@@ -189,6 +189,14 @@ Todo lo demás que falta está enumerado en
 
 ---
 
+## Derived project
+
+The circuits from this work are reused in
+**[euro-digital-zk](https://github.com/atoranzo/euro-digital-zk)**, a
+reference implementation of two digital euro requirements: provable
+holding limits and offline payments with double-spend identity
+revelation.
+
 ## Licencia
 
 MIT o Apache-2.0, a elección.
