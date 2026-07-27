@@ -186,7 +186,22 @@ rechazarse al configurar.
 No es una fuga de solidez —los valores fuera de rango se rechazan— pero
 sí un fallo de usabilidad que puede confundir un diagnóstico.
 
-### 4.8 Colisiones en el árbol de nullifiers
+### 4.8 El formato de instantánea se queda atrás al añadir estado
+
+**Dos veces** en pocas rondas: al añadir las cuentas congeladas y al
+añadir el registro de transiciones, la instantánea dejó de incluir algo
+que debía conservar. Las dos veces se detectó **después** de escribir la
+funcionalidad.
+
+Es una debilidad de **proceso**: el formato enumera campos a mano y nada
+obliga a actualizarlo. Un test que compare los campos de `SovereignLayer`
+con los que serializa la instantánea lo habría cazado las dos veces, y no
+existe.
+
+Un auditor debería comprobar que la versión actual del formato cubre todo
+el estado, y valorar exigir ese test.
+
+### 4.9 Colisiones en el árbol de nullifiers
 
 La posición sale de los bits bajos del nullifier. Dos nullifiers pueden
 colisionar, y el segundo **no podría gastarse**.

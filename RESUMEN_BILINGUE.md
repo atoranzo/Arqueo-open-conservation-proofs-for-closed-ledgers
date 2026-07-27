@@ -1,0 +1,153 @@
+# ZK-SSL — Resumen ejecutivo · Executive Summary
+
+*Español primero, English below.*
+
+---
+
+## 🇪🇸 Qué es
+
+Una **capa de liquidación financiera** donde las transferencias son
+privadas, el cumplimiento normativo es **demostrable criptográficamente**,
+y **no hace falta confiar en ninguna ceremonia de setup**.
+
+Y el trabajo comparativo que fundamentó su diseño: **el mismo circuito
+implementado en cinco sistemas de prueba de conocimiento cero**, medido en
+condiciones idénticas.
+
+### Qué NO es
+
+Un **nodo único**. Quien lo opera **ve todos los saldos** y **puede
+censurar operaciones**. Eso exige consenso distribuido, que no está
+implementado.
+
+**No lo ha auditado nadie.**
+
+### Lo que garantiza, sin revelar identidades, saldos ni importes
+
+Nadie puede crear dinero, gastar de una cuenta ajena, gastar dos veces,
+gastar estando congelado, reenviar una operación válida, ni operar sobre
+un estado corrupto. Cada garantía tiene su test que intenta romperla.
+
+Y para supervisión: **revelación selectiva** con tres modos —saldo exacto,
+mínimo de reservas, o banda ("estoy entre X e Y")—. El titular produce la
+prueba; el supervisor la verifica **sin acceso al ledger**. No hay ninguna
+clave maestra que robar.
+
+### Los números
+
+| | |
+|---|---|
+| Arranque de la capa | **0,67 ms** (sin ceremonia, sin claves que generar) |
+| Verificar una transferencia | ~4 ms |
+| Generarla | ~620 ms |
+| **Verificar / generar** | **0,5 %** |
+| Prueba de liquidación | 62 KB |
+| **Mil transferencias** | **59,1 MB acumulados** ← el límite real |
+
+### La decisión que define el diseño
+
+**Se descartó Groth16 siendo más rápido y con pruebas 320 veces menores.**
+
+El motivo: exige una ceremonia de confianza cuyos participantes, si
+coluden, pueden **crear dinero sin dejar rastro**. Las pruebas falsas
+verifican. No hay detección posterior.
+
+Es la única decisión del proyecto tomada **contra** los números de
+rendimiento.
+
+### Lo diferenciado
+
+No la capa —Zcash y Aztec llevan años de ventaja— sino **haber implementado
+lo mismo cinco veces y medirlo**. De ahí salieron ocho hallazgos que no
+están en la literatura comparativa, porque solo aparecen al portar una
+**aplicación completa**, no un SHA-256 de referencia.
+
+El principal: **la aritmetización AIR carece de restricciones de copia**,
+lo que abre un agujero de solidez silencioso al actualizar árboles de
+Merkle. Invisible para testigos honestos.
+
+### Estado
+
+**240+ tests**, reproducibles con Rust estable, sin instaladores externos.
+Los errores propios están documentados, no borrados.
+
+---
+
+## 🇬🇧 What it is
+
+A **financial settlement layer** where transfers are private, regulatory
+compliance is **cryptographically provable**, and **no trusted setup
+ceremony is required**.
+
+Plus the comparative work that informed its design: **the same circuit
+implemented across five zero-knowledge proof systems**, measured under
+identical conditions.
+
+### What it is NOT
+
+A **single node**. Whoever operates it **sees every balance** and **can
+censor operations**. Fixing that requires distributed consensus, which is
+not implemented.
+
+**It has not been audited by anyone.**
+
+### What it guarantees, without revealing identities, balances or amounts
+
+No one can create money, spend from someone else's account, double-spend,
+spend while frozen, replay a valid operation, or operate on corrupted
+state. Each guarantee has a test that tries to break it.
+
+And for supervision: **selective disclosure** in three modes — exact
+balance, minimum reserves, or band ("I am between X and Y"). The holder
+produces the proof; the supervisor verifies it **without ledger access**.
+There is no master key to steal.
+
+### The numbers
+
+| | |
+|---|---|
+| Layer startup | **0.67 ms** (no ceremony, no keys to generate) |
+| Verifying a transfer | ~4 ms |
+| Proving it | ~620 ms |
+| **Verify / prove** | **0.5 %** |
+| Settlement proof | 62 KB |
+| **One thousand transfers** | **59.1 MB accumulated** ← the real limit |
+
+### The decision that defines the design
+
+**Groth16 was rejected despite being faster and producing proofs 320×
+smaller.**
+
+The reason: it requires a trusted ceremony whose participants, if they
+collude, can **create money leaving no trace**. Forged proofs verify. There
+is no subsequent detection.
+
+It is the only decision in the project taken **against** the performance
+figures.
+
+### What is distinctive
+
+Not the layer — Zcash and Aztec have years of head start — but **having
+implemented the same thing five times and measured it**. That produced
+eight findings absent from the comparative literature, because they only
+surface when porting a **complete application**, not a reference SHA-256.
+
+The principal one: **AIR arithmetization lacks copy constraints**, which
+opens a silent soundness gap when updating Merkle trees. Invisible to
+honest witnesses.
+
+### Status
+
+**240+ tests**, reproducible with stable Rust, no external toolchains.
+Our own errors are documented, not erased.
+
+---
+
+## Enlaces · Links
+
+| | |
+|---|---|
+| Repositorio · Repository | `https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-` |
+| Revisión de seguridad · Security review | [`AUDITORIA.md`](./AUDITORIA.md) |
+| Comparativa · Comparison | [`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md) |
+| Artículo · Paper | [`PAPER_EN.md`](./PAPER_EN.md) |
