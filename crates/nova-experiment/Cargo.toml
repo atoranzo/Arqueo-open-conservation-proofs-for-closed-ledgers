@@ -1,0 +1,53 @@
+[package]
+name = "nova-experiment"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+# Quinto backend, y el único con un paradigma DISTINTO: los otros cuatro
+# producen una prueba monolítica del circuito entero; Nova PLIEGA una
+# secuencia de pasos y comprime al final.
+#
+# Aislado del resto del workspace, como los demás: usa el ciclo de curvas
+# BN254/Grumpkin y el frontend bellpepper.
+#
+# ✅ NOTA DE LICENCIA: MIT (nova-snark), compatible con el proyecto. A
+# diferencia de `plonk-experiment` (MPL-2.0), no introduce ninguna
+# licencia nueva en el árbol.
+#
+# ✅ NOTA DE DEPENDENCIAS: Poseidon viene REEXPORTADO dentro de
+# `nova_snark::frontend::gadgets::poseidon` (es la API de `neptune`), así
+# que no hay una segunda dependencia criptográfica que pueda entrar en
+# conflicto de versiones — el problema que costó varias rondas con
+# `dusk-poseidon` y que cerró la vía de PSE.
+[dependencies]
+nova-snark = "0.73"
+ff = "0.13"
+generic-array = "0.14"
+
+[dev-dependencies]
+rand = "0.8"
+
+[features]
+# ⚠️ HALLAZGO NOTABLE, y por eso esta feature existe y NO esta activada
+# por defecto.
+#
+# `nova-snark` DESACTIVA `HyperKZG::setup` en compilaciones de produccion.
+# Su mensaje de error es literal:
+#
+#   "HyperKZG::setup is disabled in production builds. Use
+#    PublicParams::setup_with_ptau_dir or
+#    R1CSShape::commitment_key_from_ptau_dir with ptau files from a
+#    trusted setup ceremony. For tests, enable the 'test-utils' feature."
+#
+# Es la UNICA de las cinco librerias de este proyecto que IMPIDE EN
+# CODIGO un setup de una sola parte. Las otras cuatro lo permiten y
+# confian en que quien lo use lo documente — cosa que este proyecto ha
+# hecho a mano cuatro veces.
+#
+# Se expone como feature propia, y no oculta en `dev-dependencies`, para
+# que quien ejecute los tests VEA en la linea de comandos que esta
+# habilitando un setup que no vale para produccion:
+#
+#   cargo test -p nova-experiment --release --features test-setup
+test-setup = ["nova-snark/test-utils"]

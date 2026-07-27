@@ -1,0 +1,31 @@
+[package]
+name = "zk-ssl"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+# **LA CAPA.** ZK-Sovereign Settlement Layer.
+#
+# Construida sobre el backend STARK/FRI por dos propiedades que ninguno de
+# los otros cuatro paradigmas ofrece a la vez:
+#
+#   - **Sin ceremonia de confianza.** Groth16 y PLONK-KZG exigen una: si
+#     sus participantes coluden, pueden falsificar pruebas y crear dinero
+#     sin que nadie lo detecte jamás. Eso es una dependencia externa
+#     permanente e inauditable, incompatible con "soberanía".
+#   - **Resistencia cuántica.** Solo depende de funciones hash.
+#
+# El precio, medido: pruebas de 36,7 KB frente a los 192 bytes de Groth16.
+# Es el coste de no depender de nadie.
+[dependencies]
+stark-experiment = { path = "../stark-experiment" }
+winterfell = "0.13"
+# Persistencia del ledger. Sin esto, reiniciar el nodo pierde el estado.
+sled = "0.34"
+# Cifrado autenticado en reposo. De RustCrypto: escribir criptografia
+# propia aqui seria un error grave, y esta libreria esta revisada y es de
+# uso amplio. Arrastra 19 dependencias.
+chacha20poly1305 = "0.10"
+# Derivacion de clave desde contrasena. Sin esto habria que exigir al
+# operador una clave de 32 bytes en hexadecimal.
+sha2 = "0.10"

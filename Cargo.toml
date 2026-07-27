@@ -1,0 +1,35 @@
+[workspace]
+members = [
+    "crates/zk-core",
+    "crates/iso-bridge",
+    "crates/halo2-experiment",
+    "crates/settlement-prover",
+    "crates/stark-experiment",
+    "crates/ceremony",
+    "crates/plonk-experiment",
+    "crates/nova-experiment",
+    "crates/settlement-layer",
+    "crates/zk-ssl",
+]
+resolver = "2"
+
+[workspace.package]
+license = "MIT OR Apache-2.0"
+
+# NOTA: versiones fijadas deliberadamente. Arkworks cambia su API entre
+# versiones menores con cierta frecuencia; si `cargo build` falla por un
+# símbolo no encontrado, lo más probable es que el compilador haya resuelto
+# una versión distinta a la probada aquí (0.4.x). En ese caso, fija la
+# versión exacta con `cargo update -p <crate> --precise <version>`.
+[workspace.dependencies]
+ark-ff = "0.4"
+ark-ec = "0.4"
+ark-std = "0.4"
+ark-relations = "0.4"
+ark-r1cs-std = "0.4"
+ark-groth16 = "0.4"
+ark-snark = "0.4"
+ark-bls12-381 = "0.4"
+ark-serialize = "0.4"
+rand = "0.8"
+rand_chacha = "0.3"

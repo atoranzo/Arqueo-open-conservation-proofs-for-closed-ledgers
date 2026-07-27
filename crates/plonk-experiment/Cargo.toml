@@ -1,0 +1,33 @@
+[package]
+name = "plonk-experiment"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+# Deliberadamente AISLADO del resto del workspace: dusk-plonk tiene su
+# propio ecosistema de curva (dusk-bls12_381, dusk-jubjub), distinto del
+# arkworks de zk-core aunque ambos usen BLS12-381. Mismo criterio que ya
+# aplicamos con halo2-experiment y stark-experiment.
+#
+# ⚠️ NOTA DE LICENCIA: dusk-plonk es MPL-2.0, no MIT/Apache como el resto
+# del proyecto. Como dependencia SIN MODIFICAR no impone obligaciones
+# sobre nuestro código (es copyleft débil, a nivel de fichero), pero
+# introduce una licencia distinta en el árbol de dependencias. Si alguna
+# vez hubiera que parchear o vendorizar dusk-plonk, esas modificaciones
+# tendrían que publicarse bajo MPL-2.0.
+[dependencies]
+dusk-plonk = "0.22"
+# Necesario para el trait `Serializable`, que da acceso a `to_bytes`.
+# Nota: `Proof::to_bytes` devuelve `[u8; N]`, no `Vec` — las pruebas
+# PLONK-KZG son de TAMANO CONSTANTE, igual que las de Groth16.
+dusk-bytes = "0.1"
+# ⚠️ RELEASE CANDIDATE. Es la única versión de dusk-poseidon que apunta a
+# dusk-plonk 0.22 y por tanto compila en Rust ESTABLE. La 0.41 (estable)
+# depende de dusk-plonk 0.21, que arrastra un `msgpacker` que exige
+# nightly. Se documenta la concesión en vez de esconderla.
+dusk-poseidon = { version = "0.42.0-rc.0", default-features = false, features = ["zk", "dusk-plonk"] }
+sled = "0.34"
+settlement-prover = { path = "../settlement-prover" }
+# `rand` pasa a dependencia normal: el puente ISO y el trait la necesitan.
+rand = "0.8"
+

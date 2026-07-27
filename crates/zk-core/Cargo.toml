@@ -1,0 +1,30 @@
+[package]
+name = "zk-core"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+[dependencies]
+ark-ff = { workspace = true }
+ark-ec = { workspace = true }
+ark-std = { workspace = true }
+ark-relations = { workspace = true }
+ark-r1cs-std = { workspace = true }
+ark-groth16 = { workspace = true }
+ark-snark = { workspace = true }
+ark-bls12-381 = { workspace = true }
+ark-serialize = { workspace = true }
+ark-crypto-primitives = { version = "0.4", features = ["r1cs", "sponge"] }
+sled = "0.34"
+settlement-prover = { path = "../settlement-prover" }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
+
+[dev-dependencies]
+ark-std = { workspace = true, features = ["print-trace"] }
+# Solo para el test de integracion de la ceremonia MPC. Es dev-dependency
+# a proposito: `zk-core` NO depende de la ceremonia para funcionar, y el
+# grafo queda aciclico (zk-core --dev--> ceremony).
+ceremony = { path = "../ceremony" }
+anyhow = "1.0"
+rand_chacha = { workspace = true }

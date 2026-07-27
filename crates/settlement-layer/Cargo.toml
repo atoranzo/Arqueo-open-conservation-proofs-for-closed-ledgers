@@ -1,0 +1,18 @@
+[package]
+name = "settlement-layer"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+# LA CAPA. Los crates anteriores implementan circuitos: demuestran que
+# una transferencia concreta es válida. Este mantiene el ESTADO — el
+# árbol de cuentas, el de nullifiers, la cadena de raíces — y aplica
+# operaciones una tras otra.
+#
+# Sin esto hay primitivas criptográficas sueltas; con esto hay un sistema
+# de liquidación.
+[dependencies]
+zk-core = { path = "../zk-core" }
+ark-bls12-381 = { workspace = true }
+ark-ff = { workspace = true }
+ark-serialize = { workspace = true }

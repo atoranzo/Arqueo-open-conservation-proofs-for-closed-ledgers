@@ -1,0 +1,18 @@
+[package]
+name = "halo2-experiment"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+# Deliberadamente AISLADO del resto del workspace (zk-core, iso-bridge):
+# Halo2 usa un ecosistema de crates de curvas elípticas distinto al de
+# Arkworks (pasta_curves / ff / group, no ark-ff / ark-ec). Mantenerlo en
+# su propio crate evita cualquier conflicto de versiones y, sobre todo,
+# evita arriesgar nada del código Groth16 ya verificado si esto falla.
+[dependencies]
+halo2_proofs = "0.3"
+halo2_gadgets = "=0.5.0"
+rand_core = "0.6"
+ff = "0.13"
+sled = "0.34"
+settlement-prover = { path = "../settlement-prover" }

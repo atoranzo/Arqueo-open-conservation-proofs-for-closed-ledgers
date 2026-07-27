@@ -1,0 +1,12 @@
+[package]
+name = "settlement-prover"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+# Deliberadamente SIN dependencias, ni siquiera de zk-core o
+# halo2-experiment. Este crate es solo la interfaz; los backends
+# concretos dependen de él, no al revés. Esto es lo que permite que
+# zk-core (Arkworks/BLS12-381) y halo2-experiment (Halo2/Pallas) sigan
+# aislados entre sí sin ningún conflicto de dependencias.
+[dependencies]

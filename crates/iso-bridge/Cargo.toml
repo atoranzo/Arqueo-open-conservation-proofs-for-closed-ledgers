@@ -1,0 +1,10 @@
+[package]
+name = "iso-bridge"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+[dependencies]
+zk-core = { path = "../zk-core" }
+ark-bls12-381 = { workspace = true }
+serde = { version = "1.0", features = ["derive"] }
