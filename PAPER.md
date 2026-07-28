@@ -745,7 +745,7 @@ herramientas externas ni compiladores no estables.
 
 ```bash
 cargo test -p zk-ssl --release              # capa: 156 tests
-cargo test -p stark-experiment --release    # circuitos: 163 tests
+cargo test -p stark-experiment --release    # circuitos: 176 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
 

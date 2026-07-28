@@ -444,8 +444,29 @@ saldo para calcular la hoja nueva. Es **el mismo problema que la
 transferencia antigua**, y tiene la misma solución: **emitir a un pendiente
 que el titular reclama**.
 
-Coste: un circuito nuevo que sube el suministro y crea un pendiente sin
-tocar ninguna cuenta. **3-5 rondas, no hecho.**
+**Implementado** en `circuit_mint_pending`: **13 tests**. Sube el
+suministro y crea un pendiente **sin tocar ninguna cuenta**, así que los
+custodios no necesitan el saldo de nadie.
+
+La propiedad va en el tipo: la firma recibe la identidad del receptor y un
+aleatorio. **No hay parámetro donde entrara un saldo, ni columna donde
+alojarlo.**
+
+⚠️ **Un fallo encontrado al construirlo, y sin corregir**: el tope de
+emisión se transporta y se declara públicamente, pero **falta la
+comprobación de rango**. Es una restricción que existe en el nombre y no
+impone nada — el mismo modo de fallo que este documento describe en otros
+sitios.
+
+Apareció al preguntar *"¿cada columna que declaro se usa de verdad?"*, que
+además destapó que **siete columnas nuevas nunca se rellenaban**: valían
+cero y sus restricciones se cumplían trivialmente.
+
+Cerrar el tope exige un segmento de rango más, lo que cambia
+`NUM_SEGMENTS` y con él los índices de las periódicas. **No está hecho.**
+
+⚠️ **Y falta cablearlo a la capa.** El circuito funciona; `mint()` sigue
+siendo el clásico.
 
 **`recovery`**: aquí hay una **tensión estructural**, no solo trabajo
 pendiente.

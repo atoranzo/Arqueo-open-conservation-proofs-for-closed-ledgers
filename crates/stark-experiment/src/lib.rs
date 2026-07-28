@@ -66,6 +66,7 @@ pub mod circuit_burn;
 pub mod circuit_freeze;
 pub mod circuit_governance;
 pub mod circuit_mint;
+pub mod circuit_mint_pending;
 pub mod circuit_recovery;
 pub mod circuit_claim;
 pub mod circuit_send;
