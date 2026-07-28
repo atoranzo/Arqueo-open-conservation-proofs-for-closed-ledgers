@@ -661,6 +661,106 @@ use super::*;
     }
 
     // -----------------------------------------------------------------
+    // Combinaciones de operaciones
+    // -----------------------------------------------------------------
+
+    /// **UNA CUENTA CONGELADA PUEDE DESTRUIR SU DINERO.**
+    ///
+    /// El circuito de liquidación comprueba el árbol de congelados; el de
+    /// destrucción **no lo mira**, y la capa tampoco.
+    ///
+    /// Congelar bloquea transferir y no bloquea destruir. Un titular bajo
+    /// investigación puede vaciar su cuenta: no se lleva el dinero, pero
+    /// **el saldo que se investigaba desaparece**.
+    ///
+    /// Este test **documenta el comportamiento actual**. Si se decide que
+    /// la congelación debe bloquear también la destrucción, este test
+    /// falla y señala dónde.
+    #[test]
+    fn a_frozen_account_can_still_burn() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+
+        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
+        layer.apply_freeze(&f, alice).expect("aplicar");
+        assert!(layer.is_frozen(alice));
+
+        // Transferir NO puede.
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        assert!(layer
+            .transfer(BaseElement::new(SK_ALICE), alice, bob, 1000)
+            .is_err());
+
+        // Pero destruir SI.
+        let b = layer.burn(BaseElement::new(SK_ALICE), alice, 1_000_000);
+        assert!(
+            b.is_ok(),
+            "COMPORTAMIENTO ACTUAL: la congelacion no bloquea la destruccion"
+        );
+        layer.apply_burn(&b.unwrap(), alice).expect("aplicar");
+        assert_eq!(
+            layer.balance_of(alice),
+            Some(0),
+            "el saldo investigado desaparece"
+        );
+    }
+
+    /// **LA RECUPERACIÓN NO LEVANTA LA CONGELACIÓN.**
+    ///
+    /// Si la levantara, bastaría con perder la clave —o decir que se
+    /// perdió— para escapar de una investigación.
+    ///
+    /// Se sostiene porque el árbol de congelados se indexa por **posición
+    /// de cuenta**, no por identidad. Pero eso era una consecuencia del
+    /// diseño, no una decisión probada.
+    #[test]
+    fn recovery_does_not_lift_a_freeze() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+
+        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
+        layer.apply_freeze(&f, alice).expect("aplicar");
+
+        // Los custodios recuperan la cuenta a una identidad nueva.
+        let nueva = derive_public_id(BaseElement::new(0xC0FFEE));
+        let r = layer.recover(&valid_auth(), alice, nueva).expect("recuperar");
+        layer.apply_recovery(&r, alice).expect("aplicar");
+
+        assert!(
+            layer.is_frozen(alice),
+            "CRITICO: recuperar una cuenta no debe levantar su congelacion, \
+             o bastaria con decir que se perdio la clave para escapar"
+        );
+    }
+
+    /// **CAMBIAR LOS CUSTODIOS INVALIDA LOS RECIBOS PENDIENTES.**
+    ///
+    /// Un recibo de emisión firmado por los custodios antiguos no debe
+    /// poder aplicarse después de sustituirlos. Si pudiera, **los
+    /// custodios destituidos conservarían poder** durante el tiempo que
+    /// tuvieran recibos sin aplicar.
+    #[test]
+    fn changing_custodians_invalidates_pending_receipts() {
+        let mut layer = new_layer();
+        let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
+
+        // Los custodios actuales emiten, pero el recibo no se aplica aun.
+        let pendiente = layer.mint(&valid_auth(), alice, 250_000).expect("emitir");
+
+        // La gobernanza los sustituye.
+        let g = layer
+            .update_custodians(&valid_governance_auth(), new_custodian_root())
+            .expect("cambiar custodios");
+        layer.apply_governance(&g).expect("aplicar");
+
+        assert!(
+            layer.apply_mint(&pendiente, alice).is_err(),
+            "CRITICO: un recibo de los custodios destituidos no debe aplicarse"
+        );
+        assert_eq!(layer.balance_of(alice), Some(0));
+    }
+
+    // -----------------------------------------------------------------
     // Casos límite
     // -----------------------------------------------------------------
 

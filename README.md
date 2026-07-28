@@ -93,6 +93,9 @@ descartó para la capa: usa curvas y exige ceremonia.
 | Interesado en el diseño | [`ARQUITECTURA.md`](./ARQUITECTURA.md) |
 | Interesado en el planteamiento | [`PRINCIPIOS.md`](./PRINCIPIOS.md) |
 | **Interesado en la visión y sus consecuencias** | [`VISION.md`](./VISION.md) |
+| Quiere entenderlo sin ser técnico | [`doc/IDEA_CENTRAL.md`](./doc/IDEA_CENTRAL.md) |
+| Quiere saber qué aporta frente a lo que hay | [`doc/APORTACION.md`](./doc/APORTACION.md) |
+| Interesado en las implicaciones | [`doc/CONSECUENCIAS.md`](./doc/CONSECUENCIAS.md) |
 
 `AUDITORIA.md` incluye una sección con **los puntos donde el autor tiene
 menos confianza**. Si vas a mirar el código con intención de romperlo,
