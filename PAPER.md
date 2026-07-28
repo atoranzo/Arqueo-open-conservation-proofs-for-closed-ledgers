@@ -738,7 +738,7 @@ otra disciplina.
 
 La implementación completa está disponible en:
 
-**`https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-`**
+**`https://github.com/USUARIO/REPOSITORIO`**
 
 Requiere únicamente el compilador Rust estable; no emplea cadenas de
 herramientas externas ni compiladores no estables.

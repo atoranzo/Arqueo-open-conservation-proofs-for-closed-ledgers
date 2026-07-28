@@ -1,0 +1,6 @@
+/target
+**/*.rs.bk
+Cargo.lock
+# Ledgers de prueba
+/ledger*
+*.bin

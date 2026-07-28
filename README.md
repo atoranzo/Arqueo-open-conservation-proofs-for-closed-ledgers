@@ -92,6 +92,7 @@ descartó para la capa: usa curvas y exige ceremonia.
 | Interesado en la comparativa | [`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md) |
 | Interesado en el diseño | [`ARQUITECTURA.md`](./ARQUITECTURA.md) |
 | Interesado en el planteamiento | [`PRINCIPIOS.md`](./PRINCIPIOS.md) |
+| **Interesado en la visión y sus consecuencias** | [`VISION.md`](./VISION.md) |
 
 `AUDITORIA.md` incluye una sección con **los puntos donde el autor tiene
 menos confianza**. Si vas a mirar el código con intención de romperlo,
@@ -188,14 +189,6 @@ Todo lo demás que falta está enumerado en
 [`AUDITORIA.md`](./AUDITORIA.md), sección 4.
 
 ---
-
-## Derived project
-
-The circuits from this work are reused in
-**[euro-digital-zk](https://github.com/atoranzo/euro-digital-zk)**, a
-reference implementation of two digital euro requirements: provable
-holding limits and offline payments with double-spend identity
-revelation.
 
 ## Licencia
 

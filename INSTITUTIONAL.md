@@ -432,7 +432,7 @@ the rest should not be deployed.
 Nothing in this document requires trusting its author.
 
 ```bash
-git clone https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-.git
+git clone [repository]
 cd zk-ssl
 cargo test -p zk-ssl --release              # 105 tests
 cargo test -p stark-experiment --release    # 135 tests

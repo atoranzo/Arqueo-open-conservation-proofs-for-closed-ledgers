@@ -436,7 +436,7 @@ lo demás no debería desplegarse.
 Nada de este documento requiere confianza en su autor.
 
 ```bash
-git clone https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-.git
+git clone [repositorio]
 cd zk-ssl
 cargo test -p zk-ssl --release              # 105 tests
 cargo test -p stark-experiment --release    # 135 tests

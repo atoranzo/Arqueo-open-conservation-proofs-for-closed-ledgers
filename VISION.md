@@ -1,0 +1,369 @@
+# ZK-SSL — Visión, principios de diseño y consecuencias técnicas
+
+**Hacia una capa de liquidación como recipiente limpio**
+
+*Revisión con lo construido y medido. Los principios no han cambiado; sí lo
+que se sabe de sus consecuencias.*
+
+---
+
+## 1. Visión
+
+Construir una capa de liquidación en la que:
+
+- Lo esencial sea demostrable sin revelar lo innecesario.
+- El poder del intermediario esté acotado, visible y mínimo.
+- El sistema actúe como un **recipiente de reglas**: recibe operaciones,
+  aplica invariantes y emite pruebas, sin apropiarse del contenido ni
+  ocultar sus límites.
+- La coherencia entre principio y arquitectura pese más que el
+  rendimiento, la adopción prematura o la narrativa.
+
+El sistema no aspira a eliminar toda confianza de un golpe. Aspira a **no
+distorsionar lo real**: donde hay verificación, se verifica; donde aún hay
+confianza, se nombra.
+
+---
+
+## 2. Principios de diseño
+
+### P1 — No distorsionar lo real
+
+Toda propiedad afirmada debe ser construible, medible y, preferiblemente,
+refutable por test. Los errores propios se documentan. Las limitaciones se
+declaran en primer plano, no en apéndices.
+
+### P2 — Recipiente limpio
+
+El sistema contiene estado y reglas. No debe ver más de lo necesario,
+retener más de lo necesario ni depender de secretos de ceremonia
+inauditables.
+
+### P3 — Confianza mínima y explícita
+
+Se elimina la fe donde la criptografía puede sustituirla. Se declara la fe
+donde aún no puede eliminarse. Ninguna dependencia de confianza se vende
+como soberanía.
+
+### P4 — Medida (límites voluntarios)
+
+El sistema define qué resuelve y qué rechaza conscientemente. Ampliar el
+alcance no es un bien en sí. Preservar pureza y verificabilidad sí.
+
+### P5 — Separación instrumento / operador / clave
+
+Quien opera el nodo no debe necesitar las claves de gasto. Quien genera la
+prueba no debe confundirse con quien la aplica. El diseño de la API debe
+hacer difíciles los usos que reintroducen confianza innecesaria.
+
+### P6 — Coherencia sobre brillo
+
+Si una optimización introduce ceremonia, opacidad o superficie de fallo
+difícil de auditar, se descarta aunque mejore latencia o tamaño de prueba.
+
+### P7 — Vaciado y no acumulación
+
+Los datos y privilegios existen el tiempo estrictamente necesario. El
+sistema favorece el **descarte verificable** frente a la retención pasiva.
+
+### P8 — Reproducibilidad sin protagonista
+
+El valor del sistema reside en que terceros puedan reconstruirlo, medirlo y
+atacarlo. La legitimidad no depende de la figura del autor.
+
+---
+
+## 3. Consecuencias técnicas
+
+### 3.1 Sobre el estado y el operador
+
+*Consecuencia de P2 y P3*
+
+| Requisito | Implicación técnica | Estado |
+|---|---|---|
+| El operador no debe leer saldos en claro | Cifrado en reposo con clave que aporta al arrancar | ⚠️ **Parcial**: los ve en memoria |
+| El operador no debe reescribir historial | Registro encadenado con verificación al arranque | ✅ |
+| El operador no debe exigir claves de gasto | `account_view` + materiales → prueba en cliente → `apply` | ✅ |
+| Censura y ordenación siguen siendo poder residual | Declaración en cabecera; consenso como único cierre | ⚠️ **Abierto** |
+
+**Estado actual aceptado**: nodo único.
+**Estado objetivo de coherencia**: minimizar la legibilidad del contenido
+del vaso, no solo la falsificación del historial.
+
+⚠️ **El cifrado en reposo no cierra P2.** Protege ante el robo del disco,
+no ante el operador. Cerrarlo exigiría un rediseño por compromisos donde la
+capa manipule solo raíces, y eso **no está hecho**.
+
+### 3.2 Sobre el backend de pruebas
+
+*Consecuencia de P3 y P6*
+
+| Criterio | Decisión |
+|---|---|
+| Ceremonia de setup | **Prohibida** como dependencia soberana |
+| Resistencia post-cuántica | Preferente |
+| Rendimiento | Secundario respecto a la ausencia de ceremonia |
+| Backend elegido | **STARK/FRI** (sin setup, post-cuántico) |
+| Descartado pese a mejor rendimiento | Groth16 (pruebas 320× menores) |
+
+**Regla de diseño**: no se adopta un paradigma que permita crear valor
+indetectable mediante colusión en el setup.
+
+⚠️ **Consecuencia medida y no anticipada**: la elección cierra la puerta a
+la **agregación recursiva**. Winterfell no soporta recursión, y construirla
+exigiría aritmetizar el verificador FRI. Ver §3.8.
+
+⚠️ **La seguridad declarada es conjeturada.** Sin extensión de campo hay un
+techo de 63 bits sobre Goldilocks. Con extensión de grado 2 el nivel es
+razonable, y **cuesta 1,2× en tiempo y 1,7× en tamaño** — medido.
+
+### 3.3 Sobre la API y el flujo de transferencia
+
+*Consecuencia de P5*
+
+Flujo obligatorio:
+
+1. El cliente obtiene la vista pública y los materiales.
+2. Calcula el nullifier y **genera la prueba localmente**.
+3. La capa verifica y aplica **sin conocer la clave de gasto**.
+
+La función de prueba es libre —no método de la capa— para que la API no
+sugiera entregar la clave al nodo.
+
+**Test discriminante**: `materials_alone_are_not_enough_to_spend`.
+
+⚠️ **P5 tiene un límite en la autoridad de umbral**: en un nodo único,
+quien genera la prueba de emisión necesita **ambas claves de custodio a la
+vez**. La garantía real es *"dos claves comprometidas en lugar de una"*, no
+*"dos voluntades independientes"*. Cerrarlo exige verificar firmas en
+circuito, y **no está hecho**.
+
+### 3.4 Sobre privacidad y cumplimiento
+
+*Consecuencia de P1 y P3*
+
+| Propiedad | Mecanismo |
+|---|---|
+| Privacidad frente a terceros que solo ven pruebas | Conocimiento cero sobre transferencias |
+| Cumplimiento sin libro mayor | Revelación selectiva: exacto / mínimo / banda |
+| Verificación externa | El supervisor verifica sin acceso al ledger |
+| No fingir privacidad frente al operador | Declaración explícita |
+
+⚠️ **Sin revelación forzosa.** Si el titular no coopera, no hay mecanismo
+alternativo. Es deliberado —no existe clave maestra que robar— y en un
+despliegue regulado sería una decisión de política a evaluar.
+
+⚠️ **Fugas por canal lateral: evidencia débil.** El tamaño de prueba varía
+un 5,4% y la correlación con el importe es +0,008 en escala logarítmica. El
+tiempo tampoco depende del importe: dispersión de 1,19×. **Con 16 y 4
+muestras eso no es demostración.**
+
+### 3.5 Sobre límites, cierre y moderación
+
+*Consecuencia de P4 y P7*
+
+| Mecanismo | Propósito | Estado |
+|---|---|---|
+| Tope de emisión inmutable | Límite duro de creación de valor | ✅ |
+| Contadores públicos de intervención | Visibilidad del uso de privilegios | ✅ |
+| Caducidad de privilegios | Evitar poder residual permanente | ✅ **congelaciones** |
+| Rechazo explícito de alcance | Documentar qué no se construirá | ✅ |
+| Instantáneas deterministas y verificables | Copia sin formatos opacos | ✅ |
+| **Descarte verificable frente a retención** | Reducir superficie sensible | ✅ **ver §3.8** |
+
+### 3.6 Sobre verificación y método
+
+*Consecuencia de P1 y P8*
+
+| Práctica | Requisito técnico |
+|---|---|
+| Cada propiedad de seguridad | **Test discriminante**: testigo coherente que viola solo esa restricción |
+| Mediciones | Misma máquina, modo release, cifras propias |
+| Errores de diseño o medición | **Documentados, no borrados** |
+| Dependencias | Minimizar; evitar toolchains ocultas |
+| Auditoría externa | Necesaria; los tests propios **no la sustituyen** |
+
+**Práctica añadida por la experiencia — el test que valida al test.**
+
+Varias propiedades llevan un segundo test que comprueba que el primero
+**puede fallar**:
+
+| Test | Su validador |
+|---|---|
+| Los saldos no son legibles en disco | Sin cifrado **sí lo son** |
+| Una cuenta congelada no puede gastar | Una libre **sí puede** |
+| Dos gastos revelan la identidad | Un gasto **no revela nada** |
+| El doble gasto entre lotes se detecta | Sin registro **no se detecta** |
+
+Sin el segundo de cada par, el primero pasaría aunque la comprobación
+estuviera mal construida.
+
+**⚠️ Práctica que faltaba y ahora consta: los hallazgos deben vivir en el
+código.**
+
+Dos de los ocho hallazgos documentados se **reintrodujeron** al escribir
+código nuevo sin consultar lo aprendido: la identidad de 64 bits y el techo
+de solidez. Documentar no impide repetir. Un test que falle, sí.
+
+### 3.7 Sobre gobernanza y emisión
+
+*Consecuencia de P3, P5 y P8*
+
+| Elemento | Diseño | Estado |
+|---|---|---|
+| Emisión | Umbral 2-de-N | ✅ |
+| Gobernanza de custodios | 2-de-N con contador público | ✅ |
+| Inmutabilidad de límites y tope | Sí | ✅ |
+| **Avance del tiempo** | **2-de-N, de una en una** | ✅ |
+| Sustituibilidad | Evitar roles cuya pérdida congele el sistema | ⚠️ **Parcial** |
+| Legitimidad | Reproducibilidad > autoridad del autor | ✅ |
+
+**El tiempo también es un privilegio.** El sistema necesitó una noción de
+época para los plazos, y avanzarla es un poder: quien la controle **caduca
+congelaciones antes de tiempo**. Se cierra igual que los demás —umbral y
+contador— y **sin saltos**, para que ningún avance masivo pase inadvertido.
+
+⚠️ **El conjunto de gobernanza es inmutable.** Si se compromete, la única
+salida es un ledger nuevo. Es el final consciente de la cadena de
+autoridad, y contradice parcialmente el criterio de sustituibilidad.
+
+### 3.8 Sobre la retención de pruebas — **P7 aplicado**
+
+*Consecuencia de P7, y el caso que más lo justifica*
+
+**El problema.** Mil transferencias acumulan 59 MB de pruebas. A un millón
+de operaciones diarias son **59 GB al día**. Eso hace indesplegable el
+sistema.
+
+**La respuesta habitual —agregar— no es alcanzable.** La recursión exigiría
+aritmetizar el verificador FRI. Y agrupar por lotes exigiría que alguien
+tuviera **las N claves de gasto** a la vez, lo que viola P5 directamente.
+
+**La pregunta que faltaba**: ¿quién necesita la prueba después de
+aplicarla?
+
+| Parte | ¿La necesita? |
+|---|---|
+| El operador | **No.** Ya la verificó |
+| El titular | **Sí**, si algún día quiere que un tercero re-verifique la suya |
+
+**Se asumía retención central sin examinarla.** Y P7 dice lo contrario:
+*los datos existen el tiempo estrictamente necesario*.
+
+| | Retención central | Retención distribuida |
+|---|---|---|
+| Operador (1M op/día) | 59 GB/día | **131 MB/día** |
+| Titular (10 op/mes) | — | 620 KB/mes |
+
+**463 veces menos.** El operador guarda la entrada del registro encadenado
+—137 bytes— en vez de la prueba.
+
+**Y el descarte es verificable, no pérdida**: el registro ya guarda
+`H(prueba)`. Quien conserve una copia demuestra que es exactamente la que
+el registro dice, sin que el operador la tenga.
+
+⚠️ **Lo que sigue abierto**:
+
+- Si nadie conservó una prueba, esa transición **no puede re-verificarse**.
+  El registro muestra la cadena, no la validez criptográfica de esa
+  operación.
+- El titular **carga con la custodia**. En un despliegue real la asumiría
+  su proveedor, con lo que la retención se re-concentra —repartida entre
+  proveedores, no en el operador central—.
+- **La verificación en bloque sigue necesitando N verificaciones.** Eso
+  *sí* exigiría recursión, y es un problema menor que 59 GB diarios.
+
+**Lección metodológica.** Una versión anterior de este análisis concluía
+que el límite de escala era *"la razón principal por la que esto no es
+desplegable"*. Era una conclusión precipitada, apoyada en una suposición
+—retención central— que **nunca se examinó y que este documento ya
+contradecía**.
+
+El principio estaba escrito antes que el problema. Aplicarlo tardó tres
+rondas más de lo necesario.
+
+---
+
+## 4. Orden de prioridad para mayor coherencia
+
+*Actualizado con lo hecho.*
+
+| | Prioridad | Estado |
+|---|---|---|
+| 1 | Reducir la legibilidad del estado por el operador | ⚠️ **Solo cifrado en reposo**. El rediseño por compromisos sigue pendiente y es el punto más incoherente con P2 |
+| 2 | Mantener y endurecer la separación clave / capa | ✅ Salvo la autoridad de umbral (§3.3) |
+| 3 | Formalizar el catálogo de rechazos | ✅ Hoja de ruta con lo no alcanzable y lo innecesario |
+| 4 | Privilegios con medida: rotación, contadores, caducidad | ✅ Contadores y caducidad de congelaciones. **Rotación pendiente** |
+| 5 | Consenso distribuido | ⬜ **Abierto**. Único cierre real de censura |
+| 6 | Auditoría externa | ⬜ **Condición, no capacidad** |
+
+**Prioridad 1 es hoy la mayor incoherencia del sistema.** El operador ve
+los saldos en memoria, y eso no lo arregla el cifrado en reposo.
+
+---
+
+## 5. Criterio de aceptación de cambios futuros
+
+Todo cambio de arquitectura, backend o API debe responder afirmativamente
+a:
+
+1. ¿Preserva la ausencia de ceremonia inauditable?
+2. ¿Reduce o declara la confianza residual?
+3. ¿Evita que el operador **vea o retenga** más de lo necesario?
+4. ¿Mantiene tests discriminantes para las propiedades afectadas?
+5. ¿Puede explicarse sin vender como resuelto lo que sigue abierto?
+
+**Criterio añadido por la experiencia:**
+
+6. ¿El hallazgo que motiva el cambio queda **en el código**, no solo en un
+   documento?
+
+Si alguna respuesta es negativa, el cambio no es coherente con la visión.
+
+### 5.1 Aplicación registrada del criterio
+
+| Cambio evaluado | Respuesta | Resultado |
+|---|---|---|
+| Agrupar pruebas por lotes | Falla el 3: exigiría las claves de gasto | **Rechazado** |
+| Delegación de prueba | Innecesario: 620 ms y 14 MB caben en un móvil | **No construido** |
+| Retención distribuida | Cumple los seis | **Adoptado** |
+
+Rechazar por criterio y **documentar el rechazo** es lo que P4 llama
+*catálogo de rechazos*.
+
+---
+
+## 6. Proyecto derivado
+
+Los circuitos de ZK-SSL se reutilizan en
+**[euro-digital-zk](https://github.com/atoranzo/euro-digital-zk)**, que
+implementa requisitos concretos del reglamento del euro digital: límite de
+tenencia demostrable, desbordamiento a cuenta vinculada, pago sin conexión
+con revelación de identidad por doble gasto, y devolución de billetes no
+gastados.
+
+Sirve de **prueba de los principios**: al aplicarlos a requisitos ajenos y
+publicados, se ve cuáles resisten. Los ocho resistieron; dos hallazgos se
+reintrodujeron por no consultarlos (§3.6).
+
+---
+
+## 7. Cierre
+
+Este documento fija la visión de ZK-SSL como **recipiente de liquidación
+con reglas demostrables**: mínima fe, máxima claridad de límites,
+separación entre instrumento y poder residual, y preferencia por la pureza
+verificable sobre el brillo.
+
+La arquitectura no se evalúa solo por lo que permite hacer. Se evalúa por
+**lo que impide falsear** y por **lo que se atreve a declarar que aún no
+resuelve**.
+
+Y hay una prueba de que los principios funcionan que no estaba prevista:
+**P7 resolvió un problema que parecía requerir una tecnología que este
+proyecto no tiene**. El principio precedió al problema, y bastó con
+aplicarlo.
+
+---
+
+*Angel Toranzo Portela · MIT / Apache-2.0*
