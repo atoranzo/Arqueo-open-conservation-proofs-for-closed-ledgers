@@ -39,6 +39,26 @@
 //! 4. **No ha gastado ya ese nullificador**: no-pertenencia al árbol.
 //! 5. El pendiente queda insertado, con el importe exacto debitado.
 //!
+//! ## Por qué NO lleva nullificador
+//!
+//! `circuit_settlement` sí lo lleva. Aquí se omite **por decisión, no por
+//! olvido**.
+//!
+//! El papel del nullificador es ser una marca pública de gasto que no
+//! revela qué cuenta lo hizo. Pero un envío ya cambia el saldo, luego la
+//! hoja, luego la raíz: **un reenvío tendría la raíz antigua obsoleta y se
+//! rechazaría**.
+//!
+//! Y para un tercero que verifique: con nullificador comprueba frescura
+//! contra la raíz de nullificadores; sin él, contra la raíz de cuentas.
+//! **Las dos exigen seguir una raíz. No se pierde nada.**
+//!
+//! `circuit_burn` ya lo omite por el mismo motivo.
+//!
+//! ⚠️ **Con varios validadores concurrentes esto cambiaría**: el
+//! nullificador detecta un gasto repetido sin necesidad de ordenar. Si
+//! algún día hay consenso, habría que reconsiderarlo.
+//!
 //! ## ⚠️ Lo que NO resuelve
 //!
 //! - **El pagador reconoce cuándo se reclama.** Eligió el aleatorio, así
@@ -95,7 +115,12 @@ const COL_SACC: usize = 37;
 const COL_FBIT: usize = 38;
 /// Bit de dirección en el árbol de PENDIENTES.
 const COL_PBIT: usize = 39;
-pub const TRACE_WIDTH: usize = 40;
+/// **Identidad pública del receptor**, que funciona como dirección.
+/// Privada: un tercero no debe saber a quién se paga.
+const COL_R_ID: usize = 40; // 40..44
+/// Aleatorio que ciega el compromiso. Lo elige el pagador.
+const COL_SALT: usize = 44; // 44..48
+pub const TRACE_WIDTH: usize = 48;
 
 // ===== Filas =====
 const ROW_LEAF_LINK: usize = 7;
@@ -117,8 +142,12 @@ const ROW_FROZEN_ROOT: usize = 471;
 ///
 /// Carril A: la posición vacía → raíz antigua de pendientes.
 /// Carril B: con el compromiso → raíz nueva.
-const ROW_PENDING_ENTRY: usize = 479;
-const ROW_PENDING_ROOT: usize = 735;
+/// Compromiso interno del pendiente: `H(id_receptor, aleatorio)`.
+const ROW_PEND_INNER: usize = 479;
+/// El pendiente completo: `H(interno, importe)`.
+const ROW_PENDING_ENTRY: usize = 487;
+/// Raíz tras insertarlo. Ciclos 61..92, filas 488..743.
+const ROW_PENDING_ROOT: usize = 743;
 
 // ===== Restricciones =====
 const C_HASH_A: usize = 0;
@@ -142,7 +171,7 @@ const C_PK_CHECK: usize = C_KEY_INPUT + 2; // 4
 const C_BALANCE: usize = C_PK_CHECK + 4; // 1
 /// **EL SUMINISTRO DISMINUYE EXACTAMENTE EN EL IMPORTE.**
 const C_SUPPLY: usize = C_BALANCE + 1; // 1
-const C_TRANSPORT: usize = C_SUPPLY + 1; // 7
+const C_TRANSPORT: usize = C_SUPPLY + 1; // 15 (7 + id receptor 4 + aleatorio 4)
 const C_ID_CONST: usize = C_TRANSPORT + 7; // 4
 const C_SBIT_BOOL: usize = C_ID_CONST + 4; // 2
 const C_FIRST_S: usize = C_SBIT_BOOL + 2; // 2
@@ -155,7 +184,22 @@ const C_FROZEN_ENTRY: usize = C_FROZEN_CAP + 4; // 4
 /// Colocación en cada nivel.
 const C_FROZEN_PLACE: usize = C_FROZEN_ENTRY + 4; // 4
 const C_FBIT_BOOL: usize = C_FROZEN_PLACE + 4; // 1
-const NUM_CONSTRAINTS: usize = C_FBIT_BOOL + 1;
+/// El compromiso interno entra con la identidad del receptor y el
+/// aleatorio.
+const C_PEND_IN: usize = C_FBIT_BOOL + 1; // 12 (capacidad 4 + identidad 4 + aleatorio 4)
+/// Y el compromiso completo, con el importe.
+const C_PEND_VAL: usize = C_PEND_IN + 12; // 5 (digest 4 + importe 1)
+/// Capacidad a cero en la subida al árbol de pendientes.
+const C_PEND_CAP: usize = C_PEND_VAL + 5; // 8
+/// **LA ENTRADA**: el carril A coloca CERO —la posición estaba libre— y
+/// el B coloca el compromiso.
+const C_PEND_ENTRY_A: usize = C_PEND_CAP + 8; // 4
+const C_PEND_ENTRY_B: usize = C_PEND_ENTRY_A + 4; // 4
+/// Colocación en cada nivel y hermano compartido.
+const C_PEND_PLACE: usize = C_PEND_ENTRY_B + 4; // 8
+const C_PEND_SIBLING: usize = C_PEND_PLACE + 8; // 4
+const C_PBIT_BOOL: usize = C_PEND_SIBLING + 4; // 1
+const NUM_CONSTRAINTS: usize = C_PBIT_BOOL + 1;
 
 // ===== Periódicas =====
 const P_HASH_FLAG: usize = 0;
@@ -174,6 +218,14 @@ const P_SEG_LINK: usize = P_CONT_S + 1;
 const P_FROZEN_ENTRY: usize = P_SEG_LINK + NUM_SEGMENTS;
 /// Enlaces de la subida.
 const P_FROZEN_LINK: usize = P_FROZEN_ENTRY + 1;
+/// Fila del compromiso interno del pendiente.
+const P_PEND_IN: usize = P_FROZEN_LINK + 1;
+/// Fila del compromiso completo.
+const P_PEND_VAL: usize = P_PEND_IN + 1;
+/// Fila que entra al árbol de pendientes.
+const P_PEND_ENTRY: usize = P_PEND_VAL + 1;
+/// Enlaces de la subida.
+const P_PEND_LINK: usize = P_PEND_ENTRY + 1;
 
 type Blake3 = Blake3_256<BaseElement>;
 
@@ -197,15 +249,19 @@ pub fn build_trace(
     frozen_path: &MerklePath,
     amount: u64,
     supply_old: u64,
-    /// Debe ser CERO: un envío no cambia el suministro. Se mantiene como
-    /// parámetro para que un test pueda intentar lo contrario.
+    // Debe ser CERO: un envío no cambia el suministro. Se mantiene como
+    // parámetro para que un test pueda intentar lo contrario.
     supply_delta: u64,
-    /// **Compromiso pendiente**: `H(H(id_receptor, aleatorio), importe)`.
-    ///
-    /// El pagador lo construye con la identidad pública del receptor, que
-    /// funciona como dirección. **No necesita su saldo.**
-    pending_commitment: Digest,
-    /// Camino de la posición libre donde se inserta.
+    // **Identidad pública del receptor.** Funciona como dirección: el
+    // pagador la obtiene del propio receptor, **no del operador**.
+    //
+    // Con ella construye el pendiente
+    // `H(H(id_receptor, aleatorio), importe)`. **No necesita su saldo ni
+    // su nonce**, que es lo que cierra la fuga.
+    receiver_id: Digest,
+    // Aleatorio que ciega el compromiso. Lo elige el pagador.
+    salt: Digest,
+    // Camino de la posición libre donde se inserta el pendiente.
     pending_path: &MerklePath,
 ) -> TraceTable<BaseElement> {
     let zero = BaseElement::ZERO;
@@ -226,6 +282,8 @@ pub fn build_trace(
         row[COL_BAL_NEW] = c_bal_new;
         row[COL_NONCE] = nonce;
         row[COL_AMT] = c_amt;
+        row[COL_R_ID..COL_R_ID + 4].copy_from_slice(&receiver_id);
+        row[COL_SALT..COL_SALT + 4].copy_from_slice(&salt);
         row[COL_SUPPLY_OLD] = c_supply_old;
         row[COL_SUPPLY_NEW] = c_supply_new;
     }
@@ -250,6 +308,16 @@ pub fn build_trace(
             rows[r][COL_SACC] = acc;
         }
     }
+
+    let place_pending = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
+        if pending_path.is_right[level] {
+            state[4..8].copy_from_slice(&pending_path.siblings[level]);
+            state[8..12].copy_from_slice(digest);
+        } else {
+            state[4..8].copy_from_slice(digest);
+            state[8..12].copy_from_slice(&pending_path.siblings[level]);
+        }
+    };
 
     let place_frozen = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
         if frozen_path.is_right[level] {
@@ -281,7 +349,7 @@ pub fn build_trace(
     rows[0][..STATE_WIDTH].copy_from_slice(&state_a);
     rows[0][LANE_B..LANE_B + STATE_WIDTH].copy_from_slice(&state_b);
 
-    for r in 0..ROW_FROZEN_ROOT {
+    for r in 0..ROW_PENDING_ROOT {
         let pos = r % CYCLE_LENGTH;
         if pos < NUM_ROUNDS {
             Rp64_256::apply_round(&mut state_a, pos);
@@ -311,6 +379,31 @@ pub fn build_trace(
                     state_b[4] = BaseElement::new(SPEND_KEY_DOMAIN);
                     state_b[8] = spend_key;
                 }
+                ROW_FROZEN_ROOT => {
+                    // COMPROMISO INTERNO: H(identidad_receptor, aleatorio).
+                    state_a[..4].copy_from_slice(&[zero; 4]);
+                    state_a[4..8].copy_from_slice(&receiver_id);
+                    state_a[8..12].copy_from_slice(&salt);
+                    state_b.copy_from_slice(&state_a);
+                }
+                ROW_PEND_INNER => {
+                    // EL PENDIENTE: H(interno, importe).
+                    state_a[4..8].copy_from_slice(&digest_a);
+                    state_a[8] = c_amt;
+                    state_a[9] = zero;
+                    state_a[10] = zero;
+                    state_a[11] = zero;
+                    state_b.copy_from_slice(&state_a);
+                }
+                ROW_PENDING_ENTRY => {
+                    // ENTRADA AL ARBOL DE PENDIENTES.
+                    //
+                    // Carril A: hoja CERO -> la posicion estaba libre.
+                    // Carril B: el compromiso -> raiz nueva.
+                    let libre: Digest = [zero; 4];
+                    place_pending(&mut state_a, &libre, 0);
+                    place_pending(&mut state_b, &digest_b, 0);
+                }
                 ROW_PK_DONE => {
                     // ENTRADA AL ARBOL DE CONGELADOS.
                     //
@@ -330,12 +423,27 @@ pub fn build_trace(
                         let level = next_cycle - 35;
                         place_frozen(&mut state_a, &digest_a, level);
                         place_frozen(&mut state_b, &digest_b, level);
+                    } else if (62..94).contains(&next_cycle) {
+                        let level = next_cycle - 61;
+                        place_pending(&mut state_a, &digest_a, level);
+                        place_pending(&mut state_b, &digest_b, level);
                     }
                 }
             }
         }
         rows[r + 1][..STATE_WIDTH].copy_from_slice(&state_a);
         rows[r + 1][LANE_B..LANE_B + STATE_WIDTH].copy_from_slice(&state_b);
+    }
+
+    for level in 0..TREE_DEPTH {
+        let bit = if pending_path.is_right[level] {
+            BaseElement::ONE
+        } else {
+            zero
+        };
+        for p in 0..CYCLE_LENGTH {
+            rows[(61 + level) * CYCLE_LENGTH + p][COL_PBIT] = bit;
+        }
     }
 
     for level in 0..FROZEN_DEPTH {
@@ -381,6 +489,11 @@ pub struct SendPublicInputs {
     /// **Raíz del árbol de congelados.** La prueba acredita que el titular
     /// NO está en él: una cuenta congelada no puede destruir su dinero.
     pub frozen_root: Digest,
+    /// **Árbol de pendientes ANTES.** La posición donde se inserta estaba
+    /// libre: ahí reside la prueba de que no se pisa otro pendiente.
+    pub pending_root_old: Digest,
+    /// **Y DESPUÉS**, con el compromiso dentro.
+    pub pending_root_new: Digest,
     pub amount: BaseElement,
     pub supply_old: BaseElement,
     pub supply_new: BaseElement,
@@ -391,6 +504,8 @@ impl ToElements<BaseElement> for SendPublicInputs {
         let mut out = self.root_old.to_vec();
         out.extend_from_slice(&self.root_new);
         out.extend_from_slice(&self.frozen_root);
+        out.extend_from_slice(&self.pending_root_old);
+        out.extend_from_slice(&self.pending_root_new);
         out.push(self.amount);
         out.push(self.supply_old);
         out.push(self.supply_new);
@@ -451,10 +566,27 @@ impl Air for SendAir {
         // Bit booleano (1): grado 2 sin ciclo.
         degrees.push(TransitionConstraintDegree::new(2));
 
+        // --- El pendiente ---
+        // Compromiso interno (12) y completo (5): grado 1 con ciclo.
+        for _ in 0..17 {
+            degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
+        }
+        // Capacidad de la subida (8): grado 1 con ciclo.
+        for _ in 0..8 {
+            degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
+        }
+        // Entradas (8), colocacion (8), hermano (4): grado 2, multiplican
+        // por el bit de direccion.
+        for _ in 0..20 {
+            degrees.push(TransitionConstraintDegree::with_cycles(2, full.clone()));
+        }
+        // Bit booleano (1): grado 2 sin ciclo.
+        degrees.push(TransitionConstraintDegree::new(2));
+
         assert_eq!(degrees.len(), NUM_CONSTRAINTS, "cuenta de grados");
 
         SendAir {
-            context: AirContext::new(trace_info, degrees, 33, options),
+            context: AirContext::new(trace_info, degrees, 41, options),
             pub_inputs,
         }
     }
@@ -469,7 +601,7 @@ impl Air for SendAir {
         let mut columns = Vec::new();
 
         let mut hash_flag = vec![zero; TRACE_LENGTH];
-        for r in 0..=ROW_FROZEN_ROOT {
+        for r in 0..=ROW_PENDING_ROOT {
             if r % CYCLE_LENGTH < NUM_ROUNDS {
                 hash_flag[r] = one;
             }
@@ -479,7 +611,7 @@ impl Air for SendAir {
         for ark in [true, false] {
             for i in 0..STATE_WIDTH {
                 let mut col = vec![zero; TRACE_LENGTH];
-                for r in 0..=ROW_FROZEN_ROOT {
+                for r in 0..=ROW_PENDING_ROOT {
                     let pos = r % CYCLE_LENGTH;
                     if pos < NUM_ROUNDS {
                         col[r] = if ark {
@@ -541,6 +673,28 @@ impl Air for SendAir {
             frozen_link[(35 + level) * CYCLE_LENGTH + 7] = one;
         }
         columns.push(frozen_link);
+
+        // Compromiso interno del pendiente: una sola fila.
+        let mut pend_in = vec![zero; TRACE_LENGTH];
+        pend_in[ROW_FROZEN_ROOT] = one;
+        columns.push(pend_in);
+
+        // Compromiso completo.
+        let mut pend_val = vec![zero; TRACE_LENGTH];
+        pend_val[ROW_PEND_INNER] = one;
+        columns.push(pend_val);
+
+        // Entrada al arbol de pendientes.
+        let mut pend_entry = vec![zero; TRACE_LENGTH];
+        pend_entry[ROW_PENDING_ENTRY] = one;
+        columns.push(pend_entry);
+
+        // Enlaces de la subida: uno por nivel a partir del primero.
+        let mut pend_link = vec![zero; TRACE_LENGTH];
+        for level in 0..TREE_DEPTH - 1 {
+            pend_link[(61 + level) * CYCLE_LENGTH + 7] = one;
+        }
+        columns.push(pend_link);
 
         columns
     }
@@ -661,6 +815,14 @@ impl Air for SendAir {
             COL_SUPPLY_OLD,
             COL_SUPPLY_NEW,
         ];
+        // La identidad del receptor y el aleatorio tambien son constantes:
+        // si variaran entre filas, el compromiso no seria el declarado.
+        for i in 0..4 {
+            result[C_TRANSPORT + 7 + i] =
+                next[COL_R_ID + i] - current[COL_R_ID + i];
+            result[C_TRANSPORT + 11 + i] =
+                next[COL_SALT + i] - current[COL_SALT + i];
+        }
         for (k, col) in transport.iter().enumerate() {
             result[C_TRANSPORT + k] = next[*col] - current[*col];
         }
@@ -698,6 +860,67 @@ impl Air for SendAir {
                 frozen_link * ((E::ONE - fbit) * (next[4 + i] - d) + fbit * (next[8 + i] - d));
         }
         result[C_FBIT_BOOL] = current[COL_FBIT] * (current[COL_FBIT] - E::ONE);
+
+        // ===== EL PENDIENTE =====
+        //
+        // Tres fases: el compromiso interno, el compromiso completo, y la
+        // insercion en el arbol.
+        //
+        // Lo que cierra la fuga esta aqui: el compromiso se forma con la
+        // IDENTIDAD del receptor, no con su saldo. El circuito no tiene
+        // ninguna columna donde ese saldo pudiera entrar.
+        let pend_in = periodic[P_PEND_IN];
+        let pend_val = periodic[P_PEND_VAL];
+        let pend_entry = periodic[P_PEND_ENTRY];
+        let pend_link = periodic[P_PEND_LINK];
+        let pbit = next[COL_PBIT];
+
+        for i in 0..4 {
+            // Compromiso interno: entra la identidad del receptor y el
+            // aleatorio, con capacidad a cero.
+            result[C_PEND_IN + i] = pend_in * next[i];
+            // DOS restricciones separadas, no su suma.
+            //
+            // Una version anterior las sumaba: un probador podia poner la
+            // identidad de mas y el aleatorio de menos, y la suma seguia
+            // dando cero. **Sumar comprobaciones independientes las
+            // anula.**
+            result[C_PEND_IN + 4 + i] = pend_in * (next[4 + i] - current[COL_R_ID + i]);
+            result[C_PEND_IN + 8 + i] = pend_in * (next[8 + i] - current[COL_SALT + i]);
+
+            // Compromiso completo: el digest interno, y el importe.
+            result[C_PEND_VAL + i] = pend_val * (next[4 + i] - current[4 + i]);
+        }
+        result[C_PEND_VAL + 4] = pend_val * (next[8] - current[COL_AMT]);
+
+        // Subida al arbol de pendientes.
+        let pend_any = pend_entry + pend_link;
+        for i in 0..4 {
+            result[C_PEND_CAP + i] = pend_any * next[i];
+            result[C_PEND_CAP + 4 + i] = pend_any * next[LANE_B + i];
+
+            // **LA POSICION ESTABA LIBRE**: el carril A entra con cero.
+            result[C_PEND_ENTRY_A + i] =
+                pend_entry * ((E::ONE - pbit) * next[4 + i] + pbit * next[8 + i]);
+            // Y el B con el compromiso, que acaba de calcular.
+            result[C_PEND_ENTRY_B + i] = pend_entry
+                * ((E::ONE - pbit) * (next[LANE_B + 4 + i] - current[LANE_B + 4 + i])
+                    + pbit * (next[LANE_B + 8 + i] - current[LANE_B + 4 + i]));
+
+            let da = current[4 + i];
+            let db = current[LANE_B + 4 + i];
+            result[C_PEND_PLACE + i] =
+                pend_link * ((E::ONE - pbit) * (next[4 + i] - da) + pbit * (next[8 + i] - da));
+            result[C_PEND_PLACE + 4 + i] = pend_link
+                * ((E::ONE - pbit) * (next[LANE_B + 4 + i] - db)
+                    + pbit * (next[LANE_B + 8 + i] - db));
+
+            // Hermano compartido: es la misma posicion del mismo arbol.
+            let sib_a = (E::ONE - pbit) * next[8 + i] + pbit * next[4 + i];
+            let sib_b = (E::ONE - pbit) * next[LANE_B + 8 + i] + pbit * next[LANE_B + 4 + i];
+            result[C_PEND_SIBLING + i] = pend_link * (sib_a - sib_b);
+        }
+        result[C_PBIT_BOOL] = current[COL_PBIT] * (current[COL_PBIT] - E::ONE);
 
         let expected = [
             current[COL_BAL],
@@ -759,6 +982,21 @@ impl Air for SendAir {
             ));
         }
 
+        // **Las raíces del árbol de pendientes**: antes libre, después con
+        // el compromiso.
+        for i in 0..4 {
+            a.push(Assertion::single(
+                4 + i,
+                ROW_PENDING_ROOT,
+                self.pub_inputs.pending_root_old[i],
+            ));
+            a.push(Assertion::single(
+                LANE_B + 4 + i,
+                ROW_PENDING_ROOT,
+                self.pub_inputs.pending_root_new[i],
+            ));
+        }
+
         a
     }
 }
@@ -806,6 +1044,18 @@ impl Prover for SendProver {
                 trace.get(5, ROW_FROZEN_ROOT),
                 trace.get(6, ROW_FROZEN_ROOT),
                 trace.get(7, ROW_FROZEN_ROOT),
+            ],
+            pending_root_old: [
+                trace.get(4, ROW_PENDING_ROOT),
+                trace.get(5, ROW_PENDING_ROOT),
+                trace.get(6, ROW_PENDING_ROOT),
+                trace.get(7, ROW_PENDING_ROOT),
+            ],
+            pending_root_new: [
+                trace.get(LANE_B + 4, ROW_PENDING_ROOT),
+                trace.get(LANE_B + 5, ROW_PENDING_ROOT),
+                trace.get(LANE_B + 6, ROW_PENDING_ROOT),
+                trace.get(LANE_B + 7, ROW_PENDING_ROOT),
             ],
             amount: trace.get(COL_AMT, 0),
             supply_old: trace.get(COL_SUPPLY_OLD, 0),
@@ -881,6 +1131,9 @@ mod tests {
         nonce: BaseElement,
         path: MerklePath,
         frozen_path: MerklePath,
+        pending_path: MerklePath,
+        receiver_id: Digest,
+        salt: Digest,
         amount: u64,
         supply_old: u64,
         public_inputs: SendPublicInputs,
@@ -928,14 +1181,55 @@ mod tests {
             &frozen_path,
         );
 
+        // Camino del arbol de PENDIENTES, con la posicion libre.
+        // Direcciones mixtas: con todas iguales la traza degenera.
+        let pending_path = MerklePath {
+            siblings: (0..TREE_DEPTH).map(|l| empty[l]).collect(),
+            is_right: (0..TREE_DEPTH).map(|l| l % 4 == 0).collect(),
+        };
+        let receiver_id = derive_public_id(BaseElement::new(0xB0B));
+        let salt: Digest = [
+            BaseElement::new(0x5EED_0001),
+            BaseElement::new(0x5EED_0002),
+            BaseElement::new(0x5EED_0003),
+            BaseElement::new(0x5EED_0004),
+        ];
+        // El compromiso, calculado de forma nativa para comparar.
+        let pend_inner = native_merge(receiver_id, salt);
+        let pending = native_merge(
+            pend_inner,
+            [BaseElement::new(amount), BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO],
+        );
+        let mut climb_pending = |hoja: Digest| {
+            let mut cur = hoja;
+            for level in 0..TREE_DEPTH {
+                cur = if pending_path.is_right[level] {
+                    native_merge(pending_path.siblings[level], cur)
+                } else {
+                    native_merge(cur, pending_path.siblings[level])
+                };
+            }
+            cur
+        };
+
         Scenario {
             public_inputs: SendPublicInputs {
                 root_old: native_climb(leaf_old, &path),
                 root_new: native_climb(leaf_new, &path),
                 amount: BaseElement::new(amount),
                 supply_old: BaseElement::new(supply_old),
-                supply_new: BaseElement::new(supply_old - amount),
+                // **UN ENVIO NO CAMBIA EL SUMINISTRO.**
+                //
+                // Heredado del circuito de destruccion, donde bajaba en el
+                // importe. Declarar aqui otro valor que el de la traza hace
+                // que probador y verificador usen entradas publicas
+                // distintas, y con ellas transcripciones de Fiat-Shamir
+                // distintas: la prueba se genera y **no verifica**, con el
+                // error opaco `InconsistentOodConstraintEvaluations`.
+                supply_new: BaseElement::new(supply_old),
                 frozen_root,
+                pending_root_old: climb_pending([BaseElement::ZERO; 4]),
+                pending_root_new: climb_pending(pending),
             },
             key,
             account_id,
@@ -943,6 +1237,9 @@ mod tests {
             nonce,
             path,
             frozen_path,
+            pending_path,
+            receiver_id,
+            salt,
             amount,
             supply_old,
         }
@@ -959,6 +1256,9 @@ mod tests {
             s.amount,
             s.supply_old,
             supply_delta,
+            s.receiver_id,
+            s.salt,
+            &s.pending_path,
         );
         let prover = SendProver::new(default_options());
 
@@ -984,7 +1284,7 @@ mod tests {
 
     /// EL TEST CLAVE.
     #[test]
-    fn authorized_burn_verifies() {
+    fn an_authorized_send_verifies() {
         let s = scenario(1_000_000, 250_000, 10_000_000);
         let trace = build_trace(
             s.key,
@@ -995,7 +1295,13 @@ mod tests {
             &s.frozen_path,
             s.amount,
             s.supply_old,
-            s.amount,
+            // ⚠️ Heredado del circuito de destruccion, donde el suministro
+            // bajaba en el importe. Un ENVIO no cambia el suministro: debe
+            // ser CERO.
+            0,
+            s.receiver_id,
+            s.salt,
+            &s.pending_path,
         );
         let prover = SendProver::new(default_options());
         let proof = prover.prove(trace).expect("la destruccion valida deberia probar");
@@ -1014,7 +1320,7 @@ mod tests {
     /// una cuenta ajena, pero no la clave. La identidad derivada de su
     /// clave no coincide con la de la cuenta.
     #[test]
-    fn third_party_cannot_burn_someone_elses_money() {
+    fn a_third_party_cannot_send_someone_elses_money() {
         let s = scenario(1_000_000, 250_000, 10_000_000);
         assert!(
             run(&s, BaseElement::new(0x1337), s.amount).is_err(),
@@ -1028,10 +1334,10 @@ mod tests {
     /// desaparecería pero la cifra auditable no lo registraría, y la
     /// invariante global se rompería en silencio.
     #[test]
-    fn burning_without_updating_supply_is_rejected() {
+    fn changing_the_supply_is_rejected() {
         let s = scenario(1_000_000, 250_000, 10_000_000);
         assert!(
-            run(&s, s.key, 0).is_err(),
+            run(&s, s.key, 250_000).is_err(),
             "CRITICO: destruir sin registrarlo en el suministro romperia la \
              invariante global"
         );
@@ -1039,7 +1345,7 @@ mod tests {
 
     /// Reducir el suministro más de lo destruido tampoco cuela.
     #[test]
-    fn deflating_supply_beyond_amount_is_rejected() {
+    fn inflating_the_supply_is_rejected() {
         let s = scenario(1_000_000, 250_000, 10_000_000);
         assert!(run(&s, s.key, 500_000).is_err());
     }
@@ -1049,10 +1355,10 @@ mod tests {
     /// El saldo resultante daría la vuelta en el campo y no cabría en el
     /// rango de 64 bits.
     #[test]
-    fn burning_more_than_the_balance_is_rejected() {
+    fn sending_more_than_the_balance_is_rejected() {
         let s = scenario(100_000, 250_000, 10_000_000);
         assert!(
-            run(&s, s.key, s.amount).is_err(),
+            run(&s, s.key, 0).is_err(),
             "CRITICO: destruir mas del saldo disponible debe rechazarse"
         );
     }
@@ -1073,7 +1379,13 @@ mod tests {
             &s.frozen_path,
             s.amount,
             s.supply_old,
-            s.amount,
+            // ⚠️ Heredado del circuito de destruccion, donde el suministro
+            // bajaba en el importe. Un ENVIO no cambia el suministro: debe
+            // ser CERO.
+            0,
+            s.receiver_id,
+            s.salt,
+            &s.pending_path,
         );
         let prover = SendProver::new(default_options());
         let proof = prover.prove(trace).expect("prove");
@@ -1100,7 +1412,7 @@ mod tests {
     /// Congelar existe para que una cuenta bajo investigación no mueva
     /// fondos. Destruirlos los mueve.
     #[test]
-    fn a_frozen_account_cannot_burn() {
+    fn a_frozen_account_cannot_send() {
         let mut s = scenario(1_000_000, 250_000, 10_000_000);
 
         // La cuenta SI esta en el arbol de congelados.
@@ -1109,7 +1421,7 @@ mod tests {
             crate::circuit_freeze::frozen_climb(hoja, &s.frozen_path);
 
         assert!(
-            run(&s, s.key, s.amount).is_err(),
+            run(&s, s.key, 0).is_err(),
             "CRITICO: una cuenta congelada no debe poder destruir su dinero"
         );
     }
@@ -1119,11 +1431,11 @@ mod tests {
     /// Sin esto, el test anterior pasaría aunque la fase de congelados
     /// rechazara todo — o no impusiera nada y fallara por otra razón.
     #[test]
-    fn a_free_account_can_burn() {
+    fn a_free_account_can_send() {
         let s = scenario(1_000_000, 250_000, 10_000_000);
         assert!(
-            run(&s, s.key, s.amount).is_ok(),
-            "una cuenta libre debe poder destruir su dinero"
+            run(&s, s.key, 0).is_ok(),
+            "una cuenta libre debe poder enviar"
         );
     }
 
@@ -1135,6 +1447,135 @@ mod tests {
     fn a_forged_frozen_root_is_rejected() {
         let mut s = scenario(1_000_000, 250_000, 10_000_000);
         s.public_inputs.frozen_root = [BaseElement::new(0xFA15E); 4];
-        assert!(run(&s, s.key, s.amount).is_err());
+        assert!(run(&s, s.key, 0).is_err());
+    }
+
+    /// **SEPARA "LA TRAZA ESTÁ MAL" DE "LAS RESTRICCIONES ESTÁN MAL".**
+    ///
+    /// Compara cada punto de referencia de la traza con su cálculo nativo.
+    /// Si pasa, la traza es correcta y el fallo está en restricciones,
+    /// grados o aserciones. Si falla, dice **exactamente cuál**.
+    ///
+    /// En `circuit_redeem` este test ahorró varias rondas de diagnóstico:
+    /// al pasar, descartó de entrada la mitad del espacio de búsqueda.
+    #[test]
+    fn trace_landmarks_match_native() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let trace = build_trace(
+            s.key,
+            s.account_id,
+            s.balance,
+            s.nonce,
+            &s.path,
+            &s.frozen_path,
+            s.amount,
+            s.supply_old,
+            0,
+            s.receiver_id,
+            s.salt,
+            &s.pending_path,
+        );
+        let esperados = &s.public_inputs;
+
+        // ===== TODAS LAS ENTRADAS PUBLICAS, NO SOLO LAS RAICES =====
+        //
+        // Una version anterior comprobaba solo las raices. El escenario
+        // declaraba `supply_new = supply_old - amount` —heredado del
+        // circuito de destruccion— mientras la traza tenia
+        // `supply_new = supply_old`.
+        //
+        // Probador y verificador usaban entradas publicas distintas, y con
+        // ellas transcripciones de Fiat-Shamir distintas: la prueba se
+        // generaba y **no verificaba**, con el error opaco
+        // `InconsistentOodConstraintEvaluations`.
+        //
+        // **Costo ocho rondas de diagnostico.** Comparar la estructura
+        // entera, y no los campos que parecen importantes, lo habria
+        // cazado a la primera.
+        let derivadas = SendProver::new(default_options()).get_pub_inputs(&trace);
+        assert_eq!(
+            derivadas.to_elements(),
+            esperados.to_elements(),
+            "las entradas publicas DERIVADAS de la traza deben coincidir con \
+             las DECLARADAS, o probador y verificador usaran transcripciones \
+             distintas"
+        );
+
+        for i in 0..4 {
+            assert_eq!(
+                trace.get(4 + i, ROW_ROOT),
+                esperados.root_old[i],
+                "raiz de cuentas ANTES, elemento {i}"
+            );
+            assert_eq!(
+                trace.get(LANE_B + 4 + i, ROW_ROOT),
+                esperados.root_new[i],
+                "raiz de cuentas DESPUES, elemento {i}"
+            );
+            assert_eq!(
+                trace.get(4 + i, ROW_FROZEN_ROOT),
+                esperados.frozen_root[i],
+                "raiz de congelados, elemento {i}"
+            );
+            assert_eq!(
+                trace.get(4 + i, ROW_PENDING_ROOT),
+                esperados.pending_root_old[i],
+                "raiz de pendientes ANTES, elemento {i}"
+            );
+            assert_eq!(
+                trace.get(LANE_B + 4 + i, ROW_PENDING_ROOT),
+                esperados.pending_root_new[i],
+                "raiz de pendientes DESPUES, elemento {i}"
+            );
+        }
+    }
+
+    /// **EL COMPROMISO SE FORMA CON LA IDENTIDAD, NO CON EL SALDO.**
+    ///
+    /// Es la propiedad que cierra la fuga, y va **en el tipo**: la firma
+    /// de `build_trace` recibe `receiver_id` y `salt`. **No hay parámetro
+    /// donde pudiera entrar un saldo.**
+    ///
+    /// Este test lo confirma calculando el compromiso de forma nativa a
+    /// partir de la identidad y comprobando que es el que la traza
+    /// inserta.
+    #[test]
+    fn the_commitment_is_built_from_the_identity_not_the_balance() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let nativo = native_merge(
+            native_merge(s.receiver_id, s.salt),
+            [
+                BaseElement::new(s.amount),
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+            ],
+        );
+        // La raiz nueva de pendientes debe ser la de insertar ESE
+        // compromiso, calculado sin conocer ningun saldo del receptor.
+        let mut cur = nativo;
+        for level in 0..TREE_DEPTH {
+            cur = if s.pending_path.is_right[level] {
+                native_merge(s.pending_path.siblings[level], cur)
+            } else {
+                native_merge(cur, s.pending_path.siblings[level])
+            };
+        }
+        assert_eq!(
+            cur, s.public_inputs.pending_root_new,
+            "el compromiso se forma con la identidad del receptor y el \
+             aleatorio: su saldo no interviene en ningun punto"
+        );
+    }
+
+    /// **DECLARAR OTRA RAIZ DE PENDIENTES SE RECHAZA.**
+    ///
+    /// Sin esto, se podria afirmar haber insertado un compromiso distinto
+    /// del que la traza construye.
+    #[test]
+    fn a_wrong_pending_root_is_rejected() {
+        let mut s = scenario(1_000_000, 250_000, 10_000_000);
+        s.public_inputs.pending_root_new = [BaseElement::new(0xFA15E); 4];
+        assert!(run(&s, s.key, 0).is_err());
     }
 }

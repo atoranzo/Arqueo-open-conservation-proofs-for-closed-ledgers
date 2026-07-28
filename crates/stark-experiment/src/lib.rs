@@ -67,6 +67,7 @@ pub mod circuit_freeze;
 pub mod circuit_governance;
 pub mod circuit_mint;
 pub mod circuit_recovery;
+pub mod circuit_send;
 pub mod circuit_settlement;
 pub mod circuit_threshold;
 pub mod compliance_circuit;
