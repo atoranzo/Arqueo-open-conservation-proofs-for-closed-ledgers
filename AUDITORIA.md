@@ -775,9 +775,26 @@ Añade valor donde **no hay** tal test. Este proyecto ha visto tres casos
 —una restricción idénticamente cero, siete columnas nunca rellenadas, un
 tope transportado sin comprobar— y ninguno lo detectaba nada.
 
-⚠️ **Solo está aplicada a `circuit_burn`.** Extenderla a los otros once
-exige construir un testigo válido y el `Air` en cada uno: **1-2 rondas cada
-uno, no hecho**.
+### Cobertura y resultado
+
+Aplicada a **6 de los 12 circuitos de producción**: `burn`, `claim`,
+`mint`, `recovery`, `send`, `settlement`. Los seis, **limpios**: toda
+restricción declarada reacciona a alguna perturbación.
+
+⚠️ **No ha encontrado ningún fallo.**
+
+Eso es un resultado, aunque modesto: dice que estos seis circuitos no tienen
+restricciones vacías, no que sean correctos. Y la herramienta está validada
+—detecta el fallo cuando se introduce a propósito—, así que el resultado
+limpio significa algo.
+
+⚠️ **Faltan 6**: `audit`, `freeze`, `governance`, `mint_pending`,
+`threshold`, `nullifier_tree`. Cada uno exige construir su testigo y su
+`Air`: **1-2 rondas cada uno, no hecho**.
+
+El más interesante de los que faltan es `mint_pending`, que es donde ya se
+encontraron **siete columnas declaradas y nunca rellenadas**. Sus
+restricciones se corrigieron, pero la comprobación no se ha hecho.
 
 ⚠️ **No detecta** restricciones que solo reaccionan a cambios de varias
 celdas a la vez, ni restricciones que se disparan pero imponen lo que no se

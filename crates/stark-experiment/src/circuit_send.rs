@@ -1578,4 +1578,53 @@ mod tests {
         s.public_inputs.pending_root_new = [BaseElement::new(0xFA15E); 4];
         assert!(run(&s, s.key, 0).is_err());
     }
+
+    /// **PRUEBA POR MUTACIÓN: ninguna restricción está vacía.**
+    ///
+    /// Si ninguna perturbación de una celda hace que una restricción se
+    /// vuelva no nula, esa restricción no impone nada — y ningún test
+    /// normal lo detecta. Ver `AUDITORIA.md` §12.
+    ///
+    /// Se prueban **todas** las filas: con muestreo, una restricción activa
+    /// en una sola fila aparece como vacía sin serlo.
+    ///
+    /// ⚠️ Un resultado limpio **no significa que el circuito sea correcto**:
+    /// significa que no tiene este fallo concreto.
+    #[test]
+    fn no_constraint_is_vacuous() {
+        use crate::mutation::{buscar_vacias, rows_of};
+
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let trace = build_trace(
+            s.key,
+            s.account_id,
+            s.balance,
+            s.nonce,
+            &s.path,
+            &s.frozen_path,
+            s.amount,
+            s.supply_old,
+            0,
+            s.receiver_id,
+            s.salt,
+            &s.pending_path,
+        );
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+
+        let air = SendAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            s.public_inputs.clone(),
+            default_options(),
+        );
+        let informe = buscar_vacias(&air, &rows, 1);
+
+        assert!(
+            informe.nunca_disparadas.is_empty(),
+            "restricciones que NINGUNA perturbacion activa (de {} totales, \
+             {} celdas probadas): {:?}",
+            informe.total,
+            informe.celdas,
+            informe.nunca_disparadas
+        );
+    }
 }
