@@ -587,6 +587,79 @@ use super::*;
     // Congelación de cuentas
     // -----------------------------------------------------------------
 
+    /// **NADA SE FILTRA ANTES DE COMPROBAR LA AUTORIDAD.**
+    ///
+    /// Cualquier comprobación anterior a la autorización **revela su
+    /// resultado a quien no es el titular**.
+    ///
+    /// Con la congelación comprobada antes —como estuvo—, un cliente de la
+    /// API podría sondear qué cuentas están congeladas, es decir **quién
+    /// está bajo investigación**, sin ser dueño de ninguna.
+    #[test]
+    fn nothing_leaks_before_authority_is_checked() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+
+        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
+        layer.apply_freeze(&f, alice).expect("aplicar");
+
+        // Un intruso, sin la clave de Alice, intenta transferir desde su
+        // cuenta. Debe recibir "no eres el titular", NO "esta congelada".
+        let r = layer.transfer(BaseElement::new(0x1337), alice, bob, 1000);
+        assert!(
+            matches!(r, Err(LayerError::NotTheAccountHolder)),
+            "CRITICO: un intruso no debe poder deducir que la cuenta esta \
+             congelada. Resultado: {r:?}"
+        );
+    }
+
+    /// **Y el titular SÍ ve el motivo real.**
+    ///
+    /// Sin esto, el test anterior pasaría aunque `transfer` devolviera
+    /// siempre el mismo error y la congelación no se comprobara.
+    #[test]
+    fn the_holder_does_see_the_freeze() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
+        layer.apply_freeze(&f, alice).expect("aplicar");
+
+        let r = layer.transfer(BaseElement::new(SK_ALICE), alice, bob, 1000);
+        assert!(
+            matches!(r, Err(LayerError::AccountFrozen(_))),
+            "el titular debe saber que su cuenta esta congelada: {r:?}"
+        );
+    }
+
+    /// **Ni el saldo se filtra antes de la autoridad.**
+    ///
+    /// `InsufficientBalance` lleva el saldo disponible. Si se comprobara
+    /// antes que la clave, cualquiera podría **sondear saldos ajenos**
+    /// pidiendo transferencias imposibles.
+    ///
+    /// `burn` y `audit` ya lo tenían en el orden correcto; este test lo
+    /// fija para los tres.
+    #[test]
+    fn the_balance_does_not_leak_before_authority() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+
+        // Pide mas de lo que Alice tiene, sin su clave.
+        let r = layer.transfer(BaseElement::new(0x1337), alice, bob, 99_999_999);
+        assert!(
+            matches!(r, Err(LayerError::NotTheAccountHolder)),
+            "CRITICO: el error no debe revelar el saldo a quien no es titular"
+        );
+
+        // Y con burn, que tambien lo lleva.
+        let r = layer.burn(BaseElement::new(0x1337), alice, 99_999_999);
+        assert!(matches!(r, Err(LayerError::NotTheAccountHolder)));
+    }
+
+
     /// **EL TEST QUE JUSTIFICA TODA LA PIEZA.**
     ///
     /// Una cuenta congelada no puede gastar. Y no lo impide la capa: lo

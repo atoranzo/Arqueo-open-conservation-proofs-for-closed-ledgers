@@ -41,13 +41,26 @@ impl SovereignLayer {
         // una prueba que luego no verifica, y el error resultante sería
         // técnico en vez de decir lo que pasa. `burn` y `audit` ya hacían
         // esta comprobación; `transfer` no, y era la operación más usada.
-        // Congelada: el circuito lo impone igualmente, pero fallar aqui
-        // evita gastar ~600 ms en una prueba que no verificara.
-        if self.is_frozen(sender_index) {
-            return Err(LayerError::AccountFrozen(sender_index));
-        }
         if derive_public_id(sender_key) != sender.public_id {
             return Err(LayerError::NotTheAccountHolder);
+        }
+
+        // ===== LA CONGELACIÓN SE COMPRUEBA DESPUÉS DE LA AUTORIDAD =====
+        //
+        // El circuito la impone igualmente; esto solo evita gastar ~600 ms
+        // en una prueba que no verificará.
+        //
+        // Pero **el orden importa**: cualquier comprobación anterior a la
+        // autorización **filtra su resultado a quien no es el titular**.
+        // Con esta antes, un cliente de la API podría sondear qué cuentas
+        // están congeladas —es decir, quién está bajo investigación— sin
+        // ser dueño de ninguna.
+        //
+        // `burn` y `audit` ya lo tenían en este orden; `transfer` no,
+        // porque la comprobación se añadió después y se colocó al
+        // principio por comodidad.
+        if self.is_frozen(sender_index) {
+            return Err(LayerError::AccountFrozen(sender_index));
         }
         if amount > sender.balance {
             return Err(LayerError::InsufficientBalance {
