@@ -1097,4 +1097,59 @@ mod tests {
         s.public_inputs.frozen_root = [BaseElement::new(0xFA15E); 4];
         assert!(run(&s, s.key, s.amount).is_err());
     }
+
+    /// **SEPARA "LA TRAZA ESTÁ MAL" DE "LAS RESTRICCIONES ESTÁN MAL".**
+    ///
+    /// Este circuito **no tenía ningún test de puntos de referencia**, pese
+    /// a estar en producción. Se detectó al inventariar cuáles comparaban
+    /// sus entradas públicas con lo que la traza produce.
+    ///
+    /// Compara la **estructura entera**, no los campos que parecen
+    /// importantes: en `circuit_send` la versión parcial dejó pasar un
+    /// campo heredado de otra operación y **costó ocho rondas de
+    /// diagnóstico**, porque el error de winterfell
+    /// —`InconsistentOodConstraintEvaluations`— apunta a las restricciones
+    /// y no a las entradas.
+    #[test]
+    fn trace_landmarks_match_native() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let trace = build_trace(
+            s.key,
+            s.account_id,
+            s.balance,
+            s.nonce,
+            &s.path,
+            &s.frozen_path,
+            s.amount,
+            s.supply_old,
+            s.amount,
+        );
+
+        for i in 0..4 {
+            assert_eq!(
+                trace.get(4 + i, ROW_ROOT),
+                s.public_inputs.root_old[i],
+                "raiz de cuentas ANTES, elemento {i}"
+            );
+            assert_eq!(
+                trace.get(LANE_B + 4 + i, ROW_ROOT),
+                s.public_inputs.root_new[i],
+                "raiz de cuentas DESPUES, elemento {i}"
+            );
+            assert_eq!(
+                trace.get(4 + i, ROW_FROZEN_ROOT),
+                s.public_inputs.frozen_root[i],
+                "raiz de congelados, elemento {i}"
+            );
+        }
+
+        // Y TODAS las entradas públicas, no solo las raíces.
+        let derivadas = BurnProver::new(default_options()).get_pub_inputs(&trace);
+        assert_eq!(
+            derivadas.to_elements(),
+            s.public_inputs.to_elements(),
+            "las entradas DERIVADAS de la traza deben coincidir con las \
+             DECLARADAS en todos sus campos"
+        );
+    }
 }

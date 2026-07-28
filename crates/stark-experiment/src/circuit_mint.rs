@@ -1068,6 +1068,22 @@ mod tests {
         }
         assert_eq!(trace.get(COL_ACC_A, ROW_CUST_ROOT), BaseElement::new(1));
         assert_eq!(trace.get(COL_ACC_B, ROW_CUST_ROOT), BaseElement::new(3));
+        // ===== Y TODAS LAS ENTRADAS PÚBLICAS, NO SOLO LAS RAÍCES =====
+        //
+        // Comparar la estructura entera. En `circuit_send` la versión
+        // parcial dejó pasar un campo heredado de otra operación y **costó
+        // ocho rondas de diagnóstico**: probador y verificador usaban
+        // transcripciones de Fiat-Shamir distintas, y el error de winterfell
+        // —`InconsistentOodConstraintEvaluations`— apunta a las
+        // restricciones, no a las entradas.
+        let derivadas = MintProver::new(default_options()).get_pub_inputs(&trace);
+        assert_eq!(
+            derivadas.to_elements(),
+            s.public_inputs.to_elements(),
+            "las entradas DERIVADAS de la traza deben coincidir con las \
+             DECLARADAS en todos sus campos"
+        );
+
     }
 
     /// EL TEST CLAVE. No silencia el pánico: si una traza válida falla,

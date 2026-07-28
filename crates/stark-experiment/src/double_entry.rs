@@ -1049,6 +1049,22 @@ mod tests {
         // Los acumuladores de solvencia reconstruyen sus valores.
         assert_eq!(trace.get(COL_SACC, 63), BaseElement::new(1_000_000));
         assert_eq!(trace.get(COL_SACC, 191), BaseElement::new(250_000));
+        // ===== Y TODAS LAS ENTRADAS PÚBLICAS, NO SOLO LAS RAÍCES =====
+        //
+        // Comparar la estructura entera. En `circuit_send` la versión
+        // parcial dejó pasar un campo heredado de otra operación y **costó
+        // ocho rondas de diagnóstico**: probador y verificador usaban
+        // transcripciones de Fiat-Shamir distintas, y el error de winterfell
+        // —`InconsistentOodConstraintEvaluations`— apunta a las
+        // restricciones, no a las entradas.
+        let derivadas = DoubleEntryProver::new(default_options()).get_pub_inputs(&trace);
+        assert_eq!(
+            derivadas.to_elements(),
+            s.public_inputs.to_elements(),
+            "las entradas DERIVADAS de la traza deben coincidir con las \
+             DECLARADAS en todos sus campos"
+        );
+
     }
 
     /// EL TEST CLAVE de todo el port.
