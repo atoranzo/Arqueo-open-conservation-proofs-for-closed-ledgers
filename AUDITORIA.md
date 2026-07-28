@@ -181,8 +181,25 @@ hasta que el receptor actúe**. Un despliegue real necesitaría reclamación
 automática por su proveedor — con lo que el proveedor vuelve a ver el
 saldo, aunque repartido y no concentrado en el operador.
 
-**Estado: diseño demostrado. El refactor de la capa —15-25 rondas— sigue
-pendiente.**
+### Estado: **los dos circuitos implementados**
+
+| Pieza | Estado |
+|---|---|
+| Diseño demostrado (`pending.rs`) | ✅ 8 tests |
+| **`circuit_send`** — el pagador debita y crea el pendiente | ✅ **12 tests** |
+| **`circuit_claim`** — el receptor demuestra que es suyo y cobra | ✅ **13 tests** |
+| La capa: dos fases, pendientes, reclamación | ⬜ 3-5 rondas |
+
+**La propiedad va en el tipo, no solo en un test.** La firma de
+`build_trace` recibe `receiver_id` y `salt`: **no hay parámetro donde
+pudiera entrar un saldo del receptor**.
+
+Los dos ataques que sostienen el esquema, cerrados con test:
+
+- `nobody_else_can_claim_a_pending_transfer`: quien intercepte el aviso
+  —aleatorio e importe— **no puede cobrarlo sin la clave**.
+- La raíz de pendientes queda vacía tras reclamar: **no se cobra dos
+  veces**.
 
 ### La vía elegida, analizada
 
@@ -218,7 +235,7 @@ observador?"* sino **"¿qué aprende cada participante?"**.
 Encontró la fuga de §4 y no encontró otra igual de grave. Pero sí tres
 cosas que estaban implícitas y **ninguna declarada**.
 
-### 9.1 Matriz por operación
+### 10.1 Matriz por operación
 
 | Operación | El operador | La contraparte | Un tercero |
 |---|---|---|---|
@@ -230,7 +247,7 @@ cosas que estaban implícitas y **ninguna declarada**.
 | Congelación | Todo | Custodios: **qué cuenta** | Nada |
 | Gasto sin conexión | — | Comercio: el importe | Nada |
 
-### 9.2 Lo implícito, ahora declarado
+### 10.2 Lo implícito, ahora declarado
 
 **El importe de emisión y destrucción es público.** Aparece en las entradas
 públicas de ambos circuitos.
@@ -256,7 +273,7 @@ Un observador del registro ve **el patrón de actividad del sistema**
 cuánto. Es metadato, y en un sistema con poca actividad podría ser
 significativo.
 
-### 9.3 Lo que el repaso confirmó que SÍ está cerrado
+### 10.3 Lo que el repaso confirmó que SÍ está cerrado
 
 | Propiedad | Cómo |
 |---|---|
@@ -265,7 +282,7 @@ significativo.
 | El nullifier no se deriva de la identidad pública | Test: `nullifier_is_not_derivable_from_public_id` |
 | Una transferencia no revela identidades a terceros | Solo raíces y nullifier |
 
-### 9.4 La pregunta que queda para un auditor
+### 10.4 La pregunta que queda para un auditor
 
 **¿Hay más datos que se entregan por necesidad técnica y que nadie
 examinó?**
@@ -360,7 +377,7 @@ que se hace al conjunto, no a la función.
 **Aplicación de P4 —medida: el sistema define qué resuelve y qué rechaza—
 a la pregunta de qué estados alcanzan las combinaciones de operaciones.**
 
-### 9.1 La matriz, probada
+### 10.1 La matriz, probada
 
 | Con la cuenta congelada | ¿Se permite? | Dónde se impone |
 |---|---|---|
@@ -371,7 +388,7 @@ a la pregunta de qué estados alcanzan las combinaciones de operaciones.**
 | Recibir una emisión | Sí | — |
 | Ser recuperada | Sí, **y la congelación sobrevive** | Probado |
 
-### 9.2 El hueco que había
+### 10.2 El hueco que había
 
 **Congelar bloqueaba transferir y no bloqueaba destruir.** Un titular bajo
 investigación podía **vaciar su cuenta a cero**: no se llevaba el dinero
@@ -380,7 +397,7 @@ investigación podía **vaciar su cuenta a cero**: no se llevaba el dinero
 El circuito de liquidación miraba el árbol de congelados; el de destrucción
 **no lo miraba en absoluto**, y la capa tampoco.
 
-### 9.3 La decisión, y su razonamiento
+### 10.3 La decisión, y su razonamiento
 
 **Congelar existe para que una cuenta bajo investigación no mueva fondos.
 Destruirlos los mueve: los saca del sistema. Que sea público e irreversible
@@ -391,13 +408,13 @@ congelados** —24 niveles, filas 280..471, que estaban libres— con 13
 restricciones nuevas y **3 tests**, incluido el validador que comprueba que
 una cuenta libre sí puede.
 
-### 9.4 Por qué se permite recibir
+### 10.4 Por qué se permite recibir
 
 Impedir que una cuenta congelada **reciba** dejaría fondos en el limbo y
 rompería pagos legítimos hacia alguien bajo investigación. Es una decisión
 deliberada, no un olvido.
 
-### 9.5 Por qué la recuperación no la levanta
+### 10.5 Por qué la recuperación no la levanta
 
 El árbol de congelados se indexa por **posición de cuenta**, no por
 identidad. Si se indexara por identidad, bastaría con decir que se perdió
@@ -439,7 +456,7 @@ compilaba y pasaba sus tests.
 | ¿Qué estados alcanzan las combinaciones? | **Una cuenta congelada podía destruir su dinero** |
 | ¿Qué puede el operador que no esté declarado? | **Puede desviar un pago si no compruebas el destino** |
 
-### 9.1 Lo que tienen en común
+### 10.1 Lo que tienen en común
 
 **Ninguna se responde revisando una función.** Cada una compara cosas que
 son coherentes por separado:
@@ -465,11 +482,59 @@ preguntar en serio.
 
 ---
 
-## 9. Donde el autor tiene MENOS confianza
+## 9. Un fallo de método que costó ocho rondas
+
+**Todos los circuitos tienen un test de puntos de referencia que compara la
+traza con su cálculo nativo. Ninguno comparaba TODAS las entradas
+públicas.**
+
+### Qué pasó
+
+Al construir `circuit_send`, el escenario de prueba heredó de
+`circuit_burn` la línea `supply_new = supply_old − amount`. Un envío **no
+cambia el suministro**, así que la traza tenía `supply_new = supply_old`.
+
+Entradas públicas distintas entre probador y verificador → **transcripciones
+de Fiat-Shamir distintas** → la prueba se genera y **no verifica**.
+
+### Por qué costó tanto
+
+El error de winterfell es `InconsistentOodConstraintEvaluations`, que
+**apunta a las restricciones**. Se descartaron, en este orden: la traza, las
+violaciones de restricción, los índices de columnas periódicas, el recuento
+de aserciones y los grados declarados.
+
+Todas eran hipótesis razonables. Ninguna era la causa.
+
+⚠️ **Y dos conclusiones se anunciaron y hubo que retirarlas**, incluida una
+—*"doblar la traza rompe `circuit_burn`"*— que resultó ser un artefacto de
+la propia bisección: al revertir el bucle no se revirtió el indicador de
+hash.
+
+### La corrección
+
+```rust
+let derivadas = Prover::new(opts).get_pub_inputs(&trace);
+assert_eq!(derivadas.to_elements(), declaradas.to_elements());
+```
+
+**Comparar la estructura entera**, no los campos que parecen importantes.
+
+### ⚠️ Aplica a los otros nueve circuitos
+
+Todos comparan raíces seleccionadas a mano. **Ninguno compara
+`to_elements()` completo.** El mismo fallo puede estar latente en cualquiera
+de ellos y solo aparecería al modificarlo.
+
+Corregirlo son 1-2 rondas por circuito, y **no está hecho**.
+
+---
+
+## 10. Donde el autor tiene MENOS confianza
 
 Esta es la sección más útil del documento.
 
-### 9.1 `open_account` no exige autorización — **mitigado a medias**
+### 10.1 `open_account` no exige autorización — **mitigado a medias**
 
 Cualquiera con acceso a la capa puede crear cuentas. No crea dinero
 (nacen a cero), pero llenaba el árbol y el mapa de registros hasta agotar
@@ -485,7 +550,7 @@ genera ninguna prueba**.
 Un auditor debería valorar si el tope es suficiente para el caso de uso
 previsto.
 
-### 9.2 La congelación no tiene justificación ni caducidad
+### 10.2 La congelación no tiene justificación ni caducidad
 
 **Implementada** con imposición en circuito: la prueba de liquidación
 acredita que el emisor no está en el árbol de congelados.
@@ -499,7 +564,7 @@ acredita que el emisor no está en el árbol de congelados.
   contrario dejaría fondos en el limbo— pero merece que un auditor valore
   si encaja con el caso de uso.
 
-### 9.3 Los grados de restricción
+### 10.3 Los grados de restricción
 
 **Cinco veces** durante el desarrollo winterfell rechazó un grado mal
 declarado. Cada vez se corrigió. La exactitud que exige winterfell hace
@@ -512,7 +577,7 @@ Especial cuidado con:
   (`circuit_mint`: 8 segmentos × 64 filas llenan la traza y la vuelven
   periódica de periodo 64).
 
-### 9.4 El patrón lockstep
+### 10.4 El patrón lockstep
 
 `C_SIBLING` impone que los dos carriles usen el mismo hermano. El
 argumento es que eso basta para atar ambas subidas a la misma posición
@@ -522,7 +587,7 @@ Está verificado con un test discriminante, **pero el argumento general no
 ha sido revisado por nadie más**. Es el hallazgo más original del
 proyecto y merece escrutinio.
 
-### 9.5 Los tests negativos
+### 10.5 Los tests negativos
 
 **Tres veces** un test negativo resultó no discriminar: fallaba por una
 restricción distinta de la que pretendía probar. Se corrigieron
@@ -531,7 +596,7 @@ construyendo testigos internamente coherentes.
 **Puede quedar alguno más.** Un auditor debería comprobar, para cada test
 negativo, que el testigo corrupto es válido en todo lo demás.
 
-### 9.6 El bloqueo de directorio de `sled` tras cerrar — **hallazgo nuevo**
+### 10.6 El bloqueo de directorio de `sled` tras cerrar — **hallazgo nuevo**
 
 `sled` mantiene un bloqueo del directorio que puede tardar en liberarse
 tras cerrar la base de datos. **Un nodo que se reinicie inmediatamente
@@ -548,7 +613,7 @@ hace el ayudante `open_retry` de los tests.
 Un auditor debería valorar si esto afecta a los procedimientos de
 recuperación tras caída.
 
-### 9.7 El techo de 63 bits
+### 10.7 El techo de 63 bits
 
 Las comprobaciones de rango fuerzan el bit más significativo a cero, así
 que **ningún valor puede superar 2^63 − 1**.
@@ -560,7 +625,7 @@ rechazarse al configurar.
 No es una fuga de solidez —los valores fuera de rango se rechazan— pero
 sí un fallo de usabilidad que puede confundir un diagnóstico.
 
-### 9.8 El formato de instantánea se queda atrás al añadir estado
+### 10.8 El formato de instantánea se queda atrás al añadir estado
 
 **Dos veces** en pocas rondas: al añadir las cuentas congeladas y al
 añadir el registro de transiciones, la instantánea dejó de incluir algo
@@ -575,7 +640,7 @@ existe.
 Un auditor debería comprobar que la versión actual del formato cubre todo
 el estado, y valorar exigir ese test.
 
-### 9.9 Colisiones en el árbol de nullifiers
+### 10.9 Colisiones en el árbol de nullifiers
 
 La posición sale de los bits bajos del nullifier. Dos nullifiers pueden
 colisionar, y el segundo **no podría gastarse**.
@@ -586,7 +651,7 @@ incorrecto, sería grave.
 
 ---
 
-## 10. Por dónde empezaría el autor si tuviera que romperlo
+## 11. Por dónde empezaría el autor si tuviera que romperlo
 
 En este orden:
 
@@ -606,7 +671,7 @@ En este orden:
 
 ---
 
-## 11. Limitaciones ya documentadas
+## 12. Limitaciones ya documentadas
 
 No hacen falta descubrirlas; están en `README.md`:
 
@@ -620,7 +685,7 @@ No hacen falta descubrirlas; están en `README.md`:
 
 ---
 
-## 12. Cómo reproducir
+## 13. Cómo reproducir
 
 ### ⚠️ Hay un test ignorado, y conviene saber por qué
 
@@ -660,7 +725,7 @@ fila exactos del fallo.
 
 ---
 
-## 13. Qué NO demuestra este documento
+## 14. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

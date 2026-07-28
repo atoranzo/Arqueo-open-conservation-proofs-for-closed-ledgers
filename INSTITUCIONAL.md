@@ -439,7 +439,7 @@ Nada de este documento requiere confianza en su autor.
 git clone [repositorio]
 cd zk-ssl
 cargo test -p zk-ssl --release              # 151 tests
-cargo test -p stark-experiment --release    # 135 tests
+cargo test -p stark-experiment --release    # 163 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
 
