@@ -57,6 +57,7 @@ use winterfell::{
 };
 
 use crate::merkle::{native_merge, Digest, MerklePath, TREE_DEPTH};
+use crate::circuit_threshold::CustodianPath;
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 /// Dominio de derivación de identidades de custodio. **Distinto del de
@@ -189,12 +190,6 @@ pub fn derive_custodian_id(key: BaseElement) -> Digest {
     )
 }
 
-/// Camino de autenticación dentro del conjunto de custodios.
-#[derive(Clone, Debug)]
-pub struct CustodianPath {
-    pub siblings: Vec<Digest>,
-    pub is_right: Vec<bool>,
-}
 
 /// Construye el conjunto de custodios y devuelve su raíz junto con los
 /// caminos de cada uno.

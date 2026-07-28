@@ -878,6 +878,106 @@ use super::*;
     }
 
     // -----------------------------------------------------------------
+    // Emisión a un pendiente
+    // -----------------------------------------------------------------
+
+    /// **EL CICLO COMPLETO: EMITIR A UN PENDIENTE Y RECLAMARLO.**
+    ///
+    /// Los custodios crean dinero **sin tocar ninguna cuenta**, así que no
+    /// necesitan el saldo de nadie. El destinatario lo reclama después.
+    ///
+    /// La emisión clásica acredita una cuenta directamente, y para
+    /// calcular su hoja nueva **necesita su saldo**.
+    #[test]
+    fn the_full_mint_to_pending_cycle() {
+        let mut layer = new_layer();
+        let bob = open_and_fund(&mut layer, SK_BOB, 50_000);
+        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
+        let suministro = layer.total_supply();
+
+        // Los custodios emiten a un pendiente.
+        let r = layer
+            .mint_to_pending(&valid_auth(), id_bob, salt_de(0xA11), 300_000)
+            .expect("emitir a pendiente");
+        layer.apply_mint_to_pending(&r).expect("aplicar");
+
+        assert_eq!(
+            layer.total_supply(),
+            suministro + 300_000,
+            "el suministro sube"
+        );
+        assert_eq!(layer.balance_of(bob), Some(50_000), "Bob aun no cobra");
+
+        // Bob lo reclama.
+        let estado_bob = state_of(&layer, bob);
+        let cr = layer
+            .claim(BaseElement::new(SK_BOB), bob, &estado_bob, &r.notice)
+            .expect("reclamar");
+        let estado_bob = state_of(&layer, bob);
+        layer.apply_claim(&cr, bob, &estado_bob, &r.notice).expect("aplicar");
+
+        assert_eq!(layer.balance_of(bob), Some(350_000), "Bob cobrado");
+        assert_eq!(layer.total_supply(), suministro + 300_000, "y el suministro no cambia al reclamar");
+    }
+
+    /// **SIN DOS CUSTODIOS NO SE EMITE.**
+    #[test]
+    fn a_single_custodian_cannot_mint_to_pending() {
+        let mut layer = new_layer();
+        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
+        let mismo = ThresholdAuth {
+            index_b: valid_auth().index_a,
+            path_b: valid_auth().path_a.clone(),
+            key_b: valid_auth().key_a,
+            ..valid_auth()
+        };
+        assert!(
+            layer.mint_to_pending(&mismo, id_bob, salt_de(0xA11), 1000).is_err(),
+            "CRITICO: un custodio contando dos veces no debe poder emitir"
+        );
+    }
+
+    /// **NO SE SUPERA EL TOPE DE EMISIÓN.**
+    ///
+    /// ⚠️ Lo impone **la capa**, no el circuito: `circuit_mint_pending`
+    /// transporta el tope pero **no lo comprueba con un rango**. Está
+    /// documentado en su cabecera y en `AUDITORIA.md` §10.
+    #[test]
+    fn the_supply_cap_is_enforced_by_the_layer() {
+        let mut layer = new_layer();
+        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
+        // Emitir EXACTAMENTE el tope es legitimo: lo alcanza, no lo supera.
+        //
+        // Una version anterior de este test probaba `MAX_SUPPLY` y fallaba
+        // por eso. **El test estaba mal, no el codigo.**
+        let ok = layer.mint_to_pending(&valid_auth(), id_bob, salt_de(0xA11), MAX_SUPPLY);
+        assert!(ok.is_ok(), "emitir hasta el tope debe permitirse: {ok:?}");
+
+        // Superarlo, no.
+        let r = layer.mint_to_pending(&valid_auth(), id_bob, salt_de(0xA12), MAX_SUPPLY + 1);
+        assert!(
+            matches!(r, Err(LayerError::OverRegulatoryLimit { .. })),
+            "pasarse del tope debe rechazarse: {r:?}"
+        );
+    }
+
+    /// **EMITIR CONSUME CUPO DE CUSTODIOS.**
+    ///
+    /// Es una intervención como las demás, y la rotación la cuenta.
+    #[test]
+    fn minting_to_pending_consumes_custodian_quota() {
+        let mut layer = new_layer();
+        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
+        assert_eq!(layer.custodian_uses(), 0);
+
+        let r = layer
+            .mint_to_pending(&valid_auth(), id_bob, salt_de(0xA11), 1000)
+            .expect("emitir");
+        layer.apply_mint_to_pending(&r).expect("aplicar");
+        assert_eq!(layer.custodian_uses(), 1);
+    }
+
+    // -----------------------------------------------------------------
     // Rotación de privilegios
     // -----------------------------------------------------------------
 

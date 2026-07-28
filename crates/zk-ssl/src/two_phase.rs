@@ -41,6 +41,10 @@
 
 use super::*;
 use crate::commitment::ClientState;
+use stark_experiment::circuit_mint_pending::{
+    build_trace as build_mint_pending_trace, MintPendingAir, MintPendingProver,
+    MintPendingPublicInputs,
+};
 use crate::pending::pending_commitment;
 use stark_experiment::circuit_claim::{
     build_trace as build_claim_trace, ClaimAir, ClaimProver, ClaimPublicInputs,
@@ -73,6 +77,15 @@ pub struct SendReceipt {
     /// en este campo.
     pub commitment: Digest,
     /// El aviso que hay que hacer llegar al receptor.
+    pub notice: PendingNotice,
+}
+
+#[derive(Debug)]
+pub struct MintPendingReceipt {
+    pub proof: Vec<u8>,
+    pub public_inputs: MintPendingPublicInputs,
+    pub commitment: Digest,
+    /// El aviso que hay que hacer llegar al destinatario.
     pub notice: PendingNotice,
 }
 
@@ -362,4 +375,103 @@ impl SovereignLayer {
         Ok(())
     }
 
+
+    /// **EMISIÓN A UN PENDIENTE.**
+    ///
+    /// Dos custodios crean dinero **sin tocar ninguna cuenta**: depositan
+    /// un compromiso atado a la identidad del destinatario, que este
+    /// reclama con `claim`.
+    ///
+    /// La emisión clásica acredita una cuenta directamente, y para ello
+    /// **necesita su saldo**. Aquí no.
+    ///
+    /// ⚠️ **Si el destinatario nunca reclama, el dinero queda en el
+    /// limbo**: el suministro subió y no está en ninguna cuenta. Haría
+    /// falta devolución tras un plazo, y esta capa **no tiene noción de
+    /// tiempo**.
+    pub fn mint_to_pending(
+        &self,
+        auth: &ThresholdAuth,
+        receiver_id: Digest,
+        salt: Digest,
+        amount: u64,
+    ) -> Result<MintPendingReceipt, LayerError> {
+        if auth.index_a >= auth.index_b {
+            return Err(LayerError::NotTheIssuer);
+        }
+        if self.total_supply + amount > self.max_supply {
+            return Err(LayerError::OverRegulatoryLimit {
+                limit: self.max_supply,
+                requested: amount,
+            });
+        }
+
+        let position = self.next_pending;
+        let pending_path = self.pending.path_for(position);
+        let trace = build_mint_pending_trace(
+            auth.key_a,
+            auth.index_a,
+            &auth.path_a,
+            auth.key_b,
+            auth.index_b,
+            &auth.path_b,
+            self.total_supply,
+            amount,
+            self.max_supply,
+            amount,
+            receiver_id,
+            salt,
+            &pending_path,
+        );
+        let prover = MintPendingProver::new(self.options.clone());
+        let public_inputs = prover.get_pub_inputs(&trace);
+        let proof = prover
+            .prove(trace)
+            .map_err(|e| LayerError::ProofFailed(format!("{e:?}")))?;
+
+        Ok(MintPendingReceipt {
+            proof: proof.to_bytes(),
+            public_inputs,
+            commitment: pending_commitment(receiver_id, salt, amount),
+            notice: PendingNotice {
+                position,
+                salt,
+                amount,
+            },
+        })
+    }
+
+    /// Aplica una emisión a pendiente: sube el suministro y deposita.
+    pub fn apply_mint_to_pending(
+        &mut self,
+        receipt: &MintPendingReceipt,
+    ) -> Result<(), LayerError> {
+        let pi = &receipt.public_inputs;
+        if pi.custodian_set_root != self.custodian_set_root {
+            return Err(LayerError::StaleState);
+        }
+        if pi.pending_root_old != self.pending.root() {
+            return Err(LayerError::StaleState);
+        }
+        if pi.supply_old.as_int() != self.total_supply {
+            return Err(LayerError::StaleState);
+        }
+
+        // Sobre una copia: si la raíz no cuadra, el estado queda intacto.
+        let pos = receipt.notice.position;
+        let mut pend = self.pending.clone();
+        pend.set_leaf(pos, receipt.commitment);
+        if pend.root() != pi.pending_root_new {
+            return Err(LayerError::StaleState);
+        }
+
+        // ===== ROTACIÓN: consume una intervención del conjunto =====
+        self.consume_custodian_use()?;
+
+        self.pending = pend;
+        self.total_supply = pi.supply_new.as_int();
+        self.next_pending = pos + 1;
+        self.commit(&[], None, Some((pos, receipt.commitment)))?;
+        Ok(())
+    }
 }
