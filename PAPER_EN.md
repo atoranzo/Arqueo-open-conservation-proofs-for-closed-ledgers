@@ -30,7 +30,7 @@ identical conditions, and we document a methodological error of our own —
 mixing debug and release build figures — that was detected and corrected
 during the work.
 
-The reference implementation comprises 321 executable tests — plus one ignored and documented — and is
+The reference implementation comprises 319 executable tests — plus one ignored and documented — and is
 publicly available. **It has not been audited by third parties and does
 not implement distributed consensus**; we discuss the implications of both
 limitations in detail.

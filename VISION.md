@@ -412,8 +412,38 @@ La ventaja sobre el refactor de golpe es que **en cada momento el sistema
 funciona**. Y el criterio de aceptación de §5 lo aprueba: reduce lo que el
 operador ve, declara lo que queda, y no rompe lo que había.
 
-⚠️ **El operador sigue viendo los saldos** mientras exista la vía antigua.
-La migración avanza operación a operación, y **no está terminada**.
+#### Estado de la migración
+
+| Módulo | Lecturas del saldo |
+|---|---|
+| `two_phase` (`send`/`claim`) | ✅ **0** |
+| `burn` | ✅ **0** |
+| `audit` | ✅ **0** |
+| `mint` | ⚠️ 2 |
+| `recovery` | ⚠️ 2 |
+| `transfer` (antigua, con la fuga) | ⚠️ 4 |
+| `client` (materiales) | ⚠️ 3 |
+| `accounts` (los propios getters) | ⚠️ 3 |
+
+⚠️ **Una versión anterior de esta tabla decía que `mint`, `recovery` y
+`transfer` estaban a cero. Era falso**: la comprobación buscaba
+`self.records.get` en una línea, y esos módulos lo escriben en varias.
+
+Es el mismo fallo que aparece en §8: **tomar el resultado de una búsqueda
+como evidencia sin verificar que la búsqueda era completa**. Aquí produjo
+una tabla incorrecta en un documento público.
+
+**`disclose_exact` era el caso más claro.** Leía el saldo con `balance_of`
+—*"pregúntale a la capa cuánto tienes y demuéstralo"*— que es justo lo que
+este modelo elimina. Ahora es *"demuestra lo que dices tener"*.
+
+⚠️ **`mint` no se migra igual.** Los custodios acreditan una cuenta ajena,
+así que necesitan su saldo para calcular la hoja nueva: **el mismo problema
+que la transferencia antigua**. La solución es la misma —emitir a un
+pendiente que el titular reclama— y **no está hecha**.
+
+⚠️ **El operador sigue viendo los saldos** mientras queden operaciones sin
+migrar. La migración avanza una a una, y **no está terminada**.
 
 ⚠️ **El coste, que es real.** El titular lleva su propio estado. Si pierde
 su copia local **no sabe cuánto tiene**, aunque el dinero siga ahí y la

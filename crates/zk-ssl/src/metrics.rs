@@ -108,19 +108,20 @@ mod tests {
         // --- Destruccion ---
         let t = Instant::now();
         let burn = layer
-            .burn(BaseElement::new(SK_BOB), bob, 100_000)
+            .burn(BaseElement::new(SK_BOB), bob, &state_of(&layer, bob), 100_000)
             .expect("destruccion");
         let burn_gen = t.elapsed();
         let burn_bytes = burn.proof.len();
 
         let t = Instant::now();
-        layer.apply_burn(&burn, bob).expect("aplicar destruccion");
+        let estado_bob = state_of(&layer, bob);
+        layer.apply_burn(&burn, bob, &estado_bob).expect("aplicar destruccion");
         let burn_apply = t.elapsed();
 
         // --- Auditoria ---
         let t = Instant::now();
         let disclosure = layer
-            .audit(BaseElement::new(SK_ALICE), alice, 700_000, 800_000)
+            .audit(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 700_000, 800_000)
             .expect("auditoria");
         let audit_gen = t.elapsed();
         let audit_bytes = disclosure.proof.len();

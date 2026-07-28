@@ -20,13 +20,23 @@ impl SovereignLayer {
         &self,
         spend_key: BaseElement,
         account_index: AccountIndex,
+        // **El estado lo aporta el titular, no la capa.**
+        //
+        // La capa comprueba que produce la hoja que tiene en el árbol, y
+        // **no necesita conocer el saldo** para ello. Es la migración hacia
+        // el modelo por compromisos, operación a operación.
+        account_state: &crate::commitment::ClientState,
         amount: u64,
     ) -> Result<BurnReceipt, LayerError> {
-        let account = self
-            .records
-            .get(&account_index)
-            .ok_or(LayerError::AccountNotFound(account_index))?
-            .clone();
+        let hoja = native_leaf(
+            account_state.public_id,
+            BaseElement::new(account_state.balance),
+            account_state.nonce,
+        );
+        if hoja != self.accounts.leaf(account_index) {
+            return Err(LayerError::StaleState);
+        }
+        let account = account_state.clone();
 
         if derive_public_id(spend_key) != account.public_id {
             return Err(LayerError::NotTheAccountHolder);
@@ -90,6 +100,7 @@ impl SovereignLayer {
         &mut self,
         receipt: &BurnReceipt,
         account_index: AccountIndex,
+        account_state: &crate::commitment::ClientState,
     ) -> Result<(), LayerError> {
         let pi = &receipt.public_inputs;
 
@@ -117,11 +128,7 @@ impl SovereignLayer {
         .map_err(|e| LayerError::VerificationFailed(format!("{e:?}")))?;
 
         let amount = pi.amount.as_int();
-        let account = self
-            .records
-            .get(&account_index)
-            .ok_or(LayerError::AccountNotFound(account_index))?
-            .clone();
+        let account = account_state.clone();
         let updated = AccountRecord {
             public_id: account.public_id,
             balance: account.balance - amount,

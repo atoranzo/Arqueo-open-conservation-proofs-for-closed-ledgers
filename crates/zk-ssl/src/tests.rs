@@ -256,9 +256,10 @@ use super::*;
         assert!(layer.mint(&valid_auth(), alice, 1).is_err());
 
         let b = layer
-            .burn(BaseElement::new(SK_ALICE), alice, 1_000_000)
+            .burn(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 1_000_000)
             .expect("destruccion");
-        layer.apply_burn(&b, alice).expect("aplicar");
+        let estado_alice = state_of(&layer, alice);
+        layer.apply_burn(&b, alice, &estado_alice).expect("aplicar");
 
         // Ahora vuelve a haber margen.
         let r2 = layer.mint(&valid_auth(), alice, 500_000);
@@ -507,8 +508,9 @@ use super::*;
             .transfer(BaseElement::new(SK_ALICE), alice, bob, 250_000)
             .expect("transferencia");
         layer.apply(&s, alice, bob, 250_000).expect("aplicar");
-        let b = layer.burn(BaseElement::new(SK_BOB), bob, 1000).expect("destruir");
-        layer.apply_burn(&b, bob).expect("aplicar");
+        let b = layer.burn(BaseElement::new(SK_BOB), bob, &state_of(&layer, bob), 1000).expect("destruir");
+        let estado_bob = state_of(&layer, bob);
+        layer.apply_burn(&b, bob, &estado_bob).expect("aplicar");
 
         // Dos aperturas + una emision (bob se abre con cero y no emite)
         // + una transferencia + una destruccion.
@@ -534,8 +536,9 @@ use super::*;
         let _cuenta_b = open_and_fund(&mut b, SK_ALICE, 1_000_000);
         assert_eq!(a.log_head(), b.log_head(), "misma actividad, misma cabeza");
 
-        let extra = a.burn(BaseElement::new(SK_ALICE), cuenta_a, 1).expect("destruir");
-        a.apply_burn(&extra, cuenta_a).expect("aplicar");
+        let extra = a.burn(BaseElement::new(SK_ALICE), cuenta_a, &state_of(&a, cuenta_a), 1).expect("destruir");
+        let estado_cuenta_a = state_of(&a, cuenta_a);
+        a.apply_burn(&extra, cuenta_a, &estado_cuenta_a).expect("aplicar");
         assert_ne!(a.log_head(), b.log_head(), "una operacion mas la cambia");
     }
 
@@ -1213,7 +1216,7 @@ use super::*;
             .is_err());
 
         // Y destruir TAMPOCO.
-        let b = layer.burn(BaseElement::new(SK_ALICE), alice, 1_000_000);
+        let b = layer.burn(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 1_000_000);
         assert!(
             matches!(b, Err(LayerError::AccountFrozen(_))),
             "CRITICO: una cuenta congelada no debe poder destruir su dinero: {b:?}"
@@ -1236,15 +1239,16 @@ use super::*;
 
         let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
         layer.apply_freeze(&f, alice).expect("aplicar");
-        assert!(layer.burn(BaseElement::new(SK_ALICE), alice, 1000).is_err());
+        assert!(layer.burn(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 1000).is_err());
 
         let u = layer.set_frozen(&valid_auth(), alice, false).expect("descongelar");
         layer.apply_freeze(&u, alice).expect("aplicar");
 
         let b = layer
-            .burn(BaseElement::new(SK_ALICE), alice, 1000)
+            .burn(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 1000)
             .expect("descongelada deberia poder destruir");
-        layer.apply_burn(&b, alice).expect("aplicar");
+        let estado_alice = state_of(&layer, alice);
+        layer.apply_burn(&b, alice, &estado_alice).expect("aplicar");
         assert_eq!(layer.balance_of(alice), Some(999_000));
     }
 
@@ -1482,7 +1486,7 @@ use super::*;
         );
 
         // Y con burn, que tambien lo lleva.
-        let r = layer.burn(BaseElement::new(0x1337), alice, 99_999_999);
+        let r = layer.burn(BaseElement::new(0x1337), alice, &state_of(&layer, alice), 99_999_999);
         assert!(matches!(r, Err(LayerError::NotTheAccountHolder)));
     }
 
@@ -2011,7 +2015,7 @@ use super::*;
         assert_eq!(layer.total_supply(), 1_000_000);
 
         let receipt = layer
-            .burn(BaseElement::new(SK_ALICE), alice, 300_000)
+            .burn(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 300_000)
             .expect("destruccion");
         println!(
             "Tamano de la prueba de DESTRUCCION: {} bytes",
@@ -2019,7 +2023,8 @@ use super::*;
         );
         assert_eq!(layer.total_supply(), 1_000_000, "burn no debe mutar el estado");
 
-        layer.apply_burn(&receipt, alice).expect("aplicar");
+        let estado_alice = state_of(&layer, alice);
+        layer.apply_burn(&receipt, alice, &estado_alice).expect("aplicar");
         assert_eq!(layer.balance_of(alice), Some(700_000));
         assert_eq!(layer.total_supply(), 700_000);
     }
@@ -2041,9 +2046,10 @@ use super::*;
         assert_eq!(sum(&layer), layer.total_supply());
 
         let r = layer
-            .burn(BaseElement::new(SK_ALICE), alice, 400_000)
+            .burn(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 400_000)
             .expect("destruccion");
-        layer.apply_burn(&r, alice).expect("aplicar");
+        let estado_alice = state_of(&layer, alice);
+        layer.apply_burn(&r, alice, &estado_alice).expect("aplicar");
 
         assert_eq!(
             sum(&layer),
@@ -2059,7 +2065,7 @@ use super::*;
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
 
-        let r = layer.burn(BaseElement::new(0x1337), alice, 100_000);
+        let r = layer.burn(BaseElement::new(0x1337), alice, &state_of(&layer, alice), 100_000);
         assert!(
             matches!(r, Err(LayerError::NotTheAccountHolder)),
             "CRITICO: sin la clave del titular no debe poder destruirse su saldo. \
@@ -2073,7 +2079,7 @@ use super::*;
     fn cannot_burn_more_than_the_balance() {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 100_000);
-        let r = layer.burn(BaseElement::new(SK_ALICE), alice, 500_000);
+        let r = layer.burn(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 500_000);
         assert!(matches!(r, Err(LayerError::InsufficientBalance { .. })));
     }
 
@@ -2083,12 +2089,14 @@ use super::*;
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let r = layer
-            .burn(BaseElement::new(SK_ALICE), alice, 200_000)
+            .burn(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 200_000)
             .expect("destruccion");
 
-        layer.apply_burn(&r, alice).expect("primera");
+        let estado_alice = state_of(&layer, alice);
+        layer.apply_burn(&r, alice, &estado_alice).expect("primera");
+        let estado_alice = state_of(&layer, alice);
         assert!(
-            matches!(layer.apply_burn(&r, alice), Err(LayerError::StaleState)),
+            matches!(layer.apply_burn(&r, alice, &estado_alice), Err(LayerError::StaleState)),
             "CRITICO: reaplicar una destruccion descuadraria el suministro"
         );
         assert_eq!(layer.total_supply(), 800_000);
@@ -2117,9 +2125,10 @@ use super::*;
 
         // Destruir: el suministro SI baja.
         let b = layer
-            .burn(BaseElement::new(SK_BOB), bob, 100_000)
+            .burn(BaseElement::new(SK_BOB), bob, &state_of(&layer, bob), 100_000)
             .expect("destruccion");
-        layer.apply_burn(&b, bob).expect("aplicar");
+        let estado_bob = state_of(&layer, bob);
+        layer.apply_burn(&b, bob, &estado_bob).expect("aplicar");
         assert_eq!(layer.total_supply(), 900_000);
         assert_eq!(sum(&layer), layer.total_supply());
 
@@ -2141,7 +2150,7 @@ use super::*;
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
 
         let disclosure = layer
-            .disclose_exact(BaseElement::new(SK_ALICE), alice)
+            .disclose_exact(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice))
             .expect("revelacion");
         println!(
             "Tamano de la prueba de AUDITORIA: {} bytes",
@@ -2168,7 +2177,7 @@ use super::*;
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
 
         let d = layer
-            .prove_minimum(BaseElement::new(SK_ALICE), alice, 500_000)
+            .prove_minimum(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 500_000)
             .expect("prueba de minimo");
         assert!(verify_audit(&d).is_ok());
         assert_eq!(d.public_inputs.lower, BaseElement::new(500_000));
@@ -2184,7 +2193,7 @@ use super::*;
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
 
         let d = layer
-            .audit(BaseElement::new(SK_ALICE), alice, 900_000, 1_100_000)
+            .audit(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 900_000, 1_100_000)
             .expect("banda");
         assert!(verify_audit(&d).is_ok());
     }
@@ -2195,7 +2204,7 @@ use super::*;
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 100_000);
 
-        let r = layer.prove_minimum(BaseElement::new(SK_ALICE), alice, 500_000);
+        let r = layer.prove_minimum(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 500_000);
         assert!(
             matches!(r, Err(LayerError::BalanceOutsideBand { .. })),
             "CRITICO: no debe poder demostrarse un minimo que no se cumple. \
@@ -2212,7 +2221,7 @@ use super::*;
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
 
-        let r = layer.disclose_exact(BaseElement::new(0x1337), alice);
+        let r = layer.disclose_exact(BaseElement::new(0x1337), alice, &state_of(&layer, alice));
         assert!(
             matches!(r, Err(LayerError::NotTheAccountHolder)),
             "CRITICO: solo el titular puede revelar su saldo. Resultado: {r:?}"

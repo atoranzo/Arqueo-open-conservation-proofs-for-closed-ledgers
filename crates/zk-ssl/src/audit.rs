@@ -30,14 +30,20 @@ impl SovereignLayer {
         &self,
         spend_key: BaseElement,
         account_index: AccountIndex,
+        // El estado lo aporta el titular: ver `burn.rs`.
+        account_state: &crate::commitment::ClientState,
         lower: u64,
         upper: u64,
     ) -> Result<AuditDisclosure, LayerError> {
-        let account = self
-            .records
-            .get(&account_index)
-            .ok_or(LayerError::AccountNotFound(account_index))?
-            .clone();
+        let hoja = native_leaf(
+            account_state.public_id,
+            BaseElement::new(account_state.balance),
+            account_state.nonce,
+        );
+        if hoja != self.accounts.leaf(account_index) {
+            return Err(LayerError::StaleState);
+        }
+        let account = account_state.clone();
 
         // Comprobaciones tempranas.
         //
@@ -77,11 +83,16 @@ impl SovereignLayer {
         &self,
         spend_key: BaseElement,
         account_index: AccountIndex,
+        // El estado lo aporta el titular: ver `burn.rs`.
+        account_state: &crate::commitment::ClientState,
     ) -> Result<AuditDisclosure, LayerError> {
-        let balance = self
-            .balance_of(account_index)
-            .ok_or(LayerError::AccountNotFound(account_index))?;
-        self.audit(spend_key, account_index, balance, balance)
+        // **El saldo lo aporta el titular**, no la capa.
+        //
+        // Antes se leia con `balance_of`, que es justo lo que el modelo por
+        // compromisos elimina: la capa no debe poder responder cuanto
+        // tiene alguien.
+        let balance = account_state.balance;
+        self.audit(spend_key, account_index, account_state, balance, balance)
     }
 
     /// Atajo: demostrar que se supera un mínimo sin revelar cuánto.
@@ -89,9 +100,11 @@ impl SovereignLayer {
         &self,
         spend_key: BaseElement,
         account_index: AccountIndex,
+        // El estado lo aporta el titular: ver `burn.rs`.
+        account_state: &crate::commitment::ClientState,
         threshold: u64,
     ) -> Result<AuditDisclosure, LayerError> {
-        self.audit(spend_key, account_index, threshold, MAX_VALUE)
+        self.audit(spend_key, account_index, account_state, threshold, MAX_VALUE)
     }
 
     // -----------------------------------------------------------------
