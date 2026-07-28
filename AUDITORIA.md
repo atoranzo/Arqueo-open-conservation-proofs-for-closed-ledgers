@@ -280,7 +280,7 @@ observador?"* sino **"¿qué aprende cada participante?"**.
 Encontró la fuga de §4 y no encontró otra igual de grave. Pero sí tres
 cosas que estaban implícitas y **ninguna declarada**.
 
-### 12.1 Matriz por operación
+### 13.1 Matriz por operación
 
 | Operación | El operador | La contraparte | Un tercero |
 |---|---|---|---|
@@ -292,7 +292,7 @@ cosas que estaban implícitas y **ninguna declarada**.
 | Congelación | Todo | Custodios: **qué cuenta** | Nada |
 | Gasto sin conexión | — | Comercio: el importe | Nada |
 
-### 12.2 Lo implícito, ahora declarado
+### 13.2 Lo implícito, ahora declarado
 
 **El importe de emisión y destrucción es público.** Aparece en las entradas
 públicas de ambos circuitos.
@@ -318,7 +318,7 @@ Un observador del registro ve **el patrón de actividad del sistema**
 cuánto. Es metadato, y en un sistema con poca actividad podría ser
 significativo.
 
-### 12.3 Lo que el repaso confirmó que SÍ está cerrado
+### 13.3 Lo que el repaso confirmó que SÍ está cerrado
 
 | Propiedad | Cómo |
 |---|---|
@@ -327,7 +327,7 @@ significativo.
 | El nullifier no se deriva de la identidad pública | Test: `nullifier_is_not_derivable_from_public_id` |
 | Una transferencia no revela identidades a terceros | Solo raíces y nullifier |
 
-### 12.4 La pregunta que queda para un auditor
+### 13.4 La pregunta que queda para un auditor
 
 **¿Hay más datos que se entregan por necesidad técnica y que nadie
 examinó?**
@@ -422,7 +422,7 @@ que se hace al conjunto, no a la función.
 **Aplicación de P4 —medida: el sistema define qué resuelve y qué rechaza—
 a la pregunta de qué estados alcanzan las combinaciones de operaciones.**
 
-### 12.1 La matriz, probada
+### 13.1 La matriz, probada
 
 | Con la cuenta congelada | ¿Se permite? | Dónde se impone |
 |---|---|---|
@@ -433,7 +433,7 @@ a la pregunta de qué estados alcanzan las combinaciones de operaciones.**
 | Recibir una emisión | Sí | — |
 | Ser recuperada | Sí, **y la congelación sobrevive** | Probado |
 
-### 12.2 El hueco que había
+### 13.2 El hueco que había
 
 **Congelar bloqueaba transferir y no bloqueaba destruir.** Un titular bajo
 investigación podía **vaciar su cuenta a cero**: no se llevaba el dinero
@@ -442,7 +442,7 @@ investigación podía **vaciar su cuenta a cero**: no se llevaba el dinero
 El circuito de liquidación miraba el árbol de congelados; el de destrucción
 **no lo miraba en absoluto**, y la capa tampoco.
 
-### 12.3 La decisión, y su razonamiento
+### 13.3 La decisión, y su razonamiento
 
 **Congelar existe para que una cuenta bajo investigación no mueva fondos.
 Destruirlos los mueve: los saca del sistema. Que sea público e irreversible
@@ -453,13 +453,13 @@ congelados** —24 niveles, filas 280..471, que estaban libres— con 13
 restricciones nuevas y **3 tests**, incluido el validador que comprueba que
 una cuenta libre sí puede.
 
-### 12.4 Por qué se permite recibir
+### 13.4 Por qué se permite recibir
 
 Impedir que una cuenta congelada **reciba** dejaría fondos en el limbo y
 rompería pagos legítimos hacia alguien bajo investigación. Es una decisión
 deliberada, no un olvido.
 
-### 12.5 Por qué la recuperación no la levanta
+### 13.5 Por qué la recuperación no la levanta
 
 El árbol de congelados se indexa por **posición de cuenta**, no por
 identidad. Si se indexara por identidad, bastaría con decir que se perdió
@@ -501,7 +501,7 @@ compilaba y pasaba sus tests.
 | ¿Qué estados alcanzan las combinaciones? | **Una cuenta congelada podía destruir su dinero** |
 | ¿Qué puede el operador que no esté declarado? | **Puede desviar un pago si no compruebas el destino** |
 
-### 12.1 Lo que tienen en común
+### 13.1 Lo que tienen en común
 
 **Ninguna se responde revisando una función.** Cada una compara cosas que
 son coherentes por separado:
@@ -724,11 +724,72 @@ rondas** en `circuit_send`.
 
 ---
 
-## 12. Donde el autor tiene MENOS confianza
+## 12. Prueba por mutación: buscar restricciones que no imponen nada
+
+**Implementada** en `crates/stark-experiment/src/mutation.rs`, con un test
+en `circuit_burn` (`no_constraint_is_vacuous`).
+
+### La técnica
+
+Si **ninguna perturbación** de una celda del testigo hace que una
+restricción se vuelva no nula, esa restricción no impone nada.
+
+```text
+1. Construir una traza VÁLIDA.
+2. Para cada celda: cambiarla.
+3. Evaluar las dos transiciones afectadas.
+4. Anotar qué restricciones se vuelven no nulas.
+5. Las que nunca se disparan: vacías.
+```
+
+No genera ni una prueba: 19.968 celdas × 2 evaluaciones tardan 0,7 s.
+
+### Validada en ambos sentidos
+
+**Detecta**: anulando la comprobación de titularidad —dejándola
+idénticamente cero, el modo de fallo que este documento describe— señala
+**exactamente** los cuatro índices afectados, `[75, 76, 77, 78]`.
+
+**No da falsos positivos**: con el circuito intacto, ninguna.
+
+### ⚠️ Dos cosas que salieron al validarla
+
+**El muestreo produce falsos positivos.** Probando una fila de cada cuatro
+señaló ocho restricciones vacías que no lo eran: las activas en una sola
+fila pueden quedar fuera de la muestra. **Hay que probar todas las filas o
+tratar el resultado como sospecha, no como hallazgo.**
+
+**Y una predicción del autor resultó falsa.** Se esperaba que, con la
+titularidad anulada, el test `third_party_cannot_burn_someone_elses_money`
+siguiera pasando — lo que habría demostrado que daba falsa confianza sobre
+la propiedad que nombra.
+
+**También falla.** Ese test sí cubre lo que dice cubrir.
+
+### Qué añade entonces
+
+Para restricciones **con** un test negativo que las cubra, nada: el test ya
+las protege.
+
+Añade valor donde **no hay** tal test. Este proyecto ha visto tres casos
+—una restricción idénticamente cero, siete columnas nunca rellenadas, un
+tope transportado sin comprobar— y ninguno lo detectaba nada.
+
+⚠️ **Solo está aplicada a `circuit_burn`.** Extenderla a los otros once
+exige construir un testigo válido y el `Air` en cada uno: **1-2 rondas cada
+uno, no hecho**.
+
+⚠️ **No detecta** restricciones que solo reaccionan a cambios de varias
+celdas a la vez, ni restricciones que se disparan pero imponen lo que no se
+cree. **Un resultado limpio no significa que el circuito sea correcto.**
+
+---
+
+## 13. Donde el autor tiene MENOS confianza
 
 Esta es la sección más útil del documento.
 
-### 12.1 `open_account` no exige autorización — **mitigado a medias**
+### 13.1 `open_account` no exige autorización — **mitigado a medias**
 
 Cualquiera con acceso a la capa puede crear cuentas. No crea dinero
 (nacen a cero), pero llenaba el árbol y el mapa de registros hasta agotar
@@ -744,7 +805,7 @@ genera ninguna prueba**.
 Un auditor debería valorar si el tope es suficiente para el caso de uso
 previsto.
 
-### 12.2 La congelación no tiene justificación ni caducidad
+### 13.2 La congelación no tiene justificación ni caducidad
 
 **Implementada** con imposición en circuito: la prueba de liquidación
 acredita que el emisor no está en el árbol de congelados.
@@ -758,7 +819,7 @@ acredita que el emisor no está en el árbol de congelados.
   contrario dejaría fondos en el limbo— pero merece que un auditor valore
   si encaja con el caso de uso.
 
-### 12.3 Los grados de restricción
+### 13.3 Los grados de restricción
 
 **Cinco veces** durante el desarrollo winterfell rechazó un grado mal
 declarado. Cada vez se corrigió. La exactitud que exige winterfell hace
@@ -771,7 +832,7 @@ Especial cuidado con:
   (`circuit_mint`: 8 segmentos × 64 filas llenan la traza y la vuelven
   periódica de periodo 64).
 
-### 12.4 El patrón lockstep
+### 13.4 El patrón lockstep
 
 `C_SIBLING` impone que los dos carriles usen el mismo hermano. El
 argumento es que eso basta para atar ambas subidas a la misma posición
@@ -781,7 +842,7 @@ Está verificado con un test discriminante, **pero el argumento general no
 ha sido revisado por nadie más**. Es el hallazgo más original del
 proyecto y merece escrutinio.
 
-### 12.5 Los tests negativos
+### 13.5 Los tests negativos
 
 **Tres veces** un test negativo resultó no discriminar: fallaba por una
 restricción distinta de la que pretendía probar. Se corrigieron
@@ -790,7 +851,7 @@ construyendo testigos internamente coherentes.
 **Puede quedar alguno más.** Un auditor debería comprobar, para cada test
 negativo, que el testigo corrupto es válido en todo lo demás.
 
-### 12.6 El bloqueo de directorio de `sled` tras cerrar — **hallazgo nuevo**
+### 13.6 El bloqueo de directorio de `sled` tras cerrar — **hallazgo nuevo**
 
 `sled` mantiene un bloqueo del directorio que puede tardar en liberarse
 tras cerrar la base de datos. **Un nodo que se reinicie inmediatamente
@@ -807,7 +868,7 @@ hace el ayudante `open_retry` de los tests.
 Un auditor debería valorar si esto afecta a los procedimientos de
 recuperación tras caída.
 
-### 12.7 El techo de 63 bits
+### 13.7 El techo de 63 bits
 
 Las comprobaciones de rango fuerzan el bit más significativo a cero, así
 que **ningún valor puede superar 2^63 − 1**.
@@ -819,7 +880,7 @@ rechazarse al configurar.
 No es una fuga de solidez —los valores fuera de rango se rechazan— pero
 sí un fallo de usabilidad que puede confundir un diagnóstico.
 
-### 12.8 El formato de instantánea se queda atrás al añadir estado
+### 13.8 El formato de instantánea se queda atrás al añadir estado
 
 **Dos veces** en pocas rondas: al añadir las cuentas congeladas y al
 añadir el registro de transiciones, la instantánea dejó de incluir algo
@@ -834,7 +895,7 @@ existe.
 Un auditor debería comprobar que la versión actual del formato cubre todo
 el estado, y valorar exigir ese test.
 
-### 12.9 Colisiones en el árbol de nullifiers
+### 13.9 Colisiones en el árbol de nullifiers
 
 La posición sale de los bits bajos del nullifier. Dos nullifiers pueden
 colisionar, y el segundo **no podría gastarse**.
@@ -845,7 +906,7 @@ incorrecto, sería grave.
 
 ---
 
-## 13. Por dónde empezaría el autor si tuviera que romperlo
+## 14. Por dónde empezaría el autor si tuviera que romperlo
 
 En este orden:
 
@@ -865,7 +926,7 @@ En este orden:
 
 ---
 
-## 14. Limitaciones ya documentadas
+## 15. Limitaciones ya documentadas
 
 No hacen falta descubrirlas; están en `README.md`:
 
@@ -879,7 +940,7 @@ No hacen falta descubrirlas; están en `README.md`:
 
 ---
 
-## 15. Cómo reproducir
+## 16. Cómo reproducir
 
 ### ⚠️ Hay un test ignorado, y conviene saber por qué
 
@@ -919,7 +980,7 @@ fila exactos del fallo.
 
 ---
 
-## 16. Qué NO demuestra este documento
+## 17. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

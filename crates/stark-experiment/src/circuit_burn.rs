@@ -1152,4 +1152,60 @@ mod tests {
              DECLARADAS en todos sus campos"
         );
     }
+
+    /// **PRUEBA POR MUTACIÓN: ninguna restricción está vacía.**
+    ///
+    /// Si **ninguna perturbación** de una celda hace que una restricción se
+    /// vuelva no nula, esa restricción no impone nada — y ningún test
+    /// normal lo detecta: el testigo honesto la satisface (vale cero, como
+    /// debe) y los adversariales fallan por otras antes de llegar a ella.
+    ///
+    /// Este proyecto ha visto ese modo de fallo **tres veces**: una
+    /// restricción idénticamente cero, siete columnas declaradas y nunca
+    /// rellenadas, y un tope transportado pero sin comprobar. Ver
+    /// `AUDITORIA.md`.
+    ///
+    /// ⚠️ **Un resultado limpio no significa que el circuito sea correcto**:
+    /// significa que no tiene este fallo concreto. No detecta restricciones
+    /// que se disparan pero imponen lo que no se cree.
+    #[test]
+    fn no_constraint_is_vacuous() {
+        use crate::mutation::{buscar_vacias, rows_of};
+
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let trace = build_trace(
+            s.key,
+            s.account_id,
+            s.balance,
+            s.nonce,
+            &s.path,
+            &s.frozen_path,
+            s.amount,
+            s.supply_old,
+            s.amount,
+        );
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+
+        let air = BurnAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            s.public_inputs.clone(),
+            default_options(),
+        );
+
+        // **TODAS las filas**, sin muestrear.
+        //
+        // Con muestreo, una restricción activa solo en filas no muestreadas
+        // aparece como vacía sin serlo. Aquí el coste es asumible:
+        // 39 columnas x 512 filas x 2 evaluaciones.
+        let informe = buscar_vacias(&air, &rows, 1);
+
+        assert!(
+            informe.nunca_disparadas.is_empty(),
+            "restricciones que NINGUNA perturbacion activa (de {} totales, \
+             {} celdas probadas): {:?}",
+            informe.total,
+            informe.celdas,
+            informe.nunca_disparadas
+        );
+    }
 }

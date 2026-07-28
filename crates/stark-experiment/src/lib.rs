@@ -78,6 +78,7 @@ pub mod double_entry;
 pub mod dual_climb;
 pub mod iso_bridge;
 pub mod merkle;
+pub mod mutation;
 pub mod nullifier;
 pub mod nullifier_tree;
 pub mod persistent_nullifier_registry;
