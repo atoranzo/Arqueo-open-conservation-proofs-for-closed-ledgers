@@ -631,6 +631,33 @@ salta, y comprobar que un circuito correcto no dispara.
 se rellene en todas las filas donde hace falta, ni columnas con un patrón
 de relleno distinto a los tres reconocidos.
 
+### El mismo fallo en las RESTRICCIONES: se intentó y no funciona
+
+Una restricción declarada y **nunca asignada** queda a cero e impone lo
+mismo que una columna vacía: nada. Se intentó la comprobación equivalente y
+**no puede hacerse con análisis de texto**.
+
+El motivo son dos casos indistinguibles mirando el código:
+
+| Constante | Forma | Realidad |
+|---|---|---|
+| `C_HASH_B` | Solo aparece definiendo `C_CAP_A` | Su rango **sí** se escribe: `result[C_HASH_A + lane*12 + i]` |
+| `C_PBIT_BOOL` sin asignar | Solo aparece definiendo `NUM_CONSTRAINTS` | Su rango **no** se escribe: es un fallo |
+
+Distinguirlos exige resolver qué índices cubre cada escritura con índice
+calculado — análisis de rangos, no expresiones regulares.
+
+**La técnica que sí funcionaría**: *perturbar el testigo y ver qué
+restricciones reaccionan*. Una que no reaccione a ninguna perturbación no
+impone nada.
+
+Es **prueba por mutación**, exige generar perturbaciones significativas por
+circuito, y **no está hecho**.
+
+⚠️ Se prefirió **no publicar una herramienta rota**: una versión que
+clasificara mal estos casos daría confianza infundada, que es peor que no
+tener comprobación.
+
 ---
 
 ## 11. Donde el autor tiene MENOS confianza
