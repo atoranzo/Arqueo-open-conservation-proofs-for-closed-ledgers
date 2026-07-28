@@ -664,20 +664,21 @@ use super::*;
     // Combinaciones de operaciones
     // -----------------------------------------------------------------
 
-    /// **UNA CUENTA CONGELADA PUEDE DESTRUIR SU DINERO.**
+    /// **UNA CUENTA CONGELADA NO PUEDE DESTRUIR SU DINERO.**
     ///
-    /// El circuito de liquidación comprueba el árbol de congelados; el de
-    /// destrucción **no lo mira**, y la capa tampoco.
+    /// Una versión anterior de este test documentaba lo contrario: la
+    /// liquidación comprobaba la congelación y la destrucción no, así que
+    /// **un titular bajo investigación podía vaciar su cuenta a cero**.
     ///
-    /// Congelar bloquea transferir y no bloquea destruir. Un titular bajo
-    /// investigación puede vaciar su cuenta: no se lleva el dinero, pero
-    /// **el saldo que se investigaba desaparece**.
+    /// Aquel test terminaba diciendo: *"si se decide que la congelación
+    /// debe bloquear también la destrucción, este test falla y señala
+    /// dónde"*. Se decidió, y este es el resultado.
     ///
-    /// Este test **documenta el comportamiento actual**. Si se decide que
-    /// la congelación debe bloquear también la destrucción, este test
-    /// falla y señala dónde.
+    /// El razonamiento: congelar existe para que una cuenta bajo
+    /// investigación **no mueva fondos**. Destruirlos los mueve — los saca
+    /// del sistema. Que sea público e irreversible no los devuelve.
     #[test]
-    fn a_frozen_account_can_still_burn() {
+    fn a_frozen_account_cannot_burn() {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
 
@@ -691,18 +692,40 @@ use super::*;
             .transfer(BaseElement::new(SK_ALICE), alice, bob, 1000)
             .is_err());
 
-        // Pero destruir SI.
+        // Y destruir TAMPOCO.
         let b = layer.burn(BaseElement::new(SK_ALICE), alice, 1_000_000);
         assert!(
-            b.is_ok(),
-            "COMPORTAMIENTO ACTUAL: la congelacion no bloquea la destruccion"
+            matches!(b, Err(LayerError::AccountFrozen(_))),
+            "CRITICO: una cuenta congelada no debe poder destruir su dinero: {b:?}"
         );
-        layer.apply_burn(&b.unwrap(), alice).expect("aplicar");
         assert_eq!(
             layer.balance_of(alice),
-            Some(0),
-            "el saldo investigado desaparece"
+            Some(1_000_000),
+            "el saldo investigado sigue intacto"
         );
+    }
+
+    /// **Y el que valida al anterior**: descongelada, sí puede.
+    ///
+    /// Sin esto, el test anterior pasaría aunque `burn` fallara siempre
+    /// por cualquier otra razón.
+    #[test]
+    fn an_unfrozen_account_can_burn_again() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+
+        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
+        layer.apply_freeze(&f, alice).expect("aplicar");
+        assert!(layer.burn(BaseElement::new(SK_ALICE), alice, 1000).is_err());
+
+        let u = layer.set_frozen(&valid_auth(), alice, false).expect("descongelar");
+        layer.apply_freeze(&u, alice).expect("aplicar");
+
+        let b = layer
+            .burn(BaseElement::new(SK_ALICE), alice, 1000)
+            .expect("descongelada deberia poder destruir");
+        layer.apply_burn(&b, alice).expect("aplicar");
+        assert_eq!(layer.balance_of(alice), Some(999_000));
     }
 
     /// **LA RECUPERACIÓN NO LEVANTA LA CONGELACIÓN.**

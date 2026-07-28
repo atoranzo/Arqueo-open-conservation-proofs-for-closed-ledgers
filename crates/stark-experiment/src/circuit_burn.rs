@@ -49,6 +49,7 @@ use winterfell::{
 };
 
 use crate::circuit_settlement::SPEND_KEY_DOMAIN;
+use crate::circuit_freeze::FROZEN_DEPTH;
 use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
@@ -72,7 +73,9 @@ const COL_SUPPLY_OLD: usize = 34;
 const COL_SUPPLY_NEW: usize = 35;
 const COL_SBIT: usize = 36;
 const COL_SACC: usize = 37;
-pub const TRACE_WIDTH: usize = 38;
+/// Bit de dirección del camino en el árbol de congelados.
+const COL_FBIT: usize = 38;
+pub const TRACE_WIDTH: usize = 39;
 
 // ===== Filas =====
 const ROW_LEAF_LINK: usize = 7;
@@ -80,6 +83,16 @@ const ROW_LEAF_DONE: usize = 15;
 const ROW_ROOT: usize = 271;
 const ROW_PK_START: usize = 272;
 const ROW_PK_DONE: usize = 279;
+/// **Fase de no-pertenencia al árbol de CONGELADOS.**
+///
+/// Ocupa las filas 280..471, que estaban libres. Sin ella, una cuenta
+/// congelada **podía destruir su dinero**: la liquidación comprobaba la
+/// congelación y la destrucción no.
+///
+/// Congelar existe para que una cuenta bajo investigación no mueva fondos.
+/// Destruirlos los mueve: los saca del sistema. Que sea público e
+/// irreversible no los devuelve.
+const ROW_FROZEN_ROOT: usize = 471;
 
 // ===== Restricciones =====
 const C_HASH_A: usize = 0;
@@ -109,7 +122,14 @@ const C_SBIT_BOOL: usize = C_ID_CONST + 4; // 2
 const C_FIRST_S: usize = C_SBIT_BOOL + 2; // 2
 const C_HORNER: usize = C_FIRST_S + 2; // 1
 const C_SEG_LINK: usize = C_HORNER + 1;
-const NUM_CONSTRAINTS: usize = C_SEG_LINK + NUM_SEGMENTS;
+/// Capacidad a cero en la fase de congelados.
+const C_FROZEN_CAP: usize = C_SEG_LINK + NUM_SEGMENTS; // 4
+/// **LA NO-PERTENENCIA.** La hoja colocada debe ser CERO.
+const C_FROZEN_ENTRY: usize = C_FROZEN_CAP + 4; // 4
+/// Colocación en cada nivel.
+const C_FROZEN_PLACE: usize = C_FROZEN_ENTRY + 4; // 4
+const C_FBIT_BOOL: usize = C_FROZEN_PLACE + 4; // 1
+const NUM_CONSTRAINTS: usize = C_FBIT_BOOL + 1;
 
 // ===== Periódicas =====
 const P_HASH_FLAG: usize = 0;
@@ -124,6 +144,10 @@ const P_SEL_PK_DONE: usize = P_SEL_ROOT + 1;
 const P_FIRST_S: usize = P_SEL_PK_DONE + 1;
 const P_CONT_S: usize = P_FIRST_S + 1;
 const P_SEG_LINK: usize = P_CONT_S + 1;
+/// Fila que entra al árbol de congelados.
+const P_FROZEN_ENTRY: usize = P_SEG_LINK + NUM_SEGMENTS;
+/// Enlaces de la subida.
+const P_FROZEN_LINK: usize = P_FROZEN_ENTRY + 1;
 
 type Blake3 = Blake3_256<BaseElement>;
 
@@ -144,6 +168,7 @@ pub fn build_trace(
     balance: u64,
     nonce: BaseElement,
     path: &MerklePath,
+    frozen_path: &MerklePath,
     amount: u64,
     supply_old: u64,
     supply_delta: u64,
@@ -191,6 +216,16 @@ pub fn build_trace(
         }
     }
 
+    let place_frozen = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
+        if frozen_path.is_right[level] {
+            state[4..8].copy_from_slice(&frozen_path.siblings[level]);
+            state[8..12].copy_from_slice(digest);
+        } else {
+            state[4..8].copy_from_slice(digest);
+            state[8..12].copy_from_slice(&frozen_path.siblings[level]);
+        }
+    };
+
     let place = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
         if path.is_right[level] {
             state[4..8].copy_from_slice(&path.siblings[level]);
@@ -211,7 +246,7 @@ pub fn build_trace(
     rows[0][..STATE_WIDTH].copy_from_slice(&state_a);
     rows[0][LANE_B..LANE_B + STATE_WIDTH].copy_from_slice(&state_b);
 
-    for r in 0..ROW_PK_DONE {
+    for r in 0..ROW_FROZEN_ROOT {
         let pos = r % CYCLE_LENGTH;
         if pos < NUM_ROUNDS {
             Rp64_256::apply_round(&mut state_a, pos);
@@ -241,17 +276,42 @@ pub fn build_trace(
                     state_b[4] = BaseElement::new(SPEND_KEY_DOMAIN);
                     state_b[8] = spend_key;
                 }
+                ROW_PK_DONE => {
+                    // ENTRADA AL ARBOL DE CONGELADOS.
+                    //
+                    // Hoja CERO en la posicion del titular: si estuviera
+                    // congelado, su hoja no seria cero y la subida no
+                    // llegaria a la raiz declarada.
+                    let libre: Digest = [zero; 4];
+                    place_frozen(&mut state_a, &libre, 0);
+                    place_frozen(&mut state_b, &libre, 0);
+                }
                 _ => {
                     let next_cycle = (r + 1) / CYCLE_LENGTH;
                     if (2..34).contains(&next_cycle) {
                         place(&mut state_a, &digest_a, next_cycle - 2);
                         place(&mut state_b, &digest_b, next_cycle - 2);
+                    } else if (36..60).contains(&next_cycle) {
+                        let level = next_cycle - 35;
+                        place_frozen(&mut state_a, &digest_a, level);
+                        place_frozen(&mut state_b, &digest_b, level);
                     }
                 }
             }
         }
         rows[r + 1][..STATE_WIDTH].copy_from_slice(&state_a);
         rows[r + 1][LANE_B..LANE_B + STATE_WIDTH].copy_from_slice(&state_b);
+    }
+
+    for level in 0..FROZEN_DEPTH {
+        let bit = if frozen_path.is_right[level] {
+            BaseElement::ONE
+        } else {
+            zero
+        };
+        for p in 0..CYCLE_LENGTH {
+            rows[(35 + level) * CYCLE_LENGTH + p][COL_FBIT] = bit;
+        }
     }
 
     for level in 0..TREE_DEPTH {
@@ -283,6 +343,9 @@ pub fn build_trace(
 pub struct BurnPublicInputs {
     pub root_old: Digest,
     pub root_new: Digest,
+    /// **Raíz del árbol de congelados.** La prueba acredita que el titular
+    /// NO está en él: una cuenta congelada no puede destruir su dinero.
+    pub frozen_root: Digest,
     pub amount: BaseElement,
     pub supply_old: BaseElement,
     pub supply_new: BaseElement,
@@ -292,6 +355,7 @@ impl ToElements<BaseElement> for BurnPublicInputs {
     fn to_elements(&self) -> Vec<BaseElement> {
         let mut out = self.root_old.to_vec();
         out.extend_from_slice(&self.root_new);
+        out.extend_from_slice(&self.frozen_root);
         out.push(self.amount);
         out.push(self.supply_old);
         out.push(self.supply_new);
@@ -340,10 +404,22 @@ impl Air for BurnAir {
             degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
         }
 
+        // --- Fase de congelados ---
+        // Capacidad (4): grado 1 con ciclo.
+        for _ in 0..4 {
+            degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
+        }
+        // No-pertenencia (4) y colocacion (4): grado 2, multiplican por el bit.
+        for _ in 0..8 {
+            degrees.push(TransitionConstraintDegree::with_cycles(2, full.clone()));
+        }
+        // Bit booleano (1): grado 2 sin ciclo.
+        degrees.push(TransitionConstraintDegree::new(2));
+
         assert_eq!(degrees.len(), NUM_CONSTRAINTS, "cuenta de grados");
 
         BurnAir {
-            context: AirContext::new(trace_info, degrees, 29, options),
+            context: AirContext::new(trace_info, degrees, 33, options),
             pub_inputs,
         }
     }
@@ -358,7 +434,7 @@ impl Air for BurnAir {
         let mut columns = Vec::new();
 
         let mut hash_flag = vec![zero; TRACE_LENGTH];
-        for r in 0..=ROW_PK_DONE {
+        for r in 0..=ROW_FROZEN_ROOT {
             if r % CYCLE_LENGTH < NUM_ROUNDS {
                 hash_flag[r] = one;
             }
@@ -368,7 +444,7 @@ impl Air for BurnAir {
         for ark in [true, false] {
             for i in 0..STATE_WIDTH {
                 let mut col = vec![zero; TRACE_LENGTH];
-                for r in 0..=ROW_PK_DONE {
+                for r in 0..=ROW_FROZEN_ROOT {
                     let pos = r % CYCLE_LENGTH;
                     if pos < NUM_ROUNDS {
                         col[r] = if ark {
@@ -418,6 +494,18 @@ impl Air for BurnAir {
             link[(seg + 1) * SEGMENT_LENGTH - 2] = one;
             columns.push(link);
         }
+
+        // Entrada al arbol de congelados: una sola fila.
+        let mut frozen_entry = vec![zero; TRACE_LENGTH];
+        frozen_entry[ROW_PK_DONE] = one;
+        columns.push(frozen_entry);
+
+        // Enlaces de la subida: uno por nivel a partir del primero.
+        let mut frozen_link = vec![zero; TRACE_LENGTH];
+        for level in 0..FROZEN_DEPTH - 1 {
+            frozen_link[(35 + level) * CYCLE_LENGTH + 7] = one;
+        }
+        columns.push(frozen_link);
 
         columns
     }
@@ -551,6 +639,26 @@ impl Air for BurnAir {
         result[C_FIRST_S + 1] = first_s * sacc_cur;
         result[C_HORNER] = cont_s * (sacc_next - (sacc_cur + sacc_cur + sbit_next));
 
+
+        // ===== NO-PERTENENCIA AL ARBOL DE CONGELADOS =====
+        //
+        // Una cuenta congelada no puede destruir su dinero. Sin esto, la
+        // liquidacion comprobaba la congelacion y la destruccion no: el
+        // saldo investigado podia desaparecer.
+        let frozen_entry = periodic[P_FROZEN_ENTRY];
+        let frozen_link = periodic[P_FROZEN_LINK];
+        let fbit = next[COL_FBIT];
+
+        for i in 0..4 {
+            result[C_FROZEN_CAP + i] = (frozen_entry + frozen_link) * next[i];
+            result[C_FROZEN_ENTRY + i] =
+                frozen_entry * ((E::ONE - fbit) * next[4 + i] + fbit * next[8 + i]);
+            let d = current[4 + i];
+            result[C_FROZEN_PLACE + i] =
+                frozen_link * ((E::ONE - fbit) * (next[4 + i] - d) + fbit * (next[8 + i] - d));
+        }
+        result[C_FBIT_BOOL] = current[COL_FBIT] * (current[COL_FBIT] - E::ONE);
+
         let expected = [
             current[COL_BAL],
             current[COL_AMT],
@@ -602,6 +710,15 @@ impl Air for BurnAir {
             self.pub_inputs.supply_new,
         ));
 
+        // **La raíz de congelados**: el titular no está en ese árbol.
+        for i in 0..4 {
+            a.push(Assertion::single(
+                4 + i,
+                ROW_FROZEN_ROOT,
+                self.pub_inputs.frozen_root[i],
+            ));
+        }
+
         a
     }
 }
@@ -643,6 +760,12 @@ impl Prover for BurnProver {
                 trace.get(LANE_B + 5, ROW_ROOT),
                 trace.get(LANE_B + 6, ROW_ROOT),
                 trace.get(LANE_B + 7, ROW_ROOT),
+            ],
+            frozen_root: [
+                trace.get(4, ROW_FROZEN_ROOT),
+                trace.get(5, ROW_FROZEN_ROOT),
+                trace.get(6, ROW_FROZEN_ROOT),
+                trace.get(7, ROW_FROZEN_ROOT),
             ],
             amount: trace.get(COL_AMT, 0),
             supply_old: trace.get(COL_SUPPLY_OLD, 0),
@@ -717,6 +840,7 @@ mod tests {
         balance: u64,
         nonce: BaseElement,
         path: MerklePath,
+        frozen_path: MerklePath,
         amount: u64,
         supply_old: u64,
         public_inputs: BurnPublicInputs,
@@ -748,6 +872,22 @@ mod tests {
             nonce,
         );
 
+        // Camino del arbol de congelados, con la cuenta LIBRE. Direcciones
+        // mixtas: con todas iguales la traza degenera.
+        let mut f_empty = vec![[BaseElement::ZERO; 4]];
+        for k in 1..=FROZEN_DEPTH {
+            let prev = f_empty[k - 1];
+            f_empty.push(native_merge(prev, prev));
+        }
+        let frozen_path = MerklePath {
+            siblings: (0..FROZEN_DEPTH).map(|l| f_empty[l]).collect(),
+            is_right: (0..FROZEN_DEPTH).map(|l| l % 3 == 0).collect(),
+        };
+        let frozen_root = crate::circuit_freeze::frozen_climb(
+            [BaseElement::ZERO; 4],
+            &frozen_path,
+        );
+
         Scenario {
             public_inputs: BurnPublicInputs {
                 root_old: native_climb(leaf_old, &path),
@@ -755,12 +895,14 @@ mod tests {
                 amount: BaseElement::new(amount),
                 supply_old: BaseElement::new(supply_old),
                 supply_new: BaseElement::new(supply_old - amount),
+                frozen_root,
             },
             key,
             account_id,
             balance,
             nonce,
             path,
+            frozen_path,
             amount,
             supply_old,
         }
@@ -773,6 +915,7 @@ mod tests {
             s.balance,
             s.nonce,
             &s.path,
+            &s.frozen_path,
             s.amount,
             s.supply_old,
             supply_delta,
@@ -809,6 +952,7 @@ mod tests {
             s.balance,
             s.nonce,
             &s.path,
+            &s.frozen_path,
             s.amount,
             s.supply_old,
             s.amount,
@@ -886,6 +1030,7 @@ mod tests {
             s.balance,
             s.nonce,
             &s.path,
+            &s.frozen_path,
             s.amount,
             s.supply_old,
             s.amount,
@@ -897,5 +1042,59 @@ mod tests {
             proof, declared, &min_opts,
         );
         assert!(v.is_err());
+    }
+
+    // -----------------------------------------------------------------
+    // No-pertenencia al árbol de congelados
+    // -----------------------------------------------------------------
+
+    /// **UNA CUENTA CONGELADA NO PUEDE DESTRUIR SU DINERO.**
+    ///
+    /// Es el test que justifica toda la fase nueva del circuito.
+    ///
+    /// Antes de esto, la liquidación comprobaba la congelación y la
+    /// destrucción no: un titular bajo investigación podía **vaciar su
+    /// cuenta a cero**. No se llevaba el dinero —se destruía— pero el
+    /// saldo investigado desaparecía.
+    ///
+    /// Congelar existe para que una cuenta bajo investigación no mueva
+    /// fondos. Destruirlos los mueve.
+    #[test]
+    fn a_frozen_account_cannot_burn() {
+        let mut s = scenario(1_000_000, 250_000, 10_000_000);
+
+        // La cuenta SI esta en el arbol de congelados.
+        let hoja = crate::circuit_freeze::frozen_leaf(true);
+        s.public_inputs.frozen_root =
+            crate::circuit_freeze::frozen_climb(hoja, &s.frozen_path);
+
+        assert!(
+            run(&s, s.key, s.amount).is_err(),
+            "CRITICO: una cuenta congelada no debe poder destruir su dinero"
+        );
+    }
+
+    /// **Y el que valida al anterior**: una cuenta libre SÍ puede.
+    ///
+    /// Sin esto, el test anterior pasaría aunque la fase de congelados
+    /// rechazara todo — o no impusiera nada y fallara por otra razón.
+    #[test]
+    fn a_free_account_can_burn() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        assert!(
+            run(&s, s.key, s.amount).is_ok(),
+            "una cuenta libre debe poder destruir su dinero"
+        );
+    }
+
+    /// **DECLARAR UNA RAÍZ DE CONGELADOS FALSA SE RECHAZA.**
+    ///
+    /// Sin esto, un congelado se libraría declarando la raíz de un árbol
+    /// vacío que él mismo construye.
+    #[test]
+    fn a_forged_frozen_root_is_rejected() {
+        let mut s = scenario(1_000_000, 250_000, 10_000_000);
+        s.public_inputs.frozen_root = [BaseElement::new(0xFA15E); 4];
+        assert!(run(&s, s.key, s.amount).is_err());
     }
 }

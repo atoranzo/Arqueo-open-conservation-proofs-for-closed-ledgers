@@ -31,6 +31,21 @@ impl SovereignLayer {
         if derive_public_id(spend_key) != account.public_id {
             return Err(LayerError::NotTheAccountHolder);
         }
+
+        // ===== LA CONGELACIÓN BLOQUEA TAMBIÉN LA DESTRUCCIÓN =====
+        //
+        // El circuito lo impone; esto solo evita gastar el cómputo de una
+        // prueba que no verificará.
+        //
+        // Antes no se comprobaba en ninguno de los dos sitios: la
+        // liquidación miraba la congelación y la destrucción no, así que
+        // **un titular bajo investigación podía vaciar su cuenta a cero**.
+        //
+        // Va DESPUÉS de la autoridad: cualquier comprobación anterior
+        // filtraría su resultado a quien no es el titular.
+        if self.is_frozen(account_index) {
+            return Err(LayerError::AccountFrozen(account_index));
+        }
         if amount > account.balance {
             return Err(LayerError::InsufficientBalance {
                 available: account.balance,
@@ -44,12 +59,14 @@ impl SovereignLayer {
         }
 
         let path = self.accounts.path_for(account_index);
+        let frozen_path = self.frozen.path_for(account_index);
         let trace = build_burn_trace(
             spend_key,
             account.public_id,
             account.balance,
             account.nonce,
             &path,
+            &frozen_path,
             amount,
             self.total_supply,
             amount,
@@ -75,6 +92,13 @@ impl SovereignLayer {
         account_index: AccountIndex,
     ) -> Result<(), LayerError> {
         let pi = &receipt.public_inputs;
+
+        // La raíz de congelados declarada debe ser la vigente: si no, la
+        // prueba acreditaría no-pertenencia a un árbol que no es el del
+        // sistema.
+        if pi.frozen_root != self.frozen.root() {
+            return Err(LayerError::StaleState);
+        }
 
         if pi.root_old != self.accounts.root()
             || pi.supply_old != BaseElement::new(self.total_supply)
