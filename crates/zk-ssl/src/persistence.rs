@@ -65,6 +65,8 @@ impl SovereignLayer {
             custodian_set_root,
             governance_set_root,
             governance_change_count: 0,
+            custodian_uses: 0,
+            max_custodian_uses: crate::DEFAULT_MAX_CUSTODIAN_USES,
             total_supply: 0,
             frozen: SparseTree::with_depth(FROZEN_DEPTH),
             freeze_count: 0,
@@ -167,6 +169,14 @@ impl SovereignLayer {
         self.custodian_set_root =
             digest_from_bytes(&need("meta:custodians", get(b"meta:custodians")?)?)?;
         self.governance_change_count = match get(b"meta:gov_changes")? {
+            Some(v) => u64::from_le_bytes(
+                v.as_slice()
+                    .try_into()
+                    .map_err(|_| StoreError::Malformed("contador de gobernanza".into()))?,
+            ),
+            None => 0,
+        };
+        self.custodian_uses = match get(b"meta:cust_uses")? {
             Some(v) => u64::from_le_bytes(
                 v.as_slice()
                     .try_into()
@@ -397,6 +407,11 @@ impl SovereignLayer {
         batch.insert(b"meta:freezes".as_ref(), self.seal(self.freeze_count.to_le_bytes().to_vec())?);
         batch.insert(b"meta:governance".as_ref(), self.seal(digest_to_bytes(&self.governance_set_root).to_vec())?);
         batch.insert(b"meta:gov_changes".as_ref(), self.seal(self.governance_change_count.to_le_bytes().to_vec())?);
+        // El cupo de custodios. **Si no persistiera, reiniciar el nodo
+        // renovaria las intervenciones** y la rotacion no serviria de
+        // nada: bastaria con reiniciar para seguir usando un conjunto
+        // agotado.
+        batch.insert(b"meta:cust_uses".as_ref(), self.seal(self.custodian_uses.to_le_bytes().to_vec())?);
         batch.insert(b"meta:next_index".as_ref(), self.seal(self.next_index.to_le_bytes().to_vec())?);
         batch.insert(b"root:state".as_ref(), self.seal(digest_to_bytes(&self.accounts.root()).to_vec())?);
         batch.insert(b"root:nullifier".as_ref(), self.seal(digest_to_bytes(&self.nullifiers.root()).to_vec())?);

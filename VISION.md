@@ -409,6 +409,48 @@ resolvería con el proveedor de pago guardando el estado del cliente — con
 lo que la legibilidad se re-concentra, repartida y no en el operador
 central.
 
+### 3.10 Sobre la rotación de privilegios
+
+*Consecuencia de P4 y P7: los privilegios existen el tiempo estrictamente
+necesario.*
+
+**El problema**: sin rotación, una clave de custodio comprometida **sirve
+para siempre**. Los contadores hacían visible su uso; nada lo acotaba.
+
+**El diseño**: la rotación se expresa **por uso, no por tiempo**, porque
+esta capa no tiene noción de tiempo.
+
+| | |
+|---|---|
+| Emitir, congelar, recuperar | Consumen una intervención |
+| Al agotarse el cupo | Los custodios **dejan de poder actuar** |
+| Rotar el conjunto | **Reinicia** el contador |
+
+Agotarse **no bloquea el sistema: obliga a renovar**. Y el conjunto viejo
+queda inerte por otra vía — su raíz ya no es la vigente.
+
+**5 tests**, incluido el que comprueba que el cupo **sobrevive al
+reinicio**: si no, bastaría reiniciar para seguir usando un conjunto
+agotado.
+
+**Dos decisiones que el compilador y el orden delataron:**
+
+El consumo va **al aplicar**, no al generar la prueba. Puesto en la
+generación, pruebas descartadas habrían agotado el cupo. El compilador lo
+señaló al rechazar una mutación sobre `&self`.
+
+Y va **después** de verificar la autoridad: antes, cualquiera podría agotar
+el cupo de los custodios sin serlo.
+
+⚠️ **Lo que NO cubre.** `set_max_custodian_uses` no está protegido por
+ninguna autorización: **un operador puede subir el cupo y anular la
+rotación**.
+
+Es coherente con el modelo declarado —el operador ya controla la capa— pero
+la rotación es **una política que el operador aplica, no una garantía que
+le vincule**. Imponerla exigiría llevar el cupo a los circuitos de emisión,
+congelación y recuperación. **No está hecho.**
+
 ---
 
 ## 4. Orden de prioridad para mayor coherencia
@@ -421,7 +463,7 @@ central.
 | 1 | Reducir la legibilidad del estado por el operador | 🔬 **Diseño demostrado** (§3.9). El refactor de la capa sigue pendiente |
 | 2 | Mantener y endurecer la separación clave / capa | ✅ Salvo la autoridad de umbral (§3.3) |
 | 3 | Formalizar el catálogo de rechazos | ✅ Hoja de ruta con lo no alcanzable y lo innecesario |
-| 4 | Privilegios con medida: rotación, contadores, caducidad | ✅ Contadores y caducidad de congelaciones. **Rotación pendiente** |
+| 4 | Privilegios con medida: rotación, contadores, caducidad | ✅ **Completa**: contadores, caducidad de congelaciones y rotación por uso (§3.10) |
 | 5 | Consenso distribuido | ⬜ **Abierto**. Único cierre real de censura |
 | 6 | Auditoría externa | ⬜ **Condición, no capacidad** |
 

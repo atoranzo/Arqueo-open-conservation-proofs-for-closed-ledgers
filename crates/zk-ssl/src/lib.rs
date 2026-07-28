@@ -170,6 +170,10 @@ pub enum LayerError {
     OverRegulatoryLimit { limit: u64, requested: u64 },
     NullifierAlreadySpent,
     NotTheIssuer,
+    /// El conjunto de custodios agotó su cupo de intervenciones.
+    ///
+    /// **No es un fallo: es la rotación funcionando.**
+    CustodianSetExhausted { uses: u64, max: u64 },
     ProofFailed(String),
     VerificationFailed(String),
     StaleState,
@@ -215,6 +219,11 @@ impl std::fmt::Display for LayerError {
             NullifierAlreadySpent => {
                 write!(f, "el nullifier ya se gasto: doble gasto rechazado")
             }
+            CustodianSetExhausted { uses, max } => write!(
+                f,
+                "el conjunto de custodios agoto su cupo ({uses}/{max}): la \
+                 gobernanza debe rotarlo"
+            ),
             NotTheIssuer => write!(
                 f,
                 "crear dinero exige dos custodios distintos del conjunto autorizado"
@@ -354,6 +363,14 @@ pub struct MintReceipt {
     pub public_inputs: MintPublicInputs,
 }
 
+/// Intervenciones que admite un conjunto de custodios antes de exigir
+/// rotación.
+///
+/// ⚠️ **Es un valor por defecto, no una recomendación.** Elegirlo es una
+/// decisión de política: más bajo reduce la ventana de una clave
+/// comprometida; más alto reduce la fricción operativa.
+pub const DEFAULT_MAX_CUSTODIAN_USES: u64 = 100;
+
 /// ⚠️ **No implementa `Debug` deliberadamente.** Contiene los saldos de
 /// todas las cuentas, y un `{:?}` en un registro de diagnóstico los
 /// expondría. Para inspeccionar el estado están los accesores
@@ -408,6 +425,18 @@ pub struct SovereignLayer {
     /// No impide que vea los saldos ni que censure: eso exige consenso.
     log: TransitionLog,
     recovery_count: u64,
+    /// **Intervenciones del conjunto de custodios vigente.**
+    ///
+    /// Emitir, congelar y recuperar lo incrementan. Al alcanzar
+    /// `max_custodian_uses`, los custodios **dejan de poder actuar** hasta
+    /// que la gobernanza rote el conjunto.
+    ///
+    /// Es la rotación de privilegios expresada por **uso**, no por tiempo:
+    /// esta capa no tiene noción de tiempo. Sin rotación, una clave
+    /// comprometida sirve para siempre.
+    custodian_uses: u64,
+    /// Cuántas intervenciones admite un conjunto antes de exigir rotación.
+    max_custodian_uses: u64,
     regulatory_limit: u64,
     /// **Tope de emisión.** Parámetro inmutable del ledger: ni siquiera
     /// el conjunto completo de custodios puede superarlo sin crear un
@@ -456,6 +485,8 @@ impl SovereignLayer {
             custodian_set_root,
             governance_set_root,
             governance_change_count: 0,
+            custodian_uses: 0,
+            max_custodian_uses: DEFAULT_MAX_CUSTODIAN_USES,
             total_supply: 0,
             frozen: SparseTree::with_depth(FROZEN_DEPTH),
             freeze_count: 0,

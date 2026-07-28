@@ -69,6 +69,14 @@ pub const LIMIT: u64 = 500_000;
 pub const MAX_SUPPLY: u64 = 100_000_000;
 pub const MAX_ACCOUNTS: u64 = 1_000;
 
+/// Capa con un cupo de custodios pequeño, para probar la rotación sin
+/// hacer cien emisiones.
+pub fn new_layer_with_quota(quota: u64) -> SovereignLayer {
+    let mut l = new_layer();
+    l.set_max_custodian_uses(quota);
+    l
+}
+
 pub fn new_layer() -> SovereignLayer {
     SovereignLayer::new(custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS)
 }

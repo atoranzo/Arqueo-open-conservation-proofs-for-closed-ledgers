@@ -107,6 +107,15 @@ impl SovereignLayer {
         )
         .map_err(|e| LayerError::VerificationFailed(format!("{e:?}")))?;
 
+        // ===== ROTACIÓN: consume una intervención del conjunto =====
+        //
+        // Se consume **al aplicar**, no al generar la prueba: una prueba
+        // que nunca se aplica no debe gastar cupo.
+        //
+        // Y va después de verificar la autoridad: si fuera antes,
+        // cualquiera podría agotar el cupo de los custodios sin serlo.
+        self.consume_custodian_use()?;
+
         // Se comprueba sobre una copia: ver el comentario de `mint`.
         let mut tentativo = self.frozen.clone();
         tentativo.set_leaf(account_index, frozen_leaf(receipt.now_frozen));

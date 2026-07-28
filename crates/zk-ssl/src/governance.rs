@@ -34,6 +34,48 @@ impl SovereignLayer {
     }
 
     /// Contador público de cambios de gobernanza.
+    /// Intervenciones consumidas por el conjunto de custodios vigente.
+    pub fn custodian_uses(&self) -> u64 {
+        self.custodian_uses
+    }
+
+    /// Fija el cupo de intervenciones por conjunto de custodios.
+    ///
+    /// ⚠️ **No lo protege ninguna autorización**: es configuración del
+    /// despliegue, no una operación del sistema. Un operador puede subirlo
+    /// y así **anular la rotación**.
+    ///
+    /// Es coherente con el modelo declarado —el operador ya controla la
+    /// capa— pero conviene saberlo: la rotación es una política que el
+    /// operador aplica, no una garantía que le vincule.
+    ///
+    /// Imponerla exigiría llevar el cupo a los circuitos de emisión,
+    /// congelación y recuperación. **No está hecho.**
+    pub fn set_max_custodian_uses(&mut self, quota: u64) {
+        self.max_custodian_uses = quota;
+    }
+
+    /// Cupo del conjunto vigente.
+    pub fn max_custodian_uses(&self) -> u64 {
+        self.max_custodian_uses
+    }
+
+    /// Comprueba que quedan intervenciones y **consume una**.
+    ///
+    /// La llaman emitir, congelar y recuperar. Va **después** de verificar
+    /// la autoridad: si fuera antes, agotar el cupo ajeno sería posible sin
+    /// ser custodio.
+    pub(crate) fn consume_custodian_use(&mut self) -> Result<(), LayerError> {
+        if self.custodian_uses >= self.max_custodian_uses {
+            return Err(LayerError::CustodianSetExhausted {
+                uses: self.custodian_uses,
+                max: self.max_custodian_uses,
+            });
+        }
+        self.custodian_uses += 1;
+        Ok(())
+    }
+
     pub fn governance_change_count(&self) -> u64 {
         self.governance_change_count
     }
@@ -99,6 +141,13 @@ impl SovereignLayer {
         .map_err(|e| LayerError::VerificationFailed(format!("{e:?}")))?;
 
         self.custodian_set_root = pi.custodian_root_new;
+
+        // ===== ROTAR REINICIA EL CUPO =====
+        //
+        // Es lo que hace que la rotación sirva: el conjunto nuevo empieza
+        // con sus intervenciones enteras, y el viejo deja de poder actuar
+        // porque su raíz ya no es la vigente.
+        self.custodian_uses = 0;
         self.governance_change_count = pi.change_count_new.as_int();
 
         // El cambio de custodios no toca cuentas ni nullifiers, pero sí

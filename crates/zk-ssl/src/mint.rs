@@ -26,6 +26,7 @@ impl SovereignLayer {
         if auth.index_a >= auth.index_b {
             return Err(LayerError::NotTheIssuer);
         }
+
         let account = self
             .records
             .get(&account_index)
@@ -103,6 +104,15 @@ impl SovereignLayer {
             &min_opts,
         )
         .map_err(|e| LayerError::VerificationFailed(format!("{e:?}")))?;
+
+        // ===== ROTACIÓN: consume una intervención del conjunto =====
+        //
+        // Se consume **al aplicar**, no al generar la prueba: una prueba
+        // que nunca se aplica no debe gastar cupo.
+        //
+        // Y va después de verificar la autoridad: si fuera antes,
+        // cualquiera podría agotar el cupo de los custodios sin serlo.
+        self.consume_custodian_use()?;
 
         let amount = pi.amount.as_int();
         let account = self

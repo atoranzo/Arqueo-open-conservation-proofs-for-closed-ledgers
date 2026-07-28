@@ -292,6 +292,8 @@ impl SovereignLayer {
         let n_log = u64_at("n_log")?;
 
         let mut layer = Self {
+            custodian_uses: 0,
+            max_custodian_uses: crate::DEFAULT_MAX_CUSTODIAN_USES,
             accounts: SparseTree::new(),
             nullifiers: SparseTree::new(),
             records: HashMap::new(),

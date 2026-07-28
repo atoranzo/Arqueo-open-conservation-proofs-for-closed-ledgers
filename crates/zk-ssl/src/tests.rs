@@ -661,6 +661,126 @@ use super::*;
     }
 
     // -----------------------------------------------------------------
+    // Rotación de privilegios
+    // -----------------------------------------------------------------
+
+    /// **CADA INTERVENCIÓN CONSUME CUPO.**
+    ///
+    /// La rotación se expresa por **uso**, no por tiempo: esta capa no
+    /// tiene noción de tiempo. Sin rotación, una clave comprometida sirve
+    /// para siempre.
+    #[test]
+    fn each_custodian_intervention_consumes_quota() {
+        let mut layer = new_layer();
+        assert_eq!(layer.custodian_uses(), 0);
+
+        let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
+        let m = layer.mint(&valid_auth(), alice, 100_000).expect("emitir");
+        layer.apply_mint(&m, alice).expect("aplicar");
+        assert_eq!(layer.custodian_uses(), 1, "emitir consume una");
+
+        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
+        layer.apply_freeze(&f, alice).expect("aplicar");
+        assert_eq!(layer.custodian_uses(), 2, "congelar consume otra");
+    }
+
+    /// **GENERAR UNA PRUEBA QUE NO SE APLICA NO GASTA CUPO.**
+    ///
+    /// El consumo va en la aplicación, no en la generación. Si fuera al
+    /// revés, **pruebas descartadas agotarían el cupo de los custodios**.
+    #[test]
+    fn generating_an_unapplied_proof_does_not_consume_quota() {
+        let mut layer = new_layer();
+        let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
+
+        let _descartada = layer.mint(&valid_auth(), alice, 100_000).expect("emitir");
+        assert_eq!(
+            layer.custodian_uses(),
+            0,
+            "una prueba que no se aplica no debe gastar cupo"
+        );
+    }
+
+    /// **AGOTADO EL CUPO, LOS CUSTODIOS NO PUEDEN ACTUAR.**
+    ///
+    /// Es la rotación funcionando: no es un fallo, es la exigencia de
+    /// renovar.
+    #[test]
+    fn an_exhausted_custodian_set_cannot_act() {
+        let mut layer = new_layer_with_quota(2);
+        let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
+
+        for i in 0..2 {
+            let m = layer.mint(&valid_auth(), alice, 1000).expect("emitir");
+            layer.apply_mint(&m, alice).expect("aplicar");
+            assert_eq!(layer.custodian_uses(), i + 1);
+        }
+
+        let m = layer.mint(&valid_auth(), alice, 1000).expect("emitir");
+        assert!(
+            matches!(
+                layer.apply_mint(&m, alice),
+                Err(LayerError::CustodianSetExhausted { .. })
+            ),
+            "CRITICO: un conjunto agotado no debe poder seguir actuando"
+        );
+        assert_eq!(layer.balance_of(alice), Some(2000), "y no se emitio nada mas");
+    }
+
+    /// **ROTAR EL CONJUNTO RENUEVA EL CUPO.**
+    ///
+    /// Es lo que hace útil la rotación: agotarse no bloquea el sistema,
+    /// **obliga a renovar**.
+    #[test]
+    fn rotating_the_custodian_set_renews_the_quota() {
+        let mut layer = new_layer_with_quota(1);
+        let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
+
+        let m = layer.mint(&valid_auth(), alice, 1000).expect("emitir");
+        layer.apply_mint(&m, alice).expect("aplicar");
+        assert_eq!(layer.custodian_uses(), 1);
+
+        let g = layer
+            .update_custodians(&valid_governance_auth(), new_custodian_root())
+            .expect("rotar");
+        layer.apply_governance(&g).expect("aplicar");
+        assert_eq!(layer.custodian_uses(), 0, "rotar reinicia el cupo");
+    }
+
+    /// **EL CUPO SOBREVIVE AL REINICIO.**
+    ///
+    /// Si no lo hiciera, **bastaría reiniciar el nodo para seguir usando
+    /// un conjunto agotado**: la rotación no serviría de nada.
+    ///
+    /// Es el mismo razonamiento que con nullificadores, congelaciones y
+    /// suministro. Cuarta vez que aparece el patrón.
+    #[test]
+    fn the_custodian_quota_survives_restart() {
+        let path = temp_path("quota");
+        {
+            let mut layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            )
+            .expect("abrir");
+            let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
+            let m = layer.mint(&valid_auth(), alice, 100_000).expect("emitir");
+            layer.apply_mint(&m, alice).expect("aplicar");
+            assert_eq!(layer.custodian_uses(), 1);
+        }
+        let layer = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        )
+        .expect("reabrir");
+        assert_eq!(
+            layer.custodian_uses(),
+            1,
+            "CRITICO: si el cupo se renovara al reiniciar, bastaria reiniciar \
+             para seguir usando un conjunto agotado"
+        );
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    // -----------------------------------------------------------------
     // Qué sobrevive a un reinicio
     // -----------------------------------------------------------------
 
