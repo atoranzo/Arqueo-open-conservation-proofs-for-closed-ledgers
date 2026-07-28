@@ -149,6 +149,40 @@ circuito, y **no está hecho**.
 | Verificación externa | El supervisor verifica sin acceso al ledger |
 | No fingir privacidad frente al operador | Declaración explícita |
 
+⚠️ **FALLO GRAVE: el pagador ve el saldo del receptor.**
+
+`TransferMaterials` entrega al cliente `receiver: AccountView`, que
+contiene **el saldo exacto del receptor, su identidad pública y su nonce**.
+
+Pagar un euro a alguien **revela cuánto tiene**.
+
+| | El operador ve saldos | El pagador ve el del receptor |
+|---|---|---|
+| Quién | Una entidad, declarada | **Cualquiera que te pague** |
+| ¿Estaba declarado? | Sí, en cabecera | **No** |
+
+**Es inherente al modelo de cuentas.** La liquidación actualiza las dos
+hojas, así que quien construye la prueba necesita el saldo del receptor
+para calcular su hoja nueva. Zcash no lo tiene porque **no actualiza el
+saldo del receptor**: crea una nota nueva.
+
+**Cómo se dejó pasar.** El comentario del código decía: *"Son caminos de
+Merkle y datos de cuenta: información de estado, no secretos"*. Esa frase
+da por buena la fuga en vez de examinarla, y nadie escribió el test que la
+habría delatado.
+
+**Salidas, ninguna barata:**
+
+| Vía | Coste |
+|---|---|
+| Protocolo entre dos partes: cada uno prueba su lado | Exige interacción y disponibilidad del receptor |
+| Modelo de notas tipo UTXO | Rediseño del sistema entero |
+| Que la capa construya la prueba | **Viola P5**: reintroduce la clave en el operador |
+
+**Estado: sin resolver.** Y es más grave que la visibilidad del operador,
+porque el operador es **uno y está declarado**, mientras que una contraparte
+es **cualquiera**.
+
 ⚠️ **Sin revelación forzosa.** Si el titular no coopera, no hay mecanismo
 alternativo. Es deliberado —no existe clave maestra que robar— y en un
 despliegue regulado sería una decisión de política a evaluar.
@@ -333,6 +367,7 @@ central.
 
 | | Prioridad | Estado |
 |---|---|---|
+| **0** | **Cerrar la fuga del saldo del receptor al pagador** (§3.4) | ⬜ **Sin resolver.** Desplaza a la 1: afecta a cualquier contraparte, no a una entidad declarada |
 | 1 | Reducir la legibilidad del estado por el operador | 🔬 **Diseño demostrado** (§3.9). El refactor de la capa sigue pendiente |
 | 2 | Mantener y endurecer la separación clave / capa | ✅ Salvo la autoridad de umbral (§3.3) |
 | 3 | Formalizar el catálogo de rechazos | ✅ Hoja de ruta con lo no alcanzable y lo innecesario |
@@ -340,9 +375,12 @@ central.
 | 5 | Consenso distribuido | ⬜ **Abierto**. Único cierre real de censura |
 | 6 | Auditoría externa | ⬜ **Condición, no capacidad** |
 
-**Prioridad 1 sigue siendo la mayor incoherencia del sistema**, pero ya no
-es una incógnita: el diseño está demostrado y lo que falta es trabajo
-mecánico. Ver §3.9.
+**La prioridad 0 apareció al empezar el refactor de la 1**, y la desplaza.
+Cerrar la visibilidad del operador mientras cualquier contraparte ve los
+saldos sería resolver el problema menor primero.
+
+La prioridad 1 ya no es una incógnita: el diseño está demostrado (§3.9) y
+lo que falta es trabajo mecánico.
 
 ---
 
@@ -403,10 +441,19 @@ La arquitectura no se evalúa solo por lo que permite hacer. Se evalúa por
 **lo que impide falsear** y por **lo que se atreve a declarar que aún no
 resuelve**.
 
-Y hay una prueba de que los principios funcionan que no estaba prevista:
+Y hay dos pruebas de que los principios funcionan, ninguna prevista.
+
 **P7 resolvió un problema que parecía requerir una tecnología que este
-proyecto no tiene**. El principio precedió al problema, y bastó con
+proyecto no tiene.** El principio precedió al problema, y bastó con
 aplicarlo.
+
+**P2 destapó un fallo peor que el que iba a arreglar.** Al empezar el
+refactor para que el operador no viera los saldos, apareció que **cualquier
+contraparte ya los ve** (§3.4). Llevaba ahí desde el principio, con un
+comentario que lo justificaba en vez de examinarlo.
+
+Ese es el argumento a favor de este documento: **un principio aplicado en
+serio encuentra lo que la implementación daba por bueno**.
 
 ---
 

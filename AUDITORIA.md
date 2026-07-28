@@ -91,11 +91,75 @@ comprobaciones de la capa son comodidad; la garantía está en el AIR.
 
 ---
 
-## 4. Donde el autor tiene MENOS confianza
+## 4. FALLO GRAVE SIN RESOLVER: el pagador ve el saldo del receptor
+
+**Encontrado durante esta sesión, al empezar un refactor por otro motivo.**
+
+### Qué ocurre
+
+`TransferMaterials` —lo que la capa entrega al cliente para que genere su
+prueba— incluye `receiver: AccountView`, que contiene:
+
+- El **saldo exacto** del receptor
+- Su **identidad pública**
+- Su **nonce**
+
+**Pagar un euro a alguien revela cuánto tiene.**
+
+### Por qué es más grave que la visibilidad del operador
+
+| | Operador | **Contraparte** |
+|---|---|---|
+| Quién | Una entidad | **Cualquiera que reciba un pago tuyo** |
+| ¿Declarado? | Sí, en cabecera de todos los documentos | **No lo estaba** |
+| Mitigable con confianza institucional | Sí | **No** |
+
+### Por qué existe
+
+Es inherente al **modelo de cuentas** con un solo probador: la liquidación
+actualiza las dos hojas, así que quien construye la prueba necesita el
+saldo del receptor para calcular su hoja nueva.
+
+Zcash no lo tiene porque **no actualiza el saldo del receptor**: crea una
+nota nueva para él.
+
+### Cómo se dejó pasar
+
+El comentario del código lo justificaba:
+
+> *"Son caminos de Merkle y datos de cuenta: información de estado, no
+> secretos."*
+
+Esa frase **da por buena la fuga en vez de examinarla**. Y no hay ningún
+test que compruebe qué aprende el pagador — todos los tests de privacidad
+miran qué ve un tercero que solo tiene la prueba.
+
+**Un test que hubiera preguntado *"¿qué sabe el pagador después de
+pagar?"* lo habría delatado desde el principio.**
+
+### Salidas
+
+| Vía | Coste | Compatible con los principios |
+|---|---|---|
+| Protocolo entre dos partes: cada uno prueba su lado | Interacción, disponibilidad del receptor | Sí |
+| Modelo de notas tipo UTXO | Rediseño del sistema entero | Sí |
+| Que la capa construya la prueba | Barato | **No: viola P5** |
+
+**Ninguna está implementada.**
+
+### Qué debe hacer un auditor con esto
+
+Comprobar si hay más fugas del mismo tipo: **datos que se entregan al
+cliente por necesidad técnica y que nadie examinó**. La pregunta correcta
+no es *"¿qué ve un observador?"* sino **"¿qué aprende cada participante?"**.
+
+---
+
+## 5. Donde el autor tiene MENOS confianza
 
 Esta es la sección más útil del documento.
 
-### 4.1 `open_account` no exige autorización — **mitigado a medias**
+### 5.1 `open_account` no exige autorización — **mitigado a medias**
 
 Cualquiera con acceso a la capa puede crear cuentas. No crea dinero
 (nacen a cero), pero llenaba el árbol y el mapa de registros hasta agotar
@@ -111,7 +175,7 @@ genera ninguna prueba**.
 Un auditor debería valorar si el tope es suficiente para el caso de uso
 previsto.
 
-### 4.2 La congelación no tiene justificación ni caducidad
+### 5.2 La congelación no tiene justificación ni caducidad
 
 **Implementada** con imposición en circuito: la prueba de liquidación
 acredita que el emisor no está en el árbol de congelados.
@@ -125,7 +189,7 @@ acredita que el emisor no está en el árbol de congelados.
   contrario dejaría fondos en el limbo— pero merece que un auditor valore
   si encaja con el caso de uso.
 
-### 4.3 Los grados de restricción
+### 5.3 Los grados de restricción
 
 **Cinco veces** durante el desarrollo winterfell rechazó un grado mal
 declarado. Cada vez se corrigió. La exactitud que exige winterfell hace
@@ -138,7 +202,7 @@ Especial cuidado con:
   (`circuit_mint`: 8 segmentos × 64 filas llenan la traza y la vuelven
   periódica de periodo 64).
 
-### 4.4 El patrón lockstep
+### 5.4 El patrón lockstep
 
 `C_SIBLING` impone que los dos carriles usen el mismo hermano. El
 argumento es que eso basta para atar ambas subidas a la misma posición
@@ -148,7 +212,7 @@ Está verificado con un test discriminante, **pero el argumento general no
 ha sido revisado por nadie más**. Es el hallazgo más original del
 proyecto y merece escrutinio.
 
-### 4.5 Los tests negativos
+### 5.5 Los tests negativos
 
 **Tres veces** un test negativo resultó no discriminar: fallaba por una
 restricción distinta de la que pretendía probar. Se corrigieron
@@ -157,7 +221,7 @@ construyendo testigos internamente coherentes.
 **Puede quedar alguno más.** Un auditor debería comprobar, para cada test
 negativo, que el testigo corrupto es válido en todo lo demás.
 
-### 4.6 El bloqueo de directorio de `sled` tras cerrar — **hallazgo nuevo**
+### 5.6 El bloqueo de directorio de `sled` tras cerrar — **hallazgo nuevo**
 
 `sled` mantiene un bloqueo del directorio que puede tardar en liberarse
 tras cerrar la base de datos. **Un nodo que se reinicie inmediatamente
@@ -174,7 +238,7 @@ hace el ayudante `open_retry` de los tests.
 Un auditor debería valorar si esto afecta a los procedimientos de
 recuperación tras caída.
 
-### 4.7 El techo de 63 bits
+### 5.7 El techo de 63 bits
 
 Las comprobaciones de rango fuerzan el bit más significativo a cero, así
 que **ningún valor puede superar 2^63 − 1**.
@@ -186,7 +250,7 @@ rechazarse al configurar.
 No es una fuga de solidez —los valores fuera de rango se rechazan— pero
 sí un fallo de usabilidad que puede confundir un diagnóstico.
 
-### 4.8 El formato de instantánea se queda atrás al añadir estado
+### 5.8 El formato de instantánea se queda atrás al añadir estado
 
 **Dos veces** en pocas rondas: al añadir las cuentas congeladas y al
 añadir el registro de transiciones, la instantánea dejó de incluir algo
@@ -201,7 +265,7 @@ existe.
 Un auditor debería comprobar que la versión actual del formato cubre todo
 el estado, y valorar exigir ese test.
 
-### 4.9 Colisiones en el árbol de nullifiers
+### 5.9 Colisiones en el árbol de nullifiers
 
 La posición sale de los bits bajos del nullifier. Dos nullifiers pueden
 colisionar, y el segundo **no podría gastarse**.
@@ -212,7 +276,7 @@ incorrecto, sería grave.
 
 ---
 
-## 5. Por dónde empezaría el autor si tuviera que romperlo
+## 6. Por dónde empezaría el autor si tuviera que romperlo
 
 En este orden:
 
@@ -232,7 +296,7 @@ En este orden:
 
 ---
 
-## 6. Limitaciones ya documentadas
+## 7. Limitaciones ya documentadas
 
 No hacen falta descubrirlas; están en `README.md`:
 
@@ -246,7 +310,7 @@ No hacen falta descubrirlas; están en `README.md`:
 
 ---
 
-## 7. Cómo reproducir
+## 8. Cómo reproducir
 
 ```bash
 cargo test -p zk-ssl --release              # la capa, 65 tests
