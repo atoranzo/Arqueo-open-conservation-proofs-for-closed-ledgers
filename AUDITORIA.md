@@ -181,7 +181,7 @@ observador?"* sino **"¿qué aprende cada participante?"**.
 Encontró la fuga de §4 y no encontró otra igual de grave. Pero sí tres
 cosas que estaban implícitas y **ninguna declarada**.
 
-### 8.1 Matriz por operación
+### 9.1 Matriz por operación
 
 | Operación | El operador | La contraparte | Un tercero |
 |---|---|---|---|
@@ -193,7 +193,7 @@ cosas que estaban implícitas y **ninguna declarada**.
 | Congelación | Todo | Custodios: **qué cuenta** | Nada |
 | Gasto sin conexión | — | Comercio: el importe | Nada |
 
-### 8.2 Lo implícito, ahora declarado
+### 9.2 Lo implícito, ahora declarado
 
 **El importe de emisión y destrucción es público.** Aparece en las entradas
 públicas de ambos circuitos.
@@ -219,7 +219,7 @@ Un observador del registro ve **el patrón de actividad del sistema**
 cuánto. Es metadato, y en un sistema con poca actividad podría ser
 significativo.
 
-### 8.3 Lo que el repaso confirmó que SÍ está cerrado
+### 9.3 Lo que el repaso confirmó que SÍ está cerrado
 
 | Propiedad | Cómo |
 |---|---|
@@ -228,7 +228,7 @@ significativo.
 | El nullifier no se deriva de la identidad pública | Test: `nullifier_is_not_derivable_from_public_id` |
 | Una transferencia no revela identidades a terceros | Solo raíces y nullifier |
 
-### 8.4 La pregunta que queda para un auditor
+### 9.4 La pregunta que queda para un auditor
 
 **¿Hay más datos que se entregan por necesidad técnica y que nadie
 examinó?**
@@ -323,7 +323,7 @@ que se hace al conjunto, no a la función.
 **Aplicación de P4 —medida: el sistema define qué resuelve y qué rechaza—
 a la pregunta de qué estados alcanzan las combinaciones de operaciones.**
 
-### 8.1 La matriz, probada
+### 9.1 La matriz, probada
 
 | Con la cuenta congelada | ¿Se permite? | Dónde se impone |
 |---|---|---|
@@ -334,7 +334,7 @@ a la pregunta de qué estados alcanzan las combinaciones de operaciones.**
 | Recibir una emisión | Sí | — |
 | Ser recuperada | Sí, **y la congelación sobrevive** | Probado |
 
-### 8.2 El hueco que había
+### 9.2 El hueco que había
 
 **Congelar bloqueaba transferir y no bloqueaba destruir.** Un titular bajo
 investigación podía **vaciar su cuenta a cero**: no se llevaba el dinero
@@ -343,7 +343,7 @@ investigación podía **vaciar su cuenta a cero**: no se llevaba el dinero
 El circuito de liquidación miraba el árbol de congelados; el de destrucción
 **no lo miraba en absoluto**, y la capa tampoco.
 
-### 8.3 La decisión, y su razonamiento
+### 9.3 La decisión, y su razonamiento
 
 **Congelar existe para que una cuenta bajo investigación no mueva fondos.
 Destruirlos los mueve: los saca del sistema. Que sea público e irreversible
@@ -354,13 +354,13 @@ congelados** —24 niveles, filas 280..471, que estaban libres— con 13
 restricciones nuevas y **3 tests**, incluido el validador que comprueba que
 una cuenta libre sí puede.
 
-### 8.4 Por qué se permite recibir
+### 9.4 Por qué se permite recibir
 
 Impedir que una cuenta congelada **reciba** dejaría fondos en el limbo y
 rompería pagos legítimos hacia alguien bajo investigación. Es una decisión
 deliberada, no un olvido.
 
-### 8.5 Por qué la recuperación no la levanta
+### 9.5 Por qué la recuperación no la levanta
 
 El árbol de congelados se indexa por **posición de cuenta**, no por
 identidad. Si se indexara por identidad, bastaría con decir que se perdió
@@ -383,11 +383,56 @@ hueco a la primera.
 
 ---
 
-## 8. Donde el autor tiene MENOS confianza
+## 8. El método: nueve preguntas transversales
+
+**Todos los hallazgos de esta ronda de revisión salieron de preguntas que
+se hacen al conjunto, no a una función.** Ninguna se responde leyendo un
+fichero, y por eso ninguna había salido antes pese a que todo el código
+compilaba y pasaba sus tests.
+
+| Pregunta | Encontró |
+|---|---|
+| ¿Qué aprende cada participante? | **El pagador ve el saldo del receptor** |
+| ¿Frente a quién es cierta esta afirmación de privacidad? | **El banco enlaza los pagos sin conexión** |
+| ¿Qué protección tiene cada artefacto con el mismo dato? | Las instantáneas iban sin cifrar |
+| ¿Qué se comprueba antes de autorizar? | La congelación se filtraba a no titulares |
+| ¿Y si se reenvía un recibo? | Faltaban dos tests, uno de ellos crearía dinero |
+| ¿Y si una operación falla a mitad? | **Cinco operaciones dejaban el estado corrupto** |
+| ¿Qué dice la documentación que el código no hace? | Cinco cifras y una limitación ya inexistente |
+| ¿Qué estados alcanzan las combinaciones? | **Una cuenta congelada podía destruir su dinero** |
+| ¿Qué puede el operador que no esté declarado? | **Puede desviar un pago si no compruebas el destino** |
+
+### 9.1 Lo que tienen en común
+
+**Ninguna se responde revisando una función.** Cada una compara cosas que
+son coherentes por separado:
+
+- Dos artefactos con el mismo dato y distinta protección.
+- Cinco operaciones que repiten un patrón incorrecto, cada una consistente
+  consigo misma.
+- Una afirmación de privacidad cierta contra un adversario y falsa contra
+  otro.
+
+### 8.2 ⚠️ Y la conclusión incómoda
+
+**Nueve preguntas, nueve hallazgos.** En código que compilaba, pasaba
+todos sus tests, y llevaba meses escrito.
+
+No hay motivo para pensar que las preguntas se hayan acabado. Las que
+quedan sin hacer son las que no se me han ocurrido — y esas son
+precisamente las que encontraría alguien de fuera.
+
+**Es el argumento más fuerte a favor de una auditoría externa que contiene
+este documento**, y no es retórico: es el registro de lo que pasó al
+preguntar en serio.
+
+---
+
+## 9. Donde el autor tiene MENOS confianza
 
 Esta es la sección más útil del documento.
 
-### 8.1 `open_account` no exige autorización — **mitigado a medias**
+### 9.1 `open_account` no exige autorización — **mitigado a medias**
 
 Cualquiera con acceso a la capa puede crear cuentas. No crea dinero
 (nacen a cero), pero llenaba el árbol y el mapa de registros hasta agotar
@@ -403,7 +448,7 @@ genera ninguna prueba**.
 Un auditor debería valorar si el tope es suficiente para el caso de uso
 previsto.
 
-### 8.2 La congelación no tiene justificación ni caducidad
+### 9.2 La congelación no tiene justificación ni caducidad
 
 **Implementada** con imposición en circuito: la prueba de liquidación
 acredita que el emisor no está en el árbol de congelados.
@@ -417,7 +462,7 @@ acredita que el emisor no está en el árbol de congelados.
   contrario dejaría fondos en el limbo— pero merece que un auditor valore
   si encaja con el caso de uso.
 
-### 8.3 Los grados de restricción
+### 9.3 Los grados de restricción
 
 **Cinco veces** durante el desarrollo winterfell rechazó un grado mal
 declarado. Cada vez se corrigió. La exactitud que exige winterfell hace
@@ -430,7 +475,7 @@ Especial cuidado con:
   (`circuit_mint`: 8 segmentos × 64 filas llenan la traza y la vuelven
   periódica de periodo 64).
 
-### 8.4 El patrón lockstep
+### 9.4 El patrón lockstep
 
 `C_SIBLING` impone que los dos carriles usen el mismo hermano. El
 argumento es que eso basta para atar ambas subidas a la misma posición
@@ -440,7 +485,7 @@ Está verificado con un test discriminante, **pero el argumento general no
 ha sido revisado por nadie más**. Es el hallazgo más original del
 proyecto y merece escrutinio.
 
-### 8.5 Los tests negativos
+### 9.5 Los tests negativos
 
 **Tres veces** un test negativo resultó no discriminar: fallaba por una
 restricción distinta de la que pretendía probar. Se corrigieron
@@ -449,7 +494,7 @@ construyendo testigos internamente coherentes.
 **Puede quedar alguno más.** Un auditor debería comprobar, para cada test
 negativo, que el testigo corrupto es válido en todo lo demás.
 
-### 8.6 El bloqueo de directorio de `sled` tras cerrar — **hallazgo nuevo**
+### 9.6 El bloqueo de directorio de `sled` tras cerrar — **hallazgo nuevo**
 
 `sled` mantiene un bloqueo del directorio que puede tardar en liberarse
 tras cerrar la base de datos. **Un nodo que se reinicie inmediatamente
@@ -466,7 +511,7 @@ hace el ayudante `open_retry` de los tests.
 Un auditor debería valorar si esto afecta a los procedimientos de
 recuperación tras caída.
 
-### 8.7 El techo de 63 bits
+### 9.7 El techo de 63 bits
 
 Las comprobaciones de rango fuerzan el bit más significativo a cero, así
 que **ningún valor puede superar 2^63 − 1**.
@@ -478,7 +523,7 @@ rechazarse al configurar.
 No es una fuga de solidez —los valores fuera de rango se rechazan— pero
 sí un fallo de usabilidad que puede confundir un diagnóstico.
 
-### 8.8 El formato de instantánea se queda atrás al añadir estado
+### 9.8 El formato de instantánea se queda atrás al añadir estado
 
 **Dos veces** en pocas rondas: al añadir las cuentas congeladas y al
 añadir el registro de transiciones, la instantánea dejó de incluir algo
@@ -493,7 +538,7 @@ existe.
 Un auditor debería comprobar que la versión actual del formato cubre todo
 el estado, y valorar exigir ese test.
 
-### 8.9 Colisiones en el árbol de nullifiers
+### 9.9 Colisiones en el árbol de nullifiers
 
 La posición sale de los bits bajos del nullifier. Dos nullifiers pueden
 colisionar, y el segundo **no podría gastarse**.
@@ -504,7 +549,7 @@ incorrecto, sería grave.
 
 ---
 
-## 9. Por dónde empezaría el autor si tuviera que romperlo
+## 10. Por dónde empezaría el autor si tuviera que romperlo
 
 En este orden:
 
@@ -524,7 +569,7 @@ En este orden:
 
 ---
 
-## 10. Limitaciones ya documentadas
+## 11. Limitaciones ya documentadas
 
 No hacen falta descubrirlas; están en `README.md`:
 
@@ -538,7 +583,7 @@ No hacen falta descubrirlas; están en `README.md`:
 
 ---
 
-## 11. Cómo reproducir
+## 12. Cómo reproducir
 
 ### ⚠️ Hay un test ignorado, y conviene saber por qué
 
@@ -578,7 +623,7 @@ fila exactos del fallo.
 
 ---
 
-## 12. Qué NO demuestra este documento
+## 13. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

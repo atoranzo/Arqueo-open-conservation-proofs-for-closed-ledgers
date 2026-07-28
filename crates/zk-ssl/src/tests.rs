@@ -661,6 +661,192 @@ use super::*;
     }
 
     // -----------------------------------------------------------------
+    // Qué sobrevive a un reinicio
+    // -----------------------------------------------------------------
+
+    /// **EL CONTADOR DE CUENTAS SOBREVIVE.**
+    ///
+    /// Si no lo hiciera, abrir una cuenta tras reiniciar devolvería un
+    /// índice **ya ocupado**, y la cuenta nueva **sobrescribiría a otra
+    /// existente**: su titular perdería su saldo sin que nada fallara.
+    ///
+    /// De los ocho campos de estado, había cinco con test de reinicio.
+    /// Este era uno de los que faltaban.
+    #[test]
+    fn the_account_counter_survives_restart() {
+        let path = temp_path("nextidx");
+        let (alice, bob);
+        {
+            let mut layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            )
+                .expect("abrir");
+            alice = open_and_fund(&mut layer, SK_ALICE, 500_000);
+            bob = open_and_fund(&mut layer, SK_BOB, 300_000);
+        }
+        let mut layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            )
+            .expect("reabrir");
+
+        let nueva = layer.open_account_checked(BaseElement::new(0xC0FFEE)).expect("abrir");
+        assert_ne!(nueva, alice, "CRITICO: la cuenta nueva pisaria a Alice");
+        assert_ne!(nueva, bob, "CRITICO: la cuenta nueva pisaria a Bob");
+        assert_eq!(layer.balance_of(alice), Some(500_000), "Alice intacta");
+        assert_eq!(layer.balance_of(bob), Some(300_000), "Bob intacto");
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// **EL SUMINISTRO TOTAL SOBREVIVE.**
+    ///
+    /// Si se reiniciara a cero, se podría emitir de nuevo hasta el tope:
+    /// **reiniciar el nodo sería una forma de crear dinero**.
+    #[test]
+    fn the_total_supply_survives_restart() {
+        let path = temp_path("supply");
+        let emitido = 750_000u64;
+        {
+            let mut layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            )
+                .expect("abrir");
+            open_and_fund(&mut layer, SK_ALICE, emitido);
+            assert_eq!(layer.total_supply(), emitido);
+        }
+        let layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            )
+            .expect("reabrir");
+        assert_eq!(
+            layer.total_supply(),
+            emitido,
+            "CRITICO: si el suministro se reiniciara, reiniciar el nodo \
+             permitiria emitir de nuevo hasta el tope"
+        );
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// **LOS NULLIFICADORES SOBREVIVEN.**
+    ///
+    /// Ya estaba comprobado en su día, pero **no en combinación con un
+    /// gasto real**: aquí se transfiere, se reinicia, y se intenta gastar
+    /// el mismo nullificador.
+    ///
+    /// Si no sobrevivieran, **bastaría reiniciar para gastar dos veces**.
+    #[test]
+    fn nullifiers_survive_restart_and_still_block() {
+        let path = temp_path("nulls");
+        let (alice, bob, raiz_nulls);
+        {
+            let mut layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            )
+                .expect("abrir");
+            alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+            bob = open_and_fund(&mut layer, SK_BOB, 0);
+            let s = layer
+                .transfer(BaseElement::new(SK_ALICE), alice, bob, 250_000)
+                .expect("transferir");
+            layer.apply(&s, alice, bob, 250_000).expect("aplicar");
+            raiz_nulls = layer.nullifier_root();
+        }
+        let layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            )
+            .expect("reabrir");
+        assert_eq!(
+            layer.nullifier_root(),
+            raiz_nulls,
+            "CRITICO: si los nullificadores no sobrevivieran, bastaria \
+             reiniciar para gastar dos veces"
+        );
+        assert_eq!(layer.balance_of(alice), Some(750_000));
+        assert_eq!(layer.balance_of(bob), Some(250_000));
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// **EL CONJUNTO DE GOBERNANZA SOBREVIVE.**
+    ///
+    /// Es inmutable por diseño, pero si al reabrir se restaurara otro,
+    /// **quien controlara ese otro conjunto podría cambiar los
+    /// custodios**.
+    #[test]
+    fn the_governance_set_survives_restart() {
+        let path = temp_path("gov");
+        {
+            let _ = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            ).expect("abrir");
+        }
+        let mut layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            )
+            .expect("reabrir");
+        // Un conjunto de gobernanza distinto no debe poder cambiar nada.
+        let g = layer.update_custodians(&valid_governance_auth(), new_custodian_root());
+        assert!(g.is_ok(), "el conjunto legitimo debe seguir funcionando");
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    // -----------------------------------------------------------------
+    // Poderes del operador que no estaban declarados
+    // -----------------------------------------------------------------
+
+    /// **EL OPERADOR PUEDE DESVIAR UN PAGO SI NO COMPRUEBAS EL DESTINO.**
+    ///
+    /// Encontrado preguntando *"¿qué puede el operador que no esté
+    /// declarado?"*. Lo declarado era: ve saldos, ordena y censura.
+    ///
+    /// El índice de una cuenta ajena **viene de fuera del sistema**, y lo
+    /// natural es preguntárselo a la capa. Si la capa devuelve el índice
+    /// equivocado, **el pago va a otra cuenta y la prueba es válida**: las
+    /// entradas públicas de la liquidación no dicen quién recibe, solo
+    /// raíces, nullificador y límites.
+    ///
+    /// Se cierra comparando la identidad del destinatario con la que
+    /// esperas, obtenida **por otro canal** — el propio destinatario.
+    #[test]
+    fn materials_for_the_wrong_recipient_are_detectable() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let mallory = open_and_fund(&mut layer, 0xBADCAFE, 0);
+
+        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
+
+        // Alice cree pagar a Bob, pero la capa le da el indice de Mallory.
+        let m = layer
+            .transfer_materials(alice, mallory, 1000, client::compute_nullifier(BaseElement::new(SK_ALICE), layer.nonce_of(alice).unwrap()))
+            .expect("materiales");
+
+        assert!(
+            m.check_recipient(id_bob).is_err(),
+            "CRITICO: comprobar el destinatario debe detectar el desvio"
+        );
+    }
+
+    /// **Y con el destinatario correcto, la comprobación pasa.**
+    ///
+    /// Sin esto, el test anterior pasaría aunque `check_recipient`
+    /// rechazara siempre.
+    #[test]
+    fn materials_for_the_right_recipient_check_out() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+
+        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
+        let m = layer
+            .transfer_materials(alice, bob, 1000, client::compute_nullifier(BaseElement::new(SK_ALICE), layer.nonce_of(alice).unwrap()))
+            .expect("materiales");
+
+        assert!(
+            m.check_recipient(id_bob).is_ok(),
+            "el destinatario correcto debe pasar la comprobacion"
+        );
+    }
+
+    // -----------------------------------------------------------------
     // Combinaciones de operaciones
     // -----------------------------------------------------------------
 

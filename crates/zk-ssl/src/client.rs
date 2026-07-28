@@ -55,6 +55,24 @@ pub struct AccountView {
     pub nonce: BaseElement,
 }
 
+/// Error al comprobar el destinatario de una transferencia.
+#[derive(Debug, PartialEq, Eq)]
+pub struct WrongRecipient {
+    pub expected: Digest,
+    pub found: Digest,
+}
+
+impl std::fmt::Display for WrongRecipient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "el destinatario de estos materiales NO es quien esperabas: \
+             la capa devolvio otra cuenta"
+        )
+    }
+}
+impl std::error::Error for WrongRecipient {}
+
 /// Todo lo que el cliente necesita de la capa para generar la prueba
 /// **sin entregarle su clave**.
 ///
@@ -77,6 +95,28 @@ pub struct TransferMaterials {
     pub frozen_path: MerklePath,
     pub regulatory_limit: u64,
     pub amount: u64,
+}
+
+impl TransferMaterials {
+    /// **COMPRUEBA A QUIÉN VAS A PAGAR. Llámalo siempre.**
+    ///
+    /// El índice de una cuenta ajena viene de fuera del sistema, y lo
+    /// natural es preguntárselo a la capa. **Si la capa miente, el pago va
+    /// a otra cuenta** — y la prueba sería válida, porque las entradas
+    /// públicas de la liquidación **no dicen quién recibe**: solo raíces,
+    /// nullificador y límites.
+    ///
+    /// Es un poder del operador que no estaba declarado: podía desviar
+    /// pagos sin falsificar nada.
+    pub fn check_recipient(&self, expected: Digest) -> Result<(), WrongRecipient> {
+        if self.receiver.public_id != expected {
+            return Err(WrongRecipient {
+                expected,
+                found: self.receiver.public_id,
+            });
+        }
+        Ok(())
+    }
 }
 
 impl SovereignLayer {

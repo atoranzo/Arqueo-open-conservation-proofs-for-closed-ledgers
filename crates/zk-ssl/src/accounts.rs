@@ -44,6 +44,14 @@ impl SovereignLayer {
         self.records.get(&index).map(|r| r.balance)
     }
 
+    /// Nonce de una cuenta.
+    ///
+    /// El cliente lo necesita para calcular su nullificador. **No es un
+    /// secreto**: la protección viene de la clave de gasto, no de él.
+    pub fn nonce_of(&self, index: AccountIndex) -> Option<BaseElement> {
+        self.records.get(&index).map(|r| r.nonce)
+    }
+
     /// Abre una cuenta **con saldo cero**.
     ///
     /// No necesita prueba porque **no crea dinero**. Para que tenga
