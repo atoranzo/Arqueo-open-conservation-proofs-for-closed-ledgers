@@ -179,9 +179,59 @@ habría delatado.
 | Modelo de notas tipo UTXO | Rediseño del sistema entero |
 | Que la capa construya la prueba | **Viola P5**: reintroduce la clave en el operador |
 
-**Estado: sin resolver.** Y es más grave que la visibilidad del operador,
-porque el operador es **uno y está declarado**, mientras que una contraparte
-es **cualquiera**.
+**Es más grave que la visibilidad del operador**, porque el operador es
+**uno y está declarado**, mientras que una contraparte es **cualquiera**.
+
+#### La corrección: transferencias por notas
+
+**El pagador no actualiza el saldo del receptor: crea una nota para él**, y
+el receptor la reclama.
+
+```text
+nota = H(H(identidad_receptor, r), [importe, época])
+```
+
+| | Hoy | Con notas |
+|---|---|---|
+| El pagador necesita | Saldo, identidad y nonce del receptor | **Solo su identidad pública** |
+| Lo que aprende del receptor | **Cuánto tiene** | **Nada** |
+
+**Qué aprende cada parte, verificado:**
+
+| Parte | Aprende |
+|---|---|
+| Pagador | La identidad pública del receptor, que usa como dirección |
+| Receptor | Nada del pagador |
+| Un tercero | Nada: solo ve compromisos |
+
+**Y el pagador no puede gastarla.** Conocer `r` no basta: reclamarla exige
+demostrar la **clave de gasto** del receptor.
+
+**Las piezas ya existen** en el proyecto derivado: `circuit_issue` crea una
+nota atada a una identidad, y `circuit_redeem` la reclama demostrando que
+es tuya. Fueron escritas para el modo sin conexión y **resuelven este
+problema sin cambios**.
+
+#### ⚠️ El residuo que deja
+
+**El pagador elige `r`, así que reconoce la nota cuando se reclama.** Sabe
+**cuándo** cobra el receptor, aunque no cuánto tiene.
+
+Zcash lo cierra cifrando la nota para que el receptor derive `r`. **Aquí no
+está resuelto**, y es mucho menor que revelar el saldo — pero es una fuga
+de vinculabilidad y conviene nombrarla.
+
+#### ⚠️ El coste de usabilidad
+
+**La transferencia pasa a ser en dos pasos**: el pagador crea la nota, el
+receptor la reclama. El dinero queda pendiente hasta que el receptor actúe.
+
+Es exactamente el modelo de Zcash, y no es gratis: hoy un pago se completa
+solo, y con notas **el receptor tiene que hacer algo**.
+
+**Estado: diseño analizado, sin implementar.** El refactor de la capa
+—transferencias en dos fases, notas pendientes, reclamación— se estima en
+15-25 rondas.
 
 ⚠️ **Sin revelación forzosa.** Si el titular no coopera, no hay mecanismo
 alternativo. Es deliberado —no existe clave maestra que robar— y en un
@@ -367,7 +417,7 @@ central.
 
 | | Prioridad | Estado |
 |---|---|---|
-| **0** | **Cerrar la fuga del saldo del receptor al pagador** (§3.4) | ⬜ **Sin resolver.** Desplaza a la 1: afecta a cualquier contraparte, no a una entidad declarada |
+| **0** | **Cerrar la fuga del saldo del receptor al pagador** (§3.4) | 🔬 **Diseño analizado**: transferencias por notas. Sin implementar |
 | 1 | Reducir la legibilidad del estado por el operador | 🔬 **Diseño demostrado** (§3.9). El refactor de la capa sigue pendiente |
 | 2 | Mantener y endurecer la separación clave / capa | ✅ Salvo la autoridad de umbral (§3.3) |
 | 3 | Formalizar el catálogo de rechazos | ✅ Hoja de ruta con lo no alcanzable y lo innecesario |

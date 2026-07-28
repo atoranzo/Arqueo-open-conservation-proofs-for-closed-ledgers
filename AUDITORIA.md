@@ -147,6 +147,24 @@ pagar?"* lo habría delatado desde el principio.**
 
 **Ninguna está implementada.**
 
+### La vía elegida, analizada
+
+**Transferencias por notas.** El pagador crea una nota atada a la identidad
+del receptor; el receptor la reclama. El pagador **nunca ve su saldo**.
+
+Las piezas existen en el proyecto derivado —`circuit_issue` y
+`circuit_redeem`, escritas para el modo sin conexión— y resuelven esto sin
+cambios.
+
+⚠️ **Residuo**: el pagador elige el aleatorio de la nota, así que
+**reconoce cuándo se reclama**. Sabe cuándo cobra el receptor, no cuánto
+tiene. Zcash lo cierra cifrando la nota; aquí no está resuelto.
+
+⚠️ **Coste**: la transferencia pasa a dos pasos y **el receptor tiene que
+actuar** para cobrar.
+
+**Estado: diseño analizado, sin implementar** (15-25 rondas estimadas).
+
 ### Qué debe hacer un auditor con esto
 
 Comprobar si hay más fugas del mismo tipo: **datos que se entregan al
