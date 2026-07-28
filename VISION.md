@@ -417,7 +417,7 @@ central.
 
 | | Prioridad | Estado |
 |---|---|---|
-| **0** | **Cerrar la fuga del saldo del receptor al pagador** (§3.4) | 🔬 **Diseño analizado**: transferencias por notas. Sin implementar |
+| **0** | **Cerrar la fuga del saldo del receptor al pagador** (§3.4) | 🔬 **Diseño demostrado** en `pending.rs`, 8 tests. Refactor de la capa pendiente |
 | 1 | Reducir la legibilidad del estado por el operador | 🔬 **Diseño demostrado** (§3.9). El refactor de la capa sigue pendiente |
 | 2 | Mantener y endurecer la separación clave / capa | ✅ Salvo la autoridad de umbral (§3.3) |
 | 3 | Formalizar el catálogo de rechazos | ✅ Hoja de ruta con lo no alcanzable y lo innecesario |

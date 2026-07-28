@@ -145,7 +145,44 @@ pagar?"* lo habría delatado desde el principio.**
 | Modelo de notas tipo UTXO | Rediseño del sistema entero | Sí |
 | Que la capa construya la prueba | Barato | **No: viola P5** |
 
-**Ninguna está implementada.**
+### La vía elegida, con el diseño demostrado
+
+**Transferencia en dos fases.** El pagador **no toca la hoja del
+receptor**: crea un compromiso pendiente atado a su identidad, y el
+receptor lo reclama.
+
+```text
+FASE 1 (pagador)             FASE 2 (receptor)
+· debita su cuenta           · demuestra que el pendiente es SUYO
+· crea el pendiente          · acredita su cuenta
+  P = H(H(id_r, s), importe) · lo anula
+```
+
+| Parte | Necesita | NO necesita |
+|---|---|---|
+| Pagador | La identidad pública del receptor, como dirección | **Su saldo. Ni su nonce.** |
+| Receptor | Su propio estado y el aviso | Nada del pagador |
+| Un tercero | — | Ve un compromiso opaco |
+
+**Demostrado en `pending.rs` con 8 tests**, incluidos los cuatro ataques:
+reclamar el pendiente ajeno, reclamarlo el pagador, reclamarlo dos veces, e
+inflar el importe.
+
+Y la propiedad va **en el tipo**, no solo en un test: la firma
+`create(receiver_id, salt, amount)` **no admite un saldo**. No hay dónde
+meterlo.
+
+⚠️ **El residuo**: el pagador elige el aleatorio, así que **reconoce cuándo
+se reclama el pendiente**. Sabe *cuándo* cobra el receptor, no cuánto
+tiene. Probado en `the_payer_can_still_tell_when_it_is_claimed`.
+
+⚠️ **El coste**: el pago pasa a dos pasos y el dinero **queda pendiente
+hasta que el receptor actúe**. Un despliegue real necesitaría reclamación
+automática por su proveedor — con lo que el proveedor vuelve a ver el
+saldo, aunque repartido y no concentrado en el operador.
+
+**Estado: diseño demostrado. El refactor de la capa —15-25 rondas— sigue
+pendiente.**
 
 ### La vía elegida, analizada
 
