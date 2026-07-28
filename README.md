@@ -93,6 +93,7 @@ descartó para la capa: usa curvas y exige ceremonia.
 | Interesado en el diseño | [`ARQUITECTURA.md`](./ARQUITECTURA.md) |
 | Interesado en el planteamiento | [`PRINCIPIOS.md`](./PRINCIPIOS.md) |
 | **Interesado en la visión y sus consecuencias** | [`VISION.md`](./VISION.md) |
+| **Llega desde Zenodo o quiere una visión general** | [`doc/ZENODO.md`](./doc/ZENODO.md) |
 | Quiere entenderlo sin ser técnico | [`doc/IDEA_CENTRAL.md`](./doc/IDEA_CENTRAL.md) |
 | Quiere saber qué aporta frente a lo que hay | [`doc/APORTACION.md`](./doc/APORTACION.md) |
 | Interesado en las implicaciones | [`doc/CONSECUENCIAS.md`](./doc/CONSECUENCIAS.md) |
