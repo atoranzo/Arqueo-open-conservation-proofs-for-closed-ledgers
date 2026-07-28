@@ -475,6 +475,32 @@ No hacen falta descubrirlas; están en `README.md`:
 
 ## 10. Cómo reproducir
 
+### ⚠️ Hay un test ignorado, y conviene saber por qué
+
+```
+cargo test -p stark-experiment --release
+→ 135 passed; 1 ignored
+```
+
+El ignorado está en `range_check.rs`: comprueba el **caso cero**, y en
+compilación de depuración winterfell rechaza sus grados porque la traza
+degenera —todos los bits a cero—. Está marcado `#[ignore]` para que la
+suite pase limpia en debug.
+
+**Ejecutarlo exige release:**
+
+```bash
+cargo test -p stark-experiment --release -- --ignored
+```
+
+⚠️ Un test ignorado **es un test que normalmente no se ejecuta**. Que esté
+justificado no lo hace inofensivo: si su comportamiento cambiara, nadie se
+enteraría hasta que alguien lo ejecutara a propósito.
+
+Un auditor debería ejecutarlo y valorar si el caso cero está bien cubierto.
+
+
+
 ```bash
 cargo test -p zk-ssl --release              # la capa, 65 tests
 cargo test -p stark-experiment --release    # los seis circuitos

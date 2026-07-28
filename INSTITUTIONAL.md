@@ -434,7 +434,7 @@ Nothing in this document requires trusting its author.
 ```bash
 git clone [repository]
 cd zk-ssl
-cargo test -p zk-ssl --release              # 105 tests
+cargo test -p zk-ssl --release              # 131 tests
 cargo test -p stark-experiment --release    # 135 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```

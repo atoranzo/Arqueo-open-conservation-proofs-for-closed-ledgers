@@ -32,7 +32,7 @@ verify_audit(&d)?;                                      // el supervisor, SIN la
 Con el **ciclo monetario completo**: el dinero puede crearse, moverse y
 retirarse, y la invariante global se mantiene en cada paso.
 
-`crates/zk-ssl` — **105 tests**. Material para auditoría externa en
+`crates/zk-ssl` — **131 tests**. Material para auditoría externa en
 [`AUDITORIA.md`](./AUDITORIA.md), todos en release. El backend STARK
 añade 5 circuitos verificados por separado.
 
@@ -192,8 +192,9 @@ las pruebas verificarían perfectamente.
   posteriores no se propagan. Replicar en caliente exige red y
   coordinación.
 - **No hay copias incrementales.**
-- **La instantánea no está cifrada.** Quien tenga el fichero ve todos los
-  saldos.
+- **Las instantáneas van cifradas** con la misma clave que el ledger, si la
+  hay. **Sin clave van en claro**, y entonces quien tenga el fichero ve
+  todos los saldos.
 
 ## Cifrado en reposo
 
