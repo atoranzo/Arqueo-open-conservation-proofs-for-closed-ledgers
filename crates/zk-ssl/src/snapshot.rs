@@ -296,6 +296,8 @@ impl SovereignLayer {
             max_custodian_uses: crate::DEFAULT_MAX_CUSTODIAN_USES,
             accounts: SparseTree::new(),
             nullifiers: SparseTree::new(),
+            pending: SparseTree::new(),
+            next_pending: 0,
             records: HashMap::new(),
             next_index,
             custodian_set_root,

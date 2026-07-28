@@ -60,6 +60,8 @@ impl SovereignLayer {
         let mut layer = Self {
             accounts: SparseTree::new(),
             nullifiers: SparseTree::new(),
+            pending: SparseTree::new(),
+            next_pending: 0,
             records: HashMap::new(),
             next_index: 0,
             custodian_set_root,
@@ -84,7 +86,7 @@ impl SovereignLayer {
             layer.load()?;
         } else {
             // Ledger nuevo: escribir los parametros del sistema.
-            layer.commit(&[], None)?;
+            layer.commit(&[], None, None)?;
         }
         Ok(layer)
     }
@@ -177,6 +179,14 @@ impl SovereignLayer {
             None => 0,
         };
         self.custodian_uses = match get(b"meta:cust_uses")? {
+            Some(v) => u64::from_le_bytes(
+                v.as_slice()
+                    .try_into()
+                    .map_err(|_| StoreError::Malformed("contador de gobernanza".into()))?,
+            ),
+            None => 0,
+        };
+        self.next_pending = match get(b"meta:next_pending")? {
             Some(v) => u64::from_le_bytes(
                 v.as_slice()
                     .try_into()
@@ -319,6 +329,22 @@ impl SovereignLayer {
             self.frozen.set_leaf(idx, digest_from_bytes(&v)?);
         }
 
+        // Hojas del arbol de PENDIENTES.
+        //
+        // Sin esto, un reinicio borraria las transferencias sin reclamar:
+        // el dinero saldria de la cuenta del pagador y **no llegaria a
+        // ninguna parte**.
+        for item in db.scan_prefix(b"pend:") {
+            let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
+            let v = unseal_one(v)?;
+            let pos = u64::from_le_bytes(
+                k[5..]
+                    .try_into()
+                    .map_err(|_| StoreError::Malformed("posicion de pendiente".into()))?,
+            );
+            self.pending.set_leaf(pos, digest_from_bytes(&v)?);
+        }
+
         for item in db.scan_prefix(b"null:") {
             let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
             let v = unseal_one(v)?;
@@ -389,6 +415,12 @@ impl SovereignLayer {
         &self,
         accounts: &[AccountIndex],
         nullifier: Option<(u64, Digest)>,
+        // Hoja del árbol de pendientes que la operación crea o consume.
+        //
+        // Consumir es escribir la hoja **vacía**: el árbol disperso no
+        // distingue "nunca hubo" de "ya se reclamó", y esa distinción no
+        // hace falta aquí.
+        pending_leaf: Option<(u64, Digest)>,
     ) -> Result<(), LayerError> {
         let db = match self.db() {
             None => return Ok(()),
@@ -412,6 +444,10 @@ impl SovereignLayer {
         // nada: bastaria con reiniciar para seguir usando un conjunto
         // agotado.
         batch.insert(b"meta:cust_uses".as_ref(), self.seal(self.custodian_uses.to_le_bytes().to_vec())?);
+        // El contador de pendientes. **Si no persistiera, tras reiniciar
+        // se reutilizarian posiciones y un pendiente nuevo pisaria a otro
+        // sin reclamar**: su receptor perderia el dinero.
+        batch.insert(b"meta:next_pending".as_ref(), self.seal(self.next_pending.to_le_bytes().to_vec())?);
         batch.insert(b"meta:next_index".as_ref(), self.seal(self.next_index.to_le_bytes().to_vec())?);
         batch.insert(b"root:state".as_ref(), self.seal(digest_to_bytes(&self.accounts.root()).to_vec())?);
         batch.insert(b"root:nullifier".as_ref(), self.seal(digest_to_bytes(&self.nullifiers.root()).to_vec())?);
@@ -452,6 +488,13 @@ impl SovereignLayer {
             let mut key = b"froz:".to_vec();
             key.extend_from_slice(&index.to_le_bytes());
             batch.insert(key, self.seal(digest_to_bytes(&leaf).to_vec())?);
+        }
+
+        // --- Pendiente creado o consumido, si la operacion lo produce ---
+        if let Some((position, p)) = pending_leaf {
+            let mut key = b"pend:".to_vec();
+            key.extend_from_slice(&position.to_le_bytes());
+            batch.insert(key, self.seal(digest_to_bytes(&p).to_vec())?);
         }
 
         // --- Nullifier gastado, si la operacion lo produce ---

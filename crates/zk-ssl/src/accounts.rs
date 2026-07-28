@@ -44,6 +44,19 @@ impl SovereignLayer {
         self.records.get(&index).map(|r| r.balance)
     }
 
+    /// Raíz del árbol de transferencias pendientes.
+    pub fn pending_root(&self) -> Digest {
+        self.pending.root()
+    }
+
+    /// Compromiso depositado en una posición, si lo hay.
+    ///
+    /// **No revela a quién va dirigido**: reconstruirlo exige el aviso del
+    /// pagador y la clave del receptor.
+    pub fn pending_at(&self, position: u64) -> Digest {
+        self.pending.leaf(position)
+    }
+
     /// Nonce de una cuenta.
     ///
     /// El cliente lo necesita para calcular su nullificador. **No es un
@@ -101,7 +114,7 @@ impl SovereignLayer {
             .append(OpKind::OpenAccount, root_old, self.accounts.root(), &[]);
 
         // Un solo lote atomico: la cuenta nueva y los metadatos.
-        self.commit(&[index], None)?;
+        self.commit(&[index], None, None)?;
         Ok(index)
     }
 

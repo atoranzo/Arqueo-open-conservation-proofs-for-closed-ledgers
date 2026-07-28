@@ -150,7 +150,7 @@ impl SovereignLayer {
         // ambas cosas.
         self.log
             .append(OpKind::Burn, pi.root_old, pi.root_new, &receipt.proof);
-        self.commit(&[account_index], None)?;
+        self.commit(&[account_index], None, None)?;
         Ok(())
     }
 

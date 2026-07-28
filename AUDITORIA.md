@@ -181,10 +181,55 @@ hasta que el receptor actúe**. Un despliegue real necesitaría reclamación
 automática por su proveedor — con lo que el proveedor vuelve a ver el
 saldo, aunque repartido y no concentrado en el operador.
 
-### Estado: **los dos circuitos implementados**
+### Estado: **RESUELTO**
 
 | Pieza | Estado |
 |---|---|
+| Diseño (`pending.rs`) | ✅ 8 tests |
+| `circuit_send` — debita y crea el pendiente | ✅ 12 tests |
+| `circuit_claim` — demuestra que es suyo y cobra | ✅ 13 tests |
+| Capa: `send`, `claim`, persistencia | ✅ 5 tests de integración |
+
+**La garantía está en el tipo, no en un test:**
+
+```rust
+pub fn send(&self, spend_key, sender_index, receiver_id, salt, amount)
+```
+
+**No hay parámetro donde pudiera entrar el saldo del receptor.** Un
+descuido futuro no puede reintroducir la fuga sin cambiar la API — que es
+la lección de los dos hallazgos que se reintrodujeron por escribir código
+nuevo sin consultar lo aprendido.
+
+### Los ataques cerrados
+
+| | |
+|---|---|
+| Quien intercepte el aviso | **No cobra**: le falta la clave |
+| Reclamar dos veces | El pendiente queda consumido, impuesto en circuito |
+| Enviar estando congelado | Rechazado |
+| Reiniciar el nodo | Los pendientes sobreviven |
+
+### ⚠️ Lo que sigue abierto
+
+**La vía antigua sigue existiendo.** `transfer()` conserva la fuga, con su
+advertencia en el código. Retirarla exige migrar lo que la use, y **no está
+hecho**.
+
+**El aviso viaja fuera del sistema.** El receptor necesita el aleatorio y
+el importe; la capa no los transporta. **Perder el aviso es no poder
+reclamar** aunque el dinero esté ahí.
+
+**Y el residuo de vinculabilidad**: el pagador eligió el aleatorio, así que
+reconoce el compromiso y **ve cuándo desaparece del árbol**. Sabe *cuándo*
+cobra el receptor, no cuánto tiene.
+
+**Y una discrepancia detectada al integrar**: `circuit_settlement`
+incrementa el nonce; `circuit_burn`, `circuit_send` y `circuit_claim` no.
+La protección contra reenvío de estos viene del encadenamiento de raíces.
+**Tres circuitos con dos comportamientos, y nada lo decía.**
+
+---|---|
 | Diseño demostrado (`pending.rs`) | ✅ 8 tests |
 | **`circuit_send`** — el pagador debita y crea el pendiente | ✅ **12 tests** |
 | **`circuit_claim`** — el receptor demuestra que es suyo y cobra | ✅ **13 tests** |

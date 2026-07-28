@@ -661,6 +661,163 @@ use super::*;
     }
 
     // -----------------------------------------------------------------
+    // Transferencia en dos fases
+    // -----------------------------------------------------------------
+
+    fn salt_de(seed: u64) -> Digest {
+        [
+            BaseElement::new(seed),
+            BaseElement::new(seed + 1),
+            BaseElement::new(seed + 2),
+            BaseElement::new(seed + 3),
+        ]
+    }
+
+    /// **EL CICLO COMPLETO: ENVIAR Y RECLAMAR.**
+    ///
+    /// Y lo que cierra la fuga está **en la firma**: `send` recibe la
+    /// identidad pública del receptor. **No hay parámetro donde pudiera
+    /// entrar su saldo.**
+    #[test]
+    fn the_full_two_phase_cycle() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 50_000);
+        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
+
+        // FASE 1: Alice envia sin conocer el saldo de Bob.
+        let r = layer
+            .send(BaseElement::new(SK_ALICE), alice, id_bob, salt_de(0x5EED), 250_000)
+            .expect("enviar");
+        layer.apply_send(&r, alice, 250_000).expect("aplicar envio");
+
+        assert_eq!(layer.balance_of(alice), Some(750_000), "Alice debitada");
+        assert_eq!(layer.balance_of(bob), Some(50_000), "Bob aun no cobra");
+
+        // FASE 2: Bob reclama con el aviso.
+        let cr = layer
+            .claim(BaseElement::new(SK_BOB), bob, &r.notice)
+            .expect("reclamar");
+        layer.apply_claim(&cr, bob, &r.notice).expect("aplicar reclamacion");
+
+        assert_eq!(layer.balance_of(bob), Some(300_000), "Bob cobrado");
+        assert_eq!(layer.balance_of(alice), Some(750_000), "Alice sin cambios");
+    }
+
+    /// **NADIE MÁS PUEDE RECLAMARLO.**
+    ///
+    /// Mallory tiene el aviso —pudo interceptarlo— pero no la clave de
+    /// Bob. Sin esto, quien viera el mensaje cobraría el pago.
+    #[test]
+    fn nobody_else_can_claim_a_pending_transfer() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let mallory = open_and_fund(&mut layer, 0xBADCAFE, 0);
+        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
+
+        let r = layer
+            .send(BaseElement::new(SK_ALICE), alice, id_bob, salt_de(0x5EED), 250_000)
+            .expect("enviar");
+        layer.apply_send(&r, alice, 250_000).expect("aplicar");
+
+        // Mallory lo intenta con SU clave y SU cuenta.
+        let intento = layer.claim(BaseElement::new(0xBADCAFE), mallory, &r.notice);
+        if let Ok(cr) = intento {
+            assert!(
+                layer.apply_claim(&cr, mallory, &r.notice).is_err(),
+                "CRITICO: quien intercepte el aviso no debe poder cobrarlo"
+            );
+        }
+        assert_eq!(layer.balance_of(mallory), Some(0), "Mallory no cobra");
+        let _ = bob;
+    }
+
+    /// **NO SE RECLAMA DOS VECES.**
+    ///
+    /// El pendiente queda consumido. Sin esto, el mismo pago se cobraría
+    /// indefinidamente.
+    #[test]
+    fn a_pending_transfer_cannot_be_claimed_twice() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
+
+        let r = layer
+            .send(BaseElement::new(SK_ALICE), alice, id_bob, salt_de(0x5EED), 250_000)
+            .expect("enviar");
+        layer.apply_send(&r, alice, 250_000).expect("aplicar");
+
+        let cr = layer.claim(BaseElement::new(SK_BOB), bob, &r.notice).expect("reclamar");
+        layer.apply_claim(&cr, bob, &r.notice).expect("primera");
+        assert_eq!(layer.balance_of(bob), Some(250_000));
+
+        assert!(
+            layer.apply_claim(&cr, bob, &r.notice).is_err(),
+            "CRITICO: reclamar dos veces seria cobrar dos veces"
+        );
+        assert_eq!(layer.balance_of(bob), Some(250_000), "el saldo no sube");
+    }
+
+    /// **UNA CUENTA CONGELADA NO PUEDE ENVIAR.**
+    #[test]
+    fn a_frozen_account_cannot_send() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
+
+        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
+        layer.apply_freeze(&f, alice).expect("aplicar");
+
+        let r = layer.send(BaseElement::new(SK_ALICE), alice, id_bob, salt_de(0x5EED), 1000);
+        assert!(matches!(r, Err(LayerError::AccountFrozen(_))));
+    }
+
+    /// **LOS PENDIENTES SOBREVIVEN AL REINICIO.**
+    ///
+    /// Si no lo hicieran, un reinicio borraría las transferencias sin
+    /// reclamar: el dinero saldría de la cuenta del pagador y **no
+    /// llegaría a ninguna parte**.
+    #[test]
+    fn pending_transfers_survive_restart() {
+        let path = temp_path("pending");
+        let aviso;
+        let (alice, bob);
+        {
+            let mut layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            )
+            .expect("abrir");
+            alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+            bob = open_and_fund(&mut layer, SK_BOB, 0);
+            let id_bob = derive_public_id(BaseElement::new(SK_BOB));
+            let r = layer
+                .send(BaseElement::new(SK_ALICE), alice, id_bob, salt_de(0x5EED), 250_000)
+                .expect("enviar");
+            layer.apply_send(&r, alice, 250_000).expect("aplicar");
+            aviso = r.notice.clone();
+        }
+
+        let mut layer = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        )
+        .expect("reabrir");
+
+        // Bob reclama DESPUES del reinicio.
+        let cr = layer
+            .claim(BaseElement::new(SK_BOB), bob, &aviso)
+            .expect("reclamar tras reiniciar");
+        layer.apply_claim(&cr, bob, &aviso).expect("aplicar");
+        assert_eq!(
+            layer.balance_of(bob),
+            Some(250_000),
+            "CRITICO: si los pendientes no sobrevivieran, el dinero se perderia"
+        );
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    // -----------------------------------------------------------------
     // Rotación de privilegios
     // -----------------------------------------------------------------
 

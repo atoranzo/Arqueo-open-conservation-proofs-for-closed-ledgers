@@ -459,7 +459,7 @@ congelación y recuperación. **No está hecho.**
 
 | | Prioridad | Estado |
 |---|---|---|
-| **0** | **Cerrar la fuga del saldo del receptor al pagador** (§3.4) | ⚙️ **Circuitos implementados**: `circuit_send` (12 tests) y `circuit_claim` (13). Falta la capa |
+| ~~**0**~~ | ~~Cerrar la fuga del saldo del receptor al pagador~~ | ✅ **RESUELTO**: `send`/`claim` en dos fases, 38 tests. La vía antigua sigue existiendo (§3.4) |
 | 1 | Reducir la legibilidad del estado por el operador | 🔬 **Diseño demostrado** (§3.9). El refactor de la capa sigue pendiente |
 | 2 | Mantener y endurecer la separación clave / capa | ✅ Salvo la autoridad de umbral (§3.3) |
 | 3 | Formalizar el catálogo de rechazos | ✅ Hoja de ruta con lo no alcanzable y lo innecesario |

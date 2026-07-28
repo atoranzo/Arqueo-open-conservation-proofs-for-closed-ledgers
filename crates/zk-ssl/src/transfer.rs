@@ -245,7 +245,16 @@ impl SovereignLayer {
         // ambas cosas.
         self.log
             .append(OpKind::Transfer, pi.root_old, pi.root_new, &settlement.proof);
-        self.commit(&[sender_index, receiver_index], Some((null_pos, pi.nullifier)))?;
+        // La liquidacion de un solo paso no toca el arbol de pendientes.
+        //
+        // ⚠️ Es la operacion que **filtra el saldo del receptor al
+        // pagador**. Se conserva mientras `send`/`claim` no la sustituyan
+        // del todo. Ver AUDITORIA.md §4.
+        self.commit(
+            &[sender_index, receiver_index],
+            Some((null_pos, pi.nullifier)),
+            None,
+        )?;
         Ok(())
     }
 }

@@ -70,6 +70,7 @@ mod accounts;
 mod audit;
 pub mod commitment;
 pub mod pending;
+pub mod two_phase;
 pub mod client;
 pub mod crypto;
 pub mod iso;
@@ -379,6 +380,17 @@ pub const DEFAULT_MAX_CUSTODIAN_USES: u64 = 100;
 pub struct SovereignLayer {
     accounts: SparseTree,
     nullifiers: SparseTree,
+    /// **Transferencias pendientes de reclamar.**
+    ///
+    /// El pagador deposita aquí un compromiso atado a la identidad del
+    /// receptor; el receptor lo reclama demostrando que es suyo.
+    ///
+    /// Existe para que **el pagador no necesite el saldo del receptor**:
+    /// la liquidación de un solo paso actualizaba las dos hojas, y quien
+    /// probaba tenía que conocer las dos.
+    pending: SparseTree,
+    /// Siguiente posición libre del árbol de pendientes.
+    next_pending: u64,
     records: HashMap<AccountIndex, AccountRecord>,
     next_index: AccountIndex,
     /// **Raíz del conjunto de custodios autorizados.** Crear dinero y
@@ -480,6 +492,8 @@ impl SovereignLayer {
         Self {
             accounts: SparseTree::new(),
             nullifiers: SparseTree::new(),
+            pending: SparseTree::new(),
+            next_pending: 0,
             records: HashMap::new(),
             next_index: 0,
             custodian_set_root,
