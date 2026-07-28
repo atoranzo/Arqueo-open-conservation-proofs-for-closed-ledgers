@@ -465,8 +465,17 @@ cero y sus restricciones se cumplían trivialmente.
 Cerrar el tope exige un segmento de rango más, lo que cambia
 `NUM_SEGMENTS` y con él los índices de las periódicas. **No está hecho.**
 
-⚠️ **Y falta cablearlo a la capa.** El circuito funciona; `mint()` sigue
-siendo el clásico.
+**Cableado a la capa**: `mint_to_pending` y `apply_mint_to_pending`, con
+**4 tests de integración**. El ciclo completo funciona: los custodios
+emiten a un pendiente y el destinatario lo reclama con `claim`.
+
+⚠️ **`mint()` clásico sigue existiendo.** Retirarlo exige migrar lo que lo
+use, y **no está hecho**.
+
+⚠️ **El tope lo impone la capa, no el circuito.** El test se llama
+`the_supply_cap_is_enforced_by_the_layer` precisamente para que se vea. Es
+coherente con el modelo declarado —el operador ya controla la capa— pero va
+contra el principio de imponer en el circuito.
 
 **`recovery`**: aquí hay una **tensión estructural**, no solo trabajo
 pendiente.

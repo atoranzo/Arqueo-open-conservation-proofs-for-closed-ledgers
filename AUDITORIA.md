@@ -607,11 +607,29 @@ y hubo que corregirla.
 
 ### Lo que un auditor debería hacer
 
-**Comprobar, para cada columna de cada circuito, que la traza le asigna
-valor.** Es mecánico y no hay nada automático que lo haga.
+**Hecho, y automatizado**: `tools/check_columns.py`.
 
-Este proyecto tiene **once circuitos** y esta comprobación solo se ha hecho
-en uno.
+```
+python3 tools/check_columns.py crates/stark-experiment/src
+→ 11 circuitos: todas las columnas declaradas se rellenan.
+```
+
+⚠️ **La comprobación se equivocó dos veces antes de funcionar.**
+
+La primera versión solo contaba lecturas de la forma `current[COL]` y **no
+detectaba** el fallo que motivó escribirla. La segunda no reconocía el
+patrón `state[COL] = …` de `trace.fill` y daba **cinco falsos positivos**.
+
+Ambos errores salieron al **validar la comprobación contra un caso
+conocido**: quitar a propósito el relleno de una columna y confirmar que
+salta, y comprobar que un circuito correcto no dispara.
+
+> **Una verificación rota es peor que ninguna**: no solo no detecta, sino
+> que dirige la atención al sitio equivocado.
+
+⚠️ **Lo que la herramienta NO comprueba**: que el valor sea el correcto, que
+se rellene en todas las filas donde hace falta, ni columnas con un patrón
+de relleno distinto a los tres reconocidos.
 
 ---
 
