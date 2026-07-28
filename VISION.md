@@ -395,9 +395,25 @@ mintiera sobre la hoja o la posición, esa comprobación falla.
 ataques —mentir sobre la hoja, mentir sobre la posición— y la comprobación
 de que la capa no retiene ningún saldo, con su validador.
 
-El refactor de la capa completa —101 referencias en nueve módulos— **sigue
-pendiente**. Se demostró el diseño antes de comprometerse con él, que es la
-lección de §3.8 aplicada por adelantado.
+**Y al implementarlo cambió el planteamiento.** Era un refactor de 101
+referencias; es **una migración**:
+
+| | |
+|---|---|
+| La vía nueva (`send`/`claim`) | **No lee el registro en ningún punto** |
+| La vía antigua (`transfer`, emisión…) | Lo necesita, y está marcada |
+| Cuando no quede vía antigua | El registro se borra |
+
+El saldo lo aporta el titular y la capa **comprueba que produce la hoja que
+tiene en el árbol**. Si mintiera, no coincidiría: probado en
+`a_holder_lying_about_their_balance_is_caught`, con su validador.
+
+La ventaja sobre el refactor de golpe es que **en cada momento el sistema
+funciona**. Y el criterio de aceptación de §5 lo aprueba: reduce lo que el
+operador ve, declara lo que queda, y no rompe lo que había.
+
+⚠️ **El operador sigue viendo los saldos** mientras exista la vía antigua.
+La migración avanza operación a operación, y **no está terminada**.
 
 ⚠️ **El coste, que es real.** El titular lleva su propio estado. Si pierde
 su copia local **no sabe cuánto tiene**, aunque el dinero siga ahí y la
@@ -460,7 +476,7 @@ congelación y recuperación. **No está hecho.**
 | | Prioridad | Estado |
 |---|---|---|
 | ~~**0**~~ | ~~Cerrar la fuga del saldo del receptor al pagador~~ | ✅ **RESUELTO**: `send`/`claim` en dos fases, 38 tests. La vía antigua sigue existiendo (§3.4) |
-| 1 | Reducir la legibilidad del estado por el operador | 🔬 **Diseño demostrado** (§3.9). El refactor de la capa sigue pendiente |
+| 1 | Reducir la legibilidad del estado por el operador | ⚙️ **En migración**: la vía nueva (`send`/`claim`) **no lee el registro**. La antigua sí, y está marcada (§3.9) |
 | 2 | Mantener y endurecer la separación clave / capa | ✅ Salvo la autoridad de umbral (§3.3) |
 | 3 | Formalizar el catálogo de rechazos | ✅ Hoja de ruta con lo no alcanzable y lo innecesario |
 | 4 | Privilegios con medida: rotación, contadores, caducidad | ✅ **Completa**: contadores, caducidad de congelaciones y rotación por uso (§3.10) |

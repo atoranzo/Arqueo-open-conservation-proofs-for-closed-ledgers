@@ -71,6 +71,18 @@ pub const MAX_ACCOUNTS: u64 = 1_000;
 
 /// Capa con un cupo de custodios pequeño, para probar la rotación sin
 /// hacer cien emisiones.
+/// El estado que un titular conoce de su propia cuenta.
+///
+/// En los tests se obtiene de la capa por comodidad. **En un despliegue lo
+/// lleva el cliente**: la capa por compromisos no lo tendría.
+pub fn state_of(layer: &SovereignLayer, index: AccountIndex) -> crate::commitment::ClientState {
+    crate::commitment::ClientState {
+        public_id: layer.public_id_of(index).expect("cuenta"),
+        balance: layer.balance_of(index).expect("cuenta"),
+        nonce: layer.nonce_of(index).expect("cuenta"),
+    }
+}
+
 pub fn new_layer_with_quota(quota: u64) -> SovereignLayer {
     let mut l = new_layer();
     l.set_max_custodian_uses(quota);

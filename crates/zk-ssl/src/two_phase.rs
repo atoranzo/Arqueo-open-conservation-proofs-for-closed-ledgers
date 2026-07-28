@@ -40,6 +40,7 @@
 //! derive el aleatorio; **aquí no está resuelto**.
 
 use super::*;
+use crate::commitment::ClientState;
 use crate::pending::pending_commitment;
 use stark_experiment::circuit_claim::{
     build_trace as build_claim_trace, ClaimAir, ClaimProver, ClaimPublicInputs,
@@ -94,15 +95,29 @@ impl SovereignLayer {
         &self,
         spend_key: BaseElement,
         sender_index: AccountIndex,
+        // **El estado lo aporta el titular, no la capa.**
+        //
+        // Es el modelo por compromisos aplicado a esta via: la capa
+        // **comprueba** que el estado declarado produce la hoja que tiene
+        // en el arbol, y **no necesita conocer el saldo** para ello.
+        //
+        // Ver `commitment.rs`, donde el diseño está demostrado.
+        sender_state: &ClientState,
         receiver_id: Digest,
         salt: Digest,
         amount: u64,
     ) -> Result<SendReceipt, LayerError> {
-        let sender = self
-            .records
-            .get(&sender_index)
-            .ok_or(LayerError::AccountNotFound(sender_index))?
-            .clone();
+        // La hoja que el estado declarado produce debe ser la que está en
+        // el árbol. Si el titular mintiera sobre su saldo, no coincidiría.
+        let hoja = native_leaf(
+            sender_state.public_id,
+            BaseElement::new(sender_state.balance),
+            sender_state.nonce,
+        );
+        if hoja != self.accounts.leaf(sender_index) {
+            return Err(LayerError::StaleState);
+        }
+        let sender = sender_state.clone();
 
         if derive_public_id(spend_key) != sender.public_id {
             return Err(LayerError::NotTheAccountHolder);
@@ -170,6 +185,7 @@ impl SovereignLayer {
         &mut self,
         receipt: &SendReceipt,
         sender_index: AccountIndex,
+        sender_state: &ClientState,
         amount: u64,
     ) -> Result<(), LayerError> {
         let pi = &receipt.public_inputs;
@@ -180,11 +196,6 @@ impl SovereignLayer {
             return Err(LayerError::StaleState);
         }
 
-        let sender = self
-            .records
-            .get(&sender_index)
-            .ok_or(LayerError::AccountNotFound(sender_index))?
-            .clone();
         // ⚠️ **El nonce NO se incrementa.**
         //
         // `circuit_send` lo heredó de `circuit_burn`, que tampoco lo
@@ -197,9 +208,9 @@ impl SovereignLayer {
         //
         // `circuit_settlement` SI lo incrementa. La diferencia es
         // deliberada aqui, pero conviene saberla.
-        let updated = AccountRecord {
-            balance: sender.balance - amount,
-            ..sender
+        let updated = ClientState {
+            balance: sender_state.balance - amount,
+            ..sender_state.clone()
         };
 
         // Sobre copias: si las raíces no cuadran, el estado queda intacto.
@@ -223,7 +234,20 @@ impl SovereignLayer {
 
         self.accounts = cuentas;
         self.pending = pend;
-        self.records.insert(sender_index, updated);
+        // ⚠️ **Se mantiene el registro por compatibilidad con la vía
+        // antigua**, que sí lo necesita. La vía nueva **no lo lee en
+        // ningún punto**: el saldo viene del titular y se verifica contra
+        // la hoja.
+        //
+        // Cuando `transfer()` desaparezca, esto también.
+        self.records.insert(
+            sender_index,
+            AccountRecord {
+                public_id: updated.public_id,
+                balance: updated.balance,
+                nonce: updated.nonce,
+            },
+        );
         self.next_pending = pos + 1;
         self.commit(&[sender_index], None, Some((pos, compromiso)))?;
         Ok(())
@@ -234,13 +258,19 @@ impl SovereignLayer {
         &self,
         spend_key: BaseElement,
         receiver_index: AccountIndex,
+        // El estado lo aporta el titular: ver el comentario de `send`.
+        receiver_state: &ClientState,
         notice: &PendingNotice,
     ) -> Result<ClaimReceipt, LayerError> {
-        let receiver = self
-            .records
-            .get(&receiver_index)
-            .ok_or(LayerError::AccountNotFound(receiver_index))?
-            .clone();
+        let hoja = native_leaf(
+            receiver_state.public_id,
+            BaseElement::new(receiver_state.balance),
+            receiver_state.nonce,
+        );
+        if hoja != self.accounts.leaf(receiver_index) {
+            return Err(LayerError::StaleState);
+        }
+        let receiver = receiver_state.clone();
 
         if derive_public_id(spend_key) != receiver.public_id {
             return Err(LayerError::NotTheAccountHolder);
@@ -284,6 +314,7 @@ impl SovereignLayer {
         &mut self,
         receipt: &ClaimReceipt,
         receiver_index: AccountIndex,
+        receiver_state: &ClientState,
         notice: &PendingNotice,
     ) -> Result<(), LayerError> {
         let pi = &receipt.public_inputs;
@@ -291,15 +322,10 @@ impl SovereignLayer {
             return Err(LayerError::StaleState);
         }
 
-        let receiver = self
-            .records
-            .get(&receiver_index)
-            .ok_or(LayerError::AccountNotFound(receiver_index))?
-            .clone();
         // El nonce tampoco se incrementa: ver el comentario de `apply_send`.
-        let updated = AccountRecord {
-            balance: receiver.balance + notice.amount,
-            ..receiver
+        let updated = ClientState {
+            balance: receiver_state.balance + notice.amount,
+            ..receiver_state.clone()
         };
 
         let mut cuentas = self.accounts.clone();
@@ -323,7 +349,15 @@ impl SovereignLayer {
 
         self.accounts = cuentas;
         self.pending = pend;
-        self.records.insert(receiver_index, updated);
+        // Ver el comentario de `apply_send`: compatibilidad, no lectura.
+        self.records.insert(
+            receiver_index,
+            AccountRecord {
+                public_id: updated.public_id,
+                balance: updated.balance,
+                nonce: updated.nonce,
+            },
+        );
         self.commit(&[receiver_index], None, Some((notice.position, vacia)))?;
         Ok(())
     }

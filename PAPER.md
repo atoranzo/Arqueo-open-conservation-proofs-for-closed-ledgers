@@ -33,7 +33,7 @@ obtenidas en condiciones idénticas, y documentamos un error metodológico
 propio —mezcla de compilaciones de depuración y optimizadas— detectado y
 corregido durante el trabajo.
 
-La implementación de referencia consta de 319 pruebas ejecutables —más una ignorada, documentada— y
+La implementación de referencia consta de 321 pruebas ejecutables —más una ignorada, documentada— y
 está disponible públicamente. **No ha sido auditada por terceros y no
 implementa consenso distribuido**; discutimos en detalle las implicaciones
 de ambas limitaciones.
@@ -744,7 +744,7 @@ Requiere únicamente el compilador Rust estable; no emplea cadenas de
 herramientas externas ni compiladores no estables.
 
 ```bash
-cargo test -p zk-ssl --release              # capa: 156 tests
+cargo test -p zk-ssl --release              # capa: 158 tests
 cargo test -p stark-experiment --release    # circuitos: 163 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```

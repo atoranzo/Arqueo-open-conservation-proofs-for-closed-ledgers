@@ -57,6 +57,11 @@ impl SovereignLayer {
         self.pending.leaf(position)
     }
 
+    /// Identidad pública de una cuenta.
+    pub fn public_id_of(&self, index: AccountIndex) -> Option<Digest> {
+        self.records.get(&index).map(|r| r.public_id)
+    }
+
     /// Nonce de una cuenta.
     ///
     /// El cliente lo necesita para calcular su nullificador. **No es un

@@ -30,7 +30,7 @@ identical conditions, and we document a methodological error of our own —
 mixing debug and release build figures — that was detected and corrected
 during the work.
 
-The reference implementation comprises 319 executable tests — plus one ignored and documented — and is
+The reference implementation comprises 321 executable tests — plus one ignored and documented — and is
 publicly available. **It has not been audited by third parties and does
 not implement distributed consensus**; we discuss the implications of both
 limitations in detail.
@@ -722,7 +722,7 @@ It requires only the stable Rust compiler; no external toolchains or
 non-stable compilers are used.
 
 ```bash
-cargo test -p zk-ssl --release              # layer: 156 tests
+cargo test -p zk-ssl --release              # layer: 158 tests
 cargo test -p stark-experiment --release    # circuits: 163 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```

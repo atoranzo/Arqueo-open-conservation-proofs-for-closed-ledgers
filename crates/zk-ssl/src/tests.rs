@@ -687,18 +687,20 @@ use super::*;
 
         // FASE 1: Alice envia sin conocer el saldo de Bob.
         let r = layer
-            .send(BaseElement::new(SK_ALICE), alice, id_bob, salt_de(0x5EED), 250_000)
+            .send(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), id_bob, salt_de(0x5EED), 250_000)
             .expect("enviar");
-        layer.apply_send(&r, alice, 250_000).expect("aplicar envio");
+        let estado_alice = state_of(&layer, alice);
+        layer.apply_send(&r, alice, &estado_alice, 250_000).expect("aplicar envio");
 
         assert_eq!(layer.balance_of(alice), Some(750_000), "Alice debitada");
         assert_eq!(layer.balance_of(bob), Some(50_000), "Bob aun no cobra");
 
         // FASE 2: Bob reclama con el aviso.
         let cr = layer
-            .claim(BaseElement::new(SK_BOB), bob, &r.notice)
+            .claim(BaseElement::new(SK_BOB), bob, &state_of(&layer, bob), &r.notice)
             .expect("reclamar");
-        layer.apply_claim(&cr, bob, &r.notice).expect("aplicar reclamacion");
+        let estado_bob = state_of(&layer, bob);
+        layer.apply_claim(&cr, bob, &estado_bob, &r.notice).expect("aplicar reclamacion");
 
         assert_eq!(layer.balance_of(bob), Some(300_000), "Bob cobrado");
         assert_eq!(layer.balance_of(alice), Some(750_000), "Alice sin cambios");
@@ -717,15 +719,17 @@ use super::*;
         let id_bob = derive_public_id(BaseElement::new(SK_BOB));
 
         let r = layer
-            .send(BaseElement::new(SK_ALICE), alice, id_bob, salt_de(0x5EED), 250_000)
+            .send(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), id_bob, salt_de(0x5EED), 250_000)
             .expect("enviar");
-        layer.apply_send(&r, alice, 250_000).expect("aplicar");
+        let estado_alice = state_of(&layer, alice);
+        layer.apply_send(&r, alice, &estado_alice, 250_000).expect("aplicar");
 
         // Mallory lo intenta con SU clave y SU cuenta.
-        let intento = layer.claim(BaseElement::new(0xBADCAFE), mallory, &r.notice);
+        let intento = layer.claim(BaseElement::new(0xBADCAFE), mallory, &state_of(&layer, mallory), &r.notice);
         if let Ok(cr) = intento {
+            let estado_mallory = state_of(&layer, mallory);
             assert!(
-                layer.apply_claim(&cr, mallory, &r.notice).is_err(),
+                layer.apply_claim(&cr, mallory, &estado_mallory, &r.notice).is_err(),
                 "CRITICO: quien intercepte el aviso no debe poder cobrarlo"
             );
         }
@@ -745,19 +749,70 @@ use super::*;
         let id_bob = derive_public_id(BaseElement::new(SK_BOB));
 
         let r = layer
-            .send(BaseElement::new(SK_ALICE), alice, id_bob, salt_de(0x5EED), 250_000)
+            .send(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), id_bob, salt_de(0x5EED), 250_000)
             .expect("enviar");
-        layer.apply_send(&r, alice, 250_000).expect("aplicar");
+        let estado_alice = state_of(&layer, alice);
+        layer.apply_send(&r, alice, &estado_alice, 250_000).expect("aplicar");
 
-        let cr = layer.claim(BaseElement::new(SK_BOB), bob, &r.notice).expect("reclamar");
-        layer.apply_claim(&cr, bob, &r.notice).expect("primera");
+        let cr = layer.claim(BaseElement::new(SK_BOB), bob, &state_of(&layer, bob), &r.notice).expect("reclamar");
+        let estado_bob = state_of(&layer, bob);
+        layer.apply_claim(&cr, bob, &estado_bob, &r.notice).expect("primera");
         assert_eq!(layer.balance_of(bob), Some(250_000));
 
+        let estado_bob = state_of(&layer, bob);
         assert!(
-            layer.apply_claim(&cr, bob, &r.notice).is_err(),
+            layer.apply_claim(&cr, bob, &estado_bob, &r.notice).is_err(),
             "CRITICO: reclamar dos veces seria cobrar dos veces"
         );
         assert_eq!(layer.balance_of(bob), Some(250_000), "el saldo no sube");
+    }
+
+    /// **UN TITULAR QUE MIENTA SOBRE SU SALDO ES DETECTADO.**
+    ///
+    /// La vía nueva **no lee el registro**: el saldo lo aporta el titular
+    /// y la capa comprueba que produce la hoja que tiene en el árbol.
+    ///
+    /// Eso es lo que permite que un operador **no necesite conocer los
+    /// saldos** — la prioridad 1 del documento de visión. Si esta
+    /// comprobación no bastara, el modelo entero se caería.
+    #[test]
+    fn a_holder_lying_about_their_balance_is_caught() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
+
+        // Alice declara tener mas de lo que su hoja acredita.
+        let mut mentira = state_of(&layer, alice);
+        mentira.balance = 99_999_999;
+
+        let r = layer.send(
+            BaseElement::new(SK_ALICE),
+            alice,
+            &mentira,
+            id_bob,
+            salt_de(0x5EED),
+            250_000,
+        );
+        assert!(
+            matches!(r, Err(LayerError::StaleState)),
+            "CRITICO: un saldo declarado que no produce la hoja del arbol debe \
+             rechazarse: {r:?}"
+        );
+    }
+
+    /// **Y el que valida al anterior**: con el saldo real, funciona.
+    ///
+    /// Sin esto, el anterior pasaría aunque `send` fallara siempre.
+    #[test]
+    fn a_truthful_holder_can_send() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
+        let verdad = state_of(&layer, alice);
+
+        assert!(layer
+            .send(BaseElement::new(SK_ALICE), alice, &verdad, id_bob, salt_de(0x5EED), 250_000)
+            .is_ok());
     }
 
     /// **UNA CUENTA CONGELADA NO PUEDE ENVIAR.**
@@ -770,7 +825,7 @@ use super::*;
         let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
         layer.apply_freeze(&f, alice).expect("aplicar");
 
-        let r = layer.send(BaseElement::new(SK_ALICE), alice, id_bob, salt_de(0x5EED), 1000);
+        let r = layer.send(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), id_bob, salt_de(0x5EED), 1000);
         assert!(matches!(r, Err(LayerError::AccountFrozen(_))));
     }
 
@@ -793,9 +848,10 @@ use super::*;
             bob = open_and_fund(&mut layer, SK_BOB, 0);
             let id_bob = derive_public_id(BaseElement::new(SK_BOB));
             let r = layer
-                .send(BaseElement::new(SK_ALICE), alice, id_bob, salt_de(0x5EED), 250_000)
+                .send(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), id_bob, salt_de(0x5EED), 250_000)
                 .expect("enviar");
-            layer.apply_send(&r, alice, 250_000).expect("aplicar");
+            let estado_alice = state_of(&layer, alice);
+            layer.apply_send(&r, alice, &estado_alice, 250_000).expect("aplicar");
             aviso = r.notice.clone();
         }
 
@@ -806,9 +862,10 @@ use super::*;
 
         // Bob reclama DESPUES del reinicio.
         let cr = layer
-            .claim(BaseElement::new(SK_BOB), bob, &aviso)
+            .claim(BaseElement::new(SK_BOB), bob, &state_of(&layer, bob), &aviso)
             .expect("reclamar tras reiniciar");
-        layer.apply_claim(&cr, bob, &aviso).expect("aplicar");
+        let estado_bob = state_of(&layer, bob);
+        layer.apply_claim(&cr, bob, &estado_bob, &aviso).expect("aplicar");
         assert_eq!(
             layer.balance_of(bob),
             Some(250_000),
