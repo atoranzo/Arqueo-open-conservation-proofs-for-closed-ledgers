@@ -437,10 +437,43 @@ una tabla incorrecta en un documento público.
 —*"pregúntale a la capa cuánto tienes y demuéstralo"*— que es justo lo que
 este modelo elimina. Ahora es *"demuestra lo que dices tener"*.
 
-⚠️ **`mint` no se migra igual.** Los custodios acreditan una cuenta ajena,
-así que necesitan su saldo para calcular la hoja nueva: **el mismo problema
-que la transferencia antigua**. La solución es la misma —emitir a un
-pendiente que el titular reclama— y **no está hecha**.
+#### Las dos operaciones de custodios no se migran igual
+
+**`mint`**: los custodios acreditan una cuenta ajena, así que necesitan su
+saldo para calcular la hoja nueva. Es **el mismo problema que la
+transferencia antigua**, y tiene la misma solución: **emitir a un pendiente
+que el titular reclama**.
+
+Coste: un circuito nuevo que sube el suministro y crea un pendiente sin
+tocar ninguna cuenta. **3-5 rondas, no hecho.**
+
+**`recovery`**: aquí hay una **tensión estructural**, no solo trabajo
+pendiente.
+
+Los custodios cambian la identidad de una cuenta conservando su saldo. Para
+calcular la hoja nueva hace falta ese saldo, y:
+
+| Quién podría aportarlo | Problema |
+|---|---|
+| El operador | Es justo lo que este modelo elimina |
+| Los custodios | No lo conocen |
+| **El titular** | **Perdió la clave — puede haber perdido también sus registros** |
+
+Si el titular conserva sus anotaciones aunque haya perdido la clave, puede
+aportarlo y la migración es trivial. **Si perdió el dispositivo entero, no
+lo sabe, y la recuperación se vuelve imposible.**
+
+> **La recuperación por custodios y un operador que no ve saldos son
+> parcialmente incompatibles.** Se puede tener una u otra en su forma
+> plena, no las dos.
+
+Cerrarlo del todo exigiría que el saldo estuviera custodiado por umbral —el
+mismo diseño que la identidad abrible del pago sin conexión— y **eso da a
+los custodios un poder nuevo que habría que contar y acotar**.
+
+**No está resuelto, y no es evidente que deba resolverse a favor de la
+privacidad**: una recuperación imposible es un fallo peor que un operador
+que ve saldos.
 
 ⚠️ **El operador sigue viendo los saldos** mientras queden operaciones sin
 migrar. La migración avanza una a una, y **no está terminada**.

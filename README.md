@@ -109,7 +109,7 @@ empieza ahí.
 Requiere Rust estable. Sin instaladores externos ni toolchains aparte.
 
 ```bash
-cargo test -p zk-ssl --release              # la capa: 158 tests
+cargo test -p zk-ssl --release              # la capa: 156 tests
 cargo test -p stark-experiment --release    # los ocho circuitos
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
