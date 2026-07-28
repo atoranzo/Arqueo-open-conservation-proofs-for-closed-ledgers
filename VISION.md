@@ -282,6 +282,49 @@ contradecía**.
 El principio estaba escrito antes que el problema. Aplicarlo tardó tres
 rondas más de lo necesario.
 
+### 3.9 Sobre la legibilidad del estado — **P2, diseño demostrado**
+
+*Consecuencia de P2. La mayor incoherencia declarada del sistema.*
+
+**El problema.** La capa guarda `(identidad, saldo, nonce)` de cada cuenta
+y **el operador los ve en memoria**. El cifrado en reposo protege ante el
+robo del disco, no ante él. P2 —*no debe ver más de lo necesario*— **no se
+cumple**.
+
+**La observación.** La capa no necesita ese contenido. Para mantener el
+árbol y verificar transiciones le basta con **el digest de la hoja**.
+
+| | Hoy | Por compromisos |
+|---|---|---|
+| La capa guarda | id, saldo, nonce | **Solo `H(H(id,saldo),nonce)`** |
+| Calcula raíces y caminos | Sí | **Sí** |
+| **Puede leer un saldo** | **Sí** ⚠️ | **No** |
+
+**Por qué sigue siendo sólido.** El cliente aporta la posición y el digest
+de la hoja nueva. La capa verifica la prueba, coloca la hoja, y **comprueba
+que la raíz resultante es la que la prueba acredita**. Si el cliente
+mintiera sobre la hoja o la posición, esa comprobación falla.
+
+**No necesita entender el contenido para detectarlo.**
+
+**Estado**: demostrado en `commitment.rs` con **7 tests**, incluidos los dos
+ataques —mentir sobre la hoja, mentir sobre la posición— y la comprobación
+de que la capa no retiene ningún saldo, con su validador.
+
+El refactor de la capa completa —101 referencias en nueve módulos— **sigue
+pendiente**. Se demostró el diseño antes de comprometerse con él, que es la
+lección de §3.8 aplicada por adelantado.
+
+⚠️ **El coste, que es real.** El titular lleva su propio estado. Si pierde
+su copia local **no sabe cuánto tiene**, aunque el dinero siga ahí y la
+recuperación por custodios funcione.
+
+Hoy la capa puede responder *"tienes X"*. Con este diseño **no puede**. Es
+el modelo de Zcash y un cambio de usabilidad serio. Un despliegue real lo
+resolvería con el proveedor de pago guardando el estado del cliente — con
+lo que la legibilidad se re-concentra, repartida y no en el operador
+central.
+
 ---
 
 ## 4. Orden de prioridad para mayor coherencia
@@ -290,15 +333,16 @@ rondas más de lo necesario.
 
 | | Prioridad | Estado |
 |---|---|---|
-| 1 | Reducir la legibilidad del estado por el operador | ⚠️ **Solo cifrado en reposo**. El rediseño por compromisos sigue pendiente y es el punto más incoherente con P2 |
+| 1 | Reducir la legibilidad del estado por el operador | 🔬 **Diseño demostrado** (§3.9). El refactor de la capa sigue pendiente |
 | 2 | Mantener y endurecer la separación clave / capa | ✅ Salvo la autoridad de umbral (§3.3) |
 | 3 | Formalizar el catálogo de rechazos | ✅ Hoja de ruta con lo no alcanzable y lo innecesario |
 | 4 | Privilegios con medida: rotación, contadores, caducidad | ✅ Contadores y caducidad de congelaciones. **Rotación pendiente** |
 | 5 | Consenso distribuido | ⬜ **Abierto**. Único cierre real de censura |
 | 6 | Auditoría externa | ⬜ **Condición, no capacidad** |
 
-**Prioridad 1 es hoy la mayor incoherencia del sistema.** El operador ve
-los saldos en memoria, y eso no lo arregla el cifrado en reposo.
+**Prioridad 1 sigue siendo la mayor incoherencia del sistema**, pero ya no
+es una incógnita: el diseño está demostrado y lo que falta es trabajo
+mecánico. Ver §3.9.
 
 ---
 

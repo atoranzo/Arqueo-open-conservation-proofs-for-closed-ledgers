@@ -68,6 +68,7 @@
 
 mod accounts;
 mod audit;
+pub mod commitment;
 pub mod client;
 pub mod crypto;
 pub mod iso;
