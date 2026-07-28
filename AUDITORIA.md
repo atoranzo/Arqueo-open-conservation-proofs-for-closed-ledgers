@@ -235,8 +235,31 @@ examinó?**
 
 La fuga de §4 existía porque un comentario la justificaba —*"información de
 estado, no secretos"*— en vez de examinarla. **Ese patrón puede repetirse
-en sitios que este repaso no ha mirado**: la API de instantáneas, los
-materiales de auditoría, o cualquier cosa que se añada después.
+en sitios que este repaso no ha mirado**: los materiales de auditoría, o
+cualquier cosa que se añada después.
+
+### 5.5 Un sitio ya mirado: las instantáneas
+
+**Se encontró una incoherencia y está cerrada.**
+
+La base de datos se cifraba con XChaCha20-Poly1305 —dieciséis llamadas a
+`seal`— y **la instantánea iba en claro**. Dos niveles de protección
+distintos para el mismo dato, y la instantánea es justo **el artefacto que
+se copia fuera del nodo**: a una cinta, a otro servidor, a un disco que
+alguien se lleva.
+
+Ahora va cifrada con la misma clave, con un byte de marca al principio para
+que la importación sepa qué tiene delante sin adivinar. **5 tests**,
+incluido el que busca el saldo byte a byte en el fichero y su validador.
+
+⚠️ **Sin clave sigue yendo en claro**, y entonces quien tenga el fichero ve
+todos los saldos. Es coherente —sin clave tampoco se cifra el ledger— pero
+conviene saberlo.
+
+**Lo que enseña**: la incoherencia no estaba en ninguna función, estaba
+**entre dos funciones**. Aparece al preguntar *"¿qué protección tiene cada
+artefacto que contiene el mismo dato?"*, no al revisar el código de una en
+una.
 
 ---
 

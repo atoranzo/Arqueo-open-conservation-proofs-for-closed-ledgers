@@ -53,8 +53,9 @@
 //!   posteriores no se propagan. Replicar en caliente exige red y
 //!   coordinación, que es el problema de sistemas distribuidos que este
 //!   proyecto no aborda.
-//! - **No está cifrada.** Quien tenga el fichero ve todos los saldos,
-//!   igual que quien tenga el disco.
+//! - **Va cifrada si la capa tiene clave**, con el mismo cifrado
+//!   autenticado que el ledger. Sin clave va en claro, y entonces quien
+//!   tenga el fichero **ve todos los saldos**.
 //! - **No hay copias incrementales.** Cada instantánea es completa.
 
 use std::collections::HashMap;
@@ -96,8 +97,55 @@ fn malformed(what: &str) -> LayerError {
     LayerError::Store(crate::store::StoreError::Malformed(what.to_string()))
 }
 
+/// Marca de instantánea sin cifrar.
+const SNAPSHOT_PLAIN: u8 = 0x00;
+/// Marca de instantánea cifrada.
+const SNAPSHOT_ENCRYPTED: u8 = 0x01;
+
 impl SovereignLayer {
+    /// Importa una instantánea cifrada.
+    ///
+    /// Existe aparte porque `import_snapshot` no tiene forma de conocer la
+    /// clave: es una función asociada, no un método.
+    pub fn import_snapshot_with_key(
+        path: &str,
+        key: &crate::crypto::LedgerKey,
+    ) -> Result<Self, LayerError> {
+        let mut buf = Vec::new();
+        std::fs::File::open(path)
+            .map_err(io_err)?
+            .read_to_end(&mut buf)
+            .map_err(io_err)?;
+
+        let plano = match buf.first() {
+            Some(&SNAPSHOT_ENCRYPTED) => key.open(&buf[1..]).map_err(LayerError::Store)?,
+            Some(&SNAPSHOT_PLAIN) => buf[1..].to_vec(),
+            _ => {
+                return Err(LayerError::Store(crate::store::StoreError::Malformed(
+                    "instantanea sin marca de cifrado".into(),
+                )))
+            }
+        };
+
+        let tmp = format!("{path}.tmp-descifrada");
+        let mut con_marca = vec![SNAPSHOT_PLAIN];
+        con_marca.extend_from_slice(&plano);
+        std::fs::write(&tmp, &con_marca).map_err(io_err)?;
+        let r = Self::import_snapshot(&tmp);
+        let _ = std::fs::remove_file(&tmp);
+        r
+    }
+
     /// Exporta el estado completo a un fichero.
+    /// Exporta una instantánea.
+    ///
+    /// **Si la capa tiene clave, la instantánea va cifrada**, con la misma
+    /// clave y el mismo cifrado autenticado que el ledger.
+    ///
+    /// Una versión anterior nunca cifraba: el disco quedaba protegido con
+    /// XChaCha20-Poly1305 y la instantánea en claro. Eran **dos niveles de
+    /// protección distintos para el mismo dato**, y la instantánea es
+    /// justo la que se copia fuera del nodo.
     pub fn export_snapshot(&self, path: &str) -> Result<SnapshotInfo, LayerError> {
         let mut out: Vec<u8> = Vec::new();
         out.extend_from_slice(MAGIC);
@@ -147,8 +195,24 @@ impl SovereignLayer {
             out.extend_from_slice(&crate::store::log_entry_to_bytes(e));
         }
 
+        // Cifrado con la misma clave que el ledger, si la hay. Se antepone
+        // un byte de marca para que la importacion sepa que tiene delante
+        // sin adivinar.
+        let bytes = match &self.key {
+            Some(k) => {
+                let mut v = vec![SNAPSHOT_ENCRYPTED];
+                v.extend_from_slice(&k.seal(&out).map_err(LayerError::Store)?);
+                v
+            }
+            None => {
+                let mut v = vec![SNAPSHOT_PLAIN];
+                v.extend_from_slice(&out);
+                v
+            }
+        };
+
         let mut f = std::fs::File::create(path).map_err(io_err)?;
-        f.write_all(&out).map_err(io_err)?;
+        f.write_all(&bytes).map_err(io_err)?;
         f.sync_all().map_err(io_err)?;
 
         Ok(SnapshotInfo {
@@ -171,6 +235,22 @@ impl SovereignLayer {
             .map_err(io_err)?
             .read_to_end(&mut buf)
             .map_err(io_err)?;
+
+        // ⚠️ `import_snapshot` es una funcion asociada: no tiene capa ni
+        // clave. Una instantanea cifrada exige `import_snapshot_with_key`.
+        let buf = match buf.first() {
+            Some(&SNAPSHOT_PLAIN) => buf[1..].to_vec(),
+            Some(&SNAPSHOT_ENCRYPTED) => {
+                return Err(LayerError::Store(crate::store::StoreError::Malformed(
+                    "la instantanea esta cifrada: usa import_snapshot_with_key".into(),
+                )))
+            }
+            _ => {
+                return Err(LayerError::Store(crate::store::StoreError::Malformed(
+                    "instantanea sin marca de cifrado: formato desconocido".into(),
+                )))
+            }
+        };
 
         let mut cursor = 0usize;
         let mut take = |n: usize, what: &str| -> Result<&[u8], LayerError> {
@@ -330,6 +410,24 @@ mod tests {
         p.push(format!("zkssl_snap_{}_{}.bin", name, std::process::id()));
         let s = p.to_str().unwrap().to_string();
         let _ = std::fs::remove_file(&s);
+        s
+    }
+
+    /// Directorio temporal para un ledger de prueba.
+    ///
+    /// `temp_file` da un fichero; los tests de cifrado necesitan además un
+    /// directorio, porque `open_encrypted` abre un ledger persistente.
+    fn temp_path(name: &str) -> String {
+        let s = format!(
+            "{}/zkssl-snap-{}-{}",
+            std::env::temp_dir().display(),
+            name,
+            std::process::id()
+        );
+        // Se limpia ANTES, como hace `temp_file`. Si un test falla, su
+        // directorio queda y el siguiente encontraria un ledger viejo con
+        // estado que no le corresponde.
+        let _ = std::fs::remove_dir_all(&s);
         s
     }
 
@@ -551,5 +649,163 @@ mod tests {
              detectarse, aunque no cambie ninguna raiz de estado"
         );
         let _ = std::fs::remove_file(&file);
+    }
+
+    // -----------------------------------------------------------------
+    // Cifrado de instantáneas
+    // -----------------------------------------------------------------
+
+    /// **EL SALDO NO APARECE EN UNA INSTANTÁNEA CIFRADA.**
+    ///
+    /// La instantánea es lo que se copia fuera del nodo: a una cinta, a
+    /// otro servidor, a un disco que alguien se lleva. Era el artefacto
+    /// **más expuesto con la protección más débil**.
+    #[test]
+    fn an_encrypted_snapshot_does_not_show_balances() {
+        let path = temp_path("snapcrypt");
+        let file = temp_file("snapcrypt");
+        const SALDO: u64 = 0x05A3_B7C9; // 94.615.497, distintivo
+        let key = crypto::LedgerKey::from_passphrase("una contrasena larga de prueba");
+        {
+            let mut layer = SovereignLayer::open_encrypted(
+                &path,
+                custodian_root(),
+                governance_root(),
+                LIMIT,
+                MAX_SUPPLY,
+                MAX_ACCOUNTS,
+                Some(key.clone()),
+            )
+            .expect("abrir cifrada");
+            open_and_fund(&mut layer, SK_ALICE, SALDO);
+            layer.export_snapshot(&file).expect("exportar");
+        }
+
+        let bytes = std::fs::read(&file).expect("leer");
+        let patron = &SALDO.to_le_bytes()[..4];
+        assert!(
+            !bytes.windows(4).any(|w| w == patron),
+            "CRITICO: el saldo aparece EN CLARO en la instantanea cifrada"
+        );
+        let _ = std::fs::remove_file(&file);
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// **Y el que valida al anterior**: sin clave, el saldo SÍ aparece.
+    ///
+    /// Sin esto, el test anterior pasaría aunque la búsqueda estuviera mal
+    /// construida o el saldo no llegara a guardarse.
+    #[test]
+    fn an_unencrypted_snapshot_does_show_balances() {
+        let file = temp_file("snapplain");
+        const SALDO: u64 = 0x05A3_B7C9;
+        let mut layer = new_layer();
+        open_and_fund(&mut layer, SK_ALICE, SALDO);
+        layer.export_snapshot(&file).expect("exportar");
+
+        let bytes = std::fs::read(&file).expect("leer");
+        let patron = &SALDO.to_le_bytes()[..4];
+        assert!(
+            bytes.windows(4).any(|w| w == patron),
+            "sin cifrado el saldo DEBE aparecer, o el test anterior no \
+             comprueba nada"
+        );
+        let _ = std::fs::remove_file(&file);
+    }
+
+    /// **UNA INSTANTÁNEA CIFRADA NO SE ABRE SIN CLAVE.**
+    ///
+    /// Y el error dice qué usar, en vez de un fallo de formato
+    /// incomprensible.
+    #[test]
+    fn an_encrypted_snapshot_cannot_be_imported_without_the_key() {
+        let path = temp_path("snapnokey");
+        let file = temp_file("snapnokey");
+        let key = crypto::LedgerKey::from_passphrase("una contrasena larga de prueba");
+        {
+            let mut layer = SovereignLayer::open_encrypted(
+                &path,
+                custodian_root(),
+                governance_root(),
+                LIMIT,
+                MAX_SUPPLY,
+                MAX_ACCOUNTS,
+                Some(key.clone()),
+            )
+            .expect("abrir");
+            open_and_fund(&mut layer, SK_ALICE, 100_000);
+            layer.export_snapshot(&file).expect("exportar");
+        }
+        assert!(
+            SovereignLayer::import_snapshot(&file).is_err(),
+            "una instantanea cifrada no debe abrirse sin clave"
+        );
+        let _ = std::fs::remove_file(&file);
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// **Y CON LA CLAVE SÍ, con el estado intacto.**
+    #[test]
+    fn an_encrypted_snapshot_restores_with_the_key() {
+        let path = temp_path("snapkey");
+        let file = temp_file("snapkey");
+        const SALDO: u64 = 250_000;
+        let key = crypto::LedgerKey::from_passphrase("una contrasena larga de prueba");
+        let alice;
+        let raiz;
+        {
+            let mut layer = SovereignLayer::open_encrypted(
+                &path,
+                custodian_root(),
+                governance_root(),
+                LIMIT,
+                MAX_SUPPLY,
+                MAX_ACCOUNTS,
+                Some(key.clone()),
+            )
+            .expect("abrir");
+            alice = open_and_fund(&mut layer, SK_ALICE, SALDO);
+            raiz = layer.state_root();
+            layer.export_snapshot(&file).expect("exportar");
+        }
+
+        let restaurada =
+            SovereignLayer::import_snapshot_with_key(&file, &key).expect("importar con clave");
+        assert_eq!(restaurada.balance_of(alice), Some(SALDO));
+        assert_eq!(restaurada.state_root(), raiz);
+        let _ = std::fs::remove_file(&file);
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// **Y una clave incorrecta no la abre.**
+    ///
+    /// El cifrado es autenticado: una clave equivocada no descifra basura,
+    /// falla.
+    #[test]
+    fn the_wrong_key_does_not_open_a_snapshot() {
+        let path = temp_path("snapbadkey");
+        let file = temp_file("snapbadkey");
+        let buena = crypto::LedgerKey::from_passphrase("la correcta y larga");
+        let mala = crypto::LedgerKey::from_passphrase("la incorrecta y larga");
+        {
+            let mut layer = SovereignLayer::open_encrypted(
+                &path,
+                custodian_root(),
+                governance_root(),
+                LIMIT,
+                MAX_SUPPLY,
+                MAX_ACCOUNTS,
+                Some(buena.clone()),
+            )
+            .expect("abrir");
+            open_and_fund(&mut layer, SK_ALICE, 100_000);
+            layer.export_snapshot(&file).expect("exportar");
+        }
+        assert!(
+            SovereignLayer::import_snapshot_with_key(&file, &mala).is_err(),
+            "CRITICO: una clave incorrecta no debe abrir la instantanea"
+        );
+        let _ = std::fs::remove_file(&file);
+        let _ = std::fs::remove_dir_all(&path);
     }
 }
