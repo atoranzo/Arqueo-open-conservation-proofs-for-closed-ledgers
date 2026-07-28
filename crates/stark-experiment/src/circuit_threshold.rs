@@ -806,6 +806,21 @@ mod tests {
         // Los acumuladores reconstruyen los indices.
         assert_eq!(trace.get(COL_ACC_A, ROW_ROOT), BaseElement::new(0));
         assert_eq!(trace.get(COL_ACC_B, ROW_ROOT), BaseElement::new(2));
+        // ===== Y TODAS LAS ENTRADAS PÚBLICAS, NO SOLO LAS RAÍCES =====
+        //
+        // Comparar la estructura entera. En `circuit_send` la versión
+        // parcial dejó pasar un campo heredado de otra operación y **costó
+        // ocho rondas de diagnóstico**: el error de winterfell
+        // —`InconsistentOodConstraintEvaluations`— apunta a las
+        // restricciones, no a las entradas.
+        let derivadas = ThresholdProver::new(default_options()).get_pub_inputs(&trace);
+        assert_eq!(
+            derivadas.to_elements(),
+            ThresholdPublicInputs { custodian_set_root: root }.to_elements(),
+            "las entradas DERIVADAS de la traza deben coincidir con las \
+             DECLARADAS en todos sus campos"
+        );
+
     }
 
     /// EL TEST CLAVE: dos custodios distintos del conjunto autorizan.

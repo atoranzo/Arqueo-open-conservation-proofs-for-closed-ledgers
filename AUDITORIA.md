@@ -687,18 +687,33 @@ afecta a la capa**, aunque sí a las conclusiones del estudio.
 
 ### Estado de los tests de puntos de referencia
 
-| Estado | Circuitos de producción |
-|---|---|
-| Comparan **todas** las entradas públicas | `burn`, `claim`, `mint`, `mint_pending`, `recovery`, `send`, `settlement` |
-| Comparan **solo raíces** | `freeze`, `threshold`, `nullifier_tree` |
-| ⚠️ **Sin test de referencia** | **`audit`, `governance`** |
+**Los 12 comparan ahora todas sus entradas públicas** con lo que la traza
+produce:
 
-⚠️ **`circuit_burn` no tenía ninguno** pese a estar en producción; se añadió
-al hacer este inventario.
+```rust
+let derivadas = XProver::new(opts).get_pub_inputs(&trace);
+assert_eq!(derivadas.to_elements(), declaradas.to_elements());
+```
 
-⚠️ **`circuit_audit` y `circuit_governance` siguen sin él.** No tienen
-escenario estructurado, así que añadirlo exige construirlo primero: **1-2
-rondas cada uno, no hecho**.
+⚠️ **Tres no tenían ningún test de referencia** —`burn`, `audit`,
+`governance`— pese a estar en producción. Se detectó al hacer este
+inventario, no antes.
+
+⚠️ Y los otros nueve **comparaban solo las raíces**, que es exactamente la
+versión que dejó pasar el fallo de `circuit_send`.
+
+### Qué protege y qué no
+
+Protege contra **un campo de entradas públicas que el escenario declara
+distinto de lo que la traza produce**. Ese fallo hace que probador y
+verificador usen transcripciones de Fiat-Shamir distintas, y el error
+resultante apunta a las restricciones.
+
+**No protege** contra restricciones mal escritas, ni contra una traza que
+satisface todo pero no significa lo que se cree.
+
+⚠️ **Ningún circuito lo tenía cuando se escribió.** Se añadieron todos
+después de que el fallo costara ocho rondas en uno de ellos.
 
 ### Por qué importa
 

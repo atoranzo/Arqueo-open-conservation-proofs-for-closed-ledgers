@@ -830,4 +830,37 @@ mod tests {
             pi(fake_root, id, 1_000_000, 1_000_000)
         ));
     }
+
+    /// **SEPARA "LA TRAZA ESTÁ MAL" DE "LAS RESTRICCIONES ESTÁN MAL".**
+    ///
+    /// Este circuito **no tenía ningún test de puntos de referencia**, pese
+    /// a estar en producción. Se detectó al inventariar cuáles comparaban
+    /// sus entradas públicas con lo que la traza produce (ver
+    /// `AUDITORIA.md` §11).
+    ///
+    /// Compara la **estructura entera**: en `circuit_send` la versión
+    /// parcial dejó pasar un campo heredado y **costó ocho rondas de
+    /// diagnóstico**.
+    #[test]
+    fn trace_landmarks_match_native() {
+        let (w, root, id) = scenario(1_000_000);
+        let trace = build_trace(&w, 700_000, 800_000);
+
+        for i in 0..4 {
+            assert_eq!(trace.get(4 + i, ROW_ROOT), root[i], "raiz, elemento {i}");
+            assert_eq!(
+                trace.get(4 + i, ROW_PK_DONE),
+                id[i],
+                "identidad publica, elemento {i}"
+            );
+        }
+
+        let derivadas = AuditProver::new(default_options()).get_pub_inputs(&trace);
+        assert_eq!(
+            derivadas.to_elements(),
+            pi(root, id, 700_000, 800_000).to_elements(),
+            "las entradas DERIVADAS de la traza deben coincidir con las \
+             DECLARADAS en todos sus campos"
+        );
+    }
 }

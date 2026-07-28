@@ -948,4 +948,57 @@ mod tests {
         );
         assert!(v.is_err());
     }
+
+    /// Las entradas públicas declaradas de un cambio válido.
+    ///
+    /// Existían **repetidas en cada test**, construidas a mano. Que un
+    /// campo se copiara mal en una de las copias no lo detectaba nada.
+    fn declared_inputs() -> GovernancePublicInputs {
+        let (r_old, r_new) = roots();
+        GovernancePublicInputs {
+            governance_set_root: build_governance_set(&governance_keys()).0,
+            custodian_root_old: r_old,
+            custodian_root_new: r_new,
+            change_count_old: BaseElement::new(COUNT_OLD),
+            change_count_new: BaseElement::new(COUNT_OLD + 1),
+        }
+    }
+
+    /// **SEPARA "LA TRAZA ESTÁ MAL" DE "LAS RESTRICCIONES ESTÁN MAL".**
+    ///
+    /// Este circuito **no tenía ningún test de puntos de referencia**, pese
+    /// a estar en producción. Se detectó al inventariar cuáles comparaban
+    /// sus entradas públicas con lo que la traza produce (`AUDITORIA.md`
+    /// §11).
+    ///
+    /// Compara la **estructura entera**, sus cinco campos: en
+    /// `circuit_send` la versión parcial dejó pasar un campo heredado y
+    /// **costó ocho rondas de diagnóstico**.
+    #[test]
+    fn trace_landmarks_match_native() {
+        let (r_old, r_new) = roots();
+        assert_ne!(r_old, r_new, "el conjunto debe cambiar de verdad");
+
+        let trace = build_trace(&valid_auth(), COUNT_OLD, 1);
+
+        // La raíz del conjunto de GOBERNANZA, que la traza calcula subiendo
+        // el árbol desde las identidades de los dos gobernadores.
+        let esperada = build_governance_set(&governance_keys()).0;
+        for i in 0..4 {
+            assert_eq!(
+                trace.get(4 + i, ROW_ROOT),
+                esperada[i],
+                "raiz de gobernanza, elemento {i}"
+            );
+        }
+
+        let derivadas = GovernanceProver::new(default_options(), r_old, r_new)
+            .get_pub_inputs(&trace);
+        assert_eq!(
+            derivadas.to_elements(),
+            declared_inputs().to_elements(),
+            "las entradas DERIVADAS de la traza deben coincidir con las \
+             DECLARADAS en todos sus campos"
+        );
+    }
 }

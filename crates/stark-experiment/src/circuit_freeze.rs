@@ -901,6 +901,27 @@ mod tests {
                 "new {i}"
             );
         }
+        // ===== Y TODAS LAS ENTRADAS PÚBLICAS, NO SOLO LAS RAÍCES =====
+        //
+        // Comparar la estructura entera. En `circuit_send` la versión
+        // parcial dejó pasar un campo heredado de otra operación y **costó
+        // ocho rondas de diagnóstico**: el error de winterfell
+        // —`InconsistentOodConstraintEvaluations`— apunta a las
+        // restricciones, no a las entradas.
+        let derivadas = FreezeProver::new(default_options()).get_pub_inputs(&trace);
+        assert_eq!(
+            derivadas.to_elements(),
+            FreezePublicInputs {
+                custodian_set_root: build_custodian_set(&custodian_keys()).0,
+                frozen_root_old: esperada_old,
+                frozen_root_new: esperada_new,
+                freeze_count_old: BaseElement::new(COUNT_OLD),
+                freeze_count_new: BaseElement::new(COUNT_OLD + 1),
+            }.to_elements(),
+            "las entradas DERIVADAS de la traza deben coincidir con las \
+             DECLARADAS en todos sus campos"
+        );
+
     }
 
     /// EL TEST CLAVE. No silencia el pánico.
