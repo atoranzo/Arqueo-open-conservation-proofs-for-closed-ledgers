@@ -107,13 +107,15 @@ impl SovereignLayer {
         )
         .map_err(|e| LayerError::VerificationFailed(format!("{e:?}")))?;
 
-        self.frozen
-            .set_leaf(account_index, frozen_leaf(receipt.now_frozen));
-        self.freeze_count = pi.freeze_count_new.as_int();
-
-        if self.frozen.root() != pi.frozen_root_new {
+        // Se comprueba sobre una copia: ver el comentario de `mint`.
+        let mut tentativo = self.frozen.clone();
+        tentativo.set_leaf(account_index, frozen_leaf(receipt.now_frozen));
+        if tentativo.root() != pi.frozen_root_new {
             return Err(LayerError::StaleState);
         }
+
+        self.frozen = tentativo;
+        self.freeze_count = pi.freeze_count_new.as_int();
 
         // La cadena va SIEMPRE sobre la raiz de CUENTAS, no sobre la del
         // arbol que esta operacion modifica.

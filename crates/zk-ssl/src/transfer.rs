@@ -194,7 +194,18 @@ impl SovereignLayer {
             nonce: receiver.nonce,
         };
 
-        self.accounts.set_leaf(
+        // ===== SE COMPRUEBA SOBRE COPIAS, NO SOBRE EL ESTADO =====
+        //
+        // Una versión anterior mutaba y comprobaba después: el error se
+        // devolvía, pero **el estado ya había cambiado en memoria**. El
+        // nodo quedaba con un estado que no correspondía a su disco hasta
+        // reiniciar.
+        //
+        // Aquí es peor que en las demás operaciones: son **dos hojas de
+        // cuenta y un nullifier**, así que un fallo dejaba tres cosas
+        // cambiadas.
+        let mut cuentas = self.accounts.clone();
+        cuentas.set_leaf(
             sender_index,
             native_leaf(
                 new_sender.public_id,
@@ -202,7 +213,7 @@ impl SovereignLayer {
                 new_sender.nonce,
             ),
         );
-        self.accounts.set_leaf(
+        cuentas.set_leaf(
             receiver_index,
             native_leaf(
                 new_receiver.public_id,
@@ -210,19 +221,21 @@ impl SovereignLayer {
                 new_receiver.nonce,
             ),
         );
-        self.records.insert(sender_index, new_sender);
-        self.records.insert(receiver_index, new_receiver);
 
-        // INSERTAR EL NULLIFIER. Sin esto el árbol nunca crece y la
+        // El nullifier también, sin el cual el árbol nunca crece y la
         // no-pertenencia sería vacua en la práctica.
         let null_pos = nullifier_position(&pi.nullifier);
-        self.nullifiers.set_leaf(null_pos, pi.nullifier);
+        let mut nulls = self.nullifiers.clone();
+        nulls.set_leaf(null_pos, pi.nullifier);
 
-        if self.accounts.root() != pi.root_new
-            || self.nullifiers.root() != pi.nullifier_root_new
-        {
+        if cuentas.root() != pi.root_new || nulls.root() != pi.nullifier_root_new {
             return Err(LayerError::StaleState);
         }
+
+        self.accounts = cuentas;
+        self.nullifiers = nulls;
+        self.records.insert(sender_index, new_sender);
+        self.records.insert(receiver_index, new_receiver);
 
         // Las dos cuentas, el nullifier y los metadatos en UN SOLO lote
         // atomico. Antes eran cuatro llamadas con nueve escrituras: si el

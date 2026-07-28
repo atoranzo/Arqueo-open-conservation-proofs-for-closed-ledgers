@@ -115,7 +115,17 @@ impl SovereignLayer {
             balance: account.balance + amount,
             nonce: account.nonce,
         };
-        self.accounts.set_leaf(
+        // ===== SE COMPRUEBA SOBRE UNA COPIA, NO SOBRE EL ESTADO =====
+        //
+        // Una versión anterior mutaba y comprobaba después: el error se
+        // devolvía, pero **el estado ya había cambiado en memoria**.
+        //
+        // Un recibo de emisión para una cuenta, aplicado sobre otra,
+        // dejaba a esa otra con el importe sumado. No se persistía —
+        // `commit` no llegaba— pero el nodo quedaba con un estado que no
+        // correspondía a su disco hasta reiniciar.
+        let mut tentativo = self.accounts.clone();
+        tentativo.set_leaf(
             account_index,
             native_leaf(
                 updated.public_id,
@@ -123,12 +133,13 @@ impl SovereignLayer {
                 updated.nonce,
             ),
         );
-        self.records.insert(account_index, updated);
-        self.total_supply = pi.supply_new.as_int();
-
-        if self.accounts.root() != pi.root_new {
+        if tentativo.root() != pi.root_new {
             return Err(LayerError::StaleState);
         }
+
+        self.accounts = tentativo;
+        self.records.insert(account_index, updated);
+        self.total_supply = pi.supply_new.as_int();
 
         // Deja constancia en el registro ANTES de persistir: si el
         // proceso muere en medio, el lote atomico incluye o excluye

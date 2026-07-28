@@ -181,7 +181,7 @@ observador?"* sino **"¿qué aprende cada participante?"**.
 Encontró la fuga de §4 y no encontró otra igual de grave. Pero sí tres
 cosas que estaban implícitas y **ninguna declarada**.
 
-### 6.1 Matriz por operación
+### 7.1 Matriz por operación
 
 | Operación | El operador | La contraparte | Un tercero |
 |---|---|---|---|
@@ -193,7 +193,7 @@ cosas que estaban implícitas y **ninguna declarada**.
 | Congelación | Todo | Custodios: **qué cuenta** | Nada |
 | Gasto sin conexión | — | Comercio: el importe | Nada |
 
-### 6.2 Lo implícito, ahora declarado
+### 7.2 Lo implícito, ahora declarado
 
 **El importe de emisión y destrucción es público.** Aparece en las entradas
 públicas de ambos circuitos.
@@ -219,7 +219,7 @@ Un observador del registro ve **el patrón de actividad del sistema**
 cuánto. Es metadato, y en un sistema con poca actividad podría ser
 significativo.
 
-### 6.3 Lo que el repaso confirmó que SÍ está cerrado
+### 7.3 Lo que el repaso confirmó que SÍ está cerrado
 
 | Propiedad | Cómo |
 |---|---|
@@ -228,7 +228,7 @@ significativo.
 | El nullifier no se deriva de la identidad pública | Test: `nullifier_is_not_derivable_from_public_id` |
 | Una transferencia no revela identidades a terceros | Solo raíces y nullifier |
 
-### 6.4 La pregunta que queda para un auditor
+### 7.4 La pregunta que queda para un auditor
 
 **¿Hay más datos que se entregan por necesidad técnica y que nadie
 examinó?**
@@ -263,11 +263,66 @@ una.
 
 ---
 
-## 6. Donde el autor tiene MENOS confianza
+## 6. Un fallo sistemático encontrado y corregido: mutar antes de comprobar
+
+**Las cinco operaciones que modifican árboles mutaban el estado antes de
+comprobar que la raíz resultante coincidía con la que la prueba acredita.**
+
+```rust
+self.accounts.set_leaf(...);          // ← muta
+self.total_supply = ...;              // ← muta
+
+if self.accounts.root() != pi.root_new {
+    return Err(StaleState);           // ← error, PERO YA MUTÓ
+}
+```
+
+### Qué implicaba
+
+| | |
+|---|---|
+| ¿Se persistía? | **No**: `commit()` no llegaba a ejecutarse |
+| ¿Quedaba en memoria? | **Sí, hasta reiniciar** |
+| Consecuencia | El nodo operaba con **un estado que no correspondía a su disco** |
+
+En `transfer` era peor: dos hojas de cuenta y un nullifier, así que un
+fallo dejaba **tres cosas cambiadas**.
+
+### El caso concreto que lo destapó
+
+Un recibo de emisión para una cuenta, **aplicado sobre otra**. La prueba
+verifica —no dice qué cuenta— y la raíz vieja coincide, así que la
+comprobación solo falla al final. Para entonces la otra cuenta ya tenía el
+importe sumado en memoria.
+
+### Cómo se encontró
+
+Un test escrito para otra cosa: `applying_a_receipt_to_the_wrong_account_is_rejected`,
+al preguntar **"¿qué pasa si se reenvía un recibo?"**. No buscaba esto.
+
+### Lo corregido
+
+Las cinco operaciones aplican sobre **una copia** y solo confirman si la
+raíz cuadra. Es el patrón que `commitment.rs` ya usaba correctamente —
+escrito después, pensando el diseño desde cero— mientras las cinco
+existentes lo repetían mal sin que nadie lo mirara.
+
+### Lo que un auditor debería extraer
+
+**El fallo no estaba en ninguna operación: estaba en las cinco.** Un
+patrón incorrecto copiado entre funciones no se ve revisándolas de una en
+una, porque cada una parece coherente consigo misma.
+
+Aparece al preguntar **"¿qué pasa si esto falla a mitad?"** — una pregunta
+que se hace al conjunto, no a la función.
+
+---
+
+## 7. Donde el autor tiene MENOS confianza
 
 Esta es la sección más útil del documento.
 
-### 6.1 `open_account` no exige autorización — **mitigado a medias**
+### 7.1 `open_account` no exige autorización — **mitigado a medias**
 
 Cualquiera con acceso a la capa puede crear cuentas. No crea dinero
 (nacen a cero), pero llenaba el árbol y el mapa de registros hasta agotar
@@ -283,7 +338,7 @@ genera ninguna prueba**.
 Un auditor debería valorar si el tope es suficiente para el caso de uso
 previsto.
 
-### 6.2 La congelación no tiene justificación ni caducidad
+### 7.2 La congelación no tiene justificación ni caducidad
 
 **Implementada** con imposición en circuito: la prueba de liquidación
 acredita que el emisor no está en el árbol de congelados.
@@ -297,7 +352,7 @@ acredita que el emisor no está en el árbol de congelados.
   contrario dejaría fondos en el limbo— pero merece que un auditor valore
   si encaja con el caso de uso.
 
-### 6.3 Los grados de restricción
+### 7.3 Los grados de restricción
 
 **Cinco veces** durante el desarrollo winterfell rechazó un grado mal
 declarado. Cada vez se corrigió. La exactitud que exige winterfell hace
@@ -310,7 +365,7 @@ Especial cuidado con:
   (`circuit_mint`: 8 segmentos × 64 filas llenan la traza y la vuelven
   periódica de periodo 64).
 
-### 6.4 El patrón lockstep
+### 7.4 El patrón lockstep
 
 `C_SIBLING` impone que los dos carriles usen el mismo hermano. El
 argumento es que eso basta para atar ambas subidas a la misma posición
@@ -320,7 +375,7 @@ Está verificado con un test discriminante, **pero el argumento general no
 ha sido revisado por nadie más**. Es el hallazgo más original del
 proyecto y merece escrutinio.
 
-### 6.5 Los tests negativos
+### 7.5 Los tests negativos
 
 **Tres veces** un test negativo resultó no discriminar: fallaba por una
 restricción distinta de la que pretendía probar. Se corrigieron
@@ -329,7 +384,7 @@ construyendo testigos internamente coherentes.
 **Puede quedar alguno más.** Un auditor debería comprobar, para cada test
 negativo, que el testigo corrupto es válido en todo lo demás.
 
-### 6.6 El bloqueo de directorio de `sled` tras cerrar — **hallazgo nuevo**
+### 7.6 El bloqueo de directorio de `sled` tras cerrar — **hallazgo nuevo**
 
 `sled` mantiene un bloqueo del directorio que puede tardar en liberarse
 tras cerrar la base de datos. **Un nodo que se reinicie inmediatamente
@@ -346,7 +401,7 @@ hace el ayudante `open_retry` de los tests.
 Un auditor debería valorar si esto afecta a los procedimientos de
 recuperación tras caída.
 
-### 6.7 El techo de 63 bits
+### 7.7 El techo de 63 bits
 
 Las comprobaciones de rango fuerzan el bit más significativo a cero, así
 que **ningún valor puede superar 2^63 − 1**.
@@ -358,7 +413,7 @@ rechazarse al configurar.
 No es una fuga de solidez —los valores fuera de rango se rechazan— pero
 sí un fallo de usabilidad que puede confundir un diagnóstico.
 
-### 6.8 El formato de instantánea se queda atrás al añadir estado
+### 7.8 El formato de instantánea se queda atrás al añadir estado
 
 **Dos veces** en pocas rondas: al añadir las cuentas congeladas y al
 añadir el registro de transiciones, la instantánea dejó de incluir algo
@@ -373,7 +428,7 @@ existe.
 Un auditor debería comprobar que la versión actual del formato cubre todo
 el estado, y valorar exigir ese test.
 
-### 6.9 Colisiones en el árbol de nullifiers
+### 7.9 Colisiones en el árbol de nullifiers
 
 La posición sale de los bits bajos del nullifier. Dos nullifiers pueden
 colisionar, y el segundo **no podría gastarse**.
@@ -384,7 +439,7 @@ incorrecto, sería grave.
 
 ---
 
-## 7. Por dónde empezaría el autor si tuviera que romperlo
+## 8. Por dónde empezaría el autor si tuviera que romperlo
 
 En este orden:
 
@@ -404,7 +459,7 @@ En este orden:
 
 ---
 
-## 8. Limitaciones ya documentadas
+## 9. Limitaciones ya documentadas
 
 No hacen falta descubrirlas; están en `README.md`:
 
@@ -418,7 +473,7 @@ No hacen falta descubrirlas; están en `README.md`:
 
 ---
 
-## 9. Cómo reproducir
+## 10. Cómo reproducir
 
 ```bash
 cargo test -p zk-ssl --release              # la capa, 65 tests
@@ -432,7 +487,7 @@ fila exactos del fallo.
 
 ---
 
-## 10. Qué NO demuestra este documento
+## 11. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

@@ -129,7 +129,9 @@ impl SovereignLayer {
             balance: account.balance,
             nonce: account.nonce + BaseElement::ONE,
         };
-        self.accounts.set_leaf(
+        // Se comprueba sobre una copia: ver el comentario de `mint`.
+        let mut tentativo = self.accounts.clone();
+        tentativo.set_leaf(
             account_index,
             native_leaf(
                 updated.public_id,
@@ -137,12 +139,13 @@ impl SovereignLayer {
                 updated.nonce,
             ),
         );
-        self.records.insert(account_index, updated);
-        self.recovery_count = pi.recovery_count_new.as_int();
-
-        if self.accounts.root() != pi.root_new {
+        if tentativo.root() != pi.root_new {
             return Err(LayerError::StaleState);
         }
+
+        self.accounts = tentativo;
+        self.records.insert(account_index, updated);
+        self.recovery_count = pi.recovery_count_new.as_int();
 
         // Deja constancia en el registro ANTES de persistir: si el
         // proceso muere en medio, el lote atomico incluye o excluye

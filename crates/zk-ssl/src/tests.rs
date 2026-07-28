@@ -584,6 +584,190 @@ use super::*;
     }
 
     // -----------------------------------------------------------------
+    // Reenvío de recibos
+    // -----------------------------------------------------------------
+
+    /// **REENVIAR UNA EMISIÓN CREARÍA DINERO.**
+    ///
+    /// Es el reenvío más grave de todos, y **no estaba probado**. Había
+    /// tests para liquidación, gobernanza, recuperación y destrucción; la
+    /// emisión se quedó fuera.
+    ///
+    /// Un recibo de emisión válido, aplicado dos veces, duplicaría el
+    /// importe emitido y el suministro dejaría de cuadrar.
+    #[test]
+    fn replaying_a_mint_is_rejected() {
+        let mut layer = new_layer();
+        let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
+
+        let r = layer.mint(&valid_auth(), alice, 250_000).expect("emitir");
+        layer.apply_mint(&r, alice).expect("primera aplicacion");
+
+        let saldo = layer.balance_of(alice);
+        let suministro = layer.total_supply();
+
+        // El MISMO recibo, otra vez.
+        assert!(
+            layer.apply_mint(&r, alice).is_err(),
+            "CRITICO: reenviar una emision crearia dinero de la nada"
+        );
+        assert_eq!(layer.balance_of(alice), saldo, "el saldo no cambia");
+        assert_eq!(layer.total_supply(), suministro, "el suministro tampoco");
+    }
+
+    /// **REENVIAR UNA CONGELACIÓN.**
+    ///
+    /// No crea dinero, pero **incrementaría el contador público dos veces**
+    /// por una sola intervención. Ese contador existe justamente para que
+    /// las intervenciones de los custodios sean contables.
+    #[test]
+    fn replaying_a_freeze_is_rejected() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+
+        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
+        layer.apply_freeze(&f, alice).expect("primera aplicacion");
+        let cuenta = layer.freeze_count();
+
+        assert!(
+            layer.apply_freeze(&f, alice).is_err(),
+            "reenviar una congelacion no debe aceptarse"
+        );
+        assert_eq!(
+            layer.freeze_count(),
+            cuenta,
+            "CRITICO: el contador de intervenciones no puede subir dos veces \
+             por una sola congelacion"
+        );
+    }
+
+    /// **Y aplicar un recibo a una cuenta DISTINTA de la suya.**
+    ///
+    /// Un recibo de emisión para Alice, aplicado sobre Bob. Si se
+    /// aceptara, cualquiera podría desviar una emisión legítima.
+    #[test]
+    fn applying_a_receipt_to_the_wrong_account_is_rejected() {
+        let mut layer = new_layer();
+        let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
+        let bob = layer.open_account_checked(BaseElement::new(SK_BOB)).expect("abrir");
+
+        let r = layer.mint(&valid_auth(), alice, 250_000).expect("emitir");
+        assert!(
+            layer.apply_mint(&r, bob).is_err(),
+            "CRITICO: un recibo de emision para Alice no debe poder aplicarse \
+             sobre la cuenta de Bob"
+        );
+        assert_eq!(layer.balance_of(bob), Some(0));
+    }
+
+    // -----------------------------------------------------------------
+    // Casos límite
+    // -----------------------------------------------------------------
+
+    /// **TRANSFERIR A LA PROPIA CUENTA.**
+    ///
+    /// El caso que más me preocupaba y **no estaba probado**.
+    ///
+    /// La capa lee los dos registros al empezar. Si son el mismo, ambos
+    /// llevan el saldo original `B`. Entonces calcularía:
+    ///
+    /// ```text
+    /// saldo_emisor_nuevo  = B − X
+    /// saldo_receptor_nuevo = B + X      ← desde B, no desde B−X
+    /// ```
+    ///
+    /// Si eso se aceptara, la cuenta **acabaría con B + X**: dinero creado
+    /// de la nada.
+    ///
+    /// El circuito debería detectarlo, porque el receptor parte de una
+    /// hoja que el emisor ya cambió y su subida no alcanzaría la raíz
+    /// intermedia. **Este test lo comprueba en vez de suponerlo.**
+    #[test]
+    fn transferring_to_your_own_account() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let antes = layer.balance_of(alice);
+
+        let r = layer.transfer(BaseElement::new(SK_ALICE), alice, alice, 250_000);
+
+        // Sea cual sea el resultado, el saldo NO debe haber subido.
+        if let Ok(s) = &r {
+            let aplicado = layer.apply(s, alice, alice, 250_000);
+            assert!(
+                aplicado.is_err(),
+                "CRITICO: transferirse a uno mismo NO debe poder aplicarse"
+            );
+        }
+        assert_eq!(
+            layer.balance_of(alice),
+            antes,
+            "CRITICO: el saldo no puede cambiar por transferirse a uno mismo"
+        );
+    }
+
+    /// **TRANSFERIR CERO.**
+    ///
+    /// No crea ni destruye dinero, pero **consume un nullifier**. Si se
+    /// permitiera sin coste, sería una forma de agotar posiciones del
+    /// árbol de nullifiers.
+    #[test]
+    fn transferring_zero() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let antes_a = layer.balance_of(alice);
+        let antes_b = layer.balance_of(bob);
+
+        if let Ok(s) = layer.transfer(BaseElement::new(SK_ALICE), alice, bob, 0) {
+            let _ = layer.apply(&s, alice, bob, 0);
+        }
+        assert_eq!(layer.balance_of(alice), antes_a, "el emisor no cambia");
+        assert_eq!(layer.balance_of(bob), antes_b, "el receptor tampoco");
+    }
+
+    /// **TRANSFERIR TODO EL SALDO.**
+    ///
+    /// La cuenta queda a cero. Es la frontera del rango: un error de una
+    /// unidad lo rechazaría.
+    #[test]
+    fn transferring_the_entire_balance() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 400_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+
+        let s = layer
+            .transfer(BaseElement::new(SK_ALICE), alice, bob, 400_000)
+            .expect("transferir todo el saldo deberia valer");
+        layer.apply(&s, alice, bob, 400_000).expect("aplicar");
+
+        assert_eq!(layer.balance_of(alice), Some(0), "la cuenta queda a cero");
+        assert_eq!(layer.balance_of(bob), Some(400_000));
+    }
+
+    /// **Y desde una cuenta a cero no se puede sacar nada.**
+    #[test]
+    fn spending_from_an_empty_account_is_rejected() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 0);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        assert!(layer
+            .transfer(BaseElement::new(SK_ALICE), alice, bob, 1)
+            .is_err());
+    }
+
+    /// **TRANSFERIR A UNA CUENTA QUE NO EXISTE.**
+    #[test]
+    fn transferring_to_a_nonexistent_account() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let r = layer.transfer(BaseElement::new(SK_ALICE), alice, 9_999, 1000);
+        assert!(
+            matches!(r, Err(LayerError::AccountNotFound(_))),
+            "deberia decir que la cuenta no existe: {r:?}"
+        );
+    }
+
+    // -----------------------------------------------------------------
     // Congelación de cuentas
     // -----------------------------------------------------------------
 
