@@ -173,11 +173,78 @@ no es *"¿qué ve un observador?"* sino **"¿qué aprende cada participante?"**.
 
 ---
 
-## 5. Donde el autor tiene MENOS confianza
+## 5. Qué aprende cada participante
+
+**Repaso sistemático aplicando la pregunta de §4**: no *"¿qué ve un
+observador?"* sino **"¿qué aprende cada participante?"**.
+
+Encontró la fuga de §4 y no encontró otra igual de grave. Pero sí tres
+cosas que estaban implícitas y **ninguna declarada**.
+
+### 6.1 Matriz por operación
+
+| Operación | El operador | La contraparte | Un tercero |
+|---|---|---|---|
+| **Transferencia** | Todo | **El saldo del receptor** ⚠️ §4 | Nada |
+| Emisión | Todo | Custodios: **el importe** | **El importe** |
+| Destrucción | Todo | — | **El importe** |
+| Auditoría | Lo revelado | Supervisor: **la identidad de la cuenta** | Nada |
+| Recuperación | Todo | Custodios: la identidad nueva | Nada |
+| Congelación | Todo | Custodios: **qué cuenta** | Nada |
+| Gasto sin conexión | — | Comercio: el importe | Nada |
+
+### 6.2 Lo implícito, ahora declarado
+
+**El importe de emisión y destrucción es público.** Aparece en las entradas
+públicas de ambos circuitos.
+
+Es **deliberado**: el suministro total tiene que ser verificable, y sin
+importes públicos no lo sería. Pero significa que **cualquiera ve cuánto
+dinero se crea y se destruye, y cuándo**. No ve a quién.
+
+**La revelación selectiva identifica la cuenta.** `AuditPublicInputs`
+incluye `public_id`.
+
+Es necesario —el supervisor debe saber de quién es el saldo que
+comprueba— pero tiene una consecuencia: **dos revelaciones del mismo
+titular son vinculables entre sí**. No se puede demostrar
+anónimamente *"alguien cumple el límite"*.
+
+**El registro de transiciones revela la secuencia de tipos de operación.**
+Cada entrada lleva su tipo: emisión, transferencia, destrucción,
+congelación.
+
+Un observador del registro ve **el patrón de actividad del sistema**
+—cuántas transferencias, cuándo hubo congelaciones— sin ver a quién ni
+cuánto. Es metadato, y en un sistema con poca actividad podría ser
+significativo.
+
+### 6.3 Lo que el repaso confirmó que SÍ está cerrado
+
+| Propiedad | Cómo |
+|---|---|
+| La emisión no revela la cuenta acreditada | Solo raíces, no identidades |
+| La destrucción no revela la cuenta | Ídem |
+| El nullifier no se deriva de la identidad pública | Test: `nullifier_is_not_derivable_from_public_id` |
+| Una transferencia no revela identidades a terceros | Solo raíces y nullifier |
+
+### 6.4 La pregunta que queda para un auditor
+
+**¿Hay más datos que se entregan por necesidad técnica y que nadie
+examinó?**
+
+La fuga de §4 existía porque un comentario la justificaba —*"información de
+estado, no secretos"*— en vez de examinarla. **Ese patrón puede repetirse
+en sitios que este repaso no ha mirado**: la API de instantáneas, los
+materiales de auditoría, o cualquier cosa que se añada después.
+
+---
+
+## 6. Donde el autor tiene MENOS confianza
 
 Esta es la sección más útil del documento.
 
-### 5.1 `open_account` no exige autorización — **mitigado a medias**
+### 6.1 `open_account` no exige autorización — **mitigado a medias**
 
 Cualquiera con acceso a la capa puede crear cuentas. No crea dinero
 (nacen a cero), pero llenaba el árbol y el mapa de registros hasta agotar
@@ -193,7 +260,7 @@ genera ninguna prueba**.
 Un auditor debería valorar si el tope es suficiente para el caso de uso
 previsto.
 
-### 5.2 La congelación no tiene justificación ni caducidad
+### 6.2 La congelación no tiene justificación ni caducidad
 
 **Implementada** con imposición en circuito: la prueba de liquidación
 acredita que el emisor no está en el árbol de congelados.
@@ -207,7 +274,7 @@ acredita que el emisor no está en el árbol de congelados.
   contrario dejaría fondos en el limbo— pero merece que un auditor valore
   si encaja con el caso de uso.
 
-### 5.3 Los grados de restricción
+### 6.3 Los grados de restricción
 
 **Cinco veces** durante el desarrollo winterfell rechazó un grado mal
 declarado. Cada vez se corrigió. La exactitud que exige winterfell hace
@@ -220,7 +287,7 @@ Especial cuidado con:
   (`circuit_mint`: 8 segmentos × 64 filas llenan la traza y la vuelven
   periódica de periodo 64).
 
-### 5.4 El patrón lockstep
+### 6.4 El patrón lockstep
 
 `C_SIBLING` impone que los dos carriles usen el mismo hermano. El
 argumento es que eso basta para atar ambas subidas a la misma posición
@@ -230,7 +297,7 @@ Está verificado con un test discriminante, **pero el argumento general no
 ha sido revisado por nadie más**. Es el hallazgo más original del
 proyecto y merece escrutinio.
 
-### 5.5 Los tests negativos
+### 6.5 Los tests negativos
 
 **Tres veces** un test negativo resultó no discriminar: fallaba por una
 restricción distinta de la que pretendía probar. Se corrigieron
@@ -239,7 +306,7 @@ construyendo testigos internamente coherentes.
 **Puede quedar alguno más.** Un auditor debería comprobar, para cada test
 negativo, que el testigo corrupto es válido en todo lo demás.
 
-### 5.6 El bloqueo de directorio de `sled` tras cerrar — **hallazgo nuevo**
+### 6.6 El bloqueo de directorio de `sled` tras cerrar — **hallazgo nuevo**
 
 `sled` mantiene un bloqueo del directorio que puede tardar en liberarse
 tras cerrar la base de datos. **Un nodo que se reinicie inmediatamente
@@ -256,7 +323,7 @@ hace el ayudante `open_retry` de los tests.
 Un auditor debería valorar si esto afecta a los procedimientos de
 recuperación tras caída.
 
-### 5.7 El techo de 63 bits
+### 6.7 El techo de 63 bits
 
 Las comprobaciones de rango fuerzan el bit más significativo a cero, así
 que **ningún valor puede superar 2^63 − 1**.
@@ -268,7 +335,7 @@ rechazarse al configurar.
 No es una fuga de solidez —los valores fuera de rango se rechazan— pero
 sí un fallo de usabilidad que puede confundir un diagnóstico.
 
-### 5.8 El formato de instantánea se queda atrás al añadir estado
+### 6.8 El formato de instantánea se queda atrás al añadir estado
 
 **Dos veces** en pocas rondas: al añadir las cuentas congeladas y al
 añadir el registro de transiciones, la instantánea dejó de incluir algo
@@ -283,7 +350,7 @@ existe.
 Un auditor debería comprobar que la versión actual del formato cubre todo
 el estado, y valorar exigir ese test.
 
-### 5.9 Colisiones en el árbol de nullifiers
+### 6.9 Colisiones en el árbol de nullifiers
 
 La posición sale de los bits bajos del nullifier. Dos nullifiers pueden
 colisionar, y el segundo **no podría gastarse**.
@@ -294,7 +361,7 @@ incorrecto, sería grave.
 
 ---
 
-## 6. Por dónde empezaría el autor si tuviera que romperlo
+## 7. Por dónde empezaría el autor si tuviera que romperlo
 
 En este orden:
 
@@ -314,7 +381,7 @@ En este orden:
 
 ---
 
-## 7. Limitaciones ya documentadas
+## 8. Limitaciones ya documentadas
 
 No hacen falta descubrirlas; están en `README.md`:
 
@@ -328,7 +395,7 @@ No hacen falta descubrirlas; están en `README.md`:
 
 ---
 
-## 8. Cómo reproducir
+## 9. Cómo reproducir
 
 ```bash
 cargo test -p zk-ssl --release              # la capa, 65 tests
@@ -342,7 +409,7 @@ fila exactos del fallo.
 
 ---
 
-## 8. Qué NO demuestra este documento
+## 10. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
