@@ -208,7 +208,11 @@ impl SovereignLayer {
                     .try_into()
                     .map_err(|_| StoreError::Malformed("importe de pendiente".into()))?,
             );
-            self.pending_amounts.insert(pos, importe);
+            // Un importe cero significa **cobrado**: no cuenta como
+            // pendiente, igual que la hoja vacia no cuenta como ocupada.
+            if importe != 0 {
+                self.pending_amounts.insert(pos, importe);
+            }
         }
 
         self.next_pending = match get(b"meta:next_pending")? {
@@ -509,18 +513,6 @@ impl SovereignLayer {
         // Sin esto, reiniciar el nodo levantaria todas las congelaciones:
         // el contador sobreviviria pero el arbol no, y una cuenta bajo
         // investigacion volveria a poder gastar.
-        // --- Importes de los pendientes sin cobrar ---
-        //
-        // Sin esto, tras un reinicio `total_pending()` valdria cero y la
-        // invariante global —saldos + pendientes == suministro— pareceria
-        // rota. Los compromisos del arbol no revelan el importe, asi que
-        // **no puede derivarse: hay que guardarlo**.
-        for (pos, importe) in &self.pending_amounts {
-            let mut key = b"pamt:".to_vec();
-            key.extend_from_slice(&pos.to_le_bytes());
-            batch.insert(key, self.seal(importe.to_le_bytes().to_vec())?);
-        }
-
         for (index, leaf) in self.frozen.occupied() {
             let mut key = b"froz:".to_vec();
             key.extend_from_slice(&index.to_le_bytes());
@@ -532,6 +524,21 @@ impl SovereignLayer {
             let mut key = b"pend:".to_vec();
             key.extend_from_slice(&position.to_le_bytes());
             batch.insert(key, self.seal(digest_to_bytes(&p).to_vec())?);
+
+            // ⚠️ **El importe va con la hoja, en el mismo lote.**
+            //
+            // Antes se escribian todos los importes actuales en un bucle
+            // aparte, y **eso nunca borraba los de los pendientes ya
+            // cobrados**: tras reiniciar, `total_pending()` los seguia
+            // contando.
+            //
+            // El mecanismo correcto es el que ya usaba la hoja: escribir el
+            // valor VACIO al consumir. Al cargar, un importe cero se omite,
+            // igual que `set_leaf` con el digest cero elimina la hoja.
+            let importe = self.pending_amounts.get(&position).copied().unwrap_or(0);
+            let mut key = b"pamt:".to_vec();
+            key.extend_from_slice(&position.to_le_bytes());
+            batch.insert(key, self.seal(importe.to_le_bytes().to_vec())?);
         }
 
         // --- Nullifier gastado, si la operacion lo produce ---

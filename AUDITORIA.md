@@ -1861,7 +1861,58 @@ escribieron mirando la vía nueva.
 
 ---
 
-## 27. Qué NO demuestra este documento
+## 27. Once tests de reinicio comparaban valores; uno solo intentaba el ataque
+
+Al migrar los tests de nullificadores apareció una asimetría:
+
+| | |
+|---|---|
+| Comparar una raíz antes y después de reiniciar | Un **indicio** |
+| Intentar la operación prohibida tras reiniciar | La **propiedad** |
+
+**De los doce tests de reinicio, once hacían lo primero.**
+
+No están mal: comprueban que el estado se restaure. Pero **ninguno demuestra
+que restaurarlo baste** para que el ataque siga bloqueado.
+
+### Lo que encontró el que sí lo intenta
+
+`a_restart_does_not_allow_claiming_twice` intenta cobrar dos veces un
+pendiente después de reiniciar.
+
+✅ **El doble cobro estaba bloqueado.** El mecanismo original es correcto:
+al cobrar, la capa escribe la hoja **vacía** en el mismo lote atómico, y al
+cargar un digest cero elimina la hoja.
+
+⚠️ **Pero destapó un fallo introducido en esta misma auditoría.**
+`total_pending()` —añadido para la invariante de §23— persistía los importes
+en un bucle aparte que escribía **solo los actuales**, y por tanto **nunca
+borraba los de los pendientes ya cobrados**. Tras reiniciar, el dinero en
+tránsito se contaba de más.
+
+**No creaba dinero**: la invariante quedaba mal, no el saldo.
+
+### La lección
+
+El mecanismo correcto estaba **al lado**, en el mismo fichero, y no se
+copió:
+
+| | Al consumir |
+|---|---|
+| `pend:` (original) | Escribe el valor **vacío**; al cargar, el cero elimina |
+| `pamt:` (añadido aquí) | Escribía solo los vivos; **el muerto se quedaba** |
+
+> **Añadir persistencia nueva sin copiar el mecanismo que ya funciona al
+> lado** es el mismo error que inventar una función que no existe, y lo
+> comete quien escribe deprisa por analogía en vez de leer.
+
+⚠️ **Y quedan once tests de reinicio que siguen comparando valores.** Cada
+uno podría esconder lo mismo: un estado que se restaura y una propiedad que
+ya no se cumple. **No se han revisado.**
+
+---
+
+## 28. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

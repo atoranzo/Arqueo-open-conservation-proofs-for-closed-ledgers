@@ -162,24 +162,48 @@ use super::*;
     /// no lo impide —la prueba sigue siendo válida—; lo bloquea la capa
     /// al comprobar que parte del estado actual.
     #[test]
-    fn replaying_a_settlement_is_rejected() {
+    fn replaying_a_send_is_rejected() {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 50_000);
 
-        let s = layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 250_000)
+        let estado = state_of(&layer, alice);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+        let recibo = layer
+            .send(
+                BaseElement::new(SK_ALICE),
+                alice,
+                &estado,
+                receptor,
+                salt_de(0x2E2E),
+                250_000,
+            )
             .expect("prueba");
-        layer.apply(&s, alice, bob, 250_000).expect("primera");
+        layer
+            .apply_send(&recibo, alice, &estado, 250_000)
+            .expect("primera");
 
+        // ⚠️ **Aquí no hay nullificador, y el reenvío se bloquea igual.**
+        //
+        // `circuit_settlement` insertaba una marca pública de gasto.
+        // `circuit_send` **no la lleva, por decisión documentada**: un envío
+        // cambia el saldo, luego la hoja, luego la raíz, así que el segundo
+        // intento parte de una `root_old` que ya no es la actual.
+        //
+        // El mecanismo cambia; **la propiedad no**.
         assert!(
             matches!(
-                layer.apply(&s, alice, bob, 250_000),
+                layer.apply_send(&recibo, alice, &estado, 250_000),
                 Err(LayerError::StaleState)
             ),
-            "CRITICO: reaplicar una liquidacion duplicaria el dinero"
+            "CRITICO: reaplicar un envio duplicaria el dinero"
         );
         assert_eq!(layer.balance_of(alice), Some(750_000));
+        assert_eq!(
+            layer.total_pending(),
+            250_000,
+            "y solo hay UN pendiente, no dos"
+        );
     }
 
     /// Dos transferencias encadenadas: la segunda parte de la raíz que
@@ -1201,9 +1225,11 @@ use super::*;
     ///
     /// Si no sobrevivieran, **bastaría reiniciar para gastar dos veces**.
     #[test]
-    fn nullifiers_survive_restart_and_still_block() {
+    fn a_restart_does_not_revive_an_applied_receipt() {
         let path = temp_path("nulls");
-        let (alice, bob, raiz_nulls);
+        let (alice, bob, raiz_cuentas);
+        let recibo;
+        let estado_usado;
         {
             let mut layer = open_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
@@ -1211,24 +1237,56 @@ use super::*;
                 .expect("abrir");
             alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
             bob = open_and_fund(&mut layer, SK_BOB, 0);
-            let s = layer
-                .transfer(BaseElement::new(SK_ALICE), alice, bob, 250_000)
-                .expect("transferir");
-            layer.apply(&s, alice, bob, 250_000).expect("aplicar");
-            raiz_nulls = layer.nullifier_root();
+            let estado = state_of(&layer, alice);
+            let receptor = layer.public_id_of(bob).expect("cuenta");
+            recibo = layer
+                .send(
+                    BaseElement::new(SK_ALICE),
+                    alice,
+                    &estado,
+                    receptor,
+                    salt_de(0x5EE),
+                    250_000,
+                )
+                .expect("enviar");
+            layer.apply_send(&recibo, alice, &estado, 250_000).expect("aplicar");
+            estado_usado = estado;
+            raiz_cuentas = layer.state_root();
         }
-        let layer = open_retry(
+        let mut layer = open_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
             )
             .expect("reabrir");
+
+        // ⚠️ **Lo que sobrevive ya no es el árbol de nullificadores.**
+        //
+        // `send`/`claim` no los usan: el reenvío se bloquea porque la
+        // `root_old` del recibo deja de ser la raíz actual. Así que lo que
+        // hay que comprobar tras reiniciar es **que esa raíz se restaure**
+        // — si volviera a la anterior, el recibo antiguo valdría otra vez.
         assert_eq!(
-            layer.nullifier_root(),
-            raiz_nulls,
-            "CRITICO: si los nullificadores no sobrevivieran, bastaria \
-             reiniciar para gastar dos veces"
+            layer.state_root(),
+            raiz_cuentas,
+            "CRITICO: si la raiz de cuentas no sobreviviera, bastaria \
+             reiniciar para reenviar el mismo recibo"
         );
+
+        // Y la propiedad, comprobada de verdad: el recibo antiguo no cuela.
+        assert!(
+            matches!(
+                layer.apply_send(&recibo, alice, &estado_usado, 250_000),
+                Err(LayerError::StaleState)
+            ),
+            "CRITICO: reiniciar no debe revivir un recibo ya aplicado"
+        );
+
         assert_eq!(layer.balance_of(alice), Some(750_000));
-        assert_eq!(layer.balance_of(bob), Some(250_000));
+        assert_eq!(
+            layer.balance_of(bob),
+            Some(0),
+            "bob no ha cobrado: el dinero sigue en un pendiente"
+        );
+        assert_eq!(layer.total_pending(), 250_000, "y el pendiente sobrevivio");
         let _ = std::fs::remove_dir_all(&path);
     }
 
@@ -2478,35 +2536,71 @@ use super::*;
     /// el árbol de nullifiers volvería a estar vacío y la no-pertenencia
     /// se satisfaría de nuevo.
     #[test]
-    fn spent_nullifiers_survive_restart() {
-        let path = temp_path("nullifiers");
-        let null_root_after;
+    fn a_restart_does_not_allow_claiming_twice() {
+        let path = temp_path("cobro_doble");
+        let aviso;
         let (alice, bob);
 
         {
-            let mut layer =
-                open_retry(
-                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS).expect("abrir");
+            let mut layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS)
+                .expect("abrir");
             alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
             bob = open_and_fund(&mut layer, SK_BOB, 0);
-            let s = layer
-                .transfer(BaseElement::new(SK_ALICE), alice, bob, 100_000)
-                .expect("prueba");
-            layer.apply(&s, alice, bob, 100_000).expect("aplicar");
-            null_root_after = layer.nullifier_root();
+
+            let estado = state_of(&layer, alice);
+            let receptor = layer.public_id_of(bob).expect("cuenta");
+            let recibo = layer
+                .send(
+                    BaseElement::new(SK_ALICE),
+                    alice,
+                    &estado,
+                    receptor,
+                    salt_de(0xC0B0),
+                    100_000,
+                )
+                .expect("enviar");
+            layer.apply_send(&recibo, alice, &estado, 100_000).expect("aplicar");
+
+            let estado_bob = state_of(&layer, bob);
+            let cobro = layer
+                .claim(BaseElement::new(SK_BOB), bob, &estado_bob, &recibo.notice)
+                .expect("cobrar");
+            layer
+                .apply_claim(&cobro, bob, &estado_bob, &recibo.notice)
+                .expect("aplicar cobro");
+            aviso = recibo.notice.clone();
         }
 
-        {
-            let layer = open_retry(
-                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS)
-                .expect("recuperar");
-            assert_eq!(
-                layer.nullifier_root(),
-                null_root_after,
-                "CRITICO: los nullifiers gastados deben sobrevivir al reinicio, \
-                 o reiniciar permitiria regastar"
-            );
-        }
+        let mut layer = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS)
+            .expect("recuperar");
+
+        // **Intenta el ataque COMPLETO, no solo la primera mitad.**
+        //
+        // ⚠️ Una version anterior comprobaba solo `claim()`, que **unicamente
+        // genera la prueba**. Que se genere no significa que se pueda
+        // cobrar: el estado cambia en `apply_claim`, y ahi es donde hay que
+        // intentar el ataque.
+        //
+        // El pendiente ya se cobro. Si reiniciar lo devolviera al arbol,
+        // Bob podria cobrarlo otra vez y **se crearia dinero**.
+        let estado_bob = state_of(&layer, bob);
+        let intento = layer.claim(BaseElement::new(SK_BOB), bob, &estado_bob, &aviso);
+        let bloqueado = match intento {
+            Err(_) => true,
+            Ok(recibo) => layer
+                .apply_claim(&recibo, bob, &estado_bob, &aviso)
+                .is_err(),
+        };
+        assert!(
+            bloqueado,
+            "CRITICO: reiniciar no debe permitir cobrar dos veces el mismo \
+             pendiente"
+        );
+
+        assert_eq!(layer.balance_of(bob), Some(100_000), "cobrado UNA vez");
+        assert_eq!(layer.total_pending(), 0, "y nada en transito");
 
         let _ = std::fs::remove_dir_all(&path);
     }
