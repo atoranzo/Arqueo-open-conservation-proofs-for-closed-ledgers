@@ -1395,9 +1395,67 @@ fila exactos del fallo.
 
 ---
 
-## 20. ⚠️ `cargo test` sin `--release` falla en 56 tests
+## 20. ⚠️ `cargo test` sin `--release` falla en 2 tests
 
-**Y no porque el código esté mal.** Merece estar aquí porque es lo primero
+> **⚠️ CORRECCIÓN.** Esta sección decía **56** y describía una causa que no
+> los explicaba. Medido de nuevo: **son 2**, deterministas, y la causa real
+> es distinta de la que se había supuesto. Lo que sigue es la versión
+> corregida; lo anterior se conserva más abajo por lo que enseña.
+
+### Los dos, medidos
+
+```
+circuit_audit::tests::no_constraint_is_vacuous
+circuit_mint_pending::tests::minting_exactly_up_to_the_cap_is_allowed
+```
+
+Tres ejecuciones seguidas dan **2 fallos exactos**. No hay intermitencia
+—se creyó verla al comparar salidas de compilaciones incrementales
+distintas, que es el mismo error de suponer sin medir que esta auditoría
+documenta en otros sitios—.
+
+### La causa del segundo, confirmada
+
+`circuit_mint_pending` descompone **`tope − suministro_nuevo` en 63 bits**.
+El test alcanza el tope **exactamente**, así que esa resta vale **cero** y
+**los 63 bits son cero**.
+
+Las restricciones booleanas sobre esos bits —`bit × (bit − 1)`— tienen grado
+real **0** en esa traza concreta, y la comprobación de depuración de
+winterfell exige que el grado declarado se realice.
+
+⚠️ **Es un fallo del test positivo, no del negativo.** El negativo espera que
+la prueba falle, y falla —por otra razón—, así que **pasa por casualidad**.
+El positivo es el que lo delata. Es exactamente la razón por la que §14 exige
+escribir los pares.
+
+### Lo que esto cambia de la conclusión anterior
+
+La versión previa decía: *«la suite en modo depuración no protege: los 56
+tests que fallan no comprueban nada»*.
+
+✅ **Con 2 fallos, el modo depuración SÍ protege casi entero** —198 de 200—,
+y ese modo es el que caza restricciones rotas: es el que dio *«expected 41
+assertions, received 42»* cuando se añadió el límite regulatorio al circuito.
+
+⚠️ **Y eso lo vuelve más valioso de lo que se creía**, no menos: 198 tests
+comprobando grados de restricción es una red que la documentación daba por
+inútil.
+
+### La cifra estuvo rancia y ninguna herramienta lo vio
+
+`check_figures.py` comprueba las cifras de tests que **pasan**. Nada
+comprobaba una cifra sobre tests que **fallan**, y por eso 56 sobrevivió a un
+factor de 28 de error.
+
+> **Una herramienta que verifica las afirmaciones sobre el éxito no dice nada
+> de las afirmaciones sobre el fallo.**
+
+### Versión anterior de esta sección, conservada
+
+**Y no porque el código esté mal.**
+
+Merece estar aquí porque es lo primero
 que ejecutaría quien evalúe el proyecto, y la conclusión natural sería que
 está roto.
 

@@ -144,7 +144,7 @@ Requiere Rust estable. Sin instaladores externos ni toolchains aparte.
 
 > ⚠️ **`--release` es obligatorio, no una optimización.**
 >
-> `cargo test` sin él **falla en 56 tests**, y no porque el código esté mal:
+> `cargo test` sin él **falla en 2 tests**, y no porque el código esté mal:
 > winterfell comprueba en modo depuración que el grado declarado de cada
 > restricción se realice en la traza concreta que se está probando.
 >
