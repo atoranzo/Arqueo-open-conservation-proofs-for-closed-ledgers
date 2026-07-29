@@ -628,14 +628,58 @@ El puente modelaba solo `ACSC` y `RJCT`: **colapsaba dos estados en uno**.
 La objeción "cambia el contrato" era mía y era falsa — la liquidación en
 dos tiempos es lo normal en pagos, y el estándar tiene el vocabulario.
 
-#### Lo hecho y lo que falta
+#### Lo hecho
 
 ✅ **`TxStatus::InProcess` → `ACSP`** existe en el puente.
 
-⚠️ **Falta encaminar `settle_pacs008` por `send`/`claim`.** Hoy sigue
-llamando a `transfer()`, así que **la fuga sigue abierta en la vía ISO**.
-Cambiarlo exige que el puente devuelva el pendiente y que haya un segundo
-mensaje al cobrarse: es trabajo, no una decisión.
+✅ **Los tres códigos de estado, verificados** contra el catálogo real.
+
+#### El diseño del cambio, completo
+
+⚠️ **`settle_pacs008` sigue llamando a `transfer()`**, así que la fuga sigue
+abierta en la vía ISO. El diseño está cerrado; falta escribirlo.
+
+**El obstáculo aparente y por qué no lo es.** `send()` necesita
+`sender_state` —el saldo y el nonce **declarados por el titular**— y el
+mensaje ISO no lo transporta. Si el puente se lo pidiera a la capa,
+**estaría leyendo el registro**, que es justo lo que la vía nueva evita.
+
+La salida ya está en el propio docstring de `settle_pacs008`, dicha para la
+clave:
+
+> *`sender_key` viene de un almacén de claves, no del mensaje: ISO 20022 no
+> transporta claves criptográficas.*
+
+**El mismo argumento vale para el estado.** El banco del deudor conoce el
+saldo de su cliente: eso es banca normal, no una concesión.
+
+**La firma nueva:**
+
+```rust
+pub fn settle_pacs008(
+    layer: &mut SovereignLayer,
+    registry: &IbanRegistry,
+    msg: &Pacs008,
+    sender_key: BaseElement,
+    sender_state: &ClientState,   // del mismo almacen que la clave
+    salt: Digest,                 // lo elige el pagador
+) -> Pacs002                      // devuelve ACSP, no ACSC
+```
+
+**Y una función nueva** para la segunda fase, que devuelve `ACSC` cuando el
+receptor cobra.
+
+#### ⚠️ Lo que cuesta, dicho con números
+
+| | |
+|---|---|
+| Llamadas a actualizar | **11**, todas en `iso.rs` |
+| Tests que cambian de semántica | Los que afirman `Settled` pasan a `InProcess` |
+| Función nueva | La fase de cobro |
+
+**No se hace aquí porque cambiar la API pública y la semántica de once
+tests a la vez es exactamente el tipo de cambio que esta auditoría ha visto
+salir mal.** Se prefiere dejarlo diseñado y verificable a dejarlo a medias.
 
 ✅ **Verificado contra el catálogo real.** `ACSP` es
 *AcceptedSettlementInProcess* y `ACSC` es *AcceptedSettlementCompleted*; el
