@@ -1493,6 +1493,25 @@ La capa abre cuentas secuencialmente desde el índice 0, y un camino de Merkle
 hacia la posición 0 tiene **todos los bits a cero**. La restricción booleana
 sobre ese bit es constante, y su grado real cae.
 
+### Qué restricciones exactamente
+
+Cruzando los índices del mensaje con el mapa de `circuit_send`:
+
+| Índices | Grupo | Árbol |
+|---|---|---|
+| 32–43 | `C_PLACE_A`, `C_PLACE_B`, `C_SIBLING` | Cuentas |
+| 44 | `C_BIT_BOOL` | Cuentas |
+| 106–113 | `C_FROZEN_ENTRY`, `C_FROZEN_PLACE` | Congelados |
+| 114 | `C_FBIT_BOOL` | Congelados |
+| 148–160 | `C_PEND_PLACE`, `C_PEND_SIBLING`, `C_PBIT_BOOL` | Pendientes |
+
+**Los tres árboles, y siempre las restricciones que dependen del bit del
+camino.** Ninguna otra familia aparece: ni los hashes, ni el saldo, ni el
+suministro, ni el límite.
+
+Es la confirmación más estrecha posible de la causa: **los tres caminos
+apuntan a la posición 0**, así que sus bits son constantes.
+
 ### El arreglo, y su coste
 
 Haría falta que los tests operaran sobre cuentas en índices con **bits
@@ -1501,6 +1520,15 @@ variados** —por ejemplo `0b10101`— en vez de 0 y 1.
 ⚠️ **No es un cambio pequeño**: abrir cuentas de relleno hasta llegar ahí
 cambia `account_count()`, los índices que los tests declaran, y las cifras de
 suministro de varios. Son 172 tests. **No está hecho.**
+
+⚠️ **Pero hay una parte barata.** De los tres árboles, el de **pendientes** no
+depende de índices que los tests declaren: `allocate_pending` devuelve la
+primera posición libre, que es 0. Hacer que empiece en una posición con bits
+variados arreglaría `C_PEND_*` **sin tocar ningún test**, y dejaría el
+problema reducido a los otros dos árboles.
+
+**No se ha intentado**, y conviene medir cuántos de los 65 caen solo por esa
+familia antes de decidir si compensa.
 
 ⚠️ **Y el coste de no hacerlo está medido**: 65 tests de la capa **no
 comprueban nada** en modo depuración, que es el único que valida los grados
