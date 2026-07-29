@@ -232,7 +232,15 @@ Todo lo demás que falta está enumerado en
 Proof Systems: Design Findings and Measurements**
 DOI: [10.5281/zenodo.21677737](https://doi.org/10.5281/zenodo.21677737)
 
-⚠️ **Esa versión necesita una corrección.** Sus cifras de coste —120,4 MB por
+**Provable Compliance without Full Ledger Disclosure — A Zero-Knowledge
+Settlement Architecture for Supervisory Audit**
+DOI: [10.5281/zenodo.21678396](https://doi.org/10.5281/zenodo.21678396)
+
+**From Institutional Trust to Verifiable Properties — A Minimal ZK Settlement
+Layer and Its Residual Trust Surface**
+DOI: [10.5281/zenodo.21679208](https://doi.org/10.5281/zenodo.21679208)
+
+⚠️ **La primera necesita una corrección.** Sus cifras de coste —120,4 MB por
 mil operaciones y 28,5 % de verificar sobre generar— miden la vía de un paso,
 que ya no es la de producción. Un pago por la vía en dos fases son **dos
 pruebas**, y el arnés mide **120,4 MB y 28,5 %**. Ver `AUDITORIA.md` §31.
