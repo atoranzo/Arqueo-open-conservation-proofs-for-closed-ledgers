@@ -85,7 +85,6 @@ mod recovery;
 pub mod snapshot;
 pub mod sparse_tree;
 pub mod store;
-mod transfer;
 
 #[cfg(test)]
 mod metrics;

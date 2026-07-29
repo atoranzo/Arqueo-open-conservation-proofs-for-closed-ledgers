@@ -862,7 +862,7 @@ It requires only the stable Rust compiler; no external toolchains or
 non-stable compilers are used.
 
 ```bash
-cargo test -p zk-ssl --release              # layer: 172 tests
+cargo test -p zk-ssl --release              # layer: 170 tests
 cargo test -p stark-experiment --release    # circuits: 199 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```

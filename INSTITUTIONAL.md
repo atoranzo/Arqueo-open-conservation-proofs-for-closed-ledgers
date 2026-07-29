@@ -479,7 +479,7 @@ Nothing in this document requires trusting its author.
 ```bash
 git clone [repository]
 cd zk-ssl
-cargo test -p zk-ssl --release              # 172 tests
+cargo test -p zk-ssl --release              # 170 tests
 cargo test -p stark-experiment --release    # 199 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```

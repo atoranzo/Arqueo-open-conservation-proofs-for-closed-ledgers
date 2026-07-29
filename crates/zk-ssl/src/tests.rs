@@ -1426,8 +1426,9 @@ use super::*;
         let id_bob = derive_public_id(BaseElement::new(SK_BOB));
 
         // Alice cree pagar a Bob, pero la capa le da el indice de Mallory.
+        let id_mallory = layer.public_id_of(mallory).expect("cuenta");
         let m = layer
-            .transfer_materials(alice, mallory, 1000, client::compute_nullifier(BaseElement::new(SK_ALICE), layer.nonce_of(alice).unwrap()))
+            .send_materials(alice, id_mallory, 1000, salt_de(0xDE51))
             .expect("materiales");
 
         assert!(
@@ -1448,7 +1449,7 @@ use super::*;
 
         let id_bob = derive_public_id(BaseElement::new(SK_BOB));
         let m = layer
-            .transfer_materials(alice, bob, 1000, client::compute_nullifier(BaseElement::new(SK_ALICE), layer.nonce_of(alice).unwrap()))
+            .send_materials(alice, id_bob, 1000, salt_de(0xDE52))
             .expect("materiales");
 
         assert!(

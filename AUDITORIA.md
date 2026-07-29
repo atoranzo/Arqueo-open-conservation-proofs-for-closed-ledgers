@@ -1128,12 +1128,12 @@ Leer por qué funciona antes de copiarlo evitó ese fallo.
 
 ## 15. La cifra de pruebas que este proyecto publica es incompleta
 
-La documentación afirma **371 pruebas ejecutables** y da los dos comandos
+La documentación afirma **369 pruebas ejecutables** y da los dos comandos
 que las ejecutan. Es preciso sobre **qué** mide, pero se lee como el total
 del proyecto.
 
 **El espacio de trabajo tiene diez crates**, y la suite entera son unas
-**563 pruebas** y **22 minutos**.
+**561 pruebas** y **22 minutos**.
 
 ### El desglose, que dice más que el número
 
@@ -2221,12 +2221,45 @@ Migrarlo significa dar al cliente un equivalente de `prove_transfer` sobre
 ⚠️ **No está hecho, y es más trabajo que las 35 llamadas juntas**: es una API
 pública con su propia documentación, sus tests y su lugar en los papers.
 
-### Lo que sí se ganó
+### ✅ Resuelto después, y por otro camino
 
-Las 35 migraciones **no fueron en balde**: produjeron cuatro hallazgos —§25,
-§26, §29, §30— y dejaron la vía de dos fases ejercitada por toda la suite.
-Pero **el objetivo declarado no se alcanzó**, y decirlo importa más que el
-progreso.
+Lo que faltaba no era migrar más llamadas: era **dar al cliente un sustituto
+de `prove_transfer`**. Con `send_materials` / `prove_send` y
+`claim_materials` / `prove_claim` (§33), la vía antigua se quedó sin nada que
+la necesitara y **se retiró entera**:
+
+| Retirado | Tamaño |
+|---|---|
+| `transfer.rs` completo | 260 líneas |
+| `TransferMaterials` y su `impl` | 1.776 B |
+| `transfer_materials`, `prove_transfer`, `compute_nullifier` | ~3.000 B |
+
+**Y con ella el límite del cumpleaños.** Hoy todas las llamadas a `commit`
+pasan `None` como nullificador, y las únicas escrituras que quedan
+—`persistence` y `snapshot`— **restauran de disco lo escrito antes de la
+retirada**. Nada genera nullificadores.
+
+⚠️ **El árbol se conserva por compatibilidad de formato**: quitarlo cambiaría
+el fichero en disco y el instantáneo, y obligaría a migrar ledgers
+existentes. Es peso muerto, y está marcado como tal en `accounts.rs`.
+
+⚠️ **Y el límite no se ha resuelto: se ha evitado.** El encadenamiento de
+raíces que sustituye al nullificador **exige un orden total**, que un solo
+nodo da y un sistema distribuido no. Quien distribuya esto lo recupera entero.
+
+### Lo que enseña el rodeo
+
+El plan —*«migrar 35 llamadas y retirar la función»*— estaba **mal formulado
+antes de estar bien ejecutado**. Contaba llamadas a una función cuando lo que
+sujetaba la vía antigua era **una API pública que no la llamaba**.
+
+Las 35 migraciones no fueron en balde: produjeron cuatro hallazgos —§25, §26,
+§29, §30—. Pero el cierre llegó por escribir lo que faltaba, no por terminar
+de contar.
+
+> **Un plan expresado en unidades de trabajo puede completarse sin alcanzar
+> su objetivo.** Lo que había que preguntar no era «¿cuántas llamadas
+> quedan?» sino «¿qué impide borrar esto?».
 
 ---
 

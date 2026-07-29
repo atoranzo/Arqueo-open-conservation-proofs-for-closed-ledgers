@@ -77,51 +77,7 @@ impl std::fmt::Display for WrongRecipient {
 }
 impl std::error::Error for WrongRecipient {}
 
-/// Todo lo que el cliente necesita de la capa para generar la prueba
-/// **sin entregarle su clave**.
-///
-/// Son caminos de Merkle y datos de cuenta: información de estado, no
-/// secretos.
-#[derive(Clone, Debug)]
-pub struct TransferMaterials {
-    pub sender: AccountView,
-    pub receiver: AccountView,
-    pub sender_path: MerklePath,
-    /// Camino del receptor en el árbol INTERMEDIO, tras actualizar al
-    /// emisor. Es lo que exige el encadenamiento de la partida doble.
-    pub receiver_path: MerklePath,
-    /// Camino en el árbol de nullifiers. Es un `MerklePath` como los
-    /// demás: en este backend ambos árboles comparten estructura, solo
-    /// difiere qué se coloca en la hoja.
-    pub null_path: MerklePath,
-    /// Camino de no-pertenencia al árbol de congelados. Sin él, el
-    /// cliente no podría demostrar que no está congelado.
-    pub frozen_path: MerklePath,
-    pub regulatory_limit: u64,
-    pub amount: u64,
-}
 
-impl TransferMaterials {
-    /// **COMPRUEBA A QUIÉN VAS A PAGAR. Llámalo siempre.**
-    ///
-    /// El índice de una cuenta ajena viene de fuera del sistema, y lo
-    /// natural es preguntárselo a la capa. **Si la capa miente, el pago va
-    /// a otra cuenta** — y la prueba sería válida, porque las entradas
-    /// públicas de la liquidación **no dicen quién recibe**: solo raíces,
-    /// nullificador y límites.
-    ///
-    /// Es un poder del operador que no estaba declarado: podía desviar
-    /// pagos sin falsificar nada.
-    pub fn check_recipient(&self, expected: Digest) -> Result<(), WrongRecipient> {
-        if self.receiver.public_id != expected {
-            return Err(WrongRecipient {
-                expected,
-                found: self.receiver.public_id,
-            });
-        }
-        Ok(())
-    }
-}
 
 impl SovereignLayer {
     /// Vista pública de una cuenta, para que el cliente pueda calcular su
@@ -142,7 +98,7 @@ impl SovereignLayer {
     /// público de todos modos.
     /// **Materiales para un envío, sin la clave y sin el saldo del receptor.**
     ///
-    /// El equivalente de [`Self::transfer_materials`] para la vía en dos
+    /// El equivalente, para la vía en dos fases, de los materiales que
     /// fases, con dos diferencias que son el diseño entero:
     ///
     /// | | Un paso | Envío |
@@ -229,86 +185,6 @@ impl SovereignLayer {
         })
     }
 
-    pub fn transfer_materials(
-        &self,
-        sender_index: AccountIndex,
-        receiver_index: AccountIndex,
-        amount: u64,
-        nullifier: Digest,
-    ) -> Result<TransferMaterials, LayerError> {
-        let sender = self
-            .records
-            .get(&sender_index)
-            .ok_or(LayerError::AccountNotFound(sender_index))?
-            .clone();
-        let receiver = self
-            .records
-            .get(&receiver_index)
-            .ok_or(LayerError::AccountNotFound(receiver_index))?
-            .clone();
-
-        if amount > sender.balance {
-            return Err(LayerError::InsufficientBalance {
-                available: sender.balance,
-                requested: amount,
-            });
-        }
-        if amount > self.regulatory_limit {
-            return Err(LayerError::OverRegulatoryLimit {
-                limit: self.regulatory_limit,
-                requested: amount,
-            });
-        }
-
-        let null_pos = nullifier_position(&nullifier);
-        if self.is_frozen(sender_index) {
-            return Err(LayerError::AccountFrozen(sender_index));
-        }
-        // ⚠️ La posicion se DERIVA del nullificador, asi que estar ocupada
-        // no significa que este pago se hiciera ya: puede ser el de otra
-        // persona que cayo en la misma posicion. Distinguirlo importa
-        // porque acusar de doble gasto a quien no lo ha hecho es falso.
-        if self.nullifiers.is_occupied(null_pos) {
-            if self.nullifiers.leaf(null_pos) == nullifier {
-                return Err(LayerError::NullifierAlreadySpent);
-            }
-            return Err(LayerError::NullifierPositionCollision { position: null_pos });
-        }
-
-        let sender_path = self.accounts.path_for(sender_index);
-
-        // Arbol INTERMEDIO: solo el emisor actualizado.
-        let mut mid = self.accounts.clone();
-        mid.set_leaf(
-            sender_index,
-            native_leaf(
-                sender.public_id,
-                BaseElement::new(sender.balance - amount),
-                sender.nonce + BaseElement::ONE,
-            ),
-        );
-        let receiver_path = mid.path_for(receiver_index);
-        let null_path = self.nullifiers.path_for(null_pos);
-
-        Ok(TransferMaterials {
-            sender: AccountView {
-                public_id: sender.public_id,
-                balance: sender.balance,
-                nonce: sender.nonce,
-            },
-            receiver: AccountView {
-                public_id: receiver.public_id,
-                balance: receiver.balance,
-                nonce: receiver.nonce,
-            },
-            sender_path,
-            receiver_path,
-            null_path,
-            frozen_path: self.frozen.path_for(sender_index),
-            regulatory_limit: self.regulatory_limit,
-            amount,
-        })
-    }
 }
 
 /// **Calcula el nullifier de una operación.** Se ejecuta en el cliente.
@@ -318,13 +194,13 @@ impl SovereignLayer {
 /// ajenas y vigilar cuándo gastan.
 /// **Materiales para un ENVÍO en dos fases.**
 ///
-/// La diferencia con [`TransferMaterials`] es la que da nombre al diseño:
-/// **aquí no hay `receiver: AccountView`**.
+/// La diferencia con la vía de un paso —ya retirada— es la que da nombre al
+/// diseño: **aquí no hay saldo del receptor**.
 ///
-/// La vía de un paso actualiza las dos hojas en una transición, así que quien
-/// prueba necesita el saldo del receptor para calcular su hoja nueva.
-/// `TransferMaterials` se lo entrega, y por eso **pagar a alguien revela
-/// cuánto tiene**.
+/// Aquella vía actualizaba las dos hojas en una transición, así que quien
+/// probaba necesitaba el saldo del receptor para calcular su hoja nueva, y
+/// sus materiales se lo entregaban. **Pagar a alguien revelaba cuánto
+/// tiene.**
 ///
 /// Un envío toca **una sola hoja**, la del pagador. Del receptor basta su
 /// identificador público, que es lo que va en el compromiso. Ver
@@ -345,9 +221,31 @@ pub struct SendMaterials {
     pub salt: Digest,
 }
 
+impl SendMaterials {
+    /// **Comprueba a quién van dirigidos estos materiales.**
+    ///
+    /// La capa entrega los materiales que se le piden. Si alguien
+    /// interceptara la petición y cambiara el destinatario, el pagador
+    /// firmaría un envío a otra cuenta sin notarlo.
+    ///
+    /// ⚠️ **Aquí es más simple que en la vía de un paso.** Allí había que
+    /// comparar contra `receiver.public_id` —un campo de una vista que
+    /// también traía el saldo—. Aquí el identificador **es** el único dato
+    /// del receptor que existe.
+    pub fn check_recipient(&self, expected: Digest) -> Result<(), WrongRecipient> {
+        if self.receiver_id != expected {
+            return Err(WrongRecipient {
+                expected,
+                found: self.receiver_id,
+            });
+        }
+        Ok(())
+    }
+}
+
 /// **Genera la prueba de un envío SIN tocar la capa.**
 ///
-/// Es el equivalente de [`prove_transfer`] para la vía en dos fases, y existe
+/// Es el equivalente, para la vía en dos fases, de la prueba local que
 /// por la misma razón: demostrar que **la clave de gasto no necesita salir de
 /// la máquina del cliente**.
 ///
@@ -469,57 +367,7 @@ pub fn prove_claim(
     })
 }
 
-pub fn compute_nullifier(spend_key: BaseElement, nonce: BaseElement) -> Digest {
-    stark_experiment::circuit_settlement::native_nullifier(spend_key, nonce)
-}
 
-/// **Genera la prueba de una transferencia EN LA MÁQUINA DEL CLIENTE.**
-///
-/// Es una función libre, no un método de la capa, y eso es deliberado:
-/// **la capa no puede llamarla porque no tiene la clave**. Si fuera un
-/// método, la API estaría sugiriendo lo contrario.
-pub fn prove_transfer(
-    materials: &TransferMaterials,
-    spend_key: BaseElement,
-) -> Result<Settlement, LayerError> {
-    // La clave debe corresponder a la cuenta. El circuito lo impone
-    // igualmente, pero en release no se valida al generar: sin esta
-    // comprobacion se gastaria el computo de una prueba invalida.
-    if derive_public_id(spend_key) != materials.sender.public_id {
-        return Err(LayerError::NotTheAccountHolder);
-    }
-
-    let trace = build_settlement_trace(
-        &SenderWitness {
-            spend_key,
-            balance: materials.sender.balance,
-            nonce: materials.sender.nonce,
-            path: materials.sender_path.clone(),
-        },
-        &ReceiverWitness {
-            public_id: materials.receiver.public_id,
-            balance: materials.receiver.balance,
-            nonce: materials.receiver.nonce,
-            path: materials.receiver_path.clone(),
-        },
-        materials.amount,
-        materials.amount,
-        materials.regulatory_limit,
-        &materials.null_path,
-        &materials.frozen_path,
-    );
-
-    let prover = SettlementProver::new(proof_options());
-    let public_inputs = prover.get_pub_inputs(&trace);
-    let proof = prover
-        .prove(trace)
-        .map_err(|e| LayerError::ProofFailed(format!("{e:?}")))?;
-
-    Ok(Settlement {
-        proof: proof.to_bytes(),
-        public_inputs,
-    })
-}
 
 #[cfg(test)]
 mod tests {
@@ -527,63 +375,38 @@ mod tests {
     use crate::*;
     use winterfell::math::fields::f64::BaseElement;
 
-    /// **EL TEST QUE JUSTIFICA LA PIEZA.**
-    ///
-    /// El ciclo completo sin que la clave llegue nunca a la capa.
-    #[test]
-    fn a_transfer_without_giving_the_key_to_the_layer() {
-        let mut layer = new_layer();
-        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-        let bob = open_and_fund(&mut layer, SK_BOB, 0);
-        let key = BaseElement::new(SK_ALICE);
-
-        // 1. El cliente pide la vista de su cuenta.
-        let view = layer.account_view(alice).expect("vista");
-
-        // 2. Calcula el nullifier LOCALMENTE, con su clave.
-        let nullifier = client::compute_nullifier(key, view.nonce);
-
-        // 3. Pide los materiales. La capa NO recibe la clave.
-        let materials = layer
-            .transfer_materials(alice, bob, 250_000, nullifier)
-            .expect("materiales");
-
-        // 4. Genera la prueba EN SU MAQUINA.
-        let settlement = client::prove_transfer(&materials, key).expect("prueba");
-
-        // 5. La capa verifica y aplica.
-        layer
-            .apply(&settlement, alice, bob, 250_000)
-            .expect("aplicar");
-
-        assert_eq!(layer.balance_of(alice), Some(750_000));
-        assert_eq!(layer.balance_of(bob), Some(250_000));
-    }
 
     /// **Los materiales no contienen ninguna clave.**
     ///
     /// Es la propiedad que define la pieza: lo que viaja de la capa al
     /// cliente es estado, no secretos.
     #[test]
-    fn materials_contain_no_keys() {
+    fn send_materials_contain_no_keys() {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
         let key = BaseElement::new(SK_ALICE);
-        let view = layer.account_view(alice).expect("vista");
-        let nullifier = client::compute_nullifier(key, view.nonce);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
 
         let m = layer
-            .transfer_materials(alice, bob, 1000, nullifier)
+            .send_materials(alice, receptor, 1000, salt_de(0x0C1A))
             .expect("materiales");
 
-        // La identidad publica NO es la clave: es su hash.
         assert_ne!(
             m.sender.public_id,
             [key, BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO],
             "los materiales no deben contener la clave"
         );
         assert_eq!(m.sender.public_id, derive_public_id(key));
+
+        // ⚠️ **Y tampoco el saldo del receptor.**
+        //
+        // Los materiales de la via retirada llevaban una vista completa del
+        // receptor, asi que quien pagaba veia cuanto tenia el otro. Aqui el
+        // tipo solo tiene
+        // `receiver_id: Digest`: **no hay campo por donde el saldo pudiera
+        // entrar**. Ver `AUDITORIA.md` §29.
+        assert_eq!(m.receiver_id, receptor);
     }
 
     /// **Sin la clave correcta no se puede generar la prueba**, aunque se
@@ -591,35 +414,25 @@ mod tests {
     ///
     /// Es lo que impide que quien intercepte los materiales pueda gastar.
     #[test]
-    fn materials_alone_are_not_enough_to_spend() {
+    fn send_materials_alone_are_not_enough_to_spend() {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
-        let key = BaseElement::new(SK_ALICE);
-        let view = layer.account_view(alice).expect("vista");
-        let nullifier = client::compute_nullifier(key, view.nonce);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+
         let m = layer
-            .transfer_materials(alice, bob, 250_000, nullifier)
+            .send_materials(alice, receptor, 250_000, salt_de(0x1073))
             .expect("materiales");
 
-        // Un atacante con TODOS los materiales pero sin la clave.
-        let r = client::prove_transfer(&m, BaseElement::new(0x1337));
+        let r = client::prove_send(&m, BaseElement::new(0x1337), proof_options());
         assert!(
             matches!(r, Err(LayerError::NotTheAccountHolder)),
             "CRITICO: quien intercepte los materiales NO debe poder gastar. \
-             Resultado: {r:?}"
+             Resultado: {:?}",
+            r.map(|_| "recibo")
         );
     }
 
-    /// El nullifier solo lo puede calcular el titular: es lo que impide
-    /// vigilar cuándo gasta una cuenta ajena.
-    #[test]
-    fn only_the_holder_can_compute_the_nullifier() {
-        let nonce = BaseElement::new(3);
-        let real = client::compute_nullifier(BaseElement::new(SK_ALICE), nonce);
-        let guess = client::compute_nullifier(BaseElement::new(0x1337), nonce);
-        assert_ne!(real, guess);
-    }
 
     /// **UN PAGO ENTERO SIN DAR NINGUNA CLAVE A LA CAPA.**
     ///
@@ -648,8 +461,9 @@ mod tests {
 
         // ⚠️ **Y NO ENTREGA EL SALDO DEL RECEPTOR.**
         //
-        // `TransferMaterials` lleva `receiver: AccountView` porque la vía de
-        // un paso actualiza las dos hojas y necesita el saldo del otro.
+        // Los materiales de la vía retirada llevaban una vista completa del
+        // receptor, porque esa vía actualizaba las dos hojas y necesitaba el
+        // saldo del otro.
         // `SendMaterials` lleva `receiver_id: Digest` y nada más: **la fuga
         // hacia la contraparte está cerrada en el tipo**, no en un comentario.
         assert_eq!(materials.receiver_id, receptor);
