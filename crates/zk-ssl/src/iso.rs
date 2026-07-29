@@ -313,57 +313,19 @@ fn rejected(msg: &Pacs008, code: &'static str, text: String) -> Pacs002 {
     }
 }
 
-/// **Liquida un pacs.008 y devuelve el pacs.002 correspondiente.**
-///
-/// Nunca falla con `Err`: un rechazo es una respuesta válida del
-/// protocolo, no un error del programa. Eso es deliberado — un sistema de
-/// mensajería espera **siempre** un informe de estado, y tratar el
-/// rechazo como excepción llevaría a mensajes perdidos.
-///
-/// `sender_key` viene de un almacén de claves, no del mensaje: ISO 20022
-/// no transporta claves criptográficas.
-pub fn settle_pacs008(
-    layer: &mut SovereignLayer,
-    registry: &IbanRegistry,
-    msg: &Pacs008,
-    sender_key: BaseElement,
-) -> Pacs002 {
-    let (debtor, creditor) = match registry.validate(msg) {
-        Ok(pair) => pair,
-        Err(e) => {
-            let (code, text) = e.iso_reason();
-            return rejected(msg, code, text);
-        }
-    };
-
-    let settlement: Settlement =
-        match layer.transfer(sender_key, debtor, creditor, msg.amount_minor) {
-            Ok(s) => s,
-            Err(e) => {
-                let (code, text) = iso_reason(&e);
-                return rejected(msg, code, text);
-            }
-        };
-
-    let root_old = settlement.public_inputs.root_old;
-    let root_new = settlement.public_inputs.root_new;
-
-    if let Err(e) = layer.apply(&settlement, debtor, creditor, msg.amount_minor) {
-        let (code, text) = iso_reason(&e);
-        return rejected(msg, code, text);
-    }
-
-    Pacs002 {
-        original_msg_id: msg.msg_id.clone(),
-        original_end_to_end_id: msg.end_to_end_id.clone(),
-        status: TxStatus::Settled,
-        reason_code: None,
-        reason_text: None,
-        proof: Some(settlement.proof),
-        root_old: Some(root_old),
-        root_new: Some(root_new),
-    }
-}
+// ⚠️ **`settle_pacs008` clásico RETIRADO.**
+//
+// Llamaba a `transfer()`, que actualiza la hoja del receptor y por tanto
+// **exige conocer su saldo**: el pagador lo aprendía. Era la fuga que la
+// prioridad 0 pretendía cerrar, y seguía siendo la vía por la que un banco
+// habría entrado.
+//
+// Lo sustituye `settle_pacs008_two_phase` + `claim_pacs008`, que
+// materializan el ciclo `ACSP → ACSC` del propio estándar.
+//
+// **Una fuga presente y alcanzable es una fuga**, aunque exista una
+// alternativa mejor al lado. Por eso se retira en vez de marcarse como
+// desaconsejada.
 
 /// **Liquida un pacs.008 por la vía en DOS FASES, sin filtrar el saldo del
 /// receptor.**
@@ -578,6 +540,30 @@ mod tests {
     const SK_ALICE: u64 = 0xA11CE;
     const SK_BOB: u64 = 0xB0B;
 
+    /// **Envuelve la vía en dos fases para los tests de mapeo de errores.**
+    ///
+    /// El estado del pagador y el aleatorio no vienen del mensaje: los
+    /// aporta el banco del deudor. Los tests que solo comprueban códigos de
+    /// rechazo no tienen por qué repetirlo once veces.
+    fn settle(
+        layer: &mut SovereignLayer,
+        registry: &IbanRegistry,
+        msg: &Pacs008,
+        key: u64,
+        pagador: AccountIndex,
+    ) -> Pacs002 {
+        let estado = state_of(layer, pagador);
+        settle_pacs008_two_phase(
+            layer,
+            registry,
+            msg,
+            BaseElement::new(key),
+            &estado,
+            salt_iso(),
+        )
+        .0
+    }
+
     fn setup() -> (SovereignLayer, IbanRegistry, AccountIndex, AccountIndex) {
         let mut layer = SovereignLayer::new(custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS);
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
@@ -603,14 +589,17 @@ mod tests {
     /// **EL TEST CLAVE**: un pacs.008 válido se liquida y devuelve un
     /// pacs.002 con la prueba adjunta.
     #[test]
-    fn a_valid_pacs008_settles_and_returns_a_proof() {
+    fn a_valid_pacs008_is_accepted_and_returns_a_proof() {
         let (mut layer, registry, alice, bob) = setup();
         let msg = message(250_000, "EUR");
 
-        let response = settle_pacs008(&mut layer, &registry, &msg, BaseElement::new(SK_ALICE));
+        let response = settle(&mut layer, &registry, &msg, SK_ALICE, alice);
 
-        assert_eq!(response.status, TxStatus::Settled);
-        assert_eq!(response.status.code(), "ACSC");
+        // **ACSP, no ACSC.** El pago se acepta y el dinero sale, pero no
+        // es firme hasta que el receptor cobre. Antes este test esperaba
+        // ACSC porque el puente usaba la via que filtra el saldo.
+        assert_eq!(response.status, TxStatus::InProcess);
+        assert_eq!(response.status.code(), "ACSP");
         assert!(response.reason_code.is_none());
         assert!(response.proof.is_some(), "la respuesta debe llevar la prueba");
 
@@ -619,8 +608,19 @@ mod tests {
         assert_eq!(response.original_end_to_end_id, "E2E-ABC-123");
 
         // Y el estado cambió de verdad.
-        assert_eq!(layer.balance_of(alice), Some(750_000));
-        assert_eq!(layer.balance_of(bob), Some(300_000));
+        assert_eq!(
+            layer.balance_of(alice),
+            Some(750_000),
+            "el dinero SI salio de la cuenta del pagador"
+        );
+        assert_eq!(
+            layer.balance_of(bob),
+            Some(50_000),
+            "pero el receptor sigue con lo que tenia: el dinero esta en un \
+             pendiente que aun no ha cobrado. **Esta es la propiedad que \
+             cierra la fuga**: para abonarselo en el acto habria que \
+             actualizar su hoja, y eso exige conocer su saldo"
+        );
         assert_eq!(response.root_new, Some(layer.state_root()));
     }
 
@@ -630,10 +630,10 @@ mod tests {
     /// implementación.
     #[test]
     fn insufficient_funds_maps_to_am04() {
-        let (mut layer, registry, _, _) = setup();
+        let (mut layer, registry, alice, _) = setup();
         let msg = message(9_000_000, "EUR");
 
-        let r = settle_pacs008(&mut layer, &registry, &msg, BaseElement::new(SK_ALICE));
+        let r = settle(&mut layer, &registry, &msg, SK_ALICE, alice);
         assert_eq!(r.status, TxStatus::Rejected);
         assert_eq!(r.status.code(), "RJCT");
         assert_eq!(r.reason_code, Some("AM04"));
@@ -643,9 +643,9 @@ mod tests {
     /// Importe por encima del límite regulatorio → AM02.
     #[test]
     fn over_regulatory_limit_maps_to_am02() {
-        let (mut layer, registry, _, _) = setup();
+        let (mut layer, registry, alice, _) = setup();
         let msg = message(LIMIT + 1, "EUR");
-        let r = settle_pacs008(&mut layer, &registry, &msg, BaseElement::new(SK_ALICE));
+        let r = settle(&mut layer, &registry, &msg, SK_ALICE, alice);
         assert_eq!(r.reason_code, Some("AM02"));
     }
 
@@ -671,7 +671,7 @@ mod tests {
             .expect("aplicar la congelacion");
 
         let msg = message(1000, "EUR");
-        let r = settle_pacs008(&mut layer, &registry, &msg, BaseElement::new(SK_ALICE));
+        let r = settle(&mut layer, &registry, &msg, SK_ALICE, alice);
 
         assert_eq!(
             r.reason_code,
@@ -683,28 +683,28 @@ mod tests {
     /// Divisa no admitida → AM03, antes de tocar la capa.
     #[test]
     fn wrong_currency_maps_to_am03() {
-        let (mut layer, registry, _, _) = setup();
+        let (mut layer, registry, alice, _) = setup();
         let msg = message(1000, "USD");
-        let r = settle_pacs008(&mut layer, &registry, &msg, BaseElement::new(SK_ALICE));
+        let r = settle(&mut layer, &registry, &msg, SK_ALICE, alice);
         assert_eq!(r.reason_code, Some("AM03"));
     }
 
     /// IBAN desconocido → AC01.
     #[test]
     fn unknown_iban_maps_to_ac01() {
-        let (mut layer, registry, _, _) = setup();
+        let (mut layer, registry, alice, _) = setup();
         let mut msg = message(1000, "EUR");
         msg.creditor_iban = "FR7630006000011234567890189".into();
-        let r = settle_pacs008(&mut layer, &registry, &msg, BaseElement::new(SK_ALICE));
+        let r = settle(&mut layer, &registry, &msg, SK_ALICE, alice);
         assert_eq!(r.reason_code, Some("AC01"));
     }
 
     /// Importe cero → AM01.
     #[test]
     fn zero_amount_maps_to_am01() {
-        let (mut layer, registry, _, _) = setup();
+        let (mut layer, registry, alice, _) = setup();
         let msg = message(0, "EUR");
-        let r = settle_pacs008(&mut layer, &registry, &msg, BaseElement::new(SK_ALICE));
+        let r = settle(&mut layer, &registry, &msg, SK_ALICE, alice);
         assert_eq!(r.reason_code, Some("AM01"));
     }
 
@@ -717,7 +717,7 @@ mod tests {
         let (mut layer, registry, alice, _) = setup();
         let msg = message(250_000, "EUR");
 
-        let r = settle_pacs008(&mut layer, &registry, &msg, BaseElement::new(0x1337));
+        let r = settle(&mut layer, &registry, &msg, 0x1337, alice);
         assert_eq!(r.status, TxStatus::Rejected);
         assert_eq!(
             r.reason_code,
@@ -734,18 +734,18 @@ mod tests {
     /// operaciones en limbo.
     #[test]
     fn every_message_gets_a_status_report() {
-        let (mut layer, registry, _, _) = setup();
+        let (mut layer, registry, alice, _) = setup();
         for msg in [
             message(250_000, "EUR"),
             message(9_000_000, "EUR"),
             message(0, "EUR"),
             message(1000, "USD"),
         ] {
-            let r = settle_pacs008(&mut layer, &registry, &msg, BaseElement::new(SK_ALICE));
+            let r = settle(&mut layer, &registry, &msg, SK_ALICE, alice);
             assert_eq!(r.original_end_to_end_id, "E2E-ABC-123");
             assert!(matches!(
                 r.status,
-                TxStatus::Settled | TxStatus::Rejected
+                TxStatus::InProcess | TxStatus::Rejected
             ));
         }
     }
@@ -756,9 +756,9 @@ mod tests {
     /// que confiar en quien le envía el informe.
     #[test]
     fn the_receiver_can_verify_the_attached_proof() {
-        let (mut layer, registry, _, _) = setup();
+        let (mut layer, registry, alice, _) = setup();
         let msg = message(250_000, "EUR");
-        let r = settle_pacs008(&mut layer, &registry, &msg, BaseElement::new(SK_ALICE));
+        let r = settle(&mut layer, &registry, &msg, SK_ALICE, alice);
 
         let proof = r.proof.expect("liquidada");
         assert!(!proof.is_empty());
@@ -833,30 +833,6 @@ mod tests {
         );
     }
 
-    /// **Y la vía clásica sí toca al receptor.**
-    ///
-    /// Sin este contraste, el test anterior no demostraría nada: podría
-    /// estar comprobando que la operación falló.
-    #[test]
-    fn the_classic_bridge_does_touch_the_recipient() {
-        let (mut layer, registry, _alice, bob) = setup();
-        let antes = layer.balance_of(bob).expect("cuenta");
-
-        let r = settle_pacs008(
-            &mut layer,
-            &registry,
-            &message(250_000, "EUR"),
-            BaseElement::new(SK_ALICE),
-        );
-        assert_eq!(r.status, TxStatus::Settled);
-
-        assert_eq!(
-            layer.balance_of(bob),
-            Some(antes + 250_000),
-            "la via clasica abona al receptor en el acto, y por eso necesita \
-             conocer su saldo"
-        );
-    }
 
     fn salt_iso() -> Digest {
         [

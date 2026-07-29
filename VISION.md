@@ -676,14 +676,39 @@ cómo llega ese aviso al receptor, y la firma se lo recuerda.
 versión devolvía solo el `Pacs002`, y con eso **el receptor no podía
 cobrar**. La vía era imposible de usar y nada lo señalaba.
 
-#### Lo que ahora se desbloquea
+#### ✅ `settle_pacs008` clásico, retirado
 
-Retirar `settle_pacs008` clásico ya no está bloqueado: **existe un
-sustituto completo y probado**. Y retirarlo cierra a la vez la prioridad 0
-y el límite del cumpleaños (§13), porque `send`/`claim` no usan
-nullificadores.
+**No queda ninguna vía ISO que filtre el saldo del receptor.**
 
-⚠️ **No está hecho**: son 11 tests que cambian de semántica.
+Se retiró en vez de marcarse como desaconsejado, por el principio que la
+propia §3.11 estableció:
+
+> Una fuga presente y alcanzable **es una fuga**, aunque exista una
+> alternativa mejor al lado.
+
+**Lo que cambió al migrar los tests:**
+
+| | Antes | Ahora |
+|---|---|---|
+| Estado de un pago válido | `ACSC` | **`ACSP`** |
+| Saldo del receptor tras el envío | +250.000 | **sin cambio** |
+| Nombre del test | `..._settles_...` | **`..._is_accepted_...`** |
+
+⚠️ **La segunda fila es la propiedad, no un detalle.** El receptor no tiene
+el dinero hasta que cobra, y **por eso el pagador no necesita conocer su
+saldo**.
+
+Y el nombre importa: `ACSP` **no es liquidación firme**, así que un test
+llamado *«settles»* mentiría sobre lo que comprueba.
+
+#### Lo que queda de la vía antigua
+
+`transfer()` sigue en la capa. **Ya no tiene consumidores de producción**:
+sus 35 usos restantes están todos en tests.
+
+⚠️ **Retirarlo exige migrar esos 35**, y algunos comprueban propiedades
+—invariante de suministro, reinicio, registro de transiciones— que habría
+que replantear sobre `send`/`claim`. **No está hecho.**
 
 **El obstáculo aparente y por qué no lo es.** `send()` necesita
 `sender_state` —el saldo y el nonce **declarados por el titular**— y el
@@ -752,7 +777,7 @@ una vía que no filtra, pero **la que está expuesta sí**.
 
 | | Prioridad | Estado |
 |---|---|---|
-| **0** | Cerrar la fuga del saldo del receptor al pagador | ⚙️ **Ciclo ISO completo sin fuga**: `ACSP` → `ACSC`, 5 tests. ⚠️ **La vía antigua sigue existiendo** y es la que un banco usaría si no elige la otra (§3.11) |
+| **0** | Cerrar la fuga del saldo del receptor al pagador | ✅ **Cerrada en la vía ISO**: `settle_pacs008` clásico **retirado**. No queda ninguna vía ISO que filtre. ⚠️ `transfer()` sigue en la capa, sin consumidores de producción (§3.11) |
 | 1 | Reducir la legibilidad del estado por el operador | ⚙️ **En migración**: la vía nueva (`send`/`claim`) **no lee el registro**. La antigua sí, y está marcada (§3.9) |
 | 2 | Mantener y endurecer la separación clave / capa | ✅ Salvo la autoridad de umbral (§3.3) |
 | 3 | Formalizar el catálogo de rechazos | ✅ Hoja de ruta con lo no alcanzable y lo innecesario |
