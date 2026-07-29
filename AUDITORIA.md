@@ -2230,7 +2230,63 @@ progreso.
 
 ---
 
-## 33. Qué NO demuestra este documento
+## 33. ⚠️ La vía de producción no demuestra la separación de claves
+
+**Es la propiedad que los papers citan primero, y la vía que se ejecuta no la
+enseña.**
+
+`PAPER.md` §3 dice: *«La clave de gasto no sale de la máquina del cliente»*.
+Los tres preprints la repiten, y es el argumento institucional central: el
+operador procesa sin custodiar claves.
+
+### Cómo la demuestra cada vía
+
+| Vía | Forma | ¿Enseña la separación? |
+|---|---|---|
+| Un paso | `transfer_materials` (capa) → **`prove_transfer`** (función libre, con la clave) | ✅ La clave nunca toca la capa |
+| **Dos fases** | **`layer.send(clave, ...)`** | ❌ **Método de la capa, con la clave** |
+
+`client.rs` existe precisamente para enseñarla: pide **materiales** —caminos,
+raíces, límite— y prueba en una función libre que no conoce la capa.
+
+⚠️ **`circuit_send` no tiene equivalente.** La única forma de generar un envío
+es llamar a un método de `SovereignLayer` pasándole la clave de gasto.
+
+### La propiedad puede seguir siendo cierta; lo que falta es enseñarla
+
+En un despliegue real el cliente podría ejecutar el código de la capa en su
+máquina, y la clave no viajaría a ninguna parte. **La forma de la API no lo
+impide.**
+
+Pero tampoco lo demuestra, y `client.rs` se escribió justo para eso. **Un
+lector que quiera comprobar la afirmación central de los papers solo encuentra
+la demostración en la vía retirada.**
+
+### Es separable, y se ha comprobado
+
+`send` lee de la capa: caminos de cuentas y pendientes, raíces de congelados,
+opciones, límite regulatorio, suministro y la posición libre para el
+pendiente.
+
+**Todo eso son datos públicos o derivables**, del mismo tipo que
+`TransferMaterials` ya entrega. La separación no es imposible: **no está
+hecha**.
+
+### Lo que exigiría
+
+| Pieza | Equivalente existente |
+|---|---|
+| `send_materials(...)` | `transfer_materials` |
+| `prove_send(materials, clave)` | `prove_transfer` |
+| `claim_materials` / `prove_claim` | **Sin equivalente**: el cobro no existía |
+
+⚠️ **La tercera fila no tiene precedente.** El cobro es una operación del
+receptor que la vía de un paso no tenía, así que su lado cliente hay que
+diseñarlo, no traducirlo.
+
+---
+
+## 34. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
