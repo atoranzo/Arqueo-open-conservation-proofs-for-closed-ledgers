@@ -351,19 +351,23 @@ mod tests {
     /// "transition constraint degrees didn't match: expected [63,0,63],
     /// actual [0,0,0]".
     ///
-    /// Está marcado `#[ignore]` para que la suite pase limpia en debug.
-    /// Para ejecutarlo (y confirmar que el caso cero funciona de verdad):
+    /// ⚠️ **Estaba marcado `#[ignore]` sin condición**, así que no se
+    /// ejecutaba **tampoco en release**, donde funciona: había que acordarse
+    /// de lanzarlo a mano con `-- --ignored`. Un test que depende de que
+    /// alguien recuerde ejecutarlo no protege nada.
     ///
-    /// ```text
-    /// cargo test -p stark-experiment --release -- --ignored
-    /// ```
+    /// Ahora se salta **solo en depuración**, y `--release` lo corre con el
+    /// resto.
     ///
     /// **Por qué importa este caso y no se descarta sin más**: el circuito
     /// de cumplimiento necesita `amount == balance` (que produce
     /// `diff = 0`), verificado explícitamente en los backends Groth16 y
     /// Halo2. Es un caso legítimo del dominio, no una curiosidad.
     #[test]
-    #[ignore = "traza degenerada: requiere --release por una assertion de depuracion de winterfell"]
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "traza degenerada: grado 0 en depuracion, correcto en release"
+    )]
     fn zero_value_only_works_in_release_mode() {
         let value = 0u64;
         let trace = build_trace(value);

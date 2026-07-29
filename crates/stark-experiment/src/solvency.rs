@@ -536,9 +536,11 @@ mod tests {
     /// diseño de Horner las columnas `bit` y `acc` siguen siendo de grado
     /// genérico (los otros tres segmentos no son cero), así que —a
     /// diferencia del range_check aislado— este caso podría pasar incluso
-    /// en debug. Se deja como test NORMAL para que la evidencia decida;
-    /// si la assertion de depuración salta, se reclasificará como
-    /// #[ignore] con release, igual que en range_check.
+    /// en debug.
+    ///
+    /// ✅ **La evidencia llegó: pasa en los dos modos.** La predicción era
+    /// correcta y no hace falta reclasificarlo. Se deja anotado para que
+    /// nadie repita el análisis.
     #[test]
     fn boundary_amount_equals_balance_verifies() {
         let result = run_proof(250_000, 250_000, 500_000);

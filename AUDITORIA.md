@@ -1128,12 +1128,12 @@ Leer por qué funciona antes de copiarlo evitó ese fallo.
 
 ## 15. La cifra de pruebas que este proyecto publica es incompleta
 
-La documentación afirma **372 pruebas ejecutables** y da los dos comandos
+La documentación afirma **373 pruebas ejecutables** y da los dos comandos
 que las ejecutan. Es preciso sobre **qué** mide, pero se lee como el total
 del proyecto.
 
 **El espacio de trabajo tiene diez crates**, y la suite entera son unas
-**564 pruebas** y **22 minutos**.
+**565 pruebas** y **22 minutos**.
 
 ### El desglose, que dice más que el número
 
@@ -1411,12 +1411,27 @@ fila exactos del fallo.
 | Crate y modo | Resultado |
 |---|---|
 | `stark-experiment` en depuración | ✅ **199 pasan**, 2 ignorados |
-| `stark-experiment --release` | ✅ **200 pasan**, 1 ignorado |
+| `stark-experiment --release` | ✅ **201 pasan**, **0 ignorados** |
 | **`zk-ssl` en depuración** | ❌ **107 pasan, 65 fallan** |
 | `zk-ssl --release` | ✅ **172 pasan** |
 
 **Reparto de los 65**: 48 en `tests`, 9 en `iso`, 4 en `snapshot`, 3 en
 `metrics`, 1 en `client`.
+
+### ⚠️ Un test que nadie ejecutaba
+
+`range_check::zero_value_only_works_in_release_mode` llevaba `#[ignore]`
+**sin condición**: no se ejecutaba tampoco en release, donde funciona. Su
+documentación decía cómo lanzarlo a mano con `-- --ignored`.
+
+> **Un test que depende de que alguien recuerde ejecutarlo no protege nada.**
+
+Y no era menor: comprueba `amount == balance` —que produce `diff = 0`—, un
+caso que **el circuito de cumplimiento necesita** y que Groth16 y Halo2
+verifican explícitamente.
+
+✅ Ahora usa `#[cfg_attr(debug_assertions, ignore)]`: se salta solo donde el
+problema existe, y **release lo ejecuta con el resto**.
 
 ### Lo que sí valió de aquella revisión
 
