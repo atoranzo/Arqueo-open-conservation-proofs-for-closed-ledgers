@@ -1773,7 +1773,13 @@ límite enorme**. El test de capa se reescribió para eso.
 con `Err(_) => "prove hizo panic"`. Winterfell decía *«expected 41
 assertions, received 42»* y **ese texto se estaba tirando**.
 
-**Ocho circuitos más lo siguen descartando.**
+✅ **Corregido en los nueve ayudantes que lo hacían.** Los diez devuelven
+`Result<(), String>`, así que el cambio encajaba en todos —comprobado antes
+de aplicarlo, no después—.
+
+Quedan tres con `Err(_) => {}` —`circuit_settlement`, `compliance_circuit`,
+`dual_climb`— que **descartan a propósito**: su lógica es *«si hubo pánico,
+se detectó»* y ahí el mensaje no aporta.
 
 ⚠️ **Y el cuarto es el más instructivo**: en modo release winterfell **no
 comprueba las restricciones al generar**. Un test que solo llame a `prove`

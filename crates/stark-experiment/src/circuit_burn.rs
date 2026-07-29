@@ -928,7 +928,25 @@ mod tests {
         std::panic::set_hook(hook);
 
         let proof = match r {
-            Err(_) => return Err("prove hizo panic".into()),
+            // ⚠️ **El mensaje del panico se conserva.**
+            //
+            // Winterfell comprueba en modo depuracion que las restricciones
+            // se cumplan y que la cuenta de aserciones cuadre, y **da el
+            // detalle**: *"expected 41 assertions, received 42"*, o el
+            // indice y la fila de la restriccion que falla.
+            //
+            // Descartarlo con `Err(_) => "prove hizo panic"` tira justo el
+            // dato que hace falta. En esta auditoria **costo tres rondas**
+            // llegar a un fallo de una linea por eso. Ver `AUDITORIA.md`
+            // §25.
+            Err(e) => {
+                let msg = e
+                    .downcast_ref::<String>()
+                    .cloned()
+                    .or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string()))
+                    .unwrap_or_else(|| "panico sin mensaje".into());
+                return Err(format!("prove hizo panic: {msg}"));
+            }
             Ok(Err(e)) => return Err(format!("prove Err: {e:?}")),
             Ok(Ok(p)) => p,
         };

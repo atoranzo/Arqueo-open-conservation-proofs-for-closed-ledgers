@@ -1747,7 +1747,25 @@ mod tests {
         let proof = match r {
             Ok(Ok(p)) => p,
             Ok(Err(e)) => return Err(format!("prove Err: {e:?}")),
-            Err(_) => return Err("prove hizo panic".into()),
+            // ⚠️ **El mensaje del panico se conserva.**
+            //
+            // Winterfell comprueba en modo depuracion que las restricciones
+            // se cumplan y que la cuenta de aserciones cuadre, y **da el
+            // detalle**: *"expected 41 assertions, received 42"*, o el
+            // indice y la fila de la restriccion que falla.
+            //
+            // Descartarlo con `Err(_) => "prove hizo panic"` tira justo el
+            // dato que hace falta. En esta auditoria **costo tres rondas**
+            // llegar a un fallo de una linea por eso. Ver `AUDITORIA.md`
+            // §25.
+            Err(e) => {
+                let msg = e
+                    .downcast_ref::<String>()
+                    .cloned()
+                    .or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string()))
+                    .unwrap_or_else(|| "panico sin mensaje".into());
+                return Err(format!("prove hizo panic: {msg}"));
+            }
         };
         let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
         verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
