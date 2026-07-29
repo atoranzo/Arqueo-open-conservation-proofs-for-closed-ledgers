@@ -727,8 +727,20 @@ ejecutados.
 
 ⚠️ Ninguno vino de las herramientas construidas para la auditoría —un
 detector de restricciones vacías por mutación y un comprobador de columnas
-sin rellenar— que entre las dos **no encontraron ningún defecto** en doce
-circuitos de producción.
+sin rellenar—. La afirmación de versiones anteriores de este texto —que
+entre las dos no encontraron ningún defecto en doce circuitos de
+producción— era incorrecta en dos puntos, y la auditoría lo documenta: el
+barrido de mutación cubría **once** circuitos, no doce —su informe sobre
+`circuit_audit` trabajaba con una traza de referencia inválida, y la
+autocomprobación que lo habría delatado es un `debug_assert` que nunca se
+ejecutó porque toda la documentación indicaba `--release`—, y de esos
+doce, dos pertenecen a una vía retirada del diseño, así que «de
+producción» eran diez. En los once cubiertos, ninguna de las dos
+herramientas encontró defectos.
+
+Que la cifra publicada fuera 12 y la real 11 es, en sí, un dato del tipo
+que este trabajo pretende aportar: **una herramienta de verificación cuya
+autocomprobación nadie ha ejecutado no dice lo que parece decir.**
 
 Todos vinieron de preguntar **qué defiende cada comprobación**, y después
 intentar aquello que debería impedir.

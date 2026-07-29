@@ -687,8 +687,19 @@ tests executed.
 ### Where these were found
 
 ⚠️ None came from the tools built for the audit —a vacuous-constraint detector
-by mutation and an unfilled-column checker— which between them **found no
-defect** across twelve production circuits.
+by mutation and an unfilled-column checker—. The claim in earlier versions
+of this text —that between them they found no defect across twelve
+production circuits— was wrong on two counts, both documented in the
+audit: the mutation sweep covered **eleven** circuits, not twelve —its
+report on `circuit_audit` ran against an invalid reference trace, and the
+self-check that would have caught it is a `debug_assert` that never
+executed because all documentation specified `--release`—, and two of the
+twelve belong to a design path since retired, so "production" meant ten.
+Across the eleven actually covered, neither tool found a defect.
+
+That the published figure was 12 and the real one 11 is itself a finding
+of the kind this work aims to contribute: **a verification tool whose
+self-check no one has run does not say what it appears to say.**
 
 All came from asking **what each check defends**, and then attempting the
 thing it is supposed to prevent.

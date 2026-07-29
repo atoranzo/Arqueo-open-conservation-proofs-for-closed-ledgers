@@ -3279,4 +3279,5 @@ fn a_restart_does_not_renew_an_exhausted_custodian_quota() {
     );
 
     let _ = std::fs::remove_dir_all(&path);
+
 }

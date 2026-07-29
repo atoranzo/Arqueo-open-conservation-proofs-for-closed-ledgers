@@ -785,7 +785,7 @@ tope transportado sin comprobar— y ninguno lo detectaba nada.
 
 ### Cobertura y resultado
 
-Aplicada a **los 12 circuitos de producción**. Los doce, **limpios**: toda
+Aplicada a **12 circuitos**. Los doce, **limpios**: toda
 restricción declarada reacciona a alguna perturbación del testigo.
 
 ```
@@ -1483,7 +1483,7 @@ una** en este proyecto:
 
 Las dos compilan. Las dos pasan desapercibidas. Ninguna falla ni avisa.
 
-La herramienta barre los nueve crates y busca las dos. **533 tests
+La herramienta barre los diez crates y busca las dos. **533 tests
 declarados, ninguno de los dos casos.** Está validada en los dos sentidos:
 introducir un `#[ignore]` a propósito la hace fallar, y retirarlo la
 devuelve a verde.
@@ -1525,6 +1525,10 @@ restricciones que **ya lo estaban antes de perturbar nada**.
 
 **Su informe para ese circuito no valía.** La afirmación publicada —*«prueba
 por mutación: 12 de 12 circuitos limpios»*— cubría once.
+
+⚠️ **Y «de producción» ya no es exacto.** De esos doce, `circuit_settlement`
+y `nullifier_tree` pertenecen a la **vía retirada** (§32): quedan **diez de
+producción** más esos dos, que se conservan por compatibilidad de formato.
 
 > **La herramienta tenía una autocomprobación que nadie había ejecutado,
 > porque toda la documentación decía `--release`.**
@@ -2748,7 +2752,103 @@ porque **35 es el máximo permitido, no el primero prohibido**.
 
 ---
 
-## 35. Qué NO demuestra este documento
+## 35. El experimento de índices altos: ejecutado, y con una trampa antes
+
+La hipótesis de §20 —los grados caen porque los bits de los caminos de
+Merkle son constantes, y lo son porque las cuentas están en los índices 0
+y 1— tenía un experimento diseñado para decidirla:
+`experimento_indices_altos`, con el criterio escrito **antes** de ver el
+resultado.
+
+### ⚠️ La primera ejecución no ejecutó nada
+
+El test estaba **anidado dentro de**
+`a_restart_does_not_renew_an_exhausted_custodian_quota`: compilaba, no se
+registraba, y no corría. Es la primera forma del catálogo de §17
+(`#[test]` dentro de una función), apareciendo por segunda vez en el
+proyecto.
+
+Lo insidioso no es el anidamiento sino **cómo se habría leído**:
+
+| Comando | Salida con el test anidado | Lectura ingenua |
+|---|---|---|
+| Release, filtrando `test result` | `ok. 0 passed; 173 filtered out` | «ok» |
+| Depuración, filtrando `panicked at` | *(vacío)* | «no hay panic → pasa» |
+
+Y la tabla de decisión pre-registrada decía: *«Pasa → el relleno basta»*.
+Un experimento que no corrió habría confirmado la hipótesis en su rama
+más optimista. **Pre-registrar el criterio protege contra reinterpretar
+el resultado; no protege contra leer la ausencia de resultado como
+resultado.** La tabla tenía tres filas y necesitaba cuatro:
+
+| Si en depuración… | Entonces |
+|---|---|
+| Pasa | El relleno basta |
+| Falla solo en `C_PEND_*` | Arregla dos de tres |
+| Falla igual | La hipótesis es falsa |
+| **`0 passed` o filtro vacío** | **No corrió: no concluir nada** |
+
+✅ **`tools/check_tests.py` lo detectó** —línea y diagnóstico exactos—
+en su primer uso real desde que se validó en los dos sentidos. Es la
+primera de las herramientas de auditoría que paga su construcción. La
+lección operativa: **ejecutarla es paso 0 de cualquier tanda
+experimental**, no una comprobación posterior.
+
+### El resultado, con el test ya a nivel de módulo
+
+Release: pasa (el escenario es válido). Depuración: panic de grados en la
+generación de la prueba de cobro, con **21 restricciones** desviadas de
+162 —todas contiguas, ninguna fuera de la familia del árbol de
+pendientes—:
+
+| Restricciones | Declarado → real | Causa |
+|---|---|---|
+| `C_PEND_ENTRY_A`, `C_PEND_ENTRY_B`, `C_PEND_PLACE`, `C_PEND_SIBLING` (20) | 2046 → 1023 | El factor `pbit` es constante: un grado menos |
+| `C_PBIT_BOOL` (1) | 1023 → **0** | `bit × (bit − 1)` con bit constante: idénticamente cero |
+
+Y lo que **dejó de aparecer** confirma la otra mitad: las familias de
+cuentas (`C_PLACE_*`, `C_SIBLING`, `C_BIT_BOOL`) y de congelados
+(`C_FROZEN_*`, `C_FBIT_BOOL`), que fallaban antes del relleno, ahora
+coinciden.
+
+**Veredicto: rama 2 de la tabla.** El relleno arregla dos de tres
+árboles. La posición del pendiente sale de `allocate_pending()` —un
+contador propio que arranca en 0, independiente de los índices de
+cuenta— y ningún relleno de cuentas la toca.
+
+### Tres decisiones que el resultado impone
+
+**1. El refactor de los 20 tests no se hace.** Su objetivo era que la
+suite pasara en depuración. Con el pendiente sin resolver, cualquier test
+con transferencia de dos fases seguiría fallando: el trabajo no compra el
+objetivo. El experimento existía para decidir si merecía la pena tocar
+los tests antes de tocarlos; la respuesta es no, tal como está.
+
+**2. La vía barata para el pendiente se rechaza, y queda escrito por
+qué.** Avanzar el contador en los tests para que el pendiente caiga en
+una posición con bits variados haría pasar la validación **fabricando
+testigos no representativos**: el primer pago real de cualquier
+despliegue también cae en la posición 0, y su traza degrada igual. La
+degradación no es un artefacto del escenario de test —es una propiedad
+de toda traza con posición baja—. Ocultarla en los tests sería declarar
+una propiedad mientras se esconde su contraria.
+
+**3. Lo que queda es trabajo de circuito, y va a Aplazado.** O bien se
+acepta y documenta que la validación en depuración exige testigos con
+bits variados (el statu quo, ahora con causa exacta y nombres de
+restricción), o bien se reformulan las restricciones para que el grado
+declarado se realice en toda traza. Lo segundo es un cambio de circuito
+con su propio experimento, no un parche de tests.
+
+### El experimento se borra
+
+Su comentario lo decía: existe para contestar una pregunta y se borra al
+contestarla. La receta de reproducción queda aquí: cuentas de relleno
+hasta que el emisor caiga en el índice 21 (`0b10101`) y el receptor en
+22, un pago de dos fases, y ejecutar sin `--release`. El diff de grados
+esperado es el de la tabla de arriba.
+
+## 36. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
