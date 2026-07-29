@@ -986,4 +986,41 @@ mod tests {
             informe.nunca_disparadas
         );
     }
+
+    /// **`CUSTODIAN_DEPTH` y `SEGMENT_LENGTH` están acoplados.**
+    ///
+    /// El orden estricto entre custodios se impone descomponiendo
+    /// `idx_b − idx_a − 1` en los bits de un segmento. Si esa diferencia no
+    /// cupiera en el segmento, **los testigos honestos fallarían**: no
+    /// habría descomposición posible para una autorización legítima.
+    ///
+    /// | | |
+    /// |---|---|
+    /// | `CUSTODIAN_DEPTH = 4` | 16 custodios, índices 0..15 |
+    /// | Diferencia máxima legítima | 14 |
+    /// | `SEGMENT_LENGTH = 8` | 7 bits, hasta 127 |
+    ///
+    /// Hay holgura, pero **subir la profundidad a 8** —256 custodios— daría
+    /// diferencias de hasta 254, que **no caben en 7 bits**.
+    ///
+    /// Nada más comprueba esta relación, y el fallo no sería de solidez
+    /// sino de disponibilidad: el circuito dejaría de admitir
+    /// autorizaciones válidas.
+    #[test]
+    fn the_custodian_set_size_fits_the_range_segment() {
+        let bits = (SEGMENT_LENGTH - 1) as u32;
+        let maximo_representable = (1u64 << bits) - 1;
+
+        let custodios = 1u64 << CUSTODIAN_DEPTH;
+        // El peor caso: idx_a = 0, idx_b = ultimo.
+        let diferencia_maxima = custodios - 1 - 1;
+
+        assert!(
+            diferencia_maxima <= maximo_representable,
+            "con {custodios} custodios la diferencia idx_b-idx_a-1 llega a \
+             {diferencia_maxima}, y el segmento de {bits} bits solo \
+             representa hasta {maximo_representable}. Subir \
+             CUSTODIAN_DEPTH exige subir SEGMENT_LENGTH"
+        );
+    }
 }

@@ -603,7 +603,15 @@ El **tope de emisión** se transporta y se declara públicamente, pero
 **nunca se comprueba con un rango**. La cabecera del módulo afirmaba que sí
 y hubo que corregirla.
 
-⚠️ **Sigue sin corregirse**: cerrarlo exige un segmento de rango más.
+✅ **Corregido.** Se añadió un segmento de 64 filas (filas 320-383, que
+estaban vacías) con dos columnas nuevas y seis restricciones. Dos tests lo
+fijan: `minting_beyond_the_cap_is_rejected` y
+`minting_exactly_up_to_the_cap_is_allowed`.
+
+⚠️ **El par es necesario.** La primera versión solo tenía el negativo, y
+**pasaba por la razón equivocada**: el circuito rechazaba *cualquier*
+emisión porque el test reutilizaba unas entradas públicas de importe fijo.
+Un test negativo solo dice algo cuando su positivo lo acompaña.
 
 ### Lo que un auditor debería hacer
 
@@ -804,9 +812,10 @@ así que el resultado significa algo. Pero **el valor demostrado es
 preventivo, no correctivo**: protege contra que alguien introduzca una
 restricción vacía al modificar un circuito, no ha corregido ninguna.
 
-⚠️ **Y el fallo conocido de `mint_pending` no es de este tipo**: el tope de
-emisión se transporta sin comprobarse. Que la prueba por mutación pase
-limpia **no dice nada sobre eso**.
+⚠️ **Y la prueba por mutación no habría encontrado ese fallo**: el tope se
+transportaba sin comprobarse, y una restricción que no existe no aparece
+como vacía. La herramienta detecta restricciones declaradas que no imponen
+nada, **no restricciones que faltan**.
 
 ⚠️ **No detecta** restricciones que solo reaccionan a cambios de varias
 celdas a la vez, ni restricciones que se disparan pero imponen lo que no se
@@ -814,7 +823,7 @@ cree. **Un resultado limpio no significa que el circuito sea correcto.**
 
 ---
 
-## 13. El tope de emisión se sostiene sobre UN BIT
+## 13. Invariantes frágiles: constantes acopladas sin declarar
 
 `circuit_mint` comprueba el tope descomponiendo `tope − suministro_nuevo`
 en bits. Si el suministro se pasara del tope, esa resta **envuelve** en el
@@ -856,28 +865,72 @@ transiciones activas son `SEGMENT_LENGTH − 1`, y que con ese número de bits
 el valor envuelto queda fuera del rango.
 
 ⚠️ **Se encontró preguntando por qué funciona antes de copiarlo**, no
-revisando. La intención era replicar el mecanismo en
-`circuit_mint_pending`, donde el tope **sigue sin comprobarse**.
+revisando.
 
-⚠️ **Y sigue sin comprobarse**: replicarlo exige un segmento de 64 filas en
-un circuito cuyos segmentos son de 8. **No está hecho.**
+---
+
+### El segundo: el tamaño del conjunto de custodios
+
+El orden estricto entre custodios se impone descomponiendo
+`idx_b − idx_a − 1` en los bits de un segmento. En los circuitos de
+custodios ese segmento es de **8 filas = 7 bits**, hasta 127.
+
+| `CUSTODIAN_DEPTH` | Custodios | Diferencia máxima | ¿Cabe? |
+|---|---|---|---|
+| **4** (actual) | 16 | 14 | Sí, con holgura |
+| 7 | 128 | 126 | Sí, **justo** |
+| **8** | 256 | 254 | **No** |
+
+⚠️ **El techo está en 128 custodios**, y no lo decía nada.
+
+**Y no sería un fallo de solidez, sino de disponibilidad**: con 256
+custodios el circuito dejaría de admitir autorizaciones legítimas. Un
+conjunto así funcionaría para índices cercanos y fallaría para los lejanos
+— **un fallo intermitente que dependería de qué dos custodios firmaran**.
+
+Con 256 custodios, en torno al 75 % de los pares seguiría funcionando. Es
+el tipo de cosa que se descubre en producción.
+
+`the_custodian_set_size_fits_the_range_segment` lo fija.
+
+---
+
+### El patrón
+
+Los dos tienen la misma forma:
+
+1. **Dos constantes acopladas** por una propiedad aritmética.
+2. **El acoplamiento no está declarado** en ningún sitio.
+3. **Ningún test lo cubre**: el sistema funciona con los valores actuales.
+4. **Cambiar una de las dos** rompe algo que parece no relacionado.
+
+⚠️ **Ninguna de las herramientas de esta auditoría los detecta.** No son
+restricciones vacías ni columnas sin rellenar: son relaciones entre
+constantes que solo se ven leyendo por qué funciona el mecanismo.
+
+✅ **Y ya se replicó** en `circuit_mint_pending`, con una diferencia que el
+comentario de `circuit_mint` avisaba: allí los 8 segmentos llenan la traza y
+son periódicos de periodo 64; aquí es **un bloque único en 512 filas**, así
+que el ciclo declarado es `TRACE_LENGTH`.
+
+Leer por qué funciona antes de copiarlo evitó ese fallo.
 
 ---
 
 ## 14. La cifra de pruebas que este proyecto publica es incompleta
 
-La documentación afirma **355 pruebas ejecutables** y da los dos comandos
+La documentación afirma **358 pruebas ejecutables** y da los dos comandos
 que las ejecutan. Es preciso sobre **qué** mide, pero se lee como el total
 del proyecto.
 
 **El espacio de trabajo tiene diez crates**, y la suite entera son unas
-**546 pruebas** y **22 minutos**.
+**549 pruebas** y **22 minutos**.
 
 ### El desglose, que dice más que el número
 
 | Qué es | Crates | Pruebas |
 |---|---|---|
-| **Capa de producción** | `zk-ssl`, `stark-experiment` | **355** |
+| **Capa de producción** | `zk-ssl`, `stark-experiment` | **358** |
 | Estudio comparativo | `zk-core`, `plonk-experiment`, `halo2-experiment`, `iso-bridge`, `nova-experiment` | 140 |
 | ⚠️ **Código de terceros vendorizado** | `ceremony` | **34** |
 | ⚠️ **Capa anterior, superada** | `settlement-layer` | **17** |

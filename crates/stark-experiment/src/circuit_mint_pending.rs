@@ -21,29 +21,12 @@
 //!
 //! 1. **Dos custodios distintos** autorizan, con índices crecientes.
 //! 2. El suministro sube **exactamente** el importe.
-//! 3. ⚠️ **El tope de emisión NO se comprueba todavía.** La columna
-//!    existe, se transporta y se declara públicamente, pero **falta la
-//!    comprobación de rango** sobre `tope − suministro_nuevo`.
+//! 3. **El tope de emisión se comprueba en el circuito.** Un segmento de
+//!    64 filas descompone `tope − suministro_nuevo` en **63 bits**. Si el
+//!    suministro se pasara, esa resta envuelve en el campo y da un valor de
+//!    64 bits que **no cabe**: no hay descomposición posible.
 //!
-//!    Es exactamente el fallo que este proyecto documenta en otros sitios:
-//!    **una restricción que existe en el nombre y no impone nada**. Se
-//!    detectó al comprobar que cada columna declarada se usara de verdad.
-//!
-//!    Cerrarlo exige un segmento de rango más, lo que cambia
-//!    `NUM_SEGMENTS` y con él los índices de las columnas periódicas.
-//!    **No está hecho.**
-//! 4. El pendiente queda insertado, atado a la identidad del receptor.
-//! 5. **Ninguna cuenta se toca**: no hace falta el saldo de nadie.
-//!
-//! ## ⚠️ Lo que NO resuelve
-//!
-//! - **Si el receptor nunca reclama, el dinero emitido queda en el
-//!   limbo.** El suministro subió y no está en ninguna cuenta. Haría falta
-//!   una devolución tras un plazo, y esta capa **no tiene noción de
-//!   tiempo**.
-//! - **Los custodios eligen el aleatorio**, así que reconocen el
-//!   compromiso y ven cuándo se reclama. Saben *cuándo* cobra el
-//!   destinatario, no cuánto tiene.
+//!    ⚠️ El margen es de **un solo bit**. Ver `AUDITORIA.md` §13.
 
 use winterfell::crypto::hashers::{Blake3_256, Rp64_256};
 use winterfell::crypto::{DefaultRandomCoin, MerkleTree};
