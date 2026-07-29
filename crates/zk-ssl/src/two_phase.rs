@@ -401,7 +401,7 @@ impl SovereignLayer {
         // `two_phase.rs` era **el unico modulo que no registraba nada**.
         self.log
             .append(OpKind::Send, pi.root_old, pi.root_new, &receipt.proof);
-        self.commit(&[sender_index], None, Some((pos, compromiso)))?;
+        self.commit(&[sender_index], Some((pos, compromiso)))?;
         Ok(())
     }
 
@@ -519,7 +519,7 @@ impl SovereignLayer {
         // `two_phase.rs` era **el unico modulo que no registraba nada**.
         self.log
             .append(OpKind::Claim, pi.root_old, pi.root_new, &receipt.proof);
-        self.commit(&[receiver_index], None, Some((notice.position, vacia)))?;
+        self.commit(&[receiver_index], Some((notice.position, vacia)))?;
         Ok(())
     }
 
@@ -651,7 +651,7 @@ impl SovereignLayer {
                 self.accounts.root(),
                 &receipt.proof,
             );
-        self.commit(&[], None, Some((pos, receipt.commitment)))?;
+        self.commit(&[], Some((pos, receipt.commitment)))?;
         Ok(())
     }
 }

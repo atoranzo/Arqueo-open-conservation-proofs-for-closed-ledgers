@@ -166,7 +166,7 @@ impl SovereignLayer {
         // ambas cosas.
         self.log
             .append(OpKind::Governance, raiz, raiz, &receipt.proof);
-        self.commit(&[], None, None)?;
+        self.commit(&[], None)?;
         Ok(())
     }
 }

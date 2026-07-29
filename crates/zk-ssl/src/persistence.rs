@@ -59,7 +59,6 @@ impl SovereignLayer {
 
         let mut layer = Self {
             accounts: SparseTree::new(),
-            nullifiers: SparseTree::new(),
             pending: SparseTree::new(),
             next_pending: 0,
             pending_amounts: HashMap::new(),
@@ -87,7 +86,7 @@ impl SovereignLayer {
             layer.load()?;
         } else {
             // Ledger nuevo: escribir los parametros del sistema.
-            layer.commit(&[], None, None)?;
+            layer.commit(&[], None)?;
         }
         Ok(layer)
     }
@@ -334,7 +333,7 @@ impl SovereignLayer {
             );
         }
 
-        // --- Nullifiers gastados ---
+        // --- Registro de transiciones ---
         // El registro se lee ORDENADO por numero de secuencia: sled
         // devuelve las claves en orden lexicografico, y los u64 en
         // little-endian NO lo respetan.
@@ -384,6 +383,17 @@ impl SovereignLayer {
             self.pending.set_leaf(pos, digest_from_bytes(&v)?);
         }
 
+        // --- MIGRACION: el arbol de nullificadores fue retirado ---
+        //
+        // Los ledgers escritos antes de la retirada de la via de un paso
+        // (`AUDITORIA.md` §32) contienen claves `null:{pos}` y una raiz
+        // `root:nullifier`. Nada las lee ya, pero **descartarlas sin
+        // verificarlas seria cargar en silencio**: se reconstruye el
+        // arbol legado y, tras la verificacion de integridad de abajo, se
+        // comprueba contra su raiz guardada y se elimina en un lote
+        // atomico. Un ledger nuevo no entra aqui.
+        let mut legacy_null = SparseTree::new();
+        let mut legacy_null_keys: Vec<Vec<u8>> = Vec::new();
         for item in db.scan_prefix(b"null:") {
             let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
             let v = unseal_one(v)?;
@@ -392,7 +402,8 @@ impl SovereignLayer {
                     .try_into()
                     .map_err(|_| StoreError::Malformed("posicion de nullifier".into()))?,
             );
-            self.nullifiers.set_leaf(pos, digest_from_bytes(&v)?);
+            legacy_null.set_leaf(pos, digest_from_bytes(&v)?);
+            legacy_null_keys.push(k.to_vec());
         }
 
         // --- VERIFICACION DE INTEGRIDAD ---
@@ -407,12 +418,34 @@ impl SovereignLayer {
             }
             .into());
         }
-        let stored_null = digest_from_bytes(&need("root:nullifier", get(b"root:nullifier")?)?)?;
-        if self.nullifiers.root() != stored_null {
-            return Err(StoreError::IntegrityFailure {
-                what: "arbol de nullifiers",
+        // La raiz legada se verifica ANTES de migrar: un arbol legado
+        // corrupto se trata igual que uno vivo — el arranque se detiene.
+        match get(b"root:nullifier")? {
+            Some(v) => {
+                if legacy_null.root() != digest_from_bytes(&v)? {
+                    return Err(StoreError::IntegrityFailure {
+                        what: "arbol de nullifiers (legado)",
+                    }
+                    .into());
+                }
+                let mut limpieza = sled::Batch::default();
+                for k in &legacy_null_keys {
+                    limpieza.remove(k.as_slice());
+                }
+                limpieza.remove(b"root:nullifier".as_ref());
+                db.apply_batch(limpieza)
+                    .map_err(|e| StoreError::Io(e.to_string()))?;
+                db.flush().map_err(|e| StoreError::Io(e.to_string()))?;
             }
-            .into());
+            None if !legacy_null_keys.is_empty() => {
+                // Claves sin raiz que las respalde: no hay contra que
+                // verificarlas, y descartar sin verificar no se hace.
+                return Err(StoreError::IntegrityFailure {
+                    what: "nullifiers legados sin raiz guardada",
+                }
+                .into());
+            }
+            None => {}
         }
 
         Ok(())
@@ -453,7 +486,6 @@ impl SovereignLayer {
     pub(crate) fn commit(
         &self,
         accounts: &[AccountIndex],
-        nullifier: Option<(u64, Digest)>,
         // Hoja del árbol de pendientes que la operación crea o consume.
         //
         // Consumir es escribir la hoja **vacía**: el árbol disperso no
@@ -500,7 +532,6 @@ impl SovereignLayer {
         batch.insert(b"meta:next_pending".as_ref(), self.seal(self.next_pending.to_le_bytes().to_vec())?);
         batch.insert(b"meta:next_index".as_ref(), self.seal(self.next_index.to_le_bytes().to_vec())?);
         batch.insert(b"root:state".as_ref(), self.seal(digest_to_bytes(&self.accounts.root()).to_vec())?);
-        batch.insert(b"root:nullifier".as_ref(), self.seal(digest_to_bytes(&self.nullifiers.root()).to_vec())?);
 
         // --- Cuentas afectadas ---
         for index in accounts {
@@ -560,13 +591,6 @@ impl SovereignLayer {
             let mut key = b"pamt:".to_vec();
             key.extend_from_slice(&position.to_le_bytes());
             batch.insert(key, self.seal(importe.to_le_bytes().to_vec())?);
-        }
-
-        // --- Nullifier gastado, si la operacion lo produce ---
-        if let Some((position, n)) = nullifier {
-            let mut key = b"null:".to_vec();
-            key.extend_from_slice(&position.to_le_bytes());
-            batch.insert(key, self.seal(digest_to_bytes(&n).to_vec())?);
         }
 
         db.apply_batch(batch)

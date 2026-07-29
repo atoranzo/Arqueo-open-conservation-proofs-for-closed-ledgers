@@ -32,7 +32,6 @@
 //! | `meta:*` | suministro, índice siguiente, límite, identidad del emisor |
 //! | `root:*` | raíces del último cierre, para la verificación |
 //! | `acct:{i}` | identidad (32 B) + saldo (8 B) + nonce (8 B) |
-//! | `null:{pos}` | nullifier gastado (32 B) |
 //!
 //! Los elementos de Goldilocks caben en 8 bytes; un digest, en 32.
 //!

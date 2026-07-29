@@ -90,9 +90,12 @@ no hay ceremonia ni secreto que destruir.
 **Límites cuantificados**: mil transferencias son ~620 s de prueba y
 **120,4 MB** acumulados.
 
-⚠️ **Y uno que muerde antes**: la posición del nullifier se deriva del
-propio nullifier, así que las colisiones son probables a los **~65.000
-pagos** y el afectado no puede reintentar. Es una parada, no un coste.
+⚠️ **Un límite que existió, y cómo se fue**: la vía de un paso derivaba
+la posición del nullifier del propio nullifier, con colisiones probables
+a los ~65.000 pagos. Esa vía está **retirada** y el árbol de
+nullificadores con ella (`AUDITORIA.md` §32 y §36): hoy nada los genera.
+⚠️ El límite no se resolvió, se evitó — quien distribuya esto lo
+recupera entero.
 
 ---
 
@@ -188,7 +191,7 @@ Sin revelar identidades, saldos ni importes:
 | Emitir sin autorización | **Dos custodios** demostrados en circuito |
 | Emisión encubierta | Suministro público atado en el circuito |
 | Superar el tope de emisión | Tope inmutable del ledger |
-| Gastar dos veces | No-pertenencia demostrable |
+| Gastar dos veces | Encadenamiento de raíces (orden total del nodo único) |
 | Gastar sin ser el titular | Autoridad de gasto |
 | **Gastar estando congelada** | No-pertenencia al árbol de congelados |
 | Reenviar una operación válida | Encadenamiento de raíces |

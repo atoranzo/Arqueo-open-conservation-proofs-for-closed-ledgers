@@ -2529,9 +2529,13 @@ pasan `None` como nullificador, y las únicas escrituras que quedan
 —`persistence` y `snapshot`— **restauran de disco lo escrito antes de la
 retirada**. Nada genera nullificadores.
 
-⚠️ **El árbol se conserva por compatibilidad de formato**: quitarlo cambiaría
+~~⚠️ **El árbol se conserva por compatibilidad de formato**: quitarlo cambiaría
 el fichero en disco y el instantáneo, y obligaría a migrar ledgers
-existentes. Es peso muerto, y está marcado como tal en `accounts.rs`.
+existentes. Es peso muerto, y está marcado como tal en `accounts.rs`.~~
+
+✅ **Retirado después, con migración verificada.** Ver §36: el formato en
+disco y el de instantánea cambiaron, y los datos legados se verifican
+contra sus raíces guardadas antes de eliminarse — nunca en silencio.
 
 ⚠️ **Y el límite no se ha resuelto: se ha evitado.** El encadenamiento de
 raíces que sustituye al nullificador **exige un orden total**, que un solo
@@ -2848,7 +2852,94 @@ hasta que el emisor caiga en el índice 21 (`0b10101`) y el receptor en
 22, un pago de dos fases, y ejecutar sin `--release`. El diff de grados
 esperado es el de la tabla de arriba.
 
-## 36. Qué NO demuestra este documento
+## 36. El árbol muerto de nullificadores: retirado con migración verificada
+
+§32 dejó el árbol de nullificadores como **peso muerto**: nada lo escribía
+—todas las llamadas a `commit` pasaban `None`— y se conservaba solo porque
+quitarlo cambiaba el formato en disco y el de instantánea. Esta sección
+documenta su retirada y las decisiones que la gobiernan.
+
+### Lo que se eliminó
+
+| Pieza | Detalle |
+|---|---|
+| `SovereignLayer.nullifiers` | El campo y sus tres inicializaciones |
+| `nullifier_root()` | Y su comentario de peso muerto en `accounts.rs` |
+| Parámetro `nullifier` de `commit()` | Muerto en las diez llamadas; la firma queda en dos parámetros |
+| `root:nullifier` y `null:{pos}` | Ya no se escriben al disco |
+| Cabecera y sección de nullificadores de la instantánea | El formato pasa de `ZKSSL3` a `ZKSSL4` |
+
+Y de paso, tres capas de documentación rancia de la vía de un paso que
+seguían fusionadas sobre la API viva: el ejemplo de `lib.rs` que llamaba a
+`transfer_materials`/`prove_transfer` —funciones que ya no existen—, el
+protocolo de cinco pasos de `client.rs`, y una doc huérfana de
+`compute_nullifier` que había quedado pegada encima de `SendMaterials`.
+
+### La decisión: migración verificada, nunca silenciosa
+
+Quitar el árbol dejaba tres opciones para los ledgers e instantáneas
+existentes. La ruptura dura incumplía la promesa del formato —*«una copia
+de archivo debe poder leerse dentro de diez años»*—. La migración
+silenciosa —ignorar y borrar— violaba el principio de `persistence`:
+descartar datos sin verificarlos **es** cargar en silencio.
+
+Lo implementado es la tercera:
+
+**Ledger (`sled`).** Al abrir, si existen claves `null:{pos}`, se
+reconstruye el árbol legado, **se comprueba contra la `root:nullifier`
+guardada**, y solo si coincide se eliminan —claves y raíz— en un lote
+atómico. Si no coincide, `IntegrityFailure`, igual que un árbol vivo.
+Claves sin raíz que las respalde también detienen el arranque: no hay
+contra qué verificarlas.
+
+**Instantáneas.** Se exporta solo `ZKSSL4`. Se importa `ZKSSL4` **y
+también `ZKSSL3`**: los nullificadores de una copia v3 se reconstruyen en
+un árbol temporal, se verifican contra la raíz que la copia declara, y se
+descartan. Una v3 con la raíz manipulada se rechaza.
+
+Lo protegen dos tests nuevos —`a_v3_snapshot_with_nullifiers_imports_verified`
+y `a_v3_snapshot_with_a_forged_nullifier_root_is_rejected`— que fabrican
+los bytes v3 a mano, porque el código actual ya no puede exportarlos: es
+la única forma de probar que una copia antigua sigue leyendo.
+
+### Lo que encontró la retirada: la geometría codificada
+
+`a_tampered_snapshot_is_rejected` falló tras el cambio de formato:
+codificaba la cabecera v3 en una constante —cinco raíces, cuatro
+contadores, 264 bytes— y su byte manipulado dejó de caer en el registro
+de cuenta que dice alterar para caer en el registro de transiciones, que
+se rechaza como `Malformed` y no como el `IntegrityFailure` exacto que el
+test exige. **El barrido previo al parche no podía encontrarlo**: buscó
+«nullifier» por nombre, y la constante no lo nombra — codifica su
+tamaño.
+
+Ya le había pasado al mismo test en la dirección contraria: su primera
+versión contaba desde el final del fichero, y añadir el registro
+convirtió aquel byte en historial. Creció el formato y se rompió;
+encogió y se volvió a romper.
+
+> **Un cambio de formato hay que contrastarlo con todo test que codifique
+> desplazamientos, no solo con los que nombran lo cambiado.**
+
+El riesgo declarado por adelantado —que `verify_chain()` rechazara el
+registro vacío de los tests v3— **no se materializó**: los dos tests
+nuevos pasaron a la primera. Lo que falló fue lo no previsto, que es
+exactamente para lo que sirve declarar lo previsto.
+
+### Lo que NO cambia
+
+- **El límite del cumpleaños sigue evitado, no resuelto** (§13, §32).
+  Quien distribuya esto recupera el problema entero, y entonces un árbol
+  de nullificadores —u otro mecanismo de gasto único— vuelve a hacer
+  falta. Esta retirada elimina peso muerto de un nodo único; no toma
+  ninguna decisión sobre el diseño distribuido.
+- Los circuitos `circuit_settlement` y `nullifier_tree` de
+  `stark-experiment` **se conservan**: documentan la vía comparada en los
+  papers y no pesan sobre la capa.
+- `settlement-layer` —el crate Groth16 autónomo— mantiene su propio
+  árbol: es el artefacto histórico de la comparativa, no la capa.
+
+## 37. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

@@ -1669,9 +1669,9 @@ use super::*;
 
     /// **TRANSFERIR CERO.**
     ///
-    /// No crea ni destruye dinero, pero **consume un nullifier**. Si se
-    /// permitiera sin coste, sería una forma de agotar posiciones del
-    /// árbol de nullifiers.
+    /// No crea ni destruye dinero, pero **consume una posición del árbol
+    /// de pendientes**. Si se permitiera sin coste, sería una forma de
+    /// agotar posiciones.
     #[test]
     fn transferring_zero() {
         let mut layer = new_layer();
@@ -2823,7 +2823,7 @@ use super::*;
     /// **EL TEST QUE JUSTIFICA LA PERSISTENCIA.**
     ///
     /// El estado sobrevive al reinicio del nodo: cuentas, saldos,
-    /// suministro y nullifiers gastados. Sin esto, apagar el proceso
+    /// suministro y pendientes. Sin esto, apagar el proceso
     /// borraría el ledger entero.
     #[test]
     fn ledger_survives_restart() {
@@ -2872,11 +2872,10 @@ use super::*;
         let _ = std::fs::remove_dir_all(&path);
     }
 
-    /// **El nullifier gastado sobrevive al reinicio.**
+    /// **El pendiente cobrado sobrevive al reinicio.**
     ///
-    /// Sin esto, reiniciar el nodo permitiría regastar todo lo anterior:
-    /// el árbol de nullifiers volvería a estar vacío y la no-pertenencia
-    /// se satisfaría de nuevo.
+    /// Sin esto, reiniciar el nodo permitiría cobrar dos veces: la hoja
+    /// consumida del árbol de pendientes volvería a aparecer ocupada.
     #[test]
     fn a_restart_does_not_allow_claiming_twice() {
         let path = temp_path("cobro_doble");

@@ -23,11 +23,10 @@
 //! años sin depender de la versión de `sled` que la escribió.
 //!
 //! ```text
-//! MAGIC              8 B   "ZKSSL1\0\0"
+//! MAGIC              8 B   "ZKSSL4\0\0"
 //! custodian_root    32 B
 //! governance_root   32 B
 //! state_root        32 B   ← para verificar
-//! nullifier_root    32 B   ← para verificar
 //! frozen_root       32 B   ← para verificar
 //! regulatory_limit   8 B
 //! max_supply         8 B
@@ -38,11 +37,9 @@
 //! gov_change_count   8 B
 //! next_index         8 B
 //! n_accounts         8 B
-//! n_nullifiers       8 B
 //! n_frozen           8 B
 //! n_log              8 B
 //! ── cuentas ──      (8 + 48) B cada una
-//! ── nullifiers ──   (8 + 32) B cada uno
 //! ── congeladas ──   (8 + 32) B cada una
 //! ── registro ──     137 B cada entrada
 //! ```
@@ -69,20 +66,23 @@ use stark_experiment::merkle::Digest;
 use super::*;
 use crate::store::{digest_from_bytes, digest_to_bytes, record_from_bytes, record_to_bytes};
 
-/// **Versión 3 del formato.** La 2 no incluía el registro de
-/// transiciones, y restaurar perdía el historial.
+/// **Versión 4 del formato.** La 3 incluía el árbol de nullificadores,
+/// retirado con la vía de un paso (`AUDITORIA.md` §32); una copia v3
+/// **sigue importándose**: sus nullificadores se verifican contra la
+/// raíz que declara y se descartan.
 ///
-/// La 1 La 1 no incluía las cuentas congeladas, y
-/// restaurar desde ella levantaba todas las congelaciones. Cambiar la
-/// firma hace que una copia antigua se rechace en vez de cargarse a
-/// medias.
-const MAGIC: &[u8; 8] = b"ZKSSL3\0\0";
+/// La 2 no incluía el registro de transiciones, y restaurar perdía el
+/// historial. La 1 no incluía las cuentas congeladas, y restaurar desde
+/// ella levantaba todas las congelaciones. Cambiar la firma hace que una
+/// copia antigua se rechace en vez de cargarse a medias.
+const MAGIC: &[u8; 8] = b"ZKSSL4\0\0";
+/// Firma de la versión anterior, aceptada SOLO al importar.
+const MAGIC_V3: &[u8; 8] = b"ZKSSL3\0\0";
 
 /// Resumen de una instantánea, para registro y verificación externa.
 #[derive(Clone, Debug)]
 pub struct SnapshotInfo {
     pub accounts: u64,
-    pub nullifiers: u64,
     pub frozen: u64,
     pub total_supply: u64,
     pub state_root: Digest,
@@ -152,7 +152,6 @@ impl SovereignLayer {
         out.extend_from_slice(&digest_to_bytes(&self.custodian_set_root));
         out.extend_from_slice(&digest_to_bytes(&self.governance_set_root));
         out.extend_from_slice(&digest_to_bytes(&self.accounts.root()));
-        out.extend_from_slice(&digest_to_bytes(&self.nullifiers.root()));
         out.extend_from_slice(&digest_to_bytes(&self.frozen.root()));
         out.extend_from_slice(&self.regulatory_limit.to_le_bytes());
         out.extend_from_slice(&self.max_supply.to_le_bytes());
@@ -167,23 +166,16 @@ impl SovereignLayer {
         // ficheros identicos, o compararlas seria inutil.
         let mut accounts: Vec<(&AccountIndex, &AccountRecord)> = self.records.iter().collect();
         accounts.sort_by_key(|(i, _)| **i);
-        let mut nullifiers: Vec<(u64, Digest)> = self.nullifiers.occupied();
-        nullifiers.sort_by_key(|(p, _)| *p);
         let mut frozen: Vec<(u64, Digest)> = self.frozen.occupied();
         frozen.sort_by_key(|(p, _)| *p);
 
         out.extend_from_slice(&(accounts.len() as u64).to_le_bytes());
-        out.extend_from_slice(&(nullifiers.len() as u64).to_le_bytes());
         out.extend_from_slice(&(frozen.len() as u64).to_le_bytes());
         out.extend_from_slice(&(self.log.len() as u64).to_le_bytes());
 
         for (index, r) in &accounts {
             out.extend_from_slice(&index.to_le_bytes());
             out.extend_from_slice(&record_to_bytes(&r.public_id, r.balance, r.nonce));
-        }
-        for (position, n) in &nullifiers {
-            out.extend_from_slice(&position.to_le_bytes());
-            out.extend_from_slice(&digest_to_bytes(n));
         }
         for (index, leaf) in &frozen {
             out.extend_from_slice(&index.to_le_bytes());
@@ -217,7 +209,6 @@ impl SovereignLayer {
 
         Ok(SnapshotInfo {
             accounts: accounts.len() as u64,
-            nullifiers: nullifiers.len() as u64,
             frozen: frozen.len() as u64,
             total_supply: self.total_supply,
             state_root: self.accounts.root(),
@@ -262,13 +253,29 @@ impl SovereignLayer {
             Ok(s)
         };
 
-        if take(8, "magic")? != MAGIC {
-            return Err(malformed("cabecera desconocida: no es una instantanea ZK-SSL"));
-        }
+        // Una copia v3 —anterior a la retirada del arbol de
+        // nullificadores— sigue siendo importable: sus nullificadores se
+        // verifican contra la raiz que declara y se descartan despues.
+        let legacy_v3 = {
+            let magic = take(8, "magic")?;
+            if magic == MAGIC_V3 {
+                true
+            } else if magic == MAGIC {
+                false
+            } else {
+                return Err(malformed(
+                    "cabecera desconocida: no es una instantanea ZK-SSL",
+                ));
+            }
+        };
         let custodian_set_root = digest_from_bytes(take(32, "custodian_root")?)?;
         let governance_set_root = digest_from_bytes(take(32, "governance_root")?)?;
         let declared_state = digest_from_bytes(take(32, "state_root")?)?;
-        let declared_null = digest_from_bytes(take(32, "nullifier_root")?)?;
+        let declared_null = if legacy_v3 {
+            Some(digest_from_bytes(take(32, "nullifier_root")?)?)
+        } else {
+            None
+        };
         let declared_frozen = digest_from_bytes(take(32, "frozen_root")?)?;
 
         let mut u64_at = |what: &str| -> Result<u64, LayerError> {
@@ -287,7 +294,7 @@ impl SovereignLayer {
         let governance_change_count = u64_at("gov_change_count")?;
         let next_index = u64_at("next_index")?;
         let n_accounts = u64_at("n_accounts")?;
-        let n_nullifiers = u64_at("n_nullifiers")?;
+        let n_nullifiers = if legacy_v3 { u64_at("n_nullifiers")? } else { 0 };
         let n_frozen = u64_at("n_frozen")?;
         let n_log = u64_at("n_log")?;
 
@@ -295,7 +302,6 @@ impl SovereignLayer {
             custodian_uses: 0,
             max_custodian_uses: crate::DEFAULT_MAX_CUSTODIAN_USES,
             accounts: SparseTree::new(),
-            nullifiers: SparseTree::new(),
             pending: SparseTree::new(),
             next_pending: 0,
             pending_amounts: HashMap::new(),
@@ -338,6 +344,10 @@ impl SovereignLayer {
                 },
             );
         }
+        // Nullificadores de una copia v3: se reconstruyen SOLO para
+        // verificarlos contra la raiz declarada, y se descartan. El arbol
+        // fue retirado con la via de un paso (`AUDITORIA.md` §32).
+        let mut legacy_null = SparseTree::new();
         for _ in 0..n_nullifiers {
             let position = u64::from_le_bytes(
                 take(8, "posicion de nullifier")?
@@ -345,7 +355,7 @@ impl SovereignLayer {
                     .map_err(|_| malformed("posicion de nullifier"))?,
             );
             let n = digest_from_bytes(take(32, "nullifier")?)?;
-            layer.nullifiers.set_leaf(position, n);
+            legacy_null.set_leaf(position, n);
         }
 
         for _ in 0..n_frozen {
@@ -392,12 +402,14 @@ impl SovereignLayer {
                 },
             ));
         }
-        if layer.nullifiers.root() != declared_null {
-            return Err(LayerError::Store(
-                crate::store::StoreError::IntegrityFailure {
-                    what: "arbol de nullifiers de la instantanea",
-                },
-            ));
+        if let Some(declared) = declared_null {
+            if legacy_null.root() != declared {
+                return Err(LayerError::Store(
+                    crate::store::StoreError::IntegrityFailure {
+                        what: "arbol de nullifiers de la instantanea (v3)",
+                    },
+                ));
+            }
         }
 
         Ok(layer)
@@ -436,6 +448,82 @@ mod tests {
         s
     }
 
+    /// Construye una instantánea **v3** mínima a mano: cero cuentas, UN
+    /// nullificador, cero congeladas, registro vacío. Con `honest` la
+    /// raíz de nullificadores declarada es la verdadera; sin él, falsa.
+    ///
+    /// Existe porque el código actual ya no puede EXPORTAR v3: la única
+    /// forma de probar que una copia antigua sigue importándose es
+    /// fabricar sus bytes con el formato documentado.
+    fn v3_snapshot_bytes(honest: bool) -> Vec<u8> {
+        let mut null_tree = SparseTree::new();
+        let leaf = crate::store::digest_from_bytes(&[1u8; 32]).expect("digest");
+        null_tree.set_leaf(7, leaf);
+
+        let declared_null = if honest {
+            null_tree.root()
+        } else {
+            crate::store::digest_from_bytes(&[2u8; 32]).expect("digest")
+        };
+
+        let mut out: Vec<u8> = vec![0x00]; // marca: sin cifrar
+        out.extend_from_slice(b"ZKSSL3\0\0");
+        out.extend_from_slice(&crate::store::digest_to_bytes(&custodian_root()));
+        out.extend_from_slice(&crate::store::digest_to_bytes(&governance_root()));
+        out.extend_from_slice(&crate::store::digest_to_bytes(&SparseTree::new().root()));
+        out.extend_from_slice(&crate::store::digest_to_bytes(&declared_null));
+        out.extend_from_slice(&crate::store::digest_to_bytes(
+            &SparseTree::with_depth(FROZEN_DEPTH).root(),
+        ));
+        out.extend_from_slice(&LIMIT.to_le_bytes());
+        out.extend_from_slice(&MAX_SUPPLY.to_le_bytes());
+        out.extend_from_slice(&MAX_ACCOUNTS.to_le_bytes());
+        out.extend_from_slice(&0u64.to_le_bytes()); // total_supply
+        out.extend_from_slice(&0u64.to_le_bytes()); // recovery_count
+        out.extend_from_slice(&0u64.to_le_bytes()); // freeze_count
+        out.extend_from_slice(&0u64.to_le_bytes()); // gov_change_count
+        out.extend_from_slice(&0u64.to_le_bytes()); // next_index
+        out.extend_from_slice(&0u64.to_le_bytes()); // n_accounts
+        out.extend_from_slice(&1u64.to_le_bytes()); // n_nullifiers
+        out.extend_from_slice(&0u64.to_le_bytes()); // n_frozen
+        out.extend_from_slice(&0u64.to_le_bytes()); // n_log
+        out.extend_from_slice(&7u64.to_le_bytes()); // posicion del nullifier
+        out.extend_from_slice(&crate::store::digest_to_bytes(&leaf));
+        out
+    }
+
+    /// **UNA COPIA v3 SIGUE SIENDO IMPORTABLE.**
+    ///
+    /// El formato prometió poder leerse dentro de diez años. La v4 retiró
+    /// el árbol de nullificadores; una v3 se importa igual: sus
+    /// nullificadores se verifican contra la raíz que declara y se
+    /// descartan después.
+    #[test]
+    fn a_v3_snapshot_with_nullifiers_imports_verified() {
+        let file = temp_file("v3_ok");
+        std::fs::write(&file, v3_snapshot_bytes(true)).expect("escribir v3");
+        let restored = SovereignLayer::import_snapshot(&file).expect("importar v3");
+        assert_eq!(restored.total_supply(), 0);
+        assert_eq!(restored.state_root(), SparseTree::new().root());
+        let _ = std::fs::remove_file(&file);
+    }
+
+    /// **Y UNA v3 MANIPULADA SE RECHAZA.** Descartar sin verificar sería
+    /// restaurar en silencio — lo mismo que este módulo impide en v4.
+    #[test]
+    fn a_v3_snapshot_with_a_forged_nullifier_root_is_rejected() {
+        let file = temp_file("v3_mal");
+        std::fs::write(&file, v3_snapshot_bytes(false)).expect("escribir v3");
+        // `map(|_| ())` descarta la capa: `SovereignLayer` no implementa
+        // `Debug`, y aqui solo interesa formatear el error.
+        let r = SovereignLayer::import_snapshot(&file).map(|_| ());
+        assert!(
+            r.is_err(),
+            "una raiz de nullifiers falsa debe rechazarse: {r:?}"
+        );
+        let _ = std::fs::remove_file(&file);
+    }
+
     /// **EL TEST CLAVE**: el estado sobrevive a la exportación y vuelta.
     #[test]
     fn a_snapshot_restores_the_full_state() {
@@ -448,8 +536,8 @@ mod tests {
 
         let info = layer.export_snapshot(&file).expect("exportar");
         println!(
-            "Instantanea: {} cuentas, {} nullifiers, {} bytes",
-            info.accounts, info.nullifiers, info.bytes
+            "Instantanea: {} cuentas, {} bytes",
+            info.accounts, info.bytes
         );
 
         let restored = SovereignLayer::import_snapshot(&file).expect("importar");
@@ -457,11 +545,6 @@ mod tests {
         assert_eq!(restored.balance_of(bob), Some(300_000));
         assert_eq!(restored.total_supply(), 1_050_000);
         assert_eq!(restored.state_root(), layer.state_root());
-        assert_eq!(
-            restored.nullifier_root(),
-            layer.nullifier_root(),
-            "los nullifiers gastados deben sobrevivir, o restaurar permitiria regastar"
-        );
         let _ = std::fs::remove_file(&file);
     }
 
@@ -484,7 +567,15 @@ mod tests {
         // el final: el final del fichero es ahora el registro de
         // transiciones, y manipularlo prueba otra cosa (ver el test
         // siguiente).
-        const CABECERA: usize = 8 + 32 * 5 + 8 * 8 + 8 * 4; // 264
+        //
+        // ⚠️ La constante codifica la GEOMETRIA del formato —v4: cuatro
+        // raices, tres contadores— y ya se ha quedado rancia dos veces:
+        // cuando el formato crecio (el registro, lo cuenta el test
+        // siguiente) y cuando encogio (la retirada del arbol de
+        // nullificadores, `AUDITORIA.md` §36). Un cambio de formato hay
+        // que contrastarlo con todo test que codifique desplazamientos,
+        // no solo con los que nombran lo cambiado.
+        const CABECERA: usize = 8 + 32 * 4 + 8 * 8 + 8 * 3; // 224
         let mut bytes = std::fs::read(&file).expect("leer");
         bytes[CABECERA + 20] ^= 0xFF;
         std::fs::write(&file, &bytes).expect("escribir");

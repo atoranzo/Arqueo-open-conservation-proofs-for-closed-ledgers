@@ -41,12 +41,12 @@
 //! ```text
 //! layer.open_account(sk)                    → cuenta con saldo CERO
 //! layer.mint(&auth, cuenta, importe)        → EXIGE DOS custodios
-//! layer.transfer(sk, origen, destino, imp)  → EXIGE clave de gasto
 //!
-//! // O SIN entregar la clave a la capa (ver `client`):
-//! let m = layer.transfer_materials(origen, destino, imp, nullifier)?;
-//! let s = client::prove_transfer(&m, sk)?;   // en la maquina del titular
-//! layer.apply(...)                          → verifica y aplica
+//! // Pago en dos fases, SIN entregar ninguna clave a la capa:
+//! let m = layer.send_materials(origen, id_receptor, importe, aleatorio)?;
+//! let envio = client::prove_send(&m, sk, opts)?; // en la maquina del titular
+//! layer.apply_send(&envio, origen, &estado, importe)?;
+//! // ...y el receptor cobra igual: claim_materials → prove_claim → apply_claim
 //! ```
 //!
 //! Generar la prueba y aplicarla están **separados a propósito**: permite
@@ -424,7 +424,6 @@ pub const DEFAULT_MAX_CUSTODIAN_USES: u64 = 100;
 /// concreto que se pide.
 pub struct SovereignLayer {
     accounts: SparseTree,
-    nullifiers: SparseTree,
     /// **Transferencias pendientes de reclamar.**
     ///
     /// El pagador deposita aquí un compromiso atado a la identidad del
@@ -545,7 +544,6 @@ impl SovereignLayer {
     ) -> Self {
         Self {
             accounts: SparseTree::new(),
-            nullifiers: SparseTree::new(),
             pending: SparseTree::new(),
             next_pending: 0,
             pending_amounts: HashMap::new(),

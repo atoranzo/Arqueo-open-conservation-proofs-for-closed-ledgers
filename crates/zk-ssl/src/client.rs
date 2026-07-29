@@ -3,26 +3,28 @@
 //!
 //! ## El problema que corrige
 //!
-//! `SovereignLayer::transfer` recibe la clave de gasto. Es decir: **para
-//! transferir había que entregársela a quien opera el nodo**, y con ella
-//! puede vaciar la cuenta cuando quiera.
+//! `SovereignLayer::transfer` —la vía de un paso, ya retirada— recibía
+//! la clave de gasto. Es decir: **para transferir había que
+//! entregársela a quien opera el nodo**, y con ella podía vaciar la
+//! cuenta cuando quisiera.
 //!
 //! Eso no era una limitación de escala. Era que el sistema exigía
 //! **confiar tu dinero al operador**, precisamente el intermediario que
 //! el proyecto dice eliminar.
 //!
-//! ## El protocolo
+//! ## El protocolo (dos fases)
 //!
 //! ```text
 //! 1. Cliente: pide la vista de su cuenta        → nonce, saldo, identidad
-//! 2. Cliente: calcula el nullifier LOCALMENTE   (necesita su clave)
-//! 3. Cliente: pide los materiales               → caminos de Merkle
-//! 4. Cliente: genera la prueba EN SU MÁQUINA    (la clave no sale)
-//! 5. Cliente: envía la liquidación              → la capa verifica y aplica
+//! 2. Cliente: pide los materiales               → caminos y raices publicas
+//! 3. Cliente: genera la prueba EN SU MÁQUINA    (la clave no sale)
+//! 4. Cliente: envía la operación                → la capa verifica y aplica
 //! ```
 //!
-//! El nullifier viaja a la capa en el paso 3, pero **no revela nada
-//! nuevo**: es público y aparecería igualmente al aplicar la liquidación.
+//! Vale igual para el envío (`send_materials` → `prove_send` →
+//! `apply_send`) y para el cobro (`claim_materials` → `prove_claim` →
+//! `apply_claim`). Lo demuestra
+//! `a_whole_payment_without_giving_any_key_to_the_layer`.
 //!
 //! ## Lo que esto NO resuelve
 //!
@@ -80,8 +82,8 @@ impl std::error::Error for WrongRecipient {}
 
 
 impl SovereignLayer {
-    /// Vista pública de una cuenta, para que el cliente pueda calcular su
-    /// nullifier antes de pedir materiales.
+    /// Vista pública de una cuenta, para que el cliente conozca su nonce
+    /// y su saldo antes de pedir materiales.
     pub fn account_view(&self, index: AccountIndex) -> Option<AccountView> {
         self.records.get(&index).map(|r| AccountView {
             public_id: r.public_id,
@@ -90,26 +92,12 @@ impl SovereignLayer {
         })
     }
 
-    /// Entrega los materiales para que el cliente genere la prueba.
-    ///
-    /// **No recibe la clave de gasto.** El `nullifier` lo calcula el
-    /// cliente con su clave y lo envía porque la capa necesita su
-    /// posición para dar el camino de no-pertenencia — y porque es
-    /// público de todos modos.
-    /// **Materiales para un envío, sin la clave y sin el saldo del receptor.**
-    ///
-    /// El equivalente, para la vía en dos fases, de los materiales que
-    /// fases, con dos diferencias que son el diseño entero:
-    ///
-    /// | | Un paso | Envío |
-    /// |---|---|---|
-    /// | Del receptor entrega | **Su saldo y su camino** | **Solo su identificador** |
-    /// | Reserva | Un nullificador | Una posición de pendiente |
-    ///
-    /// Todo lo que devuelve es público o derivable, así que la capa puede
-    /// entregarlo sin conocer la clave de gasto y el cliente puede probar
-    /// con [`prove_send`] sin volver a hablar con ella.
     /// **Materiales para cobrar, sin la clave.**
+    ///
+    /// **No recibe la clave de gasto.** Todo lo que devuelve es público o
+    /// derivable, así que la capa puede entregarlo sin custodiar nada y
+    /// el cliente puede probar con [`prove_claim`] sin volver a hablar
+    /// con ella.
     ///
     /// El aviso lo aporta quien cobra: la capa no sabe qué pendiente es suyo
     /// —esa es la privacidad del diseño— así que **no puede entregarlo**.
@@ -187,11 +175,6 @@ impl SovereignLayer {
 
 }
 
-/// **Calcula el nullifier de una operación.** Se ejecuta en el cliente.
-///
-/// Requiere la clave, y por eso solo el titular puede calcularlo — que es
-/// lo que impide a un observador precomputar los nullifiers de cuentas
-/// ajenas y vigilar cuándo gastan.
 /// **Materiales para un ENVÍO en dos fases.**
 ///
 /// La diferencia con la vía de un paso —ya retirada— es la que da nombre al

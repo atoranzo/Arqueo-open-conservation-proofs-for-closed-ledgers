@@ -10,30 +10,6 @@ impl SovereignLayer {
         self.accounts.root()
     }
 
-    /// ⚠️ **EL ÁRBOL DE NULLIFICADORES YA NO SE ESCRIBE.**
-    ///
-    /// La única vía que insertaba nullificadores era `transfer` + `apply`,
-    /// retirada. Hoy **todas** las llamadas a `commit` pasan `None`, y las
-    /// únicas escrituras que quedan —en `persistence` y `snapshot`—
-    /// **restauran de disco lo que se escribió antes de la retirada**.
-    ///
-    /// **Esto cierra el límite del cumpleaños de `AUDITORIA.md` §13**: la
-    /// capacidad efectiva de ~65.000 pagos dependía de que la posición se
-    /// derivara del propio nullificador, y ya no se genera ninguno.
-    ///
-    /// El árbol se conserva por **compatibilidad de formato**: quitarlo
-    /// cambiaría el fichero en disco y el instantáneo, y obligaría a migrar
-    /// los ledgers existentes. Su raíz sigue siendo parte del estado
-    /// persistido y del instantáneo, y para un ledger nuevo es siempre la
-    /// del árbol vacío.
-    ///
-    /// ⚠️ **Vuelve a hacer falta con consenso distribuido.** El
-    /// encadenamiento de raíces que lo sustituye exige un orden total, y en
-    /// un sistema distribuido no lo hay. Ver `AUDITORIA.md` §13.
-    pub fn nullifier_root(&self) -> Digest {
-        self.nullifiers.root()
-    }
-
     pub fn total_supply(&self) -> u64 {
         self.total_supply
     }
@@ -139,7 +115,7 @@ impl SovereignLayer {
             .append(OpKind::OpenAccount, root_old, self.accounts.root(), &[]);
 
         // Un solo lote atomico: la cuenta nueva y los metadatos.
-        self.commit(&[index], None, None)?;
+        self.commit(&[index], None)?;
         Ok(index)
     }
 

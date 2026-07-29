@@ -161,7 +161,7 @@ impl SovereignLayer {
         // ambas cosas.
         self.log
             .append(OpKind::Recovery, pi.root_old, pi.root_new, &receipt.proof);
-        self.commit(&[account_index], None, None)?;
+        self.commit(&[account_index], None)?;
         Ok(())
     }
 }

@@ -203,7 +203,7 @@ mod tests {
         assert!(
             audit_gen < tx_gen,
             "auditar debe ser mas barato que transferir: una subida de arbol \
-             frente a cuatro mas el arbol de nullifiers"
+             frente a las del envio (cuentas dual, congelados y pendientes)"
         );
         // ===== EL TAMAÑO SÍ SE COMPRUEBA =====
         //
@@ -256,8 +256,8 @@ mod tests {
     /// **El coste de una jornada.**
     ///
     /// Encadena transferencias reales y mide si el coste por operación se
-    /// mantiene estable. Si creciera —por el árbol de nullifiers llenándose
-    /// o por otra causa— el sistema no escalaría linealmente y eso hay que
+    /// mantiene estable. Si creciera —por los árboles llenándose o por
+    /// otra causa— el sistema no escalaría linealmente y eso hay que
     /// saberlo.
     #[test]
     fn cost_per_transfer_stays_stable() {
