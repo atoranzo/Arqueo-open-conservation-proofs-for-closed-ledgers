@@ -2589,4 +2589,84 @@ use super::*;
             layer.transfer(BaseElement::new(SK_ALICE), alice, 999, 1000),
             Err(LayerError::AccountNotFound(999))
         ));
-    }
+    
+}
+
+/// **LA INVARIANTE GLOBAL CON DINERO EN TRÁNSITO.**
+///
+/// `total_balances_always_equal_total_supply` comprueba que la suma de
+/// los saldos iguala al suministro. **Con la vía en dos fases eso deja
+/// de ser cierto**: el dinero sale de la cuenta del pagador y espera en
+/// un pendiente que **no está en ningún saldo**.
+///
+/// La invariante correcta es:
+///
+/// ```text
+/// suma de saldos + suma de pendientes == suministro
+/// ```
+///
+/// ⚠️ **Este test se escribió para verlo fallar.** La capa no lleva la
+/// suma de los pendientes, así que el descuadre existe y **ningún test
+/// lo detectaba**: el que comprueba la invariante usa `transfer()`, la
+/// vía antigua, que abona al receptor en el acto.
+///
+/// Es el mismo modo de fallo que este proyecto documenta en otros
+/// sitios: **una propiedad que se cree comprobada porque hay un test
+/// con ese nombre**, y el test ejercita otro camino.
+#[test]
+fn balances_plus_pending_always_equal_total_supply() {
+    let mut layer = new_layer();
+    let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+    let bob = open_and_fund(&mut layer, SK_BOB, 50_000);
+
+    let suma_saldos = |l: &SovereignLayer| -> u64 {
+        [alice, bob].iter().map(|i| l.balance_of(*i).unwrap()).sum()
+    };
+    assert_eq!(
+        suma_saldos(&layer),
+        layer.total_supply(),
+        "sin pendientes, la invariante clasica se cumple"
+    );
+
+    // Envio por la via en dos fases: el dinero sale y queda en transito.
+    let estado = state_of(&layer, alice);
+    let receptor = layer.public_id_of(bob).expect("cuenta");
+    let recibo = layer
+        .send(
+            BaseElement::new(SK_ALICE),
+            alice,
+            &estado,
+            receptor,
+            salt_de(0x7E57),
+            250_000,
+        )
+        .expect("envio");
+    layer
+        .apply_send(&recibo, alice, &estado, 250_000)
+        .expect("aplicar");
+
+    assert_eq!(
+        suma_saldos(&layer) + layer.total_pending(),
+        layer.total_supply(),
+        "CRITICO: el dinero en transito debe contarse. Sin sumar los \
+         pendientes, {} + 0 != {}",
+        suma_saldos(&layer),
+        layer.total_supply()
+    );
+
+    // Y al cobrarse, el pendiente desaparece y vuelve a un saldo.
+    let estado_bob = state_of(&layer, bob);
+    let cobro = layer
+        .claim(BaseElement::new(SK_BOB), bob, &estado_bob, &recibo.notice)
+        .expect("cobro");
+    layer
+        .apply_claim(&cobro, bob, &estado_bob, &recibo.notice)
+        .expect("aplicar cobro");
+
+    assert_eq!(layer.total_pending(), 0, "ya no hay nada en transito");
+    assert_eq!(
+        suma_saldos(&layer),
+        layer.total_supply(),
+        "y la invariante clasica vuelve a cumplirse"
+    );
+}

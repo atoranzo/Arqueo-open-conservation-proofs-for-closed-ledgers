@@ -298,6 +298,7 @@ impl SovereignLayer {
             nullifiers: SparseTree::new(),
             pending: SparseTree::new(),
             next_pending: 0,
+            pending_amounts: HashMap::new(),
             records: HashMap::new(),
             next_index,
             custodian_set_root,

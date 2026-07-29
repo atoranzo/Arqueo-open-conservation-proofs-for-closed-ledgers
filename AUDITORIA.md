@@ -1128,12 +1128,12 @@ Leer por qué funciona antes de copiarlo evitó ese fallo.
 
 ## 15. La cifra de pruebas que este proyecto publica es incompleta
 
-La documentación afirma **363 pruebas ejecutables** y da los dos comandos
+La documentación afirma **364 pruebas ejecutables** y da los dos comandos
 que las ejecutan. Es preciso sobre **qué** mide, pero se lee como el total
 del proyecto.
 
 **El espacio de trabajo tiene diez crates**, y la suite entera son unas
-**555 pruebas** y **22 minutos**.
+**556 pruebas** y **22 minutos**.
 
 ### El desglose, que dice más que el número
 
@@ -1583,7 +1583,62 @@ cambio los dejara falsos.
 
 ---
 
-## 23. Qué NO demuestra este documento
+## 23. La invariante global cambia de forma con dinero en tránsito
+
+**La invariante era `suma de saldos == suministro`.** Con la vía en dos
+fases **deja de ser cierta**: el dinero sale de la cuenta del pagador y
+espera en un pendiente que no está en ningún saldo.
+
+| | |
+|---|---|
+| Alice tras enviar 250.000 | 750.000 |
+| Bob, que aún no ha cobrado | 50.000 |
+| **Suma** | **800.000** |
+| Suministro | **1.050.000** |
+| **Descuadre** | **250.000** |
+
+⚠️ **El descuadre existía y ningún test lo detectaba.** El que comprueba la
+invariante —`total_balances_always_equal_total_supply`— usa `transfer()`,
+la vía antigua, que abona al receptor en el acto.
+
+> **Una propiedad que se cree comprobada porque hay un test con ese nombre,
+> y el test ejercita otro camino.**
+
+### La forma correcta
+
+```text
+suma de saldos + total_pending() == suministro
+```
+
+`total_pending()` no existía. Se añadió, con su persistencia: los
+compromisos del árbol **no revelan el importe**, así que no puede derivarse
+al reiniciar — **hay que guardarlo**. El compilador lo exigió al obligar a
+inicializar el campo nuevo en los dos sitios que reconstruyen la capa.
+
+⚠️ **Qué revela**: cuánto hay en tránsito **en total**. No de quién ni para
+quién. Es coherente con que el suministro y el tope ya sean escalares
+públicos, pero **es información que antes no existía**.
+
+### ⚠️ Y el test estuvo a punto de no comprobar nada
+
+Se escribió **dentro de otra función** por una inserción mal colocada.
+Compilaba, no se registraba, y **no ejecutaba**.
+
+Lo delató contar los `#[test]` **declarados frente a los ejecutados**:
+
+```
+168 declarados, 167 ejecutados
+```
+
+> **Un test que no aparece en la lista es invisible: no falla, no avisa.**
+> Solo el recuento lo delata.
+
+Es la misma familia que las cifras rancias de §15: **algo que la
+documentación —o el nombre de un test— afirma, y que nadie contrasta**.
+
+---
+
+## 24. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

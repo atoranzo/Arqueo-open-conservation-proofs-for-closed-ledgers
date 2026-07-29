@@ -62,6 +62,7 @@ impl SovereignLayer {
             nullifiers: SparseTree::new(),
             pending: SparseTree::new(),
             next_pending: 0,
+            pending_amounts: HashMap::new(),
             records: HashMap::new(),
             next_index: 0,
             custodian_set_root,
@@ -186,6 +187,30 @@ impl SovereignLayer {
             ),
             None => 0,
         };
+        // ⚠️ **Los importes de los pendientes se restauran del disco.**
+        //
+        // Sin esto, tras un reinicio `total_pending()` valdria cero y la
+        // invariante global —saldos + pendientes == suministro— pareceria
+        // rota. El compilador lo detecto al anadir el campo.
+        // Mismo patron que `froz:` y `pend:`: `unseal_one` es un cierre
+        // porque `self` se muta durante la carga y no puede prestarse.
+        self.pending_amounts.clear();
+        for item in db.scan_prefix(b"pamt:") {
+            let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
+            let v = unseal_one(v)?;
+            let pos = u64::from_le_bytes(
+                k[5..]
+                    .try_into()
+                    .map_err(|_| StoreError::Malformed("posicion de pendiente".into()))?,
+            );
+            let importe = u64::from_le_bytes(
+                v.as_slice()
+                    .try_into()
+                    .map_err(|_| StoreError::Malformed("importe de pendiente".into()))?,
+            );
+            self.pending_amounts.insert(pos, importe);
+        }
+
         self.next_pending = match get(b"meta:next_pending")? {
             Some(v) => u64::from_le_bytes(
                 v.as_slice()
@@ -484,6 +509,18 @@ impl SovereignLayer {
         // Sin esto, reiniciar el nodo levantaria todas las congelaciones:
         // el contador sobreviviria pero el arbol no, y una cuenta bajo
         // investigacion volveria a poder gastar.
+        // --- Importes de los pendientes sin cobrar ---
+        //
+        // Sin esto, tras un reinicio `total_pending()` valdria cero y la
+        // invariante global —saldos + pendientes == suministro— pareceria
+        // rota. Los compromisos del arbol no revelan el importe, asi que
+        // **no puede derivarse: hay que guardarlo**.
+        for (pos, importe) in &self.pending_amounts {
+            let mut key = b"pamt:".to_vec();
+            key.extend_from_slice(&pos.to_le_bytes());
+            batch.insert(key, self.seal(importe.to_le_bytes().to_vec())?);
+        }
+
         for (index, leaf) in self.frozen.occupied() {
             let mut key = b"froz:".to_vec();
             key.extend_from_slice(&index.to_le_bytes());

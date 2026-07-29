@@ -428,6 +428,15 @@ pub struct SovereignLayer {
     pending: SparseTree,
     /// Siguiente posición libre del árbol de pendientes.
     next_pending: u64,
+    /// **Importe de cada pendiente sin cobrar, por posición.**
+    ///
+    /// Existe para poder comprobar la invariante global cuando hay dinero
+    /// en tránsito: `suma de saldos + suma de pendientes == suministro`.
+    ///
+    /// ⚠️ **La capa ya conocía estos importes** —los recibe como parámetro
+    /// de `send` y los usa para el límite regulatorio—. Esto no añade
+    /// visibilidad: la hace utilizable. Ver `total_pending()`.
+    pending_amounts: HashMap<u64, u64>,
     records: HashMap<AccountIndex, AccountRecord>,
     next_index: AccountIndex,
     /// **Raíz del conjunto de custodios autorizados.** Crear dinero y
@@ -531,6 +540,7 @@ impl SovereignLayer {
             nullifiers: SparseTree::new(),
             pending: SparseTree::new(),
             next_pending: 0,
+            pending_amounts: HashMap::new(),
             records: HashMap::new(),
             next_index: 0,
             custodian_set_root,

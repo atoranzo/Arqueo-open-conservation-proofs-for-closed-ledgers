@@ -96,6 +96,40 @@ pub struct ClaimReceipt {
 }
 
 impl SovereignLayer {
+    /// **Cuánto dinero hay en tránsito: la suma de los pendientes sin
+    /// cobrar.**
+    ///
+    /// ## Por qué hace falta
+    ///
+    /// La invariante global del sistema era `suma de saldos == suministro`.
+    /// **Con la vía en dos fases deja de ser cierta**: el dinero sale de la
+    /// cuenta del pagador y espera en un pendiente que no está en ningún
+    /// saldo.
+    ///
+    /// La correcta es:
+    ///
+    /// ```text
+    /// suma de saldos + total_pending() == suministro
+    /// ```
+    ///
+    /// ⚠️ **El descuadre existía y nada lo detectaba.** El test que
+    /// comprueba la invariante usa `transfer()`, la vía antigua, que abona
+    /// al receptor en el acto. Es el modo de fallo que este proyecto
+    /// documenta en otros sitios: **una propiedad que se cree comprobada
+    /// porque hay un test con ese nombre, y el test ejercita otro camino.**
+    ///
+    /// ## ⚠️ Qué revela y qué no
+    ///
+    /// Revela **cuánto** hay en tránsito en total. **No revela de quién ni
+    /// para quién**: eso sigue en los compromisos, que no se abren.
+    ///
+    /// Que el total sea visible es coherente con el modelo declarado —el
+    /// suministro y el tope ya son escalares públicos— pero **es
+    /// información que antes no existía**, y conviene decirlo.
+    pub fn total_pending(&self) -> u64 {
+        self.pending_amounts.values().sum()
+    }
+
     /// **Asigna una posición en el árbol de pendientes, REUTILIZANDO las
     /// que quedaron libres al cobrarse.**
     ///
@@ -306,6 +340,8 @@ impl SovereignLayer {
         if pos >= self.next_pending {
             self.next_pending = pos + 1;
         }
+        // El dinero sale del saldo y pasa a estar en transito.
+        self.pending_amounts.insert(pos, amount);
         self.commit(&[sender_index], None, Some((pos, compromiso)))?;
         Ok(())
     }
@@ -399,6 +435,8 @@ impl SovereignLayer {
         let vacia: Digest = [BaseElement::ZERO; 4];
         let mut pend = self.pending.clone();
         pend.set_leaf(notice.position, vacia);
+        // Y deja de estar en transito al cobrarse.
+        self.pending_amounts.remove(&notice.position);
 
         if cuentas.root() != pi.root_new || pend.root() != pi.pending_root_new {
             return Err(LayerError::StaleState);
@@ -519,6 +557,8 @@ impl SovereignLayer {
         if pos >= self.next_pending {
             self.next_pending = pos + 1;
         }
+        // Dinero recien emitido, en transito hasta que se cobre.
+        self.pending_amounts.insert(pos, receipt.notice.amount);
         self.commit(&[], None, Some((pos, receipt.commitment)))?;
         Ok(())
     }
