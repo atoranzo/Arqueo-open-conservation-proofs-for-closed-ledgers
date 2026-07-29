@@ -166,8 +166,11 @@ let alice  = layer.open_account(sk_alice);              // saldo CERO
 let recibo = layer.mint(issuer_key, alice, 1_000_000)?; // EXIGE clave del emisor
 layer.apply_mint(&recibo, alice)?;
 
-let s = layer.transfer(sk_alice, alice, bob, 250_000)?; // EXIGE clave de gasto
-layer.apply(&s, alice, bob, 250_000)?;
+// Un pago son DOS fases: el dinero sale, y el receptor lo cobra.
+let envio = layer.send(sk_alice, alice, &estado, id_bob, aleatorio, 250_000)?;
+layer.apply_send(&envio, alice, &estado, 250_000)?;
+let cobro = layer.claim(sk_bob, bob, &estado_bob, &envio.notice)?;
+layer.apply_claim(&cobro, bob, &estado_bob, &envio.notice)?;
 
 let d = layer.audit(sk_alice, alice, 900_000, 1_100_000)?;
 verify_audit(&d)?;                                       // el supervisor, sin la capa

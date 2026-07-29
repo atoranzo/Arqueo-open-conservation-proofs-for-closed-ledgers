@@ -10,8 +10,10 @@ let alice = layer.open_account(sk_alice);          // saldo CERO
 let recibo = layer.mint(issuer_key, alice, 1_000_000)?;
 layer.apply_mint(&recibo, alice)?;                 // EXIGE clave del emisor
 
-let s = layer.transfer(sk_alice, alice, bob, 250_000)?;
-layer.apply(&s, alice, bob, 250_000)?;             // EXIGE clave de gasto
+let envio = layer.send(sk_alice, alice, &estado, id_bob, aleatorio, 250_000)?;
+layer.apply_send(&envio, alice, &estado, 250_000)?;   // el dinero sale
+let cobro = layer.claim(sk_bob, bob, &estado_bob, &envio.notice)?;
+layer.apply_claim(&cobro, bob, &estado_bob, &envio.notice)?;  // el receptor cobra
 ```
 
 Con **persistencia**: el ledger sobrevive al reinicio, y un estado
@@ -263,14 +265,31 @@ eliminar.
 ### El protocolo
 
 ```rust
-let view = layer.account_view(alice)?;                      // estado público
-let nullifier = client::compute_nullifier(key, view.nonce); // LOCAL, con la clave
-let m = layer.transfer_materials(alice, bob, importe, nullifier)?;
-let s = client::prove_transfer(&m, key)?;                   // LOCAL, la clave no sale
-layer.apply(&s, alice, bob, importe)?;
+// FASE 1 — el pagador. La capa no ve su clave.
+let m = layer.send_materials(alice, id_de_bob, importe, aleatorio)?;
+let envio = client::prove_send(&m, key, proof_options())?;   // LOCAL
+layer.apply_send(&envio, alice, &estado_alice, importe)?;
+
+// FASE 2 — el receptor. Tampoco ve la suya.
+let m = layer.claim_materials(bob, &envio.notice)?;
+let cobro = client::prove_claim(&m, key_bob, proof_options())?;  // LOCAL
+layer.apply_claim(&cobro, bob, &estado_bob, &envio.notice)?;
 ```
 
-**`prove_transfer` es una función libre, no un método de la capa.** Es
+⚠️ **Este protocolo sustituye al de un paso, retirado.** Aquella vía
+—`transfer_materials` / `prove_transfer`— entregaba al pagador **una vista
+completa del receptor, con su saldo**, porque actualizaba las dos hojas a la
+vez. Ver `AUDITORIA.md` §29.
+
+**Los materiales del envío llevan solo el identificador del receptor**, y el
+tipo lo impone: no hay campo por donde el saldo pudiera entrar.
+
+⚠️ **Asimetría del cobro**: `claim_materials` recibe el aviso, no lo entrega.
+**La capa no sabe qué pendiente es de quién** —esa es la privacidad del
+diseño— así que no podría decírselo al receptor. Cómo le llega el aviso es la
+pieza que ISO 20022 no transporta.
+
+**`prove_send` y `prove_claim` son funciones libres, no métodos de la capa.** Es
 deliberado: la capa **no puede** llamarla porque no tiene la clave. Si
 fuera un método, la API sugeriría lo contrario y alguien acabaría
 pasándosela.

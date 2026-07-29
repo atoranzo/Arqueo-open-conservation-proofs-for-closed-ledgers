@@ -11,12 +11,29 @@ idénticas.
 ```rust
 let layer = SovereignLayer::open("./ledger", custodios, gobernanza, limite, tope, max_cuentas)?;
 
-let view = layer.account_view(alice)?;
-let nullifier = client::compute_nullifier(clave, view.nonce);   // en el cliente
-let m = layer.transfer_materials(alice, bob, 250_000, nullifier)?;
-let s = client::prove_transfer(&m, clave)?;                     // la clave NO sale
-layer.apply(&s, alice, bob, 250_000)?;
+// FASE 1 — el pagador envía. La capa no ve su clave.
+let m = layer.send_materials(alice, id_de_bob, 250_000, aleatorio)?;
+let envio = client::prove_send(&m, clave_alice, proof_options())?;  // LOCAL
+layer.apply_send(&envio, alice, &estado_alice, 250_000)?;
+
+// FASE 2 — el receptor cobra. Tampoco ve la suya.
+let m = layer.claim_materials(bob, &envio.notice)?;
+let cobro = client::prove_claim(&m, clave_bob, proof_options())?;   // LOCAL
+layer.apply_claim(&cobro, bob, &estado_bob, &envio.notice)?;
 ```
+
+**Dos fases, y no por gusto.** Una liquidación que actualiza las dos cuentas
+en una sola transición exige que quien construye la prueba **conozca los dos
+saldos**: pagar a alguien revelaría cuánto tiene. Un envío toca una sola
+hoja; del receptor basta su identificador público.
+
+**Y ninguna clave llega a la capa.** Lo que la capa entrega son caminos y
+raíces —datos públicos—; lo que recibe son pruebas que verifica. Lo demuestra
+`a_whole_payment_without_giving_any_key_to_the_layer`.
+
+⚠️ **Con dos costes declarados**: el pago no es firme hasta que se cobra, y
+si el receptor nunca cobra **el importe queda inmovilizado sin devolución**.
+Ver `AUDITORIA.md` §29 y §30.
 
 ---
 

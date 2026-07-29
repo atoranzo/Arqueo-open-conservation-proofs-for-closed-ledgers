@@ -149,10 +149,17 @@ circuito, y **no está hecho**.
 | Verificación externa | El supervisor verifica sin acceso al ledger |
 | No fingir privacidad frente al operador | Declaración explícita |
 
-⚠️ **FALLO GRAVE: el pagador ve el saldo del receptor.**
+✅ **RESUELTO — El pagador ya no ve el saldo del receptor.**
 
-`TransferMaterials` entrega al cliente `receiver: AccountView`, que
-contiene **el saldo exacto del receptor, su identidad pública y su nonce**.
+**El fallo era**: los materiales de la vía de un paso entregaban al cliente
+una vista completa del receptor, con **su saldo exacto, su identidad pública
+y su nonce**, porque esa vía actualizaba las dos hojas en una transición y
+quien probaba necesitaba las dos.
+
+**Cómo se cerró**: la vía en dos fases toca **una sola hoja** por operación.
+Los materiales de envío llevan **solo el identificador del receptor**, y el
+tipo lo impone —no hay campo por donde el saldo pudiera entrar—. La vía de un
+paso se retiró entera. Ver `AUDITORIA.md` §29 y §32.
 
 Pagar un euro a alguien **revela cuánto tiene**.
 
