@@ -95,7 +95,7 @@ mod tests_support;
 
 use std::collections::HashMap;
 use winterfell::math::fields::f64::BaseElement;
-use winterfell::math::{FieldElement, StarkField};
+use winterfell::math::FieldElement;
 use winterfell::{
     crypto::hashers::Blake3_256, crypto::DefaultRandomCoin, crypto::MerkleTree, verify,
     AcceptableOptions, BatchingMethod, FieldExtension, ProofOptions, Prover,
@@ -129,10 +129,7 @@ pub use stark_experiment::circuit_threshold::build_custodian_set;
 use stark_experiment::circuit_recovery::{
     build_trace as build_recovery_trace, RecoveryAir, RecoveryProver, RecoveryPublicInputs,
 };
-use stark_experiment::circuit_settlement::{
-    build_trace as build_settlement_trace, derive_public_id, native_leaf, ReceiverWitness,
-    SenderWitness, SettlementAir, SettlementProver, SettlementPublicInputs,
-};
+use stark_experiment::circuit_settlement::{derive_public_id, native_leaf, SettlementPublicInputs};
 // El circuito de la via en dos fases. Estaba importado solo dentro de
 // `two_phase.rs`, asi que `client.rs` no podia generar un envio sin pasar
 // por la capa — que es justo lo que `AUDITORIA.md` §33 senala.
@@ -143,7 +140,6 @@ use stark_experiment::circuit_send::{
     build_trace as build_send_trace, SendProver,
 };
 use stark_experiment::merkle::{Digest, MerklePath};
-use stark_experiment::nullifier_tree::nullifier_position;
 
 use sparse_tree::SparseTree;
 use store::{digest_from_bytes, digest_to_bytes, record_from_bytes, record_to_bytes, StoreError};

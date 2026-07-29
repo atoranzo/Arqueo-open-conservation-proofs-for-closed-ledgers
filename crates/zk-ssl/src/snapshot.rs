@@ -58,7 +58,6 @@
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use winterfell::math::fields::f64::BaseElement;
-use winterfell::math::FieldElement;
 
 use stark_experiment::circuit_settlement::native_leaf;
 use stark_experiment::merkle::Digest;

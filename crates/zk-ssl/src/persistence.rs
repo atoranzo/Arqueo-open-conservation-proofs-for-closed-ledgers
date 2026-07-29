@@ -104,18 +104,6 @@ impl SovereignLayer {
         }
     }
 
-    /// Recupera un valor leído: descifrado si hay clave.
-    ///
-    /// Si la contraseña es incorrecta o el dato fue manipulado, el
-    /// cifrado autenticado lo detecta y **falla** en vez de devolver
-    /// datos plausibles pero falsos.
-    fn unseal(&self, stored: &[u8]) -> Result<Vec<u8>, LayerError> {
-        match &self.key {
-            None => Ok(stored.to_vec()),
-            Some(k) => Ok(k.open(stored)?),
-        }
-    }
-
     pub(crate) fn has_existing_ledger(&self) -> Result<bool, LayerError> {
         match self.db() {
             None => Ok(false),
@@ -149,7 +137,7 @@ impl SovereignLayer {
         let need = |k: &'static str, v: Option<Vec<u8>>| -> Result<Vec<u8>, LayerError> {
             v.ok_or_else(|| StoreError::Malformed(format!("falta la clave {k}")).into())
         };
-        // Cada valor pasa por `unseal`: descifrado si hay clave, tal cual
+        // Cada valor pasa por `unseal_one`: descifrado si hay clave, tal cual
         // si no. Con contrasena incorrecta el cifrado autenticado falla
         // aqui, en vez de producir datos plausibles pero falsos.
 

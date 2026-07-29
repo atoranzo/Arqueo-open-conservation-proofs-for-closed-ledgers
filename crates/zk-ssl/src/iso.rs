@@ -53,7 +53,7 @@ use stark_experiment::merkle::Digest;
 
 use crate::commitment::ClientState;
 use crate::two_phase::PendingNotice;
-use crate::{AccountIndex, LayerError, Settlement, SovereignLayer};
+use crate::{AccountIndex, LayerError, SovereignLayer};
 
 /// Subconjunto de un mensaje **pacs.008** (`FIToFICustomerCreditTransfer`),
 /// la orden de transferencia entre instituciones financieras.

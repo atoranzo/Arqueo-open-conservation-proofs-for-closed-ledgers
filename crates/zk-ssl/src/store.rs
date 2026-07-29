@@ -49,7 +49,7 @@
 //!   pruebas, no frente a quien tiene el disco.
 
 use winterfell::math::fields::f64::BaseElement;
-use winterfell::math::{FieldElement, StarkField};
+use winterfell::math::FieldElement;
 
 use stark_experiment::merkle::Digest;
 
