@@ -738,4 +738,59 @@ mod tests {
             informe.nunca_disparadas
         );
     }
+
+    /// **⚠️ LA CAPACIDAD PRÁCTICA ES ~2^16, NO 2^32.**
+    ///
+    /// La posición de un nullificador se deriva del propio nullificador:
+    ///
+    /// ```text
+    /// posicion = nullificador[0] mod 2^32
+    /// ```
+    ///
+    /// Y el circuito exige que esa posición esté **vacía** antes de
+    /// insertar. Así que dos nullificadores distintos que caigan en la
+    /// misma posición son un problema, y las colisiones siguen la
+    /// **paradoja del cumpleaños**:
+    ///
+    /// | Nullificadores | Probabilidad de colisión |
+    /// |---|---|
+    /// | 10.000 | 1,2 % |
+    /// | 65.536 | **39 %** |
+    /// | 100.000 | **69 %** |
+    /// | 200.000 | **99 %** |
+    ///
+    /// ⚠️ **Qué pasa al colisionar**: la capa devuelve
+    /// `NullifierAlreadySpent` y **el pago legítimo queda bloqueado para
+    /// siempre**. El nullificador es determinista a partir del estado de la
+    /// cuenta, así que no hay reintento posible.
+    ///
+    /// ⚠️ **Y el error miente**: dice "ya gastado" cuando en realidad es una
+    /// colisión de posición con el pago de otra persona.
+    ///
+    /// Este test **no falla**: documenta el límite y fija la aritmética que
+    /// lo produce, para que se vea al leer y no se descubra en producción.
+    #[test]
+    fn the_practical_capacity_is_the_birthday_bound_not_the_tree_size() {
+        // El arbol dice tener esta capacidad.
+        let posiciones: f64 = 2f64.powi(TREE_DEPTH as i32);
+        assert_eq!(posiciones, 4_294_967_296.0, "2^32 posiciones");
+
+        // Pero a los ~65.000 nullificadores la colision ya es probable.
+        let n = 65_536f64;
+        let probabilidad = 1.0 - (-(n * (n - 1.0)) / (2.0 * posiciones)).exp();
+        assert!(
+            probabilidad > 0.35,
+            "con 65.536 nullificadores la colision debe ser probable, \
+             y sale {probabilidad}"
+        );
+
+        // Y la posicion se deriva del nullificador, no se asigna: por eso
+        // el afectado no puede elegir otra.
+        let a = sample_nullifier(0xABCDEF);
+        assert_eq!(
+            nullifier_position(&a),
+            a[0].as_int() & ((1u64 << TREE_DEPTH) - 1),
+            "la posicion es una funcion del nullificador, no un hueco libre"
+        );
+    }
 }
