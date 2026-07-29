@@ -634,10 +634,27 @@ dos tiempos es lo normal en pagos, y el estándar tiene el vocabulario.
 
 ✅ **Los tres códigos de estado, verificados** contra el catálogo real.
 
-#### El diseño del cambio, completo
+#### El cambio, hecho de forma aditiva
 
-⚠️ **`settle_pacs008` sigue llamando a `transfer()`**, así que la fuga sigue
-abierta en la vía ISO. El diseño está cerrado; falta escribirlo.
+✅ **`settle_pacs008_two_phase` existe y funciona**, con tres tests:
+
+| Test | Qué demuestra |
+|---|---|
+| `..._reports_acsp_not_acsc` | Devuelve `ACSP`: aceptada, no firme |
+| `..._does_not_touch_the_recipient` | El saldo del receptor **no cambia** |
+| `the_classic_bridge_does_touch_the_recipient` | Y la vía clásica **sí** lo abona |
+
+⚠️ **El tercero es necesario.** Sin él, el segundo podría estar comprobando
+que la operación falló en vez de que no toca al receptor.
+
+**Se añadió al lado de la clásica, sin tocar su firma.** Ningún test
+existente cambió: las dos vías quedan a la vista para comparar.
+
+⚠️ **`settle_pacs008` clásico sigue existiendo**, y sigue filtrando. Es la
+vía por la que un banco entraría hoy si no elige la otra.
+
+⚠️ **Y falta la fase de cobro**: cuando el receptor reclame, hace falta un
+segundo `pacs.002` con `ACSC`. **No está implementado.**
 
 **El obstáculo aparente y por qué no lo es.** `send()` necesita
 `sender_state` —el saldo y el nonce **declarados por el titular**— y el
@@ -706,7 +723,7 @@ una vía que no filtra, pero **la que está expuesta sí**.
 
 | | Prioridad | Estado |
 |---|---|---|
-| **0** | Cerrar la fuga del saldo del receptor al pagador | ⚙️ **Parcial**: `send`/`claim` no filtran, 38 tests. **El puente ISO sigue usando `transfer()`**; decidido cómo migrarlo (§3.11), **no hecho** |
+| **0** | Cerrar la fuga del saldo del receptor al pagador | ⚙️ **Vía sin fuga disponible también en ISO**: `settle_pacs008_two_phase`, con 3 tests y su contraste. ⚠️ Falta la fase de cobro y **la vía antigua sigue existiendo** (§3.11) |
 | 1 | Reducir la legibilidad del estado por el operador | ⚙️ **En migración**: la vía nueva (`send`/`claim`) **no lee el registro**. La antigua sí, y está marcada (§3.9) |
 | 2 | Mantener y endurecer la separación clave / capa | ✅ Salvo la autoridad de umbral (§3.3) |
 | 3 | Formalizar el catálogo de rechazos | ✅ Hoja de ruta con lo no alcanzable y lo innecesario |

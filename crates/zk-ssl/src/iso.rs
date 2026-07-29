@@ -51,6 +51,7 @@ use winterfell::math::fields::f64::BaseElement;
 
 use stark_experiment::merkle::Digest;
 
+use crate::commitment::ClientState;
 use crate::{AccountIndex, LayerError, Settlement, SovereignLayer};
 
 /// Subconjunto de un mensaje **pacs.008** (`FIToFICustomerCreditTransfer`),
@@ -363,6 +364,103 @@ pub fn settle_pacs008(
     }
 }
 
+/// **Liquida un pacs.008 por la vía en DOS FASES, sin filtrar el saldo del
+/// receptor.**
+///
+/// ## Qué la distingue de `settle_pacs008`
+///
+/// La vía clásica llama a `transfer()`, que actualiza la hoja del receptor
+/// y por tanto **exige conocer su saldo**. El pagador lo aprende. Es la
+/// fuga que la prioridad 0 pretendía cerrar.
+///
+/// Ésta llama a `send()`: el dinero sale de la cuenta del pagador y queda
+/// en un **pendiente**. El receptor lo cobra después con `claim`, y
+/// **ninguna de las dos fases toca el saldo del otro**.
+///
+/// ## Por qué devuelve `ACSP` y no `ACSC`
+///
+/// El dinero ha salido, pero **el receptor todavía no lo tiene**. Responder
+/// `ACSC` —*liquidación completada*— sería afirmar algo falso.
+///
+/// ISO 20022 ya distingue los dos estados: el ciclo estándar es
+/// `RCVD → ACCP → ACSP → ACSC`. Esto **no inventa un contrato nuevo**; usa
+/// el código que el estándar tiene para esta situación. Ver `VISION.md`
+/// §3.11.
+///
+/// ## De dónde salen los parámetros que el mensaje no lleva
+///
+/// `sender_state` —el saldo y el nonce **declarados por el titular**— viene
+/// del mismo sitio que `sender_key`: del banco del deudor, que conoce el
+/// saldo de su cliente. **La capa no lo lee de su registro**, y ahí está la
+/// diferencia.
+///
+/// `salt` lo elige el pagador: es lo que hace que el compromiso pendiente
+/// no sea reconocible por terceros.
+///
+/// ## ⚠️ Lo que falta
+///
+/// **La segunda fase.** Cuando el receptor cobre, hace falta un segundo
+/// `pacs.002` con `ACSC`. No está implementado.
+pub fn settle_pacs008_two_phase(
+    layer: &mut SovereignLayer,
+    registry: &IbanRegistry,
+    msg: &Pacs008,
+    sender_key: BaseElement,
+    sender_state: &ClientState,
+    salt: Digest,
+) -> Pacs002 {
+    let (debtor, creditor) = match registry.validate(msg) {
+        Ok(pair) => pair,
+        Err(e) => {
+            let (code, text) = e.iso_reason();
+            return rejected(msg, code, text);
+        }
+    };
+
+    let receiver_id = match layer.public_id_of(creditor) {
+        Some(id) => id,
+        None => {
+            let (code, text) = iso_reason(&LayerError::AccountNotFound(creditor));
+            return rejected(msg, code, text);
+        }
+    };
+
+    let receipt = match layer.send(
+        sender_key,
+        debtor,
+        sender_state,
+        receiver_id,
+        salt,
+        msg.amount_minor,
+    ) {
+        Ok(r) => r,
+        Err(e) => {
+            let (code, text) = iso_reason(&e);
+            return rejected(msg, code, text);
+        }
+    };
+
+    let root_old = receipt.public_inputs.root_old;
+    let root_new = receipt.public_inputs.root_new;
+
+    if let Err(e) = layer.apply_send(&receipt, debtor, sender_state, msg.amount_minor) {
+        let (code, text) = iso_reason(&e);
+        return rejected(msg, code, text);
+    }
+
+    Pacs002 {
+        original_msg_id: msg.msg_id.clone(),
+        original_end_to_end_id: msg.end_to_end_id.clone(),
+        // **ACSP, no ACSC**: el dinero salio, el receptor aun no lo tiene.
+        status: TxStatus::InProcess,
+        reason_code: None,
+        reason_text: None,
+        proof: Some(receipt.proof),
+        root_old: Some(root_old),
+        root_new: Some(root_new),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -560,5 +658,105 @@ mod tests {
         // La raiz nueva declarada es la del ledger tras aplicar.
         assert_eq!(r.root_new, Some(layer.state_root()));
         assert_ne!(r.root_old, r.root_new, "el estado debe haber cambiado");
+    }
+
+    /// **LA VÍA EN DOS FASES DEVUELVE `ACSP`, NO `ACSC`.**
+    ///
+    /// El dinero ha salido de la cuenta del pagador y espera en un
+    /// pendiente. Responder *"liquidación completada"* sería afirmar algo
+    /// falso: el receptor todavía no lo tiene.
+    #[test]
+    fn the_two_phase_bridge_reports_acsp_not_acsc() {
+        let (mut layer, registry, alice, _bob) = setup();
+        let estado = state_of(&layer, alice);
+        let msg = message(250_000, "EUR");
+
+        let r = settle_pacs008_two_phase(
+            &mut layer,
+            &registry,
+            &msg,
+            BaseElement::new(SK_ALICE),
+            &estado,
+            salt_iso(),
+        );
+
+        assert_eq!(r.status, TxStatus::InProcess, "aceptada, no firme");
+        assert_eq!(r.status.code(), "ACSP");
+        assert!(r.proof.is_some(), "la prueba se adjunta igual");
+    }
+
+    /// **EL SALDO DEL RECEPTOR NO INTERVIENE.**
+    ///
+    /// Es la propiedad que justifica toda la vía nueva, y **va en el
+    /// tipo**: `settle_pacs008_two_phase` recibe el estado del **pagador**
+    /// y nada del receptor. No hay parámetro donde entrara su saldo.
+    ///
+    /// La vía clásica, en cambio, llama a `transfer()`, que actualiza la
+    /// hoja del receptor y por tanto **exige conocerlo**.
+    ///
+    /// Este test lo comprueba por su efecto: el saldo del receptor **no
+    /// cambia** tras el envío, porque el dinero está en un pendiente que
+    /// aún no ha cobrado.
+    #[test]
+    fn the_two_phase_bridge_does_not_touch_the_recipient() {
+        let (mut layer, registry, alice, bob) = setup();
+        let antes = layer.balance_of(bob).expect("cuenta");
+        let estado = state_of(&layer, alice);
+
+        let r = settle_pacs008_two_phase(
+            &mut layer,
+            &registry,
+            &message(250_000, "EUR"),
+            BaseElement::new(SK_ALICE),
+            &estado,
+            salt_iso(),
+        );
+        assert_eq!(r.status, TxStatus::InProcess);
+
+        assert_eq!(
+            layer.balance_of(bob),
+            Some(antes),
+            "el saldo del receptor NO cambia: el dinero esta en un pendiente \
+             que todavia no ha cobrado"
+        );
+        assert_eq!(
+            layer.balance_of(alice),
+            Some(1_000_000 - 250_000),
+            "pero el del pagador SI: el dinero ya salio"
+        );
+    }
+
+    /// **Y la vía clásica sí toca al receptor.**
+    ///
+    /// Sin este contraste, el test anterior no demostraría nada: podría
+    /// estar comprobando que la operación falló.
+    #[test]
+    fn the_classic_bridge_does_touch_the_recipient() {
+        let (mut layer, registry, _alice, bob) = setup();
+        let antes = layer.balance_of(bob).expect("cuenta");
+
+        let r = settle_pacs008(
+            &mut layer,
+            &registry,
+            &message(250_000, "EUR"),
+            BaseElement::new(SK_ALICE),
+        );
+        assert_eq!(r.status, TxStatus::Settled);
+
+        assert_eq!(
+            layer.balance_of(bob),
+            Some(antes + 250_000),
+            "la via clasica abona al receptor en el acto, y por eso necesita \
+             conocer su saldo"
+        );
+    }
+
+    fn salt_iso() -> Digest {
+        [
+            BaseElement::new(0x150),
+            BaseElement::new(0x151),
+            BaseElement::new(0x152),
+            BaseElement::new(0x153),
+        ]
     }
 }
