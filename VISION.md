@@ -637,9 +637,14 @@ llamando a `transfer()`, así que **la fuga sigue abierta en la vía ISO**.
 Cambiarlo exige que el puente devuelva el pendiente y que haya un segundo
 mensaje al cobrarse: es trabajo, no una decisión.
 
-⚠️ **Y los códigos ISO de este proyecto no están auditados** contra el
-catálogo real. `ACSP` y `ACSC` son los que corresponden según el estándar,
-pero **nadie lo ha verificado** (§20 de `AUDITORIA.md`).
+✅ **Verificado contra el catálogo real.** `ACSP` es
+*AcceptedSettlementInProcess* y `ACSC` es *AcceptedSettlementCompleted*; el
+ciclo estándar es `RCVD → ACCP → ACSP → ACSC`. La correspondencia con
+`send` y `claim` es la correcta.
+
+⚠️ **Con un matiz declarado**: existe `ACWP` (*AcceptedWithoutPosting*),
+semánticamente aún más cercano, descartado porque su definición lo acota a
+retenciones por escrutinio. Ver `AUDITORIA.md` §21.
 
 #### Por qué esto estaba mal declarado
 

@@ -1456,12 +1456,36 @@ es inválido cuando se excede un tope: es correcto y excede un límite.
 una elección discutible por otra sin fundamento no mejora nada. Quedan
 declarados para que un auditor con conocimiento del estándar decida.
 
-### ⚠️ Lo que NO se verificó
+### Los códigos de estado, también verificados
 
-Los códigos de **estado** —`ACSC`, `ACSP`, `RJCT`— pertenecen a un catálogo
-distinto del de motivos, y **no se contrastaron**. La decisión de §3.11 de
-`VISION.md` se apoya en que `ACSP` significa *"aceptada, liquidación en
-curso"*: **eso no está verificado contra la fuente**.
+Pertenecen a un catálogo distinto —`ExternalPaymentTransactionStatus1Code`,
+antes `TransactionIndividualStatus`— y se contrastaron aparte.
+
+| Código | Nombre | Definición |
+|---|---|---|
+| `ACSP` | AcceptedSettlementInProcess | Comprobaciones pasadas, liquidación **en curso** |
+| `ACSC` | AcceptedSettlementCompleted | Liquidación **completada** en la cuenta del deudor |
+| `RJCT` | Rejected | Rechazada |
+
+El ciclo estándar es `RCVD → ACCP → ACSP → ACSC`, así que **la decisión de
+§3.11 de `VISION.md` se sostiene**: `send` produce `ACSP` y `claim`
+produce `ACSC`.
+
+#### ⚠️ Dos matices que un experto debería revisar
+
+**`ACSC` se define sobre la cuenta del deudor.** En el modelo en dos fases
+el deudor **sí** queda debitado tras `send()`, así que por la letra `ACSC`
+sería defendible ya ahí. Se descarta porque el acreedor **no tiene el
+dinero**, y decírselo a su banco sería engañoso — pero es una lectura, no
+una certeza.
+
+**Existe `ACWP` (AcceptedWithoutPosting)**: *"aceptada sin abonar en la
+cuenta del acreedor"*. Semánticamente es **lo más cercano** al modelo en dos
+fases. Se descarta porque su definición lo acota a retenciones por
+escrutinio regulatorio o de fraude, que no es este caso.
+
+⚠️ **Si un experto en el estándar considerara que `ACWP` encaja mejor, el
+cambio es de una línea.** Queda declarado para que pueda decidirlo.
 
 ### La lección
 
