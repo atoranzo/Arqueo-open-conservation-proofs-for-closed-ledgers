@@ -140,7 +140,37 @@ fn iso_reason(err: &LayerError) -> (&'static str, String) {
         // DS0G — el estado ha cambiado: hay que reintentar sobre el actual
         LayerError::StaleState => ("DS0G", err.to_string()),
         // TECH — fallo técnico
-        _ => ("TECH", err.to_string()),
+        // ===== CUENTA BLOQUEADA =====
+        //
+        // ⚠️ Antes caia en el comodin y se reportaba como "TECH", es decir
+        // **problema tecnico**. Decirle eso a un banco cuando la cuenta
+        // esta congelada es falso: es un rechazo de negocio, y AC06 es su
+        // codigo. Ver `AUDITORIA.md` §13.
+        LayerError::AccountFrozen(_) => ("AC06", err.to_string()),
+
+        // ===== LIMITACIONES DEL SISTEMA, DECLARADAS COMO TALES =====
+        //
+        // Estas SI son tecnicas, pero se mapean **explicitamente** para que
+        // se vea que la decision se tomo.
+        LayerError::NullifierPositionCollision { .. } => ("TECH", err.to_string()),
+        LayerError::AccountLimitReached { .. } => ("TECH", err.to_string()),
+        LayerError::CustodianSetExhausted { .. } => ("TECH", err.to_string()),
+        LayerError::ProofFailed(_) => ("TECH", err.to_string()),
+        LayerError::VerificationFailed(_) => ("TECH", err.to_string()),
+        LayerError::Store(_) => ("TECH", err.to_string()),
+
+        // ===== PETICIONES MAL FORMADAS =====
+        LayerError::RecoveryToSameIdentity => ("MS03", err.to_string()),
+        LayerError::AlreadyInThatFreezeState { .. } => ("MS03", err.to_string()),
+
+        // ⚠️ **NO HAY COMODIN, Y ES DELIBERADO.**
+        //
+        // Habia un `_ => ("TECH", ...)` que absorbia **9 de las 19
+        // variantes** sin que nadie lo decidiera, incluida `AccountFrozen`.
+        //
+        // Sin comodin, anadir un error nuevo **no compila** hasta que
+        // alguien elija su codigo. Es preferible a que se reporte mal en
+        // silencio.
     }
 }
 
@@ -376,6 +406,37 @@ mod tests {
         let msg = message(LIMIT + 1, "EUR");
         let r = settle_pacs008(&mut layer, &registry, &msg, BaseElement::new(SK_ALICE));
         assert_eq!(r.reason_code, Some("AM02"));
+    }
+
+    /// **CUENTA CONGELADA → AC06, NO "PROBLEMA TÉCNICO".**
+    ///
+    /// Antes caía en un comodín `_ => ("TECH", ...)` que absorbía **9 de
+    /// las 19 variantes de error**. Un banco que reciba *TECH* reintenta;
+    /// uno que reciba *AC06* sabe que la cuenta está bloqueada.
+    ///
+    /// Decirle "problema técnico" a un rechazo de negocio **es falso**, y
+    /// en un contexto de cumplimiento puede tener consecuencias.
+    #[test]
+    fn a_frozen_account_maps_to_ac06_not_tech() {
+        let (mut layer, registry, alice, _) = setup();
+        // Dos pasos: generar el recibo y APLICARLO. `set_frozen` toma
+        // `&self` y solo produce la prueba; sin `apply_freeze` la cuenta
+        // seguiria libre y el test comprobaria otra cosa.
+        let recibo = layer
+            .set_frozen(&valid_auth(), alice, true)
+            .expect("generar la congelacion");
+        layer
+            .apply_freeze(&recibo, alice)
+            .expect("aplicar la congelacion");
+
+        let msg = message(1000, "EUR");
+        let r = settle_pacs008(&mut layer, &registry, &msg, BaseElement::new(SK_ALICE));
+
+        assert_eq!(
+            r.reason_code,
+            Some("AC06"),
+            "una cuenta bloqueada es un rechazo de NEGOCIO, no un fallo tecnico"
+        );
     }
 
     /// Divisa no admitida → AM03, antes de tocar la capa.

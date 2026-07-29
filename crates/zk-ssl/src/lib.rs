@@ -170,6 +170,19 @@ pub enum LayerError {
     InsufficientBalance { available: u64, requested: u64 },
     OverRegulatoryLimit { limit: u64, requested: u64 },
     NullifierAlreadySpent,
+    /// **La posicion del nullificador esta ocupada por OTRO nullificador.**
+    ///
+    /// No es un doble gasto: es una colision. La posicion se deriva del
+    /// propio nullificador —`nullificador[0] mod 2^32`— asi que dos pagos
+    /// legitimos distintos pueden caer en la misma.
+    ///
+    /// ⚠️ **El pago queda bloqueado y no hay reintento posible**: el
+    /// nullificador es determinista a partir del estado de la cuenta.
+    ///
+    /// Antes esto se reportaba como `NullifierAlreadySpent`, que **acusaba
+    /// al usuario honesto de algo que no habia hecho**. Ver `AUDITORIA.md`
+    /// §13.
+    NullifierPositionCollision { position: u64 },
     NotTheIssuer,
     /// El conjunto de custodios agotó su cupo de intervenciones.
     ///
@@ -216,6 +229,12 @@ impl std::fmt::Display for LayerError {
             OverRegulatoryLimit { limit, requested } => write!(
                 f,
                 "importe {requested} por encima del limite regulatorio {limit}"
+            ),
+            NullifierPositionCollision { position } => write!(
+                f,
+                "la posicion {position} ya esta ocupada por OTRO nullificador: \
+                 es una colision, no un doble gasto. El pago no puede \
+                 completarse y no hay reintento posible"
             ),
             NullifierAlreadySpent => {
                 write!(f, "el nullifier ya se gasto: doble gasto rechazado")

@@ -171,8 +171,15 @@ impl SovereignLayer {
         if self.is_frozen(sender_index) {
             return Err(LayerError::AccountFrozen(sender_index));
         }
+        // ⚠️ La posicion se DERIVA del nullificador, asi que estar ocupada
+        // no significa que este pago se hiciera ya: puede ser el de otra
+        // persona que cayo en la misma posicion. Distinguirlo importa
+        // porque acusar de doble gasto a quien no lo ha hecho es falso.
         if self.nullifiers.is_occupied(null_pos) {
-            return Err(LayerError::NullifierAlreadySpent);
+            if self.nullifiers.leaf(null_pos) == nullifier {
+                return Err(LayerError::NullifierAlreadySpent);
+            }
+            return Err(LayerError::NullifierPositionCollision { position: null_pos });
         }
 
         let sender_path = self.accounts.path_for(sender_index);

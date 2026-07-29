@@ -885,6 +885,47 @@ En una moneda digital de banco central, **65.000 pagos son unos minutos**.
 ⚠️ **No está corregido.** La decisión afecta al circuito, a la capa y a las
 cifras del paper.
 
+### Lo que se corrigió al aplicar el hallazgo
+
+**El error dejó de mentir.** La capa devolvía `NullifierAlreadySpent`, que
+**acusaba al usuario honesto de un doble gasto que no había cometido**.
+Ahora compara la hoja ocupada con el nullificador propio y distingue:
+
+```rust
+if self.nullifiers.leaf(null_pos) == nullifier {
+    return Err(LayerError::NullifierAlreadySpent);
+}
+return Err(LayerError::NullifierPositionCollision { position: null_pos });
+```
+
+**Y el paper lo declara donde hace la afirmación**, no en una nota aparte.
+
+### Y de paso apareció otro: el comodín del mapeo ISO
+
+Al añadir el error nuevo, **el compilador no lo exigió**. Había un
+`_ => ("TECH", ...)` que absorbía **9 de las 19 variantes**:
+
+| Variante | Se reportaba como |
+|---|---|
+| ⚠️ **`AccountFrozen`** | **"problema técnico"** |
+| `AccountLimitReached` | idem |
+| `CustodianSetExhausted` | idem |
+| `RecoveryToSameIdentity` | idem |
+| ...y cinco más | idem |
+
+⚠️ **`AccountFrozen` es el grave.** Un banco que recibe *TECH* reintenta;
+uno que recibe *AC06* sabe que la cuenta está bloqueada. Decirle "problema
+técnico" a un rechazo de negocio **es falso**, y en cumplimiento puede tener
+consecuencias.
+
+**El comodín se eliminó.** Ahora añadir un error nuevo **no compila** hasta
+que alguien elija su código.
+
+⚠️ **Pero los códigos concretos no están auditados.** `AC06` para cuenta
+bloqueada es estándar; `MS03` y los `TECH` explícitos son decisiones
+defendibles **que nadie ha verificado contra el catálogo ISO 20022**. Se
+cambió un mapeo silencioso por uno explícito, no por uno correcto.
+
 ### Cómo se encontró
 
 Aplicando el método de §14 a las profundidades de los árboles: **preguntar
@@ -991,18 +1032,18 @@ Leer por qué funciona antes de copiarlo evitó ese fallo.
 
 ## 15. La cifra de pruebas que este proyecto publica es incompleta
 
-La documentación afirma **359 pruebas ejecutables** y da los dos comandos
+La documentación afirma **360 pruebas ejecutables** y da los dos comandos
 que las ejecutan. Es preciso sobre **qué** mide, pero se lee como el total
 del proyecto.
 
 **El espacio de trabajo tiene diez crates**, y la suite entera son unas
-**550 pruebas** y **22 minutos**.
+**551 pruebas** y **22 minutos**.
 
 ### El desglose, que dice más que el número
 
 | Qué es | Crates | Pruebas |
 |---|---|---|
-| **Capa de producción** | `zk-ssl`, `stark-experiment` | **359** |
+| **Capa de producción** | `zk-ssl`, `stark-experiment` | **360** |
 | Estudio comparativo | `zk-core`, `plonk-experiment`, `halo2-experiment`, `iso-bridge`, `nova-experiment` | 140 |
 | ⚠️ **Código de terceros vendorizado** | `ceremony` | **34** |
 | ⚠️ **Capa anterior, superada** | `settlement-layer` | **17** |

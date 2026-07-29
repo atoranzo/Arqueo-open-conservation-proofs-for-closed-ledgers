@@ -247,6 +247,22 @@ Esa representación permite generar caminos de autenticación tanto para
 posiciones ocupadas como libres, y esa segunda capacidad es la base de las
 pruebas de **no-pertenencia**.
 
+> ⚠️ **La capacidad práctica del árbol de nullifiers no es 2³².**
+>
+> La posición de un nullifier se deriva del propio nullifier
+> —`nullifier[0] mod 2³²`— y el circuito exige que esté libre. Dos
+> nullifiers distintos que caigan en la misma posición son un conflicto, y
+> eso sigue la **paradoja del cumpleaños**: a los ~65.000 nullifiers la
+> colisión ya tiene un 39 % de probabilidad, y al 99 % con 200.000.
+>
+> El afectado no puede reintentar: el nullifier es determinista a partir
+> del estado de su cuenta. **Su pago queda bloqueado.**
+>
+> Es un límite de disponibilidad, no de solidez —nadie roba dinero— y
+> **no está corregido**. Las opciones y su coste están en `AUDITORIA.md`
+> §13. Los árboles de cuentas y congelados no tienen este problema: sus
+> posiciones **se asignan**, no se derivan.
+
 ### 4.2 No-pertenencia como primitiva
 
 Tres propiedades del sistema se demuestran mediante no-pertenencia, con la
