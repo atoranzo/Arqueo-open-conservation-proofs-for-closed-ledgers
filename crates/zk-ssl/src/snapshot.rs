@@ -443,10 +443,8 @@ mod tests {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 50_000);
-        let s = layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 250_000)
-            .expect("transferencia");
-        layer.apply(&s, alice, bob, 250_000).expect("aplicar");
+        two_phase_transfer(&mut layer, alice, SK_ALICE, bob, SK_BOB, 250_000, salt_de(0x51A1))
+            .expect("transferencia en dos fases");
 
         let info = layer.export_snapshot(&file).expect("exportar");
         println!(
@@ -597,16 +595,16 @@ mod tests {
         let genesis = layer.state_root();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
-        let s = layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 1000)
-            .expect("transferencia");
-        layer.apply(&s, alice, bob, 1000).expect("aplicar");
+        two_phase_transfer(&mut layer, alice, SK_ALICE, bob, SK_BOB, 1000, salt_de(0x51A2))
+            .expect("transferencia en dos fases");
 
         layer.export_snapshot(&file).expect("exportar");
         let restored = SovereignLayer::import_snapshot(&file).expect("importar");
 
-        // Dos aperturas + una emision + una transferencia.
-        assert_eq!(restored.transition_log().len(), 4);
+        // **Cinco, no cuatro.** Dos aperturas, una emision, y **un envio mas
+        // un cobro**: la via en dos fases deja dos entradas donde `transfer`
+        // dejaba una.
+        assert_eq!(restored.transition_log().len(), 5);
         assert_eq!(
             restored.log_head(),
             layer.log_head(),
@@ -636,10 +634,8 @@ mod tests {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
-        let s = layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 1000)
-            .expect("transferencia");
-        layer.apply(&s, alice, bob, 1000).expect("aplicar");
+        two_phase_transfer(&mut layer, alice, SK_ALICE, bob, SK_BOB, 1000, salt_de(0x51A3))
+            .expect("transferencia en dos fases");
         layer.export_snapshot(&file).expect("exportar");
 
         // El registro esta al final del fichero.

@@ -364,11 +364,25 @@ mod tests {
 
         println!("\n=== Tamano de prueba frente a importe ===");
         let mut samples: Vec<(f64, f64)> = Vec::with_capacity(N);
-        for amount in &amounts {
+        // ⚠️ **Se mide `send`, no `transfer`.**
+        //
+        // Lo que este bucle demuestra —que el tamaño de la prueba **no
+        // depende del importe**— hay que demostrarlo sobre la via que se
+        // ejecuta. Sobre la retirada no dice nada de produccion.
+        for (i, amount) in amounts.iter().enumerate() {
             let capped = (*amount).min(layer.regulatory_limit());
+            let estado = state_of(&layer, alice);
+            let receptor = layer.public_id_of(bob).expect("cuenta");
             let s = layer
-                .transfer(BaseElement::new(SK_ALICE), alice, bob, capped)
-                .expect("transferencia");
+                .send(
+                    BaseElement::new(SK_ALICE),
+                    alice,
+                    &estado,
+                    receptor,
+                    salt_de(0x7A11 + i as u64),
+                    capped,
+                )
+                .expect("envio");
             println!("  importe {:>9} → {} B", capped, s.proof.len());
             samples.push((capped as f64, s.proof.len() as f64));
         }

@@ -2178,7 +2178,59 @@ describía otra cosa de la que se creía.**
 
 ---
 
-## 32. Qué NO demuestra este documento
+## 32. ⚠️ Retirar `transfer()` no cierra el límite del cumpleaños
+
+**Esta sección corrige una afirmación repetida durante toda la auditoría.**
+
+El plan era: migrar las 35 llamadas a `transfer()`, retirar la función, y con
+ella el árbol de nullificadores y el límite de ~65.000 pagos de §13. Las 35
+llamadas están migradas y no queda ningún uso.
+
+⚠️ **Pero hay una segunda vía, y sigue viva.**
+
+`client.rs` expone `transfer_materials` → `prove_transfer` → `apply`: un
+cliente por compromisos completo, **construido sobre `circuit_settlement`**,
+que calcula su nullificador localmente y lo entrega a la capa.
+
+| | Vía | ¿Nullificador? |
+|---|---|---|
+| Capa | `transfer` + `apply` | Sí — **sin usos, retirable** |
+| **Cliente** | `prove_transfer` + `apply` | **Sí — API pública, viva** |
+| Dos fases | `send` + `claim` | No |
+
+**Retirar `transfer()` deja `apply()` en pie**, porque el cliente la necesita,
+y con ella el árbol de nullificadores y su límite.
+
+### Por qué se pasó por alto
+
+El plan se formuló contando **llamadas a `transfer()`**, y la vía del cliente
+no llama a `transfer()`: **construye su propia traza**. Un barrido por nombre
+de función nunca la habría encontrado.
+
+> **Contar llamadas a una función no mide cuánta superficie depende de lo que
+> esa función usa.** Lo que había que contar era el uso del circuito, no el
+> de la función.
+
+### Qué haría falta de verdad
+
+`client.rs` es el modelo por compromisos para la vía de un paso, y `send` /
+`claim` **ya son ese mismo modelo** —también reciben el estado del titular—.
+Migrarlo significa dar al cliente un equivalente de `prove_transfer` sobre
+`circuit_send`, con sus materiales y su cobro.
+
+⚠️ **No está hecho, y es más trabajo que las 35 llamadas juntas**: es una API
+pública con su propia documentación, sus tests y su lugar en los papers.
+
+### Lo que sí se ganó
+
+Las 35 migraciones **no fueron en balde**: produjeron cuatro hallazgos —§25,
+§26, §29, §30— y dejaron la vía de dos fases ejercitada por toda la suite.
+Pero **el objetivo declarado no se alcanzó**, y decirlo importa más que el
+progreso.
+
+---
+
+## 33. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
