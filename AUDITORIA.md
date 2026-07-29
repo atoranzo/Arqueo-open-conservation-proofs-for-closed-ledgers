@@ -1418,6 +1418,27 @@ fila exactos del fallo.
 **Reparto de los 65**: 48 en `tests`, 9 en `iso`, 4 en `snapshot`, 3 en
 `metrics`, 1 en `client`.
 
+### ✅ `tools/check_tests.py`
+
+Las dos formas en que un test puede no proteger han aparecido **una vez cada
+una** en este proyecto:
+
+| Forma | Dónde apareció |
+|---|---|
+| `#[test]` anidado en una función | `balances_plus_pending` (§17) |
+| `#[ignore]` sin condición | `zero_value_only_works_in_release_mode` (§20) |
+
+Las dos compilan. Las dos pasan desapercibidas. Ninguna falla ni avisa.
+
+La herramienta barre los nueve crates y busca las dos. **533 tests
+declarados, ninguno de los dos casos.** Está validada en los dos sentidos:
+introducir un `#[ignore]` a propósito la hace fallar, y retirarlo la
+devuelve a verde.
+
+> **Un fallo que ha ocurrido una vez puede volver a ocurrir en silencio.**
+> Convertir la comprobación puntual en herramienta cuesta menos que
+> encontrarlo dos veces.
+
 ### ⚠️ Un test que nadie ejecutaba
 
 `range_check::zero_value_only_works_in_release_mode` llevaba `#[ignore]`
