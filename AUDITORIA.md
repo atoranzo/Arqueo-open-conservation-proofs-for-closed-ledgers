@@ -1466,11 +1466,45 @@ received 42»* cuando se añadió el límite regulatorio al circuito.
 ❌ **En `zk-ssl` sigue sin proteger**: 65 de 172 fallan, y **esos 65 no
 comprueban nada** mientras el modo no se arregle.
 
-⚠️ **La causa de los 65 no está diagnosticada.** La explicación original
-—bits constantes en caminos de Merkle— es plausible, porque la capa usa
-cuentas en los índices 0 y 1, cuyos caminos son casi todo ceros, mientras
-que los tests de los circuitos varían los bits con `level % 3 == 0`. **Pero
-no se ha confirmado con un mensaje de error.**
+### ✅ La causa, confirmada con el mensaje
+
+```
+transition constraint degrees didn't match
+expected: [... 2046, 2046, ... 1023, ...]
+actual:   [... 1023, 1023, ...    0, ...]
+```
+
+**2046 = 2 × 1023**: una restricción declarada de **grado 2** evaluando como
+**grado 1**. Eso ocurre cuando **uno de los dos factores del producto es
+constante** en esa traza concreta. Y los `1023 → 0` son restricciones enteras
+constantes.
+
+Es exactamente la explicación que esta sección daba desde el principio, y
+**la revisión que la puso en duda se equivocaba**.
+
+### Por qué la capa y no los circuitos
+
+| | Índices de cuenta | Bits del camino |
+|---|---|---|
+| Tests de circuitos | Sintéticos, `is_right = level % 3 == 0` | **Varían** |
+| Tests de la capa | 0, 1, 2… asignados en orden | **Casi todo ceros** |
+
+La capa abre cuentas secuencialmente desde el índice 0, y un camino de Merkle
+hacia la posición 0 tiene **todos los bits a cero**. La restricción booleana
+sobre ese bit es constante, y su grado real cae.
+
+### El arreglo, y su coste
+
+Haría falta que los tests operaran sobre cuentas en índices con **bits
+variados** —por ejemplo `0b10101`— en vez de 0 y 1.
+
+⚠️ **No es un cambio pequeño**: abrir cuentas de relleno hasta llegar ahí
+cambia `account_count()`, los índices que los tests declaran, y las cifras de
+suministro de varios. Son 172 tests. **No está hecho.**
+
+⚠️ **Y el coste de no hacerlo está medido**: 65 tests de la capa **no
+comprueban nada** en modo depuración, que es el único que valida los grados
+de restricción.
 
 ### Versión anterior de esta sección, conservada
 
