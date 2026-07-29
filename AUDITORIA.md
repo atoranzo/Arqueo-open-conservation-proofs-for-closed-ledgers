@@ -280,7 +280,7 @@ observador?"* sino **"¿qué aprende cada participante?"**.
 Encontró la fuga de §4 y no encontró otra igual de grave. Pero sí tres
 cosas que estaban implícitas y **ninguna declarada**.
 
-### 14.1 Matriz por operación
+### 15.1 Matriz por operación
 
 | Operación | El operador | La contraparte | Un tercero |
 |---|---|---|---|
@@ -292,7 +292,7 @@ cosas que estaban implícitas y **ninguna declarada**.
 | Congelación | Todo | Custodios: **qué cuenta** | Nada |
 | Gasto sin conexión | — | Comercio: el importe | Nada |
 
-### 14.2 Lo implícito, ahora declarado
+### 15.2 Lo implícito, ahora declarado
 
 **El importe de emisión y destrucción es público.** Aparece en las entradas
 públicas de ambos circuitos.
@@ -318,7 +318,7 @@ Un observador del registro ve **el patrón de actividad del sistema**
 cuánto. Es metadato, y en un sistema con poca actividad podría ser
 significativo.
 
-### 14.3 Lo que el repaso confirmó que SÍ está cerrado
+### 15.3 Lo que el repaso confirmó que SÍ está cerrado
 
 | Propiedad | Cómo |
 |---|---|
@@ -327,7 +327,7 @@ significativo.
 | El nullifier no se deriva de la identidad pública | Test: `nullifier_is_not_derivable_from_public_id` |
 | Una transferencia no revela identidades a terceros | Solo raíces y nullifier |
 
-### 14.4 La pregunta que queda para un auditor
+### 15.4 La pregunta que queda para un auditor
 
 **¿Hay más datos que se entregan por necesidad técnica y que nadie
 examinó?**
@@ -422,7 +422,7 @@ que se hace al conjunto, no a la función.
 **Aplicación de P4 —medida: el sistema define qué resuelve y qué rechaza—
 a la pregunta de qué estados alcanzan las combinaciones de operaciones.**
 
-### 14.1 La matriz, probada
+### 15.1 La matriz, probada
 
 | Con la cuenta congelada | ¿Se permite? | Dónde se impone |
 |---|---|---|
@@ -433,7 +433,7 @@ a la pregunta de qué estados alcanzan las combinaciones de operaciones.**
 | Recibir una emisión | Sí | — |
 | Ser recuperada | Sí, **y la congelación sobrevive** | Probado |
 
-### 14.2 El hueco que había
+### 15.2 El hueco que había
 
 **Congelar bloqueaba transferir y no bloqueaba destruir.** Un titular bajo
 investigación podía **vaciar su cuenta a cero**: no se llevaba el dinero
@@ -442,7 +442,7 @@ investigación podía **vaciar su cuenta a cero**: no se llevaba el dinero
 El circuito de liquidación miraba el árbol de congelados; el de destrucción
 **no lo miraba en absoluto**, y la capa tampoco.
 
-### 14.3 La decisión, y su razonamiento
+### 15.3 La decisión, y su razonamiento
 
 **Congelar existe para que una cuenta bajo investigación no mueva fondos.
 Destruirlos los mueve: los saca del sistema. Que sea público e irreversible
@@ -453,13 +453,13 @@ congelados** —24 niveles, filas 280..471, que estaban libres— con 13
 restricciones nuevas y **3 tests**, incluido el validador que comprueba que
 una cuenta libre sí puede.
 
-### 14.4 Por qué se permite recibir
+### 15.4 Por qué se permite recibir
 
 Impedir que una cuenta congelada **reciba** dejaría fondos en el limbo y
 rompería pagos legítimos hacia alguien bajo investigación. Es una decisión
 deliberada, no un olvido.
 
-### 14.5 Por qué la recuperación no la levanta
+### 15.5 Por qué la recuperación no la levanta
 
 El árbol de congelados se indexa por **posición de cuenta**, no por
 identidad. Si se indexara por identidad, bastaría con decir que se perdió
@@ -501,7 +501,7 @@ compilaba y pasaba sus tests.
 | ¿Qué estados alcanzan las combinaciones? | **Una cuenta congelada podía destruir su dinero** |
 | ¿Qué puede el operador que no esté declarado? | **Puede desviar un pago si no compruebas el destino** |
 
-### 14.1 Lo que tienen en común
+### 15.1 Lo que tienen en común
 
 **Ninguna se responde revisando una función.** Cada una compara cosas que
 son coherentes por separado:
@@ -814,20 +814,70 @@ cree. **Un resultado limpio no significa que el circuito sea correcto.**
 
 ---
 
-## 13. La cifra de pruebas que este proyecto publica es incompleta
+## 13. El tope de emisión se sostiene sobre UN BIT
 
-La documentación afirma **353 pruebas ejecutables** y da los dos comandos
+`circuit_mint` comprueba el tope descomponiendo `tope − suministro_nuevo`
+en bits. Si el suministro se pasara del tope, esa resta **envuelve** en el
+campo de Goldilocks y da un valor cercano a `p ≈ 2^64`.
+
+Que ese valor envuelto se rechace depende de que el segmento de rango dé
+**63 bits y no 64**:
+
+| | |
+|---|---|
+| Máximo representable con 63 bits | 9.223.372.036.854.775.807 |
+| Valor envuelto de una resta negativa | ~18.446.744.069.000.000.000 |
+| ¿Cabe? | **No** — por eso se rechaza |
+
+⚠️ **Con 64 bits sí cabría.** El tope dejaría de imponerse y **ningún test
+lo notaría**: los testigos honestos pasan igual y los adversariales fallan
+antes por otras restricciones.
+
+### De dónde sale el margen
+
+De que `cont_s` marca `SEGMENT_LENGTH − 1 = 63` transiciones, no 64:
+
+```rust
+for p in 0..SEGMENT_LENGTH - 1 {
+    cont_s[seg * SEGMENT_LENGTH + p] = one;
+}
+```
+
+Partiendo de cero, 63 duplicaciones dan un valor de 63 bits.
+
+⚠️ **Ese `- 1` parece un error de índice fuera por uno.** Quien lo
+"corrigiera" dejaría el tope sin imponer, y el circuito seguiría pasando
+todos sus tests.
+
+### Ahora hay algo que lo detiene
+
+`the_range_segment_is_63_bits_not_64` comprueba las dos cosas: que las
+transiciones activas son `SEGMENT_LENGTH − 1`, y que con ese número de bits
+el valor envuelto queda fuera del rango.
+
+⚠️ **Se encontró preguntando por qué funciona antes de copiarlo**, no
+revisando. La intención era replicar el mecanismo en
+`circuit_mint_pending`, donde el tope **sigue sin comprobarse**.
+
+⚠️ **Y sigue sin comprobarse**: replicarlo exige un segmento de 64 filas en
+un circuito cuyos segmentos son de 8. **No está hecho.**
+
+---
+
+## 14. La cifra de pruebas que este proyecto publica es incompleta
+
+La documentación afirma **355 pruebas ejecutables** y da los dos comandos
 que las ejecutan. Es preciso sobre **qué** mide, pero se lee como el total
 del proyecto.
 
 **El espacio de trabajo tiene diez crates**, y la suite entera son unas
-**544 pruebas** y **22 minutos**.
+**546 pruebas** y **22 minutos**.
 
 ### El desglose, que dice más que el número
 
 | Qué es | Crates | Pruebas |
 |---|---|---|
-| **Capa de producción** | `zk-ssl`, `stark-experiment` | **353** |
+| **Capa de producción** | `zk-ssl`, `stark-experiment` | **355** |
 | Estudio comparativo | `zk-core`, `plonk-experiment`, `halo2-experiment`, `iso-bridge`, `nova-experiment` | 140 |
 | ⚠️ **Código de terceros vendorizado** | `ceremony` | **34** |
 | ⚠️ **Capa anterior, superada** | `settlement-layer` | **17** |
@@ -888,11 +938,11 @@ eran el proyecto entero.
 
 ---
 
-## 14. Donde el autor tiene MENOS confianza
+## 15. Donde el autor tiene MENOS confianza
 
 Esta es la sección más útil del documento.
 
-### 14.1 `open_account` no exige autorización — **mitigado a medias**
+### 15.1 `open_account` no exige autorización — **mitigado a medias**
 
 Cualquiera con acceso a la capa puede crear cuentas. No crea dinero
 (nacen a cero), pero llenaba el árbol y el mapa de registros hasta agotar
@@ -908,7 +958,7 @@ genera ninguna prueba**.
 Un auditor debería valorar si el tope es suficiente para el caso de uso
 previsto.
 
-### 14.2 La congelación no tiene justificación ni caducidad
+### 15.2 La congelación no tiene justificación ni caducidad
 
 **Implementada** con imposición en circuito: la prueba de liquidación
 acredita que el emisor no está en el árbol de congelados.
@@ -922,7 +972,7 @@ acredita que el emisor no está en el árbol de congelados.
   contrario dejaría fondos en el limbo— pero merece que un auditor valore
   si encaja con el caso de uso.
 
-### 14.3 Los grados de restricción
+### 15.3 Los grados de restricción
 
 **Cinco veces** durante el desarrollo winterfell rechazó un grado mal
 declarado. Cada vez se corrigió. La exactitud que exige winterfell hace
@@ -935,7 +985,7 @@ Especial cuidado con:
   (`circuit_mint`: 8 segmentos × 64 filas llenan la traza y la vuelven
   periódica de periodo 64).
 
-### 14.4 El patrón lockstep
+### 15.4 El patrón lockstep
 
 `C_SIBLING` impone que los dos carriles usen el mismo hermano. El
 argumento es que eso basta para atar ambas subidas a la misma posición
@@ -945,7 +995,7 @@ Está verificado con un test discriminante, **pero el argumento general no
 ha sido revisado por nadie más**. Es el hallazgo más original del
 proyecto y merece escrutinio.
 
-### 14.5 Los tests negativos
+### 15.5 Los tests negativos
 
 **Tres veces** un test negativo resultó no discriminar: fallaba por una
 restricción distinta de la que pretendía probar. Se corrigieron
@@ -954,7 +1004,7 @@ construyendo testigos internamente coherentes.
 **Puede quedar alguno más.** Un auditor debería comprobar, para cada test
 negativo, que el testigo corrupto es válido en todo lo demás.
 
-### 14.6 El bloqueo de directorio de `sled` tras cerrar — **hallazgo nuevo**
+### 15.6 El bloqueo de directorio de `sled` tras cerrar — **hallazgo nuevo**
 
 `sled` mantiene un bloqueo del directorio que puede tardar en liberarse
 tras cerrar la base de datos. **Un nodo que se reinicie inmediatamente
@@ -971,7 +1021,7 @@ hace el ayudante `open_retry` de los tests.
 Un auditor debería valorar si esto afecta a los procedimientos de
 recuperación tras caída.
 
-### 14.7 El techo de 63 bits
+### 15.7 El techo de 63 bits
 
 Las comprobaciones de rango fuerzan el bit más significativo a cero, así
 que **ningún valor puede superar 2^63 − 1**.
@@ -983,7 +1033,7 @@ rechazarse al configurar.
 No es una fuga de solidez —los valores fuera de rango se rechazan— pero
 sí un fallo de usabilidad que puede confundir un diagnóstico.
 
-### 14.8 El formato de instantánea se queda atrás al añadir estado
+### 15.8 El formato de instantánea se queda atrás al añadir estado
 
 **Dos veces** en pocas rondas: al añadir las cuentas congeladas y al
 añadir el registro de transiciones, la instantánea dejó de incluir algo
@@ -998,7 +1048,7 @@ existe.
 Un auditor debería comprobar que la versión actual del formato cubre todo
 el estado, y valorar exigir ese test.
 
-### 14.9 Colisiones en el árbol de nullifiers
+### 15.9 Colisiones en el árbol de nullifiers
 
 La posición sale de los bits bajos del nullifier. Dos nullifiers pueden
 colisionar, y el segundo **no podría gastarse**.
@@ -1009,7 +1059,7 @@ incorrecto, sería grave.
 
 ---
 
-## 15. Por dónde empezaría el autor si tuviera que romperlo
+## 16. Por dónde empezaría el autor si tuviera que romperlo
 
 En este orden:
 
@@ -1029,7 +1079,7 @@ En este orden:
 
 ---
 
-## 16. Limitaciones ya documentadas
+## 17. Limitaciones ya documentadas
 
 No hacen falta descubrirlas; están en `README.md`:
 
@@ -1043,7 +1093,7 @@ No hacen falta descubrirlas; están en `README.md`:
 
 ---
 
-## 17. Cómo reproducir
+## 18. Cómo reproducir
 
 ### ⚠️ Hay un test ignorado, y conviene saber por qué
 
@@ -1083,7 +1133,7 @@ fila exactos del fallo.
 
 ---
 
-## 18. Qué NO demuestra este documento
+## 19. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

@@ -1255,4 +1255,65 @@ mod tests {
             informe.nunca_disparadas
         );
     }
+
+    /// **EL RANGO ES DE 63 BITS, Y DE ESO DEPENDE QUE EL TOPE SE IMPONGA.**
+    ///
+    /// El tope se comprueba descomponiendo `tope − suministro_nuevo` en
+    /// bits. Si el suministro se pasara del tope, esa resta **envuelve** en
+    /// el campo y da un valor cercano a `p ≈ 2^64`.
+    ///
+    /// Que ese valor envuelto sea rechazado depende de que el segmento dé
+    /// **63 bits y no 64**:
+    ///
+    /// | | |
+    /// |---|---|
+    /// | Máximo con 63 bits | 9.223.372.036.854.775.807 |
+    /// | Valor envuelto | ~18.446.744.069.xxx.xxx.xxx |
+    /// | ¿Cabe? | **No** — por eso se rechaza |
+    ///
+    /// **Con 64 bits sí cabría**, el tope dejaría de imponerse, y ningún
+    /// test lo notaría: los testigos honestos pasan igual y los
+    /// adversariales fallan antes por otras restricciones.
+    ///
+    /// El margen sale de que `cont_s` cubre `SEGMENT_LENGTH − 1 = 63`
+    /// transiciones, no 64. Es un invariante de **un solo bit** que nada
+    /// más comprueba.
+    #[test]
+    fn the_range_segment_is_63_bits_not_64() {
+        let air = MintAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            scenario(1000, 500_000, 10_000_000).public_inputs,
+            default_options(),
+        );
+        let periodic = air.get_periodic_column_values();
+
+        // Transiciones activas dentro del primer segmento.
+        let cont = &periodic[P_CONT_S];
+        let activas = (0..SEGMENT_LENGTH)
+            .filter(|p| cont[*p] == BaseElement::ONE)
+            .count();
+
+        assert_eq!(
+            activas,
+            SEGMENT_LENGTH - 1,
+            "el segmento debe dar SEGMENT_LENGTH-1 = {} bits. Con {} bits \
+             el valor envuelto de una resta negativa cabria en el rango y \
+             el tope dejaria de imponerse",
+            SEGMENT_LENGTH - 1,
+            SEGMENT_LENGTH
+        );
+
+        // Y que ese numero de bits deja fuera el valor envuelto.
+        let bits = activas as u32;
+        assert!(bits < 64, "con 64 bits todo elemento del campo cabe");
+
+        let maximo_representable = (1u128 << bits) - 1;
+        let p = (1u128 << 64) - (1u128 << 32) + 1;
+        let envuelto = p - 50_000_000; // tope 100M, suministro 150M
+        assert!(
+            envuelto > maximo_representable,
+            "el valor envuelto ({envuelto}) debe quedar FUERA del rango \
+             representable ({maximo_representable}), o el tope no se impone"
+        );
+    }
 }
