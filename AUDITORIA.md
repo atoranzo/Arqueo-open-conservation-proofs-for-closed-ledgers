@@ -1128,12 +1128,12 @@ Leer por qué funciona antes de copiarlo evitó ese fallo.
 
 ## 15. La cifra de pruebas que este proyecto publica es incompleta
 
-La documentación afirma **364 pruebas ejecutables** y da los dos comandos
+La documentación afirma **365 pruebas ejecutables** y da los dos comandos
 que las ejecutan. Es preciso sobre **qué** mide, pero se lee como el total
 del proyecto.
 
 **El espacio de trabajo tiene diez crates**, y la suite entera son unas
-**556 pruebas** y **22 minutos**.
+**557 pruebas** y **22 minutos**.
 
 ### El desglose, que dice más que el número
 
@@ -1638,7 +1638,68 @@ documentación —o el nombre de un test— afirma, y que nadie contrasta**.
 
 ---
 
-## 24. Qué NO demuestra este documento
+## 24. Propiedades demostradas sobre un modelo que no se ejecuta
+
+**`crates/zk-ssl/src/pending.rs` es un prototipo del diseño en dos fases.**
+De todo lo que contiene, la producción usa **una función**:
+
+| | Quién lo usa |
+|---|---|
+| `pending_commitment` | ✅ `two_phase.rs` |
+| `PendingNotice` | ❌ Nadie fuera del propio fichero |
+| `PendingTransfers` | ❌ La capa usa `SparseTree` directamente |
+
+⚠️ **`PendingNotice` está duplicado**: existe en `pending.rs` y en
+`two_phase.rs`, **con la misma frase de documentación** y un campo de
+diferencia. Es el mismo patrón que el `CustodianPath` duplicado al copiar un
+circuito.
+
+### Lo que importa no es el duplicado
+
+Son **los 8 tests** de ese módulo. Demuestran las propiedades del diseño
+—que el pagador no necesita el saldo, que nadie más puede cobrar, que el
+compromiso no revela al receptor— **sobre un modelo que la capa no
+ejecuta**.
+
+Contrastadas una a una con la vía real:
+
+| Propiedad | ¿En producción? |
+|---|---|
+| El pagador solo necesita la identidad | ✅ |
+| El receptor puede cobrar | ✅ |
+| Nadie más puede cobrar | ✅ |
+| Ni siquiera el pagador lo recupera | ✅ |
+| No se cobra dos veces | ✅ |
+| El compromiso no revela al receptor | ✅ |
+| El pagador sabe **cuándo** se cobra | ⚠️ Fuga residual declarada |
+| ⚠️ **Cobrar otro importe se rechaza** | ❌ **No estaba** |
+
+### El hueco encontrado
+
+**Cobrar un importe distinto del comprometido crearía dinero**: el pagador
+compromete N y el receptor se abona M.
+
+El circuito lo impide por construcción —el compromiso se forma con
+`(identidad, aleatorio, importe)`— pero **nada lo comprobaba en la vía que
+se ejecuta**. Se añadió
+`circuit_claim::claiming_a_different_amount_is_rejected`.
+
+> **Una propiedad de seguridad demostrada sobre un modelo no está demostrada
+> sobre lo que se ejecuta.**
+
+### ⚠️ Y esto no se limita a este módulo
+
+`stark-experiment` tiene **11 módulos del estudio comparativo** que nadie
+usa (§15), y `crates/settlement-layer` es una capa entera superada (§11).
+**Sus tests demuestran propiedades de código que no se ejecuta.**
+
+No es un defecto —documentan cómo se llegó al diseño— pero **contar sus
+tests como garantías del sistema sería falso**, y quien lea sus nombres
+puede creerlo.
+
+---
+
+## 25. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

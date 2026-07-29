@@ -1639,4 +1639,65 @@ mod tests {
             informe.nunca_disparadas
         );
     }
+
+    /// **NO SE PUEDE COBRAR UN IMPORTE DISTINTO DEL COMPROMETIDO.**
+    ///
+    /// Si se pudiera, **se crearía dinero**: el pagador comprometió N y el
+    /// receptor se abonaría M.
+    ///
+    /// El circuito lo impide por construcción —el compromiso se forma con
+    /// `(identidad, aleatorio, importe)`, así que cambiar el importe da
+    /// otro compromiso que no está en el árbol— pero **nada lo comprobaba
+    /// en esta vía**.
+    ///
+    /// ⚠️ **Estaba verificado solo sobre el modelo.** `pending.rs` tiene
+    /// `claiming_a_different_amount_is_rejected`, pero ese módulo es un
+    /// prototipo que la capa **no usa**: la producción va por
+    /// `two_phase.rs` y este circuito. Ver `AUDITORIA.md` §24.
+    ///
+    /// Una propiedad de seguridad demostrada sobre un modelo **no está
+    /// demostrada sobre lo que se ejecuta**.
+    #[test]
+    fn claiming_a_different_amount_is_rejected() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+
+        // El compromiso del árbol se formó con `s.amount`. Se intenta
+        // cobrar el doble, dejando todo lo demás igual.
+        let trace = build_trace(
+            s.key,
+            s.account_id,
+            s.balance,
+            s.nonce,
+            &s.path,
+            &s.frozen_path,
+            s.amount * 2,
+            s.supply_old,
+            0,
+            s.receiver_id,
+            s.salt,
+            &s.pending_path,
+        );
+        let prover = ClaimProver::new(default_options());
+        let hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(|_| {}));
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
+        std::panic::set_hook(hook);
+
+        let ok = match r {
+            Ok(Ok(proof)) => {
+                let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                    proof,
+                    s.public_inputs.clone(),
+                    &min_opts,
+                )
+                .is_ok()
+            }
+            _ => false,
+        };
+        assert!(
+            !ok,
+            "CRITICO: cobrar mas de lo comprometido crearia dinero"
+        );
+    }
 }

@@ -480,7 +480,7 @@ Nothing in this document requires trusting its author.
 git clone [repository]
 cd zk-ssl
 cargo test -p zk-ssl --release              # 168 tests
-cargo test -p stark-experiment --release    # 196 tests
+cargo test -p stark-experiment --release    # 197 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
 
