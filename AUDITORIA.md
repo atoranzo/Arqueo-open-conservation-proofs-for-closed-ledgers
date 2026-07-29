@@ -1395,7 +1395,69 @@ fila exactos del fallo.
 
 ---
 
-## 20. ⚠️ `cargo test` sin `--release` falla en 2 tests
+## 20. ✅ `cargo test` sin `--release` ya pasa
+
+> **⚠️ DOBLE CORRECCIÓN.** Esta sección decía **56 fallos** y una causa que no
+> los explicaba. Medido: eran **2**. Diagnosticados y corregidos los dos,
+> ahora son **0**.
+
+### El estado
+
+| Modo | Resultado |
+|---|---|
+| `cargo test -p stark-experiment` | **199 pasan, 0 fallan**, 2 ignorados |
+| `cargo test -p stark-experiment --release` | **200 pasan**, 1 ignorado |
+
+⚠️ **`zk-ssl` en modo depuración no se ha medido.** Lo anterior es solo el
+crate de circuitos.
+
+### Fallo 1 — el test de mutación trabajaba sobre una traza inválida
+
+`circuit_audit::no_constraint_is_vacuous` construía su traza de referencia
+con **saldo 1.000.000 y banda [700.000, 800.000]**: el saldo **fuera de la
+banda**. La restricción que detecta eso saltaba, haciendo su trabajo.
+
+⚠️ **Y en `--release` no se notaba.** `buscar_vacias` lleva un
+`debug_assert` que comprueba que la referencia sea válida, y en release **no
+se ejecuta**: la herramienta seguía adelante marcando como «disparadas»
+restricciones que **ya lo estaban antes de perturbar nada**.
+
+**Su informe para ese circuito no valía.** La afirmación publicada —*«prueba
+por mutación: 12 de 12 circuitos limpios»*— cubría once.
+
+> **La herramienta tenía una autocomprobación que nadie había ejecutado,
+> porque toda la documentación decía `--release`.**
+
+Los otros once sí estaban bien: el mismo `debug_assert` los valida a todos y
+**solo saltó en `circuit_audit`**. Esa ejecución es el barrido, y es más
+fuerte que cualquier patrón de búsqueda.
+
+### Fallo 2 — el margen del tope es cero, y un grado con él
+
+`circuit_mint_pending::minting_exactly_up_to_the_cap_is_allowed` alcanza el
+tope **exactamente**, así que `tope − suministro_nuevo` vale **cero** y los
+63 bits del segmento de rango son todos cero. Las restricciones booleanas
+sobre ellos tienen grado real **0**.
+
+✅ **Se salta en depuración con `#[cfg_attr(debug_assertions, ignore)]`**, y
+el motivo va en el propio test.
+
+⚠️ **No se ha debilitado el test.** Probar con margen 1 en vez de 0 dejaría
+sin comprobar justo el límite exacto, que es para lo que existe.
+
+### Lo que esto cambia
+
+La versión anterior concluía: *«la suite en modo depuración no protege»*.
+
+✅ **Protege entera.** Y ese modo es el que comprueba que cada grado
+declarado se realice —el que dio *«expected 41 assertions, received 42»*
+cuando se añadió el límite regulatorio al circuito—.
+
+> **Se daba por rota una segunda red de 199 tests que estaba a dos arreglos
+> de funcionar.** El coste de no medir una cifra durante meses fue perder esa
+> red mientras se creía tenerla.
+
+### Versión anterior de esta sección, conservada
 
 > **⚠️ CORRECCIÓN.** Esta sección decía **56** y describía una causa que no
 > los explicaba. Medido de nuevo: **son 2**, deterministas, y la causa real

@@ -880,13 +880,25 @@ mod tests {
     fn no_constraint_is_vacuous() {
         use crate::mutation::{buscar_vacias, rows_of};
 
+        // ⚠️ **LA BANDA DEBE CONTENER EL SALDO.**
+        //
+        // Este test usaba `700_000..800_000` con un saldo de 1.000.000: la
+        // traza de referencia declaraba algo **falso**, y la restriccion que
+        // detecta el saldo fuera de banda saltaba —haciendo su trabajo—.
+        //
+        // En `--release` el `debug_assert` de `buscar_vacias` no se ejecuta,
+        // asi que la herramienta seguia adelante **con una referencia rota**:
+        // marcaba como «disparadas» restricciones que ya lo estaban antes de
+        // perturbar nada. Su informe para este circuito **no valia**.
+        //
+        // Lo delato ejecutar la suite sin `--release`. Ver `AUDITORIA.md` §20.
         let (w, root, id) = scenario(1_000_000);
-        let trace = build_trace(&w, 700_000, 800_000);
+        let trace = build_trace(&w, 900_000, 1_100_000);
         let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
 
         let air = AuditAir::new(
             TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
-            pi(root, id, 700_000, 800_000),
+            pi(root, id, 900_000, 1_100_000),
             default_options(),
         );
         let informe = buscar_vacias(&air, &rows, 1);
