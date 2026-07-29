@@ -804,19 +804,19 @@ cree. **Un resultado limpio no significa que el circuito sea correcto.**
 
 ## 13. La cifra de pruebas que este proyecto publica es incompleta
 
-La documentación afirma **341 pruebas ejecutables** y da los dos comandos
+La documentación afirma **347 pruebas ejecutables** y da los dos comandos
 que las ejecutan. Es preciso sobre **qué** mide, pero se lee como el total
 del proyecto.
 
 **El espacio de trabajo tiene diez crates**, y la suite entera son unas
-**537 pruebas** y **22 minutos**.
+**538 pruebas** y **22 minutos**.
 
 ### El desglose, que dice más que el número
 
 | Qué es | Crates | Pruebas |
 |---|---|---|
 | **Capa de producción** | `zk-ssl`, `stark-experiment` | **347** |
-| Estudio comparativo | `zk-core`, `plonk-experiment`, `halo2-experiment`, `iso-bridge`, `nova-experiment` | ~139 |
+| Estudio comparativo | `zk-core`, `plonk-experiment`, `halo2-experiment`, `iso-bridge`, `nova-experiment` | 140 |
 | ⚠️ **Código de terceros vendorizado** | `ceremony` | **34** |
 | ⚠️ **Capa anterior, superada** | `settlement-layer` | **17** |
 | Vacíos | `settlement-prover` | 0 |
@@ -840,8 +840,25 @@ superado que sigue en el árbol.
 | `zk-ssl` | 162 | 27 s |
 | `stark-experiment` | 185 | **8 s** |
 
-**El 89 % del tiempo son PLONK y Halo2.** Los dos crates de producción
-tardan **35 segundos entre los dos**.
+A los que se suma `zk-core` (Groth16 sobre BLS12-381), con 74 pruebas y
+**más de una hora**: sus tests individuales superan el minuto cada uno.
+
+**Los dos crates de producción tardan 35 segundos entre los dos.**
+
+### El tiempo de la suite ES la comparativa
+
+| Paradigma | Crate | Tiempo de sus pruebas |
+|---|---|---|
+| Groth16 / BLS12-381 | `zk-core` | **> 60 min** |
+| PLONK / KZG | `plonk-experiment` | 13 min |
+| Halo2 / IPA | `halo2-experiment` | 7 min |
+| **STARK / hash** | `stark-experiment` | **8 s** |
+
+La comparativa de rendimiento que este proyecto publica **no hace falta
+medirla aparte**: está en cuánto tarda cada crate en probarse a sí mismo.
+
+⚠️ No es una medición controlada —cada crate prueba cosas distintas— pero
+el orden de magnitud coincide con las cifras del estudio.
 
 Y ese reparto **es un dato del propio estudio**: confirma la comparativa de
 rendimiento que este proyecto publica. PLONK/KZG tarda ~6,9 s por prueba y
