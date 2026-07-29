@@ -452,18 +452,31 @@ La propiedad va en el tipo: la firma recibe la identidad del receptor y un
 aleatorio. **No hay parámetro donde entrara un saldo, ni columna donde
 alojarlo.**
 
-⚠️ **Un fallo encontrado al construirlo, y sin corregir**: el tope de
-emisión se transporta y se declara públicamente, pero **falta la
-comprobación de rango**. Es una restricción que existe en el nombre y no
-impone nada — el mismo modo de fallo que este documento describe en otros
-sitios.
+✅ **Un fallo encontrado al construirlo, y ya corregido**: el tope de
+emisión se transportaba y se declaraba públicamente, pero **faltaba la
+comprobación de rango**. Era una restricción que existía en el nombre y no
+imponía nada.
 
 Apareció al preguntar *"¿cada columna que declaro se usa de verdad?"*, que
 además destapó que **siete columnas nuevas nunca se rellenaban**: valían
 cero y sus restricciones se cumplían trivialmente.
 
-Cerrar el tope exige un segmento de rango más, lo que cambia
-`NUM_SEGMENTS` y con él los índices de las periódicas. **No está hecho.**
+**Cerrado** con un segmento de 64 filas que descompone `tope −
+suministro_nuevo` en 63 bits, en filas que estaban vacías. Dos tests lo
+fijan: `minting_beyond_the_cap_is_rejected` y
+`minting_exactly_up_to_the_cap_is_allowed`.
+
+⚠️ **El par es necesario.** La primera versión solo tenía el negativo y
+**pasaba por la razón equivocada**: el circuito rechazaba *cualquier*
+emisión porque el test reutilizaba entradas públicas de importe fijo.
+
+Apareció al preguntar *"¿cada columna que declaro se usa de verdad?"*, que
+además destapó que **siete columnas nuevas nunca se rellenaban**: valían
+cero y sus restricciones se cumplían trivialmente.
+
+Se cerró con un segmento **independiente** de 64 filas —`CAP_LENGTH`— en
+vez de tocar `NUM_SEGMENTS`, que habría desplazado los índices de todas las
+periódicas.
 
 **Cableado a la capa**: `mint_to_pending` y `apply_mint_to_pending`, con
 **4 tests de integración**. El ciclo completo funciona: los custodios
@@ -472,10 +485,17 @@ emiten a un pendiente y el destinatario lo reclama con `claim`.
 ⚠️ **`mint()` clásico sigue existiendo.** Retirarlo exige migrar lo que lo
 use, y **no está hecho**.
 
-⚠️ **El tope lo impone la capa, no el circuito.** El test se llama
-`the_supply_cap_is_enforced_by_the_layer` precisamente para que se vea. Es
-coherente con el modelo declarado —el operador ya controla la capa— pero va
-contra el principio de imponer en el circuito.
+✅ **El tope lo impone ahora el circuito, no solo la capa.**
+
+Durante un tiempo solo lo imponía la capa, y el test se llamaba
+`the_supply_cap_is_enforced_by_the_layer` precisamente para que se viera.
+Era coherente con el modelo declarado —el operador ya controla la capa—
+pero iba contra el principio de imponer en el circuito.
+
+⚠️ **Y el margen es de un solo bit.** El segmento da **63 bits, no 64**: si
+diera 64, el valor envuelto de una resta negativa cabría en el rango y el
+tope dejaría de imponerse **sin que ningún test lo notara**. Ver
+`AUDITORIA.md` §14.
 
 **`recovery`**: aquí hay una **tensión estructural**, no solo trabajo
 pendiente.
