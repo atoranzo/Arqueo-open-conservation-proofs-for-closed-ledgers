@@ -70,6 +70,15 @@ impl SparseTree {
         }
     }
 
+    /// **Cuántas posiciones admite este árbol.**
+    ///
+    /// ⚠️ `path_for` con un índice mayor produce un camino que **no llega a
+    /// la raíz**: la prueba no verificaría, y sin decir por qué. Quien
+    /// asigne posiciones debe comprobar este límite.
+    pub fn capacity(&self) -> u64 {
+        1u64 << self.depth
+    }
+
     pub fn len(&self) -> usize {
         self.leaves.len()
     }

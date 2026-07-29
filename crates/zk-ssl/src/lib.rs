@@ -183,6 +183,18 @@ pub enum LayerError {
     /// al usuario honesto de algo que no habia hecho**. Ver `AUDITORIA.md`
     /// §13.
     NullifierPositionCollision { position: u64 },
+    /// **El arbol de pendientes agoto sus posiciones.**
+    ///
+    /// El contador `next_pending` solo sube: **nunca reutiliza** las
+    /// posiciones de los pendientes ya reclamados. Asi que el limite es de
+    /// transferencias TOTALES desde el inicio, no simultaneas.
+    ///
+    /// ⚠️ Sin esta comprobacion, `path_for` produciria un camino que no
+    /// llega a la raiz y la prueba fallaria **sin decir por que**.
+    ///
+    /// Cerrarlo exige rotar el arbol o reutilizar posiciones liberadas, y
+    /// **no esta hecho**. Ver `AUDITORIA.md` §13.
+    PendingTreeExhausted { capacity: u64 },
     NotTheIssuer,
     /// El conjunto de custodios agotó su cupo de intervenciones.
     ///
@@ -229,6 +241,12 @@ impl std::fmt::Display for LayerError {
             OverRegulatoryLimit { limit, requested } => write!(
                 f,
                 "importe {requested} por encima del limite regulatorio {limit}"
+            ),
+            PendingTreeExhausted { capacity } => write!(
+                f,
+                "el arbol de pendientes agoto sus {capacity} posiciones: el \
+                 contador nunca reutiliza las liberadas, asi que el limite \
+                 es de transferencias totales, no simultaneas"
             ),
             NullifierPositionCollision { position } => write!(
                 f,

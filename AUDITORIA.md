@@ -823,7 +823,7 @@ cree. **Un resultado limpio no significa que el circuito sea correcto.**
 
 ---
 
-## 13. ⚠️ La capacidad práctica del árbol de nullificadores es ~2^16, no 2^32
+## 13. ⚠️ Capacidades declaradas frente a capacidades reales
 
 **Es el hallazgo más grave de esta auditoría.** No de solidez —nadie roba
 dinero— sino de **disponibilidad**, y con un mensaje de error que acusa al
@@ -925,6 +925,48 @@ que alguien elija su código.
 bloqueada es estándar; `MS03` y los `TECH` explícitos son decisiones
 defendibles **que nadie ha verificado contra el catálogo ISO 20022**. Se
 cambió un mapeo silencioso por uno explícito, no por uno correcto.
+
+---
+
+### El segundo: el árbol de pendientes se agota, y en menos de lo que parece
+
+Sus posiciones **se asignan** con un contador secuencial, así que no tiene
+el problema del cumpleaños. Pero el contador **solo sube: nunca reutiliza
+las posiciones de los pendientes ya reclamados**.
+
+⚠️ **El límite es de transferencias TOTALES desde el inicio, no
+simultáneas.**
+
+| Ritmo | Tiempo hasta agotar 2³² |
+|---|---|
+| 100 pagos/s | ~1,4 años |
+| **1.000 pagos/s** | **~50 días** |
+| 10.000 pagos/s | ~5 días |
+
+Y al agotarse, `path_for` producía un camino que **no llega a la raíz**: la
+prueba fallaba **sin decir por qué**.
+
+**Corregido en parte**: `SparseTree::capacity()` declara el límite, y la
+capa devuelve `PendingTreeExhausted` con su causa en vez de fallar de forma
+inexplicable.
+
+⚠️ **Pero el límite sigue existiendo.** Cerrarlo exige rotar el árbol o
+reutilizar las posiciones liberadas al reclamar, y **no está hecho**.
+
+---
+
+### El patrón de esta sección
+
+| Estructura | Capacidad declarada | Capacidad real |
+|---|---|---|
+| Nullificadores | 2³² posiciones | **~65.000 pagos** (cumpleaños) |
+| Pendientes | 2³² posiciones | **2³² pagos totales**, no simultáneos |
+| Cuentas | 2³² posiciones | 2³², correcto: se asignan y persisten |
+| Congelados | 2²⁴ posiciones | 2²⁴, correcto |
+
+**Lo que distingue a los dos primeros**: en uno la posición se *deriva*, en
+el otro el contador *no recicla*. En ambos casos la capacidad anunciada por
+la estructura **no es la del sistema**.
 
 ### Cómo se encontró
 

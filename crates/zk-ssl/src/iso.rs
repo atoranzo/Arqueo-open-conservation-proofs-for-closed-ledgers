@@ -153,6 +153,7 @@ fn iso_reason(err: &LayerError) -> (&'static str, String) {
         // Estas SI son tecnicas, pero se mapean **explicitamente** para que
         // se vea que la decision se tomo.
         LayerError::NullifierPositionCollision { .. } => ("TECH", err.to_string()),
+        LayerError::PendingTreeExhausted { .. } => ("TECH", err.to_string()),
         LayerError::AccountLimitReached { .. } => ("TECH", err.to_string()),
         LayerError::CustodianSetExhausted { .. } => ("TECH", err.to_string()),
         LayerError::ProofFailed(_) => ("TECH", err.to_string()),

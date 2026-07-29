@@ -576,6 +576,7 @@ congelación y recuperación. **No está hecho.**
 | 5 | Consenso distribuido | ⬜ **Abierto**. Único cierre real de censura |
 | 6 | Auditoría externa | ⬜ **Condición, no capacidad** |
 | 7 | ⚠️ **Capacidad del árbol de nullifiers** | ⬜ **Abierto**: ~65.000 pagos, no 2³². Ver `AUDITORIA.md` §13 |
+| 8 | ⚠️ **Agotamiento del árbol de pendientes** | ⚙️ **Declarado**: falla con su causa, pero el límite sigue (§13) |
 
 **La prioridad 0 apareció al empezar el refactor de la 1**, y la desplaza.
 Cerrar la visibilidad del operador mientras cualquier contraparte ve los

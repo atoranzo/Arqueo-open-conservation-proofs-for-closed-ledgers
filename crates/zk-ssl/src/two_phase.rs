@@ -154,6 +154,13 @@ impl SovereignLayer {
             });
         }
 
+        // ⚠️ El contador NUNCA reutiliza posiciones liberadas, asi que
+        // esto limita las transferencias TOTALES, no las simultaneas.
+        if self.next_pending >= self.pending.capacity() {
+            return Err(LayerError::PendingTreeExhausted {
+                capacity: self.pending.capacity(),
+            });
+        }
         let position = self.next_pending;
         let path = self.accounts.path_for(sender_index);
         let frozen_path = self.frozen.path_for(sender_index);
@@ -406,6 +413,13 @@ impl SovereignLayer {
             });
         }
 
+        // ⚠️ El contador NUNCA reutiliza posiciones liberadas, asi que
+        // esto limita las transferencias TOTALES, no las simultaneas.
+        if self.next_pending >= self.pending.capacity() {
+            return Err(LayerError::PendingTreeExhausted {
+                capacity: self.pending.capacity(),
+            });
+        }
         let position = self.next_pending;
         let pending_path = self.pending.path_for(position);
         let trace = build_mint_pending_trace(
