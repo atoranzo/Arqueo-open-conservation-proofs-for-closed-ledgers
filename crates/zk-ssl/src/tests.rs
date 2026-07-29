@@ -1674,14 +1674,42 @@ use super::*;
 
     /// **TRANSFERIR A UNA CUENTA QUE NO EXISTE.**
     #[test]
-    fn transferring_to_a_nonexistent_account() {
+    fn sending_to_a_nonexistent_recipient_loses_the_money() {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-        let r = layer.transfer(BaseElement::new(SK_ALICE), alice, 9_999, 1000);
-        assert!(
-            matches!(r, Err(LayerError::AccountNotFound(_))),
-            "deberia decir que la cuenta no existe: {r:?}"
+        // ⚠️ **LA VIA NUEVA NO LO IMPIDE, Y ESO ES EL HALLAZGO.**
+        //
+        // `transfer` recibia un INDICE y devolvia `AccountNotFound`. `send`
+        // recibe un IDENTIFICADOR PUBLICO —un hash— y **no comprueba que
+        // alguien lo tenga**: no puede, sin revelar quien esta en el arbol.
+        //
+        // El envio funciona, el dinero sale, y queda en un pendiente que
+        // **nadie puede cobrar jamas**. Un digito mal en el identificador
+        // pierde el pago sin ningun aviso.
+        let inexistente = derive_public_id(BaseElement::new(0xDEADBEEF));
+        let estado = state_of(&layer, alice);
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &estado, inexistente, salt_de(0x404), 1000)
+            .expect("la via nueva NO puede detectarlo");
+        layer
+            .apply_send(&recibo, alice, &estado, 1000)
+            .expect("y lo aplica");
+
+        assert_eq!(layer.balance_of(alice), Some(999_000), "el dinero salio");
+        assert_eq!(
+            layer.total_pending(),
+            1000,
+            "y esta en un pendiente que nadie reclamara"
         );
+
+        // ⚠️ **No hay devolucion.** El importe queda fuera de circulacion sin
+        // dejar de contar en el suministro: la invariante global se cumple y
+        // el dinero es inalcanzable. Ver `AUDITORIA.md` §30.
+        //
+        // **Esto no es un defecto de implementacion**: comprobar la
+        // existencia del receptor exigiria que la capa revelara quien tiene
+        // cuenta, que es justo lo que el diseno evita. Es un **coste del
+        // modelo**, y hasta ahora no estaba declarado.
     }
 
     // -----------------------------------------------------------------
