@@ -2412,6 +2412,30 @@ construya su propia traza**. Es el mismo hueco que §25, sin la regresión.
 > afirmación sin respaldo**, que en un sistema que se publica con DOI es un
 > hallazgo distinto pero no menor.
 
+### ⚠️ Dónde deja de funcionar el método
+
+Aplicado a `halo2-experiment` (27 tests), `plonk-experiment` (36) y
+`nova-experiment` (3), **el contraste no produce nada**, y el motivo importa
+más que el resultado.
+
+Esos crates **no son implementaciones superadas de lo mismo**: son el estudio
+comparativo. Sus tests negativos prueban **los primitivos de cada sistema**
+—que un testigo inválido rompe un circuito Halo2, que el gadget Poseidon
+detecta un hash falso— no las propiedades de liquidación.
+
+`wrong_hash_fails_circuit` comprueba Poseidon en Halo2. Producción usa Rescue
+en Winterfell. **No es la misma propiedad expresada de otra forma: es otra
+propiedad.**
+
+> **El contraste rinde cuando el módulo es una implementación superada de lo
+> mismo, no cuando es simplemente otro módulo.** Los cinco hallazgos vienen
+> de comparar dos formas de hacer lo mismo; comparar dos cosas distintas no
+> dice nada.
+
+Queda declarado para que nadie repita el ejercicio sobre estos tres
+esperando el mismo rendimiento. `settlement-prover` y `ceremony` no tienen
+tests propios.
+
 ### Comparación con las otras cuatro del contraste
 
 También quedó comprobado que **`derive_custodian_id` y `derive_public_id` no
