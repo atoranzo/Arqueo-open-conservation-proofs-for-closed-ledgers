@@ -2068,7 +2068,59 @@ identidad fue lo que delató el cambio de propiedad.
 
 ---
 
-## 30. Qué NO demuestra este documento
+## 30. ⚠️ Enviar a un identificador inexistente pierde el dinero
+
+**No es un defecto de implementación. Es un coste del modelo que no estaba
+declarado.**
+
+| Vía | A quién se paga | Si no existe |
+|---|---|---|
+| `transfer` | Un **índice** de cuenta | `AccountNotFound` |
+| `send` | Un **identificador público** | **Funciona. El dinero se pierde.** |
+
+`send` no puede comprobar que alguien tenga ese identificador **sin revelar
+quién está en el árbol**, que es justo lo que el diseño evita. Así que no lo
+comprueba.
+
+El envío se aplica, el dinero sale del pagador, y queda en un pendiente que
+**nadie puede cobrar jamás**. Un dígito mal en el identificador pierde el pago
+**sin ningún aviso**.
+
+⚠️ **No hay devolución.** El importe queda fuera de circulación sin dejar de
+contar en el suministro: la invariante global se cumple —`saldos + pendientes
+== suministro`— y el dinero es inalcanzable.
+
+Lo fija `sending_to_a_nonexistent_recipient_loses_the_money`, que antes se
+llamaba `transferring_to_a_nonexistent_account` y afirmaba lo contrario.
+
+### Qué haría falta, y su coste
+
+| Opción | Coste |
+|---|---|
+| Comprobar la existencia en la capa | Revela quién tiene cuenta: **rompe el modelo** |
+| Devolución tras un plazo | Exige tiempo en el circuito, que no existe |
+| Confirmación fuera de banda antes de enviar | No es criptografía, es producto |
+
+**Ninguna está implementada**, y la primera es incompatible con el diseño.
+
+### El patrón, por segunda vez en dos rondas
+
+| | Lo que cambió |
+|---|---|
+| §29 | Una congelada recibe hacia un limbo |
+| §30 | Un identificador inexistente pierde el dinero |
+
+Los dos vienen de lo mismo: **la vía en dos fases mueve la acción al
+receptor**, y las propiedades que dependían de que el pagador lo hiciera todo
+dejaron de cumplirse. Los dos aparecieron **migrando tests**, no revisando
+código.
+
+> **Un cambio de arquitectura no invalida los tests uno a uno. Invalida la
+> clase de afirmación que podían hacer.**
+
+---
+
+## 31. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

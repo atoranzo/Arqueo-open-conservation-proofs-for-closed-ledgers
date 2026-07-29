@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software or its measurements, please cite the preprint."
+title: "ZK-SSL — ZK Sovereign Settlement Layer"
+authors:
+  - family-names: "Toranzo Portela"
+    given-names: "Angel Jose"
+license: "MIT OR Apache-2.0"
+repository-code: "https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-"
+preferred-citation:
+  type: article
+  title: "Comparative Implementation of a Zero-Knowledge Settlement Layer across Five Proof Systems: Design Findings and Measurements"
+  authors:
+    - family-names: "Toranzo Portela"
+      given-names: "Angel Jose"
+  doi: "10.5281/zenodo.21677737"
+  year: 2026

@@ -216,17 +216,36 @@ use super::*;
             .expect("transferencia en dos fases");
         let root_mid = layer.state_root();
 
-        let s2 = layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 200_000)
+        let s2 = layer.send(
+                BaseElement::new(SK_ALICE),
+                alice,
+                &state_of(&layer, alice),
+                layer.public_id_of(bob).expect("cuenta"),
+                salt_de(0xC4A1),
+                200_000,
+            )
             .expect("segunda prueba");
         assert_eq!(
             s2.public_inputs.root_old, root_mid,
             "la segunda debe partir de la raiz que dejo la primera"
         );
-        layer.apply(&s2, alice, bob, 200_000).expect("segunda");
+        let estado = state_of(&layer, alice);
+        layer
+            .apply_send(&s2, alice, &estado, 200_000)
+            .expect("segunda");
 
-        assert_eq!(layer.balance_of(alice), Some(700_000));
-        assert_eq!(layer.balance_of(bob), Some(350_000));
+        // ⚠️ **Bob todavia no tiene el dinero.**
+        //
+        // El encadenamiento de raices es lo que este test comprueba, y ocurre
+        // en el ENVIO: la segunda prueba parte de la raiz que dejo la
+        // primera. Que Bob cobre es otra operacion y otra raiz.
+        assert_eq!(layer.balance_of(alice), Some(700_000), "salieron las dos");
+        assert_eq!(
+            layer.balance_of(bob),
+            Some(150_000),
+            "solo tiene lo de la PRIMERA, que si se cobro"
+        );
+        assert_eq!(layer.total_pending(), 200_000, "la segunda esta en transito");
     }
 
     /// **EL TEST DEL TOPE DE EMISIÓN.**
@@ -720,14 +739,6 @@ use super::*;
     // Transferencia en dos fases
     // -----------------------------------------------------------------
 
-    fn salt_de(seed: u64) -> Digest {
-        [
-            BaseElement::new(seed),
-            BaseElement::new(seed + 1),
-            BaseElement::new(seed + 2),
-            BaseElement::new(seed + 3),
-        ]
-    }
 
     /// **EL CICLO COMPLETO: ENVIAR Y RECLAMAR.**
     ///
@@ -1602,25 +1613,56 @@ use super::*;
     /// hoja que el emisor ya cambió y su subida no alcanzaría la raíz
     /// intermedia. **Este test lo comprueba en vez de suponerlo.**
     #[test]
-    fn transferring_to_your_own_account() {
+    fn sending_to_yourself_conserves_value() {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let antes = layer.balance_of(alice);
+        let suministro = layer.total_supply();
 
-        let r = layer.transfer(BaseElement::new(SK_ALICE), alice, alice, 250_000);
+        // ⚠️ **En la via nueva esto ya no es una anomalia.**
+        //
+        // `transfer` actualizaba las dos hojas a la vez, asi que pagarse a
+        // uno mismo era una contradiccion: la misma hoja con dos valores.
+        //
+        // `send` y `claim` tocan **una hoja cada uno, en momentos
+        // distintos**. Enviarse a uno mismo es salir y volver: no hay
+        // contradiccion que detectar, y el resultado neto es cero.
+        let propio = layer.public_id_of(alice).expect("cuenta");
+        let estado = state_of(&layer, alice);
+        let enviado = layer
+            .send(BaseElement::new(SK_ALICE), alice, &estado, propio, salt_de(0x5E1F), 250_000)
+            .and_then(|r| {
+                layer.apply_send(&r, alice, &estado, 250_000)?;
+                Ok(r)
+            });
 
-        // Sea cual sea el resultado, el saldo NO debe haber subido.
-        if let Ok(s) = &r {
-            let aplicado = layer.apply(s, alice, alice, 250_000);
-            assert!(
-                aplicado.is_err(),
-                "CRITICO: transferirse a uno mismo NO debe poder aplicarse"
+        if let Ok(recibo) = enviado {
+            assert_eq!(
+                layer.balance_of(alice),
+                Some(750_000),
+                "el dinero salio, como en cualquier envio"
             );
+            let estado2 = state_of(&layer, alice);
+            let cobro = layer.claim(BaseElement::new(SK_ALICE), alice, &estado2, &recibo.notice);
+            if let Ok(cr) = cobro {
+                let _ = layer.apply_claim(&cr, alice, &estado2, &recibo.notice);
+            }
         }
+
+        // **La invariante es lo que importa**, no si la operacion se
+        // permite: pase lo que pase, ni se crea ni se destruye valor.
+        let total: u64 = (0..layer.account_count() as u64)
+            .filter_map(|i| layer.balance_of(i))
+            .sum();
         assert_eq!(
-            layer.balance_of(alice),
-            antes,
-            "CRITICO: el saldo no puede cambiar por transferirse a uno mismo"
+            total + layer.total_pending(),
+            suministro,
+            "CRITICO: enviarse a uno mismo no puede crear ni destruir dinero"
+        );
+        assert!(
+            layer.balance_of(alice) == antes || layer.total_pending() > 0,
+            "o vuelve entero, o esta en transito: {:?} / {}",
+            layer.balance_of(alice), layer.total_pending()
         );
     }
 
@@ -1637,8 +1679,13 @@ use super::*;
         let antes_a = layer.balance_of(alice);
         let antes_b = layer.balance_of(bob);
 
-        if let Ok(s) = layer.transfer(BaseElement::new(SK_ALICE), alice, bob, 0) {
-            let _ = layer.apply(&s, alice, bob, 0);
+        // Se permita o no, los saldos no pueden moverse.
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+        let estado = state_of(&layer, alice);
+        if let Ok(r) = layer.send(
+            BaseElement::new(SK_ALICE), alice, &estado, receptor, salt_de(0x0000), 0,
+        ) {
+            let _ = layer.apply_send(&r, alice, &estado, 0);
         }
         assert_eq!(layer.balance_of(alice), antes_a, "el emisor no cambia");
         assert_eq!(layer.balance_of(bob), antes_b, "el receptor tampoco");
@@ -1667,9 +1714,14 @@ use super::*;
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 0);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
-        assert!(layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 1)
-            .is_err());
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+        let estado = state_of(&layer, alice);
+        assert!(
+            layer
+                .send(BaseElement::new(SK_ALICE), alice, &estado, receptor, salt_de(0x0E11), 1)
+                .is_err(),
+            "no se puede enviar lo que no se tiene"
+        );
     }
 
     /// **TRANSFERIR A UNA CUENTA QUE NO EXISTE.**
@@ -1919,7 +1971,14 @@ use super::*;
 
         let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
         layer.apply_freeze(&f, alice).expect("aplicar");
-        assert!(layer.transfer(BaseElement::new(SK_ALICE), alice, bob, 1000).is_err());
+        assert!(layer.send(
+                BaseElement::new(SK_ALICE),
+                alice,
+                &state_of(&layer, alice),
+                layer.public_id_of(bob).expect("cuenta"),
+                salt_de(0xF3EF),
+                1000,
+            ).is_err());
 
         let u = layer
             .set_frozen(&valid_auth(), alice, false)
@@ -2272,7 +2331,14 @@ use super::*;
         // La clave ANTIGUA ya no sirve.
         assert!(
             matches!(
-                layer.transfer(BaseElement::new(SK_ALICE), alice, bob, 1000),
+                layer.send(
+                BaseElement::new(SK_ALICE),
+                alice,
+                &state_of(&layer, alice),
+                layer.public_id_of(bob).expect("cuenta"),
+                salt_de(0xC0FF),
+                1000,
+            ),
                 Err(LayerError::NotTheAccountHolder)
             ),
             "CRITICO: tras recuperar, la clave comprometida NO debe poder gastar"
@@ -2981,13 +3047,28 @@ use super::*;
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
 
         assert!(matches!(
-            layer.transfer(BaseElement::new(SK_ALICE), alice, bob, 250_000),
+            layer.send(
+                BaseElement::new(SK_ALICE),
+                alice,
+                &state_of(&layer, alice),
+                layer.public_id_of(bob).expect("cuenta"),
+                salt_de(0x1BAD),
+                250_000,
+            ),
             Err(LayerError::InsufficientBalance { .. })
         ));
-        assert!(matches!(
-            layer.transfer(BaseElement::new(SK_ALICE), alice, 999, 1000),
-            Err(LayerError::AccountNotFound(999))
-        ));
+
+        // ⚠️ **La segunda afirmacion de este test se ha RETIRADO.**
+        //
+        // Comprobaba que enviar a la cuenta 999 diera `AccountNotFound`.
+        // `send` no recibe indices sino identificadores publicos, y **no
+        // puede comprobar que alguien los tenga** sin revelar quien esta en
+        // el arbol.
+        //
+        // No es que el error haya cambiado: **la comprobacion ya no es
+        // posible**, y lo que ocurre en su lugar —el dinero se pierde— lo
+        // fija `sending_to_a_nonexistent_recipient_loses_the_money`. Ver
+        // `AUDITORIA.md` §30.
     
 }
 

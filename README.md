@@ -226,6 +226,17 @@ Todo lo demás que falta está enumerado en
 
 ---
 
+## Publicación
+
+**Comparative Implementation of a Zero-Knowledge Settlement Layer across Five
+Proof Systems: Design Findings and Measurements**
+DOI: [10.5281/zenodo.21677737](https://doi.org/10.5281/zenodo.21677737)
+
+⚠️ **Esa versión necesita una corrección.** Sus cifras de coste —59,1 MB por
+mil operaciones y 17,5 % de verificar sobre generar— miden la vía de un paso,
+que ya no es la de producción. Un pago por la vía en dos fases son **dos
+pruebas**, y el arnés mide **120,4 MB y 28,5 %**. Ver `AUDITORIA.md` §31.
+
 ## Autoría y licencia
 
 **Angel Toranzo Portela**, 2026.

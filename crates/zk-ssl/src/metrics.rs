@@ -92,18 +92,52 @@ mod tests {
         layer.apply_mint(&r2, bob).expect("aplicar");
 
         // --- Transferencia ---
+        // ⚠️ **UN PAGO SON DOS PRUEBAS, NO UNA.**
+        //
+        // La via de produccion es `send` + `claim`. Medir solo `transfer`
+        // —la via retirada— daba **la mitad** del coste real por pago y de
+        // la acumulacion de pruebas. Ver `AUDITORIA.md` §31.
+        let estado_a = state_of(&layer, alice);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+
         let t = Instant::now();
-        let settlement = layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 250_000)
-            .expect("transferencia");
-        let tx_gen = t.elapsed();
-        let tx_bytes = settlement.proof.len();
+        let envio = layer
+            .send(
+                BaseElement::new(SK_ALICE),
+                alice,
+                &estado_a,
+                receptor,
+                salt_de(0x11E7),
+                250_000,
+            )
+            .expect("envio");
+        let send_gen = t.elapsed();
+        let send_bytes = envio.proof.len();
 
         let t = Instant::now();
         layer
-            .apply(&settlement, alice, bob, 250_000)
-            .expect("aplicar transferencia");
-        let tx_apply = t.elapsed();
+            .apply_send(&envio, alice, &estado_a, 250_000)
+            .expect("aplicar envio");
+        let send_apply = t.elapsed();
+
+        let estado_b = state_of(&layer, bob);
+        let t = Instant::now();
+        let cobro = layer
+            .claim(BaseElement::new(SK_BOB), bob, &estado_b, &envio.notice)
+            .expect("cobro");
+        let claim_gen = t.elapsed();
+        let claim_bytes = cobro.proof.len();
+
+        let t = Instant::now();
+        layer
+            .apply_claim(&cobro, bob, &estado_b, &envio.notice)
+            .expect("aplicar cobro");
+        let claim_apply = t.elapsed();
+
+        // El coste de UN PAGO completo: las dos fases sumadas.
+        let tx_gen = send_gen + claim_gen;
+        let tx_apply = send_apply + claim_apply;
+        let tx_bytes = send_bytes + claim_bytes;
 
         // --- Destruccion ---
         let t = Instant::now();
@@ -136,9 +170,12 @@ mod tests {
         line("Destruccion", burn_gen, burn_apply, burn_bytes);
         line("Auditoria (banda)", audit_gen, audit_verify, audit_bytes);
 
+        line("  ├─ envio (send)", send_gen, send_apply, send_bytes);
+        line("  └─ cobro (claim)", claim_gen, claim_apply, claim_bytes);
+
         println!("\n--- Lecturas ---");
         println!(
-            "Verificar / generar (transferencia): {:.1}%",
+            "Verificar / generar (pago completo): {:.1}%",
             100.0 * tx_apply.as_secs_f64() / tx_gen.as_secs_f64()
         );
         println!(
@@ -214,17 +251,36 @@ mod tests {
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
 
-        println!("\n=== Coste por transferencia encadenada ===\n");
+        println!("\n=== Coste por envio encadenado ===\n");
         let mut times = Vec::with_capacity(N);
         for i in 0..N {
+            let estado = state_of(&layer, alice);
+            let receptor = layer.public_id_of(bob).expect("cuenta");
             let t = Instant::now();
             let s = layer
-                .transfer(BaseElement::new(SK_ALICE), alice, bob, 10_000)
-                .expect("transferencia");
+                .send(
+                    BaseElement::new(SK_ALICE),
+                    alice,
+                    &estado,
+                    receptor,
+                    salt_de(0xE57A + i as u64),
+                    10_000,
+                )
+                .expect("envio");
             let gen = t.elapsed();
-            layer.apply(&s, alice, bob, 10_000).expect("aplicar");
+            layer.apply_send(&s, alice, &estado, 10_000).expect("aplicar");
+            // El receptor cobra en el acto: lo que se mide es que el coste no
+            // crezca con el numero de operaciones, y para eso hacen falta las
+            // dos fases o el arbol de pendientes creceria sin vaciarse nunca.
+            let estado_b = state_of(&layer, bob);
+            let cr = layer
+                .claim(BaseElement::new(SK_BOB), bob, &estado_b, &s.notice)
+                .expect("cobro");
+            layer
+                .apply_claim(&cr, bob, &estado_b, &s.notice)
+                .expect("aplicar cobro");
             times.push(gen);
-            println!("  transferencia {:>2}: {:>7.1} ms", i + 1, ms(gen));
+            println!("  envio {:>2}: {:>7.1} ms", i + 1, ms(gen));
         }
 
         let first = times[0].as_secs_f64();
@@ -233,7 +289,7 @@ mod tests {
 
         assert!(
             last < first * 2.0,
-            "el coste por transferencia no debe crecer con el numero de \
+            "el coste por envio no debe crecer con el numero de \
              operaciones. primera={first:.3}s ultima={last:.3}s"
         );
         assert_eq!(layer.balance_of(bob), Some(50_000));

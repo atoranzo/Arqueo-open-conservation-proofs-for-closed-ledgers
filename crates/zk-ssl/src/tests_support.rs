@@ -113,6 +113,19 @@ pub fn two_phase_transfer(
     Ok(())
 }
 
+/// **Semilla determinista para el aleatorio de un pendiente.**
+///
+/// Vive aquí y no en `tests.rs` porque `metrics.rs` también lo necesita: el
+/// arné­s mide la vía en dos fases, y un envío exige un aleatorio.
+pub fn salt_de(seed: u64) -> Digest {
+    [
+        BaseElement::new(seed),
+        BaseElement::new(seed + 1),
+        BaseElement::new(seed + 2),
+        BaseElement::new(seed + 3),
+    ]
+}
+
 pub fn state_of(layer: &SovereignLayer, index: AccountIndex) -> crate::commitment::ClientState {
     crate::commitment::ClientState {
         public_id: layer.public_id_of(index).expect("cuenta"),

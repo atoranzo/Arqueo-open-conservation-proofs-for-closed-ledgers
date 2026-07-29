@@ -179,6 +179,15 @@ impl SovereignLayer {
     /// ⚠️ **Obtenla del propio receptor, no de esta capa.** Si el operador
     /// te da otra identidad, el dinero irá a otra cuenta y la prueba será
     /// válida: las entradas públicas no dicen quién recibe.
+    /// ⚠️ **No comprueba que el receptor exista, y no puede.**
+    ///
+    /// El receptor se identifica por su **identificador público**, no por un
+    /// índice. Comprobar que alguien lo tenga exigiría que la capa revelara
+    /// quién está en el árbol, que es lo que este diseño evita.
+    ///
+    /// **Consecuencia**: enviar a un identificador inventado funciona, el
+    /// dinero sale, y queda en un pendiente que nadie puede cobrar. **No hay
+    /// devolución.** Ver `AUDITORIA.md` §30.
     pub fn send(
         &self,
         spend_key: BaseElement,
