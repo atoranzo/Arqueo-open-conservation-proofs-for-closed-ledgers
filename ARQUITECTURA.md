@@ -1079,7 +1079,7 @@ comprueba que transferir no altera el suministro.
 >
 > Se conserva porque documenta cómo se llegó al diseño actual —incluidos
 > **dos errores propios** que se cuentan más abajo— pero **no es la capa
-> del sistema**. La capa es `zk-ssl`: 23 módulos y 172 tests, frente a los
+> del sistema**. La capa es `zk-ssl`: 22 módulos y 172 tests, frente a los
 > 2 módulos y 17 de este.
 >
 > Una versión anterior de este documento lo titulaba *"La capa"* sin más,
