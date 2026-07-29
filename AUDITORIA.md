@@ -1473,7 +1473,60 @@ y se dio por hecho que explícito implicaba correcto.
 
 ---
 
-## 22. Qué NO demuestra este documento
+## 22. La razón verificar/generar estaba atribuida a la operación equivocada
+
+**Ocho documentos publicaban «verificar cuesta el 0,5-0,8 % de generar».**
+La cifra es cierta. **La operación, no.**
+
+### Lo que mide cada cosa
+
+| Operación | Razón | Qué hace al «aplicar» |
+|---|---|---|
+| **Auditoría** | **0,58 %** | `verify_audit` — **solo verifica** |
+| Transferencia | **17,5 %** | `apply` — verifica, muta el árbol y **escribe a disco** |
+| Emisión | 58,2 % | idem |
+| Destrucción | 63,9 % | idem |
+
+El 0,58 % es el de la **auditoría**, y es el correcto para el argumento que
+sostiene: un supervisor comprueba **sin tocar el estado**. La conclusión
+—*«podría comprobar millones de operaciones al día»*— se mantiene.
+
+⚠️ **Pero aplicar una transferencia cuesta el 17,5 %**, y eso no es
+comparable: incluye escritura a disco.
+
+### Por qué no se había visto
+
+Las demás cifras publicadas **coinciden** con lo medido:
+
+| | Publicado | Medido |
+|---|---|---|
+| Arranque | 0,67 ms | 1,757 ms (otra máquina) |
+| Generar transferencia | ~620 ms | 437,5 ms (otra máquina) |
+| Prueba de liquidación | 62 KB | 63.681 B ✅ |
+| Mil transferencias | 59,1 MB | 60,7 MB ✅ |
+
+Los tiempos absolutos varían con el hardware y eso estaba declarado. **Una
+razón entre dos tiempos de la misma máquina, no.** Ese fue el indicio.
+
+### Cómo se detectó
+
+Ejecutando `cargo test -p zk-ssl --release metrics -- --nocapture` y
+comparando con lo publicado.
+
+⚠️ **Es el único hallazgo de toda esta auditoría que exigió medir en vez de
+razonar.** Leer el código no lo habría encontrado: el código es correcto, lo
+que fallaba era la etiqueta que la documentación le ponía al número.
+
+### Lo que se hizo además
+
+**El tamaño de la prueba se comprueba ahora en el test.** Los tiempos
+dependen de la máquina, pero el tamaño **no**: es determinista. Trece
+documentos publican 62 KB y 59,1 MB, y hasta ahora nada detectaba que un
+cambio los dejara falsos.
+
+---
+
+## 23. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
