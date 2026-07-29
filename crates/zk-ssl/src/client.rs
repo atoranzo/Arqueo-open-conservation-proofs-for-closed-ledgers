@@ -45,7 +45,7 @@ use super::*;
 // `two_phase` es un modulo publico, pero sus tipos no estan en la raiz del
 // crate: `use super::*` no los alcanza.
 use crate::pending::pending_commitment;
-use crate::two_phase::{PendingNotice, SendReceipt};
+use crate::two_phase::{ClaimReceipt, PendingNotice, SendReceipt};
 
 /// Vista pública de una cuenta. **No incluye ninguna clave.**
 ///
@@ -153,6 +153,36 @@ impl SovereignLayer {
     /// Todo lo que devuelve es público o derivable, así que la capa puede
     /// entregarlo sin conocer la clave de gasto y el cliente puede probar
     /// con [`prove_send`] sin volver a hablar con ella.
+    /// **Materiales para cobrar, sin la clave.**
+    ///
+    /// El aviso lo aporta quien cobra: la capa no sabe qué pendiente es suyo
+    /// —esa es la privacidad del diseño— así que **no puede entregarlo**.
+    pub fn claim_materials(
+        &self,
+        receiver_index: AccountIndex,
+        notice: &PendingNotice,
+    ) -> Result<ClaimMaterials, LayerError> {
+        let receiver = self
+            .account_view(receiver_index)
+            .ok_or(LayerError::AccountNotFound(receiver_index))?;
+
+        // ⚠️ Una cuenta congelada no puede cobrar, y el dinero queda en el
+        // limbo. Es una inversion de la decision original, documentada en
+        // `AUDITORIA.md` §29.
+        if self.is_frozen(receiver_index) {
+            return Err(LayerError::AccountFrozen(receiver_index));
+        }
+
+        Ok(ClaimMaterials {
+            receiver_path: self.accounts.path_for(receiver_index),
+            frozen_path: self.frozen.path_for(receiver_index),
+            pending_path: self.pending.path_for(notice.position),
+            receiver,
+            total_supply: self.total_supply,
+            notice: notice.clone(),
+        })
+    }
+
     pub fn send_materials(
         &self,
         sender_index: AccountIndex,
@@ -374,6 +404,71 @@ pub fn prove_send(
     })
 }
 
+/// **Materiales para COBRAR un pendiente.**
+///
+/// La pieza que faltaba para que un pago entero se pueda probar sin dar la
+/// clave a la capa. Ver `AUDITORIA.md` §33.
+///
+/// ⚠️ **No tiene precedente en la vía de un paso**, donde recibir era pasivo:
+/// el pagador actualizaba las dos hojas y el receptor no hacía nada. Aquí
+/// cobrar es una operación del receptor, con su propia prueba.
+#[derive(Clone, Debug)]
+pub struct ClaimMaterials {
+    pub receiver: AccountView,
+    pub receiver_path: MerklePath,
+    pub frozen_path: MerklePath,
+    pub pending_path: MerklePath,
+    pub total_supply: u64,
+    /// El aviso que el pagador tuvo que hacerle llegar.
+    ///
+    /// ⚠️ **ISO 20022 no lo transporta.** Cómo viaja del pagador al receptor
+    /// sigue sin resolver; ver `AUDITORIA.md` §21 y el §3.5 de la nota de
+    /// política.
+    pub notice: PendingNotice,
+}
+
+/// **Genera la prueba de un cobro SIN tocar la capa.**
+///
+/// Con esto y [`prove_send`], **un pago completo se prueba en el cliente**:
+/// la capa entrega caminos y raíces, y verifica; la clave de gasto no sale
+/// de la máquina de quien paga ni de la de quien cobra.
+pub fn prove_claim(
+    materials: &ClaimMaterials,
+    spend_key: BaseElement,
+    options: ProofOptions,
+) -> Result<ClaimReceipt, LayerError> {
+    if derive_public_id(spend_key) != materials.receiver.public_id {
+        return Err(LayerError::NotTheAccountHolder);
+    }
+
+    let trace = build_claim_trace(
+        spend_key,
+        materials.receiver.public_id,
+        materials.receiver.balance,
+        materials.receiver.nonce,
+        &materials.receiver_path,
+        &materials.frozen_path,
+        materials.notice.amount,
+        materials.total_supply,
+        0,
+        // El destinatario del compromiso es el propio receptor: cobrar es
+        // demostrar que el pendiente estaba a su nombre.
+        materials.receiver.public_id,
+        materials.notice.salt,
+        &materials.pending_path,
+    );
+    let prover = ClaimProver::new(options);
+    let public_inputs = prover.get_pub_inputs(&trace);
+    let proof = prover
+        .prove(trace)
+        .map_err(|e| LayerError::ProofFailed(format!("{e:?}")))?;
+
+    Ok(ClaimReceipt {
+        proof: proof.to_bytes(),
+        public_inputs,
+    })
+}
+
 pub fn compute_nullifier(spend_key: BaseElement, nonce: BaseElement) -> Digest {
     stark_experiment::circuit_settlement::native_nullifier(spend_key, nonce)
 }
@@ -526,7 +621,7 @@ mod tests {
         assert_ne!(real, guess);
     }
 
-    /// **UN PAGO COMPLETO SIN DAR LA CLAVE A LA CAPA.**
+    /// **UN PAGO ENTERO SIN DAR NINGUNA CLAVE A LA CAPA.**
     ///
     /// El equivalente de `a_transfer_without_giving_the_key_to_the_layer`
     /// para la vía en dos fases, y la razón de que `send_materials` y
@@ -538,7 +633,7 @@ mod tests {
     /// tampoco la enseña, y los tres preprints citan esta propiedad como el
     /// argumento institucional central. Ver `AUDITORIA.md` §33.
     #[test]
-    fn a_send_without_giving_the_key_to_the_layer() {
+    fn a_whole_payment_without_giving_any_key_to_the_layer() {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
@@ -572,11 +667,23 @@ mod tests {
         assert_eq!(layer.balance_of(alice), Some(750_000), "el dinero salio");
         assert_eq!(layer.total_pending(), 250_000, "y esta en un pendiente");
 
-        // ===== 4. Y EL RECEPTOR LO COBRA. =====
+        // ===== 4. EL RECEPTOR COBRA, TAMBIEN SIN DAR SU CLAVE. =====
+        //
+        // ⚠️ **El aviso lo aporta el, no la capa.** La capa no sabe que
+        // pendiente es suyo —esa es la privacidad del diseno— asi que no
+        // podria entregarselo. Como le llega es la pieza que ISO 20022 no
+        // transporta; ver `AUDITORIA.md` §21.
+        let mat_cobro = layer
+            .claim_materials(bob, &recibo.notice)
+            .expect("materiales de cobro");
+        let cobro = client::prove_claim(
+            &mat_cobro,
+            BaseElement::new(SK_BOB),
+            proof_options(),
+        )
+        .expect("prueba local del cobro");
+
         let estado_bob = state_of(&layer, bob);
-        let cobro = layer
-            .claim(BaseElement::new(SK_BOB), bob, &estado_bob, &recibo.notice)
-            .expect("cobrar");
         layer
             .apply_claim(&cobro, bob, &estado_bob, &recibo.notice)
             .expect("aplicar cobro");
@@ -584,12 +691,11 @@ mod tests {
         assert_eq!(layer.balance_of(bob), Some(250_000));
         assert_eq!(layer.total_pending(), 0);
 
-        // ⚠️ **El cobro sigue siendo un método de la capa.**
+        // **UN PAGO ENTERO, Y LA CAPA NO HA VISTO NINGUNA CLAVE.**
         //
-        // No hay `claim_materials` ni `prove_claim`: el cobro es una
-        // operación que la vía de un paso no tenía, así que su lado cliente
-        // hay que **diseñarlo, no traducirlo**. Mientras tanto, la mitad de
-        // un pago demuestra la separación y la otra mitad no.
+        // Ni la del pagador ni la del receptor. Lo unico que la capa aporta
+        // son caminos y raices —datos publicos— y lo unico que recibe son
+        // pruebas que verifica.
     }
 
     /// **La clave equivocada no genera prueba, y falla ANTES de gastar cómputo.**

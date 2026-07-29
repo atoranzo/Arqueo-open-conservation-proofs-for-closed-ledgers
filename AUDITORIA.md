@@ -2272,13 +2272,12 @@ pendiente.
 `TransferMaterials` ya entrega. La separación no es imposible: **no está
 hecha**.
 
-### ⚙️ Medio cerrada
+### ✅ Cerrada
 
 | Pieza | Estado |
 |---|---|
-| `send_materials(...)` | ✅ Hecha |
-| `prove_send(materials, clave)` | ✅ Hecha — **función libre, no toca la capa** |
-| `claim_materials` / `prove_claim` | ❌ **Sin hacer** |
+| `send_materials` / `prove_send` | ✅ **Funciones libres, no tocan la capa** |
+| `claim_materials` / `prove_claim` | ✅ **Igual, y sin precedente que copiar** |
 
 Lo demuestra `a_send_without_giving_the_key_to_the_layer`: la capa entrega
 materiales sin ver la clave, el cliente prueba en local, la capa verifica y
@@ -2294,8 +2293,18 @@ entrar**.
 receptor que la vía de un paso no tenía, así que su lado cliente hay que
 **diseñarlo, no traducirlo**.
 
-> **Mientras tanto, la mitad de un pago demuestra la separación y la otra
-> mitad no.**
+`a_whole_payment_without_giving_any_key_to_the_layer` lo demuestra entero:
+**ni la clave del pagador ni la del receptor llegan a la capa.** Lo único que
+la capa aporta son caminos y raíces; lo único que recibe son pruebas que
+verifica.
+
+⚠️ **Y una asimetría que explica la pieza de ISO que falta.** `send_materials`
+recibe el identificador del receptor; `claim_materials` recibe el **aviso
+completo**, porque **la capa no sabe qué pendiente es de quién** —esa es la
+privacidad del diseño— y por tanto no puede entregarlo.
+
+> **Que ISO 20022 no transporte el aviso no es un olvido del estándar: es una
+> consecuencia de que el sistema no sepa de quién es cada pendiente.**
 
 ### Cuatro rondas de compilación para una función
 

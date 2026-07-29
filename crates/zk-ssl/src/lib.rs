@@ -137,6 +137,9 @@ use stark_experiment::circuit_settlement::{
 // El circuito de la via en dos fases. Estaba importado solo dentro de
 // `two_phase.rs`, asi que `client.rs` no podia generar un envio sin pasar
 // por la capa — que es justo lo que `AUDITORIA.md` §33 senala.
+use stark_experiment::circuit_claim::{
+    build_trace as build_claim_trace, ClaimProver,
+};
 use stark_experiment::circuit_send::{
     build_trace as build_send_trace, SendProver,
 };
