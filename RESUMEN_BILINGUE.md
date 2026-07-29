@@ -45,6 +45,19 @@ clave maestra que robar.
 | **Mil transferencias** | **59,1 MB acumulados** |
 | ⚠️ **Colisión de nullifiers** | **~65.000 pagos** ← el que muerde antes |
 
+> ⚠️ **Esa razón es la de la AUDITORÍA, no la de la transferencia.**
+>
+> `verify_audit` **solo verifica**: 1,6 ms frente a 274 de generación, un
+> **0,58 %**. Es la cifra correcta para el argumento que sostiene —un
+> supervisor comprueba sin tocar el estado— pero **estaba atribuida a la
+> transferencia**.
+>
+> Aplicar una transferencia cuesta **17,5 %** de generarla, porque `apply`
+> **verifica, muta el árbol y escribe a disco**. No es comparable.
+>
+> Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
+> --nocapture` y comparando con lo publicado. Ver `AUDITORIA.md` §22.
+
 ### La decisión que define el diseño
 
 **Se descartó Groth16 siendo más rápido y con pruebas 320 veces menores.**

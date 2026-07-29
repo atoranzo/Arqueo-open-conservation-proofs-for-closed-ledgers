@@ -168,6 +168,27 @@ mod tests {
             "auditar debe ser mas barato que transferir: una subida de arbol \
              frente a cuatro mas el arbol de nullifiers"
         );
+        // ===== EL TAMAÑO SÍ SE COMPRUEBA =====
+        //
+        // Los tiempos dependen de la maquina y por eso arriba solo se
+        // afirman RELACIONES. **El tamaño de la prueba no depende de la
+        // maquina**: es determinista, funcion del circuito y de las
+        // opciones de prueba.
+        //
+        // Y es la cifra que trece documentos publican: 62 KB por
+        // transferencia, y 59,1 MB por cada mil. Sin esta comprobacion,
+        // un cambio que engordara la prueba dejaria esas cifras falsas
+        // **sin que nada lo detectara**.
+        //
+        // ⚠️ El margen es amplio a proposito: se trata de detectar un
+        // cambio de orden de magnitud, no de fijar el byte exacto.
+        assert!(
+            (50_000..80_000).contains(&tx_bytes),
+            "la prueba de transferencia mide {tx_bytes} bytes. Los documentos \
+             publican ~62 KB y 59,1 MB por cada mil transferencias: si el \
+             tamaño ha cambiado de orden, esas cifras son falsas"
+        );
+
         assert_eq!(layer.total_supply(), 950_000);
         let sum: u64 = [alice, bob]
             .iter()

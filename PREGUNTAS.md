@@ -227,6 +227,19 @@ Aztec, con años y equipos de ventaja.
 | Generarla | ~620 ms |
 | **Verificar / generar** | **0,5 %** |
 
+> ⚠️ **Esa razón es la de la AUDITORÍA, no la de la transferencia.**
+>
+> `verify_audit` **solo verifica**: 1,6 ms frente a 274 de generación, un
+> **0,58 %**. Es la cifra correcta para el argumento que sostiene —un
+> supervisor comprueba sin tocar el estado— pero **estaba atribuida a la
+> transferencia**.
+>
+> Aplicar una transferencia cuesta **17,5 %** de generarla, porque `apply`
+> **verifica, muta el árbol y escribe a disco**. No es comparable.
+>
+> Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
+> --nocapture` y comparando con lo publicado. Ver `AUDITORIA.md` §22.
+
 Esa asimetría es lo que hace viable el modelo: el coste recae en quien
 produce la prueba, no en quien la acepta.
 

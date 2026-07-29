@@ -57,6 +57,19 @@ Todos en release, misma máquina. Una sola ejecución: sirven para comparar
 **Verificar cuesta el 0,5-0,8% de generar.** El arranque no genera claves:
 no hay ceremonia ni secreto que destruir.
 
+> ⚠️ **Esa razón es la de la AUDITORÍA, no la de la transferencia.**
+>
+> `verify_audit` **solo verifica**: 1,6 ms frente a 274 de generación, un
+> **0,58 %**. Es la cifra correcta para el argumento que sostiene —un
+> supervisor comprueba sin tocar el estado— pero **estaba atribuida a la
+> transferencia**.
+>
+> Aplicar una transferencia cuesta **17,5 %** de generarla, porque `apply`
+> **verifica, muta el árbol y escribe a disco**. No es comparable.
+>
+> Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
+> --nocapture` y comparando con lo publicado. Ver `AUDITORIA.md` §22.
+
 **Límites cuantificados**: mil transferencias son ~620 s de prueba y
 **59,1 MB** acumulados.
 

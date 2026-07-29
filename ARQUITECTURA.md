@@ -568,6 +568,19 @@ Todas en release, misma máquina, misma ejecución.
 propiedad económica que hace útil el sistema: quien recibe una
 liquidación gasta dos órdenes de magnitud menos que quien la produce.
 
+> ⚠️ **Esa razón es la de la AUDITORÍA, no la de la transferencia.**
+>
+> `verify_audit` **solo verifica**: 1,6 ms frente a 274 de generación, un
+> **0,58 %**. Es la cifra correcta para el argumento que sostiene —un
+> supervisor comprueba sin tocar el estado— pero **estaba atribuida a la
+> transferencia**.
+>
+> Aplicar una transferencia cuesta **17,5 %** de generarla, porque `apply`
+> **verifica, muta el árbol y escribe a disco**. No es comparable.
+>
+> Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
+> --nocapture` y comparando con lo publicado. Ver `AUDITORIA.md` §22.
+
 **El arranque no genera claves.** En Groth16 eran 2,6 s de setup por
 circuito. Aquí no hay nada que generar ni ningún secreto que destruir, y
 eso se ve en el propio constructor.
