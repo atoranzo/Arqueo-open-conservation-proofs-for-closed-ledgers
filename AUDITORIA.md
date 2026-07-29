@@ -1128,12 +1128,12 @@ Leer por qué funciona antes de copiarlo evitó ese fallo.
 
 ## 15. La cifra de pruebas que este proyecto publica es incompleta
 
-La documentación afirma **369 pruebas ejecutables** y da los dos comandos
+La documentación afirma **371 pruebas ejecutables** y da los dos comandos
 que las ejecutan. Es preciso sobre **qué** mide, pero se lee como el total
 del proyecto.
 
 **El espacio de trabajo tiene diez crates**, y la suite entera son unas
-**561 pruebas** y **22 minutos**.
+**563 pruebas** y **22 minutos**.
 
 ### El desglose, que dice más que el número
 
@@ -2355,7 +2355,65 @@ un campo a la estructura de al lado.**
 
 ---
 
-## 34. Qué NO demuestra este documento
+## 34. ⚠️ Un mensaje ISO malformado movía dinero
+
+**Cuarto hallazgo del ejercicio de contraste, en el cuarto intento.**
+
+`MsgId` y `EndToEndId` son `Max35Text` **obligatorios** en ISO 20022. La
+validación de producción comprobaba divisa, importe cero e IBAN, y **no los
+identificadores**.
+
+| Mensaje | Antes | Ahora |
+|---|---|---|
+| `MsgId` vacío | **Se liquidaba** | `FF10`, sin tocar el ledger |
+| `MsgId` de 36 caracteres | **Se liquidaba** | `FF10` |
+| `EndToEndId` vacío o largo | **Se liquidaba** | `FF10` |
+
+⚠️ **Y la consecuencia no era solo formal**: el `pacs.002` de respuesta salía
+con `original_msg_id` vacío, así que **el emisor no podía correlacionar la
+respuesta con su petición**. Dinero movido y acuse sin referencia.
+
+### Cómo apareció
+
+Contrastando los tres tests del crate `iso-bridge` —superado, **no usado por
+producción**— contra la vía real. Uno de ellos era
+`empty_message_id_is_rejected_before_touching_zk_core`.
+
+**El crate superado comprobaba algo que la producción no.** Es exactamente el
+patrón de §24 con `pending.rs` y de §25 con `settlement-layer`.
+
+| Intento | Módulo contrastado | Hallazgo |
+|---|---|---|
+| 1 | `pending.rs` | Una propiedad de seguridad probada solo sobre el modelo |
+| 2 | `settlement-layer` | La regresión del límite regulatorio |
+| 3 | `two_phase` vs las demás | Ninguna operación dejaba rastro en el registro |
+| 4 | `iso-bridge` | **Un mensaje malformado movía dinero** |
+
+> **Cuatro de cuatro.** Ningún otro método de esta auditoría —herramientas de
+> mutación, comprobadores de columnas, revisión de circuitos— ha tenido ese
+> rendimiento.
+
+### El código de rechazo, anotado y no resuelto
+
+Se usa `FF10`, que **ya estaba verificado en este código**. `FF01` (Invalid
+File Format) podría ser más preciso para un elemento que incumple el esquema.
+
+⚠️ **No se ha inventado uno**, que es justo el error que §21 corrigió tres
+veces —`TECH`, `AG01`, `AM12`—. Anotado para quien tenga el catálogo.
+
+### Lo que el test fija
+
+`a_malformed_message_is_rejected_before_moving_money` prueba los cuatro casos
+y termina comprobando **el saldo**:
+
+> El código de rechazo puede discutirse; **que el saldo no se mueva, no**.
+
+Y su par positivo, `identifiers_of_exactly_35_characters_are_accepted`,
+porque **35 es el máximo permitido, no el primero prohibido**.
+
+---
+
+## 35. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

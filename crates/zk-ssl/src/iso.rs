@@ -219,6 +219,13 @@ pub enum BridgeError {
     /// La divisa del mensaje no es la del ledger.
     CurrencyMismatch { expected: String, found: String },
     ZeroAmount,
+    /// Un elemento obligatorio del mensaje no cumple el esquema.
+    ///
+    /// ⚠️ **Se rechaza ANTES de tocar el ledger.** Un mensaje malformado no
+    /// debe mover dinero, y hasta que se anadio esta variante **lo movia**:
+    /// un `MsgId` vacio pasaba la validacion y el `pacs.002` de respuesta
+    /// salia sin identificador que correlacionar.
+    MalformedMessage(String),
 }
 
 impl BridgeError {
@@ -235,6 +242,16 @@ impl BridgeError {
             ),
             // AM01 — ZeroAmount
             BridgeError::ZeroAmount => ("AM01", "importe cero".to_string()),
+            // FF10 — File or transaction cannot be processed due to a
+            // technical/format problem at the receiving agent.
+            //
+            // ⚠️ **Codigo por confirmar.** `FF01` (Invalid File Format)
+            // podria ser mas preciso para un elemento que incumple el
+            // esquema. Se usa `FF10` porque **ya esta verificado en este
+            // codigo** (§21) y no se quiere inventar uno: es exactamente el
+            // error que aquella seccion corrigio tres veces. Anotado para
+            // que lo decida quien conozca el catalogo.
+            BridgeError::MalformedMessage(detalle) => ("FF10", detalle.clone()),
         }
     }
 }
@@ -281,6 +298,36 @@ impl IbanRegistry {
 
     /// Validaciones que no requieren tocar la capa.
     fn validate(&self, msg: &Pacs008) -> Result<(AccountIndex, AccountIndex), BridgeError> {
+        // ⚠️ **`MsgId` es `Max35Text` OBLIGATORIO en ISO 20022.**
+        //
+        // Sin esta comprobacion, un mensaje con el identificador vacio se
+        // procesaba entero —**el dinero se movia**— y el `pacs.002` de
+        // respuesta salia con `original_msg_id` vacio: **el emisor no podia
+        // correlacionar la respuesta con su peticion**.
+        //
+        // Lo destapo contrastar los tests del crate `iso-bridge`, superado y
+        // no usado por produccion, que si lo comprobaba
+        // (`empty_message_id_is_rejected_before_touching_zk_core`). Ver
+        // `AUDITORIA.md` §34.
+        if msg.msg_id.is_empty() {
+            return Err(BridgeError::MalformedMessage(
+                "MsgId vacio: ISO 20022 lo exige con al menos un caracter".into(),
+            ));
+        }
+        if msg.msg_id.chars().count() > 35 {
+            return Err(BridgeError::MalformedMessage(format!(
+                "MsgId de {} caracteres: ISO 20022 lo limita a 35 (Max35Text)",
+                msg.msg_id.chars().count()
+            )));
+        }
+        // ⚠️ **Mismo limite para `EndToEndId`**, que tambien es `Max35Text` y
+        // viaja igual al `pacs.002`.
+        if msg.end_to_end_id.is_empty() || msg.end_to_end_id.chars().count() > 35 {
+            return Err(BridgeError::MalformedMessage(
+                "EndToEndId vacio o de mas de 35 caracteres (Max35Text)".into(),
+            ));
+        }
+
         if msg.currency != self.currency {
             return Err(BridgeError::CurrencyMismatch {
                 expected: self.currency.clone(),
@@ -584,6 +631,67 @@ mod tests {
             amount_minor: amount,
             currency: currency.into(),
         }
+    }
+
+    /// **UN MENSAJE MALFORMADO NO DEBE MOVER DINERO.**
+    ///
+    /// `MsgId` es `Max35Text` **obligatorio** en ISO 20022. Hasta que se
+    /// añadió la comprobación, un mensaje con el identificador vacío se
+    /// liquidaba entero y el `pacs.002` salía con `original_msg_id` vacío:
+    /// **el emisor no podía correlacionar la respuesta con su petición**.
+    ///
+    /// Lo destapó contrastar los tests de `iso-bridge` —crate superado que
+    /// no usa producción— contra la vía real. Ver `AUDITORIA.md` §34.
+    #[test]
+    fn a_malformed_message_is_rejected_before_moving_money() {
+        let (mut layer, registry, alice, _) = setup();
+        let saldo_antes = layer.balance_of(alice);
+
+        for (msg_id, e2e, caso) in [
+            ("", "E2E-ABC-123", "MsgId vacio"),
+            (&"X".repeat(36) as &str, "E2E-ABC-123", "MsgId de 36 caracteres"),
+            ("MSG-2026-0001", "", "EndToEndId vacio"),
+            ("MSG-2026-0001", &"Y".repeat(36) as &str, "EndToEndId de 36"),
+        ] {
+            let mut msg = message(100_000, "EUR");
+            msg.msg_id = msg_id.into();
+            msg.end_to_end_id = e2e.into();
+
+            let r = settle(&mut layer, &registry, &msg, SK_ALICE, alice);
+            assert_eq!(
+                r.reason_code,
+                Some("FF10"),
+                "{caso}: deberia rechazarse por esquema"
+            );
+            assert!(r.proof.is_none(), "{caso}: no debe haber prueba");
+        }
+
+        // **Y lo que de verdad importa**: cuatro mensajes malformados y el
+        // saldo intacto. El rechazo ocurre **antes de tocar el ledger**.
+        assert_eq!(
+            layer.balance_of(alice),
+            saldo_antes,
+            "CRITICO: un mensaje malformado no debe mover dinero"
+        );
+    }
+
+    /// **Y el limite es de 35, no de 34 ni de 36.**
+    ///
+    /// El par positivo del test anterior: sin el, un cambio que rechazara
+    /// TODO pasaria igual.
+    #[test]
+    fn identifiers_of_exactly_35_characters_are_accepted() {
+        let (mut layer, registry, alice, _) = setup();
+        let mut msg = message(100_000, "EUR");
+        msg.msg_id = "X".repeat(35);
+        msg.end_to_end_id = "Y".repeat(35);
+
+        let r = settle(&mut layer, &registry, &msg, SK_ALICE, alice);
+        assert_ne!(
+            r.reason_code,
+            Some("FF10"),
+            "35 caracteres es el maximo PERMITIDO, no el primero prohibido"
+        );
     }
 
     /// **EL TEST CLAVE**: un pacs.008 válido se liquida y devuelve un
