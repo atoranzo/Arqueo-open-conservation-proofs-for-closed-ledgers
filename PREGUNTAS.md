@@ -237,11 +237,26 @@ magnitud, no como benchmark.
 
 **62 KB por transferencia. Mil transferencias son 59,1 MB acumulados.**
 
-Ese es el límite real del sistema, y está puesto por escrito porque es lo
-primero que un lector técnico va a buscar.
-
 Resolverlo exige agregación recursiva o pruebas por lote, que no están
 implementadas.
+
+⚠️ **Pero no es el límite que primero muerde**, y una versión anterior de
+esta respuesta decía que sí.
+
+La posición de un nullifier **se deriva del propio nullifier**, y el
+circuito exige que esté libre. Por la paradoja del cumpleaños, a los
+**~65.000 pagos** la probabilidad de que dos caigan en la misma posición
+ya es del 39 %.
+
+Y el afectado **no puede reintentar**: su nullifier es determinista, así
+que su pago queda bloqueado de forma permanente.
+
+**Los 59,1 MB son un coste. La colisión es una parada**, y le ocurre a un
+usuario concreto sin que el sistema esté saturado.
+
+Hay dos límites más —el árbol de pendientes se agota a los 2³² pagos
+totales, y el conjunto de custodios tope en 128— y los cuatro están en
+`AUDITORIA.md` §13.
 
 ### 22. ¿Cuánto falta para que sea usable?
 

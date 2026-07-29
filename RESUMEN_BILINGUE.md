@@ -42,7 +42,8 @@ clave maestra que robar.
 | Generarla | ~620 ms |
 | **Verificar / generar** | **0,5 %** |
 | Prueba de liquidación | 62 KB |
-| **Mil transferencias** | **59,1 MB acumulados** ← el límite real |
+| **Mil transferencias** | **59,1 MB acumulados** |
+| ⚠️ **Colisión de nullifiers** | **~65.000 pagos** ← el que muerde antes |
 
 ### La decisión que define el diseño
 

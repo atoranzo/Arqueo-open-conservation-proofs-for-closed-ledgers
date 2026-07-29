@@ -57,8 +57,12 @@ encontrar.
 > Implementé el mismo circuito en cinco paradigmas de prueba distintos
 > para poder comparar con datos en vez de con literatura. Verificar una
 > liquidación cuesta el 0,5% de generarla; el arranque no necesita generar
-> ninguna clave; y mil transferencias acumulan 59 MB de pruebas, que es el
-> límite real de escala.
+> ninguna clave; y mil transferencias acumulan 59 MB de pruebas.
+>
+> Y hay un límite que muerde antes: la posición de un nullifier se deriva
+> del propio nullifier, así que por la paradoja del cumpleaños, a los
+> ~65.000 pagos las colisiones ya son probables, y el afectado no puede
+> reintentar.
 >
 > Está documentado también lo que **no** hace: es un nodo único, el
 > operador ve los saldos, y no lo ha auditado nadie. Esa parte ocupa tanto

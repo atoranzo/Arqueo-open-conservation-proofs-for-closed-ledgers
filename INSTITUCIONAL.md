@@ -284,13 +284,59 @@ ledger queda coherente: se pierde la operación, no la integridad.
 autenticado. Protege contra el robo del disco o de una copia; **no contra
 el operador**, que ve los saldos en memoria.
 
-### La limitación de escala, cuantificada
+### Las limitaciones de escala, cuantificadas
 
-**Mil transferencias acumulan 59,1 MB de pruebas.** Es el límite real del
-sistema y está medido, no estimado.
+Son **cuatro**, y no se compensan entre sí. La más restrictiva no es la de
+almacenamiento.
 
-Resolverlo exige agregación recursiva o pruebas por lote, que no están
-implementadas.
+#### 1. Colisión de posiciones de nullifier — **la primera en morder**
+
+La posición de un nullifier **se deriva del propio nullifier**, y el
+circuito exige que esté libre. Dos pagos distintos que caigan en la misma
+posición son un conflicto, y eso sigue la paradoja del cumpleaños:
+
+| Pagos acumulados | Probabilidad de colisión |
+|---|---|
+| 10.000 | 1,2 % |
+| **65.536** | **39 %** |
+| 200.000 | **99 %** |
+
+⚠️ **El afectado no puede reintentar.** Su nullifier es determinista a
+partir del estado de su cuenta: **su pago queda bloqueado de forma
+permanente**.
+
+**No es un coste, es una parada.** Y a diferencia de las otras tres, le
+ocurre a un usuario concreto sin que el sistema esté saturado.
+
+#### 2. Agotamiento del árbol de pendientes
+
+El contador de posiciones **nunca reutiliza** las liberadas al reclamar, así
+que el límite es de transferencias **totales desde el inicio**: 2³². A mil
+pagos por segundo, **unos cincuenta días**.
+
+Ahora falla declarando su causa —`PendingTreeExhausted`— en vez de producir
+una prueba que no verifica.
+
+#### 3. Acumulación de pruebas
+
+**Mil transferencias acumulan 59,1 MB.** Es un coste de almacenamiento y
+ancho de banda, no una parada: el sistema sigue funcionando.
+
+#### 4. Tamaño del conjunto de custodios
+
+El orden estricto entre custodios se comprueba con un segmento de 7 bits,
+lo que **limita el conjunto a 128 miembros**. Con más, las autorizaciones
+entre índices lejanos fallarían de forma intermitente.
+
+---
+
+⚠️ **Una versión anterior de este documento decía que los 59,1 MB eran "el
+límite real del sistema".** Era falso: el primero de esta lista detiene
+pagos legítimos mucho antes, y de forma permanente.
+
+Resolver el tercero exige agregación recursiva o pruebas por lote. Los
+otros tres exigen decisiones de diseño distintas. **Ninguno está resuelto**;
+los cuatro están documentados en `AUDITORIA.md` §13.
 
 ---
 
