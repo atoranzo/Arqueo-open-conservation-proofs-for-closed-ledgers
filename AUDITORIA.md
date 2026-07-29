@@ -1395,21 +1395,33 @@ fila exactos del fallo.
 
 ---
 
-## 20. ✅ `cargo test` sin `--release` ya pasa
+## 20. ⚠️ `cargo test` sin `--release` falla en 65 tests de la capa
 
-> **⚠️ DOBLE CORRECCIÓN.** Esta sección decía **56 fallos** y una causa que no
-> los explicaba. Medido: eran **2**. Diagnosticados y corregidos los dos,
-> ahora son **0**.
+> **⚠️ CORRECCIÓN DE UNA CORRECCIÓN.** Una revisión anterior afirmó que esta
+> sección exageraba —«decía 56 y son 2»— tras medir **`stark-experiment`**.
+> Los 56 eran de **`zk-ssl`**, otro crate. La cifra no estaba rancia: estaba
+> **bien**, y hoy son **65** porque la suite ha crecido.
+>
+> **Se midió algo parecido a lo afirmado y se dio por lo mismo**, que es
+> exactamente el error que esta auditoría documenta en otros sitios. Se deja
+> escrito porque el fallo es más instructivo que la cifra.
 
-### El estado
+### El estado, por crate
 
-| Modo | Resultado |
+| Crate y modo | Resultado |
 |---|---|
-| `cargo test -p stark-experiment` | **199 pasan, 0 fallan**, 2 ignorados |
-| `cargo test -p stark-experiment --release` | **200 pasan**, 1 ignorado |
+| `stark-experiment` en depuración | ✅ **199 pasan**, 2 ignorados |
+| `stark-experiment --release` | ✅ **200 pasan**, 1 ignorado |
+| **`zk-ssl` en depuración** | ❌ **107 pasan, 65 fallan** |
+| `zk-ssl --release` | ✅ **172 pasan** |
 
-⚠️ **`zk-ssl` en modo depuración no se ha medido.** Lo anterior es solo el
-crate de circuitos.
+**Reparto de los 65**: 48 en `tests`, 9 en `iso`, 4 en `snapshot`, 3 en
+`metrics`, 1 en `client`.
+
+### Lo que sí valió de aquella revisión
+
+Aunque la conclusión era falsa, los dos fallos que encontró en
+`stark-experiment` eran **reales** y están corregidos:
 
 ### Fallo 1 — el test de mutación trabajaba sobre una traza inválida
 
@@ -1445,17 +1457,20 @@ el motivo va en el propio test.
 ⚠️ **No se ha debilitado el test.** Probar con margen 1 en vez de 0 dejaría
 sin comprobar justo el límite exacto, que es para lo que existe.
 
-### Lo que esto cambia
+### Lo que esto cambia, y lo que no
 
-La versión anterior concluía: *«la suite en modo depuración no protege»*.
+✅ **En `stark-experiment` el modo depuración protege entero** —199 tests con
+comprobación de grados—, y ese modo es el que dio *«expected 41 assertions,
+received 42»* cuando se añadió el límite regulatorio al circuito.
 
-✅ **Protege entera.** Y ese modo es el que comprueba que cada grado
-declarado se realice —el que dio *«expected 41 assertions, received 42»*
-cuando se añadió el límite regulatorio al circuito—.
+❌ **En `zk-ssl` sigue sin proteger**: 65 de 172 fallan, y **esos 65 no
+comprueban nada** mientras el modo no se arregle.
 
-> **Se daba por rota una segunda red de 199 tests que estaba a dos arreglos
-> de funcionar.** El coste de no medir una cifra durante meses fue perder esa
-> red mientras se creía tenerla.
+⚠️ **La causa de los 65 no está diagnosticada.** La explicación original
+—bits constantes en caminos de Merkle— es plausible, porque la capa usa
+cuentas en los índices 0 y 1, cuyos caminos son casi todo ceros, mientras
+que los tests de los circuitos varían los bits con `level % 3 == 0`. **Pero
+no se ha confirmado con un mensaje de error.**
 
 ### Versión anterior de esta sección, conservada
 

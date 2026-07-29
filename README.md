@@ -142,12 +142,15 @@ empieza ahí.
 
 Requiere Rust estable. Sin instaladores externos ni toolchains aparte.
 
-> ⚠️ **Usa `--release`: sin él tarda 28 veces más.**
+> ⚠️ **`--release` es obligatorio para `zk-ssl`, no una optimización.**
 >
-> `cargo test` sin él **ya pasa** —199 de 199 en el crate de circuitos— pero
-> es **28 veces más lento** (50 s frente a 8 s) porque winterfell comprueba
-> en depuración que el grado declarado de cada restricción se realice en la
-> traza concreta.
+> `cargo test` sin él **falla en 65 tests de `zk-ssl`**, y no porque el
+> código esté mal: winterfell comprueba en depuración que el grado declarado
+> de cada restricción se realice en la traza concreta, y una restricción
+> booleana sobre un bit que es constante en toda la traza tiene grado real 0.
+>
+> El crate de circuitos **sí pasa** en los dos modos (199 y 200), pero es
+> **seis veces más lento** sin `--release`.
 >
 > Un test se salta en ese modo: alcanzar el tope de emisión **exactamente**
 > deja el margen a cero, y con él el grado de sus restricciones booleanas.
