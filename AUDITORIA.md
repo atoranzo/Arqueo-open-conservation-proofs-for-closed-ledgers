@@ -1128,12 +1128,12 @@ Leer por qué funciona antes de copiarlo evitó ese fallo.
 
 ## 15. La cifra de pruebas que este proyecto publica es incompleta
 
-La documentación afirma **371 pruebas ejecutables** y da los dos comandos
+La documentación afirma **372 pruebas ejecutables** y da los dos comandos
 que las ejecutan. Es preciso sobre **qué** mide, pero se lee como el total
 del proyecto.
 
 **El espacio de trabajo tiene diez crates**, y la suite entera son unas
-**563 pruebas** y **22 minutos**.
+**564 pruebas** y **22 minutos**.
 
 ### El desglose, que dice más que el número
 
@@ -2388,10 +2388,35 @@ patrón de §24 con `pending.rs` y de §25 con `settlement-layer`.
 | 2 | `settlement-layer` | La regresión del límite regulatorio |
 | 3 | `two_phase` vs las demás | Ninguna operación dejaba rastro en el registro |
 | 4 | `iso-bridge` | **Un mensaje malformado movía dinero** |
+| 5 | `zk-core` | Una restricción correcta **pero sin test** |
 
-> **Cuatro de cuatro.** Ningún otro método de esta auditoría —herramientas de
+> **Cinco de cinco.** Ningún otro método de esta auditoría —herramientas de
 > mutación, comprobadores de columnas, revisión de circuitos— ha tenido ese
 > rendimiento.
+
+### El quinto es de otra clase, y conviene distinguirlo
+
+`zk-core` tenía `wrong_balance_not_matching_leaf_fails_constraints`.
+`circuit_send` **no** tenía equivalente: nadie había comprobado que declarar
+más saldo del que hay en la hoja rompa la prueba.
+
+⚠️ **La restricción existía y funcionaba.** El camino de Merkle no reconstruye
+`root_old` si el saldo declarado no es el de la hoja, y el test nuevo
+—`a_lie_about_the_current_balance_is_rejected`— lo confirma a la primera.
+
+**Lo que faltaba era la demostración**, y faltaba justo donde importa: la
+capa lo cazaba con `StaleState`, que es una comprobación **evitable por quien
+construya su propia traza**. Es el mismo hueco que §25, sin la regresión.
+
+> **Los cuatro primeros encontraron fallos. El quinto encontró una
+> afirmación sin respaldo**, que en un sistema que se publica con DOI es un
+> hallazgo distinto pero no menor.
+
+### Comparación con las otras cuatro del contraste
+
+También quedó comprobado que **`derive_custodian_id` y `derive_public_id` no
+coinciden** —si lo hicieran, un titular de cuenta podría hacerse pasar por
+custodio— y esa sí estaba fijada con un test desde antes.
 
 ### El código de rechazo, anotado y no resuelto
 

@@ -82,7 +82,7 @@ Merkle. Invisible para testigos honestos.
 
 ### Estado
 
-**371 tests**, reproducibles con Rust estable, sin instaladores externos.
+**372 tests**, reproducibles con Rust estable, sin instaladores externos.
 Los errores propios están documentados, no borrados.
 
 ---
@@ -152,7 +152,7 @@ honest witnesses.
 
 ### Status
 
-**371 tests**, reproducible with stable Rust, no external toolchains.
+**372 tests**, reproducible with stable Rust, no external toolchains.
 Our own errors are documented, not erased.
 
 ---

@@ -1475,6 +1475,57 @@ mod tests {
         assert!(v.is_err());
     }
 
+    /// **MENTIR SOBRE EL SALDO ACTUAL SE RECHAZA EN EL CIRCUITO.**
+    ///
+    /// La capa ya lo caza: compara la hoja que produce el estado declarado
+    /// con la que tiene el árbol, y devuelve `StaleState`. Pero **esa es una
+    /// comprobación de capa**, y quien construyera su propia traza se la
+    /// saltaría — exactamente lo que ocurrió con el límite regulatorio
+    /// (`AUDITORIA.md` §25).
+    ///
+    /// Aquí se prueba **en el circuito**: si el saldo declarado no es el que
+    /// hay en la hoja, el camino de Merkle no reconstruye `root_old` y la
+    /// prueba no verifica.
+    ///
+    /// ⚠️ **La restricción existía; lo que faltaba era el test.** Lo destapó
+    /// contrastar `zk-core` —crate superado, no usado por producción— que sí
+    /// lo tenía: `wrong_balance_not_matching_leaf_fails_constraints`.
+    #[test]
+    fn a_lie_about_the_current_balance_is_rejected() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+
+        // El camino y las raíces son los del saldo REAL; solo se miente en
+        // el saldo que se declara al construir la traza.
+        let trace = build_trace(
+            s.key,
+            s.account_id,
+            s.balance + 500_000, // ← la mentira
+            s.nonce,
+            &s.path,
+            &s.frozen_path,
+            s.amount,
+            TEST_LIMIT,
+            s.supply_old,
+            0,
+            s.receiver_id,
+            s.salt,
+            &s.pending_path,
+        );
+        let prover = SendProver::new(default_options());
+        let proof = prover.prove(trace).expect("prove");
+        let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+        let v = verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+            proof,
+            s.public_inputs.clone(),
+            &min_opts,
+        );
+        assert!(
+            v.is_err(),
+            "CRITICO: declarar mas saldo del que hay en la hoja debe romper \
+             el camino de Merkle hasta root_old"
+        );
+    }
+
     // -----------------------------------------------------------------
     // No-pertenencia al árbol de congelados
     // -----------------------------------------------------------------
