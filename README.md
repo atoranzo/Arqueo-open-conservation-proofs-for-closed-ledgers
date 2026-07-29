@@ -160,8 +160,8 @@ Requiere Rust estable. Sin instaladores externos ni toolchains aparte.
 > Lleva el motivo escrito y `--release` sí lo ejecuta.
 
 ```bash
-cargo test -p zk-ssl --release              # la capa: 172 tests
-cargo test -p stark-experiment --release    # los ocho circuitos
+cargo test -p zk-ssl --release              # la capa: 174 tests
+cargo test -p stark-experiment --release    # los doce circuitos: 201 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
 

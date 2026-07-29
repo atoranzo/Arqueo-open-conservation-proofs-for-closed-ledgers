@@ -1389,8 +1389,8 @@ Un auditor debería ejecutarlo y valorar si el caso cero está bien cubierto.
 
 
 ```bash
-cargo test -p zk-ssl --release              # la capa, 65 tests
-cargo test -p stark-experiment --release    # los seis circuitos
+cargo test -p zk-ssl --release              # la capa, 174 tests
+cargo test -p stark-experiment --release    # los doce circuitos, 201 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
 
@@ -1731,8 +1731,12 @@ obligatorio**.
 Se descubrió porque alguien lo ejecutó sin él. Ahora está en el README,
 antes del primer bloque de comandos.
 
-⚠️ **Y significa que la suite en modo depuración no protege**: los 56 tests
-que fallan no comprueban nada mientras el modo no se corrija. Cerrarlo
+⚠️ **Y significa que la suite en modo depuración no protege**: los 65 tests
+que fallan no comprueban nada mientras el modo no se corrija.
+
+> ⚠️ **Esta cifra decía 56 y contradecía al título de esta misma sección.**
+> Medida el 30 de julio de 2026 con `cargo test -p zk-ssl` sin `--release`:
+> **109 pasan, 65 fallan** de 174. Los tres preprints publicaban 56. Cerrarlo
 exigiría declarar grados que se realicen en todo testigo, o construir los
 tests con posiciones cuyos caminos tengan bits variados. **No está hecho.**
 
