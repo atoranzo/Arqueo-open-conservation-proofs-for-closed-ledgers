@@ -785,8 +785,13 @@ tope transportado sin comprobar— y ninguno lo detectaba nada.
 
 ### Cobertura y resultado
 
-Aplicada a **12 circuitos**. Los doce, **limpios**: toda
-restricción declarada reacciona a alguna perturbación del testigo.
+~~Aplicada a **12 circuitos**. Los doce, **limpios**: toda
+restricción declarada reacciona a alguna perturbación del testigo.~~
+
+⚠️ **Corregido después (§20): la cobertura real era ONCE.** El informe de
+`circuit_audit` se generó sobre una traza de referencia inválida y no
+valía; el `12 passed` de abajo cuenta tests que corrieron, no informes
+válidos. El párrafo se conserva tachado porque así se publicó.
 
 ```
 cargo test -p stark-experiment --release no_constraint_is_vacuous
@@ -806,7 +811,7 @@ limpio significa algo.
 
 ### Y sigue sin haber encontrado ningún fallo
 
-Doce circuitos, ninguna restricción vacía. La herramienta está validada
+~~Doce circuitos, ninguna restricción vacía.~~ **Once** (§20). La herramienta está validada
 —señala exactamente los índices cuando se introduce el fallo a propósito—
 así que el resultado significa algo. Pero **el valor demostrado es
 preventivo, no correctivo**: protege contra que alguien introduzca una
@@ -1528,7 +1533,10 @@ por mutación: 12 de 12 circuitos limpios»*— cubría once.
 
 ⚠️ **Y «de producción» ya no es exacto.** De esos doce, `circuit_settlement`
 y `nullifier_tree` pertenecen a la **vía retirada** (§32): quedan **diez de
-producción** más esos dos, que se conservan por compatibilidad de formato.
+producción** más esos dos, que ~~se conservan por compatibilidad de
+formato~~ se conservan porque **documentan la vía comparada en los
+papers** —la compatibilidad de formato dejó de ser motivo al retirarse el
+árbol con migración verificada (§36)—.
 
 > **La herramienta tenía una autocomprobación que nadie había ejecutado,
 > porque toda la documentación decía `--release`.**
