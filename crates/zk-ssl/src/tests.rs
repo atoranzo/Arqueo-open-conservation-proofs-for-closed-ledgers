@@ -2673,6 +2673,17 @@ fn balances_plus_pending_always_equal_total_supply() {
 
 /// **EL LÍMITE REGULATORIO LO IMPONE EL SISTEMA, NO QUIEN ENVÍA.**
 ///
+/// Son **dos comprobaciones que se componen**:
+///
+/// | Dónde | Qué prueba |
+/// |---|---|
+/// | El circuito | `importe ≤ límite declarado` |
+/// | La capa | El límite declarado **es el del sistema** |
+///
+/// Juntas dan `importe ≤ límite del sistema`, y —a diferencia de una
+/// comprobación solo de capa— **un tercero con la prueba puede verificar la
+/// primera mitad**.
+///
 /// La capa antigua tenía `settlement_with_foreign_limit_is_rejected`:
 /// manipulaba el límite declarado en el recibo y comprobaba que `apply` lo
 /// rechazara. **La vía nueva no tenía equivalente**, y tampoco la
@@ -2712,13 +2723,16 @@ fn a_send_declaring_more_than_the_limit_is_rejected() {
         )
         .expect("un envio dentro del limite se genera bien");
 
-    // Quien quisiera esquivar el limite declararia otro importe.
-    recibo.public_inputs.amount = BaseElement::new(u64::MAX / 2);
+    // Quien quisiera esquivar el limite declararia OTRO LIMITE, no otro
+    // importe: el circuito prueba `importe <= limite declarado`, asi que
+    // subir el importe sin subir el limite no daria una prueba valida.
+    recibo.public_inputs.regulatory_limit = BaseElement::new(u64::MAX / 2);
 
     let r = layer.apply_send(&recibo, alice, &estado, 250_000);
     assert!(
-        matches!(r, Err(LayerError::OverRegulatoryLimit { .. })),
-        "CRITICO: el limite lo impone el sistema sobre el importe PROBADO, \
-         no sobre el parametro que pasa quien aplica. Salio: {r:?}"
+        matches!(r, Err(LayerError::WrongRegulatoryLimit { .. })),
+        "CRITICO: el limite declarado en la prueba debe ser EL DEL SISTEMA. \
+         El circuito prueba `importe <= limite declarado`; sin esta \
+         comprobacion bastaria con declarar uno enorme. Salio: {r:?}"
     );
 }

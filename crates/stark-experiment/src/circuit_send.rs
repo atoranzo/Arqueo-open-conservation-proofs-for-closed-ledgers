@@ -95,7 +95,9 @@ pub const CYCLE_LENGTH: usize = 8;
 pub const TRACE_LENGTH: usize = 1024;
 pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: saldo, importe, saldo nuevo, suministro nuevo.
-pub const NUM_SEGMENTS: usize = 4;
+/// Cinco: saldo, importe, saldo nuevo, suministro nuevo, y **`límite −
+/// importe`**, que es lo que impone el límite regulatorio en el circuito.
+pub const NUM_SEGMENTS: usize = 5;
 
 // ===== Columnas =====
 const LANE_B: usize = STATE_WIDTH;
@@ -120,7 +122,14 @@ const COL_PBIT: usize = 39;
 const COL_R_ID: usize = 40; // 40..44
 /// Aleatorio que ciega el compromiso. Lo elige el pagador.
 const COL_SALT: usize = 44; // 44..48
-pub const TRACE_WIDTH: usize = 48;
+/// **Límite regulatorio, transportado y demostrado.**
+///
+/// ⚠️ Existe porque **al sustituir `circuit_settlement` por este circuito se
+/// perdió la comprobación**. Aquél lo lleva como entrada pública y prueba
+/// `importe ≤ límite`; éste no lo llevaba, así que el límite solo lo imponía
+/// la capa. Ver `AUDITORIA.md` §25.
+const COL_LIMIT: usize = 48;
+pub const TRACE_WIDTH: usize = 49;
 
 // ===== Filas =====
 const ROW_LEAF_LINK: usize = 7;
@@ -199,7 +208,13 @@ const C_PEND_ENTRY_B: usize = C_PEND_ENTRY_A + 4; // 4
 const C_PEND_PLACE: usize = C_PEND_ENTRY_B + 4; // 8
 const C_PEND_SIBLING: usize = C_PEND_PLACE + 8; // 4
 const C_PBIT_BOOL: usize = C_PEND_SIBLING + 4; // 1
-const NUM_CONSTRAINTS: usize = C_PBIT_BOOL + 1;
+/// **El límite es constante entre filas.**
+///
+/// Va al final y no dentro del array `transport` a propósito: añadirlo allí
+/// desplazaría los offsets `C_TRANSPORT + 7` y `+ 11` que están escritos a
+/// mano, y ese es el tipo de cambio que esta auditoría ha visto salir mal.
+const C_LIMIT_CONST: usize = C_PBIT_BOOL + 1; // 1
+const NUM_CONSTRAINTS: usize = C_LIMIT_CONST + 1;
 
 // ===== Periódicas =====
 const P_HASH_FLAG: usize = 0;
@@ -248,6 +263,9 @@ pub fn build_trace(
     path: &MerklePath,
     frozen_path: &MerklePath,
     amount: u64,
+    // **Limite regulatorio del sistema.** Lo aporta la capa, no el
+    // titular: por eso va como parametro y no se deriva del testigo.
+    regulatory_limit: u64,
     supply_old: u64,
     // Debe ser CERO: un envío no cambia el suministro. Se mantiene como
     // parámetro para que un test pueda intentar lo contrario.
@@ -282,6 +300,7 @@ pub fn build_trace(
         row[COL_BAL_NEW] = c_bal_new;
         row[COL_NONCE] = nonce;
         row[COL_AMT] = c_amt;
+        row[COL_LIMIT] = BaseElement::new(regulatory_limit);
         row[COL_R_ID..COL_R_ID + 4].copy_from_slice(&receiver_id);
         row[COL_SALT..COL_SALT + 4].copy_from_slice(&salt);
         row[COL_SUPPLY_OLD] = c_supply_old;
@@ -296,7 +315,23 @@ pub fn build_trace(
         c_amt.as_int(),
         c_bal_new.as_int(),
         c_supply_new.as_int(),
+        // **El limite regulatorio.** Si el importe lo superara, esta resta
+        // envuelve y da un valor de 64 bits que no cabe en los 63 del
+        // segmento: la descomposicion seria imposible.
+        (BaseElement::new(regulatory_limit) - c_amt).as_int(),
     ];
+    // ⚠️ **Esta cuenta tiene que coincidir con `NUM_SEGMENTS`.**
+    //
+    // Al subirlo de 4 a 5 sin anadir el valor, el quinto segmento quedaba
+    // sin rellenar: el acumulador valia cero y la restriccion fallaba. Los
+    // tests POSITIVOS lo detectaron —la prueba dejo de verificar— pero
+    // `check_columns.py` no podia: `COL_SACC` si se escribe, solo que no en
+    // ese tramo.
+    debug_assert_eq!(
+        segment_values.len(),
+        NUM_SEGMENTS,
+        "cada segmento declarado necesita su valor"
+    );
     for (seg, value) in segment_values.iter().enumerate() {
         let bits = value_to_bits_be(*value);
         let mut acc = zero;
@@ -495,6 +530,8 @@ pub struct SendPublicInputs {
     /// **Y DESPUÉS**, con el compromiso dentro.
     pub pending_root_new: Digest,
     pub amount: BaseElement,
+    /// **El límite regulatorio es público y demostrado.**
+    pub regulatory_limit: BaseElement,
     pub supply_old: BaseElement,
     pub supply_new: BaseElement,
 }
@@ -507,6 +544,7 @@ impl ToElements<BaseElement> for SendPublicInputs {
         out.extend_from_slice(&self.pending_root_old);
         out.extend_from_slice(&self.pending_root_new);
         out.push(self.amount);
+        out.push(self.regulatory_limit);
         out.push(self.supply_old);
         out.push(self.supply_new);
         out
@@ -582,11 +620,19 @@ impl Air for SendAir {
         }
         // Bit booleano (1): grado 2 sin ciclo.
         degrees.push(TransitionConstraintDegree::new(2));
+        // Transporte del limite (1): grado 1 sin ciclo.
+        degrees.push(TransitionConstraintDegree::new(1));
 
         assert_eq!(degrees.len(), NUM_CONSTRAINTS, "cuenta de grados");
 
         SendAir {
-            context: AirContext::new(trace_info, degrees, 41, options),
+            // 42, no 41: la asercion del limite regulatorio en la fila 0.
+            //
+            // ⚠️ Este numero **no lo comprueba nada al escribirlo**: si no
+            // cuadra, `prove` hace panico con el conteo. El mensaje lo dice
+            // en una linea —*expected 41, received 42*— pero solo si el
+            // test **no descarta el panico**, que es lo que hacia.
+            context: AirContext::new(trace_info, degrees, 42, options),
             pub_inputs,
         }
     }
@@ -921,12 +967,17 @@ impl Air for SendAir {
             result[C_PEND_SIBLING + i] = pend_link * (sib_a - sib_b);
         }
         result[C_PBIT_BOOL] = current[COL_PBIT] * (current[COL_PBIT] - E::ONE);
+        result[C_LIMIT_CONST] = next[COL_LIMIT] - current[COL_LIMIT];
 
         let expected = [
             current[COL_BAL],
             current[COL_AMT],
             current[COL_BAL_NEW],
             current[COL_SUPPLY_NEW],
+            // **El límite regulatorio.** Si el importe lo superara, esta
+            // resta envuelve y da un valor de 64 bits que no cabe en los
+            // 63 del segmento: no hay descomposición posible.
+            current[COL_LIMIT] - current[COL_AMT],
         ];
         for seg in 0..NUM_SEGMENTS {
             result[C_SEG_LINK + seg] = periodic[P_SEG_LINK + seg] * (sacc_next - expected[seg]);
@@ -962,6 +1013,11 @@ impl Air for SendAir {
             a.push(Assertion::single(i, ROW_PK_START, zero));
         }
         a.push(Assertion::single(COL_AMT, 0, self.pub_inputs.amount));
+        a.push(Assertion::single(
+            COL_LIMIT,
+            0,
+            self.pub_inputs.regulatory_limit,
+        ));
         a.push(Assertion::single(
             COL_SUPPLY_OLD,
             0,
@@ -1058,6 +1114,7 @@ impl Prover for SendProver {
                 trace.get(LANE_B + 7, ROW_PENDING_ROOT),
             ],
             amount: trace.get(COL_AMT, 0),
+            regulatory_limit: trace.get(COL_LIMIT, 0),
             supply_old: trace.get(COL_SUPPLY_OLD, 0),
             supply_new: trace.get(COL_SUPPLY_NEW, 0),
         }
@@ -1139,6 +1196,11 @@ mod tests {
         public_inputs: SendPublicInputs,
     }
 
+    /// Limite regulatorio de los tests. Holgado a proposito: los tests de
+    /// este circuito comprueban otras cosas, y un limite estrecho los haria
+    /// fallar por una razon que no es la suya.
+    const TEST_LIMIT: u64 = 10_000_000;
+
     fn scenario(balance: u64, amount: u64, supply_old: u64) -> Scenario {
         let mut empty = vec![[BaseElement::ZERO; 4]];
         for k in 1..=TREE_DEPTH {
@@ -1214,6 +1276,7 @@ mod tests {
 
         Scenario {
             public_inputs: SendPublicInputs {
+                regulatory_limit: BaseElement::new(TEST_LIMIT),
                 root_old: native_climb(leaf_old, &path),
                 root_new: native_climb(leaf_new, &path),
                 amount: BaseElement::new(amount),
@@ -1254,6 +1317,7 @@ mod tests {
             &s.path,
             &s.frozen_path,
             s.amount,
+            TEST_LIMIT,
             s.supply_old,
             supply_delta,
             s.receiver_id,
@@ -1268,7 +1332,20 @@ mod tests {
         std::panic::set_hook(hook);
 
         let proof = match r {
-            Err(_) => return Err("prove hizo panic".into()),
+            // ⚠️ **El mensaje del panico se conserva.**
+            //
+            // Antes se descartaba con `Err(_)` y el test solo decia "prove
+            // hizo panic", que no dice nada. Winterfell comprueba en modo
+            // depuracion que las restricciones se cumplan y **da el indice
+            // y la fila**: tirar ese mensaje obliga a adivinar.
+            Err(e) => {
+                let msg = e
+                    .downcast_ref::<String>()
+                    .cloned()
+                    .or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string()))
+                    .unwrap_or_else(|| "panico sin mensaje".into());
+                return Err(format!("prove hizo panic: {msg}"));
+            }
             Ok(Err(e)) => return Err(format!("prove Err: {e:?}")),
             Ok(Ok(p)) => p,
         };
@@ -1294,6 +1371,7 @@ mod tests {
             &s.path,
             &s.frozen_path,
             s.amount,
+            TEST_LIMIT,
             s.supply_old,
             // ⚠️ Heredado del circuito de destruccion, donde el suministro
             // bajaba en el importe. Un ENVIO no cambia el suministro: debe
@@ -1378,6 +1456,7 @@ mod tests {
             &s.path,
             &s.frozen_path,
             s.amount,
+            TEST_LIMIT,
             s.supply_old,
             // ⚠️ Heredado del circuito de destruccion, donde el suministro
             // bajaba en el importe. Un ENVIO no cambia el suministro: debe
@@ -1433,10 +1512,8 @@ mod tests {
     #[test]
     fn a_free_account_can_send() {
         let s = scenario(1_000_000, 250_000, 10_000_000);
-        assert!(
-            run(&s, s.key, 0).is_ok(),
-            "una cuenta libre debe poder enviar"
-        );
+        let r = run(&s, s.key, 0);
+        assert!(r.is_ok(), "una cuenta libre debe poder enviar: {r:?}");
     }
 
     /// **DECLARAR UNA RAÍZ DE CONGELADOS FALSA SE RECHAZA.**
@@ -1469,6 +1546,7 @@ mod tests {
             &s.path,
             &s.frozen_path,
             s.amount,
+            TEST_LIMIT,
             s.supply_old,
             0,
             s.receiver_id,
@@ -1603,6 +1681,7 @@ mod tests {
             &s.path,
             &s.frozen_path,
             s.amount,
+            TEST_LIMIT,
             s.supply_old,
             0,
             s.receiver_id,
@@ -1625,6 +1704,97 @@ mod tests {
             informe.total,
             informe.celdas,
             informe.nunca_disparadas
+        );
+    }
+
+    /// Construye y verifica con un límite regulatorio concreto.
+    fn run_con_limite(s: &Scenario, limite: u64, importe: u64) -> Result<(), String> {
+        let trace = build_trace(
+            s.key,
+            s.account_id,
+            s.balance,
+            s.nonce,
+            &s.path,
+            &s.frozen_path,
+            importe,
+            limite,
+            s.supply_old,
+            0,
+            s.receiver_id,
+            s.salt,
+            &s.pending_path,
+        );
+        let prover = SendProver::new(default_options());
+
+        // ⚠️ **Hay que VERIFICAR, no basta con probar.**
+        //
+        // En modo release winterfell **no comprueba las restricciones al
+        // generar**: construye la prueba igual y es `verify` quien la
+        // rechaza. Una version anterior de este ayudante solo llamaba a
+        // `prove`, y por eso el test negativo pasaba sin rechazar nada.
+        //
+        // Las entradas publicas se DERIVAN de la traza, que es lo que haria
+        // quien intentara saltarse el limite: presentaria unas coherentes
+        // con su propia traza. La verificacion debe rechazarla igual,
+        // porque las restricciones no se cumplen.
+        let declaradas = prover.get_pub_inputs(&trace);
+
+        let hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(|_| {}));
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
+        std::panic::set_hook(hook);
+
+        let proof = match r {
+            Ok(Ok(p)) => p,
+            Ok(Err(e)) => return Err(format!("prove Err: {e:?}")),
+            Err(_) => return Err("prove hizo panic".into()),
+        };
+        let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+        verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+            proof,
+            declaradas,
+            &min_opts,
+        )
+        .map_err(|e| format!("verificacion fallo: {e:?}"))
+    }
+
+    /// **EL LÍMITE REGULATORIO SE IMPONE EN EL CIRCUITO.**
+    ///
+    /// ⚠️ **Esto era una regresión.** `circuit_settlement` —la vía antigua—
+    /// lleva el límite como entrada pública y prueba `importe ≤ límite`.
+    /// Al sustituirla por este circuito **se perdió la comprobación**, y
+    /// como la vía en dos fases es ahora la única de ISO, el límite del
+    /// sistema no se imponía por ningún camino verificable.
+    ///
+    /// Ver `AUDITORIA.md` §25.
+    ///
+    /// El mecanismo es el mismo que el tope de emisión: un segmento
+    /// descompone `límite − importe` en **63 bits**. Si el importe lo
+    /// superara, esa resta envuelve y da 64 bits: no cabe.
+    #[test]
+    fn sending_more_than_the_regulatory_limit_is_rejected() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let r = run_con_limite(&s, 100_000, 100_001);
+        assert!(
+            r.is_err(),
+            "CRITICO: el limite regulatorio debe imponerse EN EL CIRCUITO, \
+             no solo en la capa. Salio: {r:?}"
+        );
+    }
+
+    /// **Y enviar justo el límite sí se permite.**
+    ///
+    /// Sin este, el anterior pasaría igual si el circuito rechazara
+    /// **cualquier** envío. El par distingue *impone el límite* de *no deja
+    /// enviar nada*.
+    #[test]
+    fn sending_exactly_the_regulatory_limit_is_allowed() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let r = run_con_limite(&s, 250_000, 250_000);
+        assert!(
+            r.is_ok(),
+            "alcanzar el limite exactamente es legitimo: lo alcanza, no lo \
+             supera. Salio: {r:?}"
         );
     }
 }

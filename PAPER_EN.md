@@ -723,7 +723,7 @@ non-stable compilers are used.
 
 ```bash
 cargo test -p zk-ssl --release              # layer: 169 tests
-cargo test -p stark-experiment --release    # circuits: 197 tests
+cargo test -p stark-experiment --release    # circuits: 199 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
 

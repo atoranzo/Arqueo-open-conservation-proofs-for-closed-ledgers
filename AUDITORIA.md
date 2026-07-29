@@ -1128,12 +1128,12 @@ Leer por qué funciona antes de copiarlo evitó ese fallo.
 
 ## 15. La cifra de pruebas que este proyecto publica es incompleta
 
-La documentación afirma **366 pruebas ejecutables** y da los dos comandos
+La documentación afirma **368 pruebas ejecutables** y da los dos comandos
 que las ejecutan. Es preciso sobre **qué** mide, pero se lee como el total
 del proyecto.
 
 **El espacio de trabajo tiene diez crates**, y la suite entera son unas
-**558 pruebas** y **22 minutos**.
+**560 pruebas** y **22 minutos**.
 
 ### El desglose, que dice más que el número
 
@@ -1734,14 +1734,50 @@ parámetro— contra el límite del sistema.
 manipulando el importe declarado, igual que hacía el test de la capa
 superada.
 
-⚠️ **Pero sigue siendo una comprobación de CAPA, no de circuito.**
-`circuit_send` no lleva el límite como entrada pública, así que **un tercero
-que solo tenga la prueba no puede verificar que se respetó**. La vía antigua
-sí lo permitía.
+### ✅ Cerrada del todo: el límite vuelve al circuito
 
-**Cerrarlo exige añadir el límite al circuito**, y no está hecho. Va contra
-el principio que este proyecto declara —*imponer en el circuito, no en la
-capa*— y **es una regresión frente a lo que había**.
+`circuit_send` lleva ahora `regulatory_limit` como **entrada pública**, y un
+quinto segmento de rango descompone `límite − importe` en 63 bits. Si el
+importe lo superara, esa resta envuelve y no cabe.
+
+**Son dos comprobaciones que se componen:**
+
+| Dónde | Qué prueba |
+|---|---|
+| El circuito | `importe ≤ límite declarado` |
+| La capa | El límite declarado **es el del sistema** |
+
+Juntas dan `importe ≤ límite del sistema`, y —a diferencia de una
+comprobación solo de capa— **un tercero con la prueba puede verificar la
+primera mitad**. Es la misma composición que tenía la vía antigua.
+
+**Tres tests lo fijan**: el par en el circuito
+—`sending_more_than_the_regulatory_limit_is_rejected` y
+`..._exactly_..._is_allowed`— y
+`a_send_declaring_more_than_the_limit_is_rejected` en la capa.
+
+⚠️ **El ataque cambió de forma al cerrarlo.** Antes bastaba con declarar más
+importe; ahora eso no da prueba válida, y el ataque real es **declarar un
+límite enorme**. El test de capa se reescribió para eso.
+
+### ⚠️ Cuatro fallos propios al implementarlo
+
+| Fallo | Quién lo cazó |
+|---|---|
+| `NUM_SEGMENTS` a 5 sin añadir el quinto valor | Los tests **positivos** |
+| `COL_LIMIT` declarada sin rellenar | `check_columns.py` |
+| Cuenta de aserciones sin actualizar (41 → 42) | `prove`, **pero solo tras conservar el mensaje del pánico** |
+| El ayudante del test **solo probaba, no verificaba** | El test negativo, que no rechazaba |
+
+⚠️ **El tercero costó tres rondas** porque el ayudante descartaba el mensaje
+con `Err(_) => "prove hizo panic"`. Winterfell decía *«expected 41
+assertions, received 42»* y **ese texto se estaba tirando**.
+
+**Ocho circuitos más lo siguen descartando.**
+
+⚠️ **Y el cuarto es el más instructivo**: en modo release winterfell **no
+comprueba las restricciones al generar**. Un test que solo llame a `prove`
+**no comprueba nada**.
 
 ### `apply_claim` y `apply_mint_to_pending` tampoco lo comprueban
 

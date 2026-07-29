@@ -241,6 +241,11 @@ impl SovereignLayer {
             &path,
             &frozen_path,
             amount,
+            // **El límite lo aporta la capa, y ahora el circuito lo
+            // demuestra.** Antes solo se comprobaba aquí, al generar: quien
+            // construyera su propia traza podía saltárselo. Ver
+            // `AUDITORIA.md` §25.
+            self.regulatory_limit,
             self.total_supply,
             0, // un envío no cambia el suministro
             receiver_id,
@@ -301,11 +306,20 @@ impl SovereignLayer {
         // la prueba **no puede verificar que se respeto**. La via antigua
         // si lo permitia. **Cerrarlo exige anadir el limite al circuito**, y
         // no esta hecho.
-        let importe_probado = pi.amount.as_int();
-        if importe_probado > self.regulatory_limit {
-            return Err(LayerError::OverRegulatoryLimit {
-                limit: self.regulatory_limit,
-                requested: importe_probado,
+        // El circuito prueba `importe <= limite DECLARADO en la traza`.
+        // La capa comprueba que ese limite declarado **sea el suyo**.
+        //
+        // Las dos juntas dan `importe <= limite del sistema`, y a
+        // diferencia de una comprobacion solo de capa, **un tercero con la
+        // prueba puede verificar la primera mitad**.
+        //
+        // Es la misma composicion que tenia `circuit_settlement` + `apply`
+        // en la via antigua, y que se perdio al sustituirla.
+        let limite_declarado = pi.regulatory_limit.as_int();
+        if limite_declarado != self.regulatory_limit {
+            return Err(LayerError::WrongRegulatoryLimit {
+                expected: self.regulatory_limit,
+                declared: limite_declarado,
             });
         }
 
