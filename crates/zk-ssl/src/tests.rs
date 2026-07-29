@@ -143,10 +143,8 @@ use super::*;
         };
         assert_eq!(sum(&layer), layer.total_supply());
 
-        let s = layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 250_000)
-            .expect("prueba");
-        layer.apply(&s, alice, bob, 250_000).expect("aplicar");
+        two_phase_transfer(&mut layer, alice, SK_ALICE, bob, SK_BOB, 250_000, salt_de(0xA1A1))
+            .expect("transferencia en dos fases");
 
         assert_eq!(
             sum(&layer),
@@ -214,10 +212,8 @@ use super::*;
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 50_000);
 
-        let s1 = layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 100_000)
-            .expect("primera prueba");
-        layer.apply(&s1, alice, bob, 100_000).expect("primera");
+        two_phase_transfer(&mut layer, alice, SK_ALICE, bob, SK_BOB, 100_000, salt_de(0xB2B2))
+            .expect("transferencia en dos fases");
         let root_mid = layer.state_root();
 
         let s2 = layer
@@ -613,10 +609,8 @@ use super::*;
             genesis = layer.state_root();
             let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
             let bob = open_and_fund(&mut layer, SK_BOB, 0);
-            let s = layer
-                .transfer(BaseElement::new(SK_ALICE), alice, bob, 1000)
-                .expect("transferencia");
-            layer.apply(&s, alice, bob, 1000).expect("aplicar");
+            two_phase_transfer(&mut layer, alice, SK_ALICE, bob, SK_BOB, 1000, salt_de(0xC3C3))
+                .expect("transferencia en dos fases");
             cabeza = layer.log_head();
         }
         {
@@ -624,8 +618,13 @@ use super::*;
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
             )
             .expect("recuperar");
-            // Dos aperturas + una emision + una transferencia.
-            assert_eq!(layer.transition_log().len(), 4);
+            // Dos aperturas + una emision + **un envio y un cobro**.
+            //
+            // Cinco, no cuatro: la via en dos fases deja **dos** entradas
+            // donde `transfer` dejaba una, y el registro refleja que son dos
+            // operaciones distintas, en momentos distintos y con actores
+            // distintos.
+            assert_eq!(layer.transition_log().len(), 5);
             assert_eq!(
                 layer.log_head(),
                 cabeza,
@@ -1475,8 +1474,17 @@ use super::*;
 
         // Transferir NO puede.
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let estado = state_of(&layer, alice);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
         assert!(layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 1000)
+            .send(
+                BaseElement::new(SK_ALICE),
+                alice,
+                &estado,
+                receptor,
+                salt_de(0xB0B0),
+                1000
+            )
             .is_err());
 
         // Y destruir TAMPOCO.
@@ -1646,10 +1654,8 @@ use super::*;
         let alice = open_and_fund(&mut layer, SK_ALICE, 400_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
 
-        let s = layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 400_000)
-            .expect("transferir todo el saldo deberia valer");
-        layer.apply(&s, alice, bob, 400_000).expect("aplicar");
+        two_phase_transfer(&mut layer, alice, SK_ALICE, bob, SK_BOB, 400_000, salt_de(0xD4D4))
+            .expect("transferencia en dos fases");
 
         assert_eq!(layer.balance_of(alice), Some(0), "la cuenta queda a cero");
         assert_eq!(layer.balance_of(bob), Some(400_000));
@@ -1701,7 +1707,19 @@ use super::*;
 
         // Un intruso, sin la clave de Alice, intenta transferir desde su
         // cuenta. Debe recibir "no eres el titular", NO "esta congelada".
-        let r = layer.transfer(BaseElement::new(0x1337), alice, bob, 1000);
+        // ⚠️ **La via nueva pide el estado del pagador**, que un intruso no
+        // tendria. El test se lo da: lo que se comprueba es **el orden de las
+        // comprobaciones**, no que el intruso pudiera llegar hasta aqui.
+        let estado = state_of(&layer, alice);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+        let r = layer.send(
+            BaseElement::new(0x1337),
+            alice,
+            &estado,
+            receptor,
+            salt_de(0x1337),
+            1000,
+        );
         assert!(
             matches!(r, Err(LayerError::NotTheAccountHolder)),
             "CRITICO: un intruso no debe poder deducir que la cuenta esta \
@@ -1721,7 +1739,16 @@ use super::*;
         let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
         layer.apply_freeze(&f, alice).expect("aplicar");
 
-        let r = layer.transfer(BaseElement::new(SK_ALICE), alice, bob, 1000);
+        let estado = state_of(&layer, alice);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+        let r = layer.send(
+            BaseElement::new(SK_ALICE),
+            alice,
+            &estado,
+            receptor,
+            salt_de(0xF2EE),
+            1000,
+        );
         assert!(
             matches!(r, Err(LayerError::AccountFrozen(_))),
             "el titular debe saber que su cuenta esta congelada: {r:?}"
@@ -1743,7 +1770,16 @@ use super::*;
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
 
         // Pide mas de lo que Alice tiene, sin su clave.
-        let r = layer.transfer(BaseElement::new(0x1337), alice, bob, 99_999_999);
+        let estado = state_of(&layer, alice);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+        let r = layer.send(
+            BaseElement::new(0x1337),
+            alice,
+            &estado,
+            receptor,
+            salt_de(0xBA1A),
+            99_999_999,
+        );
         assert!(
             matches!(r, Err(LayerError::NotTheAccountHolder)),
             "CRITICO: el error no debe revelar el saldo a quien no es titular"
@@ -1767,10 +1803,8 @@ use super::*;
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
 
         // Antes de congelar: puede gastar.
-        let s = layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 1000)
-            .expect("antes de congelar deberia poder");
-        layer.apply(&s, alice, bob, 1000).expect("aplicar");
+        two_phase_transfer(&mut layer, alice, SK_ALICE, bob, SK_BOB, 1000, salt_de(0xE5E5))
+            .expect("transferencia en dos fases");
 
         // Dos custodios la congelan.
         let f = layer
@@ -1780,7 +1814,16 @@ use super::*;
         assert!(layer.is_frozen(alice));
 
         // Ahora NO puede.
-        let r = layer.transfer(BaseElement::new(SK_ALICE), alice, bob, 1000);
+        let estado = state_of(&layer, alice);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+        let r = layer.send(
+            BaseElement::new(SK_ALICE),
+            alice,
+            &estado,
+            receptor,
+            salt_de(0xF3EE),
+            1000,
+        );
         assert!(
             matches!(r, Err(LayerError::AccountFrozen(_))),
             "CRITICO: una cuenta congelada NO debe poder gastar. Resultado: {r:?}"
@@ -1793,7 +1836,7 @@ use super::*;
     /// Es deliberado: impedirlo dejaría fondos en el limbo y rompería
     /// pagos legítimos hacia una cuenta bajo investigación.
     #[test]
-    fn a_frozen_account_can_still_receive() {
+    fn a_frozen_account_receives_into_limbo() {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
@@ -1801,11 +1844,42 @@ use super::*;
         let f = layer.set_frozen(&valid_auth(), bob, true).expect("congelar");
         layer.apply_freeze(&f, bob).expect("aplicar");
 
-        let s = layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 5000)
-            .expect("recibir estando congelado deberia valer");
-        layer.apply(&s, alice, bob, 5000).expect("aplicar");
-        assert_eq!(layer.balance_of(bob), Some(5000));
+        // ===== EL DINERO SALE, Y LLEGA A UN PENDIENTE =====
+        let estado = state_of(&layer, alice);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &estado, receptor, salt_de(0xF6F6), 5000)
+            .expect("enviar a una cuenta congelada SI se puede");
+        layer
+            .apply_send(&recibo, alice, &estado, 5000)
+            .expect("y aplicarlo tambien");
+
+        assert_eq!(layer.balance_of(alice), Some(995_000), "el dinero salio");
+        assert_eq!(layer.total_pending(), 5000, "y esta en un pendiente");
+
+        // ===== PERO NO PUEDE COBRARLO =====
+        let estado_bob = state_of(&layer, bob);
+        let r = layer.claim(BaseElement::new(SK_BOB), bob, &estado_bob, &recibo.notice);
+        assert!(
+            matches!(r, Err(LayerError::AccountFrozen(_))),
+            "una cuenta congelada no puede cobrar: {:?}",
+            r.map(|_| "recibo")
+        );
+        assert_eq!(layer.balance_of(bob), Some(0), "sigue sin el dinero");
+
+        // ⚠️ **ESTO INVIERTE UNA DECISION DE DISENO DOCUMENTADA.**
+        //
+        // `freeze.rs` dice: *«Una cuenta congelada no puede gastar, pero si
+        // seguir recibiendo. Impedirlo exigiria comprobar tambien al receptor
+        // y **dejaria fondos en el limbo**»*.
+        //
+        // La via en dos fases hace justo eso: el cobro es una accion del
+        // receptor, y tanto la capa como `circuit_claim` —que lleva
+        // `frozen_root`— la rechazan si esta congelado.
+        //
+        // **El dinero queda en el limbo que el diseno queria evitar**: salio
+        // del pagador, no llego al receptor, y solo se libera si alguien
+        // levanta la congelacion. Ver `AUDITORIA.md` §29.
     }
 
     /// **DESCONGELAR DEVUELVE LA CAPACIDAD DE GASTO.**
@@ -1825,10 +1899,8 @@ use super::*;
         layer.apply_freeze(&u, alice).expect("aplicar");
         assert!(!layer.is_frozen(alice));
 
-        let s = layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 1000)
-            .expect("tras descongelar deberia poder gastar");
-        layer.apply(&s, alice, bob, 1000).expect("aplicar");
+        two_phase_transfer(&mut layer, alice, SK_ALICE, bob, SK_BOB, 1000, salt_de(0x0707))
+            .expect("transferencia en dos fases");
         assert_eq!(layer.balance_of(bob), Some(1000));
     }
 
@@ -2179,10 +2251,8 @@ use super::*;
         );
 
         // La NUEVA sí.
-        let s = layer
-            .transfer(BaseElement::new(SK_ALICE_NEW), alice, bob, 1000)
-            .expect("la clave nueva deberia poder gastar");
-        layer.apply(&s, alice, bob, 1000).expect("aplicar");
+        two_phase_transfer(&mut layer, alice, SK_ALICE_NEW, bob, SK_BOB, 1000, salt_de(0x1818))
+            .expect("transferencia en dos fases");
         assert_eq!(layer.balance_of(bob), Some(1000));
     }
 
@@ -2466,10 +2536,8 @@ use super::*;
         assert_eq!(sum(&layer), layer.total_supply());
 
         // Transferir: el suministro NO cambia.
-        let s = layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 300_000)
-            .expect("transferencia");
-        layer.apply(&s, alice, bob, 300_000).expect("aplicar");
+        two_phase_transfer(&mut layer, alice, SK_ALICE, bob, SK_BOB, 300_000, salt_de(0xA1A1))
+            .expect("transferencia en dos fases");
         assert_eq!(layer.total_supply(), 1_000_000);
         assert_eq!(sum(&layer), layer.total_supply());
 

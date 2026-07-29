@@ -2013,7 +2013,62 @@ comprueba que no pise a las existentes.
 
 ---
 
-## 29. Qué NO demuestra este documento
+## 29. ⚠️ Una cuenta congelada ya no puede recibir: recibe hacia el limbo
+
+**La propiedad no se quitó. Cambió de significado al cambiar quién actúa.**
+
+`freeze.rs` documenta la decisión original:
+
+> *«**Recibir.** Una cuenta congelada no puede gastar, pero sí seguir
+> recibiendo. Impedirlo exigiría comprobar también al receptor y **dejaría
+> fondos en el limbo**.»*
+
+En la vía de un paso, recibir era **pasivo**: el pagador actualizaba las dos
+hojas y el receptor no hacía nada. En la vía en dos fases, **cobrar es una
+acción del receptor**, y tanto `claim` como `circuit_claim` —que lleva
+`frozen_root`— la rechazan si está congelado.
+
+### La secuencia real
+
+| Paso | ¿Funciona? |
+|---|---|
+| Enviar a una cuenta congelada | ✅ |
+| El dinero sale del pagador al pendiente | ✅ |
+| Que la congelada lo cobre | ❌ `AccountFrozen` |
+
+⚠️ **El dinero queda exactamente en el limbo que la decisión original quería
+evitar**: salió del pagador, no llegó al receptor, y solo se libera si alguien
+levanta la congelación.
+
+Lo fija `a_frozen_account_receives_into_limbo`, que antes se llamaba
+`a_frozen_account_can_still_receive` y afirmaba lo contrario.
+
+### Decisión pendiente, y no es técnica
+
+**¿Debe una cuenta congelada poder cobrar lo que ya le enviaron?**
+
+| A favor de permitirlo | A favor de impedirlo |
+|---|---|
+| El dinero ya salió; retenerlo no protege a nadie | Cobrar es una operación del titular, y está intervenido |
+| Evita el limbo que el diseño rechazaba | El importe seguiría inmovilizado igual, pero en su cuenta |
+| El pagador no eligió congelar a nadie | Un cobro cambia la raíz de cuentas |
+
+Implementarlo exigiría **quitar `frozen_root` de `circuit_claim`**, y eso es
+un cambio de circuito con su propio par de tests. **No está hecho, y la
+decisión no es del implementador.**
+
+### Cómo apareció
+
+Migrando `a_frozen_account_can_still_receive` al ayudante de dos fases. El
+test falló con `AccountFrozen(1)` —el índice del **receptor**— y esa
+identidad fue lo que delató el cambio de propiedad.
+
+> **Migrar un test no es traducirlo: es volver a preguntar si lo que afirmaba
+> sigue siendo cierto.**
+
+---
+
+## 30. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

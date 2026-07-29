@@ -19,6 +19,12 @@
 //! - **Recibir.** Una cuenta congelada no puede gastar, pero sí seguir
 //!   recibiendo. Impedirlo exigiría comprobar también al receptor y
 //!   dejaría fondos en el limbo.
+//!
+//!   ⚠️ **Esto ya NO es cierto por la vía en dos fases.** Cobrar un pendiente
+//!   es una acción del receptor, y `circuit_claim` lleva `frozen_root`: una
+//!   cuenta congelada **recibe hacia un pendiente que no puede cobrar**. El
+//!   dinero queda en el limbo que esta nota decía evitar. Ver
+//!   `AUDITORIA.md` §29.
 //! - **Nada justifica la congelación en el circuito.** Demuestra que dos
 //!   custodios la autorizaron, no que tuvieran razón.
 //! - **No hay caducidad.** Dura hasta que alguien la levante.
