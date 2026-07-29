@@ -77,6 +77,19 @@ pub struct Pacs008 {
 pub enum TxStatus {
     /// `ACSC` — liquidada y firme.
     Settled,
+    /// **`ACSP` — aceptada, liquidación EN CURSO.**
+    ///
+    /// El dinero ha salido de la cuenta del pagador y espera en un
+    /// pendiente a que el receptor lo cobre. **No es firme todavía.**
+    ///
+    /// Existe porque el modelo en dos fases —el único que no filtra el
+    /// saldo del receptor al pagador— no produce firmeza inmediata.
+    /// Responder `ACSC` en ese momento sería afirmar algo falso.
+    ///
+    /// ⚠️ **ISO 20022 ya distingue aceptación de firmeza.** Usar `ACSP` no
+    /// inventa un contrato nuevo: usa el código que el estándar tiene para
+    /// exactamente esta situación. Ver `VISION.md` §3.11.
+    InProcess,
     /// `RJCT` — rechazada.
     Rejected,
 }
@@ -85,6 +98,7 @@ impl TxStatus {
     pub fn code(&self) -> &'static str {
         match self {
             TxStatus::Settled => "ACSC",
+            TxStatus::InProcess => "ACSP",
             TxStatus::Rejected => "RJCT",
         }
     }

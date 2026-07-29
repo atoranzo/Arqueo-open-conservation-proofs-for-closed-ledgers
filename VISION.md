@@ -599,16 +599,47 @@ Un `send` deja el dinero en un pendiente. Si el puente respondiera `ACSC`,
 estaría afirmando algo falso: el receptor todavía no tiene el dinero, y
 podría no reclamarlo nunca.
 
-#### Las opciones, y lo que cuesta cada una
+#### La decisión: A, y no cambia el contrato
 
-| Opción | Qué implica |
+| Opción | Por qué se descarta o se toma |
 |---|---|
-| **A.** El puente responde `ACCP` (aceptada, no firme) y un segundo mensaje al reclamarse | Cambia el contrato con el banco: dos mensajes donde había uno |
-| **B.** Aceptar la fuga en la vía ISO | El banco pagador aprende el saldo del receptor |
-| **C.** Declarar que ISO no admite transferencias privadas | Honesto, pero renuncia a la integración |
+| **B.** Aceptar la fuga en la vía ISO | **Descartada.** La tesis del proyecto es que privacidad y cumplimiento son compatibles. Dejar la fuga en la interfaz por la que entra un banco la contradice en el punto exacto donde importa. |
+| **C.** Declarar ISO incompatible con transferencias privadas | **Descartada.** Es honesta, pero renuncia a un resultado que el proyecto sí demostró: que un `pacs.008` se puede liquidar con prueba adjunta. |
+| **A.** Dos estados: aceptada y firme | **Tomada.** |
 
-⚠️ **Ninguna está implementada, y la decisión no es técnica**: A cambia lo
-que el sistema promete a su contraparte.
+**El argumento que decide: A no inventa un contrato nuevo.**
+
+ISO 20022 **ya distingue aceptación de firmeza**:
+
+| Código | Significa |
+|---|---|
+| `ACSP` | Aceptada, liquidación **en curso** |
+| `ACSC` | Liquidación **completada** |
+| `RJCT` | Rechazada |
+
+Y eso **es** el modelo en dos fases:
+
+| | |
+|---|---|
+| `send()` — el dinero sale del pagador y espera en un pendiente | **`ACSP`** |
+| `claim()` — el receptor lo cobra, la operación es firme | **`ACSC`** |
+
+El puente modelaba solo `ACSC` y `RJCT`: **colapsaba dos estados en uno**.
+La objeción "cambia el contrato" era mía y era falsa — la liquidación en
+dos tiempos es lo normal en pagos, y el estándar tiene el vocabulario.
+
+#### Lo hecho y lo que falta
+
+✅ **`TxStatus::InProcess` → `ACSP`** existe en el puente.
+
+⚠️ **Falta encaminar `settle_pacs008` por `send`/`claim`.** Hoy sigue
+llamando a `transfer()`, así que **la fuga sigue abierta en la vía ISO**.
+Cambiarlo exige que el puente devuelva el pendiente y que haya un segundo
+mensaje al cobrarse: es trabajo, no una decisión.
+
+⚠️ **Y los códigos ISO de este proyecto no están auditados** contra el
+catálogo real. `ACSP` y `ACSC` son los que corresponden según el estándar,
+pero **nadie lo ha verificado** (§20 de `AUDITORIA.md`).
 
 #### Por qué esto estaba mal declarado
 
@@ -626,7 +657,7 @@ una vía que no filtra, pero **la que está expuesta sí**.
 
 | | Prioridad | Estado |
 |---|---|---|
-| **0** | Cerrar la fuga del saldo del receptor al pagador | ⚙️ **Parcial**: `send`/`claim` no filtran, 38 tests. Pero **el puente ISO sigue usando `transfer()`**, y no puede migrar: ver §3.11 |
+| **0** | Cerrar la fuga del saldo del receptor al pagador | ⚙️ **Parcial**: `send`/`claim` no filtran, 38 tests. **El puente ISO sigue usando `transfer()`**; decidido cómo migrarlo (§3.11), **no hecho** |
 | 1 | Reducir la legibilidad del estado por el operador | ⚙️ **En migración**: la vía nueva (`send`/`claim`) **no lee el registro**. La antigua sí, y está marcada (§3.9) |
 | 2 | Mantener y endurecer la separación clave / capa | ✅ Salvo la autoridad de umbral (§3.3) |
 | 3 | Formalizar el catálogo de rechazos | ✅ Hoja de ruta con lo no alcanzable y lo innecesario |
