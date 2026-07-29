@@ -430,6 +430,17 @@ constant** (step 9 cost 0.77× step 1). Closing: 1.84 s, amortizable.
 makes the model viable: cost falls on the party producing the proof, not
 on the party accepting it.
 
+> ⚠️ **That ratio is the AUDIT DISCLOSURE's, not the transfer's.**
+>
+> `verify_audit` **only verifies**: 1.6 ms against 274 ms to generate — a
+> **0.58 %**. It is the right figure for the argument it supports —a
+> supervisor checks without touching state— but **it had been attributed to
+> the transfer**.
+>
+> Applying a transfer costs **17.5 %** of generating it, because `apply`
+> **verifies, mutates the tree and writes to disk**. The two are not
+> comparable. See `AUDITORIA.md` §22.
+
 **Quantified scaling limit**: one thousand transfers accumulate 59.1 MB of
 proofs. This is the dominant practical constraint of choosing STARK, and
 the quantitative argument for recursive aggregation or batched proofs.
@@ -531,6 +542,69 @@ The figure that quantifies it: **3 dependencies versus 349**.
 
 ---
 
+## 8.bis The two-phase path and its fit with ISO 20022
+
+### The payer needed the recipient's balance
+
+A settlement that updates **both leaves** in one transition requires whoever
+builds the proof to know **both balances**. Confidentiality against third
+parties holds; against the **counterparty** it does not: **paying someone
+reveals what they hold**.
+
+This is not an implementation defect. It is a property of the statement being
+proven, and it appears in all five proof systems, because a proof about two
+accounts requires knowledge of two accounts.
+
+It matters more than its size suggests: **the operator is one declared party**
+whose powers are counted and audited; **a counterparty can be anyone**.
+
+### The design that closes it
+
+| Phase | What happens | Whose balance is needed |
+|---|---|---|
+| `send` | Value leaves the payer into a **pending commitment** | Payer's only |
+| `claim` | The recipient makes it theirs | Recipient's only |
+
+The commitment binds the recipient's public identity, a payer-chosen random
+value, and the amount. **Neither phase reads the other party's balance**, and
+it is enforced by the signature: there is no parameter through which one
+could be passed.
+
+⚠️ **Costs, stated.** The payment is not final until claimed; if the recipient
+never claims, the value is immobilised and **no return path is implemented**;
+and the payer, having chosen the random value, can recompute the commitment
+and observe **when** it is claimed — not how much the recipient holds, but a
+timing signal the design does not remove.
+
+### No nullifier, and why
+
+The two-phase circuits **omit the nullifier deliberately**: a send changes the
+balance, hence the leaf, hence the accounts root, so a resend starts from a
+stale root and is rejected.
+
+⚠️ **Distributed consensus would change this**: root chaining requires a total
+order, and the nullifier detects a repeated spend without needing one.
+
+### The fit with ISO 20022
+
+A `pacs.008` produces a `pacs.002` carrying the proof, and rejections carry
+codes from `ExternalStatusReason1Code` rather than proprietary strings.
+
+The two-phase model **uses the standard's own vocabulary**:
+
+| Phase | Status | Meaning in the standard |
+|---|---|---|
+| Send accepted | `ACSP` | Accepted, settlement in process |
+| Claim applied | `ACSC` | Settlement completed |
+| Rejection | `RJCT` | With its reason code |
+
+⚠️ **One piece is missing.** The recipient needs the pending position, the
+random value and the amount in order to claim, and **ISO 20022 has no field
+for them**. The implementation returns them alongside the message, not inside
+it. **How that side channel is operated is unresolved.**
+
+---
+
 ## 9. Errors of our own, detected and corrected
 
 Documenting these is part of the methodological contribution: work without
@@ -556,6 +630,68 @@ test**; it was caught by manual review, not automated checking.
 due to a constraint other than the one it purported to verify. These were
 corrected by constructing internally consistent witnesses that violate only
 the constraint under test.
+
+---
+
+### Substitution without contrast
+
+Introducing the two-phase path and routing the ISO bridge through it
+**silently dropped two properties** the original path had:
+
+1. **The regulatory limit stopped being enforced in the circuit.** The old
+   circuit carries it as a public input and proves `amount ≤ limit`; the new
+   one did not, so the limit was checked only at generation time — bypassable
+   by anyone constructing their own trace.
+2. **Operations left no trace in the transition log.** The two-phase module
+   was **the only one that appended nothing**, and it had become the sole
+   institutional path.
+
+Both surfaced by migrating the old path's tests and asking what each had
+defended. Neither was found by the new path's own tests, written while
+looking only at the new path.
+
+> **Substitution is not only writing the replacement. It is contrasting what
+> the original did.**
+
+### Properties proven on a model that is not executed
+
+A prototype module carried eight tests demonstrating the design's properties.
+Production uses **one function** from it and none of its data structures.
+Contrasting the eight against the executed path found one security property
+—that claiming an amount other than the committed one is rejected— verified
+**only on the model**.
+
+> **A security property proven on a model is not proven on what runs.**
+
+### Restart tests that compare rather than attack
+
+Of twelve restart tests, **eleven compared a value** before and after; one
+attempted the forbidden operation.
+
+Converting one of the eleven found that the custodian quota's **maximum** was
+not persisted while its **counter** was: restarting the node renewed an
+exhausted quota, lifting any restriction placed on a set under suspicion.
+
+> **Comparing a restored value is an indicator. Attempting the operation it is
+> supposed to block is the property.**
+
+### Tests declared versus tests executed
+
+A test written into the wrong scope compiled, did not register, and **executed
+nothing**. It was detected only by comparing declared test attributes against
+tests executed.
+
+> **A test that does not appear in the run list is invisible: it does not fail
+> and does not warn.**
+
+### Where these were found
+
+⚠️ None came from the tools built for the audit —a vacuous-constraint detector
+by mutation and an unfilled-column checker— which between them **found no
+defect** across twelve production circuits.
+
+All came from asking **what each check defends**, and then attempting the
+thing it is supposed to prevent.
 
 ---
 
@@ -696,6 +832,10 @@ trace.
 Measurements show that verification costs 0.5–0.8% of proving — an
 asymmetry that makes the model viable — and quantify its principal limit:
 **59.1 MB of accumulated proofs per thousand transfers**.
+
+⚠️ That asymmetry is measured on **audit disclosures**, which verify without
+mutating state — precisely the supervisory case. A transfer's apply step
+costs 17.5 % of proving, because it also writes.
 
 The results also delimit what has not been demonstrated. The single-node
 architecture means that state transitions are proven while the current

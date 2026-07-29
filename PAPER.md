@@ -577,6 +577,70 @@ La cifra que lo cuantifica: **3 dependencias frente a 349**.
 
 ---
 
+## 8.bis La vía en dos fases y su encaje en ISO 20022
+
+### El pagador necesitaba el saldo del receptor
+
+Una liquidación que actualiza **las dos hojas** en una sola transición exige
+que quien construye la prueba conozca **los dos saldos**. La
+confidencialidad frente a terceros se mantiene; frente a la **contraparte**,
+no: **pagar a alguien revela cuánto tiene**.
+
+No es un defecto de implementación. Es una propiedad del enunciado que se
+demuestra, y aparece en los cinco sistemas de prueba, porque una prueba sobre
+dos cuentas exige conocer dos cuentas.
+
+Importa más de lo que su tamaño sugiere: **el operador es una parte
+declarada** cuyos poderes se cuentan y auditan; **una contraparte puede ser
+cualquiera**.
+
+### El diseño que lo cierra
+
+| Fase | Qué ocurre | Qué saldo hace falta |
+|---|---|---|
+| `send` | El valor sale del pagador a un **pendiente** | Solo el del pagador |
+| `claim` | El receptor lo hace suyo | Solo el del receptor |
+
+El compromiso liga la identidad pública del receptor, un aleatorio elegido
+por el pagador y el importe. **Ninguna fase lee el saldo del otro**, y va en
+la firma: no hay parámetro por donde entrara.
+
+⚠️ **Coste declarado.** El pago no es firme hasta que se cobra; si el receptor
+nunca cobra, el valor queda inmovilizado y **no hay devolución
+implementada**; y el pagador, que eligió el aleatorio, puede recalcular el
+compromiso y ver **cuándo** se cobra — no cuánto tiene, pero sí una señal
+temporal que el diseño no elimina.
+
+### Sin nullificador, y por qué
+
+Los circuitos en dos fases **omiten el nullificador a propósito**: un envío
+cambia el saldo, luego la hoja, luego la raíz de cuentas, así que un reenvío
+parte de una raíz obsoleta y se rechaza.
+
+⚠️ **Con consenso distribuido esto cambiaría**: el encadenamiento de raíces
+exige un orden total, y el nullificador detecta un gasto repetido sin
+necesitarlo.
+
+### El encaje en ISO 20022
+
+Un `pacs.008` produce un `pacs.002` con la prueba adjunta, y los rechazos
+llevan códigos del catálogo `ExternalStatusReason1Code`, no cadenas propias.
+
+El modelo en dos fases **usa el vocabulario del propio estándar**:
+
+| Fase | Estado | Significado en el estándar |
+|---|---|---|
+| Envío aceptado | `ACSP` | Aceptada, liquidación en curso |
+| Cobro aplicado | `ACSC` | Liquidación completada |
+| Rechazo | `RJCT` | Con su código de motivo |
+
+⚠️ **Falta una pieza.** El receptor necesita la posición del pendiente, el
+aleatorio y el importe para cobrar, y **ISO 20022 no tiene campo para ellos**.
+La implementación los devuelve junto al mensaje, no dentro. **Cómo viaja ese
+canal lateral está sin resolver.**
+
+---
+
 ## 9. Errores propios detectados y corregidos
 
 Documentarlos es parte de la contribución metodológica: un trabajo sin
@@ -604,6 +668,70 @@ manual, no automática.
 fallar por una restricción distinta de la que pretendía verificar. Se
 corrigieron construyendo testigos internamente coherentes que violan
 únicamente la restricción bajo prueba.
+
+---
+
+### Sustituir sin contrastar
+
+Introducir la vía en dos fases y encaminar el puente ISO por ella **perdió en
+silencio dos propiedades** que la vía original tenía:
+
+1. **El límite regulatorio dejó de imponerse en el circuito.** El circuito
+   antiguo lo lleva como entrada pública y demuestra `importe ≤ límite`; el
+   nuevo no, así que el límite solo se comprobaba al generar — evitable
+   construyendo la propia traza.
+2. **Las operaciones no dejaban rastro en el registro.** El módulo de dos
+   fases era **el único que no registraba nada**, y era ya la única vía
+   institucional.
+
+Las dos aparecieron al migrar los tests de la vía antigua y preguntar qué
+defendía cada uno. Ninguna la encontraron los tests de la vía nueva, escritos
+mirando solo la vía nueva.
+
+> **Sustituir no es solo escribir lo nuevo. Es contrastar lo que hacía lo
+> viejo.**
+
+### Propiedades demostradas sobre un modelo que no se ejecuta
+
+Un módulo prototipo llevaba ocho tests que demostraban las propiedades del
+diseño. La producción usa **una función** de ese módulo y ninguna de sus
+estructuras. Contrastar los ocho contra la vía ejecutada encontró una
+propiedad de seguridad —que cobrar un importe distinto al comprometido se
+rechaza— verificada **solo sobre el modelo**.
+
+> **Una propiedad de seguridad demostrada sobre un modelo no está demostrada
+> sobre lo que se ejecuta.**
+
+### Tests de reinicio que comparan en vez de atacar
+
+De doce tests de reinicio, **once comparaban un valor** antes y después; uno
+intentaba la operación prohibida.
+
+Convertir uno de los once encontró que el **máximo** del cupo de custodios no
+se persistía mientras su **contador** sí: reiniciar el nodo renovaba un cupo
+agotado, levantando cualquier restricción impuesta a un conjunto bajo
+sospecha.
+
+> **Comparar un valor restaurado es un indicio. Intentar la operación que
+> debería bloquear es la propiedad.**
+
+### Tests declarados frente a tests ejecutados
+
+Un test escrito en el ámbito equivocado compilaba, no se registraba y **no
+ejecutaba nada**. Solo lo delató contrastar los `#[test]` declarados con los
+ejecutados.
+
+> **Un test que no aparece en la lista es invisible: no falla y no avisa.**
+
+### Dónde se encontraron
+
+⚠️ Ninguno vino de las herramientas construidas para la auditoría —un
+detector de restricciones vacías por mutación y un comprobador de columnas
+sin rellenar— que entre las dos **no encontraron ningún defecto** en doce
+circuitos de producción.
+
+Todos vinieron de preguntar **qué defiende cada comprobación**, y después
+intentar aquello que debería impedir.
 
 ---
 
