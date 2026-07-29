@@ -247,22 +247,46 @@ Todo lo demás que falta está enumerado en
 
 ## Publicación
 
+Tres preprints, en su **tercera revisión** (30 de julio de 2026). Las
+versiones anteriores siguen accesibles y se citan aquí: **una cifra
+publicada que se corrige no se borra, se marca**.
+
 **Comparative Implementation of a Zero-Knowledge Settlement Layer across Five
 Proof Systems: Design Findings and Measurements**
-DOI: [10.5281/zenodo.21683239](https://doi.org/10.5281/zenodo.21683239)
+DOI: [10.5281/zenodo.21693706](https://doi.org/10.5281/zenodo.21693706)
 
-*Primera versión: [10.5281/zenodo.21677737](https://doi.org/10.5281/zenodo.21677737).
-Publica 59,1 MB por mil operaciones y 17,5 % de aplicar sobre generar; las dos
-cifras miden la vía de un paso, **retirada desde entonces**. Ver
-`AUDITORIA.md` §31 y §32.*
+*Versiones anteriores: [10.5281/zenodo.21683239](https://doi.org/10.5281/zenodo.21683239)
+y [10.5281/zenodo.21677737](https://doi.org/10.5281/zenodo.21677737). La primera
+publica 59,1 MB por mil operaciones y 17,5 % de aplicar sobre generar: las dos
+cifras miden la vía de un paso, **retirada desde entonces** (§31, §32).*
 
 **Provable Compliance without Full Ledger Disclosure — A Zero-Knowledge
 Settlement Architecture for Supervisory Audit**
-DOI: [10.5281/zenodo.21678396](https://doi.org/10.5281/zenodo.21678396)
+DOI: [10.5281/zenodo.21693709](https://doi.org/10.5281/zenodo.21693709)
+
+*Versión anterior: [10.5281/zenodo.21678396](https://doi.org/10.5281/zenodo.21678396).*
 
 **From Institutional Trust to Verifiable Properties — A Minimal ZK Settlement
 Layer and Its Residual Trust Surface**
-DOI: [10.5281/zenodo.21679208](https://doi.org/10.5281/zenodo.21679208)
+DOI: [10.5281/zenodo.21693718](https://doi.org/10.5281/zenodo.21693718)
+
+*Versión anterior: [10.5281/zenodo.21679208](https://doi.org/10.5281/zenodo.21679208).*
+
+### Qué corrige la tercera revisión
+
+| Corrección | Antes | Ahora | Ver |
+|---|---|---|---|
+| Cobertura de la prueba por mutación | 12 circuitos limpios | **11** cubiertos (10 de producción); el informe del duodécimo salió de una traza inválida | §12, §20 |
+| Árbol de nullificadores | «se conserva por compatibilidad, es peso muerto» | **retirado** con migración verificada; instantánea v4 que sigue leyendo v3 | §32, §36 |
+| Confidencialidad frente al receptor | condicionada a que la vía en dos fases fuera la única | la condición **se cumplió**: es la única vía | §32 |
+| Tests de los dos crates | 369 | **375** | — |
+| Tests que fallan sin `--release` | 56 | **65** de 174, medido | §20 |
+
+⚠️ **Las referencias cruzadas entre los tres preprints apuntan a versiones
+anteriores de sus compañeros**, no a las terceras revisiones. Los enlaces
+resuelven y el contenido citado sigue siendo el correcto, pero un lector que
+los siga leerá una versión con cifras ya corregidas. Se arreglará en la
+próxima revisión de los tres.
 
 ## Autoría y licencia
 
