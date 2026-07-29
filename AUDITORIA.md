@@ -1407,7 +1407,73 @@ tests con posiciones cuyos caminos tengan bits variados. **No está hecho.**
 
 ---
 
-## 21. Qué NO demuestra este documento
+## 21. Los códigos ISO, verificados contra el catálogo real
+
+**Se contrastaron los 20 códigos del puente contra
+`ExternalStatusReason1Code`**, el catálogo publicado por ISO 20022.
+**Tres estaban mal.**
+
+### El grave: `TECH` no existe
+
+| | |
+|---|---|
+| Se usaba en | **7 variantes de error** |
+| En el catálogo | **No aparece** |
+| Correcto | `FF10` — *"File or transaction cannot be processed due to technical issues at the bank side"* |
+
+Era el destino de `ProofFailed`, `VerificationFailed`, `Store`,
+`AccountLimitReached`, `CustodianSetExhausted`,
+`NullifierPositionCollision` y `PendingTreeExhausted`.
+
+⚠️ **Un código inventado que ningún sistema receptor reconocería.** Y venía
+del comodín que se eliminó dos secciones antes: quitarlo hizo explícito el
+mapeo, pero **no lo hizo correcto**. Hizo falta contrastarlo.
+
+### Los otros dos
+
+| Código | Se usaba para | Qué dice el catálogo | Correcto |
+|---|---|---|---|
+| `AG01` | Clave de gasto errónea | *"Transaction forbidden on this **type of account**"* | **`AG08`** — *"invalid or missing user or **access right**"* |
+| `AM12` | Tope de emisión superado | *"Amount is **invalid or missing**"* | **`AM13`** — *"amount exceeds limits set by **clearing system**"* |
+
+`AG01` es sobre el **tipo de cuenta**, no sobre quién firma. Y el importe no
+es inválido cuando se excede un tope: es correcto y excede un límite.
+
+### Los siete que sí eran correctos
+
+`AM04` (fondos insuficientes), `AM02` (importe sobre el máximo), `AC01`
+(cuenta inválida), `AC06` (cuenta bloqueada), `AM01` (importe cero), `AM03`
+(divisa no admitida), `AM05` (duplicación).
+
+### ⚠️ Dos siguen siendo dudosos, y se dejan como están
+
+| Código | Se usa para | Por qué chirría |
+|---|---|---|
+| `DS0G` | `StaleState` | El catálogo lo define como *"Signer is not allowed to sign this operation type"*, que no es un estado obsoleto |
+| `AM09` | `BalanceOutsideBand` | *"Amount received is not the amount agreed"* — habla del importe recibido, no de un saldo fuera de banda |
+
+**No se cambian porque no hay un candidato claramente mejor**, y sustituir
+una elección discutible por otra sin fundamento no mejora nada. Quedan
+declarados para que un auditor con conocimiento del estándar decida.
+
+### ⚠️ Lo que NO se verificó
+
+Los códigos de **estado** —`ACSC`, `ACSP`, `RJCT`— pertenecen a un catálogo
+distinto del de motivos, y **no se contrastaron**. La decisión de §3.11 de
+`VISION.md` se apoya en que `ACSP` significa *"aceptada, liquidación en
+curso"*: **eso no está verificado contra la fuente**.
+
+### La lección
+
+Se pasó de un mapeo **silencioso** a uno **explícito** hace tres secciones,
+y se dio por hecho que explícito implicaba correcto.
+
+> **Hacer visible una decisión no la hace acertada.** Solo permite
+> comprobarla — y la comprobación es un paso aparte que hay que dar.
+
+---
+
+## 22. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

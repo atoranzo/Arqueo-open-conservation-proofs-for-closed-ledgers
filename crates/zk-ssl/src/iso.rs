@@ -143,17 +143,38 @@ fn iso_reason(err: &LayerError) -> (&'static str, String) {
         LayerError::NullifierAlreadySpent => ("AM05", err.to_string()),
         // AG01 — TransactionForbidden
         LayerError::NotTheAccountHolder | LayerError::NotTheIssuer => {
-            ("AG01", err.to_string())
+            ("AG08", err.to_string())
         }
         // AM02 — el límite del sistema no coincide con el declarado
         LayerError::WrongRegulatoryLimit { .. } => ("AM02", err.to_string()),
         // AM09 — WrongAmount (la banda declarada no corresponde)
         LayerError::BalanceOutsideBand { .. } => ("AM09", err.to_string()),
         // AM12 — InvalidAmount
-        LayerError::SupplyCapExceeded { .. } => ("AM12", err.to_string()),
+        LayerError::SupplyCapExceeded { .. } => ("AM13", err.to_string()),
         // DS0G — el estado ha cambiado: hay que reintentar sobre el actual
         LayerError::StaleState => ("DS0G", err.to_string()),
         // TECH — fallo técnico
+        // ===== CODIGOS VERIFICADOS CONTRA EL CATALOGO REAL =====
+        //
+        // `ExternalStatusReason1Code`, publicado por ISO 20022. Tres
+        // correcciones al contrastarlo:
+        //
+        // - **TECH no existe en el catalogo.** Se usaba en 7 variantes.
+        //   El codigo correcto es FF10: *"File or transaction cannot be
+        //   processed due to technical issues at the bank side"*.
+        //
+        // - **AG01 es sobre el TIPO DE CUENTA**, no sobre quien firma:
+        //   *"Transaction forbidden on this type of account"*. Para una
+        //   clave de gasto equivocada corresponde AG08: *"Transaction
+        //   failed due to invalid or missing user or access right"*.
+        //
+        // - **AM12 es *"Amount is invalid or missing"***. El importe no es
+        //   invalido cuando se excede el tope: AM13 es *"Transaction
+        //   amount exceeds limits set by clearing system"*.
+        //
+        // ⚠️ Dos siguen siendo dudosos y se declaran en `AUDITORIA.md` §21:
+        // DS0G para `StaleState` y AM09 para `BalanceOutsideBand`.
+
         // ===== CUENTA BLOQUEADA =====
         //
         // ⚠️ Antes caia en el comodin y se reportaba como "TECH", es decir
@@ -166,13 +187,13 @@ fn iso_reason(err: &LayerError) -> (&'static str, String) {
         //
         // Estas SI son tecnicas, pero se mapean **explicitamente** para que
         // se vea que la decision se tomo.
-        LayerError::NullifierPositionCollision { .. } => ("TECH", err.to_string()),
-        LayerError::PendingTreeExhausted { .. } => ("TECH", err.to_string()),
-        LayerError::AccountLimitReached { .. } => ("TECH", err.to_string()),
-        LayerError::CustodianSetExhausted { .. } => ("TECH", err.to_string()),
-        LayerError::ProofFailed(_) => ("TECH", err.to_string()),
-        LayerError::VerificationFailed(_) => ("TECH", err.to_string()),
-        LayerError::Store(_) => ("TECH", err.to_string()),
+        LayerError::NullifierPositionCollision { .. } => ("FF10", err.to_string()),
+        LayerError::PendingTreeExhausted { .. } => ("FF10", err.to_string()),
+        LayerError::AccountLimitReached { .. } => ("FF10", err.to_string()),
+        LayerError::CustodianSetExhausted { .. } => ("FF10", err.to_string()),
+        LayerError::ProofFailed(_) => ("FF10", err.to_string()),
+        LayerError::VerificationFailed(_) => ("FF10", err.to_string()),
+        LayerError::Store(_) => ("FF10", err.to_string()),
 
         // ===== PETICIONES MAL FORMADAS =====
         LayerError::RecoveryToSameIdentity => ("MS03", err.to_string()),
@@ -487,7 +508,7 @@ mod tests {
     /// El mensaje ISO puede ser perfectamente válido; la autorización
     /// viene de otro sitio.
     #[test]
-    fn wrong_spend_key_maps_to_ag01() {
+    fn wrong_spend_key_maps_to_ag08() {
         let (mut layer, registry, alice, _) = setup();
         let msg = message(250_000, "EUR");
 
@@ -495,7 +516,7 @@ mod tests {
         assert_eq!(r.status, TxStatus::Rejected);
         assert_eq!(
             r.reason_code,
-            Some("AG01"),
+            Some("AG08"),
             "un mensaje valido con clave incorrecta debe rechazarse"
         );
         assert_eq!(layer.balance_of(alice), Some(1_000_000), "sin cambios");
