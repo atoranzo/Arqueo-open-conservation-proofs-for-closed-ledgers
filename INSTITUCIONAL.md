@@ -497,7 +497,7 @@ Nada de este documento requiere confianza en su autor.
 ```bash
 git clone [repositorio]
 cd zk-ssl
-cargo test -p zk-ssl --release              # 169 tests
+cargo test -p zk-ssl --release              # 170 tests
 cargo test -p stark-experiment --release    # 199 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```

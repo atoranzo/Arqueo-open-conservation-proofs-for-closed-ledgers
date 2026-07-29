@@ -1204,7 +1204,7 @@ use super::*;
             open_and_fund(&mut layer, SK_ALICE, emitido);
             assert_eq!(layer.total_supply(), emitido);
         }
-        let layer = open_retry(
+        let mut layer = open_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
             )
             .expect("reabrir");
@@ -1213,6 +1213,28 @@ use super::*;
             emitido,
             "CRITICO: si el suministro se reiniciara, reiniciar el nodo \
              permitiria emitir de nuevo hasta el tope"
+        );
+
+        // ⚠️ **Y AHORA EL ATAQUE.** El contador es el indicio; el tope es la
+        // propiedad, y comprobarla exige intentar pasarse.
+        //
+        // Que el contador se restaure no basta: podria restaurarse y no
+        // usarse en la comprobacion del tope. Ver `AUDITORIA.md` §27.
+        let alice = 0;
+        let r = layer.mint(&valid_auth(), alice, MAX_SUPPLY - emitido + 1);
+        assert!(
+            matches!(r, Err(LayerError::SupplyCapExceeded { .. })),
+            "CRITICO: tras reiniciar, el tope debe seguir imponiendose sobre \
+             el suministro YA emitido. Salio: {:?}",
+            r.map(|_| "recibo generado")
+        );
+
+        // Y hasta el tope, si.
+        let ok = layer.mint(&valid_auth(), alice, MAX_SUPPLY - emitido);
+        assert!(
+            ok.is_ok(),
+            "y llegar justo al tope sigue permitido: {:?}",
+            ok.map(|_| "recibo")
         );
         let _ = std::fs::remove_dir_all(&path);
     }
@@ -1814,7 +1836,7 @@ use super::*;
             layer.apply_freeze(&f, alice).expect("aplicar");
         }
         {
-            let layer = open_retry(
+            let mut layer = open_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
             )
             .expect("recuperar");
@@ -1824,6 +1846,33 @@ use super::*;
                  reiniciar el nodo para levantarla"
             );
             assert_eq!(layer.freeze_count(), 1);
+
+            // ⚠️ **Y AHORA EL ATAQUE, no solo el indicio.**
+            //
+            // Que la marca sobreviva es una comprobacion de estado. La
+            // propiedad es que **la cuenta no pueda gastar**, y eso exige
+            // intentarlo.
+            //
+            // Son cosas distintas: la marca podria restaurarse y la raiz de
+            // congelados no, y entonces `is_frozen` diria que si mientras el
+            // circuito acepta la prueba. Ver `AUDITORIA.md` §27.
+            let bob = open_and_fund(&mut layer, SK_BOB, 0);
+            let estado = state_of(&layer, alice);
+            let receptor = layer.public_id_of(bob).expect("cuenta");
+            let r = layer.send(
+                BaseElement::new(SK_ALICE),
+                alice,
+                &estado,
+                receptor,
+                salt_de(0xF00D),
+                1000,
+            );
+            assert!(
+                matches!(r, Err(LayerError::AccountFrozen(_))),
+                "CRITICO: una cuenta congelada NO debe poder gastar tras \
+                 reiniciar. Salio: {:?}",
+                r.map(|_| "recibo generado")
+            );
         }
         let _ = std::fs::remove_dir_all(&path);
     }
@@ -2859,4 +2908,67 @@ fn a_send_declaring_more_than_the_limit_is_rejected() {
          El circuito prueba `importe <= limite declarado`; sin esta \
          comprobacion bastaria con declarar uno enorme. Salio: {r:?}"
     );
+}
+
+/// **REINICIAR NO DEBE RENOVAR EL CUPO DE CUSTODIOS.**
+///
+/// `the_custodian_quota_survives_restart` comprueba que el **contador**
+/// sobreviva. Pero el cupo son **dos cosas**: el contador y el máximo.
+///
+/// | | ¿Persiste? |
+/// |---|---|
+/// | `custodian_uses` — el contador | ✅ `meta:cust_uses` |
+/// | `max_custodian_uses` — el máximo | ⚠️ **No**: vuelve al valor por defecto |
+///
+/// Si alguien restringió el cupo —para limitar a un conjunto de custodios
+/// bajo sospecha— **reiniciar el nodo lo renovaría**.
+///
+/// ⚠️ **Este test se escribió para verlo fallar.** Es el mismo modo que §27:
+/// once tests de reinicio comparan un valor, y el que no comparaban era
+/// justo el que faltaba.
+#[test]
+fn a_restart_does_not_renew_an_exhausted_custodian_quota() {
+    let path = temp_path("cupo_reinicio");
+    let alice;
+    {
+        let mut layer = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        )
+        .expect("abrir");
+        // Un solo uso permitido, y se gasta.
+        layer.set_max_custodian_uses(1);
+        alice = layer
+            .open_account_checked(BaseElement::new(SK_ALICE))
+            .expect("abrir cuenta");
+        let m = layer.mint(&valid_auth(), alice, 100_000).expect("emitir");
+        layer.apply_mint(&m, alice).expect("aplicar");
+
+        // ⚠️ **El cupo se consume en `apply_mint`, no en `mint`.**
+        //
+        // Es una decision documentada: una prueba generada y NO aplicada no
+        // debe gastar cupo. Asi que comprobar `mint()` no dice nada —una
+        // version anterior de este test lo hacia y fallaba por eso—.
+        let m2 = layer.mint(&valid_auth(), alice, 1000).expect("genera igual");
+        let r = layer.apply_mint(&m2, alice);
+        assert!(
+            r.is_err(),
+            "el cupo esta agotado antes de reiniciar: {r:?}"
+        );
+    }
+
+    let mut layer = open_retry(
+        &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+    )
+    .expect("reabrir");
+
+    // **El ataque: reiniciar y APLICAR, que es donde se gasta el cupo.**
+    let m = layer.mint(&valid_auth(), alice, 1000).expect("genera");
+    let r = layer.apply_mint(&m, alice);
+    assert!(
+        r.is_err(),
+        "CRITICO: reiniciar el nodo NO debe renovar un cupo agotado. \
+         Salio: {r:?}"
+    );
+
+    let _ = std::fs::remove_dir_all(&path);
 }

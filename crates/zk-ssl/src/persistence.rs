@@ -187,6 +187,16 @@ impl SovereignLayer {
             ),
             None => 0,
         };
+        self.max_custodian_uses = match get(b"meta:cust_max")? {
+            Some(v) => u64::from_le_bytes(
+                v.as_slice()
+                    .try_into()
+                    .map_err(|_| StoreError::Malformed("maximo de custodios".into()))?,
+            ),
+            // Un ledger anterior a este campo: el valor por defecto es lo
+            // unico que se puede suponer, y es lo que habia.
+            None => crate::DEFAULT_MAX_CUSTODIAN_USES,
+        };
         // ⚠️ **Los importes de los pendientes se restauran del disco.**
         //
         // Sin esto, tras un reinicio `total_pending()` valdria cero y la
@@ -473,6 +483,17 @@ impl SovereignLayer {
         // nada: bastaria con reiniciar para seguir usando un conjunto
         // agotado.
         batch.insert(b"meta:cust_uses".as_ref(), self.seal(self.custodian_uses.to_le_bytes().to_vec())?);
+        // ⚠️ **El MAXIMO tambien, no solo el contador.**
+        //
+        // El cupo son dos cosas. Persistiendo solo el contador, reiniciar
+        // devolvia el maximo al valor por defecto y **renovaba un cupo
+        // agotado**: quien hubiera restringido a un conjunto de custodios
+        // bajo sospecha veia la restriccion levantada por un reinicio.
+        //
+        // Lo encontro `a_restart_does_not_renew_an_exhausted_custodian_quota`,
+        // escrito al revisar los once tests de reinicio que solo comparaban
+        // valores. Ver `AUDITORIA.md` §28.
+        batch.insert(b"meta:cust_max".as_ref(), self.seal(self.max_custodian_uses.to_le_bytes().to_vec())?);
         // El contador de pendientes. **Si no persistiera, tras reiniciar
         // se reutilizarian posiciones y un pendiente nuevo pisaria a otro
         // sin reclamar**: su receptor perderia el dinero.

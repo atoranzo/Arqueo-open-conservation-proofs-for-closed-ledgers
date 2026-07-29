@@ -1128,12 +1128,12 @@ Leer por qué funciona antes de copiarlo evitó ese fallo.
 
 ## 15. La cifra de pruebas que este proyecto publica es incompleta
 
-La documentación afirma **368 pruebas ejecutables** y da los dos comandos
+La documentación afirma **369 pruebas ejecutables** y da los dos comandos
 que las ejecutan. Es preciso sobre **qué** mide, pero se lee como el total
 del proyecto.
 
 **El espacio de trabajo tiene diez crates**, y la suite entera son unas
-**560 pruebas** y **22 minutos**.
+**561 pruebas** y **22 minutos**.
 
 ### El desglose, que dice más que el número
 
@@ -1912,7 +1912,56 @@ ya no se cumple. **No se han revisado.**
 
 ---
 
-## 28. Qué NO demuestra este documento
+## 28. ⚠️ Reiniciar el nodo renovaba el cupo de custodios
+
+**Es el hallazgo del ejercicio que §27 proponía**, y apareció al tercer test
+revisado de los once.
+
+### El cupo son dos cosas
+
+| | ¿Persistía? |
+|---|---|
+| `custodian_uses` — el contador | ✅ `meta:cust_uses` |
+| **`max_custodian_uses` — el máximo** | ❌ **No**: volvía al valor por defecto |
+
+⚠️ **Quien hubiera restringido el cupo —para limitar a un conjunto de
+custodios bajo sospecha— veía la restricción levantada por un reinicio.**
+
+`the_custodian_quota_survives_restart` comprobaba que **el contador**
+sobreviviera. El cupo son dos valores, y **solo uno estaba en la aserción**.
+
+### Corregido
+
+`meta:cust_max` se escribe con el contador, en el mismo lote atómico, y se
+restaura al cargar. Un ledger anterior a este campo supone el valor por
+defecto, que es exactamente el que estaba usando.
+
+`a_restart_does_not_renew_an_exhausted_custodian_quota` lo demuestra:
+agota el cupo, reinicia, e **intenta aplicar una emisión**.
+
+### ⚠️ Dos errores propios al escribirlo
+
+**Primero, atacó el paso equivocado.** El cupo se consume en `apply_mint`,
+no en `mint` —decisión documentada: una prueba generada y no aplicada no
+debe gastar cupo— y el test comprobaba `mint()`.
+
+Es la **segunda vez** en esta auditoría: el test del cobro doble atacó
+`claim()` en vez de `apply_claim()`.
+
+> **La capa separa generar de aplicar en todas sus operaciones.** Un test
+> que ataca la generación no comprueba nada, y esa separación está
+> documentada y tiene su propio test.
+
+**Segundo, la clasificación previa era falsa.**
+`the_account_counter_survives_restart` figuraba entre los once que «solo
+comparan valores» y **sí intenta el ataque**: abre una cuenta nueva y
+comprueba que no pise a las existentes.
+
+⚠️ **Quedan ocho sin revisar.**
+
+---
+
+## 29. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
