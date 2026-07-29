@@ -104,7 +104,22 @@ const COL_R_ID: usize = 38; // 38..42
 const COL_SALT: usize = 42; // 42..46
 /// Bit de dirección en el árbol de pendientes.
 const COL_PBIT: usize = 46;
-pub const TRACE_WIDTH: usize = 47;
+/// Bit de la descomposicion del margen `tope - suministro_nuevo`.
+const COL_CBIT: usize = 47;
+/// Acumulador de Horner de esa descomposicion.
+const COL_CACC: usize = 48;
+pub const TRACE_WIDTH: usize = 49;
+
+/// Primera fila del segmento que comprueba el tope de emision.
+///
+/// Va DESPUES de `ROW_PENDING_ROOT` (311), en filas que estaban vacias.
+const CAP_START: usize = 320;
+/// Longitud del segmento: 64 filas dan **63 bits**, no 64.
+///
+/// Ese margen de un bit es lo que hace que el tope se imponga: si el
+/// suministro se pasara, la resta envuelve y da un valor de 64 bits que
+/// **no cabe** en 63. Ver `AUDITORIA.md` §13.
+const CAP_LENGTH: usize = 64;
 
 // ===== Filas =====
 /// Última fila activa: raíz del conjunto de custodios.
@@ -154,7 +169,17 @@ const C_PEND_SIBLING: usize = C_PEND_PLACE + 8; // 4
 const C_PBIT_BOOL: usize = C_PEND_SIBLING + 4; // 1
 /// Transporte de las columnas constantes nuevas.
 const C_TRANSPORT_NEW: usize = C_PBIT_BOOL + 1; // 12
-const NUM_CONSTRAINTS: usize = C_TRANSPORT_NEW + 12;
+/// Los bits del margen son booleanos.
+const C_CBIT_BOOL: usize = C_TRANSPORT_NEW + 12; // 2
+/// El acumulador arranca en cero.
+const C_CAP_FIRST: usize = C_CBIT_BOOL + 2; // 2
+/// Horner: cada fila duplica y suma el bit siguiente.
+const C_CAP_HORNER: usize = C_CAP_FIRST + 2; // 1
+/// **El acumulado final ES `tope - suministro_nuevo`.**
+///
+/// Esta es la restriccion que impone el tope.
+const C_CAP_LINK: usize = C_CAP_HORNER + 1; // 1
+const NUM_CONSTRAINTS: usize = C_CAP_LINK + 1;
 
 // ===== Periódicas =====
 const P_HASH_FLAG: usize = 0;
@@ -175,6 +200,12 @@ const P_PEND_VAL: usize = P_PEND_IN + 1;
 const P_PEND_ENTRY: usize = P_PEND_VAL + 1;
 /// Enlaces de la subida.
 const P_PEND_LINK: usize = P_PEND_ENTRY + 1;
+/// Arranque del segmento del tope.
+const P_CAP_FIRST: usize = P_PEND_LINK + 1;
+/// Filas donde el acumulador del tope avanza.
+const P_CAP_CONT: usize = P_CAP_FIRST + 1;
+/// Fila donde se compara el acumulado con el margen declarado.
+const P_CAP_LINK: usize = P_CAP_CONT + 1;
 
 type Blake3 = Blake3_256<BaseElement>;
 
@@ -435,6 +466,25 @@ pub fn build_trace(
         }
     }
 
+    // ===== SEGMENTO DEL TOPE DE EMISION =====
+    //
+    // Descompone `tope - suministro_nuevo` en 63 bits. Si el suministro se
+    // pasara del tope, esa resta ENVUELVE en el campo y da un valor de 64
+    // bits que no cabe en 63: la descomposicion seria imposible y la
+    // prueba no se generaria.
+    //
+    // El margen de un bit es lo que impone el tope. Ver `AUDITORIA.md` §13.
+    let supply_new = supply_old + supply_delta;
+    let margen = max_supply.wrapping_sub(supply_new);
+    for p in 1..CAP_LENGTH {
+        // p=1 toma el bit 62; p=63, el bit 0.
+        let bit = (margen >> (CAP_LENGTH - 1 - p)) & 1;
+        rows[CAP_START + p][COL_CBIT] = BaseElement::new(bit);
+        rows[CAP_START + p][COL_CACC] =
+            rows[CAP_START + p - 1][COL_CACC] + rows[CAP_START + p - 1][COL_CACC]
+                + BaseElement::new(bit);
+    }
+
     let mut trace = TraceTable::new(TRACE_WIDTH, TRACE_LENGTH);
     trace.fill(
         |s| s.copy_from_slice(&rows[0]),
@@ -554,6 +604,22 @@ impl Air for MintPendingAir {
         for _ in 0..12 {
             degrees.push(TransitionConstraintDegree::new(1));
         }
+        // Bits del margen (2): grado 2 sin ciclo.
+        for _ in 0..2 {
+            degrees.push(TransitionConstraintDegree::new(2));
+        }
+        // Arranque (2), Horner (1) y enlace (1) del segmento del tope.
+        //
+        // ⚠️ El ciclo es `full`, NO `CAP_LENGTH`: aqui el segmento es un
+        // bloque unico en una traza de 512 filas, no la llena. Las filas a
+        // cero fuera del bloque **rompen la periodicidad**, asi que
+        // declararlo periodico de periodo 64 seria falso.
+        //
+        // En `circuit_mint` si es periodico porque sus 8 segmentos de 64
+        // filas llenan la traza entera.
+        for _ in 0..4 {
+            degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
+        }
 
         assert_eq!(degrees.len(), NUM_CONSTRAINTS, "cuenta de grados");
 
@@ -654,6 +720,22 @@ impl Air for MintPendingAir {
             pend_link[(7 + level) * CYCLE_LENGTH + 7] = one;
         }
         columns.push(pend_link);
+
+        // ===== SEGMENTO DEL TOPE =====
+        //
+        // `cont` marca CAP_LENGTH-1 = 63 transiciones, no 64. De ese unico
+        // bit de margen depende que el tope se imponga.
+        let mut cap_first = vec![zero; TRACE_LENGTH];
+        let mut cap_cont = vec![zero; TRACE_LENGTH];
+        let mut cap_link = vec![zero; TRACE_LENGTH];
+        cap_first[CAP_START] = one;
+        for p in 0..CAP_LENGTH - 1 {
+            cap_cont[CAP_START + p] = one;
+        }
+        cap_link[CAP_START + CAP_LENGTH - 2] = one;
+        columns.push(cap_first);
+        columns.push(cap_cont);
+        columns.push(cap_link);
 
         columns
     }
@@ -828,6 +910,28 @@ impl Air for MintPendingAir {
             result[C_TRANSPORT_NEW + 4 + i] = next[COL_R_ID + i] - current[COL_R_ID + i];
             result[C_TRANSPORT_NEW + 8 + i] = next[COL_SALT + i] - current[COL_SALT + i];
         }
+
+        // ===== EL TOPE DE EMISION =====
+        //
+        // El acumulador reconstruye `tope - suministro_nuevo` desde 63
+        // bits. Si el suministro se pasara, esa resta envuelve y da un
+        // valor de 64 bits: no cabe, y no hay descomposicion que satisfaga
+        // el enlace final.
+        let cbit_cur = current[COL_CBIT];
+        let cbit_next = next[COL_CBIT];
+        let cacc_cur = current[COL_CACC];
+        let cacc_next = next[COL_CACC];
+        let cap_first = periodic[P_CAP_FIRST];
+        let cap_cont = periodic[P_CAP_CONT];
+        let cap_link = periodic[P_CAP_LINK];
+
+        result[C_CBIT_BOOL] = cbit_cur * (cbit_cur - E::ONE);
+        result[C_CBIT_BOOL + 1] = cbit_next * (cbit_next - E::ONE);
+        result[C_CAP_FIRST] = cap_first * cbit_cur;
+        result[C_CAP_FIRST + 1] = cap_first * cacc_cur;
+        result[C_CAP_HORNER] = cap_cont * (cacc_next - (cacc_cur + cacc_cur + cbit_next));
+        result[C_CAP_LINK] =
+            cap_link * (cacc_next - (current[COL_MAX_SUPPLY] - current[COL_SUPPLY_NEW]));
     }
 
     fn get_assertions(&self) -> Vec<Assertion<Self::BaseField>> {
@@ -1483,6 +1587,104 @@ mod tests {
             informe.total,
             informe.celdas,
             informe.nunca_disparadas
+        );
+    }
+
+    /// Intenta generar y verificar una prueba; devuelve si lo consigue.
+    fn intenta(trace: TraceTable<BaseElement>, inputs: MintPendingPublicInputs) -> bool {
+        let prover = MintPendingProver::new(default_options());
+        let hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(|_| {}));
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
+        std::panic::set_hook(hook);
+        match r {
+            Ok(Ok(proof)) => {
+                let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                verify::<MintPendingAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                    proof,
+                    inputs,
+                    &min_opts,
+                )
+                .is_ok()
+            }
+            _ => false,
+        }
+    }
+
+    /// El compromiso pendiente **depende del importe**, asi que un test
+    /// con importe variable necesita su propio compromiso y sus propias
+    /// entradas publicas. Usar `inputs_for` fijo hace que la verificacion
+    /// falle por entradas descuadradas, no por lo que el test comprueba.
+    fn commitment_de(importe: u64) -> Digest {
+        native_merge(
+            native_merge(receiver_id(), salt()),
+            [
+                BaseElement::new(importe),
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+            ],
+        )
+    }
+
+    fn traza_con_suministro(
+        delta: u64,
+    ) -> (TraceTable<BaseElement>, MintPendingPublicInputs) {
+        let keys = custodian_keys();
+        let (root, paths) = build_custodian_set(&keys);
+        let trace = build_trace(
+            keys[1], 1, &paths[1], keys[3], 3, &paths[3],
+            SUPPLY_OLD,
+            delta,
+            MAX_SUPPLY,
+            delta,
+            receiver_id(),
+            salt(),
+            &pending_path(),
+        );
+        let inputs = MintPendingPublicInputs {
+            custodian_set_root: root,
+            supply_old: BaseElement::new(SUPPLY_OLD),
+            supply_new: BaseElement::new(SUPPLY_OLD + delta),
+            max_supply: BaseElement::new(MAX_SUPPLY),
+            amount: BaseElement::new(delta),
+            pending_root_old: climb_pending([BaseElement::ZERO; 4]),
+            pending_root_new: climb_pending(commitment_de(delta)),
+        };
+        (trace, inputs)
+    }
+
+    /// **EL TOPE SE IMPONE EN EL CIRCUITO, NO SOLO EN LA CAPA.**
+    ///
+    /// Hasta ahora el tope se transportaba como columna pero **nadie lo
+    /// comprobaba**: la capa lo rechazaba, el circuito no. Estaba
+    /// documentado como fallo abierto en `AUDITORIA.md`.
+    ///
+    /// Ahora un segmento de 64 filas descompone `tope − suministro_nuevo`
+    /// en **63 bits**. Si el suministro se pasa, esa resta envuelve en el
+    /// campo y da un valor de 64 bits: **no cabe**, y no hay descomposición
+    /// que satisfaga el enlace final.
+    #[test]
+    fn minting_beyond_the_cap_is_rejected() {
+        let (trace, inputs) = traza_con_suministro(MAX_SUPPLY - SUPPLY_OLD + 1);
+        assert!(
+            !intenta(trace, inputs),
+            "CRITICO: emitir por encima del tope debe ser imposible EN EL \
+             CIRCUITO, no solo en la capa"
+        );
+    }
+
+    /// **Y llegar justo al tope sí se permite.**
+    ///
+    /// Sin este test, el anterior pasaría igual si el circuito rechazara
+    /// **cualquier** emisión. El par distingue *impone el límite* de *no
+    /// deja emitir nada*.
+    #[test]
+    fn minting_exactly_up_to_the_cap_is_allowed() {
+        let (trace, inputs) = traza_con_suministro(MAX_SUPPLY - SUPPLY_OLD);
+        assert!(
+            intenta(trace, inputs),
+            "alcanzar el tope exactamente es legitimo: lo alcanza, no lo supera"
         );
     }
 }
