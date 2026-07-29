@@ -582,13 +582,51 @@ congelación y recuperación. **No está hecho.**
 
 ---
 
+### 3.11 El puente ISO no puede usar la vía sin fuga
+
+**La fuga del saldo al pagador está cerrada en la API directa y abierta en
+la interfaz por la que entraría un banco.**
+
+`iso.rs` llama a `transfer()`, la vía antigua. No por descuido: **el modelo
+en dos fases es incompatible con la semántica de ISO 20022.**
+
+| | |
+|---|---|
+| `pacs.002` con `ACSC` | *"liquidada y **firme**"* |
+| El modelo en dos fases | **No es firme hasta que el receptor reclama** |
+
+Un `send` deja el dinero en un pendiente. Si el puente respondiera `ACSC`,
+estaría afirmando algo falso: el receptor todavía no tiene el dinero, y
+podría no reclamarlo nunca.
+
+#### Las opciones, y lo que cuesta cada una
+
+| Opción | Qué implica |
+|---|---|
+| **A.** El puente responde `ACCP` (aceptada, no firme) y un segundo mensaje al reclamarse | Cambia el contrato con el banco: dos mensajes donde había uno |
+| **B.** Aceptar la fuga en la vía ISO | El banco pagador aprende el saldo del receptor |
+| **C.** Declarar que ISO no admite transferencias privadas | Honesto, pero renuncia a la integración |
+
+⚠️ **Ninguna está implementada, y la decisión no es técnica**: A cambia lo
+que el sistema promete a su contraparte.
+
+#### Por qué esto estaba mal declarado
+
+La tabla de prioridades marcaba la 0 como **✅ RESUELTO**. Era falso: existe
+una vía que no filtra, pero **la que está expuesta sí**.
+
+> Una fuga presente y alcanzable **es una fuga**, aunque exista una
+> alternativa mejor al lado.
+
+---
+
 ## 4. Orden de prioridad para mayor coherencia
 
 *Actualizado con lo hecho.*
 
 | | Prioridad | Estado |
 |---|---|---|
-| ~~**0**~~ | ~~Cerrar la fuga del saldo del receptor al pagador~~ | ✅ **RESUELTO**: `send`/`claim` en dos fases, 38 tests. La vía antigua sigue existiendo (§3.4) |
+| **0** | Cerrar la fuga del saldo del receptor al pagador | ⚙️ **Parcial**: `send`/`claim` no filtran, 38 tests. Pero **el puente ISO sigue usando `transfer()`**, y no puede migrar: ver §3.11 |
 | 1 | Reducir la legibilidad del estado por el operador | ⚙️ **En migración**: la vía nueva (`send`/`claim`) **no lee el registro**. La antigua sí, y está marcada (§3.9) |
 | 2 | Mantener y endurecer la separación clave / capa | ✅ Salvo la autoridad de umbral (§3.3) |
 | 3 | Formalizar el catálogo de rechazos | ✅ Hoja de ruta con lo no alcanzable y lo innecesario |
