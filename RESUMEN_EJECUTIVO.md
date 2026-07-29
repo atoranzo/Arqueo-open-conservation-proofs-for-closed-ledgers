@@ -50,7 +50,7 @@ let d = layer.audit(sk_alice, alice, 900_000, 1_100_000)?;  // "estoy entre X e 
 verify_audit(&d)?;                                          // el supervisor, sin la capa
 ```
 
-**59 tests**, todos en release.
+**373 tests**, todos en release.
 
 ### Qué garantiza, sin revelar identidades, saldos ni importes
 
@@ -269,7 +269,7 @@ estado.
 ## Reproducir
 
 ```bash
-cargo test -p zk-ssl --release              # la capa, 40 tests
+cargo test -p zk-ssl --release              # la capa, 172 tests
 cargo test -p stark-experiment --release    # el backend elegido
 cargo test -p zk-core --release performance -- --nocapture
 cargo test -p halo2-experiment --release real_proof -- --nocapture

@@ -127,7 +127,7 @@ reintroducir ceremonia y perder resistencia cuántica.
 
 **Sovereign Settlement Layer** — ✅
 `crates/zk-ssl`. Mantiene el estado, encadena raíces, aplica operaciones.
-40 tests.
+172 tests.
 
 **Autenticación criptográfica estructural** — ⚠️
 Hay claves de gasto e identidades derivadas criptográficamente
@@ -276,7 +276,7 @@ sería faltar al principio de transparencia.
 - Cinco paradigmas implementados y medidos.
 - Capa de liquidación con ciclo monetario completo, persistencia,
   auditoría y verificación de integridad.
-- 40 tests en la capa; cada propiedad de seguridad con test
+- 172 tests en la capa; cada propiedad de seguridad con test
   discriminante.
 
 ### Lo alcanzable
