@@ -112,6 +112,21 @@ empieza ahí.
 
 Requiere Rust estable. Sin instaladores externos ni toolchains aparte.
 
+> ⚠️ **`--release` es obligatorio, no una optimización.**
+>
+> `cargo test` sin él **falla en 56 tests**, y no porque el código esté mal:
+> winterfell comprueba en modo depuración que el grado declarado de cada
+> restricción se realice en la traza concreta que se está probando.
+>
+> Una restricción booleana como `bit × (bit − 1)` es idénticamente cero
+> cuando ese bit es constante en toda la traza — lo que ocurre, por ejemplo,
+> cuando el camino de Merkle de una cuenta tiene todos sus bits a cero.
+> Es correcto, pero el grado real es 0 y el declarado es 2.
+>
+> **No es un fallo de solidez**: la restricción sigue imponiendo lo que
+> debe para los testigos donde el bit varía. Es que la comprobación de
+> depuración asume que todo grado declarado se realiza en todo testigo.
+
 ```bash
 cargo test -p zk-ssl --release              # la capa: 163 tests
 cargo test -p stark-experiment --release    # los ocho circuitos

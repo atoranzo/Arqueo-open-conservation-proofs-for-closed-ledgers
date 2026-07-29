@@ -874,16 +874,37 @@ de doble gasto que es falsa.
 
 En una moneda digital de banco central, **65.000 pagos son unos minutos**.
 
-### Tres caminos, ninguno menor
+### La decisión, con los números
 
-| Opción | Qué cambia | Consecuencia |
-|---|---|---|
-| **Subir la profundidad a 64** | Circuito y traza | Límite del cumpleaños a ~4.000 millones |
-| **Encadenar en la posición** | La prueba de no pertenencia | Varios nullificadores por hoja |
-| **Declararlo como límite** | Solo documentación | Hay que rotar el árbol cada N pagos |
+| Opción | Límite | Traza | Coste | Qué es |
+|---|---|---|---|---|
+| **A.** Dejar 32 | 65.536 pagos | 1024 | ×1 | Lo actual |
+| **B.** Subir a 64 | ~4.300 millones | 2048 | ×2 | **Un aplazamiento** |
+| **C.** Indexar por el nullifier completo | Sin colisiones **por construcción** | 4096 | ×4 | **La corrección** |
 
-⚠️ **No está corregido.** La decisión afecta al circuito, a la capa y a las
-cifras del paper.
+**Lo que distingue B de C**: B sigue truncando —hay probabilidad de
+colisión, solo que baja—. C no trunca: dos nullifiers distintos ocupan
+posiciones distintas **siempre**, y el modo de fallo pasa a ser una colisión
+del hash, que es la suposición criptográfica que el sistema ya hace en todas
+partes.
+
+> **C mueve el problema al sitio donde debe estar. B lo aplaza.**
+
+### La decisión tomada: C es la correcta, y no está implementada
+
+⚠️ **No se implementa ahora, y el motivo se declara**: cambiar `TREE_DEPTH`
+toca `merkle.rs`, los cuatro circuitos que lo usan, las longitudes de traza
+y **todas las constantes de fila** de cada uno. Es el tipo de cambio que en
+esta misma auditoría ha producido, repetidamente, fallos silenciosos por
+desplazamiento de índices.
+
+**Hacerlo mal sería peor que no hacerlo**: un circuito que parece imponer
+algo y no lo impone es exactamente el modo de fallo que §12 y §14
+documentan.
+
+⚠️ **Lo que sí cambia desde ahora**: este documento y los otros doce dejan
+de describir el árbol de nullifiers como si tuviera 2³² de capacidad. B no
+se ofrece como solución, porque no lo es.
 
 ### Lo que se corrigió al aplicar el hallazgo
 
@@ -1341,7 +1362,52 @@ fila exactos del fallo.
 
 ---
 
-## 20. Qué NO demuestra este documento
+## 20. ⚠️ `cargo test` sin `--release` falla en 56 tests
+
+**Y no porque el código esté mal.** Merece estar aquí porque es lo primero
+que ejecutaría quien evalúe el proyecto, y la conclusión natural sería que
+está roto.
+
+### La causa
+
+Winterfell comprueba en modo depuración que **el grado declarado de cada
+restricción se realice en la traza concreta**:
+
+```
+transition constraint degrees didn't match
+expected: [..., 2046, 1023]
+actual:   [..., 1023,    0]
+```
+
+Una restricción booleana como `bit × (bit − 1)` tiene **grado real 0**
+cuando ese bit es constante en toda la traza. Ocurre, por ejemplo, cuando el
+camino de Merkle de una cuenta tiene todos sus bits a cero — el caso de la
+cuenta en la posición 0, que es la que usan casi todos los tests.
+
+### Por qué no es un fallo de solidez
+
+La restricción **sigue imponiendo lo que debe** para los testigos donde el
+bit varía. Lo que falla es la comprobación de depuración, que asume que todo
+grado declarado se realiza en todo testigo.
+
+### Lo que sí es
+
+⚠️ **Una limitación de reproducibilidad que estaba documentada en un solo
+sitio**: un `#[ignore]` dentro de `range_check.rs`. Todos los comandos de la
+documentación llevaban `--release`, pero **ninguno decía que fuera
+obligatorio**.
+
+Se descubrió porque alguien lo ejecutó sin él. Ahora está en el README,
+antes del primer bloque de comandos.
+
+⚠️ **Y significa que la suite en modo depuración no protege**: los 56 tests
+que fallan no comprueban nada mientras el modo no se corrija. Cerrarlo
+exigiría declarar grados que se realicen en todo testigo, o construir los
+tests con posiciones cuyos caminos tengan bits variados. **No está hecho.**
+
+---
+
+## 21. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

@@ -595,8 +595,8 @@ congelación y recuperación. **No está hecho.**
 | 4 | Privilegios con medida: rotación, contadores, caducidad | ✅ **Completa**: contadores, caducidad de congelaciones y rotación por uso (§3.10) |
 | 5 | Consenso distribuido | ⬜ **Abierto**. Único cierre real de censura |
 | 6 | Auditoría externa | ⬜ **Condición, no capacidad** |
-| 7 | ⚠️ **Capacidad del árbol de nullifiers** | ⬜ **Abierto**: ~65.000 pagos, no 2³². Ver `AUDITORIA.md` §13 |
-| 8 | ⚠️ **Agotamiento del árbol de pendientes** | ⚙️ **Declarado**: falla con su causa, pero el límite sigue (§13) |
+| 7 | ⚠️ **Capacidad del árbol de nullifiers** | ⬜ **Decidido, no implementado**: indexar por el nullifier completo. Subir la profundidad sería un aplazamiento (§13) |
+| 8 | **Agotamiento del árbol de pendientes** | ✅ **Cerrado**: las posiciones se reciclan al cobrarse. El límite pasa a ser de pendientes **simultáneos** |
 
 **La prioridad 0 apareció al empezar el refactor de la 1**, y la desplaza.
 Cerrar la visibilidad del operador mientras cualquier contraparte ve los

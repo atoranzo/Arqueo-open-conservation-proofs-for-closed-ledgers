@@ -96,6 +96,46 @@ pub struct ClaimReceipt {
 }
 
 impl SovereignLayer {
+    /// **Asigna una posición en el árbol de pendientes, REUTILIZANDO las
+    /// que quedaron libres al cobrarse.**
+    ///
+    /// ## Por qué existe
+    ///
+    /// Antes el contador solo subía, así que el límite no era de
+    /// transferencias **simultáneas** sino **totales desde el inicio**: a
+    /// mil pagos por segundo, 2³² posiciones se agotaban en unos cincuenta
+    /// días. Ver `AUDITORIA.md` §13.
+    ///
+    /// Y las posiciones **ya se liberaban**: `apply_claim` pone la hoja a
+    /// cero al cobrarse el pendiente. Nadie las reutilizaba.
+    ///
+    /// **No hizo falta tocar el circuito.** Éste demuestra que la posición
+    /// estaba vacía y pasa a contener el compromiso, y eso vale igual para
+    /// una posición nueva que para una reciclada.
+    ///
+    /// ## ⚠️ Coste
+    ///
+    /// Busca linealmente desde cero, así que es **O(pendientes creados)**
+    /// en el peor caso. Es aceptable para una demostración y **no lo sería
+    /// en producción**: ahí haría falta una lista de libres persistida.
+    ///
+    /// Se prefirió lo simple y comprobable a lo rápido y sutil.
+    /// Toma `&self`: **no muta nada**. Es coherente con `send`, que solo
+    /// genera la prueba; el estado lo cambia `apply_send`.
+    fn allocate_pending(&self) -> Result<u64, LayerError> {
+        for p in 0..self.next_pending {
+            if !self.pending.is_occupied(p) {
+                return Ok(p);
+            }
+        }
+        if self.next_pending >= self.pending.capacity() {
+            return Err(LayerError::PendingTreeExhausted {
+                capacity: self.pending.capacity(),
+            });
+        }
+        Ok(self.next_pending)
+    }
+
     /// **FASE 1.** El pagador debita su cuenta y deposita el compromiso.
     ///
     /// `receiver_id` es la **identidad pública** del receptor, que
@@ -154,14 +194,7 @@ impl SovereignLayer {
             });
         }
 
-        // ⚠️ El contador NUNCA reutiliza posiciones liberadas, asi que
-        // esto limita las transferencias TOTALES, no las simultaneas.
-        if self.next_pending >= self.pending.capacity() {
-            return Err(LayerError::PendingTreeExhausted {
-                capacity: self.pending.capacity(),
-            });
-        }
-        let position = self.next_pending;
+        let position = self.allocate_pending()?;
         let path = self.accounts.path_for(sender_index);
         let frozen_path = self.frozen.path_for(sender_index);
         let pending_path = self.pending.path_for(position);
@@ -268,7 +301,11 @@ impl SovereignLayer {
                 nonce: updated.nonce,
             },
         );
-        self.next_pending = pos + 1;
+        // Solo avanza si la posicion era nueva. Si se reutilizo una
+        // liberada, el contador ya estaba mas adelante.
+        if pos >= self.next_pending {
+            self.next_pending = pos + 1;
+        }
         self.commit(&[sender_index], None, Some((pos, compromiso)))?;
         Ok(())
     }
@@ -413,14 +450,7 @@ impl SovereignLayer {
             });
         }
 
-        // ⚠️ El contador NUNCA reutiliza posiciones liberadas, asi que
-        // esto limita las transferencias TOTALES, no las simultaneas.
-        if self.next_pending >= self.pending.capacity() {
-            return Err(LayerError::PendingTreeExhausted {
-                capacity: self.pending.capacity(),
-            });
-        }
-        let position = self.next_pending;
+        let position = self.allocate_pending()?;
         let pending_path = self.pending.path_for(position);
         let trace = build_mint_pending_trace(
             auth.key_a,
@@ -484,7 +514,11 @@ impl SovereignLayer {
 
         self.pending = pend;
         self.total_supply = pi.supply_new.as_int();
-        self.next_pending = pos + 1;
+        // Solo avanza si la posicion era nueva. Si se reutilizo una
+        // liberada, el contador ya estaba mas adelante.
+        if pos >= self.next_pending {
+            self.next_pending = pos + 1;
+        }
         self.commit(&[], None, Some((pos, receipt.commitment)))?;
         Ok(())
     }
