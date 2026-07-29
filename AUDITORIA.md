@@ -1945,12 +1945,31 @@ agota el cupo, reinicia, e **intenta aplicar una emisión**.
 no en `mint` —decisión documentada: una prueba generada y no aplicada no
 debe gastar cupo— y el test comprobaba `mint()`.
 
-Es la **segunda vez** en esta auditoría: el test del cobro doble atacó
-`claim()` en vez de `apply_claim()`.
+⚠️ **Ocurrió cuatro veces** en esta auditoría, sobre cuatro operaciones
+distintas:
 
-> **La capa separa generar de aplicar en todas sus operaciones.** Un test
-> que ataca la generación no comprueba nada, y esa separación está
-> documentada y tiene su propio test.
+| Test | Atacó | Debía atacar |
+|---|---|---|
+| Cobro doble tras reinicio | `claim()` | `apply_claim()` |
+| Cupo agotado tras reinicio | `mint()` | `apply_mint()` |
+| Custodios revocados | *(comprobado antes de escribir)* | `apply_mint()` |
+| Gobernanza tras reinicio | `update_custodians()` | `apply_governance()` |
+
+> **La capa separa generar de aplicar en todas sus operaciones.** Un test que
+> ataca la generación **no comprueba nada**, y esa separación está documentada
+> y tiene su propio test.
+
+⚠️ **Y el patrón correcto estaba en el mismo fichero desde el principio.**
+`a_custodian_cannot_change_the_custodian_set` genera, aplica, y comprueba que
+**aplicar** falle. Cuatro tests se escribieron mal con ese ejemplo a la vista.
+
+**La comprobación que lo habría evitado cuesta cinco líneas**: barrer el
+fichero buscando una aserción de fallo sobre una generación sin aplicar
+después. Se hizo al cuarto intento y confirmó que no quedaba ninguno más.
+
+> **Buscar el patrón malo en todo el fichero, en vez de arreglar la aparición
+> que se ve.** Es lo que `check_figures.py` hace con las cifras, y no se
+> aplicó aquí hasta tarde.
 
 **Segundo, la clasificación previa era falsa.**
 `the_account_counter_survives_restart` figuraba entre los once que «solo

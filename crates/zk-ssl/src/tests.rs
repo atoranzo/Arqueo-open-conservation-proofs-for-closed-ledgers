@@ -1332,6 +1332,60 @@ use super::*;
         // Un conjunto de gobernanza distinto no debe poder cambiar nada.
         let g = layer.update_custodians(&valid_governance_auth(), new_custodian_root());
         assert!(g.is_ok(), "el conjunto legitimo debe seguir funcionando");
+
+        // ⚠️ **Y el negativo, que es la propiedad.**
+        //
+        // Que el conjunto legitimo siga funcionando comprueba que el estado
+        // se restauro. Lo que hay que comprobar es que **el ilegitimo NO
+        // funcione**: si al reiniciar la raiz de gobernanza volviera a un
+        // valor por defecto o quedara vacia, cualquiera podria cambiar el
+        // conjunto de custodios.
+        //
+        // Es el mismo modo que el cupo de §28: un valor que se restaura y
+        // otro que no.
+        let claves = custodian_keys();
+        let (_, caminos) = build_governance_set(&governance_keys());
+        let impostor = GovernanceAuth {
+            key_a: claves[1],
+            index_a: 1,
+            path_a: caminos[1].clone(),
+            key_b: claves[3],
+            index_b: 3,
+            path_b: caminos[3].clone(),
+        };
+        // ⚠️ **El ataque va contra `apply_governance`, no contra
+        // `update_custodians`.**
+        //
+        // La autoridad se comprueba al APLICAR. Generar una prueba con
+        // credenciales falsas funciona: lo que no debe funcionar es
+        // aplicarla. Es el mismo patron que usa
+        // `a_custodian_cannot_change_the_custodian_set` en este mismo
+        // fichero, y que aqui se copio tarde.
+        let r = layer.update_custodians(&impostor, new_custodian_root());
+        let aplicado = match r {
+            Ok(recibo) => layer.apply_governance(&recibo).is_ok(),
+            Err(_) => false,
+        };
+        assert!(
+            !aplicado,
+            "CRITICO: reiniciar no debe permitir que un no-gobernador cambie \
+             el conjunto de custodios"
+        );
+        // ⚠️ **La raiz sigue siendo la ORIGINAL**, no la nueva.
+        //
+        // El positivo de arriba llama a `update_custodians` y **no aplica**:
+        // comprueba que la gobernanza legitima puede generar la prueba, no
+        // que el cambio se haya producido.
+        //
+        // Afirmar aqui `new_custodian_root()` era suponer un estado sin
+        // comprobarlo — el mismo error que este fichero documenta en otros
+        // sitios, en pequeno.
+        assert_eq!(
+            layer.custodian_set_root(),
+            custodian_root(),
+            "ningun cambio llego a aplicarse: ni el legitimo, que solo se \
+             genero, ni el del impostor, que se rechazo"
+        );
         let _ = std::fs::remove_dir_all(&path);
     }
 
@@ -2054,6 +2108,37 @@ use super::*;
                  custodio revocado recuperaria su poder reiniciando el nodo"
             );
             assert_eq!(layer.governance_change_count(), 1);
+        }
+
+        // ⚠️ **Y AHORA EL ATAQUE que el mensaje de arriba describe.**
+        //
+        // Comparar la raiz comprueba que el ESTADO se restaure. La propiedad
+        // es que **los custodios revocados no puedan actuar**, y eso exige
+        // intentarlo con sus credenciales.
+        //
+        // La autoridad se comprueba en `apply_mint`, **no en `mint`**: una
+        // prueba generada y no aplicada no consume nada. Atacar la
+        // generacion no comprobaria nada. Ver `AUDITORIA.md` §28.
+        {
+            let mut layer =
+                open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS)
+                    .expect("reabrir para el ataque");
+            let alice = layer
+                .open_account_checked(BaseElement::new(SK_ALICE))
+                .expect("abrir cuenta");
+
+            // `valid_auth()` son los custodios ANTIGUOS, ya revocados.
+            let m = layer
+                .mint(&valid_auth(), alice, 100_000)
+                .expect("genera igual: la autoridad se comprueba al aplicar");
+            let r = layer.apply_mint(&m, alice);
+            assert!(
+                r.is_err(),
+                "CRITICO: un custodio revocado NO debe recuperar su poder \
+                 reiniciando el nodo. Salio: {r:?}"
+            );
+            assert_eq!(layer.total_supply(), 0, "y no se emitio nada");
         }
         let _ = std::fs::remove_dir_all(&path);
     }
