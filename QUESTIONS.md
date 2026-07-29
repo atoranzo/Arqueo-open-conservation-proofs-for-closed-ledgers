@@ -234,11 +234,25 @@ not as a benchmark.
 
 **62 KB per transfer. One thousand transfers accumulate 59.1 MB.**
 
-That is the system's real limit, and it is written down because it is the
-first thing a technical reader will look for.
-
 Resolving it requires recursive aggregation or batched proofs, neither of
 which is implemented.
+
+⚠️ **But it is not the limit that bites first**, and an earlier version of
+this answer said it was.
+
+A nullifier's position **is derived from the nullifier itself**, and the
+circuit requires it to be free. By the birthday paradox, at around
+**65,000 payments** the probability that two land on the same position is
+already 39 %.
+
+And the affected user **cannot retry**: their nullifier is deterministic,
+so the payment is permanently blocked.
+
+**The 59.1 MB are a cost. The collision is a stop**, and it hits a specific
+user while the system is nowhere near saturation.
+
+Two further limits exist —the pending tree exhausts at 2³² total payments,
+and the custodian set caps at 128— and all four are in `AUDITORIA.md` §13.
 
 ### 22. How far is it from being usable?
 

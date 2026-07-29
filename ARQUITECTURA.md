@@ -577,6 +577,12 @@ eso se ve en el propio constructor.
 **Mil transferencias: ~620 s de prueba y 59,1 MB acumulados.** Ese es el
 argumento numérico a favor de las pruebas por lote — no una intuición.
 
+⚠️ **Pero no es el límite más restrictivo.** La posición del nullifier se
+deriva del propio nullifier, y por la paradoja del cumpleaños las
+colisiones son probables a los **~65.000 pagos**. Ese es una parada
+permanente para el afectado, no un coste acumulado. Ver `AUDITORIA.md`
+§13.
+
 ### El coste por operación no crece
 
 Cinco transferencias encadenadas: la última costó 1,18 veces la primera.

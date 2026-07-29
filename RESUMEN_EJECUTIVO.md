@@ -88,8 +88,13 @@ verify_audit(&d)?;                                          // el supervisor, si
 **Verificar cuesta el 0,5-0,8% de generar.** El arranque no genera
 claves: no hay ceremonia ni secreto que destruir.
 
-**Límite cuantificado**: mil transferencias son ~620 s de prueba y
+**Límites cuantificados**: mil transferencias son ~620 s de prueba y
 **59,1 MB acumulados**.
+
+⚠️ **Y hay uno que muerde antes**: la posición del nullifier se deriva del
+propio nullifier, así que por la paradoja del cumpleaños las colisiones son
+probables a los **~65.000 pagos**, y el afectado **no puede reintentar**.
+Es una parada, no un coste. Ver `AUDITORIA.md` §13.
 
 ⚠️ Una sola ejecución en una máquina. Sirven para comparar órdenes de
 magnitud, no como benchmark.

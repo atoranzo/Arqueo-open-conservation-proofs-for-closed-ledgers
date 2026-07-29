@@ -284,13 +284,58 @@ remains consistent: the operation is lost, integrity is not.
 XChaCha20-Poly1305. It protects against theft of the disk or of a backup;
 **not against the operator**, who sees balances in memory.
 
-### The scaling limit, quantified
+### The scaling limits, quantified
 
-**One thousand transfers accumulate 59.1 MB of proofs.** That is the
-system's real limit, and it is measured rather than estimated.
+There are **four**, and they do not offset one another. The storage one is
+not the first to bite.
 
-Resolving it requires recursive aggregation or batched proofs, neither of
-which is implemented.
+#### 1. Nullifier position collision — **the one that bites first**
+
+A nullifier's position **is derived from the nullifier itself**, and the
+circuit requires it to be free. Two distinct payments landing on the same
+position are a conflict, and that follows the birthday paradox:
+
+| Payments accumulated | Collision probability |
+|---|---|
+| 10,000 | 1.2 % |
+| **65,536** | **39 %** |
+| 200,000 | **99 %** |
+
+⚠️ **The affected user cannot retry.** Their nullifier is deterministic
+from their account state: **the payment is permanently blocked**.
+
+**It is not a cost, it is a stop.** And unlike the other three, it hits a
+specific user while the system is nowhere near saturation.
+
+#### 2. Pending-tree exhaustion
+
+The position counter **never reuses** slots freed on claim, so the limit is
+on **total transfers since inception**: 2³². At one thousand payments per
+second, **about fifty days**.
+
+It now fails stating its cause —`PendingTreeExhausted`— rather than
+producing a proof that will not verify.
+
+#### 3. Proof accumulation
+
+**One thousand transfers accumulate 59.1 MB.** This is a storage and
+bandwidth cost, not a stop: the system keeps working.
+
+#### 4. Custodian set size
+
+Strict ordering between custodians is checked with a 7-bit segment, which
+**caps the set at 128 members**. Beyond that, authorisations between distant
+indices would fail intermittently.
+
+---
+
+⚠️ **An earlier version of this document called the 59.1 MB "the system's
+real limit".** That was false: the first item above stops legitimate
+payments far earlier, and permanently.
+
+Resolving the third requires recursive aggregation or batched proofs. The
+other three require different design decisions. **None is resolved**; all
+four are documented in `AUDITORIA.md` §13.
 
 ---
 

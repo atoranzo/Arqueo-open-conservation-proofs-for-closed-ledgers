@@ -210,9 +210,25 @@ Eso es lo que hace viable todo el modelo. El trabajo pesado recae en quien
 quiere probar algo; quien lo verifica apenas gasta nada. Un supervisor
 podría comprobar millones de operaciones al día en un ordenador normal.
 
-Y el último número es el problema real: **59 megabytes por cada mil
-transferencias**. Un sistema nacional haría millones al día. Ese es el
-límite que habría que resolver antes de nada, y por eso está escrito.
+Y el último número es un problema: **59 megabytes por cada mil
+transferencias**. Un sistema nacional haría millones al día.
+
+Pero **no es el primero que aparecería**, y una versión anterior de este
+texto decía que sí.
+
+Cada pago genera una marca que impide gastarlo dos veces, y esa marca se
+guarda en una casilla que **se calcula a partir de la propia marca**, no se
+elige. Con cuatro mil millones de casillas parece imposible que dos coincidan
+— pero es el mismo efecto que hace que en un aula de treinta personas dos
+cumplan años el mismo día: **a los sesenta y cinco mil pagos, la
+coincidencia ya es probable**.
+
+Y a quien le toca **no puede volver a intentarlo**: su marca siempre es la
+misma. Su pago queda bloqueado.
+
+Los 59 megabytes son un coste que se acumula. Esto es una puerta que se
+cierra, y **le pasa a una persona concreta sin que el sistema esté
+saturado**. Los dos están escritos, y ninguno de los dos está resuelto.
 
 ---
 
