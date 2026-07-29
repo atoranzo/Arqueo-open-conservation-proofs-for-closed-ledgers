@@ -890,6 +890,39 @@ partes.
 
 > **C mueve el problema al sitio donde debe estar. B lo aplaza.**
 
+### ⚠️ Corrección de alcance: solo afecta a la vía ANTIGUA
+
+Se dijo antes que el cambio *"toca cuatro circuitos"*. **Es falso.**
+
+| Vía | ¿Usa nullificadores? | Límite del cumpleaños |
+|---|---|---|
+| `transfer()` — antigua | **Sí** | ~65.000 pagos |
+| `send`/`claim` — nueva | **No** | **Ninguno** |
+| `burn` | **No** | Ninguno |
+
+`circuit_send` lo omite **por decisión documentada**: un envío cambia el
+saldo, luego la hoja, luego la raíz, así que **un reenvío tendría la raíz
+obsoleta y se rechazaría**. El nullificador no aporta nada ahí.
+
+#### Lo que eso implica
+
+**Retirar `transfer()` en favor de `send`/`claim` elimina el límite sin
+tocar ningún circuito.** Y esa migración ya estaba decidida en §3.11 de
+`VISION.md`: encaminar el puente ISO por `ACSP`/`ACSC`.
+
+⚠️ **Dos problemas declarados por separado resultan ser el mismo.**
+
+#### ⚠️ Pero vuelve en cuanto haya consenso
+
+El propio `circuit_send` lo advierte:
+
+> *Con varios validadores concurrentes esto cambiaría: el nullificador
+> detecta un gasto repetido sin necesidad de ordenar.*
+
+El encadenamiento de raíces exige un **orden total**. Un nodo único lo da;
+un sistema distribuido, no. Así que el límite del cumpleaños **vuelve a
+importar en cuanto se aborde la prioridad 5**, que sigue abierta.
+
 ### La decisión tomada: C es la correcta, y no está implementada
 
 ⚠️ **No se implementa ahora, y el motivo se declara**: cambiar `TREE_DEPTH`

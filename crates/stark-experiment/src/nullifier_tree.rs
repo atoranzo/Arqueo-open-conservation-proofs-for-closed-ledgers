@@ -53,7 +53,7 @@ use winterfell::{
     TraceInfo, TracePolyTable, TraceTable, TransitionConstraintDegree,
 };
 
-use crate::merkle::{native_merge, Digest, MerklePath, TREE_DEPTH};
+use crate::merkle::{native_merge, Digest, MerklePath, NULLIFIER_DEPTH as TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;

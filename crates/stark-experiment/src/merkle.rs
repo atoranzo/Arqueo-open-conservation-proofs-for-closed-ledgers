@@ -53,6 +53,26 @@ use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 /// Profundidad del árbol. Ver la nota de arriba sobre por qué 32.
 pub const TREE_DEPTH: usize = 32;
+
+/// **Profundidad del árbol de NULLIFICADORES, separada a propósito.**
+///
+/// Hasta ahora compartía valor con `TREE_DEPTH`, y eso ocultaba que los dos
+/// árboles tienen exigencias distintas:
+///
+/// | Árbol | Posición | Consecuencia |
+/// |---|---|---|
+/// | Cuentas | **Se asigna** secuencialmente | 2³² cuentas, sin colisiones |
+/// | Nullificadores | **Se deriva** del propio nullificador | Paradoja del cumpleaños |
+///
+/// Con 32 bits, dos nullificadores distintos caen en la misma posición con
+/// un 39 % de probabilidad a los **65.536 pagos**, y el afectado **no puede
+/// reintentar**: su nullificador es determinista. Ver `AUDITORIA.md` §13.
+///
+/// ⚠️ **Sigue valiendo 32.** Esta constante existe para poder subirla sin
+/// tocar el árbol de cuentas, que no tiene el problema. Subirla exige
+/// recalcular las constantes de fila de cuatro circuitos y llevar sus
+/// trazas de 1024 a 4096 filas: **es el paso 2, y no está hecho.**
+pub const NULLIFIER_DEPTH: usize = 32;
 /// Filas por nivel: 7 rondas de hash + 1 fila de enlace.
 pub const CYCLE_LENGTH: usize = 8;
 /// Longitud total de la traza: 32 × 8 = 256 (potencia de dos ✓).
