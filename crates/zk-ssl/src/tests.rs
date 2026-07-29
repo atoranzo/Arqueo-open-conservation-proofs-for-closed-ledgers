@@ -2297,6 +2297,8 @@ use super::*;
     #[test]
     fn the_recovery_counter_survives_restart() {
         let path = temp_path("recoveries");
+        let recibo;
+        let cuenta;
         {
             let mut layer =
                 open_retry(
@@ -2307,6 +2309,8 @@ use super::*;
                 .expect("recuperar");
             layer.apply_recovery(&r, alice).expect("aplicar");
             assert_eq!(layer.recovery_count(), 1);
+            recibo = r;
+            cuenta = alice;
         }
         {
             let layer =
@@ -2318,6 +2322,30 @@ use super::*;
                 "CRITICO: el contador debe sobrevivir al reinicio, o las \
                  intervenciones dejarian de ser contables"
             );
+        }
+
+        // ⚠️ **Y el ataque, que el contador no cubre.**
+        //
+        // Que el contador se restaure hace las intervenciones CONTABLES. La
+        // propiedad distinta es que **una recuperacion ya aplicada no se
+        // pueda repetir**: reaplicarla volveria a poner la clave que los
+        // custodios eligieron, deshaciendo cualquier cambio posterior del
+        // titular legitimo.
+        //
+        // `replaying_a_recovery_is_rejected` lo comprueba sin reiniciar. Lo
+        // que faltaba es comprobar que **sobrevive al reinicio**.
+        {
+            let mut layer =
+                open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS)
+                .expect("reabrir para el ataque");
+            let r = layer.apply_recovery(&recibo, cuenta);
+            assert!(
+                r.is_err(),
+                "CRITICO: reiniciar no debe permitir reaplicar una \
+                 recuperacion ya aplicada. Salio: {r:?}"
+            );
+            assert_eq!(layer.recovery_count(), 1, "y sigue contando una");
         }
         let _ = std::fs::remove_dir_all(&path);
     }
@@ -2645,20 +2673,37 @@ use super::*;
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS).expect("abrir");
             alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
             bob = open_and_fund(&mut layer, SK_BOB, 50_000);
-            let s = layer
-                .transfer(BaseElement::new(SK_ALICE), alice, bob, 250_000)
-                .expect("prueba");
-            layer.apply(&s, alice, bob, 250_000).expect("aplicar");
+            two_phase_transfer(&mut layer, alice, SK_ALICE, bob, SK_BOB, 250_000, salt_de(0x1ED9E4))
+                .expect("transferencia en dos fases");
         } // el nodo se apaga
 
         {
-            let layer = open_retry(
+            let mut layer = open_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS)
                 .expect("el ledger deberia recuperarse");
             assert_eq!(layer.balance_of(alice), Some(750_000));
             assert_eq!(layer.balance_of(bob), Some(300_000));
             assert_eq!(layer.total_supply(), 1_050_000);
             assert_eq!(layer.account_count(), 2);
+            assert_eq!(layer.total_pending(), 0, "nada quedo en transito");
+
+            // ⚠️ **Y el ledger recuperado debe SEGUIR FUNCIONANDO.**
+            //
+            // Los saldos comprobados arriba dicen que el estado se leyo. No
+            // dicen que se leyera **entero**: si faltara el nonce, la raiz de
+            // congelados o el contador de cuentas, los saldos cuadrarian y la
+            // siguiente operacion fallaria.
+            //
+            // Es el modo de §28: un valor que se restaura y otro que no.
+            two_phase_transfer(&mut layer, bob, SK_BOB, alice, SK_ALICE, 1000, salt_de(0x5EC0))
+                .expect("CRITICO: el ledger recuperado debe poder operar");
+            assert_eq!(layer.balance_of(alice), Some(751_000));
+            assert_eq!(layer.balance_of(bob), Some(299_000));
+            assert_eq!(
+                layer.total_supply(),
+                1_050_000,
+                "y el suministro no cambia: una transferencia no crea dinero"
+            );
         }
 
         let _ = std::fs::remove_dir_all(&path);

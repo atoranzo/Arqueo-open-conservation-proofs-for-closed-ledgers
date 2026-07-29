@@ -1906,9 +1906,42 @@ copió:
 > lado** es el mismo error que inventar una función que no existe, y lo
 > comete quien escribe deprisa por analogía en vez de leer.
 
-⚠️ **Y quedan once tests de reinicio que siguen comparando valores.** Cada
-uno podría esconder lo mismo: un estado que se restaura y una propiedad que
-ya no se cumple. **No se han revisado.**
+### ✅ Los doce revisados
+
+| Cómo estaban | Cuántos |
+|---|---|
+| Ya intentaban la operación | 4 |
+| Se les añadió el ataque | 5 |
+| Migrados a la vía en dos fases | 1 |
+| Test nuevo escrito para verlo fallar | 1 |
+
+**Un fallo real**: el máximo del cupo de custodios no se persistía (§28).
+
+⚠️ **Y dos correcciones a la clasificación previa.**
+`the_account_counter_survives_restart` y `pending_transfers_survive_restart`
+figuraban entre los que «solo comparan valores» y **ya intentaban la
+operación**: el primero abre una cuenta y comprueba que no pise a las
+existentes; el segundo cobra el pendiente y lo aplica.
+
+> **Clasificar por lo que un test parece hacer, en vez de leerlo, produjo dos
+> falsos positivos de once.** El coste fue bajo aquí; en una lista de
+> hallazgos habría sido reportar defectos inexistentes.
+
+### Los ataques que se añadieron
+
+| Test | Lo que ahora intenta |
+|---|---|
+| Congelación | Que una cuenta congelada **gaste** |
+| Suministro | **Pasarse del tope**, y llegar justo |
+| Custodios | Que un conjunto **revocado** emita |
+| Gobernanza | Que un **no-gobernador** cambie el conjunto |
+| Recuperación | **Reaplicar** una recuperación ya aplicada |
+| Ledger general | **Operar** con el estado recuperado |
+
+Ese último merece nota. Los saldos restaurados dicen que el estado se leyó;
+no dicen que se leyera **entero**. Una operación posterior falla si falta el
+nonce, la raíz de congelados o el contador de cuentas — campos que ninguna
+aserción de saldo tocaría.
 
 ---
 
