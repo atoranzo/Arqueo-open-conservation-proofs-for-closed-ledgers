@@ -4,3 +4,10 @@ Cargo.lock
 # Ledgers de prueba
 /ledger*
 *.bin
+
+# Secretos: nunca deben llegar al repositorio
+.env
+*.key
+*.pem
+secrets
+.DS_Store

@@ -226,6 +226,29 @@ Todo lo demás que falta está enumerado en
 
 ---
 
-## Licencia
+## Autoría y licencia
 
-MIT o Apache-2.0, a elección.
+**Angel Toranzo Portela**, 2026.
+
+Licenciado bajo **MIT** o **Apache-2.0**, a elección de quien lo use.
+
+Las dos licencias exigen **conservar el aviso de copyright y el texto de la
+licencia** en cualquier copia o trabajo derivado. Apache-2.0 exige además
+respetar el fichero [`NOTICE`](./NOTICE).
+
+### Código de terceros
+
+`crates/ceremony/` **no es código original de este proyecto**: procede de
+`penumbra-sdk-proof-setup` (Penumbra Labs), bajo la misma licencia dual.
+Ver [`crates/ceremony/ATTRIBUTION.md`](./crates/ceremony/ATTRIBUTION.md).
+
+### ⚠️ Sin afiliación institucional
+
+Este proyecto es un trabajo **independiente**. **No está afiliado,
+respaldado ni encargado por el Banco Central Europeo, el Eurosistema, ni
+ninguna otra institución** pública o privada.
+
+Las referencias al euro digital son al diseño público publicado por esas
+instituciones y se citan como contexto de un problema técnico. **Ninguna
+afirmación de este repositorio debe leerse como posición de nadie más que
+su autor.**

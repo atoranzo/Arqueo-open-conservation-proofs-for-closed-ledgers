@@ -15,6 +15,7 @@ resolver = "2"
 
 [workspace.package]
 license = "MIT OR Apache-2.0"
+authors = ["Angel Toranzo Portela"]
 
 # NOTA: versiones fijadas deliberadamente. Arkworks cambia su API entre
 # versiones menores con cierta frecuencia; si `cargo build` falla por un
