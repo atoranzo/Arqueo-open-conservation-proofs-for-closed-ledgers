@@ -283,6 +283,32 @@ impl SovereignLayer {
             return Err(LayerError::StaleState);
         }
 
+        // ===== EL LIMITE REGULATORIO =====
+        //
+        // ⚠️ **Se comprueba sobre el importe PROBADO, no sobre el
+        // parametro.** `send()` ya lo comprueba al generar, pero eso solo
+        // ata a quien use esa funcion: quien construya su propia traza y su
+        // propia prueba puede llamar directamente a `apply_send`.
+        //
+        // **Sin esto, el limite regulatorio no se imponia en esta via.**
+        // `circuit_settlement` —la via antigua— lo lleva como entrada
+        // publica, y su `apply` comprobaba que la declarada fuera la del
+        // sistema. Al sustituir una via por otra **se perdio esa
+        // comprobacion**. Ver `AUDITORIA.md` §25.
+        //
+        // ⚠️ **Esto es de CAPA, no de circuito.** `circuit_send` no lleva
+        // el limite como entrada publica, asi que un tercero que solo tenga
+        // la prueba **no puede verificar que se respeto**. La via antigua
+        // si lo permitia. **Cerrarlo exige anadir el limite al circuito**, y
+        // no esta hecho.
+        let importe_probado = pi.amount.as_int();
+        if importe_probado > self.regulatory_limit {
+            return Err(LayerError::OverRegulatoryLimit {
+                limit: self.regulatory_limit,
+                requested: importe_probado,
+            });
+        }
+
         // ⚠️ **El nonce NO se incrementa.**
         //
         // `circuit_send` lo heredó de `circuit_burn`, que tampoco lo

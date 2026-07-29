@@ -1128,12 +1128,12 @@ Leer por qué funciona antes de copiarlo evitó ese fallo.
 
 ## 15. La cifra de pruebas que este proyecto publica es incompleta
 
-La documentación afirma **365 pruebas ejecutables** y da los dos comandos
+La documentación afirma **366 pruebas ejecutables** y da los dos comandos
 que las ejecutan. Es preciso sobre **qué** mide, pero se lee como el total
 del proyecto.
 
 **El espacio de trabajo tiene diez crates**, y la suite entera son unas
-**557 pruebas** y **22 minutos**.
+**558 pruebas** y **22 minutos**.
 
 ### El desglose, que dice más que el número
 
@@ -1699,7 +1699,72 @@ puede creerlo.
 
 ---
 
-## 25. Qué NO demuestra este documento
+## 25. ⚠️ Al sustituir una vía por otra se perdió el límite regulatorio
+
+**Es el hallazgo más serio de esta auditoría**, y salió de repetir con
+`crates/settlement-layer` el ejercicio de §24.
+
+### Lo que tenía la capa superada
+
+`settlement_with_foreign_limit_is_rejected` manipulaba el límite declarado
+en el recibo y comprobaba que `apply` lo rechazara:
+
+> *El límite lo impone el **sistema**, no quien transfiere.*
+
+### Lo que tenía la vía en producción
+
+| | Límite regulatorio |
+|---|---|
+| `circuit_settlement` + `apply` | ✅ Entrada pública **y** comprobación al aplicar |
+| `circuit_send` + `apply_send` | ❌ **Ninguna de las dos** |
+
+⚠️ **El límite quedaba impuesto solo en `send()`, al generar.** Eso ata a
+quien use esa función, pero **quien construya su propia traza y su propia
+prueba puede llamar directamente a `apply_send`**.
+
+Y como la vía en dos fases es ahora **la única de ISO** (§3.11 de
+`VISION.md`), el límite regulatorio del sistema no se imponía por ningún
+camino verificable.
+
+### Corregido, y hasta dónde
+
+✅ `apply_send` comprueba el importe **probado** —`pi.amount`, no el
+parámetro— contra el límite del sistema.
+✅ `a_send_declaring_more_than_the_limit_is_rejected` lo demuestra
+manipulando el importe declarado, igual que hacía el test de la capa
+superada.
+
+⚠️ **Pero sigue siendo una comprobación de CAPA, no de circuito.**
+`circuit_send` no lleva el límite como entrada pública, así que **un tercero
+que solo tenga la prueba no puede verificar que se respetó**. La vía antigua
+sí lo permitía.
+
+**Cerrarlo exige añadir el límite al circuito**, y no está hecho. Va contra
+el principio que este proyecto declara —*imponer en el circuito, no en la
+capa*— y **es una regresión frente a lo que había**.
+
+### `apply_claim` y `apply_mint_to_pending` tampoco lo comprueban
+
+Y **probablemente no deban**: al cobrar, el importe ya pasó el límite al
+enviarse; al emitir, lo que aplica es el tope de suministro, que sí se
+comprueba. **No se han tocado**, y queda dicho para que un auditor lo
+confirme en vez de suponerlo.
+
+### La cadena que llevó hasta aquí
+
+| | |
+|---|---|
+| Un tipo `PendingNotice` duplicado | Anotado con **nueve rondas de retraso** |
+| Al anotarlo | `pending.rs` resultó ser un prototipo que no se ejecuta |
+| Contrastar sus 8 tests | Faltaba `claiming_a_different_amount_is_rejected` (§24) |
+| Repetir con los 17 de `settlement-layer` | **Esta regresión** |
+
+> **Contrastar lo que un test demuestra con dónde se ejecuta** encontró más
+> que las dos herramientas automáticas de §12 y §14 juntas.
+
+---
+
+## 26. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

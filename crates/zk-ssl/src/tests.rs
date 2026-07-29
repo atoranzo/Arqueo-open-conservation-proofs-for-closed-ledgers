@@ -2670,3 +2670,55 @@ fn balances_plus_pending_always_equal_total_supply() {
         "y la invariante clasica vuelve a cumplirse"
     );
 }
+
+/// **EL LÍMITE REGULATORIO LO IMPONE EL SISTEMA, NO QUIEN ENVÍA.**
+///
+/// La capa antigua tenía `settlement_with_foreign_limit_is_rejected`:
+/// manipulaba el límite declarado en el recibo y comprobaba que `apply` lo
+/// rechazara. **La vía nueva no tenía equivalente**, y tampoco la
+/// comprobación.
+///
+/// | | Límite regulatorio |
+/// |---|---|
+/// | `circuit_settlement` + `apply` | Entrada pública **y** comprobación al aplicar |
+/// | `circuit_send` + `apply_send` | ⚠️ **Ninguna de las dos** |
+///
+/// **Al sustituir una vía por otra se perdió la comprobación**, y como la
+/// nueva es ahora la única de ISO, el límite quedaba impuesto solo al
+/// generar — evitable construyendo la propia traza.
+///
+/// Se encontró contrastando los tests de `crates/settlement-layer`, la capa
+/// superada, con la que se ejecuta. Ver `AUDITORIA.md` §25.
+///
+/// ⚠️ **Sigue siendo una comprobación de capa.** `circuit_send` no lleva el
+/// límite como entrada pública, así que un tercero que solo tenga la prueba
+/// **no puede verificar que se respetó**. La vía antigua sí lo permitía.
+#[test]
+fn a_send_declaring_more_than_the_limit_is_rejected() {
+    let mut layer = new_layer();
+    let alice = open_and_fund(&mut layer, SK_ALICE, 5_000_000);
+    let bob = open_and_fund(&mut layer, SK_BOB, 50_000);
+
+    let estado = state_of(&layer, alice);
+    let receptor = layer.public_id_of(bob).expect("cuenta");
+    let mut recibo = layer
+        .send(
+            BaseElement::new(SK_ALICE),
+            alice,
+            &estado,
+            receptor,
+            salt_de(0x11017),
+            250_000,
+        )
+        .expect("un envio dentro del limite se genera bien");
+
+    // Quien quisiera esquivar el limite declararia otro importe.
+    recibo.public_inputs.amount = BaseElement::new(u64::MAX / 2);
+
+    let r = layer.apply_send(&recibo, alice, &estado, 250_000);
+    assert!(
+        matches!(r, Err(LayerError::OverRegulatoryLimit { .. })),
+        "CRITICO: el limite lo impone el sistema sobre el importe PROBADO, \
+         no sobre el parametro que pasa quien aplica. Salio: {r:?}"
+    );
+}
