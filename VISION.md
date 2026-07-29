@@ -444,7 +444,7 @@ saldo para calcular la hoja nueva. Es **el mismo problema que la
 transferencia antigua**, y tiene la misma solución: **emitir a un pendiente
 que el titular reclama**.
 
-**Implementado** en `circuit_mint_pending`: **13 tests**. Sube el
+**Implementado** en `circuit_mint_pending`: **16 tests**. Sube el
 suministro y crea un pendiente **sin tocar ninguna cuenta**, así que los
 custodios no necesitan el saldo de nadie.
 

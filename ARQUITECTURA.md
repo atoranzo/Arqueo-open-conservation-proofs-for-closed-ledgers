@@ -766,7 +766,7 @@ Se cierra en dos pasos que dependen el uno del otro:
    reconstruye desde los bits de dirección del Merkle. Sin esto el índice
    sería un número inventado y el paso 1 no valdría nada.
 
-Verificado de forma aislada en `circuit_threshold` (9 tests) y en el
+Verificado de forma aislada en `circuit_threshold` (11 tests) y en el
 circuito de emisión completo (10 tests).
 
 #### ⚠️ Qué garantía da exactamente, y cuál no
