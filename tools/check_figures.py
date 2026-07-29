@@ -60,6 +60,18 @@ def cuentas_reales():
     return real
 
 
+# ⚠️ **Los patrones son ESTRECHOS a proposito.**
+#
+# Se probaron mas anchos —incluyendo `cargo test -p CRATE … N tests` y filas
+# de tabla— y encontraron **2 cifras rancias reales y 3 falsos positivos**.
+#
+# Los falsos vienen de que los documentos hablan de cuentas en varios
+# sentidos: tests que EXISTEN, tests que FALLAN en modo depuracion, y tests
+# de una lista comparativa. Un patron por proximidad no los distingue.
+#
+# **Tres falsos de cinco entrena a ignorar la herramienta**, que es peor que
+# una cobertura corta declarada. Las cifras que no se atribuyen se listan al
+# final para que quien lea sepa exactamente que queda sin comprobar.
 PATRONES = [
     (r"(\d+) tests? en `?([a-z_-]+)`?", "num-primero"),
     (r"`([a-z_]+)`[^.\n]{0,25}?(\d+) tests", "mod-primero"),

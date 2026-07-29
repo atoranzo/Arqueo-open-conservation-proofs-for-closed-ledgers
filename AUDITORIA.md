@@ -186,8 +186,8 @@ saldo, aunque repartido y no concentrado en el operador.
 | Pieza | Estado |
 |---|---|
 | Diseño (`pending.rs`) | ✅ 8 tests |
-| `circuit_send` — debita y crea el pendiente | ✅ 12 tests |
-| `circuit_claim` — demuestra que es suyo y cobra | ✅ 13 tests |
+| `circuit_send` — debita y crea el pendiente | ✅ 16 tests |
+| `circuit_claim` — demuestra que es suyo y cobra | ✅ 15 tests |
 | Capa: `send`, `claim`, persistencia | ✅ 5 tests de integración |
 
 **La garantía está en el tipo, no en un test:**
@@ -231,8 +231,8 @@ La protección contra reenvío de estos viene del encadenamiento de raíces.
 
 ---|---|
 | Diseño demostrado (`pending.rs`) | ✅ 8 tests |
-| **`circuit_send`** — el pagador debita y crea el pendiente | ✅ **12 tests** |
-| **`circuit_claim`** — el receptor demuestra que es suyo y cobra | ✅ **13 tests** |
+| **`circuit_send`** — el pagador debita y crea el pendiente | ✅ **16 tests** |
+| **`circuit_claim`** — el receptor demuestra que es suyo y cobra | ✅ **15 tests** |
 | La capa: dos fases, pendientes, reclamación | ⬜ 3-5 rondas |
 
 **La propiedad va en el tipo, no solo en un test.** La firma de
