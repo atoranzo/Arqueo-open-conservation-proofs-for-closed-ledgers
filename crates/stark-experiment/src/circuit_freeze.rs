@@ -1026,4 +1026,48 @@ mod tests {
         );
         assert!(v.is_err());
     }
+
+    /// **PRUEBA POR MUTACIÓN: ninguna restricción está vacía.**
+    ///
+    /// Si ninguna perturbación de una celda hace que una restricción se
+    /// vuelva no nula, esa restricción no impone nada — y ningún test
+    /// normal lo detecta. Ver `AUDITORIA.md` §12.
+    ///
+    /// Se prueban **todas** las filas: con muestreo, una restricción activa
+    /// en una sola fila aparece como vacía sin serlo.
+    ///
+    /// ⚠️ Un resultado limpio **no significa que el circuito sea correcto**:
+    /// significa que no tiene este fallo concreto.
+    #[test]
+    fn no_constraint_is_vacuous() {
+        use crate::mutation::{buscar_vacias, rows_of};
+
+        let path = frozen_path();
+        let trace = build_trace(&valid_auth(), false, true, &path, COUNT_OLD, 1);
+        let esperada_old = frozen_climb(frozen_leaf(false), &path);
+        let esperada_new = frozen_climb(frozen_leaf(true), &path);
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+
+        let air = FreezeAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            FreezePublicInputs {
+                custodian_set_root: build_custodian_set(&custodian_keys()).0,
+                frozen_root_old: esperada_old,
+                frozen_root_new: esperada_new,
+                freeze_count_old: BaseElement::new(COUNT_OLD),
+                freeze_count_new: BaseElement::new(COUNT_OLD + 1),
+            },
+            default_options(),
+        );
+        let informe = buscar_vacias(&air, &rows, 1);
+
+        assert!(
+            informe.nunca_disparadas.is_empty(),
+            "restricciones que NINGUNA perturbacion activa (de {} totales, \
+             {} celdas probadas): {:?}",
+            informe.total,
+            informe.celdas,
+            informe.nunca_disparadas
+        );
+    }
 }

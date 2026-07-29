@@ -777,9 +777,13 @@ tope transportado sin comprobar— y ninguno lo detectaba nada.
 
 ### Cobertura y resultado
 
-Aplicada a **7 de los 12 circuitos de producción**: `burn`, `claim`,
-`mint`, `mint_pending`, `recovery`, `send`, `settlement`. Los siete,
-**limpios**: toda restricción declarada reacciona a alguna perturbación.
+Aplicada a **los 12 circuitos de producción**. Los doce, **limpios**: toda
+restricción declarada reacciona a alguna perturbación del testigo.
+
+```
+cargo test -p stark-experiment --release no_constraint_is_vacuous
+→ 12 passed; 0 failed  (5,7 s)
+```
 
 `mint_pending` es el más significativo: es donde se declararon **siete
 columnas que la traza nunca rellenaba**. Se corrigieron en su momento, y
@@ -792,9 +796,13 @@ restricciones vacías, no que sean correctos. Y la herramienta está validada
 —detecta el fallo cuando se introduce a propósito—, así que el resultado
 limpio significa algo.
 
-⚠️ **Faltan 5**: `audit`, `freeze`, `governance`, `threshold`,
-`nullifier_tree`. Cada uno exige construir su testigo y su
-`Air`: **1-2 rondas cada uno, no hecho**.
+### Y sigue sin haber encontrado ningún fallo
+
+Doce circuitos, ninguna restricción vacía. La herramienta está validada
+—señala exactamente los índices cuando se introduce el fallo a propósito—
+así que el resultado significa algo. Pero **el valor demostrado es
+preventivo, no correctivo**: protege contra que alguien introduzca una
+restricción vacía al modificar un circuito, no ha corregido ninguna.
 
 ⚠️ **Y el fallo conocido de `mint_pending` no es de este tipo**: el tope de
 emisión se transporta sin comprobarse. Que la prueba por mutación pase
@@ -808,18 +816,18 @@ cree. **Un resultado limpio no significa que el circuito sea correcto.**
 
 ## 13. La cifra de pruebas que este proyecto publica es incompleta
 
-La documentación afirma **348 pruebas ejecutables** y da los dos comandos
+La documentación afirma **353 pruebas ejecutables** y da los dos comandos
 que las ejecutan. Es preciso sobre **qué** mide, pero se lee como el total
 del proyecto.
 
 **El espacio de trabajo tiene diez crates**, y la suite entera son unas
-**539 pruebas** y **22 minutos**.
+**544 pruebas** y **22 minutos**.
 
 ### El desglose, que dice más que el número
 
 | Qué es | Crates | Pruebas |
 |---|---|---|
-| **Capa de producción** | `zk-ssl`, `stark-experiment` | **348** |
+| **Capa de producción** | `zk-ssl`, `stark-experiment` | **353** |
 | Estudio comparativo | `zk-core`, `plonk-experiment`, `halo2-experiment`, `iso-bridge`, `nova-experiment` | 140 |
 | ⚠️ **Código de terceros vendorizado** | `ceremony` | **34** |
 | ⚠️ **Capa anterior, superada** | `settlement-layer` | **17** |
