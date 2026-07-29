@@ -52,6 +52,7 @@ use winterfell::math::fields::f64::BaseElement;
 use stark_experiment::merkle::Digest;
 
 use crate::commitment::ClientState;
+use crate::two_phase::PendingNotice;
 use crate::{AccountIndex, LayerError, Settlement, SovereignLayer};
 
 /// Subconjunto de un mensaje **pacs.008** (`FIToFICustomerCreditTransfer`),
@@ -408,12 +409,12 @@ pub fn settle_pacs008_two_phase(
     sender_key: BaseElement,
     sender_state: &ClientState,
     salt: Digest,
-) -> Pacs002 {
+) -> (Pacs002, Option<PendingNotice>) {
     let (debtor, creditor) = match registry.validate(msg) {
         Ok(pair) => pair,
         Err(e) => {
             let (code, text) = e.iso_reason();
-            return rejected(msg, code, text);
+            return (rejected(msg, code, text), None);
         }
     };
 
@@ -421,7 +422,7 @@ pub fn settle_pacs008_two_phase(
         Some(id) => id,
         None => {
             let (code, text) = iso_reason(&LayerError::AccountNotFound(creditor));
-            return rejected(msg, code, text);
+            return (rejected(msg, code, text), None);
         }
     };
 
@@ -436,7 +437,7 @@ pub fn settle_pacs008_two_phase(
         Ok(r) => r,
         Err(e) => {
             let (code, text) = iso_reason(&e);
-            return rejected(msg, code, text);
+            return (rejected(msg, code, text), None);
         }
     };
 
@@ -445,14 +446,120 @@ pub fn settle_pacs008_two_phase(
 
     if let Err(e) = layer.apply_send(&receipt, debtor, sender_state, msg.amount_minor) {
         let (code, text) = iso_reason(&e);
-        return rejected(msg, code, text);
+        return (rejected(msg, code, text), None);
     }
 
-    Pacs002 {
+    let respuesta = Pacs002 {
         original_msg_id: msg.msg_id.clone(),
         original_end_to_end_id: msg.end_to_end_id.clone(),
         // **ACSP, no ACSC**: el dinero salio, el receptor aun no lo tiene.
         status: TxStatus::InProcess,
+        reason_code: None,
+        reason_text: None,
+        proof: Some(receipt.proof),
+        root_old: Some(root_old),
+        root_new: Some(root_new),
+    };
+
+    // ⚠️ **El aviso va FUERA del mensaje, y por eso va fuera del tipo.**
+    //
+    // El receptor necesita la posicion, el aleatorio y el importe para
+    // cobrar. **ISO 20022 no tiene campo donde llevarlos**, y meterlos en
+    // el de informacion de remesa seria forzarlo.
+    //
+    // Devolverlo aparte lo hace explicito: quien use este puente **tiene
+    // que resolver como llega ese aviso al receptor**, y el tipo se lo
+    // recuerda.
+    (respuesta, Some(receipt.notice))
+}
+
+/// **Segunda fase: el receptor cobra, y el pago pasa a firme.**
+///
+/// Devuelve el segundo `pacs.002` con `ACSC` —*AcceptedSettlementCompleted*—
+/// que cierra el ciclo abierto por `settle_pacs008_two_phase` con `ACSP`.
+///
+/// ## El ciclo completo
+///
+/// ```text
+/// pacs.008  →  settle_pacs008_two_phase  →  pacs.002 (ACSP)
+///                el dinero sale, queda pendiente
+///
+///           →  claim_pacs008             →  pacs.002 (ACSC)
+///                el receptor cobra, el pago es firme
+/// ```
+///
+/// Es el ciclo `RCVD → ACCP → ACSP → ACSC` del estándar, con las dos
+/// últimas etapas materializadas. **No inventa nada**: ISO 20022 ya
+/// distingue aceptación de firmeza.
+///
+/// ## Por qué el receptor tiene que actuar
+///
+/// Es el precio de no filtrar. Para abonar en el acto habría que actualizar
+/// la hoja del receptor, y eso **exige conocer su saldo** — que es la fuga
+/// que esta vía evita.
+///
+/// ## Los parámetros que el mensaje no lleva
+///
+/// `receiver_state` viene del banco del acreedor, igual que `sender_state`
+/// venía del banco del deudor. `notice` lo hace llegar el pagador junto con
+/// el aviso de pago: contiene la posición del pendiente, el aleatorio y el
+/// importe.
+///
+/// ⚠️ **Cómo viaja ese aviso queda fuera de este puente.** ISO 20022 no
+/// tiene campo para él, y usar el de información de remesa sería forzarlo.
+/// Es una pieza real que falta.
+pub fn claim_pacs008(
+    layer: &mut SovereignLayer,
+    previous: &Pacs002,
+    receiver_index: AccountIndex,
+    receiver_key: BaseElement,
+    receiver_state: &ClientState,
+    notice: &PendingNotice,
+) -> Pacs002 {
+    let ids = (
+        previous.original_msg_id.clone(),
+        previous.original_end_to_end_id.clone(),
+    );
+
+    let receipt = match layer.claim(receiver_key, receiver_index, receiver_state, notice) {
+        Ok(r) => r,
+        Err(e) => {
+            let (code, text) = iso_reason(&e);
+            return Pacs002 {
+                original_msg_id: ids.0,
+                original_end_to_end_id: ids.1,
+                status: TxStatus::Rejected,
+                reason_code: Some(code),
+                reason_text: Some(text),
+                proof: None,
+                root_old: None,
+                root_new: None,
+            };
+        }
+    };
+
+    let root_old = receipt.public_inputs.root_old;
+    let root_new = receipt.public_inputs.root_new;
+
+    if let Err(e) = layer.apply_claim(&receipt, receiver_index, receiver_state, notice) {
+        let (code, text) = iso_reason(&e);
+        return Pacs002 {
+            original_msg_id: ids.0,
+            original_end_to_end_id: ids.1,
+            status: TxStatus::Rejected,
+            reason_code: Some(code),
+            reason_text: Some(text),
+            proof: None,
+            root_old: None,
+            root_new: None,
+        };
+    }
+
+    Pacs002 {
+        original_msg_id: ids.0,
+        original_end_to_end_id: ids.1,
+        // **ACSC**: ahora si. El receptor tiene el dinero.
+        status: TxStatus::Settled,
         reason_code: None,
         reason_text: None,
         proof: Some(receipt.proof),
@@ -671,7 +778,7 @@ mod tests {
         let estado = state_of(&layer, alice);
         let msg = message(250_000, "EUR");
 
-        let r = settle_pacs008_two_phase(
+        let (r, _aviso) = settle_pacs008_two_phase(
             &mut layer,
             &registry,
             &msg,
@@ -703,7 +810,7 @@ mod tests {
         let antes = layer.balance_of(bob).expect("cuenta");
         let estado = state_of(&layer, alice);
 
-        let r = settle_pacs008_two_phase(
+        let (r, _aviso) = settle_pacs008_two_phase(
             &mut layer,
             &registry,
             &message(250_000, "EUR"),
@@ -758,5 +865,109 @@ mod tests {
             BaseElement::new(0x152),
             BaseElement::new(0x153),
         ]
+    }
+
+    /// **EL CICLO ISO COMPLETO, SIN FILTRAR NINGÚN SALDO.**
+    ///
+    /// ```text
+    /// pacs.008  →  ACSP   el dinero sale, queda pendiente
+    ///           →  ACSC   el receptor cobra, el pago es firme
+    /// ```
+    ///
+    /// Y en ninguna de las dos fases interviene el saldo del otro: el
+    /// pagador aporta el suyo, el receptor el suyo.
+    #[test]
+    fn the_full_two_phase_iso_cycle() {
+        let (mut layer, registry, alice, bob) = setup();
+        let bob_antes = layer.balance_of(bob).expect("cuenta");
+
+        // --- Fase 1: el pagador envia ---
+        let estado_alice = state_of(&layer, alice);
+        let (acsp, aviso) = settle_pacs008_two_phase(
+            &mut layer,
+            &registry,
+            &message(250_000, "EUR"),
+            BaseElement::new(SK_ALICE),
+            &estado_alice,
+            salt_iso(),
+        );
+        assert_eq!(acsp.status.code(), "ACSP");
+        let aviso = aviso.expect("el aviso para el receptor");
+
+        assert_eq!(
+            layer.balance_of(bob),
+            Some(bob_antes),
+            "tras ACSP el receptor NO tiene el dinero todavia"
+        );
+
+        // --- Fase 2: el receptor cobra ---
+        let estado_bob = state_of(&layer, bob);
+        let acsc = claim_pacs008(
+            &mut layer,
+            &acsp,
+            bob,
+            BaseElement::new(SK_BOB),
+            &estado_bob,
+            &aviso,
+        );
+
+        assert_eq!(acsc.status.code(), "ACSC", "ahora si es firme");
+        assert!(acsc.proof.is_some(), "con su prueba adjunta");
+        assert_eq!(
+            acsc.original_end_to_end_id, acsp.original_end_to_end_id,
+            "los dos informes se refieren al mismo pago original"
+        );
+
+        assert_eq!(
+            layer.balance_of(bob),
+            Some(bob_antes + 250_000),
+            "y ahora si tiene el dinero"
+        );
+        assert_eq!(
+            layer.balance_of(alice),
+            Some(1_000_000 - 250_000),
+            "el pagador no recupera nada"
+        );
+    }
+
+    /// **NADIE MÁS PUEDE COBRAR ESE PENDIENTE.**
+    ///
+    /// Aunque tuviera el aviso completo —posición, aleatorio e importe—,
+    /// sin la clave del receptor la prueba no se genera.
+    #[test]
+    fn a_third_party_cannot_claim_the_pending() {
+        let (mut layer, registry, alice, bob) = setup();
+        let estado_alice = state_of(&layer, alice);
+        let (acsp, aviso) = settle_pacs008_two_phase(
+            &mut layer,
+            &registry,
+            &message(250_000, "EUR"),
+            BaseElement::new(SK_ALICE),
+            &estado_alice,
+            salt_iso(),
+        );
+        let aviso = aviso.expect("aviso");
+
+        // Alice intenta cobrar el pendiente que ella misma envio.
+        let estado_alice2 = state_of(&layer, alice);
+        let r = claim_pacs008(
+            &mut layer,
+            &acsp,
+            alice,
+            BaseElement::new(SK_ALICE),
+            &estado_alice2,
+            &aviso,
+        );
+
+        assert_eq!(
+            r.status,
+            TxStatus::Rejected,
+            "el compromiso se formo con la identidad de BOB: nadie mas lo cobra"
+        );
+        assert_eq!(
+            layer.balance_of(bob),
+            Some(50_000),
+            "y el pendiente sigue sin cobrarse"
+        );
     }
 }

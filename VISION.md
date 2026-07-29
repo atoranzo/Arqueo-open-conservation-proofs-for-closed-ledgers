@@ -653,8 +653,37 @@ existente cambió: las dos vías quedan a la vista para comparar.
 ⚠️ **`settle_pacs008` clásico sigue existiendo**, y sigue filtrando. Es la
 vía por la que un banco entraría hoy si no elige la otra.
 
-⚠️ **Y falta la fase de cobro**: cuando el receptor reclame, hace falta un
-segundo `pacs.002` con `ACSC`. **No está implementado.**
+✅ **Y la fase de cobro también**: `claim_pacs008` devuelve el segundo
+`pacs.002` con `ACSC`. El ciclo `RCVD → ACCP → ACSP → ACSC` del estándar
+queda materializado en sus dos últimas etapas.
+
+| Test | Qué demuestra |
+|---|---|
+| `the_full_two_phase_iso_cycle` | `ACSP` → el receptor no tiene nada → cobra → `ACSC` |
+| `a_third_party_cannot_claim_the_pending` | Con el aviso completo en la mano, sin la clave no se cobra |
+
+#### ⚠️ La pieza que ISO 20022 no transporta
+
+`settle_pacs008_two_phase` devuelve `(Pacs002, Option<PendingNotice>)`. El
+aviso —posición, aleatorio, importe— **va fuera del mensaje**, porque el
+estándar no tiene campo para él y usar el de información de remesa sería
+forzarlo.
+
+**Sale en el tipo a propósito**: quien use este puente tiene que resolver
+cómo llega ese aviso al receptor, y la firma se lo recuerda.
+
+⚠️ Se descubrió **escribiendo el test del ciclo completo**: la primera
+versión devolvía solo el `Pacs002`, y con eso **el receptor no podía
+cobrar**. La vía era imposible de usar y nada lo señalaba.
+
+#### Lo que ahora se desbloquea
+
+Retirar `settle_pacs008` clásico ya no está bloqueado: **existe un
+sustituto completo y probado**. Y retirarlo cierra a la vez la prioridad 0
+y el límite del cumpleaños (§13), porque `send`/`claim` no usan
+nullificadores.
+
+⚠️ **No está hecho**: son 11 tests que cambian de semántica.
 
 **El obstáculo aparente y por qué no lo es.** `send()` necesita
 `sender_state` —el saldo y el nonce **declarados por el titular**— y el
@@ -723,7 +752,7 @@ una vía que no filtra, pero **la que está expuesta sí**.
 
 | | Prioridad | Estado |
 |---|---|---|
-| **0** | Cerrar la fuga del saldo del receptor al pagador | ⚙️ **Vía sin fuga disponible también en ISO**: `settle_pacs008_two_phase`, con 3 tests y su contraste. ⚠️ Falta la fase de cobro y **la vía antigua sigue existiendo** (§3.11) |
+| **0** | Cerrar la fuga del saldo del receptor al pagador | ⚙️ **Ciclo ISO completo sin fuga**: `ACSP` → `ACSC`, 5 tests. ⚠️ **La vía antigua sigue existiendo** y es la que un banco usaría si no elige la otra (§3.11) |
 | 1 | Reducir la legibilidad del estado por el operador | ⚙️ **En migración**: la vía nueva (`send`/`claim`) **no lee el registro**. La antigua sí, y está marcada (§3.9) |
 | 2 | Mantener y endurecer la separación clave / capa | ✅ Salvo la autoridad de umbral (§3.3) |
 | 3 | Formalizar el catálogo de rechazos | ✅ Hoja de ruta con lo no alcanzable y lo innecesario |
