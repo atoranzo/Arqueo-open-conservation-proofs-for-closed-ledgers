@@ -781,7 +781,7 @@ una vía que no filtra, pero **la que está expuesta sí**.
 | 1 | Reducir la legibilidad del estado por el operador | ⚙️ **En migración**: la vía nueva (`send`/`claim`) **no lee el registro**. La antigua sí, y está marcada (§3.9) |
 | 2 | Mantener y endurecer la separación clave / capa | ✅ Salvo la autoridad de umbral (§3.3) |
 | 3 | Formalizar el catálogo de rechazos | ✅ Hoja de ruta con lo no alcanzable y lo innecesario |
-| 4 | Privilegios con medida: rotación, contadores, caducidad | ✅ **Completa**: contadores, caducidad de congelaciones y rotación por uso (§3.10) |
+| 4 | Privilegios con medida: rotación, contadores, caducidad | ⚙️ **Parcial**: contadores públicos y rotación por uso (§3.10). ⚠️ **La caducidad de congelaciones NO existe**: `freeze.rs` dice «dura hasta que alguien la levante» |
 | 5 | Consenso distribuido | ⬜ **Abierto**. Único cierre real de censura |
 | 6 | Auditoría externa | ⬜ **Condición, no capacidad** |
 | 7 | ⚠️ **Capacidad del árbol de nullifiers** | ⬜ **Solo afecta a `transfer()`**: `send`/`claim` no usan nullifiers. Retirar la vía antigua lo cierra sin tocar circuitos — pero **vuelve con la prioridad 5** (§13) |
