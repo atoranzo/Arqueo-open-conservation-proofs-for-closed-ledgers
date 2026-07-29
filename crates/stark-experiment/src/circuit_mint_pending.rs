@@ -1443,4 +1443,46 @@ mod tests {
             climb_pending(nativo)[0]
         );
     }
+
+    /// **PRUEBA POR MUTACIÓN: ninguna restricción está vacía.**
+    ///
+    /// Si ninguna perturbación de una celda hace que una restricción se
+    /// vuelva no nula, esa restricción no impone nada — y ningún test
+    /// normal lo detecta. Ver `AUDITORIA.md` §12.
+    ///
+    /// **Este circuito es donde más importa.** Al construirlo se declararon
+    /// **siete columnas** con sus restricciones escritas que la traza nunca
+    /// rellenaba: valían cero y sus restricciones se cumplían trivialmente.
+    /// Se corrigieron, pero nada comprobaba que no quedara ninguna.
+    ///
+    /// Se prueban **todas** las filas: con muestreo, una restricción activa
+    /// en una sola fila aparece como vacía sin serlo.
+    ///
+    /// ⚠️ Un resultado limpio **no significa que el circuito sea correcto**:
+    /// significa que no tiene este fallo concreto. El tope de emisión, por
+    /// ejemplo, se transporta sin comprobarse — y eso esta prueba no lo ve.
+    #[test]
+    fn no_constraint_is_vacuous() {
+        use crate::mutation::{buscar_vacias, rows_of};
+
+        let trace = traza_valida();
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+        let root = build_custodian_set(&custodian_keys()).0;
+
+        let air = MintPendingAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            inputs_for(root),
+            default_options(),
+        );
+        let informe = buscar_vacias(&air, &rows, 1);
+
+        assert!(
+            informe.nunca_disparadas.is_empty(),
+            "restricciones que NINGUNA perturbacion activa (de {} totales, \
+             {} celdas probadas): {:?}",
+            informe.total,
+            informe.celdas,
+            informe.nunca_disparadas
+        );
+    }
 }

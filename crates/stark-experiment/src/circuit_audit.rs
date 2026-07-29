@@ -637,6 +637,7 @@ impl Prover for AuditProver {
 
 #[cfg(test)]
 mod tests {
+    use crate::circuit_settlement::{native_climb, native_leaf};
     use super::*;
     use crate::merkle::native_merge;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
