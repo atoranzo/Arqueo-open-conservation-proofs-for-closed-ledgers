@@ -32,7 +32,7 @@ verify_audit(&d)?;                                      // el supervisor, SIN la
 Con el **ciclo monetario completo**: el dinero puede crearse, moverse y
 retirarse, y la invariante global se mantiene en cada paso.
 
-`crates/zk-ssl` — **156 tests**. Material para auditoría externa en
+`crates/zk-ssl` — **163 tests**. Material para auditoría externa en
 [`AUDITORIA.md`](./AUDITORIA.md), todos en release. El backend STARK
 añade 5 circuitos verificados por separado.
 
