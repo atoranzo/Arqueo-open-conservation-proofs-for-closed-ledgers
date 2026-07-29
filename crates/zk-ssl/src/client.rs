@@ -42,6 +42,10 @@
 //! descentralización.
 
 use super::*;
+// `two_phase` es un modulo publico, pero sus tipos no estan en la raiz del
+// crate: `use super::*` no los alcanza.
+use crate::pending::pending_commitment;
+use crate::two_phase::{PendingNotice, SendReceipt};
 
 /// Vista pública de una cuenta. **No incluye ninguna clave.**
 ///
@@ -136,6 +140,65 @@ impl SovereignLayer {
     /// cliente con su clave y lo envía porque la capa necesita su
     /// posición para dar el camino de no-pertenencia — y porque es
     /// público de todos modos.
+    /// **Materiales para un envío, sin la clave y sin el saldo del receptor.**
+    ///
+    /// El equivalente de [`Self::transfer_materials`] para la vía en dos
+    /// fases, con dos diferencias que son el diseño entero:
+    ///
+    /// | | Un paso | Envío |
+    /// |---|---|---|
+    /// | Del receptor entrega | **Su saldo y su camino** | **Solo su identificador** |
+    /// | Reserva | Un nullificador | Una posición de pendiente |
+    ///
+    /// Todo lo que devuelve es público o derivable, así que la capa puede
+    /// entregarlo sin conocer la clave de gasto y el cliente puede probar
+    /// con [`prove_send`] sin volver a hablar con ella.
+    pub fn send_materials(
+        &self,
+        sender_index: AccountIndex,
+        receiver_id: Digest,
+        amount: u64,
+        salt: Digest,
+    ) -> Result<SendMaterials, LayerError> {
+        let sender = self
+            .account_view(sender_index)
+            .ok_or(LayerError::AccountNotFound(sender_index))?;
+
+        if self.is_frozen(sender_index) {
+            return Err(LayerError::AccountFrozen(sender_index));
+        }
+        if amount > sender.balance {
+            return Err(LayerError::InsufficientBalance {
+                available: sender.balance,
+                requested: amount,
+            });
+        }
+        // ⚠️ El limite se comprueba aqui **y** lo prueba el circuito: la capa
+        // aporta el suyo y `circuit_send` demuestra `importe <= limite`. Ver
+        // `AUDITORIA.md` §25.
+        if amount > self.regulatory_limit {
+            return Err(LayerError::OverRegulatoryLimit {
+                limit: self.regulatory_limit,
+                requested: amount,
+            });
+        }
+
+        let pending_position = self.allocate_pending()?;
+
+        Ok(SendMaterials {
+            sender_path: self.accounts.path_for(sender_index),
+            frozen_path: self.frozen.path_for(sender_index),
+            pending_path: self.pending.path_for(pending_position),
+            pending_position,
+            sender,
+            receiver_id,
+            regulatory_limit: self.regulatory_limit,
+            total_supply: self.total_supply,
+            amount,
+            salt,
+        })
+    }
+
     pub fn transfer_materials(
         &self,
         sender_index: AccountIndex,
@@ -223,6 +286,94 @@ impl SovereignLayer {
 /// Requiere la clave, y por eso solo el titular puede calcularlo — que es
 /// lo que impide a un observador precomputar los nullifiers de cuentas
 /// ajenas y vigilar cuándo gastan.
+/// **Materiales para un ENVÍO en dos fases.**
+///
+/// La diferencia con [`TransferMaterials`] es la que da nombre al diseño:
+/// **aquí no hay `receiver: AccountView`**.
+///
+/// La vía de un paso actualiza las dos hojas en una transición, así que quien
+/// prueba necesita el saldo del receptor para calcular su hoja nueva.
+/// `TransferMaterials` se lo entrega, y por eso **pagar a alguien revela
+/// cuánto tiene**.
+///
+/// Un envío toca **una sola hoja**, la del pagador. Del receptor basta su
+/// identificador público, que es lo que va en el compromiso. Ver
+/// `AUDITORIA.md` §29 y el hallazgo 9 del preprint comparativo.
+#[derive(Clone, Debug)]
+pub struct SendMaterials {
+    pub sender: AccountView,
+    pub sender_path: MerklePath,
+    pub frozen_path: MerklePath,
+    pub pending_path: MerklePath,
+    /// Posición libre del árbol de pendientes que la capa ha reservado.
+    pub pending_position: u64,
+    /// **Solo el identificador.** No el saldo, no la posición en el árbol.
+    pub receiver_id: Digest,
+    pub regulatory_limit: u64,
+    pub total_supply: u64,
+    pub amount: u64,
+    pub salt: Digest,
+}
+
+/// **Genera la prueba de un envío SIN tocar la capa.**
+///
+/// Es el equivalente de [`prove_transfer`] para la vía en dos fases, y existe
+/// por la misma razón: demostrar que **la clave de gasto no necesita salir de
+/// la máquina del cliente**.
+///
+/// `SovereignLayer::send` hace lo mismo, pero es un método de la capa que
+/// recibe la clave. Esa forma no impide la separación —el cliente puede
+/// ejecutar la capa en su máquina— pero **tampoco la enseña**. Ver
+/// `AUDITORIA.md` §33.
+pub fn prove_send(
+    materials: &SendMaterials,
+    spend_key: BaseElement,
+    options: ProofOptions,
+) -> Result<SendReceipt, LayerError> {
+    // La clave debe corresponder a la cuenta. El circuito lo impone
+    // igualmente, pero en release no se valida al generar: sin esta
+    // comprobacion se gastaria el computo de una prueba invalida.
+    if derive_public_id(spend_key) != materials.sender.public_id {
+        return Err(LayerError::NotTheAccountHolder);
+    }
+
+    let trace = build_send_trace(
+        spend_key,
+        materials.sender.public_id,
+        materials.sender.balance,
+        materials.sender.nonce,
+        &materials.sender_path,
+        &materials.frozen_path,
+        materials.amount,
+        materials.regulatory_limit,
+        materials.total_supply,
+        0, // un envio no cambia el suministro
+        materials.receiver_id,
+        materials.salt,
+        &materials.pending_path,
+    );
+    let prover = SendProver::new(options);
+    let public_inputs = prover.get_pub_inputs(&trace);
+    let proof = prover
+        .prove(trace)
+        .map_err(|e| LayerError::ProofFailed(format!("{e:?}")))?;
+
+    Ok(SendReceipt {
+        proof: proof.to_bytes(),
+        public_inputs,
+        commitment: pending_commitment(
+            materials.receiver_id,
+            materials.salt,
+            materials.amount,
+        ),
+        notice: PendingNotice {
+            position: materials.pending_position,
+            salt: materials.salt,
+            amount: materials.amount,
+        },
+    })
+}
+
 pub fn compute_nullifier(spend_key: BaseElement, nonce: BaseElement) -> Digest {
     stark_experiment::circuit_settlement::native_nullifier(spend_key, nonce)
 }
@@ -373,5 +524,93 @@ mod tests {
         let real = client::compute_nullifier(BaseElement::new(SK_ALICE), nonce);
         let guess = client::compute_nullifier(BaseElement::new(0x1337), nonce);
         assert_ne!(real, guess);
+    }
+
+    /// **UN PAGO COMPLETO SIN DAR LA CLAVE A LA CAPA.**
+    ///
+    /// El equivalente de `a_transfer_without_giving_the_key_to_the_layer`
+    /// para la vía en dos fases, y la razón de que `send_materials` y
+    /// `prove_send` existan.
+    ///
+    /// `SovereignLayer::send` hace lo mismo en una llamada, pero **recibe la
+    /// clave como argumento de un método de la capa**. Eso no impide la
+    /// separación —el cliente puede ejecutar la capa en su máquina— pero
+    /// tampoco la enseña, y los tres preprints citan esta propiedad como el
+    /// argumento institucional central. Ver `AUDITORIA.md` §33.
+    #[test]
+    fn a_send_without_giving_the_key_to_the_layer() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let key = BaseElement::new(SK_ALICE);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+        let salt = salt_de(0xC11E);
+
+        // ===== 1. LA CAPA ENTREGA MATERIALES. NO VE LA CLAVE. =====
+        let materials = layer
+            .send_materials(alice, receptor, 250_000, salt)
+            .expect("materiales");
+
+        // ⚠️ **Y NO ENTREGA EL SALDO DEL RECEPTOR.**
+        //
+        // `TransferMaterials` lleva `receiver: AccountView` porque la vía de
+        // un paso actualiza las dos hojas y necesita el saldo del otro.
+        // `SendMaterials` lleva `receiver_id: Digest` y nada más: **la fuga
+        // hacia la contraparte está cerrada en el tipo**, no en un comentario.
+        assert_eq!(materials.receiver_id, receptor);
+
+        // ===== 2. EL CLIENTE PRUEBA EN LOCAL, CON SU CLAVE. =====
+        let recibo =
+            client::prove_send(&materials, key, proof_options()).expect("prueba local");
+
+        // ===== 3. LA CAPA VERIFICA Y APLICA. =====
+        let estado = state_of(&layer, alice);
+        layer
+            .apply_send(&recibo, alice, &estado, 250_000)
+            .expect("aplicar");
+
+        assert_eq!(layer.balance_of(alice), Some(750_000), "el dinero salio");
+        assert_eq!(layer.total_pending(), 250_000, "y esta en un pendiente");
+
+        // ===== 4. Y EL RECEPTOR LO COBRA. =====
+        let estado_bob = state_of(&layer, bob);
+        let cobro = layer
+            .claim(BaseElement::new(SK_BOB), bob, &estado_bob, &recibo.notice)
+            .expect("cobrar");
+        layer
+            .apply_claim(&cobro, bob, &estado_bob, &recibo.notice)
+            .expect("aplicar cobro");
+
+        assert_eq!(layer.balance_of(bob), Some(250_000));
+        assert_eq!(layer.total_pending(), 0);
+
+        // ⚠️ **El cobro sigue siendo un método de la capa.**
+        //
+        // No hay `claim_materials` ni `prove_claim`: el cobro es una
+        // operación que la vía de un paso no tenía, así que su lado cliente
+        // hay que **diseñarlo, no traducirlo**. Mientras tanto, la mitad de
+        // un pago demuestra la separación y la otra mitad no.
+    }
+
+    /// **La clave equivocada no genera prueba, y falla ANTES de gastar cómputo.**
+    #[test]
+    fn prove_send_rejects_a_key_that_is_not_the_holders() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+
+        let materials = layer
+            .send_materials(alice, receptor, 1000, salt_de(0xBAD1))
+            .expect("materiales");
+
+        let r = client::prove_send(&materials, BaseElement::new(0x1337), proof_options());
+        assert!(
+            matches!(r, Err(LayerError::NotTheAccountHolder)),
+            "el circuito lo impondria igual, pero en release no se valida al \
+             generar: sin esta comprobacion se gastaria el computo de una \
+             prueba invalida. Salio: {:?}",
+            r.map(|_| "recibo")
+        );
     }
 }

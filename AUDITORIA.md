@@ -1128,12 +1128,12 @@ Leer por qué funciona antes de copiarlo evitó ese fallo.
 
 ## 15. La cifra de pruebas que este proyecto publica es incompleta
 
-La documentación afirma **369 pruebas ejecutables** y da los dos comandos
+La documentación afirma **371 pruebas ejecutables** y da los dos comandos
 que las ejecutan. Es preciso sobre **qué** mide, pero se lee como el total
 del proyecto.
 
 **El espacio de trabajo tiene diez crates**, y la suite entera son unas
-**561 pruebas** y **22 minutos**.
+**563 pruebas** y **22 minutos**.
 
 ### El desglose, que dice más que el número
 
@@ -2272,17 +2272,44 @@ pendiente.
 `TransferMaterials` ya entrega. La separación no es imposible: **no está
 hecha**.
 
-### Lo que exigiría
+### ⚙️ Medio cerrada
 
-| Pieza | Equivalente existente |
+| Pieza | Estado |
 |---|---|
-| `send_materials(...)` | `transfer_materials` |
-| `prove_send(materials, clave)` | `prove_transfer` |
-| `claim_materials` / `prove_claim` | **Sin equivalente**: el cobro no existía |
+| `send_materials(...)` | ✅ Hecha |
+| `prove_send(materials, clave)` | ✅ Hecha — **función libre, no toca la capa** |
+| `claim_materials` / `prove_claim` | ❌ **Sin hacer** |
+
+Lo demuestra `a_send_without_giving_the_key_to_the_layer`: la capa entrega
+materiales sin ver la clave, el cliente prueba en local, la capa verifica y
+aplica.
+
+⚠️ **Y el tipo cierra además la fuga hacia la contraparte.**
+`TransferMaterials` lleva `receiver: AccountView` —el saldo del receptor—
+porque la vía de un paso actualiza las dos hojas. `SendMaterials` lleva
+`receiver_id: Digest` y nada más: **no hay campo por donde el saldo pudiera
+entrar**.
 
 ⚠️ **La tercera fila no tiene precedente.** El cobro es una operación del
 receptor que la vía de un paso no tenía, así que su lado cliente hay que
-diseñarlo, no traducirlo.
+**diseñarlo, no traducirlo**.
+
+> **Mientras tanto, la mitad de un pago demuestra la separación y la otra
+> mitad no.**
+
+### Cuatro rondas de compilación para una función
+
+| Error | Causa |
+|---|---|
+| `salt_de` invisible desde `metrics.rs` | Ayudante privado de `mod tests` |
+| `SendReceipt` invisible desde `client.rs` | Módulo público, tipos no reexportados |
+| `AccountRecord` ≠ `AccountView` | **`account_view` ya hacía la conversión, al lado** |
+| Campo `commitment` quitado | Se leyó en un `grep` y **se atribuyó a la estructura equivocada** |
+
+Los cuatro son de la misma familia: **suponer en vez de mirar**. El tercero
+repite exactamente el fallo de §27 —el mecanismo correcto estaba en el mismo
+fichero y no se copió— y el cuarto es peor: **un `grep` sin contexto atribuyó
+un campo a la estructura de al lado.**
 
 ---
 

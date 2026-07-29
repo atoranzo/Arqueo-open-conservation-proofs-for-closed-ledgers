@@ -197,7 +197,7 @@ difference is that it can now be argued with data.
 
 ## 5. The result about method
 
-The system was complete: 369 tests, ten circuits, a persistence layer, an
+The system was complete: 371 tests, ten circuits, a persistence layer, an
 audit-preparation document listing where the author had least confidence.
 
 Then nine questions were applied to it. **Not to any function — to the

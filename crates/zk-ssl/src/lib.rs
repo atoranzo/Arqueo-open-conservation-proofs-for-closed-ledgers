@@ -134,6 +134,12 @@ use stark_experiment::circuit_settlement::{
     build_trace as build_settlement_trace, derive_public_id, native_leaf, ReceiverWitness,
     SenderWitness, SettlementAir, SettlementProver, SettlementPublicInputs,
 };
+// El circuito de la via en dos fases. Estaba importado solo dentro de
+// `two_phase.rs`, asi que `client.rs` no podia generar un envio sin pasar
+// por la capa — que es justo lo que `AUDITORIA.md` §33 senala.
+use stark_experiment::circuit_send::{
+    build_trace as build_send_trace, SendProver,
+};
 use stark_experiment::merkle::{Digest, MerklePath};
 use stark_experiment::nullifier_tree::nullifier_position;
 

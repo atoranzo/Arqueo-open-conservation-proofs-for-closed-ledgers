@@ -157,7 +157,9 @@ impl SovereignLayer {
     /// Se prefirió lo simple y comprobable a lo rápido y sutil.
     /// Toma `&self`: **no muta nada**. Es coherente con `send`, que solo
     /// genera la prueba; el estado lo cambia `apply_send`.
-    fn allocate_pending(&self) -> Result<u64, LayerError> {
+    // `pub(crate)` y no privado: `client.rs` la necesita para entregar
+    // materiales de envio sin que el cliente hable dos veces con la capa.
+    pub(crate) fn allocate_pending(&self) -> Result<u64, LayerError> {
         for p in 0..self.next_pending {
             if !self.pending.is_occupied(p) {
                 return Ok(p);
