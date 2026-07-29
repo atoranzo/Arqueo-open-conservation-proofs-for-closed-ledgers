@@ -1025,7 +1025,7 @@ comprueba que transferir no altera el suministro.
 | Gastar sin ser el titular | Autoridad de gasto |
 | Reenviar una operación válida | Encadenamiento de raíces en la capa |
 
-16 tests en `settlement-layer`, 9 en `circuit_settlement`, 8 en
+17 tests en `settlement-layer`, 9 en `circuit_settlement`, 8 en
 `circuit_mint`.
 
 ### Lo que este circuito NO resuelve
@@ -1036,12 +1036,27 @@ comprueba que transferir no altera el suministro.
 - **La clave del emisor es única.** Un banco central real usaría umbral
   (m-de-n), no una sola clave.
 
-## La capa: `crates/settlement-layer`
+## La capa ANTERIOR: `crates/settlement-layer`
+
+> ⚠️ **Este crate está superado por `crates/zk-ssl`, y ningún otro depende
+> de él.** `zk-ssl` lo cita como su predecesor:
+>
+> ```rust
+> //! Equivalente del `settlement-layer::sparse_tree`, adaptado al backend
+> ```
+>
+> Se conserva porque documenta cómo se llegó al diseño actual —incluidos
+> **dos errores propios** que se cuentan más abajo— pero **no es la capa
+> del sistema**. La capa es `zk-ssl`: 23 módulos y 163 tests, frente a los
+> 2 módulos y 17 de este.
+>
+> Una versión anterior de este documento lo titulaba *"La capa"* sin más,
+> lo que **contradecía a `AUDITORIA.md` §15** en el mismo repositorio.
 
 Los demás crates implementan **circuitos**: demuestran que *una*
 transferencia es válida. Este mantiene el **estado** y aplica operaciones
-una tras otra. Es lo que convierte primitivas criptográficas en una capa
-de liquidación.
+una tras otra. Fue lo que convirtió primitivas criptográficas en una capa
+de liquidación **por primera vez** en este proyecto.
 
 ```rust
 let mut layer = SettlementLayer::new(seed)?;
@@ -1075,7 +1090,10 @@ hashes. La profundidad va en el tipo (20 para cuentas, 32 para
 nullifiers) porque mezclarlas ya provocó un fallo, y así lo impide el
 compilador.
 
-12 tests. Ejecutar: `cargo test -p settlement-layer --release`
+**17 tests.** Ejecutar: `cargo test -p settlement-layer --release`
+
+⚠️ Una versión anterior de este documento decía **12**, y otro punto decía
+**16**. Ninguna de las dos era cierta.
 
 ### Dos errores propios que los tests destaparon
 
