@@ -74,24 +74,57 @@ def main():
         docs += ["doc/" + f for f in os.listdir("doc") if f.endswith(".md")]
 
     malas = []
+    comprobadas = 0
+    huerfanas = []
     for doc in sorted(docs):
         with open(doc) as fh:
             c = fh.read()
+        atribuidas = set()
         for patron, orden in PATRONES:
             for m in re.finditer(patron, c):
                 a, b = m.group(1), m.group(2)
                 mod, n = (b, int(a)) if orden == "num-primero" else (a, int(b))
-                if mod in real and n != real[mod]:
+                if mod not in real:
+                    continue
+                comprobadas += 1
+                atribuidas.add(m.span())
+                if n != real[mod]:
                     malas.append((doc, mod, n, real[mod]))
+
+        # ⚠️ **Cifras que hablan de tests y NO se han podido atribuir.**
+        #
+        # Los patrones exigen el nombre del crate cerca del número. Una cifra
+        # separada por un comentario largo —`cargo test -p zk-ssl  # 172
+        # tests`— no se atribuye, y antes la herramienta la ignoraba **en
+        # silencio**: decía «todo correcto» sin haberla mirado.
+        for m in re.finditer(r"(\d+) tests?\b", c):
+            if any(a <= m.start() < b for a, b in atribuidas):
+                continue
+            if int(m.group(1)) < 10:      # «2 tests», «1 test»: prosa, no cifras
+                continue
+            linea = c[:m.start()].count("\n") + 1
+            huerfanas.append((doc, linea, m.group(0)))
 
     for doc, mod, dice, hay in sorted(set(malas)):
         print(f"  !! {doc}: {mod} dice {dice}, hay {hay}")
 
     if malas:
-        print(f"\n{len(set(malas))} cifras que la documentación afirma y el código desmiente.")
+        print(f"\n{len(set(malas))} cifras que la documentación afirma y el "
+              f"código desmiente.")
         return 1
 
-    print(f"{len(docs)} documentos: todas las cifras de tests coinciden con el código.")
+    print(f"{len(docs)} documentos, {comprobadas} cifras atribuidas a un crate: "
+          f"todas coinciden con el código.")
+
+    if huerfanas:
+        print(f"\n⚠️  {len(huerfanas)} cifras hablan de tests y NO se han podido "
+              f"atribuir a ningún crate.")
+        print("   No se comprueban. Acerca el nombre del crate al número, o "
+              "acepta que quedan sin verificar:")
+        for doc, linea, txt in huerfanas[:12]:
+            print(f"     {doc}:{linea}  «{txt}»")
+        if len(huerfanas) > 12:
+            print(f"     … y {len(huerfanas) - 12} más")
     return 0
 
 

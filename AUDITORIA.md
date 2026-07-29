@@ -1418,6 +1418,59 @@ fila exactos del fallo.
 **Reparto de los 65**: 48 en `tests`, 9 en `iso`, 4 en `snapshot`, 3 en
 `metrics`, 1 en `client`.
 
+### ⚠️ `check_figures.py` comprobaba tres cifras, no todas
+
+Toda esta auditoría se ha apoyado en esa herramienta para cada actualización
+de cifras, y su salida —*«22 documentos: todas las cifras coinciden con el
+código»*— **significaba otra cosa**.
+
+Comprobaba **tres**:
+
+| Cifra atribuida | Valor |
+|---|---|
+| `settlement-layer` | 17 |
+| `circuit_threshold` | 11 |
+| `circuit_mint_pending` | 16 |
+
+⚠️ **Ninguna es una cuenta principal.** Las de `zk-ssl` y `stark-experiment`
+—las que cambian en cada ronda— **nunca se comprobaron**.
+
+### Por qué
+
+Los patrones exigen el nombre del crate a menos de 25 caracteres del número.
+Una línea como:
+
+```
+cargo test -p zk-ssl --release        # la capa: 172 tests
+```
+
+tiene cuarenta de separación. La cifra no se atribuye, y la herramienta
+**la ignoraba en silencio**.
+
+### Cómo se encontró
+
+Aplicando a `check_figures` el mismo criterio que se acababa de aplicar a
+`check_tests`: **probarla en el sentido negativo**. Se puso `999 tests` en el
+`README` y siguió diciendo que todo coincidía.
+
+> **Es la segunda herramienta de auditoría rota que aparece hoy**, después
+> del detector de restricciones vacías trabajando sobre una traza inválida
+> (§20). Las dos por lo mismo: **nadie las había probado contra un caso que
+> debieran rechazar**.
+
+### Corregido: declara su cobertura
+
+Ahora informa de **cuántas cifras ha atribuido** y lista las que hablan de
+tests y no ha podido comprobar —34 en el momento de escribir esto—.
+
+> **Una herramienta que no declara su cobertura no dice nada.** «Todo
+> correcto» sobre tres cifras de treinta y siete es indistinguible de «todo
+> correcto» sobre ninguna.
+
+⚠️ **No se han reescrito los documentos** para que el crate quede pegado al
+número. La herramienta ya no engaña sobre lo que mira; ampliar su alcance es
+una decisión aparte, con su coste en frases reescritas.
+
 ### ✅ `tools/check_tests.py`
 
 Las dos formas en que un test puede no proteger han aparecido **una vez cada
