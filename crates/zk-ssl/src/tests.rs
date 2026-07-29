@@ -71,37 +71,63 @@ use super::*;
 
     /// **EL TEST CLAVE DE LA CAPA**: ciclo completo de transferencia.
     #[test]
-    fn full_transfer_cycle_updates_state() {
+    fn full_two_phase_cycle_updates_state() {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 50_000);
 
         let root_before = layer.state_root();
-        let null_root_before = layer.nullifier_root();
 
-        let settlement = layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 250_000)
-            .expect("una transferencia valida deberia generar prueba");
-        println!(
-            "Tamano de la prueba de LIQUIDACION: {} bytes",
-            settlement.proof.len()
-        );
+        // ===== FASE 1: EL PAGADOR ENVIA =====
+        let estado_alice = state_of(&layer, alice);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+        let recibo = layer
+            .send(
+                BaseElement::new(SK_ALICE),
+                alice,
+                &estado_alice,
+                receptor,
+                salt_de(0xC1C10),
+                250_000,
+            )
+            .expect("un envio valido deberia generar prueba");
+        println!("Tamano de la prueba de ENVIO: {} bytes", recibo.proof.len());
 
-        // `transfer` NO toca el estado.
+        // `send` NO toca el estado: solo genera la prueba.
         assert_eq!(layer.state_root(), root_before);
 
         layer
-            .apply(&settlement, alice, bob, 250_000)
-            .expect("una liquidacion valida deberia aplicarse");
+            .apply_send(&recibo, alice, &estado_alice, 250_000)
+            .expect("un envio valido deberia aplicarse");
+
+        assert_eq!(layer.balance_of(alice), Some(750_000), "el dinero salio");
+        assert_eq!(
+            layer.balance_of(bob),
+            Some(50_000),
+            "pero el receptor aun no lo tiene: esta en un pendiente"
+        );
+        assert_eq!(layer.total_pending(), 250_000, "y esta contabilizado");
+
+        // ===== FASE 2: EL RECEPTOR COBRA =====
+        let estado_bob = state_of(&layer, bob);
+        let cobro = layer
+            .claim(BaseElement::new(SK_BOB), bob, &estado_bob, &recibo.notice)
+            .expect("el receptor legitimo deberia poder cobrar");
+        layer
+            .apply_claim(&cobro, bob, &estado_bob, &recibo.notice)
+            .expect("el cobro deberia aplicarse");
 
         assert_eq!(layer.balance_of(alice), Some(750_000));
-        assert_eq!(layer.balance_of(bob), Some(300_000));
+        assert_eq!(layer.balance_of(bob), Some(300_000), "ahora si");
+        assert_eq!(layer.total_pending(), 0, "nada en transito");
         assert_ne!(layer.state_root(), root_before);
-        assert_ne!(
-            layer.nullifier_root(),
-            null_root_before,
-            "el nullifier deberia haberse insertado"
-        );
+
+        // ⚠️ **Ya no se comprueba la raiz de nullificadores.**
+        //
+        // `circuit_send` y `circuit_claim` **no los usan**: un reenvio
+        // tendria la raiz de cuentas obsoleta y se rechazaria. Es una
+        // decision documentada del circuito, no un olvido. Ver
+        // `AUDITORIA.md` §13.
     }
 
     /// **LA INVARIANTE GLOBAL**: la suma de saldos equivale siempre al
@@ -504,20 +530,24 @@ use super::*;
 
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
-        let s = layer
-            .transfer(BaseElement::new(SK_ALICE), alice, bob, 250_000)
-            .expect("transferencia");
-        layer.apply(&s, alice, bob, 250_000).expect("aplicar");
+        two_phase_transfer(&mut layer, alice, SK_ALICE, bob, SK_BOB, 250_000, salt_de(0x106))
+            .expect("transferencia en dos fases");
         let b = layer.burn(BaseElement::new(SK_BOB), bob, &state_of(&layer, bob), 1000).expect("destruir");
         let estado_bob = state_of(&layer, bob);
         layer.apply_burn(&b, bob, &estado_bob).expect("aplicar");
 
         // Dos aperturas + una emision (bob se abre con cero y no emite)
-        // + una transferencia + una destruccion.
+        // + **un envio + un cobro** + una destruccion.
         //
         // Que `open_account` cuente es lo correcto: mueve la raiz de
         // estado, asi que tiene que dejar rastro.
-        assert_eq!(layer.transition_log().len(), 5);
+        //
+        // **SEIS, no cinco.** Una transferencia en dos fases deja **dos**
+        // entradas donde `transfer` dejaba una. No es contabilidad: el
+        // registro refleja que **son dos operaciones distintas, en momentos
+        // distintos y con actores distintos**. Quien audite la cadena ve
+        // cuando salio el dinero y cuando se cobro.
+        assert_eq!(layer.transition_log().len(), 6);
         layer
             .transition_log()
             .verify(genesis)

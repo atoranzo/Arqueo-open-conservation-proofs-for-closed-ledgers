@@ -75,6 +75,44 @@ pub const MAX_ACCOUNTS: u64 = 1_000;
 ///
 /// En los tests se obtiene de la capa por comodidad. **En un despliegue lo
 /// lleva el cliente**: la capa por compromisos no lo tendría.
+/// **Transferencia completa por la vía en dos fases: enviar y cobrar.**
+///
+/// Existe para los tests donde la transferencia es **montaje**, no lo que
+/// se comprueba. Sin él, cada uno repetiría catorce líneas de ciclo y el
+/// ruido taparía lo que el test dice comprobar.
+///
+/// ⚠️ **No usar donde la transferencia SEA el objeto del test.** Ahí hay que
+/// ver las dos fases por separado: que el receptor no tiene el dinero hasta
+/// cobrarlo es una propiedad, no un detalle.
+pub fn two_phase_transfer(
+    layer: &mut SovereignLayer,
+    from: AccountIndex,
+    from_key: u64,
+    to: AccountIndex,
+    to_key: u64,
+    amount: u64,
+    salt: Digest,
+) -> Result<(), crate::LayerError> {
+    let estado_from = state_of(layer, from);
+    let receptor = layer
+        .public_id_of(to)
+        .ok_or(crate::LayerError::AccountNotFound(to))?;
+    let recibo = layer.send(
+        BaseElement::new(from_key),
+        from,
+        &estado_from,
+        receptor,
+        salt,
+        amount,
+    )?;
+    layer.apply_send(&recibo, from, &estado_from, amount)?;
+
+    let estado_to = state_of(layer, to);
+    let cobro = layer.claim(BaseElement::new(to_key), to, &estado_to, &recibo.notice)?;
+    layer.apply_claim(&cobro, to, &estado_to, &recibo.notice)?;
+    Ok(())
+}
+
 pub fn state_of(layer: &SovereignLayer, index: AccountIndex) -> crate::commitment::ClientState {
     crate::commitment::ClientState {
         public_id: layer.public_id_of(index).expect("cuenta"),

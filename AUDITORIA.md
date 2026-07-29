@@ -1806,7 +1806,62 @@ confirme en vez de suponerlo.
 
 ---
 
-## 26. Qué NO demuestra este documento
+## 26. ⚠️ La vía en dos fases no dejaba rastro en el registro
+
+**`two_phase.rs` era el único módulo que no registraba nada.**
+
+| Módulo | ¿Registra? |
+|---|---|
+| `accounts`, `burn`, `freeze`, `governance`, `mint`, `recovery`, `transfer` | ✅ |
+| **`two_phase`** — envío, cobro, emisión a pendiente | ❌ |
+
+El registro de transiciones es **el mecanismo de auditoría del sistema**: una
+cadena donde cada entrada parte de donde acabó la anterior, y `verify`
+comprueba que no falte ninguna.
+
+⚠️ **Y como la vía en dos fases es ahora la única de ISO (§25), los pagos de
+un banco no quedaban registrados.**
+
+### Cómo se descubrió
+
+Migrando `the_log_chains_every_operation` de `transfer` a `send`/`claim`.
+
+Se predijo que el recuento **subiría de 5 a 6** —una entrada más, porque son
+dos operaciones— y **el test midió 4**.
+
+> **Si la predicción hubiera acertado por casualidad, el hueco seguiría ahí.**
+> Lo delató la diferencia, no el acierto.
+
+### Corregido
+
+Tres tipos de operación nuevos —`Send`, `Claim`, `MintToPending`— y su
+registro en las tres funciones de aplicación, **antes de persistir**, igual
+que las demás: si el proceso muere en medio, el lote atómico incluye o
+excluye las dos cosas.
+
+⚠️ **Con un coste declarado en `MintToPending`.** El registro encadena la
+raíz de **cuentas**, y una emisión a un pendiente no la toca: su entrada
+declara la misma raíz en los dos lados. Quien lea el registro ve que hubo
+una emisión, pero **la raíz no le dice cuál**. Encadenar también la de
+pendientes exigiría cambiar el formato del registro, y **no está hecho**.
+
+### El patrón, por segunda vez
+
+Es el mismo que §25: **al sustituir una vía por otra se perdió algo que la
+primera hacía**, y nadie lo notó porque los tests de la vía nueva se
+escribieron mirando la vía nueva.
+
+| | Lo que se perdió |
+|---|---|
+| §25 | El límite regulatorio impuesto en el circuito |
+| §26 | El rastro en el registro de auditoría |
+
+> **Sustituir no es solo escribir lo nuevo: es contrastar lo que hacía lo
+> viejo.**
+
+---
+
+## 27. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

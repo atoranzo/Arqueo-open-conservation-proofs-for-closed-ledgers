@@ -71,6 +71,20 @@ pub enum OpKind {
     Recovery,
     Governance,
     Freeze,
+    /// **Envío en dos fases: el dinero sale y queda en un pendiente.**
+    ///
+    /// ⚠️ Estas tres faltaban. `two_phase.rs` era **el único módulo que no
+    /// registraba nada**, así que los envíos, los cobros y las emisiones a
+    /// pendiente **no dejaban rastro en el registro de transiciones** — que
+    /// es el mecanismo de auditoría del sistema.
+    ///
+    /// Se descubrió al migrar `the_log_chains_every_operation`: el recuento
+    /// bajó de 5 a 4 en vez de subir a 6. Ver `AUDITORIA.md` §26.
+    Send,
+    /// Cobro de un pendiente: el receptor lo hace suyo.
+    Claim,
+    /// Emisión de custodios directamente a un pendiente.
+    MintToPending,
 }
 
 impl OpKind {
@@ -90,6 +104,9 @@ impl OpKind {
             5 => OpKind::Recovery,
             6 => OpKind::Governance,
             7 => OpKind::Freeze,
+            8 => OpKind::Send,
+            9 => OpKind::Claim,
+            10 => OpKind::MintToPending,
             _ => return None,
         })
     }
@@ -103,6 +120,9 @@ impl OpKind {
             OpKind::Recovery => 5,
             OpKind::Governance => 6,
             OpKind::Freeze => 7,
+            OpKind::Send => 8,
+            OpKind::Claim => 9,
+            OpKind::MintToPending => 10,
         }
     }
 }

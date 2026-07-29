@@ -40,6 +40,7 @@
 //! derive el aleatorio; **aquí no está resuelto**.
 
 use super::*;
+use crate::log::OpKind;
 use crate::commitment::ClientState;
 use stark_experiment::circuit_mint_pending::{
     build_trace as build_mint_pending_trace, MintPendingProver,
@@ -382,6 +383,13 @@ impl SovereignLayer {
         }
         // El dinero sale del saldo y pasa a estar en transito.
         self.pending_amounts.insert(pos, amount);
+        // ⚠️ **Deja constancia ANTES de persistir**, igual que las demas
+        // operaciones: si el proceso muere en medio, el lote atomico
+        // incluye o excluye las dos cosas.
+        //
+        // `two_phase.rs` era **el unico modulo que no registraba nada**.
+        self.log
+            .append(OpKind::Send, pi.root_old, pi.root_new, &receipt.proof);
         self.commit(&[sender_index], None, Some((pos, compromiso)))?;
         Ok(())
     }
@@ -493,6 +501,13 @@ impl SovereignLayer {
                 nonce: updated.nonce,
             },
         );
+        // ⚠️ **Deja constancia ANTES de persistir**, igual que las demas
+        // operaciones: si el proceso muere en medio, el lote atomico
+        // incluye o excluye las dos cosas.
+        //
+        // `two_phase.rs` era **el unico modulo que no registraba nada**.
+        self.log
+            .append(OpKind::Claim, pi.root_old, pi.root_new, &receipt.proof);
         self.commit(&[receiver_index], None, Some((notice.position, vacia)))?;
         Ok(())
     }
@@ -599,6 +614,32 @@ impl SovereignLayer {
         }
         // Dinero recien emitido, en transito hasta que se cobre.
         self.pending_amounts.insert(pos, receipt.notice.amount);
+        // ⚠️ **Deja constancia ANTES de persistir**, igual que las demas
+        // operaciones: si el proceso muere en medio, el lote atomico
+        // incluye o excluye las dos cosas.
+        //
+        // `two_phase.rs` era **el unico modulo que no registraba nada**.
+        self.log
+            // ⚠️ **La misma raiz en los dos lados, y es correcto.**
+            //
+            // El registro encadena la raiz de CUENTAS, y una emision a un
+            // pendiente **no la toca**: el dinero aparece en el arbol de
+            // pendientes, no en ninguna cuenta.
+            //
+            // Declarar aqui las raices de pendientes romperia la cadena:
+            // `verify` comprueba que cada entrada parta de donde acabo la
+            // anterior, y mezclar arboles la haria fallar.
+            //
+            // ⚠️ **Coste declarado**: quien lea el registro ve que hubo una
+            // emision a pendiente, pero **la raiz no le dice cual**. Para
+            // eso haria falta encadenar tambien la de pendientes, y esta
+            // capa no lo hace.
+            .append(
+                OpKind::MintToPending,
+                self.accounts.root(),
+                self.accounts.root(),
+                &receipt.proof,
+            );
         self.commit(&[], None, Some((pos, receipt.commitment)))?;
         Ok(())
     }
