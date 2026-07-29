@@ -42,15 +42,15 @@
 use super::*;
 use crate::commitment::ClientState;
 use stark_experiment::circuit_mint_pending::{
-    build_trace as build_mint_pending_trace, MintPendingAir, MintPendingProver,
+    build_trace as build_mint_pending_trace, MintPendingProver,
     MintPendingPublicInputs,
 };
 use crate::pending::pending_commitment;
 use stark_experiment::circuit_claim::{
-    build_trace as build_claim_trace, ClaimAir, ClaimProver, ClaimPublicInputs,
+    build_trace as build_claim_trace, ClaimProver, ClaimPublicInputs,
 };
 use stark_experiment::circuit_send::{
-    build_trace as build_send_trace, SendAir, SendProver, SendPublicInputs,
+    build_trace as build_send_trace, SendProver, SendPublicInputs,
 };
 
 /// Lo que el pagador envía al receptor **por otro canal**.

@@ -59,7 +59,7 @@
 
 use winterfell::crypto::hashers::{Blake3_256, Rp64_256};
 use winterfell::crypto::{DefaultRandomCoin, MerkleTree};
-use winterfell::math::{fields::f64::BaseElement, FieldElement, StarkField, ToElements};
+use winterfell::math::{fields::f64::BaseElement, FieldElement, ToElements};
 use winterfell::matrix::ColMatrix;
 use winterfell::{
     Air, AirContext, Assertion, AuxRandElements, CompositionPoly, CompositionPolyTrace,
@@ -68,7 +68,7 @@ use winterfell::{
     TraceInfo, TracePolyTable, TraceTable, TransitionConstraintDegree,
 };
 
-use crate::circuit_settlement::{derive_public_id, native_climb, native_leaf, SPEND_KEY_DOMAIN};
+use crate::circuit_settlement::{derive_public_id, SPEND_KEY_DOMAIN};
 use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
