@@ -1540,7 +1540,7 @@ La cifra es cierta. **La operación, no.**
 | Operación | Razón | Qué hace al «aplicar» |
 |---|---|---|
 | **Auditoría** | **0,58 %** | `verify_audit` — **solo verifica** |
-| Transferencia | **17,5 %** | `apply` — verifica, muta el árbol y **escribe a disco** |
+| Transferencia | **28,5 %** | `apply` — verifica, muta el árbol y **escribe a disco** |
 | Emisión | 58,2 % | idem |
 | Destrucción | 63,9 % | idem |
 
@@ -1548,7 +1548,7 @@ El 0,58 % es el de la **auditoría**, y es el correcto para el argumento que
 sostiene: un supervisor comprueba **sin tocar el estado**. La conclusión
 —*«podría comprobar millones de operaciones al día»*— se mantiene.
 
-⚠️ **Pero aplicar una transferencia cuesta el 17,5 %**, y eso no es
+⚠️ **Pero aplicar una transferencia cuesta el 28,5 %**, y eso no es
 comparable: incluye escritura a disco.
 
 ### Por qué no se había visto
@@ -1560,7 +1560,7 @@ Las demás cifras publicadas **coinciden** con lo medido:
 | Arranque | 0,67 ms | 1,757 ms (otra máquina) |
 | Generar transferencia | ~620 ms | 437,5 ms (otra máquina) |
 | Prueba de liquidación | 62 KB | 63.681 B ✅ |
-| Mil transferencias | 59,1 MB | 60,7 MB ✅ |
+| Mil transferencias | 120,4 MB | 60,7 MB ✅ |
 
 Los tiempos absolutos varían con el hardware y eso estaba declarado. **Una
 razón entre dos tiempos de la misma máquina, no.** Ese fue el indicio.
@@ -1578,7 +1578,7 @@ que fallaba era la etiqueta que la documentación le ponía al número.
 
 **El tamaño de la prueba se comprueba ahora en el test.** Los tiempos
 dependen de la máquina, pero el tamaño **no**: es determinista. Trece
-documentos publican 62 KB y 59,1 MB, y hasta ahora nada detectaba que un
+documentos publican 62 KB y 120,4 MB, y hasta ahora nada detectaba que un
 cambio los dejara falsos.
 
 ---
@@ -2120,7 +2120,65 @@ código.
 
 ---
 
-## 31. Qué NO demuestra este documento
+## 31. ⚠️ Las cifras publicadas miden una operación retirada
+
+**Un pago son dos pruebas, no una.** El arnés medía `transfer` —la vía de un
+paso— y esas cifras están en cinco documentos y en un DOI.
+
+| | Publicado | Medido (pago completo) |
+|---|---|---|
+| Acumulación por mil pagos | 120,4 MB | **120,4 MB** |
+| Aplicar / generar | 28,5 % | **28,5 %** |
+| Tamaño de una prueba | ~62 KB | **~62 KB, sin cambio** |
+
+Lo que **no** cambió es el tamaño de cada prueba. Lo que cambió es que hacen
+falta dos: `send` y `claim`.
+
+> **La cifra vieja no era un error de medición: medía una operación que dejó
+> de ser la de producción.**
+
+### El desglose, que aporta algo nuevo
+
+| Fase | Generar | Aplicar | Prueba |
+|---|---|---|---|
+| Envío | 282,9 ms | 129,3 ms | 63.168 B |
+| **Cobro** | **500,7 ms** | 94,0 ms | 63.086 B |
+
+⚠️ **Cobrar cuesta casi el doble que enviar.** El circuito de cobro recorre
+el árbol de pendientes **y** el de cuentas, mientras que el de envío toca una
+cuenta y añade un pendiente.
+
+Para un sistema de pagos esto importa: **el trabajo caro recae en quien
+recibe**, no en quien paga.
+
+### Lo detectó una guarda del propio arnés
+
+`metrics.rs` llevaba una comprobación con este texto:
+
+> *«...si el tamaño ha cambiado de orden, esas cifras son falsas»*
+
+Saltó en cuanto la medición pasó a la vía nueva. **Hizo exactamente su
+trabajo**, y sin ella el cambio habría pasado en silencio dejando cinco
+documentos y un DOI con cifras que no describen nada que se ejecute.
+
+Ahora comprueba **tres** cosas: cada fase por separado y el pago completo. Si
+una engordara y la otra adelgazara, la suma podría cuadrar y la guarda callar.
+
+### Lo que exige del material publicado
+
+El preprint tiene DOI
+[10.5281/zenodo.21677737](https://doi.org/10.5281/zenodo.21677737). Zenodo
+permite versiones nuevas que heredan el *concept DOI*, así que la corrección
+no rompe ninguna cita.
+
+⚠️ **Y es coherente con lo que el propio paper declara.** Su §7.5 ya dice que
+una versión anterior describía la acumulación como el límite real del sistema
+y que eso era incorrecto. Esta corrección es de la misma clase: **el número
+describía otra cosa de la que se creía.**
+
+---
+
+## 32. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

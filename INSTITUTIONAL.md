@@ -318,7 +318,7 @@ producing a proof that will not verify.
 
 #### 3. Proof accumulation
 
-**One thousand transfers accumulate 59.1 MB.** This is a storage and
+**One thousand transfers accumulate 120.4 MB.** This is a storage and
 bandwidth cost, not a stop: the system keeps working.
 
 #### 4. Custodian set size
@@ -329,7 +329,7 @@ indices would fail intermittently.
 
 ---
 
-⚠️ **An earlier version of this document called the 59.1 MB "the system's
+⚠️ **An earlier version of this document called the 120.4 MB "the system's
 real limit".** That was false: the first item above stops legitimate
 payments far earlier, and permanently.
 

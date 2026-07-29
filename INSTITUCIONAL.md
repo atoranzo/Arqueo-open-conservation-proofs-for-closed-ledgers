@@ -239,7 +239,7 @@ prueba, no en quien la acepta.
 > supervisor comprueba sin tocar el estado— pero **estaba atribuida a la
 > transferencia**.
 >
-> Aplicar una transferencia cuesta **17,5 %** de generarla, porque `apply`
+> Aplicar una transferencia cuesta **28,5 %** de generarla, porque `apply`
 > **verifica, muta el árbol y escribe a disco**. No es comparable.
 >
 > Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
@@ -332,7 +332,7 @@ una prueba que no verifica.
 
 #### 3. Acumulación de pruebas
 
-**Mil transferencias acumulan 59,1 MB.** Es un coste de almacenamiento y
+**Mil transferencias acumulan 120,4 MB.** Es un coste de almacenamiento y
 ancho de banda, no una parada: el sistema sigue funcionando.
 
 #### 4. Tamaño del conjunto de custodios
@@ -343,7 +343,7 @@ entre índices lejanos fallarían de forma intermitente.
 
 ---
 
-⚠️ **Una versión anterior de este documento decía que los 59,1 MB eran "el
+⚠️ **Una versión anterior de este documento decía que los 120,4 MB eran "el
 límite real del sistema".** Era falso: el primero de esta lista detiene
 pagos legítimos mucho antes, y de forma permanente.
 

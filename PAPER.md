@@ -467,13 +467,13 @@ quien la acepta.
 > supervisor comprueba sin tocar el estado— pero **estaba atribuida a la
 > transferencia**.
 >
-> Aplicar una transferencia cuesta **17,5 %** de generarla, porque `apply`
+> Aplicar una transferencia cuesta **28,5 %** de generarla, porque `apply`
 > **verifica, muta el árbol y escribe a disco**. No es comparable.
 >
 > Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
 > --nocapture` y comparando con lo publicado. Ver `AUDITORIA.md` §22.
 
-**Límite de escala cuantificado**: mil transferencias acumulan 59,1 MB de
+**Límite de escala cuantificado**: mil transferencias acumulan 120,4 MB de
 pruebas. Es la restricción práctica dominante de la elección de STARK, y
 el argumento cuantitativo a favor de agregación recursiva o pruebas por
 lote.
@@ -873,7 +873,7 @@ compromisión permite crear dinero sin rastro detectable.
 
 Las mediciones muestran que verificar cuesta entre el 0,5% y el 0,8% de
 generar, asimetría que hace viable el modelo, y cuantifican su límite
-principal: **59,1 MB de pruebas acumuladas por cada mil transferencias**.
+principal: **120,4 MB de pruebas acumuladas por cada mil transferencias**.
 
 Los resultados delimitan también lo que no se ha demostrado. La
 arquitectura de nodo único implica que las transiciones de estado están

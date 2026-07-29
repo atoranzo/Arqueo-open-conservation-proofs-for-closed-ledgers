@@ -42,7 +42,7 @@ clave maestra que robar.
 | Generarla | ~620 ms |
 | **Verificar / generar** | **0,5 %** |
 | Prueba de liquidación | 62 KB |
-| **Mil transferencias** | **59,1 MB acumulados** |
+| **Mil transferencias** | **120,4 MB acumulados** |
 | ⚠️ **Colisión de nullifiers** | **~65.000 pagos** ← el que muerde antes |
 
 > ⚠️ **Esa razón es la de la AUDITORÍA, no la de la transferencia.**
@@ -52,7 +52,7 @@ clave maestra que robar.
 > supervisor comprueba sin tocar el estado— pero **estaba atribuida a la
 > transferencia**.
 >
-> Aplicar una transferencia cuesta **17,5 %** de generarla, porque `apply`
+> Aplicar una transferencia cuesta **28,5 %** de generarla, porque `apply`
 > **verifica, muta el árbol y escribe a disco**. No es comparable.
 >
 > Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
@@ -125,7 +125,7 @@ There is no master key to steal.
 | Proving it | ~620 ms |
 | **Verify / prove** | **0.5 %** |
 | Settlement proof | 62 KB |
-| **One thousand transfers** | **59.1 MB accumulated** ← the real limit |
+| **One thousand transfers** | **120.4 MB accumulated** ← the real limit |
 
 ### The decision that defines the design
 

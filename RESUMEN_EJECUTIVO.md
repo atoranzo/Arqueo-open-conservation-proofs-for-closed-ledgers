@@ -89,7 +89,7 @@ verify_audit(&d)?;                                          // el supervisor, si
 claves: no hay ceremonia ni secreto que destruir.
 
 **Límites cuantificados**: mil transferencias son ~620 s de prueba y
-**59,1 MB acumulados**.
+**120,4 MB acumulados**.
 
 ⚠️ **Y hay uno que muerde antes**: la posición del nullifier se deriva del
 propio nullifier, así que por la paradoja del cumpleaños las colisiones son

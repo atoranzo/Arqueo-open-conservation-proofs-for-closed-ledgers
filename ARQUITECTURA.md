@@ -575,7 +575,7 @@ liquidación gasta dos órdenes de magnitud menos que quien la produce.
 > supervisor comprueba sin tocar el estado— pero **estaba atribuida a la
 > transferencia**.
 >
-> Aplicar una transferencia cuesta **17,5 %** de generarla, porque `apply`
+> Aplicar una transferencia cuesta **28,5 %** de generarla, porque `apply`
 > **verifica, muta el árbol y escribe a disco**. No es comparable.
 >
 > Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
@@ -587,7 +587,7 @@ eso se ve en el propio constructor.
 
 ### El límite cuantificado
 
-**Mil transferencias: ~620 s de prueba y 59,1 MB acumulados.** Ese es el
+**Mil transferencias: ~620 s de prueba y 120,4 MB acumulados.** Ese es el
 argumento numérico a favor de las pruebas por lote — no una intuición.
 
 ⚠️ **Pero no es el límite más restrictivo.** La posición del nullifier se

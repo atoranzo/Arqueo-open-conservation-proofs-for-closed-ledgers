@@ -64,14 +64,14 @@ no hay ceremonia ni secreto que destruir.
 > supervisor comprueba sin tocar el estado— pero **estaba atribuida a la
 > transferencia**.
 >
-> Aplicar una transferencia cuesta **17,5 %** de generarla, porque `apply`
+> Aplicar una transferencia cuesta **28,5 %** de generarla, porque `apply`
 > **verifica, muta el árbol y escribe a disco**. No es comparable.
 >
 > Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
 > --nocapture` y comparando con lo publicado. Ver `AUDITORIA.md` §22.
 
 **Límites cuantificados**: mil transferencias son ~620 s de prueba y
-**59,1 MB** acumulados.
+**120,4 MB** acumulados.
 
 ⚠️ **Y uno que muerde antes**: la posición del nullifier se deriva del
 propio nullifier, así que las colisiones son probables a los **~65.000
@@ -232,8 +232,8 @@ Todo lo demás que falta está enumerado en
 Proof Systems: Design Findings and Measurements**
 DOI: [10.5281/zenodo.21677737](https://doi.org/10.5281/zenodo.21677737)
 
-⚠️ **Esa versión necesita una corrección.** Sus cifras de coste —59,1 MB por
-mil operaciones y 17,5 % de verificar sobre generar— miden la vía de un paso,
+⚠️ **Esa versión necesita una corrección.** Sus cifras de coste —120,4 MB por
+mil operaciones y 28,5 % de verificar sobre generar— miden la vía de un paso,
 que ya no es la de producción. Un pago por la vía en dos fases son **dos
 pruebas**, y el arnés mide **120,4 MB y 28,5 %**. Ver `AUDITORIA.md` §31.
 

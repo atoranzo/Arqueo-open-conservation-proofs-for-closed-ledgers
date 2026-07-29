@@ -234,7 +234,7 @@ Aztec, con años y equipos de ventaja.
 > supervisor comprueba sin tocar el estado— pero **estaba atribuida a la
 > transferencia**.
 >
-> Aplicar una transferencia cuesta **17,5 %** de generarla, porque `apply`
+> Aplicar una transferencia cuesta **28,5 %** de generarla, porque `apply`
 > **verifica, muta el árbol y escribe a disco**. No es comparable.
 >
 > Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
@@ -248,7 +248,7 @@ magnitud, no como benchmark.
 
 ### 21. ¿Cuánto ocupa? ¿Escala?
 
-**62 KB por transferencia. Mil transferencias son 59,1 MB acumulados.**
+**62 KB por transferencia. Mil transferencias son 120,4 MB acumulados.**
 
 Resolverlo exige agregación recursiva o pruebas por lote, que no están
 implementadas.
@@ -264,7 +264,7 @@ ya es del 39 %.
 Y el afectado **no puede reintentar**: su nullifier es determinista, así
 que su pago queda bloqueado de forma permanente.
 
-**Los 59,1 MB son un coste. La colisión es una parada**, y le ocurre a un
+**Los 120,4 MB son un coste. La colisión es una parada**, y le ocurre a un
 usuario concreto sin que el sistema esté saturado.
 
 Hay dos límites más —el árbol de pendientes se agota a los 2³² pagos

@@ -437,11 +437,11 @@ on the party accepting it.
 > supervisor checks without touching state— but **it had been attributed to
 > the transfer**.
 >
-> Applying a transfer costs **17.5 %** of generating it, because `apply`
+> Applying a transfer costs **28.5 %** of generating it, because `apply`
 > **verifies, mutates the tree and writes to disk**. The two are not
 > comparable. See `AUDITORIA.md` §22.
 
-**Quantified scaling limit**: one thousand transfers accumulate 59.1 MB of
+**Quantified scaling limit**: one thousand transfers accumulate 120.4 MB of
 proofs. This is the dominant practical constraint of choosing STARK, and
 the quantitative argument for recursive aggregation or batched proofs.
 
@@ -831,11 +831,11 @@ trace.
 
 Measurements show that verification costs 0.5–0.8% of proving — an
 asymmetry that makes the model viable — and quantify its principal limit:
-**59.1 MB of accumulated proofs per thousand transfers**.
+**120.4 MB of accumulated proofs per thousand transfers**.
 
 ⚠️ That asymmetry is measured on **audit disclosures**, which verify without
 mutating state — precisely the supervisory case. A transfer's apply step
-costs 17.5 % of proving, because it also writes.
+costs 28.5 % of proving, because it also writes.
 
 The results also delimit what has not been demonstrated. The single-node
 architecture means that state transitions are proven while the current

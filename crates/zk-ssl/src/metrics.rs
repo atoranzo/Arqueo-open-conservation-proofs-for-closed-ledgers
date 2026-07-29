@@ -183,7 +183,7 @@ mod tests {
             100.0 * audit_gen.as_secs_f64() / tx_gen.as_secs_f64()
         );
         println!(
-            "Jornada de 1.000 transferencias:     {:.1} s de prueba, {:.1} MB acumulados",
+            "Jornada de 1.000 pagos (envio+cobro): {:.1} s de prueba, {:.1} MB acumulados",
             tx_gen.as_secs_f64() * 1000.0,
             (tx_bytes * 1000) as f64 / 1_048_576.0
         );
@@ -212,18 +212,33 @@ mod tests {
         // maquina**: es determinista, funcion del circuito y de las
         // opciones de prueba.
         //
-        // Y es la cifra que trece documentos publican: 62 KB por
-        // transferencia, y 59,1 MB por cada mil. Sin esta comprobacion,
-        // un cambio que engordara la prueba dejaria esas cifras falsas
-        // **sin que nada lo detectara**.
+        // Y es la cifra que los documentos publican. Sin esta comprobacion,
+        // un cambio que engordara la prueba dejaria esas cifras falsas **sin
+        // que nada lo detectara**.
         //
-        // ⚠️ El margen es amplio a proposito: se trata de detectar un
-        // cambio de orden de magnitud, no de fijar el byte exacto.
+        // ⚠️ El margen es amplio a proposito: se trata de detectar un cambio
+        // de orden de magnitud, no de fijar el byte exacto.
+        //
+        // ⚠️⚠️ **ESTA GUARDA SALTO AL MIGRAR A LA VIA EN DOS FASES**, y tenia
+        // razon. Cada prueba sigue midiendo ~62 KB —eso no ha cambiado— pero
+        // **un pago son ahora DOS pruebas**, asi que la acumulacion por mil
+        // pagos pasa de 59,1 MB a **120,4 MB**.
+        //
+        // La cifra vieja no era un error de medicion: medía una operacion
+        // que dejo de ser la de produccion. Ver `AUDITORIA.md` §31.
         assert!(
-            (50_000..80_000).contains(&tx_bytes),
-            "la prueba de transferencia mide {tx_bytes} bytes. Los documentos \
-             publican ~62 KB y 59,1 MB por cada mil transferencias: si el \
-             tamaño ha cambiado de orden, esas cifras son falsas"
+            (50_000..80_000).contains(&send_bytes),
+            "la prueba de ENVIO mide {send_bytes} bytes; se esperan ~62 KB"
+        );
+        assert!(
+            (50_000..80_000).contains(&claim_bytes),
+            "la prueba de COBRO mide {claim_bytes} bytes; se esperan ~62 KB"
+        );
+        assert!(
+            (100_000..160_000).contains(&tx_bytes),
+            "un PAGO COMPLETO mide {tx_bytes} bytes. Los documentos publican \
+             ~126 KB por pago y 120,4 MB por cada mil: si el tamaño ha \
+             cambiado de orden, esas cifras son falsas"
         );
 
         assert_eq!(layer.total_supply(), 950_000);

@@ -232,7 +232,7 @@ not as a benchmark.
 
 ### 21. How large is it? Does it scale?
 
-**62 KB per transfer. One thousand transfers accumulate 59.1 MB.**
+**62 KB per transfer. One thousand transfers accumulate 120.4 MB.**
 
 Resolving it requires recursive aggregation or batched proofs, neither of
 which is implemented.
@@ -248,7 +248,7 @@ already 39 %.
 And the affected user **cannot retry**: their nullifier is deterministic,
 so the payment is permanently blocked.
 
-**The 59.1 MB are a cost. The collision is a stop**, and it hits a specific
+**The 120.4 MB are a cost. The collision is a stop**, and it hits a specific
 user while the system is nowhere near saturation.
 
 Two further limits exist —the pending tree exhausts at 2³² total payments,
