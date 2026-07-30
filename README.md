@@ -152,12 +152,17 @@ Requiere Rust estable. Sin instaladores externos ni toolchains aparte.
 > de cada restricción se realice en la traza concreta, y una restricción
 > booleana sobre un bit que es constante en toda la traza tiene grado real 0.
 >
-> El crate de circuitos **sí pasa** en los dos modos (199 y 200), pero es
-> **seis veces más lento** sin `--release`.
+> El crate de circuitos **sí pasa** en los dos modos —201 en release, 199
+> más 2 saltados en depuración— pero es **cinco veces más lento** sin
+> `--release` (51 s frente a 9 s).
 >
-> Un test se salta en ese modo: alcanzar el tope de emisión **exactamente**
-> deja el margen a cero, y con él el grado de sus restricciones booleanas.
-> Lleva el motivo escrito y `--release` sí lo ejecuta.
+> **Dos** tests se saltan en ese modo, y los dos por la misma causa: una
+> traza en la que el grado real de una restricción booleana cae a cero.
+> Alcanzar el tope de emisión **exactamente** deja el margen a cero
+> (`circuit_mint_pending`), y un valor cero en la comprobación de rango
+> deja la diferencia a cero (`range_check`) — un caso legítimo del
+> dominio, porque el circuito de cumplimiento necesita `amount == balance`.
+> Los dos llevan el motivo escrito y `--release` sí los ejecuta.
 
 ```bash
 cargo test -p zk-ssl --release              # la capa: 174 tests
