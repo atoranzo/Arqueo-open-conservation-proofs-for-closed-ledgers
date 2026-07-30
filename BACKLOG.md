@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 22 abiertas, 12 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 21 abiertas, 13 resueltas. Ultima revision: 30 de julio de 2026.
 El frente de grados (6, 24, 25, 34) queda **cerrado** (§46, §20): declarado
 como limite conocido de winterfell, sin migrar. No es fallo de solidez.
 
@@ -240,8 +240,14 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
 - [ ] **12. Sin devolucion para un pendiente no cobrado.** El importe queda
   inmovilizado y no hay camino de vuelta implementado.
 
-- [ ] **13. Senal temporal para el pagador.** Puede recomputar el
-  compromiso y ver cuando se cobra; declarado, no eliminado.
+- [x] **13. Senal temporal para el pagador: ya declarada, coherente.**
+  ~~Puede recomputar el compromiso y ver cuando se cobra; declarado, no
+  eliminado.~~ **Cerrada** el 30-07-2026: verificado que ya esta declarada
+  en **tres** puntos de AUDITORIA (§175, §223, §258) y en los **tres
+  preprints**, y los cuatro coinciden —el pagador sabe *cuando* se cobra,
+  no *cuanto*—. A diferencia de la 9, no habia contradiccion que
+  reconciliar. El residuo es del diseño en dos fases y **no se elimina**;
+  esta declarado, que es lo que pedia la entrada.
 
 - [x] **14. Techo del conjunto de custodios: ya declarado.** ~~Acoplado a
   un segmento de rango de 7 bits, sin declarar hasta que un test lo fijo.~~
