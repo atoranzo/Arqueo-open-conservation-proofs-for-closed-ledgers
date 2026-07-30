@@ -4446,6 +4446,33 @@ compromisos, sigue pendiente: no se ha verificado que su constancia no este
 igualmente pisada. Y la mitad `claim` (borrar las 8 muertas, que alli sobran
 tras §39.1) queda como limpieza sin urgencia.
 
+### 50.6 La 35: `circuit_mint_pending` esta sano (el fallo no era sistemico)
+
+Tras §50, quedaba la pregunta de si el tercer constructor de compromisos
+—`circuit_mint_pending`— tenia el mismo solapamiento. Se respondio como en
+§50: con un test discriminante, no por lectura.
+
+**Resultado: rechaza.** `a_mint_pending_with_inconsistent_receiver_identity_is_rejected`
+construye una traza con `COL_R_ID` distinto entre la fila del compromiso
+(`ROW_ROOT`) y el resto, y **la prueba no verifica**. La constancia esta
+viva. Confirmado ademas que rechaza por la razon correcta (§16.5): la
+disposicion de `mint_pending` **cuadra de verdad** —`C_TRANSPORT_NEW`
+reserva sus 12 ranuras (transporte 4 + identidad 4 + aleatorio 4) y el
+grupo siguiente arranca limpio en +12—, a diferencia de `send`, donde
+`C_TRANSPORT` declaraba 15 pero solo tenia 7 antes del grupo siguiente.
+
+La cadena que lo ata: `C_PEND_IN` lee `COL_R_ID` para el compromiso, y la
+constancia de `C_TRANSPORT_NEW + 4` garantiza que ese valor es el mismo en
+toda la traza. Corromper una fila rompe la cadena donde la constancia lo
+prohibe.
+
+**Lo que esto dice del fallo de §50: no era sistemico.** De los tres
+constructores de compromisos, `claim` tenia el problema por omision (§39),
+`send` por sobrescritura (§50), y `mint_pending` **esta correcto**. No habia
+un defecto de diseño comun a los tres; habia dos disposiciones mal contadas
+y una bien. El test queda como **regresion permanente** (no `#[ignore]`):
+protege que la disposicion de `mint_pending` siga cuadrando.
+
 ## 51. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus

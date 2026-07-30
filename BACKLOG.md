@@ -12,9 +12,10 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 21 abiertas, 15 resueltas. Ultima revision: 30 de julio de 2026.
-La 30 (fallo de solidez en `send`) queda **corregida y verificada** (§50.5).
-Abiertas 35 (revisar mint_pending) y 36 (limpiar claim) como su cola.
+**Estado**: 20 abiertas, 16 resueltas. Ultima revision: 30 de julio de 2026.
+La 30 (fallo en `send`) corregida (§50.5); `mint_pending` verificado sano
+(§50.6, entrada 35). Queda la 36 (limpiar las 8 muertas de `claim`, sin
+urgencia) como unica cola del arco de solidez de compromisos.
 El frente de grados (6, 24, 25, 34) queda **cerrado** (§46, §20): declarado
 como limite conocido de winterfell, sin migrar. No es fallo de solidez.
 
@@ -323,10 +324,14 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
 
 ## G. Otro proyecto, no una incidencia
 
-- [ ] **35. Revisar la constancia de identidad en `circuit_mint_pending`.**
-  Es el tercer constructor de compromisos (§40.2). Tras §50, verificar con
-  un test discriminante que su `COL_R_ID` no este igualmente pisado por un
-  solapamiento. **No verificado**: podria ser otro §50.
+- [x] **35. `circuit_mint_pending` esta sano.** ~~Revisar si su `COL_R_ID`
+  esta pisado como en §50.~~ **Verificado** el 30-07-2026 (§50.6): el test
+  discriminante `a_mint_pending_with_inconsistent_receiver_identity_is_rejected`
+  **rechaza** la traza de dos identidades. La constancia se impone
+  —`C_TRANSPORT_NEW` reserva sus 12 ranuras de verdad—, y rechaza por la
+  razon correcta (§16.5). El fallo de §50 en `send` **no era sistemico**: de
+  los tres constructores de compromisos, dos estaban mal contados y este
+  bien. El test queda como regresion permanente.
 
 - [ ] **36. Limpiar las 8 restricciones muertas de `circuit_claim`.** Tras
   §39.1 `COL_R_ID` no se usa alli, asi que sobran (§49.1). Borrado seguro y
