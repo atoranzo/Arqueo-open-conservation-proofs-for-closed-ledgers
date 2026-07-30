@@ -3179,6 +3179,60 @@ millones.
 circuito de 162 restricciones **tiene que cambiar**. Si sale idéntico, la
 intervención sigue sin llegar y no se concluye nada.
 
+## 37.7 El experimento corregido: la hipótesis se sostiene
+
+Intervención sobre `two_phase::allocate_pending` —búsqueda desde 255 y
+posición mínima 255, ocho bits de camino a uno—, ejecutado el 30 de julio
+de 2026.
+
+**Comprobación de alcance, primero:** el perfil de grados **cambia**. La
+intervención llega a las trazas, a diferencia de la de §37.4.
+
+**Resultado: 110 pasan, 64 fallan**, frente a 65 de referencia. Y el perfil,
+circuito a circuito:
+
+| Circuito | Desviadas antes | Desviadas ahora | Bloque de pendientes |
+|---|---|---|---|
+| 57 | 5 | 5 | — |
+| 76 | 13 | 13 | — |
+| 114 | 22 | 22 | — |
+| 125 | 21 y 27 | **6** | **desaparece** (86–106) |
+| 160 | — | 22 | — |
+| 162 | 43 | **22** | **desaparece** (140–160) |
+
+En el circuito de 162 se van exactamente las veintiuna que §35 había
+identificado por nombre —veinte `C_PEND_*` más `C_PBIT_BOOL`—, y en el de
+125 desaparece un bloque de veintiuna con la misma firma. **En ninguno de
+los seis perfiles queda una sola desviación en el rango de pendientes.**
+
+**Segunda fila de la tabla de §37.3**: menos de 65 fallos, ninguna
+`C_PEND_*` ni `C_PBIT_BOOL`. La hipótesis se sostiene: **si los bits de
+camino dejan de ser constantes, las restricciones realizan su grado.**
+
+### Lo que esto cierra y lo que no
+
+**Cierra el diagnóstico**, que era lo que §35 dejó abierto y §37.4 no llegó a
+tocar. **No implementa nada**: la intervención es una medición y se
+revierte. Convertirla en diseño exige decidir si se paga el precio de que
+las posiciones del árbol de pendientes dejen de ser secuenciales —hojas
+desperdiciadas, y la pregunta de siempre sobre registros ya escritos—.
+
+Y sobre todo, **no basta**. Quedan 64 fallos, concentrados en dos bloques
+que aparecen en casi todos los circuitos: los índices bajos (32–44) y los
+medios (105–114). Por su posición corresponden a las subidas al árbol de
+**cuentas** y al de **congelados**, que sufren lo mismo por la misma razón:
+las cuentas viven en los índices 0 y 1, y el árbol de congelados suele
+estar vacío.
+
+⚠️ Esa atribución por posición es **plausible y no verificada**. Hoy ya
+se ha atribuido un vector al circuito equivocado una vez (§37.4); antes de
+afirmarlo hay que mapear índices contra las constantes del circuito
+concreto, como se hizo con el bloque de pendientes.
+
+El pronóstico de la entrada 6 cambia con esto: **no es «no tiene
+arreglo»**, es «tiene arreglo conocido y hay que decidir su precio, en los
+tres árboles y no solo en uno».
+
 ## 38. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus

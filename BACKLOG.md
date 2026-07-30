@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 19 abiertas, 5 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 20 abiertas, 5 resueltas. Ultima revision: 30 de julio de 2026.
 
 Con la 5 queda cerrado el **grupo A**: el repositorio vuelve a describir
 lo que hay. La siguiente es la **6**.
@@ -83,8 +83,12 @@ describe cosas que no son ciertas.
   cero. Candidata sin verificar: permutar el contador de forma biyectiva
   (§37.5). ⚠️ **Todo lo anterior queda anulado por §37.6**: el experimento
   modifico `PendingTransfers`, un modelo que la capa **no ejecuta**, asi que
-  no midio nada. La hipotesis sigue sin comprobar, y las desviaciones
-  alcanzan **cinco circuitos** y los tres arboles, no solo el pendiente.
+  no midio nada. ✅ **Repetido bien** el 30-07-2026 (§37.7), interviniendo
+  en `two_phase::allocate_pending`: **segunda fila**, 64 fallos frente a 65
+  y **ni una** `C_PEND_*` ni `C_PBIT_BOOL` desviada en ninguno de los seis
+  circuitos. El diagnostico queda cerrado; falta **decidir si se paga el
+  precio** de posiciones no secuenciales. Y no basta por si solo: ver la
+  entrada 25.
 - [ ] **7. Encargar la auditoria externa del argumento lockstep.** El
   hallazgo mas original del proyecto lo respalda un test discriminante, no
   una demostracion revisada por nadie mas (§16.4).
@@ -140,6 +144,13 @@ describe cosas que no son ciertas.
   lo correcto sea **declararlo** como limite de la herramienta (§37.2,
   caso B). Es la causa de los 2 tests que `stark-experiment` se salta en
   depuracion.
+
+- [ ] **25. El mismo grado dependiente del testigo en los arboles de
+  cuentas y congelados.** Tras cerrar el diagnostico del pendiente (§37.7)
+  quedan 64 fallos en dos bloques que aparecen en casi todos los circuitos;
+  por su posicion son las subidas a **cuentas** (indices 0 y 1) y a
+  **congelados** (arbol vacio). Atribucion **sin verificar**: mapear indices
+  contra las constantes antes de afirmarla.
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo
