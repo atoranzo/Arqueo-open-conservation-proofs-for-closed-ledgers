@@ -92,9 +92,16 @@ decidir.
   en crudo y la capa construye la traza (§41). Quienes conservan su clave
   solo pueden mover su dinero; quienes la entregan pueden crearlo.
   **Confianza residual no declarada** en los preprints: va con la 28.
+  **Diseño de la solucion cerrado en §47** (via B); la implementacion es la
+  33.
 
 - [ ] **33. Que los custodios prueben en su maquina, y que la autorizacion
   cubra los parametros.** La correccion de diseno de la 32 (§41.4).
+  **Diseño cerrado (§47): via B**, firmas por conocimiento de preimagen con
+  mensaje atado, verificadas por separado —sin componer pruebas, que el
+  proyecto no sabe hacer y no necesita aqui—. Primer paso medible en §47.5:
+  separar un carril de `circuit_threshold` y medirlo. Exige toolchain; no es
+  un parche.
   **Analizada** (§42): no se mueve «al cliente» porque los custodios son
   dos y el circuito prueba conocimiento de ambas claves en una sola traza.
   La via que cierra las dos mitades es **verificar firmas en circuito**,

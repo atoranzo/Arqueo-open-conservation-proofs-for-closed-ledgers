@@ -4120,7 +4120,98 @@ depuracion. Perseguirlo costaria una migracion de fondos (6) o seria
 imposible (24, valores de dominio), y compraria una comprobacion que el
 modo de produccion no necesita. **Coherencia sobre completitud.**
 
-## 47. Qué NO demuestra este documento
+## 47. Diseno de la entrada 32/33: por que no es un parche, y por donde empieza
+
+Se pidio resolver la 32 en una sesion. Lo honesto es especificar el diseno
+hasta donde se puede verificar por lectura, y decir con precision donde
+empieza el trabajo que exige compilar y medir. No entregar un circuito sin
+probar sobre la creacion de dinero: seria el §39 de la proxima sesion, esta
+vez sobre la emision.
+
+### 47.1 Lo que hace hoy `circuit_threshold`, verificado
+
+Toma **las dos claves en crudo** (`key_a`, `key_b`), deriva cada identidad
+con `hash(CUSTODIAN_DOMAIN, key)`, y **sube las dos por el arbol de
+custodios en una sola traza de dos carriles** (`LANE_B`), demostrando que
+ambas hojas pertenecen a la raiz del conjunto. La autenticacion **es**
+conocimiento de las dos preimagenes, probado a la vez.
+
+Por eso las claves llegan al operador (§41): construir esa traza unica
+exige tener las dos claves en la misma maquina, y esa maquina es la capa.
+
+### 47.2 Que hay que cambiar, y el obstaculo real
+
+Para que las claves no salgan de las maquinas de los custodios, la traza de
+dos carriles tiene que **partirse en dos pruebas independientes** —una por
+custodio, cada una demostrando conocimiento de UNA preimagen y pertenencia
+de UNA hoja— y luego **componerse** en la evidencia de que el umbral se
+cumplio.
+
+⚠️ **La composicion de pruebas no existe en este proyecto.** Barrido hecho:
+no hay recursion, folding, agregacion ni verificacion-de-prueba-en-circuito
+en ningun crate. La unica mencion (`Proof::from_bytes` en el puente ISO) es
+deserializacion, no composicion.
+
+Esto es lo que convierte la 32 en trabajo de semanas y no en un parche: no
+es reescribir `circuit_threshold`, es **construir un mecanismo que el
+proyecto no tiene**.
+
+### 47.3 Las dos vias de composicion, con su coste
+
+**Via A — verificar dos pruebas en un circuito (recursion).** Cada custodio
+produce una prueba STARK de su mitad; un circuito verificador comprueba las
+dos. Es el enfoque general, y el mas caro: verificar una prueba STARK dentro
+de un circuito AIR es de los problemas mas pesados del area, y winterfell no
+trae verificador recursivo de serie. Coste probable: alto, y **no medido**.
+
+**Via B — firma sobre el mensaje, compuesta trivialmente.** Cada custodio
+firma en su maquina un mensaje que cubre los parametros de la operacion
+(destinatario, importe, contador), demostrando conocimiento de su clave por
+el mismo primitivo de preimagen que ya corre (§43). La capa **recoge las dos
+pruebas y las verifica por separado** contra la raiz del conjunto —no hay
+que componerlas en una sola, basta con exigir las dos—. Cierra ademas la
+otra mitad de §41.2: la autorizacion queda **ligada a la operacion**, no a
+«algo».
+
+La via B es mas simple y no necesita recursion. Su trabajo real: separar los
+dos carriles de `circuit_threshold` en dos invocaciones y anadir el mensaje
+como entrada atada a la prueba de cada custodio. Es reestructuracion de un
+circuito que ya existe, no un primitivo nuevo.
+
+### 47.4 La decision de diseño, hasta donde se puede tomar por lectura
+
+**Via B.** Razones, todas verificables:
+
+1. El primitivo que necesita —conocimiento de preimagen con mensaje en la
+   traza— **ya corre en cada pago** (`circuit_send`, `circuit_claim`). La
+   via A necesita un verificador recursivo que no existe.
+2. La via B no compone pruebas: la capa exige dos, independientes. Eso evita
+   por completo el obstaculo de §47.2.
+3. Liga la autorizacion a la operacion, que es la otra mitad del problema.
+
+⚠️ **Lo que esta decision NO es:** una implementacion. Separar los dos
+carriles de `circuit_threshold`, definir el mensaje y atarlo, y rehacer los
+tests de `mint`, `mint_to_pending`, `freeze`, `recovery` y `governance`
+—que todos usan `ThresholdAuth`— es trabajo que **exige compilar y medir**, y
+este asistente no puede verificar un cambio de solidez sobre la creacion de
+dinero sin ejecutarlo. Se deja el diseño, no el codigo.
+
+### 47.5 El primer paso concreto de la implementacion
+
+No es escribir el circuito. Es un **experimento acotado y medible**, del
+estilo de los que han funcionado en esta auditoria:
+
+> Separar UN carril de `circuit_threshold` en una prueba independiente que
+> demuestre conocimiento de una clave y pertenencia de una hoja, sin tocar
+> el otro carril ni los cinco circuitos que consumen `ThresholdAuth`.
+> Medir: numero de restricciones, filas, tiempo de prueba. Si un carril
+> solo se sostiene, la via B es viable y el coste esta medido. Si no,
+> el diseño necesita revision antes de tocar produccion.
+
+Eso es una sesion de trabajo con toolchain, no un parche a ciegas, y es el
+punto por el que empieza la 33.
+
+## 48. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
