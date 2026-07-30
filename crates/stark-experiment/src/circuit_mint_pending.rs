@@ -1238,6 +1238,53 @@ mod tests {
 
     /// El dominio de custodio está separado del de cuentas: una clave de
     /// gasto no puede hacerse pasar por custodio.
+#[test]
+    fn a_mint_pending_with_inconsistent_receiver_identity_is_rejected() {
+        // ENTRADA 35 / hermano de §50. En send, la constancia de COL_R_ID
+        // entre filas estaba muerta por un solapamiento y una traza con dos
+        // identidades verificaba (fallo). Aqui la disposicion CUADRA por
+        // lectura (C_TRANSPORT_NEW: 12 declaradas, 12 usadas), pero eso mismo
+        // parecia en send. El test lo decide: dejamos la identidad real en la
+        // fila del compromiso (ROW_ROOT) y metemos otra en el resto. Si la
+        // constancia esta viva, se rechaza; si esta muerta, verifica.
+        let keys = custodian_keys();
+        let (root, paths) = build_custodian_set(&keys);
+        let mut trace = build_trace(
+            keys[0], 0, &paths[0], keys[2], 2, &paths[2],
+            SUPPLY_OLD, AMOUNT, MAX_SUPPLY, AMOUNT,
+            receiver_id(), salt(), &pending_path(),
+        );
+
+        let otra = derive_public_id(BaseElement::new(0xA77ACC));
+        assert_ne!(otra, receiver_id(), "el testigo debe diferir");
+        for row in 0..TRACE_LENGTH {
+            if row == ROW_ROOT { continue; } // la fila del compromiso, intacta
+            for i in 0..4 {
+                trace.set(COL_R_ID + i, row, otra[i]);
+            }
+        }
+
+        let prover = MintPendingProver::new(default_options());
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+            || prover.prove(trace)));
+        let verifica = match r {
+            Err(_) => false,
+            Ok(Err(_)) => false,
+            Ok(Ok(proof)) => {
+                let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                verify::<MintPendingAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                    proof, inputs_for(root), &min_opts,
+                ).is_ok()
+            }
+        };
+        assert!(
+            !verifica,
+            "SOLIDEZ (entrada 35): mint_pending acepta COL_R_ID inconsistente \
+             entre la fila del compromiso y el resto -> mismo fallo que §50 en \
+             send. Si esto salta, la constancia esta muerta aqui tambien."
+        );
+    }
+
     #[test]
     fn custodian_domain_is_separated() {
         let k = BaseElement::new(12345);
