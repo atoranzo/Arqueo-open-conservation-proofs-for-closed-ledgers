@@ -3036,6 +3036,54 @@ queda en un estado que el código nuevo no vuelve a generar. Eso es una
 migración, y se decide como se decidió la del §36 — verificando, no
 descartando en silencio.
 
+### 37.4 Resultado: tercera fila, el desplazamiento se descarta
+
+Ejecutado el 30 de julio de 2026 con `next: 1` en `pending.rs:131`:
+**108 pasan, 66 fallan** de 174, frente a los 65 de partida.
+
+El vector de grados de una traza que falla, comparado entero:
+
+| Restricciones | Declarado | Real | |
+|---|---|---|---|
+| Índices 32–43 (12) | 1022 | **511** | siguen desviadas |
+| Índices 44–51 (8) | 1022 | 1022 | **recuperadas** |
+| Índice 52, `C_PBIT_BOOL` | 511 | **0** | sigue desviada |
+
+**13 desviadas donde antes había 21.** Y aun así, tercera fila de la tabla
+de §37.3 —siguen fallando `C_PEND_*` y `C_PBIT_BOOL`—, así que **el
+desplazamiento se descarta** y el cambio se revierte. La tabla se escribió
+antes precisamente para que una mejora parcial no se leyera como éxito.
+
+Y no es siquiera neutral: **los fallos suben de 65 a 66**. Un perfil de
+grados distinto hace fallar a un test que antes no fallaba, así que el
+cambio no se sostiene ni como paso intermedio.
+
+### 37.5 Lo que el experimento sí establece
+
+**El mecanismo queda confirmado.** Ocho restricciones pasaron a realizar su
+grado en cuanto la columna dejó de ser idénticamente nula. La causa es la
+que §35 identificó.
+
+**Y queda claro por qué un bit no basta.** La posición 1 tiene **31 de sus
+32 bits a cero**. Solo el nivel 0 aporta un valor no nulo, y los treinta y
+un niveles restantes siguen con su `pbit` constante. No hacía falta que la
+columna fuera nula: basta con que lo sea *por tramos*.
+
+De donde se sigue lo que ninguna asignación secuencial arregla: los
+primeros millares de posiciones tienen casi todos los bits altos a cero,
+sea cual sea el punto de partida. **El caso A no se cierra desplazando el
+contador.**
+
+⚠️ **Una hipótesis nueva, sin verificar y sin decidir.** Una asignación
+que **permutara** el contador de forma biyectiva —inversión de bits, por
+ejemplo— daría posiciones con bits variados desde el primer pago, y al ser
+biyectiva **no reintroduciría colisiones**, que es lo que hundió al árbol de
+nullificadores (§13, §36). Se anota como candidata a un experimento futuro,
+no como conclusión: no se ha medido, y una posición derivada de cualquier
+función del contador merece mirarse con la desconfianza que ya costó una
+vez. Derivar la posición de un **hash** sí reintroduciría el límite del
+cumpleaños entero, y esa vía queda descartada de antemano.
+
 ## 38. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus

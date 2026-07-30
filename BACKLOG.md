@@ -76,6 +76,12 @@ describe cosas que no son ciertas.
   circuito sino **no asignar la posicion 0**, y hay un experimento
   pre-registrado en §37.3 para decidirlo. Winterfell exige que el grado
   declarado **coincida** con el real, asi que declarar menos no es salida.
+  **Experimento ejecutado** el 30-07-2026 (§37.4): tercera fila, el
+  desplazamiento **se descarta** —de 21 desviadas a 13, pero los fallos
+  suben de 65 a 66—. Establecido que ninguna asignacion secuencial lo
+  cierra, porque las primeras posiciones tienen casi todos los bits altos a
+  cero. Candidata sin verificar: permutar el contador de forma biyectiva
+  (§37.5).
 - [ ] **7. Encargar la auditoria externa del argumento lockstep.** El
   hallazgo mas original del proyecto lo respalda un test discriminante, no
   una demostracion revisada por nadie mas (§16.4).
