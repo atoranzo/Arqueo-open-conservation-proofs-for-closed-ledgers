@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 22 abiertas, 7 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 23 abiertas, 7 resueltas. Ultima revision: 30 de julio de 2026.
 
 Con la 5 queda cerrado el **grupo A**: el repositorio vuelve a describir
 lo que hay. La siguiente es la **6**.
@@ -78,6 +78,13 @@ describe cosas que no son ciertas.
   30-07-2026 (§39.1): `C_PEND_IN` reconstruye el compromiso con
   `COL_ACC_ID`, atado a la clave por `C_PK_CHECK`. Escenario y los dos
   tests rehechos. 203 y 174 sin fallos.
+
+- [ ] **30. Arreglar la disposicion de las ocho ranuras solapadas.** Sin
+  consecuencia conocida tras corregir la 27 (§39.4), pero ocho
+  restricciones se calculan y se tiran y un comentario declara quince donde
+  el reparto asigna siete. Dos vias con costes muy distintos, y la decision
+  **esta aplazada a proposito**: reasignar indices es un refactor del
+  espacio de restricciones.
 
 - [ ] **29. Un fallo unico de la bateria, sin explicar.** Una ejecucion
   dio 202/1; las 46 siguientes, 203/0. La hipotesis del gancho de panico

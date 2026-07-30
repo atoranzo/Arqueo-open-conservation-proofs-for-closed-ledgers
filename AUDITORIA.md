@@ -3521,6 +3521,55 @@ ejecuciones, y la causa se desconoce.** Una batería que falla una de cada
 cuarenta y siete sin explicación es una dependencia de confianza como
 cualquier otra, y por eso figura aquí y no en una nota al pie.
 
+### 39.3 `circuit_send` no tiene la omisión análoga
+
+El punto 4 de la lista de arriba, comprobado.
+
+En el envío la identidad del receptor **debe** ser libre —el pagador elige a
+quién paga—, así que la pregunta análoga es otra: si el importe que se
+debita está atado al que va dentro del compromiso. Lo está, por tres
+piezas que comparten la misma columna:
+
+| Pieza | Impone |
+|---|---|
+| `C_BALANCE` | `COL_BAL_NEW = COL_BAL − COL_AMT` — el débito |
+| `C_PEND_VAL + 4` | el importe **dentro del compromiso** es `COL_AMT` |
+| Aserción de frontera | `COL_AMT` en la fila 0 es la entrada pública |
+
+Y `COL_AMT` figura en el vector `transport`, cuyas siete constancias ocupan
+las ranuras **+0 a +6** — las que el solapamiento de §38 **no** pisa. El
+límite regulatorio vuelve a imponerse en circuito, así que lo de §8.1 está
+cerrado.
+
+### 39.4 Qué alcance tienen entonces las ocho muertas de §38
+
+Con la 27 corregida, el análisis queda así:
+
+- En **`circuit_send`**, `COL_R_ID` y el aleatorio los **elige el pagador**.
+  Que su constancia no se imponga no le da ninguna capacidad que no tuviera.
+- En **`circuit_claim`**, `COL_R_ID` ya no lo lee nadie tras §39.1, y el
+  aleatorio solo determina el compromiso en las filas donde se construye:
+  si varía en otras, el compromiso sigue siendo el que sube al árbol y tiene
+  que casar con la raíz declarada.
+
+⚠️ **Esto es análisis, no demostración.** Hoy tres razonamientos de la
+misma clase han resultado equivocados (§37.4, §37.6, y la atribución de
+§37.7 que llevó hasta aquí). Se registra como lectura, no como garantía.
+
+**El defecto de disposición sigue ahí y hay que arreglarlo**, aunque no se
+le conozca consecuencia: ocho ranuras se calculan y se tiran, y un
+comentario declara quince donde el reparto asigna siete. Dos vías:
+
+| Vía | Coste | Riesgo |
+|---|---|---|
+| **Reasignar** los índices para que las ocho se impongan de verdad | `NUM_CONSTRAINTS` sube 8 y hay que rehacer la lista de grados | Alto: toca el espacio de índices entero |
+| **Eliminarlas** y corregir el comentario | Trivial | Bajo, pero **decide** que no hacen falta apoyándose en el análisis de arriba |
+
+⚠️ **La decisión se aplaza a propósito.** Ninguna de las dos es urgente
+—no hay consecuencia conocida— y la primera es un refactor del espacio de
+índices, que es exactamente donde este proyecto se ha hecho daño hoy. Se
+elige con la cabeza despejada, no al final de una sesión de doce horas.
+
 ## 40. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
