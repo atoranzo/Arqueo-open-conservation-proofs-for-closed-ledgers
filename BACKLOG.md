@@ -12,7 +12,10 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 21 abiertas, 6 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 22 abiertas, 6 resueltas.
+
+⚠️ **La entrada 27 es un fallo de solidez confirmado en la via de
+produccion.** Todo lo demas espera. Ultima revision: 30 de julio de 2026.
 
 Con la 5 queda cerrado el **grupo A**: el repositorio vuelve a describir
 lo que hay. La siguiente es la **6**.
@@ -69,13 +72,15 @@ describe cosas que no son ciertas.
 
 ## B. La siguiente de verdad
 
-- [ ] **27. ⚠️⚠️ SOSPECHA: el cobro puede no atar la identidad del
-  pendiente a la de la cuenta que cobra.** En `circuit_claim` nada parece
-  ligar `COL_R_ID` con `COL_ACC_ID` (§38.2). Si se confirma, quien conozca
-  los materiales de cobro —y el pagador los conoce todos— podria cobrar un
-  pendiente ajeno con una traza construida a mano. **No demostrado**: hay
-  un test discriminante pre-registrado. Es lo primero de todo hasta que se
-  cierre en un sentido o en otro.
+- [ ] **27. ⚠️ FALLO GRAVE CONFIRMADO: el cobro no demuestra titularidad.**
+  `circuit_claim` no ata `COL_R_ID` a `COL_ACC_ID`; la suite existente ya lo
+  demostraba (escenario con `SK=0xA11CE` cobrando un pendiente de `0xB0B`,
+  y verifica). Quien conozca posicion, aleatorio e importe cobra en su
+  cuenta; **el pagador los conoce todos** (§39). **Bloquea todo lo demas.**
+
+- [ ] **28. Corregir los tres preprints tras la 27.** Describen el cobro
+  como demostracion de titularidad. No tocar Zenodo hasta que 27 este
+  corregida y verificada.
 
 - [x] **26. Ocho restricciones sobrescritas en `circuit_send` y
   `circuit_claim`.** Las que imponen que la identidad del receptor y el

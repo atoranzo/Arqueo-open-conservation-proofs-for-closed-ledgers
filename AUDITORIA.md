@@ -3388,7 +3388,97 @@ Generar la prueba y verificarla.
 | Falla por otra restricción | El testigo no es discriminante (§16.5, ya ocurrió tres veces) | Rehacer el testigo hasta que solo falle lo que se prueba |
 | No compila o salida vacía | No corrió | No concluir nada |
 
-## 39. Qué NO demuestra este documento
+## 39. ⚠️ FALLO GRAVE: el cobro no demuestra que el pendiente fuera tuyo
+
+**Confirmado el 30 de julio de 2026.** No hizo falta escribir ningún test:
+lo demuestra la suite que ya pasaba.
+
+### El hecho
+
+En `circuit_claim::tests::scenario()`:
+
+```rust
+const SK: u64 = 0xA11CE;
+let account_id  = derive_public_id(BaseElement::new(SK));      // cobra
+let receiver_id = derive_public_id(BaseElement::new(0xB0B));   // destinatario
+```
+
+Son **identidades distintas**, y `an_authorized_claim_verifies` y
+`the_rightful_recipient_can_claim` **verifican**. Si el circuito exigiera
+que coincidieran, ese escenario no podría probar. Prueba.
+
+### Qué demuestra el circuito, y qué no
+
+Demuestra dos cosas ciertas por separado:
+
+1. quien prueba tiene la clave de la cuenta que se acredita (`C_PK_CHECK`
+   ata la identidad derivada a `COL_ACC_ID`), y
+2. existe en el árbol un pendiente cuyo compromiso es
+   `H(H(COL_R_ID, aleatorio), importe)`.
+
+**No demuestra que `COL_R_ID` sea `COL_ACC_ID`.** `COL_R_ID` aparece cuatro
+veces en el fichero —constante, construcción de la traza, la restricción
+de constancia que resultó muerta (§38) y la lectura que arma el
+compromiso— y ninguna aserción de frontera lo fija.
+
+### Por qué la capa no lo salva
+
+`client.rs:325` y `two_phase.rs:438` pasan `receiver.public_id` **como
+ambos argumentos**, con el comentario *«cobrar es demostrar que el
+pendiente estaba a su nombre»*. En operación honesta coinciden.
+
+Pero **el diseño entero descansa en que la prueba se genera en el
+cliente**: las funciones libres construyen la prueba con la clave de gasto
+y la capa solo verifica. Construir la traza uno mismo no es un ataque
+exótico —es el modo de operación con un cliente modificado—.
+
+Es exactamente la forma de §8.1: *una propiedad impuesta por la capa y no
+por el circuito, evitable por quien construya su propia traza*. Aquella
+era el límite regulatorio; esta es la titularidad del cobro.
+
+### Consecuencia
+
+Quien conozca **posición, aleatorio e importe** de un pendiente puede
+cobrarlo en su propia cuenta.
+
+⚠️ **El pagador los conoce todos**: él eligió el aleatorio. Puede enviar
+un pago y recuperarlo antes de que el receptor lo cobre.
+
+Y el aviso viaja **fuera del mensaje ISO 20022**, por un canal lateral que
+el propio proyecto declara sin especificar (§ de integración de estándares
+del preprint de política). Cualquiera que lo intercepte tiene lo que hace
+falta.
+
+### Por qué no se vio antes
+
+**El test que guardaba la propiedad no la prueba.**
+`nobody_else_can_claim_a_pending_transfer` —cuyo comentario lo llama *«el
+test que sostiene toda la segunda fase»*— cambia la **clave de gasto**, no
+la identidad del receptor, así que falla por `C_PK_CHECK`. Su
+documentación afirma que falla porque *«el compromiso reconstruido con su
+identidad es otro»*, y eso no es lo que ocurre.
+
+Y el que debía validarlo, `the_rightful_recipient_can_claim`, se llama *«el
+destinatario legítimo»* sobre un escenario donde el destinatario **no** es
+el titular de la cuenta. El nombre tapó el dato durante todo el desarrollo.
+
+Es la cuarta vez que §16.5 se cobra una pieza en este proyecto, y esta vez
+sobre la propiedad central de la vía de producción.
+
+### Lo que hay que hacer
+
+1. **Añadir la restricción que falta**: `COL_R_ID` debe ser `COL_ACC_ID`,
+   impuesta en circuito.
+2. **Corregir el escenario de test**, que hoy documenta el agujero en vez
+   de detectarlo, y reescribir los dos tests para que prueben lo que dicen.
+3. **Corregir los tres preprints**: describen el cobro como demostración de
+   titularidad. Entrada 28 del backlog.
+4. Revisar si `circuit_send` tiene una omisión análoga.
+
+Hasta que 1 y 2 estén hechos, **la vía de dos fases no debe describirse
+como segura frente a un cliente malicioso**.
+
+## 40. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

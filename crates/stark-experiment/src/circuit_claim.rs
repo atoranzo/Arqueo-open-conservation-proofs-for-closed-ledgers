@@ -1378,6 +1378,63 @@ mod tests {
         );
     }
 
+    /// **PASO 1 DE LA ENTRADA 27 DEL BACKLOG (`AUDITORIA.md` §38.2).**
+    ///
+    /// El test de arriba dice fallar porque *«el compromiso reconstruido
+    /// con su identidad es otro»*, pero cambia **la clave**, no la
+    /// identidad del receptor: falla por `C_PK_CHECK`. Este cambia la
+    /// identidad del receptor y **nada más**.
+    ///
+    /// Si el compromiso está atado al árbol de pendientes, la subida no
+    /// puede llegar a la raíz declarada y esto debe rechazarse. Si
+    /// verifica, `COL_R_ID` no está atado a nada.
+    #[test]
+    fn a_claim_reconstructing_a_different_commitment_is_rejected() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let otra_identidad = derive_public_id(BaseElement::new(0xDECAFB));
+        assert_ne!(otra_identidad, s.receiver_id);
+
+        let trace = build_trace(
+            s.key,
+            s.account_id,
+            s.balance,
+            s.nonce,
+            &s.path,
+            &s.frozen_path,
+            s.amount,
+            s.supply_old,
+            0,
+            otra_identidad,
+            s.salt,
+            &s.pending_path,
+        );
+        let prover = ClaimProver::new(default_options());
+
+        let hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(|_| {}));
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
+        std::panic::set_hook(hook);
+
+        let verifica = match r {
+            Err(_) => false,
+            Ok(Err(_)) => false,
+            Ok(Ok(proof)) => {
+                let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                    proof,
+                    s.public_inputs.clone(),
+                    &min_opts,
+                )
+                .is_ok()
+            }
+        };
+        assert!(
+            !verifica,
+            "CRITICO: reconstruir el compromiso con OTRA identidad no debe \
+             producir una prueba valida contra la misma raiz de pendientes"
+        );
+    }
+
     /// **Y el que valida al anterior**: con la clave correcta, sí.
     ///
     /// Sin esto, el anterior pasaría aunque la reclamación fallara siempre
