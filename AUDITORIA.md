@@ -3837,7 +3837,73 @@ que un analisis se corrige al contrastarlo con lo que el codigo hace de
 verdad (§37.4, §37.6, §40.1, y esta). El patron es consistente: **el error
 esta siempre en razonar sobre lo que deberia haber, no sobre lo que hay.**
 
-## 44. Qué NO demuestra este documento
+## 44. El precio real de la entrada 6, medido
+
+§37.7 dejó el diagnóstico cerrado —posiciones con bits de camino no
+constantes restauran los grados— y el pronóstico en «tiene arreglo, hay que
+decidir el precio». Medido el precio, la decisión es más delicada de lo que
+parecía.
+
+### 44.1 Las dos caras baratas
+
+**Capacidad: despreciable.** Los árboles de cuentas y pendientes tienen
+profundidad 32 — 2^32 hojas. Reservar las primeras 255 posiciones es el
+0,0000059 % de la capacidad. En congelados (profundidad 24) sigue siendo
+inapreciable.
+
+**Tests: coste acotado.** Reservar posiciones bajas rompe las aserciones
+que hoy esperan que el primer pendiente caiga en la 0 — son de test, no de
+produccion, y se corrigen con el escenario, como se hizo con §39.1.
+
+### 44.2 La cara cara: `next_pending` se persiste y solo sube
+
+`next_pending` es un contador persistido que **nunca reutiliza posiciones**
+(`lib.rs:192`). Para un ledger **nuevo**, arrancarlo en 256 no cuesta nada:
+ningun pendiente cae en el rango degenerado.
+
+Para un ledger **existente**, no basta. Su `next_pending` ya vale algo bajo
+y tiene pendientes vivos en las posiciones 0, 1, 2… Cambiar el punto de
+arranque **no los mueve**, y esas posiciones siguen con los bits de camino
+constantes. La correccion no es retroactiva sin **reubicar los pendientes
+existentes** a posiciones altas.
+
+⚠️ **Y reubicar un pendiente es mover valor en transito.** Un pendiente es
+un pago enviado y no cobrado (§36). Cambiarlo de posicion recalcula la raiz
+del arbol, y hacerlo mal —o a medias tras un fallo— pierde o duplica un
+pago. Es exactamente la clase de operacion que §36 rodeo de verificacion:
+no se hace en silencio, se verifica contra la raiz antes y despues.
+
+### 44.3 Entonces la 6 no es «pagar un precio», es una migracion
+
+La decision no es «reservar 256 posiciones: si o no». Es:
+
+1. **Ledger nuevo**: `next_pending` arranca en 256. Trivial, sin coste.
+2. **Ledger existente**: o se migran los pendientes vivos a posiciones
+   altas —con la misma prudencia que §36—, o se acepta que **solo los
+   ledgers nuevos** tienen los grados sanos y los viejos conviven con el
+   modo depuracion roto hasta vaciarse.
+
+La opcion 2b —correccion solo hacia delante— es defendible: el problema es
+que la comprobacion de grados no protege en depuracion, no un fallo en
+produccion, y un ledger viejo se vacia de pendientes al cobrarse todos. Pero
+es una decision de politica, no una linea de codigo.
+
+### 44.4 Por que se aplaza, con fundamento
+
+No por cansancio: porque **decidir una migracion de pagos en transito es
+del mismo peso que §36**, y §36 se hizo con una sesion dedicada, no como
+paso trece de una larga. Lo que §44 aporta es que la decision quede **bien
+planteada**: capacidad y tests son baratos, el nudo es el ledger existente,
+y hay una salida hacia delante que no migra nada si se acepta su politica.
+
+Las entradas 24 y 25 —el mismo grado dependiente del testigo en congelados,
+cuentas y por valores del dominio— comparten este analisis: cuentas viven
+en indices 0 y 1 por diseño, y ahi reservar no es opcion sin mover cuentas.
+Para esas dos, la salida realista es la de §37.2 caso B: **declarar** que la
+comprobacion de grados de winterfell es incompatible con grados que dependen
+del valor, y documentarlo como limite de la herramienta.
+
+## 45. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

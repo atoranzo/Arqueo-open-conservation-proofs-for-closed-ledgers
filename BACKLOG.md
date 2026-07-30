@@ -110,6 +110,10 @@ decidir.
   circuito sino **no asignar la posicion 0**, y hay un experimento
   pre-registrado en §37.3 para decidirlo. Winterfell exige que el grado
   declarado **coincida** con el real, asi que declarar menos no es salida.
+  **Precio medido (§44)**: capacidad y tests baratos, pero la correccion
+  arrastra una **migracion de pendientes vivos** en ledgers existentes —del
+  peso de §36—, o aceptar correccion solo-hacia-delante. Decision de
+  politica aplazada con fundamento, no una linea.
   **Experimento ejecutado** el 30-07-2026 (§37.4): tercera fila, el
   desplazamiento **se descarta** —de 21 desviadas a 13, pero los fallos
   suben de 65 a 66—. Establecido que ninguna asignacion secuencial lo
