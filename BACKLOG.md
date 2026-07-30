@@ -13,9 +13,17 @@ Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
 **Estado**: 25 abiertas, 8 resueltas. Ultima revision: 30 de julio de 2026.
+Recuento por grupo: A 0/5, B 5, C-solidez 4, C-declaradas 9, D 6, E 1.
 
-Con la 5 queda cerrado el **grupo A**: el repositorio vuelve a describir
-lo que hay. La siguiente es la **6**.
+Con la 5 quedo cerrado el **grupo A**. La siguiente prioridad es la **32**:
+las claves de custodio llegan al operador (§41), el mayor de los frentes de
+solidez/confianza abiertos hoy.
+
+⚠️ **Reordenado el 30-07-2026.** Diez entradas nuevas entraron en una
+sola sesion ancladas sobre lineas concretas, y varias quedaron en el grupo
+equivocado. Se han recolocado por prioridad **sin cambiar ningun numero**,
+como manda la convencion. El orden de lectura ya no es el numerico: es el
+de los grupos.
 
 ⚠️ **Esta lista nacio desfasada.** Se creo en el commit `9670e76`
 listando como pendientes las entradas 2 y 3, que ya estaban resueltas y
@@ -27,10 +35,9 @@ afirmacion sin comprobar.
 
 ---
 
-## A. Cerrar la obra en curso
+## A. Cerrada: la obra en curso
 
-Correcciones ya preparadas. Mientras no se apliquen, el repositorio
-describe cosas que no son ciertas.
+El repositorio volvio a describir lo que hay. Las cinco resueltas.
 
 - [x] **1. Coherencia de los papers.** ~~`PAPER.md`, `PAPER_EN.md` y la
   documentacion autocontradictoria de `circuit_send` siguen describiendo
@@ -42,23 +49,27 @@ describe cosas que no son ciertas.
   cumpleanos se reescribe como limite que existio, y la lista «que
   demuestra» de `circuit_send` deja de contradecir a la seccion «por que
   NO lleva nullificador» doce lineas mas abajo.
+
 - [x] **2. Cifras del repositorio.** ~~65 de 174 en depuracion, 174 tests
   de la capa, doce circuitos, y la contradiccion 56/65 dentro de
   `AUDITORIA.md`.~~ **Resuelto** el 30-07-2026, commit `f673c8e` *«Correct
   stale and contradictory test and circuit counts, measured»*: los 65
   medidos con `cargo test -p zk-ssl` sin `--release` (109 pasan, 65 fallan
   de 174).
+
 - [x] **3. DOI de la tercera revision.** ~~La seccion de publicacion apunta
   a versiones anteriores de los tres preprints.~~ **Resuelto** el
   30-07-2026, commit `a6be4b2` *«Point publication section at the
   third-revision DOIs»*: 21693706, 21693709 y 21693718, con las versiones
   anteriores citadas y una tabla de que corrige cada salto.
+
 - [x] **4. Medir `stark-experiment` en depuracion.** ~~El README publica
   «199 y 200» y en release hoy son 201; ultima cifra sin verificar.~~
   **Medido** el 30-07-2026: **201 en release; 199 mas 2 saltados en
   depuracion**, y 51 s frente a 9 s (cinco veces, no seis). El README
   hablaba ademas de UN test saltado y son **dos**
   (`circuit_mint_pending` y `range_check`), los dos por grado real cero.
+
 - [x] **5. Fuentes de los preprints al repositorio.** ~~Los papeles dicen
   «reproducible desde el artefacto» y el texto publicado no esta en el
   artefacto.~~ **Resuelto** el 30-07-2026, commit *«Add preprint sources so
@@ -67,42 +78,20 @@ describe cosas que no son ciertas.
   declara que son una **reconstruccion** desde la capa de texto de la
   segunda revision. La cuarta revision ya sera un parche.
 
-## B. La siguiente de verdad
+## B. La siguiente de verdad: el modelo de confianza
 
-- [x] **27. ⚠️ FALLO GRAVE CONFIRMADO Y CORREGIDO: el cobro no demostraba
-  titularidad.**
-  `circuit_claim` no ata `COL_R_ID` a `COL_ACC_ID`; la suite existente ya lo
-  demostraba (escenario con `SK=0xA11CE` cobrando un pendiente de `0xB0B`,
-  y verifica). Quien conozca posicion, aleatorio e importe cobra en su
-  cuenta; **el pagador los conoce todos** (§39). ✅ **Corregido** el
-  30-07-2026 (§39.1): `C_PEND_IN` reconstruye el compromiso con
-  `COL_ACC_ID`, atado a la clave por `C_PK_CHECK`. Escenario y los dos
-  tests rehechos. 203 y 174 sin fallos.
+La 32 encabeza. La 33 es su correccion de diseno. La 6, 25 y 24 son el
+frente de los grados, con el diagnostico ya cerrado (§37.7) y el precio por
+decidir.
 
-- [ ] **30. Arreglar la disposicion de las ocho ranuras solapadas.** Sin
-  consecuencia conocida tras corregir la 27 (§39.4), pero ocho
-  restricciones se calculan y se tiran y un comentario declara quince donde
-  el reparto asigna siete. Dos vias con costes muy distintos, y la decision
-  **esta aplazada a proposito**: reasignar indices es un refactor del
-  espacio de restricciones.
+- [ ] **32. ⚠️ Las claves de custodio SI llegan al operador.** No hay via
+  cliente para operaciones privilegiadas: `ThresholdAuth` lleva las claves
+  en crudo y la capa construye la traza (§41). Quienes conservan su clave
+  solo pueden mover su dinero; quienes la entregan pueden crearlo.
+  **Confianza residual no declarada** en los preprints: va con la 28.
 
-- [ ] **29. Un fallo unico de la bateria, sin explicar.** Una ejecucion
-  dio 202/1; las 46 siguientes, 203/0. La hipotesis del gancho de panico
-  global (32 puntos, 22 ficheros, tests en paralelo) **no** quedo
-  respaldada: `--test-threads=1` no cambia nada (§39.2). Causa desconocida.
-
-- [ ] **28. Corregir los tres preprints tras la 27.** Describen el cobro
-  como demostracion de titularidad. No tocar Zenodo hasta que 27 este
-  corregida y verificada.
-
-- [x] **26. Ocho restricciones sobrescritas en `circuit_send` y
-  `circuit_claim`.** Las que imponen que la identidad del receptor y el
-  aleatorio no varien entre filas se calculan y se pisan; nada mas las fija
-  (§38). Explotabilidad **no establecida**. Pasa por delante de la 6 y la
-  25: aquellas son grados que no se comprueban, esta es una restriccion que
-  se creia impuesta y no lo esta. **Premisa confirmada** el 30-07-2026
-  (§38.1): comentarlas no cambia nada, 201 y 174 sin fallos. Queda abierta
-  la consecuencia, que es la entrada 27.
+- [ ] **33. Que los custodios prueben en su maquina, y que la autorizacion
+  cubra los parametros.** La correccion de diseno de la 32 (§41.4).
 
 - [ ] **6. El grado dependiente del testigo en el arbol de pendientes.**
   La unica comprobacion automatica del area de menor confianza (§16.3)
@@ -124,70 +113,13 @@ describe cosas que no son ciertas.
   circuitos. El diagnostico queda cerrado; falta **decidir si se paga el
   precio** de posiciones no secuenciales. Y no basta por si solo: ver la
   entrada 25.
-- [ ] **7. ⚠️ Encargar la auditoria externa.** Ya no es solo por el
-  argumento lockstep (§16.4). Tras §39 hay un defecto **demostrado** de una
-  clase que las herramientas del proyecto no detectan por construccion, y
-  el barrido sistematico tampoco la encuentra (§40): el unico metodo
-  conocido es la lectura semantica circuito a circuito, cara, manual y en
-  la que el autor acaba de equivocarse tres veces en un dia.
 
-- [x] **31. Pregunta cerrada: `circuit_mint_pending` no declara a quien
-  emite** ~~(§40.3)~~ **y tampoco lo cubre la autorizacion** (§41.2). No es
-  fallo de solidez: la autorizacion es posesion de claves, no aprobacion de
-  una operacion.
-
-- [ ] **32. ⚠️ Las claves de custodio SI llegan al operador.** No hay via
-  cliente para operaciones privilegiadas: `ThresholdAuth` lleva las claves
-  en crudo y la capa construye la traza (§41). Quienes conservan su clave
-  solo pueden mover su dinero; quienes la entregan pueden crearlo.
-  **Confianza residual no declarada** en los preprints: va con la 28.
-
-- [ ] **33. Que los custodios prueben en su maquina, y que la autorizacion
-  cubra los parametros.** La correccion de diseno de la 32 (§41.4).
-
-## C. Declaradas, acotadas, sin urgencia
-
-- [ ] **8. `open_account` sin autorizacion.** El tope de cuentas mitiga a
-  medias: un atacante aun puede agotar el cupo, y la solucion correcta
-  exige un circuito nuevo (§16.1).
-- [ ] **9. Congelacion sin caducidad ni motivo registrado.** El circuito
-  prueba que dos custodios la autorizaron, no que tuvieran razon, y dura
-  hasta que alguien la levante (§16.2).
-- [ ] **10. Decidir sobre 127 bits conjeturados frente a 29–63
-  demostrables.** El coste de cerrar la brecha esta medido
-  (36,7 KB → 125,6 KB); falta hacer la eleccion explicita.
-- [ ] **11. Canal lateral de ISO 20022.** Posicion, aleatorio e importe del
-  pendiente viajan fuera del mensaje, sin especificar como; bloquea
-  cualquier piloto.
-- [ ] **12. Sin devolucion para un pendiente no cobrado.** El importe queda
-  inmovilizado y no hay camino de vuelta implementado.
-- [ ] **13. Senal temporal para el pagador.** Puede recomputar el
-  compromiso y ver cuando se cobra; declarado, no eliminado.
-- [ ] **14. Techo de 128 custodios.** Acoplado a un segmento de rango de 7
-  bits, con holgura hoy (el arbol admite 16) pero sin declarar hasta que un
-  test lo fijo.
-- [ ] **15. Goldilocks es estrecho para identidades.** 64 bits son colision
-  en 2³².
-- [ ] **16. Referencias cruzadas de los preprints.** Los tres citan
-  versiones anteriores de sus companeros; primera cosa de la cuarta
-  revision.
-
-## D. Operacion
-
-- [ ] **17. Replica y alta disponibilidad.** El nodo es punto unico de
-  fallo.
-- [ ] **18. Bloqueo de directorio de `sled`.** Puede impedir un reinicio
-  inmediato tras cerrar (§16.6).
-- [ ] **19. Sin log de escritura anticipada.** Un fallo entre operaciones
-  detiene el arranque pidiendo intervencion manual: correcto, pero no
-  automatico.
-- [ ] **20. Rotacion de claves operativas.** Implementada solo en parte.
-- [ ] **21. Delegacion de prueba a clientes ligeros.** Exige verificar una
-  firma dentro del circuito, ~8.000 filas.
-- [ ] **22. Agregacion de pruebas.** 120,4 MB por mil pagos es coste, no
-  parada, pero crece linealmente.
-
-## E. Otro proyecto, no una incidencia
+- [ ] **25. El mismo grado dependiente del testigo en los arboles de
+  cuentas y congelados.** Tras cerrar el diagnostico del pendiente (§37.7)
+  quedan 64 fallos en dos bloques que aparecen en casi todos los circuitos;
+  por su posicion son las subidas a **cuentas** (indices 0 y 1) y a
+  **congelados** (arbol vacio). Atribucion **sin verificar**: mapear indices
+  contra las constantes antes de afirmarla.
 
 - [ ] **24. Grado dependiente del testigo por valores legitimos del
   dominio.** `circuit_mint_pending` con el margen del tope a cero y
@@ -197,12 +129,121 @@ describe cosas que no son ciertas.
   caso B). Es la causa de los 2 tests que `stark-experiment` se salta en
   depuracion.
 
-- [ ] **25. El mismo grado dependiente del testigo en los arboles de
-  cuentas y congelados.** Tras cerrar el diagnostico del pendiente (§37.7)
-  quedan 64 fallos en dos bloques que aparecen en casi todos los circuitos;
-  por su posicion son las subidas a **cuentas** (indices 0 y 1) y a
-  **congelados** (arbol vacio). Atribucion **sin verificar**: mapear indices
-  contra las constantes antes de afirmarla.
+## C. Solidez y verificacion: resueltas y en revision
+
+Los hallazgos de solidez de esta sesion. Tres cerrados, uno aplazado a
+proposito, y la auditoria externa que ahora es instrumento y no deseo.
+
+- [x] **27. ⚠️ FALLO GRAVE CONFIRMADO Y CORREGIDO: el cobro no demostraba
+  titularidad.**
+  `circuit_claim` no ata `COL_R_ID` a `COL_ACC_ID`; la suite existente ya lo
+  demostraba (escenario con `SK=0xA11CE` cobrando un pendiente de `0xB0B`,
+  y verifica). Quien conozca posicion, aleatorio e importe cobra en su
+  cuenta; **el pagador los conoce todos** (§39). ✅ **Corregido** el
+  30-07-2026 (§39.1): `C_PEND_IN` reconstruye el compromiso con
+  `COL_ACC_ID`, atado a la clave por `C_PK_CHECK`. Escenario y los dos
+  tests rehechos. 203 y 174 sin fallos.
+
+- [x] **26. Ocho restricciones sobrescritas en `circuit_send` y
+  `circuit_claim`.** Las que imponen que la identidad del receptor y el
+  aleatorio no varien entre filas se calculan y se pisan; nada mas las fija
+  (§38). Explotabilidad **no establecida**. Pasa por delante de la 6 y la
+  25: aquellas son grados que no se comprueban, esta es una restriccion que
+  se creia impuesta y no lo esta. **Premisa confirmada** el 30-07-2026
+  (§38.1): comentarlas no cambia nada, 201 y 174 sin fallos. Queda abierta
+  la consecuencia, que es la entrada 27.
+
+- [x] **31. Pregunta cerrada: `circuit_mint_pending` no declara a quien
+  emite** ~~(§40.3)~~ **y tampoco lo cubre la autorizacion** (§41.2). No es
+  fallo de solidez: la autorizacion es posesion de claves, no aprobacion de
+  una operacion.
+
+- [ ] **30. Arreglar la disposicion de las ocho ranuras solapadas.** Sin
+  consecuencia conocida tras corregir la 27 (§39.4), pero ocho
+  restricciones se calculan y se tiran y un comentario declara quince donde
+  el reparto asigna siete. Dos vias con costes muy distintos, y la decision
+  **esta aplazada a proposito**: reasignar indices es un refactor del
+  espacio de restricciones.
+
+- [ ] **29. Un fallo unico de la bateria, sin explicar.** Una ejecucion
+  dio 202/1; las 46 siguientes, 203/0. La hipotesis del gancho de panico
+  global (32 puntos, 22 ficheros, tests en paralelo) **no** quedo
+  respaldada: `--test-threads=1` no cambia nada (§39.2). Causa desconocida.
+
+- [ ] **7. ⚠️ Encargar la auditoria externa.** Ya no es solo por el
+  argumento lockstep (§16.4). Tras §39 hay un defecto **demostrado** de una
+  clase que las herramientas del proyecto no detectan por construccion, y
+  el barrido sistematico tampoco la encuentra (§40): el unico metodo
+  conocido es la lectura semantica circuito a circuito, cara, manual y en
+  la que el autor acaba de equivocarse tres veces en un dia.
+
+## D. Declaradas, acotadas, sin urgencia
+
+- [ ] **8. `open_account` sin autorizacion.** El tope de cuentas mitiga a
+  medias: un atacante aun puede agotar el cupo, y la solucion correcta
+  exige un circuito nuevo (§16.1).
+
+- [ ] **9. Congelacion sin caducidad ni motivo registrado.** El circuito
+  prueba que dos custodios la autorizaron, no que tuvieran razon, y dura
+  hasta que alguien la levante (§16.2).
+
+- [ ] **10. Decidir sobre 127 bits conjeturados frente a 29–63
+  demostrables.** El coste de cerrar la brecha esta medido
+  (36,7 KB → 125,6 KB); falta hacer la eleccion explicita.
+
+- [ ] **11. Canal lateral de ISO 20022.** Posicion, aleatorio e importe del
+  pendiente viajan fuera del mensaje, sin especificar como; bloquea
+  cualquier piloto.
+
+- [ ] **12. Sin devolucion para un pendiente no cobrado.** El importe queda
+  inmovilizado y no hay camino de vuelta implementado.
+
+- [ ] **13. Senal temporal para el pagador.** Puede recomputar el
+  compromiso y ver cuando se cobra; declarado, no eliminado.
+
+- [ ] **14. Techo de 128 custodios.** Acoplado a un segmento de rango de 7
+  bits, con holgura hoy (el arbol admite 16) pero sin declarar hasta que un
+  test lo fijo.
+
+- [ ] **15. Goldilocks es estrecho para identidades.** 64 bits son colision
+  en 2³².
+
+- [ ] **16. Referencias cruzadas de los preprints.** Los tres citan
+  versiones anteriores de sus companeros; primera cosa de la cuarta
+  revision.
+
+## E. Operacion
+
+- [ ] **17. Replica y alta disponibilidad.** El nodo es punto unico de
+  fallo.
+
+- [ ] **18. Bloqueo de directorio de `sled`.** Puede impedir un reinicio
+  inmediato tras cerrar (§16.6).
+
+- [ ] **19. Sin log de escritura anticipada.** Un fallo entre operaciones
+  detiene el arranque pidiendo intervencion manual: correcto, pero no
+  automatico.
+
+- [ ] **20. Rotacion de claves operativas.** Implementada solo en parte.
+
+- [ ] **21. Delegacion de prueba a clientes ligeros.** Exige verificar una
+  firma dentro del circuito, ~8.000 filas.
+
+- [ ] **22. Agregacion de pruebas.** 120,4 MB por mil pagos es coste, no
+  parada, pero crece linealmente.
+
+## F. Publicacion, cuando el circuito este cerrado
+
+La 28 se hace **al final**, por decision explicita: no se tocan los
+preprints ni Zenodo hasta que los frentes de solidez del circuito esten
+cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
+(§39), claves de custodio (§41) y las cifras.
+
+- [ ] **28. Corregir los tres preprints tras la 27.** Describen el cobro
+  como demostracion de titularidad. No tocar Zenodo hasta que 27 este
+  corregida y verificada.
+
+## G. Otro proyecto, no una incidencia
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo
