@@ -12,7 +12,15 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 22 abiertas, 1 resuelta. Ultima revision: 30 de julio de 2026.
+**Estado**: 20 abiertas, 3 resueltas. Ultima revision: 30 de julio de 2026.
+
+⚠️ **Esta lista nacio desfasada.** Se creo en el commit `9670e76`
+listando como pendientes las entradas 2 y 3, que ya estaban resueltas y
+empujadas en `f673c8e` y `a6be4b2`. Se escribio desde el estado que su
+autor recordaba en vez de comprobar el arbol. Queda anotado porque es
+exactamente el fallo que la convencion de abajo pretende evitar, y porque
+una lista de pendientes que no se verifica contra el repositorio es otra
+afirmacion sin comprobar.
 
 ---
 
@@ -31,11 +39,17 @@ describe cosas que no son ciertas.
   cumpleanos se reescribe como limite que existio, y la lista «que
   demuestra» de `circuit_send` deja de contradecir a la seccion «por que
   NO lleva nullificador» doce lineas mas abajo.
-- [ ] **2. Cifras del repositorio.** 65 de 174 en depuracion, 174 tests de
-  la capa, doce circuitos, y la contradiccion 56/65 dentro de
-  `AUDITORIA.md`. → `fix_cifras.py`
-- [ ] **3. DOI de la tercera revision.** La seccion de publicacion apunta a
-  versiones anteriores de los tres preprints. → `fix_dois.py`
+- [x] **2. Cifras del repositorio.** ~~65 de 174 en depuracion, 174 tests
+  de la capa, doce circuitos, y la contradiccion 56/65 dentro de
+  `AUDITORIA.md`.~~ **Resuelto** el 30-07-2026, commit `f673c8e` *«Correct
+  stale and contradictory test and circuit counts, measured»*: los 65
+  medidos con `cargo test -p zk-ssl` sin `--release` (109 pasan, 65 fallan
+  de 174).
+- [x] **3. DOI de la tercera revision.** ~~La seccion de publicacion apunta
+  a versiones anteriores de los tres preprints.~~ **Resuelto** el
+  30-07-2026, commit `a6be4b2` *«Point publication section at the
+  third-revision DOIs»*: 21693706, 21693709 y 21693718, con las versiones
+  anteriores citadas y una tabla de que corrige cada salto.
 - [ ] **4. Medir `stark-experiment` en depuracion.** El README publica
   «199 y 200» y en release hoy son 201; ultima cifra sin verificar.
 - [ ] **5. Fuentes de los preprints al repositorio.** Los papeles dicen
