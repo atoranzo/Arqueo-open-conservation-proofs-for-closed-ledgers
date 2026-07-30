@@ -3991,7 +3991,96 @@ igual que el primer `0 de 40` pre-fix casi cierra la entrada sobre azar.
 Las dos veces, la salida corria antes de que el estado fuera el que se
 creía. Medir exige fijar primero lo que se mide.
 
-## 46. Qué NO demuestra este documento
+## 46. La decision de la entrada 6, razonada
+
+§44 dejo tres ramas de politica. Al bajar a decidir, el codigo corrige una
+premisa y la eleccion se vuelve casi forzada.
+
+### 46.1 Un dato de §44 que estaba mal: los huecos se reutilizan
+
+`two_phase::allocate_pending` **reutiliza posiciones liberadas**:
+
+```rust
+for p in 0..self.next_pending {
+    if !self.pending.is_occupied(p) { return Ok(p); }
+}
+Ok(self.next_pending)
+```
+
+§44 supuso que un ledger viejo «se vacia de pendientes al cobrarse todos» y
+por eso la correccion solo-hacia-delante bastaba con el tiempo. **Falso.**
+Cuando un pendiente en posicion baja se cobra, su hueco queda libre y la
+capa lo **reasigna** al siguiente envio, que vuelve a caer en la posicion
+degenerada. Un ledger no se cura solo: **recae**.
+
+Esto **descarta la rama solo-hacia-delante** (§44.3, opcion 2b). No es que
+sea peor: es que no existe. Mientras `allocate_pending` empiece en 0 y
+reutilice huecos, siempre habra pagos en posiciones con bits de camino
+constantes.
+
+⚠️ **Y el comentario de `allocate_pending` se contradice a si mismo**,
+como `circuit_send` en §1. Dice *«Nadie las reutilizaba»* en un parrafo y
+dos mas abajo describe el reciclado como propiedad buscada: *«vale igual
+para una posicion nueva que para una reciclada»*. El codigo reutiliza —el
+bucle devuelve el primer hueco libre desde 0—, asi que la segunda frase es
+la cierta y la primera es un resto rancio. Otro comentario que afirma lo
+contrario de lo que hace la funcion doce lineas mas abajo. Se corrige al
+redactar la 34.
+
+### 46.2 Las tres ramas, contra los principios
+
+**Migrar los pendientes vivos** (peso de §36). Correcta y completa, pero es
+mover valor en transito, y su coste —una sesion dedicada, con verificacion
+contra raiz— es real. **No aporta solidez de produccion**: el defecto que
+arregla es que la *comprobacion de grados en depuracion* no protege. Gastar
+una migracion de fondos para arreglar una comprobacion de tests es
+desproporcionado. **Coherencia**: el precio no guarda proporcion con lo que
+compra.
+
+**Declararlo limite de winterfell** (como 24/25). La winterfell comprueba
+en depuracion que el grado declarado se realice en la traza concreta; un
+grado que depende del valor del testigo —y los bits de camino lo son— es
+**incompatible con esa comprobacion por naturaleza**, no por un defecto del
+circuito. §37.7 ya lo demostro: reformular no es posible sin cambiar las
+posiciones, y cambiarlas arrastra la migracion. Es la misma situacion que
+las cuentas en indices 0 y 1 (25) y que los valores de dominio (24): **una
+propiedad de la herramienta, no un fallo del sistema.**
+
+**No hacer nada sin declararlo.** Descartada de entrada: dejaria 65 tests
+fallando en depuracion sin que el repositorio diga por que es aceptable.
+
+### 46.3 La decision
+
+**Se declara, no se migra.** Y se unifican 6, 24 y 25 bajo un mismo
+enunciado, porque son el mismo fenomeno:
+
+> La comprobacion de grados de winterfell en modo depuracion es
+> incompatible con restricciones cuyo grado depende del valor del testigo.
+> Los bits de camino de Merkle (arboles de cuentas, pendientes y
+> congelados) y los margenes que pueden ser cero (tope de emision,
+> diferencia de rango) tienen grado que colapsa en ciertos testigos
+> validos. **No es un fallo de solidez** —en release, donde winterfell no
+> comprueba grados, las pruebas se generan y verifican correctamente— sino
+> el precio de arithmetizar en AIR una logica con ramas dependientes del
+> dato. Se documenta como limite conocido; el modo release es el modo de
+> produccion.
+
+### 46.4 Por que esto es coherente y no una rendicion
+
+El proyecto ya elige release como modo de produccion y lo documenta (§20).
+La comprobacion de grados en depuracion es una red **adicional** de
+winterfell, util donde aplica, y esta clase de restriccion queda fuera de
+su alcance. Declararlo no rebaja ninguna garantia real: las pruebas
+protegen lo mismo. Lo que cambia es que **el repositorio deja de tener 65
+tests «rotos» sin explicacion** y pasa a tener un limite nombrado, que es
+justo lo que distingue a este proyecto.
+
+Lo que NO se hace, y se dice: no se persigue el 100 % de tests en
+depuracion. Perseguirlo costaria una migracion de fondos (6) o seria
+imposible (24, valores de dominio), y compraria una comprobacion que el
+modo de produccion no necesita. **Coherencia sobre completitud.**
+
+## 47. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
