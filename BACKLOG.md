@@ -12,7 +12,10 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 19 abiertas, 4 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 18 abiertas, 5 resueltas. Ultima revision: 30 de julio de 2026.
+
+Con la 5 queda cerrado el **grupo A**: el repositorio vuelve a describir
+lo que hay. La siguiente es la **6**.
 
 ⚠️ **Esta lista nacio desfasada.** Se creo en el commit `9670e76`
 listando como pendientes las entradas 2 y 3, que ya estaban resueltas y
@@ -56,9 +59,13 @@ describe cosas que no son ciertas.
   depuracion**, y 51 s frente a 9 s (cinco veces, no seis). El README
   hablaba ademas de UN test saltado y son **dos**
   (`circuit_mint_pending` y `range_check`), los dos por grado real cero.
-- [ ] **5. Fuentes de los preprints al repositorio.** Los papeles dicen
+- [x] **5. Fuentes de los preprints al repositorio.** ~~Los papeles dicen
   «reproducible desde el artefacto» y el texto publicado no esta en el
-  artefacto.
+  artefacto.~~ **Resuelto** el 30-07-2026, commit *«Add preprint sources so
+  the published text lives in the artifact»*: `doc/preprints/` con las tres
+  fuentes, el estilo, el guion de conversion y una nota de procedencia que
+  declara que son una **reconstruccion** desde la capa de texto de la
+  segunda revision. La cuarta revision ya sera un parche.
 
 ## B. La siguiente de verdad
 
