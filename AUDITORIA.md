@@ -4802,7 +4802,67 @@ encontrado**. Para esa clase sigue sin haber mas instrumento que la lectura
 semantica y el test discriminante, que es el argumento de §40.4 y de la
 entrada 7.
 
-## 54. Qué NO demuestra este documento
+## 54. El umbral, reconstruido fuera del circuito — y lo que falta
+
+Al separar los carriles (§52.7) el umbral 2-de-N dejo de vivir en el
+circuito: el orden estricto `idx_b - idx_a - 1` que garantizaba «custodios
+distintos» desaparece con la traza conjunta. `verify_threshold_pair`
+—anadida el 30-07-2026— es donde vive ahora.
+
+### 54.1 Las tres comprobaciones, y por que en ese orden
+
+1. **Las dos raices son la que dice la capa.** No se leen de las pruebas.
+2. **Los nulificadores difieren.** Aqui el umbral es umbral.
+3. **Las dos pruebas verifican.**
+
+### 54.2 Un ataque que no estaba en el analisis previo
+
+§51 y §52 identificaron **un** problema al separar: reimponer «custodios
+distintos». Al escribir la funcion aparecio un **segundo**, que ninguno de
+los dos analisis habia visto:
+
+> **El atacante trae su propio conjunto de custodios.** Se construye un arbol
+> con dieciseis claves suyas y firma dos veces con dos de ellas. Las dos
+> pruebas son **validas**. Los nulificadores son **distintos**. La
+> comprobacion de «custodios diferentes» pasa sin problema.
+
+Lo unico que lo detiene es que la raiz del conjunto **la ponga la capa** y no
+salga de la prueba. En el circuito conjunto este agujero no existia: habia
+una sola prueba con una sola raiz. **Lo abre la separacion**, igual que el
+del orden estricto. Dos agujeros, no uno, y el segundo solo aparecio al bajar
+a escribir la funcion —no leyendo el diseño—.
+
+### 54.3 Un acierto de diseño que conviene nombrar
+
+`PairRejection` es un enum, y los tests comprueban `Err(SameCustodian)` o
+`Err(WrongCustodianSet)`, no un booleano. Es decir: la disciplina de §16.5
+—que un test negativo rechace **por la razon correcta**— queda impuesta por
+el **tipo**, no confiada a un comentario. Los tests de §39, §50 y §50.7 tuvieron
+que comprobarlo aparte porque devolvian `bool`.
+
+### 54.4 ⚠️ Lo que falta, y es grave: la autorizacion no dice QUE autoriza
+
+`verify_threshold_pair` demuestra que **dos custodios distintos del conjunto
+autorizaron ALGO**. Las entradas publicas son la raiz y el nulificador: no
+mencionan destinatario, importe ni contador.
+
+> **Un par valido se puede reproducir.** Dos custodios autorizan emitir 1.000
+> a Alicia; cualquiera reenvia esas mismas dos pruebas para emitir 1.000.000
+> a Bob, y verifican igual.
+
+Es exactamente el hallazgo de §41.2 —la autorizacion es posesion de claves,
+no aprobacion de una operacion— ahora **concentrado en un solo punto** en vez
+de repartido por cinco circuitos. Cerrarlo es atar un identificador de
+operacion al nulificador, `H(dominio, clave, operacion)`, y llevarlo a las
+entradas publicas. Eso ademas **cierra la enlazabilidad** de §52.4: el
+nulificador dejaria de ser estable entre operaciones. Una sola pieza resuelve
+las dos cosas, y esta sin hacer.
+
+⚠️ **Mientras tanto, este camino NO es utilizable en produccion**, y la
+funcion lo dice en su propia documentacion. Lo que hay es un experimento
+completo y medido, no un sustituto de `ThresholdAuth`.
+
+## 55. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

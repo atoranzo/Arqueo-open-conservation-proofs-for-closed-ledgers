@@ -49,7 +49,8 @@ use winterfell::crypto::{DefaultRandomCoin, MerkleTree};
 use winterfell::math::{fields::f64::BaseElement, FieldElement, ToElements};
 use winterfell::matrix::ColMatrix;
 use winterfell::{
-    Air, AirContext, Assertion, AuxRandElements, CompositionPoly, CompositionPolyTrace,
+    verify, AcceptableOptions, Air, AirContext, Assertion, AuxRandElements, CompositionPoly,
+    CompositionPolyTrace, Proof,
     ConstraintCompositionCoefficients, DefaultConstraintCommitment, DefaultConstraintEvaluator,
     DefaultTraceLde, EvaluationFrame, PartitionOptions, ProofOptions, Prover, StarkDomain,
     TraceInfo, TracePolyTable, TraceTable, TransitionConstraintDegree,
@@ -491,6 +492,84 @@ impl Prover for NullifierThresholdProver {
     }
 }
 
+/// Por que se rechaza un par de autorizaciones.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PairRejection {
+    /// Una de las dos pruebas no verifica.
+    InvalidProof,
+    /// ⚠️ Las dos vienen del **mismo custodio**: mismo nulificador. Sin
+    /// esta comprobacion el umbral 2-de-N seria 1-de-N.
+    SameCustodian,
+    /// ⚠️ Alguna prueba demuestra pertenencia a **otro conjunto de
+    /// custodios**. Un atacante puede construirse un conjunto con dieciseis
+    /// claves suyas y firmar dos veces con dos de ellas: los nulificadores
+    /// serian distintos y el par pasaria. La raiz la pone la **capa**, no
+    /// la prueba.
+    WrongCustodianSet,
+}
+
+/// Verifica un par de autorizaciones de custodio y **decide si constituyen
+/// el umbral 2-de-N**.
+///
+/// Esta funcion es donde vive el umbral tras separar los carriles (§51.2).
+/// En `circuit_threshold` lo imponia el orden estricto `idx_b - idx_a - 1`
+/// dentro del circuito; con dos pruebas independientes no hay traza conjunta
+/// donde imponerlo, asi que se impone aqui.
+///
+/// ⚠️ **`expected_root` la aporta la capa**, no se lee de las pruebas. Es
+/// la defensa contra `WrongCustodianSet`, y es la comprobacion que un lector
+/// desprevenido omitiria: sin ella, cada prueba es valida por separado y el
+/// par tambien, pero los custodios son del atacante.
+///
+/// # ⚠️ NO USAR EN PRODUCCION TODAVIA: falta atar la operacion
+///
+/// Esta funcion demuestra que **dos custodios distintos del conjunto
+/// autorizaron ALGO**. No demuestra que autorizaran **esta** operacion: las
+/// entradas publicas son la raiz y el nulificador, y no mencionan
+/// destinatario, importe ni contador.
+///
+/// Consecuencia directa: **un par valido se puede reproducir**. Dos
+/// custodios autorizan emitir 1.000 a Alicia; cualquiera reenvia esas mismas
+/// dos pruebas para emitir 1.000.000 a Bob, y verifican igual.
+///
+/// Cerrarlo es atar un identificador de operacion al nulificador
+/// —`H(dominio, clave, operacion)`— y llevarlo a las entradas publicas. Es la
+/// otra mitad de la entrada 33 (§41.4) y esta **sin hacer**.
+pub fn verify_threshold_pair(
+    proof_a: Proof,
+    inputs_a: NullifierThresholdPublicInputs,
+    proof_b: Proof,
+    inputs_b: NullifierThresholdPublicInputs,
+    expected_root: Digest,
+    accepted: &AcceptableOptions,
+) -> Result<(), PairRejection> {
+    // 1. Las dos autorizan sobre el conjunto que la capa dice, no sobre uno
+    //    que traiga la prueba.
+    if inputs_a.custodian_set_root != expected_root
+        || inputs_b.custodian_set_root != expected_root
+    {
+        return Err(PairRejection::WrongCustodianSet);
+    }
+
+    // 2. Son custodios DISTINTOS. Aqui es donde el umbral es umbral.
+    if inputs_a.nullifier == inputs_b.nullifier {
+        return Err(PairRejection::SameCustodian);
+    }
+
+    // 3. Y las dos pruebas son validas.
+    let ok = |p: Proof, i: NullifierThresholdPublicInputs| {
+        verify::<NullifierThresholdAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+            p, i, accepted,
+        )
+        .is_ok()
+    };
+    if !ok(proof_a, inputs_a) || !ok(proof_b, inputs_b) {
+        return Err(PairRejection::InvalidProof);
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -588,6 +667,99 @@ mod tests {
             !prove_and_verify(keys[2], &paths[2], declared),
             "SOLIDEZ: el nulificador debe salir de la clave que probo pertenencia \
              (entrada 33, variante B)"
+        );
+    }
+
+    // ===== El umbral 2-de-N, que ahora vive en la capa =====
+
+    fn autorizar(
+        key: BaseElement,
+        path: &CustodianPath,
+    ) -> (Proof, NullifierThresholdPublicInputs) {
+        let trace = build_trace(key, path);
+        let prover = NullifierThresholdProver::new(default_options());
+        let inputs = NullifierThresholdPublicInputs {
+            custodian_set_root: [
+                trace.get(4, ROW_ROOT),
+                trace.get(5, ROW_ROOT),
+                trace.get(6, ROW_ROOT),
+                trace.get(7, ROW_ROOT),
+            ],
+            nullifier: derive_nullifier(key),
+        };
+        (prover.prove(trace).expect("deberia probar"), inputs)
+    }
+
+    fn opciones() -> AcceptableOptions {
+        AcceptableOptions::OptionSet(vec![default_options()])
+    }
+
+    /// Dos custodios distintos del conjunto: el umbral se cumple.
+    #[test]
+    fn two_distinct_custodians_meet_the_threshold() {
+        let keys = custodian_keys();
+        let (root, paths) = build_custodian_set(&keys);
+        let (pa, ia) = autorizar(keys[1], &paths[1]);
+        let (pb, ib) = autorizar(keys[2], &paths[2]);
+        assert_eq!(
+            verify_threshold_pair(pa, ia, pb, ib, root, &opciones()),
+            Ok(())
+        );
+    }
+
+    /// ⚠️ **La razon de ser de esta funcion.** El mismo custodio firmando
+    /// dos veces produce el mismo nulificador. Sin esta comprobacion el
+    /// umbral 2-de-N seria 1-de-N: cualquiera con UNA clave de custodio
+    /// podria emitir dinero.
+    #[test]
+    fn the_same_custodian_twice_does_not_meet_the_threshold() {
+        let keys = custodian_keys();
+        let (root, paths) = build_custodian_set(&keys);
+        let (pa, ia) = autorizar(keys[2], &paths[2]);
+        let (pb, ib) = autorizar(keys[2], &paths[2]);
+        assert_eq!(
+            verify_threshold_pair(pa, ia, pb, ib, root, &opciones()),
+            Err(PairRejection::SameCustodian),
+            "SOLIDEZ: dos autorizaciones del mismo custodio no son un umbral"
+        );
+    }
+
+    /// ⚠️ **El ataque que un lector desprevenido omitiria.** El atacante se
+    /// construye SU conjunto de custodios con dieciseis claves suyas y firma
+    /// dos veces con dos de ellas. Las dos pruebas son validas, los
+    /// nulificadores son distintos, y el par pasaria... si la raiz saliera de
+    /// las pruebas en vez de ponerla la capa.
+    #[test]
+    fn an_attacker_cannot_bring_their_own_custodian_set() {
+        let keys = custodian_keys();
+        let (root_real, _) = build_custodian_set(&keys);
+
+        let mias: Vec<BaseElement> = (1..=4).map(|i| BaseElement::new(0xA77AC0 + i)).collect();
+        let (_root_mia, paths_mias) = build_custodian_set(&mias);
+        let (pa, ia) = autorizar(mias[0], &paths_mias[0]);
+        let (pb, ib) = autorizar(mias[1], &paths_mias[1]);
+
+        assert_eq!(
+            verify_threshold_pair(pa, ia, pb, ib, root_real, &opciones()),
+            Err(PairRejection::WrongCustodianSet),
+            "SOLIDEZ: la raiz del conjunto la pone la capa, no la prueba"
+        );
+    }
+
+    /// Y un custodio real emparejado con uno del conjunto del atacante
+    /// tampoco cuela: basta que UNA de las dos sea de otro conjunto.
+    #[test]
+    fn one_real_and_one_forged_custodian_do_not_meet_the_threshold() {
+        let keys = custodian_keys();
+        let (root_real, paths) = build_custodian_set(&keys);
+        let mias: Vec<BaseElement> = (1..=4).map(|i| BaseElement::new(0xA77AC0 + i)).collect();
+        let (_r, paths_mias) = build_custodian_set(&mias);
+
+        let (pa, ia) = autorizar(keys[1], &paths[1]);
+        let (pb, ib) = autorizar(mias[0], &paths_mias[0]);
+        assert_eq!(
+            verify_threshold_pair(pa, ia, pb, ib, root_real, &opciones()),
+            Err(PairRejection::WrongCustodianSet)
         );
     }
 

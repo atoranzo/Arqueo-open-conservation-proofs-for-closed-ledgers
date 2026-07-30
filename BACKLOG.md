@@ -122,12 +122,16 @@ decidir.
   ✅ **VARIANTE DECIDIDA: B** (§52.7), por coherencia —arreglar la 32 no
   puede costar el anonimato que el circuito ya declaraba— y porque no cuesta
   mas. La variante A queda marcada como NO ELEGIDA, conservada como la
-  comparacion medida. **Falta para cerrar la 33**: (a) atar el nulificador al
-  identificador de la operacion —cierra la enlazabilidad de §52.4 y es la
-  otra mitad (§41.4)—; (b) la comprobacion en la capa de que los dos
-  nulificadores difieren, sin la cual el umbral 2-de-N es 1-de-N; (c)
-  sustituir `ThresholdAuth` en los cinco circuitos que lo consumen, que es
-  cirugia en la creacion de dinero.
+  comparacion medida. ✅ **(b) HECHO** (§54): `verify_threshold_pair`
+  reconstruye el umbral fuera del circuito. Al escribirla aparecio un
+  **segundo** agujero que la separacion abre y que ni §51 ni §52 vieron: el
+  atacante puede **traer su propio conjunto de custodios** —dos pruebas
+  validas, nulificadores distintos— si la raiz sale de la prueba en vez de
+  ponerla la capa (§54.2). **Falta para cerrar la 33**: (a) ⚠️ atar el
+  identificador de la operacion al nulificador; sin ello un par valido **se
+  reproduce** (§54.4) y este camino **no es utilizable en produccion**;
+  cierra ademas la enlazabilidad de §52.4; (c) sustituir `ThresholdAuth` en
+  los cinco circuitos, cirugia en la creacion de dinero.
   **Analizada** (§42): no se mueve «al cliente» porque los custodios son
   dos y el circuito prueba conocimiento de ambas claves en una sola traza.
   La via que cierra las dos mitades es **verificar firmas en circuito**,
