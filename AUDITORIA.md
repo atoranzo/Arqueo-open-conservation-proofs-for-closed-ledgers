@@ -4301,7 +4301,59 @@ demostrables) es el coste real de la garantia fuerte, **medido y en el
 repositorio**. La decision de que circuitos usan cual queda como afinado, no
 como frente abierto.
 
-## 49. Qué NO demuestra este documento
+## 49. La entrada 30 se parte en dos, y una mitad huele a solidez
+
+Al bajar a decidir la disposicion de las ocho ranuras solapadas (§38), el
+codigo separa dos casos que el enunciado unico ocultaba. Uno es cosmetico.
+El otro **puede** ser un fallo de solidez latente, y por eso la 30 no se
+aplica en esta sesion.
+
+### 49.1 En `circuit_claim`: borrar, no reasignar
+
+Las ocho restricciones pisadas imponen la constancia de `COL_R_ID`
+(identidad del receptor) y `COL_SALT` (aleatorio) entre filas. Tras §39.1,
+`circuit_claim` **ya no usa `COL_R_ID`** para nada: el compromiso se
+reconstruye con `COL_ACC_ID`. Esas ocho no protegen nada aqui —lo dijo ya
+§39.4—, asi que la via correcta no es reasignar indices para salvarlas, es
+**borrarlas y corregir el comentario** (que declara 15 donde el reparto da
+7). Barato y seguro.
+
+### 49.2 En `circuit_send`: puede ser un §39 latente
+
+En el envio la identidad del receptor **es libre** —el pagador elige a quien
+paga— y `C_PEND_IN` **la lee** para construir el compromiso
+(`result[C_PEND_IN + 4 + i] = pend_in * (next[..] - current[COL_R_ID + i])`,
+lineas 941-942). Aqui la constancia de `COL_R_ID` entre filas **si importa**:
+si esta muerta por el solapamiento, un probador podria poner una identidad
+en la fila donde se arma el compromiso y otra distinta en el resto de la
+traza.
+
+⚠️ **No se afirma que sea explotable.** Igual que en §38.2 antes de
+confirmar §39: podria estar cubierta por otra via —que la subida al arbol
+ate el compromiso a algo constante, o que la fila del compromiso sea la
+unica que cuenta—. Pero es **exactamente la pregunta que §39 enseño a no
+responder por lectura**: hay que construir un testigo con dos identidades y
+ver si verifica.
+
+### 49.3 Por que la 30 no se cierra hoy
+
+Porque su mitad `send` es una hipotesis de solidez sobre la **creacion de
+compromisos de pago**, y este proyecto —y este auditor— ya ha aprendido dos
+veces esta semana que esas no se resuelven a ojo: §39 salio de un test
+discriminante, no de mirar. Aplicar un borrado o una reasignacion en `send`
+sin ese test es la clase de acto que sembro el §39 original.
+
+**El primer paso, con toolchain, es un test discriminante** al estilo de
+§39: en `circuit_send`, construir una traza donde `COL_R_ID` valga una
+identidad en la fila del compromiso y otra en el resto, y ver si la prueba
+verifica. Si verifica, es §39 en el envio y es urgente. Si se rechaza,
+existe una via que lo ata, se documenta, y entonces la 30 es cosmetica y se
+resuelve borrando en los dos circuitos.
+
+La 30 queda **partida**: la mitad `claim` lista para un borrado seguro, la
+mitad `send` elevada a pregunta de solidez con test pre-especificado.
+
+## 50. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

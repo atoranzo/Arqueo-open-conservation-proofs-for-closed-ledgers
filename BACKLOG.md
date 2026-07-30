@@ -188,12 +188,13 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   fallo de solidez: la autorizacion es posesion de claves, no aprobacion de
   una operacion.
 
-- [ ] **30. Arreglar la disposicion de las ocho ranuras solapadas.** Sin
-  consecuencia conocida tras corregir la 27 (§39.4), pero ocho
-  restricciones se calculan y se tiran y un comentario declara quince donde
-  el reparto asigna siete. Dos vias con costes muy distintos, y la decision
-  **esta aplazada a proposito**: reasignar indices es un refactor del
-  espacio de restricciones.
+- [ ] **30. La disposicion de las ocho ranuras: PARTIDA en dos (§49).**
+  En `circuit_claim` las ocho sobran tras §39.1 y se **borran** (seguro).
+  En `circuit_send` `COL_R_ID` es libre y `C_PEND_IN` lo lee: si su
+  constancia esta muerta por el solapamiento, es un **§39 latente en el
+  envio**. ⚠️ No se aplica a ciegas: el primer paso es un **test
+  discriminante** (traza con dos identidades) con toolchain. Elevada de
+  cosmetica a posible solidez.
 
 - [x] **29. Carrera del gancho de panico global: identificada y
   eliminada.** ~~Fallo unico sin explicar; hipotesis no respaldada por
