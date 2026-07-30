@@ -26,8 +26,10 @@ anotado porque es el mismo fallo que la propia lista denuncia mas abajo:
 Los TRES constructores de compromisos tenian el solapamiento de §38.
 `claim` (§39 titularidad, §50.7 aleatorio) y `send` (§50 identidad)
 corregidos; `mint_pending` (§35) verificado sano. La **37** generalizo el
-hallazgo: `tools/check_constraint_layout.py` barre los 14 circuitos y no
-queda ninguna colision. El frente de grados (6, 24, 25, 34) declarado como
+hallazgo: `tools/check_constraint_layout.py` barre los 24 circuitos y no
+queda ninguna colision. ⚠️ Empezo cubriendo solo 14 y saltandose los
+otros diez EN SILENCIO (§59.2); esta frase decia «14» hasta que se corrigio
+—septima vez que esta cabecera se queda rancia en la misma sesion—. El frente de grados (6, 24, 25, 34) declarado como
 limite conocido de winterfell (§46, §20).
 
 ⚠️ Lo que ese barrido **no** cubre: restricciones ausentes o mal formuladas.
