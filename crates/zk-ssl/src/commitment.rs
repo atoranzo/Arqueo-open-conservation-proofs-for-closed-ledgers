@@ -190,7 +190,6 @@ mod tests {
     use super::*;
     use crate::sparse_tree::SparseTree;
     use stark_experiment::circuit_settlement::{derive_public_id, native_leaf};
-    use winterfell::math::FieldElement;
 
     fn estado(clave: u64, saldo: u64, nonce: u64) -> ClientState {
         ClientState {

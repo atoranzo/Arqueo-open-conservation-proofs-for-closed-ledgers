@@ -3,8 +3,6 @@
 
 use super::*;
 
-    use super::*;
-
     use crate::tests_support::*;
 
     /// **No hay setup de claves.** Es la propiedad que distingue este
@@ -781,7 +779,11 @@ use super::*;
     fn nobody_else_can_claim_a_pending_transfer() {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        // La cuenta de Bob se abre para que el escenario sea completo, pero
+        // su identidad esperada se obtiene POR OTRO CANAL —del propio Bob—,
+        // que es justo lo que el test comprueba. De ahi que el indice no se
+        // use.
+        let _bob = open_and_fund(&mut layer, SK_BOB, 0);
         let mallory = open_and_fund(&mut layer, 0xBADCAFE, 0);
         let id_bob = derive_public_id(BaseElement::new(SK_BOB));
 
@@ -987,7 +989,7 @@ use super::*;
     /// **SIN DOS CUSTODIOS NO SE EMITE.**
     #[test]
     fn a_single_custodian_cannot_mint_to_pending() {
-        let mut layer = new_layer();
+        let layer = new_layer();
         let id_bob = derive_public_id(BaseElement::new(SK_BOB));
         let mismo = ThresholdAuth {
             index_b: valid_auth().index_a,
@@ -1008,7 +1010,7 @@ use super::*;
     /// documentado en su cabecera y en `AUDITORIA.md` §10.
     #[test]
     fn the_supply_cap_is_enforced_by_the_layer() {
-        let mut layer = new_layer();
+        let layer = new_layer();
         let id_bob = derive_public_id(BaseElement::new(SK_BOB));
         // Emitir EXACTAMENTE el tope es legitimo: lo alcanza, no lo supera.
         //
@@ -1214,7 +1216,7 @@ use super::*;
             open_and_fund(&mut layer, SK_ALICE, emitido);
             assert_eq!(layer.total_supply(), emitido);
         }
-        let mut layer = open_retry(
+        let layer = open_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
             )
             .expect("reabrir");
@@ -1420,7 +1422,9 @@ use super::*;
     fn materials_for_the_wrong_recipient_are_detectable() {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        // La identidad esperada viene POR OTRO CANAL -del propio Bob-,
+        // que es justo lo que el test comprueba: el indice no se usa.
+        let _bob = open_and_fund(&mut layer, SK_BOB, 0);
         let mallory = open_and_fund(&mut layer, 0xBADCAFE, 0);
 
         let id_bob = derive_public_id(BaseElement::new(SK_BOB));
@@ -1445,7 +1449,8 @@ use super::*;
     fn materials_for_the_right_recipient_check_out() {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        // Igual que arriba: la identidad viene por otro canal.
+        let _bob = open_and_fund(&mut layer, SK_BOB, 0);
 
         let id_bob = derive_public_id(BaseElement::new(SK_BOB));
         let m = layer
@@ -2194,7 +2199,7 @@ use super::*;
     /// **UN SOLO GOBERNADOR NO BASTA.**
     #[test]
     fn one_governor_cannot_change_the_set_alone() {
-        let mut layer = new_layer();
+        let layer = new_layer();
         let keys = governance_keys();
         let (_, paths) = build_governance_set(&keys);
         let solo = GovernanceAuth {

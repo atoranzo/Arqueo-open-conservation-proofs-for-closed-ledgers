@@ -419,7 +419,6 @@ impl SovereignLayer {
 mod tests {
     use crate::tests_support::*;
     use crate::*;
-    use winterfell::math::fields::f64::BaseElement;
 
     fn temp_file(name: &str) -> String {
         let mut p = std::env::temp_dir();
