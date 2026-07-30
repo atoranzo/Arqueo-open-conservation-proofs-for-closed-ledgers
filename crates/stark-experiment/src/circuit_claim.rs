@@ -135,7 +135,10 @@ const C_BALANCE: usize = C_PK_CHECK + 4; // 1
 /// **EL SUMINISTRO DISMINUYE EXACTAMENTE EN EL IMPORTE.**
 const C_SUPPLY: usize = C_BALANCE + 1; // 1
 const C_TRANSPORT: usize = C_SUPPLY + 1; // 15 (7 + id receptor 4 + aleatorio 4)
-const C_ID_CONST: usize = C_TRANSPORT + 7; // 4
+// ⚠️ ENTRADA 36 / §50.7: era `C_TRANSPORT + 7`, mismo solapamiento que send.
+// Aunque COL_R_ID esta muerto tras §39.1, el compromiso lee COL_SALT y su
+// constancia estaba pisada -> fallo de solidez. Ahora C_TRANSPORT ocupa 15.
+const C_ID_CONST: usize = C_TRANSPORT + 15; // 4
 const C_SBIT_BOOL: usize = C_ID_CONST + 4; // 2
 const C_FIRST_S: usize = C_SBIT_BOOL + 2; // 2
 const C_HORNER: usize = C_FIRST_S + 2; // 1
@@ -513,8 +516,10 @@ impl Air for ClaimAir {
         for _ in 0..34 {
             degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
         }
-        // Saldo (1), suministro (1), transporte (7), identidad (4).
-        for _ in 0..13 {
+        // Saldo (1), suministro (1), transporte (15: 7 + identidad 4 +
+        // aleatorio 4), identidad-constante (4) = 21, grado 1 sin ciclo.
+        // ⚠️ ENTRADA 36 / §50.7: era 13; ver send §50.5.
+        for _ in 0..21 {
             degrees.push(TransitionConstraintDegree::new(1));
         }
         for _ in 0..2 {
@@ -1310,6 +1315,53 @@ mod tests {
     }
 
     /// EL TEST CLAVE.
+    // ENTRADA 36 / §50.7 CORREGIDA: la constancia de COL_SALT se impone;
+    // este test estuvo en #[ignore] mientras el fallo vivia, ahora pasa verde.
+    #[test]
+    fn a_claim_with_inconsistent_salt_is_rejected() {
+        // ENTRADA 36 / hermano de §50. La 36 se catalogo como "borrar 8
+        // muertas". Pero claim tiene el MISMO solapamiento que send, y aunque
+        // COL_R_ID esta muerto tras §39.1, el compromiso AUN lee COL_SALT
+        // (C_PEND_IN + 8). Si la constancia de COL_SALT esta muerta por el
+        // solapamiento, un probador mete un aleatorio en la fila del
+        // compromiso y otro en el resto. Dejamos el salt real en
+        // ROW_FROZEN_ROOT y metemos otro en las demas filas.
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let mut trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, &s.path, &s.frozen_path,
+            s.amount, s.supply_old, 0, s.receiver_id, s.salt, &s.pending_path,
+        );
+
+        let otro_salt = derive_public_id(BaseElement::new(0x5A17));
+        assert_ne!(otro_salt, s.salt, "el testigo debe diferir");
+        for row in 0..TRACE_LENGTH {
+            if row == ROW_FROZEN_ROOT { continue; } // fila del compromiso, intacta
+            for i in 0..4 {
+                trace.set(COL_SALT + i, row, otro_salt[i]);
+            }
+        }
+
+        let prover = ClaimProver::new(default_options());
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+            || prover.prove(trace)));
+        let verifica = match r {
+            Err(_) => false,
+            Ok(Err(_)) => false,
+            Ok(Ok(proof)) => {
+                let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                    proof, s.public_inputs.clone(), &min_opts,
+                ).is_ok()
+            }
+        };
+        assert!(
+            !verifica,
+            "SOLIDEZ (entrada 36): claim acepta COL_SALT inconsistente entre la \
+             fila del compromiso y el resto -> §50 sobre el aleatorio. La \
+             constancia de COL_SALT esta muerta por el solapamiento."
+        );
+    }
+
     #[test]
     fn an_authorized_claim_verifies() {
         let s = scenario(1_000_000, 250_000, 10_000_000);
