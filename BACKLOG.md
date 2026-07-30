@@ -12,12 +12,13 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 25 abiertas, 8 resueltas. Ultima revision: 30 de julio de 2026.
-Recuento por grupo: A 0/5, B 5, C-solidez 4, C-declaradas 9, D 6, E 1.
+**Estado**: 24 abiertas, 9 resueltas. Ultima revision: 30 de julio de 2026.
 
-Con la 5 quedo cerrado el **grupo A**. La siguiente prioridad es la **32**:
-las claves de custodio llegan al operador (§41), el mayor de los frentes de
-solidez/confianza abiertos hoy.
+Cerrado el grupo A y los hallazgos de solidez de la sesion (26, 27, 29,
+31). La siguiente prioridad es la **32**: las claves de custodio llegan al
+operador (§41), el mayor frente de confianza abierto. Le siguen el frente
+de grados (6, 24, 25), analizado a fondo (§37, §44) y pendiente de una
+decision de politica, y la publicacion (28) cuando el circuito este cerrado.
 
 ⚠️ **Reordenado el 30-07-2026.** Diez entradas nuevas entraron en una
 sola sesion ancladas sobre lineas concretas, y varias quedaron en el grupo
@@ -179,10 +180,13 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **esta aplazada a proposito**: reasignar indices es un refactor del
   espacio de restricciones.
 
-- [ ] **29. Un fallo unico de la bateria, sin explicar.** Una ejecucion
-  dio 202/1; las 46 siguientes, 203/0. La hipotesis del gancho de panico
-  global (32 puntos, 22 ficheros, tests en paralelo) **no** quedo
-  respaldada: `--test-threads=1` no cambia nada (§39.2). Causa desconocida.
+- [x] **29. Carrera del gancho de panico global: identificada y
+  eliminada.** ~~Fallo unico sin explicar; hipotesis no respaldada por
+  `--test-threads=1`.~~ Ese descarte estaba mal: un hilo elimina la carrera
+  que se quiere probar. **Reproducida** subiendo la contencion (1 de 40 a 16
+  hilos) y **corregida** (§45): los 32 bloques `take_hook`/`set_hook`
+  silenciaban un `eprintln` sin proteger el mensaje —que viaja en el `Err`
+  de `catch_unwind`— y a cambio metían la carrera. Eliminados.
 
 - [ ] **7. ⚠️ Encargar la auditoria externa.** Ya no es solo por el
   argumento lockstep (§16.4). Tras §39 hay un defecto **demostrado** de una

@@ -3903,7 +3903,67 @@ Para esas dos, la salida realista es la de §37.2 caso B: **declarar** que la
 comprobacion de grados de winterfell es incompatible con grados que dependen
 del valor, y documentarlo como limite de la herramienta.
 
-## 45. Qué NO demuestra este documento
+## 45. La carrera del gancho de panico: reproducida y eliminada
+
+§39.2 anoto un fallo unico de la bateria —202/1 una vez, 203/0 las 46
+siguientes— y **descarto** la hipotesis del gancho de panico porque
+`--test-threads=1` no cambiaba nada. Ese descarte estaba mal hecho.
+
+### 45.1 El descarte de §39.2 no probaba la hipotesis
+
+Con **un solo hilo no hay carrera posible**, asi que ver que con un hilo no
+falla no dice nada sobre una carrera entre hilos. Se descarto una hipotesis
+de concurrencia con un experimento que eliminaba la concurrencia. El
+experimento correcto es el contrario: **subir** la contencion.
+
+### 45.2 Reproducida subiendo la contencion
+
+40 pasadas con `RUST_TEST_THREADS=16`: **una fallo** (la 38). La carrera es
+real. No era 1 de 47 por azar: es 1 de ~40 cuando se fuerza el paralelismo.
+
+### 45.3 El mecanismo
+
+32 tests, en 22 ficheros, usan este patron:
+
+```rust
+let hook = take_hook();          // guarda el gancho global del PROCESO
+set_hook(Box::new(|_| {}));      // lo sustituye por un silenciador
+let r = catch_unwind(|| prove);  // provoca el panic esperado
+set_hook(hook);                  // restaura
+```
+
+El gancho es **estado global del proceso**. Entre el `take_hook` de un test
+y su `set_hook(hook)`, otro test en paralelo puede hacer su propio
+`take_hook` y llevarse el **silenciador** en vez del gancho real. A partir
+de ahi el estado queda corrompido y un panic que debia capturarse limpio
+tumba un test — uno cualquiera, sin patron, no reproducible en secuencial.
+
+### 45.4 El gancho no aportaba nada
+
+El comentario de estos bloques dice que **el mensaje del panic se conserva**
+porque winterfell da en el el detalle del fallo de restriccion, y que
+descartarlo costo tres rondas (§25). Cierto — pero ese mensaje se extrae
+del **payload del `Err`** que devuelve `catch_unwind`, con `downcast_ref`,
+y eso es independiente del gancho. El gancho solo controla si Rust ademas
+**imprime** el panic por stderr.
+
+Es decir: el silenciador no protegía el dato —que ya estaba en el `Err`—,
+solo callaba un `eprintln`, y a cambio metía la carrera. **Se elimina el
+patron entero en los 32 sitios.** Los tests quedan identicos en correccion;
+solo imprimen el backtrace del panic esperado, que es cosmetico.
+
+> El codigo decía conservar el mensaje y a la vez lo silenciaba. El detalle
+> viajaba por otra via, asi que el silenciador solo aportaba una carrera.
+
+### 45.5 La leccion, sobre el metodo
+
+§39.2 es la quinta vez en la sesion que un analisis se equivoca, y la unica
+en un **experimento negativo mal diseñado** en vez de una atribucion. La
+forma es la misma de siempre: se comprobo lo que era comodo comprobar —un
+hilo— en vez de lo que ponía la hipotesis a prueba —muchos—. Un experimento
+que no puede fallar si la hipotesis es cierta no la prueba.
+
+## 46. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
