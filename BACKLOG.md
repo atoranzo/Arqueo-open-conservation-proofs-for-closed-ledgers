@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 24 abiertas, 10 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 23 abiertas, 11 resueltas. Ultima revision: 30 de julio de 2026.
 El frente de grados (6, 24, 25, 34) queda **cerrado** (§46, §20): declarado
 como limite conocido de winterfell, sin migrar. No es fallo de solidez.
 
@@ -237,9 +237,17 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
 - [ ] **13. Senal temporal para el pagador.** Puede recomputar el
   compromiso y ver cuando se cobra; declarado, no eliminado.
 
-- [ ] **14. Techo de 128 custodios.** Acoplado a un segmento de rango de 7
-  bits, con holgura hoy (el arbol admite 16) pero sin declarar hasta que un
-  test lo fijo.
+- [x] **14. Techo del conjunto de custodios: ya declarado.** ~~Acoplado a
+  un segmento de rango de 7 bits, sin declarar hasta que un test lo fijo.~~
+  **Cerrada** el 30-07-2026: al verificar el codigo para redactarla resulta
+  que **ya estaba declarada** —AUDITORIA §14 con tabla, y el test
+  `the_custodian_set_size_fits_the_range_segment` que fija el acoplamiento
+  `CUSTODIAN_DEPTH`/`SEGMENT_LENGTH`—. Correccion de imagen fiel: no son
+  «128 custodios» sino **16 hoy** (`CUSTODIAN_DEPTH=4`); 128 es el techo
+  teorico del segmento de 7 bits, que solo mordería subiendo la profundidad
+  a 8 sin ampliar el segmento. Es limite de **disponibilidad**, no de
+  solidez. No faltaba declararla: faltaba que este backlog no la describiera
+  como pendiente.
 
 - [ ] **15. Goldilocks es estrecho para identidades.** 64 bits son colision
   en 2³².
