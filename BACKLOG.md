@@ -81,7 +81,10 @@ describe cosas que no son ciertas.
   suben de 65 a 66—. Establecido que ninguna asignacion secuencial lo
   cierra, porque las primeras posiciones tienen casi todos los bits altos a
   cero. Candidata sin verificar: permutar el contador de forma biyectiva
-  (§37.5).
+  (§37.5). ⚠️ **Todo lo anterior queda anulado por §37.6**: el experimento
+  modifico `PendingTransfers`, un modelo que la capa **no ejecuta**, asi que
+  no midio nada. La hipotesis sigue sin comprobar, y las desviaciones
+  alcanzan **cinco circuitos** y los tres arboles, no solo el pendiente.
 - [ ] **7. Encargar la auditoria externa del argumento lockstep.** El
   hallazgo mas original del proyecto lo respalda un test discriminante, no
   una demostracion revisada por nadie mas (§16.4).

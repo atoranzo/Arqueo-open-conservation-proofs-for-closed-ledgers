@@ -3041,7 +3041,13 @@ descartando en silencio.
 Ejecutado el 30 de julio de 2026 con `next: 1` en `pending.rs:131`:
 **108 pasan, 66 fallan** de 174, frente a los 65 de partida.
 
-El vector de grados de una traza que falla, comparado entero:
+⚠️ **La tabla que sigue estaba mal atribuida y se corrige en §37.6.** El
+vector se tomó del **primer** panic del fichero, que resultó ser de un
+circuito de 512 filas y 76 restricciones —ninguno de los dos que tocan el
+árbol de pendientes, que son de 1024—. Se conserva tachada porque así se
+escribió:
+
+~~El vector de grados de una traza que falla, comparado entero:~~
 
 | Restricciones | Declarado | Real | |
 |---|---|---|---|
@@ -3049,7 +3055,8 @@ El vector de grados de una traza que falla, comparado entero:
 | Índices 44–51 (8) | 1022 | 1022 | **recuperadas** |
 | Índice 52, `C_PBIT_BOOL` | 511 | **0** | sigue desviada |
 
-**13 desviadas donde antes había 21.** Y aun así, tercera fila de la tabla
+~~**13 desviadas donde antes había 21.**~~ **No.** Ese 13 es de otro
+circuito, y no cambió con el experimento. Y aun así, tercera fila de la tabla
 de §37.3 —siguen fallando `C_PEND_*` y `C_PBIT_BOOL`—, así que **el
 desplazamiento se descarta** y el cambio se revierte. La tabla se escribió
 antes precisamente para que una mejora parcial no se leyera como éxito.
@@ -3058,7 +3065,15 @@ Y no es siquiera neutral: **los fallos suben de 65 a 66**. Un perfil de
 grados distinto hace fallar a un test que antes no fallaba, así que el
 cambio no se sostiene ni como paso intermedio.
 
-### 37.5 Lo que el experimento sí establece
+### 37.5 ~~Lo que el experimento sí establece~~ — retirada entera
+
+⚠️ **Esta subsección se retira: no establecía nada.** Afirmaba que ocho
+restricciones habían recuperado su grado y que el mecanismo quedaba
+confirmado. La medición correcta (§37.6) demuestra que **no cambió
+absolutamente ningún grado**. Se conserva el texto porque así se publicó, y
+porque un documento que borra sus errores no permite contarlos.
+
+### 37.5-bis Texto retirado
 
 **El mecanismo queda confirmado.** Ocho restricciones pasaron a realizar su
 grado en cuanto la columna dejó de ser idénticamente nula. La causa es la
@@ -3083,6 +3098,86 @@ no como conclusión: no se ha medido, y una posición derivada de cualquier
 función del contador merece mirarse con la desconfianza que ya costó una
 vez. Derivar la posición de un **hash** sí reintroduciría el límite del
 cumpleaños entero, y esa vía queda descartada de antemano.
+
+## 37.6 El experimento fue NULO: modificó el modelo, no lo que corre
+
+La comparación correcta —agrupando los panics **por circuito**, que es lo
+que §37.4 no hizo— da un resultado que ninguna fila de la tabla prevé.
+
+| Circuito (restricciones) | Panics | Desviadas, `next: 0` | Desviadas, `next: 1` |
+|---|---|---|---|
+| 57 | 3 | 5 | **5** |
+| 76 | 13 | 13 | **13** |
+| 114 | 5 | 22 | **22** |
+| 125 | 1 | 27 | **27** |
+| 125 | 2 | 21 | **21** |
+| 162 (`circuit_claim`) | 39 | 43 | **43** |
+
+**Idénticos.** Mismos circuitos, mismos 63 panics, mismos índices. El
+cambio no alteró un solo grado.
+
+### Por qué
+
+`pending.rs` define `PendingTransfers`, con su campo `next` y sus ocho
+tests. **La capa no lo usa.** El estado real vive en
+`SovereignLayer.next_pending` (`lib.rs:544`) y las posiciones las reparte
+`two_phase::allocate_pending`; de `pending.rs` la producción solo importa
+la función libre `pending_commitment`.
+
+El experimento cambió `pending.rs:131`. Es decir: **modificó un modelo que
+no se ejecuta**, y por eso los grados no se movieron. El fallo número 66 no
+era un panic de grados sino la aserción `assert_eq!(pos, 0)` de uno de los
+ocho tests del propio modelo.
+
+### La clase de error, que este proyecto ya tenía documentada
+
+§8.2 del preprint comparativo dice, con estas palabras, que *un módulo
+prototipo lleva ocho tests demostrando las propiedades del diseño en dos
+fases, y que producción usa una función de ese módulo y ninguna de sus
+estructuras de datos*. Es el mismo módulo. Es el mismo error. Y esta vez
+sobrevivió a un protocolo pre-registrado.
+
+> **El pre-registro fija los criterios; no comprueba que la intervención
+> llegue a lo que se ejecuta.** Un experimento puede estar impecablemente
+> diseñado, correr entero, dar una salida limpia y no haber tocado el
+> sistema.
+
+La tabla de decisión necesita una **quinta fila**, hermana de la cuarta que
+§35 añadió:
+
+| Resultado | Lectura | Decisión |
+|---|---|---|
+| El perfil medido **no cambia en absoluto** | La intervención no llegó a la traza | **Experimento nulo**: no es rechazo, es que no se midió nada |
+
+Y un paso previo obligatorio, antes de leer ningún resultado: **demostrar
+que la intervención alcanza lo que se ejecuta**, no suponerlo por el nombre
+del fichero.
+
+### Qué queda en pie
+
+Solo esto: la hipótesis de §37.3 **sigue sin comprobar**. Lo que se sabe es
+que las desviaciones alcanzan **cinco circuitos**, no uno, y que en
+`circuit_claim` caen en tres bloques —índices 32–44, 106–114 y 140–160— que
+por el mapa de constantes corresponden a las subidas al árbol de
+**cuentas**, al de **congelados** y al de **pendientes**. Los tres son bits
+de camino constantes. El diagnóstico de §35 se amplía: no es el pendiente,
+son todos los caminos.
+
+### El experimento, reformulado
+
+**Hipótesis** (sin cambios): si las posiciones del árbol de pendientes
+dejan de tener los bits de camino constantes, las restricciones `C_PEND_*`
+y `C_PBIT_BOOL` realizan su grado declarado.
+
+**Procedimiento corregido.** Sobre `two_phase::allocate_pending`, que es lo
+que reparte de verdad: iniciar la búsqueda en 255 y devolver como mínimo
+255. Se elige 255 —`0b11111111`— porque pone **ocho bits a uno**, no uno
+solo, y porque el bucle de búsqueda recorre 255 posiciones y no dos mil
+millones.
+
+**Comprobación de alcance, antes de leer nada.** El perfil de grados del
+circuito de 162 restricciones **tiene que cambiar**. Si sale idéntico, la
+intervención sigue sin llegar y no se concluye nada.
 
 ## 38. Qué NO demuestra este documento
 
