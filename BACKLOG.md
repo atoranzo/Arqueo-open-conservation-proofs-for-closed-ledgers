@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 24 abiertas, 7 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 25 abiertas, 8 resueltas. Ultima revision: 30 de julio de 2026.
 
 Con la 5 queda cerrado el **grupo A**: el repositorio vuelve a describir
 lo que hay. La siguiente es la **6**.
@@ -131,10 +131,19 @@ describe cosas que no son ciertas.
   conocido es la lectura semantica circuito a circuito, cara, manual y en
   la que el autor acaba de equivocarse tres veces en un dia.
 
-- [ ] **31. Pregunta abierta: `circuit_mint_pending` no declara a quien
-  emite.** Ni entrada publica ni asercion sobre `COL_R_ID` (§40.3). Puede
-  estar cubierto por la cooperacion de los custodios; hace falta leer el
-  sub-circuito de umbral para saberlo. **No se afirma que sea un fallo.**
+- [x] **31. Pregunta cerrada: `circuit_mint_pending` no declara a quien
+  emite** ~~(§40.3)~~ **y tampoco lo cubre la autorizacion** (§41.2). No es
+  fallo de solidez: la autorizacion es posesion de claves, no aprobacion de
+  una operacion.
+
+- [ ] **32. ⚠️ Las claves de custodio SI llegan al operador.** No hay via
+  cliente para operaciones privilegiadas: `ThresholdAuth` lleva las claves
+  en crudo y la capa construye la traza (§41). Quienes conservan su clave
+  solo pueden mover su dinero; quienes la entregan pueden crearlo.
+  **Confianza residual no declarada** en los preprints: va con la 28.
+
+- [ ] **33. Que los custodios prueben en su maquina, y que la autorizacion
+  cubra los parametros.** La correccion de diseno de la 32 (§41.4).
 
 ## C. Declaradas, acotadas, sin urgencia
 

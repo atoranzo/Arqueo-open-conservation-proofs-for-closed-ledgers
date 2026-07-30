@@ -3641,7 +3641,74 @@ sí mismo que se equivoca al hacerlo —tres veces en un día—.
 > instrumento conocido para una clase de defecto ya demostrada en este
 > código**.
 
-## 41. Qué NO demuestra este documento
+## 41. La autorización de custodios es posesión de claves, no aprobación
+
+Respuesta a la pregunta que §40.3 dejó abierta. Se resolvió mirando **qué le
+exige la capa a los custodios**, no leyendo el sub-circuito de umbral: más
+barato y menos expuesto a equivocarse.
+
+### 41.1 Lo verificado
+
+```rust
+pub struct ThresholdAuth {
+    pub key_a: BaseElement, pub index_a: u64, pub path_a: CustodianPath,
+    pub key_b: BaseElement, pub index_b: u64, pub path_b: CustodianPath,
+}
+```
+
+**Claves de gasto en crudo.** Y las operaciones privilegiadas son métodos de
+la capa —`mint`, `mint_to_pending`, `freeze`, `recovery`, `governance`— que
+construyen la traza **dentro** (`mint.rs:48`, `two_phase.rs:559`).
+
+`client.rs` ofrece prueba en la máquina del titular para `send` y `claim`
+—y solo para eso—. **No hay vía equivalente para custodios.**
+
+### 41.2 Las dos consecuencias
+
+**Primera: la autorización no está ligada a la operación.** No hay firma
+sobre unos parámetros: hay demostración de que dos claves del conjunto
+participaron. Quien las tenga elige destinatario, importe y todo lo demás.
+Eso responde a §40.3: el destinatario de una emisión a pendiente no figura
+en la declaración pública **ni está cubierto por la autorización**; está
+cubierto por la cooperación, que es otra cosa.
+
+**Segunda, y más importante: las claves de custodio llegan al operador.**
+Por construcción, no por descuido.
+
+### 41.3 La asimetría, y qué dicen los papeles
+
+El proyecto sostiene, con razón, que *la clave de gasto no necesita viajar
+al operador*. Los preprints lo formulan con cuidado —*«no exige la entrega
+de las claves de gasto **de los clientes**»*— y esa frase es cierta.
+
+Pero el cuadro completo es este:
+
+| Parte | Su clave | Prueba en |
+|---|---|---|
+| Titular de cuenta | **No sale de su máquina** | Su máquina (`client.rs`) |
+| Custodio | **Se entrega a la capa** | El operador |
+
+Es decir: **quienes conservan sus claves son quienes solo pueden mover su
+propio dinero, y quienes las entregan son quienes pueden crearlo.** La
+custodia de claves se concentra exactamente en la parte con más poder.
+
+⚠️ Un operador que retenga dos claves de custodio puede emitir hasta el
+tope, a cualquier destinatario, hasta agotar el cupo —y el cupo se renueva
+rotando el conjunto—. El contador de intervenciones lo hace **visible**, que
+no es poco, pero no lo impide.
+
+### 41.4 Qué hacer con esto
+
+No es un fallo de solidez: el circuito demuestra exactamente lo que dice
+demostrar. Es **confianza residual no declarada**, y por eso pertenece al
+cuadro de §5 de los preprints y a la tabla de §4.1 del de confianza
+residual, donde hoy no está.
+
+La corrección técnica —que los custodios prueben en su máquina, como los
+titulares, y que la autorización cubra los parámetros de la operación— es
+trabajo de diseño, no una línea. Queda como entrada de backlog.
+
+## 42. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
