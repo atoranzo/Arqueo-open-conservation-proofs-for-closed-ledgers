@@ -3233,7 +3233,90 @@ El pronóstico de la entrada 6 cambia con esto: **no es «no tiene
 arreglo»**, es «tiene arreglo conocido y hay que decidir su precio, en los
 tres árboles y no solo en uno».
 
-## 38. Qué NO demuestra este documento
+## 38. ⚠️ Ocho restricciones que se sobrescriben antes de llegar al verificador
+
+**Encontrado el 30 de julio de 2026**, mapeando índices de restricción para
+verificar una atribución de §37.7. No se buscaba esto.
+
+### El solapamiento
+
+En `circuit_send` y en `circuit_claim`, idénticamente:
+
+```rust
+const C_TRANSPORT: usize = C_SUPPLY + 1;    // 15 (7 + id receptor 4 + aleatorio 4)
+const C_ID_CONST:  usize = C_TRANSPORT + 7; // 4
+```
+
+El comentario declara que `C_TRANSPORT` ocupa **quince** ranuras, y el
+código de evaluación las escribe:
+
+| Escritura | Ranuras | Qué impone |
+|---|---|---|
+| `result[C_TRANSPORT + k]` | +0 a +6 | Las siete columnas de transporte son constantes |
+| `result[C_TRANSPORT + 7 + i]` | +7 a +10 | **La identidad del receptor es constante** |
+| `result[C_TRANSPORT + 11 + i]` | +11 a +14 | **El aleatorio es constante** |
+
+Pero el grupo siguiente empieza **siete** ranuras después, no quince:
+
+| Constante | Ranura | Pisa |
+|---|---|---|
+| `C_ID_CONST` | +7 a +10 | las cuatro del **id del receptor** |
+| `C_SBIT_BOOL` | +11 a +12 | dos del **aleatorio** |
+| `C_FIRST_S` | +13 a +14 | las otras dos |
+
+Las escrituras posteriores ganan. **Ocho restricciones se calculan y se
+descartan**: las que imponen que la identidad del receptor y el aleatorio
+del pagador no varíen entre filas.
+
+Nada más las fija: `get_assertions` no ancla `COL_R_ID` ni `COL_SALT` en
+ninguna fila, y las únicas otras lecturas de esas columnas están en
+`C_PEND_IN`, que construye el compromiso a partir de la fila en curso.
+
+### Lo que NO se afirma
+
+⚠️ **No está establecido que esto sea explotable.** Lo verificado es
+estático: las ranuras se escriben dos veces y la segunda gana. Que un
+probador malicioso pueda aprovecharlo —por ejemplo poniendo una identidad
+en la fila donde se construye el compromiso y otra en el resto— exige un
+test discriminante que aún no existe. **Hasta que exista, esto es un
+defecto de construcción de dudosa consecuencia, no una rotura demostrada.**
+
+La cautela no es retórica: el mismo día de este hallazgo, tres
+afirmaciones sobre grados resultaron mal atribuidas por leer un vector sin
+comprobar de qué circuito era (§37.4, §37.6).
+
+### Por qué las herramientas no podían encontrarlo
+
+El detector de restricciones vacuas perturba el testigo y comprueba que
+**cada ranura declarada reaccione**. Una ranura sobrescrita **sí
+reacciona** —con la restricción que ganó—, así que el detector la ve sana.
+No puede notar que ahí vivía otra restricción distinta que se perdió.
+
+> **Una herramienta que verifica que cada ranura hace algo no puede
+> detectar que la ranura hace lo que no era.**
+
+Es la misma forma que §8.2 del preprint: una propiedad demostrada sobre
+algo que no es lo que corre. Aquí, una restricción escrita sobre algo que
+no llega.
+
+### Experimento PRE-REGISTRADO: comprobar que están muertas
+
+Antes de discutir explotabilidad hay que confirmar la premisa.
+
+**Procedimiento.** Comentar las dos escrituras de `result[C_TRANSPORT + 7 +
+i]` y `result[C_TRANSPORT + 11 + i]` en `circuit_claim` y en
+`circuit_send`, y ejecutar la suite en release.
+
+| Resultado | Lectura | Decisión |
+|---|---|---|
+| Todo pasa igual (174 y 201) | Las ocho eran código muerto: premisa confirmada | Diseñar el test discriminante de explotabilidad |
+| Algo falla | No estaban muertas: el análisis estático se equivoca | Rehacer el mapa de índices |
+| No compila, o salida vacía | El experimento no corrió | No concluir nada |
+| El perfil no cambia donde debería | La intervención no llegó | Nulo, como §37.4 |
+
+Las dos últimas filas son las lecciones de §35 y §37.6, y van de serie.
+
+## 39. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

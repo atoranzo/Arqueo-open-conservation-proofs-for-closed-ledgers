@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 20 abiertas, 5 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 21 abiertas, 5 resueltas. Ultima revision: 30 de julio de 2026.
 
 Con la 5 queda cerrado el **grupo A**: el repositorio vuelve a describir
 lo que hay. La siguiente es la **6**.
@@ -68,6 +68,13 @@ describe cosas que no son ciertas.
   segunda revision. La cuarta revision ya sera un parche.
 
 ## B. La siguiente de verdad
+
+- [ ] **26. ⚠️ Ocho restricciones sobrescritas en `circuit_send` y
+  `circuit_claim`.** Las que imponen que la identidad del receptor y el
+  aleatorio no varien entre filas se calculan y se pisan; nada mas las fija
+  (§38). Explotabilidad **no establecida**. Pasa por delante de la 6 y la
+  25: aquellas son grados que no se comprueban, esta es una restriccion que
+  se creia impuesta y no lo esta.
 
 - [ ] **6. El grado dependiente del testigo en el arbol de pendientes.**
   La unica comprobacion automatica del area de menor confianza (§16.3)
