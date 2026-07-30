@@ -4597,7 +4597,110 @@ reimponer el orden exige recomponer las pruebas —lo que el proyecto no sabe
 hacer (§47.2)—, el diseño necesita revision antes de tocar los cinco
 circuitos que consumen `ThresholdAuth`.
 
-## 52. Qué NO demuestra este documento
+## 52. El experimento de la 33, ejecutado: la via B es viable
+
+§47.5 pedia separar un carril de `circuit_threshold` y medirlo. Hecho el
+30-07-2026, en **dos variantes** —porque §51.3 dejo abierto como se reimpone
+«custodios distintos» al desaparecer el orden estricto—.
+
+### 52.1 La medicion
+
+| circuito | cols | filas | restr. | ms | bytes |
+|---|---|---|---|---|---|
+| A single (indice publico) | 16 | 64 | 26 | 4,1 | 14.700 |
+| B single (nulificador) | **14** | 64 | 35 | 4,1 | 15.293 |
+| conjunto (dos carriles) | 34 | 64 | 60 | 5,1 | 20.122 |
+
+**Dos pruebas single: 8,2 ms y ~30 KB. Una conjunta: 5,1 ms y 20 KB.**
+
+El criterio de §51.4 era «si dos single cuestan aproximadamente lo mismo que
+una conjunta». El resultado es **1,6× en tiempo y 1,5× en tamano**: no es lo
+mismo, pero es un factor constante pequeño sobre operaciones **raras**
+—emision, congelacion, gobernanza—. Ocho milisegundos y treinta kilobytes no
+son un coste que decida nada.
+
+✅ **Veredicto: la via B es viable, y esta medida.** Compra que los custodios
+no entreguen nunca su clave (la 32) por un sobrecoste despreciable.
+
+### 52.2 Un resultado que no se esperaba
+
+La variante que **protege la privacidad sale mas estrecha**: 14 columnas
+frente a 16, pese a incluir un hash entero de mas. Al no publicar el indice
+no hace falta atarlo, y desaparecen `COL_IDX`, `COL_ACC`, el acumulador de
+bits y su comprobacion final. Mas restricciones (35 frente a 26) pero traza
+mas estrecha, y **el tiempo es identico**.
+
+Es decir: **elegir la variante privada no cuesta rendimiento**. La eleccion
+entre A y B es puramente de modelo de confianza, sin compensacion tecnica
+que la enturbie.
+
+### 52.3 Recomendacion: variante B, y el argumento no es mio
+
+`circuit_threshold` **ya declara hoy**, en el comentario de sus entradas
+publicas:
+
+> *«Los indices y las claves de quienes firman son privados: se sabe que dos
+> custodios distintos del conjunto autorizaron, pero no cuales.»*
+
+Es una propiedad **elegida y documentada** del sistema. La variante A la
+rompe: publicaria que custodios firmaron cada emision. Arreglar la 32 —que
+las claves no lleguen al operador— **no debe costar una propiedad de
+privacidad distinta que el proyecto ya habia decidido tener**. Cambiarla en
+silencio, y ademas sin tocar los preprints que la describen, seria
+exactamente la clase de deriva que esta auditoria existe para impedir.
+
+Por eso: **variante B**. Preserva lo que hay, arregla lo que falla, y no
+cuesta mas.
+
+### 52.4 Lo que B NO conserva, dicho antes de que lo descubra otro
+
+El circuito conjunto de hoy no revela **nada** sobre los firmantes, ni
+siquiera si son los mismos entre dos operaciones. B publica un nulificador
+**estable por custodio**, asi que un observador puede agrupar: *«el custodio
+desconocido X autorizo estas cinco emisiones»*. No sabe quien es X, pero sabe
+que es el mismo.
+
+⚠️ **B es por tanto mejor que A pero peor que el conjunto actual** en
+privacidad. La escala honesta es:
+
+| | claves al operador | firmantes identificables | enlazables |
+|---|---|---|---|
+| conjunto (hoy) | ❌ **si (fallo 32)** | no | no |
+| A single | no | **si** | si |
+| B single | no | no | **si** |
+
+Cerrar la enlazabilidad es atar el nulificador tambien al identificador de
+la operacion —`H(dominio, clave, operacion)`—, que **hace falta de todos
+modos** para la otra mitad de la 33: que la autorizacion cubra los
+parametros (§41.4). B no es solo la mejor de las dos: esta en el camino de
+la solucion completa.
+
+### 52.5 Si la institucion quisiera lo contrario
+
+Hay un argumento legitimo para A que no se oculta: un banco central podria
+**querer** registro auditable de que dos custodios autorizaron cada emision,
+por rendicion de cuentas. Si esa fuera la exigencia, A es lo correcto — pero
+entonces es un **cambio declarado del modelo de confianza**, que hay que
+escribir en los preprints (la 28) y no colar como detalle de implementacion.
+La recomendacion es B; la decision, del proyecto.
+
+### 52.6 Dos errores mios en la medicion, registrados
+
+**Uno.** El test de §16.5 sobre el indice esperaba que la traza invalida
+fallara **al probar**. Fallo: en **release winterfell no comprueba las
+restricciones al generar la prueba** —esa es la comprobacion de depuracion
+de §20—, asi que el probador emite la prueba y es el **verificador** quien la
+tumba. El motivo del rechazo era el correcto; la etapa que predije, no.
+
+**Dos.** Puse **29** restricciones para el circuito conjunto en la tabla,
+calculado a ojo como «26 + 3». El real, contando su cadena de constantes, es
+**60**. Otra cifra sin verificar, la misma clase que §42.5 y §48.3, y en la
+misma sesion en que las retire. Corregida.
+
+Las dos las caza el mismo metodo de siempre: escribir la comprobacion y
+dejar que el codigo conteste.
+
+## 53. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

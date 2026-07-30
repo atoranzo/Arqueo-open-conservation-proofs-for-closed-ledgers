@@ -109,7 +109,18 @@ decidir.
   su metrica de exito. ⚠️ **Pregunta abierta que el experimento debe
   resolver**: al separar, el orden estricto —que eran custodios distintos—
   desaparece; hay que reimponerlo en la capa o el umbral acepta la misma
-  firma dos veces (§51.3).
+  firma dos veces (§51.3). ✅ **EXPERIMENTO EJECUTADO Y MEDIDO** el
+  30-07-2026 (§52), en dos variantes: **la via B es viable**. Dos pruebas de
+  carril unico cuestan 8,2 ms y ~30 KB frente a 5,1 ms y 20 KB de una
+  conjunta —1,6× en tiempo, 1,5× en tamano, despreciable en operaciones
+  raras—. **Recomendada la variante B** (nulificador desde la clave):
+  preserva el anonimato dentro del conjunto que `circuit_threshold` ya
+  declara, y **no cuesta mas** (14 columnas frente a 16 de la variante con
+  indice publico). ⚠️ B deja **enlazabilidad** entre operaciones del mismo
+  custodio (§52.4); cerrarla exige atar el nulificador al identificador de
+  la operacion, que hace falta igualmente para la otra mitad de la 33.
+  **Falta**: decidir la variante, y sustituir `ThresholdAuth` en los cinco
+  circuitos que lo consumen.
   **Analizada** (§42): no se mueve «al cliente» porque los custodios son
   dos y el circuito prueba conocimiento de ambas claves en una sola traza.
   La via que cierra las dos mitades es **verificar firmas en circuito**,

@@ -72,6 +72,9 @@ pub mod circuit_claim;
 pub mod circuit_send;
 pub mod circuit_settlement;
 pub mod circuit_threshold;
+// Entrada 33 / §51: las dos variantes del experimento de carril unico.
+pub mod circuit_threshold_single;
+pub mod circuit_threshold_single_nullifier;
 pub mod compliance_circuit;
 pub mod compliance_real_proof;
 pub mod double_entry;
