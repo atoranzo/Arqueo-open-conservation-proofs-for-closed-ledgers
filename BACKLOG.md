@@ -12,19 +12,17 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 19 abiertas, 17 resueltas. Ultima revision: 30 de julio de 2026.
-Arco de solidez de compromisos **cerrado**: los TRES constructores tenian el
-solapamiento de §38. `claim` (§39, §50.7), `send` (§50) corregidos;
-`mint_pending` (§35) verificado sano. Tres fallos confirmados por test, tres
-corregidos o descartados con prueba.
-El frente de grados (6, 24, 25, 34) queda **cerrado** (§46, §20): declarado
-como limite conocido de winterfell, sin migrar. No es fallo de solidez.
+**Estado**: 17 abiertas, 20 resueltas. Ultima revision: 30 de julio de 2026.
 
-Cerrado el grupo A y los hallazgos de solidez de la sesion (26, 27, 29,
-31). La siguiente prioridad es la **32**: las claves de custodio llegan al
-operador (§41), el mayor frente de confianza abierto. Le siguen el frente
-de grados (6, 24, 25), analizado a fondo (§37, §44) y pendiente de una
-decision de politica, y la publicacion (28) cuando el circuito este cerrado.
+Arco de solidez de compromisos **cerrado**: los TRES constructores de
+compromisos tenian el solapamiento de §38. `claim` (§39 titularidad, §50.7
+aleatorio) y `send` (§50 identidad) corregidos; `mint_pending` (§35)
+verificado sano. El frente de grados (6, 24, 25, 34) declarado y cerrado
+(§46, §20). ⚠️ **Abierta la 37**: barrer el mismo vicio de conteo en el
+resto de circuitos —ahi podrian quedar mas §50 sin mirar—, prioridad de
+solidez viva. Lo grande que sigue: custodios (32/33, diseño en §47),
+operacion (grupo E), consenso (23), auditoria externa (7), preprints al
+final (16, 28).
 
 ⚠️ **Reordenado el 30-07-2026.** Diez entradas nuevas entraron en una
 sola sesion ancladas sobre lineas concretas, y varias quedaron en el grupo
@@ -117,7 +115,7 @@ decidir.
   nuevo. La 21 puede o no compartir esto, segun que signifique alli
   «tercero».
 
-- [ ] **6. El grado dependiente del testigo en el arbol de pendientes.**
+- [x] **6. Grado dependiente del testigo (pendientes): DECIDIDO y DECLARADO.**
   La unica comprobacion automatica del area de menor confianza (§16.3)
   esta apagada: solo corre en depuracion y ahi fallan 65 tests (§20, §35).
   **Replanteada** el 30-07-2026 (§37): el remedio no es reformular el
@@ -142,26 +140,26 @@ decidir.
   no midio nada. ✅ **Repetido bien** el 30-07-2026 (§37.7), interviniendo
   en `two_phase::allocate_pending`: **segunda fila**, 64 fallos frente a 65
   y **ni una** `C_PEND_*` ni `C_PBIT_BOOL` desviada en ninguno de los seis
-  circuitos. El diagnostico queda cerrado; falta **decidir si se paga el
-  precio** de posiciones no secuenciales. Y no basta por si solo: ver la
-  entrada 25.
+  circuitos. El diagnostico queda cerrado. ✅ **Cerrada** el 30-07-2026:
+  decidido «declarar, no migrar» (§46) y **redactado** (entrada 34) en
+  README y AUDITORIA §20. No queda accion: limite conocido de winterfell, no
+  fallo de solidez —release genera y verifica bien—. El «falta decidir el
+  precio» de mas arriba queda superado por §46.
 
-- [ ] **25. El mismo grado dependiente del testigo en los arboles de
-  cuentas y congelados.** Tras cerrar el diagnostico del pendiente (§37.7)
+- [x] **25. Grado dependiente del testigo (cuentas/congelados): DECLARADO.** Tras cerrar el diagnostico del pendiente (§37.7)
   quedan 64 fallos en dos bloques que aparecen en casi todos los circuitos;
   por su posicion son las subidas a **cuentas** (indices 0 y 1) y a
   **congelados** (arbol vacio). Atribucion **sin verificar**: mapear indices
-  contra las constantes antes de afirmarla. ✅ **DECIDIDO** con la 6 (§46):
-  se declara como limite de winterfell, misma clase. Entrada 34.
+  contra las constantes antes de afirmarla. ✅ **Cerrada** con la 6 (§46,
+  §34): misma clase, declarada como limite conocido de winterfell.
 
-- [ ] **24. Grado dependiente del testigo por valores legitimos del
-  dominio.** `circuit_mint_pending` con el margen del tope a cero y
+- [x] **24. Grado dependiente del testigo (valores de dominio): DECLARADO.** `circuit_mint_pending` con el margen del tope a cero y
   `range_check` con diferencia cero degeneran por valores que el dominio
   necesita, no por como estan escritos; probablemente no tenga arreglo y
   lo correcto sea **declararlo** como limite de la herramienta (§37.2,
   caso B). Es la causa de los 2 tests que `stark-experiment` se salta en
-  depuracion. ✅ **DECIDIDO** con la 6 (§46): se declara como limite de
-  winterfell. Entrada 34.
+  depuracion. ✅ **Cerrada** con la 6 (§46, §34): declarada como limite de
+  winterfell; para valores de dominio no hay arreglo posible (§37.2 caso B).
 
 ## C. Solidez y verificacion: resueltas y en revision
 
@@ -219,6 +217,40 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   el barrido sistematico tampoco la encuentra (§40): el unico metodo
   conocido es la lectura semantica circuito a circuito, cara, manual y en
   la que el autor acaba de equivocarse tres veces en un dia.
+
+- [x] **35. `circuit_mint_pending` verificado sano.** ~~Revisar si su
+  `COL_R_ID` esta pisado como en §50.~~ **Verificado** el 30-07-2026 (§50.6):
+  el test `a_mint_pending_with_inconsistent_receiver_identity_is_rejected`
+  **rechaza** la traza de dos identidades; la constancia se impone
+  (`C_TRANSPORT_NEW` reserva sus 12 ranuras) y rechaza por la razon correcta
+  (§16.5). ⚠️ **Rectificado (§50.7)**: aqui se dijo que el fallo «no era
+  sistemico»; era falso —los TRES constructores tenian el solapamiento de
+  §38, `mint_pending` es el unico con la disposicion **bien contada**—. El
+  test queda como regresion permanente.
+
+- [x] **36. ⚠️ NO era limpieza: TERCER fallo de solidez, corregido.**
+  ~~Borrar 8 restricciones muertas de claim, borrado seguro.~~ `claim` tenia
+  el mismo solapamiento que `send`, y aunque `COL_R_ID` estaba muerto tras
+  §39.1, el compromiso **aun lee `COL_SALT`**: un §50 sobre el aleatorio
+  (§50.7). Confirmado por test y **corregido** (C_TRANSPORT a 15, grados
+  13->21). El testigo pasa a verde. ⚠️ Degradado a «cosmetico» **tres
+  veces** (§39.4, §49.1, al cerrar la 35) antes de que un test lo mirara: el
+  error del dia en su forma mas pura.
+
+- [ ] **37. Barrer el vicio de conteo «declara N, reparte M<N» en TODOS los
+  circuitos.** El solapamiento de §38 produjo fallos de solidez en dos de
+  los tres constructores de compromisos (§50, §50.7) y estaba en los tres.
+  La causa raiz —una constante `C_X = C_prev + N` con N menor que lo que su
+  `evaluate_transition` escribe, de modo que el grupo siguiente la pisa—
+  **no se ha buscado fuera de esos tres circuitos**. Hay una docena con la
+  misma estructura (`audit`, `burn`, `freeze`, `governance`, `mint`,
+  `recovery`, `settlement`, `threshold`, `compliance`, `double_entry`,
+  `dual_climb`…) y ninguna comprobacion automatica de que el reparto cuadre.
+  Un `tools/check_constraint_layout.py` que, por circuito, verifique que cada
+  `C_X` deja sitio a lo que se le escribe cerraria la clase entera. Es la
+  **generalizacion del hallazgo de §38**: mientras no se haga, no se sabe si
+  quedan mas §50 sin mirar. Prioridad de solidez, por delante de lo
+  declarativo.
 
 ## D. Declaradas, acotadas, sin urgencia
 
@@ -324,23 +356,6 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   corregida y verificada.
 
 ## G. Otro proyecto, no una incidencia
-
-- [x] **35. `circuit_mint_pending` esta sano.** ~~Revisar si su `COL_R_ID`
-  esta pisado como en §50.~~ **Verificado** el 30-07-2026 (§50.6): el test
-  discriminante `a_mint_pending_with_inconsistent_receiver_identity_is_rejected`
-  **rechaza** la traza de dos identidades. La constancia se impone
-  —`C_TRANSPORT_NEW` reserva sus 12 ranuras de verdad—, y rechaza por la
-  razon correcta (§16.5). El fallo de §50 en `send` **no era sistemico**: de
-  los tres constructores de compromisos, dos estaban mal contados y este
-  bien. El test queda como regresion permanente.
-
-- [x] **36. ⚠️ NO era limpieza: tercer fallo de solidez, corregido.**
-  ~~Borrar 8 restricciones muertas de claim, borrado seguro.~~ Al bajar a
-  hacerlo, `claim` tenia el mismo solapamiento que `send` y el compromiso
-  **aun lee `COL_SALT`**: un §50 sobre el aleatorio (§50.7). Confirmado por
-  test y **corregido** el 30-07-2026 (C_TRANSPORT a 15, grados 13->21, las 8
-  constancias impuestas). El test testigo pasa a verde: 205 tests, 0 fallos.
-  Degradado a «cosmetico» tres veces antes de que un test lo mirara.
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo
