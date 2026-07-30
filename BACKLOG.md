@@ -14,15 +14,41 @@ grupo de prioridad sin cambiar de numero.
 
 **Estado**: 16 abiertas, 21 resueltas. Ultima revision: 30 de julio de 2026.
 
-Arco de solidez de compromisos **cerrado**: los TRES constructores de
-compromisos tenian el solapamiento de §38. `claim` (§39 titularidad, §50.7
-aleatorio) y `send` (§50 identidad) corregidos; `mint_pending` (§35)
-verificado sano. El frente de grados (6, 24, 25, 34) declarado y cerrado
-(§46, §20). ⚠️ **Abierta la 37**: barrer el mismo vicio de conteo en el
-resto de circuitos —ahi podrian quedar mas §50 sin mirar—, prioridad de
-solidez viva. Lo grande que sigue: custodios (32/33, diseño en §47),
-operacion (grupo E), consenso (23), auditoria externa (7), preprints al
-final (16, 28).
+⚠️ **Esta cabecera se quedo rancia seis veces seguidas** durante la sesion
+del 30-07: se actualizaba al cerrar una tanda y la tanda continuaba. Llego a
+anunciar como abierta la entrada 37, cerrada ocho commits antes, y a
+describir la 32/33 como «diseño» cuando ya era un piloto funcionando. Queda
+anotado porque es el mismo fallo que la propia lista denuncia mas abajo:
+**escribir desde el estado que se recuerda en vez de comprobar el arbol**.
+
+### Solidez del circuito: cerrada
+
+Los TRES constructores de compromisos tenian el solapamiento de §38.
+`claim` (§39 titularidad, §50.7 aleatorio) y `send` (§50 identidad)
+corregidos; `mint_pending` (§35) verificado sano. La **37** generalizo el
+hallazgo: `tools/check_constraint_layout.py` barre los 14 circuitos y no
+queda ninguna colision. El frente de grados (6, 24, 25, 34) declarado como
+limite conocido de winterfell (§46, §20).
+
+⚠️ Lo que ese barrido **no** cubre: restricciones ausentes o mal formuladas.
+§39 no se habria detectado con el (§53.5). Para esa clase sigue sin haber mas
+instrumento que la lectura semantica y el test discriminante — que es el
+argumento de la **entrada 7**.
+
+### Custodios (32/33): de frente abierto a cola de trabajo
+
+Mecanismo completo y verificado: dos circuitos de carril unico, variante B
+decidida y medida (§52), umbral 2-de-N reconstruido fuera del circuito (§54),
+operacion atada al nulificador (§55), compromiso que enlaza con cada circuito
+(§56), y **piloto funcionando en `governance`** (§57). Falta repetir el patron
+en `freeze`, `recovery`, `mint_pending` y `mint` — este ultimo el mas
+enredado, y por eso el ultimo.
+
+### Lo demas
+
+Auditoria externa (7), declaradas (8, 11, 12, 15), operacion (grupo E),
+consenso (23), y los preprints al final (16, 28) — que ya acumulan tres
+fallos de solidez y una brecha de confianza sin declarar.
 
 ⚠️ **Reordenado el 30-07-2026.** Diez entradas nuevas entraron en una
 sola sesion ancladas sobre lineas concretas, y varias quedaron en el grupo
