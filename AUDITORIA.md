@@ -4216,7 +4216,49 @@ estilo de los que han funcionado en esta auditoria:
 Eso es una sesion de trabajo con toolchain, no un parche a ciegas, y es el
 punto por el que empieza la 33.
 
-## 48. Qué NO demuestra este documento
+## 48. La entrada 10, y otra cifra sin fuente
+
+La entrada 10 pedia «hacer explicita la eleccion» sobre la brecha entre
+seguridad conjeturada (127 bits) y demostrable, diciendo que el coste
+estaba medido: **36,7 KB → 125,6 KB**. Al verificar para cerrarla, dos
+cosas.
+
+### 48.1 El hecho SI esta declarado
+
+La brecha figura en el README (lista de hallazgos, punto 4: *«127 bits
+conviven con 29-63»*) y en el preprint comparativo (Finding 3: parametros
+rapidos anuncian seguridad conjeturada alta y entregan mucha menos
+demostrable salvo que se refuercen extension de campo y consultas, lo que
+sube el tamano de prueba). Como enunciado, no falta.
+
+### 48.2 La decision NO esta tomada, y la cifra de su coste no existe
+
+Lo que la entrada 10 pide —**elegir** entre cerrar la brecha o aceptarla
+conjeturada— no esta resuelto en ninguna parte. El README la lista como
+hallazgo, no como decision.
+
+⚠️ **Y la cifra que la haria decidible no esta medida.** El backlog daba
+«36,7 KB → 125,6 KB». `36,7 KB` existe: es el tamano de prueba STARK
+**actual** (README, tabla de backends). Pero **`125,6 KB` no aparece en
+ningun punto del repositorio**, ni `29 bits` como cota demostrable
+concreta. Es, casi con seguridad, otra cifra escrita de memoria al redactar
+la lista —como el «~8.000 filas» de la 21, retirado en §42.3—.
+
+Se retira. El coste real de cerrar la brecha —reforzar la extension de campo
+y las consultas, y medir el tamano de prueba resultante— **no se ha medido**,
+y hasta que se mida no debe citarse ninguno.
+
+### 48.3 Que queda, honestamente
+
+La decision del nivel de seguridad es de **politica**, como la de los grados
+(§46): no la toma el circuito, la toma quien despliega. Pero a diferencia de
+los grados, aqui **falta el dato para decidir**: cuanto cuesta en tamano de
+prueba pasar de la seguridad conjeturada a una demostrable objetivo. El
+primer paso no es elegir, es **medir** —parametrizar winterfell con extension
+de campo y consultas reforzadas y comparar el tamano—. Eso es una sesion con
+toolchain, no una linea.
+
+## 49. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

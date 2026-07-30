@@ -229,9 +229,15 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   fondo (sin caducidad, sin motivo) sigue abierto como decision de diseno,
   pero **declarado**; implementarlo es circuito, no redaccion.
 
-- [ ] **10. Decidir sobre 127 bits conjeturados frente a 29–63
-  demostrables.** El coste de cerrar la brecha esta medido
-  (36,7 KB → 125,6 KB); falta hacer la eleccion explicita.
+- [ ] **10. Decidir sobre 127 bits conjeturados frente a la seguridad
+  demostrable.** El **hecho** esta declarado (README punto 4, preprint
+  Finding 3), pero la **decision** no, y ⚠️ la cifra de coste que este
+  punto daba —«36,7 KB → 125,6 KB»— **no estaba medida**: `125,6 KB` no
+  existe en el repositorio, se escribio de memoria y se retira (§48), como
+  el ~8.000 de la 21. Primer paso: **medir** el tamano de prueba con
+  extension de campo y consultas reforzadas; es una sesion con toolchain,
+  no una decision de escritorio. Politica, como los grados, pero sin el
+  dato para decidir todavia.
 
 - [ ] **11. Canal lateral de ISO 20022.** Posicion, aleatorio e importe del
   pendiente viajan fuera del mensaje, sin especificar como; bloquea
