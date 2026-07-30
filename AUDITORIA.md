@@ -1235,9 +1235,14 @@ acredita que el emisor no está en el árbol de congelados.
 - El circuito demuestra que dos custodios la autorizaron, **no que
   tuvieran razón**. No hay orden judicial ni motivo registrado.
 - **No hay caducidad**: una congelación dura hasta que alguien la levante.
-- Una cuenta congelada **sigue pudiendo recibir**. Es deliberado —lo
-  contrario dejaría fondos en el limbo— pero merece que un auditor valore
-  si encaja con el caso de uso.
+- Una cuenta congelada **sigue pudiendo recibir**. Era deliberado en la
+  vía de un paso —lo contrario dejaría fondos en el limbo—, pero ⚠️ **con
+  la retirada de esa vía (§36) el argumento se dio la vuelta**: en dos
+  fases cobrar es una acción del receptor, y `circuit_claim` la rechaza si
+  está congelado, así que el dinero enviado a una cuenta congelada **queda
+  en el limbo que la decisión original quería evitar** (§7). El diseño no
+  se ha readaptado a ese cambio. Un auditor debe valorarlo con el
+  comportamiento real, no con el original.
 
 ### 16.3 Los grados de restricción
 

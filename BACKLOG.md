@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 23 abiertas, 11 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 22 abiertas, 12 resueltas. Ultima revision: 30 de julio de 2026.
 El frente de grados (6, 24, 25, 34) queda **cerrado** (§46, §20): declarado
 como limite conocido de winterfell, sin migrar. No es fallo de solidez.
 
@@ -219,9 +219,15 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   medias: un atacante aun puede agotar el cupo, y la solucion correcta
   exige un circuito nuevo (§16.1).
 
-- [ ] **9. Congelacion sin caducidad ni motivo registrado.** El circuito
-  prueba que dos custodios la autorizaron, no que tuvieran razon, y dura
-  hasta que alguien la levante (§16.2).
+- [x] **9. Congelacion sin caducidad ni motivo registrado: ya declarada,
+  y reconciliada.** ~~El circuito prueba que dos custodios la autorizaron,
+  no que tuvieran razon, y dura hasta que alguien la levante.~~ **Cerrada**
+  el 30-07-2026: ya estaba en §16.2. Al verificar para cerrarla, §16.2 y §7
+  se contradecian sobre «recibir estando congelada» —§16.2 lo llamaba
+  «deliberado» sin notar que la retirada de la via de un paso (§36) dejo
+  ese caso en el **limbo** que se queria evitar (§7)—. Reconciliadas. El
+  fondo (sin caducidad, sin motivo) sigue abierto como decision de diseno,
+  pero **declarado**; implementarlo es circuito, no redaccion.
 
 - [ ] **10. Decidir sobre 127 bits conjeturados frente a 29–63
   demostrables.** El coste de cerrar la brecha esta medido
