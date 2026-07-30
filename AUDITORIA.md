@@ -4248,15 +4248,32 @@ Se retira. El coste real de cerrar la brecha —reforzar la extension de campo
 y las consultas, y medir el tamano de prueba resultante— **no se ha medido**,
 y hasta que se mida no debe citarse ninguno.
 
-### 48.3 Que queda, honestamente
+### 48.3 ⚠️ Rectificacion: la cifra SI existia, y la decision esta implementada
 
-La decision del nivel de seguridad es de **politica**, como la de los grados
-(§46): no la toma el circuito, la toma quien despliega. Pero a diferencia de
-los grados, aqui **falta el dato para decidir**: cuanto cuesta en tamano de
-prueba pasar de la seguridad conjeturada a una demostrable objetivo. El
-primer paso no es elegir, es **medir** —parametrizar winterfell con extension
-de campo y consultas reforzadas y comparar el tamano—. Eso es una sesion con
-toolchain, no una linea.
+Lo de §48.2 esta **mal**, y se corrige aqui con el mismo estandar que el
+resto de la sesion. Retire «125,6 KB» por «sin fuente» tras buscar en README,
+AUDITORIA y preprints. **No busque en el codigo del puente ISO**, y ahi
+estaba:
+
+`iso_bridge.rs` documenta que su configuracion por defecto —**120 queries,
+blowup 16**, frente a los 32/8 de los circuitos normales— **alcanza 128 bits
+de seguridad DEMOSTRABLE** (no conjeturada), medida en `compliance_real_proof`,
+y **cuesta ~125 KB y ~45 ms**. De ahi salio el 125,6.
+
+Es decir: la decision de la 10 **no solo esta tomada, esta implementada**. El
+proyecto tiene una config de 128 bits demostrables, la usa por defecto en el
+puente, y deja la eleccion explicita: *«quien quiera pruebas mas pequenas
+debe pedirlo y saber que cambia»*. Exactamente lo que la entrada 10 pedia.
+
+⚠️ **Mi error fue el de siempre**: afirmar «no existe» tras una busqueda
+incompleta, que es la misma forma que §37.4 y §40. Un «no lo encuentro» no es
+un «no existe». La leccion se cobra una vez mas, ahora sobre una correccion
+mia.
+
+La cifra 36,7 KB (proof STARK normal) frente a ~125 KB (128 bits
+demostrables) es el coste real de la garantia fuerte, **medido y en el
+repositorio**. La decision de que circuitos usan cual queda como afinado, no
+como frente abierto.
 
 ## 49. Qué NO demuestra este documento
 

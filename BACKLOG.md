@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 21 abiertas, 13 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 20 abiertas, 14 resueltas. Ultima revision: 30 de julio de 2026.
 El frente de grados (6, 24, 25, 34) queda **cerrado** (§46, §20): declarado
 como limite conocido de winterfell, sin migrar. No es fallo de solidez.
 
@@ -229,15 +229,16 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   fondo (sin caducidad, sin motivo) sigue abierto como decision de diseno,
   pero **declarado**; implementarlo es circuito, no redaccion.
 
-- [ ] **10. Decidir sobre 127 bits conjeturados frente a la seguridad
-  demostrable.** El **hecho** esta declarado (README punto 4, preprint
-  Finding 3), pero la **decision** no, y ⚠️ la cifra de coste que este
-  punto daba —«36,7 KB → 125,6 KB»— **no estaba medida**: `125,6 KB` no
-  existe en el repositorio, se escribio de memoria y se retira (§48), como
-  el ~8.000 de la 21. Primer paso: **medir** el tamano de prueba con
-  extension de campo y consultas reforzadas; es una sesion con toolchain,
-  no una decision de escritorio. Politica, como los grados, pero sin el
-  dato para decidir todavia.
+- [x] **10. Seguridad conjeturada vs demostrable: decidido e implementado.**
+  ~~Decidir sobre 127 bits conjeturados; coste 36,7 KB → 125,6 KB.~~
+  **Cerrada** el 30-07-2026. Recorrido con dos errores mios corregidos: (1)
+  retire «125,6 KB» por sin-fuente (§48.2) tras una busqueda incompleta;
+  (2) **estaba en `iso_bridge.rs`** (§48.3). La decision **ya esta
+  implementada**: la config por defecto del puente ISO usa 120 queries y
+  blowup 16, alcanza **128 bits demostrables** (no conjeturados), cuesta
+  ~125 KB medidos en `compliance_real_proof`, y deja la eleccion explicita.
+  36,7 KB (normal) vs ~125 KB (fuerte) es el coste real, en el repo. Que
+  circuito usa cual es afinado, no frente abierto.
 
 - [ ] **11. Canal lateral de ISO 20022.** Posicion, aleatorio e importe del
   pendiente viajan fuera del mensaje, sin especificar como; bloquea
