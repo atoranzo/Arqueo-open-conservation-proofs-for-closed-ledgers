@@ -1364,6 +1364,70 @@ mod tests {
     }
 
     /// EL TEST CLAVE.
+    // EN ROJO A PROPOSITO: testigo del fallo de solidez de la entrada 30 / 50.
+    // #[ignore] para no tumbar la suite; corre con `cargo test -- --ignored`.
+    #[test]
+    #[ignore = "testigo del fallo de solidez de la entrada 30; ver AUDITORIA.md 50"]
+    fn a_send_with_inconsistent_receiver_identity_is_rejected() {
+        // ENTRADA 30 / §49.2. La traza honesta pone la MISMA identidad en
+        // todas las filas (build_trace, bucle sobre COL_R_ID). El ataque:
+        // dejar la identidad de la VICTIMA en la fila donde C_PEND_IN arma
+        // el compromiso (ROW_FROZEN_ROOT, donde pend_in=1), y cambiarla por
+        // la del ATACANTE en el resto. Si la constancia de COL_R_ID entre
+        // filas esta muerta por el solapamiento de §38, la traza es
+        // coherente para el compromiso y VERIFICA: seria §39 en el envio.
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let mut trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, &s.path, &s.frozen_path,
+            s.amount, TEST_LIMIT, s.supply_old, 0, s.receiver_id, s.salt,
+            &s.pending_path,
+        );
+
+        // La fila donde se construye el compromiso conserva la identidad
+        // real (la victima). En TODAS las demas filas, metemos otra.
+        let atacante = derive_public_id(BaseElement::new(0xA77ACC));
+        assert_ne!(atacante, s.receiver_id, "el testigo debe diferir");
+        for row in 0..TRACE_LENGTH {
+            if row == ROW_FROZEN_ROOT { continue; } // la del compromiso, intacta
+            for i in 0..4 {
+                trace.set(COL_R_ID + i, row, atacante[i]);
+            }
+        }
+
+        let prover = SendProver::new(default_options());
+        let hook_libre = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => None,             // panic al generar: no verifica
+                Ok(inner) => Some(inner),
+            }
+        };
+        let verifica = match hook_libre {
+            None => false,
+            Some(Err(_)) => false,          // prove devolvio Err
+            Some(Ok(proof)) => {
+                let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                    proof, s.public_inputs.clone(), &min_opts,
+                ).is_ok()
+            }
+        };
+
+        // ⚠️ El resultado ES la respuesta de la entrada 30:
+        //   verifica == false -> la constancia esta VIVA, el solapamiento no
+        //     la mato para este efecto; la 30 es cosmetica (borrar seguro).
+        //   verifica == true  -> §39 EN EL ENVIO: un probador mete dos
+        //     identidades y cuela; URGENTE.
+        assert!(
+            !verifica,
+            "SOLIDEZ: una traza con COL_R_ID inconsistente entre la fila del \
+             compromiso y el resto NO debe verificar. Si esto salta, la \
+             constancia esta muerta y es un fallo de solidez en circuit_send \
+             (entrada 30 / §49.2)."
+        );
+    }
+
     #[test]
     fn an_authorized_send_verifies() {
         let s = scenario(1_000_000, 250_000, 10_000_000);
