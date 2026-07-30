@@ -4945,7 +4945,70 @@ fuera del circuito, operacion atada— esta hecho y verificado con 18 tests.
 Esa sustitucion es cirugia en la creacion de dinero y va con la cautela de
 §50: test discriminante antes de tocar nada.
 
-## 56. Qué NO demuestra este documento
+## 56. El puente con los cinco circuitos, y por que la cirugia no se hizo hoy
+
+De la 33 quedaba «sustituir `ThresholdAuth` en los cinco circuitos». Al bajar
+al codigo, esa frase escondia dos cosas: una **amputacion** mayor de lo que
+sugeria, y una **pieza que no existia**.
+
+### 56.1 Que significa de verdad la sustitucion
+
+`circuit_mint` **empotra la subida de custodios dentro de su propia traza**:
+filas 272-311, columnas 26-31 y 43-44, con sus restricciones y sus grados.
+Los otros cuatro hacen lo mismo. Sustituir no es cambiar una firma: es
+**amputar** ese tramo de cada circuito —que queda mas pequeño— y que la
+autorizacion pase a ser una prueba aparte que la capa exige junto a la de la
+operacion.
+
+### 56.2 La pieza que faltaba: atar la autorizacion a ESTA operacion
+
+Si `mint` deja de verificar la autorizacion internamente, **nada obliga a que
+la autorizacion corresponda a esa emision**. Una autorizacion valida para
+emitir 1.000 serviria para emitir 1.000.000: es el agujero de §54.4 otra vez,
+ahora **entre circuitos** en vez de entre operaciones.
+
+`commit_operation(dominio, parametros)` lo cierra. Resume que se autoriza en
+un `Digest` que los custodios firman; la capa lo calcula desde las entradas
+publicas de la operacion y exige que coincida.
+
+**Un dominio por tipo de operacion** (`OP_MINT`, `OP_MINT_PENDING`,
+`OP_FREEZE`, `OP_RECOVERY`, `OP_GOVERNANCE`): sin eso, los mismos parametros
+bajo otro significado colisionarian y una autorizacion de congelacion valdria
+como autorizacion de emision.
+
+⚠️ **Y una suposicion declarada en la propia funcion**: la esponja **no lleva
+relleno**, asi que supone longitud FIJA por dominio. Hoy se cumple —cada
+operacion tiene un numero fijo de parametros— y los dominios impiden
+colisiones entre tipos. **Si alguna operacion pasa a tener parametros de
+longitud variable, esto necesita una regla de relleno antes de usarse.** Queda
+escrito porque es la clase de suposicion que se olvida y muerde anos despues.
+
+### 56.3 Lo que se ha construido y probado
+
+El puente, no la cirugia. Cuatro tests nuevos, entre ellos el que cierra el
+diseño: dos custodios autorizan emitir 1.000, alguien intenta usar esas
+autorizaciones para emitir 1.000.000, y el par se rechaza con
+`WrongOperation`. **16 tests** en el modulo de la variante B.
+
+### 56.4 Por que la cirugia no se hizo, con criterio y no por cansancio
+
+Amputar el tramo de custodios de cinco circuitos de creacion de dinero, sin
+compilar entre paso y paso, al final de una sesion de este tamaño, es
+exactamente el acto contra el que esta auditoria ha trabajado todo el dia.
+§50 y §50.7 fueron dos fallos de solidez que vivieron meses en circuitos que
+parecian correctos.
+
+**El camino correcto es circuito a circuito**, empezando por `mint`, con test
+discriminante antes y despues: comprobar que el circuito amputado **rechaza**
+una emision cuya autorizacion no corresponde, que es la propiedad que la
+amputacion pone en riesgo. Eso es una sesion con toolchain por circuito, no
+un parche.
+
+Lo que hoy queda hecho es que esa cirugia **ya tiene su andamio**: el
+mecanismo de autorizacion existe, esta medido, tiene la operacion atada, y
+ahora tambien el compromiso que la enlaza con cada circuito.
+
+## 57. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

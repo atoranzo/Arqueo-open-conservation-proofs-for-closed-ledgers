@@ -131,9 +131,16 @@ decidir.
   deriva de `H(dominio, clave, operacion)`, lo que cierra **a la vez** la
   reproduccion de §54.4 y la enlazabilidad de §52.4, sin coste en filas.
   Verificado con test discriminante de la constancia de `COL_OP` (§55.2).
-  **Falta solo (c)**: sustituir `ThresholdAuth` en los cinco circuitos
-  (`mint`, `mint_to_pending`, `freeze`, `recovery`, `governance`), que es
-  cirugia en la creacion de dinero y va con la cautela de §50.
+  ✅ **El puente hecho** (§56): `commit_operation` ata la
+  autorizacion a los parametros de la operacion concreta, con un dominio por
+  tipo; sin el, una autorizacion para emitir 1.000 serviria para emitir
+  1.000.000. **Falta solo (c)**: sustituir `ThresholdAuth` en los cinco
+  circuitos (`mint`, `mint_to_pending`, `freeze`, `recovery`, `governance`).
+  ⚠️ Es **amputar** de cada uno el tramo de subida de custodios que hoy
+  llevan empotrado (en `mint`: filas 272-311 y ocho columnas), no cambiar una
+  firma. **Circuito a circuito**, con test discriminante antes y despues:
+  que el circuito amputado rechace una operacion cuya autorizacion no
+  corresponde. Una sesion con toolchain por circuito (§56.4).
   **Analizada** (§42): no se mueve «al cliente» porque los custodios son
   dos y el circuito prueba conocimiento de ambas claves en una sola traza.
   La via que cierra las dos mitades es **verificar firmas en circuito**,

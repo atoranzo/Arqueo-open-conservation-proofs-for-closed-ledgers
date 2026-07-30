@@ -116,6 +116,47 @@ const P_NULL_INIT: usize = P_FIRST_ROW + 1;
 
 type Blake3 = Blake3_256<BaseElement>;
 
+// ===== Compromiso de la operacion autorizada =====
+//
+// Los custodios firman un `Digest` que resume QUE se autoriza. Este es el
+// puente entre la autorizacion y el circuito de la operacion: la capa calcula
+// el compromiso desde las entradas publicas de la operacion y exige que sea
+// el que los custodios firmaron.
+
+/// Dominios de operacion. **Uno por tipo**, para que una autorizacion de
+/// congelacion no pueda reutilizarse como autorizacion de emision.
+pub const OP_MINT: u64 = 0x4D494E54; // "MINT"
+pub const OP_MINT_PENDING: u64 = 0x4D504E44; // "MPND"
+pub const OP_FREEZE: u64 = 0x46525A45; // "FRZE"
+pub const OP_RECOVERY: u64 = 0x5245434F; // "RECO"
+pub const OP_GOVERNANCE: u64 = 0x474F5652; // "GOVR"
+
+/// Resume los parametros de una operacion en un `Digest` que los custodios
+/// firman.
+///
+/// Esponja sobre la permutacion Rescue: capacidad `state[0..4]` con el dominio
+/// en `state[0]`, ritmo `state[4..12]` de ocho elementos, modo sobrescritura.
+///
+/// ⚠️ **Supone longitud FIJA por dominio.** No lleva relleno, asi que dos
+/// mensajes del mismo dominio con longitudes distintas podrian colisionar
+/// (`[a]` y `[a, 0]` dan lo mismo). Cada operacion tiene un numero fijo de
+/// parametros, asi que la suposicion se cumple hoy —y los dominios impiden
+/// colisiones ENTRE operaciones—. **Si alguna operacion pasa a tener
+/// parametros de longitud variable, esto necesita una regla de relleno antes
+/// de usarse.** Queda escrito porque es la clase de suposicion que se olvida.
+pub fn commit_operation(domain: u64, elements: &[BaseElement]) -> Digest {
+    let zero = BaseElement::ZERO;
+    let mut state = [zero; STATE_WIDTH];
+    state[0] = BaseElement::new(domain);
+    for chunk in elements.chunks(8) {
+        for i in 0..8 {
+            state[4 + i] = if i < chunk.len() { chunk[i] } else { zero };
+        }
+        Rp64_256::apply_permutation(&mut state);
+    }
+    [state[4], state[5], state[6], state[7]]
+}
+
 /// El nulificador de un custodio **para una operacion concreta**.
 ///
 /// Una sola permutacion absorbe los seis elementos: dominio y clave en la
@@ -936,6 +977,79 @@ mod tests {
             verify_threshold_pair(pa, ia, pb, ib, root, otra, &opciones()),
             Err(PairRejection::WrongOperation),
             "SOLIDEZ: un par valido para una operacion no autoriza otra"
+        );
+    }
+
+    // ===== El compromiso de operacion: el puente con los cinco circuitos =====
+
+    /// Los parametros de una emision, tal como los expondria `circuit_mint`.
+    fn params_mint(amount: u64, supply_old: u64, supply_new: u64) -> Vec<BaseElement> {
+        let root_old = [BaseElement::new(11); 4];
+        let root_new = [BaseElement::new(22); 4];
+        let mut v = root_old.to_vec();
+        v.extend_from_slice(&root_new);
+        v.push(BaseElement::new(amount));
+        v.push(BaseElement::new(supply_old));
+        v.push(BaseElement::new(supply_new));
+        v.push(BaseElement::new(1_000_000_000));
+        v
+    }
+
+    #[test]
+    fn the_operation_commitment_is_deterministic() {
+        let p = params_mint(1_000, 0, 1_000);
+        assert_eq!(
+            commit_operation(OP_MINT, &p),
+            commit_operation(OP_MINT, &p)
+        );
+    }
+
+    /// ⚠️ **Separacion por dominio.** Los mismos parametros bajo otro tipo de
+    /// operacion dan otro compromiso: una autorizacion de congelacion no vale
+    /// como autorizacion de emision.
+    #[test]
+    fn operation_domains_are_separated() {
+        let p = params_mint(1_000, 0, 1_000);
+        assert_ne!(
+            commit_operation(OP_MINT, &p),
+            commit_operation(OP_FREEZE, &p),
+            "SOLIDEZ: sin separacion de dominio, una autorizacion sirve para \
+             cualquier tipo de operacion"
+        );
+    }
+
+    /// Cambiar cualquier parametro cambia el compromiso.
+    #[test]
+    fn every_parameter_is_covered_by_the_commitment() {
+        let base = commit_operation(OP_MINT, &params_mint(1_000, 0, 1_000));
+        assert_ne!(base, commit_operation(OP_MINT, &params_mint(1_001, 0, 1_000)));
+        assert_ne!(base, commit_operation(OP_MINT, &params_mint(1_000, 1, 1_000)));
+        assert_ne!(base, commit_operation(OP_MINT, &params_mint(1_000, 0, 1_001)));
+    }
+
+    /// ⚠️ **La prueba de que el puente funciona.** Dos custodios autorizan
+    /// emitir 1.000. Alguien intenta usar esas autorizaciones para emitir
+    /// 1.000.000. El compromiso no coincide y el par se rechaza.
+    ///
+    /// Es el mismo agujero de §54.4, ahora **entre circuitos**: sin esta
+    /// atadura, la autorizacion y la operacion serian dos cosas sueltas que
+    /// nadie obliga a corresponderse.
+    #[test]
+    fn an_authorization_for_one_mint_does_not_authorize_another() {
+        let keys = custodian_keys();
+        let (root, paths) = build_custodian_set(&keys);
+
+        let autorizada = commit_operation(OP_MINT, &params_mint(1_000, 0, 1_000));
+        let pretendida = commit_operation(OP_MINT, &params_mint(1_000_000, 0, 1_000_000));
+
+        let (pa, ia) = autorizar(keys[1], &paths[1], autorizada);
+        let (pb, ib) = autorizar(keys[2], &paths[2], autorizada);
+
+        assert_eq!(
+            verify_threshold_pair(pa, ia, pb, ib, root, pretendida, &opciones()),
+            Err(PairRejection::WrongOperation),
+            "SOLIDEZ: una autorizacion para emitir 1.000 no autoriza emitir \
+             1.000.000 (entrada 33 / §56)"
         );
     }
 
