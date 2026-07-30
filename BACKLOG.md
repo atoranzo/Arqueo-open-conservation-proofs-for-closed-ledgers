@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 23 abiertas, 7 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 24 abiertas, 7 resueltas. Ultima revision: 30 de julio de 2026.
 
 Con la 5 queda cerrado el **grupo A**: el repositorio vuelve a describir
 lo que hay. La siguiente es la **6**.
@@ -124,9 +124,17 @@ describe cosas que no son ciertas.
   circuitos. El diagnostico queda cerrado; falta **decidir si se paga el
   precio** de posiciones no secuenciales. Y no basta por si solo: ver la
   entrada 25.
-- [ ] **7. Encargar la auditoria externa del argumento lockstep.** El
-  hallazgo mas original del proyecto lo respalda un test discriminante, no
-  una demostracion revisada por nadie mas (§16.4).
+- [ ] **7. ⚠️ Encargar la auditoria externa.** Ya no es solo por el
+  argumento lockstep (§16.4). Tras §39 hay un defecto **demostrado** de una
+  clase que las herramientas del proyecto no detectan por construccion, y
+  el barrido sistematico tampoco la encuentra (§40): el unico metodo
+  conocido es la lectura semantica circuito a circuito, cara, manual y en
+  la que el autor acaba de equivocarse tres veces en un dia.
+
+- [ ] **31. Pregunta abierta: `circuit_mint_pending` no declara a quien
+  emite.** Ni entrada publica ni asercion sobre `COL_R_ID` (§40.3). Puede
+  estar cubierto por la cooperacion de los custodios; hace falta leer el
+  sub-circuito de umbral para saberlo. **No se afirma que sea un fallo.**
 
 ## C. Declaradas, acotadas, sin urgencia
 

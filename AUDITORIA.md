@@ -3570,7 +3570,78 @@ comentario declara quince donde el reparto asigna siete. Dos vías:
 índices, que es exactamente donde este proyecto se ha hecho daño hoy. Se
 elige con la cabeza despejada, no al final de una sesión de doce horas.
 
-## 40. Qué NO demuestra este documento
+## 40. El barrido que §39 obligaba a hacer, y por qué no basta
+
+§39 fue **una columna que el circuito lee y no ata a nada**, encontrada por
+accidente. La pregunta obligada después no es corregir los papeles: es si
+hay más. Esta sección registra el intento y su resultado, que es negativo.
+
+### 40.1 Dos heurísticas, las dos fallidas
+
+**«Columnas leídas sin aserción de frontera».** Devuelve entre 7 y 15 por
+circuito, 119 en total. No sirve: casi ninguna columna se ancla por
+aserción —se atan por restricciones—, así que la señal es todo ruido.
+
+**«Columnas que aparecen pocas veces en el fichero»**, que era la firma
+literal de `COL_R_ID` (cuatro apariciones). Devuelve **65 candidatas**, casi
+todas estructurales: bits de camino, acumuladores de segmento, la clave de
+gasto. Tampoco discrimina.
+
+> **El defecto de §39 no tiene forma sintáctica.** Es semántico: *un valor
+> que el probador elige, que entra en un compromiso, sin nada que lo ate a
+> algo que no pueda elegir*. Ningún `grep` expresa eso.
+
+Se registra el fracaso porque el proyecto ya sostiene que sus dos
+herramientas caras no encontraron ninguno de los defectos reales. Esta es
+la tercera, y tampoco.
+
+### 40.2 Lo que sí acotó: tres circuitos construyen un compromiso
+
+| Circuito | Estado |
+|---|---|
+| `circuit_claim` | El agujero de §39. **Corregido** (§39.1) |
+| `circuit_send` | **Verificado sin omisión análoga** (§39.3) |
+| `circuit_mint_pending` | Ver abajo |
+
+### 40.3 Pregunta abierta en `circuit_mint_pending`
+
+Verificado: **`MintPendingPublicInputs` no incluye la identidad del
+destinatario**, y `get_assertions` no ancla `COL_R_ID`. Su constancia sí se
+impone (grupo `C_TRANSPORT_NEW`, sin el solapamiento de §38).
+
+La declaración pública dice, entonces, *«dos custodios autorizaron, el
+suministro sube N respetando el tope, y un compromiso entra en el árbol de
+pendientes»* — **sin nombrar a quién**.
+
+⚠️ **No se afirma que sea un fallo.** Depende de qué cubra exactamente la
+autorización de los custodios: si construir la prueba exige su cooperación,
+el destinatario está cubierto por esa cooperación aunque no figure en la
+declaración. Determinarlo pide leer el sub-circuito de umbral con el mismo
+cuidado que llevó a §39, y **esa lectura no se ha hecho**.
+
+Lo que sí se puede decir sin más trabajo: un supervisor que verifique esa
+prueba **no aprende a quién se emitió**. Es coherente con el diseño de
+privacidad y, a la vez, significa que la autorización de custodios **no es
+auditable por destinatario**. Eso pertenece al cuadro de confianza residual
+de los preprints, figure o no como defecto.
+
+### 40.4 Lo que esto le hace a la auditoría externa
+
+§39 es un defecto de una clase que **las herramientas del proyecto no pueden
+detectar por construcción**: el detector de restricciones vacuas ve reaccionar
+la ranura sobrescrita y la da por sana. Y el barrido sistemático de §40.1
+no encuentra la clase.
+
+Queda entonces un solo método conocido que sí la encuentra: **leer cada
+circuito preguntando qué defiende cada comprobación e intentar lo que
+debería impedir**. Es caro, es manual, y el autor acaba de demostrar sobre
+sí mismo que se equivoca al hacerlo —tres veces en un día—.
+
+> La auditoría externa deja de ser «deseable» y pasa a ser **el único
+> instrumento conocido para una clase de defecto ya demostrada en este
+> código**.
+
+## 41. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
