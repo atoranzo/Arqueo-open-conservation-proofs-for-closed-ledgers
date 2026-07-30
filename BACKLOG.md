@@ -119,8 +119,15 @@ decidir.
   indice publico). ⚠️ B deja **enlazabilidad** entre operaciones del mismo
   custodio (§52.4); cerrarla exige atar el nulificador al identificador de
   la operacion, que hace falta igualmente para la otra mitad de la 33.
-  **Falta**: decidir la variante, y sustituir `ThresholdAuth` en los cinco
-  circuitos que lo consumen.
+  ✅ **VARIANTE DECIDIDA: B** (§52.7), por coherencia —arreglar la 32 no
+  puede costar el anonimato que el circuito ya declaraba— y porque no cuesta
+  mas. La variante A queda marcada como NO ELEGIDA, conservada como la
+  comparacion medida. **Falta para cerrar la 33**: (a) atar el nulificador al
+  identificador de la operacion —cierra la enlazabilidad de §52.4 y es la
+  otra mitad (§41.4)—; (b) la comprobacion en la capa de que los dos
+  nulificadores difieren, sin la cual el umbral 2-de-N es 1-de-N; (c)
+  sustituir `ThresholdAuth` en los cinco circuitos que lo consumen, que es
+  cirugia en la creacion de dinero.
   **Analizada** (§42): no se mueve «al cliente» porque los custodios son
   dos y el circuito prueba conocimiento de ambas claves en una sola traza.
   La via que cierra las dos mitades es **verificar firmas en circuito**,

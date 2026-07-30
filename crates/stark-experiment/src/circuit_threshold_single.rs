@@ -10,6 +10,17 @@
 //! recoge dos pruebas y **exige ambas** (vía B, §47.3): no se componen,
 //! se verifican por separado.
 //!
+//! # ⚠️ VARIANTE NO ELEGIDA — NO CABLEAR EN PRODUCCION
+//!
+//! El proyecto eligio la **variante B** (`circuit_threshold_single_nullifier`)
+//! el 30-07-2026 (§52.7): esta revela **que** custodios firman, y eso rompe
+//! el anonimato dentro del conjunto que `circuit_threshold` ya declaraba.
+//!
+//! Este fichero **se conserva a proposito**: es la comparacion medida que
+//! sostiene la tabla de §52.1, y el proyecto marca lo descartado en vez de
+//! borrarlo. Sus tests siguen corriendo como regresion de esa medicion.
+//! **Pero no debe conectarse a ninguna operacion privilegiada.**
+//!
 //! ## VARIANTE A: el índice del custodio es PÚBLICO
 //!
 //! Al separar los carriles desaparece la restricción de orden estricto

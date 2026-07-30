@@ -4700,6 +4700,28 @@ misma sesion en que las retire. Corregida.
 Las dos las caza el mismo metodo de siempre: escribir la comprobacion y
 dejar que el codigo conteste.
 
+### 52.7 Decision tomada: variante B
+
+El 30-07-2026 el proyecto elige la **variante B** (nulificador derivado de
+la clave). Razon, en una linea: **arreglar la 32 no puede costar el
+anonimato dentro del conjunto que `circuit_threshold` ya declaraba**, y no
+cuesta —B es mas estrecha y tarda lo mismo (§52.2)—.
+
+Queda por tanto **descartada la variante A**. Su codigo **no se borra**: es
+la comparacion medida que sostiene §52.1, y esta convencion —marcar en vez
+de borrar— es la del resto del proyecto. Pero se marca en su cabecera como
+NO ELEGIDA, porque un circuito de autenticacion de custodios vivo y sin
+marcar es una invitacion a cablearlo por error.
+
+⚠️ **Lo que esta decision NO cierra.** La 33 sigue abierta: elegir la
+variante no es implementarla. Falta (a) atar el nulificador al identificador
+de la operacion, que cierra la enlazabilidad de §52.4 **y** es la otra mitad
+de la 33 (§41.4); (b) la comprobacion en la capa de que los dos
+nulificadores difieren —sin ella el umbral 2-de-N es 1-de-N—; y (c)
+sustituir `ThresholdAuth` en los **cinco** circuitos que lo consumen
+(`mint`, `mint_to_pending`, `freeze`, `recovery`, `governance`). Eso ultimo
+es cirugia en la creacion de dinero y va con la misma cautela que §50.
+
 ## 53. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
