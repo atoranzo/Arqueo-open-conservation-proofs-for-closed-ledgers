@@ -3775,7 +3775,69 @@ mensaje» rehace el sub-circuito de umbral, toca `mint`, `mint_to_pending`,
 verificable en AIR. Es trabajo de diseño de semanas, y **lo primero sería
 medir el coste del primitivo**, no escribirlo.
 
-## 43. Qué NO demuestra este documento
+## 43. El reencuadre de la 33: no hacen falta firmas
+
+§42 propuso verificar **firmas en circuito** para ligar la autorizacion de
+custodios a la operacion. Al mirar como se autentica el sistema, esa via
+resulta innecesaria — y ademas mas cara de lo que hace falta.
+
+### 43.1 Como se autentica este sistema: sin firmas
+
+No hay ningun esquema de firma en el proyecto. La identidad es
+`derive_public_id(clave) = hash(dominio, clave)`, y autenticarse es
+**demostrar conocimiento de la preimagen**: «conozco la clave cuyo hash es
+esta identidad publica». Eso es todo lo que hacen `C_KEY_INPUT` y
+`C_PK_CHECK`.
+
+Los `grep` de «signature» o «firma» del codigo son la palabra en
+comentarios, no verificacion criptografica de firmas.
+
+### 43.2 El patron del titular ya es lo que los custodios necesitan
+
+Un titular prueba «conozco la clave de esta cuenta» **en la misma traza**
+donde estan el destinatario, el importe y el aleatorio (`COL_KEY`,
+`COL_R_ID`, `COL_AMT`, todas presentes a la vez). La clave y el mensaje
+conviven en una traza; que el titular no pueda cambiar el mensaje sin
+romper su prueba es precisamente lo que se corrigio en §39.
+
+Para los custodios el problema no es «faltan firmas» sino que **la clave se
+entrega a la capa** en vez de quedarse en su maquina (§41). La solucion es
+el mismo patron del titular, dos veces:
+
+- cada custodio, en su maquina, produce los materiales que demuestran
+  conocimiento de su clave sobre una traza que **ya incluye los parametros
+  de la operacion**;
+- la capa compone las dos mitades y verifica, sin ver ninguna clave.
+
+**El primitivo ya esta construido y medido**: es el que corre en cada pago.
+Lo que falta no es un esquema de firma nuevo, sino **reestructurar el
+sub-circuito de umbral para que las dos mitades se prueben por separado** y
+ligar el mensaje a la autorizacion — que es lo que ya se hace en el resto de
+circuitos.
+
+### 43.3 Correccion de §42.2 y §42.3
+
+§42.2 presentaba «verificar firmas en circuito» como la via, y §42.3 hablaba
+de medir el coste de ese primitivo. **Ambas cosas se corrigen**: no hay
+primitivo nuevo que medir, porque la autenticacion por conocimiento de
+preimagen es la que ya existe. La cifra retirada en §42.3 sigue retirada
+—nunca estuvo medida—, pero la razon es mas fuerte: no habia nada que medir,
+el coste ya esta en cada traza de pago.
+
+⚠️ Lo que **si** es trabajo real: partir la prueba conjunta de dos claves
+en dos pruebas componibles. Eso es reestructuracion de circuito, no un
+primitivo que falte, y su coste es el de rehacer el umbral — no el de
+inventar verificacion de firmas.
+
+### 43.4 La leccion, otra vez la misma
+
+§42 razono sobre un primitivo que el proyecto no usa —firmas— en vez de
+mirar el que usa —conocimiento de preimagen—. Es la cuarta vez en la sesion
+que un analisis se corrige al contrastarlo con lo que el codigo hace de
+verdad (§37.4, §37.6, §40.1, y esta). El patron es consistente: **el error
+esta siempre en razonar sobre lo que deberia haber, no sobre lo que hay.**
+
+## 44. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

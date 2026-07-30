@@ -96,7 +96,12 @@ decidir.
   dos y el circuito prueba conocimiento de ambas claves en una sola traza.
   La via que cierra las dos mitades es **verificar firmas en circuito**,
   mismo primitivo que la 21. Primer paso: **medir su coste**, que no esta
-  medido.
+  medido. ⚠️ **Reencuadrado (§43): no hacen falta firmas.** El sistema
+  autentica por conocimiento de preimagen de un hash, primitivo que ya
+  corre en cada pago. El trabajo real es **partir la prueba conjunta de dos
+  claves en dos componibles**, reestructuracion del umbral, no un primitivo
+  nuevo. La 21 puede o no compartir esto, segun que signifique alli
+  «tercero».
 
 - [ ] **6. El grado dependiente del testigo en el arbol de pendientes.**
   La unica comprobacion automatica del area de menor confianza (§16.3)
