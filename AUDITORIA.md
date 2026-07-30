@@ -4510,7 +4510,94 @@ columna pisada seguia viva: identidad en `send`, aleatorio en `claim`,
 ninguna con consecuencia en `mint_pending` (su disposicion, ademas, estaba
 bien). El defecto SI era comun; su explotabilidad, no.
 
-## 51. Qué NO demuestra este documento
+## 51. La 33, preparada: inventario y especificacion del primer experimento
+
+La implementacion de la 32/33 (via B, §47) empieza por el experimento de
+§47.5: separar un carril de `circuit_threshold` y medirlo. Antes de escribir
+codigo —que exige toolchain y no se hace a ciegas en el circuito de creacion
+de dinero— se deja aqui el punto de partida leido y el plano del experimento.
+
+### 51.1 Inventario: como esta hecho `circuit_threshold` hoy
+
+Es un circuito de **dos carriles simetricos**, A y B, uno por custodio.
+`LANE_B = STATE_WIDTH = 12` desplaza el carril B dentro de una traza de
+`TRACE_WIDTH = 34` columnas y `TRACE_LENGTH = 64` filas.
+
+**Columnas por carril** (A / B): estado del hash (0..12 / 12..24), bit de
+camino (`COL_BIT_A`=24 / `COL_BIT_B`=25), clave (`COL_KEY_A`=26 / 27), indice
+(`COL_IDX_A`=28 / 29), acumulador de indice (`COL_ACC_A`=30 / 31). Columnas
+**compartidas**: `COL_SBIT`=32 y `COL_SACC`=33, el bit y el acumulador del
+**segmento de rango** que impone el orden.
+
+**Cada carril, por separado, ya prueba lo que un experimento de un carril
+necesita**: conocimiento de la clave (`C_KEY_INPUT`), derivacion de la hoja
+por el hash Rescue (`C_HASH_*`, `C_CAP_*`), y pertenencia al arbol subiendo
+por los bits de camino (`C_PLACE_*`, `C_BIT_BOOL`, `C_TRANSPORT`), hasta la
+raiz comun en `ROW_ROOT`=39.
+
+### 51.2 El acoplamiento: donde A y B se necesitan
+
+Solo hay **un** punto donde los dos carriles se cruzan de verdad, y es el
+que hay que cortar. El segmento de rango (`C_HORNER`, `C_SEG_LINK`,
+`COL_SACC`) reconstruye por descomposicion en bits **tres** valores
+(linea 594):
+
+```rust
+expected = [ IDX_A,  IDX_B,  IDX_B - IDX_A - 1 ]
+```
+
+Los dos primeros son de cada carril. El tercero, `IDX_B - IDX_A - 1`, es el
+**unico** que necesita ambos indices a la vez: impone *A antes que B, sin
+repeticion*, y es lo que garantiza que las dos firmas son de custodios
+**distintos**. Todo lo demas en el circuito es dos copias independientes.
+
+### 51.3 Especificacion del experimento (parte A de §47.5)
+
+**Objetivo**: un `circuit_threshold_single` que tome UNA clave, demuestre
+conocimiento de su preimagen y pertenencia de su hoja al arbol de custodios,
+y genere una prueba STARK autonoma. Medir su coste. Si un carril solo se
+sostiene con coste razonable, la via B es viable.
+
+**Traza**: una sola copia del carril A. `TRACE_WIDTH` baja de 34 a ~14
+(estado 12 + bit + clave + indice + acc, sin las columnas `_B` ni las
+compartidas de rango). `TRACE_LENGTH` = 64 se mantiene (la subida al arbol
+no cambia).
+
+**Restricciones a conservar** (del carril A): `C_HASH_A`, `C_CAP_A`,
+`C_PLACE_A`, `C_BIT_BOOL` (solo el bit A), `C_KEY_INPUT` (solo A), `C_ACC`,
+`C_ACC_FINAL` (solo A), `C_TRANSPORT`.
+
+**Restricciones a ELIMINAR** (el acoplamiento y el carril B entero): todo
+`*_B`, y **todo el segmento de rango** (`C_SBIT_BOOL`, `C_FIRST_S`,
+`C_HORNER`, `C_SEG_LINK`, columnas `COL_SBIT`/`COL_SACC`). El orden estricto
+**no existe con un solo custodio** — no hay dos indices que ordenar.
+
+**Entradas publicas**: la raiz del arbol de custodios (igual que hoy) y el
+`derive_public_id` de la clave. Se elimina la mitad B.
+
+⚠️ **Punto de diseño que el experimento debe resolver, no dar por hecho**:
+como se combinan DOS pruebas single en la evidencia de umbral. La via B dice
+«la capa verifica las dos por separado y exige ambas» (§47.3), pero **el
+orden estricto —que eran custodios distintos— vivia en el circuito conjunto
+y desaparece al separar**. Con dos pruebas independientes hay que reimponerlo
+fuera: la capa debe comprobar que las dos hojas probadas tienen indices
+distintos, o el umbral acepta la misma firma dos veces. **Esto es lo que el
+experimento tiene que medir y decidir**: donde vive el orden estricto cuando
+ya no hay traza conjunta. Es la pregunta abierta real de la 33, y §47 no la
+cerro.
+
+### 51.4 Metrica de exito del experimento
+
+Generar y verificar la prueba de un carril, y medir: `NUM_CONSTRAINTS`,
+filas efectivas, tiempo de prueba y tamano. Comparar con el circuito conjunto
+actual. **Criterio**: si dos pruebas single cuestan aproximadamente lo mismo
+que una conjunta y el orden estricto se puede reimponer en la capa sin volver
+a acoplarlas, la via B es viable y se implementa. Si cuesta mucho mas, o si
+reimponer el orden exige recomponer las pruebas —lo que el proyecto no sabe
+hacer (§47.2)—, el diseño necesita revision antes de tocar los cinco
+circuitos que consumen `ThresholdAuth`.
+
+## 52. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

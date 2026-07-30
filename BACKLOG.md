@@ -103,7 +103,13 @@ decidir.
   mensaje atado, verificadas por separado —sin componer pruebas, que el
   proyecto no sabe hacer y no necesita aqui—. Primer paso medible en §47.5:
   separar un carril de `circuit_threshold` y medirlo. Exige toolchain; no es
-  un parche.
+  un parche. ✅ **Preparada (§51)**: inventario del circuito de dos carriles,
+  el unico punto de acoplamiento localizado (el orden estricto
+  `IDX_B - IDX_A - 1`), y especificacion del `circuit_threshold_single` con
+  su metrica de exito. ⚠️ **Pregunta abierta que el experimento debe
+  resolver**: al separar, el orden estricto —que eran custodios distintos—
+  desaparece; hay que reimponerlo en la capa o el umbral acepta la misma
+  firma dos veces (§51.3).
   **Analizada** (§42): no se mueve «al cliente» porque los custodios son
   dos y el circuito prueba conocimiento de ambas claves en una sola traza.
   La via que cierra las dos mitades es **verificar firmas en circuito**,
