@@ -187,8 +187,11 @@ const C_PK_CHECK: usize = C_KEY_INPUT + 2; // 4
 const C_BALANCE: usize = C_PK_CHECK + 4; // 1
 /// **EL SUMINISTRO DISMINUYE EXACTAMENTE EN EL IMPORTE.**
 const C_SUPPLY: usize = C_BALANCE + 1; // 1
-const C_TRANSPORT: usize = C_SUPPLY + 1; // 15 (7 + id receptor 4 + aleatorio 4)
-const C_ID_CONST: usize = C_TRANSPORT + 7; // 4
+const C_TRANSPORT: usize = C_SUPPLY + 1; // 15 (7 transporte + id receptor 4 + aleatorio 4)
+// ⚠️ ENTRADA 30 / §50: era `C_TRANSPORT + 7`, que hacia que las 8 ranuras
+// de constancia de identidad+aleatorio (+7..+14) las pisara este grupo.
+// Ahora arranca 15 despues: las 8 se imponen de verdad. NUM_CONSTRAINTS +8.
+const C_ID_CONST: usize = C_TRANSPORT + 15; // 4
 const C_SBIT_BOOL: usize = C_ID_CONST + 4; // 2
 const C_FIRST_S: usize = C_SBIT_BOOL + 2; // 2
 const C_HORNER: usize = C_FIRST_S + 2; // 1
@@ -588,8 +591,11 @@ impl Air for SendAir {
         for _ in 0..34 {
             degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
         }
-        // Saldo (1), suministro (1), transporte (7), identidad (4).
-        for _ in 0..13 {
+        // Saldo (1), suministro (1), transporte (15: 7 + identidad 4 +
+        // aleatorio 4), identidad-constante C_ID_CONST (4) = 21, grado 1
+        // sin ciclo. ⚠️ ENTRADA 30 / §50: era 13, contando transporte como 7
+        // y dejando muertas las 8 constancias de COL_R_ID/COL_SALT.
+        for _ in 0..21 {
             degrees.push(TransitionConstraintDegree::new(1));
         }
         for _ in 0..2 {
@@ -1366,8 +1372,10 @@ mod tests {
     /// EL TEST CLAVE.
     // EN ROJO A PROPOSITO: testigo del fallo de solidez de la entrada 30 / 50.
     // #[ignore] para no tumbar la suite; corre con `cargo test -- --ignored`.
+    // ENTRADA 30 / §50 CORREGIDA: este test comprueba que la constancia de
+    // COL_R_ID entre filas se impone. Estuvo en #[ignore] mientras el fallo
+    // vivia; ahora debe pasar en verde.
     #[test]
-    #[ignore = "testigo del fallo de solidez de la entrada 30; ver AUDITORIA.md 50"]
     fn a_send_with_inconsistent_receiver_identity_is_rejected() {
         // ENTRADA 30 / §49.2. La traza honesta pone la MISMA identidad en
         // todas las filas (build_trace, bucle sobre COL_R_ID). El ataque:
