@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 17 abiertas, 20 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 16 abiertas, 21 resueltas. Ultima revision: 30 de julio de 2026.
 
 Arco de solidez de compromisos **cerrado**: los TRES constructores de
 compromisos tenian el solapamiento de §38. `claim` (§39 titularidad, §50.7
@@ -261,8 +261,19 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   veces** (§39.4, §49.1, al cerrar la 35) antes de que un test lo mirara: el
   error del dia en su forma mas pura.
 
-- [ ] **37. Barrer el vicio de conteo «declara N, reparte M<N» en TODOS los
-  circuitos.** El solapamiento de §38 produjo fallos de solidez en dos de
+- [x] **37. Barrido de disposiciones: hecho, con herramienta permanente.**
+  ~~Barrer el vicio de conteo «declara N, reparte M<N» en TODOS los
+  circuitos.~~ **Cerrada** el 30-07-2026 (§53): `tools/check_constraint_layout.py`
+  cruza los indices absolutos que escribe cada `evaluate_transition` y detecta
+  COLISION (la firma de §38), DESBORDE y ranuras MUERTAS. **Resultado: 14
+  circuitos, ninguna colision** — no hay un cuarto fallo de esta clase en los
+  once que nadie habia contado. La herramienta lleva `--autotest` que
+  reproduce el fallo de §50 y comprueba que lo caza. ⚠️ **No cubre**
+  restricciones ausentes o mal formuladas (§39 no se habria detectado): para
+  esa clase sigue sin haber mas que lectura semantica y test discriminante
+  (§40.4, entrada 7). Tres errores mios construyendola, en §53.4.
+
+  ~~Original:~~ **37. Barrer el vicio de conteo «declara N, reparte M<N».** El solapamiento de §38 produjo fallos de solidez en dos de
   los tres constructores de compromisos (§50, §50.7) y estaba en los tres.
   La causa raiz —una constante `C_X = C_prev + N` con N menor que lo que su
   `evaluate_transition` escribe, de modo que el grupo siguiente la pisa—

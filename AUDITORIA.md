@@ -4722,7 +4722,87 @@ sustituir `ThresholdAuth` en los **cinco** circuitos que lo consumen
 (`mint`, `mint_to_pending`, `freeze`, `recovery`, `governance`). Eso ultimo
 es cirugia en la creacion de dinero y va con la misma cautela que §50.
 
-## 53. Qué NO demuestra este documento
+## 53. Entrada 37: el barrido de disposiciones, y la herramienta que lo hace
+
+§50.7 dejo abierta la pregunta incomoda: el solapamiento de §38 produjo
+**tres** fallos de solidez en los tres constructores de compromisos, y
+**nadie habia mirado los otros once circuitos**. La 37 la cierra, y no con
+una lectura sino con una herramienta: `tools/check_constraint_layout.py`.
+
+### 53.1 Que detecta, y por que por indice absoluto
+
+Para cada circuito resuelve la cadena de constantes a numeros, expande cada
+`result[...]` sobre los bucles que lo envuelven, y cruza los conjuntos de
+**indices absolutos** buscando tres cosas:
+
+- **COLISION** — una ranura escrita por dos sitios distintos del codigo. Es
+  la firma exacta de §38: el segundo pisa al primero y la restriccion pisada
+  no se impone.
+- **DESBORDE** — una ranura por encima de `NUM_CONSTRAINTS`.
+- **MUERTA** — una ranura declarada que nadie escribe.
+
+⚠️ **Por indice absoluto, no por grupo**, y esto importa: en los circuitos
+de dos carriles `result[C_HASH_A + lane * 12 + i]` escribe a proposito dentro
+del rango de `C_HASH_B` cuando `lane = 1`. Comprobar «cuantas ranuras usa cada
+grupo» daria un falso positivo ahi. Lo que define el defecto no es invadir un
+rango ajeno: es que **dos sentencias distintas** escriban la misma ranura.
+
+### 53.2 Resultado del barrido
+
+**14 circuitos, ninguna colision, ningun desborde, ninguna ranura muerta.**
+
+Los tres fallos conocidos estan corregidos y **no hay un cuarto** de esta
+clase en los once circuitos que nadie habia contado. La pregunta de §50.7
+queda respondida.
+
+### 53.3 La herramienta esta probada contra el fallo real
+
+Un detector que nunca ha detectado nada no esta probado. `--autotest`
+reproduce la disposicion que tenia `circuit_send` la manana del 30-07-2026
+—`C_TRANSPORT` declarando 7 ranuras y escribiendo 15— y comprueba que
+**caza las 8 ranuras pisadas**, que fueron el fallo de §50. Se ejecuta sola:
+
+```
+python3 tools/check_constraint_layout.py --autotest
+python3 tools/check_constraint_layout.py
+```
+
+### 53.4 Tres errores mios construyendo la herramienta
+
+**Uno, de diseño.** La primera version comprobaba «cuantas ranuras usa cada
+grupo frente a las que declara». Habria dado falsos positivos en todos los
+circuitos de dos carriles, por lo de §53.1. El diseño correcto —colision entre
+sentencias— solo aparecio al mirar por que el primer resultado no cuadraba.
+
+**Dos, de uno-en-uno.** El contador de elementos de un array sumaba comas + 1,
+lo que da uno de mas cuando hay **coma final** —que es el estilo del proyecto—.
+Resultado: la primera ejecucion reporto **nueve colisiones inexistentes**,
+incluidas dos en `circuit_send` y `circuit_claim`, los circuitos que se
+acababan de corregir. Estuve a punto de anunciar que el arreglo de la manana
+estaba incompleto. Lo desmintio mirar el array: tenia siete elementos, no
+ocho.
+
+**Tres, en el propio autotest.** Espere 8 colisiones en un caso sintetico que
+solo reproducia la mitad del fallo (la identidad, sin el aleatorio) y por
+tanto daba 4. Copie el numero del circuito real sin ajustarlo a mi version
+simplificada.
+
+> Los tres son el mismo error de siempre, ahora sobre la herramienta en vez
+> de sobre el circuito: **operar sobre lo que uno cree que hay**. Y los tres
+> los cazo lo mismo: contrastar la salida con el codigo antes de creersela.
+> Una herramienta de auditoria sin verificar es una afirmacion sin verificar.
+
+### 53.5 Lo que este barrido NO cubre
+
+Detecta que **cada ranura se escriba exactamente una vez**. No dice nada
+sobre si lo que se escribe en ella es **correcto**: una restriccion bien
+colocada pero mal formulada pasa el barrido sin problema. §39 fue justo eso
+—una restriccion ausente, no pisada— y esta herramienta **no lo habria
+encontrado**. Para esa clase sigue sin haber mas instrumento que la lectura
+semantica y el test discriminante, que es el argumento de §40.4 y de la
+entrada 7.
+
+## 54. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
