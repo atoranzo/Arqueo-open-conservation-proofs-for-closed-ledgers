@@ -138,9 +138,17 @@ decidir.
   circuitos (`mint`, `mint_to_pending`, `freeze`, `recovery`, `governance`).
   ⚠️ Es **amputar** de cada uno el tramo de subida de custodios que hoy
   llevan empotrado (en `mint`: filas 272-311 y ocho columnas), no cambiar una
-  firma. **Circuito a circuito**, con test discriminante antes y despues:
-  que el circuito amputado rechace una operacion cuya autorizacion no
-  corresponde. Una sesion con toolchain por circuito (§56.4).
+  firma. ✅ **PILOTO HECHO en `governance`** (§57):
+  `apply_governance_delegated` cambia el conjunto de custodios sin que las
+  claves lleguen al operador, con cuatro tests de rechazo. `governance` era
+  el piloto correcto porque **casi todo el circuito es autorizacion**: al
+  amputarlo no queda circuito, solo una suma. ⚠️ Los tests destaparon un
+  fallo de diseño que seis secciones no vieron (§57.2): el circuito llevaba
+  `CUSTODIAN_DOMAIN` incrustado y no podia autorizar gobernanza. Corregido:
+  el dominio es entrada publica y la jerarquia queda explicita.
+  **Faltan cuatro**: `freeze` (76 ranuras), `recovery` (114), `mint` (118),
+  `mint_pending` (125). `mint` **el ultimo**: su maquinaria de custodios
+  comparte carriles con la subida al arbol de cuentas (§57.1).
   **Analizada** (§42): no se mueve «al cliente» porque los custodios son
   dos y el circuito prueba conocimiento de ambas claves en una sola traza.
   La via que cierra las dos mitades es **verificar firmas en circuito**,

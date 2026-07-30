@@ -5008,7 +5008,86 @@ Lo que hoy queda hecho es que esa cirugia **ya tiene su andamio**: el
 mecanismo de autorizacion existe, esta medido, tiene la operacion atada, y
 ahora tambien el compromiso que la enlaza con cada circuito.
 
-## 57. Qué NO demuestra este documento
+## 57. El piloto de la sustitucion: gobernanza, sin claves
+
+§56.4 dejo la cirugia para «circuito a circuito». Se empezo por `mint` y el
+codigo redirigio el plan.
+
+### 57.1 Por que `mint` no era el piloto
+
+En `circuit_mint` la maquinaria de custodios **no es separable**:
+`C_HASH_A/B`, `C_CAP_A/B` y `C_PLACE_A/B` sirven **a la vez** a la subida al
+arbol de cuentas (filas 0-271) y a la de custodios (272-311) —los mismos dos
+carriles, distintos tramos—. Amputar ahi es separar tejido compartido en el
+circuito mas grande de los cinco (118 ranuras, 45 columnas, 512 filas).
+
+`circuit_governance`, en cambio, prueba **exactamente dos cosas**: que dos
+miembros distintos del conjunto de gobernanza autorizaron —toda su
+maquinaria— y que `count_new = count_old + 1` —**una** restriccion—.
+Amputarle los custodios no deja un circuito mas pequeño: **no deja circuito**.
+Lo que queda es una suma que la capa hace en Rust.
+
+Eso convierte gobernanza de «cirugia» en «reemplazo limpio», y la hace el
+piloto correcto: demuestra el patron entero con el menor riesgo.
+
+### 57.2 ⚠️ El fallo de diseño que los tests encontraron
+
+`§47`, `§51`, `§52`, `§54`, `§55` y `§56` diseñaron el mecanismo de
+autorizacion. **Ninguna vio esto**: el circuito llevaba `CUSTODIAN_DOMAIN`
+**incrustado**, y el proyecto usa **dos dominios distintos a proposito**
+—`CUSTODIAN_DOMAIN` y `GOVERNANCE_DOMAIN`— porque es lo que separa a quien
+puede emitir de quien puede cambiar quien emite.
+
+El piloto asumio que un circuito servia para los dos conjuntos. **Es falso**,
+y solo se vio al intentar usarlo: los cuatro tests fallaron, dos de ellos
+rechazando por «conjunto equivocado» cuando deberian haber pasado.
+
+Seis secciones de diseño sobre papel, y el fallo aparece a la primera
+ejecucion. Es el patron de toda la sesion, ahora sobre mi propio diseño.
+
+**Arreglo**: el dominio pasa a ser parametro y **entrada publica**, y
+`verify_threshold_pair` lo comprueba con su propio error
+(`WrongIdentityDomain`). La raiz ya lo implicaba —otro dominio da otras hojas
+y otra raiz— pero comprobarlo aparte convierte un «conjunto equivocado»
+opaco en «esto es una autorizacion de custodios y aqui se exige una de
+gobernanza». **La jerarquia queda explicita en vez de implicita.**
+
+### 57.3 Lo que hace `apply_governance_delegated`
+
+Recibe dos pruebas de `circuit_threshold_single_nullifier` generadas **en las
+maquinas de los miembros**, calcula el compromiso de la operacion desde su
+propio estado —raiz vieja, raiz nueva, contador— y exige que las dos
+autorizaciones lo lleven. Despues aplica el cambio y comprueba el contador en
+Rust.
+
+⚠️ **La garantia se muda del circuito al codigo, y hay que decirlo.** Con
+`apply_governance`, si alguien intentara cambiar el conjunto de custodios sin
+autorizacion, **el circuito lo impediria**. Con la via delegada, lo unico que
+lo impide es que esta funcion llame a `verify_threshold_pair`. Es una
+responsabilidad que estaba en matematicas y pasa a estar en Rust —mas fragil
+por naturaleza—, y por eso lleva cuatro tests de rechazo:
+
+| test | que protege |
+|---|---|
+| cambio legitimo se aplica | que los negativos no pasen por la razon equivocada |
+| mismo miembro dos veces | que 2-de-N no sea 1-de-N |
+| autorizacion para otra raiz | la atadura de §56 al nivel de la capa |
+| claves de custodio | **la jerarquia**: quien emite no cambia quien emite |
+
+Los tres negativos comprueban ademas que **el estado no cambio**: un rechazo
+que ya hubiera modificado la raiz seria peor que ningun rechazo.
+
+### 57.4 Que queda
+
+Cuatro circuitos: `freeze` (76 ranuras), `recovery` (114), `mint` (118) y
+`mint_pending` (125). El patron esta probado; `mint` va **el ultimo**, cuando
+los otros tres lo hayan ejercitado, porque es donde el tejido esta mas
+entrelazado.
+
+Y las dos vias conviven: `apply_governance` sigue ahi. Retirarla es una
+decision aparte, y no se toma hasta que la delegada haya sido ejercitada.
+
+## 58. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

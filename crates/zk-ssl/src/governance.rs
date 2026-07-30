@@ -169,4 +169,229 @@ impl SovereignLayer {
         self.commit(&[], None)?;
         Ok(())
     }
+
+    /// Aplica un cambio de custodios **sin que las claves lleguen al
+    /// operador**: la via de la entrada 32/33 (§57).
+    ///
+    /// Cada miembro del conjunto de gobernanza genera en su maquina una
+    /// prueba de `circuit_threshold_single_nullifier`, y la capa exige dos
+    /// de miembros **distintos** que autoricen **este** cambio concreto.
+    ///
+    /// # Que se mueve, y de donde a donde
+    ///
+    /// `apply_governance` confia en que el circuito demostro la
+    /// autorizacion; para construir su traza la capa necesita **las claves
+    /// en crudo** (§41), que es el fallo de la 32. Aqui la autorizacion
+    /// llega ya probada y la capa solo la **verifica**.
+    ///
+    /// ⚠️ **La garantia se muda del circuito a esta funcion.** Si esta
+    /// comprobacion se omitiera, cualquiera cambiaria el conjunto de
+    /// custodios: no queda ningun circuito que lo impida, porque lo unico
+    /// que probaba `circuit_governance` ademas de la autorizacion era que
+    /// el contador sube en uno, y eso se comprueba aqui en tres lineas.
+    /// Por eso lleva sus propios tests de rechazo.
+    pub fn apply_governance_delegated(
+        &mut self,
+        proof_a: winterfell::Proof,
+        inputs_a: stark_experiment::circuit_threshold_single_nullifier::NullifierThresholdPublicInputs,
+        proof_b: winterfell::Proof,
+        inputs_b: stark_experiment::circuit_threshold_single_nullifier::NullifierThresholdPublicInputs,
+        new_custodian_root: Digest,
+    ) -> Result<(), LayerError> {
+        use stark_experiment::circuit_threshold_single_nullifier::{
+            commit_operation, verify_threshold_pair, PairRejection, OP_GOVERNANCE,
+        };
+
+        if new_custodian_root == self.custodian_set_root {
+            return Err(LayerError::RecoveryToSameIdentity);
+        }
+
+        let count_old = self.governance_change_count;
+        let count_new = count_old + 1;
+
+        // El compromiso cubre TODO lo que el cambio decide: de que conjunto
+        // se sale, a cual se entra, y en que punto del contador. Sin el, una
+        // autorizacion para un cambio serviria para cualquier otro (§56.2).
+        let mut params: Vec<BaseElement> = self.custodian_set_root.to_vec();
+        params.extend_from_slice(&new_custodian_root);
+        params.push(BaseElement::new(count_old));
+        params.push(BaseElement::new(count_new));
+        let operation = commit_operation(OP_GOVERNANCE, &params);
+
+        let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
+        verify_threshold_pair(
+            proof_a,
+            inputs_a,
+            proof_b,
+            inputs_b,
+            // ⚠️ **La jerarquia, declarada dos veces.** El dominio dice que
+            // esto es una autorizacion de GOBERNANZA; la raiz, de que
+            // conjunto. Las identidades de custodio se derivan con otro
+            // dominio (§57.1), asi que un custodio no puede pasar por
+            // miembro de gobernanza ni aunque conociera la raiz.
+            BaseElement::new(stark_experiment::circuit_governance::GOVERNANCE_DOMAIN),
+            self.governance_set_root,
+            operation,
+            &accepted,
+        )
+        .map_err(|r| match r {
+            PairRejection::SameCustodian => LayerError::NotTheIssuer,
+            PairRejection::WrongCustodianSet => LayerError::NotTheIssuer,
+            PairRejection::WrongIdentityDomain => LayerError::NotTheIssuer,
+            PairRejection::WrongOperation => LayerError::StaleState,
+            PairRejection::InvalidProof => {
+                LayerError::VerificationFailed("autorizacion invalida".into())
+            }
+        })?;
+
+        self.custodian_set_root = new_custodian_root;
+        self.custodian_uses = 0;
+        self.governance_change_count = count_new;
+
+        let raiz = self.accounts.root();
+        self.log.append(OpKind::Governance, raiz, raiz, &[]);
+        self.commit(&[], None)?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests_delegada {
+    use super::*;
+    use crate::tests_support::*;
+    use stark_experiment::circuit_governance::build_governance_set;
+    use stark_experiment::circuit_threshold_single_nullifier as auth;
+
+    const LIMIT: u64 = 1_000_000;
+    const MAX_SUPPLY: u64 = 1_000_000_000;
+    const MAX_ACCOUNTS: u64 = 1_000;
+
+    /// Calcula el compromiso igual que lo hace la capa. Si esto y
+    /// `apply_governance_delegated` divergieran, los tests pasarian sin
+    /// probar nada: por eso el positivo comprueba que el cambio SE APLICA.
+    fn compromiso(root_old: Digest, root_new: Digest, count_old: u64) -> Digest {
+        let mut p: Vec<BaseElement> = root_old.to_vec();
+        p.extend_from_slice(&root_new);
+        p.push(BaseElement::new(count_old));
+        p.push(BaseElement::new(count_old + 1));
+        auth::commit_operation(auth::OP_GOVERNANCE, &p)
+    }
+
+    fn autorizar(
+        key: BaseElement,
+        path: &stark_experiment::circuit_threshold::CustodianPath,
+        op: Digest,
+    ) -> (winterfell::Proof, auth::NullifierThresholdPublicInputs) {
+        let trace = auth::build_trace(
+            BaseElement::new(stark_experiment::circuit_governance::GOVERNANCE_DOMAIN),
+            key,
+            path,
+            op,
+        );
+        let prover = auth::NullifierThresholdProver::new(proof_options());
+        let inputs = prover.get_pub_inputs(&trace);
+        (prover.prove(trace).expect("la autorizacion deberia probar"), inputs)
+    }
+
+    /// Un conjunto de custodios distinto del vigente, para cambiar hacia el.
+    /// Se define aqui porque el de `tests.rs` no es alcanzable desde este
+    /// modulo.
+    fn new_custodian_root() -> Digest {
+        let keys: Vec<BaseElement> = (0..5)
+            .map(|i| BaseElement::new(0xD0_0D_00 + i))
+            .collect();
+        stark_experiment::circuit_threshold::build_custodian_set(&keys).0
+    }
+
+    fn capa() -> SovereignLayer {
+        SovereignLayer::new(custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS)
+    }
+
+    /// El camino honesto: dos miembros distintos de gobernanza cambian el
+    /// conjunto de custodios **sin entregar sus claves**.
+    #[test]
+    fn a_delegated_governance_change_applies() {
+        let mut layer = capa();
+        let gk = governance_keys();
+        let (_, gp) = build_governance_set(&gk);
+        let nueva = new_custodian_root();
+
+        let op = compromiso(layer.custodian_set_root(), nueva, layer.governance_change_count());
+        let (pa, ia) = autorizar(gk[1], &gp[1], op);
+        let (pb, ib) = autorizar(gk[3], &gp[3], op);
+
+        layer
+            .apply_governance_delegated(pa, ia, pb, ib, nueva)
+            .expect("el cambio legitimo debe aplicarse");
+        assert_eq!(layer.custodian_set_root(), nueva, "la raiz debe haber cambiado");
+        assert_eq!(layer.governance_change_count(), 1);
+    }
+
+    /// ⚠️ **El mismo miembro dos veces no es un umbral.** Sin esta
+    /// comprobacion, cualquiera con UNA clave de gobernanza cambiaria quien
+    /// tiene el poder de emitir.
+    #[test]
+    fn the_same_governance_member_twice_is_rejected() {
+        let mut layer = capa();
+        let gk = governance_keys();
+        let (_, gp) = build_governance_set(&gk);
+        let nueva = new_custodian_root();
+
+        let op = compromiso(layer.custodian_set_root(), nueva, layer.governance_change_count());
+        let (pa, ia) = autorizar(gk[1], &gp[1], op);
+        let (pb, ib) = autorizar(gk[1], &gp[1], op);
+
+        let r = layer.apply_governance_delegated(pa, ia, pb, ib, nueva);
+        assert!(
+            matches!(r, Err(LayerError::NotTheIssuer)),
+            "SOLIDEZ: dos autorizaciones del mismo miembro no son 2-de-N, fue {r:?}"
+        );
+        assert_eq!(layer.custodian_set_root(), custodian_root(), "no debe cambiar nada");
+    }
+
+    /// ⚠️ **La atadura a la operacion, al nivel de la capa.** Se autoriza
+    /// un cambio hacia una raiz y se intenta ejecutar otro distinto. Sin el
+    /// compromiso de §56, una autorizacion de gobernanza serviria para
+    /// cualquier cambio de custodios.
+    #[test]
+    fn an_authorization_for_another_root_does_not_apply() {
+        let mut layer = capa();
+        let gk = governance_keys();
+        let (_, gp) = build_governance_set(&gk);
+        let autorizada = new_custodian_root();
+        let pretendida = build_governance_set(&custodian_keys()).0;
+
+        let op = compromiso(layer.custodian_set_root(), autorizada, layer.governance_change_count());
+        let (pa, ia) = autorizar(gk[1], &gp[1], op);
+        let (pb, ib) = autorizar(gk[3], &gp[3], op);
+
+        let r = layer.apply_governance_delegated(pa, ia, pb, ib, pretendida);
+        assert!(
+            matches!(r, Err(LayerError::StaleState)),
+            "SOLIDEZ: una autorizacion para un cambio no vale para otro, fue {r:?}"
+        );
+        assert_eq!(layer.custodian_set_root(), custodian_root());
+    }
+
+    /// ⚠️ **La jerarquia se sostiene.** Los custodios pueden emitir, pero
+    /// NO pueden cambiar quien es custodio: su conjunto no es el de
+    /// gobernanza, y `verify_threshold_pair` exige esa raiz.
+    #[test]
+    fn custodian_keys_cannot_change_the_custodian_set() {
+        let mut layer = capa();
+        let ck = custodian_keys();
+        let (_, cp) = build_governance_set(&ck); // su propio conjunto, no el de gobernanza
+        let nueva = new_custodian_root();
+
+        let op = compromiso(layer.custodian_set_root(), nueva, layer.governance_change_count());
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+
+        let r = layer.apply_governance_delegated(pa, ia, pb, ib, nueva);
+        assert!(
+            matches!(r, Err(LayerError::NotTheIssuer)),
+            "SOLIDEZ: quien puede emitir no puede cambiar quien emite, fue {r:?}"
+        );
+        assert_eq!(layer.custodian_set_root(), custodian_root());
+    }
 }

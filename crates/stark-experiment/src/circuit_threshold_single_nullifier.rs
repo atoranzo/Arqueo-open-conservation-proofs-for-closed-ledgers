@@ -171,7 +171,13 @@ pub fn derive_nullifier(key: BaseElement, operation: Digest) -> Digest {
 }
 
 /// Construye la traza: subida al árbol y, a continuación, el nulificador.
+/// `identity_domain` ⚠️ **no es decorativo**: `CUSTODIAN_DOMAIN` y
+/// `GOVERNANCE_DOMAIN` son distintos a proposito, y es lo que impide que un
+/// custodio —que puede emitir— pase por miembro de gobernanza —que puede
+/// cambiar quien emite—. Este circuito lo llevaba incrustado y por eso solo
+/// servia para custodios (§57.1).
 pub fn build_trace(
+    identity_domain: BaseElement,
     key: BaseElement,
     path: &CustodianPath,
     operation: Digest,
@@ -196,7 +202,7 @@ pub fn build_trace(
 
     // Ciclo 0: derivación de la identidad desde la clave.
     let mut state = [zero; STATE_WIDTH];
-    state[4] = BaseElement::new(CUSTODIAN_DOMAIN);
+    state[4] = identity_domain;
     state[8] = key;
     rows[0][..STATE_WIDTH].copy_from_slice(&state);
 
@@ -258,6 +264,10 @@ pub fn build_trace(
 /// difieran, sin llegar a saber qué custodios son.
 #[derive(Clone, Debug)]
 pub struct NullifierThresholdPublicInputs {
+    /// Dominio de derivacion del conjunto. Hacerlo publico deja la jerarquia
+    /// **explicita y comprobable**: la capa declara si espera una
+    /// autorizacion de custodios o de gobernanza (§57.1).
+    pub identity_domain: BaseElement,
     pub custodian_set_root: Digest,
     pub nullifier: Digest,
     /// ⚠️ **Compromiso de la operacion autorizada.** Sin esto la prueba
@@ -267,7 +277,8 @@ pub struct NullifierThresholdPublicInputs {
 
 impl ToElements<BaseElement> for NullifierThresholdPublicInputs {
     fn to_elements(&self) -> Vec<BaseElement> {
-        let mut v = self.custodian_set_root.to_vec();
+        let mut v = vec![self.identity_domain];
+        v.extend_from_slice(&self.custodian_set_root);
         v.extend_from_slice(&self.nullifier);
         v.extend_from_slice(&self.operation);
         v
@@ -466,7 +477,7 @@ impl Air for NullifierThresholdAir {
         for i in 0..4 {
             a.push(Assertion::single(i, 0, zero));
         }
-        a.push(Assertion::single(4, 0, BaseElement::new(CUSTODIAN_DOMAIN)));
+        a.push(Assertion::single(4, 0, self.pub_inputs.identity_domain));
         for i in 5..8 {
             a.push(Assertion::single(i, 0, zero));
         }
@@ -526,6 +537,7 @@ impl Prover for NullifierThresholdProver {
 
     fn get_pub_inputs(&self, trace: &Self::Trace) -> NullifierThresholdPublicInputs {
         NullifierThresholdPublicInputs {
+            identity_domain: trace.get(4, 0),
             custodian_set_root: [
                 trace.get(4, ROW_ROOT),
                 trace.get(5, ROW_ROOT),
@@ -594,6 +606,10 @@ pub enum PairRejection {
     /// ⚠️ Las dos vienen del **mismo custodio**: mismo nulificador. Sin
     /// esta comprobacion el umbral 2-de-N seria 1-de-N.
     SameCustodian,
+    /// ⚠️ Alguna prueba viene de un conjunto derivado con **otro
+    /// dominio**: p. ej. una autorizacion de custodios presentada para un
+    /// cambio de gobernanza. Es la jerarquia (§57.1).
+    WrongIdentityDomain,
     /// ⚠️ Alguna prueba autoriza **otra operacion**. Es lo que impide
     /// reproducir un par valido en una operacion distinta (§54.4).
     WrongOperation,
@@ -636,10 +652,19 @@ pub fn verify_threshold_pair(
     inputs_a: NullifierThresholdPublicInputs,
     proof_b: Proof,
     inputs_b: NullifierThresholdPublicInputs,
+    expected_domain: BaseElement,
     expected_root: Digest,
     expected_operation: Digest,
     accepted: &AcceptableOptions,
 ) -> Result<(), PairRejection> {
+    // 0. Las dos vienen del tipo de conjunto que la capa espera. La raiz ya
+    //    lo implicaria —otro dominio da otras hojas y otra raiz—, pero
+    //    comprobarlo aparte hace la jerarquia explicita y da un error que
+    //    dice lo que pasa en vez de «conjunto equivocado».
+    if inputs_a.identity_domain != expected_domain || inputs_b.identity_domain != expected_domain {
+        return Err(PairRejection::WrongIdentityDomain);
+    }
+
     // 1. Las dos autorizan sobre el conjunto que la capa dice, no sobre uno
     //    que traiga la prueba.
     if inputs_a.custodian_set_root != expected_root
@@ -696,13 +721,17 @@ mod tests {
         (1..=4).map(|i| BaseElement::new(0xC0000 + i)).collect()
     }
 
+    fn dominio() -> BaseElement {
+        BaseElement::new(CUSTODIAN_DOMAIN)
+    }
+
     fn prove_and_verify(
         key: BaseElement,
         path: &CustodianPath,
         op: Digest,
         declared: NullifierThresholdPublicInputs,
     ) -> bool {
-        let trace = build_trace(key, path, op);
+        let trace = build_trace(dominio(), key, path, op);
         let prover = NullifierThresholdProver::new(default_options());
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
         match r {
@@ -728,6 +757,7 @@ mod tests {
         let (root, paths) = build_custodian_set(&keys);
         let op = operacion(1);
         let declared = NullifierThresholdPublicInputs {
+            identity_domain: dominio(),
             custodian_set_root: root,
             nullifier: derive_nullifier(keys[2], op),
             operation: op,
@@ -743,6 +773,7 @@ mod tests {
         let intruso = BaseElement::new(0xBADC0DE);
         let op = operacion(1);
         let declared = NullifierThresholdPublicInputs {
+            identity_domain: dominio(),
             custodian_set_root: root,
             nullifier: derive_nullifier(intruso, op),
             operation: op,
@@ -785,6 +816,7 @@ mod tests {
         let (root, paths) = build_custodian_set(&keys);
         let op = operacion(1);
         let declared = NullifierThresholdPublicInputs {
+            identity_domain: dominio(),
             custodian_set_root: root,
             nullifier: derive_nullifier(keys[3], op), // el de OTRO custodio
             operation: op,
@@ -814,9 +846,10 @@ mod tests {
         path: &CustodianPath,
         op: Digest,
     ) -> (Proof, NullifierThresholdPublicInputs) {
-        let trace = build_trace(key, path, op);
+        let trace = build_trace(dominio(), key, path, op);
         let prover = NullifierThresholdProver::new(default_options());
         let inputs = NullifierThresholdPublicInputs {
+            identity_domain: dominio(),
             custodian_set_root: [
                 trace.get(4, ROW_ROOT),
                 trace.get(5, ROW_ROOT),
@@ -842,7 +875,7 @@ mod tests {
         let (pa, ia) = autorizar(keys[1], &paths[1], op);
         let (pb, ib) = autorizar(keys[2], &paths[2], op);
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, root, op, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, dominio(), root, op, &opciones()),
             Ok(())
         );
     }
@@ -859,7 +892,7 @@ mod tests {
         let (pa, ia) = autorizar(keys[2], &paths[2], op);
         let (pb, ib) = autorizar(keys[2], &paths[2], op);
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, root, op, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, dominio(), root, op, &opciones()),
             Err(PairRejection::SameCustodian),
             "SOLIDEZ: dos autorizaciones del mismo custodio no son un umbral"
         );
@@ -882,7 +915,7 @@ mod tests {
         let (pb, ib) = autorizar(mias[1], &paths_mias[1], op);
 
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, root_real, op, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, dominio(), root_real, op, &opciones()),
             Err(PairRejection::WrongCustodianSet),
             "SOLIDEZ: la raiz del conjunto la pone la capa, no la prueba"
         );
@@ -901,7 +934,7 @@ mod tests {
         let (pa, ia) = autorizar(keys[1], &paths[1], op);
         let (pb, ib) = autorizar(mias[0], &paths_mias[0], op);
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, root_real, op, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, dominio(), root_real, op, &opciones()),
             Err(PairRejection::WrongCustodianSet)
         );
     }
@@ -925,7 +958,7 @@ mod tests {
         let declarada = operacion(7);
         let otra = operacion(8);
 
-        let mut trace = build_trace(keys[2], &paths[2], declarada);
+        let mut trace = build_trace(dominio(), keys[2], &paths[2], declarada);
         // La fila 0 conserva la operacion declarada; el resto pasa a otra.
         for row in 1..TRACE_LENGTH {
             for i in 0..4 {
@@ -939,6 +972,7 @@ mod tests {
             Err(_) | Ok(Err(_)) => false,
             Ok(Ok(proof)) => {
                 let declared = NullifierThresholdPublicInputs {
+                    identity_domain: dominio(),
                     custodian_set_root: root,
                     nullifier: derive_nullifier(keys[2], otra),
                     operation: declarada,
@@ -974,7 +1008,7 @@ mod tests {
         let (pb, ib) = autorizar(keys[2], &paths[2], autorizada);
 
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, root, otra, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, dominio(), root, otra, &opciones()),
             Err(PairRejection::WrongOperation),
             "SOLIDEZ: un par valido para una operacion no autoriza otra"
         );
@@ -1046,7 +1080,7 @@ mod tests {
         let (pb, ib) = autorizar(keys[2], &paths[2], autorizada);
 
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, root, pretendida, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, dominio(), root, pretendida, &opciones()),
             Err(PairRejection::WrongOperation),
             "SOLIDEZ: una autorizacion para emitir 1.000 no autoriza emitir \
              1.000.000 (entrada 33 / §56)"

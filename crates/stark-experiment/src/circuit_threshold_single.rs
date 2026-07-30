@@ -678,7 +678,12 @@ mod tests {
         // cualquiera: el coste no depende de su valor.
         let op_medida = [BaseElement::new(0xDEAD_0001), BaseElement::ZERO,
                          BaseElement::ZERO, BaseElement::ZERO];
-        let trace = nulif::build_trace(keys[2], &paths[2], op_medida);
+        let trace = nulif::build_trace(
+            BaseElement::new(crate::circuit_threshold::CUSTODIAN_DOMAIN),
+            keys[2],
+            &paths[2],
+            op_medida,
+        );
         let proof_b = nulif::NullifierThresholdProver::new(default_options())
             .prove(trace)
             .expect("B deberia probar");
