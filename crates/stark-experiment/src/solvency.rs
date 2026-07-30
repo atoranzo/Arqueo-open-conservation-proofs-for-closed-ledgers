@@ -397,11 +397,8 @@ mod tests {
 
         // Capturar el posible panic de la assertion de depuración de
         // winterfell en debug (trazas inválidas), y tratarlo como rechazo.
-        let previous_hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let prove_result =
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
-        std::panic::set_hook(previous_hook);
 
         let proof: Proof = match prove_result {
             Err(_) => return Err("prove hizo panic (traza invalida detectada en debug)".into()),
@@ -501,11 +498,8 @@ mod tests {
 
         let prover = SolvencyProver::new(default_options());
 
-        let previous_hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let prove_result =
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
-        std::panic::set_hook(previous_hook);
 
         match prove_result {
             Err(_) => { /* panic: detectado */ }

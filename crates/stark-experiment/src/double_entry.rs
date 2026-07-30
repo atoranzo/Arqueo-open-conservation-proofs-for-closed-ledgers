@@ -1004,11 +1004,8 @@ mod tests {
         let trace = build_trace(&s.sender, &s.receiver, s.amount, s.credited, s.limit);
         let prover = DoubleEntryProver::new(default_options());
 
-        let previous_hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let prove_result =
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
-        std::panic::set_hook(previous_hook);
 
         let proof = match prove_result {
             Err(_) => return Err("prove hizo panic (traza invalida en debug)".into()),

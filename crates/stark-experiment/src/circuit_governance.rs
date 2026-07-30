@@ -816,10 +816,7 @@ mod tests {
             change_count_new: BaseElement::new(COUNT_OLD + 1),
         };
 
-        let hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
-        std::panic::set_hook(hook);
 
         let proof = match r {
             // ⚠️ **El mensaje del panico se conserva.**

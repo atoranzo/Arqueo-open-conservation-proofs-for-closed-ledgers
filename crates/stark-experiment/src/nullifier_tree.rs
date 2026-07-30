@@ -637,10 +637,7 @@ mod tests {
         let trace = build_trace_with_leaves(nullifier, nullifier, nullifier, &path);
 
         let prover = NullifierTreeProver::new(default_options());
-        let previous_hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
-        std::panic::set_hook(previous_hook);
 
         match r {
             Err(_) => { /* panic: detectado en debug */ }

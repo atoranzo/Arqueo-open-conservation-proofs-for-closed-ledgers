@@ -248,8 +248,6 @@ mod tests {
     /// lo inaceptable sería un paquete que verificara.
     #[test]
     fn insufficient_balance_does_not_yield_a_verifiable_package() {
-        let previous_hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let attempt = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             translate_and_prove(
                 &sample_message(2_000_000), // mas que el saldo
@@ -261,7 +259,6 @@ mod tests {
                 default_proof_options(),
             )
         }));
-        std::panic::set_hook(previous_hook);
 
         match attempt {
             Err(_) => { /* panic: la traza invalida se detecto en debug */ }

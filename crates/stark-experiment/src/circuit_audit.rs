@@ -704,10 +704,7 @@ mod tests {
         let trace = build_trace_with_id(w, lower, upper, claimed_id);
         let prover = AuditProver::new(default_options());
 
-        let hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
-        std::panic::set_hook(hook);
 
         match r {
             Err(_) | Ok(Err(_)) => false,

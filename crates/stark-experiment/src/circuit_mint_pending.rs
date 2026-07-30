@@ -1201,10 +1201,7 @@ mod tests {
         );
         let prover = MintPendingProver::new(default_options());
 
-        let hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
-        std::panic::set_hook(hook);
 
         let proof = match r {
             // ⚠️ **El mensaje del panico se conserva.**
@@ -1499,10 +1496,7 @@ mod tests {
             &pending_path(),
         );
         let prover = MintPendingProver::new(default_options());
-        let hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
-        std::panic::set_hook(hook);
         let ok = match r {
             Ok(Ok(proof)) => {
                 let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
@@ -1594,10 +1588,7 @@ mod tests {
     /// Intenta generar y verificar una prueba; devuelve si lo consigue.
     fn intenta(trace: TraceTable<BaseElement>, inputs: MintPendingPublicInputs) -> bool {
         let prover = MintPendingProver::new(default_options());
-        let hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
-        std::panic::set_hook(hook);
         match r {
             Ok(Ok(proof)) => {
                 let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);

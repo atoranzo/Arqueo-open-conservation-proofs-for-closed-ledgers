@@ -1337,10 +1337,7 @@ mod tests {
         );
         let prover = SettlementProver::new(default_options());
 
-        let hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
-        std::panic::set_hook(hook);
 
         let proof = match r {
             Err(_) => return Err("prove hizo panic (traza invalida en debug)".into()),
@@ -1546,10 +1543,7 @@ mod tests {
         );
 
         let prover = SettlementProver::new(default_options());
-        let hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
-        std::panic::set_hook(hook);
 
         match r {
             Err(_) => {}
@@ -1600,10 +1594,7 @@ mod tests {
         );
 
         let prover = SettlementProver::new(default_options());
-        let hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
-        std::panic::set_hook(hook);
 
         match r {
             Err(_) => {}

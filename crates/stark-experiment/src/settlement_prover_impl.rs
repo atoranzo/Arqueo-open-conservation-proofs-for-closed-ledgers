@@ -232,12 +232,9 @@ mod tests {
     fn insolvent_witness_does_not_verify_via_trait() {
         let (pk, vk) = StarkBackend::setup(1).unwrap();
 
-        let previous_hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let attempt = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             StarkBackend::prove(&pk, sample_witness(100_000, 250_000, 500_000), 2)
         }));
-        std::panic::set_hook(previous_hook);
 
         match attempt {
             Err(_) => { /* panic: detectado en debug */ }

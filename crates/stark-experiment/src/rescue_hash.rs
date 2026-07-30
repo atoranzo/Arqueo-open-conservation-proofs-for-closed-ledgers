@@ -478,11 +478,8 @@ mod tests {
         // La deteccion puede manifestarse de tres formas legitimas: panic
         // (modo debug), Err, o prueba que no verifica. Ver la nota
         // completa en `merkle.rs`.
-        let previous_hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let prove_result =
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
-        std::panic::set_hook(previous_hook);
 
         match prove_result {
             Err(_) => { /* panic: detectado en modo debug */ }
