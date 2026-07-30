@@ -4862,7 +4862,90 @@ las dos cosas, y esta sin hacer.
 funcion lo dice en su propia documentacion. Lo que hay es un experimento
 completo y medido, no un sustituto de `ThresholdAuth`.
 
-## 55. Qué NO demuestra este documento
+## 55. La autorizacion cubre la operacion: una pieza, dos agujeros cerrados
+
+§54.4 dejo el hueco grave: `verify_threshold_pair` demostraba que dos
+custodios distintos autorizaron **algo**, no **esta** operacion, asi que un
+par valido se reproducia. Y §52.4 dejo otro: el nulificador era estable, luego
+enlazable entre operaciones. **Los dos los cierra la misma pieza.**
+
+### 55.1 La atadura
+
+```text
+nulificador = H(NULLIFIER_DOMAIN, clave, operacion)
+```
+
+Y encaja **sin coste en filas**: `native_merge` absorbe ocho elementos por
+permutacion, asi que dominio y clave van en la mitad izquierda y el
+compromiso de la operacion en la derecha. Las mismas 8 filas de antes; solo
+crece la traza en 4 columnas (14 -> 18) y las restricciones (35 -> 39).
+
+- ✅ **Sin reproduccion**: las entradas publicas nombran la operacion, y
+  `verify_threshold_pair` recibe la que la capa ejecuta y las contrasta
+  (`WrongOperation`).
+- ✅ **Sin enlazabilidad**: el nulificador cambia con cada operacion.
+- ✅ **Conserva lo necesario**: dentro de UNA operacion sigue siendo estable,
+  que es lo que permite exigir custodios distintos. Romper esto habria
+  devuelto el umbral 2-de-N a 1-de-N por la puerta de atras.
+
+### 55.2 La cadena que lo sostiene, y el test que la prueba
+
+La atadura vale lo que valga su eslabon mas debil:
+
+> asercion en la fila 0 (la operacion declarada es la de la traza)
+> -> **constancia de `COL_OP` entre filas**
+> -> el hash del nulificador lee `COL_OP` en la fila 39.
+
+Si la constancia estuviera muerta —como lo estaba la de `COL_SALT` en §50.7—
+un custodio pondria la operacion declarada en la fila 0 y otra en la 39,
+obteniendo **nulificadores distintos para si mismo**. El umbral caeria a
+1-de-N sin que nada lo delatara.
+
+El barrido de §53 dice que la ranura esta bien asignada. **Eso no basta**, y
+§53.5 ya lo advertia: el barrido comprueba la disposicion, no la correccion.
+`an_operation_inconsistent_across_the_trace_is_rejected` construye el testigo
+malicioso y comprueba que **no cuela**.
+
+### 55.3 Medicion actualizada
+
+El circuito cambio, asi que la tabla de §52.1 esta rancia. Medido de nuevo:
+
+| circuito | cols | filas | restr. | ms | bytes |
+|---|---|---|---|---|---|
+| A single (indice publico, descartada) | 16 | 64 | 26 | 2,9 | 14.700 |
+| **B single (con operacion atada)** | 18 | 64 | **39** | 3,3 | 16.215 |
+| conjunto (dos carriles) | 34 | 64 | 60 | 4,4 | 20.122 |
+
+**Dos pruebas B: 6,6 ms y 32.430 bytes. Una conjunta: 4,4 ms y 20.122 bytes.**
+Factor 1,5× en tiempo y 1,6× en tamano, sobre operaciones raras. **El veredicto
+de §52 se mantiene: la via B es viable**, ahora con la operacion atada.
+
+⚠️ Los tiempos absolutos bajaron respecto a §52.1 (2,9 frente a 4,1 ms en la
+variante A, que no cambio). Es varianza de la maquina, no una mejora: lo
+comparable son las **proporciones**, no los milisegundos.
+
+### 55.4 Una cifra rancia mia, y como se ha cerrado la clase
+
+La tabla decia **35** restricciones para B cuando ya eran **39**: la escribi a
+mano al montar la medicion y no se actualizo al atar la operacion. Es la
+cuarta cifra fija que falla en esta sesion, tras el «29» que eran 60 (§52.6) y
+las dos que retire por error (§42.5, §48.3).
+
+Se ha corregido **de raiz**: `NUM_CONSTRAINTS` es ahora `pub` en los dos
+circuitos y la tabla **la lee del codigo**. Una tabla de medicion con numeros
+escritos a mano es una cifra sin fuente esperando su turno.
+
+### 55.5 Que queda de la 33
+
+Una sola cosa: **sustituir `ThresholdAuth` en los cinco circuitos** que lo
+consumen (`mint`, `mint_to_pending`, `freeze`, `recovery`, `governance`).
+Todo lo demas —diseño, medicion, decision de variante, umbral reconstruido
+fuera del circuito, operacion atada— esta hecho y verificado con 18 tests.
+
+Esa sustitucion es cirugia en la creacion de dinero y va con la cautela de
+§50: test discriminante antes de tocar nada.
+
+## 56. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

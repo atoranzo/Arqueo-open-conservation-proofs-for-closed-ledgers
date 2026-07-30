@@ -673,7 +673,12 @@ mod tests {
 
         // --- Variante B: nulificador ---
         let t0 = Instant::now();
-        let trace = nulif::build_trace(keys[2], &paths[2]);
+        // §55: la variante B ata la operacion al nulificador, asi que su
+        // traza necesita el compromiso de la operacion. Se mide con uno
+        // cualquiera: el coste no depende de su valor.
+        let op_medida = [BaseElement::new(0xDEAD_0001), BaseElement::ZERO,
+                         BaseElement::ZERO, BaseElement::ZERO];
+        let trace = nulif::build_trace(keys[2], &paths[2], op_medida);
         let proof_b = nulif::NullifierThresholdProver::new(default_options())
             .prove(trace)
             .expect("B deberia probar");
@@ -704,16 +709,22 @@ mod tests {
             "B single (nulificador)",
             nulif::TRACE_WIDTH,
             nulif::TRACE_LENGTH,
-            35,
+            nulif::NUM_CONSTRAINTS,
             ms_b,
             size_b
         );
-        // ⚠️ 60, contado sobre la cadena de constantes de circuit_threshold.
-        // Aqui decia `26 + 3` puesto a ojo: otra cifra sin verificar, la
-        // misma clase que §42.5 y §48.3. Corregida.
+        // ⚠️ Las tres cifras de restricciones se LEEN del codigo. Puestas a
+        // mano fallaron dos veces: «29» donde eran 60 (§52.6) y «35» donde
+        // eran 39 tras atar la operacion (§55). Una tabla de medicion con
+        // numeros escritos a mano es una cifra sin fuente esperando su turno.
         println!(
             "{:<28} {:>6} {:>7} {:>8} {:>10.1} {:>10}",
-            "conjunto (dos carriles)", 34, 64, 60, ms_c, size_c
+            "conjunto (dos carriles)",
+            34,
+            64,
+            conjunto::NUM_CONSTRAINTS,
+            ms_c,
+            size_c
         );
         println!();
         println!("DOS pruebas A: {:.1} ms, {} bytes", 2.0 * ms_a, 2 * size_a);

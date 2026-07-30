@@ -127,11 +127,13 @@ decidir.
   **segundo** agujero que la separacion abre y que ni §51 ni §52 vieron: el
   atacante puede **traer su propio conjunto de custodios** —dos pruebas
   validas, nulificadores distintos— si la raiz sale de la prueba en vez de
-  ponerla la capa (§54.2). **Falta para cerrar la 33**: (a) ⚠️ atar el
-  identificador de la operacion al nulificador; sin ello un par valido **se
-  reproduce** (§54.4) y este camino **no es utilizable en produccion**;
-  cierra ademas la enlazabilidad de §52.4; (c) sustituir `ThresholdAuth` en
-  los cinco circuitos, cirugia en la creacion de dinero.
+  ponerla la capa (§54.2). ✅ **(a) HECHO** (§55): el nulificador se
+  deriva de `H(dominio, clave, operacion)`, lo que cierra **a la vez** la
+  reproduccion de §54.4 y la enlazabilidad de §52.4, sin coste en filas.
+  Verificado con test discriminante de la constancia de `COL_OP` (§55.2).
+  **Falta solo (c)**: sustituir `ThresholdAuth` en los cinco circuitos
+  (`mint`, `mint_to_pending`, `freeze`, `recovery`, `governance`), que es
+  cirugia en la creacion de dinero y va con la cautela de §50.
   **Analizada** (§42): no se mueve «al cliente» porque los custodios son
   dos y el circuito prueba conocimiento de ambas claves en una sola traza.
   La via que cierra las dos mitades es **verificar firmas en circuito**,

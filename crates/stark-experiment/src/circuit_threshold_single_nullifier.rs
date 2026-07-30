@@ -24,18 +24,31 @@
 //! mismo, que es justo lo que la capa necesita para exigir que dos
 //! autorizaciones difieran.
 //!
-//! ## Lo que esta variante conserva y lo que cuesta
+//! ## La autorización cubre LA OPERACIÓN (§55)
+//!
+//! El nulificador se deriva de la clave **y del compromiso de la operación**:
+//!
+//! ```text
+//! nulificador = H(NULLIFIER_DOMAIN, clave, operación)
+//! ```
+//!
+//! Esa sola atadura cierra dos cosas que parecían separadas:
+//!
+//! ✅ **No hay reproducción.** La prueba solo autoriza *esta* operación: sus
+//! entradas públicas la nombran, y la capa comprueba que coincide con la que
+//! está ejecutando. Antes, dos autorizaciones para emitir 1.000 a Alicia
+//! servían para emitir 1.000.000 a Bob (§54.4).
+//!
+//! ✅ **No hay enlazabilidad.** El nulificador cambia con cada operación, así
+//! que ya no se puede agrupar «el custodio desconocido X firmó estas cinco
+//! emisiones» (§52.4).
+//!
+//! Y **conserva** lo que hacía falta: dentro de UNA operación, el mismo
+//! custodio produce siempre el mismo nulificador, que es lo que permite
+//! exigir que las dos autorizaciones sean de custodios distintos.
 //!
 //! ✅ **Conserva el anonimato dentro del conjunto**: se demuestra que un
 //! custodio autorizado firmó, sin revelar cuál. La variante A lo pierde.
-//!
-//! ⚠️ **Cuesta enlazabilidad entre operaciones.** El nulificador es el mismo
-//! en todas las autorizaciones de un custodio, así que un observador puede
-//! agrupar: «el custodio desconocido X firmó estas cinco emisiones». No sabe
-//! quién es X, pero sabe que es el mismo. Atarlo además al identificador de
-//! la operación —`H(dominio, clave, operación)`— lo cerraría, y es
-//! exactamente el puente con la otra mitad de la 33: que la autorización
-//! cubra los parámetros (§41.4). **No está en este experimento.**
 //!
 //! ## Y sale más simple de lo que parece
 //!
@@ -69,7 +82,9 @@ pub const TRACE_LENGTH: usize = 64;
 
 const COL_BIT: usize = STATE_WIDTH; // 12
 const COL_KEY: usize = STATE_WIDTH + 1; // 13
-pub const TRACE_WIDTH: usize = STATE_WIDTH + 2; // 14
+/// Compromiso de la operacion autorizada, constante en toda la traza.
+const COL_OP: usize = STATE_WIDTH + 2; // 14..18
+pub const TRACE_WIDTH: usize = STATE_WIDTH + 6; // 18
 
 /// Fila donde el estado contiene la raíz del conjunto.
 const ROW_ROOT: usize = 39;
@@ -85,9 +100,11 @@ const C_CAP: usize = C_HASH + STATE_WIDTH; // 4
 const C_PLACE: usize = C_CAP + 4; // 4
 const C_BIT_BOOL: usize = C_PLACE + 4; // 1
 const C_KEY_INPUT: usize = C_BIT_BOOL + 1; // 1
-const C_TRANSPORT: usize = C_KEY_INPUT + 1; // 1
-const C_NULL_INIT: usize = C_TRANSPORT + 1; // STATE_WIDTH
-const NUM_CONSTRAINTS: usize = C_NULL_INIT + STATE_WIDTH;
+const C_TRANSPORT: usize = C_KEY_INPUT + 1; // 5 (clave + 4 de operacion)
+const C_NULL_INIT: usize = C_TRANSPORT + 5; // STATE_WIDTH
+/// Publica para que la tabla de §52/§55 la lea del codigo y no se quede
+/// rancia: escribirla a mano ya fallo una vez (35 cuando eran 39).
+pub const NUM_CONSTRAINTS: usize = C_NULL_INIT + STATE_WIDTH;
 
 // ===== Columnas periódicas =====
 const P_HASH_FLAG: usize = 0;
@@ -99,22 +116,31 @@ const P_NULL_INIT: usize = P_FIRST_ROW + 1;
 
 type Blake3 = Blake3_256<BaseElement>;
 
-/// El nulificador de un custodio, calculado de forma nativa.
-pub fn derive_nullifier(key: BaseElement) -> Digest {
+/// El nulificador de un custodio **para una operacion concreta**.
+///
+/// Una sola permutacion absorbe los seis elementos: dominio y clave en la
+/// mitad izquierda, el compromiso de la operacion en la derecha. No cuesta
+/// filas adicionales respecto a la version sin atadura.
+pub fn derive_nullifier(key: BaseElement, operation: Digest) -> Digest {
     let zero = BaseElement::ZERO;
     native_merge(
-        [BaseElement::new(NULLIFIER_DOMAIN), zero, zero, zero],
-        [key, zero, zero, zero],
+        [BaseElement::new(NULLIFIER_DOMAIN), key, zero, zero],
+        operation,
     )
 }
 
 /// Construye la traza: subida al árbol y, a continuación, el nulificador.
-pub fn build_trace(key: BaseElement, path: &CustodianPath) -> TraceTable<BaseElement> {
+pub fn build_trace(
+    key: BaseElement,
+    path: &CustodianPath,
+    operation: Digest,
+) -> TraceTable<BaseElement> {
     let zero = BaseElement::ZERO;
     let mut rows: Vec<Vec<BaseElement>> = vec![vec![zero; TRACE_WIDTH]; TRACE_LENGTH];
 
     for row in rows.iter_mut() {
         row[COL_KEY] = key;
+        row[COL_OP..COL_OP + 4].copy_from_slice(&operation);
     }
 
     let place = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
@@ -152,7 +178,8 @@ pub fn build_trace(key: BaseElement, path: &CustodianPath) -> TraceTable<BaseEle
     // Fila 40: estado reiniciado con el dominio del nulificador y la clave.
     let mut null_state = [zero; STATE_WIDTH];
     null_state[4] = BaseElement::new(NULLIFIER_DOMAIN);
-    null_state[8] = key;
+    null_state[5] = key;
+    null_state[8..12].copy_from_slice(&operation);
     rows[ROW_ROOT + 1][..STATE_WIDTH].copy_from_slice(&null_state);
 
     for r in (ROW_ROOT + 1)..ROW_NULL {
@@ -192,12 +219,16 @@ pub fn build_trace(key: BaseElement, path: &CustodianPath) -> TraceTable<BaseEle
 pub struct NullifierThresholdPublicInputs {
     pub custodian_set_root: Digest,
     pub nullifier: Digest,
+    /// ⚠️ **Compromiso de la operacion autorizada.** Sin esto la prueba
+    /// autorizaria «algo» y se podria reproducir en otra operacion (§54.4).
+    pub operation: Digest,
 }
 
 impl ToElements<BaseElement> for NullifierThresholdPublicInputs {
     fn to_elements(&self) -> Vec<BaseElement> {
         let mut v = self.custodian_set_root.to_vec();
         v.extend_from_slice(&self.nullifier);
+        v.extend_from_slice(&self.operation);
         v
     }
 }
@@ -232,8 +263,10 @@ impl Air for NullifierThresholdAir {
         degrees.push(TransitionConstraintDegree::new(2));
         // C_KEY_INPUT (1): un selector periódico.
         degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
-        // C_TRANSPORT (1): grado 1 sin ciclo.
-        degrees.push(TransitionConstraintDegree::new(1));
+        // C_TRANSPORT (5): clave y las 4 de operacion, grado 1 sin ciclo.
+        for _ in 0..5 {
+            degrees.push(TransitionConstraintDegree::new(1));
+        }
         // C_NULL_INIT (12): un selector periódico, grado 1.
         for _ in 0..STATE_WIDTH {
             degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
@@ -242,7 +275,7 @@ impl Air for NullifierThresholdAir {
         assert_eq!(degrees.len(), NUM_CONSTRAINTS, "cuenta de grados");
 
         NullifierThresholdAir {
-            context: AirContext::new(trace_info, degrees, 16, options),
+            context: AirContext::new(trace_info, degrees, 20, options),
             pub_inputs,
         }
     }
@@ -361,27 +394,32 @@ impl Air for NullifierThresholdAir {
         // árbol con una clave y nulificar con otra, y dos autorizaciones del
         // mismo custodio pasarían por distintas.
         result[C_TRANSPORT] = next[COL_KEY] - current[COL_KEY];
+        // Y la operacion tambien: si variara entre filas, el nulificador no
+        // seria el de la operacion declarada.
+        for i in 0..4 {
+            result[C_TRANSPORT + 1 + i] = next[COL_OP + i] - current[COL_OP + i];
+        }
 
         // ===== Reinicio del estado para el nulificador =====
         // En la transición 39 → 40 el estado pasa a ser
-        // [0,0,0,0, NULLIFIER_DOMAIN,0,0,0, clave,0,0,0].
+        // [0,0,0,0, NULLIFIER_DOMAIN, clave,0,0, operacion(4)].
         for i in 0..4 {
             result[C_NULL_INIT + i] = null_init * next[i];
         }
         result[C_NULL_INIT + 4] =
             null_init * (next[4] - E::from(BaseElement::new(NULLIFIER_DOMAIN)));
-        for i in 5..8 {
+        result[C_NULL_INIT + 5] = null_init * (next[5] - current[COL_KEY]);
+        for i in 6..8 {
             result[C_NULL_INIT + i] = null_init * next[i];
         }
-        result[C_NULL_INIT + 8] = null_init * (next[8] - current[COL_KEY]);
-        for i in 9..STATE_WIDTH {
-            result[C_NULL_INIT + i] = null_init * next[i];
+        for i in 0..4 {
+            result[C_NULL_INIT + 8 + i] = null_init * (next[8 + i] - current[COL_OP + i]);
         }
     }
 
     fn get_assertions(&self) -> Vec<Assertion<Self::BaseField>> {
         let zero = BaseElement::ZERO;
-        let mut a = Vec::with_capacity(16);
+        let mut a = Vec::with_capacity(20);
 
         // Fila 0: capacidad, dominio anclado y relleno.
         for i in 0..4 {
@@ -405,6 +443,15 @@ impl Air for NullifierThresholdAir {
                 4 + i,
                 ROW_NULL,
                 self.pub_inputs.nullifier[i],
+            ));
+        }
+        // ⚠️ La operacion de la traza es la publicada: sin esto se podria
+        // hashear una operacion y declarar otra.
+        for i in 0..4 {
+            a.push(Assertion::single(
+                COL_OP + i,
+                0,
+                self.pub_inputs.operation[i],
             ));
         }
 
@@ -449,6 +496,12 @@ impl Prover for NullifierThresholdProver {
                 trace.get(5, ROW_NULL),
                 trace.get(6, ROW_NULL),
                 trace.get(7, ROW_NULL),
+            ],
+            operation: [
+                trace.get(COL_OP, 0),
+                trace.get(COL_OP + 1, 0),
+                trace.get(COL_OP + 2, 0),
+                trace.get(COL_OP + 3, 0),
             ],
         }
     }
@@ -500,6 +553,9 @@ pub enum PairRejection {
     /// ⚠️ Las dos vienen del **mismo custodio**: mismo nulificador. Sin
     /// esta comprobacion el umbral 2-de-N seria 1-de-N.
     SameCustodian,
+    /// ⚠️ Alguna prueba autoriza **otra operacion**. Es lo que impide
+    /// reproducir un par valido en una operacion distinta (§54.4).
+    WrongOperation,
     /// ⚠️ Alguna prueba demuestra pertenencia a **otro conjunto de
     /// custodios**. Un atacante puede construirse un conjunto con dieciseis
     /// claves suyas y firmar dos veces con dos de ellas: los nulificadores
@@ -521,26 +577,26 @@ pub enum PairRejection {
 /// desprevenido omitiria: sin ella, cada prueba es valida por separado y el
 /// par tambien, pero los custodios son del atacante.
 ///
-/// # ⚠️ NO USAR EN PRODUCCION TODAVIA: falta atar la operacion
+/// ⚠️ **`expected_operation` tambien la aporta la capa**, y por la misma
+/// razon: es lo que ata la autorizacion a **esta** operacion y no a
+/// cualquiera. Sin ella, dos custodios que autorizan emitir 1.000 a Alicia
+/// estarian autorizando de hecho cualquier emision, porque sus pruebas no
+/// dirian nada del importe ni del destinatario (§54.4, cerrado en §55).
 ///
-/// Esta funcion demuestra que **dos custodios distintos del conjunto
-/// autorizaron ALGO**. No demuestra que autorizaran **esta** operacion: las
-/// entradas publicas son la raiz y el nulificador, y no mencionan
-/// destinatario, importe ni contador.
+/// # Lo que sigue faltando para produccion
 ///
-/// Consecuencia directa: **un par valido se puede reproducir**. Dos
-/// custodios autorizan emitir 1.000 a Alicia; cualquiera reenvia esas mismas
-/// dos pruebas para emitir 1.000.000 a Bob, y verifican igual.
-///
-/// Cerrarlo es atar un identificador de operacion al nulificador
-/// —`H(dominio, clave, operacion)`— y llevarlo a las entradas publicas. Es la
-/// otra mitad de la entrada 33 (§41.4) y esta **sin hacer**.
+/// Esta funcion es correcta en lo que comprueba, pero el camino completo
+/// exige aun **sustituir `ThresholdAuth` en los cinco circuitos** que lo
+/// consumen (`mint`, `mint_to_pending`, `freeze`, `recovery`,
+/// `governance`), y eso es cirugia en la creacion de dinero: va con la
+/// cautela de §50, con test discriminante antes de tocar nada.
 pub fn verify_threshold_pair(
     proof_a: Proof,
     inputs_a: NullifierThresholdPublicInputs,
     proof_b: Proof,
     inputs_b: NullifierThresholdPublicInputs,
     expected_root: Digest,
+    expected_operation: Digest,
     accepted: &AcceptableOptions,
 ) -> Result<(), PairRejection> {
     // 1. Las dos autorizan sobre el conjunto que la capa dice, no sobre uno
@@ -551,12 +607,18 @@ pub fn verify_threshold_pair(
         return Err(PairRejection::WrongCustodianSet);
     }
 
-    // 2. Son custodios DISTINTOS. Aqui es donde el umbral es umbral.
+    // 2. Y autorizan ESTA operacion, no otra. Sin esto un par valido se
+    //    reproduce en cualquier operacion posterior.
+    if inputs_a.operation != expected_operation || inputs_b.operation != expected_operation {
+        return Err(PairRejection::WrongOperation);
+    }
+
+    // 3. Son custodios DISTINTOS. Aqui es donde el umbral es umbral.
     if inputs_a.nullifier == inputs_b.nullifier {
         return Err(PairRejection::SameCustodian);
     }
 
-    // 3. Y las dos pruebas son validas.
+    // 4. Y las dos pruebas son validas.
     let ok = |p: Proof, i: NullifierThresholdPublicInputs| {
         verify::<NullifierThresholdAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
             p, i, accepted,
@@ -596,9 +658,10 @@ mod tests {
     fn prove_and_verify(
         key: BaseElement,
         path: &CustodianPath,
+        op: Digest,
         declared: NullifierThresholdPublicInputs,
     ) -> bool {
-        let trace = build_trace(key, path);
+        let trace = build_trace(key, path, op);
         let prover = NullifierThresholdProver::new(default_options());
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
         match r {
@@ -622,11 +685,13 @@ mod tests {
     fn a_single_custodian_authorization_with_nullifier_verifies() {
         let keys = custodian_keys();
         let (root, paths) = build_custodian_set(&keys);
+        let op = operacion(1);
         let declared = NullifierThresholdPublicInputs {
             custodian_set_root: root,
-            nullifier: derive_nullifier(keys[2]),
+            nullifier: derive_nullifier(keys[2], op),
+            operation: op,
         };
-        assert!(prove_and_verify(keys[2], &paths[2], declared));
+        assert!(prove_and_verify(keys[2], &paths[2], op, declared));
     }
 
     /// Quien no está en el conjunto no autoriza.
@@ -635,11 +700,13 @@ mod tests {
         let keys = custodian_keys();
         let (root, paths) = build_custodian_set(&keys);
         let intruso = BaseElement::new(0xBADC0DE);
+        let op = operacion(1);
         let declared = NullifierThresholdPublicInputs {
             custodian_set_root: root,
-            nullifier: derive_nullifier(intruso),
+            nullifier: derive_nullifier(intruso, op),
+            operation: op,
         };
-        assert!(!prove_and_verify(intruso, &paths[2], declared));
+        assert!(!prove_and_verify(intruso, &paths[2], op, declared));
     }
 
     /// ⚠️ **La propiedad que sostiene la vía B con nulificador.** El mismo
@@ -649,8 +716,24 @@ mod tests {
     #[test]
     fn the_same_custodian_always_yields_the_same_nullifier() {
         let keys = custodian_keys();
-        assert_eq!(derive_nullifier(keys[1]), derive_nullifier(keys[1]));
-        assert_ne!(derive_nullifier(keys[1]), derive_nullifier(keys[2]));
+        let op = operacion(1);
+        // Dentro de UNA operacion es estable: es lo que permite exigir que
+        // las dos autorizaciones sean de custodios distintos.
+        assert_eq!(derive_nullifier(keys[1], op), derive_nullifier(keys[1], op));
+        assert_ne!(derive_nullifier(keys[1], op), derive_nullifier(keys[2], op));
+    }
+
+    /// ⚠️ **Y entre operaciones cambia**, que es lo que cierra la
+    /// enlazabilidad de §52.4: ya no se puede agrupar «el custodio desconocido
+    /// X firmo estas cinco emisiones».
+    #[test]
+    fn the_nullifier_changes_across_operations() {
+        let keys = custodian_keys();
+        assert_ne!(
+            derive_nullifier(keys[1], operacion(1)),
+            derive_nullifier(keys[1], operacion(2)),
+            "el nulificador debe variar con la operacion, o es un pseudonimo estable"
+        );
     }
 
     /// Y no se puede publicar un nulificador que no sea el de la clave con
@@ -659,12 +742,14 @@ mod tests {
     fn a_custodian_cannot_publish_someone_elses_nullifier() {
         let keys = custodian_keys();
         let (root, paths) = build_custodian_set(&keys);
+        let op = operacion(1);
         let declared = NullifierThresholdPublicInputs {
             custodian_set_root: root,
-            nullifier: derive_nullifier(keys[3]), // el de OTRO custodio
+            nullifier: derive_nullifier(keys[3], op), // el de OTRO custodio
+            operation: op,
         };
         assert!(
-            !prove_and_verify(keys[2], &paths[2], declared),
+            !prove_and_verify(keys[2], &paths[2], op, declared),
             "SOLIDEZ: el nulificador debe salir de la clave que probo pertenencia \
              (entrada 33, variante B)"
         );
@@ -672,11 +757,23 @@ mod tests {
 
     // ===== El umbral 2-de-N, que ahora vive en la capa =====
 
+    /// Un compromiso de operacion de juguete. En produccion seria el hash de
+    /// los parametros reales (destinatario, importe, contador).
+    fn operacion(n: u64) -> Digest {
+        [
+            BaseElement::new(0xDEAD_0000 + n),
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+        ]
+    }
+
     fn autorizar(
         key: BaseElement,
         path: &CustodianPath,
+        op: Digest,
     ) -> (Proof, NullifierThresholdPublicInputs) {
-        let trace = build_trace(key, path);
+        let trace = build_trace(key, path, op);
         let prover = NullifierThresholdProver::new(default_options());
         let inputs = NullifierThresholdPublicInputs {
             custodian_set_root: [
@@ -685,7 +782,8 @@ mod tests {
                 trace.get(6, ROW_ROOT),
                 trace.get(7, ROW_ROOT),
             ],
-            nullifier: derive_nullifier(key),
+            nullifier: derive_nullifier(key, op),
+            operation: op,
         };
         (prover.prove(trace).expect("deberia probar"), inputs)
     }
@@ -699,10 +797,11 @@ mod tests {
     fn two_distinct_custodians_meet_the_threshold() {
         let keys = custodian_keys();
         let (root, paths) = build_custodian_set(&keys);
-        let (pa, ia) = autorizar(keys[1], &paths[1]);
-        let (pb, ib) = autorizar(keys[2], &paths[2]);
+        let op = operacion(7);
+        let (pa, ia) = autorizar(keys[1], &paths[1], op);
+        let (pb, ib) = autorizar(keys[2], &paths[2], op);
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, root, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, root, op, &opciones()),
             Ok(())
         );
     }
@@ -715,10 +814,11 @@ mod tests {
     fn the_same_custodian_twice_does_not_meet_the_threshold() {
         let keys = custodian_keys();
         let (root, paths) = build_custodian_set(&keys);
-        let (pa, ia) = autorizar(keys[2], &paths[2]);
-        let (pb, ib) = autorizar(keys[2], &paths[2]);
+        let op = operacion(7);
+        let (pa, ia) = autorizar(keys[2], &paths[2], op);
+        let (pb, ib) = autorizar(keys[2], &paths[2], op);
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, root, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, root, op, &opciones()),
             Err(PairRejection::SameCustodian),
             "SOLIDEZ: dos autorizaciones del mismo custodio no son un umbral"
         );
@@ -736,11 +836,12 @@ mod tests {
 
         let mias: Vec<BaseElement> = (1..=4).map(|i| BaseElement::new(0xA77AC0 + i)).collect();
         let (_root_mia, paths_mias) = build_custodian_set(&mias);
-        let (pa, ia) = autorizar(mias[0], &paths_mias[0]);
-        let (pb, ib) = autorizar(mias[1], &paths_mias[1]);
+        let op = operacion(7);
+        let (pa, ia) = autorizar(mias[0], &paths_mias[0], op);
+        let (pb, ib) = autorizar(mias[1], &paths_mias[1], op);
 
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, root_real, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, root_real, op, &opciones()),
             Err(PairRejection::WrongCustodianSet),
             "SOLIDEZ: la raiz del conjunto la pone la capa, no la prueba"
         );
@@ -755,11 +856,86 @@ mod tests {
         let mias: Vec<BaseElement> = (1..=4).map(|i| BaseElement::new(0xA77AC0 + i)).collect();
         let (_r, paths_mias) = build_custodian_set(&mias);
 
-        let (pa, ia) = autorizar(keys[1], &paths[1]);
-        let (pb, ib) = autorizar(mias[0], &paths_mias[0]);
+        let op = operacion(7);
+        let (pa, ia) = autorizar(keys[1], &paths[1], op);
+        let (pb, ib) = autorizar(mias[0], &paths_mias[0], op);
         assert_eq!(
-            verify_threshold_pair(pa, ia, pb, ib, root_real, &opciones()),
+            verify_threshold_pair(pa, ia, pb, ib, root_real, op, &opciones()),
             Err(PairRejection::WrongCustodianSet)
+        );
+    }
+
+    /// ⚠️ **La constancia de `COL_OP`, que es lo que sostiene la atadura.**
+    ///
+    /// La cadena es: asercion en la fila 0 (la operacion declarada es la de
+    /// la traza) -> constancia entre filas -> el hash del nulificador lee
+    /// `COL_OP` en la fila 39. Si la constancia estuviera muerta —como lo
+    /// estaba la de `COL_SALT` en §50.7— un custodio pondria la operacion
+    /// declarada en la fila 0 y otra en la 39, obteniendo **nulificadores
+    /// distintos para si mismo**: el umbral 2-de-N volveria a ser 1-de-N.
+    ///
+    /// El barrido de disposiciones (§53) dice que las ranuras estan bien
+    /// asignadas, pero eso **no prueba que la restriccion sea correcta**
+    /// (§53.5). Esto si.
+    #[test]
+    fn an_operation_inconsistent_across_the_trace_is_rejected() {
+        let keys = custodian_keys();
+        let (root, paths) = build_custodian_set(&keys);
+        let declarada = operacion(7);
+        let otra = operacion(8);
+
+        let mut trace = build_trace(keys[2], &paths[2], declarada);
+        // La fila 0 conserva la operacion declarada; el resto pasa a otra.
+        for row in 1..TRACE_LENGTH {
+            for i in 0..4 {
+                trace.set(COL_OP + i, row, otra[i]);
+            }
+        }
+
+        let prover = NullifierThresholdProver::new(default_options());
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
+        let verifica = match r {
+            Err(_) | Ok(Err(_)) => false,
+            Ok(Ok(proof)) => {
+                let declared = NullifierThresholdPublicInputs {
+                    custodian_set_root: root,
+                    nullifier: derive_nullifier(keys[2], otra),
+                    operation: declarada,
+                };
+                verify::<
+                    NullifierThresholdAir,
+                    Blake3,
+                    DefaultRandomCoin<Blake3>,
+                    MerkleTree<Blake3>,
+                >(proof, declared, &opciones())
+                .is_ok()
+            }
+        };
+        assert!(
+            !verifica,
+            "SOLIDEZ: la operacion debe ser constante en toda la traza; si no, \
+             un custodio genera nulificadores distintos para si mismo y el \
+             umbral 2-de-N cae a 1-de-N (entrada 33 / §55)"
+        );
+    }
+
+    /// ⚠️ **El ataque que §55 cierra.** Dos custodios autorizan la operacion
+    /// 7. Alguien reenvia esas mismas dos pruebas para ejecutar la operacion
+    /// 8. Antes de atar la operacion al nulificador, esto funcionaba.
+    #[test]
+    fn a_valid_pair_cannot_be_replayed_on_another_operation() {
+        let keys = custodian_keys();
+        let (root, paths) = build_custodian_set(&keys);
+        let autorizada = operacion(7);
+        let otra = operacion(8);
+
+        let (pa, ia) = autorizar(keys[1], &paths[1], autorizada);
+        let (pb, ib) = autorizar(keys[2], &paths[2], autorizada);
+
+        assert_eq!(
+            verify_threshold_pair(pa, ia, pb, ib, root, otra, &opciones()),
+            Err(PairRejection::WrongOperation),
+            "SOLIDEZ: un par valido para una operacion no autoriza otra"
         );
     }
 
@@ -769,6 +945,6 @@ mod tests {
     fn the_nullifier_domain_is_separated_from_the_identity_domain() {
         use crate::circuit_threshold::derive_custodian_id;
         let k = BaseElement::new(0xC0FFEE);
-        assert_ne!(derive_nullifier(k), derive_custodian_id(k));
+        assert_ne!(derive_nullifier(k, operacion(1)), derive_custodian_id(k));
     }
 }

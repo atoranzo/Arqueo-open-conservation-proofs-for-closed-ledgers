@@ -118,7 +118,9 @@ const C_SBIT_BOOL: usize = C_TRANSPORT + 4; // 2
 const C_FIRST_S: usize = C_SBIT_BOOL + 2; // 2
 const C_HORNER: usize = C_FIRST_S + 2; // 1
 const C_SEG_LINK: usize = C_HORNER + 1; // NUM_SEGMENTS
-const NUM_CONSTRAINTS: usize = C_SEG_LINK + NUM_SEGMENTS;
+/// Publica para que la tabla comparativa de §52 la lea del codigo: puesta a
+/// mano se escribio «29» donde eran 60 (§52.6).
+pub const NUM_CONSTRAINTS: usize = C_SEG_LINK + NUM_SEGMENTS;
 
 // ===== Periódicas =====
 const P_HASH_FLAG: usize = 0;
