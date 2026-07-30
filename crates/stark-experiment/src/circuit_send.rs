@@ -36,8 +36,14 @@
 //! 1. Quien envía es el titular: la identidad deriva de su clave de gasto.
 //! 2. Tiene saldo suficiente.
 //! 3. **No está congelado**: no-pertenencia al árbol de congelados.
-//! 4. **No ha gastado ya ese nullificador**: no-pertenencia al árbol.
-//! 5. El pendiente queda insertado, con el importe exacto debitado.
+//! 4. **La posición del pendiente estaba libre**: no-pertenencia al árbol
+//!    de pendientes, con el compromiso insertado y el importe exacto
+//!    debitado.
+//!
+//! ⚠️ Una versión anterior de esta lista incluía «no ha gastado ya ese
+//! nullificador», **contradiciendo la sección de doce líneas más abajo**
+//! que explica por qué este circuito no lleva nullificador. Era un resto
+//! copiado de `circuit_settlement`.
 //!
 //! ## Por qué NO lleva nullificador
 //!
@@ -87,8 +93,9 @@ use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;
-/// 1024 filas. La fase de congelados acaba en la 471 y las tres fases
-/// nuevas —nullificador, compromiso e inserción— llegan a la 1007.
+/// 1024 filas. La fase de congelados acaba en la 471 y las fases del
+/// pendiente —compromiso interno, compromiso completo e inserción—
+/// llegan a la 1007.
 ///
 /// ⚠️ Quedan **16 filas de margen**. Si algo tuviera que crecer, no
 /// entraría sin duplicar la traza.

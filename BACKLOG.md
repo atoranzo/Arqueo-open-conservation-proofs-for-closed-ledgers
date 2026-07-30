@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 23 abiertas, 0 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 22 abiertas, 1 resuelta. Ultima revision: 30 de julio de 2026.
 
 ---
 
@@ -21,9 +21,16 @@ grupo de prioridad sin cambiar de numero.
 Correcciones ya preparadas. Mientras no se apliquen, el repositorio
 describe cosas que no son ciertas.
 
-- [ ] **1. Coherencia de los papers.** `PAPER.md`, `PAPER_EN.md` y la
+- [x] **1. Coherencia de los papers.** ~~`PAPER.md`, `PAPER_EN.md` y la
   documentacion autocontradictoria de `circuit_send` siguen describiendo
-  el arbol de nullificadores como parte del estado. → `coherencia_papers.py`
+  el arbol de nullificadores como parte del estado.~~
+  **Resuelto** el 30-07-2026, commit *«Align papers and circuit_send docs
+  with the retired nullifier tree»*: §3.3 pasa a nombrar el arbol de
+  pendientes, la tabla de no-pertenencia queda en dos filas con el doble
+  gasto remitido al encadenamiento de raices, el aviso del limite del
+  cumpleanos se reescribe como limite que existio, y la lista «que
+  demuestra» de `circuit_send` deja de contradecir a la seccion «por que
+  NO lleva nullificador» doce lineas mas abajo.
 - [ ] **2. Cifras del repositorio.** 65 de 174 en depuracion, 174 tests de
   la capa, doce circuitos, y la contradiccion 56/65 dentro de
   `AUDITORIA.md`. → `fix_cifras.py`

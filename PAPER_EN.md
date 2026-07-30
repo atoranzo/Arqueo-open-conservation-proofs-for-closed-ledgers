@@ -210,7 +210,7 @@ State consists of three sparse Merkle trees and several public scalars:
 | Structure | Depth | Contents |
 |---|---|---|
 | Account tree | 32 | Leaf = `H(H(id, balance), nonce)` |
-| Nullifier tree | 32 | Spend markers |
+| Pending tree | 32 | Sent commitments not yet claimed |
 | Frozen tree | 24 | Blocked accounts |
 
 Public scalars: total supply, regulatory limit, issuance cap, custodian
@@ -239,14 +239,26 @@ occupied and free positions, and the latter capability is the basis of
 
 ### 4.2 Non-membership as a primitive
 
-Three system properties are proven via non-membership, using the same
+Two system properties are proven via non-membership, using the same
 technique:
 
 | Property | Tree | What is proven |
 |---|---|---|
-| No double spend | Nullifiers | the nullifier's position is free |
 | Account not frozen | Frozen | its leaf is zero |
-| Position was available | Nullifiers | idem, before insertion |
+| Pending position was free | Pending | its leaf was zero before insertion |
+
+⚠️ **Double-spend prevention no longer works this way.** In the one-step
+path it was a third non-membership proof —the nullifier's position being
+free—; today it rests on **root chaining**, with the total-order dependency
+that implies (§4.1 and `AUDITORIA.md` §36).
+
+⚠️ **Note on earlier versions.** The one-step path derived a nullifier's
+position from the nullifier itself, which capped practical capacity at
+roughly 65,000 payments by the birthday paradox —an availability limit, not
+a soundness one. **Earlier English versions of this text did not state that
+limit, while the Spanish version did.** The path has since been retired and
+the tree removed from the layer, so the limit no longer applies; it is
+recorded here because it applied to what those versions described.
 
 The technique consists of climbing from a **zero** leaf to the declared
 root. If the position were occupied, its leaf would not be zero and the
@@ -295,7 +307,7 @@ money, and the constraint closing each:
 | Issuing without authorization | Two custodians proven in-circuit |
 | Issuance without supply update | Public supply bound in-circuit |
 | Exceeding the issuance cap | Range check on `cap − supply` |
-| Double spending | Non-membership in the nullifier tree |
+| Double spending | Root chaining (total order of the single node) |
 | Spending without being the holder | Proven spend authority |
 | Replaying a valid operation | Root chaining |
 

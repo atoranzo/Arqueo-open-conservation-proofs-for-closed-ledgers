@@ -219,7 +219,7 @@ públicos:
 | Estructura | Profundidad | Contenido |
 |---|---|---|
 | Árbol de cuentas | 32 | Hoja = `H(H(id, saldo), nonce)` |
-| Árbol de nullifiers | 32 | Marcas de gasto |
+| Árbol de pendientes | 32 | Compromisos enviados y sin cobrar |
 | Árbol de congelados | 24 | Cuentas bloqueadas |
 
 Escalares públicos: suministro total, límite regulatorio, tope de emisión,
@@ -247,32 +247,43 @@ Esa representación permite generar caminos de autenticación tanto para
 posiciones ocupadas como libres, y esa segunda capacidad es la base de las
 pruebas de **no-pertenencia**.
 
-> ⚠️ **La capacidad práctica del árbol de nullifiers no es 2³².**
+> ⚠️ **Un límite de capacidad que existió, y cómo desapareció.**
 >
-> La posición de un nullifier se deriva del propio nullifier
-> —`nullifier[0] mod 2³²`— y el circuito exige que esté libre. Dos
-> nullifiers distintos que caigan en la misma posición son un conflicto, y
-> eso sigue la **paradoja del cumpleaños**: a los ~65.000 nullifiers la
-> colisión ya tiene un 39 % de probabilidad, y al 99 % con 200.000.
+> En la vía de un paso, la posición de un nullificador se derivaba del
+> propio nullificador —`nullifier[0] mod 2³²`— y el circuito exigía que
+> estuviera libre. Dos nullificadores distintos en la misma posición eran
+> un conflicto, y eso seguía la **paradoja del cumpleaños**: a los
+> ~65.000 la colisión tenía un 39 % de probabilidad, y un 99 % con
+> 200.000. El afectado no podía reintentar —el nullificador es
+> determinista a partir del estado de su cuenta—, así que **su pago
+> quedaba bloqueado**: un límite de disponibilidad, no de solidez.
 >
-> El afectado no puede reintentar: el nullifier es determinista a partir
-> del estado de su cuenta. **Su pago queda bloqueado.**
+> Los circuitos en dos fases **no usan nullificador** (§9), y con la
+> retirada de la vía de un paso el árbol quedó sin nada que lo escribiera
+> y se eliminó de la capa. **El límite ya no aplica.**
 >
-> Es un límite de disponibilidad, no de solidez —nadie roba dinero— y
-> **no está corregido**. Las opciones y su coste están en `AUDITORIA.md`
-> §13. Los árboles de cuentas y congelados no tienen este problema: sus
-> posiciones **se asignan**, no se derivan.
+> ⚠️ **Pero se evitó, no se resolvió.** Lo que sustituye al nullificador
+> es el encadenamiento de raíces, y eso **exige un orden total**, que un
+> nodo único da y un sistema distribuido no. Quien distribuya esto
+> recupera el problema entero. Ver `AUDITORIA.md` §13, §32 y §36.
+>
+> Los árboles de cuentas, pendientes y congelados nunca tuvieron este
+> problema: sus posiciones **se asignan**, no se derivan.
 
 ### 4.2 No-pertenencia como primitiva
 
-Tres propiedades del sistema se demuestran mediante no-pertenencia, con la
+Dos propiedades del sistema se demuestran mediante no-pertenencia, con la
 misma técnica:
 
 | Propiedad | Árbol | Se demuestra que… |
 |---|---|---|
-| No hay doble gasto | Nullifiers | la posición del nullifier está libre |
 | La cuenta no está congelada | Congelados | su hoja es cero |
-| La posición estaba disponible | Nullifiers | idem, antes de insertar |
+| La posición del pendiente estaba libre | Pendientes | su hoja era cero antes de insertar |
+
+⚠️ **El doble gasto ya no se cierra así.** En la vía de un paso era una
+tercera no-pertenencia —la posición del nullificador libre—; hoy lo cierra
+el **encadenamiento de raíces**, con la dependencia del orden total que eso
+implica (§4.1 y `AUDITORIA.md` §36).
 
 La técnica consiste en subir desde una hoja **cero** hasta la raíz
 declarada. Si la posición estuviera ocupada, su hoja no sería cero y la
@@ -321,7 +332,7 @@ dinero, y la restricción que cierra cada una:
 | Emitir sin autorización | Dos custodios demostrados en circuito |
 | Emisión sin reflejo en el suministro | Suministro público atado en el circuito |
 | Superar el tope de emisión | Rango sobre `tope − suministro` |
-| Gastar dos veces | No-pertenencia en el árbol de nullifiers |
+| Gastar dos veces | Encadenamiento de raíces (orden total del nodo único) |
 | Gastar sin ser titular | Autoridad de gasto demostrada |
 | Reenviar una operación válida | Encadenamiento de raíces |
 
