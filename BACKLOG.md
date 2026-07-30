@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 18 abiertas, 5 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 19 abiertas, 5 resueltas. Ultima revision: 30 de julio de 2026.
 
 Con la 5 queda cerrado el **grupo A**: el repositorio vuelve a describir
 lo que hay. La siguiente es la **6**.
@@ -69,10 +69,13 @@ describe cosas que no son ciertas.
 
 ## B. La siguiente de verdad
 
-- [ ] **6. Reformular los grados del arbol de pendientes.** La unica
-  comprobacion automatica del area declarada de menor confianza (§16.3)
-  esta apagada, porque solo corre en depuracion y ahi fallan 65 tests
-  (§20, §35).
+- [ ] **6. El grado dependiente del testigo en el arbol de pendientes.**
+  La unica comprobacion automatica del area de menor confianza (§16.3)
+  esta apagada: solo corre en depuracion y ahi fallan 65 tests (§20, §35).
+  **Replanteada** el 30-07-2026 (§37): el remedio no es reformular el
+  circuito sino **no asignar la posicion 0**, y hay un experimento
+  pre-registrado en §37.3 para decidirlo. Winterfell exige que el grado
+  declarado **coincida** con el real, asi que declarar menos no es salida.
 - [ ] **7. Encargar la auditoria externa del argumento lockstep.** El
   hallazgo mas original del proyecto lo respalda un test discriminante, no
   una demostracion revisada por nadie mas (§16.4).
@@ -120,6 +123,14 @@ describe cosas que no son ciertas.
   parada, pero crece linealmente.
 
 ## E. Otro proyecto, no una incidencia
+
+- [ ] **24. Grado dependiente del testigo por valores legitimos del
+  dominio.** `circuit_mint_pending` con el margen del tope a cero y
+  `range_check` con diferencia cero degeneran por valores que el dominio
+  necesita, no por como estan escritos; probablemente no tenga arreglo y
+  lo correcto sea **declararlo** como limite de la herramienta (§37.2,
+  caso B). Es la causa de los 2 tests que `stark-experiment` se salta en
+  depuracion.
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo

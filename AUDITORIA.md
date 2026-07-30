@@ -2951,7 +2951,92 @@ exactamente para lo que sirve declarar lo previsto.
 - `settlement-layer` —el crate Groth16 autónomo— mantiene su propio
   árbol: es el artefacto histórico de la comparativa, no la capa.
 
-## 37. Qué NO demuestra este documento
+## 37. El grado que depende del testigo
+
+§35 dejó aplazada la reformulación de los grados del árbol de pendientes.
+Al abrirla se ve que estaba mal planteada en dos sentidos, y esta sección
+corrige el planteamiento antes de tocar nada.
+
+### 37.1 Una sospecha, cerrada leyendo
+
+`circuit_claim.rs` usa el `pbit` de la fila **siguiente** para las
+restricciones del pendiente (línea 848, `next[COL_PBIT]`) e impone su
+booleanidad sobre la fila **actual** (línea 899, `current[COL_PBIT]`). Si
+algún valor se usara sin comprobarse, un probador podría colocar ahí algo
+que no fuera 0 ni 1.
+
+**No hay hueco.** El segmento que llena `COL_PBIT` ocupa las filas
+`61 × 8 = 488` a `(61 + 31) × 8 + 7 = 743`, y la traza tiene 1024 filas.
+Todo `pbit` usado como `next` en la transición *r* se comprueba como
+`current` en la transición *r+1*, que existe siempre porque el segmento
+termina 280 filas antes del final.
+
+Se registra la sospecha resuelta en negativo, no solo las que dan fruto:
+un documento que solo anota los aciertos no dice cuánto se ha mirado.
+
+### 37.2 El diagnóstico, y por qué «declarar menos» no es una salida
+
+Winterfell no exige que el grado real sea **menor o igual** que el
+declarado: exige que **coincida**. El mensaje del test de `range_check` lo
+dice literal —*«expected [63,0,63], actual [0,0,0]»*—. Bajar la
+declaración rompería el caso no degenerado, que es el normal.
+
+Queda una sola dirección: **que el grado real no dependa del valor del
+testigo**. Y ahí los casos no son uno, son dos, con pronósticos opuestos.
+
+**Caso A — el árbol de pendientes.** `COL_PBIT` guarda los bits de la
+posición. Con posición 0 son todos cero, la columna es idénticamente nula,
+`pbit × (pbit − 1)` es el polinomio cero, y en `C_PEND_*` los términos
+multiplicados por `pbit` desaparecen. §35 descartó adelantar el contador
+**en los tests** con buen criterio: el primer pago real también cae en la
+posición 0. Pero de ahí no se sigue que haya que tocar el circuito. Si la
+capa **nunca asigna la posición 0** (`pending.rs:131`, `next: 0`), la
+producción deja de ser degenerada, y basta un solo bit no nulo para que la
+columna no sea el polinomio cero.
+
+**Caso B — los otros dos circuitos, y probablemente sin arreglo.**
+`circuit_mint_pending` degenera cuando el margen del tope es exactamente
+cero, y `range_check` cuando la diferencia es cero. Los dos son **valores
+legítimos del dominio**: el circuito de cumplimiento necesita
+`amount == balance`, verificado en Groth16 y Halo2. No se pueden diseñar
+para que no ocurran, y **no se arreglan reformulando**: si una columna es
+idénticamente cero, cualquier restricción booleana sobre ella es el
+polinomio cero, se escriba como se escriba.
+
+Si el caso B es irreducible, lo correcto no es perseguirlo sino
+**declararlo**: la comprobación de grados de winterfell es incompatible con
+restricciones cuyo grado depende del valor, eso es una propiedad de la
+herramienta, y el precio es el que ya se paga.
+
+### 37.3 Experimento PRE-REGISTRADO: desplazar la asignación
+
+**Se escribe antes de ejecutarlo.** La tabla de decisión de abajo se fija
+ahora para que el resultado no pueda reinterpretarse después.
+
+**Hipótesis.** Si `PendingTree::new` empieza en `next: 1` en vez de `next:
+0`, las 21 restricciones desviadas del caso A dejan de desviarse, porque
+`COL_PBIT` pasa a tener al menos un bit no nulo.
+
+**Procedimiento.** Cambiar `next: 0` por `next: 1` en `pending.rs:131` y
+ejecutar `cargo test -p zk-ssl` **sin** `--release`.
+
+| Resultado | Lectura | Decisión |
+|---|---|---|
+| 0 fallan | La hipótesis se sostiene y el caso A se cierra | Evaluar el coste del cambio: una hoja de 2³² perdida y la migración de registros con un pendiente en la 0 |
+| Fallan menos de 65, ninguno `C_PEND_*` ni `C_PBIT_BOOL` | El caso A se cierra; lo que queda es caso B u otra causa | Cerrar A, abrir entrada nueva para el resto |
+| Siguen fallando `C_PEND_*` o `C_PBIT_BOOL` | La hipótesis **no** se sostiene: un bit no nulo no basta | Descartar el desplazamiento y volver al planteamiento |
+| Salida vacía, `0 passed`, o error de compilación | **El experimento no corrió** | No concluir nada |
+
+La cuarta fila es la lección de §35, y va de serie desde entonces.
+
+⚠️ **Lo que este experimento no decide.** Aunque salga la primera fila, el
+cambio no es gratis ni obviamente correcto: desplazar la asignación
+significa que un registro existente con un pendiente en la posición 0
+queda en un estado que el código nuevo no vuelve a generar. Eso es una
+migración, y se decide como se decidió la del §36 — verificando, no
+descartando en silencio.
+
+## 38. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
