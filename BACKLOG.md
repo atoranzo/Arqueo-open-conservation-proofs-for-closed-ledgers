@@ -312,7 +312,15 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   veces** (§39.4, §49.1, al cerrar la 35) antes de que un test lo mirara: el
   error del dia en su forma mas pura.
 
-- [x] **37. Barrido de disposiciones: hecho, con herramienta permanente.**
+- [x] **37. Barrido de disposiciones: hecho, ampliado y CORREGIDO.**
+  ⚠️ **Se cerro sobre una cobertura parcial** (§59.2): la herramienta solo
+  entendia `result[C_ALGO + i]` y saltaba **en silencio** los circuitos que
+  indexan con numeros crudos — **10 de 24**, incluidos `compliance_circuit`,
+  `solvency` y `nullifier_tree`. El resumen decia «14 circuitos limpios» y se
+  registro como si fuera total. **Corregido** el 30-07-2026: el indice se
+  evalua entero y los comentarios se ignoran. **Resultado: 24 circuitos,
+  ninguna colision.** La conclusion era correcta pero no estaba verificada;
+  ahora lo esta.
   ~~Barrer el vicio de conteo «declara N, reparte M<N» en TODOS los
   circuitos.~~ **Cerrada** el 30-07-2026 (§53): `tools/check_constraint_layout.py`
   cruza los indices absolutos que escribe cada `evaluate_transition` y detecta

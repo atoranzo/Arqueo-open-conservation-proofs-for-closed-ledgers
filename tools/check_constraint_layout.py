@@ -54,7 +54,12 @@ EXTERNAS = {
 }
 
 RE_CONST = re.compile(r"^(?:pub )?const ([A-Z][A-Z_0-9]*): usize = (.+?);", re.MULTILINE)
-RE_WRITE = re.compile(r"result\[\s*(C_[A-Z_0-9]*)\s*(?:\+\s*([^\]]+?))?\s*\]")
+# ⚠️ Captura el indice ENTERO, no «constante + desplazamiento». La primera
+# version solo entendia `result[C_ALGO + i]` y saltaba **en silencio** los
+# circuitos que indexan con numeros crudos —`result[24 + i]`, `result[44]`—.
+# Eran DIEZ de veinticuatro, y el resumen decia «todos limpios» sobre los
+# catorce que si entendia (§59.2).
+RE_WRITE = re.compile(r"result\[([^\]]+)\]")
 RE_FOR = re.compile(r"\bfor\s+(\([^)]*\)|[a-z_][a-z_0-9]*)\s+in\s+([^{]+?)\s*\{")
 RE_LET_ARRAY = re.compile(r"let\s+([a-z_][a-z_0-9]*)\s*=\s*\[([^\]]*)\]\s*;", re.S)
 
@@ -180,13 +185,7 @@ def bucles_que_envuelven(texto, pos, valores):
 
 def indices_escritos(texto, m, valores):
     """Indices absolutos que escribe una sentencia, o None si no se expande."""
-    base_nombre, expr = m.group(1), m.group(2)
-    if base_nombre not in valores:
-        return None
-    base = valores[base_nombre]
-    if expr is None:
-        return {base}
-
+    expr = m.group(1).strip()
     envolventes = bucles_que_envuelven(texto, m.start(), valores)
     libres = sorted(set(re.findall(r"\b([a-z_][a-z_0-9]*)\b", expr)))
     libres = [v for v in libres if v not in valores]
@@ -212,17 +211,46 @@ def indices_escritos(texto, m, valores):
             return None
         if not isinstance(v, int):
             return None
-        salida.add(base + v)
+        salida.add(v)
     return salida
 
 
+def sin_comentarios(texto):
+    """Sustituye el contenido de los comentarios por espacios, conservando las
+    posiciones y los saltos de linea.
+
+    Hace falta porque la documentacion del proyecto **ilustra el problema con
+    codigo**: `mutation.rs` explica las restricciones vacuas escribiendo
+    `result[C_X]` en su propia prosa, y el barrido lo tomaba por una escritura
+    real que no sabia leer. Un aviso falso gasta la atencion que hace falta
+    para los verdaderos.
+    """
+    salida = []
+    i, n = 0, len(texto)
+    while i < n:
+        if texto.startswith("//", i):
+            j = texto.find("\n", i)
+            j = n if j == -1 else j
+            salida.append(" " * (j - i))
+            i = j
+        elif texto.startswith("/*", i):
+            j = texto.find("*/", i + 2)
+            j = n if j == -1 else j + 2
+            salida.append("".join(ch if ch == "\n" else " " for ch in texto[i:j]))
+            i = j
+        else:
+            salida.append(texto[i])
+            i += 1
+    return "".join(salida)
+
+
 def analizar(ruta):
-    texto = open(ruta, encoding="utf-8").read()
+    texto = sin_comentarios(open(ruta, encoding="utf-8").read())
     valores, crudos, sin_resolver = resolver_simbolos(texto)
     grupos = {n: valores[n] for n in crudos if n.startswith("C_") and n in valores}
-    if not grupos:
-        return None
     total = valores.get("NUM_CONSTRAINTS")
+    if not RE_WRITE.search(texto):
+        return None
 
     escrituras, indeterminadas = [], []
     for m in RE_WRITE.finditer(texto):
@@ -243,6 +271,9 @@ def analizar(ruta):
 
     cubiertas = set(duenos)
     desbordes = sorted(i for i in cubiertas if total is not None and i >= total)
+    # Sin `NUM_CONSTRAINTS` no se puede saber cuantas ranuras deberia haber,
+    # asi que no se puede hablar de ranuras muertas. Las COLISIONES —que son
+    # la firma de §38— si se detectan igual.
     muertas = sorted(set(range(total)) - cubiertas) if total is not None else []
 
     return {
@@ -336,11 +367,18 @@ def main():
     verbose = "--verbose" in sys.argv
     graves = huecos = barridos = 0
 
+    no_barridos = []
     for fichero in sorted(os.listdir(RAIZ)):
         if not fichero.endswith(".rs"):
             continue
-        r = analizar(os.path.join(RAIZ, fichero))
+        ruta = os.path.join(RAIZ, fichero)
+        r = analizar(ruta)
         if r is None:
+            # ⚠️ Un circuito que escribe restricciones pero no usa constantes
+            # `C_` no se puede analizar con este barrido. Callarlo daria una
+            # falsa seguridad: el resumen diria «todos limpios» sobre un
+            # subconjunto. `dual_climb` indexa con numeros crudos
+            # (`result[24 + i]`), y por eso quedaba fuera sin avisar.
             continue
         barridos += 1
         lineas = []
@@ -396,6 +434,20 @@ def main():
     if not graves and not huecos:
         print(
             f"{barridos} circuitos: ninguna ranura colisiona, desborda ni queda muerta."
+        )
+    if no_barridos:
+        print()
+        print(
+            f"⚠️  {len(no_barridos)} circuito(s) NO analizados —indexan las "
+            "restricciones con numeros crudos en vez de constantes `C_`, y este "
+            "barrido no sabe leerlos:"
+        )
+        for f in no_barridos:
+            print(f"      {f}")
+        print(
+            "    No estan aprobados: estan sin comprobar. Con indices a mano el "
+            "defecto de §38 es MAS facil, no menos, porque no hay una cadena de "
+            "constantes que delate el desajuste."
         )
     return 1 if graves else 0
 

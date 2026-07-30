@@ -69,7 +69,7 @@ use winterfell::{
     TraceInfo, TracePolyTable, TraceTable, TransitionConstraintDegree,
 };
 
-use crate::circuit_threshold::{CustodianPath, CUSTODIAN_DEPTH, CUSTODIAN_DOMAIN, CYCLE_LENGTH};
+use crate::circuit_threshold::{CustodianPath, CUSTODIAN_DEPTH, CYCLE_LENGTH};
 use crate::merkle::{native_merge, Digest};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
@@ -701,7 +701,7 @@ pub fn verify_threshold_pair(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::circuit_threshold::build_custodian_set;
+    use crate::circuit_threshold::{build_custodian_set, CUSTODIAN_DOMAIN};
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
 
     fn default_options() -> ProofOptions {

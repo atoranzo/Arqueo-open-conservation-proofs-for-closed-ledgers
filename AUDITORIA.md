@@ -5152,7 +5152,76 @@ con `mint` y `mint_pending` al final por tener el tejido mas entrelazado.
 Lo que §57 dejo probado sigue en pie: **el patron funciona**. Lo que §58
 corrige es la estimacion de cuanto queda.
 
-## 59. Qué NO demuestra este documento
+## 59. El barrido de §53 solo cubria la mitad, y no lo decia
+
+Al empezar `freeze` (entrada 33) aparecio un fallo en la herramienta de §53 y
+un error mio al registrarla. Va primero porque afecta a una entrada ya
+cerrada.
+
+### 59.1 El circuito amputado de `freeze`
+
+Las filas 0-191 de `circuit_freeze` son **autonomas**: la subida dual al arbol
+de congelados, carril A el estado antes, carril B el despues, con los hermanos
+compartidos. Las 192-231 son la autorizacion, reutilizando los mismos
+carriles. Amputar deja exactamente `dual_climb` a profundidad
+`FROZEN_DEPTH` = 24.
+
+`circuit_frozen_climb.rs` es eso: **una copia de `dual_climb` con la
+profundidad cambiada**. Se prefiere copiar a parametrizar la profundidad con
+genericos constantes, porque eso ultimo toca un circuito que hoy funciona y no
+conviene hacerlo en el mismo paso que la amputacion. ⚠️ **Queda como deuda
+declarada**: si uno de los dos se corrige, el otro necesita la misma
+correccion. Esta escrito en la cabecera del fichero.
+
+### 59.2 ⚠️ El fallo: la herramienta saltaba DIEZ circuitos en silencio
+
+`check_constraint_layout.py` solo entendia escrituras de la forma
+`result[C_ALGO + i]`. Los circuitos que indexan con **numeros crudos**
+—`result[24 + i]`, `result[44]`, como hace `dual_climb`— no se analizaban, y
+la herramienta **no lo decia**: su resumen anunciaba «14 circuitos: ninguna
+ranura colisiona», que un lector toma por «todos».
+
+Eran **10 de 24**, y no son piezas menores: `compliance_circuit` (25
+escrituras), `solvency` (12), `nullifier_tree` (10), `dual_climb`, `merkle`,
+`nullifier`, `range_check`, `rescue_hash`, `lib`.
+
+**Y §53.2 registro esa cobertura parcial como si fuera total**: *«no hay un
+cuarto de esta clase en los once circuitos que nadie habia contado»*. Esa
+afirmacion cubria catorce ficheros, no todos. La entrada 37 se cerro sobre
+ella.
+
+> Es la falsa seguridad exacta contra la que avisa la documentacion de la
+> propia herramienta: *«un barrido que aprueba lo que no entiende es peor que
+> no tener barrido»*. Lo escribi al construirla y aun asi lo cometi, porque
+> la herramienta callaba lo que saltaba en vez de declararlo.
+
+### 59.3 Corregido, y el resultado
+
+Dos arreglos:
+
+1. **El indice se evalua entero**, no como «constante mas desplazamiento».
+   Ahora entiende `result[24 + i]` y `result[lane * STATE_WIDTH + i]`.
+2. **Los comentarios se ignoran.** `mutation.rs` ilustra las restricciones
+   vacuas escribiendo `result[C_X]` en su prosa, y el barrido lo tomaba por
+   codigo. Un aviso falso gasta la atencion que hace falta para los
+   verdaderos.
+
+**Resultado: 24 circuitos, ninguna colision, ningun desborde, ninguna ranura
+muerta.** La conclusion de §53.2 era **correcta**, pero no estaba
+**verificada**. Ahora lo esta.
+
+⚠️ Se deja anotado que lo estuvo por suerte durante ocho commits: los diez
+circuitos sin comprobar podrian haber tenido un cuarto §50 y el repositorio
+habria afirmado lo contrario.
+
+### 59.4 Lo que sigue faltando en `freeze`
+
+El circuito amputado existe pero **no tiene tests propios ni via delegada en
+la capa**. Falta: comprobar que compila y prueba, escribir
+`apply_freeze_delegated` con el compromiso `OP_FREEZE`, y sus tests de
+rechazo —como los cuatro de §57.3—.
+
+## 60. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
