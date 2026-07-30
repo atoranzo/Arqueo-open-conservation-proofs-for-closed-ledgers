@@ -186,7 +186,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   que se quiere probar. **Reproducida** subiendo la contencion (1 de 40 a 16
   hilos) y **corregida** (§45): los 32 bloques `take_hook`/`set_hook`
   silenciaban un `eprintln` sin proteger el mensaje —que viaja en el `Err`
-  de `catch_unwind`— y a cambio metían la carrera. Eliminados.
+  de `catch_unwind`— y a cambio metían la carrera. Eliminados y
+  **verificado con 260 pasadas a 16 hilos sin fallo** (§45.6). El registro
+  se empujo una vez antes que el codigo (`bcb9f73` sin el parche, corregido
+  en `97d7c7f`); queda anotado.
 
 - [ ] **7. ⚠️ Encargar la auditoria externa.** Ya no es solo por el
   argumento lockstep (§16.4). Tras §39 hay un defecto **demostrado** de una

@@ -3963,6 +3963,34 @@ forma es la misma de siempre: se comprobo lo que era comodo comprobar —un
 hilo— en vez de lo que ponía la hipotesis a prueba —muchos—. Un experimento
 que no puede fallar si la hipotesis es cierta no la prueba.
 
+### 45.6 La verificacion, con su propio tropiezo
+
+El arreglo de §45 se registro en un commit (`bcb9f73`) **antes** de aplicar
+el codigo: el parche no se habia descargado y el commit solo llevaba
+AUDITORIA y BACKLOG. Durante unos minutos `main` afirmo una correccion que
+no estaba en el codigo. Se corrigio hacia delante con `97d7c7f`, cuyo
+mensaje nombra el commit anterior en vez de disimularlo.
+
+Y hubo un segundo tropiezo instructivo. Tras aplicar el codigo de verdad,
+una tanda de 40 pasadas dio **1 fallo** —justo lo que el arreglo debía
+eliminar—. Antes de rediagnosticar en falso, se aisló la variable
+sospechosa: ese fallo cayó en el arranque, con el build recién cambiado y
+posiblemente a medio recompilar. Recompilando en frio primero, **260
+pasadas a 16 hilos dieron cero fallos** (40 + 60 + 80 + 80), con el unico
+fallo en aquella primera tanda sin recompilar.
+
+⚠️ **Grado de certeza, explicito:** 260 pasadas sin fallo es evidencia
+fuerte de que la carrera esta eliminada, no una demostracion. Una carrera
+que aparecía 1 de 40 podria en principio aparecer 1 de 500; lo que se
+afirma es que el mecanismo identificado en §45.3 se elimino y que la
+reproduccion que lo delataba ya no ocurre en 260 intentos.
+
+**La leccion se repite en el propio cierre:** el primer `1 de 40` post-fix
+casi provoca un rediagnostico sobre una pasada contaminada por el build,
+igual que el primer `0 de 40` pre-fix casi cierra la entrada sobre azar.
+Las dos veces, la salida corria antes de que el estado fuera el que se
+creía. Medir exige fijar primero lo que se mide.
+
 ## 46. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
