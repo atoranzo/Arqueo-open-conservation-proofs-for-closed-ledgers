@@ -290,9 +290,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
 - [ ] **20. Rotacion de claves operativas.** Implementada solo en parte.
 
 - [ ] **21. Delegacion de prueba a clientes ligeros.** Exige verificar una
-  firma dentro del circuito (§18). ⚠️ Este punto decia «~8.000 filas»: esa
-  cifra **no estaba medida ni respaldada por el repositorio**, la escribio
-  el asistente de memoria y se retira (§42.3). Mismo primitivo que la 33.
+  firma dentro del circuito: **~8.000 filas** con esquema Winternitz,
+  estimacion documentada en `client.rs` (§18). ⚠️ Esta cifra se retiro por
+  error en §42.3 dandola por inventada, y se **restituye** (§42.5): estaba
+  en el codigo, se busco donde no estaba. Mismo primitivo que la 33.
 
 - [ ] **22. Agregacion de pruebas.** 120,4 MB por mil pagos es coste, no
   parada, pero crece linealmente.

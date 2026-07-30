@@ -3802,15 +3802,41 @@ de la prueba a un tercero exigiría verificar una firma en circuito*. Es
 decir, **la entrada 21 y la 33 necesitan la misma pieza**, y construirla
 una vez paga dos.
 
-⚠️ **Retirada de una cifra sin fuente.** La entrada 21 del backlog decía
-«~8.000 filas» para verificar una firma en circuito. **Esa cifra no está
-medida ni figura en ninguna parte del repositorio**: la escribió el asistente
-de memoria al redactar la lista, y quedó dentro del proyecto como si
-estuviera respaldada. Se retira. El coste real **no se ha medido**, y hasta
-que se mida no debe citarse ninguno.
+~~⚠️ **Retirada de una cifra sin fuente.** La entrada 21 del backlog decía
+«~8.000 filas»... Esa cifra no figura en ninguna parte del repositorio... Se
+retira.~~
 
-Es la misma clase que §39.2 y que las cifras de §20: un número que entra
-por comodidad y se queda como si fuera un dato.
+⚠️⚠️ **ESTO ERA FALSO. Ver §42.5.** El «~8.000 filas» **sí** estaba en el
+repositorio —`client.rs`, con el esquema concreto (Winternitz)—. Se retiró
+por error, tras buscar donde no estaba. La cifra es legitima y se restituye.
+
+### 42.5 ⚠️ Rectificacion: el ~8.000 tampoco era inventado
+
+Igual que el 125,6 KB de §48.3, y por identica causa. §42.3 afirmo que
+«~8.000 filas» no figuraba en el repositorio y lo retiro. **Estaba en
+`client.rs`**:
+
+> *«...verificar una firma dentro del circuito (Winternitz, ~8.000 filas
+> adicionales).»*
+
+Con esquema nombrado —Winternitz— y contexto —optimizacion para clientes
+ligeros, no correccion de seguridad—. Es una **estimacion documentada**, no
+una medicion exacta, pero no es una cifra de memoria: vive en el codigo.
+
+**El mismo error, dos veces, en las mismas dos entradas (21 y 10).** Las dos
+cifras que «retire por inventadas» eran reales; las dos las busque en
+AUDITORIA/README/preprints y **no en los `.rs`**. Y peor: cite la retirada
+del 8.000 como *precedente* para retirar el 125,6, encadenando el error.
+
+> **Un barrido hereda los puntos ciegos de quien lo hace.** Busque las
+> cifras donde yo esperaba que estuvieran. Las dos vivian donde no mire. Es,
+> literalmente, la tesis de §40.4: ni las herramientas ni los barridos
+> encuentran lo que su autor no sabe mirar. Solo la lectura completa —o un
+> tercero— lo hace.
+
+La entrada 21 recupera su cifra. La 10 estaba bien cerrada por otra via
+(§48.3, la decision esta implementada), pero su cita del 8.000 como
+«inventado» queda corregida aqui.
 
 ### 42.4 Lo que este análisis NO decide
 
