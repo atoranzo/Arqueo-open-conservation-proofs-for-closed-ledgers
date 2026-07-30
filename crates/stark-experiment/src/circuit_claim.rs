@@ -857,7 +857,13 @@ impl Air for ClaimAir {
             // identidad de mas y el aleatorio de menos, y la suma seguia
             // dando cero. **Sumar comprobaciones independientes las
             // anula.**
-            result[C_PEND_IN + 4 + i] = pend_in * (next[4 + i] - current[COL_R_ID + i]);
+            // ⚠️ **LA IDENTIDAD ES LA DE LA CUENTA QUE COBRA**, no un
+            // parametro aparte. Con `COL_R_ID` el circuito demostraba
+            // «existe este pendiente» y «tengo esta clave» sin exigir que
+            // fueran lo mismo: cualquiera con el aleatorio cobraba un
+            // pendiente ajeno (`AUDITORIA.md` §39). `COL_ACC_ID` esta atado
+            // a la clave por `C_PK_CHECK`, asi que aqui no cabe mentir.
+            result[C_PEND_IN + 4 + i] = pend_in * (next[4 + i] - current[COL_ACC_ID + i]);
             result[C_PEND_IN + 8 + i] = pend_in * (next[8 + i] - current[COL_SALT + i]);
 
             // Compromiso completo: el digest interno, y el importe.
@@ -1129,6 +1135,17 @@ mod tests {
     }
 
     fn scenario(balance: u64, amount: u64, supply_old: u64) -> Scenario {
+        escenario_para(balance, amount, supply_old, None)
+    }
+
+    /// `destinatario` permite construir el pendiente a nombre de OTRO, que
+    /// es el ataque de §39. Con `None`, a nombre del titular: lo honesto.
+    fn escenario_para(
+        balance: u64,
+        amount: u64,
+        supply_old: u64,
+        destinatario: Option<Digest>,
+    ) -> Scenario {
         let mut empty = vec![[BaseElement::ZERO; 4]];
         for k in 1..=TREE_DEPTH {
             let prev = empty[k - 1];
@@ -1177,7 +1194,10 @@ mod tests {
             siblings: (0..TREE_DEPTH).map(|l| empty[l]).collect(),
             is_right: (0..TREE_DEPTH).map(|l| l % 4 == 0).collect(),
         };
-        let receiver_id = derive_public_id(BaseElement::new(0xB0B));
+        // ⚠️ Aqui decía `derive_public_id(0xB0B)` —una identidad DISTINTA
+        // de la del titular— y los tests verificaban igual. Eso era §39: el
+        // escenario documentaba el agujero en vez de detectarlo.
+        let receiver_id = destinatario.unwrap_or(account_id);
         let salt: Digest = [
             BaseElement::new(0x5EED_0001),
             BaseElement::new(0x5EED_0002),
@@ -1360,21 +1380,39 @@ mod tests {
         assert!(run(&s, s.key, 500_000).is_err());
     }
 
-    /// **NADIE MÁS PUEDE RECLAMAR UN PENDIENTE AJENO.**
+    /// **SIN LA CLAVE DE LA CUENTA NO SE COBRA.**
     ///
-    /// Es el test que sostiene toda la segunda fase.
-    ///
-    /// Mallory pudo interceptar el aviso —conoce el aleatorio y el
-    /// importe— pero **no la clave del receptor**. El compromiso
-    /// reconstruido con su identidad es otro, y su subida no llega a la
-    /// raíz declarada.
+    /// ⚠️ Este test se llamaba `nobody_else_can_claim_a_pending_transfer` y
+    /// decía sostener toda la segunda fase, afirmando que fallaba porque *el
+    /// compromiso reconstruido con otra identidad es otro*. **No era
+    /// cierto**: cambia la clave de gasto, así que falla por `C_PK_CHECK`.
+    /// La propiedad que decía cubrir no la cubría nadie, y de ahí salió
+    /// §39. Renombrado a lo que sí prueba.
     #[test]
-    fn nobody_else_can_claim_a_pending_transfer() {
+    fn without_the_account_key_nothing_can_be_claimed() {
         let s = scenario(1_000_000, 250_000, 10_000_000);
         assert!(
             run(&s, BaseElement::new(0xBADCAFE), 0).is_err(),
-            "CRITICO: quien no tenga la clave del receptor no debe poder \
-             cobrar su pendiente"
+            "CRITICO: sin la clave de la cuenta no debe poder cobrarse"
+        );
+    }
+
+    /// **NADIE MÁS PUEDE COBRAR UN PENDIENTE AJENO.** — el de verdad.
+    ///
+    /// Mallory tiene **su propia cuenta y su propia clave**, y conoce el
+    /// aleatorio y el importe de un pendiente dirigido a otra identidad.
+    /// Todo lo demás de la traza es coherente. Si el circuito no atara la
+    /// identidad del compromiso a la de la cuenta que cobra, esto
+    /// verificaría — y durante todo el desarrollo verificó (§39).
+    #[test]
+    fn nobody_else_can_claim_a_pending_transfer() {
+        let ajeno = derive_public_id(BaseElement::new(0xB0B));
+        let s = escenario_para(1_000_000, 250_000, 10_000_000, Some(ajeno));
+        assert_ne!(ajeno, s.account_id);
+        assert!(
+            run(&s, s.key, 0).is_err(),
+            "CRITICO: un pendiente dirigido a OTRA identidad no debe poder \
+             cobrarse aunque se tenga una cuenta y una clave validas"
         );
     }
 

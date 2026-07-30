@@ -12,10 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 22 abiertas, 6 resueltas.
-
-⚠️ **La entrada 27 es un fallo de solidez confirmado en la via de
-produccion.** Todo lo demas espera. Ultima revision: 30 de julio de 2026.
+**Estado**: 22 abiertas, 7 resueltas. Ultima revision: 30 de julio de 2026.
 
 Con la 5 queda cerrado el **grupo A**: el repositorio vuelve a describir
 lo que hay. La siguiente es la **6**.
@@ -72,11 +69,20 @@ describe cosas que no son ciertas.
 
 ## B. La siguiente de verdad
 
-- [ ] **27. ⚠️ FALLO GRAVE CONFIRMADO: el cobro no demuestra titularidad.**
+- [x] **27. ⚠️ FALLO GRAVE CONFIRMADO Y CORREGIDO: el cobro no demostraba
+  titularidad.**
   `circuit_claim` no ata `COL_R_ID` a `COL_ACC_ID`; la suite existente ya lo
   demostraba (escenario con `SK=0xA11CE` cobrando un pendiente de `0xB0B`,
   y verifica). Quien conozca posicion, aleatorio e importe cobra en su
-  cuenta; **el pagador los conoce todos** (§39). **Bloquea todo lo demas.**
+  cuenta; **el pagador los conoce todos** (§39). ✅ **Corregido** el
+  30-07-2026 (§39.1): `C_PEND_IN` reconstruye el compromiso con
+  `COL_ACC_ID`, atado a la clave por `C_PK_CHECK`. Escenario y los dos
+  tests rehechos. 203 y 174 sin fallos.
+
+- [ ] **29. Un fallo unico de la bateria, sin explicar.** Una ejecucion
+  dio 202/1; las 46 siguientes, 203/0. La hipotesis del gancho de panico
+  global (32 puntos, 22 ficheros, tests en paralelo) **no** quedo
+  respaldada: `--test-threads=1` no cambia nada (§39.2). Causa desconocida.
 
 - [ ] **28. Corregir los tres preprints tras la 27.** Describen el cobro
   como demostracion de titularidad. No tocar Zenodo hasta que 27 este

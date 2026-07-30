@@ -3478,6 +3478,49 @@ sobre la propiedad central de la vía de producción.
 Hasta que 1 y 2 estén hechos, **la vía de dos fases no debe describirse
 como segura frente a un cliente malicioso**.
 
+### 39.1 Corregido y verificado
+
+`C_PEND_IN` reconstruye el compromiso con **`COL_ACC_ID`**, la cuenta que
+cobra, en vez de con `COL_R_ID`. Como `C_PK_CHECK` ya ata `COL_ACC_ID` a la
+identidad derivada de la clave de gasto, **no queda hueco donde meter otra
+identidad**. Es el mismo principio con que §4 cerró la fuga del saldo: la
+propiedad va en la estructura, no en un test.
+
+Pasar una identidad distinta ya no cuela por **dos** vías independientes: el
+compromiso que `build_trace` coloca en la traza no llega a la raíz declarada,
+y además viola la restricción.
+
+**Los dos tests, rehechos.** El que decía sostener la segunda fase cambiaba
+la clave y fallaba por `C_PK_CHECK`; ahora se llama
+`without_the_account_key_nothing_can_be_claimed`, que es lo que prueba. Y
+`nobody_else_can_claim_a_pending_transfer` es por fin el ataque real:
+Mallory con **su propia cuenta y su propia clave válidas** intentando cobrar
+un pendiente dirigido a otra identidad. Antes de esta corrección,
+verificaba.
+
+El escenario de test también se corrige: construía el pendiente a nombre de
+`0xB0B` mientras cobraba la cuenta de `0xA11CE`, y así **documentaba el
+agujero en vez de detectarlo**.
+
+**Verificación**: `stark-experiment` 203 y `zk-ssl` 174, sin fallos.
+
+### 39.2 Un fallo único, sin explicar
+
+La primera ejecución después de aplicar la corrección dio **202 pasan, 1
+falla**. Las **46 siguientes** —seis sueltas, veinte en paralelo y veinte con
+un solo hilo— pasan las 203. No se capturó el nombre del test que falló.
+
+Se investigó la hipótesis más plausible: 22 ficheros del crate manipulan el
+**gancho de pánico del proceso** —estado global— en 32 puntos, y `cargo
+test` ejecuta en paralelo. Las veinte pasadas con `--test-threads=1` no
+mostraron diferencia con las veinte en paralelo: cero fallos en ambas. **La
+hipótesis no queda respaldada.**
+
+⚠️ Queda anotado sin adornar: **ocurrió una vez, no se ha reproducido en 46
+ejecuciones, y la causa se desconoce.** Una batería que falla una de cada
+cuarenta y siete sin explicación es una dependencia de confianza como
+cualquier otra, y por eso figura aquí y no en una nota al pie.
+
 ## 40. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
