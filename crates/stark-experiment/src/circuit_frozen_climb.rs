@@ -43,7 +43,19 @@ use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;
 /// 32 niveles × 8 filas = 256 (potencia de dos ✓).
-pub const TRACE_LENGTH: usize = FROZEN_DEPTH * CYCLE_LENGTH;
+/// ⚠️ **Winterfell exige longitud de traza potencia de dos**, y la subida a
+/// congelados ocupa `24 × 8 = 192`, que no lo es. Se sube a 256 y los ocho
+/// niveles sobrantes son **relleno**: se sigue subiendo con hermano cero para
+/// que las restricciones de enlace se satisfagan hasta el final, y no
+/// significan nada porque las raices se anclan en `ROW_ROOT`.
+///
+/// Es la misma razon por la que `circuit_freeze` usa 512 filas para una
+/// subida de 24 niveles mas una de 4: la potencia de dos siguiente.
+pub const TRACE_LENGTH: usize = 256;
+
+/// Fila donde el estado contiene las raices de verdad. Lo que hay despues es
+/// relleno.
+pub const ROW_ROOT: usize = FROZEN_DEPTH * CYCLE_LENGTH - 1;
 /// 12 del carril A + 12 del carril B + 1 del bit compartido.
 pub const TRACE_WIDTH: usize = 2 * STATE_WIDTH + 1;
 
@@ -112,6 +124,14 @@ pub fn build_trace(leaf_a: Digest, leaf_b: Digest, path: &MerklePath) -> TraceTa
             if next_level < FROZEN_DEPTH {
                 place(&mut state_a, &digest_a, next_level);
                 place(&mut state_b, &digest_b, next_level);
+            } else {
+                // Niveles de relleno hasta la potencia de dos. Se sigue
+                // subiendo con hermano CERO —y bit cero, que es el valor por
+                // defecto de la columna— para que las restricciones de enlace
+                // se satisfagan. Lo que sale de aqui no se usa: las raices
+                // estan ancladas en ROW_ROOT.
+                state_a[4..8].copy_from_slice(&digest_a);
+                state_b[4..8].copy_from_slice(&digest_b);
             }
         }
         rows[r + 1][..STATE_WIDTH].copy_from_slice(&state_a);
@@ -307,7 +327,9 @@ impl Air for FrozenClimbAir {
 
     fn get_assertions(&self) -> Vec<Assertion<Self::BaseField>> {
         let zero = BaseElement::ZERO;
-        let last = TRACE_LENGTH - 1;
+        // ⚠️ En ROW_ROOT, no en la ultima fila: lo que viene despues es
+        // relleno para llegar a la potencia de dos.
+        let last = ROW_ROOT;
         let mut assertions = Vec::with_capacity(16);
 
         // Capacidad inicial a cero en ambos carriles (seguridad de la
@@ -352,7 +374,11 @@ impl Prover for FrozenClimbProver {
 
     fn get_pub_inputs(&self, trace: &Self::Trace) -> FrozenClimbPublicInputs {
         use winterfell::Trace;
-        let last = trace.length() - 1;
+        // ROW_ROOT, no la ultima fila: las 64 ultimas son relleno para llegar
+        // a la potencia de dos. Leer de ahi daba una raiz que no es la del
+        // arbol, y la prueba no verificaba contra la declarada.
+        debug_assert!(trace.length() > ROW_ROOT);
+        let last = ROW_ROOT;
         FrozenClimbPublicInputs {
             root_a: [
                 trace.get(4, last),
@@ -408,3 +434,235 @@ impl Prover for FrozenClimbProver {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    // ⚠️ Adaptados de `dual_climb` junto con el circuito (§59.1). Si alli se
+    // corrigen o se anaden, aqui hace falta la misma correccion: son dos
+    // copias de la misma pieza a profundidades distintas.
+
+    use super::*;
+    use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
+
+    fn default_options() -> ProofOptions {
+        ProofOptions::new(
+            32,
+            8,
+            0,
+            FieldExtension::None,
+            8,
+            31,
+            BatchingMethod::Linear,
+            BatchingMethod::Linear,
+        )
+    }
+
+    fn digest_from(n: u64) -> Digest {
+        [
+            BaseElement::new(n),
+            BaseElement::new(n + 1),
+            BaseElement::new(n + 2),
+            BaseElement::new(n + 3),
+        ]
+    }
+
+    fn sample_path() -> MerklePath {
+        MerklePath {
+            siblings: (0..FROZEN_DEPTH).map(|i| digest_from(i as u64 * 10)).collect(),
+            is_right: (0..FROZEN_DEPTH).map(|i| i % 3 == 0).collect(),
+        }
+    }
+
+    /// El test más informativo si algo falla: la traza debe terminar con
+    /// las mismas raíces que calcula la versión nativa, en ambos carriles.
+    #[test]
+    fn trace_roots_match_native_computation() {
+        let path = sample_path();
+        let leaf_a = digest_from(1000);
+        let leaf_b = digest_from(2000);
+
+        let trace = build_trace(leaf_a, leaf_b, &path);
+        let expected_a = native_climb(leaf_a, &path);
+        let expected_b = native_climb(leaf_b, &path);
+
+        // La raiz esta en ROW_ROOT; despues solo hay relleno.
+        let last = ROW_ROOT;
+        for i in 0..4 {
+            assert_eq!(trace.get(4 + i, last), expected_a[i], "carril A, elem {i}");
+            assert_eq!(
+                trace.get(LANE_B + 4 + i, last),
+                expected_b[i],
+                "carril B, elem {i}"
+            );
+        }
+    }
+
+    /// EL TEST CLAVE: dos hojas subiendo el mismo camino producen una
+    /// prueba verificable.
+    #[test]
+    fn valid_frozen_climb_produces_verifiable_proof() {
+        let path = sample_path();
+        let leaf_a = digest_from(1000);
+        let leaf_b = digest_from(2000);
+
+        let trace = build_trace(leaf_a, leaf_b, &path);
+        let prover = FrozenClimbProver::new(default_options());
+        let proof = prover.prove(trace).expect("la generacion no deberia fallar");
+
+        let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
+        let verification =
+            verify::<FrozenClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                proof,
+                FrozenClimbPublicInputs {
+                    root_a: native_climb(leaf_a, &path),
+                    root_b: native_climb(leaf_b, &path),
+                },
+                &min_opts,
+            );
+
+        assert!(
+            verification.is_ok(),
+            "una subida dual valida deberia verificar: {verification:?}"
+        );
+    }
+
+    /// EL TEST QUE JUSTIFICA TODO EL DISEÑO EN LOCKSTEP.
+    ///
+    /// ## Por qué la primera versión de este test no valía
+    ///
+    /// La primera versión corrompía un hermano del carril B directamente
+    /// en la traza. Eso lo detectaba la restricción del HASH (el estado
+    /// corrompido alimenta la ronda siguiente), no necesariamente la del
+    /// hermano compartido — así que el test pasaba aunque la restricción
+    /// clave no hiciera nada. Confianza falsa.
+    ///
+    /// ## El ataque real que este test sí construye
+    ///
+    /// Se construye una traza donde el carril A sube por el camino
+    /// `path_a` y el carril B por `path_b`, **con hermanos distintos en
+    /// el nivel 5**, y cada carril tiene todos sus hashes internamente
+    /// CORRECTOS respecto a su propio camino.
+    ///
+    /// Es exactamente lo que un diseño secuencial permitiría: dos
+    /// subidas coherentes por separado, pero por caminos distintos, para
+    /// fabricar una raíz nueva que no corresponde a la misma posición del
+    /// árbol. **Solo la restricción cruzada de hermano compartido puede
+    /// detectarlo.**
+    #[test]
+    fn divergent_sibling_between_lanes_is_detected() {
+        let path_a = sample_path();
+        // Mismo camino salvo el hermano del nivel 5.
+        let mut path_b = sample_path();
+        path_b.siblings[5] = digest_from(777_777);
+
+        let leaf_a = digest_from(1000);
+        let leaf_b = digest_from(2000);
+
+        // Traza "maliciosa": cada carril internamente coherente, caminos
+        // distintos. Se construye combinando dos trazas honestas.
+        let trace_a = build_trace(leaf_a, leaf_a, &path_a);
+        let trace_b = build_trace(leaf_b, leaf_b, &path_b);
+        let mut trace = build_trace(leaf_a, leaf_b, &path_a);
+        for row in 0..TRACE_LENGTH {
+            for col in 0..STATE_WIDTH {
+                trace.set(col, row, trace_a.get(col, row));
+                trace.set(LANE_B + col, row, trace_b.get(col, row));
+            }
+        }
+
+        let prover = FrozenClimbProver::new(default_options());
+
+        let prove_result =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
+
+        match prove_result {
+            Err(_) => { /* panic: detectado en modo debug */ }
+            Ok(Err(_)) => { /* Err: detectado */ }
+            Ok(Ok(proof)) => {
+                let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
+                let verification = verify::<
+                    FrozenClimbAir,
+                    Blake3,
+                    DefaultRandomCoin<Blake3>,
+                    MerkleTree<Blake3>,
+                >(
+                    proof,
+                    FrozenClimbPublicInputs {
+                        root_a: native_climb(leaf_a, &path_a),
+                        root_b: native_climb(leaf_b, &path_b),
+                    },
+                    &min_opts,
+                );
+                assert!(
+                    verification.is_err(),
+                    "CRITICO: dos carriles subiendo por CAMINOS DISTINTOS, cada uno \
+                     internamente coherente, deben rechazarse. Si esto verifica, la \
+                     restriccion de hermano compartido no comprueba nada y todo el \
+                     diseno en lockstep es decorativo."
+                );
+            }
+        }
+    }
+
+    /// Declarar una raíz incorrecta debe fallar.
+    #[test]
+    fn wrong_declared_root_fails_verification() {
+        let path = sample_path();
+        let leaf_a = digest_from(1000);
+        let leaf_b = digest_from(2000);
+
+        let trace = build_trace(leaf_a, leaf_b, &path);
+        let prover = FrozenClimbProver::new(default_options());
+        let proof = prover.prove(trace).expect("la generacion no deberia fallar");
+
+        let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
+        let verification =
+            verify::<FrozenClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                proof,
+                FrozenClimbPublicInputs {
+                    root_a: native_climb(leaf_a, &path),
+                    root_b: digest_from(999_999),
+                },
+                &min_opts,
+            );
+        assert!(verification.is_err());
+    }
+
+    /// Corromper una fila intermedia de hash debe detectarse.
+    #[test]
+    fn corrupted_intermediate_row_is_detected() {
+        let path = sample_path();
+        let leaf_a = digest_from(1000);
+        let leaf_b = digest_from(2000);
+        let mut trace = build_trace(leaf_a, leaf_b, &path);
+
+        let original = trace.get(6, 5 * CYCLE_LENGTH + 3);
+        trace.set(6, 5 * CYCLE_LENGTH + 3, original + BaseElement::ONE);
+
+        let prover = FrozenClimbProver::new(default_options());
+
+        let prove_result =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
+
+        match prove_result {
+            Err(_) => {}
+            Ok(Err(_)) => {}
+            Ok(Ok(proof)) => {
+                let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
+                let verification = verify::<
+                    FrozenClimbAir,
+                    Blake3,
+                    DefaultRandomCoin<Blake3>,
+                    MerkleTree<Blake3>,
+                >(
+                    proof,
+                    FrozenClimbPublicInputs {
+                        root_a: native_climb(leaf_a, &path),
+                        root_b: native_climb(leaf_b, &path),
+                    },
+                    &min_opts,
+                );
+                assert!(verification.is_err());
+            }
+        }
+    }
+}
