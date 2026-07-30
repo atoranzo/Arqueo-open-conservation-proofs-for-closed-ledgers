@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 21 abiertas, 5 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 21 abiertas, 6 resueltas. Ultima revision: 30 de julio de 2026.
 
 Con la 5 queda cerrado el **grupo A**: el repositorio vuelve a describir
 lo que hay. La siguiente es la **6**.
@@ -69,12 +69,22 @@ describe cosas que no son ciertas.
 
 ## B. La siguiente de verdad
 
-- [ ] **26. ⚠️ Ocho restricciones sobrescritas en `circuit_send` y
+- [ ] **27. ⚠️⚠️ SOSPECHA: el cobro puede no atar la identidad del
+  pendiente a la de la cuenta que cobra.** En `circuit_claim` nada parece
+  ligar `COL_R_ID` con `COL_ACC_ID` (§38.2). Si se confirma, quien conozca
+  los materiales de cobro —y el pagador los conoce todos— podria cobrar un
+  pendiente ajeno con una traza construida a mano. **No demostrado**: hay
+  un test discriminante pre-registrado. Es lo primero de todo hasta que se
+  cierre en un sentido o en otro.
+
+- [x] **26. Ocho restricciones sobrescritas en `circuit_send` y
   `circuit_claim`.** Las que imponen que la identidad del receptor y el
   aleatorio no varien entre filas se calculan y se pisan; nada mas las fija
   (§38). Explotabilidad **no establecida**. Pasa por delante de la 6 y la
   25: aquellas son grados que no se comprueban, esta es una restriccion que
-  se creia impuesta y no lo esta.
+  se creia impuesta y no lo esta. **Premisa confirmada** el 30-07-2026
+  (§38.1): comentarlas no cambia nada, 201 y 174 sin fallos. Queda abierta
+  la consecuencia, que es la entrada 27.
 
 - [ ] **6. El grado dependiente del testigo en el arbol de pendientes.**
   La unica comprobacion automatica del area de menor confianza (§16.3)

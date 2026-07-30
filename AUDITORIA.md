@@ -3316,6 +3316,78 @@ i]` y `result[C_TRANSPORT + 11 + i]` en `circuit_claim` y en
 
 Las dos últimas filas son las lecciones de §35 y §37.6, y van de serie.
 
+### 38.1 Confirmado: estaban muertas
+
+Ejecutado el 30 de julio de 2026, comentando las ocho escrituras en los dos
+circuitos: **201 y 174, cero fallos**. Primera fila de la tabla.
+
+Combinado con el análisis estático es concluyente, y no solo indicio: las
+ranuras las escriben igualmente `C_ID_CONST`, `C_SBIT_BOOL` y `C_FIRST_S`,
+así que el contenido final del vector es **idéntico con y sin ellas**. Las
+ocho restricciones no existían para el verificador.
+
+### 38.2 ⚠️ Y siguiendo el hilo, algo peor: SOSPECHA, no hallazgo
+
+Al preguntar qué se pierde exactamente con esas ocho, aparece una pregunta
+que no depende del solapamiento y que **no sé responder leyendo**.
+
+En `circuit_claim`, `COL_R_ID` —la identidad del receptor con la que se
+reconstruye el compromiso— aparece **cuatro veces en todo el fichero**: la
+declaración de la constante, la construcción de la traza por el probador
+honesto, la restricción de constancia que resultó estar muerta, y la
+lectura de `C_PEND_IN` que arma el compromiso.
+
+Por otro lado, `C_PK_CHECK` impone que la identidad **derivada de la clave
+de gasto** coincida con `COL_ACC_ID`, la cuenta que cobra.
+
+**No he encontrado ninguna restricción que ate `COL_R_ID` a `COL_ACC_ID`**,
+ni ninguna aserción de frontera que fije `COL_R_ID`.
+
+Si eso es exacto, el circuito demuestra dos cosas verdaderas por separado:
+
+1. quien prueba tiene la clave de la cuenta que cobra, y
+2. existe en el árbol un pendiente cuyo compromiso es
+   `H(H(COL_R_ID, salt), importe)`,
+
+**sin exigir que la identidad del pendiente sea la de la cuenta que
+cobra.** La comprobación de titularidad que el diseño describe —*«reconstruir
+el compromiso con su propia identidad»*— la haría la **capa** al construir
+la traza, no el circuito.
+
+De ser así, quien conozca los materiales de cobro —posición, aleatorio e
+importe— podría cobrar un pendiente ajeno construyendo su propia traza. Y
+el pagador **los conoce todos**: él eligió el aleatorio.
+
+### Lo que NO se afirma, y por qué importa decirlo
+
+⚠️ **Esto es una sospecha derivada de lectura estática, no un fallo
+demostrado.** No he excluido que exista un vínculo indirecto —por ejemplo
+a través de los carriles de entrada del hash, que `C_INPUT` ata a
+`COL_ACC_ID` en la primera fila y `C_PEND_IN` ata a `COL_R_ID` en su
+propia fase—.
+
+Los tests `nobody_else_can_claim_a_pending_transfer` y
+`a_third_party_cannot_claim_the_pending` **pasan**. Eso no zanja nada: van
+por la API de la capa, y la pregunta es qué ocurre con una traza
+construida a mano. Es exactamente la forma de §8.1 del preprint —un
+límite impuesto por la capa y no por el circuito, evitable por quien
+construya su propia traza— y la de §8.3 —comparar un valor no es intentar
+el ataque—.
+
+### Experimento PRE-REGISTRADO: el test discriminante
+
+**Procedimiento.** En `circuit_claim`, construir una traza de cobro
+internamente coherente en todo lo demás, con `COL_R_ID` = identidad de la
+víctima y `COL_ACC_ID` = identidad del atacante, que tiene su propia clave.
+Generar la prueba y verificarla.
+
+| Resultado | Lectura | Decisión |
+|---|---|---|
+| La prueba **verifica** | El circuito no ata las dos identidades: **fallo de solidez en la vía de producción** | Parar todo lo demás; corregir el circuito y publicar |
+| La prueba **se rechaza** | Existe el vínculo, por una vía que la lectura no vio | Documentar cuál es, y cerrar la sospecha |
+| Falla por otra restricción | El testigo no es discriminante (§16.5, ya ocurrió tres veces) | Rehacer el testigo hasta que solo falle lo que se prueba |
+| No compila o salida vacía | No corrió | No concluir nada |
+
 ## 39. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
