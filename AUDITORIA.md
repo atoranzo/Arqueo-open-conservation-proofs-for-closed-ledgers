@@ -5087,7 +5087,72 @@ entrelazado.
 Y las dos vias conviven: `apply_governance` sigue ahi. Retirarla es una
 decision aparte, y no se toma hasta que la delegada haya sido ejercitada.
 
-## 58. Qué NO demuestra este documento
+## 58. Los cuatro que quedan no son repeticion mecanica
+
+§57 cerro el piloto en `governance` y dejo escrito «falta repetir el patron».
+Al ir a `freeze`, esa frase resulto inexacta y conviene corregirla antes de
+que oriente mal a nadie.
+
+### 58.1 Gobernanza era un caso especial
+
+`circuit_governance` era **casi solo autorizacion**: al amputarla no quedaba
+circuito, solo `count_new = count_old + 1`, que la capa hace en Rust. Por eso
+el piloto salio limpio.
+
+Los cuatro que quedan **tienen contenido propio que debe sobrevivir**:
+
+| circuito | lo que prueba ademas de la autorizacion |
+|---|---|
+| `freeze` | transicion del arbol de congelados (filas 0-191) |
+| `recovery` | cambio de clave de una cuenta |
+| `mint` | movimiento de saldo y suministro, con tope |
+| `mint_pending` | lo anterior mas el compromiso del pendiente |
+
+Y en los cuatro los carriles de hash (`C_HASH_A/B`, `C_CAP_A/B`) estan
+**compartidos** entre su subida propia y la de custodios. Amputar es separar
+tejido, no extirpar un bloque.
+
+### 58.2 `dual_climb` no sirve tal cual
+
+`freeze` prueba, en su parte propia, exactamente lo que `dual_climb`: subida
+dual con hermanos compartidos, o sea «una posicion del arbol cambio».
+Reutilizarlo habria evitado escribir circuito. **Pero `dual_climb` opera a
+profundidad `TREE_DEPTH` = 32 y el arbol de congelados tiene
+`FROZEN_DEPTH` = 24.** No encaja sin parametrizar la profundidad, que es un
+cambio en una pieza que hoy funciona.
+
+### 58.3 ⚠️ Y de paso: `circuit_freeze` prueba menos de lo que su nombre dice
+
+`FROZEN_MARK` **no aparece en ninguna restriccion ni en ninguna asercion** de
+`circuit_freeze`. Las hojas del arbol de congelados son valores **libres**: el
+circuito prueba que dos hojas suben a las dos raices con los mismos hermanos,
+no que se haya escrito una marca de congelado.
+
+**No es un fallo de solidez**, y conviene decir por que:
+
+- Los custodios autorizan las **raices**, no las hojas. Lo que firman es la
+  transicion concreta.
+- Dejar las hojas libres es lo que permite **congelar y descongelar con el
+  mismo circuito**.
+- Y es lo que mantiene **privada la identidad**: «se sabe que alguien fue
+  congelado, no quien», como declaran sus propias entradas publicas.
+
+Pero un lector supondria que el circuito ata la marca, y **no la ata**. Queda
+escrito: lo que garantiza que la congelacion sea una congelacion es que dos
+custodios firmaron esa transicion de raiz, no una restriccion aritmetica.
+
+### 58.4 Lo que esto cambia en la planificacion
+
+Cada uno de los cuatro es **una sesion con toolchain**, no un parche:
+escribir el circuito amputado —o parametrizar `dual_climb` para `freeze`—,
+la via delegada en la capa, y sus tests de rechazo. El orden por tamaño:
+`freeze` (76 ranuras), `recovery` (114), `mint` (118), `mint_pending` (125),
+con `mint` y `mint_pending` al final por tener el tejido mas entrelazado.
+
+Lo que §57 dejo probado sigue en pie: **el patron funciona**. Lo que §58
+corrige es la estimacion de cuanto queda.
+
+## 59. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

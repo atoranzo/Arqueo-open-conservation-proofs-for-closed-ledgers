@@ -40,9 +40,9 @@ argumento de la **entrada 7**.
 Mecanismo completo y verificado: dos circuitos de carril unico, variante B
 decidida y medida (§52), umbral 2-de-N reconstruido fuera del circuito (§54),
 operacion atada al nulificador (§55), compromiso que enlaza con cada circuito
-(§56), y **piloto funcionando en `governance`** (§57). Falta repetir el patron
-en `freeze`, `recovery`, `mint_pending` y `mint` — este ultimo el mas
-enredado, y por eso el ultimo.
+(§56), y **piloto funcionando en `governance`** (§57). Faltan `freeze`, `recovery`,
+`mint_pending` y `mint`, y ⚠️ **no son repeticion mecanica** (§58): cada uno
+conserva contenido propio que el circuito debe seguir probando.
 
 ### Lo demas
 
@@ -172,9 +172,13 @@ decidir.
   fallo de diseño que seis secciones no vieron (§57.2): el circuito llevaba
   `CUSTODIAN_DOMAIN` incrustado y no podia autorizar gobernanza. Corregido:
   el dominio es entrada publica y la jerarquia queda explicita.
-  **Faltan cuatro**: `freeze` (76 ranuras), `recovery` (114), `mint` (118),
-  `mint_pending` (125). `mint` **el ultimo**: su maquinaria de custodios
-  comparte carriles con la subida al arbol de cuentas (§57.1).
+  ⚠️ **Faltan cuatro, y NO son repeticion mecanica** (§58): gobernanza era
+  especial porque al amputarla no quedaba circuito. `freeze` (76 ranuras),
+  `recovery` (114), `mint` (118) y `mint_pending` (125) **tienen contenido
+  propio que debe sobrevivir**, con los carriles de hash compartidos entre su
+  subida y la de custodios. Cada uno es **una sesion con toolchain**:
+  circuito amputado, via delegada en la capa, tests de rechazo. `mint` y
+  `mint_pending` al final.
   **Analizada** (§42): no se mueve «al cliente» porque los custodios son
   dos y el circuito prueba conocimiento de ambas claves en una sola traza.
   La via que cierra las dos mitades es **verificar firmas en circuito**,
