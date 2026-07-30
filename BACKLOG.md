@@ -178,7 +178,10 @@ decidir.
   propio que debe sobrevivir**, con los carriles de hash compartidos entre su
   subida y la de custodios. Cada uno es **una sesion con toolchain**:
   circuito amputado, via delegada en la capa, tests de rechazo. `mint` y
-  `mint_pending` al final.
+  `mint_pending` al final. **`freeze` HECHO** (§60): `circuit_frozen_climb`
+  con 5 tests, `apply_freeze_delegated` con 4 de rechazo, y la jerarquia
+  cerrada en las dos direcciones. **Quedan `recovery`, `mint` y
+  `mint_pending`.**
   **Analizada** (§42): no se mueve «al cliente» porque los custodios son
   dos y el circuito prueba conocimiento de ambas claves en una sola traza.
   La via que cierra las dos mitades es **verificar firmas en circuito**,

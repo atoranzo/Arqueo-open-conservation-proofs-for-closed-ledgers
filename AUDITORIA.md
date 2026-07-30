@@ -5221,7 +5221,56 @@ la capa**. Falta: comprobar que compila y prueba, escribir
 `apply_freeze_delegated` con el compromiso `OP_FREEZE`, y sus tests de
 rechazo —como los cuatro de §57.3—.
 
-## 60. Qué NO demuestra este documento
+## 60. `freeze` delegado: el patron con circuito que sobrevive
+
+Segunda aplicacion del patron de la 33, y la primera en una operacion que
+**conserva contenido propio**. Gobernanza no dejaba circuito al amputarla
+(§57.1); `freeze` si.
+
+### 60.1 Las tres piezas
+
+- `circuit_frozen_climb`: la subida dual al arbol de congelados, extraida de
+  las filas 0-191 de `circuit_freeze`. Cinco tests.
+- `apply_freeze_delegated`: recibe la prueba del arbol y **dos de custodios
+  distintos**, generadas en sus maquinas.
+- El compromiso `OP_FREEZE` sobre `[raiz_vieja, raiz_nueva, contador]`.
+
+### 60.2 La longitud de traza tenia que ser potencia de dos
+
+`24 x 8 = 192` no lo es, y winterfell lo exige. Se sube a 256 con ocho
+niveles de **relleno** que siguen subiendo con hermano cero, y las raices se
+anclan en `ROW_ROOT = 191`.
+
+Rellenar con ceros NO funciona: la fila 191 es de enlace, y con el estado
+siguiente a cero la restriccion de colocacion falla. Hay que seguir subiendo.
+
+Y explica una decision del proyecto que llevaba a la vista sin preguntarse:
+**por que `circuit_freeze` usa 512 filas** para una subida de 24 niveles mas
+una de 4. No era holgura: era la potencia de dos siguiente.
+
+### 60.3 Para que sirve la prueba del arbol si la capa recalcula
+
+`apply_freeze` ya aplica el cambio sobre una copia y comprueba la raiz, asi
+que **para la capa la prueba STARK es redundante**. Su valor es para **quien
+audita el registro desde fuera**: sin ella el log guardaria una transicion de
+raiz que nadie mas puede comprobar. Queda escrito en la funcion, porque un
+lector podria quitarla creyendo que sobra.
+
+### 60.4 La jerarquia, cerrada en las dos direcciones
+
+§57 comprobo que los custodios no pueden cambiar quien custodia. §60 anade la
+inversa: **gobernanza no puede congelar**. Puede cambiar quien ejerce la
+custodia, no ejercerla. Que las dos direcciones esten cerradas es lo que hace
+real la separacion, y ahora las dos tienen test.
+
+### 60.5 Que queda
+
+`recovery` (114 ranuras), `mint` (118) y `mint_pending` (125). El patron
+lleva dos aplicaciones y ha necesitado un ajuste distinto en cada una: en
+gobernanza el dominio de identidad (§57.2), en freeze la potencia de dos.
+No conviene darlo por mecanico.
+
+## 61. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
