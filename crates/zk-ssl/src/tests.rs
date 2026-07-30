@@ -779,11 +779,7 @@ use super::*;
     fn nobody_else_can_claim_a_pending_transfer() {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-        // La cuenta de Bob se abre para que el escenario sea completo, pero
-        // su identidad esperada se obtiene POR OTRO CANAL —del propio Bob—,
-        // que es justo lo que el test comprueba. De ahi que el indice no se
-        // use.
-        let _bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
         let mallory = open_and_fund(&mut layer, 0xBADCAFE, 0);
         let id_bob = derive_public_id(BaseElement::new(SK_BOB));
 
