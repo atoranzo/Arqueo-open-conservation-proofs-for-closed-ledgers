@@ -4466,12 +4466,49 @@ constancia de `C_TRANSPORT_NEW + 4` garantiza que ese valor es el mismo en
 toda la traza. Corromper una fila rompe la cadena donde la constancia lo
 prohibe.
 
-**Lo que esto dice del fallo de §50: no era sistemico.** De los tres
-constructores de compromisos, `claim` tenia el problema por omision (§39),
-`send` por sobrescritura (§50), y `mint_pending` **esta correcto**. No habia
-un defecto de diseño comun a los tres; habia dos disposiciones mal contadas
-y una bien. El test queda como **regresion permanente** (no `#[ignore]`):
-protege que la disposicion de `mint_pending` siga cuadrando.
+**Lo que esto decia del fallo de §50** —y que §50.7 corrige—: se afirmo
+aqui que el fallo «no era sistemico» y que `mint_pending` demostraba que no
+habia defecto comun. Eso resulto **precipitado**: la 36 destapo despues que
+`claim` **tambien** tenia el solapamiento (§50.7), sobre el aleatorio. De los
+tres constructores, `mint_pending` es el unico con la disposicion bien
+contada; `claim` y `send` la tenian mal. El test de `mint_pending` queda como
+**regresion permanente** y su veredicto (sano) sigue en pie; lo que se retira
+es la generalizacion «no sistemico», otra vez el error de concluir de un caso.
+
+## 50.7 ⚠️ La 36 no era limpieza: tercer fallo, en `claim` sobre el aleatorio
+
+La 36 se catalogo —por el asistente, tres veces— como «borrar 8 restricciones
+muertas de `claim`, borrado seguro». Al bajar a hacerlo, el codigo la
+desmintio: **`claim` tiene el mismo solapamiento que `send`** (`C_TRANSPORT`
+declara 15, `C_ID_CONST` arranca en +7). Tras §39.1 `COL_R_ID` esta muerto de
+verdad y su constancia sobra —eso era cierto—, **pero el compromiso aun lee
+`COL_SALT`** (`C_PEND_IN + 8`), y la constancia de `COL_SALT` era otra de las
+ocho pisadas.
+
+**Confirmado por test** (`a_claim_with_inconsistent_salt_is_rejected`): una
+traza con `COL_SALT` distinto entre la fila del compromiso (`ROW_FROZEN_ROOT`)
+y el resto **verificaba**. Es el mismo fallo que §50, en el tercer circuito,
+sobre el aleatorio en vez de la identidad.
+
+**Corregido igual que §50.5**: `C_TRANSPORT` recibe sus 15 ranuras (`+15` en
+vez de `+7`), la lista de grados pasa de 13 a 21. Las 8 restricciones ya
+estaban escritas; darles sitio impone la constancia. El test pasa de rojo
+(ignore) a **verde**: 205 tests, 0 fallos.
+
+### 50.7.1 La leccion, la septima y la mas incomoda
+
+La 36 era el error del dia en su forma mas pura: yo la habia degradado a
+«cosmetica» **tres veces** —en §39.4, en §49.1 y al cerrar la 35— sin mirar
+que el compromiso seguia leyendo el aleatorio. Cada vez razone «claim ya no
+usa COL_R_ID, luego las 8 sobran», y cada vez me salte que `COL_SALT` no es
+`COL_R_ID`. Un fallo de solidez en el circuito de cobro vivio tres etiquetas
+de «seguro» hasta que un test discriminante lo miro.
+
+Y corrige el balance: **los tres constructores de compromisos tenian el
+solapamiento** —no «dos de tres» como dijo §50.6—. Lo que variaba era cual
+columna pisada seguia viva: identidad en `send`, aleatorio en `claim`,
+ninguna con consecuencia en `mint_pending` (su disposicion, ademas, estaba
+bien). El defecto SI era comun; su explotabilidad, no.
 
 ## 51. Qué NO demuestra este documento
 

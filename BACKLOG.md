@@ -12,10 +12,11 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 20 abiertas, 16 resueltas. Ultima revision: 30 de julio de 2026.
-La 30 (fallo en `send`) corregida (§50.5); `mint_pending` verificado sano
-(§50.6, entrada 35). Queda la 36 (limpiar las 8 muertas de `claim`, sin
-urgencia) como unica cola del arco de solidez de compromisos.
+**Estado**: 19 abiertas, 17 resueltas. Ultima revision: 30 de julio de 2026.
+Arco de solidez de compromisos **cerrado**: los TRES constructores tenian el
+solapamiento de §38. `claim` (§39, §50.7), `send` (§50) corregidos;
+`mint_pending` (§35) verificado sano. Tres fallos confirmados por test, tres
+corregidos o descartados con prueba.
 El frente de grados (6, 24, 25, 34) queda **cerrado** (§46, §20): declarado
 como limite conocido de winterfell, sin migrar. No es fallo de solidez.
 
@@ -333,10 +334,13 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   los tres constructores de compromisos, dos estaban mal contados y este
   bien. El test queda como regresion permanente.
 
-- [ ] **36. Limpiar las 8 restricciones muertas de `circuit_claim`.** Tras
-  §39.1 `COL_R_ID` no se usa alli, asi que sobran (§49.1). Borrado seguro y
-  correccion del comentario que declara 15 donde el reparto da 7. Sin
-  urgencia.
+- [x] **36. ⚠️ NO era limpieza: tercer fallo de solidez, corregido.**
+  ~~Borrar 8 restricciones muertas de claim, borrado seguro.~~ Al bajar a
+  hacerlo, `claim` tenia el mismo solapamiento que `send` y el compromiso
+  **aun lee `COL_SALT`**: un §50 sobre el aleatorio (§50.7). Confirmado por
+  test y **corregido** el 30-07-2026 (C_TRANSPORT a 15, grados 13->21, las 8
+  constancias impuestas). El test testigo pasa a verde: 205 tests, 0 fallos.
+  Degradado a «cosmetico» tres veces antes de que un test lo mirara.
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo
