@@ -4353,7 +4353,70 @@ resuelve borrando en los dos circuitos.
 La 30 queda **partida**: la mitad `claim` lista para un borrado seguro, la
 mitad `send` elevada a pregunta de solidez con test pre-especificado.
 
-## 50. Qué NO demuestra este documento
+## 50. ⚠️ La mitad `send` de la 30 ES un fallo de solidez
+
+El test discriminante de §49.2 **verifica**: `circuit_send` acepta una traza
+donde `COL_R_ID` vale una identidad en la fila del compromiso
+(`ROW_FROZEN_ROOT`) y otra distinta en las otras 743 filas. Confirmado el
+30-07-2026 por `a_send_with_inconsistent_receiver_identity_is_rejected`, que
+salta con el mensaje SOLIDEZ.
+
+### 50.1 Lo confirmado
+
+La restriccion que impone la **constancia de `COL_R_ID` entre filas** —una de
+las ocho que el solapamiento de §38 sobrescribe— esta **muerta**. El circuito
+no ata el valor de `COL_R_ID` que usa el compromiso (`ROW_FROZEN_ROOT`, donde
+`C_PEND_IN` lee) al valor que lleva el resto de la traza.
+
+Que esa restriccion estaba muerta se sabia desde §38. Lo que §50 anade es que
+**en `circuit_send` esa constancia SI protegia algo**, a diferencia de
+`circuit_claim` (donde §39.1 dejo `COL_R_ID` sin uso). En `send` el receptor
+es libre, y su constancia era lo unico que ataba las filas.
+
+### 50.2 Lo que aun NO esta confirmado, y no se sobreafirma
+
+El test demuestra que **las filas no estan atadas**. No demuestra todavia el
+ataque completo —que un atacante coloque SU identidad en la fila del
+compromiso y cobre un pago ajeno—, porque el test dejo la fila del compromiso
+con la identidad de la victima. Queda un segundo test pre-especificado:
+corromper `ROW_FROZEN_ROOT` con la identidad del atacante y ver si el
+compromiso resultante puede reclamarse.
+
+⚠️ Pero la propiedad rota ya es grave por si sola: **un circuito que no ata
+una columna de identidad entre las filas que la usan no demuestra lo que
+dice**. Si el compromiso se construye en una fila y la constancia con el
+resto no se impone, cualquier razonamiento que dependa de «la identidad del
+receptor es unica en la traza» es falso. Eso basta para tratarlo como fallo.
+
+### 50.3 Relacion con §39
+
+Es el mismo fenomeno que §39, en el circuito hermano, y **la misma raiz**: el
+solapamiento de §38. §39 fue `circuit_claim` no atando el compromiso a la
+cuenta; §50 es `circuit_send` no atando la identidad del compromiso al resto
+de su propia traza. Los dos vienen de restricciones que se creian impuestas
+y no lo estaban —uno por omision (§39), otro por sobrescritura (§38/§50)—.
+
+Y confirma lo que §39.4 dejo como sospecha: la disposicion de las ocho
+ranuras **no era cosmetica en `send`**. Se catalogo como aplazable; era un
+fallo de solidez esperando.
+
+### 50.4 Que hay que hacer, y el orden
+
+1. **Reasignar los indices** de `circuit_send` para que las ocho
+   restricciones —en particular la constancia de `COL_R_ID` y `COL_SALT`—
+   se impongan de verdad. Esto es el refactor del espacio de restricciones
+   que §39.4 temia, pero ahora es **obligatorio**, no opcional.
+2. **Rehacer la lista de grados** de `send` en consecuencia.
+3. **El segundo test** (§50.2) para caracterizar el alcance completo.
+4. Revisar si `circuit_mint_pending` —el tercer constructor de compromisos
+   (§40.2)— tiene la constancia viva o tambien pisada.
+
+⚠️ Exige toolchain y una sesion dedicada: es cirugia en el circuito de
+creacion de pagos, y hacerla a ciegas seria sembrar el proximo fallo. Pero
+la **prioridad cambia**: la 30 pasa de aplazada a la cabeza de solidez, junto
+a lo que quede de la 32.
+
+## 51. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

@@ -13,6 +13,8 @@ Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
 **Estado**: 20 abiertas, 14 resueltas. Ultima revision: 30 de julio de 2026.
+⚠️ La **30 es un fallo de solidez confirmado** (§50), no cosmetico: cabeza
+de prioridad junto a la 32.
 El frente de grados (6, 24, 25, 34) queda **cerrado** (§46, §20): declarado
 como limite conocido de winterfell, sin migrar. No es fallo de solidez.
 
@@ -188,13 +190,15 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   fallo de solidez: la autorizacion es posesion de claves, no aprobacion de
   una operacion.
 
-- [ ] **30. La disposicion de las ocho ranuras: PARTIDA en dos (§49).**
-  En `circuit_claim` las ocho sobran tras §39.1 y se **borran** (seguro).
-  En `circuit_send` `COL_R_ID` es libre y `C_PEND_IN` lo lee: si su
-  constancia esta muerta por el solapamiento, es un **§39 latente en el
-  envio**. ⚠️ No se aplica a ciegas: el primer paso es un **test
-  discriminante** (traza con dos identidades) con toolchain. Elevada de
-  cosmetica a posible solidez.
+- [ ] **30. ⚠️ FALLO DE SOLIDEZ CONFIRMADO en `circuit_send` (§50).** El
+  test discriminante **verifica**: `send` no ata `COL_R_ID` entre la fila
+  del compromiso y el resto de la traza; la constancia esta muerta por el
+  solapamiento de §38. Ya no es cosmetica: es un §39 en el envio. Hay que
+  **reasignar indices y rehacer los grados** de `send` (refactor obligatorio
+  ahora), un segundo test para el alcance (§50.2), y revisar
+  `circuit_mint_pending`. Exige toolchain. **Cabeza de la cola de solidez.**
+  El test queda commiteado como `a_send_with_inconsistent_receiver_identity_is_rejected`,
+  hoy en rojo: es el testigo del fallo hasta que se corrija.
 
 - [x] **29. Carrera del gancho de panico global: identificada y
   eliminada.** ~~Fallo unico sin explicar; hipotesis no respaldada por
