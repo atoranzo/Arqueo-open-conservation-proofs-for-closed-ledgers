@@ -12,9 +12,9 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 20 abiertas, 14 resueltas. Ultima revision: 30 de julio de 2026.
-⚠️ La **30 es un fallo de solidez confirmado** (§50), no cosmetico: cabeza
-de prioridad junto a la 32.
+**Estado**: 21 abiertas, 15 resueltas. Ultima revision: 30 de julio de 2026.
+La 30 (fallo de solidez en `send`) queda **corregida y verificada** (§50.5).
+Abiertas 35 (revisar mint_pending) y 36 (limpiar claim) como su cola.
 El frente de grados (6, 24, 25, 34) queda **cerrado** (§46, §20): declarado
 como limite conocido de winterfell, sin migrar. No es fallo de solidez.
 
@@ -190,15 +190,15 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   fallo de solidez: la autorizacion es posesion de claves, no aprobacion de
   una operacion.
 
-- [ ] **30. ⚠️ FALLO DE SOLIDEZ CONFIRMADO en `circuit_send` (§50).** El
-  test discriminante **verifica**: `send` no ata `COL_R_ID` entre la fila
-  del compromiso y el resto de la traza; la constancia esta muerta por el
-  solapamiento de §38. Ya no es cosmetica: es un §39 en el envio. Hay que
-  **reasignar indices y rehacer los grados** de `send` (refactor obligatorio
-  ahora), un segundo test para el alcance (§50.2), y revisar
-  `circuit_mint_pending`. Exige toolchain. **Cabeza de la cola de solidez.**
-  El test queda commiteado como `a_send_with_inconsistent_receiver_identity_is_rejected`,
-  hoy en rojo: es el testigo del fallo hasta que se corrija.
+- [x] **30. ⚠️ FALLO DE SOLIDEZ CORREGIDO Y VERIFICADO en `circuit_send`
+  (§50).** ~~`send` no ata `COL_R_ID` entre la fila del compromiso y el
+  resto; constancia muerta por el solapamiento de §38.~~ ✅ **Corregido** el
+  30-07-2026 (§50.5): `C_TRANSPORT` recibe sus 15 ranuras (era 7), la lista
+  de grados ajusta 13->21, y las 8 constancias —que ya estaban escritas— se
+  imponen. El test testigo pasa de rojo (ignore) a **verde**: 204 tests, 0
+  fallos. **Queda** (§50.4/§50.5): revisar `circuit_mint_pending` (tercer
+  constructor de compromisos, sin verificar) y limpiar las 8 muertas de
+  `circuit_claim` (sobran tras §39.1, sin urgencia). Se abren como 35 y 36.
 
 - [x] **29. Carrera del gancho de panico global: identificada y
   eliminada.** ~~Fallo unico sin explicar; hipotesis no respaldada por
@@ -322,6 +322,16 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   corregida y verificada.
 
 ## G. Otro proyecto, no una incidencia
+
+- [ ] **35. Revisar la constancia de identidad en `circuit_mint_pending`.**
+  Es el tercer constructor de compromisos (§40.2). Tras §50, verificar con
+  un test discriminante que su `COL_R_ID` no este igualmente pisado por un
+  solapamiento. **No verificado**: podria ser otro §50.
+
+- [ ] **36. Limpiar las 8 restricciones muertas de `circuit_claim`.** Tras
+  §39.1 `COL_R_ID` no se usa alli, asi que sobran (§49.1). Borrado seguro y
+  correccion del comentario que declara 15 donde el reparto da 7. Sin
+  urgencia.
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo

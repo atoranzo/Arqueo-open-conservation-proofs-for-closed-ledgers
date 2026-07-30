@@ -4416,6 +4416,36 @@ creacion de pagos, y hacerla a ciegas seria sembrar el proximo fallo. Pero
 la **prioridad cambia**: la 30 pasa de aplazada a la cabeza de solidez, junto
 a lo que quede de la 32.
 
+### 50.5 Corregido y verificado
+
+El arreglo, el 30-07-2026: **`C_TRANSPORT` recibe las 15 ranuras que su
+codigo escribe** (era 7). El unico cambio de fondo es `C_ID_CONST =
+C_TRANSPORT + 15` en vez de `+7`; el resto de constantes se desplaza en
+cascada y `NUM_CONSTRAINTS` sube 8. La lista de grados ajusta su bloque de
+grado-1-sin-ciclo de 13 a 21 entradas (saldo 1 + suministro 1 + transporte
+15 + `C_ID_CONST` 4).
+
+**Las 8 restricciones no se escribieron: ya existian.** Estaban en
+`evaluate_transition` —`next[COL_R_ID + i] - current[COL_R_ID + i]` y lo
+mismo para `COL_SALT`— desde siempre, cayendo en indices que `C_ID_CONST`,
+`C_SBIT_BOOL` y `C_FIRST_S` sobrescribian. Darles sitio propio basto para
+imponerlas.
+
+**Verificacion**: el test `a_send_with_inconsistent_receiver_identity_is_rejected`,
+que hasta hoy verificaba (fallo) y estaba en `#[ignore]`, **ahora pasa**: la
+traza con `COL_R_ID` inconsistente entre la fila del compromiso y el resto
+**se rechaza**. `stark-experiment` pasa de 203 a **204** (el testigo sale de
+ignore y entra en verde), 0 fallos. La constancia se impone.
+
+⚠️ **Lo que este arreglo cierra y lo que no.** Cierra la mitad `send` de la
+30: la identidad del receptor esta atada a traves de la traza. Queda de §50.4:
+(1) el segundo test de §50.2 —caracterizar el ataque completo— es ahora
+innecesario como urgencia, porque la propiedad esta impuesta, pero vale como
+regresion; (2) **revisar `circuit_mint_pending`**, el tercer constructor de
+compromisos, sigue pendiente: no se ha verificado que su constancia no este
+igualmente pisada. Y la mitad `claim` (borrar las 8 muertas, que alli sobran
+tras §39.1) queda como limpieza sin urgencia.
+
 ## 51. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
