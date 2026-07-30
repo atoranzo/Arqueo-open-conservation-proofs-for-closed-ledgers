@@ -5270,7 +5270,45 @@ lleva dos aplicaciones y ha necesitado un ajuste distinto en cada una: en
 gobernanza el dominio de identidad (§57.2), en freeze la potencia de dos.
 No conviene darlo por mecanico.
 
-## 61. Qué NO demuestra este documento
+## 61. Limpiar avisos del compilador, y el primer commit roto de la sesion
+
+`cargo build --tests` acumulaba **diez avisos** en `zk-ssl` que nadie leia.
+Merecen mirarse uno a uno y no silenciarse: dos decian `unused variable:
+bob`, y una cuenta de prueba preparada y no usada **podria significar que el
+test no comprueba lo que su nombre dice**.
+
+No era el caso. Los dos tests obtienen la identidad esperada **por otro
+canal** -del propio destinatario- que es justo la propiedad que comprueban,
+asi que el indice de la cuenta sobra. Ahora esta escrito en el codigo, para
+que el proximo que vea `_bob` sepa que es deliberado en vez de encontrarse un
+guion bajo mudo.
+
+### 61.1 Dos errores encadenados
+
+**Uno: un reemplazo por patron caso donde no debia.** Se busco una secuencia
+de tres lineas creyendo que identificaba un test concreto, y esa secuencia
+aparece en varios. Se renombro `bob` en un test de la linea 786 que **si lo
+usa** (`let _ = bob;` veinte lineas mas abajo).
+
+**Dos, y peor: se empujo sin verificar.** El `cargo test` no imprimio ninguna
+linea `test result` -porque no llego a compilar- y el commit se dio por bueno
+igual. **La ausencia de una salida esperada es informacion**, y se trato como
+ruido. `c97ae47` dejo `main` sin compilar unos minutos; `80ae6a1` lo corrige y
+lo nombra.
+
+### 61.2 Donde se bajo la guardia
+
+Es el **primer commit roto en toda la sesion**, despues de decenas de cambios
+mucho mas delicados -tres fallos de solidez, cirugia en circuitos de creacion
+de dinero- todos verificados antes de empujar.
+
+Y ocurrio limpiando avisos del compilador: la tarea que parecia no poder
+fallar. La disciplina se relajo exactamente donde el riesgo se creia nulo.
+
+> Un aviso del compilador es auditoria gratuita. Ignorarlos durante diez
+> commits fue una perdida; arreglarlos sin verificar fue peor.
+
+## 62. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
