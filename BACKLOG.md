@@ -92,6 +92,11 @@ decidir.
 
 - [ ] **33. Que los custodios prueben en su maquina, y que la autorizacion
   cubra los parametros.** La correccion de diseno de la 32 (§41.4).
+  **Analizada** (§42): no se mueve «al cliente» porque los custodios son
+  dos y el circuito prueba conocimiento de ambas claves en una sola traza.
+  La via que cierra las dos mitades es **verificar firmas en circuito**,
+  mismo primitivo que la 21. Primer paso: **medir su coste**, que no esta
+  medido.
 
 - [ ] **6. El grado dependiente del testigo en el arbol de pendientes.**
   La unica comprobacion automatica del area de menor confianza (§16.3)
@@ -227,7 +232,9 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
 - [ ] **20. Rotacion de claves operativas.** Implementada solo en parte.
 
 - [ ] **21. Delegacion de prueba a clientes ligeros.** Exige verificar una
-  firma dentro del circuito, ~8.000 filas.
+  firma dentro del circuito (§18). ⚠️ Este punto decia «~8.000 filas»: esa
+  cifra **no estaba medida ni respaldada por el repositorio**, la escribio
+  el asistente de memoria y se retira (§42.3). Mismo primitivo que la 33.
 
 - [ ] **22. Agregacion de pruebas.** 120,4 MB por mil pagos es coste, no
   parada, pero crece linealmente.

@@ -1351,7 +1351,12 @@ En este orden:
 No hacen falta descubrirlas; están en `README.md`:
 
 - El operador del nodo es un intermediario de confianza.
-- No hay red, consenso, réplicas ni cifrado en reposo.
+- ~~No hay red, consenso, réplicas ni cifrado en reposo.~~
+  ⚠️ **Rancio (30-07-2026): sí hay cifrado en reposo.** `persistence` tiene
+  `open_encrypted` y sella cada valor con la clave; las instantáneas se
+  cifran y una copia cifrada no se importa sin clave. El README ya no lo
+  lista como carencia; esta sección se quedó atrás. Lo cierto sigue siendo:
+  **no hay red, consenso ni réplicas**.
 - La generación de la prueba puede hacerse en el cliente (`client`), pero
   delegarla a un **tercero** exigiría verificar una firma en circuito.
 - La resolución IBAN → cuenta está fuera de la prueba.
@@ -3708,7 +3713,69 @@ La corrección técnica —que los custodios prueben en su máquina, como los
 titulares, y que la autorización cubra los parámetros de la operación— es
 trabajo de diseño, no una línea. Queda como entrada de backlog.
 
-## 42. Qué NO demuestra este documento
+## 42. Entrada 33: por qué «que los custodios prueben en su máquina» no es tan simple
+
+Análisis de diseño, no implementación. Sale de §41, que estableció dos
+cosas: la autorización de custodios es **posesión de claves**, y esas claves
+**llegan al operador**.
+
+### 42.1 El obstaculo que no se ve al enunciarlo
+
+Para los titulares la solución existe y funciona: `client.rs` entrega
+materiales, el titular prueba en su máquina, la capa verifica. **Una clave,
+una máquina.**
+
+Los custodios son **dos**, y el circuito actual demuestra conocimiento de
+**ambas claves dentro de una sola traza**. Eso no se mueve «al cliente»
+porque no hay un cliente: hay dos.
+
+| Vía | Qué resuelve | Qué no |
+|---|---|---|
+| Un custodio prueba y el otro le pasa su clave | Nada | Reubica el problema: ahora la clave la tiene un custodio en vez del operador |
+| Prueba multiparte (MPC sobre el probador) | Todo | Es investigación, no ingeniería de aplicación |
+| **Firmas verificadas en circuito** | Las dos mitades | Cuesta, y no está medido |
+
+### 42.2 La vía de las firmas, que resuelve las dos mitades a la vez
+
+Cada custodio **firma un mensaje que cubre los parámetros de la
+operación** —destinatario, importe, contador— en su máquina. El circuito
+verifica dos firmas contra la raíz del conjunto de custodios, en vez de
+demostrar conocimiento de dos claves.
+
+Con eso:
+
+- **Las claves no salen** de las máquinas de los custodios. Cierra la 32.
+- **La autorización queda ligada a la operación.** Cierra la otra mitad de
+  §41.2: hoy dos custodios autorizan «algo» y quien tenga las claves elige
+  el qué; con firma sobre parámetros, autorizan **eso**.
+- **Se vuelve auditable por operación**, que es lo que §40.3 echó en falta.
+
+### 42.3 El coste, y una cifra que hay que retirar
+
+§18 ya identifica el mismo primitivo por otra razón: *delegar la generación
+de la prueba a un tercero exigiría verificar una firma en circuito*. Es
+decir, **la entrada 21 y la 33 necesitan la misma pieza**, y construirla
+una vez paga dos.
+
+⚠️ **Retirada de una cifra sin fuente.** La entrada 21 del backlog decía
+«~8.000 filas» para verificar una firma en circuito. **Esa cifra no está
+medida ni figura en ninguna parte del repositorio**: la escribió el asistente
+de memoria al redactar la lista, y quedó dentro del proyecto como si
+estuviera respaldada. Se retira. El coste real **no se ha medido**, y hasta
+que se mida no debe citarse ninguno.
+
+Es la misma clase que §39.2 y que las cifras de §20: un número que entra
+por comodidad y se queda como si fuera un dato.
+
+### 42.4 Lo que este análisis NO decide
+
+No decide que se haga. Cambiar de «conocimiento de clave» a «firma sobre
+mensaje» rehace el sub-circuito de umbral, toca `mint`, `mint_to_pending`,
+`freeze`, `recovery` y `governance`, y exige elegir un esquema de firma
+verificable en AIR. Es trabajo de diseño de semanas, y **lo primero sería
+medir el coste del primitivo**, no escribirlo.
+
+## 43. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
