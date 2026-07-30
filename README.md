@@ -147,6 +147,14 @@ Requiere Rust estable. Sin instaladores externos ni toolchains aparte.
 
 > ⚠️ **`--release` es obligatorio para `zk-ssl`, no una optimización.**
 >
+> ⚠️ **Estos 65 fallos son un limite conocido, no un defecto**, y estan
+> declarados en `AUDITORIA.md` §20: winterfell comprueba grados solo en
+> depuracion, y ciertas restricciones tienen grado que depende del testigo
+> (bits de camino de Merkle, margenes que pueden ser cero). En release —el
+> modo de produccion— las pruebas se generan y verifican bien. No se
+> corrige porque hacerlo exigiria migrar fondos en transito, y release no
+> lo necesita.
+>
 > `cargo test` sin él **falla en 65 tests de `zk-ssl`**, y no porque el
 > código esté mal: winterfell comprueba en depuración que el grado declarado
 > de cada restricción se realice en la traza concreta, y una restricción

@@ -142,7 +142,10 @@ impl SovereignLayer {
     /// días. Ver `AUDITORIA.md` §13.
     ///
     /// Y las posiciones **ya se liberaban**: `apply_claim` pone la hoja a
-    /// cero al cobrarse el pendiente. Nadie las reutilizaba.
+    /// cero al cobrarse el pendiente, y el bucle de abajo **las reutiliza**:
+    /// devuelve el primer hueco libre desde cero antes de `next_pending`.
+    /// (Una version anterior de este comentario decia «Nadie las
+    /// reutilizaba», contradiciendo al parrafo siguiente y al codigo.)
     ///
     /// **No hizo falta tocar el circuito.** Éste demuestra que la posición
     /// estaba vacía y pasa a contener el compromiso, y eso vale igual para

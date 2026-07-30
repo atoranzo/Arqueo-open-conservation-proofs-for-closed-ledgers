@@ -1423,10 +1423,50 @@ fila exactos del fallo.
 | `stark-experiment` en depuración | ✅ **199 pasan**, 2 ignorados |
 | `stark-experiment --release` | ✅ **201 pasan**, **0 ignorados** |
 | **`zk-ssl` en depuración** | ❌ **107 pasan, 65 fallan** |
-| `zk-ssl --release` | ✅ **172 pasan** |
+| `zk-ssl --release` | ✅ **174 pasan** |
 
 **Reparto de los 65**: 48 en `tests`, 9 en `iso`, 4 en `snapshot`, 3 en
 `metrics`, 1 en `client`.
+
+### El limite, declarado (entrada 6/24/25, decidido en §46)
+
+Estos 65 fallos **no son un defecto de solidez, y no se van a arreglar**.
+La razon, y por que esa decision es la correcta:
+
+Winterfell comprueba en depuracion que el grado declarado de cada
+restriccion se **realice** en la traza concreta que se prueba. Una
+restriccion cuyo grado **depende del valor del testigo** viola esa
+comprobacion en los testigos donde el grado colapsa, aunque sea
+perfectamente valida. En esta capa eso ocurre en dos familias:
+
+- **Bits de camino de Merkle** (arboles de cuentas, pendientes y
+  congelados). Una posicion baja tiene los bits altos a cero, y una
+  restriccion booleana `bit × (bit − 1)` sobre una columna constante-cero
+  tiene grado cero en vez del declarado (§35, §37.7).
+- **Margenes que pueden ser cero** por diseno: el margen del tope de
+  emision cuando se emite exactamente hasta el tope, y la diferencia de la
+  comprobacion de rango cuando `amount == balance`, que el circuito de
+  cumplimiento **necesita** (§37.2, caso B).
+
+**En release —el modo de produccion— winterfell no comprueba grados**, y las
+pruebas se generan y verifican correctamente en ambos casos. La comprobacion
+de grados en depuracion es una red *adicional*, util donde aplica, y esta
+clase de restriccion queda fuera de su alcance por naturaleza, no por un
+fallo del circuito.
+
+**Por que se declara y no se corrige** (§46): la unica forma de que los bits
+de camino no colapsen es no asignar las posiciones bajas, y como
+`allocate_pending` reutiliza huecos (§46.1), eso obliga a **migrar los
+pendientes vivos** de los ledgers existentes —mover valor en transito, del
+peso de §36— para arreglar una comprobacion que el modo de produccion no
+necesita. Es desproporcionado. Y para los margenes de dominio (§37.2 caso B)
+no hay arreglo posible: el valor cero es legitimo.
+
+> **Limite conocido, no fallo.** El proyecto usa release como modo de
+> produccion y lo documenta. Perseguir el 100 % de tests en depuracion
+> costaria una migracion de fondos o seria imposible, y compraria una
+> comprobacion redundante con release. Se elige coherencia sobre
+> completitud.
 
 ### ⚠️ `check_figures.py` comprobaba tres cifras, no todas
 
@@ -1451,7 +1491,7 @@ Los patrones exigen el nombre del crate a menos de 25 caracteres del número.
 Una línea como:
 
 ```
-cargo test -p zk-ssl --release        # la capa: 172 tests
+cargo test -p zk-ssl --release        # la capa: 174 tests
 ```
 
 tiene cuarenta de separación. La cifra no se atribuye, y la herramienta

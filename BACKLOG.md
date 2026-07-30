@@ -12,9 +12,9 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 25 abiertas, 9 resueltas. Ultima revision: 30 de julio de 2026.
-El frente de grados (6, 24, 25) tiene **decision tomada** (§46): declarar,
-no migrar. Queda redactarla (34).
+**Estado**: 24 abiertas, 10 resueltas. Ultima revision: 30 de julio de 2026.
+El frente de grados (6, 24, 25, 34) queda **cerrado** (§46, §20): declarado
+como limite conocido de winterfell, sin migrar. No es fallo de solidez.
 
 Cerrado el grupo A y los hallazgos de solidez de la sesion (26, 27, 29,
 31). La siguiente prioridad es la **32**: las claves de custodio llegan al
@@ -270,11 +270,12 @@ preprints ni Zenodo hasta que los frentes de solidez del circuito esten
 cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
 (§39), claves de custodio (§41) y las cifras.
 
-- [ ] **34. Redactar el limite de grados en depuracion.** La decision de
-  la 6/24/25 esta tomada (§46): un parrafo en README y AUDITORIA §20 que
-  declare que winterfell-depuracion es incompatible con grados dependientes
-  del testigo, que no es fallo de solidez, y que release es produccion.
-  Cierra el frente de grados sin migrar nada.
+- [x] **34. Redactar el limite de grados en depuracion.** ~~La decision de
+  la 6/24/25 esta tomada (§46).~~ **Hecho** el 30-07-2026: declarado en
+  AUDITORIA §20 y en el README como limite conocido, con corregida de paso
+  la cifra 172->174 y el comentario contradictorio de `allocate_pending`.
+  Con esto el **frente de grados (6, 24, 25, 34) queda cerrado**: decidido y
+  documentado, sin migrar nada.
 
 - [ ] **28. Corregir los tres preprints tras la 27.** Describen el cobro
   como demostracion de titularidad. No tocar Zenodo hasta que 27 este
