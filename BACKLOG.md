@@ -473,13 +473,42 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   no analisis**: no hay seccion porque no hay nada que analizar hasta que se
   especifique el canal.
 
-- [ ] **12. Sin devolucion para un pendiente no cobrado.** El importe queda
-  inmovilizado y no hay camino de vuelta implementado. **Respaldo**: §30, y
-  el test `sending_to_a_nonexistent_recipient_loses_the_money`, que lo
-  ejercita y lo deja anotado —«el dinero salio» y «esta en un pendiente que
-  nadie reclamara»—. ⚠️ **La invariante global SE CUMPLE**: el importe sigue
-  contando en el suministro y es inalcanzable a la vez. No es un fallo de
-  conservacion; es dinero perdido con la contabilidad cuadrada.
+- [ ] **12. ⚠️ FONDOS MUERTOS: tres fuentes y ningun camino de vuelta.**
+  ~~Sin devolucion para un pendiente no cobrado: el importe queda
+  inmovilizado.~~ **Ampliada** el 31-07-2026 (§87). **Respaldo**: §30, §29, y
+  el test `sending_to_a_nonexistent_recipient_loses_the_money`.
+  ⚠️ **Son TRES fuentes, no una** (§87.1): el receptor no cobra; el
+  destinatario no existe; y —la que lo hace **sistemico**— el destinatario
+  **esta congelado**, porque enviar a una congelada funciona pero cobrar no
+  (§29). **El sistema genera dinero irrecuperable operando como debe.**
+  ⚠️ **Dos obstaculos concretos**: (1) la capa **no tiene nocion de tiempo**
+  —`lib.rs`, y por eso la rotacion se conto en usos—, asi que una caducidad
+  debe expresarse en usos, altura u operacion explicita (§87.2); (2)
+  **`pending_commitment(receiver_id, salt, amount)` NO registra al emisor**,
+  asi que la capa **no sabe a quien devolver**, y ese dato falta **por
+  privacidad, no por descuido** (§87.3).
+  **Lo que una solucion debe probar** (§87.4): que vencio el plazo, que
+  sigue sin cobrar, y que quien recupera es quien pago **sin revelar el
+  vinculo pagador↔pendiente**. El tercero exige un compromiso con dos
+  identidades y un circuito que no existe.
+  ⚠️ **Y tiene un sub-caso peligroso** (§87.5): un mecanismo que recupere
+  pendientes de cuentas congeladas **puede usarse para vaciar a un
+  congelado**. Mirarlo al diseñar, no despues.
+  ✅ **MECANISMO PROPUESTO Y EVALUADO** (§88): reclamo por reversion que
+  prueba en cero conocimiento ser el emisor, que no se cobro y que vencio el
+  plazo. **(b) funciona hoy** y **(c) tiene las dos piezas** —`log.rs` lleva
+  `seq` monotona y comprometida en `head()`, y la comparacion por rango es la
+  del tope de emision—, pero **`seq` no es entrada publica de ningun circuito
+  todavia**. ⚠️ **(a) no es un circuito que falte: es un dato que no existe**
+  —el compromiso no codifica al emisor—, asi que exige **cambio de formato**,
+  de la clase de la entrada 15 (§88.3). **Estado: mecanismo propuesto y
+  evaluado; requiere cambio de formato del compromiso, `seq` como entrada
+  publica, un circuito nuevo, y una DECISION DE POLITICA sin resolver.**
+  ⚠️ La cuarta pieza **no se implementa**: un plazo tiene victimas legitimas.
+  Espacio de diseño registrado en §88.5 —plazo extensible por el receptor, o
+  asimetria de plazos con precedente en la regulacion de cuentas inactivas—.
+  **La invariante global SE CUMPLE**: dinero perdido con la contabilidad
+  cuadrada.
 
 - [x] **13. Senal temporal para el pagador: ya declarada, coherente.**
   ~~Puede recomputar el compromiso y ver cuando se cobra; declarado, no
@@ -512,9 +541,17 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   para `pk` y para el nulificador—. Churn: **88 usos** de `derive_public_id`
   en 22 ficheros y **122** `BaseElement::new(SK_*)`, mecanicos.
   ⚠️ **«Empezar por un circuito» NO funciona** (§85.4): un formato de
-  identidad no se migra por partes. **Plan decidido**: medir el coste con
+  identidad no se migra por partes. ~~**Plan decidido**: medir el coste con
   columnas de relleno sobre `circuit_settlement` —que la capa no ejecuta—,
-  y con ese numero hacerlo entero en un commit.
+  y con ese numero hacerlo entero en un commit.~~ ✅ **Coste MEDIDO** (§86):
+  **−2,7 % de tamaño y −12,5 % de tiempo** — ensanchar no encarece, abarata.
+  ⚠️ **Y B no es un commit, son DOS** (§85.7): los espacios de identidad se
+  separan —**gasto** en 5 circuitos, **custodios+gobernanza** acoplados por
+  `build_custodian_set` en 8—, y ningun circuito mezcla los dominios. Cada
+  commit deja el arbol verde. **Piloto**: `circuit_settlement`, que es de los
+  cinco de gasto y cuyo Air la capa **no ejecuta**, asi que se ensancha solo
+  sin meter dos formatos en produccion (§85.8). **No queda analisis
+  pendiente: solo escribirlo.**
   ~~Goldilocks es estrecho para identidades: 64 bits son colision en 2³².~~
   ⚠️ **Eso describia un problema YA CORREGIDO** —la identidad paso a ser el
   digest de 4 elementos, 256 bits, y esta documentado en la cabecera de

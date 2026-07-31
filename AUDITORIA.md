@@ -7019,6 +7019,58 @@ la estrecha y migrar por partes, como los `_climb`.
 formatos de identidad** en el sitio donde se decide quien es quien, que es
 exactamente el terreno donde salieron §27 y §73.
 
+### 85.7 B no es un commit: son dos, y hay un piloto dentro
+
+Al comprobar el acoplamiento aparecio una descomposicion que **si** es
+coherente, y que no es la que se descarto en §85.4.
+
+| espacio de identidad | circuitos | atado por |
+|---|---|---|
+| **Gasto** (cuentas) | `audit`, `burn`, `claim`, `send`, `settlement` — **5** | `derive_public_id`, `native_nullifier` |
+| **Custodios + gobernanza** | `freeze`, `governance`, `mint`, `mint_pending`, `recovery`, `threshold` ×3 — **8** | `build_custodian_set` → `derive_custodian_id` |
+
+⚠️ **Custodios y gobernanza estan acoplados** y van juntos: el conjunto de
+gobernanza se construye con `build_custodian_set`, la misma funcion y la
+misma derivacion de hoja que el de custodios.
+
+✅ **Gasto es independiente**: **ningun circuito mezcla los dos dominios**
+—comprobado por `SPEND_KEY_DOMAIN` contra `CUSTODIAN_DOMAIN`—.
+
+> La diferencia con lo descartado en §85.4 es que aquello era «un **circuito**
+> cada vez», que parte un formato por la mitad. Esto es «un **espacio de
+> identidad** cada vez», y cada uno es cerrado: los dos commits dejan el
+> arbol verde.
+
+### 85.8 El piloto: `circuit_settlement`
+
+Es de los cinco de gasto **y su Air no lo ejecuta la capa** —solo lo
+referencia `transfer.rs`, que no esta declarado en `lib.rs`—.
+
+Se puede ensanchar **solo**, con una derivacion `_wide` usada unicamente
+ahi, **sin introducir dos formatos en produccion**: que era la objecion a la
+opcion A.
+
+Establece el patron exacto —columnas, ranuras, grados, `build_trace`,
+tests— para los otros cuatro. Y su coste ya esta medido: §86 lo cifra en
+**−2,7 % de tamaño y −12,5 % de tiempo**.
+
+**Orden**: piloto en `settlement` → los otros cuatro de gasto, la derivacion
+compartida y `open_account`, en un commit → custodios y gobernanza, en otro.
+
+### 85.9 Por que se para aqui
+
+El analisis esta completo y no queda nada que investigar: la 15 pasa de
+«hay que decidir» a «hay que escribirlo».
+
+⚠️ Se para **a proposito**. Es el unico cambio de la sesion que toca
+directamente el sitio donde se decide **quien controla que cuenta**, y los
+dos fallos de solidez encontrados hoy —§73 y §74— salieron exactamente de
+ahi.
+
+> **Un analisis completo no caduca; una sesion larga si.** Empezar cansado
+> un cambio de formato de identidad es la clase de decision que este
+> documento registraria despues, y mejor registrarla antes.
+
 ### 85.6 Lo que este inventario ya ha evitado
 
 Tres cosas, y ninguna se habria visto escribiendo codigo:
@@ -7099,6 +7151,198 @@ El **instrumento de medida** se queda, con `#[ignore]`, porque mide el coste
 real de este circuito y algun dia habra que volver a mirarlo. Es el mismo
 criterio que `el_coste_de_agotar_el_espacio_de_claves` (§82.3): **un
 instrumento no es una comprobacion, pero tampoco es basura**.
+
+## 87. Fondos muertos: tres fuentes, dos obstaculos y ningun camino de vuelta
+
+La entrada 12 decia que un pendiente no cobrado queda inmovilizado. Es
+cierto y se queda corto en tres sitios.
+
+### 87.1 No es una fuente, son TRES
+
+| origen | quien lo provoca |
+|---|---|
+| El receptor **no cobra** | el receptor, o nadie |
+| El destinatario **no existe** | el pagador, por error |
+| El destinatario **esta CONGELADO** | ⚠️ **el propio sistema** |
+
+Las dos primeras estan documentadas —la segunda tiene test propio,
+`sending_to_a_nonexistent_recipient_loses_the_money`—.
+
+⚠️ **La tercera es §29 y cambia la naturaleza del problema.** Enviar a una
+cuenta congelada funciona; que ella cobre, no. En la via de un paso recibir
+era **pasivo**; en la de dos fases **cobrar es una accion del receptor**, y
+`circuit_claim` la rechaza si esta congelado.
+
+> **Congelar una cuenta con pendientes pendientes los convierte en dinero
+> muerto.** Y congelar es una accion legitima de los custodios: el sistema
+> genera fondos irrecuperables **operando como debe**.
+
+Eso es lo que hace el problema **sistemico** y no una suma de descuidos.
+
+### 87.2 Obstaculo uno: la capa no tiene nocion de tiempo
+
+Una expiracion necesita un plazo, y `lib.rs` lo dice sin rodeos:
+
+> *«Es la rotacion de privilegios expresada por **uso**, no por tiempo:
+> **esta capa no tiene nocion de tiempo**.»*
+
+No es una omision: es la misma razon por la que la rotacion de custodios se
+conto en **usos**. Cualquier caducidad tendra que expresarse en algo que la
+capa **si** tenga —usos, altura de registro, o una operacion explicita— y
+esa eleccion es de diseño, no de implementacion.
+
+### 87.3 ⚠️ Obstaculo dos: el pendiente NO registra quien lo envio
+
+```rust
+pending_commitment(receiver_id, salt, amount)
+```
+
+Identidad del receptor, aleatorio, importe. **El emisor no aparece.**
+
+> **La capa no puede devolver el dinero porque no sabe a quien.** No es que
+> falte implementar la vuelta: es que **el dato no existe** en ninguna parte
+> del estado.
+
+Y no esta ahi por descuido. Que el pendiente no ate al emisor es lo que
+impide correlacionar pagador y cobro: **es la privacidad del diseño**.
+
+### 87.4 Lo que cualquier solucion tiene que probar
+
+Ese es el nudo, y conviene enunciarlo antes de proponer nada:
+
+1. **Que el plazo vencio**, en una magnitud que la capa tenga.
+2. **Que el pendiente sigue sin cobrar** —el arbol lo dice: la hoja esta.
+3. **Que quien recupera es quien pago**, sin que la capa aprenda el vinculo
+   pagador↔pendiente que hoy no tiene.
+
+El (3) es el dificil. Atar el emisor al compromiso lo resuelve y **destruye
+la propiedad que el compromiso existe para dar**. Probarlo en cero
+conocimiento —«conozco la clave del emisor de ESTE pendiente»— lo mantiene,
+y exige un compromiso con dos identidades y un circuito que hoy no existe.
+
+### 87.5 Lo que NO se propone aqui, y por que
+
+Ningun mecanismo. Este documento **enuncia el problema y sus obstaculos**;
+elegir entre caducidad por usos, por altura o por operacion explicita, y
+entre atar al emisor o probarlo en cero conocimiento, es una decision de
+diseño con consecuencias sobre la privacidad.
+
+⚠️ Y una nota de honestidad sobre el alcance: **§29 tiene un sub-caso peor**.
+Si un pendiente se vuelve muerto **porque los custodios congelaron al
+receptor**, devolverlo al pagador es lo justo; pero un mecanismo que permita
+recuperar pendientes de cuentas congeladas **puede usarse para vaciar a un
+congelado** enviandole y recuperando. Eso hay que mirarlo cuando se diseñe,
+no despues.
+
+## 88. El mecanismo de reversion, propuesto y evaluado
+
+§87 enuncio el problema de los fondos muertos sin proponer solucion. Aqui se
+registra una **propuesta concreta** y su evaluacion contra el codigo.
+
+### 88.1 La propuesta
+
+Un circuito de **reclamo por reversion**: pasado un plazo, el emisor genera
+una prueba alternativa que demuestra en cero conocimiento
+
+- **(a)** que es el emisor original,
+- **(b)** que el receptor nunca cobro,
+- **(c)** que el plazo vencio,
+
+sin revelar el saldo de nadie.
+
+### 88.2 Lo que YA existe
+
+**(b) funciona hoy.** Cobrar pone la hoja a cero; probar pertenencia del
+compromiso en `pending_root` prueba que sigue sin cobrar. Es el inverso
+exacto de lo que hace `circuit_claim`.
+
+**(c) tiene las dos piezas.** `log.rs` lleva `seq: u64`, monotona por
+construccion —`seq = entries.len()`—, encadenada en `chain_digest(seq, ...)`
+y comprometida en `head()`; y el registro **verifica la secuencia entrada a
+entrada**. La comparacion `altura > timeout` es la misma descomposicion de
+Horner en segmentos que ya impone el tope de emision.
+
+⚠️ **Cabo suelto**: `seq` **no es hoy entrada publica de ningun circuito**.
+Meterla en la traza y atarla a algo que el verificador ya conozca es trabajo,
+no obstaculo.
+
+### 88.3 ⚠️ (a) no es un circuito que falta: es un dato que no existe
+
+```rust
+pending_commitment(receiver_id, salt, amount)
+```
+
+**No hay emisor.** No se puede probar ser el emisor de un compromiso que no
+lo codifica: no hay nada contra lo que probar.
+
+La propuesta exige por tanto **cambiar el formato del compromiso** para atar
+`sender_id`. Eso invalida cualquier pendiente existente y toca `send`,
+`claim`, `mint_to_pending`, `circuit_claim` —que lo reconstruye— y el aviso.
+
+**Es la misma clase de cambio que la entrada 15**, con el coste ya medido en
+§86: despreciable. Pero un formato es un formato.
+
+⚠️ **La privacidad no se pierde**, y conviene ser exacto sobre donde cambia:
+
+| | hoy | con `sender_id` atado |
+|---|---|---|
+| Frente a **terceros** | hash opaco | hash opaco — **sin cambio** |
+| Al receptor, **por ISO** | ya lo sabe: el mensaje lleva `debtor_iban` | sin cambio |
+| Al receptor, **via nativa** | ⚠️ **NO lo sabe**: `PendingNotice` es `{position, salt, amount}` | **pasaria a saberlo** |
+
+O sea: **no es un no-cambio**. Por ISO da igual; por la via nativa el aviso
+pasa a revelar el emisor al receptor. Es defendible —quien cobra suele saber
+quien paga— pero hay que decirlo, no darlo por hecho.
+
+### 88.4 Las cuatro piezas, y solo una es un circuito
+
+| | pieza | naturaleza |
+|---|---|---|
+| 1 | El compromiso ata al emisor | **cambio de formato** |
+| 2 | `seq` como entrada publica verificable | cambio de estado |
+| 3 | Circuito de reversion | ~`circuit_claim` + un segmento |
+| 4 | **Elegir el plazo** | ⚠️ **decision de politica** |
+
+> «Totalmente implementable» es cierto en cuanto no hay obstaculo
+> criptografico. Pero el hueco no era «falta ese circuito»: eran cuatro
+> cosas, y **la cuarta no se implementa**.
+
+### 88.5 La cuarta pieza: un plazo tiene victimas
+
+Un timeout convierte «el receptor nunca cobra» en «el receptor no cobro **a
+tiempo**». Y hay ausencias legitimas: sin conectividad, una clave en
+recuperacion, un custodio en disputa.
+
+⚠️ **No es un parametro: es una politica con perjudicados.** Registrarlo como
+binario —«sin reversion» contra «reversion seca a plazo fijo»— seria empobrecer
+la decision. Hay al menos dos patrones intermedios:
+
+**Plazo extensible por el receptor.** Sin cobrar, publica una prueba barata
+de «sigo vivo» —conocimiento de su clave sobre el compromiso— y extiende el
+plazo. Convierte al perjudicado de «lento» en «ausente durante N
+extensiones», que es un estandar mas defendible.
+⚠️ **Coste**: otro circuito pequeño y una **mutacion de estado sobre
+pendientes, que hoy son inmutables hasta el cobro**. Eso no es menor.
+
+**Asimetria de plazos.** Reversion solo tras un plazo largo —meses, no
+bloques—, con el razonamiento de que lo que se resuelve son fondos
+**muertos** sistemicos, no fondos **lentos**. El parametro deja de ser un
+compromiso de latencia y pasa a ser una **politica de abandono**, que es lo
+que las jurisdicciones ya regulan para cuentas bancarias inactivas: hay
+precedente institucional para elegirlo.
+
+Ninguno elimina la decision con victimas: **el primero la desplaza y el
+segundo la encarece.**
+
+### 88.6 Y sigue en pie el sub-caso de §87.5
+
+Un mecanismo que recupere pendientes de cuentas congeladas **puede usarse
+para vaciar a un congelado**: enviarle y revertir. Con plazo extensible es
+peor, porque el congelado **no puede extender** —extender exige probar
+conocimiento de su clave sobre el compromiso, y eso es una accion que un
+congelado quiza no deba poder hacer—.
+
+**Hay que resolverlo al diseñar, no despues.**
 
 ## 69. Qué NO demuestra este documento
 
