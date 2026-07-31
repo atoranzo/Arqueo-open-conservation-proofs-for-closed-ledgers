@@ -12,7 +12,13 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 20 abiertas, 22 resueltas. Ultima revision: 31 de julio de 2026.
+**Estado**: 20 abiertas, 23 resueltas. Ultima revision: 31 de julio de 2026.
+
+⚠️ **El 31-07 aparecio la 43 leyendo codigo para otra cosa**: la capa no
+verificaba las pruebas de la via de pago, y un tercero vaciaba cualquier
+cuenta sin clave. Corregida el mismo dia. Queda `[x]` porque esta cerrada,
+pero se deja arriba: es el fallo mas grave que ha encontrado esta auditoria
+y ninguna herramienta del proyecto podia verlo.
 
 ⚠️ **La 40 dejo de ser hipotesis.** Se abrio por la mañana como lectura sin
 medir y se confirmo por la tarde con testigo en release: es el **cuarto
@@ -524,8 +530,18 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   (§72.3). Exige dos claves de custodio: no hay escalada de privilegio, pero
   crea dinero **fuera del suministro y por tanto fuera del tope**, que es lo
   que §66 y §67 demostraron. Dos testigos ROJOS con `#[ignore]`, patron de
-  §50. **Siguiente paso: test de capa** que decida si la via antigua lo
-  acepta de punta a punta.
+  §50. ~~**Siguiente paso: test de capa** que decida si la via antigua lo
+  acepta de punta a punta.~~ **HECHO el 31-07-2026: la aceptaba** -suministro
+  +250.000, pendiente de 1.000.000 depositado y cobrable-. Al escribir ese
+  test aparecio la **43**, que era la causa de fondo. ⚠️ **Y sigue abierta
+  tras corregir la 43**: se añadio a `apply_mint_to_pending` la exigencia de
+  que el aviso declare el importe de la prueba, pero eso es **mitigacion
+  parcial** (§73.4). Camino residual **sin medir**: depositar un compromiso
+  de un millon declarando doscientos cincuenta mil -aviso y prueba coherentes
+  entre si- y cobrarlo con el aviso verdadero, porque `apply_claim` no
+  contrasta el importe contra `pending_amounts`. **Medir eso es lo
+  siguiente**, y decide si la 40 es un hueco de auditabilidad externa o
+  conservacion rota en produccion.
 
   ~~Original:~~ **40. ⚠️ El carril B del compromiso pendiente no esta atado.**
   `C_PEND_IN` y `C_PEND_VAL` restringen **solo el carril A** -no hay ningun
@@ -560,6 +576,21 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   panico. `apply_mint_pending_delegated` usa `SupplyCapExceeded` y
   `saturating_add`; la antigua **no se toco**, porque cambiar su error
   cambia lo que ven sus tests. Menor, acotado, declarado.
+
+- [x] **43. ⚠️ FALLO GRAVE CORREGIDO: la capa no verificaba las pruebas de
+  la via de pago.** ~~`apply_send`, `apply_claim` y `apply_mint_to_pending`
+  aplicaban sin llamar a `verify`.~~ Medido con **cinco testigos** en
+  release (§73): un pago con prueba de 32 ceros se aplicaba; un estado de
+  titular mentido escribia la mentira; **gastar no requeria la clave del
+  titular** —robo consumado: la victima paso de 1.000.000 a 750.000 y el
+  dinero quedo en un pendiente dirigido a la atacante—; y **cobrar tampoco
+  requeria la del receptor**. ✅ **Corregido** el 31-07-2026: las tres
+  verifican antes de tocar el estado, con el patron que ya existia siete
+  veces en el repositorio, y `apply_claim` comprueba ademas `frozen_root`.
+  Cinco testigos de rojo a verde, **200 tests sin regresion**. ⚠️ **No
+  cierra la 40**, cuyo residuo queda declarado en §73.4. ⚠️ **Y va con la
+  28**: los tres preprints citan como argumento central una propiedad que
+  el circuito demostraba y la capa no imponia (§73.2).
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo

@@ -5918,6 +5918,117 @@ Un testigo borrado no vuelve. Uno debilitado miente.
 «270 passed; 2 ignored», y esos dos ignorados son un fallo de solidez
 confirmado esperando correccion.
 
+## 73. ⚠️ FALLO GRAVE: la capa no verificaba las pruebas de la via de pago
+
+**El fallo mas grave de la auditoria**, y de una clase distinta a los tres
+anteriores. §27, §30 y §36 eran restricciones mal escritas **dentro** del
+circuito. Este es el circuito entero **sin conectar**.
+
+Encontrado el 31-07-2026 leyendo `apply_mint_to_pending` para escribir el
+test de capa de la entrada 40. Corregido y registrado en el mismo commit.
+
+### 73.1 Que se midio
+
+En `two_phase.rs` la unica llamada a `verify::<...>` era la de
+`apply_mint_pending_delegated` (§71). `apply_send`, `apply_claim` y
+`apply_mint_to_pending` **no verificaban su prueba**. Los demas modulos de
+la capa —`burn`, `freeze`, `governance`, `audit`, `mint`, `recovery`— si.
+Y `log::verify` declara en su propio comentario que no valida pruebas.
+
+Cinco testigos, todos en release:
+
+| | Resultado antes |
+|---|---|
+| Pago con prueba de **32 ceros** | ⚠️ **Se aplica** |
+| Estado del titular **mentido** (10× el saldo) | ⚠️ **Escribe la mentira** |
+| Pendiente inflado (entrada 40) | ⚠️ **Rompe la conservacion** |
+| **Gastar sin la clave del titular** | ⚠️ **Robo consumado** |
+| **Cobrar sin la clave del receptor** | ⚠️ **Cobro ajeno consumado** |
+
+El cuarto es el que decide la gravedad: Mallory, sin conocer `SK_ALICE`,
+debito 250.000 de su cuenta y creo un pendiente dirigido a **su propia
+identidad**, con una prueba de 32 ceros. La victima quedo en 750.000 y el
+dinero, en transito hacia la atacante.
+
+`apply_send` tenia **exactamente cuatro** condiciones de rechazo: las dos
+raices vigentes, la de congelados, el limite regulatorio declarado, y que
+las raices nuevas cuadraran con lo que la propia capa recomputa. Todas
+sobre datos publicos que el atacante puede recomputar. **Ninguna era una
+clave. Ninguna era una prueba.**
+
+### 73.2 Lo que esto le hace a la afirmacion central del proyecto
+
+`PAPER.md` §3 dice: *«La clave de gasto no sale de la maquina del
+cliente»*. Seguia siendo cierto, y era **irrelevante**: no hacia falta que
+saliera porque **no hacia falta en absoluto**.
+
+La propiedad la demuestra el circuito y **la capa no la imponia**, porque
+no lo consultaba. El test que §33 cita como demostracion lleva escrito
+`// ===== 3. LA CAPA VERIFICA Y APLICA. =====` y cierra con *«lo unico que
+recibe son pruebas que verifica»*. El comentario de `apply_send` decia *«el
+saldo se verifica contra la hoja»*. Las tres afirmaciones eran ciertas
+**solo si la prueba se verificaba**.
+
+⚠️ Y los tres preprints publicados con DOI citan esta propiedad como el
+argumento institucional central. Va con la entrada 28, que ahora tiene una
+razon mayor que las tres que ya acumulaba.
+
+### 73.3 Como se le escapo, y es el error de §32 otra vez
+
+En el flujo honesto `send()` genera la prueba **dentro de la capa**, asi
+que al llegar a `apply_send` ya era valida. La verificacion parecia
+redundante.
+
+Es contar el flujo previsto en vez de la superficie expuesta —lo mismo que
+§32, donde se contaron llamadas a `transfer()` sin ver la via del cliente
+que no la llamaba—.
+
+⚠️ **Y el autor habia visto la puerta.** El comentario de `apply_send` dice
+literalmente que *«quien tenga su propia prueba puede llamar directamente a
+`apply_send`»*. Se documento el vector y no se cerro.
+
+> **Documentar una puerta abierta no la cierra.** Ninguna de las
+> herramientas del proyecto podia detectar esto: no es una restriccion mal
+> escrita, es una llamada que no esta.
+
+### 73.4 La correccion, y lo que NO cierra
+
+Las tres funciones verifican ahora su prueba **antes de tocar el estado**,
+con el patron que ya existia siete veces en el repositorio. Y `apply_claim`
+comprueba ademas `frozen_root`, que `apply_send` si comprobaba y ella no:
+sin eso valdria una raiz vieja de cuando el titular aun no estaba
+congelado.
+
+Los cinco testigos pasan de rojo a verde. **200 tests, ninguna regresion**:
+la via honesta no dependia de que no se verificara.
+
+⚠️ **Pero la entrada 40 sigue abierta, y un test en verde no debe hacer
+creer lo contrario.** Se anadio a `apply_mint_to_pending` la exigencia de
+que el aviso declare el mismo importe que la prueba. Eso es **mitigacion
+parcial**: cierra la construccion del testigo, no la clase. La capa no
+puede cerrarla del todo porque **no conoce la identidad del receptor** —esa
+es la privacidad del diseño— y por tanto no puede recomputar el compromiso.
+
+Queda abierto, **sin medir**: depositar un compromiso de un millon
+declarando doscientos cincuenta mil —aviso y prueba coherentes entre si— y
+cobrarlo con el aviso verdadero. `apply_claim` solo hace
+`pending_amounts.remove(...)`: no contrasta el importe del aviso contra lo
+que se registro al depositar.
+
+Por eso el testigo se **renombro**: se llamaba
+`..._rejects_an_inflated_pending` y mide algo mas estrecho. Un nombre
+generoso en verde miente, y aqui mentiria sobre un fallo de conservacion.
+
+### 73.5 Lo que este hallazgo dice del metodo
+
+Salio de leer `apply_mint_to_pending` para escribir **otra cosa**. No lo
+encontro ninguna herramienta, ningun barrido y ninguno de los 195 tests que
+habia: la suite entera se ejecutaba por el flujo honesto, donde la prueba
+siempre era valida.
+
+Es el argumento de la **entrada 7** en su forma mas cruda. Y el proyecto
+lleva dos dias diciendo que hace falta que lo mire alguien mas.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

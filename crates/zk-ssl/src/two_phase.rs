@@ -43,15 +43,15 @@ use super::*;
 use crate::log::OpKind;
 use crate::commitment::ClientState;
 use stark_experiment::circuit_mint_pending::{
-    build_trace as build_mint_pending_trace, MintPendingProver,
+    build_trace as build_mint_pending_trace, MintPendingAir, MintPendingProver,
     MintPendingPublicInputs,
 };
 use crate::pending::pending_commitment;
 use stark_experiment::circuit_claim::{
-    build_trace as build_claim_trace, ClaimProver, ClaimPublicInputs,
+    build_trace as build_claim_trace, ClaimAir, ClaimProver, ClaimPublicInputs,
 };
 use stark_experiment::circuit_send::{
-    build_trace as build_send_trace, SendProver, SendPublicInputs,
+    build_trace as build_send_trace, SendAir, SendProver, SendPublicInputs,
 };
 
 /// Lo que el pagador envía al receptor **por otro canal**.
@@ -338,6 +338,35 @@ impl SovereignLayer {
             });
         }
 
+        // ===== SE VERIFICA LA PRUEBA. ANTES NO SE HACIA. =====
+        //
+        // ⚠️ **Esto faltaba, y era el fallo mas grave de la auditoria (§73).**
+        // Sin esta llamada, las unicas condiciones de rechazo eran raices
+        // publicas que quien llama puede recomputar, asi que:
+        //
+        // - un pago con una prueba de 32 ceros se aplicaba;
+        // - declarar un saldo falso escribia el saldo falso;
+        // - **y gastar no requeria la clave del titular**: un tercero
+        //   debitaba una cuenta ajena y se dirigia el pendiente a si mismo.
+        //
+        // La propiedad que los papers citan como argumento central -que la
+        // clave de gasto no salga de la maquina del cliente- la demostraba
+        // el circuito y **la capa no la imponia**, porque no lo consultaba.
+        //
+        // Va ANTES de tocar el estado, y va aqui y no en `send()`: `send`
+        // solo genera. El comentario de esta funcion ya advertia que «quien
+        // tenga su propia prueba puede llamar directamente a `apply_send`».
+        // La puerta estaba vista y sin cerrar.
+        let proof = winterfell::Proof::from_bytes(&receipt.proof)
+            .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
+        let min_opts = AcceptableOptions::OptionSet(vec![self.options.clone()]);
+        verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+            proof,
+            pi.clone(),
+            &min_opts,
+        )
+        .map_err(|e| LayerError::VerificationFailed(format!("envio: {e:?}")))?;
+
         // ⚠️ **El nonce NO se incrementa.**
         //
         // `circuit_send` lo heredó de `circuit_burn`, que tampoco lo
@@ -477,6 +506,33 @@ impl SovereignLayer {
             return Err(LayerError::StaleState);
         }
 
+        // ⚠️ **La raiz de congelados tampoco se comprobaba aqui**, y
+        // `apply_send` si lo hacia. El circuito acredita que el titular NO
+        // esta en ese arbol, pero contra la raiz que la prueba DECLARA: sin
+        // atarla a la del sistema, valdria una raiz vieja de cuando el
+        // titular aun no estaba congelado. Misma familia que lo de abajo, y
+        // se cierra en el mismo commit en vez de quedar anotado.
+        if pi.frozen_root != self.frozen.root() {
+            return Err(LayerError::StaleState);
+        }
+
+        // ===== SE VERIFICA LA PRUEBA. ANTES NO SE HACIA. =====
+        //
+        // ⚠️ Aqui pesaba aun mas que en `apply_send`: esta funcion acredita
+        // `receiver_state.balance + notice.amount` con **las dos cosas
+        // puestas por quien llama**, y no comprobaba que el compromiso
+        // guardado correspondiera al aviso. Cobrar el pendiente de otro solo
+        // exigia saber su posicion. Ver §73.
+        let proof = winterfell::Proof::from_bytes(&receipt.proof)
+            .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
+        let min_opts = AcceptableOptions::OptionSet(vec![self.options.clone()]);
+        verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+            proof,
+            pi.clone(),
+            &min_opts,
+        )
+        .map_err(|e| LayerError::VerificationFailed(format!("cobro: {e:?}")))?;
+
         // El nonce tampoco se incrementa: ver el comentario de `apply_send`.
         let updated = ClientState {
             balance: receiver_state.balance + notice.amount,
@@ -605,6 +661,34 @@ impl SovereignLayer {
             return Err(LayerError::StaleState);
         }
         if pi.supply_old.as_int() != self.total_supply {
+            return Err(LayerError::StaleState);
+        }
+
+        // ===== SE VERIFICA LA PRUEBA. ANTES NO SE HACIA. =====
+        //
+        // Ver §73. Sin esto, `mint_to_pending` no exigia siquiera que la
+        // autorizacion de los dos custodios existiera: bastaba con declarar
+        // la raiz del conjunto correcta.
+        let proof = winterfell::Proof::from_bytes(&receipt.proof)
+            .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
+        let min_opts = AcceptableOptions::OptionSet(vec![self.options.clone()]);
+        verify::<MintPendingAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+            proof,
+            pi.clone(),
+            &min_opts,
+        )
+        .map_err(|e| LayerError::VerificationFailed(format!("emision a pendiente: {e:?}")))?;
+
+        // ⚠️ **El aviso debe declarar el MISMO importe que la prueba.**
+        //
+        // Mitigacion PARCIAL de la entrada 40, y conviene no confundirla con
+        // una correccion. El circuito sigue sin atar el compromiso
+        // depositado al importe declarado (§72): esto solo cierra la
+        // variante en la que el aviso y la prueba se contradicen. La capa no
+        // puede cerrarla del todo porque **no conoce la identidad del
+        // receptor** -esa es la privacidad del diseño- y por tanto no puede
+        // recomputar el compromiso. El arreglo va en el circuito.
+        if receipt.notice.amount != pi.amount.as_int() {
             return Err(LayerError::StaleState);
         }
 
@@ -1061,5 +1145,442 @@ mod tests_delegada {
             "la capa debe rechazar antes de generar nada, fue {r:?}"
         );
         assert_eq!(layer.total_supply(), 0);
+    }
+}
+
+/// **¿VERIFICA LA CAPA LAS PRUEBAS DE LA VIA DE DOS FASES?**
+///
+/// En este fichero la unica llamada a `verify::<...>` es la de
+/// `apply_mint_pending_delegated`. `apply_send`, `apply_claim` y
+/// `apply_mint_to_pending` no aparecen. Todos los demas modulos de la capa
+/// -`burn`, `freeze`, `governance`, `audit`, `mint`, `recovery`- si
+/// verifican, y `log::verify` declara que **no** valida pruebas.
+///
+/// Eso es lectura. Estos testigos lo miden, porque la via de dos fases es
+/// **la via de pago del sistema** desde que §36 retiro la de un paso.
+///
+/// ⚠️ **Correr en release.** El tercero usa la posicion 0, que degenera el
+/// grado en depuracion (entrada 6, §71.3): `prove` panicaria por una razon
+/// distinta de la que se pregunta, y el testigo pasaria por el motivo
+/// equivocado.
+#[cfg(test)]
+mod tests_verificacion {
+    use super::*;
+    use crate::tests_support::*;
+    use stark_experiment::circuit_settlement::derive_public_id;
+
+    const IMPORTE: u64 = 250_000;
+    const FONDO: u64 = 1_000_000;
+    /// Mallory. **No conoce ninguna clave ajena.**
+    const SK_MALLORY: u64 = 0xBADCAFE;
+
+    /// **TESTIGO 5: ¿hace falta la clave del receptor para COBRAR?**
+    ///
+    /// `apply_claim` acredita `receiver_state.balance + notice.amount` con
+    /// **las dos cosas puestas por quien llama**, borra el pendiente de
+    /// `notice.position` **sin comprobar que el compromiso guardado
+    /// corresponda al aviso**, y no verificaba la prueba.
+    ///
+    /// Si eso es asi, cobrar el pendiente de otro solo exige saber su
+    /// posicion —que es publica: esta en el arbol—.
+    ///
+    /// ## El escenario
+    ///
+    /// Alice paga a Bob por la via honesta. Mallory, que **no conoce
+    /// `SK_BOB`**, cobra ese pendiente en su propia cuenta.
+    #[test]
+    fn claiming_a_pending_requires_knowing_the_recipients_key() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, FONDO);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let mallory = open_and_fund(&mut layer, SK_MALLORY, 0);
+
+        // Un pago honesto de Alice a Bob.
+        let estado_alice = state_of(&layer, alice);
+        let recibo = layer
+            .send(
+                BaseElement::new(SK_ALICE),
+                alice,
+                &estado_alice,
+                layer.public_id_of(bob).expect("cuenta"),
+                salt_de(0x5EED),
+                IMPORTE,
+            )
+            .expect("envio honesto");
+        layer
+            .apply_send(&recibo, alice, &estado_alice, IMPORTE)
+            .expect("el envio honesto debe aplicarse");
+        assert_eq!(layer.total_pending(), IMPORTE, "el pendiente esta ahi");
+
+        // Mallory cobra lo de Bob. No conoce SK_BOB.
+        let estado_mallory = state_of(&layer, mallory);
+        let mut cuentas = layer.accounts.clone();
+        cuentas.set_leaf(
+            mallory,
+            native_leaf(
+                estado_mallory.public_id,
+                BaseElement::new(estado_mallory.balance + IMPORTE),
+                estado_mallory.nonce,
+            ),
+        );
+        let mut pend = layer.pending.clone();
+        pend.set_leaf(recibo.notice.position, [BaseElement::ZERO; 4]);
+
+        let cobro = ClaimReceipt {
+            proof: vec![0u8; 32],
+            public_inputs: ClaimPublicInputs {
+                root_old: layer.accounts.root(),
+                root_new: cuentas.root(),
+                frozen_root: layer.frozen.root(),
+                pending_root_old: layer.pending.root(),
+                pending_root_new: pend.root(),
+                amount: BaseElement::new(IMPORTE),
+                supply_old: BaseElement::new(layer.total_supply()),
+                supply_new: BaseElement::new(layer.total_supply()),
+            },
+        };
+
+        let r = layer.apply_claim(&cobro, mallory, &estado_mallory, &recibo.notice);
+        let saldo_m = layer.balance_of(mallory);
+        let saldo_b = layer.balance_of(bob);
+
+        assert!(
+            r.is_err(),
+            "SOLIDEZ: cobrar NO requiere la clave del receptor. Mallory, sin \
+             conocer SK_BOB, ha cobrado en su cuenta un pendiente dirigido a \
+             Bob. Fue {r:?}. Mallory: {saldo_m:?}, Bob: {saldo_b:?}."
+        );
+        assert_eq!(saldo_m, Some(0), "Mallory no debe haber cobrado nada");
+        assert_eq!(
+            layer.total_pending(),
+            IMPORTE,
+            "y el pendiente de Bob debe seguir ahi"
+        );
+    }
+
+    /// **TESTIGO 4: ¿hace falta la clave del titular para gastar?**
+    ///
+    /// Los testigos 1-3 midieron que la capa no verifica las pruebas. De
+    /// ahi se **sigue** que `apply_send` no comprueba que quien gasta
+    /// conozca la clave. Seguirse no es medirse.
+    ///
+    /// ## El escenario
+    ///
+    /// Mallory **no conoce `SK_ALICE`**. Conoce el estado de la cuenta de
+    /// Alice, que la capa expone por `balance_of`, `nonce_of` y
+    /// `public_id_of` —las tres `pub`—. Con eso fabrica un recibo entero:
+    /// prueba a ceros, raices coherentes, y un pendiente dirigido a **su
+    /// propia identidad**, no a la de Alice.
+    ///
+    /// ## Por que no puede rechazar por otra cosa
+    ///
+    /// `apply_send` tiene **exactamente cuatro** condiciones de rechazo,
+    /// contadas sobre el codigo: las dos raices vigentes, la de congelados,
+    /// el limite regulatorio declarado, y que las raices nuevas cuadren con
+    /// lo que la propia capa recomputa. Las cuatro se satisfacen aqui a
+    /// proposito. **Ninguna es una clave. Ninguna es una prueba.**
+    ///
+    /// El importe va por debajo del limite regulatorio para que ese camino
+    /// tampoco pueda dar un rechazo por el motivo equivocado.
+    ///
+    /// ## Y el pendiente es COBRABLE por ella
+    ///
+    /// El compromiso se forma con la identidad de Mallory, asi que es ella
+    /// —y solo ella— quien puede reclamarlo despues. No es un pago perdido
+    /// en el limbo: es una transferencia de Alice a Mallory que Alice no
+    /// autorizo.
+    #[test]
+    fn spending_from_an_account_requires_knowing_its_key() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, FONDO);
+        let _mallory = open_and_fund(&mut layer, SK_MALLORY, 0);
+
+        // Lo unico que Mallory necesita saber, y la capa se lo da.
+        let victima = state_of(&layer, alice);
+
+        // Un pendiente dirigido a ELLA MISMA.
+        let id_mallory = derive_public_id(BaseElement::new(SK_MALLORY));
+        let salt = salt_de(0xBADC0DE);
+        let commitment = pending_commitment(id_mallory, salt, IMPORTE);
+
+        // Raices coherentes con el robo.
+        let mut cuentas = layer.accounts.clone();
+        cuentas.set_leaf(
+            alice,
+            native_leaf(
+                victima.public_id,
+                BaseElement::new(victima.balance - IMPORTE),
+                victima.nonce,
+            ),
+        );
+        let position = layer.allocate_pending().expect("posicion libre");
+        let mut pend = layer.pending.clone();
+        pend.set_leaf(position, commitment);
+
+        let recibo = SendReceipt {
+            // Ni siquiera se molesta en generar una.
+            proof: vec![0u8; 32],
+            public_inputs: SendPublicInputs {
+                root_old: layer.accounts.root(),
+                root_new: cuentas.root(),
+                frozen_root: layer.frozen.root(),
+                pending_root_old: layer.pending.root(),
+                pending_root_new: pend.root(),
+                amount: BaseElement::new(IMPORTE),
+                regulatory_limit: BaseElement::new(layer.regulatory_limit),
+                supply_old: BaseElement::new(layer.total_supply()),
+                supply_new: BaseElement::new(layer.total_supply()),
+            },
+            commitment,
+            notice: PendingNotice {
+                position,
+                salt,
+                amount: IMPORTE,
+            },
+        };
+
+        let r = layer.apply_send(&recibo, alice, &victima, IMPORTE);
+        let saldo = layer.balance_of(alice);
+        let en_transito = layer.total_pending();
+
+        assert!(
+            r.is_err(),
+            "SOLIDEZ: gastar NO requiere la clave del titular. Mallory, sin \
+             conocer SK_ALICE, ha debitado {IMPORTE} de la cuenta de Alice y \
+             ha creado un pendiente dirigido a su propia identidad, con una \
+             prueba de 32 ceros. Fue {r:?}. Saldo de la victima: {saldo:?}. \
+             En transito: {en_transito}."
+        );
+        assert_eq!(
+            saldo,
+            Some(FONDO),
+            "el saldo de la victima no debe haberse tocado"
+        );
+        assert_eq!(en_transito, 0, "ni haberse creado ningun pendiente");
+    }
+
+    fn id_bob() -> Digest {
+        derive_public_id(BaseElement::new(SK_BOB))
+    }
+
+    /// **TESTIGO 1: una prueba que no prueba nada.**
+    ///
+    /// Recibo honesto en todo salvo en la prueba, que se pone a ceros. Si
+    /// la capa la verificara, esto se rechaza; si no la mira, la longitud
+    /// del vector es lo unico que cambia y la operacion se aplica igual.
+    ///
+    /// Nada mas se toca: las raices, el compromiso y el aviso son los que
+    /// genero `send`. Si rechaza, rechaza por la prueba.
+    #[test]
+    fn apply_send_rejects_a_receipt_whose_proof_is_garbage() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, FONDO);
+        let estado = state_of(&layer, alice);
+
+        let mut recibo = layer
+            .send(
+                BaseElement::new(SK_ALICE),
+                alice,
+                &estado,
+                id_bob(),
+                salt_de(0x5EED),
+                IMPORTE,
+            )
+            .expect("el recibo honesto debe generarse");
+
+        // La prueba, a ceros. Misma longitud, cero contenido.
+        recibo.proof = vec![0u8; recibo.proof.len()];
+
+        let r = layer.apply_send(&recibo, alice, &estado, IMPORTE);
+
+        assert!(
+            r.is_err(),
+            "SOLIDEZ: `apply_send` aplica un pago cuya prueba es basura. La \
+             capa NO verifica la prueba de la via de dos fases -la unica via \
+             de pago desde §36-, asi que el circuito no protege nada aqui. \
+             Fue {r:?}"
+        );
+        assert_eq!(
+            layer.balance_of(alice),
+            Some(FONDO),
+            "y el saldo no debe haberse movido"
+        );
+        assert_eq!(layer.total_pending(), 0, "ni haberse creado el pendiente");
+    }
+
+    /// **TESTIGO 2: el titular miente sobre su propio saldo.**
+    ///
+    /// `apply_send` toma `sender_state` **del que llama** y escribe
+    /// `saldo - importe` en la hoja, comprobando solo que la raiz declarada
+    /// cuadre con lo que el mismo recomputa. Si nada ata ese estado a la
+    /// hoja real -y la prueba es lo unico que podria hacerlo-, declarar un
+    /// saldo de diez millones sobre una cuenta de uno **escribe diez
+    /// millones menos el importe**.
+    ///
+    /// Las raices declaradas se construyen coherentes **con la mentira**, a
+    /// proposito: si la capa las comprobara contra el estado real en vez de
+    /// contra lo recomputado, el test lo detecta.
+    #[test]
+    fn apply_send_rejects_a_lied_holder_state() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, FONDO);
+        let verdad = state_of(&layer, alice);
+
+        let honesto = layer
+            .send(
+                BaseElement::new(SK_ALICE),
+                alice,
+                &verdad,
+                id_bob(),
+                salt_de(0x5EED),
+                IMPORTE,
+            )
+            .expect("recibo honesto");
+
+        // Diez veces el saldo real.
+        let mentira = ClientState {
+            balance: FONDO * 10,
+            ..verdad.clone()
+        };
+
+        // Raices coherentes CON LA MENTIRA.
+        let mut cuentas = layer.accounts.clone();
+        cuentas.set_leaf(
+            alice,
+            native_leaf(
+                mentira.public_id,
+                BaseElement::new(mentira.balance - IMPORTE),
+                mentira.nonce,
+            ),
+        );
+        let mut pend = layer.pending.clone();
+        pend.set_leaf(honesto.notice.position, honesto.commitment);
+
+        let recibo = SendReceipt {
+            proof: honesto.proof.clone(),
+            public_inputs: SendPublicInputs {
+                root_new: cuentas.root(),
+                pending_root_new: pend.root(),
+                ..honesto.public_inputs.clone()
+            },
+            commitment: honesto.commitment,
+            notice: honesto.notice.clone(),
+        };
+
+        let r = layer.apply_send(&recibo, alice, &mentira, IMPORTE);
+
+        assert!(
+            r.is_err(),
+            "SOLIDEZ: `apply_send` acepta un estado de titular MENTIDO. \
+             Declarando {} de saldo sobre una cuenta de {}, la capa escribe \
+             la mentira menos el importe: dinero de la nada, sin clave y sin \
+             prueba valida. Fue {r:?}",
+            FONDO * 10,
+            FONDO
+        );
+        assert_eq!(
+            layer.balance_of(alice),
+            Some(FONDO),
+            "el saldo real no debe haberse tocado"
+        );
+    }
+
+    /// **TESTIGO 3: la entrada 40, de punta a punta.**
+    ///
+    /// §72 midio que el circuito acepta declarar un importe y depositar
+    /// otro. Esto mide si `apply_mint_to_pending` -la via de produccion- lo
+    /// deja pasar: toma `receipt.commitment` **del que llama** y lo
+    /// contrasta contra `pi.pending_root_new`, que sale de la prueba. Si
+    /// las dos vienen infladas, coinciden entre si.
+    ///
+    /// Consecuencia si se acepta: el suministro sube 250.000 y entra al
+    /// arbol un pendiente de 1.000.000 cobrable. **La conservacion se
+    /// rompe, y por debajo del tope declarado.**
+    ///
+    /// ⚠️ **ESTE TEST ESTA EN VERDE Y NO SIGNIFICA QUE LA 40 ESTE CERRADA.**
+    ///
+    /// Se renombro por eso. Rechaza porque `apply_mint_to_pending` exige que
+    /// el aviso declare el mismo importe que la prueba, y aqui se
+    /// contradicen. **Eso cierra esta construccion, no la clase.**
+    ///
+    /// Queda abierto: depositar un compromiso que vale un millon declarando
+    /// doscientos cincuenta mil -aviso y prueba coherentes ENTRE SI, asi que
+    /// la comprobacion no salta-, y cobrarlo despues con el aviso verdadero.
+    /// `apply_claim` solo hace `pending_amounts.remove(...)`: **no contrasta
+    /// el importe del aviso contra lo que se registro al depositar.**
+    ///
+    /// Sin medir. Entrada 40, residuo declarado en §73.4.
+    #[test]
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "posicion 0: el grado degenera en depuracion (entrada 6, §71.3)"
+    )]
+    fn apply_mint_to_pending_rejects_a_notice_that_contradicts_the_proof() {
+        use stark_experiment::circuit_mint_pending::TRACE_LENGTH;
+        use stark_experiment::rescue_hash::STATE_WIDTH;
+
+        let mut layer = new_layer();
+        let auth = valid_auth();
+        let position = layer.allocate_pending().expect("posicion libre");
+        let path = layer.pending.path_for(position);
+        let salt = salt_de(0x5EED);
+        let inflado = IMPORTE * 4;
+
+        // Dos trazas honestas con los MISMOS custodios: asi el ascenso del
+        // carril B sigue siendo valido y la unica variable es el importe.
+        let mut trace = build_mint_pending_trace(
+            auth.key_a, auth.index_a, &auth.path_a,
+            auth.key_b, auth.index_b, &auth.path_b,
+            layer.total_supply(), IMPORTE, MAX_SUPPLY, IMPORTE,
+            id_bob(), salt, &path,
+        );
+        let falsa = build_mint_pending_trace(
+            auth.key_a, auth.index_a, &auth.path_a,
+            auth.key_b, auth.index_b, &auth.path_b,
+            layer.total_supply(), inflado, MAX_SUPPLY, inflado,
+            id_bob(), salt, &path,
+        );
+        for row in 0..TRACE_LENGTH {
+            for j in 0..STATE_WIDTH {
+                trace.set(STATE_WIDTH + j, row, falsa.get(STATE_WIDTH + j, row));
+            }
+        }
+
+        let proof = MintPendingProver::new(proof_options())
+            .prove(trace)
+            .expect("la prueba inflada se genera: eso ya lo midio §72");
+
+        let commitment = pending_commitment(id_bob(), salt, inflado);
+        let mut pend = layer.pending.clone();
+        pend.set_leaf(position, commitment);
+
+        let recibo = MintPendingReceipt {
+            proof: proof.to_bytes(),
+            public_inputs: MintPendingPublicInputs {
+                custodian_set_root: layer.custodian_set_root,
+                supply_old: BaseElement::new(layer.total_supply()),
+                // Se declara y contabiliza IMPORTE...
+                supply_new: BaseElement::new(layer.total_supply() + IMPORTE),
+                max_supply: BaseElement::new(MAX_SUPPLY),
+                amount: BaseElement::new(IMPORTE),
+                pending_root_old: layer.pending.root(),
+                // ...y entra un pendiente que vale cuatro veces eso.
+                pending_root_new: pend.root(),
+            },
+            commitment,
+            notice: PendingNotice { position, salt, amount: inflado },
+        };
+
+        let antes = layer.total_supply();
+        let r = layer.apply_mint_to_pending(&recibo);
+
+        assert!(
+            r.is_err(),
+            "SOLIDEZ (entrada 40, de punta a punta): la capa acepta subir el \
+             suministro en {IMPORTE} mientras deposita un pendiente de \
+             {inflado}. La conservacion se rompe por debajo del tope. Fue {r:?}"
+        );
+        assert_eq!(layer.total_supply(), antes, "el suministro no debe subir");
+        assert_eq!(layer.total_pending(), 0, "ni depositarse nada");
     }
 }
