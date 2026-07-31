@@ -5600,7 +5600,58 @@ ranuras), que añade el compromiso del pendiente sobre lo que hace `mint`.
 a un pendiente sigue exigiendo las claves en el operador. Cuatro de cinco no
 cierra la entrada.
 
-## 68. Qué NO demuestra este documento
+## 68. `mint_pending`: el analisis antes de cortar
+
+Es la quinta y la mas distinta de todas. Se registra el analisis ANTES de
+tocar nada, porque si algo se pierde es esto lo que costaria rehacer.
+
+### 68.1 Esta montada al reves que las otras cuatro
+
+En `mint`, `recovery` y `freeze` el ascenso de custodios va AL FINAL (filas
+272-311) y lo propio al principio. En `mint_pending` va **al principio**:
+
+| filas | que hay |
+|---|---|
+| 0-39 | ascenso de custodios (ciclo 0 identidades, ciclos 1-4 el arbol) |
+| 39 | ⚠️ **doble funcion**: raiz de custodios Y arranque del compromiso |
+| 40-47 | compromiso interno `H(identidad_receptor, aleatorio)` |
+| 48-55 | el pendiente `H(interno, importe)` |
+| 55 | entrada en el arbol de pendientes |
+| 56-311 | niveles 1..31 |
+
+### 68.2 Por que la amputacion es limpia igualmente
+
+La fila 39 hace doble funcion, pero **el compromiso no depende del ascenso**:
+`C_PEND_IN` lo ata a `COL_R_ID` y `COL_SALT` con su **propio selector**
+(`P_PEND_IN`), no con el de la raiz de custodios. Asi que quitando el ascenso
+el compromiso sigue arrancando donde arranca.
+
+El precio: las filas 0-38 quedan **muertas**, y hay que apagar el indicador
+de hash en ellas o las restricciones de Rescue se activarian sobre ceros.
+No se ganan filas: `ROW_PENDING_ROOT`=311 obliga a 512 de todas formas.
+
+### 68.3 Que sale y que se queda
+
+**Fuera**: 10 columnas (bits, claves, indices, acumuladores y las dos del
+segmento), 36 ranuras de restriccion y 8 periodicas. `NUM_SEGMENTS` pasa de
+**3 a 0**: los tres segmentos eran indices de custodio y su orden, ninguno
+era un rango de valor.
+
+**Dentro**: toda la maquinaria del pendiente y **el tope**, que aqui tiene su
+propio mecanismo (`COL_CBIT`/`COL_CACC`, `C_CAP_LINK`) separado de los
+segmentos. Eso es lo que hace que quitar los segmentos enteros no se lleve
+por delante la comprobacion del limite -a diferencia de `mint`, donde el
+margen del tope ERA el segmento 4 (§66.1)-.
+
+De 125 ranuras a **89**, de 49 columnas a **39**.
+
+### 68.4 Lo que este analisis no dice
+
+Si compila. Es la transformacion mas grande de las cinco y la unica con
+filas muertas al principio: el indicador de hash, las aserciones de la fila 0
+y la cadena de periodicas hay que rehacerlos, no solo recortarlos.
+
+## 69. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
