@@ -6829,6 +6829,100 @@ Y la gobernanza **es inmutable por diseño**, no un hueco —aunque su coste,
 que una clave de gobernanza comprometida lo esta para siempre, si merece
 decision propia—.
 
+## 84. La cuarta revision: inventario antes de tocar
+
+La entrada 28 se abrio por una sola cosa —§27, el cobro—. El 31-07-2026 son
+**cuatro**, y tres se midieron ese dia. Esto las inventaria **sin tocar los
+preprints todavia**.
+
+### 84.1 Los cuatro frentes, y no son iguales
+
+| | frente | donde | naturaleza |
+|---|---|---|---|
+| **A** | La clave de gasto (§73.2) | `PAPER.md:194`, `PAPER_EN.md:186` | ⚠️ propiedad **no impuesta** hasta el 31-07 |
+| **B** | El cobro (§27, §39.1) | `PAPER.md:613`, `PAPER_EN.md:578` | ⚠️ propiedad **no impuesta** hasta el 30-07 |
+| **C** | 128 bits y espacio de claves (§82.4) | `PAPER.md:533`, `PAPER_EN.md:500` | analisis **que falta** |
+| **D** | Unidad MiB/MB (§83.3) | 6 sitios, los tres documentos | etiqueta **equivocada** |
+
+Mas las referencias cruzadas (entrada 16). **Once pasajes como minimo.**
+
+### 84.2 A y B no son «el paper dice algo falso»
+
+Las dos frases son **ciertas hoy**:
+
+> *«La clave de gasto no sale de la maquina del titular»* — cierta desde
+> §73, el 31-07.
+>
+> `| claim | El receptor lo hace suyo | Solo el del receptor |` — cierta
+> desde §39.1, el 30-07.
+
+Y el **diseño siempre fue correcto**. Lo que fallaba era que la
+implementacion no lo imponia: en A la capa no verificaba la prueba, asi que
+la clave no hacia falta para nada; en B el circuito no ataba el compromiso a
+la identidad del cobrador.
+
+> **Los preprints presentaban como propiedad DEL SISTEMA algo que solo era
+> propiedad DEL DISEÑO.** Quien leyo v1, v2 o v3 —artefactos con DOI— tenia
+> dos garantias que el codigo no daba.
+
+### 84.3 La decision: se anota
+
+⚠️ **La cuarta revision dira que esas dos propiedades no estaban impuestas
+en las tres anteriores, y desde cuando lo estan.**
+
+No es la opcion comoda. Sin anotarlo el paper queda correcto y nadie miente;
+quien leyo v3 y confio en esas dos frases no se entera nunca. Anotarlo obliga
+a escribir en un artefacto publico que durante tres revisiones se afirmo algo
+que el codigo no garantizaba.
+
+**Y hay precedente en el propio proyecto.** `PRINCIPIOS.md` §8 corrigio la
+hoja de ruta original —testnet 2026-2027, mainnet 2027-2028— con este
+motivo:
+
+> *«Eso no es alcanzable con los recursos actuales y decirlo seria faltar al
+> principio de transparencia.»*
+
+Se hizo una vez con una prevision optimista. Lo de ahora es del mismo tipo y
+mas serio, porque no es una expectativa sino una garantia de seguridad.
+
+`PRINCIPIOS.md` cierra: *«Si el criterio es transparencia, coherencia e
+imagen fiel de la realidad, esta es la descripcion exacta de lo que hay.»*
+Callar A y B seria dejar de cumplir esa frase el mismo dia que se mide.
+
+### 84.4 C es lo unico que sigue abierto
+
+A, B y D son cosas hechas que hay que **contar**. C es un analisis **que
+falta**: el paper llama al techo de 63 bits de solidez *«insuficiente y no
+comparable con los ~128 bits de los otros paradigmas»* y **no aplica ese
+criterio al espacio de claves**, que es de 64 bits (§82, entrada 15).
+
+⚠️ **La cuarta revision no puede limitarse a añadirlo como nota**: si el
+criterio de los 128 bits vale para la solidez, vale para las claves, y
+entonces el paper tiene que decir que **el sistema no alcanza ese listón**
+mientras `sk` sea un elemento. Eso no es una errata: es una conclusion.
+
+### 84.5 D: seis sitios y una division
+
+```rust
+"...{:.1} MB acumulados", (tx_bytes * 1000) as f64 / 1_048_576.0
+```
+
+MiB etiquetado «MB», y lo mismo con «~126 KB por pago» —medido, 126,0 KiB
+exactos—. En SI la cifra es **129,0 MB**, un 7,2 % mas.
+
+`PAPER.md:487`, `PAPER.md:899`, `PAPER_EN.md:456`, `PAPER_EN.md:857`,
+`QUESTIONS.md:235`, `QUESTIONS.md:251`. Y `QUESTIONS.md:72` habla de
+«62 KB proofs», que es **por prueba**, no por transferencia: un pago son dos.
+
+### 84.6 Por que el inventario va antes
+
+Un documento publicado **no se rectifica con `git revert`**. Una vez subida
+la cuarta revision a Zenodo, corregir un olvido exige una quinta.
+
+Y hoy ha pasado tres veces que el analisis previo evito una ronda —§70.3— y
+una que **lo escrito llevo a arreglar lo que denunciaba** (§76.1): el README
+declaro tres tests rojos y esa misma tarde dejaron de estarlo.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

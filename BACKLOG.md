@@ -612,7 +612,19 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   Con esto el **frente de grados (6, 24, 25, 34) queda cerrado**: decidido y
   documentado, sin migrar nada.
 
-- [ ] **28. Corregir los tres preprints: ya no es solo la 27.** Describen el
+- [ ] **28. Corregir los tres preprints: INVENTARIADO, decision tomada.**
+  ⚠️ **Inventario completo en §84**: cuatro frentes, **once pasajes** en tres
+  documentos, con fichero y linea. ⚠️ **DECIDIDO el 31-07-2026 (§84.3): la
+  cuarta revision ANOTA** que las dos propiedades —la clave de gasto y el
+  cobro— **no estaban impuestas** en v1, v2 y v3, y desde cuando lo estan.
+  Precedente: `PRINCIPIOS.md` §8 ya corrigio la hoja de ruta porque callarla
+  «seria faltar al principio de transparencia». ⚠️ **Y el frente C no es una
+  errata sino una conclusion** (§84.4): si el criterio de los ~128 bits vale
+  para la solidez, vale para el espacio de claves, y entonces el paper debe
+  decir que el sistema **no alcanza ese liston** mientras `sk` sea un
+  elemento (entrada 15). **No tocar Zenodo hasta las cuatro**: un documento
+  publicado no se rectifica con `git revert`.
+  ~~Original:~~ **28. Corregir los tres preprints: ya no es solo la 27.** Describen el
   cobro como demostracion de titularidad —§27, corregida y verificada—. ⚠️ **Y
   desde el 31-07-2026 se le han sumado tres cosas mas**, todas medidas:
   (a) §73.2 — los tres citan como argumento institucional central que la
