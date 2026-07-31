@@ -76,9 +76,9 @@ const ROW_LEAF_LINK: usize = 7;
 const ROW_LEAF_DONE: usize = 15;
 /// Raíz del árbol de cuentas. Su enlace arranca la fase de custodios.
 const ROW_ACCT_ROOT: usize = 271;
-/// Fila de las dos raices. Lo que hay despues es relleno: la 271 no es fila
-/// de enlace, asi que la transicion 271->272 no activa nada (§64.2).
-const ROW_PAD_FROM: usize = 272;
+// No hace falta constante para el relleno: la 271 no es fila de enlace,
+// asi que la transicion 271->272 no activa ninguna restriccion y las
+// filas siguientes se quedan a cero sin que nada las mire.
 /// Última fila activa: raíz del conjunto de custodios.
 
 // ===== Restricciones =====
@@ -122,8 +122,10 @@ const P_LINK_LEAF: usize = P_ACCT_LINK + 1;
 // Dejarlos en la cadena desplazaba `P_SEG_LINK` tres posiciones y el indice
 // se salia del array de periodicas.
 const P_FIRST_ROW: usize = P_LINK_LEAF + 1;
-const P_SEL_ACCT_ROOT: usize = P_FIRST_ROW + 1;
-const P_FIRST_S: usize = P_SEL_ACCT_ROOT + 1;
+// Se fue tambien `P_SEL_ACCT_ROOT`: solo lo leia `C_CUST_INPUT`. Una
+// periodica que se construye y nadie lee es peso muerto, y ensucia una
+// cadena que -entrada 39- no comprueba nada.
+const P_FIRST_S: usize = P_FIRST_ROW + 1;
 const P_CONT_S: usize = P_FIRST_S + 1;
 const P_SEG_LINK: usize = P_CONT_S + 1;
 
@@ -408,7 +410,7 @@ impl Air for MintClimbAir {
 
         // Enlaces del arbol de custodios: entrada + niveles.
 
-        for row in [0, ROW_ACCT_ROOT] {
+        for row in [0] {
             let mut sel = vec![zero; TRACE_LENGTH];
             sel[row] = one;
             columns.push(sel);
@@ -449,7 +451,6 @@ impl Air for MintClimbAir {
         let acct_link = periodic[P_ACCT_LINK];
         let link_leaf = periodic[P_LINK_LEAF];
         let first_row = periodic[P_FIRST_ROW];
-        let sel_acct_root = periodic[P_SEL_ACCT_ROOT];
         let first_s = periodic[P_FIRST_S];
         let cont_s = periodic[P_CONT_S];
 
