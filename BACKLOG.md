@@ -14,6 +14,11 @@ grupo de prioridad sin cambiar de numero.
 
 **Estado**: 20 abiertas, 22 resueltas. Ultima revision: 31 de julio de 2026.
 
+⚠️ **La 40 dejo de ser hipotesis.** Se abrio por la mañana como lectura sin
+medir y se confirmo por la tarde con testigo en release: es el **cuarto
+fallo de solidez** de la auditoria (§72). Sigue abierta —confirmar no es
+corregir— y es hoy la entrada de mas peso de esta lista.
+
 ⚠️ ~~16 abiertas, 21 resueltas.~~ **Estaba mal por los dos lados**, y se
 descubrio contando los `- [ ]` y `- [x]` del propio fichero: eran **17 y
 22**. Con las tres nuevas de hoy, **20 y 22**. Es la **octava** vez que esta
@@ -505,7 +510,24 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   §62.2, por tercera vez: herramienta util que cubre parte del problema sin
   que conste que parte.
 
-- [ ] **40. ⚠️ El carril B del compromiso pendiente no esta atado.**
+- [ ] **40. ⚠️ FALLO DE SOLIDEZ CONFIRMADO: el compromiso del pendiente no
+  esta atado al importe declarado.** **Medido en release el 31-07-2026
+  (§72), en los DOS circuitos**: `circuit_mint_pending_climb` y
+  `circuit_mint_pending` -el de produccion- aceptan una traza que declara
+  emitir 250.000, sube el suministro en 250.000 y deposita un pendiente de
+  1.000.000. ⚠️ **Diagnostico afinado**: no falta una restriccion, **esta en
+  el carril equivocado** -`C_PEND_IN`/`C_PEND_VAL` construyen el compromiso
+  en el carril A, cuyo digest `C_PEND_ENTRY_A` descarta forzando la hoja a
+  cero; lo que se inserta es el del carril B (§72.2)-. **Alcance**: la via
+  delegada esta protegida porque la capa recomputa `pending_commitment`; la
+  antigua `apply_mint_to_pending` **NO lo estaria, por LECTURA y sin medir**
+  (§72.3). Exige dos claves de custodio: no hay escalada de privilegio, pero
+  crea dinero **fuera del suministro y por tanto fuera del tope**, que es lo
+  que §66 y §67 demostraron. Dos testigos ROJOS con `#[ignore]`, patron de
+  §50. **Siguiente paso: test de capa** que decida si la via antigua lo
+  acepta de punta a punta.
+
+  ~~Original:~~ **40. ⚠️ El carril B del compromiso pendiente no esta atado.**
   `C_PEND_IN` y `C_PEND_VAL` restringen **solo el carril A** -no hay ningun
   `LANE_B` en ellas-, asi que lo que `C_PEND_ENTRY_B` mete en el arbol es lo
   que el carril B haya calculado, sin que el circuito lo ate a `COL_R_ID`,

@@ -1743,4 +1743,120 @@ mod tests {
             "alcanzar el tope exactamente es legitimo: lo alcanza, no lo supera"
         );
     }
+
+    /// **ENTRADA 40 EN EL CIRCUITO DE PRODUCCION.**
+    ///
+    /// El mismo testigo que en `circuit_mint_pending_climb`, aqui. Importa
+    /// mas que alli: este es el circuito que ejecuta `mint_to_pending`, la
+    /// via que el sistema usa hoy.
+    ///
+    /// `C_PEND_IN` y `C_PEND_VAL` restringen **solo el carril A** -no hay
+    /// ningun `LANE_B` en ellas-. Lo que `C_PEND_ENTRY_B` mete en el arbol
+    /// es lo que el carril B haya calculado.
+    ///
+    /// ⚠️ **Y el carril A calcula un compromiso que NADIE LEE**:
+    /// `C_PEND_ENTRY_A` fuerza su hoja a CERO sin mirar el digest que el
+    /// carril A trajo. Las restricciones del compromiso estan escritas
+    /// sobre el carril que se descarta.
+    ///
+    /// ## El testigo
+    ///
+    /// Dos trazas honestas -por `AMOUNT` y por `AMOUNT * 4`, con los MISMOS
+    /// custodios- y se copia el carril B de la segunda sobre la primera.
+    /// Como los custodios son los mismos, las filas 0-39 del carril B son
+    /// identicas y el ascenso sigue siendo valido: lo unico que cambia es
+    /// el compromiso que se deposita.
+    ///
+    /// ## Por que no usa `intenta`
+    ///
+    /// `intenta` devuelve `false` tanto si se rechaza como si `prove`
+    /// **panica**, y un panico de grados haria pasar el test por la razon
+    /// equivocada. Aqui se mira el mensaje.
+    #[test]
+    // ===== TESTIGO ROJO si la lectura es correcta. =====
+    //
+    // Se marca `ignore` por el mismo criterio que su hermano del `_climb`:
+    // nombra un fallo que existe y no esta corregido. Ver §50.
+    #[ignore = "TESTIGO ROJO entrada 40: mismo ataque, circuito de produccion"]
+    fn a_lane_b_commitment_inconsistent_with_the_declared_amount_is_rejected() {
+        let inflado = AMOUNT * 4;
+        assert_ne!(
+            commitment_de(AMOUNT),
+            commitment_de(inflado),
+            "el testigo debe diferir"
+        );
+
+        let keys = custodian_keys();
+        let (root, paths) = build_custodian_set(&keys);
+
+        // Los MISMOS custodios en las dos: asi las filas 0-39 del carril B
+        // coinciden y el ascenso sigue valido. La unica variable es el
+        // compromiso.
+        let mut trace = build_trace(
+            keys[1], 1, &paths[1], keys[3], 3, &paths[3],
+            SUPPLY_OLD, AMOUNT, MAX_SUPPLY, AMOUNT,
+            receiver_id(), salt(), &pending_path(),
+        );
+        let falsa = build_trace(
+            keys[1], 1, &paths[1], keys[3], 3, &paths[3],
+            SUPPLY_OLD, inflado, MAX_SUPPLY, inflado,
+            receiver_id(), salt(), &pending_path(),
+        );
+
+        for row in 0..TRACE_LENGTH {
+            for j in 0..STATE_WIDTH {
+                trace.set(LANE_B + j, row, falsa.get(LANE_B + j, row));
+            }
+        }
+
+        let inputs = MintPendingPublicInputs {
+            custodian_set_root: root,
+            supply_old: BaseElement::new(SUPPLY_OLD),
+            // Se declara y contabiliza AMOUNT...
+            supply_new: BaseElement::new(SUPPLY_OLD + AMOUNT),
+            max_supply: BaseElement::new(MAX_SUPPLY),
+            amount: BaseElement::new(AMOUNT),
+            pending_root_old: climb_pending([BaseElement::ZERO; 4]),
+            // ...y se deposita un pendiente que vale CUATRO VECES eso.
+            pending_root_new: climb_pending(commitment_de(inflado)),
+        };
+
+        let prover = MintPendingProver::new(default_options());
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
+        let resultado: Result<(), String> = match r {
+            Err(e) => {
+                let msg = e
+                    .downcast_ref::<String>()
+                    .cloned()
+                    .or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string()))
+                    .unwrap_or_else(|| "panico sin mensaje".into());
+                Err(format!("prove hizo panic: {msg}"))
+            }
+            Ok(Err(e)) => Err(format!("prove Err: {e:?}")),
+            Ok(Ok(proof)) => {
+                let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                verify::<MintPendingAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                    proof, inputs, &min_opts,
+                )
+                .map_err(|e| format!("verificacion fallo: {e:?}"))
+            }
+        };
+
+        if let Err(ref msg) = resultado {
+            assert!(
+                !msg.contains("degrees didn't match"),
+                "RECHAZA POR LA RAZON EQUIVOCADA: comprobacion de grados de \
+                 depuracion, no la pregunta del test. Correr en release. {msg}"
+            );
+        }
+
+        assert!(
+            resultado.is_err(),
+            "SOLIDEZ (entrada 40): el circuito de PRODUCCION acepta declarar \
+             una emision de {AMOUNT} -con el suministro subiendo {AMOUNT}- \
+             mientras deposita un pendiente que vale {inflado}. Y \
+             `apply_mint_to_pending` no lo cazaria: toma el compromiso del \
+             que llama y lo contrasta contra la raiz que da la propia prueba."
+        );
+    }
 }

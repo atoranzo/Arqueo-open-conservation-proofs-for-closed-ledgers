@@ -1220,4 +1220,112 @@ mod tests {
             "camino mixto: COL_PBIT no deberia ser nula"
         );
     }
+
+    /// **ENTRADA 40 / TEST TESTIGO: el compromiso que se INSERTA, ¿esta
+    /// atado al importe que se DECLARA?**
+    ///
+    /// `C_PEND_IN` y `C_PEND_VAL` restringen **solo el carril A**: no hay
+    /// ningun `LANE_B` en ellas. Lo que `C_PEND_ENTRY_B` mete en el arbol
+    /// es lo que el carril B haya calculado, y la hipotesis de 70.4 es que
+    /// **nada en el circuito lo ata** a `COL_R_ID`, `COL_SALT` ni
+    /// `COL_AMOUNT`.
+    ///
+    /// ## El testigo
+    ///
+    /// Dos trazas honestas -una por `AMOUNT`, otra por `AMOUNT * 4`- y se
+    /// copia el carril B de la segunda sobre la primera. El resultado
+    /// **declara y contabiliza `AMOUNT` en el suministro, pero deposita un
+    /// pendiente que vale `AMOUNT * 4`**.
+    ///
+    /// Todo lo demas queda coherente **a proposito**, para que un rechazo
+    /// signifique algo:
+    ///
+    /// - la cadena de Rescue del carril B es valida: viene de una traza
+    ///   valida;
+    /// - los hermanos coinciden entre carriles, porque los fija el
+    ///   **camino**, no el carril, y `C_PEND_SIBLING` los compara;
+    /// - las columnas constantes no se tocan, asi que `C_TRANSPORT_NEW` y
+    ///   `C_SUPPLY` se cumplen.
+    ///
+    /// ## Que significa cada resultado
+    ///
+    /// - **Rechaza** -y no por el grado-: la hipotesis es falsa, algo ata
+    ///   el carril B, y la entrada 40 se cierra como se cerro la 35.
+    /// - **Verifica**: el circuito **no demuestra** que el pendiente
+    ///   depositado valga lo que el suministro subio. Hoy lo sujeta la
+    ///   capa, que recomputa `pending_commitment` y compara raices; un
+    ///   auditor externo que solo vea la prueba **no puede**. Es el reverso
+    ///   de 67.1.
+    ///
+    /// ⚠️ **Por que este test no usa `intenta`.** Esa funcion devuelve
+    /// `false` tanto si la prueba se rechaza como si `prove` **panica**, y
+    /// en depuracion puede panicar por la comprobacion de grados. El test
+    /// pasaria entonces por la razon equivocada -exactamente lo que el
+    /// proyecto advierte de los negativos-. Aqui se mira el **mensaje**.
+    #[test]
+    // ===== TESTIGO ROJO. CONFIRMADO EL 31-07-2026. =====
+    //
+    // **Este test FALLA, y es correcto que falle**: nombra un fallo de
+    // solidez que existe y no esta corregido. Medido en release: el
+    // circuito acepta una traza que declara emitir 250.000 -y sube el
+    // suministro en 250.000- mientras deposita un pendiente de 1.000.000.
+    //
+    // Va con `ignore` y no borrado ni debilitado, que es lo que se hizo en
+    // §50 con el testigo de `circuit_send`: rojo hasta que se corrija, y
+    // entonces **se le quita la marca y pasa a verde**. Un testigo borrado
+    // no vuelve; uno debilitado miente.
+    //
+    // Para verlo: `cargo test --release -p stark-experiment a_lane_b -- --ignored`
+    #[ignore = "TESTIGO ROJO entrada 40: el carril B no esta atado al importe declarado"]
+    fn a_lane_b_commitment_inconsistent_with_the_declared_amount_is_rejected() {
+        let inflado = AMOUNT * 4;
+        assert_ne!(
+            commitment_de(AMOUNT),
+            commitment_de(inflado),
+            "el testigo debe diferir"
+        );
+
+        let (mut trace, _) = caso(AMOUNT);
+        let (falsa, _) = caso(inflado);
+
+        // Solo el carril B. Las columnas constantes -importe, suministros,
+        // identidad, aleatorio- se quedan como las declaro la honesta.
+        for row in 0..TRACE_LENGTH {
+            for j in 0..STATE_WIDTH {
+                trace.set(LANE_B + j, row, falsa.get(LANE_B + j, row));
+            }
+        }
+
+        let inputs = MintPendingClimbPublicInputs {
+            supply_old: BaseElement::new(SUPPLY_OLD),
+            // El suministro sube AMOUNT...
+            supply_new: BaseElement::new(SUPPLY_OLD + AMOUNT),
+            max_supply: BaseElement::new(MAX_SUPPLY),
+            amount: BaseElement::new(AMOUNT),
+            pending_root_old: climb_pending([BaseElement::ZERO; 4]),
+            // ...pero el pendiente depositado vale CUATRO VECES eso.
+            pending_root_new: climb_pending(commitment_de(inflado)),
+        };
+
+        let r = correr(trace, inputs);
+
+        // Si rechaza, que sea por la razon correcta y no por el grado.
+        if let Err(ref msg) = r {
+            assert!(
+                !msg.contains("degrees didn't match"),
+                "RECHAZA POR LA RAZON EQUIVOCADA: es la comprobacion de grados \
+                 de depuracion, no la pregunta de este test. Vuelve a correrlo \
+                 en release. Mensaje: {msg}"
+            );
+        }
+
+        assert!(
+            r.is_err(),
+            "SOLIDEZ (entrada 40): el circuito acepta una traza que declara \
+             emitir {AMOUNT} -y sube el suministro en {AMOUNT}- mientras \
+             deposita un pendiente que vale {inflado}. El compromiso \
+             insertado NO esta atado al importe declarado: lo sujeta la \
+             capa, no la prueba. Ver 70.4."
+        );
+    }
 }

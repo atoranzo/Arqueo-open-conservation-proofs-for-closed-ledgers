@@ -5815,6 +5815,109 @@ tengan delegada —que es ahora—, y §65.5 avisa de que la garantia **no la da
 la marca, la da usar la via delegada**. Marcar la 32 resuelta hoy seria
 justo ese maquillaje.
 
+## 72. Entrada 40 CONFIRMADA: el compromiso del pendiente no esta atado
+
+⚠️ **Cuarto fallo de solidez de la auditoria.** Medido en release el
+31-07-2026, en los DOS circuitos.
+
+### 72.1 Que acepta el circuito
+
+Una traza que **declara emitir 250.000, sube el suministro en 250.000, y
+deposita un pendiente que vale 1.000.000**. `prove` no protesta y `verify`
+la acepta.
+
+El testigo se construye con dos trazas honestas -una por el importe, otra
+por el cuadruple- copiando **solo el carril B** de la segunda sobre la
+primera. Todo lo demas queda coherente a proposito, para que el resultado
+signifique algo: la cadena de Rescue del carril B es valida porque viene de
+una traza valida; los hermanos coinciden porque los fija el **camino**, no
+el carril, asi que `C_PEND_SIBLING` se cumple; y las columnas constantes no
+se tocan, asi que `C_TRANSPORT_NEW` y `C_SUPPLY` tambien.
+
+### 72.2 No falta una restriccion: esta en el carril equivocado
+
+Esto es lo que la entrada 40 no decia todavia, y afina el diagnostico.
+
+`C_PEND_IN` y `C_PEND_VAL` construyen el compromiso sobre el **carril A**.
+Pero en la fila de entrada al arbol:
+
+```
+result[C_PEND_ENTRY_A + i] = pend_entry * ((1-pbit)*next[4+i] + pbit*next[8+i]);
+```
+
+`C_PEND_ENTRY_A` fuerza la hoja del carril A a **CERO** —la posicion estaba
+libre— **sin mirar el digest que el carril A trajo**. Y `C_PEND_ENTRY_B`
+inserta `current[LANE_B + 4 + i]`: lo que calculo el carril B.
+
+> **El carril A calcula durante dieciseis filas un compromiso que ningun
+> lector consume, y el que se deposita es el del carril B, que nadie ata.**
+
+Las restricciones del compromiso estan escritas sobre el carril que se
+descarta. Decirlo como «falta una restriccion» habria llevado a un arreglo
+que las duplica en los dos carriles; el arreglo correcto es que vivan donde
+se lee el resultado.
+
+### 72.3 Alcance: medido en el circuito, LEIDO en la capa
+
+| | |
+|---|---|
+| `circuit_mint_pending_climb` | ⚠️ **Acepta.** Medido. |
+| `circuit_mint_pending` (produccion) | ⚠️ **Acepta.** Medido. |
+| `apply_mint_pending_delegated` | ✅ **Protegida.** Recomputa `pending_commitment` y construye `pending_root_new` ella misma; una traza inflada no casa. |
+| `apply_mint_to_pending` (antigua) | ⚠️ **NO protegida, por LECTURA. Sin medir.** |
+
+La via antigua toma `receipt.commitment` **del que llama** y solo comprueba
+que cuadre con `pi.pending_root_new`, que sale de la prueba: las dos
+vendrian infladas y coincidirian entre si. Si esa lectura es correcta, el
+suministro sube 250.000 mientras entra al arbol un pendiente de 1.000.000
+que su titular puede cobrar, y **la conservacion se rompe**.
+
+⚠️ **Eso es lectura, no medicion**, y en este documento la diferencia ha
+costado cara cuatro veces. Lo decide un test de capa, que es lo siguiente.
+
+### 72.4 Que se necesita para explotarlo, y por que aun asi importa
+
+Hacen falta **dos claves de custodio**. Quien las tiene ya puede emitir con
+`mint`, asi que **no hay escalada de privilegio**.
+
+Pero lo que se rompe no es el control de acceso: es el **invariante**. Una
+emision por `mint` queda contabilizada en el suministro y sujeta al tope
+que §66 y §67 se tomaron el trabajo de demostrar. Esta no: crea dinero
+**fuera del suministro declarado y por tanto fuera del tope**, y un auditor
+externo que solo vea la prueba **no puede detectarlo**.
+
+Es el reverso exacto de §67.1: alli el tope se comprobaba dos veces porque
+el auditor externo no puede recomputar el suministro. Aqui el auditor
+tampoco puede comprobar que el pendiente valga lo que el suministro subio.
+
+### 72.5 Por que ninguna herramienta del proyecto podia verlo
+
+- `check_constraint_layout.py` cruza los indices de `result[...]`: detecta
+  colisiones, desbordes y ranuras muertas. **Aqui no hay ninguna de las
+  tres.** Las 89 ranuras se reparten bien; el problema es la que no existe.
+- `buscar_vacias` comprueba que ninguna restriccion sea vacua. Las 89
+  disparan. **Una restriccion ausente no es una restriccion vacua.**
+- Los 13 tests del circuito pasan. `the_pending_commitment_is_inserted`
+  comprueba **la traza**, no que el circuito la obligue —y esa distincion
+  quedo dicha en §70.4 al escribirlo, antes de saber que aqui habia algo.
+
+Es la clase de §39 y §27, y la tercera vez que aparece: **el unico
+instrumento conocido para ella es la lectura semantica y el test
+discriminante** (§40.4, entrada 7). Este hallazgo salio de leer el circuito
+para escribir otra cosa.
+
+### 72.6 Los testigos se quedan ROJOS
+
+Los dos van con `#[ignore]` y su motivo, no borrados ni debilitados. Es lo
+que se hizo en §50 con el testigo de `circuit_send`: rojo hasta que se
+corrija, y entonces **se le quita la marca y pasa a verde**.
+
+Un testigo borrado no vuelve. Uno debilitado miente.
+
+⚠️ **Y conviene no confundir esto con estar arreglado.** La tanda dice
+«270 passed; 2 ignored», y esos dos ignorados son un fallo de solidez
+confirmado esperando correccion.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
