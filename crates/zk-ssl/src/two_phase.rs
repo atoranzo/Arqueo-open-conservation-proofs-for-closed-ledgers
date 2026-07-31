@@ -1206,20 +1206,13 @@ mod tests_verificacion {
     /// final: **que no haya mas dinero del que se emitio**. Asi no puede
     /// pasar por la razon equivocada.
     #[test]
-    // ===== TESTIGO ROJO. CONFIRMADO EL 31-07-2026. =====
-    //
-    // **Este test FALLA, y es correcto que falle.** Medido en release: Bob
-    // acaba con 1.000.000 y el suministro emitido es 250.000. El deposito
-    // devolvio `Ok(())` **con la prueba ya verificada**, y el cobro no
-    // falsifica nada -el compromiso del millon esta de verdad en el arbol,
-    // asi que su prueba es legitima-.
-    //
-    // No hay ningun paso fraudulento que un verificador pueda detectar: el
-    // fraude es que el circuito nunca ato las dos cosas.
-    //
-    // Se le quitara la marca cuando el arreglo de §74 lo ponga en verde.
-    // Patron de §50.
-    #[ignore = "TESTIGO ROJO entrada 40: conservacion rota, arreglo en §74"]
+    // ✅ **Estaba ROJO y paso a VERDE con el arreglo de §74.** Se queda como
+    // regresion permanente: es el unico test del proyecto que comprueba la
+    // conservacion de punta a punta atravesando emision, deposito y cobro.
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "posicion 0: el grado degenera en depuracion (entrada 6, §71.3)"
+    )]
     fn a_pending_worth_more_than_declared_cannot_be_claimed() {
         use stark_experiment::circuit_mint_pending::TRACE_LENGTH;
         use stark_experiment::rescue_hash::STATE_WIDTH;

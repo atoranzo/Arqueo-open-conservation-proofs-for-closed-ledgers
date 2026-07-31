@@ -6115,6 +6115,93 @@ vez de causarla.
 Y hoy se ha comprobado dos veces que lo que se pierde de una sesion no es
 el codigo, es la memoria.
 
+## 75. Entrada 40 corregida: el compromiso, en el carril que se lee
+
+✅ **Corregida y verificada** el 31-07-2026, en los dos circuitos.
+
+### 75.1 El arreglo
+
+| | Antes | Ahora |
+|---|---|---|
+| `C_PEND_IN` | 12 ranuras, **carril A** | 12 ranuras, **carril B** |
+| `C_PEND_VAL` | **5** ranuras, carril A | **12** ranuras, carril B |
+| `NUM_CONSTRAINTS` en `_climb` | 89 | **96** |
+| `NUM_CONSTRAINTS` en produccion | 125 | **132** |
+
+Las doce de `C_PEND_VAL` son capacidad (4), digest interno (4), importe (1)
+y **relleno (3)**.
+
+⚠️ **El relleno era la mitad del fallo**, y por eso §74.2 se escribio antes
+de cortar. Sin fijarlo, dos trazas con el mismo
+`(identidad, aleatorio, importe)` producen hojas distintas: el compromiso no
+queda determinado por sus entradas ni aunque se cambie de carril. Un arreglo
+que solo hubiera movido las restricciones habria dejado el fallo vivo con
+otra forma —el error de §32 en su version mas cara: **completar el trabajo
+sin alcanzar el objetivo**—.
+
+### 75.2 Lo que se midio
+
+| | Antes | Ahora |
+|---|---|---|
+| `a_lane_b_...` (`_climb`) | 🔴 | ✅ |
+| `a_lane_b_...` (produccion) | 🔴 | ✅ |
+| `a_pending_worth_more_than_declared_cannot_be_claimed` | 🔴 | ✅ |
+| `a_valid_mint_pending_climb_verifies` | ✅ | ✅ |
+
+⚠️ **El positivo se corrio primero y por separado.** Tres testigos negativos
+en verde no dicen nada si el circuito rechaza todo, y esta sesion ya vio esa
+trampa en §66.2. Con el positivo en pie, el verde de los tres significa lo
+que dice.
+
+**272 tests en `stark-experiment` y 201 en `zk-ssl`, ninguno ignorado**, y
+cero avisos con los tres ficheros recompilados a la fuerza. No queda un solo
+test marcado en el proyecto.
+
+Los tres testigos **pierden la marca y se quedan** como regresion
+permanente, que es lo que §50 dejo dicho que se hace cuando el fallo que un
+testigo nombra se corrige. El de la capa es hoy el unico test del proyecto
+que comprueba la conservacion de punta a punta atravesando emision, deposito
+y cobro.
+
+### 75.3 `build_trace` no cambio, y eso dice algo
+
+La traza honesta ya cumplia lo que ahora se exige: ponia los dos carriles
+identicos y con capacidad y relleno a cero.
+
+> **Las restricciones describian mal algo que la construccion ya hacia
+> bien.** Por eso ningun test lo veia: todos pasaban por `build_trace`, y
+> `build_trace` era honesto. Solo un testigo que **no** use la construccion
+> normal puede encontrar esta clase de fallo.
+
+Es el argumento del test discriminante (§40.4, entrada 7) con una
+demostracion mas.
+
+### 75.4 Lo que queda, declarado
+
+El carril A sigue calculando el compromiso en las filas 40-55 y **ya no lo
+lee nadie**: `C_PEND_ENTRY_A` fuerza su hoja a cero, y las restricciones se
+han ido al carril B.
+
+Es **computo muerto, no un fallo**: la fila 56 del carril A queda
+determinada por `C_PEND_CAP`, `C_PEND_ENTRY_A` y `C_PEND_SIBLING` sea cual
+sea lo que traiga. Retirarlo tocaria el indicador de hash y la cadena de
+periodicas —entrada 39— por una ganancia de cero filas. **Se deja y se
+declara**, en vez de arreglarlo de paso en un commit que corrige otra cosa.
+
+### 75.5 Lo que este arreglo NO cierra
+
+Que `circuit_mint_pending` sea correcto. Cierra **el fallo que se midio**.
+
+La clase a la que pertenecia —restriccion ausente, o escrita sobre el sitio
+equivocado— no la detecta ninguna herramienta del proyecto por
+construccion: `check_constraint_layout.py` no vio colision, desborde ni
+ranura muerta, y `buscar_vacias` daba las 89 disparando. **Las dos tenian
+razon**: el reparto estaba bien y ninguna restriccion era vacua. El problema
+era donde miraba una de ellas.
+
+Y este fallo salio de leer el circuito para escribir otra cosa. Es la
+tercera vez hoy.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

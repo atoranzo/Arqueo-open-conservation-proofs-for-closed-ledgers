@@ -129,9 +129,15 @@ const C_SUPPLY: usize = C_HASH_B + STATE_WIDTH; // 1
 /// Compromiso interno: capacidad (4), identidad (4), aleatorio (4).
 const C_PEND_IN: usize = C_SUPPLY + 1; // 12
 /// Compromiso completo: digest (4) e importe (1).
-const C_PEND_VAL: usize = C_PEND_IN + 12; // 5
+/// Compromiso completo, **carril B y ENTERO**: capacidad (4), digest (4),
+/// importe (1) y relleno (3).
+///
+/// ⚠️ Eran **5** y estaban en el carril A. Ver §74: el carril A lo descarta
+/// `C_PEND_ENTRY_A`, y los siete elementos que faltaban dejaban el
+/// compromiso sin determinar por sus entradas.
+const C_PEND_VAL: usize = C_PEND_IN + 12; // 12
 /// Capacidad a cero en la subida.
-const C_PEND_CAP: usize = C_PEND_VAL + 5; // 8
+const C_PEND_CAP: usize = C_PEND_VAL + 12; // 8
 /// **LA POSICION ESTABA LIBRE**: carril A con cero, B con el compromiso.
 const C_PEND_ENTRY_A: usize = C_PEND_CAP + 8; // 4
 const C_PEND_ENTRY_B: usize = C_PEND_ENTRY_A + 4; // 4
@@ -358,8 +364,11 @@ impl Air for MintPendingClimbAir {
         }
         // Suministro (1): grado 1 sin ciclo.
         degrees.push(TransitionConstraintDegree::new(1));
-        // Compromiso interno (12) y completo (5): grado 1 con ciclo.
-        for _ in 0..17 {
+        // Compromiso interno (12) y completo (12): grado 1 con ciclo.
+        //
+        // Eran 17. El completo paso de 5 a 12 al fijar tambien la capacidad
+        // y el relleno de su fila, que quedaban libres (§74.2).
+        for _ in 0..24 {
             degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
         }
         // Capacidad de la subida (8): grado 1 con ciclo.
@@ -533,12 +542,21 @@ impl Air for MintPendingClimbAir {
             // Compromiso interno: capacidad a cero, y entran identidad y
             // aleatorio. **Dos restricciones separadas, no su suma**: si se
             // sumaran, un exceso en una compensaria un defecto en la otra.
-            result[C_PEND_IN + i] = pend_in * next[i];
-            result[C_PEND_IN + 4 + i] = pend_in * (next[4 + i] - current[COL_R_ID + i]);
-            result[C_PEND_IN + 8 + i] = pend_in * (next[8 + i] - current[COL_SALT + i]);
+            // ===== VAN SOBRE EL CARRIL B, QUE ES EL QUE SE INSERTA =====
+            //
+            // ⚠️ Estaban sobre el carril A, y `C_PEND_ENTRY_A` **descarta**
+            // su digest: fuerza la hoja a cero sin mirarlo. El compromiso se
+            // construia en el carril que se tira. Ver §72.2 y §74.
+            result[C_PEND_IN + i] = pend_in * next[LANE_B + i];
+            result[C_PEND_IN + 4 + i] =
+                pend_in * (next[LANE_B + 4 + i] - current[COL_R_ID + i]);
+            result[C_PEND_IN + 8 + i] =
+                pend_in * (next[LANE_B + 8 + i] - current[COL_SALT + i]);
 
-            // Compromiso completo: el digest interno.
-            result[C_PEND_VAL + i] = pend_val * (next[4 + i] - current[4 + i]);
+            // Compromiso completo: capacidad a cero y el digest interno.
+            result[C_PEND_VAL + i] = pend_val * next[LANE_B + i];
+            result[C_PEND_VAL + 4 + i] =
+                pend_val * (next[LANE_B + 4 + i] - current[LANE_B + 4 + i]);
 
             // Subida al arbol.
             result[C_PEND_CAP + i] = pend_any * next[i];
@@ -562,7 +580,17 @@ impl Air for MintPendingClimbAir {
             let sib_b = (E::ONE - pbit) * next[LANE_B + 8 + i] + pbit * next[LANE_B + 4 + i];
             result[C_PEND_SIBLING + i] = pend_link * (sib_a - sib_b);
         }
-        result[C_PEND_VAL + 4] = pend_val * (next[8] - current[COL_AMOUNT]);
+        // El importe, y el relleno a cero.
+        //
+        // ⚠️ **El relleno no es cosmetico.** Sin fijarlo, dos trazas con el
+        // mismo `(identidad, aleatorio, importe)` producen hojas distintas, y
+        // el compromiso deja de estar determinado por sus entradas. Era la
+        // mitad del fallo de la entrada 40 que un cambio de carril a secas
+        // no habria cerrado (§74.2).
+        result[C_PEND_VAL + 8] = pend_val * (next[LANE_B + 8] - current[COL_AMOUNT]);
+        for k in 0..3 {
+            result[C_PEND_VAL + 9 + k] = pend_val * next[LANE_B + 9 + k];
+        }
         result[C_PBIT_BOOL] = current[COL_PBIT] * (current[COL_PBIT] - E::ONE);
 
         // ===== TRANSPORTE DE LAS COLUMNAS CONSTANTES =====
@@ -1263,20 +1291,9 @@ mod tests {
     /// pasaria entonces por la razon equivocada -exactamente lo que el
     /// proyecto advierte de los negativos-. Aqui se mira el **mensaje**.
     #[test]
-    // ===== TESTIGO ROJO. CONFIRMADO EL 31-07-2026. =====
-    //
-    // **Este test FALLA, y es correcto que falle**: nombra un fallo de
-    // solidez que existe y no esta corregido. Medido en release: el
-    // circuito acepta una traza que declara emitir 250.000 -y sube el
-    // suministro en 250.000- mientras deposita un pendiente de 1.000.000.
-    //
-    // Va con `ignore` y no borrado ni debilitado, que es lo que se hizo en
-    // §50 con el testigo de `circuit_send`: rojo hasta que se corrija, y
-    // entonces **se le quita la marca y pasa a verde**. Un testigo borrado
-    // no vuelve; uno debilitado miente.
-    //
-    // Para verlo: `cargo test --release -p stark-experiment a_lane_b -- --ignored`
-    #[ignore = "TESTIGO ROJO entrada 40: el carril B no esta atado al importe declarado"]
+    // ✅ **Estaba ROJO y paso a VERDE con el arreglo de §74.** Se le quita la
+    // marca, que es lo que §50 dejo dicho que se hace con un testigo cuando
+    // el fallo que nombra se corrige. Se queda como regresion permanente.
     fn a_lane_b_commitment_inconsistent_with_the_declared_amount_is_rejected() {
         let inflado = AMOUNT * 4;
         assert_ne!(

@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 20 abiertas, 23 resueltas. Ultima revision: 31 de julio de 2026.
+**Estado**: 19 abiertas, 24 resueltas. Ultima revision: 31 de julio de 2026.
 
 ⚠️ **El 31-07 aparecio la 43 leyendo codigo para otra cosa**: la capa no
 verificaba las pruebas de la via de pago, y un tercero vaciaba cualquier
@@ -516,8 +516,21 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   §62.2, por tercera vez: herramienta util que cubre parte del problema sin
   que conste que parte.
 
-- [ ] **40. ⚠️ FALLO DE SOLIDEZ CONFIRMADO: el compromiso del pendiente no
-  esta atado al importe declarado.** **Medido en release el 31-07-2026
+- [x] **40. ✅ FALLO DE SOLIDEZ CORREGIDO Y VERIFICADO: el compromiso del
+  pendiente no estaba atado al importe declarado.** **Corregida** el
+  31-07-2026 (§75): `C_PEND_IN` y `C_PEND_VAL` pasan al **carril B** -el que
+  se inserta- y `C_PEND_VAL` de **5 a 12** ranuras, fijando tambien la
+  capacidad y el **relleno** de su fila. 89→96 y 125→132, en los dos
+  circuitos. Los tres testigos de rojo a verde con el positivo en pie, **272
+  y 201 tests sin ninguno ignorado**. ⚠️ El relleno era la mitad del fallo:
+  mover de carril a secas lo habria dejado vivo con otra forma (§75.1).
+  ⚠️ `build_trace` **no cambio** —la traza honesta ya cumplia lo que ahora se
+  exige—, que es justo por lo que ningun test lo veia (§75.3). Queda
+  declarado como computo muerto el compromiso que el carril A sigue
+  calculando sin que nadie lo lea (§75.4).
+
+  ~~Original:~~ **40. ⚠️ FALLO DE SOLIDEZ CONFIRMADO: el compromiso del
+  pendiente no esta atado al importe declarado.** **Medido en release el 31-07-2026
   (§72), en los DOS circuitos**: `circuit_mint_pending_climb` y
   `circuit_mint_pending` -el de produccion- aceptan una traza que declara
   emitir 250.000, sube el suministro en 250.000 y deposita un pendiente de
