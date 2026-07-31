@@ -7507,6 +7507,66 @@ hasta que se roten.
   generadas antes de la rotacion tienen 64 bits». Es una frase distinta y
   mas fiel.
 
+## 91. Tres mensajes de commit que afirmaron lo que no hicieron
+
+Un fallo de **proceso**, no de codigo. Se registra porque el historial de
+git es tan documento del proyecto como el README, y ahi la imagen fiel
+fallo tres veces seguidas el mismo dia.
+
+### 91.1 Lo que paso
+
+| commit | contenia | decia |
+|---|---|---|
+| `a826f01` | el instrumento en `metrics.rs` | *«…and record what apply actually spends»* — **el registro entro despues** |
+| `3b7e605` | las derivaciones anchas | *«…and correct the claim that widening invalidates accounts»* — **esa correccion no estaba** |
+| `ecc60cb` | AUDITORIA y BACKLOG, 234 lineas | *«Add wide key derivations»* — **no añadia ninguna** |
+
+El tercero salio de intentar arreglar el segundo: se ejecuto `git commit
+--amend` sobre lo que **se suponia** que era `HEAD`, y entre medias habia
+entrado otro commit. El resultado fueron **dos mensajes cruzados**, cada uno
+describiendo lo que hizo el otro.
+
+### 91.2 La causa es la misma de todo el dia
+
+> **Operar sobre un estado que se supone en vez de sobre el que hay.**
+
+Es lo mismo que hizo abortar tres parches por md5 desfasado, y lo mismo que
+§76, §82.1 y §84.2 registran del README, de la entrada 15 y de los
+preprints. Aqui llego a hacer daño **porque git no tiene assert**: con los
+ficheros, el md5 para la operacion; con `--amend`, nada la para.
+
+### 91.3 ⚠️ Y el segundo intento fue peor que el error
+
+Enmendar sin comprobar `HEAD` **no arreglo un mensaje: estropeo otro**. Se
+paso de un mensaje inexacto a dos cruzados.
+
+> **Una correccion aplicada sin verificar el estado no es una correccion: es
+> un segundo error con intencion de arreglar.**
+
+### 91.4 Lo que se corrige y lo que NO
+
+✅ `ecc60cb` → `2fb7438`: era `HEAD`, no lo habia visto nadie mas, se
+enmendo.
+
+⚠️ **`3b7e605` se queda como esta.** Esta publicado y su mensaje sobra en
+una mitad. **No se reescribe**: hacerlo para que parezca que no hubo error
+es exactamente lo contrario de lo que este documento defiende. Queda aqui
+anotado, que es la unica reparacion coherente.
+
+### 91.5 La regla que faltaba
+
+Con los ficheros `.rs` **nunca** ha fallado un parche por estado
+equivocado, y la razon es simple: ahi se pide `md5sum` **antes de generar
+cada uno**, sin excepcion. Con la documentacion se dio por sabido el estado
+—y fallaron tres— y con git ni siquiera se miro.
+
+> **`git log --oneline -1` antes de cualquier `amend`, igual que `md5sum`
+> antes de cualquier sustitucion.**
+
+La disciplina existia; lo que fallo fue aplicarla solo donde resultaba
+comodo. Es el patron de §59.2 —algo util aplicado a parte del trabajo sin
+declarar a que parte— por **octava** vez en la sesion.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
