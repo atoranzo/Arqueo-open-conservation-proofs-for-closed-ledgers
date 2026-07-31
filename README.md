@@ -147,36 +147,63 @@ Requiere Rust estable. Sin instaladores externos ni toolchains aparte.
 
 > ⚠️ **`--release` es obligatorio para `zk-ssl`, no una optimización.**
 >
-> ⚠️ **Estos 65 fallos son un limite conocido, no un defecto**, y estan
-> declarados en `AUDITORIA.md` §20: winterfell comprueba grados solo en
-> depuracion, y ciertas restricciones tienen grado que depende del testigo
-> (bits de camino de Merkle, margenes que pueden ser cero). En release —el
-> modo de produccion— las pruebas se generan y verifican bien. No se
-> corrige porque hacerlo exigiria migrar fondos en transito, y release no
-> lo necesita.
+> **Todas las cifras de abajo estan MEDIDAS el 31-07-2026**, no recordadas.
+> La version anterior de este bloque llevaba cuatro cifras rancias y **una
+> afirmacion falsa**; ver `AUDITORIA.md` §76 y la entrada 2 del backlog,
+> que existe precisamente por esto.
 >
-> `cargo test` sin él **falla en 65 tests de `zk-ssl`**, y no porque el
-> código esté mal: winterfell comprueba en depuración que el grado declarado
-> de cada restricción se realice en la traza concreta, y una restricción
-> booleana sobre un bit que es constante en toda la traza tiene grado real 0.
+> ⚠️ **Los fallos en depuracion son un limite conocido, no un defecto**, y
+> estan declarados en `AUDITORIA.md` §20: winterfell comprueba grados solo
+> en depuracion, y ciertas restricciones tienen grado que depende del
+> testigo (bits de camino de Merkle, margenes que pueden ser cero). En
+> release —el modo de produccion— las pruebas se generan y verifican bien.
+> No se corrige porque hacerlo exigiria migrar fondos en transito, y
+> release no lo necesita.
 >
-> El crate de circuitos **sí pasa** en los dos modos —201 en release, 199
-> más 2 saltados en depuración— pero es **cinco veces más lento** sin
-> `--release` (51 s frente a 9 s).
+> **En release, los dos crates pasan enteros y sin ningun test saltado:**
 >
-> **Dos** tests se saltan en ese modo, y los dos por la misma causa: una
-> traza en la que el grado real de una restricción booleana cae a cero.
-> Alcanzar el tope de emisión **exactamente** deja el margen a cero
-> (`circuit_mint_pending`), y un valor cero en la comprobación de rango
-> deja la diferencia a cero (`range_check`) — un caso legítimo del
-> dominio, porque el circuito de cumplimiento necesita `amount == balance`.
-> Los dos llevan el motivo escrito y `--release` sí los ejecuta.
+> | | tests | fallan | saltados | tiempo |
+> |---|---|---|---|---|
+> | `stark-experiment` | **272** | 0 | 0 | 10 s |
+> | `zk-ssl` | **201** | 0 | 0 | 29 s |
+>
+> **En depuracion, no:**
+>
+> | | pasan | fallan | saltados | tiempo |
+> |---|---|---|---|---|
+> | `stark-experiment` | 265 | **3** | 4 | 56 s |
+> | `zk-ssl` | 114 | **80** | 7 | 256 s |
+>
+> ⚠️ **El crate de circuitos NO pasa en depuracion, y este README decia que
+> si.** Fallan tres tests de solidez de custodios —dos de
+> `circuit_threshold_single_nullifier` y uno de `circuit_threshold_single`—
+> y **ya fallaban antes de la sesion que corrigio este texto**: medido
+> volviendo al commit anterior, donde fallan exactamente los mismos tres.
+> **No estan diagnosticados**: sus nombres son de solidez, no de
+> rendimiento, y atribuirlos al limite de grados sin comprobarlo seria
+> repetir el error que este documento lleva setenta secciones registrando.
+> Abierto como **entrada 44** del backlog.
+>
+> Los 80 fallos de `zk-ssl` **tampoco son nuevos**: eran 77 antes de la
+> sesion, no los 65 que este README publicaba.
+>
+> Depuracion es **cinco a seis veces mas lento** (56 s frente a 10 s en los
+> circuitos), y a cambio winterfell valida las restricciones al generar y
+> da el indice y la fila del fallo. Por eso se usa, y por eso los tests que
+> ahi degeneran llevan `ignore` **con el motivo escrito** en vez de
+> borrarse.
 
 ```bash
-cargo test -p zk-ssl --release              # la capa: 174 tests
-cargo test -p stark-experiment --release    # los doce circuitos: 201 tests
+cargo test -p zk-ssl --release              # la capa: 201 tests
+cargo test -p stark-experiment --release    # los circuitos: 272 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
+
+El crate de circuitos tiene **27 circuitos con `impl Air`**; **26 llevan
+prueba de vacuidad por mutacion** y el unico que no es el `WorkAir` de
+`lib.rs`, que es el ejemplo de demostracion de winterfell y no protege
+nada. `python3 tools/check_constraint_layout.py` barre los 27 y no
+encuentra colisiones, desbordes ni ranuras muertas.
 
 La comparativa completa:
 
@@ -286,6 +313,11 @@ DOI: [10.5281/zenodo.21693718](https://doi.org/10.5281/zenodo.21693718)
 *Versión anterior: [10.5281/zenodo.21679208](https://doi.org/10.5281/zenodo.21679208).*
 
 ### Qué corrige la tercera revisión
+
+> ⚠️ **Esta tabla es HISTORICA.** Dice que corrigio *esa* revision respecto
+> de la anterior, y sus cifras son las de entonces. **No se actualizan**:
+> meterle los numeros de hoy reescribiria lo que se publico. Para el estado
+> actual, la tabla de arriba, medida el 31-07-2026.
 
 | Corrección | Antes | Ahora | Ver |
 |---|---|---|---|

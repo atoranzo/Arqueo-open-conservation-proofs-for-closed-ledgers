@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 19 abiertas, 24 resueltas. Ultima revision: 31 de julio de 2026.
+**Estado**: 20 abiertas, 24 resueltas. Ultima revision: 31 de julio de 2026.
 
 ⚠️ **El 31-07 aparecio la 43 leyendo codigo para otra cosa**: la capa no
 verificaba las pruebas de la via de pago, y un tercero vaciaba cualquier
@@ -100,8 +100,27 @@ El repositorio volvio a describir lo que hay. Las cinco resueltas.
   demuestra» de `circuit_send` deja de contradecir a la seccion «por que
   NO lleva nullificador» doce lineas mas abajo.
 
+- [ ] **44. ⚠️ Tres tests de solidez de custodios fallan en depuracion, sin
+  diagnosticar.** `the_index_test_rejects_for_the_right_reason`,
+  `an_attacker_cannot_bring_their_own_custodian_set` y
+  `one_real_and_one_forged_custodian_do_not_meet_the_threshold`.
+  **Preexistentes**: medido volviendo a `44c5b8c`, donde fallan los mismos
+  tres (§76.1). Pasan en release. ⚠️ **La causa NO esta medida**: podrian ser
+  la clase de la entrada 6 o no, y atribuirlo sin comprobarlo es el error
+  que este proyecto lleva setenta y seis secciones registrando. Metodo que
+  ha funcionado hoy: diffear el vector de grados, aislar la variable, test
+  discriminante. ⚠️ Son los tres que comprueban que **un custodio falso no
+  alcanza el umbral** y que **el indice no se puede mentir**: por lo que
+  cubren, merecen mirarse antes que la 41.
+
 - [x] **2. Cifras del repositorio.** ~~65 de 174 en depuracion, 174 tests
   de la capa, doce circuitos, y la contradiccion 56/65 dentro de
+    ⚠️ **Se volvio a quedar rancio.** Al remedirlo el 31-07-2026 (§76) el
+  README seguia publicando 201/174/«doce circuitos» —hoy 272/201/27— y, peor,
+  **una afirmacion falsa**: que el crate de circuitos pasaba en los dos
+  modos. No pasa, y no desde hoy. Corregido con lo medido. La entrada se
+  queda `[x]`: lo que fallo no fue esta correccion sino que **nada vuelve a
+  medir esas cifras sola**.
   `AUDITORIA.md`.~~ **Resuelto** el 30-07-2026, commit `f673c8e` *«Correct
   stale and contradictory test and circuit counts, measured»*: los 65
   medidos con `cargo test -p zk-ssl` sin `--release` (109 pasan, 65 fallan

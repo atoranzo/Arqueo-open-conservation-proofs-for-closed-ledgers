@@ -6202,6 +6202,71 @@ era donde miraba una de ellas.
 Y este fallo salio de leer el circuito para escribir otra cosa. Es la
 tercera vez hoy.
 
+## 76. El README publicaba una afirmacion falsa, y no desde hoy
+
+La entrada 2 se abrio por cifras rancias y se cerro midiendolas. Al volver
+a medirlas el 31-07-2026 aparecio algo peor que una cifra.
+
+### 76.1 Lo que decia y lo que hay
+
+> *«El crate de circuitos **si pasa** en los dos modos.»*
+
+**No pasa.** En depuracion fallan tres tests de solidez de custodios:
+
+- `circuit_threshold_single::the_index_test_rejects_for_the_right_reason`
+- `circuit_threshold_single_nullifier::an_attacker_cannot_bring_their_own_custodian_set`
+- `circuit_threshold_single_nullifier::one_real_and_one_forged_custodian_do_not_meet_the_threshold`
+
+Y **ya fallaban antes de esta sesion**: volviendo al commit `44c5b8c` fallan
+exactamente los mismos tres.
+
+> **No es una cifra rancia: es una afirmacion de estado contradicha por el
+> propio comando que el README invita a ejecutar.** Una cifra desfasada
+> envejece sola; esta habia que escribirla.
+
+### 76.2 Lo medido, contra lo publicado
+
+| | Publicaba | Medido 31-07 | Antes de la sesion |
+|---|---|---|---|
+| `stark-experiment` release | 201 | **272** | 252 + 3 fallos en debug |
+| `zk-ssl` release | 174 | **201** | — |
+| Fallos de `zk-ssl` en debug | 65 | **80** | **77** |
+| Circuitos | «doce» | **27** | — |
+| Con prueba de vacuidad | 11 de 12 | **26 de 27** | — |
+
+⚠️ **Los 65 tampoco eran de hoy.** Eran 77 antes de la sesion. Sustituirlos
+por 80 sin decirlo habria ocultado que el desfase venia de antes, que es
+justo lo que la entrada 2 castiga.
+
+### 76.3 Lo que NO se toco, y por que
+
+La tabla «Que corrige la tercera revision» dice que corrigio **esa**
+revision respecto de la anterior. Sus cifras son las de entonces y
+**siguen siendo correctas para lo que afirman**.
+
+Actualizarlas habria reescrito lo que se publico. Se le añade una nota que
+declara que es historica, y se deja.
+
+> **Una cifra vieja en un contexto historico no esta rancia: esta fechada.**
+> Distinguir las dos cosas es la diferencia entre corregir un documento y
+> falsificarlo.
+
+### 76.4 Los tres tests quedan SIN diagnosticar
+
+Sus nombres son de solidez, no de rendimiento. Podrian ser la clase de la
+entrada 6 —grado dependiente del testigo— o podrian no serlo.
+
+**No se atribuyen**, porque hoy ha pasado dos veces que una atribucion sin
+comprobar era falsa. Van como **entrada 44**, con el metodo que ha
+funcionado: diffear el vector de grados, aislar la variable, test
+discriminante.
+
+⚠️ Y hay algo que incomoda en ellos y conviene decir: son los tres tests
+que comprueban que **un custodio falso no alcanza el umbral** y que **el
+indice no se puede mentir**. Que lleven fallando en depuracion sin que
+conste en ninguna parte es exactamente lo que la entrada 7 dice que las
+herramientas del proyecto no cubren.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
