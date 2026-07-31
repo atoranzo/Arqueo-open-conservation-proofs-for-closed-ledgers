@@ -5379,7 +5379,63 @@ Ninguna es un defecto. Quedan anotadas porque un barrido automatico que
 suponga nombres uniformes fallaria en las dos, y **este proyecto ya tiene
 dos casos de herramientas que saltaban ficheros en silencio** (§59.2, §62.2).
 
-## 64. Qué NO demuestra este documento
+## 64. `recovery` delegado: la extraccion mas grande
+
+Tercera aplicacion del patron, y la que mas codigo movio. `governance` no
+dejaba circuito al amputarla (57.1); `freeze` dejaba una subida dual que era
+`dual_climb` con otra profundidad (60); `recovery` deja un circuito con
+contenido propio que **nadie mas puede recomputar**.
+
+### 64.1 Que sale y que se queda
+
+De 114 restricciones a **92**, de 46 columnas a **39**. Fuera: claves e
+indices de custodio, sus acumuladores, la colocacion en su arbol, tres de los
+cuatro segmentos de rango y la mitad del transporte.
+
+Dentro, y es la razon de que este circuito exista: **los dos carriles
+construyen su hoja con la MISMA columna `COL_BAL`**, y el segmento
+superviviente la descompone en 64 bits. Una recuperacion reasigna el control,
+no mueve dinero.
+
+A diferencia de `circuit_frozen_climb` -donde las hojas libres son correctas
+(58.3)- aqui no lo serian: con hojas libres, dos custodios podrian vaciar una
+cuenta bajo apariencia de recuperacion, y un auditor externo solo veria dos
+raices cambiando.
+
+### 64.2 Dos cosas que apareceieron al extraer
+
+**La fila 271 no es de enlace.** El relleno hasta la potencia de dos salio
+gratis, sin los niveles ficticios que necesito `freeze` (60.2). Se vio
+contando `acct_link`: cubre las filas 15 y 23..263, treinta y dos niveles, y
+la 271 queda fuera.
+
+**`COL_BIT_B` era peso muerto.** En la subida al arbol de cuentas los dos
+carriles **comparten camino** -misma posicion, distinta identidad- asi que un
+solo bit de direccion basta. El segundo existia solo para la subida de
+custodios; al amputarla quedaba una columna siempre a cero con una
+restriccion booleana encima que no restringia nada.
+
+Lo delato un aviso del compilador -`bit_b` sin usar- que estuvo a punto de
+silenciarse. Es el segundo aviso del dia que señala algo real: el primero
+(`bob` sin usar) resulto correcto y merecia una explicacion; este era
+verdadero peso muerto. La diferencia solo se ve mirandolos.
+
+### 64.3 La vía delegada, y lo que la distingue
+
+`apply_recovery_delegated` recibe la prueba del circuito y dos de custodios
+distintos. Cuatro tests de rechazo, y uno de ellos es especifico de esta
+operacion: **una autorizacion para recuperar hacia una identidad no sirve
+para entregar la cuenta a otra**. El compromiso de operacion protege aqui lo
+que mas importa: a quien se le da el control.
+
+### 64.4 Estado del patron
+
+Tres de cinco: `governance`, `freeze`, `recovery`. Quedan `mint` (118
+ranuras) y `mint_pending` (125), que 57.1 dejo para el final por tener el
+tejido mas entrelazado -sus carriles de hash sirven a la vez a la subida al
+arbol de cuentas y a la de custodios-.
+
+## 65. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
