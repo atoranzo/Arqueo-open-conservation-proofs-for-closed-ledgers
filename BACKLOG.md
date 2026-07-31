@@ -183,8 +183,11 @@ decidir.
   `mint_pending` al final. **`freeze` HECHO** (§60) y **`recovery` HECHO** (§64):
   `circuit_recovery_climb` con 6 tests -incluido el de regresion que impide
   cambiar el saldo- y `apply_recovery_delegated` con 4 de rechazo. **TRES de
-  cinco operaciones ya no necesitan las claves en el operador.** Quedan
-  `mint` y `mint_pending`, los mas enredados (§57.1).
+  cinco operaciones ya no necesitan las claves en el operador**, y las vias
+  antiguas llevan `#[deprecated]` con el motivo (§65). ⚠️ Quedan `mint` y
+  `mint_pending`, que **son las que crean dinero**: mientras no tengan via
+  delegada, el fallo de la 32 sigue abierto donde mas importa. Su extraccion
+  es mecanica, no enredada (§64.5 corrige a §57.1).
   **Analizada** (§42): no se mueve «al cliente» porque los custodios son
   dos y el circuito prueba conocimiento de ambas claves en una sola traza.
   La via que cierra las dos mitades es **verificar firmas en circuito**,

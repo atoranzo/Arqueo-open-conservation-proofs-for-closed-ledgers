@@ -5458,7 +5458,59 @@ ranuras) y `mint_pending` (125), que 57.1 dejo para el final por tener el
 tejido mas entrelazado -sus carriles de hash sirven a la vez a la subida al
 arbol de cuentas y a la de custodios-.
 
-## 65. Qué NO demuestra este documento
+## 65. Politica de las vias duplicadas
+
+Con tres operaciones delegadas, cada una convive con su version antigua y
+**en ningun sitio constaba cual es la buena**. Un lector de
+`apply_governance` no podia saber que su pareja `_delegated` existe ni por
+que. Se resuelve ahora, con tres pares, en vez de con cinco.
+
+### 65.1 Donde esta el fallo, exactamente
+
+No en las seis funciones. Las tres `apply_*` verifican un recibo y son
+correctas; el problema es **de donde sale ese recibo**. Las que reciben las
+claves son `update_custodians`, `set_frozen` y `recover`, y solo esas llevan
+la marca. Marcar de mas habria diluido la señal.
+
+### 65.2 Marcadas, no borradas
+
+Hay **75 llamadas** a las vias antiguas, todas en tests, y esos tests
+comprueban propiedades reales de la capa. Borrarlas se las llevaria por
+delante. Ademas la via antigua **sigue siendo la unica** para `mint` y
+`mint_pending`.
+
+Asi que llevan `#[deprecated]` con el motivo escrito:
+
+> *Exige las claves de custodio EN EL OPERADOR: es el fallo de la entrada 32.*
+
+Quien las llame desde codigo nuevo lo vera **en su propio compilador**, no
+enterrado en un documento.
+
+### 65.3 El permiso va en los tests, no en la definicion
+
+`#![allow(deprecated)]` esta en los tres modulos de test que las ejercitan a
+proposito, con el motivo al lado. Ponerlo en la definicion habria apagado el
+aviso para todo el mundo, que es justo lo contrario de lo que se busca.
+
+### 65.4 Cuando se retiran
+
+Cuando las cinco operaciones tengan via delegada. Entonces las antiguas y sus
+circuitos conjuntos (`circuit_governance`, y las partes de custodio de
+`circuit_freeze`, `circuit_recovery`, `circuit_mint`, `circuit_mint_pending`)
+dejan de tener razon de ser.
+
+### 65.5 Lo que esta marca NO es
+
+⚠️ **Una barrera.** `#[deprecated]` es un aviso: nada impide que codigo de
+produccion la llame con un `#[allow]`. La garantia de que las claves no
+lleguen al operador **no la da esta marca**, la da usar la via delegada.
+
+Y mientras `mint` y `mint_pending` no la tengan, **el fallo de la entrada 32
+sigue abierto**: las dos operaciones que crean dinero siguen exigiendo las
+claves. Tres de cinco no es la mitad del problema resuelto, porque las dos
+que faltan son las que mas importan.
+
+## 66. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
