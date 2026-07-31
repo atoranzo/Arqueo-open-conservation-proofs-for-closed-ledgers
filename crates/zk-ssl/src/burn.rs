@@ -70,8 +70,24 @@ impl SovereignLayer {
 
         let path = self.accounts.path_for(account_index);
         let frozen_path = self.frozen.path_for(account_index);
+        // ⚠️ **La clave se RELLENA a cuatro elementos en el borde.**
+        //
+        // `circuit_burn` la absorbe ancha desde §92.6, y la capa sigue
+        // manejandola estrecha. Cuadran porque §90 probo que rellenar con
+        // ceros **da la misma identidad**: la cuenta se abrio con
+        // `derive_public_id(sk)` y el circuito computa
+        // `derive_public_id_wide([sk, 0, 0, 0])`, que es lo mismo.
+        //
+        // ⚠️ **Y por eso no gana seguridad**: sigue habiendo 64 bits de
+        // entropia. Lo que falta para ganarla es que `open_account` acepte
+        // claves anchas y que los titulares las roten (entrada 15).
         let trace = build_burn_trace(
-            spend_key,
+            [
+                spend_key,
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+            ],
             account.public_id,
             account.balance,
             account.nonce,

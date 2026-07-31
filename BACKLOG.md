@@ -585,6 +585,12 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   ⚠️ **Costo CINCO rondas** por aplicar el patron en el orden equivocado
   (§92.7): **primero los TIPOS, luego compilar, y arreglar lo que el
   compilador enumere**. Esa es la secuencia para los que quedan.
+  ⚠️ **Y rompio `main`**: ensanchar `circuit_burn` rompio su llamante en la
+  capa —`zk-ssl/src/burn.rs`— **y se commiteo sin ver la salida** (§92.8).
+  Arreglado con **una linea**, rellenando la clave en el borde, gracias a la
+  propiedad de §90 (§92.9). ⚠️ **Los tres que quedan SI los ejecuta la
+  capa**, asi que romperan su llamante igual: la secuencia completa esta en
+  §92.10.
   **Quedan**: `send` y `claim` —que transfieren igual— y `audit`, que **no
   encaja en el patron**: `COL_KEY` en 13, ancho 24 y **cero** sitios
   `state[8] = spend_key`. Absorbe la clave de otra forma y necesita analisis

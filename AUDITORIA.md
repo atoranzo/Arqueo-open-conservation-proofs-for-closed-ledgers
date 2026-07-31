@@ -7682,6 +7682,65 @@ del interlocutor.
 —dejar que la herramienta enumere— y se aplico solo donde resultaba
 comodo.**
 
+### 92.8 ⚠️ `main` estuvo roto, y las dos reglas que no se aplicaron
+
+Ensanchar `circuit_burn` rompio `crates/zk-ssl/src/burn.rs`, que llama a su
+`build_trace`. **Y se commiteo asi.**
+
+**Regla no aplicada, primera.** El piloto no rompio la capa porque
+`SettlementAir` **no lo ejecuta**: solo lo referencia `transfer.rs`, no
+declarado en `lib.rs`. Eso esta escrito en §85.8, **por quien luego no lo
+anticipo**.
+
+> Se miro el circuito y no **quien lo usa**. Es la misma raiz que los cinco
+> descuidos de §92.7: revisar donde se cambia y no donde repercute.
+
+**Regla no aplicada, segunda, y es peor.** La salida de
+`cargo test -p zk-ssl` **no imprimio ningun `test result`** —porque no
+compilaba— y se dio por buena. El metodo de trabajo lo prohibe con esas
+palabras: *«dar por bueno un commit sin ver la salida de los tests»*, y ya
+dejo `main` roto una vez.
+
+⚠️ Ademas paso **dos veces seguidas** que un `tail` corto escondio justo la
+linea que decidia. Un filtro que recorta la salida es un filtro que puede
+recortar la mala noticia: **`grep "test result"`, no `tail -6`.**
+
+### 92.9 El arreglo fue una linea, y por que importa
+
+La capa **no tuvo que cambiar**: se rellena la clave en el borde.
+
+```rust
+build_burn_trace([spend_key, ZERO, ZERO, ZERO], ...)
+```
+
+Cuadra porque §90 probo que rellenar **da la misma identidad**: la cuenta se
+abrio con `derive_public_id(sk)` y el circuito computa
+`derive_public_id_wide([sk,0,0,0])`, que es lo mismo.
+
+> **Es la primera vez que la propiedad de §90 paga en codigo, y paga
+> entero.** Sin ella habria habido que migrar `open_account` y toda la capa
+> **con `main` roto**, que es la peor situacion posible para un cambio
+> grande.
+
+⚠️ **Y no gana seguridad**: siguen siendo 64 bits. Lo que falta es que
+`open_account` acepte claves anchas y que se roten.
+
+### 92.10 Lo que esto obliga para los circuitos que quedan
+
+`send`, `claim` y `audit` **si los ejecuta la capa** —`two_phase.rs`,
+`audit.rs`—. Ensanchar cualquiera de los tres **rompera su llamante**, igual
+que `burn`.
+
+**La secuencia, completada:**
+
+1. Cambiar **todas las declaraciones** —campos, firmas— (§92.7).
+2. **Compilar el crate del circuito.**
+3. **Compilar `zk-ssl` TAMBIEN**, que es donde vive el llamante.
+4. Rellenar en el borde de la capa, como en §92.9.
+5. **Ver el `test result` de los DOS crates** antes de commitear.
+
+El paso 3 y el 5 son los que faltaron.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—
