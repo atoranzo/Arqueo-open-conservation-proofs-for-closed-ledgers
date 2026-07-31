@@ -228,6 +228,34 @@ pub fn derive_public_id(spend_key: BaseElement) -> Digest {
     )
 }
 
+/// **Identidad desde una clave de CUATRO elementos** (entrada 15, §82).
+///
+/// La estrecha toma un solo elemento de Goldilocks: **2^64**, y `pk` es
+/// publica, asi que agotar el espacio cuesta 2^63 —2,38 millones de
+/// años-nucleo medidos en §82.3, cota floja—.
+///
+/// ⚠️ **Es una generalizacion, no un reemplazo**: rellenando con ceros
+/// devuelve **exactamente lo mismo** que la estrecha, y hay test que lo fija
+/// (`the_wide_derivation_generalises_the_narrow_one`). De ahi que migrar
+/// **no invalide cuentas**.
+///
+/// ⚠️ **Pero conservar la identidad no conserva la seguridad.** Una clave
+/// rellenada con ceros sigue teniendo 64 bits de entropia. Lo que la version
+/// ancha permite es **generar claves de 256 bits**; las viejas hay que
+/// rotarlas, y hasta entonces valen lo que valian.
+pub fn derive_public_id_wide(spend_key: Digest) -> Digest {
+    native_merge(as_digest(BaseElement::new(SPEND_KEY_DOMAIN)), spend_key)
+}
+
+/// Nullifier desde una clave de cuatro elementos.
+///
+/// Misma estructura que el estrecho —dominio, clave, nonce— con la clave
+/// ocupando el digest entero en vez de su primer elemento.
+pub fn native_nullifier_wide(spend_key: Digest, nonce: BaseElement) -> Digest {
+    let inner = native_merge(as_digest(BaseElement::new(NULLIFIER_DOMAIN)), spend_key);
+    native_merge(inner, as_digest(nonce))
+}
+
 /// Hoja de cuenta: `Rescue(Rescue(pk, saldo), nonce)`.
 pub fn native_leaf(public_id: Digest, balance: BaseElement, nonce: BaseElement) -> Digest {
     let inner = native_merge(public_id, as_digest(balance));
@@ -1193,6 +1221,65 @@ impl Prover for SettlementProver {
 mod tests {
     use super::*;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
+
+    /// ⚠️ **La derivacion ancha GENERALIZA la estrecha.**
+    ///
+    /// Es la pregunta de la que depende el plan de la entrada 15: §85 y esa
+    /// entrada dicen que ensanchar la clave «invalida cualquier cuenta
+    /// existente».
+    ///
+    /// Si rellenar con ceros da la MISMA identidad, es falso: las cuentas
+    /// sobreviven y lo que hay que rotar son las claves, gradualmente.
+    ///
+    /// ⚠️ **Conservar la identidad no conserva la seguridad.** Una clave
+    /// rellenada sigue teniendo 64 bits y sigue cayendo en los 2^63 de §82.
+    /// Cambia el coste de MIGRAR, no el de ATACAR.
+    #[test]
+    fn the_wide_derivation_generalises_the_narrow_one() {
+        for k in [1u64, 0xDEADBEEF, 0xA11CE, u64::MAX - 7] {
+            let sk = BaseElement::new(k);
+            assert_eq!(
+                derive_public_id_wide(as_digest(sk)),
+                derive_public_id(sk),
+                "una clave estrecha rellenada con ceros debe dar la MISMA \
+                 identidad: si no, migrar invalidaria las cuentas (k = {k:#x})"
+            );
+            assert_eq!(
+                native_nullifier_wide(as_digest(sk), BaseElement::new(3)),
+                native_nullifier(sk, BaseElement::new(3)),
+                "y el mismo nullifier (k = {k:#x})"
+            );
+        }
+    }
+
+    /// **Y una clave ancha de verdad da otra identidad.**
+    ///
+    /// Sin esto, el test de arriba pasaria igual si la version ancha
+    /// **ignorara** los tres elementos nuevos —que es justo el fallo que
+    /// tendria si se escribiera mal—. Es el par discriminante: uno fija que
+    /// generaliza, el otro que **usa** lo que se le da.
+    #[test]
+    fn a_wide_key_is_not_its_first_element() {
+        let base = BaseElement::new(0xA11CE);
+        let estrecha = as_digest(base);
+        let ancha = [
+            base,
+            BaseElement::new(1),
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+        ];
+        assert_ne!(
+            derive_public_id_wide(ancha),
+            derive_public_id_wide(estrecha),
+            "cambiar un elemento distinto del primero DEBE cambiar la \
+             identidad, o los 192 bits nuevos no valdrian nada"
+        );
+        assert_ne!(
+            native_nullifier_wide(ancha, BaseElement::new(3)),
+            native_nullifier_wide(estrecha, BaseElement::new(3)),
+            "y el nullifier igual"
+        );
+    }
 
     /// **Cuanto cuesta agotar el espacio de claves de gasto.**
     ///
