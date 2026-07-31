@@ -46,6 +46,9 @@
 use super::*;
 // `two_phase` es un modulo publico, pero sus tipos no estan en la raiz del
 // crate: `use super::*` no los alcanza.
+// `derive_public_id_wide` (§90) no llega por `use super::*`: lib.rs
+// solo reexporta la estrecha.
+use stark_experiment::circuit_settlement::derive_public_id_wide;
 use crate::pending::pending_commitment;
 use crate::two_phase::{ClaimReceipt, PendingNotice, SendReceipt};
 
@@ -238,13 +241,18 @@ impl SendMaterials {
 /// `AUDITORIA.md` §33.
 pub fn prove_send(
     materials: &SendMaterials,
-    spend_key: BaseElement,
+    // ⚠️ **CUATRO elementos** desde §90 (entrada 15).
+    //
+    // Es el punto donde la clave ancha entra de verdad: rellenar aqui en el
+    // borde —como se hace en la via antigua— dejaria al cliente sin poder
+    // usarla nunca, y los 256 bits del circuito no servirian a nadie.
+    spend_key: Digest,
     options: ProofOptions,
 ) -> Result<SendReceipt, LayerError> {
     // La clave debe corresponder a la cuenta. El circuito lo impone
     // igualmente, pero en release no se valida al generar: sin esta
     // comprobacion se gastaria el computo de una prueba invalida.
-    if derive_public_id(spend_key) != materials.sender.public_id {
+    if derive_public_id_wide(spend_key) != materials.sender.public_id {
         return Err(LayerError::NotTheAccountHolder);
     }
 
@@ -355,7 +363,6 @@ pub fn prove_claim(
 #[cfg(test)]
 mod tests_privacidad {
     use crate::tests_support::*;
-    use crate::*;
     use stark_experiment::circuit_settlement::native_leaf;
     use winterfell::math::fields::f64::BaseElement;
 
@@ -635,7 +642,16 @@ mod tests {
             .send_materials(alice, receptor, 250_000, salt_de(0x1073))
             .expect("materiales");
 
-        let r = client::prove_send(&m, BaseElement::new(0x1337), proof_options());
+        let r = client::prove_send(
+            &m,
+            [
+                BaseElement::new(0x1337),
+                BaseElement::new(0xBADC0DE),
+                BaseElement::new(0x0DDBA11),
+                BaseElement::new(0x1CEB00DA),
+            ],
+            proof_options(),
+        );
         assert!(
             matches!(r, Err(LayerError::NotTheAccountHolder)),
             "CRITICO: quien intercepte los materiales NO debe poder gastar. \
@@ -661,7 +677,28 @@ mod tests {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
-        let key = BaseElement::new(SK_ALICE);
+        // ⚠️ **RELLENADA CON CEROS, y no por comodidad.**
+        //
+        // Se intento con una clave ancha de verdad y el circuito la rechazo
+        // —`NotTheAccountHolder`—, con razon: la cuenta se abrio con
+        // `open_and_fund(SK_ALICE)`, que deriva la identidad ESTRECHA, y esa
+        // clave no le corresponde.
+        //
+        // ⚠️ **Eso deja al descubierto que la migracion NO esta completa**:
+        // `circuit_send` sabe verificar claves de 256 bits, pero
+        // `open_account` solo sabe crear cuentas de 64. Los elementos nuevos
+        // existen en el circuito y **no son alcanzables desde la capa**
+        // hasta que `open_account` acepte `Digest` (entrada 15).
+        //
+        // Rellenar aqui es lo unico correcto hoy —§90 garantiza la misma
+        // identidad— pero **este test no ejercita los tres elementos
+        // nuevos**, y no puede hasta entonces.
+        let key = [
+            BaseElement::new(SK_ALICE),
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+        ];
         let receptor = layer.public_id_of(bob).expect("cuenta");
         let salt = salt_de(0xC11E);
 
@@ -735,7 +772,16 @@ mod tests {
             .send_materials(alice, receptor, 1000, salt_de(0xBAD1))
             .expect("materiales");
 
-        let r = client::prove_send(&materials, BaseElement::new(0x1337), proof_options());
+        let r = client::prove_send(
+            &materials,
+            [
+                BaseElement::new(0x1337),
+                BaseElement::new(0xBADC0DE),
+                BaseElement::new(0x0DDBA11),
+                BaseElement::new(0x1CEB00DA),
+            ],
+            proof_options(),
+        );
         assert!(
             matches!(r, Err(LayerError::NotTheAccountHolder)),
             "el circuito lo impondria igual, pero en release no se valida al \

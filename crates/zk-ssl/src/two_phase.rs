@@ -248,8 +248,22 @@ impl SovereignLayer {
         let frozen_path = self.frozen.path_for(sender_index);
         let pending_path = self.pending.path_for(position);
 
+        // ⚠️ **La clave se RELLENA a cuatro elementos en el borde.**
+        //
+        // `circuit_send` la absorbe ancha desde §90, y esta via —la
+        // **antigua**, marcada `#[deprecated]`— sigue manejandola estrecha.
+        // Cuadran porque §90 probo que rellenar con ceros da la MISMA
+        // identidad.
+        //
+        // ⚠️ Aqui SI se rellena y en `client::prove_send` NO: alli es donde
+        // el cliente tiene que poder usar una clave ancha de verdad.
         let trace = build_send_trace(
-            spend_key,
+            [
+                spend_key,
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+            ],
             sender.public_id,
             sender.balance,
             sender.nonce,

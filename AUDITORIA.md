@@ -7741,6 +7741,74 @@ que `burn`.
 
 El paso 3 y el 5 son los que faltaron.
 
+### 92.11 `circuit_send`: el tercero, y §92.7 pagando
+
+| | antes | ahora |
+|---|---|---|
+| `TRACE_WIDTH` | 49 | **52** |
+| `C_KEY_INPUT` | 2 | **8** |
+| `C_TRANSPORT` | 15 | **18** |
+
+**17 tests del circuito en verde**, 274 y 201, 27 circuitos limpios.
+
+⚠️ **Las cuatro declaraciones se localizaron ANTES de escribir** —`COL_KEY`,
+la firma de `build_trace`, el campo de `Scenario` y la firma de `run`—. En
+`burn` esas mismas cuatro costaron cinco rondas por buscarlas de una en una
+(§92.7). Aqui: **una ronda para el circuito.**
+
+### 92.12 ⚠️ La herramienta de §81 cazo un fallo real
+
+Al primer intento, `check_constraint_layout.py` reporto **tres colisiones y
+tres ranuras muertas**. La causa: desplazamientos codificados a mano
+—`C_TRANSPORT + 7` y `+ 11`— que asumian un array de **7** columnas. Al
+pasar a 10, las ranuras 7-9 se escribian **dos veces** y las 17-19 quedaban
+**muertas**.
+
+> Es exactamente el fallo de §66.2, y **lo detecto la ampliacion que se hizo
+> el mismo dia**. Primera vez que esa herramienta paga en algo que la lectura
+> no habria visto.
+
+### 92.13 ⚠️ Rellenar en el borde vale para la CAPA y NO para el CLIENTE
+
+§92.9 dejo escrito que los llamantes se arreglan rellenando la clave con
+ceros. **Esa receta es correcta para la capa y falsa para el cliente**, y
+estuvo a punto de aplicarse a los dos:
+
+| llamante | que es | como se arregla |
+|---|---|---|
+| `two_phase.rs::send` | via **antigua**, `#[deprecated]` | relleno en el borde |
+| `client.rs::prove_send` | **la via del cliente** | ⚠️ **la firma cambia a `Digest`** |
+
+> Rellenar en `prove_send` habria hecho compilar todo y **dejado el trabajo
+> sin efecto**: el cliente nunca podria usar una clave ancha, y los 256 bits
+> del circuito no servirian a nadie. Es la version §32 del problema
+> —completar unidades de trabajo sin alcanzar el objetivo— y la receta
+> reciente la empujaba.
+
+### 92.14 ⚠️ Y el hallazgo que reordena lo que queda
+
+`a_whole_payment_without_giving_any_key_to_the_layer` —el test que §33 cita
+como demostracion de la propiedad central— fallo con `NotTheAccountHolder`
+al darle una clave ancha de verdad.
+
+**Y el circuito tenia razon**: la cuenta se abre con
+`open_and_fund(SK_ALICE)`, que deriva la identidad **estrecha**. Esa clave no
+le corresponde.
+
+> **Los 256 bits estan en `settlement`, `burn` y `send`, y ningun cliente
+> puede usarlos.** `open_account` solo sabe crear cuentas con clave de 64,
+> asi que la clave ancha existe en el circuito y **no es alcanzable desde la
+> capa**.
+
+⚠️ **Eso cambia el orden de lo que queda**: `open_account` sube por delante
+de `claim` y `audit`. **Migrar mas circuitos no da un bit de seguridad mas**
+mientras la puerta de entrada siga siendo estrecha.
+
+Y lo destapo un fallo que parecia un descuido de test. La correccion —
+rellenar con ceros— es la unica posible hoy, y **queda escrita en el propio
+test junto con lo que no ejercita**, para que nadie lo lea como que el flujo
+completo prueba los elementos nuevos. No los prueba.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

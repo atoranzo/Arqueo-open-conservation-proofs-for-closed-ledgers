@@ -591,10 +591,24 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   propiedad de §90 (§92.9). ⚠️ **Los tres que quedan SI los ejecuta la
   capa**, asi que romperan su llamante igual: la secuencia completa esta en
   §92.10.
-  **Quedan**: `send` y `claim` —que transfieren igual— y `audit`, que **no
-  encaja en el patron**: `COL_KEY` en 13, ancho 24 y **cero** sitios
-  `state[8] = spend_key`. Absorbe la clave de otra forma y necesita analisis
-  propio. Y despues `open_account` y la capa.
+  ✅ **Y `circuit_send` tambien** (§92.11): `TRACE_WIDTH` **49→52**,
+  `C_KEY_INPUT` **2→8**, `C_TRANSPORT` **15→18**, 17 tests en verde. **Una
+  ronda para el circuito** aplicando §92.7 —los tipos primero—, frente a las
+  cinco de `burn`. ⚠️ **Y `check_constraint_layout.py` cazo un fallo real**
+  (§92.12): desplazamientos a mano que asumian el array de transporte viejo,
+  con tres ranuras escritas dos veces y tres muertas. ⚠️ **Rellenar en el
+  borde vale para la capa y NO para el cliente** (§92.13): `prove_send`
+  cambia su firma a `Digest`, porque rellenar ahi dejaria el trabajo sin
+  efecto.
+  ⚠️⚠️ **HALLAZGO QUE REORDENA LO QUE QUEDA** (§92.14): los 256 bits estan en
+  tres circuitos y **ningun cliente puede usarlos** — `open_account` solo
+  crea cuentas con clave de 64, asi que la clave ancha **no es alcanzable
+  desde la capa**. Lo destapo `a_whole_payment...` rechazando con
+  `NotTheAccountHolder`, y el circuito tenia razon.
+  **Quedan, en este orden**: **`open_account` y la capa PRIMERO** —migrar mas
+  circuitos no da un bit de seguridad mas mientras la puerta de entrada sea
+  estrecha—, y despues `claim` y `audit`, que **no encaja en el patron**:
+  `COL_KEY` en 13, ancho 24 y **cero** sitios `state[8] = spend_key`.
   ⚠️ **La derivacion estrecha NO hay que migrarla en los 22 ficheros**: §90
   la hace equivalente para una clave rellenada, asi que quien solo *calcula*
   una identidad puede seguir usandola.
