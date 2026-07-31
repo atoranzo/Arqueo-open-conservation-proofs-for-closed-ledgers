@@ -6741,8 +6741,11 @@ circuitos que absorben la clave —`send`, `claim`, `burn`, `audit`,
 `threshold`—.
 
 **No se hace hoy** y no se propone a la ligera: es un cambio de formato de
-identidad que invalida cualquier cuenta existente. Lo que si se hace es
-**dejar de llamarlo «colision en 2^32»** y dejarlo medido.
+~~identidad que invalida cualquier cuenta existente.~~ **⚠️ Rectificado en
+§90 (31-07-2026): NO invalida ninguna cuenta.** Rellenar una clave estrecha
+con ceros da **la misma identidad** —hay test—, asi que la version ancha es
+una generalizacion, no un reemplazo. Lo que si se hace es **dejar de
+llamarlo «colision en 2^32»** y dejarlo medido.
 
 ### 82.6 Lo que este caso enseña del backlog
 
@@ -7343,6 +7346,166 @@ conocimiento de su clave sobre el compromiso, y eso es una accion que un
 congelado quiza no deba poder hacer—.
 
 **Hay que resolverlo al diseñar, no despues.**
+
+## 89. Cuanto cuesta verificar, y en que se va el `apply`
+
+`ESCALADO.md` dimensiona el sharding partiendo de **4 ms por prueba**, y los
+presenta como medidos: *«Sobre lo medido (620 ms, 4 ms, 28,5 %)»*.
+
+⚠️ **No lo estaban.** `metrics.rs` cronometraba `apply` —que verifica, muta
+el arbol **y escribe a disco**—; la unica verificacion aislada que media era
+la de la divulgacion de auditoria.
+
+Y era el numero de mas peso del documento: la primera etapa de su cuello de
+botella es «64 nucleos × 250/s», y los 250/s son 1/4 ms.
+
+### 89.1 La medida
+
+`metrics::tests::el_coste_de_verificar_una_prueba`, cinco ejecuciones
+independientes en release:
+
+| | |
+|---|---|
+| Muestras | 2,36 / 2,34 / 2,41 / 2,32 / 2,35 ms |
+| **Media** | **2,35 ms**, dispersion 4 % |
+| Pruebas/s por nucleo | **425** (el documento suponia 250) |
+
+| | `ESCALADO.md` | medido |
+|---|---|---|
+| Verificar | 4 ms | **2,35 ms** |
+| TPS/shard con margen del 50 % | 8.000 | **13.600** |
+| **Shards para 498.000 TPS** | **64** | **37** |
+
+El documento era conservador por un factor **1,7**.
+
+### 89.2 ⚠️ Lo que de verdad no sabia nadie: en que se va el `apply`
+
+| | |
+|---|---|
+| Verificar | **2,35 ms** — el **3,2 %** |
+| Arbol y disco | **~70 ms** — el **96,8 %** |
+
+> **Verificar la prueba es lo mas barato que hace la capa.** Todo el coste de
+> aplicar esta en mutar el arbol y escribir.
+
+Eso valida el `C4` de `ESCALADO.md` —epocas con `apply` por lotes— mejor de
+lo que el propio documento argumenta: **el lote no ataca la verificacion,
+ataca el 96,8 % que domina**. Amortizar una escritura y una actualizacion de
+arbol entre miles de operaciones es exactamente donde esta el dinero.
+
+### 89.3 ⚠️ El instrumento defectuoso sesgaba su propia medida
+
+La primera lectura dio **2,80 ms**. El parche que añadio el instrumento
+dejo un `#[test]` duplicado: `cargo test` lo registraba **dos veces** y los
+corria **en paralelo**, dos hilos haciendo el mismo trabajo y compitiendo por
+cache. Un **19 % mas lento**.
+
+> **El defecto no solo duplicaba el test: sesgaba la medida hacia arriba.**
+
+Es el segundo error de estructura de atributos del dia —el primero fue una
+funcion postiza— y los dos vinieron de anclar en la linea `fn` olvidando lo
+que la precede. El parche correctivo comprueba ahora que no quede ningun
+`#[test]` duplicado ni delante de un comentario de documentacion.
+
+⚠️ Y con la primera lectura se cito «2,80 ms» como si fuera exacta. Cinco
+muestras despues, la dispersion es del 4 % y **la cifra honesta es un rango**,
+no la ultima ejecucion que salio. Es la inversa del error de §86.2: alli el
+dato era determinista y se llamo ruido; aqui varia y se cito como punto.
+
+### 89.4 Lo que `ESCALADO.md` tiene que corregir
+
+**No se integra todavia.** Este numero le obliga a cuatro cambios:
+
+| | |
+|---|---|
+| §5 | 250/s → **425/s**, marcado como medido con fecha, `n` y rango |
+| §6 | 64 → **37 shards**; rehacer la sensibilidad «× 4 peor» |
+| §11 | Añadir el punto que faltaba **y cerrarlo** |
+| §4 (C4) | Añadir que verificar es el 3,2 % del `apply` |
+
+⚠️ Sobre §11: que un punto debil resulte **favorable no lo saca de la
+lista**. Lo mueve de «incertidumbre» a «resuelto», y eso se escribe. Que el
+valor real sea mejor no arregla que la etiqueta fuera falsa —es la
+distincion de §76, donde el README decia «si pasa» y no pasaba—.
+
+### 89.5 Lo que este numero NO dice
+
+Mide **un nucleo de una maquina** con **estas `proof_options`**. Los 64
+nucleos y el margen del 50 % siguen siendo supuestos de `ESCALADO.md`, no
+medidas, y el coste del hash del arbol y el modelo de latencia de clientes
+siguen siendo estimacion y modelo.
+
+Se ha corregido **el primer factor**, que era el unico marcado como medido
+sin estarlo.
+
+## 90. Ensanchar la clave NO invalida ninguna cuenta
+
+Primer paso de la entrada 15, y corrige una premisa que se venia arrastrando
+desde §82.5.
+
+### 90.1 Lo que se afirmaba
+
+> *«Es un cambio de formato de identidad que **invalida cualquier cuenta
+> existente**.»*
+
+Lo repetian §85 y la entrada 15, y **entraba en la decision**: arreglar la 15
+se justifico en parte con «no hay despliegue, asi que invalidar no cuesta».
+Un argumento que solo vale mientras no haya usuarios.
+
+### 90.2 Es falso, y lo dice un test
+
+`derive_public_id_wide` y `native_nullifier_wide` se añadieron **junto a**
+las estrechas, sin tocar ninguna firma. Y:
+
+```rust
+derive_public_id_wide(as_digest(sk)) == derive_public_id(sk)
+```
+
+Se cumple para todas las claves probadas. **La version ancha es una
+generalizacion estricta**: rellenar con ceros devuelve exactamente la misma
+identidad y el mismo nullifier.
+
+| | se creia | es |
+|---|---|---|
+| Migracion | invalida toda cuenta existente | **conserva todas las identidades** |
+| Lo que exige | reapertura forzosa | **rotacion gradual de claves** |
+| Lo que gana quien no rota | — | nada: sigue con 64 bits |
+
+### 90.3 El segundo test es el que hace que el primero signifique algo
+
+`a_wide_key_is_not_its_first_element`: cambiar el **segundo** elemento **si**
+cambia la identidad.
+
+> Sin el, el primero pasaria igual si la version ancha **ignorara** los tres
+> elementos nuevos —que es exactamente el fallo que tendria escrita mal—.
+
+Uno fija que **generaliza**; el otro, que **usa** lo que se le da. Por
+separado ninguno prueba nada util.
+
+### 90.4 ⚠️ Conservar la identidad NO conserva la seguridad
+
+Una clave rellenada con ceros sigue teniendo **64 bits de entropia** y sigue
+cayendo en los 2^63 de §82.3.
+
+> **Cambia el coste de MIGRAR, no el de ATACAR.**
+
+Quien no rote su clave no gana nada. Lo que la version ancha permite es
+**generar claves de 256 bits**; las viejas siguen valiendo lo que valian
+hasta que se roten.
+
+### 90.5 Lo que esto cambia del plan
+
+- **La migracion deja de ser una ruptura.** No hay reapertura de cuentas: hay
+  un formato que admite claves anchas y una rotacion que cada titular hace
+  cuando puede.
+- **Y el argumento «no hay despliegue» deja de hacer falta.** Se apoyaba en
+  que invalidar era gratis por no haber usuarios; ahora no hay que invalidar.
+  ⚠️ Conviene notarlo: **ese argumento habria envejecido mal** en cuanto
+  hubiera un piloto, y se estuvo usando sin comprobar su premisa.
+- **Y afecta a la entrada 28**: la limitacion que la cuarta revision tendria
+  que publicar no es «el sistema no alcanza 128 bits», sino «las claves
+  generadas antes de la rotacion tienen 64 bits». Es una frase distinta y
+  mas fiel.
 
 ## 69. Qué NO demuestra este documento
 

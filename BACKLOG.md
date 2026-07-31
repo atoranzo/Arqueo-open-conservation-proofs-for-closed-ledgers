@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 19 abiertas, 27 resueltas. Ultima revision: 31 de julio de 2026.
+**Estado**: 21 abiertas, 27 resueltas. Ultima revision: 31 de julio de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
 fallos y aparecieron **dos que no eran la clase conocida** (§78). Los 78
@@ -378,7 +378,17 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   se empujo una vez antes que el codigo (`bcb9f73` sin el parche, corregido
   en `97d7c7f`); queda anotado.
 
-- [ ] **7. ⚠️ Encargar la auditoria externa.** Ya no es solo por el
+- [ ] **7. ⚠️ Encargar la auditoria externa —y ESPECIFICAR contra que.**
+  ⚠️ **Lo que a esta entrada le faltaba**: decia que hace falta auditar y no
+  decia **contra que**. `CONFIANZA_RESIDUAL.md` lo responde (entrada 48):
+  **especificacion formal de cada AIR** —que restricciones existen, que
+  grados declaran, y sobre todo **que NO restringen**— como **contrato** de
+  la auditoria. Sin eso, auditar circuitos es una lectura.
+  ⚠️ **Y hay indicio de que habria funcionado**: §72 fue una restriccion
+  escrita **sobre el carril equivocado**. Una especificacion que dijera
+  «`C_PEND_IN` ata el carril A» junto a «`C_PEND_ENTRY_B` inserta el carril
+  B» habria hecho visible el desajuste **leyendo la especificacion, sin
+  leer el codigo**. Es plausible, no seguro: se dice como lo que es. Ya no es solo por el
   argumento lockstep (§16.4). Tras §39 hay un defecto **demostrado** de una
   clase que las herramientas del proyecto no detectan por construccion, y
   el barrido sistematico tampoco la encuentra (§40): el unico metodo
@@ -551,7 +561,16 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   commit deja el arbol verde. **Piloto**: `circuit_settlement`, que es de los
   cinco de gasto y cuyo Air la capa **no ejecuta**, asi que se ensancha solo
   sin meter dos formatos en produccion (§85.8). **No queda analisis
-  pendiente: solo escribirlo.**
+  pendiente: solo escribirlo.** ✅ **PASO 1 HECHO** el 31-07-2026:
+  `derive_public_id_wide` y `native_nullifier_wide` añadidas **junto a** las
+  estrechas, sin tocar ninguna firma. ⚠️ **Y rectifica una premisa que se
+  venia arrastrando** (§90): ensanchar **NO invalida ninguna cuenta** —
+  rellenar con ceros da la MISMA identidad, hay test—. La migracion pasa de
+  **reapertura forzosa** a **rotacion gradual de claves**, y el argumento «no
+  hay despliegue, asi que invalidar es gratis» deja de hacer falta —habria
+  envejecido mal con un piloto—. ⚠️ **Conservar la identidad no conserva la
+  seguridad**: quien no rote sigue con 64 bits. **Paso 2**: ensanchar
+  `circuit_settlement` (~30 sustituciones).
   ~~Goldilocks es estrecho para identidades: 64 bits son colision en 2³².~~
   ⚠️ **Eso describia un problema YA CORREGIDO** —la identidad paso a ser el
   digest de 4 elementos, 256 bits, y esta documentado en la cabecera de
@@ -628,6 +647,18 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
     (test `the_governance_set_survives_restart`). El coste es que **una
     clave de gobernanza comprometida lo esta para siempre**, y eso si merece
     decision propia.
+
+- [ ] **47. `ESCALADO.md`: propuesta de sharding, sin integrar.**
+  Documento externo del 31-07-2026 que dimensiona 5 × 10⁹ usuarios con el
+  diseño casi intacto. ✅ **Su observacion central se sostiene**: ninguna
+  operacion toca dos cuentas, luego **no hay transacciones cross-shard**, y
+  el coste declarado de las dos fases —el pendiente inmovilizado, §29-§30—
+  es exactamente lo que compra shardabilidad. ⚠️ **Pero presentaba como
+  medido el coste de verificacion (4 ms) sin estarlo** (§89). Medido: **2,35
+  ms**, asi que el documento era conservador por 1,7 y **37 shards, no 64**.
+  **Requiere cuatro correcciones antes de integrarse** (§89.4), y
+  **reconciliar sus B1-B9 contra este backlog**: su B8 es la entrada 12 y
+  otros solapan. Anexarlo sin reconciliar duplicaria entradas.
 
 - [ ] **21. Delegacion de prueba a clientes ligeros.** Exige verificar una
   firma dentro del circuito: **~8.000 filas** con esquema Winternitz,
@@ -879,6 +910,41 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   clave (entrada 15) no depende de entenderlo. Pero si el efecto es real y
   general, **es una optimizacion que el proyecto desconoce**, y eso merece
   mirarse.
+
+- [ ] **48. `CONFIANZA_RESIDUAL.md`: la evidencia contra el operador esta en
+  manos del operador.** Documento externo del 31-07-2026, sin integrar.
+  ✅ **Su tesis central se sostiene y esta bien anclada**: el README afirma
+  que el operador «no puede reescribir el historial en secreto», y **la
+  garantia es condicional**: un log encadenado solo impide reescrituras
+  detectables por quien ya vio una cabeza anterior, y **hoy nadie fuera del
+  operador ve cabezas**. De ahi salen la vista dividida, que el supervisor
+  verifica contra raices que le da el propio operador, y que **censura y
+  no-recepcion son indistinguibles**.
+  **Tres piezas**: **B10** cabezas firmadas y publicadas a testigos —patron
+  de Certificate Transparency, RFC 6962—, con prueba de fraude portable y
+  recibos de recepcion e inclusion; **B11** operador ciego —limite por
+  operacion al circuito con la maquinaria de Horner que ya existe, y cifrado
+  del aviso—; **B12** especificacion formal del AIR y auditoria.
+  ⚠️ **RECONCILIACION, no anexo**:
+  • **B12.2 ES la entrada 7.** No se duplica: la 7 queda actualizada con lo
+    que esta propuesta le aporta —el contrato—.
+  • **B11 depende del C3 de `ESCALADO.md`** (entrada 47). Sin ese rediseño
+    de entradas publicas, el operador necesita ver estado para componer.
+    **B11.2 —cifrar el aviso— es la excepcion: independiente y hoy.**
+  • **B10.1 no depende de nada**: el log ya tiene `seq` y `chain_digest`;
+    publicar es aditivo. Implementable sobre el nodo unico actual.
+  ⚠️ **Su propia §8 acierta el punto debil**: la independencia de los
+  testigos es un **supuesto social, no criptografico**, y «quien atestigua a
+  los que atestiguan» no tiene respuesta tecnica. El documento no finge
+  tenerla, y eso hay que reconocerselo.
+  ⚠️ **Y repite una decision de politica ya conocida**: «no inclusion en N
+  epocas = censura» exige elegir N, y un N corto convierte congestion en
+  falsa evidencia. **Misma clase que el timeout de §88.5**, mismo
+  tratamiento: es politica, no parametro.
+  ⚠️ **Cita ~620 ms** para la transferencia; es la maquina lenta de §22. En
+  la de hoy son 437 ms. No invalida su argumento —usa el valor conservador—
+  pero al integrarlo hay que fechar la maquina, como obligo §89 con
+  `ESCALADO.md`.
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo
