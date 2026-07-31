@@ -848,4 +848,38 @@ mod tests {
         let result = run_proof(&s, expected_public_inputs(&s));
         assert!(result.is_ok(), "amount == balance deberia verificar: {result:?}");
     }
+
+    /// Ninguna restriccion es vacua (entrada 38, §62).
+    ///
+    /// La prueba por mutacion perturba la traza celda a celda y comprueba que
+    /// **cada** restriccion reacciona a algo. Una que no reaccione nunca esta
+    /// declarada, tiene grado asignado y no impone nada.
+    ///
+    /// AVISO: no detecta el defecto de §38 -una ranura sobrescrita sigue
+    /// reaccionando, solo que a la restriccion equivocada-. Para eso esta
+    /// `tools/check_constraint_layout.py`. Dos herramientas, dos defectos.
+    #[test]
+    fn no_constraint_is_vacuous() {
+        use crate::mutation::{buscar_vacias, rows_of};
+        use winterfell::Prover;
+
+        let s = valid_scenario(1_000_000, 250_000, 500_000);
+        let trace = build_trace(s.account_id, s.balance, s.nonce, s.amount, s.limit, &s.path);
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+        let pub_inputs = ComplianceProver::new(default_options()).get_pub_inputs(&trace);
+        let air = ComplianceAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            pub_inputs,
+            default_options(),
+        );
+        let informe = buscar_vacias(&air, &rows, 1);
+        assert!(
+            informe.nunca_disparadas.is_empty(),
+            "restricciones que NINGUNA perturbacion activa (de {} totales, \
+             {} celdas probadas): {:?}",
+            informe.total,
+            informe.celdas,
+            informe.nunca_disparadas
+        );
+    }
 }
