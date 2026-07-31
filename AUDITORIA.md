@@ -5402,7 +5402,7 @@ A diferencia de `circuit_frozen_climb` -donde las hojas libres son correctas
 cuenta bajo apariencia de recuperacion, y un auditor externo solo veria dos
 raices cambiando.
 
-### 64.2 Dos cosas que apareceieron al extraer
+### 64.2 Dos cosas que aparecieron al extraer
 
 **La fila 271 no es de enlace.** El relleno hasta la potencia de dos salio
 gratis, sin los niveles ficticios que necesito `freeze` (60.2). Se vio
