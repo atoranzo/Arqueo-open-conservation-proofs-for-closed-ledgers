@@ -12,7 +12,13 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 16 abiertas, 21 resueltas. Ultima revision: 30 de julio de 2026.
+**Estado**: 20 abiertas, 22 resueltas. Ultima revision: 31 de julio de 2026.
+
+⚠️ ~~16 abiertas, 21 resueltas.~~ **Estaba mal por los dos lados**, y se
+descubrio contando los `- [ ]` y `- [x]` del propio fichero: eran **17 y
+22**. Con las tres nuevas de hoy, **20 y 22**. Es la **octava** vez que esta
+cabecera se queda rancia, y la nota de abajo solo llevaba la cuenta hasta la
+septima. Se corrige **midiendo**, que es lo que enseñaron las entradas 2 y 4.
 
 ⚠️ **Esta cabecera se quedo rancia seis veces seguidas** durante la sesion
 del 30-07: se actualizaba al cerrar una tanda y la tanda continuaba. Llego a
@@ -187,9 +193,17 @@ decidir.
   antiguas llevan `#[deprecated]` con el motivo (§65). **`mint` HECHO** (§66, §67):
   `circuit_mint_climb` con 7 tests -conservacion y tope, este por los dos
   bordes- y `apply_mint_delegated` con 4 de rechazo, incluido que autorizar
-  250.000 no permite emitir un millon. **CUATRO de cinco.** ⚠️ Queda
-  `mint_pending`: hasta que la tenga, el fallo de la 32 **sigue abierto**
-  para la emision a pendientes.
+  250.000 no permite emitir un millon. **CUATRO de cinco.** ⚠️ ~~Queda
+  `mint_pending`: hasta que la tenga, el fallo de la 32 sigue abierto
+  para la emision a pendientes.~~ **`mint_pending` HECHO** el 31-07-2026
+  (§70, §71): `circuit_mint_pending_climb` -125 ranuras a 89, 49 columnas a
+  39, 41 periodicas a 32- con 13 tests, y `apply_mint_pending_delegated` en
+  **`two_phase.rs`** -no en `pending.rs`, que era errata de §68 (§71.1)-
+  con el positivo y cuatro de rechazo. **CINCO DE CINCO.**
+  ⚠️ **Y aun asi la 32 NO se cierra**: las vias antiguas siguen siendo
+  llamables con `#[allow(deprecated)]`, y §65.5 avisa de que la garantia no
+  la da la marca sino usar la via delegada. Lo que queda es **retirarlas**,
+  que es lo que §65.4 fija para cuando las cinco esten -o sea, ahora-.
   **Analizada** (§42): no se mueve «al cliente» porque los custodios son
   dos y el circuito prueba conocimiento de ambas claves en una sola traza.
   La via que cierra las dos mitades es **verificar firmas en circuito**,
@@ -490,6 +504,40 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   periodica equivocada **en silencio**. Es el mismo patron que §59.2 y
   §62.2, por tercera vez: herramienta util que cubre parte del problema sin
   que conste que parte.
+
+- [ ] **40. ⚠️ El carril B del compromiso pendiente no esta atado.**
+  `C_PEND_IN` y `C_PEND_VAL` restringen **solo el carril A** -no hay ningun
+  `LANE_B` en ellas-, asi que lo que `C_PEND_ENTRY_B` mete en el arbol es lo
+  que el carril B haya calculado, sin que el circuito lo ate a `COL_R_ID`,
+  `COL_SALT` ni `COL_AMOUNT`. Hoy lo sujeta la capa al recomputar
+  `pending_commitment` y comparar raices; **un auditor externo que solo vea
+  la prueba no puede** (§70.4). Afecta a `circuit_mint_pending` y a su
+  `_climb`. ⚠️ **Hipotesis de lectura, NO medida**: es de la clase de §39 y
+  §27 -restriccion ausente, no colisionada- que
+  `check_constraint_layout.py` no detecta por construccion. Lo decide un
+  test discriminante que mute la entrada del carril B en la fila 40. **No
+  degradar a «cosmetico» antes de que un test lo mire**: eso se hizo tres
+  veces con la 36.
+
+- [ ] **41. Doce fallos de depuracion sin diagnosticar.**
+  `mint`, `freeze` y `recovery` acumulan doce `tests_delegada` que fallan en
+  depuracion con *"transition constraint degrees didn't match"*.
+  **Preexistentes**, comprobado con `git stash`. Divergen en los indices
+  **44 y 73-88**; los cinco de `mint_pending`, en **50-70** por la posicion
+  0 (§71.3). **Otra disposicion, causa distinta y no medida**, asi que no se
+  les puso la marca de aquellos: seria atribuirles una causa sin comprobar
+  (§71.4). El metodo que funciono: diffear el vector, aislar la variable,
+  test discriminante. Probable emparentada con la 25 -subidas a cuentas
+  (indices 0 y 1) y a congelados (arbol vacio)-, **sin verificar**.
+
+- [ ] **42. `mint_to_pending` diverge de `mint` en el error del tope.**
+  La via antigua devuelve `OverRegulatoryLimit` —el error del limite
+  regulatorio de una **transferencia**— para una violacion del **tope de
+  emision**, donde `mint` siempre devolvio `SupplyCapExceeded`. Y suma sin
+  saturar (`self.total_supply + amount`), que en depuracion desborda con
+  panico. `apply_mint_pending_delegated` usa `SupplyCapExceeded` y
+  `saturating_add`; la antigua **no se toco**, porque cambiar su error
+  cambia lo que ven sus tests. Menor, acotado, declarado.
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo

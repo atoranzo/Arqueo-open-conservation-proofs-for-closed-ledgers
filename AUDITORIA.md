@@ -5651,7 +5651,177 @@ Si compila. Es la transformacion mas grande de las cinco y la unica con
 filas muertas al principio: el indicador de hash, las aserciones de la fila 0
 y la cadena de periodicas hay que rehacerlos, no solo recortarlos.
 
+## 70. `mint_pending` amputado: la quinta, y la unica montada al reves
+
+Ultima aplicacion del patron de la entrada 33. `circuit_mint_pending_climb`
+prueba lo propio -suministro, compromiso, posicion libre y tope- sin saber
+nada de custodios.
+
+### 70.1 El analisis de §68 acerto en las cuentas y fallo en dos cosas
+
+Recontado contra el codigo antes de tocar nada:
+
+| | §68 dijo | Medido |
+|---|---|---|
+| Ranuras fuera | 36 | **36** ✅ |
+| Ranuras | 125 → 89 | **125 → 89** ✅ |
+| Columnas | 49 → 39 | **49 → 39** ✅ |
+| Periodicas fuera | 8 | ⚠️ **9** |
+
+~~Ocho periodicas.~~ **Son nueve.** `P_FIRST_ROW` lo leia **solo**
+`C_KEY_INPUT`, que se va con la amputacion. Dejarla habria sido una
+periodica que se construye y nadie lee: el peso muerto que §66.2 mando
+retirar en `mint_climb` y que la entrada 39 declara que **nada comprueba**.
+
+Es la cuarta vez que aparece el patron de una herramienta o un recuento que
+cubre parte del problema sin declarar que parte (§59.2, §62.2, §66.2).
+
+### 70.2 Las filas muertas, y por que el compromiso sobrevive
+
+Este circuito llevaba el ascenso de custodios **al principio** (filas 0-39),
+al reves que los otros cuatro. Amputado, las filas 0-38 quedan vacias y hay
+que **apagar el indicador de hash y las ARK en ellas**, o las restricciones
+de Rescue se activarian sobre ceros.
+
+No se ganan filas: `ROW_PENDING_ROOT`=311 obliga a 512 igual.
+
+El compromiso arranca donde arrancaba porque `C_PEND_IN` lo ata a `COL_R_ID`
+y `COL_SALT` con **selector propio** (`P_PEND_IN`). `ROW_ROOT` se renombra a
+`ROW_PEND_START`: conserva el 39 y pierde la doble funcion que tenia.
+
+Las aserciones bajan de 38 a **12**. Se van las 26 de custodio; quedan las
+cuatro constantes que `C_TRANSPORT_NEW` propaga a toda la traza y las ocho
+de las dos raices. Fijar valores en filas que ninguna restriccion lee seria
+ruido.
+
+### 70.3 Compilo a la primera, y eso merece anotarse
+
+§68.4 decia que el analisis **no dice si compila**, y era la transformacion
+mayor de las cinco. Compilo sin un error y sin un aviso, y los 13 tests
+pasan en release.
+
+Es la **segunda vez** en la auditoria que el trabajo previo evita una ronda
+en vez de causarla; la primera fue el comentario de grados de §66.3. Que el
+analisis se escribiera **antes de cortar** —§68 se redacto sin tocar nada—
+es lo que lo explica.
+
+### 70.4 ⚠️ Lo que el carril B no ata, y que estos 13 tests NO miran
+
+`C_PEND_IN` y `C_PEND_VAL` restringen **solo el carril A**: no hay ningun
+`LANE_B` en ellas. Lo que entra al arbol en `C_PEND_ENTRY_B` es lo que el
+carril B haya calculado, y en el circuito **nada lo ata** a `COL_R_ID`,
+`COL_SALT` ni `COL_AMOUNT`.
+
+Hoy lo sujeta la capa, que recomputa `pending_commitment` y compara raices.
+Un auditor externo que solo vea la prueba no puede.
+
+⚠️ **Es hipotesis de lectura, no medida.** Es de la clase de §39 y §27
+—restriccion *ausente*, no colisionada— que `check_constraint_layout.py`
+**no detecta por construccion** y para la que solo hay lectura semantica y
+test discriminante (entrada 7). `the_pending_commitment_is_inserted`
+comprueba **la traza**, no que el circuito lo obligue.
+
+Es preexistente: el circuito original tiene la misma forma. Se abre como
+**entrada 40**, sin degradarla a «cosmetico» —que es lo que se hizo tres
+veces con la §36 antes de que un test la mirara.
+
+## 71. `mint_pending` delegado: las cinco vias existen
+
+Quinta y ultima via delegada. Ninguna de las cinco operaciones
+privilegiadas necesita ya que las claves de custodio lleguen al operador.
+
+### 71.1 ⚠️ Errata de §68: el fichero no es `pending.rs`
+
+~~«OJO: el fichero es `crates/zk-ssl/src/pending.rs`».~~ **Es
+`crates/zk-ssl/src/two_phase.rs`.** Comprobado contra el codigo:
+
+- `pending.rs` no tiene `SovereignLayer`, ni `ThresholdAuth`, ni operacion
+  de custodios alguna.
+- Su `PendingTransfers` tiene **cero usos fuera de su propio fichero**: es
+  el modelo que §37.6 ya declaro que **la capa no ejecuta**. El arbol real
+  es `pending: SparseTree` en `lib.rs`.
+- `mint_to_pending` y `apply_mint_to_pending` viven en `two_phase.rs`, y
+  las cuatro delegadas anteriores van **todas** en el mismo fichero que su
+  via antigua.
+
+§68 acerto en la mitad util del aviso —no hay `mint_pending.rs`— y fallo en
+el destino. Se registra porque un aviso a medias dirige mal con la
+autoridad de un aviso.
+
+### 71.2 La posicion la asigna la capa, y cierra en falso
+
+Quien genera la prueba necesito el camino del arbol, luego ya conocia la
+posicion. Si la capa asigna otra, la raiz nueva no coincide y **falla la
+verificacion de la subida**.
+
+Y el compromiso de operacion ata `raiz_vieja ++ raiz_nueva ++ importe ++
+suministros ++ tope`, asi que una autorizacion no vale **ni para otro
+importe ni para otro hueco**: las dos raices fijan las dos cosas. Es §67.2
+ampliado.
+
+### 71.3 El grado de la posicion 0: medido, no supuesto
+
+Los cinco tests fallan en **depuracion** con *"transition constraint degrees
+didn't match"*. Diagnostico propuesto: la posicion 0 tiene el camino de
+Merkle todo a la izquierda, luego `COL_PBIT` es identicamente nula, luego
+los veinte terminos `pbit * X` se anulan.
+
+Eso era un razonamiento sobre indices, y razonar sobre indices ha fallado
+tres veces en esta auditoria. Se hizo **test discriminante**: misma traza,
+mismo circuito, **solo cambia el camino**.
+
+| indices | que son | declarado | posicion 0 |
+|---|---|---|---|
+| 50-69 | los veinte terminos con `pbit` | 1022 | **511** |
+| 70 | `C_PBIT_BOOL` | 511 | **0** |
+
+Las otras 68 posiciones, identicas. Y el vector coincide **exactamente** con
+el que emitia la capa. `the_all_left_path_of_position_zero_still_verifies`
+pasa en **release**: el circuito es correcto tambien ahi.
+
+Es §37.7 reproducido —alli, intervenir en `allocate_pending` no dejaba «ni
+una `C_PEND_*` ni `C_PBIT_BOOL` desviada»— y cae bajo la decision de §46:
+**se declara, no se migra**.
+
+⚠️ **No se cambio el test a otra posicion para que pasara.** En produccion
+la posicion 0 se usa —`allocate_pending` reutiliza huecos y un ledger recae
+en ella (§46.1)—, asi que un test en la posicion 1 pasaria sin ejercitar el
+caso comun. Vale mas un test fiel saltado que uno verde mirando a otro lado.
+
+### 71.4 ⚠️ Y NO se marcaron los otros doce
+
+`mint`, `freeze` y `recovery` acumulan **doce** fallos de depuracion, y se
+comprobo con `git stash` que son **preexistentes**: sin este trabajo fallan
+los mismos doce.
+
+Pero divergen en los indices **44 y 73-88**, no en 50-70. Otra disposicion,
+**causa no medida**. Ponerles el motivo de la posicion 0 seria atribuirles
+una causa sin comprobar. Van como **entrada 41**, con el metodo que acaba de
+funcionar aqui.
+
+Los cinco de `mint_pending` si llevan
+`#[cfg_attr(debug_assertions, ignore = ...)]` con el motivo medido. La
+asimetria es **epistemica, no cosmetica**, y queda declarada: es la leccion
+de §59.2, §62.2 y la entrada 39 —declarar hasta donde llega lo que se ha
+comprobado.
+
+### 71.5 Lo que esto cierra, y lo que no
+
+**Cierra**: las cinco operaciones tienen via que no exige las claves.
+
+⚠️ **No cierra la entrada 32.** Las vias antiguas siguen siendo llamables
+con un `#[allow(deprecated)]`. §65.4 dice que se retiran cuando las cinco
+tengan delegada —que es ahora—, y §65.5 avisa de que la garantia **no la da
+la marca, la da usar la via delegada**. Marcar la 32 resuelta hoy seria
+justo ese maquillaje.
+
 ## 69. Qué NO demuestra este documento
+
+⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
+precedan en el fichero.** Es el cierre del documento, no un hallazgo mas:
+ponerla en medio haria que el texto concluyera y siguiera hablando. La
+convencion de no renumerar se mantiene; lo que se declara es que el orden
+de lectura no es el numerico, igual que en `BACKLOG.md`.
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
