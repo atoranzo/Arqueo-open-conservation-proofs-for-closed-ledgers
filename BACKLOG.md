@@ -569,8 +569,17 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **reapertura forzosa** a **rotacion gradual de claves**, y el argumento «no
   hay despliegue, asi que invalidar es gratis» deja de hacer falta —habria
   envejecido mal con un piloto—. ⚠️ **Conservar la identidad no conserva la
-  seguridad**: quien no rote sigue con 64 bits. **Paso 2**: ensanchar
-  `circuit_settlement` (~30 sustituciones).
+  seguridad**: quien no rote sigue con 64 bits. ~~**Paso 2**: ensanchar
+  `circuit_settlement` (~30 sustituciones).~~ ✅ **PASO 2 HECHO** el
+  31-07-2026 (§92): `circuit_settlement` opera con `sk` de **cuatro
+  elementos**. `TRACE_WIDTH` **49→52**, `NUM_CONSTRAINTS` **155→170**,
+  aserciones **57→51**. **18 tests en verde**, 274 y 201 sin regresion, y
+  **`no_constraint_is_vacuous` pasa**: las quince ranuras nuevas disparan
+  todas. ⚠️ Hubo que retirar seis aserciones que fijaban a cero `state[9..12]`
+  —**eran relleno y dejaron de serlo**—; pasan de estar fijadas a CERO a
+  estarlo a la CLAVE, que es mas fuerte (§92.2). **Queda**: los otros cuatro
+  de gasto + la derivacion compartida + `open_account` en un commit, y
+  custodios+gobernanza en otro.
   ~~Goldilocks es estrecho para identidades: 64 bits son colision en 2³².~~
   ⚠️ **Eso describia un problema YA CORREGIDO** —la identidad paso a ser el
   digest de 4 elementos, 256 bits, y esta documentado en la cabecera de

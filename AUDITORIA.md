@@ -7567,6 +7567,82 @@ La disciplina existia; lo que fallo fue aplicarla solo donde resultaba
 comodo. Es el patron de §59.2 —algo util aplicado a parte del trabajo sin
 declarar a que parte— por **octava** vez en la sesion.
 
+## 92. El piloto de la clave ancha: hecho
+
+`circuit_settlement` opera con `sk` de **cuatro elementos**. Es el primero de
+los cinco de gasto y el que la capa **no ejecuta** —solo lo referencia
+`transfer.rs`, no declarado en `lib.rs`—, elegido para eso (§85.8).
+
+### 92.1 Lo que cambio
+
+| | antes | ahora |
+|---|---|---|
+| `COL_S_KEY` | 1 columna | **4** (25..29) |
+| `TRACE_WIDTH` | 49 | **52** |
+| `C_NULL_KEY` / `C_PK_INPUT` | 2 y 2 | **8 y 8** |
+| `C_TRANSPORT` | 9 | **12** |
+| `NUM_CONSTRAINTS` | 155 | **170** |
+| Aserciones | 57 | **51** |
+
+**18 tests del circuito en verde**, 274 y 201 sin regresion, 27 circuitos
+limpios en las dos cadenas.
+
+⚠️ Y **`no_constraint_is_vacuous` pasa**: las quince ranuras nuevas
+**disparan todas**. No ocupan sitio: hacen trabajo. Sin esa prueba no
+sabriamos distinguir una cosa de la otra.
+
+### 92.2 Las aserciones que dejaron de tener sentido
+
+El positivo fallo con `trace does not satisfy assertion main_trace(9, 552)`.
+`get_assertions` fijaba a **cero** las ranuras `state[9..12]` en las dos
+filas donde entra la clave. **Eran relleno; dejaron de serlo.**
+
+Retirarlas **no afloja nada**:
+
+> Las ranuras pasan de estar fijadas a **CERO** a estar fijadas a la **CLAVE
+> DECLARADA** —por `C_PK_INPUT` y `C_NULL_KEY`, contra `COL_S_KEY`, que
+> `C_TRANSPORT` mantiene constante y cuya `pk` derivada debe igualar
+> `COL_S_ID` por `C_PK_CHECK`—. Es mas fuerte, no mas debil.
+
+⚠️ La de la **fila 0** se queda: ahi 9..12 sigue siendo relleno de verdad,
+porque la clave no entra hasta la fila 543. Lo caza un aserto del parche.
+
+### 92.3 ⚠️ Tres descuidos, y los tres el mismo
+
+El paso 2 dejo fuera un `state_a[8]`, una construccion de `SenderWitness` y
+**`get_assertions` entera**.
+
+> **Se cambio un formato y se reviso donde se ESCRIBE, no donde se
+> COMPRUEBA.**
+
+Es la variante de §91.5 —aplicar la disciplina solo donde resulta comodo—
+en su forma mas concreta: al ensanchar una columna se buscan las
+asignaciones y se olvidan las aserciones, que son las que dicen que esa
+columna valia cero.
+
+Ninguno llego a `main`: los dos primeros los caza el compilador y el tercero
+lo cazo **el positivo, corrido primero y solo** (§66.2).
+
+### 92.4 Y dos asertos mios que gritaron en falso
+
+`spend_key: BaseElement` casaba tambien con el **parametro** de la derivacion
+estrecha; `for i in 9..12` casaba tambien con la fila 0. Los dos abortaron el
+parche por **su propia amplitud**, no por un fallo del codigo.
+
+⚠️ Es preferible a lo contrario, pero conviene notarlo: **un aserto que grita
+en falso enseña a ignorarlo**, que es exactamente lo que §78.4 dice de los 78
+rojos permanentes. Los dos se afinaron en el sitio.
+
+### 92.5 Lo que queda
+
+**Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—
+mas la derivacion compartida y `open_account`, en un commit. Y despues
+**custodios y gobernanza**, acoplados por `build_custodian_set`, en otro
+(§85.7).
+
+El patron esta establecido: columnas, ranuras, grados, `build_trace`,
+**aserciones** y tests. Y la lista de sitios que se olvidan, tambien.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

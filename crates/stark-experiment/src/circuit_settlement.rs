@@ -90,28 +90,36 @@ pub const NUM_SEGMENTS: usize = 7;
 const LANE_B: usize = STATE_WIDTH; // 12
 const COL_BIT: usize = 24;
 /// Clave de gasto del emisor. **El testigo más sensible del sistema.**
-const COL_S_KEY: usize = 25;
+///
+/// ⚠️ **CUATRO elementos desde el 31-07-2026** (entrada 15, §82, §90). Era
+/// uno, y eso dejaba el espacio de secretos en 2^64 con `pk` publica:
+/// agotarlo costaba 2^63, medido en 2,38 millones de años-nucleo.
+///
+/// Ensanchar **no invalida cuentas**: rellenar con ceros da la misma
+/// identidad (§90.2). Lo que hace falta es **rotar la clave**, y hasta
+/// entonces la seguridad es la que era.
+const COL_S_KEY: usize = 25; // 25..29
 /// Identidad del emisor: 4 elementos, no uno. Ver la nota de cabecera.
-const COL_S_ID: usize = 26; // 26..30
-const COL_S_BAL: usize = 30;
-const COL_S_NONCE: usize = 31;
-const COL_S_BAL_NEW: usize = 32;
+const COL_S_ID: usize = 29; // 29..33
+const COL_S_BAL: usize = 33;
+const COL_S_NONCE: usize = 34;
+const COL_S_BAL_NEW: usize = 35;
 /// Identidad del receptor: 4 elementos.
-const COL_R_ID: usize = 33; // 33..37
-const COL_R_BAL: usize = 37;
-const COL_R_NONCE: usize = 38;
-const COL_R_BAL_NEW: usize = 39;
-const COL_AMT: usize = 40;
-const COL_LIM: usize = 41;
-const COL_ROOT_MID: usize = 42; // 42..46
-const COL_SBIT: usize = 46;
-const COL_SACC: usize = 47;
+const COL_R_ID: usize = 36; // 36..40
+const COL_R_BAL: usize = 40;
+const COL_R_NONCE: usize = 41;
+const COL_R_BAL_NEW: usize = 42;
+const COL_AMT: usize = 43;
+const COL_LIM: usize = 44;
+const COL_ROOT_MID: usize = 45; // 45..49
+const COL_SBIT: usize = 49;
+const COL_SACC: usize = 50;
 /// Bit de dirección del camino en el árbol de CONGELADOS.
 ///
 /// Columna propia porque ese árbol tiene profundidad 24 y se recorre en
 /// una fase distinta del de cuentas.
-const COL_FBIT: usize = 48;
-pub const TRACE_WIDTH: usize = 49;
+const COL_FBIT: usize = 51;
+pub const TRACE_WIDTH: usize = 52;
 
 // ===== Filas de eventos =====
 const ROW_S_LEAF_LINK: usize = 7;
@@ -160,18 +168,21 @@ const C_R_INPUT: usize = C_S_INPUT + 10; // 10
 const C_MID_CAPTURE: usize = C_R_INPUT + 10; // 4
 const C_MID_CHECK: usize = C_MID_CAPTURE + 4; // 4
 const C_CONSERVATION: usize = C_MID_CHECK + 4; // 2
-/// Transporte escalar: s_key, s_bal, s_nonce, s_bal_new, r_bal, r_nonce,
-/// r_bal_new, amt, lim.
-const C_TRANSPORT: usize = C_CONSERVATION + 2; // 9
+/// Transporte escalar: s_key (**4**), s_bal, s_nonce, s_bal_new, r_bal,
+/// r_nonce, r_bal_new, amt, lim.
+///
+/// ⚠️ Eran 9. La clave ocupa ahora cuatro columnas y las cuatro tienen que
+/// ser constantes, o el compromiso no seria el declarado (§90).
+const C_TRANSPORT: usize = C_CONSERVATION + 2; // 12
 /// Transporte de identidades: 4 + 4.
-const C_ID_CONST: usize = C_TRANSPORT + 9; // 8
+const C_ID_CONST: usize = C_TRANSPORT + 12; // 8
 const C_MID_CONST: usize = C_ID_CONST + 8; // 4
-/// La CLAVE entra en el nullifier (ambos carriles).
-const C_NULL_KEY: usize = C_MID_CONST + 4; // 2
-/// La clave entra en la derivación de pk (ambos carriles).
-const C_PK_INPUT: usize = C_NULL_KEY + 2; // 2
+/// La CLAVE entra en el nullifier (ambos carriles, **4 elementos**).
+const C_NULL_KEY: usize = C_MID_CONST + 4; // 8
+/// La clave entra en la derivación de pk (ambos carriles, **4 elementos**).
+const C_PK_INPUT: usize = C_NULL_KEY + 8; // 8
 /// **AUTORIDAD**: la pk derivada coincide con la identidad usada.
-const C_PK_CHECK: usize = C_PK_INPUT + 2; // 4
+const C_PK_CHECK: usize = C_PK_INPUT + 8; // 4
 /// **NO-PERTENENCIA**: al entrar en el árbol de nullifiers, el carril A
 /// coloca CERO — la posición estaba libre.
 const C_NULL_EMPTY: usize = C_PK_CHECK + 4; // 4
@@ -286,7 +297,8 @@ pub fn native_climb(leaf: Digest, path: &MerklePath) -> Digest {
 /// Testigos del emisor. Incluye la CLAVE DE GASTO.
 #[derive(Clone, Debug)]
 pub struct SenderWitness {
-    pub spend_key: BaseElement,
+    /// ⚠️ **CUATRO elementos** desde §90. Ver `COL_S_KEY`.
+    pub spend_key: Digest,
     pub balance: u64,
     pub nonce: BaseElement,
     pub path: MerklePath,
@@ -320,7 +332,7 @@ pub fn build_trace(
     null_path: &MerklePath,
     frozen_path: &MerklePath,
 ) -> TraceTable<BaseElement> {
-    let s_id = derive_public_id(sender.spend_key);
+    let s_id = derive_public_id_wide(sender.spend_key);
     build_trace_with_id(
         sender,
         receiver,
@@ -373,7 +385,7 @@ pub fn build_trace_with_id(
 
     // --- Transporte constante ---
     for row in rows.iter_mut() {
-        row[COL_S_KEY] = sender.spend_key;
+        row[COL_S_KEY..COL_S_KEY + 4].copy_from_slice(&sender.spend_key);
         for i in 0..4 {
             row[COL_S_ID + i] = s_id[i];
             row[COL_R_ID + i] = receiver.public_id[i];
@@ -479,16 +491,16 @@ pub fn build_trace_with_id(
                 ROW_R_ROOT => {
                     // Arranque de la derivacion de pk: AUTORIDAD.
                     state_a[4] = BaseElement::new(SPEND_KEY_DOMAIN);
-                    state_a[8] = sender.spend_key;
+                    state_a[8..12].copy_from_slice(&sender.spend_key);
                     state_b[4] = BaseElement::new(SPEND_KEY_DOMAIN);
-                    state_b[8] = sender.spend_key;
+                    state_b[8..12].copy_from_slice(&sender.spend_key);
                 }
                 ROW_PK_DONE => {
                     // Arranque del nullifier: DESDE LA CLAVE.
                     state_a[4] = BaseElement::new(NULLIFIER_DOMAIN);
-                    state_a[8] = sender.spend_key;
+                    state_a[8..12].copy_from_slice(&sender.spend_key);
                     state_b[4] = BaseElement::new(NULLIFIER_DOMAIN);
-                    state_b[8] = sender.spend_key;
+                    state_b[8..12].copy_from_slice(&sender.spend_key);
                 }
                 ROW_NULL_LINK => {
                     state_a[4..8].copy_from_slice(&digest_a);
@@ -656,11 +668,14 @@ impl Air for SettlementAir {
         }
         // Conservacion (2), transporte (9), ids (8), root_mid const (4):
         // grado 1 SIN ciclo.
-        for _ in 0..(2 + 9 + 8 + 4) {
+        for _ in 0..(2 + 12 + 8 + 4) {
             degrees.push(TransitionConstraintDegree::new(1));
         }
-        // Clave en nullifier (2), entrada de pk (2), comprobacion de pk (4).
-        for _ in 0..8 {
+        // Clave en nullifier (**8**), entrada de pk (**8**), pk (4).
+        //
+        // ⚠️ Eran 2 + 2 + 4. La clave entra DOS veces —para derivar `pk` y
+        // para el nullifier— y cada una son 4 elementos por 2 carriles.
+        for _ in 0..20 {
             degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
         }
         // No-pertenencia (4): GRADO 2, no 1. Su expresion selecciona la
@@ -694,7 +709,9 @@ impl Air for SettlementAir {
         assert_eq!(degrees.len(), NUM_CONSTRAINTS, "cuenta de grados");
 
         SettlementAir {
-            context: AirContext::new(trace_info, degrees, 57, options),
+            // 57 - 6: se retiraron las que fijaban a cero las ranuras
+            // 9..12, que dejaron de ser relleno al ensanchar la clave (§90).
+            context: AirContext::new(trace_info, degrees, 51, options),
             pub_inputs,
         }
     }
@@ -933,6 +950,9 @@ impl Air for SettlementAir {
         // ===== Constancia del transporte =====
         let transport = [
             COL_S_KEY,
+            COL_S_KEY + 1,
+            COL_S_KEY + 2,
+            COL_S_KEY + 3,
             COL_S_BAL,
             COL_S_NONCE,
             COL_S_BAL_NEW,
@@ -953,12 +973,22 @@ impl Air for SettlementAir {
 
         // ===== La CLAVE entra en el nullifier =====
         // El nullifier arranca tras la derivacion de pk.
-        result[C_NULL_KEY] = sel_pk_done * (next[8] - current[COL_S_KEY]);
-        result[C_NULL_KEY + 1] = sel_pk_done * (next[LANE_B + 8] - current[COL_S_KEY]);
+        // ⚠️ **Los CUATRO elementos, en los dos carriles.** Atar solo el
+        // primero dejaria los otros tres libres, y el compromiso dejaria de
+        // estar determinado por la clave declarada — el mismo fallo que §72
+        // en otro sitio.
+        for i in 0..4 {
+            result[C_NULL_KEY + i] = sel_pk_done * (next[8 + i] - current[COL_S_KEY + i]);
+            result[C_NULL_KEY + 4 + i] =
+                sel_pk_done * (next[LANE_B + 8 + i] - current[COL_S_KEY + i]);
+        }
 
         // ===== La clave entra en la derivación de pk =====
-        result[C_PK_INPUT] = sel_pk_start * (next[8] - current[COL_S_KEY]);
-        result[C_PK_INPUT + 1] = sel_pk_start * (next[LANE_B + 8] - current[COL_S_KEY]);
+        for i in 0..4 {
+            result[C_PK_INPUT + i] = sel_pk_start * (next[8 + i] - current[COL_S_KEY + i]);
+            result[C_PK_INPUT + 4 + i] =
+                sel_pk_start * (next[LANE_B + 8 + i] - current[COL_S_KEY + i]);
+        }
 
         // ===== AUTORIDAD DE GASTO =====
         // La pk derivada de la clave coincide con la identidad usada en
@@ -1054,9 +1084,13 @@ impl Air for SettlementAir {
         for i in 5..8 {
             a.push(Assertion::single(i, ROW_NULL_START, zero));
         }
-        for i in 9..12 {
-            a.push(Assertion::single(i, ROW_NULL_START, zero));
-        }
+        // ⚠️ Las ranuras 9..12 **ya no son relleno: son la clave** (§90).
+        //
+        // Las fijaba a cero cuando `sk` era un elemento. Ahora `state[8..12]`
+        // lleva los cuatro, y quien las ata es `C_NULL_KEY` contra
+        // `COL_S_KEY` —constante por `C_TRANSPORT`—. Pasan de estar fijadas
+        // a CERO a estar fijadas a la CLAVE DECLARADA: mas fuerte, no mas
+        // debil.
         // Nullifier publico.
         for i in 0..4 {
             a.push(Assertion::single(
@@ -1074,9 +1108,7 @@ impl Air for SettlementAir {
         for i in 5..8 {
             a.push(Assertion::single(i, ROW_PK_START, zero));
         }
-        for i in 9..12 {
-            a.push(Assertion::single(i, ROW_PK_START, zero));
-        }
+        // ⚠️ Igual que arriba: 9..12 es la clave, y la ata `C_PK_INPUT`.
         // Raices del arbol de nullifiers: la antigua (donde la posicion
         // estaba libre) y la nueva (con el nullifier insertado).
         for i in 0..4 {
@@ -1392,9 +1424,17 @@ mod tests {
     /// hoja NUEVA del emisor, que es lo que exige el encadenamiento.
     fn scenario(sender_balance: u64, amount: u64, credited: u64, limit: u64) -> Scenario {
         let empty = empty_subtrees();
-        let s_key = BaseElement::new(0xDEADBEEF);
+        // ⚠️ Clave ANCHA de verdad: si fuera `as_digest(x)` los tres
+        // elementos nuevos irian a cero y el circuito pasaria sin
+        // ejercitarlos (§90.3).
+        let s_key = [
+            BaseElement::new(0xDEADBEEF),
+            BaseElement::new(0xFEEDFACE),
+            BaseElement::new(0x00C0FFEE),
+            BaseElement::new(0x05EA51DE),
+        ];
         let s_nonce = BaseElement::new(7);
-        let s_id = derive_public_id(s_key);
+        let s_id = derive_public_id_wide(s_key);
         let r_id = derive_public_id(BaseElement::new(0xCAFE));
         let r_bal = 50_000u64;
         let r_nonce = BaseElement::new(3);
@@ -1433,7 +1473,7 @@ mod tests {
 
         // Arbol de nullifiers: parte vacio, se inserta el de esta
         // operacion.
-        let nullifier = native_nullifier(s_key, s_nonce);
+        let nullifier = native_nullifier_wide(s_key, s_nonce);
         let null_path =
             crate::nullifier_tree::path_for_empty_tree(
                 crate::nullifier_tree::nullifier_position(&nullifier),
@@ -1578,7 +1618,7 @@ mod tests {
             // La pk derivada al final coincide con la identidad usada.
             assert_eq!(
                 trace.get(4 + i, ROW_PK_DONE),
-                derive_public_id(s.sender.spend_key)[i],
+                derive_public_id_wide(s.sender.spend_key)[i],
                 "pk derivada {i}"
             );
         }
@@ -1742,11 +1782,19 @@ mod tests {
     #[test]
     fn attacker_without_spend_key_cannot_transfer() {
         let s = scenario(1_000_000, 250_000, 250_000, 500_000);
-        let victim_id = derive_public_id(s.sender.spend_key);
+        let victim_id = derive_public_id_wide(s.sender.spend_key);
 
         // El atacante usa la identidad de la victima con SU clave.
         let attacker = SenderWitness {
-            spend_key: BaseElement::new(0x1337),
+            // ⚠️ Ancha de verdad, no `as_digest(x)`: con relleno de ceros
+            // el test seguiria siendo valido —§90: rellenar conserva la
+            // identidad— pero no ejercitaria los tres elementos nuevos.
+            spend_key: [
+                BaseElement::new(0x1337),
+                BaseElement::new(0xBADC0DE),
+                BaseElement::new(0x0DDBA11),
+                BaseElement::new(0x1CEB00DA),
+            ],
             balance: s.sender.balance,
             nonce: s.sender.nonce,
             path: s.sender.path.clone(),
@@ -1808,7 +1856,7 @@ mod tests {
             s.amount,
             s.credited,
             s.limit,
-            derive_public_id(s.sender.spend_key),
+            derive_public_id_wide(s.sender.spend_key),
             &s.null_path,
             nullifier, // la posicion "ya estaba ocupada"
             &s.frozen_path,
