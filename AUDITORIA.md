@@ -6923,6 +6923,112 @@ Y hoy ha pasado tres veces que el analisis previo evito una ronda —§70.3— y
 una que **lo escrito llevo a arreglar lo que denunciaba** (§76.1): el README
 declaro tres tests rojos y esa misma tarde dejaron de estarlo.
 
+## 85. Ensanchar la clave: inventario y plan, antes de escribir nada
+
+La entrada 15 quedo medida en §82: el espacio de secretos es 2^64 porque
+`sk` es **un solo elemento**. Esto inventaria que costaria pasarlo a cuatro
+—256 bits— y deja el plan decidido.
+
+### 85.1 Lo que NO hay que cambiar
+
+Las ocho derivaciones son **una sustitucion cada una**:
+
+```rust
+merge(as_digest(DOMAIN), as_digest(sk))   →   merge(as_digest(DOMAIN), sk)
+```
+
+`derive_public_id`, `native_nullifier` ×4, `derive_governor_id`,
+`derive_custodian_id` ×2. **La estructura del hash no cambia**, asi que el
+nulificador tampoco necesita otra forma de absorcion. Era una de las tres
+incognitas y queda descartada.
+
+Y en el estado de Rescue **hay sitio**: la clave ocupa la ranura 8 de 12, y
+9-11 estan libres.
+
+```rust
+state_a[4] = SPEND_KEY_DOMAIN;
+state_a[8] = spend_key;          // → state_a[8..12].copy_from_slice(&sk)
+```
+
+⚠️ Esas ranuras libres **no son un agujero**: `C_PK_CHECK` clava la salida a
+los 256 bits de `pk`, y encontrar una preimagen de eso son 2^256. Se
+comprobo antes de dar el dato.
+
+### 85.2 Lo que si cuesta, contado sobre `circuit_settlement`
+
+| | ahora | tras ensanchar |
+|---|---|---|
+| `COL_S_KEY` | 1 columna | **4** |
+| `TRACE_WIDTH` | 49 | **52** (+3) |
+| `C_NULL_KEY` | 2 | **8** |
+| `C_PK_INPUT` | 2 | **8** |
+| `C_TRANSPORT` | 9 | **12** |
+| `NUM_CONSTRAINTS` | **155** | **170** (+15) |
+
+⚠️ **Son +15, no +6.** La primera estimacion conto la clave una vez y entra
+**dos**: para derivar `pk` y para el nulificador. Es la tercera vez en la
+sesion que una estimacion sin contar sale corta.
+
+⚠️ **Y el tamaño de prueba NO queda igual**, como se dijo antes de mirar:
+`COL_S_KEY` es una **columna de traza**, no solo una ranura del estado.
+Ensanchar la clave ensancha la traza.
+
+### 85.3 El churn, medido
+
+| | |
+|---|---|
+| `derive_public_id` | **88 usos en 22 ficheros** |
+| `SK_ALICE` / `SK_BOB` / `SK_MALLORY` | **329 menciones**, de las cuales **122** son `BaseElement::new(SK_*)` |
+| Conjuntos de custodios y gobernanza | 9 literales en 2 funciones |
+| Circuitos que absorben la clave | 5 de gasto + umbral y gobernanza |
+
+El churn de tests es **mecanico**: se cambia el ayudante y se sustituye un
+patron. No son 329 ediciones a mano.
+
+### 85.4 ⚠️ «Empezar por un circuito» NO funciona, y conviene saber por que
+
+El guion de las cinco amputaciones —hacer uno entero, medir, seguir— **no se
+aplica aqui**. Alli cada circuito extraido era **nuevo y aislado**. Esto es
+un **cambio de formato de identidad**, y `derive_public_id` la usan 22
+ficheros.
+
+En cuanto un circuito espere una `pk` derivada de cuatro elementos y la capa
+la derive de uno, **dejan de coincidir** y se rompe todo lo que toque
+cuentas.
+
+> **Un formato no se migra por partes.** El error habria sido empezar por
+> `circuit_burn` «porque es el mas estrecho» y descubrirlo a mitad.
+
+### 85.5 El plan: C, luego B; A solo si B no cabe
+
+**C — medir el coste, sin tocar la identidad.** La pregunta no es como se
+ensancha una clave: es **cuanto cuestan +3 columnas y +15 restricciones en
+tamaño de prueba y tiempo**. Eso se mide con columnas de relleno y
+restricciones triviales sobre `circuit_settlement` —cuyo `SettlementAir`
+**la capa no ejecuta**: solo lo referencia `transfer.rs`, que no esta
+declarado en `lib.rs`—. Mismo numero, una fraccion del trabajo, y **cero
+riesgo de tocar la semantica de quien controla que cuenta**.
+
+**B — hacerlo entero, en un commit.** Con el barrido comprobando las **dos**
+cadenas en los 27 circuitos (§81) y la suite en 272 + 201 sin ignorados, un
+desajuste de disposicion se caza al instante.
+
+**A — coexistencia, solo si B no cabe.** Añadir una derivacion ancha junto a
+la estrecha y migrar por partes, como los `_climb`.
+⚠️ **Es la ultima opcion a proposito**: durante la migracion conviven **dos
+formatos de identidad** en el sitio donde se decide quien es quien, que es
+exactamente el terreno donde salieron §27 y §73.
+
+### 85.6 Lo que este inventario ya ha evitado
+
+Tres cosas, y ninguna se habria visto escribiendo codigo:
+
+1. Que el plan «un circuito primero» era inviable (§85.4).
+2. Que el coste era +15 y no +6.
+3. Que el tamaño de prueba **si** cambia.
+
+Las tres se dijeron mal antes de contarlas. Contarlas costo cuatro `grep`.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

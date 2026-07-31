@@ -502,7 +502,19 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   solidez. No faltaba declararla: faltaba que este backlog no la describiera
   como pendiente.
 
-- [ ] **15. ⚠️ El ESPACIO DE CLAVES es de 64 bits. Medido.**
+- [ ] **15. ⚠️ El ESPACIO DE CLAVES es de 64 bits. Medido, e INVENTARIADO el
+  arreglo.** ⚠️ **Inventario y plan en §85** (31-07-2026): las ocho
+  derivaciones son una sustitucion cada una y el nulificador **no** cambia de
+  forma; en el estado de Rescue **hay sitio** —la clave ocupa la ranura 8 de
+  12—. Lo que cuesta, contado sobre `circuit_settlement`: `TRACE_WIDTH`
+  **49→52** y `NUM_CONSTRAINTS` **155→170**, o sea **+3 columnas y +15
+  ranuras por circuito** —son +15 y no +6 porque la clave entra **dos veces**,
+  para `pk` y para el nulificador—. Churn: **88 usos** de `derive_public_id`
+  en 22 ficheros y **122** `BaseElement::new(SK_*)`, mecanicos.
+  ⚠️ **«Empezar por un circuito» NO funciona** (§85.4): un formato de
+  identidad no se migra por partes. **Plan decidido**: medir el coste con
+  columnas de relleno sobre `circuit_settlement` —que la capa no ejecuta—,
+  y con ese numero hacerlo entero en un commit.
   ~~Goldilocks es estrecho para identidades: 64 bits son colision en 2³².~~
   ⚠️ **Eso describia un problema YA CORREGIDO** —la identidad paso a ser el
   digest de 4 elementos, 256 bits, y esta documentado en la cabecera de
