@@ -7633,6 +7633,55 @@ parche por **su propia amplitud**, no por un fallo del codigo.
 en falso enseña a ignorarlo**, que es exactamente lo que §78.4 dice de los 78
 rojos permanentes. Los dos se afinaron en el sitio.
 
+### 92.6 `circuit_burn`: el segundo, y lo que costo
+
+Mismo patron, sobre el mas estrecho de los cinco.
+
+| | antes | ahora |
+|---|---|---|
+| `TRACE_WIDTH` | 39 | **42** |
+| `C_KEY_INPUT` | 2 | **8** |
+| `C_TRANSPORT` | 7 | **10** |
+| Aserciones | 33 | **33** — sin cambio |
+
+⚠️ **Un paso menos que el piloto, y comprobado ANTES**: `circuit_burn` no
+fija a cero las ranuras 9..12 en la fila de la clave —su unica asercion
+sobre 9..12 es la de la fila 0, donde siguen siendo relleno—. Mirarlo antes
+de escribir evito la ronda que el piloto costo (§92.2).
+
+**11 tests en verde**, incluidos el positivo, el negativo del atacante y
+`no_constraint_is_vacuous`.
+
+### 92.7 ⚠️ CINCO rondas en el circuito mas simple, y siempre lo mismo
+
+| ronda | lo que faltaba |
+|---|---|
+| 1 | un `state_a[8]` fuera del ancla |
+| 2 | un `///` sobre un parametro —Rust no lo permite— y el `let key` del escenario |
+| 3 | el **campo** `key` del struct y la **firma** de `run` |
+| 4 | la clave del atacante |
+
+En cada una se dijo «este es el ultimo» y no lo era.
+
+> **La causa no fue el patron —que estaba probado— sino el ORDEN de
+> aplicarlo**: se buscaron los USOS de memoria, uno a uno, en vez de cambiar
+> los TIPOS y dejar que el compilador los enumere.
+
+**La secuencia correcta, para los tres que quedan:**
+
+1. Cambiar **todas las declaraciones**: campos de struct, firmas de funcion,
+   parametros. Nada de usos todavia.
+2. **Compilar.**
+3. Arreglar lo que el compilador liste, que es **exhaustivo** y gratis.
+
+Hacerlo al reves es hacer a mano —y peor— lo que la maquina hace sola. Se
+hizo al reves cinco veces seguidas, y cada ronda consumio una compilacion
+del interlocutor.
+
+⚠️ Es la variante de §91.5 aplicada a uno mismo: **la disciplina existia
+—dejar que la herramienta enumere— y se aplico solo donde resultaba
+comodo.**
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

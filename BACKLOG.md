@@ -577,9 +577,21 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **`no_constraint_is_vacuous` pasa**: las quince ranuras nuevas disparan
   todas. ⚠️ Hubo que retirar seis aserciones que fijaban a cero `state[9..12]`
   —**eran relleno y dejaron de serlo**—; pasan de estar fijadas a CERO a
-  estarlo a la CLAVE, que es mas fuerte (§92.2). **Queda**: los otros cuatro
+  estarlo a la CLAVE, que es mas fuerte (§92.2). ~~**Queda**: los otros cuatro
   de gasto + la derivacion compartida + `open_account` en un commit, y
-  custodios+gobernanza en otro.
+  custodios+gobernanza en otro.~~ ✅ **Y `circuit_burn` tambien** (§92.6):
+  `TRACE_WIDTH` **39→42**, `C_KEY_INPUT` **2→8**, `C_TRANSPORT` **7→10**, 11
+  tests en verde. Sin aserciones que retirar —se comprobo antes—.
+  ⚠️ **Costo CINCO rondas** por aplicar el patron en el orden equivocado
+  (§92.7): **primero los TIPOS, luego compilar, y arreglar lo que el
+  compilador enumere**. Esa es la secuencia para los que quedan.
+  **Quedan**: `send` y `claim` —que transfieren igual— y `audit`, que **no
+  encaja en el patron**: `COL_KEY` en 13, ancho 24 y **cero** sitios
+  `state[8] = spend_key`. Absorbe la clave de otra forma y necesita analisis
+  propio. Y despues `open_account` y la capa.
+  ⚠️ **La derivacion estrecha NO hay que migrarla en los 22 ficheros**: §90
+  la hace equivalente para una clave rellenada, asi que quien solo *calcula*
+  una identidad puede seguir usandola.
   ~~Goldilocks es estrecho para identidades: 64 bits son colision en 2³².~~
   ⚠️ **Eso describia un problema YA CORREGIDO** —la identidad paso a ser el
   digest de 4 elementos, 256 bits, y esta documentado en la cabecera de
