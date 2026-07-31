@@ -24,6 +24,19 @@ Para cada circuito:
      DESBORDE   una ranura por encima de NUM_CONSTRAINTS
      MUERTA     una ranura por debajo de NUM_CONSTRAINTS que nadie escribe
 
+Y **la cadena de columnas PERIODICAS**, que hasta la entrada 39 no miraba
+nadie: `result[...]` y `periodic[...]` son dos arrays distintos y esta
+herramienta solo cruzaba uno.
+
+     DESBORDE PERIODICA  se lee una columna por encima de las construidas
+     MUERTA PERIODICA    se construye una columna que NADIE lee
+
+Importa por lo que NO se ve: al extraer `circuit_mint_climb` quedaron tres
+constantes `P_*` muertas y el indice se salio del array (§66.2). Se noto
+**porque desbordo**. Si el desplazamiento fuera hacia abajo, la restriccion
+leeria la columna periodica equivocada **en silencio**, activandose en las
+filas que no son —la clase de §39 y §72, que ninguna otra comprobacion ve—.
+
 Lo que esta herramienta NO puede hacer: los indices salen de un analisis
 sintactico, no de ejecutar el circuito. Cuando una expresion no se puede
 expandir con certeza se marca INDETERMINADA y **cuenta como hueco del
@@ -60,6 +73,23 @@ RE_CONST = re.compile(r"^(?:pub )?const ([A-Z][A-Z_0-9]*): usize = (.+?);", re.M
 # Eran DIEZ de veinticuatro, y el resumen decia «todos limpios» sobre los
 # catorce que si entendia (§59.2).
 RE_WRITE = re.compile(r"result\[([^\]]+)\]")
+# Lecturas de la cadena periodica.
+#
+# ⚠️ **`periodic\w*` y no `periodic`, y esto ya fallo una vez.** La primera
+# version de esta regex casaba solo `periodic[...]`, y SEIS circuitos
+# -`merkle`, `rescue_hash`, `compliance_circuit`, `dual_climb`,
+# `circuit_frozen_climb`, `nullifier`- llaman al parametro `periodic_values`.
+# El barrido dio 159 columnas muertas que no existian: **el mismo agujero que
+# RE_WRITE tenia antes de §59.2**, cometido al cerrarlo.
+#
+# Incluye ademas los cortes `periodic[P_A..P_A + N]`, que son 35 de las 217
+# lecturas del repositorio.
+RE_PERIODIC = re.compile(r"\bperiodic\w*\[([^\]]+)\]")
+RE_PUSH = re.compile(r"\bcolumns\.push\(")
+# `solvency` no usa `push`: devuelve `vec![a, b, c]` directamente. Se excluyen
+# las formas `vec![x; n]`, que construyen UNA columna, no una lista.
+RE_VEC = re.compile(r"vec!\[([^\[\]]*)\]")
+RE_FN_PERIODIC = re.compile(r"fn get_periodic_column_values")
 RE_FOR = re.compile(r"\bfor\s+(\([^)]*\)|[a-z_][a-z_0-9]*)\s+in\s+([^{]+?)\s*\{")
 RE_LET_ARRAY = re.compile(r"let\s+([a-z_][a-z_0-9]*)\s*=\s*\[([^\]]*)\]\s*;", re.S)
 
@@ -215,6 +245,170 @@ def indices_escritos(texto, m, valores):
     return salida
 
 
+def _valores_de_expr(texto, pos, expr, valores):
+    """Valores que toma una expresion en `pos`, expandiendo sus bucles.
+
+    Es el nucleo de `indices_escritos`, extraido para que las lecturas de
+    `periodic[...]` —que pueden ser cortes `a..b`— usen la MISMA maquinaria.
+    Duplicarla habria hecho que las dos divergieran en silencio.
+    """
+    expr = expr.strip()
+    envolventes = bucles_que_envuelven(texto, pos, valores)
+    libres = sorted(set(re.findall(r"\b([a-z_][a-z_0-9]*)\b", expr)))
+    libres = [v for v in libres if v not in valores]
+
+    dominios = []
+    for v in libres:
+        vals = None
+        for nombre, conjunto in envolventes:
+            if nombre == v:
+                vals = conjunto
+                break
+        if vals is None:
+            return None
+        dominios.append(sorted(vals))
+
+    salida = set()
+    for combo in (itertools.product(*dominios) if dominios else [()]):
+        entorno = dict(valores)
+        entorno.update(dict(zip(libres, combo)))
+        try:
+            v = eval(expr, {"__builtins__": {}}, entorno)  # noqa: S307
+        except Exception:
+            return None
+        if not isinstance(v, int):
+            return None
+        salida.add(v)
+    return salida
+
+
+def indices_leidos(texto, m, valores):
+    """Indices que lee un `periodic[...]`, incluidos los cortes `a..b`."""
+    expr = m.group(1).strip()
+    if ".." not in expr:
+        return _valores_de_expr(texto, m.start(), expr, valores)
+
+    ini_txt, fin_txt = expr.split("..", 1)
+    inclusivo = fin_txt.startswith("=")
+    if inclusivo:
+        fin_txt = fin_txt[1:]
+    a = _valores_de_expr(texto, m.start(), ini_txt, valores)
+    b = _valores_de_expr(texto, m.start(), fin_txt, valores)
+    if a is None or b is None:
+        return None
+    salida = set()
+    for x in a:
+        for y in b:
+            salida.update(range(x, y + 1 if inclusivo else y))
+    return salida
+
+
+def tamano_de_bucle(texto, rango, valores):
+    """Cuantas veces itera un bucle, o None si no se acota.
+
+    Para CONTAR empujes basta el tamano; los valores no hacen falta. Por eso
+    acepta arrays literales como `[true, false]`, que `rango_de_bucle` no
+    puede convertir en indices y devolveria None.
+    """
+    vals = rango_de_bucle(texto, rango, valores)
+    if vals is not None:
+        return len(vals)
+    r = rango.strip()
+    if r.startswith("[") and r.endswith("]") and ".iter()" not in r:
+        n = contar_elementos(r[1:-1])
+        return n if n else None
+    return None
+
+
+def _envolventes_acotadas(texto, pos, valores):
+    """Producto de las iteraciones de los bucles abiertos en `pos`."""
+    total = 1
+    for m in RE_FOR.finditer(texto[:pos]):
+        try:
+            ini = texto.index("{", m.end() - 1)
+        except ValueError:
+            continue
+        prof, cerrado = 0, False
+        for i in range(ini, pos):
+            if texto[i] == "{":
+                prof += 1
+            elif texto[i] == "}":
+                prof -= 1
+                if prof == 0:
+                    cerrado = True
+                    break
+        if cerrado:
+            continue
+        n = tamano_de_bucle(texto, m.group(2), valores)
+        if n is None:
+            return None
+        total *= n
+    return total
+
+
+def _cuerpo_de_funcion(texto, nombre):
+    """Cuerpo de una funcion y su desplazamiento, por conteo de llaves."""
+    # ⚠️ Busqueda de texto PLANO, sin expresion regular.
+    #
+    # Un `\b` aqui tuvo que atravesar dos capas de comillas y se
+    # colapso en un caracter de RETROCESO (0x08). El patron dejaba de casar,
+    # el contador daba cero en los 27 circuitos y el barrido reportaba 823
+    # desbordes inexistentes. Sin escapes no hay nada que colapsar.
+    pos = texto.find("fn " + nombre)
+    if pos < 0:
+        return None
+    try:
+        ini = texto.index("{", pos + len(nombre) + 3)
+    except ValueError:
+        return None
+    prof = 0
+    for i in range(ini, len(texto)):
+        if texto[i] == "{":
+            prof += 1
+        elif texto[i] == "}":
+            prof -= 1
+            if prof == 0:
+                return texto[ini:i + 1], ini
+    return None
+
+
+def columnas_construidas(texto, valores):
+    """Cuantas columnas periodicas construye el circuito, o None.
+
+    ⚠️ **None significa NO COMPROBADO, nunca «cero».** Devolver 0 cuando no
+    se entiende la construccion hace que TODA lectura parezca un desborde:
+    `solvency` —que devuelve `vec![a, b, c]` en vez de usar `push`— aparecio
+    asi con seis desbordes inexistentes.
+
+    Un barrido que **condena** lo que no entiende es tan malo como uno que lo
+    aprueba (§42.5, §59.2).
+    """
+    cuerpo_pos = _cuerpo_de_funcion(texto, "get_periodic_column_values")
+    if cuerpo_pos is None:
+        return 0  # el circuito no tiene cadena periodica
+    cuerpo, desplazamiento = cuerpo_pos
+
+    # Forma 1: `columns.push(...)`, expandiendo sus bucles.
+    total, hubo = 0, False
+    for m in RE_PUSH.finditer(cuerpo):
+        hubo = True
+        n = _envolventes_acotadas(texto, desplazamiento + m.start(), valores)
+        if n is None:
+            return None
+        total += n
+    if hubo:
+        return total
+
+    # Forma 2: `vec![a, b, c]` devuelto directamente.
+    listas = [g for g in RE_VEC.findall(cuerpo) if ";" not in g]
+    if listas:
+        n = contar_elementos(listas[-1])
+        if n:
+            return n
+
+    return None
+
+
 def sin_comentarios(texto):
     """Sustituye el contenido de los comentarios por espacios, conservando las
     posiciones y los saltos de linea.
@@ -276,6 +470,27 @@ def analizar(ruta):
     # la firma de §38— si se detectan igual.
     muertas = sorted(set(range(total)) - cubiertas) if total is not None else []
 
+    # ===== LA CADENA PERIODICA (entrada 39) =====
+    #
+    # Mismo cruce, otro array. Se construyen N columnas y se leen indices; si
+    # alguno se sale, la restriccion lee **otra columna** —y si se sale hacia
+    # abajo, lo hace en silencio—.
+    p_construidas = columnas_construidas(texto, valores)
+    p_leidas, p_indeterminadas = set(), []
+    for m in RE_PERIODIC.finditer(texto):
+        idx = indices_leidos(texto, m, valores)
+        linea = texto[: m.start()].count("\n") + 1
+        if idx is None:
+            p_indeterminadas.append((linea, m.group(0)))
+        else:
+            p_leidas.update(idx)
+
+    if p_construidas is None:
+        p_desbordes, p_muertas = [], []
+    else:
+        p_desbordes = sorted(i for i in p_leidas if i >= p_construidas)
+        p_muertas = sorted(set(range(p_construidas)) - p_leidas)
+
     return {
         "total": total,
         "colisiones": colisiones,
@@ -284,6 +499,10 @@ def analizar(ruta):
         "indeterminadas": indeterminadas,
         "sin_resolver": sin_resolver,
         "grupos": sorted(grupos.items(), key=lambda kv: kv[1]),
+        "p_construidas": p_construidas,
+        "p_desbordes": p_desbordes,
+        "p_muertas": p_muertas,
+        "p_indeterminadas": p_indeterminadas,
     }
 
 
@@ -334,6 +553,28 @@ fn evaluate() {
 """
 
 
+CASO_66 = """
+const P_UNO: usize = 0;
+const P_DOS: usize = 1;
+const P_TRES: usize = 2;
+const C_ALGO: usize = 0;
+const NUM_CONSTRAINTS: usize = 1;
+
+fn get_periodic_column_values(&self) -> Vec<Vec<Self::BaseField>> {
+    let mut columns = Vec::new();
+    columns.push(uno);
+    columns.push(dos);
+    columns
+}
+
+fn evaluate_transition(&self) {
+    let a = periodic[P_UNO];
+    let c = periodic[P_TRES];
+    result[C_ALGO] = a * c;
+}
+"""
+
+
 def autotest():
     """Comprueba que el detector caza el fallo real de §50.
 
@@ -358,6 +599,30 @@ def autotest():
         print(f"AUTOTEST FALLA: esperaba 8 colisiones en el caso de §50, hallo {n}")
         return 1
     print("autotest: el detector caza las 8 ranuras pisadas del fallo de §50")
+
+    # ===== Y que caza la cadena periodica rota de §66.2 (entrada 39) =====
+    #
+    # `CASO_66` reproduce lo que quedo en `circuit_mint_climb`: una periodica
+    # que se construye y nadie lee, y una lectura por encima de las
+    # construidas. Un detector que nunca ha detectado nada no esta probado.
+    with tempfile.NamedTemporaryFile("w", suffix=".rs", delete=False) as f:
+        f.write(CASO_66)
+        ruta = f.name
+    try:
+        r = analizar(ruta)
+    finally:
+        os.unlink(ruta)
+
+    if r["p_construidas"] != 2:
+        print(f"AUTOTEST FALLA: esperaba 2 columnas, conto {r['p_construidas']}")
+        return 1
+    if r["p_muertas"] != [1]:
+        print(f"AUTOTEST FALLA: esperaba la columna 1 muerta, hallo {r['p_muertas']}")
+        return 1
+    if r["p_desbordes"] != [2]:
+        print(f"AUTOTEST FALLA: esperaba desborde en 2, hallo {r['p_desbordes']}")
+        return 1
+    print("autotest: el detector caza la periodica muerta y el desborde de §66.2")
     return 0
 
 
@@ -408,6 +673,34 @@ def main():
             lineas.append(f"    [?] linea {linea}: no se pudo expandir  {txt}")
             huecos += 1
 
+        # ===== CADENA PERIODICA (entrada 39) =====
+        for i in r["p_desbordes"]:
+            lineas.append(
+                f"    [DESBORDE PERIODICA] se lee periodic[{i}] y solo se "
+                f"construyen {r['p_construidas']} columnas"
+            )
+            graves += 1
+
+        if r["p_muertas"]:
+            lineas.append(
+                f"    [MUERTA PERIODICA] {len(r['p_muertas'])} columna(s) que "
+                f"se construyen y NADIE lee: {r['p_muertas']}"
+            )
+            huecos += 1
+
+        for linea, txt in r["p_indeterminadas"]:
+            lineas.append(
+                f"    [?] linea {linea}: lectura periodica no expandible  {txt}"
+            )
+            huecos += 1
+
+        if r["p_construidas"] is None:
+            lineas.append(
+                "    [?] no se pudo contar cuantas columnas periodicas se "
+                "construyen: la cadena queda SIN COMPROBAR"
+            )
+            huecos += 1
+
         for n in r["sin_resolver"]:
             lineas.append(f"    [?] constante no resuelta: {n}")
             huecos += 1
@@ -433,7 +726,9 @@ def main():
         )
     if not graves and not huecos:
         print(
-            f"{barridos} circuitos: ninguna ranura colisiona, desborda ni queda muerta."
+            f"{barridos} circuitos: ninguna ranura colisiona, desborda ni queda "
+            "muerta, y ninguna columna periodica se lee fuera de rango ni se "
+            "construye sin leerse."
         )
     if no_barridos:
         print()

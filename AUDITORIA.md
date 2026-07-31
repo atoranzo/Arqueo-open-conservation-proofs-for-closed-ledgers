@@ -6588,6 +6588,75 @@ impide llamarlas con un `#[allow]`, y este mismo commit añade dos.
 **La garantia la da usar la via delegada.** Mientras las antiguas existan,
 el fallo de la entrada 32 esta *evitable*, no *cerrado*.
 
+## 81. Entrada 39 cerrada, y los tres errores que costo cerrarla
+
+`check_constraint_layout.py` cruzaba los indices de `result[...]` y **no los
+de `periodic[...]`**. Son dos arrays y miraba uno.
+
+### 81.1 Por que importaba
+
+En `mint_climb` quedaron tres constantes `P_*` muertas, `P_SEG_LINK` se
+desplazo y el indice se salio del array (§66.2). **Se noto porque
+desbordo.**
+
+Si el desplazamiento fuera hacia abajo, la restriccion leeria la columna
+periodica equivocada **en silencio** —activandose en las filas que no son—.
+Ni las colisiones, ni las ranuras muertas, ni `buscar_vacias` lo verian: es
+la clase de §39 y §72.
+
+Ahora comprueba `DESBORDE PERIODICA` —se lee por encima de lo construido— y
+`MUERTA PERIODICA` —se construye y nadie lee—, con autotest propio.
+
+### 81.2 Reproduce sola una comprobacion que se hizo a mano
+
+Da **32** en `circuit_mint_pending_climb` y **41** en
+`circuit_mint_pending`: exactamente lo que hubo que contar a mano esta
+mañana al amputar, y donde §68 se equivoco contando ocho periodicas cuando
+eran nueve (§70.1).
+
+> Automatizar lo que ya se hace a mano es la conversion mas barata que hay,
+> y la unica que no se olvida de hacerse.
+
+### 81.3 ⚠️ Los TRES errores que costo, porque valen mas que la herramienta
+
+**Uno.** La primera regex casaba `periodic[` y no `periodic_values[`. Seis
+circuitos usan el segundo nombre y el barrido reporto **159 columnas muertas
+inexistentes**.
+
+> Es **literalmente el mismo agujero que `RE_WRITE` tenia antes de §59.2**,
+> cometido al cerrarlo. El patron no es que se olvide: es que se repite en
+> quien lo esta corrigiendo.
+
+**Dos.** El contador devolvia `0` cuando no entendia la construccion.
+`solvency` devuelve `vec![a, b, c]` en vez de usar `push`, y aparecio con
+seis desbordes falsos.
+
+La regla de §42.5 decia que un barrido no debe **aprobar** lo que no
+entiende. No decia lo otro, y hacia falta:
+
+> **Un barrido que CONDENA lo que no entiende es tan malo como uno que lo
+> aprueba.** Los dos mienten; el segundo ademas entrena a ignorarlo.
+
+**Tres.** Un `\b` de expresion regular atraveso dos capas de comillas y se
+colapso en un caracter de **retroceso** (0x08). El patron dejo de casar, el
+contador dio cero en los 27 circuitos y el barrido reporto **823 desbordes**.
+Sustituido por busqueda de texto plano: sin escapes no hay nada que
+colapsar.
+
+### 81.4 Lo que los tres tienen en comun
+
+Los tres **compilaban**, ninguno lanzaba excepcion, y los tres producian un
+informe con aspecto de informe. El primero y el tercero habrian pasado por
+buenos si el resumen se hubiera leido por encima; el segundo habria hecho
+que alguien fuera a «arreglar» `solvency`, que no tenia nada roto.
+
+> **Una herramienta de auditoria que se equivoca no falla: miente con
+> autoridad.** Por eso lleva autotest, y por eso el autotest se escribio con
+> un caso que ya habia fallado de verdad.
+
+Los tres los cazo ejecutarla contra los 27 circuitos antes de darla por
+buena. Ninguno lo habria cazado leerla.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

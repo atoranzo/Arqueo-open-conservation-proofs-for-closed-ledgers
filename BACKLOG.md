@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 19 abiertas, 26 resueltas. Ultima revision: 31 de julio de 2026.
+**Estado**: 18 abiertas, 27 resueltas. Ultima revision: 31 de julio de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
 fallos y aparecieron **dos que no eran la clase conocida** (§78). Los 78
@@ -567,7 +567,22 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   §59.2: herramienta util aplicada a parte del codigo sin que conste a que
   parte. Es un test por circuito, no un rediseño.
 
-- [ ] **39. La cadena de columnas PERIODICAS no la comprueba nada.**
+- [x] **39. ✅ La cadena de columnas PERIODICAS: ya la comprueba el barrido.**
+  ~~No la comprueba nada.~~ **Cerrada** el 31-07-2026 (§81):
+  `check_constraint_layout.py` cruza ahora tambien los indices de
+  `periodic[...]`, con `DESBORDE PERIODICA` y `MUERTA PERIODICA`, y con
+  autotest propio sobre el caso real de §66.2. Reproduce sola el recuento
+  que hubo que hacer a mano al amputar `mint_pending` —32 y 41— y donde §68
+  conto ocho periodicas cuando eran nueve. ⚠️ **Costo TRES errores**, todos
+  registrados en §81.3: la regex casaba `periodic[` y no `periodic_values[`
+  -159 columnas muertas falsas, **el mismo agujero de §59.2 cometido al
+  cerrarlo**-; el contador devolvia 0 en vez de «no comprobado» -seis
+  desbordes falsos en `solvency`-; y un `\b` se colapso en un caracter de
+  retroceso -823 desbordes falsos-. Los tres compilaban y los tres producian
+  un informe con aspecto de informe.
+
+  ~~Original:~~ **39. La cadena de columnas PERIODICAS no la comprueba
+  nada.**
   `check_constraint_layout.py` verifica los indices de `result[...]`, pero
   **no los de `periodic[...]`**: son dos arrays distintos y la herramienta
   solo mira uno. Al extraer `circuit_mint_climb` se dejaron tres constantes
