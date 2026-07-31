@@ -6657,6 +6657,105 @@ que alguien fuera a «arreglar» `solvency`, que no tenia nada roto.
 Los tres los cazo ejecutarla contra los 27 circuitos antes de darla por
 buena. Ninguno lo habria cazado leerla.
 
+## 82. El espacio de claves: 64 bits, medido
+
+La entrada 15 decia, en dos lineas y sin referencia a ninguna seccion:
+*«Goldilocks es estrecho para identidades: 64 bits son colision en 2^32»*.
+
+### 82.1 Lo que decia ya estaba corregido
+
+La cabecera de `circuit_settlement.rs` documenta ese hallazgo **y su
+arreglo**: si la identidad fuera un solo elemento, encontrar `sk'` con la
+misma `pk` costaria ~2^32 por la paradoja del cumpleaños. Por eso la
+identidad paso a ser el **digest completo de 4 elementos, 256 bits**.
+
+La entrada describia el problema *antes* del arreglo, y llevaba asi lo
+bastante como para que nadie la releyera.
+
+### 82.2 Lo que la entrada NO decia, y sigue vivo
+
+**El SECRETO sigue siendo un solo elemento.**
+
+```rust
+pub fn open_account(&mut self, spend_key: BaseElement) -> AccountIndex
+pub fn derive_public_id(spend_key: BaseElement) -> Digest
+pub fn derive_governor_id(key: BaseElement) -> Digest
+```
+
+`pk = Rescue(DOMAIN, sk)` con `sk` en Goldilocks: **2^64**. Y `pk` es
+**publica** —`public_id_of` es `pub`, y el puente ISO la lleva en los
+mensajes porque el pagador la necesita para direccionar—.
+
+El ataque no es una colision: es **busqueda exhaustiva fuera de linea**.
+Dado `pk`, enumerar `sk` y comparar. Coste esperado **2^63**, sin limite de
+intentos porque no toca el sistema.
+
+> ⚠️ **Ensanchar la identidad a 256 bits no ayuda contra esto.** Impide
+> encontrar OTRA clave con la misma identidad; no impide encontrar LA clave.
+> Son dos problemas distintos y solo se arreglo uno.
+
+### 82.3 La medida
+
+`el_coste_de_agotar_el_espacio_de_claves`, en release:
+
+| | |
+|---|---|
+| `derive_public_id` por segundo y nucleo | **122.850** |
+| 2^63 evaluaciones | 9,223 × 10^18 |
+| **Años-nucleo** | **2.379.098** |
+| Con 1.000 nucleos | 2.379 años |
+| Con 100.000 nucleos | **23,8 años** |
+| Con 10.000.000 nucleos | **87 dias** |
+
+⚠️ **Es una cota superior floja del coste real.** Ese numero sale de CPU sin
+optimizar el ataque: con asignacion de memoria por llamada, rehaciendo la
+mitad constante del estado en cada intento, y comparando el digest entero
+antes de descartar. Un atacante usaria GPU o ASIC y ninguna de las tres.
+**El margen real es menor que el medido, no mayor.**
+
+### 82.4 ⚠️ El paper ya tiene el argumento, y no lo aplica aqui
+
+`PAPER.md` §8.3, sobre el techo de solidez del STARK:
+
+> *«63 bits de solidez, **insuficiente y no comparable con los ~128 bits**
+> de los otros paradigmas.»*
+
+**Ese mismo criterio se aplica al espacio de claves, y el paper no lo
+hace.** Son dos consecuencias independientes de la misma estrechez de
+Goldilocks:
+
+| | consecuencia | estado |
+|---|---|---|
+| Solidez del STARK | techo de 63 bits | Documentado §16.7, **publicado** |
+| Espacio de claves | 64 bits | ⚠️ **En ninguna parte** |
+
+Arreglar una no arregla la otra. Y quien lea el paper concluira que la
+estrechez de Goldilocks tiene **una** consecuencia, porque es la unica que
+se nombra.
+
+### 82.5 Que haria falta, y su tamaño
+
+`sk` de **cuatro elementos** (256 bits). Toca `derive_public_id`,
+`native_nullifier`, `derive_governor_id`, `derive_custodian_id` y todos los
+circuitos que absorben la clave —`send`, `claim`, `burn`, `audit`,
+`threshold`—.
+
+**No se hace hoy** y no se propone a la ligera: es un cambio de formato de
+identidad que invalida cualquier cuenta existente. Lo que si se hace es
+**dejar de llamarlo «colision en 2^32»** y dejarlo medido.
+
+### 82.6 Lo que este caso enseña del backlog
+
+La entrada 15 tenia dos lineas y **era la unica sin referencia a una
+seccion**. Eso era el sintoma: nada la respaldaba porque nunca se analizo.
+
+> **Una entrada de backlog sin analisis detras no es una tarea pendiente:
+> es una intuicion vieja disfrazada de tarea.** Y disfrazada de tarea, se
+> lee por encima y se pospone, que es lo que le paso durante meses.
+
+Y lo que decia era ademas **falso a estas alturas** —describia algo
+corregido—, asi que releerla confirmaba que estaba «bajo control».
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

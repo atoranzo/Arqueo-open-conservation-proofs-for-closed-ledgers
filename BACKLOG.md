@@ -493,8 +493,26 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   solidez. No faltaba declararla: faltaba que este backlog no la describiera
   como pendiente.
 
-- [ ] **15. Goldilocks es estrecho para identidades.** 64 bits son colision
-  en 2³².
+- [ ] **15. ⚠️ El ESPACIO DE CLAVES es de 64 bits. Medido.**
+  ~~Goldilocks es estrecho para identidades: 64 bits son colision en 2³².~~
+  ⚠️ **Eso describia un problema YA CORREGIDO** —la identidad paso a ser el
+  digest de 4 elementos, 256 bits, y esta documentado en la cabecera de
+  `circuit_settlement.rs`—. **Lo vivo es otra cosa** (§82): `sk` sigue
+  siendo **un solo elemento** —`open_account(spend_key: BaseElement)`— asi
+  que el espacio de secretos es 2^64, y `pk` es **publica** porque el pagador
+  la necesita para direccionar. El ataque es **busqueda exhaustiva fuera de
+  linea**, no una colision, y ensanchar la identidad **no ayuda nada** contra
+  el. **MEDIDO** el 31-07-2026 con
+  `el_coste_de_agotar_el_espacio_de_claves`: **122.850 derivaciones/s por
+  nucleo**, o sea **2,38 millones de años-nucleo** para 2^63 — 23,8 años con
+  100.000 nucleos, 87 dias con diez millones. ⚠️ **Cota superior floja**: es
+  CPU sin optimizar el ataque. ⚠️ **Y va con la 28 y la 16**: `PAPER.md` §8.3
+  llama al techo de 63 bits de solidez «insuficiente y no comparable con los
+  ~128 bits de los otros paradigmas» —**el mismo criterio se aplica al
+  espacio de claves y el paper no lo dice**, asi que quien lo lea concluira
+  que la estrechez de Goldilocks tiene una sola consecuencia (§82.4)—.
+  **Arreglo dimensionado en §82.5**: `sk` de 4 elementos, que invalida
+  cualquier cuenta existente.
 
 - [ ] **16. Referencias cruzadas de los preprints.** Los tres citan
   versiones anteriores de sus companeros; primera cosa de la cuarta

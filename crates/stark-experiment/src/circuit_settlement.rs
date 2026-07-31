@@ -1194,6 +1194,79 @@ mod tests {
     use super::*;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
 
+    /// **Cuanto cuesta agotar el espacio de claves de gasto.**
+    ///
+    /// La cabecera de este modulo documenta el problema de la IDENTIDAD y su
+    /// correccion: paso a ser el digest completo de 4 elementos. Eso impide
+    /// encontrar **otra** clave con la misma identidad.
+    ///
+    /// ⚠️ **No impide encontrar LA clave.** `sk` sigue siendo **un solo
+    /// elemento de Goldilocks**, asi que el espacio de secretos es 2^64 y
+    /// `pk` es publica —el pagador la necesita para direccionar—. El ataque
+    /// es busqueda exhaustiva fuera de linea: enumerar `sk`, comparar `pk`.
+    ///
+    /// Este test **no juzga**: mide `derive_public_id`, que es exactamente
+    /// la operacion que el atacante repite, y extrapola a 2^63. El numero
+    /// decide si eso es un limite declarable o un fallo que hay que
+    /// corregir.
+    ///
+    /// Se salta siempre: es un instrumento, no una comprobacion. Correr con
+    /// `--ignored --nocapture`, y **en release**, o se mide el compilador.
+    #[test]
+    #[ignore = "instrumento de medida, no comprobacion: correr a mano"]
+    fn el_coste_de_agotar_el_espacio_de_claves() {
+        use std::time::Instant;
+
+        // Calentamiento, para no medir la primera carga de las tablas.
+        let mut sumidero = BaseElement::ZERO;
+        for k in 0..10_000u64 {
+            sumidero += derive_public_id(BaseElement::new(k))[0];
+        }
+
+        const N: u64 = 2_000_000;
+        let t0 = Instant::now();
+        for k in 0..N {
+            sumidero += derive_public_id(BaseElement::new(k))[0];
+        }
+        let dt = t0.elapsed().as_secs_f64();
+        // El sumidero existe para que el optimizador no borre el bucle.
+        assert_ne!(sumidero, BaseElement::new(u64::MAX), "sumidero");
+
+        let por_seg = N as f64 / dt;
+        // 2^63 es el coste ESPERADO: de media se encuentra a mitad del
+        // espacio. 2^64 seria el peor caso.
+        let esperado = 2f64.powi(63);
+        let seg_1_nucleo = esperado / por_seg;
+        let anios_1_nucleo = seg_1_nucleo / (365.25 * 24.0 * 3600.0);
+
+        println!("\n=== Coste de agotar el espacio de claves de gasto ===\n");
+        println!("  Este nucleo, este binario, sin optimizar el ataque:");
+        println!("    derive_public_id/s   {por_seg:>18.0}");
+        println!("    N medido             {N:>18}");
+        println!("    tiempo               {dt:>18.3} s");
+        println!();
+        println!("  Extrapolacion a 2^63 = {esperado:.3e} evaluaciones:");
+        println!("    anios-nucleo         {anios_1_nucleo:>18.1}");
+        for nucleos in [1_000f64, 100_000.0, 10_000_000.0] {
+            let anios = anios_1_nucleo / nucleos;
+            if anios >= 1.0 {
+                println!("    con {nucleos:>12.0} nucleos  {anios:>10.1} anios");
+            } else {
+                println!("    con {nucleos:>12.0} nucleos  {:>10.1} dias", anios * 365.25);
+            }
+        }
+        println!();
+        println!("  ⚠️ Es una COTA SUPERIOR floja del coste real del ataque:");
+        println!("     un atacante usaria GPU o ASIC, evitaria la asignacion");
+        println!("     de memoria por llamada y compararia solo un elemento");
+        println!("     del digest antes de descartar. El numero de arriba es");
+        println!("     lo que cuesta HOY con este codigo, no lo que costaria");
+        println!("     a quien lo intente en serio.");
+        println!();
+        println!("  ⚠️ Y no depende de la anchura de la IDENTIDAD (256 bits):");
+        println!("     depende de la del SECRETO, que es un elemento = 64 bits.");
+    }
+
     fn default_options() -> ProofOptions {
         ProofOptions::new(
             32,
