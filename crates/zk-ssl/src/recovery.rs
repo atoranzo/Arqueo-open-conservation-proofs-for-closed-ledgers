@@ -164,4 +164,256 @@ impl SovereignLayer {
         self.commit(&[account_index], None)?;
         Ok(())
     }
+
+    /// Recupera una cuenta **sin que las claves de custodio lleguen al
+    /// operador**: la via de la entrada 32/33 (65).
+    ///
+    /// Tres pruebas: `climb_proof` de `circuit_recovery_climb` -que la hoja
+    /// vieja y la nueva suben a las dos raices con el mismo camino, con el
+    /// MISMO saldo y el nonce incrementado- y dos de custodios distintos que
+    /// autorizan ESTA transicion.
+    ///
+    /// # Que prueba el circuito y que comprueba la capa
+    ///
+    /// El circuito prueba lo que un auditor externo no puede recomputar: que
+    /// el saldo se conserva. La capa recomputa la raiz por su cuenta -tiene
+    /// el arbol- asi que para ella la prueba es redundante, igual que en
+    /// `freeze` (60.3). Su valor es para el registro.
+    pub fn apply_recovery_delegated(
+        &mut self,
+        climb_proof: winterfell::Proof,
+        proof_a: winterfell::Proof,
+        inputs_a: stark_experiment::circuit_threshold_single_nullifier::NullifierThresholdPublicInputs,
+        proof_b: winterfell::Proof,
+        inputs_b: stark_experiment::circuit_threshold_single_nullifier::NullifierThresholdPublicInputs,
+        account_index: AccountIndex,
+        new_public_id: Digest,
+    ) -> Result<(), LayerError> {
+        use stark_experiment::circuit_recovery_climb::{
+            RecoveryClimbAir, RecoveryClimbPublicInputs,
+        };
+        use stark_experiment::circuit_threshold::CUSTODIAN_DOMAIN;
+        use stark_experiment::circuit_threshold_single_nullifier::{
+            commit_operation, verify_threshold_pair, PairRejection, OP_RECOVERY,
+        };
+
+        let account = self
+            .records
+            .get(&account_index)
+            .ok_or(LayerError::AccountNotFound(account_index))?
+            .clone();
+
+        let root_old = self.accounts.root();
+        let count_old = self.recovery_count;
+        let count_new = count_old + 1;
+
+        let updated = AccountRecord {
+            public_id: new_public_id,
+            balance: account.balance,
+            nonce: account.nonce + BaseElement::ONE,
+        };
+        let mut tentativo = self.accounts.clone();
+        tentativo.set_leaf(
+            account_index,
+            native_leaf(
+                updated.public_id,
+                BaseElement::new(updated.balance),
+                updated.nonce,
+            ),
+        );
+        let root_new = tentativo.root();
+
+        let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
+
+        verify::<RecoveryClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+            climb_proof,
+            RecoveryClimbPublicInputs {
+                root_old,
+                root_new,
+                recovery_count_old: BaseElement::new(count_old),
+                recovery_count_new: BaseElement::new(count_new),
+            },
+            &accepted,
+        )
+        .map_err(|e| LayerError::VerificationFailed(format!("subida de recuperacion: {e:?}")))?;
+
+        let mut params: Vec<BaseElement> = root_old.to_vec();
+        params.extend_from_slice(&root_new);
+        params.push(BaseElement::new(count_old));
+        params.push(BaseElement::new(count_new));
+        let operation = commit_operation(OP_RECOVERY, &params);
+
+        verify_threshold_pair(
+            proof_a, inputs_a, proof_b, inputs_b,
+            // Custodios: recuperar es custodia, no cambiar quien custodia.
+            BaseElement::new(CUSTODIAN_DOMAIN),
+            self.custodian_set_root,
+            operation,
+            &accepted,
+        )
+        .map_err(|r| match r {
+            PairRejection::SameCustodian
+            | PairRejection::WrongCustodianSet
+            | PairRejection::WrongIdentityDomain => LayerError::NotTheIssuer,
+            PairRejection::WrongOperation => LayerError::StaleState,
+            PairRejection::InvalidProof => {
+                LayerError::VerificationFailed("autorizacion invalida".into())
+            }
+        })?;
+
+        // Despues de verificar la autoridad: si fuera antes, cualquiera
+        // podria agotar el cupo sin ser custodio.
+        self.consume_custodian_use()?;
+
+        self.accounts = tentativo;
+        self.records.insert(account_index, updated);
+        self.recovery_count = count_new;
+
+        self.log.append(OpKind::Recovery, root_old, root_new, &[]);
+        self.commit(&[], None)?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests_delegada {
+    use super::*;
+    use crate::tests_support::*;
+    use stark_experiment::circuit_recovery_climb as climb;
+    use stark_experiment::circuit_threshold::{build_custodian_set, CUSTODIAN_DOMAIN};
+    use stark_experiment::circuit_threshold_single_nullifier as auth;
+
+    const LIMIT: u64 = 1_000_000;
+    const MAX_SUPPLY: u64 = 1_000_000_000;
+    const MAX_ACCOUNTS: u64 = 1_000;
+
+    fn dominio() -> BaseElement {
+        BaseElement::new(CUSTODIAN_DOMAIN)
+    }
+
+    fn compromiso(root_old: Digest, root_new: Digest, count_old: u64) -> Digest {
+        let mut v: Vec<BaseElement> = root_old.to_vec();
+        v.extend_from_slice(&root_new);
+        v.push(BaseElement::new(count_old));
+        v.push(BaseElement::new(count_old + 1));
+        auth::commit_operation(auth::OP_RECOVERY, &v)
+    }
+
+    fn autorizar(
+        key: BaseElement,
+        path: &stark_experiment::circuit_threshold::CustodianPath,
+        op: Digest,
+    ) -> (winterfell::Proof, auth::NullifierThresholdPublicInputs) {
+        let trace = auth::build_trace(dominio(), key, path, op);
+        let prover = auth::NullifierThresholdProver::new(proof_options());
+        let inputs = prover.get_pub_inputs(&trace);
+        (prover.prove(trace).expect("autorizacion"), inputs)
+    }
+
+    /// Monta la capa con una cuenta y devuelve (capa, indice, id_nueva).
+    fn capa() -> (SovereignLayer, AccountIndex, Digest) {
+        let mut l = SovereignLayer::new(
+            custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS);
+        l.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
+        let nueva = stark_experiment::circuit_settlement::derive_public_id(
+            BaseElement::new(0xBEEF_CAFE));
+        (l, 0, nueva)
+    }
+
+    fn prueba_subida(layer: &SovereignLayer, idx: AccountIndex, nueva: Digest) -> winterfell::Proof {
+        let rec = layer.records.get(&idx).expect("cuenta").clone();
+        let path = layer.accounts.path_for(idx);
+        let trace = climb::build_trace(
+            rec.public_id, nueva, rec.balance, rec.balance, rec.nonce, &path,
+            layer.recovery_count(), 1,
+        );
+        climb::RecoveryClimbProver::new(proof_options())
+            .prove(trace)
+            .expect("subida")
+    }
+
+    fn raiz_nueva(layer: &SovereignLayer, idx: AccountIndex, nueva: Digest) -> Digest {
+        let rec = layer.records.get(&idx).expect("cuenta").clone();
+        let mut t = layer.accounts.clone();
+        t.set_leaf(idx, native_leaf(nueva, BaseElement::new(rec.balance),
+                                    rec.nonce + BaseElement::ONE));
+        t.root()
+    }
+
+    /// Dos custodios distintos recuperan una cuenta sin entregar sus claves.
+    #[test]
+    fn a_delegated_recovery_applies() {
+        let (mut layer, idx, nueva) = capa();
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+
+        let op = compromiso(layer.accounts.root(), raiz_nueva(&layer, idx, nueva),
+                            layer.recovery_count());
+        let subida = prueba_subida(&layer, idx, nueva);
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+
+        layer.apply_recovery_delegated(subida, pa, ia, pb, ib, idx, nueva)
+            .expect("la recuperacion legitima debe aplicarse");
+        assert_eq!(layer.records.get(&idx).unwrap().public_id, nueva,
+                   "la identidad debe haber cambiado");
+    }
+
+    #[test]
+    fn the_same_custodian_twice_cannot_recover() {
+        let (mut layer, idx, nueva) = capa();
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+        let antes = layer.records.get(&idx).unwrap().public_id;
+
+        let op = compromiso(layer.accounts.root(), raiz_nueva(&layer, idx, nueva),
+                            layer.recovery_count());
+        let subida = prueba_subida(&layer, idx, nueva);
+        let (pa, ia) = autorizar(ck[2], &cp[2], op);
+        let (pb, ib) = autorizar(ck[2], &cp[2], op);
+
+        let r = layer.apply_recovery_delegated(subida, pa, ia, pb, ib, idx, nueva);
+        assert!(matches!(r, Err(LayerError::NotTheIssuer)), "fue {r:?}");
+        assert_eq!(layer.records.get(&idx).unwrap().public_id, antes, "no debe cambiar");
+    }
+
+    /// Una autorizacion para recuperar hacia una identidad no sirve para otra.
+    #[test]
+    fn an_authorization_for_another_identity_does_not_apply() {
+        let (mut layer, idx, nueva) = capa();
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+        let antes = layer.records.get(&idx).unwrap().public_id;
+        let otra = stark_experiment::circuit_settlement::derive_public_id(
+            BaseElement::new(0xDEAD_BEEF));
+
+        let op = compromiso(layer.accounts.root(), raiz_nueva(&layer, idx, otra),
+                            layer.recovery_count());
+        let subida = prueba_subida(&layer, idx, nueva);
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+
+        let r = layer.apply_recovery_delegated(subida, pa, ia, pb, ib, idx, nueva);
+        assert!(r.is_err(), "una autorizacion para otra identidad no vale, fue {r:?}");
+        assert_eq!(layer.records.get(&idx).unwrap().public_id, antes);
+    }
+
+    /// La jerarquia: gobernanza no recupera cuentas.
+    #[test]
+    fn governance_keys_cannot_recover() {
+        let (mut layer, idx, nueva) = capa();
+        let gk = governance_keys();
+        let (_, gp) = build_custodian_set(&gk);
+        let antes = layer.records.get(&idx).unwrap().public_id;
+
+        let op = compromiso(layer.accounts.root(), raiz_nueva(&layer, idx, nueva),
+                            layer.recovery_count());
+        let subida = prueba_subida(&layer, idx, nueva);
+        let (pa, ia) = autorizar(gk[1], &gp[1], op);
+        let (pb, ib) = autorizar(gk[3], &gp[3], op);
+
+        let r = layer.apply_recovery_delegated(subida, pa, ia, pb, ib, idx, nueva);
+        assert!(matches!(r, Err(LayerError::NotTheIssuer)), "fue {r:?}");
+        assert_eq!(layer.records.get(&idx).unwrap().public_id, antes);
+    }
 }
