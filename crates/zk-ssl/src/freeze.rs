@@ -54,6 +54,13 @@ impl SovereignLayer {
     /// Exige **dos custodios distintos**. Descongelar cuesta lo mismo que
     /// congelar: si levantar una congelación fuese más fácil que
     /// imponerla, no valdría de nada.
+    #[deprecated(
+        since = "0.1.0",
+        note = "Exige las claves de custodio EN EL OPERADOR: es el fallo de la \
+                entrada 32. Usa la via delegada, donde cada custodio prueba en \
+                su maquina. Se conserva mientras `mint` y `mint_pending` no \
+                tengan equivalente delegado (ver AUDITORIA 65)."
+    )]
     pub fn set_frozen(
         &self,
         auth: &ThresholdAuth,

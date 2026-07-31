@@ -417,6 +417,12 @@ impl SovereignLayer {
 
 #[cfg(test)]
 mod tests {
+    // Estos tests ejercitan la via ANTIGUA a proposito: sigue siendo la
+    // unica para `mint` y `mint_pending`, y sus propiedades hay que
+    // comprobarlas igual. El aviso de obsolescencia se silencia aqui, no en
+    // la definicion, para que siga saltando en codigo nuevo.
+    #![allow(deprecated)]
+
     use crate::tests_support::*;
     use crate::*;
 

@@ -44,6 +44,13 @@ impl SovereignLayer {
     /// ⚠️ **El circuito no verifica que el nuevo titular sea legítimo.**
     /// Eso lo comprueban los custodios fuera de línea; la criptografía no
     /// puede saber de quién es una cuenta.
+    #[deprecated(
+        since = "0.1.0",
+        note = "Exige las claves de custodio EN EL OPERADOR: es el fallo de la \
+                entrada 32. Usa la via delegada, donde cada custodio prueba en \
+                su maquina. Se conserva mientras `mint` y `mint_pending` no \
+                tengan equivalente delegado (ver AUDITORIA 65)."
+    )]
     pub fn recover(
         &self,
         auth: &ThresholdAuth,

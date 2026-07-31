@@ -86,6 +86,13 @@ impl SovereignLayer {
     /// Exige **dos miembros distintos del conjunto de gobernanza**, no de
     /// custodios: quien puede emitir y recuperar cuentas no puede cambiar
     /// quién tiene ese poder.
+    #[deprecated(
+        since = "0.1.0",
+        note = "Exige las claves de custodio EN EL OPERADOR: es el fallo de la \
+                entrada 32. Usa la via delegada, donde cada custodio prueba en \
+                su maquina. Se conserva mientras `mint` y `mint_pending` no \
+                tengan equivalente delegado (ver AUDITORIA 65)."
+    )]
     pub fn update_custodians(
         &self,
         auth: &GovernanceAuth,

@@ -1,6 +1,12 @@
 //! Tests de la capa. Se mantienen juntos porque comparten los
 //! ayudantes `new_layer`, `open_and_fund` y `temp_path`.
 
+// Estos tests ejercitan la via ANTIGUA a proposito: sigue siendo la unica
+// para `mint` y `mint_pending`, y sus propiedades hay que comprobarlas
+// igual. El aviso de obsolescencia se silencia AQUI, no en la definicion,
+// para que siga saltando en codigo nuevo.
+#![allow(deprecated)]
+
 use super::*;
 
     use crate::tests_support::*;
