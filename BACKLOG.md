@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 18 abiertas, 27 resueltas. Ultima revision: 31 de julio de 2026.
+**Estado**: 19 abiertas, 27 resueltas. Ultima revision: 31 de julio de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
 fallos y aparecieron **dos que no eran la clase conocida** (§78). Los 78
@@ -828,6 +828,20 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   quinta vez—. 12 de 12 en verde tras el arreglo. ⚠️ **Doce en verde no
   demuestran que este arreglado** (§79.4), y **la 18 no se cierra**: esto
   protege los tests, no un nodo real.
+
+- [ ] **46. Anomalia: mas columnas y mas restricciones dan una prueba MENOR.**
+  Medido el 31-07-2026 (§86) con relleno sobre `circuit_settlement`: pasar de
+  **49 columnas y 155 restricciones** a **52 y 170** deja la prueba en
+  **39.538 B en vez de 40.645** —2,7 % menos— y la generacion en **97,8 ms en
+  vez de 111,8** —12,5 % menos—. Tres ejecuciones de cada lado: el tamaño es
+  **determinista**, no ruido. ✅ **Descartado que pruebe menos**: la suite del
+  circuito pasa 16 de 16 con el relleno puesto, incluidos los ocho negativos
+  y la prueba por mutacion (§86.4). ⚠️ **La causa NO esta identificada** y
+  apunta a algo estructural de winterfell —particionado del compromiso,
+  columnas de composicion—. **No bloquea nada**: la decision de ensanchar la
+  clave (entrada 15) no depende de entenderlo. Pero si el efecto es real y
+  general, **es una optimizacion que el proyecto desconoce**, y eso merece
+  mirarse.
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo

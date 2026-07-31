@@ -1518,6 +1518,67 @@ mod tests {
     /// A diferencia de los negativos, este NO silencia el pánico: si la
     /// traza válida no satisface alguna restricción, queremos ver cuál y
     /// en qué fila, no un mensaje genérico.
+    /// **Que cuestan +3 columnas y +15 restricciones.**
+    ///
+    /// §85.2 conto que ensanchar `sk` a cuatro elementos cuesta eso por
+    /// circuito. Lo que el conteo NO dice es cuanto vale en **tamaño de
+    /// prueba y tiempo**, y de ahi depende si el cambio se hace entero.
+    ///
+    /// Se corre ANTES y DESPUES del ensanchamiento de relleno: el delta
+    /// entre las dos ejecuciones del **mismo** test es el coste por
+    /// circuito.
+    ///
+    /// **INSTRUMENTO, no comprobacion**: mide y no juzga. Se salta siempre.
+    /// Correr en release, o se mide el compilador:
+    ///
+    /// ```text
+    /// cargo test --release -p stark-experiment el_coste_de_tres_columnas \
+    ///     -- --ignored --nocapture
+    /// ```
+    #[test]
+    #[ignore = "instrumento de medida, no comprobacion: correr a mano"]
+    fn el_coste_de_tres_columnas_y_quince_restricciones() {
+        use std::time::Instant;
+
+        let s = scenario(1_000_000, 250_000, 250_000, 500_000);
+        let prover = SettlementProver::new(default_options());
+
+        // Calentamiento: la primera prueba paga tablas y asignaciones que
+        // no son parte de lo que se mide.
+        let cal = build_trace(
+            &s.sender, &s.receiver, s.amount, s.credited, s.limit,
+            &s.null_path, &s.frozen_path,
+        );
+        let _ = prover.prove(cal).expect("calentamiento");
+
+        const N: usize = 5;
+        let mut bytes = 0usize;
+        let t0 = Instant::now();
+        for _ in 0..N {
+            let trace = build_trace(
+                &s.sender, &s.receiver, s.amount, s.credited, s.limit,
+                &s.null_path, &s.frozen_path,
+            );
+            let proof = prover.prove(trace).expect("la traza valida debe probar");
+            bytes = proof.to_bytes().len();
+        }
+        let dt = t0.elapsed().as_secs_f64() / N as f64;
+
+        println!("\n=== Coste de la anchura, en `circuit_settlement` ===\n");
+        println!("  TRACE_WIDTH        {TRACE_WIDTH:>8}");
+        println!("  NUM_CONSTRAINTS    {NUM_CONSTRAINTS:>8}");
+        println!("  prueba             {bytes:>8} B");
+        println!("  generar            {:>8.1} ms   (media de {N})", dt * 1000.0);
+        println!();
+        println!("  §85.2 cuenta que ensanchar `sk` a cuatro elementos son");
+        println!("  +3 columnas y +15 restricciones. Corre esto ANTES y");
+        println!("  DESPUES del ensanchamiento de relleno: el delta entre");
+        println!("  las dos ejecuciones es lo que costaria por circuito.");
+        println!();
+        println!("  ⚠️ Y multiplicalo por CINCO circuitos de gasto, mas los");
+        println!("     de umbral y gobernanza.");
+    }
+
     #[test]
     fn authorized_valid_transfer_verifies() {
         let s = scenario(1_000_000, 250_000, 250_000, 500_000);

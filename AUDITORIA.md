@@ -7029,6 +7029,77 @@ Tres cosas, y ninguna se habria visto escribiendo codigo:
 
 Las tres se dijeron mal antes de contarlas. Contarlas costo cuatro `grep`.
 
+## 86. El coste de ensanchar: medido, y no es el que se esperaba
+
+§85.2 conto que ensanchar `sk` a cuatro elementos cuesta **+3 columnas y +15
+restricciones por circuito**. Faltaba saber que vale eso en tamaño y tiempo.
+
+Se midio con **relleno** sobre `circuit_settlement` —cuyo Air la capa no
+ejecuta— para no tocar la semantica de quien controla que cuenta.
+
+### 86.1 Las seis medidas
+
+| | prueba | generar |
+|---|---|---|
+| **49 columnas, 155 restricciones** | **40.645 B** ×3 | 111,3 / 112,3 / 111,8 ms |
+| **52 columnas, 170 restricciones** | **39.538 B** ×3 | 97,6 / 98,0 / 97,8 ms |
+| **delta** | **−1.107 B (−2,7 %)** | **−13,9 ms (−12,5 %)** |
+
+Con mas columnas y mas restricciones, la prueba es **mas pequeña y mas
+rapida**.
+
+### 86.2 ⚠️ Un error mio, y del tipo peor
+
+Con la primera pareja de medidas escribi que el instrumento estaba mal y que
+el efecto era **ruido**, porque «el tamaño de una prueba STARK varia entre
+ejecuciones».
+
+**Es falso.** Tres ejecuciones de cada lado dieron el mismo byte exacto: el
+tamaño es **determinista**.
+
+> Atribui a ruido un efecto real **porque tenia el signo que no esperaba**.
+> Es el mismo error que explicar un dato incomodo, y aqui es peor: el dato
+> era **comodo** —favorecia la decision que ya queria tomar— y aun asi lo
+> descarte por no encajar con mi modelo.
+
+Se registra porque el sesgo no fue hacia la conclusion, sino hacia la
+**expectativa**, y ese no se corrige queriendo.
+
+### 86.3 Lo que la medida decide, y lo que no
+
+**Decide**: el coste no es obstaculo. El plan B —hacerlo entero en un
+commit— es viable, y no depende de entender por que.
+
+**No decide** el porque. Tres columnas mas deberian dar una prueba mayor:
+cada consulta abre tres valores adicionales. Que salga menor apunta a algo
+estructural de winterfell —particionado del compromiso, numero de columnas
+de composicion— y **cualquier explicacion que se diera aqui seria
+especulacion sobre sus interioridades**.
+
+### 86.4 La sospecha que si se comprobo
+
+Un resultado favorable e inexplicado admite una lectura fea: que el circuito
+con relleno **pruebe menos**, y sea mas pequeño porque hay menos que probar.
+Las quince ranuras son copias redundantes y las tres columnas no las lee
+nadie: no deberia pasar, pero «no deberia» es la palabra que este documento
+lleva ochenta y seis secciones castigando.
+
+Se corrio la suite del circuito con el relleno puesto: **16 de 16**,
+incluidos los ocho negativos —`attacker_without_spend_key_cannot_transfer`,
+`money_creation_is_rejected`, `forged_nullifier_is_rejected`…— y la prueba
+por mutacion. Rechaza todo lo que debe rechazar.
+
+**La sospecha queda descartada. La anomalia, no**: se abre como entrada 46.
+
+### 86.5 Lo que se queda y lo que se va
+
+El **relleno** se revierte: era un instrumento de una tarde.
+
+El **instrumento de medida** se queda, con `#[ignore]`, porque mide el coste
+real de este circuito y algun dia habra que volver a mirarlo. Es el mismo
+criterio que `el_coste_de_agotar_el_espacio_de_claves` (§82.3): **un
+instrumento no es una comprobacion, pero tampoco es basura**.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
