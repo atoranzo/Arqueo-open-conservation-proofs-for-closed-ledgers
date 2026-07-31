@@ -762,4 +762,35 @@ mod tests {
              dos pruebas del mismo custodio superan el umbral (entrada 33)"
         );
     }
+
+    /// Ninguna restriccion es vacua. Ver la nota en `circuit_frozen_climb`:
+    /// esta herramienta y el barrido de disposiciones cubren defectos
+    /// distintos.
+    #[test]
+    fn no_constraint_is_vacuous() {
+        use crate::mutation::{buscar_vacias, rows_of};
+
+        let keys = custodian_keys();
+        let (root, paths) = build_custodian_set(&keys);
+        let trace = build_trace(keys[2], 2, &paths[2]);
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+
+        let air = SingleThresholdAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            SingleThresholdPublicInputs {
+                custodian_set_root: root,
+                custodian_index: BaseElement::new(2),
+            },
+            default_options(),
+        );
+        let informe = buscar_vacias(&air, &rows, 1);
+        assert!(
+            informe.nunca_disparadas.is_empty(),
+            "restricciones que NINGUNA perturbacion activa (de {} totales, \
+             {} celdas probadas): {:?}",
+            informe.total,
+            informe.celdas,
+            informe.nunca_disparadas
+        );
+    }
 }

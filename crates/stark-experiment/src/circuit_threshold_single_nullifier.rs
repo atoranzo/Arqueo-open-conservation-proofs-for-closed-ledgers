@@ -1095,4 +1095,36 @@ mod tests {
         let k = BaseElement::new(0xC0FFEE);
         assert_ne!(derive_nullifier(k, operacion(1)), derive_custodian_id(k));
     }
+
+    /// Ninguna restriccion es vacua. Ver la nota en `circuit_frozen_climb`.
+    #[test]
+    fn no_constraint_is_vacuous() {
+        use crate::mutation::{buscar_vacias, rows_of};
+
+        let keys = custodian_keys();
+        let (root, paths) = build_custodian_set(&keys);
+        let op = operacion(1);
+        let trace = build_trace(dominio(), keys[2], &paths[2], op);
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+
+        let air = NullifierThresholdAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            NullifierThresholdPublicInputs {
+                identity_domain: dominio(),
+                custodian_set_root: root,
+                nullifier: derive_nullifier(keys[2], op),
+                operation: op,
+            },
+            default_options(),
+        );
+        let informe = buscar_vacias(&air, &rows, 1);
+        assert!(
+            informe.nunca_disparadas.is_empty(),
+            "restricciones que NINGUNA perturbacion activa (de {} totales, \
+             {} celdas probadas): {:?}",
+            informe.total,
+            informe.celdas,
+            informe.nunca_disparadas
+        );
+    }
 }

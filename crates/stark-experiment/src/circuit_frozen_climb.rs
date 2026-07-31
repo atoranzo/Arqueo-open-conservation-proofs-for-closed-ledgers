@@ -665,4 +665,43 @@ mod tests {
             }
         }
     }
+
+    /// Ninguna restriccion es vacua.
+    ///
+    /// La herramienta de mutacion perturba la traza celda a celda y comprueba
+    /// que **cada** restriccion reacciona a algo. Una que no reaccione nunca
+    /// esta declarada, tiene grado asignado y no impone nada.
+    ///
+    /// AVISO: no detecta el defecto de §38 -una ranura sobrescrita por otro
+    /// grupo sigue reaccionando, solo que a la restriccion equivocada-. Para
+    /// eso esta `tools/check_constraint_layout.py`. Son dos herramientas
+    /// distintas para dos defectos distintos.
+    #[test]
+    fn no_constraint_is_vacuous() {
+        use crate::mutation::{buscar_vacias, rows_of};
+
+        let path = sample_path();
+        let leaf_a = digest_from(1000);
+        let leaf_b = digest_from(2000);
+        let trace = build_trace(leaf_a, leaf_b, &path);
+        let rows = rows_of(&trace, TRACE_WIDTH, TRACE_LENGTH);
+
+        let air = FrozenClimbAir::new(
+            TraceInfo::new(TRACE_WIDTH, TRACE_LENGTH),
+            FrozenClimbPublicInputs {
+                root_a: native_climb(leaf_a, &path),
+                root_b: native_climb(leaf_b, &path),
+            },
+            default_options(),
+        );
+        let informe = buscar_vacias(&air, &rows, 1);
+        assert!(
+            informe.nunca_disparadas.is_empty(),
+            "restricciones que NINGUNA perturbacion activa (de {} totales, \
+             {} celdas probadas): {:?}",
+            informe.total,
+            informe.celdas,
+            informe.nunca_disparadas
+        );
+    }
 }
