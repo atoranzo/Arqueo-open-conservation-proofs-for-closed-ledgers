@@ -622,10 +622,29 @@ mod tests {
             custodian_set_root: root,
             custodian_index: BaseElement::new(3),
         };
+        // ⚠️ **Quien lo caza depende del modo, y los dos estan bien.**
+        //
+        // En release el probador no valida restricciones, asi que la traza
+        // se genera y la violacion de `C_ACC_FINAL` la caza el
+        // **verificador**.
+        //
+        // En depuracion winterfell SI las valida al generar, y la caza el
+        // **probador** -antes, y diciendo *"main transition constraint 23
+        // did not evaluate to ZERO at step 39"*, que es mas preciso-.
+        //
+        // Este test afirmaba `FallaAlVerificar` en los dos modos y por eso
+        // fallaba en depuracion **desde antes de la entrada 44**. Lo que no
+        // puede ser en ningun modo es `Acepta`, y eso se sigue exigiendo.
+        let esperado = if cfg!(debug_assertions) {
+            Rechazo::FallaAlProbar
+        } else {
+            Rechazo::FallaAlVerificar
+        };
         assert_eq!(
             por_que_rechaza(keys[2], 3, &paths[2], declared),
-            Rechazo::FallaAlVerificar,
-            "en release la violacion de C_ACC_FINAL la caza el verificador"
+            esperado,
+            "la violacion de C_ACC_FINAL debe cazarla el probador en \
+             depuracion y el verificador en release, nunca pasar"
         );
     }
 

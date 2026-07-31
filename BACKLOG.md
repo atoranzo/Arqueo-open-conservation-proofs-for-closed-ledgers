@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 20 abiertas, 24 resueltas. Ultima revision: 31 de julio de 2026.
+**Estado**: 19 abiertas, 25 resueltas. Ultima revision: 31 de julio de 2026.
 
 ⚠️ **El 31-07 aparecio la 43 leyendo codigo para otra cosa**: la capa no
 verificaba las pruebas de la via de pago, y un tercero vaciaba cualquier
@@ -100,8 +100,25 @@ El repositorio volvio a describir lo que hay. Las cinco resueltas.
   demuestra» de `circuit_send` deja de contradecir a la seccion «por que
   NO lleva nullificador» doce lineas mas abajo.
 
-- [ ] **44. ⚠️ Tres tests de solidez de custodios fallan en depuracion, sin
-  diagnosticar.** `the_index_test_rejects_for_the_right_reason`,
+- [x] **44. ✅ Tres tests de solidez de custodios en depuracion:
+  diagnosticados y corregidos.** ~~Sin diagnosticar.~~ **Medidos** el
+  31-07-2026 (§77): **un sintoma, DOS causas**. (1)
+  `the_index_test_rejects_for_the_right_reason` **no era un fallo**: la
+  traza viola `C_ACC_FINAL` a proposito y en depuracion la caza el
+  **probador** -nombrando la restriccion 23 en el paso 39- en vez del
+  verificador; el test afirmaba una sola forma de rechazo para los dos
+  modos. (2) Los otros dos usaban `paths_mias[0]`, y el indice 0 anula los
+  bits de camino: `C_PLACE` de 126 a 63 y `C_BIT_BOOL` a 0 —entrada 6—.
+  ✅ **Corregidos**: el primero espera lo que corresponde a cada modo, los
+  otros usan un indice no degenerado. **Los tres vuelven a correr en
+  depuracion**: se gana cobertura, no se pierde. ⚠️ **Arreglo opuesto al de
+  §71.3 y con criterio explicito** (§77.3): alli no se cambio la posicion
+  porque la 0 es la que produccion usa; aqui el indice del atacante es
+  incidental. ⚠️ **El proyecto ya lo sabia**: `tests_support.rs` lo tenia
+  escrito y los demas tests del mismo fichero usaban 1 y 2 (§77.4).
+
+  ~~Original:~~ **44. ⚠️ Tres tests de solidez de custodios fallan en
+  depuracion, sin diagnosticar.** `the_index_test_rejects_for_the_right_reason`,
   `an_attacker_cannot_bring_their_own_custodian_set` y
   `one_real_and_one_forged_custodian_do_not_meet_the_threshold`.
   **Preexistentes**: medido volviendo a `44c5b8c`, donde fallan los mismos

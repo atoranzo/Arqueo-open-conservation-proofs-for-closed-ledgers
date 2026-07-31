@@ -6211,7 +6211,18 @@ a medirlas el 31-07-2026 aparecio algo peor que una cifra.
 
 > *«El crate de circuitos **si pasa** en los dos modos.»*
 
-**No pasa.** En depuracion fallan tres tests de solidez de custodios:
+~~**No pasa.**~~ ✅ **Pasa desde el mismo dia, una hora despues**: los tres
+se diagnosticaron y corrigieron en §77, y el README se puso al dia en el
+mismo commit. Lo que sigue siendo cierto es que **cuando se escribio esa
+frase era falsa**, y lo era desde antes.
+
+⚠️ **Y el rodeo dice algo que conviene no perder.** La correccion del README
+envejecio en una hora **porque el propio texto llevo a arreglar lo que
+denunciaba**. Escribir «no pasa, y estos son los tres» convirtio una
+afirmacion comoda en una tarea con nombre. Es el mejor argumento que va a
+tener este proyecto para medir las cifras en vez de recordarlas.
+
+En depuracion fallaban tres tests de solidez de custodios:
 
 - `circuit_threshold_single::the_index_test_rejects_for_the_right_reason`
 - `circuit_threshold_single_nullifier::an_attacker_cannot_bring_their_own_custodian_set`
@@ -6266,6 +6277,80 @@ que comprueban que **un custodio falso no alcanza el umbral** y que **el
 indice no se puede mentir**. Que lleven fallando en depuracion sin que
 conste en ninguna parte es exactamente lo que la entrada 7 dice que las
 herramientas del proyecto no cubren.
+
+## 77. Entrada 44: un sintoma, dos causas, arreglos opuestos
+
+Los tres tests de solidez de custodios que fallaban en depuracion desde
+antes de la sesion (§76.1). Medidos el 31-07-2026.
+
+### 77.1 El primero no era un fallo
+
+`the_index_test_rejects_for_the_right_reason` construye a proposito una
+traza que viola `C_ACC_FINAL` —prueba el camino del custodio 2 declarando
+el indice 3— y afirmaba que la rechaza el **verificador**.
+
+En depuracion la rechaza el **probador**, y con mas detalle: *«main
+transition constraint 23 did not evaluate to ZERO at step 39»*. El test
+recibia `FallaAlProbar` donde esperaba `FallaAlVerificar`.
+
+> **Los dos comportamientos son correctos.** Lo que estaba mal era una
+> afirmacion escrita para un modo y comprobada en los dos.
+
+Arreglo: esperar lo que corresponde a cada modo. **Se gana cobertura**: el
+test vuelve a correr en depuracion, donde ademas nombra la restriccion y el
+paso.
+
+### 77.2 Los otros dos: el indice 0, otra vez
+
+`an_attacker_cannot_bring_their_own_custodian_set` y
+`one_real_and_one_forged_custodian_do_not_meet_the_threshold` usaban
+`paths_mias[0]`. El vector de grados lo dice sin ambiguedad:
+
+| indices | que son | declarado | indice 0 |
+|---|---|---|---|
+| 16-19 | `C_PLACE` | 126 | **63** |
+| 20 | `C_BIT_BOOL` | 63 | **0** |
+
+Es la entrada 6: el camino del indice 0 tiene **todos los bits de direccion
+a cero**.
+
+### 77.3 ⚠️ El arreglo es el OPUESTO al de §71.3, y el criterio importa
+
+En §71.3 se decidio **no** cambiar la posicion para que el test pasara,
+porque la posicion 0 **es la que produccion usa** —`allocate_pending`
+reutiliza huecos y un ledger recae en ella (§46.1)—. Un test en otra
+posicion habria pasado sin ejercitar el caso comun.
+
+Aqui el indice del atacante es **incidental**: lo que se comprueba es que
+trae otro conjunto, no que use el hueco 0. Cambiarlo no debilita nada y
+devuelve los dos tests a depuracion.
+
+> **El criterio no es «evitar el caso degenerado» ni «declararlo»: es si el
+> caso degenerado es el que produccion ejecuta.** Mismo sintoma, misma
+> causa, decisiones contrarias.
+
+### 77.4 Y el proyecto ya lo sabia
+
+`tests_support.rs` lleva escrito desde antes: *«Indices 1 y 3: el 0 tiene
+todos los bits de camino a cero y degeneraria la traza»*. Y en el propio
+`circuit_threshold_single_nullifier`, **todos los demas tests usan los
+indices 1 y 2**. Solo estos dos usaban el 0.
+
+Es el patron de §59.2, §62.2 y la entrada 39 por cuarta vez:
+**conocimiento que existe y no se aplica a todo el codigo**. Aqui ni
+siquiera era una herramienta con cobertura parcial: era un comentario en
+otro fichero.
+
+### 77.5 Lo que esto NO era
+
+Un fallo de solidez. Los tres tests pasaban en release y lo que comprueban
+—que un conjunto de custodios ajeno no cuela y que el indice no se puede
+mentir— **siempre se cumplio**.
+
+Lo que fallaba era la instrumentacion, y llevaba fallando lo bastante como
+para que el README publicara que el crate pasaba en los dos modos. Un test
+rojo permanente que nadie mira es un test que no existe, y ademas **tapa a
+los que aparezcan al lado**.
 
 ## 69. Qué NO demuestra este documento
 

@@ -171,21 +171,25 @@ Requiere Rust estable. Sin instaladores externos ni toolchains aparte.
 >
 > | | pasan | fallan | saltados | tiempo |
 > |---|---|---|---|---|
-> | `stark-experiment` | 265 | **3** | 4 | 56 s |
-> | `zk-ssl` | 114 | **80** | 7 | 256 s |
+> | `stark-experiment` | **268** | 0 | 4 | 55 s |
+> | `zk-ssl` | 114 | **80** | 7 | 262 s |
 >
-> ⚠️ **El crate de circuitos NO pasa en depuracion, y este README decia que
-> si.** Fallan tres tests de solidez de custodios —dos de
-> `circuit_threshold_single_nullifier` y uno de `circuit_threshold_single`—
-> y **ya fallaban antes de la sesion que corrigio este texto**: medido
-> volviendo al commit anterior, donde fallan exactamente los mismos tres.
-> **No estan diagnosticados**: sus nombres son de solidez, no de
-> rendimiento, y atribuirlos al limite de grados sin comprobarlo seria
-> repetir el error que este documento lleva setenta secciones registrando.
-> Abierto como **entrada 44** del backlog.
+> ⚠️ **El crate de circuitos SI pasa en los dos modos, pero esa frase costo
+> una correccion.** Hasta el 31-07-2026 fallaban en depuracion tres tests de
+> solidez de custodios, **desde antes** —medido volviendo al commit
+> anterior—, y este README publicaba que pasaba. Diagnosticados y corregidos
+> el mismo dia (`AUDITORIA.md` §77, entrada 44 del backlog): eran **dos
+> causas distintas**, una de ellas un test escrito para el comportamiento de
+> release y comprobado en los dos modos.
 >
-> Los 80 fallos de `zk-ssl` **tampoco son nuevos**: eran 77 antes de la
-> sesion, no los 65 que este README publicaba.
+> Los 4 saltados llevan `ignore` **con el motivo escrito**: trazas donde el
+> grado real de una restriccion cae a cero —alcanzar el tope de emision
+> exactamente, o un camino de Merkle con todos los bits a cero—. Release los
+> ejecuta.
+>
+> ⚠️ **Los 80 fallos de `zk-ssl` siguen abiertos, y no son nuevos**: eran 77
+> antes de la sesion, no los 65 que este README publicaba. Son el limite de
+> grados de §20, y **no estan diagnosticados uno a uno** —entrada 41—.
 >
 > Depuracion es **cinco a seis veces mas lento** (56 s frente a 10 s en los
 > circuitos), y a cambio winterfell valida las restricciones al generar y

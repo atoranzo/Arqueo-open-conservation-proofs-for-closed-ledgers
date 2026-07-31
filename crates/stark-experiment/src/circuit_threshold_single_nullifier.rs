@@ -911,7 +911,18 @@ mod tests {
         let mias: Vec<BaseElement> = (1..=4).map(|i| BaseElement::new(0xA77AC0 + i)).collect();
         let (_root_mia, paths_mias) = build_custodian_set(&mias);
         let op = operacion(7);
-        let (pa, ia) = autorizar(mias[0], &paths_mias[0], op);
+        // ⚠️ **Indices 2 y 1, no 0.** El camino del indice 0 tiene todos los
+        // bits de direccion a cero, y eso degenera el grado de `C_PLACE` -de
+        // 2 a 1- y de `C_BIT_BOOL` -a 0-, asi que `prove` panica en
+        // depuracion (entrada 6). Cual sea el indice del atacante es
+        // **incidental**: lo que este test comprueba es que trae OTRO
+        // conjunto. Cambiarlo no debilita nada y devuelve el test a
+        // depuracion.
+        //
+        // Es el criterio inverso al de §71.3, y a proposito: alli la
+        // posicion 0 **es la que produccion usa**, y evitarla habria hecho
+        // pasar el test sin ejercitar el caso comun.
+        let (pa, ia) = autorizar(mias[2], &paths_mias[2], op);
         let (pb, ib) = autorizar(mias[1], &paths_mias[1], op);
 
         assert_eq!(
@@ -932,7 +943,8 @@ mod tests {
 
         let op = operacion(7);
         let (pa, ia) = autorizar(keys[1], &paths[1], op);
-        let (pb, ib) = autorizar(mias[0], &paths_mias[0], op);
+        // Indice 2 y no 0, por lo mismo que arriba.
+        let (pb, ib) = autorizar(mias[2], &paths_mias[2], op);
         assert_eq!(
             verify_threshold_pair(pa, ia, pb, ib, dominio(), root_real, op, &opciones()),
             Err(PairRejection::WrongCustodianSet)
