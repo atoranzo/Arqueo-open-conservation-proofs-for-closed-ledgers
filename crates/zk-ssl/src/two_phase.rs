@@ -657,4 +657,409 @@ impl SovereignLayer {
         self.commit(&[], Some((pos, receipt.commitment)))?;
         Ok(())
     }
+
+    // -----------------------------------------------------------------
+
+    /// Emite a un pendiente **sin que las claves de custodio lleguen al
+    /// operador**: la QUINTA y ultima de la entrada 32/33 (68).
+    ///
+    /// Con esta via, el fallo de la entrada 32 queda cerrado: ninguna de
+    /// las cinco operaciones privilegiadas exige ya las claves en crudo.
+    ///
+    /// Tres pruebas: `climb_proof` de `circuit_mint_pending_climb` -que el
+    /// suministro sube EXACTAMENTE el importe, que el compromiso entra en
+    /// una posicion LIBRE y que no se pasa del tope- y dos de custodios
+    /// distintos que autorizan ESTA emision.
+    ///
+    /// ## La posicion la asigna la capa, y eso no es un cabo suelto
+    ///
+    /// Quien genera la prueba necesita el camino del arbol, asi que tuvo
+    /// que conocer la posicion antes. Si asigno otra, la raiz nueva no
+    /// coincide y **la verificacion de la subida falla**: cierra en falso,
+    /// no en abierto.
+    ///
+    /// ## El tope se comprueba DOS veces, y no es redundancia (67.1)
+    ///
+    /// Aqui porque la capa conoce el suministro real y puede rechazar
+    /// antes de nada; en el circuito porque un auditor externo que solo ve
+    /// el registro **no puede recomputar el suministro**.
+    ///
+    /// ⚠️ **Usa `SupplyCapExceeded`, no `OverRegulatoryLimit`.** La via
+    /// antigua de arriba devuelve el segundo para esta misma condicion, que
+    /// es el error del limite regulatorio de una transferencia, no el del
+    /// tope de emision -y ademas suma sin saturar-. `mint` siempre uso
+    /// `SupplyCapExceeded`. La divergencia se deja anotada en vez de
+    /// corregirse de tapadillo: tocar el error de la via antigua cambia lo
+    /// que ven sus tests y es otra tarea.
+    #[allow(clippy::too_many_arguments)]
+    pub fn apply_mint_pending_delegated(
+        &mut self,
+        climb_proof: winterfell::Proof,
+        proof_a: winterfell::Proof,
+        inputs_a: stark_experiment::circuit_threshold_single_nullifier::NullifierThresholdPublicInputs,
+        proof_b: winterfell::Proof,
+        inputs_b: stark_experiment::circuit_threshold_single_nullifier::NullifierThresholdPublicInputs,
+        receiver_id: Digest,
+        salt: Digest,
+        amount: u64,
+    ) -> Result<PendingNotice, LayerError> {
+        use stark_experiment::circuit_mint_pending_climb::{
+            MintPendingClimbAir, MintPendingClimbPublicInputs,
+        };
+        use stark_experiment::circuit_threshold::CUSTODIAN_DOMAIN;
+        use stark_experiment::circuit_threshold_single_nullifier::{
+            commit_operation, verify_threshold_pair, PairRejection, OP_MINT_PENDING,
+        };
+
+        let would_be = self.total_supply.saturating_add(amount);
+        if would_be > self.max_supply {
+            return Err(LayerError::SupplyCapExceeded {
+                cap: self.max_supply,
+                would_be,
+            });
+        }
+
+        let position = self.allocate_pending()?;
+        let commitment = pending_commitment(receiver_id, salt, amount);
+
+        let root_old = self.pending.root();
+        let supply_old = self.total_supply;
+        let supply_new = supply_old + amount;
+
+        // Sobre una COPIA, no sobre el estado. Si algo falla despues, el
+        // arbol real no se ha tocado.
+        let mut tentativo = self.pending.clone();
+        tentativo.set_leaf(position, commitment);
+        let root_new = tentativo.root();
+
+        let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
+
+        verify::<MintPendingClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+            climb_proof,
+            MintPendingClimbPublicInputs {
+                supply_old: BaseElement::new(supply_old),
+                supply_new: BaseElement::new(supply_new),
+                max_supply: BaseElement::new(self.max_supply),
+                amount: BaseElement::new(amount),
+                pending_root_old: root_old,
+                pending_root_new: root_new,
+            },
+            &accepted,
+        )
+        .map_err(|e| LayerError::VerificationFailed(format!("subida del pendiente: {e:?}")))?;
+
+        // El compromiso cubre TODO lo que la emision decide: de que raiz de
+        // pendientes a cual -lo que fija posicion Y compromiso-, cuanto, y
+        // contra que suministro y que tope.
+        let mut params: Vec<BaseElement> = root_old.to_vec();
+        params.extend_from_slice(&root_new);
+        params.push(BaseElement::new(amount));
+        params.push(BaseElement::new(supply_old));
+        params.push(BaseElement::new(supply_new));
+        params.push(BaseElement::new(self.max_supply));
+        let operation = commit_operation(OP_MINT_PENDING, &params);
+
+        verify_threshold_pair(
+            proof_a,
+            inputs_a,
+            proof_b,
+            inputs_b,
+            BaseElement::new(CUSTODIAN_DOMAIN),
+            self.custodian_set_root,
+            operation,
+            &accepted,
+        )
+        .map_err(|r| match r {
+            PairRejection::SameCustodian
+            | PairRejection::WrongCustodianSet
+            | PairRejection::WrongIdentityDomain => LayerError::NotTheIssuer,
+            PairRejection::WrongOperation => LayerError::StaleState,
+            PairRejection::InvalidProof => {
+                LayerError::VerificationFailed("autorizacion invalida".into())
+            }
+        })?;
+
+        // Despues de verificar la autoridad: si fuera antes, cualquiera
+        // podria agotar el cupo de los custodios sin serlo.
+        self.consume_custodian_use()?;
+
+        self.pending = tentativo;
+        self.total_supply = supply_new;
+        if position >= self.next_pending {
+            self.next_pending = position + 1;
+        }
+        self.pending_amounts.insert(position, amount);
+
+        // La MISMA raiz de cuentas en los dos lados, y es correcto: una
+        // emision a un pendiente no toca ninguna cuenta. Mismo criterio que
+        // la via antigua de arriba.
+        self.log.append(
+            OpKind::MintToPending,
+            self.accounts.root(),
+            self.accounts.root(),
+            &[],
+        );
+        self.commit(&[], Some((position, commitment)))?;
+
+        Ok(PendingNotice {
+            position,
+            salt,
+            amount,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests_delegada {
+    use super::*;
+    use crate::tests_support::*;
+    use stark_experiment::circuit_mint_pending_climb as climb;
+    use stark_experiment::circuit_threshold::{build_custodian_set, CUSTODIAN_DOMAIN};
+    use stark_experiment::circuit_threshold_single_nullifier as auth;
+
+    const AMOUNT: u64 = 250_000;
+
+    // ===== LOS CINCO SE SALTAN EN DEPURACION, Y ESTA MEDIDO POR QUE =====
+    //
+    // `allocate_pending` devuelve 0 en una capa nueva, y **la posicion 0
+    // tiene el camino de Merkle todo a la izquierda**: `COL_PBIT` queda
+    // identicamente nula, los veinte terminos `pbit * X` se anulan y las
+    // restricciones `C_PEND_ENTRY_A/B`, `C_PEND_PLACE` y `C_PEND_SIBLING`
+    // caen de grado 2 a 1 -indices 50-69, de 1022 a 511-, y `C_PBIT_BOOL`
+    // de 511 a 0. Winterfell comprueba en depuracion que el grado declarado
+    // se realice, y rechaza.
+    //
+    // **No es un fallo de solidez.** En release generan y verifican: lo
+    // prueban estos mismos cinco y, en el circuito,
+    // `the_all_left_path_of_position_zero_still_verifies`, que usa el
+    // camino degenerado a proposito.
+    //
+    // ⚠️ **No se cambia el test a otra posicion para que pase.** En
+    // produccion la posicion 0 SE USA -`allocate_pending` reutiliza huecos
+    // y un ledger recae en ella (46.1)-, asi que un test en la posicion 1
+    // pasaria sin ejercitar el caso comun. Vale mas un test fiel saltado
+    // que uno verde que mira a otro lado.
+    //
+    // Es la decision de la entrada 6, tomada en 46: **se declara, no se
+    // migra**. Limite conocido de winterfell (entradas 24, 25, 34).
+    //
+    // ⚠️ **Los DOCE fallos de depuracion de `mint`, `freeze` y `recovery`
+    // NO llevan esta marca.** Divergen en otros indices -44 y 73-88- y su
+    // causa **no esta medida**. Ponerles este motivo seria atribuirles una
+    // causa sin comprobar. Van en su propia entrada de backlog.
+
+    fn dominio() -> BaseElement {
+        BaseElement::new(CUSTODIAN_DOMAIN)
+    }
+
+    /// El compromiso de operacion, calculado como lo calculara la capa.
+    fn compromiso(layer: &SovereignLayer, amount: u64) -> Digest {
+        let position = layer.allocate_pending().expect("posicion libre");
+        let c = pending_commitment(receptor(), salt_de(0x5EED), amount);
+        let mut t = layer.pending.clone();
+        t.set_leaf(position, c);
+
+        let mut v: Vec<BaseElement> = layer.pending.root().to_vec();
+        v.extend_from_slice(&t.root());
+        v.push(BaseElement::new(amount));
+        v.push(BaseElement::new(layer.total_supply()));
+        v.push(BaseElement::new(layer.total_supply() + amount));
+        v.push(BaseElement::new(MAX_SUPPLY));
+        auth::commit_operation(auth::OP_MINT_PENDING, &v)
+    }
+
+    fn autorizar(
+        key: BaseElement,
+        path: &stark_experiment::circuit_threshold::CustodianPath,
+        op: Digest,
+    ) -> (winterfell::Proof, auth::NullifierThresholdPublicInputs) {
+        let trace = auth::build_trace(dominio(), key, path, op);
+        let prover = auth::NullifierThresholdProver::new(proof_options());
+        let inputs = prover.get_pub_inputs(&trace);
+        (prover.prove(trace).expect("autorizacion"), inputs)
+    }
+
+    /// Identidad publica del destinatario. **La dan los custodios, no la
+    /// capa**: la capa no sabe de quien es cada pendiente.
+    fn receptor() -> Digest {
+        stark_experiment::circuit_settlement::derive_public_id(BaseElement::new(SK_BOB))
+    }
+
+    fn prueba_subida(layer: &SovereignLayer, amount: u64) -> winterfell::Proof {
+        let position = layer.allocate_pending().expect("posicion libre");
+        let path = layer.pending.path_for(position);
+        let trace = climb::build_trace(
+            layer.total_supply(),
+            amount,
+            MAX_SUPPLY,
+            amount,
+            receptor(),
+            salt_de(0x5EED),
+            &path,
+        );
+        climb::MintPendingClimbProver::new(proof_options())
+            .prove(trace)
+            .expect("subida")
+    }
+
+    // =================================================================
+    // EL POSITIVO VA PRIMERO (guion, 66.2).
+    // =================================================================
+
+    /// **Dos custodios distintos emiten a un pendiente sin entregar sus
+    /// claves.** La quinta y ultima: cierra la entrada 32.
+    #[test]
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "grado dependiente del testigo: la posicion 0 anula COL_PBIT (entrada 6, 46, 68.3)"
+    )]
+    fn a_delegated_mint_to_pending_applies() {
+        let mut layer = new_layer();
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+        let antes = layer.total_supply();
+
+        let op = compromiso(&layer, AMOUNT);
+        let subida = prueba_subida(&layer, AMOUNT);
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+
+        let aviso = layer
+            .apply_mint_pending_delegated(
+                subida, pa, ia, pb, ib, receptor(), salt_de(0x5EED), AMOUNT,
+            )
+            .expect("la emision legitima debe aplicarse");
+
+        assert_eq!(aviso.amount, AMOUNT);
+        assert_eq!(
+            layer.total_supply(),
+            antes + AMOUNT,
+            "el suministro debe subir"
+        );
+        assert_eq!(
+            layer.total_pending(),
+            AMOUNT,
+            "y el dinero debe quedar en transito, no en una cuenta"
+        );
+    }
+
+    /// **UNA SOLA CLAVE NO CREA DINERO.**
+    ///
+    /// Un 2-de-N en el que un custodio contara dos veces seria un 1-de-N
+    /// disfrazado.
+    #[test]
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "grado dependiente del testigo: la posicion 0 anula COL_PBIT (entrada 6, 46, 68.3)"
+    )]
+    fn the_same_custodian_twice_cannot_mint_to_pending() {
+        let mut layer = new_layer();
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+        let antes = layer.total_supply();
+        let raiz_antes = layer.pending.root();
+
+        let op = compromiso(&layer, AMOUNT);
+        let subida = prueba_subida(&layer, AMOUNT);
+        let (pa, ia) = autorizar(ck[2], &cp[2], op);
+        let (pb, ib) = autorizar(ck[2], &cp[2], op);
+
+        let r = layer.apply_mint_pending_delegated(
+            subida, pa, ia, pb, ib, receptor(), salt_de(0x5EED), AMOUNT,
+        );
+        assert!(matches!(r, Err(LayerError::NotTheIssuer)), "fue {r:?}");
+        assert_eq!(layer.total_supply(), antes, "no debe emitirse nada");
+        assert_eq!(layer.pending.root(), raiz_antes, "ni depositarse nada");
+    }
+
+    /// **UNA AUTORIZACION PARA EMITIR X NO SIRVE PARA EMITIR MAS.**
+    ///
+    /// Es la propiedad de 67.2 aplicada al pendiente, y aqui cubre ademas
+    /// la POSICION: el compromiso ata las dos raices del arbol, asi que una
+    /// autorizacion tampoco vale para otro hueco.
+    #[test]
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "grado dependiente del testigo: la posicion 0 anula COL_PBIT (entrada 6, 46, 68.3)"
+    )]
+    fn an_authorization_for_one_amount_does_not_mint_another_to_pending() {
+        let mut layer = new_layer();
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+        let antes = layer.total_supply();
+        let raiz_antes = layer.pending.root();
+
+        let op = compromiso(&layer, AMOUNT);
+        let subida = prueba_subida(&layer, AMOUNT * 4);
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+
+        let r = layer.apply_mint_pending_delegated(
+            subida, pa, ia, pb, ib, receptor(), salt_de(0x5EED), AMOUNT * 4,
+        );
+        assert!(
+            r.is_err(),
+            "SOLIDEZ: autorizar 250k no autoriza emitir 1M, fue {r:?}"
+        );
+        assert_eq!(layer.total_supply(), antes);
+        assert_eq!(layer.pending.root(), raiz_antes);
+    }
+
+    /// **LA JERARQUIA: gobernanza no emite.**
+    ///
+    /// Las claves de gobernanza cambian quienes son los custodios; no
+    /// pueden hacer el trabajo de los custodios. La separacion de dominio
+    /// es lo que la hace real.
+    #[test]
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "grado dependiente del testigo: la posicion 0 anula COL_PBIT (entrada 6, 46, 68.3)"
+    )]
+    fn governance_keys_cannot_mint_to_pending() {
+        let mut layer = new_layer();
+        let gk = governance_keys();
+        let (_, gp) = build_custodian_set(&gk);
+        let antes = layer.total_supply();
+        let raiz_antes = layer.pending.root();
+
+        let op = compromiso(&layer, AMOUNT);
+        let subida = prueba_subida(&layer, AMOUNT);
+        let (pa, ia) = autorizar(gk[1], &gp[1], op);
+        let (pb, ib) = autorizar(gk[3], &gp[3], op);
+
+        let r = layer.apply_mint_pending_delegated(
+            subida, pa, ia, pb, ib, receptor(), salt_de(0x5EED), AMOUNT,
+        );
+        assert!(matches!(r, Err(LayerError::NotTheIssuer)), "fue {r:?}");
+        assert_eq!(layer.total_supply(), antes);
+        assert_eq!(layer.pending.root(), raiz_antes);
+    }
+
+    /// **EL TOPE, EN LA CAPA.** El circuito lo comprueba tambien, y no es
+    /// redundancia: destinatarios distintos (67.1).
+    #[test]
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "grado dependiente del testigo: la posicion 0 anula COL_PBIT (entrada 6, 46, 68.3)"
+    )]
+    fn the_layer_rejects_minting_over_the_cap() {
+        let mut layer = new_layer();
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+
+        let exceso = MAX_SUPPLY + 1;
+        let op = compromiso(&layer, AMOUNT);
+        let subida = prueba_subida(&layer, AMOUNT);
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+
+        let r = layer.apply_mint_pending_delegated(
+            subida, pa, ia, pb, ib, receptor(), salt_de(0x5EED), exceso,
+        );
+        assert!(
+            matches!(r, Err(LayerError::SupplyCapExceeded { .. })),
+            "la capa debe rechazar antes de generar nada, fue {r:?}"
+        );
+        assert_eq!(layer.total_supply(), 0);
+    }
 }

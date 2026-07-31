@@ -1112,4 +1112,112 @@ mod tests {
             informe.nunca_disparadas
         );
     }
+
+    /// Camino de la POSICION 0: todos los bits de direccion a cero.
+    fn camino_posicion_cero() -> MerklePath {
+        MerklePath {
+            siblings: pending_path().siblings,
+            is_right: vec![false; TREE_DEPTH],
+        }
+    }
+
+    /// Sube una hoja por un camino todo-izquierda.
+    fn climb_izquierda(leaf: Digest) -> Digest {
+        let p = camino_posicion_cero();
+        let mut cur = leaf;
+        for level in 0..TREE_DEPTH {
+            cur = native_merge(cur, p.siblings[level]);
+        }
+        cur
+    }
+
+    /// **DISCRIMINANTE: la degeneracion es de la POSICION 0, no del
+    /// circuito.**
+    ///
+    /// El camino de la posicion 0 tiene **todos** los bits de direccion a
+    /// cero, asi que `COL_PBIT` es la columna identicamente nula. Todo
+    /// termino `pbit * X` se anula y las veinte restricciones de
+    /// `C_PEND_ENTRY_A/B`, `C_PEND_PLACE` y `C_PEND_SIBLING` **caen de
+    /// grado 2 a 1**; `C_PBIT_BOOL`, de 1 a 0.
+    ///
+    /// Es el hallazgo de 37.7 -donde intervenir en `allocate_pending` para
+    /// usar la segunda posicion dejaba «ni una `C_PEND_*` ni `C_PBIT_BOOL`
+    /// desviada»- reproducido en el circuito nuevo.
+    ///
+    /// ## Por que este test decide algo y el positivo normal no
+    ///
+    /// `a_valid_mint_pending_climb_verifies` usa un camino **mixto**
+    /// (`l % 3 == 0`) y pasa en depuracion. Este usa el degenerado y falla
+    /// **solo ahi**. Con los dos, la causa queda aislada a una variable: el
+    /// camino. Sin este, «es la posicion 0» seria una hipotesis sobre
+    /// indices, que es como se degrado tres veces un fallo real a
+    /// «cosmetico» (36).
+    ///
+    /// ## Lo que fija, y lo que no
+    ///
+    /// Fija que el circuito **es correcto tambien para la posicion 0**: en
+    /// release genera y verifica. Lo que no encaja es la comprobacion de
+    /// depuracion de winterfell, que asume que todo grado declarado se
+    /// realiza en todo testigo. Limite conocido de la herramienta, no fallo
+    /// de solidez: entradas 6, 24, 25 y 34, decision «declarar, no migrar»
+    /// en 46.
+    #[test]
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "grado dependiente del testigo: la posicion 0 anula COL_PBIT (entrada 6)"
+    )]
+    fn the_all_left_path_of_position_zero_still_verifies() {
+        let camino = camino_posicion_cero();
+        let trace = build_trace(
+            SUPPLY_OLD,
+            AMOUNT,
+            MAX_SUPPLY,
+            AMOUNT,
+            receiver_id(),
+            salt(),
+            &camino,
+        );
+        let inputs = MintPendingClimbPublicInputs {
+            supply_old: BaseElement::new(SUPPLY_OLD),
+            supply_new: BaseElement::new(SUPPLY_OLD + AMOUNT),
+            max_supply: BaseElement::new(MAX_SUPPLY),
+            amount: BaseElement::new(AMOUNT),
+            pending_root_old: climb_izquierda([BaseElement::ZERO; 4]),
+            pending_root_new: climb_izquierda(commitment()),
+        };
+        assert_eq!(
+            correr(trace, inputs),
+            Ok(()),
+            "el circuito debe ser correcto TAMBIEN para la posicion 0: lo que \
+             no encaja es la comprobacion de grados de depuracion, no la prueba"
+        );
+    }
+
+    /// **Y la columna del bit es efectivamente nula.** Sin esto, el test de
+    /// arriba probaria que algo falla en la posicion 0, pero no QUE.
+    #[test]
+    fn the_position_zero_path_leaves_the_direction_bit_identically_zero() {
+        let cero = build_trace(
+            SUPPLY_OLD,
+            AMOUNT,
+            MAX_SUPPLY,
+            AMOUNT,
+            receiver_id(),
+            salt(),
+            &camino_posicion_cero(),
+        );
+        for row in 0..TRACE_LENGTH {
+            assert_eq!(
+                cero.get(COL_PBIT, row),
+                BaseElement::ZERO,
+                "posicion 0: COL_PBIT deberia ser identicamente nula, fila {row}"
+            );
+        }
+        // Y con un camino mixto NO lo es: es la unica variable que cambia.
+        let mixto = traza_valida();
+        assert!(
+            (0..TRACE_LENGTH).any(|r| mixto.get(COL_PBIT, r) != BaseElement::ZERO),
+            "camino mixto: COL_PBIT no deberia ser nula"
+        );
+    }
 }
