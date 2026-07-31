@@ -623,9 +623,17 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   de cinco» concluira que esto esta casi hecho; la parte que da seguridad no
   ha empezado.** Es lo previsto en §96 — la seguridad entra toda de golpe al
   cerrar la puerta.
-  **Queda**: `audit` —que **no encaja en el patron**: `COL_KEY` en 13, ancho
-  24 y **cero** sitios `state[8] = spend_key`, asi que necesita analisis
-  propio— y despues `open_account` y la capa, **al final** (§96.4).
+  ✅ **Y `circuit_audit` HECHO** (§92.17): el analisis previo encontro que
+  **es de UN SOLO CARRIL** —no absorbe la clave «de otra forma», la absorbe
+  igual pero **una vez**, porque audita en vez de transitar—. `TRACE_WIDTH`
+  **24→27**, `C_PK_INPUT` **1→4**, `num_assertions` **20→17**: la mitad de
+  coste que los de dos carriles. ⚠️ Aqui **si** habia aserciones que retirar
+  —tres, sobre `ROW_PK_START`—, comprobado **antes** de escribir.
+  ✅ **LOS CINCO CIRCUITOS DE GASTO MIGRADOS**: `settlement`, `burn`, `send`,
+  `claim`, `audit`. 274 y 201, cero avisos, 27 circuitos limpios.
+  ⚠️⚠️ **Y siguen siendo CERO bits ganados** (§92.19): `open_account` deriva
+  estrecho, asi que ningun titular puede tener clave ancha. **Queda solo la
+  puerta, y es lo unico que mueve esa cifra — la mueve entera.**
   ⚠️ **La derivacion estrecha NO hay que migrarla en los 22 ficheros**: §90
   la hace equivalente para una clave rellenada, asi que quien solo *calcula*
   una identidad puede seguir usandola.

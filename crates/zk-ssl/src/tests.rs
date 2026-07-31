@@ -10,6 +10,9 @@
 use super::*;
 
     use crate::tests_support::*;
+    // `derive_public_id_wide` no llega por `use super::*`: lib.rs solo
+    // reexporta la estrecha.
+    use stark_experiment::circuit_settlement::derive_public_id_wide;
 
     /// **No hay setup de claves.** Es la propiedad que distingue este
     /// paradigma: arrancar la capa es instantáneo y no genera ningún
@@ -2800,8 +2803,16 @@ use super::*;
             let prev = empty[k - 1];
             empty.push(native_merge(prev, prev));
         }
-        let key = BaseElement::new(SK_ALICE);
-        let id = derive_public_id(key);
+        // ⚠️ Ancha de verdad: este test **fabrica el arbol**, no abre
+        // cuenta por la capa, asi que no le aplica el limite de §92.14 y
+        // puede ejercitar los tres elementos nuevos (§90.3).
+        let key = [
+            BaseElement::new(SK_ALICE),
+            BaseElement::new(0xA0D17),
+            BaseElement::new(0x0DDBA11),
+            BaseElement::new(0x5EA51DE),
+        ];
+        let id = derive_public_id_wide(key);
         let nonce = BaseElement::ZERO;
         let mut siblings = Vec::new();
         let mut is_right = Vec::new();

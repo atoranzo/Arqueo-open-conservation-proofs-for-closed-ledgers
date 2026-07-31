@@ -68,7 +68,7 @@ use winterfell::{
     TraceInfo, TracePolyTable, TraceTable, TransitionConstraintDegree,
 };
 
-use crate::circuit_settlement::{derive_public_id, SPEND_KEY_DOMAIN};
+use crate::circuit_settlement::{derive_public_id_wide, SPEND_KEY_DOMAIN};
 use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
@@ -84,15 +84,16 @@ pub const MAX_VALUE: u64 = (1u64 << 62) - 1;
 
 // ===== Columnas =====
 const COL_BIT: usize = 12;
-const COL_KEY: usize = 13;
-const COL_ID: usize = 14; // 14..18
-const COL_BAL: usize = 18;
-const COL_NONCE: usize = 19;
-const COL_LOWER: usize = 20;
-const COL_UPPER: usize = 21;
-const COL_SBIT: usize = 22;
-const COL_SACC: usize = 23;
-pub const TRACE_WIDTH: usize = 24;
+/// Clave de gasto. ⚠️ **CUATRO elementos** desde §90 (entrada 15).
+const COL_KEY: usize = 13; // 13..17
+const COL_ID: usize = 17; // 17..21
+const COL_BAL: usize = 21;
+const COL_NONCE: usize = 22;
+const COL_LOWER: usize = 23;
+const COL_UPPER: usize = 24;
+const COL_SBIT: usize = 25;
+const COL_SACC: usize = 26;
+pub const TRACE_WIDTH: usize = 27;
 
 // ===== Filas de eventos =====
 const ROW_LEAF_LINK: usize = 7;
@@ -110,11 +111,11 @@ const C_LEAF_CAP: usize = C_BIT_BOOL + 1; // 4
 const C_LEAF_DIG: usize = C_LEAF_CAP + 4; // 4
 const C_NONCE: usize = C_LEAF_DIG + 4; // 1
 const C_INPUT: usize = C_NONCE + 1; // 5: identidad (4) + saldo
-const C_PK_INPUT: usize = C_INPUT + 5; // 1
+const C_PK_INPUT: usize = C_INPUT + 5; // 4
 /// **TITULARIDAD**: la pk derivada coincide con la identidad auditada.
-const C_PK_CHECK: usize = C_PK_INPUT + 1; // 4
-const C_TRANSPORT: usize = C_PK_CHECK + 4; // 5
-const C_ID_CONST: usize = C_TRANSPORT + 5; // 4
+const C_PK_CHECK: usize = C_PK_INPUT + 4; // 4
+const C_TRANSPORT: usize = C_PK_CHECK + 4; // 8
+const C_ID_CONST: usize = C_TRANSPORT + 8; // 4
 const C_SBIT_BOOL: usize = C_ID_CONST + 4; // 2
 const C_FIRST_S: usize = C_SBIT_BOOL + 2; // 2
 const C_HORNER: usize = C_FIRST_S + 2; // 1
@@ -147,7 +148,8 @@ fn value_to_bits_be(value: u64) -> Vec<bool> {
 /// revelar mediante los límites.
 #[derive(Clone, Debug)]
 pub struct AuditWitness {
-    pub spend_key: BaseElement,
+    /// ⚠️ **CUATRO elementos** desde §90 (entrada 15).
+    pub spend_key: Digest,
     pub balance: u64,
     pub nonce: BaseElement,
     pub path: MerklePath,
@@ -172,7 +174,7 @@ pub fn build_trace_with_id(
     let mut rows: Vec<Vec<BaseElement>> = vec![vec![zero; TRACE_WIDTH]; TRACE_LENGTH];
 
     for row in rows.iter_mut() {
-        row[COL_KEY] = witness.spend_key;
+        row[COL_KEY..COL_KEY + 4].copy_from_slice(&witness.spend_key);
         for i in 0..4 {
             row[COL_ID + i] = claimed_id[i];
         }
@@ -235,7 +237,7 @@ pub fn build_trace_with_id(
                 ROW_ROOT => {
                     // Derivacion de pk: TITULARIDAD.
                     state[4] = BaseElement::new(SPEND_KEY_DOMAIN);
-                    state[8] = witness.spend_key;
+                    state[8..12].copy_from_slice(&witness.spend_key);
                 }
                 _ => {
                     let next_cycle = (r + 1) / CYCLE_LENGTH;
@@ -268,7 +270,7 @@ pub fn build_trace_with_id(
 }
 
 pub fn build_trace(witness: &AuditWitness, lower: u64, upper: u64) -> TraceTable<BaseElement> {
-    let id = derive_public_id(witness.spend_key);
+    let id = derive_public_id_wide(witness.spend_key);
     build_trace_with_id(witness, lower, upper, id)
 }
 
@@ -316,13 +318,16 @@ impl Air for AuditAir {
             degrees.push(TransitionConstraintDegree::with_cycles(2, full.clone()));
         }
         degrees.push(TransitionConstraintDegree::new(2)); // bit booleano
-        // leaf cap (4), leaf dig (4), nonce (1), input (5), pk input (1),
-        // pk check (4) = 19, grado 1 con ciclo.
-        for _ in 0..19 {
+        // leaf cap (4), leaf dig (4), nonce (1), input (5), pk input (**4**),
+        // pk check (4) = 22, grado 1 con ciclo.
+        //
+        // ⚠️ Eran 19: la clave paso de 1 ranura a 4 —cuatro elementos por UN
+        // carril, que es lo que distingue a este circuito (§90)—.
+        for _ in 0..22 {
             degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
         }
-        // Transporte (5) + identidad (4): grado 1 sin ciclo.
-        for _ in 0..9 {
+        // Transporte (**8**) + identidad (4): grado 1 sin ciclo.
+        for _ in 0..12 {
             degrees.push(TransitionConstraintDegree::new(1));
         }
         for _ in 0..2 {
@@ -335,7 +340,10 @@ impl Air for AuditAir {
         assert_eq!(degrees.len(), NUM_CONSTRAINTS, "cuenta de grados");
 
         AuditAir {
-            context: AirContext::new(trace_info, degrees, 20, options),
+            // 20 - 3: se retiraron las que fijaban a cero `state[9..12]` en
+            // `ROW_PK_START`, que dejaron de ser relleno al ensanchar la
+            // clave (§92.2). Son tres y no seis porque hay UN carril.
+            context: AirContext::new(trace_info, degrees, 17, options),
             pub_inputs,
         }
     }
@@ -481,7 +489,10 @@ impl Air for AuditAir {
         result[C_INPUT + 4] = first_row * (current[8] - current[COL_BAL]);
 
         // La clave entra en la derivación de pk.
-        result[C_PK_INPUT] = sel_root * (next[8] - current[COL_KEY]);
+        // ⚠️ Los CUATRO elementos. Un solo carril: no hay `LANE_B` (§92.2).
+        for i in 0..4 {
+            result[C_PK_INPUT + i] = sel_root * (next[8 + i] - current[COL_KEY + i]);
+        }
 
         // ===== TITULARIDAD =====
         // La pk derivada de la clave coincide con la identidad auditada.
@@ -492,7 +503,16 @@ impl Air for AuditAir {
             result[C_PK_CHECK + i] = sel_pk_done * (current[4 + i] - current[COL_ID + i]);
         }
 
-        let transport = [COL_KEY, COL_BAL, COL_NONCE, COL_LOWER, COL_UPPER];
+        let transport = [
+            COL_KEY,
+            COL_KEY + 1,
+            COL_KEY + 2,
+            COL_KEY + 3,
+            COL_BAL,
+            COL_NONCE,
+            COL_LOWER,
+            COL_UPPER,
+        ];
         for (k, col) in transport.iter().enumerate() {
             result[C_TRANSPORT + k] = next[*col] - current[*col];
         }
@@ -543,9 +563,12 @@ impl Air for AuditAir {
         for i in 5..8 {
             a.push(Assertion::single(i, ROW_PK_START, zero));
         }
-        for i in 9..12 {
-            a.push(Assertion::single(i, ROW_PK_START, zero));
-        }
+        // ⚠️ Las ranuras 9..12 **ya no son relleno: son la clave** (§92.2).
+        //
+        // Las ataba a cero cuando `sk` era un elemento. Ahora las fija
+        // `C_PK_INPUT` contra `COL_KEY` —constante por `C_TRANSPORT`— y
+        // `C_PK_CHECK` exige que la `pk` derivada iguale `COL_ID`. Pasan de
+        // estar fijadas a CERO a estarlo a la CLAVE: mas fuerte.
         a.push(Assertion::single(COL_LOWER, 0, self.pub_inputs.lower));
         a.push(Assertion::single(COL_UPPER, 0, self.pub_inputs.upper));
 
@@ -663,8 +686,15 @@ mod tests {
             let prev = empty[k - 1];
             empty.push(native_merge(prev, prev));
         }
-        let key = BaseElement::new(SK);
-        let id = derive_public_id(key);
+        // ⚠️ Ancha de verdad, no `as_digest(x)`: con relleno de ceros el
+        // test pasaria sin ejercitar los tres elementos nuevos (§90.3).
+        let key = [
+            BaseElement::new(SK),
+            BaseElement::new(0xA0D17),
+            BaseElement::new(0x0DDBA11),
+            BaseElement::new(0x5EA51DE),
+        ];
+        let id = derive_public_id_wide(key);
         let nonce = BaseElement::ZERO;
 
         let mut siblings = Vec::with_capacity(TREE_DEPTH);
@@ -798,7 +828,12 @@ mod tests {
     fn third_party_cannot_disclose_someone_elses_balance() {
         let (victim, root, victim_id) = scenario(1_000_000);
         let attacker = AuditWitness {
-            spend_key: BaseElement::new(0x1337),
+            spend_key: [
+                BaseElement::new(0x1337),
+                BaseElement::new(0xBADC0DE),
+                BaseElement::new(0x0DDBA11),
+                BaseElement::new(0x1CEB00DA),
+            ],
             balance: victim.balance,
             nonce: victim.nonce,
             path: victim.path.clone(),

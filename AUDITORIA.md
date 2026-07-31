@@ -7927,6 +7927,67 @@ toda de golpe cuando se cierre la puerta, y ni un bit antes** — y por eso
 de trabajo: cuatro circuitos es un avance visible que no mueve la unica cifra
 que importa. Es §32 otra vez, vista desde el lado del que va ganando.
 
+### 92.17 `circuit_audit`: el quinto, y lo que el analisis previo encontro
+
+`audit` no encajaba en el patron —`COL_KEY` en 13, ancho 24, **cero** sitios
+`state[8] = spend_key`—, asi que se leyo antes de escribir, como §68 con
+`mint_pending`.
+
+**La razon resulto mas simple de lo que parecia:**
+
+> **Es de UN SOLO CARRIL.** Cero apariciones de `LANE_B`. No absorbe la clave
+> «de otra forma»: la absorbe **igual** —`state[4]=DOMINIO`,
+> `state[8]=clave`— pero **una vez**, porque **audita en vez de transitar**:
+> no hay estado viejo y nuevo que comparar.
+
+| | antes | ahora |
+|---|---|---|
+| `TRACE_WIDTH` | 24 | **27** |
+| `C_PK_INPUT` | 1 | **4** |
+| `C_TRANSPORT` | 5 | **8** |
+| `num_assertions` | 20 | **17** |
+
+**+3 columnas y +6 ranuras: la mitad** que en los de dos carriles.
+
+⚠️ **Y aqui SI habia aserciones que retirar** —tres, sobre `ROW_PK_START`—,
+al reves que en `burn`, `send` y `claim`. Es el caso del piloto (§92.2), y
+**se comprobo antes de escribir**, que alli costo una ronda. Son tres y no
+seis porque hay un carril.
+
+Las de la **fila 0** se quedan: ahi `9..12` sigue siendo relleno.
+
+### 92.18 ⚠️ Sustituir o ampliar un import: la regla es CONTAR
+
+Al migrar `audit` se sustituyo el import de la derivacion estrecha por la
+ancha. Fallo: **algun test del circuito seguia usando la estrecha**.
+
+Se corrigio ampliandolo —dejando las dos— y entonces salto el aviso
+contrario: **`unused import`**, porque ya no quedaba ningun uso.
+
+> Sustituir en un sitio y ampliar en otro no son dos reglas: **es una, y
+> exige contar los usos que quedan.** Se hizo mal en las dos direcciones
+> seguidas: sustituir donde habia que ampliar, y ampliar donde habia que
+> sustituir.
+
+El parche final lleva el aserto que lo distingue —`count("derive_public_id(")
+== 0` antes de quitar el import— y que no se puso ninguna de las dos veces.
+
+### 92.19 Los CINCO circuitos de gasto, migrados
+
+`settlement`, `burn`, `send`, `claim`, `audit`. 274 y 201, cero avisos, 27
+circuitos limpios.
+
+⚠️ **Y siguen siendo CERO bits de seguridad ganados** (§92.16):
+`open_account` deriva estrecho, asi que ningun titular puede tener una clave
+ancha. Lo que queda —**la puerta**— es lo unico que mueve esa cifra, y la
+mueve entera.
+
+⚠️ Una nota sobre el orden que conviene conservar: **`audit` era el unico de
+los cinco cuyo retraso no tenia consecuencia patrimonial.** No mueve dinero:
+prueba `inferior <= saldo <= superior` sin tocar el arbol. Una cuenta que no
+pudiera auditarse perderia la revelacion selectiva, no los fondos — a
+diferencia de `claim`, cuya ausencia los inmovilizaba (§96.2).
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

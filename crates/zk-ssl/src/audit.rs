@@ -59,7 +59,14 @@ impl SovereignLayer {
         }
 
         let witness = AuditWitness {
-            spend_key,
+            // ⚠️ Clave RELLENADA a cuatro elementos (§92.9): la capa la
+            // maneja estrecha y §90 garantiza la misma identidad.
+            spend_key: [
+                spend_key,
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+            ],
             balance: account.balance,
             nonce: account.nonce,
             path: self.accounts.path_for(account_index),
