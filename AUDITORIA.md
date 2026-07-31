@@ -5340,7 +5340,46 @@ Quedan **nueve sin cubrir**: `compliance_circuit`, `double_entry`,
 del codigo, sin que en ningun sitio conste a que parte. La diferencia es que
 esta vez se ha contado antes de afirmar nada.
 
-## 63. Qué NO demuestra este documento
+## 63. Entrada 38 cerrada: 23 de 23 sin restricciones vacuas
+
+Se añadio `no_constraint_is_vacuous` a los ocho circuitos que quedaban
+-`dual_climb`, `merkle`, `nullifier`, `range_check`, `rescue_hash`,
+`solvency`, `compliance_circuit` y `double_entry`- y **los 23 pasan**.
+
+Ningun circuito del proyecto tiene una restriccion declarada que no imponga
+nada. Y ahora esta **comprobado**, no supuesto: doce lo estaban, once no.
+
+### 63.1 Donde se esperaba encontrar algo
+
+`compliance_circuit` (25 escrituras de restricciones) y `double_entry` (41
+columnas) eran los candidatos: la mayor superficie del proyecto sin haber
+pasado nunca por esta herramienta. Estan limpios.
+
+Es un resultado negativo y vale igual que uno positivo: la diferencia entre
+«creemos que no hay restricciones vacuas» y «no las hay en los 23».
+
+### 63.2 Lo unico que queda fuera, y por que
+
+El `WorkAir` de `lib.rs` -el circuito de demostracion de winterfell- no se
+cubre: no protege nada del sistema. Contarlo habria inflado la cobertura sin
+añadir garantia.
+
+### 63.3 Dos inconsistencias de nombres, a la vista
+
+Al escribir los tests salieron dos cosas que nadie habia notado:
+
+- `range_check` llama **`TRACE_ROWS`** a lo que los otros 23 llaman
+  `TRACE_LENGTH`. Unico caso en el proyecto.
+- `nullifier` y `rescue_hash` **no tienen `TRACE_WIDTH`**: su traza es
+  exactamente el estado del hash, asi que usan `STATE_WIDTH`. Coherente
+  -son los dos circuitos mas primitivos- pero conviene saberlo antes de
+  escribir codigo que los toque.
+
+Ninguna es un defecto. Quedan anotadas porque un barrido automatico que
+suponga nombres uniformes fallaria en las dos, y **este proyecto ya tiene
+dos casos de herramientas que saltaban ficheros en silencio** (§59.2, §62.2).
+
+## 64. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

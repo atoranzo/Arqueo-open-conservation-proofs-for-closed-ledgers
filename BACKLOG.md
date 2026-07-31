@@ -456,7 +456,17 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
 
 ## G. Otro proyecto, no una incidencia
 
-- [ ] **38. Prueba de vacuidad en los nueve circuitos que no la tienen.**
+- [x] **38. Prueba de vacuidad en TODOS los circuitos: hecha.**
+  ~~Nueve circuitos sin ella.~~ **Cerrada** el 30-07-2026 (§63): añadida a
+  los ocho que quedaban y **23 de 23 en verde** — ningun circuito del
+  proyecto tiene una restriccion que no imponga nada. Solo queda fuera el
+  `WorkAir` de `lib.rs`, que es el circuito de demostracion de winterfell y
+  no protege nada. De paso aparecieron dos nombres inconsistentes:
+  `range_check` llama `TRACE_ROWS` a lo que los demas llaman `TRACE_LENGTH`,
+  y `nullifier`/`rescue_hash` no tienen `TRACE_WIDTH` porque su traza ES el
+  estado del hash.
+
+  ~~Original:~~ **38. Prueba de vacuidad en los nueve circuitos que no la tienen.**
   `crate::mutation::buscar_vacias` detecta restricciones que no imponen nada,
   y la usan **15 de los 24** circuitos con `impl Air` (§62). Sin ella en
   `compliance_circuit`, `double_entry`, `dual_climb`, `lib`, `merkle`,
