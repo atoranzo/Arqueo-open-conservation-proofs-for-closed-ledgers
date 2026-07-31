@@ -5562,7 +5562,45 @@ Sin ese comentario habria salido un panico de grados y una ronda larga. Es la
 primera vez en la sesion que la documentacion del proyecto **evita** un error
 en vez de al reves.
 
-## 67. Qué NO demuestra este documento
+## 67. `mint` delegado: la que crea dinero
+
+Cuarta via delegada, y la que mas pesa. Un operador con las claves podia
+emitir; con esta via no.
+
+### 67.1 El tope se comprueba DOS veces, y no es redundancia
+
+- **En la capa**, porque conoce el suministro real y puede rechazar antes de
+  generar nada.
+- **En el circuito**, porque un auditor externo que solo ve el registro **no
+  puede recomputar el suministro** y necesita que la prueba se lo garantice.
+
+Es el reverso de §60.3: alli la prueba del arbol era redundante para la capa
+y valiosa fuera; aqui las dos comprobaciones tienen destinatarios distintos y
+las dos hacen falta.
+
+### 67.2 El test que mas vale
+
+`an_authorization_for_one_amount_does_not_mint_another`: se autoriza emitir
+250.000 y se intenta emitir un millon. **Se rechaza.** El compromiso de
+operacion (§56) cubre el importe, el suministro antes y despues, y el tope,
+asi que una autorizacion no vale para otra cantidad.
+
+Es la propiedad mas valiosa que este sistema puede tener, y hasta hoy no
+estaba probada porque la autorizacion no existia como pieza separada.
+
+Los cuatro tests comprueban ademas que **el suministro no cambio** tras el
+rechazo. Un rechazo que ya hubiera emitido seria peor que ninguno.
+
+### 67.3 Estado: cuatro de cinco
+
+`governance`, `freeze`, `recovery` y `mint`. Queda `mint_pending` (125
+ranuras), que añade el compromiso del pendiente sobre lo que hace `mint`.
+
+⚠️ **Hasta que esa este, el fallo de la entrada 32 sigue abierto**: emitir
+a un pendiente sigue exigiendo las claves en el operador. Cuatro de cinco no
+cierra la entrada.
+
+## 68. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
