@@ -6029,6 +6029,92 @@ siempre era valida.
 Es el argumento de la **entrada 7** en su forma mas cruda. Y el proyecto
 lleva dos dias diciendo que hace falta que lo mire alguien mas.
 
+## 74. La entrada 40 es CONSERVACION ROTA, y el analisis del arreglo
+
+⚠️ Medido el 31-07-2026, **despues** de la correccion de §73: sigue siendo
+explotable de punta a punta.
+
+### 74.1 Que se midio
+
+| | |
+|---|---|
+| Suministro emitido | **250.000** |
+| En cuentas al final | **1.000.000** |
+| En transito | 0 |
+| Resultado del deposito | **`Ok(())`** |
+
+El camino, en dos pasos:
+
+1. Depositar un compromiso que vale un millon **declarando doscientos
+   cincuenta mil**, con el aviso coherente con la prueba —asi la mitigacion
+   de §73.4 no salta—.
+2. Cobrarlo con el aviso **verdadero**.
+
+⚠️ **Y esto es lo que hace el hallazgo distinto de los anteriores.** El
+primer paso paso con la prueba **ya verificada**. El segundo **no falsifica
+nada**: el compromiso del millon esta de verdad en el arbol, asi que el
+circuito de cobro lo reconstruye y su prueba es legitima.
+
+> **No hay ningun paso fraudulento que un verificador pueda detectar. El
+> fraude es que el circuito nunca ato las dos cosas.**
+
+Es dinero que el tope declarado no cuenta, y el tope es la propiedad que
+§66 y §67 se tomaron el trabajo de demostrar.
+
+### 74.2 El arreglo minimo NO basta, y conviene verlo antes de cortar
+
+Lo evidente es mover `C_PEND_IN` y `C_PEND_VAL` del carril A —cuyo digest
+`C_PEND_ENTRY_A` descarta— al carril B, que es el que se inserta (§72.2).
+
+**No basta.** `C_PEND_VAL` fija hoy `next[4..8]` —el digest interno— y
+`next[8]` —el importe—, y deja libres:
+
+- `next[0..4]`, la capacidad;
+- `next[9..12]`, el relleno.
+
+**Siete elementos.** Cambiar de carril sin cerrarlos deja un compromiso que
+sigue sin estar determinado por sus entradas: distintos rellenos dan
+distintas hojas para el mismo `(identidad, aleatorio, importe)`.
+
+Seria completar el trabajo sin alcanzar el objetivo, que es exactamente la
+leccion de §32 —*«un plan expresado en unidades de trabajo puede
+completarse sin alcanzar su objetivo»*—.
+
+### 74.3 Dimensiones del arreglo
+
+| | Ahora | Tras el arreglo |
+|---|---|---|
+| `C_PEND_IN` | 12 ranuras, **carril A** | 12 ranuras, **carril B** |
+| `C_PEND_VAL` | **5** ranuras, carril A | **12** ranuras, carril B |
+| `NUM_CONSTRAINTS` en `_climb` | 89 | **96** |
+| `NUM_CONSTRAINTS` en produccion | 125 | **132** |
+
+Las siete nuevas son grado 1 con ciclo, el mismo grupo que las que ya hay:
+el bucle de grados pasa de `0..17` a `0..24`. Hay que hacerlo en **los dos
+circuitos**.
+
+⚠️ **Lo que este analisis no dice**: si el carril A queda entonces sin nada
+que probar en las filas 40-55. Si es asi, sobra su computo entero y habria
+que decidir si se retira —lo que cambiaria el indicador de hash y las
+periodicas— o se deja como esta. Sin verificar.
+
+### 74.4 El criterio de exito
+
+`a_pending_worth_more_than_declared_cannot_be_claimed` en verde, y con el
+los dos testigos de §72 —que quedan rojos con `#[ignore]` hasta entonces—.
+
+Que compile no es el criterio. Que los dieciseis tests de los dos circuitos
+sigan pasando, tampoco por si solo: **ninguno de ellos veia esto**.
+
+### 74.5 Por que se escribe antes de cortar
+
+Es lo que §68 hizo con `mint_pending`, y §70.3 registro el resultado: fue
+la segunda vez en el proyecto que el trabajo previo **evito** una ronda en
+vez de causarla.
+
+Y hoy se ha comprobado dos veces que lo que se pierde de una sesion no es
+el codigo, es la memoria.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

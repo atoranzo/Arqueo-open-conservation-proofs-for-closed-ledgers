@@ -1174,6 +1174,140 @@ mod tests_verificacion {
     /// Mallory. **No conoce ninguna clave ajena.**
     const SK_MALLORY: u64 = 0xBADCAFE;
 
+    /// **TESTIGO 6: el camino residual de la entrada 40.**
+    ///
+    /// §73 corrigio que la capa no verificara las pruebas, y añadio a
+    /// `apply_mint_to_pending` la exigencia de que el aviso declare el
+    /// importe de la prueba. Eso cerro la construccion del testigo 3.
+    ///
+    /// Pero el circuito **sigue sin atar el compromiso depositado al importe
+    /// declarado** (§72), y queda este camino, declarado en §73.4:
+    ///
+    /// 1. Depositar un compromiso que vale `INFLADO` **declarando
+    ///    `IMPORTE`**, con el aviso coherente con la prueba —asi la
+    ///    mitigacion no salta—.
+    /// 2. Cobrarlo con el aviso **verdadero**. El circuito de cobro
+    ///    reconstruye `H(H(id_bob, salt), INFLADO)`, que es justo la hoja que
+    ///    hay en el arbol, asi que la prueba es **legitima**.
+    ///
+    /// `apply_claim` solo hace `pending_amounts.remove(...)`: no contrasta el
+    /// importe del aviso contra lo que se registro al depositar.
+    ///
+    /// ## Que decide
+    ///
+    /// Si al final Bob tiene `INFLADO` y el suministro solo subio `IMPORTE`,
+    /// la entrada 40 no es un hueco de auditabilidad externa: es
+    /// **conservacion rota**, y con dinero que el tope declarado no cuenta.
+    ///
+    /// ## Por que la asercion mira el invariante y no el `Result`
+    ///
+    /// Cualquiera de los dos pasos puede rechazarse por su cuenta, y eso
+    /// estaria bien. Lo que este test afirma es lo unico que importa al
+    /// final: **que no haya mas dinero del que se emitio**. Asi no puede
+    /// pasar por la razon equivocada.
+    #[test]
+    // ===== TESTIGO ROJO. CONFIRMADO EL 31-07-2026. =====
+    //
+    // **Este test FALLA, y es correcto que falle.** Medido en release: Bob
+    // acaba con 1.000.000 y el suministro emitido es 250.000. El deposito
+    // devolvio `Ok(())` **con la prueba ya verificada**, y el cobro no
+    // falsifica nada -el compromiso del millon esta de verdad en el arbol,
+    // asi que su prueba es legitima-.
+    //
+    // No hay ningun paso fraudulento que un verificador pueda detectar: el
+    // fraude es que el circuito nunca ato las dos cosas.
+    //
+    // Se le quitara la marca cuando el arreglo de §74 lo ponga en verde.
+    // Patron de §50.
+    #[ignore = "TESTIGO ROJO entrada 40: conservacion rota, arreglo en §74"]
+    fn a_pending_worth_more_than_declared_cannot_be_claimed() {
+        use stark_experiment::circuit_mint_pending::TRACE_LENGTH;
+        use stark_experiment::rescue_hash::STATE_WIDTH;
+
+        let mut layer = new_layer();
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let auth = valid_auth();
+        let salt = salt_de(0x5EED);
+        let inflado = IMPORTE * 4;
+        let id_bob = layer.public_id_of(bob).expect("cuenta");
+
+        // ===== PASO 1: depositar de mas declarando de menos =====
+        let position = layer.allocate_pending().expect("posicion libre");
+        let path = layer.pending.path_for(position);
+
+        let mut trace = build_mint_pending_trace(
+            auth.key_a, auth.index_a, &auth.path_a,
+            auth.key_b, auth.index_b, &auth.path_b,
+            layer.total_supply(), IMPORTE, MAX_SUPPLY, IMPORTE,
+            id_bob, salt, &path,
+        );
+        let falsa = build_mint_pending_trace(
+            auth.key_a, auth.index_a, &auth.path_a,
+            auth.key_b, auth.index_b, &auth.path_b,
+            layer.total_supply(), inflado, MAX_SUPPLY, inflado,
+            id_bob, salt, &path,
+        );
+        for row in 0..TRACE_LENGTH {
+            for j in 0..STATE_WIDTH {
+                trace.set(STATE_WIDTH + j, row, falsa.get(STATE_WIDTH + j, row));
+            }
+        }
+        let proof = MintPendingProver::new(proof_options())
+            .prove(trace)
+            .expect("la traza inflada genera prueba: lo midio §72");
+
+        // El compromiso vale INFLADO...
+        let commitment = pending_commitment(id_bob, salt, inflado);
+        let mut pend = layer.pending.clone();
+        pend.set_leaf(position, commitment);
+
+        let recibo = MintPendingReceipt {
+            proof: proof.to_bytes(),
+            public_inputs: MintPendingPublicInputs {
+                custodian_set_root: layer.custodian_set_root,
+                supply_old: BaseElement::new(layer.total_supply()),
+                supply_new: BaseElement::new(layer.total_supply() + IMPORTE),
+                max_supply: BaseElement::new(MAX_SUPPLY),
+                amount: BaseElement::new(IMPORTE),
+                pending_root_old: layer.pending.root(),
+                pending_root_new: pend.root(),
+            },
+            commitment,
+            // ...pero el aviso declara IMPORTE, coherente con la prueba:
+            // la mitigacion de §73.4 no puede saltar.
+            notice: PendingNotice { position, salt, amount: IMPORTE },
+        };
+
+        let deposito = layer.apply_mint_to_pending(&recibo);
+
+        // ===== PASO 2: cobrar con el aviso VERDADERO =====
+        if deposito.is_ok() {
+            let aviso_real = PendingNotice { position, salt, amount: inflado };
+            let estado_bob = state_of(&layer, bob);
+            if let Ok(cobro) =
+                layer.claim(BaseElement::new(SK_BOB), bob, &estado_bob, &aviso_real)
+            {
+                let _ = layer.apply_claim(&cobro, bob, &estado_bob, &aviso_real);
+            }
+        }
+
+        // ===== LO UNICO QUE IMPORTA AL FINAL =====
+        let suministro = layer.total_supply();
+        let en_cuentas: u64 = layer.records.values().map(|r| r.balance).sum();
+        let en_transito = layer.total_pending();
+
+        assert!(
+            en_cuentas + en_transito <= suministro,
+            "CONSERVACION ROTA (entrada 40, camino residual de §73.4): hay \
+             {en_cuentas} en cuentas y {en_transito} en transito, y el \
+             suministro emitido es {suministro}. Deposito: {deposito:?}. \
+             Saldo de Bob: {:?}. El circuito no ata el compromiso al importe \
+             declarado, y la capa no puede cerrarlo porque no conoce la \
+             identidad del receptor: el arreglo va en el circuito.",
+            layer.balance_of(bob)
+        );
+    }
+
     /// **TESTIGO 5: ¿hace falta la clave del receptor para COBRAR?**
     ///
     /// `apply_claim` acredita `receiver_state.balance + notice.amount` con

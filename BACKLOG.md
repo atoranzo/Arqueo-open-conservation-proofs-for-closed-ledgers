@@ -539,9 +539,20 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   parcial** (§73.4). Camino residual **sin medir**: depositar un compromiso
   de un millon declarando doscientos cincuenta mil -aviso y prueba coherentes
   entre si- y cobrarlo con el aviso verdadero, porque `apply_claim` no
-  contrasta el importe contra `pending_amounts`. **Medir eso es lo
+  contrasta el importe contra `pending_amounts`. ~~**Medir eso es lo
   siguiente**, y decide si la 40 es un hueco de auditabilidad externa o
-  conservacion rota en produccion.
+  conservacion rota en produccion.~~ **MEDIDO el 31-07-2026 (§74): es
+  CONSERVACION ROTA.** Bob acaba con 1.000.000 y el suministro emitido es
+  250.000. ⚠️ **El deposito devolvio `Ok(())` con la prueba ya verificada**,
+  y el cobro **no falsifica nada** —el compromiso del millon esta de verdad
+  en el arbol—: no hay ningun paso que un verificador pueda detectar.
+  ⚠️ **El arreglo minimo NO basta** (§74.2): mover `C_PEND_IN`/`C_PEND_VAL`
+  al carril B deja libres siete elementos -capacidad y relleno- que
+  `C_PEND_VAL` no fija. Dimensionado en §74.3: `C_PEND_VAL` de 5 a 12
+  ranuras, 89→96 en el `_climb` y 125→132 en produccion, en **los dos
+  circuitos**. Criterio de exito: los tres testigos rojos en verde.
+  **Es hoy la entrada de mas peso de esta lista**, por delante del README y
+  de retirar las vias antiguas.
 
   ~~Original:~~ **40. ⚠️ El carril B del compromiso pendiente no esta atado.**
   `C_PEND_IN` y `C_PEND_VAL` restringen **solo el carril A** -no hay ningun
