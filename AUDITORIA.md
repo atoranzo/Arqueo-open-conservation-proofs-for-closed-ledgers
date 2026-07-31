@@ -6756,6 +6756,79 @@ seccion**. Eso era el sintoma: nada la respaldaba porque nunca se analizo.
 Y lo que decia era ademas **falso a estas alturas** —describia algo
 corregido—, asi que releerla confirmaba que estaba «bajo control».
 
+## 83. El backlog auditado a si mismo, y la hipotesis que fallo
+
+La entrada 15 resulto describir un problema **ya corregido** (§82), y era la
+unica sin referencia a ninguna seccion. La hipotesis era obvia: **buscar las
+demas sin respaldo, porque tendran el mismo problema.**
+
+### 83.1 Nueve, no una
+
+| entradas abiertas sin ninguna referencia | 9 de 18 |
+|---|---|
+
+`11, 12, 16, 17, 19, 20, 22, 28, 42`.
+
+### 83.2 ⚠️ Y revisarlas una a una absolvio a SIETE
+
+- **22** —la que mas riesgo parecia, por llevar una cifra publicada— resulto
+  estar **guardada por un test** (`cost_per_transfer_stays_stable`) con
+  margenes anchos a proposito, que **ya salto una vez** en la migracion a la
+  via en dos fases y tenia razon (§31). Medido hoy: 123,0 por mil, dentro de
+  la guarda.
+- **12** tiene su respaldo en §30 y en un test que lo ejercita.
+- **11, 17, 19** son constataciones de ausencia: no hay seccion porque no
+  hay nada que analizar.
+- **16, 28** hablan de documentos externos, verificables contra ellos.
+- **42** se escribio hoy y solo le faltaba citar §73.4.
+
+> **La hipotesis era falsa.** «Sin seccion detras» no predice que la entrada
+> sea falsa: predice que **nadie la ha releido**, que es condicion necesaria
+> para envejecer mal, no suficiente. La 15 lo era por otra razon —describia
+> un arreglo ya hecho—.
+
+Se registra porque un barrido que confirma lo que se esperaba enseña menos
+que uno que lo desmiente, y porque la tentacion al ver «9 de 18 sin
+respaldo» era anunciar nueve problemas.
+
+### 83.3 Lo unico accionable que aparecio: una unidad
+
+El arnes de metricas calcula la acumulacion asi:
+
+```rust
+"...{:.1} MB acumulados", (tx_bytes * 1000) as f64 / 1_048_576.0
+```
+
+Divide entre 2^20 —**MiB**— y lo etiqueta **«MB»**. Lo mismo con «~126 KB
+por pago»: medido son 129.014 B = **126,0 KiB** exactos.
+
+La convencion es coherente en todo el proyecto **y llega a los tres
+preprints**:
+
+| lectura | valor |
+|---|---|
+| Medido el 31-07-2026, en MiB | **123,0** |
+| Publicado (MiB implicito) | 120,4 → deriva 2,2 %, dentro de la guarda |
+| **Si el lector toma MB = 10^6** | **129,0** → lo publicado dice **7,2 % menos** |
+
+No es un error de medicion: es una etiqueta. Pero esta en material con DOI,
+y va con las entradas 16 y 28.
+
+### 83.4 La 20 era la unica irrefutable
+
+Decia *«implementada solo en parte»*. Sin decir que parte, no se puede
+confirmar ni refutar.
+
+> **Una entrada que no se puede refutar no envejece: se queda para siempre
+> pareciendo pendiente.** Es peor que una equivocada, porque la equivocada
+> al menos puede corregirse cuando alguien la mire.
+
+Descompuesta, son cuatro casos y **dos estan hechos**: rotacion de custodios
+por uso, y `recover` para la clave de cuenta. Falta el recifrado del ledger.
+Y la gobernanza **es inmutable por diseño**, no un hueco —aunque su coste,
+que una clave de gobernanza comprometida lo esta para siempre, si merece
+decision propia—.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

@@ -467,10 +467,19 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
 
 - [ ] **11. Canal lateral de ISO 20022.** Posicion, aleatorio e importe del
   pendiente viajan fuera del mensaje, sin especificar como; bloquea
-  cualquier piloto.
+  cualquier piloto. **Comprobable**: `grep -n "PendingNotice"
+  crates/zk-ssl/src/iso.rs` — el aviso que el receptor necesita para cobrar
+  no forma parte del mensaje ISO que se genera. **Constatacion de ausencia,
+  no analisis**: no hay seccion porque no hay nada que analizar hasta que se
+  especifique el canal.
 
 - [ ] **12. Sin devolucion para un pendiente no cobrado.** El importe queda
-  inmovilizado y no hay camino de vuelta implementado.
+  inmovilizado y no hay camino de vuelta implementado. **Respaldo**: §30, y
+  el test `sending_to_a_nonexistent_recipient_loses_the_money`, que lo
+  ejercita y lo deja anotado —«el dinero salio» y «esta en un pendiente que
+  nadie reclamara»—. ⚠️ **La invariante global SE CUMPLE**: el importe sigue
+  contando en el suministro y es inalcanzable a la vez. No es un fallo de
+  conservacion; es dinero perdido con la contabilidad cuadrada.
 
 - [x] **13. Senal temporal para el pagador: ya declarada, coherente.**
   ~~Puede recomputar el compromiso y ver cuando se cobra; declarado, no
@@ -516,11 +525,19 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
 
 - [ ] **16. Referencias cruzadas de los preprints.** Los tres citan
   versiones anteriores de sus companeros; primera cosa de la cuarta
-  revision.
+  revision. **Comprobable** contra los propios ficheros de `doc/`, sin
+  necesidad de seccion. ⚠️ **La cuarta revision ya no es solo esto**: se le
+  han acumulado la 28 —el cobro—, la 15 —el espacio de claves de 64 bits,
+  que §82.4 muestra que el paper no menciona pese a usar el criterio de los
+  128 bits— y la unidad MiB/MB de la 22.
 
 ## E. Operacion
 
-- [ ] **17. Replica y alta disponibilidad.** El nodo es punto unico de
+- [ ] **17. Replica y alta disponibilidad.** **Comprobable**: `grep -rn
+  "replica\|cluster\|raft" crates/zk-ssl/src/` no devuelve nada.
+  ⚠️ **Constatacion de arquitectura, no hallazgo**: no hay seccion porque no
+  hay nada medido que registrar, y va con la entrada 23. El nodo es punto
+  unico de
   fallo.
 
 - [ ] **18. Bloqueo de directorio de `sled`.** Puede impedir un reinicio
@@ -532,11 +549,36 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   mismo, y ahi no hay reintento de test que valga. Deja de ser una
   limitacion teorica.
 
-- [ ] **19. Sin log de escritura anticipada.** Un fallo entre operaciones
+- [ ] **19. Sin log de escritura anticipada.** **Comprobable**: `grep -rn
+  "write_ahead\|journal" crates/zk-ssl/src/` no devuelve nada. Un fallo
+  entre operaciones
   detiene el arranque pidiendo intervencion manual: correcto, pero no
   automatico.
 
-- [ ] **20. Rotacion de claves operativas.** Implementada solo en parte.
+- [ ] **20. Rotacion de claves: DOS de cuatro casos, y uno no es un hueco.**
+  ~~Implementada solo en parte.~~ ⚠️ **«En parte» no se podia ni confirmar ni
+  refutar**, y esa era su unica pega: una entrada irrefutable no envejece, se
+  queda para siempre pareciendo pendiente (§83). Descompuesta y comprobada el
+  31-07-2026:
+  - ✅ **Custodios**: rotacion **por uso**, no por tiempo —esta capa no tiene
+    nocion de tiempo—. `custodian_uses` sube con cada emision, congelacion y
+    recuperacion; al llegar a `max_custodian_uses` los custodios dejan de
+    poder actuar hasta que la gobernanza rote el conjunto (`lib.rs`, campo
+    `max_custodian_uses`).
+  - ✅ **Clave de cuenta**: `recover` deja fuera la clave comprometida, con
+    autorizacion de custodios. Test:
+    `recovery_locks_out_the_compromised_key`.
+  - ❌ **Clave de cifrado del ledger**: **no hay recifrado**. Comprobable:
+    `grep -rn "rekey\|re_encrypt" crates/zk-ssl/src/` no devuelve nada.
+    Cambiar la contraseña exige reconstruir el ledger.
+  - ⚠️ **Gobernanza**: `governance_set_root` **solo se fija en el
+    constructor** y no tiene modificador —comprobable: `grep -n
+    "governance_set_root" crates/zk-ssl/src/lib.rs` da lectura y
+    constructor—. **Es inmutable por diseño, no un hueco**: si se pudiera
+    rotar, quien controlara el conjunto nuevo podria cambiar los custodios
+    (test `the_governance_set_survives_restart`). El coste es que **una
+    clave de gobernanza comprometida lo esta para siempre**, y eso si merece
+    decision propia.
 
 - [ ] **21. Delegacion de prueba a clientes ligeros.** Exige verificar una
   firma dentro del circuito: **~8.000 filas** con esquema Winternitz,
@@ -545,7 +587,16 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   en el codigo, se busco donde no estaba. Mismo primitivo que la 33.
 
 - [ ] **22. Agregacion de pruebas.** 120,4 MB por mil pagos es coste, no
-  parada, pero crece linealmente.
+  parada, pero crece linealmente. **Respaldo**: §31 explica por que la cifra
+  paso de 59,1 a 120,4 —un pago son DOS pruebas desde la via en dos fases— y
+  la guarda `metrics::tests::cost_per_transfer_stays_stable` la vigila con
+  margenes anchos a proposito, **para detectar un cambio de orden de
+  magnitud, no el byte exacto**. Ya salto una vez, en esa migracion, y tenia
+  razon. Medido el 31-07-2026: **123,0 por mil**, dentro de la guarda.
+  ⚠️ **Pero la UNIDAD esta mal etiquetada** (§83.3): el arnes divide entre
+  `1_048_576` —MiB— y lo imprime como «MB», y esa etiqueta llega a
+  `PAPER.md`, `PAPER_EN.md` y `QUESTIONS.md`. Un lector que tome MB = 10⁶
+  leera **7,2 % menos** de lo real: son **129,0 MB**. Va con la 16 y la 28.
 
 ## F. Publicacion, cuando el circuito este cerrado
 
@@ -561,9 +612,17 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   Con esto el **frente de grados (6, 24, 25, 34) queda cerrado**: decidido y
   documentado, sin migrar nada.
 
-- [ ] **28. Corregir los tres preprints tras la 27.** Describen el cobro
-  como demostracion de titularidad. No tocar Zenodo hasta que 27 este
-  corregida y verificada.
+- [ ] **28. Corregir los tres preprints: ya no es solo la 27.** Describen el
+  cobro como demostracion de titularidad —§27, corregida y verificada—. ⚠️ **Y
+  desde el 31-07-2026 se le han sumado tres cosas mas**, todas medidas:
+  (a) §73.2 — los tres citan como argumento institucional central que la
+  clave de gasto no sale de la maquina del cliente, y **la capa no lo imponia
+  hasta ese dia** porque no verificaba las pruebas; (b) §82.4 — el paper
+  llama al techo de 63 bits de solidez «insuficiente y no comparable con los
+  ~128 bits», y **no aplica ese criterio al espacio de claves**, que es de 64
+  bits (entrada 15); (c) §83.3 — la cifra de acumulacion esta en MiB
+  etiquetado «MB», un 7,2 % por debajo si se lee en SI (entrada 22).
+  ⚠️ **No tocar Zenodo hasta tener las cuatro resueltas**, no solo la 27.
 
 ## G. Otro proyecto, no una incidencia
 
@@ -706,6 +765,8 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   (indices 0 y 1) y a congelados (arbol vacio)-, **sin verificar**.
 
 - [ ] **42. `mint_to_pending` diverge de `mint` en el error del tope.**
+  **Respaldo**: §73.4, donde se decidio no tocar la via antigua al corregir
+  la 43 porque cambiar su error cambia lo que ven sus tests.
   La via antigua devuelve `OverRegulatoryLimit` —el error del limite
   regulatorio de una **transferencia**— para una violacion del **tope de
   emision**, donde `mint` siempre devolvio `SupplyCapExceeded`. Y suma sin
