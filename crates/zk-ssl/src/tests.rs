@@ -427,7 +427,7 @@ use super::*;
         let good = crypto::LedgerKey::from_passphrase("la correcta");
 
         {
-            let mut layer = SovereignLayer::open_encrypted(
+            let mut layer = open_encrypted_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
                 Some(good.clone()),
             )
@@ -437,7 +437,7 @@ use super::*;
 
         // Con la contrasena correcta: se recupera.
         {
-            let layer = SovereignLayer::open_encrypted(
+            let layer = open_encrypted_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
                 Some(good),
             )
@@ -447,7 +447,7 @@ use super::*;
 
         // Con OTRA contrasena: falla.
         let bad = crypto::LedgerKey::from_passphrase("la incorrecta");
-        let r = SovereignLayer::open_encrypted(
+        let r = open_encrypted_retry(
             &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
             Some(bad),
         );
@@ -458,7 +458,7 @@ use super::*;
         );
 
         // Y SIN contrasena tampoco: los datos estan cifrados en disco.
-        let r2 = SovereignLayer::open_encrypted(
+        let r2 = open_encrypted_retry(
             &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
             None,
         );
@@ -485,7 +485,7 @@ use super::*;
         // Habria fallado igual con un cifrado perfecto.
         const SALDO: u64 = 0x05A3_B7C9; // 94.615.497
         {
-            let mut layer = SovereignLayer::open_encrypted(
+            let mut layer = open_encrypted_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
                 Some(crypto::LedgerKey::from_passphrase("clave")),
             )
@@ -1332,6 +1332,19 @@ use super::*;
     /// **quien controlara ese otro conjunto podría cambiar los
     /// custodios**.
     #[test]
+    // ⚠️ **Se salta en depuracion por el negativo que lleva dentro.**
+    //
+    // El nombre suena a camino legitimo, pero la propiedad esta en el
+    // impostor: claves de custodio con caminos de gobernanza. Esa traza no
+    // cumple `main_trace(16, 39)` y en depuracion panica al generar.
+    //
+    // Mismo caso que `a_custodian_cannot_change_the_custodian_set`, y
+    // **quedo escondido** hasta que se clasificaron los ochenta fallos por
+    // clase de panico en vez de contarlos (§78).
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "escenario de rechazo: la traza es invalida a proposito y en depuracion winterfell lo caza al generar (§78)"
+    )]
     fn the_governance_set_survives_restart() {
         let path = temp_path("gov");
         {
@@ -2170,6 +2183,23 @@ use super::*;
     /// Es la prueba de que la jerarquía funciona: quien puede emitir y
     /// recuperar cuentas no puede cambiar quién tiene ese poder.
     #[test]
+    // ⚠️ **Se salta en depuracion, y no por estar mal.**
+    //
+    // El impostor lleva claves de custodio por caminos de gobernanza, asi
+    // que su carril **no llega a la raiz del conjunto** y la asercion
+    // `main_trace(16, 39)` no se cumple. Eso es justo lo que el test
+    // comprueba, y en release lo caza el verificador.
+    //
+    // En depuracion winterfell comprueba las aserciones **al generar** y
+    // panica dentro de `update_custodians`. No se puede esperar «el rechazo
+    // de cada modo» como en §77.1: **la capa no puede capturar un panico**
+    // para devolver un `Err`.
+    //
+    // Medido el 31-07-2026 (§78). Release SI lo ejecuta.
+    #[cfg_attr(
+        debug_assertions,
+        ignore = "escenario de rechazo: la traza es invalida a proposito y en depuracion winterfell lo caza al generar (§78)"
+    )]
     fn a_custodian_cannot_change_the_custodian_set() {
         let mut layer = new_layer();
         // Una autorizacion construida con claves de CUSTODIO sobre la

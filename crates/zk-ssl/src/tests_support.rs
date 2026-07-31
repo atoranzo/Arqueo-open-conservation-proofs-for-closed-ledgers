@@ -173,6 +173,51 @@ pub fn open_and_fund(layer: &mut SovereignLayer, sk: u64, amount: u64) -> Accoun
 /// El reintento **solo** absorbe errores de E/S. Cualquier otro error
 /// —incluido `ParameterMismatch`, que es lo que estos tests comprueban—
 /// se devuelve de inmediato.
+/// **Hermano de `open_retry` para el ledger cifrado.**
+///
+/// ⚠️ **Por que hace falta, medido y no supuesto.** El 31-07-2026
+/// `an_encrypted_ledger_needs_the_right_passphrase` fallo **1 de 12
+/// pasadas a 16 hilos** en release, con
+/// *«could not acquire lock on .../db: WouldBlock»* al **reabrir
+/// inmediatamente tras cerrar**. Es la entrada 18 —el bloqueo de directorio
+/// de `sled`— con manifestacion medida por primera vez.
+///
+/// ⚠️ **Y `open_retry` ya existia**, con este mismo remedio, usado en 39
+/// llamadas. Las 9 que abren cifrado no lo tenian: la proteccion existia y
+/// no estaba aplicada a todo el codigo, que es el patron de §59.2.
+///
+/// Absorbe **solo** errores de E/S. Cualquier otro —incluida una contraseña
+/// equivocada, que es lo que estos tests comprueban— se devuelve de
+/// inmediato y no puede quedar enmascarado.
+#[allow(clippy::too_many_arguments)]
+pub fn open_encrypted_retry(
+    path: &str,
+    custodians: Digest,
+    governance: Digest,
+    limit: u64,
+    max_supply: u64,
+    max_accounts: u64,
+    key: Option<crate::crypto::LedgerKey>,
+) -> Result<SovereignLayer, LayerError> {
+    for intento in 0..10 {
+        match SovereignLayer::open_encrypted(
+            path,
+            custodians,
+            governance,
+            limit,
+            max_supply,
+            max_accounts,
+            key.clone(),
+        ) {
+            Err(LayerError::Store(StoreError::Io(_))) if intento < 9 => {
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+            otro => return otro,
+        }
+    }
+    unreachable!()
+}
+
 pub fn open_retry(
     path: &str,
     custodians: Digest,

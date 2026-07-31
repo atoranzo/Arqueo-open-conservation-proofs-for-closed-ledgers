@@ -6352,6 +6352,157 @@ para que el README publicara que el crate pasaba en los dos modos. Un test
 rojo permanente que nadie mira es un test que no existe, y ademas **tapa a
 los que aparezcan al lado**.
 
+## 78. Entrada 41: los ochenta, clasificados
+
+No se diagnostican contando: se clasifican por **clase de panico**. Medido
+el 31-07-2026 sobre la salida completa.
+
+### 78.1 Dos clases, y una no era la conocida
+
+| | ruta en winterfell | mensaje | que es |
+|---|---|---|---|
+| **78** | `evaluation_table.rs` | `degrees didn't match` | Grado declarado que no se realiza |
+| **2** | `trace/mod.rs` | `trace does not satisfy assertion` | ⚠️ **Una asercion que la traza no cumple** |
+
+**No son lo mismo.** El primero es un limite de la herramienta —la
+restriccion impone lo que debe, y release genera y verifica bien—. El
+segundo es una traza que no cumple lo que se le exige, y eso **en un camino
+legitimo seria un fallo**.
+
+Contarlos como «ochenta del limite de grados» habria enterrado los dos.
+
+### 78.2 Los dos: escenarios de rechazo
+
+`main_trace(16, 39)`: la columna 16 es `LANE_B + 4` y la fila 39 es
+`ROW_ROOT` —la asercion de que **el segundo carril llega a la raiz del
+conjunto**, o sea, que el segundo firmante pertenece a el—.
+
+- `a_custodian_cannot_change_the_custodian_set`
+- `the_governance_set_survives_restart`
+
+Los dos construyen un **impostor**: claves de custodio recorriendo caminos
+de gobernanza. Su carril no llega a esa raiz, y por eso se rechazan. **Es
+la propiedad que prueban.**
+
+⚠️ **El segundo estaba escondido detras de su nombre.** «Sobrevive al
+reinicio» suena a camino legitimo; la propiedad esta en el negativo que
+lleva dentro, doce lineas mas abajo. Solo aparecio al clasificar por clase
+de panico.
+
+> **Un test cuyo nombre describe la mitad positiva esconde la negativa en
+> los informes de fallo.**
+
+### 78.3 Por que no se arreglan como §77.1
+
+Alli el test comparaba `Rechazo::FallaAlProbar` contra
+`Rechazo::FallaAlVerificar` y bastaba con esperar el que corresponde a cada
+modo.
+
+Aqui el panico ocurre **dentro de la capa**, en `update_custodians`, que
+llama a `prove`. **Una capa no puede capturar un panico para devolver un
+`Err`**, y envolverlo en `catch_unwind` cambiaria lo que el test comprueba
+—§45 retiro treinta y dos de esos bloques por meter una carrera—.
+
+Se marcan con `cfg_attr(debug_assertions, ignore)` y el motivo medido.
+Release los ejecuta.
+
+### 78.4 Los 78 NO se marcan, y es una decision
+
+Podrian marcarse en bloque y dejar la depuracion en verde. **No se hace**,
+por dos razones:
+
+1. El motivo real **varia**: indice de cuenta 0 y 1, arbol de congelados
+   vacio, margen del tope a cero (entradas 6, 24, 25). Ponerles a los 78 el
+   mismo texto seria atribuir en bloque, que es exactamente el error que
+   §77 acaba de desmentir —un sintoma, dos causas—.
+2. La entrada 44 enseño que **cambiar el testigo puede ser mejor que
+   marcarlo**, y el criterio es si el caso degenerado es el que produccion
+   ejecuta (§77.3). Eso hay que decidirlo test a test, no de golpe.
+
+⚠️ **Y el precio de no marcarlos queda dicho**: mientras haya 78 rojos
+permanentes, **un fallo nuevo en depuracion se esconde entre ellos**. Es lo
+que le paso a la entrada 44 durante quien sabe cuanto tiempo.
+
+### 78.5 Lo que esta entrada gana hoy
+
+Pasa de «80 fallos sin diagnosticar» a «78 de clase conocida y decidida, y
+2 de diseño de test, corregidos». Lo que queda es trabajo dimensionado, no
+una incognita.
+
+## 79. Un fallo de 1 de 12, y como aparecio
+
+Release estaba en verde y llevaba todo el dia en verde. Una pasada suelta,
+corrida por otro motivo, dio **200 y 1 fallo**. Las tres siguientes, 201.
+
+### 79.1 Un error mio antes del hallazgo
+
+Al pedir el nombre del test lo puse en una pasada distinta de la que
+fallaba, y esa paso. **Se perdio el nombre por ordenar mal los comandos.**
+
+Queda anotado porque el reflejo natural entonces es «habra sido cosa de una
+vez». Un fallo unico sin explicar es exactamente como empezo §29, y alli la
+primera hipotesis se descarto **mal** con `--test-threads=1` —un hilo
+elimina la carrera que se quiere probar—.
+
+### 79.2 Reproducido subiendo la contencion
+
+Doce pasadas a 16 hilos, guardando cada salida: **1 de 12**.
+
+```
+tests::an_encrypted_ledger_needs_the_right_passphrase
+panicked at tests.rs:444
+  Store(Io("could not acquire lock on \"/tmp/zkssl_encrypted_43267/db\":
+  WouldBlock"))
+```
+
+Es el **bloqueo de directorio de `sled`** —entrada 18, §16.6— con
+manifestacion medida por primera vez. Y el numero de linea importa: **444
+es la reapertura con la contraseña CORRECTA**, no la comprobacion de la
+incorrecta.
+
+> ⚠️ **No era un fallo de seguridad, y habia que comprobarlo.** Ese test
+> tiene dos formas de fallar: una es el bloqueo, y la otra seria que **una
+> contraseña equivocada abriera el ledger cifrado**. La segunda habria sido
+> el quinto hallazgo del dia. Leer el mensaje, y no el nombre del test, es
+> lo que las distingue.
+
+### 79.3 La proteccion existia, en 39 sitios de 48
+
+`open_retry` se escribio precisamente para esto y lo usaban **39**
+llamadas. Las **9** que abren el ledger cifrado iban directas a
+`SovereignLayer::open_encrypted`, sin red.
+
+Es el patron de §59.2, §62.2, §66.2 y §77.4 por **quinta vez en la
+sesion**: algo util aplicado a parte del codigo sin que conste a que parte.
+Y aqui ni siquiera era una herramienta: era una funcion en el mismo crate.
+
+Correccion: `open_encrypted_retry`, hermano exacto, en las **nueve**. Solo
+absorbe errores de E/S; cualquier otro —incluida la contraseña equivocada—
+se devuelve de inmediato y no puede quedar enmascarado.
+
+### 79.4 ⚠️ Doce en verde NO demuestran que este arreglado
+
+Demuestran que **no aparecio en doce**, en las mismas condiciones en que
+antes aparecia una de cada doce. Es evidencia, no prueba.
+
+Lo que si sostiene la correccion es que el remedio es el que `open_retry`
+lleva usando en 39 llamadas sin incidencia registrada.
+
+⚠️ **Y el fondo sigue abierto**: la entrada 18 no se cierra. Esto arregla
+los **tests**; un nodo real que se reinicie inmediatamente tras cerrarse
+puede sufrir lo mismo, y ahi no hay `open_retry` que valga.
+
+### 79.5 Lo que ensena sobre el verde
+
+Los 78 rojos permanentes de depuracion esconden fallos nuevos **por
+ruido** —le paso a la entrada 44—. Este ha ensenado que el verde de release
+tambien esconde, **por escasez**: un fallo de 1 de 12 no aparece en la
+pasada de antes de commitear.
+
+> **Una suite en verde no dice que no haya fallos: dice que no salieron
+> esta vez.** La diferencia solo se ve corriendola muchas veces, y eso no
+> se hace nunca porque en verde no parece hacer falta.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

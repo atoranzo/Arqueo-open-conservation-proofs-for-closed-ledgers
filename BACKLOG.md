@@ -12,7 +12,12 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 19 abiertas, 25 resueltas. Ultima revision: 31 de julio de 2026.
+**Estado**: 19 abiertas, 26 resueltas. Ultima revision: 31 de julio de 2026.
+
+⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
+fallos y aparecieron **dos que no eran la clase conocida** (§78). Los 78
+restantes tienen causa decidida pero **no medida uno a uno**, y marcarlos en
+bloque seria el error que §77 acaba de desmentir.
 
 ⚠️ **El 31-07 aparecio la 43 leyendo codigo para otra cosa**: la capa no
 verificaba las pruebas de la via de pago, y un tercero vaciaba cualquier
@@ -486,7 +491,13 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   fallo.
 
 - [ ] **18. Bloqueo de directorio de `sled`.** Puede impedir un reinicio
-  inmediato tras cerrar (§16.6).
+  inmediato tras cerrar (§16.6). ⚠️ **Manifestacion MEDIDA** el 31-07-2026
+  (§79): hizo fallar un test de release **1 de cada 12 pasadas** a 16 hilos,
+  con `WouldBlock` al reabrir. Los tests quedan protegidos con
+  `open_encrypted_retry` (entrada 45), pero **el fondo sigue abierto**: un
+  nodo real que se reinicie inmediatamente tras cerrarse puede sufrir lo
+  mismo, y ahi no hay reintento de test que valga. Deja de ser una
+  limitacion teorica.
 
 - [ ] **19. Sin log de escritura anticipada.** Un fallo entre operaciones
   detiene el arranque pidiendo intervencion manual: correcto, pero no
@@ -617,7 +628,25 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   degradar a «cosmetico» antes de que un test lo mire**: eso se hizo tres
   veces con la 36.
 
-- [ ] **41. Doce fallos de depuracion sin diagnosticar.**
+- [ ] **41. Ochenta fallos de depuracion: CLASIFICADOS, dos corregidos.**
+  ~~Doce fallos sin diagnosticar.~~ ⚠️ **Eran ochenta, no doce** -los doce
+  eran los de `tests_delegada`; el conteo original miro un subconjunto-.
+  **Clasificados** el 31-07-2026 por clase de panico (§78): **78** son
+  `degrees didn't match` -grado declarado que no se realiza, entradas 6, 24
+  y 25, decidido en §46- y **2** son `trace does not satisfy assertion
+  main_trace(16, 39)`, que **no es la misma clase**: una asercion que la
+  traza no cumple. ✅ **Esos 2 corregidos**: son escenarios de rechazo
+  -impostor con claves de custodio por caminos de gobernanza- y en
+  depuracion winterfell los caza al generar; marcados con el motivo medido.
+  ⚠️ Uno de ellos, `the_governance_set_survives_restart`, **estaba escondido
+  detras de su nombre**: suena a camino legitimo y la propiedad esta en el
+  negativo que lleva dentro (§78.2). ⚠️ **Los 78 NO se marcan en bloque**
+  (§78.4): su causa varia y la 44 enseño que a veces es mejor cambiar el
+  testigo que marcarlo, lo que hay que decidir test a test. **Precio
+  declarado**: mientras sigan rojos, un fallo nuevo en depuracion se esconde
+  entre ellos.
+
+  ~~Original:~~ **41. Doce fallos de depuracion sin diagnosticar.**
   `mint`, `freeze` y `recovery` acumulan doce `tests_delegada` que fallan en
   depuracion con *"transition constraint degrees didn't match"*.
   **Preexistentes**, comprobado con `git stash`. Divergen en los indices
@@ -651,6 +680,21 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   cierra la 40**, cuyo residuo queda declarado en §73.4. ⚠️ **Y va con la
   28**: los tres preprints citan como argumento central una propiedad que
   el circuito demostraba y la capa no imponia (§73.2).
+
+- [x] **45. ✅ Fallo inestable en release: identificado y corregido.**
+  ~~Un fallo unico sin explicar en `zk-ssl` release.~~ **Reproducido**
+  subiendo la contencion —12 pasadas a 16 hilos, **1 de 12**— y no
+  descartandolo con un hilo, que es el error que §29 documenta.
+  `an_encrypted_ledger_needs_the_right_passphrase` fallaba al **reabrir con
+  la contraseña correcta** por el bloqueo de directorio de `sled`
+  (entrada 18). ⚠️ **No era un fallo de seguridad**: la contraseña
+  incorrecta nunca abrio nada, y distinguirlo exigio leer el mensaje y no el
+  nombre del test (§79.2). ✅ **Corregido**: `open_encrypted_retry` en las
+  **nueve** llamadas que abrian cifrado sin red —`open_retry` ya protegia
+  otras 39: la proteccion existia y no estaba aplicada a todo, §59.2 por
+  quinta vez—. 12 de 12 en verde tras el arreglo. ⚠️ **Doce en verde no
+  demuestran que este arreglado** (§79.4), y **la 18 no se cierra**: esto
+  protege los tests, no un nodo real.
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo

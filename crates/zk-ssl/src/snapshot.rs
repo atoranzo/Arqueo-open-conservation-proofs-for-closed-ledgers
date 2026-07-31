@@ -763,7 +763,7 @@ mod tests {
         const SALDO: u64 = 0x05A3_B7C9; // 94.615.497, distintivo
         let key = crypto::LedgerKey::from_passphrase("una contrasena larga de prueba");
         {
-            let mut layer = SovereignLayer::open_encrypted(
+            let mut layer = open_encrypted_retry(
                 &path,
                 custodian_root(),
                 governance_root(),
@@ -819,7 +819,7 @@ mod tests {
         let file = temp_file("snapnokey");
         let key = crypto::LedgerKey::from_passphrase("una contrasena larga de prueba");
         {
-            let mut layer = SovereignLayer::open_encrypted(
+            let mut layer = open_encrypted_retry(
                 &path,
                 custodian_root(),
                 governance_root(),
@@ -850,7 +850,7 @@ mod tests {
         let alice;
         let raiz;
         {
-            let mut layer = SovereignLayer::open_encrypted(
+            let mut layer = open_encrypted_retry(
                 &path,
                 custodian_root(),
                 governance_root(),
@@ -884,7 +884,7 @@ mod tests {
         let buena = crypto::LedgerKey::from_passphrase("la correcta y larga");
         let mala = crypto::LedgerKey::from_passphrase("la incorrecta y larga");
         {
-            let mut layer = SovereignLayer::open_encrypted(
+            let mut layer = open_encrypted_retry(
                 &path,
                 custodian_root(),
                 governance_root(),
