@@ -660,7 +660,7 @@ mod tests {
         use std::time::Instant;
 
         let keys = custodian_keys();
-        let (root, paths) = build_custodian_set(&keys);
+        let (_root, paths) = build_custodian_set(&keys);
 
         // --- Variante A: indice publico ---
         let t0 = Instant::now();

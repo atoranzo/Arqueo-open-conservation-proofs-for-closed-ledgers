@@ -1215,7 +1215,7 @@ mod tests {
             pend_inner,
             [BaseElement::new(amount), BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO],
         );
-        let mut climb_pending = |hoja: Digest| {
+        let climb_pending = |hoja: Digest| {
             let mut cur = hoja;
             for level in 0..TREE_DEPTH {
                 cur = if pending_path.is_right[level] {
