@@ -5308,7 +5308,39 @@ fallar. La disciplina se relajo exactamente donde el riesgo se creia nulo.
 > Un aviso del compilador es auditoria gratuita. Ignorarlos durante diez
 > commits fue una perdida; arreglarlos sin verificar fue peor.
 
-## 62. Qué NO demuestra este documento
+## 62. Dos herramientas, y ninguna cubre lo de la otra
+
+Al ir a `recovery` (entrada 33) aparecio que el proyecto tiene **una segunda
+herramienta de auditoria de circuitos** que no se habia nombrado en esta
+sesion: `crate::mutation::buscar_vacias`, prueba por mutacion que perturba la
+traza celda a celda y comprueba que **cada** restriccion reacciona a algo.
+
+### 62.1 Cubren defectos distintos, y conviene decirlo
+
+| herramienta | detecta | NO detecta |
+|---|---|---|
+| `buscar_vacias` | restricciones que no imponen nada | el solapamiento de §38: la ranura sobrescrita **si** reacciona, solo que a la restriccion equivocada |
+| `check_constraint_layout.py` | ranuras escritas dos veces, desbordadas o muertas | si lo escrito impone algo |
+
+Ninguna es redundante y ninguna basta. Que cada una **declare lo que no
+cubre** es lo unico que evita repetir la falsa seguridad de §59.2.
+
+### 62.2 Cobertura: 15 de 24, y tres eran deuda mia
+
+Doce circuitos tenian el test de vacuidad. **Los tres que se añadieron hoy
+-`circuit_threshold_single`, `circuit_threshold_single_nullifier` y
+`circuit_frozen_climb`- no lo tenian**: deuda creada en esta misma sesion.
+Añadido; los tres pasan.
+
+Quedan **nueve sin cubrir**: `compliance_circuit`, `double_entry`,
+`dual_climb`, `lib`, `merkle`, `nullifier`, `range_check`, `rescue_hash` y
+`solvency`. Se abre como entrada 38.
+
+⚠️ Es el mismo patron que §59.2: una herramienta util que se aplica a parte
+del codigo, sin que en ningun sitio conste a que parte. La diferencia es que
+esta vez se ha contado antes de afirmar nada.
+
+## 63. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos

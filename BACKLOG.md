@@ -456,6 +456,14 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
 
 ## G. Otro proyecto, no una incidencia
 
+- [ ] **38. Prueba de vacuidad en los nueve circuitos que no la tienen.**
+  `crate::mutation::buscar_vacias` detecta restricciones que no imponen nada,
+  y la usan **15 de los 24** circuitos con `impl Air` (§62). Sin ella en
+  `compliance_circuit`, `double_entry`, `dual_climb`, `lib`, `merkle`,
+  `nullifier`, `range_check`, `rescue_hash` y `solvency`. ⚠️ Mismo patron que
+  §59.2: herramienta util aplicada a parte del codigo sin que conste a que
+  parte. Es un test por circuito, no un rediseño.
+
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo
   que se indexe por el nullificador completo (§13, §32, §36).
