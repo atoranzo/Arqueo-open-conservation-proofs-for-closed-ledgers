@@ -478,6 +478,17 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   §59.2: herramienta util aplicada a parte del codigo sin que conste a que
   parte. Es un test por circuito, no un rediseño.
 
+- [ ] **39. La cadena de columnas PERIODICAS no la comprueba nada.**
+  `check_constraint_layout.py` verifica los indices de `result[...]`, pero
+  **no los de `periodic[...]`**: son dos arrays distintos y la herramienta
+  solo mira uno. Al extraer `circuit_mint_climb` se dejaron tres constantes
+  `P_*` muertas en la cadena, `P_SEG_LINK` quedo desplazado y el indice se
+  salio del array (§66.2). ⚠️ **Ahi se noto porque desbordo**; si el
+  desplazamiento fuera hacia ABAJO, la restriccion leeria la columna
+  periodica equivocada **en silencio**. Es el mismo patron que §59.2 y
+  §62.2, por tercera vez: herramienta util que cubre parte del problema sin
+  que conste que parte.
+
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo
   que se indexe por el nullificador completo (§13, §32, §36).

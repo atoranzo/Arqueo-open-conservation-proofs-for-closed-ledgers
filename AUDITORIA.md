@@ -5510,7 +5510,59 @@ sigue abierto**: las dos operaciones que crean dinero siguen exigiendo las
 claves. Tres de cinco no es la mitad del problema resuelto, porque las dos
 que faltan son las que mas importan.
 
-## 66. Qué NO demuestra este documento
+## 66. `mint` extraido: el circuito que prueba el tope
+
+Cuarta aplicacion del patron, y la mas critica: `mint` crea dinero.
+
+### 66.1 Que se queda dentro
+
+De 118 restricciones a **96**, de 45 columnas a **38**. Fuera lo de siempre
+mas tres de los ocho segmentos de rango. Dentro, lo que hace que este
+circuito no pueda reducirse a una subida de Merkle:
+
+- `saldo_nuevo = saldo + importe` y `suministro_nuevo = suministro + importe`
+- **el margen del tope**: `tope - suministro_nuevo` en 64 bits
+
+Sin el segundo, dos custodios podrian firmar una raiz cualquiera y un auditor
+externo no sabria si se respeto el limite. Tiene test por los DOS lados:
+emitir por encima se rechaza, y emitir hasta el tope **exacto** se acepta -un
+circuito que rechazara tambien el borde seria mas restrictivo de lo declarado,
+y eso solo se ve probando los dos-.
+
+### 66.2 ⚠️ El fallo que costo dos rondas, y lo que revela
+
+Se quitaron las periodicas de custodio de su construccion y de su uso, pero
+**no de la cadena de constantes**: `P_CUST_LINK`, `P_POW2` y
+`P_SEL_CUST_ROOT` seguian ahi, desplazando `P_SEG_LINK` tres posiciones. El
+indice se salio del array y `prove` panico con *"len is 36 but the index is
+36"*.
+
+En `recovery` este paso si se hizo; en `mint` se olvido. Lo caza el test
+positivo, no el negativo: los tres negativos pasaban porque **todo** fallaba.
+Es exactamente la razon por la que un test positivo no es opcional aunque
+parezca trivial.
+
+**Y revela un hueco de cobertura**: `check_constraint_layout.py` comprueba
+los indices de `result[...]` pero **no los de `periodic[...]`**. Aqui se noto
+porque desbordo; si el desplazamiento fuera hacia abajo, la restriccion
+leeria la columna periodica equivocada **sin ruido**. Se abre como entrada 39.
+
+Es la tercera vez en la sesion que aparece el mismo patron -herramienta que
+cubre parte del problema sin declarar que parte- despues de §59.2 (el barrido
+saltaba 10 de 24 circuitos) y §62.2 (la prueba de vacuidad cubria 12 de 24).
+
+### 66.3 Lo que el proyecto me evito
+
+El comentario de la lista de grados del circuito original advertia que con
+ocho segmentos el rango llenaba **exactamente** las 512 filas, volviendo
+periodicas de periodo 64 las columnas del segmento. Al bajar a cinco
+(5x64=320) eso deja de ser cierto y el ciclo vuelve a `TRACE_LENGTH`.
+
+Sin ese comentario habria salido un panico de grados y una ronda larga. Es la
+primera vez en la sesion que la documentacion del proyecto **evita** un error
+en vez de al reves.
+
+## 67. Qué NO demuestra este documento
 
 Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
 propios fallos de forma sistemática y ha encontrado algunos**, incluidos
