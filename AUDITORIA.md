@@ -5015,7 +5015,13 @@ codigo redirigio el plan.
 
 ### 57.1 Por que `mint` no era el piloto
 
-En `circuit_mint` la maquinaria de custodios **no es separable**:
+AVISO: **lo que sigue resulto ser falso**, y se corrige en 64.5. La
+maquinaria de custodios de `circuit_mint` SI es separable: ocupa las filas
+272-311, un tramo propio, exactamente igual que en `circuit_recovery` -que se
+extrajo sin problema (64)-. La razon real para dejar `mint` al final es su
+tamaño y que crea dinero, no que este entrelazado.
+
+~~En `circuit_mint` la maquinaria de custodios **no es separable**:~~
 `C_HASH_A/B`, `C_CAP_A/B` y `C_PLACE_A/B` sirven **a la vez** a la subida al
 arbol de cuentas (filas 0-271) y a la de custodios (272-311) —los mismos dos
 carriles, distintos tramos—. Amputar ahi es separar tejido compartido en el
@@ -5427,6 +5433,23 @@ distintos. Cuatro tests de rechazo, y uno de ellos es especifico de esta
 operacion: **una autorizacion para recuperar hacia una identidad no sirve
 para entregar la cuenta a otra**. El compromiso de operacion protege aqui lo
 que mas importa: a quien se le da el control.
+
+### 64.5 Correccion de 57.1: `mint` tampoco esta entrelazado
+
+Al mirar `circuit_mint` para planificar, resulta que su reparto de filas es
+**identico** al de `recovery`: hoja en 0-15, arbol de cuentas hasta 271,
+custodios en 272-311. Y su cadena de restricciones es la misma salvo lo
+propio de emitir.
+
+57.1 dijo que en `mint` la maquinaria de custodios "no es separable" y que
+amputar seria "separar tejido compartido". **Es falso.** Los dos tramos usan
+los mismos carriles pero en **filas distintas**, que es justo lo que hizo
+mecanica la extraccion de `recovery`.
+
+Lo que si es cierto es que `mint` es mas grande (118 ranuras frente a 114) y
+que **crea dinero**, asi que merece mas cuidado. Pero eso es criticidad, no
+enredo, y conviene no confundirlas: una justifica ir despacio, la otra
+habria justificado un rediseño.
 
 ### 64.4 Estado del patron
 
