@@ -7809,6 +7809,77 @@ rellenar con ceros— es la unica posible hoy, y **queda escrita en el propio
 test junto con lo que no ejercita**, para que nadie lo lea como que el flujo
 completo prueba los elementos nuevos. No los prueba.
 
+## 96. ⚠️ RECTIFICACION de §92.14: `open_account` va el ULTIMO
+
+§92.14 —escrita hace una hora— concluyo que **`open_account` sube por
+delante de `claim` y `audit`**, porque migrar mas circuitos no da un bit de
+seguridad mientras la puerta de entrada sea estrecha.
+
+**El razonamiento era correcto y la conclusion, al reves.**
+
+### 96.1 Lo medido: siete operaciones del titular, una funcionaria
+
+| operacion | circuito | ¿clave ancha de verdad? |
+|---|---|---|
+| `client::prove_send` | `circuit_send` ✅ | **funciona** |
+| `two_phase::send` (antigua) | `circuit_send` ✅ | rellena — solo con ceros |
+| `burn` | `circuit_burn` ✅ | rellena — solo con ceros |
+| `client::prove_claim` | `circuit_claim` ❌ | **NO** |
+| `two_phase::claim` | `circuit_claim` ❌ | **NO** |
+| `audit` | `circuit_audit` ❌ | **NO** |
+| `disclose_exact` | `circuit_audit` ❌ | **NO** |
+| `prove_minimum` | `circuit_audit` ❌ | **NO** |
+
+### 96.2 ⚠️ Lo que habria pasado
+
+Una cuenta abierta con clave ancha **de verdad** —elementos no nulos— podria
+**enviar** un pago y **nada mas**: no podria cobrarlo, ni quemar, ni
+auditarse, porque esas vias derivan la identidad **estrecha** y no
+coincidiria.
+
+Y el sistema es de **dos fases**:
+
+> **Enviar sin poder cobrar deja el dinero en un pendiente inmovilizado** —
+> que es exactamente la entrada 12, provocada a proposito por la propia
+> migracion.
+
+> **Migrar `open_account` ahora abriria una puerta a un pasillo cerrado. Y
+> peor: una puerta por la que se mete dinero y no se saca.**
+
+### 96.3 Por que el error, y no fue de razonamiento
+
+§92.14 midio bien —los 256 bits no son alcanzables— y de ahi salto a «hay
+que abrir la puerta primero». **Lo que no se conto fue si habia salidas.**
+
+Se propuso incluso el cambio concreto —firma a `Digest`— con el argumento
+de que §90 evita romper cuentas existentes. Eso es cierto **y es
+irrelevante**:
+
+> El problema no era **lo que rompia**, sino que **lo que habilitaba no
+> servia**. Un cambio puede ser seguro para lo que ya hay y aun asi crear
+> algo inservible.
+
+Lo paro una pregunta: *«¿cuantos circuitos faltan para que una clave ancha
+sea usable de verdad?»* — es decir, **contar antes de proponer**, que es lo
+que este documento lleva noventa y seis secciones repitiendo y lo que fallo
+otra vez.
+
+### 96.4 El orden correcto
+
+**`claim` → `audit` → `open_account` y la capa.**
+
+`claim` **primero de todos**, porque sin el una cuenta ancha no puede
+recuperar su dinero. `open_account` **el ultimo**, porque es lo unico que no
+puede ir antes que las salidas.
+
+### 96.5 ⚠️ Riesgo que queda declarado
+
+**Quien migre `open_account` sin leer esto crea cuentas que pierden fondos.**
+No es un riesgo teorico: el cambio es de una linea, parece progreso, y §92.14
+lo recomendaba.
+
+Por eso se registra hoy y no cuando se retome.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

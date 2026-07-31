@@ -605,10 +605,18 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   crea cuentas con clave de 64, asi que la clave ancha **no es alcanzable
   desde la capa**. Lo destapo `a_whole_payment...` rechazando con
   `NotTheAccountHolder`, y el circuito tenia razon.
-  **Quedan, en este orden**: **`open_account` y la capa PRIMERO** —migrar mas
-  circuitos no da un bit de seguridad mas mientras la puerta de entrada sea
-  estrecha—, y despues `claim` y `audit`, que **no encaja en el patron**:
-  `COL_KEY` en 13, ancho 24 y **cero** sitios `state[8] = spend_key`.
+  ⚠️⚠️ ~~**Quedan, en este orden**: `open_account` y la capa PRIMERO.~~
+  **RECTIFICADO el 01-08-2026 (§96): `open_account` va el ULTIMO.** Se conto
+  cuantas operaciones del titular funcionarian con una clave ancha de verdad:
+  **una de siete**. Podria **enviar** y no cobrar, ni quemar, ni auditarse
+  —esas vias derivan estrecho—. Y en un sistema de dos fases, **enviar sin
+  poder cobrar deja el dinero en un pendiente inmovilizado** (entrada 12).
+  ⚠️ **Migrar `open_account` ahora crearia cuentas que pierden fondos**, y el
+  cambio es de una linea y parece progreso (§96.5).
+  **Orden correcto**: **`claim` PRIMERO** —sin el, una cuenta ancha no
+  recupera su dinero—, luego `audit` —que **no encaja en el patron**:
+  `COL_KEY` en 13, ancho 24 y **cero** sitios `state[8] = spend_key`—, y
+  `open_account` y la capa **al final**.
   ⚠️ **La derivacion estrecha NO hay que migrarla en los 22 ficheros**: §90
   la hace equivalente para una clave rellenada, asi que quien solo *calcula*
   una identidad puede seguir usandola.
