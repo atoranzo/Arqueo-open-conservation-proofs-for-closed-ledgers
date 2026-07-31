@@ -65,6 +65,140 @@ mod tests {
     /// operaciones de partes distintas: quien produce la prueba puede no
     /// ser quien la acepta. Confundirlas en un solo número escondería que
     /// la verificación es dos órdenes de magnitud más barata.
+    /// **Cuanto cuesta VERIFICAR una prueba, sola.**
+    ///
+    /// ⚠️ `apply` no responde a esto: verifica, muta el arbol **y escribe a
+    /// disco**. Los tres juntos son lo que mide `metrics_of_the_layer`.
+    ///
+    /// Lo pregunta `ESCALADO.md`, que dimensiona el shard sobre **4 ms por
+    /// prueba** presentandolos como medidos —y no lo estaban—. De ese numero
+    /// cuelga la primera etapa del cuello de botella:
+    ///
+    /// ```text
+    ///   4 ms -> 8.000 TPS/shard ->   64 shards
+    ///  20 ms -> 1.600 TPS/shard -> ~310 shards
+    ///  74 ms ->   430 TPS/shard -> ~1150 shards
+    /// ```
+    ///
+    /// **INSTRUMENTO, no comprobacion.** Correr en release:
+    ///
+    /// ```text
+    /// cargo test --release -p zk-ssl el_coste_de_verificar \
+    ///     -- --ignored --nocapture
+    /// ```
+    #[test]
+    #[ignore = "instrumento de medida, no comprobacion: correr a mano"]
+    fn el_coste_de_verificar_una_prueba() {
+        use stark_experiment::circuit_claim::ClaimAir;
+        use stark_experiment::circuit_send::SendAir;
+        use std::time::Instant;
+
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let estado_a = state_of(&layer, alice);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+
+        let envio = layer
+            .send(
+                BaseElement::new(SK_ALICE),
+                alice,
+                &estado_a,
+                receptor,
+                salt_de(0x11E7),
+                250_000,
+            )
+            .expect("envio");
+
+        // El `apply` completo, para poder repartirlo despues.
+        let t = Instant::now();
+        layer
+            .apply_send(&envio, alice, &estado_a, 250_000)
+            .expect("aplicar envio");
+        let send_apply = t.elapsed().as_secs_f64() * 1000.0;
+
+        let estado_b = state_of(&layer, bob);
+        let cobro = layer
+            .claim(BaseElement::new(SK_BOB), bob, &estado_b, &envio.notice)
+            .expect("cobro");
+        let t = Instant::now();
+        layer
+            .apply_claim(&cobro, bob, &estado_b, &envio.notice)
+            .expect("aplicar cobro");
+        let claim_apply = t.elapsed().as_secs_f64() * 1000.0;
+
+        let accepted = AcceptableOptions::OptionSet(vec![proof_options()]);
+
+        // ===== VERIFICAR, Y SOLO VERIFICAR =====
+        //
+        // Ni arbol, ni disco, ni las comprobaciones de estado de la capa.
+        // Es lo unico que un shard paraleliza.
+        const N: usize = 50;
+
+        let mut send_ver = 0.0;
+        for i in 0..=N {
+            let p = winterfell::Proof::from_bytes(&envio.proof).expect("prueba");
+            let t = Instant::now();
+            verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                p,
+                envio.public_inputs.clone(),
+                &accepted,
+            )
+            .expect("el envio honesto debe verificar");
+            // La primera es calentamiento y no cuenta.
+            if i > 0 {
+                send_ver += t.elapsed().as_secs_f64() * 1000.0;
+            }
+        }
+        send_ver /= N as f64;
+
+        let mut claim_ver = 0.0;
+        for i in 0..=N {
+            let p = winterfell::Proof::from_bytes(&cobro.proof).expect("prueba");
+            let t = Instant::now();
+            verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                p,
+                cobro.public_inputs.clone(),
+                &accepted,
+            )
+            .expect("el cobro honesto debe verificar");
+            if i > 0 {
+                claim_ver += t.elapsed().as_secs_f64() * 1000.0;
+            }
+        }
+        claim_ver /= N as f64;
+
+        println!("\n=== Coste de VERIFICAR, aislado ===\n");
+        println!("  {:<10} {:>10} {:>10} {:>10}", "", "verificar", "apply", "resto");
+        println!(
+            "  {:<10} {:>8.2} ms {:>8.1} ms {:>8.1} ms",
+            "envio", send_ver, send_apply, send_apply - send_ver
+        );
+        println!(
+            "  {:<10} {:>8.2} ms {:>8.1} ms {:>8.1} ms",
+            "cobro", claim_ver, claim_apply, claim_apply - claim_ver
+        );
+        println!();
+        let media = (send_ver + claim_ver) / 2.0;
+        let por_seg = 1000.0 / media;
+        println!("  media por prueba        {media:>8.2} ms");
+        println!("  pruebas/s por nucleo    {por_seg:>8.0}");
+        println!("  64 nucleos              {:>8.0} TPS", por_seg * 64.0);
+        println!(
+            "  con margen del 50 %     {:>8.0} TPS/shard",
+            por_seg * 64.0 * 0.5
+        );
+        let shards = 498_000.0 / (por_seg * 64.0 * 0.5);
+        println!("  shards para 498.000 TPS {shards:>8.0}");
+        println!();
+        println!("  ⚠️ `ESCALADO.md` supone 4 ms -> 250/s -> 64 shards, y los");
+        println!("     presenta como MEDIDOS. Este es el numero real, y §11");
+        println!("     de ese documento no lo lista entre sus incertidumbres.");
+        println!();
+        println!("  ⚠️ Esto mide UN nucleo de esta maquina con estas");
+        println!("     `proof_options`. No mide un shard.");
+    }
+
     #[test]
     fn metrics_of_the_layer() {
         println!("\n=== ZK-SSL — metricas de la capa (release) ===\n");
