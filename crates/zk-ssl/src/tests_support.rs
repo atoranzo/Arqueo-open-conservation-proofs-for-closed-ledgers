@@ -3,6 +3,16 @@
 //! Viven aquí y no en `tests.rs` porque el puente ISO también los
 //! necesita, y duplicarlos haría que dos suites divergieran en silencio.
 
+// ⚠️ **`open_and_fund` usa la via antigua `mint()`, y se llama 145 veces.**
+//
+// Es el punto por el que la mitad de la suite depende de la via marcada
+// **sin nombrarla**. Migrarlo a la delegada multiplica por tres el coste de
+// fondear una cuenta -una prueba pasa a ser tres- y ese numero no esta
+// medido: ver AUDITORIA 80.
+//
+// §65.3: el permiso va en los tests, no en la definicion.
+#![allow(deprecated)]
+
 use super::*;
 
 pub const SK_ALICE: u64 = 0xA11CE;

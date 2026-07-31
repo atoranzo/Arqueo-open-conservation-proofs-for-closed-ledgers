@@ -58,8 +58,10 @@ impl SovereignLayer {
         since = "0.1.0",
         note = "Exige las claves de custodio EN EL OPERADOR: es el fallo de la \
                 entrada 32. Usa la via delegada, donde cada custodio prueba en \
-                su maquina. Se conserva mientras `mint` y `mint_pending` no \
-                tengan equivalente delegado (ver AUDITORIA 65)."
+                su maquina. Las CINCO operaciones ya la tienen desde el \
+                31-07-2026 (AUDITORIA 71), asi que esta ya no hace falta: se \
+                conserva solo hasta migrar sus usos, inventariados en \
+                AUDITORIA 80."
     )]
     pub fn set_frozen(
         &self,

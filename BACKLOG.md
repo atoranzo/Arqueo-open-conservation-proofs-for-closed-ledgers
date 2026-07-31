@@ -175,7 +175,22 @@ La 32 encabeza. La 33 es su correccion de diseno. La 6, 25 y 24 son el
 frente de los grados, con el diagnostico ya cerrado (§37.7) y el precio por
 decidir.
 
-- [ ] **32. ⚠️ Las claves de custodio SI llegan al operador.** No hay via
+- [ ] **32. ⚠️ Las claves de custodio SI llegan al operador.**
+  ⚠️ **Estado al 31-07-2026**: las **cinco** operaciones tienen via delegada
+  (§71) y las **cinco** vias antiguas estan marcadas `#[deprecated]` —§65
+  habia marcado tres; `mint` y `mint_to_pending` no, porque les faltaba la
+  delegada, y las tres notas viejas condicionaban la marca a eso mismo, asi
+  que estaban rancias (§80.1)—. **Lo que queda es RETIRARLAS**, y el
+  inventario esta medido en §80: **138 llamadas** directas y, sobre todo,
+  **145 usos de `open_and_fund`**, que llama a `.mint()` por dentro — la
+  mitad de la suite depende de la via antigua **sin nombrarla**. ⚠️ **El
+  precio no esta medido**: la delegada genera tres pruebas donde la antigua
+  genera una, y la suite esta en 31 s / 250 s. **Siguiente paso concreto
+  (§80.5)**: migrar solo `open_and_fund` en una rama y cronometrar. Con ese
+  numero se decide entre retirar o declarar que no se retira, como §46 hizo
+  con la 6. ⚠️ Mientras existan, el fallo esta **evitable, no cerrado**
+  (§65.5, §80.6).
+  ~~Original:~~ No hay via
   cliente para operaciones privilegiadas: `ThresholdAuth` lleva las claves
   en crudo y la capa construye la traza (§41). Quienes conservan su clave
   solo pueden mover su dinero; quienes la entregan pueden crearlo.

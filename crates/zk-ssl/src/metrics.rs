@@ -35,6 +35,12 @@
 
 #[cfg(test)]
 mod tests {
+    // El arnes mide la via ANTIGUA a proposito: es la que las cifras
+    // publicadas describen. Cuando se migre (entrada 32) las mediciones
+    // cambian con ella, y eso hay que declararlo, no absorberlo. §65.3: el
+    // permiso va aqui, no en la definicion.
+    #![allow(deprecated)]
+
     use crate::tests_support::*;
     use crate::*;
     use std::time::{Duration, Instant};

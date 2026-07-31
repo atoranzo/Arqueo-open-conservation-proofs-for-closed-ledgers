@@ -14,6 +14,15 @@ impl SovereignLayer {
     /// Exige **dos custodios distintos** del conjunto autorizado, con
     /// índices en orden estricto. Un 2-de-N en el que un custodio pudiera
     /// contar dos veces sería un 1-de-N disfrazado.
+    #[deprecated(
+        since = "0.1.0",
+        note = "Exige las claves de custodio EN EL OPERADOR: es el fallo de la \
+                entrada 32. Usa la via delegada, donde cada custodio prueba en \
+                su maquina. Las CINCO operaciones ya la tienen desde el \
+                31-07-2026 (AUDITORIA 71), asi que esta ya no hace falta: se \
+                conserva solo hasta migrar sus usos, inventariados en \
+                AUDITORIA 80."
+    )]
     pub fn mint(
         &self,
         auth: &ThresholdAuth,

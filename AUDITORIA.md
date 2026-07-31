@@ -6503,6 +6503,91 @@ pasada de antes de commitear.
 > esta vez.** La diferencia solo se ve corriendola muchas veces, y eso no
 > se hace nunca porque en verde no parece hacer falta.
 
+## 80. Retirar las vias antiguas: el inventario antes de cortar
+
+§65.4 fija que se retiran «cuando las cinco operaciones tengan via
+delegada». Eso se cumplio el 31-07-2026 (§71). Esto mide **que costaria**,
+antes de tocar nada.
+
+### 80.1 Lo que ya se ha hecho, y era la mitad que faltaba
+
+§65 marco **tres de cinco**. `mint` y `mint_to_pending` quedaron sin marca
+**precisamente porque les faltaba la via delegada**.
+
+Y las tres notas existentes decian: *«Se conserva mientras `mint` y
+`mint_pending` no tengan equivalente delegado»*. **Esa condicion se cumplio
+esta mañana**, asi que las tres estaban rancias desde entonces.
+
+Corregido: las **cinco** marcadas, con la nota al dia. Cero avisos, porque
+§65.3 se respeta —el permiso va en los tests— y `metrics.rs` y
+`tests_support.rs`, que no lo tenian, lo llevan ahora con el motivo escrito.
+
+### 80.2 El inventario
+
+| via antigua | llamadas | donde |
+|---|---|---|
+| `mint` / `apply_mint` | **54** | tests, metrics, tests_support |
+| `set_frozen` / `apply_freeze` | 38 | tests, iso, snapshot |
+| `update_custodians` / `apply_governance` | 19 | tests |
+| `recover` / `apply_recovery` | 18 | tests |
+| `mint_to_pending` / `apply_mint_to_pending` | 9 | tests |
+| | **138** | |
+
+⚠️ **Y el numero que de verdad manda no esta en esa tabla.**
+`open_and_fund` —el unico camino legitimo para que una cuenta tenga saldo—
+llama a `.mint()` por dentro, y **se usa 145 veces**.
+
+> **La mitad de la suite depende de la via antigua sin nombrarla.** Un
+> barrido por nombre de funcion habria contado 54 y se habria dejado 145.
+> Es literalmente el error de §32: contar llamadas a una funcion no mide
+> cuanta superficie depende de lo que esa funcion usa.
+
+### 80.3 El precio, y por que no esta medido
+
+La via antigua genera **una** prueba —`circuit_mint`, con los custodios
+dentro—. La delegada genera **tres**: la subida mas dos de umbral.
+
+Migrar `open_and_fund` multiplica por tres el coste de fondear una cuenta,
+145 veces. La suite esta hoy en **31 s** en release y **250 s** en
+depuracion.
+
+⚠️ **Cuanto sube exactamente no se sabe.** Puede ser el doble o puede ser
+diez veces, y de eso depende que la retirada sea viable o que el precio
+razonable sea dejar las cinco marcadas sin retirarlas.
+
+### 80.4 Y hay un efecto que no es de coste
+
+`metrics.rs` mide **la via que se ejecuta**. Si `open_and_fund` cambia, las
+cifras de rendimiento publicadas cambian con ella —y no porque el sistema
+sea mas lento, sino porque se estaria midiendo otra cosa—.
+
+Eso hay que **declararlo**, no absorberlo. La marca `allow(deprecated)` que
+lleva ahora ese modulo lo dice en el codigo.
+
+### 80.5 El experimento que decide
+
+Migrar **solo** `open_and_fund` a la via delegada, en una rama, y
+cronometrar la suite en los dos modos. Un cambio, un numero.
+
+Con ese numero se decide entre:
+
+- **retirar**, si el coste es asumible;
+- **no retirar y declararlo**, dejando las cinco marcadas y escribiendo por
+  que —que es lo que §46 hizo con la entrada 6—.
+
+⚠️ **Lo que no se puede hacer es empezar a borrar y ver que pasa.** §32
+—la entrada que da nombre a esto— es el registro de un plan que se
+completo en unidades de trabajo sin alcanzar su objetivo. Aqui el objetivo
+no es borrar cinco funciones: es que nadie pueda pedir las claves.
+
+### 80.6 Lo que la marca NO da
+
+§65.5 ya lo decia y sigue valiendo: `#[deprecated]` es un aviso. Nada
+impide llamarlas con un `#[allow]`, y este mismo commit añade dos.
+
+**La garantia la da usar la via delegada.** Mientras las antiguas existan,
+el fallo de la entrada 32 esta *evitable*, no *cerrado*.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
