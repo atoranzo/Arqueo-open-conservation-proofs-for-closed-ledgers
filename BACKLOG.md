@@ -613,10 +613,19 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   poder cobrar deja el dinero en un pendiente inmovilizado** (entrada 12).
   ⚠️ **Migrar `open_account` ahora crearia cuentas que pierden fondos**, y el
   cambio es de una linea y parece progreso (§96.5).
-  **Orden correcto**: **`claim` PRIMERO** —sin el, una cuenta ancha no
-  recupera su dinero—, luego `audit` —que **no encaja en el patron**:
-  `COL_KEY` en 13, ancho 24 y **cero** sitios `state[8] = spend_key`—, y
-  `open_account` y la capa **al final**.
+  ✅ **Y `circuit_claim` HECHO** (§92.15): `TRACE_WIDTH` **48→51**,
+  `C_KEY_INPUT` **2→8**, `C_TRANSPORT` **15→18**. Una ronda para el circuito,
+  27 circuitos limpios al primer intento, y los desplazamientos a mano
+  —reincidentes por tercera vez— corregidos **de entrada**.
+  ⚠️⚠️ **CUATRO circuitos migrados y CERO bits de seguridad ganados**
+  (§92.16): en el test del pago completo **las dos claves van rellenadas con
+  ceros**, porque `open_account` deriva estrecho. **Un lector que vea «cuatro
+  de cinco» concluira que esto esta casi hecho; la parte que da seguridad no
+  ha empezado.** Es lo previsto en §96 — la seguridad entra toda de golpe al
+  cerrar la puerta.
+  **Queda**: `audit` —que **no encaja en el patron**: `COL_KEY` en 13, ancho
+  24 y **cero** sitios `state[8] = spend_key`, asi que necesita analisis
+  propio— y despues `open_account` y la capa, **al final** (§96.4).
   ⚠️ **La derivacion estrecha NO hay que migrarla en los 22 ficheros**: §90
   la hace equivalente para una clave rellenada, asi que quien solo *calcula*
   una identidad puede seguir usandola.

@@ -64,26 +64,27 @@ pub const NUM_SEGMENTS: usize = 4;
 const LANE_B: usize = STATE_WIDTH;
 const COL_BIT: usize = 24;
 /// Clave de gasto del TITULAR.
-const COL_KEY: usize = 25;
-const COL_ACC_ID: usize = 26; // 26..30
-const COL_BAL: usize = 30;
-const COL_BAL_NEW: usize = 31;
-const COL_NONCE: usize = 32;
-const COL_AMT: usize = 33;
-const COL_SUPPLY_OLD: usize = 34;
-const COL_SUPPLY_NEW: usize = 35;
-const COL_SBIT: usize = 36;
-const COL_SACC: usize = 37;
+/// Clave de gasto. ⚠️ **CUATRO elementos** desde §90 (entrada 15).
+const COL_KEY: usize = 25; // 25..29
+const COL_ACC_ID: usize = 29; // 29..33
+const COL_BAL: usize = 33;
+const COL_BAL_NEW: usize = 34;
+const COL_NONCE: usize = 35;
+const COL_AMT: usize = 36;
+const COL_SUPPLY_OLD: usize = 37;
+const COL_SUPPLY_NEW: usize = 38;
+const COL_SBIT: usize = 39;
+const COL_SACC: usize = 40;
 /// Bit de dirección del camino en el árbol de congelados.
-const COL_FBIT: usize = 38;
+const COL_FBIT: usize = 41;
 /// Bit de dirección en el árbol de PENDIENTES.
-const COL_PBIT: usize = 39;
+const COL_PBIT: usize = 42;
 /// **Identidad pública del receptor**, que funciona como dirección.
 /// Privada: un tercero no debe saber a quién se paga.
-const COL_R_ID: usize = 40; // 40..44
+const COL_R_ID: usize = 43; // 43..47
 /// Aleatorio que ciega el compromiso. Lo elige el pagador.
-const COL_SALT: usize = 44; // 44..48
-pub const TRACE_WIDTH: usize = 48;
+const COL_SALT: usize = 47; // 47..51
+pub const TRACE_WIDTH: usize = 51;
 
 // ===== Filas =====
 const ROW_LEAF_LINK: usize = 7;
@@ -127,18 +128,18 @@ const C_LEAF_DIG_A: usize = C_LEAF_CAP_B + 4;
 const C_LEAF_DIG_B: usize = C_LEAF_DIG_A + 4;
 const C_NONCE: usize = C_LEAF_DIG_B + 4; // 2
 const C_INPUT: usize = C_NONCE + 2; // 10
-const C_KEY_INPUT: usize = C_INPUT + 10; // 2
+const C_KEY_INPUT: usize = C_INPUT + 10; // 8
 /// **TITULARIDAD**: la identidad derivada coincide con la de la cuenta.
-const C_PK_CHECK: usize = C_KEY_INPUT + 2; // 4
+const C_PK_CHECK: usize = C_KEY_INPUT + 8; // 4
 /// **EL SALDO DISMINUYE EXACTAMENTE EN EL IMPORTE.**
 const C_BALANCE: usize = C_PK_CHECK + 4; // 1
 /// **EL SUMINISTRO DISMINUYE EXACTAMENTE EN EL IMPORTE.**
 const C_SUPPLY: usize = C_BALANCE + 1; // 1
-const C_TRANSPORT: usize = C_SUPPLY + 1; // 15 (7 + id receptor 4 + aleatorio 4)
+const C_TRANSPORT: usize = C_SUPPLY + 1; // 18 (10 + id receptor 4 + aleatorio 4)
 // ⚠️ ENTRADA 36 / §50.7: era `C_TRANSPORT + 7`, mismo solapamiento que send.
 // Aunque COL_R_ID esta muerto tras §39.1, el compromiso lee COL_SALT y su
 // constancia estaba pisada -> fallo de solidez. Ahora C_TRANSPORT ocupa 15.
-const C_ID_CONST: usize = C_TRANSPORT + 15; // 4
+const C_ID_CONST: usize = C_TRANSPORT + 18; // 4
 const C_SBIT_BOOL: usize = C_ID_CONST + 4; // 2
 const C_FIRST_S: usize = C_SBIT_BOOL + 2; // 2
 const C_HORNER: usize = C_FIRST_S + 2; // 1
@@ -207,7 +208,8 @@ fn value_to_bits_be(value: u64) -> Vec<bool> {
 /// de la destruida, para el test de destrucción encubierta.
 #[allow(clippy::too_many_arguments)]
 pub fn build_trace(
-    spend_key: BaseElement,
+    // ⚠️ `spend_key` son **CUATRO elementos** desde §90 (entrada 15).
+    spend_key: Digest,
     account_id: Digest,
     balance: u64,
     nonce: BaseElement,
@@ -242,7 +244,7 @@ pub fn build_trace(
     let mut rows: Vec<Vec<BaseElement>> = vec![vec![zero; TRACE_WIDTH]; TRACE_LENGTH];
 
     for row in rows.iter_mut() {
-        row[COL_KEY] = spend_key;
+        row[COL_KEY..COL_KEY + 4].copy_from_slice(&spend_key);
         for i in 0..4 {
             row[COL_ACC_ID + i] = account_id[i];
         }
@@ -343,9 +345,9 @@ pub fn build_trace(
                 }
                 ROW_ROOT => {
                     state_a[4] = BaseElement::new(SPEND_KEY_DOMAIN);
-                    state_a[8] = spend_key;
+                    state_a[8..12].copy_from_slice(&spend_key);
                     state_b[4] = BaseElement::new(SPEND_KEY_DOMAIN);
-                    state_b[8] = spend_key;
+                    state_b[8..12].copy_from_slice(&spend_key);
                 }
                 ROW_FROZEN_ROOT => {
                     // COMPROMISO INTERNO: H(identidad_receptor, aleatorio).
@@ -513,13 +515,15 @@ impl Air for ClaimAir {
         degrees.push(TransitionConstraintDegree::new(2));
         // Enlaces de hoja (16), nonce (2), entradas (10), clave (2),
         // titularidad (4) = 34, grado 1 con ciclo.
-        for _ in 0..34 {
+        // ⚠️ Eran 34: la clave paso de 2 ranuras a 8 (§90).
+        for _ in 0..40 {
             degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
         }
         // Saldo (1), suministro (1), transporte (15: 7 + identidad 4 +
         // aleatorio 4), identidad-constante (4) = 21, grado 1 sin ciclo.
         // ⚠️ ENTRADA 36 / §50.7: era 13; ver send §50.5.
-        for _ in 0..21 {
+        // ⚠️ Eran 21: `C_TRANSPORT` paso de 15 a 18 (§90).
+        for _ in 0..24 {
             degrees.push(TransitionConstraintDegree::new(1));
         }
         for _ in 0..2 {
@@ -759,8 +763,12 @@ impl Air for ClaimAir {
         result[C_INPUT + 4] = first_row * (current[8] - current[COL_BAL]);
         result[C_INPUT + 9] = first_row * (current[LANE_B + 8] - current[COL_BAL_NEW]);
 
-        result[C_KEY_INPUT] = sel_root * (next[8] - current[COL_KEY]);
-        result[C_KEY_INPUT + 1] = sel_root * (next[LANE_B + 8] - current[COL_KEY]);
+        // ⚠️ Los CUATRO elementos, en los dos carriles (§92.2).
+        for i in 0..4 {
+            result[C_KEY_INPUT + i] = sel_root * (next[8 + i] - current[COL_KEY + i]);
+            result[C_KEY_INPUT + 4 + i] =
+                sel_root * (next[LANE_B + 8 + i] - current[COL_KEY + i]);
+        }
 
         // ===== TITULARIDAD =====
         // La identidad derivada de la clave es la de la cuenta. Sin la
@@ -785,6 +793,9 @@ impl Air for ClaimAir {
 
         let transport = [
             COL_KEY,
+            COL_KEY + 1,
+            COL_KEY + 2,
+            COL_KEY + 3,
             COL_BAL,
             COL_BAL_NEW,
             COL_NONCE,
@@ -795,9 +806,13 @@ impl Air for ClaimAir {
         // La identidad del receptor y el aleatorio tambien son constantes:
         // si variaran entre filas, el compromiso no seria el declarado.
         for i in 0..4 {
-            result[C_TRANSPORT + 7 + i] =
+            // ⚠️ **10 y 14, no 7 y 11**: el array `transport` paso de 7 a
+            // 10 columnas. Es la TERCERA vez que estos desplazamientos dan
+            // problemas —entrada 36, §50.7, y §92.12 en `send`, donde los
+            // cazo `check_constraint_layout.py`—.
+            result[C_TRANSPORT + 10 + i] =
                 next[COL_R_ID + i] - current[COL_R_ID + i];
-            result[C_TRANSPORT + 11 + i] =
+            result[C_TRANSPORT + 14 + i] =
                 next[COL_SALT + i] - current[COL_SALT + i];
         }
         for (k, col) in transport.iter().enumerate() {
@@ -1092,7 +1107,9 @@ impl Prover for ClaimProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::circuit_settlement::{derive_public_id, native_climb, native_leaf};
+    use crate::circuit_settlement::{
+        derive_public_id, derive_public_id_wide, native_climb, native_leaf,
+    };
     use crate::merkle::native_merge;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
 
@@ -1112,7 +1129,8 @@ mod tests {
     }
 
     struct Scenario {
-        key: BaseElement,
+        /// ⚠️ **CUATRO elementos** desde §90. Su tipo va primero (§92.7).
+        key: Digest,
         account_id: Digest,
         balance: u64,
         nonce: BaseElement,
@@ -1156,8 +1174,15 @@ mod tests {
             let prev = empty[k - 1];
             empty.push(native_merge(prev, prev));
         }
-        let key = BaseElement::new(SK);
-        let account_id = derive_public_id(key);
+        // ⚠️ Ancha de verdad, no `as_digest(x)`: con relleno de ceros el
+        // test pasaria sin ejercitar los tres elementos nuevos (§90.3).
+        let key = [
+            BaseElement::new(SK),
+            BaseElement::new(0xC1A1),
+            BaseElement::new(0x0DDBA11),
+            BaseElement::new(0x5EA51DE),
+        ];
+        let account_id = derive_public_id_wide(key);
         let nonce = BaseElement::ZERO;
 
         // Direcciones MIXTAS: con todas iguales la traza degenera.
@@ -1262,7 +1287,7 @@ mod tests {
         }
     }
 
-    fn run(s: &Scenario, key: BaseElement, supply_delta: u64) -> Result<(), String> {
+    fn run(s: &Scenario, key: Digest, supply_delta: u64) -> Result<(), String> {
         let trace = build_trace(
             key,
             s.account_id,
@@ -1402,7 +1427,17 @@ mod tests {
     fn a_third_party_cannot_claim_with_someone_elses_key() {
         let s = scenario(1_000_000, 250_000, 10_000_000);
         assert!(
-            run(&s, BaseElement::new(0x1337), s.amount).is_err(),
+            run(
+                &s,
+                [
+                    BaseElement::new(0x1337),
+                    BaseElement::new(0xBADC0DE),
+                    BaseElement::new(0x0DDBA11),
+                    BaseElement::new(0x1CEB00DA),
+                ],
+                s.amount
+            )
+            .is_err(),
             "CRITICO: sin la clave del titular no debe poder destruirse su saldo"
         );
     }
@@ -1441,7 +1476,17 @@ mod tests {
     fn without_the_account_key_nothing_can_be_claimed() {
         let s = scenario(1_000_000, 250_000, 10_000_000);
         assert!(
-            run(&s, BaseElement::new(0xBADCAFE), 0).is_err(),
+            run(
+                &s,
+                [
+                    BaseElement::new(0xBADCAFE),
+                    BaseElement::new(0xBADC0DE),
+                    BaseElement::new(0x0DDBA11),
+                    BaseElement::new(0x1CEB00DA),
+                ],
+                0
+            )
+            .is_err(),
             "CRITICO: sin la clave de la cuenta no debe poder cobrarse"
         );
     }

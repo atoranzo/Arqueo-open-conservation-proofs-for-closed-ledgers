@@ -7880,6 +7880,53 @@ lo recomendaba.
 
 Por eso se registra hoy y no cuando se retome.
 
+### 92.15 `circuit_claim`: el cuarto, y el manual ya funciona
+
+| | antes | ahora |
+|---|---|---|
+| `TRACE_WIDTH` | 48 | **51** |
+| `C_KEY_INPUT` | 2 | **8** |
+| `C_TRANSPORT` | 15 | **18** |
+
+**Una ronda para el circuito**, dos para los llamantes. 274 y 201, 27
+circuitos limpios **al primer intento**.
+
+Las tres comprobaciones previas del manual, hechas antes de escribir:
+
+1. **Las cuatro declaraciones** (§92.7).
+2. **Las aserciones** (§92.6): la unica sobre `9..12` es la de la fila 0.
+3. ⚠️ **Los desplazamientos a mano** (§92.12): `C_TRANSPORT + 7` y `+ 11`,
+   corregidos **de entrada** en vez de esperar a que los cazara el barrido.
+
+⚠️ **Ese tercero es reincidente y merece contarse**: el propio fichero ya
+documentaba *«era `C_TRANSPORT + 7`, mismo solapamiento que send»* (entrada
+36 / §50.7). Con la de `send` de hoy (§92.12), es la **tercera** vez que ese
+desplazamiento concreto rompe algo. La primera se descubrio como fallo de
+solidez; la segunda la cazo la herramienta; la tercera se vio leyendo.
+
+### 92.16 ⚠️ CUATRO circuitos migrados, CERO bits de seguridad ganados
+
+`settlement`, `burn`, `send` y `claim` verifican claves de 256 bits. Y en el
+test del pago completo, **las dos claves —la del emisor y la del receptor—
+van rellenadas con ceros**, porque sus cuentas se abrieron con
+`open_account`, que deriva **estrecho**.
+
+| | |
+|---|---|
+| Circuitos de gasto migrados | **4 de 5** |
+| Bits de entropia que gana un titular hoy | **0** |
+
+> **Un lector que vea «cuatro de cinco circuitos» concluira que la entrada 15
+> esta casi hecha. La parte que da seguridad no ha empezado.**
+
+No es un fracaso: es exactamente lo previsto en §96. **La seguridad entra
+toda de golpe cuando se cierre la puerta, y ni un bit antes** — y por eso
+`open_account` va la ultima, no la primera.
+
+⚠️ Y es la razon para medir el progreso en **propiedades** y no en unidades
+de trabajo: cuatro circuitos es un avance visible que no mueve la unica cifra
+que importa. Es §32 otra vez, vista desde el lado del que va ganando.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

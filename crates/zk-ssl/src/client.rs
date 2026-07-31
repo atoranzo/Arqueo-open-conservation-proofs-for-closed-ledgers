@@ -323,10 +323,12 @@ pub struct ClaimMaterials {
 /// de la máquina de quien paga ni de la de quien cobra.
 pub fn prove_claim(
     materials: &ClaimMaterials,
-    spend_key: BaseElement,
+    // ⚠️ **CUATRO elementos** desde §90. Es la via del CLIENTE: rellenar
+    // aqui lo dejaria sin poder usar una clave ancha nunca (§92.13).
+    spend_key: Digest,
     options: ProofOptions,
 ) -> Result<ClaimReceipt, LayerError> {
-    if derive_public_id(spend_key) != materials.receiver.public_id {
+    if derive_public_id_wide(spend_key) != materials.receiver.public_id {
         return Err(LayerError::NotTheAccountHolder);
     }
 
@@ -740,7 +742,17 @@ mod tests {
             .expect("materiales de cobro");
         let cobro = client::prove_claim(
             &mat_cobro,
-            BaseElement::new(SK_BOB),
+            // ⚠️ **RELLENADA CON CEROS**, como la de Alice y por lo mismo
+            // (§92.14): la cuenta de Bob se abrio con `open_and_fund(SK_BOB)`,
+            // que deriva la identidad ESTRECHA. Una clave ancha de verdad
+            // seria rechazada — y no podra usarse hasta que `open_account`
+            // acepte `Digest`, que va el ULTIMO (§96.4).
+            [
+                BaseElement::new(SK_BOB),
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+            ],
             proof_options(),
         )
         .expect("prueba local del cobro");

@@ -481,8 +481,15 @@ impl SovereignLayer {
         let frozen_path = self.frozen.path_for(receiver_index);
         let pending_path = self.pending.path_for(notice.position);
 
+        // ⚠️ Clave RELLENADA a cuatro elementos: via antigua, y §90
+        // garantiza la misma identidad (§92.9).
         let trace = build_claim_trace(
-            spend_key,
+            [
+                spend_key,
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+            ],
             receiver.public_id,
             receiver.balance,
             receiver.nonce,
