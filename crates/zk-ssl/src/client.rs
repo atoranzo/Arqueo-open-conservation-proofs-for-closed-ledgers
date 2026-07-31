@@ -353,6 +353,234 @@ pub fn prove_claim(
 
 
 #[cfg(test)]
+mod tests_privacidad {
+    use crate::tests_support::*;
+    use crate::*;
+    use stark_experiment::circuit_settlement::native_leaf;
+    use winterfell::math::fields::f64::BaseElement;
+
+    /// Mallory. **No conoce ninguna clave ajena.** Se define aqui y no en
+    /// `tests_support` porque solo la usa este modulo.
+    const SK_MALLORY: u64 = 0xBADCAFE;
+
+    /// **SUPERFICIE 1: el contrato de `account_view` no exige autoridad.**
+    ///
+    /// La cabecera de este modulo promete que *«la clave de gasto nunca sale
+    /// de la maquina del titular»*. Es cierto **y es insuficiente**: para
+    /// LEER un saldo no hace falta clave ninguna.
+    ///
+    /// ```rust,ignore
+    /// pub fn account_view(&self, index: AccountIndex) -> Option<AccountView>
+    /// ```
+    ///
+    /// Toma un indice. No recibe credencial. Devuelve `balance` y `nonce`.
+    ///
+    /// ⚠️ **Esto es un hallazgo de CONTRATO, no de explotacion.** No hay
+    /// capa de red en este repositorio, asi que «cualquiera vuelca el
+    /// ledger» seria una afirmacion sobre un despliegue que no existe. Lo
+    /// que si es cierto hoy: **exponer esta API sin añadir control de acceso
+    /// convierte una fuga hacia-el-operador —declarada en la cabecera— en
+    /// una fuga hacia-terceros, que el README no declara.**
+    #[test]
+    fn reading_a_balance_requires_authority() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let _mallory = open_and_fund(&mut layer, SK_MALLORY, 0);
+
+        // Mallory no conoce SK_ALICE. Solo su indice, que es un entero.
+        let vista = layer.account_view(alice);
+
+        assert!(
+            vista.is_none(),
+            "CONTRATO: `account_view` devuelve el saldo ({:?}) y el nonce de \
+             una cuenta ajena sin pedir credencial alguna. La cabecera de \
+             este modulo promete que la clave no sale de la maquina del \
+             titular —cierto— pero para LEER no hace falta clave.",
+            vista.as_ref().map(|v| v.balance)
+        );
+    }
+
+    /// **Y los indices son enumerables**, lo que hace la consecuencia
+    /// sistematica en vez de puntual.
+    ///
+    /// `accounts.rs`: `let index = self.next_index; self.next_index += 1;`
+    ///
+    /// ⚠️ Condicional a exposicion, como el anterior.
+    #[test]
+    fn account_indices_are_not_enumerable() {
+        let mut layer = new_layer();
+        open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        open_and_fund(&mut layer, SK_BOB, 500_000);
+        open_and_fund(&mut layer, SK_MALLORY, 0);
+
+        let encontradas: Vec<u64> = (0..10)
+            .filter(|i| layer.account_view(*i).is_some())
+            .collect();
+
+        assert!(
+            encontradas.len() <= 1,
+            "CONTRATO: barriendo los indices 0..10 aparecen {} cuentas ({:?}) \
+             con sus saldos. Los indices son SECUENCIALES —`next_index += \
+             1`— asi que enumerarlos no requiere adivinar nada.",
+            encontradas.len(),
+            encontradas
+        );
+    }
+
+    /// ⚠️ **SUPERFICIE 2: la que SOBREVIVE a cerrar la API.**
+    ///
+    /// Este es el numero que importa, porque **ningun parche de la API lo
+    /// toca**.
+    ///
+    /// `send_materials` entrega `sender_path`, y `sparse_tree::path_for`
+    /// devuelve `node(level, idx ^ 1)`: en el nivel 0, **la hoja del
+    /// vecino**. Y la hoja es
+    ///
+    /// ```text
+    /// native_leaf(pk, saldo, nonce) = H(H(pk, saldo), nonce)
+    /// ```
+    ///
+    /// **sin salt** —verificado: `native_merge` pone la capacidad a cero, sin
+    /// dominio ni cegado—. Con `pk` conocida, hay una ecuacion y dos
+    /// incognitas.
+    ///
+    /// ## El regimen es 1D, y eso NO es un supuesto
+    ///
+    /// `accounts.rs`: `let nonce = BaseElement::ZERO`, y sube de uno en uno
+    /// por gasto. El nonce de una cuenta minorista es un numero de dos
+    /// digitos: **no multiplica el coste de forma apreciable**. El regimen
+    /// 2D —que encareceria el ataque por el rango del nonce— **nunca
+    /// existio**.
+    ///
+    /// ## Alcance, acotado
+    ///
+    /// El camino entrega `depth` hermanos. **Solo `siblings[0]` es
+    /// atacable por diccionario**: los demas son raices de subarbol, no
+    /// preimagenes de hoja. Es **1 cuenta**, no log2(N).
+    ///
+    /// ## El coste es una CURVA, no un numero
+    ///
+    /// Depende del rango de saldo que el atacante asuma, que es un supuesto
+    /// sobre la victima y no sobre la criptografia. El test lo reporta asi.
+    #[test]
+    #[ignore = "instrumento de medida: correr a mano, en release"]
+    fn a_neighbour_leaf_does_not_reveal_its_balance() {
+        use std::time::Instant;
+
+        let mut layer = new_layer();
+        // Indices 0 y 1: vecinos de arbol, porque 0 ^ 1 == 1.
+        let victima = open_and_fund(&mut layer, SK_ALICE, 7_431_00); // 7.431,00
+        let atacante = open_and_fund(&mut layer, SK_MALLORY, 0);
+        assert_eq!(victima ^ 1, atacante, "deben ser vecinos de arbol");
+
+        // Lo unico que el atacante necesita, y se lo da el protocolo.
+        let receptor = layer.public_id_of(victima).expect("cuenta");
+        let m = layer
+            .send_materials(atacante, receptor, 0, salt_de(0x1073))
+            .expect("materiales: paso 2 del protocolo del cliente");
+        let hoja_vecina = m.sender_path.siblings[0];
+        let pk_victima = receptor;
+
+        // ⚠️ El nonce NO se busca: se sabe que nace en cero y sube por
+        // gasto. Se prueban los diez primeros, que cubre cualquier cuenta
+        // recien abierta. Ese es el prior, y va escrito.
+        const NONCES: u64 = 10;
+        const RANGO: u64 = 1_000_000; // 0..10.000 EUR en centimos = ~2^20
+
+        let t0 = Instant::now();
+        let mut hallado = None;
+        'busca: for nonce in 0..NONCES {
+            for saldo in 0..RANGO {
+                if native_leaf(
+                    pk_victima,
+                    BaseElement::new(saldo),
+                    BaseElement::new(nonce),
+                ) == hoja_vecina
+                {
+                    hallado = Some((saldo, nonce));
+                    break 'busca;
+                }
+            }
+        }
+        let dt = t0.elapsed().as_secs_f64();
+
+        if let Some((saldo, nonce)) = hallado {
+            let probadas = (nonce * RANGO + saldo).max(1) as f64;
+            let por_seg = probadas / dt;
+            println!("\n=== Diccionario sobre la hoja del vecino ===\n");
+            println!("  ⚠️ PRIORS DE ESTA MEDIDA, sin los cuales no significa nada:");
+            println!("     - nonce en 0..{NONCES}  (nace en cero, sube por gasto)");
+            println!("     - saldo en 0..{RANGO}  (~2^20: minorista, centimos)");
+            println!("     - `pk` de la victima conocida (viaja en los materiales)");
+            println!();
+            println!("  saldo hallado        {saldo:>12}");
+            println!("  nonce hallado        {nonce:>12}");
+            println!("  hojas probadas       {probadas:>12.0}");
+            println!("  tiempo               {dt:>12.2} s");
+            println!("  hojas/s por nucleo   {por_seg:>12.0}");
+            println!();
+            println!("  CURVA sobre el rango de saldo asumido:");
+            for (etiqueta, n) in [
+                ("0-10.000 EUR (2^20)", 1e6),
+                ("0-1 M EUR   (2^27)", 1e8),
+                ("0-100 M EUR (2^34)", 1e10),
+                ("64 bits completos ", 1.8e19),
+            ] {
+                let seg = n * NONCES as f64 / por_seg;
+                if seg < 3600.0 {
+                    println!("    {etiqueta}  {:>10.1} min", seg / 60.0);
+                } else if seg < 86400.0 * 365.0 {
+                    println!("    {etiqueta}  {:>10.1} h", seg / 3600.0);
+                } else {
+                    println!("    {etiqueta}  {:>10.3e} años-nucleo", seg / 3.156e7);
+                }
+            }
+            println!();
+            println!("  ⚠️ Alcance: **1 cuenta** —solo `siblings[0]` es preimagen");
+            println!("     de hoja—. Los otros {} hermanos son raices de", 
+                     m.sender_path.siblings.len() - 1);
+            println!("     subarbol y NO son diccionariables.");
+            println!();
+            println!("  ⚠️ Y esta fuga **sobrevive a cerrar `account_view`**:");
+            println!("     depende del formato de hoja, no de la API.");
+        }
+
+        assert!(
+            hallado.is_none(),
+            "PRIVACIDAD FRENTE A TERCEROS: el saldo del vecino se recupera \
+             por diccionario desde el camino que el propio protocolo entrega. \
+             `native_leaf` no lleva salt y el nonce nace en cero. Ver la \
+             salida para la curva y sus priors."
+        );
+    }
+
+    /// **SUPERFICIE 3: ¿es el vecino ELEGIBLE?**
+    ///
+    /// Con `next_index += 1`, quien abre dos cuentas seguidas obtiene
+    /// indices contiguos. Si puede provocar sus altas alrededor de una
+    /// victima, no es «me toca un vecino al azar»: es **elegir a quien
+    /// espiar**.
+    ///
+    /// El test lo comprueba de la unica forma que no es conjetura: abriendo
+    /// cuentas y mirando que indices salen.
+    #[test]
+    fn account_indices_are_not_predictable() {
+        let mut layer = new_layer();
+        let a = open_and_fund(&mut layer, SK_ALICE, 0);
+        let b = open_and_fund(&mut layer, SK_BOB, 0);
+        let c = open_and_fund(&mut layer, SK_MALLORY, 0);
+
+        assert!(
+            !(b == a + 1 && c == b + 1),
+            "VECINO ELEGIBLE CONFIRMADO: las altas dan indices consecutivos \
+             ({a}, {b}, {c}). Quien controle el momento de sus altas elige a \
+             quien tiene por vecino de arbol —y con dos altas, rodea—. La \
+             fuga deja de ser oportunista."
+        );
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use crate::tests_support::*;
     use crate::*;
