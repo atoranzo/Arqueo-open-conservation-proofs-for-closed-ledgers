@@ -41,9 +41,34 @@ Ver `AUDITORIA.md` §29 y §30.
 
 Esto es un **nodo único**. Quien lo opera:
 
-- **Ve todos los saldos.** La privacidad es frente a terceros que solo ven
-  pruebas, no frente a quien mantiene el estado.
+- **Ve todos los saldos.** No frente a quien mantiene el estado.
 - **Ordena las operaciones y puede censurar.**
+
+⚠️ **Y la privacidad frente a TERCEROS tampoco esta.** Este documento decia
+que lo estaba «frente a terceros **que solo ven pruebas**». La condicion
+—que un tercero solo vea pruebas— **es falsa**, y esta medido el 31-07-2026
+(`AUDITORIA.md` §93):
+
+| superficie | medido |
+|---|---|
+| `account_view`, `balance_of`, `nonce_of` y `public_id_of` | toman un indice, **no piden credencial**, devuelven el saldo. Y los indices son **enumerables** (`next_index += 1`) |
+| El camino Merkle que el protocolo entrega | `sender_path.siblings[0]` **es la hoja del vecino**, y `native_leaf(pk, saldo, nonce)` **no lleva salt**: el saldo se recupero por diccionario en **10,84 s** |
+
+El coste del segundo **no es un numero, es una curva** sobre el rango de
+saldo que el atacante asuma: **2,4 min** para 0-10.000 EUR, 4,1 h para
+0-1 M, y 8,3×10^7 años-nucleo si el saldo fuera uniforme en 64 bits —**que
+nunca lo es en un sistema de dinero**—.
+
+⚠️ Y el vecino de arbol **es elegible**: las altas dan indices consecutivos,
+asi que quien controla el momento de su alta elige a quien espia.
+
+**Alcance, acotado**: **1 cuenta** por camino —solo `siblings[0]` es
+preimagen de hoja; los otros 31 hermanos son raices de subarbol y no son
+diccionariables—.
+
+**Estado**: entradas 49 y 50 del backlog, **abiertas**. La primera se cierra
+facil y **no cierra la segunda**, que exige tocar el formato del compromiso
+y decidir si el cliente custodia estado (§93.4).
 
 Ambas cosas exigen consenso distribuido, que **no está implementado** y es
 un problema de otra disciplina.

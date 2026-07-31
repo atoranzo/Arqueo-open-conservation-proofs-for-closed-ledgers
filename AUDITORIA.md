@@ -7920,6 +7920,69 @@ bueno en los otros dos se equivoca, y nada en el codigo se lo advierte.
 algun camino de produccion. `SettlementAir` no lo esta (§85.8); de estos dos
 no se sabe.
 
+## 95. Garantias con condicion implicita: la tercera vez
+
+El README decia que la privacidad es «frente a terceros **que solo ven
+pruebas**». Corregido hoy, porque §93 midio que esa condicion no se cumple.
+
+### 95.1 No es una mentira: es una condicion sin verificar
+
+La frase era **cierta bajo su condicion**. Lo que nadie comprobo es que la
+condicion se diera: un tercero **no solo ve pruebas**. Ve `siblings[0]` en
+los materiales del protocolo, y ve saldos si llama a `balance_of`.
+
+### 95.2 ⚠️ Y es la TERCERA vez que aparece esta estructura
+
+| | garantia | condicion implicita que fallaba |
+|---|---|---|
+| §76 | *«no puede reescribir el historial en secreto»* | …para quien **ya observo una cabeza anterior**, y nadie fuera del operador las observa |
+| §84.2 | *«la clave de gasto no sale de la maquina del cliente»* | …**si la capa verificara la prueba**, y no la verificaba (§73) |
+| §95 | *«privacidad frente a terceros que solo ven pruebas»* | …**si los terceros solo vieran pruebas**, y ven caminos y saldos |
+
+Las tres son de la misma forma exacta:
+
+> **Una propiedad del DISEÑO enunciada como propiedad del SISTEMA, con la
+> condicion que las separa escrita o sobreentendida, y nunca verificada.**
+
+Y las tres se descubrieron igual: **no buscandolas, sino escribiendo con
+precision otra cosa y tropezando** —§76 midiendo cifras del README, §84.2
+inventariando los preprints, §95 comprobando una errata del salt—.
+
+### 95.3 El proyecto no tiene instrumento para esta clase
+
+`check_constraint_layout.py` cruza indices. `buscar_vacias` prueba
+mutaciones. Los tests comprueban comportamiento. **Ninguno lee una
+afirmacion en prosa y verifica su condicion.**
+
+⚠️ Y `B12.1` —la especificacion formal del AIR— **solo cubre los
+circuitos**. Las garantias del README, de `PRINCIPIOS.md` y de los tres
+preprints se siguen escribiendo sin contrato.
+
+> El equivalente documental de B12.1 seria: **cada garantia publicada
+> declara su condicion, y cada condicion tiene un test que la comprueba.**
+> Las tres de la tabla habrian caido el dia que se escribieron.
+
+No se propone como tarea: se enuncia porque es la leccion de las tres, y
+sin enunciarla la cuarta llegara igual.
+
+### 95.4 Lo que NO se ha hecho hoy
+
+**No se ha tocado el codigo.** La mitigacion de la entrada 49 —exigir la
+identidad publica para leer— es barata y **no se ha hecho**, por dos
+razones:
+
+1. **Su llave es la direccion de pago.** `public_id` es lo que se reparte
+   para cobrar; un control cuya credencial la tiene todo el que te ha pagado
+   **no es un control de acceso**, y no es revocable.
+2. ⚠️ **Permitiria escribir una frase mas tranquilizadora sin dar la
+   garantia que sugiere** — que es exactamente el defecto de §95.1, cometido
+   a sabiendas.
+
+Impide el **barrido masivo**, y eso es valor operativo real. Se hara **con
+la entrada 50** —son la misma decision de arquitectura— y **declarando su
+alcance en el mismo commit**: «impide la enumeracion; no impide la lectura
+por quien conoce tu identidad de pago».
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
