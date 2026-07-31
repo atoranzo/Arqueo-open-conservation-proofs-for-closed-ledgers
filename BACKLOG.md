@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 21 abiertas, 27 resueltas. Ultima revision: 31 de julio de 2026.
+**Estado**: 24 abiertas, 27 resueltas. Ultima revision: 31 de julio de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
 fallos y aparecieron **dos que no eran la clase conocida** (§78). Los 78
@@ -972,6 +972,44 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   la de hoy son 437 ms. No invalida su argumento —usa el valor conservador—
   pero al integrarlo hay que fechar la maquina, como obligo §89 con
   `ESCALADO.md`.
+
+- [ ] **49. ⚠️ El contrato de `account_view` no exige autorizacion.**
+  Medido el 31-07-2026 (§93.1): toma un indice, **no recibe credencial**, y
+  devuelve `balance` y `nonce` de cualquier cuenta. Los indices son
+  **enumerables** —`next_index += 1`—. ⚠️ **Hallazgo de CONTRATO, no de
+  explotacion**: no hay capa de red en el repositorio, asi que «cualquiera
+  vuelca el ledger» seria una cifra rancia hacia el drama. Lo cierto:
+  **exponerlo sin control de acceso convierte una fuga hacia-el-operador —ya
+  declarada— en una fuga hacia-terceros que el README no declara.**
+  Arreglo barato —autorizacion en el contrato— y **no cierra la 50**.
+
+- [ ] **50. ⚠️ PRIVACIDAD FRENTE A TERCEROS ROTA: la hoja no lleva salt.**
+  **Medido** el 31-07-2026 (§93.2): el saldo del vecino de arbol se recupera
+  por diccionario en **10,84 s** desde `sender_path.siblings[0]`, que el
+  propio protocolo entrega al cliente. `native_leaf(pk, saldo, nonce)` **no
+  lleva salt** y `native_merge` no tiene cegado. ⚠️ **El coste es una CURVA
+  sobre el rango de saldo asumido**: **2,4 min** para 0-10.000 EUR, 4,1 h
+  para 0-1 M, 8,3×10^7 años-nucleo si el saldo fuera uniforme en 64 bits —y
+  **nunca lo es en un sistema de dinero**: por eso el salt es la unica fuente
+  de entropia posible—. **Alcance: 1 cuenta**, solo `siblings[0]`; los 31
+  hermanos restantes no son diccionariables. **Regimen 1D confirmado**: el
+  nonce nace en cero. ⚠️ **Y el vecino es ELEGIBLE** (§93.3): las altas dan
+  indices consecutivos, asi que quien controla su alta elige victima.
+  ⚠️ **NO es clase entrada 15** (§93.4): un salt exige que el cliente
+  **custodie estado**, y hoy `ClientState` lo pide todo a la capa. Es cambio
+  de modelo de cliente, con victimas —quien pierde el salt, pierde la
+  cuenta—. ⚠️ **El obstaculo real no es el nonce** —el circuito ya usa
+  nonces distintos por carril— **sino la asimetria emisor/receptor**
+  (§93.5): con salt derivado de clave, el emisor no puede computar la hoja
+  nueva del receptor. **Ninguna salida medida.**
+
+- [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
+  §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
+  `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y
+  `double_entry`. Es la entrada 15 replicada, y explica por que solo se
+  corrigio la auditada. ⚠️ **Compartir nombre invita a suponer que son la
+  misma funcion.** No medido si las otras dos estan en algun camino de
+  produccion.
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo
