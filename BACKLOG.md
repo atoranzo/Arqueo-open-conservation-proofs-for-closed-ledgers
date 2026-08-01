@@ -1066,8 +1066,13 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   por construccion** —`prove()` no falla en release— que habria anunciado un
   fallo de solidez inexistente, y una sospecha **acertada por el motivo
   equivocado** —el tiempo, sin referencia—.
-  **Queda**: el resto de la especificacion de `mint`, y las 25 de los demas
-  circuitos, sujetas a §105.3.
+  ✅ **La especificacion de `mint` esta COMPLETA**: `doc/air/circuit_mint.md`.
+  Añadio **§4.5** —`C_TRANSPORT` tiene 11 ranuras y a primera vista solo se
+  contaban 10 columnas; la undecima era `COL_MAX_SUPPLY`, y **sin ella el
+  tope seria falsificable**— y **§4.6**: el circuito prueba que **dos indices
+  distintos** autorizaron, **no que haya dos personas**.
+  ⚠️ **Van DOS de veintisiete**, con **tres garantias por consecuencia**
+  documentadas. **Las 25 restantes siguen sujetas a §105.3.**
 
 - [ ] **56. Firmar las cabezas con XMSS — decision tomada, sin implementar.**
   ⚠️ **DECISION del 01-08-2026 (§106)**: **todo el camino de produccion es
@@ -1171,7 +1176,20 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   declarada— en una fuga hacia-terceros que el README no declara.**
   Arreglo barato —autorizacion en el contrato— y **no cierra la 50**.
 
-- [ ] **50. ⚠️ PRIVACIDAD FRENTE A TERCEROS ROTA: la hoja no lleva salt.**
+- [ ] **50. ⚠️ PRIVACIDAD FRENTE A TERCEROS ROTA — con una via viva otra vez
+  (§108).** ⚠️ **§99.4 descarto mal** la familia «salt en el estado»: pidio
+  «ocultante frente a todos» cuando **la 50 es frente a TERCEROS** —el
+  operador ya ve los saldos y esta declarado— y **no distinguio derivar de
+  conservar**: la capa no necesita computar el salt, **lo transporta** como
+  transporta `public_id`. **Verificado**: `AccountView` —lo que lee
+  cualquiera— **no tiene por que llevarlo**; el camino Merkle son hashes;
+  `state_of` **no existe como API**, asi que el canal del titular **se puede
+  diseñar con autorizacion desde el principio**. ⚠️ **Sin resolver**: de donde
+  sale el salt al abrir y si se puede recuperar (§93.4), y el coste en los
+  cinco circuitos —**clase entrada 15**, coste medido negativo en §86—.
+  ⚠️ **No es una solucion: es una familia viva.** Y es la **novena
+  autocorreccion del dia** (§108.5).
+  ~~50. ⚠️ PRIVACIDAD FRENTE A TERCEROS ROTA: la hoja no lleva salt.**
   **Medido** el 31-07-2026 (§93.2): el saldo del vecino de arbol se recupera
   por diccionario en **10,84 s** desde `sender_path.siblings[0]`, que el
   propio protocolo entrega al cliente. `native_leaf(pk, saldo, nonce)` **no

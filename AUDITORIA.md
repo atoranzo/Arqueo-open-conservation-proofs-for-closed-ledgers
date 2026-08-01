@@ -8735,6 +8735,84 @@ La especificacion de `circuit_mint` **no encontro un fallo**, pero encontro
 > **obliga a preguntar «¿que impide X?»** por cada cosa que el enunciado
 > promete. Y esa pregunta, aqui, no tenia respuesta escrita en ninguna parte.
 
+## 108. ⚠️ §99.4 descarto mal el salt en el estado
+
+§99 cerro la entrada 50 diciendo que **no hay solucion conocida**: derivar el
+salt de la clave es imposible porque `open_account`, `mint`, `freeze` y
+`recover` escriben la hoja **sin conocer el secreto**. Eso sigue siendo
+cierto.
+
+Pero §99.4 descarto ademas, **sin medir**, la familia «salt en el estado»,
+con este razonamiento: *«la capa lo escribe, luego lo ve»*.
+
+**Ese descarte esta mal, por dos razones distintas.**
+
+### 108.1 Aplico el criterio equivocado
+
+*«La capa lo ve»* es cierto **y es irrelevante**:
+
+| | ve el salt | ¿importa? |
+|---|---|---|
+| El operador | si | **no** — ya ve los saldos, declarado en el README |
+| **El vecino de arbol** | **no** | ⚠️ **es la entrada 50** |
+
+> **La entrada 50 es sobre TERCEROS, no sobre el operador.** Un salt que el
+> operador conozca y el vecino no **cierra la 50 sin pretender cerrar lo que
+> nunca se prometio.**
+
+§99.4 exigio «ocultante frente a todos» a un problema medido «frente a
+terceros».
+
+### 108.2 Y no distinguio DERIVAR de CONSERVAR
+
+La capa **no necesita computar el salt**. `mint` compone la hoja asi:
+
+```rust
+native_leaf(updated.public_id, BaseElement::new(updated.balance), updated.nonce)
+```
+
+desde `AccountRecord`, **sin entender ninguno de sus campos**. Un salt seria
+uno mas: lo guarda y lo pasa, igual que pasa `public_id`.
+
+> **Conservar no es derivar.** §99.3 conto bien quien escribe hojas sin la
+> clave, y de ahi salto a que el salt era incomputable — cuando basta con que
+> sea **transportable**.
+
+### 108.3 Lo verificado, pieza a pieza
+
+| | |
+|---|---|
+| `AccountRecord` | tres campos; **48 bytes fijos** en disco → 80 con salt, **migracion necesaria** |
+| `AccountView` —lo que lee **cualquiera** por `account_view`— | **el salt NO tiene por que entrar ahi** |
+| `ClientState` —del titular— | ahi si; y ⚠️ **`state_of` vive en `tests_support.rs`**: **no existe como API de la capa**, asi que el canal **hay que diseñarlo** — y puede exigir autorizacion desde el primer dia |
+| `SendMaterials` | lleva la vista **del propio emisor**, y del receptor **solo el identificador** |
+| El camino Merkle | **hashes de hoja**, no sus componentes — con salt dejan de ser diccionariables |
+
+### 108.4 Lo que NO resuelve
+
+- **De donde sale el salt al abrir cuenta**, y si el titular puede
+  recuperarlo si lo pierde. **§93.4 sigue en pie**: el cliente no custodia
+  estado hoy, y esto se lo pediria.
+- **El coste en circuito**: `native_leaf` gana un argumento y toca los cinco
+  de gasto. Es **clase entrada 15**, con el coste ya medido en §86 —ensanchar
+  **abarata**—.
+- ⚠️ **No es una solucion: es una familia que vuelve a estar viva.**
+
+### 108.5 ⚠️ Y la duda que va con esta correccion
+
+Es la **novena autocorreccion del dia**, y todas siguen el mismo patron: una
+conclusion escrita con rigor resulta estar mal **al intentar usarla**.
+
+§93.5 dio un obstaculo falso. §99 lo corrigio y dio otro. §108 corrige el
+descarte de §99. **Las tres se escribieron con la misma seguridad.**
+
+> Admite dos lecturas y no se cual es la buena: **que el metodo funciona**
+> —cada conclusion se somete a uso y las malas caen— **o que se concluye
+> demasiado rapido**, y la proxima revision encontrara algo tambien.
+>
+> Se registra la duda junto a la correccion. Quien lea §108 debe ver que
+> corrige a §99, que corrigio a §93.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—
