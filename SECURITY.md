@@ -187,12 +187,9 @@ ante pérdida del nodo; análisis de metadatos; seguridad económica de un token
 verificador acepte una transición inválida— repórtalos **en privado** antes de
 divulgarlos.
 
-> ⚠️ **PENDIENTE: canal de contacto privado.** Hasta que se active, este
-> documento **no ofrece una vía privada**, y eso es una carencia con
-> consecuencia: quien encuentre un fallo de solidez no tiene dónde reportarlo
-> salvo un *issue* público. Se declara en vez de omitirse.
->
-> Vía prevista: *GitHub Security Advisories* del repositorio.
+Usa **«Report a vulnerability»** en la pestaña **Security** de este
+repositorio. Abre un aviso privado que solo ve el mantenedor; no expone
+ninguna dirección de correo.
 
 **Problemas no sensibles** —documentación, límites ya listados, mejoras—:
 *issue* normal.
