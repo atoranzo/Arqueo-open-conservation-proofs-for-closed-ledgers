@@ -8887,6 +8887,91 @@ titular**:
 > **La 49 depende de la 53** —la firma XMSS— **o de un mecanismo
 > equivalente.** No es una tarde.
 
+## 110. XMSS convierte una perdida de durabilidad en perdida de secreto
+
+Al ir a implementar la firma (entrada 53) aparecio una dependencia que
+ninguna de las cuatro secciones anteriores tenia.
+
+### 110.1 ⚠️ La 53 depende de la 19, y hace media hora se dijo lo contrario
+
+El orden de prioridad escrito hace treinta minutos decia que la 53 era **«lo
+unico de arriba que puede empezarse sin decidir nada mas»**.
+
+**Es falso.** XMSS necesita que su indice se persista **antes de firmar**, y
+eso es un requisito sobre la persistencia que el proyecto **no cumple hoy**.
+
+**Undecima correccion del dia**, y la primera de algo dicho en la misma hora.
+
+### 110.2 El argumento de la entrada 19 deja de valer
+
+`persistence.rs` documenta por que no hay log de escritura anticipada, con
+una tabla precisa de que se pierde en cada momento de fallo. Y cierra:
+
+> *«Lo que se pierde en el caso intermedio es **durabilidad** —la operacion
+> puede haberse perdido— pero no **integridad**. **Perder una operacion es
+> recuperable: se vuelve a enviar.**»*
+
+**Ese razonamiento es correcto para el ledger y falso para XMSS:**
+
+| | perder una operacion |
+|---|---|
+| Hoy | recuperable — se vuelve a enviar |
+| **Con XMSS** | ⚠️ **la clave de firma se filtra** al reusar el indice |
+
+> **XMSS convierte una perdida de durabilidad en una perdida de secreto.**
+
+La decision de no tener WAL esta **bien razonada para el sistema actual** y
+deja de estarlo en cuanto se firme con indice derivado de `seq`. No es que
+la entrada 19 estuviera mal: es que **XMSS cambia su premisa**.
+
+### 110.3 ⚠️ Y el reuso de indice es AMBIGUO desde fuera
+
+§103.3 y §106.4 celebran que el modo de fallo de XMSS **sea** el fraude
+perseguido: reusar indice significa dos cabezas con el mismo `seq`, que es la
+vista dividida.
+
+**Eso solo vale si el reuso es fraude.** Un reinicio honesto tras un fallo
+entre firma y persistencia produce **el mismo evento**:
+
+> **«Te pille mintiendo» y «acabas de perder tu clave» son indistinguibles
+> para un observador externo.**
+
+⚠️ Y con un agravante: **la cabeza ya esta publicada**. Un testigo la tiene.
+El operador no puede deshacer la firma ni explicar la coincidencia sin pedir
+que le crean — que es exactamente lo que las cabezas atestiguadas existen
+para no tener que hacer.
+
+**Eso no esta en §106 y es lo primero que un auditor preguntaria.**
+
+### 110.4 El patron: cuatro capas, ninguna en la clasificacion original
+
+| pieza | clasificada como | resulto depender de |
+|---|---|---|
+| B10.1 | «aditiva, sin dependencias» | una **firma** que no existe (§103.1) |
+| La firma | «componente» | el **esquema**, que es decision de tesis (§106.2) |
+| XMSS | «formato» | **persistir el indice** (§106.5) |
+| Persistir el indice | — | un **WAL** que no hay (§110.1) |
+
+> `CONFIANZA_RESIDUAL.md` clasifica esfuerzos **sistematicamente por
+> debajo**, y van **cuatro piezas seguidas** donde ocurre. No es que la
+> propuesta sea mala: es que **una propuesta escrita sin implementar no ve
+> las capas de abajo**, y eso es informacion sobre como leerla — no solo
+> sobre esta pieza.
+
+### 110.5 Lo que sigue en pie
+
+**XMSS sigue siendo la eleccion correcta** (§106.3): no añade familia de
+supuestos, y ese criterio no cambia.
+
+Lo que cambia es el **orden**: antes de firmar hay que resolver que el indice
+no retroceda nunca. Y hay dos vias, ninguna medida:
+
+- **WAL** —entrada 19—: persistir el indice antes de firmar.
+- **Indice independiente y monotono**, persistido con `fsync` propio antes de
+  cada firma, desacoplado de `seq`. ⚠️ Pierde la propiedad de §103.3 —que el
+  reuso sea la vista dividida— pero **§110.3 acaba de mostrar que esa
+  propiedad era ambigua de todos modos**.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

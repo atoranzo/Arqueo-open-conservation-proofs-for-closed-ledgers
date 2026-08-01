@@ -1118,18 +1118,23 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   vigentes» —`OpKind` dice que circuito usar, no que version—. Requiere
   primero **versionar las reglas de validacion**, que no existe.
 
-- [ ] **53. ⚠️ No hay firma criptografica en el proyecto, y B10.1 la
-  presupone.** Medido el 01-08-2026 (§103): cero `ed25519`, `signature` o
-  `sign(` en todo el arbol. B10.1 —cabezas **firmadas**— se clasifico como
-  «aditiva» y **§93.6 la llamo la unica sin dependencias**; eso vale para
-  publicar y **no para firmar**. ⚠️ **Y el esquema es decision de TESIS, no de
-  libreria**: `ed25519` **no es post-cuantico** y el proyecto eligio STARK por
-  eso (§103.2). **B10.1 depende de B15 —XMSS— y ninguna lo declara.**
-  ✅ **Observacion util de B15**: XMSS filtra la clave si se reusa un indice, y
-  con `seq` como indice **reusarlo significa dos cabezas con el mismo `seq`**
-  — el modo de fallo del esquema **es** el fraude perseguido (§103.3).
-  **Separable**: la cabeza **publicable** se puede hacer hoy y hace la vista
-  dividida **detectable**; sin firma no es **oponible** (§103.4).
+- [ ] **53. ⚠️ No hay firma criptografica — y XMSS depende de la 19.**
+  ⚠️⚠️ **CORRECCION (§110.1)**: se dijo que la 53 era «lo unico que puede
+  empezarse sin decidir nada mas». **Es falso**: XMSS necesita persistir su
+  indice **antes de firmar**, y eso es un requisito sobre la persistencia que
+  el proyecto **no cumple**.
+  ⚠️ **XMSS convierte una perdida de durabilidad en perdida de SECRETO**
+  (§110.2): `persistence.rs` justifica no tener WAL porque «perder una
+  operacion es recuperable»; con XMSS **no lo es**, porque reusar el indice
+  **filtra la clave**. La entrada 19 no estaba mal — **XMSS cambia su
+  premisa**.
+  ⚠️ **Y el reuso de indice es AMBIGUO** (§110.3): §103.3 lo celebraba como
+  «el modo de fallo ES el fraude», y un reinicio honesto produce el mismo
+  evento. **«Te pille mintiendo» y «acabas de perder tu clave» no se
+  distinguen desde fuera** — con la cabeza ya publicada.
+  **Sigue en pie**: XMSS es la eleccion correcta (§106.3). **Cambia el
+  orden**: primero garantizar que el indice no retroceda. Dos vias sin medir
+  en §110.5.
 
 - [ ] **48. `CONFIANZA_RESIDUAL.md`: la evidencia contra el operador esta en
   manos del operador.** Documento externo del 31-07-2026, sin integrar.
