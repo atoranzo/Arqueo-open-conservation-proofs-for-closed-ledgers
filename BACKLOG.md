@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 25 abiertas, 27 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 24 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -542,7 +542,19 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   solidez. No faltaba declararla: faltaba que este backlog no la describiera
   como pendiente.
 
-- [ ] **15. ⚠️ El ESPACIO DE CLAVES es de 64 bits. Medido, e INVENTARIADO el
+- [x] **15. ✅ CERRADA. El espacio de claves: capacidad completa, adopcion
+  opt-in.** Cerrada el 01-08-2026 (§102). ✅ **Capacidad**: los cinco
+  circuitos de gasto (§92), la puerta `open_account_wide` (§97), **un pago
+  completo con claves de 256 bits medido de punta a punta** (§97.3) y **la
+  rotacion de una cuenta estrecha a ancha, medida** (§98.2). ⚠️ **La adopcion
+  es opt-in por diseño**: quien use `open_account` sigue con 64 bits, y la
+  via esta marcada `#[deprecated]`. Se intento migrar los 159 tests con una
+  linea y **fallaron 59** —dos patrones mecanicos, ninguno del camino ancho—;
+  **se revirtio** porque no gana un solo bit y porque **que 159 tests usen la
+  via estrecha es cobertura, no deuda**: esa via sigue viva y alguien tiene
+  que probarla (§102.2). ⚠️ **Migrar los tests sera necesario al retirar la
+  via estrecha, que es la entrada 32.**
+  ~~15. El ESPACIO DE CLAVES es de 64 bits. Medido, e INVENTARIADO el
   arreglo.** ⚠️ **Inventario y plan en §85** (31-07-2026): las ocho
   derivaciones son una sustitucion cada una y el nulificador **no** cambia de
   forma; en el estado de Rescue **hay sitio** —la clave ocupa la ranura 8 de

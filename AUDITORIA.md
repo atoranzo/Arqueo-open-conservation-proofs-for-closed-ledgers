@@ -8314,6 +8314,61 @@ sin depositar».
 ⚠️ **NO se ha depositado nada en Zenodo.** Los DOI siguen apuntando a las
 terceras revisiones, **que son las que un lector recibe hoy**.
 
+## 102. La entrada 15, cerrada: la adopcion es opt-in por diseño
+
+Se intento migrar la suite entera a claves anchas cambiando **una linea**:
+`open_and_fund` llamando a `open_account_wide(wide_key(sk))`, que habria
+convertido **159 tests** de golpe.
+
+### 102.1 Lo que paso, medido
+
+Compilo limpio y **fallaron 62** —59 reales, mas los 3 testigos de
+privacidad que deben fallar—. Agrupados por mensaje:
+
+| | |
+|---|---|
+| `NotTheAccountHolder` | ~53 |
+| `assertion left == right` | 6 |
+
+⚠️ **Ninguno era del camino ancho.** Los tests abren cuenta ancha y luego
+pasan una clave **estrecha** a `send`, `claim` o `burn`, cada uno con su
+literal. Dos patrones, 59 ediciones a mano.
+
+### 102.2 Por que se revirtio
+
+**1. No gana ni un bit.** §90 garantiza que una clave rellenada da la misma
+identidad, asi que `open_and_fund` estrecha es correcta. Y la capacidad de
+256 bits **ya esta probada de punta a punta** —§97.3 el pago completo, §98.2
+la rotacion—. Migrar los 159 cambia **con que claves prueban los tests**, no
+lo que el sistema puede hacer.
+
+**2. Son 59 ediciones a mano en dos patrones**, y este mismo dia se
+demostro dos veces que ahi el error es alto: el `regex` que hizo 18
+sustituciones sin verse (§97.1) y las cinco rondas de `circuit_burn`
+(§92.7).
+
+**3. Y hay un argumento mejor que los dos anteriores.** Que 159 tests usen
+la via estrecha **no es deuda: es cobertura**.
+
+> La via estrecha **sigue existiendo y sigue siendo llamable**. Si toda la
+> suite pasa a ancha, **la estrecha queda sin un solo test** y permanece en
+> el codigo. Migrar la cobertura de lo que sigue vivo es empeorar, no
+> mejorar.
+
+### 102.3 Lo que cierra la entrada
+
+| | |
+|---|---|
+| **Capacidad** | ✅ cinco circuitos, la puerta, el pago completo, la rotacion |
+| **Adopcion** | **decision de quien abre cuenta**, no del proyecto |
+
+§97.4 ya lo decia y era exacto: **la migracion es opt-in**. La entrada 15 se
+cierra **declarandolo**, no migrando 159 tests.
+
+⚠️ **Y cuando deje de ser opt-in tendra otro nombre**: retirar la via
+estrecha es la **entrada 32**, y entonces los 159 tests habra que migrarlos
+—pero por esa razon y con ese criterio, no por esta—.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—
