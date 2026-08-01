@@ -3,9 +3,9 @@
 <p class="sub">Design Findings and Measurements</p>
 
 <div class="meta">
-<p><strong>Author:</strong> Angel Jose Toranzo Portela &nbsp;·&nbsp; <strong>Affiliation:</strong> Independent &nbsp;·&nbsp; <strong>DOI:</strong> 10.5281/zenodo.21677737</p>
+<p><strong>Author:</strong> Angel Jose Toranzo Portela &nbsp;·&nbsp; <strong>Affiliation:</strong> Independent &nbsp;·&nbsp; <strong>DOI:</strong> 10.5281/zenodo.21693706</p>
 <p><strong>Repository:</strong> https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-</p>
-<p><strong>Companion preprints:</strong> <em>Provable Compliance without Full Ledger Disclosure</em>, 10.5281/zenodo.21678396; <em>From Institutional Trust to Verifiable Properties</em>, 10.5281/zenodo.21679208.</p>
+<p><strong>Companion preprints:</strong> <em>Provable Compliance without Full Ledger Disclosure</em>, 10.5281/zenodo.21693709; <em>From Institutional Trust to Verifiable Properties</em>, 10.5281/zenodo.21693718.</p>
 <p><strong>Code artifact:</strong> executable tests and measurement harnesses in-repo</p>
 <p><strong>Version:</strong> third revision, July 2026. The second revision added §3.6, §7.5, §7.6 and §8, recorded the retirement of the single-step settlement path, and re-measured the cost figures on the two-phase path. This revision corrects the mutation-coverage figure of §8.5 from twelve circuits to eleven, reports that the nullifier tree described in §7.5 as retained dead weight has since been removed with a verified migration, adds a fifth methodology error class in §8.6, and re-measures the test counts of §9. Changes that reverse an earlier claim are marked in place rather than removed.</p>
 </div>
@@ -111,6 +111,13 @@ Every operation is split:
 
 This enables client-side custody of spending keys, external verification of disclosures without ledger access, and cleaner institutional role separation.
 
+⚠️ **Correction.** An earlier version of this paper stated the above without
+qualification. Until 31 July 2026 the layer's `apply_send`, `apply_claim` and
+`apply_mint_to_pending` **did not verify the proof at all** before mutating
+state, so the payment path did not enforce what §3.1 describes: a spending
+key was not needed to move someone else's funds. The defect is fixed and
+measured.
+
 ### 3.3 State structures
 
 State comprises:
@@ -160,6 +167,13 @@ The layer's operator is one declared party; a counterparty can be anyone. The tw
 
 The pending commitment binds the recipient's public identity, a payer-chosen salt, and the amount. Neither phase reads the other party's balance, and the property is **enforced by the function signature**: there is no parameter into which a counterparty balance could be passed.
 
+⚠️ **Correction.** That signature argument holds for the *balance*, and an
+earlier version of this paper let it stand for more than it covers. Until 30
+July 2026 the claim circuit **did not bind the commitment to the claimant's
+identity**: anyone holding the notice could claim it, and no function
+signature prevented that because it was not a signature problem. Fixed and
+measured.
+
 **Costs, stated.** The payment is not final until claimed; if the recipient never claims, the value is immobilised, and a return mechanism is not implemented. The payer chose the salt, so they can recompute the commitment and observe **when** it is claimed — not how much the recipient holds, but a residual timing signal that the design does not remove.
 
 **No nullifier.** The two-phase circuits omit nullifiers deliberately: a send changes the payer's balance, hence their leaf, hence the accounts root, so a replay presents a stale root and is rejected.
@@ -205,6 +219,17 @@ When a transfer updates Merkle state, a natural implementation climbs the tree t
 ### Finding 2 — Field width matters for identities
 
 Using a 64-bit field for identity-bearing values creates collision-scale risk unacceptable for account identity constructions. Identity-grade material required wider digests.
+
+⚠️ **Correction — the fix stated above is necessary but not sufficient.**
+Widening the *identity* prevents finding **another** key that collides with
+it; it does not prevent finding **the** key. If the secret remains a single
+element its space is 2^64 and the identity is public, so exhausting it
+offline costs 2^63 — measured at 2.38 million core-years on one CPU without
+optimising the attack, which is a **loose upper bound**. The criterion
+Finding 3 applies to the soundness ceiling applies equally here, and earlier
+versions of this paper did not apply it. The complete fix requires four
+elements in the **secret** as well; it is implemented and measured, and
+migration is opt-in — keys generated before rotating still carry 64 bits.
 
 ### Finding 3 — Conjectured vs provable STARK security can diverge substantially
 
@@ -297,7 +322,7 @@ Strict ordering between two authorising custodians is enforced by decomposing th
 
 #### Proof accumulation
 
-One thousand complete payments accumulate **120.4 MB**. This is a storage and bandwidth cost, not a stop.
+One thousand complete payments accumulate **120.4 MiB**. This is a storage and bandwidth cost, not a stop.
 
 ⚠️ **A payment is two proofs.** Each proof is about 62 KB and that has not changed; the two-phase design of §3.6 requires a send and a claim. An earlier version of this paper reported 59.1 MB, which measured the single-step path after that path had stopped being the production one.
 

@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 25 abiertas, 27 resueltas. Ultima revision: 1 de agosto de 2026.
+**Estado**: 24 abiertas, 28 resueltas. Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
 fallos y aparecieron **dos que no eran la clase conocida** (§78). Los 78
@@ -664,7 +664,12 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **Arreglo dimensionado en §82.5**: `sk` de 4 elementos, que invalida
   cualquier cuenta existente.
 
-- [ ] **16. Referencias cruzadas de los preprints.** Los tres citan
+- [x] **16. ✅ Referencias cruzadas: CORREGIDAS.** Las siete el 01-08-2026
+  (§101.2): cinco cruzadas **y dos autocitas** —`ZK-SSL-preprint.md` y
+  `ZK-SSL-policy-note.md` se citaban a si mismos con su DOI de primera
+  revision—, que la entrada no inventariaba. Cero DOI de primera revision en
+  `doc/preprints/`.
+  ~~16. Referencias cruzadas de los preprints.~~ Los tres citan
   versiones anteriores de sus companeros; primera cosa de la cuarta
   revision. **Comprobable** contra los propios ficheros de `doc/`, sin
   necesidad de seccion. ⚠️ **La cuarta revision ya no es solo esto**: se le
@@ -765,7 +770,20 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   Con esto el **frente de grados (6, 24, 25, 34) queda cerrado**: decidido y
   documentado, sin migrar nada.
 
-- [ ] **28. Preprints: LOS CUATRO FRENTES ESCRITOS, sin publicar.**
+- [ ] **28. Preprints: CORREGIDOS los tres, sin depositar.**
+  ⚠️⚠️ **§84 inventario los ficheros EQUIVOCADOS** (§101.1): `PAPER.md` y
+  `QUESTIONS.md` de la raiz **no son los preprints publicados** —978 lineas
+  contra 448, numeracion y contenido distintos—. Las notas del 01-08 estan en
+  **material interno**; la 28 no estaba hecha. **§99.5 por segunda vez.**
+  ✅ **Hecho sobre `doc/preprints/`**: los cuatro frentes en
+  `ZK-SSL-preprint.md`; **dos filas de §4.1** de `ZK-SSL-residual-trust.md`
+  cuya garantia no se cumplia —§73 y §74—; la unidad **MiB**, tercera
+  correccion de esa cifra; **§4.7 nueva**, con la privacidad frente a
+  terceros y **sin checkmark**, porque §99 descarto las soluciones; y el
+  frente A en `ZK-SSL-policy-note.md`.
+  ⚠️⚠️ **NO DEPOSITADO.** Los DOI apuntan a las terceras revisiones, **que
+  son las que un lector recibe hoy**. Depositar es el paso que cierra esta
+  entrada, y es una decision, no trabajo.
   ✅ Escritos el 01-08-2026 (§100) en `PAPER.md`, `PAPER_EN.md` y
   `QUESTIONS.md`: **notas de correccion** para la clave de gasto (§73) y el
   cobro (§27) —«la capa no verificaba las pruebas… la clave no hacia falta

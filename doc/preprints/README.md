@@ -45,10 +45,24 @@ Consecuencias que un lector debe conocer:
 - A partir de aquí el problema desaparece: la cuarta revisión será un
   parche sobre estos ficheros.
 
-## Pendiente conocido
+## Referencias cruzadas: corregidas
 
-Las **referencias cruzadas entre los tres preprints apuntan a versiones
-anteriores** de sus compañeros, no a las terceras revisiones. Los enlaces
-resuelven y lo citado es correcto, pero quien los siga leerá una versión
-con cifras ya corregidas. Es la entrada **16** de `BACKLOG.md` y lo
-primero de la próxima revisión.
+~~Las referencias cruzadas apuntan a versiones anteriores.~~ **Corregido el
+01-08-2026** (entrada **16**): las siete citas —cinco cruzadas y **dos en
+las que un preprint se citaba a sí mismo con su DOI de primera revisión**—
+apuntan ya a las terceras.
+
+⚠️ La entrada 16 hablaba solo de las cruzadas; las dos autocitas se
+encontraron al hacerla.
+
+## Cuarta revisión: escrita, sin depositar
+
+Los ficheros de este directorio llevan ya las correcciones de la cuarta
+revisión (entrada **28**): notas sobre las dos propiedades que el diseño
+garantizaba y la implementación no imponía, el arreglo incompleto de la
+anchura de identidades, la unidad **MiB**, y una sección nueva —§4.7 de
+`ZK-SSL-residual-trust.md`— con un residual **abierto**.
+
+⚠️ **No se ha depositado nada en Zenodo.** El texto está corregido; los DOI
+de arriba siguen apuntando a las terceras revisiones, que son las que un
+lector recibe hoy.

@@ -8,7 +8,7 @@
 <p><strong>License:</strong> MIT OR Apache-2.0 &nbsp;·&nbsp; <strong>Status:</strong> Technical preprint / systems note &nbsp;·&nbsp; <strong>Affiliation:</strong> Independent</p>
 <p><strong>Version:</strong> third revision, July 2026. The second revision added §4.4 and §4.5, reporting residual dependencies the first version did not name. This revision reports that the nullifier tree behind the collision bound of §4.5 has been removed from the layer with a verified migration, corrects the mutation-coverage figure of §4.6 from twelve circuits to eleven, and adds a third correction to the conclusion concerning figures that disagreed across this project's own published documents.</p>
 <p><strong>No institutional affiliation.</strong> This is independent work. It is not affiliated with, endorsed by, or commissioned by the European Central Bank, the Eurosystem, or any other institution, public or private. No claim in this document should be read as anyone's position but its author's.</p>
-<p><strong>Companion preprints:</strong> <em>Comparative Implementation of a Zero-Knowledge Settlement Layer across Five Proof Systems</em>, 10.5281/zenodo.21677737; <em>Provable Compliance without Full Ledger Disclosure</em>, 10.5281/zenodo.21678396.</p>
+<p><strong>Companion preprints:</strong> <em>Comparative Implementation of a Zero-Knowledge Settlement Layer across Five Proof Systems</em>, 10.5281/zenodo.21693706; <em>Provable Compliance without Full Ledger Disclosure</em>, 10.5281/zenodo.21693709.</p>
 </div>
 
 **Keywords:** financial settlement, zero-knowledge proofs, institutional trust, residual trust, selective disclosure, payment infrastructure, permissioned systems
@@ -117,9 +117,9 @@ ZK does not delete intermediaries by default. In a single-node deployment, resid
 | Censor or delay transactions | Yes |
 | Become a single point of failure | Yes |
 | Silently rewrite history | Constrained by chained transition records / integrity checks |
-| Create value outside rules | Constrained by proof verification and public supply constraints |
-| Spend from an account without key | Constrained if spending proofs require client-side keys |
-| Learn a counterparty's balance | **Constrained now:** the single-step path that exposed it has been retired and the split transition is the only path; see §4.4 |
+| Create value outside rules | Constrained by proof verification and public supply constraints — ⚠️ **the constraint failed once; see §4.7** |
+| Spend from an account without key | Constrained if spending proofs require client-side keys — ⚠️ **the condition did not hold; see §4.7** |
+| Learn a counterparty's balance | **Constrained now:** the single-step path that exposed it has been retired and the split transition is the only path; see §4.4 — ⚠️ **but a *neighbour* can still read it; see §4.7** |
 | Keep an account frozen indefinitely | Not bounded: freezes are counted but never expire |
 | Refuse service once a capacity bound is reached | Partly bounded; see §4.5 — one of the three bounds has since been removed |
 
@@ -173,9 +173,9 @@ Three were quantified. **One of the three has since been removed**, and the sequ
 
 **The authorising set is capped at 128 members** by the way ordering between two custodians is enforced. Beyond that, authorisations between distant members fail intermittently, depending on which two sign.
 
-**Evidence accumulates at 120.4 MB per thousand complete payments.** This is a cost, not a stop, and an earlier framing of this work treated it as the binding limit. It was not: the collision bound blocked legitimate payments far earlier, permanently, and while the system was nowhere near saturation.
+**Evidence accumulates at 120.4 MiB per thousand complete payments.** This is a cost, not a stop, and an earlier framing of this work treated it as the binding limit. It was not: the collision bound blocked legitimate payments far earlier, permanently, and while the system was nowhere near saturation.
 
-⚠️ That figure was itself corrected twice, and both corrections belong in a paper about naming residual trust. The first version treated accumulation as the binding limit, which it is not. The second reported 59.1 MB, which measured the single-step path after that path had stopped being the production one — a payment through the split transition of §4.4 is **two proofs, not one**.
+⚠️ That figure has now been corrected three times, and every correction belongs in a paper about naming residual trust. **The third is the unit**: the number was always binary and was reported as "MB"; in SI units it is 129.0 MB. The first version treated accumulation as the binding limit, which it is not. The second reported 59.1 MB, which measured the single-step path after that path had stopped being the production one — a payment through the split transition of §4.4 is **two proofs, not one**.
 
 ⚠️ **And the expensive half falls on the recipient.** Generating a claim proof costs roughly 500 ms against 283 ms for a send. For a residual-trust schedule this is not a footnote: the party with the least choice about participating carries the larger cost.
 
@@ -192,6 +192,46 @@ That correction is not incidental to this paper's thesis. **A verification tool 
 All of §4.4 and §4.5 came from a different question: *what does this check defend, and what happens if I attempt the thing it is supposed to prevent?* Applied to tests inherited from a superseded implementation path, that question found a regulatory limit no longer enforced in-circuit and a set of operations leaving no audit trail. Applied to restart tests, it found a privilege quota that a node restart silently renewed.
 
 We report this because it bears on the paper's thesis. Naming residual trust is not a one-time act of documentation. It is a recurring adversarial exercise against one's own claims, and its yield came from asking what was defended — not from building instruments to detect what was not.
+
+### 4.7 Three residuals this paper had not named
+
+§4.4 states that a design which bounds the operator and ignores the
+counterparty **has named the wrong residual**. An audit pass on 31 July 2026
+found three more, and the same sentence applies to them.
+
+**Two conditions in §4.1 that did not hold.** The table said value creation
+was *constrained by proof verification* and that spending without a key was
+*constrained if spending proofs require client-side keys*. Until 31 July
+2026 the layer's `apply_send`, `apply_claim` and `apply_mint_to_pending`
+**did not verify their proofs at all**, so neither constraint operated: any
+party could empty any account, and value could be minted outside the supply
+cap. Both are fixed and measured.
+
+⚠️ **The table's own wording anticipated this and no one checked it.** A row
+reading *«constrained **if** X»* states a condition; verifying that X holds
+is a separate act, and it was never performed.
+
+**And a residual that is still open.** §4.4 closed the leak toward the
+*payer* — paying someone no longer reveals what they hold. It did not close
+the leak toward a **neighbour who has not paid anything**:
+
+The layer hands each client the Merkle path for its own account. The
+sibling at level 0 **is the neighbouring account's leaf**, and the leaf is
+`H(H(identity, balance), nonce)` with **no salt**. With the target's public
+identity — which travels as the payment address — the balance is recovered
+by dictionary. **Measured: 10.84 s** for a retail balance.
+
+The cost is not a number but a curve over the balance range an attacker
+assumes: **2.4 minutes** for 0–10 000 €, 4.1 hours for 0–1 M, and 8.3 × 10⁷
+core-years if balances were uniform over 64 bits — **which they never are in
+a money system**. Scope is bounded: **one account** per path, since only the
+level-0 sibling is a leaf preimage. And account indices are sequential, so
+**the neighbour is chosen, not drawn**.
+
+⚠️ **This one does not end in a checkmark.** Deriving a salt from the
+spending key is ruled out: `open_account`, `mint`, `freeze` and `recover`
+all write a holder's leaf **without knowing that holder's secret**. No
+solution is currently known, and stating that is the point of this section.
 
 ## 5. Comparison with existing models
 

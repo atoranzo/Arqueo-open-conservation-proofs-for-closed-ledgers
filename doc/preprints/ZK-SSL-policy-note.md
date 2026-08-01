@@ -3,13 +3,13 @@
 <p class="sub">A Zero-Knowledge Settlement Architecture for Supervisory Audit</p>
 
 <div class="meta">
-<p><strong>Author:</strong> Angel Jose Toranzo Portela &nbsp;·&nbsp; <strong>DOI:</strong> 10.5281/zenodo.21678396</p>
+<p><strong>Author:</strong> Angel Jose Toranzo Portela &nbsp;·&nbsp; <strong>DOI:</strong> 10.5281/zenodo.21693709</p>
 <p><strong>Repository:</strong> https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-</p>
 <p><strong>Document type:</strong> Technical policy note / preprint &nbsp;·&nbsp; <strong>Affiliation:</strong> Independent</p>
 <p><strong>Audience:</strong> supervisors, central banks, fintech risk teams, CBDC researchers, payment architects</p>
 <p><strong>Version:</strong> third revision, July 2026. The second revision added §3.4, §3.5, §4.1 and §5.1, extended the residual-trust schedule of §5 with quantified capacity limits, and re-measured the cost figures on the two-phase path. This revision reports that the mechanism behind the collision bound of §5.1 has been removed from the layer with a verified migration, withdraws the conditional caveat in §8 that the two-phase path had not yet become the only path, and re-measures the test count in the artifact list.</p>
 <p><strong>No institutional affiliation.</strong> This is independent work. It is not affiliated with, endorsed by, or commissioned by the European Central Bank, the Eurosystem, or any other institution, public or private. References to the digital euro are to publicly published designs and are cited as context for a technical problem. No claim in this document should be read as anyone's position but its author's.</p>
-<p><strong>Companion preprint:</strong> the measurement and proof-system comparison behind this note is published separately as <em>Comparative Implementation of a Zero-Knowledge Settlement Layer across Five Proof Systems</em>, 10.5281/zenodo.21677737. Its first version reported 59.1 MB per thousand operations and a 17.5 % apply-to-prove ratio; both figures measured the single-step path, which is no longer the production one. Those figures have since been corrected in that preprint's own revisions, and the values used here are the corrected ones for a complete two-phase payment.</p>
+<p><strong>Companion preprint:</strong> the measurement and proof-system comparison behind this note is published separately as <em>Comparative Implementation of a Zero-Knowledge Settlement Layer across Five Proof Systems</em>, 10.5281/zenodo.21693706. Its first version reported 59.1 MB per thousand operations and a 17.5 % apply-to-prove ratio; both figures measured the single-step path, which is no longer the production one. Those figures have since been corrected in that preprint's own revisions, and the values used here are the corrected ones for a complete two-phase payment.</p>
 </div>
 
 **Keywords:** supervisory audit, selective disclosure, zero-knowledge proofs, payment settlement, compliance, privacy, residual trust, CBDC infrastructure
@@ -87,6 +87,14 @@ A transfer works as follows:
 In many operational designs, intermediaries must handle or control signing capability to process activity. That creates custody and insider-risk concentration.
 
 In this architecture, **the spending key does not need to travel to the operator** for a transfer proof to be created. The operator may still be operationally powerful, but one sensitive trust path — key custody for ordinary spending — is reduced.
+
+⚠️ **Correction.** That is a property of the design, and until 31 July 2026
+the implementation did not enforce it: the layer applied payment-path
+transitions **without verifying their proofs**, so a spending key was not
+needed to move another account's funds. What the design withheld from the
+operator, the implementation did not require of anyone. The defect is fixed
+and measured; supervisors reading an earlier version of this note received
+the claim without that qualification.
 
 For risk officers, this is a concrete control statement:
 

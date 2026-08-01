@@ -8242,6 +8242,78 @@ documento **antes de registrar**, no despues.
   rotas **crearia el mismo problema otra vez**.
 - Los cuatro frentes estan escritos; **la revision no esta publicada**.
 
+## 101. ⚠️ §84 inventario los preprints EQUIVOCADOS
+
+### 101.1 Lo que paso
+
+§84 localizo once pasajes en `PAPER.md` y `QUESTIONS.md` de la raiz. **Esos
+no son los preprints publicados.** Los del DOI estan en `doc/preprints/`:
+
+| | raiz | publicado |
+|---|---|---|
+| Lineas | `PAPER.md` **978** | `ZK-SSL-preprint.md` **448** |
+| §8.2 | «El campo Goldilocks es demasiado estrecho para identidades» | «Properties proven on a model that is not executed» |
+| «la clave de gasto no sale» | si | **no aparece** |
+
+Las cuatro notas escritas el 01-08 estan en **material interno**. Corrigen
+afirmaciones reales y esos ficheros tambien deben ser fieles, pero **la
+entrada 28 no estaba hecha**, y el commit que las llevaba se llama *«Fourth
+revision of the preprints»* sin haber tocado ningun preprint.
+
+> Es **§99.5 por segunda vez en la misma sesion**: un dato correcto sobre el
+> objeto equivocado es indistinguible de un dato correcto.
+
+⚠️ Y otra vez lo cazo **intentar usar la conclusion** —hacer la entrada 16—
+no releer §84. Van **seis** autocorrecciones hoy y las seis igual.
+
+### 101.2 La entrada 16 tenia dos citas mas de las que decia
+
+Siete DOI apuntaban a primeras revisiones. **Cinco cruzadas** —lo
+inventariado— **y dos autocitas**: `ZK-SSL-preprint.md` y
+`ZK-SSL-policy-note.md` **se citaban a si mismos** con su DOI antiguo. Eso
+no estaba en la entrada.
+
+### 101.3 ⚠️ Lo que aparecio al leer `ZK-SSL-residual-trust.md`
+
+Su tabla §4.1 enumera lo que el operador puede hacer, y **dos filas
+enunciaban garantias que no se cumplian**:
+
+| fila | decia | la realidad |
+|---|---|---|
+| *Create value outside rules* | «Constrained by proof verification» | §74: **se creo dinero fuera del tope** |
+| *Spend from an account without key* | «Constrained **if** spending proofs require client-side keys» | §73: **la capa no verificaba** |
+
+> **La tabla ya tenia el formato correcto.** Distingue «Yes», «Constrained»,
+> «Not bounded», y usa «constrained **if** X» cuando la garantia es
+> condicional. **Lo que fallo no fue el diseño del documento: fue verificar
+> que X se cumpliera.** §95.2 dentro del papel que lo padece.
+
+Y **falta una fila entera**: la tabla no contempla al **tercero**. §4.4 cerro
+la fuga hacia el pagador; la de §93 va hacia un **vecino que no ha pagado
+nada**, y ese documento se compromete —§24— a que *«un paper cuya
+contribucion es nombrar la confianza residual queda falsado por la confianza
+que no supo nombrar»*.
+
+### 101.4 §4.7: la primera seccion de ese paper sin ✅
+
+Se añadio con los tres residuales: las dos condiciones incumplidas y la
+privacidad frente a terceros, con los **10,84 s**, la curva sobre el rango de
+saldo, el alcance de **una cuenta** y el vecino **elegible**.
+
+⚠️ **No termina en checkmark**, y es lo correcto: §99 descarto la familia de
+soluciones. Un documento cuya tesis es nombrar lo que falta, con todos sus
+residuales cerrados, es sospechoso.
+
+### 101.5 Lo hecho, y lo que sigue sin hacerse
+
+✅ Siete DOI · §4.1 dos filas · §4.5 la unidad, **tercera correccion de esa
+cifra** · §4.7 · frente A en `policy-note`, redactado para su lector
+institucional · `README` del directorio, de «pendiente conocido» a «escrita,
+sin depositar».
+
+⚠️ **NO se ha depositado nada en Zenodo.** Los DOI siguen apuntando a las
+terceras revisiones, **que son las que un lector recibe hoy**.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—
