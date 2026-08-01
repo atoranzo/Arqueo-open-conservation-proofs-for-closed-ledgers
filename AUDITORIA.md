@@ -9434,6 +9434,74 @@ declarada**: el recall exige consentimiento del receptor y esto es
 
 Δ por encima del suelo lo elige el emisor, con **Δ=∞ como statu quo**.
 
+## 120. ⚠️ El codigo cita dos documentos que NO EXISTEN
+
+### 120.1 Medido
+
+`CONFIANZA_RESIDUAL.md` y `ESCALADO.md` **no estan en el arbol ni en el
+historial** —`git log --all` no devuelve nada—. Y se citan:
+
+| dónde | citas |
+|---|---|
+| **Codigo publicado** | **6** — `lib.rs:422`, `log.rs:405/423/446`, `metrics.rs:73/194` |
+| `AUDITORIA.md` | **12** |
+| `BACKLOG.md` | **6** |
+
+**Veinticuatro referencias a documentos que nunca se commitearon**, seis de
+ellas **en el codigo**, por nombre y seccion: `B10.1`, `§8.1`, `§2.2`,
+«dimensiona el shard sobre 4 ms».
+
+### 120.2 El propio proyecto tiene la frase que lo condena
+
+`ZK-SSL-residual-trust.md`, en voz del autor:
+
+> *«Un numero que no describe nada ejecutable es una **dependencia residual
+> de la confianza del lector en el autor**.»*
+
+⚠️ **Una cita a un fichero inexistente es exactamente eso** — y esta en el
+codigo publicado, no en notas internas. Un lector que quiera comprobar
+`log.rs:423` **no puede**.
+
+### 120.3 ⚠️ Cuatro de las seis citas del codigo son de HOY
+
+`lib.rs:422` y `log.rs:405/423/446` se escribieron esta sesion, al construir
+`EpochHead` (§104). **Se cito un documento que estaba pegado en el chat como
+si fuera del repositorio, sin comprobar que lo estuviera.**
+
+> Es §101 exacto —inventariar los ficheros equivocados por no comprobar cual
+> era el objeto— **cometido otra vez seis horas despues, en el mismo dia y
+> por la misma mano.**
+
+### 120.4 Sexta de la familia §95.2, y de clase nueva
+
+| | la forma |
+|---|---|
+| §76, §84.2, §95, §98.4 | una **garantia** cuya condicion nadie verifico |
+| §111.2 | una **salvaguarda que no existe** |
+| **§120** | una **referencia que el lector no puede seguir** |
+
+Las anteriores prometian de mas sobre algo real o describian algo ausente.
+**Esta ofrece una comprobacion y la hace imposible** — que es peor en un
+proyecto cuyo metodo es la trazabilidad.
+
+### 120.5 La decision, ABIERTA y declarada
+
+| | |
+|---|---|
+| **A · commitear los dos documentos** | cierra las 24 citas. ⚠️ Mete en el arbol **texto nunca revisado y con cifras desfasadas** —el borrador dice «cabeza ~200 B» y la real son **~18,5 KB** (§114)— |
+| **B · repuntar cada cita** | mas fiel al estado real. ⚠️ **Algunas no tienen destino**: `§8.1` y `§2.2` no estan en ningun fichero, ni en el preprint derivado |
+
+**Recomendacion registrada, no ejecutada**: **A con cabecera de estado** —
+commitearlos **marcados como propuestas de sesion no revisadas**, con la
+lista de lo que otras secciones ya corrigen.
+
+> B convierte 24 citas verificables en 24 parafrasis y **pierde la
+> trazabilidad que este proyecto usa como metodo**. A la conserva, **al
+> precio de que el arbol gane dos documentos de autoridad menor** — y eso
+> hay que decirlo en su cabecera, o se repite el problema de los preprints.
+
+**No se ejecuta aqui**: es decision del autor.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

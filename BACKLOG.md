@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 32 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 33 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -1108,6 +1108,25 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   incluir en la cabeza hoy**: el proyecto no tiene noción de «reglas
   vigentes» —`OpKind` dice que circuito usar, no que version—. Requiere
   primero **versionar las reglas de validacion**, que no existe.
+
+- [ ] **61. ⚠️⚠️ El codigo cita DOS DOCUMENTOS QUE NO EXISTEN.**
+  Medido el 01-08-2026 (§120): `CONFIANZA_RESIDUAL.md` y `ESCALADO.md` **no
+  estan en el arbol ni en el historial**, y se citan **24 veces** — **6 en
+  codigo publicado** (`lib.rs`, `log.rs` ×3, `metrics.rs` ×2), 12 en
+  `AUDITORIA.md`, 6 aqui.
+  ⚠️ **El propio preprint tiene la frase que lo condena**: *«un numero que no
+  describe nada ejecutable es una dependencia residual de la confianza del
+  lector en el autor»*. **Una cita a un fichero inexistente es exactamente
+  eso.**
+  ⚠️ **Cuatro de las seis citas del codigo son de esa misma sesion**
+  (§120.3): §101 cometido otra vez seis horas despues.
+  ⚠️ **Sexta de la familia §95.2 y de clase nueva**: no una garantia sin
+  verificar ni una salvaguarda inventada, sino **una comprobacion ofrecida y
+  hecha imposible**.
+  **DECISION ABIERTA** (§120.5): **A** commitear los dos —cerrando las 24
+  citas, al precio de meter texto no revisado con cifras desfasadas— o **B**
+  repuntar cada cita —mas fiel, pero **algunas no tienen destino**—.
+  Recomendacion: **A con cabecera de estado**.
 
 - [ ] **59. ⚠️ `native_merge` esta definida DOS veces, y son la misma.**
   `rescue_hash.rs:121` y `merkle.rs:91`: **cuerpos identicos linea a linea**
