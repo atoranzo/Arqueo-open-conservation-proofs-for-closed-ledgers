@@ -721,11 +721,22 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   mismo, y ahi no hay reintento de test que valga. Deja de ser una
   limitacion teorica.
 
-- [ ] **19. Sin log de escritura anticipada.** **Comprobable**: `grep -rn
-  "write_ahead\|journal" crates/zk-ssl/src/` no devuelve nada. Un fallo
-  entre operaciones
-  detiene el arranque pidiendo intervencion manual: correcto, pero no
-  automatico.
+- [ ] **19. Sin log de escritura anticipada — y la consecuencia que se
+  describia NO existe.** **Comprobable**: `grep -rn "write_ahead|journal"
+  crates/zk-ssl/src/` no devuelve nada. ✅ Eso es cierto.
+  ⚠️⚠️ **CORREGIDO el 01-08-2026 (§111.2)**: esta entrada decia que un fallo
+  entre operaciones «detiene el arranque pidiendo intervencion manual».
+  **Medido: cero coincidencias de `intervencion`, `manual` o
+  `StoreError::Malformed`. Nada detiene el arranque.** Y `persistence.rs`
+  documenta lo contrario: **el ledger queda coherente en los tres casos de
+  fallo**; lo que se pierde es **durabilidad, no integridad**.
+  ⚠️ **Quinta de la familia §95.2 y de la peor clase**: las otras cuatro
+  prometian de mas sobre algo real; **esta describia un mecanismo
+  inventado**.
+  ⚠️ **La 53 NO depende de esta entrada** (§111.1): XMSS necesita **su propio
+  contador con `fsync`**, no un WAL del ledger. El argumento de
+  `persistence.rs` —un WAL propio añade superficie sobre lo que `sled` ya
+  hace— **sigue siendo valido**.
 
 - [ ] **20. Rotacion de claves: DOS de cuatro casos, y uno no es un hueco.**
   ~~Implementada solo en parte.~~ ⚠️ **«En parte» no se podia ni confirmar ni

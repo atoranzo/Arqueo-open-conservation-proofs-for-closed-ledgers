@@ -8972,6 +8972,67 @@ no retroceda nunca. Y hay dos vias, ninguna medida:
   reuso sea la vista dividida— pero **§110.3 acaba de mostrar que esa
   propiedad era ambigua de todos modos**.
 
+## 111. La 53 NO depende de la 19 — y la 19 afirma algo que no existe
+
+### 111.1 ⚠️ §110.1 fue precipitada
+
+Hace quince minutos §110.1 concluyo que **la 53 depende de la 19**, porque
+XMSS necesita persistir su indice antes de firmar y el proyecto no tiene WAL.
+
+**Son piezas distintas:**
+
+| | que necesita | quien lo da |
+|---|---|---|
+| **Entrada 19** | durabilidad del **ledger** | `sled` ya la da; un WAL propio **añadiria superficie**, y `persistence.rs` lo argumenta bien |
+| **XMSS** | que **su indice** no retroceda nunca | **un contador propio con `fsync`**, aislado del ledger |
+
+Lo segundo es **una pieza pequeña**: un valor, persistido antes de cada
+firma. No toca el ledger, no reimplementa nada de `sled`, y **no tiene la
+superficie de fallo que `persistence.rs` teme de un WAL**.
+
+⚠️ **Y §110.3 quito el motivo de acoplarlos.** La propiedad elegante de
+§103.3 —que reusar indice **sea** la vista dividida— resulto ambigua, porque
+un reinicio honesto da el mismo evento. **Sin esa propiedad, atar el indice a
+`seq` no compra nada**, y un contador independiente es mas simple.
+
+**Duodecima correccion del dia**, y **tercera dentro de la misma hora en que
+se escribio lo corregido**.
+
+### 111.2 ⚠️ Y la entrada 19 afirma una salvaguarda que NO existe
+
+La entrada dice:
+
+> *«Un fallo entre operaciones **detiene el arranque pidiendo intervencion
+> manual**: correcto, pero no automatico.»*
+
+**Medido: cero coincidencias** de `intervencion`, `manual` o
+`StoreError::Malformed` en toda la capa. **Nada detiene el arranque.**
+
+Y `persistence.rs` documenta lo contrario:
+
+> *«En los tres casos el ledger queda **coherente**… se pierde durabilidad,
+> no integridad.»*
+
+⚠️ **La parte comprobable de la entrada es cierta** —no hay WAL, y ella misma
+da el `grep` que lo demuestra—. **La descripcion de la consecuencia es
+falsa.**
+
+### 111.3 Es la quinta de la familia §95.2, y de la peor clase
+
+| | la forma |
+|---|---|
+| §76, §84.2, §95, §98.4 | una **garantia** cuya **condicion** nadie verifico |
+| **§111.2** | una **salvaguarda que no existe** |
+
+> Las cuatro anteriores prometian de mas sobre algo real. **Esta describe un
+> mecanismo inventado** — y un lector que confie en ella creera que el
+> sistema se protege de un fallo del que **no se protege**.
+
+⚠️ Y lo mas incomodo: la entrada **se acompaña de su propio `grep`
+comprobable**, que es la disciplina de la casa. **Comprobar la mitad
+verificable de una afirmacion y dar la otra mitad por buena es exactamente lo
+que §59.2 castiga**, cometido en el documento que lleva la cuenta.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—
