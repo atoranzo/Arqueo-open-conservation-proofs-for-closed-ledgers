@@ -9311,6 +9311,129 @@ nodo. Decirlo de menos seria falso; decirlo de mas, tambien.
 **No se corrige aqui**: los preprints estan **suspendidos** (entrada 28), y
 `SECURITY.md` espera a que T2b confirme la decision.
 
+## 119. La reversion es un segundo cobro, jamas una tercera voluntad
+
+**Decision** (pieza 4 de §88.4): quien devuelve es **el emisor, con su clave,
+tras un plazo**, por la misma maquinaria de claim, hacia una identidad de
+retorno comprometida en el envio.
+
+### 119.1 Lo que mata las alternativas es una sola frase
+
+> Operador, gobernanza, custodios caso a caso **y el barrido automatico**
+> —*«el mismo poder con eufemismo»*— serian **la primera transicion del
+> sistema donde el dinero se mueve SIN LA CLAVE DE UN TITULAR**.
+
+Eso rompe la fila «gastar de una cuenta ajena» de la tabla de garantias.
+**Muertas por identidad del proyecto, no por conveniencia.**
+
+⚠️ Y **«nadie, nunca» sobrevive** — como el subcaso **Δ=∞ pago a pago**, no
+como politica. Es mas honesto: el statu quo se conserva como **eleccion del
+emisor**, no como imposibilidad.
+
+### 119.2 El mecanismo, y su invariante
+
+El compromiso pendiente v2 ata `(receiver_id, salt, amount)` **mas**
+`refund_id` —elegido por el emisor— **y los terminos temporales**.
+
+> ⚠️ **Invariante**: los terminos van **en el compromiso**, no solo en el
+> aviso. Inmutables desde el envio y **a la vista del receptor**, que ve al
+> recibir cuando puede vencer lo suyo.
+
+Antes del vencimiento **solo el receptor cobra**; despues, **tambien** el
+retorno. **El receptor nunca pierde el derecho hasta que el emisor ejecuta**:
+no hay fondos que caduquen al vacio ni barredor. La invariante de suministro
+no se toca.
+
+### 119.3 ⚠️ El reloj: `seq` NO es un reloj
+
+**Autocorreccion registrada por el propio asiento.** Se afirmo que «`seq` es
+inflable porque `open_account` no exige autorizacion»; el codigo muestra
+`max_accounts` acotandolo.
+
+Y esa correccion tapaba **la de fondo**:
+
+> **`seq` cuenta operaciones, no tiempo.** En un sistema quieto, un mes son
+> **cero entradas** — y §88.5 pedia «meses, no bloques».
+
+**El plazo se cuenta en cabezas de epoca firmadas** —el latido 1/min de
+§115—: un reloj anclado a calendario **cuya aceleracion por el operador deja
+evidencia firmada y oponible** en manos de cualquier testigo. `seq` crudo no
+la dejaba.
+
+La pieza 2 de §88.4 queda precisada: **no es «meter seq en la traza», es atar
+el input temporal a una cabeza verificable.**
+
+### 119.4 §88.6 resuelto, con su coste
+
+El circuito de reversion lleva `frozen_root` y comprueba **receptor ∉
+congelados** — espejo de lo que `circuit_claim` hace con el cobrador (§29).
+Congelar preserva el patrimonio **entrante** entero: «enviarle y revertir»
+no lo vacia.
+
+⚠️ **Coste con nombre**: la congelacion pasa a **retener fondos de terceros**
+—los emisores—, lo que añade presion a la politica de caducidad de
+congelaciones que el README ya lista como falta.
+
+### 119.5 Poderes nuevos del operador
+
+1. ⚠️ **Tras Δ hay carrera** emisor/receptor **y el operador ordena**.
+   Combinando orden y censura puede forzar el desenlace entre los dos
+   legitimos. **No puede robar** —el dinero solo va a receptor o retorno—
+   pero es poder nuevo.
+2. El reloj de cabezas firmadas convierte su aceleracion en **evidencia
+   oponible**.
+
+⚠️ **3. Y uno compuesto que el asiento no separa**: el operador es **a la vez
+quien ordena la carrera y quien acelera el reloj**. Puede censurar al
+receptor durante Δ y luego favorecer al emisor.
+
+> Cada pieza deja evidencia por separado —la censura no esta cerrada, la
+> aceleracion es oponible— pero **combinadas producen un resultado que
+> ninguna de las dos evidencias explica sola**. No cambia la decision; **es
+> una fila propia**, no una mencion de pasada.
+
+### 119.6 Sin retroactividad — estructural, no disciplinaria
+
+**Los pendientes v1 son irreversibles para siempre**, incluidos los perdidos
+de §30.
+
+> Cambiarles los terminos a posteriori seria **exactamente la deshonestidad
+> que el proyecto existe para impedir.**
+
+✅ **Comprobado en arbol**: `t3a_sin_retroactividad_por_construccion` —ningun
+`refund_id` con ningun reloj reconstruye un compromiso v1—.
+
+Hacia delante, v2 **cierra las tres fuentes de la entrada 12**: el receptor
+lento cobra hasta que el emisor ejecuta; el identificador inexistente de §30
+pasa de perdida segura a **recuperable si Δ es finito**; el limbo de §29
+queda **retenido-durante y reversible-despues**.
+
+### 119.7 Sometida a uso: T3a, 3/3 sobre el struct real
+
+Exclusion mutua sobre el arbol real, solo el retorno designado revierte —con
+el pendiente **integro** tras el intento ajeno—, y la no-retroactividad.
+
+⚠️ **El compromiso v2 del test es prototipo**: el formato real llega con las
+piezas 1-3, y **T3b es su aceptacion** —(a) antes del vencimiento rechaza;
+(b) despues verifica y consume; (c) receptor congelado ⇒ rechazada; (d) un v1
+rechazado **tambien en circuito**; (e) el input temporal atado a una cabeza
+firmada—.
+
+**Si (a) no puede escribirse** porque el reloj no entra como input publico,
+la politica queda **condicionada, no caida**.
+
+### 119.8 La linea para `PRINCIPIOS.md`
+
+> **Δ_min = 13 meses.** Ningun pago puede llevar un plazo de reversion menor.
+
+**Precedente**: el plazo de *recall* de SEPA. ⚠️ **Con la analogia imperfecta
+declarada**: el recall exige consentimiento del receptor y esto es
+**unilateral por abandono**, lo que argumenta un suelo **largo, nunca corto**.
+
+> **Un Δ≈0 seria un pago que nunca fue promesa.**
+
+Δ por encima del suelo lo elige el emisor, con **Δ=∞ como statu quo**.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

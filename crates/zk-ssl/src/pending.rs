@@ -347,3 +347,106 @@ mod tests {
         );
     }
 }
+
+
+#[cfg(test)]
+mod t3a_reversion_como_segundo_cobro {
+    //! T3a - entrada 12/§88: la exclusion del "segundo cobro", sometida a
+    //! uso sobre el arbol real ANTES de construir circuito alguno. El
+    //! compromiso v2 es prototipo de test; el formato real llega con las
+    //! piezas 1-3.
+    use super::*;
+    use std::collections::HashMap;
+
+    fn d(x: u64) -> Digest {
+        [BaseElement::new(x), BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO]
+    }
+
+    /// v2 = merge(v1, merge(refund_id, created_seq)): v1 como prefijo.
+    fn commitment_v2(rec: Digest, salt: Digest, amt: u64, refund: Digest, seq: u64) -> Digest {
+        native_merge(
+            pending_commitment(rec, salt, amt),
+            native_merge(refund, d(seq)),
+        )
+    }
+
+    /// Reversion prototipo: mismo esqueleto que `claim`, reconstruyendo
+    /// con la identidad de RETORNO. No comprueba Δ ni congelados: eso es
+    /// del circuito (T3b).
+    fn revert_v2(
+        set: &mut PendingTransfers,
+        reclamados: &mut HashMap<u64, Digest>,
+        pos: u64,
+        refund_key: BaseElement,
+        rec: Digest,
+        salt: Digest,
+        amt: u64,
+        seq: u64,
+    ) -> Result<u64, &'static str> {
+        if reclamados.contains_key(&pos) {
+            return Err("ya consumido");
+        }
+        let guardado = set.tree.leaf(pos);
+        if guardado == [BaseElement::ZERO; 4] {
+            return Err("no existe o ya consumido");
+        }
+        let mio = commitment_v2(rec, salt, amt, derive_public_id(refund_key), seq);
+        if mio != guardado {
+            return Err("no eres el retorno");
+        }
+        set.tree.set_leaf(pos, [BaseElement::ZERO; 4]);
+        reclamados.insert(pos, guardado);
+        Ok(amt)
+    }
+
+    const SK_REFUND: u64 = 0xF00D;
+    const SK_OTRO: u64 = 0xBAD;
+
+    fn alta_v2(set: &mut PendingTransfers) -> (u64, Digest, Digest, u64, u64) {
+        let (rec, salt, amt, seq) = (d(0xB0B0), d(0x5EED), 250_000u64, 42u64);
+        let p = commitment_v2(rec, salt, amt, derive_public_id(BaseElement::new(SK_REFUND)), seq);
+        let pos = set.next;
+        set.tree.set_leaf(pos, p);
+        set.next += 1;
+        (pos, rec, salt, amt, seq)
+    }
+
+    #[test]
+    fn t3a_exclusion_mutua() {
+        let mut set = PendingTransfers::new();
+        let mut rc = HashMap::new();
+        let (pos, rec, salt, amt, seq) = alta_v2(&mut set);
+        // reversion valida consume la hoja...
+        assert_eq!(
+            revert_v2(&mut set, &mut rc, pos, BaseElement::new(SK_REFUND), rec, salt, amt, seq),
+            Ok(amt)
+        );
+        // ...y el segundo movimiento — cualquiera — muere en el arbol.
+        assert!(revert_v2(&mut set, &mut rc, pos, BaseElement::new(SK_REFUND), rec, salt, amt, seq).is_err());
+        assert_eq!(set.tree.leaf(pos), [BaseElement::ZERO; 4]);
+    }
+
+    #[test]
+    fn t3a_solo_el_retorno_designado() {
+        let mut set = PendingTransfers::new();
+        let mut rc = HashMap::new();
+        let (pos, rec, salt, amt, seq) = alta_v2(&mut set);
+        assert!(revert_v2(&mut set, &mut rc, pos, BaseElement::new(SK_OTRO), rec, salt, amt, seq).is_err());
+        // y el pendiente sigue integro para el legitimo
+        assert!(revert_v2(&mut set, &mut rc, pos, BaseElement::new(SK_REFUND), rec, salt, amt, seq).is_ok());
+    }
+
+    #[test]
+    fn t3a_sin_retroactividad_por_construccion() {
+        // Un pendiente v1 NO es reversible: ningun refund_id reconstruye
+        // su compromiso. La promesa "los viejos quedan como estaban" es
+        // estructural, no disciplinaria.
+        let (rec, salt, amt) = (d(0xB0B0), d(0x5EED), 250_000u64);
+        let v1 = pending_commitment(rec, salt, amt);
+        for rk in [SK_REFUND, SK_OTRO, 0u64, 1] {
+            for seq in [0u64, 42, u64::MAX] {
+                assert_ne!(v1, commitment_v2(rec, salt, amt, derive_public_id(BaseElement::new(rk)), seq));
+            }
+        }
+    }
+}

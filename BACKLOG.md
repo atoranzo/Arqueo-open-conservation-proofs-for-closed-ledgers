@@ -484,43 +484,23 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   no analisis**: no hay seccion porque no hay nada que analizar hasta que se
   especifique el canal.
 
-- [ ] **12. ⚠️ FONDOS MUERTOS: tres fuentes y ningun camino de vuelta.**
-  ~~Sin devolucion para un pendiente no cobrado: el importe queda
-  inmovilizado.~~ **Ampliada** el 31-07-2026 (§87). **Respaldo**: §30, §29, y
-  el test `sending_to_a_nonexistent_recipient_loses_the_money`.
-  ⚠️ **Son TRES fuentes, no una** (§87.1): el receptor no cobra; el
-  destinatario no existe; y —la que lo hace **sistemico**— el destinatario
-  **esta congelado**, porque enviar a una congelada funciona pero cobrar no
-  (§29). **El sistema genera dinero irrecuperable operando como debe.**
-  ⚠️ **Dos obstaculos concretos**: (1) la capa **no tiene nocion de tiempo**
-  —`lib.rs`, y por eso la rotacion se conto en usos—, asi que una caducidad
-  debe expresarse en usos, altura u operacion explicita (§87.2); (2)
-  **`pending_commitment(receiver_id, salt, amount)` NO registra al emisor**,
-  asi que la capa **no sabe a quien devolver**, y ese dato falta **por
-  privacidad, no por descuido** (§87.3).
-  **Lo que una solucion debe probar** (§87.4): que vencio el plazo, que
-  sigue sin cobrar, y que quien recupera es quien pago **sin revelar el
-  vinculo pagador↔pendiente**. El tercero exige un compromiso con dos
-  identidades y un circuito que no existe.
-  ⚠️ **Y tiene un sub-caso peligroso** (§87.5): un mecanismo que recupere
-  pendientes de cuentas congeladas **puede usarse para vaciar a un
-  congelado**. Mirarlo al diseñar, no despues.
-  ✅ **MECANISMO PROPUESTO Y EVALUADO** (§88): reclamo por reversion que
-  prueba en cero conocimiento ser el emisor, que no se cobro y que vencio el
-  plazo. **(b) funciona hoy** y **(c) tiene las dos piezas** —`log.rs` lleva
-  `seq` monotona y comprometida en `head()`, y la comparacion por rango es la
-  del tope de emision—, pero **`seq` no es entrada publica de ningun circuito
-  todavia**. ⚠️ **(a) no es un circuito que falte: es un dato que no existe**
-  —el compromiso no codifica al emisor—, asi que exige **cambio de formato**,
-  de la clase de la entrada 15 (§88.3). **Estado: mecanismo propuesto y
-  evaluado; requiere cambio de formato del compromiso, `seq` como entrada
-  publica, un circuito nuevo, y una DECISION DE POLITICA sin resolver.**
-  ⚠️ La cuarta pieza **no se implementa**: un plazo tiene victimas legitimas.
-  Espacio de diseño registrado en §88.5 —plazo extensible por el receptor, o
-  asimetria de plazos con precedente en la regulacion de cuentas inactivas—.
-  **La invariante global SE CUMPLE**: dinero perdido con la contabilidad
-  cuadrada.
-
+- [ ] **12. Fondos muertos — POLITICA DECIDIDA (§119), piezas 1-3
+  pendientes.** ✅ **La reversion es un segundo cobro**: el **emisor, con su
+  clave, tras un plazo**, hacia un `refund_id` comprometido en el envio.
+  ⚠️ **Lo que mata las alternativas**: operador, gobernanza, custodios y
+  **barrido automatico** serian **la primera transicion donde el dinero se
+  mueve sin la clave de un titular**. «Nadie nunca» sobrevive como **Δ=∞ pago
+  a pago**, eleccion del emisor.
+  ⚠️ **`seq` NO es un reloj** (§119.3): cuenta operaciones, y un mes quieto
+  son cero entradas. **El plazo se cuenta en cabezas de epoca firmadas**, cuya
+  aceleracion deja **evidencia oponible**.
+  ✅ **Sin retroactividad, estructural**: los v1 son irreversibles para
+  siempre — `t3a_sin_retroactividad_por_construccion`. **T3a 3/3.**
+  ⚠️ **Poder compuesto nuevo** (§119.5): el operador **ordena la carrera Y
+  acelera el reloj**; cada pieza deja evidencia, **la combinacion no**.
+  ⚠️ **Coste**: congelar pasa a **retener fondos de terceros**.
+  **Para `PRINCIPIOS.md`**: **Δ_min = 13 meses**, precedente SEPA con la
+  analogia imperfecta declarada. **Pendiente T3b.**
 - [x] **13. Senal temporal para el pagador: ya declarada, coherente.**
   ~~Puede recomputar el compromiso y ver cuando se cobra; declarado, no
   eliminado.~~ **Cerrada** el 30-07-2026: verificado que ya esta declarada
