@@ -9033,6 +9033,130 @@ comprobable**, que es la disciplina de la casa. **Comprobar la mitad
 verificable de una afirmacion y dar la otra mitad por buena es exactamente lo
 que §59.2 castiga**, cometido en el documento que lleva la cuenta.
 
+## 112. Evaluacion XMSS ejecutada: que, con que prueba, y que se descarto
+
+Se evaluo `xmss` 0.1.0-pre.0 —**RustCrypto/signatures**, publicado el
+25-06-2026— con las cinco pruebas de la entrada 53, mas agotamiento y medidas
+por conjunto. Detalle en `doc/xmss-evaluacion.md`.
+
+⚠️ **El campo cambio despues de escribir el protocolo**: ese crate es de la
+misma organizacion que `sha2` y `chacha20poly1305`, **ya aceptadas por
+politica** en el `Cargo.toml`. Pre-release y **sin auditoria independiente**,
+declarado por el propio crate.
+
+| criterio | resultado |
+|---|---|
+| 1 · solo hash | ✅ `cargo tree` = **0 curvas ni reticulos**. ⚠️ `chacha20` via `rand` para el RNG de keygen — cifrado de flujo, **sin supuesto nuevo** |
+| 2 · indice | ⚠️ **persiste, pero la API no lo expone**: solo derivable del formato de referencia —SK 136 B, OID `0x00000001`, indice en `[4..8]` BE—. Fragil: en MT mide ⌈h/8⌉ |
+| 3 · reuso | ❌ **firma** — dos firmas validas al mismo indice. Y `Clone` en `SigningKey` lo reproduce **sin tocar disco** |
+| 3b · agotar | ✅ `KeyExhausted` en la firma **2^h exacta**, sin dar la vuelta |
+| 4 · altura | ✅ h=10 y MT 20/2. Las alturas son **menu discreto**: 10/16/20 y 20/40/60 |
+| 5 · revisada | ⚠️ suite 10/10, **funcional**; KAT sin confirmar. A favor: **conformidad de formato byte a byte** —firmas de 18.469 y 27.688 B, las cifras del RFC— |
+
+**Descartes**: `purecrypto`, **por declaracion de su propio autor** —*«do not
+use it for anything real yet»*—; el XMSS de QRL queda fuera del marco por ser
+C++ via FFI.
+
+⚠️ **Y `purecrypto` enseño algo sobre la prueba 1**: un **monolito derrota el
+`cargo tree`**, porque las curvas viven dentro del crate y el arbol no las ve.
+
+### 112.1 El criterio 5 pedia algo que no existe
+
+Pedia «vectores de RFC 8391» y **el RFC no publica vectores**. Los canonicos
+son los de `xmss-reference` y los ACVP de SP 800-208.
+
+> Es **§95.2 en nuestro propio protocolo**: una condicion enunciada que nadie
+> habia verificado, escrita el mismo dia que la seccion que castiga esa forma.
+
+## 113. Ninguna candidata cumple el criterio 3 — y ninguna puede
+
+El criterio exigia que restaurar un estado previo y firmar devolviera error.
+
+**Era insatisfacible junto al criterio 2.** Un estado serializado a bytes del
+llamante —lo que el criterio 2 **exige**— y restaurado es **indistinguible de
+uno legitimo**: detectar el retroceso requiere informacion **externa al
+blob**.
+
+> SP 800-208 asume lo mismo: por eso **exige modulos hardware** para firmas
+> con estado.
+
+⚠️ **Decimotercera correccion del dia, y la primera de algo redactado como
+criterio para terceros.** El protocolo se escribio veinte minutos antes de
+evaluarlo con el.
+
+**Reformulacion**: **3a** firma por `&mut` que avanza antes de devolver, sin
+API firmar-con-indice —✅ aqui— y sin `Clone` silencioso —✘, registrado—;
+**3b** fallo duro al agotar —✅—. **La proteccion contra retroceso es siempre
+del proyecto.**
+
+### 113.1 El guardian deja de ser contingencia: es el mecanismo
+
+Contador propio, `fsync`, **firmar-despues-de-persistir**, con las dos
+cautelas intactas —`fsync` puede mentir; el orden invierte el flujo natural—
+mas dos requisitos medidos:
+
+- **Test de layout**: el guardian lee el indice en el offset del formato de
+  referencia y debe llevar un test que lo compruebe, para que **un cambio de
+  serializacion falle en CI y no en produccion**.
+- **Reconciliacion tras reinicio**: si el contador propio supera al indice del
+  SK, el indice huerfano **se quema o se registra la divergencia**; nunca se
+  retrocede.
+
+⚠️ **Se declara, como el protocolo exigia: la seguridad del esquema pasa a
+depender de codigo propio, NO auditado.**
+
+## 114. La firma cuesta O(d·2^(h/d)): la tercera victima
+
+**Medido**: firma ≈ keygen —645 vs 634 ms en h=10, constante en 1024 firmas—
+y **SK de 136 B sin estado de recorrido** ⇒ la implementacion **reconstruye
+el arbol en cada firma**. Modelo ~0,62 ms/hoja, validado con error < 1 % en
+dos predicciones.
+
+| conjunto | firma | verif | tamaño |
+|---|---|---|---|
+| **MT 40/8** | **160,5 ms** | 2,7 ms | 18.469 B |
+| MT 60/12 | 241,2 ms | 3,8 ms | 27.688 B |
+| XMSS 20 | ≈ 650 s *(derivado)* | — | 2.820 B |
+
+**Es propiedad de la implementacion, no del esquema** —BDS la eliminaria— y
+depende de un **pre-release**: puede cambiar upstream. Va en el issue
+(`doc/issue-rustcrypto.md`).
+
+### 114.1 ⚠️ ENMIENDA: la tabla NO queda «sin incognitas»
+
+`doc/xmss-evaluacion.md` §5 concluye que deja la decision «sin incognitas».
+**No es exacto**, y la diferencia importa: **toda la evaluacion asume una
+firma por segundo**, y esa premisa no se cuestiono.
+
+| cadencia | conjunto | almacenamiento | CPU |
+|---|---|---|---|
+| **1/s** | 40/8 | **0,58 TB/año** | 16 % de un nucleo |
+| **1/min** | 40/8 | **9,7 GB/año** | 0,27 % |
+| **1/min** | **40/4** | **5,2 GB/año** | 4,2 % |
+
+> A una firma por minuto el almacenamiento **cae 60 veces** y **`40/4` vuelve
+> a ser viable**. La recomendacion de `40/8` es correcta **bajo la premisa**,
+> y la premisa es lo que no se discutio.
+
+⚠️ **Y no es un parametro: es cuanto tarda una vista dividida en ser
+oponible.** Firmar cada 60 epocas la detecta igual —dos cabezas
+contradictorias siguen siendo dos cabezas— con granularidad de un minuto.
+**Certificate Transparency no firma cada segundo.**
+
+**Decision con victimas** (`PRINCIPIOS.md`): cadencia fina cuesta 0,58 TB/año;
+cadencia gruesa da al operador **una ventana de un minuto** para servir
+historias distintas. **Queda abierta.**
+
+### 114.2 Procedencia de estas medidas
+
+Las cifras vienen etiquetadas con maquina y modo —`--release`, x86-64,
+01-08-2026— que es la disciplina de la casa. ⚠️ **No se han reproducido de
+forma independiente**, y los pendientes 1 y 2 de la evaluacion —grep de los
+diez tests, fijar el commit del tag— son lo que las cerraria.
+
+Y los 0,62 ms/hoja son **de esa maquina**: si el nodo objetivo es ARM (B9),
+repetir antes de fijar nada.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

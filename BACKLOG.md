@@ -1129,7 +1129,27 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   vigentes» —`OpKind` dice que circuito usar, no que version—. Requiere
   primero **versionar las reglas de validacion**, que no existe.
 
-- [ ] **53. ⚠️ No hay firma criptografica — y XMSS depende de la 19.**
+- [ ] **53. ⚠️ No hay firma — XMSS EVALUADO, con guardian obligatorio.**
+  ✅ **Evaluado el 01-08-2026** (§112-114, `doc/xmss-evaluacion.md`):
+  **`xmss` 0.1.0-pre.0 de RustCrypto** —misma organizacion que `sha2`, ya
+  aceptada— es **la unica viable**. Solo hash ✅, agotamiento ✅, alturas ✅;
+  **indice sin API** ⚠️ y **sin auditoria** ⚠️.
+  ⚠️⚠️ **El criterio 3 era insatisfacible** (§113): un blob restaurado es
+  indistinguible de uno legitimo, y **SP 800-208 asume lo mismo** —por eso
+  exige hardware—. **Decimotercera correccion del dia**, de un criterio
+  redactado veinte minutos antes.
+  ⚠️ **El guardian no es contingencia: es el mecanismo.** Contador propio,
+  `fsync`, firmar-despues-de-persistir, test de layout y reconciliacion que
+  **nunca retrocede**. **Se declara: la seguridad pasa a depender de codigo
+  propio NO auditado.**
+  ⚠️ **La firma cuesta O(d·2^(h/d))** —reconstruye el arbol cada vez—:
+  **160,5 ms** en MT 40/8. Propiedad de la **implementacion**, no del esquema.
+  ⚠️⚠️ **INCOGNITA ABIERTA** (§114.1): toda la evaluacion asume **1 firma/s**.
+  A **1/min** el almacenamiento cae de **0,58 TB/año a 9,7 GB** y `40/4`
+  vuelve a ser viable. **No es un parametro: es cuanto tarda una vista
+  dividida en ser oponible.** Decision con victimas, sin tomar.
+  **Pendientes**: KAT, fijar el tag, issue upstream
+  (`doc/issue-rustcrypto.md`), el guardian, y medir en ARM.
   ⚠️⚠️ **CORRECCION (§110.1)**: se dijo que la 53 era «lo unico que puede
   empezarse sin decidir nada mas». **Es falso**: XMSS necesita persistir su
   indice **antes de firmar**, y eso es un requisito sobre la persistencia que
