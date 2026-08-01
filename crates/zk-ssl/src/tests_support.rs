@@ -156,6 +156,11 @@ pub fn new_layer() -> SovereignLayer {
 
 /// Abre una cuenta y le emite fondos: el único camino legítimo para
 /// que una cuenta tenga saldo.
+/// Abre una cuenta con clave **estrecha** y la fondea.
+///
+/// ⚠️ Sigue tomando un `u64` a proposito: son **158 usos** que no ganan nada
+/// con claves anchas, y §90 garantiza que rellenar da la misma identidad.
+/// Para ejercitar los 256 bits esta [`open_and_fund_wide`].
 pub fn open_and_fund(layer: &mut SovereignLayer, sk: u64, amount: u64) -> AccountIndex {
     let idx = layer.open_account(BaseElement::new(sk));
     if amount > 0 {
@@ -165,6 +170,40 @@ pub fn open_and_fund(layer: &mut SovereignLayer, sk: u64, amount: u64) -> Accoun
         layer.apply_mint(&receipt, idx).expect("aplicar emision");
     }
     idx
+}
+
+/// **Abre una cuenta con clave ANCHA de verdad**, y la fondea.
+///
+/// ⚠️ Los cuatro elementos **no nulos**: es lo unico que ejercita los 256
+/// bits que los cinco circuitos verifican desde §92.19. Con
+/// [`open_and_fund`] —que rellena con ceros— el camino funciona pero **no
+/// prueba nada nuevo** (§90.3).
+pub fn open_and_fund_wide(
+    layer: &mut SovereignLayer,
+    sk: Digest,
+    amount: u64,
+) -> AccountIndex {
+    let idx = layer.open_account_wide(sk);
+    if amount > 0 {
+        let receipt = layer
+            .mint(&valid_auth(), idx, amount)
+            .expect("la emision autorizada deberia generar prueba");
+        layer.apply_mint(&receipt, idx).expect("aplicar emision");
+    }
+    idx
+}
+
+/// Clave ancha de prueba, derivada de una semilla corta.
+///
+/// Los tres elementos extra **no son cero**, que es el punto: una clave
+/// `[sk, 0, 0, 0]` tiene 64 bits de entropia y no ejercita nada.
+pub fn wide_key(sk: u64) -> Digest {
+    [
+        BaseElement::new(sk),
+        BaseElement::new(sk ^ 0xA11CE),
+        BaseElement::new(sk ^ 0x0DDBA11),
+        BaseElement::new(sk ^ 0x5EA51DE),
+    ]
 }
 
 

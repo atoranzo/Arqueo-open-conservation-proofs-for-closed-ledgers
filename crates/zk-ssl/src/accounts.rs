@@ -75,6 +75,41 @@ impl SovereignLayer {
             .expect("abrir una cuenta no deberia fallar sin persistencia")
     }
 
+    /// **Abre una cuenta con una clave de CUATRO elementos.**
+    ///
+    /// Es la puerta que faltaba: los cinco circuitos de gasto verifican
+    /// claves de 256 bits desde §92.19, y hasta aqui **ningun titular podia
+    /// tener una** —`open_account` solo creaba cuentas de 64 (§92.14)—.
+    ///
+    /// ## Por que se añade en vez de cambiar la firma
+    ///
+    /// Cambiarla obliga a tocar **115 llamadas** —medido, no estimado— entre
+    /// `open_account`, `send`, `claim`, `burn` y `audit`, cuyas firmas
+    /// dependen de esta. Se intento y los errores de compilacion pasaron de
+    /// 15 a 85 (§97).
+    ///
+    /// ⚠️ **Y no crea dos formatos de cuenta**, que era la objecion de
+    /// §85.5: §90 probo que `[sk,0,0,0]` da la MISMA identidad que `sk`. El
+    /// arbol no distingue una cuenta abierta por una via de otra abierta por
+    /// la otra — solo distingue **cuanta entropia** tiene su clave.
+    ///
+    /// ⚠️ **Lo que cuesta**: la API queda con dos entradas. Es deuda, y va
+    /// declarada aqui en vez de descubrirse luego.
+    pub fn open_account_wide(&mut self, spend_key: Digest) -> AccountIndex {
+        self.open_account_wide_checked(spend_key)
+            .expect("abrir una cuenta no deberia fallar sin persistencia")
+    }
+
+    /// Igual que [`Self::open_account_wide`], con el error de persistencia.
+    pub fn open_account_wide_checked(
+        &mut self,
+        spend_key: Digest,
+    ) -> Result<AccountIndex, LayerError> {
+        self.open_with_id(
+            stark_experiment::circuit_settlement::derive_public_id_wide(spend_key),
+        )
+    }
+
     /// Igual que `open_account`, pero devuelve el error de persistencia.
     pub fn open_account_checked(
         &mut self,
@@ -87,10 +122,23 @@ impl SovereignLayer {
                 limit: self.max_accounts,
             });
         }
+        self.open_with_id(derive_public_id(spend_key))
+    }
+
+    /// Cuerpo comun de las dos vias de apertura.
+    ///
+    /// Recibe la **identidad ya derivada**, que es lo unico que la cuenta
+    /// guarda: la clave no se almacena en ningun sitio (§93.4). Por eso las
+    /// dos anchuras comparten todo salvo la derivacion.
+    fn open_with_id(&mut self, public_id: Digest) -> Result<AccountIndex, LayerError> {
+        if self.next_index >= self.max_accounts {
+            return Err(LayerError::AccountLimitReached {
+                limit: self.max_accounts,
+            });
+        }
         let index = self.next_index;
         self.next_index += 1;
         let root_old = self.accounts.root();
-        let public_id = derive_public_id(spend_key);
         let nonce = BaseElement::ZERO;
         self.accounts
             .set_leaf(index, native_leaf(public_id, BaseElement::ZERO, nonce));

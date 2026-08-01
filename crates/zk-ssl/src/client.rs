@@ -772,6 +772,50 @@ mod tests {
         // pruebas que verifica.
     }
 
+    /// ⚠️ **UN PAGO COMPLETO CON CLAVE DE 256 BITS, DE PUNTA A PUNTA.**
+    ///
+    /// Es la unica prueba de que la entrada 15 sirve para algo. Los cinco
+    /// circuitos verifican claves anchas desde §92.19, pero hasta
+    /// `open_account_wide` **ningun titular podia tener una**, asi que el
+    /// camino completo —abrir, enviar, cobrar— **nunca se habia
+    /// ejercitado**.
+    ///
+    /// Las claves son anchas **de verdad**: los tres elementos extra no son
+    /// cero. Con relleno el test pasaria sin probar nada nuevo (§90.3).
+    #[test]
+    fn a_whole_payment_with_a_256_bit_key() {
+        let mut layer = new_layer();
+        let sk_alice = wide_key(SK_ALICE);
+        let sk_bob = wide_key(SK_BOB);
+        let alice = open_and_fund_wide(&mut layer, sk_alice, 1_000_000);
+        let bob = open_and_fund_wide(&mut layer, sk_bob, 0);
+
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+        let materials = layer
+            .send_materials(alice, receptor, 250_000, salt_de(0x1DE))
+            .expect("materiales");
+        let recibo = client::prove_send(&materials, sk_alice, proof_options())
+            .expect("el titular con clave ancha DEBE poder probar su envio");
+        let estado = state_of(&layer, alice);
+        layer
+            .apply_send(&recibo, alice, &estado, 250_000)
+            .expect("aplicar envio");
+
+        let cm = layer
+            .claim_materials(bob, &recibo.notice)
+            .expect("materiales de cobro");
+        let cobro = client::prove_claim(&cm, sk_bob, proof_options())
+            .expect("el receptor con clave ancha DEBE poder cobrar");
+        let estado_bob = state_of(&layer, bob);
+        layer
+            .apply_claim(&cobro, bob, &estado_bob, &recibo.notice)
+            .expect("aplicar cobro");
+
+        assert_eq!(layer.balance_of(alice), Some(750_000));
+        assert_eq!(layer.balance_of(bob), Some(250_000));
+        assert_eq!(layer.total_pending(), 0);
+    }
+
     /// **La clave equivocada no genera prueba, y falla ANTES de gastar cómputo.**
     #[test]
     fn prove_send_rejects_a_key_that_is_not_the_holders() {
