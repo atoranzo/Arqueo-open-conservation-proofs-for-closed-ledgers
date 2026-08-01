@@ -1044,7 +1044,20 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   ⚠️ **NO es clase entrada 15** (§93.4): un salt exige que el cliente
   **custodie estado**, y hoy `ClientState` lo pide todo a la capa. Es cambio
   de modelo de cliente, con victimas —quien pierde el salt, pierde la
-  cuenta—. ⚠️ **El obstaculo real no es el nonce** —el circuito ya usa
+  cuenta—. ⚠️⚠️ **RECTIFICADO el 01-08-2026 (§99): el obstaculo que §93.5 dio por
+  bloqueante era FALSO.** El emisor **nunca computa la hoja del receptor**
+  —`circuit_send` usa `COL_R_ID` solo para el compromiso del pendiente—; el
+  diseño de dos fases existe para eso. **Cada uno recompone su propia hoja
+  con su propia clave.** Y §93.4 tambien quedo desfasada: desde §97,
+  `prove_send` y `prove_claim` reciben la clave de 256 bits, asi que un salt
+  derivado seria recuperable **sin almacen nuevo**.
+  ⚠️ **El obstaculo REAL es otro** (§99.3): **la capa escribe hojas sin
+  conocer el secreto**. `open_account`, `mint`, `freeze` y `recover`
+  recomponen `native_leaf` del titular **sin su clave** —`circuit_mint` usa
+  las de los custodios—. Un salt derivado de `sk` haria esas hojas
+  incomputables. **Descarta la unica familia de soluciones que parecia
+  viable, y no hay otra medida.**
+  ~~El obstaculo real no es el nonce~~ —el circuito ya usa
   nonces distintos por carril— **sino la asimetria emisor/receptor**
   (§93.5): con salt derivado de clave, el emisor no puede computar la hoja
   nueva del receptor. **Ninguna salida medida.**

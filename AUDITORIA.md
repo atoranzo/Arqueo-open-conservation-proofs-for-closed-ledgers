@@ -8102,6 +8102,89 @@ del diseño enunciada sin la condicion que la limita— y va como entrada 52,
 no como nota: es una limitacion de **soberania**, que es la palabra del
 titulo del proyecto.
 
+## 99. ⚠️ RECTIFICACION de §93.5: el obstaculo del salt era otro
+
+§93.5 concluyo que lo que impedia un salt derivado de la clave era la
+**asimetria emisor/receptor**: *«con un salt derivado de clave, el emisor no
+puede computar la hoja nueva del receptor»*.
+
+**Es falso.**
+
+### 99.1 El emisor nunca computa la hoja del receptor
+
+`circuit_send` usa `COL_R_ID` **solo para construir el compromiso del
+pendiente** (`C_PEND_IN`). **No hay `COL_R_BAL`, ni `r_nonce`, ni nada del
+estado del receptor.**
+
+> Y tiene todo el sentido: **el diseño de dos fases existe para eso**. El
+> emisor no actualiza al receptor; deja un pendiente que el receptor cobra
+> despues **con su propia clave**, por `circuit_claim`.
+
+| quien | que hoja recompone | ¿tiene la clave? |
+|---|---|---|
+| Emisor (`send`) | **solo la suya** | ✅ |
+| Receptor (`claim`) | **solo la suya** | ✅ |
+
+⚠️ **De donde salio el error**: se leyeron `C_NONCE + 2` y `+ 3` en
+`circuit_settlement` —el circuito de UN paso, **que la capa no ejecuta**— y
+se aplico la conclusion a la via de dos fases, **que es la que corre**. Un
+dato correcto sobre el circuito equivocado.
+
+### 99.2 Y §93.4 tambien quedo desfasada, por §97
+
+§93.4 dijo que un salt exige que el cliente **custodie estado**, porque
+`ClientState` lo pide todo a la capa. Desde §97, `prove_send` y `prove_claim`
+reciben `spend_key: Digest`: **el cliente ya pasa su clave de 256 bits**, asi
+que `salt = H(DOMINIO, sk, nonce)` seria derivable **sin almacen nuevo** y
+con 256 bits de entropia.
+
+### 99.3 ⚠️ El obstaculo REAL: la capa escribe hojas sin conocer el secreto
+
+| operacion | quien compone la hoja | ¿tiene `sk`? |
+|---|---|---|
+| `open_account` | la capa | ❌ **no la guarda** |
+| `mint` | la capa + custodios | ❌ **no** |
+| `freeze`, `recover` | custodios | ❌ **no** |
+| `send`, `claim`, `burn` | el titular | ✅ |
+
+`circuit_mint` usa `COL_KEY_A` y `COL_KEY_B` —las claves de los
+**custodios**— y recompone `native_leaf(public_id, balance, nonce)` **sin la
+del titular**.
+
+> **Tres operaciones privilegiadas escriben la hoja de un titular sin poder
+> derivar su salt.** Emitir, congelar y recuperar son legitimas y **no pasan
+> por el titular**. Si el salt viene de `sk`, esas hojas serian
+> incomputables — o habria que darle el salt a la capa, y entonces no ciega
+> nada.
+
+**Eso descarta las derivaciones de `sk`**, que era la unica familia de
+soluciones que parecia viable.
+
+### 99.4 Lo que NO se registra
+
+Se pensaron tres salidas —salt en el estado, salt que solo cambia en
+operaciones del titular, cegar solo el saldo— y **ninguna esta medida**. La
+tercera puede que ni tenga sentido criptografico.
+
+⚠️ **No se registran**, por lo mismo que §93.5 no registro las suyas: son
+ideas de dos minutos, y meterlas aqui las convertiria en punto de partida
+del proximo que lea. **Lo solido es que el obstaculo conocido era falso y el
+real es otro.**
+
+### 99.5 Y una leccion sobre el propio registro
+
+§93.5 se escribio con el rigor de esta casa —contra el codigo, con la
+comprobacion hecha— y **estaba mal**, porque se leyo el circuito que no
+corre.
+
+> **Un dato correcto sobre el objeto equivocado es indistinguible de un dato
+> correcto**, y sobrevive a la revision precisamente porque es verificable.
+> Lo unico que lo caza es **volver a preguntar de que objeto hablamos**.
+
+Es la cuarta vez que un hallazgo de este documento se corrige a si mismo
+—§82.5 en §90, §92.14 en §96, §93.5 aqui— y las cuatro se cazaron **al
+intentar usar la conclusion**, no al releerla.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—
