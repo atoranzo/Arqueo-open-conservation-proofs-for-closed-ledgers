@@ -187,6 +187,13 @@ keys.
 machine**: the layer supplies authentication paths and the client builds
 the proof locally.
 
+> ⚠️ **Correction note (fourth revision).** Until 31 July 2026 this was a
+> property **of the design**, not of the system: the layer **did not verify
+> the proofs** of the payment path before applying the transition, so the
+> key was not needed to move someone else's funds. Earlier revisions stated
+> the property without that caveat. The defect is fixed and measured; full
+> record in `AUDITORIA.md` §73.
+
 ### 3.2 Separating proving from applying
 
 All operations are split into two acts:
@@ -453,7 +460,7 @@ on the party accepting it.
 > **verifies, mutates the tree and writes to disk**. The two are not
 > comparable. See `AUDITORIA.md` §22.
 
-**Quantified scaling limit**: one thousand transfers accumulate 120.4 MB of
+**Quantified scaling limit**: one thousand transfers accumulate 120.4 MiB of
 proofs. This is the dominant practical constraint of choosing STARK, and
 the quantitative argument for recursive aggregation or batched proofs.
 
@@ -492,6 +499,21 @@ bound: computationally trivial.
 On BLS12-381 (255 bits per element) the issue does not arise, which
 explains why it does not appear when designing over that curve. The fix is
 to use full four-element digests (256 bits).
+
+⚠️ **That fix is necessary but not sufficient, and earlier revisions
+presented it as complete.** Widening the **identity** prevents finding
+*another* key colliding with it; **it does not prevent finding *the* key**.
+If the secret is still a single element its space is 2⁶⁴ and the identity is
+public, so exhausting it offline costs 2⁶³ — measured at 2.38 million
+core-years on a CPU without optimising the attack, which is a **loose upper
+bound**.
+
+The criterion §8.3 applies to the soundness ceiling — insufficient against
+the ~128 bits of the other paradigms — **applies equally to the key space**,
+and earlier revisions did not apply it. The complete fix requires **four
+elements in the secret too**; it is implemented and measured
+(`AUDITORIA.md` §82, §90, §97), and **migration is opt-in**: keys generated
+before rotating still have 64 bits.
 
 ### 8.3 Soundness ceiling for STARK over Goldilocks
 
@@ -576,6 +598,13 @@ whose powers are counted and audited; **a counterparty can be anyone**.
 |---|---|---|
 | `send` | Value leaves the payer into a **pending commitment** | Payer's only |
 | `claim` | The recipient makes it theirs | Recipient's only |
+
+> ⚠️ **Correction note (fourth revision).** Until 30 July 2026 the claim
+> circuit **did not bind the commitment to the claimant's identity**:
+> anyone holding the notice could claim it. Earlier revisions described
+> claiming as a proof of ownership — what the design intended and the
+> implementation did not enforce. Fixed and measured; see `AUDITORIA.md`
+> §27 and §39.1.
 
 The commitment binds the recipient's public identity, a payer-chosen random
 value, and the amount. **Neither phase reads the other party's balance**, and
@@ -854,7 +883,9 @@ trace.
 
 Measurements show that verification costs 0.5–0.8% of proving — an
 asymmetry that makes the model viable — and quantify its principal limit:
-**120.4 MB of accumulated proofs per thousand transfers**.
+**120.4 MiB of accumulated proofs per thousand transfers** — unit
+corrected in the fourth revision: the figure was always binary and was
+labelled "MB"; in SI units it is 129.0 MB.
 
 ⚠️ That asymmetry is measured on **audit disclosures**, which verify without
 mutating state — precisely the supervisory case. A transfer's apply step

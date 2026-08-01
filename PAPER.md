@@ -195,6 +195,13 @@ conoce ninguna clave privada.
 del titular**: la capa entrega los caminos de autenticación y el cliente
 construye la prueba localmente.
 
+> ⚠️ **Nota de corrección (cuarta revisión).** Esta propiedad era, hasta el
+> 31 de julio de 2026, una propiedad **del diseño** y no del sistema: la
+> capa **no verificaba las pruebas** de la vía de pago antes de aplicar la
+> transición, de modo que la clave no hacía falta para mover fondos ajenos.
+> Las revisiones anteriores la enunciaron sin esa salvedad. El defecto está
+> corregido y medido; el registro completo, en `AUDITORIA.md` §73.
+
 ### 3.2 Separación entre generar y aplicar
 
 Todas las operaciones se dividen en dos actos:
@@ -484,7 +491,7 @@ quien la acepta.
 > Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
 > --nocapture` y comparando con lo publicado. Ver `AUDITORIA.md` §22.
 
-**Límite de escala cuantificado**: mil transferencias acumulan 120,4 MB de
+**Límite de escala cuantificado**: mil transferencias acumulan 120,4 MiB de
 pruebas. Es la restricción práctica dominante de la elección de STARK, y
 el argumento cuantitativo a favor de agregación recursiva o pruebas por
 lote.
@@ -525,6 +532,21 @@ por el argumento del cumpleaños: computacionalmente trivial.
 En BLS12-381 (255 bits por elemento) el problema no se plantea, lo que
 explica que no aparezca al diseñar sobre esa curva. La corrección consiste
 en emplear digests completos de cuatro elementos (256 bits).
+
+⚠️ **Esa corrección es necesaria y no suficiente, y las revisiones
+anteriores la presentaron como completa.** Ensanchar la **identidad** impide
+hallar *otra* clave que colisione con ella; **no impide hallar *la* clave**.
+Si el secreto sigue siendo un solo elemento, su espacio es 2⁶⁴ y la
+identidad es pública, de modo que agotarlo por fuerza bruta fuera de línea
+cuesta 2⁶³ —medido en 2,38 millones de años-núcleo sobre una CPU sin
+optimizar el ataque, que es **cota superior floja**—.
+
+El criterio que §8.3 aplica al techo de solidez —insuficiente frente a los
+~128 bits de los otros paradigmas— **se aplica igual al espacio de claves**,
+y las revisiones anteriores no lo hicieron. La corrección completa exige
+**cuatro elementos también en el secreto**; está implementada y medida
+(`AUDITORIA.md` §82, §90, §97), y **la migración es opt-in**: las claves
+generadas antes de rotar siguen teniendo 64 bits.
 
 ### 8.3 Techo de solidez en STARK sobre Goldilocks
 
@@ -611,6 +633,13 @@ cualquiera**.
 |---|---|---|
 | `send` | El valor sale del pagador a un **pendiente** | Solo el del pagador |
 | `claim` | El receptor lo hace suyo | Solo el del receptor |
+
+> ⚠️ **Nota de corrección (cuarta revisión).** El circuito de cobro **no
+> ataba el compromiso a la identidad de quien cobra** hasta el 30 de julio
+> de 2026: cualquiera con el aviso podía reclamarlo. Las revisiones
+> anteriores describieron el cobro como demostración de titularidad, que es
+> lo que el diseño pretendía y lo que la implementación no imponía.
+> Corregido y medido; ver `AUDITORIA.md` §27 y §39.1.
 
 El compromiso liga la identidad pública del receptor, un aleatorio elegido
 por el pagador y el importe. **Ninguna fase lee el saldo del otro**, y va en
@@ -896,7 +925,9 @@ compromisión permite crear dinero sin rastro detectable.
 
 Las mediciones muestran que verificar cuesta entre el 0,5% y el 0,8% de
 generar, asimetría que hace viable el modelo, y cuantifican su límite
-principal: **120,4 MB de pruebas acumuladas por cada mil transferencias**.
+principal: **120,4 MiB de pruebas acumuladas por cada mil transferencias**
+—unidad corregida en la cuarta revisión: la cifra siempre fue binaria, y
+se etiquetaba «MB»; en unidades SI son 129,0 MB—.
 
 Los resultados delimitan también lo que no se ha demostrado. La
 arquitectura de nodo único implica que las transiciones de estado están
