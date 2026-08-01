@@ -8431,6 +8431,76 @@ Lo que no da es oponibilidad.
 **Se hace esa mitad, y se declara cual es** — en vez de llamarlo B10.1 y
 dejar la firma implicita.
 
+## 104. La cabeza de epoca: la mitad de B10.1 que no necesita firma
+
+### 104.1 Lo que se construyo
+
+`EpochHead` con cinco campos —`seq`, las tres raices y `chain_digest`— y un
+`digest()` para compararlas de un vistazo. `SovereignLayer::epoch_head()` la
+produce.
+
+⚠️ **Todo esto ya existia. Lo que faltaba era exponerlo junto.** El README
+afirma que el operador «no puede reescribir el historial en secreto», y §76
+establecio que esa garantia **solo vale para quien ya observo una cabeza
+anterior** — y hoy nadie fuera del operador observa cabezas.
+
+**Dos testigos**, y el segundo importa mas:
+
+- `two_divergent_views_produce_different_heads`: dos vistas con historias
+  distintas dan cabezas distintas. **La vista dividida es detectable.**
+- `a_head_does_not_say_who_issued_it`: **fabrica una cabeza a mano** con
+  valores inventados y comprueba que es del mismo tipo que una legitima.
+
+> El segundo test documenta **lo que el sistema NO hace**, en codigo
+> ejecutable. Y el dia que alguien añada firma, **ese test fallara** — que es
+> correcto: cuando la ausencia deje de ser cierta, el test que la afirma
+> tiene que romperse.
+
+### 104.2 ⚠️ Media pieza de B10.2 ya estaba construida
+
+`TransitionLog::first_divergence` **ya existe**: compara dos registros y
+devuelve la entrada exacta en que divergen.
+
+`CONFIANZA_RESIDUAL.md` lista B10.2 —«comparacion entre testigos»— como
+pendiente y la llama «la pieza que CT infradesplego». **La mitad
+algoritmica ya estaba en el codigo.**
+
+> Es la **tercera** vez hoy que una propuesta externa pide algo que el
+> proyecto ya tiene: la rotacion de §98.2, `seq` monotona de §88.2, y esto.
+> ⚠️ **Y las tres se descubrieron al ir a implementarlas**, no al leer la
+> propuesta.
+
+### 104.3 El campo que falta, y por que no se pone vacio
+
+`CONFIANZA_RESIDUAL.md` §2.1 incluye `hash_verificador_vigente` en la cabeza,
+con el mejor argumento de esa propuesta:
+
+> *«quien puede actualizar el verificador es la **raiz de confianza real** del
+> sistema y nadie lo ve»*
+
+**Cambiar el verificador cambia que es una transicion valida** — mas poderoso
+que cualquier operacion del sistema.
+
+⚠️ **No se puede rellenar hoy**: el proyecto **no tiene noción de «reglas
+vigentes»**. `OpKind` dice que circuito usar, no que version de las reglas
+estaba activa. Un campo vacio seria peor que su ausencia: **una cabeza que
+dice incluirlo y no lo hace.**
+
+Va **declarado en el propio tipo**, con su motivo, y abre la entrada 54.
+
+### 104.4 Lo que esto NO cierra
+
+| | |
+|---|---|
+| Vista dividida | **detectable**, no cerrada |
+| Prueba de fraude | ❌ **no oponible** — sin firma (entrada 53) |
+| Testigos que comparen | ❌ **no existen**: publicar es una funcion; recoger y comparar es operacion |
+
+`CONFIANZA_RESIDUAL.md` §8.1 lo dice sin adornos: *la independencia de los
+testigos es un supuesto social, no criptografico*. Y §6 recuerda que
+Certificate Transparency tuvo el patron funcionando y su pieza de comparacion
+**infradesplegada durante años**.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

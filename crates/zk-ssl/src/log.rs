@@ -400,6 +400,162 @@ impl SovereignLayer {
     }
 }
 
+/// **Cabeza de época: lo que un testigo externo necesita para comparar.**
+///
+/// `CONFIANZA_RESIDUAL.md` B10.1. El README afirma que el operador «no puede
+/// reescribir el historial en secreto», y `AUDITORIA.md` §76 establece que
+/// esa garantía **solo vale para quien ya observó una cabeza anterior** —y
+/// hoy nadie fuera del operador observa cabezas—.
+///
+/// Publicar esto permite que dos partes comparen su vista del sistema: si el
+/// operador les mostró historiales distintos, sus cabezas difieren para el
+/// mismo `seq`.
+///
+/// # ⚠️ Lo que esto NO es
+///
+/// **No es oponible.** No lleva firma, y el proyecto **no tiene ninguna
+/// primitiva de firma** (§103.1). Dos cabezas contradictorias **detectan**
+/// la inconsistencia; no prueban ante un tercero **quién** las emitió. Para
+/// eso hace falta B15 —XMSS—, y elegir el esquema es una decisión de tesis:
+/// `ed25519` no es post-cuántico (§103.2).
+///
+/// **No hay testigos.** Esto es una función; que alguien la recoja y compare
+/// es operación, no código. `CONFIANZA_RESIDUAL.md` §8.1 lo dice sin
+/// adornos: *la independencia de los testigos es un supuesto social, no
+/// criptográfico*.
+///
+/// **Y no cierra la vista dividida**: la hace detectable **si** hay quien
+/// compare. Certificate Transparency tuvo el patrón funcionando y su pieza
+/// de comparación infradesplegada durante años.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct EpochHead {
+    /// Altura del registro. Monótona por construcción.
+    pub seq: u64,
+    /// Raíz del árbol de cuentas.
+    pub accounts_root: Digest,
+    /// Raíz del árbol de pendientes.
+    pub pending_root: Digest,
+    /// Raíz del árbol de congelados: pone **la política de congelación** bajo
+    /// observación externa, no solo el dinero.
+    pub frozen_root: Digest,
+    /// Compromiso de todo el historial. Dos nodos con el mismo valor tienen
+    /// la misma historia.
+    pub chain_digest: Digest,
+    // ⚠️ **FALTA `verifier_hash`, y no por olvido.**
+    //
+    // `CONFIANZA_RESIDUAL.md` §2.2 lo propone con el mejor argumento de esa
+    // propuesta: «quien puede actualizar el verificador es la **raíz de
+    // confianza real** del sistema y nadie lo ve». Un operador que cambia el
+    // verificador cambia **qué es una transición válida** — más poderoso que
+    // cualquier operación del sistema.
+    //
+    // **No se puede rellenar hoy**: el proyecto no tiene noción de «reglas
+    // vigentes». `OpKind` dice qué circuito usar, no qué versión de las
+    // reglas estaba activa. Un campo vacío sería peor que su ausencia: una
+    // cabeza que dice incluirlo y no lo hace.
+    //
+    // Backlog 54.
+}
+
+impl EpochHead {
+    /// Resumen de la cabeza en un solo digest, para comparar de un vistazo.
+    ///
+    /// ⚠️ **Comparar digests dice que difieren, no dónde.** Para eso está
+    /// [`TransitionLog::first_divergence`], que ya existe y localiza la
+    /// entrada exacta en que dos historiales se separan.
+    pub fn digest(&self) -> Digest {
+        let a = native_merge(as_digest(self.seq), self.accounts_root);
+        let b = native_merge(self.pending_root, self.frozen_root);
+        native_merge(native_merge(a, b), self.chain_digest)
+    }
+}
+
+#[cfg(test)]
+mod tests_cabeza {
+    use crate::tests_support::*;
+    use crate::*;
+
+    /// **Dos vistas divergentes producen cabezas distintas.**
+    ///
+    /// Es lo único que `EpochHead` demuestra, y es real: si el operador
+    /// mostró historiales distintos a dos partes, sus cabezas difieren y
+    /// **cualquiera de las dos puede notarlo** comparando con la otra.
+    ///
+    /// Hoy eso es imposible porque nadie fuera del operador ve cabezas
+    /// (`AUDITORIA.md` §76).
+    #[test]
+    fn two_divergent_views_produce_different_heads() {
+        let mut a = new_layer();
+        let mut b = new_layer();
+
+        // Misma historia: misma cabeza.
+        let alice_a = open_and_fund(&mut a, SK_ALICE, 1_000_000);
+        let _alice_b = open_and_fund(&mut b, SK_ALICE, 1_000_000);
+        assert_eq!(
+            a.epoch_head().digest(),
+            b.epoch_head().digest(),
+            "dos nodos con la misma historia deben tener la misma cabeza"
+        );
+
+        // La vista A recibe una operación que la B no ve.
+        open_and_fund(&mut a, SK_BOB, 0);
+
+        let ha = a.epoch_head();
+        let hb = b.epoch_head();
+        assert_ne!(
+            ha.digest(),
+            hb.digest(),
+            "VISTA DIVIDIDA: dos historias distintas deben dar cabezas \
+             distintas, o publicar la cabeza no detectaria nada"
+        );
+        assert_ne!(ha.seq, hb.seq, "y la altura las separa");
+        let _ = alice_a;
+    }
+
+    /// ⚠️ **Y una cabeza NO dice quién la emitió.**
+    ///
+    /// Este test **fabrica una cabeza a mano** con valores inventados y
+    /// comprueba que es indistinguible en tipo de una legítima. No lleva
+    /// firma, así que nada la ata al operador.
+    ///
+    /// Se escribe explícitamente para que la ausencia quede en el código y
+    /// no solo en un comentario: dos cabezas contradictorias **detectan**
+    /// la inconsistencia; **no prueban ante un tercero quién mintió**.
+    ///
+    /// Cerrar esto exige una primitiva de firma que el proyecto **no tiene**
+    /// (§103.1), y elegirla es una decisión de tesis: `ed25519` no es
+    /// post-cuántico (§103.2). Backlog 53.
+    #[test]
+    fn a_head_does_not_say_who_issued_it() {
+        let layer = new_layer();
+        let legitima = layer.epoch_head();
+
+        // Cualquiera puede construir esto. No hace falta ser el operador.
+        let inventada = crate::log::EpochHead {
+            seq: legitima.seq,
+            accounts_root: [BaseElement::new(0xFA15A); 4],
+            pending_root: legitima.pending_root,
+            frozen_root: legitima.frozen_root,
+            chain_digest: [BaseElement::new(0x3E17A); 4],
+        };
+
+        assert_ne!(
+            legitima.digest(),
+            inventada.digest(),
+            "difieren en contenido, si"
+        );
+
+        // ⚠️ Pero nada en el tipo distingue una de otra: no hay firma que
+        // verificar, ni emisor al que atribuirla.
+        assert_eq!(
+            std::mem::size_of_val(&legitima),
+            std::mem::size_of_val(&inventada),
+            "SIN FIRMA: una cabeza inventada es del mismo tipo que una \
+             legitima. La vista dividida es DETECTABLE, no OPONIBLE."
+        );
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

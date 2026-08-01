@@ -418,6 +418,31 @@ pub const DEFAULT_MAX_CUSTODIAN_USES: u64 = 100;
 /// expondría. Para inspeccionar el estado están los accesores
 /// (`balance_of`, `state_root`, `total_supply`...), que devuelven lo
 /// concreto que se pide.
+impl SovereignLayer {
+    /// **Cabeza de época publicable.** `CONFIANZA_RESIDUAL.md` B10.1.
+    ///
+    /// Reúne lo que un testigo externo necesita para comprobar que su vista
+    /// del sistema coincide con la de otro: la altura, las tres raíces y el
+    /// compromiso de todo el historial.
+    ///
+    /// ⚠️ **Todo esto ya existía**; lo que faltaba era **exponerlo junto**.
+    /// La garantía del README —«no puede reescribir el historial en
+    /// secreto»— es condicional a que alguien haya observado una cabeza
+    /// anterior (`AUDITORIA.md` §76), y hoy **nadie fuera del operador
+    /// observa cabezas**. Esto es la mitad que se puede construir sin firma.
+    ///
+    /// ⚠️ **No es oponible y no hay testigos**: ver [`EpochHead`].
+    pub fn epoch_head(&self) -> crate::log::EpochHead {
+        crate::log::EpochHead {
+            seq: self.log.len() as u64,
+            accounts_root: self.accounts.root(),
+            pending_root: self.pending.root(),
+            frozen_root: self.frozen.root(),
+            chain_digest: self.log.head(),
+        }
+    }
+}
+
 pub struct SovereignLayer {
     accounts: SparseTree,
     /// **Transferencias pendientes de reclamar.**

@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 25 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 26 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -1052,6 +1052,18 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   clave (entrada 15) no depende de entenderlo. Pero si el efecto es real y
   general, **es una optimizacion que el proyecto desconoce**, y eso merece
   mirarse.
+
+- [ ] **54. ⚠️ Cambiar el verificador es invisible, y es el poder mayor del
+  operador.** Encontrado el 01-08-2026 al construir la cabeza de epoca
+  (§104.3). `CONFIANZA_RESIDUAL.md` §2.2 lo dice mejor: *«quien puede
+  actualizar el verificador es la **raiz de confianza real** del sistema y
+  nadie lo ve»*. **Cambiar el verificador cambia que es una transicion
+  valida** — mas poderoso que cualquier operacion. ⚠️ **No esta en
+  `SECURITY.md` §2 ni en la tabla §4.1 de `residual-trust`**: ninguna de las
+  dos enumeraciones de poderes del operador lo lista. ⚠️ **Y no se puede
+  incluir en la cabeza hoy**: el proyecto no tiene noción de «reglas
+  vigentes» —`OpKind` dice que circuito usar, no que version—. Requiere
+  primero **versionar las reglas de validacion**, que no existe.
 
 - [ ] **53. ⚠️ No hay firma criptografica en el proyecto, y B10.1 la
   presupone.** Medido el 01-08-2026 (§103): cero `ed25519`, `signature` o
