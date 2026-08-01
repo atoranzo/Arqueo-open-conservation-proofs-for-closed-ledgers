@@ -70,6 +70,16 @@ impl SovereignLayer {
     ///
     /// No necesita prueba porque **no crea dinero**. Para que tenga
     /// fondos hay que emitir, y eso exige la clave del emisor.
+    #[deprecated(
+        since = "0.1.0",
+        note = "Crea cuentas con clave de 64 bits: agotar su espacio cuesta \
+                2^63, medido en 2,38 millones de años-nucleo y con cota \
+                floja (AUDITORIA 82). Usa `open_account_wide`, que acepta \
+                cuatro elementos. Se conserva porque son 115 llamadas y 158 \
+                usos de `open_and_fund`, y §90 garantiza que una clave \
+                rellenada da la misma identidad: la migracion es opt-in \
+                (AUDITORIA 97.4)."
+    )]
     pub fn open_account(&mut self, spend_key: BaseElement) -> AccountIndex {
         self.open_account_checked(spend_key)
             .expect("abrir una cuenta no deberia fallar sin persistencia")

@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 24 abiertas, 27 resueltas. Ultima revision: 31 de julio de 2026.
+**Estado**: 25 abiertas, 27 resueltas. Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
 fallos y aparecieron **dos que no eran la clase conocida** (§78). Los 78
@@ -1056,6 +1056,19 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   corrigio la auditada. ⚠️ **Compartir nombre invita a suponer que son la
   misma funcion.** No medido si las otras dos estan en algun camino de
   produccion.
+
+- [ ] **52. ⚠️ Un titular no puede rotar su clave sin dos custodios.**
+  Descubierto el 01-08-2026 al medir la adopcion de la entrada 15 (§98.4).
+  `recover` y `apply_recovery_delegated` **exigen dos custodios**, asi que
+  rotar a una clave de 256 bits **no es una accion soberana**: la clave de
+  gasto nunca sale de la maquina del titular, pero **cambiarla depende de
+  terceros**. ⚠️ **Puede gastar sin permiso de nadie y no puede protegerse
+  sin permiso de dos.** Es la cuarta condicion implicita de la familia de
+  §95.2, y toca la palabra del titulo del proyecto. **No se propone
+  mecanismo**: una via de rotacion autoautorizada es diseño nuevo —y hay que
+  mirar antes por que la recuperacion exige custodios, que probablemente sea
+  para el caso de la clave PERDIDA, distinto del de la clave que se quiere
+  MEJORAR—.
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo

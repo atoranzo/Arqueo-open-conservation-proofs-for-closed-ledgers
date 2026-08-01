@@ -8041,6 +8041,67 @@ son 115 llamadas y 158 usos de `open_and_fund` que lo hacen. La API queda con
 ⚠️ **Para cerrar la 15 falta**: retirar o marcar la via estrecha —familia de
 la entrada 32— y que las cuentas existentes **roten**.
 
+## 98. Adopcion: la rotacion ya existia, y quien no puede usarla
+
+§97.4 pedia dos cosas para cerrar la entrada 15. **Una ya estaba hecha.**
+
+### 98.1 La via estrecha, marcada
+
+`open_account` lleva `#[deprecated]`, como §65 hizo con las cinco vias
+antiguas. **Cero churn** —es un aviso, no un cambio de firma— y **cero
+avisos nuevos**, porque su unico llamante directo es `open_and_fund`, que ya
+esta cubierto.
+
+### 98.2 ✅ La rotacion no era trabajo pendiente: era un camino sin recorrer
+
+```rust
+pub fn recover(&self, auth, account_index, new_public_id: Digest)
+pub fn apply_recovery_delegated(..., new_public_id: Digest)
+```
+
+Las dos toman **la identidad ya derivada** —un `Digest`— y **no comprueban
+su formato**. Un titular con clave ancha siempre pudo rotar: deriva
+`derive_public_id_wide(sk)` en su maquina y la pasa.
+
+> **Lo que faltaba no era implementarlo: era comprobarlo**, que no es lo
+> mismo. Es la distincion que este documento lleva noventa y ocho secciones
+> haciendo, y §97.4 la habia perdido.
+
+`a_narrow_account_can_rotate_to_a_256_bit_key`, en verde: abre estrecha,
+rota a ancha, **y paga despues con los 256 bits**. Las cuentas que ya
+existen **tienen salida**.
+
+### 98.3 ⚠️ El testigo se escribio primero por la via equivocada
+
+La primera version usaba `recover`, marcada `#[deprecated]` desde §65 porque
+exige las claves de custodio **en el operador** — el fallo de la entrada 32.
+
+> Habria demostrado la propiedad **por un camino que el proyecto quiere
+> retirar**. Al retirarlo se habria perdido la evidencia de que las cuentas
+> viejas tienen salida — justo lo que el testigo existe para probar.
+
+Reescrito con `apply_recovery_delegated`. **Lo destapo el aviso del
+compilador**, no la revision: sin `#[deprecated]` en `recover`, el testigo
+se habria quedado asi.
+
+### 98.4 ⚠️ Y la limitacion que sale de haber mirado
+
+**`recover` exige DOS CUSTODIOS.** Rotar a clave ancha **no es una accion
+soberana del titular**: necesita autorizacion de terceros.
+
+| | |
+|---|---|
+| La clave de gasto | **nunca sale** de la maquina del titular |
+| Cambiarla | **depende de dos custodios** |
+
+> Un titular **no puede mejorar su propia seguridad por su cuenta**. Puede
+> gastar sin permiso de nadie y no puede protegerse sin permiso de dos.
+
+Es la **cuarta** condicion implicita de la familia de §95.2 —una propiedad
+del diseño enunciada sin la condicion que la limita— y va como entrada 52,
+no como nota: es una limitacion de **soberania**, que es la palabra del
+titulo del proyecto.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

@@ -296,6 +296,81 @@ mod tests_delegada {
     const MAX_SUPPLY: u64 = 1_000_000_000;
     const MAX_ACCOUNTS: u64 = 1_000;
 
+    /// ⚠️ **UNA CUENTA ESTRECHA PUEDE ROTAR A CLAVE DE 256 BITS.**
+    ///
+    /// Es lo que decide si la entrada 15 se puede cerrar para las cuentas
+    /// **que ya existen**. `open_account_wide` sirve para las nuevas; esta
+    /// via es la unica salida para las viejas.
+    ///
+    /// Y funciona porque `recover` toma la identidad **ya derivada** —un
+    /// `Digest`— y **no comprueba su formato**: al titular le basta derivar
+    /// `derive_public_id_wide(sk_ancha)` en su maquina.
+    ///
+    /// ⚠️ **Pero exige DOS CUSTODIOS.** Rotar a clave ancha **no es una
+    /// accion soberana del titular**: necesita autorizacion de terceros. Eso
+    /// contradice el espiritu del resto del diseño —la clave nunca sale de
+    /// su maquina, pero **cambiarla depende de otros**— y no se resuelve
+    /// aqui: se registra (§98).
+    #[test]
+    fn a_narrow_account_can_rotate_to_a_256_bit_key() {
+        use stark_experiment::circuit_settlement::derive_public_id_wide;
+
+        let mut layer = new_layer();
+        #[allow(deprecated)]
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund_wide(&mut layer, wide_key(SK_BOB), 0);
+
+        // La clave nueva, ancha de verdad. **El titular la genera y la
+        // deriva; la capa solo ve la identidad.**
+        let sk_ancha = wide_key(0x1207A);
+        let id_nueva = derive_public_id_wide(sk_ancha);
+
+        // ⚠️ **Por la via DELEGADA**, no la antigua.
+        //
+        // El primer intento uso `recover`, que esta marcada `#[deprecated]`
+        // desde §65: exige las claves de custodio EN EL OPERADOR, que es el
+        // fallo de la entrada 32. Habria demostrado que se puede rotar **por
+        // un camino que el proyecto quiere retirar**, y al retirarlo se
+        // habria perdido la evidencia de que las cuentas viejas tienen
+        // salida.
+        //
+        // Las dos vias toman `new_public_id: Digest`, asi que la propiedad
+        // es la misma — pero la que se demuestra debe ser la que se queda.
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+        let op = compromiso(
+            layer.accounts.root(),
+            raiz_nueva(&layer, alice, id_nueva),
+            layer.recovery_count(),
+        );
+        let subida = prueba_subida(&layer, alice, id_nueva);
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+        layer
+            .apply_recovery_delegated(subida, pa, ia, pb, ib, alice, id_nueva)
+            .expect("la recuperacion delegada debe aplicarse");
+
+        assert_eq!(
+            layer.public_id_of(alice),
+            Some(id_nueva),
+            "la cuenta debe tener ya la identidad ancha"
+        );
+
+        // ⚠️ Y lo que de verdad importa: que DESPUES pueda pagar con ella.
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+        let m = layer
+            .send_materials(alice, receptor, 250_000, salt_de(0x1207))
+            .expect("materiales");
+        let recibo = crate::client::prove_send(&m, sk_ancha, proof_options())
+            .expect("tras rotar, el titular DEBE poder probar con su clave ancha");
+        let estado = state_of(&layer, alice);
+        layer
+            .apply_send(&recibo, alice, &estado, 250_000)
+            .expect("aplicar envio");
+
+        assert_eq!(layer.balance_of(alice), Some(750_000));
+    }
+
     fn dominio() -> BaseElement {
         BaseElement::new(CUSTODIAN_DOMAIN)
     }
