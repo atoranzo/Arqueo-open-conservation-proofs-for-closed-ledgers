@@ -765,7 +765,23 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   Con esto el **frente de grados (6, 24, 25, 34) queda cerrado**: decidido y
   documentado, sin migrar nada.
 
-- [ ] **28. Corregir los tres preprints: INVENTARIADO, decision tomada.**
+- [ ] **28. Preprints: LOS CUATRO FRENTES ESCRITOS, sin publicar.**
+  ✅ Escritos el 01-08-2026 (§100) en `PAPER.md`, `PAPER_EN.md` y
+  `QUESTIONS.md`: **notas de correccion** para la clave de gasto (§73) y el
+  cobro (§27) —«la capa no verificaba las pruebas… la clave no hacia falta
+  para mover fondos ajenos»; «cualquiera con el aviso podia reclamarlo»—, la
+  **correccion incompleta de §8.2** y la **unidad MiB** en seis sitios.
+  ⚠️ **El frente C era peor de lo inventariado** (§100.2): no faltaba un
+  analisis, **habia una afirmacion publicada que se queda corta** —§8.2 dice
+  que la correccion «consiste en emplear digests de cuatro elementos», y eso
+  arregla la identidad, **no la clave**—.
+  ⚠️ **Y `QUESTIONS.md` se quedo fuera del primer parche** (§100.3): el
+  inventario listaba seis sitios y se cubrieron cuatro.
+  ⚠️⚠️ **NO SUBIR A ZENODO todavia**: la **entrada 16** sigue abierta —los
+  tres se citan entre si por versiones antiguas— y publicar con referencias
+  cruzadas rotas **crearia el mismo problema otra vez**. Los cuatro frentes
+  estan escritos; **la revision no esta publicada**.
+  ~~28. Corregir los tres preprints: INVENTARIADO, decision tomada.~~
   ⚠️ **Inventario completo en §84**: cuatro frentes, **once pasajes** en tres
   documentos, con fichero y linea. ⚠️ **DECIDIDO el 31-07-2026 (§84.3): la
   cuarta revision ANOTA** que las dos propiedades —la clave de gasto y el
