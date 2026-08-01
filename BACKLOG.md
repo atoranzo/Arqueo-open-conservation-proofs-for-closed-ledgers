@@ -12,7 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 24 abiertas, 28 resueltas. Ultima revision: 1 de agosto de 2026.
+**Estado**: 25 abiertas, 27 resueltas — **2 suspendidas** (16 y 28).
+Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
 fallos y aparecieron **dos que no eran la clase conocida** (§78). Los 78
@@ -664,7 +665,20 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **Arreglo dimensionado en §82.5**: `sk` de 4 elementos, que invalida
   cualquier cuenta existente.
 
-- [x] **16. ✅ Referencias cruzadas: CORREGIDAS.** Las siete el 01-08-2026
+- [ ] **16. ⏸️ SUSPENDIDA. Referencias cruzadas — y NO se van a mantener.**
+  ⏸️ Suspendida con la 28 el 01-08-2026, y con una decision de diseño:
+  **cada paper sera independiente**, sin citar a sus companeros. Eso no
+  resuelve la entrada: **la elimina**.
+  ⚠️ **Y la razon por la que no se puede mantener es estructural**: los DOI
+  de una version **no existen hasta despues de depositarla**, asi que toda
+  revision nace con sus referencias apuntando a la anterior. No es un
+  descuido que se corrija una vez: **se rompe en cada revision**.
+  ⚠️ **Se descubrio ademas un fallo de deposito del 29-07-2026**: las v2 y v3
+  de `ZK-SSL-policy-note` se subieron **dentro de la cadena de versiones de
+  `ZK-SSL-residual-trust`**. Por eso `doc/preprints/README.md` atribuia
+  `…693709` a `policy-note` cuando es **v2 de residual-trust**. Esta
+  publicado y **no se puede deshacer**: solo documentarse.
+  ~~16. Referencias cruzadas: CORREGIDAS.~~ Las siete el 01-08-2026
   (§101.2): cinco cruzadas **y dos autocitas** —`ZK-SSL-preprint.md` y
   `ZK-SSL-policy-note.md` se citaban a si mismos con su DOI de primera
   revision—, que la entrada no inventariaba. Cero DOI de primera revision en
@@ -770,7 +784,16 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   Con esto el **frente de grados (6, 24, 25, 34) queda cerrado**: decidido y
   documentado, sin migrar nada.
 
-- [ ] **28. Preprints: CORREGIDOS los tres, sin depositar.**
+- [ ] **28. ⏸️ SUSPENDIDA hasta el fin del proyecto. Preprints.**
+  ⏸️ **Decision del 01-08-2026**: las revisiones de preprints consumen tiempo
+  desproporcionado y su enredo de versiones en Zenodo no aporta al codigo.
+  **Se retoman al final**, con los tres papers rehechos de una vez y **sin
+  referencias cruzadas** —cada uno independiente—.
+  ⚠️ **Lo publicado sigue publicado**: los tres tienen DOI y un lector los
+  recibe hoy tal como estan. Suspender es aplazar el trabajo, **no retirar el
+  problema**, y por eso la entrada no se cierra.
+  ✅ **El trabajo hecho no se pierde**: `doc/preprints/` ya lleva los cuatro
+  frentes corregidos (§100, §101), listo para cuando toque.
   ⚠️⚠️ **§84 inventario los ficheros EQUIVOCADOS** (§101.1): `PAPER.md` y
   `QUESTIONS.md` de la raiz **no son los preprints publicados** —978 lineas
   contra 448, numeracion y contenido distintos—. Las notas del 01-08 estan en
