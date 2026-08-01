@@ -9502,6 +9502,122 @@ lista de lo que otras secciones ya corrigen.
 
 **No se ejecuta aqui**: es decision del autor.
 
+## 121. El acuse compromete su propio N, bajo techo
+
+**Decision** (B10.3): **N va comprometido en cada acuse**, inmutable y a la
+vista de quien lo recibe.
+
+### 121.1 Lo que resuelve, y la simetria con §119
+
+⚠️ El problema declarado era que **un N corto convierte congestion legitima
+en falsa evidencia**. Con N comprometido por acuse:
+
+> Bajo congestion, el operador honesto **no viola un N corto: emite acuses
+> con N mayor y lo declara**. La congestion deja de fabricar falsa evidencia
+> y pasa a ser **degradacion visible y firmada** del servicio.
+>
+> Y **el censor que infla N tambien se delata**: un N obeso es señal que
+> cualquier testigo lee.
+
+| | quien elige | que lo acota |
+|---|---|---|
+| §119 · reversion | el **emisor** | un **suelo** que protege al receptor |
+| §121 · acuse | el **operador** | un **techo** que protege al usuario |
+
+**Una sola linea sistemica en cada caso.** Aqui: `N_max`.
+
+### 121.2 ⚠️ La trampa del borrador: NADA de firma-por-acuse
+
+B10.3 decia que el operador **firma** `(hash_de_la_prueba,
+epoca_de_recepcion)` al aceptar.
+
+> **Tal cual, a miles de operaciones por segundo, revienta la aritmetica de
+> la entrada 53**: los 2^40 indices de XMSS durarian **semanas**.
+
+**Correccion de diseño, no de politica**: los acuses son **hojas bajo una
+raiz de recepcion comprometida en la cabeza**. El acuse individual = camino
+Merkle + la cabeza firmada del latido.
+
+> **Hereda la firma. Cero indices extra.** Y llega en ≤1 latido —≤1 min—,
+> despreciable frente a `N_max`.
+
+⚠️ **Es la SEGUNDA extension pendiente de `EpochHead`** —tras
+`verifier_hash` (§104.3)— **antes de que exista un solo testigo**. La cabeza
+aun no esta desplegada, asi que no hay migracion; pero conviene contarlas.
+
+### 121.3 El detector que NO necesita N
+
+El acuse lleva un **contador de recepcion monotono**. Entonces:
+
+> *«Una operacion con contador posterior a la mia entro y la mia no»* es
+> evidencia de **reordenacion inmune a la congestion** — porque **la
+> congestion retrasa a todos; solo la censura adelanta**.
+
+**Detector inmediato**, y N queda como cota de **abandono**, no de lentitud
+—el mismo corte que §88.5—. Coste: un `u64`.
+
+### 121.4 El reloj ya estaba decidido dos veces
+
+N se cuenta en **cabezas firmadas**, no en epocas crudas (§115, §119.3):
+`epoca_de_recepcion` = `seq` de la ultima cabeza firmada al aceptar.
+**Estirar el latido para esquivar N es en si evidencia oponible.**
+
+Y la regla **a demanda** de §115 regala la mitad del mecanismo: acuse +
+secuencia de cabezas sin la inclusion **es un registro oponible del retraso
+sea cual sea N**.
+
+### 121.5 ⚠️ Cruces con otras secciones
+
+- **§116**: el acuse ata `hash_de_la_prueba`. Si usa `digest_of_proof` tal
+  cual, **hereda la colision por ceros finales**. Exige el digest con
+  longitud codificada, o un hash real. **§116 se cierra antes que esto.**
+- **Entrada 53**: los costes del borrador —«cabeza ~200 B»— **predatan la
+  firma**: la cabeza real son **~18,5 KB** (§114).
+- **Nomenclatura**: reservar «acuse». El proyecto ya tiene dos `receipt`
+  —`SendReceipt`, `GovernanceReceipt`, que son **otro animal**: paquetes de
+  prueba del cliente—. Un tercero homonimo repetiria lo de los salts.
+
+### 121.6 La linea para `PRINCIPIOS.md`, propuesta
+
+> **N_max = 1.440 cabezas firmadas** —24 h al latido de 1/min—: ningun acuse
+> puede prometer inclusion mas lenta.
+
+**Precedente**: el MMD de Certificate Transparency, 24 h. **Aritmetica
+medida**: a 70 ms por `apply` sin lotes, 24 h absorben **mas de 1,2 M de
+operaciones** de backlog — **a ese horizonte, «era congestion» muere como
+defensa**.
+
+⚠️ **Caveat declarado**: en CT la consecuencia era ecosistemica —desconfiar
+del log—; **aqui el sistema produce el par condenatorio, no adjudica**. La
+consecuencia es del supervisor o del contrato.
+
+### 121.7 Limite heredado, sin maquillar
+
+> **El acuse solo encarece censurar lo acusado.** Negarse a emitir acuses es
+> el mundo pre-B10.3: **detectable por el cliente afectado** —«no me dan
+> acuse» es razon para no operar— **pero no evidencia portable**.
+
+Limite del borrador, que N no cambia y esta entrada no maquilla.
+
+### 121.8 Sometimiento: documental, y por que
+
+⚠️ **Primera de las cuatro decisiones del dia cuyo sometimiento no fue
+mecanico**: el acuse **no existe en codigo**, asi que no habia nada que
+ejecutar. Se sometio el **texto**: recuperado del registro de sesiones,
+colacionado contra el codigo publicado —los `receipt` existentes son otro
+animal— y con dos piezas del borrador **corregidas antes de heredarlas**
+(§121.2 y §121.5).
+
+**T4 es su aceptacion mecanica**: (a) inclusion en ≤N ⇒ no hay par
+condenatorio construible; (b) no-inclusion tras N ⇒ acuse + N cabezas
+verifica como evidencia portable; (c) contador `i` incluido con `i−1` fuera
+⇒ evidencia **inmediata**; (d) un acuse no es confundible con los `receipt`
+existentes; (e) ata la prueba con digest con longitud.
+
+**Si (a)-(b) no pueden escribirse** porque la raiz de recepcion no entra en
+la cabeza, el hueco es el formato de B10.1 — **trabajo, no obstaculo**, y la
+politica queda **condicionada, no caida**.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

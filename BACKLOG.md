@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 33 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 34 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -1108,6 +1108,31 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   incluir en la cabeza hoy**: el proyecto no tiene noción de «reglas
   vigentes» —`OpKind` dice que circuito usar, no que version—. Requiere
   primero **versionar las reglas de validacion**, que no existe.
+
+- [ ] **62. Acuse de recepcion (B10.3) — POLITICA DECIDIDA (§121).**
+  ✅ **N va comprometido en cada acuse**, inmutable y a la vista. Bajo
+  congestion el operador honesto **emite N mayor y lo declara**: la
+  congestion pasa de fabricar falsa evidencia a ser **degradacion visible y
+  firmada**, y **un N obeso delata al censor**. Simetrico a §119: alli el
+  emisor sobre un **suelo**, aqui el operador bajo un **techo**.
+  ⚠️⚠️ **Correccion del borrador** (§121.2): decia que el operador **firma**
+  cada acuse — **a miles de op/s eso agota los 2^40 indices XMSS en
+  semanas**. Los acuses son **hojas bajo una raiz en la cabeza**: heredan la
+  firma, **cero indices extra**. ⚠️ Es la **segunda extension pendiente de
+  `EpochHead`** antes de su primer testigo.
+  ✅ **Detector que no necesita N** (§121.3): contador de recepcion monotono
+  — *«una operacion posterior entro y la mia no»* es **reordenacion inmune a
+  la congestion**, porque **la congestion retrasa a todos y solo la censura
+  adelanta**. Un `u64`.
+  ⚠️ **Hereda §116** si usa `digest_of_proof` tal cual: **§116 se cierra
+  antes**. Y **reservar «acuse»**: ya hay dos `receipt` que son otro animal.
+  ⚠️ **Limite sin maquillar** (§121.7): **solo encarece censurar lo
+  acusado**; negarse a emitir acuses sigue sin dejar evidencia portable.
+  **Para `PRINCIPIOS.md`**: **N_max = 1.440 cabezas** —24 h, precedente MMD
+  de CT—; a 70 ms/apply, 24 h absorben **>1,2 M operaciones**: a ese
+  horizonte «era congestion» muere como defensa. **Caveat**: CT adjudicaba;
+  **aqui el sistema produce el par condenatorio, no adjudica**.
+  **Pendiente T4.**
 
 - [ ] **61. ⚠️⚠️ El codigo cita DOS DOCUMENTOS QUE NO EXISTEN.**
   Medido el 01-08-2026 (§120): `CONFIANZA_RESIDUAL.md` y `ESCALADO.md` **no
