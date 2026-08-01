@@ -8579,6 +8579,89 @@ aprobaron `circuit_burn` sin ver nada, porque §72 fue una restriccion **bien
 formada sobre el objeto equivocado**, y eso ninguna herramienta que cuente
 apariciones lo detecta.
 
+## 106. DECISION: todo post-cuantico en produccion, XMSS para las firmas
+
+Tomada el 01-08-2026 al plantearse la firma de las cabezas de epoca
+(entrada 53). No es una preferencia: **es la tesis del proyecto aplicada a lo
+que se añada a partir de ahora.**
+
+### 106.1 El enunciado, con su matiz
+
+> **Todo el camino de produccion es post-cuantico.** Los backends comparados
+> —BLS12-381, Groth16, PLONK, Halo2, y `crates/ceremony`— **se conservan como
+> evidencia de por que se eligio STARK**, no como alternativa desplegable.
+
+⚠️ El matiz importa: retirarlos **destruiria la aportacion medible del
+proyecto**, que es precisamente la comparacion empirica de cinco sistemas
+sobre el mismo circuito. Estan ahi para mostrar el coste de las otras
+opciones, incluida su dependencia de curvas.
+
+### 106.2 Verificado, no supuesto
+
+`crates/zk-ssl` y `crates/stark-experiment` —el camino de produccion— **no
+tienen ninguna dependencia de curva eliptica**. Comprobado sobre sus
+`Cargo.toml`: cero `ark-*`, `bls12`, `curve25519`, `secp` o `ed25519`.
+
+Lo que sostiene el sistema hoy:
+
+| pieza | supuesto |
+|---|---|
+| STARK / FRI | resistencia de la funcion hash |
+| Rescue | idem |
+| Arbol de Merkle | idem |
+
+**Una sola familia de supuestos.** Y esa es la propiedad que la decision
+protege.
+
+### 106.3 XMSS, y el criterio que lo elige
+
+No se elige por ser «el mas post-cuantico». Se elige porque **es el unico que
+no añade una familia de supuestos nueva**:
+
+| | supuestos | coste |
+|---|---|---|
+| **XMSS** | **resistencia de la funcion hash** — los mismos que ya sostienen los STARK | tiene **estado** |
+| SPHINCS+ | hash tambien, sin estado | firmas de 8-17 KB |
+| ML-DSA | **reticulos** — hipotesis nueva | estandarizado, rapido |
+| ~~ed25519~~ | ❌ **no post-cuantico** | descartado por la decision |
+
+> **Elegir XMSS no añade nada que no estuviera ya asumido.** Elegir ML-DSA
+> si, y **un sistema con dos familias de supuestos es tan fuerte como la mas
+> debil de las dos**: añadir reticulos junto a hashes no suma seguridad, suma
+> superficie.
+
+### 106.4 ⚠️ La condicion de XMSS, y por que aqui es una ventaja
+
+XMSS es un esquema **con estado**: cada firma consume un indice del arbol, y
+**reusar un indice filtra la clave privada**. En la mayoria de usos eso es un
+inconveniente operativo serio.
+
+Aqui no:
+
+> `seq` es **monotona por construccion** —`seq = entries.len()`—, asi que
+> usarla como indice significa que **reusar un indice es emitir dos cabezas
+> con el mismo `seq`**. Y eso **es exactamente la vista dividida** que la
+> firma existe para hacer oponible.
+>
+> **El modo de fallo del esquema y el fraude perseguido son el mismo
+> evento.**
+
+La observacion es de B15 de `CONFIANZA_RESIDUAL.md`; lo que esa propuesta no
+conecto es que **B10.1 depende de ella** (§103.3).
+
+### 106.5 Lo que esta decision NO resuelve
+
+- **No implementa nada.** Es un criterio de eleccion, y la firma sigue sin
+  existir (entrada 53).
+- ⚠️ **El estado de XMSS hay que persistirlo.** Un nodo que reinicie y pierda
+  el indice **puede reusar uno**, y entonces filtra su clave. Con `seq`
+  derivada del log persistido el riesgo baja, pero **no se ha comprobado que
+  el log garantice esa monotonía a traves de un reinicio**. Entrada 18 ronda
+  cerca.
+- **No dice el tamaño del arbol XMSS**, que fija cuantas epocas se pueden
+  firmar antes de agotar las claves. Es un parametro con consecuencia: **un
+  arbol agotado deja al operador sin poder publicar cabezas.**
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

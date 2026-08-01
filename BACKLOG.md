@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 27 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 28 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -1052,6 +1052,22 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   clave (entrada 15) no depende de entenderlo. Pero si el efecto es real y
   general, **es una optimizacion que el proyecto desconoce**, y eso merece
   mirarse.
+
+- [ ] **56. Firmar las cabezas con XMSS — decision tomada, sin implementar.**
+  ⚠️ **DECISION del 01-08-2026 (§106)**: **todo el camino de produccion es
+  post-cuantico**; los backends comparados se conservan **como evidencia de
+  por que se eligio STARK**, no como alternativa. ✅ **Verificado**:
+  `zk-ssl` y `stark-experiment` **no tienen ninguna dependencia de curva
+  eliptica** — una sola familia de supuestos, la resistencia del hash.
+  **XMSS para las firmas** (entrada 53), y **no por ser «el mas
+  post-cuantico»**: es el unico que **no añade una familia de supuestos
+  nueva** —SPHINCS+ tambien es de hash pero firma 8-17 KB; ML-DSA mete
+  reticulos, y **un sistema con dos familias es tan fuerte como la mas
+  debil**—. ⚠️ **Su estado es aqui una ventaja** (§106.4): reusar indice
+  filtra la clave, y con `seq` como indice **reusarlo ES la vista dividida**.
+  ⚠️ **Sin resolver**: persistir el indice a traves de un reinicio —un nodo
+  que lo pierda puede reusarlo— y elegir el tamaño del arbol, que fija
+  **cuantas epocas se pueden firmar antes de agotarse**.
 
 - [ ] **55. ⚠️ B12.1: el formato de especificacion del AIR, probado en un
   circuito.** `doc/air/circuit_burn.md`, escrito el 01-08-2026 (§105).
