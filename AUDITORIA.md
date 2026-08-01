@@ -8813,6 +8813,80 @@ descarte de §99. **Las tres se escribieron con la misma seguridad.**
 > Se registra la duda junto a la correccion. Quien lea §108 debe ver que
 > corrige a §99, que corrigio a §93.
 
+## 109. La 49 y la 50 NO se resuelven con la misma pieza
+
+Con §108 devolviendo vida al «salt en el estado», se propuso usar **el salt
+como credencial de lectura**: seria una llave que —a diferencia de la
+identidad publica que §95.4 descarto— **no es la direccion de pago** y el
+titular puede derivar de `sk`.
+
+**La propuesta era mala.** Se descarta antes de escribir codigo, y se
+registra por que.
+
+### 109.1 Un secreto que viaja en cada operacion no es una credencial
+
+El cliente **necesita el salt cada vez** que reconstruye su hoja para probar.
+Va y viene por el canal operador↔cliente constantemente.
+
+> Una credencial deberia viajar lo minimo. **Un cegado tiene que viajar cada
+> vez.** Son requisitos opuestos sobre el mismo valor.
+
+### 109.2 Y no se podria rotar
+
+Si el salt se compromete hay que rotarlo. Pero:
+
+1. Rotarlo **cambia la hoja**.
+2. Cambiar la hoja **es una transicion de estado**.
+3. Que exigiria **autorizacion**… con el salt comprometido.
+
+> **Un secreto que ciega el estado y autoriza el acceso al estado no se puede
+> rotar sin usarlo.** Es circular.
+
+### 109.3 ⚠️ Y la razon de fondo: la 49 no es un problema criptografico
+
+`account_view`, `balance_of`, `public_id_of` y `nonce_of` —**cuatro puertas,
+no una**— devuelven datos sin comprobar quien llama.
+
+> **La solucion de un problema de control de acceso es control de acceso.**
+> No reutilizar material criptografico porque este a mano.
+
+⚠️ Y habria creado **la cuarta garantia por consecuencia** del proyecto:
+lectura y cegado atados al mismo secreto, dependiendo el uno del otro **sin
+que nada avise si uno cambia**. Las otras tres estan en §105.2 y §107.1, y
+las tres son la forma de §72.
+
+### 109.4 ⚠️ Y el salt no arregla la 49 de todos modos
+
+`balance_of(index)` devuelve **el numero**. Un salt oculta la hoja frente a
+quien la ve **hasheada** —el vecino con su camino Merkle— **no frente a quien
+pregunta**.
+
+| entrada | de quien protege |
+|---|---|
+| **50** | del vecino que **recibe un camino** |
+| **49** | del que **simplemente pregunta** |
+
+**Son ataques distintos**, y arreglar la 50 sin la 49 dejaria hojas cegadas
+**y una API que da el saldo en claro**: la defensa criptografica seria
+decorativa.
+
+### 109.5 ⚠️ CORRECCION de §95.4: la 49 no es barata
+
+§95.4 dijo que la mitigacion de la 49 «se cierra facil» y que solo era
+discutible **como declararla**.
+
+**Es falso.** El proyecto **no tiene ningun mecanismo de autenticacion de
+titular**:
+
+- No hay firma (§103.1).
+- `open_account` **no registra nada** que sirva para probar identidad
+  despues: solo guarda `public_id`, `balance` y `nonce`.
+- Y la unica prueba de titularidad que existe es **un STARK de ~600 ms**
+  (§93.1), inaceptable para una lectura.
+
+> **La 49 depende de la 53** —la firma XMSS— **o de un mecanismo
+> equivalente.** No es una tarde.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

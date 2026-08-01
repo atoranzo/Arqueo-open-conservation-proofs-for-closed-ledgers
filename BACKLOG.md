@@ -1166,7 +1166,24 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   pero al integrarlo hay que fechar la maquina, como obligo §89 con
   `ESCALADO.md`.
 
-- [ ] **49. ⚠️ El contrato de `account_view` no exige autorizacion.**
+- [ ] **49. ⚠️ CUATRO puertas de lectura sin autorizacion — y NO es barata.**
+  ⚠️ **No es solo `account_view`**: tambien `balance_of`, `public_id_of` y
+  `nonce_of`. Arreglar una sola seria el error de §80.2.
+  ⚠️⚠️ **CORRECCION de §95.4** (§109.5): se dijo que «se cierra facil» y **es
+  falso**. El proyecto **no tiene ningun mecanismo de autenticacion de
+  titular** —no hay firma (§103.1), `open_account` no guarda nada que sirva
+  para probar identidad despues, y la unica prueba de titularidad existente es
+  **un STARK de ~600 ms**, inaceptable para una lectura—. **Depende de la
+  entrada 53.**
+  ⚠️ **Y el salt de la 50 NO la arregla** (§109.4): un salt oculta la hoja
+  frente a quien la ve **hasheada**; `balance_of` devuelve **el numero**. La
+  50 protege del vecino que recibe un camino; la 49, del que **pregunta**.
+  **Arreglar la 50 sin la 49 dejaria hojas cegadas y una API que da el saldo
+  en claro.**
+  ⚠️ **Se descarto usar el salt como credencial** (§109.1-3): viaja en cada
+  operacion, **no se podria rotar** —seria circular— y habria creado la cuarta
+  «garantia por consecuencia» del proyecto.
+  ~~49. ⚠️ El contrato de `account_view` no exige autorizacion.~~
   Medido el 31-07-2026 (§93.1): toma un indice, **no recibe credencial**, y
   devuelve `balance` y `nonce` de cualquier cuenta. Los indices son
   **enumerables** —`next_index += 1`—. ⚠️ **Hallazgo de CONTRATO, no de
