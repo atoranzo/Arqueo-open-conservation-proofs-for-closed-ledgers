@@ -9237,6 +9237,80 @@ encadenamiento, **no la resistencia a colision del resumen**.
 
 **Arreglo**: bloque final con la longitud del mensaje. Entrada 58.
 
+## 117. El salt de hoja se deriva de la clave. Cierra §108.4
+
+**Decision**: `salt_hoja = native_merge([LEAF_SALT_DOMAIN], clave_ancha)`,
+como `derive_leaf_salt_wide` / `derive_leaf_salt` en `circuit_settlement.rs`.
+La estrecha rellena `[sk,0,0,0]` y hereda §90: **dos vias de apertura, una
+cuenta, UN salt** — comprobado, no prometido.
+
+### 117.1 Por que derivarlo y no las otras dos vias
+
+| origen | por que no |
+|---|---|
+| Aleatorio custodiado por el titular | ⚠️ **§93.4 lo mata**: «el cliente no custodia estado hoy, y esto se lo pediria» |
+| Suministrado por el operador | muere contra la mision de **operador ciego** |
+| **Derivado de la clave** | ✅ satisface §93.4, la migracion futura y la promesa vigente **a la vez** |
+
+> **El salt no puede perderse por separado — solo con la clave, y entonces ya
+> estaba todo perdido.** Cero secretos de perdida fatal nuevos.
+
+### 117.2 Sometido a uso: T2a, 3/3
+
+⚠️ **`t2a_dominio` es la apuesta real**, y su motivo merece leerse: el
+nullifier es `merge(merge([NULLIFIER_DOMAIN], clave), [nonce])`, asi que una
+colision de dominios **haria del salt el estado interno del nullifier** — una
+**llave maestra de trazabilidad de todos los gastos de la cuenta**.
+
+Los otros dos: `t2a_anchura_coherente` hereda §90 en las dos vias, y
+`t2a_determinista_no_trivial` comprueba que la posicion importa
+—`[sk,0,0,0] ≠ [0,0,0,sk]`—.
+
+### 117.3 ⚠️ CORRECCION al coste 3 del asiento: no es divergencia de estilo
+
+El asiento anota como coste que `LEAF_SALT_DOMAIN` use **8 bytes** donde la
+casa usa 4 —`"SPKY"`, `"NULL"`, `"CUST"`, `"GOVE"`—.
+
+**Medido: hay 5 dominios distintos, y la separacion es ESTRUCTURAL.**
+
+> `LEAF_SALT` mide 8 bytes y los otros cuatro miden 4. **No pueden colisionar
+> por longitud**, no solo por valor.
+
+Eso es **mas fuerte que lo que el test comprueba**: `t2a_dominio` verifica
+que los valores elegidos no chocan; la longitud garantiza que **no podrian**.
+
+**No es un coste: es una propiedad**, y conviene que quede escrita como tal
+para que nadie la «arregle» por consistencia de estilo.
+
+### 117.4 Lo que sigue abierto, con nombre
+
+- **T2b, test de aceptacion de la 50** —no de esta entrada—: abrir cuenta,
+  **destruir todo el estado del cliente salvo la clave**, re-derivar, gastar.
+  ⚠️ **Si T2b no puede escribirse, esta decision cae.**
+- **El asterisco de §93.4**: la clave **ya llega** a la capa en
+  `open_account(_wide)` —no se *almacena*, pero se *ve* al abrir—. La v1
+  puede derivar el salt en el nodo **sin que fluya un bit nuevo**. Existia
+  antes de esta decision; esta entrada **lo documenta, no lo crea**.
+- Renombrar en doc `salt_hoja` / `salt_aviso`: el de `pending.rs` es **otro
+  animal** —por pago, aleatorio, del emisor, viaja en el aviso—.
+
+## 118. ⚠️ Dos documentos publicos dicen «sin solucion conocida»
+
+`SECURITY.md` §3.2 y `doc/preprints/ZK-SSL-residual-trust.md` §4.7 afirman
+que la fuga de la entrada 50 **no tiene solucion conocida**, y que derivar el
+salt de la clave **esta descartado**.
+
+**§108 y §117 lo desmienten.** Mientras no se corrijan, el proyecto tiene
+**dos documentos publicos contradiciendo lo decidido** — uno de ellos
+depositado con DOI.
+
+⚠️ **Y la correccion no es «ya esta resuelto»**: es que **el cegado es frente
+a TERCEROS y solo frente a terceros**, con la v1 derivando el salt en el
+nodo. Decirlo de menos seria falso; decirlo de mas, tambien.
+
+**No se corrige aqui**: los preprints estan **suspendidos** (entrada 28), y
+`SECURITY.md` espera a que T2b confirme la decision.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

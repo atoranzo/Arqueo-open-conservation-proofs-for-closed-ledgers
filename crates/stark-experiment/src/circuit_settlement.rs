@@ -2039,3 +2039,113 @@ mod tests {
         );
     }
 }
+
+
+/// Dominio del salt de hoja (entrada 50; cierra §108.4).
+///
+/// Valor autodescriptivo —"SALTLEAF" en ASCII— y **distinto de todo dominio
+/// existente: `t2a_dominio` lo comprueba, no lo promete**. Si colisionara
+/// con `NULLIFIER_DOMAIN`, el salt seria el estado interno del nullifier.
+pub const LEAF_SALT_DOMAIN: u64 = 0x53414C54_4C454146;
+
+/// **Salt de hoja, derivado de la clave de gasto ANCHA.**
+///
+/// Decision de la entrada 50: el salt no es un secreto nuevo — se deriva de
+/// la clave, en cliente, con la familia de hash del proyecto. Quien tiene la
+/// clave lo re-deriva; quien la pierde ya lo habia perdido todo (§93.4: el
+/// cliente no custodia estado, y esto no se lo pide).
+///
+/// ⚠️ Declarado: (1) acopla el salt a la clave — rotar clave implicara
+/// nueva hoja; (2) es **convencion del cliente de referencia**, el protocolo
+/// no impone el origen; (3) protege de terceros que ven caminos y pruebas —
+/// **del operador no, y no lo pretende** (el operador ve los saldos).
+pub fn derive_leaf_salt_wide(spend_key: Digest) -> Digest {
+    native_merge(as_digest(BaseElement::new(LEAF_SALT_DOMAIN)), spend_key)
+}
+
+/// Anchura estrecha: rellena y hereda la garantia de §90 —
+/// `[sk,0,0,0]` es la MISMA cuenta, luego el MISMO salt.
+pub fn derive_leaf_salt(spend_key: BaseElement) -> Digest {
+    derive_leaf_salt_wide(as_digest(spend_key))
+}
+
+#[cfg(test)]
+mod t2a_salt_hoja {
+    //! T2a - la decision del salt, sometida a uso (disciplina de §108.5).
+    use super::*;
+
+    fn claves() -> [Digest; 3] {
+        [
+            as_digest(BaseElement::new(1)),
+            as_digest(BaseElement::new(0xDEAD_BEEF)),
+            [
+                BaseElement::new(7),
+                BaseElement::new(11),
+                BaseElement::new(13),
+                BaseElement::new(17),
+            ],
+        ]
+    }
+
+    #[test]
+    fn t2a_dominio() {
+        // La apuesta real: colision con NULLIFIER_DOMAIN haria del salt una
+        // llave maestra de trazabilidad de la cuenta.
+        assert_ne!(LEAF_SALT_DOMAIN, SPEND_KEY_DOMAIN);
+        assert_ne!(LEAF_SALT_DOMAIN, NULLIFIER_DOMAIN);
+        // Censo repo-wide (§116): los OTROS dos dominios vivos del crate.
+        assert_ne!(LEAF_SALT_DOMAIN, crate::circuit_mint_pending::CUSTODIAN_DOMAIN);
+        assert_ne!(LEAF_SALT_DOMAIN, crate::circuit_governance::GOVERNANCE_DOMAIN);
+        // Y los duplicados-por-copia quedan fijados por test, no por
+        // disciplina: si alguien cambia una definicion y no la otra, esto
+        // rompe aqui y no en un circuito.
+        assert_eq!(
+            crate::nullifier::NULLIFIER_DOMAIN,
+            crate::circuit_threshold_single_nullifier::NULLIFIER_DOMAIN
+        );
+        assert_eq!(
+            crate::circuit_mint_pending::CUSTODIAN_DOMAIN,
+            crate::circuit_threshold::CUSTODIAN_DOMAIN
+        );
+        for k in claves() {
+            let s = derive_leaf_salt_wide(k);
+            assert_ne!(s, derive_public_id_wide(k), "salt == identidad");
+            assert_ne!(s, k, "salt == clave");
+            for n in [0u64, 1, 7] {
+                assert_ne!(
+                    s,
+                    native_nullifier_wide(k, BaseElement::new(n)),
+                    "salt == nullifier(nonce={n})"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn t2a_anchura_coherente() {
+        // Hereda §90: dos vias de apertura, una cuenta, UN salt.
+        for sk in [1u64, 0xDEAD_BEEF, 0xFFFF_FFFF_0000_0000] {
+            let e = BaseElement::new(sk);
+            assert_eq!(derive_leaf_salt(e), derive_leaf_salt_wide(as_digest(e)));
+        }
+    }
+
+    #[test]
+    fn t2a_determinista_no_trivial() {
+        let ks = claves();
+        assert_eq!(derive_leaf_salt_wide(ks[0]), derive_leaf_salt_wide(ks[0]));
+        for i in 0..ks.len() {
+            for j in i + 1..ks.len() {
+                assert_ne!(
+                    derive_leaf_salt_wide(ks[i]),
+                    derive_leaf_salt_wide(ks[j]),
+                    "claves distintas, mismo salt"
+                );
+            }
+        }
+        // La posicion importa: [sk,0,0,0] y [0,0,0,sk] no comparten salt.
+        let sk = BaseElement::new(42);
+        let inv = [BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO, sk];
+        assert_ne!(derive_leaf_salt(sk), derive_leaf_salt_wide(inv));
+    }
+}

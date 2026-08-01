@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 30 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 32 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -1128,6 +1128,28 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   incluir en la cabeza hoy**: el proyecto no tiene noción de «reglas
   vigentes» —`OpKind` dice que circuito usar, no que version—. Requiere
   primero **versionar las reglas de validacion**, que no existe.
+
+- [ ] **59. ⚠️ `native_merge` esta definida DOS veces, y son la misma.**
+  `rescue_hash.rs:121` y `merkle.rs:91`: **cuerpos identicos linea a linea**
+  —mismo estado, mismas posiciones, misma permutacion— con firmas distintas
+  solo por alias (`[BaseElement; 4]` vs `Digest`). **No es un re-export: son
+  dos funciones.**
+  ⚠️ **Hoy coinciden. Nada lo comprueba.** Es §94 aplicado a la funcion que
+  compone **todos** los hashes del sistema.
+  ⚠️ **Y toca lo decidido en §117**: el asiento dice que `derive_leaf_salt`
+  usa «el mismo `native_merge`» **por construccion** — con dos definiciones,
+  «el mismo» depende de **cual importe cada modulo**. Si una divergiera,
+  **el salt y la identidad se computarian con hashes distintos**.
+  **Arreglo**: re-export, o test que las compare sobre muestras.
+
+- [ ] **60. ⚠️ Dos constantes de dominio declaradas por duplicado.**
+  `CUSTODIAN_DOMAIN` en `circuit_mint_pending.rs:49` y `circuit_threshold.rs:71`;
+  `NULLIFIER_DOMAIN` en `nullifier.rs:41` y
+  `circuit_threshold_single_nullifier.rs:79`. **Mismo valor hoy, nada lo
+  comprueba.**
+  ⚠️ **Si `NULLIFIER_DOMAIN` divergiera, dos circuitos computarian
+  nullificadores DISTINTOS para el mismo gasto** — y eso es doble gasto.
+  Encontrado al cerrar el primer pendiente de §117.
 
 - [ ] **58. ⚠️ `digest_of_proof` rellena con ceros sin codificar longitud.**
   Hallazgo colateral de §115 (§116): **dos pruebas que difieran solo en ceros
