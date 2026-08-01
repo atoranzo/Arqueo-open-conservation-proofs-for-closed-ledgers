@@ -8662,6 +8662,79 @@ conecto es que **B10.1 depende de ella** (§103.3).
   firmar antes de agotar las claves. Es un parametro con consecuencia: **un
   arbol agotado deja al operador sin poder publicar cabezas.**
 
+## 107. El 2-de-N de `circuit_mint`, comprobado — y dos mediciones malas
+
+Especificando `circuit_mint` aparecio una pregunta que el codigo no
+responde: **¿que impide que un custodio firme dos veces?**
+
+§80 lo enuncia como riesgo —*«un 2-de-N en el que un custodio pudiera contar
+dos veces seria un 1-de-N disfrazado»*— y `mint.rs` de la capa lo comprueba
+con `index_a >= index_b`. Pero **la capa no es el circuito**, y §73 registra
+que pasa cuando una propiedad la impone solo la capa.
+
+⚠️ **No habia ningun test que lo probara.**
+
+### 107.1 La defensa existe, y esta donde no se esperaba
+
+No hay ninguna restriccion que compare los indices. La defensa es la
+**descomposicion binaria por segmentos**, la misma que impone el tope de
+emision:
+
+```rust
+expected[7] = current[COL_IDX_B] - current[COL_IDX_A] - E::ONE;
+```
+
+Con `IDX_A == IDX_B` eso vale `-1`, que en Goldilocks es `p-1` y **no cabe en
+el segmento**. La prueba no verifica.
+
+✅ **MEDIDO**: `one_custodian_cannot_sign_twice` →
+`Err("verificacion fallo: InconsistentOodConstraintEvaluations")`.
+
+> **La prueba se genero, se verifico, y el verificador la rechazo.** La
+> defensa esta en una restriccion, **no en el constructor de la traza** — que
+> es exactamente la distincion que §73 costo aprender.
+
+⚠️ **Y depende de tres cosas separadas**: `C_ACC` acumula los bits del camino,
+`C_ACC_FINAL` ata el indice acumulado al declarado, y el segmento impide la
+diferencia negativa. **Juntas dan la propiedad; ninguna la da sola.** Es la
+tercera «garantia por consecuencia» del proyecto, junto a las dos de
+`circuit_burn` (§105.2).
+
+### 107.2 ⚠️ La primera medicion era VACUA por construccion
+
+El test se escribio con `prover.prove(trace).is_err()`.
+
+> **En release el probador no valida las restricciones** (§77.1): genera la
+> prueba igual, y es el verificador quien la rechaza. **`prove()` no puede
+> fallar en release**, asi que ese test habria «detectado» un agujero en
+> **cualquier** circuito, correcto o no.
+
+Y lo habria registrado como el tercer fallo de solidez del dia.
+
+### 107.3 ⚠️ Y la segunda medicion tambien: acerte por el motivo equivocado
+
+Se sospecho del test **porque tardo 0,05 s**, razonando que «una prueba STARK
+son cientos de milisegundos».
+
+**Esa referencia era falsa.** Los 52 tests de `circuit_mint` corren en 1,36 s;
+los cientos de milisegundos eran de `circuit_settlement`, que es mucho mayor.
+
+> **Un tiempo sin referencia no es una medida.** La sospecha era correcta y su
+> razon no: lo que delataba el test era **su logica** —`prove` no falla en
+> release—, no su duracion.
+
+⚠️ **Y si hubiera tardado 300 ms, no habria sospechado nada.** El error se
+caza por leer lo que el test comprueba, no por cronometrarlo.
+
+### 107.4 Lo que esto dice de B12.1
+
+La especificacion de `circuit_mint` **no encontro un fallo**, pero encontro
+**una defensa que nadie habia comprobado** y que ahora tiene test.
+
+> El valor del ejercicio no esta en documentar lo que hay: esta en que
+> **obliga a preguntar «¿que impide X?»** por cada cosa que el enunciado
+> promete. Y esa pregunta, aqui, no tenia respuesta escrita en ninguna parte.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

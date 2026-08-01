@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 28 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 29 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -1052,6 +1052,22 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   clave (entrada 15) no depende de entenderlo. Pero si el efecto es real y
   general, **es una optimizacion que el proyecto desconoce**, y eso merece
   mirarse.
+
+- [ ] **57. Especificar `circuit_mint` — parcial, con una defensa ya
+  comprobada.** Al escribirla (§107) aparecio la pregunta que §80 enuncia y
+  nadie habia probado: **¿que impide que un custodio firme dos veces?**
+  ✅ **MEDIDO**: el circuito lo rechaza —`one_custodian_cannot_sign_twice`, con
+  `InconsistentOodConstraintEvaluations`—. La defensa es la **descomposicion
+  binaria**: `IDX_B − IDX_A − 1` vale `p−1` si los indices son iguales y no
+  cabe en el segmento. **Esta en una restriccion, no en el constructor.**
+  ⚠️ **Tercera «garantia por consecuencia»** del proyecto: la dan `C_ACC`,
+  `C_ACC_FINAL` y el segmento **juntas**; ninguna sola.
+  ⚠️ **Dos mediciones malas por el camino** (§107.2, §107.3): un test **vacuo
+  por construccion** —`prove()` no falla en release— que habria anunciado un
+  fallo de solidez inexistente, y una sospecha **acertada por el motivo
+  equivocado** —el tiempo, sin referencia—.
+  **Queda**: el resto de la especificacion de `mint`, y las 25 de los demas
+  circuitos, sujetas a §105.3.
 
 - [ ] **56. Firmar las cabezas con XMSS — decision tomada, sin implementar.**
   ⚠️ **DECISION del 01-08-2026 (§106)**: **todo el camino de produccion es

@@ -906,7 +906,76 @@ impl Prover for MintProver {
 }
 
 #[cfg(test)]
+#[cfg(test)]
 mod tests {
+    /// ⚠️ **UN SOLO CUSTODIO NO PUEDE EMITIR DOS VECES.**
+    ///
+    /// `AUDITORIA.md` §80 lo enuncia: *«un 2-de-N en el que un custodio
+    /// pudiera contar dos veces sería un 1-de-N disfrazado»*. La capa lo
+    /// comprueba —`index_a >= index_b` da `NotTheIssuer`— **pero la capa no
+    /// es el circuito**, y §73 registra qué pasa cuando una propiedad la
+    /// impone solo la capa.
+    ///
+    /// ## Dónde está la defensa en el circuito
+    ///
+    /// No hay ninguna restricción que compare los índices directamente. La
+    /// da la **descomposición binaria por segmentos**: `expected[7]` es
+    /// `IDX_B − IDX_A − 1`, y si los dos índices fueran iguales valdría
+    /// `−1`, que en Goldilocks es `p−1` — un número enorme.
+    ///
+    /// ⚠️ **Y esa defensa depende del ancho de segmento.** `SEGMENT_LENGTH`
+    /// es **64**, y Goldilocks tiene ~64 bits: si el segmento admitiera
+    /// cualquier elemento del campo, `p−1` cabría y **la comprobación sería
+    /// vacía**.
+    ///
+    /// Este test decide cuál de las dos cosas ocurre. **No se puede resolver
+    /// leyendo.**
+    #[test]
+    fn one_custodian_cannot_sign_twice() {
+        let s = scenario(1_000_000, 250_000, 500_000);
+        let keys = custodian_keys();
+        let (_, cpaths) = build_custodian_set(&keys);
+
+        // El mismo custodio, dos veces. Es todo lo que un custodio
+        // malicioso tiene: su clave y su camino.
+        let auth = ThresholdAuth {
+            key_a: keys[2],
+            index_a: 2,
+            path_a: cpaths[2].clone(),
+            key_b: keys[2],
+            index_b: 2,
+            path_b: cpaths[2].clone(),
+        };
+
+        // ⚠️ **Por `run`, que hace `prove` Y `verify`.**
+        //
+        // La primera version de este test usaba `prover.prove(...).is_err()`
+        // a secas. **En release el probador NO valida las restricciones**
+        // (§77.1): genera la prueba igual y es el verificador quien la
+        // rechaza. Ese test habria "detectado" un agujero en cualquier
+        // circuito, correcto o no.
+        //
+        // ⚠️ Lo delato **el resultado**, no el tiempo: `prove().is_err()`
+        // en release no puede fallar nunca, asi que el test era vacuo por
+        // construccion.
+        //
+        // Se sospecho del tiempo —0,05 s— y **esa sospecha era infundada**:
+        // los 52 tests de `mint` corren en 1,36 s. Se estaba comparando con
+        // `circuit_settlement`, que es mucho mayor. **Un tiempo sin
+        // referencia no es una medida.**
+        // ✅ **MEDIDO**: `Err("verificacion fallo:
+        // InconsistentOodConstraintEvaluations")`. La prueba se genero, se
+        // verifico, y **el verificador la rechazo**. La defensa esta en una
+        // restriccion, no en el constructor de la traza — que es la
+        // diferencia que §73 costo aprender.
+        assert!(
+            run(&s, &auth, s.amount).is_err(),
+            "UN CUSTODIO EMITIENDO SOLO: el circuito acepto y verifico una \
+             emision con index_a == index_b. El 2-de-N es un 1-de-N (§80)."
+        );
+    }
+
+
     use super::*;
     use crate::circuit_settlement::{derive_public_id, native_climb, native_leaf};
     use crate::circuit_threshold::build_custodian_set;
