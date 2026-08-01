@@ -8501,6 +8501,84 @@ testigos es un supuesto social, no criptografico*. Y §6 recuerda que
 Certificate Transparency tuvo el patron funcionando y su pieza de comparacion
 **infradesplegada durante años**.
 
+## 105. B12.1: una especificacion escrita, y por que no se escriben las 26
+
+`SECURITY.md` §3.1 llama a la especificacion formal del AIR **la carencia de
+prioridad mas alta**. Se escribio una —`doc/air/circuit_burn.md`, el circuito
+mas pequeño de los cinco de gasto— para ver que produce.
+
+### 105.1 Lo que NO encontro
+
+**Ningun fallo.** Las 28 restricciones de `circuit_burn` estan completas.
+
+### 105.2 Lo que si produjo, y no existia
+
+**Uno. La asimetria de los dos lanes.** El lane A lleva la hoja **vieja**, el
+B la **nueva**; en la fase de identidad los dos reciben la **misma clave** y
+**solo el A se compara** con `COL_ACC_ID`.
+
+Es correcto. Y la justificacion —«computan el mismo digest porque reciben la
+misma entrada y la misma capacidad»— **se deducia cruzando las lineas 565,
+606 y 615**, tres bloques separados por cincuenta lineas. **Ninguno lo
+decia.**
+
+**Dos. Dos garantias por CONSECUENCIA, no por restriccion.**
+
+| | protege porque… | frágil si… |
+|---|---|---|
+| `C_PK_CHECK` (§4.2) | los dos lanes computan lo mismo | alguien cambia uno y no el otro |
+| Camino de congelados (§4.5) | la raiz publicada no cuadraria | el arbol degenera |
+
+> **Las dos dependen de que algo mas no cambie, y nada avisa si cambia.**
+> §72 —un fallo de solidez— fue exactamente esa forma.
+
+**Tres. Una correccion del propio documento mientras se escribia.** §4.5
+empezo diciendo «nada verifica que el camino sea del mismo indice, y no lo he
+podido descartar». Es falso: **la raiz lo verifica implicitamente**. §99.5
+aplicado al documento en la hora en que se escribio.
+
+### 105.3 ⚠️ Por que NO se escriben las otras 26
+
+**No es por el esfuerzo**, aunque sea real: `circuit_burn` es el mas pequeño y
+llevo una hora larga; varios de los 26 tienen el doble de restricciones.
+
+Es por esto:
+
+> **Una especificacion escrita por quien escribio el circuito hereda sus
+> puntos ciegos.**
+
+Las tres cosas que salieron fueron **razonamientos que hubo que reconstruir**
+—por que basta comprobar un lane, por que la raiz cierra el camino de
+congelados—. Un tercero no los reconstruye: **los cuestiona**. Y esa
+diferencia es justo lo que separa una especificacion util de una que
+documenta lo que su autor ya creia.
+
+⚠️ **Y hay un riesgo peor que no escribirlas**: una especificacion completa,
+firmada por el autor, **parece un contrato** — y un auditor que la reciba
+puede auditarla **en vez de** auditar el codigo. `SECURITY.md` §3.1 pide un
+contrato «contra el que contrastar»; un contrato escrito por la misma mano
+que el codigo no contrasta nada.
+
+### 105.4 Lo que se hace en su lugar
+
+`doc/air/circuit_burn.md` queda como **muestra del formato**, no como primera
+de veintisiete. Su valor es doble:
+
+1. **Enseña que el formato funciona**: la seccion «que NO se restringe» es la
+   unica que no se puede extraer del codigo, y es la que produjo las tres
+   cosas de §105.2.
+2. **Da al auditor un punto de partida**: el formato, un ejemplo completo, y
+   la advertencia de que lo escribio el autor.
+
+**La entrada 48 (B12.1) se mantiene abierta**, y su forma correcta es: **que
+la especificacion se escriba con la auditoria, no antes de ella** — entrada 7.
+
+⚠️ Se registra que se intento la via de generarla automaticamente y **no
+sirve**: dos barridos —columnas sin usar, columnas en un solo carril—
+aprobaron `circuit_burn` sin ver nada, porque §72 fue una restriccion **bien
+formada sobre el objeto equivocado**, y eso ninguna herramienta que cuente
+apariciones lo detecta.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

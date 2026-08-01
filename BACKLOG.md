@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 26 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 27 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -1052,6 +1052,22 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   clave (entrada 15) no depende de entenderlo. Pero si el efecto es real y
   general, **es una optimizacion que el proyecto desconoce**, y eso merece
   mirarse.
+
+- [ ] **55. ⚠️ B12.1: el formato de especificacion del AIR, probado en un
+  circuito.** `doc/air/circuit_burn.md`, escrito el 01-08-2026 (§105).
+  ✅ **El formato funciona**: la seccion «que NO se restringe» es la unica que
+  no se puede extraer del codigo, y produjo **tres razonamientos que no
+  existian** — la asimetria de los lanes, y **dos garantias por consecuencia
+  y no por restriccion**, que son la forma exacta de §72.
+  ❌ **No encontro ningun fallo** en `circuit_burn`.
+  ⚠️ **Las otras 26 NO se escriben, y no por esfuerzo** (§105.3): una
+  especificacion escrita por quien escribio el circuito **hereda sus puntos
+  ciegos**, y una completa y firmada por el autor **parece un contrato** que
+  un auditor podria auditar **en vez de** auditar el codigo.
+  **Forma correcta**: escribirlas **con** la auditoria, no antes — entrada 7.
+  ⚠️ **Y la via automatica no sirve**: dos barridos aprobaron el circuito sin
+  ver nada, porque §72 fue una restriccion **bien formada sobre el objeto
+  equivocado**.
 
 - [ ] **54. ⚠️ Cambiar el verificador es invisible, y es el poder mayor del
   operador.** Encontrado el 01-08-2026 al construir la cabeza de epoca
