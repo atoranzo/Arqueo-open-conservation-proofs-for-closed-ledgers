@@ -686,3 +686,111 @@ mod tests {
         assert_eq!(digest_of_proof(b"igual"), digest_of_proof(b"igual"));
     }
 }
+
+
+#[cfg(test)]
+mod t1_chain_retroactivo {
+    //! T1 - el argumento retroactivo del `chain_digest`, medido.
+    //!
+    //! Sostiene la decision 1-firma/min (entrada 53): una cabeza firmada en
+    //! `n` ata tambien las `n-1` epocas anteriores. Estaba razonado, no
+    //! medido. Si `t1_cabeza_ata_la_historia` falla, la ventana era de
+    //! impunidad parcial y la decision se rehace a 1/s.
+    use super::*;
+
+    const N: u64 = 12;
+    const K: u64 = 5; // la epoca de la mentira
+
+    fn tag_valido() -> u8 {
+        (0u8..=255)
+            .find(|b| OpKind::from_tag_byte(*b).is_some())
+            .expect("ningun tag de OpKind valido")
+    }
+
+    /// Historia de `n` entradas; con `mentira`, la K lleva otra prueba.
+    fn historia(n: u64, mentira: bool) -> TransitionLog {
+        let tag = tag_valido();
+        let mut log = TransitionLog::new();
+        for i in 0..n {
+            let base: &[u8] = if mentira && i == K { b"mentira" } else { b"honesta" };
+            let mut p = base.to_vec();
+            p.push(i as u8); // cada entrada, distinguible
+            log.append(
+                OpKind::from_tag_byte(tag).unwrap(),
+                as_digest(i),
+                as_digest(i + 1),
+                &p,
+            );
+        }
+        log
+    }
+
+    #[test]
+    fn t1_divergencia_localizada() {
+        let a = historia(N, false);
+        let b = historia(N, true);
+        assert_eq!(a.first_divergence(&b), Some(K));
+        for j in 0..N as usize {
+            let iguales = a.entries()[j].chain == b.entries()[j].chain;
+            assert_eq!(iguales, (j as u64) < K, "epoca {j}");
+        }
+    }
+
+    #[test]
+    fn t1_cabeza_ata_la_historia() {
+        let a = historia(N, false);
+        let cabeza_firmada = a.head();
+
+        // El testigo recomputa desde los campos CRUDOS con la funcion
+        // publica, sin fiarse de los `chain` almacenados.
+        let recompute = |entradas: &[LogEntry], mentir_en: Option<u64>| -> Digest {
+            let mut prev = [BaseElement::ZERO; 4];
+            for e in entradas {
+                let pd = match mentir_en {
+                    Some(k) if e.seq == k => digest_of_proof(b"mentira-injertada"),
+                    _ => e.proof_digest,
+                };
+                prev = chain_digest(
+                    e.seq,
+                    OpKind::from_tag_byte(e.kind.tag_byte()).unwrap(),
+                    e.root_old,
+                    e.root_new,
+                    pd,
+                    prev,
+                );
+            }
+            prev
+        };
+
+        // Control: si esto falla, el mal planteado es el test.
+        assert_eq!(
+            recompute(a.entries(), None),
+            cabeza_firmada,
+            "la recomputacion no reproduce append: T1 mal planteado"
+        );
+        // La propiedad: alterar la epoca K falsifica la cabeza de N.
+        assert_ne!(
+            recompute(a.entries(), Some(K)),
+            cabeza_firmada,
+            "IMPUNIDAD: la cabeza de n NO ata la epoca k"
+        );
+        // Y la otra historia completa tampoco casa.
+        assert_ne!(historia(N, true).head(), cabeza_firmada);
+    }
+
+    #[test]
+    fn t1_verify_chain_caza_sustitucion() {
+        let a = historia(N, false);
+        // restaurado de copia, intacto: pasa
+        assert!(TransitionLog::from_entries(a.entries().to_vec())
+            .verify_chain()
+            .is_ok());
+        // restaurado con la entrada K sustituida: debe fallar
+        let mut manipuladas = a.entries().to_vec();
+        manipuladas[K as usize].proof_digest = digest_of_proof(b"mentira-injertada");
+        assert!(
+            TransitionLog::from_entries(manipuladas).verify_chain().is_err(),
+            "verify_chain NO detecta la sustitucion en k"
+        );
+    }
+}

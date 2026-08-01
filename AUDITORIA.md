@@ -9157,6 +9157,86 @@ diez tests, fijar el commit del tag— son lo que las cerraria.
 Y los 0,62 ms/hoja son **de esa maquina**: si el nodo objetivo es ARM (B9),
 repetir antes de fijar nada.
 
+## 115. Cadencia de firma: 1/min + a demanda. Premisa MEDIDA
+
+**Decision**: las cabezas se firman **una vez por minuto**, y ademas **a
+demanda** — toda peticion externa se responde firmada, con **cache por
+`seq`**: maxima una firma nueva por epoca, idempotente. Conjunto
+`XMSSMT-SHA2_40/8_256`.
+
+⚠️ **El peor caso adversarial esta acotado**: un testigo pidiendo cada
+segundo degenera **exactamente** al escenario 1/s ya cuantificado —16 % de un
+nucleo, agotamiento a ~35.000 años—. **Techo conocido, no regimen.**
+
+### 115.1 La premisa decisiva estaba razonada y ahora esta medida
+
+La decision descansa en que **una cabeza firmada en `n` ata tambien las
+epocas anteriores** via `chain_digest`: la ventana de 60 s es **latencia de
+oponibilidad, no impunidad**.
+
+⚠️ **Eso se enuncio como razonamiento, no como medida** —y se señalo antes de
+decidir, que es la diferencia con las cinco veces que §95.2 registra—.
+
+**Medido**: `log.rs`, modulo `t1_chain_retroactivo`, **3/3 en verde**:
+
+| test | que demuestra |
+|---|---|
+| `t1_divergencia_localizada` | divergir en `k` contamina todo `j ≥ k`, y `first_divergence` localiza `k` **exacto** |
+| `t1_cabeza_ata_la_historia` | un testigo que recomputa desde los campos crudos reproduce `head()`, y **alterar la epoca `k` falsifica la cabeza de `n`** |
+| `t1_verify_chain_caza_sustitucion` | la sustitucion se detecta **incluso en un log restaurado de copia** |
+
+> El segundo es, literalmente, *«la firma en `n` cubre la mentira en `k`»*.
+
+### 115.2 Lo que la decision cierra
+
+| | |
+|---|---|
+| Politica de retencion de firmas | **muere sin decidirse**: 9,7 GB/año se retienen integros durante decadas |
+| CPU de firma | del **16 % al 0,27 %** de un nucleo |
+| Estado BDS del issue upstream | de **necesidad a mejora** |
+
+### 115.3 Condicion de reversion, y un juicio declarado
+
+⚠️ **Sigue viva**: si el sistema promete algun dia oponibilidad **sub-minuto
+sin peticion** —firmeza en caliente estilo RTGS—, se paga el escenario 1/s
+con sus **0,58 TB/año** y su retencion. **Cambio de mision, via
+`PRINCIPIOS.md`.**
+
+⚠️ **Juicio declarado, no medido**: que este sistema responde a escalas de
+supervision y conciliacion —donde 60 s no compran nada a un operador
+deshonesto— es **una premisa sobre el uso**, no un hecho del codigo. **Si el
+uso real cambia, cae la premisa y la decision con ella.**
+
+## 116. ⚠️ `digest_of_proof` rellena con ceros sin codificar la longitud
+
+Hallazgo colateral de §115: el resumen que ata cada entrada del log a su
+prueba **rellena el ultimo bloque con ceros y no codifica la longitud del
+mensaje**. **Dos pruebas que difieran solo en ceros finales colisionan.**
+
+### 116.1 Por que NO se degrada a nota al pie
+
+Su propia doc lo llama «atar, no hash de proposito general», y el asiento
+original lo degradaba porque **no habilita fabricar pruebas validas
+alternativas**.
+
+**Eso es cierto hoy y depende de algo externo al resumen**: de que el
+verificador rechace la prueba alterada.
+
+> ⚠️ **Es la CUARTA garantia por consecuencia del proyecto** —§105.2 (dos en
+> `circuit_burn`), §107.1 (`circuit_mint`)—: una propiedad que se sostiene
+> **porque otra pieza la sostiene**, sin que nada avise si esa pieza cambia.
+
+Y con un agravante que las otras tres no tienen:
+
+> **El `chain_digest` que §115.1 acaba de validar incluye
+> `digest_of_proof`.** La cadena que ata toda la historia —y que ahora
+> sostiene la decision de cadencia— es tan fuerte como ese resumen.
+
+**«Atar a una prueba concreta» es falso al byte**, y T1 mide el
+encadenamiento, **no la resistencia a colision del resumen**.
+
+**Arreglo**: bloque final con la longitud del mensaje. Entrada 58.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

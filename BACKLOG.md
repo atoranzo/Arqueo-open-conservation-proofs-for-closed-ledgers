@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 29 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 30 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -1129,7 +1129,30 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   vigentes» —`OpKind` dice que circuito usar, no que version—. Requiere
   primero **versionar las reglas de validacion**, que no existe.
 
-- [ ] **53. ⚠️ No hay firma — XMSS EVALUADO, con guardian obligatorio.**
+- [ ] **58. ⚠️ `digest_of_proof` rellena con ceros sin codificar longitud.**
+  Hallazgo colateral de §115 (§116): **dos pruebas que difieran solo en ceros
+  finales colisionan**. Su doc lo llama «atar, no hash de proposito general»,
+  y no habilita fabricar pruebas validas alternativas — **pero eso depende de
+  que el verificador rechace la prueba alterada**: es la **CUARTA garantia
+  por consecuencia** del proyecto (§105.2, §107.1).
+  ⚠️ **Agravante**: el `chain_digest` que T1 valida —y que sostiene la
+  decision de cadencia de §115— **incluye `digest_of_proof`**. La cadena que
+  ata toda la historia es tan fuerte como ese resumen.
+  **Arreglo**: bloque final con la longitud del mensaje.
+
+- [ ] **53. ⚠️ No hay firma — XMSS EVALUADO, CADENCIA DECIDIDA.**
+  ✅ **Cadencia (§115)**: **1/min + a demanda**, con cache por `seq`
+  idempotente. El peor caso —un testigo pidiendo cada segundo— **degenera al
+  escenario 1/s ya cuantificado**: techo conocido, no regimen.
+  ✅ **La premisa esta MEDIDA**: `t1_chain_retroactivo`, **3/3** — una cabeza
+  firmada en `n` **ata las epocas anteriores**, asi que los 60 s son
+  **latencia de oponibilidad, no impunidad**.
+  ✅ **Cierra**: la retencion muere sin decidirse (9,7 GB/año), la CPU baja al
+  **0,27 %**, y BDS pasa de necesidad a mejora.
+  ⚠️ **Reversion viva**: prometer oponibilidad **sub-minuto sin peticion**
+  cuesta el escenario 1/s —0,58 TB/año—. Cambio de mision.
+  ⚠️ **Juicio declarado**: que 60 s no compran nada a un operador deshonesto
+  **es una premisa sobre el uso**, no un hecho del codigo.
   ✅ **Evaluado el 01-08-2026** (§112-114, `doc/xmss-evaluacion.md`):
   **`xmss` 0.1.0-pre.0 de RustCrypto** —misma organizacion que `sha2`, ya
   aceptada— es **la unica viable**. Solo hash ✅, agotamiento ✅, alturas ✅;
