@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 24 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 25 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -1052,6 +1052,19 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   clave (entrada 15) no depende de entenderlo. Pero si el efecto es real y
   general, **es una optimizacion que el proyecto desconoce**, y eso merece
   mirarse.
+
+- [ ] **53. ⚠️ No hay firma criptografica en el proyecto, y B10.1 la
+  presupone.** Medido el 01-08-2026 (§103): cero `ed25519`, `signature` o
+  `sign(` en todo el arbol. B10.1 —cabezas **firmadas**— se clasifico como
+  «aditiva» y **§93.6 la llamo la unica sin dependencias**; eso vale para
+  publicar y **no para firmar**. ⚠️ **Y el esquema es decision de TESIS, no de
+  libreria**: `ed25519` **no es post-cuantico** y el proyecto eligio STARK por
+  eso (§103.2). **B10.1 depende de B15 —XMSS— y ninguna lo declara.**
+  ✅ **Observacion util de B15**: XMSS filtra la clave si se reusa un indice, y
+  con `seq` como indice **reusarlo significa dos cabezas con el mismo `seq`**
+  — el modo de fallo del esquema **es** el fraude perseguido (§103.3).
+  **Separable**: la cabeza **publicable** se puede hacer hoy y hace la vista
+  dividida **detectable**; sin firma no es **oponible** (§103.4).
 
 - [ ] **48. `CONFIANZA_RESIDUAL.md`: la evidencia contra el operador esta en
   manos del operador.** Documento externo del 31-07-2026, sin integrar.

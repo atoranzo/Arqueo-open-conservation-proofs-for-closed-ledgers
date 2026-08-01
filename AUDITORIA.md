@@ -8369,6 +8369,68 @@ cierra **declarandolo**, no migrando 159 tests.
 estrecha es la **entrada 32**, y entonces los 159 tests habra que migrarlos
 —pero por esa razon y con ese criterio, no por esta—.
 
+## 103. B10.1 no es independiente: no hay firma en el proyecto
+
+`CONFIANZA_RESIDUAL.md` clasifica B10.1 —cabeza firmada por epoca— como
+«formato + componente», con la nota: *«el log ya tiene `seq` y
+`chain_digest`; publicar es aditivo»*. Y §93.6 la llamo **la unica pieza sin
+dependencias**.
+
+### 103.1 Cierto para publicar, falso para firmar
+
+**No existe ninguna primitiva de firma en el proyecto.** Verificado: cero
+coincidencias de `ed25519`, `dalek`, `signature` o `sign(` en todo el arbol,
+incluidos los `Cargo.toml`.
+
+Y B10.1 dice literalmente que el operador **firma** y publica. Sin firma, la
+**prueba de fraude portable** —el 90 % del valor de la propuesta— no existe:
+cualquiera podria fabricar una cabeza.
+
+⚠️ §93.6 miro `seq` y `chain_digest`, que si estan, y **no miro la firma**.
+Es la misma clase de error que §84 inventariando los ficheros equivocados:
+la comprobacion fue correcta sobre una parte del objeto.
+
+### 103.2 Y elegir el esquema es una decision de TESIS
+
+`ed25519` es la opcion obvia —madura, rapida, estandar— **y no es
+post-cuantica**.
+
+> El proyecto eligio STARK **precisamente** por transparencia y resistencia
+> post-cuantica. Firmar las cabezas —que son el compromiso de **todo el
+> historial**— con una curva eliptica meteria el supuesto que el nucleo
+> rechazo por diseño.
+
+No es «añadir una dependencia»: es decidir si la propiedad post-cuantica
+aplica al historial o solo a las pruebas.
+
+### 103.3 La propuesta ya tenia la respuesta y no la conecto
+
+`CONFIANZA_RESIDUAL.md` lista **B15 — cabezas XMSS**, con `seq` como indice.
+**B10.1 depende de B15, y ninguna de las dos lo declara.**
+
+⚠️ Y la observacion de B15 es buena, mas de lo que ella misma dice: XMSS
+tiene **estado** —un indice que no puede reusarse— y reusarlo **filtra la
+clave**. En este uso concreto ese modo de fallo es una **ventaja**:
+
+> `seq` es monotona por construccion, asi que reusar indice significa **dos
+> cabezas con el mismo `seq`** — que es exactamente la vista dividida que se
+> persigue. **El modo de fallo del esquema y el fraude perseguido son el
+> mismo evento.**
+
+### 103.4 Lo que separa DETECTABLE de OPONIBLE
+
+| | sin firma | con firma |
+|---|---|---|
+| Dos testigos comparan cabezas del mismo `seq` | **detectan** la inconsistencia | igual |
+| Probar ante un tercero **quien** la emitio | ❌ imposible | ✅ prueba portable |
+
+**La primera mitad se puede hacer hoy** y tiene valor propio: una cabeza
+publicada permite a cualquiera comprobar que su vista coincide con la de otro.
+Lo que no da es oponibilidad.
+
+**Se hace esa mitad, y se declara cual es** — en vez de llamarlo B10.1 y
+dejar la firma implicita.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—
