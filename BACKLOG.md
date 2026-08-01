@@ -631,9 +631,16 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   —tres, sobre `ROW_PK_START`—, comprobado **antes** de escribir.
   ✅ **LOS CINCO CIRCUITOS DE GASTO MIGRADOS**: `settlement`, `burn`, `send`,
   `claim`, `audit`. 274 y 201, cero avisos, 27 circuitos limpios.
-  ⚠️⚠️ **Y siguen siendo CERO bits ganados** (§92.19): `open_account` deriva
-  estrecho, asi que ningun titular puede tener clave ancha. **Queda solo la
-  puerta, y es lo unico que mueve esa cifra — la mueve entera.**
+  ✅ **LA PUERTA, ABIERTA** (§97): `open_account_wide(Digest)` añadida, y un
+  **pago completo con claves de 256 bits medido de punta a punta**. 202 y
+  274, cero avisos. ⚠️ **Primero se hizo mal** (§97.1): se estimo «~22
+  llamadas» y son **115** —§80.2 literal, del mismo dia—; los errores pasaron
+  de 15 a 85 y se tiro de un `regex` que hizo **18 sustituciones sin verlas**.
+  Revertido. El diseño correcto era **el que §85.5 descarto**, y su objecion
+  resulto falsa con §90 medido.
+  ⚠️ **DEUDA DECLARADA** (§97.4): la migracion es **opt-in**; quien use
+  `open_account` sigue con **64 bits**. **Falta**: retirar o marcar la via
+  estrecha —familia de la 32— y que las cuentas **roten**.
   ⚠️ **La derivacion estrecha NO hay que migrarla en los 22 ficheros**: §90
   la hace equivalente para una clave rellenada, asi que quien solo *calcula*
   una identidad puede seguir usandola.

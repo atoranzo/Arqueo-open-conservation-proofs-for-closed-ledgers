@@ -7988,6 +7988,59 @@ prueba `inferior <= saldo <= superior` sin tocar el arbol. Una cuenta que no
 pudiera auditarse perderia la revelacion selectiva, no los fondos — a
 diferencia de `claim`, cuya ausencia los inmovilizaba (§96.2).
 
+## 97. La puerta: `open_account_wide`, y un pago de 256 bits medido
+
+### 97.1 ⚠️ Primero se hizo mal: 115 llamadas, no «~22»
+
+Se estimo el alcance de cambiar la firma en **«~22 llamadas»**. Medido:
+`.open_account` + `_checked` **31**, `.send` **37**, `.claim` **25**,
+`.burn` **14**, `.audit` + `disclose_exact` + `prove_minimum` **8** —
+**115**. Al aplicarlo los errores pasaron de 15 a **85**.
+
+> ⚠️ Es **§80.2 literal, escrito el mismo dia**: contar llamadas a una
+> funcion no mide la superficie que depende de lo que esa funcion usa.
+> Faltaban `send`, `claim`, `burn` y `audit`, cuyas firmas cambian con ella.
+
+⚠️ **Y peor que el error de cuenta**: cuando el numero no cuadro, en vez de
+parar se tiro de una **expresion regular** que hizo **18 sustituciones que
+nunca se llegaron a ver**. Es justo lo que este metodo prohibe. Revertido
+entero con `git checkout`.
+
+### 97.2 El diseño correcto era el que se habia descartado
+
+§85.5 rechazo la coexistencia por «dos formatos de identidad conviviendo».
+**Con §90 medido, esa objecion es falsa:**
+
+> `[sk,0,0,0]` da **la misma identidad** que `sk`. No conviven dos formatos:
+> conviven dos **anchuras de entrada** al mismo. **El arbol no distingue**
+> una cuenta abierta por una via de otra abierta por la otra — solo
+> distingue **cuanta entropia** tiene su clave.
+
+Se añadio sin tocar ninguna de las 115 llamadas: `open_account_wide`,
+`open_and_fund_wide` y `wide_key`.
+
+### 97.3 ✅ Un pago completo con clave de 256 bits, medido
+
+`a_whole_payment_with_a_256_bit_key`, en verde: `open_account_wide` →
+`send_materials` → `prove_send` → `apply_send` → `claim_materials` →
+`prove_claim` → `apply_claim`, con los tres elementos extra **no nulos**.
+
+**El camino nunca se habia recorrido.** 202 y 274, cero avisos, 27 circuitos
+limpios.
+
+> **La entrada 15 deja de valer cero bits.** Quien abra con
+> `open_account_wide` tiene **256 bits**, y los 2,38 millones de años-nucleo
+> de §82.3 dejan de aplicarle.
+
+### 97.4 ⚠️ La deuda, declarada
+
+**La migracion es opt-in.** Quien use `open_account` sigue con **64 bits**, y
+son 115 llamadas y 158 usos de `open_and_fund` que lo hacen. La API queda con
+**dos entradas de apertura**.
+
+⚠️ **Para cerrar la 15 falta**: retirar o marcar la via estrecha —familia de
+la entrada 32— y que las cuentas existentes **roten**.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—
