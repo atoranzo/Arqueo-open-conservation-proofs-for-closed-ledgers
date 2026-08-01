@@ -8185,6 +8185,63 @@ Es la cuarta vez que un hallazgo de este documento se corrige a si mismo
 —§82.5 en §90, §92.14 en §96, §93.5 aqui— y las cuatro se cazaron **al
 intentar usar la conclusion**, no al releerla.
 
+## 100. La cuarta revision de los preprints: los cuatro frentes escritos
+
+§84 inventario cuatro frentes y once pasajes. Escritos hoy en `PAPER.md`,
+`PAPER_EN.md` y `QUESTIONS.md`.
+
+### 100.1 Las dos notas de correccion
+
+**A y B no eran erratas: eran propiedades del DISEÑO enunciadas como
+propiedades del SISTEMA** (§84.2). Las notas lo dicen sin rodeos:
+
+> *«…la capa **no verificaba las pruebas** de la via de pago antes de aplicar
+> la transicion, de modo que la clave no hacia falta para mover fondos
+> ajenos.»*
+
+> *«…el circuito de cobro **no ataba el compromiso a la identidad de quien
+> cobra**: cualquiera con el aviso podia reclamarlo.»*
+
+§84.3 decidio anotarlo con el precedente de `PRINCIPIOS.md` §8. ⚠️ Aquel era
+una **prevision optimista** y estos son **garantias de seguridad**: la
+decision se reconfirmo con la frase concreta delante, no en abstracto.
+
+### 100.2 ⚠️ El frente C era peor de lo que §84 creia
+
+§84 lo planteo como un analisis **que falta**. Al mirarlo resulto que
+`PAPER.md` **§8.2 ya existe** —«El campo Goldilocks es demasiado estrecho
+para identidades»— y **publica una correccion incompleta como completa**:
+
+> *«La correccion consiste en emplear digests completos de cuatro elementos
+> (256 bits).»*
+
+Eso arregla la **identidad** y no la **clave** (§82.2, §90.4). No faltaba un
+analisis: **habia una afirmacion publicada que se queda corta**, y es
+distinto — en A y B el diseño era correcto; **en C la afirmacion era
+incorrecta**.
+
+La nota nueva aplica el criterio de §8.3 —los ~128 bits— al espacio de
+claves, da los 2^63 medidos y declara que **la migracion es opt-in**.
+
+### 100.3 ⚠️ Y `QUESTIONS.md` se quedo fuera del primer parche
+
+§84.5 listaba **seis** sitios para la unidad y el parche cubrio **cuatro**:
+los dos de `QUESTIONS.md` se olvidaron. Se detecto al barrer el tercer
+documento **antes de registrar**, no despues.
+
+> El inventario era correcto y **el parche no lo cubrio entero**. Es el
+> patron de §59.2 —algo aplicado a parte del trabajo sin declarar a que
+> parte— en el commit que corrige material publicado.
+
+### 100.4 Lo que NO cierra la entrada 28
+
+⚠️ **No se ha subido nada a Zenodo, y no debe subirse todavia.**
+
+- **La entrada 16 sigue abierta**: los tres preprints se citan entre si por
+  versiones antiguas. Subir una cuarta revision con referencias cruzadas
+  rotas **crearia el mismo problema otra vez**.
+- Los cuatro frentes estan escritos; **la revision no esta publicada**.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—
