@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 35 abiertas, 30 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 33 abiertas, 33 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -1131,12 +1131,6 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   medido **del sistema actual**, y no depende de si se adopta la propuesta
   que lo encontro. Criterio 6 de `VISION.md` §5 aplicado.
 
-- [ ] **64. ⚠️ El codigo cita secciones con la numeracion v1 de
-  `CONFIANZA_RESIDUAL.md`.** `log.rs` cita `§8.1` y `§2.2`; el documento
-  commiteado es la **v2**, donde son **§10.1 y §10.2** (§122.6).
-  ⚠️ **El guardian valida que el fichero existe, NO que la seccion exista
-  dentro** — misma clase de cita imposible de seguir, un nivel mas abajo.
-
 - [ ] **62. Acuse de recepcion (B10.3) — POLITICA DECIDIDA (§121).**
   ✅ **N va comprometido en cada acuse**, inmutable y a la vista. Bajo
   congestion el operador honesto **emite N mayor y lo declara**: la
@@ -1181,7 +1175,28 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   repuntar cada cita —mas fiel, pero **algunas no tienen destino**—.
   Recomendacion: **A con cabecera de estado**.
 
-- [ ] **59. ⚠️ `native_merge` esta definida DOS veces, y son la misma.**
+- [x] **59. ✅ `native_merge`: una definicion (§125.1).** El miedo de §117
+  —«dos Rescue que deben coincidir»— **se desmintio por lectura**: eran **el
+  mismo wrapper caracter a caracter**. Cierre por **delegacion**, cero
+  call-sites tocados.
+
+- [x] **60. ✅ Dominios: una definicion canonica (§125.2).** `pub use` en los
+  demas modulos: las rutas viejas resuelven, **el valor ya no puede
+  divergir**. ⚠️ **Retirada honesta**: los dos `assert_eq!` de T2a se
+  volvieron **tautologicos** y se retiran — **un test que no discrimina es
+  una garantia falsa**.
+
+- [x] **64. ✅ Citas a secciones: una viva, clase cerrada (§125.3).**
+  `log.rs` §8.1 → **§10.1**, y `verificar_citas.py` **v2** valida que la
+  seccion exista. **0 fantasmas · 0 secciones muertas.**
+
+- [ ] **66. ⚠️ El guardian v2 excluye por FICHERO, no por bloque.** Su ambito
+  es **solo `.rs`** (§125.4), asi que deja sin cubrir **las cientos de citas
+  de `AUDITORIA.md` y `BACKLOG.md`** —el tejido del registro— para proteger
+  ~30 de las cabeceras-mapa, que narran numeraciones viejas **a proposito**.
+  ⚠️ **Si una cita de `AUDITORIA.md` apunta a una seccion renumerada, el
+  registro se rompe por dentro y nadie lo sabe.** Arreglo: excluir por bloque
+  marcado, no por extension.
   `rescue_hash.rs:121` y `merkle.rs:91`: **cuerpos identicos linea a linea**
   —mismo estado, mismas posiciones, misma permutacion— con firmas distintas
   solo por alias (`[BaseElement; 4]` vs `Digest`). **No es un re-export: son
@@ -1193,15 +1208,6 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   «el mismo» depende de **cual importe cada modulo**. Si una divergiera,
   **el salt y la identidad se computarian con hashes distintos**.
   **Arreglo**: re-export, o test que las compare sobre muestras.
-
-- [ ] **60. ⚠️ Dos constantes de dominio declaradas por duplicado.**
-  `CUSTODIAN_DOMAIN` en `circuit_mint_pending.rs:49` y `circuit_threshold.rs:71`;
-  `NULLIFIER_DOMAIN` en `nullifier.rs:41` y
-  `circuit_threshold_single_nullifier.rs:79`. **Mismo valor hoy, nada lo
-  comprueba.**
-  ⚠️ **Si `NULLIFIER_DOMAIN` divergiera, dos circuitos computarian
-  nullificadores DISTINTOS para el mismo gasto** — y eso es doble gasto.
-  Encontrado al cerrar el primer pendiente de §117.
 
 - [x] **58. ✅ `digest_of_proof` INYECTIVO (§124).** Codificacion por limbs
   de **32 bits sin reduccion al campo** + bloque final de longitud.

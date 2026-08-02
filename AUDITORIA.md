@@ -9907,6 +9907,101 @@ independientes del digest**.
 ⚠️ Y lo que el asiento dice de si mismo: los 3 rojos de superficie **quedan
 mas visibles que nunca** — son la **prioridad 1 de VISION** esperando turno.
 
+## 125. Coherencia por construccion o por test, nunca por costumbre
+
+Cierra las entradas 59, 60 y 64 con **un solo principio**, que no estaba
+escrito y deberia:
+
+> **La coherencia entre piezas que deben coincidir o es por CONSTRUCCION
+> —una sola definicion— o es por TEST —guardian—. Por costumbre, nunca.**
+
+Las tres deudas eran **la misma enfermedad con tres cepas**.
+
+### 125.1 La 59 se desmintio POR LECTURA
+
+El miedo de §117 era «dos implementaciones de Rescue que deben coincidir y
+nada lo comprueba».
+
+**La lectura lo desmintio de la mejor manera**: los dos son **el mismo
+wrapper caracter a caracter** sobre la `Rp64_256` de winter-crypto.
+
+> **No habia dos Rescue. Habia una fotocopia.**
+
+Y eso hace el cierre **trivial en vez de arriesgado**:
+`rescue_hash::native_merge` **delega** en `merkle::native_merge` — una
+definicion, **cero call-sites tocados**, y el modo de fallo —editar una copia
+y no la otra— **deja de existir**.
+
+⚠️ El miedo registrado era desproporcionado, y solo se supo **leyendo los dos
+cuerpos**.
+
+### 125.2 La 60, la grave, cerrada por construccion
+
+Dos copias de `NULLIFIER_DOMAIN` podian divergir y dar **nulificadores
+distintos para el mismo gasto** segun el circuito — **doble gasto entre
+vias**, la garantia mas cara del sistema rota en silencio.
+
+**Cierre**: una definicion canonica por dominio —`nullifier.rs` para
+NULLIFIER, `circuit_threshold` para CUSTODIAN— y `pub use` en los demas. Las
+rutas viejas resuelven; **el valor ya no puede divergir**.
+
+⚠️ **Retirada honesta incluida**: los dos `assert_eq!` que T2a puso el dia
+del censo **se volvieron tautologicos** al deduplicar.
+
+> **Un test que no discrimina es una garantia falsa.** Se retiran, con la
+> nota en su lugar — y **retirarlos es mas dificil que dejarlos**.
+
+**Frontera declarada**: las replicas de `halo2`/`plonk`/`zk-core` siguen por
+copia **fuera** del arbol de dependencias de `zk-ssl`.
+
+### 125.3 La 64: una cita viva, y la clase cerrada
+
+El censo encontro **una sola** cita de codigo con seccion desfasada:
+`log.rs` citaba §8.1 con la numeracion v1 — corregida a **§10.1**.
+
+Y la clase queda con guardian: `verificar_citas.py` **v2** comprueba que toda
+cita `FICHERO.md §N` desde `.rs` apunte a **una seccion que exista**.
+
+✅ **Primer veredicto**: `0 fantasmas · 0 secciones muertas · exit=0`.
+
+### 125.4 ⚠️ Pero el ambito del guardian v2 deja fuera el 90 % de las citas
+
+Su docstring declara **«solo `.rs`»**, con el argumento de que *«las
+cabeceras-mapa narran numeraciones viejas a proposito y no son rot»*.
+
+**Correcto para las cabeceras. Y deja sin cubrir el resto:**
+
+| | citas de seccion | ¿cubiertas? |
+|---|---|---|
+| Codigo `.rs` | ~10 | ✅ |
+| `AUDITORIA.md`, `BACKLOG.md` | **cientos** | ❌ |
+| Cabeceras-mapa | ~30, **viejas a proposito** | ❌ correcto |
+
+> **Se excluye por FICHERO en vez de por BLOQUE**, y eso deja fuera **la
+> mayor superficie de citas del proyecto** para proteger tres cabeceras.
+
+Las citas de `AUDITORIA.md` son **el tejido del registro**: `§93.4`,
+`§105.3`, `§121.5`. Si una apunta a una seccion que se renumero, el registro
+se rompe por dentro **y nadie lo sabe**.
+
+**Entrada 66.**
+
+### 125.5 Dos errores de metodo, documentados
+
+**El del asiento**: el bloque del parche llevaba una etiqueta perdida que
+**rompio el comando final**, y el guardian quedo sin correr en esa pasada.
+
+> Se detecto **porque el rito exige VER el resumen, no suponerlo**. Misma
+> familia que §89.3: **el instrumento tambien se audita**.
+
+⚠️ **Y uno mio**: una lectura de `cargo test` **durante la recompilacion**
+dio `277 passed; 1 failed`, y se sospecho una regresion en `native_merge`
+—la funcion que compone todos los hashes—. **Tres pasadas siguientes: 278
+limpio.**
+
+> **Un resultado de test leido mientras `cargo` recompila puede mentir.** Es
+> §107.3 otra vez: **una cifra sin su condicion de medida no es una medida.**
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

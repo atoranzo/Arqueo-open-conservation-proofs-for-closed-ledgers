@@ -118,12 +118,13 @@ pub fn build_trace(input_a: [BaseElement; 4], input_b: [BaseElement; 4]) -> Trac
 }
 
 /// Calcula el digest esperado de forma nativa, con la librería.
+///
+/// **Delegado a `merkle::native_merge`** (entrada 59, §125): eran dos
+/// copias carácter a carácter del mismo wrapper sobre `Rp64_256`. Una
+/// sola definición, por construcción — el miedo de §117 («dos Rescue que
+/// deben coincidir») quedó desmentido por lectura y cerrado aquí.
 pub fn native_merge(a: [BaseElement; 4], b: [BaseElement; 4]) -> [BaseElement; 4] {
-    let mut state = [BaseElement::ZERO; STATE_WIDTH];
-    state[4..8].copy_from_slice(&a);
-    state[8..12].copy_from_slice(&b);
-    Rp64_256::apply_permutation(&mut state);
-    [state[4], state[5], state[6], state[7]]
+    crate::merkle::native_merge(a, b)
 }
 
 /// Inputs públicos: solo el digest resultante. Los dos valores de entrada

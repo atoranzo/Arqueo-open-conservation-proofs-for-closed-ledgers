@@ -73,10 +73,12 @@ use crate::circuit_threshold::{CustodianPath, CUSTODIAN_DEPTH, CYCLE_LENGTH};
 use crate::merkle::{native_merge, Digest};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
-/// Dominio del nulificador. **Distinto del de identidad de custodio**: si
-/// coincidieran, el nulificador publicado sería la propia identidad y
-/// revelaría al firmante.
-pub const NULLIFIER_DOMAIN: u64 = 0x4E554C4C; // "NULL"
+/// Dominio del nulificador — **una sola definición** (entrada 60, §125),
+/// reexportada de `nullifier.rs`: dos copias podían divergir y dar
+/// nulificadores distintos para el mismo gasto. **Distinto del de
+/// identidad de custodio**: si coincidieran, el nulificador publicado
+/// sería la propia identidad y revelaría al firmante.
+pub use crate::nullifier::NULLIFIER_DOMAIN;
 
 pub const TRACE_LENGTH: usize = 64;
 

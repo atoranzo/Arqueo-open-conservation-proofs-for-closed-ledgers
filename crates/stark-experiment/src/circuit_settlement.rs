@@ -2096,17 +2096,11 @@ mod t2a_salt_hoja {
         // Censo repo-wide (§116): los OTROS dos dominios vivos del crate.
         assert_ne!(LEAF_SALT_DOMAIN, crate::circuit_mint_pending::CUSTODIAN_DOMAIN);
         assert_ne!(LEAF_SALT_DOMAIN, crate::circuit_governance::GOVERNANCE_DOMAIN);
-        // Y los duplicados-por-copia quedan fijados por test, no por
-        // disciplina: si alguien cambia una definicion y no la otra, esto
-        // rompe aqui y no en un circuito.
-        assert_eq!(
-            crate::nullifier::NULLIFIER_DOMAIN,
-            crate::circuit_threshold_single_nullifier::NULLIFIER_DOMAIN
-        );
-        assert_eq!(
-            crate::circuit_mint_pending::CUSTODIAN_DOMAIN,
-            crate::circuit_threshold::CUSTODIAN_DOMAIN
-        );
+        // Los duplicados-por-copia YA NO EXISTEN (entrada 60, §125): cada
+        // dominio tiene una definicion y el resto son reexports. Los
+        // assert_eq que vivian aqui se volvieron tautologicos, y un test
+        // que no discrimina es una garantia falsa (§9 del metodo): se
+        // retiran con esta nota en su lugar.
         for k in claves() {
             let s = derive_leaf_salt_wide(k);
             assert_ne!(s, derive_public_id_wide(k), "salt == identidad");

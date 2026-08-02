@@ -43,10 +43,11 @@ use crate::merkle::{native_merge, Digest, MerklePath, TREE_DEPTH};
 use crate::circuit_threshold::CustodianPath;
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
-/// Dominio de derivación de identidades de custodio. **Distinto del de
-/// cuentas y del de emisor**: una clave de gasto no puede hacerse pasar
-/// por custodio.
-pub const CUSTODIAN_DOMAIN: u64 = 0x43555354; // "CUST"
+/// Dominio de derivación de identidades de custodio — **una sola
+/// definición** (entrada 60, §125), reexportada de `circuit_threshold`,
+/// que queda como sede canónica. **Distinto del de cuentas y del de
+/// emisor**: una clave de gasto no puede hacerse pasar por custodio.
+pub use crate::circuit_threshold::CUSTODIAN_DOMAIN;
 
 pub const CYCLE_LENGTH: usize = 8;
 /// 512 filas. La autorización acaba en la 39; el compromiso y la

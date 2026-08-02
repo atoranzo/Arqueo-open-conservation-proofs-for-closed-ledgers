@@ -436,7 +436,7 @@ impl SovereignLayer {
 /// `ed25519` no es post-cuántico (§103.2).
 ///
 /// **No hay testigos.** Esto es una función; que alguien la recoja y compare
-/// es operación, no código. `CONFIANZA_RESIDUAL.md` §8.1 lo dice sin
+/// es operación, no código. `CONFIANZA_RESIDUAL.md` §10.1 lo dice sin
 /// adornos: *la independencia de los testigos es un supuesto social, no
 /// criptográfico*.
 ///
