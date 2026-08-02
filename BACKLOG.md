@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 34 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 36 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -743,7 +743,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
     clave de gobernanza comprometida lo esta para siempre**, y eso si merece
     decision propia.
 
-- [ ] **47. `ESCALADO.md`: propuesta de sharding, sin integrar.**
+- [ ] **47. `doc/ESCALADO.md`: propuesta de sharding, COMMITTEADA (§122), sin adoptar.**
   Documento externo del 31-07-2026 que dimensiona 5 × 10⁹ usuarios con el
   diseño casi intacto. ✅ **Su observacion central se sostiene**: ninguna
   operacion toca dos cuentas, luego **no hay transacciones cross-shard**, y
@@ -1108,6 +1108,20 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   incluir en la cabeza hoy**: el proyecto no tiene noción de «reglas
   vigentes» —`OpKind` dice que circuito usar, no que version—. Requiere
   primero **versionar las reglas de validacion**, que no existe.
+
+- [ ] **63. ⚠️ La contencion del anclaje de raiz: 1,6 TPS efectivos, sin
+  registrar.** `doc/ESCALADO.md` §2.2 la identifica como **su limite n.º 1**,
+  y **medido el 02-08-2026: cero coincidencias** en `AUDITORIA.md` y
+  `README.md` (§122.4).
+  ⚠️ **Debe registrarse aunque el escalado no se adopte jamas**: es un limite
+  medido **del sistema actual**, y no depende de si se adopta la propuesta
+  que lo encontro. Criterio 6 de `VISION.md` §5 aplicado.
+
+- [ ] **64. ⚠️ El codigo cita secciones con la numeracion v1 de
+  `CONFIANZA_RESIDUAL.md`.** `log.rs` cita `§8.1` y `§2.2`; el documento
+  commiteado es la **v2**, donde son **§10.1 y §10.2** (§122.6).
+  ⚠️ **El guardian valida que el fichero existe, NO que la seccion exista
+  dentro** — misma clase de cita imposible de seguir, un nivel mas abajo.
 
 - [ ] **62. Acuse de recepcion (B10.3) — POLITICA DECIDIDA (§121).**
   ✅ **N va comprometido en cada acuse**, inmutable y a la vista. Bajo

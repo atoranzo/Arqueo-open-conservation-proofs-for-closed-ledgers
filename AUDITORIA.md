@@ -9618,6 +9618,116 @@ existentes; (e) ata la prueba con digest con longitud.
 la cabeza, el hueco es el formato de B10.1 — **trabajo, no obstaculo**, y la
 politica queda **condicionada, no caida**.
 
+## 122. Los dos fantasmas, committeados. Y el encaje, aplicado con VISION §5
+
+**A endurecida ejecutada** (§120.5): `doc/ESCALADO.md` y
+`doc/CONFIANZA_RESIDUAL.md`, **cuerpo verbatim**, con cabecera que **no es
+descargo sino mapa de correcciones**.
+
+✅ **`tools/verificar_citas.py`: 30 nombres citados, 0 fantasmas.** Las 24
+citas vuelven a ser verificables.
+
+### 122.1 El encaje se decidio con un instrumento que YA EXISTIA
+
+`VISION.md` §5 es literalmente un criterio de aceptacion de cambios futuros.
+**No hubo que inventar el test de encaje: hubo que aplicarlo.**
+
+⚠️ Que este proyecto tuviera ya escrito como decidir esto, y que nadie lo
+usara en las horas que se pasaron discutiendo ambos documentos, **es el
+mismo patron que §120**: un instrumento existente que no se busca.
+
+### 122.2 `ESCALADO.md` — encaja como DOS cosas que el documento mezcla
+
+| | veredicto |
+|---|---|
+| **C2, C3, C6** | ✅ sirven a la mision declarada **a cualquier escala**. C3 —entradas publicas *hiding*— es la **prioridad 1 de VISION** y la pieza que `CONFIANZA_RESIDUAL` llama B11 |
+| **El dimensionamiento 5×10⁹** | ⚠️ es el estudio de **una mision que el proyecto no ha declarado** |
+
+**Y la confesion esta en su propio §6**: para la mision declarada —200
+instituciones— *«3,3 tx/s: el codigo actual la ejecuta hoy, sin cambios»*.
+
+`PRINCIPIOS.md` P4 —«ampliar el alcance no es un bien en si»— **no prohibe el
+estudio: prohibe adoptarlo sin decision consciente**, y esa decision es de
+mision y pasa por VISION §5, no por el backlog.
+
+### 122.3 Dos casi-choques que la colacion desactivo
+
+**Uno · homonimia.** VISION §5.1 **rechazo** «agrupar pruebas por lotes»
+—falla el criterio 3: exigiria claves de gasto— y **C4 comparte palabra**.
+
+> **No comparte naturaleza**: C4 **verifica cada prueba individualmente** y
+> lotea solo arbol y disco. Sin agregacion, sin claves.
+
+⚠️ Hay que decirlo o **el catalogo de rechazos parecera violado**. Es la
+tercera homonimia del proyecto, tras los salts (§117) y los `receipt`
+(§121.5).
+
+Y §89.2 le regala a C4 **un argumento mejor que el suyo**: verificar es el
+**3,2 %** del `apply`, asi que el lote ataca exactamente **el 96,8 % que
+domina**.
+
+**Dos · C1.** Declara el nullifier «bloqueante para cualquier escala», y
+VISION §4-p7 ya lo matizo: **solo afecta a `transfer()`**; `send`/`claim` no
+usan nullifiers, y **retirar la via antigua lo cierra hoy sin tocar
+circuitos**.
+
+### 122.4 ⚠️ DEUDA CON NOMBRE: la contencion del anclaje
+
+`ESCALADO.md` §2.2 identifica **la contencion del anclaje de raiz** como su
+limite n.º 1, con **1,6 TPS efectivos**.
+
+**Medido: cero coincidencias** de esa cifra en `AUDITORIA.md` y en
+`README.md`. **No esta registrada en ninguna parte.**
+
+> ⚠️ **Debe entrar al registro AUNQUE EL ESCALADO NO SE ADOPTE JAMAS.** Es
+> el criterio 6 de VISION aplicado: un limite medido del sistema actual no
+> depende de si se adopta la propuesta que lo encontro.
+
+Entrada 63.
+
+### 122.5 `CONFIANZA_RESIDUAL.md` — el mapa corre AL REVES
+
+**Encaja de lleno, y no como ampliacion**: VISION §1 pide «el poder del
+intermediario acotado, visible y minimo», y **este documento es ese verso
+operacionalizado**. B10 corre sobre el nodo unico **hoy**.
+
+⚠️ **Su mapa no corrige cifras hacia abajo: anota que la realidad lo
+adelanto.**
+
+| el documento propone | el estado real |
+|---|---|
+| B10.1 cabeza firmada | **construida, firmada y medida** — 40/8, 18,5 KB, 160 ms (§104, §114) |
+| B10.2 comparacion entre testigos | **primitiva con test**: `first_divergence` + T1 (§104.2, §115.1) |
+| B10.3 acuse | **decidido** en §121, con dos correcciones al borrador |
+| B8 / §87 | **resuelto** en §119 |
+| «la errata del salt», precondicion de B18.2 | **resuelta en §117 — y MEJORA B18**: el reclamo de migracion exige **solo la clave** |
+
+**Coherencia fina que cierra**: §5.3 prohibe el rollback automatico y **§119
+no lo viola** — la reversion es un claim con clave de titular, **segunda
+voluntad, jamas mutacion sin prueba**.
+
+### 122.6 ⚠️ El desfase que el guardian NO caza
+
+El codigo cita `§8.1` y `§2.2` de `CONFIANZA_RESIDUAL.md` **con la
+numeracion v1**. El documento commiteado es la **v2**, donde esas secciones
+son **§10.1 y §10.2**.
+
+> **El guardian valida que el FICHERO existe; no que la SECCION exista
+> dentro.** Es la misma clase de cita imposible de seguir, **un nivel mas
+> abajo**.
+
+### 122.7 Y el patron que produjo los fantasmas sigue activo
+
+`Downloads` contiene `asiento-115`, `-116`, `-117`, `-119` y dos
+`auditoria-asientos.md` — **todos entregables de sesion cuyo contenido ya
+vive en este fichero**, y uno de ellos genero el tercer fantasma.
+
+> **La fuente del problema no fue un descuido puntual: es como se trabaja.**
+> Se generan ficheros de trabajo que se integran **por contenido**, y cuyo
+> **nombre** puede acabar citado.
+
+El guardian lo caza en CI. **La practica sigue siendo la misma.**
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

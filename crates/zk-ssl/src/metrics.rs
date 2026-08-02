@@ -70,7 +70,8 @@ mod tests {
     /// ⚠️ `apply` no responde a esto: verifica, muta el arbol **y escribe a
     /// disco**. Los tres juntos son lo que mide `metrics_of_the_layer`.
     ///
-    /// Lo pregunta `ESCALADO.md`, que dimensiona el shard sobre **4 ms por
+    /// Lo pregunta la propuesta de sharding —entrada 47 del backlog,
+    /// corregida en §89—, que dimensiona el shard sobre **4 ms por
     /// prueba** presentandolos como medidos —y no lo estaban—. De ese numero
     /// cuelga la primera etapa del cuello de botella:
     ///
@@ -191,7 +192,7 @@ mod tests {
         let shards = 498_000.0 / (por_seg * 64.0 * 0.5);
         println!("  shards para 498.000 TPS {shards:>8.0}");
         println!();
-        println!("  ⚠️ `ESCALADO.md` supone 4 ms -> 250/s -> 64 shards, y los");
+        println!("  ⚠️ La propuesta de sharding (entrada 47, §89) supone 4 ms");
         println!("     presenta como MEDIDOS. Este es el numero real, y §11");
         println!("     de ese documento no lo lista entre sus incertidumbres.");
         println!();

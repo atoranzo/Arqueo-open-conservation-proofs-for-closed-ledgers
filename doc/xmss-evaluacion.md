@@ -138,7 +138,7 @@ repetir `tests/medidas.rs` allí antes de fijar nada.
 
 ## 6. Registro y pendientes
 
-Asientos redactados aparte (`auditoria-asientos.md`), incluido el que el §6
+Asientos redactados aparte (`AUDITORIA.md §112-114`), incluido el que el §6
 original exigía: *ninguna cumple el criterio 3, y ninguna puede*.
 
 Pendientes, por orden:
