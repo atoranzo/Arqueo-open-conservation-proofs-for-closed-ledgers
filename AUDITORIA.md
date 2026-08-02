@@ -10411,6 +10411,89 @@ Ninguno se invalida; **ninguno es comparable con una medida de otro dia al
 > **Un instrumento preciso no es un instrumento exacto.** σ 0,5 % dice lo
 > bien que el aparato repite; **no dice nada de si mide lo mismo mañana**.
 
+## 132. B13/B14: diseñada y descompuesta. NINGUN AIR abierto
+
+⚠️ **Numeracion**: el asiento llego como «§131», ya ocupada por la
+caracterizacion del instrumento. Va como **§132**.
+
+### 132.1 Por que no se abre a ciegas
+
+> En restricciones de AIR, **un desajuste no falla al compilar: acepta
+> pruebas que no deberia**.
+
+Abrir ocho seria **el borrador de 49-A (§129) elevado a la octava
+potencia**, en el unico terreno donde los errores son **invisibles**.
+
+### 132.2 ⚠️ Cuatro correcciones del Paso 0 a la ficha de la entrada 50
+
+| decia | el arbol dice |
+|---|---|
+| «coste **negativo** (§86)» | ⚠️ **FALSO**: §86 midio **ensanchar** —mas datos en merges **existentes**—. El salt **AÑADE un merge**. Coste **positivo** |
+| «cinco circuitos» | **OCHO** computan `native_leaf`: burn, audit, mint, send, recovery, recovery_climb, claim, mint_climb —settlement son helpers, no AIR— |
+| «un merge mas» | **estado nuevo en una maquina de DOS CARRILES** —`C_LEAF_CAP/DIG/NONCE` sobre lanes A y B con flag `link_leaf`—, replicado en **ocho geometrias distintas** |
+| «clase entrada 15» | el **arbol mixto** es un problema de diseño **que la entrada 50 no tenia resuelto** |
+
+⚠️ **La primera es §95.2, y la cita es mia**: se invoco «§86, coste negativo»
+**tres veces hoy** sin comprobar que §86 midiera lo mismo. **Cabe en la
+longitud** —`TRACE_LENGTH` 1024, la hoja llega a la fila 15— pero
+`TRACE_WIDTH` 52 **crece ~16 columnas**. La cifra real la dara el
+instrumento de §130 **cuando el circuito exista**, no la cita.
+
+### 132.3 El arbol mixto, y la arquitectura elegida
+
+Las cuentas viejas **no pueden saltearse del lado del servidor**: el salt
+deriva de la clave y la capa **no la tiene** (§93.4, a proposito).
+
+| salida | veredicto |
+|---|---|
+| Dos formulas con **selector del probador** | ❌ **carga de solidez real**: habria que probar que nadie abre una hoja vieja **como salteada** ni al reves |
+| **Envoltura uniforme salt-cero** | ✅ **elegida** |
+
+La capa **si conoce** `(id, balance, nonce)` de cada cuenta vieja ⇒ recomputa
+sus hojas **una vez** como `merge(hoja_vieja, [0;4])`.
+
+> **Arbol uniforme, UNA sola formula en los ocho AIR** —un merge, sin
+> selector, **sin solidez condicional**— y la **no-retroactividad de §126.4
+> cae POR CONSTRUCCION**: salt cero es publico, esas cuentas siguen
+> barribles, **exactamente lo declarado**.
+
+Misma familia que el centinela de 49-A. Y `derive_leaf_salt` **nunca produce
+cero** —mezcla el dominio—, con assert que lo fija.
+
+### 132.4 El prerrequisito: el paso 1 NO es tocar un AIR
+
+Recomputar las hojas viejas **cambia la raiz del arbol de cuentas** ⇒ es un
+**evento de migracion** que necesita `OpKind` propio, **prueba de que la raiz
+nueva deriva legitimamente de la vieja**, y coordinacion con snapshots.
+
+**Eso solo es una entrada.**
+
+### 132.5 Descomposicion, ninguno abierto
+
+| paso | |
+|---|---|
+| 0 | ✅ **Anatomia leida** — el arnes `mutation::{buscar_vacias, rows_of}` **ya existe** |
+| 1 | **Migracion de raiz** (prerrequisito) |
+| 2 | **Piloto en `circuit_send`**, con **test de MUTACION obligatorio**: sabotear el salt y ver que el AIR **rechaza** — **sin el, la restriccion es fe** |
+| 3 | Replicar a los siete, **uno a uno, cada uno con su mutacion** |
+| 4 | **T2b-circuito** (§126) |
+| 5 | **Medir** el coste **positivo** con el instrumento de §130 |
+
+### 132.6 ⚠️ La mitigacion provisional: una mitad vale, la otra se descarta
+
+**Vale**: documentar en la apertura —mecanismo `#[deprecated]` que
+`open_account` **ya usa** para el riesgo de 64 bits— que **las cuentas
+abiertas hoy quedan barribles hasta el despliegue**.
+
+⚠️ **Se descarta**: *«fundar la hoja con entropia en el balance/nonce
+inicial»*.
+
+> **El balance es dinero**: no se le puede meter entropia sin cambiar cuanto
+> vale la cuenta. Y el nonce lo ata `C_NONCE` a **incrementos de uno**.
+
+**No es una mitigacion pendiente: es una que no existe**, y registrarla como
+pendiente habria sido deuda falsa.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

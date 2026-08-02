@@ -1397,9 +1397,22 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   arregla**. A diferencia de §98.2, aqui **hay que rotar para ganar la
   privacidad**: una cuenta vieja que nunca rote **queda expuesta para
   siempre**.
-  **Queda**: B13/B14 —`native_leaf_salted` en los cinco AIR y el punto de
-  insercion del salt en la apertura— y despues T2b-circuito. Clase entrada
-  15, coste medido **negativo** (§86).
+  ⚠️⚠️ **B13/B14 DISEÑADA (§132), ningun AIR abierto.** **NO es «`native_
+  leaf_salted` en cinco AIR»**: son **OCHO** circuitos con layout propio, la
+  restriccion de hoja es una **maquina de estados de dos carriles**, y el
+  **coste NO es negativo** —§86 midio *ensanchar*; el salt **añade un
+  merge**—. ⚠️ **Esa cita era §95.2 y se repitio tres veces.**
+  ✅ **Arquitectura elegida**: **envoltura uniforme salt-cero** —una sola
+  formula en los ocho, **sin selector ni solidez condicional**, y la
+  no-retroactividad de §126.4 **cae por construccion**—.
+  ⚠️ **El paso 1 NO es tocar un AIR**: es la **migracion de raiz** —`OpKind`
+  propio, prueba raiz_nueva↔raiz_vieja, snapshots—, que **es su propia
+  entrada**.
+  ⚠️ **Cada restriccion nueva exige test de MUTACION**: sabotear el salt y
+  ver que el AIR rechaza — **sin el, la restriccion es fe**.
+  ⚠️ **Mitigacion provisional**: vale documentar el riesgo en la apertura;
+  **se descarta** meter entropia en balance/nonce —**el balance es dinero** y
+  el nonce lo ata `C_NONCE`— (§132.6).
   (§108).** ⚠️ **§99.4 descarto mal** la familia «salt en el estado»: pidio
   «ocultante frente a todos» cuando **la 50 es frente a TERCEROS** —el
   operador ya ve los saldos y esta declarado— y **no distinguio derivar de
