@@ -10349,6 +10349,76 @@ vez —el `regex` que hizo 18 cambios sin verse—.
    de `balance_of` intactos**.
 5. **Eliminar los shims** cuando el paso 3 los deje sin uso.
 
+## 130. El canon de tiempos, re-medido con protocolo
+
+⚠️ **Esta seccion se escribio DESPUES de §131-§133**, al descubrirse que
+**seis citas de `AUDITORIA.md` y una del README apuntaban a una seccion que
+no existia** — el canon vivia solo en el README y en el informe de sesion.
+
+> Es **§120 otra vez** —una cita que el lector no puede seguir— y **la
+> primera vez que muerde la laguna de la entrada 66**: el guardian valida
+> secciones citadas **desde `.rs`**, y estas se citaban **desde los `.md`**.
+
+Instrumento: `metrics.rs`, `mod remedicion_89_1`, protocolo §89.1 estricto —
+**una ejecucion del proceso = una muestra**, cinco muestras, release.
+
+### 130.1 El canon
+
+| via | generacion | apply | prueba |
+|---|---|---|---|
+| **send** | **353,2 ms** | **36,4 ms** | **64.722 B** |
+| **claim** | **243,1 ms** (caliente 236,9) | **38,1 ms** | **65.250 B** |
+
+**Un pago completo ≈ 664 ms** —590 de generacion + 74 de `apply`—. Mil
+transferencias: **~590 s y ~124 MiB**.
+
+⚠️ **Cifras de UN contexto.** §131 mide la deriva entre sesiones en **~9 %**
+y fija como se publican: **rango, no cifra con σ**.
+
+### 130.2 Cuatro correcciones a la familia de numeros
+
+1. **El instrumento no era ruidoso: era sensible al protocolo.** Con
+   proceso-por-muestra dispersa **0,5-0,6 %**. Los 375 y 315 de t5b —bucles
+   entrelazados, cache compartida— y el 353 de aqui **no son tres medidas de
+   lo mismo: son tres protocolos**.
+2. ⚠️ **El 620 canonico pasa a historico.** Estaba un **75 % por encima**.
+   Recorria README, PRINCIPIOS y ESCALADO **y nadie sabe de donde salio** —
+   se **retira una cifra huerfana**, no se corrige un error.
+3. ⚠️ **«La prueba» son DOS numeros**: claim genera un **33 % mas barato**
+   que send. El canon anterior trataba los circuitos **como uno**.
+4. La dispersion del `apply` —4-6 %— contra la de la generacion —0,6 %— es
+   **un dato**: el `apply` **lleva disco dentro**; la generacion es CPU pura.
+
+### 130.3 Fase B: el efecto del digest, aislado con control
+
+⚠️ **El primer diseño era invalido**: comparar el arbol nuevo contra la tanda
+vieja **es la comparacion entre sesiones que §131.5 prohibe**. Rediseñado a
+**protocolo APAREADO** —cinco pares nuevo/viejo alternados en una sesion, **la
+deriva cancelandose en la resta**—.
+
+| | |
+|---|---|
+| **Δ apply (viejo − nuevo)** | send **33,8 ± 4,1** · claim **35,3 ± 2,9 ms** |
+| Prediccion registrada | 29,6 / 29,8 — **confirmada a 1-2σ** |
+| Distancia de cero | **8σ** |
+| ⚠️ **Control interno** | **Δ gen ≡ 0** (+4 ± 43) |
+
+> **El control es lo que hace valida la medida**: la generacion **no lleva
+> digest**, asi que su Δ nulo **mide el ruido ambiente y demuestra que el
+> +34 del `apply` es efecto y no contexto**. Sin el, un Δ de +34 podria ser
+> deriva.
+
+### 130.4 ⚠️ Y §89.2 queda decodificado
+
+`apply` viejo = **71,8 ± 1,7** en este contexto ⇒ el *«arbol y disco ~70 ms»*
+de §89.2 era:
+
+> **~60 ms de `digest_of_proof` SIN NOMBRAR + ~10-12 de verificar, arbol y
+> disco.**
+
+**§124 partio por la mitad el termino dominante del `apply`** — y **nadie lo
+sabia cuando se hizo**: se justifico por la colision, no por el coste.
+
 ## 131. ⚠️ El instrumento tiene DOS dispersiones, y §130 publico una
 
 §130 caracterizo el instrumento con proceso-por-muestra y sello **σ 0,6 %**,
