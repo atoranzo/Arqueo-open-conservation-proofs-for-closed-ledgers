@@ -9960,7 +9960,8 @@ El censo encontro **una sola** cita de codigo con seccion desfasada:
 `log.rs` citaba §8.1 con la numeracion v1 — corregida a **§10.1**.
 
 Y la clase queda con guardian: `verificar_citas.py` **v2** comprueba que toda
-cita `FICHERO.md §N` desde `.rs` apunte a **una seccion que exista**.
+cita de la forma «*fichero* `.md` §N» desde `.rs` apunte a **una seccion
+que exista**.
 
 ✅ **Primer veredicto**: `0 fantasmas · 0 secciones muertas · exit=0`.
 
@@ -9985,6 +9986,18 @@ Las citas de `AUDITORIA.md` son **el tejido del registro**: `§93.4`,
 se rompe por dentro **y nadie lo sabe**.
 
 **Entrada 66.**
+
+### 125.4-bis ⚠️ Y el guardian volvio a cazar una MENCION
+
+El ejemplo de §125.3 usaba un nombre generico entre comillas. **El guardian
+lo conto como cita** — **cuarta vez** que confunde nombrar con citar, tras
+`auditoria-asientos` en §122.8.
+
+> **La seccion que documenta el limite del guardian lo desencadeno al
+> documentarlo.** Es §122.8 literal, repetido dos secciones despues.
+
+Confirma la entrada 66: el arreglo no es evitar los ejemplos, es **excluir
+por bloque marcado**, no por extension de fichero.
 
 ### 125.5 Dos errores de metodo, documentados
 
