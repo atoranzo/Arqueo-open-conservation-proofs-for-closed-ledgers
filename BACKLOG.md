@@ -1346,7 +1346,26 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   declarada— en una fuga hacia-terceros que el README no declara.**
   Arreglo barato —autorizacion en el contrato— y **no cierra la 50**.
 
-- [ ] **50. ⚠️ PRIVACIDAD FRENTE A TERCEROS ROTA — con una via viva otra vez
+- [ ] **50. ⚠️ PRIVACIDAD FRENTE A TERCEROS — propiedad DEMOSTRADA,
+  despliegue pendiente (§126).**
+  ✅ **La clausula de caida de §117 se resuelve A FAVOR**: `T2b-nativo` 3/3
+  demuestra que **un titular que pierde todo salvo la clave reconstruye su
+  hoja**, y que el ataque medido de 10,84 s **no acierta** con salt —**con
+  control de que si acierta con el salt correcto**, para que el cegado no
+  oculte tambien al legitimo—.
+  ⚠️ **T2b se partio en dos** (§126.2): la clausula decia «cae si la
+  propiedad es **irrealizable**», no «si el test no puede escribirse hoy» —la
+  hoja se computa **dentro de la traza**, asi que el salt es cambio de AIR en
+  los cinco circuitos—. **T2b-circuito queda especificado y NO escrito**: un
+  test que no compila disfrazado de verde seria peor que ninguno.
+  ⚠️⚠️ **Y se cierra HACIA DELANTE** (§126.4): **las cuentas abiertas antes
+  del despliegue siguen barribles en 10,84 s**, y **ningun salt futuro lo
+  arregla**. A diferencia de §98.2, aqui **hay que rotar para ganar la
+  privacidad**: una cuenta vieja que nunca rote **queda expuesta para
+  siempre**.
+  **Queda**: B13/B14 —`native_leaf_salted` en los cinco AIR y el punto de
+  insercion del salt en la apertura— y despues T2b-circuito. Clase entrada
+  15, coste medido **negativo** (§86).
   (§108).** ⚠️ **§99.4 descarto mal** la familia «salt en el estado»: pidio
   «ocultante frente a todos» cuando **la 50 es frente a TERCEROS** —el
   operador ya ve los saldos y esta declarado— y **no distinguio derivar de

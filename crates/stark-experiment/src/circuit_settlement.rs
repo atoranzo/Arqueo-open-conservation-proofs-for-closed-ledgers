@@ -2069,7 +2069,110 @@ pub fn derive_leaf_salt(spend_key: BaseElement) -> Digest {
     derive_leaf_salt_wide(as_digest(spend_key))
 }
 
+/// **Hoja salteada** (entrada 50). Extiende `native_leaf` con el salt
+/// de §117 SIN tocar la hoja vieja ni sus call-sites: el despliegue —
+/// sustituir `native_leaf` por esta en los cinco circuitos y sus AIR —
+/// es B13/B14. Aqui existe para que la propiedad de recuperacion sea
+/// demostrable (T2b-nativo) antes de tocar traza alguna.
+///
+/// Estructura = la vieja con un merge mas de salt al final: el circuito
+/// paga un bloque Rescue adicional por hoja (clase entrada 15, §82).
+pub fn native_leaf_salted(
+    public_id: Digest,
+    balance: BaseElement,
+    nonce: BaseElement,
+    leaf_salt: Digest,
+) -> Digest {
+    native_merge(native_leaf(public_id, balance, nonce), leaf_salt)
+}
+
 #[cfg(test)]
+mod t2b_recuperacion_nativa {
+    //! T2b-nativo (entrada 50): la propiedad de RECUPERACION de §117,
+    //! demostrada SIN el circuito. Decide la clausula de caida de §116:
+    //! si esto compila y pasa, la propiedad es realizable y §117 se
+    //! sostiene; el test de `apply` extremo-a-extremo (T2b-circuito)
+    //! queda condicionado a B13/B14 (salt en las cinco trazas), y NO se
+    //! escribe hoy porque exigiria un AIR que aun no existe.
+    use super::*;
+
+    const SK: u64 = 0xA11CE;
+
+    fn d(x: u64) -> Digest {
+        [BaseElement::new(x), BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO]
+    }
+
+    /// El titular pierde TODO menos la clave. Con solo la clave rederiva
+    /// identidad y salt (§117) y, con balance/nonce que su `ClientState`
+    /// ya porta, reconstruye su hoja identica. Es T2b sin `apply`.
+    #[test]
+    fn t2b_solo_la_clave_reconstruye_la_hoja() {
+        let sk = BaseElement::new(SK);
+        let (balance, nonce) = (BaseElement::new(250_000), BaseElement::new(7));
+
+        // Apertura: la hoja que quedo en el arbol.
+        let id = derive_public_id(sk);
+        let salt = derive_leaf_salt(sk);
+        let hoja_en_arbol = native_leaf_salted(id, balance, nonce, salt);
+
+        // Recuperacion: SOLO la clave (+ balance/nonce de ClientState).
+        let id_r = derive_public_id(sk);
+        let salt_r = derive_leaf_salt(sk);
+        let hoja_r = native_leaf_salted(id_r, balance, nonce, salt_r);
+
+        assert_eq!(hoja_r, hoja_en_arbol, "la clave sola no reconstruye la hoja");
+    }
+
+    /// La hoja salteada NO revela el balance por diccionario sobre el
+    /// hermano de camino: cada balance candidato produce una hoja
+    /// distinta SOLO si el atacante conoce el salt — que no conoce. Con
+    /// el salt derivado de una clave que no tiene, el barrido de 0..N
+    /// balances no acierta ninguno.
+    #[test]
+    fn t2b_diccionario_sin_salt_no_acierta() {
+        let sk = BaseElement::new(SK);
+        let (balance_real, nonce) = (BaseElement::new(3_500), BaseElement::new(1));
+        let salt = derive_leaf_salt(sk);
+        let id = derive_public_id(sk);
+        let objetivo = native_leaf_salted(id, balance_real, nonce, salt);
+
+        // Atacante: ve la hoja objetivo y el id (publico), NO el salt.
+        // Barre el rango realista de §50 (aqui comprimido) con salt=0.
+        let salt_falso = [BaseElement::ZERO; 4];
+        let mut acierta = false;
+        for b in 0..10_000u64 {
+            if native_leaf_salted(id, BaseElement::new(b), nonce, salt_falso) == objetivo {
+                acierta = true;
+                break;
+            }
+        }
+        assert!(!acierta, "el diccionario acerto SIN el salt: cegado roto");
+
+        // Control: CON el salt correcto, el balance real si reproduce la
+        // hoja — la hoja no es opaca al legitimo, solo al tercero.
+        assert_eq!(native_leaf_salted(id, balance_real, nonce, salt), objetivo);
+    }
+
+    /// La hoja vieja (sin salt) SIGUE siendo vulnerable — esto NO es
+    /// retroactivo, y el test lo fija: `native_leaf` sin salt reproduce
+    /// el balance por barrido. Documenta que la 50 se cierra hacia
+    /// delante, no sobre hojas ya escritas (coherente con §117).
+    #[test]
+    fn t2b_hoja_vieja_sigue_expuesta() {
+        let id = d(0xB0B);
+        let (balance_real, nonce) = (BaseElement::new(42), BaseElement::new(0));
+        let objetivo = native_leaf(id, balance_real, nonce);
+        let mut encontrado = None;
+        for b in 0..1_000u64 {
+            if native_leaf(id, BaseElement::new(b), nonce) == objetivo {
+                encontrado = Some(b);
+                break;
+            }
+        }
+        assert_eq!(encontrado, Some(42), "la hoja vieja debe seguir siendo barrible");
+    }
+}
+
 mod t2a_salt_hoja {
     //! T2a - la decision del salt, sometida a uso (disciplina de §108.5).
     use super::*;

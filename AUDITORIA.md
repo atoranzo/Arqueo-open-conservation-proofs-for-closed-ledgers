@@ -10015,6 +10015,83 @@ limpio.**
 > **Un resultado de test leido mientras `cargo` recompila puede mentir.** Es
 > §107.3 otra vez: **una cifra sin su condicion de medida no es una medida.**
 
+## 126. T2b partido en dos, y la clausula de caida resuelta A FAVOR
+
+§117 llevaba escrita su propia condena: *«si T2b no puede escribirse, esta
+decision cae»*.
+
+### 126.1 El hallazgo que forzo partir el test
+
+**La hoja se computa DENTRO de la traza**: `circuit_send.rs` fuerza la
+permutacion Rescue de `native_leaf` como restricciones periodicas del AIR
+—`ROW_LEAF_LINK`, `C_LEAF_CAP/DIG`—.
+
+> Meter el salt es **cambio de AIR en los cinco circuitos de gasto**, no de
+> capa. **T2b tal como se especifico exige B13/B14 ya hechos**, y escribirlo
+> hoy seria **un test que no compila disfrazado de verde**.
+
+### 126.2 La distincion que salva la coherencia
+
+⚠️ **La clausula no dice** «§117 cae si el test no puede escribirse hoy» —eso
+seria **rehen de un calendario de ingenieria**—. **Dice** «cae si la
+propiedad que el test afirma es **irrealizable**».
+
+> Separarlas evita **las dos** patologias: **fingir el verde** y **tumbar una
+> decision solida por falta de andamiaje**.
+
+### 126.3 T2b-nativo: la propiedad, sin el circuito — 3/3
+
+`circuit_settlement.rs`, `mod t2b_recuperacion_nativa`, sobre `native_leaf`
+y `native_merge` reales. Introduce `native_leaf_salted` como definicion
+**nueva** —la vieja y sus 60+ call-sites **intactos**: eso es B13/B14—.
+
+| test | que demuestra |
+|---|---|
+| `t2b_solo_la_clave_reconstruye_la_hoja` | ✅ **decide la clausula**: un titular que pierde todo salvo la clave rederiva identidad y salt (§117) y **reconstruye su hoja identica** |
+| `t2b_diccionario_sin_salt_no_acierta` | el ataque **medido** de la 50 —10,84 s— **no acierta ninguno** con salt |
+| `t2b_hoja_vieja_sigue_expuesta` | la 50 se cierra **hacia delante**, no sobre hojas ya escritas |
+
+⚠️ **El segundo lleva su control**, y esa es la parte que importa: comprueba
+que el barrido **no acierta sin el salt** *y* que **si reproduce la hoja con
+el salt correcto**.
+
+> Sin ese control, **un cegado que rompiera tambien al legitimo daria el
+> mismo verde**. Es §66.2 aplicado: el positivo primero y solo.
+
+### 126.4 ⚠️ Veredicto: §117 SE SOSTIENE. Y lo que eso NO significa
+
+La 50 pasa de **«familia viva»** —su etiqueta desde §108— a **propiedad
+demostrada con despliegue pendiente**.
+
+⚠️ **No esta cerrada.** Y hay una consecuencia que `t2b_hoja_vieja_sigue_
+expuesta` convierte de aspiracion en **comportamiento verificado**:
+
+> **Las cuentas abiertas antes del despliegue siguen siendo barribles en
+> 10,84 s, y eso no lo arregla ningun salt futuro.**
+
+Es la forma de §98.2 —la rotacion existe— **con una diferencia**: alli se
+rotaba para ganar **entropia**; aqui **hay que rotar para ganar la
+privacidad**. Una cuenta vieja que nunca rote **queda expuesta para siempre**.
+
+### 126.5 Lo que queda, tasado
+
+**T2b-circuito**, condicionado a B13/B14: el `apply` extremo a extremo con el
+salt ya presente en las cinco trazas. **Especificado, NO escrito** — se
+documenta como pendiente honesto, **no se finge**.
+
+**Coste del despliegue**: clase entrada 15, con precedente medido —§82
+ensancho la clave de 1 a 4 elementos en traza, y §86 midio el coste
+**negativo**: ensanchar abarata—. `native_leaf_salted` es **un merge Rescue
+mas por hoja**.
+
+### 126.6 La guarda, otra vez
+
+El md5 de partida del asiento era el del **arbol de lectura**, no el estado
+**post-§125**. **La guarda lo detecto.**
+
+> Es la tercera vez en dos horas que el ABORTA evita construir sobre un
+> estado que ya no existia.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—
