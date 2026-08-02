@@ -10259,6 +10259,96 @@ que un cierre fingido** —criterio 5 de VISION—.
 > rito exige **VER, no suponer**. La misma red que caza los errores del
 > proyecto (§89.3), funcionando sobre los propios.
 
+## 129. 49-A: lo que es de verdad, medido antes de tocar codigo
+
+### 129.1 ⚠️ Dos premisas mias, desmentidas por el arbol
+
+**Una · «pone en verde los tres testigos rojos».** **Falso, y el propio
+codigo lo dice:**
+
+| testigo | ¿lo cierra la clave de vista? |
+|---|---|
+| `reading_a_balance_requires_authority` | ✅ **si** |
+| `account_indices_are_not_predictable` | ❌ es **49-B** —posicion de alta—, **ortogonal a toda credencial** |
+| `a_neighbour_leaf_does_not_reveal_its_balance` | ❌ es la **50**, y su propio cuerpo lo declara: *«esta fuga sobrevive a cerrar `account_view`»* |
+
+**Indicador corregido: UN rojo verde, no tres.** Fingir tres seria el
+autoengaño que la casa evita.
+
+**Dos · «exigir credencial en las cuatro puertas».** **Rompería el sistema,
+no solo la suite.** Medido: **97 usos de `balance_of` en once ficheros**, y
+**no solo en tests** —13 en `iso.rs`, 7 en `two_phase.rs`: camino de
+produccion—.
+
+> **`balance_of` es infraestructura interna**, y el operador **ya ve los
+> saldos**: exponerselos a el **no filtra nada**.
+
+El contrato que el rojo pide no es «toda lectura exige credencial», es **«la
+vista destinada al titular exige que sea el titular»**. Se **AÑADE** una
+puerta autenticada; **no se lisian los accessors**.
+
+### 129.2 El alcance real: migracion de formato en disco
+
+49-A toca **dos rutas de serializacion independientes** que comparten
+`record_to_bytes`:
+
+| ruta | escribe | lee |
+|---|---|---|
+| sled | `persistence.rs:531` | `:309` |
+| **snapshot** | `snapshot.rs:177` | **`:333`** |
+
+⚠️ **La linea 333 lleva `take(48, "registro")`: la longitud esta codificada
+en la llamada.** Un parche que solo tocara `store.rs` dejaria el snapshot
+**escribiendo 80 y leyendo 48**.
+
+**Formato**: `[u8; 48]` fijo, **sin byte de version**. Añadir `view_id` lo
+lleva a 80 e **invalida toda cuenta ya escrita**.
+
+✅ **Y la longitud fija es la herramienta, no el obstaculo**: `len()==48` ⇒
+viejo, `==80` ⇒ nuevo. **Discriminador por longitud**, con precedente en el
+arbol `legacy_null` que `persistence.rs` **ya migro**.
+
+### 129.3 Decision declarada: NO-RETROACTIVA
+
+Las cuentas pre-49-A cargan `view_id` = **centinela** —digest cero, que
+`view_id_of` **nunca produce** porque mezcla el dominio en el estado—. Su
+vista autenticada devuelve siempre `None`.
+
+> **Misma familia que §117 y §119**: el salt no protegio las hojas viejas, la
+> reversion no alcanzo los pendientes viejos, y la vista no protege las
+> cuentas viejas. **Las tres lo eligen y las tres lo dicen.**
+
+### 129.4 ⚠️ El borrador retirado, y su punto (c)
+
+El primer intento fue un heredoc ciego que **(a)** llamaba a una funcion
+**inexistente** mientras preguntaba si existia; **(b)** rompia §90 con
+`spend_key[0]`; **(c)** dejaba **las dos rutas de snapshot sin tocar**.
+
+> **El (c) es el que asusta: escribir 48 por una ruta y leer 80 por otra NO
+> da error de compilacion.** El fallo aparece al restaurar un snapshot.
+
+**Lo cazo el rito de leer antes** — los greps que encontraron el segundo
+consumidor y el constructor de `persistence.rs:316`.
+
+⚠️ **La regla que sale de aqui**: **superficie publica viva se despliega por
+pasos compilables en la maquina real, nunca de una tacada.** Es §97.1 otra
+vez —el `regex` que hizo 18 cambios sin verse—.
+
+### 129.5 El plan, en cinco pasos verificables
+
+1. **Frontera de serializacion** (`store.rs`): `_v2` con formato dual por
+   longitud + centinela; shims viejos `#[deprecated]` como **mapa exacto** de
+   lo que falta migrar. **Diseñado y probado que aplica limpio; NO aplicado.**
+2. **Estructura y apertura**: `AccountRecord` gana `view_id`;
+   `open_with_id` lo recibe **como parametro** —no puede derivarlo: solo
+   tiene la identidad (§93.4)—. ⚠️ **La via ancha debe resolver §90 de
+   verdad**, no con `spend_key[0]`.
+3. **Migrar los 5 call-sites**. Sub-decision abierta: el `take(48)` de
+   `snapshot.rs:333` — ¿los snapshots viejos **se migran o se regeneran**?
+4. **Puerta autenticada** en `client.rs`. Test: el rojo pasa; **los 97 usos
+   de `balance_of` intactos**.
+5. **Eliminar los shims** cuando el paso 3 los deje sin uso.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

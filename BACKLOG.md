@@ -1238,8 +1238,22 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   mision cambia**. ⚠️ **Reversion viva**: sub-minuto **sin peticion** cuesta
   **0,58 TB/año**.
 
-- [ ] **49. ⚠️ Cuatro puertas sin autorizacion — MECANISMO DECIDIDO (§127),
-  despliegue pendiente.**
+- [ ] **49-A. ⚠️ Clave de vista: ALCANCE MEDIDO (§129), despliegue en cinco
+  pasos.** ⚠️⚠️ **NO es «desplegar una credencial»: es migracion de formato de
+  cuenta en disco** —dos rutas de serializacion, `[u8; 48]` → 80, sin byte de
+  version—. ⚠️ **`snapshot.rs:333` lleva `take(48)` codificado**: un parche que
+  solo tocara `store.rs` **escribiria 80 y leeria 48 — corrupcion silenciosa,
+  sin error de compilacion**.
+  ⚠️ **Indicador corregido**: pone verde **UN** rojo, no tres —
+  `account_indices_are_not_predictable` es **49-B** y
+  `a_neighbour_leaf...` es la **50**, y su cuerpo lo declara—.
+  ⚠️ **Y no se exige credencial en las cuatro puertas**: **97 usos de
+  `balance_of` en once ficheros**, 13 en `iso.rs` y 7 en `two_phase.rs` —
+  **camino de produccion**. Se **añade** `account_view_authenticated`.
+  ✅ **Discriminador por longitud** —48 viejo, 80 nuevo— con precedente en la
+  migracion de `legacy_null`. **NO-RETROACTIVA** (§129.3): centinela para las
+  cuentas viejas, **misma familia que §117 y §119**.
+  **Sub-decision abierta**: ¿los snapshots viejos se migran o se regeneran?
   ⚠️⚠️ **Su «depende de la 53» era verdad AL REVES** (§127.2): XMSS firma
   **cabezas del operador**, una identidad; la 49 necesita que **cada titular**
   pruebe **su** cuenta. **La 53 tenia que resolverse para ver que no la
