@@ -9719,7 +9719,8 @@ son **§10.1 y §10.2**.
 ### 122.7 Y el patron que produjo los fantasmas sigue activo
 
 `Downloads` contiene `asiento-115`, `-116`, `-117`, `-119` y dos
-`auditoria-asientos.md` — **todos entregables de sesion cuyo contenido ya
+`auditoria-asientos` *(sin extension a proposito: ver 122.8)* — **todos
+entregables de sesion cuyo contenido ya
 vive en este fichero**, y uno de ellos genero el tercer fantasma.
 
 > **La fuente del problema no fue un descuido puntual: es como se trabaja.**
@@ -9727,6 +9728,23 @@ vive en este fichero**, y uno de ellos genero el tercer fantasma.
 > **nombre** puede acabar citado.
 
 El guardian lo caza en CI. **La practica sigue siendo la misma.**
+
+### 122.8 ⚠️ El guardian no distingue CITAR de NOMBRAR
+
+Al registrar §122.7 —*«el patron que produjo los fantasmas sigue activo»*— se
+**nombro** el fichero de ejemplo, y el guardian lo conto como **cita**.
+**Tercera aparicion del mismo nombre, y la tercera por la misma via.**
+
+> **La seccion que describe el patron lo cometio al describirlo**, en el
+> mismo commit que lo registra.
+
+**Limite del guardian, declarado**: su ambito dice «solo `.rs` y `.md` son
+fuentes de citas», y eso acota **donde** mira. **No acota que una mencion no
+es una referencia.** Aqui se resuelve quitando la extension; una version
+futura podria ignorar los nombres dentro de bloques marcados.
+
+⚠️ **Y su otro limite sigue vivo** (entrada 64): valida que el **fichero**
+exista, **no que la seccion citada este dentro**.
 
 ### 92.5 Lo que queda
 

@@ -86,6 +86,7 @@ Y para los circuitos:
 
 ```bash
 python3 tools/check_constraint_layout.py
+python3 tools/verificar_citas.py
 ```
 
 Cruza los índices de `result[...]` **y** de `periodic[...]` en los 27
