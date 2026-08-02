@@ -10644,6 +10644,90 @@ resolver.**
 | 4 | **Coordinar con §132** — o justificar dos eventos (§133.4) |
 | 5 | `account_indices_are_not_predictable` pasa a verde: **segundo de los tres rojos historicos** |
 
+## 134. El orden, leido contra los asientos: cuatro anotaciones
+
+El orden por fisica —mecanico, documental, diseño, condicionado, riesgo con
+nombre, ruido— es solido como esqueleto. Leido contra el registro pide
+**cuatro anotaciones**, y **dos cambian el orden en vez de matizarlo**.
+
+### 134.1 La 52 es la clave de boveda, no un item
+
+**Tres decisiones de esta sesion difirieron su coste a la rotacion:**
+
+| | lo que difirio |
+|---|---|
+| §117 | «rotar la clave implica nueva hoja» |
+| §127.5 | la clave de vista **es irrotable sin rotar la de gasto** |
+| B18.2 | su reclamo de migracion **ES una rotacion con hoja nueva** |
+
+Y la entrada 20 muestra que **medio espacio de diseño ya existe**: `recover`
+**rota la clave de cuenta CON custodios** — el acoplamiento exacto que §128
+dijo que hay que leer antes de proponer nada.
+
+> **O se unifican los dos casos abiertos de la 20 + el reclamo de B18.2 + los
+> tres costes diferidos en UN solo diseño de rotacion, o la rotacion se
+> diseñara tres veces, incompatibles entre si.**
+
+⚠️ **Y hay una restriccion estructural que debe leer primero quien la
+diseñe**: la 20 registra que la rotacion de custodios es **por uso, no por
+tiempo** —*«esta capa no tiene nocion de tiempo»*—. Es la misma razon por la
+que §119.3 tuvo que anclar el reloj de la reversion a **cabezas firmadas**.
+**La ausencia de tiempo ya ha condicionado dos diseños distintos.**
+
+### 134.2 ⚠️ La 7 y B13/B14 colisionan en los mismos ocho AIR
+
+La evidencia de la entrada 7 es que **§72 —una restriccion en el carril
+equivocado— se habria cazado leyendo la spec, sin leer el codigo**.
+
+Y la clase de bug que §132 mas teme del salt es **exactamente esa**: un
+desajuste de constante de fila entre `place()` y la restriccion, **en dos
+carriles**.
+
+> **La seccion maquina-de-hoja de la spec —no la spec entera— sube a paso
+> 1.5 de B13/B14**, y el piloto de `send` se escribe **contra** ella.
+>
+> **Especificar-modificar-completar, no modificar-y-luego-especificar-lo-
+> modificado.**
+
+### 134.3 La 42 se ata a la 32 — pero por su ficha, NO por el grep
+
+**La anotacion acierta**: la 42 es `mint_to_pending`, **la via antigua**, y su
+propia ficha lo dice —*«`apply_mint_pending_delegated` usa
+`SupplyCapExceeded`; la antigua no se toco»*—. **Muere cuando la 32 retire
+las vias.**
+
+⚠️ **Pero la evidencia inicial era ambigua**: `client.rs:157` lanza
+`OverRegulatoryLimit` **y es correcto** — es el limite regulatorio de una
+**transferencia**, con su comentario citando §25.
+
+> **Cuarta homonimia del proyecto** —tras los salts, los `receipt` y
+> `native_merge`—: **el mismo `LayerError` significa cosas distintas segun
+> quien lo lance**, y `grep` no las distingue.
+
+**Y el prerrequisito de la 32 —medir el precio de la delegada— corre bajo
+§130/§131**: proceso-por-muestra, **y apareado si compara vias**, o producira
+otro numero-de-contexto disfrazado de dato.
+
+### 134.4 Tres ausencias que el orden pierde en silencio
+
+1. **La mitigacion provisional de §132.6** —documentar el riesgo en la
+   apertura—: pequeña, separable, y **la unica respuesta inmediata a la
+   urgencia que justifico poner B13/B14 arriba**.
+2. **Los cinco pasos de 49-A**, con el paso 1 ya diseñado.
+3. ⚠️ **Las migraciones de B13/B14 y de la 67 van ENCADENADAS** (§133.4). El
+   orden debe mostrarlas asi **o alguien las ejecutara en serie y recomputara
+   el arbol dos veces**.
+
+### 134.5 Lo que el orden dice de la sesion
+
+> **Ya nada entra por la etiqueta «barato».** Esta sesion la invirtio
+> **cuatro veces** —§129, §130.2, §132.2, §133.1— y las cuatro etiquetas eran
+> propias.
+
+El triaje de §128 —mecanico / documental / diseño / condicionado— **se
+convirtio en columna vertebral**, y el cubo de condicionadas (12, 62, 54)
+esta bien aparcado.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

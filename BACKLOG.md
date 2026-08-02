@@ -1480,18 +1480,19 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   misma funcion.** No medido si las otras dos estan en algun camino de
   produccion.
 
-- [ ] **52. ⚠️ Un titular no puede rotar su clave sin dos custodios.**
-  Descubierto el 01-08-2026 al medir la adopcion de la entrada 15 (§98.4).
-  `recover` y `apply_recovery_delegated` **exigen dos custodios**, asi que
-  rotar a una clave de 256 bits **no es una accion soberana**: la clave de
-  gasto nunca sale de la maquina del titular, pero **cambiarla depende de
-  terceros**. ⚠️ **Puede gastar sin permiso de nadie y no puede protegerse
-  sin permiso de dos.** Es la cuarta condicion implicita de la familia de
-  §95.2, y toca la palabra del titulo del proyecto. **No se propone
-  mecanismo**: una via de rotacion autoautorizada es diseño nuevo —y hay que
-  mirar antes por que la recuperacion exige custodios, que probablemente sea
-  para el caso de la clave PERDIDA, distinto del de la clave que se quiere
-  MEJORAR—.
+- [ ] **52. ⚠️ CLAVE DE BOVEDA: un solo diseño de rotacion, o se hara tres
+  veces (§134.1).** **Tres decisiones difirieron su coste aqui**: §117 —rotar
+  implica hoja nueva—, §127.5 —la clave de vista **es irrotable sin rotar la
+  de gasto**— y B18.2, cuyo reclamo de migracion **ES una rotacion**.
+  ⚠️ **Y medio espacio de diseño ya existe**: `recover` **rota la clave CON
+  custodios** (entrada 20) — el acoplamiento que hay que leer **antes** de
+  proponer rotacion autoautorizada.
+  ⚠️ **Restriccion estructural a leer primero**: la rotacion de custodios es
+  **por uso, no por tiempo** —*«esta capa no tiene nocion de tiempo»*—, la
+  misma razon por la que §119.3 anclo el reloj a **cabezas firmadas**. **La
+  ausencia de tiempo ya condiciono dos diseños.**
+  **Alcance real**: unificar los dos casos abiertos de la 20 + el reclamo de
+  B18.2 + los tres costes diferidos. **Sesion propia.**
 
 - [ ] **23. Consenso distribuido.** No anade un problema nuevo: recupera el
   del doble gasto que se cerro, y con el el limite del cumpleanos, salvo
