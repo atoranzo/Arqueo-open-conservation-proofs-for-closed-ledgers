@@ -1289,8 +1289,22 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   ⚠️ **NO esta cerrada**: falta `AccountRecord` + `view_id`, `open_with_id`,
   las cuatro firmas y ~100 call-sites.
 
-- [ ] **67. ⚠️ Los indices de alta son predecibles, y ninguna credencial lo
-  arregla.** Mitad B de la 49 (§127.6): las altas dan **indices
+- [ ] **67. ⚠️ Indices predecibles — REDISEÑADA (§133): derivar, no
+  aleatorizar.**
+  ⚠️⚠️ **«La mitigacion mas barata» era lo contrario**: el indice **ES la
+  coordenada del arbol**, y el cliente **lo recibe, no lo recupera** — hoy es
+  secuencial y por eso **un cliente que lo perdio puede barrer 0..n**.
+  **Aleatorizarlo cambia una fuga de privacidad por un MODO DE PERDIDA DE
+  FONDOS** y rompe la recuperacion de §127. **Cuarto §95.2 de la sesion.**
+  ✅ **Solucion: `posicion = H(public_id)`** — el atacante **no elige
+  vecino** (objetivo cumplido) **y la recuperacion MEJORA**: con solo la
+  clave se encuentra la cuenta **sin barrer**. Y **el arbol ya es disperso**
+  —`TREE_DEPTH` 32, 2^32 slots—: cabe nativo.
+  ⚠️ **MEDIA, no barata**: colisiones **con argumento de solidez** —que un
+  atacante no pueda forzar coincidencia—, snapshot disperso, y migracion.
+  ⚠️ **Dependencia dura con B13/B14** (§133.4): **las dos recomputan el
+  arbol**. Coordinarlas ahorra un evento **y es mas arriesgado** —dos cambios
+  con una sola prueba de que salio bien—. **Sin resolver.** Mitad B de la 49 (§127.6): las altas dan **indices
   consecutivos**, asi que **quien controla el momento de su alta ELIGE a su
   vecino de arbol y con dos altas lo rodea** — convierte la fuga de la 50 de
   **oportunista en DIRIGIDA**. Medido desde §93.3 y **sin entrada propia

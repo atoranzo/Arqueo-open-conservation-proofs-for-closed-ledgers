@@ -10494,6 +10494,86 @@ inicial»*.
 **No es una mitigacion pendiente: es una que no existe**, y registrarla como
 pendiente habria sido deuda falsa.
 
+## 133. La 67: NO aleatorizar la posicion — DERIVARLA
+
+⚠️ **Numeracion**: el asiento llego como «§132», ya ocupada por B13/B14. Va
+como **§133**.
+
+### 133.1 ⚠️ «La mitigacion mas barata del proyecto» era lo contrario
+
+Y el codigo lo dice en tres capas:
+
+1. **El indice ES la coordenada en el arbol**, no una etiqueta:
+   `set_leaf(index, ...)` con `index = next_index++`, y `path_for(index)`
+   construye **toda prueba de pertenencia** sobre ella.
+2. ⚠️ **El que mata la frase**: el cliente **no recupera su indice, lo
+   recibe** —`account_view(index)`, `send(receiver_index)`—. Hoy es
+   secuencial, asi que **un cliente que lo perdio puede encontrarse
+   barriendo 0..n**.
+
+   > **Aleatorizarlo cambia una fuga de privacidad por un MODO DE PERDIDA DE
+   > FONDOS**: con solo su clave, nadie localiza su cuenta. **Rompe la
+   > recuperacion que §127 acababa de construir.**
+3. El snapshot **cuenta por densidad** —`accounts.len()`, lineas 171 y 210—.
+
+**Es el cuarto §95.2 de la sesion, y los cuatro son mios**: «coste negativo»
+(§132.2), «pone verde los tres» (§129.1), «un merge mas» (§132.2) y este.
+
+### 133.2 La solucion arregla en vez de romper
+
+**`posicion = H(public_id) mod 2^32`** —y el `public_id` ya deriva de la
+clave (§117)—:
+
+| | |
+|---|---|
+| **El atacante no elige vecino** | su posicion **la fija su identidad**, fuera de su control — **objetivo de la 67 cumplido** |
+| **La recuperacion MEJORA** | un cliente con solo su clave computa `public_id → posicion` y **encuentra su cuenta sin barrer nada** |
+
+> Cierra de paso el modo de perdida que la version aleatoria abriria, **y
+> mejora sobre el barrido secuencial de hoy**.
+
+✅ **Y el arbol YA es disperso**: `SparseMerkleTree`, `TREE_DEPTH = 32`,
+capacidad 2^32. **El obstaculo que se temia no existe**: `public_id → [0,
+2^32)` cabe nativo.
+
+### 133.3 Por que es MEDIA y no barata
+
+- ⚠️ **Colisiones**: dos `public_id` al mismo slot. Problema clasico con
+  solucion conocida, **pero es decision de diseño con su prueba** — hay que
+  **argumentar** que un atacante no puede forzar la coincidencia con una
+  victima. Fabricar `public_id` cuesta 2^63 (§82), asi que es duro; **se
+  argumenta, no se asume**.
+- **Snapshot**: de contar por `len()` a serializar posiciones dispersas.
+- **Migracion**: recomputa el arbol de cuentas.
+
+### 133.4 ⚠️ La dependencia dura con §132 — y su riesgo
+
+**Las dos migraciones recomputan el arbol**: la envoltura salt-cero de
+B13/B14 y el reposicionamiento de la 67.
+
+> Se hacen **en una sola pasada** o **se emiten dos eventos de migracion
+> donde basta uno**.
+
+⚠️ **Y hay que decir la otra mitad**: un evento que aplique **salt-cero Y
+reposicionamiento a la vez** tiene **dos formas de salir mal y una sola
+prueba de que salio bien**.
+
+**Coordinarlas es mas barato y mas arriesgado.** La coordinacion necesita su
+propio argumento de **por que un evento con dos cambios es verificable** —o
+dos eventos consecutivos, mas caros y cada uno con su prueba—. **Sin
+resolver.**
+
+### 133.5 Descomposicion, ninguno abierto
+
+| paso | |
+|---|---|
+| 0 | ✅ anatomia: indice = coordenada; cliente **recibe** el indice; arbol **disperso** 2^32; snapshot cuenta por `len()` |
+| 1 | **Resolucion de colision con su argumento de solidez** — prerrequisito |
+| 2 | Derivacion + **recuperacion por computo** |
+| 3 | Snapshot disperso |
+| 4 | **Coordinar con §132** — o justificar dos eventos (§133.4) |
+| 5 | `account_indices_are_not_predictable` pasa a verde: **segundo de los tres rojos historicos** |
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—
