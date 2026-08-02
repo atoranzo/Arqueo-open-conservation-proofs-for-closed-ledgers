@@ -112,8 +112,26 @@ no hay ceremonia ni secreto que destruir.
 > Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
 > --nocapture` y comparando con lo publicado. Ver `AUDITORIA.md` §22.
 
+⚠️ **La contención del anclaje de raíz** (`AUDITORIA.md` §123): toda prueba
+se ata a la raíz exacta que vio al generarse, así que **dos emisores que no
+comparten nada quedan serializados por el anclaje global** — aplicar la
+primera invalida la segunda (`StaleState`), aunque toque otra hoja. **El
+mecanismo está comprobado** (T5a) y no depende de ninguna constante.
+
+⚠️ **El número, en rango y con su reserva**: entre **1,5 y 1,9 TPS** en dos
+ejecuciones de una máquina, con constantes que **aún no han pasado el
+protocolo de medición del proyecto** (entrada 65). Es el techo real del nodo
+actual bajo concurrencia, y **muerde antes que cualquier otro límite
+listado**. La salida diseñada —nonce en la hoja y vigencia en O(1)— es C2/C3
+de `doc/ESCALADO.md`, propuesta con su propia cabecera de estado.
+
+⚠️ **Y los ~620 s de abajo están en revisión**: dos medidas directas dieron
+**314 y 375 ms** por prueba, no 620 (§123.5). No se corrige aquí porque no
+han pasado el protocolo de §89.1 — **pero la cifra publicada ya no es
+firme**.
+
 **Límites cuantificados**: mil transferencias son ~620 s de prueba y
-**120,4 MB** acumulados.
+**120,4 MiB** acumulados.
 
 ⚠️ **Un límite que existió, y cómo se fue**: la vía de un paso derivaba
 la posición del nullifier del propio nullifier, con colisiones probables

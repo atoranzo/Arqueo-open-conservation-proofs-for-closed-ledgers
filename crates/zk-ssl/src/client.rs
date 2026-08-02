@@ -847,3 +847,96 @@ mod tests {
         );
     }
 }
+
+
+#[cfg(test)]
+mod t5_contencion_anclaje {
+    //! T5 - entrada 63 / seccion 122.4: la contencion del anclaje, MEDIDA.
+    //! ESCALADO.md 2.2 la modela en 1,6 TPS; aqui se comprueba el mecanismo
+    //! y se miden las constantes con las que re-derivar el numero.
+    use crate::tests_support::*;
+    use crate::LayerError;
+    use stark_experiment::circuit_settlement::derive_public_id;
+    use std::time::{Duration, Instant};
+    use winterfell::math::fields::f64::BaseElement;
+
+    const SK_A: u64 = 0xA5A5;
+    const SK_M: u64 = 0x5A5A;
+    const SK_B: u64 = 0xB0B0;
+
+    #[test]
+    fn t5a_dos_independientes_un_anclaje() {
+        let mut layer = new_layer();
+        let a = open_and_fund(&mut layer, SK_A, 1_000_000);
+        let m = open_and_fund(&mut layer, SK_M, 1_000_000);
+        let bob = derive_public_id(BaseElement::new(SK_B));
+        let ea = state_of(&layer, a);
+        let em = state_of(&layer, m);
+        // Dos pruebas contra la MISMA raiz: titulares distintos, hojas
+        // distintas, cero estado compartido.
+        let t = Instant::now();
+        let ra = layer.send(BaseElement::new(SK_A), a, &ea, bob, salt_de(1), 100).unwrap();
+        let rm = layer.send(BaseElement::new(SK_M), m, &em, bob, salt_de(2), 100).unwrap();
+        eprintln!("dos generaciones: {:?}", t.elapsed());
+        layer.apply_send(&ra, a, &ea, 100).unwrap();
+        match layer.apply_send(&rm, m, &em, 100) {
+            Err(LayerError::StaleState) => eprintln!(
+                "VEREDICTO 5a: contencion confirmada — StaleState sobre una                  operacion INDEPENDIENTE: el anclaje global serializa a                  titulares que no comparten nada"
+            ),
+            otro => panic!("esperaba StaleState, llego {otro:?}"),
+        }
+    }
+
+    #[test]
+    fn t5b_constantes_y_coste_efectivo() {
+        // Dos clientes ingenuos, en serie (cota del fenomeno, no
+        // concurrencia real): cada ronda ambos generan contra la raiz
+        // vigente; el segundo pierde, regenera y aplica.
+        const RONDAS: u64 = 5;
+        let mut layer = new_layer();
+        let a = open_and_fund(&mut layer, SK_A, 1_000_000);
+        let m = open_and_fund(&mut layer, SK_M, 1_000_000);
+        let bob = derive_public_id(BaseElement::new(SK_B));
+        let (mut gens, mut regens, mut ops) = (0u32, 0u32, 0u32);
+        let (mut t_gen, mut t_apply) = (Duration::ZERO, Duration::ZERO);
+        let t0 = Instant::now();
+        for r in 0..RONDAS {
+            let ea = state_of(&layer, a);
+            let em = state_of(&layer, m);
+            let t = Instant::now();
+            let ra = layer.send(BaseElement::new(SK_A), a, &ea, bob, salt_de(100 + r), 100).unwrap();
+            t_gen += t.elapsed(); gens += 1;
+            let t = Instant::now();
+            let rm = layer.send(BaseElement::new(SK_M), m, &em, bob, salt_de(200 + r), 100).unwrap();
+            t_gen += t.elapsed(); gens += 1;
+            let t = Instant::now();
+            layer.apply_send(&ra, a, &ea, 100).unwrap();
+            t_apply += t.elapsed(); ops += 1;
+            match layer.apply_send(&rm, m, &em, 100) {
+                Err(LayerError::StaleState) => {
+                    regens += 1;
+                    let em2 = state_of(&layer, m);
+                    let t = Instant::now();
+                    let rm2 = layer.send(BaseElement::new(SK_M), m, &em2, bob, salt_de(300 + r), 100).unwrap();
+                    t_gen += t.elapsed(); gens += 1;
+                    let t = Instant::now();
+                    layer.apply_send(&rm2, m, &em2, 100).unwrap();
+                    t_apply += t.elapsed(); ops += 1;
+                }
+                Ok(()) => { ops += 1; eprintln!("ronda {r}: la segunda ENTRO — sin contencion, revisar"); }
+                Err(e) => panic!("{e:?}"),
+            }
+        }
+        let wall = t0.elapsed();
+        let g = t_gen / gens;
+        let ap = t_apply / ops;
+        eprintln!("ops aplicadas: {ops} | generaciones: {gens} | regeneraciones: {regens}");
+        eprintln!("t_gen medio: {g:?} | t_apply medio: {ap:?}  <- arbitra 177 ms vs 72 ms");
+        eprintln!("pared: {wall:?} | TPS efectivo en serie: {:.2}", ops as f64 / wall.as_secs_f64());
+        eprintln!(
+            "modelo 2 clientes: coste/op = {:.0} ms x {:.1} gens/op + apply => {:.2} TPS",
+            g.as_secs_f64() * 1e3, gens as f64 / ops as f64,
+            1.0 / ((gens as f64 / ops as f64) * g.as_secs_f64() + ap.as_secs_f64())
+        );
+    }
+}

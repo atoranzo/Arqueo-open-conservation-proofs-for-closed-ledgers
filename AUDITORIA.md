@@ -9746,6 +9746,81 @@ futura podria ignorar los nombres dentro de bloques marcados.
 ⚠️ **Y su otro limite sigue vivo** (entrada 64): valida que el **fichero**
 exista, **no que la seccion citada este dentro**.
 
+## 123. La contencion del anclaje: mecanismo firme, numero en rango
+
+Cierra la entrada 63 y la deuda de §122.4. Tests en `client.rs`, modulo
+`t5_contencion_anclaje`.
+
+### 123.1 El mecanismo, comprobado en su forma dura (T5a)
+
+Dos titulares que **no comparten nada** —cuentas distintas, hojas distintas,
+cero estado comun— generan contra la misma raiz. Aplicar la primera **mata a
+la segunda**: `Err(LayerError::StaleState)`.
+
+> **El anclaje global serializa operaciones independientes.** Es **propiedad
+> del sistema actual**, no de la propuesta que la encontro.
+
+⚠️ **Esta parte es cualitativa y firme.** No depende de ninguna constante.
+
+### 123.2 ⚠️ El numero varia entre ejecuciones, y por eso va en rango
+
+| | primera | segunda |
+|---|---|---|
+| `t_gen` | 375 ms | **314 ms** |
+| `t_apply` | 90 ms | **62 ms** |
+| **TPS efectivo** | **1,53** | **1,87** |
+
+**22 % de diferencia entre dos corridas de la misma maquina.**
+
+> ⚠️ Publicar «~1,5 TPS» repetiria **exactamente lo de `ESCALADO.md`**: un
+> TPS derivado de constantes que no han pasado el protocolo de §89.1.
+
+### 123.3 El modelo anterior acerto por las razones equivocadas
+
+`ESCALADO.md` §2.2 daba **1,6 TPS** ≈ 1/620 ms.
+
+> **Un modelo con las dos constantes equivocadas que cayo dentro del rango
+> real por compensacion de errores.**
+
+⚠️ **Y eso es indistinguible de acertar hasta que se mide.** Es §99.5 en
+forma numerica: un dato correcto sobre el objeto equivocado.
+
+**Correccion de una etiqueta propia**: §122.4 la llamo «limite medido».
+**Era prematuro.** Desde §123 lo es.
+
+### 123.4 §22 arbitrado por medida directa
+
+§22 daba `apply` en **177 ms** —28,5 % de un 620 que tampoco era—. Medido:
+**62-90 ms**. **§22 cae**; §89.2 tenia la historia correcta con el numero
+corto.
+
+### 123.5 ⚠️ Deuda: `t_gen` canonico, y el README ya la lleva marcada
+
+**375 y 314 ms discrepan del 620 canonico** de `README.md`, `PRINCIPIOS.md`
+y `doc/ESCALADO.md`. **No se corrige el canon**: n=15 no es el protocolo de
+§89.1.
+
+⚠️ **Pero la cifra publicada deja de ser firme**, y el README lo dice ya.
+**Entrada 65.**
+
+### 123.6 ⚠️ Y aparecio un SEPTIMO sitio de la unidad
+
+`README.md` decia **120,4 MB** para una cifra binaria. El inventario de
+§84.5 hablaba de **seis** sitios y la correccion del 01-08 cubrio los tres
+documentos del lote — **el README no estaba en el lote**.
+
+> **Segunda vez que ese inventario se queda corto**: §100.3 registro que
+> `QUESTIONS.md` se habia quedado fuera del primer parche. **Ahora el
+> README.**
+
+### 123.7 El metodo, para el registro
+
+El bloque se ejecuto dos veces; en la segunda **la guarda md5 aborto el
+pegado** y evito un modulo duplicado — la enfermedad de §89.3, donde un
+`#[test]` duplicado sesgo su propia medida un 19 %.
+
+> **El ABORTA era el sistema funcionando.**
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 36 abiertas, 28 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 36 abiertas, 29 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -1109,8 +1109,22 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   vigentes» —`OpKind` dice que circuito usar, no que version—. Requiere
   primero **versionar las reglas de validacion**, que no existe.
 
-- [ ] **63. ⚠️ La contencion del anclaje de raiz: 1,6 TPS efectivos, sin
-  registrar.** `doc/ESCALADO.md` §2.2 la identifica como **su limite n.º 1**,
+- [x] **63. ✅ La contencion del anclaje: REGISTRADA (§123).**
+  ✅ **Mecanismo comprobado (T5a)**: dos titulares que no comparten nada
+  quedan serializados por el anclaje global — `StaleState`. **Cualitativo y
+  firme.**
+  ⚠️ **El numero va en RANGO**: **1,53 y 1,87 TPS**, 22 % de diferencia entre
+  corridas. Publicar una cifra unica repetiria lo de `ESCALADO.md`.
+  ⚠️ **El 1,6 anterior acerto por compensacion de errores** (§123.3): las dos
+  constantes estaban mal.
+  ✅ **§22 arbitrado**: `apply` son **62-90 ms**, no 177.
+
+- [ ] **65. ⚠️ Re-medir `t_gen` con el protocolo de §89.1.** Medido **314 y
+  375 ms** frente al **620 canonico** de `README.md`, `PRINCIPIOS.md` y
+  `doc/ESCALADO.md` (§123.5). ⚠️ **Si se confirma, cae en cascada**: «mil
+  transferencias ~620 s», el 1,24 s/dia, los percentiles de §3.1/§7 y la
+  tabla de `PRINCIPIOS.md` §5. El README **ya lleva la marca de revision**.
+  **Media hora.** `doc/ESCALADO.md` §2.2 la identifica como **su limite n.º 1**,
   y **medido el 02-08-2026: cero coincidencias** en `AUDITORIA.md` y
   `README.md` (§122.4).
   ⚠️ **Debe registrarse aunque el escalado no se adopte jamas**: es un limite
