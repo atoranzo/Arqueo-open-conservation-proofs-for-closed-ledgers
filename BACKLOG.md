@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 36 abiertas, 29 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 35 abiertas, 30 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -1203,7 +1203,21 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   nullificadores DISTINTOS para el mismo gasto** — y eso es doble gasto.
   Encontrado al cerrar el primer pendiente de §117.
 
-- [ ] **58. ⚠️ `digest_of_proof` rellena con ceros sin codificar longitud.**
+- [x] **58. ✅ `digest_of_proof` INYECTIVO (§124).** Codificacion por limbs
+  de **32 bits sin reduccion al campo** + bloque final de longitud.
+  ⚠️⚠️ **El arreglo que §116 habia registrado NO habria bastado** (§124.1):
+  al implementarlo aparecio una **segunda familia** —`p` colisionando con
+  ceros **de la misma longitud**— que la longitud sola no cubre. §95.2
+  **cazado antes de committearse**, primera vez del dia.
+  ✅ **Y abarata**: 3.876 merges frente a 7.750 para 62 KB —**la mitad**—;
+  **28,06 ms** medidos (n=20), ~1/3 del `apply`.
+  ✅ **Corte limpio**: `persistence.rs` no contiene «chain», `LogEntry` no
+  deriva serde ⇒ **nada almacenado codifica el digest viejo**. **Sin
+  compatibilidad hacia atras a proposito**: un modo compatible conservaria la
+  debilidad.
+  ✅ **T6 4/4**, y **213 verdes siguen verdes** —T1 y T3a incluidos: la
+  propiedad retroactiva de §115 se sostiene sobre el digest nuevo—.
+  **Desbloquea §121.5**: el acuse nace sin heredar deuda.
   Hallazgo colateral de §115 (§116): **dos pruebas que difieran solo en ceros
   finales colisionan**. Su doc lo llama «atar, no hash de proposito general»,
   y no habilita fabricar pruebas validas alternativas — **pero eso depende de

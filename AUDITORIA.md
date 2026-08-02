@@ -9821,6 +9821,92 @@ pegado** y evito un modulo duplicado — la enfermedad de §89.3, donde un
 
 > **El ABORTA era el sistema funcionando.**
 
+## 124. `digest_of_proof` inyectivo — y la segunda familia que §116 no vio
+
+Cierra la entrada 58 y desbloquea §121.5.
+
+### 124.1 ⚠️ El arreglo registrado en §116 NO habria bastado
+
+§116 registro una familia de colision —ceros finales, distinta longitud— y
+escribio su arreglo: «bloque final con la longitud».
+
+**Al implementarlo aparecio la segunda familia**, que ese arreglo no cubre:
+
+> La reduccion `% p` hacia que un bloque de 8 bytes con valor **exactamente
+> `p`** colisionara con uno de ceros **de la misma longitud**. **La longitud
+> sola no bastaba.**
+
+⚠️ **Es §95.2 otra vez** —una correccion registrada cuya condicion nadie
+verifico— **pero cazada antes de committearse**. Es la primera del dia que
+se detiene en esa fase.
+
+### 124.2 El arreglo, y que abarata
+
+**Codificacion inyectiva de raiz**: limbs de **32 bits** —cada elemento
+< 2³² < p, **sin reduccion al campo**— empaquetados de a 4 por merge, mas
+bloque final de longitud.
+
+| | antes | ahora |
+|---|---|---|
+| Bytes por permutacion | 8 | **16** |
+| Merges para 62 KB | 7.750 | **3.876** — la mitad |
+| Coste medido | — | **28,06 ms** (n=20) |
+
+**Relleno de ceros + longitud explicita = codificacion libre de prefijos.**
+La resistencia a colision queda **donde debe**: en `native_merge` (Rescue).
+
+⚠️ **Contexto del coste**: 28 ms frente a los **62-90 ms** del `apply`
+(§123.4) — **en torno a un tercio**. No despreciable, no dominante.
+
+Y el comentario del codigo deja de decir «no pretende atar al byte»:
+**ahora atar a una prueba concreta es verdad al byte**.
+
+### 124.3 El corte, en la unica ventana en que es gratis
+
+`chain_digest` incluye `proof_digest`, y las cabezas firmadas comprometen
+`chain_digest`: **esto es cambio de formato del log**.
+
+**Radio de explosion comprobado antes de cortar:**
+
+- `digest_of_proof` **solo lo llama `append`** y los tests.
+- `LogEntry` **no deriva serde**.
+- `persistence.rs` **no contiene la palabra `chain`**.
+
+> **Nada almacenado en ninguna parte codifica el digest viejo.** Hoy el corte
+> es gratis; **con acuses emitidos o logs persistidos habria sido
+> migracion**.
+
+⚠️ **Sin compatibilidad hacia atras a proposito**: un modo compatible
+**conservaria la debilidad**.
+
+**Y es la primera vez en esta sesion que el orden de las decisiones sale a
+favor.** §121 decidio el acuse **y no lo implemento**; si lo hubiera hecho,
+esto seria una migracion.
+
+### 124.4 Sometido a uso — T6, 4/4
+
+| test | que mata |
+|---|---|
+| `t6_ceros_finales` | la familia de §116, bordes de bloque incluidos |
+| `t6_aliasing_del_campo` | ⚠️ **el par `p ≡ 0` de misma longitud** — la segunda familia |
+| `t6_a_nivel_de_chain` | la amenaza real: dos pruebas casi-iguales, **dos cabezas** |
+| `t6_coste_sobre_prueba_realista` | 28,06 ms, n=20 |
+
+✅ **Y la suite entera como prueba del radio**: los **213 verdes siguen
+verdes** —T1 y T3a incluidos, asi que **la propiedad retroactiva de §115 se
+sostiene sobre el digest nuevo**—. Con T6: **217**.
+
+Los 3 rojos son los de `tests_privacidad`, **rojos por construccion e
+independientes del digest**.
+
+### 124.5 Lo que desbloquea, y la nota honesta
+
+**§121.5 satisfecho**: el acuse ya tiene con que atar `hash_de_la_prueba` —
+**nace sobre el digest inyectivo, sin heredar deuda**.
+
+⚠️ Y lo que el asiento dice de si mismo: los 3 rojos de superficie **quedan
+mas visibles que nunca** — son la **prioridad 1 de VISION** esperando turno.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

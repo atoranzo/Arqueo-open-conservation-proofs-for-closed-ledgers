@@ -164,18 +164,34 @@ fn as_digest(x: u64) -> Digest {
 
 /// Resumen de una prueba serializada.
 pub fn digest_of_proof(proof: &[u8]) -> Digest {
-    // Se procesa por bloques de 8 bytes hacia un acumulador. No pretende
-    // ser una funcion hash de proposito general: solo tiene que atar la
-    // entrada a una prueba concreta.
+    // Codificacion INYECTIVA (entrada 58, cierra la debilidad de §116 y
+    // una segunda que su arreglo propuesto no cubria):
+    //
+    // 1. Limbs de 32 bits — cada elemento < 2^32 < p — sin reduccion al
+    //    campo. El esquema anterior reducia bloques u64 con `% p`, y un
+    //    bloque que valiera exactamente p colisionaba con uno de ceros
+    //    CON LA MISMA LONGITUD: la longitud sola no habria bastado.
+    // 2. Bloque final con la longitud en bytes: dos entradas que solo
+    //    difieren en ceros finales ya no colisionan.
+    //
+    // Rellenar con ceros + longitud explicita = codificacion libre de
+    // prefijos; la resistencia a colision queda donde debe: en
+    // `native_merge` (Rescue). Sigue sin pretender ser un hash de
+    // proposito general — pero ahora "atar a una prueba concreta" es
+    // verdad al byte. Y ademas abarata: 16 bytes por merge en vez de 8.
     let mut acc: Digest = [BaseElement::ZERO; 4];
-    for bloque in proof.chunks(8) {
-        let mut b = [0u8; 8];
+    for bloque in proof.chunks(16) {
+        let mut b = [0u8; 16];
         b[..bloque.len()].copy_from_slice(bloque);
-        // Reducir al campo: Goldilocks no admite todos los u64.
-        let v = u64::from_le_bytes(b) % 0xFFFF_FFFF_0000_0001;
-        acc = native_merge(acc, as_digest(v));
+        let d = [
+            BaseElement::new(u32::from_le_bytes(b[0..4].try_into().unwrap()) as u64),
+            BaseElement::new(u32::from_le_bytes(b[4..8].try_into().unwrap()) as u64),
+            BaseElement::new(u32::from_le_bytes(b[8..12].try_into().unwrap()) as u64),
+            BaseElement::new(u32::from_le_bytes(b[12..16].try_into().unwrap()) as u64),
+        ];
+        acc = native_merge(acc, d);
     }
-    acc
+    native_merge(acc, as_digest(proof.len() as u64))
 }
 
 /// Calcula el resumen encadenado de una entrada.
@@ -792,5 +808,55 @@ mod t1_chain_retroactivo {
             TransitionLog::from_entries(manipuladas).verify_chain().is_err(),
             "verify_chain NO detecta la sustitucion en k"
         );
+    }
+}
+
+
+#[cfg(test)]
+mod t6_digest_inyectivo {
+    //! T6 - entrada 58: las dos familias de colision, muertas y medidas.
+    use super::*;
+    use std::time::Instant;
+
+    #[test]
+    fn t6_ceros_finales() {
+        for base in [&b""[..], b"x", b"quince_bytes_yy", b"dieciseis_bytes_", b"honesta"] {
+            let mut con_cero = base.to_vec();
+            con_cero.push(0);
+            assert_ne!(digest_of_proof(base), digest_of_proof(&con_cero), "len {}", base.len());
+            let mut ocho = base.to_vec();
+            ocho.extend_from_slice(&[0u8; 8]);
+            assert_ne!(digest_of_proof(base), digest_of_proof(&ocho));
+        }
+    }
+
+    #[test]
+    fn t6_aliasing_del_campo() {
+        // Bajo el esquema viejo: un bloque que vale p se reducia a 0 y
+        // colisionaba con ceros CON LA MISMA LONGITUD — la familia que el
+        // arreglo de §116 (solo longitud) no habria matado.
+        let p_le = 0xFFFF_FFFF_0000_0001u64.to_le_bytes();
+        assert_ne!(digest_of_proof(&p_le), digest_of_proof(&[0u8; 8]));
+    }
+
+    #[test]
+    fn t6_a_nivel_de_chain() {
+        // La amenaza real de §116: dos pruebas casi-iguales, dos chains.
+        let tag = (0u8..=255).find(|b| OpKind::from_tag_byte(*b).is_some()).unwrap();
+        let mut a = TransitionLog::new();
+        let mut b = TransitionLog::new();
+        a.append(OpKind::from_tag_byte(tag).unwrap(), as_digest(1), as_digest(2), b"honesta");
+        b.append(OpKind::from_tag_byte(tag).unwrap(), as_digest(1), as_digest(2), b"honesta\0");
+        assert_ne!(a.head(), b.head(), "ceros finales aun invisibles al chain");
+    }
+
+    #[test]
+    fn t6_coste_sobre_prueba_realista() {
+        let prueba = vec![0xA5u8; 62_000];
+        let t = Instant::now();
+        let n = 20u32;
+        for _ in 0..n { std::hint::black_box(digest_of_proof(&prueba)); }
+        eprintln!("digest de 62 KB: {:?} de media (n={n}) — {} merges",
+                  t.elapsed() / n, 62_000 / 16 + 1);
     }
 }
