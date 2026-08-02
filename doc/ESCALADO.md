@@ -46,6 +46,9 @@ MAPA DE CORRECCIONES (cifra desfasada → dónde está la corrección):
   + a demanda, techo adversarial 1/s ya tarifado (16 % de núcleo, 40/8,
   ~18,5 KB/cabeza). Los costes de log de §6 predatan la firma y no
   incluyen ese tamaño.
+· §3.1 «620 ms × 2 tx/día = 1,24 s/día»  → §130: la generación medida
+  con protocolo es 353,2 ms (send) y 237 (claim) — el día del cliente
+  recalcula a ~0,59 s. El 620 pasa a histórico.
 · C4 «apply por lotes» ≠ «agrupar PRUEBAS por lotes» (RECHAZADO en
   VISION §5.1 por exigir claves de gasto): aquí cada prueba se verifica
   individualmente; el lote es solo de árbol y disco. Homonimia, no

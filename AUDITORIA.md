@@ -10349,6 +10349,68 @@ vez —el `regex` que hizo 18 cambios sin verse—.
    de `balance_of` intactos**.
 5. **Eliminar los shims** cuando el paso 3 los deje sin uso.
 
+## 131. ⚠️ El instrumento tiene DOS dispersiones, y §130 publico una
+
+§130 caracterizo el instrumento con proceso-por-muestra y sello **σ 0,6 %**,
+concluyendo que *«el instrumento nunca fue ruidoso — era sensible al
+protocolo»*.
+
+**La primera mitad es cierta. La segunda esta incompleta.**
+
+### 131.1 Dos tandas, internamente consistentes, mutuamente incompatibles
+
+| | §130 (n=5) | verificacion (n=5) | Δ |
+|---|---|---|---|
+| send gen | 353,2 ± 2,3 | **322,2 ± 1,8** | **−8,8 %** |
+| claim gen | 237,0 | **217,7 ± 0,9** | **−8,1 %** |
+| send apply | 36,4 | **32,4** | −11 % |
+
+> **322 esta a TRECE sigmas de 353.** Las dos tandas tienen σ ≈ 0,5 % dentro
+> y **~9 % entre ellas**.
+
+### 131.2 Hay dos dispersiones, y son cosas distintas
+
+| | valor | que mide |
+|---|---|---|
+| **Intra-tanda** | **σ 0,5 %** | el instrumento **es un reloj** |
+| **Entre tandas** | **~9 %, sistematico** | **el estado de la maquina cambia entre sesiones** |
+
+⚠️ **Publicar σ 0,6 % sugiere reproducibilidad al 0,6 %, y no la hay al 9 %.**
+
+Es **§123.2 otra vez** —alli se publico rango porque variaba un 22 %— **y
+esta vez con un instrumento mejor**: mejorar el instrumento no elimino el
+problema, **lo movio un nivel**.
+
+### 131.3 El veredicto de §130, aplicado a §130
+
+§130 sella que los numeros de t5b *«describen SU contexto, no el canon»*.
+
+> **Los suyos tambien.** 375, 315, 353 y 322 no son cuatro errores ni cuatro
+> protocolos: son **cuatro contextos**, y solo dos de ellos comparten
+> instrumento.
+
+**No lo tumba** —el canon nuevo sigue siendo el mejor que hay, y su tabla de
+dos vias es un hallazgo real: **claim genera un 33 % mas barato que send**—.
+Lo que cambia es **como se publica**.
+
+### 131.4 Lo que se corrige en el README
+
+De cifra con σ a **rango con las dos dispersiones declaradas**:### 131.5 ⚠️ Lo que NO se sabe, y no se supone
+
+**Que causa la deriva del 9 %**: termico, turbo, cache, carga del sistema.
+**No se investiga aqui y no se conjetura** — es la siguiente medicion.
+
+⚠️ **Y una consecuencia que alcanza a todo lo de hoy**: los **10,84 s** del
+diccionario (§93.2), los **28 ms** del digest (§124.2) y los **160 ms** de
+XMSS (§114) **arrastran esa misma deriva** si se comparan entre sesiones.
+Ninguno se invalida; **ninguno es comparable con una medida de otro dia al
+9 %**.
+
+### 131.6 La leccion, en una linea
+
+> **Un instrumento preciso no es un instrumento exacto.** σ 0,5 % dice lo
+> bien que el aparato repite; **no dice nada de si mide lo mismo mañana**.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

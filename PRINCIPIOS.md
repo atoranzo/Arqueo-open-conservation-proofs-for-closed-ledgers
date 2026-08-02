@@ -186,7 +186,7 @@ que quien produce la prueba y quien la acepta sean partes distintas.
 ### La decisión que define la arquitectura
 
 Se descartó **Groth16 pese a ser el más rápido y tener pruebas 320 veces
-más pequeñas** (192 bytes frente a 62 KB).
+más pequeñas** (192 bytes frente a ~65 KB — §130).
 
 El motivo no fue técnico sino de coherencia: exige ceremonia de
 confianza. Sin ceremonia quedan Halo2/IPA y STARK/FRI; de los dos, STARK

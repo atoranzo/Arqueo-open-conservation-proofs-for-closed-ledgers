@@ -123,6 +123,19 @@ ZK does not delete intermediaries by default. In a single-node deployment, resid
 | Keep an account frozen indefinitely | Not bounded: freezes are counted but never expire |
 | Refuse service once a capacity bound is reached | Partly bounded; see §4.5 — one of the three bounds has since been removed |
 
+
+⚠️ **Changing the verifier.** The operator can replace the verifier that
+decides what counts as a valid transition. This is strictly more powerful
+than anything in the table above: ordering, censoring and observing act
+*within* the rules, whereas replacing the verifier **redefines the rules
+themselves** — and today it leaves no trace, because the system has no
+notion of "rules in force" (`OpKind` names which circuit to run, not which
+version was active). Its closure — committing `hash_verificador_vigente`
+in the attested epoch head, making every verifier update a public act — is
+described in the working document (§2.2) and tracked as Backlog 54. A
+residual-trust surface that omits its own largest residual would be asking
+for exactly the trust this paper claims to remove.
+
 ### 4.2 Why naming residual trust is the contribution
 
 Many systems advertise "trustless" or "sovereign" properties while retaining operational chokepoints. The approach here is the opposite:

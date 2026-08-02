@@ -603,3 +603,58 @@ mod tests {
         // comprobar, y aqui se comprueba, es la correlacion.
     }
 }
+
+
+#[cfg(test)]
+mod remedicion_89_1 {
+    //! Re-medicion §89.1 (prerrequisito bloqueante del informe de sesion):
+    //! caracterizar el instrumento ANTES de creer numeros. Una ejecucion
+    //! del proceso = UNA muestra (correr 5 veces, en release, a mano).
+    //! Cada muestra imprime gen, apply y el tamaño REAL de la prueba —
+    //! el paso 1 del protocolo — para send y para claim.
+    use crate::tests_support::*;
+    use std::time::Instant;
+    use winterfell::math::fields::f64::BaseElement;
+
+    const SK_A: u64 = 0x89A1;
+    const SK_B: u64 = 0x89B1;
+
+    #[test]
+    #[ignore = "instrumento de medida, no comprobacion: correr a mano, 5x, en release"]
+    fn muestra() {
+        let mut layer = new_layer();
+        let a = open_and_fund(&mut layer, SK_A, 1_000_000);
+        let b = open_and_fund(&mut layer, SK_B, 0);
+        let ea = state_of(&layer, a);
+        let receptor = layer.public_id_of(b).expect("cuenta");
+
+        let t = Instant::now();
+        let envio = layer
+            .send(BaseElement::new(SK_A), a, &ea, receptor, salt_de(0x891), 250_000)
+            .expect("envio");
+        let gen_s = t.elapsed().as_secs_f64() * 1e3;
+        let t = Instant::now();
+        layer.apply_send(&envio, a, &ea, 250_000).expect("aplicar envio");
+        let ap_s = t.elapsed().as_secs_f64() * 1e3;
+        eprintln!(
+            "MUESTRA send  gen={gen_s:7.1}ms apply={ap_s:6.1}ms proof={} B",
+            envio.proof.len()
+        );
+
+        let eb = state_of(&layer, b);
+        let t = Instant::now();
+        let cobro = layer
+            .claim(BaseElement::new(SK_B), b, &eb, &envio.notice)
+            .expect("cobro");
+        let gen_c = t.elapsed().as_secs_f64() * 1e3;
+        let t = Instant::now();
+        layer
+            .apply_claim(&cobro, b, &eb, &envio.notice)
+            .expect("aplicar cobro");
+        let ap_c = t.elapsed().as_secs_f64() * 1e3;
+        eprintln!(
+            "MUESTRA claim gen={gen_c:7.1}ms apply={ap_c:6.1}ms proof={} B",
+            cobro.proof.len()
+        );
+    }
+}

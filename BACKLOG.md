@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 33 abiertas, 34 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 33 abiertas, 35 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -1116,7 +1116,24 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   constantes estaban mal.
   ✅ **§22 arbitrado**: `apply` son **62-90 ms**, no 177.
 
-- [ ] **65. ⚠️ Re-medir `t_gen` con el protocolo de §89.1.** Medido **314 y
+- [x] **65. ✅ Re-medido (§130) — y el instrumento caracterizado (§131).**
+  ✅ **Canon nuevo con protocolo proceso-por-muestra**: send gen **320-355
+  ms**, claim **217-240**, apply **32-38**, prueba **64,7/65,2 KB**. **El 620
+  canonico pasa a historico**: estaba un 75 % por encima.
+  ✅ **Hallazgo**: «la prueba» son **dos numeros** — claim genera un **33 %
+  mas barato** que send. El canon anterior trataba los circuitos como uno.
+  ⚠️⚠️ **Y el instrumento tiene DOS dispersiones** (§131): **σ 0,5 %
+  intra-tanda** y **~9 % entre tandas** — 322,2 ± 1,8 frente a 353,2 ± 2,3,
+  **trece sigmas**. §130 publico la primera como si fuera el canon; **es
+  §123.2 con un instrumento mejor**.
+  ⚠️ **Alcanza a todo lo medido hoy**: los 10,84 s del diccionario, los 28 ms
+  del digest y los 160 ms de XMSS **arrastran la misma deriva** entre
+  sesiones.
+
+- [ ] **68. ⚠️ Que causa la deriva del 9 % entre tandas.** Termico, turbo,
+  cache o carga — **no investigado y no conjeturado** (§131.5). Hasta
+  saberlo, **ninguna medida de tiempo es comparable entre sesiones** a menos
+  del 10 %. Medido **314 y
   375 ms** frente al **620 canonico** de `README.md`, `PRINCIPIOS.md` y
   `doc/ESCALADO.md` (§123.5). ⚠️ **Si se confirma, cae en cascada**: «mil
   transferencias ~620 s», el 1,24 s/dia, los percentiles de §3.1/§7 y la

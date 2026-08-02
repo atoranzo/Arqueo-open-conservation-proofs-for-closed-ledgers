@@ -125,13 +125,20 @@ actual bajo concurrencia, y **muerde antes que cualquier otro límite
 listado**. La salida diseñada —nonce en la hoja y vigencia en O(1)— es C2/C3
 de `doc/ESCALADO.md`, propuesta con su propia cabecera de estado.
 
-⚠️ **Y los ~620 s de abajo están en revisión**: dos medidas directas dieron
-**314 y 375 ms** por prueba, no 620 (§123.5). No se corrige aquí porque no
-han pasado el protocolo de §89.1 — **pero la cifra publicada ya no es
-firme**.
+⚠️ **El ~620 s histórico quedó resuelto en `AUDITORIA.md` §130**: era
+cifra de otro protocolo (probablemente la vía retirada); el canon vigente
+—con dispersión medida— es el de abajo.
 
-**Límites cuantificados**: mil transferencias son ~620 s de prueba y
-**120,4 MiB** acumulados.
+⚠️ **Sobre las cifras de tiempo que siguen**: el instrumento repite con
+**σ 0,5 %** dentro de una tanda, pero **dos tandas del mismo binario en la
+misma máquina difieren un ~9 %** (`AUDITORIA.md` §131). Los tiempos van como
+**rango**, y **no son comparables con medidas de otra sesión** a menos del
+10 %. La causa de esa deriva **no está investigada**.
+
+**Límites cuantificados**: mil transferencias son **~590 s** de prueba
+(un pago son dos: send 353,2 ms · σ 0,6 % + claim 237 ms, protocolo
+§89.1, `AUDITORIA.md` §130) y **~124 MiB** acumulados (64,7 + 65,2 KB
+por pago, medidos).
 
 ⚠️ **Un límite que existió, y cómo se fue**: la vía de un paso derivaba
 la posición del nullifier del propio nullifier, con colisiones probables

@@ -43,7 +43,7 @@ setup, límites explícitos.*
 
 **Positivas**
 - Menos réplicas masivas de datos sensibles. **Con retención distribuida,
-  el operador guarda 137 bytes por operación en vez de 62 KB**: 463 veces
+  el operador guarda 137 bytes por operación en vez de ~65 KB**: ~472 veces
   menos.
 - Diseño minimalista más eficiente que redes infladas.
 - Sin ceremonias, menos dependencias frágiles de setup global.
