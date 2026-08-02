@@ -10092,6 +10092,105 @@ El md5 de partida del asiento era el del **arbol de lectura**, no el estado
 > Es la tercera vez en dos horas que el ABORTA evita construir sobre un
 > estado que ya no existia.
 
+## 127. La 49 esperaba a la 53 para ver que la 53 no la resuelve
+
+### 127.1 La 53 cierra, con su juicio ratificado COMO JUICIO
+
+Todo lo tecnico estaba hecho (§112-115). Lo unico vivo era **un juicio
+declarado**, y se ratifica como lo que es:
+
+> Que **60 s de latencia de oponibilidad no compran nada a un operador
+> deshonesto** es una **premisa sobre el USO** del sistema —liquidacion
+> institucional supervisada, no pagos minoristas en caliente—, **no un hecho
+> del codigo**. Puesta por quien decide, **revisable si la mision cambia**.
+
+⚠️ **Reversion viva**: prometer oponibilidad **sub-minuto sin peticion**
+cuesta el escenario 1/s —**0,58 TB/año**—. Cambio de mision, via VISION §5.
+
+### 127.2 ⚠️ Mi error de tipo: la dependencia era al reves
+
+§109.5 escribio *«la 49 depende de la 53»*, esperando que la firma resolviera
+la autenticacion.
+
+**Con la firma ya elegida se ve el error:**
+
+| | quien firma | que |
+|---|---|---|
+| **XMSS (53)** | **el operador** | cabezas de epoca — **una identidad**, la clave del nodo |
+| **La 49 necesita** | **cada titular** | prueba de titularidad de **SU** cuenta |
+
+> **La 53 tenia que resolverse antes para ver que NO resuelve la 49.**
+
+La dependencia se cierra y la 49 pasa a necesitar **pieza propia**.
+
+### 127.3 Decision: clave de vista, y por que esta
+
+**`derive_view_key(sk)`** — credencial de lectura derivada de la clave de
+gasto, patron de §117 aplicado a lectura. El titular la presenta; la capa la
+compara contra un `view_id` guardado al abrir.
+
+| opcion | veredicto |
+|---|---|
+| derivada + verificada **en circuito** | ❌ la prueba de ~600 ms **que la propia 49 rechaza** |
+| derivada + verificada **nativamente** | ✅ **elegida**: un merge, y **NO viaja en cada operacion** —a diferencia del salt que §109 descarto por eso— |
+| **secreto nuevo independiente** | ❌ rotable de verdad, pero es el **modo de perdida fatal nuevo** que §117 rechazo y la custodia que §93.4 prohibe |
+
+⚠️ **Se guarda `view_id` = hash de la clave de vista, NO la clave**: el
+operador queda con material para **COMPARAR**, no para **LEER**.
+
+### 127.4 T7, 3/3 — y el test que hace segura la separacion
+
+| test | que demuestra |
+|---|---|
+| `t7_solo_el_titular...` | el titular reproduce su `view_id`; un tercero sin la clave, no |
+| `t7_la_vista_no_es_credencial_de_GASTO` | ⚠️ presentar la vista **no deriva la clave de gasto ni la identidad** |
+| `t7_dominio` | dominio distinto de los cinco vivos, **`LEAF_SALT` incluido** |
+
+> **Sin el segundo, autenticar la lectura seria entregar el gasto.**
+>
+> Y el tercero cubre una interaccion fina que no estaba en ningun sitio: **si
+> los dominios coincidieran, presentar la vista revelaria el salt de hoja de
+> §117** — y eso **reabriria la 50 por la puerta que se acaba de cerrar**.
+
+Tercera vez que el proyecto usa separacion de dominios, y **la primera que se
+comprueba entre dos piezas nuevas**.
+
+### 127.5 ⚠️ La limitacion, y su consecuencia
+
+La clave de vista **esta acoplada a la clave de gasto**, asi que **rotarla
+exige rotar la de gasto**. El asiento lo declara; la consecuencia conviene
+subrayarla:
+
+> Si la clave de vista se compromete, **el titular no puede recuperar la
+> privacidad de lectura sin cambiar de cuenta**.
+
+Es la forma de §110.2 con XMSS: **un secreto derivado hereda el destino del
+que lo genera.** Se elige el acoplamiento **conscientemente**, sobre la
+alternativa de un secreto nuevo de perdida fatal.
+
+### 127.6 Mitad B: la predecibilidad del indice, que NINGUNA credencial arregla
+
+`account_indices_are_not_predictable` lo mide desde §93.3: **las altas dan
+indices consecutivos**, asi que quien controla el momento de su alta **ELIGE
+a su vecino de arbol, y con dos altas lo rodea**.
+
+> Convierte la fuga de la 50 de **oportunista** en **DIRIGIDA**.
+
+Es **ortogonal a la autenticacion** —aleatorizar la posicion de alta, o
+derivarla del `public_id`, es su propio cambio— y llevaba **desde §93 sin
+entrada propia**.
+
+### 127.7 Alcance honesto: DECISION + NUCLEO, no cierre
+
+T7 demuestra que el mecanismo es **realizable**. **La 49 NO esta cerrada.**
+
+El cierre toca `AccountRecord` —ganar `view_id`—, `open_with_id`, **las
+cuatro firmas publicas** y ~100 call-sites de test. **Eso es despliegue.**
+
+⚠️ Se declara para **no vender como resuelto lo que es decidido-y-fundado**
+—criterio 5 de VISION—. Y sigue viva la observacion de §124: **los tres
+rojos de `tests_privacidad` son exactamente lo que la 49-A pondra en verde.**
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

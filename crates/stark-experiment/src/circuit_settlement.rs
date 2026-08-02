@@ -2086,7 +2086,100 @@ pub fn native_leaf_salted(
     native_merge(native_leaf(public_id, balance, nonce), leaf_salt)
 }
 
+/// Dominio de la CLAVE DE VISTA (entrada 49). Distinto de todo dominio
+/// vivo — `t7_vista` lo comprueba: si coincidiera con SPEND_KEY la clave
+/// de vista SERIA la identidad y no cegaria nada; si con LEAF_SALT,
+/// presentar la vista revelaria el salt de hoja.
+pub const VIEW_KEY_DOMAIN: u64 = 0x56494557_4B455900; // "VIEWKEY\0"
+
+/// **Clave de vista**: credencial de LECTURA derivada de la clave de
+/// gasto (entrada 49; patron de §117 aplicado a lectura). El titular la
+/// presenta; la capa la compara contra el `view_id` guardado al abrir la
+/// cuenta. Barata (un merge, verificable NATIVAMENTE — no el STARK de
+/// ~600 ms que la 49 declara inaceptable), y NO viaja en cada operacion
+/// —a diferencia del salt que §109 descarto por eso—.
+///
+/// ⚠️ Limitacion declarada: acoplada a la clave, solo rota rotando la
+/// clave (como el salt de §117). Una credencial de lectura ROTABLE de
+/// verdad exigiria un secreto nuevo custodiado (§93.4 lo prohibe) — se
+/// elige el acoplamiento sobre el secreto nuevo, conscientemente.
+pub fn derive_view_key(spend_key: BaseElement) -> Digest {
+    native_merge(
+        as_digest(BaseElement::new(VIEW_KEY_DOMAIN)),
+        as_digest(spend_key),
+    )
+}
+
+/// El `view_id` que la cuenta guarda: hash de la clave de vista. Guardar
+/// el hash y no la clave permite verificar por presentacion sin que el
+/// operador quede con material que le deje LEER (solo COMPARAR).
+pub fn view_id_of(spend_key: BaseElement) -> Digest {
+    native_merge(
+        as_digest(BaseElement::new(VIEW_KEY_DOMAIN)),
+        derive_view_key(spend_key),
+    )
+}
+
 #[cfg(test)]
+mod t7_clave_de_vista {
+    //! T7 (entrada 49): el NUCLEO de la credencial de lectura, demostrado
+    //! realizable. NO es el cierre de la 49 —autenticar las cuatro puertas
+    //! toca AccountRecord y ~100 call-sites: eso es el despliegue—. Aqui
+    //! se decide el mecanismo y se prueba su propiedad.
+    use super::*;
+
+    const SK: u64 = 0xA11CE;
+    const SK_OTRO: u64 = 0xBADCAFE;
+
+    #[test]
+    fn t7_solo_el_titular_presenta_la_vista_correcta() {
+        let sk = BaseElement::new(SK);
+        // Al abrir, la cuenta guarda view_id_of(sk).
+        let guardado = view_id_of(sk);
+        // El titular re-deriva su clave de vista y la capa comprueba.
+        let presentada = derive_view_key(sk);
+        assert_eq!(
+            native_merge(as_digest(BaseElement::new(VIEW_KEY_DOMAIN)), presentada),
+            guardado,
+            "el titular no reproduce su propio view_id"
+        );
+        // Un tercero SIN la clave no puede presentar la vista correcta.
+        let intruso = derive_view_key(BaseElement::new(SK_OTRO));
+        assert_ne!(
+            native_merge(as_digest(BaseElement::new(VIEW_KEY_DOMAIN)), intruso),
+            guardado,
+            "un tercero paso el control de vista"
+        );
+    }
+
+    #[test]
+    fn t7_la_vista_no_es_credencial_de_GASTO() {
+        // Presentar la clave de vista no debe permitir DERIVAR la de gasto
+        // ni la identidad: son dominios separados. Comprobamos que ni la
+        // clave de vista ni el view_id coinciden con identidad o nullifier.
+        let sk = BaseElement::new(SK);
+        let vk = derive_view_key(sk);
+        assert_ne!(vk, derive_public_id(sk), "vista == identidad");
+        for n in [0u64, 1, 7] {
+            assert_ne!(vk, native_nullifier_wide(as_digest(sk), BaseElement::new(n)));
+        }
+        // Y la vista es DERIVABLE de la clave, no al reves: dado solo el
+        // view_id, no hay atajo a la clave (lo garantiza Rescue; aqui
+        // fijamos que view_id != clave y != clave de vista en claro).
+        assert_ne!(view_id_of(sk), vk, "view_id == clave de vista en claro");
+        assert_ne!(view_id_of(sk), as_digest(sk), "view_id == clave");
+    }
+
+    #[test]
+    fn t7_dominio() {
+        assert_ne!(VIEW_KEY_DOMAIN, SPEND_KEY_DOMAIN);
+        assert_ne!(VIEW_KEY_DOMAIN, NULLIFIER_DOMAIN);
+        assert_ne!(VIEW_KEY_DOMAIN, LEAF_SALT_DOMAIN);
+        assert_ne!(VIEW_KEY_DOMAIN, crate::circuit_mint_pending::CUSTODIAN_DOMAIN);
+        assert_ne!(VIEW_KEY_DOMAIN, crate::circuit_governance::GOVERNANCE_DOMAIN);
+    }
+}
+
 mod t2b_recuperacion_nativa {
     //! T2b-nativo (entrada 50): la propiedad de RECUPERACION de §117,
     //! demostrada SIN el circuito. Decide la clausula de caida de §116:

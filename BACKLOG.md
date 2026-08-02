@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 33 abiertas, 33 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 33 abiertas, 34 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -1234,7 +1234,40 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   ata toda la historia es tan fuerte como ese resumen.
   **Arreglo**: bloque final con la longitud del mensaje.
 
-- [ ] **53. ⚠️ No hay firma — XMSS EVALUADO, CADENCIA DECIDIDA.**
+- [x] **53. ✅ CERRADA (§127.1). Firma XMSS: elegida, evaluada, cadencia
+  medida.** Lo unico vivo era **un juicio declarado**, ratificado **como
+  juicio**: que 60 s no compran nada a un operador deshonesto es **premisa
+  sobre el USO** —liquidacion institucional supervisada—, **revisable si la
+  mision cambia**. ⚠️ **Reversion viva**: sub-minuto **sin peticion** cuesta
+  **0,58 TB/año**.
+
+- [ ] **49. ⚠️ Cuatro puertas sin autorizacion — MECANISMO DECIDIDO (§127),
+  despliegue pendiente.**
+  ⚠️⚠️ **Su «depende de la 53» era verdad AL REVES** (§127.2): XMSS firma
+  **cabezas del operador**, una identidad; la 49 necesita que **cada titular**
+  pruebe **su** cuenta. **La 53 tenia que resolverse para ver que no la
+  resuelve.**
+  ✅ **Decidido: clave de vista** `derive_view_key(sk)`, verificada
+  **nativamente** —un merge, y **no viaja en cada operacion**, a diferencia
+  del salt que §109 descarto por eso—. Se guarda **`view_id` = hash**, no la
+  clave: el operador puede **comparar**, no **leer**.
+  ✅ **T7 3/3**, incluido `t7_la_vista_no_es_credencial_de_GASTO` —sin el,
+  autenticar la lectura seria entregar el gasto— y `t7_dominio`: **si
+  coincidiera con `LEAF_SALT`, presentar la vista revelaria el salt de §117**
+  y reabriria la 50.
+  ⚠️ **Limitacion declarada** (§127.5): acoplada a la clave de gasto, asi que
+  **rotarla exige rotar la de gasto** — si se compromete, **no hay privacidad
+  de lectura sin cambiar de cuenta**.
+  ⚠️ **NO esta cerrada**: falta `AccountRecord` + `view_id`, `open_with_id`,
+  las cuatro firmas y ~100 call-sites.
+
+- [ ] **67. ⚠️ Los indices de alta son predecibles, y ninguna credencial lo
+  arregla.** Mitad B de la 49 (§127.6): las altas dan **indices
+  consecutivos**, asi que **quien controla el momento de su alta ELIGE a su
+  vecino de arbol y con dos altas lo rodea** — convierte la fuga de la 50 de
+  **oportunista en DIRIGIDA**. Medido desde §93.3 y **sin entrada propia
+  hasta hoy**. Arreglo: aleatorizar la posicion de alta o derivarla del
+  `public_id`. **Ortogonal a la autenticacion.**
   ✅ **Cadencia (§115)**: **1/min + a demanda**, con cache por `seq`
   idempotente. El peor caso —un testigo pidiendo cada segundo— **degenera al
   escenario 1/s ya cuantificado**: techo conocido, no regimen.
@@ -1318,33 +1351,6 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   la de hoy son 437 ms. No invalida su argumento —usa el valor conservador—
   pero al integrarlo hay que fechar la maquina, como obligo §89 con
   `ESCALADO.md`.
-
-- [ ] **49. ⚠️ CUATRO puertas de lectura sin autorizacion — y NO es barata.**
-  ⚠️ **No es solo `account_view`**: tambien `balance_of`, `public_id_of` y
-  `nonce_of`. Arreglar una sola seria el error de §80.2.
-  ⚠️⚠️ **CORRECCION de §95.4** (§109.5): se dijo que «se cierra facil» y **es
-  falso**. El proyecto **no tiene ningun mecanismo de autenticacion de
-  titular** —no hay firma (§103.1), `open_account` no guarda nada que sirva
-  para probar identidad despues, y la unica prueba de titularidad existente es
-  **un STARK de ~600 ms**, inaceptable para una lectura—. **Depende de la
-  entrada 53.**
-  ⚠️ **Y el salt de la 50 NO la arregla** (§109.4): un salt oculta la hoja
-  frente a quien la ve **hasheada**; `balance_of` devuelve **el numero**. La
-  50 protege del vecino que recibe un camino; la 49, del que **pregunta**.
-  **Arreglar la 50 sin la 49 dejaria hojas cegadas y una API que da el saldo
-  en claro.**
-  ⚠️ **Se descarto usar el salt como credencial** (§109.1-3): viaja en cada
-  operacion, **no se podria rotar** —seria circular— y habria creado la cuarta
-  «garantia por consecuencia» del proyecto.
-  ~~49. ⚠️ El contrato de `account_view` no exige autorizacion.~~
-  Medido el 31-07-2026 (§93.1): toma un indice, **no recibe credencial**, y
-  devuelve `balance` y `nonce` de cualquier cuenta. Los indices son
-  **enumerables** —`next_index += 1`—. ⚠️ **Hallazgo de CONTRATO, no de
-  explotacion**: no hay capa de red en el repositorio, asi que «cualquiera
-  vuelca el ledger» seria una cifra rancia hacia el drama. Lo cierto:
-  **exponerlo sin control de acceso convierte una fuga hacia-el-operador —ya
-  declarada— en una fuga hacia-terceros que el README no declara.**
-  Arreglo barato —autorizacion en el contrato— y **no cierra la 50**.
 
 - [ ] **50. ⚠️ PRIVACIDAD FRENTE A TERCEROS — propiedad DEMOSTRADA,
   despliegue pendiente (§126).**
