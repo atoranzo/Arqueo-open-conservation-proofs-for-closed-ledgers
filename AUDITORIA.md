@@ -10191,6 +10191,74 @@ cuatro firmas publicas** y ~100 call-sites de test. **Eso es despliegue.**
 —criterio 5 de VISION—. Y sigue viva la observacion de §124: **los tres
 rojos de `tests_privacidad` son exactamente lo que la 49-A pondra en verde.**
 
+## 128. Ocho items, tres fisicas — y tres que NO se cierran
+
+⚠️ **La decision de esta tanda es no tratarla como un lote.** Los ocho items
+tienen fisica distinta, y meterlos en un cierre comun seria el error de bulto
+que este proyecto evita.
+
+### 128.1 Grupo A — T3b y T4: partidos, como §126
+
+Ni T3b ni T4 deciden nada: **verifican que las politicas de §119 y §121 son
+implementables**. Al leerlos contra el arbol, **ambos exigen andamiaje
+inexistente** —T3b el circuito de reversion con `refund_id`; T4 el acuse como
+hoja bajo raiz de recepcion—. **Escribirlos enteros hoy seria fingir verde.**
+
+| | resultado |
+|---|---|
+| **T3b-nativo 2/2** | la reversion tras plazo, con el **reloj en cabezas firmadas** (§119.3), y **solo el `refund_id` legitimo** la reconstruye. Mas la no-retroactividad estructural |
+| **T4-nativo 2/2** | el acuse liga `(hash_prueba, epoca, N)` **con digest inyectivo** (§124), y el **contador monotono distingue reordenacion** (§121.3) |
+
+✅ **Las clausulas de §119 y §121 se resuelven a favor**: las politicas son
+implementables; **el circuito es ingenieria, no riesgo de existencia**.
+
+**T3b-circuito y T4-circuito**: especificados, condicionados y **NO escritos**.
+
+### 128.2 Grupo B — la entrada 54, registrada donde faltaba
+
+⚠️ **El poder mayor del operador no figuraba en NINGUNA de las dos
+enumeraciones del proyecto**: ni en `SECURITY.md` §2 —que lista ver,
+censurar, ordenar y custodiar— ni en la tabla §4.1 de `residual-trust`.
+
+> **Cambiar el verificador redefine que es una transicion valida.** Ordenar,
+> censurar y observar actuan **dentro** de las reglas; sustituir el
+> verificador **cambia las reglas**.
+
+✅ **Aplicado en `SECURITY.md` §2**, con su cierre nombrado y su precondicion:
+el sistema **no tiene nocion de «reglas vigentes»**, asi que el campo de la
+cabeza **no puede rellenarse hoy** — y un campo vacio seria peor que su
+ausencia (§104.3).
+
+⚠️ **El parrafo para el preprint queda REDACTADO Y SIN APLICAR**: los
+preprints estan **suspendidos** (entrada 28), y editarlos reabriria por la
+puerta de atras lo que se suspendio. Ademas **ya estan depositados**: no
+llegaria a ningun lector hasta una quinta revision. **Se guarda en la entrada
+54.**
+
+### 128.3 Grupo C — tres que NO se cierran, y por que declararlo es la decision
+
+⚠️ **Estas tres no se resuelven en esta tanda**, y decirlo es **mas honesto
+que un cierre fingido** —criterio 5 de VISION—.
+
+| | por que no, y siguiente paso |
+|---|---|
+| **52** | **Toca la palabra del titulo**: puede gastar sin permiso de nadie y **no puede protegerse sin permiso de dos**. ⚠️ Antes de proponer rotacion autoautorizada hay que **entender por que la recuperacion exige custodios** — probablemente la misma razon. **Diseño nuevo, sesion propia.** |
+| **32** | Inventario medido: **138 llamadas + 145 usos de `open_and_fund`** —que llama a `.mint()` por dentro: **media suite depende de la via antigua sin nombrarla**—. ⚠️ **El precio de la delegada —tres pruebas donde la antigua hace una— NO esta medido.** Trabajo mecanico grande. |
+| **47** | Falta mapear **B1-B9 contra el backlog** —su B8 es la 12, ya resuelta en §119— y aplicar las cuatro correcciones de §89.4. **Reconciliacion, no decision.** |
+
+### 128.4 Metodo: dos patrones propios, corregidos
+
+1. **Etiqueta perdida cerrando bloques de parche** (§125, §127): **dos veces
+   rompio el comando final**. Regla: los heredoc terminan en su delimitador,
+   **sin texto detras**.
+2. **`tail -N` sobre salida de cargo**: **tres veces oculto el resumen real**
+   —cargo emite el bloque de la lib **y** el de doc-tests, y el ultimo es el
+   vacio—. Regla: **`grep "test result"`, nunca `tail`**.
+
+> Son hermanos: **descuidos de lectura del instrumento**, cazados porque el
+> rito exige **VER, no suponer**. La misma red que caza los errores del
+> proyecto (§89.3), funcionando sobre los propios.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

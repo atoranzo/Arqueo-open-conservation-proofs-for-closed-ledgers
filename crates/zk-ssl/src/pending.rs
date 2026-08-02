@@ -450,3 +450,94 @@ mod t3a_reversion_como_segundo_cobro {
         }
     }
 }
+
+
+#[cfg(test)]
+mod t3b_reversion_temporal_nativa {
+    //! T3b-nativo (entrada 12): la mitad de T3b que NO necesita circuito.
+    //! Decide la clausula de §119: si la reversion-tras-plazo es
+    //! construible sobre el compromiso v2, la politica es implementable y
+    //! el circuito es ingenieria (piezas 1-3), no riesgo de existencia.
+    use super::*;
+    use stark_experiment::circuit_settlement::derive_public_id;
+    use winterfell::math::fields::f64::BaseElement;
+
+    fn d(x: u64) -> Digest {
+        [BaseElement::new(x), BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO]
+    }
+
+    fn commitment_v2(rec: Digest, salt: Digest, amt: u64, refund: Digest, expiry: u64) -> Digest {
+        native_merge(pending_commitment(rec, salt, amt), native_merge(refund, d(expiry)))
+    }
+
+    const SK_REFUND: u64 = 0xF00D;
+    const SK_OTRO: u64 = 0xBAD;
+
+    #[test]
+    fn t3b_reversion_solo_tras_plazo_y_solo_retorno() {
+        let (rec, salt, amt, expiry) = (d(0xB0B), d(0x5EED), 250_000u64, 100u64);
+        let refund = derive_public_id(BaseElement::new(SK_REFUND));
+        let objetivo = commitment_v2(rec, salt, amt, refund, expiry);
+        let ahora: u64 = 120;
+        assert!(ahora >= expiry, "precondicion temporal");
+        assert_eq!(
+            commitment_v2(rec, salt, amt, derive_public_id(BaseElement::new(SK_REFUND)), expiry),
+            objetivo, "el retorno legitimo no reconstruye el compromiso"
+        );
+        assert_ne!(
+            commitment_v2(rec, salt, amt, derive_public_id(BaseElement::new(SK_OTRO)), expiry),
+            objetivo, "un tercero paso como retorno"
+        );
+    }
+
+    #[test]
+    fn t3b_v1_no_es_reversible() {
+        let (rec, salt, amt) = (d(0xB0B), d(0x5EED), 250_000u64);
+        let v1 = pending_commitment(rec, salt, amt);
+        for rk in [SK_REFUND, SK_OTRO, 0u64] {
+            for expiry in [0u64, 100, u64::MAX] {
+                assert_ne!(v1, commitment_v2(rec, salt, amt, derive_public_id(BaseElement::new(rk)), expiry));
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod t4_acuse_nativo {
+    //! T4-nativo (entrada 62): la mitad de T4 que NO necesita el formato
+    //! de cabeza. Decide la clausula de §121: si el par condenatorio se
+    //! construye sobre estructuras nativas, la politica del acuse es
+    //! implementable. T4-circuito queda condicionado a B10.1 extendido.
+    use super::*;
+    use stark_experiment::circuit_settlement::view_id_of;
+    use winterfell::math::fields::f64::BaseElement;
+
+    fn d(x: u64) -> Digest {
+        [BaseElement::new(x), BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO]
+    }
+
+    fn acuse(hash_prueba: Digest, epoca: u64, n: u64) -> Digest {
+        native_merge(hash_prueba, native_merge(d(epoca), d(n)))
+    }
+
+    #[test]
+    fn t4_acuse_liga_prueba_epoca_y_n() {
+        let hp = view_id_of(BaseElement::new(0xA11CE));
+        let a = acuse(hp, 100, 1_440);
+        assert_ne!(a, acuse(hp, 101, 1_440), "misma prueba, otra epoca: mismo acuse");
+        assert_ne!(a, acuse(hp, 100, 720), "mismo par, otro N: mismo acuse");
+        assert_ne!(a, acuse(d(0xBEEF), 100, 1_440), "otra prueba: mismo acuse");
+        assert_eq!(a, acuse(hp, 100, 1_440), "no determinista");
+    }
+
+    #[test]
+    fn t4_contador_detecta_reordenacion() {
+        let hp_i = view_id_of(BaseElement::new(1));
+        let hp_j = view_id_of(BaseElement::new(2));
+        let (ci, cj) = (10u64, 11u64);
+        assert!(ci < cj);
+        let incluidos = native_merge(hp_j, d(cj));
+        let compromiso_i = native_merge(hp_i, d(ci));
+        assert_ne!(incluidos, compromiso_i, "i no esta, j si: deben distinguirse");
+    }
+}

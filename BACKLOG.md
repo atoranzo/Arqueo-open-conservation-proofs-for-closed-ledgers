@@ -1097,17 +1097,14 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   ver nada, porque §72 fue una restriccion **bien formada sobre el objeto
   equivocado**.
 
-- [ ] **54. ⚠️ Cambiar el verificador es invisible, y es el poder mayor del
-  operador.** Encontrado el 01-08-2026 al construir la cabeza de epoca
-  (§104.3). `CONFIANZA_RESIDUAL.md` §2.2 lo dice mejor: *«quien puede
-  actualizar el verificador es la **raiz de confianza real** del sistema y
-  nadie lo ve»*. **Cambiar el verificador cambia que es una transicion
-  valida** — mas poderoso que cualquier operacion. ⚠️ **No esta en
-  `SECURITY.md` §2 ni en la tabla §4.1 de `residual-trust`**: ninguna de las
-  dos enumeraciones de poderes del operador lo lista. ⚠️ **Y no se puede
-  incluir en la cabeza hoy**: el proyecto no tiene noción de «reglas
-  vigentes» —`OpKind` dice que circuito usar, no que version—. Requiere
-  primero **versionar las reglas de validacion**, que no existe.
+- [ ] **54. ⚠️ Cambiar el verificador es invisible — REGISTRADO en
+  `SECURITY.md` (§128.2).** ✅ Aplicado el parrafo en `SECURITY.md` §2: **el
+  poder mayor no estaba en ninguna de las dos enumeraciones** del proyecto.
+  ⏸️ **El parrafo del preprint queda redactado y SIN aplicar**: los preprints
+  estan **suspendidos** (entrada 28) y ya depositados — no llegaria a un
+  lector hasta una quinta revision. Texto listo para cuando se levante.
+  ⚠️ **El cierre sigue pendiente**: `hash_verificador_vigente` en la cabeza
+  **requiere primero que el sistema tenga nocion de «reglas vigentes»**.
 
 - [x] **63. ✅ La contencion del anclaje: REGISTRADA (§123).**
   ✅ **Mecanismo comprobado (T5a)**: dos titulares que no comparten nada

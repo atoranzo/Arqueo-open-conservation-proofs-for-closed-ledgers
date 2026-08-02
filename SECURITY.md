@@ -69,6 +69,18 @@ atado al importe (§74). Ambas corregidas y medidas.
   externos de sus cabezas, podría presentar historias distintas a partes
   distintas. Cerrarlo exige publicar cabezas a testigos: **es una propuesta,
   no una función existente**.
+- ⚠️ **El operador puede cambiar el verificador, y hoy eso es invisible.**
+  Es **el poder mayor de todos** y no estaba en esta lista: quien puede
+  actualizar el verificador **cambia qué es una transición válida** —más
+  poderoso que cualquier operación, porque **redefine las reglas bajo las que
+  todas las demás se juzgan**—. Un operador que lo sustituye puede aceptar
+  como válido lo que las reglas publicadas rechazarían, **sin dejar rastro en
+  el estado**. No hay noción de «reglas vigentes» hoy —`OpKind` dice qué
+  circuito usar, no qué versión estaba activa—, así que el cambio **no queda
+  registrado ni es comprobable a posteriori**. El cierre diseñado
+  —`hash_verificador_vigente` en la cabeza atestiguada, que vuelve pública
+  toda actualización— está en `doc/CONFIANZA_RESIDUAL.md` §2.2 y es la
+  entrada 54; **requiere primero dar al sistema esa noción**.
 - **No hay recuperación si el nodo desaparece.**
 - **Metadatos**: qué posiciones cambian y cuándo siguen siendo observables.
 - **Solidez de circuitos y del sistema de prueba**: no verificada formalmente.
