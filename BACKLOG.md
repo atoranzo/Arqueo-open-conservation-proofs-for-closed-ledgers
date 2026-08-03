@@ -1331,8 +1331,25 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   (§133). Hallazgos de seguridad cazados: ClientState reescribible (P2),
   atributo desplazado (P5) — ambos invisibles a un despliegue de una tacada.
 
-- [ ] **67. ⚠️ Indices predecibles — REDISEÑADA (§133): derivar, no
-  aleatorizar.**
+- [ ] **67. ⚠️ Indices predecibles — INTENTADA Y REVERTIDA (asiento del
+  2026-08-03): imposible EN SOLITARIO, condicionada a la migracion unica.**
+  ⚠️⚠️ **El intento rompio 27 tests y la causa es UNA constante:
+  `FROZEN_DEPTH = 24`.** El indice de cuenta es coordenada COMPARTIDA
+  entre el arbol de cuentas (2^32) y el de congelados (2^24): la posicion
+  derivada produce indices que el frozen no puede alojar, y send/claim/
+  burn/transfer llevan `frozen.path_for(indice)` dentro. La invariante
+  «indice < 2^24» la cumplia la secuencia de gratis; nadie la habia
+  declarado. Reversion inmediata; arbol en 232/2.
+  **Salida elegida**: crecer frozen a 32 → es SU propia migracion → la
+  migracion unica de B13/B14 pasa de dos frentes a TRES (reposicionar +
+  salt-cero + frozen a 32, con sus AIR de congelacion). Encoger el espacio
+  a 2^24 destriparia la mitigacion (molienda de horas a minutos). El «una
+  pasada» de §133 no era eficiencia: era necesidad estructural.
+  **Sobrevive del intento**: derived_position con sondeo (correcto sobre
+  frozen-32), cota ~2^31, snapshot ya disperso-compatible, 2 tests listos.
+  **Regla de metodo nueva**: antes de cambiar el dominio de un
+  identificador, censar TODAS las estructuras que lo usan como coordenada
+  — el grep es `path_for(.*index)` en todos los arboles, no `0..next`.
   ⚠️⚠️ **«La mitigacion mas barata» era lo contrario**: el indice **ES la
   coordenada del arbol**, y el cliente **lo recibe, no lo recupera** — hoy es
   secuencial y por eso **un cliente que lo perdio puede barrer 0..n**.
