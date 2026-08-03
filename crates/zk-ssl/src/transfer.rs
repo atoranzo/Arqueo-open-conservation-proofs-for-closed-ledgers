@@ -187,11 +187,13 @@ impl SovereignLayer {
             public_id: sender.public_id,
             balance: sender.balance - amount,
             nonce: sender.nonce + BaseElement::ONE,
+            view_id: sender.view_id,
         };
         let new_receiver = AccountRecord {
             public_id: receiver.public_id,
             balance: receiver.balance + amount,
             nonce: receiver.nonce,
+            view_id: receiver.view_id,
         };
 
         // ===== SE COMPRUEBA SOBRE COPIAS, NO SOBRE EL ESTADO =====

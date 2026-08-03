@@ -431,6 +431,14 @@ impl SovereignLayer {
                 public_id: updated.public_id,
                 balance: updated.balance,
                 nonce: updated.nonce,
+                // view_id del record GUARDADO, no del ClientState entrante:
+                // el cliente no debe reescribir su credencial de lectura al
+                // operar (49-A). Inmutable salvo apertura y recovery.
+                view_id: self
+                    .records
+                    .get(&sender_index)
+                    .map(|r| r.view_id)
+                    .unwrap_or(crate::store::VIEW_ID_LEGACY),
             },
         );
         // Solo avanza si la posicion era nueva. Si se reutilizo una
@@ -590,6 +598,12 @@ impl SovereignLayer {
                 public_id: updated.public_id,
                 balance: updated.balance,
                 nonce: updated.nonce,
+                // Ver nota en el envío: view_id del record guardado.
+                view_id: self
+                    .records
+                    .get(&receiver_index)
+                    .map(|r| r.view_id)
+                    .unwrap_or(crate::store::VIEW_ID_LEGACY),
             },
         );
         // ⚠️ **Deja constancia ANTES de persistir**, igual que las demas

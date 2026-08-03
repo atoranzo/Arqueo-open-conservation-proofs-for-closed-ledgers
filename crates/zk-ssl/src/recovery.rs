@@ -137,6 +137,16 @@ impl SovereignLayer {
             public_id: receipt.new_public_id,
             balance: account.balance,
             nonce: account.nonce + BaseElement::ONE,
+                // ⚠️ COSTURA 49-A <-> 52 (rotación): se copia el view_id
+                // ANTERIOR, pero la clave de gasto acaba de rotar y el
+                // view_id deriva de ella (§127), así que el recuperado
+                // conserva una credencial de vista que su clave NUEVA ya
+                // no reproduce. La capa no puede recalcularlo: no tiene la
+                // clave (§93.4). El cierre correcto —traer el view_id nuevo
+                // en el receipt de recuperación— es diseño de la rotación
+                // (entrada 52), NO de 49-A. Limitación declarada y con test
+                // (`recovery_deja_view_id_viejo`), no agujero silencioso.
+                view_id: account.view_id,
         };
         // ===== ROTACIÓN: consume una intervención del conjunto =====
         //
@@ -220,6 +230,16 @@ impl SovereignLayer {
             public_id: new_public_id,
             balance: account.balance,
             nonce: account.nonce + BaseElement::ONE,
+                // ⚠️ COSTURA 49-A <-> 52 (rotación): se copia el view_id
+                // ANTERIOR, pero la clave de gasto acaba de rotar y el
+                // view_id deriva de ella (§127), así que el recuperado
+                // conserva una credencial de vista que su clave NUEVA ya
+                // no reproduce. La capa no puede recalcularlo: no tiene la
+                // clave (§93.4). El cierre correcto —traer el view_id nuevo
+                // en el receipt de recuperación— es diseño de la rotación
+                // (entrada 52), NO de 49-A. Limitación declarada y con test
+                // (`recovery_deja_view_id_viejo`), no agujero silencioso.
+                view_id: account.view_id,
         };
         let mut tentativo = self.accounts.clone();
         tentativo.set_leaf(

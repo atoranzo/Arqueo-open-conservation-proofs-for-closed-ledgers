@@ -2113,6 +2113,21 @@ pub fn derive_view_key(spend_key: BaseElement) -> Digest {
 /// El `view_id` que la cuenta guarda: hash de la clave de vista. Guardar
 /// el hash y no la clave permite verificar por presentacion sin que el
 /// operador quede con material que le deje LEER (solo COMPARAR).
+/// Variante ANCHA de la clave de vista (49-A paso 2). Hereda §90:
+/// `[sk,0,0,0]` y `sk` dan el MISMO view_id porque `derive_public_id`
+/// ya lo garantiza y esta se define sobre la misma anchura.
+pub fn derive_view_key_wide(spend_key: Digest) -> Digest {
+    native_merge(as_digest(BaseElement::new(VIEW_KEY_DOMAIN)), spend_key)
+}
+
+/// Variante ANCHA del view_id almacenado (49-A paso 2).
+pub fn view_id_of_wide(spend_key: Digest) -> Digest {
+    native_merge(
+        as_digest(BaseElement::new(VIEW_KEY_DOMAIN)),
+        derive_view_key_wide(spend_key),
+    )
+}
+
 pub fn view_id_of(spend_key: BaseElement) -> Digest {
     native_merge(
         as_digest(BaseElement::new(VIEW_KEY_DOMAIN)),

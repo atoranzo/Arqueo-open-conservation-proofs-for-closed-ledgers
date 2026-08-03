@@ -1297,8 +1297,31 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   ⚠️ **Limitacion declarada** (§127.5): acoplada a la clave de gasto, asi que
   **rotarla exige rotar la de gasto** — si se compromete, **no hay privacidad
   de lectura sin cambiar de cuenta**.
-  ⚠️ **NO esta cerrada**: falta `AccountRecord` + `view_id`, `open_with_id`,
-  las cuatro firmas y ~100 call-sites.
+  ✅ **PASOS 1-2 CERRADOS con test** (sesion 2026-08-03, guarda `store.rs`
+  `58a2a353…`, `accounts.rs` `ed0947c3…`):
+  · Paso 1 — serializacion dual por longitud (48 viejo→centinela, 80 nuevo)
+    + `VIEW_ID_LEGACY`; `record_v2_roundtrip_y_dual` 5/5.
+  · Paso 2 — `AccountRecord` gana `view_id`; poblado en 13 constructores de
+    9 ficheros; `derive_view_key_wide`/`view_id_of_wide` (heredan §90);
+    accessor `stored_view_id` (lo usa el paso 4); `t_paso2_view_id` 4/4.
+  ⚠️⚠️ **HALLAZGO DE SEGURIDAD (lo destapo el compilador, NO estaba en §129)**:
+  `two_phase` ×2 y `burn` reconstruyen el record desde el **ClientState
+  ENTRANTE** (input del cliente), no desde el guardado. Poblar
+  `view_id: input.view_id` dejaria a **un cliente reescribir su propia
+  credencial de lectura en cada operacion**, anulando 49-A por dentro.
+  Corregido: leen `self.records.get(&idx).view_id`. `mint`/`transfer`
+  verificados (parten del record guardado). Regresion
+  `operar_preserva_el_view_id` lo blinda.
+  ⚠️ **COSTURA 49-A↔52 declarada** (`recovery.rs` ×2): recovery rota el
+  `public_id`, el view_id viejo ya no deriva de la clave nueva y la capa no
+  puede recalcularlo (§93.4); se copia el viejo con TODO. El cierre —traer
+  el view_id nuevo en el receipt— es diseno de la 52. Test de recovery
+  pendiente (necesita receipt valido).
+  ⚠️ **FALTAN pasos 3-5**: (3) migrar 5 call-sites `#[deprecated]` de
+  `record_to_bytes`/`_from_bytes` (WRITE de `snapshot.rs:177` + 4 tests) +
+  sub-decision snapshots viejos migran/regeneran; (4) puerta
+  `account_view_authenticated` (usa `stored_view_id`) → pone verde
+  `reading_a_balance_requires_authority`; (5) eliminar shims deprecated.
 
 - [ ] **67. ⚠️ Indices predecibles — REDISEÑADA (§133): derivar, no
   aleatorizar.**
@@ -1528,3 +1551,33 @@ Y una advertencia que pertenece aqui tanto como los pendientes: **esta
 lista no se termina.** Cada cosa que se cierre destapara otras — ha pasado
 tres veces esta semana. El valor del proyecto no esta en llegar a cero
 pendientes, sino en saber con precision que es y que no es.
+
+- [ ] **70. Triaje de las 14 medidas del articulo «el ultimo intermediario»
+  (dinero cuantico).** Documentos externos (1.txt/2.txt) anclados a un
+  articulo de prensa, NO al registro — describen la direccion del proyecto
+  pero reflejan un estado de hace semanas. Colacionadas (sesion 2026-08-03);
+  analisis completo en `doc/triaje-14-medidas.md`. Veredicto por grupos:
+  ⚠️⚠️ **DOS revierten un asiento — NO implementar literalmente**:
+  · Medida 3a («que `balance_of`/`nonce_of`/`public_id_of` exijan credencial
+    o se eliminen») **revierte §129**: son accessors del OPERADOR (que ya ve
+    saldos), 97 usos legitimos; la puerta correcta se **añade**
+    (`account_view_authenticated`, 49-A paso 4), no se lisian las internas.
+  · Medida 4b/14 («actualizar los preprints para que no mencionen la via
+    retirada») **revierte §135**: los articulos publicados NO se editan, se
+    corrigen por `ERRATA.md`. En docs VIVOS si; en preprints, por errata.
+  ✅ **YA HECHAS o EN CURSO con mas rigor que la lista**: 3b (salt en hoja =
+  50/B13-B14, disenada §132); 1/2/11 (custodios via B = 32/33, diseno cerrado
+  §47/§51) ⚠️ con el matiz que la lista NO ve: migrar sin resolver antes el
+  **orden estricto `IDX_B-IDX_A-1`** abre doble-uso de custodio (§51); 4a
+  (`transfer()` ni esta `#[deprecated]` — su retirada ES la 32 entera).
+  🟢 **NUEVAS y sin choque — candidatas a ejecutar**:
+  · **Medida 9** (la mejor): tests de «que aprende cada participante»
+    (operador/contraparte/tercero), extendiendo §16 — mecanismo, no
+    narrativa; fortalece la tesis central.
+  · Medidas 7/10/12/13 (documentales): seccion «relacion con el dinero
+    cuantico» en docs vivos; interfaz de anclaje externo (documento de consenso **por crear**)
+    —conecta con el intermediario residual = orden+completitud que el acuse
+    de §119/§121 ya ataca—; actualizar SECURITY.md/modelo de amenaza;
+    documento de posicionamiento publico.
+  **Accion**: ejecutar 9 y las documentales que no toquen articulos
+  publicados; el resto ya esta hecho, en curso, o pendiente de su diseno.

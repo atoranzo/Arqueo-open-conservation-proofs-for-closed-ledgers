@@ -63,7 +63,7 @@ use stark_experiment::circuit_settlement::native_leaf;
 use stark_experiment::merkle::Digest;
 
 use super::*;
-use crate::store::{digest_from_bytes, digest_to_bytes, record_from_bytes, record_to_bytes};
+use crate::store::{digest_from_bytes, digest_to_bytes, record_from_bytes, record_from_bytes_v2, record_to_bytes};
 
 /// **Versión 4 del formato.** La 3 incluía el árbol de nullificadores,
 /// retirado con la vía de un paso (`AUDITORIA.md` §32); una copia v3
@@ -330,7 +330,7 @@ impl SovereignLayer {
                     .try_into()
                     .map_err(|_| malformed("indice de cuenta"))?,
             );
-            let (public_id, balance, nonce) = record_from_bytes(take(48, "registro")?)?;
+            let (public_id, balance, nonce, view_id) = record_from_bytes_v2(take(48, "registro")?)?;
             layer
                 .accounts
                 .set_leaf(index, native_leaf(public_id, BaseElement::new(balance), nonce));
@@ -340,6 +340,7 @@ impl SovereignLayer {
                     public_id,
                     balance,
                     nonce,
+                    view_id,
                 },
             );
         }

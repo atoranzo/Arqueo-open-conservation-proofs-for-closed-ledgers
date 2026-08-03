@@ -149,6 +149,14 @@ impl SovereignLayer {
             public_id: account.public_id,
             balance: account.balance - amount,
             nonce: account.nonce,
+            // view_id del record GUARDADO, no del ClientState entrante
+            // (`account` es un ClientState): el cliente no reescribe su
+            // credencial de lectura al quemar (49-A). Igual que two_phase.
+            view_id: self
+                .records
+                .get(&account_index)
+                .map(|r| r.view_id)
+                .unwrap_or(crate::store::VIEW_ID_LEGACY),
         };
         // Se comprueba sobre una copia: ver el comentario de `mint`.
         let mut tentativo = self.accounts.clone();

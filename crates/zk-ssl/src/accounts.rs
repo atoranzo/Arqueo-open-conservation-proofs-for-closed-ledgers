@@ -93,6 +93,14 @@ impl SovereignLayer {
     /// El cierre —`native_leaf_salted` en los ocho AIR, con envoltura
     /// salt-cero para las cuentas previas— está diseñado en §131 (numeración
     /// del árbol: §132) y es trabajo mayor, no inmediato.
+    /// **view_id almacenado de una cuenta** (49-A). Lo usa la vista
+    /// autenticada del paso 4 para comparar contra la clave de vista que
+    /// presenta el titular. Devuelve `None` si la cuenta no existe;
+    /// `VIEW_ID_LEGACY` (cero) si es una cuenta pre-49-A.
+    pub fn stored_view_id(&self, index: AccountIndex) -> Option<Digest> {
+        self.records.get(&index).map(|r| r.view_id)
+    }
+
     pub fn open_account(&mut self, spend_key: BaseElement) -> AccountIndex {
         self.open_account_checked(spend_key)
             .expect("abrir una cuenta no deberia fallar sin persistencia")
@@ -143,6 +151,7 @@ impl SovereignLayer {
     ) -> Result<AccountIndex, LayerError> {
         self.open_with_id(
             stark_experiment::circuit_settlement::derive_public_id_wide(spend_key),
+            stark_experiment::circuit_settlement::view_id_of_wide(spend_key),
         )
     }
 
@@ -158,7 +167,10 @@ impl SovereignLayer {
                 limit: self.max_accounts,
             });
         }
-        self.open_with_id(derive_public_id(spend_key))
+        self.open_with_id(
+            derive_public_id(spend_key),
+            stark_experiment::circuit_settlement::view_id_of(spend_key),
+        )
     }
 
     /// Cuerpo comun de las dos vias de apertura.
@@ -166,7 +178,7 @@ impl SovereignLayer {
     /// Recibe la **identidad ya derivada**, que es lo unico que la cuenta
     /// guarda: la clave no se almacena en ningun sitio (§93.4). Por eso las
     /// dos anchuras comparten todo salvo la derivacion.
-    fn open_with_id(&mut self, public_id: Digest) -> Result<AccountIndex, LayerError> {
+    fn open_with_id(&mut self, public_id: Digest, view_id: Digest) -> Result<AccountIndex, LayerError> {
         if self.next_index >= self.max_accounts {
             return Err(LayerError::AccountLimitReached {
                 limit: self.max_accounts,
@@ -184,6 +196,7 @@ impl SovereignLayer {
                 public_id,
                 balance: 0,
                 nonce,
+                view_id,
             },
         );
         // ⚠️ **La unica transicion de estado SIN prueba.**
@@ -204,4 +217,56 @@ impl SovereignLayer {
     }
 
     // -----------------------------------------------------------------
+}
+
+
+#[cfg(test)]
+mod t_paso2_view_id {
+    //! Paso 2 de 49-A verificado: el view_id se puebla y viaja correcto.
+    use super::*;
+    use crate::tests_support::*;
+    use stark_experiment::circuit_settlement::{view_id_of, view_id_of_wide};
+    use crate::store::VIEW_ID_LEGACY;
+
+    const SK: u64 = 0xA11CE;
+
+    #[test]
+    fn apertura_puebla_view_id_real_no_centinela() {
+        let mut layer = new_layer();
+        let idx = open_and_fund(&mut layer, SK, 1_000_000);
+        let esperado = view_id_of(BaseElement::new(SK));
+        assert_eq!(layer.stored_view_id(idx), Some(esperado));
+        assert_ne!(layer.stored_view_id(idx), Some(VIEW_ID_LEGACY),
+                   "una cuenta nueva NO debe llevar el centinela");
+    }
+
+    #[test]
+    fn via_ancha_hereda_90() {
+        // §90: [sk,0,0,0] y sk dan la misma cuenta -> mismo view_id.
+        let mut layer = new_layer();
+        let sk_wide = [BaseElement::new(SK), BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO];
+        let idx = open_and_fund_wide(&mut layer, sk_wide, 0);
+        assert_eq!(layer.stored_view_id(idx), Some(view_id_of_wide(sk_wide)));
+        // y coincide con la estrecha del mismo sk (herencia §90)
+        assert_eq!(view_id_of_wide(sk_wide), view_id_of(BaseElement::new(SK)));
+    }
+
+    #[test]
+    fn cuenta_inexistente_es_none() {
+        let layer = new_layer();
+        assert_eq!(layer.stored_view_id(9999), None);
+    }
+
+    #[test]
+    fn operar_preserva_el_view_id() {
+        // Emitir sobre una cuenta NO debe cambiar su view_id (mint parte
+        // del record guardado). Regresión de la corrección de seguridad.
+        let mut layer = new_layer();
+        let idx = open_and_fund(&mut layer, SK, 500_000);
+        let antes = layer.stored_view_id(idx);
+        let receipt = layer.mint(&valid_auth(), idx, 100_000).expect("mint");
+        layer.apply_mint(&receipt, idx).expect("apply_mint");
+        assert_eq!(layer.stored_view_id(idx), antes,
+                   "operar cambió el view_id: la credencial no debe mutar al operar");
+    }
 }

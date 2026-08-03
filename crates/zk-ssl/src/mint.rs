@@ -133,6 +133,7 @@ impl SovereignLayer {
             public_id: account.public_id,
             balance: account.balance + amount,
             nonce: account.nonce,
+            view_id: account.view_id,
         };
         // ===== SE COMPRUEBA SOBRE UNA COPIA, NO SOBRE EL ESTADO =====
         //
@@ -222,6 +223,7 @@ impl SovereignLayer {
             public_id: account.public_id,
             balance: account.balance + amount,
             nonce: account.nonce,
+            view_id: account.view_id,
         };
         let mut tentativo = self.accounts.clone();
         tentativo.set_leaf(

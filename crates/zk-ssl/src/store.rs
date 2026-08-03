@@ -130,7 +130,35 @@ pub fn digest_from_bytes(b: &[u8]) -> Result<Digest, StoreError> {
     Ok(d)
 }
 
-/// Registro de cuenta serializado: identidad (32) + saldo (8) + nonce (8).
+/// **Centinela de `view_id`** para cuentas anteriores a 49-A (asiento de
+/// alcance de 49-A): el digest cero, que `view_id_of` no produce nunca
+/// (siempre mezcla el dominio VIEW_KEY en el estado Rescue). Una cuenta
+/// con este `view_id` es pre-49-A y su vista autenticada devolvera
+/// siempre `None`: no-retroactividad declarada, como el salt de §117 con
+/// las hojas viejas.
+pub const VIEW_ID_LEGACY: Digest = [BaseElement::ZERO; 4];
+
+/// **Formato NUEVO** (80 bytes): identidad (32) + saldo (8) + nonce (8) +
+/// view_id (32). Paso 1 de 49-A. Los call-sites migran a esta en pasos
+/// posteriores; hasta entonces coexiste con el shim legacy de abajo.
+pub fn record_to_bytes_v2(
+    public_id: &Digest,
+    balance: u64,
+    nonce: BaseElement,
+    view_id: &Digest,
+) -> [u8; 80] {
+    let mut out = [0u8; 80];
+    out[..32].copy_from_slice(&digest_to_bytes(public_id));
+    out[32..40].copy_from_slice(&balance.to_le_bytes());
+    out[40..48].copy_from_slice(&element_to_bytes(nonce));
+    out[48..80].copy_from_slice(&digest_to_bytes(view_id));
+    out
+}
+
+/// **Shim del formato viejo** (48 bytes, sin view_id). TEMPORAL: existe
+/// solo para que los call-sites no migrados sigan compilando durante el
+/// despliegue de 49-A. Muere cuando el ultimo call-site pase a `_v2`.
+#[deprecated(note = "49-A paso 1: migrar a record_to_bytes_v2; este shim se elimina al cerrar 49-A")]
 pub fn record_to_bytes(public_id: &Digest, balance: u64, nonce: BaseElement) -> [u8; 48] {
     let mut out = [0u8; 48];
     out[..32].copy_from_slice(&digest_to_bytes(public_id));
@@ -139,17 +167,40 @@ pub fn record_to_bytes(public_id: &Digest, balance: u64, nonce: BaseElement) -> 
     out
 }
 
-pub fn record_from_bytes(b: &[u8]) -> Result<(Digest, u64, BaseElement), StoreError> {
-    if b.len() != 48 {
-        return Err(StoreError::Malformed(format!(
-            "registro de {} bytes, se esperaban 48",
-            b.len()
-        )));
+/// **Lectura DUAL por longitud** (paso 1 de 49-A). 48 bytes = formato
+/// viejo, `view_id` <- centinela legacy; 80 bytes = formato nuevo con
+/// view_id real. La longitud fija discrimina sin byte de version —el
+/// mismo espiritu que el arbol `legacy_null` de `persistence.rs`—.
+/// Cualquier otra longitud se rechaza (un registro truncado no se
+/// interpreta mal).
+pub fn record_from_bytes_v2(
+    b: &[u8],
+) -> Result<(Digest, u64, BaseElement, Digest), StoreError> {
+    match b.len() {
+        48 => {
+            let public_id = digest_from_bytes(&b[..32])?;
+            let balance = u64::from_le_bytes(b[32..40].try_into().unwrap());
+            let nonce = element_from_bytes(&b[40..48])?;
+            Ok((public_id, balance, nonce, VIEW_ID_LEGACY))
+        }
+        80 => {
+            let public_id = digest_from_bytes(&b[..32])?;
+            let balance = u64::from_le_bytes(b[32..40].try_into().unwrap());
+            let nonce = element_from_bytes(&b[40..48])?;
+            let view_id = digest_from_bytes(&b[48..80])?;
+            Ok((public_id, balance, nonce, view_id))
+        }
+        n => Err(StoreError::Malformed(format!(
+            "registro de {n} bytes, se esperaban 48 (viejo) u 80 (nuevo)"
+        ))),
     }
-    let public_id = digest_from_bytes(&b[..32])?;
-    let balance = u64::from_le_bytes(b[32..40].try_into().unwrap());
-    let nonce = element_from_bytes(&b[40..48])?;
-    Ok((public_id, balance, nonce))
+}
+
+/// Lectura del formato viejo. Delega en `_v2` y descarta el view_id, para
+/// que los call-sites no migrados sigan compilando. TEMPORAL (49-A).
+pub fn record_from_bytes(b: &[u8]) -> Result<(Digest, u64, BaseElement), StoreError> {
+    let (id, bal, nonce, _view) = record_from_bytes_v2(b)?;
+    Ok((id, bal, nonce))
 }
 
 #[cfg(test)]
@@ -191,6 +242,33 @@ mod tests {
     /// Un dato de tamaño incorrecto se rechaza en vez de interpretarse
     /// mal. Sin esto, un ledger truncado produciría valores plausibles
     /// pero falsos.
+    /// Paso 1 de 49-A: formato dual por longitud.
+    #[test]
+    fn record_v2_roundtrip_y_dual() {
+        let id: Digest = [BaseElement::new(9); 4];
+        let vid: Digest = [BaseElement::new(0x5EE); 4];
+
+        let b80 = record_to_bytes_v2(&id, 1_000_000, BaseElement::new(7), &vid);
+        assert_eq!(b80.len(), 80);
+        let (id2, bal, nonce, vid2) = record_from_bytes_v2(&b80).unwrap();
+        assert_eq!((id2, bal, nonce, vid2), (id, 1_000_000, BaseElement::new(7), vid));
+
+        #[allow(deprecated)]
+        let b48 = record_to_bytes(&id, 500, BaseElement::new(3));
+        let (id3, bal3, nonce3, vid3) = record_from_bytes_v2(&b48).unwrap();
+        assert_eq!((id3, bal3, nonce3), (id, 500, BaseElement::new(3)));
+        assert_eq!(vid3, VIEW_ID_LEGACY, "una cuenta vieja debe cargar con centinela");
+
+        let real = stark_experiment::circuit_settlement::view_id_of(
+            BaseElement::new(0xA11CE),
+        );
+        assert_ne!(real, VIEW_ID_LEGACY, "view_id real colisiono con el centinela");
+
+        assert!(record_from_bytes_v2(&[0u8; 40]).is_err());
+        assert!(record_from_bytes_v2(&[0u8; 48]).is_ok());
+        assert!(record_from_bytes_v2(&[0u8; 80]).is_ok());
+    }
+
     #[test]
     fn malformed_data_is_rejected() {
         assert!(digest_from_bytes(&[0u8; 16]).is_err());

@@ -306,7 +306,8 @@ impl SovereignLayer {
                     .try_into()
                     .map_err(|_| StoreError::Malformed("indice de cuenta".into()))?,
             );
-            let (public_id, balance, nonce) = record_from_bytes(&v)?;
+            let (public_id, balance, nonce, view_id) =
+                crate::store::record_from_bytes_v2(&v)?;
             self.accounts.set_leaf(
                 idx,
                 native_leaf(public_id, BaseElement::new(balance), nonce),
@@ -317,6 +318,7 @@ impl SovereignLayer {
                     public_id,
                     balance,
                     nonce,
+                    view_id,
                 },
             );
         }

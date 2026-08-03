@@ -320,6 +320,11 @@ struct AccountRecord {
     public_id: Digest,
     balance: u64,
     nonce: BaseElement,
+    /// Compromiso de la clave de vista (49-A): `view_id_of(spend_key)`,
+    /// fijado al abrir. `VIEW_ID_LEGACY` (cero) en cuentas pre-49-A.
+    /// Las operaciones que no rotan la clave lo PRESERVAN; recovery lo
+    /// toca y es la costura 49-A<->52 (ver TODO en recovery.rs).
+    view_id: Digest,
 }
 
 /// Liquidación: la prueba y los valores públicos que la acompañan.
