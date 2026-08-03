@@ -7809,6 +7809,238 @@ rellenar con ceros— es la unica posible hoy, y **queda escrita en el propio
 test junto con lo que no ejercita**, para que nadie lo lea como que el flujo
 completo prueba los elementos nuevos. No los prueba.
 
+## 93. La privacidad frente a terceros: cuatro superficies, medidas
+
+El README afirma privacidad **frente a terceros**; el operador ve los
+saldos y eso esta declarado. Se midio si lo primero es cierto.
+
+⚠️ **Marco de falsacion**: los cuatro testigos afirman el comportamiento
+**sano** —«leer exige autoridad», «los indices no son enumerables», «la hoja
+no revela el saldo», «los indices no son predecibles»—. Afirmar el ataque
+habria hecho pasar los tests por cualquier motivo (§66.2).
+
+### 93.1 Superficie 1: el CONTRATO de `account_view`
+
+```rust
+pub fn account_view(&self, index: AccountIndex) -> Option<AccountView>
+```
+
+Toma un indice. **No recibe credencial. No comprueba nada.** Devuelve
+`balance` y `nonce`. Medido: `Some(1000000)` de una cuenta ajena.
+
+Y los indices son **enumerables**: `next_index += 1`, y barriendo 0..10
+aparecen las 3 cuentas abiertas.
+
+⚠️ **Esto es un hallazgo de CONTRATO, no de explotacion.** **No hay capa de
+red en este repositorio**, asi que «cualquiera vuelca el ledger» seria una
+afirmacion sobre un despliegue que no existe —una cifra rancia hacia el
+drama, que §76 prohibe igual que hacia el aburrimiento—.
+
+Lo cierto hoy, y solo esto:
+
+> **El contrato de `account_view` no incluye autorizacion.** Exponerlo sin
+> añadir control de acceso convierte una fuga hacia-el-operador —declarada
+> en la cabecera de `client.rs`— en una fuga hacia-terceros, **que el README
+> no declara**.
+
+### 93.2 ⚠️ Superficie 2: la que SOBREVIVE a cerrar la API
+
+`send_materials` entrega `sender_path`, y `sparse_tree::path_for` devuelve
+`node(level, idx ^ 1)`: en el nivel 0, **la hoja del vecino**. Y
+
+```rust
+native_leaf(pk, saldo, nonce) = H(H(pk, saldo), nonce)
+```
+
+**sin salt** —verificado: `native_merge` pone la capacidad a cero, sin
+dominio ni cegado, en las dos capas—.
+
+**Medido: saldo del vecino recuperado en 10,84 s.** 743.100 centimos,
+exacto.
+
+| | |
+|---|---|
+| Hojas por segundo y nucleo | **68.549** (medido; se habia estimado 61.000) |
+| Hojas probadas | 743.100 |
+
+⚠️ **El coste no es un numero: es una curva sobre el rango de saldo
+asumido**, que es un supuesto sobre la victima y no sobre la criptografia:
+
+| rango asumido | coste, un nucleo |
+|---|---|
+| 0-10.000 EUR (2^20) | **2,4 min** |
+| 0-1 M EUR (2^27) | 4,1 h |
+| 0-100 M EUR (2^34) | 405 h |
+| 64 bits uniformes | 8,3×10^7 años-nucleo |
+
+> **La ultima fila salva y condena el diseño a la vez.** Si el saldo fuera
+> uniforme en 64 bits el ataque seria inviable. **No lo es, y nunca lo es en
+> un sistema de dinero**: la entropia del saldo es baja por definicion del
+> dominio. Por eso el salt no es un lujo criptografico — **es la unica
+> fuente de entropia posible**.
+
+**Alcance, acotado**: el camino entrega 32 hermanos y **solo `siblings[0]`
+es preimagen de hoja**. Los otros 31 son raices de subarbol y no son
+diccionariables. Es **1 cuenta**, no log2(N).
+
+**Regimen 1D, y no es un supuesto**: `accounts.rs` hace
+`let nonce = BaseElement::ZERO` y sube de uno en uno por gasto. **El regimen
+2D —donde el rango del nonce multiplicaria el coste— nunca existio.**
+
+⚠️ **Y esta fuga sobrevive a cerrar `account_view`**: depende del formato de
+hoja, no de la API. Tapiar la API es una tarde; esto no.
+
+### 93.3 Superficie 3: el vecino es ELEGIBLE, no aleatorio
+
+Medido: tres altas consecutivas dan indices `0, 1, 2`.
+
+Con `next_index += 1`, **quien controla el momento de sus altas elige a
+quien tiene por vecino de arbol** — y con dos altas, lo rodea. La fuga deja
+de ser oportunista y pasa a ser dirigida.
+
+### 93.4 La pregunta que decide el arreglo: **NO es clase entrada 15**
+
+Un salt de hoja tiene que ser **secreto para el operador** —si no, no ciega—
+y **recuperable por el cliente** —sin el no puede reconstruir su hoja—.
+
+⚠️ **Y hoy el cliente no guarda nada.** `ClientState { public_id, balance,
+nonce }`: los tres campos **los conoce la capa**, y `state_of()` los pide y
+los recibe. Ese es el modelo entero.
+
+> Un salt obliga a que el cliente **custodie estado que solo el tiene**. Eso
+> no es un cambio de formato: **es un cambio de modelo de cliente**, y trae
+> una decision con victimas —quien pierde el salt, pierde la cuenta—.
+
+**Clase: entrada 15 MAS una decision de arquitectura que el proyecto no ha
+tomado nunca.**
+
+### 93.5 Y el obstaculo real no es el que se temia
+
+Se temia que un salt dependiente del nonce rompiera el enlace entre la hoja
+vieja y la nueva. **No lo rompe**: el circuito ya usa nonces distintos en
+cada carril —`C_NONCE + 1` exige `nonce + 1` en el carril B— y **no liga las
+hojas por campos compartidos**, sino porque ambas suben por el mismo camino
+con los mismos hermanos. Un salt seria un campo mas, igual que el nonce.
+
+⚠️ **Lo que si obstaculiza es la asimetria emisor/receptor**: `apply_send`
+actualiza tambien la hoja del **receptor** —`C_NONCE + 2` y `+ 3`—, y con un
+salt derivado de clave **el emisor no puede computarla**, porque no tiene la
+clave del receptor. El pago exigiria que el receptor participe, y **el
+diseño de dos fases existe precisamente para que no tenga que hacerlo**.
+
+⚠️ **Ninguna salida a eso esta medida**, y no se registran las que se
+discutieron: son ideas de diez minutos, y meterlas aqui seria lo que este
+documento lleva noventa secciones castigando.
+
+### 93.6 Lo que esto reordena
+
+- **B12.1 —especificacion formal del AIR— no puede escribirse todavia.** El
+  formato de hoja depende de una decision de arquitectura abierta:
+  especificarlo ahora es especificarlo dos veces.
+- **B11.2 —cifrar el aviso— tampoco**: §88.3 dice que el aviso puede tener
+  que llevar `sender_id`, y cifrar antes de decidir el contenido fija el
+  formato equivocado con AEAD encima.
+- **B10.1 —cabeza firmada por epoca— sobrevive intacta**: no depende del
+  formato de hoja, ni del aviso, ni de C3, ni de que haya testigos que
+  comparen todavia.
+
+### 93.7 Lo que NO se ha medido
+
+1. Un despliegue con altas por lotes, donde atacante y victima quedarian
+   contiguos **por construccion**.
+2. Multinucleo y GPU: los 2,4 minutos son **un nucleo sin optimizar**. La
+   cifra realista es peor, no mejor.
+3. Si `send_materials` acabara expuesto en algun transporte. Hoy no hay.
+
+## 94. Tres `native_leaf` con dominios de identidad distintos
+
+Hallazgo aparte, encontrado al verificar cual usa la capa.
+
+| | firma de la identidad |
+|---|---|
+| `circuit_settlement` (**la de produccion**) | `public_id: Digest` — **256 bits** |
+| `compliance_circuit` | `account_id: BaseElement` — **64 bits** |
+| `double_entry` | `id: BaseElement` — **64 bits** |
+
+**Las tres tienen la MISMA estructura** —`H(H(id, saldo), nonce)`—. No
+divergen en forma: divergen en **anchura del dominio**, porque
+`as_digest(id)` es `[id, 0, 0, 0]`.
+
+> Es **la entrada 15 replicada en la identidad** de dos circuitos
+> secundarios. Y explica por que solo se corrigio `circuit_settlement`: fue
+> el que se auditó.
+
+⚠️ **Compartir nombre lo empeora**, porque invita a suponer que son la misma
+funcion. Un lector que verifique `native_leaf` en un circuito y lo de por
+bueno en los otros dos se equivoca, y nada en el codigo se lo advierte.
+
+⚠️ **No se ha medido** si `compliance_circuit` o `double_entry` estan en
+algun camino de produccion. `SettlementAir` no lo esta (§85.8); de estos dos
+no se sabe.
+
+## 95. Garantias con condicion implicita: la tercera vez
+
+El README decia que la privacidad es «frente a terceros **que solo ven
+pruebas**». Corregido hoy, porque §93 midio que esa condicion no se cumple.
+
+### 95.1 No es una mentira: es una condicion sin verificar
+
+La frase era **cierta bajo su condicion**. Lo que nadie comprobo es que la
+condicion se diera: un tercero **no solo ve pruebas**. Ve `siblings[0]` en
+los materiales del protocolo, y ve saldos si llama a `balance_of`.
+
+### 95.2 ⚠️ Y es la TERCERA vez que aparece esta estructura
+
+| | garantia | condicion implicita que fallaba |
+|---|---|---|
+| §76 | *«no puede reescribir el historial en secreto»* | …para quien **ya observo una cabeza anterior**, y nadie fuera del operador las observa |
+| §84.2 | *«la clave de gasto no sale de la maquina del cliente»* | …**si la capa verificara la prueba**, y no la verificaba (§73) |
+| §95 | *«privacidad frente a terceros que solo ven pruebas»* | …**si los terceros solo vieran pruebas**, y ven caminos y saldos |
+
+Las tres son de la misma forma exacta:
+
+> **Una propiedad del DISEÑO enunciada como propiedad del SISTEMA, con la
+> condicion que las separa escrita o sobreentendida, y nunca verificada.**
+
+Y las tres se descubrieron igual: **no buscandolas, sino escribiendo con
+precision otra cosa y tropezando** —§76 midiendo cifras del README, §84.2
+inventariando los preprints, §95 comprobando una errata del salt—.
+
+### 95.3 El proyecto no tiene instrumento para esta clase
+
+`check_constraint_layout.py` cruza indices. `buscar_vacias` prueba
+mutaciones. Los tests comprueban comportamiento. **Ninguno lee una
+afirmacion en prosa y verifica su condicion.**
+
+⚠️ Y `B12.1` —la especificacion formal del AIR— **solo cubre los
+circuitos**. Las garantias del README, de `PRINCIPIOS.md` y de los tres
+preprints se siguen escribiendo sin contrato.
+
+> El equivalente documental de B12.1 seria: **cada garantia publicada
+> declara su condicion, y cada condicion tiene un test que la comprueba.**
+> Las tres de la tabla habrian caido el dia que se escribieron.
+
+No se propone como tarea: se enuncia porque es la leccion de las tres, y
+sin enunciarla la cuarta llegara igual.
+
+### 95.4 Lo que NO se ha hecho hoy
+
+**No se ha tocado el codigo.** La mitigacion de la entrada 49 —exigir la
+identidad publica para leer— es barata y **no se ha hecho**, por dos
+razones:
+
+1. **Su llave es la direccion de pago.** `public_id` es lo que se reparte
+   para cobrar; un control cuya credencial la tiene todo el que te ha pagado
+   **no es un control de acceso**, y no es revocable.
+2. ⚠️ **Permitiria escribir una frase mas tranquilizadora sin dar la
+   garantia que sugiere** — que es exactamente el defecto de §95.1, cometido
+   a sabiendas.
+
+Impide el **barrido masivo**, y eso es valor operativo real. Se hara **con
+la entrada 50** —son la misma decision de arquitectura— y **declarando su
+alcance en el mismo commit**: «impide la enumeracion; no impide la lectura
+por quien conoce tu identidad de pago».
+
 ## 96. ⚠️ RECTIFICACION de §92.14: `open_account` va el ULTIMO
 
 §92.14 —escrita hace una hora— concluyo que **`open_account` sube por
@@ -10867,238 +11099,6 @@ mas la derivacion compartida y `open_account`, en un commit. Y despues
 
 El patron esta establecido: columnas, ranuras, grados, `build_trace`,
 **aserciones** y tests. Y la lista de sitios que se olvidan, tambien.
-
-## 93. La privacidad frente a terceros: cuatro superficies, medidas
-
-El README afirma privacidad **frente a terceros**; el operador ve los
-saldos y eso esta declarado. Se midio si lo primero es cierto.
-
-⚠️ **Marco de falsacion**: los cuatro testigos afirman el comportamiento
-**sano** —«leer exige autoridad», «los indices no son enumerables», «la hoja
-no revela el saldo», «los indices no son predecibles»—. Afirmar el ataque
-habria hecho pasar los tests por cualquier motivo (§66.2).
-
-### 93.1 Superficie 1: el CONTRATO de `account_view`
-
-```rust
-pub fn account_view(&self, index: AccountIndex) -> Option<AccountView>
-```
-
-Toma un indice. **No recibe credencial. No comprueba nada.** Devuelve
-`balance` y `nonce`. Medido: `Some(1000000)` de una cuenta ajena.
-
-Y los indices son **enumerables**: `next_index += 1`, y barriendo 0..10
-aparecen las 3 cuentas abiertas.
-
-⚠️ **Esto es un hallazgo de CONTRATO, no de explotacion.** **No hay capa de
-red en este repositorio**, asi que «cualquiera vuelca el ledger» seria una
-afirmacion sobre un despliegue que no existe —una cifra rancia hacia el
-drama, que §76 prohibe igual que hacia el aburrimiento—.
-
-Lo cierto hoy, y solo esto:
-
-> **El contrato de `account_view` no incluye autorizacion.** Exponerlo sin
-> añadir control de acceso convierte una fuga hacia-el-operador —declarada
-> en la cabecera de `client.rs`— en una fuga hacia-terceros, **que el README
-> no declara**.
-
-### 93.2 ⚠️ Superficie 2: la que SOBREVIVE a cerrar la API
-
-`send_materials` entrega `sender_path`, y `sparse_tree::path_for` devuelve
-`node(level, idx ^ 1)`: en el nivel 0, **la hoja del vecino**. Y
-
-```rust
-native_leaf(pk, saldo, nonce) = H(H(pk, saldo), nonce)
-```
-
-**sin salt** —verificado: `native_merge` pone la capacidad a cero, sin
-dominio ni cegado, en las dos capas—.
-
-**Medido: saldo del vecino recuperado en 10,84 s.** 743.100 centimos,
-exacto.
-
-| | |
-|---|---|
-| Hojas por segundo y nucleo | **68.549** (medido; se habia estimado 61.000) |
-| Hojas probadas | 743.100 |
-
-⚠️ **El coste no es un numero: es una curva sobre el rango de saldo
-asumido**, que es un supuesto sobre la victima y no sobre la criptografia:
-
-| rango asumido | coste, un nucleo |
-|---|---|
-| 0-10.000 EUR (2^20) | **2,4 min** |
-| 0-1 M EUR (2^27) | 4,1 h |
-| 0-100 M EUR (2^34) | 405 h |
-| 64 bits uniformes | 8,3×10^7 años-nucleo |
-
-> **La ultima fila salva y condena el diseño a la vez.** Si el saldo fuera
-> uniforme en 64 bits el ataque seria inviable. **No lo es, y nunca lo es en
-> un sistema de dinero**: la entropia del saldo es baja por definicion del
-> dominio. Por eso el salt no es un lujo criptografico — **es la unica
-> fuente de entropia posible**.
-
-**Alcance, acotado**: el camino entrega 32 hermanos y **solo `siblings[0]`
-es preimagen de hoja**. Los otros 31 son raices de subarbol y no son
-diccionariables. Es **1 cuenta**, no log2(N).
-
-**Regimen 1D, y no es un supuesto**: `accounts.rs` hace
-`let nonce = BaseElement::ZERO` y sube de uno en uno por gasto. **El regimen
-2D —donde el rango del nonce multiplicaria el coste— nunca existio.**
-
-⚠️ **Y esta fuga sobrevive a cerrar `account_view`**: depende del formato de
-hoja, no de la API. Tapiar la API es una tarde; esto no.
-
-### 93.3 Superficie 3: el vecino es ELEGIBLE, no aleatorio
-
-Medido: tres altas consecutivas dan indices `0, 1, 2`.
-
-Con `next_index += 1`, **quien controla el momento de sus altas elige a
-quien tiene por vecino de arbol** — y con dos altas, lo rodea. La fuga deja
-de ser oportunista y pasa a ser dirigida.
-
-### 93.4 La pregunta que decide el arreglo: **NO es clase entrada 15**
-
-Un salt de hoja tiene que ser **secreto para el operador** —si no, no ciega—
-y **recuperable por el cliente** —sin el no puede reconstruir su hoja—.
-
-⚠️ **Y hoy el cliente no guarda nada.** `ClientState { public_id, balance,
-nonce }`: los tres campos **los conoce la capa**, y `state_of()` los pide y
-los recibe. Ese es el modelo entero.
-
-> Un salt obliga a que el cliente **custodie estado que solo el tiene**. Eso
-> no es un cambio de formato: **es un cambio de modelo de cliente**, y trae
-> una decision con victimas —quien pierde el salt, pierde la cuenta—.
-
-**Clase: entrada 15 MAS una decision de arquitectura que el proyecto no ha
-tomado nunca.**
-
-### 93.5 Y el obstaculo real no es el que se temia
-
-Se temia que un salt dependiente del nonce rompiera el enlace entre la hoja
-vieja y la nueva. **No lo rompe**: el circuito ya usa nonces distintos en
-cada carril —`C_NONCE + 1` exige `nonce + 1` en el carril B— y **no liga las
-hojas por campos compartidos**, sino porque ambas suben por el mismo camino
-con los mismos hermanos. Un salt seria un campo mas, igual que el nonce.
-
-⚠️ **Lo que si obstaculiza es la asimetria emisor/receptor**: `apply_send`
-actualiza tambien la hoja del **receptor** —`C_NONCE + 2` y `+ 3`—, y con un
-salt derivado de clave **el emisor no puede computarla**, porque no tiene la
-clave del receptor. El pago exigiria que el receptor participe, y **el
-diseño de dos fases existe precisamente para que no tenga que hacerlo**.
-
-⚠️ **Ninguna salida a eso esta medida**, y no se registran las que se
-discutieron: son ideas de diez minutos, y meterlas aqui seria lo que este
-documento lleva noventa secciones castigando.
-
-### 93.6 Lo que esto reordena
-
-- **B12.1 —especificacion formal del AIR— no puede escribirse todavia.** El
-  formato de hoja depende de una decision de arquitectura abierta:
-  especificarlo ahora es especificarlo dos veces.
-- **B11.2 —cifrar el aviso— tampoco**: §88.3 dice que el aviso puede tener
-  que llevar `sender_id`, y cifrar antes de decidir el contenido fija el
-  formato equivocado con AEAD encima.
-- **B10.1 —cabeza firmada por epoca— sobrevive intacta**: no depende del
-  formato de hoja, ni del aviso, ni de C3, ni de que haya testigos que
-  comparen todavia.
-
-### 93.7 Lo que NO se ha medido
-
-1. Un despliegue con altas por lotes, donde atacante y victima quedarian
-   contiguos **por construccion**.
-2. Multinucleo y GPU: los 2,4 minutos son **un nucleo sin optimizar**. La
-   cifra realista es peor, no mejor.
-3. Si `send_materials` acabara expuesto en algun transporte. Hoy no hay.
-
-## 94. Tres `native_leaf` con dominios de identidad distintos
-
-Hallazgo aparte, encontrado al verificar cual usa la capa.
-
-| | firma de la identidad |
-|---|---|
-| `circuit_settlement` (**la de produccion**) | `public_id: Digest` — **256 bits** |
-| `compliance_circuit` | `account_id: BaseElement` — **64 bits** |
-| `double_entry` | `id: BaseElement` — **64 bits** |
-
-**Las tres tienen la MISMA estructura** —`H(H(id, saldo), nonce)`—. No
-divergen en forma: divergen en **anchura del dominio**, porque
-`as_digest(id)` es `[id, 0, 0, 0]`.
-
-> Es **la entrada 15 replicada en la identidad** de dos circuitos
-> secundarios. Y explica por que solo se corrigio `circuit_settlement`: fue
-> el que se auditó.
-
-⚠️ **Compartir nombre lo empeora**, porque invita a suponer que son la misma
-funcion. Un lector que verifique `native_leaf` en un circuito y lo de por
-bueno en los otros dos se equivoca, y nada en el codigo se lo advierte.
-
-⚠️ **No se ha medido** si `compliance_circuit` o `double_entry` estan en
-algun camino de produccion. `SettlementAir` no lo esta (§85.8); de estos dos
-no se sabe.
-
-## 95. Garantias con condicion implicita: la tercera vez
-
-El README decia que la privacidad es «frente a terceros **que solo ven
-pruebas**». Corregido hoy, porque §93 midio que esa condicion no se cumple.
-
-### 95.1 No es una mentira: es una condicion sin verificar
-
-La frase era **cierta bajo su condicion**. Lo que nadie comprobo es que la
-condicion se diera: un tercero **no solo ve pruebas**. Ve `siblings[0]` en
-los materiales del protocolo, y ve saldos si llama a `balance_of`.
-
-### 95.2 ⚠️ Y es la TERCERA vez que aparece esta estructura
-
-| | garantia | condicion implicita que fallaba |
-|---|---|---|
-| §76 | *«no puede reescribir el historial en secreto»* | …para quien **ya observo una cabeza anterior**, y nadie fuera del operador las observa |
-| §84.2 | *«la clave de gasto no sale de la maquina del cliente»* | …**si la capa verificara la prueba**, y no la verificaba (§73) |
-| §95 | *«privacidad frente a terceros que solo ven pruebas»* | …**si los terceros solo vieran pruebas**, y ven caminos y saldos |
-
-Las tres son de la misma forma exacta:
-
-> **Una propiedad del DISEÑO enunciada como propiedad del SISTEMA, con la
-> condicion que las separa escrita o sobreentendida, y nunca verificada.**
-
-Y las tres se descubrieron igual: **no buscandolas, sino escribiendo con
-precision otra cosa y tropezando** —§76 midiendo cifras del README, §84.2
-inventariando los preprints, §95 comprobando una errata del salt—.
-
-### 95.3 El proyecto no tiene instrumento para esta clase
-
-`check_constraint_layout.py` cruza indices. `buscar_vacias` prueba
-mutaciones. Los tests comprueban comportamiento. **Ninguno lee una
-afirmacion en prosa y verifica su condicion.**
-
-⚠️ Y `B12.1` —la especificacion formal del AIR— **solo cubre los
-circuitos**. Las garantias del README, de `PRINCIPIOS.md` y de los tres
-preprints se siguen escribiendo sin contrato.
-
-> El equivalente documental de B12.1 seria: **cada garantia publicada
-> declara su condicion, y cada condicion tiene un test que la comprueba.**
-> Las tres de la tabla habrian caido el dia que se escribieron.
-
-No se propone como tarea: se enuncia porque es la leccion de las tres, y
-sin enunciarla la cuarta llegara igual.
-
-### 95.4 Lo que NO se ha hecho hoy
-
-**No se ha tocado el codigo.** La mitigacion de la entrada 49 —exigir la
-identidad publica para leer— es barata y **no se ha hecho**, por dos
-razones:
-
-1. **Su llave es la direccion de pago.** `public_id` es lo que se reparte
-   para cobrar; un control cuya credencial la tiene todo el que te ha pagado
-   **no es un control de acceso**, y no es revocable.
-2. ⚠️ **Permitiria escribir una frase mas tranquilizadora sin dar la
-   garantia que sugiere** — que es exactamente el defecto de §95.1, cometido
-   a sabiendas.
-
-Impide el **barrido masivo**, y eso es valor operativo real. Se hara **con
-la entrada 50** —son la misma decision de arquitectura— y **declarando su
-alcance en el mismo commit**: «impide la enumeracion; no impide la lectura
-por quien conoce tu identidad de pago».
 
 ## 137. 49-B: intentada, ROTA por una constante, revertida — y la pregunta de arquitectura cerrada por el fracaso
 
