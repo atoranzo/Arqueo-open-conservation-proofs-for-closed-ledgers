@@ -11100,20 +11100,6 @@ la entrada 50** —son la misma decision de arquitectura— y **declarando su
 alcance en el mismo commit**: «impide la enumeracion; no impide la lectura
 por quien conoce tu identidad de pago».
 
-## 69. Qué NO demuestra este documento
-
-⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
-precedan en el fichero.** Es el cierre del documento, no un hallazgo mas:
-ponerla en medio haria que el texto concluyera y siguiera hablando. La
-convencion de no renumerar se mantiene; lo que se declara es que el orden
-de lectura no es el numerico, igual que en `BACKLOG.md`.
-
-Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
-propios fallos de forma sistemática y ha encontrado algunos**, incluidos
-dos al escribir estas páginas.
-
-Es exactamente por eso que hace falta que lo mire alguien más.
-
 ## 137. 49-B: intentada, ROTA por una constante, revertida — y la pregunta de arquitectura cerrada por el fracaso
 
 **Qué se intentó.** Posición derivada de la identidad para altas nuevas
@@ -11171,3 +11157,17 @@ disperso-compatible (serializa pares índice-registro; la objeción de
 §133 era sobre-cautela), y los dos tests escritos, válidos entonces.
 Nada de esto está en el árbol hoy: la suite está en 232/2 y 49-B sigue
 roja, que es la imagen fiel.
+
+## 69. Qué NO demuestra este documento
+
+⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
+precedan en el fichero.** Es el cierre del documento, no un hallazgo mas:
+ponerla en medio haria que el texto concluyera y siguiera hablando. La
+convencion de no renumerar se mantiene; lo que se declara es que el orden
+de lectura no es el numerico, igual que en `BACKLOG.md`.
+
+Que el sistema sea seguro. Demuestra que **el autor ha buscado sus
+propios fallos de forma sistemática y ha encontrado algunos**, incluidos
+dos al escribir estas páginas.
+
+Es exactamente por eso que hace falta que lo mire alguien más.
