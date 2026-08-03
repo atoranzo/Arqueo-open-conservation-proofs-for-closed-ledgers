@@ -10728,6 +10728,82 @@ El triaje de §128 —mecanico / documental / diseño / condicionado— **se
 convirtio en columna vertebral**, y el cubo de condicionadas (12, 62, 54)
 esta bien aparcado.
 
+## 135. Una edicion a un preprint publicado: hecha, revertida, declarada
+
+⚠️ **Numeracion**: el asiento llego como «§134», ya ocupada. Va como **§135**.
+
+### 135.1 La secuencia, completa
+
+Al cerrar la 54 (§128.2) se **insertó** el parrafo «Changing the verifier»
+en el cuerpo de `doc/preprints/ZK-SSL-residual-trust.md` §4.1 — **un
+artefacto publicado con DOI**.
+
+⚠️ **Y el asiento que lo narraba decia «revertido por el autor». El arbol
+decia lo contrario**: el parrafo seguia ahi, y habia entrado en el commit
+`337a434`, cuyo mensaje habla de **medicion de tiempos**.
+
+> **Dos fallos en uno**: un artefacto publicado editado, **y** un commit que
+> contiene mas de lo que dice (§91). El segundo es lo que hizo invisible al
+> primero.
+
+**Comprobado antes de registrar nada** — de otro modo se habria escrito una
+reversion que no habia ocurrido.
+
+### 135.2 El error no es de contenido: es de VEHICULO
+
+El riesgo del verificador **es real y esta bien escrito**. Lo que estaba mal
+es **por donde entro**.
+
+⚠️ **Y la regla que lo prohibe se dicto en esta misma sesion, por la misma
+mano**:
+
+| | |
+|---|---|
+| §119 | reescribir el referente **lo falsifica** |
+| §122 | los dos documentos recuperados van **verbatim**, con cabecera-mapa **encima**, no arreglados |
+| §130 | la cascada de correcciones **excluyo los preprints explicitamente** |
+
+**La regla existia, era propia, y no se aplico.**
+
+### 135.3 Ejecutado: revertido, y con vehiculo nuevo
+
+✅ **Revertido**: 783 bytes, 12 lineas, cero coincidencias. El artefacto
+vuelve a estar **verbatim**.
+
+✅ **`doc/preprints/ERRATA.md` creado** — el vehiculo **aditivo** que la
+entrada 28 no tenia: **como corregir algo publicado sin reescribirlo ni
+esperar a una revision**.
+
+Y con lo que el fichero **declara que NO hace**:
+
+> Un lector que descargue el PDF **no ve este fichero**. Registrar una errata
+> **no la corrige para quien ya la leyo**.
+
+### 135.4 ⚠️ Su entrada 2: el directorio incumplia su propia regla
+
+`ERRATA.md` nace con **dos** entradas. La segunda reconoce que **las cuatro
+notas de correccion de §100 se insertaron EN el cuerpo** de dos preprints.
+
+**Su contenido es correcto. Su vehiculo era el que este fichero declara
+equivocado**, y lo usaron antes de que el fichero existiera.
+
+**No se deshacen**: ya estan depositadas, y retirarlas seria **reescribir el
+artefacto otra vez — el mismo error en direccion contraria**.
+
+> **Un fichero de erratas que declara una regla sin admitir que el directorio
+> la incumple en cuatro sitios naceria falso.**
+
+### 135.5 La leccion, en la columna de metodo
+
+> **El registro debe contener las reversiones con el mismo rigor que los
+> cambios**, o el metodo tiene un punto ciego **exactamente del tamaño de un
+> `git revert` sin asiento**.
+
+⚠️ Y una segunda, que este caso añade: **un asiento puede describir un estado
+que el arbol no tiene**. Paso al metodo: **antes de registrar una accion,
+comprobar en el arbol que ocurrio** — igual que §130 se descubrio ausente
+porque seis citas la buscaban.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—

@@ -1097,7 +1097,18 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   ver nada, porque §72 fue una restriccion **bien formada sobre el objeto
   equivocado**.
 
-- [ ] **54. ⚠️ Cambiar el verificador es invisible — REGISTRADO en
+- [ ] **54. ⚠️ Cambiar el verificador es invisible — REGISTRADO, y con
+  vehiculo nuevo (§135).** ✅ En `SECURITY.md` §2 y en
+  **`doc/preprints/ERRATA.md` entrada 1**.
+  ⚠️⚠️ **El parrafo se habia insertado EN el cuerpo del preprint** —un
+  artefacto publicado— **dentro de un commit sobre medicion de tiempos**, y
+  el asiento que lo narraba **lo daba por revertido cuando no lo estaba**
+  (§135.1). **Revertido: 783 bytes, 12 lineas.**
+  ✅ **`ERRATA.md` creado**: el vehiculo **aditivo** que faltaba — corregir lo
+  publicado **sin reescribirlo**. Con su entrada 2 admitiendo que **las
+  cuatro notas de §100 usaron el vehiculo equivocado**.
+  ⚠️ **El cierre sigue pendiente**: `hash_verificador_vigente` **requiere que
+  el sistema tenga nocion de «reglas vigentes»**.
   `SECURITY.md` (§128.2).** ✅ Aplicado el parrafo en `SECURITY.md` §2: **el
   poder mayor no estaba en ninguna de las dos enumeraciones** del proyecto.
   ⏸️ **El parrafo del preprint queda redactado y SIN aplicar**: los preprints
