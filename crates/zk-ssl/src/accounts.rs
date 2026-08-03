@@ -70,6 +70,14 @@ impl SovereignLayer {
     ///
     /// No necesita prueba porque **no crea dinero**. Para que tenga
     /// fondos hay que emitir, y eso exige la clave del emisor.
+    /// **view_id almacenado de una cuenta** (49-A). Lo usa la vista
+    /// autenticada del paso 4 para comparar contra la clave de vista que
+    /// presenta el titular. Devuelve `None` si la cuenta no existe;
+    /// `VIEW_ID_LEGACY` (cero) si es una cuenta pre-49-A.
+    pub fn stored_view_id(&self, index: AccountIndex) -> Option<Digest> {
+        self.records.get(&index).map(|r| r.view_id)
+    }
+
     #[deprecated(
         since = "0.1.0",
         note = "Crea cuentas con clave de 64 bits: agotar su espacio cuesta \
@@ -93,13 +101,6 @@ impl SovereignLayer {
     /// El cierre —`native_leaf_salted` en los ocho AIR, con envoltura
     /// salt-cero para las cuentas previas— está diseñado en §131 (numeración
     /// del árbol: §132) y es trabajo mayor, no inmediato.
-    /// **view_id almacenado de una cuenta** (49-A). Lo usa la vista
-    /// autenticada del paso 4 para comparar contra la clave de vista que
-    /// presenta el titular. Devuelve `None` si la cuenta no existe;
-    /// `VIEW_ID_LEGACY` (cero) si es una cuenta pre-49-A.
-    pub fn stored_view_id(&self, index: AccountIndex) -> Option<Digest> {
-        self.records.get(&index).map(|r| r.view_id)
-    }
 
     pub fn open_account(&mut self, spend_key: BaseElement) -> AccountIndex {
         self.open_account_checked(spend_key)

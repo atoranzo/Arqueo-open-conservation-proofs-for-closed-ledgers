@@ -1266,7 +1266,7 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   mision cambia**. ⚠️ **Reversion viva**: sub-minuto **sin peticion** cuesta
   **0,58 TB/año**.
 
-- [ ] **49-A. ⚠️ Clave de vista: ALCANCE MEDIDO (§129), despliegue en cinco
+- [x] **49-A. ✅ CERRADA 5/5. Clave de vista, ALCANCE MEDIDO (§129), desplegada en cinco
   pasos.** ⚠️⚠️ **NO es «desplegar una credencial»: es migracion de formato de
   cuenta en disco** —dos rutas de serializacion, `[u8; 48]` → 80, sin byte de
   version—. ⚠️ **`snapshot.rs:333` lleva `take(48)` codificado**: un parche que
@@ -1322,6 +1322,14 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   sub-decision snapshots viejos migran/regeneran; (4) puerta
   `account_view_authenticated` (usa `stored_view_id`) → pone verde
   `reading_a_balance_requires_authority`; (5) eliminar shims deprecated.
+  ✅✅ **CERRADA (5/5)**: P3 snapshot v5 (MAGIC_V5, 80 B) + persistence
+  WRITE _v2, `snapshot_v5_preserva_view_id` 1/1. P4 `account_view`→
+  `pub(crate)` + `account_view_authenticated`, `reading_a_balance_
+  requires_authority` VERDE. P5 imports muertos + BUG corregido (el
+  `#[deprecated]` de `open_account` estaba desplazado sobre
+  `stored_view_id` desde el P2). Suite 228 verdes; los 2 rojos son 49-B
+  (§133). Hallazgos de seguridad cazados: ClientState reescribible (P2),
+  atributo desplazado (P5) — ambos invisibles a un despliegue de una tacada.
 
 - [ ] **67. ⚠️ Indices predecibles — REDISEÑADA (§133): derivar, no
   aleatorizar.**

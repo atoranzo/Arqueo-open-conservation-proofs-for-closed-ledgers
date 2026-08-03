@@ -142,7 +142,7 @@ use stark_experiment::circuit_send::{
 use stark_experiment::merkle::{Digest, MerklePath};
 
 use sparse_tree::SparseTree;
-use store::{digest_from_bytes, digest_to_bytes, record_from_bytes, record_to_bytes, StoreError};
+use store::{digest_from_bytes, digest_to_bytes, StoreError};
 
 type Blake3 = Blake3_256<BaseElement>;
 
