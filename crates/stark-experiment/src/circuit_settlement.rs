@@ -2110,6 +2110,16 @@ pub fn derive_view_key(spend_key: BaseElement) -> Digest {
     )
 }
 
+/// **view_id a partir de una CLAVE DE VISTA ya derivada** (49-A paso 4).
+/// El titular presenta `derive_view_key(sk)` —no su clave de gasto— y la
+/// capa computa este merge para comparar contra el `view_id` guardado.
+/// Es el segundo merge de `view_id_of`: `view_id_of(sk) ==
+/// view_id_from_view_key(derive_view_key(sk))`. Existe para que la puerta
+/// autenticada no reimplemente el hash ni reciba la clave de gasto.
+pub fn view_id_from_view_key(view_key: Digest) -> Digest {
+    native_merge(as_digest(BaseElement::new(VIEW_KEY_DOMAIN)), view_key)
+}
+
 /// El `view_id` que la cuenta guarda: hash de la clave de vista. Guardar
 /// el hash y no la clave permite verificar por presentacion sin que el
 /// operador quede con material que le deje LEER (solo COMPARAR).

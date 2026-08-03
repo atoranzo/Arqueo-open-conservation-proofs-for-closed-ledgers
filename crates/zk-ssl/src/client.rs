@@ -48,7 +48,7 @@ use super::*;
 // crate: `use super::*` no los alcanza.
 // `derive_public_id_wide` (§90) no llega por `use super::*`: lib.rs
 // solo reexporta la estrecha.
-use stark_experiment::circuit_settlement::derive_public_id_wide;
+use stark_experiment::circuit_settlement::{derive_public_id_wide, view_id_from_view_key};
 use crate::pending::pending_commitment;
 use crate::two_phase::{ClaimReceipt, PendingNotice, SendReceipt};
 
@@ -85,14 +85,40 @@ impl std::error::Error for WrongRecipient {}
 
 
 impl SovereignLayer {
-    /// Vista pública de una cuenta, para que el cliente conozca su nonce
-    /// y su saldo antes de pedir materiales.
-    pub fn account_view(&self, index: AccountIndex) -> Option<AccountView> {
+    /// Vista INTERNA de una cuenta (49-A paso 4, §129): `pub(crate)`, no
+    /// API pública. La usa el protocolo interno (`claim_materials`,
+    /// `send_materials`) y el operador, que ya ve todo el estado. **Un
+    /// tercero NO puede llegar aquí**: la API pública de lectura es
+    /// `account_view_authenticated`, que exige la clave de vista. Este
+    /// cambio cierra `reading_a_balance_requires_authority` sin lisiar el
+    /// uso interno (§129: no se tocan los accessors internos).
+    pub(crate) fn account_view(&self, index: AccountIndex) -> Option<AccountView> {
         self.records.get(&index).map(|r| AccountView {
             public_id: r.public_id,
             balance: r.balance,
             nonce: r.nonce,
         })
+    }
+
+    /// **Vista pública AUTENTICADA de una cuenta** (49-A paso 4). El
+    /// llamador presenta su clave de vista (`derive_view_key(sk)`,
+    /// derivada de la clave de gasto en su máquina, §127); la capa la
+    /// convierte a `view_id` y la compara contra el guardado. Devuelve la
+    /// vista solo si coinciden — un tercero con solo el índice obtiene
+    /// `None`. Presentar la clave de vista NO permite gastar (T7, §127).
+    ///
+    /// Cuentas pre-49-A (view_id centinela) devuelven siempre `None`: su
+    /// vista no está protegida y no se sirve por esta puerta (no-retro).
+    pub fn account_view_authenticated(
+        &self,
+        index: AccountIndex,
+        view_key: Digest,
+    ) -> Option<AccountView> {
+        let guardado = self.stored_view_id(index)?;
+        if guardado != view_id_from_view_key(view_key) {
+            return None;
+        }
+        self.account_view(index)
     }
 
     /// **Materiales para cobrar, sin la clave.**
@@ -372,41 +398,49 @@ mod tests_privacidad {
     /// `tests_support` porque solo la usa este modulo.
     const SK_MALLORY: u64 = 0xBADCAFE;
 
-    /// **SUPERFICIE 1: el contrato de `account_view` no exige autoridad.**
+    /// **SUPERFICIE 1: CERRADA (49-A paso 4).** La API publica de lectura
+    /// ahora EXIGE autoridad. `account_view` paso a `pub(crate)` —uso
+    /// interno del protocolo y del operador, §129— y la via de tercero es
+    /// `account_view_authenticated(index, view_key)`, que compara la clave
+    /// de vista presentada contra el `view_id` guardado.
     ///
-    /// La cabecera de este modulo promete que *«la clave de gasto nunca sale
-    /// de la maquina del titular»*. Es cierto **y es insuficiente**: para
-    /// LEER un saldo no hace falta clave ninguna.
-    ///
-    /// ```rust,ignore
-    /// pub fn account_view(&self, index: AccountIndex) -> Option<AccountView>
-    /// ```
-    ///
-    /// Toma un indice. No recibe credencial. Devuelve `balance` y `nonce`.
-    ///
-    /// ⚠️ **Esto es un hallazgo de CONTRATO, no de explotacion.** No hay
-    /// capa de red en este repositorio, asi que «cualquiera vuelca el
-    /// ledger» seria una afirmacion sobre un despliegue que no existe. Lo
-    /// que si es cierto hoy: **exponer esta API sin añadir control de acceso
-    /// convierte una fuga hacia-el-operador —declarada en la cabecera— en
-    /// una fuga hacia-terceros, que el README no declara.**
+    /// El hallazgo original (leer no exigia clave) queda resuelto: un
+    /// tercero con solo el indice obtiene `None`; solo quien deriva la
+    /// clave de vista de la cuenta —desde su clave de gasto, en su
+    /// maquina, §127— ve su saldo. Presentar la vista NO permite gastar
+    /// (T7). Este test verifica el contrato NUEVO.
     #[test]
     fn reading_a_balance_requires_authority() {
+        use stark_experiment::circuit_settlement::derive_view_key;
+        use winterfell::math::fields::f64::BaseElement;
+
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let _mallory = open_and_fund(&mut layer, SK_MALLORY, 0);
 
-        // Mallory no conoce SK_ALICE. Solo su indice, que es un entero.
-        let vista = layer.account_view(alice);
-
+        // Mallory tiene su propia clave de vista, NO la de Alice.
+        let vk_mallory = derive_view_key(BaseElement::new(SK_MALLORY));
         assert!(
-            vista.is_none(),
-            "CONTRATO: `account_view` devuelve el saldo ({:?}) y el nonce de \
-             una cuenta ajena sin pedir credencial alguna. La cabecera de \
-             este modulo promete que la clave no sale de la maquina del \
-             titular —cierto— pero para LEER no hace falta clave.",
-            vista.as_ref().map(|v| v.balance)
+            layer.account_view_authenticated(alice, vk_mallory).is_none(),
+            "un tercero con su propia clave de vista NO debe ver la cuenta de Alice"
         );
+
+        // Una clave de vista arbitraria tampoco abre.
+        let basura = [BaseElement::new(0xDEAD); 4];
+        assert!(
+            layer.account_view_authenticated(alice, basura).is_none(),
+            "una clave de vista arbitraria NO debe abrir la cuenta"
+        );
+
+        // SOLO la clave de vista de Alice —derivada de SU clave— abre SU vista.
+        let vk_alice = derive_view_key(BaseElement::new(SK_ALICE));
+        let vista = layer.account_view_authenticated(alice, vk_alice);
+        assert!(
+            vista.is_some(),
+            "la clave de vista correcta del titular DEBE abrir su vista"
+        );
+        assert_eq!(vista.unwrap().balance, 1_000_000,
+                   "la vista autenticada devuelve el saldo real al titular");
     }
 
     /// **Y los indices son enumerables**, lo que hace la consecuencia
