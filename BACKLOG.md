@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 33 abiertas, 35 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 34 abiertas, 35 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 1 de agosto de 2026.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
@@ -1404,6 +1404,11 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   la de hoy son 437 ms. No invalida su argumento —usa el valor conservador—
   pero al integrarlo hay que fechar la maquina, como obligo §89 con
   `ESCALADO.md`.
+
+- [ ] **69. Tres ayudantes de test sin usar en `circuit_settlement.rs`.**
+  `SK` y `d()` en `t2b_recuperacion_nativa`, `claves()` en `t2a_salt_hoja`
+  (§136.3). **Peso muerto, no garantia falsa** —a diferencia de los
+  `assert_eq!` de §125.2—. Limpieza, no hallazgo.
 
 - [ ] **50. ⚠️ PRIVACIDAD FRENTE A TERCEROS — propiedad DEMOSTRADA,
   despliegue pendiente (§126).**

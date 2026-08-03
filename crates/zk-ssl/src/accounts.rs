@@ -80,6 +80,19 @@ impl SovereignLayer {
                 rellenada da la misma identidad: la migracion es opt-in \
                 (AUDITORIA 97.4)."
     )]
+    /// ⚠️ **Privacidad hasta el despliegue del salt de hoja (Backlog 50,
+    /// `AUDITORIA.md` §126, §132):** la hoja se compromete hoy **sin
+    /// salt**, así que un observador del árbol puede recuperar el saldo de
+    /// una cuenta por **diccionario sobre el hermano de camino** —barriendo
+    /// balances candidatos hasta reproducir la hoja—. El coste es bajo en el
+    /// rango de saldos realista (cifra en Backlog 50); afecta **por igual a
+    /// las dos anchuras de apertura** —no depende de la entropía de la
+    /// clave, sino de la ausencia de salt en la hoja—. **No se corrige
+    /// rotando ni esperando**: una cuenta abierta hoy queda barrible
+    /// mientras su hoja no lleve salt, y el salt no es retroactivo (§126.4).
+    /// El cierre —`native_leaf_salted` en los ocho AIR, con envoltura
+    /// salt-cero para las cuentas previas— está diseñado en §131 (numeración
+    /// del árbol: §132) y es trabajo mayor, no inmediato.
     pub fn open_account(&mut self, spend_key: BaseElement) -> AccountIndex {
         self.open_account_checked(spend_key)
             .expect("abrir una cuenta no deberia fallar sin persistencia")
@@ -105,6 +118,19 @@ impl SovereignLayer {
     ///
     /// ⚠️ **Lo que cuesta**: la API queda con dos entradas. Es deuda, y va
     /// declarada aqui en vez de descubrirse luego.
+    /// ⚠️ **Privacidad hasta el despliegue del salt de hoja (Backlog 50,
+    /// `AUDITORIA.md` §126, §132):** la hoja se compromete hoy **sin
+    /// salt**, así que un observador del árbol puede recuperar el saldo de
+    /// una cuenta por **diccionario sobre el hermano de camino** —barriendo
+    /// balances candidatos hasta reproducir la hoja—. El coste es bajo en el
+    /// rango de saldos realista (cifra en Backlog 50); afecta **por igual a
+    /// las dos anchuras de apertura** —no depende de la entropía de la
+    /// clave, sino de la ausencia de salt en la hoja—. **No se corrige
+    /// rotando ni esperando**: una cuenta abierta hoy queda barrible
+    /// mientras su hoja no lleve salt, y el salt no es retroactivo (§126.4).
+    /// El cierre —`native_leaf_salted` en los ocho AIR, con envoltura
+    /// salt-cero para las cuentas previas— está diseñado en §131 (numeración
+    /// del árbol: §132) y es trabajo mayor, no inmediato.
     pub fn open_account_wide(&mut self, spend_key: Digest) -> AccountIndex {
         self.open_account_wide_checked(spend_key)
             .expect("abrir una cuenta no deberia fallar sin persistencia")

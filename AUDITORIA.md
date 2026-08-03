@@ -10804,6 +10804,60 @@ que el arbol no tiene**. Paso al metodo: **antes de registrar una accion,
 comprobar en el arbol que ocurrio** — igual que §130 se descubrio ausente
 porque seis citas la buscaban.
 
+## 136. La mitigacion de §132.6, y una falsa alarma sobre una cifra propia
+
+### 136.1 ✅ El aviso en la apertura, hecho
+
+`accounts.rs` documenta en **las dos puertas** —`open_account` y
+`open_account_wide`— que una cuenta abierta hoy **queda barrible hasta el
+despliegue del salt**.
+
+⚠️ **Y dice lo que no era obvio**: la fuga **no depende de la entropia de la
+clave, sino de la ausencia de salt en la hoja** — asi que **las dos anchuras
+son igual de vulnerables**.
+
+> Sin esa frase, un lector supondria que `open_account_wide` protege mas
+> **porque protege mas en otra cosa** —los 256 bits—. **Falsa sensacion de
+> seguridad por asociacion.**
+
+Y **no promete temporalidad**: *«no se corrige rotando ni esperando»*, que es
+§126.4 dicho donde el titular lo lee.
+
+### 136.2 ⚠️ Falsa alarma: los «10,84 s» SI estan anclados
+
+Se reporto que la cifra del diccionario **no aparecia en `AUDITORIA.md`** —
+citada toda la sesion, en §108, §117, §126, §131.5 y en `SECURITY.md`, sin
+fuente canonica—. Habria sido peor que el caso de §130: alli faltaba una
+seccion; aqui faltaria **una medicion publicada**.
+
+**Es falso.** §93.2, en el registro:
+
+> *«**Medido: saldo del vecino recuperado en 10,84 s.** 743.100 centimos,
+> exacto.»*
+
+Con su curva sobre el rango de saldo, sus priors y su alcance acotado.
+
+⚠️ **Por que fallo la comprobacion**: el `grep` busco **las palabras que
+describen el hallazgo** —«barrib», «diccionario»— y la cifra esta anclada
+**por su numero**.
+
+> **Una cifra bien anclada puede parecer huerfana si se la busca por su
+> contexto en vez de por su valor.** Es **§99.5 en la herramienta de
+> verificacion**: un dato correcto buscado sobre el objeto equivocado.
+
+**La leccion es util aunque la alarma fuera falsa**: verificar la existencia
+de un dato se hace **por el dato**, no por su narrativa.
+
+### 136.3 Tres ayudantes de test sin usar
+
+`circuit_settlement.rs` da tres avisos: `SK` y `d()` en
+`t2b_recuperacion_nativa`, `claves()` en `t2a_salt_hoja` — **ayudantes que
+sobrevivieron a la escritura de sus tests**.
+
+⚠️ **Peso muerto, no garantia falsa** — a diferencia de los `assert_eq!`
+tautologicos de §125.2, que **afirmaban algo**. Aqui no se retira nada
+todavia: se **nombra**, para que la limpieza no se confunda con un hallazgo.
+
 ### 92.5 Lo que queda
 
 **Los otros cuatro circuitos de gasto** —`send`, `claim`, `burn`, `audit`—
