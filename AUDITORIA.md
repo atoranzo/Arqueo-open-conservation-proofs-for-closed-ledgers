@@ -11113,3 +11113,61 @@ propios fallos de forma sistemática y ha encontrado algunos**, incluidos
 dos al escribir estas páginas.
 
 Es exactamente por eso que hace falta que lo mire alguien más.
+
+## 137. 49-B: intentada, ROTA por una constante, revertida — y la pregunta de arquitectura cerrada por el fracaso
+
+**Qué se intentó.** Posición derivada de la identidad para altas nuevas
+(`public_id[0] mod capacidad`, sondeo lineal determinista, `next_index`
+conservado como censo de cuota), sin migración: las cuentas viejas se
+quedaban donde estaban (no-retro, familia §117/VIEW_ID_LEGACY) y la
+migración única de B13/B14 haría después las dos cosas de una pasada. El
+análisis previo verificó contigüidad (`0..next_index`: solo pendientes),
+tests con índices literales (ninguno), iso (índice opaco) y la capacidad
+del árbol de CUENTAS. El parche compiló y sus dos tests nuevos pasaron.
+
+**Qué pasó.** La suite completa —no filtrada, la regla que existe para
+esto— devolvió **27 rojos**: todo lo que congela, emite, recupera, envía
+o transfiere. Reversión inmediata (`git checkout`), árbol de vuelta a
+232/2. Los 27 no se parchearon: se revirtió la decisión.
+
+**La causa raíz, verificada y no especulada: `FROZEN_DEPTH = 24`.**
+El árbol de congelados tiene capacidad 2^24; el de cuentas, 2^32. El
+índice de cuenta es **coordenada COMPARTIDA entre dos árboles de
+capacidades distintas**: `frozen.path_for(sender_index)` vive dentro de
+send (two_phase:248), claim (:481), burn, transfer y las vías delegadas.
+La invariante implícita «índice < 2^24» la cumplía la asignación
+secuencial —de gratis, sin declararla— y la violó la posición derivada
+(índices hasta 2^32, 256× la capacidad del frozen). La doc de
+`capacity()` lo advertía: *«quien asigne posiciones debe comprobar este
+límite»* — se comprobó el límite de UN árbol; el índice cruzaba DOS.
+
+**Lo que el fracaso cierra.** La pregunta «¿49-B sola o con B13/B14?»
+tenía una respuesta que ninguna opción contemplaba: **sola es
+estructuralmente imposible**, no ineficiente. Tres salidas, todas caras:
+(1) encoger el espacio a 2^24 → la molienda para dirigir posición baja
+de ~2^31 (horas) a ~2^23 (minutos): destripa la mitigación — NO;
+(2) crecer `frozen` a 32 → cambia su raíz → es SU propia migración →
+pertenece a la migración única, que pasa a migrar TRES cosas de una
+pasada: reposicionar cuentas + salt-cero en hojas + frozen a profundidad
+32 — y `circuit_freeze`/`circuit_burn` verifican caminos de 24, así que
+**los AIR de congelación también cambian: B13/B14 crece**;
+(3) desacoplar índice y slot de congelación (mapa aparte) → complejidad
+nueva y un mapa más que persistir y probar — peor que (2).
+**Veredicto: la (2).** 49-B queda CONDICIONADA a la migración única de
+tres frentes. El «una pasada» de §133 no era preferencia de eficiencia:
+era necesidad, y costó 27 rojos demostrarlo.
+
+**Corrección al método, con nombre.** El análisis de contigüidad miró
+`next_index`, literales e iteraciones — pero no censó **quién más usa el
+índice como coordenada**. Regla nueva: *antes de cambiar el dominio de
+un identificador, censar TODAS las estructuras que lo usan como
+coordenada y comprobar el límite de CADA una* — el grep no es
+`0..next_index`, es `path_for(.*index)` en todos los árboles.
+
+**Lo que sobrevive del intento** (para la migración única): el diseño de
+`derived_position` con sondeo (correcto sobre un frozen de 32), la cota
+honesta de ~2^31, la corrección de que el snapshot ya es
+disperso-compatible (serializa pares índice-registro; la objeción de
+§133 era sobre-cautela), y los dos tests escritos, válidos entonces.
+Nada de esto está en el árbol hoy: la suite está en 232/2 y 49-B sigue
+roja, que es la imagen fiel.
