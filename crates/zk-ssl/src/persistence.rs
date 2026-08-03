@@ -530,7 +530,7 @@ impl SovereignLayer {
                 key.extend_from_slice(&index.to_le_bytes());
                 batch.insert(
                     key,
-                    self.seal(record_to_bytes(&r.public_id, r.balance, r.nonce).to_vec())?,
+                    self.seal(crate::store::record_to_bytes_v2(&r.public_id, r.balance, r.nonce, &r.view_id).to_vec())?,
                 );
             }
         }
