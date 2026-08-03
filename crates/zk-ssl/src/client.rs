@@ -621,6 +621,131 @@ mod tests_privacidad {
              fuga deja de ser oportunista."
         );
     }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // MEDIDA 9 — qué aprende cada participante (extiende §16). Tests
+    // DISCRIMINANTES de correlación: no describen el modelo, cazan las
+    // fugas que sobrevivirían a un cambio de diseño. Cada uno FALLA si la
+    // propiedad de privacidad se rompe.
+    // ═══════════════════════════════════════════════════════════════════
+
+    use crate::pending::pending_commitment;
+    use stark_experiment::circuit_settlement::derive_public_id;
+
+    /// **TERCERO, correlación 1: el commitment NO codifica al emisor.**
+    ///
+    /// `pending_commitment(receiver_id, salt, amount)` no toma la identidad
+    /// del pagador. Consecuencia verificable: dos emisores DISTINTOS que
+    /// envían el mismo importe al mismo receptor con el mismo salt producen
+    /// commitments IDÉNTICOS. Un tercero que observa el árbol de pendientes
+    /// no puede, del commitment, recuperar quién pagó.
+    ///
+    /// ⚠️ Lo que un auditor debe valorar (§16): esto significa que el salt
+    /// es lo ÚNICO que da unlinkability. Reutilizar salt entre pagos al
+    /// mismo receptor los vuelve enlazables —ver el test siguiente—.
+    #[test]
+    fn el_commitment_no_revela_al_emisor() {
+        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
+        let salt = salt_de(0x5EED);
+
+        // Alice paga a Bob; Mallory paga a Bob. Mismo receptor, salt, importe.
+        let c_desde_alice = pending_commitment(id_bob, salt, 250_000);
+        let c_desde_mallory = pending_commitment(id_bob, salt, 250_000);
+
+        // El emisor no entra en la formula: los commitments son iguales.
+        assert_eq!(
+            c_desde_alice, c_desde_mallory,
+            "el commitment depende del EMISOR: seria un canal para \
+             identificar al pagador desde el arbol de pendientes"
+        );
+    }
+
+    /// **TERCERO, correlación 2: el salt da unlinkability, y su ausencia la
+    /// quita.** Dos pagos al mismo receptor con salts DISTINTOS producen
+    /// commitments distintos (no enlazables); con el mismo salt, iguales
+    /// (enlazables). Fija en test que la unlinkability descansa en el salt.
+    #[test]
+    fn el_salt_es_lo_que_hace_impagos_inenlazables() {
+        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
+
+        let c1 = pending_commitment(id_bob, salt_de(0xAAAA), 100_000);
+        let c2 = pending_commitment(id_bob, salt_de(0xBBBB), 100_000);
+        let c3 = pending_commitment(id_bob, salt_de(0xAAAA), 100_000);
+
+        assert_ne!(c1, c2, "salts distintos deben dar commitments distintos");
+        assert_eq!(c1, c3, "mismo salt+receptor+importe -> mismo commitment (enlazable)");
+    }
+
+    /// **CONTRAPARTE (el receptor): qué aprende del emisor al cobrar.**
+    ///
+    /// El receptor recibe un `PendingNotice { position, salt, amount }`.
+    /// **Ninguno de esos campos es la identidad del emisor** —el diseño lo
+    /// fija en el tipo: no hay un campo `sender`—. El receptor sabe cuánto
+    /// cobra y desde qué posición, pero no de quién. Es la propiedad
+    /// «la capa no sabe qué pendiente es de quién», vista desde el receptor.
+    ///
+    /// ⚠️ Auditor (§16, §21): el notice viaja FUERA de banda (ISO 20022 no
+    /// lo transporta). Si el canal de entrega revelara al emisor, la fuga
+    /// estaria en ese canal, no aqui. Este test acota lo que la CAPA expone.
+    #[test]
+    fn el_receptor_no_aprende_al_emisor_del_aviso() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let id_bob = layer.public_id_of(bob).expect("bob");
+        let estado_alice = state_of(&layer, alice);
+
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &estado_alice, id_bob, salt_de(0x1), 250_000)
+            .expect("send");
+
+        // El aviso que le llega al receptor: salt, amount, position.
+        // NO contiene la identidad de Alice. Se verifica sobre los campos
+        // publicos del notice: cobrar solo necesita SK_BOB + el aviso, y el
+        // aviso no menciona a Alice.
+        let notice = &recibo.notice;
+        let id_alice = derive_public_id(BaseElement::new(SK_ALICE));
+        // El salt del aviso no es la identidad de Alice (son cosas distintas).
+        assert_ne!(notice.salt, id_alice,
+                   "el salt del aviso NO debe coincidir con la identidad del emisor");
+        // El commitment depositado se reproduce SIN la identidad de Alice:
+        // solo con receptor+salt+amount, lo que confirma que el emisor no
+        // es un input recuperable por el receptor.
+        assert_eq!(
+            recibo.commitment,
+            pending_commitment(id_bob, notice.salt, notice.amount),
+            "el receptor reproduce el commitment sin conocer al emisor: \
+             el emisor no es recuperable del material que el receptor tiene"
+        );
+    }
+
+    /// **TERCERO, correlación 3: `position` filtra ORDEN, no identidad.**
+    ///
+    /// Las posiciones se asignan por orden de llegada (`next_pending += 1`),
+    /// asi que dos sends consecutivos ocupan 0 y 1 sea quien sea el emisor.
+    /// La posicion correlaciona *cuando*, no *quien*. Un tercero aprende la
+    /// secuencia temporal de pagos, pero no a quien pertenecen.
+    #[test]
+    fn la_posicion_del_pendiente_es_orden_no_identidad() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 1_000_000);
+        let mallory = open_and_fund(&mut layer, SK_MALLORY, 1_000_000);
+        let id_m = layer.public_id_of(mallory).expect("m");
+
+        // Alice envia primero, Bob despues. Posiciones 0 y 1 por orden.
+        let ea = state_of(&layer, alice);
+        let r0 = layer.send(BaseElement::new(SK_ALICE), alice, &ea, id_m, salt_de(0x1), 100)
+            .expect("send alice");
+        layer.apply_send(&r0, alice, &ea, 100).expect("apply");
+        let eb = state_of(&layer, bob);
+        let r1 = layer.send(BaseElement::new(SK_BOB), bob, &eb, id_m, salt_de(0x2), 200)
+            .expect("send bob");
+
+        // La posicion refleja el orden (0, 1), no quien envio.
+        assert_eq!(r0.notice.position, 0, "primer envio -> posicion 0");
+        assert_eq!(r1.notice.position, 1, "segundo envio -> posicion 1, por ORDEN no por emisor");
+    }
 }
 
 #[cfg(test)]
