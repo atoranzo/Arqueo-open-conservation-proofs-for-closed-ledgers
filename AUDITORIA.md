@@ -11322,6 +11322,58 @@ release (README:251-252; «31 s en release»). La causa de la caída en
 debug no se conjetura (131.5); si algún día importa ese modo, se censa
 entonces.
 
+## 141. SB0 ejecutado completo: circuit_send con UNA representación de su geometría (cuatro pasos, suite verde en cada eslabón)
+
+**Qué se hizo.** El refactor que §140 eligió, en los cuatro pasos
+compilables del plan (regla §129), cada uno con guarda md5 atómica,
+suite release canónica (286/0 + 2 ignorados en stark, 240/2 + 3 en
+zk-ssl; los 2 rojos = 49-B) y commit propio:
+
+- **SB0.1** (`0451462`): bloque `CYC_*` derivado de `(CYCLE_LENGTH,
+  TREE_DEPTH, FROZEN_DEPTH)`; las nueve `ROW_*` re-expresadas como
+  derivadas; nueve clavos `const _: () = assert!(…)` con los valores
+  heredados — **el compilador atestiguó la identidad, no esta sesión**.
+- **SB0.2** (`564f45e`): los seis bucles (tres de bits, tres
+  periódicas) sobre `CYC_ACC`/`CYC_FROZEN`/`CYC_PEND_CLIMB`; cero
+  literales de ciclo en bucles.
+- **SB0.3** (`0639a52`): el `match` normalizado a la convención única
+  `(CYC_arranque..CYC_fin)` con `nivel = nc − CYC_arranque` — frozen
+  (36..60)→(35..59), pendientes (62..94)→(61..93). Los cuatro valores
+  que cambian eran inalcanzables (sombreado / límite del bucle, mapa
+  §3), y ahora **el rango se guarda su propio valor ilegal superior**
+  en los dos tramos que antes dependían de guardianes externos — el
+  defecto exacto que detonó los intentos de §139. `debug_assert!` en
+  los tres `place_*`: el próximo desajuste dirá «nivel X sobre path de
+  Y» en vez de estallar por índice.
+- **SB0.4** (`96264ba`): comentarios al marco único (el muerto del
+  margen «1007/16» fuera; el pendiente en el marco de hasheo, como su
+  vecino); frase de convención junto al bloque; los nueve clavos
+  retirados y en su lugar UNA guarda de relación:
+  `const _: () = assert!(ROW_PENDING_ROOT < TRACE_LENGTH)` — el
+  presupuesto de la traza en compilación, la que avisará con salt y
+  frozen-32.
+
+Cadena md5 de `circuit_send.rs`: `1b7110b9…` → `77f88cb4…` →
+`77771824…` → `c0d4cce6…` → `0573f724…`. La cuarta reversión que §139
+temía no ocurrió: no quedaba nada que desincronizar.
+
+**Hallazgo colateral, censado para el paso 3.** Los rangos literales
+del `match` viven en NUEVE ficheros hermanos: `circuit_claim` con los
+tres tramos, `circuit_burn` con dos (cuentas + frozen), y siete con
+uno (cuentas): `circuit_audit`, `circuit_mint`, `circuit_mint_climb`,
+`circuit_recovery`, `circuit_recovery_climb`, `circuit_settlement`,
+`double_entry`. La réplica del patrón SB0 tiene su lista hecha antes
+de empezar — y cada uno se censa al migrarlo (§138: no se asume que lo
+de send vale sin probarlo allí).
+
+**Lo que queda listo.** SB1 (salt) vuelve a ser lo que la spec diseñó:
+la mecánica de corrimiento es añadir `CYC_SALT` y correr `CYC_ACC` una
+línea; el trabajo real son las columnas testigo, `link_salt`, las seis
+`C_SALT_*` (cuatro limbos atados, §138) y las 2 mutaciones
+obligatorias. La estadificación de `FROZEN_DEPTH` (§140.3) sigue
+ABIERTA, decisión del autor; bloquea la parte frozen del piloto, no el
+salt.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

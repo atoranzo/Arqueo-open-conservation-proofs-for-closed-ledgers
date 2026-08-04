@@ -1572,6 +1572,18 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   PRIMERO: producir el mapa completo de la geometría de `circuit_send` como
   documento; con él la elección es obvia. El plan SB1→SB5 sigue válido
   salvo la mecánica de dónde meter las 8 filas.
+  ✅ **Paso 2 — decisión tomada y SB0 EJECUTADO (2026-08-04, §140-§141)**:
+  el mapa completo existe (`doc/mapa-geometria-circuit_send.md` +
+  `tools/verifica_geometria.py`, verificación mecánica que reproduce los
+  intentos de §139); la elección fue REFACTOR — frozen-32 obliga al
+  corrimiento que el hack pretendía evitar. SB0 completo en cuatro pasos
+  compilables (`0451462`, `564f45e`, `0639a52`, `96264ba`): geometría en
+  UNA representación (`CYC_*` → `ROW_*`, bucles y `match` derivados),
+  `debug_assert` en los tres `place_*`, y la guarda de presupuesto
+  `ROW_PENDING_ROOT < TRACE_LENGTH` en compilación. Suite release
+  canónica en cada eslabón. SIGUE: SB1 — el salt de verdad (columnas,
+  `link_salt`, las seis `C_SALT_*`, 2 mutaciones); la estadificación de
+  `FROZEN_DEPTH` (§140.3) ABIERTA, del autor.
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y
