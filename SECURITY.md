@@ -110,13 +110,13 @@ atando lo que no era—. Ninguna herramienta la detectó.
 
 **Estado: abierto.** Backlog 48 (B12.1).
 
-### 3.2 El compromiso de hoja **no es ocultante** — ⚠️ MEDIDO
+### 3.2 El compromiso de hoja **ya ES ocultante** — MEDIDO y RESUELTO (entrada 50)
 
-`native_leaf(identity, balance, nonce)` = `H(H(id, saldo), nonce)`, **sin
-salt**. Y `path_for` entrega al cliente el hermano de nivel 0, que **es la hoja
+**Mundo viejo**: `native_leaf(identity, balance, nonce)` = `H(H(id,
+saldo), nonce)`, **sin salt**. Y `path_for` entrega al cliente el hermano de nivel 0, que **es la hoja
 de la cuenta vecina**.
 
-**Medido el 31-07-2026: el saldo del vecino se recupera en 10,84 s.**
+**Medido el 31-07-2026: el saldo del vecino se recuperaba en 10,84 s.**
 
 El coste es una **curva** sobre el rango de saldo que el atacante asuma:
 
@@ -126,20 +126,26 @@ El coste es una **curva** sobre el rango de saldo que el atacante asuma:
 | 0–1 M € | 4,1 h |
 | 64 bits uniformes | 8,3 × 10⁷ años-núcleo — **que nunca lo son en dinero** |
 
-Alcance: **una cuenta** por camino. Y los índices son secuenciales, así que
-**el vecino se elige, no toca al azar**.
+Alcance: **una cuenta** por camino. Y los índices eran secuenciales, así
+que **el vecino se elegía**. Ambas cosas, muertas — ver abajo y §157.
 
-⚠️ **Sin solución conocida.** Derivar el salt de la clave está descartado:
-`open_account`, `mint`, `freeze` y `recover` escriben la hoja de un titular
-**sin conocer su secreto** (§99.3).
+La solución que §99.3 descartaba —derivar en cada escritura— **no hizo
+falta**: el salt se fija UNA vez al abrir (`derive_leaf_salt(sk)`, §117)
+y se ALMACENA en el récord; quien escribe sin el secreto **lee**
+`r.leaf_salt`, y recovery preserva LA COPIA (§93.4).
 
-**Estado: abierto.** Backlog 50. `AUDITORIA.md` §93, §99.
+**Estado: RESUELTO.** Entrada 50 CERRADA y etiquetada (`entrada-50`):
+hoja envuelta en árbol y circuitos (flip D4), colocación `public_id mod
+capacidad`, y el barrido convertido en CONTRATO (`hallado.is_none()`).
+`AUDITORIA.md` §117, §156-§158.
 
 ### 3.3 El contrato de lectura de cuentas no exige autorización — ⚠️ MEDIDO
 
 `account_view(index)`, `balance_of`, `nonce_of` y `public_id_of` **toman un
-índice y no piden credencial**. Los índices son secuenciales (`next_index +=
-1`), así que enumerarlos no requiere adivinar nada.
+índice y no piden credencial** — del OPERADOR por diseño (§129); el
+titular tiene `account_view_authenticated` (49-A). Y los índices **ya
+no** son secuenciales: colocación `public_id mod capacidad` (F3, §157)
+— enumerarlos exige adivinar, y el contrato-test lo vigila.
 
 ⚠️ **Es un hallazgo de contrato, no de explotación**: no hay capa de red en
 este repositorio. Lo cierto hoy: **exponer estas funciones sin control de

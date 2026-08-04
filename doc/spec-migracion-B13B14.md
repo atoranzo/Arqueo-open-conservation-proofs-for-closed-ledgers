@@ -1,5 +1,8 @@
 # B13/B14 · Paso 1 — Spec del EVENTO DE MIGRACIÓN (cuatro sub-frentes, réplica determinista)
 
+> **ESTADO: EJECUTADO** — flip D4 (`2ac37c5`) + F3 (§156-§157); etiqueta
+> `entrada-50`. La spec queda como diseño de referencia del evento.
+
 Entregable del paso 1 de la campaña. Censo completo ejecutado (regla
 §137: TODAS las estructuras, no la muestra). Correcciones al enunciado:
 **DIEZ AIR, no ocho** (FROZEN_DEPTH vive en burn, claim, freeze,

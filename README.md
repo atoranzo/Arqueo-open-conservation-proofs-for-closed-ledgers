@@ -47,20 +47,24 @@ Esto es un **nodo único**. Quien lo opera:
 ⚠️ **Y la privacidad frente a TERCEROS tampoco esta.** Este documento decia
 que lo estaba «frente a terceros **que solo ven pruebas**». La condicion
 —que un tercero solo vea pruebas— **es falsa**, y esta medido el 31-07-2026
-(`AUDITORIA.md` §93):
+(`AUDITORIA.md` §93). **Desde la entrada 50 (§156-§157) ambas
+superficies cambiaron de estado** — la tabla conserva la medida y añade
+el veredicto de hoy:
 
-| superficie | medido |
+| superficie | medido → veredicto |
 |---|---|
-| `account_view`, `balance_of`, `nonce_of` y `public_id_of` | toman un indice, **no piden credencial**, devuelven el saldo. Y los indices son **enumerables** (`next_index += 1`) |
-| El camino Merkle que el protocolo entrega | `sender_path.siblings[0]` **es la hoja del vecino**, y `native_leaf(pk, saldo, nonce)` **no lleva salt**: el saldo se recupero por diccionario en **10,84 s** |
+| `account_view`, `balance_of`, `nonce_of` y `public_id_of` | del OPERADOR por diseño (§129); el titular tiene `account_view_authenticated` (49-A). Y los índices **ya no son enumerables**: colocación `public_id mod capacidad` (F3, §157) — el contrato `account_indices_are_not_enumerable` vigila en verde |
+| El camino Merkle que el protocolo entrega | `siblings[0]` sigue siendo la hoja del vecino, pero desde el flip D4 (§156) la hoja va **ENVUELTA** —`native_leaf_salted(…, salt)`, salt fijado al abrir (§117)—. El diccionario que recuperó el saldo en **10,84 s** ya **no acierta**: el instrumento quedó como CONTRATO |
 
-El coste del segundo **no es un numero, es una curva** sobre el rango de
-saldo que el atacante asuma: **2,4 min** para 0-10.000 EUR, 4,1 h para
-0-1 M, y 8,3×10^7 años-nucleo si el saldo fuera uniforme en 64 bits —**que
-nunca lo es en un sistema de dinero**—.
+El coste de aquel ataque **no era un número, era una curva**: **2,4 min**
+para 0-10.000 EUR, 4,1 h para 0-1 M, y 8,3×10^7 años-núcleo en 64 bits
+uniformes —que nunca lo son en dinero—. **La curva está muerta por el
+salt**; se conserva como medida del riesgo que se cerró.
 
-⚠️ Y el vecino de arbol **es elegible**: las altas dan indices consecutivos,
-asi que quien controla el momento de su alta elige a quien espia.
+⚠️ Y el vecino de árbol **era elegible** —altas consecutivas—. Desde F3
+la colocación es `public_id mod capacidad`: el contrato
+`account_indices_are_not_predictable` vigila en verde que elegir vecino
+ya no sea posible (§157).
 
 **Alcance, acotado**: **1 cuenta** por camino —solo `siblings[0]` es
 preimagen de hoja; los otros 31 hermanos son raices de subarbol y no son
