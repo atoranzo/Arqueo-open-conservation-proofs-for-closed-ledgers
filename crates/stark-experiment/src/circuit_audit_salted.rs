@@ -112,7 +112,11 @@ const COL_LOWER: usize = 23;
 const COL_UPPER: usize = 24;
 const COL_SBIT: usize = 25;
 const COL_SACC: usize = 26;
-pub const TRACE_WIDTH: usize = 27;
+/// **Salt de la hoja** (testigo, §117): envuelve la hoja como tercer
+/// merge — UN carril, un salt (spec de la máquina de hoja §2). Sin
+/// colisión en audit: no hay COL_SALT previo.
+const COL_LEAF_SALT: usize = 27; // 27..31
+pub const TRACE_WIDTH: usize = 31;
 
 // ===== Filas de eventos =====
 //
@@ -124,10 +128,15 @@ pub const TRACE_WIDTH: usize = 27;
 // ciclo vive fuera de este bloque — bucles de bits, periódicas y el
 // `match` de `build_trace` lo derivan de aquí.
 const CYC_NONCE: usize = 1;
-const CYC_ACC: usize = CYC_NONCE + 1;
+// El TERCER merge (§117, B13/B14): la hoja se envuelve con el salt
+// antes de entrar al camino. Todo el calendario posterior se corre +1
+// ciclo solo, por derivación (playbook R2).
+const CYC_SALT: usize = CYC_NONCE + 1;
+const CYC_ACC: usize = CYC_SALT + 1;
 const CYC_PK: usize = CYC_ACC + TREE_DEPTH;
 const CYC_FIN: usize = CYC_PK + 1;
 const ROW_LEAF_LINK: usize = CYC_NONCE * CYCLE_LENGTH - 1;
+const ROW_SALT_LINK: usize = CYC_SALT * CYCLE_LENGTH - 1;
 const ROW_LEAF_DONE: usize = CYC_ACC * CYCLE_LENGTH - 1;
 const ROW_ROOT: usize = CYC_PK * CYCLE_LENGTH - 1;
 const ROW_PK_START: usize = CYC_PK * CYCLE_LENGTH;
@@ -186,6 +195,9 @@ pub struct AuditWitness {
     pub spend_key: Digest,
     pub balance: u64,
     pub nonce: BaseElement,
+    /// **Salt de la hoja (testigo, §117).** Deriva de la clave; la
+    /// pertenencia se prueba sobre `H(native_leaf, salt)`.
+    pub leaf_salt: Digest,
     pub path: MerklePath,
 }
 
@@ -216,6 +228,7 @@ pub fn build_trace_with_id(
         row[COL_NONCE] = witness.nonce;
         row[COL_LOWER] = c_lower;
         row[COL_UPPER] = c_upper;
+        row[COL_LEAF_SALT..COL_LEAF_SALT + 4].copy_from_slice(&witness.leaf_salt);
     }
 
     // Rangos: saldo, saldo − inferior, superior − saldo.
@@ -272,6 +285,14 @@ pub fn build_trace_with_id(
                 ROW_LEAF_LINK => {
                     state[4..8].copy_from_slice(&digest);
                     state[8] = witness.nonce;
+                }
+                ROW_SALT_LINK => {
+                    // EL TERCER MERGE (§117): la hoja se envuelve con el
+                    // salt. Digest arrastrado; el rate recibe los CUATRO
+                    // limbos del salt (spec §2 — atar solo [8] sería el
+                    // bug de §92.2 en su forma nueva).
+                    state[4..8].copy_from_slice(&digest);
+                    state[8..12].copy_from_slice(&witness.leaf_salt);
                 }
                 ROW_LEAF_DONE => place(&mut state, &digest, 0),
                 ROW_ROOT => {
@@ -705,7 +726,9 @@ impl Prover for AuditProver {
 
 #[cfg(test)]
 mod tests {
-    use crate::circuit_settlement::{native_climb, native_leaf};
+    use crate::circuit_settlement::{
+        derive_leaf_salt_wide, native_climb, native_leaf_salted,
+    };
     use super::*;
     use crate::merkle::native_merge;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
@@ -751,13 +774,20 @@ mod tests {
             is_right.push(level % 3 == 0);
         }
         let path = MerklePath { siblings, is_right };
-        let root = native_climb(native_leaf(id, BaseElement::new(balance), nonce), &path);
+        // El salt REAL del titular (§117): derivado de la clave, no un
+        // literal de juguete — el escenario vive en el mundo envuelto.
+        let leaf_salt = derive_leaf_salt_wide(key);
+        let root = native_climb(
+            native_leaf_salted(id, BaseElement::new(balance), nonce, leaf_salt),
+            &path,
+        );
 
         (
             AuditWitness {
                 spend_key: key,
                 balance,
                 nonce,
+                leaf_salt,
                 path,
             },
             root,
@@ -865,7 +895,7 @@ mod tests {
 
     /// **NADIE PUEDE REVELAR POR OTRO.**
     ///
-    /// Un tercero conoce la identidad, el saldo, el nonce y el camino de
+    /// Un tercero conoce la identidad, el saldo, el nonce, el salt y el camino de
     /// una cuenta ajena, y construye la traza **con la identidad de la
     /// víctima** para que la raíz cuadre. Solo `C_PK_CHECK` puede
     /// detectar que su clave no corresponde.
@@ -881,6 +911,9 @@ mod tests {
             ],
             balance: victim.balance,
             nonce: victim.nonce,
+            // El salt es OBSERVABLE (el secreto es la clave, §117): el
+            // ataque sigue apuntando a titularidad, no a pertenencia.
+            leaf_salt: victim.leaf_salt,
             path: victim.path.clone(),
         };
         assert!(
