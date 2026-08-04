@@ -381,6 +381,12 @@ pub fn build_trace(
     }
 
     let place_pending = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
+        debug_assert!(
+            level < TREE_DEPTH,
+            "place_pending: nivel {} sobre path de {}",
+            level,
+            TREE_DEPTH
+        );
         if pending_path.is_right[level] {
             state[4..8].copy_from_slice(&pending_path.siblings[level]);
             state[8..12].copy_from_slice(digest);
@@ -391,6 +397,12 @@ pub fn build_trace(
     };
 
     let place_frozen = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
+        debug_assert!(
+            level < FROZEN_DEPTH,
+            "place_frozen: nivel {} sobre path de {}",
+            level,
+            FROZEN_DEPTH
+        );
         if frozen_path.is_right[level] {
             state[4..8].copy_from_slice(&frozen_path.siblings[level]);
             state[8..12].copy_from_slice(digest);
@@ -401,6 +413,12 @@ pub fn build_trace(
     };
 
     let place = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
+        debug_assert!(
+            level < TREE_DEPTH,
+            "place: nivel {} sobre path de {}",
+            level,
+            TREE_DEPTH
+        );
         if path.is_right[level] {
             state[4..8].copy_from_slice(&path.siblings[level]);
             state[8..12].copy_from_slice(digest);
@@ -487,15 +505,22 @@ pub fn build_trace(
                 }
                 _ => {
                     let next_cycle = (r + 1) / CYCLE_LENGTH;
-                    if (2..34).contains(&next_cycle) {
-                        place(&mut state_a, &digest_a, next_cycle - 2);
-                        place(&mut state_b, &digest_b, next_cycle - 2);
-                    } else if (36..60).contains(&next_cycle) {
-                        let level = next_cycle - 35;
+                    // Convención única (SB0, §140): cada tramo genérico es
+                    // `(CYC_arranque..CYC_fin_de_tramo)` y el nivel es
+                    // `next_cycle - CYC_arranque`. El arranque lo sombrea
+                    // su brazo explícito (que coloca el nivel 0); el final
+                    // queda FUERA del rango: la raíz no se coloca, la atan
+                    // las aserciones.
+                    if (CYC_ACC..CYC_PK).contains(&next_cycle) {
+                        let level = next_cycle - CYC_ACC;
+                        place(&mut state_a, &digest_a, level);
+                        place(&mut state_b, &digest_b, level);
+                    } else if (CYC_FROZEN..CYC_PEND_IN).contains(&next_cycle) {
+                        let level = next_cycle - CYC_FROZEN;
                         place_frozen(&mut state_a, &digest_a, level);
                         place_frozen(&mut state_b, &digest_b, level);
-                    } else if (62..94).contains(&next_cycle) {
-                        let level = next_cycle - 61;
+                    } else if (CYC_PEND_CLIMB..CYC_FIN).contains(&next_cycle) {
+                        let level = next_cycle - CYC_PEND_CLIMB;
                         place_pending(&mut state_a, &digest_a, level);
                         place_pending(&mut state_b, &digest_b, level);
                     }
