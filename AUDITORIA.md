@@ -11814,6 +11814,42 @@ holgura **0** en su 256. **CABE — exacto.**
 Suite 420/0; capa 240/2 intacta; guardianes 35·37. Sigue: asiento de
 cierre de campaña e informe de traspaso actualizado.
 
+## 153. CIERRE DE CAMPAÑA — los diez gemelos del paso 3, en una página
+
+**Lo hecho** (§143-§152, 47 commits): DIEZ gemelos `*_salted` nacidos,
+derivados, envueltos (los ocho con salt) o girados a 32 (los dos de
+profundidad), cada uno con sus mutaciones obligatorias rechazando y su
+espejo nativo↔circuito verde. Suite stark: **420/0** (de 341 al abrir
+el paso 3); capa **240/2 intacta** — ni un test de zk-ssl tocado en
+toda la campaña; guardianes **35·37** (citas · circuitos censados).
+
+**Los tres hallazgos estructurales**: (1) **burn NO cabe en 512** —
+único desborde; TRACE propia 1024, coste ~2× crudo, la medición
+apareada del paso 5 (§130) lo cuantificará; (2) **audit es de UN
+carril** — tres familias/12 ranuras, espejo de una hoja, salt en el
+testigo: el molde demostró que se adapta; (3) **freeze es la CASA de
+`FROZEN_DEPTH`** y frozen_climb, a 32, ajusta EXACTO — §60.2 disuelto
+por geometría, no pagado.
+
+**Las variantes semánticas registradas**: el titular de mint asciende
+al mundo ancho y su salt viaja del dueño al emisor (nota para el flip,
+§146); LA COPIA de recovery (§93.4) certificada por espejo — mismo
+salt, identidades y nonces distintos — y heredada por recovery_climb.
+
+**Las reglas que el playbook ganó por la vía práctica**: anclas DEL
+NATURAL, nunca de memoria (reafirmada por ~ocho abortos limpios de
+guarda — CERO bytes mal escritos en toda la campaña); censar TODOS los
+literales del struct-testigo, no solo el nexo; ante clausuras
+homónimas en forma, el ancla lleva el `let nombre =` completo; los
+comentarios se revisan EN el paso que mueve la geometría; y el patrón
+R2-deriva-R6-gira para los gemelos de profundidad (freeze: R6 = una
+línea).
+
+**Lo que la campaña deja armado**: paso 4 (T2b-circuito), paso 5
+(medición apareada §130, con el 2× de burn como dato esperado), y el
+flip D4 con sus avisos anotados donde muerden. El informe de traspaso
+actualizado acompaña este asiento como documento.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

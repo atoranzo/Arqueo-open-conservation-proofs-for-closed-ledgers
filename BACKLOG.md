@@ -1644,6 +1644,10 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   ✅✅ **DIEZ DE DIEZ — CAMPAÑA DEL PASO 3 COMPLETA** (§143-§152, 47
   commits de campaña). Sigue: asiento de cierre + informe de
   traspaso.
+  ✅ **CIERRE DE CAMPAÑA (§153)**: resumen en una página — hallazgos
+  (burn 1024, audit un carril, freeze la CASA + ajuste exacto),
+  variantes (titular ancho, LA COPIA), reglas del playbook, y lo que
+  queda armado (paso 4, paso 5 §130, flip D4). El paso 3 se archiva.
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y
