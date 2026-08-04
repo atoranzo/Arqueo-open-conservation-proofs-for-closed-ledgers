@@ -2455,4 +2455,29 @@ mod tests {
              decorativo a nivel de circuito"
         );
     }
+    /// **[§130] Instrumento de la medición apareada (paso 5).** Prove
+    /// del GEMELO en su escenario honesto — construcción + prove dentro
+    /// del reloj (el patrón de `metrics_33`). Se corre a mano, en
+    /// release:
+    /// `cargo test --release -p stark-experiment medicion_130 -- --ignored --nocapture`
+    #[test]
+    #[ignore = "instrumento de medida, no comprobacion: correr a mano"]
+    fn medicion_130_send_gemelo() {
+        use std::time::Instant;
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let t0 = Instant::now();
+        let trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path,
+            &s.frozen_path, s.amount, TEST_LIMIT, s.supply_old, 0,
+            s.receiver_id, s.salt, &s.pending_path,
+        );
+        let proof = SendProver::new(default_options())
+            .prove(trace)
+            .expect("el honesto debe probar");
+        let ms = t0.elapsed().as_secs_f64() * 1000.0;
+        println!(
+            "[§130] send gemelo: prove {ms:.1} ms, proof {} bytes",
+            proof.to_bytes().len()
+        );
+    }
 }
