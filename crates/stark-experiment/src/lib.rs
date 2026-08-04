@@ -78,6 +78,7 @@ pub mod circuit_mint_pending;
 // Entrada 33 / 68: mint_pending sin la parte de autorizacion.
 pub mod circuit_mint_pending_climb;
 pub mod circuit_recovery;
+pub mod circuit_recovery_salted;
 // Entrada 33 / §64: recovery sin la parte de autorizacion.
 pub mod circuit_recovery_climb;
 pub mod circuit_claim;
