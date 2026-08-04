@@ -140,11 +140,23 @@ const COL_LIMIT: usize = 51;
 pub const TRACE_WIDTH: usize = 52;
 
 // ===== Filas =====
-const ROW_LEAF_LINK: usize = 7;
-const ROW_LEAF_DONE: usize = 15;
-const ROW_ROOT: usize = 271;
-const ROW_PK_START: usize = 272;
-const ROW_PK_DONE: usize = 279;
+//
+// Geometría derivada (SB0, §140): cada tramo arranca en un ciclo `CYC_*`
+// y las filas-hito `ROW_*` se derivan de él — una sola fuente de verdad
+// para el calendario, tras las tres reversiones de §139.
+const CYC_NONCE: usize = 1;
+const CYC_ACC: usize = CYC_NONCE + 1;
+const CYC_PK: usize = CYC_ACC + TREE_DEPTH;
+const CYC_FROZEN: usize = CYC_PK + 1;
+const CYC_PEND_IN: usize = CYC_FROZEN + FROZEN_DEPTH;
+const CYC_PEND_VAL: usize = CYC_PEND_IN + 1;
+const CYC_PEND_CLIMB: usize = CYC_PEND_VAL + 1;
+const CYC_FIN: usize = CYC_PEND_CLIMB + TREE_DEPTH;
+const ROW_LEAF_LINK: usize = CYC_NONCE * CYCLE_LENGTH - 1;
+const ROW_LEAF_DONE: usize = CYC_ACC * CYCLE_LENGTH - 1;
+const ROW_ROOT: usize = CYC_PK * CYCLE_LENGTH - 1;
+const ROW_PK_START: usize = CYC_PK * CYCLE_LENGTH;
+const ROW_PK_DONE: usize = CYC_FROZEN * CYCLE_LENGTH - 1;
 /// **Fase de no-pertenencia al árbol de CONGELADOS.**
 ///
 /// Ocupa las filas 280..471, que estaban libres. Sin ella, una cuenta
@@ -154,17 +166,29 @@ const ROW_PK_DONE: usize = 279;
 /// Congelar existe para que una cuenta bajo investigación no mueva fondos.
 /// Destruirlos los mueve: los saca del sistema. Que sea público e
 /// irreversible no los devuelve.
-const ROW_FROZEN_ROOT: usize = 471;
+const ROW_FROZEN_ROOT: usize = CYC_PEND_IN * CYCLE_LENGTH - 1;
 /// **Inserción del pendiente**: ciclos 60..91, filas 480..735.
 ///
 /// Carril A: la posición vacía → raíz antigua de pendientes.
 /// Carril B: con el compromiso → raíz nueva.
 /// Compromiso interno del pendiente: `H(id_receptor, aleatorio)`.
-const ROW_PEND_INNER: usize = 479;
+const ROW_PEND_INNER: usize = CYC_PEND_VAL * CYCLE_LENGTH - 1;
 /// El pendiente completo: `H(interno, importe)`.
-const ROW_PENDING_ENTRY: usize = 487;
+const ROW_PENDING_ENTRY: usize = CYC_PEND_CLIMB * CYCLE_LENGTH - 1;
 /// Raíz tras insertarlo. Ciclos 61..92, filas 488..743.
-const ROW_PENDING_ROOT: usize = 743;
+const ROW_PENDING_ROOT: usize = CYC_FIN * CYCLE_LENGTH - 1;
+
+// Clavos transitorios de SB0.1: los valores heredados, atados en
+// compilación mientras dura el refactor. Se retiran en SB0.4.
+const _: () = assert!(ROW_LEAF_LINK == 7);
+const _: () = assert!(ROW_LEAF_DONE == 15);
+const _: () = assert!(ROW_ROOT == 271);
+const _: () = assert!(ROW_PK_START == 272);
+const _: () = assert!(ROW_PK_DONE == 279);
+const _: () = assert!(ROW_FROZEN_ROOT == 471);
+const _: () = assert!(ROW_PEND_INNER == 479);
+const _: () = assert!(ROW_PENDING_ENTRY == 487);
+const _: () = assert!(ROW_PENDING_ROOT == 743);
 
 // ===== Restricciones =====
 const C_HASH_A: usize = 0;
