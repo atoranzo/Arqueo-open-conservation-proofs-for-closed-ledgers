@@ -1319,7 +1319,7 @@ mod tests {
     use super::*;
     use crate::circuit_settlement::{
         derive_leaf_salt_wide, derive_public_id, derive_public_id_wide,
-        native_climb, native_leaf_salted,
+        native_climb, native_leaf, native_leaf_salted,
     };
     use crate::merkle::native_merge;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
@@ -2212,5 +2212,146 @@ mod tests {
         assert!(!verifica,
                 "el limbo atado del nonce DEBE rechazar; si no, la mutacion \
                  en ROW_LEAF_LINK no llega al circuito y el test previo es vacio");
+    }
+
+    /// **NATIVO↔CIRCUITO de la envoltura (spec §4, piloto B13/B14).**
+    ///
+    /// La cadena de TRES merges del trace debe espejar `native_leaf_salted`
+    /// limbo a limbo: en `ROW_SALT_LINK` el digest disponible es la hoja
+    /// SIN envolver (`native_leaf`) y en `ROW_LEAF_DONE` la ENVUELTA —
+    /// carril A con el saldo viejo, carril B con el nuevo. Si esto cuadra,
+    /// el tercer merge del circuito ES la envoltura nativa, no un pariente.
+    #[test]
+    fn la_cadena_de_tres_merges_espeja_native_leaf_salted() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path,
+            s.amount, TEST_LIMIT, s.supply_old, 0, s.receiver_id, s.salt,
+            &s.pending_path,
+        );
+
+        let sin_sal_a = native_leaf(s.account_id, BaseElement::new(s.balance), s.nonce);
+        let sin_sal_b = native_leaf(
+            s.account_id,
+            BaseElement::new(s.balance) - BaseElement::new(s.amount),
+            s.nonce,
+        );
+        let con_sal_a =
+            native_leaf_salted(s.account_id, BaseElement::new(s.balance), s.nonce, s.leaf_salt);
+        let con_sal_b = native_leaf_salted(
+            s.account_id,
+            BaseElement::new(s.balance) - BaseElement::new(s.amount),
+            s.nonce,
+            s.leaf_salt,
+        );
+        for i in 0..4 {
+            assert_eq!(
+                trace.get(4 + i, ROW_SALT_LINK),
+                sin_sal_a[i],
+                "hoja sin envolver, carril A"
+            );
+            assert_eq!(
+                trace.get(LANE_B + 4 + i, ROW_SALT_LINK),
+                sin_sal_b[i],
+                "hoja sin envolver, carril B"
+            );
+            assert_eq!(
+                trace.get(4 + i, ROW_LEAF_DONE),
+                con_sal_a[i],
+                "hoja envuelta, carril A"
+            );
+            assert_eq!(
+                trace.get(LANE_B + 4 + i, ROW_LEAF_DONE),
+                con_sal_b[i],
+                "hoja envuelta, carril B"
+            );
+        }
+    }
+
+    /// **MUTACIÓN OBLIGATORIA (a) de la spec §4: un limbo del salt
+    /// testigo alterado DEBE rechazarse.**
+    ///
+    /// El ataque: la columna testigo `COL_LEAF_SALT+2` en la fila del
+    /// tercer merge deja de coincidir con el salt que el estado sembró.
+    /// `C_SALT_IN_{A,B}+2` deben disparar; si verificara, la envoltura
+    /// sería decorativa y la 50 seguiría abierta con otro disfraz. El
+    /// veneno es `honesto + 1`: distinto por construcción, no por azar.
+    #[test]
+    fn mutacion_a_un_limbo_del_salt_testigo_alterado_se_rechaza() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let mut trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path,
+            s.amount, TEST_LIMIT, s.supply_old, 0, s.receiver_id, s.salt,
+            &s.pending_path,
+        );
+
+        let veneno = trace.get(COL_LEAF_SALT + 2, ROW_SALT_LINK) + BaseElement::ONE;
+        trace.set(COL_LEAF_SALT + 2, ROW_SALT_LINK, veneno);
+
+        let prover = SendProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "un limbo del salt testigo alterado DEBE rechazar (C_SALT_IN); \
+             si verifica, la envoltura es decorativa"
+        );
+    }
+
+    /// **MUTACIÓN OBLIGATORIA (b) de la spec §4: el tercer merge omitido
+    /// —la hoja SIN envolver entrando al camino— DEBE rechazarse.**
+    ///
+    /// El ataque: en la transición de colocación (`ROW_LEAF_DONE` → +1)
+    /// la subida arranca de `native_leaf` en vez de la hoja envuelta. Se
+    /// escriben AMBAS mitades del estado siguiente para alcanzar al gate
+    /// sea cual sea el bit de dirección; `C_PLACE_A` dispara sobre la
+    /// mitad colocada (y la cadena de hash del ciclo siguiente, detrás).
+    #[test]
+    fn mutacion_b_la_hoja_sin_envolver_no_entra_al_camino() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let mut trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path,
+            s.amount, TEST_LIMIT, s.supply_old, 0, s.receiver_id, s.salt,
+            &s.pending_path,
+        );
+
+        let sin_sal = native_leaf(s.account_id, BaseElement::new(s.balance), s.nonce);
+        for i in 0..4 {
+            trace.set(4 + i, ROW_LEAF_DONE + 1, sin_sal[i]);
+            trace.set(8 + i, ROW_LEAF_DONE + 1, sin_sal[i]);
+        }
+
+        let prover = SendProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "la hoja sin envolver NO debe entrar al camino (C_PLACE en el \
+             enlace corrido); si verifica, el corrimiento no protege nada"
+        );
     }
 }
