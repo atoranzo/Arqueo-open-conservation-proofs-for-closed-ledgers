@@ -11158,6 +11158,51 @@ disperso-compatible (serializa pares índice-registro; la objeción de
 Nada de esto está en el árbol hoy: la suite está en 232/2 y 49-B sigue
 roja, que es la imagen fiel.
 
+## 138. Cuestión previa de la máquina de hoja: RESUELTA antes de tocar el salt (no explotable)
+
+**Contexto.** La spec de la máquina de hoja (paso 1.5 de B13/B14) señaló,
+antes de tocar ningún AIR, una duda de soundness: `C_NONCE` en
+`circuit_send` (y `circuit_burn`, línea 592) ata SOLO `next[8]` en el
+merge del nonce — `link_leaf * (next[8] - COL_NONCE)`. Los limbos `[9]`,
+`[10]`, `[11]` del rate no tienen restricción propia. El nativo los pone
+a cero (`as_digest(nonce) = [nonce,0,0,0]`), pero un probador construye
+su trace: nada en las restricciones se lo OBLIGA. Tres líneas más abajo,
+`C_KEY_INPUT` sí ata los cuatro, citando §92.2 — la lección estaba en la
+clave y NO en el nonce.
+
+**Método: escribir el test que DECIDE, no suponer.** Calcando el patrón
+de mutación de `a_send_with_inconsistent_receiver_identity_is_rejected`:
+construir un trace válido, envenenar `[9]` en `ROW_LEAF_LINK`, y probar
+de extremo a extremo (`prove` -> `verify`). Más un CANARIO (envenenar
+`[8]`, el limbo atado) para descartar que la mutación no llegara al
+circuito — un test que pasa por la razón equivocada es peor que ninguno.
+
+**Resultado: RECHAZA. No explotable.** Ambos en verde:
+`un_nonce_con_limbo_alto_no_cero_se_rechaza` (el limbo alto corrupto no
+verifica) y `canario_el_limbo_atado_del_nonce_tambien_rechaza` (el limbo
+atado también rechaza -> la mutación en ROW_LEAF_LINK SÍ llega; el primer
+test no es vacío).
+
+**El porqué (leído en código, no inferido).** `C_HASH_A/B` (línea 804)
+ata la permutación Rescue COMPLETA — las 12 columnas del estado, incluido
+el rate `8..12`, en toda fila con `hash_flag=1`. En `ROW_LEAF_LINK`,
+`link_leaf` fija el rate del estado siguiente con el nonce; la fila
+siguiente tiene `hash_flag=1`, y `C_HASH` exige que ese estado completo
+(rate incluido) sea la preimagen correcta de la permutación. Un `[9]`
+corrupto entra en el MDS de la ronda siguiente y rompe `C_HASH` aguas
+abajo. **`C_NONCE` no necesita atar los cuatro limbos: la cadena de
+hasheo los arrastra.** El limbo suelto es redundancia cubierta, no un
+agujero.
+
+**Consecuencia para B13/B14.** El suelo del piloto aguanta: el merge del
+nonce es sólido, y el salt se añade sobre terreno probado. Para
+`C_SALT_IN` (delta salt de la spec) se elige atar los cuatro limbos —como
+la clave— por claridad y defensa en profundidad, sabiendo ahora que
+C_HASH ya cubriría: cinturón sobre tirantes, sin coste de soundness.
+`circuit_burn` tiene el patrón idéntico; su test de mutación, al migrarlo
+(paso 3), debe llevar el mismo canario — no se asume que lo de send vale
+para burn sin probarlo allí. Commit `1ba848d`.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

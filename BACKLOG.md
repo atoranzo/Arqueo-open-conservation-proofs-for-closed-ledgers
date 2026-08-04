@@ -1550,7 +1550,15 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   salt = +4 columnas y 6 restricciones `C_SALT_*` (§92.2 aplicada al
   salt), frozen-32 con presupuesto POR circuito, mutación obligatoria;
   cuestión previa señalada (limbos 9..11 del rate del nonce). Ambas
-  specs en `doc/`. SIGUE: paso 2, piloto `circuit_send`.
+  specs en `doc/`.
+  ✅ **Paso 2 (previo) — cuestión previa de la máquina de hoja RESUELTA**
+  (`1ba848d`): `C_NONCE` ata solo `next[8]`; los limbos 9..11 del rate no
+  tienen restricción propia, PERO no es explotable — `C_HASH` ata la
+  permutación Rescue completa (rate incluido) y un limbo corrupto rompe
+  aguas abajo. Probado con test + canario (no supuesto), leído el porqué.
+  Asiento §138. Para `C_SALT_IN` se atarán los 4 limbos por claridad.
+  SIGUE: paso 2 propiamente — añadir `C_SALT_*` a `circuit_send` (el
+  tercer merge del salt + 2 mutaciones obligatorias).
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y
