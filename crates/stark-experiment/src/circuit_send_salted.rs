@@ -2373,4 +2373,86 @@ mod tests {
              enlace corrido); si verifica, el corrimiento no protege nada"
         );
     }
+
+    /// **T2b-CIRCUITO (paso 4, §154): la RECUPERACIÓN de §117, extremo a
+    /// extremo por el AIR.** El titular pierde TODO menos la clave;
+    /// rederiva identidad y salt (§117) — los asertos lo certifican —,
+    /// toma de lo PÚBLICO camino y raíces, y el circuito le firma una
+    /// prueba que VERIFICA. Hermano de
+    /// `t2b_solo_la_clave_reconstruye_la_hoja` (settlement), que dejó
+    /// esta mitad «condicionada a B13/B14»: condición cumplida en §143.
+    #[test]
+    fn t2b_circuito_solo_la_clave_produce_prueba_que_verifica() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+
+        // Recuperación: SOLO la clave (+ balance/nonce del ClientState;
+        // camino y raíces son PÚBLICOS, reconstruibles del árbol).
+        let id_r = derive_public_id_wide(s.key);
+        let salt_r = derive_leaf_salt_wide(s.key);
+        assert_eq!(id_r, s.account_id, "la clave rederiva la identidad");
+        assert_eq!(salt_r, s.leaf_salt, "la clave rederiva el salt (§117)");
+
+        let trace = build_trace(
+            s.key, id_r, s.balance, s.nonce, salt_r, &s.path,
+            &s.frozen_path, s.amount, TEST_LIMIT, s.supply_old, 0,
+            s.receiver_id, s.salt, &s.pending_path,
+        );
+        let prover = SendProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            verifica,
+            "la clave sola (más lo público) DEBE producir una prueba que \
+             verifica — si no, la recuperación de §117 es papel"
+        );
+    }
+
+    /// **T2b-CIRCUITO, el reverso**: el diccionario del atacante contra
+    /// el VERIFICADOR — sin el salt del titular (usa 0) su testigo no
+    /// reproduce la hoja del árbol y NINGUNA prueba verifica contra las
+    /// raíces públicas. Hermano de `t2b_diccionario_sin_salt_no_acierta`.
+    #[test]
+    fn t2b_circuito_diccionario_sin_salt_no_verifica() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let salt_falso = [BaseElement::ZERO; 4];
+
+        let trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, salt_falso, &s.path,
+            &s.frozen_path, s.amount, TEST_LIMIT, s.supply_old, 0,
+            s.receiver_id, s.salt, &s.pending_path,
+        );
+        let prover = SendProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "sin el salt del titular la prueba NO debe verificar contra \
+             las raíces públicas; si verifica, el cegado de §117 es \
+             decorativo a nivel de circuito"
+        );
+    }
 }

@@ -2209,9 +2209,11 @@ mod t2b_recuperacion_nativa {
     //! T2b-nativo (entrada 50): la propiedad de RECUPERACION de §117,
     //! demostrada SIN el circuito. Decide la clausula de caida de §116:
     //! si esto compila y pasa, la propiedad es realizable y §117 se
-    //! sostiene; el test de `apply` extremo-a-extremo (T2b-circuito)
-    //! queda condicionado a B13/B14 (salt en las cinco trazas), y NO se
-    //! escribe hoy porque exigiria un AIR que aun no existe.
+    //! sostiene. T2b-circuito, condicionado entonces a B13/B14, quedó
+    //! ESCRITO en el paso 4 (§154) sobre el gemelo del piloto:
+    //! `circuit_send_salted::tests::t2b_circuito_*` — la clave sola
+    //! produce prueba que VERIFICA; el diccionario sin salt NO. La
+    //! versión por `apply` de la capa llega con el flip (D4).
     use super::*;
 
     const SK: u64 = 0xA11CE;
