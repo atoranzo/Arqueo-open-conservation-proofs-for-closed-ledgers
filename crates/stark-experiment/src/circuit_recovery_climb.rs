@@ -783,4 +783,24 @@ mod tests {
              {} celdas probadas): {:?}",
             informe.total, informe.celdas, informe.nunca_disparadas);
     }
+    /// **[§130] Instrumento de la medición apareada (paso 5).** Prove
+    /// del LEGADO en su escenario honesto — construcción + prove
+    /// dentro del reloj (patrón `metrics_33`). Correr a mano, en release:
+    /// `cargo test --release -p stark-experiment medicion_130 -- --ignored --nocapture`
+    #[test]
+    #[ignore = "instrumento de medida, no comprobacion: correr a mano"]
+    fn medicion_130_recovery_climb_legado() {
+        use std::time::Instant;
+        let t0 = Instant::now();
+        let s = scenario();
+        let trace = build(&s, BALANCE, 1);
+        let proof = RecoveryClimbProver::new(default_options())
+            .prove(trace)
+            .expect("el honesto debe probar");
+        let ms = t0.elapsed().as_secs_f64() * 1000.0;
+        println!(
+            "[§130] recovery_climb legado: prove {ms:.1} ms, proof {} bytes",
+            proof.to_bytes().len()
+        );
+    }
 }

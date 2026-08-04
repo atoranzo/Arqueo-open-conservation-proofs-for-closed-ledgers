@@ -1085,4 +1085,29 @@ mod tests {
             informe.nunca_disparadas
         );
     }
+    /// **[§130] Instrumento de la medición apareada (paso 5).** Prove
+    /// del LEGADO en su escenario honesto — construcción + prove
+    /// dentro del reloj (patrón `metrics_33`). Correr a mano, en release:
+    /// `cargo test --release -p stark-experiment medicion_130 -- --ignored --nocapture`
+    #[test]
+    #[ignore = "instrumento de medida, no comprobacion: correr a mano"]
+    fn medicion_130_freeze_legado() {
+        use std::time::Instant;
+        let t0 = Instant::now();
+        let keys = custodian_keys();
+        let (_set_root, cpaths) = build_custodian_set(&keys);
+        let auth = ThresholdAuth {
+            key_a: keys[1], index_a: 1, path_a: cpaths[1].clone(),
+            key_b: keys[3], index_b: 3, path_b: cpaths[3].clone(),
+        };
+        let trace = build_trace(&auth, false, true, &frozen_path(), COUNT_OLD, 1);
+        let proof = FreezeProver::new(default_options())
+            .prove(trace)
+            .expect("el honesto debe probar");
+        let ms = t0.elapsed().as_secs_f64() * 1000.0;
+        println!(
+            "[§130] freeze legado: prove {ms:.1} ms, proof {} bytes",
+            proof.to_bytes().len()
+        );
+    }
 }
