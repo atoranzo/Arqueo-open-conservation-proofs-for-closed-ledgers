@@ -74,6 +74,7 @@ pasos 2-3 midiendo filas usadas hoy — **no se asume que 1024 alcanza**.
 | audit (§147) | 279 | 287 | — (sin frozen) | **224** (28 ciclos, en su 512) | **CABE** |
 | mint_climb (§148) | 271 | 279 | — (sin frozen) | **232** (29 ciclos, en su 512) | **CABE** |
 | recovery (§149) | 311 | 319 | — (sin frozen) | **192** (24 ciclos, en su 512) | **CABE** |
+| recovery_climb (§150) | 271 | 279 | — (sin frozen) | **232** (29 ciclos, en su 512) | **CABE** |
 
 (Primera fila: medida por el piloto en el gemelo; el resto se rellena
 circuito a circuito en el paso 3.)

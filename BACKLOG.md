@@ -1626,6 +1626,11 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   certificada por el espejo (mismo salt, ids y nonces distintos);
   doble ascenso ancho; C_NONCE+1 ata el salto del nonce. Fila 7
   (319/192, CABE). Siete de diez. SIGUE: recovery_climb.
+  ✅ **recovery_climb COMPLETO (§150, `92180eb`→`e866d25`)**: forma
+  mint_climb + semántica recovery (salto de nonce, LA COPIA); raíz
+  pub; un aborto de guarda (el trío compacto). Fila 8 (279/232,
+  CABE). OCHO de diez. SIGUE: freeze y frozen_climb — SIN salt,
+  rito R1+R2+R6 con mutaciones de profundidad.
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y

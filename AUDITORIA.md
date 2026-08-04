@@ -11699,6 +11699,37 @@ recovery_climb (un tramo), y detrás el par final SIN salt —
 freeze/frozen_climb, gemelos mínimos de profundidad (R1+R2+R6 con
 mutaciones propias).
 
+## 150. Recovery_climb COMPLETO — el octavo, con la receta ya madura
+
+**Qué es**: la fase de cuentas de la recuperación, aislada — la forma
+de mint_climb con la semántica de recovery: dos carriles donde la
+identidad cambia, el nonce SALTA (`C_NONCE+1` contra `current + ONE`)
+y **LA COPIA** (§93.4) viste ambos carriles con el salt de la clave
+vieja. Sin custodios ni frozen. Su raíz es **pub** —
+`pub const ROW_ACCT_ROOT` — con la joya de doc que el legacy ya traía:
+el relleno tras la 271 sale GRATIS aquí (no es fila de enlace), «a
+diferencia de `circuit_frozen_climb`, §60.2» — anticipo exacto del
+gemelo que viene.
+
+**Los cinco commits** (`92180eb`→`942bd86`→`4040d32`→`e866d25`, R4+R5
+en tanda; md5 `aebf382a…`→`e5355344…`→`774f0e41…`→`7260a046…`): R2 a
+la primera con las anclas de mint_climb; R3 con UN aborto limpio de
+guarda — recovery_climb escribe compacto (hoja nueva en una línea,
+retorno en una, embudo en dos) lo que recovery escribía vertical —
+tres anclas corregidas del natural, cero bytes mal escritos; R4+R5 a
+la primera con el ancla del nonce-que-salta ya validada en §149.
+
+**Presupuesto** (octava fila): 271 → 279; holgura **232** (29 ciclos)
+en su 512. CABE.
+
+**Estado**: **OCHO de diez**; capa 240/2 intacta. SIGUE: el par final
+SIN salt — **freeze** y **frozen_climb** (checklist: «solo
+profundidad»). El rito muda por última vez: R1+R2+**R6** (FROZEN_DEPTH
+= 32 local reemplazando el import, §128) + mutaciones de profundidad
+propias (un camino de 24 declarado como 32 debe RECHAZAR). Y
+frozen_climb trae el relleno CARO que su primo acaba de señalar
+(§60.2).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
