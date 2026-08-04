@@ -1659,6 +1659,11 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   cash), audit encoge; resto 0–9,5 %. Tabla en
   doc/medicion-130-apareada.md. **Los cinco pasos pre-flip de
   B13/B14, COMPLETOS.** SIGUE: el flip D4.
+  ✅✅ **FLIP D4 HECHO (§156, `2ac37c5`)**: release única — gemelos
+  sustituyen, legacy muere (−15.078 líneas), capa salted extremo a
+  extremo, v7 + pines, marcador de geometría, museo en 24 local.
+  Guardián 27; suites 316/0 y 240/2. SIGUE: **F3** (migración en vivo,
+  los 2 rojos de índices, etiqueta 50) y **F4** (flecos censados).
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y

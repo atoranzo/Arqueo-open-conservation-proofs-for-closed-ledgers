@@ -11921,6 +11921,54 @@ T2b-circuito §154 · 5: esta medición). SIGUE: **el flip D4** (release
 avisos de §143.1/§146/§149-§152 cableados; la etiqueta de la entrada
 50 se cierra ahí).
 
+## 156. FLIP D4 — LA RELEASE ÚNICA: el mundo nuevo es EL mundo
+
+**Lo que el commit `2ac37c5` hace** (35 ficheros, +2.543/−15.078): los
+DIEZ gemelos SUSTITUYEN a sus legacy —que mueren—, `FROZEN_DEPTH` vive
+a 32 en la CASA y send/claim/burn/frozen_climb vuelven a importarla
+(helpers `_32` y consts locales, fuera); la capa habla salted de punta
+a punta —`AccountView` porta el salt del record y viaja
+materials→trace; 8 call-sites + barrido de construcción con
+`leaf_salt_rec`/`LEAF_SALT_LEGACY`; LA COPIA en recovery (§93.4)—;
+snapshot **v7** (hoja envuelta, frozen-32) con importación ≤v6 pineada
+a `FROZEN_DEPTH_PRE = 24`; marcador `meta:geometry_v7` al persistir,
+separado del acta `meta:migrated`; y el **museo** `circuit_settlement`
+queda en 24 local con clímber propio hasta su retirada. Guardián de
+ranuras: **27 circuitos** —el censo del mundo nuevo, por primera vez—;
+suites **316/0 + 12** y **240/2 + 3**.
+
+**Los tres descubrimientos de la batalla.** (1) El museo: un undécimo
+circuito que ningún censo contó porque no está vivo — trece tests
+suyos cayeron dos veces (geometría corrida, luego el clímber de la
+CASA a 32 sobre sus caminos de 24) y ambas el pánico señaló la línea
+exacta. (2) El bug REAL de rotación: derivar el salt de la clave en el
+cliente rompe LA COPIA tras recovery —`derive(clave_nueva) ≠ salt del
+record (clave vieja)`—; el salt no se deriva en el cliente: **viaja en
+los materials**, y esa es la razón de ser del campo en `AccountView`.
+(3) El marcador dividido: «persistí en geometría nueva» y «pasé por la
+migración» son afirmaciones distintas — el guard anti-re-ejecución
+exigía la separación y un test la hizo valer.
+
+**El método, bajo fuego real.** El espejo del asistente DERIVÓ entre
+turnos (el entorno se re-aprovisionó con su propio núcleo aplicado en
+una cola de turno perdida) y de la confusión salió doctrina: **el
+canon es el árbol del piloto** — los md5 del espejo pasan a
+informativos y los jueces son los asertos de cada transformación, los
+guardianes y las suites. Siete rondas de A3 con ~cinco abortos limpios
+de guarda (la segunda llamada `frozen_climb_32` de burn que el censo
+dejó anotada como duda, el estado-desconocido que enseñó a detectar
+«hecho» por estructura, y el E0062 que RESOLVIÓ el fantasma: los
+literales ya llevaban el salt más abajo de mis ventanas de lectura).
+**Cero reversiones; cero bytes escritos por una guarda rota.**
+
+**Cola.** **F3**: migración en vivo sobre los tests de capa —los DOS
+rojos históricos de privacidad de índices mueren con la reposición
+`public_id mod cap`— y la etiqueta de la entrada 50. **F4**: flecos
+censados —doc de `client.rs:490`, expectativa del instrumento-barrido
+(ahora §117 manda que NO encuentre), prosa «GEMELO» en el doc de
+medición, epílogo del playbook, retirada futura del museo, warnings—.
+El mundo viejo ya solo existe como historia bien contada.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
