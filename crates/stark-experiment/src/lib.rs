@@ -77,6 +77,7 @@ pub mod circuit_recovery;
 // Entrada 33 / §64: recovery sin la parte de autorizacion.
 pub mod circuit_recovery_climb;
 pub mod circuit_claim;
+pub mod circuit_claim_salted;
 pub mod circuit_send;
 pub mod circuit_send_salted;
 pub mod circuit_settlement;
