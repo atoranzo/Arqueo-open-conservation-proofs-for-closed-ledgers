@@ -97,7 +97,11 @@ const COL_PBIT: usize = 42;
 const COL_R_ID: usize = 43; // 43..47
 /// Aleatorio que ciega el compromiso. Lo elige el pagador.
 const COL_SALT: usize = 47; // 47..51
-pub const TRACE_WIDTH: usize = 51;
+/// **Salt de la hoja** (testigo, §117): envuelve la hoja como tercer
+/// merge. UN solo salt compartido por ambos carriles (spec de la
+/// máquina de hoja §2).
+const COL_LEAF_SALT: usize = 51; // 51..55
+pub const TRACE_WIDTH: usize = 55;
 
 // ===== Filas =====
 //
@@ -109,7 +113,11 @@ pub const TRACE_WIDTH: usize = 51;
 // ciclo vive fuera de este bloque — bucles de bits, periódicas y el
 // `match` de `build_trace` lo derivan de aquí.
 const CYC_NONCE: usize = 1;
-const CYC_ACC: usize = CYC_NONCE + 1;
+// El TERCER merge (§117, B13/B14): la hoja se envuelve con el salt
+// antes de entrar al camino. Todo el calendario posterior se corre +1
+// ciclo solo, por derivación (playbook R2).
+const CYC_SALT: usize = CYC_NONCE + 1;
+const CYC_ACC: usize = CYC_SALT + 1;
 const CYC_PK: usize = CYC_ACC + TREE_DEPTH;
 const CYC_FROZEN: usize = CYC_PK + 1;
 const CYC_PEND_IN: usize = CYC_FROZEN + FROZEN_DEPTH;
@@ -117,6 +125,7 @@ const CYC_PEND_VAL: usize = CYC_PEND_IN + 1;
 const CYC_PEND_CLIMB: usize = CYC_PEND_VAL + 1;
 const CYC_FIN: usize = CYC_PEND_CLIMB + TREE_DEPTH;
 const ROW_LEAF_LINK: usize = CYC_NONCE * CYCLE_LENGTH - 1;
+const ROW_SALT_LINK: usize = CYC_SALT * CYCLE_LENGTH - 1;
 const ROW_LEAF_DONE: usize = CYC_ACC * CYCLE_LENGTH - 1;
 const ROW_ROOT: usize = CYC_PK * CYCLE_LENGTH - 1;
 const ROW_PK_START: usize = CYC_PK * CYCLE_LENGTH;
@@ -247,6 +256,10 @@ pub fn build_trace(
     account_id: Digest,
     balance: u64,
     nonce: BaseElement,
+    // **Salt de la hoja (testigo).** Deriva de la clave (§117); el
+    // tercer merge envuelve la hoja: la pertenencia se prueba sobre
+    // `H(native_leaf, salt)`.
+    leaf_salt: Digest,
     path: &MerklePath,
     frozen_path: &MerklePath,
     amount: u64,
@@ -288,6 +301,7 @@ pub fn build_trace(
         row[COL_AMT] = c_amt;
         row[COL_R_ID..COL_R_ID + 4].copy_from_slice(&receiver_id);
         row[COL_SALT..COL_SALT + 4].copy_from_slice(&salt);
+        row[COL_LEAF_SALT..COL_LEAF_SALT + 4].copy_from_slice(&leaf_salt);
         row[COL_SUPPLY_OLD] = c_supply_old;
         row[COL_SUPPLY_NEW] = c_supply_new;
     }
@@ -390,6 +404,16 @@ pub fn build_trace(
                     state_a[8] = nonce;
                     state_b[4..8].copy_from_slice(&digest_b);
                     state_b[8] = nonce;
+                }
+                ROW_SALT_LINK => {
+                    // EL TERCER MERGE (§117): la hoja se envuelve con el
+                    // salt. Digest arrastrado; el rate recibe los CUATRO
+                    // limbos del salt (spec §2 — atar solo [8] sería el
+                    // bug de §92.2 en su forma nueva).
+                    state_a[4..8].copy_from_slice(&digest_a);
+                    state_a[8..12].copy_from_slice(&leaf_salt);
+                    state_b[4..8].copy_from_slice(&digest_b);
+                    state_b[8..12].copy_from_slice(&leaf_salt);
                 }
                 ROW_LEAF_DONE => {
                     place(&mut state_a, &digest_a, 0);
@@ -1167,7 +1191,8 @@ impl Prover for ClaimProver {
 mod tests {
     use super::*;
     use crate::circuit_settlement::{
-        derive_public_id, derive_public_id_wide, native_climb, native_leaf,
+        derive_leaf_salt_wide, derive_public_id, derive_public_id_wide,
+        native_climb, native_leaf_salted,
     };
     use crate::merkle::native_merge;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
@@ -1193,6 +1218,7 @@ mod tests {
         account_id: Digest,
         balance: u64,
         nonce: BaseElement,
+        leaf_salt: Digest,
         path: MerklePath,
         frozen_path: MerklePath,
         pending_path: MerklePath,
@@ -1253,12 +1279,17 @@ mod tests {
         }
         let path = MerklePath { siblings, is_right };
 
-        let leaf_old = native_leaf(account_id, BaseElement::new(balance), nonce);
+        // El salt REAL del titular (§117): derivado de la clave, no un
+        // literal de juguete — el escenario vive en el mundo envuelto.
+        let leaf_salt = derive_leaf_salt_wide(key);
+        let leaf_old =
+            native_leaf_salted(account_id, BaseElement::new(balance), nonce, leaf_salt);
         // **EL SALDO SUBE**: el receptor cobra el pendiente.
-        let leaf_new = native_leaf(
+        let leaf_new = native_leaf_salted(
             account_id,
             BaseElement::new(balance) + BaseElement::new(amount),
             nonce,
+            leaf_salt,
         );
 
         // Camino del arbol de congelados, con la cuenta LIBRE. Direcciones
@@ -1336,6 +1367,7 @@ mod tests {
             account_id,
             balance,
             nonce,
+            leaf_salt,
             path,
             frozen_path,
             pending_path,
@@ -1352,6 +1384,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1412,7 +1445,7 @@ mod tests {
         // ROW_FROZEN_ROOT y metemos otro en las demas filas.
         let s = scenario(1_000_000, 250_000, 10_000_000);
         let mut trace = build_trace(
-            s.key, s.account_id, s.balance, s.nonce, &s.path, &s.frozen_path,
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path,
             s.amount, s.supply_old, 0, s.receiver_id, s.salt, &s.pending_path,
         );
 
@@ -1454,6 +1487,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1590,6 +1624,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1645,6 +1680,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1736,6 +1772,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1875,6 +1912,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1931,6 +1969,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount * 2,
