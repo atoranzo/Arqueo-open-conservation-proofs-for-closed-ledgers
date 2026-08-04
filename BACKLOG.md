@@ -1612,6 +1612,11 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   titular asciende al mundo ancho (su salt, §117), R6 n/a. Fila 4 de
   la tabla §3 (319/192, CABE en 512). Cuatro de diez. SIGUE: audit
   (spec §5: no muta estado).
+  ✅ **audit COMPLETO (§147, `972dc25`→`20aa611`)**: UN carril — tres
+  familias/12 ranuras, espejo de una hoja, salt en el TESTIGO (cero
+  firmas). Costura del atacante (salt observable; el secreto es la
+  clave). Fila 5 (287/224, CABE). **CINCO DE DIEZ: mitad de
+  campaña.** SIGUE: mint_climb.
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y

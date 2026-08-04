@@ -71,6 +71,7 @@ pasos 2-3 midiendo filas usadas hoy — **no se asume que 1024 alcanza**.
 | claim (§144) | 743 | 751 | **815** | **208** (26 ciclos) | **CABE** |
 | burn (§145) | 471 | 479 | **543** | **480** (60 ciclos, en SU 1024) | **NO CABE en 512 → TRACE propia 1024** |
 | mint (§146) | 311 | 319 | — (sin frozen) | **192** (24 ciclos, en su 512) | **CABE** |
+| audit (§147) | 279 | 287 | — (sin frozen) | **224** (28 ciclos, en su 512) | **CABE** |
 
 (Primera fila: medida por el piloto en el gemelo; el resto se rellena
 circuito a circuito en el paso 3.)

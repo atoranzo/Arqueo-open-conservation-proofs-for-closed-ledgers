@@ -11587,6 +11587,49 @@ dueño. La capa lo cablea en el flip (D4), aquí queda anotado.
 **audit** («no muta estado», spec §5 — a censar qué significa para
 los dos carriles y el espejo).
 
+## 147. Audit COMPLETO — la variante de UN carril, y el molde demostró que se adapta
+
+**Lo que el censo desveló**: audit no es un gemelo de menos fases —
+es de **arquitectura distinta**: UN solo carril (ancho 27, un estado
+Rescue), sin `COL_BAL_NEW` ni importes, con `COL_LOWER`/`COL_UPPER` —
+prueba `saldo ∈ [inferior, superior]` **sin mutar estado** (la
+advertencia de la spec §5, descifrada). Y la elegancia estructural que
+lo hizo el gemelo de menos fricción: audit ya tenía **struct de
+testigo** (`AuditWitness`) — el salt entró como campo, con **cero
+firmas tocadas y cero llamadores enhebrados**.
+
+**Las tres adaptaciones del molde** (primeras reales de la campaña,
+todas al playbook): (1) R4 son **TRES familias, 12 ranuras**
+(`C_SALT_{CAP,DIG,IN}` sin sufijos A/B, el estilo propio de audit);
+(2) el espejo nativo↔circuito es de UNA hoja; (3) el hogar del salt es
+el testigo, no la firma. El guardián de ranuras parseó la variante y
+la bendijo sin tocar su código: el censo por `listdir` + convención
+paga otra vez.
+
+**La costura que el conteo no podía ver**: el test «NADIE PUEDE
+REVELAR POR OTRO» construye su propio `AuditWitness` (el atacante),
+con formato distinto al del escenario — el grep de literales del
+struct lo cazó ANTES de compilar. Semántica registrada: el atacante
+hereda `victim.leaf_salt` porque **el salt es observable; el secreto
+es la clave** (§117) — el ataque sigue apuntando a titularidad
+(`C_PK_CHECK`), no a pertenencia. Regla nueva del playbook R0: censar
+TODOS los literales del struct-testigo, no solo el nexo.
+
+**Y un tropiezo del asistente, cazado por su propia guarda**: el
+ancla del marcador de sección se escribió de memoria («===== Filas
+=====») cuando audit dice «===== Filas de eventos =====» — el conteo
+esperado abortó con CERO bytes escritos, se leyó el natural, se
+corrigió. La regla «anclas del natural, nunca de memoria», reafirmada
+por la vía práctica.
+
+**Los cinco commits** (`972dc25`→`1e7fbf9`→`36de0c9`→`20aa611`, con
+R4+R5 en tanda; md5 `89cc95cb…`→`8ca55df1…`→`870a08c0…`→`e49e42ee…`).
+**Presupuesto** (quinta fila): 279 → 287; holgura **224** (28 ciclos)
+en su 512. CABE.
+
+**Estado**: **CINCO GEMELOS DE DIEZ — mitad de campaña**; capa 240/2
+intacta. SIGUE: mint_climb (un tramo).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
