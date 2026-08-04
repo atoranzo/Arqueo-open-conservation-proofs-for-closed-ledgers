@@ -1979,4 +1979,100 @@ mod tests {
              supera. Salio: {r:?}"
         );
     }
+
+    /// **CUESTIÓN PREVIA de la spec de la máquina de hoja (B13/B14).**
+    ///
+    /// `C_NONCE` (línea ~839) ata SOLO `next[8]` en el merge del nonce:
+    /// `link_leaf * (next[8] - COL_NONCE)`. Los limbos `[9]`, `[10]`,
+    /// `[11]` del rate quedan SIN restricción. El nativo los pone a cero
+    /// (`as_digest(nonce) = [nonce,0,0,0]`), pero el probador construye su
+    /// propio trace: nada le OBLIGA a ponerlos a cero. Tres líneas más
+    /// abajo, `C_KEY_INPUT` sí ata los cuatro, con un comentario que cita
+    /// §92.2 — la lección se aplicó a la clave y NO al nonce.
+    ///
+    /// Este test DECIDE si el limbo suelto es explotable. Pone `[9]` a
+    /// no-cero en la fila del merge del nonce y prueba de extremo a
+    /// extremo:
+    /// - RECHAZA -> hay defensa aguas abajo; el limbo no importa; se
+    ///   documenta y el salt puede añadirse sobre este merge.
+    /// - ACEPTA  -> soundness roto (hoja forjable que no es native_leaf);
+    ///   precede a B13/B14: se atan los cuatro limbos ANTES del salt.
+    #[test]
+    fn un_nonce_con_limbo_alto_no_cero_se_rechaza() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let mut trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, &s.path, &s.frozen_path,
+            s.amount, TEST_LIMIT, s.supply_old, 0, s.receiver_id, s.salt,
+            &s.pending_path,
+        );
+
+        // El ataque: limbo [9] del rate (carril A) en la fila del merge
+        // del nonce, a no-cero. El nativo lo tiene a cero; C_NONCE no lo
+        // ata. Columna 9 = rate[1] del carril A (rate en 8..12).
+        let veneno = BaseElement::new(0x600D_512E);
+        trace.set(9, ROW_LEAF_LINK, veneno);
+
+        let prover = SendProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+
+        // Hipótesis: un circuito correcto RECHAZA (ataria los 4 limbos).
+        // Si este assert FALLA (verifica==true), el hallazgo es un fallo
+        // de soundness real y este test rojo es su testigo hasta que se
+        // aten [9..11] como en C_KEY_INPUT.
+        assert!(
+            !verifica,
+            "SOUNDNESS: un limbo alto no-cero del nonce en la hoja PASA la \
+             verificacion. La hoja forjada no es native_leaf. Atar los 4 \
+             limbos en C_NONCE (for i in 0..4) ANTES de tocar el salt."
+        );
+    }
+
+    /// **Canario del test anterior**: demuestra que la mutación en
+    /// `ROW_LEAF_LINK` LLEGA al circuito y no la borra `build_trace`.
+    /// Envenena el limbo `[8]` (el que C_NONCE SÍ ata) — debe rechazar.
+    /// Si este pasa Y el anterior pasa, el rechazo del anterior es real
+    /// (la celda importa), no un artefacto de una mutación ignorada.
+    #[test]
+    fn canario_el_limbo_atado_del_nonce_tambien_rechaza() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let mut trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, &s.path, &s.frozen_path,
+            s.amount, TEST_LIMIT, s.supply_old, 0, s.receiver_id, s.salt,
+            &s.pending_path,
+        );
+        // Limbo [8] = el VALOR del nonce en el rate, atado por C_NONCE.
+        trace.set(8, ROW_LEAF_LINK, BaseElement::new(0xDEAD_512E));
+
+        let prover = SendProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,
+                Ok(Err(_)) => false,
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(!verifica,
+                "el limbo atado del nonce DEBE rechazar; si no, la mutacion \
+                 en ROW_LEAF_LINK no llega al circuito y el test previo es vacio");
+    }
 }
