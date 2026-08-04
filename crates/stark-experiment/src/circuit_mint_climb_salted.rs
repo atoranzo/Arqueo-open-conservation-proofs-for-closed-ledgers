@@ -86,7 +86,11 @@ const COL_SUPPLY_NEW: usize = COL_SUPPLY_OLD + 1; // 34
 const COL_MAX_SUPPLY: usize = COL_SUPPLY_NEW + 1; // 35
 const COL_SBIT: usize = COL_MAX_SUPPLY + 1; // 36
 const COL_SACC: usize = COL_SBIT + 1; // 37
-pub const TRACE_WIDTH: usize = COL_SACC + 1; // 38
+/// **Salt de la hoja** (testigo, §117): envuelve la hoja como tercer
+/// merge. UN solo salt compartido por ambos carriles (spec §2). Sin
+/// colisión: no hay COL_SALT previo. En el estilo derivado de la casa.
+const COL_LEAF_SALT: usize = COL_SACC + 1; // 38..42
+pub const TRACE_WIDTH: usize = COL_LEAF_SALT + 4; // 42
 
 // ===== Filas =====
 //
@@ -98,9 +102,14 @@ pub const TRACE_WIDTH: usize = COL_SACC + 1; // 38
 // ciclo vive fuera de este bloque — bucles de bits, periódicas y el
 // `match` de `build_trace` lo derivan de aquí.
 const CYC_NONCE: usize = 1;
-const CYC_ACC: usize = CYC_NONCE + 1;
+// El TERCER merge (§117, B13/B14): la hoja se envuelve con el salt
+// antes de entrar al camino. Todo el calendario posterior se corre +1
+// ciclo solo, por derivación (playbook R2).
+const CYC_SALT: usize = CYC_NONCE + 1;
+const CYC_ACC: usize = CYC_SALT + 1;
 const CYC_FIN: usize = CYC_ACC + TREE_DEPTH;
 const ROW_LEAF_LINK: usize = CYC_NONCE * CYCLE_LENGTH - 1;
+const ROW_SALT_LINK: usize = CYC_SALT * CYCLE_LENGTH - 1;
 const ROW_LEAF_DONE: usize = CYC_ACC * CYCLE_LENGTH - 1;
 /// Última fila activa: raíz del árbol de cuentas. (El doc heredado
 /// hablaba de custodios — deriva del legacy de mint; aquí no hay.)
@@ -180,6 +189,9 @@ pub fn build_trace(
     account_id: Digest,
     balance: u64,
     nonce: BaseElement,
+    // **Salt de la hoja (testigo).** Del TITULAR de la cuenta acreditada
+    // (§117): la pertenencia se prueba sobre `H(native_leaf, salt)`.
+    leaf_salt: Digest,
     path: &MerklePath,
     amount: u64,
     supply_old: u64,
@@ -207,6 +219,7 @@ pub fn build_trace(
         row[COL_SUPPLY_OLD] = c_supply_old;
         row[COL_SUPPLY_NEW] = c_supply_new;
         row[COL_MAX_SUPPLY] = c_max;
+        row[COL_LEAF_SALT..COL_LEAF_SALT + 4].copy_from_slice(&leaf_salt);
     }
 
     // Rangos. El quinto demuestra que no se supera el tope; los tres
@@ -275,6 +288,16 @@ pub fn build_trace(
                     state_a[8] = nonce;
                     state_b[4..8].copy_from_slice(&digest_b);
                     state_b[8] = nonce;
+                }
+                ROW_SALT_LINK => {
+                    // EL TERCER MERGE (§117): la hoja se envuelve con el
+                    // salt. Digest arrastrado; el rate recibe los CUATRO
+                    // limbos del salt (spec §2 — atar solo [8] sería el
+                    // bug de §92.2 en su forma nueva).
+                    state_a[4..8].copy_from_slice(&digest_a);
+                    state_a[8..12].copy_from_slice(&leaf_salt);
+                    state_b[4..8].copy_from_slice(&digest_b);
+                    state_b[8..12].copy_from_slice(&leaf_salt);
                 }
                 ROW_LEAF_DONE => {
                     place_acct(&mut state_a, &digest_a, 0);
@@ -751,7 +774,10 @@ impl Prover for MintClimbProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::circuit_settlement::{derive_public_id, native_climb, native_leaf};
+    use crate::circuit_settlement::{
+        derive_leaf_salt_wide, derive_public_id_wide, native_climb,
+        native_leaf_salted,
+    };
     use crate::merkle::native_merge;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension, Prover};
 
@@ -768,6 +794,7 @@ mod tests {
         account_id: Digest,
         balance: u64,
         nonce: BaseElement,
+        leaf_salt: Digest,
         path: MerklePath,
         amount: u64,
         supply_old: u64,
@@ -780,7 +807,17 @@ mod tests {
             let prev = empty[k - 1];
             empty.push(native_merge(prev, prev));
         }
-        let account_id = derive_public_id(BaseElement::new(0xA11CE));
+        // ⚠️ Ancha de verdad, no `as_digest(x)`: con relleno de ceros el
+        // test pasaria sin ejercitar los elementos altos (§90.3). El
+        // TITULAR de la cuenta acreditada asciende al mundo ancho: su
+        // clave manda sobre identidad Y salt (§117).
+        let key = [
+            BaseElement::new(0xA11CE_0001),
+            BaseElement::new(0xA11CE_0002),
+            BaseElement::new(0xA11CE_0003),
+            BaseElement::new(0xA11CE_0004),
+        ];
+        let account_id = derive_public_id_wide(key);
         let nonce = BaseElement::ZERO;
 
         let mut siblings = Vec::with_capacity(TREE_DEPTH);
@@ -791,8 +828,13 @@ mod tests {
         }
         let path = MerklePath { siblings, is_right };
 
-        let leaf_old = native_leaf(account_id, BaseElement::new(balance), nonce);
-        let leaf_new = native_leaf(account_id, BaseElement::new(balance + amount), nonce);
+        // El salt REAL del titular (§117): derivado de la clave, no un
+        // literal de juguete — el escenario vive en el mundo envuelto.
+        let leaf_salt = derive_leaf_salt_wide(key);
+        let leaf_old =
+            native_leaf_salted(account_id, BaseElement::new(balance), nonce, leaf_salt);
+        let leaf_new =
+            native_leaf_salted(account_id, BaseElement::new(balance + amount), nonce, leaf_salt);
 
         Scenario {
             public_inputs: MintClimbPublicInputs {
@@ -803,13 +845,13 @@ mod tests {
                 supply_new: BaseElement::new(supply_old + amount),
                 max_supply: BaseElement::new(MAX_SUPPLY),
             },
-            account_id, balance, nonce, path, amount, supply_old,
+            account_id, balance, nonce, leaf_salt, path, amount, supply_old,
         }
     }
 
     fn build(s: &Scenario, supply_delta: u64) -> TraceTable<BaseElement> {
-        build_trace(s.account_id, s.balance, s.nonce, &s.path, s.amount,
-                    s.supply_old, supply_delta, MAX_SUPPLY)
+        build_trace(s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path,
+                    s.amount, s.supply_old, supply_delta, MAX_SUPPLY)
     }
 
     fn run(s: &Scenario, supply_delta: u64) -> Result<(), String> {
