@@ -63,7 +63,7 @@ use stark_experiment::circuit_settlement::native_leaf;
 use stark_experiment::merkle::Digest;
 
 use super::*;
-use crate::store::{digest_from_bytes, digest_to_bytes, record_from_bytes_v2, record_to_bytes_v2};
+use crate::store::{digest_from_bytes, digest_to_bytes, record_from_bytes_v2, record_from_bytes_v3, record_to_bytes_v2, record_to_bytes_v3};
 
 /// **Versión 4 del formato.** La 3 incluía el árbol de nullificadores,
 /// retirado con la vía de un paso (`AUDITORIA.md` §32); una copia v3
@@ -80,6 +80,9 @@ const MAGIC_V3: &[u8; 8] = b"ZKSSL3\0\0";
 /// v5 (49-A): registros de cuenta de 80 B, con view_id. v4 y v3 (48 B, sin
 /// view_id) se siguen importando con centinela.
 const MAGIC_V5: &[u8; 8] = b"ZKSSL5\0\0";
+/// v6 (B13/B14): registros de 112 B con leaf_salt. v5/v4/v3 (80/48) se
+/// importan con salt centinela.
+const MAGIC_V6: &[u8; 8] = b"ZKSSL6\0\0";
 
 /// Resumen de una instantánea, para registro y verificación externa.
 #[derive(Clone, Debug)]
@@ -150,7 +153,7 @@ impl SovereignLayer {
     /// justo la que se copia fuera del nodo.
     pub fn export_snapshot(&self, path: &str) -> Result<SnapshotInfo, LayerError> {
         let mut out: Vec<u8> = Vec::new();
-        out.extend_from_slice(MAGIC_V5);
+        out.extend_from_slice(MAGIC_V6);
         out.extend_from_slice(&digest_to_bytes(&self.custodian_set_root));
         out.extend_from_slice(&digest_to_bytes(&self.governance_set_root));
         out.extend_from_slice(&digest_to_bytes(&self.accounts.root()));
@@ -177,7 +180,7 @@ impl SovereignLayer {
 
         for (index, r) in &accounts {
             out.extend_from_slice(&index.to_le_bytes());
-            out.extend_from_slice(&record_to_bytes_v2(&r.public_id, r.balance, r.nonce, &r.view_id));
+            out.extend_from_slice(&record_to_bytes_v3(&r.public_id, r.balance, r.nonce, &r.view_id, &r.leaf_salt));
         }
         for (index, leaf) in &frozen {
             out.extend_from_slice(&index.to_le_bytes());
@@ -269,6 +272,8 @@ impl SovereignLayer {
                 (false, 48usize)
             } else if magic == MAGIC_V5 {
                 (false, 80usize)
+            } else if magic == MAGIC_V6 {
+                (false, 112usize)
             } else {
                 return Err(malformed(
                     "cabecera desconocida: no es una instantanea ZK-SSL",
@@ -338,8 +343,8 @@ impl SovereignLayer {
                     .try_into()
                     .map_err(|_| malformed("indice de cuenta"))?,
             );
-            let (public_id, balance, nonce, view_id) =
-                record_from_bytes_v2(take(rec_len, "registro")?)?;
+            let (public_id, balance, nonce, view_id, leaf_salt) =
+                record_from_bytes_v3(take(rec_len, "registro")?)?;
             layer
                 .accounts
                 .set_leaf(index, native_leaf(public_id, BaseElement::new(balance), nonce));
@@ -350,6 +355,7 @@ impl SovereignLayer {
                     balance,
                     nonce,
                     view_id,
+                    leaf_salt,
                 },
             );
         }
@@ -448,6 +454,33 @@ mod tests {
     /// paso el WRITE escribia 48 B y el view_id se perdia en cada copia,
     /// reapareciendo como centinela al reimportar. El test prueba que
     /// ahora cruza el disco intacto.
+    /// B13/B14: el snapshot v6 PERSISTE el leaf_salt. Antes de v6, el
+    /// WRITE escribia 80 B y el salt se perdia. Cruza el disco intacto.
+    #[test]
+    fn snapshot_v6_preserva_leaf_salt() {
+        use stark_experiment::circuit_settlement::derive_leaf_salt;
+        use winterfell::math::fields::f64::BaseElement;
+        const SK: u64 = 0x5A17;
+
+        let mut l1 = new_layer();
+        let idx = open_and_fund(&mut l1, SK, 1_000_000);
+        let salt = l1.stored_leaf_salt(idx);
+        // Salt REAL derivado de la clave, no centinela.
+        assert_eq!(salt, Some(derive_leaf_salt(BaseElement::new(SK))));
+        assert_ne!(salt, Some(crate::store::LEAF_SALT_LEGACY));
+
+        let path = temp_file("v6_leaf_salt");
+        l1.export_snapshot(&path).expect("export v6");
+        let l2 = SovereignLayer::import_snapshot(&path).expect("import v6");
+        let _ = std::fs::remove_file(&path);
+
+        assert_eq!(l2.stored_leaf_salt(idx), salt,
+                   "el leaf_salt no sobrevivio el round-trip de snapshot");
+        // y el view_id tambien sigue (v6 lleva ambos).
+        assert_eq!(l2.stored_view_id(idx), l1.stored_view_id(idx),
+                   "v6 debe preservar view_id ademas de leaf_salt");
+    }
+
     #[test]
     fn snapshot_v5_preserva_view_id() {
         use stark_experiment::circuit_settlement::view_id_of;

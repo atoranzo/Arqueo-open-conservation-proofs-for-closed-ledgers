@@ -439,6 +439,12 @@ impl SovereignLayer {
                     .get(&sender_index)
                     .map(|r| r.view_id)
                     .unwrap_or(crate::store::VIEW_ID_LEGACY),
+                // salt del record GUARDADO, no del input (misma razon 49-A).
+                leaf_salt: self
+                    .records
+                    .get(&sender_index)
+                    .map(|r| r.leaf_salt)
+                    .unwrap_or(crate::store::LEAF_SALT_LEGACY),
             },
         );
         // Solo avanza si la posicion era nueva. Si se reutilizo una
@@ -604,6 +610,12 @@ impl SovereignLayer {
                     .get(&receiver_index)
                     .map(|r| r.view_id)
                     .unwrap_or(crate::store::VIEW_ID_LEGACY),
+                // Ver nota en el envio: salt del record guardado.
+                leaf_salt: self
+                    .records
+                    .get(&receiver_index)
+                    .map(|r| r.leaf_salt)
+                    .unwrap_or(crate::store::LEAF_SALT_LEGACY),
             },
         );
         // ⚠️ **Deja constancia ANTES de persistir**, igual que las demas

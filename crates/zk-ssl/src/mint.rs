@@ -134,6 +134,8 @@ impl SovereignLayer {
             balance: account.balance + amount,
             nonce: account.nonce,
             view_id: account.view_id,
+            // opera sobre el record guardado -> preserva el salt.
+            leaf_salt: account.leaf_salt,
         };
         // ===== SE COMPRUEBA SOBRE UNA COPIA, NO SOBRE EL ESTADO =====
         //
@@ -224,6 +226,8 @@ impl SovereignLayer {
             balance: account.balance + amount,
             nonce: account.nonce,
             view_id: account.view_id,
+            // opera sobre el record guardado -> preserva el salt.
+            leaf_salt: account.leaf_salt,
         };
         let mut tentativo = self.accounts.clone();
         tentativo.set_leaf(

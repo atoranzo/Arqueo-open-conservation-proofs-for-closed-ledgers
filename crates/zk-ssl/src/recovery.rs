@@ -147,6 +147,10 @@ impl SovereignLayer {
                 // (entrada 52), NO de 49-A. Limitación declarada y con test
                 // (`recovery_deja_view_id_viejo`), no agujero silencioso.
                 view_id: account.view_id,
+                // MISMA costura para el salt: deriva de la clave que rota,
+                // asi que el salt viejo ya no corresponde. Se copia con el
+                // view_id; el cierre es la entrada 52.
+                leaf_salt: account.leaf_salt,
         };
         // ===== ROTACIÓN: consume una intervención del conjunto =====
         //
@@ -240,6 +244,10 @@ impl SovereignLayer {
                 // (entrada 52), NO de 49-A. Limitación declarada y con test
                 // (`recovery_deja_view_id_viejo`), no agujero silencioso.
                 view_id: account.view_id,
+                // MISMA costura para el salt: deriva de la clave que rota,
+                // asi que el salt viejo ya no corresponde. Se copia con el
+                // view_id; el cierre es la entrada 52.
+                leaf_salt: account.leaf_salt,
         };
         let mut tentativo = self.accounts.clone();
         tentativo.set_leaf(

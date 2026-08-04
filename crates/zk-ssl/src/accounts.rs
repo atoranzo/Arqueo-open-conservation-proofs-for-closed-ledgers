@@ -78,6 +78,13 @@ impl SovereignLayer {
         self.records.get(&index).map(|r| r.view_id)
     }
 
+    /// **leaf_salt almacenado** (B13/B14). La capa lo lee para recomputar
+    /// la hoja salteada (no puede derivarlo: §93.4). `None` si no existe;
+    /// `LEAF_SALT_LEGACY` en cuentas migradas/pre-B13.
+    pub fn stored_leaf_salt(&self, index: AccountIndex) -> Option<Digest> {
+        self.records.get(&index).map(|r| r.leaf_salt)
+    }
+
     #[deprecated(
         since = "0.1.0",
         note = "Crea cuentas con clave de 64 bits: agotar su espacio cuesta \
@@ -153,6 +160,7 @@ impl SovereignLayer {
         self.open_with_id(
             stark_experiment::circuit_settlement::derive_public_id_wide(spend_key),
             stark_experiment::circuit_settlement::view_id_of_wide(spend_key),
+            stark_experiment::circuit_settlement::derive_leaf_salt_wide(spend_key),
         )
     }
 
@@ -171,6 +179,7 @@ impl SovereignLayer {
         self.open_with_id(
             derive_public_id(spend_key),
             stark_experiment::circuit_settlement::view_id_of(spend_key),
+            stark_experiment::circuit_settlement::derive_leaf_salt(spend_key),
         )
     }
 
@@ -179,7 +188,12 @@ impl SovereignLayer {
     /// Recibe la **identidad ya derivada**, que es lo unico que la cuenta
     /// guarda: la clave no se almacena en ningun sitio (§93.4). Por eso las
     /// dos anchuras comparten todo salvo la derivacion.
-    fn open_with_id(&mut self, public_id: Digest, view_id: Digest) -> Result<AccountIndex, LayerError> {
+    fn open_with_id(
+        &mut self,
+        public_id: Digest,
+        view_id: Digest,
+        leaf_salt: Digest,
+    ) -> Result<AccountIndex, LayerError> {
         if self.next_index >= self.max_accounts {
             return Err(LayerError::AccountLimitReached {
                 limit: self.max_accounts,
@@ -198,6 +212,7 @@ impl SovereignLayer {
                 balance: 0,
                 nonce,
                 view_id,
+                leaf_salt,
             },
         );
         // ⚠️ **La unica transicion de estado SIN prueba.**

@@ -157,6 +157,12 @@ impl SovereignLayer {
                 .get(&account_index)
                 .map(|r| r.view_id)
                 .unwrap_or(crate::store::VIEW_ID_LEGACY),
+            // salt del record guardado (misma razon 49-A).
+            leaf_salt: self
+                .records
+                .get(&account_index)
+                .map(|r| r.leaf_salt)
+                .unwrap_or(crate::store::LEAF_SALT_LEGACY),
         };
         // Se comprueba sobre una copia: ver el comentario de `mint`.
         let mut tentativo = self.accounts.clone();

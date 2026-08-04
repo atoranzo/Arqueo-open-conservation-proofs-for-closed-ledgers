@@ -306,8 +306,8 @@ impl SovereignLayer {
                     .try_into()
                     .map_err(|_| StoreError::Malformed("indice de cuenta".into()))?,
             );
-            let (public_id, balance, nonce, view_id) =
-                crate::store::record_from_bytes_v2(&v)?;
+            let (public_id, balance, nonce, view_id, leaf_salt) =
+                crate::store::record_from_bytes_v3(&v)?;
             self.accounts.set_leaf(
                 idx,
                 native_leaf(public_id, BaseElement::new(balance), nonce),
@@ -319,6 +319,7 @@ impl SovereignLayer {
                     balance,
                     nonce,
                     view_id,
+                    leaf_salt,
                 },
             );
         }
@@ -530,7 +531,7 @@ impl SovereignLayer {
                 key.extend_from_slice(&index.to_le_bytes());
                 batch.insert(
                     key,
-                    self.seal(crate::store::record_to_bytes_v2(&r.public_id, r.balance, r.nonce, &r.view_id).to_vec())?,
+                    self.seal(crate::store::record_to_bytes_v3(&r.public_id, r.balance, r.nonce, &r.view_id, &r.leaf_salt).to_vec())?,
                 );
             }
         }

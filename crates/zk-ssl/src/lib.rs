@@ -325,6 +325,12 @@ struct AccountRecord {
     /// Las operaciones que no rotan la clave lo PRESERVAN; recovery lo
     /// toca y es la costura 49-A<->52 (ver TODO en recovery.rs).
     view_id: Digest,
+    /// Salt de la hoja (entrada 50 / B13-B14): `derive_leaf_salt(sk)`,
+    /// fijado al abrir. `LEAF_SALT_LEGACY` (cero) en cuentas migradas
+    /// (salt-cero, no-retro §126.4) y pre-B13/B14. La capa lo lee para
+    /// recomputar la hoja salteada (no puede derivarlo: §93.4). Se
+    /// PRESERVA al operar; recovery lo toca (misma costura que view_id).
+    leaf_salt: Digest,
 }
 
 /// Liquidación: la prueba y los valores públicos que la acompañan.
