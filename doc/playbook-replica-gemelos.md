@@ -105,3 +105,20 @@ UNA release: la capa cambia imports a los gemelos; se borran legacies,
 helpers `_32` y consts locales; `FROZEN_DEPTH` compartida a 32 (o
 `frozen_climb` pasa a iterar el camino — decisión de ese paso, §143.1);
 fixture legacy prueba la migración; snapshot v7.
+
+## Epílogo — la campaña, cerrada (post-flip)
+
+El playbook cumplió: DIEZ gemelos (§143-§152), T2b-circuito (§154),
+medición apareada (§155), FLIP D4 como release única (§156) y F3
+(§157) — **cero rojos** en ambas suites por primera vez. Este
+documento queda como MÉTODO para futuras réplicas de este porte.
+
+Reglas ganadas bajo fuego, sumadas a las de campaña: **el canon es el
+árbol del piloto** (los md5 del espejo son informativos; juzgan los
+asertos de cada transformación, los guardianes y las suites); **los
+asientos nacen en el python** (párrafos unidos por `\n\n`, inmunes al
+portapapeles); **el mensaje de un commit no afirma un verde futuro**
+(se escribe tras el verde o se escribe condicional); **«hecho» se
+detecta por estructura**, no por byte-igualdad; y **las colas y los
+conteos se censan del natural, hasta el final** — la segunda llamada
+de burn esperó al flip para cobrarse su duda anotada.

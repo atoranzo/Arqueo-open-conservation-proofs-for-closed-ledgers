@@ -484,15 +484,18 @@ mod tests_privacidad {
     ///
     /// `send_materials` entrega `sender_path`, y `sparse_tree::path_for`
     /// devuelve `node(level, idx ^ 1)`: en el nivel 0, **la hoja del
-    /// vecino**. Y la hoja es
+    /// vecino**. En el MUNDO VIEJO la hoja era
     ///
     /// ```text
     /// native_leaf(pk, saldo, nonce) = H(H(pk, saldo), nonce)
     /// ```
     ///
-    /// **sin salt** —verificado: `native_merge` pone la capacidad a cero, sin
-    /// dominio ni cegado—. Con `pk` conocida, hay una ecuacion y dos
-    /// incognitas.
+    /// **sin salt** —`native_merge` pone la capacidad a cero, sin dominio
+    /// ni cegado— y con `pk` conocida había una ecuación y dos
+    /// incógnitas. **Tras el flip (§156) la hoja va ENVUELTA**
+    /// —`native_leaf_salted(…, salt)`, salt derivado de la clave
+    /// (§117)— y este diccionario NO acierta: el instrumento quedó como
+    /// CONTRATO (si encuentra algo, el cegado se rompió).
     ///
     /// ## El regimen es 1D, y eso NO es un supuesto
     ///
@@ -597,10 +600,10 @@ mod tests_privacidad {
 
         assert!(
             hallado.is_none(),
-            "PRIVACIDAD FRENTE A TERCEROS: el saldo del vecino se recupera \
-             por diccionario desde el camino que el propio protocolo entrega. \
-             `native_leaf` no lleva salt y el nonce nace en cero. Ver la \
-             salida para la curva y sus priors."
+            "PRIVACIDAD FRENTE A TERCEROS (§117): la hoja va ENVUELTA con \
+             salt — si este barrido ENCUENTRA algo, el cegado se ha roto y \
+             el flip D4 dejó una hoja sin envolver. Ver la salida para la \
+             curva y sus priors."
         );
     }
 

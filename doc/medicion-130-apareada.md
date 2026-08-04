@@ -27,3 +27,8 @@ por el mismo precio; (3) audit: prueba deterministamente MENOR (−653
 bytes), hecho anotado; (4) el resto: 0–9,5 % (freeze = sus 8 ciclos
 reales de más). Los tiempos son de UNA corrida serie: orientativos; los
 tamaños de prueba son deterministas y canónicos.
+
+**Post-flip (§156)**: los gemelos SON los circuitos — los instrumentos
+sobreviven como `medicion_130_<circuito>` (los `_legado` murieron con
+sus ficheros). Esta tabla queda como la foto del coste en la víspera
+del flip: el precio se pagó y pasó a la historia.
