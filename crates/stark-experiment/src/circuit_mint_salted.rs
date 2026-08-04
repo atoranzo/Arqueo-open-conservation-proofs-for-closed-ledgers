@@ -81,9 +81,9 @@ use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;
-/// 512 filas. La tubería acaba en `ROW_CUST_ROOT` (fila 311): quedan
-/// **200 filas de holgura** (25 ciclos). Sin fase frozen, el mundo
-/// nuevo solo suma el ciclo del salt: 319, y 512 ALCANZA (spec §3).
+/// 512 filas. En el gemelo la tubería —con el salt— acaba en
+/// `ROW_CUST_ROOT` (fila 319): quedan **192 filas de holgura** (24
+/// ciclos). Sin fase frozen, 512 ALCANZA (tabla §3 de la spec, §146).
 pub const TRACE_LENGTH: usize = 512;
 pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: saldo, importe, saldo nuevo, suministro nuevo,
@@ -113,7 +113,11 @@ const COL_SUPPLY_NEW: usize = 41;
 const COL_MAX_SUPPLY: usize = 42;
 const COL_SBIT: usize = 43;
 const COL_SACC: usize = 44;
-pub const TRACE_WIDTH: usize = 45;
+/// **Salt de la hoja** (testigo, §117): envuelve la hoja como tercer
+/// merge. UN solo salt compartido por ambos carriles (spec de la
+/// máquina de hoja §2). Sin colisión en mint: no hay COL_SALT previo.
+const COL_LEAF_SALT: usize = 45; // 45..49
+pub const TRACE_WIDTH: usize = 49;
 
 // ===== Filas =====
 //
@@ -126,12 +130,17 @@ pub const TRACE_WIDTH: usize = 45;
 // ciclo vive fuera de este bloque — bucles de bits, periódicas y el
 // `match` de `build_trace` lo derivan de aquí.
 const CYC_NONCE: usize = 1;
-const CYC_ACC: usize = CYC_NONCE + 1;
+// El TERCER merge (§117, B13/B14): la hoja se envuelve con el salt
+// antes de entrar al camino. Todo el calendario posterior se corre +1
+// ciclo solo, por derivación (playbook R2).
+const CYC_SALT: usize = CYC_NONCE + 1;
+const CYC_ACC: usize = CYC_SALT + 1;
 /// Ciclo de la raíz de cuentas; su fila de enlace arranca custodios.
 const CYC_ACCT_ROOT: usize = CYC_ACC + TREE_DEPTH;
 const CYC_CUST: usize = CYC_ACCT_ROOT + 1;
 const CYC_FIN: usize = CYC_CUST + CUSTODIAN_DEPTH;
 const ROW_LEAF_LINK: usize = CYC_NONCE * CYCLE_LENGTH - 1;
+const ROW_SALT_LINK: usize = CYC_SALT * CYCLE_LENGTH - 1;
 const ROW_LEAF_DONE: usize = CYC_ACC * CYCLE_LENGTH - 1;
 /// Raíz del árbol de cuentas. Su enlace arranca la fase de custodios.
 const ROW_ACCT_ROOT: usize = CYC_ACCT_ROOT * CYCLE_LENGTH - 1;
@@ -223,6 +232,9 @@ pub fn build_trace(
     account_id: Digest,
     balance: u64,
     nonce: BaseElement,
+    // **Salt de la hoja (testigo).** Del TITULAR de la cuenta acreditada
+    // (§117): la pertenencia se prueba sobre `H(native_leaf, salt)`.
+    leaf_salt: Digest,
     path: &MerklePath,
     amount: u64,
     supply_old: u64,
@@ -254,6 +266,7 @@ pub fn build_trace(
         row[COL_SUPPLY_OLD] = c_supply_old;
         row[COL_SUPPLY_NEW] = c_supply_new;
         row[COL_MAX_SUPPLY] = c_max;
+        row[COL_LEAF_SALT..COL_LEAF_SALT + 4].copy_from_slice(&leaf_salt);
     }
 
     // Rangos. El quinto demuestra que no se supera el tope; los tres
@@ -347,6 +360,16 @@ pub fn build_trace(
                     state_a[8] = nonce;
                     state_b[4..8].copy_from_slice(&digest_b);
                     state_b[8] = nonce;
+                }
+                ROW_SALT_LINK => {
+                    // EL TERCER MERGE (§117): la hoja se envuelve con el
+                    // salt. Digest arrastrado; el rate recibe los CUATRO
+                    // limbos del salt (spec §2 — atar solo [8] sería el
+                    // bug de §92.2 en su forma nueva).
+                    state_a[4..8].copy_from_slice(&digest_a);
+                    state_a[8..12].copy_from_slice(&leaf_salt);
+                    state_b[4..8].copy_from_slice(&digest_b);
+                    state_b[8..12].copy_from_slice(&leaf_salt);
                 }
                 ROW_LEAF_DONE => {
                     place_acct(&mut state_a, &digest_a, 0);
@@ -1034,7 +1057,10 @@ mod tests {
 
 
     use super::*;
-    use crate::circuit_settlement::{derive_public_id, native_climb, native_leaf};
+    use crate::circuit_settlement::{
+        derive_leaf_salt_wide, derive_public_id_wide, native_climb,
+        native_leaf_salted,
+    };
     use crate::circuit_threshold::build_custodian_set;
     use crate::merkle::native_merge;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
@@ -1069,6 +1095,7 @@ mod tests {
         account_id: Digest,
         balance: u64,
         nonce: BaseElement,
+        leaf_salt: Digest,
         path: MerklePath,
         amount: u64,
         supply_old: u64,
@@ -1081,7 +1108,17 @@ mod tests {
             let prev = empty[k - 1];
             empty.push(native_merge(prev, prev));
         }
-        let account_id = derive_public_id(BaseElement::new(0xA11CE));
+        // ⚠️ Ancha de verdad, no `as_digest(x)`: con relleno de ceros el
+        // test pasaria sin ejercitar los elementos altos (§90.3). El
+        // TITULAR de la cuenta acreditada asciende al mundo ancho: su
+        // clave manda sobre identidad Y salt (§117).
+        let key = [
+            BaseElement::new(0xA11CE_0001),
+            BaseElement::new(0xA11CE_0002),
+            BaseElement::new(0xA11CE_0003),
+            BaseElement::new(0xA11CE_0004),
+        ];
+        let account_id = derive_public_id_wide(key);
         let nonce = BaseElement::ZERO;
 
         // Direcciones MIXTAS: con todas iguales la traza degenera.
@@ -1096,8 +1133,13 @@ mod tests {
         let keys = custodian_keys();
         let (set_root, cpaths) = build_custodian_set(&keys);
 
-        let leaf_old = native_leaf(account_id, BaseElement::new(balance), nonce);
-        let leaf_new = native_leaf(account_id, BaseElement::new(balance + amount), nonce);
+        // El salt REAL del titular (§117): derivado de la clave, no un
+        // literal de juguete — el escenario vive en el mundo envuelto.
+        let leaf_salt = derive_leaf_salt_wide(key);
+        let leaf_old =
+            native_leaf_salted(account_id, BaseElement::new(balance), nonce, leaf_salt);
+        let leaf_new =
+            native_leaf_salted(account_id, BaseElement::new(balance + amount), nonce, leaf_salt);
 
         Scenario {
             public_inputs: MintPublicInputs {
@@ -1120,6 +1162,7 @@ mod tests {
             account_id,
             balance,
             nonce,
+            leaf_salt,
             path,
             amount,
             supply_old,
@@ -1132,6 +1175,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             s.amount,
             s.supply_old,
