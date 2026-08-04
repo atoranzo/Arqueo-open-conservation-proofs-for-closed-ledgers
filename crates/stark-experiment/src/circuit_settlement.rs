@@ -85,6 +85,7 @@ const FROZEN_DEPTH: usize = 24;
 /// Subida de congelados A 24 — pareja del pin de arriba: la CASA ya
 /// vive a 32 y su `frozen_climb` moriría con los caminos de 24 que
 /// este museo construye. Muere con el módulo (BACKLOG).
+#[cfg(test)] // solo los trece tests del museo lo llaman
 fn frozen_climb_24(leaf: Digest, path: &MerklePath) -> Digest {
     let mut current = leaf;
     for level in 0..FROZEN_DEPTH {
@@ -2199,6 +2200,7 @@ mod t7_clave_de_vista {
     }
 
     #[test]
+    #[allow(non_snake_case)] // GASTO en mayúsculas es la voz del test
     fn t7_la_vista_no_es_credencial_de_GASTO() {
         // Presentar la clave de vista no debe permitir DERIVAR la de gasto
         // ni la identidad: son dominios separados. Comprobamos que ni la
@@ -2226,6 +2228,7 @@ mod t7_clave_de_vista {
     }
 }
 
+#[cfg(test)]
 mod t2b_recuperacion_nativa {
     //! T2b-nativo (entrada 50): la propiedad de RECUPERACION de §117,
     //! demostrada SIN el circuito. Decide la clausula de caida de §116:
@@ -2314,6 +2317,7 @@ mod t2b_recuperacion_nativa {
     }
 }
 
+#[cfg(test)]
 mod t2a_salt_hoja {
     //! T2a - la decision del salt, sometida a uso (disciplina de §108.5).
     use super::*;
