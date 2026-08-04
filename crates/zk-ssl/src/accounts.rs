@@ -199,7 +199,17 @@ impl SovereignLayer {
                 limit: self.max_accounts,
             });
         }
-        let index = self.next_index;
+        // Colocación del MUNDO NUEVO (F3): la MISMA política que la
+        // migración (paso 1b) — `public_id[0] mod capacidad` con sondeo
+        // lineal determinista. `next_index` queda como CENSO (cuota),
+        // no como posición: los índices dejan de ser secuenciales y
+        // enumerables (contratos de client.rs, superficies 2-3), y las
+        // altas de un atacante ya no eligen vecino.
+        let cap = self.accounts.capacity();
+        let mut index = public_id[0].as_int() % cap;
+        while self.records.contains_key(&index) {
+            index = (index + 1) % cap;
+        }
         self.next_index += 1;
         let root_old = self.accounts.root();
         let nonce = BaseElement::ZERO;
