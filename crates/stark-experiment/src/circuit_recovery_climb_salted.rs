@@ -52,6 +52,9 @@ use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;
+/// 512 filas. La tubería acaba en `ROW_ACCT_ROOT` (fila 271): quedan
+/// **240 filas de holgura** (30 ciclos). Sin frozen ni custodios, el
+/// mundo nuevo solo suma el ciclo del salt: 279, y 512 ALCANZA (§3).
 pub const TRACE_LENGTH: usize = 512;
 pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: saldo, índice A, índice B, y `B − A − 1`.
@@ -82,13 +85,27 @@ const COL_SACC: usize = COL_SBIT + 1; // 39
 pub const TRACE_WIDTH: usize = COL_SACC + 1; // 40
 
 // ===== Filas =====
-const ROW_LEAF_LINK: usize = 7;
-const ROW_LEAF_DONE: usize = 15;
+//
+// Geometría derivada (playbook R2; el patrón de SB0, §140-§141). Un
+// solo tramo: hoja + subida de cuentas — `CYC_FIN = CYC_ACC +
+// TREE_DEPTH`, sin custodios, frozen ni pendientes.
+//
+// Convención: todo arranque de tramo es un `CYC_*`; ningún literal de
+// ciclo vive fuera de este bloque — bucles de bits, periódicas y el
+// `match` de `build_trace` lo derivan de aquí.
+const CYC_NONCE: usize = 1;
+const CYC_ACC: usize = CYC_NONCE + 1;
+const CYC_FIN: usize = CYC_ACC + TREE_DEPTH;
+const ROW_LEAF_LINK: usize = CYC_NONCE * CYCLE_LENGTH - 1;
+const ROW_LEAF_DONE: usize = CYC_ACC * CYCLE_LENGTH - 1;
 /// Fila donde el estado contiene las dos raices. Lo que hay despues es
 /// relleno hasta la potencia de dos: la 271 **no es fila de enlace**, asi que
 /// la transicion 271->272 no activa ninguna restriccion y el relleno sale
 /// gratis (a diferencia de `circuit_frozen_climb`, §60.2).
-pub const ROW_ACCT_ROOT: usize = 271;
+pub const ROW_ACCT_ROOT: usize = CYC_FIN * CYCLE_LENGTH - 1;
+
+// El presupuesto, en compilación: la tubería debe caber en la traza.
+const _: () = assert!(ROW_ACCT_ROOT < TRACE_LENGTH);
 
 // ===== Restricciones =====
 const C_HASH_A: usize = 0;
@@ -187,6 +204,12 @@ pub fn build_trace(
     }
 
     let place_acct = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
+        debug_assert!(
+            level < TREE_DEPTH,
+            "place_acct: nivel {} sobre path de {}",
+            level,
+            TREE_DEPTH
+        );
         if path.is_right[level] {
             state[4..8].copy_from_slice(&path.siblings[level]);
             state[8..12].copy_from_slice(digest);
@@ -230,8 +253,12 @@ pub fn build_trace(
                 }
                 _ => {
                     let next_cycle = (r + 1) / CYCLE_LENGTH;
-                    if (2..34).contains(&next_cycle) {
-                        let level = next_cycle - 2;
+                    // Convención única (playbook R2): tramo genérico =
+                    // `(CYC_arranque..CYC_fin_de_tramo)`, nivel =
+                    // `next_cycle - CYC_arranque`; el arranque lo sombrea
+                    // el brazo de `ROW_LEAF_DONE` (nivel 0 explícito).
+                    if (CYC_ACC..CYC_FIN).contains(&next_cycle) {
+                        let level = next_cycle - CYC_ACC;
                         place_acct(&mut state_a, &digest_a, level);
                         place_acct(&mut state_b, &digest_b, level);
                     }
@@ -249,7 +276,7 @@ pub fn build_trace(
             zero
         };
         for p in 0..CYCLE_LENGTH {
-            rows[(2 + level) * CYCLE_LENGTH + p][COL_BIT_A] = bit;
+            rows[(CYC_ACC + level) * CYCLE_LENGTH + p][COL_BIT_A] = bit;
         }
     }
     let mut trace = TraceTable::new(TRACE_WIDTH, TRACE_LENGTH);
@@ -366,7 +393,7 @@ impl Air for RecoveryClimbAir {
         let mut acct_link = vec![zero; TRACE_LENGTH];
         acct_link[ROW_LEAF_DONE] = one;
         for level in 0..TREE_DEPTH - 1 {
-            acct_link[(2 + level) * CYCLE_LENGTH + 7] = one;
+            acct_link[(CYC_ACC + level) * CYCLE_LENGTH + 7] = one;
         }
         columns.push(acct_link);
 
