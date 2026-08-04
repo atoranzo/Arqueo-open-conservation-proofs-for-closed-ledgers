@@ -66,6 +66,7 @@ pub mod circuit_audit_salted;
 pub mod circuit_burn;
 pub mod circuit_burn_salted;
 pub mod circuit_freeze;
+pub mod circuit_freeze_salted;
 // Entrada 33 / §59: la subida a congelados sin la parte de autorizacion.
 pub mod circuit_frozen_climb;
 pub mod circuit_governance;
