@@ -11778,6 +11778,42 @@ y la cola de vacuidad multilínea. **Los tres commits**
 relleno CARO que recovery_climb señaló (§60.2: allí la última fila SÍ
 es de enlace).
 
+## 152. Frozen_climb COMPLETO — el décimo: ajuste exacto, y la campaña del paso 3 CERRADA
+
+**Los dos avisos del paso 2, resueltos por lectura**: el «24 clavado
+en la línea 166» (§143.1) resultó ser PROSA del mundo viejo (docs del
+módulo y del TRACE) e ÍNDICES de restricción (`result[24 + i]` es la
+ranura 24..27, no profundidad) — el código profundo ya derivaba todo
+de `FROZEN_DEPTH` importado, con `ROW_ROOT` incluido. Y el relleno
+CARO (§60.2) no hubo que pagarlo: **se disolvió por geometría** — a
+32, `ROW_ROOT = 255 = TRACE_LENGTH − 1`, el ajuste es EXACTO y no
+queda fila que rellenar. Guarda en compilación:
+`assert!(ROW_ROOT == TRACE_LENGTH - 1)`.
+
+**El giro (R2+R6 fusionados — nada que derivar: ya venía derivado)**:
+el import de `circuit_freeze` se vuelve `const FROZEN_DEPTH: usize =
+32;` LOCAL (los gemelos no importan de otros gemelos; en el flip la
+CASA §151 exporta 32 y el import vuelve). La prosa del mundo viejo,
+**redimida**: el primer renglón del doc del TRACE («32 niveles × 8
+filas = 256») era herencia de `dual_climb` que POR FIN es verdad
+aquí; el párrafo de deuda del módulo pierde su tensión — ambos árboles
+viven ya a 32 y así queda escrito. El contrato de la firma («llega el
+camino de 32 del árbol de cuentas; se usan los FROZEN_DEPTH
+primeros») hizo el resto: los llamadores no cambiaron y el camino
+corto de 24 muere en el `assert!` de entrada — primera mutación. La
+segunda: raíz vacía de 24 ≠ raíz vacía de 32.
+
+**Los tres commits** (`5f799b0`→`1dc4249`, R2+R6 en uno; md5
+`13be019c…`→`e21c69a9…`). Todo a la primera: cinco anclas, cero
+abortos.
+
+**Presupuesto** (décima fila, la única exacta): — → **255** (a 32);
+holgura **0** en su 256. **CABE — exacto.**
+
+**Estado: DIEZ GEMELOS DE DIEZ — LA CAMPAÑA DEL PASO 3, COMPLETA.**
+Suite 420/0; capa 240/2 intacta; guardianes 35·37. Sigue: asiento de
+cierre de campaña e informe de traspaso actualizado.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

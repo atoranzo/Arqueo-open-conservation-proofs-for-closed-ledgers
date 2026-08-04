@@ -1637,6 +1637,13 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   (clausuras homónimas → nombre completo). Fila 9 (295/216, CABE).
   NUEVE de diez. SIGUE: frozen_climb (24 clavado en :166; relleno
   CARO §60.2).
+  ✅ **frozen_climb COMPLETO (§152, `5f799b0`→`1dc4249`)**: giro a 32
+  local con ajuste EXACTO (ROW_ROOT = TRACE−1; §60.2 disuelto por
+  geometría); los dos avisos del paso 2 eran prosa/índices, no
+  código. Fila 10 (255/0, CABE exacto).
+  ✅✅ **DIEZ DE DIEZ — CAMPAÑA DEL PASO 3 COMPLETA** (§143-§152, 47
+  commits de campaña). Sigue: asiento de cierre + informe de
+  traspaso.
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y

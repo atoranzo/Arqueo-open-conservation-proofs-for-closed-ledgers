@@ -76,6 +76,7 @@ pasos 2-3 midiendo filas usadas hoy — **no se asume que 1024 alcanza**.
 | recovery (§149) | 311 | 319 | — (sin frozen) | **192** (24 ciclos, en su 512) | **CABE** |
 | recovery_climb (§150) | 271 | 279 | — (sin frozen) | **232** (29 ciclos, en su 512) | **CABE** |
 | freeze (§151) | — (sin salt) | — | **295** (a 32) | **216** (27 ciclos, en su 512) | **CABE** |
+| frozen_climb (§152) | — (sin salt) | — | **255** (a 32, EXACTO) | **0** (ajuste perfecto, en su 256) | **CABE — exacto** |
 
 (Primera fila: medida por el piloto en el gemelo; el resto se rellena
 circuito a circuito en el paso 3.)
