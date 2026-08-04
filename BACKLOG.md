@@ -1559,6 +1559,19 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   Asiento §138. Para `C_SALT_IN` se atarán los 4 limbos por claridad.
   SIGUE: paso 2 propiamente — añadir `C_SALT_*` a `circuit_send` (el
   tercer merge del salt + 2 mutaciones obligatorias).
+  ⚠️ **Paso 2 — OBSTÁCULO encontrado, TRES reversiones (asiento §139)**:
+  insertar el merge del salt en `circuit_send` por corrimiento manual es
+  inviable — el trace codifica la posición de cada camino en TRES sitios
+  desincronizables (constantes `ROW_*` en filas, offsets `(N+level)*
+  CYCLE_LENGTH` en columnas, y rangos+aritmética en el `match r` 477-489,
+  con ciclos-frontera no uniformes). Tres intentos, tres `git checkout`,
+  árbol 286/0 intacto. Tercera aparición de §137 (censar TODAS las
+  representaciones). **ESPERA DECISIÓN DE ESTRATEGIA**: (a) HACK — salt en
+  la holgura del final (744→751, cero corrimiento, trace no-temporal); (b)
+  REFACTOR — unificar las 3 representaciones antes de insertar. Recomendado
+  PRIMERO: producir el mapa completo de la geometría de `circuit_send` como
+  documento; con él la elección es obvia. El plan SB1→SB5 sigue válido
+  salvo la mecánica de dónde meter las 8 filas.
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y

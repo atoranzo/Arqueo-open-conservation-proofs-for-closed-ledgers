@@ -11203,6 +11203,57 @@ C_HASH ya cubriría: cinturón sobre tirantes, sin coste de soundness.
 (paso 3), debe llevar el mismo canario — no se asume que lo de send vale
 para burn sin probarlo allí. Commit `1ba848d`.
 
+## 139. El piloto del salt: TRES reversiones que mapearon el obstáculo (circuit_send codifica cada posición en tres sitios)
+
+**Qué se intentó.** Insertar el tercer merge del salt en `circuit_send`
+(SB1 del plan del piloto: reindexado puro, restricciones inertes) para que
+la hoja pasara a `native_leaf_salted`. La spec de la máquina de hoja lo
+planteó como corrimiento +1 ciclo de los tramos posteriores al salt.
+
+**Qué pasó: tres reversiones, cada una destapando una representación.** El
+trace codifica la posición de cada camino de Merkle (cuentas, frozen,
+pending) en TRES sitios que ninguna edición parcial mantiene en sincronía:
+(1) las constantes `ROW_*` en filas (`ROW_ROOT=271`, `ROW_FROZEN_ROOT=471`
+…); (2) los offsets de ciclo de las columnas, `(2 + level)*CYCLE_LENGTH`
+cuentas / `(35 + level)` frozen / `(61 + level)` pending, en los bucles de
+`build_trace` Y en las periódicas `link_merkle`/`frozen_link`/`pend_link`;
+(3) los rangos + aritmética del `match r` (líneas 477-489), que calcula el
+nivel del path con rangos HARDCODEADOS y offset distinto por tramo:
+`(2..34) -> next_cycle-2`, `(36..60) -> next_cycle-35`, `(62..94) ->
+next_cycle-61`.
+
+Intento 1 (solo `ROW_*` +8): rompió (offsets de ciclo viejos). Intento 2
+(`ROW_*` +8 Y offsets +1): rompió IGUAL — el `match` seguía con sus rangos
+viejos, `place_frozen` recibió `level=24` sobre un path de 24 (índice
+fuera de rango, misma línea las dos veces). Reversión `git checkout` cada
+vez; árbol a 286/0 intacto.
+
+**El hallazgo (método, no código).** `circuit_send` es demasiado
+intrincado para modificar su geometría por corrimiento manual: cada
+posición vive en tres representaciones con convenciones de off-by-one
+DISTINTAS, y los rangos del `match` tienen ciclos-frontera entre tramos
+(saltos 34→36, 60→62) que no son uniformes. **Tercera aparición del
+fenómeno de §137**: censar TODAS las representaciones de una coordenada,
+no la muestra. El grep de censo buscó `const ROW_` y `* CYCLE_LENGTH`; se
+perdió los rangos del `match`. Regla reforzada: antes de mover una
+coordenada en un circuito, grep de las TRES formas.
+
+**Estrategias para la próxima sesión (a decidir con el mapa completo, NO a
+ojo).** HACK: el salt en la holgura del final (filas 744→751, 281 libres),
+enlace lógico apuntando allí, cero corrimiento — ninguna representación se
+toca; coste: el trace deja de leerse en orden temporal. REFACTOR: unificar
+las tres representaciones (derivar offsets y rangos de las constantes
+`ROW_`), luego insertar — correcto pero sesión propia. **Recomendación:
+producir primero el MAPA COMPLETO de la geometría de `circuit_send` como
+documento; con él la elección es obvia y la ejecución deja de tropezar.
+Sin él, un cuarto intento repetiría el patrón.**
+
+**Imagen fiel.** El piloto NO avanzó; el árbol quedó 286/0 y 240/2, sin
+rastro de los intentos. Lo que avanzó es el conocimiento del obstáculo —
+imprescindible: sin estas tres reversiones, quien abriera el piloto habría
+caído en la misma trampa. El plan SB1→SB5 sigue válido salvo la mecánica
+de dónde meter las 8 filas, que es lo que se replantea.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
