@@ -294,6 +294,7 @@ mod tests {
     #[test]
     fn record_roundtrip() {
         let id: Digest = [BaseElement::new(9); 4];
+        #[allow(deprecated)] // ejercita el shim A PROPÓSITO (49-A paso 1)
         let bytes = record_to_bytes(&id, 1_000_000, BaseElement::new(7));
         let (id2, bal, nonce) = record_from_bytes(&bytes).unwrap();
         assert_eq!(id2, id);

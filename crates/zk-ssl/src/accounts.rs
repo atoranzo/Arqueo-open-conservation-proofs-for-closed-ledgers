@@ -295,6 +295,7 @@ mod t_paso2_view_id {
         let mut layer = new_layer();
         let idx = open_and_fund(&mut layer, SK, 500_000);
         let antes = layer.stored_view_id(idx);
+        #[allow(deprecated)] // uso INVENTARIADO (AUDITORIA 80); migra con la 32
         let receipt = layer.mint(&valid_auth(), idx, 100_000).expect("mint");
         layer.apply_mint(&receipt, idx).expect("apply_mint");
         assert_eq!(layer.stored_view_id(idx), antes,
