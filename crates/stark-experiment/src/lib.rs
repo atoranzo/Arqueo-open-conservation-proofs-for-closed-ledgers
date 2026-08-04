@@ -62,6 +62,7 @@
 //!   propiedades que llevaron a elegir este paradigma para la capa.
 
 pub mod circuit_audit;
+pub mod circuit_audit_salted;
 pub mod circuit_burn;
 pub mod circuit_burn_salted;
 pub mod circuit_freeze;
