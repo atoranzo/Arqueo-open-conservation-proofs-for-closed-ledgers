@@ -64,6 +64,14 @@ Los caminos de congelación crecen de 24 a 32 niveles: **+8 ciclos = +64
 filas** en cada circuito que verifica camino frozen (send, claim, burn,
 freeze, frozen_climb). Presupuesto por circuito: TABLA A RELLENAR en los
 pasos 2-3 midiendo filas usadas hoy — **no se asume que 1024 alcanza**.
+
+| circuito | hoy (fila final) | + salt | + frozen-32 | holgura en 1024 | veredicto |
+|---|---|---|---|---|---|
+| send (PILOTO, §143) | 743 | 751 | **815** | **208** (26 ciclos) | **CABE** |
+
+(Primera fila: medida por el piloto en el gemelo; el resto se rellena
+circuito a circuito en el paso 3.)
+
 Si un circuito desborda: `TRACE_LENGTH` propio a 2048 (coste ~2× en su
 prueba, medido en el paso 5) o compactación de fases — decisión POR
 circuito, con el dato delante.

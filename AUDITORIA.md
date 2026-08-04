@@ -11422,6 +11422,60 @@ grados, evaluate); **SB1.d** las dos mutaciones de la spec §4 + test
 nativo↔circuito; **SB1.e** frozen-32 local con la primera fila real de
 la tabla de presupuestos.
 
+## 143. SB1 COMPLETO: el piloto send vive entero en el gemelo — salt + frozen-32 + mutaciones que muerden
+
+**Los cinco eslabones**, cada uno con guarda md5 atómica, suite release
+canónica y commit propio (cadena del gemelo: `7af238ed…` → `1de69a2f…`
+→ `3cb26323…` → `fccaa41d…` → `e239fc5b…`):
+
+- **SB1.a** (`bab7097`, §142): nace el gemelo; el guardián de ranuras
+  lo absorbe (28 circuitos).
+- **SB1.b** (`b9f8a74`): el mundo envuelto — `CYC_SALT` entra en la
+  cadena derivada y TODO el calendario se corre solo (el dividendo de
+  SB0, cobrado); 4 columnas `COL_LEAF_SALT` (52→56); brazo del tercer
+  merge; `scenario()` con el salt REAL (`derive_leaf_salt_wide(key)`,
+  §117). Los 19 tests pasaron A LA PRIMERA en el mundo nuevo, hitos
+  contra el nativo incluidos.
+- **SB1.c** (`8066497`): las seis `C_SALT_*` (24 ranuras) cosidas por
+  `link_salt`/`P_LINK_SALT`, grados y evaluate; el arnés de vacuidad
+  las cubre: NINGUNA decorativa. El hueco de la fila 15, cerrado.
+- **SB1.d** (`0549016`): las DOS mutaciones de la spec §4 RECHAZAN —
+  (a) limbo del salt testigo alterado (veneno = honesto+1, dispara
+  `C_SALT_IN`); (b) la hoja sin envolver al camino (dispara `C_PLACE`
+  en el enlace corrido) — más el nativo↔circuito: la cadena de tres
+  merges espeja `native_leaf_salted` limbo a limbo, ambos carriles.
+- **SB1.e** (`7f84ff8`): frozen-32 LOCAL — el gemelo declara su
+  `FROZEN_DEPTH = 32` y deja de importar la compartida (§140.3 opción
+  i, materializada): el flip aquí es borrar la const y devolver el
+  import. `frozen_climb_32` en tests, con cláusula de retirada.
+
+**Presupuesto MEDIDO** (primera fila de la tabla de la spec §3,
+rellenada en `doc/`): send 743 → +salt 751 → +frozen-32 **815**;
+holgura **208 filas** (26 ciclos). `TRACE_LENGTH = 1024` alcanza — y
+lo jura la guarda de SB0.4 en compilación, no este asiento.
+
+**Dos hallazgos para el checklist del flip.**
+1. `frozen_climb` (`circuit_freeze.rs:166`) **clava la profundidad por
+   dentro** (`0..FROZEN_DEPTH`), no itera el camino: con path de 32
+   subiría 24 y callaría. Al flip: o la compartida pasa a iterar el
+   camino, o su constante sube con los cinco — decisión de ese paso,
+   aquí anotada.
+2. **La cuarta representación mordió al asistente**: SB1.b corrió el
+   calendario y dejó desfasados los números de los comentarios del
+   gemelo (743/488/280…) — el fenómeno exacto de §140.4, en la mano
+   que lo había cazado. SB1.e los repuso anclados a nombres. Regla
+   viva: los números de comentario se revisan EN el paso que mueve la
+   geometría, no después.
+
+**Qué prueba y qué no.** El checklist de la spec para send está ENTERO
+(salt + frozen-32 + mutaciones + nativo↔circuito) y la capa siguió
+240/2 toda la campaña — la promesa de la estrategia C, cumplida. NO
+prueba: los otros nueve AIR (paso 3, con la lista de rangos de §141 y
+las variantes por circuito que la spec §5 advierte: mint sin carril de
+resta, audit sin mutar estado…), T2b-circuito (paso 4), la medición
+apareada (paso 5), ni el flip (release única D4: capa + gemelos +
+migración, y los legacy se borran).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

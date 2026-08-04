@@ -1589,6 +1589,14 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   en el flip; la capa sigue 240/2 toda la campaña; la estadificación
   §140.3 queda resuelta de facto (profundidad local del gemelo, el
   flip unifica). SIGUE: SB1.b-e sobre el gemelo.
+  ✅ **Paso 2 COMPLETO — el PILOTO send, entero en el gemelo (§143,
+  `b9f8a74`→`7f84ff8`)**: salt (tercer merge, seis `C_SALT_*`/24
+  ranuras) + frozen-32 local + las 2 mutaciones de la spec §4
+  rechazando + nativo↔circuito limbo a limbo. Presupuesto MEDIDO:
+  `ROW_PENDING_ROOT` 815, holgura 208 — primera fila de la tabla de la
+  spec §3. SIGUE: paso 3 (los nueve gemelos, lista de rangos de §141;
+  dos avisos para el flip en §143: `frozen_climb` clava 24, y los
+  números de comentario se revisan EN el paso que mueve geometría).
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y
