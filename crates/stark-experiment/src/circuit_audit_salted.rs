@@ -163,7 +163,14 @@ const C_SBIT_BOOL: usize = C_ID_CONST + 4; // 2
 const C_FIRST_S: usize = C_SBIT_BOOL + 2; // 2
 const C_HORNER: usize = C_FIRST_S + 2; // 1
 const C_SEG_LINK: usize = C_HORNER + 1; // NUM_SEGMENTS
-const NUM_CONSTRAINTS: usize = C_SEG_LINK + NUM_SEGMENTS;
+/// **La envoltura de la hoja (§117, B13/B14) — UN carril.** Tres
+/// familias cosidas por `link_salt` en `ROW_SALT_LINK`: capacidad a
+/// cero, digest arrastrado, y los CUATRO limbos del rate atados al
+/// salt testigo (§138 en los cuatro limbos).
+const C_SALT_CAP: usize = C_SEG_LINK + NUM_SEGMENTS; // 4
+const C_SALT_DIG: usize = C_SALT_CAP + 4; // 4
+const C_SALT_IN: usize = C_SALT_DIG + 4; // 4
+const NUM_CONSTRAINTS: usize = C_SALT_IN + 4;
 
 // ===== Columnas periódicas =====
 const P_HASH_FLAG: usize = 0;
@@ -171,7 +178,9 @@ const P_ARK1: usize = 1;
 const P_ARK2: usize = P_ARK1 + STATE_WIDTH;
 const P_LINK_MERKLE: usize = P_ARK2 + STATE_WIDTH;
 const P_LINK_LEAF: usize = P_LINK_MERKLE + 1;
-const P_LINK_PLACE: usize = P_LINK_LEAF + 1;
+/// Fila del TERCER merge: la envoltura del salt (§117).
+const P_LINK_SALT: usize = P_LINK_LEAF + 1;
+const P_LINK_PLACE: usize = P_LINK_SALT + 1;
 const P_FIRST_ROW: usize = P_LINK_PLACE + 1;
 const P_SEL_ROOT: usize = P_FIRST_ROW + 1;
 const P_SEL_PK_DONE: usize = P_SEL_ROOT + 1;
@@ -402,6 +411,11 @@ impl Air for AuditAir {
         for _ in 0..(3 + NUM_SEGMENTS) {
             degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
         }
+        // La envoltura del salt (12): grado 1 con ciclo — el molde de
+        // los enlaces de hoja, gate periódico × expresión lineal.
+        for _ in 0..12 {
+            degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
+        }
 
         assert_eq!(degrees.len(), NUM_CONSTRAINTS, "cuenta de grados");
 
@@ -458,6 +472,10 @@ impl Air for AuditAir {
         link_leaf[ROW_LEAF_LINK] = one;
         columns.push(link_leaf);
 
+        let mut link_salt = vec![zero; TRACE_LENGTH];
+        link_salt[ROW_SALT_LINK] = one;
+        columns.push(link_salt);
+
         let mut link_place = vec![zero; TRACE_LENGTH];
         link_place[ROW_LEAF_DONE] = one;
         columns.push(link_place);
@@ -502,6 +520,7 @@ impl Air for AuditAir {
         let ark2 = &periodic[P_ARK2..P_ARK2 + STATE_WIDTH];
         let link_merkle = periodic[P_LINK_MERKLE];
         let link_leaf = periodic[P_LINK_LEAF];
+        let link_salt = periodic[P_LINK_SALT];
         let link_place = periodic[P_LINK_PLACE];
         let first_row = periodic[P_FIRST_ROW];
         let sel_root = periodic[P_SEL_ROOT];
@@ -547,6 +566,16 @@ impl Air for AuditAir {
             result[C_LEAF_DIG + i] = link_leaf * (next[4 + i] - current[4 + i]);
         }
         result[C_NONCE] = link_leaf * (next[8] - current[COL_NONCE]);
+
+        // EL TERCER MERGE (§117): la envoltura, cosida por `link_salt`.
+        // Digest arrastrado y los CUATRO limbos del rate := salt testigo
+        // (§138 en los cuatro limbos) — UN carril.
+        for i in 0..4 {
+            result[C_SALT_CAP + i] = link_salt * next[i];
+            result[C_SALT_DIG + i] = link_salt * (next[4 + i] - current[4 + i]);
+            result[C_SALT_IN + i] =
+                link_salt * (next[8 + i] - current[COL_LEAF_SALT + i]);
+        }
 
         // Entradas de la hoja: identidad completa + saldo.
         for i in 0..4 {
@@ -727,7 +756,7 @@ impl Prover for AuditProver {
 #[cfg(test)]
 mod tests {
     use crate::circuit_settlement::{
-        derive_leaf_salt_wide, native_climb, native_leaf_salted,
+        derive_leaf_salt_wide, native_climb, native_leaf, native_leaf_salted,
     };
     use super::*;
     use crate::merkle::native_merge;
@@ -1020,6 +1049,96 @@ mod tests {
             informe.total,
             informe.celdas,
             informe.nunca_disparadas
+        );
+    }
+
+    /// **NATIVO↔CIRCUITO de la envoltura (spec §4, playbook R5) — un
+    /// carril, una hoja.**
+    #[test]
+    fn la_cadena_de_tres_merges_espeja_native_leaf_salted() {
+        let (w, _root, id) = scenario(1_000_000);
+        let trace = build_trace(&w, 900_000, 1_100_000);
+
+        let sin_sal = native_leaf(id, BaseElement::new(w.balance), w.nonce);
+        let con_sal =
+            native_leaf_salted(id, BaseElement::new(w.balance), w.nonce, w.leaf_salt);
+        for i in 0..4 {
+            assert_eq!(
+                trace.get(4 + i, ROW_SALT_LINK),
+                sin_sal[i],
+                "hoja sin envolver"
+            );
+            assert_eq!(
+                trace.get(4 + i, ROW_LEAF_DONE),
+                con_sal[i],
+                "hoja envuelta"
+            );
+        }
+    }
+
+    /// **MUTACIÓN OBLIGATORIA (a) de la spec §4.** Veneno = honesto + 1.
+    #[test]
+    fn mutacion_a_un_limbo_del_salt_testigo_alterado_se_rechaza() {
+        let (w, root, id) = scenario(1_000_000);
+        let mut trace = build_trace(&w, 900_000, 1_100_000);
+
+        let veneno = trace.get(COL_LEAF_SALT + 2, ROW_SALT_LINK) + BaseElement::ONE;
+        trace.set(COL_LEAF_SALT + 2, ROW_SALT_LINK, veneno);
+
+        let prover = AuditProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, pi(root, id, 900_000, 1_100_000), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "un limbo del salt testigo alterado DEBE rechazar (C_SALT_IN); \
+             si verifica, la envoltura es decorativa"
+        );
+    }
+
+    /// **MUTACIÓN OBLIGATORIA (b) de la spec §4.** AMBAS mitades del
+    /// estado siguiente (bit-agnóstico); `C_PLACE` dispara.
+    #[test]
+    fn mutacion_b_la_hoja_sin_envolver_no_entra_al_camino() {
+        let (w, root, id) = scenario(1_000_000);
+        let mut trace = build_trace(&w, 900_000, 1_100_000);
+
+        let sin_sal = native_leaf(id, BaseElement::new(w.balance), w.nonce);
+        for i in 0..4 {
+            trace.set(4 + i, ROW_LEAF_DONE + 1, sin_sal[i]);
+            trace.set(8 + i, ROW_LEAF_DONE + 1, sin_sal[i]);
+        }
+
+        let prover = AuditProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, pi(root, id, 900_000, 1_100_000), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "la hoja sin envolver NO debe entrar al camino (C_PLACE en el \
+             enlace corrido); si verifica, el corrimiento no protege nada"
         );
     }
 }
