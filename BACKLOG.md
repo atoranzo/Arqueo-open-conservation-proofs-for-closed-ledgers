@@ -1597,6 +1597,8 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   spec §3. SIGUE: paso 3 (los nueve gemelos, lista de rangos de §141;
   dos avisos para el flip en §143: `frozen_climb` clava 24, y los
   números de comentario se revisan EN el paso que mueve geometría).
+  Receta destilada: `doc/playbook-replica-gemelos.md` — gemelo-primero
+  y SB0 DENTRO del gemelo (el legacy no se toca: muere en el flip).
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y
