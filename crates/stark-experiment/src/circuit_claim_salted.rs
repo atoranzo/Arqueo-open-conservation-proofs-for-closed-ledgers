@@ -65,11 +65,9 @@ use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;
-/// 1024 filas. La fase de congelados acaba en la 471 y las tres fases
-/// nuevas —nullificador, compromiso e inserción— llegan a la 1007.
-///
-/// ⚠️ Quedan **16 filas de margen**. Si algo tuviera que crecer, no
-/// entraría sin duplicar la traza.
+/// 1024 filas. La tubería completa acaba en `ROW_PENDING_ROOT` (fila
+/// 743): quedan **280 filas de holgura** (35 ciclos) — misma geometría
+/// que send legacy: `doc/mapa-geometria-circuit_send.md` §6-§7 aplica.
 pub const TRACE_LENGTH: usize = 1024;
 pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: saldo, importe, saldo nuevo, suministro nuevo.
@@ -102,11 +100,27 @@ const COL_SALT: usize = 47; // 47..51
 pub const TRACE_WIDTH: usize = 51;
 
 // ===== Filas =====
-const ROW_LEAF_LINK: usize = 7;
-const ROW_LEAF_DONE: usize = 15;
-const ROW_ROOT: usize = 271;
-const ROW_PK_START: usize = 272;
-const ROW_PK_DONE: usize = 279;
+//
+// Geometría derivada (playbook R2; el patrón de SB0, §140-§141): cada
+// tramo arranca en un ciclo `CYC_*` y las filas-hito `ROW_*` se derivan
+// de él — una sola fuente de verdad para el calendario.
+//
+// Convención: todo arranque de tramo es un `CYC_*`; ningún literal de
+// ciclo vive fuera de este bloque — bucles de bits, periódicas y el
+// `match` de `build_trace` lo derivan de aquí.
+const CYC_NONCE: usize = 1;
+const CYC_ACC: usize = CYC_NONCE + 1;
+const CYC_PK: usize = CYC_ACC + TREE_DEPTH;
+const CYC_FROZEN: usize = CYC_PK + 1;
+const CYC_PEND_IN: usize = CYC_FROZEN + FROZEN_DEPTH;
+const CYC_PEND_VAL: usize = CYC_PEND_IN + 1;
+const CYC_PEND_CLIMB: usize = CYC_PEND_VAL + 1;
+const CYC_FIN: usize = CYC_PEND_CLIMB + TREE_DEPTH;
+const ROW_LEAF_LINK: usize = CYC_NONCE * CYCLE_LENGTH - 1;
+const ROW_LEAF_DONE: usize = CYC_ACC * CYCLE_LENGTH - 1;
+const ROW_ROOT: usize = CYC_PK * CYCLE_LENGTH - 1;
+const ROW_PK_START: usize = CYC_PK * CYCLE_LENGTH;
+const ROW_PK_DONE: usize = CYC_FROZEN * CYCLE_LENGTH - 1;
 /// **Fase de no-pertenencia al árbol de CONGELADOS.**
 ///
 /// Ocupa las filas 280..471, que estaban libres. Sin ella, una cuenta
@@ -116,17 +130,22 @@ const ROW_PK_DONE: usize = 279;
 /// Congelar existe para que una cuenta bajo investigación no mueva fondos.
 /// Destruirlos los mueve: los saca del sistema. Que sea público e
 /// irreversible no los devuelve.
-const ROW_FROZEN_ROOT: usize = 471;
+const ROW_FROZEN_ROOT: usize = CYC_PEND_IN * CYCLE_LENGTH - 1;
 /// **Inserción del pendiente**: ciclos 60..91, filas 480..735.
 ///
 /// Carril A: la posición vacía → raíz antigua de pendientes.
 /// Carril B: con el compromiso → raíz nueva.
 /// Compromiso interno del pendiente: `H(id_receptor, aleatorio)`.
-const ROW_PEND_INNER: usize = 479;
+const ROW_PEND_INNER: usize = CYC_PEND_VAL * CYCLE_LENGTH - 1;
 /// El pendiente completo: `H(interno, importe)`.
-const ROW_PENDING_ENTRY: usize = 487;
+const ROW_PENDING_ENTRY: usize = CYC_PEND_CLIMB * CYCLE_LENGTH - 1;
 /// Raíz tras insertarlo. Ciclos 61..92, filas 488..743.
-const ROW_PENDING_ROOT: usize = 743;
+const ROW_PENDING_ROOT: usize = CYC_FIN * CYCLE_LENGTH - 1;
+
+// El presupuesto, en compilación: la tubería debe caber en la traza.
+// Con el salt y frozen-32 (B13/B14), esto es lo que avisará si
+// `TRACE_LENGTH = 1024` se queda corto.
+const _: () = assert!(ROW_PENDING_ROOT < TRACE_LENGTH);
 
 // ===== Restricciones =====
 const C_HASH_A: usize = 0;
@@ -295,6 +314,12 @@ pub fn build_trace(
     }
 
     let place_pending = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
+        debug_assert!(
+            level < TREE_DEPTH,
+            "place_pending: nivel {} sobre path de {}",
+            level,
+            TREE_DEPTH
+        );
         if pending_path.is_right[level] {
             state[4..8].copy_from_slice(&pending_path.siblings[level]);
             state[8..12].copy_from_slice(digest);
@@ -305,6 +330,12 @@ pub fn build_trace(
     };
 
     let place_frozen = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
+        debug_assert!(
+            level < FROZEN_DEPTH,
+            "place_frozen: nivel {} sobre path de {}",
+            level,
+            FROZEN_DEPTH
+        );
         if frozen_path.is_right[level] {
             state[4..8].copy_from_slice(&frozen_path.siblings[level]);
             state[8..12].copy_from_slice(digest);
@@ -315,6 +346,12 @@ pub fn build_trace(
     };
 
     let place = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
+        debug_assert!(
+            level < TREE_DEPTH,
+            "place: nivel {} sobre path de {}",
+            level,
+            TREE_DEPTH
+        );
         if path.is_right[level] {
             state[4..8].copy_from_slice(&path.siblings[level]);
             state[8..12].copy_from_slice(digest);
@@ -406,15 +443,22 @@ pub fn build_trace(
                 }
                 _ => {
                     let next_cycle = (r + 1) / CYCLE_LENGTH;
-                    if (2..34).contains(&next_cycle) {
-                        place(&mut state_a, &digest_a, next_cycle - 2);
-                        place(&mut state_b, &digest_b, next_cycle - 2);
-                    } else if (36..60).contains(&next_cycle) {
-                        let level = next_cycle - 35;
+                    // Convención única (playbook R2): cada tramo genérico
+                    // es `(CYC_arranque..CYC_fin_de_tramo)` y el nivel es
+                    // `next_cycle - CYC_arranque`. El arranque lo sombrea
+                    // su brazo explícito (que coloca el nivel 0); el final
+                    // queda FUERA del rango: la raíz no se coloca, la atan
+                    // las aserciones.
+                    if (CYC_ACC..CYC_PK).contains(&next_cycle) {
+                        let level = next_cycle - CYC_ACC;
+                        place(&mut state_a, &digest_a, level);
+                        place(&mut state_b, &digest_b, level);
+                    } else if (CYC_FROZEN..CYC_PEND_IN).contains(&next_cycle) {
+                        let level = next_cycle - CYC_FROZEN;
                         place_frozen(&mut state_a, &digest_a, level);
                         place_frozen(&mut state_b, &digest_b, level);
-                    } else if (62..94).contains(&next_cycle) {
-                        let level = next_cycle - 61;
+                    } else if (CYC_PEND_CLIMB..CYC_FIN).contains(&next_cycle) {
+                        let level = next_cycle - CYC_PEND_CLIMB;
                         place_pending(&mut state_a, &digest_a, level);
                         place_pending(&mut state_b, &digest_b, level);
                     }
@@ -432,7 +476,7 @@ pub fn build_trace(
             zero
         };
         for p in 0..CYCLE_LENGTH {
-            rows[(61 + level) * CYCLE_LENGTH + p][COL_PBIT] = bit;
+            rows[(CYC_PEND_CLIMB + level) * CYCLE_LENGTH + p][COL_PBIT] = bit;
         }
     }
 
@@ -443,7 +487,7 @@ pub fn build_trace(
             zero
         };
         for p in 0..CYCLE_LENGTH {
-            rows[(35 + level) * CYCLE_LENGTH + p][COL_FBIT] = bit;
+            rows[(CYC_FROZEN + level) * CYCLE_LENGTH + p][COL_FBIT] = bit;
         }
     }
 
@@ -454,7 +498,7 @@ pub fn build_trace(
             zero
         };
         for p in 0..CYCLE_LENGTH {
-            rows[(2 + level) * CYCLE_LENGTH + p][COL_BIT] = bit;
+            rows[(CYC_ACC + level) * CYCLE_LENGTH + p][COL_BIT] = bit;
         }
     }
 
@@ -621,7 +665,7 @@ impl Air for ClaimAir {
 
         let mut link_merkle = vec![zero; TRACE_LENGTH];
         for level in 0..TREE_DEPTH - 1 {
-            link_merkle[(2 + level) * CYCLE_LENGTH + 7] = one;
+            link_merkle[(CYC_ACC + level) * CYCLE_LENGTH + 7] = one;
         }
         columns.push(link_merkle);
 
@@ -664,7 +708,7 @@ impl Air for ClaimAir {
         // Enlaces de la subida: uno por nivel a partir del primero.
         let mut frozen_link = vec![zero; TRACE_LENGTH];
         for level in 0..FROZEN_DEPTH - 1 {
-            frozen_link[(35 + level) * CYCLE_LENGTH + 7] = one;
+            frozen_link[(CYC_FROZEN + level) * CYCLE_LENGTH + 7] = one;
         }
         columns.push(frozen_link);
 
@@ -686,7 +730,7 @@ impl Air for ClaimAir {
         // Enlaces de la subida: uno por nivel a partir del primero.
         let mut pend_link = vec![zero; TRACE_LENGTH];
         for level in 0..TREE_DEPTH - 1 {
-            pend_link[(61 + level) * CYCLE_LENGTH + 7] = one;
+            pend_link[(CYC_PEND_CLIMB + level) * CYCLE_LENGTH + 7] = one;
         }
         columns.push(pend_link);
 
