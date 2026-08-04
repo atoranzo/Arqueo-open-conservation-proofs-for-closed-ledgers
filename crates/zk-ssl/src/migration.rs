@@ -198,7 +198,26 @@ mod tests {
     #[test]
     fn una_congelacion_sobrevive_el_remapa() {
         let mut l = new_layer();
-        let alice = open_and_fund(&mut l, SK_ALICE, 1_000_000);
+        // Mundo LEGACY simulado (colocación secuencial pre-F3): tras el
+        // flip las altas ya NACEN en su posición pid-mod y la migración
+        // sobre mundo fresco es IDENTIDAD — para que el remapa tenga
+        // algo que remapear, el récord se planta a mano en el índice 0.
+        let sk = BaseElement::new(SK_ALICE);
+        let pid = derive_public_id(sk);
+        let salt = stark_experiment::circuit_settlement::derive_leaf_salt(sk);
+        let alice: AccountIndex = 0;
+        l.records.insert(alice, AccountRecord {
+            public_id: pid,
+            balance: 1_000_000,
+            nonce: BaseElement::ZERO,
+            view_id: stark_experiment::circuit_settlement::view_id_of(sk),
+            leaf_salt: salt,
+        });
+        l.accounts.set_leaf(
+            alice,
+            native_leaf_salted(pid, BaseElement::new(1_000_000), BaseElement::ZERO, salt),
+        );
+        l.next_index += 1;
         let marca: Digest = [BaseElement::new(0x46524F5A); 4]; // "FROZ"
         l.frozen.set_leaf(alice, marca);
         assert!(l.is_frozen(alice), "precondicion: congelada");

@@ -429,10 +429,11 @@ mod tests_delegada {
     fn capa() -> (SovereignLayer, AccountIndex, Digest) {
         let mut l = SovereignLayer::new(
             custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS);
-        l.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
+        // Post-F3 la posición ya no es secuencial: se captura la REAL.
+        let idx = l.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
         let nueva = stark_experiment::circuit_settlement::derive_public_id(
             BaseElement::new(0xBEEF_CAFE));
-        (l, 0, nueva)
+        (l, idx, nueva)
     }
 
     fn prueba_subida(layer: &SovereignLayer, idx: AccountIndex, nueva: Digest) -> winterfell::Proof {

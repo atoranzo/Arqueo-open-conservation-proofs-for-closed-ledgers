@@ -429,14 +429,14 @@ use super::*;
         let path = temp_path("encrypted");
         let good = crypto::LedgerKey::from_passphrase("la correcta");
 
-        {
+        let alice = {
             let mut layer = open_encrypted_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
                 Some(good.clone()),
             )
             .expect("abrir cifrado");
-            open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-        }
+            open_and_fund(&mut layer, SK_ALICE, 1_000_000)
+        };
 
         // Con la contrasena correcta: se recupera.
         {
@@ -445,7 +445,7 @@ use super::*;
                 Some(good),
             )
             .expect("recuperar con la contrasena correcta");
-            assert_eq!(layer.balance_of(0), Some(1_000_000));
+            assert_eq!(layer.balance_of(alice), Some(1_000_000));
         }
 
         // Con OTRA contrasena: falla.
@@ -1213,14 +1213,15 @@ use super::*;
     fn the_total_supply_survives_restart() {
         let path = temp_path("supply");
         let emitido = 750_000u64;
-        {
+        let alice = {
             let mut layer = open_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
             )
                 .expect("abrir");
-            open_and_fund(&mut layer, SK_ALICE, emitido);
+            let a = open_and_fund(&mut layer, SK_ALICE, emitido);
             assert_eq!(layer.total_supply(), emitido);
-        }
+            a
+        };
         let layer = open_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
             )
@@ -1236,8 +1237,7 @@ use super::*;
         // propiedad, y comprobarla exige intentar pasarse.
         //
         // Que el contador se restaure no basta: podria restaurarse y no
-        // usarse en la comprobacion del tope. Ver `AUDITORIA.md` §27.
-        let alice = 0;
+        // usarse en la comprobacion del tope. Ver `AUDITORIA.md` §27. Índice REAL capturado arriba (post-F3).
         let r = layer.mint(&valid_auth(), alice, MAX_SUPPLY - emitido + 1);
         assert!(
             matches!(r, Err(LayerError::SupplyCapExceeded { .. })),
@@ -1675,9 +1675,9 @@ use super::*;
 
         // **La invariante es lo que importa**, no si la operacion se
         // permite: pase lo que pase, ni se crea ni se destruye valor.
-        let total: u64 = (0..layer.account_count() as u64)
-            .filter_map(|i| layer.balance_of(i))
-            .sum();
+        // Post-F3 los índices no son un rango 0..censo: la suma vive en
+        // los RECORDS, que son la verdad de quién existe y dónde.
+        let total: u64 = layer.records.values().map(|r| r.balance).sum();
         assert_eq!(
             total + layer.total_pending(),
             suministro,
