@@ -11374,6 +11374,54 @@ obligatorias. La estadificación de `FROZEN_DEPTH` (§140.3) sigue
 ABIERTA, decisión del autor; bloquea la parte frozen del piloto, no el
 salt.
 
+## 142. Estrategia del piloto: la costura con la capa obligaba a elegir — GEMELO ANDAMIO (C), y el gemelo ya nació
+
+**La bifurcación que el mapa declaró fuera de alcance (mapa §9).** D4
+de la spec de migración manda: los AIR nuevos verifican el mundo nuevo
+y no el viejo; **circuitos + capa + migración van en UNA release**.
+Censo de la costura: la capa construye la traza de send en dos sitios
+(`two_phase.rs:260`, `client.rs:285`) con el camino sacado de su árbol
+actual, de hojas sin envolver — si `circuit_send` computara la hoja
+envuelta en el sitio, esa hoja subiría con hermanos del árbol viejo y
+la raíz no sería la del ledger: caería todo test de capa que ejercite
+un envío (el envío vive en ≥6 ficheros — two_phase, tests, client,
+iso, metrics, tests_support — con 57 referencias; el conteo exacto de
+rojos solo lo daría correr, pero son decenas, no dos).
+
+**Las dos estrategias, costeadas.** (A) En el sitio, con interregno
+rojo: stark verde y autocontenido, la capa compila pero decenas de sus
+tests quedan «correctamente rojos hasta el flip» durante toda la
+campaña del paso 3 — y el precio real es que **el semáforo deja de
+informar**: un rojo nuevo de verdad se camufla en la pared; el
+precedente de la casa son dos o tres rojos nominales, no una pared.
+(C) Gemelo como andamio declarado con retirada en el flip (precedente:
+los shims `#[deprecated]` de 49-A, aceptados y retirados a tiempo): el
+piloto entero vive en la copia, la capa no se toca y sigue 240/2 toda
+la campaña, el paso 3 replica el patrón, y el flip es exactamente la
+release única de D4 — la capa cambia imports, los legacy se borran, la
+fixture legacy prueba la migración. Coste de C: duplicación temporal
+(~2.100 líneas por gemelo) contra §125, mitigada por ser andamio
+DECLARADO con cláusula de retirada escrita en el propio módulo.
+
+**Ratificado por el autor: C.** Y C paga un bonus solo: la
+estadificación de `FROZEN_DEPTH` (§140.3) queda **RESUELTA de facto**
+por la vía (i) — el gemelo llevará profundidad frozen local a 32 sin
+tocar la constante compartida de cinco circuitos, y el flip unifica.
+
+**SB1.a ejecutado** (`bab7097`): nace
+`crates/stark-experiment/src/circuit_send_salted.rs` como copia
+compilante de `circuit_send` (md5 del gemelo `7af238ed…`; `lib.rs`
+`5568fcd5…` → `ad708f9a…`), con la cabecera-andamio y la cláusula de
+retirada en el código. El guardián de ranuras lo absorbió sin
+presentaciones (27 → **28 circuitos**); suite stark 286 → **305/0**
+(+19 del gemelo), capa intacta 240/2. El rebanado que sigue, cada
+eslabón con su rito: **SB1.b** geometría (`CYC_SALT`) + columnas
+(`COL_LEAF_SALT`, 52→56) + brazo de siembra + `scenario()` al mundo
+envuelto; **SB1.c** `link_salt` + las seis `C_SALT_*` (24 ranuras,
+grados, evaluate); **SB1.d** las dos mutaciones de la spec §4 + test
+nativo↔circuito; **SB1.e** frozen-32 local con la primera fila real de
+la tabla de presupuestos.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

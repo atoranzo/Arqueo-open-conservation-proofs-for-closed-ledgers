@@ -1584,6 +1584,11 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   canónica en cada eslabón. SIGUE: SB1 — el salt de verdad (columnas,
   `link_salt`, las seis `C_SALT_*`, 2 mutaciones); la estadificación de
   `FROZEN_DEPTH` (§140.3) ABIERTA, del autor.
+  → **Estrategia del piloto RATIFICADA: C, gemelo andamio (§142,
+  `bab7097`)** — `circuit_send_salted` nacido con cláusula de retirada
+  en el flip; la capa sigue 240/2 toda la campaña; la estadificación
+  §140.3 queda resuelta de facto (profundidad local del gemelo, el
+  flip unifica). SIGUE: SB1.b-e sobre el gemelo.
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y
