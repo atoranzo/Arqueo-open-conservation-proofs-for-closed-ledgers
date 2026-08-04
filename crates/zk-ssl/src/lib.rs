@@ -67,6 +67,7 @@
 //! - **Nada de esto ha sido auditado por terceros.**
 
 mod accounts;
+mod migration;
 mod audit;
 pub mod commitment;
 pub mod pending;

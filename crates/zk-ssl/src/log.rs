@@ -85,6 +85,13 @@ pub enum OpKind {
     Claim,
     /// Emisión de custodios directamente a un pendiente.
     MintToPending,
+    /// **Migración única de B13/B14** (spec del paso 1): reposiciona las
+    /// cuentas por identidad, envuelve las hojas con el salt del record
+    /// (cero para lo legacy) y remapea frozen a profundidad 32. Cambia
+    /// DOS árboles: las raíces de cuentas van en la entrada; las de
+    /// frozen, comprometidas en el payload (no es prueba, es compromiso
+    /// replicable). Se registra sin prueba, como OpenAccount.
+    Migration,
 }
 
 impl OpKind {
@@ -107,6 +114,7 @@ impl OpKind {
             8 => OpKind::Send,
             9 => OpKind::Claim,
             10 => OpKind::MintToPending,
+            11 => OpKind::Migration,
             _ => return None,
         })
     }
@@ -123,6 +131,7 @@ impl OpKind {
             OpKind::Send => 8,
             OpKind::Claim => 9,
             OpKind::MintToPending => 10,
+            OpKind::Migration => 11,
         }
     }
 }
