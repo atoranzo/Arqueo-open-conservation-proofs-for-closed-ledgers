@@ -97,7 +97,11 @@ const COL_SBIT: usize = 39;
 const COL_SACC: usize = 40;
 /// Bit de dirección del camino en el árbol de congelados.
 const COL_FBIT: usize = 41;
-pub const TRACE_WIDTH: usize = 42;
+/// **Salt de la hoja** (testigo, §117): envuelve la hoja como tercer
+/// merge. UN solo salt compartido por ambos carriles (spec de la
+/// máquina de hoja §2). Sin colisión en burn: no hay COL_SALT previo.
+const COL_LEAF_SALT: usize = 42; // 42..46
+pub const TRACE_WIDTH: usize = 46;
 
 // ===== Filas =====
 //
@@ -111,11 +115,16 @@ pub const TRACE_WIDTH: usize = 42;
 // ciclo vive fuera de este bloque — bucles de bits, periódicas y el
 // `match` de `build_trace` lo derivan de aquí.
 const CYC_NONCE: usize = 1;
-const CYC_ACC: usize = CYC_NONCE + 1;
+// El TERCER merge (§117, B13/B14): la hoja se envuelve con el salt
+// antes de entrar al camino. Todo el calendario posterior se corre +1
+// ciclo solo, por derivación (playbook R2).
+const CYC_SALT: usize = CYC_NONCE + 1;
+const CYC_ACC: usize = CYC_SALT + 1;
 const CYC_PK: usize = CYC_ACC + TREE_DEPTH;
 const CYC_FROZEN: usize = CYC_PK + 1;
 const CYC_FIN: usize = CYC_FROZEN + FROZEN_DEPTH;
 const ROW_LEAF_LINK: usize = CYC_NONCE * CYCLE_LENGTH - 1;
+const ROW_SALT_LINK: usize = CYC_SALT * CYCLE_LENGTH - 1;
 const ROW_LEAF_DONE: usize = CYC_ACC * CYCLE_LENGTH - 1;
 const ROW_ROOT: usize = CYC_PK * CYCLE_LENGTH - 1;
 const ROW_PK_START: usize = CYC_PK * CYCLE_LENGTH;
@@ -210,6 +219,10 @@ pub fn build_trace(
     account_id: Digest,
     balance: u64,
     nonce: BaseElement,
+    // **Salt de la hoja (testigo).** Deriva de la clave (§117); el
+    // tercer merge envuelve la hoja: la pertenencia se prueba sobre
+    // `H(native_leaf, salt)`.
+    leaf_salt: Digest,
     path: &MerklePath,
     frozen_path: &MerklePath,
     amount: u64,
@@ -236,6 +249,7 @@ pub fn build_trace(
         row[COL_AMT] = c_amt;
         row[COL_SUPPLY_OLD] = c_supply_old;
         row[COL_SUPPLY_NEW] = c_supply_new;
+        row[COL_LEAF_SALT..COL_LEAF_SALT + 4].copy_from_slice(&leaf_salt);
     }
 
     // Rangos. `c_bal_new` demuestra que no se destruye mas de lo que hay:
@@ -320,6 +334,16 @@ pub fn build_trace(
                     state_a[8] = nonce;
                     state_b[4..8].copy_from_slice(&digest_b);
                     state_b[8] = nonce;
+                }
+                ROW_SALT_LINK => {
+                    // EL TERCER MERGE (§117): la hoja se envuelve con el
+                    // salt. Digest arrastrado; el rate recibe los CUATRO
+                    // limbos del salt (spec §2 — atar solo [8] sería el
+                    // bug de §92.2 en su forma nueva).
+                    state_a[4..8].copy_from_slice(&digest_a);
+                    state_a[8..12].copy_from_slice(&leaf_salt);
+                    state_b[4..8].copy_from_slice(&digest_b);
+                    state_b[8..12].copy_from_slice(&leaf_salt);
                 }
                 ROW_LEAF_DONE => {
                     place(&mut state_a, &digest_a, 0);
@@ -888,7 +912,10 @@ impl Prover for BurnProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::circuit_settlement::{derive_public_id_wide, native_climb, native_leaf};
+    use crate::circuit_settlement::{
+        derive_leaf_salt_wide, derive_public_id_wide, native_climb,
+        native_leaf_salted,
+    };
     use crate::merkle::native_merge;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
 
@@ -914,6 +941,7 @@ mod tests {
         account_id: Digest,
         balance: u64,
         nonce: BaseElement,
+        leaf_salt: Digest,
         path: MerklePath,
         frozen_path: MerklePath,
         amount: u64,
@@ -947,11 +975,16 @@ mod tests {
         }
         let path = MerklePath { siblings, is_right };
 
-        let leaf_old = native_leaf(account_id, BaseElement::new(balance), nonce);
-        let leaf_new = native_leaf(
+        // El salt REAL del titular (§117): derivado de la clave, no un
+        // literal de juguete — el escenario vive en el mundo envuelto.
+        let leaf_salt = derive_leaf_salt_wide(key);
+        let leaf_old =
+            native_leaf_salted(account_id, BaseElement::new(balance), nonce, leaf_salt);
+        let leaf_new = native_leaf_salted(
             account_id,
             BaseElement::new(balance) - BaseElement::new(amount),
             nonce,
+            leaf_salt,
         );
 
         // Camino del arbol de congelados, con la cuenta LIBRE. Direcciones
@@ -983,6 +1016,7 @@ mod tests {
             account_id,
             balance,
             nonce,
+            leaf_salt,
             path,
             frozen_path,
             amount,
@@ -996,6 +1030,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1048,6 +1083,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1139,6 +1175,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1228,6 +1265,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1288,6 +1326,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1306,7 +1345,7 @@ mod tests {
         //
         // Con muestreo, una restricción activa solo en filas no muestreadas
         // aparece como vacía sin serlo. Aquí el coste es asumible:
-        // 42 columnas x 1024 filas x 2 evaluaciones (gemelo; el 39x512 era
+        // 46 columnas x 1024 filas x 2 evaluaciones (gemelo; el 39x512 era
         // del legacy y ya arrastraba el 39 desfasado).
         let informe = buscar_vacias(&air, &rows, 1);
 
