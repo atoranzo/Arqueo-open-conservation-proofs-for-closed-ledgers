@@ -1653,6 +1653,12 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   (gemelo del piloto); el diccionario sin salt NO verifica; el nativo
   apunta a sus hermanos; la mitad de `apply` queda anotada para D4.
   SIGUE: paso 5 — medición apareada (§130).
+  ✅ **Paso 5 COMPLETO — medición §130 apareada (§155)**: 20
+  instrumentos ignored; corrida canónica en serie; burn ×2,04
+  (predicción §145 clavada), frozen_climb gratis (§60.2 cerrado en
+  cash), audit encoge; resto 0–9,5 %. Tabla en
+  doc/medicion-130-apareada.md. **Los cinco pasos pre-flip de
+  B13/B14, COMPLETOS.** SIGUE: el flip D4.
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y

@@ -11884,6 +11884,43 @@ Suite **422/0**; capa 240/2; guardianes 35·37.
 decidida por partida doble — nativo Y circuito. SIGUE: paso 5, la
 medición apareada (§130), con el 2× de burn como dato esperado.
 
+## 155. Paso 5 COMPLETO — la medición §130 apareada: burn ×2,04 clavado, frozen_climb gratis, audit encoge
+
+**El arnés**: veinte instrumentos `#[ignore = "instrumento de medida…"]`
+(uno por circuito y lado, junto a su propio escenario — el patrón de
+`metrics_33` y de los dos ignored históricos de settlement),
+construcción + prove dentro del reloj, tamaño de prueba incluido.
+Piloto send primero (validado con sus dos líneas), luego los nueve
+pares en un mega-parche de 18 ficheros — **las dieciocho anclas a la
+primera**, incluidas las colas pre-compactación de claim/burn. La
+primera corrida (paralela) enseñó la trampa: contención cruzada en los
+tiempos; la canónica es **en serie** (`--test-threads=1`), 1,06 s de
+pared para los veinte proves. Tabla completa en
+`doc/medicion-130-apareada.md`; instrumentos en `6ee02d7`
+(+ piloto `dd03c23`).
+
+**Los tres titulares**: (1) **burn ×2,04** (44,7→91,3 ms) — la
+predicción de §145 al montar la TRACE 1024, clavada al decimal;
+(2) **frozen_climb GRATIS o mejor** (−5,3 % tiempo, −1,4 % prueba) —
+el legado ya pagaba 32 subidas (24 reales + 8 de relleno CARO, §60.2)
+y el gemelo cobra las 32 de verdad por el mismo precio: la capacidad
+×256 sale regalada por geometría, cerrando el círculo de §152;
+(3) **audit encoge** — prueba deterministamente menor (−653 bytes) con
+carril único y salt; hecho anotado sin teoría forzada.
+
+**El coste del mundo nuevo, medido**: fuera de burn (resuelto y
+cuantificado), el salt + frozen-32 cuesta **0–9,5 %** de tiempo y
+−2,2…+8 % de prueba por circuito — freeze paga sus 8 ciclos reales de
+más (+9,5 %) y los demás viven en el ruido o cerca. El flip D4 tiene
+ya su precio en la mano.
+
+**Estado**: paso 5 CERRADO — los cinco pasos de B13/B14 previos al
+flip, COMPLETOS (2: piloto §143 · 3: diez gemelos §144-§153 · 4:
+T2b-circuito §154 · 5: esta medición). SIGUE: **el flip D4** (release
+única: capa + gemelos + migración; los legacy se borran; snapshot v7;
+avisos de §143.1/§146/§149-§152 cableados; la etiqueta de la entrada
+50 se cierra ahí).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
