@@ -68,6 +68,7 @@ pasos 2-3 midiendo filas usadas hoy — **no se asume que 1024 alcanza**.
 | circuito | hoy (fila final) | + salt | + frozen-32 | holgura en 1024 | veredicto |
 |---|---|---|---|---|---|
 | send (PILOTO, §143) | 743 | 751 | **815** | **208** (26 ciclos) | **CABE** |
+| claim (§144) | 743 | 751 | **815** | **208** (26 ciclos) | **CABE** |
 
 (Primera fila: medida por el piloto en el gemelo; el resto se rellena
 circuito a circuito en el paso 3.)

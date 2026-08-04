@@ -11476,6 +11476,41 @@ resta, audit sin mutar estado…), T2b-circuito (paso 4), la medición
 apareada (paso 5), ni el flip (release única D4: capa + gemelos +
 migración, y los legacy se borran).
 
+## 144. Claim COMPLETO en el gemelo — el playbook replica (dos de diez)
+
+**Los seis eslabones** (`e0986fb`→`29a8d81`→`ba2a380`→`d9d8786`→
+`efbe0e3`→`a9e178e`; md5 del gemelo `603ff086…`→`35092bb4…`→
+`c62f7487…`→`22aa8a03…`→`4f872dfa…`→`522da3e3…`), cada uno con guarda
+atómica y suite release canónica: **R1** nacimiento (guardián 28→29);
+**R2** SB0 interno FUSIONADO — la identidad de las nueve derivadas
+verificada mecánicamente ANTES de escribir (el sustituto del testigo-
+compilador cuando el parche es uno); **R3** mundo envuelto (calendario
+a 751 por derivación, «EL SALDO SUBE» conservado, los 18 tests a la
+primera); **R4** las seis `C_SALT_*` — y claim TRAE arnés de vacuidad:
+las 24 quedaron cubiertas dinámicamente en el mismo verde; **R5** las
+dos mutaciones de la spec §4 RECHAZAN + espejo nativo↔circuito con el
+carril B sumando; **R6** frozen-32 local (815, holgura 208, jurado en
+compilación).
+
+**Lo que claim enseñó al playbook.** (1) El R2 fusionado funciona: un
+parche compilable con verificación de valores pre-escritura sustituye
+a los cuatro pasos del piloto sin perder garantía. (2) Las variantes
+entran solas si el censo R0 las nombra: `escenario_para`/`destinatario`
+(el parámetro nacido de cazar §39) intacto, la suma del receptor
+conservada, la colisión `COL_SALT` resuelta por convención
+(`COL_LEAF_SALT = 51`, ancho 55). (3) **La ventana R3→R6 de los
+comentarios**: R3 movió geometría y los números de comentario quedaron
+desfasados UNA ventana de commit hasta que R6 los llevó a los finales
+— la forma leve del fenómeno de §143.2; para los siete restantes, R3
+lleva la renumeración consigo o la declara diferida a R6 en su commit.
+
+**Presupuesto MEDIDO** (segunda fila de la tabla §3): claim 743 → 751
+→ **815**; holgura **208** (26 ciclos). CABE.
+
+**Estado**: dos gemelos de diez (send §143, claim §144); capa 240/2
+toda la campaña. SIGUE: **burn** (cuentas + frozen, dos tramos — el
+último con fase frozen antes de los siete de un tramo), por su R0.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

@@ -1599,6 +1599,9 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   números de comentario se revisan EN el paso que mueve geometría).
   Receta destilada: `doc/playbook-replica-gemelos.md` — gemelo-primero
   y SB0 DENTRO del gemelo (el legacy no se toca: muere en el flip).
+  ✅ **claim COMPLETO (§144, `e0986fb`→`a9e178e`)**: seis eslabones
+  R1-R6, las dos mutaciones rechazan, fila 2 de la tabla §3 (815/208,
+  CABE). Dos gemelos de diez. SIGUE: burn.
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y
