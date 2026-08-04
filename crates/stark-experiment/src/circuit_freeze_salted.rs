@@ -80,6 +80,10 @@ pub const FROZEN_DEPTH: usize = 24;
 pub const FROZEN_MARK: u64 = 0x46524F5A; // "FROZ"
 
 pub const CYCLE_LENGTH: usize = 8;
+/// 512 filas. La tubería acaba en `ROW_CUST_ROOT` — hoy
+/// `(FROZEN_DEPTH + 1 + CUSTODIAN_DEPTH) · 8 − 1`. Con profundidad 24:
+/// fila 231, holgura 280 (35 ciclos). Con **32** (§128, el destino de
+/// este gemelo): fila 295, holgura 216 (27 ciclos) — 512 ALCANZA.
 pub const TRACE_LENGTH: usize = 512;
 pub const SEGMENT_LENGTH: usize = 8;
 /// Segmentos: índice A, índice B, y `B − A − 1`.
@@ -106,12 +110,21 @@ const COL_SACC: usize = 36;
 pub const TRACE_WIDTH: usize = 37;
 
 // ===== Filas =====
-/// Subida al árbol de congelados: ciclos 0-23, filas 0..191.
-const ROW_FROZEN_ROOT: usize = 191;
-/// Derivación de identidades de custodio: ciclo 24.
-const ROW_CUST_START: usize = 192;
-/// Subida al conjunto de custodios: ciclos 25-28.
-const ROW_CUST_ROOT: usize = 231;
+//
+// Geometría derivada de `FROZEN_DEPTH` (playbook R2): el cuerpo de
+// `build_trace` ya era genérico en profundidad; con los `ROW_*`
+// derivados, girar la constante re-deriva TODO el calendario (R6).
+const CYC_CUST: usize = FROZEN_DEPTH + 1;
+const CYC_FIN: usize = CYC_CUST + CUSTODIAN_DEPTH;
+/// Subida al árbol de congelados: ciclos `0..FROZEN_DEPTH`.
+const ROW_FROZEN_ROOT: usize = FROZEN_DEPTH * CYCLE_LENGTH - 1;
+/// Derivación de identidades de custodio: el ciclo `FROZEN_DEPTH`.
+const ROW_CUST_START: usize = FROZEN_DEPTH * CYCLE_LENGTH;
+/// Subida al conjunto de custodios: `CYC_CUST..CYC_FIN`.
+const ROW_CUST_ROOT: usize = CYC_FIN * CYCLE_LENGTH - 1;
+
+// El presupuesto, en compilación: la tubería debe caber en la traza.
+const _: () = assert!(ROW_CUST_ROOT < TRACE_LENGTH);
 
 // ===== Restricciones =====
 const C_HASH_A: usize = 0;
@@ -239,6 +252,12 @@ pub fn build_trace(
                  digest: &Digest,
                  p: &MerklePath,
                  level: usize| {
+        debug_assert!(
+            level < FROZEN_DEPTH,
+            "place: nivel {} sobre camino de {}",
+            level,
+            FROZEN_DEPTH
+        );
         if p.is_right[level] {
             state[4..8].copy_from_slice(&p.siblings[level]);
             state[8..12].copy_from_slice(digest);
@@ -251,6 +270,12 @@ pub fn build_trace(
                       digest: &Digest,
                       p: &CustodianPath,
                       level: usize| {
+        debug_assert!(
+            level < CUSTODIAN_DEPTH,
+            "place_cust: nivel {} sobre camino de {}",
+            level,
+            CUSTODIAN_DEPTH
+        );
         if p.is_right[level] {
             state[4..8].copy_from_slice(&p.siblings[level]);
             state[8..12].copy_from_slice(digest);
