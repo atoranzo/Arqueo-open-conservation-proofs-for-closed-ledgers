@@ -11511,6 +11511,41 @@ lleva la renumeración consigo o la declara diferida a R6 en su commit.
 toda la campaña. SIGUE: **burn** (cuentas + frozen, dos tramos — el
 último con fase frozen antes de los siete de un tramo), por su R0.
 
+## 145. Burn COMPLETO — el primer desborde, cazado por la tabla y resuelto con el dato
+
+**El hallazgo que justifica la campaña de presupuestos.** El censo R0
+dio `TRACE_LENGTH = 512` con la tubería en 471 — holgura 40 — y la
+cuenta del mundo nuevo dio: +salt 479, +frozen-32 **543 ≥ 512. NO
+CABE.** Primer desborde de los diez, exactamente el caso para el que
+la spec §3 exigió la tabla («no se asume que 1024 alcanza» — aquí fue
+512 el que no alcanzó). La decisión, con el dato delante: compactar no
+existe (hoja + subida + identidad + frozen, nada plegable sin
+rediseño) → **TRACE propia a 1024**, la potencia siguiente, holgura
+final 480 (60 ciclos), jurada por la guarda en compilación. El coste
+~2× ya asoma en el instrumento: la suite stark pasó de ~13,9 s a
+~15,0-15,6 s con burn probando a 1024 — dato crudo para la medición
+apareada del paso 5.
+
+**Los cinco commits** (`8a0da2b`→`71b0ccd`→`9cea05b`→`40be1d8`→
+`48b0ef9`; md5 del gemelo `30c15ff3…`→`1c5401de…`→`d68065a9…`→
+`bfd3ed4d…`→`f1d6b091…`): R1 nacimiento con el desborde declarado en
+cabecera; R2 SB0 interno de cadena corta (sin pendientes: `CYC_FIN =
+CYC_FROZEN + FROZEN_DEPTH`) **más la subida 512→1024 etiquetada como
+el único cambio no-idéntico** — y el barrido de la regla §143.2 cazó
+dos `512` de comentario más un «39 columnas» que YA venía desfasado
+del legacy (deriva preexistente, documentada en el propio comentario);
+R3 mundo envuelto (`COL_LEAF_SALT = 42`, sin colisión: burn no tenía
+salt previo); R4 las seis (cola en `C_FBIT_BOOL`, el arnés de vacuidad
+cubriendo las 24 en la misma pasada); R5+R6 en tanda — las dos
+mutaciones de la spec §4 RECHAZAN, espejo nativo↔circuito con la resta
+del carril B, frozen-32 local con `frozen_climb_32`.
+
+**Estado**: tres gemelos de diez (send §143, claim §144, burn §145);
+capa 240/2 intacta toda la campaña. La tabla §3 tiene su primera fila
+con historia. SIGUE: **mint** — un tramo, sin fase frozen (R6 no
+aplica) y la variante que la spec §5 advierte: sin carril de resta, a
+censar en R0.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

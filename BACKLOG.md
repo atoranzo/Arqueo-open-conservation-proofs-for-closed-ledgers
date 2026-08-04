@@ -1602,6 +1602,11 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   ✅ **claim COMPLETO (§144, `e0986fb`→`a9e178e`)**: seis eslabones
   R1-R6, las dos mutaciones rechazan, fila 2 de la tabla §3 (815/208,
   CABE). Dos gemelos de diez. SIGUE: burn.
+  ✅ **burn COMPLETO (§145, `8a0da2b`→`48b0ef9`)**: PRIMER DESBORDE
+  cazado por la tabla (512 no alcanza: 543) → TRACE propia 1024
+  (holgura 480; coste ~2× crudo: 15,0-15,6 s vs 13,9 s, para el paso
+  5). Tres de diez. SIGUE: mint (un tramo, sin frozen; spec §5: sin
+  carril de resta).
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y

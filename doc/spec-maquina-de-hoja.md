@@ -69,6 +69,7 @@ pasos 2-3 midiendo filas usadas hoy — **no se asume que 1024 alcanza**.
 |---|---|---|---|---|---|
 | send (PILOTO, §143) | 743 | 751 | **815** | **208** (26 ciclos) | **CABE** |
 | claim (§144) | 743 | 751 | **815** | **208** (26 ciclos) | **CABE** |
+| burn (§145) | 471 | 479 | **543** | **480** (60 ciclos, en SU 1024) | **NO CABE en 512 → TRACE propia 1024** |
 
 (Primera fila: medida por el piloto en el gemelo; el resto se rellena
 circuito a circuito en el paso 3.)
