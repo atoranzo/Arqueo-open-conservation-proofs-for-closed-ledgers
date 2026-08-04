@@ -69,11 +69,14 @@ use crate::circuit_threshold::{CustodianPath, CUSTODIAN_DEPTH, CUSTODIAN_DOMAIN}
 use crate::merkle::{native_merge, Digest, MerklePath};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
-/// Profundidad del árbol de congelados: hasta 16.777.216 cuentas.
+/// Profundidad del árbol de congelados: **32** — hasta 2³² cuentas,
+/// pareja del árbol de cuentas (§128, B13/B14).
 ///
-/// Elegida porque su subida **cabe en las filas libres** del circuito de
-/// liquidación (192 de 200), sin agrandar su traza.
-pub const FROZEN_DEPTH: usize = 24;
+/// El mundo viejo usaba 24 («cabe en las filas libres de liquidación»);
+/// los gemelos de liquidación ya viven a 32 con frozen-32 local, y este
+/// módulo — LA CASA de la constante — gira aquí. Toda la geometría de
+/// abajo se re-deriva sola (playbook R2 → R6).
+pub const FROZEN_DEPTH: usize = 32;
 
 /// Marca de cuenta congelada. Cualquier valor no nulo serviría; se usa
 /// uno reconocible para que un volcado del árbol sea legible.
@@ -1123,6 +1126,65 @@ mod tests {
             informe.total,
             informe.celdas,
             informe.nunca_disparadas
+        );
+    }
+
+    /// **MUTACIÓN DE PROFUNDIDAD (R6, §128).** Un camino de 24 niveles
+    /// presentado a un circuito de 32 DEBE morir en la construcción: el
+    /// `debug_assert` de `place` (o el índice fuera de rango en
+    /// release) lo caza antes de que exista traza alguna.
+    #[test]
+    fn un_camino_de_24_declarado_como_32_muere_en_la_construccion() {
+        let keys = custodian_keys();
+        let (_set_root, cpaths) = build_custodian_set(&keys);
+        let auth = ThresholdAuth {
+            key_a: keys[1],
+            index_a: 1,
+            path_a: cpaths[1].clone(),
+            key_b: keys[3],
+            index_b: 3,
+            path_b: cpaths[3].clone(),
+        };
+
+        // Camino CORTO: 24 niveles, el mundo viejo.
+        let mut empty = vec![[BaseElement::ZERO; 4]];
+        for k in 1..=24 {
+            let prev = empty[k - 1];
+            empty.push(native_merge(prev, prev));
+        }
+        let mut siblings = Vec::with_capacity(24);
+        let mut is_right = Vec::with_capacity(24);
+        for level in 0..24 {
+            siblings.push(empty[level]);
+            is_right.push(level % 3 == 0);
+        }
+        let corto = MerklePath { siblings, is_right };
+
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            build_trace(&auth, false, true, &corto, COUNT_OLD, 1)
+        }));
+        assert!(
+            r.is_err(),
+            "un camino de 24 niveles declarado ante FROZEN_DEPTH = 32 DEBE \
+             morir en la construcción; si produce traza, la profundidad \
+             es decorativa"
+        );
+    }
+
+    /// **MUTACIÓN DE PROFUNDIDAD (R6, §128).** La raíz vacía a 24 y a 32
+    /// son árboles DISTINTOS: ningún estado del mundo viejo verifica en
+    /// el nuevo por accidente.
+    #[test]
+    fn la_raiz_vacia_de_24_no_es_la_raiz_vacia_de_32() {
+        let mut e = vec![[BaseElement::ZERO; 4]];
+        for k in 1..=32 {
+            let prev = e[k - 1];
+            e.push(native_merge(prev, prev));
+        }
+        assert_ne!(
+            e[24], e[32],
+            "las raíces vacías de 24 y 32 niveles deben diferir (§128); \
+             si coinciden, el hash está roto"
         );
     }
 }
