@@ -12009,6 +12009,40 @@ solo **F4** (flecos censados: doc de `client.rs:490`, prosa «GEMELO»
 en el doc de medición, epílogo del playbook, retirada futura del
 museo, warnings).
 
+## 158. F4 COMPLETO — CERO·CERO, la retirada del museo registrada, y la COLA VACÍA
+
+**Los flecos, en cuatro cortes** (`a2f414d`→`af75c0a`): la prosa del
+mundo viejo pasó a pasado y el contrato del barrido habla en presente
+(§117); el doc de medición ganó su postscriptum y el playbook su
+epílogo con las reglas de fuego; los módulos `t2b`/`t2a` recibieron su
+puerta `#[cfg(test)]` — **compilaban en la lib sin ella**, un latente
+que el foco del flip sacó a la luz —, el clímber del museo quedó
+enjaulado y la voz de `GASTO` protegida; y los dos `deprecated`
+deliberados llevan `allow` con puntero. Un disparo de B sobre A
+abortado salió VACUO («nothing to commit»): la atomicidad de la cadena
+pagó una vez más.
+
+**Las dos voces que quedan anotadas, y de quién son**: el shim de
+`record_to_bytes` pertenece a **49-A** (su test lo ejercita a
+propósito) y el `mint` de operador a la **entrada 32** (inventariado
+en AUDITORIA 80). No son deuda de B13/B14: viven registradas en sus
+atributos y en sus asientos, y migran con sus dueños.
+
+**La retirada del museo, REGISTRADA como futura** (sin fecha):
+`circuit_settlement` — trece tests, frozen-24 local, clímber propio.
+⚠️ Condición de retirada: **los helpers nativos se mudan ANTES**
+(`native_leaf`/`native_leaf_salted`/`derive_*` viven en ese fichero y
+son del mundo vivo — el museo se va, la fragua se queda).
+
+**El número final**: warnings **0 · 0** y suites **316/0 + 12 ·
+242/0 + 3**. CERO·CERO por primera vez.
+
+**COLA DE B13/B14: VACÍA.** La entrada 50 —salt de hoja (§117),
+frozen-32 (§128), diez gemelos, T2b doble, medición, flip D4,
+colocación pid-mod, flecos— queda cerrada de punta a punta, etiquetada
+(`entrada-50`) y contada donde sobrevive (§140-§158). Lo que el
+proyecto aún debe pertenece a otras entradas, y cada una lo sabe.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

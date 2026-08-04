@@ -1668,6 +1668,12 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   `entrada-50` PUESTA**: colocación pid-mod, contratos de privacidad
   en verde, cinco fósiles enterrados, **CERO ROJOS** (316/0 · 242/0).
   La entrada 50 se CIERRA. SIGUE: **F4** (flecos) — y nada más.
+  ✅✅✅✅ **F4 COMPLETO (§158, `a2f414d`→`af75c0a`)**: prosa al
+  presente, jaulas cfg(test) a t2b/t2a (compilaban en la lib sin
+  puerta), allows con puntero a las deudas de 49-A y la 32,
+  **CERO·CERO** (warnings 0·0; suites 316/0 · 242/0). Retirada del
+  museo REGISTRADA como futura (⚠️ los helpers nativos se mudan
+  antes). **COLA: VACÍA.**
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y
