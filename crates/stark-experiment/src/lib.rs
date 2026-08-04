@@ -73,6 +73,7 @@ pub mod circuit_mint;
 pub mod circuit_mint_salted;
 // Entrada 33 / §66: mint sin la parte de autorizacion.
 pub mod circuit_mint_climb;
+pub mod circuit_mint_climb_salted;
 pub mod circuit_mint_pending;
 // Entrada 33 / 68: mint_pending sin la parte de autorizacion.
 pub mod circuit_mint_pending_climb;
