@@ -1536,6 +1536,21 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   (§93.5): con salt derivado de clave, el emisor no puede computar la hoja
   nueva del receptor. **Ninguna salida medida.**
 
+  ✅ **HITOS B13/B14 — paso 1 COMPLETO (2026-08-04)**: (1a) `leaf_salt`
+  en el record, formato v3 (112 B) + snapshot v6, 10 constructores, el
+  salt cruza el disco verificado (`2327877`). (1b) el evento de
+  migración, CUATRO sub-frentes probados — reposicionar con sondeo
+  determinista, envolver con el salt DEL RECORD (enmienda E1 a la spec,
+  fijada en test), frozen-32 sobrevive reinicios, sled con marcador
+  `meta:migrated` y carga geometría-consciente; el ledger migrado
+  REINICIA y la re-migración se rechaza (`dcc2af0`, `f1c08f2`). NO se
+  ejecuta en vivo hasta el flip: los AIR de hoy verifican hoja sin salt
+  y frozen-24. (1.5) spec de la máquina de hoja ANTES de tocar AIR
+  (`doc/spec-maquina-de-hoja.md`): carriles = estado viejo/nuevo, delta
+  salt = +4 columnas y 6 restricciones `C_SALT_*` (§92.2 aplicada al
+  salt), frozen-32 con presupuesto POR circuito, mutación obligatoria;
+  cuestión previa señalada (limbos 9..11 del rate del nonce). Ambas
+  specs en `doc/`. SIGUE: paso 2, piloto `circuit_send`.
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y
