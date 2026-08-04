@@ -93,12 +93,10 @@ use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;
-/// 1024 filas. La fase de congelados acaba en la 471 y las fases del
-/// pendiente —compromiso interno, compromiso completo e inserción—
-/// llegan a la 1007.
-///
-/// ⚠️ Quedan **16 filas de margen**. Si algo tuviera que crecer, no
-/// entraría sin duplicar la traza.
+/// 1024 filas. La tubería completa acaba en `ROW_PENDING_ROOT` (fila
+/// 743): quedan **280 filas de holgura** (35 ciclos) sin `hash_flag` ni
+/// ARK. El presupuesto del piloto B13/B14 cabe con margen — ver
+/// `doc/mapa-geometria-circuit_send.md` §6-§7 y AUDITORIA §140.
 pub const TRACE_LENGTH: usize = 1024;
 pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: saldo, importe, saldo nuevo, suministro nuevo.
@@ -144,6 +142,10 @@ pub const TRACE_WIDTH: usize = 52;
 // Geometría derivada (SB0, §140): cada tramo arranca en un ciclo `CYC_*`
 // y las filas-hito `ROW_*` se derivan de él — una sola fuente de verdad
 // para el calendario, tras las tres reversiones de §139.
+//
+// Convención: todo arranque de tramo es un `CYC_*`; ningún literal de
+// ciclo vive fuera de este bloque — bucles de bits, periódicas y el
+// `match` de `build_trace` lo derivan de aquí.
 const CYC_NONCE: usize = 1;
 const CYC_ACC: usize = CYC_NONCE + 1;
 const CYC_PK: usize = CYC_ACC + TREE_DEPTH;
@@ -167,28 +169,24 @@ const ROW_PK_DONE: usize = CYC_FROZEN * CYCLE_LENGTH - 1;
 /// Destruirlos los mueve: los saca del sistema. Que sea público e
 /// irreversible no los devuelve.
 const ROW_FROZEN_ROOT: usize = CYC_PEND_IN * CYCLE_LENGTH - 1;
-/// **Inserción del pendiente**: ciclos 60..91, filas 480..735.
+/// **Fase del pendiente.** El ciclo `CYC_PEND_IN` (59) hashea el
+/// compromiso interno `H(id_receptor, aleatorio)`; esta fila de enlace
+/// siembra `(interno, importe)`, el ciclo `CYC_PEND_VAL` (60) hashea el
+/// pendiente completo y la subida hashea en `CYC_PEND_CLIMB..CYC_FIN`
+/// (ciclos 61..92, filas 488..743).
 ///
 /// Carril A: la posición vacía → raíz antigua de pendientes.
 /// Carril B: con el compromiso → raíz nueva.
-/// Compromiso interno del pendiente: `H(id_receptor, aleatorio)`.
 const ROW_PEND_INNER: usize = CYC_PEND_VAL * CYCLE_LENGTH - 1;
 /// El pendiente completo: `H(interno, importe)`.
 const ROW_PENDING_ENTRY: usize = CYC_PEND_CLIMB * CYCLE_LENGTH - 1;
 /// Raíz tras insertarlo. Ciclos 61..92, filas 488..743.
 const ROW_PENDING_ROOT: usize = CYC_FIN * CYCLE_LENGTH - 1;
 
-// Clavos transitorios de SB0.1: los valores heredados, atados en
-// compilación mientras dura el refactor. Se retiran en SB0.4.
-const _: () = assert!(ROW_LEAF_LINK == 7);
-const _: () = assert!(ROW_LEAF_DONE == 15);
-const _: () = assert!(ROW_ROOT == 271);
-const _: () = assert!(ROW_PK_START == 272);
-const _: () = assert!(ROW_PK_DONE == 279);
-const _: () = assert!(ROW_FROZEN_ROOT == 471);
-const _: () = assert!(ROW_PEND_INNER == 479);
-const _: () = assert!(ROW_PENDING_ENTRY == 487);
-const _: () = assert!(ROW_PENDING_ROOT == 743);
+// El presupuesto, en compilación: la tubería debe caber en la traza.
+// Con el salt y frozen-32 (B13/B14), esto es lo que avisará si
+// `TRACE_LENGTH = 1024` se queda corto.
+const _: () = assert!(ROW_PENDING_ROOT < TRACE_LENGTH);
 
 // ===== Restricciones =====
 const C_HASH_A: usize = 0;
