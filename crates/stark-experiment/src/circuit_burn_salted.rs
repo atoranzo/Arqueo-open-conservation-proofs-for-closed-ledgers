@@ -65,7 +65,6 @@ use winterfell::{
 };
 
 use crate::circuit_settlement::SPEND_KEY_DOMAIN;
-use crate::circuit_freeze::FROZEN_DEPTH;
 use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
@@ -103,6 +102,12 @@ const COL_FBIT: usize = 41;
 const COL_LEAF_SALT: usize = 42; // 42..46
 pub const TRACE_WIDTH: usize = 46;
 
+/// Profundidad frozen del MUNDO NUEVO: **32** (§137; §140.3 opción i,
+/// materializada por la estrategia C de §142). Local al gemelo: la
+/// compartida de `circuit_freeze` sigue en 24 hasta el flip, que la
+/// sube a 32 y devuelve aquí el import — una línea.
+const FROZEN_DEPTH: usize = 32;
+
 // ===== Filas =====
 //
 // Geometría derivada (playbook R2; el patrón de SB0, §140-§141): cada
@@ -131,7 +136,8 @@ const ROW_PK_START: usize = CYC_PK * CYCLE_LENGTH;
 const ROW_PK_DONE: usize = CYC_FROZEN * CYCLE_LENGTH - 1;
 /// **Fase de no-pertenencia al árbol de CONGELADOS.**
 ///
-/// Ocupa las filas 280..471, que estaban libres. Sin ella, una cuenta
+/// Ocupa los ciclos `CYC_FROZEN..CYC_FIN` (36..68), filas 288..543
+/// en el gemelo. Sin ella, una cuenta
 /// congelada **podía destruir su dinero**: la liquidación comprobaba la
 /// congelación y la destrucción no.
 ///
@@ -951,7 +957,7 @@ mod tests {
     use super::*;
     use crate::circuit_settlement::{
         derive_leaf_salt_wide, derive_public_id_wide, native_climb,
-        native_leaf_salted,
+        native_leaf, native_leaf_salted,
     };
     use crate::merkle::native_merge;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
@@ -984,6 +990,22 @@ mod tests {
         amount: u64,
         supply_old: u64,
         public_inputs: BurnPublicInputs,
+    }
+
+    /// Subida frozen del MUNDO NUEVO (32 niveles): itera el camino
+    /// entero. La `frozen_climb` compartida clava la profundidad legacy
+    /// (24) por dentro; en el flip aquella pasa a 32 y este helper se
+    /// retira con el andamio (§142/§143.1).
+    fn frozen_climb_32(leaf: Digest, path: &MerklePath) -> Digest {
+        let mut current = leaf;
+        for level in 0..FROZEN_DEPTH {
+            current = if path.is_right[level] {
+                native_merge(path.siblings[level], current)
+            } else {
+                native_merge(current, path.siblings[level])
+            };
+        }
+        current
     }
 
     fn scenario(balance: u64, amount: u64, supply_old: u64) -> Scenario {
@@ -1035,10 +1057,7 @@ mod tests {
             siblings: (0..FROZEN_DEPTH).map(|l| f_empty[l]).collect(),
             is_right: (0..FROZEN_DEPTH).map(|l| l % 3 == 0).collect(),
         };
-        let frozen_root = crate::circuit_freeze::frozen_climb(
-            [BaseElement::ZERO; 4],
-            &frozen_path,
-        );
+        let frozen_root = frozen_climb_32([BaseElement::ZERO; 4], &frozen_path);
 
         Scenario {
             public_inputs: BurnPublicInputs {
@@ -1249,8 +1268,7 @@ mod tests {
 
         // La cuenta SI esta en el arbol de congelados.
         let hoja = crate::circuit_freeze::frozen_leaf(true);
-        s.public_inputs.frozen_root =
-            crate::circuit_freeze::frozen_climb(hoja, &s.frozen_path);
+        s.public_inputs.frozen_root = frozen_climb_32(hoja, &s.frozen_path);
 
         assert!(
             run(&s, s.key, s.amount).is_err(),
@@ -1393,6 +1411,149 @@ mod tests {
             informe.total,
             informe.celdas,
             informe.nunca_disparadas
+        );
+    }
+
+    /// **NATIVO↔CIRCUITO de la envoltura (spec §4, playbook R5).**
+    #[test]
+    fn la_cadena_de_tres_merges_espeja_native_leaf_salted() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let trace = build_trace(
+            s.key,
+            s.account_id,
+            s.balance,
+            s.nonce,
+            s.leaf_salt,
+            &s.path,
+            &s.frozen_path,
+            s.amount,
+            s.supply_old,
+            s.amount,
+        );
+
+        let sin_sal_a = native_leaf(s.account_id, BaseElement::new(s.balance), s.nonce);
+        let sin_sal_b = native_leaf(
+            s.account_id,
+            BaseElement::new(s.balance) - BaseElement::new(s.amount),
+            s.nonce,
+        );
+        let con_sal_a =
+            native_leaf_salted(s.account_id, BaseElement::new(s.balance), s.nonce, s.leaf_salt);
+        let con_sal_b = native_leaf_salted(
+            s.account_id,
+            BaseElement::new(s.balance) - BaseElement::new(s.amount),
+            s.nonce,
+            s.leaf_salt,
+        );
+        for i in 0..4 {
+            assert_eq!(
+                trace.get(4 + i, ROW_SALT_LINK),
+                sin_sal_a[i],
+                "hoja sin envolver, carril A"
+            );
+            assert_eq!(
+                trace.get(LANE_B + 4 + i, ROW_SALT_LINK),
+                sin_sal_b[i],
+                "hoja sin envolver, carril B"
+            );
+            assert_eq!(
+                trace.get(4 + i, ROW_LEAF_DONE),
+                con_sal_a[i],
+                "hoja envuelta, carril A"
+            );
+            assert_eq!(
+                trace.get(LANE_B + 4 + i, ROW_LEAF_DONE),
+                con_sal_b[i],
+                "hoja envuelta, carril B"
+            );
+        }
+    }
+
+    /// **MUTACIÓN OBLIGATORIA (a) de la spec §4.** Veneno = honesto + 1.
+    #[test]
+    fn mutacion_a_un_limbo_del_salt_testigo_alterado_se_rechaza() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let mut trace = build_trace(
+            s.key,
+            s.account_id,
+            s.balance,
+            s.nonce,
+            s.leaf_salt,
+            &s.path,
+            &s.frozen_path,
+            s.amount,
+            s.supply_old,
+            s.amount,
+        );
+
+        let veneno = trace.get(COL_LEAF_SALT + 2, ROW_SALT_LINK) + BaseElement::ONE;
+        trace.set(COL_LEAF_SALT + 2, ROW_SALT_LINK, veneno);
+
+        let prover = BurnProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "un limbo del salt testigo alterado DEBE rechazar (C_SALT_IN); \
+             si verifica, la envoltura es decorativa"
+        );
+    }
+
+    /// **MUTACIÓN OBLIGATORIA (b) de la spec §4.** AMBAS mitades del
+    /// estado siguiente (bit-agnóstico); `C_PLACE` dispara.
+    #[test]
+    fn mutacion_b_la_hoja_sin_envolver_no_entra_al_camino() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let mut trace = build_trace(
+            s.key,
+            s.account_id,
+            s.balance,
+            s.nonce,
+            s.leaf_salt,
+            &s.path,
+            &s.frozen_path,
+            s.amount,
+            s.supply_old,
+            s.amount,
+        );
+
+        let sin_sal = native_leaf(s.account_id, BaseElement::new(s.balance), s.nonce);
+        for i in 0..4 {
+            trace.set(4 + i, ROW_LEAF_DONE + 1, sin_sal[i]);
+            trace.set(8 + i, ROW_LEAF_DONE + 1, sin_sal[i]);
+        }
+
+        let prover = BurnProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "la hoja sin envolver NO debe entrar al camino (C_PLACE en el \
+             enlace corrido); si verifica, el corrimiento no protege nada"
         );
     }
 }
