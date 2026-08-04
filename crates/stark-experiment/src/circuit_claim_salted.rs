@@ -60,14 +60,14 @@ use winterfell::{
 };
 
 use crate::circuit_settlement::SPEND_KEY_DOMAIN;
-use crate::circuit_freeze::FROZEN_DEPTH;
 use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;
-/// 1024 filas. La tubería completa acaba en `ROW_PENDING_ROOT` (fila
-/// 743): quedan **280 filas de holgura** (35 ciclos) — misma geometría
-/// que send legacy: `doc/mapa-geometria-circuit_send.md` §6-§7 aplica.
+/// 1024 filas. En el gemelo la tubería —con el salt y frozen-32—
+/// acaba en `ROW_PENDING_ROOT` (fila 815): quedan **208 filas de
+/// holgura** (26 ciclos) sin `hash_flag` ni ARK — misma geometría que
+/// el gemelo de send (tabla §3 de la spec, §144).
 pub const TRACE_LENGTH: usize = 1024;
 pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: saldo, importe, saldo nuevo, suministro nuevo.
@@ -103,6 +103,12 @@ const COL_SALT: usize = 47; // 47..51
 const COL_LEAF_SALT: usize = 51; // 51..55
 pub const TRACE_WIDTH: usize = 55;
 
+/// Profundidad frozen del MUNDO NUEVO: **32** (§137; §140.3 opción i,
+/// materializada por la estrategia C de §142). Local al gemelo: la
+/// compartida de `circuit_freeze` sigue en 24 hasta el flip, que la
+/// sube a 32 y devuelve aquí el import — una línea.
+const FROZEN_DEPTH: usize = 32;
+
 // ===== Filas =====
 //
 // Geometría derivada (playbook R2; el patrón de SB0, §140-§141): cada
@@ -132,7 +138,8 @@ const ROW_PK_START: usize = CYC_PK * CYCLE_LENGTH;
 const ROW_PK_DONE: usize = CYC_FROZEN * CYCLE_LENGTH - 1;
 /// **Fase de no-pertenencia al árbol de CONGELADOS.**
 ///
-/// Ocupa las filas 280..471, que estaban libres. Sin ella, una cuenta
+/// Ocupa los ciclos `CYC_FROZEN..CYC_PEND_IN` (36..68), filas 288..543
+/// en el gemelo. Sin ella, una cuenta
 /// congelada **podía destruir su dinero**: la liquidación comprobaba la
 /// congelación y la destrucción no.
 ///
@@ -140,15 +147,18 @@ const ROW_PK_DONE: usize = CYC_FROZEN * CYCLE_LENGTH - 1;
 /// Destruirlos los mueve: los saca del sistema. Que sea público e
 /// irreversible no los devuelve.
 const ROW_FROZEN_ROOT: usize = CYC_PEND_IN * CYCLE_LENGTH - 1;
-/// **Inserción del pendiente**: ciclos 60..91, filas 480..735.
+/// **Fase del pendiente.** El ciclo `CYC_PEND_IN` (68) hashea el
+/// compromiso interno `H(id_receptor, aleatorio)`; esta fila de enlace
+/// siembra `(interno, importe)`, el ciclo `CYC_PEND_VAL` (69) hashea el
+/// pendiente completo y la subida hashea en `CYC_PEND_CLIMB..CYC_FIN`
+/// (ciclos 70..101, filas 560..815).
 ///
 /// Carril A: la posición vacía → raíz antigua de pendientes.
 /// Carril B: con el compromiso → raíz nueva.
-/// Compromiso interno del pendiente: `H(id_receptor, aleatorio)`.
 const ROW_PEND_INNER: usize = CYC_PEND_VAL * CYCLE_LENGTH - 1;
 /// El pendiente completo: `H(interno, importe)`.
 const ROW_PENDING_ENTRY: usize = CYC_PEND_CLIMB * CYCLE_LENGTH - 1;
-/// Raíz tras insertarlo. Ciclos 61..92, filas 488..743.
+/// Raíz tras insertarlo. Ciclos 70..101, filas 560..815.
 const ROW_PENDING_ROOT: usize = CYC_FIN * CYCLE_LENGTH - 1;
 
 // El presupuesto, en compilación: la tubería debe caber en la traza.
@@ -1279,6 +1289,22 @@ mod tests {
         cur
     }
 
+    /// Subida frozen del MUNDO NUEVO (32 niveles): itera el camino
+    /// entero. La `frozen_climb` compartida clava la profundidad legacy
+    /// (24) por dentro; en el flip aquella pasa a 32 y este helper se
+    /// retira con el andamio (§142/§143.1).
+    fn frozen_climb_32(leaf: Digest, path: &MerklePath) -> Digest {
+        let mut current = leaf;
+        for level in 0..FROZEN_DEPTH {
+            current = if path.is_right[level] {
+                native_merge(path.siblings[level], current)
+            } else {
+                native_merge(current, path.siblings[level])
+            };
+        }
+        current
+    }
+
     fn scenario(balance: u64, amount: u64, supply_old: u64) -> Scenario {
         escenario_para(balance, amount, supply_old, None)
     }
@@ -1340,10 +1366,7 @@ mod tests {
             siblings: (0..FROZEN_DEPTH).map(|l| f_empty[l]).collect(),
             is_right: (0..FROZEN_DEPTH).map(|l| l % 3 == 0).collect(),
         };
-        let frozen_root = crate::circuit_freeze::frozen_climb(
-            [BaseElement::ZERO; 4],
-            &frozen_path,
-        );
+        let frozen_root = frozen_climb_32([BaseElement::ZERO; 4], &frozen_path);
 
         // Camino del arbol de PENDIENTES, con la posicion libre.
         // Direcciones mixtas: con todas iguales la traza degenera.
@@ -1760,8 +1783,7 @@ mod tests {
 
         // La cuenta SI esta en el arbol de congelados.
         let hoja = crate::circuit_freeze::frozen_leaf(true);
-        s.public_inputs.frozen_root =
-            crate::circuit_freeze::frozen_climb(hoja, &s.frozen_path);
+        s.public_inputs.frozen_root = frozen_climb_32(hoja, &s.frozen_path);
 
         assert!(
             run(&s, s.key, 0).is_err(),
