@@ -11664,6 +11664,41 @@ en su 512. CABE.
 — la variante anunciada más delicada de la spec: el salt se **COPIA**
 (§93.4, costura 52), no se deriva fresco; su escenario refleja copia.
 
+## 149. Recovery COMPLETO — LA COPIA (§93.4) hecha test
+
+**La variante semántica de la campaña, resuelta.** Recovery reasigna
+una cuenta (dos custodios, el precio dicho sin adornos en su propio
+header): la identidad cambia (`id_old`→`id_new`), el nonce SALTA
+(`+1`, invalidando lo firmado con la clave comprometida — su
+restricción propia: `C_NONCE+1` ata contra `current[COL_NONCE] +
+E::ONE`), el contador de recuperaciones sube… **y el salt NO cambia**:
+el récord recuperado viste el de la clave VIEJA (§93.4, costura 52).
+Estructuralmente eso es el gemelo estándar — UNA `COL_LEAF_SALT` para
+ambos carriles — porque la copia es semántica, y vive donde debe: en
+el escenario (`leaf_salt = derive_leaf_salt_wide(key_old)` con su ⚠️),
+en el brazo, en la doc de las seis, y sobre todo en **el espejo**, que
+certifica los ocho limbos: hoja vieja y récord nuevo, envueltos con EL
+MISMO salt.
+
+**El doble ascenso** (§90.3): las dos claves de juguete estrechas
+(`0xA11CE`, `0xBEEF_CAFE`) se vuelven anchas de verdad; identidad Y
+salt derivan de la clave — la vieja manda sobre el salt, la nueva solo
+sobre la identidad. La rotación del salt queda donde la spec la dejó:
+costura 52, fuera de alcance.
+
+**Los cinco commits** (`9d22008`→`e82410b`→`4e10e3f`→`7de56e3`, R4+R5
+en tanda; md5 `8a39cd6e…`→`26c5e4ba…`→`5c187f19…`→`51025f17…`). En R1
+la guarda de árbol-sucio absorbió un doble-pegado accidental con CERO
+bytes escritos — tercera vez que el rito se paga solo en el día.
+
+**Presupuesto** (séptima fila): 311 → 319; holgura **192** (24 ciclos)
+en su 512. CABE.
+
+**Estado**: **siete de diez**; capa 240/2 intacta. SIGUE:
+recovery_climb (un tramo), y detrás el par final SIN salt —
+freeze/frozen_climb, gemelos mínimos de profundidad (R1+R2+R6 con
+mutaciones propias).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

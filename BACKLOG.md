@@ -1622,6 +1622,10 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   cadena P amputada) reparadas/respetadas; dos abortos de guarda con
   CERO bytes. Fila 6 (279/232, CABE). Seis de diez. SIGUE: recovery
   (el salt se COPIA — §93.4, costura 52).
+  ✅ **recovery COMPLETO (§149, `9d22008`→`7de56e3`)**: LA COPIA
+  certificada por el espejo (mismo salt, ids y nonces distintos);
+  doble ascenso ancho; C_NONCE+1 ata el salto del nonce. Fila 7
+  (319/192, CABE). Siete de diez. SIGUE: recovery_climb.
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y
