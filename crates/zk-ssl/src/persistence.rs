@@ -298,6 +298,14 @@ impl SovereignLayer {
         );
 
         // --- Cuentas ---
+        // ¿Ledger MIGRADO (B13/B14)? La presencia del marcador decide la
+        // geometria de reconstruccion: hoja envuelta + frozen a 32. No va
+        // sellado: su semantica es presencia, y las raices almacenadas
+        // arbitran — marcador falso o ausente => IntegrityFailure.
+        let migrated = db
+            .get(b"meta:migrated")
+            .map_err(|e| StoreError::Io(e.to_string()))?
+            .is_some();
         for item in db.scan_prefix(b"acct:") {
             let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
             let v = unseal_one(v)?;
@@ -310,7 +318,13 @@ impl SovereignLayer {
                 crate::store::record_from_bytes_v3(&v)?;
             self.accounts.set_leaf(
                 idx,
-                native_leaf(public_id, BaseElement::new(balance), nonce),
+                if migrated {
+                    stark_experiment::circuit_settlement::native_leaf_salted(
+                        public_id, BaseElement::new(balance), nonce, leaf_salt,
+                    )
+                } else {
+                    native_leaf(public_id, BaseElement::new(balance), nonce)
+                },
             );
             self.records.insert(
                 idx,
@@ -347,6 +361,10 @@ impl SovereignLayer {
                 .collect::<Result<Vec<_>, _>>()?,
         );
 
+        if migrated {
+            // El arbol de congelados migrado vive a profundidad 32.
+            self.frozen = SparseTree::with_depth(crate::migration::FROZEN_DEPTH_POST);
+        }
         for item in db.scan_prefix(b"froz:") {
             let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
             let v = unseal_one(v)?;
