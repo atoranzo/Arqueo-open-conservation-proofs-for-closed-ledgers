@@ -11546,6 +11546,47 @@ con historia. SIGUE: **mint** — un tramo, sin fase frozen (R6 no
 aplica) y la variante que la spec §5 advierte: sin carril de resta, a
 censar en R0.
 
+## 146. Mint COMPLETO — el primer gemelo sin frozen, y el titular asciende al mundo ancho
+
+**Lo que el censo R0 desveló** (y que ningún calco de claim habría
+visto): mint no es la máquina de send con menos fases — es **emisión
+con autoridad de umbral 2-de-N**, DOS árboles (cuentas + custodios,
+`CUSTODIAN_DEPTH` de `circuit_threshold`), columnas gemelas por
+custodio, y **un solo llamador** para sus 13 tests. La máquina de hoja
+sí es la estándar («sin carril de resta» = el carril B SUMA, como
+claim), sin fase frozen (checklist: mint | salt sí | frozen-32 —) →
+**R6 no aplica** y el rito se encoge a cinco eslabones.
+
+**Los cinco commits** (`892874f`→`502e014`→`79e8576`→`198e5a9` con la
+tanda R4+R5 fusionada; md5 `3129d036…`→`33b8cbcf…`→`5fd246df…`→
+`3ca5777c…`): R1 nacimiento (guardián 30→31); R2 SB0 de **doble
+árbol** — cadena `CYC_ACCT_ROOT`/`CYC_CUST`/`CYC_FIN = CYC_CUST +
+CUSTODIAN_DEPTH`, identidad de las cinco `ROW_*` verificada
+pre-escritura, y un patrón de frontera PROPIO documentado: el tramo de
+custodios arranca **sin sombra** (su brazo previo es `ROW_ACCT_ROOT`,
+que siembra la derivación de identidades, no el nivel 0 — el rango
+coloca el nivel 0 él mismo); R3 mundo envuelto con la variante
+conceptual del circuito: mint acredita a un TITULAR ajeno, y su salt
+es del titular (§117) — el escenario **asciende al mundo ancho**: la
+clave de juguete estrecha `0xA11CE` (pre-§90) se vuelve clave ancha de
+verdad (§90.3), `derive_public_id_wide` + `derive_leaf_salt_wide` de
+la MISMA clave, y `derive_public_id` estrecho muere del fichero;
+R4+R5 en tanda — `P_LINK_SALT` entre `link_leaf` y `cust_link`, las
+seis con su bloque de grados tras los enlaces de segmento, las dos
+mutaciones RECHAZAN, espejo limbo a limbo con el carril B sumando.
+
+**Presupuesto** (cuarta fila de la tabla §3, la primera sin columna
+frozen): 311 → 319; holgura **192** (24 ciclos) en su 512. CABE.
+
+**Nota operativa para el flip**: quien construya la prueba de mint en
+el mundo nuevo necesita el `leaf_salt` del titular acreditado como
+testigo — el dueño lo deriva de su clave; el emisor lo recibe del
+dueño. La capa lo cablea en el flip (D4), aquí queda anotado.
+
+**Estado**: cuatro gemelos de diez; capa 240/2 intacta. SIGUE:
+**audit** («no muta estado», spec §5 — a censar qué significa para
+los dos carriles y el espejo).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

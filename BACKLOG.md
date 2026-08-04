@@ -1607,6 +1607,11 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   (holgura 480; coste ~2× crudo: 15,0-15,6 s vs 13,9 s, para el paso
   5). Tres de diez. SIGUE: mint (un tramo, sin frozen; spec §5: sin
   carril de resta).
+  ✅ **mint COMPLETO (§146, `892874f`→`198e5a9`)**: doble árbol
+  (custodios 2-de-N intactos), frontera sin sombra documentada, el
+  titular asciende al mundo ancho (su salt, §117), R6 n/a. Fila 4 de
+  la tabla §3 (319/192, CABE en 512). Cuatro de diez. SIGUE: audit
+  (spec §5: no muta estado).
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y
