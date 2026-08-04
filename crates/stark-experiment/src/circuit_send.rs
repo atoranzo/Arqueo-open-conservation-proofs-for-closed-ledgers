@@ -513,7 +513,7 @@ pub fn build_trace(
             zero
         };
         for p in 0..CYCLE_LENGTH {
-            rows[(61 + level) * CYCLE_LENGTH + p][COL_PBIT] = bit;
+            rows[(CYC_PEND_CLIMB + level) * CYCLE_LENGTH + p][COL_PBIT] = bit;
         }
     }
 
@@ -524,7 +524,7 @@ pub fn build_trace(
             zero
         };
         for p in 0..CYCLE_LENGTH {
-            rows[(35 + level) * CYCLE_LENGTH + p][COL_FBIT] = bit;
+            rows[(CYC_FROZEN + level) * CYCLE_LENGTH + p][COL_FBIT] = bit;
         }
     }
 
@@ -535,7 +535,7 @@ pub fn build_trace(
             zero
         };
         for p in 0..CYCLE_LENGTH {
-            rows[(2 + level) * CYCLE_LENGTH + p][COL_BIT] = bit;
+            rows[(CYC_ACC + level) * CYCLE_LENGTH + p][COL_BIT] = bit;
         }
     }
 
@@ -714,7 +714,7 @@ impl Air for SendAir {
 
         let mut link_merkle = vec![zero; TRACE_LENGTH];
         for level in 0..TREE_DEPTH - 1 {
-            link_merkle[(2 + level) * CYCLE_LENGTH + 7] = one;
+            link_merkle[(CYC_ACC + level) * CYCLE_LENGTH + 7] = one;
         }
         columns.push(link_merkle);
 
@@ -757,7 +757,7 @@ impl Air for SendAir {
         // Enlaces de la subida: uno por nivel a partir del primero.
         let mut frozen_link = vec![zero; TRACE_LENGTH];
         for level in 0..FROZEN_DEPTH - 1 {
-            frozen_link[(35 + level) * CYCLE_LENGTH + 7] = one;
+            frozen_link[(CYC_FROZEN + level) * CYCLE_LENGTH + 7] = one;
         }
         columns.push(frozen_link);
 
@@ -779,7 +779,7 @@ impl Air for SendAir {
         // Enlaces de la subida: uno por nivel a partir del primero.
         let mut pend_link = vec![zero; TRACE_LENGTH];
         for level in 0..TREE_DEPTH - 1 {
-            pend_link[(61 + level) * CYCLE_LENGTH + 7] = one;
+            pend_link[(CYC_PEND_CLIMB + level) * CYCLE_LENGTH + 7] = one;
         }
         columns.push(pend_link);
 
