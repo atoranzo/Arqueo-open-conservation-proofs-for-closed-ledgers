@@ -89,6 +89,9 @@ use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;
+/// 512 filas. La tubería acaba en `ROW_PK_DONE` (fila 279): quedan
+/// **232 filas de holgura** (29 ciclos). Sin fase frozen, el mundo
+/// nuevo solo suma el ciclo del salt: 287, y 512 ALCANZA (spec §3).
 pub const TRACE_LENGTH: usize = 512;
 pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: saldo, saldo − inferior, superior − saldo.
@@ -112,11 +115,26 @@ const COL_SACC: usize = 26;
 pub const TRACE_WIDTH: usize = 27;
 
 // ===== Filas de eventos =====
-const ROW_LEAF_LINK: usize = 7;
-const ROW_LEAF_DONE: usize = 15;
-const ROW_ROOT: usize = 271;
-const ROW_PK_START: usize = 272;
-const ROW_PK_DONE: usize = 279;
+//
+// Geometría derivada (playbook R2; el patrón de SB0, §140-§141). La
+// cadena más corta de la campaña: hoja, subida de cuentas y
+// titularidad — `CYC_FIN = CYC_PK + 1`, sin frozen ni pendientes.
+//
+// Convención: todo arranque de tramo es un `CYC_*`; ningún literal de
+// ciclo vive fuera de este bloque — bucles de bits, periódicas y el
+// `match` de `build_trace` lo derivan de aquí.
+const CYC_NONCE: usize = 1;
+const CYC_ACC: usize = CYC_NONCE + 1;
+const CYC_PK: usize = CYC_ACC + TREE_DEPTH;
+const CYC_FIN: usize = CYC_PK + 1;
+const ROW_LEAF_LINK: usize = CYC_NONCE * CYCLE_LENGTH - 1;
+const ROW_LEAF_DONE: usize = CYC_ACC * CYCLE_LENGTH - 1;
+const ROW_ROOT: usize = CYC_PK * CYCLE_LENGTH - 1;
+const ROW_PK_START: usize = CYC_PK * CYCLE_LENGTH;
+const ROW_PK_DONE: usize = CYC_FIN * CYCLE_LENGTH - 1;
+
+// El presupuesto, en compilación: la tubería debe caber en la traza.
+const _: () = assert!(ROW_PK_DONE < TRACE_LENGTH);
 
 // ===== Índices de restricción =====
 const C_HASH: usize = 0; // 12
@@ -223,6 +241,12 @@ pub fn build_trace_with_id(
     }
 
     let place = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
+        debug_assert!(
+            level < TREE_DEPTH,
+            "place: nivel {} sobre path de {}",
+            level,
+            TREE_DEPTH
+        );
         if witness.path.is_right[level] {
             state[4..8].copy_from_slice(&witness.path.siblings[level]);
             state[8..12].copy_from_slice(digest);
@@ -257,8 +281,13 @@ pub fn build_trace_with_id(
                 }
                 _ => {
                     let next_cycle = (r + 1) / CYCLE_LENGTH;
-                    if (2..34).contains(&next_cycle) {
-                        place(&mut state, &digest, next_cycle - 2);
+                    // Convención única (playbook R2): tramo genérico =
+                    // `(CYC_arranque..CYC_fin_de_tramo)`, nivel =
+                    // `next_cycle - CYC_arranque`; el arranque lo sombrea
+                    // el brazo de `ROW_LEAF_DONE` (nivel 0 explícito).
+                    if (CYC_ACC..CYC_PK).contains(&next_cycle) {
+                        let level = next_cycle - CYC_ACC;
+                        place(&mut state, &digest, level);
                     }
                 }
             }
@@ -273,7 +302,7 @@ pub fn build_trace_with_id(
             zero
         };
         for p in 0..CYCLE_LENGTH {
-            rows[(2 + level) * CYCLE_LENGTH + p][COL_BIT] = bit;
+            rows[(CYC_ACC + level) * CYCLE_LENGTH + p][COL_BIT] = bit;
         }
     }
 
@@ -400,7 +429,7 @@ impl Air for AuditAir {
 
         let mut link_merkle = vec![zero; TRACE_LENGTH];
         for level in 0..TREE_DEPTH - 1 {
-            link_merkle[(2 + level) * CYCLE_LENGTH + 7] = one;
+            link_merkle[(CYC_ACC + level) * CYCLE_LENGTH + 7] = one;
         }
         columns.push(link_merkle);
 
