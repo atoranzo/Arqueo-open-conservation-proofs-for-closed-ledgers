@@ -11730,6 +11730,54 @@ propias (un camino de 24 declarado como 32 debe RECHAZAR). Y
 frozen_climb trae el relleno CARO que su primo acaba de señalar
 (§60.2).
 
+## 151. Freeze COMPLETO — la CASA de FROZEN_DEPTH gira a 32, y el rito mínimo estrena forma
+
+**El hallazgo que reorganizó el tramo final**: freeze no importa
+`FROZEN_DEPTH` — **lo define** (`pub const`, su línea 61 del legado);
+el resto del sistema lo importa de aquí. Los gemelos de liquidación se
+independizaron con frozen-32 local (send/claim/burn, §143-§145)
+precisamente para no depender de esta casa; el gemelo de freeze es
+donde la constante GIRA de verdad.
+
+**El rito mínimo (R1+R2+R6), y por qué R2 importa aquí**: el cuerpo de
+`build_trace` ya era genérico en profundidad (`next_cycle 
+FROZEN_DEPTH`, `== FROZEN_DEPTH`, `− FROZEN_DEPTH − 1`, y hasta el
+enlace de custodios derivado) — solo los tres `ROW_*` eran literales
+(191/192/231) con docs en prosa de 24 («ciclos 0-23»). R2 los derivó
+(`CYC_CUST = FROZEN_DEPTH + 1`, `CYC_FIN = CYC_CUST +
+CUSTODIAN_DEPTH`) y reescribió los docs en términos derivados **para
+que siguieran siendo verdad tras el giro**. Resultado: **R6 = una
+línea** — `24 → 32` — y el calendario entero (raíz 191→255, custodios
+→295, holgura 280→216 en 512) se re-derivó solo; el guardián de
+ranuras lo bendijo sin inmutarse y los OCHO tests del legado corren a
+32 vía `frozen_path()` derivado, intactos.
+
+**Las mutaciones que estrenan categoría** (ningún gemelo con salt las
+necesitó): (1) un camino de 24 niveles declarado ante el circuito de
+32 **muere en la construcción** — el `debug_assert` de `place` sembrado
+en R2 (o el índice fuera de rango en release) lo caza antes de que
+exista traza; (2) la raíz vacía de 24 ≠ la raíz vacía de 32 — verdad
+nativa que fija la incompatibilidad de mundos (§128).
+
+**Sin salt por diseño**: el árbol de congelados indexa por número de
+cuenta, sin hojas de cuenta — R3/R4/R5 no aplican (checklist: «solo
+profundidad»).
+
+**Tres abortos de guarda en el camino, cero bytes**: dos clausuras con
+la misma sangría (resuelto anclando por nombre completo — regla nueva:
+ante clausuras homónimas en forma, el ancla incluye el `let nombre =`)
+y la cola de vacuidad multilínea. **Los tres commits**
+(`4090d23`→`8f5bcab`→`0fb407f`; md5 `5ea4ab06…`→`62dee025…`→
+`a4a35c7c…`).
+
+**Presupuesto** (novena fila, la primera del régimen de profundidad):
+231 → **295** (a 32); holgura **216** (27 ciclos) en su 512. CABE.
+
+**Estado**: **NUEVE de diez**; capa 240/2 intacta. SIGUE: el último —
+**frozen_climb**, con su 24 clavado en la línea 166 (§143.1) y el
+relleno CARO que recovery_climb señaló (§60.2: allí la última fila SÍ
+es de enlace).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

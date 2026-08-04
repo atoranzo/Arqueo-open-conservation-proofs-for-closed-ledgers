@@ -1631,6 +1631,12 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   pub; un aborto de guarda (el trío compacto). Fila 8 (279/232,
   CABE). OCHO de diez. SIGUE: freeze y frozen_climb — SIN salt,
   rito R1+R2+R6 con mutaciones de profundidad.
+  ✅ **freeze COMPLETO (§151, `4090d23`→`0fb407f`)**: la CASA de
+  FROZEN_DEPTH gira 24→32 (§128) — R2 derivó, R6 fue una línea; dos
+  mutaciones de profundidad estrenan categoría; regla nueva de anclas
+  (clausuras homónimas → nombre completo). Fila 9 (295/216, CABE).
+  NUEVE de diez. SIGUE: frozen_climb (24 clavado en :166; relleno
+  CARO §60.2).
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y
