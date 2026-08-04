@@ -1617,6 +1617,11 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   firmas). Costura del atacante (salt observable; el secreto es la
   clave). Fila 5 (287/224, CABE). **CINCO DE DIEZ: mitad de
   campaña.** SIGUE: mint_climb.
+  ✅ **mint_climb COMPLETO (§148, `f006c32`→`04fd772`)**: la fase de
+  cuentas de mint aislada; dos derivas del legado (doc de custodios,
+  cadena P amputada) reparadas/respetadas; dos abortos de guarda con
+  CERO bytes. Fila 6 (279/232, CABE). Seis de diez. SIGUE: recovery
+  (el salt se COPIA — §93.4, costura 52).
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y

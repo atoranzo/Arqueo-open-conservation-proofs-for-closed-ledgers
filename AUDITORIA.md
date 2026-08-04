@@ -11630,6 +11630,40 @@ en su 512. CABE.
 **Estado**: **CINCO GEMELOS DE DIEZ — mitad de campaña**; capa 240/2
 intacta. SIGUE: mint_climb (un tramo).
 
+## 148. Mint_climb COMPLETO — el gemelo exprés, y las derivas del legado documentadas
+
+**Qué es**: la fase de cuentas de la emisión, aislada — hoja + subida,
+dos carriles (el saldo SUBE), sin titularidad, sin custodios, sin
+frozen. Nació de AMPUTAR mint (su propia cadena P lo cuenta: «Se
+fueron P_CUST_LINK, P_POW2 y P_SEL_CUST_ROOT con la amputación»), y
+esa historia dejó dos derivas que el censo cazó y este paso reparó:
+(1) el doc de `ROW_ACCT_ROOT` hablaba de «arrancar la fase de
+custodios» que aquí no existe — reparado con arqueología; (2) la
+cadena P cuelga de `P_ACCT_LINK` y `P_FIRST_ROW = P_LINK_LEAF + 1` —
+`P_LINK_SALT` entró re-enganchando al sucesor, respetando el hueco
+histórico.
+
+**Los cinco commits** (`f006c32`→`7e71f95`→`cfb95e8`→`04fd772`, R4+R5
+en tanda; md5 `e83c6433…`→`6d177a65…`→`77c3479b…`→`74f151c9…`): R1;
+R2 mínimo (tres `ROW_*`, `CYC_FIN = CYC_ACC + TREE_DEPTH`); R3 con el
+ascenso al mundo ancho calcado de mint y `COL_LEAF_SALT` en **el
+estilo derivado que la casa ya usaba** (`COL_SACC + 1`, ancho
+`COL_LEAF_SALT + 4`); R4+R5 con el embudo `build()` de la casa
+haciendo las mutaciones de una línea.
+
+**Dos abortos de guarda en el camino, cero bytes escritos**: el
+retorno compacto del escenario (una línea, no el par vertical) y el
+`NUM_CONSTRAINTS` **pub** + cola de vacuidad compacta — ambas
+divergencias de formato cazadas por el conteo esperado, corregidas del
+natural. El sistema de anclas pagándose en el circuito siete.
+
+**Presupuesto** (sexta fila): 271 → 279; holgura **232** (29 ciclos)
+en su 512. CABE.
+
+**Estado**: **seis de diez**; capa 240/2 intacta. SIGUE: **recovery**
+— la variante anunciada más delicada de la spec: el salt se **COPIA**
+(§93.4, costura 52), no se deriva fresco; su escenario refleja copia.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
