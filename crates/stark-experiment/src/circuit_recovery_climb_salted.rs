@@ -82,7 +82,11 @@ const COL_COUNT_OLD: usize = COL_NONCE + 1; // 36
 const COL_COUNT_NEW: usize = COL_COUNT_OLD + 1; // 37
 const COL_SBIT: usize = COL_COUNT_NEW + 1; // 38
 const COL_SACC: usize = COL_SBIT + 1; // 39
-pub const TRACE_WIDTH: usize = COL_SACC + 1; // 40
+/// **Salt de la hoja** (testigo, §117): envuelve la hoja como tercer
+/// merge. UN solo salt para AMBOS carriles — LA COPIA (§93.4): el de
+/// la clave vieja viste también al récord nuevo. Estilo derivado.
+const COL_LEAF_SALT: usize = COL_SACC + 1; // 40..44
+pub const TRACE_WIDTH: usize = COL_LEAF_SALT + 4; // 44
 
 // ===== Filas =====
 //
@@ -94,9 +98,14 @@ pub const TRACE_WIDTH: usize = COL_SACC + 1; // 40
 // ciclo vive fuera de este bloque — bucles de bits, periódicas y el
 // `match` de `build_trace` lo derivan de aquí.
 const CYC_NONCE: usize = 1;
-const CYC_ACC: usize = CYC_NONCE + 1;
+// El TERCER merge (§117, B13/B14): la hoja se envuelve con el salt
+// antes de entrar al camino. Todo el calendario posterior se corre +1
+// ciclo solo, por derivación (playbook R2).
+const CYC_SALT: usize = CYC_NONCE + 1;
+const CYC_ACC: usize = CYC_SALT + 1;
 const CYC_FIN: usize = CYC_ACC + TREE_DEPTH;
 const ROW_LEAF_LINK: usize = CYC_NONCE * CYCLE_LENGTH - 1;
+const ROW_SALT_LINK: usize = CYC_SALT * CYCLE_LENGTH - 1;
 const ROW_LEAF_DONE: usize = CYC_ACC * CYCLE_LENGTH - 1;
 /// Fila donde el estado contiene las dos raices. Lo que hay despues es
 /// relleno hasta la potencia de dos: la 271 **no es fila de enlace**, asi que
@@ -165,6 +174,10 @@ pub fn build_trace(
     balance: u64,
     balance_new: u64,
     nonce: BaseElement,
+    // **Salt de la hoja (testigo).** LA COPIA (§93.4): derivado de la
+    // clave VIEJA, viste ambos carriles — la identidad cambia, el salt
+    // no (la rotación es de la costura 52, fuera de alcance).
+    leaf_salt: Digest,
     path: &MerklePath,
     count_old: u64,
     count_delta: u64,
@@ -187,6 +200,7 @@ pub fn build_trace(
         row[COL_NONCE] = nonce;
         row[COL_COUNT_OLD] = c_count_old;
         row[COL_COUNT_NEW] = c_count_new;
+        row[COL_LEAF_SALT..COL_LEAF_SALT + 4].copy_from_slice(&leaf_salt);
     }
 
     // Un solo segmento: el rango del saldo.
@@ -246,6 +260,17 @@ pub fn build_trace(
                     state_a[8] = nonce;
                     state_b[4..8].copy_from_slice(&digest_b);
                     state_b[8] = nonce_new;
+                }
+                ROW_SALT_LINK => {
+                    // EL TERCER MERGE (§117): la hoja se envuelve con el
+                    // salt. Digest arrastrado; el rate recibe los CUATRO
+                    // limbos del salt (spec §2 — atar solo [8] sería el
+                    // bug de §92.2 en su forma nueva). El MISMO salt en
+                    // ambos carriles: LA COPIA (§93.4).
+                    state_a[4..8].copy_from_slice(&digest_a);
+                    state_a[8..12].copy_from_slice(&leaf_salt);
+                    state_b[4..8].copy_from_slice(&digest_b);
+                    state_b[8..12].copy_from_slice(&leaf_salt);
                 }
                 ROW_LEAF_DONE => {
                     place_acct(&mut state_a, &digest_a, 0);
@@ -675,7 +700,10 @@ impl Prover for RecoveryClimbProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::circuit_settlement::{derive_public_id, native_climb, native_leaf};
+    use crate::circuit_settlement::{
+        derive_leaf_salt_wide, derive_public_id_wide, native_climb,
+        native_leaf_salted,
+    };
     use crate::merkle::native_merge;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension, Prover};
 
@@ -693,6 +721,7 @@ mod tests {
         id_old: Digest,
         id_new: Digest,
         nonce: BaseElement,
+        leaf_salt: Digest,
         path: MerklePath,
         public_inputs: RecoveryClimbPublicInputs,
     }
@@ -703,8 +732,22 @@ mod tests {
             let prev = empty[k - 1];
             empty.push(native_merge(prev, prev));
         }
-        let id_old = derive_public_id(BaseElement::new(0xA11CE));
-        let id_new = derive_public_id(BaseElement::new(0xBEEF_CAFE));
+        // Doble ascenso al mundo ancho (§90.3): identidad Y salt
+        // derivan de la clave (§117) — la vieja manda sobre el salt.
+        let key_old = [
+            BaseElement::new(0xA11CE_0001),
+            BaseElement::new(0xA11CE_0002),
+            BaseElement::new(0xA11CE_0003),
+            BaseElement::new(0xA11CE_0004),
+        ];
+        let key_new = [
+            BaseElement::new(0xBEEF_CAFE_0001),
+            BaseElement::new(0xBEEF_CAFE_0002),
+            BaseElement::new(0xBEEF_CAFE_0003),
+            BaseElement::new(0xBEEF_CAFE_0004),
+        ];
+        let id_old = derive_public_id_wide(key_old);
+        let id_new = derive_public_id_wide(key_new);
         let nonce = BaseElement::new(3);
 
         let mut siblings = Vec::with_capacity(TREE_DEPTH);
@@ -715,8 +758,18 @@ mod tests {
         }
         let path = MerklePath { siblings, is_right };
 
-        let leaf_old = native_leaf(id_old, BaseElement::new(BALANCE), nonce);
-        let leaf_new = native_leaf(id_new, BaseElement::new(BALANCE), nonce + BaseElement::ONE);
+        // ⚠️ LA COPIA (§93.4, costura 52): el salt del récord recuperado
+        // es el de la clave VIEJA — la identidad cambia, el salt no. Un
+        // solo testigo viste ambos carriles.
+        let leaf_salt = derive_leaf_salt_wide(key_old);
+        let leaf_old =
+            native_leaf_salted(id_old, BaseElement::new(BALANCE), nonce, leaf_salt);
+        let leaf_new = native_leaf_salted(
+            id_new,
+            BaseElement::new(BALANCE),
+            nonce + BaseElement::ONE,
+            leaf_salt,
+        );
 
         Scenario {
             public_inputs: RecoveryClimbPublicInputs {
@@ -725,13 +778,13 @@ mod tests {
                 recovery_count_old: BaseElement::new(COUNT_OLD),
                 recovery_count_new: BaseElement::new(COUNT_OLD + 1),
             },
-            id_old, id_new, nonce, path,
+            id_old, id_new, nonce, leaf_salt, path,
         }
     }
 
     fn build(s: &Scenario, bal_new: u64, count_delta: u64) -> TraceTable<BaseElement> {
-        build_trace(s.id_old, s.id_new, BALANCE, bal_new, s.nonce, &s.path,
-                    COUNT_OLD, count_delta)
+        build_trace(s.id_old, s.id_new, BALANCE, bal_new, s.nonce, s.leaf_salt,
+                    &s.path, COUNT_OLD, count_delta)
     }
 
     fn run(s: &Scenario, bal_new: u64, count_delta: u64) -> Result<(), String> {
