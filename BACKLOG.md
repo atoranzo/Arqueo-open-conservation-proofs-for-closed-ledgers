@@ -1648,6 +1648,11 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   (burn 1024, audit un carril, freeze la CASA + ajuste exacto),
   variantes (titular ancho, LA COPIA), reglas del playbook, y lo que
   queda armado (paso 4, paso 5 §130, flip D4). El paso 3 se archiva.
+  ✅ **Paso 4 COMPLETO — T2b-circuito (§154)**: la recuperación de
+  §117 extremo a extremo — la clave sola produce prueba que VERIFICA
+  (gemelo del piloto); el diccionario sin salt NO verifica; el nativo
+  apunta a sus hermanos; la mitad de `apply` queda anotada para D4.
+  SIGUE: paso 5 — medición apareada (§130).
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y

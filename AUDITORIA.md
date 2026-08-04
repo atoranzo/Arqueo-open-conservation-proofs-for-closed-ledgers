@@ -11850,6 +11850,40 @@ línea).
 flip D4 con sus avisos anotados donde muerden. El informe de traspaso
 actualizado acompaña este asiento como documento.
 
+## 154. Paso 4 COMPLETO — T2b-circuito: la recuperación de §117, extremo a extremo por el AIR
+
+**La promesa del legado, cumplida donde estaba escrita.** El módulo
+`t2b_recuperacion_nativa` (entrada 50) dejó dicho que T2b-circuito «NO
+se escribe hoy porque exigiría un AIR que aún no existe» — condición
+que el paso 3 cumplió. Hoy los dos hermanos existen, lado a lado:
+
+**El test positivo** (`t2b_circuito_solo_la_clave_produce_prueba_que_verifica`,
+en el gemelo del piloto): el titular pierde TODO menos la clave;
+rederiva identidad y salt (§117) — dos asertos lo certifican contra el
+escenario —, toma de lo PÚBLICO camino y raíces, y `circuit_send_salted`
+le firma una prueba que **VERIFICA**. La recuperación no es papel: es
+un STARK aceptado.
+
+**El reverso** (`t2b_circuito_diccionario_sin_salt_no_verifica`): el
+atacante del diccionario, ahora contra el VERIFICADOR — con salt=0 su
+testigo no reproduce la hoja del árbol y ninguna prueba verifica
+contra las raíces públicas. El cegado de §117 muerde a nivel de
+circuito, no solo de hash.
+
+**La línea obsoleta del nativo, actualizada**: su cabecera apunta ya a
+los hermanos de circuito, y deja anotada la mitad que falta por
+diseño: **la versión por `apply` de la capa llega con el flip (D4)** —
+la capa no habla salted antes por mandato de la estrategia C.
+
+**Un commit, dos ficheros** (md5 send `e239fc5b…`→`1b9cfff5…`;
+settlement `86b9ac26…`→`f6a5e552…`); un aborto de guarda por la cola
+real del gemelo (SB1.d dejó las mutaciones al final), cero bytes.
+Suite **422/0**; capa 240/2; guardianes 35·37.
+
+**Estado**: paso 4 CERRADO. La cláusula de caída de §116 queda
+decidida por partida doble — nativo Y circuito. SIGUE: paso 5, la
+medición apareada (§130), con el 2× de burn como dato esperado.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
