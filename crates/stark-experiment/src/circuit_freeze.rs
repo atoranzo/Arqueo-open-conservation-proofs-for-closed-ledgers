@@ -54,17 +54,24 @@ use crate::circuit_threshold::{CustodianPath, CUSTODIAN_DEPTH, CUSTODIAN_DOMAIN}
 use crate::merkle::{native_merge, Digest, MerklePath};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
-/// Profundidad del árbol de congelados: hasta 16.777.216 cuentas.
+/// Profundidad del árbol de congelados: **32** — hasta 2³² cuentas,
+/// pareja del árbol de cuentas (§128, B13/B14).
 ///
-/// Elegida porque su subida **cabe en las filas libres** del circuito de
-/// liquidación (192 de 200), sin agrandar su traza.
-pub const FROZEN_DEPTH: usize = 24;
+/// El mundo viejo usaba 24 («cabe en las filas libres de liquidación»);
+/// los gemelos de liquidación ya viven a 32 con frozen-32 local, y este
+/// módulo — LA CASA de la constante — gira aquí. Toda la geometría de
+/// abajo se re-deriva sola (playbook R2 → R6).
+pub const FROZEN_DEPTH: usize = 32;
 
 /// Marca de cuenta congelada. Cualquier valor no nulo serviría; se usa
 /// uno reconocible para que un volcado del árbol sea legible.
 pub const FROZEN_MARK: u64 = 0x46524F5A; // "FROZ"
 
 pub const CYCLE_LENGTH: usize = 8;
+/// 512 filas. La tubería acaba en `ROW_CUST_ROOT` — hoy
+/// `(FROZEN_DEPTH + 1 + CUSTODIAN_DEPTH) · 8 − 1`. Con profundidad 24:
+/// fila 231, holgura 280 (35 ciclos). Con **32** (§128, el destino de
+/// este gemelo): fila 295, holgura 216 (27 ciclos) — 512 ALCANZA.
 pub const TRACE_LENGTH: usize = 512;
 pub const SEGMENT_LENGTH: usize = 8;
 /// Segmentos: índice A, índice B, y `B − A − 1`.
@@ -91,12 +98,21 @@ const COL_SACC: usize = 36;
 pub const TRACE_WIDTH: usize = 37;
 
 // ===== Filas =====
-/// Subida al árbol de congelados: ciclos 0-23, filas 0..191.
-const ROW_FROZEN_ROOT: usize = 191;
-/// Derivación de identidades de custodio: ciclo 24.
-const ROW_CUST_START: usize = 192;
-/// Subida al conjunto de custodios: ciclos 25-28.
-const ROW_CUST_ROOT: usize = 231;
+//
+// Geometría derivada de `FROZEN_DEPTH` (playbook R2): el cuerpo de
+// `build_trace` ya era genérico en profundidad; con los `ROW_*`
+// derivados, girar la constante re-deriva TODO el calendario (R6).
+const CYC_CUST: usize = FROZEN_DEPTH + 1;
+const CYC_FIN: usize = CYC_CUST + CUSTODIAN_DEPTH;
+/// Subida al árbol de congelados: ciclos `0..FROZEN_DEPTH`.
+const ROW_FROZEN_ROOT: usize = FROZEN_DEPTH * CYCLE_LENGTH - 1;
+/// Derivación de identidades de custodio: el ciclo `FROZEN_DEPTH`.
+const ROW_CUST_START: usize = FROZEN_DEPTH * CYCLE_LENGTH;
+/// Subida al conjunto de custodios: `CYC_CUST..CYC_FIN`.
+const ROW_CUST_ROOT: usize = CYC_FIN * CYCLE_LENGTH - 1;
+
+// El presupuesto, en compilación: la tubería debe caber en la traza.
+const _: () = assert!(ROW_CUST_ROOT < TRACE_LENGTH);
 
 // ===== Restricciones =====
 const C_HASH_A: usize = 0;
@@ -224,6 +240,12 @@ pub fn build_trace(
                  digest: &Digest,
                  p: &MerklePath,
                  level: usize| {
+        debug_assert!(
+            level < FROZEN_DEPTH,
+            "place: nivel {} sobre camino de {}",
+            level,
+            FROZEN_DEPTH
+        );
         if p.is_right[level] {
             state[4..8].copy_from_slice(&p.siblings[level]);
             state[8..12].copy_from_slice(digest);
@@ -236,6 +258,12 @@ pub fn build_trace(
                       digest: &Digest,
                       p: &CustodianPath,
                       level: usize| {
+        debug_assert!(
+            level < CUSTODIAN_DEPTH,
+            "place_cust: nivel {} sobre camino de {}",
+            level,
+            CUSTODIAN_DEPTH
+        );
         if p.is_right[level] {
             state[4..8].copy_from_slice(&p.siblings[level]);
             state[8..12].copy_from_slice(digest);
@@ -1085,13 +1113,72 @@ mod tests {
             informe.nunca_disparadas
         );
     }
+
+    /// **MUTACIÓN DE PROFUNDIDAD (R6, §128).** Un camino de 24 niveles
+    /// presentado a un circuito de 32 DEBE morir en la construcción: el
+    /// `debug_assert` de `place` (o el índice fuera de rango en
+    /// release) lo caza antes de que exista traza alguna.
+    #[test]
+    fn un_camino_de_24_declarado_como_32_muere_en_la_construccion() {
+        let keys = custodian_keys();
+        let (_set_root, cpaths) = build_custodian_set(&keys);
+        let auth = ThresholdAuth {
+            key_a: keys[1],
+            index_a: 1,
+            path_a: cpaths[1].clone(),
+            key_b: keys[3],
+            index_b: 3,
+            path_b: cpaths[3].clone(),
+        };
+
+        // Camino CORTO: 24 niveles, el mundo viejo.
+        let mut empty = vec![[BaseElement::ZERO; 4]];
+        for k in 1..=24 {
+            let prev = empty[k - 1];
+            empty.push(native_merge(prev, prev));
+        }
+        let mut siblings = Vec::with_capacity(24);
+        let mut is_right = Vec::with_capacity(24);
+        for level in 0..24 {
+            siblings.push(empty[level]);
+            is_right.push(level % 3 == 0);
+        }
+        let corto = MerklePath { siblings, is_right };
+
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            build_trace(&auth, false, true, &corto, COUNT_OLD, 1)
+        }));
+        assert!(
+            r.is_err(),
+            "un camino de 24 niveles declarado ante FROZEN_DEPTH = 32 DEBE \
+             morir en la construcción; si produce traza, la profundidad \
+             es decorativa"
+        );
+    }
+
+    /// **MUTACIÓN DE PROFUNDIDAD (R6, §128).** La raíz vacía a 24 y a 32
+    /// son árboles DISTINTOS: ningún estado del mundo viejo verifica en
+    /// el nuevo por accidente.
+    #[test]
+    fn la_raiz_vacia_de_24_no_es_la_raiz_vacia_de_32() {
+        let mut e = vec![[BaseElement::ZERO; 4]];
+        for k in 1..=32 {
+            let prev = e[k - 1];
+            e.push(native_merge(prev, prev));
+        }
+        assert_ne!(
+            e[24], e[32],
+            "las raíces vacías de 24 y 32 niveles deben diferir (§128); \
+             si coinciden, el hash está roto"
+        );
+    }
     /// **[§130] Instrumento de la medición apareada (paso 5).** Prove
-    /// del LEGADO en su escenario honesto — construcción + prove
+    /// del circuito en su escenario honesto — construcción + prove
     /// dentro del reloj (patrón `metrics_33`). Correr a mano, en release:
     /// `cargo test --release -p stark-experiment medicion_130 -- --ignored --nocapture`
     #[test]
     #[ignore = "instrumento de medida, no comprobacion: correr a mano"]
-    fn medicion_130_freeze_legado() {
+    fn medicion_130_freeze() {
         use std::time::Instant;
         let t0 = Instant::now();
         let keys = custodian_keys();
@@ -1106,7 +1193,7 @@ mod tests {
             .expect("el honesto debe probar");
         let ms = t0.elapsed().as_secs_f64() * 1000.0;
         println!(
-            "[§130] freeze legado: prove {ms:.1} ms, proof {} bytes",
+            "[§130] freeze gemelo: prove {ms:.1} ms, proof {} bytes",
             proof.to_bytes().len()
         );
     }

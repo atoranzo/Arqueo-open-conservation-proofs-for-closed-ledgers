@@ -73,6 +73,9 @@ use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;
+/// 512 filas. La tubería acaba en `ROW_PK_DONE` (fila 279): quedan
+/// **232 filas de holgura** (29 ciclos). Sin fase frozen, el mundo
+/// nuevo solo suma el ciclo del salt: 287, y 512 ALCANZA (spec §3).
 pub const TRACE_LENGTH: usize = 512;
 pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: saldo, saldo − inferior, superior − saldo.
@@ -93,14 +96,38 @@ const COL_LOWER: usize = 23;
 const COL_UPPER: usize = 24;
 const COL_SBIT: usize = 25;
 const COL_SACC: usize = 26;
-pub const TRACE_WIDTH: usize = 27;
+/// **Salt de la hoja** (testigo, §117): envuelve la hoja como tercer
+/// merge — UN carril, un salt (spec de la máquina de hoja §2). Sin
+/// colisión en audit: no hay COL_SALT previo.
+const COL_LEAF_SALT: usize = 27; // 27..31
+pub const TRACE_WIDTH: usize = 31;
 
 // ===== Filas de eventos =====
-const ROW_LEAF_LINK: usize = 7;
-const ROW_LEAF_DONE: usize = 15;
-const ROW_ROOT: usize = 271;
-const ROW_PK_START: usize = 272;
-const ROW_PK_DONE: usize = 279;
+//
+// Geometría derivada (playbook R2; el patrón de SB0, §140-§141). La
+// cadena más corta de la campaña: hoja, subida de cuentas y
+// titularidad — `CYC_FIN = CYC_PK + 1`, sin frozen ni pendientes.
+//
+// Convención: todo arranque de tramo es un `CYC_*`; ningún literal de
+// ciclo vive fuera de este bloque — bucles de bits, periódicas y el
+// `match` de `build_trace` lo derivan de aquí.
+const CYC_NONCE: usize = 1;
+// El TERCER merge (§117, B13/B14): la hoja se envuelve con el salt
+// antes de entrar al camino. Todo el calendario posterior se corre +1
+// ciclo solo, por derivación (playbook R2).
+const CYC_SALT: usize = CYC_NONCE + 1;
+const CYC_ACC: usize = CYC_SALT + 1;
+const CYC_PK: usize = CYC_ACC + TREE_DEPTH;
+const CYC_FIN: usize = CYC_PK + 1;
+const ROW_LEAF_LINK: usize = CYC_NONCE * CYCLE_LENGTH - 1;
+const ROW_SALT_LINK: usize = CYC_SALT * CYCLE_LENGTH - 1;
+const ROW_LEAF_DONE: usize = CYC_ACC * CYCLE_LENGTH - 1;
+const ROW_ROOT: usize = CYC_PK * CYCLE_LENGTH - 1;
+const ROW_PK_START: usize = CYC_PK * CYCLE_LENGTH;
+const ROW_PK_DONE: usize = CYC_FIN * CYCLE_LENGTH - 1;
+
+// El presupuesto, en compilación: la tubería debe caber en la traza.
+const _: () = assert!(ROW_PK_DONE < TRACE_LENGTH);
 
 // ===== Índices de restricción =====
 const C_HASH: usize = 0; // 12
@@ -120,7 +147,14 @@ const C_SBIT_BOOL: usize = C_ID_CONST + 4; // 2
 const C_FIRST_S: usize = C_SBIT_BOOL + 2; // 2
 const C_HORNER: usize = C_FIRST_S + 2; // 1
 const C_SEG_LINK: usize = C_HORNER + 1; // NUM_SEGMENTS
-const NUM_CONSTRAINTS: usize = C_SEG_LINK + NUM_SEGMENTS;
+/// **La envoltura de la hoja (§117, B13/B14) — UN carril.** Tres
+/// familias cosidas por `link_salt` en `ROW_SALT_LINK`: capacidad a
+/// cero, digest arrastrado, y los CUATRO limbos del rate atados al
+/// salt testigo (§138 en los cuatro limbos).
+const C_SALT_CAP: usize = C_SEG_LINK + NUM_SEGMENTS; // 4
+const C_SALT_DIG: usize = C_SALT_CAP + 4; // 4
+const C_SALT_IN: usize = C_SALT_DIG + 4; // 4
+const NUM_CONSTRAINTS: usize = C_SALT_IN + 4;
 
 // ===== Columnas periódicas =====
 const P_HASH_FLAG: usize = 0;
@@ -128,7 +162,9 @@ const P_ARK1: usize = 1;
 const P_ARK2: usize = P_ARK1 + STATE_WIDTH;
 const P_LINK_MERKLE: usize = P_ARK2 + STATE_WIDTH;
 const P_LINK_LEAF: usize = P_LINK_MERKLE + 1;
-const P_LINK_PLACE: usize = P_LINK_LEAF + 1;
+/// Fila del TERCER merge: la envoltura del salt (§117).
+const P_LINK_SALT: usize = P_LINK_LEAF + 1;
+const P_LINK_PLACE: usize = P_LINK_SALT + 1;
 const P_FIRST_ROW: usize = P_LINK_PLACE + 1;
 const P_SEL_ROOT: usize = P_FIRST_ROW + 1;
 const P_SEL_PK_DONE: usize = P_SEL_ROOT + 1;
@@ -152,6 +188,9 @@ pub struct AuditWitness {
     pub spend_key: Digest,
     pub balance: u64,
     pub nonce: BaseElement,
+    /// **Salt de la hoja (testigo, §117).** Deriva de la clave; la
+    /// pertenencia se prueba sobre `H(native_leaf, salt)`.
+    pub leaf_salt: Digest,
     pub path: MerklePath,
 }
 
@@ -182,6 +221,7 @@ pub fn build_trace_with_id(
         row[COL_NONCE] = witness.nonce;
         row[COL_LOWER] = c_lower;
         row[COL_UPPER] = c_upper;
+        row[COL_LEAF_SALT..COL_LEAF_SALT + 4].copy_from_slice(&witness.leaf_salt);
     }
 
     // Rangos: saldo, saldo − inferior, superior − saldo.
@@ -207,6 +247,12 @@ pub fn build_trace_with_id(
     }
 
     let place = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
+        debug_assert!(
+            level < TREE_DEPTH,
+            "place: nivel {} sobre path de {}",
+            level,
+            TREE_DEPTH
+        );
         if witness.path.is_right[level] {
             state[4..8].copy_from_slice(&witness.path.siblings[level]);
             state[8..12].copy_from_slice(digest);
@@ -233,6 +279,14 @@ pub fn build_trace_with_id(
                     state[4..8].copy_from_slice(&digest);
                     state[8] = witness.nonce;
                 }
+                ROW_SALT_LINK => {
+                    // EL TERCER MERGE (§117): la hoja se envuelve con el
+                    // salt. Digest arrastrado; el rate recibe los CUATRO
+                    // limbos del salt (spec §2 — atar solo [8] sería el
+                    // bug de §92.2 en su forma nueva).
+                    state[4..8].copy_from_slice(&digest);
+                    state[8..12].copy_from_slice(&witness.leaf_salt);
+                }
                 ROW_LEAF_DONE => place(&mut state, &digest, 0),
                 ROW_ROOT => {
                     // Derivacion de pk: TITULARIDAD.
@@ -241,8 +295,13 @@ pub fn build_trace_with_id(
                 }
                 _ => {
                     let next_cycle = (r + 1) / CYCLE_LENGTH;
-                    if (2..34).contains(&next_cycle) {
-                        place(&mut state, &digest, next_cycle - 2);
+                    // Convención única (playbook R2): tramo genérico =
+                    // `(CYC_arranque..CYC_fin_de_tramo)`, nivel =
+                    // `next_cycle - CYC_arranque`; el arranque lo sombrea
+                    // el brazo de `ROW_LEAF_DONE` (nivel 0 explícito).
+                    if (CYC_ACC..CYC_PK).contains(&next_cycle) {
+                        let level = next_cycle - CYC_ACC;
+                        place(&mut state, &digest, level);
                     }
                 }
             }
@@ -257,7 +316,7 @@ pub fn build_trace_with_id(
             zero
         };
         for p in 0..CYCLE_LENGTH {
-            rows[(2 + level) * CYCLE_LENGTH + p][COL_BIT] = bit;
+            rows[(CYC_ACC + level) * CYCLE_LENGTH + p][COL_BIT] = bit;
         }
     }
 
@@ -336,6 +395,11 @@ impl Air for AuditAir {
         for _ in 0..(3 + NUM_SEGMENTS) {
             degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
         }
+        // La envoltura del salt (12): grado 1 con ciclo — el molde de
+        // los enlaces de hoja, gate periódico × expresión lineal.
+        for _ in 0..12 {
+            degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
+        }
 
         assert_eq!(degrees.len(), NUM_CONSTRAINTS, "cuenta de grados");
 
@@ -384,13 +448,17 @@ impl Air for AuditAir {
 
         let mut link_merkle = vec![zero; TRACE_LENGTH];
         for level in 0..TREE_DEPTH - 1 {
-            link_merkle[(2 + level) * CYCLE_LENGTH + 7] = one;
+            link_merkle[(CYC_ACC + level) * CYCLE_LENGTH + 7] = one;
         }
         columns.push(link_merkle);
 
         let mut link_leaf = vec![zero; TRACE_LENGTH];
         link_leaf[ROW_LEAF_LINK] = one;
         columns.push(link_leaf);
+
+        let mut link_salt = vec![zero; TRACE_LENGTH];
+        link_salt[ROW_SALT_LINK] = one;
+        columns.push(link_salt);
 
         let mut link_place = vec![zero; TRACE_LENGTH];
         link_place[ROW_LEAF_DONE] = one;
@@ -436,6 +504,7 @@ impl Air for AuditAir {
         let ark2 = &periodic[P_ARK2..P_ARK2 + STATE_WIDTH];
         let link_merkle = periodic[P_LINK_MERKLE];
         let link_leaf = periodic[P_LINK_LEAF];
+        let link_salt = periodic[P_LINK_SALT];
         let link_place = periodic[P_LINK_PLACE];
         let first_row = periodic[P_FIRST_ROW];
         let sel_root = periodic[P_SEL_ROOT];
@@ -481,6 +550,16 @@ impl Air for AuditAir {
             result[C_LEAF_DIG + i] = link_leaf * (next[4 + i] - current[4 + i]);
         }
         result[C_NONCE] = link_leaf * (next[8] - current[COL_NONCE]);
+
+        // EL TERCER MERGE (§117): la envoltura, cosida por `link_salt`.
+        // Digest arrastrado y los CUATRO limbos del rate := salt testigo
+        // (§138 en los cuatro limbos) — UN carril.
+        for i in 0..4 {
+            result[C_SALT_CAP + i] = link_salt * next[i];
+            result[C_SALT_DIG + i] = link_salt * (next[4 + i] - current[4 + i]);
+            result[C_SALT_IN + i] =
+                link_salt * (next[8 + i] - current[COL_LEAF_SALT + i]);
+        }
 
         // Entradas de la hoja: identidad completa + saldo.
         for i in 0..4 {
@@ -660,7 +739,9 @@ impl Prover for AuditProver {
 
 #[cfg(test)]
 mod tests {
-    use crate::circuit_settlement::{native_climb, native_leaf};
+    use crate::circuit_settlement::{
+        derive_leaf_salt_wide, native_climb, native_leaf, native_leaf_salted,
+    };
     use super::*;
     use crate::merkle::native_merge;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
@@ -706,13 +787,20 @@ mod tests {
             is_right.push(level % 3 == 0);
         }
         let path = MerklePath { siblings, is_right };
-        let root = native_climb(native_leaf(id, BaseElement::new(balance), nonce), &path);
+        // El salt REAL del titular (§117): derivado de la clave, no un
+        // literal de juguete — el escenario vive en el mundo envuelto.
+        let leaf_salt = derive_leaf_salt_wide(key);
+        let root = native_climb(
+            native_leaf_salted(id, BaseElement::new(balance), nonce, leaf_salt),
+            &path,
+        );
 
         (
             AuditWitness {
                 spend_key: key,
                 balance,
                 nonce,
+                leaf_salt,
                 path,
             },
             root,
@@ -820,7 +908,7 @@ mod tests {
 
     /// **NADIE PUEDE REVELAR POR OTRO.**
     ///
-    /// Un tercero conoce la identidad, el saldo, el nonce y el camino de
+    /// Un tercero conoce la identidad, el saldo, el nonce, el salt y el camino de
     /// una cuenta ajena, y construye la traza **con la identidad de la
     /// víctima** para que la raíz cuadre. Solo `C_PK_CHECK` puede
     /// detectar que su clave no corresponde.
@@ -836,6 +924,9 @@ mod tests {
             ],
             balance: victim.balance,
             nonce: victim.nonce,
+            // El salt es OBSERVABLE (el secreto es la clave, §117): el
+            // ataque sigue apuntando a titularidad, no a pertenencia.
+            leaf_salt: victim.leaf_salt,
             path: victim.path.clone(),
         };
         assert!(
@@ -944,13 +1035,103 @@ mod tests {
             informe.nunca_disparadas
         );
     }
+
+    /// **NATIVO↔CIRCUITO de la envoltura (spec §4, playbook R5) — un
+    /// carril, una hoja.**
+    #[test]
+    fn la_cadena_de_tres_merges_espeja_native_leaf_salted() {
+        let (w, _root, id) = scenario(1_000_000);
+        let trace = build_trace(&w, 900_000, 1_100_000);
+
+        let sin_sal = native_leaf(id, BaseElement::new(w.balance), w.nonce);
+        let con_sal =
+            native_leaf_salted(id, BaseElement::new(w.balance), w.nonce, w.leaf_salt);
+        for i in 0..4 {
+            assert_eq!(
+                trace.get(4 + i, ROW_SALT_LINK),
+                sin_sal[i],
+                "hoja sin envolver"
+            );
+            assert_eq!(
+                trace.get(4 + i, ROW_LEAF_DONE),
+                con_sal[i],
+                "hoja envuelta"
+            );
+        }
+    }
+
+    /// **MUTACIÓN OBLIGATORIA (a) de la spec §4.** Veneno = honesto + 1.
+    #[test]
+    fn mutacion_a_un_limbo_del_salt_testigo_alterado_se_rechaza() {
+        let (w, root, id) = scenario(1_000_000);
+        let mut trace = build_trace(&w, 900_000, 1_100_000);
+
+        let veneno = trace.get(COL_LEAF_SALT + 2, ROW_SALT_LINK) + BaseElement::ONE;
+        trace.set(COL_LEAF_SALT + 2, ROW_SALT_LINK, veneno);
+
+        let prover = AuditProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, pi(root, id, 900_000, 1_100_000), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "un limbo del salt testigo alterado DEBE rechazar (C_SALT_IN); \
+             si verifica, la envoltura es decorativa"
+        );
+    }
+
+    /// **MUTACIÓN OBLIGATORIA (b) de la spec §4.** AMBAS mitades del
+    /// estado siguiente (bit-agnóstico); `C_PLACE` dispara.
+    #[test]
+    fn mutacion_b_la_hoja_sin_envolver_no_entra_al_camino() {
+        let (w, root, id) = scenario(1_000_000);
+        let mut trace = build_trace(&w, 900_000, 1_100_000);
+
+        let sin_sal = native_leaf(id, BaseElement::new(w.balance), w.nonce);
+        for i in 0..4 {
+            trace.set(4 + i, ROW_LEAF_DONE + 1, sin_sal[i]);
+            trace.set(8 + i, ROW_LEAF_DONE + 1, sin_sal[i]);
+        }
+
+        let prover = AuditProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, pi(root, id, 900_000, 1_100_000), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "la hoja sin envolver NO debe entrar al camino (C_PLACE en el \
+             enlace corrido); si verifica, el corrimiento no protege nada"
+        );
+    }
     /// **[§130] Instrumento de la medición apareada (paso 5).** Prove
-    /// del LEGADO en su escenario honesto — construcción + prove
+    /// del circuito en su escenario honesto — construcción + prove
     /// dentro del reloj (patrón `metrics_33`). Correr a mano, en release:
     /// `cargo test --release -p stark-experiment medicion_130 -- --ignored --nocapture`
     #[test]
     #[ignore = "instrumento de medida, no comprobacion: correr a mano"]
-    fn medicion_130_audit_legado() {
+    fn medicion_130_audit() {
         use std::time::Instant;
         let t0 = Instant::now();
         let (w, _root, _id) = scenario(1_000_000);
@@ -960,7 +1141,7 @@ mod tests {
             .expect("el honesto debe probar");
         let ms = t0.elapsed().as_secs_f64() * 1000.0;
         println!(
-            "[§130] audit legado: prove {ms:.1} ms, proof {} bytes",
+            "[§130] audit gemelo: prove {ms:.1} ms, proof {} bytes",
             proof.to_bytes().len()
         );
     }

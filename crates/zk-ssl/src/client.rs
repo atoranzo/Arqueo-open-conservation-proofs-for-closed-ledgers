@@ -62,6 +62,10 @@ pub struct AccountView {
     pub public_id: Digest,
     pub balance: u64,
     pub nonce: BaseElement,
+    /// Salt de la hoja (§117) — el titular lo necesita para PROBAR en el
+    /// mundo nuevo; viene del record (paso 1a) y no filtra nada que el
+    /// dueño no tenga ya.
+    pub leaf_salt: Digest,
 }
 
 /// Error al comprobar el destinatario de una transferencia.
@@ -97,6 +101,7 @@ impl SovereignLayer {
             public_id: r.public_id,
             balance: r.balance,
             nonce: r.nonce,
+            leaf_salt: r.leaf_salt,
         })
     }
 
@@ -287,6 +292,7 @@ pub fn prove_send(
         materials.sender.public_id,
         materials.sender.balance,
         materials.sender.nonce,
+        materials.sender.leaf_salt,
         &materials.sender_path,
         &materials.frozen_path,
         materials.amount,
@@ -363,6 +369,7 @@ pub fn prove_claim(
         materials.receiver.public_id,
         materials.receiver.balance,
         materials.receiver.nonce,
+        materials.receiver.leaf_salt,
         &materials.receiver_path,
         &materials.frozen_path,
         materials.notice.amount,

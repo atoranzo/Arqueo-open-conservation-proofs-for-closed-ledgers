@@ -2795,7 +2795,7 @@ use super::*;
         use stark_experiment::circuit_audit::{
             build_trace as build_audit, AuditProver, AuditWitness,
         };
-        use stark_experiment::circuit_settlement::{native_climb, native_leaf};
+        use stark_experiment::circuit_settlement::{native_climb, native_leaf_salted};
         use stark_experiment::merkle::{native_merge, MerklePath, TREE_DEPTH};
 
         let mut empty = vec![[BaseElement::ZERO; 4]];
@@ -2821,12 +2821,17 @@ use super::*;
             is_right.push(level % 3 == 0);
         }
         let path = MerklePath { siblings, is_right };
-        let root = native_climb(native_leaf(id, BaseElement::new(100_000), nonce), &path);
+        let leaf_salt = [BaseElement::new(0x5A17_0B13); 4];
+        let root = native_climb(
+            native_leaf_salted(id, BaseElement::new(100_000), nonce, leaf_salt),
+            &path,
+        );
 
         let w = AuditWitness {
             spend_key: key,
             balance: 100_000,
             nonce,
+            leaf_salt,
             path,
         };
         // Se afirma un minimo de 500.000 con un saldo de 100.000.

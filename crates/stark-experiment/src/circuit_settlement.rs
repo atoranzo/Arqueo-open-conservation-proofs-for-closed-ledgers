@@ -74,7 +74,28 @@ use winterfell::{
 };
 
 use crate::merkle::{native_merge, Digest, MerklePath, TREE_DEPTH};
-use crate::circuit_freeze::FROZEN_DEPTH;
+// ⚠️ CIRCUITO-MUSEO (liquidación de un solo paso): sus tramos se
+// diseñaron para frozen-24 (bits de congelados en ciclos 103..127,
+// última fila 1023 de 1024 — ajuste EXACTO) y sus trece tests
+// documentan ese mundo. Tras el flip D4 la CASA exporta 32; este
+// módulo queda en 24 LOCAL hasta su retirada (BACKLOG). Los helpers
+// nativos (native_leaf/salted, derive_*) no dependen de esto.
+const FROZEN_DEPTH: usize = 24;
+
+/// Subida de congelados A 24 — pareja del pin de arriba: la CASA ya
+/// vive a 32 y su `frozen_climb` moriría con los caminos de 24 que
+/// este museo construye. Muere con el módulo (BACKLOG).
+fn frozen_climb_24(leaf: Digest, path: &MerklePath) -> Digest {
+    let mut current = leaf;
+    for level in 0..FROZEN_DEPTH {
+        current = if path.is_right[level] {
+            crate::merkle::native_merge(path.siblings[level], current)
+        } else {
+            crate::merkle::native_merge(current, path.siblings[level])
+        };
+    }
+    current
+}
 use crate::nullifier::NULLIFIER_DOMAIN;
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
@@ -1490,7 +1511,7 @@ mod tests {
             siblings: (0..FROZEN_DEPTH).map(|l| f_empty[l]).collect(),
             is_right: (0..FROZEN_DEPTH).map(|l| l % 3 == 0).collect(),
         };
-        let frozen_root = crate::circuit_freeze::frozen_climb(
+        let frozen_root = frozen_climb_24(
             [BaseElement::ZERO; 4],
             &frozen_path,
         );
@@ -1948,7 +1969,7 @@ mod tests {
 
         // Se declara la raiz del arbol con ESTA CUENTA CONGELADA.
         let mut declared = s.public_inputs.clone();
-        declared.frozen_root = crate::circuit_freeze::frozen_climb(
+        declared.frozen_root = frozen_climb_24(
             crate::circuit_freeze::frozen_leaf(true),
             &s.frozen_path,
         );
@@ -2211,7 +2232,7 @@ mod t2b_recuperacion_nativa {
     //! si esto compila y pasa, la propiedad es realizable y §117 se
     //! sostiene. T2b-circuito, condicionado entonces a B13/B14, quedó
     //! ESCRITO en el paso 4 (§154) sobre el gemelo del piloto:
-    //! `circuit_send_salted::tests::t2b_circuito_*` — la clave sola
+    //! `circuit_send::tests::t2b_circuito_*` — la clave sola
     //! produce prueba que VERIFICA; el diccionario sin salt NO. La
     //! versión por `apply` de la capa llega con el flip (D4).
     use super::*;

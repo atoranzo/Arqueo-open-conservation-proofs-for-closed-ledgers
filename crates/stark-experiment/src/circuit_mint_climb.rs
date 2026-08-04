@@ -37,6 +37,9 @@ use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;
+/// 512 filas. La tubería acaba en `ROW_ACCT_ROOT` (fila 271): quedan
+/// **240 filas de holgura** (30 ciclos). Sin frozen ni custodios, el
+/// mundo nuevo solo suma el ciclo del salt: 279, y 512 ALCANZA (§3).
 pub const TRACE_LENGTH: usize = 512;
 pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: saldo, importe, saldo nuevo, suministro nuevo,
@@ -69,13 +72,37 @@ const COL_SUPPLY_NEW: usize = COL_SUPPLY_OLD + 1; // 34
 const COL_MAX_SUPPLY: usize = COL_SUPPLY_NEW + 1; // 35
 const COL_SBIT: usize = COL_MAX_SUPPLY + 1; // 36
 const COL_SACC: usize = COL_SBIT + 1; // 37
-pub const TRACE_WIDTH: usize = COL_SACC + 1; // 38
+/// **Salt de la hoja** (testigo, §117): envuelve la hoja como tercer
+/// merge. UN solo salt compartido por ambos carriles (spec §2). Sin
+/// colisión: no hay COL_SALT previo. En el estilo derivado de la casa.
+const COL_LEAF_SALT: usize = COL_SACC + 1; // 38..42
+pub const TRACE_WIDTH: usize = COL_LEAF_SALT + 4; // 42
 
 // ===== Filas =====
-const ROW_LEAF_LINK: usize = 7;
-const ROW_LEAF_DONE: usize = 15;
-/// Raíz del árbol de cuentas. Su enlace arranca la fase de custodios.
-const ROW_ACCT_ROOT: usize = 271;
+//
+// Geometría derivada (playbook R2; el patrón de SB0, §140-§141). Un
+// solo tramo: hoja + subida de cuentas — `CYC_FIN = CYC_ACC +
+// TREE_DEPTH`, sin titularidad, frozen ni pendientes.
+//
+// Convención: todo arranque de tramo es un `CYC_*`; ningún literal de
+// ciclo vive fuera de este bloque — bucles de bits, periódicas y el
+// `match` de `build_trace` lo derivan de aquí.
+const CYC_NONCE: usize = 1;
+// El TERCER merge (§117, B13/B14): la hoja se envuelve con el salt
+// antes de entrar al camino. Todo el calendario posterior se corre +1
+// ciclo solo, por derivación (playbook R2).
+const CYC_SALT: usize = CYC_NONCE + 1;
+const CYC_ACC: usize = CYC_SALT + 1;
+const CYC_FIN: usize = CYC_ACC + TREE_DEPTH;
+const ROW_LEAF_LINK: usize = CYC_NONCE * CYCLE_LENGTH - 1;
+const ROW_SALT_LINK: usize = CYC_SALT * CYCLE_LENGTH - 1;
+const ROW_LEAF_DONE: usize = CYC_ACC * CYCLE_LENGTH - 1;
+/// Última fila activa: raíz del árbol de cuentas. (El doc heredado
+/// hablaba de custodios — deriva del legacy de mint; aquí no hay.)
+const ROW_ACCT_ROOT: usize = CYC_FIN * CYCLE_LENGTH - 1;
+
+// El presupuesto, en compilación: la tubería debe caber en la traza.
+const _: () = assert!(ROW_ACCT_ROOT < TRACE_LENGTH);
 // No hace falta constante para el relleno: la 271 no es fila de enlace,
 // asi que la transicion 271->272 no activa ninguna restriccion y las
 // filas siguientes se quedan a cero sin que nada las mire.
@@ -108,7 +135,17 @@ const C_SBIT_BOOL: usize = C_ID_CONST + 4; // 2
 const C_FIRST_S: usize = C_SBIT_BOOL + 2; // 2
 const C_HORNER: usize = C_FIRST_S + 2; // 1
 const C_SEG_LINK: usize = C_HORNER + 1; // NUM_SEGMENTS
-pub const NUM_CONSTRAINTS: usize = C_SEG_LINK + NUM_SEGMENTS;
+/// **La envoltura de la hoja (§117, B13/B14).** Seis familias cosidas
+/// por `link_salt` en `ROW_SALT_LINK`: capacidad a cero, digest
+/// arrastrado, y los CUATRO limbos del rate atados al salt testigo —
+/// §92.2 en ambos carriles, §138 en los cuatro limbos.
+const C_SALT_CAP_A: usize = C_SEG_LINK + NUM_SEGMENTS; // 4
+const C_SALT_CAP_B: usize = C_SALT_CAP_A + 4; // 4
+const C_SALT_DIG_A: usize = C_SALT_CAP_B + 4; // 4
+const C_SALT_DIG_B: usize = C_SALT_DIG_A + 4; // 4
+const C_SALT_IN_A: usize = C_SALT_DIG_B + 4; // 4
+const C_SALT_IN_B: usize = C_SALT_IN_A + 4; // 4
+pub const NUM_CONSTRAINTS: usize = C_SALT_IN_B + 4;
 
 // ===== Periódicas =====
 const P_HASH_FLAG: usize = 0;
@@ -117,11 +154,13 @@ const P_ARK2: usize = P_ARK1 + STATE_WIDTH;
 /// Enlaces del árbol de cuentas (niveles + colocación de la hoja).
 const P_ACCT_LINK: usize = P_ARK2 + STATE_WIDTH;
 const P_LINK_LEAF: usize = P_ACCT_LINK + 1;
+/// Fila del TERCER merge: la envoltura del salt (§117).
+const P_LINK_SALT: usize = P_LINK_LEAF + 1;
 /// Enlaces del árbol de custodios (entrada + niveles).
 // Se fueron `P_CUST_LINK`, `P_POW2` y `P_SEL_CUST_ROOT` con la amputacion.
 // Dejarlos en la cadena desplazaba `P_SEG_LINK` tres posiciones y el indice
 // se salia del array de periodicas.
-const P_FIRST_ROW: usize = P_LINK_LEAF + 1;
+const P_FIRST_ROW: usize = P_LINK_SALT + 1;
 // Se fue tambien `P_SEL_ACCT_ROOT`: solo lo leia `C_CUST_INPUT`. Una
 // periodica que se construye y nadie lee es peso muerto, y ensucia una
 // cadena que -entrada 39- no comprueba nada.
@@ -148,6 +187,9 @@ pub fn build_trace(
     account_id: Digest,
     balance: u64,
     nonce: BaseElement,
+    // **Salt de la hoja (testigo).** Del TITULAR de la cuenta acreditada
+    // (§117): la pertenencia se prueba sobre `H(native_leaf, salt)`.
+    leaf_salt: Digest,
     path: &MerklePath,
     amount: u64,
     supply_old: u64,
@@ -175,6 +217,7 @@ pub fn build_trace(
         row[COL_SUPPLY_OLD] = c_supply_old;
         row[COL_SUPPLY_NEW] = c_supply_new;
         row[COL_MAX_SUPPLY] = c_max;
+        row[COL_LEAF_SALT..COL_LEAF_SALT + 4].copy_from_slice(&leaf_salt);
     }
 
     // Rangos. El quinto demuestra que no se supera el tope; los tres
@@ -199,6 +242,12 @@ pub fn build_trace(
     }
 
     let place_acct = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
+        debug_assert!(
+            level < TREE_DEPTH,
+            "place_acct: nivel {} sobre path de {}",
+            level,
+            TREE_DEPTH
+        );
         if path.is_right[level] {
             state[4..8].copy_from_slice(&path.siblings[level]);
             state[8..12].copy_from_slice(digest);
@@ -238,14 +287,28 @@ pub fn build_trace(
                     state_b[4..8].copy_from_slice(&digest_b);
                     state_b[8] = nonce;
                 }
+                ROW_SALT_LINK => {
+                    // EL TERCER MERGE (§117): la hoja se envuelve con el
+                    // salt. Digest arrastrado; el rate recibe los CUATRO
+                    // limbos del salt (spec §2 — atar solo [8] sería el
+                    // bug de §92.2 en su forma nueva).
+                    state_a[4..8].copy_from_slice(&digest_a);
+                    state_a[8..12].copy_from_slice(&leaf_salt);
+                    state_b[4..8].copy_from_slice(&digest_b);
+                    state_b[8..12].copy_from_slice(&leaf_salt);
+                }
                 ROW_LEAF_DONE => {
                     place_acct(&mut state_a, &digest_a, 0);
                     place_acct(&mut state_b, &digest_b, 0);
                 }
                 _ => {
                     let next_cycle = (r + 1) / CYCLE_LENGTH;
-                    if (2..34).contains(&next_cycle) {
-                        let level = next_cycle - 2;
+                    // Convención única (playbook R2): tramo genérico =
+                    // `(CYC_arranque..CYC_fin_de_tramo)`, nivel =
+                    // `next_cycle - CYC_arranque`; el arranque lo sombrea
+                    // el brazo de `ROW_LEAF_DONE` (nivel 0 explícito).
+                    if (CYC_ACC..CYC_FIN).contains(&next_cycle) {
+                        let level = next_cycle - CYC_ACC;
                         place_acct(&mut state_a, &digest_a, level);
                         place_acct(&mut state_b, &digest_b, level);
                     }
@@ -264,7 +327,7 @@ pub fn build_trace(
             zero
         };
         for p in 0..CYCLE_LENGTH {
-            rows[(2 + level) * CYCLE_LENGTH + p][COL_BIT_A] = bit;
+            rows[(CYC_ACC + level) * CYCLE_LENGTH + p][COL_BIT_A] = bit;
         }
     }
     // Bits del arbol de custodios: caminos DISTINTOS por carril.
@@ -353,6 +416,11 @@ impl Air for MintClimbAir {
         for _ in 0..NUM_SEGMENTS {
             degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
         }
+        // La envoltura del salt (24): grado 1 con ciclo — el molde de los
+        // enlaces de hoja, gate periódico × expresión lineal.
+        for _ in 0..24 {
+            degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
+        }
 
         assert_eq!(degrees.len(), NUM_CONSTRAINTS, "cuenta de grados");
 
@@ -400,13 +468,17 @@ impl Air for MintClimbAir {
         let mut acct_link = vec![zero; TRACE_LENGTH];
         acct_link[ROW_LEAF_DONE] = one;
         for level in 0..TREE_DEPTH - 1 {
-            acct_link[(2 + level) * CYCLE_LENGTH + 7] = one;
+            acct_link[(CYC_ACC + level) * CYCLE_LENGTH + 7] = one;
         }
         columns.push(acct_link);
 
         let mut link_leaf = vec![zero; TRACE_LENGTH];
         link_leaf[ROW_LEAF_LINK] = one;
         columns.push(link_leaf);
+
+        let mut link_salt = vec![zero; TRACE_LENGTH];
+        link_salt[ROW_SALT_LINK] = one;
+        columns.push(link_salt);
 
         // Enlaces del arbol de custodios: entrada + niveles.
 
@@ -450,6 +522,7 @@ impl Air for MintClimbAir {
         let ark2 = &periodic[P_ARK2..P_ARK2 + STATE_WIDTH];
         let acct_link = periodic[P_ACCT_LINK];
         let link_leaf = periodic[P_LINK_LEAF];
+        let link_salt = periodic[P_LINK_SALT];
         let first_row = periodic[P_FIRST_ROW];
         let first_s = periodic[P_FIRST_S];
         let cont_s = periodic[P_CONT_S];
@@ -516,6 +589,21 @@ impl Air for MintClimbAir {
 
         result[C_NONCE] = link_leaf * (next[8] - current[COL_NONCE]);
         result[C_NONCE + 1] = link_leaf * (next[LANE_B + 8] - current[COL_NONCE]);
+
+        // EL TERCER MERGE (§117): la envoltura, cosida por `link_salt`.
+        // Digest arrastrado y los CUATRO limbos del rate := salt testigo
+        // (§92.2 en ambos carriles; §138 en los cuatro limbos).
+        for i in 0..4 {
+            result[C_SALT_CAP_A + i] = link_salt * next[i];
+            result[C_SALT_CAP_B + i] = link_salt * next[LANE_B + i];
+            result[C_SALT_DIG_A + i] = link_salt * (next[4 + i] - current[4 + i]);
+            result[C_SALT_DIG_B + i] =
+                link_salt * (next[LANE_B + 4 + i] - current[LANE_B + 4 + i]);
+            result[C_SALT_IN_A + i] =
+                link_salt * (next[8 + i] - current[COL_LEAF_SALT + i]);
+            result[C_SALT_IN_B + i] =
+                link_salt * (next[LANE_B + 8 + i] - current[COL_LEAF_SALT + i]);
+        }
 
         for i in 0..4 {
             result[C_INPUT + i] = first_row * (current[4 + i] - current[COL_ACC_ID + i]);
@@ -709,7 +797,10 @@ impl Prover for MintClimbProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::circuit_settlement::{derive_public_id, native_climb, native_leaf};
+    use crate::circuit_settlement::{
+        derive_leaf_salt_wide, derive_public_id_wide, native_climb,
+        native_leaf, native_leaf_salted,
+    };
     use crate::merkle::native_merge;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension, Prover};
 
@@ -726,6 +817,7 @@ mod tests {
         account_id: Digest,
         balance: u64,
         nonce: BaseElement,
+        leaf_salt: Digest,
         path: MerklePath,
         amount: u64,
         supply_old: u64,
@@ -738,7 +830,17 @@ mod tests {
             let prev = empty[k - 1];
             empty.push(native_merge(prev, prev));
         }
-        let account_id = derive_public_id(BaseElement::new(0xA11CE));
+        // ⚠️ Ancha de verdad, no `as_digest(x)`: con relleno de ceros el
+        // test pasaria sin ejercitar los elementos altos (§90.3). El
+        // TITULAR de la cuenta acreditada asciende al mundo ancho: su
+        // clave manda sobre identidad Y salt (§117).
+        let key = [
+            BaseElement::new(0xA11CE_0001),
+            BaseElement::new(0xA11CE_0002),
+            BaseElement::new(0xA11CE_0003),
+            BaseElement::new(0xA11CE_0004),
+        ];
+        let account_id = derive_public_id_wide(key);
         let nonce = BaseElement::ZERO;
 
         let mut siblings = Vec::with_capacity(TREE_DEPTH);
@@ -749,8 +851,13 @@ mod tests {
         }
         let path = MerklePath { siblings, is_right };
 
-        let leaf_old = native_leaf(account_id, BaseElement::new(balance), nonce);
-        let leaf_new = native_leaf(account_id, BaseElement::new(balance + amount), nonce);
+        // El salt REAL del titular (§117): derivado de la clave, no un
+        // literal de juguete — el escenario vive en el mundo envuelto.
+        let leaf_salt = derive_leaf_salt_wide(key);
+        let leaf_old =
+            native_leaf_salted(account_id, BaseElement::new(balance), nonce, leaf_salt);
+        let leaf_new =
+            native_leaf_salted(account_id, BaseElement::new(balance + amount), nonce, leaf_salt);
 
         Scenario {
             public_inputs: MintClimbPublicInputs {
@@ -761,13 +868,13 @@ mod tests {
                 supply_new: BaseElement::new(supply_old + amount),
                 max_supply: BaseElement::new(MAX_SUPPLY),
             },
-            account_id, balance, nonce, path, amount, supply_old,
+            account_id, balance, nonce, leaf_salt, path, amount, supply_old,
         }
     }
 
     fn build(s: &Scenario, supply_delta: u64) -> TraceTable<BaseElement> {
-        build_trace(s.account_id, s.balance, s.nonce, &s.path, s.amount,
-                    s.supply_old, supply_delta, MAX_SUPPLY)
+        build_trace(s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path,
+                    s.amount, s.supply_old, supply_delta, MAX_SUPPLY)
     }
 
     fn run(s: &Scenario, supply_delta: u64) -> Result<(), String> {
@@ -859,13 +966,123 @@ mod tests {
              {} celdas probadas): {:?}",
             informe.total, informe.celdas, informe.nunca_disparadas);
     }
+
+    /// **NATIVO↔CIRCUITO de la envoltura (spec §4, playbook R5).**
+    #[test]
+    fn la_cadena_de_tres_merges_espeja_native_leaf_salted() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let trace = build(&s, s.amount);
+
+        let sin_sal_a = native_leaf(s.account_id, BaseElement::new(s.balance), s.nonce);
+        let sin_sal_b = native_leaf(
+            s.account_id,
+            BaseElement::new(s.balance) + BaseElement::new(s.amount),
+            s.nonce,
+        );
+        let con_sal_a =
+            native_leaf_salted(s.account_id, BaseElement::new(s.balance), s.nonce, s.leaf_salt);
+        let con_sal_b = native_leaf_salted(
+            s.account_id,
+            BaseElement::new(s.balance) + BaseElement::new(s.amount),
+            s.nonce,
+            s.leaf_salt,
+        );
+        for i in 0..4 {
+            assert_eq!(
+                trace.get(4 + i, ROW_SALT_LINK),
+                sin_sal_a[i],
+                "hoja sin envolver, carril A"
+            );
+            assert_eq!(
+                trace.get(LANE_B + 4 + i, ROW_SALT_LINK),
+                sin_sal_b[i],
+                "hoja sin envolver, carril B"
+            );
+            assert_eq!(
+                trace.get(4 + i, ROW_LEAF_DONE),
+                con_sal_a[i],
+                "hoja envuelta, carril A"
+            );
+            assert_eq!(
+                trace.get(LANE_B + 4 + i, ROW_LEAF_DONE),
+                con_sal_b[i],
+                "hoja envuelta, carril B"
+            );
+        }
+    }
+
+    /// **MUTACIÓN OBLIGATORIA (a) de la spec §4.** Veneno = honesto + 1.
+    #[test]
+    fn mutacion_a_un_limbo_del_salt_testigo_alterado_se_rechaza() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let mut trace = build(&s, s.amount);
+
+        let veneno = trace.get(COL_LEAF_SALT + 2, ROW_SALT_LINK) + BaseElement::ONE;
+        trace.set(COL_LEAF_SALT + 2, ROW_SALT_LINK, veneno);
+
+        let prover = MintClimbProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<MintClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "un limbo del salt testigo alterado DEBE rechazar (C_SALT_IN); \
+             si verifica, la envoltura es decorativa"
+        );
+    }
+
+    /// **MUTACIÓN OBLIGATORIA (b) de la spec §4.** AMBAS mitades del
+    /// estado siguiente (bit-agnóstico); `C_PLACE` dispara.
+    #[test]
+    fn mutacion_b_la_hoja_sin_envolver_no_entra_al_camino() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let mut trace = build(&s, s.amount);
+
+        let sin_sal = native_leaf(s.account_id, BaseElement::new(s.balance), s.nonce);
+        for i in 0..4 {
+            trace.set(4 + i, ROW_LEAF_DONE + 1, sin_sal[i]);
+            trace.set(8 + i, ROW_LEAF_DONE + 1, sin_sal[i]);
+        }
+
+        let prover = MintClimbProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<MintClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "la hoja sin envolver NO debe entrar al camino (C_PLACE en el \
+             enlace corrido); si verifica, el corrimiento no protege nada"
+        );
+    }
     /// **[§130] Instrumento de la medición apareada (paso 5).** Prove
-    /// del LEGADO en su escenario honesto — construcción + prove
+    /// del circuito en su escenario honesto — construcción + prove
     /// dentro del reloj (patrón `metrics_33`). Correr a mano, en release:
     /// `cargo test --release -p stark-experiment medicion_130 -- --ignored --nocapture`
     #[test]
     #[ignore = "instrumento de medida, no comprobacion: correr a mano"]
-    fn medicion_130_mint_climb_legado() {
+    fn medicion_130_mint_climb() {
         use std::time::Instant;
         let t0 = Instant::now();
         let s = scenario(1_000_000, 250_000, 10_000_000);
@@ -875,7 +1092,7 @@ mod tests {
             .expect("el honesto debe probar");
         let ms = t0.elapsed().as_secs_f64() * 1000.0;
         println!(
-            "[§130] mint_climb legado: prove {ms:.1} ms, proof {} bytes",
+            "[§130] mint_climb gemelo: prove {ms:.1} ms, proof {} bytes",
             proof.to_bytes().len()
         );
     }

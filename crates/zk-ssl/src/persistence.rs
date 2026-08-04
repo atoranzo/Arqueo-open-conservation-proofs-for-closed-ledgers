@@ -305,7 +305,12 @@ impl SovereignLayer {
         let migrated = db
             .get(b"meta:migrated")
             .map_err(|e| StoreError::Io(e.to_string()))?
-            .is_some();
+            .is_some()
+            // …o nacido ya en el mundo nuevo (flip D4): misma geometría.
+            || db
+                .get(b"meta:geometry_v7")
+                .map_err(|e| StoreError::Io(e.to_string()))?
+                .is_some();
         for item in db.scan_prefix(b"acct:") {
             let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
             let v = unseal_one(v)?;
@@ -364,6 +369,10 @@ impl SovereignLayer {
         if migrated {
             // El arbol de congelados migrado vive a profundidad 32.
             self.frozen = SparseTree::with_depth(crate::migration::FROZEN_DEPTH_POST);
+        } else {
+            // Mundo viejo en disco: frozen se reconstruye a 24 (PRE), o las
+            // raíces almacenadas no cuadrarían (§128).
+            self.frozen = SparseTree::with_depth(crate::migration::FROZEN_DEPTH_PRE);
         }
         for item in db.scan_prefix(b"froz:") {
             let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
@@ -517,6 +526,12 @@ impl SovereignLayer {
         batch.insert(b"meta:supply".as_ref(), self.seal(self.total_supply.to_le_bytes().to_vec())?);
         batch.insert(b"meta:recoveries".as_ref(), self.seal(self.recovery_count.to_le_bytes().to_vec())?);
         batch.insert(b"meta:freezes".as_ref(), self.seal(self.freeze_count.to_le_bytes().to_vec())?);
+        // Partida de nacimiento del mundo nuevo (flip D4): todo estado
+        // persistido tras el flip lleva hoja envuelta y frozen-32. Es un
+        // marcador de GEOMETRÍA, separado del acta histórica
+        // `meta:migrated` (que el guard anti-re-ejecución de la migración
+        // lee en exclusiva). Presencia sin sellar; las raíces arbitran.
+        batch.insert(b"meta:geometry_v7".as_ref(), vec![7u8]);
         batch.insert(b"meta:governance".as_ref(), self.seal(digest_to_bytes(&self.governance_set_root).to_vec())?);
         batch.insert(b"meta:gov_changes".as_ref(), self.seal(self.governance_change_count.to_le_bytes().to_vec())?);
         // El cupo de custodios. **Si no persistiera, reiniciar el nodo

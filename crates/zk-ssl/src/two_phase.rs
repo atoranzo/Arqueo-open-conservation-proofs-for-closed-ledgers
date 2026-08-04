@@ -211,10 +211,16 @@ impl SovereignLayer {
     ) -> Result<SendReceipt, LayerError> {
         // La hoja que el estado declarado produce debe ser la que está en
         // el árbol. Si el titular mintiera sobre su saldo, no coincidiría.
-        let hoja = native_leaf(
+        let leaf_salt_rec = self
+            .records
+            .get(&sender_index)
+            .map(|r| r.leaf_salt)
+            .unwrap_or(crate::store::LEAF_SALT_LEGACY);
+        let hoja = native_leaf_salted(
             sender_state.public_id,
             BaseElement::new(sender_state.balance),
             sender_state.nonce,
+            leaf_salt_rec,
         );
         if hoja != self.accounts.leaf(sender_index) {
             return Err(LayerError::StaleState);
@@ -267,6 +273,7 @@ impl SovereignLayer {
             sender.public_id,
             sender.balance,
             sender.nonce,
+            leaf_salt_rec,
             &path,
             &frozen_path,
             amount,
@@ -399,13 +406,19 @@ impl SovereignLayer {
         };
 
         // Sobre copias: si las raíces no cuadran, el estado queda intacto.
+        let leaf_salt_rec = self
+            .records
+            .get(&sender_index)
+            .map(|r| r.leaf_salt)
+            .unwrap_or(crate::store::LEAF_SALT_LEGACY);
         let mut cuentas = self.accounts.clone();
         cuentas.set_leaf(
             sender_index,
-            native_leaf(
+            native_leaf_salted(
                 updated.public_id,
                 BaseElement::new(updated.balance),
                 updated.nonce,
+                leaf_salt_rec,
             ),
         );
         let pos = receipt.notice.position;
@@ -474,10 +487,16 @@ impl SovereignLayer {
         receiver_state: &ClientState,
         notice: &PendingNotice,
     ) -> Result<ClaimReceipt, LayerError> {
-        let hoja = native_leaf(
+        let leaf_salt_rec = self
+            .records
+            .get(&receiver_index)
+            .map(|r| r.leaf_salt)
+            .unwrap_or(crate::store::LEAF_SALT_LEGACY);
+        let hoja = native_leaf_salted(
             receiver_state.public_id,
             BaseElement::new(receiver_state.balance),
             receiver_state.nonce,
+            leaf_salt_rec,
         );
         if hoja != self.accounts.leaf(receiver_index) {
             return Err(LayerError::StaleState);
@@ -507,6 +526,7 @@ impl SovereignLayer {
             receiver.public_id,
             receiver.balance,
             receiver.nonce,
+            leaf_salt_rec,
             &path,
             &frozen_path,
             notice.amount,
@@ -574,13 +594,19 @@ impl SovereignLayer {
             ..receiver_state.clone()
         };
 
+        let leaf_salt_rec = self
+            .records
+            .get(&receiver_index)
+            .map(|r| r.leaf_salt)
+            .unwrap_or(crate::store::LEAF_SALT_LEGACY);
         let mut cuentas = self.accounts.clone();
         cuentas.set_leaf(
             receiver_index,
-            native_leaf(
+            native_leaf_salted(
                 updated.public_id,
                 BaseElement::new(updated.balance),
                 updated.nonce,
+                leaf_salt_rec,
             ),
         );
         // **Consumido**: la hoja vuelve a estar vacía. Sin esto, el mismo
@@ -1397,13 +1423,19 @@ mod tests_verificacion {
 
         // Mallory cobra lo de Bob. No conoce SK_BOB.
         let estado_mallory = state_of(&layer, mallory);
+        let salt_mallory = layer
+            .records
+            .get(&mallory)
+            .map(|r| r.leaf_salt)
+            .unwrap_or(crate::store::LEAF_SALT_LEGACY);
         let mut cuentas = layer.accounts.clone();
         cuentas.set_leaf(
             mallory,
-            native_leaf(
+            native_leaf_salted(
                 estado_mallory.public_id,
                 BaseElement::new(estado_mallory.balance + IMPORTE),
                 estado_mallory.nonce,
+                salt_mallory,
             ),
         );
         let mut pend = layer.pending.clone();
@@ -1487,13 +1519,19 @@ mod tests_verificacion {
         let commitment = pending_commitment(id_mallory, salt, IMPORTE);
 
         // Raices coherentes con el robo.
+        let salt_alice = layer
+            .records
+            .get(&alice)
+            .map(|r| r.leaf_salt)
+            .unwrap_or(crate::store::LEAF_SALT_LEGACY);
         let mut cuentas = layer.accounts.clone();
         cuentas.set_leaf(
             alice,
-            native_leaf(
+            native_leaf_salted(
                 victima.public_id,
                 BaseElement::new(victima.balance - IMPORTE),
                 victima.nonce,
+                salt_alice,
             ),
         );
         let position = layer.allocate_pending().expect("posicion libre");
@@ -1627,13 +1665,19 @@ mod tests_verificacion {
         };
 
         // Raices coherentes CON LA MENTIRA.
+        let salt_alice = layer
+            .records
+            .get(&alice)
+            .map(|r| r.leaf_salt)
+            .unwrap_or(crate::store::LEAF_SALT_LEGACY);
         let mut cuentas = layer.accounts.clone();
         cuentas.set_leaf(
             alice,
-            native_leaf(
+            native_leaf_salted(
                 mentira.public_id,
                 BaseElement::new(mentira.balance - IMPORTE),
                 mentira.nonce,
+                salt_alice,
             ),
         );
         let mut pend = layer.pending.clone();

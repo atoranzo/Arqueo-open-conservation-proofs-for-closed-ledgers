@@ -83,6 +83,11 @@ const MAGIC_V5: &[u8; 8] = b"ZKSSL5\0\0";
 /// v6 (B13/B14): registros de 112 B con leaf_salt. v5/v4/v3 (80/48) se
 /// importan con salt centinela.
 const MAGIC_V6: &[u8; 8] = b"ZKSSL6\0\0";
+/// v7 (flip D4): mismo registro de 112 B, pero el árbol se reconstruye
+/// con hoja ENVUELTA (`native_leaf_salted`) y frozen a 32. v6 y
+/// anteriores se importan como mundo viejo (sin salt, frozen a 24) y se
+/// migran después.
+const MAGIC_V7: &[u8; 8] = b"ZKSSL7\0\0";
 
 /// Resumen de una instantánea, para registro y verificación externa.
 #[derive(Clone, Debug)]
@@ -153,7 +158,7 @@ impl SovereignLayer {
     /// justo la que se copia fuera del nodo.
     pub fn export_snapshot(&self, path: &str) -> Result<SnapshotInfo, LayerError> {
         let mut out: Vec<u8> = Vec::new();
-        out.extend_from_slice(MAGIC_V6);
+        out.extend_from_slice(MAGIC_V7);
         out.extend_from_slice(&digest_to_bytes(&self.custodian_set_root));
         out.extend_from_slice(&digest_to_bytes(&self.governance_set_root));
         out.extend_from_slice(&digest_to_bytes(&self.accounts.root()));
@@ -264,16 +269,19 @@ impl SovereignLayer {
         // Tres formatos vivos: v3 (con arbol de nullificadores), v4 (sin
         // el), v5 (49-A: registros de 80 B con view_id). v3/v4 llevan
         // registros de 48 B y se importan con view_id centinela.
-        let (legacy_v3, rec_len) = {
+        let (legacy_v3, rec_len, salted) = {
             let magic = take(8, "magic")?;
             if magic == MAGIC_V3 {
-                (true, 48usize)
+                (true, 48usize, false)
             } else if magic == MAGIC {
-                (false, 48usize)
+                (false, 48usize, false)
             } else if magic == MAGIC_V5 {
-                (false, 80usize)
+                (false, 80usize, false)
             } else if magic == MAGIC_V6 {
-                (false, 112usize)
+                (false, 112usize, false)
+            } else if magic == MAGIC_V7 {
+                // Mundo nuevo (flip D4): hoja envuelta y frozen a 32.
+                (false, 112usize, true)
             } else {
                 return Err(malformed(
                     "cabecera desconocida: no es una instantanea ZK-SSL",
@@ -322,7 +330,11 @@ impl SovereignLayer {
             custodian_set_root,
             governance_set_root,
             governance_change_count,
-            frozen: SparseTree::with_depth(FROZEN_DEPTH),
+            frozen: SparseTree::with_depth(if salted {
+                FROZEN_DEPTH
+            } else {
+                crate::migration::FROZEN_DEPTH_PRE
+            }),
             freeze_count,
             log: TransitionLog::new(),
             total_supply,
@@ -345,9 +357,16 @@ impl SovereignLayer {
             );
             let (public_id, balance, nonce, view_id, leaf_salt) =
                 record_from_bytes_v3(take(rec_len, "registro")?)?;
-            layer
-                .accounts
-                .set_leaf(index, native_leaf(public_id, BaseElement::new(balance), nonce));
+            layer.accounts.set_leaf(
+                index,
+                if salted {
+                    stark_experiment::circuit_settlement::native_leaf_salted(
+                        public_id, BaseElement::new(balance), nonce, leaf_salt,
+                    )
+                } else {
+                    native_leaf(public_id, BaseElement::new(balance), nonce)
+                },
+            );
             layer.records.insert(
                 index,
                 AccountRecord {
@@ -547,7 +566,7 @@ mod tests {
         out.extend_from_slice(&crate::store::digest_to_bytes(&SparseTree::new().root()));
         out.extend_from_slice(&crate::store::digest_to_bytes(&declared_null));
         out.extend_from_slice(&crate::store::digest_to_bytes(
-            &SparseTree::with_depth(FROZEN_DEPTH).root(),
+            &SparseTree::with_depth(crate::migration::FROZEN_DEPTH_PRE).root(),
         ));
         out.extend_from_slice(&LIMIT.to_le_bytes());
         out.extend_from_slice(&MAX_SUPPLY.to_le_bytes());

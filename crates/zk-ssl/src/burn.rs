@@ -28,10 +28,16 @@ impl SovereignLayer {
         account_state: &crate::commitment::ClientState,
         amount: u64,
     ) -> Result<BurnReceipt, LayerError> {
-        let hoja = native_leaf(
+        let leaf_salt_rec = self
+            .records
+            .get(&account_index)
+            .map(|r| r.leaf_salt)
+            .unwrap_or(crate::store::LEAF_SALT_LEGACY);
+        let hoja = native_leaf_salted(
             account_state.public_id,
             BaseElement::new(account_state.balance),
             account_state.nonce,
+            leaf_salt_rec,
         );
         if hoja != self.accounts.leaf(account_index) {
             return Err(LayerError::StaleState);
@@ -91,6 +97,7 @@ impl SovereignLayer {
             account.public_id,
             account.balance,
             account.nonce,
+            leaf_salt_rec,
             &path,
             &frozen_path,
             amount,
@@ -168,10 +175,11 @@ impl SovereignLayer {
         let mut tentativo = self.accounts.clone();
         tentativo.set_leaf(
             account_index,
-            native_leaf(
+            native_leaf_salted(
                 updated.public_id,
                 BaseElement::new(updated.balance),
                 updated.nonce,
+                updated.leaf_salt,
             ),
         );
         if tentativo.root() != pi.root_new {

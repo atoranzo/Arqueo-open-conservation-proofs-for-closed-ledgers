@@ -35,10 +35,16 @@ impl SovereignLayer {
         lower: u64,
         upper: u64,
     ) -> Result<AuditDisclosure, LayerError> {
-        let hoja = native_leaf(
+        let leaf_salt_rec = self
+            .records
+            .get(&account_index)
+            .map(|r| r.leaf_salt)
+            .unwrap_or(crate::store::LEAF_SALT_LEGACY);
+        let hoja = native_leaf_salted(
             account_state.public_id,
             BaseElement::new(account_state.balance),
             account_state.nonce,
+            leaf_salt_rec,
         );
         if hoja != self.accounts.leaf(account_index) {
             return Err(LayerError::StaleState);
@@ -69,6 +75,7 @@ impl SovereignLayer {
             ],
             balance: account.balance,
             nonce: account.nonce,
+            leaf_salt: leaf_salt_rec,
             path: self.accounts.path_for(account_index),
         };
         let trace = build_audit_trace(&witness, lower, upper);

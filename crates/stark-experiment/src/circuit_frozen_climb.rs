@@ -12,12 +12,11 @@
 //! autorización. La entrada 33 amputa la segunda parte, y lo que queda es
 //! este circuito.
 //!
-//! ⚠️ **Es una copia de `dual_climb` con la profundidad cambiada**, y eso es
-//! deuda declarada. `dual_climb` opera a `FROZEN_DEPTH` = 32 y el árbol de
-//! congelados tiene 24 (§58.2). Parametrizar la profundidad con genéricos
-//! constantes evitaría duplicar, pero toca un circuito que hoy funciona y se
-//! prefiere no hacerlo en el mismo paso que la amputación. **Si uno de los
-//! dos se corrige, el otro necesita la misma corrección.**
+//! ⚠️ **Es una copia de `dual_climb`**, y eso sigue siendo deuda declarada —
+//! pero la divergencia de profundidad MUERE aquí: en el mundo nuevo ambos
+//! árboles viven a 32 (§128) y este gemelo también. Parametrizar con
+//! genéricos constantes evitaría duplicar; queda para después del flip.
+//! **Si uno de los dos se corrige, el otro necesita la misma corrección.**
 //!
 //! ## Qué NO prueba
 //!
@@ -42,20 +41,19 @@ use crate::merkle::{native_merge, Digest, MerklePath};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;
-/// 32 niveles × 8 filas = 256 (potencia de dos ✓).
-/// ⚠️ **Winterfell exige longitud de traza potencia de dos**, y la subida a
-/// congelados ocupa `24 × 8 = 192`, que no lo es. Se sube a 256 y los ocho
-/// niveles sobrantes son **relleno**: se sigue subiendo con hermano cero para
-/// que las restricciones de enlace se satisfagan hasta el final, y no
-/// significan nada porque las raices se anclan en `ROW_ROOT`.
-///
-/// Es la misma razon por la que `circuit_freeze` usa 512 filas para una
-/// subida de 24 niveles mas una de 4: la potencia de dos siguiente.
+/// 32 niveles × 8 filas = **256 exactos** (potencia de dos ✓): a la
+/// profundidad nueva el ajuste es PERFECTO — `ROW_ROOT = 255 =
+/// TRACE_LENGTH − 1` y **no queda relleno** (§60.2, resuelto por
+/// geometría). El mundo viejo, a 24, ocupaba 192 y rellenaba ocho
+/// niveles con hermano cero; ese coste se desvanece aquí.
 pub const TRACE_LENGTH: usize = 256;
 
-/// Fila donde el estado contiene las raices de verdad. Lo que hay despues es
-/// relleno.
+/// Fila donde el estado contiene las raíces de verdad: la ÚLTIMA
+/// (255 = TRACE_LENGTH − 1). A 32 no hay «después»: sin relleno.
 pub const ROW_ROOT: usize = FROZEN_DEPTH * CYCLE_LENGTH - 1;
+
+// El ajuste exacto, en compilación (§60.2 resuelto por geometría).
+const _: () = assert!(ROW_ROOT == TRACE_LENGTH - 1);
 /// 12 del carril A + 12 del carril B + 1 del bit compartido.
 pub const TRACE_WIDTH: usize = 2 * STATE_WIDTH + 1;
 
@@ -704,13 +702,60 @@ mod tests {
             informe.nunca_disparadas
         );
     }
+
+    /// **MUTACIÓN DE PROFUNDIDAD (R6, §128).** Un camino de 24 niveles
+    /// muere en el `assert!` de la firma: el contrato pide ≥ 32 y el
+    /// mundo viejo ya no entra.
+    #[test]
+    fn un_camino_de_24_muere_en_la_construccion() {
+        let mut empty = vec![[BaseElement::ZERO; 4]];
+        for k in 1..=24 {
+            let prev = empty[k - 1];
+            empty.push(native_merge(prev, prev));
+        }
+        let mut siblings = Vec::with_capacity(24);
+        let mut is_right = Vec::with_capacity(24);
+        for level in 0..24 {
+            siblings.push(empty[level]);
+            is_right.push(level % 3 == 0);
+        }
+        let corto = MerklePath { siblings, is_right };
+
+        let hoja_a = [BaseElement::new(1); 4];
+        let hoja_b = [BaseElement::new(2); 4];
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            build_trace(hoja_a, hoja_b, &corto)
+        }));
+        assert!(
+            r.is_err(),
+            "un camino de 24 niveles ante FROZEN_DEPTH = 32 DEBE morir en \
+             la construcción; si produce traza, la profundidad es decorativa"
+        );
+    }
+
+    /// **MUTACIÓN DE PROFUNDIDAD (R6, §128).** La raíz vacía a 24 y a 32
+    /// son árboles DISTINTOS: ningún estado del mundo viejo verifica en
+    /// el nuevo por accidente.
+    #[test]
+    fn la_raiz_vacia_de_24_no_es_la_raiz_vacia_de_32() {
+        let mut e = vec![[BaseElement::ZERO; 4]];
+        for k in 1..=32 {
+            let prev = e[k - 1];
+            e.push(native_merge(prev, prev));
+        }
+        assert_ne!(
+            e[24], e[32],
+            "las raíces vacías de 24 y 32 niveles deben diferir (§128); \
+             si coinciden, el hash está roto"
+        );
+    }
     /// **[§130] Instrumento de la medición apareada (paso 5).** Prove
-    /// del LEGADO en su escenario honesto — construcción + prove
+    /// del circuito en su escenario honesto — construcción + prove
     /// dentro del reloj (patrón `metrics_33`). Correr a mano, en release:
     /// `cargo test --release -p stark-experiment medicion_130 -- --ignored --nocapture`
     #[test]
     #[ignore = "instrumento de medida, no comprobacion: correr a mano"]
-    fn medicion_130_frozen_climb_legado() {
+    fn medicion_130_frozen_climb() {
         use std::time::Instant;
         let t0 = Instant::now();
         let trace = build_trace(digest_from(1000), digest_from(2000), &sample_path());
@@ -719,7 +764,7 @@ mod tests {
             .expect("el honesto debe probar");
         let ms = t0.elapsed().as_secs_f64() * 1000.0;
         println!(
-            "[§130] frozen_climb legado: prove {ms:.1} ms, proof {} bytes",
+            "[§130] frozen_climb gemelo: prove {ms:.1} ms, proof {} bytes",
             proof.to_bytes().len()
         );
     }

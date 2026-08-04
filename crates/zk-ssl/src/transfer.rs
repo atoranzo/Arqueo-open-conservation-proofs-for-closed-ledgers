@@ -93,10 +93,11 @@ impl SovereignLayer {
         let mut mid = self.accounts.clone();
         mid.set_leaf(
             sender_index,
-            native_leaf(
+            native_leaf_salted(
                 sender.public_id,
                 BaseElement::new(sender.balance - amount),
                 sender.nonce + BaseElement::ONE,
+                sender.leaf_salt,
             ),
         );
         let receiver_path = mid.path_for(receiver_index);
@@ -188,12 +189,14 @@ impl SovereignLayer {
             balance: sender.balance - amount,
             nonce: sender.nonce + BaseElement::ONE,
             view_id: sender.view_id,
+            leaf_salt: sender.leaf_salt,
         };
         let new_receiver = AccountRecord {
             public_id: receiver.public_id,
             balance: receiver.balance + amount,
             nonce: receiver.nonce,
             view_id: receiver.view_id,
+            leaf_salt: receiver.leaf_salt,
         };
 
         // ===== SE COMPRUEBA SOBRE COPIAS, NO SOBRE EL ESTADO =====
@@ -209,18 +212,20 @@ impl SovereignLayer {
         let mut cuentas = self.accounts.clone();
         cuentas.set_leaf(
             sender_index,
-            native_leaf(
+            native_leaf_salted(
                 new_sender.public_id,
                 BaseElement::new(new_sender.balance),
                 new_sender.nonce,
+                new_sender.leaf_salt,
             ),
         );
         cuentas.set_leaf(
             receiver_index,
-            native_leaf(
+            native_leaf_salted(
                 new_receiver.public_id,
                 BaseElement::new(new_receiver.balance),
                 new_receiver.nonce,
+                new_receiver.leaf_salt,
             ),
         );
 

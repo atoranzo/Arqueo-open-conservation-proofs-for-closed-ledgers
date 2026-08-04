@@ -18,6 +18,9 @@ use std::collections::HashMap;
 /// Profundidad del árbol de congelados POST-migración (spec §137: crecer
 /// frozen a 32 es la salida elegida; el flip redefine FROZEN_DEPTH).
 pub(crate) const FROZEN_DEPTH_POST: usize = 32;
+/// Profundidad PRE-migración (mundo viejo): las vías de importación
+/// legacy (sled sin marcador, snapshots ≤v6) reconstruyen frozen a 24.
+pub(crate) const FROZEN_DEPTH_PRE: usize = 24;
 
 impl SovereignLayer {
     /// ¿Consta ya una migración en el registro? El log protegiéndose a

@@ -204,7 +204,12 @@ impl SovereignLayer {
         let root_old = self.accounts.root();
         let nonce = BaseElement::ZERO;
         self.accounts
-            .set_leaf(index, native_leaf(public_id, BaseElement::ZERO, nonce));
+            .set_leaf(
+                index,
+                stark_experiment::circuit_settlement::native_leaf_salted(
+                    public_id, BaseElement::ZERO, nonce, leaf_salt,
+                ),
+            );
         self.records.insert(
             index,
             AccountRecord {

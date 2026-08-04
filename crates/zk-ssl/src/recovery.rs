@@ -80,6 +80,7 @@ impl SovereignLayer {
             account.balance,
             account.balance,
             account.nonce,
+            account.leaf_salt,
             &path,
             self.recovery_count,
             1,
@@ -165,10 +166,11 @@ impl SovereignLayer {
         let mut tentativo = self.accounts.clone();
         tentativo.set_leaf(
             account_index,
-            native_leaf(
+            native_leaf_salted(
                 updated.public_id,
                 BaseElement::new(updated.balance),
                 updated.nonce,
+                updated.leaf_salt,
             ),
         );
         if tentativo.root() != pi.root_new {
@@ -252,10 +254,11 @@ impl SovereignLayer {
         let mut tentativo = self.accounts.clone();
         tentativo.set_leaf(
             account_index,
-            native_leaf(
+            native_leaf_salted(
                 updated.public_id,
                 BaseElement::new(updated.balance),
                 updated.nonce,
+                updated.leaf_salt,
             ),
         );
         let root_new = tentativo.root();
@@ -436,7 +439,8 @@ mod tests_delegada {
         let rec = layer.records.get(&idx).expect("cuenta").clone();
         let path = layer.accounts.path_for(idx);
         let trace = climb::build_trace(
-            rec.public_id, nueva, rec.balance, rec.balance, rec.nonce, &path,
+            rec.public_id, nueva, rec.balance, rec.balance, rec.nonce,
+            rec.leaf_salt, &path,
             layer.recovery_count(), 1,
         );
         climb::RecoveryClimbProver::new(proof_options())
@@ -447,8 +451,9 @@ mod tests_delegada {
     fn raiz_nueva(layer: &SovereignLayer, idx: AccountIndex, nueva: Digest) -> Digest {
         let rec = layer.records.get(&idx).expect("cuenta").clone();
         let mut t = layer.accounts.clone();
-        t.set_leaf(idx, native_leaf(nueva, BaseElement::new(rec.balance),
-                                    rec.nonce + BaseElement::ONE));
+        t.set_leaf(idx, native_leaf_salted(nueva, BaseElement::new(rec.balance),
+                                    rec.nonce + BaseElement::ONE,
+                                    rec.leaf_salt));
         t.root()
     }
 

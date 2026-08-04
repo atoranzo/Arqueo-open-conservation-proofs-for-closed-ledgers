@@ -59,6 +59,7 @@ impl SovereignLayer {
             account.public_id,
             account.balance,
             account.nonce,
+            account.leaf_salt,
             &path,
             amount,
             self.total_supply,
@@ -149,10 +150,11 @@ impl SovereignLayer {
         let mut tentativo = self.accounts.clone();
         tentativo.set_leaf(
             account_index,
-            native_leaf(
+            native_leaf_salted(
                 updated.public_id,
                 BaseElement::new(updated.balance),
                 updated.nonce,
+                updated.leaf_salt,
             ),
         );
         if tentativo.root() != pi.root_new {
@@ -232,10 +234,11 @@ impl SovereignLayer {
         let mut tentativo = self.accounts.clone();
         tentativo.set_leaf(
             account_index,
-            native_leaf(
+            native_leaf_salted(
                 updated.public_id,
                 BaseElement::new(updated.balance),
                 updated.nonce,
+                updated.leaf_salt,
             ),
         );
         let root_new = tentativo.root();
@@ -316,8 +319,9 @@ mod tests_delegada {
     fn compromiso(layer: &SovereignLayer, idx: AccountIndex, amount: u64) -> Digest {
         let rec = layer.records.get(&idx).expect("cuenta").clone();
         let mut t = layer.accounts.clone();
-        t.set_leaf(idx, native_leaf(rec.public_id,
-                                    BaseElement::new(rec.balance + amount), rec.nonce));
+        t.set_leaf(idx, native_leaf_salted(rec.public_id,
+                                    BaseElement::new(rec.balance + amount),
+                                    rec.nonce, rec.leaf_salt));
         let mut v: Vec<BaseElement> = layer.accounts.root().to_vec();
         v.extend_from_slice(&t.root());
         v.push(BaseElement::new(amount));
@@ -342,7 +346,7 @@ mod tests_delegada {
         let rec = layer.records.get(&idx).expect("cuenta").clone();
         let path = layer.accounts.path_for(idx);
         let trace = climb::build_trace(
-            rec.public_id, rec.balance, rec.nonce, &path, amount,
+            rec.public_id, rec.balance, rec.nonce, rec.leaf_salt, &path, amount,
             layer.total_supply(), amount, MAX_SUPPLY,
         );
         climb::MintClimbProver::new(proof_options()).prove(trace).expect("subida")

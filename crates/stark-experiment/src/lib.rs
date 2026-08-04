@@ -62,32 +62,22 @@
 //!   propiedades que llevaron a elegir este paradigma para la capa.
 
 pub mod circuit_audit;
-pub mod circuit_audit_salted;
 pub mod circuit_burn;
-pub mod circuit_burn_salted;
 pub mod circuit_freeze;
-pub mod circuit_freeze_salted;
 // Entrada 33 / §59: la subida a congelados sin la parte de autorizacion.
 pub mod circuit_frozen_climb;
-pub mod circuit_frozen_climb_salted;
 pub mod circuit_governance;
 pub mod circuit_mint;
-pub mod circuit_mint_salted;
 // Entrada 33 / §66: mint sin la parte de autorizacion.
 pub mod circuit_mint_climb;
-pub mod circuit_mint_climb_salted;
 pub mod circuit_mint_pending;
 // Entrada 33 / 68: mint_pending sin la parte de autorizacion.
 pub mod circuit_mint_pending_climb;
 pub mod circuit_recovery;
-pub mod circuit_recovery_salted;
 // Entrada 33 / §64: recovery sin la parte de autorizacion.
 pub mod circuit_recovery_climb;
-pub mod circuit_recovery_climb_salted;
 pub mod circuit_claim;
-pub mod circuit_claim_salted;
 pub mod circuit_send;
-pub mod circuit_send_salted;
 pub mod circuit_settlement;
 pub mod circuit_threshold;
 // Entrada 33 / §51: las dos variantes del experimento de carril unico.

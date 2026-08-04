@@ -88,15 +88,15 @@ use winterfell::{
 };
 
 use crate::circuit_settlement::SPEND_KEY_DOMAIN;
-use crate::circuit_freeze::FROZEN_DEPTH;
 use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;
-/// 1024 filas. La tubería completa acaba en `ROW_PENDING_ROOT` (fila
-/// 743): quedan **280 filas de holgura** (35 ciclos) sin `hash_flag` ni
-/// ARK. El presupuesto del piloto B13/B14 cabe con margen — ver
-/// `doc/mapa-geometria-circuit_send.md` §6-§7 y AUDITORIA §140.
+/// 1024 filas. En el gemelo la tubería —con el salt y frozen-32—
+/// acaba en `ROW_PENDING_ROOT` (fila 815): quedan **208 filas de
+/// holgura** (26 ciclos) sin `hash_flag` ni ARK. Presupuesto MEDIDO:
+/// primera fila de la tabla de la spec §3 (§143). El mapa del legacy:
+/// `doc/mapa-geometria-circuit_send.md` §6-§7.
 pub const TRACE_LENGTH: usize = 1024;
 pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: saldo, importe, saldo nuevo, suministro nuevo.
@@ -135,7 +135,13 @@ const COL_SALT: usize = 47; // 47..51
 /// `importe ≤ límite`; éste no lo llevaba, así que el límite solo lo imponía
 /// la capa. Ver `AUDITORIA.md` §25.
 const COL_LIMIT: usize = 51;
-pub const TRACE_WIDTH: usize = 52;
+/// **Salt de la hoja** (testigo, §117): envuelve la hoja como tercer
+/// merge. UN solo salt compartido por ambos carriles (spec de la
+/// máquina de hoja §2).
+const COL_LEAF_SALT: usize = 52; // 52..56
+pub const TRACE_WIDTH: usize = 56;
+
+use crate::circuit_freeze::FROZEN_DEPTH;
 
 // ===== Filas =====
 //
@@ -147,7 +153,11 @@ pub const TRACE_WIDTH: usize = 52;
 // ciclo vive fuera de este bloque — bucles de bits, periódicas y el
 // `match` de `build_trace` lo derivan de aquí.
 const CYC_NONCE: usize = 1;
-const CYC_ACC: usize = CYC_NONCE + 1;
+// El TERCER merge (§117, piloto B13/B14): la hoja se envuelve con el
+// salt antes de entrar al camino. Todo el calendario posterior se corre
+// +1 ciclo solo, por derivación (SB0).
+const CYC_SALT: usize = CYC_NONCE + 1;
+const CYC_ACC: usize = CYC_SALT + 1;
 const CYC_PK: usize = CYC_ACC + TREE_DEPTH;
 const CYC_FROZEN: usize = CYC_PK + 1;
 const CYC_PEND_IN: usize = CYC_FROZEN + FROZEN_DEPTH;
@@ -155,13 +165,15 @@ const CYC_PEND_VAL: usize = CYC_PEND_IN + 1;
 const CYC_PEND_CLIMB: usize = CYC_PEND_VAL + 1;
 const CYC_FIN: usize = CYC_PEND_CLIMB + TREE_DEPTH;
 const ROW_LEAF_LINK: usize = CYC_NONCE * CYCLE_LENGTH - 1;
+const ROW_SALT_LINK: usize = CYC_SALT * CYCLE_LENGTH - 1;
 const ROW_LEAF_DONE: usize = CYC_ACC * CYCLE_LENGTH - 1;
 const ROW_ROOT: usize = CYC_PK * CYCLE_LENGTH - 1;
 const ROW_PK_START: usize = CYC_PK * CYCLE_LENGTH;
 const ROW_PK_DONE: usize = CYC_FROZEN * CYCLE_LENGTH - 1;
 /// **Fase de no-pertenencia al árbol de CONGELADOS.**
 ///
-/// Ocupa las filas 280..471, que estaban libres. Sin ella, una cuenta
+/// Ocupa los ciclos `CYC_FROZEN..CYC_PEND_IN` (36..68), filas 288..543
+/// en el gemelo. Sin ella, una cuenta
 /// congelada **podía destruir su dinero**: la liquidación comprobaba la
 /// congelación y la destrucción no.
 ///
@@ -169,18 +181,18 @@ const ROW_PK_DONE: usize = CYC_FROZEN * CYCLE_LENGTH - 1;
 /// Destruirlos los mueve: los saca del sistema. Que sea público e
 /// irreversible no los devuelve.
 const ROW_FROZEN_ROOT: usize = CYC_PEND_IN * CYCLE_LENGTH - 1;
-/// **Fase del pendiente.** El ciclo `CYC_PEND_IN` (59) hashea el
+/// **Fase del pendiente.** El ciclo `CYC_PEND_IN` (68) hashea el
 /// compromiso interno `H(id_receptor, aleatorio)`; esta fila de enlace
-/// siembra `(interno, importe)`, el ciclo `CYC_PEND_VAL` (60) hashea el
+/// siembra `(interno, importe)`, el ciclo `CYC_PEND_VAL` (69) hashea el
 /// pendiente completo y la subida hashea en `CYC_PEND_CLIMB..CYC_FIN`
-/// (ciclos 61..92, filas 488..743).
+/// (ciclos 70..101, filas 560..815).
 ///
 /// Carril A: la posición vacía → raíz antigua de pendientes.
 /// Carril B: con el compromiso → raíz nueva.
 const ROW_PEND_INNER: usize = CYC_PEND_VAL * CYCLE_LENGTH - 1;
 /// El pendiente completo: `H(interno, importe)`.
 const ROW_PENDING_ENTRY: usize = CYC_PEND_CLIMB * CYCLE_LENGTH - 1;
-/// Raíz tras insertarlo. Ciclos 61..92, filas 488..743.
+/// Raíz tras insertarlo. Ciclos 70..101, filas 560..815.
 const ROW_PENDING_ROOT: usize = CYC_FIN * CYCLE_LENGTH - 1;
 
 // El presupuesto, en compilación: la tubería debe caber en la traza.
@@ -241,12 +253,22 @@ const C_PEND_ENTRY_B: usize = C_PEND_ENTRY_A + 4; // 4
 const C_PEND_PLACE: usize = C_PEND_ENTRY_B + 4; // 8
 const C_PEND_SIBLING: usize = C_PEND_PLACE + 8; // 4
 const C_PBIT_BOOL: usize = C_PEND_SIBLING + 4; // 1
+/// **La envoltura de la hoja (§117, piloto B13/B14).** Seis familias
+/// cosidas por `link_salt` en `ROW_SALT_LINK`: capacidad a cero, digest
+/// arrastrado, y los CUATRO limbos del rate atados al salt testigo —
+/// §92.2 en ambos carriles, §138 en los cuatro limbos.
+const C_SALT_CAP_A: usize = C_PBIT_BOOL + 1; // 4
+const C_SALT_CAP_B: usize = C_SALT_CAP_A + 4; // 4
+const C_SALT_DIG_A: usize = C_SALT_CAP_B + 4; // 4
+const C_SALT_DIG_B: usize = C_SALT_DIG_A + 4; // 4
+const C_SALT_IN_A: usize = C_SALT_DIG_B + 4; // 4
+const C_SALT_IN_B: usize = C_SALT_IN_A + 4; // 4
 /// **El límite es constante entre filas.**
 ///
 /// Va al final y no dentro del array `transport` a propósito: añadirlo allí
 /// desplazaría los offsets `C_TRANSPORT + 7` y `+ 11` que están escritos a
 /// mano, y ese es el tipo de cambio que esta auditoría ha visto salir mal.
-const C_LIMIT_CONST: usize = C_PBIT_BOOL + 1; // 1
+const C_LIMIT_CONST: usize = C_SALT_IN_B + 4; // 1
 const NUM_CONSTRAINTS: usize = C_LIMIT_CONST + 1;
 
 // ===== Periódicas =====
@@ -255,7 +277,9 @@ const P_ARK1: usize = 1;
 const P_ARK2: usize = P_ARK1 + STATE_WIDTH;
 const P_LINK_MERKLE: usize = P_ARK2 + STATE_WIDTH;
 const P_LINK_LEAF: usize = P_LINK_MERKLE + 1;
-const P_LINK_PLACE: usize = P_LINK_LEAF + 1;
+/// Fila del TERCER merge: la envoltura del salt (§117).
+const P_LINK_SALT: usize = P_LINK_LEAF + 1;
+const P_LINK_PLACE: usize = P_LINK_SALT + 1;
 const P_FIRST_ROW: usize = P_LINK_PLACE + 1;
 const P_SEL_ROOT: usize = P_FIRST_ROW + 1;
 const P_SEL_PK_DONE: usize = P_SEL_ROOT + 1;
@@ -294,6 +318,10 @@ pub fn build_trace(
     account_id: Digest,
     balance: u64,
     nonce: BaseElement,
+    // **Salt de la hoja (testigo).** Deriva de la clave (§117); el
+    // tercer merge envuelve la hoja: la pertenencia se prueba sobre
+    // `H(native_leaf, salt)`.
+    leaf_salt: Digest,
     path: &MerklePath,
     frozen_path: &MerklePath,
     amount: u64,
@@ -337,6 +365,7 @@ pub fn build_trace(
         row[COL_LIMIT] = BaseElement::new(regulatory_limit);
         row[COL_R_ID..COL_R_ID + 4].copy_from_slice(&receiver_id);
         row[COL_SALT..COL_SALT + 4].copy_from_slice(&salt);
+        row[COL_LEAF_SALT..COL_LEAF_SALT + 4].copy_from_slice(&leaf_salt);
         row[COL_SUPPLY_OLD] = c_supply_old;
         row[COL_SUPPLY_NEW] = c_supply_new;
     }
@@ -455,6 +484,16 @@ pub fn build_trace(
                     state_a[8] = nonce;
                     state_b[4..8].copy_from_slice(&digest_b);
                     state_b[8] = nonce;
+                }
+                ROW_SALT_LINK => {
+                    // EL TERCER MERGE (§117): la hoja se envuelve con el
+                    // salt. Digest arrastrado; el rate recibe los CUATRO
+                    // limbos del salt (spec §2 — atar solo [8] sería el
+                    // bug de §92.2 en su forma nueva).
+                    state_a[4..8].copy_from_slice(&digest_a);
+                    state_a[8..12].copy_from_slice(&leaf_salt);
+                    state_b[4..8].copy_from_slice(&digest_b);
+                    state_b[8..12].copy_from_slice(&leaf_salt);
                 }
                 ROW_LEAF_DONE => {
                     place(&mut state_a, &digest_a, 0);
@@ -684,6 +723,11 @@ impl Air for SendAir {
         }
         // Bit booleano (1): grado 2 sin ciclo.
         degrees.push(TransitionConstraintDegree::new(2));
+        // La envoltura del salt (24): grado 1 con ciclo — el molde de los
+        // enlaces de hoja, gate periódico × expresión lineal.
+        for _ in 0..24 {
+            degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
+        }
         // Transporte del limite (1): grado 1 sin ciclo.
         degrees.push(TransitionConstraintDegree::new(1));
 
@@ -744,6 +788,10 @@ impl Air for SendAir {
         let mut link_leaf = vec![zero; TRACE_LENGTH];
         link_leaf[ROW_LEAF_LINK] = one;
         columns.push(link_leaf);
+
+        let mut link_salt = vec![zero; TRACE_LENGTH];
+        link_salt[ROW_SALT_LINK] = one;
+        columns.push(link_salt);
 
         let mut link_place = vec![zero; TRACE_LENGTH];
         link_place[ROW_LEAF_DONE] = one;
@@ -823,6 +871,7 @@ impl Air for SendAir {
         let ark2 = &periodic[P_ARK2..P_ARK2 + STATE_WIDTH];
         let link_merkle = periodic[P_LINK_MERKLE];
         let link_leaf = periodic[P_LINK_LEAF];
+        let link_salt = periodic[P_LINK_SALT];
         let link_place = periodic[P_LINK_PLACE];
         let first_row = periodic[P_FIRST_ROW];
         let sel_root = periodic[P_SEL_ROOT];
@@ -885,6 +934,21 @@ impl Air for SendAir {
 
         result[C_NONCE] = link_leaf * (next[8] - current[COL_NONCE]);
         result[C_NONCE + 1] = link_leaf * (next[LANE_B + 8] - current[COL_NONCE]);
+
+        // EL TERCER MERGE (§117): la envoltura, cosida por `link_salt`.
+        // Digest arrastrado y los CUATRO limbos del rate := salt testigo
+        // (§92.2 en ambos carriles; §138 en los cuatro limbos).
+        for i in 0..4 {
+            result[C_SALT_CAP_A + i] = link_salt * next[i];
+            result[C_SALT_CAP_B + i] = link_salt * next[LANE_B + i];
+            result[C_SALT_DIG_A + i] = link_salt * (next[4 + i] - current[4 + i]);
+            result[C_SALT_DIG_B + i] =
+                link_salt * (next[LANE_B + 4 + i] - current[LANE_B + 4 + i]);
+            result[C_SALT_IN_A + i] =
+                link_salt * (next[8 + i] - current[COL_LEAF_SALT + i]);
+            result[C_SALT_IN_B + i] =
+                link_salt * (next[LANE_B + 8 + i] - current[COL_LEAF_SALT + i]);
+        }
 
         for i in 0..4 {
             result[C_INPUT + i] = first_row * (current[4 + i] - current[COL_ACC_ID + i]);
@@ -1242,7 +1306,8 @@ impl Prover for SendProver {
 mod tests {
     use super::*;
     use crate::circuit_settlement::{
-        derive_public_id, derive_public_id_wide, native_climb, native_leaf,
+        derive_leaf_salt_wide, derive_public_id, derive_public_id_wide,
+        native_climb, native_leaf, native_leaf_salted,
     };
     use crate::merkle::native_merge;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
@@ -1269,6 +1334,7 @@ mod tests {
         account_id: Digest,
         balance: u64,
         nonce: BaseElement,
+        leaf_salt: Digest,
         path: MerklePath,
         frozen_path: MerklePath,
         pending_path: MerklePath,
@@ -1283,6 +1349,7 @@ mod tests {
     /// este circuito comprueban otras cosas, y un limite estrecho los haria
     /// fallar por una razon que no es la suya.
     const TEST_LIMIT: u64 = 10_000_000;
+
 
     fn scenario(balance: u64, amount: u64, supply_old: u64) -> Scenario {
         let mut empty = vec![[BaseElement::ZERO; 4]];
@@ -1310,11 +1377,16 @@ mod tests {
         }
         let path = MerklePath { siblings, is_right };
 
-        let leaf_old = native_leaf(account_id, BaseElement::new(balance), nonce);
-        let leaf_new = native_leaf(
+        // El salt REAL del titular (§117): derivado de la clave, no un
+        // literal de juguete — el escenario vive en el mundo envuelto.
+        let leaf_salt = derive_leaf_salt_wide(key);
+        let leaf_old =
+            native_leaf_salted(account_id, BaseElement::new(balance), nonce, leaf_salt);
+        let leaf_new = native_leaf_salted(
             account_id,
             BaseElement::new(balance) - BaseElement::new(amount),
             nonce,
+            leaf_salt,
         );
 
         // Camino del arbol de congelados, con la cuenta LIBRE. Direcciones
@@ -1328,10 +1400,7 @@ mod tests {
             siblings: (0..FROZEN_DEPTH).map(|l| f_empty[l]).collect(),
             is_right: (0..FROZEN_DEPTH).map(|l| l % 3 == 0).collect(),
         };
-        let frozen_root = crate::circuit_freeze::frozen_climb(
-            [BaseElement::ZERO; 4],
-            &frozen_path,
-        );
+        let frozen_root = crate::circuit_freeze::frozen_climb([BaseElement::ZERO; 4], &frozen_path);
 
         // Camino del arbol de PENDIENTES, con la posicion libre.
         // Direcciones mixtas: con todas iguales la traza degenera.
@@ -1388,6 +1457,7 @@ mod tests {
             account_id,
             balance,
             nonce,
+            leaf_salt,
             path,
             frozen_path,
             pending_path,
@@ -1404,6 +1474,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1463,7 +1534,7 @@ mod tests {
         // coherente para el compromiso y VERIFICA: seria §39 en el envio.
         let s = scenario(1_000_000, 250_000, 10_000_000);
         let mut trace = build_trace(
-            s.key, s.account_id, s.balance, s.nonce, &s.path, &s.frozen_path,
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path,
             s.amount, TEST_LIMIT, s.supply_old, 0, s.receiver_id, s.salt,
             &s.pending_path,
         );
@@ -1521,6 +1592,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1616,6 +1688,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1664,6 +1737,7 @@ mod tests {
             s.account_id,
             s.balance + 500_000, // ← la mentira
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1710,8 +1784,7 @@ mod tests {
 
         // La cuenta SI esta en el arbol de congelados.
         let hoja = crate::circuit_freeze::frozen_leaf(true);
-        s.public_inputs.frozen_root =
-            crate::circuit_freeze::frozen_climb(hoja, &s.frozen_path);
+        s.public_inputs.frozen_root = crate::circuit_freeze::frozen_climb(hoja, &s.frozen_path);
 
         assert!(
             run(&s, s.key, 0).is_err(),
@@ -1757,6 +1830,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1892,6 +1966,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             s.amount,
@@ -1928,6 +2003,7 @@ mod tests {
             s.account_id,
             s.balance,
             s.nonce,
+            s.leaf_salt,
             &s.path,
             &s.frozen_path,
             importe,
@@ -2048,7 +2124,7 @@ mod tests {
     fn un_nonce_con_limbo_alto_no_cero_se_rechaza() {
         let s = scenario(1_000_000, 250_000, 10_000_000);
         let mut trace = build_trace(
-            s.key, s.account_id, s.balance, s.nonce, &s.path, &s.frozen_path,
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path,
             s.amount, TEST_LIMIT, s.supply_old, 0, s.receiver_id, s.salt,
             &s.pending_path,
         );
@@ -2096,7 +2172,7 @@ mod tests {
     fn canario_el_limbo_atado_del_nonce_tambien_rechaza() {
         let s = scenario(1_000_000, 250_000, 10_000_000);
         let mut trace = build_trace(
-            s.key, s.account_id, s.balance, s.nonce, &s.path, &s.frozen_path,
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path,
             s.amount, TEST_LIMIT, s.supply_old, 0, s.receiver_id, s.salt,
             &s.pending_path,
         );
@@ -2122,38 +2198,251 @@ mod tests {
                 "el limbo atado del nonce DEBE rechazar; si no, la mutacion \
                  en ROW_LEAF_LINK no llega al circuito y el test previo es vacio");
     }
+
+    /// **NATIVO↔CIRCUITO de la envoltura (spec §4, piloto B13/B14).**
+    ///
+    /// La cadena de TRES merges del trace debe espejar `native_leaf_salted`
+    /// limbo a limbo: en `ROW_SALT_LINK` el digest disponible es la hoja
+    /// SIN envolver (`native_leaf`) y en `ROW_LEAF_DONE` la ENVUELTA —
+    /// carril A con el saldo viejo, carril B con el nuevo. Si esto cuadra,
+    /// el tercer merge del circuito ES la envoltura nativa, no un pariente.
+    #[test]
+    fn la_cadena_de_tres_merges_espeja_native_leaf_salted() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path,
+            s.amount, TEST_LIMIT, s.supply_old, 0, s.receiver_id, s.salt,
+            &s.pending_path,
+        );
+
+        let sin_sal_a = native_leaf(s.account_id, BaseElement::new(s.balance), s.nonce);
+        let sin_sal_b = native_leaf(
+            s.account_id,
+            BaseElement::new(s.balance) - BaseElement::new(s.amount),
+            s.nonce,
+        );
+        let con_sal_a =
+            native_leaf_salted(s.account_id, BaseElement::new(s.balance), s.nonce, s.leaf_salt);
+        let con_sal_b = native_leaf_salted(
+            s.account_id,
+            BaseElement::new(s.balance) - BaseElement::new(s.amount),
+            s.nonce,
+            s.leaf_salt,
+        );
+        for i in 0..4 {
+            assert_eq!(
+                trace.get(4 + i, ROW_SALT_LINK),
+                sin_sal_a[i],
+                "hoja sin envolver, carril A"
+            );
+            assert_eq!(
+                trace.get(LANE_B + 4 + i, ROW_SALT_LINK),
+                sin_sal_b[i],
+                "hoja sin envolver, carril B"
+            );
+            assert_eq!(
+                trace.get(4 + i, ROW_LEAF_DONE),
+                con_sal_a[i],
+                "hoja envuelta, carril A"
+            );
+            assert_eq!(
+                trace.get(LANE_B + 4 + i, ROW_LEAF_DONE),
+                con_sal_b[i],
+                "hoja envuelta, carril B"
+            );
+        }
+    }
+
+    /// **MUTACIÓN OBLIGATORIA (a) de la spec §4: un limbo del salt
+    /// testigo alterado DEBE rechazarse.**
+    ///
+    /// El ataque: la columna testigo `COL_LEAF_SALT+2` en la fila del
+    /// tercer merge deja de coincidir con el salt que el estado sembró.
+    /// `C_SALT_IN_{A,B}+2` deben disparar; si verificara, la envoltura
+    /// sería decorativa y la 50 seguiría abierta con otro disfraz. El
+    /// veneno es `honesto + 1`: distinto por construcción, no por azar.
+    #[test]
+    fn mutacion_a_un_limbo_del_salt_testigo_alterado_se_rechaza() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let mut trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path,
+            s.amount, TEST_LIMIT, s.supply_old, 0, s.receiver_id, s.salt,
+            &s.pending_path,
+        );
+
+        let veneno = trace.get(COL_LEAF_SALT + 2, ROW_SALT_LINK) + BaseElement::ONE;
+        trace.set(COL_LEAF_SALT + 2, ROW_SALT_LINK, veneno);
+
+        let prover = SendProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "un limbo del salt testigo alterado DEBE rechazar (C_SALT_IN); \
+             si verifica, la envoltura es decorativa"
+        );
+    }
+
+    /// **MUTACIÓN OBLIGATORIA (b) de la spec §4: el tercer merge omitido
+    /// —la hoja SIN envolver entrando al camino— DEBE rechazarse.**
+    ///
+    /// El ataque: en la transición de colocación (`ROW_LEAF_DONE` → +1)
+    /// la subida arranca de `native_leaf` en vez de la hoja envuelta. Se
+    /// escriben AMBAS mitades del estado siguiente para alcanzar al gate
+    /// sea cual sea el bit de dirección; `C_PLACE_A` dispara sobre la
+    /// mitad colocada (y la cadena de hash del ciclo siguiente, detrás).
+    #[test]
+    fn mutacion_b_la_hoja_sin_envolver_no_entra_al_camino() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let mut trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path, &s.frozen_path,
+            s.amount, TEST_LIMIT, s.supply_old, 0, s.receiver_id, s.salt,
+            &s.pending_path,
+        );
+
+        let sin_sal = native_leaf(s.account_id, BaseElement::new(s.balance), s.nonce);
+        for i in 0..4 {
+            trace.set(4 + i, ROW_LEAF_DONE + 1, sin_sal[i]);
+            trace.set(8 + i, ROW_LEAF_DONE + 1, sin_sal[i]);
+        }
+
+        let prover = SendProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "la hoja sin envolver NO debe entrar al camino (C_PLACE en el \
+             enlace corrido); si verifica, el corrimiento no protege nada"
+        );
+    }
+
+    /// **T2b-CIRCUITO (paso 4, §154): la RECUPERACIÓN de §117, extremo a
+    /// extremo por el AIR.** El titular pierde TODO menos la clave;
+    /// rederiva identidad y salt (§117) — los asertos lo certifican —,
+    /// toma de lo PÚBLICO camino y raíces, y el circuito le firma una
+    /// prueba que VERIFICA. Hermano de
+    /// `t2b_solo_la_clave_reconstruye_la_hoja` (settlement), que dejó
+    /// esta mitad «condicionada a B13/B14»: condición cumplida en §143.
+    #[test]
+    fn t2b_circuito_solo_la_clave_produce_prueba_que_verifica() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+
+        // Recuperación: SOLO la clave (+ balance/nonce del ClientState;
+        // camino y raíces son PÚBLICOS, reconstruibles del árbol).
+        let id_r = derive_public_id_wide(s.key);
+        let salt_r = derive_leaf_salt_wide(s.key);
+        assert_eq!(id_r, s.account_id, "la clave rederiva la identidad");
+        assert_eq!(salt_r, s.leaf_salt, "la clave rederiva el salt (§117)");
+
+        let trace = build_trace(
+            s.key, id_r, s.balance, s.nonce, salt_r, &s.path,
+            &s.frozen_path, s.amount, TEST_LIMIT, s.supply_old, 0,
+            s.receiver_id, s.salt, &s.pending_path,
+        );
+        let prover = SendProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            verifica,
+            "la clave sola (más lo público) DEBE producir una prueba que \
+             verifica — si no, la recuperación de §117 es papel"
+        );
+    }
+
+    /// **T2b-CIRCUITO, el reverso**: el diccionario del atacante contra
+    /// el VERIFICADOR — sin el salt del titular (usa 0) su testigo no
+    /// reproduce la hoja del árbol y NINGUNA prueba verifica contra las
+    /// raíces públicas. Hermano de `t2b_diccionario_sin_salt_no_acierta`.
+    #[test]
+    fn t2b_circuito_diccionario_sin_salt_no_verifica() {
+        let s = scenario(1_000_000, 250_000, 10_000_000);
+        let salt_falso = [BaseElement::ZERO; 4];
+
+        let trace = build_trace(
+            s.key, s.account_id, s.balance, s.nonce, salt_falso, &s.path,
+            &s.frozen_path, s.amount, TEST_LIMIT, s.supply_old, 0,
+            s.receiver_id, s.salt, &s.pending_path,
+        );
+        let prover = SendProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "sin el salt del titular la prueba NO debe verificar contra \
+             las raíces públicas; si verifica, el cegado de §117 es \
+             decorativo a nivel de circuito"
+        );
+    }
     /// **[§130] Instrumento de la medición apareada (paso 5).** Prove
-    /// del LEGADO en su escenario honesto — construcción + prove dentro
+    /// del circuito en su escenario honesto — construcción + prove dentro
     /// del reloj (el patrón de `metrics_33`). Se corre a mano, en
     /// release:
     /// `cargo test --release -p stark-experiment medicion_130 -- --ignored --nocapture`
     #[test]
     #[ignore = "instrumento de medida, no comprobacion: correr a mano"]
-    fn medicion_130_send_legado() {
+    fn medicion_130_send() {
         use std::time::Instant;
         let s = scenario(1_000_000, 250_000, 10_000_000);
         let t0 = Instant::now();
         let trace = build_trace(
-            s.key,
-            s.account_id,
-            s.balance,
-            s.nonce,
-            &s.path,
-            &s.frozen_path,
-            s.amount,
-            TEST_LIMIT,
-            s.supply_old,
-            0,
-            s.receiver_id,
-            s.salt,
-            &s.pending_path,
+            s.key, s.account_id, s.balance, s.nonce, s.leaf_salt, &s.path,
+            &s.frozen_path, s.amount, TEST_LIMIT, s.supply_old, 0,
+            s.receiver_id, s.salt, &s.pending_path,
         );
         let proof = SendProver::new(default_options())
             .prove(trace)
             .expect("el honesto debe probar");
         let ms = t0.elapsed().as_secs_f64() * 1000.0;
         println!(
-            "[§130] send legado: prove {ms:.1} ms, proof {} bytes",
+            "[§130] send gemelo: prove {ms:.1} ms, proof {} bytes",
             proof.to_bytes().len()
         );
     }

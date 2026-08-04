@@ -130,7 +130,9 @@ pub use stark_experiment::circuit_threshold::build_custodian_set;
 use stark_experiment::circuit_recovery::{
     build_trace as build_recovery_trace, RecoveryAir, RecoveryProver, RecoveryPublicInputs,
 };
-use stark_experiment::circuit_settlement::{derive_public_id, native_leaf, SettlementPublicInputs};
+use stark_experiment::circuit_settlement::{
+    derive_public_id, native_leaf, native_leaf_salted, SettlementPublicInputs,
+};
 // El circuito de la via en dos fases. Estaba importado solo dentro de
 // `two_phase.rs`, asi que `client.rs` no podia generar un envio sin pasar
 // por la capa — que es justo lo que `AUDITORIA.md` §33 senala.
