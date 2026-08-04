@@ -11969,6 +11969,46 @@ censados —doc de `client.rs:490`, expectativa del instrumento-barrido
 medición, epílogo del playbook, retirada futura del museo, warnings—.
 El mundo viejo ya solo existe como historia bien contada.
 
+## 157. F3 COMPLETO — los contratos cobran, CERO ROJOS, y la entrada 50 se etiqueta
+
+**La colocación del mundo nuevo** (`e3116c6`): `open_account` adopta
+la política de la migración — `public_id[0] mod capacidad` con sondeo
+lineal — y `next_index` queda como CENSO (la cuota), no como posición.
+Los DOS contratos históricos de privacidad
+(`account_indices_are_not_predictable` / `_not_enumerable`) cobran: un
+atacante ya no elige vecino con sus altas ni enumera cuentas barriendo
+índices. La migración queda como herramienta de stores LEGACY — sobre
+mundo fresco es IDENTIDAD, y su test de congelación ahora lo documenta
+migrando desde un legacy SIMULADO (récord plantado a mano en el 0).
+
+**Los cinco fósiles de la era secuencial** (`f926de6`): `capa()` de
+los tests delegada devolvía `(l, 0)` en vez del índice real (ocho
+tests); el test de congelación presumía viejo≠nuevo; `balance_of(0)`
+cableado tras el reinicio cifrado; `let alice = 0` en el ataque del
+tope; y el invariante de self-send sumaba sobre `0..censo` en vez de
+sobre los RECORDS. Cinco cortes con ancla, y el número que la casa
+esperaba desde su fundación: **zk-ssl 242/0 + 3 · stark 316/0 + 12 —
+CERO ROJOS en ambas suites por primera vez.**
+
+**El traspié, al registro**: el Bloque B de F3 llevaba condición
+«solo con doble verde» y disparó sobre 12 rojos — `e3116c6` quedó
+empujado afirmando un 242/0 que aún no existía. Doctrina fix-forward:
+`f926de6` endereza el estado y lo dice en su propio mensaje. Regla
+ganada: **el mensaje de un commit no afirma un verde futuro** — se
+escribe tras el verde o se escribe condicional.
+
+**El regalo de la campaña**: el instrumento-barrido de client
+(`#[ignore]`) ya afirmaba `hallado.is_none()` — era un contrato
+durmiente que el mundo salted puso en verde SOLO. Un fleco de F4,
+disuelto antes de nacer.
+
+**Etiqueta**: `entrada-50` anotada sobre `f926de6`. La entrada más
+larga del BACKLOG — salt de hoja (§117), frozen-32 (§128), diez
+gemelos, flip D4, colocación — queda CERRADA de punta a punta. Cola:
+solo **F4** (flecos censados: doc de `client.rs:490`, prosa «GEMELO»
+en el doc de medición, epílogo del playbook, retirada futura del
+museo, warnings).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

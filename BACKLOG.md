@@ -1664,6 +1664,10 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   extremo, v7 + pines, marcador de geometría, museo en 24 local.
   Guardián 27; suites 316/0 y 240/2. SIGUE: **F3** (migración en vivo,
   los 2 rojos de índices, etiqueta 50) y **F4** (flecos censados).
+  ✅✅✅ **F3 COMPLETO (§157, `e3116c6`+`f926de6`) — ETIQUETA
+  `entrada-50` PUESTA**: colocación pid-mod, contratos de privacidad
+  en verde, cinco fósiles enterrados, **CERO ROJOS** (316/0 · 242/0).
+  La entrada 50 se CIERRA. SIGUE: **F4** (flecos) — y nada más.
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y
