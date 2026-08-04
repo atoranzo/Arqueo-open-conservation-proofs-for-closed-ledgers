@@ -11254,6 +11254,74 @@ imprescindible: sin estas tres reversiones, quien abriera el piloto habría
 caído en la misma trampa. El plan SB1→SB5 sigue válido salvo la mecánica
 de dónde meter las 8 filas, que es lo que se replantea.
 
+## 140. El mapa de la geometría de circuit_send: producido, verificado mecánicamente, y la elección tomada — REFACTOR (SB0)
+
+**Qué existe.** El mapa que §139 mandó producir antes de decidir:
+`doc/mapa-geometria-circuit_send.md` (calendario completo, las tres
+representaciones sitio por sitio con líneas de `1cbfedc`, tabla de
+guardianes de frontera, censo ampliado, presupuesto, plan). Y su
+verificador: `tools/verifica_geometria.py`, que no confía — reconstruye
+el calendario fila a fila desde las constantes exactas, cruza las tres
+representaciones entre sí y reproduce los intentos 1 y 2 de §139.
+Ejecutado en esta máquina: secciones A–F en verde; los dos intentos
+estallan en `place_frozen: nivel 24 sobre path de 24 (fila 471)` — la
+misma línea que costó tres reversiones encontrar.
+
+**Lo que el mapa encontró que §139 no tenía.**
+1. **Los guardianes de frontera son de TRES tipos** — el límite del
+   propio rango, el sombreado por un brazo explícito, y el límite del
+   bucle — y solo el primero viaja con el rango. El valor ilegal de
+   frozen (`nc=59` → nivel 24) lo impide SOLO el brazo de
+   `ROW_FROZEN_ROOT`; el de pendientes (`nc=93` → nivel 32) lo impide
+   SOLO el límite del bucle (`ROW_PENDING_ROOT` no tiene brazo). Por eso
+   ambos intentos detonaron precisamente en frozen: era el único tramo
+   cuyo guardián era la constante que el corrimiento movía.
+2. **La forma derivada existe y es exacta**: las nueve `ROW_*` colapsan
+   en ocho arranques de ciclo `CYC_*` derivados de `(CYCLE_LENGTH,
+   TREE_DEPTH, FROZEN_DEPTH)` — verificado dígito a dígito (sección F).
+   Normalizar los rangos del `match` a la convención única toca solo
+   valores hoy inalcanzables: re-expresión byte-idéntica.
+3. **`FROZEN_DEPTH` es coordenada compartida** (`circuit_freeze.rs:61` →
+   send/claim/burn/frozen_climb + settlement; la capa ya tiene
+   `FROZEN_DEPTH_POST=32` de 1b). El flip a 32 no puede ser solo-send
+   vía la constante. Cuestión de estadificación ABIERTA (mapa §7, dos
+   opciones), decisión del autor; bloquea la parte frozen del piloto y
+   el paso 3 — NO bloquea SB0.
+4. Correcciones de registro: la holgura son **280 filas** (744..1023),
+   no 281 — la 743 sostiene las raíces atadas por aserción; el
+   comentario de `TRACE_LENGTH` («llegan a la 1007… 16 de margen»)
+   describe una geometría muerta; §139 citó líneas de un estado
+   intermedio (el `match` vive en 464-478 en `1cbfedc`).
+
+**Presupuesto verificado (sección E).** Salt +8 y frozen-32 +64 llevan
+`ROW_PENDING_ROOT` de 743 a 815; margen 208. `TRACE_LENGTH=1024`
+alcanza para send — primera fila con dato de la tabla de la spec §3.
+
+**La elección: REFACTOR (SB0), luego el salt.** El argumento no es de
+gusto: frozen-32 obliga al corrimiento (mueve `ROW_FROZEN_ROOT` — fila
+de aserción y de siembra — y todo lo posterior) que el hack pretendía
+evitar. El hack solo aplazaría 8 de las 72 filas y cobraría 12-20
+columnas de transporte, partir `tree_link`, y una traza no temporal
+multiplicada por los diez AIR del paso 3. SB0 va en pasos compilables
+(regla §129), cada uno con suite verde y guarda md5: SB0.1 bloque
+`CYC_*` + `ROW_*` derivadas con clavos `const _: () = assert!(…)`;
+SB0.2 los literales 2/35/61 de los seis bucles; SB0.3 rangos del
+`match` normalizados + `debug_assert!` en los tres `place_*`; SB0.4
+comentarios, clavos fuera, frase de convención. Tras eso, SB1 vuelve a
+ser lo que la spec diseñó y su mecánica de corrimiento es una línea. La
+cuarta reversión que §139 temía se evita no eligiendo mejor entre dos
+maneras de mover tres representaciones, sino dejando de tener tres.
+
+**Nota de instrumento.** Al poner la baseline de esta sesión, la suite
+se corrió sin `--release` por error del asistente: en debug, stark da
+282/0 con 6 ignorados y zk-ssl **147/86** con 12. Los totales cuadran
+exactos con los 288 y 245 declarados y con los ignores condicionados a
+debug (cada uno con su motivo en el código), pero los 86 caídos de
+debug no están censados en ningún sitio. La suite canónica es en
+release (README:251-252; «31 s en release»). La causa de la caída en
+debug no se conjetura (131.5); si algún día importa ese modo, se censa
+entonces.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
