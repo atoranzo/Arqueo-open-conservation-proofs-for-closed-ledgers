@@ -81,6 +81,9 @@ use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;
+/// 512 filas. La tubería acaba en `ROW_CUST_ROOT` (fila 311): quedan
+/// **200 filas de holgura** (25 ciclos). Sin fase frozen, el mundo
+/// nuevo solo suma el ciclo del salt: 319, y 512 ALCANZA (spec §3).
 pub const TRACE_LENGTH: usize = 512;
 pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: saldo, importe, saldo nuevo, suministro nuevo,
@@ -113,13 +116,31 @@ const COL_SACC: usize = 44;
 pub const TRACE_WIDTH: usize = 45;
 
 // ===== Filas =====
-const ROW_LEAF_LINK: usize = 7;
-const ROW_LEAF_DONE: usize = 15;
+//
+// Geometría derivada (playbook R2; el patrón de SB0, §140-§141). Mint
+// tiene DOS árboles: cuentas (TREE_DEPTH) y custodios
+// (CUSTODIAN_DEPTH, de `circuit_threshold`); su cadena acaba en
+// `CYC_FIN = CYC_CUST + CUSTODIAN_DEPTH`, sin fase frozen.
+//
+// Convención: todo arranque de tramo es un `CYC_*`; ningún literal de
+// ciclo vive fuera de este bloque — bucles de bits, periódicas y el
+// `match` de `build_trace` lo derivan de aquí.
+const CYC_NONCE: usize = 1;
+const CYC_ACC: usize = CYC_NONCE + 1;
+/// Ciclo de la raíz de cuentas; su fila de enlace arranca custodios.
+const CYC_ACCT_ROOT: usize = CYC_ACC + TREE_DEPTH;
+const CYC_CUST: usize = CYC_ACCT_ROOT + 1;
+const CYC_FIN: usize = CYC_CUST + CUSTODIAN_DEPTH;
+const ROW_LEAF_LINK: usize = CYC_NONCE * CYCLE_LENGTH - 1;
+const ROW_LEAF_DONE: usize = CYC_ACC * CYCLE_LENGTH - 1;
 /// Raíz del árbol de cuentas. Su enlace arranca la fase de custodios.
-const ROW_ACCT_ROOT: usize = 271;
-const ROW_CUST_START: usize = 272;
+const ROW_ACCT_ROOT: usize = CYC_ACCT_ROOT * CYCLE_LENGTH - 1;
+const ROW_CUST_START: usize = CYC_ACCT_ROOT * CYCLE_LENGTH;
 /// Última fila activa: raíz del conjunto de custodios.
-const ROW_CUST_ROOT: usize = 311;
+const ROW_CUST_ROOT: usize = CYC_FIN * CYCLE_LENGTH - 1;
+
+// El presupuesto, en compilación: la tubería debe caber en la traza.
+const _: () = assert!(ROW_CUST_ROOT < TRACE_LENGTH);
 
 // ===== Restricciones =====
 const C_HASH_A: usize = 0;
@@ -261,6 +282,12 @@ pub fn build_trace(
     }
 
     let place_acct = |state: &mut [BaseElement; STATE_WIDTH], digest: &Digest, level: usize| {
+        debug_assert!(
+            level < TREE_DEPTH,
+            "place_acct: nivel {} sobre path de {}",
+            level,
+            TREE_DEPTH
+        );
         if path.is_right[level] {
             state[4..8].copy_from_slice(&path.siblings[level]);
             state[8..12].copy_from_slice(digest);
@@ -273,6 +300,12 @@ pub fn build_trace(
                       digest: &Digest,
                       p: &CustodianPath,
                       level: usize| {
+        debug_assert!(
+            level < CUSTODIAN_DEPTH,
+            "place_cust: nivel {} sobre path de {}",
+            level,
+            CUSTODIAN_DEPTH
+        );
         if p.is_right[level] {
             state[4..8].copy_from_slice(&p.siblings[level]);
             state[8..12].copy_from_slice(digest);
@@ -328,12 +361,19 @@ pub fn build_trace(
                 }
                 _ => {
                     let next_cycle = (r + 1) / CYCLE_LENGTH;
-                    if (2..34).contains(&next_cycle) {
-                        let level = next_cycle - 2;
+                    // Convención única (playbook R2): tramo genérico =
+                    // `(CYC_arranque..CYC_fin_de_tramo)`, nivel =
+                    // `next_cycle - CYC_arranque`. CUENTAS: arranque
+                    // sombreado por el brazo de `ROW_LEAF_DONE` (nivel 0
+                    // explícito). CUSTODIOS: arranque SIN sombra — el
+                    // brazo previo es `ROW_ACCT_ROOT` (siembra, no nivel
+                    // 0) y el rango coloca el nivel 0 él mismo (§146).
+                    if (CYC_ACC..CYC_ACCT_ROOT).contains(&next_cycle) {
+                        let level = next_cycle - CYC_ACC;
                         place_acct(&mut state_a, &digest_a, level);
                         place_acct(&mut state_b, &digest_b, level);
-                    } else if (35..39).contains(&next_cycle) {
-                        let level = next_cycle - 35;
+                    } else if (CYC_CUST..CYC_FIN).contains(&next_cycle) {
+                        let level = next_cycle - CYC_CUST;
                         place_cust(&mut state_a, &digest_a, &auth.path_a, level);
                         place_cust(&mut state_b, &digest_b, &auth.path_b, level);
                         let p = BaseElement::new(1u64 << level);
@@ -365,7 +405,7 @@ pub fn build_trace(
             zero
         };
         for p in 0..CYCLE_LENGTH {
-            rows[(2 + level) * CYCLE_LENGTH + p][COL_BIT_A] = bit;
+            rows[(CYC_ACC + level) * CYCLE_LENGTH + p][COL_BIT_A] = bit;
         }
     }
     // Bits del arbol de custodios: caminos DISTINTOS por carril.
@@ -381,8 +421,8 @@ pub fn build_trace(
             zero
         };
         for p in 0..CYCLE_LENGTH {
-            rows[(35 + level) * CYCLE_LENGTH + p][COL_BIT_A] = ba;
-            rows[(35 + level) * CYCLE_LENGTH + p][COL_BIT_B] = bb;
+            rows[(CYC_CUST + level) * CYCLE_LENGTH + p][COL_BIT_A] = ba;
+            rows[(CYC_CUST + level) * CYCLE_LENGTH + p][COL_BIT_B] = bb;
         }
     }
 
@@ -542,7 +582,7 @@ impl Air for MintAir {
         let mut acct_link = vec![zero; TRACE_LENGTH];
         acct_link[ROW_LEAF_DONE] = one;
         for level in 0..TREE_DEPTH - 1 {
-            acct_link[(2 + level) * CYCLE_LENGTH + 7] = one;
+            acct_link[(CYC_ACC + level) * CYCLE_LENGTH + 7] = one;
         }
         columns.push(acct_link);
 
@@ -554,7 +594,9 @@ impl Air for MintAir {
         let mut cust_link = vec![zero; TRACE_LENGTH];
         let mut pow2 = vec![zero; TRACE_LENGTH];
         for level in 0..CUSTODIAN_DEPTH {
-            let row = (34 + level) * CYCLE_LENGTH + 7;
+            // Enlace HACIA el ciclo `CYC_CUST + level`: la fila de
+            // enlace vive al final del ciclo anterior.
+            let row = (CYC_ACCT_ROOT + level) * CYCLE_LENGTH + 7;
             cust_link[row] = one;
             pow2[row] = BaseElement::new(1u64 << level);
         }
