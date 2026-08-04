@@ -180,7 +180,17 @@ const C_FROZEN_ENTRY: usize = C_FROZEN_CAP + 4; // 4
 /// Colocación en cada nivel.
 const C_FROZEN_PLACE: usize = C_FROZEN_ENTRY + 4; // 4
 const C_FBIT_BOOL: usize = C_FROZEN_PLACE + 4; // 1
-const NUM_CONSTRAINTS: usize = C_FBIT_BOOL + 1;
+/// **La envoltura de la hoja (§117, B13/B14).** Seis familias cosidas
+/// por `link_salt` en `ROW_SALT_LINK`: capacidad a cero, digest
+/// arrastrado, y los CUATRO limbos del rate atados al salt testigo —
+/// §92.2 en ambos carriles, §138 en los cuatro limbos.
+const C_SALT_CAP_A: usize = C_FBIT_BOOL + 1; // 4
+const C_SALT_CAP_B: usize = C_SALT_CAP_A + 4; // 4
+const C_SALT_DIG_A: usize = C_SALT_CAP_B + 4; // 4
+const C_SALT_DIG_B: usize = C_SALT_DIG_A + 4; // 4
+const C_SALT_IN_A: usize = C_SALT_DIG_B + 4; // 4
+const C_SALT_IN_B: usize = C_SALT_IN_A + 4; // 4
+const NUM_CONSTRAINTS: usize = C_SALT_IN_B + 4;
 
 // ===== Periódicas =====
 const P_HASH_FLAG: usize = 0;
@@ -188,7 +198,9 @@ const P_ARK1: usize = 1;
 const P_ARK2: usize = P_ARK1 + STATE_WIDTH;
 const P_LINK_MERKLE: usize = P_ARK2 + STATE_WIDTH;
 const P_LINK_LEAF: usize = P_LINK_MERKLE + 1;
-const P_LINK_PLACE: usize = P_LINK_LEAF + 1;
+/// Fila del TERCER merge: la envoltura del salt (§117).
+const P_LINK_SALT: usize = P_LINK_LEAF + 1;
+const P_LINK_PLACE: usize = P_LINK_SALT + 1;
 const P_FIRST_ROW: usize = P_LINK_PLACE + 1;
 const P_SEL_ROOT: usize = P_FIRST_ROW + 1;
 const P_SEL_PK_DONE: usize = P_SEL_ROOT + 1;
@@ -504,6 +516,11 @@ impl Air for BurnAir {
         }
         // Bit booleano (1): grado 2 sin ciclo.
         degrees.push(TransitionConstraintDegree::new(2));
+        // La envoltura del salt (24): grado 1 con ciclo — el molde de los
+        // enlaces de hoja, gate periódico × expresión lineal.
+        for _ in 0..24 {
+            degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
+        }
 
         assert_eq!(degrees.len(), NUM_CONSTRAINTS, "cuenta de grados");
 
@@ -556,6 +573,10 @@ impl Air for BurnAir {
         let mut link_leaf = vec![zero; TRACE_LENGTH];
         link_leaf[ROW_LEAF_LINK] = one;
         columns.push(link_leaf);
+
+        let mut link_salt = vec![zero; TRACE_LENGTH];
+        link_salt[ROW_SALT_LINK] = one;
+        columns.push(link_salt);
 
         let mut link_place = vec![zero; TRACE_LENGTH];
         link_place[ROW_LEAF_DONE] = one;
@@ -613,6 +634,7 @@ impl Air for BurnAir {
         let ark2 = &periodic[P_ARK2..P_ARK2 + STATE_WIDTH];
         let link_merkle = periodic[P_LINK_MERKLE];
         let link_leaf = periodic[P_LINK_LEAF];
+        let link_salt = periodic[P_LINK_SALT];
         let link_place = periodic[P_LINK_PLACE];
         let first_row = periodic[P_FIRST_ROW];
         let sel_root = periodic[P_SEL_ROOT];
@@ -675,6 +697,21 @@ impl Air for BurnAir {
 
         result[C_NONCE] = link_leaf * (next[8] - current[COL_NONCE]);
         result[C_NONCE + 1] = link_leaf * (next[LANE_B + 8] - current[COL_NONCE]);
+
+        // EL TERCER MERGE (§117): la envoltura, cosida por `link_salt`.
+        // Digest arrastrado y los CUATRO limbos del rate := salt testigo
+        // (§92.2 en ambos carriles; §138 en los cuatro limbos).
+        for i in 0..4 {
+            result[C_SALT_CAP_A + i] = link_salt * next[i];
+            result[C_SALT_CAP_B + i] = link_salt * next[LANE_B + i];
+            result[C_SALT_DIG_A + i] = link_salt * (next[4 + i] - current[4 + i]);
+            result[C_SALT_DIG_B + i] =
+                link_salt * (next[LANE_B + 4 + i] - current[LANE_B + 4 + i]);
+            result[C_SALT_IN_A + i] =
+                link_salt * (next[8 + i] - current[COL_LEAF_SALT + i]);
+            result[C_SALT_IN_B + i] =
+                link_salt * (next[LANE_B + 8 + i] - current[COL_LEAF_SALT + i]);
+        }
 
         for i in 0..4 {
             result[C_INPUT + i] = first_row * (current[4 + i] - current[COL_ACC_ID + i]);
