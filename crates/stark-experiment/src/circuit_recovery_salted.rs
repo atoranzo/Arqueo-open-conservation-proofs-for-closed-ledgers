@@ -188,7 +188,18 @@ const C_SBIT_BOOL: usize = C_ID_CONST + 8; // 2
 const C_FIRST_S: usize = C_SBIT_BOOL + 2; // 2
 const C_HORNER: usize = C_FIRST_S + 2; // 1
 const C_SEG_LINK: usize = C_HORNER + 1; // NUM_SEGMENTS
-const NUM_CONSTRAINTS: usize = C_SEG_LINK + NUM_SEGMENTS;
+/// **La envoltura de la hoja (§117, B13/B14).** Seis familias cosidas
+/// por `link_salt` en `ROW_SALT_LINK`: capacidad a cero, digest
+/// arrastrado, y los CUATRO limbos del rate atados al salt testigo —
+/// §92.2 en ambos carriles, §138 en los cuatro limbos. UN salt: LA
+/// COPIA (§93.4).
+const C_SALT_CAP_A: usize = C_SEG_LINK + NUM_SEGMENTS; // 4
+const C_SALT_CAP_B: usize = C_SALT_CAP_A + 4; // 4
+const C_SALT_DIG_A: usize = C_SALT_CAP_B + 4; // 4
+const C_SALT_DIG_B: usize = C_SALT_DIG_A + 4; // 4
+const C_SALT_IN_A: usize = C_SALT_DIG_B + 4; // 4
+const C_SALT_IN_B: usize = C_SALT_IN_A + 4; // 4
+const NUM_CONSTRAINTS: usize = C_SALT_IN_B + 4;
 
 // ===== Periódicas =====
 const P_HASH_FLAG: usize = 0;
@@ -196,7 +207,9 @@ const P_ARK1: usize = 1;
 const P_ARK2: usize = P_ARK1 + STATE_WIDTH;
 const P_ACCT_LINK: usize = P_ARK2 + STATE_WIDTH;
 const P_LINK_LEAF: usize = P_ACCT_LINK + 1;
-const P_CUST_LINK: usize = P_LINK_LEAF + 1;
+/// Fila del TERCER merge: la envoltura del salt (§117).
+const P_LINK_SALT: usize = P_LINK_LEAF + 1;
+const P_CUST_LINK: usize = P_LINK_SALT + 1;
 const P_POW2: usize = P_CUST_LINK + 1;
 const P_FIRST_ROW: usize = P_POW2 + 1;
 const P_SEL_ACCT_ROOT: usize = P_FIRST_ROW + 1;
@@ -511,6 +524,11 @@ impl Air for RecoveryAir {
         for _ in 0..(3 + NUM_SEGMENTS) {
             degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
         }
+        // La envoltura del salt (24): grado 1 con ciclo — el molde de los
+        // enlaces de hoja, gate periódico × expresión lineal.
+        for _ in 0..24 {
+            degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
+        }
 
         assert_eq!(degrees.len(), NUM_CONSTRAINTS, "cuenta de grados");
 
@@ -565,6 +583,10 @@ impl Air for RecoveryAir {
         link_leaf[ROW_LEAF_LINK] = one;
         columns.push(link_leaf);
 
+        let mut link_salt = vec![zero; TRACE_LENGTH];
+        link_salt[ROW_SALT_LINK] = one;
+        columns.push(link_salt);
+
         let mut cust_link = vec![zero; TRACE_LENGTH];
         let mut pow2 = vec![zero; TRACE_LENGTH];
         for level in 0..CUSTODIAN_DEPTH {
@@ -617,6 +639,7 @@ impl Air for RecoveryAir {
         let ark2 = &periodic[P_ARK2..P_ARK2 + STATE_WIDTH];
         let acct_link = periodic[P_ACCT_LINK];
         let link_leaf = periodic[P_LINK_LEAF];
+        let link_salt = periodic[P_LINK_SALT];
         let cust_link = periodic[P_CUST_LINK];
         let pow2 = periodic[P_POW2];
         let first_row = periodic[P_FIRST_ROW];
@@ -690,6 +713,22 @@ impl Air for RecoveryAir {
         // El nonce incrementa: marca que la cuenta cambió de control.
         result[C_NONCE] = link_leaf * (next[8] - current[COL_NONCE]);
         result[C_NONCE + 1] = link_leaf * (next[LANE_B + 8] - (current[COL_NONCE] + E::ONE));
+
+        // EL TERCER MERGE (§117): la envoltura, cosida por `link_salt`.
+        // Digest arrastrado y los CUATRO limbos del rate := salt testigo
+        // (§92.2 en ambos carriles; §138 en los cuatro limbos). EL MISMO
+        // salt en A y B: LA COPIA (§93.4).
+        for i in 0..4 {
+            result[C_SALT_CAP_A + i] = link_salt * next[i];
+            result[C_SALT_CAP_B + i] = link_salt * next[LANE_B + i];
+            result[C_SALT_DIG_A + i] = link_salt * (next[4 + i] - current[4 + i]);
+            result[C_SALT_DIG_B + i] =
+                link_salt * (next[LANE_B + 4 + i] - current[LANE_B + 4 + i]);
+            result[C_SALT_IN_A + i] =
+                link_salt * (next[8 + i] - current[COL_LEAF_SALT + i]);
+            result[C_SALT_IN_B + i] =
+                link_salt * (next[LANE_B + 8 + i] - current[COL_LEAF_SALT + i]);
+        }
 
         // ===== EL SALDO NO CAMBIA =====
         // Ambos carriles usan la MISMA columna de saldo. Una recuperación
@@ -922,7 +961,7 @@ mod tests {
     use super::*;
     use crate::circuit_settlement::{
         derive_leaf_salt_wide, derive_public_id_wide, native_climb,
-        native_leaf_salted,
+        native_leaf, native_leaf_salted,
     };
     use crate::circuit_threshold::build_custodian_set;
     use crate::merkle::native_merge;
@@ -1261,6 +1300,118 @@ mod tests {
             informe.total,
             informe.celdas,
             informe.nunca_disparadas
+        );
+    }
+
+    /// **NATIVO↔CIRCUITO de la envoltura (spec §4, playbook R5) — y LA
+    /// COPIA (§93.4) hecha test: identidades distintas, nonces
+    /// distintos, EL MISMO salt en los ocho asertos de limbo.**
+    #[test]
+    fn la_cadena_de_tres_merges_espeja_native_leaf_salted() {
+        let s = scenario();
+        let trace = build(&s, &s.auth, BALANCE, 1);
+
+        let sin_sal_a = native_leaf(s.id_old, BaseElement::new(BALANCE), s.nonce);
+        let sin_sal_b = native_leaf(
+            s.id_new,
+            BaseElement::new(BALANCE),
+            s.nonce + BaseElement::ONE,
+        );
+        let con_sal_a =
+            native_leaf_salted(s.id_old, BaseElement::new(BALANCE), s.nonce, s.leaf_salt);
+        let con_sal_b = native_leaf_salted(
+            s.id_new,
+            BaseElement::new(BALANCE),
+            s.nonce + BaseElement::ONE,
+            s.leaf_salt,
+        );
+        for i in 0..4 {
+            assert_eq!(
+                trace.get(4 + i, ROW_SALT_LINK),
+                sin_sal_a[i],
+                "hoja vieja sin envolver"
+            );
+            assert_eq!(
+                trace.get(LANE_B + 4 + i, ROW_SALT_LINK),
+                sin_sal_b[i],
+                "récord nuevo sin envolver"
+            );
+            assert_eq!(
+                trace.get(4 + i, ROW_LEAF_DONE),
+                con_sal_a[i],
+                "hoja vieja envuelta (salt viejo)"
+            );
+            assert_eq!(
+                trace.get(LANE_B + 4 + i, ROW_LEAF_DONE),
+                con_sal_b[i],
+                "récord nuevo envuelto con EL MISMO salt (LA COPIA)"
+            );
+        }
+    }
+
+    /// **MUTACIÓN OBLIGATORIA (a) de la spec §4.** Veneno = honesto + 1.
+    #[test]
+    fn mutacion_a_un_limbo_del_salt_testigo_alterado_se_rechaza() {
+        let s = scenario();
+        let mut trace = build(&s, &s.auth, BALANCE, 1);
+
+        let veneno = trace.get(COL_LEAF_SALT + 2, ROW_SALT_LINK) + BaseElement::ONE;
+        trace.set(COL_LEAF_SALT + 2, ROW_SALT_LINK, veneno);
+
+        let prover = RecoveryProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<RecoveryAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "un limbo del salt testigo alterado DEBE rechazar (C_SALT_IN); \
+             si verifica, la envoltura es decorativa"
+        );
+    }
+
+    /// **MUTACIÓN OBLIGATORIA (b) de la spec §4.** AMBAS mitades del
+    /// estado siguiente (bit-agnóstico); `C_PLACE` dispara.
+    #[test]
+    fn mutacion_b_la_hoja_sin_envolver_no_entra_al_camino() {
+        let s = scenario();
+        let mut trace = build(&s, &s.auth, BALANCE, 1);
+
+        let sin_sal = native_leaf(s.id_old, BaseElement::new(BALANCE), s.nonce);
+        for i in 0..4 {
+            trace.set(4 + i, ROW_LEAF_DONE + 1, sin_sal[i]);
+            trace.set(8 + i, ROW_LEAF_DONE + 1, sin_sal[i]);
+        }
+
+        let prover = RecoveryProver::new(default_options());
+        let verifica = {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                || prover.prove(trace)));
+            match r {
+                Err(_) => false,        // panic al generar -> no verifica
+                Ok(Err(_)) => false,    // prove Err
+                Ok(Ok(proof)) => {
+                    let min_opts = AcceptableOptions::OptionSet(vec![default_options()]);
+                    verify::<RecoveryAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                        proof, s.public_inputs.clone(), &min_opts,
+                    ).is_ok()
+                }
+            }
+        };
+        assert!(
+            !verifica,
+            "la hoja sin envolver NO debe entrar al camino (C_PLACE en el \
+             enlace corrido); si verifica, el corrimiento no protege nada"
         );
     }
 }
