@@ -88,6 +88,27 @@ atado al importe (§74). Ambas corregidas y medidas.
   permiso de nadie y **no puede mejorar su propia seguridad sin permiso de
   dos** (§98.4).
 
+### 2.bis Los dos residuos que quedan, y qué los elimina
+
+Tras la entrada 50, las confianzas residuales de este diseño se reducen
+a dos, y conviene nombrarlas mirando hacia delante:
+
+1. **El orden y la completitud del historial.** El operador decide qué
+   entra y en qué orden, y podría omitir. Mitigación diseñada: cabezas
+   atestiguadas, recibos y **acuse** (§121,
+   `doc/CONFIANZA_RESIDUAL.md`) — mentir pasa a dejar evidencia
+   fail-stop. Eliminación: consenso/replicación o anclaje externo de
+   raíces (interfaz por diseñar).
+
+2. **El operador ve el estado.** La privacidad es frente a terceros,
+   no frente a quien mantiene el ledger; el titular tiene vista
+   autenticada (49-A) y el resto es asumido y documentado. Eliminación:
+   arquitectura de operador ciego (B11) o federación.
+
+Ninguna prueba ZK sustituye estas dos; lo que este proyecto exige es
+que estén **escritas, medidas y con su ataque diseñado** en vez de
+escondidas en la palabra «descentralizado».
+
 ## 3. Problemas de seguridad identificados
 
 > Hallazgos internos, **no auditados**. Cuatro de los cinco están **medidos**

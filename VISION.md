@@ -849,6 +849,14 @@ reintrodujeron por no consultarlos (§3.6).
 
 ---
 
+## 6.bis Relación con el «último intermediario»
+
+La dirección de fondo de este documento coincide con la crítica de que
+*el consenso es el último intermediario*: cada decisión aquí —STARK sin
+ceremonia, vía delegada, hoja envuelta, acuse— reduce lo que hay que
+confiar a alguien. El argumento completo, con lo eliminado, lo residual
+y lo que solo la física podrá retirar, está en `PRINCIPIOS.md` §6.bis.
+
 ## 7. Cierre
 
 Este documento fija la visión de ZK-SSL como **recipiente de liquidación

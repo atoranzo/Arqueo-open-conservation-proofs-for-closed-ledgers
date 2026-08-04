@@ -232,6 +232,38 @@ entre paradigmas. Eso no se descubre midiendo SHA-256.
 
 ---
 
+### 6.bis — El «último intermediario» y el dinero cuántico
+
+Hay un argumento reciente que este protocolo toma en serio: *Bitcoin
+eliminó a los bancos pero no a la confianza — la trasladó al consenso,
+que es el último intermediario*. El dinero cuántico (teorema de
+no-clonación) promete eliminarlo por física; su memoria aún no existe a
+escala.
+
+ZK-SSL es el intento clásico de la misma dirección, con herramientas de
+hoy, y conviene decir con precisión qué elimina y qué no:
+
+**Eliminado**: la ceremonia de setup (STARK/FRI — no hay secreto
+retenible por terceros); las claves de custodio en el nodo para las
+operaciones migradas a la vía delegada; y, desde la entrada 50, la
+recuperación de saldos por diccionario sobre los caminos que el
+protocolo entrega (hoja envuelta, §117).
+
+**Reducido pero presente**: el operador. Ve el estado —la privacidad es
+frente a terceros—, ordena, y podría omitir historial. Ese residuo
+tiene nombre y ataque diseñados: cabezas atestiguadas y **acuse**
+(§121, `doc/CONFIANZA_RESIDUAL.md`), que convierten «confía en el
+operador» en «el operador no puede mentir sin dejar evidencia
+fail-stop».
+
+**Fuera del dominio clásico**: la garantía física. Un STARK es solidez
+computacional con margen amplio y post-cuántico (evaluación XMSS en
+`doc/xmss-evaluacion.md`), no un teorema de la naturaleza. Cuando la
+memoria cuántica madure, el dinero cuántico podrá retirar al último
+intermediario del todo; hasta entonces, este diseño busca dejarlo
+**mínimo, medido y con evidencia** — que es lo máximo que la
+criptografía clásica honesta puede prometer.
+
 ## 7. Aportaciones reales
 
 Siete hallazgos, ninguno presente en los materiales que comparan
