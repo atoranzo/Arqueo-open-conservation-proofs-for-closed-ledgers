@@ -55,7 +55,7 @@ import os
 import re
 import sys
 
-RAIZ = os.path.join(os.path.dirname(__file__), "..", "crates", "stark-experiment", "src")
+RAIZ = os.path.join(os.path.dirname(__file__), "..", "..", "crates", "stark-experiment", "src")
 
 STATE_WIDTH = 12
 
