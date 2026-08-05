@@ -12127,6 +12127,48 @@ las cinco `#[deprecated]` de custodios · **B-4** medir (medida 11):
 errata (§135). Preside el matiz de §51: el orden estricto ya vive en
 los appliers — los tests migrados deben EJERCITARLO, no esquivarlo.
 
+## 161. La 32-transfer EJECUTADA — el cadáver sale del árbol, y dos letreros dicen hoy la verdad
+
+**Lo retirado**: `transfer.rs` entero (267 líneas — `transfer()` y su
+`apply()`), el `struct Settlement` de lib.rs (huérfano con él) y
+`SettlementPublicInputs` del import de la raíz, sin lector al caer el
+struct. `native_leaf` NO era huérfano: un `head -4` truncó su censo
+de lectores en el espejo y persistence:331 —el único que bebe del
+import de la raíz— quedó fuera; el compilador lo devolvió y la
+compuerta hizo su trabajo (cero empujado). Regla ganada: **los censos
+de poda se cuentan SIN `head`**. Nada lo cableaba —ni `mod`,
+ni `include!`, ni Cargo— y nadie lo llamaba: **el flip ya lo había
+dejado fuera del árbol de compilación**; esta tanda entierra el
+cuerpo. Con él muere el fantasma doctrinal de §160: el doc que
+recomendaba `client::prove_transfer` se va con su fichero.
+
+**Dos reconciliaciones de doctrina, ambas a favor de HOY**: (1) §32
+preservaba `apply()` «porque el cliente la necesita» — el cliente por
+compromisos (`prove_transfer`/`transfer_materials` sobre
+`circuit_settlement`) murió en el flip, así que la fila «viva» del
+cuadro de §32 es historia y `apply()` cae con el fichero: la
+superficie del nullificador que §32 vigilaba queda cerrada por
+retirada total (el árbol ya se había ido; véase la entrada 1). (2) El
+letrero de two_phase («cuando `transfer()` desaparezca, esto
+también») **prometía de más**: `records` no sirve a la verificación,
+pero alimenta los accessors del operador (§129; `balance_of` lee
+`records`) y el snapshot — el insert se queda y el letrero ahora lo
+dice.
+
+**El barrido de prosa**: cuatro presentes falsos pasan a pasado (iso
+×2, two_phase, tests — la vía clásica «llamaba», el test viejo
+«usaba») y el fósil «145 veces» de tests_support pasa a 185, el
+número del censo canon (§160). El bloque histórico de iso
+(«RETIRADO… Llamaba») ya hablaba en pasado y no se toca: los
+comentarios pueden narrar historia; lo que no pueden es mentir en
+presente.
+
+**Verificación de coste cero**: suites y guardianes idénticos al
+turno anterior — quitar lo que no compila no puede mover un dígito, y
+que no lo mueva es exactamente la comprobación. La entrada 32 NO
+viste ✅: le quedan el cronómetro de §80.5 (= B-0b), la migración de
+llamadores (B-2) y la jubilación de las cinco marcas (B-3).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

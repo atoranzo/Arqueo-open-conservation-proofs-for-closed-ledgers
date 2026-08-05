@@ -131,7 +131,7 @@ use stark_experiment::circuit_recovery::{
     build_trace as build_recovery_trace, RecoveryAir, RecoveryProver, RecoveryPublicInputs,
 };
 use stark_experiment::circuit_settlement::{
-    derive_public_id, native_leaf, native_leaf_salted, SettlementPublicInputs,
+    derive_public_id, native_leaf, native_leaf_salted,
 };
 // El circuito de la via en dos fases. Estaba importado solo dentro de
 // `two_phase.rs`, asi que `client.rs` no podia generar un envio sin pasar
@@ -334,13 +334,6 @@ struct AccountRecord {
     /// recomputar la hoja salteada (no puede derivarlo: §93.4). Se
     /// PRESERVA al operar; recovery lo toca (misma costura que view_id).
     leaf_salt: Digest,
-}
-
-/// Liquidación: la prueba y los valores públicos que la acompañan.
-#[derive(Debug)]
-pub struct Settlement {
-    pub proof: Vec<u8>,
-    pub public_inputs: SettlementPublicInputs,
 }
 
 /// Revelación dirigida a un supervisor.

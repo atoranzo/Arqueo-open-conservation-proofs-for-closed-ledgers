@@ -114,8 +114,9 @@ impl SovereignLayer {
     /// ```
     ///
     /// ⚠️ **El descuadre existía y nada lo detectaba.** El test que
-    /// comprueba la invariante usa `transfer()`, la vía antigua, que abona
-    /// al receptor en el acto. Es el modo de fallo que este proyecto
+    /// comprobaba la invariante usaba `transfer()` —retirada en la 32
+    /// (§161)—, que abonaba al receptor en el acto. Es el modo de fallo
+    /// que este proyecto
     /// documenta en otros sitios: **una propiedad que se cree comprobada
     /// porque hay un test con ese nombre, y el test ejercita otro camino.**
     ///
@@ -432,12 +433,12 @@ impl SovereignLayer {
 
         self.accounts = cuentas;
         self.pending = pend;
-        // ⚠️ **Se mantiene el registro por compatibilidad con la vía
-        // antigua**, que sí lo necesita. La vía nueva **no lo lee en
-        // ningún punto**: el saldo viene del titular y se verifica contra
-        // la hoja.
-        //
-        // Cuando `transfer()` desaparezca, esto también.
+        // ⚠️ **El registro se mantiene aunque `transfer()` ya no exista**
+        // (la 32, §161): la vía nueva no lo LEE para verificar —el saldo
+        // viene del titular y se contrasta con la hoja—, pero `records`
+        // alimenta los accessors del operador (§129; `balance_of` lee
+        // `records`) y el snapshot. El letrero viejo («cuando `transfer()`
+        // desaparezca, esto también») prometía de más; §161 lo reconcilia.
         self.records.insert(
             sender_index,
             AccountRecord {

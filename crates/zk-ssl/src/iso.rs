@@ -379,9 +379,10 @@ fn rejected(msg: &Pacs008, code: &'static str, text: String) -> Pacs002 {
 ///
 /// ## Qué la distingue de `settle_pacs008`
 ///
-/// La vía clásica llama a `transfer()`, que actualiza la hoja del receptor
-/// y por tanto **exige conocer su saldo**. El pagador lo aprende. Es la
-/// fuga que la prioridad 0 pretendía cerrar.
+/// La vía clásica llamaba a `transfer()`, que actualizaba la hoja del
+/// receptor y por tanto **exigía conocer su saldo**. El pagador lo
+/// aprendía. Era la fuga que la prioridad 0 pretendía cerrar — retirada
+/// del árbol en la 32 (§161).
 ///
 /// Ésta llama a `send()`: el dinero sale de la cuenta del pagador y queda
 /// en un **pendiente**. El receptor lo cobra después con `claim`, y
@@ -912,8 +913,9 @@ mod tests {
     /// tipo**: `settle_pacs008_two_phase` recibe el estado del **pagador**
     /// y nada del receptor. No hay parámetro donde entrara su saldo.
     ///
-    /// La vía clásica, en cambio, llama a `transfer()`, que actualiza la
-    /// hoja del receptor y por tanto **exige conocerlo**.
+    /// La vía clásica, en cambio, llamaba a `transfer()`, que actualizaba
+    /// la hoja del receptor y por tanto **exigía conocerlo** (retirada,
+    /// §161).
     ///
     /// Este test lo comprueba por su efecto: el saldo del receptor **no
     /// cambia** tras el envío, porque el dinero está en un pendiente que

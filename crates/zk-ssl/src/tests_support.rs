@@ -3,7 +3,7 @@
 //! Viven aquí y no en `tests.rs` porque el puente ISO también los
 //! necesita, y duplicarlos haría que dos suites divergieran en silencio.
 
-// ⚠️ **`open_and_fund` usa la via antigua `mint()`, y se llama 145 veces.**
+// ⚠️ **`open_and_fund` usa la via antigua `mint()`, y se llama 185 veces.**
 //
 // Es el punto por el que la mitad de la suite depende de la via marcada
 // **sin nombrarla**. Migrarlo a la delegada multiplica por tres el coste de

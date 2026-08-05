@@ -3140,8 +3140,8 @@ use super::*;
 ///
 /// ⚠️ **Este test se escribió para verlo fallar.** La capa no lleva la
 /// suma de los pendientes, así que el descuadre existe y **ningún test
-/// lo detectaba**: el que comprueba la invariante usa `transfer()`, la
-/// vía antigua, que abona al receptor en el acto.
+/// lo detectaba**: el que comprobaba la invariante usaba `transfer()`
+/// —hoy retirada (§161)—, que abonaba al receptor en el acto.
 ///
 /// Es el mismo modo de fallo que este proyecto documenta en otros
 /// sitios: **una propiedad que se cree comprobada porque hay un test
