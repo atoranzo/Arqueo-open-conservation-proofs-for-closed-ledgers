@@ -13,7 +13,7 @@ Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
 **Estado**: 34 abiertas, 40 resueltas — **2 suspendidas** (16 y 28).
-Ultima revision: 5 de agosto de 2026 — **contada, no recordada** (la cicatriz de las ocho veces).
+Ultima revision: 5 de agosto de 2026 — **contada, no recordada**.
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
 fallos y aparecieron **dos que no eran la clase conocida** (§78). Los 78
@@ -30,6 +30,13 @@ y ninguna herramienta del proyecto podia verlo.
 medir y se confirmo por la tarde con testigo en release: es el **cuarto
 fallo de solidez** de la auditoria (§72). Sigue abierta —confirmar no es
 corregir— y es hoy la entrada de mas peso de esta lista.
+
+⚠️ **NOVENA rancia, cazada por el método** (05-08-2026): la cabecera
+juraba «34 abiertas, 35 resueltas» y el conteo del propio fichero dio
+**33 y 39** ANTES de la revisión de hoy — llevaba desfasada desde alguna
+tanda anterior sin que nadie lo notara. La diferencia con las ocho
+previas: esta la cazó **el script midiendo antes de escribir**, no un
+lector después. La cabecera de hoy sale del conteo, y así saldrán todas.
 
 ⚠️ ~~16 abiertas, 21 resueltas.~~ **Estaba mal por los dos lados**, y se
 descubrio contando los `- [ ]` y `- [x]` del propio fichero: eran **17 y
