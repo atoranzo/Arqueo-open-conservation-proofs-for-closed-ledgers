@@ -333,7 +333,7 @@ mod tests {
                    "un v1 debe cargar con AMBOS centinela");
 
         // El salt real es inalcanzable por el centinela.
-        let salt_real = stark_experiment::circuit_settlement::derive_leaf_salt(
+        let salt_real = stark_experiment::native::derive_leaf_salt(
             BaseElement::new(0xBEE),
         );
         assert_ne!(salt_real, LEAF_SALT_LEGACY, "derive_leaf_salt no debe dar cero");
@@ -360,7 +360,7 @@ mod tests {
         assert_eq!((id3, bal3, nonce3), (id, 500, BaseElement::new(3)));
         assert_eq!(vid3, VIEW_ID_LEGACY, "una cuenta vieja debe cargar con centinela");
 
-        let real = stark_experiment::circuit_settlement::view_id_of(
+        let real = stark_experiment::native::view_id_of(
             BaseElement::new(0xA11CE),
         );
         assert_ne!(real, VIEW_ID_LEGACY, "view_id real colisiono con el centinela");

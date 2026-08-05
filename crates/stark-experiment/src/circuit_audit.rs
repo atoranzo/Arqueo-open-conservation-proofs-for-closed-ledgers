@@ -68,7 +68,7 @@ use winterfell::{
     TraceInfo, TracePolyTable, TraceTable, TransitionConstraintDegree,
 };
 
-use crate::circuit_settlement::{derive_public_id_wide, SPEND_KEY_DOMAIN};
+use crate::native::{derive_public_id_wide, SPEND_KEY_DOMAIN};
 use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
@@ -739,7 +739,7 @@ impl Prover for AuditProver {
 
 #[cfg(test)]
 mod tests {
-    use crate::circuit_settlement::{
+    use crate::native::{
         derive_leaf_salt_wide, native_climb, native_leaf, native_leaf_salted,
     };
     use super::*;

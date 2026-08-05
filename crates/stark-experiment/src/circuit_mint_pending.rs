@@ -1105,7 +1105,7 @@ impl Prover for MintPendingProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::circuit_settlement::derive_public_id;
+    use crate::native::derive_public_id;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
 
     const SUPPLY_OLD: u64 = 10_000_000;

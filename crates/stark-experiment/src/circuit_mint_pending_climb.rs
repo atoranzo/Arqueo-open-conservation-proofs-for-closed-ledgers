@@ -770,7 +770,7 @@ impl Prover for MintPendingClimbProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::circuit_settlement::derive_public_id;
+    use crate::native::derive_public_id;
     use crate::merkle::native_merge;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
 

@@ -59,7 +59,7 @@ use std::collections::HashMap;
 use std::io::{Read, Write};
 use winterfell::math::fields::f64::BaseElement;
 
-use stark_experiment::circuit_settlement::native_leaf;
+use stark_experiment::native::native_leaf;
 use stark_experiment::merkle::Digest;
 
 use super::*;
@@ -360,7 +360,7 @@ impl SovereignLayer {
             layer.accounts.set_leaf(
                 index,
                 if salted {
-                    stark_experiment::circuit_settlement::native_leaf_salted(
+                    stark_experiment::native::native_leaf_salted(
                         public_id, BaseElement::new(balance), nonce, leaf_salt,
                     )
                 } else {
@@ -476,7 +476,7 @@ mod tests {
     /// WRITE escribia 80 B y el salt se perdia. Cruza el disco intacto.
     #[test]
     fn snapshot_v6_preserva_leaf_salt() {
-        use stark_experiment::circuit_settlement::derive_leaf_salt;
+        use stark_experiment::native::derive_leaf_salt;
         use winterfell::math::fields::f64::BaseElement;
         const SK: u64 = 0x5A17;
 
@@ -501,7 +501,7 @@ mod tests {
 
     #[test]
     fn snapshot_v5_preserva_view_id() {
-        use stark_experiment::circuit_settlement::view_id_of;
+        use stark_experiment::native::view_id_of;
         use winterfell::math::fields::f64::BaseElement;
         const SK: u64 = 0xA11CE;
 

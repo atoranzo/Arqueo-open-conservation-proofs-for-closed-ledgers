@@ -116,7 +116,7 @@ pub use stark_experiment::circuit_governance::{build_governance_set};
 /// Construcción del conjunto de custodios: devuelve su raíz y los
 /// caminos de cada miembro.
 pub use stark_experiment::circuit_threshold::build_custodian_set;
-use stark_experiment::circuit_settlement::{
+use stark_experiment::native::{
     derive_public_id, native_leaf, native_leaf_salted,
 };
 // El circuito de la via en dos fases. Estaba importado solo dentro de

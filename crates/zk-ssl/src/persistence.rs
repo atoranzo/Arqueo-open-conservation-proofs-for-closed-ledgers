@@ -324,7 +324,7 @@ impl SovereignLayer {
             self.accounts.set_leaf(
                 idx,
                 if migrated {
-                    stark_experiment::circuit_settlement::native_leaf_salted(
+                    stark_experiment::native::native_leaf_salted(
                         public_id, BaseElement::new(balance), nonce, leaf_salt,
                     )
                 } else {

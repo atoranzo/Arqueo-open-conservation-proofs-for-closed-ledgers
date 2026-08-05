@@ -48,7 +48,7 @@ use super::*;
 // crate: `use super::*` no los alcanza.
 // `derive_public_id_wide` (§90) no llega por `use super::*`: lib.rs
 // solo reexporta la estrecha.
-use stark_experiment::circuit_settlement::{derive_public_id_wide, view_id_from_view_key};
+use stark_experiment::native::{derive_public_id_wide, view_id_from_view_key};
 use crate::pending::pending_commitment;
 use crate::two_phase::{ClaimReceipt, PendingNotice, SendReceipt};
 
@@ -398,7 +398,7 @@ pub fn prove_claim(
 #[cfg(test)]
 mod tests_privacidad {
     use crate::tests_support::*;
-    use stark_experiment::circuit_settlement::native_leaf;
+    use stark_experiment::native::native_leaf;
     use winterfell::math::fields::f64::BaseElement;
 
     /// Mallory. **No conoce ninguna clave ajena.** Se define aqui y no en
@@ -418,7 +418,7 @@ mod tests_privacidad {
     /// (T7). Este test verifica el contrato NUEVO.
     #[test]
     fn reading_a_balance_requires_authority() {
-        use stark_experiment::circuit_settlement::derive_view_key;
+        use stark_experiment::native::derive_view_key;
         use winterfell::math::fields::f64::BaseElement;
 
         let mut layer = new_layer();
@@ -640,7 +640,7 @@ mod tests_privacidad {
     // ═══════════════════════════════════════════════════════════════════
 
     use crate::pending::pending_commitment;
-    use stark_experiment::circuit_settlement::derive_public_id;
+    use stark_experiment::native::derive_public_id;
 
     /// **TERCERO, correlación 1: el commitment NO codifica al emisor.**
     ///
@@ -1025,7 +1025,7 @@ mod t5_contencion_anclaje {
     //! y se miden las constantes con las que re-derivar el numero.
     use crate::tests_support::*;
     use crate::LayerError;
-    use stark_experiment::circuit_settlement::derive_public_id;
+    use stark_experiment::native::derive_public_id;
     use std::time::{Duration, Instant};
     use winterfell::math::fields::f64::BaseElement;
 

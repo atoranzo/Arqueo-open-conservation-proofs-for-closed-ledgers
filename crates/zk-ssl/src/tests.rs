@@ -15,7 +15,7 @@ use super::*;
     use crate::tests_support::*;
     // `derive_public_id_wide` no llega por `use super::*`: lib.rs solo
     // reexporta la estrecha.
-    use stark_experiment::circuit_settlement::derive_public_id_wide;
+    use stark_experiment::native::derive_public_id_wide;
 
     /// **No hay setup de claves.** Es la propiedad que distingue este
     /// paradigma: arrancar la capa es instantáneo y no genera ningún
@@ -2375,7 +2375,7 @@ use super::*;
         use stark_experiment::circuit_audit::{
             build_trace as build_audit, AuditProver, AuditWitness,
         };
-        use stark_experiment::circuit_settlement::{native_climb, native_leaf_salted};
+        use stark_experiment::native::{native_climb, native_leaf_salted};
         use stark_experiment::merkle::{native_merge, MerklePath, TREE_DEPTH};
 
         let mut empty = vec![[BaseElement::ZERO; 4]];

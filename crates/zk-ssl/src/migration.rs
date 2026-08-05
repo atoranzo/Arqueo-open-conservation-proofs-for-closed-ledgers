@@ -12,7 +12,7 @@
 //! toda prueba. Esta función existe para el flip y para sus tests.
 
 use super::*;
-use stark_experiment::circuit_settlement::native_leaf_salted;
+use stark_experiment::native::native_leaf_salted;
 use std::collections::HashMap;
 
 /// Profundidad del árbol de congelados POST-migración (spec §137: crecer
@@ -165,7 +165,7 @@ mod tests {
     /// el salt DEL RECORD (la enmienda a la spec). Pendientes intactos.
     #[test]
     fn cada_cuenta_sobrevive_con_su_hoja_envuelta() {
-        use stark_experiment::circuit_settlement::native_leaf_salted;
+        use stark_experiment::native::native_leaf_salted;
         let mut l = new_layer();
         open_and_fund(&mut l, SK_ALICE, 1_000_000);
         open_and_fund(&mut l, SK_BOB, 250_000);
@@ -204,13 +204,13 @@ mod tests {
         // algo que remapear, el récord se planta a mano en el índice 0.
         let sk = BaseElement::new(SK_ALICE);
         let pid = derive_public_id(sk);
-        let salt = stark_experiment::circuit_settlement::derive_leaf_salt(sk);
+        let salt = stark_experiment::native::derive_leaf_salt(sk);
         let alice: AccountIndex = 0;
         l.records.insert(alice, AccountRecord {
             public_id: pid,
             balance: 1_000_000,
             nonce: BaseElement::ZERO,
-            view_id: stark_experiment::circuit_settlement::view_id_of(sk),
+            view_id: stark_experiment::native::view_id_of(sk),
             leaf_salt: salt,
         });
         l.accounts.set_leaf(
@@ -256,7 +256,7 @@ mod tests {
     /// sondea al siguiente.
     #[test]
     fn colision_de_posicion_sondea_al_siguiente() {
-        use stark_experiment::circuit_settlement::native_leaf;
+        use stark_experiment::native::native_leaf;
         let mut l = new_layer();
         let x = BaseElement::new(0xC011);
         let vid: Digest = [BaseElement::new(9); 4];

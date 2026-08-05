@@ -158,9 +158,9 @@ impl SovereignLayer {
         spend_key: Digest,
     ) -> Result<AccountIndex, LayerError> {
         self.open_with_id(
-            stark_experiment::circuit_settlement::derive_public_id_wide(spend_key),
-            stark_experiment::circuit_settlement::view_id_of_wide(spend_key),
-            stark_experiment::circuit_settlement::derive_leaf_salt_wide(spend_key),
+            stark_experiment::native::derive_public_id_wide(spend_key),
+            stark_experiment::native::view_id_of_wide(spend_key),
+            stark_experiment::native::derive_leaf_salt_wide(spend_key),
         )
     }
 
@@ -178,8 +178,8 @@ impl SovereignLayer {
         }
         self.open_with_id(
             derive_public_id(spend_key),
-            stark_experiment::circuit_settlement::view_id_of(spend_key),
-            stark_experiment::circuit_settlement::derive_leaf_salt(spend_key),
+            stark_experiment::native::view_id_of(spend_key),
+            stark_experiment::native::derive_leaf_salt(spend_key),
         )
     }
 
@@ -216,7 +216,7 @@ impl SovereignLayer {
         self.accounts
             .set_leaf(
                 index,
-                stark_experiment::circuit_settlement::native_leaf_salted(
+                stark_experiment::native::native_leaf_salted(
                     public_id, BaseElement::ZERO, nonce, leaf_salt,
                 ),
             );
@@ -256,7 +256,7 @@ mod t_paso2_view_id {
     //! Paso 2 de 49-A verificado: el view_id se puebla y viaja correcto.
     use super::*;
     use crate::tests_support::*;
-    use stark_experiment::circuit_settlement::{view_id_of, view_id_of_wide};
+    use stark_experiment::native::{view_id_of, view_id_of_wide};
     use crate::store::VIEW_ID_LEGACY;
 
     const SK: u64 = 0xA11CE;

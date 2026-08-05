@@ -58,7 +58,7 @@ use winterfell::math::{fields::f64::BaseElement, FieldElement};
 
 use crate::sparse_tree::SparseTree;
 use crate::Digest;
-use stark_experiment::circuit_settlement::derive_public_id;
+use stark_experiment::native::derive_public_id;
 use stark_experiment::merkle::native_merge;
 
 /// Compromiso de una transferencia pendiente.
@@ -459,7 +459,7 @@ mod t3b_reversion_temporal_nativa {
     //! construible sobre el compromiso v2, la politica es implementable y
     //! el circuito es ingenieria (piezas 1-3), no riesgo de existencia.
     use super::*;
-    use stark_experiment::circuit_settlement::derive_public_id;
+    use stark_experiment::native::derive_public_id;
     use winterfell::math::fields::f64::BaseElement;
 
     fn d(x: u64) -> Digest {
@@ -509,7 +509,7 @@ mod t4_acuse_nativo {
     //! construye sobre estructuras nativas, la politica del acuse es
     //! implementable. T4-circuito queda condicionado a B10.1 extendido.
     use super::*;
-    use stark_experiment::circuit_settlement::view_id_of;
+    use stark_experiment::native::view_id_of;
     use winterfell::math::fields::f64::BaseElement;
 
     fn d(x: u64) -> Digest {

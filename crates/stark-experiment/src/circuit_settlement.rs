@@ -77,9 +77,9 @@ use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 #[cfg(test)]
 use crate::merkle::native_merge; // suministro de la jaula: el clímber-24 y los tests del museo
 
-// La fragua vive en `crate::native` (M-1, §175). El museo re-exporta
-// por compatibilidad hasta M-2, cuando los llamadores se reapunten.
-pub use crate::native::*;
+// El museo consume la fragua como cualquier hijo del módulo (M-2):
+// el re-export público murió — los llamadores ya apuntan a `native`.
+use crate::native::*;
 // ⚠️ CIRCUITO-MUSEO (liquidación de un solo paso): sus tramos se
 // diseñaron para frozen-24 (bits de congelados en ciclos 103..127,
 // última fila 1023 de 1024 — ajuste EXACTO) y sus trece tests

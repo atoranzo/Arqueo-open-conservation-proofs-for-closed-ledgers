@@ -203,7 +203,7 @@ mod tests_delegada {
     /// aqui: se registra (§98).
     #[test]
     fn a_narrow_account_can_rotate_to_a_256_bit_key() {
-        use stark_experiment::circuit_settlement::derive_public_id_wide;
+        use stark_experiment::native::derive_public_id_wide;
 
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
@@ -350,7 +350,7 @@ mod tests_delegada {
             custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS);
         // Post-F3 la posición ya no es secuencial: se captura la REAL.
         let idx = l.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
-        let nueva = stark_experiment::circuit_settlement::derive_public_id(
+        let nueva = stark_experiment::native::derive_public_id(
             BaseElement::new(0xBEEF_CAFE));
         (l, idx, nueva)
     }
@@ -421,7 +421,7 @@ mod tests_delegada {
         let ck = custodian_keys();
         let (_, cp) = build_custodian_set(&ck);
         let antes = layer.records.get(&idx).unwrap().public_id;
-        let otra = stark_experiment::circuit_settlement::derive_public_id(
+        let otra = stark_experiment::native::derive_public_id(
             BaseElement::new(0xDEAD_BEEF));
 
         let op = compromiso(layer.accounts.root(), raiz_nueva(&layer, idx, otra),

@@ -797,7 +797,7 @@ impl Prover for MintClimbProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::circuit_settlement::{
+    use crate::native::{
         derive_leaf_salt_wide, derive_public_id_wide, native_climb,
         native_leaf, native_leaf_salted,
     };

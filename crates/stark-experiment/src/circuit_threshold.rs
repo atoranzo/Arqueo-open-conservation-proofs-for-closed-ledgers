@@ -722,7 +722,7 @@ impl Prover for ThresholdProver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::circuit_settlement::derive_public_id;
+    use crate::native::derive_public_id;
     use winterfell::{verify, AcceptableOptions, BatchingMethod, FieldExtension};
 
     fn default_options() -> ProofOptions {

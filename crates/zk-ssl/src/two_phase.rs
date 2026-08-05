@@ -867,7 +867,7 @@ mod tests_delegada {
     /// Identidad publica del destinatario. **La dan los custodios, no la
     /// capa**: la capa no sabe de quien es cada pendiente.
     fn receptor() -> Digest {
-        stark_experiment::circuit_settlement::derive_public_id(BaseElement::new(SK_BOB))
+        stark_experiment::native::derive_public_id(BaseElement::new(SK_BOB))
     }
 
     fn prueba_subida(layer: &SovereignLayer, amount: u64) -> winterfell::Proof {
@@ -1068,7 +1068,7 @@ mod tests_delegada {
 mod tests_verificacion {
     use super::*;
     use crate::tests_support::*;
-    use stark_experiment::circuit_settlement::derive_public_id;
+    use stark_experiment::native::derive_public_id;
 
     const IMPORTE: u64 = 250_000;
     const FONDO: u64 = 1_000_000;
