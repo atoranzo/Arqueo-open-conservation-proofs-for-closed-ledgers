@@ -751,8 +751,7 @@ mod tests {
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 500_000);
 
-        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
-        layer.apply_freeze(&f, alice).expect("aplicar");
+        set_frozen_delegated(&mut layer, alice, true);
 
         let info = layer.export_snapshot(&file).expect("exportar");
         assert_eq!(info.frozen, 1, "la instantanea debe incluir la congelada");

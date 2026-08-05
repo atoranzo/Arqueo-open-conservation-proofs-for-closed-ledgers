@@ -200,40 +200,6 @@ mod tests {
         println!("     `proof_options`. No mide un shard.");
     }
 
-    /// **El precio de la palanca (B-0b, §80.5)** — fondear una cuenta
-    /// por las dos vías, apareado en el mismo proceso: la vieja genera
-    /// UNA prueba (mint) y la delegada TRES (subida + par de umbral).
-    /// Protocolo §89.1: una ejecución del proceso = una muestra; correr
-    /// cinco veces y publicar el rango (§131).
-    ///
-    ///     cargo test -p zk-ssl --release el_precio_de_la_palanca \
-    ///         -- --ignored --nocapture
-    #[test]
-    #[ignore]
-    fn el_precio_de_la_palanca() {
-        let mut vieja = new_layer();
-        let mut nueva = new_layer();
-        let a = vieja.open_account(BaseElement::new(SK_ALICE));
-        let b = nueva.open_account(BaseElement::new(SK_ALICE));
-
-        let t = Instant::now();
-        let receipt = vieja.mint(&valid_auth(), a, 250_000).expect("emision");
-        vieja.apply_mint(&receipt, a).expect("aplicar");
-        let via_vieja = t.elapsed();
-
-        let t = Instant::now();
-        fund_delegated(&mut nueva, b, 250_000);
-        let via_delegada = t.elapsed();
-
-        assert_eq!(vieja.balance_of(a), nueva.balance_of(b), "paridad de saldo");
-        println!(
-            "palanca: vieja {:.1} ms · delegada {:.1} ms · x{:.2}",
-            ms(via_vieja),
-            ms(via_delegada),
-            ms(via_delegada) / ms(via_vieja)
-        );
-    }
-
     #[test]
     fn metrics_of_the_layer() {
         println!("\n=== ZK-SSL — metricas de la capa (release) ===\n");
@@ -252,19 +218,20 @@ mod tests {
 
         // --- Emision con umbral 2-de-N ---
         let t = Instant::now();
-        let receipt = layer
-            .mint(&valid_auth(), alice, 1_000_000)
-            .expect("emision");
+        let op = mint_commitment(&layer, alice, 1_000_000);
+        let subida = mint_climb_proof(&layer, alice, 1_000_000);
+        let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
         let mint_gen = t.elapsed();
-        let mint_bytes = receipt.proof.len();
+        let mint_bytes = subida.to_bytes().len();
 
         let t = Instant::now();
-        layer.apply_mint(&receipt, alice).expect("aplicar emision");
+        layer
+            .apply_mint_delegated(subida, pa, ia, pb, ib, alice, 1_000_000)
+            .expect("aplicar emision");
         let mint_apply = t.elapsed();
 
         // Fondos para el receptor, sin medir.
-        let r2 = layer.mint(&valid_auth(), bob, 50_000).expect("emision 2");
-        layer.apply_mint(&r2, bob).expect("aplicar");
+        fund_delegated(&mut layer, bob, 50_000);
 
         // --- Transferencia ---
         // ⚠️ **UN PAGO SON DOS PRUEBAS, NO UNA.**
@@ -637,7 +604,6 @@ mod tests {
         // comprobar, y aqui se comprueba, es la correlacion.
     }
 }
-
 
 #[cfg(test)]
 mod remedicion_89_1 {

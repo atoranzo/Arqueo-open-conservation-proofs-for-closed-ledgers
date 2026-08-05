@@ -778,12 +778,7 @@ mod tests {
         // Dos pasos: generar el recibo y APLICARLO. `set_frozen` toma
         // `&self` y solo produce la prueba; sin `apply_freeze` la cuenta
         // seguiria libre y el test comprobaria otra cosa.
-        let recibo = layer
-            .set_frozen(&valid_auth(), alice, true)
-            .expect("generar la congelacion");
-        layer
-            .apply_freeze(&recibo, alice)
-            .expect("aplicar la congelacion");
+        set_frozen_delegated(&mut layer, alice, true);
 
         let msg = message(1000, "EUR");
         let r = settle(&mut layer, &registry, &msg, SK_ALICE, alice);

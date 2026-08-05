@@ -1836,21 +1836,6 @@ use super::*;
         stark_experiment::circuit_threshold::build_custodian_set(&keys).0
     }
 
-    fn new_custodian_auth() -> ThresholdAuth {
-        let keys: Vec<BaseElement> = (0..5)
-            .map(|i| BaseElement::new(0xD0_0D_00 + i))
-            .collect();
-        let (_, paths) = stark_experiment::circuit_threshold::build_custodian_set(&keys);
-        ThresholdAuth {
-            key_a: keys[1],
-            index_a: 1,
-            path_a: paths[1].clone(),
-            key_b: keys[3],
-            index_b: 3,
-            path_b: paths[3].clone(),
-        }
-    }
-
     /// **EL TEST QUE JUSTIFICA LA PIEZA.**
     ///
     /// Tras el cambio, **los custodios antiguos ya no pueden emitir** y

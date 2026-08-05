@@ -1302,7 +1302,8 @@ mod tests_verificacion {
 
         let mut layer = new_layer();
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
-        let auth = valid_auth();
+        let ck = custodian_keys();
+        let (_, cp) = stark_experiment::circuit_threshold::build_custodian_set(&ck);
         let salt = salt_de(0x5EED);
         let inflado = IMPORTE * 4;
         let id_bob = layer.public_id_of(bob).expect("cuenta");
@@ -1312,14 +1313,14 @@ mod tests_verificacion {
         let path = layer.pending.path_for(position);
 
         let mut trace = build_mint_pending_trace(
-            auth.key_a, auth.index_a, &auth.path_a,
-            auth.key_b, auth.index_b, &auth.path_b,
+            ck[1], 1, &cp[1],
+            ck[3], 3, &cp[3],
             layer.total_supply(), IMPORTE, MAX_SUPPLY, IMPORTE,
             id_bob, salt, &path,
         );
         let falsa = build_mint_pending_trace(
-            auth.key_a, auth.index_a, &auth.path_a,
-            auth.key_b, auth.index_b, &auth.path_b,
+            ck[1], 1, &cp[1],
+            ck[3], 3, &cp[3],
             layer.total_supply(), inflado, MAX_SUPPLY, inflado,
             id_bob, salt, &path,
         );
@@ -1748,7 +1749,8 @@ mod tests_verificacion {
         use stark_experiment::rescue_hash::STATE_WIDTH;
 
         let mut layer = new_layer();
-        let auth = valid_auth();
+        let ck = custodian_keys();
+        let (_, cp) = stark_experiment::circuit_threshold::build_custodian_set(&ck);
         let position = layer.allocate_pending().expect("posicion libre");
         let path = layer.pending.path_for(position);
         let salt = salt_de(0x5EED);
@@ -1757,14 +1759,14 @@ mod tests_verificacion {
         // Dos trazas honestas con los MISMOS custodios: asi el ascenso del
         // carril B sigue siendo valido y la unica variable es el importe.
         let mut trace = build_mint_pending_trace(
-            auth.key_a, auth.index_a, &auth.path_a,
-            auth.key_b, auth.index_b, &auth.path_b,
+            ck[1], 1, &cp[1],
+            ck[3], 3, &cp[3],
             layer.total_supply(), IMPORTE, MAX_SUPPLY, IMPORTE,
             id_bob(), salt, &path,
         );
         let falsa = build_mint_pending_trace(
-            auth.key_a, auth.index_a, &auth.path_a,
-            auth.key_b, auth.index_b, &auth.path_b,
+            ck[1], 1, &cp[1],
+            ck[3], 3, &cp[3],
             layer.total_supply(), inflado, MAX_SUPPLY, inflado,
             id_bob(), salt, &path,
         );

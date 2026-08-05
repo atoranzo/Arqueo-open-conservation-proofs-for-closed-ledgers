@@ -190,6 +190,18 @@ mod tests {
         cleanup(&path);
     }
 
+    /// El rito de §165, en esta casa: tras soltar el registro, sled
+    /// puede tardar en devolver el cerrojo (WouldBlock) — el primo del
+    /// flake curado en zk-ssl, destapado por B-3b-i al mover el reloj.
+    fn open_retry(path: &str) -> PersistentNullifierRegistry {
+        for _ in 0..10 {
+            match PersistentNullifierRegistry::open(path) {
+                Ok(r) => return r,
+                Err(_) => std::thread::sleep(std::time::Duration::from_millis(50)),
+            }
+        }
+        PersistentNullifierRegistry::open(path).unwrap()
+    }
     /// LA PROPIEDAD QUE JUSTIFICA QUE SEA PERSISTENTE: el registro
     /// sobrevive a un reinicio del proceso. Sin esto, reiniciar un nodo
     /// permitiría regastar todo lo anterior.
@@ -202,12 +214,12 @@ mod tests {
         let nullifier = sample_nullifier(12345, 1);
 
         {
-            let registry = PersistentNullifierRegistry::open(&path_str).unwrap();
+            let registry = open_retry(&path_str);
             registry.check_and_mark_spent(&nullifier).unwrap();
         } // se cierra la base de datos: simula el apagado del nodo
 
         {
-            let registry = PersistentNullifierRegistry::open(&path_str).unwrap();
+            let registry = open_retry(&path_str);
             assert!(
                 registry.is_spent(&nullifier).unwrap(),
                 "CRITICO: tras reiniciar, el nullifier gastado debe seguir marcado"
