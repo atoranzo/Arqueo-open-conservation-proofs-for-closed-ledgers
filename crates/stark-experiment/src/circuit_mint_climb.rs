@@ -168,6 +168,22 @@ const P_FIRST_S: usize = P_FIRST_ROW + 1;
 const P_CONT_S: usize = P_FIRST_S + 1;
 const P_SEG_LINK: usize = P_CONT_S + 1;
 
+// ===== Celdas libres (FV-1, doc/VERIFICACION_FORMAL.md par.1; censo par.188) =====
+// El interprete multi-ciclo (doc/fv/interprete_multiciclo.py) exige un dueno
+// por cada (columna, clase de fila); lo que es testigo POR DISENO se declara
+// aqui, y una declaracion que ademas tenga dueno es aviso rancio.
+// CELDAS_LIBRES: limbos del salt de hoja: solo se leen por current en el tercer merge (§117) (clase *, cols 38..42) — §188
+// CELDAS_LIBRES: bit de camino: se consume en las filas de enlace del arbol y su booleanidad viaja por current (clase sin acct_link, col 24) — §188
+// CELDAS_LIBRES: descanso del acumulador de Horner en la frontera de segmento (clase acct_link, col 37) — §188
+// CELDAS_LIBRES: descanso del acumulador en la cola de la traza (clase plana, col 37) — §188
+// CELDAS_LIBRES: limbos altos del rate en el primer merge: solo el limbo 8 lleva el nonce (§92.2) (clase cont_s+link_leaf, cols 9..12) — §188
+// CELDAS_LIBRES: limbos altos del rate en el primer merge, carril B (clase cont_s+link_leaf, cols 21..24) — §188
+// CELDAS_LIBRES: carriles tras la raiz de cuentas: el ascenso termino y las raices quedan asertadas en su fila (clase cont_s, cols 0..4) — §188
+// CELDAS_LIBRES: carriles tras la raiz, salvo los digest asertados (clase cont_s, cols 8..16) — §188
+// CELDAS_LIBRES: carriles tras la raiz, carril B alto (clase cont_s, cols 20..24) — §188
+// CELDAS_LIBRES: carriles muertos en el quinto cierre, tras la raiz (clase cont_s+seg_link4, cols 0..24) — §188
+// CELDAS_LIBRES: cola plana de la traza: solo las economicas viajan (clase plana, cols 0..24) — §188
+
 type Blake3 = Blake3_256<BaseElement>;
 
 fn value_to_bits_be(value: u64) -> Vec<bool> {

@@ -13069,6 +13069,55 @@ carriles) con la trampa del alias resuelta. Queda cobertura —selectores
 multi-ciclo de los circuitos de cuentas— y el injerto en el guardián. Canon
 sin cambio (297 · 242 · 40 · 28).
 
+## 187. El mapa de tres capas — doc §9: la sesión propia de la 71 queda con plano
+
+La crítica externa de FV quedó triada y respondida con tres intérpretes
+ejecutables (§184-§186); lo que FALTA quedaba en prosa de traspaso, no en
+canon. Este asiento lo fija: doc/VERIFICACION_FORMAL.md gana el §9 («El
+mapa de lo que falta — tres capas»), leído del árbol, que corrige una
+imprecisión de traspasos previos: el resto NO es «solo cobertura» — la
+Capa 1 es un TERCER patrón de selector (cuatro familias: hash multi-ciclo,
+one-hots de árbol, fila-0, segmentos Horner) que el intérprete de ciclo
+corto no sabe leer. Capa 2, el injerto en el guardián (751 líneas, leídas
+enteras antes de tocar). Capa 3, FV-2/FV-3 intactas detrás. Criterio
+invariante desde §185: mint_climb sano cero huérfanas Y mutante cazado.
+El contenido del §9 viajó también como doc/fv/mapa_fv_capas.md.
+
+## 188. Capa 1 EJECUTADA — el intérprete multi-ciclo, 588 celdas-clase, y el candidato ciego
+
+La sesión propia que §187 dejaba con plano. doc/fv/interprete_multiciclo.py
+lee las CUATRO familias del §9 sobre circuit_mint_climb y asume de entrada
+el riesgo declarado del mapa: clase = FIRMA explícita de selectores por
+paso (0..510), no patrón de ciclo. Medido: 14 clases · 588 celdas-clase ·
+33 sentencias result · 140 celdas libres DECLARADAS en el propio circuito
+(convención CELDAS_LIBRES del doc §1: salt de hoja testigo, bit de camino
+fuera de las filas de enlace, descansos del acumulador, limbos altos del
+primer merge, y los carriles tras la raíz — la cola plana son 192 de los
+511 pasos) · 0 rancias · 0 SIN DUEÑO. Mutantes: C_HORNER cazado (7
+huérfanas nuevas: col 37 en las clases de cuerpo) y C_SALT_IN_A cazado (4
+nuevas: cols 8..11 en la clase del tercer merge).
+
+El HALLAZGO: el candidato del mapa (borrar una C_SEG_LINK) es CIEGO para
+el censo — delta 0, porque Horner co-posee la col 37 en las clases de
+cierre (cont_s cubre la penúltima fila de cada segmento). La red que lo ve
+es el guardián, por partida doble y medido sobre copia mutada: [MUERTA] 5
+ranuras sin escribir (grupo C_SEG_LINK) y [MUERTA PERIODICA] columnas
+31..35 construidas sin leerse. Matiz que la Capa 2 hereda: ambas avisan
+como HUECOS, no graves (exit 0); la compuerta del rito cae igualmente
+porque la línea limpia del resumen desaparece. La cosecha del intérprete
+es conservadora (alias de columna Y de selector, arrays de constantes con
+deref, bucles reales por pila de llaves, ensanche del bloque de carril
+solo para la forma-hash): lo no entendido jamás SUMA cobertura — el sesgo
+es al rojo, §59.2 no entra por aquí. Dos cicatrices del camino: el locus
+de CELDAS_LIBRES moría en el primer paréntesis de prosa (§117) — línea y
+locus van ahora separados —, y la aserción de ROW_ACCT_ROOT acredita a
+TODA la clase cont_s (39 filas) por doctrina §185: el propio censo lo
+recuerda en cada salida — referenciada ≠ determinada.
+
+Queda de la 71: Capa 2, el injerto (con este hallazgo en la mano: el censo
+entra como compuerta que TUMBA, y la política huecos/graves de las MUERTAS
+se mira ahí). Detrás, intacto, el §9.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
