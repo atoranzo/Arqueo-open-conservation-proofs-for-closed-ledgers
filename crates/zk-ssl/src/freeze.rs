@@ -328,6 +328,39 @@ mod tests_delegada {
         assert!(layer.is_frozen(idx), "la cuenta debe quedar congelada");
     }
 
+    /// **REENVIAR una congelacion delegada NO cuenta dos veces.** El
+    /// compromiso ata `count_old → count_old+1` y las raices: aplicado
+    /// una vez, el contador avanzo y los mismos materiales quedan
+    /// huerfanos. Releva en B-3 a `replaying_a_freeze_is_rejected`
+    /// (via-recibo, §167).
+    #[test]
+    fn replaying_a_delegated_freeze_is_rejected() {
+        let mut layer = capa();
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+        let idx = 0;
+
+        let root_old = layer.frozen_root();
+        let mut t = layer.frozen.clone();
+        t.set_leaf(idx, frozen_leaf(true));
+        let op = compromiso(root_old, t.root(), layer.freeze_count());
+        let subida = prueba_subida(&layer, idx, true);
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+        layer
+            .apply_freeze_delegated(
+                subida.clone(), pa.clone(), ia.clone(), pb.clone(), ib.clone(), idx, true,
+            )
+            .expect("la primera aplicacion");
+        let cuenta = layer.freeze_count();
+
+        // Los MISMOS materiales, otra vez.
+        let r = layer.apply_freeze_delegated(subida, pa, ia, pb, ib, idx, true);
+        assert!(r.is_err(), "CRITICO: reenviar contaria dos intervenciones: {r:?}");
+        assert_eq!(layer.freeze_count(), cuenta, "el contador no avanza");
+        assert!(layer.is_frozen(idx), "y el estado no se toca");
+    }
+
     /// El mismo custodio dos veces no es un umbral.
     #[test]
     fn the_same_custodian_twice_cannot_freeze() {

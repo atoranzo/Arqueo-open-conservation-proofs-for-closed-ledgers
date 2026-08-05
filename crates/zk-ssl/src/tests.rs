@@ -901,8 +901,7 @@ use super::*;
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let id_bob = derive_public_id(BaseElement::new(SK_BOB));
 
-        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
-        layer.apply_freeze(&f, alice).expect("aplicar");
+        set_frozen_delegated(&mut layer, alice, true);
 
         let r = layer.send(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), id_bob, salt_de(0x5EED), 1000);
         assert!(matches!(r, Err(LayerError::AccountFrozen(_))));
@@ -1071,8 +1070,7 @@ use super::*;
         fund_delegated(&mut layer, alice, 100_000);
         assert_eq!(layer.custodian_uses(), 1, "emitir consume una");
 
-        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
-        layer.apply_freeze(&f, alice).expect("aplicar");
+        set_frozen_delegated(&mut layer, alice, true);
         assert_eq!(layer.custodian_uses(), 2, "congelar consume otra");
     }
 
@@ -1509,8 +1507,7 @@ use super::*;
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
 
-        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
-        layer.apply_freeze(&f, alice).expect("aplicar");
+        set_frozen_delegated(&mut layer, alice, true);
         assert!(layer.is_frozen(alice));
 
         // Transferir NO puede.
@@ -1550,12 +1547,10 @@ use super::*;
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
 
-        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
-        layer.apply_freeze(&f, alice).expect("aplicar");
+        set_frozen_delegated(&mut layer, alice, true);
         assert!(layer.burn(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 1000).is_err());
 
-        let u = layer.set_frozen(&valid_auth(), alice, false).expect("descongelar");
-        layer.apply_freeze(&u, alice).expect("aplicar");
+        set_frozen_delegated(&mut layer, alice, false);
 
         let b = layer
             .burn(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 1000)
@@ -1578,8 +1573,7 @@ use super::*;
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
 
-        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
-        layer.apply_freeze(&f, alice).expect("aplicar");
+        set_frozen_delegated(&mut layer, alice, true);
 
         // Los custodios recuperan la cuenta a una identidad nueva.
         let nueva = derive_public_id(BaseElement::new(0xC0FFEE));
@@ -1812,8 +1806,7 @@ use super::*;
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
 
-        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
-        layer.apply_freeze(&f, alice).expect("aplicar");
+        set_frozen_delegated(&mut layer, alice, true);
 
         // Un intruso, sin la clave de Alice, intenta transferir desde su
         // cuenta. Debe recibir "no eres el titular", NO "esta congelada".
@@ -1846,8 +1839,7 @@ use super::*;
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
-        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
-        layer.apply_freeze(&f, alice).expect("aplicar");
+        set_frozen_delegated(&mut layer, alice, true);
 
         let estado = state_of(&layer, alice);
         let receptor = layer.public_id_of(bob).expect("cuenta");
@@ -1917,10 +1909,7 @@ use super::*;
             .expect("transferencia en dos fases");
 
         // Dos custodios la congelan.
-        let f = layer
-            .set_frozen(&valid_auth(), alice, true)
-            .expect("congelar");
-        layer.apply_freeze(&f, alice).expect("aplicar congelacion");
+        set_frozen_delegated(&mut layer, alice, true);
         assert!(layer.is_frozen(alice));
 
         // Ahora NO puede.
@@ -1951,8 +1940,7 @@ use super::*;
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
 
-        let f = layer.set_frozen(&valid_auth(), bob, true).expect("congelar");
-        layer.apply_freeze(&f, bob).expect("aplicar");
+        set_frozen_delegated(&mut layer, bob, true);
 
         // ===== EL DINERO SALE, Y LLEGA A UN PENDIENTE =====
         let estado = state_of(&layer, alice);
@@ -1999,8 +1987,7 @@ use super::*;
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
 
-        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
-        layer.apply_freeze(&f, alice).expect("aplicar");
+        set_frozen_delegated(&mut layer, alice, true);
         assert!(layer.send(
                 BaseElement::new(SK_ALICE),
                 alice,
@@ -2010,10 +1997,7 @@ use super::*;
                 1000,
             ).is_err());
 
-        let u = layer
-            .set_frozen(&valid_auth(), alice, false)
-            .expect("descongelar");
-        layer.apply_freeze(&u, alice).expect("aplicar");
+        set_frozen_delegated(&mut layer, alice, false);
         assert!(!layer.is_frozen(alice));
 
         two_phase_transfer(&mut layer, alice, SK_ALICE, bob, SK_BOB, 1000, salt_de(0x0707))
@@ -2048,12 +2032,10 @@ use super::*;
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         assert_eq!(layer.freeze_count(), 0);
 
-        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
-        layer.apply_freeze(&f, alice).expect("aplicar");
+        set_frozen_delegated(&mut layer, alice, true);
         assert_eq!(layer.freeze_count(), 1);
 
-        let u = layer.set_frozen(&valid_auth(), alice, false).expect("descongelar");
-        layer.apply_freeze(&u, alice).expect("aplicar");
+        set_frozen_delegated(&mut layer, alice, false);
         assert_eq!(
             layer.freeze_count(),
             2,
@@ -2075,8 +2057,7 @@ use super::*;
             )
             .expect("abrir");
             alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-            let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
-            layer.apply_freeze(&f, alice).expect("aplicar");
+            set_frozen_delegated(&mut layer, alice, true);
         }
         {
             let mut layer = open_retry(

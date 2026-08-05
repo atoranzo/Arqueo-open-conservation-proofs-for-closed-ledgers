@@ -12346,6 +12346,30 @@ claves viejas contra raíz nueva, §54.2 en vivo— tiene casa natural en
 la familia governance (B-2e). **Cero llamadas de mint sin destino.**
 Siguiente: set_frozen (17).
 
+## 167. B-2d — la familia freeze, CERRADA: quince mecánicos, un relevo, paridad del contador
+
+**La familia más disciplinada del censo**: 15 de 17 eran el patrón
+mecánico puro —todos setup de tests cuyo sujeto es otro— y giran en
+barrido estructural (nombres asertados) a `set_frozen_delegated`,
+sobre la palanca extendida: `freeze_commitment` (raíces del árbol de
+congelados + `count → count+1` atado), `freeze_climb_proof`
+(FrozenClimb) y el aplicador. Paridad del contador público verificada
+del natural ANTES de girar: `freeze_count` avanza en las dos vías
+(:142 vieja, :246 delegada) — `every_freeze_is_counted` cuenta hoy
+intervenciones reales.
+
+**Los dos no-mecánicos, al libro**: `replaying_a_freeze_is_rejected`
+vive hasta B-3, relevado hoy por
+`replaying_a_delegated_freeze_is_rejected` — los mismos materiales
+reaplicados rebotan porque el contador ya avanzó, y el contador no
+avanza dos veces (que es exactamente lo que el contador existe para
+garantizar) —; `one_custodian_cannot_freeze_alone` (autoridad-mala en
+generación, contrato de la vía-recibo) vive hasta B-3 con relevos
+existentes: `the_same_custodian_twice_cannot_freeze` y
+`governance_keys_cannot_freeze`. **Cero llamadas de freeze sin
+destino.** Suite: 247 → 248. Siguiente: update_custodians (10), la
+casa natural del relevo de rotación que mint dejó pendiente (§166).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

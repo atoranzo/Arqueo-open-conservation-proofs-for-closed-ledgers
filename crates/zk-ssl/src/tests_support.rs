@@ -19,6 +19,7 @@
 
 use super::*;
 use stark_experiment::circuit_mint_climb as climb;
+use stark_experiment::circuit_frozen_climb as climb_frozen;
 use stark_experiment::circuit_threshold::CUSTODIAN_DOMAIN;
 use stark_experiment::circuit_threshold_single_nullifier as auth;
 
@@ -396,6 +397,43 @@ pub fn fund_delegated(layer: &mut SovereignLayer, idx: AccountIndex, amount: u64
     layer
         .apply_mint_delegated(subida, pa, ia, pb, ib, idx, amount)
         .expect("la emision delegada legitima debe aplicarse");
+}
+
+/// El compromiso de congelación delegada: raíz ANTES y DESPUÉS del
+/// árbol de congelados, con el contador atado `count → count+1`.
+/// Calcado del molde de freeze::tests_delegada.
+pub fn freeze_commitment(layer: &SovereignLayer, idx: AccountIndex, frozen: bool) -> Digest {
+    let root_old = layer.frozen_root();
+    let mut t = layer.frozen.clone();
+    t.set_leaf(idx, frozen_leaf(frozen));
+    let mut v: Vec<BaseElement> = root_old.to_vec();
+    v.extend_from_slice(&t.root());
+    v.push(BaseElement::new(layer.freeze_count()));
+    v.push(BaseElement::new(layer.freeze_count() + 1));
+    auth::commit_operation(auth::OP_FREEZE, &v)
+}
+
+/// La subida de congelación para `idx` hacia el estado `frozen`.
+pub fn freeze_climb_proof(
+    layer: &SovereignLayer,
+    idx: AccountIndex,
+    frozen: bool,
+) -> winterfell::Proof {
+    let path = layer.frozen.path_for(idx);
+    let trace = climb_frozen::build_trace(frozen_leaf(!frozen), frozen_leaf(frozen), &path);
+    climb_frozen::FrozenClimbProver::new(proof_options())
+        .prove(trace)
+        .expect("subida de congelacion")
+}
+
+/// Congela o descongela `idx` por la VÍA DELEGADA: custodios 1 y 3.
+pub fn set_frozen_delegated(layer: &mut SovereignLayer, idx: AccountIndex, frozen: bool) {
+    let op = freeze_commitment(layer, idx, frozen);
+    let subida = freeze_climb_proof(layer, idx, frozen);
+    let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+    layer
+        .apply_freeze_delegated(subida, pa, ia, pb, ib, idx, frozen)
+        .expect("la congelacion delegada legitima debe aplicarse");
 }
 
 /// [`open_and_fund`], por la vía delegada. Misma firma y mismo abridor
