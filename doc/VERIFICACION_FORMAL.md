@@ -173,6 +173,37 @@ guardián como compuerta. El núcleo difícil —derivar clase-de-fila del
 selector y cazar el hueco— está **probado sobre el circuito simple**. El
 resto es cobertura, no concepto.
 
+## 8. FV-1: dos carriles — y el falso positivo del alias
+
+`doc/fv/interprete_dos_carriles.py` lleva el intérprete al primer circuito
+de dos carriles, `circuit_frozen_climb` (45 restricciones, ascenso de
+Merkle). Cuatro piezas nuevas sobre el de un carril: bucle de carril
+`for (lane, offset) in [(0,0),(1,LANE_B)]`, índices crudos (`result[24+i]`,
+`result[44]`), selector booleano de fila-completa (`current[COL_BIT]*...`,
+clase «todas»), y **seguimiento de aliases**. Criterio de §185 cumplido:
+circuito sano cero huérfanas, mutante (`result[24+i]` borrado) cazado —
+cuatro capacidades del carril A sin dueño en «enlace».
+
+**El hallazgo, el más importante de la serie**: en la primera versión, el
+circuito SANO reportó `(24, enlace)` huérfana —`COL_BIT`, el bit de
+dirección—. **No era sub-restringimiento: era ceguera del intérprete.**
+`COL_BIT` se lee una vez como `let bit = next[COL_BIT];` y ese `bit` entra
+en las restricciones de colocación bajo `link_flag`; el parser buscaba
+`next[COL_BIT]` DENTRO de cada `result[...]` y no seguía el alias. Un
+verificador sintáctico que no sigue variables intermedias **grita
+"vulnerabilidad" sobre código sano** —el peor fallo de una herramienta de
+seguridad, porque destruye su credibilidad (§137: censar todas las
+representaciones; §42.5: no condenar lo que no se entiende)—. Corregido con
+cosecha de `let X = next[...]` y propagación; el sano queda limpio y el
+mutante sigue saltando.
+
+**Estado de la 71**: el intérprete cubre un carril y dos carriles, con las
+cuatro piezas y el seguimiento de aliases. Queda: selectores multi-ciclo
+(`with_cycles` con periódicas one-hot de árbol y segmentos de rango — los
+circuitos de cuentas), y el injerto final en el guardián como compuerta.
+El concepto está probado en las dos topologías; el resto sigue siendo
+cobertura, ahora con una trampa —el alias— ya conocida y resuelta.
+
 ## 5. Estado
 
 FV-0 ejecutada (§183 + SECURITY §2). FV-1: diseñada, sesión propia — el

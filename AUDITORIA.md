@@ -13042,6 +13042,33 @@ carriles duales, aserciones en filas no-cero— e injertar en el guardián
 como compuerta. El concepto está resuelto; el resto es cobertura. Canon sin
 cambio (297 · 242 · 40 · 28).
 
+## 186. FV-1 a dos carriles — y el falso positivo que casi se disfraza de hallazgo
+
+El intérprete de §185 se generalizó al primer circuito de dos carriles
+(`circuit_frozen_climb`) y **cumple el criterio**: sano cero huérfanas,
+mutante cazado (cuatro capacidades del carril A). Cuatro piezas nuevas:
+bucle de carril, índices crudos, selector booleano de fila-completa, y
+seguimiento de aliases.
+
+**El hallazgo es el más valioso de la serie FV, y es una advertencia sobre
+las herramientas de verificación mismas.** La primera versión declaró
+`COL_BIT` (col 24) sin dueño en el circuito SANO. No era sub-restringimiento
+—era ceguera del intérprete—: `COL_BIT` se lee vía `let bit =
+next[COL_BIT];` y el `bit` gobierna las colocaciones bajo `link_flag`; el
+parser no seguía el alias. Un verificador sintáctico que grita
+"vulnerabilidad" sobre código sano es peor que no tenerlo —destruye su
+propia credibilidad, la lección de §42.5 aplicada a la herramienta en vez
+de al circuito, y §137 (censar todas las representaciones) en su forma más
+peligrosa: la representación no vista se confunde con un fallo—. Resuelto
+con cosecha de aliases. Esta trampa habría hecho a FV-1, aplicado a ciegas
+sobre los 28, reportar falsos sub-restringimientos que un revisor tomaría
+por reales; queda documentada para que el injerto no reincida.
+
+**Estado 71**: concepto probado en las dos topologías (un carril, dos
+carriles) con la trampa del alias resuelta. Queda cobertura —selectores
+multi-ciclo de los circuitos de cuentas— y el injerto en el guardián. Canon
+sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

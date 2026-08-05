@@ -1837,6 +1837,13 @@ pendientes, sino en saber con precision que es y que no es.
   RESUELTO sobre el circuito simple.** Queda: generalizar a los 28
   (selectores multi-ciclo, carriles duales, aserciones en filas no-cero) e
   injertar en el guardián. Concepto hecho; el resto es cobertura.
+  ✅✅ **DOS CARRILES (§186)**: `doc/fv/interprete_dos_carriles.py` cubre
+  `circuit_frozen_climb` (sano 0 huérfanas, mutante cazado) con bucle de
+  carril + índices crudos + selector booleano + **seguimiento de aliases**.
+  Hallazgo capital: un falso positivo (`COL_BIT` leído vía `let bit=next[]`)
+  casi se disfraza de sub-restringimiento — un verificador que grita sobre
+  código sano se autodestruye (§42.5/§137). Resuelto. Queda: selectores
+  multi-ciclo (circuitos de cuentas) + injerto en el guardián.
 
 - [ ] **72. FV-2: spike SMT sobre `circuit_refund` (tras la 71).**
   Exportador en `tools/` del sistema (20 restricciones + 12 aserciones,
