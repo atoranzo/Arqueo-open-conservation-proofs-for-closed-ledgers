@@ -343,6 +343,26 @@ Todo lo demás que falta está enumerado en
 
 ---
 
+## Dinero cuántico
+
+Dos afirmaciones distintas, para no mezclarlas:
+
+**Lo que este proyecto ya es**: resistente a un adversario cuántico en su
+solidez. STARK/FRI no usa emparejamientos ni ceremonia (solo hashes), y la
+autoridad de gasto es conocimiento de preimagen —identidad, salt de hoja y
+nullifier derivan de la clave por hash (§117)—, sin firma clásica en la vía
+de pago. La evaluación de firmas hash-based para los custodios está hecha
+(`doc/xmss-evaluacion.md`). Un ordenador cuántico no falsifica estas
+pruebas ni gasta estas cuentas.
+
+**Lo que este proyecto NO es**: dinero cuántico. Ese término nombra otra
+cosa —estados cuánticos no-clonables como billetes, donde el doble-gasto
+lo prohíbe la física y el intermediario de orden (aquí: el operador; en
+general: el consenso) puede retirarse del todo. Esa es la dirección que
+`PRINCIPIOS.md` §6.bis señala como horizonte; este proyecto es la
+aproximación **clásica** disponible hoy, con ese intermediario mínimo,
+medido y con su acuse diseñado (`AUDITORIA.md` §121, §174).
+
 ## Publicación
 
 Tres preprints, en su **tercera revisión** (30 de julio de 2026). Las

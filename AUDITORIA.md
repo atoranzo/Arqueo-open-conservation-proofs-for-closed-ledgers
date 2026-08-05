@@ -12942,6 +12942,27 @@ revés. **Estado de §178: EJECUTADO.** Canon: stark 297/0+10 · zk-ssl
 242/0+3 · guardianes 39 · 28. Queda de su cola solo prosa: las
 documentales 7/12/13 del triaje.
 
+## 182. Documentales 7/12/13 ejecutadas — y el triaje de las 14 medidas, CERRADO
+
+**7 — dinero cuántico**: sección propia en README con la distinción que
+importa: lo que este proyecto YA es (solidez post-cuántica: STARK/FRI y
+autoridad-por-preimagen §117, sin firma clásica en la vía de pago; XMSS
+evaluado) y lo que NO es (dinero cuántico de verdad: no-clonabilidad
+física que retiraría al intermediario de orden — el horizonte de
+PRINCIPIOS §6.bis del que esto es la aproximación clásica). **12 —
+SECURITY**: §1 gana la caducidad con su doble cerrojo y sus tres tests
+nombrados como testigos; §2 gana dos honestidades — la carrera post-T es
+del operador (residuo de orden §121, no superficie nueva) y la vía
+retirada solo sabe inmovilizar (§177). **13 — posicionamiento**: ya
+existía de una era anterior; refrescado (la caducidad entra al inventario;
+la línea de BACKLOG 32/33 pasa de «pendiente» a «retirada ✅»).
+
+Con estas tres, **las 14 medidas del triaje quedan todas resueltas**:
+ejecutadas con más rigor que lo pedido (1/2/3b/8/9/10/11/7/12/13),
+rechazadas con acta (3a→§129, 4b/14→§135, 4a→era la 32), o promovidas a
+arquitectura con sesión propia (6→§177 la examinó contra tres ataques).
+El triaje nació para ordenar; muere ordenado.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

@@ -3,7 +3,7 @@
 **Qué es.** El núcleo criptográfico verificable de una liquidación
 soberana: propiedades monetarias demostrables en circuito
 (conservación del valor, autoridad de gasto, tope de emisión, no
-doble-gasto), cumplimiento supervisable **sin revelar el libro**
+doble-gasto, caducidad de pendientes con doble cerrojo), cumplimiento supervisable **sin revelar el libro**
 (revelación exacta / mínima / de banda), y **sin ceremonia de setup**
 (STARK/FRI, post-cuántico). Cinco backends medidos sobre el mismo
 circuito real (`FIVE_BACKENDS.md`); rendimiento y suites en

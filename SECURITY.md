@@ -39,6 +39,15 @@ verificar tú leyendo el repositorio, trátalo como afirmación pendiente.
 
 ## 1. Qué pretende garantizar el diseño
 
+- **Caducidad del pendiente con doble cerrojo** (`AUDITORIA.md` §178-§181):
+  pasada la `T` declarada, el emisor recupera un envío no cobrado — y SOLO
+  el emisor: el destino lo fijan los registros de la capa (no la prueba) y
+  la subida de crédito exige el salt derivado de SU clave (§117). Testigos:
+  `el_ladron_con_aviso_no_puede_reembolsarse`,
+  `la_carrera_post_t_el_primero_gana`,
+  `las_dos_vias_de_caducidad_no_se_cruzan`. Los pendientes de emisión
+  caducan destruyendo (el suministro baja lo que subió).
+
 **Propiedades objetivo.** Su corrección depende de que las restricciones de
 circuito sean completas, y eso **no está formalmente especificado ni auditado**
 (§3.1).
@@ -61,6 +70,16 @@ de la vía de pago (`AUDITORIA.md` §73) y el compromiso del pendiente no estaba
 atado al importe (§74). Ambas corregidas y medidas.
 
 ## 2. Qué NO protege
+
+- **La carrera post-T es del operador.** Tras la `T` de caducidad, cobro y
+  reembolso compiten y el orden dentro del lote lo decide quien ordena —
+  es el residuo de orden general (§121), no una superficie nueva; la
+  carrera está declarada y probada en ambos órdenes. Los pendientes
+  ANTERIORES a la caducidad no tienen meta y son inmunes: solo cobro,
+  para siempre.
+- **Inmovilización, no robo, en la vía retirada** (`AUDITORIA.md` §177):
+  la única deuda demostrable del árbol de nullifiers heredado es que el
+  operador puede inmovilizar; nunca gastar ni redirigir.
 
 - **El operador ve el estado.** Es el mayor límite de privacidad y está
   asumido.
