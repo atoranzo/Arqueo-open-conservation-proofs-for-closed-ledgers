@@ -12404,6 +12404,40 @@ releva en B-3 con una operación delegada post-reinicio. **Cero
 llamadas de governance sin destino.** Suite: 248 → 250. Quedan:
 recover (9) y mint_to_pending (5).
 
+## 169. B-2f — la familia recovery, CERRADA: las dos puertas y el recibo que cruza el reinicio
+
+**Hallazgo primero — la puerta que NO estaba**: la vía-recibo rechaza
+recuperar-a-la-misma-identidad en la GENERACIÓN (:72)… y la delegada
+lo ACEPTABA. El relevo nació afirmando «puerta en el circuito» y el
+rojo lo desmintió con un `Ok(())` — ni capa ni circuito la tenían, y
+el no-cambio gastaba cupo, avanzaba contador y quemaba nonce. **Cura
+en esta misma tanda**: la puerta vive ahora en
+`apply_recovery_delegated` (calco de la de gobernanza), rechaza ANTES
+de verificar, y el relevo —reformado a `matches!` y sin-gasto— la
+vigila. Primera divergencia real de guardas que la campaña destapa y
+cierra, y la razón de ser de los relevos: un guardián que nace en
+rojo vale más que diez que nacen en verde.
+
+**Hallazgo segundo — el recibo que cruza el reinicio**: la guarda de
+reuso destapó que `the_recovery_counter_survives_restart` no era
+setup: `recibo = r` saca el recibo del bloque para REAPLICARLO tras
+reabrir — es el guardián de réplica-tras-reinicio de la vía-recibo.
+Al libro: mecanismo relevado hoy (el replay delegado ata raíces y
+contador, que PERSISTEN), adaptación restart-con-materiales en
+B-3.
+
+**Lo ejecutado**: palanca con LA COPIA fiel (§93.4: salt y saldo se
+preservan, el nonce avanza) — `recovery_commitment`,
+`recovery_climb_proof` (nueve argumentos, calcada) y
+`recover_delegated`; paridad del contador verificada (:182/:310);
+**cinco mecánicos giran** (cuatro tests): no-levanta-congelación,
+bloqueo de la clave comprometida, preservación de saldo y suministro,
+contador ×2. **El libro**: replay y réplica-tras-reinicio relevados
+hoy; `one_custodian_cannot_recover_alone` con relevos existentes
+(mismo-custodio, otra-identidad, claves-de-gobernanza); same-identity
+relevado por la puerta-circuito. **Cero llamadas de recover sin
+destino.** Suite: 250 → 252. Queda: mint_to_pending (5).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

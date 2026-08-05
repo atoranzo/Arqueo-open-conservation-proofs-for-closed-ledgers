@@ -228,6 +228,15 @@ impl SovereignLayer {
             .ok_or(LayerError::AccountNotFound(account_index))?
             .clone();
 
+        // ⚠️ La vía-recibo rechaza esto en la GENERACIÓN (:72). La
+        // delegada NO tenía puerta — ni aquí ni en el circuito: §169 lo
+        // demostró con el rojo del relevo — y aceptaba un no-cambio que
+        // gasta cupo, avanza contador y quema nonce. La puerta, calcada
+        // de la de gobernanza: rechaza ANTES de verificar.
+        if new_public_id == account.public_id {
+            return Err(LayerError::RecoveryToSameIdentity);
+        }
+
         let root_old = self.accounts.root();
         let count_old = self.recovery_count;
         let count_new = count_old + 1;
@@ -400,6 +409,67 @@ mod tests_delegada {
             .expect("aplicar envio");
 
         assert_eq!(layer.balance_of(alice), Some(750_000));
+    }
+
+    /// **REENVIAR una recuperación delegada se rechaza**: el compromiso
+    /// ata raíces y contador; aplicado una vez, ambos avanzaron y los
+    /// mismos materiales quedan huérfanos. Releva en B-3 a
+    /// `replaying_a_recovery_is_rejected` y el mecanismo de
+    /// `the_recovery_counter_survives_restart` (vía-recibo, §169).
+    #[test]
+    fn replaying_a_delegated_recovery_is_rejected() {
+        let (mut layer, idx, nueva) = capa();
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+
+        let op = compromiso(
+            layer.accounts.root(), raiz_nueva(&layer, idx, nueva), layer.recovery_count(),
+        );
+        let subida = prueba_subida(&layer, idx, nueva);
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+        layer
+            .apply_recovery_delegated(
+                subida.clone(), pa.clone(), ia.clone(), pb.clone(), ib.clone(), idx, nueva,
+            )
+            .expect("la primera recuperacion");
+        let cuenta = layer.recovery_count();
+
+        // Los MISMOS materiales, otra vez.
+        let r = layer.apply_recovery_delegated(subida, pa, ia, pb, ib, idx, nueva);
+        assert!(r.is_err(), "CRITICO: reenviar rotaria la identidad de nuevo: {r:?}");
+        assert_eq!(layer.recovery_count(), cuenta, "el contador no avanza");
+        assert_eq!(layer.public_id_of(idx), Some(nueva), "la identidad queda donde estaba");
+    }
+
+    /// **RECUPERAR A LA MISMA IDENTIDAD, por la delegada — el rojo que
+    /// valió una puerta**: la teoría decía «el circuito la impone»; el
+    /// relevo la desmintió con un Ok(()) — ni capa ni circuito la
+    /// tenían, y el no-cambio gastaba cupo, contador y nonce. La puerta
+    /// vive ahora en el apply (calco de la de gobernanza) y este test
+    /// la vigila: rechazo ANTES de verificar, sin gastar nada. Releva
+    /// en B-3 a `recovery_to_the_same_identity_is_rejected` (§169).
+    #[test]
+    fn delegated_recovery_to_the_same_identity_is_rejected() {
+        let (mut layer, idx, _) = capa();
+        let misma = layer.public_id_of(idx).expect("cuenta");
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+
+        let op = compromiso(
+            layer.accounts.root(), raiz_nueva(&layer, idx, misma), layer.recovery_count(),
+        );
+        let subida = prueba_subida(&layer, idx, misma);
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+
+        let r = layer.apply_recovery_delegated(subida, pa, ia, pb, ib, idx, misma);
+        assert!(
+            matches!(r, Err(LayerError::RecoveryToSameIdentity)),
+            "CRITICO: rotar hacia la misma identidad: {r:?}"
+        );
+        assert_eq!(layer.recovery_count(), 0, "el contador no se gasta");
+        assert_eq!(layer.custodian_uses(), 0, "ni el cupo");
     }
 
     fn dominio() -> BaseElement {

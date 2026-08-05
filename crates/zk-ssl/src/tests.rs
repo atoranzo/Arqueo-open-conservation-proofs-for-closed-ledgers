@@ -1574,8 +1574,7 @@ use super::*;
 
         // Los custodios recuperan la cuenta a una identidad nueva.
         let nueva = derive_public_id(BaseElement::new(0xC0FFEE));
-        let r = layer.recover(&valid_auth(), alice, nueva).expect("recuperar");
-        layer.apply_recovery(&r, alice).expect("aplicar");
+        recover_delegated(&mut layer, alice, nueva);
 
         assert!(
             layer.is_frozen(alice),
@@ -2364,12 +2363,7 @@ use super::*;
         const SK_ALICE_NEW: u64 = 0xA11CE_2;
         let new_id = derive_public_id(BaseElement::new(SK_ALICE_NEW));
 
-        let receipt = layer
-            .recover(&valid_auth(), alice, new_id)
-            .expect("los custodios deberian poder recuperar");
-        layer
-            .apply_recovery(&receipt, alice)
-            .expect("aplicar recuperacion");
+        recover_delegated(&mut layer, alice, new_id);
 
         // La clave ANTIGUA ya no sirve.
         assert!(
@@ -2405,8 +2399,7 @@ use super::*;
         let supply_before = layer.total_supply();
 
         let new_id = derive_public_id(BaseElement::new(0xA11CE_2));
-        let r = layer.recover(&valid_auth(), alice, new_id).expect("recuperar");
-        layer.apply_recovery(&r, alice).expect("aplicar");
+        recover_delegated(&mut layer, alice, new_id);
 
         assert_eq!(layer.balance_of(alice), Some(1_000_000), "el saldo no cambia");
         assert_eq!(layer.total_supply(), supply_before, "el suministro tampoco");
@@ -2422,16 +2415,10 @@ use super::*;
         let bob = open_and_fund(&mut layer, SK_BOB, 1_000_000);
         assert_eq!(layer.recovery_count(), 0);
 
-        let r1 = layer
-            .recover(&valid_auth(), alice, derive_public_id(BaseElement::new(0xA1)))
-            .expect("primera");
-        layer.apply_recovery(&r1, alice).expect("aplicar");
+        recover_delegated(&mut layer, alice, derive_public_id(BaseElement::new(0xA1)));
         assert_eq!(layer.recovery_count(), 1);
 
-        let r2 = layer
-            .recover(&valid_auth(), bob, derive_public_id(BaseElement::new(0xB1)))
-            .expect("segunda");
-        layer.apply_recovery(&r2, bob).expect("aplicar");
+        recover_delegated(&mut layer, bob, derive_public_id(BaseElement::new(0xB1)));
         assert_eq!(
             layer.recovery_count(),
             2,

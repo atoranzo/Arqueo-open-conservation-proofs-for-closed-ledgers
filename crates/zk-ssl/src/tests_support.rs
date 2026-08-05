@@ -20,6 +20,7 @@
 use super::*;
 use stark_experiment::circuit_mint_climb as climb;
 use stark_experiment::circuit_frozen_climb as climb_frozen;
+use stark_experiment::circuit_recovery_climb as climb_recovery;
 use stark_experiment::circuit_threshold::CUSTODIAN_DOMAIN;
 use stark_experiment::circuit_threshold_single_nullifier as auth;
 
@@ -479,6 +480,50 @@ pub fn update_custodians_delegated(layer: &mut SovereignLayer, nueva: Digest) {
     layer
         .apply_governance_delegated(pa, ia, pb, ib, nueva)
         .expect("el cambio delegado legitimo debe aplicarse")
+}
+
+/// El compromiso de recuperación delegada: raíz ANTES → raíz con LA
+/// COPIA (identidad nueva, saldo y salt preservados, nonce avanzado),
+/// contador atado. Calcado del molde de recovery.
+pub fn recovery_commitment(layer: &SovereignLayer, idx: AccountIndex, nueva: Digest) -> Digest {
+    let rec = layer.records.get(&idx).expect("cuenta").clone();
+    let mut t = layer.accounts.clone();
+    t.set_leaf(idx, native_leaf_salted(nueva, BaseElement::new(rec.balance),
+                                rec.nonce + BaseElement::ONE,
+                                rec.leaf_salt));
+    let mut v: Vec<BaseElement> = layer.accounts.root().to_vec();
+    v.extend_from_slice(&t.root());
+    v.push(BaseElement::new(layer.recovery_count()));
+    v.push(BaseElement::new(layer.recovery_count() + 1));
+    auth::commit_operation(auth::OP_RECOVERY, &v)
+}
+
+/// La subida de recuperación para `idx` hacia `nueva`.
+pub fn recovery_climb_proof(
+    layer: &SovereignLayer,
+    idx: AccountIndex,
+    nueva: Digest,
+) -> winterfell::Proof {
+    let rec = layer.records.get(&idx).expect("cuenta").clone();
+    let path = layer.accounts.path_for(idx);
+    let trace = climb_recovery::build_trace(
+        rec.public_id, nueva, rec.balance, rec.balance, rec.nonce,
+        rec.leaf_salt, &path,
+        layer.recovery_count(), 1,
+    );
+    climb_recovery::RecoveryClimbProver::new(proof_options())
+        .prove(trace)
+        .expect("subida de recuperacion")
+}
+
+/// Recupera `idx` hacia la identidad `nueva` por la VÍA DELEGADA.
+pub fn recover_delegated(layer: &mut SovereignLayer, idx: AccountIndex, nueva: Digest) {
+    let op = recovery_commitment(layer, idx, nueva);
+    let subida = recovery_climb_proof(layer, idx, nueva);
+    let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+    layer
+        .apply_recovery_delegated(subida, pa, ia, pb, ib, idx, nueva)
+        .expect("la recuperacion delegada legitima debe aplicarse");
 }
 
 /// [`open_and_fund`], por la vía delegada. Misma firma y mismo abridor
