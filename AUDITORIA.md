@@ -12630,6 +12630,58 @@ diseñada; pendiente de despliegue». **La 10 sale de la cola de
 pendientes**; su primer paso medible es `B10.6`. Del triaje quedan las
 documentales 7/12/13 y los frentes mayores (6 notas/UTXO, museo).
 
+## 175. El frente del museo, ABIERTO con su mapa — y por qué sigue sin fecha, ahora con razón medida
+
+**Qué se censó** (lectura sobre el árbol, sin tocar): el «museo»
+`stark_experiment::circuit_settlement` (2.393 líneas) tiene una frontera
+limpia entre DIECISÉIS helpers vivos —`derive_public_id{,_wide}`,
+`native_leaf{,_salted}`, `native_nullifier{,_wide}`, `native_climb`,
+`derive_leaf_salt{,_wide}`, `derive_view_key{,_wide}`, `view_id_of{,_wide}`,
+`view_id_from_view_key`— concentrados en dos zonas (líneas 257-386 y
+2084-2163), y el AIR MUERTO de la vía de un paso (§36):
+`SettlementAir`, `SettlementProver`, `SenderWitness`, `ReceiverWitness`,
+`SettlementPublicInputs` y sus `build_trace`, que son el grueso entre
+medias.
+
+**El hallazgo que MANTIENE la retirada sin fecha** —y corrige la
+lectura ingenua de «fichero muerto, bórralo»: el AIR presunto-muerto NO
+está muerto fuera de stark. `SettlementProver` tiene **nueve usuarios
+vivos** (incluidos `zk-core` y `settlement-layer`), y `SenderWitness`/
+`ReceiverWitness` viven en `settlement-layer/src/lib.rs`. Hay al menos
+TRES crates en juego —`zk-ssl`, `zk-core`, `settlement-layer`— y DOS
+ficheros `circuit_settlement.rs` (stark 2.393 líneas, zk-core 605). El
+museo no es un fichero: es un nudo multi-crate.
+
+**Las preguntas que el frente debe responder ANTES de mudar nada** —
+este es el primer paso real, no la mudanza: (1) ¿qué es `settlement-layer`
+frente a `zk-ssl` — dos capas, una obsoleta, o una dependencia? (2) el
+`SettlementProver` que usan `zk-core` y `settlement-layer`, ¿es el museo
+de stark o un homónimo en otra crate? (3) ¿por qué DOS
+`circuit_settlement.rs`, y cuál es canónico? (4) el hogar de los
+dieciséis helpers —`native_leaf` tiene **27 usuarios** repartidos entre
+crates— ¿es `zk-core` (parece el núcleo), un módulo `native` nuevo, o
+`rescue_hash` (el único candidato existente)? Sin estas cuatro
+respuestas, cualquier plan de mudanza inventa el mapa.
+
+**El orden, cuando el mapa esté claro**: censo helper-por-helper con
+usuarios por crate → decisión del hogar (asiento propio) → mudar los
+helpers y reapuntar imports (la palanca de precondición de §158) →
+solo entonces retirar el AIR muerto, si de verdad quedó sin usuarios
+vivos tras aclarar el nudo de `SettlementProver`. Es un frente del
+tamaño de una tanda B, con su riesgo de anclas entre crates; se hace con
+la mesa despejada y espejo fresco, como §158 ya intuía al no ponerle
+fecha.
+
+**Las dos costuras, que NO son de este frente ni de nadie ahora** —
+registradas para que no se confundan con trabajo pendiente: la costura
+**49-A↔52** (recovery.rs:93, el view_id/salt que la rotación deja viejo)
+es diseño de la **entrada 52**, no de 49-A —«la capa no puede
+recalcularlo: no tiene la clave», limitación declarada con test
+`recovery_deja_view_id_viejo`, no agujero—; y el **shim 49-A**
+(`record_to_bytes`) migra con el cierre de 49-A (§158). Ninguna se toca
+sin abrir su entrada dueña; forzarlas sería entrar por la puerta de
+atrás. Están donde deben, marcadas y con test.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
