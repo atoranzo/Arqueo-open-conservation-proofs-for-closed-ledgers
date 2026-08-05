@@ -13017,6 +13017,31 @@ tinta inexistente. Es exactamente el fallo que §111.2 registró —un asiento
 que narra lo que no pasó—. Este asiento existe de verdad, y con él las tres
 piezas prometidas. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 185. FV-1 cruza la frontera — el intérprete caza el mutante, y la aserción tiene clase
+
+El intérprete de selectores que §184 fijó como núcleo de FV-1 está escrito
+y **funciona**: `doc/fv/interprete_selectores.py` deriva las clases de fila
+del selector real de `circuit_refund` —hash = filas 0..6, enlace = fila 7—
+y **distingue el mutante** que el prototipo no distinguía: borrar `C_CAP`
+deja cuatro capacidades sin dueño en la clase «enlace».
+
+**El hallazgo que lo desbloqueó** es de la clase de §72 —una garantía que
+se creía puesta y vivía en la fila equivocada—. El prototipo trataba una
+aserción como cobertura de su columna en TODA clase de fila; pero
+`Assertion::single(c, 0, zero)` ata la capacidad `c` a cero SOLO en la fila
+0 (clase «hash»), mientras `C_CAP` la gobierna en la fila 7 (clase
+«enlace»). Cubrir toda clase con una aserción de una fila borra la
+distinción que caza el sub-restringimiento —el mismo error de agregación
+que §184 vio en las clases, ahora en las aserciones—. La aserción tiene
+clase: la de su fila, y ninguna otra.
+
+**Estado de la entrada 71**: el núcleo difícil (derivar clase-de-fila del
+selector, ubicar aserciones por su fila, cazar el hueco) está probado sobre
+el circuito simple. Queda generalizar a los 28 —selectores multi-ciclo,
+carriles duales, aserciones en filas no-cero— e injertar en el guardián
+como compuerta. El concepto está resuelto; el resto es cobertura. Canon sin
+cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

@@ -142,6 +142,37 @@ distingue su propio mutante no vigila nada, y la cabecera del guardián lo
 dice —un barrido que aprueba lo que no entiende es peor que ninguno
 (§42.5)—. Vive en `doc/fv/` como evidencia ejecutable de la frontera.
 
+## 7. FV-1: la frontera, CRUZADA — el intérprete caza el mutante
+
+`doc/fv/interprete_selectores.py` implementa el intérprete de selectores
+que §6 midió faltar, y **caza el caso-mutación** que el prototipo no
+distinguía. Sobre `circuit_refund`: circuito sano, cero celdas huérfanas;
+mutante con `C_CAP` borrado, **cuatro celdas sin dueño** —las capacidades
+`(0,1,2,3)` en la clase de fila «enlace»— exactamente las que debían
+renacer a cero en la fila de enlace y ahora no gobierna nada.
+
+**Cómo cruza la frontera**: deriva las clases de fila del selector REAL, no
+de una etiqueta —lee `hash_flag = [1×NUM_ROUNDS, 0]` sobre el ciclo y
+obtiene clase «hash» = filas 0..6, clase «enlace» = fila 7— y ubica cada
+restricción por su selector (`hash_flag` → hash, `1−hash_flag` → enlace).
+
+**El hallazgo que lo desbloqueó** (§185): una aserción vive en UNA fila,
+luego en UNA clase. El prototipo trataba `Assertion::single(c, 0, _)` como
+cobertura de la columna `c` en TODA clase, y esa era la fuga: las
+capacidades están aseveradas a cero en la fila 0 (clase «hash»), pero
+`C_CAP` las gobierna en la fila 7 (clase «enlace») — filas distintas,
+clases distintas. Cubrir «toda clase» con una aserción de la fila 0 borra
+justo la distinción que caza el sub-restringimiento. Corregido —la
+aserción cubre `(columna, clase-de-su-fila)`— el mutante salta.
+
+**Lo que queda de la entrada 71**: generalizar el intérprete a los 28
+circuitos —clases de fila de selectores multi-ciclo (`with_cycles`,
+one-hot de enlaces de árbol, segmentos), carriles duales (`offset`/
+`LANE_B`), y aserciones en filas no-cero— y entonces injertarlo en el
+guardián como compuerta. El núcleo difícil —derivar clase-de-fila del
+selector y cazar el hueco— está **probado sobre el circuito simple**. El
+resto es cobertura, no concepto.
+
 ## 5. Estado
 
 FV-0 ejecutada (§183 + SECURITY §2). FV-1: diseñada, sesión propia — el
