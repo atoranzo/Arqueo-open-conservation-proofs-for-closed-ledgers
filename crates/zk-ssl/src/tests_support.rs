@@ -3,12 +3,16 @@
 //! Viven aquí y no en `tests.rs` porque el puente ISO también los
 //! necesita, y duplicarlos haría que dos suites divergieran en silencio.
 
-// ⚠️ **`open_and_fund` usa la via antigua `mint()`, y se llama 185 veces.**
+// ✅ **`open_and_fund` fondea por la VIA DELEGADA desde B-0b-ii (§163).**
 //
-// Es el punto por el que la mitad de la suite depende de la via marcada
-// **sin nombrarla**. Migrarlo a la delegada multiplica por tres el coste de
-// fondear una cuenta -una prueba pasa a ser tres- y ese numero no esta
-// medido: ver AUDITORIA 80.
+// Era el punto por el que la mitad de la suite dependia de la via
+// marcada **sin nombrarla**; hoy sus 185 usos ejercitan la via real.
+// El precio se midio ANTES de girar la llave (§162): x3,54-3,70 por
+// fondeo, pagado en maquina de CI y no en usuario.
+//
+// El `allow` de abajo ya no ampara al fondeo: ampara `open_account`
+// (64 bits, opt-in por §97.4, fuera de B por §160) y lo que aun
+// ejercita la via antigua a proposito hasta B-2/B-3.
 //
 // §65.3: el permiso va en los tests, no en la definicion.
 #![allow(deprecated)]
@@ -161,16 +165,13 @@ pub fn new_layer() -> SovereignLayer {
 /// que una cuenta tenga saldo.
 /// Abre una cuenta con clave **estrecha** y la fondea.
 ///
-/// ⚠️ Sigue tomando un `u64` a proposito: son **158 usos** que no ganan nada
+/// ⚠️ Sigue tomando un `u64` a proposito: son **185 usos** que no ganan nada
 /// con claves anchas, y §90 garantiza que rellenar da la misma identidad.
 /// Para ejercitar los 256 bits esta [`open_and_fund_wide`].
 pub fn open_and_fund(layer: &mut SovereignLayer, sk: u64, amount: u64) -> AccountIndex {
     let idx = layer.open_account(BaseElement::new(sk));
     if amount > 0 {
-        let receipt = layer
-            .mint(&valid_auth(), idx, amount)
-            .expect("la emision autorizada deberia generar prueba");
-        layer.apply_mint(&receipt, idx).expect("aplicar emision");
+        fund_delegated(layer, idx, amount);
     }
     idx
 }
@@ -188,10 +189,7 @@ pub fn open_and_fund_wide(
 ) -> AccountIndex {
     let idx = layer.open_account_wide(sk);
     if amount > 0 {
-        let receipt = layer
-            .mint(&valid_auth(), idx, amount)
-            .expect("la emision autorizada deberia generar prueba");
-        layer.apply_mint(&receipt, idx).expect("aplicar emision");
+        fund_delegated(layer, idx, amount);
     }
     idx
 }
@@ -419,7 +417,9 @@ mod la_palanca {
     fn open_and_fund_delegated_matches_the_old_road() {
         let mut vieja = new_layer();
         let mut nueva = new_layer();
-        let a = open_and_fund(&mut vieja, SK_ALICE, 250_000);
+        let a = vieja.open_account(BaseElement::new(SK_ALICE));
+        let r = vieja.mint(&valid_auth(), a, 250_000).expect("emision vieja");
+        vieja.apply_mint(&r, a).expect("aplicar");
         let b = open_and_fund_delegated(&mut nueva, SK_ALICE, 250_000);
         assert_eq!(a, b, "misma colocacion pid-mod");
         let (sv, sn) = (state_of(&vieja, a), state_of(&nueva, b));
@@ -434,7 +434,9 @@ mod la_palanca {
     fn the_wide_road_also_matches() {
         let mut vieja = new_layer();
         let mut nueva = new_layer();
-        let a = open_and_fund_wide(&mut vieja, wide_key(SK_BOB), 77_000);
+        let a = vieja.open_account_wide(wide_key(SK_BOB));
+        let r = vieja.mint(&valid_auth(), a, 77_000).expect("emision vieja");
+        vieja.apply_mint(&r, a).expect("aplicar");
         let b = open_and_fund_wide_delegated(&mut nueva, wide_key(SK_BOB), 77_000);
         assert_eq!(a, b, "misma colocacion");
         let (sv, sn) = (state_of(&vieja, a), state_of(&nueva, b));

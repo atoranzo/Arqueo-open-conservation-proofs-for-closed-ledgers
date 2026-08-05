@@ -191,6 +191,11 @@ decidir.
   numero se decide entre retirar o declarar que no se retira, como §46 hizo
   con la 6. ⚠️ Mientras existan, el fallo esta **evitable, no cerrado**
   (§65.5, §80.6).
+  ✅ **§80.5 EJECUTADO** (§162-§163): instrumento apareado §89.1, cinco
+  muestras — vieja 108,4-109,7 ms, delegada 388,2-403,1 ms, x3,54-3,70;
+  decision por principios (§163): RETIRAR — `open_and_fund{,_wide}`
+  fondean por la delegada desde B-0b-ii. Quedan: B-2 (los ~70
+  llamadores directos de tests) y B-3 (jubilar las cinco marcas).
   ~~Original:~~ No hay via
   cliente para operaciones privilegiadas: `ThresholdAuth` lleva las claves
   en crudo y la capa construye la traza (§41). Quienes conservan su clave

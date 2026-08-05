@@ -12202,6 +12202,45 @@ paga donde menos duele. **DECISIÓN: del piloto, al abrir B-0b-ii** —
 este asiento registra el número; la palabra siguiente registra el
 rumbo.
 
+## 163. La decisión de §80.5, derivada de los principios — RETIRAR, y la llave girada
+
+**El mandato del piloto**: decidir aplicando de forma coherente,
+transparente y honesta los principios fundacionales, como imagen fiel
+de la realidad del proyecto. La derivación, con los textos delante:
+(1) el objetivo nombrado (§80.5): «el objetivo no es borrar cinco
+funciones: es que nadie pueda pedir las claves»; (2) la garantía
+(§65.5, §80.6): «la garantía… no la da esta marca, la da USAR la vía
+delegada» — mientras existan, *evitable, no cerrado*; (3) la doctrina
+de retirada ya sentada por esta casa en la 32-transfer: «una fuga
+presente y alcanzable es una fuga, aunque exista una alternativa
+mejor al lado. Por eso se retira en vez de marcarse como
+desaconsejada»; (4) el método fundacional (PRINCIPIOS §1): «las
+propiedades verificadas una a una y el coste de cada una medido» — el
+coste está medido (§162) y se paga en máquina, no en usuario; (5) el
+test del precedente §46/entrada 6: allí el código corrigió una
+premisa y conservar quedó casi forzado; aquí ninguna premisa corrige
+a favor de conservar — la delegada existe ×5 y la paridad está
+probada (B-0a); (6) imagen fiel: una suite cuya mitad depende de la
+vía marcada *sin nombrarla* no describe lo que el proyecto declara.
+**Seis señales, una dirección: RETIRAR.** La rama (b) de §80.5 queda
+descartada con sus razones a la vista.
+
+**Lo ejecutado**: `open_and_fund` y `open_and_fund_wide` fondean por
+`fund_delegated` — 185 usos pasan a ejercitar la vía real en cada
+pasada. Los dos tests de paridad re-anclan su lado viejo a la vía
+antigua EXPLÍCITA (`mint` + `apply_mint` a la vista, bajo el `allow`
+del fichero) y siguen montando guardia: delegada == vieja en
+identidad, saldo, nonce, suministro y colocación, hasta que B-3
+jubile la vieja y ellos se adapten con ella. Los letreros de
+tests_support cuentan hoy: el fondeo ya no es lo que el `allow`
+ampara.
+
+**El coste, pagado donde se dijo**: la suite en modo nuevo da su
+primera muestra en el verde de este mismo bloque; el rango se
+completará con las pasadas venideras (§131), contra el techo
+proyectado en §162 (~+52 s). La entrada 32 viste el paso §80.5 como
+EJECUTADO; le quedan B-2 y B-3 para su ✅ entero.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
