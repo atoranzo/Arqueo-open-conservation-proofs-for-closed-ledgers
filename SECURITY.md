@@ -71,6 +71,16 @@ atado al importe (§74). Ambas corregidas y medidas.
 
 ## 2. Qué NO protege
 
+- **Sin demostración formal de los layouts (sub-restringimiento).** La
+  suite prueba PUNTOS (testigos válidos verifican; los corruptos que se
+  nos ocurrieron rebotan), no el universal «ningún testigo-fantasma
+  satisface las restricciones». El guardián
+  (`tools/check_constraint_layout.py`) es sintáctico y los discriminantes
+  son muestras. La clase —dominante en incidentes ZK reales— tiene triaje
+  y plan en `doc/VERIFICACION_FORMAL.md` (§183): censo de celdas en el
+  guardián (FV-1), spike SMT acotado (FV-2), y Lean/K declarado como
+  horizonte, no como deuda.
+
 - **La carrera post-T es del operador.** Tras la `T` de caducidad, cobro y
   reembolso compiten y el orden dentro del lote lo decide quien ordena —
   es el residuo de orden general (§121), no una superficie nueva; la

@@ -12963,6 +12963,35 @@ rechazadas con acta (3a→§129, 4b/14→§135, 4a→era la 32), o promovidas a
 arquitectura con sesión propia (6→§177 la examinó contra tres ataques).
 El triaje nació para ordenar; muere ordenado.
 
+## 183. Crítica externa: verificación formal — triaje, dos verdades y cuatro medidas
+
+Llegó una crítica externa: los circuitos sub-restringidos son el riesgo
+número uno en ZK, y sin verificación formal de los layouts no hay
+soberanía que valga. **El triaje le da la razón en el núcleo y le corrige
+el mapa.** La razón: la suite prueba PUNTOS, no universales — 297+242
+verdes no demuestran que ningún testigo-fantasma exista; el §69 pedía este
+residuo con nombre y ahora lo tiene (SECURITY §2). El mapa: aquí no hay
+R1CS ni Plonkish (es AIR/winterfell, Goldilocks, sbox grado 7 — las
+herramientas de estante son del mundo circom y no aplican);
+`circuit_settlement.rs` ya no existe (§175); y el guardián de layout YA
+cubre la mitad sintáctica de la clase, con casos-mutación sembrados y
+bugs reales cazados en su acta de nacimiento.
+
+**Cuatro medidas** (`doc/VERIFICACION_FORMAL.md`): **FV-0** esta tinta;
+**FV-1**, la implementable — el CENSO DE CELDAS en el guardián: cada
+columna × clase-de-fila con dueño (transición activa, aserción, o
+testigo-libre DECLARADO), con su caso-mutación («borrar un C_CAP debe
+gritar»), y la honestidad en su propia salida: referenciada ≠ determinada;
+**FV-2**, spike SMT acotado a circuit_refund (cvc5 cuerpo-finito) con
+permiso explícito para concluir «intratable, con acta»; **FV-3**, Lean/K
+como horizonte nombrado — el trato del dinero cuántico, no una promesa.
+Y una precisión de especificación para no verificar el teorema
+equivocado: la propiedad no es «todo testigo da el mismo nullifier»
+(falsa: usuarios distintos, nullifiers distintos) sino determinación
+funcional por (clave, dominio). FV-1 es sesión propia y empieza por
+censar al guardián mismo: 600+ líneas que se extienden tras leerse
+enteras, no tras adivinarse.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
