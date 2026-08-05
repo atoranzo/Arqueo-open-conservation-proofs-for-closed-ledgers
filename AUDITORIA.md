@@ -12080,6 +12080,53 @@ por censo: la vía delegada EXISTE completa
 appliers — el trabajo es migrar ~229 llamadas de la vía antigua,
 amputar `transfer` y los `deprecated`, y medir después (11).
 
+## 160. Campaña B ABIERTA — el censo canon reconcilia el ~229 del sello con el paisaje real
+
+**El re-conteo (canon, doble verde con el espejo del sello
+`63ca178`)**: la vía antigua directa —`mint`, `set_frozen`, `recover`,
+`update_custodians`, `mint_to_pending`— suma **83 aciertos** (69 en
+`tests.rs`, 3 en `tests_support.rs`, 11 repartidos entre definiciones
+propias, usos inventariados —p. ej. accounts:298— y prosa técnica).
+`open_and_fund` suma **185 usos** (tests 105, client 29, snapshot 19,
+metrics 8, two_phase 8, migration 7, log 3, accounts 2, iso 2,
+recovery 1): **la palanca de la campaña** — las DOS anchuras
+(`open_and_fund` y `open_and_fund_wide`) montan sobre el `mint()`
+viejo, así que migrar los helpers por dentro convierte 185 sitios en
+uno. El ~229 del sello venía del espejo pre-flip; queda reconciliado.
+
+**`transfer` está HUÉRFANO, no solo sin deprecar**: nada lo cablea
+—ni `mod transfer` en lib.rs, ni `include!`, ni rastro en Cargo.toml—
+y cero llamadores reales de `.transfer(`. Quedan 267 líneas muertas,
+6 menciones-prosa (iso ×3, two_phase ×2, tests:3143 — esta habla en
+PRESENTE de un test que ya no la usa) y un **fantasma doctrinal**: el
+doc de transfer.rs:17 recomienda `client::prove_transfer`, que no
+existe en el workspace (ni `transfer_materials`). La 32 pasa de
+cirugía a retirada de cadáver + barrido — la entrada 70 ya lo olía:
+«su retirada ES la 32 entera».
+
+**Reconciliaciones con el sello**: la vía delegada son CINCO, no
+cuatro — `apply_governance_delegated` también existe—; el molde de
+fabricar `(subida, pa, ia, pb, ib)` vive DUPLICADO en el bloque de
+tests de cada módulo (5-6 aciertos `_delegated(` por fichero) y
+`tests_support` NO tiene fabricador común — esa extracción es la
+primera piedra. Fósiles a barrer: el «145 veces» de tests_support:6
+(hoy 185) y la prosa en presente de tests:3143.
+
+**Alcance (ratificado con este asiento)**: `open_account` de 64
+bits (accounts.rs:88) queda FUERA de B — su migración es opt-in por
+§97.4 (§90 garantiza identidad idéntica con clave rellenada) y el
+sello jubila solo la vía de custodios. El shim de store.rs:189
+tampoco entra: migra con 49-A, como declara su propia nota.
+
+**Las tandas**: **B-0** fabricador delegado común en tests_support
++ `open_and_fund{,_wide}_delegated` (la palanca) · **B-1** la 32:
+retirar transfer.rs + barrido de prosa, fantasma y fósiles · **B-2**
+las ~70 llamadas directas de tests.rs, por familias · **B-3** jubilar
+las cinco `#[deprecated]` de custodios · **B-4** medir (medida 11):
+`metrics_of_the_layer` + patrón §130; tablas vivas sí, preprints por
+errata (§135). Preside el matiz de §51: el orden estricto ya vive en
+los appliers — los tests migrados deben EJERCITARLO, no esquivarlo.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
