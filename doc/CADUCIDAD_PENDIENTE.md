@@ -131,3 +131,17 @@ el primer día. **Primer paso**: `circuit_refund` con su layout en el
 guardián y sus discriminantes, antes de tocar la capa. Es trabajo de
 circuito: **sesión propia**, como manda la casa para todo lo que estrena
 restricciones.
+
+## 9. ERRATA de ejecución (§180) — el reuso del clímber, falsificado
+
+Este documento diseñó el crédito como reuso de `mint_climb` «sin tocar una
+coma» (§2) y prometió UN circuito (§7). **El árbol lo falsificó al
+ejecutar**: `mint_climb` ata `supply_new − supply_old == importe` en
+circuito (su `C_SUPPLY`; `supply_delta` existe para que la emisión
+encubierta se RECHACE, no para esquivarla). Un reembolso no emite, y
+mentirle a un circuito no es de esta casa. La respuesta:
+**`circuit_credit_climb`** (#28), gemelo con tres cortes marcados y
+discriminante del cerrojo #2 (salt ajeno no verifica). La caducidad usa
+DOS circuitos —apertura #27 + crédito #28— y el guardián dice **28**.
+Registro completo: AUDITORIA **§178-§180**. Lo demás de este diseño
+(doble cerrojo, T, carrera, des-emisión, legado) sigue vigente tal cual.
