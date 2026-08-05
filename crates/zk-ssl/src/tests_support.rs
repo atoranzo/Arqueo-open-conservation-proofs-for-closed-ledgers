@@ -317,6 +317,33 @@ pub fn open_retry(
 // de entrañas es B-0b, con su medición al lado.
 // ============================================================================
 
+/// El par de umbral sobre un conjunto de claves ARBITRARIO (dominio de
+/// custodios): la pieza para probar conjuntos entrantes tras una
+/// rotación, o salientes contra la raíz nueva.
+pub fn custodian_pair_with(
+    keys: &[BaseElement],
+    op: Digest,
+    a: usize,
+    b: usize,
+) -> (
+    winterfell::Proof,
+    auth::NullifierThresholdPublicInputs,
+    winterfell::Proof,
+    auth::NullifierThresholdPublicInputs,
+) {
+    assert!(a < b, "§51: index_a < index_b, estricto");
+    let (_, cp) = stark_experiment::circuit_threshold::build_custodian_set(keys);
+    let d = BaseElement::new(CUSTODIAN_DOMAIN);
+    let prover = auth::NullifierThresholdProver::new(proof_options());
+    let ta = auth::build_trace(d, keys[a], &cp[a], op);
+    let ia = prover.get_pub_inputs(&ta);
+    let pa = prover.prove(ta).expect("autorizacion A");
+    let tb = auth::build_trace(d, keys[b], &cp[b], op);
+    let ib = prover.get_pub_inputs(&tb);
+    let pb = prover.prove(tb).expect("autorizacion B");
+    (pa, ia, pb, ib)
+}
+
 /// El par de autorizaciones de umbral para `op`: custodios `a` y `b`,
 /// distintos y en orden estricto.
 pub fn delegated_pair(

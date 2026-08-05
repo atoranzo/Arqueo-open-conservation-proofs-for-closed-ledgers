@@ -830,11 +830,13 @@ use super::*;
         let id_bob = derive_public_id(BaseElement::new(SK_BOB));
         let suministro = layer.total_supply();
 
-        // Los custodios emiten a un pendiente.
-        let r = layer
-            .mint_to_pending(&valid_auth(), id_bob, salt_de(0xA11), 300_000)
+        // Los custodios emiten a un pendiente, por la vía delegada.
+        let op = mint_pending_commitment(&layer, id_bob, salt_de(0xA11), 300_000);
+        let subida = mint_pending_climb_proof(&layer, id_bob, salt_de(0xA11), 300_000);
+        let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+        let aviso = layer
+            .apply_mint_pending_delegated(subida, pa, ia, pb, ib, id_bob, salt_de(0xA11), 300_000)
             .expect("emitir a pendiente");
-        layer.apply_mint_to_pending(&r).expect("aplicar");
 
         assert_eq!(
             layer.total_supply(),
@@ -846,10 +848,10 @@ use super::*;
         // Bob lo reclama.
         let estado_bob = state_of(&layer, bob);
         let cr = layer
-            .claim(BaseElement::new(SK_BOB), bob, &estado_bob, &r.notice)
+            .claim(BaseElement::new(SK_BOB), bob, &estado_bob, &aviso)
             .expect("reclamar");
         let estado_bob = state_of(&layer, bob);
-        layer.apply_claim(&cr, bob, &estado_bob, &r.notice).expect("aplicar");
+        layer.apply_claim(&cr, bob, &estado_bob, &aviso).expect("aplicar");
 
         assert_eq!(layer.balance_of(bob), Some(350_000), "Bob cobrado");
         assert_eq!(layer.total_supply(), suministro + 300_000, "y el suministro no cambia al reclamar");
@@ -1022,7 +1024,7 @@ use super::*;
             assert_eq!(layer.total_supply(), emitido);
             a
         };
-        let layer = open_retry(
+        let mut layer = open_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
             )
             .expect("reabrir");
@@ -1038,21 +1040,20 @@ use super::*;
         //
         // Que el contador se restaure no basta: podria restaurarse y no
         // usarse en la comprobacion del tope. Ver `AUDITORIA.md` §27. Índice REAL capturado arriba (post-F3).
-        let r = layer.mint(&valid_auth(), alice, MAX_SUPPLY - emitido + 1);
+        let exceso = MAX_SUPPLY - emitido + 1;
+        let op = mint_commitment(&layer, alice, exceso);
+        let subida = mint_climb_proof(&layer, alice, exceso);
+        let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+        let r = layer.apply_mint_delegated(subida, pa, ia, pb, ib, alice, exceso);
         assert!(
             matches!(r, Err(LayerError::SupplyCapExceeded { .. })),
             "CRITICO: tras reiniciar, el tope debe seguir imponiendose sobre \
-             el suministro YA emitido. Salio: {:?}",
-            r.map(|_| "recibo generado")
+             el suministro YA emitido. Salio: {r:?}"
         );
 
-        // Y hasta el tope, si.
-        let ok = layer.mint(&valid_auth(), alice, MAX_SUPPLY - emitido);
-        assert!(
-            ok.is_ok(),
-            "y llegar justo al tope sigue permitido: {:?}",
-            ok.map(|_| "recibo")
-        );
+        // Y hasta el tope, si — por la via real.
+        fund_delegated(&mut layer, alice, MAX_SUPPLY - emitido);
+        assert_eq!(layer.total_supply(), MAX_SUPPLY, "clavado en el tope");
         let _ = std::fs::remove_dir_all(&path);
     }
 
@@ -1159,9 +1160,9 @@ use super::*;
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
             )
             .expect("reabrir");
-        // Un conjunto de gobernanza distinto no debe poder cambiar nada.
-        let g = layer.update_custodians(&valid_governance_auth(), new_custodian_root());
-        assert!(g.is_ok(), "el conjunto legitimo debe seguir funcionando");
+        // El conjunto legitimo, tras el reinicio, PUEDE actuar — y actua.
+        update_custodians_delegated(&mut layer, new_custodian_root());
+        assert_eq!(layer.custodian_set_root(), new_custodian_root());
 
         // ⚠️ **Y el negativo, que es la propiedad.**
         //
@@ -1173,49 +1174,24 @@ use super::*;
         //
         // Es el mismo modo que el cupo de §28: un valor que se restaura y
         // otro que no.
+        // El impostor: custodios firmando en SU dominio contra la
+        // gobernanza — el par llega con el dominio equivocado y rebota
+        // al aplicar, que es donde la autoridad se comprueba.
         let claves = custodian_keys();
-        let (_, caminos) = build_governance_set(&governance_keys());
-        let impostor = GovernanceAuth {
-            key_a: claves[1],
-            index_a: 1,
-            path_a: caminos[1].clone(),
-            key_b: claves[3],
-            index_b: 3,
-            path_b: caminos[3].clone(),
-        };
-        // ⚠️ **El ataque va contra `apply_governance`, no contra
-        // `update_custodians`.**
-        //
-        // La autoridad se comprueba al APLICAR. Generar una prueba con
-        // credenciales falsas funciona: lo que no debe funcionar es
-        // aplicarla. Es el mismo patron que usa
-        // `a_custodian_cannot_change_the_custodian_set` en este mismo
-        // fichero, y que aqui se copio tarde.
-        let r = layer.update_custodians(&impostor, new_custodian_root());
-        let aplicado = match r {
-            Ok(recibo) => layer.apply_governance(&recibo).is_ok(),
-            Err(_) => false,
-        };
+        let otra = governance_commitment(&layer, custodian_root());
+        let (pa, ia, pb, ib) = custodian_pair_with(&claves, otra, 1, 3);
+        let r = layer.apply_governance_delegated(pa, ia, pb, ib, custodian_root());
         assert!(
-            !aplicado,
+            r.is_err(),
             "CRITICO: reiniciar no debe permitir que un no-gobernador cambie \
-             el conjunto de custodios"
+             el conjunto de custodios: {r:?}"
         );
-        // ⚠️ **La raiz sigue siendo la ORIGINAL**, no la nueva.
-        //
-        // El positivo de arriba llama a `update_custodians` y **no aplica**:
-        // comprueba que la gobernanza legitima puede generar la prueba, no
-        // que el cambio se haya producido.
-        //
-        // Afirmar aqui `new_custodian_root()` era suponer un estado sin
-        // comprobarlo — el mismo error que este fichero documenta en otros
-        // sitios, en pequeno.
         assert_eq!(
             layer.custodian_set_root(),
-            custodian_root(),
-            "ningun cambio llego a aplicarse: ni el legitimo, que solo se \
-             genero, ni el del impostor, que se rechazo"
+            new_custodian_root(),
+            "solo el cambio legitimo se aplico; el del impostor rebota"
         );
+        assert_eq!(layer.governance_change_count(), 1);
         let _ = std::fs::remove_dir_all(&path);
     }
 
@@ -1891,23 +1867,25 @@ use super::*;
         update_custodians_delegated(&mut layer, new_custodian_root());
         assert_eq!(layer.custodian_set_root(), new_custodian_root());
 
-        // Los ANTIGUOS ya no pueden.
-        let old = layer.mint(&valid_auth(), alice, 1000);
-        let applied = match old {
-            Ok(receipt) => layer.apply_mint(&receipt, alice).is_ok(),
-            Err(_) => false,
-        };
+        // Los ANTIGUOS ya no pueden — ni con materiales frescos.
+        let op = mint_commitment(&layer, alice, 1000);
+        let subida = mint_climb_proof(&layer, alice, 1000);
+        let (pa, ia, pb, ib) = delegated_pair(op, 1, 3); // claves VIEJAS
+        let old = layer.apply_mint_delegated(subida, pa, ia, pb, ib, alice, 1000);
         assert!(
-            !applied,
+            old.is_err(),
             "CRITICO: tras el cambio, los custodios antiguos NO deben poder \
-             crear dinero. Si pueden, el cambio es cosmetico."
+             crear dinero. Si pueden, el cambio es cosmetico: {old:?}"
         );
 
-        // Los NUEVOS sí.
-        let r2 = layer
-            .mint(&new_custodian_auth(), alice, 5000)
+        // Los NUEVOS sí — con su propio par.
+        let nuevas: Vec<BaseElement> = (0..5).map(|i| BaseElement::new(0xD0_0D_00 + i)).collect();
+        let op2 = mint_commitment(&layer, alice, 5000);
+        let subida2 = mint_climb_proof(&layer, alice, 5000);
+        let (pa2, ia2, pb2, ib2) = custodian_pair_with(&nuevas, op2, 1, 3);
+        layer
+            .apply_mint_delegated(subida2, pa2, ia2, pb2, ib2, alice, 5000)
             .expect("los nuevos custodios deberian poder emitir");
-        layer.apply_mint(&r2, alice).expect("aplicar");
         assert_eq!(layer.balance_of(alice), Some(6000));
     }
 
@@ -2012,9 +1990,8 @@ use super::*;
         // es que **los custodios revocados no puedan actuar**, y eso exige
         // intentarlo con sus credenciales.
         //
-        // La autoridad se comprueba en `apply_mint`, **no en `mint`**: una
-        // prueba generada y no aplicada no consume nada. Atacar la
-        // generacion no comprobaria nada. Ver `AUDITORIA.md` §28.
+        // La autoridad se comprueba al APLICAR — en las dos eras: generar
+        // materiales es del cliente y no consume nada. Ver `AUDITORIA.md` §28.
         {
             let mut layer =
                 open_retry(
@@ -2024,11 +2001,12 @@ use super::*;
                 .open_account_checked(BaseElement::new(SK_ALICE))
                 .expect("abrir cuenta");
 
-            // `valid_auth()` son los custodios ANTIGUOS, ya revocados.
-            let m = layer
-                .mint(&valid_auth(), alice, 100_000)
-                .expect("genera igual: la autoridad se comprueba al aplicar");
-            let r = layer.apply_mint(&m, alice);
+            // Los custodios ANTIGUOS, ya revocados — materiales frescos
+            // bajo su conjunto, contra la raiz nueva persistida.
+            let op = mint_commitment(&layer, alice, 100_000);
+            let subida = mint_climb_proof(&layer, alice, 100_000);
+            let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+            let r = layer.apply_mint_delegated(subida, pa, ia, pb, ib, alice, 100_000);
             assert!(
                 r.is_err(),
                 "CRITICO: un custodio revocado NO debe recuperar su poder \
@@ -2129,19 +2107,24 @@ use super::*;
     #[test]
     fn the_recovery_counter_survives_restart() {
         let path = temp_path("recoveries");
-        let recibo;
+        let materiales;
         let cuenta;
         {
             let mut layer =
                 open_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS).expect("abrir");
             let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-            let r = layer
-                .recover(&valid_auth(), alice, derive_public_id(BaseElement::new(0xA1)))
+            let nueva = derive_public_id(BaseElement::new(0xA1));
+            let op = recovery_commitment(&layer, alice, nueva);
+            let subida = recovery_climb_proof(&layer, alice, nueva);
+            let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+            layer
+                .apply_recovery_delegated(
+                    subida.clone(), pa.clone(), ia.clone(), pb.clone(), ib.clone(), alice, nueva,
+                )
                 .expect("recuperar");
-            layer.apply_recovery(&r, alice).expect("aplicar");
             assert_eq!(layer.recovery_count(), 1);
-            recibo = r;
+            materiales = (subida, pa, ia, pb, ib, nueva);
             cuenta = alice;
         }
         {
@@ -2164,14 +2147,15 @@ use super::*;
         // custodios eligieron, deshaciendo cualquier cambio posterior del
         // titular legitimo.
         //
-        // `replaying_a_recovery_is_rejected` lo comprueba sin reiniciar. Lo
+        // `replaying_a_delegated_recovery_is_rejected` lo comprueba sin reiniciar. Lo
         // que faltaba es comprobar que **sobrevive al reinicio**.
         {
             let mut layer =
                 open_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS)
                 .expect("reabrir para el ataque");
-            let r = layer.apply_recovery(&recibo, cuenta);
+            let (subida, pa, ia, pb, ib, nueva) = materiales;
+            let r = layer.apply_recovery_delegated(subida, pa, ia, pb, ib, cuenta, nueva);
             assert!(
                 r.is_err(),
                 "CRITICO: reiniciar no debe permitir reaplicar una \

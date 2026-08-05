@@ -319,7 +319,12 @@ impl SovereignLayer {
         self.recovery_count = count_new;
 
         self.log.append(OpKind::Recovery, root_old, root_new, &[]);
-        self.commit(&[], None)?;
+        // ⚠️ **El registro VIAJA en el lote, como en la vía-recibo.** Con
+        // `&[]` la raíz rotada llegaba al disco sin el AccountRecord: al
+        // reabrir, la reconstrucción no casaba con `root:state` y la
+        // integridad —fail-closed— detenía un ledger LEGÍTIMO. Lo destapó
+        // el test persistente girado en B-3a-ii (§171).
+        self.commit(&[account_index], None)?;
         Ok(())
     }
 }
