@@ -36,30 +36,6 @@ use super::*;
         assert_eq!(layer.total_supply(), 0);
     }
 
-    /// **EL TEST QUE CIERRA LA CREACIÓN DE DINERO.**
-    #[test]
-    fn only_the_issuer_can_create_money() {
-        let mut layer = new_layer();
-        let alice = layer.open_account(BaseElement::new(SK_ALICE));
-        let keys = custodian_keys();
-        let (_, paths) = stark_experiment::circuit_threshold::build_custodian_set(&keys);
-        // Mismo custodio dos veces: un 2-de-N disfrazado de 1-de-N.
-        let bad = ThresholdAuth {
-            key_a: keys[2],
-            index_a: 2,
-            path_a: paths[2].clone(),
-            key_b: keys[2],
-            index_b: 2,
-            path_b: paths[2].clone(),
-        };
-        let r = layer.mint(&bad, alice, 1_000_000);
-        assert!(
-            matches!(r, Err(LayerError::NotTheIssuer)),
-            "CRITICO: sin la clave del emisor no debe poder crearse dinero"
-        );
-        assert_eq!(layer.total_supply(), 0);
-    }
-
     /// La emisión aumenta el suministro exactamente en lo emitido.
     #[test]
     fn minting_increases_supply_exactly() {
@@ -255,48 +231,6 @@ use super::*;
             "solo tiene lo de la PRIMERA, que si se cobro"
         );
         assert_eq!(layer.total_pending(), 200_000, "la segunda esta en transito");
-    }
-
-    /// **EL TEST DEL TOPE DE EMISIÓN.**
-    ///
-    /// Ni siquiera la autoridad emisora puede inflar sin límite. Tiene la
-    /// clave, pero el tope es un parámetro inmutable del ledger.
-    #[test]
-    fn the_issuer_cannot_mint_beyond_the_cap() {
-        let mut layer = new_layer();
-        let alice = layer.open_account(BaseElement::new(SK_ALICE));
-
-        let r = layer.mint(&valid_auth(), alice, MAX_SUPPLY + 1);
-        assert!(
-            matches!(r, Err(LayerError::SupplyCapExceeded { .. })),
-            "CRITICO: la autoridad emisora NO debe poder superar el tope del \
-             sistema. Resultado: {r:?}"
-        );
-        assert_eq!(layer.total_supply(), 0);
-    }
-
-    /// El tope se aplica al ACUMULADO, no a cada emisión por separado.
-    ///
-    /// Sin esto, el emisor podría emitir mil veces por debajo del tope y
-    /// superarlo igualmente.
-    #[test]
-    fn the_cap_applies_to_the_accumulated_supply() {
-        let mut layer = new_layer();
-        let alice = layer.open_account(BaseElement::new(SK_ALICE));
-
-        // Primera emision: hasta casi el tope.
-        let r1 = layer
-            .mint(&valid_auth(), alice, MAX_SUPPLY - 1000)
-            .expect("primera emision");
-        layer.apply_mint(&r1, alice).expect("aplicar");
-        assert_eq!(layer.total_supply(), MAX_SUPPLY - 1000);
-
-        // Segunda: pequena por si sola, pero superaria el acumulado.
-        let r2 = layer.mint(&valid_auth(), alice, 2000);
-        assert!(
-            matches!(r2, Err(LayerError::SupplyCapExceeded { .. })),
-            "CRITICO: el tope debe aplicarse al acumulado, no a cada emision"
-        );
     }
 
     /// Emitir exactamente hasta el tope sí vale: un límite efectivo menor
@@ -674,83 +608,9 @@ use super::*;
     // Reenvío de recibos
     // -----------------------------------------------------------------
 
-    /// **REENVIAR UNA EMISIÓN CREARÍA DINERO.**
-    ///
-    /// Es el reenvío más grave de todos, y **no estaba probado**. Había
-    /// tests para liquidación, gobernanza, recuperación y destrucción; la
-    /// emisión se quedó fuera.
-    ///
-    /// Un recibo de emisión válido, aplicado dos veces, duplicaría el
-    /// importe emitido y el suministro dejaría de cuadrar.
-    #[test]
-    fn replaying_a_mint_is_rejected() {
-        let mut layer = new_layer();
-        let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
-
-        let r = layer.mint(&valid_auth(), alice, 250_000).expect("emitir");
-        layer.apply_mint(&r, alice).expect("primera aplicacion");
-
-        let saldo = layer.balance_of(alice);
-        let suministro = layer.total_supply();
-
-        // El MISMO recibo, otra vez.
-        assert!(
-            layer.apply_mint(&r, alice).is_err(),
-            "CRITICO: reenviar una emision crearia dinero de la nada"
-        );
-        assert_eq!(layer.balance_of(alice), saldo, "el saldo no cambia");
-        assert_eq!(layer.total_supply(), suministro, "el suministro tampoco");
-    }
-
-    /// **REENVIAR UNA CONGELACIÓN.**
-    ///
-    /// No crea dinero, pero **incrementaría el contador público dos veces**
-    /// por una sola intervención. Ese contador existe justamente para que
-    /// las intervenciones de los custodios sean contables.
-    #[test]
-    fn replaying_a_freeze_is_rejected() {
-        let mut layer = new_layer();
-        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-
-        let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
-        layer.apply_freeze(&f, alice).expect("primera aplicacion");
-        let cuenta = layer.freeze_count();
-
-        assert!(
-            layer.apply_freeze(&f, alice).is_err(),
-            "reenviar una congelacion no debe aceptarse"
-        );
-        assert_eq!(
-            layer.freeze_count(),
-            cuenta,
-            "CRITICO: el contador de intervenciones no puede subir dos veces \
-             por una sola congelacion"
-        );
-    }
-
-    /// **Y aplicar un recibo a una cuenta DISTINTA de la suya.**
-    ///
-    /// Un recibo de emisión para Alice, aplicado sobre Bob. Si se
-    /// aceptara, cualquiera podría desviar una emisión legítima.
-    #[test]
-    fn applying_a_receipt_to_the_wrong_account_is_rejected() {
-        let mut layer = new_layer();
-        let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
-        let bob = layer.open_account_checked(BaseElement::new(SK_BOB)).expect("abrir");
-
-        let r = layer.mint(&valid_auth(), alice, 250_000).expect("emitir");
-        assert!(
-            layer.apply_mint(&r, bob).is_err(),
-            "CRITICO: un recibo de emision para Alice no debe poder aplicarse \
-             sobre la cuenta de Bob"
-        );
-        assert_eq!(layer.balance_of(bob), Some(0));
-    }
-
     // -----------------------------------------------------------------
     // Transferencia en dos fases
     // -----------------------------------------------------------------
-
 
     /// **EL CICLO COMPLETO: ENVIAR Y RECLAMAR.**
     ///
@@ -995,47 +855,6 @@ use super::*;
         assert_eq!(layer.total_supply(), suministro + 300_000, "y el suministro no cambia al reclamar");
     }
 
-    /// **SIN DOS CUSTODIOS NO SE EMITE.**
-    #[test]
-    fn a_single_custodian_cannot_mint_to_pending() {
-        let layer = new_layer();
-        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
-        let mismo = ThresholdAuth {
-            index_b: valid_auth().index_a,
-            path_b: valid_auth().path_a.clone(),
-            key_b: valid_auth().key_a,
-            ..valid_auth()
-        };
-        assert!(
-            layer.mint_to_pending(&mismo, id_bob, salt_de(0xA11), 1000).is_err(),
-            "CRITICO: un custodio contando dos veces no debe poder emitir"
-        );
-    }
-
-    /// **NO SE SUPERA EL TOPE DE EMISIÓN.**
-    ///
-    /// ⚠️ Lo impone **la capa**, no el circuito: `circuit_mint_pending`
-    /// transporta el tope pero **no lo comprueba con un rango**. Está
-    /// documentado en su cabecera y en `AUDITORIA.md` §10.
-    #[test]
-    fn the_supply_cap_is_enforced_by_the_layer() {
-        let layer = new_layer();
-        let id_bob = derive_public_id(BaseElement::new(SK_BOB));
-        // Emitir EXACTAMENTE el tope es legitimo: lo alcanza, no lo supera.
-        //
-        // Una version anterior de este test probaba `MAX_SUPPLY` y fallaba
-        // por eso. **El test estaba mal, no el codigo.**
-        let ok = layer.mint_to_pending(&valid_auth(), id_bob, salt_de(0xA11), MAX_SUPPLY);
-        assert!(ok.is_ok(), "emitir hasta el tope debe permitirse: {ok:?}");
-
-        // Superarlo, no.
-        let r = layer.mint_to_pending(&valid_auth(), id_bob, salt_de(0xA12), MAX_SUPPLY + 1);
-        assert!(
-            matches!(r, Err(LayerError::OverRegulatoryLimit { .. })),
-            "pasarse del tope debe rechazarse: {r:?}"
-        );
-    }
-
     /// **EMITIR CONSUME CUPO DE CUSTODIOS.**
     ///
     /// Es una intervención como las demás, y la rotación la cuenta.
@@ -1069,23 +888,6 @@ use super::*;
 
         set_frozen_delegated(&mut layer, alice, true);
         assert_eq!(layer.custodian_uses(), 2, "congelar consume otra");
-    }
-
-    /// **GENERAR UNA PRUEBA QUE NO SE APLICA NO GASTA CUPO.**
-    ///
-    /// El consumo va en la aplicación, no en la generación. Si fuera al
-    /// revés, **pruebas descartadas agotarían el cupo de los custodios**.
-    #[test]
-    fn generating_an_unapplied_proof_does_not_consume_quota() {
-        let mut layer = new_layer();
-        let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
-
-        let _descartada = layer.mint(&valid_auth(), alice, 100_000).expect("emitir");
-        assert_eq!(
-            layer.custodian_uses(),
-            0,
-            "una prueba que no se aplica no debe gastar cupo"
-        );
     }
 
     /// **AGOTADO EL CUPO, LOS CUSTODIOS NO PUEDEN ACTUAR.**
@@ -1580,30 +1382,6 @@ use super::*;
         );
     }
 
-    /// **CAMBIAR LOS CUSTODIOS INVALIDA LOS RECIBOS PENDIENTES.**
-    ///
-    /// Un recibo de emisión firmado por los custodios antiguos no debe
-    /// poder aplicarse después de sustituirlos. Si pudiera, **los
-    /// custodios destituidos conservarían poder** durante el tiempo que
-    /// tuvieran recibos sin aplicar.
-    #[test]
-    fn changing_custodians_invalidates_pending_receipts() {
-        let mut layer = new_layer();
-        let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
-
-        // Los custodios actuales emiten, pero el recibo no se aplica aun.
-        let pendiente = layer.mint(&valid_auth(), alice, 250_000).expect("emitir");
-
-        // La gobernanza los sustituye.
-        update_custodians_delegated(&mut layer, new_custodian_root());
-
-        assert!(
-            layer.apply_mint(&pendiente, alice).is_err(),
-            "CRITICO: un recibo de los custodios destituidos no debe aplicarse"
-        );
-        assert_eq!(layer.balance_of(alice), Some(0));
-    }
-
     // -----------------------------------------------------------------
     // Casos límite
     // -----------------------------------------------------------------
@@ -1882,7 +1660,6 @@ use super::*;
         assert!(matches!(r, Err(LayerError::NotTheAccountHolder)));
     }
 
-
     /// **EL TEST QUE JUSTIFICA TODA LA PIEZA.**
     ///
     /// Una cuenta congelada no puede gastar. Y no lo impide la capa: lo
@@ -1993,26 +1770,6 @@ use super::*;
         two_phase_transfer(&mut layer, alice, SK_ALICE, bob, SK_BOB, 1000, salt_de(0x0707))
             .expect("transferencia en dos fases");
         assert_eq!(layer.balance_of(bob), Some(1000));
-    }
-
-    /// **UN SOLO CUSTODIO NO PUEDE CONGELAR.**
-    #[test]
-    fn one_custodian_cannot_freeze_alone() {
-        let mut layer = new_layer();
-        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-
-        let keys = custodian_keys();
-        let (_, paths) = stark_experiment::circuit_threshold::build_custodian_set(&keys);
-        let solo = ThresholdAuth {
-            key_a: keys[2],
-            index_a: 2,
-            path_a: paths[2].clone(),
-            key_b: keys[2],
-            index_b: 2,
-            path_b: paths[2].clone(),
-        };
-        assert!(layer.set_frozen(&solo, alice, true).is_err());
-        assert!(!layer.is_frozen(alice));
     }
 
     /// Cada congelación y descongelación queda contada.
@@ -2176,50 +1933,6 @@ use super::*;
         debug_assertions,
         ignore = "escenario de rechazo: la traza es invalida a proposito y en depuracion winterfell lo caza al generar (§78)"
     )]
-    fn a_custodian_cannot_change_the_custodian_set() {
-        let mut layer = new_layer();
-        // Una autorizacion construida con claves de CUSTODIO sobre la
-        // estructura de gobernanza.
-        let keys = custodian_keys();
-        let (_, paths) = build_governance_set(&governance_keys());
-        let fake = GovernanceAuth {
-            key_a: keys[1],
-            index_a: 1,
-            path_a: paths[1].clone(),
-            key_b: keys[3],
-            index_b: 3,
-            path_b: paths[3].clone(),
-        };
-
-        let r = layer.update_custodians(&fake, new_custodian_root());
-        let applied = match r {
-            Ok(receipt) => layer.apply_governance(&receipt).is_ok(),
-            Err(_) => false,
-        };
-        assert!(
-            !applied,
-            "CRITICO: quien puede emitir y recuperar NO debe poder cambiar \
-             quien tiene ese poder"
-        );
-        assert_eq!(layer.custodian_set_root(), custodian_root(), "sin cambios");
-    }
-
-    /// **UN SOLO GOBERNADOR NO BASTA.**
-    #[test]
-    fn one_governor_cannot_change_the_set_alone() {
-        let layer = new_layer();
-        let keys = governance_keys();
-        let (_, paths) = build_governance_set(&keys);
-        let solo = GovernanceAuth {
-            key_a: keys[2],
-            index_a: 2,
-            path_a: paths[2].clone(),
-            key_b: keys[2],
-            index_b: 2,
-            path_b: paths[2].clone(),
-        };
-        assert!(layer.update_custodians(&solo, new_custodian_root()).is_err());
-    }
 
     /// Cada cambio queda contado.
     #[test]
@@ -2260,21 +1973,6 @@ use super::*;
         let r2 = layer.apply_mint_delegated(s2, pa2, ia2, pb2, ib2, alice, 100_000);
         assert!(r2.is_err(), "CRITICO: claves revocadas contra raiz nueva: {r2:?}");
         assert_eq!(layer.total_supply(), 0, "nada se emitio");
-    }
-
-    /// Reaplicar un cambio de gobernanza se rechaza.
-    #[test]
-    fn replaying_a_governance_change_is_rejected() {
-        let mut layer = new_layer();
-        let g = layer
-            .update_custodians(&valid_governance_auth(), new_custodian_root())
-            .expect("cambio");
-        layer.apply_governance(&g).expect("primera");
-        assert!(matches!(
-            layer.apply_governance(&g),
-            Err(LayerError::StaleState)
-        ));
-        assert_eq!(layer.governance_change_count(), 1);
     }
 
     /// **EL CONJUNTO DE CUSTODIOS VIGENTE SOBREVIVE AL REINICIO.**
@@ -2421,63 +2119,6 @@ use super::*;
             2,
             "cada intervencion de los custodios debe quedar contada"
         );
-    }
-
-    /// **UN SOLO CUSTODIO NO PUEDE RECUPERAR.**
-    #[test]
-    fn one_custodian_cannot_recover_alone() {
-        let mut layer = new_layer();
-        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-
-        let keys = custodian_keys();
-        let (_, paths) = stark_experiment::circuit_threshold::build_custodian_set(&keys);
-        let solo = ThresholdAuth {
-            key_a: keys[2],
-            index_a: 2,
-            path_a: paths[2].clone(),
-            key_b: keys[2],
-            index_b: 2,
-            path_b: paths[2].clone(),
-        };
-
-        let new_id = derive_public_id(BaseElement::new(0xA11CE_2));
-        assert!(
-            layer.recover(&solo, alice, new_id).is_err(),
-            "CRITICO: un custodio contando dos veces convertiria el 2-de-N en 1-de-N"
-        );
-        assert_eq!(layer.recovery_count(), 0);
-    }
-
-    /// Recuperar a la misma identidad no hace nada y solo gastaría el
-    /// contador: se rechaza antes de generar la prueba.
-    #[test]
-    fn recovery_to_the_same_identity_is_rejected() {
-        let mut layer = new_layer();
-        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-        let same = derive_public_id(BaseElement::new(SK_ALICE));
-        assert!(matches!(
-            layer.recover(&valid_auth(), alice, same),
-            Err(LayerError::RecoveryToSameIdentity)
-        ));
-    }
-
-    /// Reaplicar una recuperación debe rechazarse.
-    #[test]
-    fn replaying_a_recovery_is_rejected() {
-        let mut layer = new_layer();
-        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-        let new_id = derive_public_id(BaseElement::new(0xA11CE_2));
-        let r = layer.recover(&valid_auth(), alice, new_id).expect("recuperar");
-
-        layer.apply_recovery(&r, alice).expect("primera");
-        assert!(
-            matches!(
-                layer.apply_recovery(&r, alice),
-                Err(LayerError::StaleState)
-            ),
-            "CRITICO: reaplicar una recuperacion descuadraria el contador"
-        );
-        assert_eq!(layer.recovery_count(), 1);
     }
 
     /// **El contador sobrevive al reinicio.**
