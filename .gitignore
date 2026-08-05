@@ -15,3 +15,5 @@ secrets
 # Scripts de parche de un solo uso (se aplican desde la raiz y se borran).
 # NO afecta a los .py del proyecto, que viven en subdirectorios.
 /*.py
+# marcas NTFS que WSL materializa al arrastrar desde Windows
+*:Zone.Identifier
