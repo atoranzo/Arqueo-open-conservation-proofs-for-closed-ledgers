@@ -111,6 +111,37 @@ compromiso respecto de (receptor, salt, importe). FV-1 y FV-2 apuntan a
 esa forma. Verificar formalmente la especificación equivocada es el otro
 modo de fallar de la VF, y se documenta aquí para que no ocurra.
 
+## 6. FV-1: el prototipo, EJECUTADO — y la frontera, MEDIDA
+
+`doc/fv/censo_celdas_prototipo.py` implementa el enfoque sobre
+`circuit_refund` y **se ejecutó**. Resultado en dos mitades, las dos
+valiosas:
+
+**El enfoque funciona**: resuelve las constantes, parsea las transiciones
+(`next[...]`) y las aserciones (`Assertion::single`), y cruza ambas contra
+la convención de celdas libres. Sobre `circuit_refund` reporta las 12
+columnas cubiertas, sin celdas huérfanas.
+
+**La frontera está MEDIDA, no supuesta**: el caso-mutación —borrar
+`C_CAP`— **NO se distingue** en la simplificación de clases del prototipo.
+La razón es exactamente la prevista: sin un intérprete que compute «clase
+de fila K = las filas donde el selector S vale 1», la clase agregada
+«enlace» no aísla las filas donde `C_CAP` era el único dueño; la columna
+sigue referenciada por `C_HASH` en la clase «hash», y el censo agregado no
+ve el hueco.
+
+**Lo que esto decide para la entrada 71**: FV-1 real NO es un injerto en el
+guardián. Es, en su núcleo, **el intérprete de selectores periódicos** —
+leer `get_periodic_column_values` fila a fila y derivar, por selector, el
+conjunto exacto de filas que activa. Con eso «celda × clase» se vuelve
+computable y el mutante se caza. El prototipo convierte la estimación de
+§183 en un requisito probado: **el trabajo es el intérprete, no el cruce.**
+
+**Por qué NO está en `tools/` como guardián**: una herramienta que no
+distingue su propio mutante no vigila nada, y la cabecera del guardián lo
+dice —un barrido que aprueba lo que no entiende es peor que ninguno
+(§42.5)—. Vive en `doc/fv/` como evidencia ejecutable de la frontera.
+
 ## 5. Estado
 
 FV-0 ejecutada (§183 + SECURITY §2). FV-1: diseñada, sesión propia — el

@@ -12992,6 +12992,31 @@ funcional por (clave, dominio). FV-1 es sesión propia y empieza por
 censar al guardián mismo: 600+ líneas que se extienden tras leerse
 enteras, no tras adivinarse.
 
+## 184. FV-1: el prototipo ejecutado convierte la estimación en requisito — y una corrección de acta
+
+Se desarrolló el primer paso de la entrada 71 hasta un prototipo funcional
+sobre `circuit_refund` y **se ejecutó** (el método de la casa: no se
+registra un enfoque sin correrlo). Hace lo que el guardián de ranuras no
+hace —parsea transiciones y aserciones y cruza por celda contra celdas
+libres declaradas— pero su **caso-mutación, borrar `C_CAP`, NO se
+distingue**: sin un intérprete que derive «clase de fila = filas donde el
+selector vale 1», la clase agregada no aísla las filas donde la restricción
+borrada era el único dueño. **El valor**: §183 estimó FV-1 como «extender
+el guardián»; la ejecución lo corrige a un requisito probado — el núcleo de
+FV-1 es **el intérprete de selectores periódicos**, no el cruce (la parte
+fácil, ya prototipada). El prototipo vive en `doc/fv/`, no en `tools/`: no
+caza su mutante, luego no es guardián (§42.5).
+
+⚠️ **Corrección de acta (§111.2 en carne propia)**: el commit `0496b8b`
+selló un mensaje que anunciaba este §184, la §6 del doc y la entrada 71
+actualizada —y NINGUNA de las tres se había escrito—. La guarda del bloque
+buscaba el prototipo con un nombre (`censo_celdas_prototipo.py`) distinto
+del que el arrastre dejó (`censo_celdas.py`), abortó su rama por diseño, y
+un `git add -A` de cola coló el fichero suelto mientras el commit describía
+tinta inexistente. Es exactamente el fallo que §111.2 registró —un asiento
+que narra lo que no pasó—. Este asiento existe de verdad, y con él las tres
+piezas prometidas. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

@@ -1821,6 +1821,14 @@ pendientes, sino en saber con precision que es y que no es.
   OBLIGADO**: leer entero `tools/check_constraint_layout.py` (600+ líneas)
   — se extiende lo leído, no lo adivinado. Diseño completo:
   `doc/VERIFICACION_FORMAL.md` §1. **Sesión propia.**
+  ✅ **PROTOTIPO EJECUTADO (§184)**: `doc/fv/censo_celdas_prototipo.py`
+  corre sobre `circuit_refund` — el cruce funciona, el caso-mutación NO se
+  distingue en clases agregadas. **Requisito REAL medido**: el núcleo de
+  FV-1 es el **intérprete de selectores periódicos** (derivar «clase de
+  fila = filas donde el selector vale 1» leyendo
+  `get_periodic_column_values` fila a fila), NO el injerto — ése es la parte
+  fácil, ya prototipada. El prototipo vive en `doc/fv/`, no en `tools/`: no
+  caza su mutante, luego no vigila (§42.5).
 
 - [ ] **72. FV-2: spike SMT sobre `circuit_refund` (tras la 71).**
   Exportador en `tools/` del sistema (20 restricciones + 12 aserciones,
