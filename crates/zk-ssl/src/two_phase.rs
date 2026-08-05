@@ -67,6 +67,16 @@ pub struct PendingNotice {
 /// Materiales del reembolso (§178, R-2c): las DOS pruebas del doble
 /// cerrojo — la apertura del compromiso (#27) y la subida de crédito del
 /// EMISOR (#28, con su salt derivado de su clave §117).
+/// Materiales de la DES-EMISIÓN (§178 §4, R-2d): solo la apertura #27 —
+/// no hay cuenta que acreditar; caducar un pendiente de EMISIÓN destruye
+/// exactamente lo comprometido y el suministro BAJA lo que subió.
+pub struct DeissueReceipt {
+    pub refund_proof: Vec<u8>,
+    pub position: u64,
+    pub amount: u64,
+    pub commitment: Digest,
+}
+
 pub struct RefundReceipt {
     pub refund_proof: Vec<u8>,
     pub credit_proof: Vec<u8>,
@@ -217,6 +227,81 @@ impl SovereignLayer {
     /// EMISOR puede: la hoja se reconstruye con el salt DERIVADO de su
     /// clave (§117) y debe casar con el árbol — clave ajena, hoja ajena,
     /// rebote aquí mismo.
+    /// Fabrica los materiales de la des-emisión: la apertura del
+    /// compromiso, sin clave ni cuenta — quien tenga el aviso (emisor
+    /// delegado, custodios, o el receptor que nunca cobró) puede pedirla;
+    /// la compuerta del centinela decide si procede.
+    pub fn deissue(
+        &self,
+        position: u64,
+        receiver_id: Digest,
+        salt: Digest,
+        amount: u64,
+    ) -> Result<DeissueReceipt, LayerError> {
+        use stark_experiment::circuit_refund as refundc;
+        let commitment = crate::pending::pending_commitment(receiver_id, salt, amount);
+        let t = refundc::build_trace(receiver_id, salt, amount);
+        let refund_proof = refundc::RefundProver::new(self.options.clone())
+            .prove(t)
+            .map_err(|e| LayerError::VerificationFailed(format!("apertura: {e:?}")))?
+            .to_bytes();
+        Ok(DeissueReceipt { refund_proof, position, amount, commitment })
+    }
+
+    /// **Aplica la des-emisión**: SOLO posiciones con centinela (nacidas
+    /// por emisión). Las compuertas de tiempo y materiales son las del
+    /// reembolso; la mutación es destruir — hoja vacía y suministro ABAJO.
+    pub fn apply_deissue(&mut self, receipt: &DeissueReceipt) -> Result<(), LayerError> {
+        use stark_experiment::circuit_refund::{RefundAir, RefundPublicInputs};
+
+        let pos = receipt.position;
+        let (sender_index, born) = self
+            .pending_meta
+            .get(&pos)
+            .copied()
+            .ok_or(LayerError::RefundUnavailable)?;
+        if sender_index != crate::REFUND_SENDER_NONE {
+            // Un pendiente de PAGO no se des-emite: su vía es el reembolso.
+            return Err(LayerError::RefundUnavailable);
+        }
+        let now = self.log.len() as u64;
+        if now.saturating_sub(born) < self.refund_ttl {
+            return Err(LayerError::RefundTooEarly { born, now, ttl: self.refund_ttl });
+        }
+        if self.pending.leaf(pos) != receipt.commitment {
+            return Err(LayerError::PendingMismatch);
+        }
+        if self.pending_amounts.get(&pos).copied() != Some(receipt.amount) {
+            return Err(LayerError::PendingMismatch);
+        }
+        let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
+        let p_ref = winterfell::Proof::from_bytes(&receipt.refund_proof)
+            .map_err(|e| LayerError::VerificationFailed(format!("apertura mal formada: {e:?}")))?;
+        verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+            p_ref,
+            RefundPublicInputs {
+                commitment: receipt.commitment,
+                amount: BaseElement::new(receipt.amount),
+            },
+            &accepted,
+        )
+        .map_err(|e| LayerError::VerificationFailed(format!("apertura: {e:?}")))?;
+
+        let vacia: Digest = [BaseElement::ZERO; 4];
+        let root = self.accounts.root();
+        self.pending.set_leaf(pos, vacia);
+        self.pending_amounts.remove(&pos);
+        self.pending_meta.remove(&pos);
+        // Lo emitido-a-pendiente subió el suministro al nacer (two_phase,
+        // mint_to_pending): al caducar sin cobro, BAJA exactamente eso.
+        self.total_supply -= receipt.amount;
+        // La raíz de cuentas no se mueve: el log la repite a ambos lados.
+        self.log
+            .append(OpKind::Refund, root, root, &receipt.refund_proof);
+        self.commit(&[], Some((pos, vacia)))?;
+        Ok(())
+    }
+
     pub fn refund(
         &self,
         spend_key: BaseElement,
@@ -1500,6 +1585,94 @@ mod tests_verificacion {
         let materiales = refund_de(&layer, alice, SK_ALICE, &recibo, receptor, 300_000);
         layer.apply_refund(&materiales).expect("refund tras reinicio");
         assert_eq!(state_of(&layer, alice).balance, 1_000_000);
+    }
+
+    /// R-2d FELIZ: el mint-pendiente caducado se DES-EMITE — el
+    /// suministro baja exactamente lo que subió al emitir. Con cronómetro.
+    #[test]
+    fn un_mint_pendiente_caducado_se_desemite() {
+        use std::time::Instant;
+        let mut layer = new_layer();
+        layer.set_refund_ttl(1);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let receptor = layer.public_id_of(bob).expect("bob");
+        let supply_antes = layer.total_supply();
+        mint_to_pending_delegated(&mut layer, receptor, salt_de(0xD1), 500_000);
+        assert_eq!(layer.total_supply(), supply_antes + 500_000, "emitir SUBE");
+        let t = Instant::now();
+        let materiales = layer
+            .deissue(0, receptor, salt_de(0xD1), 500_000)
+            .expect("materiales");
+        let t_gen = t.elapsed();
+        let t = Instant::now();
+        layer.apply_deissue(&materiales).expect("des-emitir");
+        eprintln!(
+            "DESEMISION — generar: {:?} | aplicar: {:?} | apertura {} B",
+            t_gen, t.elapsed(), materiales.refund_proof.len()
+        );
+        assert_eq!(layer.total_supply(), supply_antes, "caducar BAJA lo emitido");
+        assert!(layer.pending_meta_of(0).is_none());
+        assert_eq!(layer.total_pending(), 0);
+    }
+
+    /// R-2d: antes de T, la des-emisión rebota igual que el reembolso.
+    #[test]
+    fn la_desemision_pre_t_rebota() {
+        let mut layer = new_layer();
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let receptor = layer.public_id_of(bob).expect("bob");
+        mint_to_pending_delegated(&mut layer, receptor, salt_de(0xD2), 100_000);
+        let materiales = layer
+            .deissue(0, receptor, salt_de(0xD2), 100_000)
+            .expect("materiales");
+        assert!(matches!(
+            layer.apply_deissue(&materiales),
+            Err(LayerError::RefundTooEarly { .. })
+        ));
+    }
+
+    /// R-2d LAS VÍAS NO SE CRUZAN: el centinela no acepta reembolso-con-
+    /// crédito, y el pendiente de pago no acepta des-emisión.
+    #[test]
+    fn las_dos_vias_de_caducidad_no_se_cruzan() {
+        let mut layer = new_layer();
+        layer.set_refund_ttl(1);
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let receptor = layer.public_id_of(bob).expect("bob");
+
+        // Un mint-pendiente (centinela) en pos 0…
+        mint_to_pending_delegated(&mut layer, receptor, salt_de(0xD3), 40_000);
+        // …y un pendiente de PAGO de alice en pos 1.
+        let ea = state_of(&layer, alice);
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, receptor, salt_de(0xD4), 60_000)
+            .expect("send");
+        layer.apply_send(&recibo, alice, &ea, 60_000).expect("apply");
+
+        // Vía cruzada 1: refund-con-crédito sobre el CENTINELA → rebota.
+        // (Directo, sin recibo sintético: alice apunta su refund a la
+        // posición 0 del mint-pendiente — lo que un atacante haría.)
+        let ea2 = state_of(&layer, alice);
+        let robado = layer
+            .refund(
+                BaseElement::new(SK_ALICE), alice, &ea2,
+                0, receptor, salt_de(0xD3), 40_000,
+            )
+            .expect("materiales contra el centinela");
+        assert!(matches!(
+            layer.apply_refund(&robado),
+            Err(LayerError::RefundUnavailable)
+        ), "el centinela NO admite credito a nadie");
+
+        // Vía cruzada 2: des-emisión sobre el pendiente de PAGO → rebota.
+        let destruir = layer
+            .deissue(recibo.notice.position, receptor, salt_de(0xD4), 60_000)
+            .expect("materiales");
+        assert!(matches!(
+            layer.apply_deissue(&destruir),
+            Err(LayerError::RefundUnavailable)
+        ), "el pago NO se destruye: su via es el reembolso al emisor");
     }
 
     #[test]
