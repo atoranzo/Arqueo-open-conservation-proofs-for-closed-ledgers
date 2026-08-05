@@ -12854,6 +12854,52 @@ cerrojos, la carrera post-T, y el reinicio que conserva el meta; (5)
 medición. Es la mitad grande y toca persistencia: **sesión propia, con
 censo fresco** — este asiento es su punto de partida.
 
+## 180. R-2a y R-2b EJECUTADOS — el meta en el lote y el gemelo del clímber; los dos circuitos de la caducidad, vivos
+
+**R-2a** (`da583fe`): la infraestructura del meta — `pending_meta
+{emisor, nacimiento}` nace en `apply_send` y en mint-a-pendiente (con
+CENTINELA `u64::MAX`: des-emisión, no reembolso), muere en `claim`, y
+**viaja EN EL LOTE** junto a `pamt:` (la lección de §169 cumplida:
+`pmeta:` de 16 bytes, vacío = sin-meta). `T = refund_ttl` queda como línea
+sistémica (DEFAULT 64 latidos de `log.seq`, knob, persistida). **Legado
+declarado**: pendientes pre-R2a sin meta son INMUNES a la caducidad —
+ausencia es inmunidad, no fabricación. La tanda pagó tres reglas nuevas al
+rito: un ancla-de-fn CARGA con su atributo (la compuerta del silencio cazó
+un `#[test]` desnudado — un test existente silenciosamente desactivado, su
+mejor presa); los bloques de reparación se escriben IDEMPOTENTES; los
+constructores de un struct se censan TODOS.
+
+**R-2b** (`0e5a933`): el censo FALSIFICÓ el reuso de `mint_climb` con
+`delta=0` — su `C_SUPPLY` ata `supply_new − supply_old == importe` («EL
+SUMINISTRO SUBE EXACTAMENTE EN EL IMPORTE»); `supply_delta` existe para
+que la emisión encubierta se RECHACE, no para esquivarla. La respuesta
+honesta: **`circuit_credit_climb`**, gemelo con TRES cortes marcados en el
+código (sin `C_SUPPLY`; rango de 3 segmentos, no 5; publics sin
+suministro) y cabecera-puntero al origen para que el drift grite (lección
+del museo). Dos discriminantes: otro importe NO verifica, y **una subida
+con salt AJENO no verifica contra la raíz del titular** — el cerrojo #2 de
+§178 (§117), probado en circuito. Una costura al vuelo (aserciones
+24→23). **Canon: stark 297/0+10 · guardián 28 circuitos · zk-ssl
+234/0+3.**
+
+**R-2c, el tejido, con su guion censo-primero**: (1) **censo de
+`OpKind`** ANTES de tocarlo — enum con `tag_byte`/`from_tag_byte` y
+matches exhaustivos repartidos por el árbol; añadir `Refund` sin censar
+cada match es rotura en cadena; (2) `RefundReceipt` + `refund()` del
+emisor (deriva su salt de la clave, §117; arma las DOS pruebas); (3)
+`apply_refund`: compuertas de capa —meta existe y no-centinela,
+`seq − nacimiento ≥ T`, `hoja[pos] == P`, `amounts[pos] == importe`— más
+verificación de ambas pruebas con los publics construidos por la capa
+(`root_new` del tentativo que acredita a `meta.sender_index`: el destino
+atado por raíces, patrón del delegado), mutación, `OpKind::Refund` al log,
+`commit(&[emisor], Some((pos, vacía)))`; (4) la batería: feliz, pre-T
+rebota, **ladrón-con-aviso** (su clímber no casa la raíz del emisor),
+carrera post-T, replay (hoja vacía), y la persistencia del meta con el
+patrón de reapertura leído del natural; (5) **R-2d**: des-emisión del
+centinela (sin clímber — no hay cuenta; `total_supply` BAJA, que subió al
+emitir), medición, y el asiento de cierre. Sesión propia: es el tejido
+donde los dos cerrojos se cierran en la capa.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
