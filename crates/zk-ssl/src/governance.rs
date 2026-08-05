@@ -336,6 +336,33 @@ mod tests_delegada {
         assert_eq!(layer.governance_change_count(), 1);
     }
 
+    /// **REENVIAR un cambio delegado se rechaza en la puerta**: tras
+    /// aplicar, la raíz vigente ES la nueva, y el reintento con la misma
+    /// choca con `RecoveryToSameIdentity` antes de verificar nada — y si
+    /// trajera otra raíz, el compromiso (que ata saliente, entrante y
+    /// contador) lo dejaría huérfano. Releva en B-3 a
+    /// `replaying_a_governance_change_is_rejected` (vía-recibo, §168).
+    #[test]
+    fn replaying_a_delegated_governance_change_is_rejected() {
+        let mut layer = capa();
+        let gk = governance_keys();
+        let (_, gp) = build_governance_set(&gk);
+        let nueva = new_custodian_root();
+
+        let op = compromiso(layer.custodian_set_root(), nueva, layer.governance_change_count());
+        let (pa, ia) = autorizar(gk[1], &gp[1], op);
+        let (pb, ib) = autorizar(gk[3], &gp[3], op);
+        layer
+            .apply_governance_delegated(pa.clone(), ia.clone(), pb.clone(), ib.clone(), nueva)
+            .expect("el primer cambio");
+
+        // Los MISMOS materiales, otra vez.
+        let r = layer.apply_governance_delegated(pa, ia, pb, ib, nueva);
+        assert!(r.is_err(), "CRITICO: reenviar contaria dos cambios: {r:?}");
+        assert_eq!(layer.governance_change_count(), 1, "el contador no avanza");
+        assert_eq!(layer.custodian_set_root(), nueva, "y la raiz queda donde estaba");
+    }
+
     /// ⚠️ **El mismo miembro dos veces no es un umbral.** Sin esta
     /// comprobacion, cualquiera con UNA clave de gobernanza cambiaria quien
     /// tiene el poder de emitir.

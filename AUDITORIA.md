@@ -12370,6 +12370,40 @@ existentes: `the_same_custodian_twice_cannot_freeze` y
 destino.** Suite: 247 → 248. Siguiente: update_custodians (10), la
 casa natural del relevo de rotación que mint dejó pendiente (§166).
 
+## 168. B-2e — la familia governance, CERRADA, y la deuda de §166 SALDADA
+
+**Paridad del contador de cambios verificada del natural** (:160
+vieja, :258 delegada) y palanca extendida al dominio de gobernanza:
+`governance_commitment` (saliente → entrante, contador atado),
+`governance_pair` (miembros, §51-estricto) y
+`update_custodians_delegated`. **Cinco mecánicos giran** en barrido
+estructural — rotación-renueva, invalida-pendientes, revoca-viejos,
+cada-cambio-contado, conjunto-vigente-sobrevive: la rotación de los
+tests es hoy la rotación real. El censo confesó un séptimo aparente
+que no lo era: `the_governance_set_survives_restart` es SONDA de
+generación (`is_ok` sin apply) — contrato gen-time de la vía-recibo,
+al libro.
+
+**La deuda de §166, saldada**:
+`rotation_orphans_pregenerated_delegated_materials` vive entre los
+tests de gobernanza y ejercita §54.2 en vivo — materiales de emisión
+generados bajo el conjunto vigente, rotación delegada, y ni los
+materiales ni las claves del saliente sobreviven: la capa pone SU
+raíz. Releva en B-3 al clúster vía-recibo (:1592, :2154-2167,
+:2322).
+
+**El libro de la familia**: `replaying_a_governance_change` vive
+hasta B-3, relevado hoy — el reintento delegado choca en la puerta
+`RecoveryToSameIdentity`, con el compromiso como segunda cerradura —;
+la sonda gen de :1362 y el trío de autoridad-mala (:1393 impostor,
+:2202 custodio-no-cambia, :2229 gobernador-solo) viven hasta B-3 con
+relevos existentes: `the_same_governance_member_twice_is_rejected`,
+`custodian_keys_cannot_change_the_custodian_set`,
+`an_authorization_for_another_root_does_not_apply` — y la sonda se
+releva en B-3 con una operación delegada post-reinicio. **Cero
+llamadas de governance sin destino.** Suite: 248 → 250. Quedan:
+recover (9) y mint_to_pending (5).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

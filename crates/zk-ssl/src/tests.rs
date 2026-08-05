@@ -1133,10 +1133,7 @@ use super::*;
         fund_delegated(&mut layer, alice, 1000);
         assert_eq!(layer.custodian_uses(), 1);
 
-        let g = layer
-            .update_custodians(&valid_governance_auth(), new_custodian_root())
-            .expect("rotar");
-        layer.apply_governance(&g).expect("aplicar");
+        update_custodians_delegated(&mut layer, new_custodian_root());
         assert_eq!(layer.custodian_uses(), 0, "rotar reinicia el cupo");
     }
 
@@ -1602,10 +1599,7 @@ use super::*;
         let pendiente = layer.mint(&valid_auth(), alice, 250_000).expect("emitir");
 
         // La gobernanza los sustituye.
-        let g = layer
-            .update_custodians(&valid_governance_auth(), new_custodian_root())
-            .expect("cambiar custodios");
-        layer.apply_governance(&g).expect("aplicar");
+        update_custodians_delegated(&mut layer, new_custodian_root());
 
         assert!(
             layer.apply_mint(&pendiente, alice).is_err(),
@@ -2141,10 +2135,7 @@ use super::*;
         fund_delegated(&mut layer, alice, 1000);
 
         // La gobernanza cambia el conjunto.
-        let g = layer
-            .update_custodians(&valid_governance_auth(), new_custodian_root())
-            .expect("cambio de gobernanza");
-        layer.apply_governance(&g).expect("aplicar");
+        update_custodians_delegated(&mut layer, new_custodian_root());
         assert_eq!(layer.custodian_set_root(), new_custodian_root());
 
         // Los ANTIGUOS ya no pueden.
@@ -2240,11 +2231,39 @@ use super::*;
         let mut layer = new_layer();
         assert_eq!(layer.governance_change_count(), 0);
 
-        let g = layer
-            .update_custodians(&valid_governance_auth(), new_custodian_root())
-            .expect("cambio");
-        layer.apply_governance(&g).expect("aplicar");
+        update_custodians_delegated(&mut layer, new_custodian_root());
         assert_eq!(layer.governance_change_count(), 1);
+    }
+
+    /// **LA ROTACIÓN DEJA HUÉRFANOS LOS MATERIALES DELEGADOS** (§54.2
+    /// en vivo: la capa pone SU raíz al verificar). Ni los materiales
+    /// generados bajo el conjunto saliente ni sus claves sobreviven al
+    /// cambio. Releva en B-3 al clúster vía-recibo de rotación (§166:
+    /// pending-receipts, revokes-old, revoked-survives-restart).
+    #[test]
+    fn rotation_orphans_pregenerated_delegated_materials() {
+        let mut layer = new_layer();
+        let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
+
+        // Materiales de emisión, generados BAJO el conjunto vigente.
+        let op = mint_commitment(&layer, alice, 100_000);
+        let subida = mint_climb_proof(&layer, alice, 100_000);
+        let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+
+        // La gobernanza rota el conjunto, por la delegada.
+        update_custodians_delegated(&mut layer, new_custodian_root());
+
+        // Los materiales del conjunto saliente no aplican...
+        let r = layer.apply_mint_delegated(subida, pa, ia, pb, ib, alice, 100_000);
+        assert!(r.is_err(), "CRITICO: materiales del conjunto revocado: {r:?}");
+
+        // ...y sus claves tampoco autorizan nada nuevo.
+        let op2 = mint_commitment(&layer, alice, 100_000);
+        let s2 = mint_climb_proof(&layer, alice, 100_000);
+        let (pa2, ia2, pb2, ib2) = delegated_pair(op2, 1, 3); // claves VIEJAS
+        let r2 = layer.apply_mint_delegated(s2, pa2, ia2, pb2, ib2, alice, 100_000);
+        assert!(r2.is_err(), "CRITICO: claves revocadas contra raiz nueva: {r2:?}");
+        assert_eq!(layer.total_supply(), 0, "nada se emitio");
     }
 
     /// Reaplicar un cambio de gobernanza se rechaza.
@@ -2275,10 +2294,7 @@ use super::*;
                 open_retry(
                 &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS)
                     .expect("abrir");
-            let g = layer
-                .update_custodians(&valid_governance_auth(), new_custodian_root())
-                .expect("cambio");
-            layer.apply_governance(&g).expect("aplicar");
+            update_custodians_delegated(&mut layer, new_custodian_root());
         }
         {
             // Se abre con el conjunto ORIGINAL como argumento, pero el

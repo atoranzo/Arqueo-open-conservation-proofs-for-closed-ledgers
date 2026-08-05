@@ -436,6 +436,51 @@ pub fn set_frozen_delegated(layer: &mut SovereignLayer, idx: AccountIndex, froze
         .expect("la congelacion delegada legitima debe aplicarse");
 }
 
+/// El compromiso del cambio de custodios: raíz saliente → entrante,
+/// contador atado. Dominio de GOBERNANZA. Calcado del molde.
+pub fn governance_commitment(layer: &SovereignLayer, nueva: Digest) -> Digest {
+    let mut p: Vec<BaseElement> = layer.custodian_set_root().to_vec();
+    p.extend_from_slice(&nueva);
+    p.push(BaseElement::new(layer.governance_change_count()));
+    p.push(BaseElement::new(layer.governance_change_count() + 1));
+    auth::commit_operation(auth::OP_GOVERNANCE, &p)
+}
+
+/// El par de autorizaciones de GOBERNANZA para `op`: miembros `a` y
+/// `b`, distintos y en orden estricto — §51 también preside aquí.
+pub fn governance_pair(
+    op: Digest,
+    a: usize,
+    b: usize,
+) -> (
+    winterfell::Proof,
+    auth::NullifierThresholdPublicInputs,
+    winterfell::Proof,
+    auth::NullifierThresholdPublicInputs,
+) {
+    assert!(a < b, "§51: index_a < index_b, estricto");
+    let gk = governance_keys();
+    let (_, gp) = stark_experiment::circuit_governance::build_governance_set(&gk);
+    let d = BaseElement::new(stark_experiment::circuit_governance::GOVERNANCE_DOMAIN);
+    let prover = auth::NullifierThresholdProver::new(proof_options());
+    let ta = auth::build_trace(d, gk[a], &gp[a], op);
+    let ia = prover.get_pub_inputs(&ta);
+    let pa = prover.prove(ta).expect("autorizacion A");
+    let tb = auth::build_trace(d, gk[b], &gp[b], op);
+    let ib = prover.get_pub_inputs(&tb);
+    let pb = prover.prove(tb).expect("autorizacion B");
+    (pa, ia, pb, ib)
+}
+
+/// Cambia el conjunto de custodios por la VÍA DELEGADA: miembros 1 y 3.
+pub fn update_custodians_delegated(layer: &mut SovereignLayer, nueva: Digest) {
+    let op = governance_commitment(layer, nueva);
+    let (pa, ia, pb, ib) = governance_pair(op, 1, 3);
+    layer
+        .apply_governance_delegated(pa, ia, pb, ib, nueva)
+        .expect("el cambio delegado legitimo debe aplicarse")
+}
+
 /// [`open_and_fund`], por la vía delegada. Misma firma y mismo abridor
 /// estrecho: B migra la custodia, no la apertura (§160, §90).
 pub fn open_and_fund_delegated(layer: &mut SovereignLayer, sk: u64, amount: u64) -> AccountIndex {
