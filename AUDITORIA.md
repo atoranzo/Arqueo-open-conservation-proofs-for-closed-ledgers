@@ -12818,6 +12818,42 @@ ANTES de tocar la capa. Es trabajo que estrena restricciones:
 **sesión propia**, como la casa manda — este asiento deja el diseño
 completo para que esa sesión ejecute, no explore.
 
+## 179. R-1 EJECUTADO — el circuito #27 (`circuit_refund`) nace y verifica al primer vuelo
+
+**El primer paso medible de §178, hecho** (`f2b3ca9`): la apertura del
+compromiso pendiente en la traza más corta de la casa — 16 filas, una vía,
+dos merges de Rescue. Veinte restricciones (`C_HASH` 12 rondas, `C_CAP` 4
+capacidades, `C_CARRY` 4 portes del digest interior) y doce aserciones que
+dejan al receptor y al salt LIBRES como testigo e inyectan el importe
+(fila 8) y `P` (fila final) como públicos. Cuatro tests, dos de ellos
+DISCRIMINANTES: otro importe NO verifica, otro compromiso NO verifica. Un
+AIR nuevo contra winterfell que compiló, probó y verificó de estreno; el
+único tropiezo fue un `use` sobrante que el compilador nombró. **Canon
+nuevo: stark 293/0+10 · guardián 27 circuitos**; zk-ssl intacto en
+231.
+
+**El reparto circuito/capa, sellado en el diseño**: el circuito lleva el
+medio-cerrojo criptográfico —la apertura ata importe y compromiso, así que
+el ladrón no elige cuánto ni transfiere la prueba a otra hoja— y
+deliberadamente NO lleva PK (el destino lo fija la capa desde
+`pending_meta`), ni nullifier (la hoja vacía es su anti-replay), ni frozen
+(devolver no es cobrar), ni camino (`P` ya es público: la capa comprueba
+`hoja[pos]==P` y vacía nativamente, como todo apply). El otro
+medio-cerrojo —destino-por-registros y materiales-solo-del-emisor— es de
+capa, y es exactamente R-2.
+
+**R-2, con su orden censo-primero ya escrito**: (1) leer del natural
+`apply_send`/`apply_claim` (el ancla del meta y el patrón de vaciado), la
+forma del COMMIT EN LOTE y la persistencia — la lección de §169 exige que
+`pending_meta` viaje en el lote, lo que probablemente estrena una versión
+de snapshot; (2) meta `{sender_index, born_seq}` + compuerta TTL sobre
+`epoch_head().seq` + `apply_refund` cosiendo `circuit_refund` con el
+`mint_climb` reusado; (3) la des-emisión de mint-pendientes; (4) la
+batería de punta a punta — el ladrón-con-aviso rebotando por sus dos
+cerrojos, la carrera post-T, y el reinicio que conserva el meta; (5)
+medición. Es la mitad grande y toca persistencia: **sesión propia, con
+censo fresco** — este asiento es su punto de partida.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
