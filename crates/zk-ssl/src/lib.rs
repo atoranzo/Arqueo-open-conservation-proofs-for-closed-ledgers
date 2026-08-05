@@ -157,6 +157,13 @@ pub fn proof_options() -> ProofOptions {
     )
 }
 
+/// `T` por defecto de la caducidad (§178), en latidos de `log.seq`.
+/// Línea sistémica: se declara, se publica y se revisa con datos.
+pub const DEFAULT_REFUND_TTL: u64 = 64;
+/// Centinela de `pending_meta`: el pendiente nació por EMISIÓN, no tiene
+/// emisor-cuenta; su caducidad DES-EMITE (§178 §4).
+pub const REFUND_SENDER_NONE: u64 = u64::MAX;
+
 #[derive(Debug)]
 pub enum LayerError {
     AccountNotFound(AccountIndex),
@@ -423,6 +430,15 @@ pub struct SovereignLayer {
     /// de `send` y los usa para el límite regulatorio—. Esto no añade
     /// visibilidad: la hace utilizable. Ver `total_pending()`.
     pending_amounts: HashMap<u64, u64>,
+    /// Metadatos del pendiente (R-2a, §178/§179): quién lo creó y cuándo,
+    /// para la caducidad. `sender_index == REFUND_SENDER_NONE` marca los
+    /// de EMISIÓN (des-emisión al caducar, no reembolso). Misma clase de
+    /// persistencia que `pending_amounts`: sled (`pmeta:`), no snapshot.
+    pending_meta: HashMap<u64, (u64, u64)>,
+    /// `T` de la caducidad (§178): latidos de `log.seq` que deben pasar
+    /// antes de que un pendiente sea reembolsable/des-emitible. Línea
+    /// sistémica declarada, familia `N_max`/`M`.
+    refund_ttl: u64,
     records: HashMap<AccountIndex, AccountRecord>,
     next_index: AccountIndex,
     /// **Raíz del conjunto de custodios autorizados.** Crear dinero y
@@ -526,6 +542,8 @@ impl SovereignLayer {
             pending: SparseTree::new(),
             next_pending: 0,
             pending_amounts: HashMap::new(),
+            pending_meta: HashMap::new(),
+            refund_ttl: DEFAULT_REFUND_TTL,
             records: HashMap::new(),
             next_index: 0,
             custodian_set_root,

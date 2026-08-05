@@ -115,6 +115,25 @@ impl SovereignLayer {
     /// Que el total sea visible es coherente con el modelo declarado —el
     /// suministro y el tope ya son escalares públicos— pero **es
     /// información que antes no existía**, y conviene decirlo.
+    /// Metadato de caducidad de una posición: `(emisor, nacimiento)`.
+    /// `None` en pendientes anteriores a R-2a (legado): sin meta no hay
+    /// caducidad — solo `claim`, para siempre. Ausencia = inmunidad, no
+    /// fabricación (§178).
+    pub fn pending_meta_of(&self, pos: u64) -> Option<(u64, u64)> {
+        self.pending_meta.get(&pos).copied()
+    }
+
+    /// La `T` vigente de la caducidad (línea sistémica, §178).
+    pub fn refund_ttl(&self) -> u64 {
+        self.refund_ttl
+    }
+
+    /// Ajusta `T`. El knob existe para operación y tests; el valor es
+    /// parte del contrato público del nodo y se persiste con el lote.
+    pub fn set_refund_ttl(&mut self, t: u64) {
+        self.refund_ttl = t;
+    }
+
     pub fn total_pending(&self) -> u64 {
         self.pending_amounts.values().sum()
     }
@@ -455,6 +474,8 @@ impl SovereignLayer {
         }
         // El dinero sale del saldo y pasa a estar en transito.
         self.pending_amounts.insert(pos, amount);
+        self.pending_meta
+            .insert(pos, (sender_index, self.log.len() as u64));
         // ⚠️ **Deja constancia ANTES de persistir**, igual que las demas
         // operaciones: si el proceso muere en medio, el lote atomico
         // incluye o excluye las dos cosas.
@@ -604,6 +625,7 @@ impl SovereignLayer {
         pend.set_leaf(notice.position, vacia);
         // Y deja de estar en transito al cobrarse.
         self.pending_amounts.remove(&notice.position);
+        self.pending_meta.remove(&notice.position);
 
         if cuentas.root() != pi.root_new || pend.root() != pi.pending_root_new {
             return Err(LayerError::StaleState);
@@ -774,6 +796,8 @@ impl SovereignLayer {
             self.next_pending = position + 1;
         }
         self.pending_amounts.insert(position, amount);
+        self.pending_meta
+            .insert(position, (crate::REFUND_SENDER_NONE, self.log.len() as u64));
 
         // La MISMA raiz de cuentas en los dos lados, y es correcto: una
         // emision a un pendiente no toca ninguna cuenta. Mismo criterio que
@@ -1089,6 +1113,56 @@ mod tests_verificacion {
     ///
     /// Alice paga a Bob por la via honesta. Mallory, que **no conoce
     /// `SK_BOB`**, cobra ese pendiente en su propia cuenta.
+    /// R-2a: el envío registra `(emisor, nacimiento)` y el cobro lo borra.
+    #[test]
+    fn send_registra_el_meta_y_claim_lo_borra() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let id_bob = layer.public_id_of(bob).expect("bob");
+        let ea = state_of(&layer, alice);
+        let seq_antes = layer.epoch_head().seq;
+
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, id_bob, salt_de(0xB2), 250_000)
+            .expect("send");
+        layer.apply_send(&recibo, alice, &ea, 250_000).expect("apply");
+
+        let pos = recibo.notice.position;
+        let (emisor, nacido) = layer.pending_meta_of(pos).expect("meta debe existir");
+        assert_eq!(emisor, alice, "el meta apunta al EMISOR");
+        assert_eq!(nacido, seq_antes, "nacido = seq del lote que lo creó");
+
+        let eb = state_of(&layer, bob);
+        let cobro = layer
+            .claim(BaseElement::new(SK_BOB), bob, &eb, &recibo.notice)
+            .expect("claim");
+        layer.apply_claim(&cobro, bob, &eb, &recibo.notice).expect("apply claim");
+        assert!(layer.pending_meta_of(pos).is_none(), "el cobro borra el meta");
+    }
+
+    /// R-2a: la emisión-a-pendiente lleva el CENTINELA (des-emisión, no
+    /// reembolso: no hay emisor-cuenta).
+    #[test]
+    fn mint_a_pendiente_lleva_el_centinela() {
+        let mut layer = new_layer();
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let id_bob = layer.public_id_of(bob).expect("bob");
+        mint_to_pending_delegated(&mut layer, id_bob, salt_de(0xA1), 500_000);
+        // Capa fresca: allocate_pending entrega la posición 0.
+        let (emisor, _) = layer.pending_meta_of(0).expect("meta");
+        assert_eq!(emisor, crate::REFUND_SENDER_NONE, "centinela de emisión");
+    }
+
+    /// R-2a: `T` es línea sistémica — con defecto declarado y knob.
+    #[test]
+    fn la_t_de_caducidad_tiene_defecto_y_knob() {
+        let mut layer = new_layer();
+        assert_eq!(layer.refund_ttl(), crate::DEFAULT_REFUND_TTL);
+        layer.set_refund_ttl(7);
+        assert_eq!(layer.refund_ttl(), 7);
+    }
+
     #[test]
     fn claiming_a_pending_requires_knowing_the_recipients_key() {
         let mut layer = new_layer();

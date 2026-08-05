@@ -325,6 +325,8 @@ impl SovereignLayer {
             pending: SparseTree::new(),
             next_pending: 0,
             pending_amounts: HashMap::new(),
+            pending_meta: HashMap::new(),
+            refund_ttl: crate::DEFAULT_REFUND_TTL,
             records: HashMap::new(),
             next_index,
             custodian_set_root,

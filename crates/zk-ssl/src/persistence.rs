@@ -62,6 +62,8 @@ impl SovereignLayer {
             pending: SparseTree::new(),
             next_pending: 0,
             pending_amounts: HashMap::new(),
+            pending_meta: HashMap::new(),
+            refund_ttl: crate::DEFAULT_REFUND_TTL,
             records: HashMap::new(),
             next_index: 0,
             custodian_set_root,
@@ -192,6 +194,30 @@ impl SovereignLayer {
         // Mismo patron que `froz:` y `pend:`: `unseal_one` es un cierre
         // porque `self` se muta durante la carga y no puede prestarse.
         self.pending_amounts.clear();
+        self.pending_meta.clear();
+        for item in db.scan_prefix(b"pmeta:") {
+            let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
+            let v = unseal_one(v)?;
+            if v.len() != 16 {
+                continue; // vacío = sin meta (vaciada o legado)
+            }
+            let pos = u64::from_le_bytes(
+                k[6..]
+                    .try_into()
+                    .map_err(|_| StoreError::Malformed("posicion de meta".into()))?,
+            );
+            let sender = u64::from_le_bytes(v[..8].try_into().unwrap());
+            let born = u64::from_le_bytes(v[8..].try_into().unwrap());
+            self.pending_meta.insert(pos, (sender, born));
+        }
+        if let Some(v) = db.get(b"meta:refund_ttl").map_err(|e| StoreError::Io(e.to_string()))? {
+            let v = unseal_one(v)?;
+            self.refund_ttl = u64::from_le_bytes(
+                v.as_slice()
+                    .try_into()
+                    .map_err(|_| StoreError::Malformed("refund_ttl".into()))?,
+            );
+        }
         for item in db.scan_prefix(b"pamt:") {
             let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
             let v = unseal_one(v)?;
@@ -554,6 +580,7 @@ impl SovereignLayer {
         // se reutilizarian posiciones y un pendiente nuevo pisaria a otro
         // sin reclamar**: su receptor perderia el dinero.
         batch.insert(b"meta:next_pending".as_ref(), self.seal(self.next_pending.to_le_bytes().to_vec())?);
+        batch.insert(b"meta:refund_ttl".as_ref(), self.seal(self.refund_ttl.to_le_bytes().to_vec())?);
         batch.insert(b"meta:next_index".as_ref(), self.seal(self.next_index.to_le_bytes().to_vec())?);
         batch.insert(b"root:state".as_ref(), self.seal(digest_to_bytes(&self.accounts.root()).to_vec())?);
 
@@ -615,6 +642,21 @@ impl SovereignLayer {
             let mut key = b"pamt:".to_vec();
             key.extend_from_slice(&position.to_le_bytes());
             batch.insert(key, self.seal(importe.to_le_bytes().to_vec())?);
+
+            // El META viaja con la hoja, en el MISMO lote (lección §169):
+            // 16 bytes (emisor||nacimiento) si existe; vacío si la posición
+            // quedó sin meta (vaciada, o legado sin caducidad).
+            let mut key = b"pmeta:".to_vec();
+            key.extend_from_slice(&position.to_le_bytes());
+            let mv = match self.pending_meta.get(&position) {
+                Some((s, b)) => {
+                    let mut v = s.to_le_bytes().to_vec();
+                    v.extend_from_slice(&b.to_le_bytes());
+                    v
+                }
+                None => Vec::new(),
+            };
+            batch.insert(key, self.seal(mv)?);
         }
 
         db.apply_batch(batch)
