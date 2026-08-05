@@ -12536,6 +12536,64 @@ no deudas de esta campaña: la medida 9 (Campaña C, «qué aprende cada
 participante»), las notas/UTXO (6), el anclaje externo (10), la retirada
 del museo, y las costuras ajenas anotadas (shim 49-A, costura 52).
 
+## 173. Campaña C — la medida 9 estaba HECHA y dispersa; este asiento la reconoce y la cierra
+
+**El hallazgo de apertura**: la medida 9 del triaje («qué aprende cada
+participante», la que el triaje llamó «la mejor») no había que
+implementarla desde cero — ya vivía en el árbol, con más rigor que la
+lista, y sin asiento que la nombrara. Bajo la cabecera «MEDIDA 9» de
+client.rs hay ONCE tests discriminantes de correlación, con la filosofía
+correcta escrita en su encabezado: no describen el modelo, cazan las
+fugas que sobrevivirían a un cambio de diseño — cada uno FALLA si la
+propiedad de privacidad se rompe.
+
+**Los tres roles, cubiertos donde tienen sentido — en el PAGO**, que es
+la única operación de tres partes (emisor, receptor, tercero-observador).
+**Tercero**: `el_commitment_no_revela_al_emisor` (dos pagadores distintos
+al mismo receptor con mismo salt e importe producen commitments
+idénticos), `el_salt_es_lo_que_hace_impagos_inenlazables` (la
+unlinkability descansa en el salt, y su reutilización la quita),
+`la_posicion_del_pendiente_es_orden_no_identidad`. **Contraparte** (el
+receptor): `el_receptor_no_aprende_al_emisor_del_aviso` — el
+`PendingNotice` no tiene campo `sender`, fijado en el tipo. **Materiales**
+(la vía delegada de pago): `send_materials_contain_no_keys`,
+`send_materials_alone_are_not_enough_to_spend`,
+`a_whole_payment_without_giving_any_key_to_the_layer` (y su variante de
+256 bits), `prove_send_rejects_a_key_that_is_not_the_holders`. Y el par
+t5a/t5b, que mide el coste de la contención del anclaje global.
+
+**El cuarto rol, el OPERADOR, es límite DECLARADO, no discriminable**:
+qué aprende la capa no se prueba con un test que falle — se declara y se
+acota. Su tesis vive en `commitment.rs` («la capa guarda (identidad,
+saldo, nonce); NO lo necesita — el operador no puede leer nada del
+compromiso») y en `crypto.rs` («NO protege contra el operador del nodo,
+que ve los saldos»). Es honestidad de §16 hecha arquitectura: la capa por
+compromisos demuestra que el operador PODRÍA no ver, y el modelo actual
+declara que ve. Un discriminante aquí no aplica; el asiento lo fija como
+frontera conocida.
+
+**Un test de la medida vive huérfano, y se reconoce en su sitio**:
+`nothing_leaks_before_authority_is_checked` (tests.rs) es rol-tercero
+puro sobre la congelación — un intruso sin la clave recibe «no eres el
+titular», NO «está congelada», así que no puede deducir el estado de
+freeze de una cuenta ajena. Es medida 9 aplicada a las operaciones de
+custodio (freeze/recovery/governance), que por lo demás son actos
+custodio↔capa SIN contraparte ni tercero que cobre o reciba — por eso no
+generan su propia batería. Se deja donde está (prueba orden-de-verificación
+en su contexto de autoridad); este asiento es el hilo que lo une a la
+campaña, sin moverlo.
+
+**Campaña C, CERRADA por reconocimiento (✅ medida 9)**. Lo que el
+triaje marcó «IMPLEMENTAR» estaba implementado; lo que faltaba era el
+asiento que lo declarara medido. La suite lo ejercita en cada pasada (los
+once discriminantes + el huérfano, todos en verde dentro de los 231). No
+hay código nuevo: como en otras medidas del triaje, el proyecto lo había
+hecho con más rigor que la lista, y la deuda era de registro, no de
+mecanismo. **Del triaje quedan las documentales** (7 dinero-cuántico, 10
+anclaje externo, 12 SECURITY, 13 posicionamiento — por errata §135 donde
+toquen preprints) y los frentes mayores (6 notas/UTXO, museo). La medida
+9 sale de la cola de pendientes.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
