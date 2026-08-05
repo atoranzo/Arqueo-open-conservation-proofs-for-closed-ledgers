@@ -206,7 +206,13 @@ cobertura, ahora con una trampa —el alias— ya conocida y resuelta.
 
 ## 5. Estado
 
-FV-0 ejecutada (§183 + SECURITY §2). FV-1: diseñada, sesión propia — el
-primer paso es el censo DEL guardián mismo (600+ líneas que parsean; se
-extiende lo que se ha leído entero, no lo que se adivina). FV-2: tras
-FV-1. FV-3: horizonte.
+FV-0 ejecutada (§183 + SECURITY §2). **FV-1: concepto RESUELTO en las dos
+topologías** — prototipo con frontera medida (§184/§6), intérprete de un
+carril cazando su mutante (§185/§7), intérprete de dos carriles con
+seguimiento de aliases (§186/§8); tres evidencias ejecutables en
+`doc/fv/`, dos hallazgos capitales registrados (la aserción tiene clase;
+el falso positivo del alias). **Queda de la 71**: selectores multi-ciclo
+(las periódicas de longitud-de-traza con one-hots de árbol y segmentos —
+los circuitos de cuentas) y el injerto en el guardián como compuerta —
+sesión propia, cobertura sobre concepto probado. FV-2: tras el injerto.
+FV-3: horizonte.
