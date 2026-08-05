@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 34 abiertas, 35 resueltas — **2 suspendidas** (16 y 28).
-Ultima revision: 1 de agosto de 2026.
+**Estado**: 34 abiertas, 40 resueltas — **2 suspendidas** (16 y 28).
+Ultima revision: 5 de agosto de 2026 — **contada, no recordada** (la cicatriz de las ocho veces).
 
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
 fallos y aparecieron **dos que no eran la clase conocida** (§78). Los 78
@@ -520,6 +520,23 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   ⚠️ **Coste**: congelar pasa a **retener fondos de terceros**.
   **Para `PRINCIPIOS.md`**: **Δ_min = 13 meses**, precedente SEPA con la
   analogia imperfecta declarada. **Pendiente T3b.**
+  ✅✅ **MECANISMO EJECUTADO (§178-§181, 05-08-2026)**: la caducidad
+  completa — `refund()` del EMISOR con su clave (el salt §117 fabrica la
+  subida; `circuit_refund` #27 + `circuit_credit_climb` #28), **destino
+  fijado por `pending_meta`, no por la prueba**; des-emisión de los
+  mint-pendientes (el suministro baja al satoshi); carrera post-T declarada
+  y probada en ambos órdenes; y **la no-retroactividad de §119 POR
+  CONSTRUCCIÓN**: el legado sin meta es inmune para siempre. Números
+  (§181): reembolso ~203 ms + 69 KB; des-emisión ~189 ms + 13,8 KB.
+  ⚠️⚠️ **DOS DIVERGENCIAS con la política, DECLARADAS**: (i) **T cuenta
+  latidos de `log.seq`** — exactamente lo que §119.3 descartó como reloj
+  («un mes quieto son cero entradas») — porque las cabezas
+  firmadas-publicadas (48/B10) **no existen aún**: cuando existan, **T
+  migra a cabezas**; hasta entonces el poder compuesto de §119.5 (ordenar
+  la carrera Y acelerar el reloj) sigue vivo, ahora con mecanismo real.
+  (ii) **Sin Δ por pago**: el «Δ=∞ elección del emisor» no está — T es
+  global con knob (`set_refund_ttl`, persistida). **La entrada queda
+  ABIERTA por estas dos divergencias, no por el mecanismo.**
 - [x] **13. Senal temporal para el pagador: ya declarada, coherente.**
   ~~Puede recomputar el compromiso y ver cuando se cobra; declarado, no
   eliminado.~~ **Cerrada** el 30-07-2026: verificado que ya esta declarada
@@ -1734,7 +1751,7 @@ lista no se termina.** Cada cosa que se cierre destapara otras — ha pasado
 tres veces esta semana. El valor del proyecto no esta en llegar a cero
 pendientes, sino en saber con precision que es y que no es.
 
-- [ ] **70. Triaje de las 14 medidas del articulo «el ultimo intermediario»
+- [x] **70. Triaje de las 14 medidas del articulo «el ultimo intermediario»
   (dinero cuantico).** Documentos externos (1.txt/2.txt) anclados a un
   articulo de prensa, NO al registro — describen la direccion del proyecto
   pero reflejan un estado de hace semanas. Colacionadas (sesion 2026-08-03);
@@ -1773,3 +1790,38 @@ pendientes, sino en saber con precision que es y que no es.
   (`apply_*_delegated` ×4) y el orden estricto de §51 ya vive en los
   appliers — el trabajo es migrar ~229 llamadas de la vía antigua,
   amputar `transfer` y los `deprecated`, y medir después (11).
+  ✅✅ **CERRADO ENTERO (§182, 05-08-2026)**: Campaña B ejecutada (32/33
+  arriba), la **9** hecha (Campaña C, §173), la **10** hecha (§174,
+  `doc/ANCLAJE_EXTERNO.md`), la **6** examinada contra tres ataques
+  (§177), y las documentales **7/12/13** en el árbol (README «Dinero
+  cuántico», SECURITY §1-§2, POSICIONAMIENTO refrescado). De 14:
+  ejecutadas con más rigor, rechazadas con acta, o promovidas con examen.
+  El triaje nació para ordenar y muere ordenado.
+
+- [ ] **71. FV-1: el CENSO DE CELDAS del guardián (grupo C, solidez).**
+  Nace de la crítica externa de sub-restringimiento (§183): la suite prueba
+  PUNTOS, no universales, y el guardián audita RANURAS, no CELDAS. **Qué
+  verifica**: para cada circuito, cada columna × clase-de-fila (filas-hash,
+  cada enlace, fila 0, segmentos — clases derivadas de las periódicas que
+  el guardián ya parsea) tiene DUEÑO: transición activa, aserción, o
+  **celda libre DECLARADA** (convención `// CELDAS_LIBRES:` que el guardián
+  parseará; libre sin declarar = fallo; declarada con dueño = aviso rancio).
+  **Caso-mutación obligatorio antes del verde**: una copia de
+  `circuit_refund` con un `C_CAP` borrado debe hacer gritar «celda sin
+  dueño». **Honestidad en su propia salida**: referenciada ≠ determinada —
+  caza la clase empíricamente dominante (la celda que nadie mira), no la
+  determinación semántica; complementa a los discriminantes. **Primer paso
+  OBLIGADO**: leer entero `tools/check_constraint_layout.py` (600+ líneas)
+  — se extiende lo leído, no lo adivinado. Diseño completo:
+  `doc/VERIFICACION_FORMAL.md` §1. **Sesión propia.**
+
+- [ ] **72. FV-2: spike SMT sobre `circuit_refund` (tras la 71).**
+  Exportador en `tools/` del sistema (20 restricciones + 12 aserciones,
+  selectores evaluados por fila) a SMT2 cuerpo-finito (cvc5 `--ff`, primo
+  Goldilocks). Preguntas: determinación fijados los publics; consistencia
+  de la cadena sin seguir Rescue. **Expectativa declarada de antemano**:
+  grado 7 en un primo de 64 bits puede ser intratable — «TIMEOUT con estos
+  parámetros» es un entregable VÁLIDO y se registra; el spike compra
+  conocimiento del coste, no promete un verde. Si trata, la pregunta de
+  escalar a `circuit_send` (51 columnas) se abre con datos; si no, se
+  cierra con acta. Diseño: `doc/VERIFICACION_FORMAL.md` §2.
