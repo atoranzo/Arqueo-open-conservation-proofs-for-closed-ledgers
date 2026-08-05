@@ -12682,6 +12682,43 @@ recalcularlo: no tiene la clave», limitación declarada con test
 sin abrir su entrada dueña; forzarlas sería entrar por la puerta de
 atrás. Están donde deben, marcadas y con test.
 
+## 176. El frente del museo, CERRADO — M-1/M-2/M-3: la fragua vive, el museo cayó
+
+**Las cuatro preguntas de §175, respondidas del natural antes de cortar**:
+(1) `settlement-layer` es la capa del mundo Groth16/arkworks anterior
+(sobre `zk-core`); `zk-ssl` es la actual, STARK, y jamás toca aquel mundo.
+(2) El `SettlementProver` «con nueve usuarios» era doble homónimo: el
+nombre del TRAIT de `settlement-prover` (que los tres backends implementan
+para `compliance_circuit`, no para el museo) y los tipos Groth16 propios
+de zk-core — el struct del museo tenía CERO usuarios en todo el workspace.
+(3) Dos `circuit_settlement.rs` = dos mundos de prueba, cada uno canónico
+en el suyo — y el homónimo mordió una última vez: el censo del derribo
+tropezó con el `pub mod` de zk-core (vivo, legítimo) y se corrigió a
+ámbito-STARK. (4) El hogar: `stark-experiment/src/native.rs`, nacido en
+M-1.
+
+**Las tres operaciones**: **M-1** (`05df78a`) mudó LA FRAGUA verbatim por
+caminante — 16 helpers, 3 constantes de dominio y el utilitario privado
+`as_digest` que el compilador nombró — con el museo re-exportando por
+compatibilidad y sus tests enjaulados recibiendo suministros cfg-gated
+(lección: los warnings de la lib no absuelven a los tests). **M-2**
+(`45f0eca`) reapuntó 51 referencias en 24 ficheros (15 stark-internas, 36
+del lado zk-ssl) y degradó el compat a glob privado. **M-3** derribó el
+fichero entero (2.230 líneas ya sin fragua) y su `pub mod`: cero código
+del mundo STARK nombra al muerto; las menciones en prosa quedan como
+registro.
+
+**Los números del cierre, predichos por SIMULACIÓN en réplica antes de
+cortar y clavados al primer golpe**: stark 316/0+12 → **289/0+10** —los
+27 del museo que corrían en release mueren con él, sus 2 `#[ignore]`
+(instrumentos de medida) también—; el guardián de layout 27 → **26
+circuitos** —el `SettlementAir` era uno—; zk-ssl intacto en **231/0+3**
+porque toda su dieta era la fragua, que vive. La condición de §158 —«los
+helpers nativos se mudan ANTES»— se cumplió al pie: **el museo se fue, la
+fragua se quedó**. La simulación-en-réplica pre-derribo entra al rito. El
+frente sale de la cola; quedan las documentales 7/12/13 y la entrada
+6.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
