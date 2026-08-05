@@ -78,6 +78,7 @@ pub mod circuit_recovery;
 pub mod circuit_recovery_climb;
 pub mod circuit_claim;
 pub mod circuit_send;
+pub mod circuit_credit_climb;
 pub mod circuit_refund;
 pub mod native;
 pub mod circuit_threshold;
