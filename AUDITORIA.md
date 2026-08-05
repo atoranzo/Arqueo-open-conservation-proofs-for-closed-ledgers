@@ -12277,6 +12277,43 @@ pasan a CONTAR intervenciones de la vía real, con el mapa de arriba
 como garantía de que cuentan lo mismo. Coste esperado: ~+1,7 s de
 suite (6 × ~0,28 s, §162).
 
+## 165. B-2b — los tres con-reuso, leídos a los ojos: dos portan, uno releva
+
+**El detector confesó un falso positivo**: en `an_exhausted…` y
+`a_restart_does_not_renew…` el «reuso» del recibo era *shadowing*
+(`let m` re-ligado para el intento fallido) — más llamadas viejas del
+mismo test, no reuso. Solo `replaying_a_mint_is_rejected` reusa de
+verdad: reaplica el MISMO recibo, que es exactamente su propiedad.
+
+**Dos portan enteros**: agotamiento del cupo y su persistencia tras
+reinicio son propiedades del cupo —que vive en paridad :125/:290
+(§164)— y ahora se ejercitan POR LA DELEGADA: el bucle consume con
+`fund_delegated`, el intento que debe rebotar usa materiales crudos
+(`mint_commitment` + `mint_climb_proof` + `delegated_pair`) contra
+`apply_mint_delegated`, y rebota en `CustodianSetExhausted` — el
+cupo se gasta DESPUÉS de verificar la autoridad, en las dos vías. El
+letrero interno de restart se generaliza: «el cupo se consume en el
+APPLY», sin nombrar vía.
+
+**Uno releva**: la propiedad «nada se emite dos veces con los mismos
+materiales» gana su guardián delegado —
+`replaying_a_delegated_mint_is_rejected` en el bloque de mint,
+materiales clonados y reaplicados sobre el estado ya mutado, rechazo
+por is_err con saldo y suministro clavados—. El test viejo de la
+vía-recibo QUEDA (guarda una función que aún existe) y **muere con la
+marca en B-3, relevado**: primera entrada del libro de cobertura de
+la campaña. Suite: 244 → 245.
+
+**Y la compuerta destapó un flake latente, ajeno en contenido**: el
+rojo fue `corrupted_ledger_is_detected_at_startup` — intacto por esta
+tanda — cayendo en `sled::open` CRUDO al manipular el db: tras soltar
+la capa, sled tarda en liberar el cerrojo (WouldBlock), y el rito ya
+tenía `open_retry`… para la capa; la manipulación quedaba fuera. El
+peso nuevo de la suite movió el reloj y la carrera asomó. Cura de
+especie: `sled_open_retry` en tests_support (mismo rito, diez
+reintentos) y el único sitio censado —SIN head— portado. Rojo ajeno,
+gatillado en tiempo: exactamente para eso está la compuerta.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

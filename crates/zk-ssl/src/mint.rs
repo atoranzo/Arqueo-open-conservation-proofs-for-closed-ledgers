@@ -379,6 +379,37 @@ mod tests_delegada {
         assert_eq!(layer.records.get(&idx).unwrap().balance, AMOUNT, "y el saldo");
     }
 
+    /// **REENVIAR una emision delegada NO emite dos veces.** El
+    /// compromiso ata las raices del estado ANTES de aplicar: consumida
+    /// la operacion, los mismos materiales quedan huerfanos del estado.
+    /// Es el guardian delegado de la propiedad que
+    /// `replaying_a_mint_is_rejected` guarda en la via-recibo (esa
+    /// muere con la marca en B-3; esta la releva).
+    #[test]
+    fn replaying_a_delegated_mint_is_rejected() {
+        let (mut layer, idx) = capa();
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+
+        let op = compromiso(&layer, idx, AMOUNT);
+        let subida = prueba_subida(&layer, idx, AMOUNT);
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+        layer
+            .apply_mint_delegated(
+                subida.clone(), pa.clone(), ia.clone(), pb.clone(), ib.clone(), idx, AMOUNT,
+            )
+            .expect("la primera aplicacion");
+        let saldo = layer.records.get(&idx).unwrap().balance;
+        let suministro = layer.total_supply();
+
+        // Los MISMOS materiales, otra vez.
+        let r = layer.apply_mint_delegated(subida, pa, ia, pb, ib, idx, AMOUNT);
+        assert!(r.is_err(), "CRITICO: reenviar materiales crearia dinero: {r:?}");
+        assert_eq!(layer.records.get(&idx).unwrap().balance, saldo, "el saldo no cambia");
+        assert_eq!(layer.total_supply(), suministro, "el suministro tampoco");
+    }
+
     /// UNA SOLA CLAVE NO EMITE DINERO.
     #[test]
     fn the_same_custodian_twice_cannot_mint() {

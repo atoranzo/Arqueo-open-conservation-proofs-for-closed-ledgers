@@ -268,6 +268,21 @@ pub fn open_encrypted_retry(
     unreachable!()
 }
 
+/// `sled::open`, con el mismo rito de reintentos que [`open_retry`]:
+/// tras soltar una capa, sled puede tardar en liberar el cerrojo del
+/// directorio (WouldBlock), y la manipulacion directa del db en los
+/// tests de corrupcion llegaba en crudo — la especie que la compuerta
+/// destapo en B-2b (§165).
+pub fn sled_open_retry(path: &str) -> sled::Db {
+    for _ in 0..10 {
+        match sled::open(path) {
+            Ok(db) => return db,
+            Err(_) => std::thread::sleep(std::time::Duration::from_millis(50)),
+        }
+    }
+    sled::open(path).expect("abrir db tras diez reintentos")
+}
+
 pub fn open_retry(
     path: &str,
     custodians: Digest,

@@ -1092,15 +1092,19 @@ use super::*;
         let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
 
         for i in 0..2 {
-            let m = layer.mint(&valid_auth(), alice, 1000).expect("emitir");
-            layer.apply_mint(&m, alice).expect("aplicar");
+            fund_delegated(&mut layer, alice, 1000);
             assert_eq!(layer.custodian_uses(), i + 1);
         }
 
-        let m = layer.mint(&valid_auth(), alice, 1000).expect("emitir");
+        // La tercera intervencion: materiales validos, cupo agotado. El
+        // cupo se consume DESPUES de verificar la autoridad (:290), asi
+        // que la autorizacion pasa y el gasto es lo que rebota.
+        let op = mint_commitment(&layer, alice, 1000);
+        let subida = mint_climb_proof(&layer, alice, 1000);
+        let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
         assert!(
             matches!(
-                layer.apply_mint(&m, alice),
+                layer.apply_mint_delegated(subida, pa, ia, pb, ib, alice, 1000),
                 Err(LayerError::CustodianSetExhausted { .. })
             ),
             "CRITICO: un conjunto agotado no debe poder seguir actuando"
@@ -3011,7 +3015,7 @@ use super::*;
 
         // Manipulacion: se altera la raiz guardada.
         {
-            let db = sled::open(&path).expect("abrir db");
+            let db = sled_open_retry(&path);
             let fake: Digest = [BaseElement::new(0xBADBAD); 4];
             db.insert(b"root:state", store::digest_to_bytes(&fake).to_vec())
                 .expect("insertar");
@@ -3290,16 +3294,17 @@ fn a_restart_does_not_renew_an_exhausted_custodian_quota() {
         alice = layer
             .open_account_checked(BaseElement::new(SK_ALICE))
             .expect("abrir cuenta");
-        let m = layer.mint(&valid_auth(), alice, 100_000).expect("emitir");
-        layer.apply_mint(&m, alice).expect("aplicar");
+        fund_delegated(&mut layer, alice, 100_000);
 
-        // ⚠️ **El cupo se consume en `apply_mint`, no en `mint`.**
-        //
-        // Es una decision documentada: una prueba generada y NO aplicada no
-        // debe gastar cupo. Asi que comprobar `mint()` no dice nada —una
-        // version anterior de este test lo hacia y fallaba por eso—.
-        let m2 = layer.mint(&valid_auth(), alice, 1000).expect("genera igual");
-        let r = layer.apply_mint(&m2, alice);
+        // ⚠️ **El cupo se consume en el APPLY, no al generar** — en las
+        // dos vias (:125 vieja, :290 delegada). Es una decision
+        // documentada: materiales generados y NO aplicados no gastan
+        // cupo; una version anterior comprobaba la generacion y fallaba
+        // por eso.
+        let op = mint_commitment(&layer, alice, 1000);
+        let subida = mint_climb_proof(&layer, alice, 1000);
+        let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+        let r = layer.apply_mint_delegated(subida, pa, ia, pb, ib, alice, 1000);
         assert!(
             r.is_err(),
             "el cupo esta agotado antes de reiniciar: {r:?}"
@@ -3312,8 +3317,10 @@ fn a_restart_does_not_renew_an_exhausted_custodian_quota() {
     .expect("reabrir");
 
     // **El ataque: reiniciar y APLICAR, que es donde se gasta el cupo.**
-    let m = layer.mint(&valid_auth(), alice, 1000).expect("genera");
-    let r = layer.apply_mint(&m, alice);
+    let op = mint_commitment(&layer, alice, 1000);
+    let subida = mint_climb_proof(&layer, alice, 1000);
+    let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+    let r = layer.apply_mint_delegated(subida, pa, ia, pb, ib, alice, 1000);
     assert!(
         r.is_err(),
         "CRITICO: reiniciar el nodo NO debe renovar un cupo agotado. \
