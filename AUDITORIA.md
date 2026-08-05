@@ -12043,6 +12043,43 @@ colocación pid-mod, flecos— queda cerrada de punta a punta, etiquetada
 (`entrada-50`) y contada donde sobrevive (§140-§158). Lo que el
 proyecto aún debe pertenece a otras entradas, y cada una lo sabe.
 
+## 159. Campaña A COMPLETA — el triaje de las 14, reconciliado con la jornada, y las tres plumas
+
+**El triaje (2026-08-03, doc/triaje-14-medidas.md; citable en la
+entrada 70) reconciliado con el día del flip**: la **3b** pasó de
+*diseñada* a **HECHA** (entrada 50, etiqueta); la **3a** sigue vetada
+por §129 y hoy además existe la vista autenticada; la **4a** sigue
+siendo la 32; los preprints siguen intocables por §135 (errata) — pero
+los **docs VIVOS** habían quedado mintiendo y la 14-viva se ejecutó:
+seis censados, dos con desactualización real.
+
+**A-1 (`98f0813`)**: README y SECURITY pasan las dos superficies
+medidas del 31-07 a **RESUELTO** — la tabla y la curva del diccionario
+se conservan como historia del riesgo cerrado; la objeción de §99.3
+(«escribir sin conocer el secreto») queda disuelta por el
+salt-en-récord con LA COPIA; la enumerabilidad y la elegibilidad del
+vecino, muertas por la colocación pid-mod con sus contratos en verde.
+La spec de migración, sellada **EJECUTADA**.
+
+**A-2 (`567eed1`) — las tres plumas (medidas 7/12/13)**:
+PRINCIPIOS §6.bis fija la relación con el «último intermediario» y el
+dinero cuántico en tres registros honestos (eliminado / reducido con
+ataque diseñado —el acuse §121— / fuera del dominio clásico); VISION
+apunta; SECURITY §2.bis nombra los DOS residuos que quedan (orden y
+completitud; el operador ve el estado) y qué los elimina; y
+`doc/POSICIONAMIENTO.md` nace como la página pública — qué es, qué lo
+distingue, qué NO es todavía, y la conversación que se propone
+(piloto de pruebas de banda tras auditoría externa).
+
+**Del triaje quedan vivas**: la **9** («qué aprende cada
+participante», la mejor — Campaña C), la **6** (notas/UTXO, sesión
+propia), la **10** (interfaz de anclaje, conecta con el acuse), y el
+bloque **1/2/4a/11 = entradas 32/33 = Campaña B**, hoy reencuadrada
+por censo: la vía delegada EXISTE completa
+(`apply_*_delegated` ×4) y el orden estricto de §51 ya vive en los
+appliers — el trabajo es migrar ~229 llamadas de la vía antigua,
+amputar `transfer` y los `deprecated`, y medir después (11).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
