@@ -12438,6 +12438,41 @@ hoy; `one_custodian_cannot_recover_alone` con relevos existentes
 relevado por la puerta-circuito. **Cero llamadas de recover sin
 destino.** Suite: 250 → 252. Queda: mint_to_pending (5).
 
+## 170. B-2 CERRADA — la última familia, el libro consolidado, y la mesa puesta para B-3
+
+**B-2g, pending**: palanca extendida (compromiso del árbol de
+pendientes con suministro atado, subida de siete argumentos, y
+`mint_to_pending_delegated`) y el quota-test girado — la emisión a
+pendiente de los tests cuenta hoy intervenciones reales (:786/:950).
+Al libro: el ciclo completo REUSA su recibo (vive hasta B-3; su
+pierna-mint ya está relevada por el positivo delegado del módulo, y
+el ciclo entero se adapta con el *aviso* en la jubilación); el
+mismo-custodio gen-time con relevo en el bloque delegado; y el par
+del tope en generación (`OverRegulatoryLimit`), contrato vía-recibo
+cuya faceta-apply guarda la puerta `would_be` del apply delegado —
+precedente del relevo-cap de mint (§166).
+
+**El cierre de la campaña de migración, en números**: 68 llamadas
+directas en 47 tests → **33 giradas** al barrido estructural (6+5
+mint, 15 freeze, 5 governance, 5 recovery... y 1 pending) + 2 portes
+enteros + **9 relevos nuevos** en los bloques delegados + ~20
+entradas de libro, cada una con su relevo o su porqué. Suite 244 →
+252, tiempo 19-27 s → 34-41 s: el precio de §162, pagado donde se
+dijo, comprando que TODA la maquinaria de custodios de la suite —
+fondeo, congelación, rotación, recuperación, pendientes, cupos y
+contadores — ejercite la vía real en cada pasada.
+
+**Lo que la campaña encontró por el camino**: el tope que vive en la
+generación (contrato vía-recibo, §166); **la puerta que NO estaba**
+(la delegada aceptaba same-identity: cura en el apply, §169 — la
+primera divergencia real de guardas, destapada por un relevo que
+nació en rojo); el recibo que cruza el reinicio (§169); §54.2 en vivo
+(§168); el flake del cerrojo de sled (§165); y las reglas del rito:
+censos sin head, colas envueltas, el detector de reuso como juez que
+dos veces supo más que el censor. **B-3 queda armada**: jubilar las
+cinco `#[deprecated]` con el libro como mapa — cada muerte,
+relevada — y con ella el ✅ entero de la entrada 32.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

@@ -1045,10 +1045,7 @@ use super::*;
         let id_bob = derive_public_id(BaseElement::new(SK_BOB));
         assert_eq!(layer.custodian_uses(), 0);
 
-        let r = layer
-            .mint_to_pending(&valid_auth(), id_bob, salt_de(0xA11), 1000)
-            .expect("emitir");
-        layer.apply_mint_to_pending(&r).expect("aplicar");
+        mint_to_pending_delegated(&mut layer, id_bob, salt_de(0xA11), 1000);
         assert_eq!(layer.custodian_uses(), 1);
     }
 

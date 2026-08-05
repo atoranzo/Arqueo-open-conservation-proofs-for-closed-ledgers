@@ -21,6 +21,7 @@ use super::*;
 use stark_experiment::circuit_mint_climb as climb;
 use stark_experiment::circuit_frozen_climb as climb_frozen;
 use stark_experiment::circuit_recovery_climb as climb_recovery;
+use stark_experiment::circuit_mint_pending_climb as climb_pending;
 use stark_experiment::circuit_threshold::CUSTODIAN_DOMAIN;
 use stark_experiment::circuit_threshold_single_nullifier as auth;
 
@@ -524,6 +525,66 @@ pub fn recover_delegated(layer: &mut SovereignLayer, idx: AccountIndex, nueva: D
     layer
         .apply_recovery_delegated(subida, pa, ia, pb, ib, idx, nueva)
         .expect("la recuperacion delegada legitima debe aplicarse");
+}
+
+/// El compromiso de emisión-a-pendiente delegada: raíz del árbol de
+/// pendientes ANTES/DESPUÉS de colocar el compromiso del receptor,
+/// suministro atado y tope leído de la capa. Calcado del molde.
+pub fn mint_pending_commitment(
+    layer: &SovereignLayer,
+    receiver_id: Digest,
+    salt: Digest,
+    amount: u64,
+) -> Digest {
+    let position = layer.allocate_pending().expect("posicion libre");
+    let c = crate::pending::pending_commitment(receiver_id, salt, amount);
+    let mut t = layer.pending.clone();
+    t.set_leaf(position, c);
+    let mut v: Vec<BaseElement> = layer.pending.root().to_vec();
+    v.extend_from_slice(&t.root());
+    v.push(BaseElement::new(amount));
+    v.push(BaseElement::new(layer.total_supply()));
+    v.push(BaseElement::new(layer.total_supply() + amount));
+    v.push(BaseElement::new(layer.max_supply()));
+    auth::commit_operation(auth::OP_MINT_PENDING, &v)
+}
+
+/// La subida de emisión-a-pendiente, con el tope de la capa.
+pub fn mint_pending_climb_proof(
+    layer: &SovereignLayer,
+    receiver_id: Digest,
+    salt: Digest,
+    amount: u64,
+) -> winterfell::Proof {
+    let position = layer.allocate_pending().expect("posicion libre");
+    let path = layer.pending.path_for(position);
+    let trace = climb_pending::build_trace(
+        layer.total_supply(),
+        amount,
+        layer.max_supply(),
+        amount,
+        receiver_id,
+        salt,
+        &path,
+    );
+    climb_pending::MintPendingClimbProver::new(proof_options())
+        .prove(trace)
+        .expect("subida a pendiente")
+}
+
+/// Emite `amount` a un PENDIENTE del receptor, por la VÍA DELEGADA.
+pub fn mint_to_pending_delegated(
+    layer: &mut SovereignLayer,
+    receiver_id: Digest,
+    salt: Digest,
+    amount: u64,
+) {
+    let op = mint_pending_commitment(layer, receiver_id, salt, amount);
+    let subida = mint_pending_climb_proof(layer, receiver_id, salt, amount);
+    let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+    let _ = layer
+        .apply_mint_pending_delegated(subida, pa, ia, pb, ib, receiver_id, salt, amount)
+        .expect("la emision delegada a pendiente debe aplicarse");
 }
 
 /// [`open_and_fund`], por la vía delegada. Misma firma y mismo abridor
