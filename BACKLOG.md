@@ -1766,7 +1766,7 @@ pendientes, sino en saber con precision que es y que no es.
   ✅ **Campaña A COMPLETA (§159, sello 63ca178)** — el puntero se
   cierra con el párrafo final del sello, calcado:
   **Del triaje quedan vivas**: la **9** («qué aprende cada
-  participante», la mejor — Campaña C), la **6** (notas/UTXO, sesión
+  participante», la mejor — Campaña C), ~~la **6**~~ (notas/UTXO — EXAMINADA y resuelta, §177: vecino cerrado por colocación hash, inmovilización es coste declarado con caducidad pendiente, consenso ortogonal; no exige rediseño; sesión
   propia), la **10** (interfaz de anclaje, conecta con el acuse), y el
   bloque **1/2/4a/11 = entradas 32/33 = Campaña B**, hoy reencuadrada
   por censo: la vía delegada EXISTE completa

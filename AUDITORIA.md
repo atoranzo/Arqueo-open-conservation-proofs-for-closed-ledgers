@@ -12716,8 +12716,65 @@ circuitos** —el `SettlementAir` era uno—; zk-ssl intacto en **231/0+3**
 porque toda su dieta era la fragua, que vive. La condición de §158 —«los
 helpers nativos se mudan ANTES»— se cumplió al pie: **el museo se fue, la
 fragua se quedó**. La simulación-en-réplica pre-derribo entra al rito. El
-frente sale de la cola; quedan las documentales 7/12/13 y la entrada
-6.
+frente sale de la cola; quedan las documentales 7/12/13 y la medida
+6 del triaje (notas/UTXO) — que §177 examina y resuelve.
+
+## 177. La medida 6 (notas/UTXO), EXAMINADA frente a tres ataques — y por qué el modelo de cuentas los cubre sin rediseño
+
+**Enmienda de registro primero**: la «entrada 6» del BACKLOG (grado
+dependiente del testigo, «declarar no migrar», §46) está ✅ cerrada y es
+OTRA cosa; lo que el triaje numera **6** es «notas/UTXO → arquitectura
+mayor». Los traspasos conflaban ambas numeraciones; queda enmendado aquí
+y en §176. Y la bifurcación cuentas-vs-notas no se decide desde cero: **la
+tabla de Salidas de §4** ya pesó el modelo UTXO —«compatible con los
+principios: Sí; coste: rediseño del sistema entero»— y eligió dos-fases,
+que la casa hoy ejecuta, mide (§172) y guarda (§173).
+
+**El examen — tres ataques que UTXO tocaría, medidos contra lo que la
+capa hace hoy**:
+
+**(1) El ataque del vecino** (leer el saldo ajeno por el camino de Merkle
+del árbol de cuentas, eligiendo quién espiar al cronometrar las altas):
+**cerrado en el modelo de cuentas, sin UTXO**. La colocación NO es
+`next+1` — es `public_id[0] mod capacidad` con sondeo lineal
+(accounts.rs:207), así que el índice deriva de la identidad, que deriva de
+la clave de gasto (§127). Un atacante no elige vecino: necesitaría una
+preimagen que aterrice contigua, no un reloj. El test
+`account_indices_are_not_predictable` lo verifica en verde. UTXO lo
+cerraría por construcción (no hay hoja de saldo por identidad); el modelo
+de cuentas lo cerró por colocación. **Empate — ambos lo resuelven.**
+
+**(2) El pago no reclamado / inmovilización**: dos-fases lo tiene —no
+existe operación de cancelar, caducar ni reembolsar un pendiente; sin el
+`claim` del receptor, los fondos quedan quietos—, y **es coste DECLARADO,
+no defecto oculto** (§29-§30 «el coste declarado de las dos fases», entrada
+12, asumido en ESCALADO.md; y es MENOS limbo que la vía de un paso que
+sustituyó, §7/§36). UTXO clásico tiene el mismo defecto base y a veces
+trae time-locks/reembolso —salidas de diseño que aquí no se
+implementaron—. **Único frente donde UTXO ofrecería algo; pero se cierra
+con una operación de caducidad sobre el modelo actual, NO con un rediseño
+a notas.**
+
+**(3) El ordenamiento distribuido / consenso**: **ninguno lo resuelve, y
+es ortogonal al modelo de datos**. Quién ordena las operaciones es capa
+distinta de cómo se representa el valor —Bitcoin es UTXO *y* PoW porque son
+cosas separadas—. La casa lo declara fuera de alcance (`CONFIANZA_RESIDUAL
+§8`: «el operador sigue ordenando; consenso sigue fuera de alcance») y el
+anclaje externo (§174) solo lo acota. UTXO no cambiaría una coma.
+**Empate — ninguno; irrelevante a la bifurcación.**
+
+**El veredicto**: dos-fases **no domina** a UTXO —empata en vecino y
+consenso, y en inmovilización UTXO ofrece salidas que aquí faltan— pero
+**UTXO tampoco domina**, y su único frente ganador (la inmovilización) se
+cierra con una operación de caducidad sobre cuentas, sin pagar el rediseño
+entero que §4 rechazó y que rompería cuentas, congelación, recuperación,
+gobernanza, banda de auditoría y mapeo ISO. Lo que UTXO compraría de más
+—ceguera del operador— ya tiene dueño mejor (B11, `CONFIANZA §3`). **La
+medida 6 no se persigue como rediseño**; su única deuda viva y localizada
+—la caducidad del pendiente inmovilizado— queda anotada como mejora sobre
+el modelo actual, no como razón para notas. Si la bifurcación se reabriera,
+sería **contra esta acta**. **La cola mayor del triaje queda VACÍA**: solo
+restan las documentales 7/12/13.
 
 ## 69. Qué NO demuestra este documento
 
