@@ -12594,6 +12594,42 @@ anclaje externo, 12 SECURITY, 13 posicionamiento — por errata §135 donde
 toquen preprints) y los frentes mayores (6 notas/UTXO, museo). La medida
 9 sale de la cola de pendientes.
 
+## 174. Medida 10 — el anclaje externo, diseñado: el reloj que ni el operador ni el emisor controlan
+
+**Qué pedía la 10**: BACKLOG y SECURITY §2.bis la nombran «interfaz de
+anclaje externo (por diseñar)» — la *eliminación* del residuo #1 (orden y
+completitud) que el acuse (§121) solo *acota*. No es código: es el
+documento de diseño que faltaba, hermano de `CONFIANZA_RESIDUAL.md`. Vive
+en `doc/ANCLAJE_EXTERNO.md`.
+
+**El mecanismo, en una línea**: publicar la raíz de recepción —que ya va
+comprometida y firmada en cada `EpochHead` (§121.2)— en un medio
+append-only independiente del operador. Hereda la firma (cero índices
+XMSS extra, la corrección que salvó al acuse) y admite anclaje por lotes
+(raíz de un árbol de cabezas cada *M* latidos; el ancla individual es un
+camino Merkle). *M* es una línea sistémica como `N_max`: se declara y se
+mide.
+
+**Lo que ataca, exacto**: los dos puntos que `CONFIANZA_RESIDUAL §8`
+dejaba abiertos — la **vista dividida** (el operador firma cabezas
+distintas a testigos distintos; el ancla la vuelve autodelatora sin
+depender del gossip que CT infradesplegó) y el **RPO del siniestro** (deja
+de depender de la cooperación del operador). Añade el tercer vértice a la
+simetría §119/§121: un reloj que ni el operador (techo `N_max`) ni el
+emisor (suelo) controlan.
+
+**Encaje y honestidad**: dos filas nuevas en el Backlog de CONFIANZA —
+`B10.6` (formato del ancla + *M*) y `B10.7` (verificador en cliente),
+ninguna toca circuito, ambas sobre las cabezas que ya existen. El
+documento nombra su propio residuo (§6): el medio externo es una
+dependencia de confianza **desplazada, no eliminada**; la cola entre
+anclas sigue acotada por *M* y N2, no cerrada; y el ancla prueba *qué
+raíz* era canónica, no que su contenido fuera completo (eso sigue siendo
+recibos + no-inclusión, §121.3). SECURITY §2.bis pasa a «interfaz
+diseñada; pendiente de despliegue». **La 10 sale de la cola de
+pendientes**; su primer paso medible es `B10.6`. Del triaje quedan las
+documentales 7/12/13 y los frentes mayores (6 notas/UTXO, museo).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

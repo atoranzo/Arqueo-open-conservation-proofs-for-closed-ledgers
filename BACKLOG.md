@@ -1757,7 +1757,7 @@ pendientes, sino en saber con precision que es y que no es.
     (operador/contraparte/tercero), extendiendo §16 — mecanismo, no
     narrativa; fortalece la tesis central.
   · Medidas 7/10/12/13 (documentales): seccion «relacion con el dinero
-    cuantico» en docs vivos; interfaz de anclaje externo (documento de consenso **por crear**)
+    cuantico» en docs vivos; interfaz de anclaje externo (**documento CREADO**: `doc/ANCLAJE_EXTERNO.md`, §174 — B10.6/B10.7 en el backlog de CONFIANZA)
     —conecta con el intermediario residual = orden+completitud que el acuse
     de §119/§121 ya ataca—; actualizar SECURITY.md/modelo de amenaza;
     documento de posicionamiento publico.

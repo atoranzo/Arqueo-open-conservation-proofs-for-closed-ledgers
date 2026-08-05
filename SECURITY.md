@@ -98,7 +98,7 @@ a dos, y conviene nombrarlas mirando hacia delante:
    atestiguadas, recibos y **acuse** (§121,
    `doc/CONFIANZA_RESIDUAL.md`) — mentir pasa a dejar evidencia
    fail-stop. Eliminación: consenso/replicación o anclaje externo de
-   raíces (interfaz por diseñar).
+   raíces (interfaz diseñada: `doc/ANCLAJE_EXTERNO.md`; pendiente de despliegue).
 
 2. **El operador ve el estado.** La privacidad es frente a terceros,
    no frente a quien mantiene el ledger; el titular tiene vista

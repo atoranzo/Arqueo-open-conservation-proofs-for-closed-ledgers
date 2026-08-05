@@ -457,6 +457,8 @@ no cierra la censura, la hace cara; la fila 3 deja los metadatos abiertos
 | B18.3 | Declaración de siniestro, ventana de reclamos y remanente | **política** + gobernanza | B10.1 | Decisión con víctimas; familia §87 |
 | B18.4 | Recuperación de pendientes desde el árbol reconstruido | circuito | B18.1 | Hereda B8/§87; el aviso es el reclamo |
 | B18.5 | Prueba de conservación de la migración | circuito existente | B18.2 | La maquinaria de banda audita su propia migración |
+| B10.6 | Ancla externa de la raíz de cabezas (interfaz + parámetro *M*) | formato + componente | B10.1, §121.2 | Importa disponibilidad ajena; no elige medio (`doc/ANCLAJE_EXTERNO.md`) |
+| B10.7 | Verificador de ancla en cliente/testigo (camino Merkle → raíz anclada) | cliente | B10.6 | Convierte la comparación B10.2 en lectura sin gossip |
 
 Orden sugerido: B12.1 → {B10.1, B11.2} en paralelo → B10.3/B10.4/B10.5 →
 B18.1 (los testigos ya reciben cabezas; añadir deltas es incremental) →
