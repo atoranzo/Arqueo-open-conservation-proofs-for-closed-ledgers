@@ -1878,25 +1878,6 @@ use super::*;
     ///
     /// Es la prueba de que la jerarquía funciona: quien puede emitir y
     /// recuperar cuentas no puede cambiar quién tiene ese poder.
-    #[test]
-    // ⚠️ **Se salta en depuracion, y no por estar mal.**
-    //
-    // El impostor lleva claves de custodio por caminos de gobernanza, asi
-    // que su carril **no llega a la raiz del conjunto** y la asercion
-    // `main_trace(16, 39)` no se cumple. Eso es justo lo que el test
-    // comprueba, y en release lo caza el verificador.
-    //
-    // En depuracion winterfell comprueba las aserciones **al generar** y
-    // panica dentro de `update_custodians`. No se puede esperar «el rechazo
-    // de cada modo» como en §77.1: **la capa no puede capturar un panico**
-    // para devolver un `Err`.
-    //
-    // Medido el 31-07-2026 (§78). Release SI lo ejecuta.
-    #[cfg_attr(
-        debug_assertions,
-        ignore = "escenario de rechazo: la traza es invalida a proposito y en depuracion winterfell lo caza al generar (§78)"
-    )]
-
     /// Cada cambio queda contado.
     #[test]
     fn every_governance_change_is_counted() {

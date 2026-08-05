@@ -585,26 +585,3 @@ pub fn mint_to_pending_delegated(
         .expect("la emision delegada a pendiente debe aplicarse");
 }
 
-/// [`open_and_fund`], por la vía delegada. Misma firma y mismo abridor
-/// estrecho: B migra la custodia, no la apertura (§160, §90).
-pub fn open_and_fund_delegated(layer: &mut SovereignLayer, sk: u64, amount: u64) -> AccountIndex {
-    let idx = layer.open_account(BaseElement::new(sk));
-    if amount > 0 {
-        fund_delegated(layer, idx, amount);
-    }
-    idx
-}
-
-/// [`open_and_fund_wide`], por la vía delegada.
-pub fn open_and_fund_wide_delegated(
-    layer: &mut SovereignLayer,
-    sk: Digest,
-    amount: u64,
-) -> AccountIndex {
-    let idx = layer.open_account_wide(sk);
-    if amount > 0 {
-        fund_delegated(layer, idx, amount);
-    }
-    idx
-}
-
