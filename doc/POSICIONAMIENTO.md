@@ -19,8 +19,8 @@ confianza está medido, con nombre y con su ataque diseñado
 —el operador ve el estado; la privacidad es frente a terceros—, sin
 consenso/replicación, sin auditoría externa, y con el rendimiento del
 anclaje como trabajo explícito de escalado (`doc/ESCALADO.md`). Las
-vías antiguas pendientes de retirada están inventariadas
-(BACKLOG 32/33).
+vías antiguas señaladas ya fueron retiradas; su inventario quedó en
+(BACKLOG 32/33 ✅, Campañas A y B).
 
 **Dirección.** *El consenso es el último intermediario*: este proyecto
 lo deja mínimo, medido y con evidencia — ceremonia eliminada, claves de
