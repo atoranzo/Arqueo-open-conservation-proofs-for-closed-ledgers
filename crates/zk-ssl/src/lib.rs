@@ -109,27 +109,13 @@ use stark_experiment::circuit_audit::{
 use stark_experiment::circuit_burn::{
     build_trace as build_burn_trace, BurnAir, BurnProver, BurnPublicInputs,
 };
-use stark_experiment::circuit_freeze::{
-    build_trace as build_freeze_trace, frozen_leaf, FreezeAir, FreezeProver, FreezePublicInputs,
-    FROZEN_DEPTH,
-};
-use stark_experiment::circuit_governance::{
-    build_trace as build_governance_trace, GovernanceAir, GovernanceProver,
-    GovernancePublicInputs,
-};
 /// Autorización de dos miembros del conjunto de gobernanza.
-pub use stark_experiment::circuit_governance::{build_governance_set, GovernanceAuth};
-use stark_experiment::circuit_mint::{
-    build_trace as build_mint_trace, MintAir, MintProver, MintPublicInputs,
-};
+use stark_experiment::circuit_freeze::{frozen_leaf, FROZEN_DEPTH};
+pub use stark_experiment::circuit_governance::{build_governance_set};
 /// Autorización de dos custodios, necesaria para emitir.
-pub use stark_experiment::circuit_mint::ThresholdAuth;
 /// Construcción del conjunto de custodios: devuelve su raíz y los
 /// caminos de cada miembro.
 pub use stark_experiment::circuit_threshold::build_custodian_set;
-use stark_experiment::circuit_recovery::{
-    build_trace as build_recovery_trace, RecoveryAir, RecoveryProver, RecoveryPublicInputs,
-};
 use stark_experiment::circuit_settlement::{
     derive_public_id, native_leaf, native_leaf_salted,
 };
@@ -365,35 +351,6 @@ pub fn verify_audit(disclosure: &AuditDisclosure) -> Result<(), LayerError> {
     .map_err(|e| LayerError::VerificationFailed(format!("{e:?}")))
 }
 
-/// Recibo de una congelación o descongelación.
-#[derive(Debug)]
-pub struct FreezeReceipt {
-    pub proof: Vec<u8>,
-    pub public_inputs: FreezePublicInputs,
-    /// Estado al que pasa la cuenta. Lo necesita quien aplica el recibo;
-    /// el circuito solo demuestra que la transición es válida.
-    pub now_frozen: bool,
-}
-
-/// Recibo de un cambio de gobernanza.
-#[derive(Debug)]
-pub struct GovernanceReceipt {
-    pub proof: Vec<u8>,
-    pub public_inputs: GovernancePublicInputs,
-}
-
-/// Recibo de una recuperación de cuenta.
-///
-/// Lleva la identidad nueva porque quien aplica la recuperación necesita
-/// saber a quién reasignar la cuenta; el circuito solo demuestra que la
-/// transición es válida.
-#[derive(Debug)]
-pub struct RecoveryReceipt {
-    pub proof: Vec<u8>,
-    pub public_inputs: RecoveryPublicInputs,
-    pub new_public_id: Digest,
-}
-
 /// Recibo de una emisión.
 /// Recibo de una destrucción de circulante.
 ///
@@ -404,12 +361,6 @@ pub struct RecoveryReceipt {
 pub struct BurnReceipt {
     pub proof: Vec<u8>,
     pub public_inputs: BurnPublicInputs,
-}
-
-#[derive(Debug)]
-pub struct MintReceipt {
-    pub proof: Vec<u8>,
-    pub public_inputs: MintPublicInputs,
 }
 
 /// Intervenciones que admite un conjunto de custodios antes de exigir
