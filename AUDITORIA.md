@@ -12772,9 +12772,51 @@ gobernanza, banda de auditoría y mapeo ISO. Lo que UTXO compraría de más
 —ceguera del operador— ya tiene dueño mejor (B11, `CONFIANZA §3`). **La
 medida 6 no se persigue como rediseño**; su única deuda viva y localizada
 —la caducidad del pendiente inmovilizado— queda anotada como mejora sobre
-el modelo actual, no como razón para notas. Si la bifurcación se reabriera,
+el modelo actual, no como razón para notas. — y **DISEÑADA en §178** (`doc/CADUCIDAD_PENDIENTE.md`). Si la bifurcación se reabriera,
 sería **contra esta acta**. **La cola mayor del triaje queda VACÍA**: solo
 restan las documentales 7/12/13.
+
+## 178. La caducidad del pendiente, DISEÑADA — el reembolso del emisor tras T, con doble cerrojo
+
+**Qué cierra**: la única deuda viva que el examen de §177 dejó — el
+frente donde el modelo de notas ofrecía algo (time-locks) que dos-fases no
+tenía. El diseño vive en `doc/CADUCIDAD_PENDIENTE.md` (hermano de
+ANCLAJE_EXTERNO) y se construye entero sobre piezas EXISTENTES:
+`apply_send` ya recibe `sender_index`, `pending_amounts` ya sienta el
+precedente del metadato-declarado del operador, `epoch_head().seq` ya es
+reloj, y el crédito reusa `mint_climb` sin tocar una coma.
+
+**El corazón del diseño es el ataque que lo mata en su forma ingenua**:
+un refund que solo exija conocer la apertura del compromiso vuelve ROBABLE
+el aviso filtrado (hoy inocuo: `claim` ata la clave del receptor, §39.1).
+El doble cerrojo lo cierra: (1) el DESTINO lo fijan los registros — la
+capa acredita a `meta.sender_index` pruebe quien pruebe, así que el
+ladrón, como mucho, le paga el trámite al emisor; (2) los MATERIALES solo
+puede fabricarlos el emisor — la subida de crédito exige el preimagen de
+su hoja, cuyo salt deriva de su clave (§117). Ni el compromiso ni `claim`
+ni los discriminantes de §173 se tocan: el emisor entra en los registros
+del operador (que ya lo conocía, §21/§129), jamás en el árbol.
+
+**Las decisiones con nombre**: `T` es línea sistémica declarada (familia
+`N_max`/§121 y `M`/§174), que hereda el reloj de cabezas firmadas cuando
+existan (§115); la CARRERA post-T entre claim y refund se declara como
+semántica —un parámetro parte el tiempo en dos derechos, el primero en
+aplicarse gana—; los pendientes de EMISIÓN se DES-EMITEN al caducar
+(simetría: la emisión no cobrada deja de existir); la clave-perdida del
+emisor va a fase-2 remanente (familia B18.3, decisión política); y el
+operador puede acelerar devoluciones pero nunca desviarlas — declarado. El
+meta viaja EN EL LOTE del commit, con la lección del oro de §169 escrita
+como test desde el primer día.
+
+**Coste y frontera**: un circuito pequeño nuevo (`circuit_refund`,
+clase claim-sin-identidad: apertura + vaciado; sin PK, sin nullifier —la
+hoja vacía es su anti-replay—, sin frozen; el guardián de layout pasará de
+26 a 27), una compuerta de capa, el meta persistido, y una batería de
+tests que incluye al ladrón-con-aviso y la persistencia tras reinicio.
+**Primer paso medible**: el circuito con su layout y sus discriminantes,
+ANTES de tocar la capa. Es trabajo que estrena restricciones:
+**sesión propia**, como la casa manda — este asiento deja el diseño
+completo para que esa sesión ejecute, no explore.
 
 ## 69. Qué NO demuestra este documento
 
