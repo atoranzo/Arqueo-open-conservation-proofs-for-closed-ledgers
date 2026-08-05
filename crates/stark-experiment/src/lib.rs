@@ -78,6 +78,7 @@ pub mod circuit_recovery;
 pub mod circuit_recovery_climb;
 pub mod circuit_claim;
 pub mod circuit_send;
+pub mod circuit_refund;
 pub mod native;
 pub mod circuit_threshold;
 // Entrada 33 / §51: las dos variantes del experimento de carril unico.
