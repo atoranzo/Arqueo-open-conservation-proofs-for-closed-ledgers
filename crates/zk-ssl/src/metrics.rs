@@ -39,7 +39,6 @@ mod tests {
     // publicadas describen. Cuando se migre (entrada 32) las mediciones
     // cambian con ella, y eso hay que declararlo, no absorberlo. §65.3: el
     // permiso va aqui, no en la definicion.
-    #![allow(deprecated)]
 
     use crate::tests_support::*;
     use crate::*;
@@ -213,7 +212,11 @@ mod tests {
             ms(startup)
         );
 
+        // `open_account` (64 bits) sigue viva y opt-in (§97.4, fuera de B
+        // por §160); aquí se usa a propósito para medir la capa real.
+        #[allow(deprecated)]
         let alice = layer.open_account(BaseElement::new(SK_ALICE));
+        #[allow(deprecated)]
         let bob = layer.open_account(BaseElement::new(SK_BOB));
 
         // --- Emision con umbral 2-de-N ---

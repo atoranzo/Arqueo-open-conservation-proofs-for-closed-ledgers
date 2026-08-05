@@ -15,6 +15,9 @@
 // ya no existe: B-3 la retiró con el libro en la mano (§171).
 //
 // §65.3: el permiso va en los tests, no en la definicion.
+// Ampara `open_account` (64 bits), viva y opt-in por §97.4 (fuera de B
+// por §160). La vía-recibo de custodios que antes también amparaba se
+// retiró en B-3 (§171).
 #![allow(deprecated)]
 
 use super::*;

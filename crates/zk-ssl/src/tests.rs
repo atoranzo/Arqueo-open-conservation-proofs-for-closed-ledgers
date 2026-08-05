@@ -5,6 +5,9 @@
 // para `mint` y `mint_pending`, y sus propiedades hay que comprobarlas
 // igual. El aviso de obsolescencia se silencia AQUI, no en la definicion,
 // para que siga saltando en codigo nuevo.
+// Ampara `open_account` (64 bits), viva y opt-in por §97.4 (fuera de B
+// por §160). La vía-recibo de custodios que antes también amparaba se
+// retiró en B-3 (§171).
 #![allow(deprecated)]
 
 use super::*;

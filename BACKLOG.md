@@ -176,7 +176,15 @@ La 32 encabeza. La 33 es su correccion de diseno. La 6, 25 y 24 son el
 frente de los grados, con el diagnostico ya cerrado (§37.7) y el precio por
 decidir.
 
-- [ ] **32. ⚠️ Las claves de custodio SI llegan al operador.**
+- [x] **32. ✅ Las claves de custodio ya NO llegan al operador.**
+  ✅ **CERRADA (§171)**: la vía-recibo de custodios —cinco funciones, cinco
+  applies, cinco recibos y los dos tipos `ThresholdAuth`/`GovernanceAuth`—
+  retirada del árbol (B-3b-ii, `d19b20e`, −990 líneas). Ya no existe camino
+  por el que una clave de custodio llegue al operador: toda operación
+  privilegiada pasa por la vía delegada (§47/§51). La suite (231 tests)
+  ejercita la vía real en cada pasada; su precio se midió antes (§162:
+  x3,54-3,70). La 33 es su gemela.
+
   ⚠️ **Estado al 31-07-2026**: las **cinco** operaciones tienen via delegada
   (§71) y las **cinco** vias antiguas estan marcadas `#[deprecated]` —§65
   habia marcado tres; `mint` y `mint_to_pending` no, porque les faltaba la
@@ -204,7 +212,7 @@ decidir.
   **Diseño de la solucion cerrado en §47** (via B); la implementacion es la
   33.
 
-- [ ] **33. Que los custodios prueben en su maquina, y que la autorizacion
+- [x] **33. ✅ Los custodios prueban en su máquina, y la autorización
   cubra los parametros.** La correccion de diseno de la 32 (§41.4).
   **Diseño cerrado (§47): via B**, firmas por conocimiento de preimagen con
   mensaje atado, verificadas por separado —sin componer pruebas, que el
@@ -287,6 +295,12 @@ decidir.
   claves en dos componibles**, reestructuracion del umbral, no un primitivo
   nuevo. La 21 puede o no compartir esto, segun que signifique alli
   «tercero».
+  ✅ **IMPLEMENTADA Y CERRADA (§171)**: la vía B vive en los cinco
+  `apply_*_delegated`; el orden estricto §51.3 (`index_a < index_b`) se
+  reimpone en la capa y todos los tests migrados lo ejercitan. La
+  autorización cubre los parámetros: el compromiso ata raíces, contador y
+  operación (§54.2 en vivo, §168). La evidencia es la suite por la vía
+  real, no una promesa.
 
 - [x] **6. Grado dependiente del testigo (pendientes): DECIDIDO y DECLARADO.**
   La unica comprobacion automatica del area de menor confianza (§16.3)

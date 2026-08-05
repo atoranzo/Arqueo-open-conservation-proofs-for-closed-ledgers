@@ -206,7 +206,6 @@ mod tests_delegada {
         use stark_experiment::circuit_settlement::derive_public_id_wide;
 
         let mut layer = new_layer();
-        #[allow(deprecated)]
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
         let bob = open_and_fund_wide(&mut layer, wide_key(SK_BOB), 0);
 

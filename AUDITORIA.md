@@ -12473,6 +12473,34 @@ dos veces supo más que el censor. **B-3 queda armada**: jubilar las
 cinco `#[deprecated]` con el libro como mapa — cada muerte,
 relevada — y con ella el ✅ entero de la entrada 32.
 
+## 171. B-3 CERRADA — la vía-recibo de custodios, retirada; la 32 y la 33, ✅
+
+**La jubilación**: B-3a-i diecisiete lápidas · B-3a-ii seis adaptaciones
+a la era delegada · B-3b-i la capa sin llamadores · B-3b-ii LA RETIRADA
+(cinco funciones, cinco applies, cinco recibos, dos tipos Auth, cinco
+circuitos, dos lápidas de two_phase; `d19b20e`, −990 líneas) · B-3c este
+cierre (cuatro allows huérfanos fuera; los dos de tests reetiquetados —
+aman `open_account`, no la vía muerta —; los dos ✅). Suite 252 → 231,
+silencio 0·0.
+
+**Los tres oros**, de guardas que nacieron para descubrir: la PUERTA QUE
+NO ESTABA (la recuperación delegada aceptaba same-identity con Ok(); cura
+en el apply, §169) · el commit huérfano (persistía la raíz sin el
+registro — nodo irreiniciable tras recuperar, §169) · la forja aviso≠prueba
+de §73.4, que la delegada vuelve estructuralmente INEXPRESABLE. Y un flake
+de cerrojo con primo en dos crates (§165).
+
+**La 32 y la 33, cerradas** — las que dieron nombre a media campaña. Ya
+no existe camino por el que una clave de custodio llegue al operador: no es
+una marca que ruega no usar la vía mala, es que la vía mala NO existe.
+**Reglas del rito ganadas bajo fuego**: lápidas doble-asertadas; un `use`
+de bloque se poda POR SÍMBOLO, nunca por línea; el caminante respeta la
+frontera-de-blanco; la poda de un ayudante se censa por el ayudante; los
+allows se retiran solo si su deprecated murió (los de tests amparaban
+`open_account`, vivo); y la compuerta del silencio (cero warnings o no hay
+commit) salvó la retirada dos veces. **Queda B-4**: medir (11) y canonizar
+el rango de suite; luego el cierre de la Campaña B.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

@@ -584,7 +584,6 @@ mod tests {
     // unica para `mint` y `mint_pending`, y sus propiedades hay que
     // comprobarlas igual. El aviso de obsolescencia se silencia aqui, no en
     // la definicion, para que siga saltando en codigo nuevo.
-    #![allow(deprecated)]
 
     use super::*;
     use crate::tests_support::*;
@@ -943,7 +942,6 @@ mod tests {
             "pero el del pagador SI: el dinero ya salio"
         );
     }
-
 
     fn salt_iso() -> Digest {
         [
