@@ -1744,3 +1744,13 @@ pendientes, sino en saber con precision que es y que no es.
     documento de posicionamiento publico.
   **Accion**: ejecutar 9 y las documentales que no toquen articulos
   publicados; el resto ya esta hecho, en curso, o pendiente de su diseno.
+  ✅ **Campaña A COMPLETA (§159, sello 63ca178)** — el puntero se
+  cierra con el párrafo final del sello, calcado:
+  **Del triaje quedan vivas**: la **9** («qué aprende cada
+  participante», la mejor — Campaña C), la **6** (notas/UTXO, sesión
+  propia), la **10** (interfaz de anclaje, conecta con el acuse), y el
+  bloque **1/2/4a/11 = entradas 32/33 = Campaña B**, hoy reencuadrada
+  por censo: la vía delegada EXISTE completa
+  (`apply_*_delegated` ×4) y el orden estricto de §51 ya vive en los
+  appliers — el trabajo es migrar ~229 llamadas de la vía antigua,
+  amputar `transfer` y los `deprecated`, y medir después (11).
