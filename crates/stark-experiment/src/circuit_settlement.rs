@@ -73,7 +73,13 @@ use winterfell::{
     TraceInfo, TracePolyTable, TraceTable, TransitionConstraintDegree,
 };
 
-use crate::merkle::{native_merge, Digest, MerklePath, TREE_DEPTH};
+use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
+#[cfg(test)]
+use crate::merkle::native_merge; // suministro de la jaula: el clímber-24 y los tests del museo
+
+// La fragua vive en `crate::native` (M-1, §175). El museo re-exporta
+// por compatibilidad hasta M-2, cuando los llamadores se reapunten.
+pub use crate::native::*;
 // ⚠️ CIRCUITO-MUSEO (liquidación de un solo paso): sus tramos se
 // diseñaron para frozen-24 (bits de congelados en ciclos 103..127,
 // última fila 1023 de 1024 — ajuste EXACTO) y sus trece tests
@@ -99,9 +105,6 @@ fn frozen_climb_24(leaf: Digest, path: &MerklePath) -> Digest {
 }
 use crate::nullifier::NULLIFIER_DOMAIN;
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
-
-/// Dominio de derivación de la identidad desde la clave de gasto.
-pub const SPEND_KEY_DOMAIN: u64 = 0x53504B59; // "SPKY"
 
 pub const CYCLE_LENGTH: usize = 8;
 pub const TRACE_LENGTH: usize = 1024;
@@ -249,71 +252,11 @@ const P_FROZEN_LINK: usize = P_FROZEN_ENTRY + 1;
 
 type Blake3 = Blake3_256<BaseElement>;
 
+/// Suministro de la jaula (solo tests del museo): la fragua se llevó su
+/// copia pública-privada; los 29 tests y el clímber-24 conservan esta.
+#[cfg(test)]
 fn as_digest(x: BaseElement) -> Digest {
     [x, BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO]
-}
-
-/// Identidad de cuenta desde la clave de gasto. **Digest completo.**
-pub fn derive_public_id(spend_key: BaseElement) -> Digest {
-    native_merge(
-        as_digest(BaseElement::new(SPEND_KEY_DOMAIN)),
-        as_digest(spend_key),
-    )
-}
-
-/// **Identidad desde una clave de CUATRO elementos** (entrada 15, §82).
-///
-/// La estrecha toma un solo elemento de Goldilocks: **2^64**, y `pk` es
-/// publica, asi que agotar el espacio cuesta 2^63 —2,38 millones de
-/// años-nucleo medidos en §82.3, cota floja—.
-///
-/// ⚠️ **Es una generalizacion, no un reemplazo**: rellenando con ceros
-/// devuelve **exactamente lo mismo** que la estrecha, y hay test que lo fija
-/// (`the_wide_derivation_generalises_the_narrow_one`). De ahi que migrar
-/// **no invalide cuentas**.
-///
-/// ⚠️ **Pero conservar la identidad no conserva la seguridad.** Una clave
-/// rellenada con ceros sigue teniendo 64 bits de entropia. Lo que la version
-/// ancha permite es **generar claves de 256 bits**; las viejas hay que
-/// rotarlas, y hasta entonces valen lo que valian.
-pub fn derive_public_id_wide(spend_key: Digest) -> Digest {
-    native_merge(as_digest(BaseElement::new(SPEND_KEY_DOMAIN)), spend_key)
-}
-
-/// Nullifier desde una clave de cuatro elementos.
-///
-/// Misma estructura que el estrecho —dominio, clave, nonce— con la clave
-/// ocupando el digest entero en vez de su primer elemento.
-pub fn native_nullifier_wide(spend_key: Digest, nonce: BaseElement) -> Digest {
-    let inner = native_merge(as_digest(BaseElement::new(NULLIFIER_DOMAIN)), spend_key);
-    native_merge(inner, as_digest(nonce))
-}
-
-/// Hoja de cuenta: `Rescue(Rescue(pk, saldo), nonce)`.
-pub fn native_leaf(public_id: Digest, balance: BaseElement, nonce: BaseElement) -> Digest {
-    let inner = native_merge(public_id, as_digest(balance));
-    native_merge(inner, as_digest(nonce))
-}
-
-/// Nullifier desde la CLAVE, no desde la identidad pública.
-pub fn native_nullifier(spend_key: BaseElement, nonce: BaseElement) -> Digest {
-    let inner = native_merge(
-        as_digest(BaseElement::new(NULLIFIER_DOMAIN)),
-        as_digest(spend_key),
-    );
-    native_merge(inner, as_digest(nonce))
-}
-
-pub fn native_climb(leaf: Digest, path: &MerklePath) -> Digest {
-    let mut current = leaf;
-    for level in 0..TREE_DEPTH {
-        current = if path.is_right[level] {
-            native_merge(path.siblings[level], current)
-        } else {
-            native_merge(current, path.siblings[level])
-        };
-    }
-    current
 }
 
 /// Testigos del emisor. Incluye la CLAVE DE GASTO.
@@ -822,7 +765,6 @@ impl Air for SettlementAir {
             link[(seg + 1) * SEGMENT_LENGTH - 2] = one;
             columns.push(link);
         }
-
 
         // Entrada al arbol de congelados: una sola fila.
         let mut frozen_entry = vec![zero; TRACE_LENGTH];
@@ -2060,111 +2002,6 @@ mod tests {
             informe.nunca_disparadas
         );
     }
-}
-
-
-/// Dominio del salt de hoja (entrada 50; cierra §108.4).
-///
-/// Valor autodescriptivo —"SALTLEAF" en ASCII— y **distinto de todo dominio
-/// existente: `t2a_dominio` lo comprueba, no lo promete**. Si colisionara
-/// con `NULLIFIER_DOMAIN`, el salt seria el estado interno del nullifier.
-pub const LEAF_SALT_DOMAIN: u64 = 0x53414C54_4C454146;
-
-/// **Salt de hoja, derivado de la clave de gasto ANCHA.**
-///
-/// Decision de la entrada 50: el salt no es un secreto nuevo — se deriva de
-/// la clave, en cliente, con la familia de hash del proyecto. Quien tiene la
-/// clave lo re-deriva; quien la pierde ya lo habia perdido todo (§93.4: el
-/// cliente no custodia estado, y esto no se lo pide).
-///
-/// ⚠️ Declarado: (1) acopla el salt a la clave — rotar clave implicara
-/// nueva hoja; (2) es **convencion del cliente de referencia**, el protocolo
-/// no impone el origen; (3) protege de terceros que ven caminos y pruebas —
-/// **del operador no, y no lo pretende** (el operador ve los saldos).
-pub fn derive_leaf_salt_wide(spend_key: Digest) -> Digest {
-    native_merge(as_digest(BaseElement::new(LEAF_SALT_DOMAIN)), spend_key)
-}
-
-/// Anchura estrecha: rellena y hereda la garantia de §90 —
-/// `[sk,0,0,0]` es la MISMA cuenta, luego el MISMO salt.
-pub fn derive_leaf_salt(spend_key: BaseElement) -> Digest {
-    derive_leaf_salt_wide(as_digest(spend_key))
-}
-
-/// **Hoja salteada** (entrada 50). Extiende `native_leaf` con el salt
-/// de §117 SIN tocar la hoja vieja ni sus call-sites: el despliegue —
-/// sustituir `native_leaf` por esta en los cinco circuitos y sus AIR —
-/// es B13/B14. Aqui existe para que la propiedad de recuperacion sea
-/// demostrable (T2b-nativo) antes de tocar traza alguna.
-///
-/// Estructura = la vieja con un merge mas de salt al final: el circuito
-/// paga un bloque Rescue adicional por hoja (clase entrada 15, §82).
-pub fn native_leaf_salted(
-    public_id: Digest,
-    balance: BaseElement,
-    nonce: BaseElement,
-    leaf_salt: Digest,
-) -> Digest {
-    native_merge(native_leaf(public_id, balance, nonce), leaf_salt)
-}
-
-/// Dominio de la CLAVE DE VISTA (entrada 49). Distinto de todo dominio
-/// vivo — `t7_vista` lo comprueba: si coincidiera con SPEND_KEY la clave
-/// de vista SERIA la identidad y no cegaria nada; si con LEAF_SALT,
-/// presentar la vista revelaria el salt de hoja.
-pub const VIEW_KEY_DOMAIN: u64 = 0x56494557_4B455900; // "VIEWKEY\0"
-
-/// **Clave de vista**: credencial de LECTURA derivada de la clave de
-/// gasto (entrada 49; patron de §117 aplicado a lectura). El titular la
-/// presenta; la capa la compara contra el `view_id` guardado al abrir la
-/// cuenta. Barata (un merge, verificable NATIVAMENTE — no el STARK de
-/// ~600 ms que la 49 declara inaceptable), y NO viaja en cada operacion
-/// —a diferencia del salt que §109 descarto por eso—.
-///
-/// ⚠️ Limitacion declarada: acoplada a la clave, solo rota rotando la
-/// clave (como el salt de §117). Una credencial de lectura ROTABLE de
-/// verdad exigiria un secreto nuevo custodiado (§93.4 lo prohibe) — se
-/// elige el acoplamiento sobre el secreto nuevo, conscientemente.
-pub fn derive_view_key(spend_key: BaseElement) -> Digest {
-    native_merge(
-        as_digest(BaseElement::new(VIEW_KEY_DOMAIN)),
-        as_digest(spend_key),
-    )
-}
-
-/// **view_id a partir de una CLAVE DE VISTA ya derivada** (49-A paso 4).
-/// El titular presenta `derive_view_key(sk)` —no su clave de gasto— y la
-/// capa computa este merge para comparar contra el `view_id` guardado.
-/// Es el segundo merge de `view_id_of`: `view_id_of(sk) ==
-/// view_id_from_view_key(derive_view_key(sk))`. Existe para que la puerta
-/// autenticada no reimplemente el hash ni reciba la clave de gasto.
-pub fn view_id_from_view_key(view_key: Digest) -> Digest {
-    native_merge(as_digest(BaseElement::new(VIEW_KEY_DOMAIN)), view_key)
-}
-
-/// El `view_id` que la cuenta guarda: hash de la clave de vista. Guardar
-/// el hash y no la clave permite verificar por presentacion sin que el
-/// operador quede con material que le deje LEER (solo COMPARAR).
-/// Variante ANCHA de la clave de vista (49-A paso 2). Hereda §90:
-/// `[sk,0,0,0]` y `sk` dan el MISMO view_id porque `derive_public_id`
-/// ya lo garantiza y esta se define sobre la misma anchura.
-pub fn derive_view_key_wide(spend_key: Digest) -> Digest {
-    native_merge(as_digest(BaseElement::new(VIEW_KEY_DOMAIN)), spend_key)
-}
-
-/// Variante ANCHA del view_id almacenado (49-A paso 2).
-pub fn view_id_of_wide(spend_key: Digest) -> Digest {
-    native_merge(
-        as_digest(BaseElement::new(VIEW_KEY_DOMAIN)),
-        derive_view_key_wide(spend_key),
-    )
-}
-
-pub fn view_id_of(spend_key: BaseElement) -> Digest {
-    native_merge(
-        as_digest(BaseElement::new(VIEW_KEY_DOMAIN)),
-        derive_view_key(spend_key),
-    )
 }
 
 #[cfg(test)]
