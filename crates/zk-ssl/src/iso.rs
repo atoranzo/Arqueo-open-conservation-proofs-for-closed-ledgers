@@ -155,6 +155,11 @@ fn iso_reason(err: &LayerError) -> (&'static str, String) {
         LayerError::SupplyCapExceeded { .. } => ("AM13", err.to_string()),
         // DS0G — el estado ha cambiado: hay que reintentar sobre el actual
         LayerError::StaleState => ("DS0G", err.to_string()),
+        // DS0G — el pendiente aún no caduca / no casa: reintentar más tarde.
+        LayerError::RefundTooEarly { .. } => ("DS0G", err.to_string()),
+        LayerError::PendingMismatch => ("DS0G", err.to_string()),
+        // AG08 — reembolso no permitido sobre esa posición (legado/emisión).
+        LayerError::RefundUnavailable => ("AG08", err.to_string()),
         // TECH — fallo técnico
         // ===== CODIGOS VERIFICADOS CONTRA EL CATALOGO REAL =====
         //

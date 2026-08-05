@@ -92,6 +92,9 @@ pub enum OpKind {
     /// frozen, comprometidas en el payload (no es prueba, es compromiso
     /// replicable). Se registra sin prueba, como OpenAccount.
     Migration,
+    /// Reembolso de un pendiente caducado al emisor (§178, R-2c) — o su
+    /// des-emisión si nació por emisión (centinela).
+    Refund,
 }
 
 impl OpKind {
@@ -115,6 +118,7 @@ impl OpKind {
             9 => OpKind::Claim,
             10 => OpKind::MintToPending,
             11 => OpKind::Migration,
+            12 => OpKind::Refund,
             _ => return None,
         })
     }
@@ -132,6 +136,7 @@ impl OpKind {
             OpKind::Claim => 9,
             OpKind::MintToPending => 10,
             OpKind::Migration => 11,
+            OpKind::Refund => 12,
         }
     }
 }

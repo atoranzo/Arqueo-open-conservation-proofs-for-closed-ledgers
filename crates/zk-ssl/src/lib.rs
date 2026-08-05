@@ -166,6 +166,14 @@ pub const REFUND_SENDER_NONE: u64 = u64::MAX;
 
 #[derive(Debug)]
 pub enum LayerError {
+    /// El pendiente aún no cumplió la `T` de caducidad (§178).
+    RefundTooEarly { born: u64, now: u64, ttl: u64 },
+    /// La posición no admite reembolso: sin meta (legado) o centinela de
+    /// emisión (su vía es la des-emisión, no el crédito).
+    RefundUnavailable,
+    /// La posición no casa con los materiales: hoja distinta del
+    /// compromiso o importe distinto del registrado.
+    PendingMismatch,
     AccountNotFound(AccountIndex),
     InsufficientBalance { available: u64, requested: u64 },
     OverRegulatoryLimit { limit: u64, requested: u64 },
@@ -234,6 +242,19 @@ impl std::fmt::Display for LayerError {
         use LayerError::*;
         match self {
             AccountNotFound(i) => write!(f, "la cuenta {i} no existe"),
+            RefundTooEarly { born, now, ttl } => write!(
+                f,
+                "el pendiente nacio en seq {born}; a seq {now} no cumple la \
+                 T de caducidad ({ttl})"
+            ),
+            RefundUnavailable => write!(
+                f,
+                "la posicion no admite reembolso: sin meta (legado) o de emision"
+            ),
+            PendingMismatch => write!(
+                f,
+                "la posicion no casa con los materiales (hoja o importe)"
+            ),
             InsufficientBalance {
                 available,
                 requested,

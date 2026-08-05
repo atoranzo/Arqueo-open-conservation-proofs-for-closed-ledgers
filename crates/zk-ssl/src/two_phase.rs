@@ -64,6 +64,19 @@ pub struct PendingNotice {
 }
 
 #[derive(Debug)]
+/// Materiales del reembolso (§178, R-2c): las DOS pruebas del doble
+/// cerrojo — la apertura del compromiso (#27) y la subida de crédito del
+/// EMISOR (#28, con su salt derivado de su clave §117).
+pub struct RefundReceipt {
+    pub refund_proof: Vec<u8>,
+    pub credit_proof: Vec<u8>,
+    pub position: u64,
+    pub amount: u64,
+    /// El compromiso que se abre; la capa comprueba `hoja[pos] == P`.
+    pub commitment: Digest,
+}
+
+#[derive(Debug)]
 pub struct SendReceipt {
     pub proof: Vec<u8>,
     pub public_inputs: SendPublicInputs,
@@ -200,6 +213,143 @@ impl SovereignLayer {
     /// **Consecuencia**: enviar a un identificador inventado funciona, el
     /// dinero sale, y queda en un pendiente que nadie puede cobrar. **No hay
     /// devolución.** Ver `AUDITORIA.md` §30.
+    /// **Fabrica los materiales del reembolso** (§178, R-2c). Solo el
+    /// EMISOR puede: la hoja se reconstruye con el salt DERIVADO de su
+    /// clave (§117) y debe casar con el árbol — clave ajena, hoja ajena,
+    /// rebote aquí mismo.
+    pub fn refund(
+        &self,
+        spend_key: BaseElement,
+        sender_index: AccountIndex,
+        sender_state: &ClientState,
+        position: u64,
+        receiver_id: Digest,
+        salt: Digest,
+        amount: u64,
+    ) -> Result<RefundReceipt, LayerError> {
+        use stark_experiment::circuit_credit_climb as credit;
+        use stark_experiment::circuit_refund as refundc;
+        use stark_experiment::native::derive_leaf_salt;
+
+        if derive_public_id(spend_key) != sender_state.public_id {
+            return Err(LayerError::NotTheAccountHolder);
+        }
+        let leaf_salt = derive_leaf_salt(spend_key);
+        let hoja = native_leaf_salted(
+            sender_state.public_id,
+            BaseElement::new(sender_state.balance),
+            sender_state.nonce,
+            leaf_salt,
+        );
+        if hoja != self.accounts.leaf(sender_index) {
+            return Err(LayerError::StaleState);
+        }
+        let commitment = crate::pending::pending_commitment(receiver_id, salt, amount);
+        let path = self.accounts.path_for(sender_index);
+
+        let t_ref = refundc::build_trace(receiver_id, salt, amount);
+        let refund_proof = refundc::RefundProver::new(self.options.clone())
+            .prove(t_ref)
+            .map_err(|e| LayerError::VerificationFailed(format!("apertura: {e:?}")))?
+            .to_bytes();
+        let t_cred = credit::build_trace(
+            sender_state.public_id,
+            sender_state.balance,
+            sender_state.nonce,
+            leaf_salt,
+            &path,
+            amount,
+        );
+        let credit_proof = credit::CreditClimbProver::new(self.options.clone())
+            .prove(t_cred)
+            .map_err(|e| LayerError::VerificationFailed(format!("credito: {e:?}")))?
+            .to_bytes();
+        Ok(RefundReceipt { refund_proof, credit_proof, position, amount, commitment })
+    }
+
+    /// **Aplica el reembolso** con los DOS cerrojos de §178: el destino lo
+    /// fijan los registros (`meta.sender_index`) — pruebe quien pruebe— y
+    /// la subida solo casa si la fabricó el titular de ESA hoja.
+    pub fn apply_refund(&mut self, receipt: &RefundReceipt) -> Result<(), LayerError> {
+        use stark_experiment::circuit_credit_climb::{CreditClimbAir, CreditClimbPublicInputs};
+        use stark_experiment::circuit_refund::{RefundAir, RefundPublicInputs};
+
+        let pos = receipt.position;
+        let (sender_index, born) = self
+            .pending_meta
+            .get(&pos)
+            .copied()
+            .ok_or(LayerError::RefundUnavailable)?;
+        if sender_index == crate::REFUND_SENDER_NONE {
+            return Err(LayerError::RefundUnavailable);
+        }
+        let now = self.log.len() as u64;
+        if now.saturating_sub(born) < self.refund_ttl {
+            return Err(LayerError::RefundTooEarly { born, now, ttl: self.refund_ttl });
+        }
+        if self.pending.leaf(pos) != receipt.commitment {
+            return Err(LayerError::PendingMismatch);
+        }
+        if self.pending_amounts.get(&pos).copied() != Some(receipt.amount) {
+            return Err(LayerError::PendingMismatch);
+        }
+        let rec = self
+            .records
+            .get(&sender_index)
+            .ok_or(LayerError::AccountNotFound(sender_index))?
+            .clone();
+        let root_old = self.accounts.root();
+        let updated_balance = rec.balance + receipt.amount;
+        let mut tentativo = self.accounts.clone();
+        tentativo.set_leaf(
+            sender_index,
+            native_leaf_salted(
+                rec.public_id,
+                BaseElement::new(updated_balance),
+                rec.nonce,
+                rec.leaf_salt,
+            ),
+        );
+        let root_new = tentativo.root();
+        let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
+        let p_ref = winterfell::Proof::from_bytes(&receipt.refund_proof)
+            .map_err(|e| LayerError::VerificationFailed(format!("apertura mal formada: {e:?}")))?;
+        verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+            p_ref,
+            RefundPublicInputs {
+                commitment: receipt.commitment,
+                amount: BaseElement::new(receipt.amount),
+            },
+            &accepted,
+        )
+        .map_err(|e| LayerError::VerificationFailed(format!("apertura: {e:?}")))?;
+        let p_cred = winterfell::Proof::from_bytes(&receipt.credit_proof)
+            .map_err(|e| LayerError::VerificationFailed(format!("credito mal formado: {e:?}")))?;
+        verify::<CreditClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+            p_cred,
+            CreditClimbPublicInputs {
+                root_old,
+                root_new,
+                amount: BaseElement::new(receipt.amount),
+            },
+            &accepted,
+        )
+        .map_err(|e| LayerError::VerificationFailed(format!("credito: {e:?}")))?;
+
+        let vacia: Digest = [BaseElement::ZERO; 4];
+        self.accounts = tentativo;
+        let mut nuevo = rec;
+        nuevo.balance = updated_balance;
+        self.records.insert(sender_index, nuevo);
+        self.pending.set_leaf(pos, vacia);
+        self.pending_amounts.remove(&pos);
+        self.pending_meta.remove(&pos);
+        self.log
+            .append(OpKind::Refund, root_old, root_new, &receipt.refund_proof);
+        self.commit(&[sender_index], Some((pos, vacia)))?;
+        Ok(())
+    }
+
     pub fn send(
         &self,
         spend_key: BaseElement,
@@ -1161,6 +1311,195 @@ mod tests_verificacion {
         assert_eq!(layer.refund_ttl(), crate::DEFAULT_REFUND_TTL);
         layer.set_refund_ttl(7);
         assert_eq!(layer.refund_ttl(), 7);
+    }
+
+    fn refund_de(
+        layer: &SovereignLayer,
+        idx: AccountIndex,
+        sk: u64,
+        recibo: &SendReceipt,
+        receptor: Digest,
+        amount: u64,
+    ) -> RefundReceipt {
+        let estado = state_of(layer, idx);
+        layer
+            .refund(
+                BaseElement::new(sk), idx, &estado,
+                recibo.notice.position, receptor, recibo.notice.salt, amount,
+            )
+            .expect("materiales de reembolso")
+    }
+
+    /// R-2c FELIZ: tras T, el reembolso devuelve al emisor — con cronómetro.
+    #[test]
+    fn un_refund_tras_t_devuelve_al_emisor() {
+        use std::time::Instant;
+        let mut layer = new_layer();
+        layer.set_refund_ttl(1);
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let receptor = layer.public_id_of(bob).expect("bob");
+        let ea = state_of(&layer, alice);
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, receptor, salt_de(0xF1), 250_000)
+            .expect("send");
+        layer.apply_send(&recibo, alice, &ea, 250_000).expect("apply send");
+        assert_eq!(state_of(&layer, alice).balance, 750_000);
+
+        let t = Instant::now();
+        let materiales = refund_de(&layer, alice, SK_ALICE, &recibo, receptor, 250_000);
+        let t_gen = t.elapsed();
+        let t = Instant::now();
+        layer.apply_refund(&materiales).expect("apply refund");
+        eprintln!(
+            "REFUND — generar: {:?} | aplicar: {:?} | apertura {} B + credito {} B",
+            t_gen, t.elapsed(),
+            materiales.refund_proof.len(), materiales.credit_proof.len()
+        );
+        assert_eq!(state_of(&layer, alice).balance, 1_000_000, "el dinero VUELVE");
+        assert!(layer.pending_meta_of(recibo.notice.position).is_none());
+        assert_eq!(layer.total_pending(), 0);
+    }
+
+    /// R-2c: antes de T, la compuerta rebota con su error nominal.
+    #[test]
+    fn antes_de_t_el_reembolso_rebota() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let receptor = layer.public_id_of(bob).expect("bob");
+        let ea = state_of(&layer, alice);
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, receptor, salt_de(0xF2), 100_000)
+            .expect("send");
+        layer.apply_send(&recibo, alice, &ea, 100_000).expect("apply");
+        let materiales = refund_de(&layer, alice, SK_ALICE, &recibo, receptor, 100_000);
+        assert!(
+            matches!(layer.apply_refund(&materiales), Err(LayerError::RefundTooEarly { .. })),
+            "con T=64 por defecto, un latido no basta"
+        );
+    }
+
+    /// R-2c EL LADRÓN: con el aviso entero, Mallory fabrica materiales —
+    /// pero su clímber acredita SU hoja, y el destino lo fijan los
+    /// registros: la raíz tentativa (que acredita a ALICE) no casa.
+    #[test]
+    fn el_ladron_con_aviso_no_puede_reembolsarse() {
+        let mut layer = new_layer();
+        layer.set_refund_ttl(1);
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let mallory = open_and_fund(&mut layer, SK_MALLORY, 0);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let receptor = layer.public_id_of(bob).expect("bob");
+        let ea = state_of(&layer, alice);
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, receptor, salt_de(0xF3), 200_000)
+            .expect("send");
+        layer.apply_send(&recibo, alice, &ea, 200_000).expect("apply");
+
+        let robado = refund_de(&layer, mallory, SK_MALLORY, &recibo, receptor, 200_000);
+        assert!(
+            matches!(layer.apply_refund(&robado), Err(LayerError::VerificationFailed(_))),
+            "el credito del ladron no casa la raiz que acredita al EMISOR"
+        );
+        assert_eq!(state_of(&layer, mallory).balance, 0, "el ladron no cobra");
+        assert!(layer.pending_meta_of(recibo.notice.position).is_some(), "el pendiente sigue");
+    }
+
+    /// R-2c LA CARRERA, ambos órdenes: el primero gana, el segundo rebota.
+    #[test]
+    fn la_carrera_post_t_el_primero_gana() {
+        // Orden A: claim primero → refund rebota (hoja vacía).
+        let mut layer = new_layer();
+        layer.set_refund_ttl(1);
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let receptor = layer.public_id_of(bob).expect("bob");
+        let ea = state_of(&layer, alice);
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, receptor, salt_de(0xF4), 50_000)
+            .expect("send");
+        layer.apply_send(&recibo, alice, &ea, 50_000).expect("apply");
+        let materiales = refund_de(&layer, alice, SK_ALICE, &recibo, receptor, 50_000);
+        let eb = state_of(&layer, bob);
+        let cobro = layer
+            .claim(BaseElement::new(SK_BOB), bob, &eb, &recibo.notice)
+            .expect("claim");
+        layer.apply_claim(&cobro, bob, &eb, &recibo.notice).expect("apply claim");
+        assert!(
+            matches!(layer.apply_refund(&materiales), Err(LayerError::RefundUnavailable)),
+            "el cobro se lleva el meta consigo: el reembolso ya NI CALIFICA \
+             (RefundUnavailable, la primera compuerta) — mejor que encontrar \
+             la hoja vacia"
+        );
+
+        // Orden B: refund primero → claim rebota (raíz de pendientes movida).
+        let mut layer = new_layer();
+        layer.set_refund_ttl(1);
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let receptor = layer.public_id_of(bob).expect("bob");
+        let ea = state_of(&layer, alice);
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, receptor, salt_de(0xF5), 50_000)
+            .expect("send");
+        layer.apply_send(&recibo, alice, &ea, 50_000).expect("apply");
+        let eb = state_of(&layer, bob);
+        let cobro = layer
+            .claim(BaseElement::new(SK_BOB), bob, &eb, &recibo.notice)
+            .expect("claim generado ANTES del refund");
+        let materiales = refund_de(&layer, alice, SK_ALICE, &recibo, receptor, 50_000);
+        layer.apply_refund(&materiales).expect("refund gana");
+        assert!(
+            layer.apply_claim(&cobro, bob, &eb, &recibo.notice).is_err(),
+            "tras el reembolso, el cobro rebota"
+        );
+        assert_eq!(state_of(&layer, alice).balance, 1_000_000);
+        assert_eq!(state_of(&layer, bob).balance, 0);
+    }
+
+    /// R-2c PERSISTENCIA: el meta sobrevive al reinicio, y el reembolso
+    /// funciona sobre la capa reabierta (patrón open_retry).
+    #[test]
+    fn el_meta_sobrevive_al_reinicio_y_el_refund_funciona() {
+        let path = std::env::temp_dir()
+            .join(format!(
+                "zkssl_meta_reinicio_{}_{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ))
+            .to_string_lossy()
+            .into_owned();
+        let (alice, recibo, receptor, born);
+        {
+            let mut layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS)
+                .expect("abrir");
+            alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+            let bob = open_and_fund(&mut layer, SK_BOB, 0);
+            receptor = layer.public_id_of(bob).expect("bob");
+            let ea = state_of(&layer, alice);
+            recibo = layer
+                .send(BaseElement::new(SK_ALICE), alice, &ea, receptor, salt_de(0xF6), 300_000)
+                .expect("send");
+            layer.apply_send(&recibo, alice, &ea, 300_000).expect("apply");
+            born = layer.pending_meta_of(recibo.notice.position).expect("meta").1;
+        }
+        let mut layer = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS)
+            .expect("reabrir");
+        assert_eq!(
+            layer.pending_meta_of(recibo.notice.position),
+            Some((alice, born)),
+            "el meta VIAJÓ en el lote y sobrevivió"
+        );
+        layer.set_refund_ttl(1);
+        let materiales = refund_de(&layer, alice, SK_ALICE, &recibo, receptor, 300_000);
+        layer.apply_refund(&materiales).expect("refund tras reinicio");
+        assert_eq!(state_of(&layer, alice).balance, 1_000_000);
     }
 
     #[test]
