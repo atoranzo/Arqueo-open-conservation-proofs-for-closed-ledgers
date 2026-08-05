@@ -12169,6 +12169,39 @@ que no lo mueva es exactamente la comprobación. La entrada 32 NO
 viste ✅: le quedan el cronómetro de §80.5 (= B-0b), la migración de
 llamadores (B-2) y la jubilación de las cinco marcas (B-3).
 
+## 162. El precio de la palanca, MEDIDO — y el tenedor de §80.5 sobre la mesa
+
+**Instrumento**: `el_precio_de_la_palanca` en metrics.rs, apareado en
+el mismo proceso —fondear por la vía vieja (UNA prueba: mint) y por la
+delegada (TRES: subida + par de umbral §51-estricto)— bajo protocolo
+§89.1: una ejecución del proceso = una muestra, cinco muestras,
+release, rango y no cifra (§131).
+
+**El canon**: vieja **108,4–109,7 ms** (dispersión ~1 %); delegada
+**388,2–403,1 ms** (~4 % — más piezas móviles, más varianza, en el
+espíritu de §130.4); multiplicador **×3,54–×3,70**. La entrada 32
+avisaba «tres pruebas donde la antigua genera una» y el número le da
+la razón: el coste escala con el número de pruebas — la apuesta previa
+de un multiplicador suave era errónea y queda retirada por medición.
+
+**Proyección para la suite** (explícita en sus supuestos): 185 usos
+censados de `open_and_fund{,_wide}` (§160) × ~0,28 s de sobrecoste ≈
+**+52 s de techo** si cada uso ejecuta una vez por pasada — del orden
+de 23 s al orden de 70-80 s. La cifra real la dirá el flip y se
+publicará como rango; los 69 llamadores directos de tests.rs (B-2)
+añadirían lo suyo con la misma aritmética.
+
+**El tenedor de §80.5, ahora con el número en la mano**: (a)
+**retirar** — el sobrecoste es de CI, no de usuario: segundos de
+máquina por que la suite ejercite la vía REAL, que es cobertura y es
+la tesis («que nadie pueda pedir las claves»); (b) **no retirar y
+declararlo**, precedente §46 con la entrada 6, dejando las cinco
+marcas y el porqué escrito. Recomendación del asistente: **(a)**,
+porque el precio compra exactamente lo que la campaña promete y se
+paga donde menos duele. **DECISIÓN: del piloto, al abrir B-0b-ii** —
+este asiento registra el número; la palabra siguiente registra el
+rumbo.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
