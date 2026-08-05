@@ -12501,6 +12501,41 @@ allows se retiran solo si su deprecated murió (los de tests amparaban
 commit) salvó la retirada dos veces. **Queda B-4**: medir (11) y canonizar
 el rango de suite; luego el cierre de la Campaña B.
 
+## 172. B-4 — la medida 11 EJECUTADA sobre el estado final, y la Campaña B CERRADA
+
+**El canon de la capa, re-medido tras la migración** (release, protocolo
+§89.1/§130, tres corridas, dispersión <2%): arranque **~1,0 ms**; emisión
+2-de-N **~238 ms** generar / **~3,2 ms** aplicar / **54.667 B**;
+transferencia (send+claim) **~380 ms** generar / **~68 ms** aplicar /
+**132.311 B**; destrucción **~401 ms** / **~32 ms** / **62.290 B**; banda de
+auditoría **~48 ms** / **~1,3 ms** / **50.933 B**. Lecturas estables:
+verificar/generar de un pago completo **~18%**, auditar/transferir **~13%**,
+jornada de mil pagos **~380 s** de prueba y **126,2 MB** acumulados. Los
+tamaños de prueba no cambiaron con la migración — la vía delegada altera
+quién autoriza, no la forma del ascenso — y así lo confirma el instrumento
+girado (`metrics_of_the_layer`, hoy sobre la vía real).
+
+**El rango de suite del estado final** (231 tests, release, tres pasadas):
+**34,9 – 40,6 s**. Contra la proyección de §162 (~+52 s de techo sobre los
+19-27 s del modo viejo ⇒ 70-80 s), el coste real fue **~+13-15 s**: la
+proyección sobreestimaba porque asumía que cada uso migrado ejecuta una vez
+por pasada, y la suite comparte capas entre asertos. El precio de la vía
+real, ya con el número final en la mano, es la mitad de su techo — y se
+sigue pagando donde se dijo, en máquina de CI, no en usuario.
+
+**Campaña B, CERRADA.** El arco completo: censo canon (§160) → la palanca
+y su paridad (B-0a) → el cadáver `transfer` fuera (B-1) → el precio medido y
+la decisión por principios: RETIRAR (§162-§163) → la migración de las cinco
+familias, test a test, con libro (§164-§170) → la jubilación de la
+vía-recibo y sus dos ✅ (§171) → esta medición (§172). Trece asientos, una
+suite que pasó de depender a medias de una vía marcada-sin-nombrarla a
+ejercitar la vía real en cada pasada, tres oros de seguridad hallados por
+guardas que nacieron para descubrir, y una fuga —la que el proyecto nació
+para cerrar— que ya no tiene camino. **Lo que queda son frentes nuevos**,
+no deudas de esta campaña: la medida 9 (Campaña C, «qué aprende cada
+participante»), las notas/UTXO (6), el anclaje externo (10), la retirada
+del museo, y las costuras ajenas anotadas (shim 49-A, costura 52).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
