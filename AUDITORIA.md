@@ -12900,6 +12900,48 @@ centinela (sin clímber — no hay cuenta; `total_supply` BAJA, que subió al
 emitir), medición, y el asiento de cierre. Sesión propia: es el tejido
 donde los dos cerrojos se cierran en la capa.
 
+## 181. §178 EJECUTADO — la caducidad completa, con sus números
+
+**R-2c, el tejido** (`1d244d2`): `refund()` espeja a `send()` guarda por
+guarda —titularidad, y la hoja reconstruida con el salt DERIVADO de la
+clave (§117): clave ajena, hoja ajena, rebote— y fabrica las dos pruebas;
+`apply_refund` pasa las compuertas (meta existe y no-centinela →
+`RefundUnavailable`; `seq − nacido ≥ T` → `RefundTooEarly`; hoja == P e
+importe == registrado → `PendingMismatch`) y verifica AMBAS con publics
+construidos por la capa: el `root_new` del tentativo que acredita a
+`meta.sender_index` — **el destino atado por raíces**, patrón del
+delegado. `OpKind::Refund` (tag 12). Cinco tests: feliz, pre-T, **el
+ladrón con el aviso entero rebotando** (su clímber no casa la raíz que
+acredita al emisor: los dos cerrojos mordiendo juntos), **la carrera en
+ambos órdenes**, y el meta sobreviviendo al reinicio.
+
+**R-2d, la des-emisión** (`0dcc6bc`): los mint-pendientes del centinela
+caducan DESTRUYENDO — `total_supply` baja exactamente lo que subió al
+nacer, verificado al satoshi; sin clímber (no hay cuenta que acreditar),
+solo la apertura #27 prueba que se destruye lo comprometido. Y **las vías
+no se cruzan**: el centinela no admite crédito a nadie, el pago no se
+destruye — cada caducidad por su puerta, ambas rebotando
+`RefundUnavailable`.
+
+**Los números** (Ryzen del piloto, `--release`): reembolso completo
+**~203 ms** de generación + **~10 ms** de aplicación, con **14.257 B** de
+apertura + **54.654 B** de crédito (~69 KB); des-emisión **~189 ms** +
+**~7,6 ms** con **13.759 B**. Del orden del resto de la casa
+(transferencia ~380 ms / 132 KB): la caducidad no es la operación cara.
+
+**Dos lecciones del tejido, al rito**: (1) el censo de un enum incluye
+TODOS sus matches exhaustivos, y viven donde el grep temático no mira —
+`iso.rs` traduce `LayerError` a códigos ISO SIN catch-all *por diseño*
+(se eliminó porque absorbía errores en silencio), y solo el compilador
+sabía que mis tres errores nuevos necesitaban sus códigos pensados
+(DS0G/AG08); (2) un rojo puede ser un HALLAZGO: en el Orden A de la
+carrera, el cobro se lleva el meta consigo y el reembolso ya NI CALIFICA
+(`RefundUnavailable`, la primera compuerta) — mejor comportamiento que el
+que mi test esperaba; la expectativa se corrigió hacia el código, no al
+revés. **Estado de §178: EJECUTADO.** Canon: stark 297/0+10 · zk-ssl
+242/0+3 · guardianes 39 · 28. Queda de su cola solo prosa: las
+documentales 7/12/13 del triaje.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
