@@ -12241,6 +12241,42 @@ completará con las pasadas venideras (§131), contra el techo
 proyectado en §162 (~+52 s). La entrada 32 viste el paso §80.5 como
 EJECUTADO; le quedan B-2 y B-3 para su ✅ entero.
 
+## 164. B-2 ABIERTA — el mapa del cupo completo, la doctrina de migración, y seis mecánicos girados
+
+**El mapa del cupo, por función contenedora — con corrección**: la
+media-respuesta del traspaso («mint en ninguna») venía de greppear el
+término equivocado; el mapa real es PARIDAD PERFECTA —
+`consume_custodian_use` vive en las dos vías de las CUATRO
+operaciones que consumen: mint (apply_mint :125 / delegada :290),
+freeze (:132/:243), recovery (:163/:306), mint_to_pending
+(:786/:950) — y **governance no consume**: la rotación renueva el
+cupo, no lo gasta (`rotating_the_custodian_set_renews_the_quota`).
+Consecuencia doctrinal: **los quota-tests migran limpios** — la
+delegada gasta exactamente donde gastaba la vieja.
+
+**El censo fino de tests.rs, al registro**: 68 llamadas directas en
+47 tests — mint 27 (+1 comentario), set_frozen 17, update_custodians
+10, recover 9, mint_to_pending 5. Mecánicos por patrón generalizado
+(`let R = capa.mint(...).expect(); capa.apply_mint(&R,...)`):
+**nueve**, de los que **tres reusan el receipt** después
+(`replaying_a_mint_is_rejected`, `an_exhausted_custodian_set…`,
+`a_restart_does_not_renew…`) y quedan para su tanda semántica.
+Doctrina de la campaña, estilo §77: cada test **migra** (setup por la
+delegada), **se porta** (la conducta, por la vía nueva) o
+**muere-con-la-marca en B-3 con su porqué escrito** — nada se pierde
+en silencio.
+
+**B-2a ejecutada**: los seis mecánicos limpios giran a
+`fund_delegated` — `minting_exactly_to_the_cap_is_allowed`,
+`burning_frees_up_minting_capacity`,
+`each_custodian_intervention_consumes_quota`,
+`rotating_the_custodian_set_renews_the_quota`,
+`the_custodian_quota_survives_restart`,
+`changing_custodians_revokes_the_old_ones`. Los cuatro quota-tests
+pasan a CONTAR intervenciones de la vía real, con el mapa de arriba
+como garantía de que cuentan lo mismo. Coste esperado: ~+1,7 s de
+suite (6 × ~0,28 s, §162).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

@@ -304,10 +304,7 @@ use super::*;
         let mut layer = new_layer();
         let alice = layer.open_account(BaseElement::new(SK_ALICE));
 
-        let r = layer
-            .mint(&valid_auth(), alice, MAX_SUPPLY)
-            .expect("emitir hasta el tope exacto deberia valer");
-        layer.apply_mint(&r, alice).expect("aplicar");
+        fund_delegated(&mut layer, alice, MAX_SUPPLY);
         assert_eq!(layer.total_supply(), MAX_SUPPLY);
     }
 
@@ -321,10 +318,7 @@ use super::*;
         let mut layer = new_layer();
         let alice = layer.open_account(BaseElement::new(SK_ALICE));
 
-        let r = layer
-            .mint(&valid_auth(), alice, MAX_SUPPLY)
-            .expect("emision");
-        layer.apply_mint(&r, alice).expect("aplicar");
+        fund_delegated(&mut layer, alice, MAX_SUPPLY);
         assert!(layer.mint(&valid_auth(), alice, 1).is_err());
 
         let b = layer
@@ -1063,8 +1057,7 @@ use super::*;
         assert_eq!(layer.custodian_uses(), 0);
 
         let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
-        let m = layer.mint(&valid_auth(), alice, 100_000).expect("emitir");
-        layer.apply_mint(&m, alice).expect("aplicar");
+        fund_delegated(&mut layer, alice, 100_000);
         assert_eq!(layer.custodian_uses(), 1, "emitir consume una");
 
         let f = layer.set_frozen(&valid_auth(), alice, true).expect("congelar");
@@ -1124,8 +1117,7 @@ use super::*;
         let mut layer = new_layer_with_quota(1);
         let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
 
-        let m = layer.mint(&valid_auth(), alice, 1000).expect("emitir");
-        layer.apply_mint(&m, alice).expect("aplicar");
+        fund_delegated(&mut layer, alice, 1000);
         assert_eq!(layer.custodian_uses(), 1);
 
         let g = layer
@@ -1151,8 +1143,7 @@ use super::*;
             )
             .expect("abrir");
             let alice = layer.open_account_checked(BaseElement::new(SK_ALICE)).expect("abrir");
-            let m = layer.mint(&valid_auth(), alice, 100_000).expect("emitir");
-            layer.apply_mint(&m, alice).expect("aplicar");
+            fund_delegated(&mut layer, alice, 100_000);
             assert_eq!(layer.custodian_uses(), 1);
         }
         let layer = open_retry(
@@ -2151,8 +2142,7 @@ use super::*;
         let alice = layer.open_account(BaseElement::new(SK_ALICE));
 
         // Los custodios actuales pueden emitir.
-        let r = layer.mint(&valid_auth(), alice, 1000).expect("emision inicial");
-        layer.apply_mint(&r, alice).expect("aplicar");
+        fund_delegated(&mut layer, alice, 1000);
 
         // La gobernanza cambia el conjunto.
         let g = layer
