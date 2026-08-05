@@ -65,13 +65,15 @@ use super::*;
     fn minting_increases_supply_exactly() {
         let mut layer = new_layer();
         let alice = layer.open_account(BaseElement::new(SK_ALICE));
-        let receipt = layer
-            .mint(&valid_auth(), alice, 500_000)
-            .expect("emision");
-        println!("Tamano de la prueba de EMISION: {} bytes", receipt.proof.len());
+        let op = mint_commitment(&layer, alice, 500_000);
+        let subida = mint_climb_proof(&layer, alice, 500_000);
+        let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+        println!("Tamano de la subida de EMISION: {} bytes", subida.to_bytes().len());
 
-        assert_eq!(layer.total_supply(), 0, "mint no debe mutar el estado");
-        layer.apply_mint(&receipt, alice).expect("aplicar");
+        assert_eq!(layer.total_supply(), 0, "generar materiales no muta el estado");
+        layer
+            .apply_mint_delegated(subida, pa, ia, pb, ib, alice, 500_000)
+            .expect("aplicar");
         assert_eq!(layer.total_supply(), 500_000);
         assert_eq!(layer.balance_of(alice), Some(500_000));
     }
@@ -319,7 +321,13 @@ use super::*;
         let alice = layer.open_account(BaseElement::new(SK_ALICE));
 
         fund_delegated(&mut layer, alice, MAX_SUPPLY);
-        assert!(layer.mint(&valid_auth(), alice, 1).is_err());
+        let op = mint_commitment(&layer, alice, 1);
+        let subida = mint_climb_proof(&layer, alice, 1);
+        let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+        assert!(matches!(
+            layer.apply_mint_delegated(subida, pa, ia, pb, ib, alice, 1),
+            Err(LayerError::SupplyCapExceeded { .. })
+        ));
 
         let b = layer
             .burn(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 1_000_000)
@@ -327,8 +335,11 @@ use super::*;
         let estado_alice = state_of(&layer, alice);
         layer.apply_burn(&b, alice, &estado_alice).expect("aplicar");
 
-        // Ahora vuelve a haber margen.
-        let r2 = layer.mint(&valid_auth(), alice, 500_000);
+        // Ahora vuelve a haber margen — y se comprueba por la via real.
+        let op = mint_commitment(&layer, alice, 500_000);
+        let subida = mint_climb_proof(&layer, alice, 500_000);
+        let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+        let r2 = layer.apply_mint_delegated(subida, pa, ia, pb, ib, alice, 500_000);
         assert!(
             r2.is_ok(),
             "destruir deberia liberar capacidad de emision: {r2:?}"

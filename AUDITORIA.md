@@ -12314,6 +12314,38 @@ especie: `sled_open_retry` en tests_support (mismo rito, diez
 reintentos) y el único sitio censado —SIN head— portado. Rojo ajeno,
 gatillado en tiempo: exactamente para eso está la compuerta.
 
+## 166. B-2c — la familia mint, CERRADA: el hallazgo del tope, dos portes, dos relevos y el libro
+
+**El hallazgo que reclasifica**: la vía-recibo impone el tope EN LA
+GENERACIÓN (`mint()` mismo devuelve `SupplyCapExceeded`); la delegada
+lo impone EN EL APPLY por diseño — la generación es del cliente y no
+conoce el suministro. Los cuatro tests gen-time (:267 simple, :293
+acumulado, :322 lleno, :1231 tras reinicio) guardan un contrato de la
+vía-recibo que muere con ella: quedan hasta B-3, relevados hoy en su
+faceta-apply.
+
+**Lo ejecutado**: `minting_increases_supply_exactly` porta entero —
+materiales de cliente, la no-mutación del estado intacta («generar
+materiales no muta»), la subida medida en bytes—; `burning_frees…`
+completa su porte (el tope-lleno y el margen-recuperado, por la
+delegada). Dos relevos nacen en el bloque delegado:
+`the_delegated_cap_is_enforced_at_apply` (forma acumulada, que
+subsume la simple; el rechazo llega ANTES de verificar el par) y
+`materials_for_one_account_do_not_apply_to_another` (el compromiso
+ata el índice). Suite: 245 → 247.
+
+**El libro de la familia, con destino escrito**: viven-hasta-B-3 y
+mueren relevados — :55 autoridad-mala (relevos existentes:
+`governance_keys_cannot_mint`, `the_same_custodian_twice`); :267/
+:293/:1231-1240 tope-en-generación (relevo de hoy, faceta-apply);
+:679 replay (relevo §165); :730 recibo-a-cuenta-ajena (relevo de
+hoy); :1077 generar-no-consume (por construcción: la generación
+delegada es del cliente; queda guardando el contrato viejo); y el
+clúster de rotación :1592/:2154-2167/:2322, cuyo relevo —materiales y
+claves viejas contra raíz nueva, §54.2 en vivo— tiene casa natural en
+la familia governance (B-2e). **Cero llamadas de mint sin destino.**
+Siguiente: set_frozen (17).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

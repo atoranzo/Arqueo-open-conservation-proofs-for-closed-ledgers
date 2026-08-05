@@ -379,6 +379,64 @@ mod tests_delegada {
         assert_eq!(layer.records.get(&idx).unwrap().balance, AMOUNT, "y el saldo");
     }
 
+    /// **EL TOPE DELEGADO VIVE EN EL APPLY** — la generacion es del
+    /// cliente y no conoce el suministro; la capa lo impone al aplicar
+    /// (y el circuito lo re-declara para el auditor). Aqui la forma
+    /// ACUMULADA, que subsume a la simple. Releva en B-3 la faceta
+    /// apply de los cuatro tests gen-time de la via-recibo (§166).
+    #[test]
+    fn the_delegated_cap_is_enforced_at_apply() {
+        let (mut layer, idx) = capa();
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+
+        // Hasta casi el tope, por la delegada.
+        let casi = MAX_SUPPLY - 1000;
+        let op = compromiso(&layer, idx, casi);
+        let subida = prueba_subida(&layer, idx, casi);
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+        layer
+            .apply_mint_delegated(subida, pa, ia, pb, ib, idx, casi)
+            .expect("hasta casi el tope");
+
+        // Pequena por si sola; el acumulado la rechaza ANTES de verificar.
+        let op = compromiso(&layer, idx, 2000);
+        let subida = prueba_subida(&layer, idx, 2000);
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+        let r = layer.apply_mint_delegated(subida, pa, ia, pb, ib, idx, 2000);
+        assert!(
+            matches!(r, Err(LayerError::SupplyCapExceeded { .. })),
+            "CRITICO: el tope debe aplicarse al acumulado tambien en la delegada: {r:?}"
+        );
+        assert_eq!(layer.total_supply(), casi, "y nada se emitio de mas");
+    }
+
+    /// **LOS MATERIALES ATAN LA CUENTA.** El compromiso sella el indice
+    /// dentro del estado ANTES/DESPUES: aplicarlos a otra cuenta
+    /// recompone otro compromiso y el par queda huerfano. Releva en B-3
+    /// a `applying_a_receipt_to_the_wrong_account` (via-recibo, §166).
+    #[test]
+    fn materials_for_one_account_do_not_apply_to_another() {
+        let (mut layer, alice) = capa();
+        let bob = layer
+            .open_account_checked(BaseElement::new(SK_BOB))
+            .expect("abrir bob");
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+
+        let op = compromiso(&layer, alice, AMOUNT);
+        let subida = prueba_subida(&layer, alice, AMOUNT);
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+
+        let r = layer.apply_mint_delegated(subida, pa, ia, pb, ib, bob, AMOUNT);
+        assert!(r.is_err(), "CRITICO: materiales de Alice sobre Bob: {r:?}");
+        assert_eq!(layer.total_supply(), 0, "no se emitio nada");
+        assert_eq!(layer.records.get(&bob).unwrap().balance, 0, "Bob intacto");
+    }
+
     /// **REENVIAR una emision delegada NO emite dos veces.** El
     /// compromiso ata las raices del estado ANTES de aplicar: consumida
     /// la operacion, los mismos materiales quedan huerfanos del estado.
