@@ -51,6 +51,7 @@ Uso:
 import itertools
 import os
 import re
+import subprocess
 import sys
 
 RAIZ = os.path.join(os.path.dirname(__file__), "..", "crates", "stark-experiment", "src")
@@ -516,6 +517,75 @@ def grupo_de(indice, grupos):
         return "?"
     return f"{anterior[0]}+{indice - anterior[1]}"
 
+# ===== EL CENSO DE CELDAS-CLASE (FV-1; §188-§189) =====
+#
+# La Capa 1-2 (§188-§189) midio que censo y redes clasicas son
+# COMPLEMENTARIOS, en los dos sentidos: borrar C_SEG_LINK deja el censo en
+# delta 0 (Horner co-posee la col 37 en las clases de cierre) y son las
+# redes de ESTE barrido quienes lo ven (MUERTA + MUERTA PERIODICA, graves
+# desde §189); cambiar el SELECTOR de una restriccion (cont_s→first_s en
+# Horner) deja todas las ranuras escritas y todas las periodicas leidas
+# —redes ciegas— y es el censo quien grita: 5 celdas-clase sin dueño
+# (§189, medido). Complementarias por MEDICION, no por diseño: por eso el
+# censo entra aqui como compuerta y no como evidencia (doc §9, Capa 2).
+#
+# El interprete vive en doc/fv/ —donde §188 lo cita— y se ejecuta tal cual:
+# caza sus DOS mutantes en cada corrida («mutantes 2/2» en su COMPUERTA),
+# asi que el caso-mutacion viene sembrado de fabrica y aqui SE EXIGE.
+CENSO_RUTA = os.path.join(
+    os.path.dirname(__file__), "..", "doc", "fv", "interprete_multiciclo.py"
+)
+RE_COMPUERTA = re.compile(
+    r"^COMPUERTA: (\d+) clases \u00b7 (\d+) celdas-clase \u00b7 (\d+) libres "
+    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d)/2 \u00b7 "
+    r"C_SEG_LINK\u2192guardi\u00e1n$"
+)
+
+
+def censo_mint_climb():
+    """Corre el censo FV-1 sobre mint_climb; devuelve (linea_limpia, faltas).
+
+    Toda falta es GRAVE, incluida la ausencia del interprete: una compuerta
+    que se salta cuando su herramienta no esta es el falso verde de §59.2.
+    """
+    if not os.path.exists(CENSO_RUTA):
+        return None, [
+            "[CENSO] falta doc/fv/interprete_multiciclo.py: la compuerta "
+            "no puede correr, y eso es GRAVE, no un hueco (§59.2)"
+        ]
+    p = subprocess.run(
+        [sys.executable, CENSO_RUTA], capture_output=True, text=True
+    )
+    linea = next(
+        (l for l in reversed(p.stdout.splitlines())
+         if l.startswith("COMPUERTA:")),
+        None,
+    )
+    faltas = []
+    if p.returncode != 0:
+        faltas.append(f"[CENSO] el interprete salio con codigo {p.returncode}")
+    if linea is None:
+        faltas.append("[CENSO] sin linea COMPUERTA en la salida del interprete")
+    else:
+        m = RE_COMPUERTA.match(linea)
+        if m is None:
+            faltas.append(f"[CENSO] COMPUERTA con forma inesperada: {linea}")
+        else:
+            clases, celdas, libres, huerf, mut = m.groups()
+            if huerf != "0":
+                faltas.append(
+                    f"[CENSO] {huerf} celda(s)-clase SIN DUE\u00d1O en mint_climb"
+                )
+            if mut != "2":
+                faltas.append(f"[CENSO] el interprete cazo {mut}/2 mutantes")
+            if not faltas:
+                return (
+                    f"Censo mint_climb: {celdas} celdas-clase en {clases} "
+                    f"clases \u00b7 {libres} libres declaradas \u00b7 0 sin "
+                    f"due\u00f1o \u00b7 mutantes 2/2."
+                ), []
+    return None, faltas
+
 
 CASO_50 = """
 const C_A: usize = 0;
@@ -575,6 +645,27 @@ fn evaluate_transition(&self) {
 """
 
 
+CASO_188 = """
+const C_A: usize = 0;
+const C_B: usize = 1;
+const NUM_CONSTRAINTS: usize = 2;
+const P_UNO: usize = 0;
+const P_LINK: usize = 1;
+
+fn get_periodic_column_values(&self) -> Vec<Vec<Self::BaseField>> {
+    let mut columns = Vec::new();
+    columns.push(uno);
+    columns.push(link);
+    columns
+}
+
+fn evaluate_transition(&self) {
+    let a = periodic[P_UNO];
+    result[C_A] = a;
+}
+"""
+
+
 def autotest():
     """Comprueba que el detector caza el fallo real de §50.
 
@@ -623,20 +714,50 @@ def autotest():
         print(f"AUTOTEST FALLA: esperaba desborde en 2, hallo {r['p_desbordes']}")
         return 1
     print("autotest: el detector caza la periodica muerta y el desborde de §66.2")
+
+    # ===== Y que la firma del candidato ciego de §188 TUMBA (§189) =====
+    #
+    # `CASO_188` reproduce lo que deja borrar `C_SEG_LINK` en mint_climb:
+    # una ranura declarada que nadie escribe y una periodica construida
+    # que nadie lee. Con la politica vieja ambas eran huecos y el exit
+    # era 0: el candidato salia limpio. Este caso pide el barrido ENTERO
+    # (no `analizar`) para que una regresion de la politica no pueda
+    # pasar en silencio.
+    import io
+    from contextlib import redirect_stdout
+
+    d = tempfile.mkdtemp()
+    ruta = os.path.join(d, "caso_188.rs")
+    with open(ruta, "w") as f:
+        f.write(CASO_188)
+    try:
+        with redirect_stdout(io.StringIO()):
+            rc = barrer(d, verbose=False, con_censo=False)
+    finally:
+        os.unlink(ruta)
+        os.rmdir(d)
+    if rc != 1:
+        print(f"AUTOTEST FALLA: la firma del candidato ciego salio "
+              f"con {rc}, no con 1")
+        return 1
+    print("autotest: la firma del candidato ciego de §188 es GRAVE "
+          "y tumba el exit")
     return 0
 
 
-def main():
-    if "--autotest" in sys.argv:
-        return autotest()
-    verbose = "--verbose" in sys.argv
+def barrer(raiz, verbose, con_censo):
+    """Recorre `raiz`; devuelve 1 si hay GRAVES, 0 si no.
+
+    `con_censo=False` existe para el autotest: permite barrer un
+    directorio sembrado sin arrastrar el censo del arbol real.
+    """
     graves = huecos = barridos = 0
 
     no_barridos = []
-    for fichero in sorted(os.listdir(RAIZ)):
+    for fichero in sorted(os.listdir(raiz)):
         if not fichero.endswith(".rs"):
             continue
-        ruta = os.path.join(RAIZ, fichero)
+        ruta = os.path.join(raiz, fichero)
         r = analizar(ruta)
         if r is None:
             # ⚠️ Un circuito que escribe restricciones pero no usa constantes
@@ -662,12 +783,16 @@ def main():
             graves += 1
 
         if r["muertas"]:
+            # §189 — POLITICA: hallazgo POSITIVO medido = GRAVE;
+            # incapacidad del barrido = hueco. Era hueco, y el
+            # candidato ciego de §188 (borrar C_SEG_LINK) salia con
+            # exit 0 apoyandose exactamente en eso.
             gm = sorted({grupo_de(i, r["grupos"]).split("+")[0] for i in r["muertas"]})
             lineas.append(
                 f"    [MUERTA] {len(r['muertas'])} ranura(s) sin escribir "
                 f"(grupos: {', '.join(gm)})"
             )
-            huecos += 1
+            graves += 1
 
         for linea, txt in r["indeterminadas"]:
             lineas.append(f"    [?] linea {linea}: no se pudo expandir  {txt}")
@@ -682,11 +807,12 @@ def main():
             graves += 1
 
         if r["p_muertas"]:
+            # §189 — la otra red que ve al candidato ciego: misma politica.
             lineas.append(
                 f"    [MUERTA PERIODICA] {len(r['p_muertas'])} columna(s) que "
                 f"se construyen y NADIE lee: {r['p_muertas']}"
             )
-            huecos += 1
+            graves += 1
 
         for linea, txt in r["p_indeterminadas"]:
             lineas.append(
@@ -712,6 +838,16 @@ def main():
         elif verbose:
             print(f"\n  {fichero}: {r['total']} ranuras, cada una escrita una vez")
 
+    linea_censo = None
+    if con_censo:
+        # ===== EL CENSO (FV-1, §189): ve la celda que estas redes no ven =====
+        linea_censo, faltas_censo = censo_mint_climb()
+        if faltas_censo:
+            print("\n  circuit_mint_climb.rs (censo FV-1)")
+            for falta in faltas_censo:
+                print(f"    {falta}")
+            graves += len(faltas_censo)
+
     print()
     if graves:
         print(
@@ -725,10 +861,11 @@ def main():
             "aprobados: son huecos del propio barrido, y hay que mirarlos a mano."
         )
     if not graves and not huecos:
+        censo_txt = f" {linea_censo}" if linea_censo else ""
         print(
             f"{barridos} circuitos: ninguna ranura colisiona, desborda ni queda "
             "muerta, y ninguna columna periodica se lee fuera de rango ni se "
-            "construye sin leerse."
+            "construye sin leerse." + censo_txt
         )
     if no_barridos:
         print()
@@ -745,6 +882,12 @@ def main():
             "constantes que delate el desajuste."
         )
     return 1 if graves else 0
+
+
+def main():
+    if "--autotest" in sys.argv:
+        return autotest()
+    return barrer(RAIZ, "--verbose" in sys.argv, con_censo=True)
 
 
 if __name__ == "__main__":

@@ -13118,6 +13118,49 @@ Queda de la 71: Capa 2, el injerto (con este hallazgo en la mano: el censo
 entra como compuerta que TUMBA, y la política huecos/graves de las MUERTAS
 se mira ahí). Detrás, intacto, el §9.
 
+## 189. Capa 2 EJECUTADA — el censo es compuerta del guardián y las MUERTAS son graves
+
+El injerto que doc §9 pedía, hecho y medido. `tools/check_constraint_layout.py`
+queda en 894 líneas: `main()` se parte en `barrer(raiz, verbose, con_censo)` y
+`censo_mint_climb()` ejecuta `doc/fv/interprete_multiciclo.py` como subprocess
+y EXIGE su COMPUERTA sana — exit 0, «0 sin dueño», «mutantes 2/2» (el
+caso-mutación viene sembrado de fábrica: el intérprete caza sus dos mutantes
+en cada corrida, y esta compuerta lo exige). Toda falta del censo es GRAVE,
+incluida la ausencia del intérprete: una compuerta que se salta cuando su
+herramienta no está es el falso verde de §59.2. La línea limpia conserva el
+prefijo del rito y gana el censo: «28 circuitos: … sin leerse. Censo
+mint_climb: 588 celdas-clase en 14 clases · 140 libres declaradas · 0 sin
+dueño · mutantes 2/2.»
+
+**La política que §188 dejó a mirar, decidida por la doctrina del propio
+guardián** (condenar lo que no se entiende es tan malo como aprobarlo,
+§42.5/§59.2): hallazgo POSITIVO medido = GRAVE; incapacidad del barrido =
+hueco. [MUERTA] y [MUERTA PERIODICA] suben a graves — eran los huecos con
+exit 0 en los que el candidato ciego se apoyaba —; toda la familia [?] sigue
+siendo hueco. `CASO_188` queda sembrado en el autotest y pide el barrido
+ENTERO, no `analizar`: una regresión de la política no puede pasar en
+silencio. Autotest 3/3.
+
+**Las tres cazas, medidas sobre copias del árbol** — la complementariedad es
+bidireccional y MEDIDA, no supuesta: borrar `C_SEG_LINK` (el candidato ciego
+de §188) deja el censo en delta 0 y son las redes quienes lo ven ([MUERTA] 5
+ranuras + [MUERTA PERIODICA] [31..35], GRAVES; exit 0→1 — el candidato ya no
+sale); cambiar el SELECTOR (`cont_s`→`first_s` en Horner) deja todas las
+ranuras escritas y todas las periódicas leídas — redes CIEGAS — y el censo
+grita 5 celdas-clase sin dueño (exit 1 — la compuerta ve lo que las redes no
+ven); borrar `C_HORNER` dispara las dos con granos distintos (1 ranura muerta
+contra 7 celdas-clase huérfanas). Regalo del diseño: la sonda interna del
+intérprete reporta sola quién caza al candidato en cada baseline
+(`C_SEG_LINK→guardián` en sano, `→censo` cuando Horner falta).
+
+**Alcance honesto**: el censo cubre `circuit_mint_climb`, el único con
+intérprete multi-ciclo; `circuit_frozen_climb` tiene el suyo (§186) en
+doc/fv/ como evidencia; los hermanos de CUENTAS (`credit_climb`,
+`recovery_climb`, `mint`, `send`, `claim`) siguen bajo las redes clásicas y
+SIN censo — no hay falso verde: la línea limpia nombra su alcance. La 71
+sigue ABIERTA en el BACKLOG con la extensión circuito a circuito como resto;
+doc §9 y su gemelo `mapa_fv_capas.md` quedan marcados (Capas 1-2 EJECUTADAS).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

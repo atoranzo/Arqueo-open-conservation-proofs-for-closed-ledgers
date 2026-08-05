@@ -215,6 +215,8 @@ leer — trabajo de concepto, no de volumen.
 
 ### Capa 1 — el intérprete MULTI-CICLO (el trabajo de concepto que queda)
 
+*(EJECUTADA en §188: doc/fv/interprete_multiciclo.py.)*
+
 El intérprete de §185/§186 deriva la clase de fila de un `hash_flag` de
 **ciclo corto**: `[1×NUM_ROUNDS, 0]` sobre `CYCLE_LENGTH=8`, que se repite.
 Los circuitos de CUENTAS (familia `circuit_mint_climb`, `credit_climb`,
@@ -266,6 +268,8 @@ de extenderlo (la trampa del alias, §186, ya está resuelta ahí y no debe
 reintroducirse).
 
 ### Capa 2 — el injerto en el guardián (convierte demostración en protección)
+
+*(EJECUTADA en §189: el censo es compuerta de tools/check_constraint_layout.py y las MUERTAS son GRAVES.)*
 
 Hoy los tres intérpretes viven en `doc/fv/` como EVIDENCIA; ninguno es
 compuerta. Injertar el intérprete generalizado en

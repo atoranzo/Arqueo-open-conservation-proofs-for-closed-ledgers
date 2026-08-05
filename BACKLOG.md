@@ -1844,6 +1844,16 @@ pendientes, sino en saber con precision que es y que no es.
   casi se disfraza de sub-restringimiento — un verificador que grita sobre
   código sano se autodestruye (§42.5/§137). Resuelto. Queda: selectores
   multi-ciclo (circuitos de cuentas) + injerto en el guardián.
+  ✅✅ **CAPAS 1-2 DEL MAPA EJECUTADAS (§188-§189, 05-08-2026)**:
+  `doc/fv/interprete_multiciclo.py` censa `circuit_mint_climb` (14 clases ·
+  588 celdas-clase · 140 libres declaradas · 0 sin dueño · mutantes 2/2) y
+  desde §189 es COMPUERTA del guardián (subprocess + política: MUERTA y
+  MUERTA PERIODICA suben a graves; `CASO_188` sembrado en el autotest).
+  Complementariedad MEDIDA en ambos sentidos: `C_SEG_LINK` borrado = censo
+  ciego, redes graves; selector cambiado = redes ciegas, censo 5 sin dueño.
+  La entrada SIGUE ABIERTA: queda extender censo+compuerta circuito a
+  circuito (CUENTAS primero: `credit_climb`, `recovery_climb`, `mint`,
+  `send`, `claim`), sin falso verde — la línea limpia nombra su alcance.
 
 - [ ] **72. FV-2: spike SMT sobre `circuit_refund` (tras la 71).**
   Exportador en `tools/` del sistema (20 restricciones + 12 aserciones,
