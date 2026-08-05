@@ -72,6 +72,8 @@ no los sustituye. La salida lo dirá cada vez que corra.
 
 ## 2. FV-2 — Spike SMT, acotado y con permiso para fracasar
 
+*(EJECUTADA en §190: q2 unsat · q1 intratable por memoria, CON ACTA.)*
+
 **Alcance**: UN circuito, el más pequeño (`circuit_refund`: 20
 restricciones, 12 aserciones, traza 16×12). Un exportador en `tools/` que
 emite el sistema (transiciones con selectores evaluados por fila +
@@ -282,6 +284,8 @@ hecha —injertar un intérprete que sólo cubre dos topologías dejaría los 26
 circuitos restantes en falso verde, el pecado de §59.2—.
 
 ### Capa 3 — FV-2 y FV-3 (intactas, detrás del injerto)
+
+*(FV-2 EJECUTADA en §190, con acta; FV-3 sigue siendo horizonte.)*
 
 **FV-2** (entrada 72): el spike SMT sobre `circuit_refund`, guion completo
 en §2 de este doc; «intratable con acta» es entregable válido. Se hace tras

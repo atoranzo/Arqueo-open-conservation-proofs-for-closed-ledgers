@@ -13161,6 +13161,54 @@ SIN censo — no hay falso verde: la línea limpia nombra su alcance. La 71
 sigue ABIERTA en el BACKLOG con la extensión circuito a circuito como resto;
 doc §9 y su gemelo `mapa_fv_capas.md` quedan marcados (Capas 1-2 EJECUTADAS).
 
+## 190. FV-2 EJECUTADA CON ACTA — q2 unsat · q1 intratable por MEMORIA · el coste, comprado
+
+El spike de doc §2, corrido entero y cerrado en sus propios términos. Dos
+entregables en el árbol: `doc/fv/fv2_exporta_smt.py` (exportador SMT2 del
+sistema de `circuit_refund`: 20 restricciones con selectores evaluados por
+fila + 12 aserciones, traza 16×12; autotest interno que construye la traza
+honesta con la semántica de `build_trace` y exige 0 en las 176 restricciones
+activas; 9 anclas verbatim count==1 sobre el circuito; COMPUERTA-FV2 estable
+en tres corridas con constantes reales: q1 385 asserts · q1m 383 · q2 97) y
+`examples/volcado_rescue.rs` (las constantes MDS/INV_MDS/ARK1/ARK2 las canta
+winterfell a JSON — verificadas MDS·INV_MDS=I antes de usarse). La
+interpretación de q2 quedó DECLARADA (rito §4): cada ciclo de 7 rondas
+abstraído como permutación no interpretada R compartida; y su cicatriz,
+cazada en ensayo: la diferencia v1 barría las filas intermedias, sueltas a
+propósito en la abstracción — SAT trivial sin significado; v2 acota a la
+cadena {7, 8, 15}.
+
+**Lo verde, medido**: `q2_cadena_uf → unsat` en 18/43/46 ms (tres corridas,
+cvc5 1.3.2 pip — la igualdad sobre el sort FF no necesita CoCoA): la
+fontanería (C_CAP + C_CARRY + aserciones) determina sola el estado de la
+cadena, sin apoyarse en el álgebra de Rescue. La sintaxis SMT2 emitida
+parseó entera al primer intento (el error de la sonda fue de capacidad, no
+de forma).
+
+**El muro, medido**: `q1_determinacion` y `q1_mut_carry` (el sistema séptico
+completo, 336 ecuaciones de grado 7 sobre 384+5 símbolos) agotan la jaula de
+6 GB en ~21 s y abortan — SIGABRT con «double free or corruption»: CoCoA no
+muere elegante al fallar la reserva — IDÉNTICO en los dos modos del motor
+(`gb` 20,9/21,6 s · `split` 21,0/22,0 s). Sin jaula, el segador de WSL los
+mata por SIGTERM antes. No es timeout: es memoria, y llega en segundos. El
+mutante corre la misma suerte, luego la caza SMT no se consumó: el
+exportador SE QUEDA en doc/fv/ como evidencia (§42.5) — su autotest de traza
+honesta y sus anclas vigilan la fidelidad de la traducción, no la solidez.
+**Escalar a `circuit_send` (51 columnas): CERRADO con datos** — si 16×12
+revienta 6 GB en 21 s, no hay pregunta que abrir.
+
+**El coste, comprado, con sus cicatrices** (todas al traspaso): el cvc5 de
+pip viene sin CoCoA («not configured with --cocoa» — GPL no viaja en
+binarios); el build desde fuente exige `--gpl` explícito y `--prefix=` con
+igual; el modo se llama `split`, no split-gb; DOS falsos del propio andamio
+por `pipefail` (un `grep -q` que corta el pipe y un `VAR=$(cmd|tail)` que
+muere antes del diagnóstico) parieron el rito «el diagnóstico debe
+sobrevivir al fallo que diagnostica»; y un `exit` en shell interactivo que
+mató una terminal parió el del cat-heredoc + `bash fichero`. Build medido:
+cvc5 1.3.2 (git 86cecd8) + CoCoA 0.99800 + CaDiCaL 2.1.3 + Poly 0.2.0. La
+72 queda CERRADA CON ACTA en el BACKLOG; doc §2 y la Capa 3 del mapa,
+marcadas.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

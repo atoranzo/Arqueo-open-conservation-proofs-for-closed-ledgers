@@ -1855,7 +1855,7 @@ pendientes, sino en saber con precision que es y que no es.
   circuito (CUENTAS primero: `credit_climb`, `recovery_climb`, `mint`,
   `send`, `claim`), sin falso verde — la línea limpia nombra su alcance.
 
-- [ ] **72. FV-2: spike SMT sobre `circuit_refund` (tras la 71).**
+- [x] **72. FV-2: spike SMT sobre `circuit_refund` (tras la 71).**
   Exportador en `tools/` del sistema (20 restricciones + 12 aserciones,
   selectores evaluados por fila) a SMT2 cuerpo-finito (cvc5 `--ff`, primo
   Goldilocks). Preguntas: determinación fijados los publics; consistencia
@@ -1865,3 +1865,8 @@ pendientes, sino en saber con precision que es y que no es.
   conocimiento del coste, no promete un verde. Si trata, la pregunta de
   escalar a `circuit_send` (51 columnas) se abre con datos; si no, se
   cierra con acta. Diseño: `doc/VERIFICACION_FORMAL.md` §2.
+  ✅✅ **CERRADA CON ACTA (§190, 05-08-2026)**: q2 (cadena, abstracción-R)
+  → unsat en 18-46 ms; q1/q1m (sistema séptico entero) → intratables por
+  MEMORIA (6 GB en ~21 s, SIGABRT, modos gb y split idénticos); escalar a
+  `circuit_send` cerrado con datos. Exportador en `doc/fv/` (mutante SMT
+  sin consumar, §42.5); constantes por `examples/volcado_rescue.rs`.

@@ -77,6 +77,8 @@ circuitos restantes en falso verde, el pecado de §59.2—.
 
 ### Capa 3 — FV-2 y FV-3 (intactas, detrás del injerto)
 
+*(FV-2 EJECUTADA en §190, con acta; FV-3 sigue siendo horizonte.)*
+
 **FV-2** (entrada 72): el spike SMT sobre `circuit_refund`, guion completo
 en §2 de este doc; «intratable con acta» es entregable válido. Se hace tras
 el injerto, no antes: el censo de celdas es la línea barata que corre
