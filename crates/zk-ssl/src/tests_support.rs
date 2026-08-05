@@ -14,6 +14,9 @@
 #![allow(deprecated)]
 
 use super::*;
+use stark_experiment::circuit_mint_climb as climb;
+use stark_experiment::circuit_threshold::CUSTODIAN_DOMAIN;
+use stark_experiment::circuit_threshold_single_nullifier as auth;
 
 pub const SK_ALICE: u64 = 0xA11CE;
 pub const SK_BOB: u64 = 0xB0B;
@@ -285,4 +288,159 @@ pub fn open_retry(
         }
     }
     unreachable!()
+}
+
+// ============================================================================
+// La palanca (B-0, §160): la vía delegada como ayudante común.
+//
+// El molde vivía DUPLICADO en el bloque de tests de cada módulo (mint,
+// freeze, governance, recovery, two_phase); aquí se asienta UNA vez, con
+// los topes leídos DE LA CAPA — no de constantes locales — para servir a
+// cualquier suite. §51 preside: el orden estricto se EJERCITA, no se
+// esquiva. B-0a: las variantes delegadas CONVIVEN con las viejas; el flip
+// de entrañas es B-0b, con su medición al lado.
+// ============================================================================
+
+/// El par de autorizaciones de umbral para `op`: custodios `a` y `b`,
+/// distintos y en orden estricto.
+pub fn delegated_pair(
+    op: Digest,
+    a: usize,
+    b: usize,
+) -> (
+    winterfell::Proof,
+    auth::NullifierThresholdPublicInputs,
+    winterfell::Proof,
+    auth::NullifierThresholdPublicInputs,
+) {
+    assert!(a < b, "§51: index_a < index_b, estricto");
+    let ck = custodian_keys();
+    let (_, cp) = stark_experiment::circuit_threshold::build_custodian_set(&ck);
+    let d = BaseElement::new(CUSTODIAN_DOMAIN);
+    let prover = auth::NullifierThresholdProver::new(proof_options());
+    let ta = auth::build_trace(d, ck[a], &cp[a], op);
+    let ia = prover.get_pub_inputs(&ta);
+    let pa = prover.prove(ta).expect("autorizacion A");
+    let tb = auth::build_trace(d, ck[b], &cp[b], op);
+    let ib = prover.get_pub_inputs(&tb);
+    let pb = prover.prove(tb).expect("autorizacion B");
+    (pa, ia, pb, ib)
+}
+
+/// El compromiso de emisión delegada: estado ANTES y DESPUÉS de abonar
+/// `amount` en `idx`, sellado con `OP_MINT`. Calcado del molde de mint.
+pub fn mint_commitment(layer: &SovereignLayer, idx: AccountIndex, amount: u64) -> Digest {
+    let rec = layer.records.get(&idx).expect("cuenta").clone();
+    let mut t = layer.accounts.clone();
+    t.set_leaf(
+        idx,
+        native_leaf_salted(
+            rec.public_id,
+            BaseElement::new(rec.balance + amount),
+            rec.nonce,
+            rec.leaf_salt,
+        ),
+    );
+    let mut v: Vec<BaseElement> = layer.accounts.root().to_vec();
+    v.extend_from_slice(&t.root());
+    v.push(BaseElement::new(amount));
+    v.push(BaseElement::new(layer.total_supply()));
+    v.push(BaseElement::new(layer.total_supply() + amount));
+    v.push(BaseElement::new(layer.max_supply()));
+    auth::commit_operation(auth::OP_MINT, &v)
+}
+
+/// La subida de mint para `idx`/`amount`, con los topes de la capa.
+pub fn mint_climb_proof(
+    layer: &SovereignLayer,
+    idx: AccountIndex,
+    amount: u64,
+) -> winterfell::Proof {
+    let rec = layer.records.get(&idx).expect("cuenta").clone();
+    let path = layer.accounts.path_for(idx);
+    let trace = climb::build_trace(
+        rec.public_id,
+        rec.balance,
+        rec.nonce,
+        rec.leaf_salt,
+        &path,
+        amount,
+        layer.total_supply(),
+        amount,
+        layer.max_supply(),
+    );
+    climb::MintClimbProver::new(proof_options())
+        .prove(trace)
+        .expect("subida")
+}
+
+/// Emite `amount` en `idx` por la VÍA DELEGADA: custodios 1 y 3
+/// autorizan sin que sus claves toquen el operador.
+pub fn fund_delegated(layer: &mut SovereignLayer, idx: AccountIndex, amount: u64) {
+    let op = mint_commitment(layer, idx, amount);
+    let subida = mint_climb_proof(layer, idx, amount);
+    let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+    layer
+        .apply_mint_delegated(subida, pa, ia, pb, ib, idx, amount)
+        .expect("la emision delegada legitima debe aplicarse");
+}
+
+/// [`open_and_fund`], por la vía delegada. Misma firma y mismo abridor
+/// estrecho: B migra la custodia, no la apertura (§160, §90).
+pub fn open_and_fund_delegated(layer: &mut SovereignLayer, sk: u64, amount: u64) -> AccountIndex {
+    let idx = layer.open_account(BaseElement::new(sk));
+    if amount > 0 {
+        fund_delegated(layer, idx, amount);
+    }
+    idx
+}
+
+/// [`open_and_fund_wide`], por la vía delegada.
+pub fn open_and_fund_wide_delegated(
+    layer: &mut SovereignLayer,
+    sk: Digest,
+    amount: u64,
+) -> AccountIndex {
+    let idx = layer.open_account_wide(sk);
+    if amount > 0 {
+        fund_delegated(layer, idx, amount);
+    }
+    idx
+}
+
+#[cfg(test)]
+mod la_palanca {
+    use super::*;
+
+    /// La delegada fondea IGUAL que la vieja: misma identidad, mismo
+    /// saldo, mismo nonce, mismo suministro y misma colocación. Si esto
+    /// rompe, las dos vías divergen — hallazgo, no accidente.
+    #[test]
+    fn open_and_fund_delegated_matches_the_old_road() {
+        let mut vieja = new_layer();
+        let mut nueva = new_layer();
+        let a = open_and_fund(&mut vieja, SK_ALICE, 250_000);
+        let b = open_and_fund_delegated(&mut nueva, SK_ALICE, 250_000);
+        assert_eq!(a, b, "misma colocacion pid-mod");
+        let (sv, sn) = (state_of(&vieja, a), state_of(&nueva, b));
+        assert_eq!(sv.public_id, sn.public_id, "misma identidad");
+        assert_eq!(sv.balance, sn.balance, "mismo saldo");
+        assert_eq!(sv.nonce, sn.nonce, "mismo nonce");
+        assert_eq!(vieja.total_supply(), nueva.total_supply(), "mismo suministro");
+    }
+
+    /// La anchura ancha, por la misma puerta.
+    #[test]
+    fn the_wide_road_also_matches() {
+        let mut vieja = new_layer();
+        let mut nueva = new_layer();
+        let a = open_and_fund_wide(&mut vieja, wide_key(SK_BOB), 77_000);
+        let b = open_and_fund_wide_delegated(&mut nueva, wide_key(SK_BOB), 77_000);
+        assert_eq!(a, b, "misma colocacion");
+        let (sv, sn) = (state_of(&vieja, a), state_of(&nueva, b));
+        assert_eq!(sv.public_id, sn.public_id, "misma identidad");
+        assert_eq!(sv.balance, sn.balance, "mismo saldo");
+        assert_eq!(sv.nonce, sn.nonce, "mismo nonce");
+        assert_eq!(vieja.total_supply(), nueva.total_supply(), "mismo suministro");
+    }
 }
