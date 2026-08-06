@@ -13272,6 +13272,38 @@ las columnas desde COL_ID_NEW hasta TRACE_WIDTH, y la cabecera decía «fila
 del .rs la acompaña. Cero contradicciones también dentro del circuito.
 Quedan de la 71: `mint`, `send`, `claim`.
 
+## 193. La entrada 73 nace y se ejecuta: el núcleo de la estirpe — una doctrina, N especificaciones
+
+La evaluación que el traspaso ordenó llegó con su dato decisivo: el cuarto
+sujeto de la 71 (`circuit_mint`, la familia de PAGOS) mide **10/12 anclas**
+— y las dos mudas son de LÓGICA, no de forma: el hash cierra en
+`ROW_CUST_ROOT` (dos ascensos: cuentas y custodios), y trae tres familias
+de máscara nuevas (`cust_link`, `sel_acct_root`, `sel_cust_root`) más
+`P_POW2` y dos bits. El rito veta derivar sobre lógica compartida; la
+respuesta es compartirla de verdad: **`doc/fv/censo_nucleo.py`** (397
+líneas) — regexes, resolver, clasificación por firma, cosecha conservadora
+(§186), censos de transición y aserciones, gramática de CELDAS_LIBRES,
+mutantes y candidato, TODO una sola vez — parametrizado por ESPEC
+(fichero, anclas, esperados, máscaras, sanidad, P2SEL, rótulo, mutantes,
+col de cierre). Los tres intérpretes quedan FINOS: 62/49/49 líneas de pura
+especificación (antes 3×425).
+
+**La compuerta reina: paridad byte a byte.** Los tres stdouts completos —
+clases, censos, MUTANTES incluidos — capturados como patrón oro ANTES de
+tocar nada, y los finos los reproducen BYTE-IDÉNTICOS (diff vacío ×3,
+exits 0). El guardián (933, intacto) corre sus tres censos por el camino
+nuevo sin enterarse; autotest 3/3; una caza end-to-end de propina
+(selector cambiado en credit → censo 4 sin dueño, exit 1). Y una cicatriz
+del andamio para el traspaso: el primer generador reventó en un `%s` que
+tropezó con el `r % CYCLE_LENGTH` del propio texto del ancla — y el falso
+verde resultante (oro contra oro, ficheros sin escribir) lo delató el
+stderr y las líneas de escritura AUSENTES: **la paridad se declara tras
+ver la pluma escribir, no solo el diff en verde**.
+
+La 71 sigue: `mint` (pagos) será la SÉPTIMA pieza, la primera nacida
+directamente como ESPEC sobre el núcleo — con sus familias propias
+declaradas, no derivadas.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

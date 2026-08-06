@@ -1876,3 +1876,9 @@ pendientes, sino en saber con precision que es y que no es.
   MEMORIA (6 GB en ~21 s, SIGABRT, modos gb y split idénticos); escalar a
   `circuit_send` cerrado con datos. Exportador en `doc/fv/` (mutante SMT
   sin consumar, §42.5); constantes por `examples/volcado_rescue.rs`.
+- [x] **73. Refactor paramétrico de la estirpe FV-1 (núcleo + ESPECs).**
+  Nació con datos: tres hermanos derivados por cortes y un cuarto sujeto
+  (pagos) cuyo drift es de lógica (familias nuevas), no de forma.
+  ✅✅ **EJECUTADA (§193, 06-08-2026)**: `censo_nucleo.py` (397) + tres
+  intérpretes finos (62/49/49) con PARIDAD BYTE A BYTE contra los stdouts
+  patrón-oro (mutantes incluidos); guardián intacto (933), autotest 3/3.
