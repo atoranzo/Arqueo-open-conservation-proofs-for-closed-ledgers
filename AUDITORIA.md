@@ -13551,6 +13551,46 @@ implementacion posible. Las deudas declaradas de la nota (aviso fuera
 de banda §21, nodo unico, --dev) siguen declaradas donde estaban: el
 cierre no las esconde, las deja escritas con su cauce. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 200. Doscientos: el escaparate se pone al nivel del arbol
+
+Hito de numero redondo con causa concreta: el README —lo primero que ve
+un visitante— llevaba las cifras del 31-07 (272/201 tests, 27 circuitos)
+y NO contaba nada de §197–§199: ni la spec, ni el OpenRPC generado, ni
+los vectores de conformidad, ni el nodo, ni el SDK, ni el keystore. El
+arbol habia cambiado de categoria y el escaparate no.
+
+La operacion fue CIRUGIA ANCLADA, no demolicion: cinco transformaciones
+con ancla verbatim (count==1) y PRE/POST por sha, conservando byte a
+byte todo el rigor que hacia bueno al documento —el aviso del operador
+como intermediario, la curva del ataque de diccionario muerta CON su
+historia, las reservas de medicion (§131), la tabla historica de
+revisiones que «no se actualiza: se marca»—. Lo que era acta y no
+escaparate (las tablas del 31-07 con su cronica de correcciones) se
+PODO remitiendo a su casa: AUDITORIA §20, §76–§77. Nada se borro del
+proyecto; se reordeno quien cuenta que.
+
+Lo nuevo, en tres secciones pensadas para el visitante: **«Pruebalo en
+cinco minutos»** —cuatro comandos, cuatro propiedades: simulate (pago
+completo con pruebas reales), nodo+e2e (la clave no viaja, en vivo),
+conformance --check (el contrato de la segunda implementacion) y el
+keystore—; **«De implementacion a protocolo (§197–§199)»** —la tabla de
+piezas: spec normativa, openrpc GENERADO fuente-unica, vectores-
+compuerta, proceso RFC, los cuatro crates—; y **«Formalizacion en
+marcha»** —ESPECs ejecutables del pago con sus compuertas, el guardian
+con seis censos, y el techo §§69 declarado, no escondido. Ademas:
+cifras vigentes con fecha (297/242, 0 fallos, ignorados con motivo; 28
+circuitos), los comandos de reproduccion al dia, y dos filas nuevas en
+el orden de lectura (implementadores → spec; formalizacion →
+VERIFICACION_FORMAL). Cada enlace verificado contra el arbol ANTES de
+escribirse.
+
+Balance a los doscientos, en una linea por capa: 28 circuitos con
+guardian y nucleo de pagos formalizado en ESPEC ejecutable; una capa
+con sus garantias enumeradas y sus limites cuantificados; y desde este
+ciclo, un PROTOCOLO con contrato publico y segunda implementacion
+posible. Trece sellos verificables, dos notas del backlog abiertas y
+cerradas (71 y 74), y el trio FV identico sello a sello desde §196. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

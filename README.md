@@ -37,6 +37,76 @@ Ver `AUDITORIA.md` §29 y §30.
 
 ---
 
+## Pruébalo en cinco minutos
+
+Rust estable, `--release` obligatorio (ver más abajo por qué). Cuatro
+comandos, cuatro propiedades:
+
+```bash
+# 1 · Un pago completo (fondear ×2 → enviar → cobrar) con pruebas STARK
+#     reales y traza por fases — saldos finales 750000/1250000, cadena
+#     de transiciones íntegra:
+cargo run --release -p zk-ssl-cli -- simulate --amount 250000
+
+# 2 · El nodo de referencia vivo + el SDK con claves ALEATORIAS — el
+#     pago viaja por JSON-RPC y la clave de gasto NO (se prueba en local):
+cargo run --release -p zk-ssl-node -- --dev &
+cargo run --release -p zk-ssl-sdk --example e2e
+kill %1
+
+# 3 · ¿Vas a escribir una SEGUNDA implementación? Este es tu contrato:
+#     re-ejecuta el escenario canónico y compara campo a campo:
+cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.1.json
+
+# 4 · El wallet en reposo, cifrado con la MISMA construcción que el
+#     ledger y dominio propio (guardar → cargar → que lo malo FALLE):
+cargo run --release -p zk-ssl-sdk --example keystore
+```
+
+Las tres líneas que deben salir: `cadena de transiciones íntegra`,
+`E2E OK: … la clave de gasto no viajo`, `CONFORMIDAD: … todo IDENTICO`.
+
+---
+
+## De implementación a protocolo (§197–§199)
+
+Desde agosto de 2026 esto no es solo una capa: es un **protocolo con
+contrato público**, pensado para que exista una segunda implementación
+sin leer el código del nodo.
+
+| Pieza | Qué fija |
+|---|---|
+| [`spec/RPC.md`](./spec/RPC.md) | La especificación normativa (`zkssl/0.1`): 17 métodos JSON-RPC, tipos de cable en hex canónico — el mismo byte a byte que persiste la capa |
+| [`spec/openrpc.json`](./spec/openrpc.json) | **GENERADO** desde la tabla que vive en `zk-ssl-wire`, junto a los DTOs: una sola fuente. El verificador de cada sello exige que regenerarlo lo reproduzca **byte a byte** |
+| [`spec/vectors/`](./spec/vectors/) | Vectores de conformidad **por versión**: el escenario canónico reducido a hechos (raíces, digests de prueba, cadena, cabeza de época). El determinismo por operación está medido en tres cruces independientes y es **compuerta permanente** |
+| [`spec/rfc/`](./spec/rfc/) | El proceso de cambio: numerado, con estados, y una regla de oro — los vectores viejos **jamás se reescriben**; si el cable cambia, la versión sube |
+| `crates/zk-ssl-wire` | El formato de cable (DTOs validados, `deny_unknown_fields`) |
+| `crates/zk-ssl-node` | El nodo de referencia (axum): entrega materiales, verifica pruebas; `dev_*` doblemente cerrado (feature + flag) |
+| `crates/zk-ssl-sdk` | El lado del titular: la única línea donde interviene la clave de gasto es `prove_send/prove_claim`, **en local**. Incluye el **keystore**: wallet en reposo con la misma construcción que el ledger y dominio propio — un test EXIGE que la clave del ledger no abra el keystore |
+| `crates/zk-ssl-cli` | Sandbox y trazador sobre la capa REAL (`simulate` · `trace-tx` · `inspect-state` · `conformance`), salida JSONL opcional |
+
+Actado en ejecución, no solo en código: el pago SDK↔nodo con claves
+aleatorias terminó con alice 750000 · bob 250000 · `verifyChain ok`, y
+`spend_key` no tiene ni `Serialize` — no puede viajar por accidente.
+
+---
+
+## Formalización en marcha (`doc/fv/`)
+
+Los circuitos del núcleo de pagos tienen **ESPEC ejecutable**: un
+intérprete fino en Python reproduce byte a byte la salida patrón-oro
+del circuito Rust — mutantes incluidos — y una compuerta cuenta cada
+celda de la traza con dueño declarado (`circuit_send`: 23 clases ·
+1288 celdas-clase · 0 sin dueño; `circuit_claim`: 21 · 1155 · 0).
+`tools/check_constraint_layout.py` (el guardián) barre los **28
+circuitos** y canta **seis censos** en línea limpia en cada sello.
+Mapa y estado: [`doc/fv/mapa_fv_capas.md`](./doc/fv/mapa_fv_capas.md) y
+[`doc/VERIFICACION_FORMAL.md`](./doc/VERIFICACION_FORMAL.md). El techo
+de todo esto está declarado, no escondido: `AUDITORIA.md` §§69
+(Winterfell asumido).
+
+---
+
 ## ⚠️ Léelo antes que nada: el operador es un intermediario de confianza
 
 Esto es un **nodo único**. Quien lo opera:
@@ -188,6 +258,8 @@ descartó para la capa: usa curvas y exige ceremonia.
 | Quiere entenderlo sin ser técnico | [`doc/IDEA_CENTRAL.md`](./doc/IDEA_CENTRAL.md) |
 | Quiere saber qué aporta frente a lo que hay | [`doc/APORTACION.md`](./doc/APORTACION.md) |
 | Interesado en las implicaciones | [`doc/CONSECUENCIAS.md`](./doc/CONSECUENCIAS.md) |
+| **Vas a implementar el protocolo** | [`spec/RPC.md`](./spec/RPC.md) + [`spec/vectors/`](./spec/vectors/) |
+| Interesado en la formalización | [`doc/VERIFICACION_FORMAL.md`](./doc/VERIFICACION_FORMAL.md) |
 
 `AUDITORIA.md` incluye una sección con **los puntos donde el autor tiene
 menos confianza**. Si vas a mirar el código con intención de romperlo,
@@ -201,67 +273,33 @@ Requiere Rust estable. Sin instaladores externos ni toolchains aparte.
 
 > ⚠️ **`--release` es obligatorio para `zk-ssl`, no una optimización.**
 >
-> **Todas las cifras de abajo estan MEDIDAS el 31-07-2026**, no recordadas.
-> La version anterior de este bloque llevaba cuatro cifras rancias y **una
-> afirmacion falsa**; ver `AUDITORIA.md` §76 y la entrada 2 del backlog,
-> que existe precisamente por esto.
+> **Cifras vigentes, medidas el 06-08-2026** (sello §199 y su
+> verificador). Las del 31-07 y su historia —por qué depuración falla
+> por diseño (grados dependientes del testigo), qué se corrigió y qué
+> costó corregirlo— viven en `AUDITORIA.md` §20, §76–§77 y no se
+> borran: se marcan.
 >
-> ⚠️ **Los fallos en depuracion son un limite conocido, no un defecto**, y
-> estan declarados en `AUDITORIA.md` §20: winterfell comprueba grados solo
-> en depuracion, y ciertas restricciones tienen grado que depende del
-> testigo (bits de camino de Merkle, margenes que pueden ser cero). En
-> release —el modo de produccion— las pruebas se generan y verifican bien.
-> No se corrige porque hacerlo exigiria migrar fondos en transito, y
-> release no lo necesita.
+> **En release, los dos crates pasan enteros:**
 >
-> **En release, los dos crates pasan enteros y sin ningun test saltado:**
+> | | tests | fallan | ignorados (con motivo escrito) |
+> |---|---|---|---|
+> | `stark-experiment` | **297** | 0 | 10 |
+> | `zk-ssl` | **242** | 0 | 3 |
 >
-> | | tests | fallan | saltados | tiempo |
-> |---|---|---|---|---|
-> | `stark-experiment` | **272** | 0 | 0 | 10 s |
-> | `zk-ssl` | **201** | 0 | 0 | 29 s |
->
-> **En depuracion, no:**
->
-> | | pasan | fallan | saltados | tiempo |
-> |---|---|---|---|---|
-> | `stark-experiment` | **268** | 0 | 4 | 55 s |
-> | `zk-ssl` | 114 | **80** | 7 | 262 s |
->
-> ⚠️ **El crate de circuitos SI pasa en los dos modos, pero esa frase costo
-> una correccion.** Hasta el 31-07-2026 fallaban en depuracion tres tests de
-> solidez de custodios, **desde antes** —medido volviendo al commit
-> anterior—, y este README publicaba que pasaba. Diagnosticados y corregidos
-> el mismo dia (`AUDITORIA.md` §77, entrada 44 del backlog): eran **dos
-> causas distintas**, una de ellas un test escrito para el comportamiento de
-> release y comprobado en los dos modos.
->
-> Los 4 saltados llevan `ignore` **con el motivo escrito**: trazas donde el
-> grado real de una restriccion cae a cero —alcanzar el tope de emision
-> exactamente, o un camino de Merkle con todos los bits a cero—. Release los
-> ejecuta.
->
-> ⚠️ **Los 80 fallos de `zk-ssl` siguen abiertos, y no son nuevos**: eran 77
-> antes de la sesion, no los 65 que este README publicaba. Son el limite de
-> grados de §20, y **no estan diagnosticados uno a uno** —entrada 41—.
->
-> Depuracion es **cinco a seis veces mas lento** (56 s frente a 10 s en los
-> circuitos), y a cambio winterfell valida las restricciones al generar y
-> da el indice y la fila del fallo. Por eso se usa, y por eso los tests que
-> ahi degeneran llevan `ignore` **con el motivo escrito** en vez de
-> borrarse.
+> Y **0 warnings** en ambos: el verificador de cada sello los cuenta.
 
 ```bash
-cargo test -p zk-ssl --release              # la capa: 201 tests
-cargo test -p stark-experiment --release    # los circuitos: 272 tests
+cargo test -p zk-ssl --release              # la capa: 242 tests
+cargo test -p stark-experiment --release    # los circuitos: 297 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
 
-El crate de circuitos tiene **27 circuitos con `impl Air`**; **26 llevan
-prueba de vacuidad por mutacion** y el unico que no es el `WorkAir` de
-`lib.rs`, que es el ejemplo de demostracion de winterfell y no protege
-nada. `python3 tools/check_constraint_layout.py` barre los 27 y no
-encuentra colisiones, desbordes ni ranuras muertas.
+El crate de circuitos tiene **28 circuitos con `impl Air`** (los dos
+últimos: `circuit_send` y `circuit_claim`, el pago en dos fases, ambos
+con su ESPEC ejecutable y compuerta de mutantes — ver «Formalización»
+arriba). `python3 tools/check_constraint_layout.py` (guardián v7) barre
+los 28, canta **seis censos** en línea limpia y no encuentra colisiones,
+desbordes ni ranuras muertas.
 
 La comparativa completa:
 
