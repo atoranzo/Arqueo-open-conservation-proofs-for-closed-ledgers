@@ -39,9 +39,9 @@ use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;
-/// 512 filas. La tubería acaba en `ROW_ACCT_ROOT` (fila 271): quedan
-/// **240 filas de holgura** (30 ciclos). Sin frozen ni custodios, el
-/// mundo nuevo solo suma el ciclo del salt: 279, y 512 ALCANZA (§3).
+/// 512 filas. La tubería acaba en `ROW_ACCT_ROOT` (fila 279): quedan
+/// **232 filas de holgura** (29 ciclos). Sin frozen ni custodios, el
+/// mundo nuevo solo suma el ciclo del salt (271→279), y 512 ALCANZA (§3).
 pub const TRACE_LENGTH: usize = 512;
 pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: saldo, índice A, índice B, y `B − A − 1`.
@@ -60,20 +60,20 @@ const COL_BIT_A: usize = 2 * STATE_WIDTH; // 24
 /// Identidad de la cuenta ANTES de la recuperación.
 const COL_ID_OLD: usize = COL_BIT_A + 1; // 25..29
 /// Identidad DESPUÉS. La posición en el árbol no cambia.
-const COL_ID_NEW: usize = COL_ID_OLD + 4; // 30..34
-const COL_BAL: usize = COL_ID_NEW + 4; // 34
-const COL_NONCE: usize = COL_BAL + 1; // 35
+const COL_ID_NEW: usize = COL_ID_OLD + 4; // 29..33
+const COL_BAL: usize = COL_ID_NEW + 4; // 33
+const COL_NONCE: usize = COL_BAL + 1; // 34
 /// Contador público de recuperaciones. Lo que hace **contables** las
 /// intervenciones de los custodios.
-const COL_COUNT_OLD: usize = COL_NONCE + 1; // 36
-const COL_COUNT_NEW: usize = COL_COUNT_OLD + 1; // 37
-const COL_SBIT: usize = COL_COUNT_NEW + 1; // 38
-const COL_SACC: usize = COL_SBIT + 1; // 39
+const COL_COUNT_OLD: usize = COL_NONCE + 1; // 35
+const COL_COUNT_NEW: usize = COL_COUNT_OLD + 1; // 36
+const COL_SBIT: usize = COL_COUNT_NEW + 1; // 37
+const COL_SACC: usize = COL_SBIT + 1; // 38
 /// **Salt de la hoja** (testigo, §117): envuelve la hoja como tercer
 /// merge. UN solo salt para AMBOS carriles — LA COPIA (§93.4): el de
 /// la clave vieja viste también al récord nuevo. Estilo derivado.
-const COL_LEAF_SALT: usize = COL_SACC + 1; // 40..44
-pub const TRACE_WIDTH: usize = COL_LEAF_SALT + 4; // 44
+const COL_LEAF_SALT: usize = COL_SACC + 1; // 39..43
+pub const TRACE_WIDTH: usize = COL_LEAF_SALT + 4; // 43
 
 // ===== Filas =====
 //
@@ -155,6 +155,14 @@ const P_FIRST_S: usize = P_FIRST_ROW + 1;
 const P_CONT_S: usize = P_FIRST_S + 1;
 const P_SEG_LINK: usize = P_CONT_S + 1;
 
+// CELDAS_LIBRES: salt de hoja testigo — LA COPIA viste ambos carriles (clase *, cols 39..43) — §117/§93.4
+// CELDAS_LIBRES: bit de camino: solo los enlaces de cuenta lo miran (clase sin acct_link, col 24) — §192
+// CELDAS_LIBRES: descansos del acumulador del saldo (clase sin cont_s, col 38) — §192
+// CELDAS_LIBRES: limbos altos del primer merge, carril A: solo el limbo 8 lleva nonce (clase cont_s+link_leaf, cols 9..12) — §92.2
+// CELDAS_LIBRES: limbos altos del primer merge, carril B: el 20 lleva nonce+1 (clase cont_s+link_leaf, cols 21..24) — §92.2
+// CELDAS_LIBRES: carriles hash muertos tras la raíz, capacidad A (clase plana, cols 0..4) — §192
+// CELDAS_LIBRES: carriles muertos tras la raíz, salvo digest asertados: rate A alto + capacidad B (clase plana, cols 8..16) — §192
+// CELDAS_LIBRES: carriles muertos tras la raíz, rate B alto (clase plana, cols 20..24) — §192
 type Blake3 = Blake3_256<BaseElement>;
 
 fn value_to_bits_be(value: u64) -> Vec<bool> {

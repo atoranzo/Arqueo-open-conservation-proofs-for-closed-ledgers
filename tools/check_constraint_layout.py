@@ -548,6 +548,14 @@ RE_COMPUERTA_CREDIT = re.compile(
     r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d)/2 \u00b7 "
     r"C_SEG_LINK\u2192guardi\u00e1n$"
 )
+CENSO_RECOVERY_RUTA = os.path.join(
+    os.path.dirname(__file__), "..", "doc", "fv", "interprete_recovery_climb.py"
+)
+RE_COMPUERTA_RECOVERY = re.compile(
+    r"^COMPUERTA-RECOVERY: (\d+) clases \u00b7 (\d+) celdas-clase \u00b7 (\d+) libres "
+    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d)/2 \u00b7 "
+    r"C_SEG_LINK\u2192guardi\u00e1n$"
+)
 
 
 def _censo_fv1(sujeto, ruta, prefijo, regex):
@@ -601,6 +609,11 @@ def censo_mint_climb():
 def censo_credit_climb():
     return _censo_fv1("credit_climb", CENSO_CREDIT_RUTA,
                       "COMPUERTA-CREDIT:", RE_COMPUERTA_CREDIT)
+
+
+def censo_recovery_climb():
+    return _censo_fv1("recovery_climb", CENSO_RECOVERY_RUTA,
+                      "COMPUERTA-RECOVERY:", RE_COMPUERTA_RECOVERY)
 
 
 CASO_50 = """
@@ -861,6 +874,7 @@ def barrer(raiz, verbose, con_censo):
         for fichero_censo, fn_censo in (
             ("circuit_mint_climb.rs", censo_mint_climb),
             ("circuit_credit_climb.rs", censo_credit_climb),
+            ("circuit_recovery_climb.rs", censo_recovery_climb),
         ):
             linea_c, faltas_censo = fn_censo()
             if faltas_censo:

@@ -13242,6 +13242,36 @@ exit»); corregido en AMBOS intérpretes a la verdad vigente (GRAVES desde
 §189, el exit cae solo). Cero contradicciones código↔acta. Quedan de la 71:
 `recovery_climb`, `mint`, `send`, `claim` — el patrón, tres veces probado.
 
+## 192. El censo viaja II: recovery_climb — el drift medido se absorbe en un corte
+
+La sexta pieza de la estirpe, `doc/fv/interprete_recovery_climb.py` (425),
+derivada del intérprete de mint. El drift, MEDIDO antes de derivar: 11/12
+anclas idénticas; la que no — recovery construye `first_row` por asignación
+directa, sin bucle — se absorbió en un corte anclado del derivador, con la
+máscara {0} intacta. El rito se refina con ello: **drift localizado en un
+ancla de forma se absorbe en corte; drift en la lógica compartida veta la
+derivación**. Medido sano: **9 clases · 387 celdas-clase · 68 libres
+declaradas · 0 sin dueño · 0 rancias · mutantes 2/2** (C_HORNER→5 en col
+38; C_SALT_IN_A→4). La cuenta a mano de las cinco formas (36 salt + 7 bit +
+3 descansos + 6 limbos + 16 plana) la clavó la máquina. LA COPIA (§93.4) en
+la declaración del salt: un testigo viste ambos carriles.
+
+**El candidato ciego, TERCERA confirmación** (hallazgo 6º: es de familia):
+delta 0, Horner co-posee la col 38, sonda `→guardián`. Guardián v4 (933
+líneas): `censo_recovery_climb` tercero en la tupla de `barrer`; la línea
+limpia del rito lleva TRES censos. Tres cazas sobre copias, exit 1 las
+tres: candidato borrado → TRIPLE grave ([MUERTA] 1 + [MUERTA PERIODICA]
+[31] + [CENSO]) · C_HORNER → ambas redes con grano (1 ranura vs 5
+celdas-clase, sonda `→censo`) · selector cambiado → redes CIEGAS, censo 4
+sin dueño exactos.
+
+**Diez comentarios rancios del propio circuito, corregidos en la misma
+cirugía**: el corrimiento +1 del segundo bit amputado (64.2) numeraba mal
+las columnas desde COL_ID_NEW hasta TRACE_WIDTH, y la cabecera decía «fila
+271» donde la aritmética resuelve 279. La aritmética manda; ahora la prosa
+del .rs la acompaña. Cero contradicciones también dentro del circuito.
+Quedan de la 71: `mint`, `send`, `claim`.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

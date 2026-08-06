@@ -1856,7 +1856,10 @@ pendientes, sino en saber con precision que es y que no es.
   `send`, `claim`), sin falso verde — la línea limpia nombra su alcance.
   ✅ **credit_climb CENSADO Y COMPUERTA (§191)**: 12 clases · 468
   celdas-clase · 83 libres · mutantes 2/2 · candidato→guardián (TRIPLE
-  grave, exit 1). Quedan: `recovery_climb`, `mint`, `send`, `claim`.
+  grave, exit 1).
+  ✅ **recovery_climb CENSADO Y COMPUERTA (§192)**: 9 clases · 387
+  celdas-clase · 68 libres · mutantes 2/2 · candidato→guardián (TRIPLE
+  grave). Quedan: `mint`, `send`, `claim`.
 
 - [x] **72. FV-2: spike SMT sobre `circuit_refund` (tras la 71).**
   Exportador en `tools/` del sistema (20 restricciones + 12 aserciones,
