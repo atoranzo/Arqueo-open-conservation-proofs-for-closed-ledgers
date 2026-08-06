@@ -1890,7 +1890,7 @@ pendientes, sino en saber con precision que es y que no es.
   intérpretes finos (62/49/49) con PARIDAD BYTE A BYTE contra los stdouts
   patrón-oro (mutantes incluidos); guardián intacto (933), autotest 3/3.
 
-- [ ] **74. Ecosistema RPC: de implementación a protocolo.**
+- [x] **74. Ecosistema RPC: de implementación a protocolo.**
   Nació en §197 con la Fase 0 cumplida: wire + spec (`zkssl/0.1`) + nodo
   de referencia + SDK + CLI, y el criterio probado — pago en dos fases
   SDK↔nodo sin que la clave de gasto viaje (verificado en código y en
@@ -1906,4 +1906,5 @@ pendientes, sino en saber con precision que es y que no es.
   ✅ Fase 0 (§197): 4 crates + `spec/RPC.md`; e2e con claves aleatorias
   (750000/250000, `verifyChain` ok:true); tamaño real de prueba medido y
   la spec corregida (54–66 KB).
-  ✅ Fase 1a (§198): `spec/openrpc.json` GENERADO desde la tabla de `zk-ssl-wire` (17 métodos, tests 2/2; regenerar reproduce BYTE A BYTE — compuerta del BLOQUE) · vectores `spec/vectors/zkssl-0.1.json` (escenario canónico, 6 entradas; `conformance --check` los reproduce — determinismo probado ×2 y ahora COMPUERTA permanente) · proceso RFC en `spec/rfc/`. Queda: keystore cifrado.
+  ✅ Fase 1a (§198): `spec/openrpc.json` GENERADO desde la tabla de `zk-ssl-wire` (17 métodos, tests 2/2; regenerar reproduce BYTE A BYTE — compuerta del BLOQUE) · vectores `spec/vectors/zkssl-0.1.json` (escenario canónico, 6 entradas; `conformance --check` los reproduce — determinismo probado ×2 y ahora COMPUERTA permanente) · proceso RFC en `spec/rfc/`.
+  ✅✅ **CERRADA (§199, 06-08-2026)** con el keystore: `zk-ssl-sdk/src/keystore.rs` (217) — la MISMA construcción de reposo que el ledger con dominio propio `ZK-SSL-keystore-v1`; test que EXIGE que la clave del ledger NO abra el keystore; binding public_id declarado==derivado; cifrado autenticado; 0600 en Unix; 5 tests + ejemplo vivo, verdes a la primera. De implementación a protocolo: spec + OpenRPC + vectores-compuerta + RFC + wallet en reposo. Deudas declaradas (§21 fuera de banda, nodo único, --dev) siguen escritas con su cauce.

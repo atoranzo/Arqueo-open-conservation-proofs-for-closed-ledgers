@@ -13514,6 +13514,43 @@ modulo, el subcomando) — todo en crates nuevos y `spec/`; la capa y los
 circuitos NI ROZADOS (huellas en el BLOQUE). De la nota 74 queda:
 keystore cifrado, y los RFC de fondo cuando toquen. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 199. El keystore — y la 74 SE CIERRA: de implementacion a protocolo, con el wallet dormido bajo la ley del ledger
+
+La clave de gasto ya no viajaba (§197); ahora tampoco DUERME desnuda.
+`zk-ssl-sdk/src/keystore.rs` (217) guarda el wallet cifrado con la MISMA
+construccion de reposo que el ledger — `zk_ssl::crypto`: XChaCha20-
+Poly1305, nonce de 24 bytes aleatorio por escritura, clave derivada de
+la contrasena con SHA-256 sobre un DOMINIO — pero con dominio PROPIO
+(`ZK-SSL-keystore-v1`): **ledger y wallet nunca comparten clave
+simetrica aunque compartan contrasena**, y eso no es una intencion sino
+un test — `la_clave_del_ledger_no_abre_el_keystore` construye la
+LedgerKey con la misma contrasena y EXIGE que el descifrado falle. Una
+sola ley de reposo en el proyecto, dominios separados probados; escribir
+criptografia propia aqui habria sido el error que el propio Cargo.toml
+de la capa advierte.
+
+El fichero (`zkssl-keystore/1`, JSON de la casa) lleva EN CLARO el
+`public_id` — publico por diseno — y cifrados los 32 bytes canonicos de
+`store::digest_to_bytes`. Al cargar, el binding declarado==derivado
+rechaza el fichero cambiado de sitio o editado; el cifrado autenticado
+rechaza la manipulacion byte a byte; en Unix el fichero nace 0600. Cinco
+tests (ida y vuelta de identificadores, contrasena mala, manipulacion,
+public_id ajeno, DOMINIOS) mas el doctest del SDK y el ejercicio vivo
+(`examples/keystore.rs`, 25): guardar, cargar identico, y que lo malo
+FALLE — todo VERDE A LA PRIMERA en la maquina del sello. Cero deps
+nuevas de verdad: chacha20poly1305 y sha2 entran al SDK en las MISMAS
+versiones que ya vivian en el lock. La advertencia KDF de la capa aplica
+INTEGRA y viaja escrita en el modulo; endurecer a Argon2/scrypt tiene
+cauce — el proceso RFC de §198 — no parche silencioso.
+
+**Con esto la nota 74 baja a [x]**: spec (`zkssl/0.1`) + OpenRPC
+generado + vectores de conformidad como compuerta + proceso RFC + nodo
+de referencia + SDK con el wallet en reposo. Lo que era una
+implementacion es un PROTOCOLO con contrato publico y segunda-
+implementacion posible. Las deudas declaradas de la nota (aviso fuera
+de banda §21, nodo unico, --dev) siguen declaradas donde estaban: el
+cierre no las esconde, las deja escritas con su cauce. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

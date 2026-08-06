@@ -119,6 +119,15 @@ impl Wallet {
     pub fn leaf_salt(&self) -> Digest {
         native::derive_leaf_salt_wide(self.spend_key)
     }
+
+    /// Solo para el keystore del propio crate: la clave no sale del proceso.
+    pub(crate) fn spend_key(&self) -> Digest {
+        self.spend_key
+    }
+
+    pub(crate) fn from_spend_key(spend_key: Digest) -> Self {
+        Self { spend_key }
+    }
 }
 
 // ────────────────────────────── Account ─────────────────────────────
@@ -273,3 +282,5 @@ pub mod reexports {
 }
 
 pub use wire::WireError;
+
+pub mod keystore;
