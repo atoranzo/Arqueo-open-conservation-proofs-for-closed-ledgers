@@ -12,6 +12,7 @@
 //! Con `--json`, stdout es JSON Lines puro (un evento por línea).
 
 mod commands;
+mod conformance;
 mod fmt;
 mod sandbox;
 mod trace;
@@ -50,6 +51,8 @@ enum Command {
     TraceTx(commands::TraceTxArgs),
     /// Inspecciona el estado del libro mayor.
     InspectState(commands::InspectStateArgs),
+    /// Vectores de conformidad: --emit los fija, --check los reproduce.
+    Conformance(conformance::ConformanceArgs),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -67,6 +70,7 @@ fn main() -> anyhow::Result<()> {
         Command::Simulate(a) => commands::simulate(a, tracer.as_mut()),
         Command::TraceTx(a) => commands::trace_tx(a, tracer.as_mut()),
         Command::InspectState(a) => commands::inspect_state(a, tracer.as_mut()),
+        Command::Conformance(a) => conformance::conformance(a, tracer.as_mut()),
     }
 }
 

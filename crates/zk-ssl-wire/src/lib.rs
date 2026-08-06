@@ -582,3 +582,6 @@ pub struct ParamsDto {
     pub max_accounts: Q,
     pub custodian_root: B32,
 }
+
+/// Documento OpenRPC del protocolo (nota 74): la tabla vive aqui.
+pub mod openrpc;

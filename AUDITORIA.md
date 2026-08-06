@@ -13477,6 +13477,43 @@ warnings 0·0. Las deudas que el RPC hereda quedan DECLARADAS, no
 escondidas, y viven en la **nota 74, que esta entrada ABRE** (Fase 1:
 OpenRPC · vectores por version · proceso RFC · keystore). Canon sin cambio (297 · 242 · 40 · 28).
 
+## 198. Fase 1a de la 74: OpenRPC desde el wire y los vectores de conformidad — el determinismo, de hallazgo a compuerta
+
+Dos piezas para que exista una SEGUNDA implementacion, y las dos con la
+misma idea: una sola fuente que se auto-verifica.
+
+**OpenRPC (`spec/openrpc.json`, 412, GENERADO).** La tabla de los 17
+metodos vive en `zk-ssl-wire/src/openrpc.rs` (135), junto a los DTOs que
+describe — no en un documento aparte que envejezca. `gen_openrpc` la
+vuelca; dos tests la vigilan (17, unicos, en el orden de `spec/RPC.md`);
+y el BLOQUE-198 exige que REGENERAR reproduzca el fichero BYTE A BYTE:
+el json no puede divergir de la tabla sin gritar. v0 deliberadamente
+conciso — esquemas por referencia (Q/DATA/Digest con el patron hex
+canonico); el contraste campo a campo no es suyo: es de los vectores.
+
+**Vectores de conformidad (`spec/vectors/zkssl-0.1.json`, 64).** El
+escenario canonico —open+fund(0xA11CE,+1000000)×2 · send 250000 (salt
+7) · claim— reducido a hechos: por operacion, raiz vieja y nueva,
+digest de la prueba y digest de cadena; al final, cabeza de epoca y
+suministro. Todo en el hex de `store::digest_to_bytes`: el mismo byte a
+byte que persiste la capa. `conformance --check` re-ejecuta y compara
+campo a campo; en la maquina del sello paso DOS veces seguidas —
+**el determinismo por operacion (§197) deja de ser hallazgo y pasa a
+COMPUERTA**, re-probada en cada BLOQUE futuro. Y una tercera
+confirmacion cruzada, gratis: el `epoch_digest` del escenario
+(`0x58a324cc…`) es EXACTAMENTE el del `simulate` de la Fase 0 — dos
+caminos de codigo, un estado final.
+
+Proceso RFC en `spec/rfc/` (PROCESO 24 + plantilla 29), con la regla
+que protege a los vectores: si el cable cambia, la version sube y los
+vectores viejos se CONSERVAN bajo la suya — jamas se reescriben.
+
+Ejecucion del F1: ~300 lineas de Rust nuevas, `cargo check` y tests
+VERDES A LA PRIMERA; cinco parches anclados (serde_json al wire, el
+modulo, el subcomando) — todo en crates nuevos y `spec/`; la capa y los
+circuitos NI ROZADOS (huellas en el BLOQUE). De la nota 74 queda:
+keystore cifrado, y los RFC de fondo cuando toquen. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

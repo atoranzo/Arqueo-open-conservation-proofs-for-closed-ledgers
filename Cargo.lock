@@ -3358,6 +3358,7 @@ name = "zk-ssl-wire"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_json",
  "stark-experiment",
  "winterfell",
  "zk-ssl",

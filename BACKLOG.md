@@ -1906,3 +1906,4 @@ pendientes, sino en saber con precision que es y que no es.
   ✅ Fase 0 (§197): 4 crates + `spec/RPC.md`; e2e con claves aleatorias
   (750000/250000, `verifyChain` ok:true); tamaño real de prueba medido y
   la spec corregida (54–66 KB).
+  ✅ Fase 1a (§198): `spec/openrpc.json` GENERADO desde la tabla de `zk-ssl-wire` (17 métodos, tests 2/2; regenerar reproduce BYTE A BYTE — compuerta del BLOQUE) · vectores `spec/vectors/zkssl-0.1.json` (escenario canónico, 6 entradas; `conformance --check` los reproduce — determinismo probado ×2 y ahora COMPUERTA permanente) · proceso RFC en `spec/rfc/`. Queda: keystore cifrado.

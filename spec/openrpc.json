@@ -1,0 +1,412 @@
+{
+  "components": {
+    "schemas": {
+      "DATA": {
+        "pattern": "^0x([0-9a-f][0-9a-f])*$",
+        "type": "string"
+      },
+      "Digest": {
+        "description": "32 bytes: la MISMA serializacion que persiste la capa (store::digest_to_bytes)",
+        "pattern": "^0x[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "ProtocolVersion": {
+        "const": "zkssl/0.1",
+        "type": "string"
+      },
+      "Q": {
+        "description": "u64 en hex, sin ceros a la izquierda",
+        "pattern": "^0x[0-9a-f]+$",
+        "type": "string"
+      }
+    }
+  },
+  "info": {
+    "description": "Especificacion normativa: spec/RPC.md. Principio que el API preserva: la clave de gasto no viaja jamas.",
+    "title": "ZK-SSL JSON-RPC",
+    "version": "zkssl/0.1"
+  },
+  "methods": [
+    {
+      "name": "zkssl_protocolVersion",
+      "params": [],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ProtocolVersion"
+        }
+      },
+      "summary": "Version del protocolo."
+    },
+    {
+      "name": "zkssl_params",
+      "params": [],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/Params"
+        }
+      },
+      "summary": "Parametros inmutables del ledger."
+    },
+    {
+      "name": "zkssl_epochHead",
+      "params": [],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/EpochHead"
+        }
+      },
+      "summary": "Cabeza de epoca: seq, raices y digests."
+    },
+    {
+      "name": "zkssl_supply",
+      "params": [],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/Supply"
+        }
+      },
+      "summary": "Suministro total y en transito."
+    },
+    {
+      "name": "zkssl_accountCount",
+      "params": [],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/Q"
+        }
+      },
+      "summary": "Numero de cuentas abiertas."
+    },
+    {
+      "name": "zkssl_publicId",
+      "params": [
+        {
+          "name": "index",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/Digest"
+        }
+      },
+      "summary": "Id publico de una cuenta por indice."
+    },
+    {
+      "name": "zkssl_accountView",
+      "params": [
+        {
+          "name": "index",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        },
+        {
+          "name": "viewKey",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/AccountView"
+        }
+      },
+      "summary": "Vista AUTENTICADA: exige la clave de VISTA (49-A)."
+    },
+    {
+      "name": "zkssl_logEntry",
+      "params": [
+        {
+          "name": "seq",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/LogEntry"
+        }
+      },
+      "summary": "Una entrada del registro encadenado."
+    },
+    {
+      "name": "zkssl_logEntries",
+      "params": [
+        {
+          "name": "fromSeq",
+          "required": false,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        },
+        {
+          "name": "limit",
+          "required": false,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/LogEntries"
+        }
+      },
+      "summary": "Entradas desde fromSeq (limite <= 1000)."
+    },
+    {
+      "name": "zkssl_verifyChain",
+      "params": [],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/VerifyChain"
+        }
+      },
+      "summary": "Reverifica la cadena completa del registro."
+    },
+    {
+      "name": "zkssl_openAccount",
+      "params": [
+        {
+          "name": "publicId",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        },
+        {
+          "name": "viewId",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        },
+        {
+          "name": "leafSalt",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/Opened"
+        }
+      },
+      "summary": "Abre con ids DERIVADOS: la clave de gasto no viaja."
+    },
+    {
+      "name": "zkssl_sendMaterials",
+      "params": [
+        {
+          "name": "sender",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        },
+        {
+          "name": "receiverId",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        },
+        {
+          "name": "amount",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        },
+        {
+          "name": "salt",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/SendMaterials"
+        }
+      },
+      "summary": "Materiales publicos para probar el envio EN LOCAL."
+    },
+    {
+      "name": "zkssl_applySend",
+      "params": [
+        {
+          "name": "receipt",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/SendReceipt"
+          }
+        },
+        {
+          "name": "sender",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        },
+        {
+          "name": "senderState",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ClientState"
+          }
+        },
+        {
+          "name": "amount",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/Applied"
+        }
+      },
+      "summary": "Aplica un recibo de envio verificando su prueba STARK."
+    },
+    {
+      "name": "zkssl_claimMaterials",
+      "params": [
+        {
+          "name": "receiver",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        },
+        {
+          "name": "notice",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/PendingNotice"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ClaimMaterials"
+        }
+      },
+      "summary": "Materiales publicos para probar el cobro EN LOCAL."
+    },
+    {
+      "name": "zkssl_applyClaim",
+      "params": [
+        {
+          "name": "receipt",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ClaimReceipt"
+          }
+        },
+        {
+          "name": "receiver",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        },
+        {
+          "name": "receiverState",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ClientState"
+          }
+        },
+        {
+          "name": "notice",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/PendingNotice"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/Applied"
+        }
+      },
+      "summary": "Aplica un recibo de cobro verificando su prueba STARK."
+    },
+    {
+      "name": "dev_fund",
+      "params": [
+        {
+          "name": "index",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        },
+        {
+          "name": "amount",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/Applied"
+        }
+      },
+      "summary": "SOLO --dev: emision delegada con custodios de PRUEBA."
+    },
+    {
+      "name": "dev_openSeeded",
+      "params": [
+        {
+          "name": "seed",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/Opened"
+        }
+      },
+      "summary": "SOLO --dev: abre desde una clave determinista de la suite."
+    }
+  ],
+  "openrpc": "1.2.6"
+}

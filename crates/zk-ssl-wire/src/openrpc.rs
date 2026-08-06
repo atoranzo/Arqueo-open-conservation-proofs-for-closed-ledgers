@@ -1,0 +1,135 @@
+//! # OpenRPC del protocolo — generado DESDE este crate (nota 74, Fase 1).
+//!
+//! La tabla de metodos vive AQUI, junto a los DTOs que describe: una
+//! sola fuente. `gen_openrpc` (src/bin) la vuelca a `spec/openrpc.json`;
+//! una herramienta o una SEGUNDA implementacion la consume sin leer el
+//! codigo del nodo. v0 deliberadamente conciso: nombre, resumen,
+//! parametros y resultado con esquemas por referencia a los tipos de
+//! `spec/RPC.md` (Q, DATA, Digest) — el contraste campo a campo lo dan
+//! los vectores de conformidad, no este documento.
+
+use serde_json::{json, Value};
+
+/// Los metodos del protocolo, en el orden de `spec/RPC.md`.
+pub fn method_names() -> Vec<&'static str> {
+    vec![
+        "zkssl_protocolVersion",
+        "zkssl_params",
+        "zkssl_epochHead",
+        "zkssl_supply",
+        "zkssl_accountCount",
+        "zkssl_publicId",
+        "zkssl_accountView",
+        "zkssl_logEntry",
+        "zkssl_logEntries",
+        "zkssl_verifyChain",
+        "zkssl_openAccount",
+        "zkssl_sendMaterials",
+        "zkssl_applySend",
+        "zkssl_claimMaterials",
+        "zkssl_applyClaim",
+        "dev_fund",
+        "dev_openSeeded",
+    ]
+}
+
+fn p(name: &str, tipo: &str) -> Value {
+    json!({ "name": name, "required": true,
+            "schema": { "$ref": format!("#/components/schemas/{tipo}") } })
+}
+
+fn p_opt(name: &str, tipo: &str) -> Value {
+    json!({ "name": name, "required": false,
+            "schema": { "$ref": format!("#/components/schemas/{tipo}") } })
+}
+
+fn m(name: &str, summary: &str, params: Value, result_tipo: &str) -> Value {
+    json!({ "name": name, "summary": summary, "params": params,
+            "result": { "name": "result",
+                        "schema": { "$ref": format!("#/components/schemas/{result_tipo}") } } })
+}
+
+pub fn document() -> Value {
+    let methods = vec![
+        m("zkssl_protocolVersion", "Version del protocolo.", json!([]), "ProtocolVersion"),
+        m("zkssl_params", "Parametros inmutables del ledger.", json!([]), "Params"),
+        m("zkssl_epochHead", "Cabeza de epoca: seq, raices y digests.", json!([]), "EpochHead"),
+        m("zkssl_supply", "Suministro total y en transito.", json!([]), "Supply"),
+        m("zkssl_accountCount", "Numero de cuentas abiertas.", json!([]), "Q"),
+        m("zkssl_publicId", "Id publico de una cuenta por indice.",
+          json!([p("index", "Q")]), "Digest"),
+        m("zkssl_accountView", "Vista AUTENTICADA: exige la clave de VISTA (49-A).",
+          json!([p("index", "Q"), p("viewKey", "Digest")]), "AccountView"),
+        m("zkssl_logEntry", "Una entrada del registro encadenado.",
+          json!([p("seq", "Q")]), "LogEntry"),
+        m("zkssl_logEntries", "Entradas desde fromSeq (limite <= 1000).",
+          json!([p_opt("fromSeq", "Q"), p_opt("limit", "Q")]), "LogEntries"),
+        m("zkssl_verifyChain", "Reverifica la cadena completa del registro.",
+          json!([]), "VerifyChain"),
+        m("zkssl_openAccount", "Abre con ids DERIVADOS: la clave de gasto no viaja.",
+          json!([p("publicId", "Digest"), p("viewId", "Digest"), p("leafSalt", "Digest")]),
+          "Opened"),
+        m("zkssl_sendMaterials", "Materiales publicos para probar el envio EN LOCAL.",
+          json!([p("sender", "Q"), p("receiverId", "Digest"), p("amount", "Q"),
+                 p("salt", "Digest")]), "SendMaterials"),
+        m("zkssl_applySend", "Aplica un recibo de envio verificando su prueba STARK.",
+          json!([p("receipt", "SendReceipt"), p("sender", "Q"),
+                 p("senderState", "ClientState"), p("amount", "Q")]), "Applied"),
+        m("zkssl_claimMaterials", "Materiales publicos para probar el cobro EN LOCAL.",
+          json!([p("receiver", "Q"), p("notice", "PendingNotice")]), "ClaimMaterials"),
+        m("zkssl_applyClaim", "Aplica un recibo de cobro verificando su prueba STARK.",
+          json!([p("receipt", "ClaimReceipt"), p("receiver", "Q"),
+                 p("receiverState", "ClientState"), p("notice", "PendingNotice")]),
+          "Applied"),
+        m("dev_fund", "SOLO --dev: emision delegada con custodios de PRUEBA.",
+          json!([p("index", "Q"), p("amount", "Q")]), "Applied"),
+        m("dev_openSeeded", "SOLO --dev: abre desde una clave determinista de la suite.",
+          json!([p("seed", "Q")]), "Opened"),
+    ];
+    json!({
+        "openrpc": "1.2.6",
+        "info": {
+            "title": "ZK-SSL JSON-RPC",
+            "version": "zkssl/0.1",
+            "description": "Especificacion normativa: spec/RPC.md. Principio que el API preserva: la clave de gasto no viaja jamas."
+        },
+        "methods": methods,
+        "components": { "schemas": {
+            "Q": { "type": "string", "pattern": "^0x[0-9a-f]+$",
+                   "description": "u64 en hex, sin ceros a la izquierda" },
+            "DATA": { "type": "string", "pattern": "^0x([0-9a-f][0-9a-f])*$" },
+            "Digest": { "type": "string", "pattern": "^0x[0-9a-f]{64}$",
+                        "description": "32 bytes: la MISMA serializacion que persiste la capa (store::digest_to_bytes)" },
+            "ProtocolVersion": { "type": "string", "const": "zkssl/0.1" }
+        } }
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn diecisiete_metodos_unicos_y_en_orden() {
+        let nombres = method_names();
+        assert_eq!(nombres.len(), 17);
+        let mut u = nombres.clone();
+        u.sort();
+        u.dedup();
+        assert_eq!(u.len(), 17, "nombres repetidos");
+        let doc = document();
+        let met = doc["methods"].as_array().expect("methods");
+        assert_eq!(met.len(), 17);
+        for (i, mm) in met.iter().enumerate() {
+            assert_eq!(mm["name"].as_str().unwrap(), nombres[i]);
+        }
+    }
+
+    #[test]
+    fn el_documento_declara_version_y_esquemas() {
+        let doc = document();
+        assert_eq!(doc["openrpc"], "1.2.6");
+        assert_eq!(doc["info"]["version"], "zkssl/0.1");
+        assert!(doc["components"]["schemas"]["Digest"].is_object());
+    }
+}
