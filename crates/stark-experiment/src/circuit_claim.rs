@@ -212,6 +212,35 @@ const C_SALT_IN_A: usize = C_SALT_DIG_B + 4; // 4
 const C_SALT_IN_B: usize = C_SALT_IN_A + 4; // 4
 const NUM_CONSTRAINTS: usize = C_SALT_IN_B + 4;
 
+// ===== Celdas libres (FV-1, §196) =====
+//
+// Lo que el censo midió sin dueño y ES libre — cada línea con su porqué;
+// el guardián las parsea y una declaración con dueño sale como RANCIA:
+// · el salt testigo (51..54) solo se LEE en link_salt: testigo, no atada.
+// · bits de dirección fuera de sus tramos (24, 41, 42): relleno booleano.
+// · el acumulador Horner (40) fuera de los segmentos — que aquí acaban
+//   en la fila 255: sel_root, pk_done y los enlaces frozen quedan fuera.
+// · carril B en la fase de congelados: la no-pertenencia sube SOLO por A.
+// · caps/rate no atados en re-siembras puntuales (sel_root, pend_in,
+//   pend_val): basura ahí desvía el hash y la raíz declarada la rechaza.
+// · limbos altos del nonce (9..11 y 21..23 en link_leaf): la cuestión
+//   previa de la spec §4; los tests decisores viven en send
+//   (`un_nonce_con_limbo_alto_no_cero_se_rechaza` y su canario) — misma
+//   siembra, misma defensa aguas abajo.
+// · la holgura (clase plana, 815..1022): 208 filas tras la tubería.
+// CELDAS_LIBRES: (clase *, cols 51..55)
+// CELDAS_LIBRES: (clase sin link_merkle ni link_place, col 24)
+// CELDAS_LIBRES: (clase sin cont_s ni first_s ni seg_link0 ni seg_link1 ni seg_link2 ni seg_link3, col 40)
+// CELDAS_LIBRES: (clase sin frozen_entry ni frozen_link, col 41)
+// CELDAS_LIBRES: (clase sin pend_entry ni pend_link, col 42)
+// CELDAS_LIBRES: (clase frozen_entry+sel_pk_done, cols 12..25)
+// CELDAS_LIBRES: (clase frozen_link, cols 12..25)
+// CELDAS_LIBRES: (clase pend_in, cols 12..25)
+// CELDAS_LIBRES: (clase pend_val, cols 0..4) (clase pend_val, cols 9..25)
+// CELDAS_LIBRES: (clase sel_root, cols 0..4) (clase sel_root, cols 12..16)
+// CELDAS_LIBRES: (clase cont_s+link_leaf, cols 9..12) (clase cont_s+link_leaf, cols 21..24)
+// CELDAS_LIBRES: (clase plana, cols 0..4) (clase plana, cols 8..16) (clase plana, cols 20..25)
+
 // ===== Periódicas =====
 const P_HASH_FLAG: usize = 0;
 const P_ARK1: usize = 1;

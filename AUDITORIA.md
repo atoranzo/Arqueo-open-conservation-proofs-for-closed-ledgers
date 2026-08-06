@@ -13381,6 +13381,54 @@ forma del §194 (por paquete, release, compuertas literales): stark 297
 mint-pagos y send, la primera fuera de la traza 512— con el censo como
 COMPUERTA del guardián (v6, 961) y el núcleo en v4. Queda `claim`. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 196. FV-1: la RECLAMACIÓN nace ESPEC y la 71 SE CIERRA — novena pieza, seis censos
+
+La novena pieza, y con ella la entrada 71 completa su lista: la gemela
+invertida de send. `doc/fv/interprete_claim.py` (82 líneas) censa
+`circuit_claim` — 1024×55, sin `COL_LIMIT`, 4 segmentos Horner que
+acaban en la fila 255 — con 22 anclas de conteo exacto, incluida la que
+fija el cierre de §39 en el propio código: el compromiso interno ata la
+identidad a `COL_ACC_ID`, la cuenta que COBRA, no a `COL_R_ID` (muerto
+tras §39.1; su constancia sigue impuesta por el transporte). Las dos
+inversiones están en el código y el censo las lee sin inmutarse: el
+saldo SUBE y el pendiente SALE (carril A arrastra el compromiso, B
+entra a cero) — la prosa vieja del propio .rs aún narraba la entrada;
+la aritmética manda.
+
+Antes de censar, el rito cazó un import fatal EN SECO: importar un
+ESPEC lo EJECUTA (`sys.exit`), así que compartir máscaras entre
+gemelas importándolas era un suicidio. La respuesta de §193, otra vez:
+**núcleo v5** (461) — `mascaras_gemelas` y `P2SEL_GEMELAS` viven UNA
+vez en el núcleo; send adelgaza 129→88 y su salida se re-probó
+BYTE-IDÉNTICA. Paridad ×5 contra patrón oro, espejo y árbol.
+
+Medido sano: **21 clases · 1155 celdas-clase · 55 sentencias · 235
+huérfanas → 12 declaraciones (29 líneas en el .rs, 2179→2208) → 0 sin
+dueño · 0 rancias, limpio A LA PRIMERA** — la lección de gramática de
+§195 ya estaba pagada. Los segmentos cortos estrenan clases PURAS que
+send no tenía: `sel_root`, `frozen_entry+sel_pk_done` y una
+`frozen_link` unificada de 31. Los limbos altos del nonce quedan
+declarados citando a los tests-decisores de send (aquí no viven): misma
+siembra, misma defensa aguas abajo. Pista rancia anotada, tercera
+aparición: `with_capacity(29)` contra 41 aserciones reales.
+
+Guardián v7 (961→975, +14): SEXTO censo, línea limpia con los seis,
+autotest 3/3. Cazas ×3 con restauración por sha: candidato → TRIPLE
+grave ([MUERTA] 4 + [MUERTA PERIODICA] 4 + [CENSO] — la escalera NS
+8/5/4 por circuito) · Horner → ambas redes (sonda 1 vs censo 7) ·
+selector → censo 5 EXACTOS. **El candidato ciego, SEXTA confirmación**:
+la co-posesión Horner/seg_link es del PATRÓN de segmentos — probada ya
+en dos longitudes de traza, dos topologías de carril y seis circuitos.
+Suites canónicas: stark 297 · zk-ssl 242 · 0 failed · warnings 0·0.
+
+**Estado 71: SE CIERRA.** Seis piezas censadas —mint_climb, credit,
+recovery, mint-pagos, send y claim— con el censo como COMPUERTA del
+guardián y la honestidad de serie: referenciada ≠ determinada (doc §1).
+Lo que queda fuera ya está registrado como decisión, no como deuda:
+extender a los 28 es elección (el candidato ×6 dice que lo que importa
+es el patrón), y `dual_climb` sigue siendo el hueco conocido de índices
+crudos. El checkbox baja. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

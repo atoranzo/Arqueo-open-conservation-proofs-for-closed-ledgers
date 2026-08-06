@@ -1,45 +1,35 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Intérprete del ENVÍO (circuit_send) — octava pieza (§195).
+"""Intérprete de la RECLAMACIÓN (circuit_claim) — novena pieza (§196).
 
-La segunda nacida directamente como ESPEC sobre censo_nucleo.py, y la
-primera FUERA de la traza 512: dos carriles reales sobre 1024×56. Lo que
-send añade a la estirpe:
-  · TRES tramos de árbol — cuentas (raíz A/B en 279), NO-pertenencia a
-    congelados (raíz en 543, solo carril A) e inserción en pendientes
-    (raíces A/B en 815); el hash corre hasta ROW_PENDING_ROOT y deja
-    HOLGURA: 208 filas sin selector — aquí SÍ hay clase plana.
-  · tree_link = link_merkle + link_place y pend_any = pend_entry +
-    pend_link: alias-SUMA por `let` (v2). Y (frozen_entry + frozen_link)
-    SUMA INLINE, sin `let` — la forma que motivó el núcleo v4 (un
-    reclamo por sumando, sumandos fuera del conjunto estricto).
-  · transport de 10 columnas con sumas de literal (COL_KEY + 1..3):
-    la otra mitad de v4 (arrays con `+`, elementos evaluados).
-  · sel_root {279} y sel_pk_done {287} del triple one-hot
-    `for row in [0, ROW_ROOT, ROW_PK_DONE]` — first_row incluido;
-    frozen_entry comparte fila con sel_pk_done: firma compuesta.
-  · pend_in {543} · pend_val {551} · pend_entry {559}: la fase del
-    compromiso, tres selectores de una fila.
-  · 5 segmentos Horner en 0..319: NO llenan la traza (a diferencia de
-    toda la estirpe anterior).
-Sin POW2. Doctrina, cosecha conservadora (§186) y sesgo al rojo (§59.2):
-en el núcleo. Referenciada ≠ determinada (doc §1).
+La gemela invertida de send sobre la misma geometría de 1024: dos
+carriles, 55 columnas (sin COL_LIMIT), 4 segmentos Horner (0..255 — los
+hitos 279/287 y los enlaces frozen quedan FUERA de cont_s: clases
+puras que send no tenía). Las dos inversiones viven en el código y el
+censo las lee igual: el saldo SUBE (C_BALANCE con `+`) y el pendiente
+SALE (carril A arrastra el compromiso, B entra a cero). El cierre de
+§39 es estructural y se ancla: el compromiso interno ata la identidad
+a `COL_ACC_ID` — la cuenta que COBRA —, no a `COL_R_ID`.
+Las dos formas del núcleo v4 (arrays con suma de literal; suma INLINE
+`(frozen_entry + frozen_link)`) también están aquí: v4 ya las habla.
+Sin POW2. Doctrina, cosecha conservadora (§186) y sesgo al rojo
+(§59.2): en el núcleo. Referenciada ≠ determinada (doc §1).
 """
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import censo_nucleo as nucleo
 
 
-def sanidad_send(v, masc):
+def sanidad_claim(v, masc):
     assert len(masc["hash_flag"]) == 714 and len(masc["link_merkle"]) == 31
     assert len(masc["frozen_link"]) == 31 and len(masc["pend_link"]) == 31
-    assert len(masc["cont_s"]) == 315
+    assert len(masc["cont_s"]) == 252
 
 
 ESPEC = {
-    "FICHERO": "circuit_send.rs",
-    "TITULO": "circuit_send",
-    "ROTULO": "COMPUERTA-SEND",
+    "FICHERO": "circuit_claim.rs",
+    "TITULO": "circuit_claim",
+    "ROTULO": "COMPUERTA-CLAIM",
     "COL_CIERRE": 40,
     "EXTERNAS": {"STATE_WIDTH": 12, "NUM_ROUNDS": 7, "CYCLE_LENGTH": 8,
                  "TREE_DEPTH": 32, "FROZEN_DEPTH": 32},
@@ -64,10 +54,14 @@ ESPEC = {
         ("let pend_any = pend_entry + pend_link;", 1),     # alias-suma (v2)
         ("(frozen_entry + frozen_link)", 1),               # suma inline (v4)
         ("let transport = [", 1),                          # array con + (v4)
-        ("AirContext::new(trace_info, degrees, 42, options)", 1),
+        ("AirContext::new(trace_info, degrees, 41, options)", 1),
+        # El cierre de §39, anclado: el compromiso ata la identidad de la
+        # CUENTA QUE COBRA, no COL_R_ID.
+        ("result[C_PEND_IN + 4 + i] = pend_in * (next[4 + i] - "
+         "current[COL_ACC_ID + i]);", 1),
     ],
-    "ESPERADO": {"TRACE_WIDTH": 56, "TRACE_LENGTH": 1024, "SEGMENT_LENGTH": 64,
-                 "NUM_SEGMENTS": 5, "LANE_B": 12, "NUM_CONSTRAINTS": 203,
+    "ESPERADO": {"TRACE_WIDTH": 55, "TRACE_LENGTH": 1024, "SEGMENT_LENGTH": 64,
+                 "NUM_SEGMENTS": 4, "LANE_B": 12, "NUM_CONSTRAINTS": 201,
                  "CYC_ACC": 3, "CYC_PK": 35, "CYC_FROZEN": 36,
                  "CYC_PEND_IN": 68, "CYC_PEND_CLIMB": 70, "CYC_FIN": 102,
                  "ROW_LEAF_LINK": 7, "ROW_SALT_LINK": 15, "ROW_LEAF_DONE": 23,
@@ -75,7 +69,7 @@ ESPEC = {
                  "ROW_FROZEN_ROOT": 543, "ROW_PEND_INNER": 551,
                  "ROW_PENDING_ENTRY": 559, "ROW_PENDING_ROOT": 815},
     "MASCARAS": nucleo.mascaras_gemelas,
-    "SANIDAD": sanidad_send,
+    "SANIDAD": sanidad_claim,
     "P2SEL": nucleo.P2SEL_GEMELAS,
     "MUTANTES": [
         ("C_HORNER", r"\n\s*result\[C_HORNER\][^;]*;",

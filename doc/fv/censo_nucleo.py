@@ -85,6 +85,52 @@ def sanidad_clasica(v, masc):
     assert len(masc["hash_flag"]) == 245 and len(masc["acct_link"]) == 32
 
 
+# Las familias de los GEMELOS de 1024 (send/claim, §195-§196): tres tramos
+# de arbol, triple one-hot, fase del pendiente y segmentos que NO llenan
+# la traza. Una sola copia; cada gemela trae su ESPEC (NS y sanidad).
+P2SEL_GEMELAS = {"P_HASH_FLAG": "hash_flag", "P_LINK_MERKLE": "link_merkle",
+                 "P_LINK_LEAF": "link_leaf", "P_LINK_SALT": "link_salt",
+                 "P_LINK_PLACE": "link_place", "P_FIRST_ROW": "first_row",
+                 "P_SEL_ROOT": "sel_root", "P_SEL_PK_DONE": "sel_pk_done",
+                 "P_FIRST_S": "first_s", "P_CONT_S": "cont_s",
+                 "P_FROZEN_ENTRY": "frozen_entry",
+                 "P_FROZEN_LINK": "frozen_link",
+                 "P_PEND_IN": "pend_in", "P_PEND_VAL": "pend_val",
+                 "P_PEND_ENTRY": "pend_entry", "P_PEND_LINK": "pend_link"}
+
+
+def mascaras_gemelas(v):
+    pasos = range(v["TRACE_LENGTH"] - 1)
+    C = v["CYCLE_LENGTH"]
+    m = {}
+    m["hash_flag"] = frozenset(
+        r for r in pasos
+        if r <= v["ROW_PENDING_ROOT"] and r % C < v["NUM_ROUNDS"])
+    m["link_merkle"] = frozenset(
+        (v["CYC_ACC"] + lv) * C + 7 for lv in range(v["TREE_DEPTH"] - 1))
+    m["link_leaf"] = frozenset({v["ROW_LEAF_LINK"]})
+    m["link_salt"] = frozenset({v["ROW_SALT_LINK"]})
+    m["link_place"] = frozenset({v["ROW_LEAF_DONE"]})
+    m["first_row"] = frozenset({0})
+    m["sel_root"] = frozenset({v["ROW_ROOT"]})
+    m["sel_pk_done"] = frozenset({v["ROW_PK_DONE"]})
+    m["first_s"] = frozenset(s * v["SEGMENT_LENGTH"] for s in range(v["NUM_SEGMENTS"]))
+    m["cont_s"] = frozenset(
+        s * v["SEGMENT_LENGTH"] + p
+        for s in range(v["NUM_SEGMENTS"]) for p in range(v["SEGMENT_LENGTH"] - 1))
+    for s in range(v["NUM_SEGMENTS"]):
+        m["seg_link%d" % s] = frozenset({(s + 1) * v["SEGMENT_LENGTH"] - 2})
+    m["frozen_entry"] = frozenset({v["ROW_PK_DONE"]})
+    m["frozen_link"] = frozenset(
+        (v["CYC_FROZEN"] + lv) * C + 7 for lv in range(v["FROZEN_DEPTH"] - 1))
+    m["pend_in"] = frozenset({v["ROW_FROZEN_ROOT"]})
+    m["pend_val"] = frozenset({v["ROW_PEND_INNER"]})
+    m["pend_entry"] = frozenset({v["ROW_PENDING_ENTRY"]})
+    m["pend_link"] = frozenset(
+        (v["CYC_PEND_CLIMB"] + lv) * C + 7 for lv in range(v["TREE_DEPTH"] - 1))
+    return m
+
+
 def resolver(texto, externas):
     crudos = {m.group(1): m.group(2).strip() for m in RE_CONST.finditer(texto)}
     val = dict(externas)

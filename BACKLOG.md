@@ -1805,7 +1805,7 @@ pendientes, sino en saber con precision que es y que no es.
   ejecutadas con más rigor, rechazadas con acta, o promovidas con examen.
   El triaje nació para ordenar y muere ordenado.
 
-- [ ] **71. FV-1: el CENSO DE CELDAS del guardián (grupo C, solidez).**
+- [x] **71. FV-1: el CENSO DE CELDAS del guardián (grupo C, solidez).**
   Nace de la crítica externa de sub-restringimiento (§183): la suite prueba
   PUNTOS, no universales, y el guardián audita RANURAS, no CELDAS. **Qué
   verifica**: para cada circuito, cada columna × clase-de-fila (filas-hash,
@@ -1861,6 +1861,7 @@ pendientes, sino en saber con precision que es y que no es.
   celdas-clase · 68 libres · mutantes 2/2 · candidato→guardián (TRIPLE
   grave). Quedan: `mint`, `send`, `claim`.
   ✅ **mint (pagos) CENSADO Y COMPUERTA (§194)**: primera pieza nacida
+  ✅ claim (§196): ESPEC `doc/fv/interprete_claim.py` (82) — la gemela invertida; COMPUERTA-CLAIM 21 clases · 1155 celdas-clase · 235 libres · 0 sin dueño · mutantes 2/2, limpia a la primera; núcleo v5 (gemelas al núcleo, paridad ×5, send 129→88); guardián v7 (SEXTO censo, 975); cazas ×3 (TRIPLE 4+4+CENSO · 1 vs 7 · selector 5). §39 anclado en el censo. LA 71 SE CIERRA: seis piezas, checkbox abajo.
   ESPEC — 21 clases · 1029 · 343 libres (0 rancias a la primera) ·
   mutantes 2/2 · candidato→guardián (CUARTA, ya fuera de *_climb).
   Núcleo v2 (alias-suma) y v3 (sin A ni B), paridad ×3 en cada paso.
