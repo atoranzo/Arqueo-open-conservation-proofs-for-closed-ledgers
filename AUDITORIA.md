@@ -13591,6 +13591,44 @@ ciclo, un PROTOCOLO con contrato publico y segunda implementacion
 posible. Trece sellos verificables, dos notas del backlog abiertas y
 cerradas (71 y 74), y el trio FV identico sello a sello desde §196. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 201. Los satelites del escaparate: el resumen, el roadmap y el CLI dicen la verdad de hoy
+
+El §200 puso el README al dia; este sello alinea los tres documentos
+que orbitan a su alrededor, y el peor no era el de las cifras.
+
+**RESUMEN_EJECUTIVO.md (8 cirugias).** El documento al que el README
+manda a «alguien con 5 minutos» abria con un snippet de la API
+RETIRADA — `layer.transfer(sk_alice, …)`: la clave de gasto entrando a
+la capa, exactamente lo que la portada jura que no ocurre. Ahora abre
+con las dos fases y la prueba LOCAL. Ademas: presentaba como VIVO el
+limite del cumpleanos (~65.000 pagos) de una via retirada en §32/§36
+— ahora cuenta que existio y como se fue, y que el techo real es el
+anclaje de raiz (1,5–1,9 TPS, §123); negaba un cifrado en reposo que
+existe desde crypto.rs y el keystore (§199) — ahora lo afirma con su
+alcance declarado; cantaba 373 y 172 tests — ahora 539 (297+242) con
+fecha; la tabla de garantias paso de 9 filas pre-custodios a las 11
+vigentes (dos custodios, congeladas, historial); y gano la seccion
+1.bis: el protocolo §197–§199 en ocho lineas y dos comandos.
+
+**ROADMAP-ECOSISTEMA.md (13 cirugias).** Era el plan de §197 y seguia
+escrito en futuro («este paquete», «siguiente») con todo ya sellado.
+Paso de PLAN a ACTA: cada fila de la tabla con su §, las Fases 0 y 1
+marcadas SELLADAS con el criterio de exito CUMPLIDO y actado (el e2e:
+alice 750000 · bob 1250000 · verifyChain ok, la clave sin viajar), y
+la Fase 2 declarada abierta. Los saldos del acta son los del estado
+FINAL del e2e — mas precisos que la mencion abreviada del README.
+
+**README-CLI.md (3 cirugias).** El CLI callaba su subcomando estrella:
+`conformance` entra en la estructura, en el uso (con su frase: «la 2ª
+implementacion empieza aqui») y la decision sin-tokio se actualiza —
+el nodo que aquel parrafo imaginaba futuro existe desde §197.
+
+Meta-leccion cosechada: el barrido automatico de rancidez (buscar
+272/201/375) dio CERO en el peor ofensor, porque sus numeros rancios
+eran otros (373, 172). Los marcadores se calibran LEYENDO el fichero,
+no presuponiendo — el head dirigido lo cazo. Y como en §200: cirugia
+anclada (count==1, PRE/POST por sha), ni una linea de rigor tocada. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

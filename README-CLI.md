@@ -40,6 +40,7 @@ crates/zk-ssl-cli/
 └── src/
     ├── main.rs      # clap (derive) + init de tracing-subscriber (stderr)
     ├── commands.rs  # simulate / trace-tx / inspect-state
+    ├── conformance.rs # --emit/--check: los vectores del protocolo (§198)
     ├── sandbox.rs   # motor: fases reales de la capa, instrumentadas
     ├── trace.rs     # enum TraceEvent + trait Tracer (consola / JSONL)
     └── fmt.rs       # hex de Digest vía zk_ssl::store (misma serialización)
@@ -66,6 +67,10 @@ cargo run -p zk-ssl-cli -- trace-tx --ledger ./ledger --seq 3
 
 # Estado: raíces, suministro, en tránsito, cabeza del registro, cuentas:
 cargo run -p zk-ssl-cli -- inspect-state --ledger ./ledger --accounts
+
+# Conformidad del protocolo: re-ejecuta el escenario canónico y compara
+# campo a campo contra los vectores fijados — la 2ª implementación empieza aquí:
+cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.1.json
 
 # Eventos como JSON Lines (datos por stdout, diagnóstico por stderr):
 cargo run -p zk-ssl-cli -- --json simulate | jq .
@@ -107,7 +112,9 @@ Salida típica de `simulate` (abreviada):
 - **Sin `tokio`.** La capa es síncrona y "no hay red ni consenso" por
   diseño. Cuando exista un nodo con JSON-RPC, lo limpio es una feature
   `rpc` (tokio + jsonrpsee) que implemente `Tracer`/consultas contra el
-  nodo, no arrastrar un runtime async hoy.
+  nodo, no arrastrar un runtime async hoy. Ese nodo **ya existe** desde §197
+  (`zk-ssl-node`, axum): este CLI sigue síncrono a propósito, contra la
+  capa directa; el camino con red es SDK↔nodo.
 - **`Result` en los bordes, enums en el centro**: los `LayerError` de la
   capa suben tal cual; cada rechazo emite `TraceEvent::Rejected` antes de
   propagarse.

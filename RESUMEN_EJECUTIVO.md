@@ -37,41 +37,49 @@ criptográficas de una liquidación soberana son construibles y medibles.
 ## 1. El artefacto: `crates/zk-ssl`
 
 ```rust
-let mut layer = SovereignLayer::open("./ledger", issuer_key, limite, tope)?;
+let layer = SovereignLayer::open("./ledger", custodios, gobernanza, limite, tope, max_cuentas)?;
 
-let alice = layer.open_account(sk_alice);            // saldo CERO
-let recibo = layer.mint(issuer_key, alice, 1_000_000)?;
-layer.apply_mint(&recibo, alice)?;
+// FASE 1 — el pagador envía. La capa no ve su clave.
+let m = layer.send_materials(alice, id_de_bob, 250_000, aleatorio)?;
+let envio = client::prove_send(&m, clave_alice, proof_options())?;  // LOCAL
+layer.apply_send(&envio, alice, &estado_alice, 250_000)?;
 
-let s = layer.transfer(sk_alice, alice, bob, 250_000)?;
-layer.apply(&s, alice, bob, 250_000)?;
-
-let d = layer.audit(sk_alice, alice, 900_000, 1_100_000)?;  // "estoy entre X e Y"
-verify_audit(&d)?;                                          // el supervisor, sin la capa
+// FASE 2 — el receptor cobra. Tampoco ve la suya.
+let m = layer.claim_materials(bob, &envio.notice)?;
+let cobro = client::prove_claim(&m, clave_bob, proof_options())?;   // LOCAL
+layer.apply_claim(&cobro, bob, &estado_bob, &envio.notice)?;
 ```
 
-**373 tests**, todos en release.
+**Ninguna clave llega a la capa**: entrega caminos y raíces —datos
+públicos— y recibe pruebas que verifica. La revelación selectiva
+(`audit`: "estoy entre X e Y") la produce el titular y la verifica el
+supervisor **sin acceso al ledger**.
+
+**539 tests** (297 de circuitos + 242 de la capa), todos en release,
+0 fallos y 0 warnings — medidos el 06-08-2026 (sello §199).
 
 ### Qué garantiza, sin revelar identidades, saldos ni importes
 
-| Vía de crear dinero | Cerrada por |
+| Vía de ataque | Cerrada por |
 |---|---|
 | Transferir más de lo debitado | Conservación (partida doble) |
 | Abrir cuenta con saldo | Apertura siempre a cero |
-| Emitir sin autorización | Clave del emisor demostrada en circuito |
+| Emitir sin autorización | **Dos custodios** demostrados en circuito |
 | Emisión encubierta | Suministro público atado en el circuito |
-| Emitir por encima del tope | Tope inmutable del ledger |
-| Gastar dos veces | No-pertenencia demostrable |
+| Superar el tope de emisión | Tope inmutable del ledger |
+| Gastar dos veces | Encadenamiento de raíces (orden total del nodo único) |
 | Gastar sin ser el titular | Autoridad de gasto |
-| Reenviar una operación válida | Encadenamiento de raíces en la capa |
+| **Gastar estando congelada** | No-pertenencia al árbol de congelados |
+| Reenviar una operación válida | Encadenamiento de raíces |
 | Operar sobre estado corrupto | Verificación de integridad al arrancar |
+| **Reescribir el historial** | Registro encadenado de transiciones |
 
 ### Ciclo monetario completo
 
 | Operación | Autoridad | Suministro |
 |---|---|---|
 | `mint` | Emisor, dentro del tope | Sube |
-| `transfer` | Titular | No cambia |
+| `transfer` (dos fases: `send` → `claim`) | Titular | No cambia |
 | `burn` | Titular | Baja |
 | `audit` | Titular | — |
 
@@ -88,16 +96,36 @@ verify_audit(&d)?;                                          // el supervisor, si
 **Verificar cuesta el 0,5-0,8% de generar.** El arranque no genera
 claves: no hay ceremonia ni secreto que destruir.
 
-**Límites cuantificados**: mil transferencias son ~620 s de prueba y
-**120,4 MB acumulados**.
+**Límites cuantificados**: mil transferencias son **~590 s** de prueba
+(un pago son dos: send 353,2 ms + claim 237 ms, protocolo §89.1) y
+**~124 MiB** acumulados. El techo real bajo concurrencia es el anclaje
+de raíz: **1,5–1,9 TPS** medidos (`AUDITORIA.md` §123, entrada 65).
 
-⚠️ **Y hay uno que muerde antes**: la posición del nullifier se deriva del
-propio nullifier, así que por la paradoja del cumpleaños las colisiones son
-probables a los **~65.000 pagos**, y el afectado **no puede reintentar**.
-Es una parada, no un coste. Ver `AUDITORIA.md` §13.
+⚠️ **Un límite que existió, y cómo se fue**: la vía de un paso tenía
+colisiones probables a los ~65.000 pagos. Esa vía está **retirada** y su
+árbol con ella (`AUDITORIA.md` §32 y §36): hoy nada los genera. El
+límite no se resolvió, se evitó — quien la recupere, lo recupera.
 
 ⚠️ Una sola ejecución en una máquina. Sirven para comparar órdenes de
 magnitud, no como benchmark.
+
+---
+
+## 1.bis — De implementación a protocolo (§197–§199, agosto 2026)
+
+La capa ya no está sola: tiene **contrato público** para que exista una
+segunda implementación sin leer el código del nodo. `spec/RPC.md`
+(`zkssl/0.1`, 17 métodos) · `spec/openrpc.json` **generado** desde el
+código (regenerarlo debe reproducirlo byte a byte) · **vectores de
+conformidad** versionados (`conformance --check` los re-ejecuta campo a
+campo: es compuerta permanente) · proceso RFC · nodo de referencia
+(`zk-ssl-node`) · SDK donde la prueba se hace **en local** y el wallet
+duerme cifrado (keystore con dominio propio). Dos comandos para tocarlo:
+
+```bash
+cargo run --release -p zk-ssl-cli -- simulate --amount 250000
+cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.1.json
+```
 
 ---
 
@@ -242,7 +270,9 @@ rendimiento.
 - **No hay atomicidad entre operaciones.** Si el proceso muere a mitad,
   el arranque detecta la inconsistencia y se detiene — correcto, pero
   requiere intervención manual.
-- **No hay copias, replicación ni cifrado en reposo.**
+- **No hay copias ni replicación.** El cifrado en reposo **sí** existe
+  —ledger y keystore del wallet (`zk-ssl::crypto`, XChaCha20-Poly1305)—
+  con su alcance declarado: protege el disco robado, no al operador.
 - **La clave del emisor es única**, no de umbral.
 - **Las mediciones son una sola ejecución en una máquina.** Sirven para
   comparar órdenes de magnitud, no como benchmark riguroso.
@@ -269,8 +299,8 @@ estado.
 ## Reproducir
 
 ```bash
-cargo test -p zk-ssl --release              # la capa, 172 tests
-cargo test -p stark-experiment --release    # el backend elegido
+cargo test -p zk-ssl --release              # la capa, 242 tests
+cargo test -p stark-experiment --release    # los circuitos, 297 tests
 cargo test -p zk-core --release performance -- --nocapture
 cargo test -p halo2-experiment --release real_proof -- --nocapture
 cargo test -p plonk-experiment --release performance -- --nocapture
