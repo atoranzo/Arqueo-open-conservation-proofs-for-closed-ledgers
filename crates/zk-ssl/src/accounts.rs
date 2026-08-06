@@ -188,7 +188,7 @@ impl SovereignLayer {
     /// Recibe la **identidad ya derivada**, que es lo unico que la cuenta
     /// guarda: la clave no se almacena en ningun sitio (§93.4). Por eso las
     /// dos anchuras comparten todo salvo la derivacion.
-    fn open_with_id(
+    pub fn open_with_id(
         &mut self,
         public_id: Digest,
         view_id: Digest,

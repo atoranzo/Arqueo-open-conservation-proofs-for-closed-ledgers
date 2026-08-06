@@ -1,0 +1,24 @@
+[package]
+name = "zk-ssl-wire"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+# **El formato de cable del protocolo.** Los DTOs JSON canónicos que
+# comparten nodo, SDKs y herramientas futuras (explorador, SDK TypeScript).
+#
+# Convención adoptada del ecosistema más aceptado (Ethereum JSON-RPC):
+#   - QUANTITY (u64):  string hex con prefijo, p. ej. "0x3d0900"
+#   - DATA (bytes):    string hex "0x…" de longitud par
+#   - Digest (32 B):   DATA de 32 bytes, la MISMA serialización que
+#                      persiste la capa (`zk_ssl::store::digest_to_bytes`)
+#
+# Un formato de cable estable e independiente del nodo es lo que convierte
+# una implementación en un protocolo: cualquiera puede implementar contra
+# esto sin leer el código de la capa.
+
+[dependencies]
+zk-ssl = { path = "../zk-ssl" }
+winterfell = "0.13"
+serde = { version = "1", features = ["derive"] }
+stark-experiment = { path = "../stark-experiment" }

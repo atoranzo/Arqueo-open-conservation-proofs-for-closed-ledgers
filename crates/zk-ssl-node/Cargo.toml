@@ -1,0 +1,37 @@
+[package]
+name = "zk-ssl-node"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+# **El nodo de referencia** (análogo a geth/anvil): sirve la capa por
+# JSON-RPC 2.0 según `spec/RPC.md`, con persistencia sled opcional.
+#
+# Propiedad central que el RPC preserva: **ninguna clave de gasto viaja**.
+# El nodo entrega materiales (datos públicos) y acepta recibos con prueba;
+# probar ocurre en el cliente (zk-ssl-sdk). Abrir cuenta viaja como
+# (publicId, viewId, leafSalt), derivados en el cliente.
+#
+# `--dev` (feature `dev`, activada por defecto): emisión de fondos con los
+# custodios de prueba de la suite — el equivalente a las cuentas
+# prefondeadas de anvil. Un build de producción se hace con
+# `--no-default-features`.
+
+[features]
+default = ["dev"]
+dev = ["zk-ssl/sandbox"]
+
+[dependencies]
+zk-ssl = { path = "../zk-ssl" }
+zk-ssl-wire = { path = "../zk-ssl-wire" }
+stark-experiment = { path = "../stark-experiment" }
+winterfell = "0.13"
+
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
+axum = "0.7"
+clap = { version = "4.5", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1"

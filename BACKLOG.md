@@ -1889,3 +1889,20 @@ pendientes, sino en saber con precision que es y que no es.
   ✅ send (§195): ESPEC `doc/fv/interprete_send.py` (129) sobre el núcleo v4; COMPUERTA-SEND 23 clases · 1288 celdas-clase · 258 libres · 0 sin dueño · mutantes 2/2; 13 declaraciones CELDAS_LIBRES en el .rs; guardián v6 (QUINTO censo, 961); cazas ×3 (TRIPLE 5+5+CENSO · 1 vs 10 · selector 8). Primera pieza fuera de la traza 512 (dos carriles, 1024×56). Queda: claim.
   intérpretes finos (62/49/49) con PARIDAD BYTE A BYTE contra los stdouts
   patrón-oro (mutantes incluidos); guardián intacto (933), autotest 3/3.
+
+- [ ] **74. Ecosistema RPC: de implementación a protocolo.**
+  Nació en §197 con la Fase 0 cumplida: wire + spec (`zkssl/0.1`) + nodo
+  de referencia + SDK + CLI, y el criterio probado — pago en dos fases
+  SDK↔nodo sin que la clave de gasto viaje (verificado en código y en
+  ejecución). Fuente: ROADMAP-ECOSISTEMA.md. Qué falta (Fase 1, para que
+  existan SEGUNDAS implementaciones): OpenRPC generado desde
+  `zk-ssl-wire` · vectores de conformidad POR VERSIÓN de circuito (el
+  determinismo por operación ya está medido: raíces idénticas CLI↔RPC
+  con la misma semilla) · proceso RFC del protocolo · keystore cifrado.
+  Deudas heredadas DECLARADAS: el aviso viaja fuera de banda (§21) ·
+  nodo único (el operador ordena y puede censurar) · `--dev` usa
+  custodios de PRUEBA (producción exige raíces reales por flags, marcado
+  en `zk-ssl-node/src/main.rs`).
+  ✅ Fase 0 (§197): 4 crates + `spec/RPC.md`; e2e con claves aleatorias
+  (750000/250000, `verifyChain` ok:true); tamaño real de prueba medido y
+  la spec corregida (54–66 KB).

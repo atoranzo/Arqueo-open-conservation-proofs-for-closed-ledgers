@@ -1,0 +1,30 @@
+[package]
+name = "zk-ssl-cli"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+# Sandbox + trazador de la ZK-Sovereign Settlement Layer desde la terminal.
+#
+# NO reimplementa la capa: ejecuta `zk_ssl::SovereignLayer` de verdad, con
+# pruebas STARK reales, y expone tres subcomandos: `simulate`, `trace-tx`
+# e `inspect-state`.
+#
+# ⚠️ Sin `tokio` a propósito: la capa es síncrona y no hay red ni consenso
+# (ver lib.rs de zk-ssl, «Lo que esta capa NO es»). Cuando exista un nodo
+# con JSON-RPC, añadir aquí una feature `rpc` con tokio + jsonrpsee en vez
+# de arrastrar un runtime async que hoy nadie usa.
+
+[dependencies]
+# La capa real, con sus ayudantes de escenario expuestos como sandbox.
+# Ver PARCHES.md: exige la feature `sandbox` en zk-ssl.
+zk-ssl = { path = "../zk-ssl", features = ["sandbox"] }
+winterfell = "0.13"
+
+clap = { version = "4.5", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "ansi"] }
+colored = "2.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"

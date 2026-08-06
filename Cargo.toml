@@ -10,6 +10,10 @@ members = [
     "crates/nova-experiment",
     "crates/settlement-layer",
     "crates/zk-ssl",
+    "crates/zk-ssl-cli",
+    "crates/zk-ssl-wire",
+    "crates/zk-ssl-node",
+    "crates/zk-ssl-sdk",
 ]
 resolver = "2"
 

@@ -91,8 +91,8 @@ pub mod store;
 mod metrics;
 #[cfg(test)]
 mod tests;
-#[cfg(test)]
-mod tests_support;
+#[cfg(any(test, feature = "sandbox"))]
+pub mod tests_support;
 
 use std::collections::HashMap;
 use winterfell::math::fields::f64::BaseElement;

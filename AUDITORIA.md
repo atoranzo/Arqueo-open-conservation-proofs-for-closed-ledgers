@@ -13429,6 +13429,54 @@ extender a los 28 es elección (el candidato ×6 dice que lo que importa
 es el patrón), y `dual_climb` sigue siendo el hueco conocido de índices
 crudos. El checkbox baja. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 197. Ecosistema RPC (Fase 0): el pago en dos fases sale por el cable — y la clave no viaja
+
+Material de OTRO taller, AUDITADO antes de aplicado. Un paquete generado
+en otra sesion (zip sha `bb2ff940…`) trajo cuatro crates —`zk-ssl-wire`
+(584: el formato de cable, hex canonico validado), `zk-ssl-cli`
+(301→327+cinco modulos: sandbox/trazador sobre la capa REAL),
+`zk-ssl-node` (417: JSON-RPC 2.0 de referencia, axum) y `zk-ssl-sdk`
+(275+38: el lado del titular)— mas `spec/RPC.md` (zkssl/0.1) y tres
+documentos. Antes de tocar el arbol: las 2.244 lineas de Rust y los
+cuatro docs LEIDOS ENTEROS, ~40 firmas verificadas contra el codigo
+sellado (todas casaron; dos «ausencias» fueron greps mios en el fichero
+equivocado — ausencia-en-grep no es ausencia), y CERO copias de ficheros
+sellados dentro del paquete.
+
+Cinco parches minimos con pre/post por sha, ninguno de logica: members
+del workspace; feature `sandbox`; visibilidad de `tests_support` tras
+esa feature; `pub fn open_with_id` — la puerta de `zkssl_openAccount`,
+cuya doctrina ya vivia en el propio metodo («la clave no se almacena en
+ningun sitio», §93.4: con esto, tampoco viaja); y la copia. `cargo
+check` de los cuatro: VERDE A LA PRIMERA (22 s) — el paquete se escribio
+contra las firmas reales sin poder compilar, y compilo.
+
+El humo destapo UN bug real, arreglado por la regla de oro (solo crates
+nuevos): `simulate` asumia indices secuenciales, pero el arbol de
+cuentas es DISPERSO — abrir devuelve la POSICION DERIVADA de la hoja
+(#296740276, #4052836150…). El fix mapea logico→real en la corrida.
+
+**Fase 0 del roadmap: CUMPLIDA por dos vias.** CLI: fund×2 + send +
+claim con pruebas reales — saldos 750000/1250000, en transito 0, cadena
+integra (6 entradas). SDK contra el nodo VIVO con claves ALEATORIAS (la
+via de produccion): alice 750000 · bob 250000 · `verifyChain` 7
+entradas `ok:true`. La promesa «la clave de gasto no viaja» quedo
+verificada en el CODIGO (unica aparicion de `spend_key`: dentro de
+`prove_send/prove_claim`, en local) y en EJECUCION.
+
+Medidas que el papel no tenia: pruebas reales de **54–66 KB** segun
+circuito (la spec decia ~36,7: corregida); **determinismo POR
+OPERACION** cruzado en dos superficies — mismas raices y cadena en
+CLI↔RPC con la misma semilla (`f3fca118…`/`1a9be8eb…`): el cimiento de
+los vectores de conformidad; el `epochHead` virgen con seq 0, cadena a
+ceros y la raiz del arbol VACIO por triplicado (`cef70622…`); y
+serde_json ordenando claves en ALFABETICO (BTreeMap) — dato para
+implementadores y para cualquier gate. Guardian tras los parches:
+barrer con los SEIS censos, circuitos NI ROZADOS; suites 297/242,
+warnings 0·0. Las deudas que el RPC hereda quedan DECLARADAS, no
+escondidas, y viven en la **nota 74, que esta entrada ABRE** (Fase 1:
+OpenRPC · vectores por version · proceso RFC · keystore). Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
