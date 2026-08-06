@@ -120,6 +120,14 @@ const P_FIRST_S: usize = P_FIRST_ROW + 1;
 const P_CONT_S: usize = P_FIRST_S + 1;
 const P_SEG_LINK: usize = P_CONT_S + 1;
 
+// CELDAS_LIBRES: salt de hoja testigo, presente en todas las filas (clase *, cols 35..39) — §117
+// CELDAS_LIBRES: bit de camino: solo los enlaces de cuenta lo miran (clase sin acct_link, col 24) — §191
+// CELDAS_LIBRES: descansos del acumulador de saldo entre segmentos (clase sin cont_s, col 34) — §191
+// CELDAS_LIBRES: limbos altos del primer merge, carril A: solo el limbo 8 lleva nonce (clase cont_s+link_leaf, cols 9..12) — §92.2
+// CELDAS_LIBRES: limbos altos del primer merge, carril B (clase cont_s+link_leaf, cols 21..24) — §92.2
+// CELDAS_LIBRES: carriles hash muertos tras la raíz, capacidad A (clase plana, cols 0..4) — §191
+// CELDAS_LIBRES: carriles muertos tras la raíz, salvo digest asertados: rate A alto + capacidad B (clase plana, cols 8..16) — §191
+// CELDAS_LIBRES: carriles muertos tras la raíz, rate B alto (clase plana, cols 20..24) — §191
 type Blake3 = Blake3_256<BaseElement>;
 
 fn value_to_bits_be(value: u64) -> Vec<bool> {

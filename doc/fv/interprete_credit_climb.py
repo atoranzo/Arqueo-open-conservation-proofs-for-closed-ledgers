@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Intérprete MULTI-CICLO — clase = conjunto explícito de filas (Capa 1, doc §9).
+"""Intérprete MULTI-CICLO del CRÉDITO — hermano derivado (resto de la 71, §191).
 
-Cuarta pieza de la estirpe FV-1 (prototipo → un carril → dos carriles → este).
-El sujeto es circuit_mint_climb: periódicas de longitud-de-traza (512 filas)
+Quinta pieza de la estirpe FV-1; derivado ANCLADO del intérprete de mint
+(las 12 anclas del constructor de periódicas son idénticas en ambos — se
+midió antes de derivar). El sujeto es circuit_credit_climb: periódicas de longitud-de-traza (512 filas)
 en CUATRO familias que el intérprete de ciclo corto no sabía leer (doc §9):
   1. hash_flag multi-ciclo   r % CYCLE_LENGTH < NUM_ROUNDS  Y  r <= ROW_ACCT_ROOT
   2. one-hots de árbol       acct_link una-por-nivel; link_leaf/link_salt puntuales
@@ -37,7 +38,7 @@ intérprete caza la celda que NADIE mira, no los grados de libertad.
 import os, re, sys
 
 RAIZ = os.path.join(os.path.dirname(__file__), "..", "..", "crates", "stark-experiment", "src")
-FICHERO = "circuit_mint_climb.rs"
+FICHERO = "circuit_credit_climb.rs"
 EXTERNAS = {"STATE_WIDTH": 12, "NUM_ROUNDS": 7, "CYCLE_LENGTH": 8, "TREE_DEPTH": 32}
 
 # Anclas verbatim del constructor de periódicas, con su conteo exacto: si el
@@ -300,8 +301,8 @@ def censar(texto):
         assert c == n, "ancla <<%s>>: %d != %d" % (a, c, n)
     val = resolver(texto)
     # verbatim del traspaso, medido de nuevo aquí — no recordado
-    esperado = {"TRACE_WIDTH": 42, "TRACE_LENGTH": 512, "SEGMENT_LENGTH": 64,
-                "NUM_SEGMENTS": 5, "LANE_B": 12, "CYC_ACC": 3, "ROW_LEAF_LINK": 7,
+    esperado = {"TRACE_WIDTH": 39, "TRACE_LENGTH": 512, "SEGMENT_LENGTH": 64,
+                "NUM_SEGMENTS": 3, "LANE_B": 12, "CYC_ACC": 3, "ROW_LEAF_LINK": 7,
                 "ROW_SALT_LINK": 15, "ROW_LEAF_DONE": 23, "ROW_ACCT_ROOT": 279}
     for k, e in esperado.items():
         assert val.get(k) == e, "constante %s: resuelta %s, esperada %s" % (k, val.get(k), e)
@@ -343,7 +344,7 @@ def main():
     texto = open(os.path.join(RAIZ, FICHERO), encoding="utf-8").read()
     val, clases, sin, rancias, libres, n_res = censar(texto)
     n_cl, W = len(clases), val["TRACE_WIDTH"]
-    print("== intérprete multi-ciclo: circuit_mint_climb · %d columnas · %d pasos ==" %
+    print("== intérprete multi-ciclo: circuit_credit_climb · %d columnas · %d pasos ==" %
           (W, val["TRACE_LENGTH"] - 1))
     for nom, (_, filas) in sorted(clases.items(), key=lambda kv: kv[1][1][0]):
         print("   clase %-28s · %3d filas · %d..%d" % (nom, len(filas), filas[0], filas[-1]))
@@ -369,7 +370,7 @@ def main():
         ("C_HORNER", r"\n\s*result\[C_HORNER\][^;]*;",
          "el paso de Horner: el acumulador en el cuerpo de segmento"),
         ("C_SALT_IN_A", r"\n\s*result\[C_SALT_IN_A \+ i\][^;]*;",
-         "la atadura del salt testigo al rate, carril A (§117/§138)"),
+         "la atadura del salt testigo al rate, carril A (§117: el cerrojo #2)"),
     ]:
         mut, k = mutar(patron)
         print("\n== MUTANTE (%s borrado: %s) ==" % (nombre, descripcion))
@@ -405,7 +406,7 @@ def main():
             print("   ✅ el censo lo caza")
             a_censo = True
         elif lee_sano >= 1 and lee_mut == 0:
-            print("   ✅ al censo se le escapa (Horner co-posee la col 37 en las clases de cierre)")
+            print("   ✅ al censo se le escapa (Horner co-posee la col 34 en las clases de cierre)")
             print("      — lo ven las DOS redes del guardián (ranuras MUERTAS y periódicas")
             print("        sin leerse), GRAVES desde §189: el exit del guardián cae solo")
         else:
@@ -413,7 +414,7 @@ def main():
             resultado = 1
 
     print("\nFV-1 caza la celda que NADIE mira; referenciada ≠ determinada (doc §1).")
-    print("COMPUERTA: %d clases · %d celdas-clase · %d libres declaradas · %d sin dueño · "
+    print("COMPUERTA-CREDIT: %d clases · %d celdas-clase · %d libres declaradas · %d sin dueño · "
           "mutantes %d/2 · C_SEG_LINK→%s"
           % (n_cl, n_cl * W, len(libres), len(sin), cazados,
              "censo" if a_censo else "guardián"))

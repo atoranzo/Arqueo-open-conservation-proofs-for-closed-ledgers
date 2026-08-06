@@ -1854,6 +1854,9 @@ pendientes, sino en saber con precision que es y que no es.
   La entrada SIGUE ABIERTA: queda extender censo+compuerta circuito a
   circuito (CUENTAS primero: `credit_climb`, `recovery_climb`, `mint`,
   `send`, `claim`), sin falso verde — la línea limpia nombra su alcance.
+  ✅ **credit_climb CENSADO Y COMPUERTA (§191)**: 12 clases · 468
+  celdas-clase · 83 libres · mutantes 2/2 · candidato→guardián (TRIPLE
+  grave, exit 1). Quedan: `recovery_climb`, `mint`, `send`, `claim`.
 
 - [x] **72. FV-2: spike SMT sobre `circuit_refund` (tras la 71).**
   Exportador en `tools/` del sistema (20 restricciones + 12 aserciones,

@@ -13209,6 +13209,39 @@ cvc5 1.3.2 (git 86cecd8) + CoCoA 0.99800 + CaDiCaL 2.1.3 + Poly 0.2.0. La
 72 queda CERRADA CON ACTA en el BACKLOG; doc §2 y la Capa 3 del mapa,
 marcadas.
 
+## 191. El censo viaja: credit_climb CENSADO Y COMPUERTA — el hermano por derivación anclada
+
+El resto de la 71 arranca por donde el traspaso mandaba. La quinta pieza de
+la estirpe, `doc/fv/interprete_credit_climb.py` (425 líneas), no se escribió:
+se DERIVÓ del intérprete de mint con siete cortes anclados count==1 — antes
+de derivar se midió que las 12 anclas del constructor de periódicas son
+IDÉNTICAS en ambos circuitos: la lógica compartida viaja intacta, drift
+cero. Medido sano: **12 clases · 468 celdas-clase · 83 libres declaradas ·
+0 sin dueño · 0 rancias · mutantes internos 2/2** (C_HORNER→6 huérfanas en
+col 34; C_SALT_IN_A→4, el cerrojo #2 de §117). Las 8 líneas CELDAS_LIBRES:
+salt testigo (clase *), bit de camino (sin acct_link), descansos del
+acumulador (sin cont_s), limbos altos del primer merge en AMBOS carriles
+(§92.2), y carriles muertos tras la raíz — con los digest 4..7/16..19
+acreditados por las aserciones de raíz: **§185 trabajando en vivo**.
+
+**El candidato ciego SE REPITE, medido**: borrar `C_SEG_LINK` deja el censo
+en delta 0 (Horner co-posee la col 34 en las clases de cierre; lecturas de
+P_SEG_LINK 1→0) — sonda interna: `→guardián`. Y el guardián v3 (919 líneas:
+`_censo_fv1` compartido, `censo_credit_climb` hermano, `censo_mint_climb`
+conserva nombre y byte) lo espera: **tres cazas end-to-end sobre copias** —
+candidato borrado → TRIPLE grave ([MUERTA] 3 ranuras + [MUERTA PERIODICA]
+[31..33] + [CENSO] el intérprete aborta), exit 1 · C_HORNER borrado → las
+dos redes con granos distintos (1 ranura vs 6 celdas-clase) y la sonda viva
+girando a `→censo` · selector `cont_s`→`first_s` → redes CIEGAS y el censo
+gritando 4 sin dueño exactos, exit 1. Complementariedad bidireccional,
+segunda vez, medida. La línea limpia del rito lleva ahora LOS DOS censos.
+
+**Prosa rancia cazada al derivar**: el mensaje del candidato en el
+intérprete de mint aún narraba el mundo pre-§189 («huecos sin tumbar el
+exit»); corregido en AMBOS intérpretes a la verdad vigente (GRAVES desde
+§189, el exit cae solo). Cero contradicciones código↔acta. Quedan de la 71:
+`recovery_climb`, `mint`, `send`, `claim` — el patrón, tres veces probado.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

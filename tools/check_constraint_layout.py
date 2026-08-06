@@ -540,25 +540,32 @@ RE_COMPUERTA = re.compile(
     r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d)/2 \u00b7 "
     r"C_SEG_LINK\u2192guardi\u00e1n$"
 )
+CENSO_CREDIT_RUTA = os.path.join(
+    os.path.dirname(__file__), "..", "doc", "fv", "interprete_credit_climb.py"
+)
+RE_COMPUERTA_CREDIT = re.compile(
+    r"^COMPUERTA-CREDIT: (\d+) clases \u00b7 (\d+) celdas-clase \u00b7 (\d+) libres "
+    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d)/2 \u00b7 "
+    r"C_SEG_LINK\u2192guardi\u00e1n$"
+)
 
 
-def censo_mint_climb():
-    """Corre el censo FV-1 sobre mint_climb; devuelve (linea_limpia, faltas).
-
-    Toda falta es GRAVE, incluida la ausencia del interprete: una compuerta
-    que se salta cuando su herramienta no esta es el falso verde de §59.2.
-    """
-    if not os.path.exists(CENSO_RUTA):
+def _censo_fv1(sujeto, ruta, prefijo, regex):
+    """Nucleo compartido de los censos FV-1 (§189/§191): corre el interprete
+    del `sujeto` y devuelve (linea_limpia, faltas). Toda falta es GRAVE,
+    incluida la ausencia del interprete: una compuerta que se salta cuando
+    su herramienta no esta es el falso verde de §59.2."""
+    if not os.path.exists(ruta):
         return None, [
-            "[CENSO] falta doc/fv/interprete_multiciclo.py: la compuerta "
+            f"[CENSO] falta {os.path.basename(ruta)}: la compuerta "
             "no puede correr, y eso es GRAVE, no un hueco (§59.2)"
         ]
     p = subprocess.run(
-        [sys.executable, CENSO_RUTA], capture_output=True, text=True
+        [sys.executable, ruta], capture_output=True, text=True
     )
     linea = next(
         (l for l in reversed(p.stdout.splitlines())
-         if l.startswith("COMPUERTA:")),
+         if l.startswith(prefijo)),
         None,
     )
     faltas = []
@@ -567,24 +574,33 @@ def censo_mint_climb():
     if linea is None:
         faltas.append("[CENSO] sin linea COMPUERTA en la salida del interprete")
     else:
-        m = RE_COMPUERTA.match(linea)
+        m = regex.match(linea)
         if m is None:
             faltas.append(f"[CENSO] COMPUERTA con forma inesperada: {linea}")
         else:
             clases, celdas, libres, huerf, mut = m.groups()
             if huerf != "0":
                 faltas.append(
-                    f"[CENSO] {huerf} celda(s)-clase SIN DUE\u00d1O en mint_climb"
+                    f"[CENSO] {huerf} celda(s)-clase SIN DUE\u00d1O en {sujeto}"
                 )
             if mut != "2":
                 faltas.append(f"[CENSO] el interprete cazo {mut}/2 mutantes")
             if not faltas:
                 return (
-                    f"Censo mint_climb: {celdas} celdas-clase en {clases} "
+                    f"Censo {sujeto}: {celdas} celdas-clase en {clases} "
                     f"clases \u00b7 {libres} libres declaradas \u00b7 0 sin "
                     f"due\u00f1o \u00b7 mutantes 2/2."
                 ), []
     return None, faltas
+
+
+def censo_mint_climb():
+    return _censo_fv1("mint_climb", CENSO_RUTA, "COMPUERTA:", RE_COMPUERTA)
+
+
+def censo_credit_climb():
+    return _censo_fv1("credit_climb", CENSO_CREDIT_RUTA,
+                      "COMPUERTA-CREDIT:", RE_COMPUERTA_CREDIT)
 
 
 CASO_50 = """
@@ -840,13 +856,22 @@ def barrer(raiz, verbose, con_censo):
 
     linea_censo = None
     if con_censo:
-        # ===== EL CENSO (FV-1, §189): ve la celda que estas redes no ven =====
-        linea_censo, faltas_censo = censo_mint_climb()
-        if faltas_censo:
-            print("\n  circuit_mint_climb.rs (censo FV-1)")
-            for falta in faltas_censo:
-                print(f"    {falta}")
-            graves += len(faltas_censo)
+        # ===== LOS CENSOS (FV-1, §189/§191): ven la celda que estas redes no ven =====
+        partes = []
+        for fichero_censo, fn_censo in (
+            ("circuit_mint_climb.rs", censo_mint_climb),
+            ("circuit_credit_climb.rs", censo_credit_climb),
+        ):
+            linea_c, faltas_censo = fn_censo()
+            if faltas_censo:
+                print(f"\n  {fichero_censo} (censo FV-1)")
+                for falta in faltas_censo:
+                    print(f"    {falta}")
+                graves += len(faltas_censo)
+            else:
+                partes.append(linea_c)
+        if partes and not graves:
+            linea_censo = " ".join(partes)
 
     print()
     if graves:
