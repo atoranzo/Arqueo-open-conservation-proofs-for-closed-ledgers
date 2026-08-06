@@ -13304,6 +13304,38 @@ La 71 sigue: `mint` (pagos) será la SÉPTIMA pieza, la primera nacida
 directamente como ESPEC sobre el núcleo — con sus familias propias
 declaradas, no derivadas.
 
+## 194. La séptima pieza nace ESPEC: circuit_mint (pagos) — dos ascensos, cuatro censos
+
+La primera pieza escrita directamente como especificación sobre el núcleo:
+`doc/fv/interprete_mint.py` (94 líneas) declara las familias PROPIAS de
+la emisión como delta explícito — hash hasta `ROW_CUST_ROOT` (dos
+ascensos), `cust_link` {287, 295, 303, 311}, los selectores de raíz
+`sel_acct_root` {279} y `sel_cust_root` {319} nacidos del triple one-hot,
+`P_POW2` como columna de VALORES (fuera de P2SEL, como las ARK), y 16
+anclas con `let any_link = acct_link + cust_link;` fijada. Para censarla
+el núcleo creció dos veces, con paridad byte a byte re-probada ×3 en cada
+una: **v2, el alias-SUMA de selectores** (un reclamo por sumando —
+conservador; sin él, C_CAP habría reclamado con firma vacía TODAS las
+clases: sobre-cobertura, sesgo al verde, §59.2) y **v3, `sin A ni B`** en
+la gramática de libres (las firmas compuestas de mint no se nombraban con
+un solo selector).
+
+Medido sano: **21 clases · 1029 celdas-clase · 42 sentencias · 343
+huérfanas** — y la cuenta a mano (163 económicas + 180 de carriles) la
+clavó la máquina. **19 declaraciones → 0 sin dueño · 0 rancias a la
+primera.** Mutantes 2/2 (C_HORNER→10 en col 44; C_SALT_IN_A→4). **El
+candidato ciego, CUARTA confirmación** — ahora fuera de la familia
+*_climb: la co-posesión Horner/seg_link es del PATRÓN de segmentos, no de
+la estirpe. Guardián v5 (947): `censo_mint_pagos` cuarto en `barrer`; la
+línea limpia lleva CUATRO censos; autotest 3/3. Tres cazas exit 1:
+candidato → TRIPLE grave ([MUERTA] 8 ranuras + [MUERTA PERIODICA] 8 cols
++ [CENSO]) · Horner → ambas redes (1 vs 10, sonda →censo) · selector →
+redes ciegas, censo lo para. Tres rancios del .rs corregidos en la misma
+cirugía: la cabecera decía «45 columnas» (son 49), la tabla de ciclos
+arrastraba el corrimiento pre-salt, y un `#[cfg(test)]` duplicado.
+
+Quedan de la 71: `send`, `claim` — con el molde ESPEC ya caliente.
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

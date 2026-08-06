@@ -1860,6 +1860,11 @@ pendientes, sino en saber con precision que es y que no es.
   ✅ **recovery_climb CENSADO Y COMPUERTA (§192)**: 9 clases · 387
   celdas-clase · 68 libres · mutantes 2/2 · candidato→guardián (TRIPLE
   grave). Quedan: `mint`, `send`, `claim`.
+  ✅ **mint (pagos) CENSADO Y COMPUERTA (§194)**: primera pieza nacida
+  ESPEC — 21 clases · 1029 · 343 libres (0 rancias a la primera) ·
+  mutantes 2/2 · candidato→guardián (CUARTA, ya fuera de *_climb).
+  Núcleo v2 (alias-suma) y v3 (sin A ni B), paridad ×3 en cada paso.
+  Quedan: `send`, `claim`.
 
 - [x] **72. FV-2: spike SMT sobre `circuit_refund` (tras la 71).**
   Exportador en `tools/` del sistema (20 restricciones + 12 aserciones,

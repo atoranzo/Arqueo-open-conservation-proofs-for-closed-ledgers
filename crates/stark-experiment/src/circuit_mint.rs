@@ -36,14 +36,14 @@
 //! a los caminos de Merkle mediante un acumulador. Ver
 //! `circuit_threshold`, donde la pieza está verificada de forma aislada.
 //!
-//! ## Estructura de la traza (45 columnas × 512 filas)
+//! ## Estructura de la traza (49 columnas × 512 filas)
 //!
 //! | Ciclos | Filas | Fase |
 //! |---|---|---|
-//! | 0-1 | 0..15 | Hojas de la cuenta (A = antigua, B = nueva) |
-//! | 2-33 | 16..271 | Subida dual del árbol de cuentas |
-//! | 34 | 272..279 | Derivación de las dos identidades de custodio |
-//! | 35-38 | 280..311 | Subida al conjunto de custodios |
+//! | 0-2 | 0..23 | Hoja, nonce y envoltura del salt (§117) |
+//! | 3-34 | 24..279 | Subida dual del árbol de cuentas |
+//! | 35 | 280..287 | Derivación de las dos identidades de custodio |
+//! | 36-39 | 288..319 | Subida al conjunto de custodios |
 //!
 //! Los dos carriles se **reutilizan**: durante la fase de cuenta llevan
 //! saldo antiguo y nuevo por el MISMO camino; durante la de custodios
@@ -200,6 +200,25 @@ const P_FIRST_S: usize = P_SEL_CUST_ROOT + 1;
 const P_CONT_S: usize = P_FIRST_S + 1;
 const P_SEG_LINK: usize = P_CONT_S + 1;
 
+// CELDAS_LIBRES: salt de hoja del titular acreditado (clase *, cols 45..49) — §117
+// CELDAS_LIBRES: bit A: solo los enlaces de árbol lo miran (clase sin acct_link ni cust_link, col 24) — §194
+// CELDAS_LIBRES: bit B: solo el árbol de custodios lo mira (clase sin cust_link, col 25) — §194
+// CELDAS_LIBRES: acumuladores de índice en reposo (clase sin cust_link ni first_row, cols 30..32) — §194
+// CELDAS_LIBRES: descansos del acumulador de rango (clase sin cont_s, col 44) — §194
+// CELDAS_LIBRES: carriles hash muertos tras la raíz de custodios (clase cont_s, cols 0..24) — §194
+// CELDAS_LIBRES: carriles muertos, arranques de segmento tardíos (clase cont_s+first_s, cols 0..24) — §194
+// CELDAS_LIBRES: carriles muertos, cierre del segmento 5 (clase cont_s+seg_link5, cols 0..24) — §194
+// CELDAS_LIBRES: carriles muertos, cierre del segmento 6 (clase cont_s+seg_link6, cols 0..24) — §194
+// CELDAS_LIBRES: carriles muertos, cierre del segmento 7 (clase cont_s+seg_link7, cols 0..24) — §194
+// CELDAS_LIBRES: carriles muertos, descansos tardíos (clase plana, cols 0..24) — §194
+// CELDAS_LIBRES: raíz de custodios: capacidad A fuera de las aserciones (clase sel_cust_root, cols 0..4) — §194
+// CELDAS_LIBRES: raíz de custodios: rate A alto + capacidad B (clase sel_cust_root, cols 8..16) — §194
+// CELDAS_LIBRES: raíz de custodios: rate B alto (clase sel_cust_root, cols 20..24) — §194
+// CELDAS_LIBRES: siembra de custodios: capacidad A (clase cont_s+sel_acct_root, cols 0..4) — §194
+// CELDAS_LIBRES: siembra: solo el limbo 8 lleva la clave A (clase cont_s+sel_acct_root, cols 9..16) — §92.2
+// CELDAS_LIBRES: siembra: solo el limbo 20 lleva la clave B (clase cont_s+sel_acct_root, cols 21..24) — §92.2
+// CELDAS_LIBRES: limbos altos del primer merge, carril A: solo el 8 lleva nonce (clase cont_s+link_leaf, cols 9..12) — §92.2
+// CELDAS_LIBRES: limbos altos del primer merge, carril B: solo el 20 lleva nonce (clase cont_s+link_leaf, cols 21..24) — §92.2
 type Blake3 = Blake3_256<BaseElement>;
 
 fn value_to_bits_be(value: u64) -> Vec<bool> {
@@ -1007,7 +1026,6 @@ impl Prover for MintProver {
     }
 }
 
-#[cfg(test)]
 #[cfg(test)]
 mod tests {
     /// ⚠️ **UN SOLO CUSTODIO NO PUEDE EMITIR DOS VECES.**

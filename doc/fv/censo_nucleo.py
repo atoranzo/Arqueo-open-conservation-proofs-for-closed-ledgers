@@ -39,6 +39,7 @@ RE_SEGSEL = re.compile(r"periodic\[\s*P_SEG_LINK\s*\+\s*(\w+)\s*\]")
 RE_SEL_BIND = re.compile(r"let\s+(\w+)\s*=\s*periodic\[(P_\w+)\]\s*;")
 RE_ALIAS_NEXT = re.compile(r"let\s+(\w+)\s*=\s*next\[([^\]]+)\]\s*;")
 RE_ALIAS_SEL = re.compile(r"let\s+(\w+)\s*=\s*(\w+)\s*;")
+RE_ALIAS_SUMA = re.compile(r"let\s+(\w+)\s*=\s*(\w+)\s*\+\s*(\w+)\s*;")
 RE_ARRAY = re.compile(r"let\s+(\w+)\s*=\s*\[\s*([A-Z_0-9\s,]+)\]\s*;", re.DOTALL)
 RE_ASSERT = re.compile(r"Assertion::single\(\s*([^,]+?)\s*,\s*([^,]+?)\s*,")
 RE_FOR_LANE = re.compile(r"for\s*\(\s*lane\s*,\s*offset\s*\)\s*in\s*\[[^\]]*\]\s*\{")
@@ -203,7 +204,8 @@ def tramo_carril(tramos, pos):
     return None
 
 
-def censo_transicion(cuerpo, val, arrays, sel_vars, alias_next):
+def censo_transicion(cuerpo, val, arrays, sel_vars, alias_next, suma_alias=None):
+    suma_alias = suma_alias or {}
     tramos = ambitos(cuerpo, val, arrays)
     reclamos, n_result = set(), 0
     for m in RE_RESULT.finditer(cuerpo):
@@ -214,6 +216,10 @@ def censo_transicion(cuerpo, val, arrays, sel_vars, alias_next):
         for nom, canon in sel_vars.items():
             if re.search(r"\b%s\b" % nom, sent):
                 sels.add(canon)
+        alternos = [frozenset()]
+        for nom, canones in suma_alias.items():
+            if re.search(r"\b%s\b" % nom, sent):
+                alternos = [al | {c} for al in alternos for c in canones]
         seg_m = RE_SEGSEL.search(sent)
         exprs = [x.group(1) for x in RE_NEXT.finditer(sent)]
         for nom, ex in alias_next.items():
@@ -225,7 +231,8 @@ def censo_transicion(cuerpo, val, arrays, sel_vars, alias_next):
             exprs = [x.group(1) for x in RE_NEXT.finditer(cuerpo[carril[0]:carril[1]])]
             ancho = True
         for d in combos(tramos, m.start(), val):
-            s2 = set(sels)
+          for alt in alternos:
+            s2 = set(sels) | set(alt)
             if seg_m:
                 sv = d.get(seg_m.group(1), ev(seg_m.group(1), val))
                 if sv is None:
@@ -268,8 +275,9 @@ def celdas_libres(texto, clases, fila2clase):
         elif quien == "*":
             noms = list(clases)
         elif quien.startswith("sin "):
-            sel = quien[4:].strip()
-            noms = [n for n, (f, _) in clases.items() if sel not in f]
+            sels = [s.strip() for s in quien[4:].split(" ni ")]
+            noms = [n for n, (f, _) in clases.items()
+                    if all(s not in f for s in sels)]
         else:
             noms = [quien] if quien in clases else []
         for n in noms:
@@ -301,7 +309,11 @@ def censar(texto, E):
         if m.group(2) in sel_vars:
             sel_vars[m.group(1)] = sel_vars[m.group(2)]
     alias_next = {m.group(1): m.group(2) for m in RE_ALIAS_NEXT.finditer(tex_tr)}
-    reclamos, n_res = censo_transicion(tex_tr, val, arrays, sel_vars, alias_next)
+    suma_alias = {}
+    for m in RE_ALIAS_SUMA.finditer(tex_tr):
+        if m.group(2) in sel_vars and m.group(3) in sel_vars:
+            suma_alias[m.group(1)] = [sel_vars[m.group(2)], sel_vars[m.group(3)]]
+    reclamos, n_res = censo_transicion(tex_tr, val, arrays, sel_vars, alias_next, suma_alias)
     asev = censo_aserciones(tex_as, val, fila2clase)
     libres = celdas_libres(texto, clases, fila2clase)
     cubierto = set(asev)
