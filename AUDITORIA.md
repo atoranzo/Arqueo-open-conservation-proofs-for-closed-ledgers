@@ -13629,6 +13629,76 @@ eran otros (373, 172). Los marcadores se calibran LEYENDO el fichero,
 no presuponiendo — el head dirigido lo cazo. Y como en §200: cirugia
 anclada (count==1, PRE/POST por sha), ni una linea de rigor tocada. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 202. SECURITY al dia: la eximente que caduco, el vecindario medido, y el consenso como ultimo intermediario
+
+Actualizar la politica de seguridad encontro, otra vez, cosas de fondo.
+
+**La eximente caducada (§3.3).** El apartado decia «no hay capa de red en
+este repositorio» y desde §197 la hay. Reescrito con lo que el nodo hace
+DE VERDAD, leido del codigo: `zkssl_accountView` **exige clave de vista**
+(49-A: el RPC nacio con el control de acceso puesto, buena noticia);
+`publicId`, `logEntries`, `epochHead`, `supply` y `accountCount`
+responden sin credencial —publicos por diseno—; `dev_*` con doble
+cerrojo. Y lo que sigue abierto, sin adornos: **ni auth, ni TLS, ni
+limite de tasa**; lo unico que hoy separa la fuga hacia-el-operador de la
+fuga hacia-terceros es que escucha en `127.0.0.1` por defecto.
+
+**Hallazgo NUEVO, del propio trabajo de documentar**: el binario del nodo
+**abre el ledger sin cifrado en reposo**. La capa tiene `open_encrypted`
+y `zk_ssl::crypto` desde hace mucho; el wallet duerme cifrado desde §199;
+pero el nodo no cablea ninguna clave. Quien robe el disco de un nodo lee
+los saldos. No es fallo de la primitiva: es que no esta conectada.
+
+**FV al dia (§2).** El bullet de sub-restringimiento seguia describiendo
+FV-1 como plan cuando esta HECHO (§195-§196): ESPEC ejecutable, mutantes,
+y censo con **0 celdas sin dueno** (send 23·1288, claim 21·1155). Se dice
+lo que eso cierra —«¿hay celdas que nadie restringe?»— y lo que **no**:
+que las restricciones sean suficientes.
+
+**El vecindario, medido y con las dos direcciones (§3.ter).** Tres ejes
+donde este diseno va por delante —autoridad de gasto post-cuantica HOY
+(no hay firma clasica en la via de pago: la autoridad es conocimiento de
+preimagen, y STARK/FRI solo usa hashes) frente a ECDSA/Schnorr, BLS,
+Pallas/Vesta y Ed25519; sin ceremonia y sin haberla tenido nunca; y
+revelacion ACOTADA por banda frente a la clave de vista todo-o-nada— y
+cuatro donde los otros aplastan: descentralizacion, rendimiento
+(1,5-1,9 TPS), madurez sin auditar, y 36,7 KB de prueba. Con la reserva
+puesta: post-cuantico significa sin supuestos de curva, no invulnerable,
+y el techo de 63 bits medido (hallazgo 3) va escrito al lado.
+
+**La leccion prestada.** En junio de 2026 se divulgo un fallo de
+**sub-restringimiento en el gadget de multiplicacion eliptica de halo2**
+que afectaba al pool Orchard de Zcash, **cuatro anos expuesto**,
+encontrado por auditoria asistida por IA y no por su suite; el remedio
+anunciado fue verificacion formal. Es EXACTAMENTE la clase que §3.1
+declara como prioridad mas alta aqui. Se cita porque valida el orden de
+prioridades y porque obliga a la conclusion correcta: si un sistema
+auditado y maduro tardo cuatro anos, **estos circuitos tampoco estan
+probados, y se dice**.
+
+**El cierre (§6): «el consenso es el ultimo intermediario».** Cada uno de
+estos sistemas quito a alguien —el banco emisor, el observador, el
+anfitrion, los participantes de una ceremonia— y **ninguno quito al que
+ordena**: el consenso es un intermediario de orden, hecho plural y hecho
+caro, y de ahi salen censura, reordenamiento y MEV. Existe porque un bit
+se puede copiar: el doble gasto es corolario de la clonabilidad. El
+dinero cuantico ataca esa raiz —no-clonacion— y por eso es la unica
+propuesta que suprime al ultimo intermediario en vez de repartirlo; con
+sus faltas dichas (memoria cuantica, el verificador central de Wiesner,
+esquemas de clave publica rotos): horizonte, no plan de obra. La tesis
+que posiciona a este proyecto: **si llegara el dinero cuantico, casi nada
+de esta pila habria que rehacerlo** —autoridad por preimagen, solidez
+solo-hash, suministro atado en circuito, cumplimiento por revelacion
+acotada—; lo unico a sustituir es al que ordena, que es justo lo que la
+fisica se llevaria. Y la posicion final: la confianza residual de este
+diseno **tiene nombre, medida y ataque disenado**, y son dos residuos que
+son la misma sombra del ordenador.
+
+Datos ajenos con fecha y lista de fuentes al pie del documento, con el
+aviso de re-verificarlos: ese campo se mueve rapido. Cirugia anclada
+(5 transformaciones, count==1, PRE/POST por sha), ni una linea del rigor
+previo tocada. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
