@@ -253,22 +253,33 @@ magnitud, no como benchmark.
 Resolverlo exige agregación recursiva o pruebas por lote, que no están
 implementadas.
 
-⚠️ **Pero no es el límite que primero muerde**, y una versión anterior de
-esta respuesta decía que sí.
+⚠️ **Pero no es el límite que primero muerde** — y esta respuesta ha
+tenido que corregirse DOS veces, así que las dos correcciones se dejan
+escritas.
 
-La posición de un nullifier **se deriva del propio nullifier**, y el
-circuito exige que esté libre. Por la paradoja del cumpleaños, a los
-**~65.000 pagos** la probabilidad de que dos caigan en la misma posición
-ya es del 39 %.
+**Primera corrección**: durante un tiempo esta respuesta decía que el
+tamaño era el límite principal, y no lo era. Lo era la colisión de
+nullifiers: su posición se derivaba del propio nullifier, y por la
+paradoja del cumpleaños a los **~65.000 pagos** la probabilidad de que
+dos cayeran en la misma casilla llegaba al 39 %, dejando un pago
+bloqueado de forma permanente.
 
-Y el afectado **no puede reintentar**: su nullifier es determinista, así
-que su pago queda bloqueado de forma permanente.
+**Segunda corrección**: ⚠️ **ese límite ya no existe.** La vía de un paso
+que lo producía **se retiró con su árbol de nullifiers** (`AUDITORIA.md`
+§32 y §36): hoy nada los genera. La vía de producción es la de dos fases,
+donde el anti-replay es el **encadenamiento de raíces**.
 
-**Los 120,4 MB son un coste. La colisión es una parada**, y le ocurre a un
-usuario concreto sin que el sistema esté saturado.
+⚠️ **Y no se resolvió, se evitó**: el encadenamiento exige un **orden
+total**, que un nodo único da y un sistema distribuido no. Quien
+distribuya esto recupera el límite intacto.
 
-Hay dos límites más —el árbol de pendientes se agota a los 2³² pagos
-totales, y el conjunto de custodios tope en 128— y los cuatro están en
+**El límite que primero muerde HOY** es la contención del anclaje de
+raíz: cada prueba se ata a la raíz exacta que vio al generarse, así que
+dos emisores concurrentes se serializan. Medido: **1,5-1,9 TPS**
+(`AUDITORIA.md` §123, entrada 65 del backlog).
+
+Quedan dos límites más —el árbol de pendientes se agota a los 2³² pagos
+totales, y el conjunto de custodios tope en 128— y todos están en
 `AUDITORIA.md` §13.
 
 ### 22. ¿Cuánto falta para que sea usable?

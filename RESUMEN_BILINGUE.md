@@ -42,8 +42,8 @@ clave maestra que robar.
 | Generarla | ~620 ms |
 | **Verificar / generar** | **0,5 %** |
 | Prueba de liquidación | 62 KB |
-| **Mil transferencias** | **120,4 MB acumulados** |
-| ⚠️ **Colisión de nullifiers** | **~65.000 pagos** ← el que muerde antes |
+| **Mil transferencias** | **~590 s** y **~124 MiB** acumulados |
+| ⚠️ **Techo real bajo concurrencia** | **1,5-1,9 TPS** ← el que muerde antes (anclaje de raíz, §123) |
 
 > ⚠️ **Esa razón es la de la AUDITORÍA, no la de la transferencia.**
 >
@@ -82,8 +82,13 @@ Merkle. Invisible para testigos honestos.
 
 ### Estado
 
-**373 tests**, reproducibles con Rust estable, sin instaladores externos.
-Los errores propios están documentados, no borrados.
+**539 tests** (297 de circuitos + 242 de la capa), 0 fallos y 0 warnings,
+medidos el 06-08-2026. Reproducibles con Rust estable, sin instaladores
+externos. Los errores propios están documentados, no borrados.
+
+Desde agosto de 2026 hay además **contrato público de protocolo**:
+especificación, OpenRPC generado desde el código y vectores de
+conformidad que una segunda implementación debe reproducir.
 
 ---
 
@@ -125,7 +130,8 @@ There is no master key to steal.
 | Proving it | ~620 ms |
 | **Verify / prove** | **0.5 %** |
 | Settlement proof | 62 KB |
-| **One thousand transfers** | **120.4 MB accumulated** ← the real limit |
+| **One thousand transfers** | **~590 s**, **~124 MiB** accumulated |
+| ⚠️ **Real ceiling under concurrency** | **1.5-1.9 TPS** ← the limit that bites first (root anchoring) |
 
 ### The decision that defines the design
 
@@ -152,8 +158,13 @@ honest witnesses.
 
 ### Status
 
-**373 tests**, reproducible with stable Rust, no external toolchains.
-Our own errors are documented, not erased.
+**539 tests** (297 circuit + 242 layer), 0 failures and 0 warnings,
+measured on 2026-08-06. Reproducible with stable Rust, no external
+toolchains. Our own errors are documented, not erased.
+
+Since August 2026 there is also a **public protocol contract**: a
+normative spec, an OpenRPC document generated from the code, and
+conformance vectors that a second implementation must reproduce.
 
 ---
 
@@ -161,7 +172,7 @@ Our own errors are documented, not erased.
 
 | | |
 |---|---|
-| Repositorio · Repository | `https://github.com/USUARIO/REPO` |
+| Repositorio · Repository | `https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-` |
 | Revisión de seguridad · Security review | [`AUDITORIA.md`](./AUDITORIA.md) |
 | Comparativa · Comparison | [`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md) |
 | Artículo · Paper | [`PAPER_EN.md`](./PAPER_EN.md) |

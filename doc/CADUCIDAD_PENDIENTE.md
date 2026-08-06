@@ -63,7 +63,10 @@ refund(pos, apertura, subida_de_crédito)
   vaciado del camino de pendientes. **Sin PK-check** (el destino ya está
   fijado), **sin nullifier** (la hoja vacía es su propio anti-replay: el
   segundo intento no encuentra P), **sin frozen-check** (devolver no es
-  cobrar). El guardián de layout pasará de 26 a **27 circuitos**.
+  cobrar). El guardián de layout pasará de 26 a **27 circuitos**. ⚠️ **Superado al
+  ejecutar**: fueron DOS circuitos (#27 apertura + #28 crédito) y el
+  guardián dice **28** — ver la nota de cierre de este documento y
+  `AUDITORIA.md` §178-§180.
 - **El crédito reusa `mint_climb`** sin tocar una coma: es exactamente
   «hoja(b) → hoja(b+importe), mismo pid/nonce/salt».
 - **El reloj**: `born_seq = epoch_head().seq` al aplicar el send. `T` es

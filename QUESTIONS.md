@@ -239,22 +239,33 @@ and was labelled "MB"; in SI units it is 129.0 MB.)
 Resolving it requires recursive aggregation or batched proofs, neither of
 which is implemented.
 
-⚠️ **But it is not the limit that bites first**, and an earlier version of
-this answer said it was.
+⚠️ **But it is not the limit that bites first** — and this answer has had
+to be corrected TWICE, so both corrections are left on the record.
 
-A nullifier's position **is derived from the nullifier itself**, and the
-circuit requires it to be free. By the birthday paradox, at around
-**65,000 payments** the probability that two land on the same position is
-already 39 %.
+**First correction**: for a while this answer claimed size was the main
+limit, and it was not. The nullifier collision was: its position was
+derived from the nullifier itself, and by the birthday paradox at around
+**65,000 payments** the probability that two landed on the same slot
+reached 39 %, permanently blocking someone's payment.
 
-And the affected user **cannot retry**: their nullifier is deterministic,
-so the payment is permanently blocked.
+**Second correction**: ⚠️ **that limit no longer exists.** The one-step
+path that produced it **was retired along with its nullifier tree**
+(`AUDITORIA.md` §32 and §36): nothing generates them today. The
+production path is the two-phase one, where anti-replay is **root
+chaining**.
 
-**The 120.4 MiB are a cost. The collision is a stop**, and it hits a specific
-user while the system is nowhere near saturation.
+⚠️ **And it was avoided, not solved**: root chaining requires a **total
+order**, which a single node provides and a distributed system does not.
+Whoever distributes this recovers the limit intact.
 
-Two further limits exist —the pending tree exhausts at 2³² total payments,
-and the custodian set caps at 128— and all four are in `AUDITORIA.md` §13.
+**The limit that bites first TODAY** is root-anchoring contention: every
+proof is tied to the exact root it saw when generated, so concurrent
+issuers serialise. Measured: **1.5-1.9 TPS** (`AUDITORIA.md` §123,
+backlog entry 65).
+
+Two further limits remain —the pending tree exhausts at 2³² total
+payments, and the custodian set caps at 128— and all are in
+`AUDITORIA.md` §13.
 
 ### 22. How far is it from being usable?
 

@@ -127,7 +127,15 @@ reintroducir ceremonia y perder resistencia cuántica.
 
 **Sovereign Settlement Layer** — ✅
 `crates/zk-ssl`. Mantiene el estado, encadena raíces, aplica operaciones.
-172 tests.
+**242 tests.**
+
+**Superficie de protocolo** — ✅ *(añadido: §197-§199)*
+La capa dejó de estar sola: `zk-ssl-wire` (formato de cable),
+`zk-ssl-node` (nodo de referencia JSON-RPC), `zk-ssl-sdk` (lado del
+titular, prueba LOCAL, wallet cifrado en reposo) y `zk-ssl-cli`
+(sandbox, trazador y conformidad), con `spec/RPC.md` normativa,
+`spec/openrpc.json` generado desde el código y **vectores de conformidad**
+que una segunda implementación debe reproducir campo a campo.
 
 **Autenticación criptográfica estructural** — ⚠️
 Hay claves de gasto e identidades derivadas criptográficamente
@@ -160,24 +168,36 @@ conexión.
 ### 4.2 Flujo operativo real
 
 ```rust
-let mut layer = SovereignLayer::open("./ledger", issuer_key, limite, tope)?;
+let layer = SovereignLayer::open("./ledger", custodios, gobernanza, limite, tope, max_cuentas)?;
 
-let alice  = layer.open_account(sk_alice);              // saldo CERO
-let recibo = layer.mint(issuer_key, alice, 1_000_000)?; // EXIGE clave del emisor
-layer.apply_mint(&recibo, alice)?;
+// Emitir EXIGE DOS custodios, demostrados en circuito.
+// Un pago son DOS fases, y en NINGUNA la clave llega a la capa:
+// la capa entrega materiales (caminos y raices, datos publicos) y
+// recibe pruebas que verifica.
 
-// Un pago son DOS fases: el dinero sale, y el receptor lo cobra.
-let envio = layer.send(sk_alice, alice, &estado, id_bob, aleatorio, 250_000)?;
-layer.apply_send(&envio, alice, &estado, 250_000)?;
-let cobro = layer.claim(sk_bob, bob, &estado_bob, &envio.notice)?;
+// FASE 1 — el pagador envia.
+let m = layer.send_materials(alice, id_de_bob, 250_000, aleatorio)?;
+let envio = client::prove_send(&m, clave_alice, proof_options())?;  // LOCAL
+layer.apply_send(&envio, alice, &estado_alice, 250_000)?;
+
+// FASE 2 — el receptor cobra.
+let m = layer.claim_materials(bob, &envio.notice)?;
+let cobro = client::prove_claim(&m, clave_bob, proof_options())?;   // LOCAL
 layer.apply_claim(&cobro, bob, &estado_bob, &envio.notice)?;
 
-let d = layer.audit(sk_alice, alice, 900_000, 1_100_000)?;
+let d = layer.audit(clave_alice, alice, 900_000, 1_100_000)?;
 verify_audit(&d)?;                                       // el supervisor, sin la capa
 ```
 
 Generar la prueba y aplicarla están **separados a propósito**: permite
-que quien produce la prueba y quien la acepta sean partes distintas.
+que quien produce la prueba y quien la acepta sean partes distintas — y
+es lo que hace que **ninguna clave de gasto llegue nunca a la capa**. Lo
+demuestra `a_whole_payment_without_giving_any_key_to_the_layer`.
+
+⚠️ **Una versión anterior de este bloque usaba la API RETIRADA**
+(`layer.send(sk_alice, …)`, `layer.mint(issuer_key, …)`): la clave de
+gasto entrando a la capa, justo lo contrario de lo que este documento
+sostiene. Corregido en §203; el error se registra en vez de borrarse.
 
 ---
 
@@ -256,6 +276,10 @@ tiene nombre y ataque diseñados: cabezas atestiguadas y **acuse**
 operador» en «el operador no puede mentir sin dejar evidencia
 fail-stop».
 
+*El argumento completo —por qué el consenso es un intermediario de orden
+y no su ausencia, y qué de esta pila sobreviviría al dinero cuántico—
+está desarrollado en [`SECURITY.md`](./SECURITY.md) §6.*
+
 **Fuera del dominio clásico**: la garantía física. Un STARK es solidez
 computacional con margen amplio y post-cuántico (evaluación XMSS en
 `doc/xmss-evaluacion.md`), no un teorema de la naturaleza. Cuando la
@@ -266,7 +290,7 @@ criptografía clásica honesta puede prometer.
 
 ## 7. Aportaciones reales
 
-Siete hallazgos, ninguno presente en los materiales que comparan
+Ocho hallazgos, ninguno presente en los materiales que comparan
 paradigmas:
 
 **1. AIR carece de restricciones de copia.** Al portar la actualización
@@ -295,6 +319,14 @@ otras cuatro librerías lo permiten y confían en la documentación.
 **7. El ecosistema PLONK-KZG en Rust son stacks verticales cerrados.**
 Seis vías investigadas, cinco rotas.
 
+**8. Un zkVM no es comparable en igualdad de condiciones.** Se evaluó
+RISC Zero como sexto paradigma: usa STARK sobre Goldilocks —el mismo
+sistema y campo que el backend elegido— pero exige una toolchain externa
+para compilar el programa invitado, lo que incumple el criterio que
+descartó a otras tres librerías. La medida concreta de lo que cuesta la
+generalidad: **3 dependencias frente a 349**. Se documenta en vez de
+implementarse.
+
 ---
 
 ## 8. Hoja de ruta
@@ -308,8 +340,15 @@ sería faltar al principio de transparencia.
 - Cinco paradigmas implementados y medidos.
 - Capa de liquidación con ciclo monetario completo, persistencia,
   auditoría y verificación de integridad.
-- 172 tests en la capa; cada propiedad de seguridad con test
+- **539 tests** (297 de circuitos + 242 de la capa), 0 fallos y 0
+  warnings, medidos el 06-08-2026; cada propiedad de seguridad con test
   discriminante.
+- **De implementación a protocolo** (§197-§199): especificación, OpenRPC
+  generado, vectores de conformidad como compuerta permanente, proceso
+  RFC, nodo de referencia y SDK con keystore.
+- **ESPEC ejecutable del núcleo de pagos** (§195-§196): intérprete que
+  reproduce byte a byte la salida del circuito, mutantes incluidos, y
+  censo de celdas con **0 sin dueño**.
 
 ### Lo alcanzable
 

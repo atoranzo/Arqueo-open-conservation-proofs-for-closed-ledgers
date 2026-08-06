@@ -107,9 +107,22 @@ llega viva. El throughput efectivo colapsa a **~1,6 TPS** con regeneraciones
 en cascada. Este límite muerde antes que cualquier otro y no aparece en la
 lista de límites cuantificados del README.
 
-**2.3 El nullifier.** Colisiones de posición probables a ~65.000 pagos (ya
-registrado). Bloqueante para cualquier escala; ninguno de los cambios de este
-documento tiene sentido sin resolverlo primero.
+**2.3 El nullifier — ⚠️ RETIRADO, y esta entrada estaba equivocada.**
+Decía que las colisiones a ~65.000 pagos eran «bloqueante para cualquier
+escala» y que **ningún cambio de este documento tenía sentido sin
+resolverlo primero**. Eso ya no es cierto por una vía que no era la
+prevista: **la vía de un paso se retiró con su árbol de nullifiers**
+(`AUDITORIA.md` §32 y §36), así que hoy nada los genera y el orden de
+trabajo de este documento **no está bloqueado**.
+
+⚠️ Con la reserva de siempre: el límite **se evitó, no se resolvió**. Lo
+que sustituye al marcador es el encadenamiento de raíces, que exige
+**orden total** — el que un nodo único da y un sistema distribuido no.
+Cualquier diseño de escalado que reparta el estado **recupera el problema
+entero**, y por tanto sigue siendo la primera pregunta de la §5.
+
+**El límite número uno vigente es el 2.2** (contención del anclaje), hoy
+medido en **1,5-1,9 TPS**.
 
 ---
 

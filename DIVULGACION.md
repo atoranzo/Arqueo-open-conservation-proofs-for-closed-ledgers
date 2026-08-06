@@ -216,19 +216,29 @@ transferencias**. Un sistema nacional haría millones al día.
 Pero **no es el primero que aparecería**, y una versión anterior de este
 texto decía que sí.
 
-Cada pago genera una marca que impide gastarlo dos veces, y esa marca se
-guarda en una casilla que **se calcula a partir de la propia marca**, no se
-elige. Con cuatro mil millones de casillas parece imposible que dos coincidan
-— pero es el mismo efecto que hace que en un aula de treinta personas dos
-cumplan años el mismo día: **a los sesenta y cinco mil pagos, la
-coincidencia ya es probable**.
+⚠️ **Y aquí hace falta corregir la corrección.** Durante un tiempo este
+texto explicaba que el límite que primero aparecía era otro: cada pago
+generaba una marca guardada en una casilla **calculada a partir de la
+propia marca**, y por el mismo efecto que hace que en un aula de treinta
+personas dos cumplan años el mismo día, a los **sesenta y cinco mil
+pagos** la coincidencia ya era probable — dejando el pago de alguien
+bloqueado para siempre.
 
-Y a quien le toca **no puede volver a intentarlo**: su marca siempre es la
-misma. Su pago queda bloqueado.
+**Ese límite ya no existe: el camino que lo producía se retiró entero**
+(`AUDITORIA.md` §32 y §36), y hoy nada genera esas marcas. El pago se
+protege ahora encadenando el estado: reenviar una operación vieja
+presenta una foto caducada y se rechaza.
 
-Los 59 megabytes son un coste que se acumula. Esto es una puerta que se
-cierra, y **le pasa a una persona concreta sin que el sistema esté
-saturado**. Los dos están escritos, y ninguno de los dos está resuelto.
+**Pero no se resolvió, se evitó** — y conviene decirlo así: el nuevo
+mecanismo necesita que **alguien ponga las operaciones en un orden**, y
+eso es justo lo que un sistema distribuido no tiene gratis. Quien
+reparta esto entre varios nodos recupera el problema entero.
+
+¿Y cuál es entonces el límite que primero muerde hoy? **No es el
+tamaño**: es que cada prueba se ata a la foto exacta del sistema que vio
+al generarse, así que dos personas pagando a la vez se estorban. Medido:
+**entre 1,5 y 1,9 operaciones por segundo**. Ese es el techo real, y
+está escrito con su número.
 
 ---
 

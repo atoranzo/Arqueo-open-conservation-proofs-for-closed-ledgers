@@ -13699,6 +13699,65 @@ aviso de re-verificarlos: ese campo se mueve rapido. Cirugia anclada
 (5 transformaciones, count==1, PRE/POST por sha), ni una linea del rigor
 previo tocada. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 203. La constelacion entera: nueve satelites mas, y una correccion que sobrevivio a lo que corregia
+
+Tras §200-§202 (README, tres satelites, SECURITY) quedaba el resto del
+vecindario documental. Barrido con marcadores calibrados LEYENDO —la
+leccion de §201— sobre TODOS los .md del arbol, triaje, y nueve
+intervenidos. Lo que no se toco va con motivo escrito abajo.
+
+**El hallazgo del tramo, y es de patron.** Cuatro documentos
+—DIVULGACION, PREGUNTAS, QUESTIONS, doc/ESCALADO— presentaban como VIVO
+el limite de colision de nullifiers a ~65.000 pagos. Tres de ellos lo
+decian con esta formula: «no es el limite que primero muerde, y una
+version anterior de este texto decia que si». Es decir: **habian sido
+corregidos UNA vez para ascender ese limite a principal… y despues la
+via que lo producia se retiro entera (§32, §36)**. La correccion
+sobrevivio a lo que corregia. Ahora los tres cuentan las DOS
+correcciones —se dejan escritas, no se borran— y nombran el limite
+vigente: la contencion del anclaje, 1,5-1,9 TPS (§123). doc/ESCALADO era
+el peor: afirmaba que **ningun cambio de ese documento tenia sentido sin
+resolver el nullifier primero**, bloqueando en falso su propio plan de
+trabajo.
+
+**PRINCIPIOS.md — la vara de §201, otra vez.** Su §4.2 abria con la API
+RETIRADA (`layer.send(sk_alice, …)`, `layer.mint(issuer_key, …)`): la
+clave de gasto entrando a la capa, lo contrario de lo que el documento
+sostiene. Sustituido por las dos fases con prueba LOCAL y el testigo que
+lo demuestra. Ademas: 172 tests -> 242 y el canon 539 con fecha; el
+componente de protocolo (§197-§199) anadido al mapa de arquitectura; la
+ESPEC ejecutable (§195-§196) en «lo hecho»; su §6.bis remite ahora al
+argumento completo de SECURITY §6; y **decia «Siete hallazgos» cuando
+README y RESUMEN dicen ocho** — faltaba el zkVM (3 dependencias frente a
+349): anadido, la casa deja de contradecirse.
+
+**RESUMEN_BILINGUE.md** llevaba 373 tests en los dos idiomas, la fila
+del nullifier como «el que muerde antes» solo en la mitad espanola (las
+dos tablas divergian), y **un marcador de plantilla sin sustituir en la
+tabla de enlaces: `github.com/USUARIO/REPO`** — en un documento publico.
+Corregidos los tres, y las dos mitades vuelven a decir lo mismo.
+
+**INSTITUCIONAL / INSTITUTIONAL**: el bloque «verificar todo lo
+anterior» pedia 172 y 201 tests. Hoy 242 y 297.
+
+**doc/CADUCIDAD_PENDIENTE**: «el guardian pasara de 26 a 27 circuitos»
+en futuro, cuando el propio cierre del documento ya registra que fueron
+DOS y el guardian dice 28. Marcado como superado en el punto, con
+puntero a su nota de cierre y a §178-§180.
+
+**Lo que NO se toco, y por que.** Documentos de publicacion (PAPER,
+PAPER_EN, doc/ZENODO, PUBLICACION, doc/preprints/*): **se versionan, no
+se reescriben** — la regla de la casa dice que una cifra publicada que
+se corrige no se borra, se marca. Actas (AUDITORIA, BACKLOG): sus
+asientos DEBEN conservar las cifras de entonces. PERFORMANCE.md: ya
+lleva «DOCUMENTO SUPERADO» en cabecera, es constancia deliberada de un
+error metodologico. ARQUITECTURA.md queda para el sello siguiente: 1518
+lineas y con narracion historica que hay que distinguir de la rancia,
+leerlo entero es su propio trabajo.
+
+19 cirugias ancladas (count==1, PRE/POST por sha), validadas
+reproduciendo el POST byte a byte antes de escribir el pegable. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
