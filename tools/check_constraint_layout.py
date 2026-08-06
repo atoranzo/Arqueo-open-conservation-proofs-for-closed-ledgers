@@ -564,6 +564,14 @@ RE_COMPUERTA_RECOVERY = re.compile(
     r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d)/2 \u00b7 "
     r"C_SEG_LINK\u2192guardi\u00e1n$"
 )
+CENSO_SEND_RUTA = os.path.join(
+    os.path.dirname(__file__), "..", "doc", "fv", "interprete_send.py"
+)
+RE_COMPUERTA_SEND = re.compile(
+    r"^COMPUERTA-SEND: (\d+) clases \u00b7 (\d+) celdas-clase \u00b7 (\d+) libres "
+    r"declaradas \u00b7 (\d+) sin due\u00f1o \u00b7 mutantes (\d)/2 \u00b7 "
+    r"C_SEG_LINK\u2192guardi\u00e1n$"
+)
 
 
 def _censo_fv1(sujeto, ruta, prefijo, regex):
@@ -627,6 +635,11 @@ def censo_recovery_climb():
 def censo_mint_pagos():
     return _censo_fv1("mint (pagos)", CENSO_MINT_PAGOS_RUTA,
                       "COMPUERTA-MINT:", RE_COMPUERTA_MINT)
+
+
+def censo_send():
+    return _censo_fv1("send", CENSO_SEND_RUTA,
+                      "COMPUERTA-SEND:", RE_COMPUERTA_SEND)
 
 
 CASO_50 = """
@@ -889,6 +902,7 @@ def barrer(raiz, verbose, con_censo):
             ("circuit_credit_climb.rs", censo_credit_climb),
             ("circuit_recovery_climb.rs", censo_recovery_climb),
             ("circuit_mint.rs", censo_mint_pagos),
+            ("circuit_send.rs", censo_send),
         ):
             linea_c, faltas_censo = fn_censo()
             if faltas_censo:

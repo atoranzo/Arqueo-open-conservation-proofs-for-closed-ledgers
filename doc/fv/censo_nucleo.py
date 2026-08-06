@@ -40,7 +40,8 @@ RE_SEL_BIND = re.compile(r"let\s+(\w+)\s*=\s*periodic\[(P_\w+)\]\s*;")
 RE_ALIAS_NEXT = re.compile(r"let\s+(\w+)\s*=\s*next\[([^\]]+)\]\s*;")
 RE_ALIAS_SEL = re.compile(r"let\s+(\w+)\s*=\s*(\w+)\s*;")
 RE_ALIAS_SUMA = re.compile(r"let\s+(\w+)\s*=\s*(\w+)\s*\+\s*(\w+)\s*;")
-RE_ARRAY = re.compile(r"let\s+(\w+)\s*=\s*\[\s*([A-Z_0-9\s,]+)\]\s*;", re.DOTALL)
+RE_SUMA_INLINE = re.compile(r"\(\s*(\w+)\s*\+\s*(\w+)\s*\)")
+RE_ARRAY = re.compile(r"let\s+(\w+)\s*=\s*\[\s*([A-Z_0-9\s,+]+)\]\s*;", re.DOTALL)
 RE_ASSERT = re.compile(r"Assertion::single\(\s*([^,]+?)\s*,\s*([^,]+?)\s*,")
 RE_FOR_LANE = re.compile(r"for\s*\(\s*lane\s*,\s*offset\s*\)\s*in\s*\[[^\]]*\]\s*\{")
 RE_FOR_RANGE = re.compile(r"for\s+(\w+)\s+in\s+([A-Za-z_0-9]+)\s*\.\.(=?)\s*([A-Za-z_0-9]+)\s*\{")
@@ -192,7 +193,7 @@ def combos(tramos, pos, val):
             _, kv, cv, arr = sc
             for d in out:
                 for k, nombre in enumerate(arr):
-                    nu.append(dict(d, **{kv: k, cv: val.get(nombre)}))
+                    nu.append(dict(d, **{kv: k, cv: ev(nombre, val)}))
         out = nu
     return out
 
@@ -220,6 +221,11 @@ def censo_transicion(cuerpo, val, arrays, sel_vars, alias_next, suma_alias=None)
         for nom, canones in suma_alias.items():
             if re.search(r"\b%s\b" % nom, sent):
                 alternos = [al | {c} for al in alternos for c in canones]
+        for msum in RE_SUMA_INLINE.finditer(sent):
+            a, b = sel_vars.get(msum.group(1)), sel_vars.get(msum.group(2))
+            if a and b:
+                alternos = [al | {c} for al in alternos for c in (a, b)]
+                sels.discard(a); sels.discard(b)
         seg_m = RE_SEGSEL.search(sent)
         exprs = [x.group(1) for x in RE_NEXT.finditer(sent)]
         for nom, ex in alias_next.items():

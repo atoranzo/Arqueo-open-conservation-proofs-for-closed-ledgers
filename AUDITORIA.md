@@ -13336,6 +13336,51 @@ arrastraba el corrimiento pre-salt, y un `#[cfg(test)]` duplicado.
 
 Quedan de la 71: `send`, `claim` — con el molde ESPEC ya caliente.
 
+## 195. FV-1: el ENVÍO nace ESPEC — octava pieza, primera fuera de la traza 512
+
+La octava pieza del censo FV-1, y la primera FUERA de la traza 512:
+`circuit_send`, dos carriles reales sobre 1024×56. Nace directamente como
+ESPEC (`doc/fv/interprete_send.py`, 129) sobre el núcleo: 21 anclas con
+conteo exacto, 20 constantes ESPERADAS, 16 selectores en P2SEL, 42
+aserciones con clase. El censo mide 23 clases · 1288 celdas-clase · 56
+sentencias — y aquí VUELVE la clase plana: la tubería acaba en la fila
+815 y deja 208 filas de holgura que ninguna pieza anterior tenía.
+
+Send exigió el núcleo v4 (409→415), dos formas nuevas y un corte por
+cada una: arrays con suma de literal (`transport` lleva `COL_KEY +
+1..3`; los elementos ahora se EVALÚAN, no se buscan por nombre) y la
+suma INLINE de selectores (`(frozen_entry + frozen_link)` sin `let`):
+un reclamo POR SUMANDO, con los sumandos fuera del conjunto estricto.
+Paridad byte a byte ×4 + autotest contra el patrón oro, en el espejo y
+en este árbol — la pluma vista escribir en ambos.
+
+258 huérfanas medidas y leídas UNA A UNA contra el circuito; 13
+declaraciones (33 líneas en el .rs, 2449→2483); 0 sin dueño · 0
+rancias. Tres familias con historia: el salt testigo (52..55) libre en
+TODAS las clases —solo se lee, nunca se ata—; el carril B libre en la
+fase de congelados —la no-pertenencia sube SOLO por A y B jamás se
+asierta ahí—; y los limbos altos del nonce (9..11/21..23 en
+link_leaf): el censo REDESCUBRE por su cuenta la cuestión previa de la
+spec §4 y la deja declarada citando al test que mide la defensa aguas
+abajo. Una lección de gramática cazada midiendo, no leyendo: el `sin`
+va DENTRO de `clase` (RE_LOCUS) — 63 huérfanas fantasma hasta dar con
+la forma canónica.
+
+Guardián v6 (947→961, +14): QUINTO censo en `barrer`, línea limpia con
+los cinco, autotest 3/3. Cazas ×3 con restauración por sha: candidato →
+TRIPLE grave ([MUERTA] 5 + [MUERTA PERIODICA] 5 + [CENSO]; NS=5, no
+8) · Horner → ambas redes (sonda 1 vs censo 10) · selector → redes
+ciegas y el censo grita 8 EXACTOS. El candidato ciego suma su QUINTA
+confirmación: la co-posesión Horner/seg_link es del PATRÓN — ya ni la
+longitud de traza es de la estirpe. Pista rancia anotada:
+`with_capacity(29)` contra 42 aserciones reales. Suites canónicas en la
+forma del §194 (por paquete, release, compuertas literales): stark 297
+· zk-ssl 242 · 0 failed · warnings 0·0.
+
+**Estado 71**: cinco piezas censadas —mint_climb, credit, recovery,
+mint-pagos y send, la primera fuera de la traza 512— con el censo como
+COMPUERTA del guardián (v6, 961) y el núcleo en v4. Queda `claim`. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
