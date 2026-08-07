@@ -106,6 +106,26 @@ pub struct ClaimReceipt {
     pub public_inputs: ClaimPublicInputs,
 }
 
+/// **Lo que una validacion de envio produce y una aplicacion consume**
+/// (§214). Separar ambas fases es lo que permite validar N operaciones
+/// contra una instantanea y aplicarlas despues (RFC-0002, etapa 2).
+struct SendPlan {
+    sender_index: AccountIndex,
+    updated: ClientState,
+    hoja_nueva: Digest,
+    pos: u64,
+    compromiso: Digest,
+    amount: u64,
+}
+
+/// Gemela de [`SendPlan`] para el cobro.
+struct ClaimPlan {
+    receiver_index: AccountIndex,
+    updated: ClientState,
+    hoja_nueva: Digest,
+    position: u64,
+}
+
 impl SovereignLayer {
     /// **Cuánto dinero hay en tránsito: la suma de los pendientes sin
     /// cobrar.**
@@ -586,48 +606,44 @@ impl SovereignLayer {
     }
 
     /// Aplica un envío: debita y deposita el compromiso.
-    pub fn apply_send(
-        &mut self,
+    /// **Valida un envio SIN tocar nada** (§214).
+    ///
+    /// Toma los arboles por referencia en vez de leerlos de `self`: eso es
+    /// lo que permite validarlo contra una **instantanea de arranque de
+    /// lote** en vez de contra el estado actual (RFC-0002, etapa 2).
+    ///
+    /// Contiene, en el mismo orden, las cinco comprobaciones que
+    /// `apply_send` hacia antes de mutar. **Ninguna muta.**
+    #[allow(clippy::too_many_arguments)]
+    fn validate_send(
+        &self,
+        accounts: &SparseTree,
+        pending: &SparseTree,
+        frozen_root: Digest,
         receipt: &SendReceipt,
         sender_index: AccountIndex,
         sender_state: &ClientState,
         amount: u64,
-    ) -> Result<(), LayerError> {
+    ) -> Result<SendPlan, LayerError> {
         let pi = &receipt.public_inputs;
-        if pi.root_old != self.accounts.root() || pi.pending_root_old != self.pending.root() {
+        if pi.root_old != accounts.root() || pi.pending_root_old != pending.root() {
             return Err(LayerError::StaleState);
         }
-        if pi.frozen_root != self.frozen.root() {
+        if pi.frozen_root != frozen_root {
             return Err(LayerError::StaleState);
         }
 
         // ===== EL LIMITE REGULATORIO =====
         //
-        // ⚠️ **Se comprueba sobre el importe PROBADO, no sobre el
-        // parametro.** `send()` ya lo comprueba al generar, pero eso solo
-        // ata a quien use esa funcion: quien construya su propia traza y su
-        // propia prueba puede llamar directamente a `apply_send`.
+        // ⚠️ Se comprueba sobre el importe PROBADO, no sobre el parametro:
+        // quien construya su propia traza puede llamar directamente al
+        // apply. El circuito prueba `importe <= limite DECLARADO`; la capa
+        // comprueba que ese limite sea el suyo. Ver `AUDITORIA.md` §25.
         //
-        // **Sin esto, el limite regulatorio no se imponia en esta via.**
-        // `circuit_settlement` —la via antigua— lo lleva como entrada
-        // publica, y su `apply` comprobaba que la declarada fuera la del
-        // sistema. Al sustituir una via por otra **se perdio esa
-        // comprobacion**. Ver `AUDITORIA.md` §25.
-        //
-        // ⚠️ **Esto es de CAPA, no de circuito.** `circuit_send` no lleva
-        // el limite como entrada publica, asi que un tercero que solo tenga
-        // la prueba **no puede verificar que se respeto**. La via antigua
-        // si lo permitia. **Cerrarlo exige anadir el limite al circuito**, y
-        // no esta hecho.
-        // El circuito prueba `importe <= limite DECLARADO en la traza`.
-        // La capa comprueba que ese limite declarado **sea el suyo**.
-        //
-        // Las dos juntas dan `importe <= limite del sistema`, y a
-        // diferencia de una comprobacion solo de capa, **un tercero con la
-        // prueba puede verificar la primera mitad**.
-        //
-        // Es la misma composicion que tenia `circuit_settlement` + `apply`
-        // en la via antigua, y que se perdio al sustituirla.
+        // ⚠️ Esto es de CAPA, no de circuito: `circuit_send` no lleva el
+        // limite como entrada publica, asi que un tercero con solo la
+        // prueba **no puede verificar que se respeto**. Cerrarlo exige
+        // anadirlo al circuito, y no esta hecho.
         let limite_declarado = pi.regulatory_limit.as_int();
         if limite_declarado != self.regulatory_limit {
             return Err(LayerError::WrongRegulatoryLimit {
@@ -636,25 +652,12 @@ impl SovereignLayer {
             });
         }
 
-        // ===== SE VERIFICA LA PRUEBA. ANTES NO SE HACIA. =====
+        // ===== SE VERIFICA LA PRUEBA =====
         //
-        // ⚠️ **Esto faltaba, y era el fallo mas grave de la auditoria (§73).**
-        // Sin esta llamada, las unicas condiciones de rechazo eran raices
-        // publicas que quien llama puede recomputar, asi que:
-        //
-        // - un pago con una prueba de 32 ceros se aplicaba;
-        // - declarar un saldo falso escribia el saldo falso;
-        // - **y gastar no requeria la clave del titular**: un tercero
-        //   debitaba una cuenta ajena y se dirigia el pendiente a si mismo.
-        //
-        // La propiedad que los papers citan como argumento central -que la
-        // clave de gasto no salga de la maquina del cliente- la demostraba
-        // el circuito y **la capa no la imponia**, porque no lo consultaba.
-        //
-        // Va ANTES de tocar el estado, y va aqui y no en `send()`: `send`
-        // solo genera. El comentario de esta funcion ya advertia que «quien
-        // tenga su propia prueba puede llamar directamente a `apply_send`».
-        // La puerta estaba vista y sin cerrar.
+        // ⚠️ Esto faltaba, y era el fallo mas grave de la auditoria (§73).
+        // Sin esta llamada, gastar no requeria la clave del titular: un
+        // tercero debitaba una cuenta ajena y se dirigia el pendiente a si
+        // mismo. Va ANTES de tocar el estado.
         let proof = winterfell::Proof::from_bytes(&receipt.proof)
             .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
         let min_opts = AcceptableOptions::OptionSet(vec![self.options.clone()]);
@@ -665,37 +668,19 @@ impl SovereignLayer {
         )
         .map_err(|e| LayerError::VerificationFailed(format!("envio: {e:?}")))?;
 
-        // ⚠️ **El nonce NO se incrementa.**
-        //
-        // `circuit_send` lo heredó de `circuit_burn`, que tampoco lo
-        // incrementa. Si la capa lo hiciera, la hoja resultante seria otra
-        // y la raiz no cuadraria con la que la prueba acredita.
-        //
-        // La proteccion contra reenvio viene del encadenamiento de raices:
-        // un segundo intento tendria `root_old` obsoleta. Es lo mismo que
-        // hace la destruccion.
-        //
-        // `circuit_settlement` SI lo incrementa. La diferencia es
-        // deliberada aqui, pero conviene saberla.
+        // ⚠️ **El nonce NO se incrementa.** `circuit_send` lo heredo de
+        // `circuit_burn`. Si la capa lo hiciera, la hoja resultante seria
+        // otra y la raiz no cuadraria con la que la prueba acredita. La
+        // proteccion contra reenvio viene del encadenamiento de raices.
         let updated = ClientState {
             balance: sender_state.balance - amount,
             ..sender_state.clone()
         };
-
-        // Sobre copias: si las raíces no cuadran, el estado queda intacto.
         let leaf_salt_rec = self
             .records
             .get(&sender_index)
             .map(|r| r.leaf_salt)
             .unwrap_or(crate::store::LEAF_SALT_LEGACY);
-        // §212: la raiz hipotetica se calcula con `root_with`, que sube el
-        // camino de la hoja sin clonar el arbol. Antes eran DOS clones
-        // completos por operacion —cuentas y pendientes— solo para esta
-        // comprobacion, y desde §207 esos clones copian tambien el mapa de
-        // nodos internos.
-        //
-        // La atomicidad se conserva y **mejora**: `root_with` no muta, asi
-        // que hasta que las dos raices no cuadran no se toca nada.
         let hoja_nueva = native_leaf_salted(
             updated.public_id,
             BaseElement::new(updated.balance),
@@ -705,62 +690,94 @@ impl SovereignLayer {
         let pos = receipt.notice.position;
         let compromiso = receipt.commitment;
 
-        if self.accounts.root_with(sender_index, hoja_nueva) != pi.root_new
-            || self.pending.root_with(pos, compromiso) != pi.pending_root_new
+        // La raiz hipotetica sale de `root_with` (§212): sin clonar, y sin
+        // mutar. Se calcula **contra los arboles que se han pasado**, que
+        // en un lote son los de la instantanea de arranque.
+        if accounts.root_with(sender_index, hoja_nueva) != pi.root_new
+            || pending.root_with(pos, compromiso) != pi.pending_root_new
         {
             return Err(LayerError::StaleState);
         }
 
-        self.accounts.set_leaf(sender_index, hoja_nueva);
-        self.pending.set_leaf(pos, compromiso);
-        // ⚠️ **El registro se mantiene aunque `transfer()` ya no exista**
-        // (la 32, §161): la vía nueva no lo LEE para verificar —el saldo
-        // viene del titular y se contrasta con la hoja—, pero `records`
-        // alimenta los accessors del operador (§129; `balance_of` lee
-        // `records`) y el snapshot. El letrero viejo («cuando `transfer()`
-        // desaparezca, esto también») prometía de más; §161 lo reconcilia.
-        self.records.insert(
+        Ok(SendPlan {
             sender_index,
+            updated,
+            hoja_nueva,
+            pos,
+            compromiso,
+            amount,
+        })
+    }
+
+    /// **Aplica un envio ya validado.** Solo muta; no comprueba nada.
+    ///
+    /// ⚠️ El registro recibe las raices **REALES** —la de antes y la de
+    /// despues de esta mutacion—, no las que la prueba declara. Con una
+    /// sola operacion coinciden; en un lote no, y el registro necesita las
+    /// reales para que `verify_chain` siga pasando. La decision y lo que
+    /// se pierde con ella estan en `spec/RPC.md` y en §213.
+    fn commit_send(&mut self, plan: &SendPlan, receipt: &SendReceipt) -> Result<(), LayerError> {
+        let root_antes = self.accounts.root();
+        self.accounts.set_leaf(plan.sender_index, plan.hoja_nueva);
+        self.pending.set_leaf(plan.pos, plan.compromiso);
+        let root_despues = self.accounts.root();
+
+        // El registro se mantiene para los accessors del operador (§129,
+        // §161): `balance_of` lee `records`, y el snapshot tambien.
+        self.records.insert(
+            plan.sender_index,
             AccountRecord {
-                public_id: updated.public_id,
-                balance: updated.balance,
-                nonce: updated.nonce,
-                // view_id del record GUARDADO, no del ClientState entrante:
-                // el cliente no debe reescribir su credencial de lectura al
-                // operar (49-A). Inmutable salvo apertura y recovery.
+                public_id: plan.updated.public_id,
+                balance: plan.updated.balance,
+                nonce: plan.updated.nonce,
+                // view_id y salt del record GUARDADO, no del ClientState
+                // entrante: el cliente no debe reescribir su credencial de
+                // lectura al operar (49-A).
                 view_id: self
                     .records
-                    .get(&sender_index)
+                    .get(&plan.sender_index)
                     .map(|r| r.view_id)
                     .unwrap_or(crate::store::VIEW_ID_LEGACY),
-                // salt del record GUARDADO, no del input (misma razon 49-A).
                 leaf_salt: self
                     .records
-                    .get(&sender_index)
+                    .get(&plan.sender_index)
                     .map(|r| r.leaf_salt)
                     .unwrap_or(crate::store::LEAF_SALT_LEGACY),
             },
         );
-        // Solo avanza si la posicion era nueva. Si se reutilizo una
-        // liberada, el contador ya estaba mas adelante.
-        if pos >= self.next_pending {
-            self.next_pending = pos + 1;
+        if plan.pos >= self.next_pending {
+            self.next_pending = plan.pos + 1;
         }
-        // §211: aplicada deja de estar reservada — ahora la ocupa el arbol.
-        self.reserved_pending.remove(&pos);
-        // El dinero sale del saldo y pasa a estar en transito.
-        self.pending_amounts.insert(pos, amount);
+        self.reserved_pending.remove(&plan.pos);
+        self.pending_amounts.insert(plan.pos, plan.amount);
         self.pending_meta
-            .insert(pos, (sender_index, self.log.len() as u64));
-        // ⚠️ **Deja constancia ANTES de persistir**, igual que las demas
-        // operaciones: si el proceso muere en medio, el lote atomico
-        // incluye o excluye las dos cosas.
-        //
-        // `two_phase.rs` era **el unico modulo que no registraba nada**.
+            .insert(plan.pos, (plan.sender_index, self.log.len() as u64));
+        // ⚠️ Deja constancia ANTES de persistir: el lote atomico incluye o
+        // excluye las dos cosas.
         self.log
-            .append(OpKind::Send, pi.root_old, pi.root_new, &receipt.proof);
-        self.commit(&[sender_index], Some((pos, compromiso)))?;
+            .append(OpKind::Send, root_antes, root_despues, &receipt.proof);
+        self.commit(&[plan.sender_index], Some((plan.pos, plan.compromiso)))?;
         Ok(())
+    }
+
+    /// **FASE 1 aplicada.** Validar contra el estado actual y aplicar.
+    pub fn apply_send(
+        &mut self,
+        receipt: &SendReceipt,
+        sender_index: AccountIndex,
+        sender_state: &ClientState,
+        amount: u64,
+    ) -> Result<(), LayerError> {
+        let plan = self.validate_send(
+            &self.accounts,
+            &self.pending,
+            self.frozen.root(),
+            receipt,
+            sender_index,
+            sender_state,
+            amount,
+        )?;
+        self.commit_send(&plan, receipt)
     }
 
     /// **FASE 2.** El receptor demuestra que el pendiente es suyo y cobra.
@@ -834,35 +851,27 @@ impl SovereignLayer {
     }
 
     /// Aplica una reclamación: acredita y consume el pendiente.
-    pub fn apply_claim(
-        &mut self,
+    /// **Valida un cobro SIN tocar nada** (§214). Gemela de
+    /// [`Self::validate_send`]: arboles por referencia, ninguna mutacion.
+    fn validate_claim(
+        &self,
+        accounts: &SparseTree,
+        pending: &SparseTree,
+        frozen_root: Digest,
         receipt: &ClaimReceipt,
         receiver_index: AccountIndex,
         receiver_state: &ClientState,
         notice: &PendingNotice,
-    ) -> Result<(), LayerError> {
+    ) -> Result<ClaimPlan, LayerError> {
         let pi = &receipt.public_inputs;
-        if pi.root_old != self.accounts.root() || pi.pending_root_old != self.pending.root() {
+        if pi.root_old != accounts.root() || pi.pending_root_old != pending.root() {
+            return Err(LayerError::StaleState);
+        }
+        if pi.frozen_root != frozen_root {
             return Err(LayerError::StaleState);
         }
 
-        // ⚠️ **La raiz de congelados tampoco se comprobaba aqui**, y
-        // `apply_send` si lo hacia. El circuito acredita que el titular NO
-        // esta en ese arbol, pero contra la raiz que la prueba DECLARA: sin
-        // atarla a la del sistema, valdria una raiz vieja de cuando el
-        // titular aun no estaba congelado. Misma familia que lo de abajo, y
-        // se cierra en el mismo commit en vez de quedar anotado.
-        if pi.frozen_root != self.frozen.root() {
-            return Err(LayerError::StaleState);
-        }
-
-        // ===== SE VERIFICA LA PRUEBA. ANTES NO SE HACIA. =====
-        //
-        // ⚠️ Aqui pesaba aun mas que en `apply_send`: esta funcion acredita
-        // `receiver_state.balance + notice.amount` con **las dos cosas
-        // puestas por quien llama**, y no comprobaba que el compromiso
-        // guardado correspondiera al aviso. Cobrar el pendiente de otro solo
-        // exigia saber su posicion. Ver §73.
+        // Se verifica la prueba ANTES de tocar el estado (§73).
         let proof = winterfell::Proof::from_bytes(&receipt.proof)
             .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
         let min_opts = AcceptableOptions::OptionSet(vec![self.options.clone()]);
@@ -873,83 +882,97 @@ impl SovereignLayer {
         )
         .map_err(|e| LayerError::VerificationFailed(format!("cobro: {e:?}")))?;
 
-        // El nonce tampoco se incrementa: ver el comentario de `apply_send`.
         let updated = ClientState {
             balance: receiver_state.balance + notice.amount,
             ..receiver_state.clone()
         };
-
         let leaf_salt_rec = self
             .records
             .get(&receiver_index)
             .map(|r| r.leaf_salt)
             .unwrap_or(crate::store::LEAF_SALT_LEGACY);
-        // §212: como en `apply_send`, la raiz hipotetica sale de
-        // `root_with` y no de clonar el arbol.
-        //
-        // ⚠️ **Y ademas se corrige un orden equivocado.** Estas dos lineas
-        //
-        //     self.pending_amounts.remove(&notice.position);
-        //     self.pending_meta.remove(&notice.position);
-        //
-        // estaban ANTES de la comprobacion de raices. Si esa comprobacion
-        // fallaba, la capa se quedaba **sin el importe ni los metadatos de
-        // una nota que seguia existiendo en el arbol** —porque el borrado
-        // del pendiente iba sobre un clon que se descartaba—. El comentario
-        // gemelo de `apply_send` promete «si las raices no cuadran, el
-        // estado queda intacto»; aqui no se cumplia. Ahora si: **nada se
-        // toca hasta que las dos raices cuadran**.
         let hoja_nueva = native_leaf_salted(
             updated.public_id,
             BaseElement::new(updated.balance),
             updated.nonce,
             leaf_salt_rec,
         );
-        // **Consumido**: la hoja vuelve a estar vacía. Sin esto, el mismo
-        // pendiente se cobraría indefinidamente.
+        // **Consumido**: la hoja vuelve a estar vacia. Sin esto, el mismo
+        // pendiente se cobraria indefinidamente.
         let vacia: Digest = [BaseElement::ZERO; 4];
 
-        if self.accounts.root_with(receiver_index, hoja_nueva) != pi.root_new
-            || self.pending.root_with(notice.position, vacia) != pi.pending_root_new
+        if accounts.root_with(receiver_index, hoja_nueva) != pi.root_new
+            || pending.root_with(notice.position, vacia) != pi.pending_root_new
         {
             return Err(LayerError::StaleState);
         }
 
-        // A partir de aqui SI se muta: las raices ya cuadran.
-        self.pending_amounts.remove(&notice.position);
-        self.pending_meta.remove(&notice.position);
-        self.accounts.set_leaf(receiver_index, hoja_nueva);
-        self.pending.set_leaf(notice.position, vacia);
-        // Ver el comentario de `apply_send`: compatibilidad, no lectura.
-        self.records.insert(
+        Ok(ClaimPlan {
             receiver_index,
+            updated,
+            hoja_nueva,
+            position: notice.position,
+        })
+    }
+
+    /// **Aplica un cobro ya validado.** Solo muta.
+    ///
+    /// ⚠️ Como en `commit_send`, el registro recibe las raices REALES
+    /// (§213). Y las bajas de `pending_amounts`/`pending_meta` van aqui,
+    /// **despues** de toda comprobacion: hasta §212 estaban antes, y una
+    /// comprobacion fallida dejaba a la capa sin el importe de una nota
+    /// que seguia existiendo en el arbol.
+    fn commit_claim(&mut self, plan: &ClaimPlan, receipt: &ClaimReceipt) -> Result<(), LayerError> {
+        let vacia: Digest = [BaseElement::ZERO; 4];
+        let root_antes = self.accounts.root();
+        self.pending_amounts.remove(&plan.position);
+        self.pending_meta.remove(&plan.position);
+        self.accounts.set_leaf(plan.receiver_index, plan.hoja_nueva);
+        self.pending.set_leaf(plan.position, vacia);
+        let root_despues = self.accounts.root();
+
+        self.records.insert(
+            plan.receiver_index,
             AccountRecord {
-                public_id: updated.public_id,
-                balance: updated.balance,
-                nonce: updated.nonce,
-                // Ver nota en el envío: view_id del record guardado.
+                public_id: plan.updated.public_id,
+                balance: plan.updated.balance,
+                nonce: plan.updated.nonce,
                 view_id: self
                     .records
-                    .get(&receiver_index)
+                    .get(&plan.receiver_index)
                     .map(|r| r.view_id)
                     .unwrap_or(crate::store::VIEW_ID_LEGACY),
-                // Ver nota en el envio: salt del record guardado.
                 leaf_salt: self
                     .records
-                    .get(&receiver_index)
+                    .get(&plan.receiver_index)
                     .map(|r| r.leaf_salt)
                     .unwrap_or(crate::store::LEAF_SALT_LEGACY),
             },
         );
-        // ⚠️ **Deja constancia ANTES de persistir**, igual que las demas
-        // operaciones: si el proceso muere en medio, el lote atomico
-        // incluye o excluye las dos cosas.
-        //
-        // `two_phase.rs` era **el unico modulo que no registraba nada**.
         self.log
-            .append(OpKind::Claim, pi.root_old, pi.root_new, &receipt.proof);
-        self.commit(&[receiver_index], Some((notice.position, vacia)))?;
+            .append(OpKind::Claim, root_antes, root_despues, &receipt.proof);
+        self.commit(&[plan.receiver_index], Some((plan.position, vacia)))?;
         Ok(())
+    }
+
+    /// **FASE 2 aplicada.** Validar contra el estado actual y aplicar.
+    pub fn apply_claim(
+        &mut self,
+        receipt: &ClaimReceipt,
+        receiver_index: AccountIndex,
+        receiver_state: &ClientState,
+        notice: &PendingNotice,
+    ) -> Result<(), LayerError> {
+        let plan = self.validate_claim(
+            &self.accounts,
+            &self.pending,
+            self.frozen.root(),
+            receipt,
+            receiver_index,
+            receiver_state,
+            notice,
+        )?;
+        self.commit_claim(&plan, receipt)
     }
 
     // -----------------------------------------------------------------

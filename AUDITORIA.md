@@ -14419,6 +14419,56 @@ Septima vez en este tramo que leer antes de escribir cambia el plan, y la
 mas barata: un `grep` y dos funciones leidas frente a un refactor
 construido sobre una garantia rota. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 214. Comprobar y mutar, separados: el refactor que hace posible `apply_many` — y que la conformidad demuestra inocuo
+
+Las dos funciones mas criticas de la capa —las que llevan el comentario
+de §73, el fallo mas grave que encontro la auditoria— se parten en dos
+mitades **sin ganar ni una capacidad nueva**. Ese es el punto: un
+refactor puro se puede demostrar; un refactor con funcionalidad nueva
+encima, no.
+
+**Lo que se separa.**
+
+- `validate_send` / `validate_claim` — **toman los arboles por
+  referencia** en vez de leerlos de `self`, y no mutan nada. Esa unica
+  diferencia es lo que permitira validarlas contra una **instantanea de
+  arranque** en vez de contra el estado actual (RFC-0002, etapa 2).
+- `commit_send` / `commit_claim` — solo mutan; no comprueban nada.
+- `SendPlan` / `ClaimPlan` — lo que la validacion produce y la aplicacion
+  consume.
+- `apply_send` / `apply_claim` quedan en cuatro lineas: validar contra
+  los arboles propios, aplicar.
+
+**Y el cambio de §213, aplicado.** El registro pasa a recibir las raices
+**REALES** —la de antes y la de despues de la mutacion— en vez de las que
+la prueba declara. Con una sola operacion coinciden; en un lote no, y el
+registro necesita las reales para que `verify_chain` siga pasando.
+
+**Lo que demuestra que nada se movio.** No hace falta creerselo:
+
+1. **`conformance --check` sobre `zkssl/0.2`: IDENTICO.** Compara digests
+   byte a byte de seis operaciones, cabeza de epoca y suministro. Si el
+   `append` con raices reales hubiera cambiado algo, la cadena y la cabeza
+   cambiarian y la compuerta gritaria.
+2. **El `simulate` completo devuelve las mismas raices** que antes del
+   refactor: cuentas `84f8f0db…95c51a39`, cadena `7e78983c…2f6211fe`.
+3. **Suite en 251**, sin un test nuevo ni uno perdido.
+
+**Una pieza mas, pequena y necesaria:** `send_materials_at`, que acepta
+una posicion de pendiente **ya elegida**. `send_materials` toma la que
+devuelve `allocate_pending`, que mira el estado actual; para armar un
+lote hay que **reservar** primero (§211) y pasar esa posicion. Sin esto,
+la reserva de §211 no tendria por donde usarse.
+
+**Por que se sello aparte de `apply_many`.** Escribir el refactor y la
+capacidad nueva en el mismo paso habria dejado sin respuesta la pregunta
+que importa: si algo se rompiera, ¿fue el refactor o la funcion nueva?
+Separandolos, este sello tiene una respuesta binaria —la conformidad
+sigue identica o no— y el siguiente parte de una base probada.
+
+De la etapa 2 queda `apply_many`, que ya solo orquesta: instantanea,
+validar las N contra ella, aplicar, y una operacion por cuenta. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

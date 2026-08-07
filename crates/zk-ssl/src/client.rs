@@ -161,12 +161,41 @@ impl SovereignLayer {
         })
     }
 
+    /// Materiales de envio **con una posicion de pendiente ya elegida**
+    /// (§214, pieza previa a `apply_many`).
+    ///
+    /// `send_materials` toma la que devuelve `allocate_pending`, que mira
+    /// el estado ACTUAL. Para armar un lote hay que **reservar** primero
+    /// —`reserve_pending`, §211— y pasar esa posicion aqui: dos clientes
+    /// contra la misma raiz de arranque reciben posiciones distintas.
+    pub fn send_materials_at(
+        &self,
+        sender_index: AccountIndex,
+        receiver_id: Digest,
+        amount: u64,
+        salt: Digest,
+        pending_position: u64,
+    ) -> Result<SendMaterials, LayerError> {
+        self.send_materials_inner(sender_index, receiver_id, amount, salt, Some(pending_position))
+    }
+
     pub fn send_materials(
         &self,
         sender_index: AccountIndex,
         receiver_id: Digest,
         amount: u64,
         salt: Digest,
+    ) -> Result<SendMaterials, LayerError> {
+        self.send_materials_inner(sender_index, receiver_id, amount, salt, None)
+    }
+
+    fn send_materials_inner(
+        &self,
+        sender_index: AccountIndex,
+        receiver_id: Digest,
+        amount: u64,
+        salt: Digest,
+        posicion: Option<u64>,
     ) -> Result<SendMaterials, LayerError> {
         let sender = self
             .account_view(sender_index)
@@ -191,7 +220,10 @@ impl SovereignLayer {
             });
         }
 
-        let pending_position = self.allocate_pending()?;
+        let pending_position = match posicion {
+            Some(p) => p,
+            None => self.allocate_pending()?,
+        };
 
         Ok(SendMaterials {
             sender_path: self.accounts.path_for(sender_index),
