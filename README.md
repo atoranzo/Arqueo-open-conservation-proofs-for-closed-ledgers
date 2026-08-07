@@ -76,7 +76,7 @@ sin leer el código del nodo.
 
 | Pieza | Qué fija |
 |---|---|
-| [`spec/RPC.md`](./spec/RPC.md) | La especificación normativa (`zkssl/0.1`): 17 métodos JSON-RPC, tipos de cable en hex canónico — el mismo byte a byte que persiste la capa |
+| [`spec/RPC.md`](./spec/RPC.md) | La especificación normativa (**`zkssl/0.2`** desde §209): 17 métodos JSON-RPC, tipos de cable en hex canónico — el mismo byte a byte que persiste la capa. Los vectores de `0.1` **se conservan** |
 | [`spec/openrpc.json`](./spec/openrpc.json) | **GENERADO** desde la tabla que vive en `zk-ssl-wire`, junto a los DTOs: una sola fuente. El verificador de cada sello exige que regenerarlo lo reproduzca **byte a byte** |
 | [`spec/vectors/`](./spec/vectors/) | Vectores de conformidad **por versión**: el escenario canónico reducido a hechos (raíces, digests de prueba, cadena, cabeza de época). El determinismo por operación está medido en tres cruces independientes y es **compuerta permanente** |
 | [`spec/rfc/`](./spec/rfc/) | El proceso de cambio: numerado, con estados, y una regla de oro — los vectores viejos **jamás se reescriben**; si el cable cambia, la versión sube |

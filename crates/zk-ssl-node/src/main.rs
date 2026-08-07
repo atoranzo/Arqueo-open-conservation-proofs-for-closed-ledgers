@@ -168,7 +168,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
 
     match method {
         // ── lectura ────────────────────────────────────────────────
-        "zkssl_protocolVersion" => Ok(json!("zkssl/0.1")),
+        "zkssl_protocolVersion" => Ok(json!("zkssl/0.2")),
 
         "zkssl_params" => Ok(serde_json::to_value(wire::ParamsDto {
             regulatory_limit: Q(l.regulatory_limit()),

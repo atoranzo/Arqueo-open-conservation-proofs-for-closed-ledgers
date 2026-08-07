@@ -31,10 +31,25 @@
 //! - `digest_of_proof` ≪ 10 ms → **refutada**: el coste está en otro
 //!   sitio y hay que seguir midiendo antes de tocar nada.
 //!
-//! ⚠️ Blake3 aquí es solo la **referencia de cuánto costaría el mismo
-//! trabajo con un hash no algebraico**. Este banco no propone el cambio:
-//! lo dimensiona. El cambio afecta a `proof_digest`, a la cadena y por
-//! tanto a los vectores de conformidad — es materia de RFC.
+//! ## Este banco ya cumplió su encargo — léelo antes de interpretarlo
+//!
+//! **En §204 confirmó la hipótesis**: `digest_of_proof` era el **93 %**
+//! del `apply` (30,99 ms de 33,27), **2.915×** lo que costaba Blake3
+//! sobre los mismos bytes, para un resumen que **no entra en ningún
+//! circuito**.
+//!
+//! **En §209 se hizo el cambio** (etapa 1 del RFC-0002): `digest_of_proof`
+//! pasó a Blake3 con dominio y longitud explícita, la versión del
+//! protocolo subió a `zkssl/0.2` y se emitieron vectores nuevos
+//! conservando los de `0.1`. El `apply` bajó de 33,27 a ~3,3 ms.
+//!
+//! **Desde §209 este banco es una COMPUERTA DE REGRESIÓN**: si alguien
+//! devolviera un hash algebraico a `digest_of_proof`, su coste volvería a
+//! dominar el `apply` y esta salida lo diría.
+//!
+//! ⚠️ La columna «Blake3 sobre los mismos bytes» es la **referencia**:
+//! desde §209 debería parecerse mucho a la primera, porque ambas hacen
+//! ya el mismo trabajo. Si se separan otra vez, algo cambió.
 //!
 //! Uso:
 //! ```text
@@ -109,7 +124,7 @@ fn main() {
 
     let n_bloques = bytes.len().div_ceil(16);
 
-    // ── 1. digest_of_proof (Rescue, un merge por bloque de 16 bytes) ──
+    // ── 1. digest_of_proof, tal como este arbol lo implemente HOY ──
     let t = Instant::now();
     let mut d1 = [BaseElement::from(0u32); 4];
     for _ in 0..REPS {
@@ -132,7 +147,7 @@ fn main() {
     println!("| medida | valor |");
     println!("|---|---|");
     println!("| tamano de la prueba | **{} bytes** ({n_bloques} bloques de 16) |", bytes.len());
-    println!("| `digest_of_proof` (Rescue) | **{ms_rescue:.2} ms** |");
+    println!("| `digest_of_proof` (implementacion actual) | **{ms_rescue:.3} ms** |");
     println!("| Blake3 sobre los mismos bytes | **{ms_blake:.3} ms** |");
     println!("| `apply_send` completo (esta corrida) | {ms_apply:.2} ms |");
 
@@ -140,7 +155,7 @@ fn main() {
     println!("== LECTURA ==");
     let pct = 100.0 * ms_rescue / ms_apply;
     println!("  digest_of_proof / apply .... {pct:.0}% del coste del apply");
-    println!("  Rescue / Blake3 ............ {:.0}x mas caro", ms_rescue / ms_blake.max(1e-9));
+    println!("  actual / Blake3 ............ {:.1}x", ms_rescue / ms_blake.max(1e-9));
     let ahorro = ms_rescue - ms_blake;
     let apply_nuevo = ms_apply - ahorro;
     println!("  apply si se cambiara ....... {apply_nuevo:.2} ms (de {ms_apply:.2})");
@@ -150,27 +165,29 @@ fn main() {
     }
     println!();
 
+    println!("== DIAGNOSTICO ==");
+    println!();
     if pct > 50.0 {
-        println!("VEREDICTO: HIPOTESIS CONFIRMADA — digest_of_proof es el {pct:.0}% del apply.");
-        println!("  -> El coste dominante NO es el diseno, ni los arboles, ni la");
-        println!("     persistencia, ni la verificacion: es hashear la prueba entera");
-        println!("     con un hash ALGEBRAICO para un resumen que no entra en ningun");
-        println!("     circuito (0 coincidencias de proof_digest en stark-experiment).");
-        println!();
-        println!("  ARREGLO QUIRURGICO propuesto para el RFC:");
-        println!("   - `chain_digest` (5 merges) se QUEDA en Rescue: podria entrar en");
-        println!("     circuito con las cabezas atestiguadas (§121).");
-        println!("   - `digest_of_proof` ({n_bloques} merges) pasa a un hash no algebraico.");
-        println!();
-        println!("  ⚠️ CAMBIA proof_digest y la cadena -> cambia los vectores de");
-        println!("     conformidad. Es cambio de PROTOCOLO: RFC + zkssl/0.2, y los");
-        println!("     vectores de 0.1 se conservan. No entra por commit directo.");
+        println!("⚠️ REGRESION: digest_of_proof es el {pct:.0}% del apply.");
+        println!("   Referencia: en §204 era el 93% (Rescue, 30,99 ms) y en §209 se");
+        println!("   cambio a Blake3 con dominio y longitud (etapa 1 del RFC-0002).");
+        println!("   Si esta cifra vuelve a estar arriba, alguien devolvio un hash");
+        println!("   ALGEBRAICO a `log::digest_of_proof`. Mirar ahi.");
+        println!("   Recordatorio: `chain_digest` SI debe seguir en Rescue.");
+    } else if pct < 10.0 {
+        println!("✅ El cambio de §209 esta en su sitio: {pct:.0}% del apply.");
+        println!("   Referencia: 93% en §204, antes de la etapa 1.");
+        println!("   El apply de esta corrida ({ms_apply:.2} ms) ya no lo domina el");
+        println!("   resumen de la prueba. Lo que queda del RFC-0002 es la etapa 2");
+        println!("   (transicion de hoja y lote), que ataca la CONTENCION — otra");
+        println!("   cosa distinta, y NO se arregla desde aqui.");
     } else {
-        println!("VEREDICTO: HIPOTESIS REFUTADA — solo el {pct:.0}% del apply.");
-        println!("  -> El coste plano esta en otro sitio. NO tocar el hash.");
-        println!("  -> Siguiente sospechoso a medir: las actualizaciones de los tres");
-        println!("     arboles y el numero de veces que apply pide root().");
+        println!("⚠️ INTERMEDIO: {pct:.0}% del apply.");
+        println!("   Ni el 93% de §204 ni el residuo esperado tras §209. Medir de");
+        println!("   nuevo antes de concluir: puede ser ruido de una corrida corta.");
     }
+    println!();
+    println!("Referencias: AUDITORIA.md §204 (las cinco tablas) y §209 (etapa 1).");
     println!();
     println!("Anota esta tabla en AUDITORIA.md junto a las de A, A.2 y A.3.");
 }

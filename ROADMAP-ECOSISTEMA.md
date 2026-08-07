@@ -15,7 +15,7 @@ adapta las herramientas más aceptadas de otros ecosistemas a ZK-SSL.
 
 | ecosistema | herramienta | equivalente ZK-SSL | estado |
 |---|---|---|---|
-| Ethereum | `execution-apis` (spec RPC) | `spec/RPC.md` (`zkssl/0.1`) | ✅ sellado (§197) |
+| Ethereum | `execution-apis` (spec RPC) | `spec/RPC.md` (**`zkssl/0.2`** desde §209) | ✅ sellado (§197) |
 | Ethereum | convención QUANTITY/DATA | `zk-ssl-wire` (hex 0x, digests canónicos) | ✅ sellado (§197) |
 | Ethereum | geth (nodo) | `zk-ssl-node` | ✅ sellado (§197) |
 | Foundry | anvil (devnet + faucet) | `zk-ssl-node --dev` (`dev_fund` con nullifiers de custodio visibles) | ✅ sellado (§197) |

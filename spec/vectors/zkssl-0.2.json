@@ -1,0 +1,64 @@
+{
+  "spec": "zkssl/0.2",
+  "sellado": "§197",
+  "escenario": "open+fund(seed 0xA11CE, +1000000) x2 · send 250000 (salt 7) · claim",
+  "canon": [
+    297,
+    245,
+    40,
+    28
+  ],
+  "entradas": [
+    {
+      "seq": "0x0",
+      "kind": "OpenAccount",
+      "root_old": "0xcef7062263b5c3db053e011286d1b34ed498c9e6f69bc9a558246553819539bb",
+      "root_new": "0x6590b0bf234a2761348e2b6f7bab35039c9e923e431a9883d44650770ebb7b1a",
+      "proof_digest": "0x74de079ffffa783f99bdd9ffa25e4112f8c395b141c83325e06ad3e10625cfa1",
+      "chain": "0x21e8b648195e35ae59892044ad555f4689cc901e5f8513ef158f49ecc88f310c"
+    },
+    {
+      "seq": "0x1",
+      "kind": "Mint",
+      "root_old": "0x6590b0bf234a2761348e2b6f7bab35039c9e923e431a9883d44650770ebb7b1a",
+      "root_new": "0xf3fca118e57f2d2d40a8df6dc6290b9e64e155cce6eea9cbc7e59f9b3ebc0ad6",
+      "proof_digest": "0x74de079ffffa783f99bdd9ffa25e4112f8c395b141c83325e06ad3e10625cfa1",
+      "chain": "0x2d2ade346947001311a94d85aeb0e534fe24750e9ac5f460991ebb252ce6c8de"
+    },
+    {
+      "seq": "0x2",
+      "kind": "OpenAccount",
+      "root_old": "0xf3fca118e57f2d2d40a8df6dc6290b9e64e155cce6eea9cbc7e59f9b3ebc0ad6",
+      "root_new": "0xbee1fa003cc2da4eb950271b72b57050d2ec2e8dbe787bb65c1f444cbca74c5d",
+      "proof_digest": "0x74de079ffffa783f99bdd9ffa25e4112f8c395b141c83325e06ad3e10625cfa1",
+      "chain": "0xa21c74bbd9b6a714f4e3f55eb59ae891131ef69840402bfbc6d8cae3f1804a2d"
+    },
+    {
+      "seq": "0x3",
+      "kind": "Mint",
+      "root_old": "0xbee1fa003cc2da4eb950271b72b57050d2ec2e8dbe787bb65c1f444cbca74c5d",
+      "root_new": "0x75418f6b7f9f18f7eff20bb30a1a2da5a4dbbe43f691fa3d612a6833a592ea0b",
+      "proof_digest": "0x74de079ffffa783f99bdd9ffa25e4112f8c395b141c83325e06ad3e10625cfa1",
+      "chain": "0xd2d6be9597414d6bb7d1d6bb2c25d31259e66f535b5adae7866c6effff2bcf57"
+    },
+    {
+      "seq": "0x4",
+      "kind": "Send",
+      "root_old": "0x75418f6b7f9f18f7eff20bb30a1a2da5a4dbbe43f691fa3d612a6833a592ea0b",
+      "root_new": "0xd44542e01c8f055048242d571cad197371950e0817c2666824cafcaf6088e69e",
+      "proof_digest": "0x4d0a52f83025eb5d51c379741c7096da47df81905de102121342b2f0f4e678ee",
+      "chain": "0x3f88d04aa19522aeb12fa73c4a71424b6a4ece73a5965271bb88d3ce0b923338"
+    },
+    {
+      "seq": "0x5",
+      "kind": "Claim",
+      "root_old": "0xd44542e01c8f055048242d571cad197371950e0817c2666824cafcaf6088e69e",
+      "root_new": "0x84f8f0dbd0c02e0f5d0730065522e17914cc5a3bb5b957d9756c518995c51a39",
+      "proof_digest": "0xb11c0022f59cf02427497ec6db125646c41451faaf02704a57525d40b73e3b81",
+      "chain": "0x7e78983cd08a95c840b98c3e7eac84ba5350e827394ce198fd312a152f6211fe"
+    }
+  ],
+  "epoch_digest": "0xc7ec244664de5f51b3f2bcb47b35e710994d16dc4ea68ba77d9fca686bcf4613",
+  "supply": "0x1e8480",
+  "pending": "0x0"
+}

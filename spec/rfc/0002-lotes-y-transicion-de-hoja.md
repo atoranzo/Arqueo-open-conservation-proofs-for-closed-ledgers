@@ -5,7 +5,25 @@
 - **Fecha:** 2026-08-07
 - **Versión del protocolo afectada:** `zkssl/0.1` → `zkssl/0.2`
 - **Asiento(s) de AUDITORIA:** §204 (las mediciones), §205 (las
-  correcciones de `doc/ESCALADO`), §206 (este documento)
+  correcciones de `doc/ESCALADO`), §206 (este documento), §207 (etapa 3),
+  §209 (etapa 1)
+
+## Estado de las etapas
+
+| etapa | estado | dónde |
+|---|---|---|
+| **1 · el hash del registro** | ✅ **HECHA** — `apply` de 33,27 a ~3,2 ms; techo del nodo de 30 a **~320 op/s**. Subió a `zkssl/0.2` y se emitieron vectores nuevos conservando los de `0.1` | §209 |
+| **2 · transición de hoja + lote** | ⬜ **PENDIENTE.** Es la única que queda, y la que ataca la contención (66 % del trabajo desperdiciado). Rompe el cable otra vez | — |
+| **3 · árbol incremental** | ✅ **HECHA** — `send_materials` de e = 1,08 a ~0,1. No tocó cable ni circuitos | §207 |
+
+⚠️ **Corrección a la sección «Compatibilidad» de más abajo**: este RFC
+decía que las etapas 1 y 2 debían compartir una sola emisión de
+`zkssl/0.2`. **No se hizo así**: la etapa 1 se sella sola y emite `0.2`
+ya. La etapa 2 volverá a romper el cable y necesitará **`zkssl/0.3`**.
+El motivo del cambio de plan es que la etapa 1 era un cambio de una
+función con un ×10 medido, y retenerla meses esperando a la etapa 2
+—que introduce circuitos nuevos y su escalera FV— habría sido pagar un
+coste real por una elegancia de numeración.
 
 > **Nota de numeración.** El **RFC-0001** queda reservado al
 > endurecimiento del KDF del keystore (SHA-256 → Argon2id), señalado en

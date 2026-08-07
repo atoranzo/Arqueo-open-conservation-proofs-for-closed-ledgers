@@ -176,36 +176,64 @@ fn as_digest(x: u64) -> Digest {
     ]
 }
 
+/// **Dominio del resumen de prueba.** Separa este uso de cualquier otro
+/// hash del proyecto: dos entradas de dominios distintos no pueden
+/// colisionar aunque compartan bytes.
+const DOMINIO_PRUEBA: &[u8] = b"ZK-SSL-proof-digest-v2";
+
 /// Resumen de una prueba serializada.
+///
+/// **§209 (`zkssl/0.2`, etapa 1 del RFC-0002): esto ya no usa Rescue.**
+///
+/// La version anterior recorria la prueba en bloques de 16 bytes y
+/// aplicaba una permutacion algebraica (`native_merge`) a cada uno:
+/// **4.115 permutaciones** para una prueba de envio de 65.840 bytes.
+/// Medido en `AUDITORIA.md` §204 (banco A.4): **30,99 ms, el 93 % del
+/// coste de un `apply`, y 2.915x lo que cuesta Blake3 sobre los mismos
+/// bytes**.
+///
+/// Rescue se elige por ser **amigable con circuitos**. Este resumen
+/// **no entra en ninguno** —`proof_digest` no aparece en
+/// `stark-experiment`—: resume bytes opacos para atar una entrada del
+/// registro a una prueba concreta. Se pagaba el precio de una propiedad
+/// que aqui no se usa.
+///
+/// ⚠️ **`chain_digest` SIGUE en Rescue** y debe seguir: son 5 merges
+/// (~65 us) y podria entrar en circuito el dia de las cabezas
+/// atestiguadas (§121).
+///
+/// ## Lo que se conserva de la version anterior
+///
+/// La **codificacion inyectiva** (entrada 58, cierra §116) sigue siendo
+/// el requisito, y se obtiene ahora por construccion:
+///
+/// 1. **Dominio explicito** al frente: separa este hash de cualquier otro.
+/// 2. **Longitud en bytes** antes del contenido: dos entradas que solo
+///    difieran en ceros finales no colisionan.
+/// 3. **Blake3 sobre el resto**: la resistencia a colision descansa en un
+///    hash de proposito general, en vez de en una construccion propia.
+///
+/// Los 32 bytes de salida se parten en cuatro `u64` que el campo reduce.
+/// Goldilocks tiene p = 2^64 - 2^32 + 1, asi que la reduccion recorta una
+/// fraccion despreciable del espacio: la resistencia efectiva sigue
+/// dominada por Blake3, no por esta conversion.
 pub fn digest_of_proof(proof: &[u8]) -> Digest {
-    // Codificacion INYECTIVA (entrada 58, cierra la debilidad de §116 y
-    // una segunda que su arreglo propuesto no cubria):
-    //
-    // 1. Limbs de 32 bits — cada elemento < 2^32 < p — sin reduccion al
-    //    campo. El esquema anterior reducia bloques u64 con `% p`, y un
-    //    bloque que valiera exactamente p colisionaba con uno de ceros
-    //    CON LA MISMA LONGITUD: la longitud sola no habria bastado.
-    // 2. Bloque final con la longitud en bytes: dos entradas que solo
-    //    difieren en ceros finales ya no colisionan.
-    //
-    // Rellenar con ceros + longitud explicita = codificacion libre de
-    // prefijos; la resistencia a colision queda donde debe: en
-    // `native_merge` (Rescue). Sigue sin pretender ser un hash de
-    // proposito general — pero ahora "atar a una prueba concreta" es
-    // verdad al byte. Y ademas abarata: 16 bytes por merge en vez de 8.
-    let mut acc: Digest = [BaseElement::ZERO; 4];
-    for bloque in proof.chunks(16) {
-        let mut b = [0u8; 16];
-        b[..bloque.len()].copy_from_slice(bloque);
-        let d = [
-            BaseElement::new(u32::from_le_bytes(b[0..4].try_into().unwrap()) as u64),
-            BaseElement::new(u32::from_le_bytes(b[4..8].try_into().unwrap()) as u64),
-            BaseElement::new(u32::from_le_bytes(b[8..12].try_into().unwrap()) as u64),
-            BaseElement::new(u32::from_le_bytes(b[12..16].try_into().unwrap()) as u64),
-        ];
-        acc = native_merge(acc, d);
+    use winterfell::crypto::hashers::Blake3_256;
+    use winterfell::crypto::{Digest as _, Hasher as _};
+
+    let mut entrada = Vec::with_capacity(DOMINIO_PRUEBA.len() + 8 + proof.len());
+    entrada.extend_from_slice(DOMINIO_PRUEBA);
+    entrada.extend_from_slice(&(proof.len() as u64).to_le_bytes());
+    entrada.extend_from_slice(proof);
+
+    let bytes = Blake3_256::<BaseElement>::hash(&entrada).as_bytes();
+    let mut salida: Digest = [BaseElement::ZERO; 4];
+    for (i, hueco) in salida.iter_mut().enumerate() {
+        let mut w = [0u8; 8];
+        w.copy_from_slice(&bytes[i * 8..(i + 1) * 8]);
+        *hueco = BaseElement::new(u64::from_le_bytes(w));
     }
-    native_merge(acc, as_digest(proof.len() as u64))
+    salida
 }
 
 /// Calcula el resumen encadenado de una entrada.

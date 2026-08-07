@@ -14077,6 +14077,79 @@ al terminar. Pero un banco que da una instruccion caduca es peor que uno
 que no dice nada, porque el que lo lee no tiene como saber que la
 pregunta ya se respondio. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 209. Etapa 1 del RFC-0002: el registro deja el hash algebraico — zkssl/0.2, y el apply baja de 33 a 3 ms
+
+El cambio de una funcion, medido en §204 como el **93 % del coste de
+aplicar una operacion**.
+
+**Lo que se cambio.** `log::digest_of_proof` recorria la prueba en
+bloques de 16 bytes aplicando una permutacion Rescue a cada uno: 4.115
+permutaciones para una prueba de 65.840 bytes. Ahora es
+`Blake3(dominio || longitud || prueba)` partido en cuatro elementos del
+campo. **`chain_digest` SIGUE en Rescue**, como exige el RFC: son 5
+merges y podria entrar en circuito con las cabezas atestiguadas (§121).
+
+La **codificacion inyectiva** de la entrada 58 (que cerraba §116) no se
+pierde: se obtiene por construccion —dominio explicito al frente,
+longitud en bytes antes del contenido, y la resistencia a colision
+descansando en un hash de proposito general en vez de en una
+construccion propia—.
+
+**El efecto, medido en la maquina del sello:**
+
+| | antes (§204) | ahora (§209) |
+|---|---|---|
+| `digest_of_proof` | 30,99 ms | **~0,01 ms** |
+| `apply_send` | 33,27 ms | **3,11-3,33 ms** |
+| techo del nodo | 30 op/s | **~320 op/s** |
+
+El RFC proyectaba 436 op/s restando el hash del total; lo medido son
+~320. La diferencia es lo que queda por debajo —arboles, registro,
+serializacion— y ahora es lo que domina. **La proyeccion se anota junto
+a la medida, no se sustituye.**
+
+**Rompe el cable, y por eso sube a `zkssl/0.2`.** Cambia `proof_digest`,
+con el la cadena y la cabeza de epoca. Ningun metodo, campo ni tipo se
+anade, quita ni renombra. Cinco ficheros lo llevan a la vez porque el
+cable es atomico: `log.rs`, `openrpc.rs` (tres ocurrencias, una en su
+propio test), `conformance.rs`, el nodo y `spec/RPC.md` —que gana un
+bloque explicando que cambio y que no—.
+
+**Los vectores de `0.1` SE CONSERVAN** intactos (`3aa7b062…`, mismo sha
+que en §198) y se emiten los de `0.2`. Y hay una comprobacion que vale
+mas que un test: **`conformance --check` RECHAZA los vectores de otra
+version** —«los vectores son de OTRA version: zkssl/0.1 (aqui:
+zkssl/0.2)»— y sale con codigo distinto de cero. Validar entre versiones
+seria peor que no validar.
+
+**Dos deudas que destapo el propio trabajo, arregladas antes de sellar:**
+
+1. **El canon de los vectores decia 242 tests.** Desde §207 son **245**
+   —los tres del arbol disperso—. Estrenar una version de protocolo con
+   una cifra caduca DENTRO de su contrato habria sido el mismo error que
+   esta jornada lleva corrigiendo en documentos, pero en un artefacto
+   normativo. Corregido a `[297, 245, 40, 28]` y vectores **re-emitidos**.
+2. **El banco A.4 repetia la falta de §208**: etiquetaba «Rescue» lo que
+   ya era Blake3 y su veredicto decia «NO tocar el hash» justo despues de
+   tocarlo y funcionar. Ahora cuenta sus dos vidas y **vigila la
+   regresion**: si alguien devuelve un hash algebraico, su coste vuelve a
+   dominar el `apply` y el banco lo dice, recordando que `chain_digest`
+   SI debe seguir en Rescue.
+
+**Y la rancidez que este sello creaba, cerrada en el mismo sello:**
+README, ROADMAP-ECOSISTEMA y RESUMEN_EJECUTIVO decian `zkssl/0.1`.
+
+**Correccion de plan, escrita en el propio RFC.** El RFC-0002 decia que
+las etapas 1 y 2 debian compartir una sola emision de `zkssl/0.2`. **No
+se hizo asi**: la etapa 1 se sella sola y emite `0.2`; la etapa 2 rompera
+el cable otra vez y necesitara `0.3`. El motivo: retener meses un cambio
+de una funcion con un x10 medido, esperando a una etapa que introduce
+circuitos nuevos y su escalera FV, habria sido pagar un coste real por
+una elegancia de numeracion.
+
+Del RFC-0002 queda **solo la etapa 2**: la transicion de hoja y la prueba
+de lote, contra la contencion. La 1 y la 3 estan hechas. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

@@ -1,4 +1,19 @@
-# ZK-SSL JSON-RPC — especificación v0.1 (`zkssl/0.1`)
+# ZK-SSL JSON-RPC — especificación v0.2 (`zkssl/0.2`)
+
+> **Qué cambió de `0.1` a `0.2` (§209, etapa 1 del RFC-0002).** Un solo
+> cambio, y no está en los métodos: **`proof_digest` deja de calcularse
+> con un hash algebraico**. Con él cambian `chain` y la cabeza de época,
+> que son valores de cable. Ningún método, campo ni tipo se añade,
+> quita ni renombra.
+>
+> **Los vectores de `zkssl/0.1` se conservan** en `spec/vectors/` y
+> siguen describiendo aquella versión: una implementación de `0.1` sigue
+> pudiendo comprobarse contra ellos. `conformance --check` **rechaza**
+> validar vectores de una versión distinta a la suya, y eso es correcto.
+>
+> Motivo, medido en `AUDITORIA.md` §204: ese hash era el **93 %** del
+> coste de aplicar una operación —30,99 ms de 33,27— para un resumen que
+> **no entra en ningún circuito**.
 
 Especificación normativa del API de nodo. `zk-ssl-node` es la
 implementación de referencia; `zk-ssl-wire` define los tipos de cable.
@@ -42,7 +57,7 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 
 | método | params | result |
 |---|---|---|
-| `zkssl_protocolVersion` | — | `"zkssl/0.1"` |
+| `zkssl_protocolVersion` | — | `"zkssl/0.2"` |
 | `zkssl_params` | — | `{regulatoryLimit, maxSupply, maxAccounts: Q, custodianRoot: Digest}` |
 | `zkssl_epochHead` | — | `{seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, epochDigest}` |
 | `zkssl_supply` | — | `{total, pending: Q}` |

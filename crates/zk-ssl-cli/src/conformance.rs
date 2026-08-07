@@ -86,10 +86,11 @@ fn recolectar(layer: &SovereignLayer) -> Vectores {
         })
         .collect();
     Vectores {
-        spec: "zkssl/0.1".into(),
+        spec: "zkssl/0.2".into(),
         sellado: "§197".into(),
         escenario: ESCENARIO.into(),
-        canon: [297, 242, 40, 28],
+        // §207 sumo tres tests al arbol disperso: 242 -> 245.
+        canon: [297, 245, 40, 28],
         entradas,
         epoch_digest: hexd(&layer.epoch_head().digest()),
         supply: q(layer.total_supply()),
