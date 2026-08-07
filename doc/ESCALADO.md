@@ -96,16 +96,63 @@ consenso distribuido sigue fuera de alcance, como declara el README.
 
 ## 2. Por qué el diseño actual no llega (sobre lo medido)
 
-**2.1 Techo del `apply` secuencial.** `apply` cuesta el 28,5 % de generar
-(§22): ~177 ms por transferencia. Techo de un nodo: **5,7 TPS**. Para el pico
-mundial harían falta ~88.000 instancias. Eso no es un camino.
+**2.1 Techo del `apply` secuencial — ⚠️ CIFRA CORREGIDA (§204).** Esta
+entrada decía: «`apply` cuesta el 28,5 % de generar (§22): ~177 ms por
+transferencia. Techo de un nodo: **5,7 TPS**». **Ese número era
+DERIVADO**, no medido: un porcentaje tomado de §22, de la vía de un paso
+que se retiró en §32/§36.
 
-**2.2 ⚠️ Contención del anclaje de raíz — el límite número uno.** La prueba
-se ata a la raíz previa exacta (es el anti-replay actual). La raíz cambia
-cada ~177 ms y generar cuesta 620 ms: bajo concurrencia, casi ninguna prueba
-llega viva. El throughput efectivo colapsa a **~1,6 TPS** con regeneraciones
-en cascada. Este límite muerde antes que cualquier otro y no aparece en la
-lista de límites cuantificados del README.
+**Medido directamente en §204** (banco `etapa_a_apply`, misma carga sobre
+memoria, tmpfs y disco):
+
+| | |
+|---|---|
+| `apply` por operación | **37,99 ms** en disco · 36,73 en memoria |
+| Techo de un nodo | **26,3 operaciones/s** ≈ **13,2 pagos/s** |
+
+Es **4,6× mejor de lo que decía esta entrada**. Y el desglose importa más
+que la cifra: persistencia **3 %**, verificación STARK **7 %**, y **93 %
+en `digest_of_proof`**, que hashea la prueba entera (65.840 bytes) con
+Rescue —2.915× más caro que Blake3 sobre los mismos bytes— para un
+resumen que **no entra en ningún circuito**. Corrigiéndolo, el `apply`
+bajaría a ~2,3 ms: **436 operaciones/s**.
+
+⚠️ Pero el techo del `apply` **no es el límite efectivo**: ver 2.2.
+
+**2.2 ⚠️ Contención del anclaje de raíz — el límite número uno, ahora
+MEDIDO (§204).** La prueba se ata a la raíz previa exacta (es el
+anti-replay actual), y generar cuesta ~250 ms el envío y ~237 el cobro.
+Bajo concurrencia, casi ninguna prueba llega viva.
+
+Esta entrada estimaba «~1,6 TPS con regeneraciones en cascada». El banco
+`etapa_a5_concurrencia` lo puso a prueba con hilos que operan **cada uno
+su propio par de cuentas** —así lo único disputable es la raíz—:
+
+| hilos | pagos/s | `StaleState` (envío) | `StaleState` (cobro) | regeneraciones/pago |
+|---|---|---|---|---|
+| 1 | 1,85 | 0 | 0 | 0,00 |
+| 4 | **1,57** | 9 | 37 | **3,83** |
+
+**Confirmado, y peor de lo estimado**: 70 generaciones para 24
+operaciones — **el 66 % del trabajo criptográfico se tira** — y el
+rendimiento **BAJA** al añadir hilos (0,84×). Eso es un livelock, no un
+cuello de botella ordinario.
+
+⚠️ **Dos correcciones a esta entrada:**
+
+1. «La raíz cambia cada ~177 ms» venía del número derivado de 2.1. Lo
+   medido son ~33 ms por `apply`, así que bajo carga la raíz **cambia
+   aún más rápido** y la contención es **peor**, no mejor.
+2. Con **un solo hilo** salen 1,85 pagos/s **sin una sola regeneración**:
+   eso es simplemente `250 + 33 + 237 + 33 = 553 ms` en serie. Es decir,
+   el sistema **está en serie Y ADEMÁS se degrada al paralelizarlo**. Las
+   dos explicaciones eran ciertas a la vez.
+
+**Hallazgo nuevo del mismo banco**: los cobros sufren **4,1× más** que
+los envíos (37 frente a 9). `claim` se ata también a `pending_root_old`,
+de modo que **cada envío ajeno le mata la prueba**. El acoplamiento de
+los tres árboles deja de ser teoría y pasa a ser medida — y es la parte
+más barata de atacar.
 
 **2.3 El nullifier — ⚠️ RETIRADO, y esta entrada estaba equivocada.**
 Decía que las colisiones a ~65.000 pagos eran «bloqueante para cualquier

@@ -13877,6 +13877,56 @@ prediccion y su refutacion ANTES de ver el dato.
 Este asiento registra las medidas. La reescritura del RFC-0002 y las
 correcciones de `doc/ESCALADO` §2.1-§2.2 van en el sello siguiente. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 205. Las cifras derivadas caen: ESCALADO corregido con lo medido, y el diagnostico entra al arbol con su cadena de refutaciones
+
+§204 dejo las cinco tablas en acta. Este sello las lleva a los dos
+documentos que las necesitaban, y corrige una cifra que llevaba meses
+gobernando decisiones sin haber sido medida nunca.
+
+**`doc/ESCALADO` §2.1 — el numero derivado.** Decia: «`apply` cuesta el
+28,5 % de generar (§22): ~177 ms por transferencia. Techo de un nodo:
+5,7 TPS». **Nunca se midio**: es un porcentaje tomado de §22, de la via
+de un paso **retirada en §32/§36**. Lo medido en §204 son **37,99 ms** en
+disco — **4,6x mejor** — y el techo real del `apply` son **26,3
+operaciones/s**. Con el desglose al lado, que importa mas que la cifra:
+persistencia 3 %, verificacion 7 %, y **93 % en `digest_of_proof`**.
+
+**`doc/ESCALADO` §2.2 — la estimacion que se queda corta.** Estimaba
+«~1,6 TPS con regeneraciones en cascada». Medido: **1,57 pagos/s con 4
+hilos y 3,83 regeneraciones por pago** — 70 generaciones para 24
+operaciones, **el 66 % del trabajo criptografico tirado**— y el
+rendimiento **BAJA** al paralelizar (0,84x): es un livelock. Ademas dos
+correcciones internas: «la raiz cambia cada ~177 ms» heredaba el numero
+derivado de 2.1 —son ~33 ms, luego la contencion es PEOR—, y con un solo
+hilo salen 1,85 pagos/s **sin una sola regeneracion**, que es exactamente
+la suma en serie. **El sistema esta en serie Y ADEMAS se degrada al
+paralelizarlo**: las dos explicaciones eran ciertas a la vez.
+Y el hallazgo nuevo que la entrada no tenia: los cobros sufren **4,1x
+mas** que los envios porque `claim` se ata tambien a `pending_root_old`
+— cada envio ajeno le mata la prueba.
+
+**`doc/DIAGNOSTICO_ESCALADO.md` entra al arbol (623 lineas).** Nacio de
+auditar un diagnostico de escalado externo que resulto casi inaplicable
+—MSM que aqui no existe, un registro de nullifiers retirado, un
+`settlement-prover` que es un trait de 91 lineas— y su §2 fija, con
+`grep` reproducible, **lo que NO es el cuello de botella**. Se le anade
+la seccion **0.bis** con lo medido, porque el propio documento se
+escribio ANTES de medir y **tres de sus hipotesis cayeron**: el `flush`
+por operacion, el `nonce` como anti-replay y el arbol cuadratico. Las
+tres se conservan escritas con su refutacion al lado; lo que se corrige
+es el estado vigente, no la historia.
+
+Ese documento vale por lo que ahorra: contiene la aritmetica RTGS
+(Fedwire, 836.322 operaciones diarias, ~21 op/s de media contando que un
+pago son DOS operaciones), el analisis Plonky3 vs Miden —con la
+conclusion de que Miden contradice el hallazgo 8 propio y anularia la
+escalera FV—, los dos esquives declarados (orden total y canal fuera de
+banda) y la regla para no repetir el error: **antes de aceptar una
+recomendacion de escalado, contrastarla contra la §2**.
+
+Nada de codigo en este sello. Solo que los documentos digan lo que las
+maquinas midieron. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
