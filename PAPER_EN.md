@@ -137,8 +137,10 @@ STARK/FRI. Of these two, STARK/FRI is superior in both proving and
 verification, and adds a further property: **post-quantum security**,
 depending only on hash functions.
 
-The cost is substantial. The STARK proofs we measured occupy 36.7 KB
-against Groth16's 192 bytes — a factor of **320×**. In proving time for
+The cost is substantial. The STARK proofs of the comparison circuit
+occupy 36.7 KB against Groth16's 192 bytes — a factor of **320×**. The
+layer's production circuits are larger —**53.6 to 65.3 KB**, measured
+in §218— so the real factor is around 300-350×. In proving time for
 the complete circuit the difference favors STARK, but proof size
 constrains any scenario where proofs must be transmitted or stored at
 volume.

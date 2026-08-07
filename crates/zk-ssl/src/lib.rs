@@ -19,8 +19,21 @@
 //! cuántica — lo que importa en una infraestructura pensada para durar
 //! décadas.
 //!
-//! El precio, medido: **36,7 KB por prueba** frente a los 192 bytes de
-//! Groth16. Es el coste de no depender de nadie.
+//! El precio, medido. Y hay **dos cifras**, que no son la misma y
+//! durante muchos sellos se citaron como si lo fueran:
+//!
+//! | qué | tamaño | dónde se mide |
+//! |---|---|---|
+//! | **circuito de comparación** (blowup 16, ext. cuadrática) | 36,7 KB | `FIVE_BACKENDS.md`: es lo que se enfrenta a Groth16, PLONK y Halo2 sobre la MISMA carga |
+//! | **circuitos de esta capa** | **53,6-65,3 KB** | §218, banco C0.1: `mint` 54.858 y 55.568 B · `send` 66.164 B · `claim` 66.820 B |
+//!
+//! Los circuitos de producción son **1,5-1,8× más grandes** que el de
+//! comparación. Las dos medidas son correctas; lo que faltaba era
+//! decir que son de cosas distintas. Nadie había medido los de
+//! producción hasta C0.1.
+//!
+//! Frente a los 192 bytes de Groth16, es el coste de no depender de
+//! nadie: sin ceremonia de confianza y con resistencia cuántica.
 //!
 //! ## Qué garantiza cada operación
 //!

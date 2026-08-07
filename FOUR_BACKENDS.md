@@ -151,9 +151,11 @@ el rendimiento del generador, y se puede asumir el tamaño de prueba.
 El tamaño no bloquea la mensajería: los buses financieros (ISO 20022
 sobre SWIFT, MQ, Kafka) mueven rutinariamente cargas de cientos de KB. La
 fricción real es la **acumulación histórica**: a millones de
-transacciones, almacenar 36,7 KB por prueba en vez de 192 bytes cambia el
-tamaño del ledger, los tiempos de sincronización y la validación en frío
-en dos órdenes de magnitud.
+transacciones, almacenar **53,6-65,3 KB** por prueba —lo que miden los
+circuitos de esta capa (§218), no los 36,7 KB del circuito de
+comparación— en vez de 192 bytes cambia el tamaño del ledger, los
+tiempos de sincronización y la validación en frío en dos órdenes de
+magnitud.
 
 ---
 

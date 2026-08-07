@@ -83,14 +83,14 @@ Salida típica de `simulate` (abreviada):
 
 ```
 ━━ FASE FUND ━━ emisión delegada de 1000000 a #0: exige DOS custodios
-  ✔ prueba STARK generada: 36.7 KB — digest 3fa2…9c01 [812 ms]
+  ✔ prueba STARK generada: 54.3 KB — digest 3fa2…9c01 [812 ms]
   · custodio #1 autoriza — nullifier consumido: 8b1e…
   · custodio #3 autoriza — nullifier consumido: 44c7…
   ✔ aplicado → log#1 Mint  raíz a01b…→77d2…  cadena 5e90… [95 ms]
 
 ━━ FASE SEND ━━ #0 → #1, importe 250000: materiales → prueba LOCAL → apply_send
   · materiales listos (pendiente@0) [0 ms]
-  ✔ prueba STARK generada: 36.7 KB — digest c3d4… [1204 ms]
+  ✔ prueba STARK generada: 64.6 KB — digest c3d4… [1204 ms]
   ✔ aplicado → log#3 Send  raíz 77d2…→b6aa…  cadena 09f1… [102 ms]
   el dinero está EN TRÁNSITO: no es del receptor hasta que cobre (§29)
 

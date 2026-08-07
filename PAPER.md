@@ -145,8 +145,10 @@ STARK/FRI. De esos dos, STARK/FRI resulta superior en generación y
 verificación, e incorpora una propiedad adicional: **resistencia
 cuántica**, al depender exclusivamente de funciones hash.
 
-El coste es sustancial. Las pruebas STARK medidas ocupan 36,7 KB frente a
-los 192 bytes de Groth16: un factor de **320×**. En tiempo de generación
+El coste es sustancial. Las pruebas STARK del circuito de comparación
+ocupan 36,7 KB frente a los 192 bytes de Groth16: un factor de
+**320×**. Los circuitos de producción de la capa son mayores —**53,6 a
+65,3 KB**, medidos en §218—, así que el factor real ronda 300-350×. En tiempo de generación
 del circuito completo, la diferencia favorece a STARK, pero el tamaño
 condiciona cualquier escenario donde las pruebas deban transmitirse o
 almacenarse en volumen.

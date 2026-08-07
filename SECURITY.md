@@ -358,7 +358,7 @@ este eje solo aplica contra Zcash.
 | **Descentralización** | miles de validadores/mineros independientes | **UN nodo, un operador**. Ve el estado, ordena, puede censurar |
 | **Rendimiento** | Solana en miles de TPS; Bitcoin y Ethereum en un orden muy superior a este | **1,5-1,9 TPS** medidos (§123) |
 | **Madurez** | años en producción, auditorías repetidas, recompensas por fallos | **cero auditorías externas**, prototipo de investigación |
-| **Tamaño de prueba** | Groth16: 192 B | **36,7 KB** — el precio de no depender de nadie |
+| **Tamaño de prueba** | Groth16: 192 B | **53,6-65,3 KB** medidos en los circuitos de esta capa (§218) — el precio de no depender de nadie. Los 36,7 KB de las tablas comparativas son del circuito de comparación, no de éstos |
 
 **Y una lección que este proyecto toma prestada, no presta**: el fallo de
 sub-restringimiento de Orchard (junio de 2026) ocurrió en la clase que

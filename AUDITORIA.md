@@ -14813,3 +14813,149 @@ aquel 4,08 contra 3,11 ms que se declaró ruido cae justo en esta banda.
 - El **muro del cuerpo HTTP** del nodo (`main.rs:74` monta el router sin
   `DefaultBodyLimit`) sigue sin medirse: banco C0.2, abierto. Bloquea
   cablear `apply_many` por RPC.
+## 218. La línea base del nodo, y dos cifras que nunca fueron la misma
+
+Dos trabajos sin relación aparente, unidos por la misma pregunta: **¿qué
+mide de verdad este sistema, y contra qué se compara?**
+
+### D.1 — el nodo por RPC, que nadie había medido
+
+Todo lo que esta casa sabía de concurrencia —§204 banco A.5, §216 banco
+B.1— se midió **a nivel de capa**. Por RPC hay dos cosas más que no
+estaban: el `Mutex` que `dispatch` mantiene durante toda la petición, y el
+cable —~132 KB de hex por `applySend`—. `main.rs:163` ya anticipaba que
+«con carga real, el paso siguiente es una cola de escritura», pero nadie
+había comprobado si el cuello era la contención o el candado.
+
+Importa porque la propuesta **(b)** —acumular operaciones en el nodo para
+aplicarlas en lote— ataca la **contención**. Si por RPC el cuello fuera el
+`Mutex`, (b) no arreglaría nada, y se sabría **después** de escribirlo.
+
+Cuatro corridas, cuatro clientes, ocho pagos, nodo nuevo cada vez:
+
+| corrida | generaciones | mínimo | desperdicio | regen/pago | pagos/s |
+|---|---|---|---|---|---|
+| D.1 | 37 | 16 | 57 % | 2,62 | 1,68 |
+| bucle 1 | 42 | 16 | 62 % | 3,25 | 1,55 |
+| bucle 2 | 37 | 16 | 57 % | 2,62 | 1,85 |
+| bucle 3 | 41 | 16 | 61 % | 3,12 | 1,79 |
+| **media** | **39,25** | 16 | **59 %** | **2,90 ± 0,33** | **1,72 ± 0,13** |
+| capa (§216, secuencial) | 44 | 16 | 64 % | 3,50 | 1,62 |
+
+**El cuello por RPC es la contención, igual que en la capa.** Tres
+regeneraciones por pago y el 59 % del trabajo criptográfico tirado. **(b)
+está justificado por la misma medida que lo justificó en §216**, y ahora
+existe una cifra que batir: antes de D.1 no había ninguna.
+
+### Y una lección de método que costó dos correcciones en el mismo día
+
+La primera corrida daba 2,62 regen/pago frente a los 3,50 de la capa, y de
+ahí deduje un «peaje del nodo» de 17,4 ms por generación —el `Mutex` más
+el cable— y un techo de rendimiento para (b).
+
+**Las tres corridas siguientes lo desmontaron.** La dispersión de este
+banco es del **±11 %**, no del ±1 %: con la media real, la diferencia
+entre RPC y capa baja a 7,5 ms —un 6,7 %— y **queda por debajo del
+ruido**. El peaje no es medible con este instrumento. La retiro entera.
+
+⚠️ **Un banco no hereda el suelo de ruido de otro.** El ±1 % del §217 se
+midió sobre `ABRIR`, que es determinista. Éste mide concurrencia, que
+tiene su propia dispersión. Cada banco declara la suya o no dice nada.
+
+Y una segunda corrección, peor, cazada al recalcular antes de sellar: al
+resumir las cuatro corridas fundí dos filas que coincidían en `regen`
+—2,62— y le puse a una los pagos/s de la otra. La media salió 3,00 en vez
+de 2,90 y 1,67 en vez de 1,72. Ninguna conclusión cambia, pero **la cifra
+que iba a quedar grabada era falsa**. Tercer error del día de la misma
+familia: **manipular números resumidos en vez de volver a los datos.**
+
+### Las dos cifras del tamaño de prueba
+
+C0.1 midió los circuitos de producción por primera vez:
+
+| circuito | bytes | KB |
+|---|---|---|
+| `mint` (delegado) | 54.858 · 55.568 | 53,6 · 54,3 |
+| **`send`** | **66.164** | **64,6** |
+| `claim` | 66.820 | 65,3 |
+
+Y aquí estaba el hallazgo, que **no es el que se buscaba**. La sospecha
+era que «36,7 KB» fuese rancidez propagada a cuarenta sitios. Al leerlos
+enteros resultó lo contrario: **36,7 KB es una medida correcta —del
+circuito de comparación**, blowup 16 con extensión cuadrática, el que se
+enfrenta a Groth16, PLONK y Halo2 sobre la misma carga—. Está en la tabla
+de configuraciones de `FIVE_BACKENDS.md` junto a 27,7 · 32,7 · 125,6 KB, y
+`AUDITORIA.md` en su línea 4267 ya lo tenía anotado: «*36,7 KB existe*».
+
+**Las dos medidas son ciertas. Lo que faltaba era decir que son de cosas
+distintas** — y no se podía decir, porque nadie había medido los circuitos
+de producción. Son **1,5-1,8× más grandes** que el de comparación.
+
+Así que la corrección no fue sustituir un número en cuarenta sitios, sino
+**separar dos conceptos y arreglar solo donde se confundían**:
+
+| se corrige | por qué |
+|---|---|
+| `zk-ssl-wire/src/lib.rs:471` | documenta `SendReceiptDto.proof`: un artefacto de producción |
+| `zk-ssl/src/lib.rs` | cabecera de la capa. **Aquí queda escrita la distinción, una vez y con las dos cifras** |
+| `SECURITY.md:361` | tabla de ESTE sistema frente a cadenas en producción |
+| `FOUR_/FIVE_/THREE_BACKENDS.md` (acumulación histórica) | habla de millones de transacciones REALES. Subestimaba el problema un 77 % |
+| `README-CLI.md:86,93` | salida de ejemplo del CLI que **la herramienta no produce**. §208 otra vez, y en el primer documento que lee quien prueba el sistema |
+| `PAPER.md:148` · `PAPER_EN.md:140` | el número **no se toca**: se añade de qué circuito es |
+
+**Y lo que NO se toca, declarado para que nadie lo «corrija» dentro de seis
+sellos**: las ~32 apariciones restantes son legítimas. Todas las tablas
+comparativas de cuatro columnas —PAPER, los BACKENDS, README, PRINCIPIOS,
+RESUMEN_EJECUTIVO, INSTITUCIONAL, INSTITUTIONAL, ZENODO, ARQUITECTURA—
+comparan el **circuito de comparación** entre paradigmas, y ahí 36,7 KB es
+el número correcto. Las tablas de configuración y las discusiones del
+salto 36,7 → 125,6 KB, igual. Y los asientos históricos de `AUDITORIA.md`
+y `BACKLOG.md` **no se reescriben nunca**.
+
+### D.1, corregido antes de sellarlo
+
+Dos defectos del banco, arreglados en este mismo sello:
+
+- Su cabecera avisaba «**escribe en el ledger del nodo**» cuando el banco
+  lo levanta **sin `--ledger`** y la capa vive en memoria. §208: un banco
+  que da una instrucción caduca es peor que uno mudo.
+- Imprimía un **veredicto tajante desde una sola corrida** — el mismo
+  defecto que B.4 con su proyección desde un solo escalón. Ahora imprime
+  la línea base con su dispersión, dice qué corrida es ésta, y **se niega
+  a concluir**: el veredicto sale de la media de tres.
+
+### La predicción de (b), escrita antes de empezar
+
+Si (b) lleva el desperdicio al mínimo teórico —de 39,25 generaciones a
+16— y el nodo no cobra un peaje distinguible, el rendimiento debería subir
+en proporción al trabajo que deja de tirarse: **hacia 3,7-4,2 pagos/s**,
+del orden del 2,28× que §216 midió en la capa.
+
+**Si sale por debajo de 3**, hay un coste del nodo que este banco no ve, y
+tocaría la cola de escritura de `main.rs:163` antes que los lotes.
+
+### Lo que NO se afirma
+
+- D.1 mide **cuatro clientes**. No dice nada de cuarenta ni de cuatrocientos.
+- El cable y el `Mutex` **no se miden por separado**: se sabe que juntos
+  no superan el ruido a esta escala, y nada más.
+- La capa vive **en memoria**: el disco no entra.
+- El tamaño de prueba se midió en **un escenario**. Otros importes u
+  otras cuentas darán bytes distintos —los dos `mint` ya difieren un
+  1,3 %—, pero de forma **determinista**: el prover de winterfell no tira
+  dados, y dos corridas del banco dieron cifras idénticas al byte.
+
+### Abierto tras §218
+
+- **(b) sin escribir.** Decidido: método **aditivo** —`applySend` no se
+  toca, porque cambiar su respuesta síncrona sí subiría versión—.
+- ⚠️ `zkssl_sendMaterials` **no reserva**: llama a `allocate_pending()`,
+  que mira el estado actual. **Dos clientes concurrentes reciben la misma
+  posición.** Es el fallo que §211 arregló con `reserve_pending` y que el
+  nodo no usa. Cablearlo abre una fuga —reservas que nadie libera— y hace
+  falta caducidad, con el precedente del `refund_ttl`.
+- El muro del cuerpo HTTP son **2.097.152 bytes** (C0.2, H2 clavada). Con
+  132 KB por operación caben **15**; los 16 de §216 se pasan por 1,26 %.
+- Base64 en vez de hex ahorraría un **33 %** del cable y haría caber el
+  lote de §216 sin tocar el transporte, pero es cambio de formato: sería
+  `zkssl/0.3`. Aplazado y medido aparte.

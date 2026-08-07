@@ -468,7 +468,12 @@ impl TryFrom<&ClaimPublicInputsDto> for ClaimPublicInputs {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SendReceiptDto {
-    /// `winterfell::Proof::to_bytes` (~36,7 KB).
+    /// `winterfell::Proof::to_bytes`. **66.164 bytes (64,6 KB)** para
+    /// `circuit_send`, medido en §218 (banco C0.1).
+    ///
+    /// ⚠️ Los 36,7 KB que citan las tablas comparativas son del
+    /// **circuito de comparación** (blowup 16, ext. cuadrática), no de
+    /// los circuitos de esta capa. Ver `crates/zk-ssl/src/lib.rs`.
     pub proof: Blob,
     pub public_inputs: SendPublicInputsDto,
     pub commitment: B32,
