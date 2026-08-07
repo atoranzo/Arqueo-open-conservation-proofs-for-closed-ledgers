@@ -13758,6 +13758,125 @@ leerlo entero es su propio trabajo.
 19 cirugias ancladas (count==1, PRE/POST por sha), validadas
 reproduciendo el POST byte a byte antes de escribir el pegable. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 204. Cinco mediciones sobre el apply: tres hipotesis refutadas, dos confirmadas, y el cuello de botella era un hash
+
+El RFC-0002 (§198bis, `spec/rfc/`) declara que **ninguna etapa se abre
+sin la tabla de la etapa A**. Se hizo la tabla. Y despues cuatro mas,
+porque cada una refuto o precisó a la anterior.
+
+**Ninguna toca la biblioteca**: cinco ejemplos que usan solo API publica
+(`crates/zk-ssl/examples/`, 1097 lineas), con `required-features =
+["sandbox"]` para que `cargo test` no intente compilarlos sin la feature
+y rompa la suite.
+
+**A — ¿donde se van los ~175 ms del apply?** Misma carga sobre tres
+soportes: memoria, tmpfs y disco.
+
+| soporte | apply_send | apply_claim | media/operacion |
+|---|---|---|---|
+| memoria | 36,22 ms | 37,23 ms | **36,73 ms** |
+| tmpfs | 37,34 ms | 37,53 ms | **37,44 ms** |
+| disco | 38,30 ms | 37,67 ms | **37,99 ms** |
+
+Descomposicion: verificacion+arboles 36,73 · serializacion+sled 0,71 ·
+**durabilidad fisica 0,55**. La persistencia es el **3 %**.
+⚠️ **Hipotesis del `flush` por operacion: REFUTADA.** La etapa B del RFC
+—group commit— optimizaria 1,26 ms de 38.
+Y de paso: el techo del `apply` son **26,3 operaciones/s**, no las 5,7
+TPS que `doc/ESCALADO` §2.1 deriva de un porcentaje de la via retirada.
+
+**A.2 — ¿verificacion o arboles?**
+
+| fase | verificacion sola | apply completo | resto |
+|---|---|---|---|
+| send | 2,49 ms | 33,81 ms | **31,32 ms** |
+| claim | 2,43 ms | 33,45 ms | **31,01 ms** |
+
+Verificacion **7 %**, resto **93 %**.
+
+**A.3 — ¿el 93 % crece con las cuentas?** Hipotesis: `SparseTree::root()`
+recomputa sin cache y barre TODAS las hojas por nodo, luego el coste
+seria ~k².
+
+| cuentas | apply/operacion | send_materials |
+|---|---|---|
+| 4 | 35,25 ms | 0,64 ms |
+| 20 | 42,10 ms | 4,04 ms |
+| 60 | 57,75 ms | 11,84 ms |
+
+Exponente medido: **apply e = 0,18** (plano) · **send_materials e =
+1,08** (lineal, ×18,5).
+⚠️ **Hipotesis del arbol cuadratico: REFUTADA para el apply.** Pero el
+barrido lineal SI existe y aparece en `send_materials` —que corre en el
+nodo en cada envio—: extrapolado a 1.000 cuentas, ~248 ms por llamada.
+Es un problema real, y **no era el que buscabamos**.
+
+**A.4 — el coste plano, aislado.** Ultimo sospechoso: `digest_of_proof`
+recorre la prueba en bloques de 16 bytes y hace **una permutacion Rescue
+por bloque**.
+
+| medida | valor |
+|---|---|
+| tamano de la prueba de envio | **65.840 bytes** (4.115 bloques) |
+| `digest_of_proof` (Rescue) | **30,99 ms** |
+| Blake3 sobre los mismos bytes | **0,011 ms** |
+| apply_send completo | 33,27 ms |
+
+**El 93 % del apply es ese hash. Rescue es 2.915x mas caro que Blake3
+aqui.** Y `proof_digest`/`chain_digest` **no aparecen en ningun
+circuito**: se paga un hash algebraico —elegido por ser amigable con
+circuitos— para un resumen que jamas entrara en uno.
+✅ **HIPOTESIS CONFIRMADA.** Cambiandolo, el apply pasaria de 33,27 a
+2,29 ms: **de 30 a 436 operaciones/s**.
+Arreglo quirurgico: `chain_digest` (5 merges) SE QUEDA en Rescue —podria
+entrar en circuito con las cabezas atestiguadas §121—; `digest_of_proof`
+(4.115 merges) cambia. ⚠️ Cambia la cadena y por tanto los vectores de
+conformidad: es cambio de PROTOCOLO, va por RFC con `zkssl/0.2`.
+
+**A.5 — ¿la contencion existe?** Los 1,5-1,9 TPS admitian dos
+explicaciones que dan el mismo numero: contencion real, o simple suma en
+serie (250+33+237+33 = 553 ms = 1,81 pagos/s). Se separan contando
+`StaleState` con hilos que operan **cada uno su propio par de cuentas**,
+de modo que lo unico disputable es la raiz.
+
+| hilos | pagos | s | pagos/s | stale send | stale claim | regeneraciones/pago |
+|---|---|---|---|---|---|---|
+| 1 | 3 | 1,6 | 1,85 | 0 | 0 | 0,00 |
+| 4 | 12 | 7,7 | **1,57** | 9 | 37 | **3,83** |
+
+✅ **HIPOTESIS CONFIRMADA, y peor de lo supuesto**: 70 generaciones para
+24 operaciones — **el 66 % del trabajo criptografico se tira**. Y anadir
+hilos **degrada** el rendimiento (0,84x): es la firma de un livelock, no
+de un cuello ordinario.
+**Hallazgo aparte**: los cobros sufren **4,1x mas** que los envios (37 vs
+9). El `claim` se ata tambien a `pending_root_old`, asi que **cada envio
+ajeno le mata la prueba**. El acoplamiento de los tres arboles deja de
+ser teoria y pasa a ser medida — y es la parte mas barata de atacar.
+Con un hilo salen los 1,85 pagos/s que predice la aritmetica en serie:
+**las dos historias eran ciertas a la vez** — el sistema esta en serie Y
+ademas se degrada al paralelizarlo.
+
+**Sintesis, con lo que arregla cada cosa y lo que no:**
+
+| pieza | arregla | NO arregla |
+|---|---|---|
+| hash Rescue→Blake3 | techo del nodo: 30 → 436 op/s | la contencion (66 % de desperdicio sigue) |
+| desacoplar las tres raices | que los cobros mueran por envios ajenos | los envios entre si |
+| lotes (etapa D) | la contencion entera | el techo, si el hash sigue |
+| arbol incremental | el desplome de `send_materials` a escala | nada de lo anterior |
+
+Ninguna sirve sola, y ahora esta **medido** cual falta para que.
+
+**Metodo, para quien venga.** Cinco hipotesis, **tres refutadas** —el
+flush, el nonce (§203bis del diagnostico) y el arbol cuadratico— y dos
+confirmadas. Cada refutacion costo minutos y ahorro meses: se estuvo a
+punto de disenar un circuito de lote para esquivar **un hash mal
+elegido**. La regla que lo hizo posible es la del RFC: escribir la
+prediccion y su refutacion ANTES de ver el dato.
+
+Este asiento registra las medidas. La reescritura del RFC-0002 y las
+correcciones de `doc/ESCALADO` §2.1-§2.2 van en el sello siguiente. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

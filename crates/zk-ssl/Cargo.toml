@@ -34,3 +34,26 @@ sha2 = "0.10"
 # Expone `tests_support` como sandbox para herramientas (zk-ssl-cli/node).
 # Solo visibilidad; en compilacion normal no cambia nada. Ver PARCHES.md.
 sandbox = []
+
+# Los bancos de medicion del RFC-0002 (etapas A a A.5) usan
+# `tests_support`, asi que EXIGEN la feature. Sin esto, `cargo test`
+# intentaria compilarlos sin ella y la suite se romperia.
+[[example]]
+name = "etapa_a_apply"
+required-features = ["sandbox"]
+
+[[example]]
+name = "etapa_a2_verify"
+required-features = ["sandbox"]
+
+[[example]]
+name = "etapa_a3_escala"
+required-features = ["sandbox"]
+
+[[example]]
+name = "etapa_a4_hash"
+required-features = ["sandbox"]
+
+[[example]]
+name = "etapa_a5_concurrencia"
+required-features = ["sandbox"]
