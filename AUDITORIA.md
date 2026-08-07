@@ -14359,6 +14359,66 @@ cambiado una sola raiz, gritaria.
 De la etapa 2 quedan `apply_many` y la regla de una operacion por cuenta
 y por lote. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 213. Lo que el registro afirma, y lo que dejara de afirmar: la declaracion que va ANTES de escribir `apply_many`
+
+Al leer `apply_send` y `apply_claim` enteras para disenar `apply_many`,
+aparecio una condicion que el plan de §210 no habia tenido en cuenta.
+`log::verify_chain`:
+
+    if i > 0 && e.root_old != self.entries[i - 1].root_new {
+        return Err(LogError::BrokenChain { at: e.seq });
+    }
+
+Y su gemela `verify(genesis_root)` sigue una raiz esperada desde el
+genesis. **El registro exige llevar la cadena REAL de raices** — la
+garantia que el README publica como «reescribir el historial → registro
+encadenado de transiciones».
+
+**Por que eso rompe el plan.** En un lote todas las pruebas declaran la
+misma `root_old` y raices nuevas HIPOTETICAS —«la raiz que saldria si mi
+cambio fuera el unico»— que no encadenan entre si, y ninguna es la raiz
+real final. Anotar en el registro lo que la prueba declara produciria un
+registro que **falla `verify_chain`**.
+
+**La medicion que decidio.** La pregunta era: ¿verifica algo el vinculo
+entre las raices del registro y las que la prueba declara? Respuesta:
+**no**. El unico enlace es la construccion —`append(OpKind::Send,
+pi.root_old, pi.root_new, ...)`—, que es una eleccion de que escribir, no
+una comprobacion. Ninguna funcion compara ambas cosas. Luego cambiar lo
+que se le pasa a `append` **no rompe ninguna verificacion existente**.
+
+**La decision: opcion (b)** —N entradas con las raices REALES—, y no por
+preferencia sino porque `verify` **la exige**. Con N=1 no cambia
+absolutamente nada: la raiz real ES la hipotetica, y eso ya esta
+**probado** por el test `root_with_equivale_a_clonar_y_escribir` de §212.
+Los vectores de conformidad quedan intactos.
+
+**Lo que se pierde, y por eso se declara.** Hoy, un tercero con una
+entrada **y** su prueba puede comprobar que la transicion acreditada es
+la que el registro anoto, **sin tener el arbol**. Con lotes necesitara
+replicarlo. Es coherente con el modelo de `SECURITY.md` §6 y §121
+—verificacion por replica— pero es una **perdida real**, y se escribe en
+`spec/RPC.md` en vez de descubrirse leyendo el codigo.
+
+**Y una consecuencia que no se buscaba: la composicion de los lotes es
+OBSERVABLE.** Dos implementaciones que apliquen la misma secuencia
+agrupandola distinto producen `rootNew` distintos y cadenas distintas. El
+registro deja de ser funcion unicamente de la secuencia de operaciones:
+**tambien depende de como se agruparon**. Por eso los vectores de
+conformidad pasan a **declarar su politica de agrupacion**, y se hace
+constar que los de `0.1` y `0.2` se generaron **sin lotes (N=1)**: una
+implementacion debe reproducirlos aplicando de una en una.
+
+**Metodo.** Este asiento no escribe una linea de codigo, y es
+deliberado: si la mesa no acepta la perdida declarada arriba, `apply_many`
+no se escribe. Documento primero, refactor despues — sobre todo cuando el
+refactor toca las dos funciones que llevan el comentario de §73, el fallo
+mas grave que encontro la auditoria.
+
+Septima vez en este tramo que leer antes de escribir cambia el plan, y la
+mas barata: un `grep` y dos funciones leidas frente a un refactor
+construido sobre una garantia rota. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

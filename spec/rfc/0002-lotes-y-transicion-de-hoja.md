@@ -184,6 +184,55 @@ circuito.
 lote cambia `frozen_root` y mata todas las pruebas en vuelo. Se declara:
 **las congelaciones van en su propio lote**.
 
+#### 2.4.bis El registro encadenado — hallazgo de §213
+
+Antes de escribir `apply_many` se leyó `log::verify_chain` y apareció una
+condición que el plan de §210 no había tenido en cuenta:
+
+```rust
+if i > 0 && e.root_old != self.entries[i - 1].root_new {
+    return Err(LogError::BrokenChain { at: e.seq });
+}
+```
+
+Y su gemela `verify(genesis_root)` sigue una raíz esperada desde el
+génesis. Es decir: **el registro exige llevar la cadena REAL de raíces**
+— la garantía que el README publica como «reescribir el historial →
+registro encadenado de transiciones».
+
+**El problema.** En un lote, todas las pruebas declaran la misma
+`root_old` y raíces nuevas **hipotéticas** que no encadenan entre sí.
+Anotar en el registro lo que la prueba declara produciría un registro que
+**falla `verify_chain`**.
+
+**Tres salidas, y la decisión.**
+
+| | qué hace | precio |
+|---|---|---|
+| (a) el lote es **una sola entrada** | encadena | una entrada deja de corresponder a una prueba concreta; cambia el formato del registro |
+| **(b) N entradas con las raíces REALES** | **encadena, y con N=1 no cambia nada** —la raíz real *es* la hipotética, probado por el test de `root_with` en §212—, así que los vectores quedan intactos | el `rootNew` de una entrada deja de ser el que su prueba declara; atarlos exige replicar el árbol |
+| (c) no agrupar | nada cambia | la contención se queda |
+
+**Se elige la (b)**, y no por preferencia: `verify` **exige** la cadena
+real, así que es la única compatible con lo que ya está publicado.
+
+**Lo que se midió para decidirlo** (§213): que **nada en el árbol
+verifica el vínculo entre las raíces del registro y las que la prueba
+declara**. El único enlace es la construcción —`append(OpKind::Send,
+pi.root_old, pi.root_new, …)`—, que es una elección de qué escribir, no
+una comprobación. Cambiar lo que se le pasa a `append` no rompe ninguna
+verificación existente.
+
+⚠️ **Pero sí se pierde una capacidad**, y está declarada en `spec/RPC.md`
+(«Qué afirma el registro de transiciones»): hoy, con una entrada y su
+prueba, un tercero puede atarlas **sin tener el árbol**; con lotes
+necesitará replicarlo.
+
+⚠️ **Y la composición de los lotes pasa a ser observable**: dos
+implementaciones que agrupen distinto producen cadenas distintas para la
+misma secuencia. Por eso los vectores declaran su política de agrupación,
+y los de `0.1` y `0.2` se generaron **sin lotes (N=1)**.
+
 #### 2.5 Las tres piezas, en orden
 
 1. ✅ **Reserva de posiciones de pendiente — HECHA (§211).**
@@ -194,8 +243,8 @@ lote cambia `frozen_root` y mata todas las pruebas en vuelo. Se declara:
    el bug antes de arreglarlo: sin reservar, dos llamadas devuelven la
    misma posición.
 2. ⬜ **`apply_many`** — instantánea de arranque, verificación de cada
-   prueba contra su raíz hipotética, aplicación de las N, recómputo una
-   vez. **Es lo siguiente.**
+   prueba contra su raíz hipotética, aplicación de las N, y **`append`
+   recibiendo las raíces REALES** (§2.4.bis). **Es lo siguiente.**
 3. ⬜ **Una operación por cuenta y por lote.**
 
 Las tres son de capa. **Cero superficie nueva de sub-restringimiento**:

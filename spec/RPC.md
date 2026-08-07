@@ -126,6 +126,72 @@ compila sin la feature `dev` y no contiene este espacio.
 `StaleState` es esperable bajo concurrencia: el estado declarado quedó
 atrás. El cliente refresca su vista y reintenta.
 
+## Qué afirma el registro de transiciones
+
+Esta sección es **normativa** y describe lo que `zkssl_logEntries` y
+`zkssl_verifyChain` garantizan hoy, y lo que dejarán de garantizar si el
+nodo aplica operaciones **por lotes** (RFC-0002, etapa 2). Se escribe
+**antes** de implementarlo para que nadie construya sobre una garantía
+que va a cambiar.
+
+### Lo que el registro afirma SIEMPRE
+
+1. **Los números de secuencia son consecutivos** desde cero.
+2. **`rootOld` de una entrada es `rootNew` de la anterior**, y la primera
+   arranca en la raíz del génesis. Es lo que impide insertar o borrar
+   operaciones del medio.
+3. **`chain` es el resumen encadenado** de la entrada y de todo lo
+   anterior: alterar cualquier campo de cualquier entrada rompe la cadena
+   desde ahí hasta el final.
+4. **`proofDigest` ata la entrada a una prueba concreta** —a sus bytes—,
+   aunque el registro no guarde la prueba.
+
+Estas cuatro se mantienen con lotes o sin ellos. `zkssl_verifyChain` las
+comprueba.
+
+### Lo que HOY vale además, y con lotes dejará de valer
+
+⚠️ **Hoy, cada operación se aplica sola, y por eso las raíces del
+registro coinciden con las que la prueba declara.** Un tercero que tenga
+una entrada **y** su prueba puede comprobar que la transición que la
+prueba acredita es exactamente la que el registro anotó, **sin necesidad
+de tener el árbol**.
+
+**Con lotes eso deja de ser cierto.** En un lote de N operaciones, cada
+prueba se genera contra la **raíz de arranque del lote** y acredita una
+transición **hipotética** —«la raíz que saldría si mi cambio fuera el
+único»—. El registro, en cambio, tiene que anotar las raíces **reales**,
+porque es lo que exige la garantía 2.
+
+En consecuencia, dentro de un lote:
+
+- `rootNew` de una entrada **no** será, en general, la raíz que su propia
+  prueba declara;
+- atar una entrada a la transición que su prueba acredita **exigirá tener
+  el árbol** —es decir, replicar el estado—, no solo la entrada y la
+  prueba.
+
+Esto es coherente con el modelo declarado en `SECURITY.md` §6 y en el
+asiento §121: la verificación por **réplica**. Pero es una **pérdida
+real** frente a lo que hoy se puede hacer, y por eso se declara aquí en
+vez de descubrirse al leer el código.
+
+### Y una consecuencia para la conformidad
+
+⚠️ **La composición de los lotes es observable.** Dos implementaciones
+que apliquen la misma secuencia de operaciones **agrupándolas de forma
+distinta** producirán entradas con `rootNew` distintos y, por tanto,
+cadenas distintas. El registro deja de ser una función únicamente de la
+secuencia de operaciones: **también depende de cómo se agruparon**.
+
+Por eso, **los vectores de conformidad declaran su política de
+agrupación**. Los de `zkssl/0.1` y `zkssl/0.2` se generaron **sin lotes**
+—una operación por aplicación, N=1— y una implementación debe
+reproducirlos aplicando de una en una. Cuando existan vectores de lote,
+lo dirán explícitamente.
+
+---
+
 ## Notas operativas
 
 - Un nodo, un escritor: las escrituras serializan en el nodo (el orden
