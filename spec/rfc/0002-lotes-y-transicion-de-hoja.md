@@ -13,7 +13,7 @@
 | etapa | estado | dónde |
 |---|---|---|
 | **1 · el hash del registro** | ✅ **HECHA** — `apply` de 33,27 a ~3,2 ms; techo del nodo de 30 a **~320 op/s**. Subió a `zkssl/0.2` y se emitieron vectores nuevos conservando los de `0.1` | §209 |
-| **2 · transición de hoja + lote** | ⬜ **PENDIENTE.** Es la única que queda, y la que ataca la contención (66 % del trabajo desperdiciado). Rompe el cable otra vez | — |
+| **2 · lotes** | 🔄 **REDEFINIDA (§210).** Sigue pendiente, pero **ya no necesita circuitos nuevos ni romper el cable**: la medición mató al circuito de lote y las tres verificaciones encontraron que el obstáculo era de capa | §210 |
 | **3 · árbol incremental** | ✅ **HECHA** — `send_materials` de e = 1,08 a ~0,1. No tocó cable ni circuitos | §207 |
 
 ⚠️ **Corrección a la sección «Compatibilidad» de más abajo**: este RFC
@@ -96,52 +96,105 @@ todavía desperdiciado, el rendimiento efectivo sube solo un **+13 %**
 de época → **cambia los vectores de conformidad**. Es `zkssl/0.2`, y los
 vectores de `0.1` se conservan (regla 2 del PROCESO).
 
-### Etapa 2 — Transición de hoja y prueba de lote
+### Etapa 2 — Lotes **sin circuitos** (redefinida en §210)
 
-**El cambio arquitectónico, y el único que ataca la contención.**
+> **Esta sección se reescribió después de medir.** La versión anterior
+> proponía cambiar `circuit_send`/`circuit_claim` para que dejaran de
+> afirmar `root_new`, y añadir un `circuit_batch_root` que el nodo
+> probaría. **Las dos piezas se caen**: el circuito de lote por su coste
+> medido, y el cambio de circuitos porque resultó innecesario. Se conserva
+> escrito abajo lo descartado, con su número.
 
-**2.1 — El cliente deja de afirmar la raíz nueva.** Hoy `circuit_send` y
-`circuit_claim` afirman `root_old` **y** `root_new`. Pasan a afirmar solo
-pertenencia bajo `root_old` y **cuál es su hoja nueva**.
+#### 2.1 Por qué se cae el circuito de lote: está medido
 
-Y **el `nonce` por fin avanza**: hoy `circuit_send` documenta que «el
-nonce NO cambia: destruir no consume el derecho». Con lotes, el circuito
-exige `nonce_new = nonce_old + 1`, y eso deduplica dentro del lote: **una
-operación por cuenta y por lote**, comprobable sin confiar en nadie.
+Banco `etapa_b0_lote` (§210). Dos geometrías reales, recta ajustada
+`t = 42,3 ms + 3,2 µs por cada 1.000 celdas`:
 
-**2.2 — Circuito nuevo `circuit_batch_root`**, que prueba el nodo: dado
-`root_old` y N pares (posición, hoja_nueva), demuestra `root_new`, más la
-conservación del suministro del lote. Traza: **N ascensos de Merkle** —
-grande, pero de la misma naturaleza que los dos que los circuitos
-actuales ya hacen. **No es recursión**: nadie verifica una prueba dentro
-de un circuito.
+| N (hojas) | filas | celdas | prueba proyectada | techo |
+|---|---|---|---|---|
+| 10 | 1.280 → 2.048 | 51.200 | 208 ms | 48 op/s |
+| 50 | 6.400 → 8.192 | 204.800 | 705 ms | 71 op/s |
+| 100 | 12.800 → 16.384 | 409.600 | **1.368 ms** | **73 op/s** |
+| 500 | 64.000 → 65.536 | 1.638.400 | 5.344 ms | 94 op/s |
 
-**2.3 — Qué verifica un tercero.** `N pruebas de cliente + 1 prueba de
-lote` afirman **exactamente lo mismo** que hoy afirma una prueba por
-operación. La propiedad «cada transición de raíz está demostrada» **no se
-pierde: se reparte**.
+⚠️ Es **cota optimista**: el término `n·log n` de las FFT y la presión de
+memoria empujan el coste real por encima de la recta.
 
-**2.4 — El desacoplamiento de las tres raíces viene incluido, y NO era
-una etapa aparte.** Una versión anterior de este RFC —y el traspaso de
-§204— decía que desacoplar los tres árboles era «la parte más barata de
-atacar». **Es falso, y conviene dejarlo escrito.** El `claim` muere 4,1×
-más que el `send` porque se ata a `pending_root_old`, y **no puede dejar
-de morir sin cambiar lo que la prueba afirma** — que es exactamente esta
-etapa. No hay atajo previo.
+**El circuito de lote sería el cuello nuevo**: ~73 op/s frente a las
+**~320 op/s** que el `apply` ya alcanza desde §209 — **4,4× peor**, a
+cambio de dos circuitos nuevos, su ESPEC, su censo, y toda la superficie
+de sub-restringimiento de la clase §3.1.
 
-*(El único desacoplamiento barato posible sería el de `frozen_root`, que
-cambia con muy baja frecuencia y podría fijarse por época. Pero A.5 midió
-que el problema es `pending_root`: sería arreglar lo que no duele.)*
+#### 2.2 Por qué tampoco hacen falta circuitos nuevos
 
-**Lo que puede matar esta etapa, y se mide ANTES de escribir código de
-producción:**
+La prueba de un cliente afirma: *«mi hoja vieja está en `root_old`, y
+aplicando mi cambio sale `root_new`»*. Eso **sigue siendo cierto dentro
+de un lote**: `root_new` es simplemente «la raíz si el mío fuera el único
+cambio desde la raíz de arranque».
 
-1. RAM y longitud de traza del circuito de lote para N = 50 / 100 / 500.
-2. **Tiempo de prueba del lote**, que pasa a ser el techo nuevo: si
-   probar 100 cuesta 10 s, son ~10 op/s y no compensa.
-3. Que la conservación del suministro se demuestre a nivel de lote.
-4. Qué le pasa al árbol de pendientes y a la cabeza de época cuando dos
-   cuentas avanzan sin orden entre sí.
+Y el nodo **ya sabe calcular esa raíz hipotética**: es el patrón
+`tentativo = árbol.clone(); set_leaf(…)` que ya vive en `commitment.rs` y
+`burn.rs`, y que desde §207 cuesta un ascenso —32 hashes—.
+
+Luego `apply_many` puede:
+
+1. Fijar la **raíz de arranque** del lote (instantánea de los tres árboles).
+2. Por cada operación: calcular su raíz hipotética **desde el arranque** y
+   verificar la prueba contra ella, tal cual la verifica hoy.
+3. Aplicar las N hojas al árbol real y recomputar la raíz **una vez**.
+4. Rechazar dos operaciones de la **misma cuenta** en el mismo lote — el
+   nodo sabe de qué cuenta es cada una, así que **ni siquiera hace falta
+   avanzar el `nonce`**.
+
+**Sin tocar circuitos. Sin romper el cable. Sin `zkssl/0.3`.**
+
+#### 2.3 Las tres verificaciones exigidas, y su resultado (§210)
+
+| verificación | resultado |
+|---|---|
+| **¿Algo depende de la raíz ACTUAL y no de una de arranque?** | ✅ **No.** Todo lo que `apply_send` comprueba tras el cerrojo usa solo `pi`, `self.regulatory_limit` y `self.records`. Las dos comprobaciones de raíz son las únicas, y ambas admiten la instantánea |
+| **¿Sobreviven los tres árboles?** | ⚠️ **NO, y aquí está el bloqueante** — ver 2.4 |
+| **¿Sobrevive la conservación del suministro?** | ✅ **Sí.** Es estructural y por operación —el saldo baja, la nota sube (`pending_amounts`)—; no hay un total recomputado que pueda descuadrar. Condicionado a que no colisionen las posiciones, que es 2.4 |
+
+#### 2.4 El bloqueante: `allocate_pending` colisiona en lote
+
+```rust
+pub(crate) fn allocate_pending(&self) -> Result<u64, LayerError> {
+    for p in 0..self.next_pending {
+        if !self.pending.is_occupied(p) { return Ok(p); }   // ← estado ACTUAL
+    }
+    Ok(self.next_pending)
+}
+```
+
+Es **solo lectura sobre el estado actual**. Dos clientes que pidan
+materiales contra la misma raíz de arranque **reciben la MISMA posición**:
+sus pruebas afirman insertar en la misma hoja del árbol de pendientes, y
+el segundo `apply` pisaría la nota del primero.
+
+En el banco `etapa_a5_concurrencia` (§204) no ocurrió porque el mutex
+serializaba materiales-y-aplicación. **En un lote no hay nada que lo
+impida.**
+
+**Arreglo: reserva de posiciones.** Un contador que avanza **al entregar
+materiales**, no al observar ocupación. Es cambio de **capa**, no de
+circuito.
+
+⚠️ **Y un segundo, menor**: una **congelación de gobernanza** a mitad de
+lote cambia `frozen_root` y mata todas las pruebas en vuelo. Se declara:
+**las congelaciones van en su propio lote**.
+
+#### 2.5 Las tres piezas, en orden
+
+1. **Reserva de posiciones de pendiente** — el bloqueante. Sin esto, nada
+   más funciona.
+2. **`apply_many`** — instantánea de arranque, verificación de cada prueba
+   contra su raíz hipotética, aplicación de las N, recómputo una vez.
+3. **Una operación por cuenta y por lote.**
+
+Las tres son de capa. **Cero superficie nueva de sub-restringimiento**:
+la clase §3.1 no entra en juego, y por eso esta etapa ya **no** exige
+ESPEC ejecutable ni censo — no hay circuito nuevo que censar.
 
 ### Etapa 3 — Árbol incremental (implementación, **sin RFC**)
 
@@ -187,6 +240,8 @@ Se conserva escrito para que no vuelva a proponerse sin leer por qué cayó.
 | **Arreglar el árbol para acelerar el `apply`** | exponente **0,18**: plano (A.3). El árbol sí hay que arreglarlo, pero por `send_materials` — etapa 3 |
 | **Verificación en paralelo como palanca principal** | la verificación es el **7 %** (A.2) |
 | **Delegar la generación a GPUs** | prueba el **cliente** (`client.rs`); el testigo lleva material de la clave de gasto. Sería una regresión de seguridad, no una optimización |
+| **`circuit_batch_root` (el circuito de lote)** | medido en §210: toparía el nodo en **~73 op/s** (N=100) frente a las ~320 que el `apply` ya alcanza — **4,4× peor**, y como cota optimista. Y resulta innecesario: la raíz nueva es determinista dadas las hojas, y quien replique el árbol la recomputa. La réplica verificable es lo que `SECURITY.md` §6 y §121 ya declaran como camino |
+| **Cambiar `circuit_send`/`circuit_claim` para no afirmar `root_new`** | innecesario (§210, 2.2): `root_new` sigue siendo cierta dentro del lote como «la raíz si el mío fuera el único cambio», y el nodo la calcula |
 | **Recursión FRI / migrar a Plonky3 o Miden** | `winterfell` no trae verificador recursivo; Miden es un zkVM y contradice el hallazgo 8 propio, además de anular la escalera FV. Y la etapa 2 **no necesita recursión** |
 
 ---
@@ -196,7 +251,7 @@ Se conserva escrito para que no vuelva a proponerse sin leer por qué cayó.
 | etapa | ¿rompe el cable? | vectores |
 |---|---|---|
 | 1 · el hash | **sí** → `zkssl/0.2` | los de `0.1` **se conservan**; nuevos bajo `0.2` |
-| 2 · transición de hoja + lote | **sí** → `zkssl/0.2` | ídem |
+| 2 · lotes (redefinida §210) | **NO** — es cambio de capa | intactos; `conformance --check` debe seguir en IDÉNTICO |
 | 3 · árbol incremental | **no** | intactos; `conformance --check` debe seguir en IDÉNTICO |
 | cobro agregado (opcional) | sí | ídem |
 | partición (opcional) | sí (direccionamiento de notas) | a decidir al abrirla |

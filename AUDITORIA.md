@@ -14150,6 +14150,86 @@ una elegancia de numeracion.
 Del RFC-0002 queda **solo la etapa 2**: la transicion de hoja y la prueba
 de lote, contra la contencion. La 1 y la 3 estan hechas. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 210. La etapa 2 pierde sus circuitos: el lote costaba mas que el cuello que quitaba, y el obstaculo real era una funcion de capa
+
+El RFC-0002 exige medir el coste del circuito de lote **antes de escribir
+codigo de produccion**. Se midio. Y despues las tres verificaciones que
+el propio RFC pedia. Resultado: **la etapa 2 ya no necesita circuitos
+nuevos, ni rompe el cable, ni exige escalera FV**.
+
+**La medida que mata al circuito de lote** (banco `etapa_b0_lote`, 211
+lineas, que NO toca produccion). No se puede cronometrar un circuito que
+no existe; si se pueden medir **dos geometrias reales** y ajustar la
+recta: `circuit_frozen_climb` (256 filas x 25 columnas = DOS ascensos de
+Merkle de 32 niveles, el ladrillo exacto del lote) y `circuit_send`
+(1.024 x 56, el pago de hoy). Recta: **t = 42,3 ms + 3,2 us por cada
+1.000 celdas**.
+
+| N | filas | celdas | prueba | techo |
+|---|---|---|---|---|
+| 10 | 2.048 | 51.200 | 208 ms | 48 op/s |
+| 50 | 8.192 | 204.800 | 705 ms | 71 op/s |
+| 100 | 16.384 | 409.600 | **1.368 ms** | **73 op/s** |
+| 500 | 65.536 | 1.638.400 | 5.344 ms | 94 op/s |
+
+⚠️ Cota **optimista**: el `n log n` de las FFT y la memoria empujan
+arriba. Aun asi el veredicto es claro: **~73 op/s frente a las ~320 que
+el `apply` ya alcanza desde §209** — **4,4x peor**, a cambio de dos
+circuitos nuevos con su ESPEC, su censo y toda la superficie de
+sub-restringimiento de la clase §3.1.
+
+**Y ademas resulta innecesario.** La prueba de un cliente afirma «mi hoja
+vieja esta en root_old y aplicando mi cambio sale root_new», y eso
+**sigue siendo cierto dentro de un lote**: root_new es «la raiz si el mio
+fuera el unico cambio desde el arranque». El nodo ya sabe calcularla —es
+el patron `tentativo = arbol.clone(); set_leaf(...)` de `commitment.rs` y
+`burn.rs`, que desde §207 cuesta un ascenso—. Luego **tampoco hay que
+cambiar `circuit_send` ni `circuit_claim`**.
+
+**Las tres verificaciones, con su resultado:**
+
+1. **¿Algo depende de la raiz ACTUAL?** NO. Todo lo que `apply_send`
+   comprueba tras el cerrojo usa solo `pi`, `regulatory_limit` y
+   `records`. Las dos comprobaciones de raiz son las unicas y admiten una
+   instantanea de arranque.
+2. **¿Sobreviven los tres arboles?** **NO — el bloqueante**, abajo.
+3. **¿Sobrevive la conservacion del suministro?** SI. Es estructural y
+   por operacion —el saldo baja, la nota sube—; no hay total recomputado
+   que descuadre. Condicionado al punto 2.
+
+**EL BLOQUEANTE, y no es criptografico.** `allocate_pending` busca la
+primera posicion libre **leyendo el estado actual**:
+
+    for p in 0..self.next_pending {
+        if !self.pending.is_occupied(p) { return Ok(p); }
+    }
+
+Dos clientes que pidan materiales contra la misma raiz de arranque
+**reciben la MISMA posicion**: sus pruebas afirman insertar en la misma
+hoja de pendientes, y el segundo `apply` pisaria la nota del primero. En
+`etapa_a5_concurrencia` (§204) no ocurrio porque el mutex serializaba
+materiales-y-aplicacion; **en un lote nada lo impide**.
+
+Arreglo: **reserva de posiciones** —un contador que avanza al ENTREGAR
+materiales, no al observar ocupacion—. Cambio de capa.
+
+⚠️ Segundo hallazgo, menor: una **congelacion de gobernanza** a mitad de
+lote cambia `frozen_root` y mata todas las pruebas en vuelo. Se declara:
+las congelaciones van en su propio lote.
+
+**La etapa 2 queda en tres piezas, todas de capa:** reserva de
+posiciones, `apply_many`, y una operacion por cuenta y por lote —que el
+nodo sabe sin necesidad de avanzar el `nonce`—. Semanas, no meses. Y
+**cero superficie nueva de sub-restringimiento**: por eso esta etapa ya
+NO exige ESPEC ejecutable ni censo. No hay circuito que censar.
+
+**Lo descartado se escribe con su numero**, como manda la casa: el
+`circuit_batch_root` y el cambio de `circuit_send`/`circuit_claim` entran
+en la tabla de descartes del RFC con la medida al lado.
+
+Este asiento no cambia ninguna cifra del canon: solo anade un banco que
+no toca produccion, y reescribe el plan con lo que la maquina dijo. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
