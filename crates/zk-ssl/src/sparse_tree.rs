@@ -22,6 +22,29 @@
 //! paradigma, no una decisión de diseño — y hace el árbol de este backend
 //! mayor que el de los otros, con más capacidad de cuentas a cambio de
 //! más hashes por operación.
+//!
+//! ## Nodos internos en caché (§207, etapa 3 del RFC-0002)
+//!
+//! La primera versión recomputaba el árbol entero en cada `root()`, y en
+//! cada nodo decidía la ocupación con un **barrido lineal de todas las
+//! hojas**. Medido en `AUDITORIA.md` §204 (banco `etapa_a3_escala`): eso
+//! NO dominaba el `apply` —exponente 0,18, plano— pero sí
+//! `send_materials`, que construye caminos: **e = 1,08**, de 0,64 ms con
+//! 4 cuentas a 11,84 con 60, y ~248 ms extrapolados a 1.000. Y corre
+//! **en el nodo**, en cada envío.
+//!
+//! Ahora los nodos internos no vacíos se guardan y se actualizan **solo
+//! en el camino de la hoja modificada**: `set_leaf` cuesta `O(profundidad)`
+//! hashes, y `root()` y cada hermano de `path_for` son una consulta.
+//!
+//! ⚠️ **El precio, dicho:** se cambia tiempo por memoria. El mapa guarda
+//! como mucho `hojas × profundidad` entradas —los subárboles vacíos NO se
+//! almacenan—, así que un ledger de millones de cuentas ocupará memoria
+//! proporcional. Es un intercambio deliberado, no un descuido.
+//!
+//! **La semántica NO cambia**: mismas raíces, mismos caminos. Lo
+//! garantiza la compuerta de conformidad, que compara digests byte a byte
+//! contra los vectores de `zkssl/0.1`.
 
 use std::collections::HashMap;
 use winterfell::math::fields::f64::BaseElement;
@@ -41,6 +64,13 @@ pub struct SparseTree {
     /// Hash del subárbol vacío de cada altura. `empty[0]` es la hoja
     /// vacía; `empty[TREE_DEPTH]` es la raíz de un árbol vacío.
     empty: Vec<Digest>,
+    /// Nodos internos NO vacíos, por `(nivel, índice)`.
+    ///
+    /// Invariante: una entrada ausente significa **subárbol vacío**, y su
+    /// valor es `empty[nivel]`. Por eso `recompute_path` **borra** el nodo
+    /// cuando su valor vuelve a ser el vacío: si no, el mapa crecería sin
+    /// límite y la consulta devolvería basura tras un borrado.
+    nodes: HashMap<(usize, u64), Digest>,
 }
 
 impl Default for SparseTree {
@@ -67,6 +97,7 @@ impl SparseTree {
             depth,
             leaves: HashMap::new(),
             empty,
+            nodes: HashMap::new(),
         }
     }
 
@@ -106,27 +137,41 @@ impl SparseTree {
         } else {
             self.leaves.insert(index, value);
         }
+        self.recompute_path(index);
     }
 
-    /// Hash de un nodo interno.
+    /// Rehace los nodos internos del camino de una hoja hasta la raíz.
     ///
-    /// Cortocircuitado: un subárbol sin hojas ocupadas devuelve
-    /// directamente el hash vacío precalculado, sin recorrerlo. Es lo que
-    /// hace viable un árbol de 2^32 posiciones.
+    /// `O(profundidad)` hashes. Es lo único que cuesta una escritura.
+    fn recompute_path(&mut self, index: u64) {
+        let mut idx = index;
+        for level in 1..=self.depth {
+            let parent = idx >> 1;
+            let left = self.node(level - 1, parent * 2);
+            let right = self.node(level - 1, parent * 2 + 1);
+            let value = native_merge(left, right);
+            if value == self.empty[level] {
+                self.nodes.remove(&(level, parent));
+            } else {
+                self.nodes.insert((level, parent), value);
+            }
+            idx = parent;
+        }
+    }
+
+    /// Hash de un nodo interno: **una consulta**, no un recorrido.
+    ///
+    /// Un subárbol sin hojas ocupadas no está en el mapa y devuelve el
+    /// hash vacío precalculado. Es lo que hace viable un árbol de 2^32
+    /// posiciones — y ahora también lo que lo hace barato.
     fn node(&self, level: usize, index: u64) -> Digest {
         if level == 0 {
             return self.leaf(index);
         }
-        let span = 1u64 << level;
-        let start = index.saturating_mul(span);
-        let end = start.saturating_add(span);
-        let occupied = self.leaves.keys().any(|k| *k >= start && *k < end);
-        if !occupied {
-            return self.empty[level];
-        }
-        let left = self.node(level - 1, index * 2);
-        let right = self.node(level - 1, index * 2 + 1);
-        native_merge(left, right)
+        self.nodes
+            .get(&(level, index))
+            .copied()
+            .unwrap_or(self.empty[level])
     }
 
     /// Hojas ocupadas, para exportar el estado.
@@ -137,8 +182,18 @@ impl SparseTree {
         self.leaves.iter().map(|(k, v)| (*k, *v)).collect()
     }
 
+    /// Raíz del árbol. Ahora es **una consulta**, no una reconstrucción.
     pub fn root(&self) -> Digest {
         self.node(self.depth, 0)
+    }
+
+    /// Cuántos nodos internos no vacíos hay en caché.
+    ///
+    /// Diagnóstico: crece como `hojas × profundidad` en el peor caso, y
+    /// **debe volver a cero** si se vacía el árbol. Hay un test que lo
+    /// exige.
+    pub fn cached_nodes(&self) -> usize {
+        self.nodes.len()
     }
 
     /// Camino de autenticación de una posición. Funciona igual para hojas
@@ -228,6 +283,57 @@ mod tests {
             };
         }
         assert_eq!(current, t.root());
+    }
+
+    /// **El invariante de la caché**: vaciar el árbol debe dejar el mapa
+    /// de nodos internos a CERO. Si no, un borrado dejaría basura y
+    /// `node()` devolvería un valor obsoleto en vez del hash vacío.
+    #[test]
+    fn emptying_the_tree_clears_the_cache() {
+        let mut t = SparseTree::new();
+        let empty_root = t.root();
+        assert_eq!(t.cached_nodes(), 0);
+
+        for i in [3u64, 5, 1_000_000, 1u64 << (TREE_DEPTH - 1)] {
+            t.set_leaf(i, d(i));
+        }
+        assert!(t.cached_nodes() > 0, "la cache deberia tener nodos");
+        assert_ne!(t.root(), empty_root);
+
+        for i in [3u64, 5, 1_000_000, 1u64 << (TREE_DEPTH - 1)] {
+            t.set_leaf(i, [BaseElement::ZERO; 4]);
+        }
+        assert_eq!(t.root(), empty_root, "la raiz debe volver a la vacia");
+        assert_eq!(t.cached_nodes(), 0, "CRITICO: la cache no se limpio");
+    }
+
+    /// Reescribir la misma hoja no acumula nodos: el camino se rehace, no
+    /// se anade.
+    #[test]
+    fn rewriting_a_leaf_does_not_grow_the_cache() {
+        let mut t = SparseTree::new();
+        t.set_leaf(7, d(1));
+        let n1 = t.cached_nodes();
+        for k in 2..20u64 {
+            t.set_leaf(7, d(k));
+        }
+        assert_eq!(t.cached_nodes(), n1, "la cache crecio al reescribir");
+    }
+
+    /// El orden de insercion no cambia la raiz: la caché no introduce
+    /// dependencia del historial.
+    #[test]
+    fn insertion_order_does_not_change_the_root() {
+        let mut a = SparseTree::new();
+        for i in [1u64, 500, 99_999, 7] {
+            a.set_leaf(i, d(i));
+        }
+        let mut b = SparseTree::new();
+        for i in [99_999u64, 7, 1, 500] {
+            b.set_leaf(i, d(i));
+        }
+        assert_eq!(a.root(), b.root());
+        assert_eq!(a.cached_nodes(), b.cached_nodes());
     }
 
     /// Posiciones muy separadas no interfieren: comprueba que el

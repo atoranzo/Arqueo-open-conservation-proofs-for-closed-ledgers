@@ -13982,6 +13982,63 @@ Estado del RFC: **PROPUESTO**. El 0001 queda reservado al endurecimiento
 del KDF (Argon2id) y sigue sin redactar; se anota en el propio fichero
 para que la numeracion no confunda. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 207. Etapa 3 del RFC-0002: el arbol guarda sus nodos internos — y la conformidad demuestra que la semantica no cambio
+
+Primera implementacion que sale del plan medido de §206. Es la etapa que
+**no toca el cable ni los circuitos** y por eso no necesitaba RFC.
+
+**El problema, medido en §204.** `SparseTree::root()` recomputaba el
+arbol entero en cada llamada, y en cada nodo decidia la ocupacion con un
+**barrido lineal de todas las hojas** (`leaves.keys().any(...)`). El
+banco `etapa_a3_escala` refuto que eso dominara el `apply` —exponente
+0,18, plano— pero midio que **si domina `send_materials`**, que
+construye caminos: **e = 1,08**, de 0,64 ms con 4 cuentas a 11,84 con 60,
+y ~248 ms extrapolados a 1.000. Y corre **en el nodo**, en cada envio.
+
+**El cambio.** Los nodos internos no vacios se guardan en un mapa por
+`(nivel, indice)` y se actualizan **solo en el camino de la hoja
+modificada**:
+
+- `set_leaf` → `O(profundidad)` hashes (antes: nada, pero se pagaba
+  despues y multiplicado).
+- `root()` → **una consulta**.
+- cada hermano de `path_for` → una consulta.
+
+**El invariante que sostiene todo, y su trampa.** Una entrada ausente
+significa subarbol vacio, con valor `empty[nivel]`. Por eso
+`recompute_path` **BORRA** el nodo cuando su valor vuelve al vacio: si no
+lo hiciera, un borrado dejaria basura y `node()` devolveria un valor
+obsoleto en vez del hash vacio. Tres tests nuevos lo exigen: vaciar el
+arbol deja la cache **a cero**; reescribir la misma hoja **no** la hace
+crecer; y el **orden de insercion no cambia la raiz ni el numero de
+nodos** —la cache no introduce dependencia del historial—.
+
+**Lo que demuestra que la semantica NO cambio.** No hace falta creerselo:
+`conformance --check` compara **digests byte a byte** contra los vectores
+de `zkssl/0.1` —raices viejas y nuevas de seis operaciones, cabeza de
+epoca y suministro—. Si una sola raiz hubiera cambiado, la compuerta
+gritaria. Sigue en IDENTICO. Es la mejor prueba de refactor que tiene
+esta casa, y estaba ahi desde §198 esperando a ser util.
+
+**El precio, dicho antes de que alguien lo descubra tarde.** Se cambia
+tiempo por memoria: el mapa guarda como mucho `hojas x profundidad`
+entradas, asi que un ledger de millones de cuentas ocupara memoria
+proporcional. Y hay un efecto de segundo orden: el patron `tentativo =
+arbol.clone(); tentativo.set_leaf(...)` —usado en `commitment.rs` y
+`burn.rs` para calcular una raiz prospectiva— ahora **clona tambien el
+mapa**. Sigue siendo mucho mas barato que antes (copiar `k x d` entradas
+frente a recomputar `k^2 x d`), pero deja de ser gratis. Queda anotado
+para quien optimice despues.
+
+**Verificacion en la maquina del sello**: el banco `etapa_a3_escala`
+vuelve a correr en el BLOQUE, y su exponente se compara con el 1,08 que
+midio §204. Ese contraste antes/despues, con el mismo banco y la misma
+maquina, es el entregable de esta etapa.
+
+Del RFC-0002 quedan la etapa 1 (el hash, ×14 del techo) y la etapa 2 (la
+transicion de hoja, contra la contencion). Ambas rompen el cable y
+comparten version `zkssl/0.2`. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
