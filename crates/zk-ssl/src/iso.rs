@@ -196,6 +196,10 @@ fn iso_reason(err: &LayerError) -> (&'static str, String) {
         // se vea que la decision se tomo.
         LayerError::NullifierPositionCollision { .. } => ("FF10", err.to_string()),
         LayerError::PendingTreeExhausted { .. } => ("FF10", err.to_string()),
+        // AM05 — Duplication: es literalmente lo que ocurre, la misma
+        // cuenta o la misma posicion dos veces en un lote (§215).
+        LayerError::DuplicateAccountInBatch { .. } => ("AM05", err.to_string()),
+        LayerError::DuplicatePendingInBatch { .. } => ("AM05", err.to_string()),
         LayerError::AccountLimitReached { .. } => ("FF10", err.to_string()),
         LayerError::CustodianSetExhausted { .. } => ("FF10", err.to_string()),
         LayerError::ProofFailed(_) => ("FF10", err.to_string()),

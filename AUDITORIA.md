@@ -14469,6 +14469,79 @@ sigue identica o no— y el siguiente parte de una base probada.
 De la etapa 2 queda `apply_many`, que ya solo orquesta: instantanea,
 validar las N contra ella, aplicar, y una operacion por cuenta. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 215. `apply_many`: dos titulares generan contra la misma raiz y las dos pruebas viven — la etapa 2, cerrada
+
+Pieza 2 y ultima de la etapa 2 del RFC-0002, sobre la base que dejaron
+§211 (reserva), §212 (`root_with`) y §214 (validate/commit).
+
+**Que hace, en este orden y no otro.**
+
+1. **Rechaza el lote entero** si lleva dos operaciones de la misma cuenta
+   o sobre la misma posicion de pendiente. Antes de validar nada.
+2. Toma una **instantanea de arranque** de los tres arboles: UN clon por
+   lote, no por operacion —`root_with` hace el resto sin copiar—.
+3. **Valida las N contra esa instantanea**, verificacion de prueba
+   incluida, **sin mutar**. Si una falla, no se aplica ninguna.
+4. Aplica las N.
+
+**El problema que resuelve, medido.** §204 con cuatro hilos: **3,83
+regeneraciones por pago**, 70 generaciones para 24 operaciones —**el 66 %
+del trabajo criptografico tirado**— y el rendimiento BAJANDO al
+paralelizar. Un livelock. Con lote, N titulares generan a la vez contra
+la misma raiz y ninguna prueba muere.
+
+**El test que justifica la etapa entera** no lo dice de palabra:
+
+    assert_eq!(e1.public_inputs.root_old, raiz_arranque);
+    assert_eq!(e2.public_inputs.root_old, raiz_arranque);
+    c.apply_many(&[...e1..., ...e2...]).expect("el lote debe aplicarse entero");
+    assert_eq!(c.balance_of(a1).unwrap(), 999_000);
+    assert_eq!(c.balance_of(a2).unwrap(), 998_000);
+
+**Dos pruebas generadas contra la MISMA raiz, y las dos se aplican.** Sin
+lote, la segunda llegaria muerta. Y el registro encadena: `verify_chain`
+pasa, y las reservas vuelven a cero.
+
+Otros tres: el lote **rechaza una cuenta repetida** sin aplicar nada; una
+**validacion fallida deja el arbol intacto** —se comprueba la raiz, no
+solo el saldo—; y **un lote de UNO da exactamente el mismo estado que
+`apply_send`** (misma raiz, misma cabeza de cadena, mismo numero de
+entradas). Suite 251 → **255**.
+
+**El cable NO se mueve**: `conformance --check` sobre `zkssl/0.2` sigue
+IDENTICO. Es capa pura, como §210 predijo cuando la etapa perdio sus
+circuitos.
+
+**Dos variantes de error nuevas** —`DuplicateAccountInBatch` y
+`DuplicatePendingInBatch`— con sus brazos en `Display` y en el mapeo ISO.
+Codigo **AM05, «Duplication»**, que es literalmente lo que ocurre; ambos
+`match` son exhaustivos desde que se retiro el comodin `_ => ("TECH")`
+que absorbia nueve variantes.
+
+**Lo que queda dicho para quien lo use:** hay que **reservar** las
+posiciones (§211) y pedir materiales con `send_materials_at` (§214), o
+dos titulares reciben la misma; una **congelacion de gobernanza a mitad
+de lote lo invalida entero** y va en su propio lote; el registro anota
+las **raices reales** (§213, declarado en `spec/RPC.md`); y la
+**validacion es todo-o-nada pero la aplicacion es secuencial** — un fallo
+de persistencia a mitad deja lote parcial, igual que N llamadas sueltas
+fallando a la tercera. Agrupar la persistencia es trabajo posterior;
+§204 midio que es el 3 %.
+
+**Una vara propia, cazada por el propio banco de pruebas.** El primer
+intento fallo en `assert_eq!(log.len(), 6)`: di por hecho que abrir
+cuenta no deja entrada en el registro, **sin medirlo**. El codigo estaba
+bien —los dos saldos ya habian quedado correctos— y lo que contaba mal
+era el test. El arreglo no fue poner el numero bueno sino **dejar de
+fijar un absoluto**: se guarda `log.len()` antes y se exige que el lote
+anada exactamente dos. Es lo que el test queria afirmar, y no se rompe si
+el montaje cambia.
+
+**La etapa 2 queda cerrada**: reserva, `apply_many`, y una operacion por
+cuenta y por lote —que resulto no necesitar el `nonce`, porque el nodo
+sabe de que cuenta es cada operacion—. Del RFC-0002 no queda ninguna
+etapa pendiente. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

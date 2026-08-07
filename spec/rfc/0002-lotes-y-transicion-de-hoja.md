@@ -1,6 +1,8 @@
 # RFC-0002 — Transición de hoja, lotes, y el hash del registro
 
-- **Estado:** PROPUESTO
+- **Estado:** ACEPTADO — **las tres etapas están hechas** (§207, §209,
+  §215). Se conserva como registro de lo decidido, lo medido y lo
+  descartado.
 - **Autores:** (mesa)
 - **Fecha:** 2026-08-07
 - **Versión del protocolo afectada:** `zkssl/0.1` → `zkssl/0.2`
@@ -13,7 +15,7 @@
 | etapa | estado | dónde |
 |---|---|---|
 | **1 · el hash del registro** | ✅ **HECHA** — `apply` de 33,27 a ~3,2 ms; techo del nodo de 30 a **~320 op/s**. Subió a `zkssl/0.2` y se emitieron vectores nuevos conservando los de `0.1` | §209 |
-| **2 · lotes** | 🔄 **EN CURSO.** Redefinida en §210; **pieza 1 de 3 hecha en §211** (reserva de posiciones). Sigue pendiente, pero **ya no necesita circuitos nuevos ni romper el cable**: la medición mató al circuito de lote y las tres verificaciones encontraron que el obstáculo era de capa | §210 |
+| **2 · lotes** | ✅ **CERRADA (§215).** Redefinida sin circuitos en §210; reserva §211; `root_with` §212; la declaración del registro §213; validate/commit §214; `apply_many` §215 | §210-§215 |
 | **3 · árbol incremental** | ✅ **HECHA** — `send_materials` de e = 1,08 a ~0,1. No tocó cable ni circuitos | §207 |
 
 ⚠️ **Corrección a la sección «Compatibilidad» de más abajo**: este RFC
@@ -242,10 +244,14 @@ y los de `0.1` y `0.2` se generaron **sin lotes (N=1)**.
    aplicó, nada hay que respetar—. Cuatro tests, y el primero demuestra
    el bug antes de arreglarlo: sin reservar, dos llamadas devuelven la
    misma posición.
-2. ⬜ **`apply_many`** — instantánea de arranque, verificación de cada
-   prueba contra su raíz hipotética, aplicación de las N, y **`append`
-   recibiendo las raíces REALES** (§2.4.bis). **Es lo siguiente.**
-3. ⬜ **Una operación por cuenta y por lote.**
+2. ✅ **`apply_many` — HECHA (§215).** Instantánea de arranque, las N
+   validadas contra ella **sin mutar**, aplicación después, y `append` con
+   las raíces REALES. Cuatro tests, y el primero demuestra lo que la etapa
+   existía para conseguir: **dos pruebas generadas contra la misma raíz se
+   aplican las dos**.
+3. ✅ **Una operación por cuenta y por lote — HECHA (§215)**, dentro de
+   `apply_many`. Resultó **no necesitar el `nonce`**: el nodo sabe de qué
+   cuenta es cada operación, así que el circuito no se toca.
 
 Las tres son de capa. **Cero superficie nueva de sub-restringimiento**:
 la clase §3.1 no entra en juego, y por eso esta etapa ya **no** exige

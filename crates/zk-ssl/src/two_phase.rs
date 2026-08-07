@@ -118,6 +118,52 @@ struct SendPlan {
     amount: u64,
 }
 
+/// **Una operacion de un lote** (§215).
+///
+/// El lote existe para que N titulares generen sus pruebas **en paralelo
+/// contra una misma raiz de arranque**, en vez de esperar cada uno a que
+/// el anterior aplique. Es lo que ataca la contencion medida en §204:
+/// 3,83 regeneraciones por pago, el 66 % del trabajo criptografico
+/// tirado.
+pub enum BatchOp<'a> {
+    Send {
+        receipt: &'a SendReceipt,
+        sender_index: AccountIndex,
+        sender_state: &'a ClientState,
+        amount: u64,
+    },
+    Claim {
+        receipt: &'a ClaimReceipt,
+        receiver_index: AccountIndex,
+        receiver_state: &'a ClientState,
+        notice: &'a PendingNotice,
+    },
+}
+
+impl BatchOp<'_> {
+    /// La cuenta que la operacion toca. **Una por lote.**
+    fn account(&self) -> AccountIndex {
+        match self {
+            BatchOp::Send { sender_index, .. } => *sender_index,
+            BatchOp::Claim { receiver_index, .. } => *receiver_index,
+        }
+    }
+
+    /// La posicion de pendiente que crea (envio) o consume (cobro).
+    fn pending_position(&self) -> u64 {
+        match self {
+            BatchOp::Send { receipt, .. } => receipt.notice.position,
+            BatchOp::Claim { notice, .. } => notice.position,
+        }
+    }
+}
+
+/// Un plan validado con su recibo, listo para aplicar.
+enum PlanListo<'a> {
+    Send(SendPlan, &'a SendReceipt),
+    Claim(ClaimPlan, &'a ClaimReceipt),
+}
+
 /// Gemela de [`SendPlan`] para el cobro.
 struct ClaimPlan {
     receiver_index: AccountIndex,
@@ -975,6 +1021,128 @@ impl SovereignLayer {
         self.commit_claim(&plan, receipt)
     }
 
+    /// **Aplica N operaciones validadas contra una MISMA raiz de arranque**
+    /// (§215, pieza 2 de la etapa 2 del RFC-0002).
+    ///
+    /// ## Por que existe
+    ///
+    /// Hoy cada titular genera su prueba contra la raiz que ve, y si otro
+    /// aplica mientras tanto la prueba llega muerta. Medido en §204 con
+    /// cuatro hilos: **3,83 regeneraciones por pago**, 70 generaciones
+    /// para 24 operaciones —**el 66 % del trabajo criptografico tirado**—
+    /// y el rendimiento BAJANDO al paralelizar. Un livelock.
+    ///
+    /// Con lote, N titulares generan **a la vez** contra la misma raiz y
+    /// ninguna prueba muere.
+    ///
+    /// ## Que hace, en orden
+    ///
+    /// 1. **Rechaza el lote entero** si lleva dos operaciones de la misma
+    ///    cuenta o sobre la misma posicion de pendiente.
+    /// 2. Toma una **instantanea de arranque** de los tres arboles.
+    /// 3. **Valida las N contra esa instantanea** —incluida la
+    ///    verificacion de cada prueba— sin mutar nada. Si una falla, no se
+    ///    aplica ninguna.
+    /// 4. Aplica las N en orden.
+    ///
+    /// ## Lo que hay que saber antes de usarlo
+    ///
+    /// ⚠️ **Quien arma el lote debe reservar las posiciones** con
+    /// [`Self::reserve_pending`] y pedir materiales con
+    /// `send_materials_at` (§211, §214). Sin reservar, dos titulares
+    /// reciben la misma posicion.
+    ///
+    /// ⚠️ **Una congelacion de gobernanza a mitad de lote lo invalida
+    /// entero**: cambia `frozen_root` y todas las pruebas dejan de casar.
+    /// Las congelaciones van en su propio lote.
+    ///
+    /// ⚠️ **El registro anota las raices REALES**, no las que cada prueba
+    /// declara: en un lote no coinciden. Lo que eso implica —y lo que se
+    /// pierde— esta declarado en `spec/RPC.md`, «Que afirma el registro de
+    /// transiciones», y en §213.
+    ///
+    /// ⚠️ **La validacion es todo-o-nada; la aplicacion es secuencial.**
+    /// Si fallara la persistencia a mitad, quedaria un lote parcial — la
+    /// misma situacion que N llamadas sueltas fallando a la tercera.
+    /// Agrupar la persistencia es trabajo posterior; §204 midio que es el
+    /// 3 % del coste.
+    pub fn apply_many(&mut self, ops: &[BatchOp<'_>]) -> Result<(), LayerError> {
+        if ops.is_empty() {
+            return Ok(());
+        }
+
+        // 1 · una operacion por cuenta, y posiciones distintas.
+        let mut cuentas = std::collections::BTreeSet::new();
+        let mut posiciones = std::collections::BTreeSet::new();
+        for op in ops {
+            let idx = op.account();
+            if !cuentas.insert(idx) {
+                return Err(LayerError::DuplicateAccountInBatch { index: idx });
+            }
+            let pos = op.pending_position();
+            if !posiciones.insert(pos) {
+                return Err(LayerError::DuplicatePendingInBatch { position: pos });
+            }
+        }
+
+        // 2 · la instantanea de arranque. UN clon por lote, no por
+        //     operacion: `root_with` (§212) hace el resto sin copiar.
+        let snap_accounts = self.accounts.clone();
+        let snap_pending = self.pending.clone();
+        let snap_frozen = self.frozen.root();
+
+        // 3 · validar TODAS. Nada se muta aqui.
+        let mut planes: Vec<PlanListo<'_>> = Vec::with_capacity(ops.len());
+        for op in ops {
+            let plan = match op {
+                BatchOp::Send {
+                    receipt,
+                    sender_index,
+                    sender_state,
+                    amount,
+                } => PlanListo::Send(
+                    self.validate_send(
+                        &snap_accounts,
+                        &snap_pending,
+                        snap_frozen,
+                        receipt,
+                        *sender_index,
+                        sender_state,
+                        *amount,
+                    )?,
+                    receipt,
+                ),
+                BatchOp::Claim {
+                    receipt,
+                    receiver_index,
+                    receiver_state,
+                    notice,
+                } => PlanListo::Claim(
+                    self.validate_claim(
+                        &snap_accounts,
+                        &snap_pending,
+                        snap_frozen,
+                        receipt,
+                        *receiver_index,
+                        receiver_state,
+                        notice,
+                    )?,
+                    receipt,
+                ),
+            };
+            planes.push(plan);
+        }
+
+        // 4 · aplicar. A partir de aqui se muta.
+        for plan in &planes {
+            match plan {
+                PlanListo::Send(p, r) => self.commit_send(p, r)?,
+                PlanListo::Claim(p, r) => self.commit_claim(p, r)?,
+            }
+        }
+        Ok(())
+    }
+
     // -----------------------------------------------------------------
 
     /// Emite a un pendiente **sin que las claves de custodio lleguen al
@@ -1135,6 +1303,221 @@ impl SovereignLayer {
 /// Es la pieza 1 de la etapa 2 del RFC-0002, y la que desbloquea las
 /// otras dos: sin ella, un lote reparte la misma posicion dos veces
 /// (§210).
+/// **§215 — el lote.** Lo que estos tests demuestran es que dos titulares
+/// pueden generar contra la MISMA raiz y que las dos pruebas viven.
+#[cfg(test)]
+mod tests_lote {
+    use super::*;
+    use crate::tests_support::*;
+
+    fn capa_con_cuentas(n: u64) -> (SovereignLayer, Vec<AccountIndex>) {
+        let mut c = SovereignLayer::new(
+            custodian_root(),
+            governance_root(),
+            LIMIT,
+            MAX_SUPPLY,
+            MAX_ACCOUNTS,
+        );
+        let mut idx = Vec::new();
+        for i in 0..n {
+            let a = c.open_account_wide(wide_key(0xA11CE + i));
+            idx.push(a);
+        }
+        for &a in &idx {
+            let op = mint_commitment(&c, a, 1_000_000);
+            let subida = mint_climb_proof(&c, a, 1_000_000);
+            let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+            c.apply_mint_delegated(subida, pa, ia, pb, ib, a, 1_000_000)
+                .expect("fondear");
+        }
+        (c, idx)
+    }
+
+    fn estado(c: &SovereignLayer, i: AccountIndex) -> ClientState {
+        ClientState {
+            public_id: c.public_id_of(i).expect("cuenta"),
+            balance: c.balance_of(i).expect("cuenta"),
+            nonce: c.nonce_of(i).expect("cuenta"),
+        }
+    }
+
+    /// **EL TEST QUE JUSTIFICA LA ETAPA 2.**
+    ///
+    /// Dos titulares piden materiales contra el MISMO estado —cada uno
+    /// con su posicion reservada (§211)— generan sus pruebas, y las dos
+    /// se aplican en un lote. Hoy, sin lote, la segunda llegaria muerta.
+    #[test]
+    fn dos_envios_generados_contra_la_misma_raiz_viven_los_dos() {
+        let (mut c, idx) = capa_con_cuentas(4);
+        let (a1, b1, a2, b2) = (idx[0], idx[1], idx[2], idx[3]);
+        let k1 = wide_key(0xA11CE);
+        let k2 = wide_key(0xA11CE + 2);
+
+        // Estado de arranque: nadie ha aplicado nada todavia.
+        let est1 = estado(&c, a1);
+        let est2 = estado(&c, a2);
+        let raiz_arranque = c.accounts.root();
+        let entradas_antes = c.log.len();
+
+        // Dos posiciones RESERVADAS: sin esto ambas serian la misma.
+        let p1 = c.reserve_pending().expect("reserva 1");
+        let p2 = c.reserve_pending().expect("reserva 2");
+        assert_ne!(p1, p2, "sin reserva distinta no hay lote posible");
+
+        let m1 = c
+            .send_materials_at(a1, c.public_id_of(b1).unwrap(), 1_000, salt_de(11), p1)
+            .expect("materiales 1");
+        let m2 = c
+            .send_materials_at(a2, c.public_id_of(b2).unwrap(), 2_000, salt_de(22), p2)
+            .expect("materiales 2");
+
+        // AMBAS pruebas se generan contra la misma raiz de arranque.
+        let e1 = crate::client::prove_send(&m1, k1, crate::proof_options()).expect("prueba 1");
+        let e2 = crate::client::prove_send(&m2, k2, crate::proof_options()).expect("prueba 2");
+        assert_eq!(e1.public_inputs.root_old, raiz_arranque);
+        assert_eq!(e2.public_inputs.root_old, raiz_arranque);
+
+        c.apply_many(&[
+            BatchOp::Send {
+                receipt: &e1,
+                sender_index: a1,
+                sender_state: &est1,
+                amount: 1_000,
+            },
+            BatchOp::Send {
+                receipt: &e2,
+                sender_index: a2,
+                sender_state: &est2,
+                amount: 2_000,
+            },
+        ])
+        .expect("el lote debe aplicarse entero");
+
+        // Los dos saldos bajaron, y el registro encadena.
+        assert_eq!(c.balance_of(a1).unwrap(), 999_000);
+        assert_eq!(c.balance_of(a2).unwrap(), 998_000);
+        // No se fija un numero absoluto: el montaje (aperturas y emisiones)
+        // tambien deja entradas, y cuantas es cosa suya. Lo que este test
+        // afirma es que el LOTE anade exactamente DOS.
+        assert_eq!(
+            c.log.len(),
+            entradas_antes + 2,
+            "el lote debe anadir dos entradas, una por operacion"
+        );
+        c.log.verify_chain().expect("la cadena debe encadenar");
+        assert_eq!(c.reserved_pending_count(), 0, "las reservas se consumieron");
+    }
+
+    /// El lote rechaza dos operaciones de la misma cuenta, **antes** de
+    /// validar nada.
+    #[test]
+    fn el_lote_rechaza_una_cuenta_repetida() {
+        let (mut c, idx) = capa_con_cuentas(2);
+        let (a, b) = (idx[0], idx[1]);
+        let est = estado(&c, a);
+        let p = c.reserve_pending().expect("reserva");
+        let m = c
+            .send_materials_at(a, c.public_id_of(b).unwrap(), 1_000, salt_de(7), p)
+            .expect("materiales");
+        let e = crate::client::prove_send(&m, wide_key(0xA11CE), crate::proof_options())
+            .expect("prueba");
+
+        let r = c.apply_many(&[
+            BatchOp::Send {
+                receipt: &e,
+                sender_index: a,
+                sender_state: &est,
+                amount: 1_000,
+            },
+            BatchOp::Send {
+                receipt: &e,
+                sender_index: a,
+                sender_state: &est,
+                amount: 1_000,
+            },
+        ]);
+        assert!(
+            matches!(r, Err(LayerError::DuplicateAccountInBatch { index }) if index == a),
+            "esperaba cuenta repetida, salio {r:?}"
+        );
+        // Y NADA se aplico.
+        assert_eq!(c.balance_of(a).unwrap(), 1_000_000);
+    }
+
+    /// Si una validacion falla, **no se aplica ninguna**.
+    #[test]
+    fn una_validacion_fallida_deja_el_lote_entero_sin_aplicar() {
+        let (mut c, idx) = capa_con_cuentas(4);
+        let (a1, b1, a2) = (idx[0], idx[1], idx[2]);
+        let est1 = estado(&c, a1);
+        // Estado MENTIROSO para la segunda: su prueba no casara.
+        let est2_falso = ClientState {
+            balance: 999_999,
+            ..estado(&c, a2)
+        };
+        let p1 = c.reserve_pending().expect("r1");
+        let p2 = c.reserve_pending().expect("r2");
+        let m1 = c
+            .send_materials_at(a1, c.public_id_of(b1).unwrap(), 1_000, salt_de(31), p1)
+            .expect("m1");
+        let e1 = crate::client::prove_send(&m1, wide_key(0xA11CE), crate::proof_options())
+            .expect("p1");
+        let m2 = c
+            .send_materials_at(a2, c.public_id_of(b1).unwrap(), 1_000, salt_de(32), p2)
+            .expect("m2");
+        let e2 = crate::client::prove_send(&m2, wide_key(0xA11CE + 2), crate::proof_options())
+            .expect("p2");
+
+        let saldo_antes = c.balance_of(a1).unwrap();
+        let raiz_antes = c.accounts.root();
+        let r = c.apply_many(&[
+            BatchOp::Send {
+                receipt: &e1,
+                sender_index: a1,
+                sender_state: &est1,
+                amount: 1_000,
+            },
+            BatchOp::Send {
+                receipt: &e2,
+                sender_index: a2,
+                sender_state: &est2_falso,
+                amount: 1_000,
+            },
+        ]);
+        assert!(r.is_err(), "la segunda deberia fallar la validacion");
+        assert_eq!(c.balance_of(a1).unwrap(), saldo_antes, "la PRIMERA no debe haberse aplicado");
+        assert_eq!(c.accounts.root(), raiz_antes, "el arbol debe estar intacto");
+    }
+
+    /// Un lote de UNA operacion deja el mismo estado que `apply_send`.
+    #[test]
+    fn un_lote_de_uno_equivale_a_apply_send() {
+        let hacer = |por_lote: bool| -> (Digest, Digest, usize) {
+            let (mut c, idx) = capa_con_cuentas(2);
+            let (a, b) = (idx[0], idx[1]);
+            let est = estado(&c, a);
+            let m = c
+                .send_materials(a, c.public_id_of(b).unwrap(), 5_000, salt_de(99))
+                .expect("materiales");
+            let e = crate::client::prove_send(&m, wide_key(0xA11CE), crate::proof_options())
+                .expect("prueba");
+            if por_lote {
+                c.apply_many(&[BatchOp::Send {
+                    receipt: &e,
+                    sender_index: a,
+                    sender_state: &est,
+                    amount: 5_000,
+                }])
+                .expect("lote de uno");
+            } else {
+                c.apply_send(&e, a, &est, 5_000).expect("apply_send");
+            }
+            (c.accounts.root(), c.log.head(), c.log.len())
+        };
+        assert_eq!(hacer(true), hacer(false), "lote de uno != apply_send");
+    }
+}
+
 #[cfg(test)]
 mod tests_reserva {
     use super::*;

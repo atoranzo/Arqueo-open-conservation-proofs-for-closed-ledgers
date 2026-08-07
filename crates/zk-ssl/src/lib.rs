@@ -208,6 +208,17 @@ pub enum LayerError {
     /// Cerrarlo exige rotar el arbol o reutilizar posiciones liberadas, y
     /// **no esta hecho**. Ver `AUDITORIA.md` §13.
     PendingTreeExhausted { capacity: u64 },
+    /// **Dos operaciones de la misma cuenta en un lote** (§215).
+    ///
+    /// `apply_many` valida las N contra una instantanea de arranque. Si
+    /// dos tocaran la misma cuenta, la segunda habria calculado su hoja
+    /// nueva sobre un saldo que la primera ya cambio, y su prueba dejaria
+    /// de acreditar la transicion que se aplica. Se rechaza el lote
+    /// entero: es un error de composicion de quien lo arma, no del pago.
+    DuplicateAccountInBatch { index: AccountIndex },
+    /// **Dos operaciones sobre la misma posicion de pendiente en un lote**
+    /// (§215). Misma razon: quien arma el lote debe reservar (§211).
+    DuplicatePendingInBatch { position: u64 },
     NotTheIssuer,
     /// El conjunto de custodios agotó su cupo de intervenciones.
     ///
@@ -327,6 +338,16 @@ impl std::fmt::Display for LayerError {
             AlreadyInThatFreezeState => {
                 write!(f, "la cuenta ya esta en ese estado de congelacion")
             }
+            DuplicateAccountInBatch { index } => write!(
+                f,
+                "el lote lleva dos operaciones de la cuenta {index}: hay que \
+                 armarlo con una por cuenta"
+            ),
+            DuplicatePendingInBatch { position } => write!(
+                f,
+                "el lote lleva dos operaciones sobre la posicion pendiente \
+                 {position}: hay que reservar antes de repartir materiales"
+            ),
         }
     }
 }
