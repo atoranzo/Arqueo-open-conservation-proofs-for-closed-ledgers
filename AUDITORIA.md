@@ -13927,6 +13927,61 @@ recomendacion de escalado, contrastarla contra la §2**.
 Nada de codigo en este sello. Solo que los documentos digan lo que las
 maquinas midieron. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 206. El RFC-0002, reescrito por las medidas: un enlace roto, una etapa descartada y una afirmacion propia corregida
+
+§205 publico `doc/DIAGNOSTICO_ESCALADO.md` con un enlace a
+`spec/rfc/0002-lotes-y-transicion-de-hoja.md` **que no existia**: el RFC
+se habia redactado en el taller y nunca se sello. Este asiento lo crea,
+y lo crea **reescrito**, porque su version conjeturada ya no era cierta.
+
+**Lo que las medidas cambiaron del plan.** La primera version proponia
+cinco etapas ordenadas por intuicion. Tras §204 quedan **tres**, en otro
+orden y con otras razones:
+
+| etapa | que es | efecto medido |
+|---|---|---|
+| **1** | `digest_of_proof` deja de usar Rescue | techo del nodo **30 → 436 op/s** |
+| **2** | transicion de hoja + prueba de lote | la contencion (66 % del trabajo desperdiciado) |
+| **3** | arbol incremental | el desplome de `send_materials` (e = 1,08) |
+
+Y **seis propuestas descartadas con su motivo**, en una tabla propia:
+group commit (persistencia 3 %), anti-replay por `nonce` (se muerde la
+cola: quitar la atadura de raiz reintroduce el marcador retirado en
+§32/§36), arreglar el arbol para acelerar el `apply` (exponente 0,18),
+verificacion en paralelo como palanca principal (es el 7 %), delegar la
+generacion a GPUs (el testigo lleva material de la clave: seria
+regresion de seguridad, no optimizacion) y recursion/migrar a
+Plonky3-Miden (winterfell no trae verificador recursivo; Miden es un
+zkVM y contradice el hallazgo 8 propio, ademas de anular la escalera FV
+— y la etapa 2 **no necesita recursion**).
+
+**La correccion mas incomoda es de una afirmacion propia.** El traspaso
+de §204 y la primera version del RFC decian que **desacoplar las tres
+raices era «la parte mas barata de atacar»**. Es **falso**: el `claim`
+muere 4,1x mas que el `send` porque se ata a `pending_root_old`, y **no
+puede dejar de morir sin cambiar lo que la prueba afirma** —que es
+exactamente la etapa 2—. No hay atajo previo. Queda escrito en el §2.4
+del RFC, con el motivo, para que nadie lo intente por separado.
+
+**Dos decisiones de proceso que el RFC fija:**
+
+- Las etapas 1 y 2 rompen el cable por la misma razon, asi que
+  **`zkssl/0.2` se emite UNA vez**, con las dos hechas, en vez de dos
+  versiones seguidas.
+- La etapa 3 **no requiere RFC** —no toca cable ni circuitos— y puede
+  sellarse por su cuenta.
+
+**Y la compuerta que protege lo que mas importa aqui**: la etapa 2
+introduce circuitos nuevos, es decir **superficies nuevas de
+sub-restringimiento** —la clase §3.1, la que costo cuatro anos al pool
+Orchard—. El RFC exige **ESPEC ejecutable y censo con 0 celdas sin dueno
+antes de sellarla**, igual que §195-§196. Sin eso, la ganancia de
+rendimiento se pagaria en la moneda mas cara de esta casa.
+
+Estado del RFC: **PROPUESTO**. El 0001 queda reservado al endurecimiento
+del KDF (Argon2id) y sigue sin redactar; se anota en el propio fichero
+para que la numeracion no confunda. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
