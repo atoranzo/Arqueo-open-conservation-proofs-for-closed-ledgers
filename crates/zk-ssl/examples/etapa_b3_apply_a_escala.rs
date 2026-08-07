@@ -9,10 +9,15 @@
 //!
 //! ## La cifra en juego
 //!
-//! **El techo de ~320 op/s de §209 se midió con DOS cuentas.** Si a 1e5
-//! cuentas cae, todo lo que esta casa afirma sobre rendimiento —§209 y
-//! §216 incluidos— vale para un juguete y no para un despliegue. Eso es
-//! lo que este banco pone a prueba.
+//! **La banda del `apply` es 265-320 op/s** (§218). §209 midió 3,1 ms
+//! con DOS cuentas y esa cifra se citó sola durante nueve sellos: es el
+//! extremo bueno de una banda, no el valor. Si a 1e5 cuentas el `apply`
+//! se saliera de la banda, todo lo que esta casa afirma sobre
+//! rendimiento valdría para un juguete y no para un despliegue.
+//!
+//! **Medido en §219: 3,58 · 3,64 · 3,67 ms a 1e3, 1e4 y 1e5** (`e=0,01`).
+//! La banda aguanta dos órdenes de magnitud, y el valor real a escala
+//! está en su SUELO: 273 op/s, no 320.
 //!
 //! ## El truco que lo hace viable
 //!
@@ -172,7 +177,7 @@ fn main() {
 
     eprintln!("== BANCO B.3 · el apply con el arbol GRANDE ==");
     eprintln!("   tope: {tope} cuentas · {pagos} pagos cronometrados por escalon");
-    eprintln!("   referencia: §209 midio ~3,1 ms de apply (~320 op/s) con DOS cuentas");
+    eprintln!("   referencia: banda 265-320 op/s (§218) · §219 midio 3,67 ms a 1e5");
     eprintln!("   ⚠️ el relleno son cuentas VACIAS: abrir no lleva prueba\n");
 
     let rss0 = rss_mb();
@@ -203,7 +208,12 @@ fn main() {
     }
 
     println!();
-    println!("| cuentas | apply/operacion | techo implicito | send_materials | generar (ref) | RSS (MB) |");
+    // ⚠️ `generar` es del CLIENTE y NO depende de la escala: la profundidad
+    // del arbol es constante. §219 lo midio en 282 · 461 · 220 ms con las
+    // cuentas x100 —y eso YA es la media de `pagos` generaciones—. La
+    // columna se imprime como contexto; leerle una tendencia es un error,
+    // y quien esto escribe lo cometio antes de mirar los tres escalones.
+    println!("| cuentas | apply/operacion | techo implicito | send_materials | generar (ruido, +-50%) | RSS (MB) |");
     println!("|---|---|---|---|---|---|");
     for p in &puntos {
         println!(
@@ -230,7 +240,7 @@ fn main() {
     println!("  RSS ............ e = {e_rss:.2}");
     println!();
     println!("== LECTURA ==");
-    println!("  §209 (2 cuentas) ....... ~3,1 ms · ~320 op/s");
+    println!("  banda medida (§218) .... 3,1-3,8 ms · 265-320 op/s");
     println!(
         "  aqui ({} cuentas) ... {:.2} ms · {:.0} op/s",
         ultimo.cuentas,
@@ -243,9 +253,9 @@ fn main() {
     let techo = 1000.0 / ultimo.ms_apply.max(1e-9);
     if e_apply.is_finite() && e_apply > 0.35 {
         println!("VEREDICTO: ⚠️ EL APPLY CRECE CON EL NUMERO DE CUENTAS (e={e_apply:.2}).");
-        println!("  El techo de ~320 op/s de §209 se midio con DOS cuentas y NO VALE");
-        println!("  a escala. Hay que corregir §209 y §216 con la misma vara con la");
-        println!("  que §205 corrigio ESCALADO §2.1: 'no derivar cifras, medirlas'.");
+        println!("  La banda 265-320 op/s (§218) NO VALE a esta escala. Hay que");
+        println!("  corregirla con la misma vara con la que §205 corrigio ESCALADO");
+        println!("  §2.1 y §218 corrigio el extremo de §209: no derivar, medir.");
         println!("  Antes de tocar nada, averiguar QUE crece: el arbol (lo dice B.2),");
         println!("  `records`, el registro, o `commit`.");
     } else if e_mat.is_finite() && e_mat > 0.5 {

@@ -230,9 +230,18 @@ fn main() {
         pu.cuentas, pu.s_abrir
     );
     println!("  estimacion teorica (N x 32 x {:.1} us): {est_u:.1} s", US_POR_MERGE);
-    let proy_1m = pu.s_abrir * (1_000_000.0 / pu.cuentas as f64);
+    // §219: extrapolar con el exponente MEDIDO, no linealmente. Con tres
+    // escalones e=1,03, y la diferencia a 1e6 es de 297 a 318 s: un 7 %
+    // que se perdia por usar un numero resumido teniendo el dato al lado.
+    let factor = 1_000_000.0 / pu.cuentas as f64;
+    let proy_1m = if e_abrir.is_finite() && e_abrir > 0.0 {
+        pu.s_abrir * factor.powf(e_abrir)
+    } else {
+        pu.s_abrir * factor
+    };
     println!("  proyeccion a 1.000.000 de cuentas: **~{proy_1m:.0} s**");
-    println!("  ⚠️ extrapolacion lineal, NO medida, salvo que el tope ya sea 1e6.");
+    println!("  ⚠️ extrapolada con el exponente MEDIDO (e={e_abrir:.2}), no es una");
+    println!("     medida. Con UN solo escalon no hay exponente y cae a lineal.");
     println!();
 
     let cerca = est_u > 0.0 && (pu.s_abrir / est_u) > 0.4 && (pu.s_abrir / est_u) < 2.5;

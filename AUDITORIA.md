@@ -14959,3 +14959,129 @@ tocaría la cola de escritura de `main.rs:163` antes que los lotes.
 - Base64 en vez de hex ahorraría un **33 %** del cable y haría caber el
   lote de §216 sin tocar el transporte, pero es cambio de formato: sería
   `zkssl/0.3`. Aplazado y medido aparte.
+## 219. Un orden de magnitud más, y el arreglo del §217 verificado donde importa
+
+Los escalones de **1e5** que B.3 y B.4 nunca corrieron. En B.4 no se podía:
+`crear` era cuadrático y montar cien mil cuentas habría llevado más de una
+hora. En B.3 sí se podía —su capa es en memoria, así que `commit()` salía
+por la puerta de atrás y nunca tocó el cuadrático— y simplemente no se
+había hecho. La distinción se anota porque §218 la dio por igual para los
+dos, y no lo era.
+
+### B.3 — el `apply` aguanta dos órdenes de magnitud
+
+| cuentas | `apply` | techo implícito | `send_materials` | RSS |
+|---|---|---|---|---|
+| 1.000 | 3,58 ms | 280 op/s | 0,00 ms | 6 MB |
+| 10.000 | 3,64 ms | 274 op/s | 0,01 ms | 36 MB |
+| **100.000** | **3,67 ms** | **273 op/s** | 0,01 ms | **163 MB** |
+
+`e = 0,01`. **Plano con las cuentas multiplicándose por cien.**
+
+Y valida la corrección de §218: los 273 op/s caen dentro de la banda
+**265-320** que aquel sello estableció, y confirman lo que decía al
+establecerla — **el valor real a escala está en el SUELO de la banda, no
+en el extremo**. Citar «~320 op/s» era citar el mejor caso de un sistema
+con dos cuentas.
+
+`send_materials` sigue en 0,01 ms: el arreglo de §207 aguanta a 1e5.
+
+### B.4 — el arranque, con tres escalones
+
+| cuentas | `crear` | **ABRIR** | µs/cuenta | disco | RSS |
+|---|---|---|---|---|---|
+| 1.000 | 0,5 s | **0,26 s** | 263,3 | 1 MB | 3 MB |
+| 10.000 | 5,6 s | **2,74 s** | 273,6 | 7 MB | 22 MB |
+| **100.000** | **56,4 s** | **29,68 s** | 296,8 | 48 MB | 148 MB |
+
+`e = 1,03` confirmado con tres puntos, no con dos. La recta se sostiene, y
+los µs por cuenta suben suave —263 · 274 · 297— por jerarquía de memoria,
+igual que B.2 midió en `set_leaf`.
+
+⚠️ **Pero el banco proyectaba mal, teniendo el dato al lado.** Multiplicaba
+por diez —297 s— cuando su propio exponente medido es 1,03. Con él:
+**318 s**. Un 7 % perdido por usar un número resumido en vez del dato, que
+es el mismo descuido que este asiento y los dos anteriores llevan
+persiguiendo. **Corregido en este sello**: la proyección usa el exponente
+y cae a lineal solo si no hay dos escalones que lo den.
+
+### El arreglo de §217, verificado un orden de magnitud más allá
+
+`crear`: **0,5 · 5,6 · 56,4 s**. Plano en µs por cuenta —500 · 560 · 564—
+con las cuentas por cien.
+
+Lo que habría costado **con el cuadrático**, al coste por entrada que §218
+midió (0,79 µs y subiendo): 5·10⁹ escrituras de registro, **más de una
+hora**. Medido ahora: **56 segundos.**
+
+Y el factor de mejora **crece con la escala** —8,3× a 1e4, del orden de
+70× a 1e5—. Eso es la firma de haber quitado un término cuadrático y no un
+coste fijo, que es justo lo que §217 afirmó y no había podido demostrar
+más allá de 1e4.
+
+### La memoria empieza a mandar
+
+La capa entera pasa de 36 a 163 MB entre 1e4 y 1e5: **4,5× por década**. Y
+cruzando con B.2, el árbol pasa de ser el 39 % de la capa a ser el **66 %**:
+se está convirtiendo en el término dominante.
+
+Proyección a 1e6: entre **0,7 y 1,0 GB**, y el extremo alto es el más
+probable porque la razón sube. ⚠️ Es una proyección desde dos escalones y
+**no incluye `pending` ni `frozen`**, que nadie ha medido.
+
+### Predicciones: los tiempos sí, los espacios no
+
+Cinco escritas antes del dato:
+
+| | predicho | medido | |
+|---|---|---|---|
+| `apply` a 1e5 | 3,6-3,9 ms | 3,67 | ✅ |
+| `crear` a 1e5 | 50-70 s | 56,4 | ✅ |
+| `ABRIR` a 1e5 | 28-33 s | 29,68 | ✅ |
+| RSS de B.3 | 200-300 MB | **163** | ❌ |
+| disco de B.4 | 55-70 MB | **48** | ❌ |
+
+⚠️ **Los tres aciertos son de TIEMPO y salen de medidas del mismo banco.
+Los dos fallos son de ESPACIO y salen de cruzar bancos distintos** — el
+RSS de B.3 lo derivé de la razón capa/árbol de B.2, y los dos se pasan por
+arriba.
+
+**Rito nuevo: una razón entre dos bancos no transfiere.** Cada uno mide su
+propio proceso, con su asignador y su granularidad de páginas. Un cociente
+tomado de un banco no es una constante del sistema.
+
+### `generar`: ruido con nombre de medida
+
+282 · 461 · 220 ms con las cuentas por cien. **Sin tendencia**, y no debía
+tenerla: la profundidad del árbol es constante, así que el circuito no
+sabe cuántas cuentas hay.
+
+Y es peor de lo que parecía: la columna **ya es la media de `pagos`
+generaciones** (`t_gen / pagos`), y aun promediando tres varía un ±50 %.
+
+Sobre esa columna construí una hipótesis falsa —«crece con `e≈0,20`, a 1e5
+serán ~718 ms»— con dos puntos de un solo banco. La refutaron los tres
+escalones. **Corregido en este sello**: la cabecera de la columna dice
+`generar (ruido, ±50%)` y un comentario advierte de que leerle una
+tendencia es un error, con el nombre de quien lo cometió.
+
+### Y una rancidez de un solo sello
+
+B.3 seguía citando «§209 midió ~3,1 ms de apply (~320 op/s) con DOS
+cuentas» en tres sitios, incluida su cabecera y su veredicto rojo, que
+mandaba corregir §209 y §216 — **algo que §218 ya había hecho dos horas
+antes**. §208 otra vez, y esta vez con el sello anterior aún caliente.
+
+Los tres sitios pasan a la banda medida, y el veredicto rojo ahora habla
+de corregir **la banda**, no el extremo que ya no existe.
+
+### Lo que NO se afirma
+
+- **1e6 sigue sin medirse.** Los 318 s del arranque son extrapolación con
+  el exponente, no medida.
+- El `apply` **contra disco** a escala sigue sin medirse: B.3 corre en
+  memoria y lo dice.
+- El arranque con **registro grande** tampoco: en B.4 el log solo tiene
+  las altas.
+- `pending` y `frozen` sin medir.
+- Las medidas de B.4 se toman en **tmpfs**. En disco real, peor.
