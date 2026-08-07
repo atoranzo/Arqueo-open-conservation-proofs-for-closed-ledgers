@@ -14542,6 +14542,56 @@ cuenta y por lote —que resulto no necesitar el `nonce`, porque el nodo
 sabe de que cuenta es cada operacion—. Del RFC-0002 no queda ninguna
 etapa pendiente. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 216. El lote, medido: cero pruebas tiradas — y el modo secuencial reprodujo §204 por su cuenta
+
+El RFC-0002 se abrio midiendo y se cierra midiendo. `apply_many` existia
+desde §215 y sus tests pasaban, pero **nadie habia medido su
+rendimiento**: que una funcion haga lo que dice no prueba que arregle lo
+que se escribio que arreglaria.
+
+Banco `etapa_b1_lote_medido` (402 lineas, **no toca produccion**): los dos
+modos, la misma carga, la misma maquina, la misma corrida. Cuatro pares
+de cuentas, dos rondas, ocho pagos por modo.
+
+| modo | pagos | generaciones | minimo posible | desperdicio | StaleState | regen/pago | pagos/s |
+|---|---|---|---|---|---|---|---|
+| secuencial | 8 | 44 | 16 | **64 %** | 28 | **3,50** | 1,62 |
+| **lote** | 8 | **16** | 16 | **0 %** | **0** | **0,00** | **3,70** |
+
+**1 · El lote alcanza el minimo teorico exacto.** Dieciseis generaciones
+para ocho pagos —dos por pago, envio y cobro— y **ni una sola prueba
+tirada**. Cero `StaleState`, como exigia la construccion: todas las
+pruebas se generan contra la raiz que el lote va a usar y nada se aplica
+entremedias.
+
+**2 · El modo secuencial reprodujo §204 por su cuenta**, y esto vale
+tanto como lo anterior. §204 midio **3,83** regeneraciones por pago y un
+**66 %** de trabajo tirado con el banco `etapa_a5_concurrencia`. Este
+banco, escrito aparte y con otro codigo, da **3,50** y **64 %**. Dos
+instrumentos independientes llegando al mismo sitio: la medicion que
+justifico toda la etapa 2 queda **confirmada**, no solo citada.
+
+**3 · Y los pagos/s subieron 2,28x pese al aviso.** El banco advierte
+—como §204— que en una sola maquina el tiempo de pared no deberia
+multiplicarse aunque desaparezca el desperdicio, porque todos los
+"clientes" comparten CPU. Subio igual: **1,62 → 3,70 pagos/s**. La razon
+es que las 28 pruebas que ya no se generan **no eran solo trabajo
+tirado: eran trabajo que competia con el util**. En un despliegue real,
+con los clientes en maquinas distintas, la ganancia sera otra —mejor o
+peor— y **no se declara aqui**: lo que este banco mide es el
+desperdicio, y el desperdicio es cero.
+
+**Lo que queda dicho, y no se infla.** Esta corrida son ocho pagos en una
+maquina de ocho nucleos. No es una medida de despliegue, no dice cuantas
+operaciones por segundo aguanta un nodo real, y no toca el techo del
+`apply` (~320 op/s, §209) ni el objetivo RTGS (~21 op/s de media,
+§6.2 del diagnostico). Lo que dice, y es lo unico que se afirma: **el
+mecanismo elimina el desperdicio que §204 midio, exactamente y hasta el
+minimo teorico.**
+
+Con esto el RFC-0002 queda cerrado **y verificado**: las tres etapas
+hechas, y la que las justificaba a todas, medida antes y despues. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

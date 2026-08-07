@@ -61,3 +61,7 @@ required-features = ["sandbox"]
 [[example]]
 name = "etapa_b0_lote"
 required-features = ["sandbox"]
+
+[[example]]
+name = "etapa_b1_lote_medido"
+required-features = ["sandbox"]
