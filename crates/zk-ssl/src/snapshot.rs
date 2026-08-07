@@ -340,6 +340,7 @@ impl SovereignLayer {
             }),
             freeze_count,
             log: TransitionLog::new(),
+            log_persisted: 0,
             total_supply,
             recovery_count,
             regulatory_limit,

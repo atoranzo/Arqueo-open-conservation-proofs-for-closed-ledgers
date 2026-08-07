@@ -544,6 +544,16 @@ pub struct SovereignLayer {
     /// Hace que el operador no pueda reescribir el historial en secreto.
     /// No impide que vea los saldos ni que censure: eso exige consenso.
     log: TransitionLog,
+    /// Entradas del registro **ya escritas en disco**. `commit` se
+    /// salta esas: el registro es de solo anadir, asi que
+    /// reescribirlas es trabajo tirado — y con N operaciones son
+    /// N(N+1)/2 escrituras. Medido en B.4: `crear` de 1e3 a 1e4
+    /// subio 56x cuando las cuentas subieron 10x.
+    ///
+    /// Solo avanza tras un `flush` con exito, y solo se adelanta en
+    /// `load()`, donde lo leido ES el disco. Si se quedara corta se
+    /// reescribe de mas: lento, correcto. Nunca al reves.
+    log_persisted: usize,
     recovery_count: u64,
     /// **Intervenciones del conjunto de custodios vigente.**
     ///
@@ -616,6 +626,7 @@ impl SovereignLayer {
             frozen: SparseTree::with_depth(FROZEN_DEPTH),
             freeze_count: 0,
             log: TransitionLog::new(),
+            log_persisted: 0,
             recovery_count: 0,
             regulatory_limit,
             max_supply,

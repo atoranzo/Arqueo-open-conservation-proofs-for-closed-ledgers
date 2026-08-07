@@ -14,7 +14,7 @@
 
 | etapa | estado | dónde |
 |---|---|---|
-| **1 · el hash del registro** | ✅ **HECHA** — `apply` de 33,27 a ~3,2 ms; techo del nodo de 30 a **~320 op/s**. Subió a `zkssl/0.2` y se emitieron vectores nuevos conservando los de `0.1` | §209 |
+| **1 · el hash del registro** | ✅ **HECHA** — `apply` de 33,27 a ~3,2 ms; techo del nodo de 30 a **265-320 op/s** (banda medida en §217: el `apply` es plano entre 2 y 10.000 cuentas, y la dispersión entre medidas supera al efecto de escala). Subió a `zkssl/0.2` y se emitieron vectores nuevos conservando los de `0.1` | §209 |
 | **2 · lotes** | ✅ **CERRADA (§215).** Redefinida sin circuitos en §210; reserva §211; `root_with` §212; la declaración del registro §213; validate/commit §214; `apply_many` §215 | §210-§215 |
 | **3 · árbol incremental** | ✅ **HECHA** — `send_materials` de e = 1,08 a ~0,1. No tocó cable ni circuitos | §207 |
 
@@ -123,7 +123,7 @@ Banco `etapa_b0_lote` (§210). Dos geometrías reales, recta ajustada
 memoria empujan el coste real por encima de la recta.
 
 **El circuito de lote sería el cuello nuevo**: ~73 op/s frente a las
-**~320 op/s** que el `apply` ya alcanza desde §209 — **4,4× peor**, a
+**265-320 op/s** que el `apply` ya alcanza desde §209 — **~4× peor**, a
 cambio de dos circuitos nuevos, su ESPEC, su censo, y toda la superficie
 de sub-restringimiento de la clase §3.1.
 
@@ -301,7 +301,7 @@ Se conserva escrito para que no vuelva a proponerse sin leer por qué cayó.
 | **Arreglar el árbol para acelerar el `apply`** | exponente **0,18**: plano (A.3). El árbol sí hay que arreglarlo, pero por `send_materials` — etapa 3 |
 | **Verificación en paralelo como palanca principal** | la verificación es el **7 %** (A.2) |
 | **Delegar la generación a GPUs** | prueba el **cliente** (`client.rs`); el testigo lleva material de la clave de gasto. Sería una regresión de seguridad, no una optimización |
-| **`circuit_batch_root` (el circuito de lote)** | medido en §210: toparía el nodo en **~73 op/s** (N=100) frente a las ~320 que el `apply` ya alcanza — **4,4× peor**, y como cota optimista. Y resulta innecesario: la raíz nueva es determinista dadas las hojas, y quien replique el árbol la recomputa. La réplica verificable es lo que `SECURITY.md` §6 y §121 ya declaran como camino |
+| **`circuit_batch_root` (el circuito de lote)** | medido en §210: toparía el nodo en **~73 op/s** (N=100) frente a las 265-320 que el `apply` ya alcanza (banda, §217) — **~4× peor**, y como cota optimista. Y resulta innecesario: la raíz nueva es determinista dadas las hojas, y quien replique el árbol la recomputa. La réplica verificable es lo que `SECURITY.md` §6 y §121 ya declaran como camino |
 | **Cambiar `circuit_send`/`circuit_claim` para no afirmar `root_new`** | innecesario (§210, 2.2): `root_new` sigue siendo cierta dentro del lote como «la raíz si el mío fuera el único cambio», y el nodo la calcula |
 | **Recursión FRI / migrar a Plonky3 o Miden** | `winterfell` no trae verificador recursivo; Miden es un zkVM y contradice el hallazgo 8 propio, además de anular la escalera FV. Y la etapa 2 **no necesita recursión** |
 

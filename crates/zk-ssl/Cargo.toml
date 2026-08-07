@@ -65,3 +65,15 @@ required-features = ["sandbox"]
 [[example]]
 name = "etapa_b1_lote_medido"
 required-features = ["sandbox"]
+
+[[example]]
+name = "etapa_b2_arbol_a_escala"
+required-features = ["sandbox"]
+
+[[example]]
+name = "etapa_b3_apply_a_escala"
+required-features = ["sandbox"]
+
+[[example]]
+name = "etapa_b4_arranque"
+required-features = ["sandbox"]

@@ -17,3 +17,12 @@ secrets
 /*.py
 # marcas NTFS que WSL materializa al arrastrar desde Windows
 *:Zone.Identifier
+
+# Verificadores de sello y bancos sueltos: la convencion es borrarlos tras
+# usarlos (arriba), pero 23 sobrevivieron hasta §217 y ahogaron un cerrojo
+# que intentaba enseñar la unica linea que importaba. Red, no sustituto.
+/BLOQUE-*.sh
+/BANCO-*.sh
+# Bytecode de Python: lo generan las herramientas de doc/fv y tools/.
+__pycache__/
+*.pyc

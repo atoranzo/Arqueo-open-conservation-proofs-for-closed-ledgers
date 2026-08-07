@@ -14605,3 +14605,211 @@ propios fallos de forma sistemática y ha encontrado algunos**, incluidos
 dos al escribir estas páginas.
 
 Es exactamente por eso que hace falta que lo mire alguien más.
+## 217. Tres bancos a escala, y el registro que se reescribía entero
+
+Todas las cifras de rendimiento de esta casa —`apply` 3,1 ms, techo ~320
+op/s, desperdicio del lote 0 %— se midieron con **dos a sesenta cuentas**.
+En la valoración honesta del proyecto, ésa era la debilidad número cinco:
+*el rendimiento sigue sin medirse donde importa*. Tres bancos nuevos
+fueron a mirarlo. El que parecía menos interesante encontró la piedra.
+
+### B.2 — el árbol aguanta, y da una ley
+
+`SparseTree` solo, sin capa ni pruebas, hasta cien mil hojas. Los dos
+patrones: el **disperso** —el real, `accounts.rs` coloca por
+`public_id[0] mod capacidad` para que los índices no sean enumerables— y
+el **consecutivo**, hipotético.
+
+| hojas | nodos (disperso) | nodos/hoja | RSS | `set_leaf` |
+|---|---|---|---|---|
+| 1.200 | 26.034 | 21,7 | 2 MB | 231,7 µs |
+| 10.400 | 199.983 | 19,2 | 14 MB | 238,1 µs |
+| 100.600 | 1.558.040 | 15,5 | 108 MB | 255,5 µs |
+
+**La estimación previa de «~32 nodos por hoja» queda refutada.** Los
+nodos por hoja no son constantes: **caen**, y siguen `32 − log₂(n)`
+—21,8 · 18,7 · 15,4 frente a lo medido, dentro del 3 %—, porque con `n`
+hojas los `log₂(n)` niveles altos acaban compartiéndose. Por esa ley, un
+millón de cuentas son ~12,1 M nodos ≈ **880 MB**, no los 3 GB estimados
+ni los 1.077 MB que da extrapolar en línea recta. `bytes/nodo` sale plano
+en **72,7**.
+
+El precio de la dispersión tampoco es un número: es una función. 21,7× →
+19,2× → **15,5×** en nodos, bajando hacia ~12× a 1e6. **La decisión de
+seguridad de `accounts.rs` sale más barata cuanto mayor es el sistema**, y
+eso no estaba escrito en ninguna parte.
+
+Y confirma lo que estaba en duda: `set_leaf` sube un 10 % mientras las
+hojas se multiplican por 84 (`e = 0,02`). **La caché de §207 hace lo que
+§207 dice.** El techo del `apply` y el exponente plano sobreviven.
+
+### B.3 — el `apply` es plano, y su cifra era un extremo
+
+| cuentas | `apply` | techo implícito | `send_materials` |
+|---|---|---|---|
+| 1.000 | 3,76 ms | 266 op/s | 0,01 ms |
+| 10.000 | 3,63 ms | 275 op/s | 0,01 ms |
+
+`e = −0,02`: entre mil y diez mil cuentas no pasa nada. Pero **§209 marcó
+3,1 ms y aquí, ya en 1e3, salen 3,76** —antes de que empiece el tramo
+medido—, y el `apply` **baja** al multiplicar por diez las cuentas. Eso no
+es escala: es el suelo de ruido.
+
+**Corrección de documentación: el `apply` está entre 3,1 y 3,8 ms — 265 a
+320 op/s — y la dispersión entre mediciones es mayor que cualquier efecto
+de escala observado.** Citar «~320 op/s» como cifra única es citar el
+extremo bueno de una banda. Corregido en `RFC-0002` y en
+`etapa_b0_lote.rs` con la misma vara con la que cayó `ESCALADO` §2.1 en
+§205.
+
+`send_materials` en 0,01 ms con `e = 0,10`: el arreglo de §207 aguanta con
+el árbol grande. Cerrado.
+
+### B.4 — el arranque, y lo que había detrás
+
+`load()` reconstruye el árbol **hoja a hoja** con `set_leaf`, y desde §207
+eso son 32 merges por cuenta en vez de una inserción.
+
+| cuentas | `crear` | **ABRIR** | µs/cuenta |
+|---|---|---|---|
+| 1.000 | 0,8 s | **0,26 s** | 263,0 |
+| 10.000 | 45,0 s | **2,90 s** | 290,0 |
+
+`ABRIR` sale lineal (`e = 1,04`) y proyecta **~290 s a un millón de
+cuentas**. Un nodo de liquidación que tarda cinco minutos en volver tras
+un reinicio no cumple un objetivo de recuperación razonable, y eso es lo
+que mira un comité de riesgos.
+
+**La atribución no es una sospecha: está medida desde tres instrumentos
+independientes.** El µs por merge implícito sale 7,53 en §204, **7,44** en
+el `set_leaf` de B.2, y 8,91 en el arranque de B.4. Restando B.2 de B.4,
+los 47,1 µs que quedan son `scan_prefix` y deserialización: **el 82 % del
+arranque es exactamente el `set_leaf` de §207**.
+
+⚠️ **Es una deuda declarativa de §207, no un defecto.** Aquel sello cambió
+tiempo por memoria y el cambio fue bueno —el `apply` pasó de 33 a 3,1 ms—.
+Lo que hizo fue **mover coste del estado estacionario al arranque, y
+declarar solo la mitad del precio**. La deuda no es que §207 hiciera algo
+mal; es que declaró el precio en memoria y no en arranque. Queda abierta:
+persistir los nodos internos, carga perezosa, o instantánea al cerrar.
+
+Y hay una cuarta salida que nadie había puesto sobre la mesa y que B.2
+dimensiona: **reconstruir por niveles en vez de hoja a hoja** recomputa
+cada nodo interno una vez en lugar de tantas como descendientes tenga.
+Con 12,1 nodos/hoja a 1e6 frente a 32 merges, son **2,6× menos merges**
+sin tocar el formato en disco ni exigir RFC. No arregla el problema; es la
+mitad del camino gratis.
+
+### Lo que B.4 encontró sin buscarlo: `crear` era cuadrático
+
+La columna `crear` iba marcada «contexto» y era la única sin exponente.
+**0,8 s → 45,0 s**: diez veces más cuentas, **56 veces más tiempo**.
+
+No era el árbol —B.2 lo midió plano—. Era esto, en `persistence.rs`:
+
+```rust
+for e in self.log.entries() {          // ← TODAS, en CADA commit
+    batch.insert(key, self.seal(log_entry_to_bytes(e))?);
+}
+```
+
+**Cada `commit()` reescribía el registro entero.** La operación número k
+escribía k entradas: N(N+1)/2 en total.
+
+Y el bucle no recorre cuentas: recorre **entradas del registro**, es decir
+**todas las operaciones que el nodo haya hecho jamás**. A las ~21 op/s de
+media que pide un RTGS, reescribir el registro se come el presupuesto de
+47,6 ms por operación en unas **58.000 entradas — bajo una hora de
+servicio**. Un árbol que aguanta un millón de cuentas y un `apply` de
+3,6 ms no sirven de nada si el nodo se ahoga en la primera hora.
+
+**§204 no podía verlo.** Midió la persistencia en el 3 % con dos cuentas y
+un registro de seis entradas. No fue un error de medición: el banco era
+**estructuralmente incapaz** de ver un coste que crece con el histórico.
+Mismo caso que `ESCALADO` §2.1, y mismo trato.
+
+### El arreglo, y el registro que sí es de solo añadir
+
+`TransitionLog` solo expone `append` y `entries()` como slice inmutable;
+el único `remove` del fichero está dentro de un test. `migration.rs` solo
+añade. `import_snapshot` construye una capa con `db: None` que **no puede
+persistir**. Verificado antes de tocar nada: escribir solo lo nuevo no
+puede perder nada.
+
+Marca de agua `log_persisted`, y el bucle se salta lo ya escrito. **Falla
+hacia el lado seguro**: solo avanza tras un `flush` con éxito, y solo se
+adelanta en `load()`, donde lo leído *es* el disco. Si se quedara corta,
+reescribe de más —lento, correcto—; nunca al revés.
+
+Los **trece** llamantes de `commit` ya tenían `&mut self`, así que el
+cambio de firma no propaga ni una línea. Tres literales de construcción,
+todos a cero.
+
+| | pre | post | reescritura del registro | µs/entrada |
+|---|---|---|---|---|
+| `crear` 1e3 | 0,8 s | 0,5 s | 0,3 s / 500.500 | **0,60** |
+| `crear` 1e4 | 45,0 s | 5,4 s | 39,6 s / 50.005.000 | **0,79** |
+
+**8,3× a 1e4 y solo 1,6× a 1e3**: si el arreglo hubiera quitado un coste
+fijo, el factor sería el mismo en los dos escalones. Que crezca con la
+escala es el término superlineal desapareciendo. Y el coste por entrada
+**sube un 32 %** entre escalones: la amplificación de escritura de sled
+empeora según crece el almacén, así que el crecimiento real era **algo
+peor que N²**.
+
+`crear` ya es plano: 500 µs/cuenta a 1e3, 540 a 1e4. Proyecta **~55 s a
+1e5** y **~9 minutos a 1e6**. Y `commit` deja de crecer con el histórico,
+que era la piedra.
+
+Las cuatro compuertas en verde, y la que importa: `conformance --check`
+de `zkssl/0.2` sigue diciendo **«todo IDENTICO»**. El arreglo no mueve ni
+una raíz ni un `chain`.
+
+### Una predicción fallida, anotada como tal
+
+Antes de aplicar el arreglo escribí: *`crear` a 1e4 cae de 45,0 s a
+~3,9 s*. Salieron **5,5**. Un 41 % de error.
+
+El mecanismo acertó; el coeficiente no. **Ajusté dos incógnitas con dos
+ecuaciones, que tiene cero grados de libertad: el ajuste es exacto por
+construcción y no comprueba nada del modelo.** Mi única verificación fue
+«las constantes son plausibles», y el lineal real (~520 µs) resultó un
+30 % mayor que el deducido (388,5). Es el pecado del §205 cometido desde
+dentro: **derivar una cifra y tratarla como medida**. La diferencia es que
+estaba escrita antes y se pudo comprobar. La tabla de arriba sale de
+**restar dos medidas**, no de ajustar.
+
+### El suelo de ruido depende del estado de la máquina
+
+`ABRIR` a 1e4 en tres pasadas frías: **2,75 · 2,77 · 2,76** — dispersión
+del 0,7 %. La misma medida tomada **justo después de las dos suites en
+release** dio 3,03: un +10 %.
+
+**Rito nuevo:** un banco que corre detrás de las suites no es comparable
+con uno en frío. O se mide en frío, o se declara. Las medidas del bloque
+C1 quedan marcadas como «en caliente». De paso, esto respalda al §212:
+aquel 4,08 contra 3,11 ms que se declaró ruido cae justo en esta banda.
+
+### Lo que NO se afirma
+
+- Ninguno de los tres bancos llegó a **1e5**: con `crear` cuadrático no se
+  podía, y ahora que se puede, no se ha hecho.
+- El `apply` **contra disco** a escala sigue sin medirse. B.3 corrió todo
+  en memoria y lo dice.
+- El arranque con **registro grande** tampoco: en B.4 el log solo tiene
+  las altas. Un ledger con millones de entradas es otro escalón.
+- `pending` y `frozen` no se han medido: el ×3 de memoria a 1e6 es cota
+  superior, no medida.
+- Las medidas de B.4 se tomaron en **tmpfs**. En disco real, peor.
+
+### Rancidez pendiente, declarada y no corregida aquí
+
+- **Tres cifras para el tamaño de la prueba**: `wire/src/lib.rs:471` dice
+  «~36,7 KB», `spec/RPC.md:98` dice «~54-66 KB», y TRAS-216 midió 65.840
+  bytes. `SECURITY.md`, los dos PAPER y `FOUR_BACKENDS.md` propagan la
+  primera. **No se corrige sin medirla**: es lo que hace el banco C0.1.
+- **`172 / 201 tests`** en `PAPER.md:958`, `PAPER_EN.md:919` y
+  `ARQUITECTURA.md:37,1082`. El canon es 255 y 297.
+- El **muro del cuerpo HTTP** del nodo (`main.rs:74` monta el router sin
+  `DefaultBodyLimit`) sigue sin medirse: banco C0.2, abierto. Bloquea
+  cablear `apply_many` por RPC.

@@ -76,6 +76,7 @@ impl SovereignLayer {
             frozen: SparseTree::with_depth(FROZEN_DEPTH),
             freeze_count: 0,
             log: TransitionLog::new(),
+            log_persisted: 0,
             recovery_count: 0,
             regulatory_limit,
             max_supply,
@@ -392,6 +393,9 @@ impl SovereignLayer {
                 .map(|(_, v)| crate::store::log_entry_from_bytes(&v))
                 .collect::<Result<Vec<_>, _>>()?,
         );
+        // Lo reconstruido viene del disco: esas entradas YA estan
+        // escritas. Unico punto donde la marca se adelanta.
+        self.log_persisted = self.log.len();
 
         if migrated {
             // El arbol de congelados migrado vive a profundidad 32.
@@ -529,7 +533,7 @@ impl SovereignLayer {
     /// Perder una operación es recuperable: se vuelve a enviar. Un estado
     /// a medias no lo es.
     pub(crate) fn commit(
-        &self,
+        &mut self,
         accounts: &[AccountIndex],
         // Hoja del árbol de pendientes que la operación crea o consume.
         //
@@ -540,7 +544,7 @@ impl SovereignLayer {
     ) -> Result<(), LayerError> {
         let db = match self.db() {
             None => return Ok(()),
-            Some(d) => d,
+            Some(d) => d.clone(),
         };
 
         let mut batch = sled::Batch::default();
@@ -602,7 +606,7 @@ impl SovereignLayer {
         // Se escriben todas las entradas en cada lote. Sin persistirlo, el
         // operador borraria el historial reiniciando el nodo — que es
         // justo lo que el registro existe para impedir.
-        for e in self.log.entries() {
+        for e in self.log.entries().iter().skip(self.log_persisted) {
             let mut key = b"log:".to_vec();
             key.extend_from_slice(&e.seq.to_le_bytes());
             batch.insert(key, self.seal(crate::store::log_entry_to_bytes(e))?);
@@ -663,6 +667,10 @@ impl SovereignLayer {
         db.apply_batch(batch)
             .map_err(|e| StoreError::Io(e.to_string()))?;
         db.flush().map_err(|e| StoreError::Io(e.to_string()))?;
+        // Despues del flush: si algo fallara arriba, la marca no se
+        // mueve y la proxima pasada reescribe. Fallo hacia el lado
+        // seguro.
+        self.log_persisted = self.log.len();
         Ok(())
     }
 }

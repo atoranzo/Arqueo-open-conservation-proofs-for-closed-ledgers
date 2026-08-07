@@ -26,8 +26,9 @@
 //!
 //! ## Qué decide
 //!
-//! Si el techo proyectado del lote queda **muy por debajo de las ~320
-//! op/s** que el `apply` alcanza desde §209, entonces el circuito de lote
+//! Si el techo proyectado del lote queda **muy por debajo de las
+//! 265-320 op/s** que el `apply` alcanza (banda medida en §217; §209
+//! citó solo el extremo bueno), entonces el circuito de lote
 //! **se convierte en el cuello nuevo** y hay que preguntarse si hace
 //! falta — porque la raíz nueva es **determinista** dadas las hojas, y un
 //! verificador que replique el árbol la recomputa sin prueba ninguna.
@@ -180,7 +181,7 @@ fn main() {
     println!("   Leelo como cota OPTIMISTA.");
     println!();
     println!("== LECTURA ==");
-    println!("  techo del apply desde §209 .......... ~320 op/s");
+    println!("  techo del apply (banda, §217) ....... 265-320 op/s");
     println!("  techo proyectado del lote (N=100) ... ~{techo_100:.0} op/s");
     println!("  efectivo hoy (contencion) ........... ~3,8 op/s");
     println!();
@@ -188,7 +189,7 @@ fn main() {
     if techo_100 < 160.0 {
         println!("VEREDICTO: el circuito de lote SERIA EL CUELLO NUEVO.");
         println!("  Aun siendo mucho mejor que los 3,8 op/s de hoy, dejaria el nodo");
-        println!("  muy por debajo de las ~320 op/s que el apply ya alcanza.");
+        println!("  muy por debajo de las 265-320 op/s que el apply ya alcanza.");
         println!();
         println!("  -> Pregunta obligada: ¿hace falta el circuito de lote?");
         println!("     Su unico trabajo es que un verificador que SOLO tiene raices");
