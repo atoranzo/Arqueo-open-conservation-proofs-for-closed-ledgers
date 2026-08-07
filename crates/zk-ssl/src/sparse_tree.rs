@@ -159,6 +159,77 @@ impl SparseTree {
         }
     }
 
+    /// **Carga N hojas y reconstruye los nodos internos DE ABAJO
+    /// ARRIBA** (§221). Sustituye a llamar `set_leaf` N veces al
+    /// arrancar.
+    ///
+    /// ## Por qué existe
+    ///
+    /// `set_leaf` cuesta `O(profundidad)` = **32 merges por hoja**, y
+    /// recomputa cada nodo interno **una vez por descendiente**.
+    /// Construir por niveles lo computa **una sola vez**.
+    ///
+    /// El ahorro no es constante: es `32 / (nodos por hoja)`, y §217
+    /// midió que los nodos por hoja siguen `32 - log2(n)`. A cien mil
+    /// hojas dispersas son 15,5 → **2,1× menos merges**; a un millón,
+    /// 12,1 → 2,6×. **Mejora cuanto mayor es el ledger.**
+    ///
+    /// Es la salida barata de la deuda que §207 declaró en memoria y no
+    /// en arranque (§217, banco B.4): no toca el formato en disco, no
+    /// persiste nada nuevo y no exige RFC.
+    ///
+    /// ## Por qué da EXACTAMENTE el mismo árbol
+    ///
+    /// El invariante de `nodes` es «entrada ausente = subárbol vacío».
+    /// Tras N `set_leaf`, el mapa contiene exactamente los nodos
+    /// internos NO vacíos: cada `recompute_path` rehace su camino con
+    /// los valores vigentes, y el último que toca un ancestro lo deja
+    /// correcto. Esto construye ese mismo conjunto, y aplica el mismo
+    /// corte —un nodo cuyo valor sea el vacío NO se guarda—.
+    /// `insertion_order_does_not_change_the_root` ya afirmaba que la
+    /// caché no depende del historial; hay un test que compara las dos
+    /// vías hoja a hoja.
+    ///
+    /// ⚠️ **Descarta el contenido previo.** Es para arrancar, no para
+    /// añadir: quien tenga hojas y quiera una más usa `set_leaf`.
+    ///
+    /// ⚠️ **Precio en memoria transitoria**: mantiene el nivel actual y
+    /// el siguiente en mapas aparte. En el nivel bajo son ~N entradas,
+    /// y a partir de ahí encogen. Se libera al terminar.
+    pub fn rebuild_from(&mut self, hojas: impl IntoIterator<Item = (u64, Digest)>) {
+        let cero: Digest = [BaseElement::ZERO; 4];
+        self.leaves.clear();
+        self.nodes.clear();
+        for (idx, val) in hojas {
+            // El digest cero es hoja libre, igual que en `set_leaf`.
+            if val != cero {
+                self.leaves.insert(idx, val);
+            }
+        }
+        let mut actual: HashMap<u64, Digest> = self.leaves.clone();
+        for level in 1..=self.depth {
+            let vacio_hijo = self.empty[level - 1];
+            let vacio_padre = self.empty[level];
+            let mut padres: HashMap<u64, Digest> = HashMap::new();
+            for idx in actual.keys() {
+                let p = idx >> 1;
+                if padres.contains_key(&p) {
+                    continue; // el hermano ya lo computo
+                }
+                let izq = actual.get(&(p * 2)).copied().unwrap_or(vacio_hijo);
+                let der = actual.get(&(p * 2 + 1)).copied().unwrap_or(vacio_hijo);
+                let v = native_merge(izq, der);
+                if v != vacio_padre {
+                    padres.insert(p, v);
+                }
+            }
+            for (p, v) in &padres {
+                self.nodes.insert((level, *p), *v);
+            }
+            actual = padres;
+        }
+    }
+
     /// Hash de un nodo interno: **una consulta**, no un recorrido.
     ///
     /// Un subárbol sin hojas ocupadas no está en el mapa y devuelve el
@@ -429,5 +500,67 @@ mod tests {
             path_before.siblings[TREE_DEPTH - 1],
             path_after.siblings[TREE_DEPTH - 1]
         );
+    }
+
+    /// **EL TEST DE §221**: reconstruir por niveles da EXACTAMENTE el
+    /// mismo árbol que insertar hoja a hoja.
+    ///
+    /// No basta la raíz: se compara también el número de nodos en caché
+    /// —el invariante «ausente = vacío» se rompe si sobra o falta uno—
+    /// y el camino de autenticación de cada hoja, que es lo que viaja
+    /// dentro de las pruebas.
+    ///
+    /// Los índices imitan la colocación REAL de `accounts.rs`
+    /// —dispersión pseudoaleatoria, no consecutiva— porque el patrón
+    /// decide cuántos nodos altos se comparten y por tanto qué se está
+    /// probando. Y se incluye el caso vacío y la mitad opuesta del
+    /// árbol de 2^32.
+    #[test]
+    fn reconstruir_por_niveles_da_el_mismo_arbol() {
+        let dispersa = |i: u64| -> u64 {
+            i.wrapping_mul(0x9E37_79B9_7F4A_7C15)
+                .rotate_left(31)
+                .wrapping_mul(0xBF58_476D_1CE4_E5B9)
+                % (1u64 << TREE_DEPTH)
+        };
+        let mut hojas: Vec<(u64, Digest)> =
+            (0..500u64).map(|i| (dispersa(i), d(i + 1))).collect();
+        // Vecinas, la mitad opuesta y el cero: los bordes del invariante.
+        hojas.push((0, d(7)));
+        hojas.push((1, d(8)));
+        hojas.push((1u64 << (TREE_DEPTH - 1), d(9)));
+
+        let mut una = SparseTree::new();
+        for (i, v) in &hojas {
+            una.set_leaf(*i, *v);
+        }
+        let mut otra = SparseTree::new();
+        otra.rebuild_from(hojas.clone());
+
+        assert_eq!(una.root(), otra.root(), "la raiz difiere");
+        assert_eq!(una.len(), otra.len(), "numero de hojas");
+        assert_eq!(
+            una.cached_nodes(),
+            otra.cached_nodes(),
+            "CRITICO: el mapa de nodos internos no coincide"
+        );
+        for (i, _) in &hojas {
+            let a = una.path_for(*i);
+            let b = otra.path_for(*i);
+            assert_eq!(a.siblings, b.siblings, "camino de la hoja {i}");
+            assert_eq!(a.is_right, b.is_right, "lados de la hoja {i}");
+        }
+
+        // Sin hojas: arbol vacio canonico y cache a cero.
+        let mut vacio = SparseTree::new();
+        vacio.rebuild_from(Vec::new());
+        assert_eq!(vacio.root(), SparseTree::new().root());
+        assert_eq!(vacio.cached_nodes(), 0);
+
+        // Una hoja CERO no ocupa, igual que en `set_leaf`.
+        let mut con_cero = SparseTree::new();
+        con_cero.rebuild_from(vec![(5u64, [BaseElement::ZERO; 4])]);
+        assert!(con_cero.is_empty());
+        assert_eq!(con_cero.cached_nodes(), 0);
     }
 }

@@ -15218,3 +15218,124 @@ misma familia que el `for` del registro que quitó §217.
 - El barrido perezoso solo corre **cuando llega una petición**. Un nodo
   ocioso mantiene sus reservas hasta la siguiente, y eso es correcto: sin
   peticiones no hay a quién estorbar.
+## 221. El arranque, reconstruido por niveles: la salida barata de §207
+
+§207 cambió tiempo por memoria y **declaró el precio en memoria, no en
+arranque**. §217 midió la deuda con el banco B.4: `load()` reconstruía el
+árbol **hoja a hoja** con `set_leaf`, y desde §207 eso son 32 merges por
+cuenta. A cien mil cuentas, **29,68 s**, y el **82 %** era exactamente ese
+`set_leaf` —medido restando B.2 de B.4, dos instrumentos independientes—.
+
+De las cuatro salidas que §217 puso sobre la mesa, ésta era la única que
+**no toca el formato en disco, no persiste nada nuevo y no exige RFC**:
+construir de abajo arriba computa cada nodo interno **una vez** en lugar
+de una por descendiente.
+
+### Por qué da exactamente el mismo árbol
+
+El invariante de `nodes` es «**entrada ausente = subárbol vacío**», y
+`recompute_path` borra el nodo cuando su valor vuelve al vacío. Tras N
+`set_leaf` el mapa contiene exactamente los nodos internos no vacíos: cada
+camino se rehace con los valores vigentes, y el último que toca un
+ancestro lo deja correcto. `rebuild_from` construye ese mismo conjunto y
+aplica el mismo corte.
+
+`insertion_order_does_not_change_the_root` ya afirmaba desde §207 que la
+caché no depende del historial. Eso es lo que hace legítima la
+sustitución, y lo que se comprueba ahora hoja a hoja.
+
+### La medida
+
+| escalón | antes (§219) | después | factor |
+|---|---|---|---|
+| 1.000 | 0,26 s | **0,21 s** | 1,24× |
+| 10.000 | 2,74 s | **1,77 s** | 1,55× |
+| **100.000** | **29,68 s** | **15,70 s** | **1,89×** |
+
+**El factor crece con la escala**, y ésa es la firma que importa: no es un
+coste fijo que se quita, es trabajo repetido que desaparece. §217 midió
+que los nodos por hoja siguen `32 − log₂(n)` —15,5 a 1e5—, así que los
+merges caen `32/15,5 = 2,1×`. Cuantas más hojas, más nodos altos
+compartidos, más trabajo que la vía hoja a hoja repetía.
+
+Los µs por cuenta **cambian de signo**: 263 · 274 · 297 antes, **210 · 177
+· 157** después.
+
+### El exponente cambia, y eso vale más que el factor
+
+`ABRIR` pasa de **`e = 1,03`** a **`e = 0,94`**. El arranque deja de ser
+lineal en cuentas y pasa a ser **sublineal**, porque el trabajo real ya no
+es `N × 32` sino `N × (32 − log₂ N)`.
+
+Proyección a un millón **con el exponente medido**: **~136 s**, frente a
+los 318 s que §219 proyectó. De cinco minutos y medio a poco más de dos.
+
+⚠️ **Es proyección, no medida**, y con tres puntos. Se usa el exponente y
+no una recta porque §219 corrigió exactamente ese descuido en este mismo
+banco.
+
+### La discrepancia del 8 %, declarada y sin resolver
+
+El modelo escrito antes del dato decía: 24,3 s de merges ÷ 2,1 + 5,4 s de
+scan y deserialización = **17,0 s**. Predicción publicada: 16-19 s.
+
+Medido: **15,70 s**. Un **8 % mejor** que el modelo, y por debajo de la
+banda predicha.
+
+Si los merges caen exactamente 2,1×, la parte no-merge tendría que ser
+~4,1 s y no los ~5,4 que §217 dedujo. Dos explicaciones, y **no distingo
+entre ellas con dos muestras**:
+
+- el 82 % atribuido a `set_leaf` era algo mayor;
+- o la construcción por niveles ahorra también en **accesos al mapa**
+  —hace la mitad de consultas por nodo— y eso no entraba en el modelo.
+
+Se anota sin resolver. Separarlas exige instrumentar los merges aparte de
+las consultas, y eso es otro banco.
+
+### Lo que subió, y estaba declarado
+
+**RSS 165-167 MB** frente a 148 antes: un **+12 %** por los mapas
+transitorios de cada nivel, declarados en la cabecera del método. Se
+liberan al terminar, y el árbol resultante es idéntico.
+
+`crear` intacto —56,1 y 62,9 s contra 56,4—, y `conformance --check` en
+**«todo IDENTICO»**: el arreglo no mueve ni una raíz ni un `chain`.
+
+### El test, y el canon que sube
+
+⚠️ **La conformidad NO cubre esto.** `conformance` corre el escenario con
+`sandbox::open_layer(None, …)` —en memoria—, así que **nunca ejecuta
+`load()`**. Quien cubre el arranque es la suite: los tests de reinicio,
+más el nuevo.
+
+`reconstruir_por_niveles_da_el_mismo_arbol` no se conforma con la raíz.
+Compara también:
+
+- **`cached_nodes`** — si sobra o falta un nodo, el invariante «ausente =
+  vacío» está roto y `node()` devolvería basura tras un borrado;
+- **el camino de autenticación de cada hoja**, que es lo que viaja dentro
+  de las pruebas.
+
+Con índices que imitan la dispersión REAL de `accounts.rs`, más los
+bordes: hojas vecinas, la mitad opuesta del árbol de 2³², el árbol vacío,
+y una hoja con digest cero.
+
+**Canon de la suite: 255 → 256.** Los vectores NO se tocan: su
+`canon: [297, 245, 40, 28]` es una foto del momento de emitir
+`zkssl/0.2`, no un contador vivo.
+
+### Lo que NO se afirma
+
+- **La deuda de §207 no queda saldada, queda a la mitad.** Persistir los
+  nodos internos seguiría dando arranque casi instantáneo; sigue abierta,
+  igual que la carga perezosa y la instantánea al cerrar.
+- **1e6 sin medir.** Los ~136 s son extrapolación con exponente.
+- El arranque con **registro grande** sigue sin medirse: en B.4 el log
+  solo tiene las altas.
+- Las medidas son en **tmpfs**. En disco real, peor.
+- El `+12 %` de RSS se midió a 1e5. A 1e6 el mapa transitorio del nivel
+  bajo sería de ~1M entradas y no está medido.
+- `legacy_null` sigue usando `set_leaf`, y es correcto: reconstruye un
+  árbol de ledgers pre-§32 solo para verificarlo y borrarlo. Un ledger
+  nuevo no entra por ahí.

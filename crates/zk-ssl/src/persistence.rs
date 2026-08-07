@@ -339,6 +339,11 @@ impl SovereignLayer {
                 .get(b"meta:geometry_v7")
                 .map_err(|e| StoreError::Io(e.to_string()))?
                 .is_some();
+        // §221: se recogen las hojas y el arbol se construye DE ABAJO
+        // ARRIBA una sola vez, en vez de N `set_leaf` a 32 merges cada
+        // uno. §217 (banco B.4) midio que ese `set_leaf` es el **82 %**
+        // del arranque, y que a 1e5 cuentas son 29,68 s.
+        let mut hojas: Vec<(u64, Digest)> = Vec::new();
         for item in db.scan_prefix(b"acct:") {
             let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
             let v = unseal_one(v)?;
@@ -349,7 +354,7 @@ impl SovereignLayer {
             );
             let (public_id, balance, nonce, view_id, leaf_salt) =
                 crate::store::record_from_bytes_v3(&v)?;
-            self.accounts.set_leaf(
+            hojas.push((
                 idx,
                 if migrated {
                     stark_experiment::native::native_leaf_salted(
@@ -358,7 +363,7 @@ impl SovereignLayer {
                 } else {
                     native_leaf(public_id, BaseElement::new(balance), nonce)
                 },
-            );
+            ));
             self.records.insert(
                 idx,
                 AccountRecord {
@@ -370,6 +375,7 @@ impl SovereignLayer {
                 },
             );
         }
+        self.accounts.rebuild_from(hojas);
 
         // --- Registro de transiciones ---
         // El registro se lee ORDENADO por numero de secuencia: sled
@@ -405,6 +411,7 @@ impl SovereignLayer {
             // raíces almacenadas no cuadrarían (§128).
             self.frozen = SparseTree::with_depth(crate::migration::FROZEN_DEPTH_PRE);
         }
+        let mut congeladas: Vec<(u64, Digest)> = Vec::new();
         for item in db.scan_prefix(b"froz:") {
             let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
             let v = unseal_one(v)?;
@@ -413,14 +420,19 @@ impl SovereignLayer {
                     .try_into()
                     .map_err(|_| StoreError::Malformed("indice de congelada".into()))?,
             );
-            self.frozen.set_leaf(idx, digest_from_bytes(&v)?);
+            congeladas.push((idx, digest_from_bytes(&v)?));
         }
+        // Las congelaciones son raras, asi que aqui el ahorro es
+        // pequeño; se hace igual por coherencia y porque un ledger con
+        // muchas congelaciones pagaria lo mismo que el de cuentas.
+        self.frozen.rebuild_from(congeladas);
 
         // Hojas del arbol de PENDIENTES.
         //
         // Sin esto, un reinicio borraria las transferencias sin reclamar:
         // el dinero saldria de la cuenta del pagador y **no llegaria a
         // ninguna parte**.
+        let mut pendientes: Vec<(u64, Digest)> = Vec::new();
         for item in db.scan_prefix(b"pend:") {
             let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
             let v = unseal_one(v)?;
@@ -429,8 +441,9 @@ impl SovereignLayer {
                     .try_into()
                     .map_err(|_| StoreError::Malformed("posicion de pendiente".into()))?,
             );
-            self.pending.set_leaf(pos, digest_from_bytes(&v)?);
+            pendientes.push((pos, digest_from_bytes(&v)?));
         }
+        self.pending.rebuild_from(pendientes);
 
         // --- MIGRACION: el arbol de nullificadores fue retirado ---
         //
