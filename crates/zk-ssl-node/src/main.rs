@@ -10,9 +10,10 @@
 //! - el CLIENTE (zk-ssl-sdk) deriva sus identificadores y PRUEBA en local.
 //!   Ninguna clave de gasto viaja por este RPC.
 
+use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::Mutex;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use axum::extract::State;
 use axum::routing::post;
@@ -49,14 +50,47 @@ struct Args {
     #[arg(long, default_value_t = 1_000)]
     max_accounts: u64,
 
+    /// **Segundos que vive una reserva de posición de pendiente.**
+    ///
+    /// `zkssl_sendMaterials` reserva la posición que entrega (§211), de
+    /// modo que dos titulares concurrentes reciben posiciones DISTINTAS
+    /// contra la misma raíz. Quien pide materiales y no aplica dejaría
+    /// la posición inmovilizada: esto la libera.
+    ///
+    /// ⚠️ **El valor por defecto está DECLARADO, no medido.** Lo que
+    /// hay medido es la generación de una prueba —220-461 ms con ±50 %
+    /// de ruido, §219— y eso NO incluye la red ni el tiempo que el
+    /// titular tarda en decidirse. Treinta segundos son dos órdenes de
+    /// magnitud de margen sobre lo único que se sabe. Medir el tramo
+    /// materiales→entrega por RPC y ajustar está en la cola.
+    ///
+    /// Corta: un titular lento pierde su hueco y reintenta. Larga: quien
+    /// pida materiales en bucle sin aplicar acumula reservas, y
+    /// `allocate_pending` las recorre en cada llamada.
+    #[arg(long, default_value_t = 30)]
+    reserva_ttl: u64,
+
     /// Filtro de tracing (stderr).
     #[arg(long, default_value = "info")]
     log: String,
 }
 
+/// Lo que el nodo guarda entre peticiones, bajo **un solo candado**.
+///
+/// Las reservas viven aquí y no en la capa a propósito: `reserve_pending`
+/// y `release_pending` son la operación; **cuánto dura una reserva es
+/// política del operador**, no invariante de la capa. Y un solo candado
+/// para las dos cosas evita cualquier orden de bloqueo.
+struct Estado {
+    layer: SovereignLayer,
+    /// posición reservada -> cuándo se entregó.
+    reservas: BTreeMap<u64, Instant>,
+}
+
 struct App {
-    layer: Mutex<SovereignLayer>,
+    estado: Mutex<Estado>,
     dev: bool,
+    reserva_ttl: Duration,
 }
 
 #[tokio::main]
@@ -65,7 +99,11 @@ async fn main() -> anyhow::Result<()> {
     init_tracing(&args.log);
 
     let layer = open_layer(&args)?;
-    let app = std::sync::Arc::new(App { layer: Mutex::new(layer), dev: args.dev });
+    let app = std::sync::Arc::new(App {
+        estado: Mutex::new(Estado { layer, reservas: BTreeMap::new() }),
+        dev: args.dev,
+        reserva_ttl: Duration::from_secs(args.reserva_ttl),
+    });
 
     if args.dev {
         tracing::warn!("modo --dev: dev_* habilitado con custodios de PRUEBA; no usar en producción");
@@ -163,8 +201,25 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
     // ⚠️ Las operaciones bloquean el Mutex mientras verifican pruebas
     // (~decenas de ms). Correcto para un nodo único; con carga real, el
     // paso siguiente es una cola de escritura (ver ROADMAP).
-    let mut layer = app.layer.lock().expect("mutex de la capa envenenado");
-    let l = &mut *layer;
+    let mut guardia = app.estado.lock().expect("mutex del estado envenenado");
+    let Estado { layer: l, reservas } = &mut *guardia;
+
+    // ── Barrido PEREZOSO de reservas caducadas ────────────────────
+    // Sin tarea de fondo a propósito: un temporizador disputaría este
+    // mismo candado con las escrituras, y §218 midió que la contención
+    // es el cuello. Barrer aquí cuesta O(caducadas) y no añade candados.
+    let ahora = Instant::now();
+    let ttl = app.reserva_ttl;
+    let caducadas: Vec<u64> = reservas
+        .iter()
+        .filter(|(_, t)| ahora.duration_since(**t) > ttl)
+        .map(|(p, _)| *p)
+        .collect();
+    for p in caducadas {
+        l.release_pending(p);
+        reservas.remove(&p);
+        tracing::warn!(posicion = p, "reserva caducada y liberada");
+    }
 
     match method {
         // ── lectura ────────────────────────────────────────────────
@@ -270,14 +325,30 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             #[serde(rename_all = "camelCase")]
             struct P { sender: Q, receiver_id: wire::B32, amount: Q, salt: wire::B32 }
             let p: P = parse(params)?;
-            let m = l
-                .send_materials(
-                    p.sender.0,
-                    digest_from_wire(&p.receiver_id).map_err(RpcError::wire)?,
-                    p.amount.0,
-                    digest_from_wire(&p.salt).map_err(RpcError::wire)?,
-                )
-                .map_err(RpcError::layer)?;
+            let receptor = digest_from_wire(&p.receiver_id).map_err(RpcError::wire)?;
+            let salt = digest_from_wire(&p.salt).map_err(RpcError::wire)?;
+
+            // ⚠️ **RESERVAR, no solo consultar.** `allocate_pending` es PURA:
+            // no muta. El candado serializa las peticiones pero no cambia su
+            // resultado, así que dos titulares recibían la MISMA posición y
+            // el segundo moría al aplicar. Es el fallo que §211 arregló en la
+            // capa con `reserve_pending` y que este nodo no usaba.
+            //
+            // Y es condición necesaria del lote: `apply_many` rechaza el lote
+            // entero con `DuplicatePendingInBatch` si dos comparten posición.
+            let pos = l.reserve_pending().map_err(RpcError::layer)?;
+            let m = match l.send_materials_at(p.sender.0, receptor, p.amount.0, salt, pos) {
+                Ok(m) => m,
+                Err(e) => {
+                    // ⚠️ Soltar en el camino de ERROR no es un detalle: la capa
+                    // rechaza por cuenta congelada, saldo o límite regulatorio, y
+                    // sin esto cada rechazo dejaría una reserva muerta. Un
+                    // atacante ni siquiera necesitaría saldo para provocarlas.
+                    l.release_pending(pos);
+                    return Err(RpcError::layer(e));
+                }
+            };
+            reservas.insert(pos, Instant::now());
             Ok(serde_json::to_value(wire::SendMaterialsDto::from(&m)).unwrap())
         }
 
@@ -293,8 +364,28 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             let p: P = parse(params)?;
             let receipt = (&p.receipt).try_into().map_err(RpcError::wire)?;
             let state = (&p.sender_state).try_into().map_err(RpcError::wire)?;
-            l.apply_send(&receipt, p.sender.0, &state, p.amount.0)
-                .map_err(RpcError::layer)?;
+            // ⚠️ **Toda reserva necesita una salida que NO sea el reloj.**
+            // Con exito la suelta `commit_send` en la capa; con FALLO no la
+            // soltaba nadie, y en D.1 cada reintento abandonaba una: 16-18
+            // huerfanas por corrida, contadas por el propio nodo. Como
+            // `allocate_pending` las recorre en cada llamada, el arreglo de
+            // la reserva costaba un 17 % de rendimiento (1,72 -> 1,42
+            // pagos/s, t=4,2). Medido en §220 antes de sellarlo.
+            //
+            // Un recibo que no se aplico esta MUERTO: su prueba esta atada a
+            // una raiz que ya se movio, y el titular regenerara con
+            // materiales nuevos. Soltar su posicion es correcto.
+            //
+            // La posicion se lee DESPUES de `apply_send`: el tipo de
+            // `receipt` lo fija esa llamada, y tocar un campo antes deja la
+            // inferencia coja.
+            let r = l.apply_send(&receipt, p.sender.0, &state, p.amount.0);
+            let pos = receipt.notice.position;
+            reservas.remove(&pos);
+            if let Err(e) = r {
+                l.release_pending(pos);
+                return Err(RpcError::layer(e));
+            }
             Ok(applied(l))
         }
 

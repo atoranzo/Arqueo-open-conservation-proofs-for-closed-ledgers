@@ -15085,3 +15085,136 @@ de corregir **la banda**, no el extremo que ya no existe.
   las altas.
 - `pending` y `frozen` sin medir.
 - Las medidas de B.4 se toman en **tmpfs**. En disco real, peor.
+## 220. La reserva de posiciones, y el cuello que el arreglo trajo consigo
+
+Condición necesaria de (b) —acumular operaciones en el nodo y aplicarlas
+en lote—: `apply_many` rechaza el lote entero con
+`DuplicatePendingInBatch` si dos operaciones comparten posición de
+pendiente. Y el nodo repartía posiciones repetidas.
+
+### El fallo
+
+`zkssl_sendMaterials` llamaba a `send_materials`, que usa
+`allocate_pending`. Y `allocate_pending` es **pura**: toma `&self`, salta
+lo ocupado y lo reservado, pero **no reserva nada**.
+
+El `Mutex` de `dispatch` no salvaba nada. Serializa las peticiones, sí,
+pero como la función es pura ambas devuelven **la misma posición**. Dos
+titulares concurrentes recibían la posición 5; el segundo moría al
+aplicar.
+
+**§211 ya había arreglado esto en la capa** con `reserve_pending`, y §214
+había añadido `send_materials_at` para usarlo. El nodo no llamaba a
+ninguno de los dos. El arreglo estaba escrito y sin cablear desde hacía
+nueve sellos.
+
+### El arreglo, y su primera versión incompleta
+
+`zkssl_sendMaterials` pasa a reservar, y **suelta la reserva en el camino
+de error** —la capa rechaza por cuenta congelada, saldo o límite
+regulatorio, y sin eso cada rechazo dejaría una posición muerta; un
+atacante ni siquiera necesitaría saldo para provocarlas—.
+
+La caducidad va en `--reserva-ttl`, por defecto **30 s**. ⚠️ **Declarada,
+no medida.** Lo único medido cerca es la generación de una prueba —220 a
+461 ms con ±50 % de ruido (§219)— y eso no incluye la red ni el tiempo
+que el titular tarda en decidirse. Medir el tramo materiales→entrega por
+RPC y ajustar queda en la cola.
+
+El barrido es **perezoso**, al entrar en `dispatch`. Sin tarea de fondo a
+propósito: un temporizador disputaría el mismo candado con las escrituras,
+y §218 midió que la contención es el cuello. Añadir contención para
+arreglar contención merece su propia medida.
+
+`App` pasa a un solo candado sobre `{layer, reservas}` — hay un único
+`lock()` en el fichero, así que no hay orden de bloqueo que equivocar.
+
+### Y entonces el nodo se volvió un 17 % más lento
+
+| tanda | regen/pago | pagos/s | reservas barridas |
+|---|---|---|---|
+| antes del arreglo (§218) | 2,90 ± 0,33 | **1,72 ± 0,13** | — |
+| con la reserva, `ttl=30` | 3,37 ± 0,55 | **1,42 ± 0,05** | **0 · 0 · 0** |
+| con la reserva, `ttl=1` | 3,33 ± 0,85 | 1,68 ± 0,19 | **18 · 16 · 16** |
+| **arreglo completo** | 3,25 ± 0,70 | **1,74 ± 0,07** | **0 · 0 · 0** |
+
+`t = 4,2` de caída y `t = 6,8` de recuperación. El estado final es
+**indistinguible del previo** (`t = 0,34`) y además correcto.
+
+**La causa está contada, no inferida.** Con `ttl=30` el nodo barrió CERO
+reservas en tres corridas de cinco segundos; con `ttl=1` barrió 16, 16 y
+18. Cada reintento de D.1 abandonaba una reserva que **nadie soltaba**: el
+titular cuya prueba llega muerta vuelve a pedir materiales y reserva otra,
+y la anterior se queda. Con 43 generaciones para 8 pagos son ~27
+huérfanas por corrida.
+
+Y `allocate_pending` **las recorre en cada llamada**. Su propia cabecera lo
+avisa desde que se escribió: *«busca linealmente desde cero, así que es
+O(pendientes creados)… no lo sería en producción»*. Cité esa línea al leer
+el fichero y no até el cabo.
+
+### El experimento que lo discriminó no costó una línea de código
+
+La bandera que acababa de añadirse servía justo para eso. Con `ttl=1` las
+reservas abandonadas expiran **durante** la corrida y el barrido las
+recoge: si el rendimiento volvía y el contador dejaba de ser cero, la fuga
+era la causa. Volvió, y el contador subió a dieciséis.
+
+Es la primera vez en esta serie que una pieza recién añadida sirve para
+diagnosticar el defecto de sí misma.
+
+### El arreglo que faltaba
+
+Simétrico al de `sendMaterials`: si `apply_send` **falla**, la posición se
+suelta. Un recibo que no se aplicó está muerto —su prueba está atada a una
+raíz que ya se movió— y el titular regenerará con materiales nuevos.
+
+⚠️ **Rito: toda reserva necesita una salida que NO sea el reloj.** Con
+éxito la suelta `commit_send` en la capa; con fallo no la soltaba nadie. La
+caducidad es red de seguridad; si es el mecanismo, está mal diseñado. Con
+`ttl=1` el sistema «funcionaba» por coincidencia: un segundo caía por
+debajo del ciclo de reintento. Eso no es un diseño.
+
+### Y un rito sobre cómo se predice
+
+La predicción escrita antes decía: **«`regen/pago` no bajará de forma
+medible»**. Acertó, y sigue acertando en las cuatro tandas —2,90 · 3,37 ·
+3,33 · 3,25, bandas solapadas enteras—. La posición duplicada **no era una
+causa medible del desperdicio**: quien falla en D.1 muere porque la raíz
+avanzó, no por la posición. El cuello sigue siendo la contención y **(b)
+sigue justificado por la misma medida**.
+
+Pero el daño apareció en `pagos/s`, que yo no estaba vigilando.
+
+⚠️ **Predecir sobre una métrica no autoriza a mirar solo esa.** Un cambio
+correcto puede pagar su corrección en la columna de al lado, y si no se
+mira, se sella. Es la quinta vez en esta serie que el error es de método y
+no de código.
+
+### Superficie comprobada
+
+De los diecisiete métodos que `dispatch` expone, **solo `sendMaterials`
+reserva y solo `applySend` suelta**. `claimMaterials` y `applyClaim`
+consumen una posición que ya existe, y `apply_refund`, `apply_deissue` y
+`apply_mint_pending_delegated` **no están expuestos por RPC**. El par
+cubre todo lo que el nodo ofrece.
+
+### Deuda declarada, no arreglada
+
+`allocate_pending` sigue siendo **O(pendientes creados)** y con reservas
+vivas también camina el conjunto. Hoy no muerde porque las reservas se
+sueltan por los dos caminos, pero **un cliente lento con muchas reservas
+simultáneas legítimas volvería a pagarlo**. La cabecera del método pide
+una lista de libres persistida; es trabajo aparte y va a la cola. Es de la
+misma familia que el `for` del registro que quitó §217.
+
+### Lo que NO se afirma
+
+- El nodo **no tiene tests**: lo verificado aquí es compilación, warnings
+  a cero, la suite de la capa —que no se tocó— y **la medida de D.1**.
+- Todo con **cuatro clientes**. Nada se afirma de cuarenta.
+- La caducidad de 30 s es **declarada**. No hay medida del tramo
+  materiales→entrega por RPC.
+- El barrido perezoso solo corre **cuando llega una petición**. Un nodo
+  ocioso mantiene sus reservas hasta la siguiente, y eso es correcto: sin
+  peticiones no hay a quién estorbar.
