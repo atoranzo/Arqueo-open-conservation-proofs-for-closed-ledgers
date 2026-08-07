@@ -21,7 +21,9 @@ use axum::{Json, Router};
 use clap::Parser;
 use serde::Deserialize;
 use serde_json::{json, Value};
-use zk_ssl::{LayerError, SovereignLayer};
+use zk_ssl::commitment::ClientState;
+use zk_ssl::two_phase::{BatchOp, ClaimReceipt, PendingNotice, SendReceipt};
+use zk_ssl::{AccountIndex, LayerError, SovereignLayer};
 use zk_ssl_wire as wire;
 use zk_ssl_wire::{digest_from_wire, digest_to_wire, Q};
 
@@ -414,6 +416,168 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             l.apply_claim(&receipt, p.receiver.0, &state, &notice)
                 .map_err(RpcError::layer)?;
             Ok(applied(l))
+        }
+
+        // ── lote: N operaciones contra UNA raiz de arranque ──────
+        //
+        // ⚠️ **Aditivo a proposito.** `applySend` y `applyClaim` no se
+        // tocan: cambiar su respuesta sincrona subiria de version, y
+        // esto no. Quien quiera la respuesta operacion a operacion la
+        // sigue teniendo; quien quiera lote usa esto.
+        //
+        // ⚠️ **El lote lo arma QUIEN LLAMA.** El nodo no acumula: se
+        // midio (§222, banco E.2) que juntar los recibos fuera o dentro
+        // del nodo se diferencia en **0,08 % del ciclo**, y acumular
+        // dentro exigiria estado, vales, otra caducidad y rehacer la
+        // concurrencia de `handle`/`dispatch`. Si alguna vez hace falta
+        // que titulares SIN coordinar se beneficien, sera una capa
+        // encima de esto, no en su lugar.
+        //
+        // ⚠️ **Cabe sin tocar el transporte.** El muro del cuerpo son
+        // 2.097.152 bytes (§218, banco C0.2) y una operacion ronda los
+        // 132.728 en hex: entran **15**. La carga que §216 midio —8
+        // pagos— son 8 envios y 8 cobros, y no pueden ir juntos de todas
+        // formas: un cobro necesita que su pendiente exista, y
+        // `apply_many` los rechazaria por `DuplicatePendingInBatch`.
+        // Van en dos lotes de 8, que son 1,06 MB: la mitad del muro.
+        "zkssl_applyMany" => {
+            #[derive(Deserialize)]
+            #[serde(tag = "kind", rename_all = "camelCase")]
+            enum OpDto {
+                #[serde(rename_all = "camelCase")]
+                Send {
+                    receipt: wire::SendReceiptDto,
+                    sender: Q,
+                    sender_state: wire::ClientStateDto,
+                    amount: Q,
+                },
+                #[serde(rename_all = "camelCase")]
+                Claim {
+                    receipt: wire::ClaimReceiptDto,
+                    receiver: Q,
+                    receiver_state: wire::ClientStateDto,
+                    notice: wire::PendingNoticeDto,
+                },
+            }
+            #[derive(Deserialize)]
+            struct P { ops: Vec<OpDto> }
+
+            // Los tipos PROPIOS viven aqui porque `BatchOp` los presta:
+            // hay que tenerlos vivos mientras dure `apply_many`.
+            enum Propia {
+                Send(SendReceipt, AccountIndex, ClientState, u64),
+                Claim(ClaimReceipt, AccountIndex, ClientState, PendingNotice),
+            }
+
+            let p: P = parse(params)?;
+            // ⚠️ El lote VACIO se rechaza: `apply_many` devuelve Ok(())
+            // con cero operaciones y el sobre de respuesta no tendria
+            // ni `fromSeq` ni `rootOld` que dar.
+            if p.ops.is_empty() {
+                return Err(RpcError::invalid_params("lote vacio"));
+            }
+
+            let mut propias: Vec<Propia> = Vec::with_capacity(p.ops.len());
+            for op in &p.ops {
+                propias.push(match op {
+                    OpDto::Send { receipt, sender, sender_state, amount } => Propia::Send(
+                        receipt.try_into().map_err(RpcError::wire)?,
+                        sender.0,
+                        sender_state.try_into().map_err(RpcError::wire)?,
+                        amount.0,
+                    ),
+                    OpDto::Claim { receipt, receiver, receiver_state, notice } => Propia::Claim(
+                        receipt.try_into().map_err(RpcError::wire)?,
+                        receiver.0,
+                        receiver_state.try_into().map_err(RpcError::wire)?,
+                        notice.try_into().map_err(RpcError::wire)?,
+                    ),
+                });
+            }
+
+            // Las posiciones que el lote toca, para soltarlas si falla.
+            let posiciones: Vec<u64> = propias
+                .iter()
+                .map(|o| match o {
+                    Propia::Send(r, ..) => r.notice.position,
+                    Propia::Claim(_, _, _, n) => n.position,
+                })
+                .collect();
+
+            let ops: Vec<BatchOp<'_>> = propias
+                .iter()
+                .map(|o| match o {
+                    Propia::Send(receipt, sender_index, sender_state, amount) => {
+                        BatchOp::Send {
+                            receipt,
+                            sender_index: *sender_index,
+                            sender_state,
+                            amount: *amount,
+                        }
+                    }
+                    Propia::Claim(receipt, receiver_index, receiver_state, notice) => {
+                        BatchOp::Claim {
+                            receipt,
+                            receiver_index: *receiver_index,
+                            receiver_state,
+                            notice,
+                        }
+                    }
+                })
+                .collect();
+
+            let antes = l.transition_log().len();
+            let raiz_antes = digest_to_wire(&l.state_root());
+            let r = l.apply_many(&ops);
+            drop(ops);
+
+            // ⚠️ **Soltar las reservas pase lo que pase.** `apply_many`
+            // valida TODO o nada: un lote rechazado dejaria N posiciones
+            // reservadas sin dueno, y `allocate_pending` las recorre en
+            // cada llamada. Es la leccion de §220 —donde el mismo
+            // descuido costo un 17 % de rendimiento— aplicada ANTES de
+            // que la cobre un banco. Con exito las quita `commit_send`;
+            // aqui se retiran del reloj en los dos casos.
+            for pos in &posiciones {
+                reservas.remove(pos);
+            }
+            if let Err(e) = r {
+                for pos in &posiciones {
+                    l.release_pending(*pos);
+                }
+                return Err(RpcError::layer(e));
+            }
+
+            // El sobre: `applied` en ORDEN DE ENTRADA, que es el mismo en
+            // que `apply_many` aplica (two_phase.rs, paso 4). Y
+            // `batch.rootOld` es lo unico que el lote puede devolver a
+            // cambio de lo que quita: dentro de un lote cada prueba
+            // acredita una transicion contra la RAIZ DE ARRANQUE, no
+            // contra la que el registro anota (spec/RPC.md, §213).
+            let entradas = l.transition_log().entries();
+            let nuevas = &entradas[antes..];
+            let aplicadas: Vec<Value> = nuevas
+                .iter()
+                .map(|e| {
+                    json!({
+                        "logSeq": Q(e.seq),
+                        "kind": format!("{:?}", e.kind),
+                        "accountsRoot": digest_to_wire(&e.root_new),
+                        "chain": digest_to_wire(&e.chain),
+                    })
+                })
+                .collect();
+            Ok(json!({
+                "batch": {
+                    "size": Q(nuevas.len() as u64),
+                    "fromSeq": nuevas.first().map(|e| Q(e.seq)),
+                    "toSeq": nuevas.last().map(|e| Q(e.seq)),
+                    "rootOld": raiz_antes,
+                    "rootNew": digest_to_wire(&l.state_root()),
+                    "chain": digest_to_wire(&l.log_head()),
+                },
+                "applied": aplicadas,
+            }))
         }
 
         // ── dev_* : SOLO con --dev (custodios de prueba) ───────────

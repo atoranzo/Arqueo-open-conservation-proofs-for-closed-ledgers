@@ -15339,3 +15339,193 @@ y una hoja con digest cero.
 - `legacy_null` sigue usando `set_leaf`, y es correcto: reconstruye un
   árbol de ledgers pre-§32 solo para verificarlo y borrarlo. Un ledger
   nuevo no entra por ahí.
+## 222. `zkssl_applyMany`: el lote llega hasta el RPC
+
+§216 midió que `apply_many` elimina el desperdicio de contención hasta el
+mínimo teórico exacto —**a nivel de capa**—. §218 midió la línea base del
+nodo **por RPC**. Entre las dos había un hueco que nadie había cruzado: el
+lote existía en la capa y el nodo no lo exponía.
+
+### Antes de escribir: qué forma, y por qué no la que habíamos elegido
+
+Estaba decidido acumular en el nodo —la opción (b)— porque no gastaba
+versión y no abría superficie. **Leer `main.rs` entero lo desmontó.**
+
+`handle` llama a `dispatch` de forma **síncrona**, y `dispatch` toma el
+`Mutex` durante toda la petición. Para que un titular que encola **espere**
+a que el lote cierre habría que soltar el candado y bloquearse: bloquearse
+sin soltarlo es interbloqueo —nadie más puede encolar—, y soltarlo exige
+reestructurar `handle`/`dispatch` en torno a async. Eso no es «un método
+aditivo»: es rehacer la concurrencia del nodo. La alternativa —acuse
+asíncrono con vale— evita la espera pero añade mapa de vales, método de
+consulta y **otra caducidad**, justo después de que §220 enseñara lo que
+cuesta un mapa sin camino de salida.
+
+Y el motivo por el que se había descartado la otra forma **se cayó al
+medir**: se descartó por «subir `DefaultBodyLimit` abre superficie», pero
+**no hace falta subirlo**. Quince operaciones son 1.990.920 bytes contra
+un muro de 2.097.152 (§218, banco C0.2): caben, con 106 KB de holgura. Y
+la carga que §216 midió —8 pagos— son 8 envíos y 8 cobros, que **no pueden
+ir en el mismo lote de todas formas**: un cobro necesita que su pendiente
+exista, y `apply_many` los rechazaría por `DuplicatePendingInBatch`. Van
+en dos lotes de 8, que son 1,06 MB: la mitad del muro.
+
+El «los 16 no caben» que C0.2 midió era cierto y era **irrelevante**: esa
+carga nunca fue un lote de 16.
+
+### El banco E.2, y una medida que casi queda falsa
+
+Para elegir sin construir las dos, se midió lo único que las diferencia:
+**el coste de una petición por RPC según su tamaño**. Las dos hacen el
+mismo trabajo en la capa; el JSON se deserializa en `handle`, **antes** de
+que `dispatch` tome el candado. Así que la diferencia se reduce a coste
+fijo × N frente a coste fijo × 1 con los mismos bytes.
+
+⚠️ **La primera versión del banco midió su propio instrumental.** Lanzaba
+un proceso `curl` por petición y dio **6,53 ms de coste fijo**. La pista
+estaba en sus datos crudos: 132.728 bytes → 7,47 ms y 265.456 → **6,37**.
+El doble de bytes, menos tiempo. Medido aparte, el proceso costaba
+**5,06 ms**.
+
+Y al rehacerlo con conexión persistente apareció un segundo artefacto:
+**44 ms por petición** contra un servidor de pruebas, con dispersión de
+0,1 ms. Eran los **40 ms del ACK retardado** de Nagle en ese servidor. Con
+Nagle desactivado, la misma mecánica da 0,149 ms.
+
+**Dos defectos de instrumentación en un banco de red, y ninguno lo cazó el
+recuerdo: los cazó ensayar.** Rito: *un banco de red mide su propio
+instrumental antes que el sistema, y hay que separarlos a propósito.*
+
+Con la medida buena:
+
+| | E.1 (con `curl`) | E.2 (conexión persistente) |
+|---|---|---|
+| coste fijo | 6,53 ms | **0,255 ms** |
+| coste por byte | 2,295 ms/MB | **1,180 ms/MB** (808 MB/s) |
+
+⚠️ Y H2′ falló: predije que el coste **por byte** se mantendría, y se
+redujo a la mitad. El instrumento contaminaba las dos pendientes, no solo
+el corte.
+
+**Techo del nodo: 3.922 peticiones/s.** El objetivo RTGS de 21 op/s está
+al **0,5 %** de ese techo. Eso mata la hipótesis inquietante que la medida
+falsa dejaba abierta: con 6,5 ms el techo habrían sido 154/s y el objetivo
+estaría al 13 % — un cuello estructural que ningún lote arregla. **No lo
+es.**
+
+**Ventaja de `applyMany` sobre acumular: 3,57 ms = 0,08 % del ciclo.**
+Empatan en rendimiento, así que la elección es por **superficie** — y ahí
+no hay competencia: `applyMany` no necesita estado en el nodo, ni vales,
+ni otra caducidad, ni rehacer la concurrencia.
+
+⚠️ Y lo que ninguna medida contesta, escrito para que no se olvide:
+**`applyMany` exige un AGREGADOR** que junte los N recibos. Si en el
+despliegue real existe —un banco, un proveedor de pagos— basta. Si los
+titulares no se coordinan, la acumulación es la única que les sirve, y
+sería una capa **encima** de esto, pagando esos 3,57 ms. **Decisión de
+mesa, no de banco.**
+
+### El método
+
+Aditivo a propósito: `applySend` y `applyClaim` **no se tocan**. Cambiar
+su respuesta síncrona subiría de versión; esto no. Quien quiera la
+respuesta operación a operación la sigue teniendo.
+
+Params: `{ops: [...]}` con discriminante `kind` y **los mismos campos que
+los dos métodos sueltos**, así que quien ya habla el protocolo no aprende
+nada nuevo. Respuesta:
+
+```
+{ "batch":   {size, fromSeq, toSeq, rootOld, rootNew, chain},
+  "applied": [ {logSeq, kind, accountsRoot, chain}, … ] }
+```
+
+`applied` va en **orden de entrada** —el mismo en que `apply_many` aplica—
+y cada `accountsRoot` sale de **su propia entrada del registro**, no de la
+raíz final: llamar a `applied()` N veces habría devuelto la raíz final
+repetida N veces.
+
+`batch.rootOld` es lo único que el lote puede devolver a cambio de lo que
+quita: dentro de un lote cada prueba acredita una transición contra la
+**raíz de arranque**, no contra la que el registro anota (`spec/RPC.md`,
+§213). Exponerla deja al cliente comprobar contra qué se validó la suya.
+
+Dos cosas que lleva de serie:
+
+- **Lote vacío rechazado.** `apply_many` devuelve `Ok(())` con cero
+  operaciones y el sobre no tendría ni `fromSeq` ni `rootOld` que dar.
+- **Reservas sueltas pase lo que pase.** `apply_many` valida todo o nada;
+  un lote rechazado dejaría N posiciones sin dueño, y `allocate_pending`
+  las recorre en cada llamada. Es la lección de §220 —donde el mismo
+  descuido costó un 17 % de rendimiento— **aplicada antes de que la
+  cobrara un banco.**
+
+### La medida: el banco D.2
+
+Por cada ronda, con cuatro titulares: **los cuatro `sendMaterials`
+seguidos** —nadie aplica en medio, así que todos salen contra la misma
+raíz de arranque, y desde §220 cada uno recibe posición distinta—, luego
+**las cuatro pruebas en paralelo**, un hilo por titular, y **un solo
+`applyMany`**. Igual para los cobros. Ocho pagos: los mismos que midieron
+§216 y D.1.
+
+| vía | pagos | generaciones | mínimo | desperdicio | pagos/s |
+|---|---|---|---|---|---|
+| capa, secuencial (§216) | 8 | 44 | 16 | 64 % | 1,62 |
+| capa, lote (§216) | 8 | 16 | 16 | 0 % | 3,70 |
+| suelto por RPC (§218, n=4) | 8 | 39,25 | 16 | 59 % | **1,72 ± 0,13** |
+| **lote por RPC (n=3)** | 8 | **16** | 16 | **0 %** | **4,95 ± 0,15** |
+
+`t = 29,7`. **Las tres pasadas dan 16 generaciones exactas.** Ni una
+prueba tirada, ni una vez.
+
+### La predicción falló por arriba, y la explicación es conjetura
+
+Predije **3,7-4,2 pagos/s** razonando desde el 2,28× que §216 midió en la
+capa. Salió **4,95**, un 18 % por encima de la banda, con **2,88× de
+factor**: **el lote mejora MÁS por RPC que en la capa.**
+
+⚠️ **Conjetura, no medida**: en la vía suelta cada pago paga dieciséis
+peticiones y sus contenciones; en la de lote, cuatro. Lo que el lote quita
+no es el coste de la petición —0,255 ms, despreciable frente a los ~575 ms
+del ciclo— sino **la ventana entre pedir materiales y aplicar**, que es
+donde otro cliente se cuela y mata la prueba. Menos peticiones, menos
+ventanas.
+
+**No se escribe como hecho.** Separarlo exige medir la ventana, y es otro
+banco. Se anota porque una predicción que falla por el lado bueno merece
+explicación tanto como una que falla por el malo — y las cuatro veces que
+esta sesión trató una conjetura como medida acabaron en corrección.
+
+### Lo que esto NO cierra
+
+⚠️ **El objetivo RTGS sigue sin alcanzarse.** 4,95 pagos/s son **9,8
+operaciones aplicadas por segundo**, contra las **21 op/s de media** que
+pide un RTGS. Falta un factor 2,1.
+
+Y el cuello ya no es aplicar: el techo del `apply` está en **272 op/s**
+(§219, 3,67 ms a cien mil cuentas). Lo que limita es **generar pruebas**,
+que es trabajo del CLIENTE y escala con el número de titulares, no del
+nodo. Con más titulares en paralelo esto debería subir — **no se afirma**:
+nadie lo ha medido con más de cuatro pares.
+
+Además:
+
+- El nodo **sigue sin tests**. Lo verificado es compilación, warnings a
+  cero, prueba de humo por RPC, la suite de la capa —que no se tocó— y
+  D.2.
+- **La latencia de JUNTAR los recibos no se mide.** Un agregador real
+  espera al titular más lento antes de poder enviar el lote, y eso no
+  entra en pagos/s.
+- Todo con **cuatro titulares** y lotes de cuatro. Nada se afirma de
+  quince, que es el máximo que cabe.
+- El lote **mixto** —envíos y cobros juntos— no se ha ejercitado: D.2 los
+  manda en lotes separados porque el orden lo obliga.
+
+### Lo que la superficie confirma
+
+De los métodos que `dispatch` expone, solo `sendMaterials` reserva y solo
+`applySend` y `applyMany` sueltan. `claimMaterials` y `applyClaim` consumen
+una posición que ya existe, y `apply_refund`, `apply_deissue` y
+`apply_mint_pending_delegated` no están expuestos por RPC. El par
+reservar/soltar sigue cubriendo todo lo que el nodo ofrece.
