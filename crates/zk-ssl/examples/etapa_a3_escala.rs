@@ -37,6 +37,27 @@
 //! ⚠️ Este banco **no demuestra** dónde está el coste: mide cómo escala.
 //! Un exponente ≈ 2 es evidencia fuerte, no una prueba.
 //!
+//! ## Este banco ya tuvo dos vidas — léelo antes de interpretar su salida
+//!
+//! **En §204 respondió a la pregunta de arriba y la REFUTÓ**: el `apply`
+//! salió plano (e = 0,18), así que el árbol no explicaba sus ~31 ms —eso
+//! resultó ser `digest_of_proof`, ver §204 banco A.4—. Pero de paso midió
+//! algo que nadie buscaba: **`send_materials` era lineal, e = 1,08**
+//! (0,64 ms con 4 cuentas, 11,84 con 60, ~248 extrapolados a 1.000), y
+//! corre **en el nodo** en cada envío.
+//!
+//! **En §207 sirvió de contraste antes/después** de la etapa 3 del
+//! RFC-0002 —nodos internos en caché—: el exponente de `send_materials`
+//! cayó de **1,08 a ~0,1**, por debajo de la resolución del reloj.
+//!
+//! **Y desde §207 su función es otra: es una COMPUERTA DE REGRESIÓN.** Si
+//! alguien deshace la caché de nodos internos, o vuelve a meter un
+//! recorrido lineal sobre las hojas, el exponente de `send_materials`
+//! saltará otra vez hacia 1 y este banco lo dirá.
+//!
+//! Referencias vivas: `AUDITORIA.md` §204 (las cinco tablas) y §207 (la
+//! etapa 3), `spec/rfc/0002-lotes-y-transicion-de-hoja.md` (el plan).
+//!
 //! Uso:
 //! ```text
 //! cargo run --release -p zk-ssl --features sandbox --example etapa_a3_escala -- 6
@@ -191,31 +212,49 @@ fn main() {
     println!("  send_materials ... e = {e_mat:.2}   ({:.1}x mas lento)", m2 / m1);
     println!();
 
-    if e_apply > 1.5 {
-        println!("VEREDICTO: HIPOTESIS CONFIRMADA (e = {e_apply:.2}, cuadratico o peor).");
-        println!("  -> El 93% de A.2 NO es coste inherente del diseno: es el arbol.");
-        println!("  -> `SparseTree::root()` recomputa sin cache y barre todas las");
-        println!("     hojas por nodo (sparse_tree.rs, linea del `any(...)`).");
-        println!("  -> ARREGLO SIN TOCAR PROTOCOLO NI CIRCUITOS: cachear la raiz e");
-        println!("     invalidarla al insertar; guardar nodos internos y actualizar");
-        println!("     solo el camino de la hoja modificada. O(k^2*d) -> O(d).");
-        println!("  -> Esto REDEFINE el RFC-0002: la etapa B pasa a ser el arbol");
-        println!("     incremental, y las etapas C/D pueden no hacer falta para el");
-        println!("     objetivo de media. Volver a medir A antes de decidirlas.");
-        let proy = t2 * (1000.0f64 / k2 as f64).powf(e_apply);
-        println!();
-        println!("  Proyeccion a 1.000 cuentas con este exponente: ~{proy:.0} ms/operacion");
-        println!("  (extrapolacion, NO medida: sirve para dimensionar la urgencia)");
-    } else if e_apply < 0.5 {
-        println!("VEREDICTO: HIPOTESIS REFUTADA (e = {e_apply:.2}, practicamente plano).");
-        println!("  -> Los 31 ms de A.2 no vienen del tamano del arbol.");
-        println!("  -> NO tocar el arbol. Hay que medir de nuevo que compone esos");
-        println!("     31 ms antes de abrir ninguna etapa del RFC-0002.");
-    } else {
-        println!("VEREDICTO: PARCIAL (e = {e_apply:.2}).");
-        println!("  -> Hay un termino que crece pero no es cuadratico limpio.");
-        println!("  -> Repetir con mas tamanos antes de concluir.");
-    }
+    println!("== DIAGNOSTICO (dos ejes, con sus referencias historicas) ==");
     println!();
-    println!("Anota esta tabla en AUDITORIA.md junto a las de A y A.2.");
+
+    // ── Eje 1: send_materials. Es el que la etapa 3 (§207) arreglo, y
+    //    por tanto el que delata una regresion.
+    print!("  send_materials  e = {e_mat:.2}  ->  ");
+    if e_mat > 0.7 {
+        println!("⚠️ CRECE CON LAS CUENTAS.");
+        println!("     Referencia: §204 midio e = 1,08 ANTES de la etapa 3.");
+        println!("     Si este arbol ya deberia tener nodos internos en cache");
+        println!("     (§207), esto es una REGRESION: alguien deshizo la cache o");
+        println!("     reintrodujo un recorrido lineal sobre las hojas.");
+        println!("     Mirar `SparseTree::node` y `recompute_path` en");
+        println!("     crates/zk-ssl/src/sparse_tree.rs.");
+        let proy = m2 * (1000.0f64 / k2 as f64).powf(e_mat);
+        println!("     Proyeccion a 1.000 cuentas: ~{proy:.0} ms por llamada, EN EL NODO.");
+    } else if e_mat < 0.4 {
+        println!("✅ PLANO.");
+        println!("     La cache de nodos internos (§207, etapa 3 del RFC-0002)");
+        println!("     esta haciendo su trabajo: construir un camino ya no");
+        println!("     depende de cuantas cuentas hay. Referencia: e = 1,08 antes.");
+    } else {
+        println!("⚠️ INTERMEDIO.");
+        println!("     Ni plano ni lineal limpio. Repetir con mas tamanos y con");
+        println!("     mas pagos antes de concluir nada.");
+    }
+
+    println!();
+
+    // ── Eje 2: apply. §204 lo midio plano (0,18) y §207 lo confirmo.
+    print!("  apply           e = {e_apply:.2}  ->  ");
+    if e_apply > 1.0 {
+        println!("⚠️ CRECE CON LAS CUENTAS, Y NO DEBERIA.");
+        println!("     §204 y §207 lo midieron PLANO (0,18 y 0,00). Algo nuevo");
+        println!("     escala mal: medir antes de tocar nada.");
+    } else {
+        println!("✅ PLANO, como en §204 (0,18) y §207 (0,00).");
+        println!("     El coste del apply NO depende del tamano del arbol. Su");
+        println!("     93% es `digest_of_proof` (§204 banco A.4): esa es la");
+        println!("     etapa 1 del RFC-0002, y NO se arregla desde aqui.");
+    }
+
+    println!();
+    println!("Referencias: AUDITORIA.md §204 (las cinco tablas) y §207 (etapa 3).");
+    println!("Si alguno de los dos ejes cambia de veredicto, es material de asiento.");
 }

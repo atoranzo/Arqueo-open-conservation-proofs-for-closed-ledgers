@@ -14039,6 +14039,44 @@ Del RFC-0002 quedan la etapa 1 (el hash, ×14 del techo) y la etapa 2 (la
 transicion de hoja, contra la contencion). Ambas rompen el cable y
 comparten version `zkssl/0.2`. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 208. El banco que sobrevivio a su propia pregunta: de veredicto caduco a compuerta de regresion
+
+Deuda menor detectada al ejecutar §207, y anotada en su traspaso: el
+banco `etapa_a3_escala` imprimio **«HIPOTESIS REFUTADA — NO tocar el
+arbol»** justo despues de que el arbol se hubiera tocado y funcionado.
+
+El texto no estaba mal: **estaba caduco**. Se escribio en §204 para
+responder «¿el coste del `apply` crece con las cuentas?», y esa pregunta
+ya tiene respuesta. Quien corriera el banco en 2027 leeria una
+instruccion —no tocar el arbol— que contradice lo que el propio
+repositorio hizo en §207.
+
+**El arreglo no es borrar el veredicto: es darle el trabajo que ahora
+tiene.** El banco pasa de responder una pregunta cerrada a **vigilar dos
+ejes**, cada uno con su referencia historica:
+
+| eje | referencia | lectura |
+|---|---|---|
+| `send_materials` | **e = 1,08** en §204 (antes de la etapa 3) · ~0,1 en §207 | **> 0,7 → REGRESION**: alguien deshizo la cache de nodos internos o reintrodujo un recorrido lineal. Dice donde mirar: `SparseTree::node` y `recompute_path` |
+| `apply` | **0,18** en §204 · **0,00** en §207 | **> 1,0 → algo nuevo escala mal**. Plano → recuerda que su 93 % es `digest_of_proof`, y que eso **no se arregla desde aqui**: es la etapa 1 del RFC-0002 |
+
+Y la cabecera del fichero cuenta ahora **las dos vidas del banco**: en
+§204 refuto la hipotesis del arbol cuadratico para el `apply` y de paso
+descubrio, sin buscarlo, que `send_materials` era lineal; en §207 sirvio
+de contraste antes/despues de la etapa 3. Desde §207 su funcion es
+**compuerta de regresion**.
+
+**Nota de proceso, para que nadie se sorprenda:** `BLOQUE-204.sh` pinea
+la huella ANTERIOR de este fichero, asi que a partir de este sello ese
+verificador ya no pasa. Es lo normal en un verificador historico —
+comprueba el estado de SU sello, no el de hoy—. El vigente es el
+BLOQUE-208.
+
+Ninguna medida cambia con este sello: solo cambia lo que el banco DICE
+al terminar. Pero un banco que da una instruccion caduca es peor que uno
+que no dice nada, porque el que lo lee no tiene como saber que la
+pregunta ya se respondio. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
