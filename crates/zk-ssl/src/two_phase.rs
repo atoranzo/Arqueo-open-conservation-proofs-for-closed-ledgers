@@ -688,27 +688,31 @@ impl SovereignLayer {
             .get(&sender_index)
             .map(|r| r.leaf_salt)
             .unwrap_or(crate::store::LEAF_SALT_LEGACY);
-        let mut cuentas = self.accounts.clone();
-        cuentas.set_leaf(
-            sender_index,
-            native_leaf_salted(
-                updated.public_id,
-                BaseElement::new(updated.balance),
-                updated.nonce,
-                leaf_salt_rec,
-            ),
+        // §212: la raiz hipotetica se calcula con `root_with`, que sube el
+        // camino de la hoja sin clonar el arbol. Antes eran DOS clones
+        // completos por operacion —cuentas y pendientes— solo para esta
+        // comprobacion, y desde §207 esos clones copian tambien el mapa de
+        // nodos internos.
+        //
+        // La atomicidad se conserva y **mejora**: `root_with` no muta, asi
+        // que hasta que las dos raices no cuadran no se toca nada.
+        let hoja_nueva = native_leaf_salted(
+            updated.public_id,
+            BaseElement::new(updated.balance),
+            updated.nonce,
+            leaf_salt_rec,
         );
         let pos = receipt.notice.position;
         let compromiso = receipt.commitment;
-        let mut pend = self.pending.clone();
-        pend.set_leaf(pos, compromiso);
 
-        if cuentas.root() != pi.root_new || pend.root() != pi.pending_root_new {
+        if self.accounts.root_with(sender_index, hoja_nueva) != pi.root_new
+            || self.pending.root_with(pos, compromiso) != pi.pending_root_new
+        {
             return Err(LayerError::StaleState);
         }
 
-        self.accounts = cuentas;
-        self.pending = pend;
+        self.accounts.set_leaf(sender_index, hoja_nueva);
+        self.pending.set_leaf(pos, compromiso);
         // ⚠️ **El registro se mantiene aunque `transfer()` ya no exista**
         // (la 32, §161): la vía nueva no lo LEE para verificar —el saldo
         // viene del titular y se contrasta con la hoja—, pero `records`
@@ -880,31 +884,42 @@ impl SovereignLayer {
             .get(&receiver_index)
             .map(|r| r.leaf_salt)
             .unwrap_or(crate::store::LEAF_SALT_LEGACY);
-        let mut cuentas = self.accounts.clone();
-        cuentas.set_leaf(
-            receiver_index,
-            native_leaf_salted(
-                updated.public_id,
-                BaseElement::new(updated.balance),
-                updated.nonce,
-                leaf_salt_rec,
-            ),
+        // §212: como en `apply_send`, la raiz hipotetica sale de
+        // `root_with` y no de clonar el arbol.
+        //
+        // ⚠️ **Y ademas se corrige un orden equivocado.** Estas dos lineas
+        //
+        //     self.pending_amounts.remove(&notice.position);
+        //     self.pending_meta.remove(&notice.position);
+        //
+        // estaban ANTES de la comprobacion de raices. Si esa comprobacion
+        // fallaba, la capa se quedaba **sin el importe ni los metadatos de
+        // una nota que seguia existiendo en el arbol** —porque el borrado
+        // del pendiente iba sobre un clon que se descartaba—. El comentario
+        // gemelo de `apply_send` promete «si las raices no cuadran, el
+        // estado queda intacto»; aqui no se cumplia. Ahora si: **nada se
+        // toca hasta que las dos raices cuadran**.
+        let hoja_nueva = native_leaf_salted(
+            updated.public_id,
+            BaseElement::new(updated.balance),
+            updated.nonce,
+            leaf_salt_rec,
         );
         // **Consumido**: la hoja vuelve a estar vacía. Sin esto, el mismo
         // pendiente se cobraría indefinidamente.
         let vacia: Digest = [BaseElement::ZERO; 4];
-        let mut pend = self.pending.clone();
-        pend.set_leaf(notice.position, vacia);
-        // Y deja de estar en transito al cobrarse.
-        self.pending_amounts.remove(&notice.position);
-        self.pending_meta.remove(&notice.position);
 
-        if cuentas.root() != pi.root_new || pend.root() != pi.pending_root_new {
+        if self.accounts.root_with(receiver_index, hoja_nueva) != pi.root_new
+            || self.pending.root_with(notice.position, vacia) != pi.pending_root_new
+        {
             return Err(LayerError::StaleState);
         }
 
-        self.accounts = cuentas;
-        self.pending = pend;
+        // A partir de aqui SI se muta: las raices ya cuadran.
+        self.pending_amounts.remove(&notice.position);
+        self.pending_meta.remove(&notice.position);
+        self.accounts.set_leaf(receiver_index, hoja_nueva);
+        self.pending.set_leaf(notice.position, vacia);
         // Ver el comentario de `apply_send`: compatibilidad, no lectura.
         self.records.insert(
             receiver_index,

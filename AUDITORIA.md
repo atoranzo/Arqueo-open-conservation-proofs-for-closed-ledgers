@@ -14292,6 +14292,73 @@ publicada. Solo se toca al emitir una version nueva, que fue lo que hizo
 De la etapa 2 quedan **dos piezas**: `apply_many` y una operacion por
 cuenta y por lote. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 212. `root_with`: la raiz hipotetica sin clonar el arbol — y un orden equivocado en `apply_claim` que llevaba ahi desde el principio
+
+Pieza previa a `apply_many` (etapa 2 del RFC-0002). Pequena, verificable,
+y con dos efectos que no estaban buscados por igual.
+
+**Lo que se anade.** `SparseTree::root_with(index, value)` responde «¿que
+raiz saldria si esta posicion valiera X?» subiendo el camino de la hoja y
+combinando con los hermanos que ya estan en cache: **O(profundidad)
+hashes, cero copias**, y sin tocar el arbol.
+
+Es el ladrillo que `apply_many` necesita: permite preguntar «¿que raiz
+saldria **desde la instantanea de arranque** si esta hoja valiera X?» sin
+clonar por operacion.
+
+**Lo que se quita.** `apply_send` y `apply_claim` clonaban el arbol
+ENTERO dos veces por operacion —cuentas y pendientes— solo para esa
+comprobacion. Desde §207 esos clones copian tambien el mapa de nodos
+internos; quedo anotado en aquel asiento como «deja de ser gratis».
+
+⚠️ **NO se declara mejora de rendimiento, porque no se midio.** Con las
+dos cuentas del banco el clon copia ~128 entradas —trivial— y `root_with`
+lo cambia por 32 hashes mas: `apply_send` dio **4,08 ms** en esta corrida
+frente a 3,11 en la de §209, y esa diferencia esta **dentro del ruido**
+entre corridas. El beneficio es **asintotico y estructural**: el clon
+crece con `hojas x profundidad` y los hashes no. Se sabra cuando haya
+miles de cuentas, no hoy.
+
+**Y el hallazgo que no se buscaba.** Leyendo `apply_claim` entero
+aparecio esto:
+
+    self.pending_amounts.remove(&notice.position);
+    self.pending_meta.remove(&notice.position);
+
+    if cuentas.root() != pi.root_new || pend.root() != pi.pending_root_new {
+        return Err(LayerError::StaleState);
+    }
+
+**Dos mutaciones ANTES de la comprobacion.** Si esa comprobacion fallaba
+—cliente con un `leaf_salt` o un estado distinto del que la capa
+guarda—, la capa se quedaba **sin el importe ni los metadatos de una nota
+que seguia existiendo en el arbol**, porque el borrado del pendiente iba
+sobre un clon que se descartaba. Un reembolso posterior no habria sabido
+el importe.
+
+El comentario gemelo de `apply_send` promete «sobre copias: si las raices
+no cuadran, el estado queda intacto». **Aqui no se cumplia.** Ahora si, y
+la atomicidad ademas MEJORA: `root_with` no muta, asi que **nada se toca
+hasta que las dos raices cuadran**.
+
+⚠️ **Sin test dedicado, y se dice.** Construir el caso exige un recibo
+cuya prueba verifique pero declare una raiz nueva equivocada, y la API no
+lo permite montar comodamente. La correccion es estructural —la
+verificacion va antes que toda mutacion— y se apoya en eso, no en un
+test. Queda anotado por si alguien encuentra la forma de cubrirlo.
+
+**Lo que garantiza que nada se movio por debajo.** Dos tests nuevos: uno
+compara `root_with` contra clonar-y-escribir en cuatro casos —posicion
+libre, sobrescribir, **borrar**, y la mitad opuesta de un arbol de 2^32—;
+otro comprueba que `root_with` del valor actual devuelve la raiz actual.
+Suite 249 -> **251**. Y sobre todo: **`conformance --check` sobre
+`zkssl/0.2` sigue en IDENTICO**, comparando digests byte a byte de seis
+operaciones, cabeza de epoca y suministro. Si el refactor hubiera
+cambiado una sola raiz, gritaria.
+
+De la etapa 2 quedan `apply_many` y la regla de una operacion por cuenta
+y por lote. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la

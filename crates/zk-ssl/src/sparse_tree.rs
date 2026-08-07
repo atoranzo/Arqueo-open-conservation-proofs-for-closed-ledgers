@@ -187,6 +187,43 @@ impl SparseTree {
         self.node(self.depth, 0)
     }
 
+    /// **Qué raíz saldría si esta posición valiera `value`** — sin tocar
+    /// el árbol y **sin clonarlo** (§212).
+    ///
+    /// Sube por el camino de la hoja combinando con los hermanos que ya
+    /// están en caché: `O(profundidad)` hashes, cero copias.
+    ///
+    /// ## Por qué existe
+    ///
+    /// `apply_send` y `apply_claim` calculaban la raíz hipotética
+    /// **clonando el árbol entero** —dos clones por operación, uno de
+    /// cuentas y otro de pendientes— solo para comprobar que coincidía con
+    /// la que la prueba declara. Desde §207 esos clones copian también el
+    /// mapa de nodos internos, así que dejaron de ser gratis; quedó
+    /// anotado en aquel asiento.
+    ///
+    /// Y es además el ladrillo que `apply_many` necesita (etapa 2 del
+    /// RFC-0002, pieza 2): permite preguntar «¿qué raíz saldría desde la
+    /// INSTANTÁNEA DE ARRANQUE si esta hoja valiera X?» sin clonar por
+    /// operación.
+    ///
+    /// El digest cero se trata como hoja vacía, igual que en `set_leaf`:
+    /// `root_with(i, [0;4])` da la raíz que quedaría al borrarla.
+    pub fn root_with(&self, index: u64, value: Digest) -> Digest {
+        let mut actual = value;
+        let mut idx = index;
+        for level in 0..self.depth {
+            let hermano = self.node(level, idx ^ 1);
+            actual = if idx % 2 == 1 {
+                native_merge(hermano, actual)
+            } else {
+                native_merge(actual, hermano)
+            };
+            idx /= 2;
+        }
+        actual
+    }
+
     /// Cuántos nodos internos no vacíos hay en caché.
     ///
     /// Diagnóstico: crece como `hojas × profundidad` en el peor caso, y
@@ -283,6 +320,43 @@ mod tests {
             };
         }
         assert_eq!(current, t.root());
+    }
+
+    /// **`root_with` coincide con clonar-y-escribir**, que es lo que
+    /// sustituye. Si esto fallara, `apply_send` aceptaría o rechazaría
+    /// raíces distintas de las que aceptaba antes.
+    #[test]
+    fn root_with_equivale_a_clonar_y_escribir() {
+        let mut t = SparseTree::new();
+        for i in [3u64, 5, 1_000_000] {
+            t.set_leaf(i, d(i));
+        }
+        for (idx, val) in [
+            (7u64, d(999)),                    // posicion libre
+            (5, d(1234)),                      // sobrescribir una ocupada
+            (3, [BaseElement::ZERO; 4]),       // borrar una ocupada
+            (1u64 << (TREE_DEPTH - 1), d(77)), // la mitad opuesta del arbol
+        ] {
+            let mut copia = t.clone();
+            copia.set_leaf(idx, val);
+            assert_eq!(
+                t.root_with(idx, val),
+                copia.root(),
+                "root_with difiere de clonar-y-escribir en {idx}"
+            );
+        }
+        // Y no ha tocado el arbol original.
+        assert_eq!(t.len(), 3);
+    }
+
+    /// `root_with` con el valor que ya tiene devuelve la raíz actual.
+    #[test]
+    fn root_with_del_valor_actual_es_la_raiz() {
+        let mut t = SparseTree::new();
+        t.set_leaf(11, d(11));
+        t.set_leaf(22, d(22));
+        assert_eq!(t.root_with(11, t.leaf(11)), t.root());
+        assert_eq!(t.root_with(999, t.leaf(999)), t.root(), "posicion vacia");
     }
 
     /// **El invariante de la caché**: vaciar el árbol debe dejar el mapa
