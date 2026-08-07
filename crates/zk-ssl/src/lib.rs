@@ -94,6 +94,7 @@ mod tests;
 #[cfg(any(test, feature = "sandbox"))]
 pub mod tests_support;
 
+use std::collections::BTreeSet;
 use std::collections::HashMap;
 use winterfell::math::fields::f64::BaseElement;
 use winterfell::math::FieldElement;
@@ -193,9 +194,13 @@ pub enum LayerError {
     NullifierPositionCollision { position: u64 },
     /// **El arbol de pendientes agoto sus posiciones.**
     ///
-    /// El contador `next_pending` solo sube: **nunca reutiliza** las
-    /// posiciones de los pendientes ya reclamados. Asi que el limite es de
-    /// transferencias TOTALES desde el inicio, no simultaneas.
+    /// ⚠️ **Corregido en §211.** Este comentario decia que `next_pending`
+    /// «solo sube: nunca reutiliza las posiciones ya reclamadas», y que
+    /// por tanto el limite era de transferencias TOTALES. **Es falso**:
+    /// `allocate_pending` recorre desde cero y **reutiliza** los huecos que
+    /// deja `apply_claim`. El propio `two_phase.rs` ya habia corregido la
+    /// misma afirmacion en su comentario; aqui sobrevivio. El limite real
+    /// es de pendientes **simultaneos**, no totales.
     ///
     /// ⚠️ Sin esta comprobacion, `path_for` produciria un camino que no
     /// llega a la raiz y la prueba fallaria **sin decir por que**.
@@ -442,6 +447,19 @@ pub struct SovereignLayer {
     pending: SparseTree,
     /// Siguiente posición libre del árbol de pendientes.
     next_pending: u64,
+    /// **Posiciones de pendiente ENTREGADAS y aun no aplicadas** (§211,
+    /// pieza 1 de la etapa 2 del RFC-0002).
+    ///
+    /// `allocate_pending` mira el estado ACTUAL del arbol. Con lotes eso
+    /// no basta: dos clientes que pidan materiales contra la misma raiz de
+    /// arranque recibirian **la misma posicion**, y el segundo `apply`
+    /// pisaria la nota del primero (§210). Reservar cierra esa ventana.
+    ///
+    /// ⚠️ **NO se persiste, a proposito.** Una reserva significa
+    /// «entregada, no aplicada»; si el proceso muere, nada se aplico y
+    /// todas las reservas deben morir con el. Persistirlas solo serviria
+    /// para perder posiciones para siempre.
+    reserved_pending: BTreeSet<u64>,
     /// **Importe de cada pendiente sin cobrar, por posición.**
     ///
     /// Existe para poder comprobar la invariante global cuando hay dinero
@@ -562,6 +580,7 @@ impl SovereignLayer {
             accounts: SparseTree::new(),
             pending: SparseTree::new(),
             next_pending: 0,
+            reserved_pending: BTreeSet::new(),
             pending_amounts: HashMap::new(),
             pending_meta: HashMap::new(),
             refund_ttl: DEFAULT_REFUND_TTL,

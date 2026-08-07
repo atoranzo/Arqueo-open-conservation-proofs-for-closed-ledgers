@@ -194,16 +194,51 @@ impl SovereignLayer {
     // materiales de envio sin que el cliente hable dos veces con la capa.
     pub(crate) fn allocate_pending(&self) -> Result<u64, LayerError> {
         for p in 0..self.next_pending {
-            if !self.pending.is_occupied(p) {
+            // §211: una posicion RESERVADA cuenta como ocupada aunque el
+            // arbol aun no la tenga. Sin esto, dos peticiones contra la
+            // misma raiz de arranque recibirian la misma (§210).
+            if !self.pending.is_occupied(p) && !self.reserved_pending.contains(&p) {
                 return Ok(p);
             }
         }
-        if self.next_pending >= self.pending.capacity() {
+        let mut p = self.next_pending;
+        while self.reserved_pending.contains(&p) {
+            p += 1;
+        }
+        if p >= self.pending.capacity() {
             return Err(LayerError::PendingTreeExhausted {
                 capacity: self.pending.capacity(),
             });
         }
-        Ok(self.next_pending)
+        Ok(p)
+    }
+
+    /// **Reserva una posicion de pendiente** (§211, pieza 1 de la etapa 2).
+    ///
+    /// Devuelve la misma posicion que `allocate_pending` **y la marca**,
+    /// de modo que una segunda llamada devuelve otra distinta aunque el
+    /// arbol no haya cambiado. Es lo que permite entregar materiales a N
+    /// clientes contra una sola raiz de arranque.
+    ///
+    /// Quien reserve y no aplique debe llamar a [`Self::release_pending`],
+    /// o la posicion queda inmovilizada hasta reiniciar. **Las reservas no
+    /// se persisten**: un reinicio las anula todas, que es lo correcto —
+    /// si nada se aplico, nada hay que respetar.
+    pub fn reserve_pending(&mut self) -> Result<u64, LayerError> {
+        let p = self.allocate_pending()?;
+        self.reserved_pending.insert(p);
+        Ok(p)
+    }
+
+    /// Libera una reserva que no va a aplicarse. `true` si estaba reservada.
+    pub fn release_pending(&mut self, position: u64) -> bool {
+        self.reserved_pending.remove(&position)
+    }
+
+    /// Cuantas posiciones hay reservadas ahora mismo. Diagnostico: **debe
+    /// volver a cero** cuando el lote termina.
+    pub fn reserved_pending_count(&self) -> usize {
+        self.reserved_pending.len()
     }
 
     /// **FASE 1.** El pagador debita su cuenta y deposita el compromiso.
@@ -707,6 +742,8 @@ impl SovereignLayer {
         if pos >= self.next_pending {
             self.next_pending = pos + 1;
         }
+        // §211: aplicada deja de estar reservada — ahora la ocupa el arbol.
+        self.reserved_pending.remove(&pos);
         // El dinero sale del saldo y pasa a estar en transito.
         self.pending_amounts.insert(pos, amount);
         self.pending_meta
@@ -1030,6 +1067,8 @@ impl SovereignLayer {
         if position >= self.next_pending {
             self.next_pending = position + 1;
         }
+        // §211: aplicada deja de estar reservada.
+        self.reserved_pending.remove(&position);
         self.pending_amounts.insert(position, amount);
         self.pending_meta
             .insert(position, (crate::REFUND_SENDER_NONE, self.log.len() as u64));
@@ -1050,6 +1089,94 @@ impl SovereignLayer {
             salt,
             amount,
         })
+    }
+}
+
+/// **§211 — la reserva de posiciones de pendiente.**
+///
+/// Es la pieza 1 de la etapa 2 del RFC-0002, y la que desbloquea las
+/// otras dos: sin ella, un lote reparte la misma posicion dos veces
+/// (§210).
+#[cfg(test)]
+mod tests_reserva {
+    use super::*;
+    use crate::tests_support::*;
+
+    fn capa() -> SovereignLayer {
+        SovereignLayer::new(
+            custodian_root(),
+            governance_root(),
+            LIMIT,
+            MAX_SUPPLY,
+            MAX_ACCOUNTS,
+        )
+    }
+
+    /// **EL TEST QUE JUSTIFICA TODO**: sin reservar, dos peticiones contra
+    /// el mismo estado dan la MISMA posicion. Reservando, dan distintas.
+    #[test]
+    fn dos_reservas_no_colisionan() {
+        let mut c = capa();
+
+        // Sin reservar: el comportamiento viejo, que es el bug de §210.
+        let a = c.allocate_pending().expect("primera");
+        let b = c.allocate_pending().expect("segunda");
+        assert_eq!(a, b, "sin reservar, allocate reparte la misma dos veces");
+
+        // Reservando: distintas.
+        let a = c.reserve_pending().expect("primera");
+        let b = c.reserve_pending().expect("segunda");
+        let d = c.reserve_pending().expect("tercera");
+        assert_ne!(a, b);
+        assert_ne!(b, d);
+        assert_ne!(a, d);
+        assert_eq!(c.reserved_pending_count(), 3);
+    }
+
+    /// Liberar devuelve la posicion al fondo comun.
+    #[test]
+    fn liberar_devuelve_la_posicion() {
+        let mut c = capa();
+        let p = c.reserve_pending().expect("reserva");
+        assert_eq!(c.reserved_pending_count(), 1);
+
+        assert!(c.release_pending(p), "estaba reservada");
+        assert_eq!(c.reserved_pending_count(), 0);
+        assert!(!c.release_pending(p), "ya no lo estaba");
+
+        // Y vuelve a entregarse.
+        assert_eq!(c.reserve_pending().expect("otra vez"), p);
+    }
+
+    /// Las reservas **no se persisten**: una capa nueva no hereda ninguna.
+    /// Es lo correcto — si nada se aplico, nada hay que respetar.
+    #[test]
+    fn una_capa_nueva_no_hereda_reservas() {
+        let mut c = capa();
+        for _ in 0..5 {
+            c.reserve_pending().expect("reserva");
+        }
+        assert_eq!(c.reserved_pending_count(), 5);
+
+        let limpia = capa();
+        assert_eq!(limpia.reserved_pending_count(), 0);
+        assert_eq!(limpia.allocate_pending().expect("libre"), 0);
+    }
+
+    /// El agotamiento del arbol sigue detectandose con reservas de por
+    /// medio: no se puede reservar mas alla de la capacidad.
+    #[test]
+    fn las_reservas_respetan_la_capacidad() {
+        let mut c = capa();
+        // No se agota un arbol de 2^32 en un test; se comprueba que la
+        // cuenta de reservas avanza y que ninguna se repite.
+        let mut vistas = std::collections::BTreeSet::new();
+        for _ in 0..64 {
+            let p = c.reserve_pending().expect("reserva");
+            assert!(vistas.insert(p), "posicion {p} repetida");
+        }
+        assert_eq!(c.reserved_pending_count(), 64);
+        assert_eq!(vistas.len(), 64);
     }
 }
 

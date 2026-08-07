@@ -61,6 +61,7 @@ impl SovereignLayer {
             accounts: SparseTree::new(),
             pending: SparseTree::new(),
             next_pending: 0,
+            reserved_pending: std::collections::BTreeSet::new(),
             pending_amounts: HashMap::new(),
             pending_meta: HashMap::new(),
             refund_ttl: crate::DEFAULT_REFUND_TTL,

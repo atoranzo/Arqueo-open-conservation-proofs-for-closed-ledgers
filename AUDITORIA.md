@@ -14230,6 +14230,68 @@ en la tabla de descartes del RFC con la medida al lado.
 Este asiento no cambia ninguna cifra del canon: solo anade un banco que
 no toca produccion, y reescribe el plan con lo que la maquina dijo. Canon sin cambio (297 · 242 · 40 · 28).
 
+## 211. La reserva de posiciones: el bloqueante de §210, cerrado — y un test que demuestra el fallo antes de arreglarlo
+
+Pieza 1 de las tres en que §210 dejo la etapa 2. Sin ella las otras dos
+no funcionan: un lote repartiria la misma posicion de pendiente dos
+veces y el segundo `apply` pisaria la nota del primero.
+
+**El cambio.** `allocate_pending` seguia mirando el estado ACTUAL del
+arbol. Ahora una posicion **reservada** cuenta como ocupada aunque el
+arbol aun no la tenga:
+
+- `reserve_pending()` — devuelve la posicion **y la marca**; una segunda
+  llamada da otra distinta aunque el arbol no haya cambiado.
+- `release_pending(pos)` — para quien reserve y no aplique.
+- `reserved_pending_count()` — diagnostico: **debe volver a cero** cuando
+  el lote termina.
+- Los dos `apply` que consumen posicion **limpian la reserva**: a partir
+  de ahi la ocupa el arbol de verdad.
+
+⚠️ **Las reservas NO se persisten, a proposito.** Una reserva significa
+«entregada, no aplicada»; si el proceso muere, nada se aplico y todas
+deben morir con el. Persistirlas solo serviria para perder posiciones
+para siempre. Hay un test que lo exige.
+
+**Cuatro tests, y el primero es el que justifica el sello** porque
+demuestra el fallo ANTES de arreglarlo:
+
+    let a = c.allocate_pending()?;
+    let b = c.allocate_pending()?;
+    assert_eq!(a, b, "sin reservar, allocate reparte la misma dos veces");
+    // y despues, reservando: a != b != d
+
+Los otros tres: liberar devuelve la posicion al fondo comun, una capa
+nueva no hereda reservas, y 64 reservas seguidas sin una sola repetida.
+Suite de la capa: 245 -> **249**.
+
+**El cable NO se mueve.** Esto es cambio de capa puro:
+`conformance --check` sobre `zkssl/0.2` sigue en IDENTICO, y por eso esta
+etapa no necesita `zkssl/0.3` — como §210 dejo escrito.
+
+**Hallazgo lateral, corregido en el mismo sello.** La documentacion de
+`PendingTreeExhausted` en `lib.rs` seguia afirmando que «el contador
+`next_pending` solo sube: **nunca reutiliza** las posiciones de los
+pendientes ya reclamados», y de ahi deducia que el limite era de
+transferencias TOTALES. **Es falso**: `allocate_pending` recorre desde
+cero y reutiliza los huecos que deja `apply_claim`. El propio
+`two_phase.rs` ya habia corregido esa misma frase en su comentario —«una
+version anterior decia "nadie las reutilizaba", contradiciendo al
+codigo»— pero en `lib.rs` sobrevivio. El limite real es de pendientes
+**simultaneos**.
+
+**Nota sobre el canon, para que nadie lo "arregle" por error.** La suite
+pasa de 245 a 249, pero `conformance.rs` sigue fijando `[297, 245, 40,
+28]` y los vectores de `zkssl/0.2` llevan lo mismo. **Es correcto**: el
+canon es una FOTO del momento en que se emitio esa version del
+protocolo, no un contador vivo — por eso los vectores de `0.1` conservan
+sus 242. Actualizarlo ahora romperia la conformidad de una version ya
+publicada. Solo se toca al emitir una version nueva, que fue lo que hizo
+§209.
+
+De la etapa 2 quedan **dos piezas**: `apply_many` y una operacion por
+cuenta y por lote. Canon sin cambio (297 · 242 · 40 · 28).
+
 ## 69. Qué NO demuestra este documento
 
 ⚠️ **Esta seccion se queda la ultima a proposito, aunque §70 y §71 la
