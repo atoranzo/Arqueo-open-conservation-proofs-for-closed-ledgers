@@ -173,6 +173,12 @@ async fn handle(
     })
 }
 
+/// ⚠️ `Debug` no estaba, y eso es un defecto por derecho propio: un tipo
+/// de error sin `Debug` obliga a cualquiera que lo use a inventarse
+/// rodeos —`.expect()` no compila sobre `Result<_, RpcError>`—. Se
+/// añadió en §228, al escribir los primeros tests del nodo. No toca el
+/// cable: `handle` construye el JSON del error a mano.
+#[derive(Debug)]
 struct RpcError {
     code: i64,
     message: String,
@@ -669,4 +675,291 @@ fn init_tracing(filter: &str) {
         .with_target(false)
         .compact()
         .init();
+}
+
+// ─────────────────────────── TESTS DEL NODO ───────────────────────────
+//
+// §228. **El nodo llevaba 672 líneas y dieciocho métodos sin un solo
+// test.** Su pin en `tools/canon.sh` era 0, declarado como hueco, no como
+// aprobación. Lo único que lo verificaba era una prueba de humo por RPC
+// —que el método responde— y las suites de la capa, que no tocan el nodo.
+//
+// ## Qué se prueba aquí, y por qué esto y no otra cosa
+//
+// `dispatch` es una función libre sobre `&App`: se puede llamar sin
+// levantar HTTP, sin puertos y sin tokio. Eso permite probar la LÓGICA DEL
+// NODO —despacho, reservas, barrido, errores— en milisegundos.
+//
+// Lo que NO se prueba aquí, y se dice para que nadie lo suponga:
+// - **Nada que exija una prueba STARK.** `applySend` y `applyClaim` con
+//   recibos reales cuestan ~250 ms de generación por operación y viven en
+//   los bancos D.1 y D.2, no en la suite.
+// - **El transporte**: axum, el muro del cuerpo, la serialización HTTP.
+//   Eso lo miden C0.2 y E.2.
+//
+// ## Los que importan de verdad
+//
+// Tres de estos tests corresponden a fallos que ESTA CASA YA TUVO:
+// - `sendMaterials` repartía posiciones REPETIDAS (§220), porque
+//   `allocate_pending` es pura y el candado no cambia su resultado.
+// - un `applySend` fallido NO soltaba su reserva (§220), y eso costó un
+//   **17 % de rendimiento** medido.
+// - el lote vacío devolvía un sobre sin `fromSeq` ni `rootOld` (§222).
+//
+// Un test que reproduce un fallo ya ocurrido vale más que diez inventados.
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Un nodo en memoria, con `--dev`, y la caducidad que pida el test.
+    fn nodo(ttl_segundos: u64) -> App {
+        let layer = SovereignLayer::new(
+            zk_ssl::tests_support::custodian_root(),
+            zk_ssl::tests_support::governance_root(),
+            500_000,
+            100_000_000,
+            1_000,
+        );
+        App {
+            estado: Mutex::new(Estado { layer, reservas: BTreeMap::new() }),
+            dev: true,
+            reserva_ttl: Duration::from_secs(ttl_segundos),
+        }
+    }
+
+    /// Abre una cuenta con semilla `s` y la fondea. Devuelve (indice, id).
+    fn cuenta(app: &App, s: u64, saldo: u64) -> (u64, Value) {
+        let r = dispatch(app, "dev_openSeeded", json!({ "seed": Q(s) })).expect("abrir");
+        let idx = r["index"].as_str().expect("index").to_string();
+        let idx = u64::from_str_radix(idx.trim_start_matches("0x"), 16).expect("hex");
+        dispatch(app, "dev_fund", json!({ "index": Q(idx), "amount": Q(saldo) })).expect("fondear");
+        (idx, r["publicId"].clone())
+    }
+
+    fn reservas_vivas(app: &App) -> usize {
+        app.estado.lock().expect("mutex").reservas.len()
+    }
+
+    /// Un digest a partir de un u64, para las sales de los tests.
+    fn sal(n: u64) -> [winterfell::math::fields::f64::BaseElement; 4] {
+        use winterfell::math::fields::f64::BaseElement as E;
+        [E::new(n), E::new(0), E::new(0), E::new(0)]
+    }
+
+    fn materiales(app: &App, emisor: u64, receptor: &Value, importe: u64, salt: u64) -> Value {
+        dispatch(
+            app,
+            "zkssl_sendMaterials",
+            json!({
+                "sender": Q(emisor),
+                "receiverId": receptor,
+                "amount": Q(importe),
+                "salt": digest_to_wire(&sal(salt)),
+            }),
+        )
+        .expect("materiales")
+    }
+
+    fn posicion(m: &Value) -> u64 {
+        let p = m["pendingPosition"].as_str().expect("pendingPosition");
+        u64::from_str_radix(p.trim_start_matches("0x"), 16).expect("hex")
+    }
+
+    // ── el despacho ───────────────────────────────────────────────
+
+    #[test]
+    fn un_metodo_desconocido_da_32601_y_no_toca_nada() {
+        let app = nodo(30);
+        let e = dispatch(&app, "zkssl_loQueSea", json!({})).expect_err("deberia fallar");
+        assert_eq!(e.code, -32601, "metodo desconocido debe ser MethodNotFound");
+        assert_eq!(reservas_vivas(&app), 0);
+    }
+
+    #[test]
+    fn la_version_del_protocolo_es_la_declarada() {
+        let app = nodo(30);
+        let v = dispatch(&app, "zkssl_protocolVersion", json!([])).expect("version");
+        // ⚠️ Si esto cambia, cambia el CABLE. spec/RPC.md §versionado: lo
+        // que sube version es que cambien los VALORES que viajan.
+        assert_eq!(v, json!("zkssl/0.2"));
+    }
+
+    #[test]
+    fn sin_dev_los_metodos_dev_se_rechazan() {
+        let mut app = nodo(30);
+        app.dev = false;
+        let e = dispatch(&app, "dev_fund", json!({ "index": Q(0), "amount": Q(1) }))
+            .expect_err("dev_* sin --dev debe rechazarse");
+        assert_eq!(e.code, -32601, "sin --dev, dev_* no existe");
+    }
+
+    // ── EL FALLO DE §220: posiciones repetidas ────────────────────
+
+    #[test]
+    fn dos_peticiones_de_materiales_reciben_posiciones_distintas() {
+        // ⚠️ EL TEST QUE HABRIA CAZADO EL FALLO DE §220.
+        // `allocate_pending` es PURA: mira el estado y no muta. El candado
+        // de `dispatch` serializa las peticiones pero NO cambia su
+        // resultado, asi que dos titulares recibian la MISMA posicion y el
+        // segundo moria al aplicar. El nodo llevaba nueve sellos sin usar
+        // `reserve_pending`, que la capa tenia desde §211.
+        let app = nodo(30);
+        let (a, _) = cuenta(&app, 1, 100_000);
+        let (b, _) = cuenta(&app, 2, 100_000);
+        let (_, id_c) = cuenta(&app, 3, 0);
+
+        let m1 = materiales(&app, a, &id_c, 1_000, 7);
+        let m2 = materiales(&app, b, &id_c, 1_000, 8);
+
+        assert_ne!(
+            posicion(&m1),
+            posicion(&m2),
+            "CRITICO: dos titulares han recibido la MISMA posicion de pendiente. \
+             Un lote con las dos seria rechazado entero por DuplicatePendingInBatch, \
+             y aplicandolas de una en una la segunda muere."
+        );
+        assert_eq!(reservas_vivas(&app), 2, "cada materiales deja SU reserva");
+    }
+
+    #[test]
+    fn muchas_peticiones_seguidas_no_repiten_ninguna_posicion() {
+        let app = nodo(30);
+        let (a, _) = cuenta(&app, 10, 1_000_000);
+        let (_, id) = cuenta(&app, 11, 0);
+        let mut vistas = std::collections::BTreeSet::new();
+        for i in 0..15u64 {
+            let m = materiales(&app, a, &id, 1_000, 100 + i);
+            assert!(vistas.insert(posicion(&m)), "posicion repetida en la iteracion {i}");
+        }
+        assert_eq!(vistas.len(), 15);
+        assert_eq!(reservas_vivas(&app), 15);
+    }
+
+    // ── EL FALLO DE §220: reservas que nadie suelta ───────────────
+
+    #[test]
+    fn si_la_capa_rechaza_los_materiales_la_reserva_se_suelta() {
+        // ⚠️ Sin esto, CADA peticion rechazada —cuenta congelada, saldo
+        // insuficiente, limite regulatorio— dejaria una posicion muerta.
+        // Y un atacante no necesitaria ni saldo para provocarlas.
+        let app = nodo(30);
+        let (pobre, _) = cuenta(&app, 20, 10);
+        let (_, id) = cuenta(&app, 21, 0);
+
+        let e = dispatch(
+            &app,
+            "zkssl_sendMaterials",
+            json!({
+                "sender": Q(pobre),
+                "receiverId": id,
+                "amount": Q(999_999u64),
+                "salt": digest_to_wire(&sal(1)),
+            }),
+        )
+        .expect_err("saldo insuficiente debe rechazarse");
+        assert_eq!(e.code, -32000, "un rechazo de la capa es error de capa");
+        assert_eq!(
+            reservas_vivas(&app),
+            0,
+            "CRITICO: la peticion fue rechazada y la reserva se quedo colgada"
+        );
+    }
+
+    // ── EL BARRIDO PEREZOSO ───────────────────────────────────────
+
+    #[test]
+    fn el_barrido_libera_las_reservas_caducadas_en_la_siguiente_peticion() {
+        // Caducidad de 0 s: todo lo reservado esta caduco al instante.
+        // El barrido corre AL ENTRAR en dispatch, asi que hace falta UNA
+        // peticion mas para que se note — y eso es correcto: un nodo
+        // ocioso mantiene sus reservas hasta que alguien llama.
+        let app = nodo(0);
+        let (a, _) = cuenta(&app, 30, 100_000);
+        let (_, id) = cuenta(&app, 31, 0);
+
+        materiales(&app, a, &id, 1_000, 42);
+        assert_eq!(reservas_vivas(&app), 1, "la reserva existe nada mas crearse");
+
+        std::thread::sleep(Duration::from_millis(20));
+        dispatch(&app, "zkssl_accountCount", json!({})).expect("una peticion cualquiera");
+        assert_eq!(reservas_vivas(&app), 0, "el barrido no libero la reserva caducada");
+    }
+
+    #[test]
+    fn con_caducidad_larga_el_barrido_no_toca_nada() {
+        let app = nodo(3_600);
+        let (a, _) = cuenta(&app, 40, 100_000);
+        let (_, id) = cuenta(&app, 41, 0);
+        materiales(&app, a, &id, 1_000, 43);
+        for _ in 0..5 {
+            dispatch(&app, "zkssl_accountCount", json!({})).expect("peticion");
+        }
+        assert_eq!(reservas_vivas(&app), 1, "una reserva viva no debe barrerse");
+    }
+
+    // ── EL LOTE (§222) ────────────────────────────────────────────
+
+    #[test]
+    fn el_lote_vacio_se_rechaza_y_dice_por_que() {
+        // `apply_many` devuelve Ok(()) con cero operaciones, asi que sin
+        // esta guarda el sobre no tendria ni `fromSeq` ni `rootOld`.
+        let app = nodo(30);
+        let e = dispatch(&app, "zkssl_applyMany", json!({ "ops": [] }))
+            .expect_err("el lote vacio debe rechazarse");
+        assert_eq!(e.code, -32602);
+        assert!(
+            e.message.contains("lote vacio"),
+            "el rechazo debe decir POR QUE, y dijo: {}",
+            e.message
+        );
+    }
+
+    #[test]
+    fn una_operacion_de_clase_desconocida_rechaza_el_lote() {
+        let app = nodo(30);
+        let e = dispatch(&app, "zkssl_applyMany", json!({ "ops": [{ "kind": "vuelo" }] }))
+            .expect_err("clase desconocida debe rechazarse");
+        assert_eq!(e.code, -32602);
+    }
+
+    #[test]
+    fn apply_many_es_aditivo_los_sueltos_siguen_existiendo() {
+        // ⚠️ Esto es lo que hace legitimo NO subir de version: la
+        // superficie es aditiva y los valores de cable no se movieron.
+        // Si alguien "simplificara" quitando applySend, esto se pone rojo.
+        let app = nodo(30);
+        for m in [
+            "zkssl_applySend",
+            "zkssl_applyClaim",
+            "zkssl_sendMaterials",
+            "zkssl_claimMaterials",
+            "zkssl_applyMany",
+        ] {
+            let e = dispatch(&app, m, json!({})).expect_err("params vacios: debe fallar");
+            assert_ne!(e.code, -32601, "{m} ha desaparecido del despacho");
+        }
+    }
+
+    // ── consultas de solo lectura ─────────────────────────────────
+
+    #[test]
+    fn las_consultas_no_dejan_reservas() {
+        let app = nodo(30);
+        cuenta(&app, 50, 1_000);
+        for m in ["zkssl_accountCount", "zkssl_supply", "zkssl_epochHead", "zkssl_params"] {
+            dispatch(&app, m, json!({})).unwrap_or_else(|e| panic!("{m}: {}", e.message));
+        }
+        assert_eq!(reservas_vivas(&app), 0, "una consulta no debe reservar nada");
+    }
+
+    #[test]
+    fn el_registro_arranca_vacio_y_crece_con_las_altas() {
+        let app = nodo(30);
+        let antes = dispatch(&app, "zkssl_accountCount", json!({})).expect("cuenta");
+        assert_eq!(antes, json!("0x0"), "un nodo nuevo no tiene cuentas");
+        cuenta(&app, 60, 100);
+        cuenta(&app, 61, 100);
+        let despues = dispatch(&app, "zkssl_accountCount", json!({})).expect("cuenta");
+        assert_eq!(despues, json!("0x2"));
+    }
 }

@@ -16133,3 +16133,87 @@ mecánica de hacerlo bien y no se usó desde el principio.
   la feature `parallel` y los 24 warnings. Marlin **no era uno de ellos**.
 - `zk-core` no pierde ni gana tests: el fichero nunca se compiló, así que
   su pin de 74 no se mueve.
+## 228. El nodo tenía dieciocho métodos y ningún test
+
+Su pin en `tools/canon.sh` era **0**, con la nota «sin tests: HUECO
+DECLARADO». Un cero declarado no es una aprobación, pero tampoco protege:
+672 líneas despachando dieciocho métodos —con `applyMany`, reservas de
+posición y barrido perezoso— y lo único que las verificaba era **una
+prueba de humo por RPC** que comprobaba que el método responde.
+
+Ahora son **trece tests**, y el pin lo dice.
+
+### Tres de ellos reproducen fallos que esta casa YA tuvo
+
+Eso no es casualidad: **un test que reproduce un fallo ocurrido vale más
+que diez inventados.**
+
+**`dos_peticiones_de_materiales_reciben_posiciones_distintas`** — el fallo
+de §220. `allocate_pending` es **pura**: mira el estado y no muta. El
+candado de `dispatch` serializa las peticiones pero **no cambia su
+resultado**, así que dos titulares recibían la misma posición y el segundo
+moría al aplicar. La capa tenía `reserve_pending` desde §211 y el nodo no
+lo usó durante **nueve sellos**. Este test lo habría cazado el primer día.
+
+**`si_la_capa_rechaza_los_materiales_la_reserva_se_suelta`** — el otro
+fallo de §220, el que costó un **17 % de rendimiento medido**. Sin soltar
+en el camino de error, cada rechazo —cuenta congelada, saldo, límite
+regulatorio— dejaba una posición muerta, y `allocate_pending` las recorre
+en cada llamada. Un atacante no necesitaría ni saldo para provocarlas.
+
+**`el_lote_vacio_se_rechaza_y_dice_por_que`** — §222. `apply_many`
+devuelve `Ok(())` con cero operaciones, así que sin la guarda el sobre no
+tendría ni `fromSeq` ni `rootOld`. Y el test no se conforma con el código:
+exige que el mensaje **diga el motivo**.
+
+### Y uno que vigila lo que hace legítimo no subir de versión
+
+**`apply_many_es_aditivo_los_sueltos_siguen_existiendo`**: comprueba que
+`applySend`, `applyClaim`, `sendMaterials`, `claimMaterials` y `applyMany`
+siguen en el despacho. Si alguien «simplificara» quitando uno, esto se
+pone rojo — porque la superficie aditiva es exactamente el argumento por
+el que §222 no subió a `zkssl/0.3`.
+
+Igual que `la_version_del_protocolo_es_la_declarada`, que fija
+`zkssl/0.2` contra el cable.
+
+### Por qué estos y no otros
+
+`dispatch` es una función libre sobre `&App`: se puede llamar **sin
+levantar HTTP, sin puertos y sin tokio**. Eso permite probar la lógica del
+nodo —despacho, reservas, barrido, errores— en milisegundos, y por eso el
+pin de tiempo del crate no se mueve.
+
+⚠️ **Lo que NO prueban, dicho para que nadie lo suponga:**
+
+- **Nada que exija una prueba STARK.** `applySend` y `applyClaim` con
+  recibos reales cuestan ~250 ms de generación por operación: eso vive en
+  los bancos D.1 y D.2, no en la suite.
+- **El transporte**: axum, el muro del cuerpo, la serialización HTTP. Eso
+  lo miden C0.2 y E.2.
+- **La concurrencia real.** Los tests llaman a `dispatch` en serie. Que
+  dos titulares reciban posiciones distintas se prueba con dos llamadas
+  seguidas, que es donde estaba el fallo —la función era pura—, pero **no
+  se prueba con hilos**.
+
+### El barrido, probado por sus dos lados
+
+Con caducidad de 0 s la reserva desaparece **en la siguiente petición**, y
+con 3.600 s cinco peticiones no la tocan. El primero también fija una
+propiedad que se declaró en §225 y no se había comprobado: **el barrido
+corre al entrar en `dispatch`**, así que un nodo ocioso mantiene sus
+reservas hasta que alguien llama. Eso es correcto —sin peticiones no hay a
+quién estorbar— y ahora está escrito en un test en vez de en un comentario.
+
+### Canon
+
+**`zk-ssl-node`: de 0 a 13.** Es cambio de canon y va declarado. Los
+`#[test]` declarados del workspace suben de 767 a **780**.
+
+### Lo que NO cambia
+
+- El nodo sigue sin pruebas de **integración**: nada arranca el binario y
+  le habla por HTTP dentro de la suite.
+- **El RTGS sigue sin alcanzarse** (9,8 op/s contra 21).
+- Los 24 warnings siguen pinchados y la feature `parallel` de `ceremony`
+  sigue sin activarse.
