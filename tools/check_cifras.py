@@ -35,10 +35,20 @@ Corregir una cifra ahí **no sería transparencia: sería falsificar el
 referente** de las correcciones que ya se publicaron sobre esos textos. Es
 la regla que el propio repositorio se dio, y esta herramienta la respeta.
 
-⚠️ Y **no entiende prosa**: solo caza el patrón «número + tests» cerca del
+⚠️ Y **no entiende prosa**: caza el patrón «número + tests» cerca del
 nombre de un crate. Una afirmación rancia escrita de otra forma **se le
 escapa**, y eso hay que saberlo. No es un verificador de documentación: es
 una red para la cifra que ya se rancció una vez.
+
+⚠️ **El hueco se midió y se estrechó** (§239): `PRINCIPIOS.md` decía «539
+tests» **sin nombrar ningún crate**, y esta herramienta no lo veía. Ahora
+también comprueba los TOTALES —una cifra de cuatro dígitos junto a
+«tests»— contra la suma de los pines, que es la otra forma en que un
+documento cuenta lo mismo.
+
+El hueco no está cerrado: una frase como «unos quinientos tests» sigue
+escapándose. **Lo que se puede decir es que las dos formas que ya se
+rancciaron están cubiertas.**
 
 ## Uso
 
@@ -60,6 +70,13 @@ EXCLUIDOS = {
 }
 PREFIJOS_EXCLUIDOS = ("doc/preprints/", "spec/rfc/")
 
+# ⚠️ Lineas que cuentan un MOMENTO PASADO, no el presente. `doc/ZENODO.md`
+# narra el estado del sistema cuando se deposito: «The system WAS complete:
+# 373 tests». Corregir eso falsificaria el relato, igual que corregir un
+# asiento. Se excluye POR LINEA, no por fichero, para que el resto del
+# documento siga vigilado (§239).
+LINEAS_HISTORICAS = ("The system was complete",)
+
 
 def pines():
     """Lee de `tools/canon.sh` los pines de tests. NO se escriben aquí."""
@@ -67,6 +84,17 @@ def pines():
     fuera = {}
     for linea in open(ruta, encoding="utf-8"):
         m = re.match(r"^([a-z0-9-]+)\s+\w+\s+(\d+)\s+(\d+)\s+(\d+)\s", linea)
+        if m:
+            fuera[m.group(1)] = int(m.group(2))
+    return fuera
+
+
+def pines_sello():
+    """Solo los pines del nivel `--sello`: la suma que se cita mas."""
+    ruta = os.path.join(RAIZ, "tools", "canon.sh")
+    fuera = {}
+    for linea in open(ruta, encoding="utf-8"):
+        m = re.match(r"^([a-z0-9-]+)\s+sello\s+(\d+)\s", linea)
         if m:
             fuera[m.group(1)] = int(m.group(2))
     return fuera
@@ -114,6 +142,30 @@ def main():
                     v = int(m.group(1).replace(".", ""))
                     if v != pin:
                         malas.append((rel, n, crate, v, pin, linea.strip()[:78]))
+
+    # ⚠️ TOTALES: una cifra de 3-4 digitos junto a «tests» y SIN nombre de
+    # crate suele ser la suma. Se compara contra las sumas posibles —la del
+    # sello, la de todos los pines— con margen cero: si no es ninguna, se
+    # señala para que alguien mire, porque asi se colo el 539.
+    suma_sello = sum(pines_sello().values())
+    suma_todos = sum(p.values())
+    posibles = {suma_sello, suma_todos}
+    for rel in vivos():
+        texto = open(os.path.join(RAIZ, rel), encoding="utf-8").read()
+        for n, linea in enumerate(texto.split("\n"), 1):
+            if any(c in linea for c in p):
+                continue          # ya lo mira el bucle de arriba
+            if re.search(r"--release\s+[^#\s]", linea) or "circuit_" in linea:
+                continue
+            if any(h in linea for h in LINEAS_HISTORICAS):
+                continue
+            for m in re.finditer(r"\*?\*?(\d{3,4})\*?\*?\s*(?:tests|pruebas)", linea):
+                v = int(m.group(1))
+                revisadas += 1
+                if v not in posibles:
+                    malas.append((rel, n, "TOTAL", v,
+                                  f"{suma_sello} (sello) o {suma_todos} (todos)",
+                                  linea.strip()[:78]))
 
     for rel, n, crate, v, pin, l in malas:
         print(f"  RANCIA  {rel}:{n}")

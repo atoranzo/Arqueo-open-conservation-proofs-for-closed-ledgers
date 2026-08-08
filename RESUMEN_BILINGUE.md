@@ -82,8 +82,9 @@ Merkle. Invisible para testigos honestos.
 
 ### Estado
 
-**539 tests** (297 de circuitos + 242 de la capa), 0 fallos y 0 warnings,
-medidos el 06-08-2026. Reproducibles con Rust estable, sin instaladores
+**646 tests en la compuerta de sello** —783 con todos los pines, 798
+declarados—, 0 fallos y 24 warnings **pinchados**, ejecutados por
+`tools/canon.sh`. Reproducibles con Rust estable, sin instaladores
 externos. Los errores propios están documentados, no borrados.
 
 Desde agosto de 2026 hay además **contrato público de protocolo**:
@@ -158,8 +159,9 @@ honest witnesses.
 
 ### Status
 
-**539 tests** (297 circuit + 242 layer), 0 failures and 0 warnings,
-measured on 2026-08-06. Reproducible with stable Rust, no external
+**646 tests in the sealing gate** —783 across all pinned levels, 798
+declared—, 0 failures and 24 **pinned** warnings, run by
+`tools/canon.sh`. Reproducible with stable Rust, no external
 toolchains. Our own errors are documented, not erased.
 
 Since August 2026 there is also a **public protocol contract**: a

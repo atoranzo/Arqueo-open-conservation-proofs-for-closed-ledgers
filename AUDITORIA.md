@@ -17236,3 +17236,80 @@ derecha**, no solo las dos de la izquierda.
   sus 26,3 op/s del 31 de julio, y eso sigue siendo correcto.
 - **No mide nada nuevo.** Todas las cifras que entran vienen de bancos ya
   ejecutados: H.1, I.1, D.2, E.2, B.3.
+## 239. Una tercera generación de cifras rancias, y el hueco que las dejaba pasar
+
+§237 corrigió nueve cifras de tests y montó la compuerta. §238, el techo del
+nodo. Éste destapa **ocho más**, y lo interesante no son las cifras: es
+**por qué la compuerta no las veía**.
+
+### El hueco, medido
+
+`check_cifras.py` cazaba «número + tests» **cerca del nombre de un crate**.
+Pero un documento cuenta lo mismo de otra forma:
+
+> *«**539 tests** (297 de circuitos + 242 de la capa)»*
+
+**Ningún nombre de crate.** Invisible. Y así estaba en `PRINCIPIOS.md`,
+`RESUMEN_EJECUTIVO.md` y `RESUMEN_BILINGUE.md` **dos veces** —español e
+inglés—, todas bajo epígrafe **«Estado»**.
+
+Más una **tercera generación**: `373 pruebas` en `PAPER.md`, de una época
+anterior a los 539.
+
+⚠️ En §237 escribí que la compuerta *«no entiende prosa y una afirmación
+rancia escrita de otra forma se le escapa»*. **Era cierto y lo dejé ahí.**
+Un hueco declarado y no cerrado es mejor que uno oculto, pero peor que uno
+cerrado.
+
+### Lo que se hizo con él
+
+La compuerta comprueba ahora también los **totales**: una cifra de tres o
+cuatro dígitos junto a «tests», **sin nombre de crate**, contra las sumas
+posibles —**646** en el sello, **783** con todos los pines—.
+
+Pasa de vigilar **13 cifras a 19**.
+
+⚠️ **El hueco no queda cerrado, y se dice**: «unos quinientos tests» sigue
+escapándose. Lo que se puede afirmar es que **las dos formas que ya se
+rancciaron están cubiertas**.
+
+### Una histórica que NO se corrige, y cómo se distingue
+
+`doc/ZENODO.md` dice:
+
+> *«The system **was** complete: 373 tests, ten circuits…»*
+
+**Narra un momento pasado.** Corregirlo falsificaría el relato, igual que
+corregir un asiento. Se excluye **por línea, no por fichero**, para que el
+resto del documento siga vigilado — un fichero entero fuera sería la
+excusa perfecta para meter ahí lo que envejece.
+
+⚠️ Y la distinción que lo resuelve es el **tiempo verbal**: «el sistema
+**era**» narra; «consta de» **afirma el presente**. `PAPER.md` decía «consta
+de 373 pruebas» y por eso sí se corrige.
+
+### Lo que ganan los dos documentos del sello
+
+**`PRINCIPIOS.md`** — su lista «Lo hecho» no mencionaba nada posterior a
+§199. Ahora incluye el guardián y el firmante, **y la dependencia
+criptográfica sin auditar**. Y su tabla de «qué está demostrado» gana el
+matiz que faltaba:
+
+> ⚠️ **Firmar las cabezas no cambia esa tabla todavía.** La firma ata una
+> cabeza a quien la emitió; para que sirva hace falta **que alguien la
+> guarde y la compare**, y no hay ni custodia declarada de la clave ni un
+> solo testigo. Lo construido es **el primer eslabón de cinco, no la
+> propiedad**.
+
+**`ARQUITECTURA.md`** — su lista «Lo que sigue faltando para producción» es
+la de **`zk-core`/Groth16, el backend de COMPARACIÓN**, y no lo decía.
+Leerla como «lo que le falta al sistema» confunde el backend que se
+conserva *como evidencia de por qué se eligió STARK* con el que está en el
+camino de producción. Ahora lo avisa en su primera línea.
+
+### Lo que este sello NO hace
+
+- **No toca `doc/ZENODO.md`** ni ningún cuerpo congelado.
+- **No revisa los 59 `.md` uno a uno.** Cubre lo que una compuerta puede
+  comprobar; el resto sigue siendo prosa sin verificar.
+- **No mide nada nuevo.**

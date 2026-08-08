@@ -55,6 +55,12 @@ que el principio señala.** Sigue ahí.
 **Las transiciones están demostradas. El estado y la completitud del
 historial, no.**
 
+⚠️ **Y firmar las cabezas no cambia esa tabla todavía** (§236, §238).
+La firma ata una cabeza a quien la emitió; para que eso sirva de algo
+hace falta **que alguien la guarde y la compare**, y hoy no hay ni
+custodia declarada de la clave ni un solo testigo. Lo construido es el
+primer eslabón de cinco, no la propiedad.
+
 **Lo que esto es**: una demostración de que las propiedades
 criptográficas de una liquidación soberana son construibles y medibles.
 **Lo que no es**: una capa descentralizada.
@@ -127,7 +133,7 @@ reintroducir ceremonia y perder resistencia cuántica.
 
 **Sovereign Settlement Layer** — ✅
 `crates/zk-ssl`. Mantiene el estado, encadena raíces, aplica operaciones.
-**242 tests.**
+**256 tests** (3 ignorados, declarados) en `crates/zk-ssl`.
 
 **Superficie de protocolo** — ✅ *(añadido: §197-§199)*
 La capa dejó de estar sola: `zk-ssl-wire` (formato de cable),
@@ -340,15 +346,38 @@ sería faltar al principio de transparencia.
 - Cinco paradigmas implementados y medidos.
 - Capa de liquidación con ciclo monetario completo, persistencia,
   auditoría y verificación de integridad.
-- **539 tests** (297 de circuitos + 242 de la capa), 0 fallos y 0
-  warnings, medidos el 06-08-2026; cada propiedad de seguridad con test
-  discriminante.
+- **646 tests en la compuerta de sello** —256 de la capa, 297 de
+  circuitos, 34 de la ceremonia, 31 del nodo, 17 de liquidación, y los
+  del SDK, el cable y el puente ISO—, **783 contando los pines de
+  `--largo` y `--completo`**, y **798 declarados**. 0 fallos y 24
+  warnings **pinchados** (no crecen). Cada propiedad de seguridad con
+  test discriminante.
+
+  ⚠️ Aquí decía **539** con el desglose «297 + 242», y ninguna de las
+  dos cifras era ya cierta. **No se recuerdan: se ejecutan** —
+  `bash tools/canon.sh --sello` falla si el árbol deja de darlas.
 - **De implementación a protocolo** (§197-§199): especificación, OpenRPC
   generado, vectores de conformidad como compuerta permanente, proceso
   RFC, nodo de referencia y SDK con keystore.
 - **ESPEC ejecutable del núcleo de pagos** (§195-§196): intérprete que
   reproduce byte a byte la salida del circuito, mutantes incluidos, y
   censo de celdas con **0 sin dueño**.
+
+- **Primer eslabón de la oponibilidad** (§234-§236): guardián del índice
+  de firma —contador con `fsync` antes de firmar, que **se niega a
+  arrancar si su `fsync` no persiste**— y firmante de cabezas de época
+  con XMSS, dominio propio y versión de formato explícita.
+
+  ⚠️ **Y con ello, la primera dependencia criptográfica del árbol**:
+  `xmss 0.1.0-pre.0`, pre-release **sin auditoría independiente** por
+  declaración del propio crate. Elegida entre cuatro candidatas con
+  cinco criterios (`doc/xmss-evaluacion.md`).
+
+  ⚠️ **Firmar no es tener evidencia oponible.** Faltan la custodia
+  declarada de la clave —sin ella *una firma no tiene valor
+  probatorio*—, el latido que emita cabezas, releer una firma desde
+  sus bytes, y **cualquier testigo**: hoy nadie fuera del operador ve
+  una cabeza.
 
 ### Lo alcanzable
 
