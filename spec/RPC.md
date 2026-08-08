@@ -24,8 +24,15 @@ roadmap.)
 
 ## Transporte y sobre
 
-- HTTP `POST /`, cuerpo JSON-RPC 2.0. Un objeto por petición (los lotes
-  no están soportados en v0.1).
+- HTTP `POST /`, cuerpo JSON-RPC 2.0. **Un objeto por petición**: no se
+  admite el *batch de JSON-RPC* (un array de peticiones en un cuerpo).
+  ⚠️ **Esto no tiene nada que ver con `zkssl_applyMany`.** Aquel es un
+  **lote de OPERACIONES** dentro de UNA petición; esto es un lote de
+  PETICIONES, y no se admite. La misma palabra para dos cosas ha
+  causado confusión desde v0.1 y por eso se separa aquí.
+- **Tamaño del cuerpo**: el límite por defecto del transporte son
+  **2.097.152 bytes** (§218, medido). Una operación con prueba ronda los
+  132.728 en hex, así que en un `zkssl_applyMany` entran **15**.
 - Respuesta: `{"jsonrpc":"2.0","id":…,"result":…}` o
   `{"jsonrpc":"2.0","id":…,"error":{"code":…,"message":…}}`.
 
@@ -91,6 +98,7 @@ view_id_of_wide, derive_leaf_salt_wide}`.
 | `zkssl_applySend` | `{receipt: SendReceipt, sender: Q, senderState: ClientState, amount: Q}` | `Applied` |
 | `zkssl_claimMaterials` | `{receiver: Q, notice: PendingNotice}` | `ClaimMaterials` |
 | `zkssl_applyClaim` | `{receipt: ClaimReceipt, receiver: Q, receiverState: ClientState, notice: PendingNotice}` | `Applied` |
+| `zkssl_applyMany` | `{ops: BatchOp[]}` | `BatchApplied` |
 
 - `Applied = {logSeq: Q, kind, accountsRoot, chain: Digest}` — la
   entrada que quedó en el registro encadenado.
@@ -149,7 +157,55 @@ que va a cambiar.
 Estas cuatro se mantienen con lotes o sin ellos. `zkssl_verifyChain` las
 comprueba.
 
-### Lo que HOY vale además, y con lotes dejará de valer
+### `zkssl_applyMany` — N operaciones contra UNA raíz de arranque
+
+```
+BatchOp = {kind: "send",  receipt: SendReceipt,  sender: Q,
+           senderState: ClientState, amount: Q}
+        | {kind: "claim", receipt: ClaimReceipt, receiver: Q,
+           receiverState: ClientState, notice: PendingNotice}
+
+BatchApplied = {
+  batch:   {size, fromSeq, toSeq: Q, rootOld, rootNew, chain: Digest},
+  applied: Applied[]
+}
+```
+
+**Los campos son los MISMOS que los de `zkssl_applySend` y
+`zkssl_applyClaim`, más un discriminante.** Quien ya habla el protocolo
+no aprende nada nuevo, y por eso el método es **aditivo**: los dos
+sueltos siguen existiendo con su respuesta síncrona intacta, y la
+versión del protocolo **no cambia**.
+
+Reglas normativas:
+
+1. **Todo o nada.** Se validan las N operaciones contra el estado de
+   arranque y solo entonces se aplican. Si una falla, **ninguna** se
+   aplica y la respuesta es un error.
+2. **Un lote vacío es `InvalidParams`.** No hay `fromSeq` ni `rootOld`
+   que devolver.
+3. **Una cuenta como máximo una vez por lote**, y **posiciones de
+   pendiente distintas**. Dos operaciones que compartan posición
+   rechazan el lote entero (`DuplicatePendingInBatch`). Por eso un
+   cobro **no puede ir en el mismo lote** que el envío que crea su
+   pendiente: van en lotes consecutivos.
+4. **`applied` va en el orden de entrada de `ops`**, que es el mismo en
+   que se aplican, y sus `logSeq` son consecutivos desde
+   `batch.fromSeq`.
+5. **`accountsRoot` de cada `Applied` es el `rootNew` de SU entrada del
+   registro**, no la raíz final del lote.
+6. **`batch.rootOld` es la raíz de arranque contra la que se validaron
+   TODAS las pruebas.** Es lo único que el lote puede devolver a cambio
+   de la garantía que quita (ver la sección siguiente): deja al cliente
+   comprobar contra qué se validó la suya.
+
+⚠️ **Quien arma el lote no es el nodo.** El nodo no acumula operaciones:
+aplica las que le llegan juntas en una petición. Juntarlas es trabajo de
+un **agregador** —un banco, un proveedor de pagos—, y **ese agregador ve
+quién paga a quién**. No necesita claves —las pruebas vienen hechas—,
+pero sí ve el grafo. Se declara aquí en vez de descubrirse al desplegar.
+
+### Lo que vale al aplicar de una en una, y el lote quita
 
 ⚠️ **Hoy, cada operación se aplica sola, y por eso las raíces del
 registro coinciden con las que la prueba declara.** Un tercero que tenga
@@ -157,7 +213,11 @@ una entrada **y** su prueba puede comprobar que la transición que la
 prueba acredita es exactamente la que el registro anotó, **sin necesidad
 de tener el árbol**.
 
-**Con lotes eso deja de ser cierto.** En un lote de N operaciones, cada
+**Con `zkssl_applyMany` eso deja de ser cierto —y desde §222 el método
+existe, así que ya no es una advertencia sobre el futuro—.** Sigue
+valiendo para las operaciones que se apliquen de una en una con
+`applySend` y `applyClaim`, que no se han tocado. En un lote de N
+operaciones, en cambio, cada
 prueba se genera contra la **raíz de arranque del lote** y acredita una
 transición **hipotética** —«la raíz que saldría si mi cambio fuera el
 único»—. El registro, en cambio, tiene que anotar las raíces **reales**,
@@ -190,6 +250,14 @@ agrupación**. Los de `zkssl/0.1` y `zkssl/0.2` se generaron **sin lotes**
 reproducirlos aplicando de una en una. Cuando existan vectores de lote,
 lo dirán explícitamente.
 
+⚠️ **Desde §222 `zkssl_applyMany` existe, y los vectores de `zkssl/0.2`
+siguen siendo de N=1.** Eso es deliberado y no es una omisión: la
+superficie del protocolo es aditiva y los valores de cable no se
+movieron, así que los vectores existentes **siguen siendo válidos tal
+cual** —`conformance --check` de `zkssl/0.2` sigue dando idéntico—. Una
+implementación que quiera acreditar el lote necesitará vectores propios;
+no los hay todavía.
+
 ---
 
 ## Notas operativas
@@ -199,5 +267,8 @@ lo dirán explícitamente.
   otro problema y no está implementado).
 - Parámetros de un ledger persistido: inmutables
   (`ParameterMismatch` al reabrir con otros valores).
-- Versionado: `zkssl_protocolVersion` gobierna compatibilidad; cambios
-  incompatibles suben a `zkssl/0.2`.
+- Versionado: `zkssl_protocolVersion` gobierna compatibilidad. **La
+  versión vigente es `zkssl/0.2`** desde §209, y lo que la sube es que
+  cambien los **valores que viajan**, no el tamaño de la superficie:
+  añadir un método de forma aditiva —como `zkssl_applyMany` en §222— no
+  la sube, porque los vectores de conformidad no se mueven.

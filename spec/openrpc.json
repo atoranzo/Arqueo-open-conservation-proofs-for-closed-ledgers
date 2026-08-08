@@ -363,6 +363,25 @@
       "summary": "Aplica un recibo de cobro verificando su prueba STARK."
     },
     {
+      "name": "zkssl_applyMany",
+      "params": [
+        {
+          "name": "ops",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/BatchOp"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BatchApplied"
+        }
+      },
+      "summary": "Aplica N operaciones contra UNA raiz de arranque: todo o nada."
+    },
+    {
       "name": "dev_fund",
       "params": [
         {

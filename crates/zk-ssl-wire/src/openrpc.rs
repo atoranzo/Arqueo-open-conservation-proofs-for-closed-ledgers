@@ -28,6 +28,7 @@ pub fn method_names() -> Vec<&'static str> {
         "zkssl_applySend",
         "zkssl_claimMaterials",
         "zkssl_applyClaim",
+        "zkssl_applyMany",
         "dev_fund",
         "dev_openSeeded",
     ]
@@ -81,6 +82,8 @@ pub fn document() -> Value {
           json!([p("receipt", "ClaimReceipt"), p("receiver", "Q"),
                  p("receiverState", "ClientState"), p("notice", "PendingNotice")]),
           "Applied"),
+        m("zkssl_applyMany", "Aplica N operaciones contra UNA raiz de arranque: todo o nada.",
+          json!([p("ops", "BatchOp")]), "BatchApplied"),
         m("dev_fund", "SOLO --dev: emision delegada con custodios de PRUEBA.",
           json!([p("index", "Q"), p("amount", "Q")]), "Applied"),
         m("dev_openSeeded", "SOLO --dev: abre desde una clave determinista de la suite.",
@@ -110,16 +113,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn diecisiete_metodos_unicos_y_en_orden() {
+    fn dieciocho_metodos_unicos_y_en_orden() {
+        // §223: subio a 18 con `zkssl_applyMany`. Que este test tenga el
+        // numero en el nombre es a proposito: renombrarlo obliga a mirar.
         let nombres = method_names();
-        assert_eq!(nombres.len(), 17);
+        assert_eq!(nombres.len(), 18);
         let mut u = nombres.clone();
         u.sort();
         u.dedup();
-        assert_eq!(u.len(), 17, "nombres repetidos");
+        assert_eq!(u.len(), 18, "nombres repetidos");
         let doc = document();
         let met = doc["methods"].as_array().expect("methods");
-        assert_eq!(met.len(), 17);
+        assert_eq!(met.len(), 18);
         for (i, mm) in met.iter().enumerate() {
             assert_eq!(mm["name"].as_str().unwrap(), nombres[i]);
         }

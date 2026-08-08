@@ -15529,3 +15529,119 @@ De los métodos que `dispatch` expone, solo `sendMaterials` reserva y solo
 una posición que ya existe, y `apply_refund`, `apply_deissue` y
 `apply_mint_pending_delegated` no están expuestos por RPC. El par
 reservar/soltar sigue cubriendo todo lo que el nodo ofrece.
+## 223. Un método vivo sin especificación
+
+§222 cableó `zkssl_applyMany` y lo midió. Lo que no hizo fue **decirlo en
+la especificación normativa**: `spec/RPC.md` no lo mencionaba, y
+`spec/openrpc.json` —el documento que una segunda implementación consume
+sin leer el código del nodo— tampoco.
+
+Esta casa tiene una regla para eso: **la rancidez que crea un sello se
+cierra en el sello siguiente** (§209). Éste la cumple.
+
+### La colisión que ya era peligrosa y ahora era una trampa
+
+`spec/RPC.md:27` decía, en un documento titulado v0.2:
+
+> *Un objeto por petición (los lotes no están soportados en v0.1).*
+
+Dos defectos en dos líneas. El menor: «v0.1» en un documento v0.2, caduco
+desde §209. El mayor: ahí **«lotes» significa el *batch* de JSON-RPC —un
+array de peticiones en un cuerpo—**, sentido completamente distinto del
+«lote de operaciones» del RFC-0002.
+
+Mientras no existió un método de lote, era ambigüedad. **Desde §222 es una
+trampa**: un lector que busque si el protocolo admite lotes encuentra
+«no están soportados» a diez líneas de la tabla donde `zkssl_applyMany` sí
+está. Los dos sentidos quedan separados explícitamente, y el aviso dice
+que la confusión viene de v0.1.
+
+De paso queda documentado el **tamaño del cuerpo**: 2.097.152 bytes
+medidos (§218), y por tanto **15 operaciones** por lote.
+
+### La especificación del lote
+
+`BatchOp` y `BatchApplied` escritos, y seis reglas normativas: todo o
+nada; lote vacío es `InvalidParams`; una cuenta como máximo una vez y
+posiciones de pendiente distintas —por eso un cobro **no puede ir en el
+mismo lote** que el envío que crea su pendiente—; `applied` en orden de
+entrada con `logSeq` consecutivos; `accountsRoot` de cada `Applied` es el
+`rootNew` de **su** entrada, no la raíz final; y `batch.rootOld` es la
+raíz de arranque contra la que se validaron **todas** las pruebas.
+
+Y una declaración que no estaba en ninguna parte y que no es técnica:
+
+⚠️ **Quien arma el lote no es el nodo, y ese agregador ve quién paga a
+quién.** No necesita claves —las pruebas vienen hechas— pero sí ve el
+grafo de pagos. En el modelo de `SECURITY.md` §6 y del asiento §121 no
+había ninguna pieza así. Se declara en la especificación en vez de
+descubrirse al desplegar.
+
+### El condicional que dejó de serlo
+
+`RPC.md` tenía una sección titulada *«Lo que HOY vale además, y con lotes
+dejará de valer»*, escrita **antes** de que los lotes existieran. Era una
+advertencia sobre el futuro, y desde §222 el futuro llegó.
+
+Pasa a *«Lo que vale al aplicar de una en una, y el lote quita»*, con la
+precisión que faltaba: **la garantía sigue valiendo** para las operaciones
+aplicadas con `applySend` y `applyClaim`, que no se tocaron. Se pierde
+sólo para las que van en lote. No es todo o nada; es una elección por
+operación, y quien la hace es quien llama.
+
+### La conformidad, y por qué los vectores no se mueven
+
+⚠️ Los vectores de `zkssl/0.2` **siguen siendo de N=1** y eso es
+deliberado, no una omisión: la superficie es aditiva y **los valores de
+cable no se movieron**, así que los vectores existentes siguen siendo
+válidos tal cual —`conformance --check` sigue dando idéntico—. Una
+implementación que quiera acreditar el lote necesitará vectores propios;
+no los hay.
+
+Queda escrito porque, sin decirlo, la ausencia de vectores de lote parece
+un descuido y es una consecuencia.
+
+### El versionado, corregido con el criterio de la casa
+
+`RPC.md:202` decía *«cambios incompatibles suben a `zkssl/0.2`»* —frase
+escrita desde 0.1, caduca desde §209—. Ahora dice lo que esta casa
+realmente aplica: **lo que sube la versión es que cambien los valores que
+viajan, no el tamaño de la superficie**. Añadir un método de forma aditiva
+no la sube, porque los vectores de conformidad no se mueven. Es
+exactamente el razonamiento con el que se decidió no subir a `zkssl/0.3`
+en §222, ahora escrito donde se puede consultar.
+
+### OpenRPC, regenerado y comprobado
+
+`openrpc.rs` es la fuente única y `spec/openrpc.json` un **artefacto
+generado**. Se añade el método a la lista y al documento, y el fichero se
+**regenera**; la compuerta exige que regenerar dos veces dé los mismos
+bytes, que es la regla de la casa para artefactos generados.
+
+El test `diecisiete_metodos_unicos_y_en_orden` pasa a
+`dieciocho_...`. **Que el número esté en el nombre del test es a
+propósito**: obliga a renombrarlo, y renombrar obliga a mirar. Un test que
+se llamara `metodos_unicos` habría cambiado el `17` por un `18` sin que
+nadie se detuviera.
+
+### Un hueco en las compuertas, encontrado al hacer esto
+
+⚠️ **El crate `zk-ssl-wire` no está en el canon.** Sus dos tests —los que
+acabamos de tocar— **no los corre ninguna compuerta de sello**: el canon
+vigila `stark-experiment` (297) y `zk-ssl` (256), y nada más. Un cambio
+que rompiera `openrpc.rs` habría pasado todas las compuertas de los
+últimos seis sellos.
+
+Este bloque los corre. **No se declara canon nuevo**: contarlos exigiría
+haberlos medido antes, y no se han medido nunca. Se exige exit 0 y que el
+test renombrado aparezca y pase. Fijar su canon queda en la cola.
+
+### Lo que NO se afirma
+
+- **No hay vectores de lote.** La conformidad no acredita `applyMany`.
+- El lote **mixto** —envíos y cobros juntos, permitido por las reglas
+  siempre que no compartan posición— no se ha ejercitado en ningún banco.
+- Los **lotes de 15**, el máximo que cabe, tampoco.
+- La especificación describe lo que el nodo hace hoy. **Ninguna segunda
+  implementación la ha consumido**, así que no está probada como
+  especificación, solo como documentación.
