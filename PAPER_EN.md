@@ -918,8 +918,12 @@ It requires only the stable Rust compiler; no external toolchains or
 non-stable compilers are used.
 
 ```bash
-cargo test -p zk-ssl --release              # layer: 172 tests
-cargo test -p stark-experiment --release    # circuits: 201 tests
+# Or all at once, with the canon's pinned counts checked:
+bash tools/canon.sh --sello
+
+cargo test -p zk-ssl --release              # layer: 256 tests (3 ignored)
+cargo test -p stark-experiment --release    # circuits: 297 (10 ignored)
+cargo test -p zk-ssl-node --release         # node: 31
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
 

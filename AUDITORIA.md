@@ -17090,3 +17090,80 @@ inválida y nadie lo nota hasta que un testigo la rechaza.
   cabezas incompletas **por diseño, no por descuido**.
 - `xmss` es **`0.1.0-pre.0` sin auditoría independiente**, fijado con `=`
   porque `master` ya diverge del tag.
+## 237. Los documentos decían 172 tests. Eran 256, y nadie lo veía
+
+Nueve cifras rancias en siete documentos vivos, la más antigua con
+**veintisiete sellos** encima.
+
+| documento | decía | es |
+|---|---|---|
+| `ARQUITECTURA.md` ×2 | 172 tests en la capa | **256** |
+| `ARQUITECTURA.md` | el backend STARK añade **5 circuitos** | **18** |
+| `PAPER.md`, `PAPER_EN.md` ×2 c/u | 172 / 201 | **256 / 297** |
+| `README.md`, `RESUMEN_EJECUTIVO.md`, `INSTITUCIONAL.md`, `INSTITUTIONAL.md` | 242 tests | **256** |
+
+⚠️ Y **había dos generaciones de rancidez**: el traspaso apuntaba los
+`172/201`, y al construir la compuerta aparecieron cuatro `242` que **nadie
+tenía anotados**. Buscar lo que uno recuerda encuentra lo que uno recuerda.
+
+### Por qué pasó, y por qué volvería a pasar
+
+El canon vigila el código con pines exactos desde §224. **Nadie vigilaba la
+prosa.** Un número escrito a mano en un `.md` envejece sin avisar, y quien
+lo lee **no tiene forma de saber que envejeció** — que es peor que no
+ponerlo.
+
+Por eso este sello no se limita a corregir: `tools/check_cifras.py` **lee
+los pines de `tools/canon.sh`** —no los escribe— y comprueba que ningún
+documento vivo los contradiga. Si el canon cambia, la compuerta cambia con
+él sin tocar nada.
+
+### ⚠️ Y lo que la compuerta NO mira, que es la mitad del asiento
+
+**Los REGISTROS quedan fuera, a propósito:**
+
+- `AUDITORIA.md` — los asientos describen **un momento** y no se reescriben.
+- `BACKLOG.md` — los números no se reutilizan ni se renumeran.
+- `doc/preprints/*` — **depositados con DOI**, conservados verbatim; sus
+  errores van a `ERRATA.md`, no al cuerpo.
+- `doc/ESCALADO.md`, `doc/CONFIANZA_RESIDUAL.md` — **cuerpo VERBATIM** con
+  cabecera-mapa encima (§120, decisión A).
+- `spec/rfc/*` — un RFC es un documento fechado.
+
+**Doce de los cincuenta y nueve `.md`**, y entre ellos el más grande.
+
+Corregir una cifra ahí **no sería transparencia: sería falsificar el
+referente** de las correcciones ya publicadas sobre esos textos. Lo dice el
+propio repositorio en `ERRATA.md`, y esta compuerta lo respeta.
+
+⚠️ Por eso `doc/ESCALADO.md` conserva sus **26,3 op/s** y sus **13,2
+pagos/s** del 31 de julio, hoy superados por los **248 op/s** de §229 —un
+factor **9,4×**—. No es descuido: es que ese cuerpo no se toca.
+
+### Dos falsos positivos de mi propia compuerta, arreglados en ella
+
+⚠️ Señaló *«9 tests para `zk-core`»* en `ARQUITECTURA.md`. **Falso**: son
+los 9 tests de **un circuito** (`circuit_audit`), no del crate. El
+documento estaba bien y **la herramienta estaba mal**.
+
+Al filtrarlo se pasó de largo y **dejó de ver los cuatro `242`** —el filtro
+excluía cualquier línea con algo tras `--release`, incluido un comentario—.
+Décimo instrumento mío torcido, y **el primero que falló hacia el lado
+peligroso: callar ante lo real.**
+
+Corregido para distinguir un **filtro de test** de un **comentario**, y
+probado en sus dos direcciones con líneas de verdad.
+
+⚠️ Rito: **cuando una compuerta da un falso positivo, se arregla la
+compuerta, no el documento.** Y al arreglarla se prueba que **sigue viendo
+lo que veía**: un filtro que calla es peor que uno que grita.
+
+### Lo que este sello NO hace
+
+- **No actualiza el estado del proyecto.** `README.md` sigue citando §209 y
+  no menciona el firmante, el guardián ni `xmss`. Eso es §238.
+- **No toca `ESCALADO.md`** ni ningún otro cuerpo congelado.
+- **No entiende prosa.** La compuerta caza «número + tests» cerca del
+  nombre de un crate; una afirmación rancia escrita de otra forma **se le
+  escapa**. Es una red para la cifra que ya se rancció, no un verificador
+  de documentación.

@@ -957,8 +957,12 @@ Requiere únicamente el compilador Rust estable; no emplea cadenas de
 herramientas externas ni compiladores no estables.
 
 ```bash
-cargo test -p zk-ssl --release              # capa: 172 tests
-cargo test -p stark-experiment --release    # circuitos: 201 tests
+# O de una vez, con los pines del canon comprobados:
+bash tools/canon.sh --sello
+
+cargo test -p zk-ssl --release              # capa: 256 tests (3 ignorados)
+cargo test -p stark-experiment --release    # circuitos: 297 (10 ignorados)
+cargo test -p zk-ssl-node --release         # nodo: 31
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
 

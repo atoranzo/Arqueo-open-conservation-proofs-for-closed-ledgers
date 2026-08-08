@@ -299,7 +299,7 @@ estado.
 ## Reproducir
 
 ```bash
-cargo test -p zk-ssl --release              # la capa, 242 tests
+cargo test -p zk-ssl --release              # la capa, 256 tests (3 ign.)
 cargo test -p stark-experiment --release    # los circuitos, 297 tests
 cargo test -p zk-core --release performance -- --nocapture
 cargo test -p halo2-experiment --release real_proof -- --nocapture
