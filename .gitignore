@@ -26,3 +26,8 @@ secrets
 # Bytecode de Python: lo generan las herramientas de doc/fv y tools/.
 __pycache__/
 *.pyc
+
+# Registro de cuando paso el canon --completo por ultima vez. NO se
+# versiona a proposito: es un hecho de ESTA maquina, y en un clon nuevo
+# la respuesta correcta es "nunca".
+/.canon/

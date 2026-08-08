@@ -3,40 +3,54 @@
 #
 # **La fuente unica.** Antes de §224 cada BLOQUE reescribia sus compuertas
 # a mano, y por eso `zk-ssl-wire` paso SEIS sellos sin que nadie corriera
-# sus tests. Ahora hay un fichero, esta en el repo, y los bloques lo
-# invocan:
+# sus tests.
 #
-#     bash tools/canon.sh --sello     # nivel de sello (cada bloque)
-#     bash tools/canon.sh --largo     # todo, incluidos los caros
-#     bash tools/canon.sh --lista     # solo enseña la tabla, no ejecuta
+#     bash tools/canon.sh --sello      # cada bloque · ~145 s
+#     bash tools/canon.sh --largo      # + halo2 y plonk · ~20 min
+#     bash tools/canon.sh --completo   # + zk-core · ~39 min
+#     bash tools/canon.sh --lista      # solo enseña la tabla, no ejecuta
 #
-# ## Lo que hace ROBUSTO a esto, y no es la tabla
+# ## Lo que lo hace ROBUSTO, y no es la tabla
 #
 # 1. **Los miembros del workspace se LEEN de Cargo.toml.** Un crate nuevo
-#    sin fila en la tabla pone la compuerta ROJA, y una fila sin crate
-#    tambien. El agujero de §223 —un crate entero fuera de las
-#    compuertas— pasa de "hay que acordarse" a **imposible**.
-# 2. **Pines EXACTOS, no minimos.** Si alguien arregla un warning o añade
-#    un test, esto se pone rojo y hay que actualizar el pin A PROPOSITO.
-#    Nada mejora ni empeora en silencio.
-# 3. **No se para en el primer fallo.** Acumula y da el inventario
-#    completo: un banco que se para en el primer susto oculta los otros.
-# 4. **Timeout POR CRATE.** `zk-core` no termina —73 de 76 y a los 1800 s
-#    sigue— y esta pinchado COMO ANOMALIA, no escondido. Un crate que
-#    cuelga no puede colgar la compuerta.
-# 5. **Anclas ASCII.** `.` de grep casa un BYTE, no un caracter: un ancla
-#    con tilde no falla, se queda MUDA (§223).
-# 6. **Dice exactamente que linea editar** cuando un pin no cuadra.
+#    sin fila pone la compuerta ROJA, y una fila sin crate tambien. El
+#    agujero de §223 pasa de "hay que acordarse" a **imposible**.
+# 2. **Pines EXACTOS, no minimos.** Nada mejora ni empeora en silencio.
+# 3. **No se para en el primer fallo:** da el inventario completo.
+# 4. **Timeout POR CRATE.** Un crate que cuelgue no cuelga la compuerta.
+# 5. **Anclas ASCII.** `.` de grep casa un BYTE: un ancla con tilde no
+#    falla, se queda MUDA (§223).
+# 6. **Here-string, nunca `echo | grep`**: con `pipefail`, `grep -q` sale
+#    al encontrar, `echo` recibe SIGPIPE y devuelve 141 aunque la busqueda
+#    acierte. Una compuerta intermitente es peor que ninguna.
+# 7. **Dice que linea editar** cuando un pin no cuadra.
+#
+# ## Los TRES niveles, y por que tres (§225)
+#
+# `zk-core` cuesta **38,6 minutos**: 1.472 s los 73 tests de biblioteca
+# con 8 hilos, mas **845 s la ceremonia**. Y no hay hilo que lo arregle:
+# medido, generar la prueba añade un 5 % y rayon un 17 % — **el coste es
+# SINTETIZAR el circuito**, y `ark-r1cs-std` sintetiza en serie.
+#
+# Meter 39 minutos en cada sello garantizaria que alguien acabe saltandose
+# la compuerta, y una compuerta que se salta no protege. Es exactamente lo
+# que le paso a `check_tests.py`.
+#
+# ⚠️ **El nivel `--completo` NO lo fuerza nadie.** Es disciplina, no
+# compuerta, y la disciplina es justo lo que ha fallado seis veces en este
+# proyecto. Lo unico que se puede hacer por construccion es **no fiarlo a
+# la memoria**: cada `--completo` que pasa deja constancia en
+# `.canon/ultimo-completo`, y TODA invocacion dice cuando fue y cuantos
+# sellos han pasado desde entonces.
 #
 # ## Como se actualiza un pin
 #
-# Se MIDE primero y se edita la tabla despues. Nunca al reves: fijar un
-# numero sin medirlo es lo que esta casa lleva ocho sellos evitando.
+# Se MIDE primero y se edita la tabla despues. Nunca al reves.
 #
 # ================================================================
+
 # ⚠️ La guarda va ANTES de cualquier bashismo: con `sh` el `set -o pipefail`
-# de abajo revienta primero y el aviso no llega a imprimirse nunca. Lo cazo
-# el ensayo, no el recuerdo.
+# de abajo revienta primero y el aviso no llega a imprimirse nunca.
 if [ -z "${BASH_VERSION:-}" ]; then
   echo "canon.sh necesita bash: usa 'bash tools/canon.sh', no 'sh'." >&2
   exit 2
@@ -51,36 +65,31 @@ set -uo pipefail
 RAIZ="${CANON_RAIZ:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$RAIZ" || exit 2
 NIVEL="${1:---sello}"
+SELLO_FILE=".canon/ultimo-completo"
 
 # ── LA TABLA ────────────────────────────────────────────────────
 # crate | nivel | pasan | ignorados | warnings | timeout_s | nota
 #
-# Medido en §224 (banco F.1) sobre el sello 7a33e58, en release.
-# `pasan` e `ignorados` son lo que el arnes EJECUTA, no los `#[test]`
-# declarados: en zk-ssl son 259 declarados, 256 pasan y 3 son
-# instrumentos de medida.
+# Medido en §224 (banco F.1) y corregido en §225 (bancos G.1 y G.2) sobre
+# el sello 06106c9, en release. `pasan` e `ignorados` son lo que el arnes
+# EJECUTA, no los `#[test]` declarados.
 TABLA=$(cat <<'FIN_TABLA'
-zk-ssl             sello  256   3   0   600  la capa
-stark-experiment   sello  297  10   0   600  los circuitos
-ceremony           sello   34   0  11   300  DEUDA: 11 warnings, pinchados para que no crezcan
-settlement-layer   sello   17   0   0   300
-iso-bridge         sello    3   0   0   300
-zk-ssl-sdk         sello    6   0   0   300
-zk-ssl-wire        sello    2   0   0   300  fuera de toda compuerta hasta §223
-zk-ssl-cli         sello    0   0   0   300  sin tests: es un binario
-zk-ssl-node        sello    0   0   0   300  sin tests: HUECO DECLARADO, esta en la cola
-settlement-prover  sello    0   0   0   300  sin tests
-nova-experiment    sello    0   0   0   300  0 es CORRECTO: sus 3 tests exigen --features test-setup
-halo2-experiment   largo   27   0   0  1200  caro: 438 s medidos
-plonk-experiment   largo   36   0   3  1800  caro: 749 s medidos. DEUDA: 3 warnings
-zk-core            largo   73   0  10  1800  ⚠️ NO TERMINA: 73 de 76 y timeout. Pinchado COMO ANOMALIA
+zk-ssl             sello     256   3   0   600  la capa
+stark-experiment   sello     297  10   0   600  los circuitos
+ceremony           sello      34   0  11   300  DEUDA: 11 warnings, pinchados para que no crezcan
+settlement-layer   sello      17   0   0   300
+iso-bridge         sello       3   0   0   300
+zk-ssl-sdk         sello       6   0   0   300
+zk-ssl-wire        sello       2   0   0   300  fuera de toda compuerta hasta §223
+zk-ssl-cli         sello       0   0   0   300  sin tests: es un binario
+zk-ssl-node        sello       0   0   0   300  sin tests: HUECO DECLARADO, esta en la cola
+settlement-prover  sello       0   0   0   300  sin tests
+nova-experiment    sello       0   0   0   300  0 es CORRECTO: sus 3 tests exigen --features test-setup
+halo2-experiment   largo      27   0   0  1200  caro: 438 s medidos
+plonk-experiment   largo      36   0   3  1800  caro: 749 s medidos. DEUDA: 3 warnings
+zk-core            completo   74   0  10  3600  38,6 min: 1472 s lib + 845 s ceremonia. Los 10 warnings son de `ceremony`, no suyos
 FIN_TABLA
 )
-
-# `zk-core` no termina: su fila espera exit 124 (timeout), no 0. Si algun
-# dia termina, esta compuerta se pone roja y habra que mirar por que —
-# que es exactamente lo que se quiere.
-ANOMALIA_TIMEOUT="zk-core"
 
 # ── utilidades ──────────────────────────────────────────────────
 rojo=0
@@ -88,12 +97,36 @@ fallos=()
 msg() { echo "$*" >&2; }
 falla() { rojo=1; fallos+=("$1"); msg "  XX  $1"; }
 
+nivel_num() {
+  case "$1" in
+    sello) echo 1 ;; largo) echo 2 ;; completo) echo 3 ;; *) echo 9 ;;
+  esac
+}
+
 miembros_del_workspace() {
   sed -n '/^\[workspace\]/,/^\[[^w]/p' Cargo.toml \
     | grep -oE '"crates/[a-z0-9-]+"' | tr -d '"' | sed 's|crates/||'
 }
 
-fila_de() { awk -v c="$1" '$1==c {print; exit}' <<< "$TABLA"; }
+estado_completo() {
+  if [ -f "$SELLO_FILE" ]; then
+    local c f n
+    read -r c f < "$SELLO_FILE"
+    n=$(git rev-list --count "$c..HEAD" 2>/dev/null || echo "?")
+    if [ "$n" = "0" ]; then
+      msg "  ultimo --completo: $c ($f) · AL DIA"
+    else
+      msg "  ultimo --completo: $c ($f) · **$n sello(s) por detras de HEAD**"
+    fi
+  else
+    msg "  ultimo --completo: **NUNCA**. Los 39 min de zk-core no los ha corrido nadie."
+  fi
+}
+
+case "$NIVEL" in
+  --sello|--largo|--completo|--lista) : ;;
+  *) msg "nivel desconocido: $NIVEL. Usa --sello, --largo, --completo o --lista."; exit 2 ;;
+esac
 
 # ── 0 · COHERENCIA: la tabla y el workspace dicen lo mismo ──────
 msg "== CANON · coherencia con el workspace =="
@@ -101,12 +134,7 @@ MIEMBROS=$(miembros_del_workspace)
 EN_TABLA=$(awk 'NF{print $1}' <<< "$TABLA")
 n_m=$(wc -l <<< "$MIEMBROS"); n_t=$(wc -l <<< "$EN_TABLA")
 msg "  miembros en Cargo.toml: $n_m · filas en la tabla: $n_t"
-# ⚠️ Here-string, NO tuberia. `echo X | grep -q` es INTERMITENTE con
-# `pipefail`: grep -q sale en cuanto encuentra, echo recibe SIGPIPE y
-# devuelve 141, y pipefail lo propaga como fallo de la tuberia AUNQUE la
-# busqueda haya acertado. Una compuerta intermitente es peor que ninguna:
-# enseña a ignorarla. Lo cazo el ensayo — daba stark-experiment por
-# ausente estando presente.
+# ⚠️ Here-string, NO tuberia: ver el punto 6 de la cabecera.
 for c in $MIEMBROS; do
   grep -qx "$c" <<< "$EN_TABLA" || falla "el crate '$c' esta en el workspace y NO en el canon"
 done
@@ -114,6 +142,7 @@ for c in $EN_TABLA; do
   grep -qx "$c" <<< "$MIEMBROS" || falla "la fila '$c' no corresponde a ningun crate del workspace"
 done
 [ $rojo -eq 0 ] && msg "  OK  todos los crates tienen fila y todas las filas tienen crate"
+estado_completo
 
 if [ "$NIVEL" = "--lista" ]; then
   msg ""
@@ -123,6 +152,7 @@ if [ "$NIVEL" = "--lista" ]; then
 fi
 
 # ── 1 · los tests, crate a crate ────────────────────────────────
+PEDIDO=$(nivel_num "${NIVEL#--}")
 OUT="${OUT:-/tmp/canon}"
 rm -rf "$OUT"; mkdir -p "$OUT"
 msg ""
@@ -131,7 +161,7 @@ msg "   crate                exit  pasan(pin) ignor(pin) warn(pin)   seg"
 T_TOTAL=0
 while read -r c niv pasan ign warn tmo resto; do
   [ -n "$c" ] || continue
-  if [ "$NIVEL" = "--sello" ] && [ "$niv" != "sello" ]; then continue; fi
+  [ "$(nivel_num "$niv")" -le "$PEDIDO" ] || continue
   T0=$(date +%s)
   timeout "${tmo}s" cargo test -p "$c" --release > "$OUT/$c.txt" 2>&1
   RC=$?
@@ -140,10 +170,7 @@ while read -r c niv pasan ign warn tmo resto; do
   I=$(grep -oE "[0-9]+ ignored" "$OUT/$c.txt" | grep -oE "[0-9]+" | paste -sd+ | bc 2>/dev/null); I=${I:-0}
   W=$(grep -c "^warning" "$OUT/$c.txt")
   printf "   %-20s %4s %6s(%s) %6s(%s) %5s(%s) %5s\n" "$c" "$RC" "$P" "$pasan" "$I" "$ign" "$W" "$warn" "$((T1-T0))" >&2
-  # exit esperado: 0, salvo la anomalia declarada
-  esperado=0
-  [ "$c" = "$ANOMALIA_TIMEOUT" ] && esperado=124
-  [ "$RC" = "$esperado" ] || falla "$c: exit $RC, el canon espera $esperado  ->  tools/canon.sh, fila '$c'"
+  [ "$RC" = "0" ]     || falla "$c: exit $RC  ->  tools/canon.sh, fila '$c'"
   [ "$P" = "$pasan" ] || falla "$c: pasan $P, el canon dice $pasan  ->  MEDIR y editar tools/canon.sh, fila '$c'"
   [ "$I" = "$ign" ]   || falla "$c: ignorados $I, el canon dice $ign  ->  tools/canon.sh, fila '$c'"
   [ "$W" = "$warn" ]  || falla "$c: warnings $W, el canon dice $warn  ->  tools/canon.sh, fila '$c'"
@@ -173,6 +200,11 @@ if [ $? -ne 0 ]; then msg "  OK  0.1 RECHAZADO"; else falla "0.1 deberia rechaza
 msg ""
 if [ $rojo -eq 0 ]; then
   msg "== CANON $NIVEL: VERDE =="
+  if [ "$NIVEL" = "--completo" ]; then
+    mkdir -p "$(dirname "$SELLO_FILE")"
+    printf '%s %s\n' "$(git rev-parse --short HEAD)" "$(date -Iseconds)" > "$SELLO_FILE"
+    msg "   anotado en $SELLO_FILE — para que nadie tenga que acordarse."
+  fi
 else
   msg "== CANON $NIVEL: ROJO · ${#fallos[@]} fallo(s) =="
   for f in "${fallos[@]}"; do msg "   · $f"; done

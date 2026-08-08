@@ -15789,3 +15789,137 @@ protege. **Lo mismo que pasó con `check_tests.py`.**
   veces. Queda declarado como debilidad de este diseño.
 - `zk-ssl-node` **sigue sin tests**: 0 pines es un hueco declarado, no una
   aprobación.
+## 225. `zk-core` no cuelga: cuesta 39 minutos
+
+§224 dejó `zk-core` pinchado **como anomalía**: `73 pasan, exit 124, NO
+TERMINA`. Los bancos G.1 y G.2 fueron a averiguar qué test se colgaba.
+
+**No se cuelga ninguno.** El pin era falso.
+
+### Lo que estaba mal, y por qué importa
+
+El `exit 124` era **el `timeout` del banco F.1**, no un defecto del crate.
+Y los 1800 s se agotaban porque el crate tarda **38,6 minutos**:
+
+| | |
+|---|---|
+| 73 tests de biblioteca, 8 hilos | **1.472 s** |
+| `ceremony_produces_working_keys_for_the_compliance_circuit` | **845 s** |
+| **total, 74 tests** | **2.317 s** |
+
+⚠️ **Un pin equivocado es peor que no tener pin**: afirma algo falso con
+la autoridad de una compuerta. El del §224 llevaba un sello entero
+diciendo que un crate no terminaba cuando lo que hacía era tardar.
+
+### Tres hipótesis mías, tres correcciones
+
+**El test que no terminaba no era ninguno de mis tres candidatos.** Aposté
+por los dos de `marlin_proof_system.rs` (setup universal con topes de
+4.000) y el de `performance`. Era `ceremony_integration.rs`, un test de
+**integración** — mi recuento de `#[test]` en `src/*.rs` no podía verlo,
+y no se me ocurrió mirar `tests/`.
+
+**«Los tests de circuito quizá generan prueba innecesariamente»: falso.**
+37 de 43 ya comprueban solo restricciones. Y comparando dentro de cada
+fichero, generar la prueba cuesta un **5 %** —`circuit_audit` 45 s con
+prueba frente a 42-47 sin; `circuit_settlement` 159 frente a 132-152—.
+No había nada que convertir: ya estaba bien hecho.
+
+**«Todo el rendimiento del proyecto está regalado por no activar rayon»:
+exagerado.** Medido sobre la ceremonia, que es lo más pesado que tiene el
+proyecto: **845 → 723 s, un 17 %**. Predije «3× o más».
+
+Escribí que eran «seis núcleos parados en toda la criptografía». Era una
+**conjetura sobre un mecanismo que no había medido**, y es la quinta vez
+en esta serie. Se retira.
+
+### Y las dos correcciones apuntan al mismo sitio
+
+- generar la prueba: **+5 %**
+- rayon en la ceremonia: **+17 %**
+
+Dos medidas independientes, sobre trabajos distintos: **el coste de
+`zk-core` es SINTETIZAR el circuito**. Los gadgets de `ark-r1cs-std` sobre
+BLS12-381 construyen y evalúan las restricciones **en serie**, y eso no lo
+mueve ningún hilo.
+
+**No es un defecto que arreglar: es el precio del trabajo.** 39 minutos es
+lo que cuesta comprobar el backend Groth16 y su ceremonia en cuatro
+núcleos.
+
+### El test que nadie había corrido nunca
+
+`ceremony_produces_working_keys_for_the_compliance_circuit` ejecuta una
+**ceremonia real de Powers of Tau con tres contribuciones**, y su propio
+comentario lo declara: *«EL TEST QUE CIERRA LA LIMITACIÓN MÁS GRAVE DEL
+PROYECTO»*.
+
+Comprueba que el trusted setup se puede hacer sin un solo participante
+honesto — la tesis criptográfica sobre la que se apoya todo lo demás.
+
+⚠️ **Y nunca se había ejecutado.** Ahora sí: **845 s, exit 0, pasa.**
+
+Eso también cierra una tentación: **no se puede marcar como «instrumento
+de medida»**. No mide: afirma. La marca de §224 no le vale.
+
+### Tres niveles, no dos
+
+- **`--sello`** — 145 s, en cada bloque.
+- **`--largo`** — más `halo2` (438 s) y `plonk` (749 s).
+- **`--completo`** — más `zk-core`: **39 minutos**. Antes de publicar,
+  antes de una auditoría, y cuando se toque un circuito.
+
+Meter 39 minutos en cada sello garantizaría que alguien acabe saltándose
+la compuerta, y **una compuerta que se salta no protege** — que es
+exactamente lo que le pasó a `check_tests.py`.
+
+### Lo único que se puede hacer por construcción
+
+⚠️ **`--completo` no lo fuerza nadie.** Es disciplina, y la disciplina es
+justo lo que ha fallado seis veces en este proyecto. No hay forma de
+obligar a correr 39 minutos desde un fichero.
+
+Lo que sí se puede es **no fiarlo a la memoria**: cada `--completo` que
+pasa deja constancia en `.canon/ultimo-completo`, y **toda** invocación
+—incluida la de `--sello` de cada bloque— dice cuándo fue y **cuántos
+sellos han pasado desde entonces**:
+
+```
+ultimo --completo: 06106c9 (2026-...) · 3 sello(s) por detras de HEAD
+ultimo --completo: **NUNCA**. Los 39 min de zk-core no los ha corrido nadie.
+```
+
+No es una compuerta y no se presenta como tal. Es información en el sitio
+donde se decide, en vez de una intención.
+
+Y si el `--completo` sale **rojo, no anota nada**: el registro dice
+«pasó», no «se intentó». Verificado en los cuatro casos —anota al pasar,
+dice AL DIA, cuenta el retraso tras dos sellos, y no escribe en rojo—.
+
+### Lo que queda abierto, y no se disimula
+
+⚠️ **`marlin_proof_system.rs` sigue siendo código muerto.** 197 líneas,
+dos tests, **no está declarado en `lib.rs`** y no hay una sola referencia
+en todo el crate. Y lo que implementa es el **setup universal**: lo que su
+propia cabecera presenta como la solución al problema del «trusted setup
+por circuito», que es la limitación más grave declarada del proyecto.
+
+Es el **séptimo** «escrito y no cableado», después de `reserve_pending`
+(nueve sellos), los tests de `wire`, `check_tests.py`, los 198 tests, la
+feature `parallel` de `ceremony` y los 24 warnings. **Enchufarlo o
+borrarlo es decisión de mesa, y va a la cola.**
+
+- La feature `parallel` de `ceremony` **existe y nadie la activa**. Ahora
+  se sabe lo que vale: un 17 % en la ceremonia. `cargo` **sí acepta**
+  `--features ceremony/parallel` desde `zk-core`, así que activarla no
+  exige tocar código; qué hacer con ella es otra decisión.
+- **`ceremony` genera 9-10 warnings** —`Phase2` nunca se construye,
+  `assume_valid` sin usar— en el crate que sostiene la tesis. Pinchados,
+  no arreglados.
+- **`--largo` y `--completo` no los ha corrido nadie todavía.** Los pines
+  de `halo2`, `plonk` y `zk-core` vienen de F.1 y G.2, no de una pasada
+  del canon. El primer `--completo` los confirmará o los corregirá.
+- El **paralelismo del arnés** rinde **2,86×** en 8 hilos lógicos sobre 4
+  núcleos físicos: 4.205 s en serie contra 1.472 con 8 hilos. Medir
+  `--test-threads=4` habría dicho si el cuello es CPU o memoria, y **se
+  abortó por tiempo**: queda sin medir.
