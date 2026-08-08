@@ -25,6 +25,11 @@ dependent — the index width is ⌈h/8⌉ for XMSS^MT. For state-critical
 deployments a typed accessor removes a whole class of layout bugs. Happy to
 send a PR if you'd take one.
 
+Prior art, if useful: `oxicrypt-xmss` 0.22.0 exposes `leaf_index(&self) -> u32`
+and `is_exhausted(&self) -> bool` on its private key, and documents an internal
+state counter that refuses to sign past exhaustion. Different scope (single
+parameter set, XMSS-SHA2_10_256) but it shows the accessor is practical.
+
 **2. Is cached traversal state (BDS) on the roadmap?** Signing currently
 appears to rebuild the tree each time — sign ≈ keygen in our measurements
 (~0.62 ms/leaf, x86-64, release): XMSS-SHA2_10_256 signs in ~645 ms vs

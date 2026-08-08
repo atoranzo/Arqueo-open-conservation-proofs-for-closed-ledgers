@@ -16860,3 +16860,112 @@ es peor que no tenerlo.
   «escrito y no cableado» más, y va anotado como tal.
 - **El test de layout no está**: sin `xmss` como dependencia no hay SK que
   interpretar. Entra con el firmante.
+## 235. Había una cuarta candidata, y no estaba en la tabla
+
+`doc/xmss-evaluacion.md` eligió `xmss` de RustCrypto declarándolo **«viable,
+única»**. Esa palabra no es sobre el crate: es sobre **el conjunto de
+candidatas** —tres: `xmss`, `purecrypto`, la de QRL—.
+
+La sonda S.1 encontró publicada una cuarta que no estaba en la tabla:
+`oxicrypt-xmss` 0.22.0, *«XMSS hash-based signatures (SP 800-208) for CNSA
+2.0 firmware signing»*. **No una pre-release.**
+
+### Por qué se miró antes de escribir el firmante
+
+Añadir una dependencia criptográfica es **la decisión menos reversible del
+proyecto**, y la que iba a añadirse es una *pre-release sin auditar* al
+árbol de un sistema cuya tesis es **una sola familia de supuestos y todo
+medido**. Comprobar que la lista estaba completa costaba una ejecución;
+descubrirlo después, no.
+
+### El resultado: descartada, y por altura
+
+La sonda S.2 aplicó **los mismos cinco criterios**, para que fuera
+comparable:
+
+| criterio | `xmss` (RustCrypto) | `oxicrypt-xmss` |
+|---|---|---|
+| versión | 0.1.0-pre.0 (**pre**) | **0.22.0** |
+| 1 · solo hash | 0 curvas, ~24 crates | **0 curvas, 11 crates** |
+| 2 · expone el índice | **NO** | ✅ **`leaf_index()`** |
+| 3b · falla al agotar | ✅ `KeyExhausted` | ✅ **`is_exhausted()`** |
+| 4 · conjunto 40/8 | ✅ `XmssMtSha2_40_8_256` | ❌ **solo altura 10** |
+| 5 · KAT | 1, en línea | ✅ **`tests/nist_kat.rs`** |
+
+**Gana en tres criterios donde la elegida falla o va justa.** La descarta
+el cuarto, y sin ambigüedad:
+
+> Implementa **un solo conjunto**: XMSS-SHA2_10_256, altura 10 —
+> **1.024 firmas en total, para siempre**.
+
+Al latido de 1/min del proyecto, la clave se agota en **17 horas**. Frente
+a las ~31,5 M firmas/año que el §0 de la evaluación fija, se queda corto
+por un factor **30.762×**. El conjunto elegido ofrece **mil millones de
+veces** más.
+
+⚠️ **Y no es peor crate: es para otro uso.** Su propia descripción dice
+«firmware signing», donde mil veinticuatro firmas sobran en la vida de un
+producto. Descartada **por el uso, no por la calidad** — que es una
+conclusión mejor y más útil que «peor candidata».
+
+### Lo que se lleva el registro, y vale más que el descarte
+
+⚠️ **`leaf_index()` existe y está publicado.** El issue de RustCrypto
+—redactado desde §112 y **todavía sin enviar**— pide exactamente eso, y
+podía leerse como una petición de comodidad. Con una implementación en
+producción que lo expone, pasa a ser **una omisión de `xmss`**. El issue
+gana ese párrafo.
+
+Lo mismo con su **contador de estado interno**: *«refuses to sign once the
+tree is exhausted»*. Es una segunda confirmación de que el guardián de
+§234 resuelve un problema real que otros también tuvieron que resolver.
+
+### Y los pendientes 1 y 2, hechos por el camino
+
+El propio documento los ponía **antes** del guardián, y el guardián era el
+4. Se hizo el 4 primero sin abrir esa lista — **duodécima corrección**, y
+la misma lección de §233: *leer el documento que tiene las prioridades*,
+que aquí era uno que yo había leído dos mensajes antes sin llegar al final.
+
+- **Pendiente 1**: 17 tests, y **sí hay KAT** en el paquete
+  (`test_kat_xmss_sha2_10_256_verify`). La nota decía «sin fichero de
+  vectores» — cierto, pero el KAT está dentro del fuente. **Mejor de lo
+  registrado.** `Clone` sigue derivado en `SigningKey`: el footgun de E1
+  intacto. Y **no hay `index()` ni `remaining()`**.
+- **Pendiente 2**: fijado con `=0.1.0-pre.0` y leído del registro, no de
+  `master`. **`XmssMtSha2_40_8_256` existe**, entre 56 variantes
+  multiárbol. Criterio 1 reverificado: 0 curvas, 0 retículos.
+
+### ⚠️ Cinco instrumentos míos torcidos en cuatro mensajes
+
+No es una nota de humildad: es un patrón que hay que dejar escrito.
+
+1. el `paste` del `Cargo.lock` emparejaba cada versión con el paquete
+   **siguiente** —el fichero abre con un `version` de cabecera—, y dio
+   «xmss 0.9.5»;
+2. «47 crates» contaba **líneas** de `cargo tree`, no crates únicos;
+3. el comprobador de imports marcó `Read`, `Seek` y `Write` como sin usar:
+   son **traits usados por método**, invisibles por nombre;
+4. el de las tres copias dijo «DIFIEREN» comparando **una lista de dos
+   apariciones** contra una huella;
+5. el `grep` de `Clone` buscaba `SigningKey|SecretKey|PrivateKey` y el tipo
+   se llama **`XmssPrivateKey`**: la comprobación **no llegó a ejecutarse**,
+   y salió en blanco.
+
+**Ninguno tocó el sistema.** Todos dieron falsa alarma —o silencio— sobre
+cosas correctas. Pero cinco no es mala suerte, y el riesgo real es el
+inverso del que parece: **un instrumento que calla se lee como un verde**.
+El quinto es el peligroso, y solo se detectó porque el hueco en la salida
+era visible.
+
+⚠️ Rito: **un instrumento que no encuentra nada tiene que decir si buscó**.
+Un `grep` sin coincidencias y un `grep` sin objetivo se imprimen igual.
+
+### Lo que NO cambia
+
+- **La elección sigue siendo `xmss` de RustCrypto.** El descarte de la
+  cuarta la confirma; no la reabre.
+- Sigue siendo una **pre-release sin auditoría independiente**, y eso
+  seguirá escrito cuando entre en el árbol.
+- **El pendiente 3 sigue vivo**: el issue está redactado, ahora con más
+  argumento, y **sin enviar**.

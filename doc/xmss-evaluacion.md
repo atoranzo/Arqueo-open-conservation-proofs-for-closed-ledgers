@@ -61,9 +61,23 @@ Pre-release y **sin auditoría independiente**, declarado por el propio crate.
 
 | candidata | 1 · solo hash | 2 · índice | 3 · reúso | 3b · agotar | 4 · altura | 5 · revisada | veredicto |
 |---|---|---|---|---|---|---|---|
-| `xmss` (RustCrypto, 0.1.0-pre.0) | ✅ | ⚠️ cond. | ❌ (E1) | ✅ | ✅ | ⚠️ | **viable, única** — con guardián obligatorio declarado + issue upstream |
+| `xmss` (RustCrypto, 0.1.0-pre.0) | ✅ | ⚠️ cond. | ❌ (E1) | ✅ | ✅ | ⚠️ | **viable, la única usable de CUATRO** (§235) — con guardián obligatorio declarado + issue upstream |
 | `purecrypto` (KarpelesLab) | ⚠️ proxy no aplica (monolito, E2) | — | — | — | — | ❌ «doc»: *«do not use it for anything real yet»*, del propio autor | descartada por 5 sin gastar los tests |
 | XMSS de QRL | — | — | — | — | — | «doc» | descartada del marco: C++ (qrllib) vía FFI — fuera de la superficie pure-Rust y del test 1 |
+| `oxicrypt-xmss` (oxiforge, **0.22.0**) | ✅ 0 curvas, 11 crates | ✅ **`leaf_index()`** | — | ✅ `is_exhausted()` | ❌ **altura 10** | ✅ `tests/nist_kat.rs` | **descartada por ALTURA** (§235): implementa **un solo conjunto**, XMSS-SHA2_10_256 → **1.024 firmas en total**. Al latido de 1/min se agota en **17 h**. Corta por un factor **30.762×** frente a las ~31,5 M firmas/año. **No es peor crate: es para otro uso** —su descripción dice «CNSA 2.0 firmware signing», donde 1.024 sobran— |
+
+⚠️ **La tabla tenía tres filas y había una cuarta** (§235). El veredicto
+«única» era correcto en la conclusión y **falso en la premisa**: se afirmó
+sobre un conjunto de candidatas incompleto. `oxicrypt-xmss` es una
+candidata real —no un monolito, no C++ vía FFI, sin avisos de su autor— y
+**gana a la elegida en tres criterios**; la descarta la altura, no la
+calidad.
+
+⚠️ **Y refuerza el pendiente 3**: `leaf_index()` existe y está publicado.
+El issue de RustCrypto podía leerse como una petición de comodidad; con
+una implementación en producción que lo expone, pasa a ser **una omisión
+de `xmss`**. Lo mismo con su contador de estado interno: el guardián
+resuelve un problema que otros también resolvieron.
 
 ---
 
@@ -143,11 +157,18 @@ original exigía: *ninguna cumple el criterio 3, y ninguna puede*.
 
 Pendientes, por orden:
 
-1. **Grep de los 10 tests** del clone y confirmación KAT:
-   `grep -rn "fn test" ~/signatures/xmss/src | sed 's/.*fn //'` y
-   `grep -rilE "test.?vector|kat|acvp|xmss.?reference" ~/signatures/xmss`
-2. Repetir la suite **fijando el commit del tag** 0.1.0-pre.0 (master ya
-   difiere: `sha3`→`shake`).
+1. ✅ **HECHO** (§235, sonda S.1). **17 tests**, y **sí hay KAT en el
+   paquete publicado**: `test_kat_xmss_sha2_10_256_verify`. La nota de §1
+   decía «sin fichero de vectores», y es cierto —no hay fichero— pero el
+   KAT está dentro del fuente. Mejor de lo registrado.
+   ⚠️ **`Clone` sigue derivado en `SigningKey`**: el footgun de E1 está
+   intacto, verificado sobre el fuente descargado.
+   ⚠️ Y **no hay `index()` ni `remaining()`**: el pendiente 3 sigue vivo.
+2. ✅ **HECHO** (§235, sonda S.1): se fijó con `cargo add xmss@=0.1.0-pre.0`
+   y se leyó el fuente del registro, no `master`. **El conjunto elegido
+   existe**: `XmssMtSha2_40_8_256`, entre las 56 variantes multiárbol.
+   Criterio 1 reverificado: **0 curvas, 0 retículos**; `chacha20` vía
+   `rand` como única excepción, la ya declarada en E5.
 3. **Issue en RustCrypto/signatures** (`issue-rustcrypto.md`): `index()`,
    `remaining()`, plan BDS, y el aviso sobre `Clone`.
 4. Guardián: implementación + test de layout (§3).
