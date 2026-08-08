@@ -1,0 +1,438 @@
+//! # El guardián del índice de firma
+//!
+//! XMSS es un esquema **con estado**: cada firma consume un índice, y
+//! **reusar uno filtra la clave** (§106.4). No es una degradación: es
+//! compromiso.
+//!
+//! ## Por qué vive aquí y no en la capa
+//!
+//! §111.1 lo decidió: **un contador propio con `fsync`, aislado del
+//! ledger** — no un WAL. Y va en el nodo por el mismo criterio que las
+//! reservas de posición (§220): *«cuánto dura una reserva es política del
+//! operador, no invariante de la capa»*. Firmar cabezas es deber del
+//! operador; la liquidación no depende de ello.
+//!
+//! Aislado significa aislado: **no toca `sled`, no toca `persistence.rs`,
+//! no reimplementa nada**. Un fichero, ocho bytes, y un orden.
+//!
+//! ## ⚠️ XMSS cambia la premisa de durabilidad de la capa
+//!
+//! `persistence.rs` justifica no tener WAL con esta frase:
+//!
+//! > *«Perder una operación es recuperable: se vuelve a enviar.»*
+//!
+//! **Con XMSS deja de ser cierto** (§110.2). Si el proceso muere tras
+//! firmar con un índice y antes de persistirlo, ese índice está **quemado
+//! en una firma publicada** y el contador no lo sabe: al reiniciar se
+//! reusa. Por eso el orden se invierte a propósito: **persistir primero,
+//! firmar después.**
+//!
+//! ## El invariante, en una línea
+//!
+//! > **Ninguna firma puede existir con un índice mayor que el contador
+//! > persistido.**
+//!
+//! Lo contrario —contador por delante, índice quemado sin firma— es el
+//! caso **seguro**, y es el que resuelve [`Reconciliacion`]. Medido en el
+//! banco K.1: ocurre en **13 de 25** muertes del proceso. **No es la
+//! excepción: es el camino normal tras una caída.**
+//!
+//! ## ⚠️ La autocomprobación, y por qué no es paranoia
+//!
+//! K.1 midió `fsync` en dos sistemas de ficheros de la misma máquina:
+//!
+//! | | coste de `fsync` | frente a no persistir |
+//! |---|---|---|
+//! | ext4 | 0,907 ms | **382×** |
+//! | tmpfs (`/tmp`) | 0,002 ms | **1×** |
+//!
+//! En `tmpfs`, `fsync` **devuelve éxito sin persistir nada** — no hay
+//! disco. Un guardián cuyo fichero acabe ahí es un **no-op**, y la clave
+//! queda en riesgo con cada llamada devolviendo `Ok`.
+//!
+//! Y `/tmp` es un sitio perfectamente plausible para un fichero que
+//! alguien considere auxiliar.
+//!
+//! Por eso [`GuardianIndice::abrir`] **mide su propio `fsync` al arrancar
+//! y se niega a operar** si el coste es indistinguible de no persistir. Es
+//! la única señal disponible desde dentro del proceso.
+//!
+//! ⚠️ **Los umbrales salen de UNA máquina** —WSL2 sobre un i5-1135G7— y
+//! están declarados, no derivados. Un NVMe rápido puede dar `fsync` de
+//! ~100 µs legítimos; por eso el discriminante principal es la **razón**
+//! contra no persistir, no el valor absoluto.
+//!
+//! ## ⚠️ Lo que esto NO garantiza
+//!
+//! **Nada frente a un corte de corriente.** *«`fsync` puede mentir»* habla
+//! de discos que confirman escrituras que siguen en caché volátil. K.1
+//! midió durabilidad frente a **muerte del proceso** —25 de 25 sin una
+//! sola firma por delante—, y eso **no es lo mismo**. Medirlo exige cortar
+//! la corriente de verdad, y no se ha hecho.
+//!
+//! ## ⚠️ Y esta pieza NO tiene consumidor todavía
+//!
+//! Es el **eslabón 2 de cinco** (`BACKLOG.md`, «la cadena de la
+//! oponibilidad»); el 3 —la cabeza firmada, emitida— no existe. Se
+//! construye antes a propósito, porque es la pieza más difícil de
+//! retroadaptar. **El riesgo está declarado**: se diseña una API sin su
+//! consumidor.
+
+use std::fs::{File, OpenOptions};
+use std::io::{Read, Seek, SeekFrom, Write};
+use std::path::{Path, PathBuf};
+use std::time::Instant;
+
+/// Cuántas escrituras usa la autocomprobación de arranque.
+const MUESTRAS_AUTOCOMPROBACION: u32 = 20;
+
+/// ⚠️ **Umbral DECLARADO, no derivado.** `fsync` tiene que costar al menos
+/// esta razón frente a escribir sin persistir. Medido en K.1: ext4 dio
+/// **382×** y tmpfs **1×**, así que 10 separa los dos casos con dos
+/// órdenes de margen por el lado bueno.
+const RAZON_MINIMA: f64 = 10.0;
+
+/// Suelo absoluto, como segunda red. Un NVMe rápido hace `fsync` en
+/// ~100 µs legítimos, así que esto se queda muy por debajo: solo caza el
+/// caso «no hay disco».
+const SUELO_MICROS: f64 = 20.0;
+
+#[derive(Debug)]
+pub enum GuardianError {
+    Io(String),
+    /// El fichero existe pero no tiene ocho bytes.
+    Corrupto { bytes: usize },
+    /// ⚠️ `fsync` no cuesta nada: casi seguro `tmpfs` o un montaje sin
+    /// persistencia real. **Operar aquí pondría la clave en riesgo.**
+    PersistenciaFalsa { con_fsync_us: f64, sin_fsync_us: f64, razon: f64 },
+}
+
+impl std::fmt::Display for GuardianError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GuardianError::Io(e) => write!(f, "guardián del índice: {e}"),
+            GuardianError::Corrupto { bytes } => write!(
+                f,
+                "guardián del índice: el fichero del contador tiene {bytes} bytes, no 8"
+            ),
+            GuardianError::PersistenciaFalsa { con_fsync_us, sin_fsync_us, razon } => write!(
+                f,
+                "guardián del índice: `fsync` no persiste nada aquí \
+                 ({con_fsync_us:.1} µs con fsync frente a {sin_fsync_us:.1} µs sin él, \
+                 razón {razon:.1}×, mínimo {RAZON_MINIMA:.0}×). \
+                 Casi seguro es tmpfs o un montaje sin disco. \
+                 Reusar un índice XMSS filtra la clave: el nodo NO arranca así."
+            ),
+        }
+    }
+}
+
+/// Lo que se encuentra al comparar el contador con el índice real de la
+/// clave, tras un reinicio.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Reconciliacion {
+    /// Todo cuadra.
+    Coincide { indice: u64 },
+    /// ⚠️ **El caso normal tras una caída** —13 de 25 en K.1—: se persistió
+    /// el índice y el proceso murió antes de firmar. Hay índices
+    /// **quemados sin firma**. No es un fallo: es el precio del orden.
+    ContadorAdelantado { contador: u64, clave: u64, huerfanos: u64 },
+    /// ⚠️⚠️ **LO QUE NUNCA DEBE PASAR.** La clave ha firmado con índices
+    /// que el contador no registró: o el orden se invirtió, o `fsync` no
+    /// hizo lo que dijo. **La clave debe considerarse comprometida.**
+    ClaveAdelantada { contador: u64, clave: u64, sin_registrar: u64 },
+}
+
+/// Contador monótono de índices de firma, persistido antes de cada uso.
+///
+/// ⚠️ `Debug` porque aparece en un `Result` que los tests inspeccionan con
+/// `{:?}`: **si el error lo deriva y el éxito no, el `Result` sigue sin
+/// derivarlo**. Es el mismo olvido de §228 con `RpcError`, y la regla que
+/// lo evita es mirar LAS DOS mitades del `Result`, no solo la que falla.
+#[derive(Debug)]
+pub struct GuardianIndice {
+    ruta: PathBuf,
+    actual: u64,
+}
+
+impl GuardianIndice {
+    /// Abre —o crea— el contador, **y comprueba que `fsync` persiste de
+    /// verdad** en ese sistema de ficheros.
+    pub fn abrir(ruta: impl AsRef<Path>) -> Result<Self, GuardianError> {
+        let ruta = ruta.as_ref().to_path_buf();
+        let carpeta = ruta.parent().unwrap_or(Path::new(".")).to_path_buf();
+        std::fs::create_dir_all(&carpeta).map_err(|e| GuardianError::Io(e.to_string()))?;
+
+        Self::comprobar_persistencia(&carpeta)?;
+
+        let actual = if ruta.exists() {
+            let mut buf = Vec::new();
+            File::open(&ruta)
+                .and_then(|mut f| f.read_to_end(&mut buf))
+                .map_err(|e| GuardianError::Io(e.to_string()))?;
+            if buf.len() != 8 {
+                return Err(GuardianError::Corrupto { bytes: buf.len() });
+            }
+            u64::from_le_bytes(buf.try_into().expect("8 bytes"))
+        } else {
+            0
+        };
+
+        let g = GuardianIndice { ruta, actual };
+        // Se escribe el valor de arranque para que el fichero exista y
+        // quede sincronizado, incluso si es 0.
+        g.persistir(actual)?;
+        Ok(g)
+    }
+
+    /// ⚠️ **La única función que debe usarse antes de firmar.** Persiste
+    /// `actual + 1`, lo devuelve, y **solo entonces** el llamante puede
+    /// firmar con él.
+    ///
+    /// Si el proceso muere entre esta llamada y la firma, el índice queda
+    /// **huérfano** — quemado sin firma. Eso es correcto y esperado; lo
+    /// resuelve [`Self::reconciliar`].
+    pub fn reservar(&mut self) -> Result<u64, GuardianError> {
+        let siguiente = self.actual.checked_add(1).ok_or_else(|| {
+            GuardianError::Io("el contador de índices se ha desbordado".into())
+        })?;
+        self.persistir(siguiente)?;
+        self.actual = siguiente;
+        Ok(siguiente)
+    }
+
+    /// El último índice persistido. **Nunca retrocede.**
+    pub fn actual(&self) -> u64 {
+        self.actual
+    }
+
+    /// Compara el contador con el índice que la clave dice tener.
+    ///
+    /// ⚠️ El índice de la clave **lo lee el llamante**, porque hoy la API
+    /// de `xmss` **no lo expone**: hay que interpretar el byte del SK en el
+    /// offset del formato de referencia, y en multiárbol ese offset depende
+    /// del conjunto (⌈h/8⌉). El issue upstream que pide `index()` está
+    /// redactado en `doc/issue-rustcrypto.md` **y sin enviar**.
+    pub fn reconciliar(&self, indice_de_la_clave: u64) -> Reconciliacion {
+        use std::cmp::Ordering::*;
+        match self.actual.cmp(&indice_de_la_clave) {
+            Equal => Reconciliacion::Coincide { indice: self.actual },
+            Greater => Reconciliacion::ContadorAdelantado {
+                contador: self.actual,
+                clave: indice_de_la_clave,
+                huerfanos: self.actual - indice_de_la_clave,
+            },
+            Less => Reconciliacion::ClaveAdelantada {
+                contador: self.actual,
+                clave: indice_de_la_clave,
+                sin_registrar: indice_de_la_clave - self.actual,
+            },
+        }
+    }
+
+    fn persistir(&self, valor: u64) -> Result<(), GuardianError> {
+        let mut f = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(false)
+            .open(&self.ruta)
+            .map_err(|e| GuardianError::Io(e.to_string()))?;
+        f.seek(SeekFrom::Start(0)).map_err(|e| GuardianError::Io(e.to_string()))?;
+        f.write_all(&valor.to_le_bytes()).map_err(|e| GuardianError::Io(e.to_string()))?;
+        // `sync_all` es `fsync(2)`: datos Y metadatos. Es lo que K.1 midió.
+        f.sync_all().map_err(|e| GuardianError::Io(e.to_string()))?;
+        Ok(())
+    }
+
+    /// Mide `fsync` contra no-`fsync` y decide si este sitio persiste.
+    fn comprobar_persistencia(carpeta: &Path) -> Result<(), GuardianError> {
+        let prueba = carpeta.join(".guardian-autocomprobacion");
+        let medir = |con_fsync: bool| -> Result<f64, GuardianError> {
+            let mut f = OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(&prueba)
+                .map_err(|e| GuardianError::Io(e.to_string()))?;
+            let t0 = Instant::now();
+            for n in 0..MUESTRAS_AUTOCOMPROBACION {
+                f.seek(SeekFrom::Start(0)).map_err(|e| GuardianError::Io(e.to_string()))?;
+                f.write_all(&(n as u64).to_le_bytes())
+                    .map_err(|e| GuardianError::Io(e.to_string()))?;
+                if con_fsync {
+                    f.sync_all().map_err(|e| GuardianError::Io(e.to_string()))?;
+                }
+            }
+            Ok(t0.elapsed().as_secs_f64() * 1e6 / MUESTRAS_AUTOCOMPROBACION as f64)
+        };
+        let sin = medir(false)?;
+        let con = medir(true)?;
+        let _ = std::fs::remove_file(&prueba);
+
+        let razon = if sin > 0.0 { con / sin } else { f64::INFINITY };
+        if razon < RAZON_MINIMA && con < SUELO_MICROS {
+            return Err(GuardianError::PersistenciaFalsa {
+                con_fsync_us: con,
+                sin_fsync_us: sin,
+                razon,
+            });
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ⚠️ Los tests que NO son de la autocomprobación fuerzan el sitio de
+    // trabajo, porque `std::env::temp_dir()` suele ser **tmpfs** y ahí
+    // `abrir` se niega —con razón—. Se usa un directorio bajo el propio
+    // árbol del proyecto, que está en disco.
+    fn en_disco(nombre: &str) -> PathBuf {
+        let d = std::path::Path::new("target").join(format!("guardian_{nombre}"));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("crear");
+        d.join("indice.bin")
+    }
+
+    #[test]
+    fn arranca_en_cero_y_avanza_de_uno_en_uno() {
+        let p = en_disco("avanza");
+        let mut g = GuardianIndice::abrir(&p).expect("abrir");
+        assert_eq!(g.actual(), 0, "un contador nuevo empieza en 0");
+        assert_eq!(g.reservar().expect("reservar"), 1);
+        assert_eq!(g.reservar().expect("reservar"), 2);
+        assert_eq!(g.actual(), 2);
+    }
+
+    #[test]
+    fn el_contador_sobrevive_al_cierre_y_nunca_retrocede() {
+        // ⚠️ El test que da sentido a la pieza: si esto falla, un reinicio
+        // reusa indices y **filtra la clave** (§106.4).
+        let p = en_disco("sobrevive");
+        {
+            let mut g = GuardianIndice::abrir(&p).expect("abrir");
+            for _ in 0..5 {
+                g.reservar().expect("reservar");
+            }
+            assert_eq!(g.actual(), 5);
+        }
+        let g2 = GuardianIndice::abrir(&p).expect("reabrir");
+        assert_eq!(g2.actual(), 5, "CRITICO: el contador retrocedio al reabrir");
+    }
+
+    #[test]
+    fn reabrir_muchas_veces_no_pierde_ni_una() {
+        let p = en_disco("muchas");
+        for esperado in 1..=6u64 {
+            let mut g = GuardianIndice::abrir(&p).expect("abrir");
+            assert_eq!(g.reservar().expect("reservar"), esperado);
+        }
+        assert_eq!(GuardianIndice::abrir(&p).expect("abrir").actual(), 6);
+    }
+
+    #[test]
+    fn el_contador_adelantado_es_el_caso_normal_y_se_reconoce() {
+        // K.1: 13 de 25 muertes del proceso dejan el contador por delante.
+        let p = en_disco("adelantado");
+        let mut g = GuardianIndice::abrir(&p).expect("abrir");
+        for _ in 0..7 {
+            g.reservar().expect("reservar");
+        }
+        // La clave solo llego a firmar 5 de los 7 indices reservados.
+        assert_eq!(
+            g.reconciliar(5),
+            Reconciliacion::ContadorAdelantado { contador: 7, clave: 5, huerfanos: 2 }
+        );
+    }
+
+    #[test]
+    fn la_clave_adelantada_se_distingue_y_es_lo_grave() {
+        // ⚠️ Esto significa que la clave firmo con indices que el contador
+        // no registro: el orden se invirtio o `fsync` mintio.
+        let p = en_disco("clave_adelantada");
+        let mut g = GuardianIndice::abrir(&p).expect("abrir");
+        g.reservar().expect("reservar");
+        assert_eq!(
+            g.reconciliar(9),
+            Reconciliacion::ClaveAdelantada { contador: 1, clave: 9, sin_registrar: 8 }
+        );
+    }
+
+    #[test]
+    fn coincidir_es_coincidir() {
+        let p = en_disco("coincide");
+        let mut g = GuardianIndice::abrir(&p).expect("abrir");
+        g.reservar().expect("reservar");
+        g.reservar().expect("reservar");
+        assert_eq!(g.reconciliar(2), Reconciliacion::Coincide { indice: 2 });
+    }
+
+    #[test]
+    fn un_fichero_de_otro_tamano_se_rechaza_en_vez_de_interpretarse() {
+        let p = en_disco("corrupto");
+        std::fs::write(&p, b"esto no son ocho bytes").expect("escribir");
+        match GuardianIndice::abrir(&p) {
+            Err(GuardianError::Corrupto { bytes }) => assert_eq!(bytes, 22),
+            otro => panic!("deberia rechazarse por corrupto, y dio: {otro:?}"),
+        }
+    }
+
+    #[test]
+    fn en_tmpfs_se_niega_a_operar() {
+        // ⚠️ EL TEST QUE JUSTIFICA LA AUTOCOMPROBACION. K.1 midio que en
+        // tmpfs `fsync` cuesta lo MISMO que no hacerlo (razon 1x, frente a
+        // 382x en ext4): devuelve exito sin persistir nada.
+        //
+        // Si la maquina de pruebas no tiene /dev/shm ni un temp_dir en
+        // tmpfs, el test se salta EN VOZ ALTA en vez de fingir que paso.
+        let candidatos = [PathBuf::from("/dev/shm"), std::env::temp_dir()];
+        let mut probado = false;
+        for base in candidatos {
+            if !base.is_dir() {
+                continue;
+            }
+            let salida = std::process::Command::new("df")
+                .args(["-T", "--output=fstype"])
+                .arg(&base)
+                .output();
+            let es_tmpfs = match salida {
+                Ok(o) => String::from_utf8_lossy(&o.stdout).contains("tmpfs"),
+                Err(_) => false,
+            };
+            if !es_tmpfs {
+                continue;
+            }
+            probado = true;
+            let d = base.join(format!("guardian_tmpfs_{}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&d);
+            std::fs::create_dir_all(&d).expect("crear");
+            let r = GuardianIndice::abrir(d.join("indice.bin"));
+            let _ = std::fs::remove_dir_all(&d);
+            match r {
+                Err(GuardianError::PersistenciaFalsa { razon, .. }) => {
+                    assert!(razon < RAZON_MINIMA, "razon {razon} deberia estar bajo el minimo");
+                }
+                otro => panic!(
+                    "en {} —que es tmpfs— el guardian DEBE negarse, y dio: {otro:?}",
+                    base.display()
+                ),
+            }
+            break;
+        }
+        if !probado {
+            eprintln!(
+                "AVISO: no se encontro ningun tmpfs donde probar el rechazo. \
+                 La autocomprobacion NO se ha ejercitado en este entorno."
+            );
+        }
+    }
+
+    #[test]
+    fn en_disco_de_verdad_si_opera() {
+        // La otra mitad: donde `fsync` cuesta, el guardian arranca.
+        let p = en_disco("disco_real");
+        GuardianIndice::abrir(&p).expect("en disco real el guardian debe arrancar");
+    }
+}

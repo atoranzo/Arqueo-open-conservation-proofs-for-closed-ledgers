@@ -94,7 +94,7 @@ iso-bridge         sello       3   0   0   300
 zk-ssl-sdk         sello       6   0   0   300
 zk-ssl-wire        sello       2   0   0   300  fuera de toda compuerta hasta §223
 zk-ssl-cli         sello       0   0   0   300  sin tests: es un binario
-zk-ssl-node        sello      13   0   0   300  §228: de 0 a 13. TRES reproducen fallos ya ocurridos (§220 x2, §222)
+zk-ssl-node        sello      22   0   0   300  §234: 13 -> 22, +9 del guardian del indice de firma
 settlement-prover  sello       0   0   0   300  sin tests
 nova-experiment    sello       0   0   0   300  0 es CORRECTO: sus 3 tests exigen --features test-setup
 halo2-experiment   largo      27   0   0  1200  caro: 438 s medidos

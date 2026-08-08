@@ -10,6 +10,16 @@
 //! - el CLIENTE (zk-ssl-sdk) deriva sus identificadores y PRUEBA en local.
 //!   Ninguna clave de gasto viaja por este RPC.
 
+/// **El guardián del índice de firma XMSS.**
+///
+/// Aquí y no en la capa por el mismo criterio que las reservas de
+/// posición: firmar cabezas es **política del operador**, no invariante
+/// de la liquidación. Ver la cabecera del módulo.
+///
+/// ⚠️ **Sin consumidor todavía**: es el eslabón 2 de la cadena de la
+/// oponibilidad (`BACKLOG.md`) y el 3 —la cabeza firmada— no existe.
+mod firma_indice;
+
 use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::Mutex;

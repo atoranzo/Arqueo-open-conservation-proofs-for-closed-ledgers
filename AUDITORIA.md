@@ -16754,3 +16754,109 @@ el documento: es que la cadena de dependencias vive ahí, y una cola
 declarada sin mirarla ordena por lo que se recuerda en vez de por lo que
 bloquea. Aquí habría puesto a construir el tejado —el acuse— con los
 cimientos —el guardián del índice— sin empezar.
+## 234. El guardián del índice: `fsync` mide 382× en disco y 1× en tmpfs
+
+⚠️ **Esta pieza no tiene consumidor todavía.** Es el eslabón 2 de la
+cadena de la oponibilidad (`BACKLOG.md`, §233) y el 3 —la cabeza firmada,
+emitida— no existe. Se construye antes **a propósito**, y el riesgo va
+declarado: **se diseña una API sin su consumidor.**
+
+Se hace igual por dos razones. La API está **forzada por el invariante**
+—persistir, luego firmar, nunca retroceder— y deja poco margen a que el
+firmante quiera otra cosa. Y es la pieza **más difícil de retroadaptar**:
+construirla junto al firmante invita a atajos.
+
+### El banco K.1, y lo que no esperaba encontrar
+
+§111.1 cerró el diseño; lo único sin desarrollar era la cautela *«`fsync`
+puede mentir»*, citada en tres sitios y explicada en ninguno. K.1 la midió.
+
+| | `fsync` | frente a no persistir |
+|---|---|---|
+| `$HOME` (ext4) | **0,907 ms** | **382×** |
+| `/tmp` (**tmpfs**) | 0,002 ms | **1×** |
+
+**H1 acierta** (0,5-3 ms predichos) y el coste es el **0,57 %** de una
+firma MT 40/8: **el guardián no cambia la cadencia.**
+
+Pero lo que importa está en la segunda fila. En `tmpfs` **`fsync` devuelve
+éxito sin persistir nada** — no hay disco. Un guardián cuyo fichero acabe
+ahí es un **no-op**, con cada llamada devolviendo `Ok` y la clave en
+riesgo. Y `/tmp` es un sitio perfectamente plausible para un fichero que
+alguien considere auxiliar.
+
+⚠️ Eso convierte la autocomprobación de arranque de idea razonable en
+**requisito con evidencia**: la única señal disponible desde dentro del
+proceso es que **su propio `fsync` cueste algo**. El discriminante está
+medido —382× contra 1×— y el umbral se fija en **10×**, con dos órdenes de
+margen por el lado bueno.
+
+### El invariante, y que se sostiene bajo `kill -9`
+
+> **Ninguna firma puede existir con un índice mayor que el contador
+> persistido.**
+
+K.1 lo probó con un hijo que persiste-y-luego-firma y un padre que lo mata
+en un instante aleatorio: **25 de 25 sin una sola firma por delante.**
+
+Y algo que no era el objetivo de la medida: **13 de 25** dejaron el
+contador **adelantado** — índices quemados sin firma. **El 52 %.** La
+reconciliación que la evaluación pedía «por si acaso» resulta ser **el
+camino normal tras una caída, no la excepción**, y el tipo
+`Reconciliacion::ContadorAdelantado` lo dice con esa cifra al lado.
+
+### Por qué vive en el nodo
+
+§111.1 exigía **aislado del ledger**. Y el criterio de dónde ponerlo ya
+estaba en esta casa, en `main.rs` desde §220:
+
+> *«cuánto dura una reserva es política del operador, no invariante de la
+> capa»*
+
+Firmar cabezas es lo mismo: **deber del operador**. Aislado de verdad: no
+toca `sled`, no toca `persistence.rs`, no reimplementa nada. Un fichero,
+ocho bytes y un orden.
+
+### La premisa de `persistence.rs` que XMSS invalida
+
+Está escrita ahí desde hace sellos:
+
+> *«Perder una operación es recuperable: se vuelve a enviar.»*
+
+**Con XMSS deja de serlo** (§110.2). Un índice quemado en una firma
+publicada no se recupera reenviando nada. Por eso el orden se invierte a
+propósito, y por eso el guardián no puede vivir dentro del componente cuya
+documentación afirma lo contrario.
+
+### Nueve tests, y dos que son el par
+
+- el contador **sobrevive al cierre y nunca retrocede** — si esto falla, un
+  reinicio reusa índices y **filtra la clave**;
+- **en `tmpfs` se niega a operar**, y **en disco de verdad sí opera**. Las
+  dos mitades: una compuerta que solo comprueba una no vale nada.
+
+⚠️ El test de `tmpfs` **avisa en voz alta si no encuentra un tmpfs** donde
+probar, en vez de pasar en silencio. Un test que no se ejecuta y dice `ok`
+es peor que no tenerlo.
+
+**Canon: `zk-ssl-node` de 13 a 22.**
+
+### Lo que NO se afirma
+
+- ⚠️ **Nada frente a un corte de corriente.** *«`fsync` puede mentir»*
+  habla de discos que confirman escrituras en caché volátil. K.1 midió
+  **muerte del proceso**, que no es lo mismo. Medirlo exige cortar la
+  corriente de verdad, y **no se ha hecho**.
+- **Los umbrales salen de UNA máquina** —WSL2 sobre un i5-1135G7— y están
+  declarados, no derivados. Por eso el discriminante principal es la
+  **razón**, no el valor absoluto: un NVMe puede dar `fsync` de ~100 µs
+  legítimos.
+- **`xmss` sigue sin ser dependencia.** El guardián no firma: cuenta. El
+  índice real de la clave **lo lee el llamante**, porque la API no lo
+  expone.
+- ⚠️ **El issue upstream está redactado y sin enviar**
+  (`doc/issue-rustcrypto.md`). Pide `index()` tipado — que convertiría el
+  test de layout en **innecesario** en vez de en un parche que avisa. Es un
+  «escrito y no cableado» más, y va anotado como tal.
+- **El test de layout no está**: sin `xmss` como dependencia no hay SK que
+  interpretar. Entra con el firmante.
