@@ -16217,3 +16217,126 @@ quién estorbar— y ahora está escrito en un test en vez de en un comentario.
 - **El RTGS sigue sin alcanzarse** (9,8 op/s contra 21).
 - Los 24 warnings siguen pinchados y la feature `parallel` de `ceremony`
   sigue sin activarse.
+## 229. El nodo nunca fue el cuello, y bastaba una resta para saberlo
+
+El traspaso llevaba **dos sellos** con esto en el primer punto de la cola:
+
+> *Faltan 9,8 op/s de las 21 que pide un RTGS, y el cuello está medido —
+> generar pruebas, trabajo del cliente, que escala con los titulares.*
+
+**Falso, y con los números en la mesa desde §219.**
+
+### La resta que no se hizo
+
+De los 1.616 ms que cuestan ocho pagos en D.2:
+
+| | |
+|---|---|
+| aplicar 16 operaciones (3,67 ms cada una, §219) | **59 ms** |
+| cuatro peticiones (§222, banco E.2) | **6 ms** |
+| **el NODO** | **65 ms · 4 %** |
+| generar las pruebas | **1.552 ms · 96 %** |
+
+Los 4,95 pagos/s de D.2 no son una propiedad del nodo: son una propiedad
+de **generar las pruebas de las dos partes en el mismo portátil de cuatro
+núcleos**.
+
+### El banco H.1, y por qué solo se podía ahora
+
+`zkssl_applyMany` (§222) permite algo que ningún método anterior permitía:
+todos los recibos de un lote van contra **la misma raíz de arranque**, así
+que se generan antes —tardando lo que haga falta— y **se cronometra solo
+la petición que los aplica**.
+
+Lotes de 1, 4, 8 y 15, tres repeticiones cada uno:
+
+| ops | aplicar | ms/op | generar | el nodo es el |
+|---|---|---|---|---|
+| 1 | 4,43 ± 0,09 ms | 4,43 | 237 ms | **1,8 %** |
+| 4 | 16,37 ± 0,63 | 4,09 | 508 | **3,1 %** |
+| 8 | 32,18 ± 0,71 | 4,02 | 593 | **5,1 %** |
+| 15 | 60,92 ± 0,72 | 4,06 | 1.026 | **5,6 %** |
+
+Recta: **0,225 + 4,035·n**, con residuos de ±0,33 ms sobre 61. 
+
+**TECHO DEL NODO POR RPC: 248 op/s.** El objetivo RTGS de 21 op/s de media
+es el **8,5 %** de ese techo.
+
+No falta un factor 2: **sobra un factor doce.**
+
+### Las tres hipótesis, y lo que vale que acierten
+
+| | predicho antes | medido |
+|---|---|---|
+| coste fijo | 0,3-1 ms | **0,225 ms** |
+| coste por operación | ~3,85 ms | **4,035 ms** |
+| quince operaciones | ~58 ms | **60,9 ms** |
+
+Pero lo que da peso al número no es que la predicción acertara: es que
+**tres bancos independientes concuerdan**.
+
+- **El coste fijo**: E.2 midió 0,255 ms con un método de solo lectura y
+  cuerpos rellenos de relleno; H.1 mide **0,225** con lotes reales de
+  hasta dos megabytes. Instrumentos distintos, cargas distintas.
+- **El coste por operación**: B.3 midió `apply` **en la capa, en proceso**:
+  3,67 ms. H.1 mide **4,035** por RPC, con verificación STARK, candado,
+  deserialización y transporte dentro.
+
+Cuando bancos que no comparten código coinciden así, la cifra deja de ser
+de un banco y pasa a ser del sistema.
+
+### ⚠️ Los 0,216 ms que NO se explican
+
+```
+  apply en la capa (B.3) ........ 3,670 ms
+  transporte de 130 KB (E.2) ....   0,149 ms   (a los 808 MB/s medidos)
+  ─────────────────────────────────────────
+  suma explicada ................ 3,819 ms
+  MEDIDO ........................ 4,035 ms
+  SIN EXPLICAR ..................   0,216 ms   (5,4 %)
+```
+
+La sospecha razonable es **deserializar el DTO y convertirlo a los tipos
+propios** —`SendReceiptDto` → `SendReceipt`, con sus caminos de Merkle y
+su prueba—, que ocurre en `dispatch` y no en ninguno de los dos bancos
+anteriores.
+
+**Se anota como sospecha, no como hecho.** Separarlo exige cronometrar la
+conversión aparte, y es otro banco. Un 5,4 % sin explicar es pequeño, pero
+un residuo que se rellena con una historia deja de ser un residuo — y esta
+serie lleva **siete conjeturas caídas** por exactamente ese movimiento.
+
+### Lo que esto significa, dicho con cuidado
+
+- **El nodo no es el cuello, y no lo era cuando se dijo que sí.**
+- En un despliegue real **cada titular prueba en su propia máquina**, así
+  que más titulares es **más** capacidad de prueba, no menos. Con 220-461
+  ms por prueba (§219), bastan **entre 5 y 10 titulares probando de
+  continuo** para saturar los 21 op/s.
+- Medir con 8 o 16 titulares en el portátil habría medido **el portátil**:
+  cuatro pares usan cuatro de ocho hilos lógicos, ocho saturan los cuatro
+  núcleos físicos, dieciséis serían dos oleadas sin ganancia.
+
+### Lo que NO se afirma, y el banco lo imprime
+
+- ⚠️ **La CONCURRENCIA no está medida.** Un solo cliente manda los lotes
+  en serie. Con varios agregadores a la vez, el `Mutex` de `dispatch` es
+  el siguiente sospechoso, y `main.rs` lo anticipa desde §218. **Pasa a
+  ser el primer punto de la cola.**
+- **La escala**: el árbol de H.1 tiene 30 cuentas. B.3 midió que `apply`
+  es plano hasta 1e5 (e=0,01), así que no debería importar — pero eso es
+  mérito de B.3, no de este banco.
+- **El disco**: el nodo corrió en memoria, sin `--ledger`.
+- **Solo envíos.** Un cobro verifica otro circuito y no se ha medido.
+- Y el techo de 248 op/s es de **este** hardware. No es una propiedad del
+  diseño: es lo que da un i5-1135G7.
+
+### El rito
+
+⚠️ **Antes de declarar un cuello, hacer la resta.** Los tres números
+—3,67 ms de apply, 0,255 ms de petición, 1.616 ms de ciclo— llevaban dos
+sellos disponibles, y en ese tiempo la afirmación fue **prioridad número
+uno del proyecto**. No hizo falta un banco para verlo: hizo falta restar.
+
+Un cuello se declara midiendo dónde se va el tiempo, no observando que el
+resultado es menor de lo que se quería.
