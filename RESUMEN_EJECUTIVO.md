@@ -98,8 +98,17 @@ claves: no hay ceremonia ni secreto que destruir.
 
 **Límites cuantificados**: mil transferencias son **~590 s** de prueba
 (un pago son dos: send 353,2 ms + claim 237 ms, protocolo §89.1) y
-**~124 MiB** acumulados. El techo real bajo concurrencia es el anclaje
-de raíz: **1,5–1,9 TPS** medidos (`AUDITORIA.md` §123, entrada 65).
+**~124 MiB** acumulados.
+
+⚠️ **Aquí decía que el techo era «1,5–1,9 TPS». Era falso** (§229): esa
+cifra medía el ciclo entero en una sola máquina y se atribuía al nodo. El
+nodo trabajaba el **4 %** del tiempo. Medido aparte, **aplica 248 op/s por
+RPC** (§229, banco H.1), y el objetivo de un RTGS —21 op/s— es el **8,5 %**
+de ese techo.
+
+Lo que sí serializa es **la raíz**, no el candado (§230): dos emisores que
+salen a la vez aplican uno, y el otro tira sus pruebas. El nodo rechaza
+barato; el precio lo paga quien pierde.
 
 ⚠️ **Un límite que existió, y cómo se fue**: la vía de un paso tenía
 colisiones probables a los ~65.000 pagos. Esa vía está **retirada** y su

@@ -17167,3 +17167,72 @@ lo que veía**: un filtro que calla es peor que uno que grita.
   nombre de un crate; una afirmación rancia escrita de otra forma **se le
   escapa**. Es una red para la cifra que ya se rancció, no un verificador
   de documentación.
+## 238. El README decía que el techo eran 1,9 TPS. Son 248 op/s
+
+§237 arregló las cifras de tests. Ésta es la que hacía daño de verdad:
+
+> *«entre **1,5 y 1,9 TPS** […]. Es **el techo real del nodo actual** bajo
+> concurrencia, y **muerde antes que cualquier otro límite listado**.»*
+
+**Falso, y por un factor de 130×.**
+
+### Qué medía en realidad
+
+El ciclo entero **en una sola máquina** —un portátil generando las pruebas
+de las dos partes— atribuido al nodo. Hecha la resta (§229), de los 1.616
+ms que cuestan ocho pagos **el nodo trabaja 65: el 4 %**.
+
+| | medido |
+|---|---|
+| techo del nodo, por RPC | **248 op/s** (§229, H.1: `0,225 + 4,035·n` ms) |
+| ciclo completo en un portátil | 4,95 ± 0,15 pagos/s (§222) |
+| objetivo de un RTGS | 21 op/s — el **8,5 %** de ese techo |
+
+**No faltaba un factor 2: sobraba un factor doce.**
+
+⚠️ Y el error no era la medida: era **la atribución**. La cifra estaba bien
+tomada y mal asignada, que es peor, porque una cifra mal tomada se detecta
+repitiéndola y una mal asignada **se repite igual**.
+
+### La contención sí era cierta, y ahora está medida
+
+El bloque del anclaje de raíz decía la verdad sobre el mecanismo, sin
+cifra. §230 la puso: **cuatro clientes concurrentes aplican uno y tres son
+rechazados — el 75 % de las pruebas a la basura**. El nodo **rechaza
+barato** (3,1 ms frente a 32), así que el precio lo paga quien pierde. Con
+un solo emisor por raíz, cero.
+
+### Lo que el README no decía y ahora dice
+
+⚠️ **Que el proyecto tiene una dependencia criptográfica sin auditar.**
+Desde §236 el nodo depende de `xmss` 0.1.0-pre.0 — pre-release, sin
+auditoría independiente por declaración del propio crate. Hasta ese sello
+todo el camino de producción era hash propio y `winterfell`. **Eso se lee
+en el README o no se lee**, y estaba solo en un `Cargo.toml`.
+
+Y una tabla de lo que existe frente a lo que falta:
+
+| construido | sin construir |
+|---|---|
+| guardián del índice (§234) | **custodia de la clave** |
+| firmante de cabezas (§236) | **latido** |
+| | **releer una firma desde sus bytes** |
+| | **testigos: ninguno** |
+
+⚠️ Con la frase que sostiene la tabla: **sin custodia declarada de la
+clave, una firma no tiene valor probatorio.** Que el sistema firme no es
+que la firma sirva — y sin decirlo, un lector concluye lo contrario.
+
+Y el «consenso distribuido» de la lista gana su contrapartida: la
+alternativa que este proyecto **sí** persigue —responsabilidad demostrable,
+al modo de Certificate Transparency— **necesita las cuatro filas de la
+derecha**, no solo las dos de la izquierda.
+
+### Lo que este sello NO hace
+
+- **No toca `ARQUITECTURA.md` ni `PRINCIPIOS.md`**, que también van
+  atrasados. Se hace lo que se puede verificar de una vez.
+- **No toca ningún cuerpo congelado** (§237): `doc/ESCALADO.md` conserva
+  sus 26,3 op/s del 31 de julio, y eso sigue siendo correcto.
+- **No mide nada nuevo.** Todas las cifras que entran vienen de bancos ya
+  ejecutados: H.1, I.1, D.2, E.2, B.3.

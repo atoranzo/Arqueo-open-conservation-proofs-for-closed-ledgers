@@ -192,12 +192,37 @@ comparten nada quedan serializados por el anclaje global** — aplicar la
 primera invalida la segunda (`StaleState`), aunque toque otra hoja. **El
 mecanismo está comprobado** (T5a) y no depende de ninguna constante.
 
-⚠️ **El número, en rango y con su reserva**: entre **1,5 y 1,9 TPS** en dos
-ejecuciones de una máquina, con constantes que **aún no han pasado el
-protocolo de medición del proyecto** (entrada 65). Es el techo real del nodo
-actual bajo concurrencia, y **muerde antes que cualquier otro límite
-listado**. La salida diseñada —nonce en la hoja y vigencia en O(1)— es C2/C3
-de `doc/ESCALADO.md`, propuesta con su propia cabecera de estado.
+**Y ahora está medido** (§230, banco I.1): cuatro clientes que envían a la
+vez, cada uno con sus propias cuentas, **aplican uno y los otros tres son
+rechazados** — el **75 %** de las pruebas generadas, a la basura. El nodo
+**rechaza barato** —3,1 ms frente a 32 de aplicar— así que el precio no lo
+paga él: lo paga quien pierde la carrera. Con **un solo emisor por raíz**
+el desperdicio es cero.
+
+⚠️ **Aquí decía «entre 1,5 y 1,9 TPS» y lo llamaba «el techo real del nodo».
+Era falso, y por mucho** (§229, §238). Aquella cifra medía **el ciclo
+entero en una sola máquina** —un portátil generando las pruebas de las dos
+partes— y se atribuía al nodo.
+
+Hecha la resta, de los 1.616 ms que cuestan ocho pagos el nodo trabaja
+**65**: el **4 %**. El resto es generar pruebas, que es trabajo del
+cliente y en despliegue real ocurre en su máquina.
+
+| | medido |
+|---|---|
+| **techo del nodo, por RPC** | **248 op/s** (§229, banco H.1: `0,225 + 4,035·n` ms) |
+| ciclo completo en un portátil | 4,95 ± 0,15 pagos/s (§222) |
+| objetivo de un RTGS | 21 op/s de media — el **8,5 %** de ese techo |
+
+**No falta un factor 2: sobra un factor doce.** Y la cifra la respaldan
+tres bancos que no comparten código: el coste fijo por petición sale 0,255
+ms en E.2 y 0,225 en H.1; el `apply` sale 3,67 ms en la capa (B.3) y 4,035
+por RPC.
+
+⚠️ **Lo que sigue sin medirse**: la latencia por petición, muchos emisores
+concurrentes, el nodo contra disco, y **0,216 ms por operación (5,4 %) que
+no se explican** — la sospecha es deserializar el DTO, y se anota como
+sospecha.
 
 ⚠️ **El ~620 s histórico quedó resuelto en `AUDITORIA.md` §130**: era
 cifra de otro protocolo (probablemente la vía retirada); el canon vigente
@@ -368,11 +393,41 @@ al construir. Detallados en [`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md):
 **No auditado por terceros.** Ninguna cantidad de tests propios lo
 sustituye.
 
+### ⚠️ El proyecto tiene una dependencia criptográfica sin auditar
+
+Desde §236 el nodo depende de **`xmss` 0.1.0-pre.0** de RustCrypto, para
+firmar las cabezas de época. Es una **pre-release y su propio crate declara
+que no tiene auditoría independiente**. Se eligió entre cuatro candidatas
+con cinco criterios (`doc/xmss-evaluacion.md`, §235) y la versión va
+**clavada con `=`** porque `master` diverge del tag publicado.
+
+Hasta ese sello, todo el camino de producción era hash propio y
+`winterfell`. **Ahora hay una familia de supuestos más en el árbol**, y
+conviene que se lea aquí y no en un `Cargo.toml`.
+
+### Lo que existe hoy, y lo que le falta para valer
+
+| pieza | estado |
+|---|---|
+| guardián del índice de firma | **construido** (§234). Contador con `fsync` antes de firmar, y **se niega a arrancar si su `fsync` no persiste** — en `tmpfs` cuesta lo mismo que no hacerlo |
+| firmante de cabezas | **construido** (§236). Dominio, versión de formato, y verifica su propia salida |
+| **custodia de la clave** | ⚠️ **no existe.** El firmante toma una semilla; de dónde sale y quién la guarda **no está decidido** |
+| **latido** | ⚠️ **no existe.** Nada emite cabezas por época: el firmante firma cuando se le pide, y nadie se lo pide |
+| **releer una firma desde sus bytes** | ⚠️ **no existe**, y es lo que necesita un testigo |
+| testigos | ⚠️ **ninguno.** Nadie fuera del operador ve cabezas |
+
+⚠️ **Y sin custodia declarada de la clave, una firma NO tiene valor probatorio.**
+Que el sistema firme no es que la firma sirva.
+
 Lo que falta, por orden de importancia:
 
 - **Consenso distribuido.** Sin él, el operador ve los saldos y puede
-  censurar.
+  censurar. La alternativa que este proyecto sí persigue —responsabilidad
+  demostrable, al modo de Certificate Transparency— **necesita las cuatro
+  filas de arriba marcadas con ⚠️**.
 - **Auditoría externa.**
+- **El recibo de admisión** (§121): cuatro cosas independientes apuntan a
+  esa pieza, y sigue sin construirse.
 - Delegación de la prueba a terceros (verificar firma en circuito).
 - Política de caducidad para congelaciones; justificación registrada.
 
