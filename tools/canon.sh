@@ -5,9 +5,17 @@
 # a mano, y por eso `zk-ssl-wire` paso SEIS sellos sin que nadie corriera
 # sus tests.
 #
-#     bash tools/canon.sh --sello      # cada bloque · ~145 s
-#     bash tools/canon.sh --largo      # + halo2 y plonk · ~20 min
-#     bash tools/canon.sh --completo   # + zk-core · ~39 min
+#     bash tools/canon.sh --sello      # cada bloque · **151 s**
+#     bash tools/canon.sh --largo      # + halo2 y plonk · **~20 min**
+#     bash tools/canon.sh --completo   # + zk-core · **53,6 min**
+#
+# ⚠️ Estos tiempos los midio el CANON, no los bancos (§226, primera
+# pasada de `--completo`): 151 + 347 (halo2) + 689 (plonk) + 2.032
+# (zk-core) = **3.217 s**. Los bancos F.1 y G.2 daban cifras mayores
+# porque midieron en FRIO; el canon mide con el `target` caliente,
+# que es como se corre de verdad. La diferencia no es pequeña:
+# zk-core 2.032 s aqui frente a los 2.317 que sumaban las dos
+# invocaciones separadas de G.2.
 #     bash tools/canon.sh --lista      # solo enseña la tabla, no ejecuta
 #
 # ## Lo que lo hace ROBUSTO, y no es la tabla
@@ -27,12 +35,14 @@
 #
 # ## Los TRES niveles, y por que tres (§225)
 #
-# `zk-core` cuesta **38,6 minutos**: 1.472 s los 73 tests de biblioteca
-# con 8 hilos, mas **845 s la ceremonia**. Y no hay hilo que lo arregle:
-# medido, generar la prueba añade un 5 % y rayon un 17 % — **el coste es
-# SINTETIZAR el circuito**, y `ark-r1cs-std` sintetiza en serie.
+# `zk-core` cuesta **33,9 minutos** medidos por el canon (2.032 s). G.2
+# lo midio en dos invocaciones separadas y en frio: 1.472 s los 73 tests
+# de biblioteca con 8 hilos mas **845 s la ceremonia**. Y no hay hilo
+# que lo arregle: medido, generar la prueba añade un 5 % y rayon un
+# 17 % — **el coste es SINTETIZAR el circuito**, y `ark-r1cs-std`
+# sintetiza en serie.
 #
-# Meter 39 minutos en cada sello garantizaria que alguien acabe saltandose
+# Meter 54 minutos en cada sello garantizaria que alguien acabe saltandose
 # la compuerta, y una compuerta que se salta no protege. Es exactamente lo
 # que le paso a `check_tests.py`.
 #
@@ -119,7 +129,7 @@ estado_completo() {
       msg "  ultimo --completo: $c ($f) · **$n sello(s) por detras de HEAD**"
     fi
   else
-    msg "  ultimo --completo: **NUNCA**. Los 39 min de zk-core no los ha corrido nadie."
+    msg "  ultimo --completo: **NUNCA**. Los 54 min del nivel completo no los ha corrido nadie."
   fi
 }
 

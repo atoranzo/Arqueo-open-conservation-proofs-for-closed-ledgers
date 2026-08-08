@@ -15923,3 +15923,85 @@ borrarlo es decisión de mesa, y va a la cola.**
   núcleos físicos: 4.205 s en serie contra 1.472 con 8 hilos. Medir
   `--test-threads=4` habría dicho si el cuello es CPU o memoria, y **se
   abortó por tiempo**: queda sin medir.
+## 226. La primera pasada del canon completo, y el fichero que mentía sobre sí mismo
+
+§224 creó `tools/canon.sh` y §225 le puso tres niveles. Ninguno de los dos
+llegó a correr el nivel `--completo`: sus pines de `halo2`, `plonk` y
+`zk-core` venían de los bancos F.1 y G.2, **no de una pasada del canon**.
+
+Un pin sin verificar es una afirmación sin comprobar. Ésta es la
+comprobación.
+
+### Los catorce, a la primera
+
+| crate | exit | pasan (pin) | ignorados | warnings | seg |
+|---|---|---|---|---|---|
+| zk-ssl | 0 | 256 (256) | 3 (3) | 0 (0) | 40 |
+| stark-experiment | 0 | 297 (297) | 10 (10) | 0 (0) | 11 |
+| ceremony | 0 | 34 (34) | 0 | 11 (11) | 1 |
+| settlement-layer | 0 | 17 (17) | 0 | 0 | 51 |
+| iso-bridge | 0 | 3 (3) | 0 | 0 | 45 |
+| zk-ssl-sdk | 0 | 6 (6) | 0 | 0 | 0 |
+| zk-ssl-wire | 0 | 2 (2) | 0 | 0 | 0 |
+| cli · node · prover · nova | 0 | 0 (0) | 0 | 0 | ~1 |
+| **halo2-experiment** | 0 | **27 (27)** | 0 | 0 | **347** |
+| **plonk-experiment** | 0 | **36 (36)** | 0 | **3 (3)** | **689** |
+| **zk-core** | 0 | **74 (74)** | 0 | **10 (10)** | **2.032** |
+| | | | | | **3.217 s** |
+
+**Ningún pin falló.** Yo había predicho que alguno podría no cuadrar,
+«sobre todo los warnings, que dependen de qué se recompile en cada
+pasada». No pasó: los tres pines que nunca había verificado el canon —27,
+36 y 74, con sus 3 y 10 warnings— cuadran exactamente.
+
+Y `check_tests.py` verde, y la conformidad en «todo IDENTICO» con los
+vectores 0.1 rechazados.
+
+### El fichero mentía sobre sí mismo
+
+⚠️ La cabecera de `canon.sh` decía **`--completo · ~39 min`**. Son
+**53,6**. Y el aviso de «NUNCA» citaba «los 39 min de zk-core» cuando
+`zk-core` solo son 34 y el nivel entero 54.
+
+Rancidez que creó §225, cerrada aquí — la regla de la casa.
+
+### Por qué los bancos y el canon no dan lo mismo
+
+No es ruido: es **frío contra caliente**.
+
+| | banco (frío) | canon (caliente) |
+|---|---|---|
+| zk-core | 2.317 s | **2.032 s** |
+| plonk | 749 s | **689 s** |
+| halo2 | 438 s | **347 s** |
+
+Los bancos F.1 y G.2 compilaban cada crate desde un `target` frío, y
+además G.2 midió `zk-core` en **dos invocaciones separadas** —la
+biblioteca y la ceremonia— sumando 1.472 + 845. El canon lo corre de una
+vez con el `target` caliente, que es **como se corre de verdad**.
+
+⚠️ Rito: **un tiempo medido en frío no es el tiempo de la compuerta.** La
+diferencia aquí llega al 21 % en `halo2`. Los tiempos de la tabla pasan a
+ser los del canon, y así se dice en la cabecera.
+
+### Lo que esto deja establecido
+
+- **El canon está verificado de punta a punta.** Los catorce crates, los
+  751 tests que pasan, y los 24 warnings pinchados.
+- **`.canon/ultimo-completo` existe por primera vez.** A partir de ahora
+  cada `--sello` dice cuántos sellos hace que se corrió el completo, sin
+  que nadie tenga que acordarse.
+- **`zk-core` no era una anomalía ni un crate roto**: es un crate que
+  cuesta 34 minutos porque sintetizar circuitos cuesta eso, y ahora está
+  dentro de una compuerta que se puede correr.
+
+### Lo que NO cambia
+
+- **`--completo` sigue siendo disciplina, no compuerta.** Que se haya
+  corrido una vez no lo convierte en costumbre. El registro solo hace que
+  el olvido sea **visible**, no imposible.
+- **Los 24 warnings siguen pinchados, no arreglados.**
+- **`marlin_proof_system.rs` sigue siendo código muerto** — séptimo
+  «escrito y no cableado», y el que resuelve el problema declarado como
+  más grave del proyecto.
+- El **nodo sigue sin tests**: sus 0 pines son un hueco declarado.
