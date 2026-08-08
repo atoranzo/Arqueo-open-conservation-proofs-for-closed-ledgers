@@ -246,6 +246,26 @@ Esto no es un detalle de implementación: es una **restricción del
 protocolo**, y quien escriba un cliente concurrente tiene que saberla
 antes de descubrirla tirando pruebas.
 
+#### Turnarse, no competir — y un turno no es un consenso
+
+De la restricción se sigue que **varios agregadores tienen que turnarse**
+en vez de competir. §230 midió el precio de no hacerlo: cuatro que salen
+a la vez aplican uno y los otros tres tiran **el 75 %** de sus pruebas.
+
+⚠️ **Un turno no es un consenso, y conviene no leerlo así.** Un consenso
+decide **quién tiene razón** entre partes que discrepan sobre el estado.
+Un turno decide **quién va primero** entre partes que ya saben que solo
+cabe una y no discrepan de nada. Aquí no hay nada que acordar: la raíz ya
+determina el resultado, y turnarse solo evita generar pruebas que van a
+morir. Nada de esto abre una grieta en el modelo de nodo único de
+`SECURITY.md` §6.
+
+⚠️ **Qué mecanismo de turno usar no lo dice esta especificación, y es
+deliberado.** La especificación normativa manda sobre **el cable** —qué
+viaja y qué significa—, no sobre **quién opera qué**. El modelo de
+despliegue recomendado está en `SECURITY.md` §2.ter, como recomendación
+y no como requisito de conformidad.
+
 Medido (§230, banco I.1) con cuatro agregadores enviando a la vez, cada
 uno con sus propias cuentas —sin competir por cuenta ni por posición de
 pendiente, solo por la raíz—:

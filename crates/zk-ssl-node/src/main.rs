@@ -458,6 +458,21 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
         // que titulares SIN coordinar se beneficien, sera una capa
         // encima de esto, no en su lugar.
         //
+        // ⚠️ **El lote MIXTO —envíos y cobros juntos— SE ADMITE.** Lo
+        // midió J.1 (§232): `apply_many` solo exige cuentas distintas y
+        // posiciones distintas, y **ninguna de las dos comprobaciones mira
+        // la clase**. Un cobro consume una posición vieja; un envío crea
+        // una nueva. Un cobro del pendiente que crea un envío del MISMO
+        // lote sí se rechaza, con `DuplicatePendingInBatch`.
+        //
+        // Y sin embargo el modelo de despliegue recomendado los SEPARA en
+        // dos agregadores (`SECURITY.md` §2.ter). **No es por rendimiento
+        // ni un descuido**: es porque cada mitad revela media arista
+        // —emisor+importe, o receptor+importe— y separarlas hace que
+        // ninguna pieza fuera del nodo vea el grafo de pagos (§231).
+        // El código admite las dos formas a propósito: la spec manda
+        // sobre el cable, no sobre quién opera qué.
+        //
         // ⚠️ **Cabe sin tocar el transporte.** El muro del cuerpo son
         // 2.097.152 bytes (§218, banco C0.2) y una operacion ronda los
         // 132.728 en hex: entran **15**. La carga que §216 midio —8

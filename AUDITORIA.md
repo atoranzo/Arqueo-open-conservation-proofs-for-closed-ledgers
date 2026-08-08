@@ -16541,3 +16541,118 @@ antes.
 y refutadas al medirlas o al leerlas. Las siete primeras costaron un banco
 o una resta; ésta costó **dos sellos y una línea en la especificación
 normativa**, que es el sitio donde una afirmación falsa hace más daño.
+## 232. El modelo de agregador: turno explícito y dos alternados
+
+⚠️ **Ninguna de las dos mitades de esto existe.** Ni el turno ni el reparto
+están construidos ni medidos. El cable los permite tal como está, y eso es
+todo lo que se sabe. Este asiento fija una decisión de despliegue **antes**
+de que alguien la tome por comodidad —el argumento de §213—, no describe
+algo que funcione.
+
+⚠️ Y es una **recomendación de mesa sin contraparte que la valide**. Se
+escribe un modelo de despliegue para un despliegue que no existe, con
+actores —dos agregadores independientes— que hoy no hay. Si mañana aparece
+un participante real, **lo primero que preguntará es quién opera la mitad
+de cobros**, y esa pregunta no la responde el repositorio.
+
+### La decisión, y por qué ésta
+
+**Turno explícito, y dos agregadores alternados** — uno de envíos, otro de
+cobros.
+
+El argumento decisivo **no es el rendimiento**: es que **el agregador
+único no necesita el grafo para su trabajo**. Junta recibos y los manda en
+una petición. Ver quién paga a quién no le aporta nada a esa función — es
+un efecto colateral de la comodidad. **Conceder observación que no hace
+falta es el tipo de decisión que se defiende mal después.**
+
+Y el coste está medido: **cero en el nodo**. El turno hace falta de todas
+formas, porque la raíz lo exige (§230). El reparto viaja encima.
+
+### Lo que hizo falta medir para poder decidir
+
+| | |
+|---|---|
+| §229 | el nodo aplica **248 op/s**; el objetivo RTGS es el 8,5 % |
+| §230 | lo que serializa es **la raíz**, no el candado: 1 de 4, 75 % tirado |
+| §231 | el receptor **no** viaja en el recibo de envío; une `notice.position` |
+| §232 (J.1) | el **lote mixto SÍ se admite**: 8 de 8 |
+
+J.1 era el que faltaba, y no era una curiosidad: si el mixto no se
+admitiera, repartir observación costaría un turno extra **por diseño**. Al
+admitirse, ese turno es **una elección**, y una elección se defiende.
+
+### Dos preguntas independientes, y una ya estaba respondida
+
+Durante dos sellos esto se planteó como «elegir una de tres opciones». No
+lo era.
+
+**Quién aplica** — forzado por la raíz: **uno cada vez**. No hay diseño
+que lo evite sin cambiar el sistema de prueba. Lo único que se decide es
+*cómo se turnan*.
+
+**Quién observa** — libre, y **gratis en el nodo**.
+
+⚠️ Y para llegar ahí hubo que tirar una conjetura mía más: escribí que
+envíos y cobros «no compiten por la misma raíz». **Falso.** `apply_send` y
+`apply_claim` comprueban lo mismo —`accounts.root()` y `pending.root()`—
+y ambos mueven las dos. **Novena.**
+
+### La declaración completa, no solo la parte favorable
+
+Va en `SECURITY.md` §2.ter, y con las cuatro salvedades:
+
+- **Cada agregador ve media arista**: emisor + importe, o receptor +
+  importe, más la posición. ⚠️ **Eso no es cero: es información
+  comercial.**
+- ⚠️ **Si la misma entidad opera ambas mitades, la propiedad se pierde
+  entera y nadie lo nota desde fuera.** Escrito como **condición**, no
+  como supuesto: el sistema no la comprueba ni puede.
+- **El nodo ve ambas.** Es confidencialidad **entre participantes**, no
+  frente al operador. Ya estaba en §2.2; se dice aquí para que la sección
+  nueva no se lea al revés.
+- ⚠️ **Dos agregadores son dos puntos de censura, no medio cada uno.** El
+  de envíos bloquea un pago **entero** sin tocar el cobro. Cae bajo el
+  **recibo de admisión** (§121) — y es la **cuarta convergencia** hacia
+  esa pieza, que sigue sin construir.
+
+### Un turno no es un consenso
+
+Va en `spec/RPC.md`, porque sin esa frase alguien leerá «turno» como una
+grieta en el modelo de nodo único:
+
+> Un consenso decide **quién tiene razón** entre partes que discrepan
+> sobre el estado. Un turno decide **quién va primero** entre partes que
+> ya saben que solo cabe una y no discrepan de nada.
+
+Aquí no hay nada que acordar: la raíz ya determina el resultado, y
+turnarse solo evita generar pruebas que van a morir.
+
+### Y dónde va cada cosa, que no es un detalle
+
+⚠️ **La especificación normativa manda sobre el CABLE —qué viaja y qué
+significa—, no sobre QUIÉN OPERA QUÉ.** Por eso `spec/RPC.md` se queda con
+la restricción de la raíz y con la naturaleza del turno, y el **modelo de
+despliegue** vive en `SECURITY.md` como recomendación, **no como requisito
+de conformidad**.
+
+Una segunda implementación que aplique lote a lote sin turnarse **sigue
+siendo conforme**. Perderá pruebas, y eso es asunto suyo.
+
+### El comentario de `apply_many`
+
+`main.rs` dice ahora que el lote mixto **se admite** —J.1 lo midió— y que
+el modelo recomendado los separa **por observación, no por rendimiento**.
+Sin eso, el primero que lea el código pensaría que separarlos es un
+descuido.
+
+### Lo que queda abierto
+
+- ⚠️ **El coste del lote mixto frente a dos separados NO está medido.** La
+  recomendación asume que separar cuesta un turno; **cuánto cuesta ese
+  turno no se sabe**. §230 acota el precio de **no** turnarse —el 75 %—,
+  no el de turnarse.
+- **El mecanismo de turno no está elegido**: candado externo, cola,
+  testigo rotatorio. Solo se afirma que hace falta uno.
+- **Nada de esto está construido.** Es la primera línea de este asiento y
+  conviene que sea también la última.

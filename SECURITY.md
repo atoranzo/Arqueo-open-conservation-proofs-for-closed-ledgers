@@ -163,6 +163,59 @@ Ninguna prueba ZK sustituye estas dos; lo que este proyecto exige es
 que estén **escritas, medidas y con su ataque diseñado** en vez de
 escondidas en la palabra «descentralizado».
 
+### 2.ter El modelo de agregador — recomendación, no requisito
+
+⚠️ **Ninguna de las dos mitades de esto existe.** Ni el turno ni el reparto
+están construidos ni medidos: el cable los permite tal como está, y eso es
+todo lo que se sabe. Esta sección fija una decisión de despliegue **antes**
+de que alguien la tome por comodidad, no describe algo que funcione.
+
+⚠️ Y es una **recomendación de mesa sin contraparte que la valide**. Si
+mañana aparece un participante real, lo primero que preguntará es **quién
+opera la mitad de cobros**, y esa pregunta no la responde este repositorio.
+
+#### La decisión
+
+**Turno explícito, y dos agregadores alternados** — uno de envíos, otro de
+cobros.
+
+El argumento no es de rendimiento: es que **el agregador único no necesita
+el grafo para su trabajo**. Junta recibos y los manda en una petición. Ver
+quién paga a quién no le aporta nada a esa función; es un efecto colateral
+de la comodidad. **Conceder observación que no hace falta se defiende mal
+después.**
+
+Y el coste está medido: **cero en el nodo**. El turno hace falta de todas
+formas porque la raíz lo exige (§230); el reparto viaja encima.
+
+#### Lo que la propiedad da, y lo que NO
+
+- **Cada agregador ve media arista**: emisor + importe, o receptor +
+  importe, más `notice.position` (§231). ⚠️ **Eso no es cero: es
+  información comercial.** Quién paga, cuánto y con qué frecuencia basta
+  para muchos análisis.
+- ⚠️ **Si la misma entidad opera ambas mitades, la propiedad se pierde
+  entera y nadie lo nota desde fuera.** Se escribe como **condición**, no
+  como supuesto: el sistema no la comprueba ni puede.
+- **El nodo ve ambas mitades**, por definición. Esto es confidencialidad
+  **entre participantes**, no frente al operador. Ya estaba dicho en §2.2;
+  conviene que esta sección no se lea al revés.
+- ⚠️ **Dos agregadores son dos puntos de censura, no medio cada uno.** El
+  de envíos bloquea un pago **entero** sin tocar el cobro. Eso cae bajo el
+  **recibo de admisión** (§121, `doc/CONFIANZA_RESIDUAL.md`) — y es la
+  **cuarta** convergencia hacia esa pieza, que sigue sin construir.
+
+#### Lo que queda abierto
+
+- **El coste del lote mixto frente a dos separados no está medido.** J.1
+  midió que el mixto se admite; la recomendación asume que separar cuesta
+  un turno, pero **cuánto cuesta ese turno no se sabe**. §230 acota el
+  precio de **no** turnarse —el que pierde tira el 75 % de sus pruebas—,
+  no el de turnarse.
+- El mecanismo de turno —candado externo, cola, testigo rotatorio— no está
+  elegido. Solo se afirma que **hace falta uno** y que **no es un
+  consenso**: ver `spec/RPC.md`.
+
 ## 3. Problemas de seguridad identificados
 
 > Hallazgos internos, **no auditados**. Casi todos están **medidos** con
