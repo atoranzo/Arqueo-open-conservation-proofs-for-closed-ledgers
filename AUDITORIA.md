@@ -15645,3 +15645,147 @@ test renombrado aparezca y pase. Fijar su canon queda en la cola.
 - La especificación describe lo que el nodo hace hoy. **Ninguna segunda
   implementación la ha consumido**, así que no está probada como
   especificación, solo como documentación.
+## 224. El canon, en un fichero: la herramienta que sí se cablea
+
+§223 encontró que `zk-ssl-wire` no estaba en ninguna compuerta de sello.
+Al mirar el workspace, el agujero era mayor.
+
+### El inventario (banco F.1)
+
+**Catorce crates, y las compuertas corrían dos.**
+
+| | pasan | ignorados | warnings | segundos |
+|---|---|---|---|---|
+| stark-experiment | 297 | 10 | 0 | 15 |
+| zk-ssl | 256 | 3 | 0 | 51 |
+| **zk-core** | **73 de 76** | 0 | **10** | **timeout a 1800** |
+| plonk-experiment | 36 | 0 | **3** | 749 |
+| ceremony | 34 | 0 | **11** | 24 |
+| halo2-experiment | 27 | 0 | 0 | 438 |
+| settlement-layer | 17 | 0 | 0 | 63 |
+| zk-ssl-sdk | 6 | 0 | 0 | 4 |
+| iso-bridge | 3 | 0 | 0 | 54 |
+| zk-ssl-wire | 2 | 0 | 0 | 0 |
+| nova · cli · node · prover | 0 | 0 | 0 | — |
+
+**751 tests pasan en el workspace y las compuertas veían 553: 198 fuera.**
+
+Tres hallazgos que nadie buscaba:
+
+⚠️ **`zk-core` no falla: NO TERMINA.** El exit 124 es el `timeout` del
+banco. Pasa 73 de 76 y a los treinta minutos sigue. Un crate cuyos tests
+no caben en media hora **nunca ha podido estar en una compuerta** — eso
+explica que no estuviera, y no lo justifica.
+
+⚠️ **El canon decía «warnings 0» y solo era cierto para dos crates.**
+Medidos: **24 warnings** que ninguna compuerta ha visto nunca.
+
+⚠️ **`0 pasados` no significa lo mismo en todos.** En `nova-experiment` es
+**correcto**: sus tres tests exigen `--features test-setup` porque
+`nova-snark` **prohíbe en código** un setup de una sola parte, y la
+feature existe para que quien la active lo vea en la línea de órdenes. En
+`zk-ssl-node` es un hueco declarado. La tabla lo dice crate a crate.
+
+### El patrón, que ya va por cuatro
+
+⚠️ **Esta casa escribe la herramienta y no la cablea.**
+
+- `reserve_pending`, escrito en §211 y sin usar por el nodo hasta §220:
+  **nueve sellos** con el fallo que arreglaba todavía vivo.
+- Los tests de `zk-ssl-wire`: nunca.
+- `tools/check_tests.py`: nunca.
+- Los 198 tests de este asiento.
+
+No es olvido: es que **la compuerta vivía en mi cabeza y se reescribía a
+mano en cada bloque**. Lo que se reescribe a mano se olvida.
+
+### `tools/canon.sh`: una fuente, no una costumbre
+
+Los pines viven en el repo y los bloques lo invocan:
+
+```
+bash tools/canon.sh --sello    # cada bloque
+bash tools/canon.sh --largo    # todo, incluidos los caros
+bash tools/canon.sh --lista    # solo enseña la tabla
+```
+
+Lo que lo hace **robusto no es la tabla**:
+
+1. ⚠️ **Los miembros del workspace se LEEN de `Cargo.toml`.** Un crate
+   nuevo sin fila pone la compuerta roja, y una fila sin crate también.
+   El agujero de §223 pasa de «hay que acordarse» a **imposible**.
+2. **Pines exactos, no mínimos.** Arreglar un warning pone esto rojo y
+   obliga a actualizar el pin **a propósito**. Nada mejora ni empeora en
+   silencio — y por eso los 24 warnings quedan **pinchados**: no se
+   arreglan aquí, pero **no pueden crecer**.
+3. **No se para en el primer fallo.** Da el inventario y falla al final:
+   pararse en el primer susto oculta los demás.
+4. **Timeout por crate.** Un crate que cuelga no cuelga la compuerta.
+5. **Dice qué línea editar** cuando un pin no cuadra.
+6. **`zk-core` está pinchado COMO ANOMALÍA**: su fila espera `exit 124`.
+   Si algún día termina, **la compuerta se pone roja** y habrá que
+   mirarlo. Un problema declarado no es un problema escondido.
+
+### Dos fallos de robustez que cazó el ensayo
+
+⚠️ **`echo X | grep -q` es INTERMITENTE con `pipefail`.** `grep -q` sale
+en cuanto encuentra, `echo` recibe SIGPIPE y devuelve 141, y `pipefail`
+lo propaga como fallo **aunque la búsqueda haya acertado**. La primera
+versión daba `stark-experiment` por ausente estando presente. Todas las
+búsquedas sobre variables pasan a *here-string*: sin tubería, sin carrera.
+Verificado con **30 pasadas seguidas verdes y 10 de 10 rojas** con un
+crate sin fila.
+
+**Una compuerta intermitente es peor que ninguna: enseña a ignorarla.**
+
+⚠️ **La guarda de bash iba después de `set -o pipefail`**, así que con
+`sh` reventaba antes de imprimir su propio aviso. Ahora va la primera.
+
+### `check_tests.py`, y por qué nadie la invocaba
+
+Contra el árbol sellado daba **trece falsos positivos**: un `#[ignore]`
+por circuito más tres de la capa. Al mirarlos, los trece son
+**instrumentos de medida**, y todos lo dicen en su motivo.
+
+**Ésa era la razón real de que la herramienta no se mirase.** Una
+herramienta que grita cuando no pasa nada se deja de mirar, y entonces
+**tampoco avisa cuando sí pasa**.
+
+Se le añade una segunda excepción, que es una **regla y no una lista**:
+`#[ignore = "instrumento de medida…"]` se declara y se cuenta aparte; un
+`#[ignore]` que no se declare sigue siendo un fallo.
+
+Y se prueba **en los cuatro sentidos**, como se hizo al escribirla
+(`AUDITORIA.md` en su linea 1508, donde se le metió un `999 tests` para ver si fallaba):
+
+| caso | esperado | medido |
+|---|---|---|
+| árbol real | verde | **769 declarados · 13 instrumentos · exit 0** |
+| `#[ignore = "porque si"]` | rojo | IGNORADO · exit 1 |
+| `#[ignore]` a secas | rojo | IGNORADO · exit 1 |
+| `#[test]` anidado en una `fn` | rojo | ANIDADO · exit 1 |
+| instrumento bien declarado | verde | 14 instrumentos · exit 0 |
+
+### Los dos niveles, y por qué son obligatorios
+
+**54,2 minutos** el workspace entero. El nivel de **sello** son los once
+rápidos —unos 4,5 minutos con el `target` caliente, y casi nada tras la
+primera vez— y el **largo** se queda `halo2` (438 s), `plonk` (749 s) y
+`zk-core` (que no termina).
+
+No es una comodidad: meter 54 minutos en cada sello garantizaría que
+alguien acabe saltándose la compuerta, y una compuerta que se salta no
+protege. **Lo mismo que pasó con `check_tests.py`.**
+
+### Lo que NO se afirma
+
+- **`zk-core` sigue sin arreglarse.** Está pinchado como anomalía, con
+  sus 73 de 76 y su timeout. Averiguar qué test no termina es trabajo
+  aparte y está en la cola.
+- **Los 24 warnings siguen ahí.** Pinchados para que no crezcan; no
+  arreglados.
+- **El nivel largo no lo corre ningún sello.** Correrlo periódicamente es
+  disciplina, no compuerta, y eso es exactamente lo que ha fallado cuatro
+  veces. Queda declarado como debilidad de este diseño.
+- `zk-ssl-node` **sigue sin tests**: 0 pines es un hueco declarado, no una
+  aprobación.
