@@ -206,9 +206,28 @@ fn parse<T: serde::de::DeserializeOwned>(params: Value) -> Result<T, RpcError> {
 }
 
 fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
-    // ⚠️ Las operaciones bloquean el Mutex mientras verifican pruebas
-    // (~decenas de ms). Correcto para un nodo único; con carga real, el
-    // paso siguiente es una cola de escritura (ver ROADMAP).
+    // Las operaciones bloquean el Mutex mientras verifican pruebas
+    // (~decenas de ms). Correcto para un nodo único.
+    //
+    // ⚠️ **Aquí decía que el paso siguiente era «una cola de escritura
+    // (ver ROADMAP)». Las dos mitades estaban mal** (§230):
+    //
+    // - **No hay tal ROADMAP.** El único es `ROADMAP-ECOSISTEMA.md`, que
+    //   trata de especificación, SDKs y vectores de conformidad, y no
+    //   menciona el candado ni la concurrencia. Referencia rota.
+    // - **Y una cola de escritura no arreglaría nada.** El banco I.1
+    //   midió cuatro agregadores concurrentes: aplica UNO por ronda y
+    //   los otros tres reciben `StaleState`. Lo que serializa no es
+    //   este candado: es que **un recibo solo vale contra la raíz
+    //   exacta contra la que se probó** (`two_phase.rs`, la
+    //   comprobación de `root_old`). Quitar el `Mutex` no cambiaría un
+    //   solo resultado de ese banco.
+    //
+    // Lo que el nodo SÍ hace bien bajo esa carga, y estaba sin medir:
+    // **rechaza barato**. Un lote muerto cuesta 3,1 ms frente a los
+    // 32 de uno aplicado —el 9 %—, porque la raíz se comprueba ANTES de
+    // verificar las pruebas. El precio de la contención lo paga el
+    // agregador que pierde, no el nodo.
     let mut guardia = app.estado.lock().expect("mutex del estado envenenado");
     let Estado { layer: l, reservas } = &mut *guardia;
 

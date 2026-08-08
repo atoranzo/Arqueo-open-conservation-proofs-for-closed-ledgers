@@ -205,6 +205,43 @@ un **agregador** —un banco, un proveedor de pagos—, y **ese agregador ve
 quién paga a quién**. No necesita claves —las pruebas vienen hechas—,
 pero sí ve el grafo. Se declara aquí en vez de descubrirse al desplegar.
 
+### ⚠️ Un lote por raíz: `applyMany` asume UN agregador
+
+Todas las pruebas de un lote acreditan su transición contra **la raíz de
+arranque**. Cuando un lote aplica, la raíz se mueve, y **cualquier otro
+lote probado contra la raíz anterior se rechaza entero** con
+`StaleState`.
+
+Esto no es un detalle de implementación: es una **restricción del
+protocolo**, y quien escriba un cliente concurrente tiene que saberla
+antes de descubrirla tirando pruebas.
+
+Medido (§230, banco I.1) con cuatro agregadores enviando a la vez, cada
+uno con sus propias cuentas —sin competir por cuenta ni por posición de
+pendiente, solo por la raíz—:
+
+| | |
+|---|---|
+| lotes que aplican por ronda | **1 de 4** |
+| rechazados por `StaleState` | **3 de 4** |
+| pruebas desperdiciadas | **75 %** |
+
+Dos consecuencias para quien implemente:
+
+1. **El nodo rechaza barato.** Un lote muerto cuesta **3,1 ms** frente a
+   los 32 de uno aplicado —el 9 %—, porque la raíz se comprueba antes de
+   verificar las pruebas. Un nodo con varios agregadores no se ahoga.
+2. **El precio lo paga quien pierde.** Ocho pruebas descartadas son ~2 s
+   de CPU del agregador; el nodo tiró 9 ms. Una razón de **655×**.
+
+Y por tanto: **el lote no elimina la contención, le cambia el grano.**
+Aplicando de una en una se contiende por operación y se pierde una
+prueba; en lote se contiende por lote y se pierden N. Con **un solo
+agregador** el desperdicio es cero y el nodo aplica 248 op/s (§229).
+
+§223 ya declaraba que el agregador ve el grafo de pagos. Ésta es la
+segunda razón, técnica, de que haya **uno**.
+
 ### Lo que vale al aplicar de una en una, y el lote quita
 
 ⚠️ **Hoy, cada operación se aplica sola, y por eso las raíces del

@@ -16340,3 +16340,129 @@ uno del proyecto**. No hizo falta un banco para verlo: hizo falta restar.
 
 Un cuello se declara midiendo dónde se va el tiempo, no observando que el
 resultado es menor de lo que se quería.
+## 230. Lo que serializa no es el candado: es la raíz
+
+Desde §218 el proyecto venía diciendo, en el código y en dos bancos, que
+«con carga real el paso siguiente es una cola de escritura», señalando al
+`Mutex` de `dispatch`. §229 midió el techo del nodo —248 op/s— con **un
+solo cliente en serie** y declaró la concurrencia sin medir.
+
+### Lo que la lectura encontró antes que el banco
+
+`two_phase.rs`, en la comprobación de `root_old`:
+
+```
+if pi.root_old != accounts.root() || pi.pending_root_old != pending.root() {
+    return Err(LayerError::StaleState);
+}
+```
+
+**Un recibo solo vale contra la raíz exacta contra la que se probó.** Si un
+agregador aplica, la raíz se mueve y los lotes probados contra la anterior
+mueren enteros.
+
+Eso era **lectura de código**, no medida. El banco I.1 se construyó para
+comprobarla **y para poder refutarla**: su hipótesis H4 decía que si
+aplicaba más de uno, la lectura estaba mal.
+
+### El banco I.1
+
+Cuatro agregadores, ocho operaciones cada uno, **cada uno con sus propias
+cuentas** —así no compiten por cuenta ni por posición de pendiente, solo
+por la raíz—. Todos piden materiales contra la misma raíz, todos generan
+en paralelo, y todos envían a la vez.
+
+| ronda | aplicaron | `StaleState` | enviar | generar |
+|---|---|---|---|---|
+| 1 | **1/4** | 3 | 42 ms | 2.745 ms |
+| 2 | **1/4** | 3 | 41 ms | 3.535 ms |
+| 3 | **1/4** | 3 | 41 ms | 3.670 ms |
+
+**Uno por ronda, las tres veces. 72 pruebas tiradas de 96 — el 75 %.**
+
+H1 y H3 aciertan exactamente. La lectura era correcta.
+
+### Tres cosas que el banco trajo y no se habían pedido
+
+**El nodo rechaza barato.** Cuatro lotes concurrentes cuestan 41,3 ms;
+uno solo aplicado costaba 32,2 (§229). Los tres rechazos suman 9,2 ms:
+**3,1 ms cada uno, el 9 % de una aplicación.** La raíz se comprueba
+*antes* de verificar las ocho pruebas STARK. Estaba en el código y nadie
+lo había medido: **un nodo con varios agregadores no se ahoga rechazando.**
+
+**El desperdicio no cae donde parecía.** Por ronda el nodo tira 9 ms y los
+clientes tiran 24 pruebas: **seis segundos de CPU**. Una razón de **655×**.
+La contención no es un problema de capacidad del nodo: es un **impuesto
+sobre los agregadores que pierden**.
+
+**Y el lote no elimina la contención: le cambia el grano.**
+
+| | contienden por | desperdicio | coste de perder |
+|---|---|---|---|
+| D.1, suelto | cada operación | 59 % | 1 prueba |
+| I.1, en lote | cada lote | **75 %** | **8 pruebas** |
+| **un agregador** | nada | **0 %** | — |
+
+`applyMany` multiplica el precio de la contención que vino a evitar. Con
+un solo agregador desaparece; con varios, empeora.
+
+### Cuatro sitios que afirmaban lo contrario, y una referencia rota
+
+⚠️ **`main.rs` remitía a un `ROADMAP` que no existe.** El único es
+`ROADMAP-ECOSISTEMA.md`, que trata de especificación, SDKs y vectores de
+conformidad: cero menciones al candado o a la concurrencia.
+
+Es la **segunda referencia rota en tres sellos** —§227 encontró que
+`zk-core/src/lib.rs` mandaba al README para algo que el README no dice—,
+y la tercera contando §205. Dos en tres sellos ya no es mala suerte.
+
+Corregidos los cuatro:
+
+- `main.rs`: el comentario del candado, con la medida.
+- `d1_rpc_baseline.rs` ×2: la hipótesis queda marcada como **resuelta**, y
+  su recomendación —*«atacar el candado antes que los lotes»*— como
+  **equivocada**: se hizo al revés y salió bien (1,72 → 4,95 pagos/s).
+- `d2_lote_rpc.rs`: la rama que no se tomó, y por qué no habría servido.
+
+### La restricción, en la especificación
+
+`spec/RPC.md` documentaba `applyMany` sin lo más importante para quien
+escriba un cliente: **dos agregadores no pueden ganar la misma raíz.**
+Ahora lo dice, con las cifras y con las dos consecuencias —el nodo rechaza
+barato, el precio lo paga quien pierde—.
+
+§223 declaró que el agregador ve el grafo de pagos. Ésta es **la segunda
+razón, y técnica, de que haya uno**.
+
+### La compuerta que NO se construyó, y por qué
+
+Se propuso un comprobador de referencias rotas. **Se midió antes de
+escribirlo**, y la medida lo desaconseja:
+
+- patrón amplio: **13 avisos, ~10 legítimos** — `AUDITORIA.md` es un
+  registro histórico y su trabajo *es* citar lo que ya no existe
+  (`marlin_proof_system.rs`, `transfer.rs`, `mint_pending.rs`), más
+  ejemplos ilustrativos y una plantilla;
+- patrón estrecho: **2 avisos, los 2 falsos** — `CONFIANZA_RESIDUAL.md` y
+  `real_proof.rs` existen, citados con nombre corto;
+- y **ninguno de los dos habría cazado `ver ROADMAP`**, que no lleva
+  comillas ni extensión: el caso que motivó la propuesta.
+
+Una herramienta que no caza el caso que la origina y grita por diez que
+están bien es `check_tests.py` antes de §224, y ya se sabe cómo acaba:
+**nadie la mira, y entonces tampoco avisa cuando sí pasa.**
+
+⚠️ Rito: **una compuerta también se mide antes de escribirla.** Lo que
+queda en el registro no es «no dio tiempo»: es la medición que muestra por
+qué no se construye.
+
+### Lo que NO se decide aquí
+
+- **Qué hacer con varios agregadores** —cola de escritura descartada,
+  agregador único por diseño, o encadenar lotes— es **decisión de mesa**.
+  El banco no la toma y este asiento tampoco.
+- **La latencia por petición no se mide**, ni el reparto entre quien gana
+  y quien pierde: en I.1 todos salen a la vez y desde el mismo proceso.
+- Solo **envíos**, nodo en memoria, y este hardware.
+- Y sigue sin medirse qué pasa con **muchos** agregadores: cuatro no dicen
+  nada de cuarenta, aunque la mecánica no debería cambiar.

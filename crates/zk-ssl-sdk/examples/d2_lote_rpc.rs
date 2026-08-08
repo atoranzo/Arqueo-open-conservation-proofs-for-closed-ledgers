@@ -42,6 +42,10 @@
 //! - **Si sale por debajo de 3**, hay un coste del nodo que el lote no
 //!   toca, y tocaría la cola de escritura que `main.rs` anticipa.
 //!
+//!   ⚠️ Salió 4,95, así que esta rama no se tomó. Y §230 midió que la
+//!   cola de escritura no habría servido: lo que serializa es la raíz,
+//!   no el candado.
+//!
 //! ## Cómo se usa
 //!
 //! Necesita un nodo en marcha con `--dev`:

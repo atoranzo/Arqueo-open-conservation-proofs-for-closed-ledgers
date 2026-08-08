@@ -6,9 +6,14 @@
 //! cosas que no estaban:
 //!
 //! 1. **El `Mutex` que `dispatch` mantiene durante toda la petición.**
-//!    `main.rs:163` ya lo anticipa —«con carga real, el paso siguiente es
-//!    una cola de escritura»— pero nadie ha comprobado si el cuello es la
+//!    `main.rs` lo anticipaba —«con carga real, el paso siguiente es una
+//!    cola de escritura»— y nadie había comprobado si el cuello es la
 //!    regeneración de pruebas o el candado.
+//!
+//!    ⚠️ **RESUELTO en §230, y no era el candado.** El banco I.1 midió
+//!    cuatro agregadores concurrentes: aplica UNO por ronda. Lo que
+//!    serializa es que un recibo solo vale contra **la raíz exacta**
+//!    contra la que se probó. Una cola de escritura no lo tocaría.
 //! 2. **El coste del cable.** Una prueba de envío son **65.840 bytes**
 //!    (§204 banco A.4). En hex dentro de JSON son **~132 KB por
 //!    `applySend`**, más la serialización en ambos extremos. Eso no está
@@ -36,6 +41,11 @@
 //! - Si sale **mucho menos desperdicio pero menos operaciones/s** → el
 //!   cuello es el **`Mutex` o el cable**, y (b) **no lo toca**. Habría
 //!   que atacar el candado (cola de escritura) antes que los lotes.
+//!
+//!   ⚠️ **Esta rama no ocurrió, y la recomendación era equivocada**
+//!   (§230). Se hicieron los lotes ANTES que el candado y salió bien:
+//!   §222 midió 1,72 → 4,95 pagos/s por RPC. Y §229 midió que el nodo
+//!   trabajaba el **4 %** del ciclo: el candado nunca fue el cuello.
 //! - Si el desperdicio es **cero** → las peticiones ya se serializan de
 //!   tal modo que ninguna prueba muere. Entonces (b) no tendría nada que
 //!   eliminar, y el trabajo iría a otro sitio.
