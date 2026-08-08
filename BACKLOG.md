@@ -15,6 +15,30 @@ grupo de prioridad sin cambiar de numero.
 **Estado**: 34 abiertas, 40 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 5 de agosto de 2026 — **contada, no recordada**.
 
+## La cadena de la oponibilidad, de un vistazo
+
+⚠️ Anadida en §233 porque estaba **repartida entre las entradas 53, 56 y
+62**, y reconstruirla exigia leer las tres. Sin ella se ordena por lo que
+se recuerda en vez de por lo que bloquea: en §233 la cola de traspaso
+puso **el acuse primero**, que es el ultimo eslabon.
+
+```
+  1. esquema de firma ......... 53  CERRADA (§127.1) · xmss MT 40/8, medido
+  2. GUARDIAN DEL INDICE ...... 56  <-- LO UNICO VIVO DEL ESLABON 1
+  3. cabeza firmada, emitida .. 56  no existe: epoch_head() es constructor puro
+  4. EpochHead + 2 extensiones  48  verifier_hash (§104.3) + raiz de recepcion (§121)
+  5. acuse .................... 62  politica DECIDIDA; mitad aritmetica YA construida
+```
+
+**Cada eslabon depende del anterior.** El acuse sin cabeza firmada no es
+evidencia portable (§121.7), y la cabeza sin guardian del indice no es
+oponible sino peligrosa: **reusar el indice filtra la clave** (§110.2).
+
+⚠️ Y dos dependencias que no estan en esa columna: el acuse **hereda
+§116** si usa `digest_of_proof` tal cual —§116 se cierra antes—, y
+**XMSS cambia la premisa de la entrada 19**: sin WAL, perder una
+operacion dejaba de ser recuperable.
+
 ⚠️ **La 41 no se cierra hoy, y eso es deliberado.** Se clasificaron sus 80
 fallos y aparecieron **dos que no eran la clase conocida** (§78). Los 78
 restantes tienen causa decidida pero **no medida uno a uno**, y marcarlos en

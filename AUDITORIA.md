@@ -16656,3 +16656,101 @@ descuido.
   testigo rotatorio. Solo se afirma que hace falta uno.
 - **Nada de esto está construido.** Es la primera línea de este asiento y
   conviene que sea también la última.
+## 233. Puse el recibo de admisión primero sin mirar el backlog
+
+La cola de traspaso llevaba, en su primer punto:
+
+> **El recibo de admisión (§121). Cuatro convergencias apuntan ahí. Sigue
+> sin construir.**
+
+Es **el cuarto eslabón de una cadena**, y el backlog lo tiene escrito desde
+§121-§127 con el orden ya fijado. No lo miré.
+
+⚠️ El error no es de análisis: **declaré prioridades sin leer el documento
+cuya única función es tenerlas.** Es de la misma familia que §231 —escribir
+una propiedad de seguridad sin mirar `SECURITY.md`— y esta vez con un
+documento que existe precisamente para eso.
+
+### El estado real de la cadena
+
+| eslabón | estado |
+|---|---|
+| **esquema de firma** | ✅ **CERRADO** (entrada 53, §127.1): `xmss` de RustCrypto, **MT 40/8** — 160,5 ms firmar, 2,7 ms verificar, 18.469 B, horizonte ~35.000 años a 1 firma/s. Medido, no derivado (`doc/xmss-evaluacion.md`) |
+| **el guardián del índice** | ⚠️ **lo único vivo del primer eslabón.** Entrada 56: «persistir el índice a través de un reinicio». Y el backlog ya fija el orden: *«primero garantizar que el índice no retroceda. Dos vías sin medir»* |
+| **cabeza firmada, emitida** | ❌ no existe. `epoch_head()` es un constructor puro que lee cinco raíces; `log.rs:474` lo dice: *«No es oponible. No lleva firma»* |
+| **`EpochHead` extendido** | ❌ dos extensiones declaradas **en el propio código**: `verifier_hash` (§104.3) y la raíz de recepción (§121) |
+| **el acuse** | ✅ política **decidida** (§121) · ✅ **mitad aritmética construida y probada** (`t4_acuse_nativo` en `pending.rs`) · ⚠️ pendiente T4 |
+
+**«Sigue sin construir» era falso en las dos direcciones**: el esquema está
+cerrado y medido, y la mitad del acuse ya está en el árbol con tests.
+
+### Lo que el backlog sabía y yo no
+
+**El acuse hereda §116.** Si usa `digest_of_proof` tal cual, arrastra la
+colisión por ceros finales, y **§116 se cierra antes**. Una dependencia
+más que mi cuadro no tenía.
+
+**Hay que reservar la palabra «acuse».** El proyecto ya tiene dos
+`receipt` —`SendReceipt`, `GovernanceReceipt`— que son **otro animal**:
+paquetes de prueba del cliente. Un tercer homónimo repetiría lo de los
+salts.
+
+### Y lo más grave, que tampoco estaba en mi cuadro
+
+⚠️ **XMSS convierte una pérdida de durabilidad en pérdida de SECRETO**
+(§110.2). `persistence.rs` justifica no tener WAL porque «perder una
+operación es recuperable»; **con XMSS no lo es**, porque reusar el índice
+**filtra la clave**. La entrada 19 no estaba mal — **XMSS cambia su
+premisa**.
+
+⚠️ **Y el reúso de índice es AMBIGUO** (§110.3). §103.3 lo celebraba como
+«el modo de fallo ES el fraude», pero **un reinicio honesto produce el
+mismo evento**: *«te pillé mintiendo»* y *«acabas de perder tu clave»* **no
+se distinguen desde fuera**, con la cabeza ya publicada.
+
+Eso no es un detalle del guardián: es que **adoptar XMSS cambia la premisa
+de durabilidad de toda la capa**, y la entrada 19 —el WAL— pasa de
+«recuperable» a otra cosa.
+
+### El guardián, que es lo siguiente
+
+`doc/xmss-evaluacion.md` lo asciende de contingencia a **mecanismo**,
+porque el test 3 falla y no puede no fallar:
+
+> ❌ dos firmas válidas al mismo índice. Y **sin disco**: `SigningKey`
+> implementa `Clone`.
+
+Ni la propia librería distingue un reinicio honesto de un reúso malicioso.
+Lo que exige, ya escrito y medido:
+
+- **contador propio, `fsync`, y firmar DESPUÉS de persistir** — invirtiendo
+  el flujo natural a propósito;
+- **test de layout**: el índice se lee del byte 7 del SK, y en multiárbol el
+  offset **depende del conjunto** (⌈h/8⌉). El test debe hacer que un cambio
+  de serialización **falle en CI, no en producción**;
+- **reconciliación tras reinicio**: si el contador propio va por delante del
+  índice del SK, el huérfano se quema o se registra; **nunca se retrocede**.
+
+Y la declaración que la propia evaluación exige: **la seguridad del esquema
+pasa a depender de código propio, no auditado.**
+
+### Lo que NO se afirma
+
+- **Nada de esto se construye en este sello.** Es un asiento de orden.
+- La API de `xmss` **no expone el índice**: se deriva de un offset del
+  formato de referencia. Frágil por definición; el test de layout **avisa,
+  no garantiza**. La evaluación propone la salida: issue upstream.
+- `0.1.0-pre.0`, con `master` divergiendo del tag publicado (`sha3` →
+  `shake`) y sin vectores KAT en el paquete. Lo que salva la papeleta es
+  que la **conformidad de formato está probada byte a byte** contra las
+  cifras del RFC.
+- Y las **dos vías** para que el índice no retroceda **siguen sin medir**
+  (§110.5).
+
+### El rito
+
+⚠️ **Antes de declarar una prioridad, leer el backlog.** No es cortesía con
+el documento: es que la cadena de dependencias vive ahí, y una cola
+declarada sin mirarla ordena por lo que se recuerda en vez de por lo que
+bloquea. Aquí habría puesto a construir el tejado —el acuse— con los
+cimientos —el guardián del índice— sin empezar.
