@@ -201,9 +201,39 @@ Reglas normativas:
 
 ⚠️ **Quien arma el lote no es el nodo.** El nodo no acumula operaciones:
 aplica las que le llegan juntas en una petición. Juntarlas es trabajo de
-un **agregador** —un banco, un proveedor de pagos—, y **ese agregador ve
-quién paga a quién**. No necesita claves —las pruebas vienen hechas—,
-pero sí ve el grafo. Se declara aquí en vez de descubrirse al desplegar.
+un **agregador** —un banco, un proveedor de pagos—. No necesita claves:
+las pruebas vienen hechas.
+
+#### Qué ve exactamente un agregador
+
+⚠️ Hasta §231 aquí se afirmaba que **«ve quién paga a quién»**. Es
+**falso**, y era una afirmación no comprobada. Medido campo a campo
+sobre los DTO:
+
+| procesa | ve | NO ve |
+|---|---|---|
+| solo envíos | emisor, importe, `notice.position` | **el receptor** |
+| solo cobros | receptor, importe, `notice.position` | **el emisor** |
+| **ambos** | **la arista completa** | — |
+
+**El identificador del receptor NO viaja en el recibo de envío.**
+`SendReceiptDto` lleva `proof`, `public_inputs`, `commitment` y
+`notice`; y `SendPublicInputsDto` son raíces, importe, límite y
+suministro. El `receiver_id` solo aparece en `SendMaterialsDto`, que va
+**del nodo al titular**, no del titular al nodo.
+
+Lo que une las dos mitades es **`notice.position`**: aparece en
+`receipt.notice.position` al enviar y en `notice.position` al cobrar. Un
+agregador que vea las dos correlaciona por esa clave y reconstruye
+emisor → receptor → importe.
+
+**Consecuencia para quien despliegue**, que la afirmación anterior
+ocultaba: **separar envíos y cobros en agregadores distintos es una
+mitigación real.** Ninguno de los dos ve el grafo por sí solo.
+
+Y esto no exime al NODO, que ve todo lo anterior por definición.
+`SECURITY.md` ya lo decía bien —«qué posiciones cambian y cuándo siguen
+siendo observables»—; la afirmación errónea estaba aquí, no allí.
 
 ### ⚠️ Un lote por raíz: `applyMany` asume UN agregador
 
@@ -239,8 +269,10 @@ Aplicando de una en una se contiende por operación y se pierde una
 prueba; en lote se contiende por lote y se pierden N. Con **un solo
 agregador** el desperdicio es cero y el nodo aplica 248 op/s (§229).
 
-§223 ya declaraba que el agregador ve el grafo de pagos. Ésta es la
-segunda razón, técnica, de que haya **uno**.
+§223 declaraba que el agregador ve el grafo de pagos; §231 lo corrigió
+—solo lo ve quien procesa **las dos mitades**—. Ésta es la segunda
+razón, y técnica, de que haya **uno**: dos no pueden ganar la misma
+raíz.
 
 ### Lo que vale al aplicar de una en una, y el lote quita
 

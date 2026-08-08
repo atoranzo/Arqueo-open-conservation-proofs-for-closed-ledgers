@@ -131,6 +131,12 @@ atado al importe (§74). Ambas corregidas y medidas.
   entrada 54; **requiere primero dar al sistema esa noción**.
 - **No hay recuperación si el nodo desaparece.**
 - **Metadatos**: qué posiciones cambian y cuándo siguen siendo observables.
+  Medido campo a campo en §231: un envío revela **emisor, importe y
+  `notice.position`** —no el receptor—; un cobro revela **receptor,
+  importe y la misma posición**. Quien vea las dos mitades reconstruye la
+  arista por esa clave. El nodo las ve siempre; un **agregador** (§223)
+  solo si procesa ambas, así que separarlas entre agregadores distintos
+  es una mitigación real.
 - **Solidez de circuitos y del sistema de prueba**: no verificada formalmente.
 - ⚠️ **Rotar la clave exige dos custodios.** Un titular puede gastar sin
   permiso de nadie y **no puede mejorar su propia seguridad sin permiso de

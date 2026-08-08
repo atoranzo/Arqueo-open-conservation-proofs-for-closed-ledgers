@@ -16466,3 +16466,78 @@ qué no se construye.
 - Solo **envíos**, nodo en memoria, y este hardware.
 - Y sigue sin medirse qué pasa con **muchos** agregadores: cuatro no dicen
   nada de cuarenta, aunque la mecánica no debería cambiar.
+## 231. «El agregador ve quién paga a quién» era falso, y lo escribí yo
+
+§223 lo declaró, §230 lo repitió, y acabó en **`spec/RPC.md`** —normativa,
+lo que leería una segunda implementación— y en el banco I.1. Cinco sitios,
+**todos míos**, ninguno anterior a §223.
+
+Nunca lo comprobé. Al ir a decidir el modelo de agregador, la premisa no
+aguantó la primera lectura de los DTO.
+
+### Lo que revela cada mitad, campo a campo
+
+**El identificador del receptor NO viaja en el recibo de envío.**
+
+`SendReceiptDto` lleva `proof`, `public_inputs`, `commitment` y `notice`.
+`SendPublicInputsDto` son raíces, importe, límite regulatorio y suministro.
+El `receiver_id` aparece **solo** en `SendMaterialsDto`, que va **del nodo
+al titular** — la dirección contraria.
+
+| procesa | ve | NO ve |
+|---|---|---|
+| solo envíos | emisor, importe, `notice.position` | **el receptor** |
+| solo cobros | receptor, importe, `notice.position` | **el emisor** |
+| **ambos** | **la arista completa** | — |
+
+Lo que une las dos mitades es **`notice.position`**: aparece en
+`receipt.notice.position` al enviar y en `notice.position` al cobrar. Quien
+vea las dos correlaciona por esa clave.
+
+### La versión correcta es más precisa y **más útil**
+
+Mi afirmación falsa ocultaba una mitigación real: **separar envíos y cobros
+en agregadores distintos**. Ninguno de los dos ve el grafo por sí solo.
+
+Eso no aparecía porque yo había escrito que el envío ya revelaba el
+destinatario. **Una afirmación demasiado pesimista tapó una salida.** Es la
+primera vez en esta serie que una conjetura mía no solo era falsa, sino que
+además cerraba una opción de diseño.
+
+### Y estaba bien escrito en otro sitio
+
+`SECURITY.md` ya decía, desde antes: *«Metadatos: qué posiciones cambian y
+cuándo siguen siendo observables.»* **La propiedad correcta estaba en el
+documento de seguridad**, y yo escribí otra cosa en la especificación sin
+mirarlo.
+
+⚠️ Rito: **antes de declarar una propiedad de seguridad, mirar si el
+documento de seguridad ya la declara.** No es solo evitar la contradicción:
+es que el sitio donde ya está suele tenerla mejor dicha.
+
+Corregidos los cinco, y `SECURITY.md` gana la precisión que le faltaba —qué
+revela cada mitad y cuál es la clave que las une—, porque ahí es donde toca
+buscarlo.
+
+### Lo que esto NO absuelve
+
+- **El nodo lo ve todo**, por definición. Nada de esto cambia su posición.
+- **La correlación por posición no está medida en un banco**: se leyó campo
+  a campo en los DTO. Es lectura verificada, no ejecución.
+- **No se ha comprobado si hay otras vías de correlación** —tiempos,
+  tamaños, orden de las operaciones dentro de un lote—. Solo se ha mirado
+  qué campos viajan.
+- **La mitigación no está construida ni medida.** Separar agregadores es
+  una posibilidad que el cable permite, no una pieza del sistema.
+
+### La decisión de mesa sigue pendiente, y ahora con la premisa buena
+
+Elegir entre **un agregador**, **varios coordinados fuera** o **encadenar
+lotes** dependía en parte de cuánto observa esa pieza. La respuesta era
+distinta de la escrita, así que la decisión se toma después de esto y no
+antes.
+
+⚠️ **Y ocho veces ya.** Ocho conjeturas de esta sesión escritas como hecho
+y refutadas al medirlas o al leerlas. Las siete primeras costaron un banco
+o una resta; ésta costó **dos sellos y una línea en la especificación
+normativa**, que es el sitio donde una afirmación falsa hace más daño.

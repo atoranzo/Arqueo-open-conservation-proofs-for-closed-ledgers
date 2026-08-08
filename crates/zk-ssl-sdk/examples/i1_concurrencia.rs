@@ -57,8 +57,13 @@
 //!
 //! Si H1 acierta, la conclusión **no** es «el diseño está roto». Es que
 //! `applyMany` asume **un agregador**, y eso ya se intuía en §223 por otra
-//! vía —el agregador ve el grafo de pagos—. Aquí aparecería una segunda
-//! razón, técnica: **dos no pueden ganar la misma raíz.**
+//! vía. Aquí aparecería una segunda razón, técnica: **dos no pueden ganar
+//! la misma raíz.**
+//!
+//! ⚠️ Aquella vía estaba MAL enunciada y §231 la corrigió: el agregador
+//! **no** ve quién paga a quién por procesar envíos. El receptor no viaja
+//! en el recibo de envío. Solo ve la arista quien procesa **las dos
+//! mitades**, correlacionando por `notice.position`.
 //!
 //! Qué hacer con eso —cola de escritura en el nodo, agregador único por
 //! diseño, o encadenar lotes— es **decisión de mesa**, y este banco no la
@@ -292,8 +297,8 @@ fn main() -> anyhow::Result<()> {
         println!("  Consecuencias, dichas con cuidado:");
         println!("    · una cola de escritura en el nodo NO arreglaria esto: el");
         println!("      candado no es el cuello, y quitarlo no cambiaria nada.");
-        println!("    · `applyMany` asume UN agregador. §223 ya lo intuia por otra");
-        println!("      via —el agregador ve el grafo de pagos—; aqui aparece una");
+        println!("    · `applyMany` asume UN agregador. §223 lo intuia por otra");
+        println!("      via —MAL enunciada, corregida en §231—; aqui aparece una");
         println!("      segunda razon, tecnica: **dos no pueden ganar la misma raiz**.");
         println!("    · y perder la carrera cuesta ahora {n_ops} pruebas, no una.");
         println!("      El lote MULTIPLICA el precio de la contencion que evita.");
