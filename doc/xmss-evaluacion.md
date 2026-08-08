@@ -27,7 +27,12 @@ Pre-release y **sin auditoría independiente**, declarado por el propio crate.
 | # | prueba ejecutada | resultado |
 |---|---|---|
 | **1** | `cargo tree` + grep de curvas/retículos | ✅ **0 coincidencias**; el árbol completo son hashes (`sha2`, `sha3`/`keccak`) y soporte, ~24 crates. ⚠️ matiz registrado: `rand` arrastra `chacha20` (cifrado de flujo, para el RNG de keygen) — no es familia de supuestos nueva y ya está en el proyecto. |
-| **2** | firmar → serializar → deserializar → índice | El estado **persiste** (round-trip identidad) pero **la API no expone el índice**: solo `sign`/`sign_detached` + bytes. Según la letra («se descarta»): ❌. Verificado el matiz: SK = 136 B = **OID(4, =0x00000001) + índice(4, BE) + 4×32** — formato de referencia exacto; tras una firma solo cambia el byte 7. Derivable, frágil (en MT el índice mide ⌈h/8⌉: el offset depende del conjunto). **Se degrada a ⚠️ condicionado**: issue upstream pidiendo `index()`, y guardián con test propio de layout mientras tanto. |
+| **2** | firmar → serializar → deserializar → índice | El estado **persiste** (round-trip identidad) pero **la API no expone el índice**: solo `sign`/`sign_detached` + bytes. Según la letra («se descarta»): ❌. Verificado el matiz: SK = 136 B = **OID(4, =0x00000001) + índice(4, BE) + 4×32** — formato de referencia exacto; tras una firma solo cambia el byte 7.
+⚠️ **Esas cifras son del conjunto de ÁRBOL ÚNICO** (§236, sonda S.3). Para
+el conjunto ELEGIDO, `XMSSMT-SHA2_40/8_256`, se midió: **SK = 137 B =
+OID(4) + índice(5, BE) + 4×32**, con el índice en los bytes [4, 9) —el
+ancho es ⌈h/8⌉ = 5 para h=40, como esta misma fila advertía—. Al firmar
+una vez cambia el **byte 8**, el menos significativo. Derivable, frágil (en MT el índice mide ⌈h/8⌉: el offset depende del conjunto). **Se degrada a ⚠️ condicionado**: issue upstream pidiendo `index()`, y guardián con test propio de layout mientras tanto. |
 | **3** | firmar en n → restaurar estado previo → firmar | ❌ **firma**: dos firmas válidas al mismo índice. Segunda vía sin disco: `SigningKey` implementa `Clone` — clonar y firmar con ambas reproduce el reúso. **Predicción registrada y cumplida** — ver E1: ninguna candidata puede pasar esta prueba tal como estaba escrita. |
 | **3b** | agotar 2^h firmas (h=10) | ✅ `Err(KeyExhausted)` en la firma 1025 **exacta**, variante nombrada, sin wrap. |
 | **4** | dos conjuntos, uno simple y uno multiárbol | ✅ h=10 y MT 20/2 instancian, firman y verifican. Alturas = **menú discreto** (E4). |

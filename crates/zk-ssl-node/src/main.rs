@@ -20,6 +20,13 @@
 /// oponibilidad (`BACKLOG.md`) y el 3 —la cabeza firmada— no existe.
 mod firma_indice;
 
+/// **El firmante de cabezas de época.** Eslabón 3 de la cadena de la
+/// oponibilidad, y el **consumidor** que al guardián le faltaba (§234).
+///
+/// ⚠️ Sigue sin haber **latido**: esto firma cuando se le pide, y nadie
+/// se lo pide todavía. Y **no hay custodia de clave declarada**.
+mod firma_cabeza;
+
 use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::Mutex;

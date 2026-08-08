@@ -16969,3 +16969,124 @@ Un `grep` sin coincidencias y un `grep` sin objetivo se imprimen igual.
   seguirá escrito cuando entre en el árbol.
 - **El pendiente 3 sigue vivo**: el issue está redactado, ahora con más
   argumento, y **sin enviar**.
+## 236. El firmante: dominio, versión de formato, y el guardián con consumidor
+
+Eslabón 3 de la cadena. `xmss` entra en el árbol —**la primera dependencia
+criptográfica del proyecto**— y el guardián de §234 deja de estar sin
+consumidor.
+
+### Lo que se firma
+
+```text
+preámbulo = b"ZK-SSL-epoch-head" ‖ versión_de_formato ‖ epoch_digest
+firma     = XMSS(preámbulo)
+```
+
+**50 bytes** —17 + 1 + 32—, y la firma adjunta sale a **18.519** = los
+18.469 del RFC más el preámbulo dentro.
+
+### Por qué la versión de formato, y por qué no es un campo vacío
+
+`EpochHead` tiene dos extensiones pendientes y §121.2 avisaba: *«antes de
+que exista un solo testigo»*. **Firmar crea el primer testigo.**
+
+Sin ese byte, cuando entre la raíz de recepción el `epoch_digest` cambiaría
+y un testigo con firmas guardadas **no podría distinguir una cabeza vieja
+legítima de una falsificación**. Con él, la transición es legible. El aviso
+de §121.2 queda **atendido, no ignorado** — y se dice aquí porque alguien
+leerá §121.2 dentro de un año y querrá saber si se respetó.
+
+⚠️ Y no es lo mismo que un campo vacío. `verifier_hash` vacío **mentiría**;
+una versión de formato **dice la verdad**: «esta cabeza tiene estos cinco
+campos». Es el criterio que mató a `verifier_hash`, aplicado en la dirección
+contraria — y aplicarlo cuando lleva a decir que **sí** se puede hacer es lo
+que hace que el criterio valga.
+
+⚠️ **No toca `epoch_digest`**, que está congelado en los vectores de
+conformidad de 0.2. La versión vive en el **preámbulo de la firma**.
+
+### El dominio, sin la versión dentro
+
+Sin dominio, una firma de cabeza podría reinterpretarse como firma de otra
+cosa el día que el operador firme algo más (§209).
+
+⚠️ Pero va **sin** `-v1`, cambiando lo propuesto: **dos marcadores de versión
+que pueden discrepar valen menos que uno.** Si alguien sube el byte y no la
+cadena, el preámbulo queda inconsistente y nadie lo nota. Hay un test que lo
+vigila.
+
+### Dos ejes de versión, y cuál manda sobre qué
+
+| | gobierna |
+|---|---|
+| `zkssl/0.2` | **el cable**: qué viaja y qué significa |
+| `VERSION_FORMATO` | **qué campos entran en la firma** |
+
+**Avanzan por separado.** Sin decirlo, la próxima persona pensará que uno
+implica al otro.
+
+### El test de layout: por qué NO son 256 firmas
+
+Su propósito declarado es *«que un cambio de serialización falle en CI, no
+en producción»*. 256 firmas contra la clave real cuestan **37 s medidos**
+(256 × 144,5 ms) sobre los 4 s que tarda hoy el nodo entero.
+
+Se descompone, y sale **más fuerte**:
+
+- **El acarreo es una propiedad del LECTOR**, y se prueba sintéticamente y
+  en microsegundos: seis vectores, hasta `2⁴⁰-1`.
+- **El offset y el ancho** se prueban contra la clave real con **una** firma:
+  el SK mide 137 y el índice pasa de 0 a 1 en los bytes [4, 9).
+- Y **un SK de otro tamaño se rechaza** en vez de leerse: si upstream cambia
+  la serialización, falla aquí.
+
+Lo que las 256 firmas añadirían es cobertura del **incremento de upstream**,
+que no es un cambio de serialización. Se declara y no se paga.
+
+### La cifra de la evaluación que estaba mal
+
+Decía **«SK = 136 B = OID(4) + índice(4, BE) + 4×32»**. Eso es del conjunto
+de **árbol único**. Para el elegido, medido en S.3: **137 = OID(4) +
+índice(5) + 4×32**, con el índice en [4, 9) big-endian.
+
+La propia evaluación advertía que *«en MT el índice mide ⌈h/8⌉»* — pero la
+cifra concreta quedó con el número del otro conjunto. Corregida.
+
+### ⚠️ Dos avisos falsos de mi propia sonda
+
+S.3 imprimió **«NO CUADRA»** dos veces, y las dos eran **mías**:
+
+1. *«el índice empieza en 8, no en 4»* — con **una** firma solo cambia el
+   byte menos significativo de un entero big-endian. Cuadra.
+2. *«la firma mide 18.494, no 18.469»* — `Signature` lleva **el mensaje
+   adjunto**, y el mensaje eran 25 bytes. 18.469 + 25 = 18.494. Cuadra exacto.
+
+Séptimo y octavo instrumento míos torcidos. Y estos dos **habrían hecho
+daño**: me llevaban a escribir un test de layout que vigilara el byte 8 como
+si fuera «el índice», y a dudar de una cifra correcta.
+
+Reverificado de paso, sobre esta máquina: keygen **17,9 ms**, firmar
+**144,5**, verificar **2,4** — un 5-11 % **más rápidos** que el 01-08.
+
+### Firmar verifica su propia salida
+
+`firmar()` **verifica la firma antes de devolverla**. Cuesta 2,4 ms sobre
+144,5 —el 1,7 %— y cierra la clase de fallo en que se publica una firma
+inválida y nadie lo nota hasta que un testigo la rechaza.
+
+**Canon: `zk-ssl-node` de 22 a 31.**
+
+### Lo que NO da, y hay que leer entero
+
+- ⚠️ **No hay custodia de clave.** El operador no tiene clave hoy, y *una
+  firma sin custodia declarada es una firma sin valor probatorio*. Esta pieza
+  toma una semilla; **de dónde sale y quién la guarda es decisión de
+  despliegue**, y no está tomada.
+- ⚠️ **No hay latido.** Nada emite cabezas periódicamente.
+- ⚠️ **Releer una firma desde sus bytes —lo que necesita un TESTIGO— no está
+  resuelto.** No se sondeó esa parte de la API, y **no se ha fingido con un
+  `try_from` supuesto**. Va a la cola.
+- **La cabeza sigue incompleta.** Un testigo que guarde firmas v1 guarda
+  cabezas incompletas **por diseño, no por descuido**.
+- `xmss` es **`0.1.0-pre.0` sin auditoría independiente**, fijado con `=`
+  porque `master` ya diverge del tag.

@@ -324,7 +324,7 @@ checksum = "94893f1e0c6eeab764ade8dc4c0db24caf4fe7cbbaafc0eba0a9030f447b5185"
 dependencies = [
  "colored",
  "num-traits",
- "rand",
+ "rand 0.8.7",
  "rayon",
 ]
 
@@ -558,9 +558,9 @@ dependencies = [
  "ark-snark",
  "ark-std",
  "blake2b_simd",
- "rand",
+ "rand 0.8.7",
  "rand_chacha",
- "rand_core",
+ "rand_core 0.6.4",
  "rayon",
 ]
 
@@ -582,13 +582,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "chacha20"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d524456ba66e72eb8b115ff89e01e497f8e6d11d78b70b1aa13c0fbd97540a81"
+dependencies = [
+ "cfg-if",
+ "cpufeatures 0.3.0",
+ "rand_core 0.10.1",
+]
+
+[[package]]
 name = "chacha20poly1305"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10cd79432192d1c0f4e1a0fef9527696cc039165d729fb41b3f4f4f354c2dc35"
 dependencies = [
  "aead",
- "chacha20",
+ "chacha20 0.9.1",
  "cipher",
  "poly1305",
  "zeroize",
@@ -756,7 +767,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78c8292055d1c1df0cce5d180393dc8cce0abec0a7102adb6c7b1eef6016d60a"
 dependencies = [
  "generic-array 0.14.7",
- "rand_core",
+ "rand_core 0.6.4",
  "typenum",
 ]
 
@@ -859,7 +870,7 @@ dependencies = [
  "ff",
  "group",
  "pairing",
- "rand_core",
+ "rand_core 0.6.4",
  "rayon",
  "subtle",
  "zeroize",
@@ -886,7 +897,7 @@ dependencies = [
  "dusk-bytes",
  "ff",
  "group",
- "rand_core",
+ "rand_core 0.6.4",
  "subtle",
 ]
 
@@ -907,7 +918,7 @@ dependencies = [
  "merlin",
  "miniz_oxide 0.7.4",
  "msgpacker",
- "rand_core",
+ "rand_core 0.6.4",
  "rayon",
  "sha2",
  "zeroize",
@@ -961,7 +972,7 @@ dependencies = [
  "bitvec",
  "byteorder",
  "ff_derive",
- "rand_core",
+ "rand_core 0.6.4",
  "subtle",
 ]
 
@@ -1097,13 +1108,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "getrandom"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "r-efi",
+ "rand_core 0.10.1",
+]
+
+[[package]]
 name = "group"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0f9ef7462f7c099f518d754361858f86d8a07af53ba9af0fe635bbccb151a63"
 dependencies = [
  "ff",
- "rand_core",
+ "rand_core 0.6.4",
  "subtle",
 ]
 
@@ -1114,7 +1137,7 @@ dependencies = [
  "ff",
  "halo2_gadgets",
  "halo2_proofs",
- "rand_core",
+ "rand_core 0.6.4",
  "settlement-prover",
  "sled",
 ]
@@ -1133,7 +1156,7 @@ dependencies = [
  "halo2_proofs",
  "lazy_static",
  "pasta_curves",
- "rand",
+ "rand 0.8.7",
  "sinsemilla",
  "subtle",
  "uint",
@@ -1163,7 +1186,7 @@ dependencies = [
  "indexmap 1.9.3",
  "maybe-rayon",
  "pasta_curves",
- "rand_core",
+ "rand_core 0.6.4",
  "tracing",
 ]
 
@@ -1186,7 +1209,7 @@ dependencies = [
  "pairing",
  "paste",
  "plonky2_maybe_rayon",
- "rand_core",
+ "rand_core 0.6.4",
  "rayon",
  "serde",
  "serde_arrays",
@@ -1298,6 +1321,16 @@ name = "httpdate"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
+
+[[package]]
+name = "hybrid-array"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f2d35805454dc9f8662a98d6d61886ffe26bd465f5960e0e55345c70d5c0d2a9"
+dependencies = [
+ "typenum",
+ "zeroize",
+]
 
 [[package]]
 name = "hyper"
@@ -1657,7 +1690,7 @@ checksum = "58c38e2799fc0978b65dfff8023ec7843e2330bb462f19198840b34b6582397d"
 dependencies = [
  "byteorder",
  "keccak",
- "rand_core",
+ "rand_core 0.6.4",
  "zeroize",
 ]
 
@@ -1723,7 +1756,7 @@ dependencies = [
  "ff",
  "generic-array 0.14.7",
  "nova-snark",
- "rand",
+ "rand 0.8.7",
 ]
 
 [[package]]
@@ -1738,7 +1771,7 @@ dependencies = [
  "digest",
  "ff",
  "generic-array 1.4.4",
- "getrandom",
+ "getrandom 0.2.17",
  "halo2curves",
  "itertools 0.14.0",
  "num-bigint 0.4.8",
@@ -1746,7 +1779,7 @@ dependencies = [
  "num-traits",
  "once_cell",
  "rand_chacha",
- "rand_core",
+ "rand_core 0.6.4",
  "rayon",
  "serde",
  "serde_with",
@@ -1761,7 +1794,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1783,7 +1816,7 @@ checksum = "c89e69e7e0f03bea5ef08013795c25018e101932225a656383bd384495ecc367"
 dependencies = [
  "num-integer",
  "num-traits",
- "rand",
+ "rand 0.8.7",
  "serde",
 ]
 
@@ -1873,7 +1906,7 @@ dependencies = [
  "ff",
  "group",
  "lazy_static",
- "rand",
+ "rand 0.8.7",
  "static_assertions",
  "subtle",
 ]
@@ -1903,7 +1936,7 @@ dependencies = [
  "dusk-bytes",
  "dusk-plonk",
  "dusk-poseidon",
- "rand",
+ "rand 0.8.7",
  "settlement-prover",
  "sled",
 ]
@@ -1971,6 +2004,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "r-efi"
+version = "6.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
+
+[[package]]
 name = "radium"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1984,7 +2023,18 @@ checksum = "22f6172bdec972074665ed81ed53b71da00bfc44b65a753cfde883ec4c702a1a"
 dependencies = [
  "libc",
  "rand_chacha",
- "rand_core",
+ "rand_core 0.6.4",
+]
+
+[[package]]
+name = "rand"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7f5fa3a058cd35567ef9bfa5e75732bee0f9e4c55fa90477bef2dfcdbc4be80"
+dependencies = [
+ "chacha20 0.10.1",
+ "getrandom 0.4.3",
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -1994,7 +2044,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6c10a63a0fa32252be49d21e7709d4d4baf8d231c2dbce1eaa8141b9b127d88"
 dependencies = [
  "ppv-lite86",
- "rand_core",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -2003,8 +2053,14 @@ version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
- "getrandom",
+ "getrandom 0.2.17",
 ]
+
+[[package]]
+name = "rand_core"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63b8176103e19a2643978565ca18b50549f6101881c443590420e4dc998a3c69"
 
 [[package]]
 name = "rayon"
@@ -2080,7 +2136,7 @@ checksum = "a4689e6c2294d81e88dc6261c768b63bc4fcdb852be6d1352498b114f61383b7"
 dependencies = [
  "cc",
  "cfg-if",
- "getrandom",
+ "getrandom 0.2.17",
  "libc",
  "untrusted",
  "windows-sys 0.52.0",
@@ -2334,6 +2390,12 @@ name = "shlex"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
+
+[[package]]
+name = "signature"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77549399552de45a898a580c1b41d445bf730df867cc44e6c0233bbc4b8329de"
 
 [[package]]
 name = "simd-adler32"
@@ -3156,6 +3218,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "xmss"
+version = "0.1.0-pre.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5715f4f20c87b0d3f8e70ff92e15d1fe405183b493e39f79e77c81545a3b4d4b"
+dependencies = [
+ "digest",
+ "hybrid-array",
+ "rand 0.10.2",
+ "sha2",
+ "sha3",
+ "signature",
+ "subtle",
+ "thiserror",
+ "zeroize",
+]
+
+[[package]]
 name = "yoke"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3288,7 +3367,7 @@ dependencies = [
  "ark-snark",
  "ark-std",
  "ceremony",
- "rand",
+ "rand 0.8.7",
  "rand_chacha",
  "settlement-prover",
  "sled",
@@ -3334,6 +3413,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.23",
  "winterfell",
+ "xmss",
  "zk-ssl",
  "zk-ssl-wire",
 ]
@@ -3344,7 +3424,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chacha20poly1305",
- "rand",
+ "rand 0.8.7",
  "serde",
  "serde_json",
  "sha2",

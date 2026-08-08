@@ -26,6 +26,11 @@ zk-ssl = { path = "../zk-ssl" }
 zk-ssl-wire = { path = "../zk-ssl-wire" }
 stark-experiment = { path = "../stark-experiment" }
 winterfell = "0.13"
+# ⚠️ **0.1.0-pre.0, SIN auditoría independiente**, declarado por el propio
+# crate. Elegido en la entrada 53 (§127.1) y confirmado en §235 como la
+# única usable de CUATRO candidatas. La versión va FIJADA con `=`: es una
+# pre-release y `master` ya diverge del tag (`sha3` → `shake`).
+xmss = "=0.1.0-pre.0"
 
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
 axum = "0.7"
