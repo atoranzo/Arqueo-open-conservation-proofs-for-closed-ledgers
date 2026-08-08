@@ -1,3 +1,60 @@
+================================================================================
+INVESTIGACION DESCARTADA · Marlin y el setup UNIVERSAL
+================================================================================
+
+⚠️ ESTO NO ES CODIGO DEL PROYECTO. No compila, nunca ha compilado, y no debe
+   volver a `crates/zk-core/src/`. Por eso la extension es `.rs.txt`: ningun
+   `mod`, ninguna herramienta y ningun `cargo` lo confundira con un modulo.
+
+## Que se intento
+
+Sustituir el trusted setup POR CIRCUITO de Groth16 por el setup UNIVERSAL de
+Marlin: uno solo, hasta un tamaño maximo, valido para cualquier circuito de
+ese tamaño o menor — incluidos los que no existian cuando se genero. Eso
+convertiria "una ceremonia por cada version del circuito" en "una ceremonia
+para siempre", que es la limitacion mas grave que el proyecto se declara.
+
+## Por que se descarto
+
+**No compila, y no por un descuido.** Importa cuatro dependencias que no
+estan en ningun `Cargo.toml` del workspace:
+
+    ark_marlin · ark_poly · ark_poly_commit · blake2
+
+Y `ark-marlin` es precisamente la que la investigacion descarto. La cabecera
+que sigue lo anticipaba antes de intentarlo: avisa de "varias rondas de
+correccion" y del choque de versiones de `blake2` (0.9 frente a 0.10+) que
+Marlin arrastra en esa era del ecosistema Arkworks.
+
+La conclusion del proyecto esta en `crates/zk-core/src/lib.rs`, en el
+apartado de limitaciones honestas: de las dos investigaciones reales
+—`ark-marlin` y `celo-org/snark-setup`— **no habia alternativa madura**.
+
+## Por que se conserva en vez de borrarse
+
+Una decision negativa documentada CON su intento vale mas que documentada
+sin el. Cuando alguien pregunte "¿por que no usasteis un setup universal?",
+la respuesta util no es una frase: es esto, mas las cuatro dependencias que
+faltaban.
+
+## Que hacer si algun dia se retoma
+
+`ark-marlin` es el eslabon a comprobar primero: si su ecosistema madura y
+las versiones de `blake2` dejan de chocar, esto es el punto de partida.
+Solo cubria `ComplianceCircuit`, el circuito simple; extenderlo a
+`ComplianceCircuitWithState` era un paso posterior.
+
+## Lo que se afirmo de esto y era FALSO
+
+§225 y §226 lo sellaron como "codigo muerto" y "septimo escrito y no
+cableado", con la cola diciendo que resolvia la limitacion mas grave.
+**Las dos mitades eran falsas**: ni resuelve nada —no compila— ni se quedo
+sin cablear por descuido. §227 lo corrige.
+
+================================================================================
+LO QUE SIGUE ES EL FICHERO ORIGINAL, INTACTO
+================================================================================
+
 //! Capa de pruebas con Marlin, como alternativa a Groth16 que elimina el
 //! problema del "trusted setup por circuito".
 //!

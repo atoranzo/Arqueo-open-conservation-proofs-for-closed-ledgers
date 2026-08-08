@@ -32,6 +32,8 @@
 #    al encontrar, `echo` recibe SIGPIPE y devuelve 141 aunque la busqueda
 #    acierte. Una compuerta intermitente es peor que ninguna.
 # 7. **Dice que linea editar** cuando un pin no cuadra.
+# 8. **Ningun `.rs` bajo `src/` puede quedar sin declarar** (§227). Lo que
+#    no se compila no se verifica — y encima invita a especular.
 #
 # ## Los TRES niveles, y por que tres (§225)
 #
@@ -196,6 +198,20 @@ if [ $? -eq 0 ]; then
 else
   sed 's/^/      /' "$OUT/check_tests.txt" >&2
   falla "check_tests.py encontro tests que no protegen"
+fi
+
+# ── 2 bis · ficheros .rs que no declara nadie ──
+# Un `.rs` sin declarar NO se compila, asi que nada lo verifica — y encima
+# invita a especular sobre el. `marlin_proof_system.rs` estuvo asi, y se
+# sello DOS VECES una descripcion falsa de lo que era (§227).
+msg ""
+msg "== CANON · ficheros .rs que no declara nadie =="
+python3 tools/check_modulos.py > "$OUT/check_modulos.txt" 2>&1
+if [ $? -eq 0 ]; then
+  msg "  OK  $(tail -1 "$OUT/check_modulos.txt")"
+else
+  sed 's/^/      /' "$OUT/check_modulos.txt" >&2
+  falla "hay ficheros .rs que nadie declara"
 fi
 
 # ── 3 · conformidad ─────────────────────────────────────────────

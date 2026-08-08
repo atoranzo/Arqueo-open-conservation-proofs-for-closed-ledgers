@@ -16005,3 +16005,131 @@ ser los del canon, y así se dice en la cabecera.
   «escrito y no cableado», y el que resuelve el problema declarado como
   más grave del proyecto.
 - El **nodo sigue sin tests**: sus 0 pines son un hueco declarado.
+## 227. Lo que afirmé de `marlin_proof_system.rs` era falso
+
+§225 y §226 lo sellaron como **«código muerto»** y **«séptimo escrito y no
+cableado»**, y la cola lo puso en primer lugar diciendo que resolvía «la
+limitación más grave del proyecto».
+
+**Las dos mitades eran falsas.** Este asiento las corrige, porque los
+asientos no se reescriben.
+
+### Lo que pasó, y cómo se debería haber visto
+
+Conté que el módulo no estaba declarado en `lib.rs`, y de ahí construí un
+relato: alguien escribió la solución al problema más grave y se olvidó de
+enchufarla. **No comprobé si podía estar declarado.**
+
+No puede. Importa **cuatro dependencias que no están en ningún
+`Cargo.toml`** del workspace:
+
+```
+ark_marlin · ark_poly · ark_poly_commit · blake2
+```
+
+Declararlo en `lib.rs` rompería el crate. **No compila, y nunca ha
+compilado.**
+
+Y la conclusión ya estaba escrita, tres líneas más arriba de donde miré, en
+las limitaciones honestas de `zk-core/src/lib.rs`:
+
+> *las dos investigaciones reales (`ark-marlin`, `celo-org/snark-setup`)
+> confirmaron que no hay alternativa madura en el ecosistema Arkworks
+> actual.*
+
+Y la propia cabecera del fichero lo anticipaba **antes** de intentarlo:
+avisaba de «varias rondas de corrección» y del choque de versiones de
+`blake2` —0.9 frente a 0.10+— que Marlin arrastra en esa era del
+ecosistema.
+
+**No es código sin cablear: es una investigación que se hizo, dio negativo
+y se documentó.** Es la sexta conjetura de esta serie construida sobre un
+mecanismo sin comprobar, y la sexta corrección.
+
+### Y una referencia rota, que es lo que sí era un defecto
+
+`lib.rs` decía **«ver README»** para esas dos investigaciones. **El README
+no las menciona ni una vez.** Están en `GROTH16_VS_HALO2.md` y
+`ARQUITECTURA.md`.
+
+Es exactamente el defecto que §205 corrigió —un enlace a un documento que
+no dice lo que se promete— y por eso existe la regla «comprobar enlaces al
+sellar». Quien lea la limitación más honesta del proyecto y vaya al README
+a por el detalle, no encuentra nada.
+
+Corregido: la línea apunta ahora a los tres sitios donde está de verdad, y
+añade lo que faltaba por decir — **la ceremonia MPC multi-parte SÍ está
+construida y comprobada** (`crates/ceremony`, §225, 845 s, pasa). La
+limitación es el setup *universal*, no la ceremonia.
+
+### El fichero, movido a lo que es
+
+`crates/zk-core/src/marlin_proof_system.rs` →
+**`doc/investigacion/marlin-setup-universal.rs.txt`**
+
+La extensión no es `.rs` a propósito: ningún `mod`, ninguna herramienta y
+ningún `cargo` lo confundirá con un módulo. Y lleva un preámbulo nuevo con
+qué se intentó, qué cuatro dependencias faltaban, por qué se descartó, qué
+mirar si algún día se retoma, y **qué se afirmó de él que era falso**.
+
+Se conserva en vez de borrarse por un motivo: **una decisión negativa
+documentada CON su intento vale más que documentada sin él.** Cuando
+alguien pregunte por qué no se usó un setup universal, la respuesta útil no
+es una frase — es esto, más las cuatro dependencias que no existían
+maduras.
+
+### La compuerta que lo habría cazado el primer día
+
+Un `.rs` bajo `src/` que nadie declara tiene **dos** problemas, y el
+segundo es peor:
+
+1. **No se compila**, así que ninguna compuerta lo verifica: puede estar
+   roto durante años sin que nada lo sepa.
+2. **Y como no se compila, invita a especular.** Lo que no se compila no se
+   puede afirmar — y aquí se afirmó dos veces, en dos sellos.
+
+`tools/check_modulos.py`, cableado en `canon.sh`: un fichero `src/a/b/c.rs`
+tiene que estar declarado como `mod c;` en `src/a/b.rs` o `src/a/b/mod.rs`.
+Recursivo, así que `ceremony/src/single/phase2.rs` lo valida contra
+`single/mod.rs` y no contra `lib.rs`.
+
+**Medido hoy: 104 ficheros bajo `src/`, todos declarados.** El único
+huérfano era éste.
+
+⚠️ **Y la primera versión daba un falso positivo**: señalaba
+`zk-ssl-wire/src/bin/gen_openrpc.rs` —el que genera `spec/openrpc.json`—
+sin saber que `src/bin/` es un directorio **especial** de cargo, un binario
+por fichero y no módulos. Corregido antes de entregar, porque un falso
+positivo es exactamente lo que hizo que nadie mirase `check_tests.py`
+durante seis sellos.
+
+Se prueba en cuatro sentidos: verde en el árbol real, rojo con un huérfano
+suelto, rojo con uno anidado, y **verde** con un binario en `src/bin/`.
+
+⚠️ Límite conocido y declarado: no entiende `#[path = "..."]`. Si alguien
+lo usa, dará un falso positivo — y entonces la respuesta es declararlo en
+la herramienta, no callar la compuerta.
+
+### Cuatro anclas tecleadas y falladas
+
+Esta cirugía necesitó **cuatro intentos** por anclas escritas de memoria en
+vez de leídas: los guiones de caja de `canon.sh` —conté distinto de lo que
+había— y un `repr()` con `.replace("'", '"')` que rompió una cadena que
+contenía `sed 's/^/…/'`.
+
+La regla ya estaba escrita desde §222: **el ancla se SACA leyéndola, no
+escribiéndola.** Se cumplió a la cuarta, generando la cirugía entera
+programáticamente desde el fichero. Cuando una regla se incumple cuatro
+veces seguidas, el problema no es la memoria: es que había una forma
+mecánica de hacerlo bien y no se usó desde el principio.
+
+### Lo que NO cambia
+
+- **El setup universal sigue sin estar disponible.** Mover un fichero no
+  resuelve nada: la limitación del trusted setup por circuito sigue en pie,
+  y ahora está documentada donde se puede encontrar.
+- El recuento de «escrito y no cableado» **baja de siete a seis**:
+  `reserve_pending`, los tests de `wire`, `check_tests.py`, los 198 tests,
+  la feature `parallel` y los 24 warnings. Marlin **no era uno de ellos**.
+- `zk-core` no pierde ni gana tests: el fichero nunca se compiló, así que
+  su pin de 74 no se mueve.

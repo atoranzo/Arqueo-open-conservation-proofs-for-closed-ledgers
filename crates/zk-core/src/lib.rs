@@ -19,9 +19,20 @@
 //! ## Lo que este módulo NO resuelve todavía (limitaciones honestas)
 //! - No incluye una ceremonia de trusted setup multi-parte (MPC). El
 //!   `setup()` de este código es de un solo participante y NO debe usarse
-//!   en producción tal cual — ver README para las dos investigaciones
-//!   reales (`ark-marlin`, `celo-org/snark-setup`) que confirmaron que no
-//!   hay alternativa madura en el ecosistema Arkworks actual.
+//!   en producción tal cual. Las dos investigaciones reales —`ark-marlin` y
+//!   `celo-org/snark-setup`— confirmaron que **no hay alternativa madura**
+//!   en el ecosistema Arkworks actual.
+//!
+//!   ⚠️ Esta línea decía «ver README» y **el README no las menciona**:
+//!   referencia rota, del mismo tipo que la que §205 corrigió. Donde están
+//!   de verdad:
+//!   - `doc/investigacion/marlin-setup-universal.rs.txt` — el intento
+//!     completo con Marlin, que **no compila**, y por qué se descartó.
+//!   - `GROTH16_VS_HALO2.md` y `ARQUITECTURA.md`.
+//!
+//!   La ceremonia MPC multi-parte SÍ está construida y comprobada:
+//!   `crates/ceremony` y su test de integración, que ejecuta un Powers of
+//!   Tau con tres contribuciones (§225, 845 s, pasa).
 //! - `PersistentNullifierRegistry` es de un solo nodo, no distribuida.
 //! - No ha sido auditado por terceros.
 
