@@ -105,19 +105,67 @@ pub fn native_merge(left: Digest, right: Digest) -> Digest {
     [state[4], state[5], state[6], state[7]]
 }
 
-/// Embebe un `u64` como digest: el valor en el primer elemento, ceros el
-/// resto.
+/// **Embebe un elemento como digest**: el valor en el primer hueco, ceros
+/// el resto.
+///
+/// ⚠️ **Esta es LA decisión de formato** —dónde va el elemento y con qué se
+/// rellena—. [`as_digest`] es un **atajo tipado** que la llama: no son dos
+/// definiciones con dos firmas, es **una y su conveniencia**.
+///
+/// ⚠️ Siete copias privadas de esta misma función viven en
+/// `stark-experiment` (`native.rs`, `nullifier.rs`, `circuit_governance.rs`,
+/// `circuit_threshold.rs`, `compliance_circuit.rs`, `double_entry.rs`,
+/// `circuit_mint_pending.rs`). **§258 no las toca**: no cruzan al
+/// verificador, igual que en §255. Pero ahora existe **una pública contra
+/// la que compararlas** el día que se aborden.
+pub fn embeber(x: BaseElement) -> Digest {
+    [x, BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO]
+}
+
+/// Embebe un `u64` como digest. **Atajo tipado** sobre [`embeber`].
 ///
 /// ⚠️ Era **privada** en `zk-ssl/src/log.rs`. Es una **decisión de
 /// formato** —dónde va el número y con qué se rellena—, así que un
 /// verificador independiente tiene que usar **esta misma**, no una copia.
 pub fn as_digest(x: u64) -> Digest {
-    [
-        BaseElement::new(x),
-        BaseElement::ZERO,
-        BaseElement::ZERO,
-        BaseElement::ZERO,
-    ]
+    embeber(BaseElement::new(x))
+}
+
+/// **Hoja de cuenta**: `merge(merge(pk, saldo), nonce)`.
+///
+/// ⚠️ **Sin esto, §256 seguía siendo un recibo ilegible para su
+/// destinatario.** `verificar_inclusion` prueba que **una** hoja estaba en
+/// la cabeza firmada; para saber que es **la tuya** hay que recomponerla, y
+/// eso vivía en `stark-experiment` —el probador—. Un titular con solo
+/// `zk-ssl-verify` no podía.
+///
+/// ⚠️ **No cambia un byte**: `stark-experiment` la reexporta desde aquí, así
+/// que las dos son literalmente la misma función. Y la **conformidad 0.2**
+/// es el juez: si compusiera distinto, el `epoch_digest` se movería.
+pub fn native_leaf(public_id: Digest, balance: BaseElement, nonce: BaseElement) -> Digest {
+    let inner = native_merge(public_id, embeber(balance));
+    native_merge(inner, embeber(nonce))
+}
+
+/// **Hoja salteada** (entrada 50, §117): la vieja **con un merge más** de
+/// salt al final.
+///
+/// ⚠️ **Las dos formas conviven**, y cuál aplica es propiedad **del ledger
+/// entero**, no de la cuenta: al reabrir, `meta:migrated` en sled —o la
+/// versión del snapshot— decide si las hojas se reconstruyen saladas o no.
+/// En caliente, toda cuenta nueva sale **salada**.
+///
+/// ⚠️ Y **no son intercambiables**: `native_leaf` NO es
+/// `native_leaf_salted` con salt cero — hay test. Por eso el recibo de §259
+/// tendrá que **declarar cuál se usó**: quien componga la que no es verá
+/// `RaizDistinta` **sin saber por qué**.
+pub fn native_leaf_salted(
+    public_id: Digest,
+    balance: BaseElement,
+    nonce: BaseElement,
+    leaf_salt: Digest,
+) -> Digest {
+    native_merge(native_leaf(public_id, balance, nonce), leaf_salt)
 }
 
 /// Sube un camino Merkle desde la hoja y devuelve la raíz.
@@ -348,5 +396,51 @@ mod tests {
         // ⚠️ Copiar 12 a mano desligaria la constante de la implementacion.
         assert_eq!(STATE_WIDTH, Rp64_256::STATE_WIDTH);
         assert!(STATE_WIDTH >= 12, "native_merge escribe hasta el indice 11");
+    }
+
+    // ── §258 · la hoja, componible sin el probador ────────────────
+
+    #[test]
+    fn embeber_y_as_digest_componen_lo_mismo() {
+        // ⚠️ `as_digest` es un ATAJO, no una segunda definicion. Si algun
+        // dia dejara de delegar, esto lo dice.
+        for v in [0u64, 1, 7, u64::MAX >> 1] {
+            assert_eq!(as_digest(v), embeber(BaseElement::new(v)));
+        }
+        let e = embeber(BaseElement::new(9));
+        assert_eq!(e[0], BaseElement::new(9), "el valor va delante");
+        assert!(e[1..].iter().all(|x| *x == BaseElement::ZERO), "y ceros detras");
+    }
+
+    #[test]
+    fn la_hoja_salada_es_la_vieja_con_un_merge_mas() {
+        // ⚠️ FIJA LA ESTRUCTURA. El circuito paga un bloque Rescue de mas
+        // por hoja (entrada 15, §82); si la composicion cambiara sin que
+        // nadie lo notase, el coste medido dejaria de corresponder.
+        let id = d(10);
+        let (saldo, nonce, sal) = (BaseElement::new(1_000), BaseElement::new(3), d(20));
+        assert_eq!(
+            native_leaf_salted(id, saldo, nonce, sal),
+            native_merge(native_leaf(id, saldo, nonce), sal)
+        );
+    }
+
+    #[test]
+    fn una_hoja_sin_sal_no_es_la_salada_con_sal_cero() {
+        // ⚠️⚠️ LAS DOS FORMAS SON DISTINTAS DE VERDAD, y de aqui sale una
+        // consecuencia para §259: el recibo TIENE QUE DECLARAR cual se
+        // uso. Quien componga la que no es vera `RaizDistinta` sin saber
+        // por que — y un fallo ilegible es el que hace que se culpe al
+        // sitio equivocado.
+        //
+        // Si esto fuera igualdad, el campo `leafFormat` de §259 seria
+        // decoracion. No lo es.
+        let id = d(10);
+        let (saldo, nonce) = (BaseElement::new(1_000), BaseElement::new(3));
+        let cero: Digest = [BaseElement::ZERO; 4];
+        assert_ne!(
+            native_leaf(id, saldo, nonce),
+            native_leaf_salted(id, saldo, nonce, cero)
+        );
     }
 }

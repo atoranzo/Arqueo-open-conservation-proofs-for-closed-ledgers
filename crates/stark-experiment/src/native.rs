@@ -45,11 +45,22 @@ pub fn derive_public_id_wide(spend_key: Digest) -> Digest {
     native_merge(as_digest(BaseElement::new(SPEND_KEY_DOMAIN)), spend_key)
 }
 
-/// Hoja de cuenta: `Rescue(Rescue(pk, saldo), nonce)`.
-pub fn native_leaf(public_id: Digest, balance: BaseElement, nonce: BaseElement) -> Digest {
-    let inner = native_merge(public_id, as_digest(balance));
-    native_merge(inner, as_digest(nonce))
-}
+// ⚠️ §258: **LA HOJA SE DEFINE EN `zk-ssl-hash`**, y aqui se REEXPORTA.
+//    No es una delegacion: es LA MISMA FUNCION, asi que no pueden divergir
+//    ni en silencio ni de ninguna otra forma. La ruta
+//    `stark_experiment::native::native_leaf` no se mueve — hay ocho
+//    circuitos y toda la capa llamandola.
+//
+//    Razon: `verificar_inclusion` (§256) prueba que UNA hoja estaba en la
+//    cabeza firmada; para saber que es LA TUYA hay que recomponerla, y
+//    componerla exigia compilar el PROBADOR. Un recibo que su destinatario
+//    no puede interpretar no es un recibo.
+//
+// ⚠️ El `as_digest` privado de este fichero NO se toca: sigue siendo una de
+//    las siete copias anotadas (§255), porque no cruza al verificador. Lo
+//    que §258 anade es una publica —`zk_ssl_hash::embeber`— contra la que
+//    compararlas el dia que se aborden.
+pub use zk_ssl_hash::{native_leaf, native_leaf_salted};
 
 /// Nullifier desde la CLAVE, no desde la identidad pública.
 pub fn native_nullifier(spend_key: BaseElement, nonce: BaseElement) -> Digest {
@@ -109,22 +120,10 @@ pub fn derive_leaf_salt_wide(spend_key: Digest) -> Digest {
     native_merge(as_digest(BaseElement::new(LEAF_SALT_DOMAIN)), spend_key)
 }
 
-/// **Hoja salteada** (entrada 50). Extiende `native_leaf` con el salt
-/// de §117 SIN tocar la hoja vieja ni sus call-sites: el despliegue —
-/// sustituir `native_leaf` por esta en los cinco circuitos y sus AIR —
-/// es B13/B14. Aqui existe para que la propiedad de recuperacion sea
-/// demostrable (T2b-nativo) antes de tocar traza alguna.
-///
-/// Estructura = la vieja con un merge mas de salt al final: el circuito
-/// paga un bloque Rescue adicional por hoja (clase entrada 15, §82).
-pub fn native_leaf_salted(
-    public_id: Digest,
-    balance: BaseElement,
-    nonce: BaseElement,
-    leaf_salt: Digest,
-) -> Digest {
-    native_merge(native_leaf(public_id, balance, nonce), leaf_salt)
-}
+// ⚠️ §258: `native_leaf_salted` vive en `zk-ssl-hash` y se reexporta arriba,
+//    junto a `native_leaf`. El despliegue en los circuitos y sus AIR
+//    (B13/B14) sigue pendiente y sin cambios: mover la definicion no
+//    despliega nada.
 
 /// Dominio de la CLAVE DE VISTA (entrada 49). Distinto de todo dominio
 /// vivo — `t7_vista` lo comprueba: si coincidiera con SPEND_KEY la clave

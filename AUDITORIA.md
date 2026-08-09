@@ -19074,3 +19074,99 @@ menos. **La huella POST no es decoración: es el ancla PRE del siguiente.**
 
 **Canon: `zk-ssl` 256 → 257, `zk-ssl-hash` 8 → 11, `zk-ssl-verify` 22 → 23.**
 Sumas: 717 → 722, 854 → 859, 868 → 873.
+## 258. La hoja, componible sin el probador
+
+### ⚠️ §256 dijo una cosa y significaba otra
+
+El asiento de §256 escribió *«prueba que la hoja estaba, no qué
+significaba»* **como propiedad** — la misma que impide que la capa lo sepa.
+Y como propiedad está bien. Pero mezcló con ella **un defecto**:
+
+| | qué es |
+|---|---|
+| que la capa no sepa qué significa la hoja | **propiedad**, buscada |
+| que **el titular no pueda comprobar que la hoja es la suya** | **defecto**, y grave |
+
+> **La segunda no es privacidad: es un recibo ilegible para su
+> destinatario.** Y servirlo así habría sido publicar una promesa.
+
+`native_leaf_salted` vivía en `stark-experiment` —el probador—, y
+`zk-ssl-verify` solo ve `xmss`, `zk-ssl-hash` y `winter-math`. Es el mismo
+hueco que §257 cerró para el par byte↔`Digest`, **un nivel más arriba**.
+
+### `as_digest` no tenía dos firmas: eran dos funciones distintas
+
+Había una `as_digest(u64)` pública en `zk-ssl-hash` y siete privadas
+`as_digest(BaseElement)` en `stark-experiment`. **No son la misma función
+con dos firmas**: una **convierte y embebe**, la otra **solo embebe**.
+
+```rust
+pub fn embeber(x: BaseElement) -> Digest      // el formato
+pub fn as_digest(x: u64) -> Digest {           // conversión + formato
+    embeber(BaseElement::new(x))
+}
+```
+
+Con eso hay **una sola decisión de formato** y `as_digest` pasa a ser **un
+atajo tipado**, no una segunda definición. Y encaja con lo que la
+composición necesita de verdad: `native_leaf` recibe el saldo ya convertido
+y el nonce ya viene como `BaseElement`.
+
+### Reexportar, no delegar
+
+`stark-experiment` **reexporta** `native_leaf` y `native_leaf_salted` desde
+`zk-ssl-hash`. No es una delegación: **es la misma función**, así que no
+pueden divergir ni en silencio ni de ninguna otra forma. La ruta
+`stark_experiment::native::native_leaf` no se mueve — hay ocho circuitos y
+toda la capa llamándola.
+
+⚠️ **Ninguna de las dos cambia un byte, y la conformidad 0.2 es el juez**:
+si `embeber` no compusiera igual que las copias, el `epoch_digest` se mueve
+y salta en el acto. La compuerta lo nombra explícitamente en vez de
+confiarlo al canon.
+
+⚠️ Las **siete copias privadas** de `stark-experiment` quedan **anotadas y
+sin tocar**, igual que en §255: no cruzan al verificador. Con una
+diferencia: **ahora hay una pública contra la que compararlas** el día que
+se aborden.
+
+### ⚠️ Dos formas de hoja conviven, y lo decide el LEDGER
+
+Medido antes de escribir:
+
+- En caliente, **toda cuenta nueva sale salada**: `open_with_id` llama a
+  `native_leaf_salted` sin condición.
+- **Al reabrir**, la forma la decide `meta:migrated` en sled —o la versión
+  del snapshot— **y se aplica al ledger entero**, no cuenta a cuenta.
+- La bandera **es observable y está en el registro**: `has_migration_entry()`
+  mira si hay una entrada `OpKind::Migration`. Va, por tanto, **dentro del
+  `chainDigest`** y de la cabeza firmada. La forma no es un dato suelto del
+  operador: **está atestiguada**.
+
+Y `una_hoja_sin_sal_no_es_la_salada_con_sal_cero` demuestra que **no son
+intercambiables**. De ahí sale una consecuencia para §259: **el recibo tiene
+que declarar cuál se usó.**
+
+⚠️ **Ese campo no es una pieza de confianza.** Si el operador mintiera sobre
+la forma, el titular compondría mal, la raíz no saldría y el recibo se
+rechazaría: una forma equivocada **no puede hacer que un recibo falso
+verifique**, solo que uno legítimo falle. Es una **pista para que el fallo
+sea legible** —§254: un instrumento que falla dice qué falló—, no un
+supuesto que haya que autenticar.
+
+### Pregunta abierta, sin medir
+
+Reabrir un ledger **sin migrar** reconstruye todo **sin sal**, pero abrir
+una cuenta después la escribiría **con** sal. Si nada lo impide, ese árbol
+quedaría **mezclado**. **No se ha medido si hay guarda**, y por eso va como
+pregunta y no como hallazgo. Backlog.
+
+### Lo que §258 NO hace
+
+- **No sirve el recibo por RPC** — eso es §259, y ahora sí es servible algo
+  que el destinatario puede interpretar.
+- **No despliega la hoja salada en los circuitos ni en sus AIR** (B13/B14):
+  mover la definición no despliega nada.
+- **No toca las siete copias** de `as_digest`.
+
+**Canon: `zk-ssl-hash` 11 → 14.** Sumas: 722 → 725, 859 → 862, 873 → 876.
