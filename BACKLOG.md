@@ -1181,8 +1181,16 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   ⏸️ **El parrafo del preprint queda redactado y SIN aplicar**: los preprints
   estan **suspendidos** (entrada 28) y ya depositados — no llegaria a un
   lector hasta una quinta revision. Texto listo para cuando se levante.
-  ⚠️ **El cierre sigue pendiente**: `hash_verificador_vigente` en la cabeza
-  **requiere primero que el sistema tenga nocion de «reglas vigentes»**.
+  ⚠️ **El cierre sigue pendiente, y la razon se CORRIGIO en §246**: decia
+  que hacia falta «nocion de reglas vigentes», lo cual es **casi circular**
+  —el campo ES ese mecanismo—.
+  ⚠️ **La razon real: el AIR es CODIGO, no datos.** Lo unico hasheable en
+  ejecucion son las `ProofOptions`, y **un operador puede cambiar el AIR
+  dejandolas identicas**: el campo seria **CIEGO, no vacio** — y un campo
+  ciego pasa desapercibido mintiendo sobre lo que existe para detectar.
+  **Depende de la entrada 55** (el AIR como datos) **o de compilacion
+  reproducible**. Hashear el fuente al compilar NO vale: no prueba que el
+  binario se construyera de ese fuente.
 
 - [x] **63. ✅ La contencion del anclaje: REGISTRADA (§123).**
   ✅ **Mecanismo comprobado (T5a)**: dos titulares que no comparten nada

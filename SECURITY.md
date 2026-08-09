@@ -142,6 +142,15 @@ atado al importe (§74). Ambas corregidas y medidas.
   circular. Lo que el proyecto puede dar es la implementación de
   referencia — **quita la excusa de que no hay cómo**, no la desconfianza.
 
+  ⚠️ **Y el ancla anterior no está sin decidir: NO HAY CLAVE QUE ANCLAR**
+  (§246). El operador **no tiene ninguna**; `--clave` existe *«para
+  ejercitar el mecanismo, no como forma de operar»*, y así está escrito en
+  su propia documentación.
+
+  Anclar hoy sería **anclar una clave de prueba**. La decisión del ancla
+  **viene con la decisión de despliegue**, no antes — y eso la reformula:
+  no es «falta elegir entre cuatro opciones», es «falta la clave».
+
   Hoy un tercero verifica que la firma cuadra con **la clave que el mismo
   nodo le dio**. Eso es circular: un operador puede cambiar de clave entre
   dos consultas y **ambas respuestas verifican**.

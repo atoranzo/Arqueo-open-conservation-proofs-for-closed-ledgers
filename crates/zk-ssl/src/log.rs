@@ -507,10 +507,35 @@ pub struct EpochHead {
     // verificador cambia **qué es una transición válida** — más poderoso que
     // cualquier operación del sistema.
     //
-    // **No se puede rellenar hoy**: el proyecto no tiene noción de «reglas
-    // vigentes». `OpKind` dice qué circuito usar, no qué versión de las
-    // reglas estaba activa. Un campo vacío sería peor que su ausencia: una
-    // cabeza que dice incluirlo y no lo hace.
+    // **No se puede rellenar hoy, y la razón NO es la que decía aquí**
+    // (§246). Decía «el proyecto no tiene noción de reglas vigentes», que
+    // suena a funcionalidad pendiente y **es casi circular**: `verifier_hash`
+    // ES el mecanismo para tener esa noción.
+    //
+    // ⚠️ **La razón real: el AIR es CÓDIGO, no datos.** Lo que este campo
+    // debe delatar es **qué es una transición válida**, y eso lo define el
+    // AIR. Lo único hasheable en ejecución son las `ProofOptions` — y **un
+    // operador puede cambiar el AIR dejando las `ProofOptions` idénticas**.
+    //
+    // Un `verifier_hash` así **no sería un campo vacío: sería un campo
+    // CIEGO**, y eso es peor — un campo vacío se nota, uno ciego pasa
+    // desapercibido **mintiendo justo sobre lo que existe para detectar**.
+    //
+    // ⚠️ Y las dos salidas están cerradas **por razones ajenas a este
+    // fichero**:
+    //
+    // - **Hashear el fuente al compilar** no prueba que el binario se
+    //   construyera de ese fuente. Sin compilación reproducible, el operador
+    //   reporta el hash grabado y corre otra cosa: miente en el caso que
+    //   importa.
+    // - **El AIR como datos** —entrada 55— sí sería hasheable, y está parada
+    //   por un motivo que no es esfuerzo: *una especificación escrita por
+    //   quien escribió el circuito hereda sus puntos ciegos*, y debe
+    //   escribirse **con la auditoría, no antes**.
+    //
+    // El criterio de §104.3 sigue valiendo, y ahora con el matiz que le
+    // faltaba: un campo vacío sería peor que su ausencia; **uno ciego, peor
+    // que uno vacío**.
     //
     // Backlog 54.
 }

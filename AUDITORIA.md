@@ -17910,3 +17910,87 @@ inverso convierte cualquier `//` dentro de una cadena en un truncamiento.
 - **No comprueba la custodia**: el nodo la *afirma* (§244).
 - Y `verifier_hash` **sigue bloqueado por la entrada 54**: exige noción de
   «reglas vigentes», que no existe. **No es un olvido.**
+## 246. Dos bloqueos con la razón equivocada escrita
+
+Ninguna línea de código nuevo. Este sello **cambia dos razones flojas por
+dos precisas**, y una de ellas la descubrí **al empezar a construir lo que
+no debía**.
+
+### ⚠️ Iba a construir un campo que miente
+
+Tras §245 —donde el ancla se resolvió sola en cuanto se dejó de tratarla
+como una elección— apliqué la misma sospecha a `verifier_hash`. Y el
+argumento de `log.rs` parecía ceder:
+
+> *«No se puede rellenar hoy: el proyecto no tiene noción de reglas
+> vigentes.»*
+
+Eso **es casi circular**: `verifier_hash` **es** el mecanismo para tener esa
+noción. Decir «no puedo añadir el campo que registra X porque no registro X»
+no sostiene un bloqueo.
+
+Propuse construirlo. **Y estaba mal.**
+
+### La razón real: el AIR es CÓDIGO, no datos
+
+Lo que el campo debe delatar es *«quien cambia el verificador cambia **qué
+es una transición válida**»*. Eso lo define **el AIR**.
+
+Lo único hasheable en ejecución son las `ProofOptions` — y **un operador
+puede cambiar el AIR dejando las `ProofOptions` idénticas**. El hash no se
+movería.
+
+> Habría construido **un campo ciego, no vacío.** Y eso es peor: **un campo
+> vacío se nota; uno ciego pasa desapercibido mintiendo justo sobre lo que
+> existe para detectar.**
+
+Es el criterio de §104.3 con el matiz que le faltaba.
+
+### Y las dos salidas están cerradas por razones ajenas
+
+**Hashear el fuente al compilar** no prueba que el binario se construyera de
+ese fuente. Sin compilación reproducible, el operador reporta el hash
+grabado y corre otra cosa: **miente en el caso que importa**.
+
+**El AIR como datos** —entrada 55— sí sería hasheable, y está parada por un
+motivo que **no es esfuerzo**: *una especificación escrita por quien escribió
+el circuito hereda sus puntos ciegos*, y debe escribirse **con la auditoría,
+no antes**.
+
+⚠️ Así que `verifier_hash` **depende de la entrada 55 o de compilación
+reproducible**, no de una «noción de reglas vigentes». Corregido en
+`log.rs` y en la entrada 54.
+
+### El ancla anterior: no falta decidir, **falta la clave**
+
+`SECURITY.md` decía que el ancla anterior al primer encuentro exigía elegir
+entre cuatro opciones —huella publicada, registro de transparencia,
+contraparte, autoridad— *«cuando haya con quién»*.
+
+⚠️ **No es eso: no hay clave que anclar.** El operador **no tiene ninguna**;
+`--clave` existe *«para ejercitar el mecanismo, no como forma de operar»*, y
+así está escrito en su propia documentación.
+
+**Anclar hoy sería anclar una clave de prueba.** La decisión del ancla
+**viene con la decisión de despliegue**, no antes.
+
+### ⚠️ Lo que este sello enseña sobre el método
+
+§245 salió bien porque **desconfié de un bloqueo y resultó ser mi marco**.
+§246 empezó igual y **el bloqueo era real** — solo que estaba mal explicado.
+
+> **Desconfiar de un bloqueo es correcto; concluir que no existe porque su
+> razón está mal escrita, no.** Una razón floja puede tapar una buena.
+
+La diferencia entre los dos casos la dio **comprobar contra el árbol**: en
+§245 el ancla existía en cuanto había un testigo; aquí, buscar qué se podía
+hashear enseñó que no había nada honesto que hashear.
+
+### Lo que §246 NO hace
+
+- **No desbloquea `verifier_hash`**: lo deja bloqueado **con la razón
+  buena**, y con las dos dependencias nombradas.
+- **No decide el ancla**: la reformula como lo que es.
+- **No toca ningún pin**: no hay código ejecutable nuevo.
+- ⚠️ Y toca `log.rs`, que estaba **intacto desde §216**. Es un comentario:
+  ninguna línea de código cambia.
