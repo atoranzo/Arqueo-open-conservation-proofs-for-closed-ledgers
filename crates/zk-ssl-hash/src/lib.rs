@@ -1,6 +1,21 @@
-//! # El hash nativo, **fuera del probador**
+//! # Las primitivas de FORMATO, fuera del probador
 //!
-//! Una sola función —`native_merge`— y la constante que necesita. Nada más.
+//! ⚠️ **El nombre del crate dice `hash`, y ya no es solo el hash.** Lo que
+//! vive aquí es **lo que el nodo y un verificador independiente tienen que
+//! componer IGUAL**: el hash 2-a-1, cómo se embebe un `u64`, cómo se sube
+//! un camino Merkle, y **cómo se compone el digest de una cabeza**.
+//!
+//! > **Una decisión de formato tiene que tener UNA SOLA DEFINICIÓN**, por
+//! > la misma razón que el hash: si el nodo y el verificador la componen
+//! > distinto, **divergen en silencio**.
+//!
+//! §254 movió `native_merge` aquí y creyó cerrar el problema. Al escribir
+//! el **recibo de inclusión** aparecieron **tres piezas más** que el
+//! verificador necesitaba y no tenía: `as_digest` era **privada** en
+//! `log.rs`, subir el camino vivía en `stark-experiment` **atado a
+//! `TREE_DEPTH`**, y **la composición de `EpochHead::digest()`** estaba
+//! solo en el nodo. **El problema no estaba resuelto: estaba destapado a
+//! medias.**
 //!
 //! ## ⚠️ Por qué está separado: no es organización
 //!
@@ -90,6 +105,62 @@ pub fn native_merge(left: Digest, right: Digest) -> Digest {
     [state[4], state[5], state[6], state[7]]
 }
 
+/// Embebe un `u64` como digest: el valor en el primer elemento, ceros el
+/// resto.
+///
+/// ⚠️ Era **privada** en `zk-ssl/src/log.rs`. Es una **decisión de
+/// formato** —dónde va el número y con qué se rellena—, así que un
+/// verificador independiente tiene que usar **esta misma**, no una copia.
+pub fn as_digest(x: u64) -> Digest {
+    [
+        BaseElement::new(x),
+        BaseElement::ZERO,
+        BaseElement::ZERO,
+        BaseElement::ZERO,
+    ]
+}
+
+/// Sube un camino Merkle desde la hoja y devuelve la raíz.
+///
+/// ⚠️ **Itera sobre la LONGITUD DEL CAMINO, no sobre una constante.** La
+/// versión de `stark-experiment` usaba `TREE_DEPTH` fijo, mientras
+/// `SparseTree::path_for` genera caminos de `self.depth`: con un árbol de
+/// otra profundidad, la constante habría leído fuera del camino o dejado
+/// niveles sin subir.
+///
+/// `is_right[i] == true` significa que **el nodo actual va a la derecha** y
+/// el hermano a la izquierda.
+pub fn path_root(leaf: Digest, siblings: &[Digest], is_right: &[bool]) -> Digest {
+    debug_assert_eq!(siblings.len(), is_right.len(), "camino descuadrado");
+    let mut current = leaf;
+    for (hermano, derecha) in siblings.iter().zip(is_right) {
+        current = if *derecha {
+            native_merge(*hermano, current)
+        } else {
+            native_merge(current, *hermano)
+        };
+    }
+    current
+}
+
+/// Compone el digest de una cabeza de época.
+///
+/// ⚠️ **Esta es LA composición**, y `EpochHead::digest()` la llama. Un
+/// verificador que quiera comprobar que una raíz de cuentas pertenece a una
+/// cabeza firmada **necesita componerla exactamente igual** — y la única
+/// forma segura de garantizarlo es que **sea la misma función**.
+pub fn epoch_digest(
+    seq: u64,
+    accounts_root: Digest,
+    pending_root: Digest,
+    frozen_root: Digest,
+    chain_digest: Digest,
+) -> Digest {
+    let a = native_merge(as_digest(seq), accounts_root);
+    let b = native_merge(pending_root, frozen_root);
+    native_merge(native_merge(a, b), chain_digest)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,6 +172,47 @@ mod tests {
             BaseElement::new(n + 2),
             BaseElement::new(n + 3),
         ]
+    }
+
+    #[test]
+    fn as_digest_pone_el_valor_delante_y_ceros_detras() {
+        let v = as_digest(7);
+        assert_eq!(v[0], BaseElement::new(7));
+        assert!(v[1..].iter().all(|x| *x == BaseElement::ZERO));
+    }
+
+    #[test]
+    fn un_camino_de_un_nivel_sube_en_los_dos_sentidos() {
+        // ⚠️ Si el orden no importara, un camino no distinguiria izquierda
+        // de derecha y CUALQUIER hoja probaria CUALQUIER posicion.
+        let (hoja, hermano) = (d(1), d(9));
+        assert_eq!(path_root(hoja, &[hermano], &[false]), native_merge(hoja, hermano));
+        assert_eq!(path_root(hoja, &[hermano], &[true]), native_merge(hermano, hoja));
+    }
+
+    #[test]
+    fn path_root_itera_sobre_el_camino_no_sobre_una_constante() {
+        // ⚠️ La version de stark-experiment usaba TREE_DEPTH FIJO. Con un
+        // camino mas corto habria leido fuera; con uno mas largo, habria
+        // dejado niveles sin subir.
+        let hoja = d(1);
+        assert_eq!(path_root(hoja, &[], &[]), hoja, "camino vacio: la hoja ES la raiz");
+        let dos = path_root(hoja, &[d(9), d(11)], &[false, true]);
+        assert_eq!(dos, native_merge(d(11), native_merge(hoja, d(9))));
+        let tres = path_root(hoja, &[d(9), d(11), d(13)], &[false, true, false]);
+        assert_ne!(dos, tres, "cada nivel cuenta");
+    }
+
+    #[test]
+    fn el_digest_de_epoca_depende_de_sus_cinco_partes() {
+        // ⚠️ Si alguna no entrara, el operador podria cambiarla sin que la
+        // cabeza firmada lo delatara.
+        let base = epoch_digest(1, d(10), d(20), d(30), d(40));
+        assert_ne!(base, epoch_digest(2, d(10), d(20), d(30), d(40)), "seq");
+        assert_ne!(base, epoch_digest(1, d(11), d(20), d(30), d(40)), "accounts_root");
+        assert_ne!(base, epoch_digest(1, d(10), d(21), d(30), d(40)), "pending_root");
+        assert_ne!(base, epoch_digest(1, d(10), d(20), d(31), d(40)), "frozen_root");
+        assert_ne!(base, epoch_digest(1, d(10), d(20), d(30), d(41)), "chain_digest");
     }
 
     #[test]

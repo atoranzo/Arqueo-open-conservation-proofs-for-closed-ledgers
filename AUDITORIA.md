@@ -18798,3 +18798,76 @@ de ocho—. **Se arregló la compuerta, no el código**: el falso positivo era
 suyo.
 
 **Canon: `zk-ssl-hash` 4/0/0, nuevo.** Sumas: 699 → 703.
+## 255. Las primitivas de formato: §254 estaba destapado a medias
+
+**§254 movió `native_merge` y creyó cerrar el problema.** Al escribir el
+recibo de inclusión aparecieron **tres piezas más** que el verificador
+necesitaba y no tenía:
+
+| pieza | dónde estaba | qué es |
+|---|---|---|
+| `as_digest(u64)` | **privada** en `zk-ssl/src/log.rs` | **formato** |
+| subir un camino Merkle | `stark-experiment`, atado a **`TREE_DEPTH`** | algoritmo |
+| la composición de `EpochHead::digest()` | solo en el nodo | **formato** |
+
+> **Una decisión de formato tiene que tener UNA SOLA DEFINICIÓN**, por la
+> misma razón que el hash: si el nodo y el verificador la componen distinto,
+> **divergen en silencio**.
+
+Y si hubiera escrito el recibo primero, **habría reimplementado la
+composición en `zk-ssl-verify`** — de vuelta al punto donde §254 empezó, un
+nivel más arriba.
+
+### ⚠️ `path_root` corrige un supuesto de la versión vieja
+
+`native_root` iteraba **`0..TREE_DEPTH`**, una constante. Pero
+`SparseTree::path_for` genera caminos de **`self.depth`**.
+
+Aquí funcionaba **porque este árbol tiene esa profundidad**, no porque
+estuviera bien: con un árbol de otra, la constante habría **leído fuera del
+camino** o **dejado niveles sin subir**. La versión compartida itera sobre
+**la longitud del camino**, y hay test con caminos de 0, 2 y 3 niveles.
+
+### ⚠️ Y siete copias que NO se tocan, anotadas
+
+`stark-experiment` tiene **siete `as_digest` idénticas** —comparadas cuerpo
+a cuerpo, **un solo cuerpo distinto entre las siete**— en `native.rs`,
+`circuit_governance.rs`, `circuit_threshold.rs`, `compliance_circuit.rs`,
+`double_entry.rs`, `nullifier.rs` y `circuit_mint_pending.rs`.
+
+Tienen **firma distinta** de la del nodo: toman `x: BaseElement` ya
+convertido, no `u64`.
+
+**No se tocan en §255**: son internas del probador y **ninguna cruza al
+verificador**, así que no pueden producir la divergencia que este sello
+evita. Pero **quedan anotadas**: siete copias del mismo formato son
+exactamente la forma que precede a una divergencia, y es la misma clase que
+el delegado que §254 encontró en §125.
+
+### Refactor puro, otra vez
+
+**No cambia ni un byte.** `EpochHead::digest()` llama a
+`zk_ssl_hash::epoch_digest`, `native_root` delega en `path_root`, y
+`as_digest` se importa en vez de definirse.
+
+> La corrección **la demuestran las compuertas que ya existen**, y sobre
+> todo **la conformidad `zkssl/0.2`, que pincha el `epoch_digest`**.
+
+Si la composición cambiara en un solo `merge`, **la conformidad lo diría en
+el acto**.
+
+### El nombre del crate ya no encaja, y se dice
+
+`zk-ssl-hash` **ya no es solo el hash**: contiene **las primitivas de
+formato que el nodo y un verificador independiente deben componer igual**.
+El nombre se queda —renombrar tocaría cinco `Cargo.toml` sin ganar nada—,
+pero **la cabecera lo dice** para que nadie lo reconstruya dentro de un año.
+
+**Canon: `zk-ssl-hash` de 4 a 8.** Sumas: 703 → 707.
+
+### Lo que §255 NO hace
+
+- **No escribe el recibo de inclusión**: pone lo que necesita para que su
+  verificación **no duplique nada**.
+- **No toca las siete copias** de `stark-experiment`.
+- **No toca el formato firmado** ni obliga a `zkssl/0.3`.

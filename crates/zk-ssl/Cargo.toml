@@ -18,6 +18,10 @@ license.workspace = true
 # El precio, medido: pruebas de 36,7 KB frente a los 192 bytes de Groth16.
 # Es el coste de no depender de nadie.
 [dependencies]
+# ⚠️ §255: las primitivas de FORMATO —`native_merge`, `as_digest`,
+#    `path_root` y `epoch_digest`— que el nodo y un verificador
+#    independiente tienen que componer IGUAL. Una sola definicion.
+zk-ssl-hash = { path = "../zk-ssl-hash" }
 stark-experiment = { path = "../stark-experiment" }
 winterfell = "0.13"
 # Persistencia del ledger. Sin esto, reiniciar el nodo pierde el estado.

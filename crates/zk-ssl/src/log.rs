@@ -167,14 +167,10 @@ pub struct LogEntry {
     pub chain: Digest,
 }
 
-fn as_digest(x: u64) -> Digest {
-    [
-        BaseElement::new(x),
-        BaseElement::ZERO,
-        BaseElement::ZERO,
-        BaseElement::ZERO,
-    ]
-}
+// ⚠️ §255: `as_digest` vive en `zk-ssl-hash`. Es una DECISION DE FORMATO
+// —donde va el numero y con que se rellena—, y un verificador
+// independiente tiene que usar LA MISMA, no una copia. Era privada aqui.
+use zk_ssl_hash::as_digest;
 
 /// **Dominio del resumen de prueba.** Separa este uso de cualquier otro
 /// hash del proyecto: dos entradas de dominios distintos no pueden
@@ -546,10 +542,20 @@ impl EpochHead {
     /// ⚠️ **Comparar digests dice que difieren, no dónde.** Para eso está
     /// [`TransitionLog::first_divergence`], que ya existe y localiza la
     /// entrada exacta en que dos historiales se separan.
+    /// ⚠️ §255: **la composición vive en `zk-ssl-hash`**, no aquí.
+    ///
+    /// Un verificador que quiera comprobar que una raíz de cuentas
+    /// pertenece a **una cabeza firmada** necesita componerla **exactamente
+    /// igual**, y la única forma segura de garantizarlo es que **sea la
+    /// misma función**. Dos composiciones divergirían **en silencio**.
     pub fn digest(&self) -> Digest {
-        let a = native_merge(as_digest(self.seq), self.accounts_root);
-        let b = native_merge(self.pending_root, self.frozen_root);
-        native_merge(native_merge(a, b), self.chain_digest)
+        zk_ssl_hash::epoch_digest(
+            self.seq,
+            self.accounts_root,
+            self.pending_root,
+            self.frozen_root,
+            self.chain_digest,
+        )
     }
 }
 

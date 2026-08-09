@@ -111,16 +111,13 @@ pub struct MerklePath {
 
 /// Calcula la raíz de forma nativa siguiendo el camino, para saber qué
 /// esperar sin adivinarlo.
+// ⚠️ §255: delega en `zk_ssl_hash::path_root`, que **itera sobre la
+// LONGITUD DEL CAMINO, no sobre `TREE_DEPTH`**. Aqui la constante fija
+// funcionaba porque este arbol tiene esa profundidad, pero
+// `SparseTree::path_for` genera caminos de `self.depth`: con otro arbol,
+// la constante habria leido fuera del camino o dejado niveles sin subir.
 pub fn native_root(leaf: Digest, path: &MerklePath) -> Digest {
-    let mut current = leaf;
-    for level in 0..TREE_DEPTH {
-        current = if path.is_right[level] {
-            native_merge(path.siblings[level], current)
-        } else {
-            native_merge(current, path.siblings[level])
-        };
-    }
-    current
+    zk_ssl_hash::path_root(leaf, &path.siblings, &path.is_right)
 }
 
 /// Construye la traza completa: 32 niveles encadenados.
