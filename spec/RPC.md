@@ -74,6 +74,7 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 | `zkssl_logEntry` | `{seq: Q}` | `LogEntry` |
 | `zkssl_logEntries` | `{fromSeq?: Q, limit?: Q}` | `LogEntry[]` (límite ≤ 1000) |
 | `zkssl_verifyChain` | — | `{ok: bool, entries?, error?}` |
+| `zkssl_inclusionReceipt` | `{index: Q}` | `{index, leaf, path, leafFormat, head}` |
 
 `LogEntry = {seq: Q, kind: string, rootOld, rootNew, proofDigest, chain: Digest}`
 con `kind` ∈ {`OpenAccount`,`Mint`,`Transfer`,`Burn`,`Recovery`,
@@ -499,6 +500,68 @@ decisión**, no en una nota aparte.
 ⚠️ Y **sin custodia declarada de la clave, lo que este método sirve no tiene
 valor probatorio** (`SECURITY.md`). §242 hace que el artefacto exista; no
 que valga.
+
+### `zkssl_inclusionReceipt` — la inclusión, comprobable sin el nodo
+
+Devuelve lo que un tercero necesita para comprobar que **una hoja estaba en
+la cabeza firmada**: `index`, `leaf`, `path` y los cinco campos de `head`.
+La verificación es la de §256: subir el camino hasta `accountsRoot` y
+comprobar que esos cinco campos componen el `epochDigest` **de una cabeza
+firmada**. Una raíz suelta no prueba nada.
+
+⚠️ **Del árbol `accounts`**, que es el que firma la cabeza. `CommitmentLayer`
+solo se instancia en sus propios tests: un camino suyo llevaría a una raíz
+**que nadie firma**.
+
+⚠️ **`leafFormat` es una OBSERVACIÓN, no una afirmación.** El nodo compone la
+hoja **de las dos formas** —`native_leaf` y `native_leaf_salted`— y declara
+la que casó con el árbol. Si mintiera, el titular compondría mal y el recibo
+**fallaría**: una forma equivocada **no puede hacer que un recibo falso
+verifique**, solo que uno legítimo falle. Está para que el fallo sea
+**legible** en vez de un `RaizDistinta` a secas.
+
+⚠️ **Aditivo**: `zkssl/0.2` **no sube**. No cambia ningún valor que viaje.
+
+### ⚠️ Lo que un camino expone: enumeración del saldo
+
+**Esto NO es propio del recibo. Afecta igual a `zkssl_sendMaterials`, que
+reparte `senderPath` sin credencial alguna desde antes que este método
+exista.** Se dice aquí, bajo las dos puertas, porque decirlo solo bajo una
+es cómo se llega a tener dos.
+
+Con un camino de cuentas y la raíz, cualquiera puede probar hojas candidatas
+**sin volver a hablar con el nodo**: compone `native_leaf(publicId, saldo,
+nonce)`, sube el camino y compara. Las tres piezas que hacen el espacio
+enumerable **son públicas**:
+
+| pieza | de dónde sale |
+|---|---|
+| `publicId` | `zkssl_publicId`, **sin credencial** |
+| cota del saldo | `regulatoryLimit`, que `zkssl_params` publica |
+| nonce | contador que **empieza en cero** |
+
+Un lector puede hacer la cuenta: el producto de esas dos cotas es el número
+de hojas a probar, y **cada prueba son unos pocos hashes**. Con el
+`regulatoryLimit` del nodo de referencia —500.000— y un nonce bajo, eso es
+enumerable en una máquina cualquiera.
+
+⚠️ **El salt de §117 es lo único que lo impide**, y su propia documentación
+dice exactamente esto: protege «de terceros que ven caminos y pruebas». Se
+deriva de la clave de gasto, así que un tercero **no lo tiene**, y multiplica
+el espacio por el tamaño de la clave.
+
+> ⚠️ **Por eso la migración de §117 no es una mejora: es la condición para
+> operar en abierto.** Un ledger sin migrar que exponga `sendMaterials` o
+> este método **publica los saldos** a quien quiera calcularlos.
+
+⚠️ **`claimMaterials` no está en el mismo caso**: exige el `PendingNotice`
+del pagador. No es una credencial que el nodo compruebe, pero **hay que
+tenerlo**. La puerta abierta de par en par es una, no dos.
+
+Cerrar la exposición —exigir credencial para los caminos— **es un sello
+aparte**: cambia superficie hoy pública y puede romper clientes. Meterlo
+aquí encadenaría «servir el recibo» con «cerrar `sendMaterials`», y si algo
+se torciera no se sabría cuál de los dos fue.
 
 ## Notas operativas
 

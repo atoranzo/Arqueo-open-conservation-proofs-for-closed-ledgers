@@ -30,6 +30,7 @@ pub fn method_names() -> Vec<&'static str> {
         "zkssl_applyClaim",
         "zkssl_applyMany",
         "zkssl_signedEpochHead",
+        "zkssl_inclusionReceipt",
         "dev_fund",
         "dev_openSeeded",
     ]
@@ -88,6 +89,9 @@ pub fn document() -> Value {
         m("zkssl_signedEpochHead",
           "La ULTIMA cabeza de epoca firmada, para un TESTIGO. Aditivo: no toca zkssl_epochHead.",
           json!([]), "SignedEpochHead"),
+        m("zkssl_inclusionReceipt",
+          "Recibo de inclusion de una cuenta: hoja, camino y cabeza. leafFormat es OBSERVADO.",
+          json!([p("index", "Q")]), "InclusionReceipt"),
         m("dev_fund", "SOLO --dev: emision delegada con custodios de PRUEBA.",
           json!([p("index", "Q"), p("amount", "Q")]), "Applied"),
         m("dev_openSeeded", "SOLO --dev: abre desde una clave determinista de la suite.",
@@ -117,22 +121,44 @@ mod tests {
     use super::*;
 
     #[test]
-    fn diecinueve_metodos_unicos_y_en_orden() {
+    fn veinte_metodos_unicos_y_en_orden() {
         // §223: subio a 18 con `zkssl_applyMany`. §242: a 19 con
-        // `zkssl_signedEpochHead`. Que este test tenga el numero en el
+        // `zkssl_signedEpochHead`. §259: a 20 con
+        // `zkssl_inclusionReceipt`. Que este test tenga el numero en el
         // nombre es a proposito: renombrarlo OBLIGA A MIRAR.
         let nombres = method_names();
-        assert_eq!(nombres.len(), 19);
+        assert_eq!(nombres.len(), 20);
         let mut u = nombres.clone();
         u.sort();
         u.dedup();
-        assert_eq!(u.len(), 19, "nombres repetidos");
+        assert_eq!(u.len(), 20, "nombres repetidos");
         let doc = document();
         let met = doc["methods"].as_array().expect("methods");
-        assert_eq!(met.len(), 19);
+        assert_eq!(met.len(), 20);
         for (i, mm) in met.iter().enumerate() {
             assert_eq!(mm["name"].as_str().unwrap(), nombres[i]);
         }
+    }
+
+    /// ⚠️ **`spec/openrpc.json` es un ARTEFACTO GENERADO, y llevaba
+    /// RANCIO desde §242**: 18 metodos frente a los 19 de `document()`.
+    /// La cabecera de este modulo dice «una sola fuente» y habia **dos
+    /// copias sin nadie que las comparara** — el rito de §217 incumplido
+    /// justo donde mas se afirma.
+    ///
+    /// Regenerar:
+    /// `cargo run --release -p zk-ssl-wire --bin gen_openrpc > spec/openrpc.json`
+    #[test]
+    fn el_json_publicado_es_el_que_genera_esta_tabla() {
+        let ruta = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../spec/openrpc.json");
+        let publicado: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&ruta).expect("spec/openrpc.json"))
+                .expect("json valido");
+        assert_eq!(
+            publicado, document(),
+            "spec/openrpc.json NO es lo que genera esta tabla: regenerar con gen_openrpc"
+        );
     }
 
     #[test]

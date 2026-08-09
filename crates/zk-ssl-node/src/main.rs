@@ -604,6 +604,28 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 }
             })
         }
+        // ⚠️ **§259 · EL RECIBO DE INCLUSION.** Del arbol `accounts`, que es
+        // el que firma la cabeza. `leafFormat` va OBSERVADO: la capa
+        // compone la hoja de las dos formas y declara la que caso.
+        //
+        // ⚠️ **Aditivo**: no toca `zkssl_epochHead` ni los valores que
+        // viajan. **La version NO sube**, por la misma razon que no subio
+        // con `zkssl_applyMany` (§222) ni con `zkssl_signedEpochHead`.
+        "zkssl_inclusionReceipt" => {
+            #[derive(Deserialize)]
+            struct P { index: Q }
+            let p: P = parse(params)?;
+            let m = l.inclusion_materials(p.index.0).map_err(RpcError::layer)?;
+            Ok(serde_json::to_value(wire::InclusionReceiptDto {
+                index: Q(m.index),
+                leaf: digest_to_wire(&m.leaf),
+                path: wire::MerklePathDto::from(&m.path),
+                leaf_format: m.forma.como_cable().to_string(),
+                head: wire::EpochHeadDto::from(&l.epoch_head()),
+            })
+            .unwrap())
+        }
+
         "zkssl_supply" => Ok(json!({
             "total": Q(l.total_supply()),
             "pending": Q(l.total_pending()),
@@ -1543,5 +1565,127 @@ mod tests {
         cuenta(&app, 61, 100);
         let despues = dispatch(&app, "zkssl_accountCount", json!({})).expect("cuenta");
         assert_eq!(despues, json!("0x2"));
+    }
+
+    // ── §259 · el recibo de inclusion ─────────────────────────────
+    //
+    // ⚠️ AQUI VIVE EL CRUCE, y por eso los tests de §259 estan en el nodo
+    // y no en la capa: es el unico crate que ve LA CAPA y EL VERIFICADOR a
+    // la vez. Los once tests de `inclusion.rs` construyen su raiz CON
+    // `path_root`: son autoconsistentes y no pueden probar que un camino
+    // de un `SparseTree` DE VERDAD verifique.
+
+    /// Traduce el recibo del cable a lo que el verificador entiende —
+    /// exactamente lo que haria un tercero.
+    fn recibo_desde_cable(v: &Value) -> zk_ssl_verify::ReciboInclusion {
+        let d = |x: &Value| {
+            digest_from_wire(&serde_json::from_value::<wire::B32>(x.clone()).expect("B32"))
+                .expect("digest")
+        };
+        let q = |x: &Value| {
+            u64::from_str_radix(x.as_str().expect("Q").trim_start_matches("0x"), 16).expect("hex")
+        };
+        let h = &v["head"];
+        zk_ssl_verify::ReciboInclusion {
+            indice: q(&v["index"]),
+            hoja: d(&v["leaf"]),
+            hermanos: v["path"]["siblings"].as_array().expect("siblings").iter().map(d).collect(),
+            derecha: v["path"]["isRight"]
+                .as_array()
+                .expect("isRight")
+                .iter()
+                .map(|b| b.as_bool().expect("bool"))
+                .collect(),
+            seq: q(&h["seq"]),
+            accounts_root: d(&h["accountsRoot"]),
+            pending_root: d(&h["pendingRoot"]),
+            frozen_root: d(&h["frozenRoot"]),
+            chain_digest: d(&h["chainDigest"]),
+        }
+    }
+
+    #[test]
+    fn el_recibo_de_inclusion_verifica_contra_la_cabeza() {
+        // ⚠️⚠️ EL TEST QUE JUSTIFICA TODA LA CADENA §256-§259: un camino
+        // sacado de un `SparseTree` REAL, subido por el verificador
+        // INDEPENDIENTE, hasta la cabeza. Si el convenio de `is_right` del
+        // arbol y el de `path_root` divergieran, los once de
+        // `inclusion.rs` seguirian verdes y ESTE se pondria rojo.
+        let app = nodo(30);
+        let (idx, _) = cuenta(&app, 70, 1_000);
+        let r = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(idx) }))
+            .expect("recibo");
+        let firmado = digest_from_wire(
+            &serde_json::from_value::<wire::B32>(r["head"]["epochDigest"].clone()).expect("B32"),
+        )
+        .expect("digest");
+        assert_eq!(
+            zk_ssl_verify::verificar_inclusion(&recibo_desde_cable(&r), firmado),
+            Ok(())
+        );
+    }
+
+    #[test]
+    fn el_recibo_declara_la_forma_que_el_arbol_tiene() {
+        // En caliente toda cuenta nueva sale SALADA (§258): la forma no se
+        // declara de memoria, se mide contra el arbol.
+        let app = nodo(30);
+        let (idx, _) = cuenta(&app, 71, 500);
+        let r = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(idx) }))
+            .expect("recibo");
+        assert_eq!(r["leafFormat"], json!("salted"));
+    }
+
+    #[test]
+    fn el_recibo_no_entrega_el_salt() {
+        // ⚠️ El salt es lo UNICO que impide enumerar el saldo desde un
+        // camino (§117). Si algun dia se colara en el DTO, esto lo dice.
+        let app = nodo(30);
+        let (idx, _) = cuenta(&app, 72, 500);
+        let r = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(idx) }))
+            .expect("recibo");
+        // ⚠️ Por CLAVES, no por subcadena: el valor de `leafFormat` es
+        // literalmente "salted", asi que buscar "salt" en el texto entero
+        // mediria la respuesta y no la estructura.
+        let claves: Vec<String> = r
+            .as_object()
+            .expect("el recibo es un objeto")
+            .keys()
+            .map(|k| k.to_lowercase())
+            .collect();
+        assert!(
+            claves.iter().all(|k| !k.contains("salt")),
+            "el recibo no debe llevar el salt: {claves:?}"
+        );
+    }
+
+    #[test]
+    fn un_recibo_de_otra_epoca_no_verifica() {
+        // ⚠️ EL TERCER ESLABON, contra un arbol de verdad: el camino era
+        // correcto CUANDO SE SIRVIO, y deja de valer en cuanto la raiz se
+        // mueve. Sin la comprobacion de cabeza, un operador serviria un
+        // recibo de una epoca en la que la hoja SI estaba.
+        let app = nodo(30);
+        let (idx, _) = cuenta(&app, 73, 500);
+        let r = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(idx) }))
+            .expect("recibo");
+        cuenta(&app, 74, 500); // la raiz se mueve
+        let nueva = dispatch(&app, "zkssl_epochHead", json!({})).expect("cabeza");
+        let firmado = digest_from_wire(
+            &serde_json::from_value::<wire::B32>(nueva["epochDigest"].clone()).expect("B32"),
+        )
+        .expect("digest");
+        assert_eq!(
+            zk_ssl_verify::verificar_inclusion(&recibo_desde_cable(&r), firmado),
+            Err(zk_ssl_verify::InclusionError::CabezaDistinta)
+        );
+    }
+
+    #[test]
+    fn una_cuenta_que_no_existe_no_da_recibo() {
+        let app = nodo(30);
+        let e = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(9_999) }))
+            .expect_err("no deberia haber recibo");
+        assert_ne!(e.code, -32601, "el metodo existe: no puede ser MethodNotFound");
     }
 }

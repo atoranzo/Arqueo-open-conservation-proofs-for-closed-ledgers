@@ -382,6 +382,36 @@
       "summary": "Aplica N operaciones contra UNA raiz de arranque: todo o nada."
     },
     {
+      "name": "zkssl_signedEpochHead",
+      "params": [],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/SignedEpochHead"
+        }
+      },
+      "summary": "La ULTIMA cabeza de epoca firmada, para un TESTIGO. Aditivo: no toca zkssl_epochHead."
+    },
+    {
+      "name": "zkssl_inclusionReceipt",
+      "params": [
+        {
+          "name": "index",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/InclusionReceipt"
+        }
+      },
+      "summary": "Recibo de inclusion de una cuenta: hoja, camino y cabeza. leafFormat es OBSERVADO."
+    },
+    {
       "name": "dev_fund",
       "params": [
         {

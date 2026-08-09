@@ -579,6 +579,28 @@ impl From<&EpochHead> for EpochHeadDto {
     }
 }
 
+/// **Recibo de inclusión** (§259): lo que un tercero necesita para
+/// comprobar, **sin el nodo**, que una hoja estaba en una cabeza firmada.
+///
+/// ⚠️ `leaf_format` es **una observación, no una afirmación**: el nodo
+/// compone la hoja de las dos formas y declara la que casó con el árbol.
+/// Si mintiera, el titular compondría mal y el recibo **fallaría** — una
+/// forma equivocada no puede hacer que un recibo falso verifique, solo que
+/// uno legítimo falle. Está para que el fallo sea **legible** (§254).
+///
+/// ⚠️ **No lleva el `leafSalt`**: es lo único que impide enumerar el saldo
+/// desde un camino (§117).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct InclusionReceiptDto {
+    pub index: Q,
+    pub leaf: B32,
+    pub path: MerklePathDto,
+    /// `"salted"` o `"unsalted"`.
+    pub leaf_format: String,
+    pub head: EpochHeadDto,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ParamsDto {

@@ -19170,3 +19170,106 @@ pregunta y no como hallazgo. Backlog.
 - **No toca las siete copias** de `as_digest`.
 
 **Canon: `zk-ssl-hash` 11 → 14.** Sumas: 722 → 725, 859 → 862, 873 → 876.
+## 259. Servir el recibo de inclusión
+
+Cierra la cadena que empezó en §256: `verificar_inclusion` existía, §257 hizo
+legible el cable y §258 la hoja, y **ahora el nodo lo sirve**.
+
+### ⚠️ El árbol es `accounts`, y el asiento de §256 decía lo contrario
+
+`CommitmentLayer` **solo se instancia dentro de su propio `mod tests`**:
+seis `CommitmentLayer::new()`, todas después del `#[cfg(test)]`. **Ningún
+sitio de producción la construye.** Lo que firma la cabeza es
+`SovereignLayer.accounts` (`epoch_head`: `accounts_root:
+self.accounts.root()`), cuyas hojas son compromisos.
+
+> **Un recibo de `CommitmentLayer::path_for` daría un camino a una raíz que
+> nadie firma.** El asiento de §256 apuntaba ahí, y su comentario gemelo
+> vivía además en `inclusion.rs`. Queda corregido en el código y aquí.
+
+### `leafFormat` se MIDE, no se declara
+
+La capa **no guarda la geometría en memoria**: al abrir la deciden
+`meta:migrated` **o** `meta:geometry_v7` —«nacido ya en el mundo nuevo»—, y
+después solo queda implícita en las hojas y en la profundidad del árbol de
+congelados. Así que `inclusion_materials` compone la hoja **de las dos
+formas** y devuelve **la que casó**; si no casa ninguna, `StaleState`, que
+es el idioma que `burn.rs:42` y `audit.rs:49` ya usaban.
+
+⚠️ **Y no es una pieza de confianza**: una forma mentida hace fallar un
+recibo **legítimo**, no verificar uno **falso**. Está para que el fallo sea
+legible (§254). Un campo observado tampoco puede quedarse rancio como una
+bandera que alguien mantiene.
+
+### ⚠️ Lo que un camino expone, y por qué NO es un riesgo de §259
+
+Con un camino de cuentas y la raíz se pueden probar hojas candidatas
+**offline**. Las tres piezas que hacen el espacio enumerable son públicas:
+`publicId` **sin credencial**, el `regulatoryLimit` que `zkssl_params`
+publica y acota el saldo, y un nonce que **empieza en cero**. Con el límite
+del nodo de referencia —500.000— y un nonce bajo, **es enumerable en una
+máquina cualquiera**. La cuenta está escrita para que un lector la
+reproduzca, no para que se fíe de la palabra «trivial».
+
+⚠️ **`zkssl_sendMaterials` ya reparte `senderPath` sin credencial ninguna
+desde antes de que este método existiera.** Sus parámetros son `sender`,
+`receiverId`, `amount` y `salt`: **ningún secreto**. Lo único que puede
+hacerla fallar es el saldo, el límite o que la cuenta esté congelada —
+razones que nada tienen que ver con quién llama. El recibo sería **la
+segunda puerta**, no la primera.
+
+Y **la frase que lo cierra ya estaba escrita**: el salt de §117 protege «de
+terceros que ven caminos y pruebas». Servir recibos es ver caminos, y
+`sendMaterials` también. **El documento que justificaba el salt describía
+exactamente esto, y la superficie que lo expone se abrió sin cruzar las dos
+cosas.**
+
+> ⚠️ **La migración de §117 no es una mejora: es la condición para operar en
+> abierto.** No es una entrada de backlog «pendiente»; es una condición de
+> despliegue, como el ancla de §246.
+
+`claimMaterials` **no está en el mismo caso**: exige el `PendingNotice` del
+pagador. No es credencial comprobada por el nodo, pero hay que tenerlo.
+
+⚠️ **Por qué no se bloquea §259 en ledgers sin migrar.** Un cerrojo en una
+puerta con la de al lado abierta **no protege y parece que sí** — la misma
+familia que el falso «limpio» de §250: alguien leería «§259 exige migración»
+y concluiría que los caminos están protegidos. **Un control parcial mal
+etiquetado es peor que la ausencia declarada, porque la ausencia no engaña a
+nadie.** Exigir credencial para los caminos es el arreglo, y es **sello
+propio**: cambia superficie hoy pública y puede romper clientes.
+
+### El cruce vive en el nodo, y por qué
+
+Los once tests de `inclusion.rs` construyen su raíz **con `path_root`**: son
+autoconsistentes. `zk-ssl-node` es el único crate que ve **la capa y el
+verificador a la vez**, así que ahí está el test que coge un camino de un
+`SparseTree` **de verdad** y lo sube con el verificador **independiente**
+hasta la cabeza. Si el convenio de `is_right` del árbol y el de `path_root`
+divergieran, **los once seguirían verdes y este se pondría rojo**.
+
+⚠️ Por eso el accesor de la capa **no lleva tests propios**: los cinco del
+nodo lo ejercitan de punta a punta, y cinco tests en `zk-ssl` que no
+cruzasen nada serían cubrir el expediente. Se declara aquí en vez de
+disimularlo.
+
+### ⚠️ `spec/openrpc.json` llevaba rancio desde §242
+
+Tenía **18** métodos y `document()` **19**: faltaba `zkssl_signedEpochHead`.
+La cabecera de `openrpc.rs` dice «la tabla vive AQUÍ: una sola fuente», y
+**había dos copias sin nadie que las comparara** — el rito de §217
+incumplido justo donde más se afirma. Se regenera (20 métodos) y **queda
+test que ata el fichero publicado a `document()`**, que es lo que faltaba.
+
+El test `diecinueve_metodos_unicos_y_en_orden` pasa a `veinte_...`: lleva el
+número en el nombre **a propósito** — renombrarlo obliga a mirar.
+
+### Lo que §259 NO hace
+
+- **No sube la versión.** `zkssl/0.2` sigue: la superficie es aditiva y no
+  se mueve ningún valor que viaje (precedentes §222 y §242).
+- **No cierra `sendMaterials`.** Sello aparte.
+- **No entrega el `leafSalt`**, y hay test que lo comprueba.
+
+**Canon: `zk-ssl-node` 46 → 51, `zk-ssl-wire` 2 → 3.** La capa se queda en
+257. Sumas: 725 → 731, 862 → 868, 876 → 882.

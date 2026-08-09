@@ -247,7 +247,88 @@ impl SovereignLayer {
         Ok(index)
     }
 
+    /// **Materiales de un recibo de inclusión** (§259).
+    ///
+    /// ⚠️ **Del árbol `accounts`, que es el que firma la cabeza**
+    /// (`epoch_head`: `accounts_root: self.accounts.root()`). No de
+    /// `CommitmentLayer`, que **solo se instancia dentro de su propio
+    /// `mod tests`**: un camino suyo llevaría a una raíz **que nadie
+    /// firma**. El asiento de §256 lo decía al revés.
+    ///
+    /// ⚠️ **La forma de la hoja se MIDE, no se declara.** La capa no
+    /// guarda la geometría en memoria —al abrir la deciden
+    /// `meta:migrated` **o** `meta:geometry_v7`—, así que aquí se compone
+    /// de las dos formas y se reporta **la que casó**. Un campo observado
+    /// no puede quedarse rancio como una bandera que alguien mantiene.
+    ///
+    /// `StaleState` si no casa ninguna: el registro y el árbol discrepan.
+    /// Es el mismo idioma que `burn.rs` y `audit.rs` ya usan.
+    ///
+    /// ⚠️ **No devuelve el `leaf_salt`**: se deriva de la clave de gasto y
+    /// es lo único que impide enumerar el saldo desde un camino (§117).
+    pub fn inclusion_materials(
+        &self,
+        index: AccountIndex,
+    ) -> Result<MaterialesInclusion, LayerError> {
+        let r = self
+            .records
+            .get(&index)
+            .ok_or(LayerError::AccountNotFound(index))?;
+        let en_arbol = self.accounts.leaf(index);
+        let saldo = BaseElement::new(r.balance);
+        let con_sal = zk_ssl_hash::native_leaf_salted(r.public_id, saldo, r.nonce, r.leaf_salt);
+        let sin_sal = zk_ssl_hash::native_leaf(r.public_id, saldo, r.nonce);
+        let forma = if en_arbol == con_sal {
+            FormaHoja::ConSal
+        } else if en_arbol == sin_sal {
+            FormaHoja::SinSal
+        } else {
+            return Err(LayerError::StaleState);
+        };
+        Ok(MaterialesInclusion {
+            index,
+            leaf: en_arbol,
+            path: self.accounts.path_for(index),
+            forma,
+        })
+    }
+
     // -----------------------------------------------------------------
+}
+
+/// Con qué forma está compuesta la hoja de una cuenta (§259).
+///
+/// ⚠️ **Las dos conviven y no son intercambiables**: `native_leaf` NO es
+/// `native_leaf_salted` con salt cero — hay test en `zk-ssl-hash` (§258).
+/// Cuál aplica es propiedad **del ledger entero**, no de la cuenta.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FormaHoja {
+    /// `native_leaf_salted`: la hoja envuelta con el salt de §117.
+    ConSal,
+    /// `native_leaf`: la hoja del mundo viejo, sin envolver.
+    SinSal,
+}
+
+impl FormaHoja {
+    /// Nombre **estable** para el cable. Cambiarlo mueve el protocolo.
+    pub fn como_cable(self) -> &'static str {
+        match self {
+            FormaHoja::ConSal => "salted",
+            FormaHoja::SinSal => "unsalted",
+        }
+    }
+}
+
+/// Lo que el nodo necesita para servir un recibo de inclusión.
+///
+/// ⚠️ **Sin el `leaf_salt`**, a propósito: ver `inclusion_materials`.
+#[derive(Debug, Clone)]
+pub struct MaterialesInclusion {
+    pub index: AccountIndex,
+    /// La hoja **tal como está en el árbol**, no recompuesta al vuelo.
+    pub leaf: Digest,
+    pub path: MerklePath,
+    pub forma: FormaHoja,
 }
 
 
