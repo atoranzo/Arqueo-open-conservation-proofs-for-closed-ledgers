@@ -19273,3 +19273,162 @@ número en el nombre **a propósito** — renombrarlo obliga a mirar.
 
 **Canon: `zk-ssl-node` 46 → 51, `zk-ssl-wire` 2 → 3.** La capa se queda en
 257. Sumas: 725 → 731, 862 → 868, 876 → 882.
+## 260. Las correcciones que no son de código
+
+Ocho entradas de los sellos §256-§259. **Ninguna es un fallo de la capa**:
+todas son sobre **cómo se comprueba**, que es de lo que este proyecto dice
+ir. Se agrupan aquí porque una corrección que espera se convierte en
+arqueología: a los cuatro sellos ya no se corrige, se reconstruye.
+
+⚠️ **Las ocho se volvieron a medir contra el árbol antes de escribirse**, y
+las cinco citas de la entrada 7 se verificaron una a una sobre este sello.
+Es el rito de §242 aplicado al asiento de correcciones — saltárselo **justo
+aquí** habría sido irónico.
+
+### 1 · La COMPUERTA 2 de §256 contó once, y su asiento dice siete
+
+El bloque reportó *«11 tests que comprueban que RECHAZA»* cuando el asiento
+sellado dice *«siete de los diez»*. El patrón `se_rechaza[a-z_]* ... ok`
+casaba también con **cuatro tests de §243 que ya existían** en
+`zk-ssl-verify/src/lib.rs`: `una_firma_valida_de_otra_cabeza_se_rechaza`,
+`una_version_de_formato_cambiada_se_rechaza`,
+`un_byte_cambiado_en_la_firma_se_rechaza` y `basura_se_rechaza_sin_reventar`.
+7 + 4 = 11.
+
+**No fue falso verde** —los cinco nombres se comprobaban uno a uno—, pero el
+instrumento **medía el crate entero mientras su mensaje hablaba del sello**.
+Consecuencia concreta: si mañana se borran los siete negativos de §256, el
+umbral `>= 6` **sigue pasando** con los cuatro viejos.
+
+### 2 · `spec/openrpc.json`: diecisiete sellos rancio
+
+Desde §242 tenía **18** métodos y `document()` **19**. La cabecera de
+`openrpc.rs` dice *«la tabla vive AQUÍ: una sola fuente»* y **había dos
+copias sin nadie que las comparara** — el rito de §217 incumplido justo
+donde más se afirma.
+
+Corregido en §259 (20 métodos) **con test que ata el fichero a
+`document()`**. Lo que queda por registrar es **por qué duró diecisiete
+sellos**: un artefacto generado sin compuerta no envejece a la vista de
+nadie. **Generar no es garantizar; lo que garantiza es comparar.**
+
+### 3 · El asiento de §256 apuntaba a la capa que nadie firma
+
+Decía que el recibo que sirve al acuse es el de `CommitmentLayer`. Esa capa
+**solo se instancia dentro de su propio `mod tests`**; lo que firma la cabeza
+es `SovereignLayer.accounts`. Un camino de `CommitmentLayer::path_for`
+llevaría a **una raíz que nadie firma**.
+
+La frase gemela vivía además **en el código**, en `inclusion.rs`. Corregido
+en §259. Registrado aquí porque el fallo no fue la frase: fue que **se
+escribió una afirmación sobre qué capa opera sin comprobar quién la
+instancia**.
+
+### 4 · Un instrumento que se medía a sí mismo
+
+La primera compuerta de identidad del BLOQUE-257 buscaba su propia marca con
+`grep` sobre `$0` — y **la línea del `grep` contenía la marca**. Daba el
+mismo veredicto para el bloque bueno y para el viejo.
+
+> **Un instrumento que se incluye en su propia medida no mide.** Las anclas
+> van partidas en dos literales, para que la línea que busca no contenga lo
+> buscado.
+
+### 5 · Un pin de regresión que era una conjetura
+
+En §257, `los_mensajes_de_formato_sobreviven_a_la_delegacion` comparaba solo
+el texto de formato, olvidando que el prefijo —«dato mal formado en el
+ledger: »— lo pone `StoreError::Malformed`. **Ese test habría fallado también
+contra el código anterior.**
+
+> **Un pin que no pasaría contra el estado que dice proteger no es un pin:
+> es una conjetura.** Y una conjetura en verde se lee como propiedad
+> demostrada.
+
+### 6 · Un backtick dentro de un mensaje
+
+En el BLOQUE-259, un acento grave dentro de un `msg` **se ejecutó como
+orden**: `accounts: command not found`, y el mensaje salió cortado. Fue
+inocuo —texto decorativo tras una compuerta ya pasada—, pero la lección no
+es esa: **lo que hay entre acentos graves se ejecuta**, y `bash -n` no lo ve
+porque la sustitución de órdenes **es sintaxis válida**.
+
+Regla: ningún acento grave dentro de un `msg`. El BLOQUE-260 se comprueba a
+sí mismo antes de tocar nada.
+
+### 7 · §258-A: el ledger que no vuelve a abrir — RAZONADO, no medido
+
+⚠️ **Condición de alcanzabilidad, primero: solo entra aquí un ledger
+anterior al flip D4.** `commit()` escribe `meta:geometry_v7` en **cada**
+persistencia, así que **ningún ledger guardado por este código puede quedar
+sin migrar**. Quien lea esto dentro de un año sabe en dos segundos si le
+aplica.
+
+La cadena, cada eslabón con su línea:
+
+| paso | dónde |
+|---|---|
+| `migrated` = `meta:migrated` **o** `meta:geometry_v7` | `persistence.rs:334` y `:339` |
+| abrir cuenta escribe hoja **salada**, sin guarda | `accounts.rs:219` |
+| el mismo `commit` escribe `geometry_v7`… | `persistence.rs:578` |
+| …y `root:state` desde el árbol **vivo** | `persistence.rs:603` |
+
+Un ledger legacy abre bien —todo se reconstruye sin sal y la raíz cuadra—.
+Se abre una cuenta: hoja salada en un árbol de hojas sin sal, **el árbol
+queda mezclado**. Su `commit` guarda la raíz mezclada **y** el marcador de
+geometría. Al reabrir, `migrated` ya es cierto, **todas** las hojas se
+reconstruyen saladas, las viejas cambian, la raíz no cuadra:
+**`IntegrityFailure`. El ledger no abre.**
+
+⚠️ **Y la conjetura de partida era otra, y era falsa.** Se dijo que un árbol
+mezclado permitiría que **el recibo mintiera**. No: §259 mide la forma **por
+cuenta**, componiendo la hoja de las dos maneras y devolviendo la que casó,
+así que **un árbol mixto lo sirve bien**. Lo que se rompe no es el recibo:
+es la recarga. **Peor en disponibilidad, mejor en honestidad** — falla a
+gritos, no en silencio. La conjetura la puso quien esto escribe y **la
+refutó la lectura**, no un banco.
+
+> ⚠️ **LÍMITE DE ESTA ENTRADA: no está medida, está LEÍDA.** Si existe un
+> ledger anterior a D4, **nadie ha comprobado que la cadena ocurra**: solo
+> que el código dice que ocurriría. Es un escalón por debajo de §251, que
+> distinguió *ejercitado* de *medido*; esto es **razonado**. No se cite
+> como si estuviera ejercitado.
+
+**Por qué no hay banco, y no es por el coste**: fabricar un sled legacy para
+probar un camino legacy **mide la fabricación, no el camino**. Si la réplica
+saliera mal —una hoja mal recompuesta, un `root:state` recalculado con la
+función equivocada— el banco fallaría y **no se sabría cuál de los dos
+falló**. Un instrumento sin poder de refutación es peor que no tenerlo. La
+cadena es enteramente de lectura: no hay tiempos, ni tamaños, ni
+comportamiento bajo carga. **Hay cuatro hechos del código y una consecuencia
+que se deduce — y cualquiera puede refutarla abriendo esas líneas.**
+
+### 8 · Un pin de tiempo que envejeció a la baja
+
+`--completo` corrió sobre este sello tras **34 sellos** sin ejecutarse: los
+137 tests de `halo2-experiment`, `plonk-experiment` y `zk-core` **verdes en
+su pin**, y los warnings pinchados —11, 3 y 10— exactamente donde estaban.
+Eso es un dato sobre **acoplamiento**, no una casilla: treinta y cuatro
+sellos de trabajo en la capa, el cable, el nodo y el verificador **no
+rozaron los tres paradigmas del museo**.
+
+Y una cifra que envejeció **a favor**: la nota del canon decía 38,6 min para
+`zk-core` (1472 s lib + 845 s ceremonia, §225) y se midieron **2075 s**.
+Actualizada. **Un pin de tiempo que nadie revisa deriva en los dos
+sentidos**, y anotar solo las derivas en contra sería contar la mitad.
+
+⚠️ El nivel entero costó **3268 s (54 min)**, no los ~39 que se estimaron al
+proponerlo: la estimación **confundió el coste de un crate con el de la
+corrida**.
+
+### Las tres categorías, para que no se confundan otra vez
+
+| categoría | qué significa |
+|---|---|
+| **medido** | hay números de una ejecución: tiempos, tamaños, tasas |
+| **ejercitado** | corre en la suite, sin números que interpretar (§251) |
+| **razonado** | se deduce de líneas concretas y **se refuta leyendo** |
+
+La entrada 7 es de la tercera, y lo dice en su propio cuerpo.
+
+**No mueve ningún pin de tests.** Sumas: 731 / 868 / 882, sin cambio.

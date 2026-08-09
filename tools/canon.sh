@@ -101,7 +101,7 @@ settlement-prover  sello       0   0   0   300  sin tests
 nova-experiment    sello       0   0   0   300  0 es CORRECTO: sus 3 tests exigen --features test-setup
 halo2-experiment   largo      27   0   0  1200  caro: 438 s medidos
 plonk-experiment   largo      36   0   3  1800  caro: 749 s medidos. DEUDA: 3 warnings
-zk-core            completo   74   0  10  3600  38,6 min: 1472 s lib + 845 s ceremonia. Los 10 warnings son de `ceremony`, no suyos
+zk-core            completo   74   0  10  3600  2075 s medidos en 6cb8883 (§260). La nota anterior (§225) decia 38,6 min = 1472 lib + 845 ceremonia: envejecio A LA BAJA. Los 10 warnings son de `ceremony`, no suyos
 FIN_TABLA
 )
 
