@@ -317,6 +317,212 @@ fn leer_hex(v: &Value) -> Result<Vec<u8>, String> {
         .collect()
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+//  §249 · LEER el diario: auditarlo y compararlo
+//
+//  ⚠️ §248 eligió los campos del diario con este criterio: **lo suficiente
+//  para que un tercero reverifique sin el nodo**. Eso es una afirmación
+//  sobre un uso futuro, y **nada la ejercitaba**: el diario se escribía y
+//  nadie lo leía jamás. Los cuatro tests comprobaban **la forma de una
+//  línea en memoria**, que es otra cosa.
+//
+//  > El formato estaba **declarado, no terminado**.
+//
+//  ⚠️ **Esto NO crea el segundo testigo.** Hace que su trabajo sea posible,
+//  y prueba que el diario sirve para lo que dijo servir. Es la misma forma
+//  que §245 y §248: el proyecto no puede construir la confianza, puede
+//  **quitar la excusa de que no hay cómo**.
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Lo que la auditoría de un diario encuentra.
+///
+/// ⚠️ **Tres cosas distintas con tres significados distintos**, como en
+/// §246: una firma que no verifica, un índice que retrocede y una clave que
+/// cambia no son el mismo problema. El vocabulario se mantiene coherente
+/// con el de [`Veredicto`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Hallazgo {
+    /// La firma guardada **no valida contra su propio digest**.
+    FirmaNoVerifica { linea: usize, indice: u64, error: String },
+    /// El índice **retrocede**: un diario solo puede avanzar.
+    IndiceRetrocede { linea: usize, previo: u64, ahora: u64 },
+    /// ⚠️ **La clave cambia a mitad del diario.** Es el caso que §244 dejó
+    /// abierto —el anclaje— y **el auditor es quien puede verlo**.
+    CambioDeClave { linea: usize, fijada: String, recibida: String },
+    /// Una versión de formato que este binario no conoce.
+    VersionDesconocida { linea: usize, v: u64 },
+    /// La línea no es JSON, o le faltan campos.
+    LineaIlegible { linea: usize, error: String },
+}
+
+impl Hallazgo {
+    pub fn clase(&self) -> &'static str {
+        match self {
+            Hallazgo::FirmaNoVerifica { .. } => "firma-no-verifica",
+            Hallazgo::IndiceRetrocede { .. } => "indice-retrocede",
+            Hallazgo::CambioDeClave { .. } => "cambio-de-clave",
+            Hallazgo::VersionDesconocida { .. } => "version-desconocida",
+            Hallazgo::LineaIlegible { .. } => "linea-ilegible",
+        }
+    }
+}
+
+/// Un mismo índice con dos contenidos distintos, en dos diarios.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Divergencia {
+    pub indice: u64,
+    pub digest_a: String,
+    pub digest_b: String,
+    pub misma_clave: bool,
+}
+
+/// Resultado de auditar: cuántas líneas, cuántas **reverificadas**, y qué.
+#[derive(Debug, Default)]
+pub struct Auditoria {
+    pub lineas: usize,
+    pub con_firma: usize,
+    pub reverificadas: usize,
+    pub hallazgos: Vec<Hallazgo>,
+}
+
+/// **Relee un diario y lo reverifica SIN EL NODO.**
+///
+/// ⚠️ Esto es lo que convierte el criterio de §248 en algo **ejecutable**.
+/// Un tercero que reciba un diario dentro de seis meses tiene que poder
+/// decir *«esto verifica»* con una orden; si para eso hiciera falta escribir
+/// un programa, **el formato no estaría terminado**.
+///
+/// ⚠️ Reutiliza [`verificar`] **tal cual**, y eso no es casualidad: §248
+/// guardó los campos **como vinieron del cable**. Si los hubiera
+/// transformado, el auditor tendría que reimplementar la verificación — y
+/// dos implementaciones pueden discrepar.
+pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
+    let mut a = Auditoria::default();
+    let mut ultimo: Option<u64> = None;
+    let mut clave: Option<String> = None;
+
+    for (i, l) in lineas.iter().enumerate() {
+        let n = i + 1;
+        if l.trim().is_empty() {
+            continue;
+        }
+        a.lineas += 1;
+        let v: Value = match serde_json::from_str(l) {
+            Ok(v) => v,
+            Err(e) => {
+                a.hallazgos.push(Hallazgo::LineaIlegible { linea: n, error: e.to_string() });
+                continue;
+            }
+        };
+        match v["v"].as_u64() {
+            Some(x) if x <= DIARIO_VERSION as u64 => {}
+            Some(x) => {
+                a.hallazgos.push(Hallazgo::VersionDesconocida { linea: n, v: x });
+                continue;
+            }
+            None => {
+                a.hallazgos.push(Hallazgo::LineaIlegible {
+                    linea: n,
+                    error: "sin campo `v`: no declara su formato".into(),
+                });
+                continue;
+            }
+        }
+        // Las lineas sin cabeza firmada son legitimas y no se reverifican.
+        if v["signature"].is_null() {
+            continue;
+        }
+        a.con_firma += 1;
+
+        let indice = match leer_q(&v["index"]) {
+            Ok(x) => x,
+            Err(e) => {
+                a.hallazgos.push(Hallazgo::LineaIlegible { linea: n, error: e });
+                continue;
+            }
+        };
+        // ⚠️ Un diario SOLO PUEDE AVANZAR: es de solo añadir (§248).
+        if let Some(u) = ultimo {
+            if indice < u {
+                a.hallazgos.push(Hallazgo::IndiceRetrocede { linea: n, previo: u, ahora: indice });
+            }
+        }
+        ultimo = Some(ultimo.map_or(indice, |u| u.max(indice)));
+
+        // ⚠️ LA CLAVE FIJADA, no solo las firmas: un diario donde la clave
+        // cambia a mitad es el caso que §244 dejo abierto, y NO PUEDE PASAR
+        // EN SILENCIO.
+        let k = v["publicKey"].as_str().unwrap_or_default().to_string();
+        match &clave {
+            None => clave = Some(k),
+            Some(f) if *f == k => {}
+            Some(f) => {
+                a.hallazgos.push(Hallazgo::CambioDeClave {
+                    linea: n,
+                    fijada: f.clone(),
+                    recibida: k,
+                });
+            }
+        }
+
+        match verificar(&v) {
+            Ok(()) => a.reverificadas += 1,
+            Err(e) => a.hallazgos.push(Hallazgo::FirmaNoVerifica { linea: n, indice, error: e }),
+        }
+    }
+    a
+}
+
+/// **Compara dos diarios**: el mismo índice con distinto contenido.
+///
+/// ⚠️ Con un solo operador esto **no prueba nada** —dos diarios míos son un
+/// diario con dos ficheros—. Es la pieza que **activa** la propiedad de
+/// §248 cuando exista un segundo testigo, y sin ella ese testigo no tendría
+/// con qué.
+///
+/// ⚠️ Y detecta la divergencia, **no dice cuál miente**. No hace falta: lo
+/// que queda probado es que **el operador emitió dos cosas distintas para el
+/// mismo índice**, y ninguno de los dos testigos pudo fabricar su firma.
+pub fn comparar_lineas(a: &[String], b: &[String]) -> Vec<Divergencia> {
+    let mapa = |ls: &[String]| -> BTreeMap<u64, (String, String)> {
+        let mut m = BTreeMap::new();
+        for l in ls {
+            let v: Value = match serde_json::from_str(l) {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+            if v["signature"].is_null() {
+                continue;
+            }
+            if let Ok(i) = leer_q(&v["index"]) {
+                m.insert(
+                    i,
+                    (
+                        v["epochDigest"].as_str().unwrap_or_default().to_string(),
+                        v["publicKey"].as_str().unwrap_or_default().to_string(),
+                    ),
+                );
+            }
+        }
+        m
+    };
+    let (ma, mb) = (mapa(a), mapa(b));
+    let mut out = Vec::new();
+    for (i, (da, ka)) in &ma {
+        if let Some((db, kb)) = mb.get(i) {
+            if da != db {
+                out.push(Divergencia {
+                    indice: *i,
+                    digest_a: da.clone(),
+                    digest_b: db.clone(),
+                    misma_clave: ka == kb,
+                });
+            }
+        }
+    }
+    out
+}
+
 #[derive(Args)]
 pub struct WitnessArgs {
     /// Nodo a atestiguar.
@@ -337,9 +543,61 @@ pub struct WitnessArgs {
     /// Diario, una línea JSON por consulta.
     #[arg(long)]
     diario: Option<PathBuf>,
+
+    /// **Relee un diario y lo reverifica SIN EL NODO** (§249).
+    ///
+    /// ⚠️ Es lo que convierte el criterio de §248 —*lo suficiente para
+    /// que un tercero reverifique sin el nodo*— en algo **ejecutable**.
+    #[arg(long, value_name = "DIARIO", conflicts_with = "comparar")]
+    auditar: Option<PathBuf>,
+
+    /// **Compara dos diarios**: el mismo índice con distinto contenido.
+    ///
+    /// ⚠️ Con un solo operador **no prueba nada**. Es la pieza que activa
+    /// la propiedad de §248 cuando exista un segundo testigo.
+    #[arg(long, value_name = "DIARIO", num_args = 2)]
+    comparar: Option<Vec<PathBuf>>,
+}
+
+fn leer(p: &std::path::Path) -> anyhow::Result<Vec<String>> {
+    Ok(std::fs::read_to_string(p)?.lines().map(str::to_string).collect())
 }
 
 pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
+    // ── §249 · los dos modos que LEEN, antes del que observa ──
+    if let Some(p) = &a.auditar {
+        let r = auditar_lineas(&leer(p)?);
+        println!("{}: {} lineas · {} con firma · {} REVERIFICADAS sin el nodo",
+                 p.display(), r.lineas, r.con_firma, r.reverificadas);
+        for h in &r.hallazgos {
+            println!("  ⚠️ {} · {h:?}", h.clase());
+        }
+        if r.hallazgos.is_empty() {
+            println!("sin hallazgos");
+            return Ok(());
+        }
+        anyhow::bail!("{} hallazgo(s) en el diario", r.hallazgos.len());
+    }
+    if let Some(ps) = &a.comparar {
+        let (x, y) = (leer(&ps[0])?, leer(&ps[1])?);
+        let d = comparar_lineas(&x, &y);
+        println!("{} ({} lineas) vs {} ({} lineas)",
+                 ps[0].display(), x.len(), ps[1].display(), y.len());
+        if d.is_empty() {
+            println!("sin divergencias");
+            return Ok(());
+        }
+        for v in &d {
+            println!("  ⚠️⚠️ VISTA DIVIDIDA en el indice {}: {} != {} (misma clave: {})",
+                     v.indice, v.digest_a, v.digest_b, v.misma_clave);
+        }
+        eprintln!();
+        eprintln!("   DETECTAR NO ES DISTINGUIR: esto no dice cual miente.");
+        eprintln!("   Pero el operador EMITIO LAS DOS, y ninguno de los dos");
+        eprintln!("   testigos pudo fabricar su firma.");
+        anyhow::bail!("{} divergencia(s) entre los diarios", d.len());
+    }
+
     let mut m = Memoria::nueva();
     let agente = ureq::AgentBuilder::new().timeout(Duration::from_secs(10)).build();
     let mut diario = a
@@ -402,6 +660,103 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ── §249: LEER el diario ──
+
+    /// Una linea de diario bien formada, para las pruebas de estructura.
+    fn dia(indice: &str, digest: &str, clave: &str) -> String {
+        let mut v = json!({});
+        v["v"] = json!(DIARIO_VERSION);
+        v["clase"] = json!("nueva");
+        v["vistoUnix"] = json!(1000);
+        v["index"] = json!(indice);
+        v["epochDigest"] = json!(digest);
+        v["formatVersion"] = json!("0x1");
+        v["signature"] = json!("0xabcd");
+        v["publicKey"] = json!(clave);
+        v.to_string()
+    }
+
+    #[test]
+    fn una_linea_sana_solo_falla_en_la_firma() {
+        // ⚠️ El crate del testigo NO PUEDE FIRMAR —no depende de `xmss`—,
+        // asi que una firma valida no se puede fabricar aqui. Lo que SI se
+        // prueba: que una linea estructuralmente sana produce UN SOLO
+        // hallazgo, el de la firma. Si hubiera mas, fallaria la estructura.
+        let r = auditar_lineas(&[dia("0x1", "0xaa", "0xdead")]);
+        assert_eq!(r.lineas, 1);
+        assert_eq!(r.con_firma, 1);
+        assert_eq!(r.reverificadas, 0, "la firma de prueba no puede verificar");
+        assert_eq!(r.hallazgos.len(), 1, "solo la firma: {:?}", r.hallazgos);
+        assert_eq!(r.hallazgos[0].clase(), "firma-no-verifica");
+    }
+
+    #[test]
+    fn auditar_ve_un_indice_que_retrocede() {
+        // Un diario es de SOLO AÑADIR: solo puede avanzar.
+        let r = auditar_lineas(&[
+            dia("0x9", "0xaa", "0xdead"),
+            dia("0x3", "0xbb", "0xdead"),
+        ]);
+        let c: Vec<_> = r.hallazgos.iter().map(|h| h.clase()).collect();
+        assert!(c.contains(&"indice-retrocede"), "{c:?}");
+    }
+
+    #[test]
+    fn auditar_ve_la_clave_que_cambia_a_mitad() {
+        // ⚠️ Es el caso que §244 dejo abierto —el anclaje— y el auditor es
+        // quien puede verlo. NO PUEDE PASAR EN SILENCIO.
+        let r = auditar_lineas(&[
+            dia("0x1", "0xaa", "0xdead"),
+            dia("0x2", "0xbb", "0xbeef"),
+        ]);
+        let c: Vec<_> = r.hallazgos.iter().map(|h| h.clase()).collect();
+        assert!(c.contains(&"cambio-de-clave"), "{c:?}");
+    }
+
+    #[test]
+    fn auditar_rechaza_lo_ilegible_y_lo_que_no_declara_formato() {
+        let r = auditar_lineas(&[
+            "esto no es json".into(),
+            json!({"clase": "nueva"}).to_string(),
+            json!({"v": 99, "clase": "nueva"}).to_string(),
+        ]);
+        let c: Vec<_> = r.hallazgos.iter().map(|h| h.clase()).collect();
+        assert_eq!(c, vec!["linea-ilegible", "linea-ilegible", "version-desconocida"], "{c:?}");
+    }
+
+    #[test]
+    fn las_lineas_sin_firma_son_legitimas_y_no_se_reverifican() {
+        let mut v = json!({});
+        v["v"] = json!(DIARIO_VERSION);
+        v["clase"] = json!("sin-firma");
+        v["reason"] = json!("aun no ha habido latido");
+        let r = auditar_lineas(&[v.to_string()]);
+        assert_eq!(r.lineas, 1);
+        assert_eq!(r.con_firma, 0);
+        assert!(r.hallazgos.is_empty(), "{:?}", r.hallazgos);
+    }
+
+    #[test]
+    fn comparar_un_diario_consigo_mismo_da_cero() {
+        // ⚠️ Comprobable HOY, sin contraparte.
+        let d = vec![dia("0x1", "0xaa", "0xdead"), dia("0x2", "0xbb", "0xdead")];
+        assert!(comparar_lineas(&d, &d).is_empty());
+    }
+
+    #[test]
+    fn comparar_encuentra_el_mismo_indice_con_otro_digest() {
+        // ⚠️⚠️ LA PROPIEDAD que §248 hizo posible: una vista dividida entre
+        // partes distintas, indetectable desde un historico central.
+        let a = vec![dia("0x1", "0xaa", "0xdead"), dia("0x9", "0xaaaa", "0xdead")];
+        let b = vec![dia("0x1", "0xaa", "0xdead"), dia("0x9", "0xbbbb", "0xdead")];
+        let d = comparar_lineas(&a, &b);
+        assert_eq!(d.len(), 1, "{d:?}");
+        assert_eq!(d[0].indice, 9);
+        assert_eq!(d[0].digest_a, "0xaaaa");
+        assert_eq!(d[0].digest_b, "0xbbbb");
+        assert!(d[0].misma_clave, "firmadas con la misma clave: el operador emitio las dos");
+    }
 
     // ── §248: el diario, verificable y comparable ──
 

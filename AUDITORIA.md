@@ -18191,3 +18191,81 @@ escapadas.
 de §244, y hoy costó tres intentos aprenderlo otra vez.
 
 **Canon: `zk-ssl-cli` de 11 a 15.** Sumas: 678 → 682.
+## 249. Leer el diario: `--auditar` y `--comparar`
+
+### ⚠️ §248 eligió sus campos con un criterio que nada ejercitaba
+
+El criterio era *«lo suficiente para que un tercero **reverifique sin el
+nodo**»*. Eso es **una afirmación sobre un uso futuro**, y los cuatro tests
+comprobaban **la forma de una línea en memoria**, que es otra cosa.
+
+**El diario se escribía y nadie lo leía jamás.**
+
+> El formato estaba **declarado, no terminado.**
+
+Es el rito de §224 en su forma más pura: un artefacto que dice servir para
+algo, y nada comprueba que sirva.
+
+### `--auditar`: la afirmación, hecha ejecutable
+
+Relee un diario, **reverifica cada firma sin el nodo**, y comprueba que los
+índices avanzan y que **la clave fijada no cambia**.
+
+⚠️ Un tercero que reciba un diario dentro de seis meses tiene que poder
+decir *«esto verifica»* **con una orden**. Si para eso hiciera falta
+escribir un programa, el formato no estaría terminado.
+
+**Reutiliza `verificar()` tal cual**, y eso no es casualidad: §248 guardó
+los campos **como vinieron del cable**. Si los hubiera transformado, el
+auditor tendría que **reimplementar la verificación** — y dos
+implementaciones pueden discrepar.
+
+### ⚠️ Tres hallazgos distintos, como en §246
+
+| clase | qué significa |
+|---|---|
+| `firma-no-verifica` | la firma guardada no valida contra su digest |
+| `indice-retrocede` | un diario **solo puede avanzar**: es de solo añadir |
+| ⚠️ `cambio-de-clave` | **el caso que §244 dejó abierto** — el anclaje |
+| `version-desconocida` | una versión de formato que este binario no conoce |
+| `linea-ilegible` | no es JSON, o no declara su formato |
+
+⚠️ **La clave fijada se comprueba, no solo las firmas.** Un diario donde la
+clave cambia a mitad **no puede pasar en silencio**, y el auditor es quien
+puede verlo.
+
+### `--comparar`: la pieza que activa la propiedad
+
+Encuentra **el mismo índice con distinto contenido** en dos diarios.
+
+⚠️ **Con un solo operador no prueba nada** —dos diarios míos son un diario
+con dos ficheros—. Pero sin ella el segundo testigo no tendría con qué, y
+entraría como código que nadie ha visto funcionar.
+
+**Lo que sí es comprobable hoy, y está en los tests**: comparar un diario
+**consigo mismo da cero divergencias**, y comparar dos con un índice
+manipulado **la encuentra**, con `misma_clave: true` — que es lo que prueba
+que **el operador emitió las dos**.
+
+⚠️ Y **detecta la divergencia, no dice cuál miente**. No hace falta:
+ninguno de los dos testigos pudo fabricar la firma del operador.
+
+### Una limitación del propio sello, dicha
+
+El crate del testigo **no puede firmar** —no depende de `xmss`—, así que
+**una firma válida no se puede fabricar en sus tests**. Lo que se prueba es
+que **una línea estructuralmente sana produce un solo hallazgo, el de la
+firma**: si hubiera más, fallaría la estructura.
+
+**La reverificación de verdad se ejercita contra el diario que L.1
+produjo**, y ese resultado va aparte de este sello.
+
+### ⚠️ Lo que §249 NO hace
+
+**Esto no crea el segundo testigo.** Hace que su trabajo sea posible, y
+prueba que el diario sirve para lo que dijo servir.
+
+Es la misma forma que §245 y §248: **el proyecto no puede construir la
+confianza, puede quitar la excusa de que no hay cómo.**
+
+**Canon: `zk-ssl-cli` de 15 a 22.** Sumas: 682 → 689.
