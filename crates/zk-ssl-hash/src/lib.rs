@@ -161,6 +161,85 @@ pub fn epoch_digest(
     native_merge(native_merge(a, b), chain_digest)
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+//  §257 · EL BYTE Y EL ELEMENTO
+//
+//  ⚠️ **Sin esto, §256 no era alcanzable.** `verificar_inclusion` toma
+//  `Digest` —cuatro elementos de campo—, y lo que viaja por el cable son
+//  **32 bytes**. La conversión entre las dos cosas vivía en
+//  `zk-ssl/src/store.rs`, **dentro de la capa**: un tercero que quisiera
+//  comprobar un recibo tenía que **compilar el código del operador**, que
+//  es exactamente lo que §243 existe para impedir.
+//
+//  Es una **decisión de formato** —little-endian, cuatro elementos en
+//  orden—, y por el criterio de §254 le corresponde vivir aquí.
+//  `store.rs` **delega**: una sola definición, no dos.
+//
+//  ⚠️ **Los mensajes de error se conservan letra a letra.** Delegar no
+//  debe cambiar lo que ve quien ya dependía de esto, y hay test que lo
+//  fija en los dos lados.
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Lo que puede ir mal al leer un digest o un elemento del cable.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FormatoError {
+    /// Un elemento que no mide 8 bytes.
+    LongitudElemento(usize),
+    /// Un digest que no mide 32 bytes.
+    LongitudDigest(usize),
+}
+
+impl core::fmt::Display for FormatoError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // ⚠️ Estas dos frases son **las de `store.rs` antes de delegar**.
+        // Cambiarlas rompería los mensajes que la capa ya emitía.
+        match self {
+            FormatoError::LongitudElemento(n) => write!(f, "elemento de {n} bytes"),
+            FormatoError::LongitudDigest(n) => {
+                write!(f, "digest de {n} bytes, se esperaban 32")
+            }
+        }
+    }
+}
+
+impl std::error::Error for FormatoError {}
+
+/// Un elemento de Goldilocks cabe en 8 bytes, little-endian.
+pub fn element_to_bytes(e: BaseElement) -> [u8; 8] {
+    e.as_int().to_le_bytes()
+}
+
+pub fn element_from_bytes(b: &[u8]) -> Result<BaseElement, FormatoError> {
+    let arr: [u8; 8] = b
+        .try_into()
+        .map_err(|_| FormatoError::LongitudElemento(b.len()))?;
+    Ok(BaseElement::new(u64::from_le_bytes(arr)))
+}
+
+/// Cuatro elementos en orden, 8 bytes cada uno.
+///
+/// ⚠️ **El orden es parte del formato**, no un detalle: si se invirtiera,
+/// el nodo y el verificador compondrían raíces distintas de los mismos
+/// bytes y **ninguna compuerta lo vería**. Hay test que lo fija.
+pub fn digest_to_bytes(d: &Digest) -> [u8; 32] {
+    let mut out = [0u8; 32];
+    for (i, e) in d.iter().enumerate() {
+        out[i * 8..(i + 1) * 8].copy_from_slice(&element_to_bytes(*e));
+    }
+    out
+}
+
+pub fn digest_from_bytes(b: &[u8]) -> Result<Digest, FormatoError> {
+    if b.len() != 32 {
+        return Err(FormatoError::LongitudDigest(b.len()));
+    }
+    let mut d = [BaseElement::ZERO; 4];
+    for (i, hueco) in d.iter_mut().enumerate() {
+        *hueco = element_from_bytes(&b[i * 8..(i + 1) * 8])?;
+    }
+    Ok(d)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -172,6 +251,36 @@ mod tests {
             BaseElement::new(n + 2),
             BaseElement::new(n + 3),
         ]
+    }
+
+    // ── §257 · el byte y el elemento ──────────────────────────────
+
+    #[test]
+    fn el_digest_da_la_vuelta_por_los_bytes() {
+        let x = d(7);
+        assert_eq!(digest_from_bytes(&digest_to_bytes(&x)).unwrap(), x);
+    }
+
+    #[test]
+    fn el_orden_es_little_endian_y_por_elementos() {
+        // ⚠️ ESTO FIJA EL FORMATO. Si alguien invirtiera el orden de los
+        // cuatro elementos o el de los bytes, el nodo y el verificador
+        // compondrian raices distintas de los MISMOS bytes y nada lo
+        // delataria. Aqui si.
+        let b = digest_to_bytes(&as_digest(1));
+        assert_eq!(b[0], 1, "el valor va en el primer byte del primer elemento");
+        assert!(b[1..32].iter().all(|x| *x == 0), "el resto son ceros");
+    }
+
+    #[test]
+    fn una_longitud_que_no_es_32_se_rechaza_y_dice_cuanto() {
+        // ⚠️ Un instrumento que falla dice QUE fallo (§254): no basta con
+        // rechazar, tiene que decir cuantos bytes llegaron.
+        let e = digest_from_bytes(&[0u8; 31]).unwrap_err();
+        assert_eq!(e, FormatoError::LongitudDigest(31));
+        assert_eq!(format!("{e}"), "digest de 31 bytes, se esperaban 32");
+        let e2 = element_from_bytes(&[0u8; 7]).unwrap_err();
+        assert_eq!(format!("{e2}"), "elemento de 7 bytes");
     }
 
     #[test]

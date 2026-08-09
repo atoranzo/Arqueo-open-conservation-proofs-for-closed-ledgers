@@ -86,7 +86,7 @@ SELLO_FILE=".canon/ultimo-completo"
 # el sello 06106c9, en release. `pasan` e `ignorados` son lo que el arnes
 # EJECUTA, no los `#[test]` declarados.
 TABLA=$(cat <<'FIN_TABLA'
-zk-ssl             sello     256   3   0   600  la capa
+zk-ssl             sello     257   3   0   600  la capa
 stark-experiment   sello     297  10   0   600  los circuitos
 ceremony           sello      34   0  11   300  DEUDA: 11 warnings, pinchados para que no crezcan
 settlement-layer   sello      17   0   0   300
@@ -95,8 +95,8 @@ zk-ssl-sdk         sello       6   0   0   300
 zk-ssl-wire        sello       2   0   0    60  openrpc: §242 lo deja en 19 metodos
 zk-ssl-cli         sello      26   0   0   120  §250: 22 -> 26, la vista dividida EN FRIO
 zk-ssl-node        sello      46   0   0   400  §253: 40 -> 46, el contador de recepcion
-zk-ssl-verify      sello      22   0   0   120  §256: 12 -> 22, la inclusion verificable
-zk-ssl-hash        sello       8   0   0    60  §255: 4 -> 8, las primitivas de formato
+zk-ssl-verify      sello      23   0   0   120  §257: 22 -> 23, del cable a la cabeza sin la capa
+zk-ssl-hash        sello      11   0   0    60  §257: 8 -> 11, el byte y el elemento
 settlement-prover  sello       0   0   0   300  sin tests
 nova-experiment    sello       0   0   0   300  0 es CORRECTO: sus 3 tests exigen --features test-setup
 halo2-experiment   largo      27   0   0  1200  caro: 438 s medidos

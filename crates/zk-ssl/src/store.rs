@@ -96,38 +96,35 @@ impl std::error::Error for StoreError {}
 // Serialización
 // ---------------------------------------------------------------------
 
-/// Un elemento de Goldilocks cabe en 8 bytes.
+// ⚠️ §257: **estas cuatro DELEGAN**. La definicion vive en
+//    `zk-ssl-hash`, porque es una DECISION DE FORMATO y un tercero que
+//    verifica un recibo tiene que poder leerla **sin compilar la capa**
+//    (§243). Antes vivian aqui, y eso hacia §256 inalcanzable desde
+//    fuera.
+//
+// ⚠️ **Los mensajes no cambian**: `FormatoError` los reproduce letra a
+//    letra y hay test a los dos lados. Delegar no debe alterar lo que ve
+//    quien ya dependia de esto.
+//
+// ⚠️ Se conservan como funciones publicas de `store` **a proposito**: son
+//    el nombre por el que el resto de la capa las llama, y renombrar en
+//    el mismo sello en que se mueve la definicion mezclaria dos cambios.
+
+/// Un elemento de Goldilocks cabe en 8 bytes. Delega en `zk-ssl-hash`.
 pub fn element_to_bytes(e: BaseElement) -> [u8; 8] {
-    e.as_int().to_le_bytes()
+    zk_ssl_hash::element_to_bytes(e)
 }
 
 pub fn element_from_bytes(b: &[u8]) -> Result<BaseElement, StoreError> {
-    let arr: [u8; 8] = b
-        .try_into()
-        .map_err(|_| StoreError::Malformed(format!("elemento de {} bytes", b.len())))?;
-    Ok(BaseElement::new(u64::from_le_bytes(arr)))
+    zk_ssl_hash::element_from_bytes(b).map_err(|e| StoreError::Malformed(e.to_string()))
 }
 
 pub fn digest_to_bytes(d: &Digest) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    for (i, e) in d.iter().enumerate() {
-        out[i * 8..(i + 1) * 8].copy_from_slice(&element_to_bytes(*e));
-    }
-    out
+    zk_ssl_hash::digest_to_bytes(d)
 }
 
 pub fn digest_from_bytes(b: &[u8]) -> Result<Digest, StoreError> {
-    if b.len() != 32 {
-        return Err(StoreError::Malformed(format!(
-            "digest de {} bytes, se esperaban 32",
-            b.len()
-        )));
-    }
-    let mut d = [BaseElement::ZERO; 4];
-    for i in 0..4 {
-        d[i] = element_from_bytes(&b[i * 8..(i + 1) * 8])?;
-    }
-    Ok(d)
+    zk_ssl_hash::digest_from_bytes(b).map_err(|e| StoreError::Malformed(e.to_string()))
 }
 
 /// **Centinela de `view_id`** para cuentas anteriores a 49-A (asiento de
@@ -268,6 +265,39 @@ pub fn record_from_bytes(b: &[u8]) -> Result<(Digest, u64, BaseElement), StoreEr
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// ⚠️ §257: **los mensajes no cambiaron al delegar.**
+    ///
+    /// Si `FormatoError` los reescribiera, la capa emitiria otro texto sin
+    /// que ningun otro test lo notara — y quien parsee estos mensajes se
+    /// romperia en silencio.
+    ///
+    /// ⚠️ **El prefijo lo pone `StoreError::Malformed`**, no el texto de
+    /// formato. La primera version de este test comparaba solo el
+    /// interior, y **habria fallado tambien contra el codigo anterior**:
+    /// no era un pin de regresion, era una conjetura. Un pin que no
+    /// pasaria contra el estado que dice proteger no protege nada.
+    #[test]
+    fn los_mensajes_de_formato_sobreviven_a_la_delegacion() {
+        let e = digest_from_bytes(&[0u8; 31]).unwrap_err();
+        assert_eq!(
+            format!("{e}"),
+            "dato mal formado en el ledger: digest de 31 bytes, se esperaban 32"
+        );
+        let e2 = element_from_bytes(&[0u8; 7]).unwrap_err();
+        assert_eq!(
+            format!("{e2}"),
+            "dato mal formado en el ledger: elemento de 7 bytes"
+        );
+
+        // ⚠️ Y ATADO al crate que ahora define el texto: si `zk-ssl-hash`
+        // cambiara su redaccion, esto se pone rojo aqui, que es donde el
+        // mensaje se publica.
+        assert!(format!("{e}")
+            .ends_with(&zk_ssl_hash::FormatoError::LongitudDigest(31).to_string()));
+        assert!(format!("{e2}")
+            .ends_with(&zk_ssl_hash::FormatoError::LongitudElemento(7).to_string()));
+    }
 
     /// Ida y vuelta de un elemento.
     #[test]

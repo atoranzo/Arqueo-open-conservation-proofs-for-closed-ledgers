@@ -18964,3 +18964,113 @@ inclusión de **un dato que ya no puede interpretar** — y eso es correcto: es
 - **No toca el formato firmado** ni obliga a `zkssl/0.3`.
 
 **Canon: `zk-ssl-verify` de 12 a 22.** Sumas: 707 → 717.
+## 257. El byte y el elemento
+
+⚠️ **§256 no era alcanzable, y el sello no lo sabía.**
+
+`verificar_inclusion` toma `Digest` —cuatro elementos de campo—. Lo que
+viaja por el cable son **32 bytes en hexadecimal**. La conversión entre las
+dos cosas, `digest_from_bytes`, vivía en `crates/zk-ssl/src/store.rs`:
+**dentro de la capa**.
+
+> Un tercero con `zk-ssl-verify` y `zk-ssl-hash` podía comprobar **la firma**
+> de una cabeza —bytes crudos, §242— pero **no podía convertir un recibo en
+> algo que `verificar_inclusion` aceptara** sin compilar el código del
+> operador. Que es exactamente lo que §243 existe para impedir.
+
+Los diez tests de §256 no lo veían **porque no podían**: construyen
+`accounts_root` **con `path_root`**, así que son autoconsistentes y el cable
+no aparece en ninguno.
+
+### Lo que se hizo
+
+Es una **decisión de formato** —little-endian, cuatro elementos en orden—,
+y por el criterio de §254 le corresponde vivir en `zk-ssl-hash`. `store.rs`
+**delega**: **una sola definición, no dos**.
+
+⚠️ **Los mensajes de error se conservan letra a letra**, y hay test **a los
+dos lados**. Delegar no debe cambiar lo que ve quien ya dependía de esto —
+y un mensaje que cambia sin que nadie lo note rompe en silencio a quien lo
+parsea.
+
+### El test que §256 no podía tener
+
+`del_cable_a_la_cabeza_sin_la_capa` hace el camino entero —bytes → `Digest`
+→ raíz → cabeza firmada— **usando solo `zk-ssl-hash` y `zk-ssl-verify`**. Si
+algún día hiciera falta importar la capa para que pase, **§243 se habrá
+roto y este test lo dirá**.
+
+El hexadecimal se decodifica a mano **a propósito**: no es una decisión de
+este proyecto. Lo que sí es decisión nuestra —el orden de los cuatro
+elementos y el little-endian— vive ahora en un solo sitio, y
+`el_orden_es_little_endian_y_por_elementos` lo fija: **si alguien lo
+invirtiera, el nodo y el verificador compondrían raíces distintas de los
+mismos bytes y ninguna compuerta lo vería.**
+
+### ⚠️ Un desglose rancio, que viajó todo §256
+
+`PRINCIPIOS.md` decía **«12 del verificador independiente»** cuando §256 lo
+había dejado en 22, y **`check_cifras` no lo veía**: las cifras de un
+desglose no llevan «tests» al lado ni nombre de crate, que son las dos
+formas que la herramienta caza. Lo declara ella misma —«no entiende
+prosa»—, y aquí está el caso concreto.
+
+Se corrige a 257 y 23, y **queda compuerta a mano** en el bloque. La
+compuerta a mano no es la solución: la solución es que `check_cifras`
+entienda el patrón «**N** del/de la \<alias\>», y eso es otro sello. **Lo
+que no se puede es dejarlo sin registrar**, que es como llegó hasta aquí.
+
+### ⚠️ Nueve cifras a mano, y la herramienta que las cazó
+
+§257 es el primer sello en mucho tiempo que **mueve el pin de `zk-ssl`**, y
+el número de tests de la capa estaba escrito **a mano en nueve documentos
+vivos**: `ARQUITECTURA.md` (dos veces), `PAPER.md`, `PAPER_EN.md`,
+`INSTITUTIONAL.md`, `INSTITUCIONAL.md`, `RESUMEN_EJECUTIVO.md`, `README.md`
+y `PRINCIPIOS.md`.
+
+⚠️ **`check_cifras` las cazó las nueve**, que es exactamente para lo que se
+escribió en §237 —cuando `ARQUITECTURA.md` llevaba veintisiete sellos
+diciendo 172—. El bloque salió rojo **por no tocarlas**, y eso es la
+herramienta funcionando, no un estorbo.
+
+Contraste que conviene dejar escrito: el desglose de `PRINCIPIOS.md`
+—«12 del verificador independiente»— **viajó rancio todo §256 sin que nadie
+lo viera**, porque en esa forma la cifra no lleva «tests» al lado. Las dos
+cosas ocurrieron en el mismo repositorio y con la misma herramienta: **lo
+que entra en su patrón se caza el mismo día; lo que no, dura sellos.**
+
+### ⚠️ Un pin de regresión que no pasaría contra el código anterior
+
+La primera versión de `los_mensajes_de_formato_sobreviven_a_la_delegacion`
+comparaba **solo el texto de formato**, olvidando que el prefijo —«dato mal
+formado en el ledger: »— lo pone `StoreError::Malformed`, no la función que
+lo produce. **Ese test habría fallado también contra el código anterior**:
+
+> Un pin que no pasaría contra el estado que dice proteger **no es un pin:
+> es una conjetura**. Y una conjetura en verde se lee como una propiedad
+> demostrada.
+
+Corregido, y además **atado al crate que ahora define el texto**: el mensaje
+de la capa tiene que **terminar exactamente** en lo que emite
+`zk-ssl-hash::FormatoError`. Si allí cambia la redacción, se pone rojo aquí,
+que es donde el mensaje se publica.
+
+⚠️ Y lo que sí quedó demostrado por el fallo: **256 de 257 en verde**, con el
+único rojo en la aserción mal escrita. La delegación no cambió ningún
+mensaje — el propio panic lo enseñó, con las dos cadenas una encima de otra.
+
+### ⚠️ Rito nuevo: un bloque imprime las huellas POST de lo que toca
+
+El BLOQUE-256 no imprimió el sha de `AUDITORIA.md` después de escribirlo, y
+por eso **este bloque no ha podido anclarla por huella**: ha tenido que
+anclarla por estructura —número de líneas y presencia del asiento—, que es
+menos. **La huella POST no es decoración: es el ancla PRE del siguiente.**
+
+### Lo que §257 NO hace
+
+- **No sirve el recibo por RPC.** Eso es §258 — y ahora sí se puede, porque
+  lo que se sirva será legible por quien no tiene la capa.
+- **No toca el formato firmado** ni la versión del protocolo.
+
+**Canon: `zk-ssl` 256 → 257, `zk-ssl-hash` 8 → 11, `zk-ssl-verify` 22 → 23.**
+Sumas: 717 → 722, 854 → 859, 868 → 873.

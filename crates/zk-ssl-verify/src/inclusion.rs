@@ -287,4 +287,69 @@ mod tests_inclusion {
         assert!(format!("{d}").contains("3") && format!("{d}").contains("2"));
         let _: &dyn std::error::Error = &e;
     }
+
+    /// ⚠️⚠️ **EL TEST QUE §256 NO PODIA TENER.**
+    ///
+    /// Los diez de §256 construyen `accounts_root` **con `path_root`**:
+    /// son autoconsistentes, y por eso **ninguno prueba que un tercero
+    /// pueda llegar hasta aqui desde lo que viaja por el cable**. Este
+    /// hace el camino entero —bytes → `Digest` → raiz → cabeza— usando
+    /// **solo `zk-ssl-hash` y este crate**. Si algun dia hiciera falta
+    /// importar la capa para pasarlo, §243 se habria roto.
+    ///
+    /// El hexadecimal se decodifica a mano a proposito: **no es una
+    /// decision de este proyecto**, es la convencion del cable. Lo que si
+    /// es decision nuestra —el orden de los cuatro elementos y el
+    /// little-endian— vive en `zk-ssl-hash` y es lo que se ejercita.
+    #[test]
+    fn del_cable_a_la_cabeza_sin_la_capa() {
+        use zk_ssl_hash::{digest_from_bytes, digest_to_bytes};
+
+        fn a_hex(d: Digest) -> String {
+            digest_to_bytes(&d).iter().map(|b| format!("{b:02x}")).collect()
+        }
+        fn de_hex(s: &str) -> Digest {
+            let s = s.trim_start_matches("0x");
+            let bytes: Vec<u8> = (0..s.len() / 2)
+                .map(|i| u8::from_str_radix(&s[i * 2..i * 2 + 2], 16).expect("hex"))
+                .collect();
+            digest_from_bytes(&bytes).expect("32 bytes")
+        }
+
+        let (r, firmado) = recibo_bueno();
+
+        // ── lo que el nodo pondria en el cable ──
+        let cable_hoja = a_hex(r.hoja);
+        let cable_hermanos: Vec<String> = r.hermanos.iter().map(|h| a_hex(*h)).collect();
+        let cable_accounts = a_hex(r.accounts_root);
+        let cable_pending = a_hex(r.pending_root);
+        let cable_frozen = a_hex(r.frozen_root);
+        let cable_chain = a_hex(r.chain_digest);
+        let cable_epoch = a_hex(firmado);
+
+        // ── lo que un TERCERO reconstruye, sin la capa ──
+        let reconstruido = ReciboInclusion {
+            indice: r.indice,
+            hoja: de_hex(&cable_hoja),
+            hermanos: cable_hermanos.iter().map(|h| de_hex(h)).collect(),
+            derecha: r.derecha.clone(),
+            seq: r.seq,
+            accounts_root: de_hex(&cable_accounts),
+            pending_root: de_hex(&cable_pending),
+            frozen_root: de_hex(&cable_frozen),
+            chain_digest: de_hex(&cable_chain),
+        };
+        assert_eq!(reconstruido, r, "el cable no pierde nada");
+        assert_eq!(verificar_inclusion(&reconstruido, de_hex(&cable_epoch)), Ok(()));
+
+        // ⚠️ Y un byte cambiado EN EL CABLE se nota: si no, el hexadecimal
+        // seria decorativo.
+        let mut roto = cable_accounts.clone().into_bytes();
+        roto[0] = if roto[0] == b'0' { b'1' } else { b'0' };
+        let torcido = ReciboInclusion {
+            accounts_root: de_hex(&String::from_utf8(roto).expect("hex")),
+            ..reconstruido.clone()
+        };
+        assert_ne!(verificar_inclusion(&torcido, de_hex(&cable_epoch)), Ok(()));
+    }
 }
