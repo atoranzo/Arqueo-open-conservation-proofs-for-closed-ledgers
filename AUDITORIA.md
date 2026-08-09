@@ -17606,3 +17606,97 @@ juntas.
 - **El histórico**, con su cifra y su motivo, declarado abierto.
 - `verifier_hash`, bloqueado por la entrada 54.
 - Y la interacción latido/escrituras, sin medir (§241).
+## 243. La verificación sale del nodo: `zk-ssl-verify`
+
+Hasta §242 el verificador vivía dentro del **binario del nodo**, junto a
+`tokio` y `axum`. Eso significaba que **la única forma de verificar una
+cabeza de época era compilar el código del operador**.
+
+> La diferencia es entre *«publicamos algo verificable»* y *«publicamos algo
+> verificable si te tragas nuestro servidor»*.
+
+Y no es estética: **el proyecto entero se apoya en que un tercero pueda
+comprobar sin depender del operador.** Que la única vía fuera el código del
+operador era exactamente la dependencia que el aparato existe para eliminar.
+
+### Tres formas, y por qué la tercera
+
+**A · el nodo como `lib` + `bin`** — conserva el problema y lo disfraza. Que
+el `lib` exista no impide que quien dependa de él compile el servidor; solo
+lo hace posible sin `git clone`. **La superficie sigue siendo la
+equivocada.**
+
+**B · bajarlo a `zk-ssl-wire`** — es la más peligrosa. `wire` lo usan el
+nodo, el CLI, el SDK y la conformidad: meterle una dependencia criptográfica
+**sin auditar** significa que **todo el que toca el cable arrastra `xmss`**.
+Ampliar la superficie de riesgo del proyecto entero para resolver un
+problema de empaquetado.
+
+**C · un crate nuevo** — quince miembros en vez de catorce, pero **es
+exactamente lo que un tercero necesita y nada más**.
+
+### ⚠️ La dependencia va en UN SOLO SENTIDO
+
+`zk-ssl-verify` **no depende de la capa, ni del nodo, ni del cable**. Su
+único `use` es `xmss`, y su `Cargo.toml` **no tiene ni una dependencia de
+ruta**. Hay compuerta que lo comprueba.
+
+Si algún día importa algo del proyecto, **se habrá vuelto a caer en el
+problema**.
+
+⚠️ Y debería ser **el crate que menos cambie**: su superficie es el dominio,
+la versión de formato y `verificar_cabeza`. **Un pin que no se mueve casi no
+cuesta** — que es lo que hace asumible la objeción de «un crate más es un
+sitio más donde envejecer una cifra».
+
+### El apaño del OID viaja con su centinela
+
+`OFFSET_MT_UPSTREAM` se muda al verificador **porque es un apaño de lectura
+y quien lee es quien verifica**.
+
+Y `el_apano_del_oid_sigue_haciendo_falta` se muda con él: **es lo que
+avisará el día que `xmss` lo arregle**, y esa señal debe llegar **al crate
+que la sufre, no al que la heredó**.
+
+### El firmante usa el mismo verificador que el tercero
+
+`firmar()` ya verificaba su propia salida (§240). Ahora lo hace **con
+`zk_ssl_verify::verificar_cabeza`, el mismo código que correrá un testigo**.
+
+⚠️ Si el firmante y el testigo no compartieran verificador, **podrían
+discrepar** — y el proyecto se enteraría el día que un tercero rechace algo
+que el operador daba por bueno.
+
+### Cómo se hizo, y por qué así
+
+`firma_cabeza.rs` se **reescribió entero** en vez de operarlo con veinte
+anclas: la lección de §241 —*no parchear una cirugía ya parcheada*— vale
+también para el fichero.
+
+Y lo que se fue **se reexporta**: `main.rs` y `latido.rs` **no se tocan**.
+De 632 líneas a 314 en el nodo, más 356 en el crate nuevo.
+
+**Canon**: `zk-ssl-node` de 49 a **37**, `zk-ssl-verify` entra con **12**.
+
+⚠️ **Doce, no once**: `cargo test` cuenta también **el doctest del ejemplo
+de uso** de `lib.rs`. El nodo no los tiene —es un binario, y los doctests
+solo corren en objetivos de librería—, así que la primera cuenta salió
+corta y **el bloque paró**.
+
+Y con esa cuenta **las sumas no se mueven**: 664, 801 y 816 se quedan
+igual. Los 17 tests de `firma_cabeza.rs` se reparten en **5 en el nodo, 11
+en el verificador y 1 doctest** — los mismos, repartidos, y uno de ellos
+es ahora **el ejemplo de uso del crate**, que un tercero lee primero.
+
+**Los cuatro documentos que citan el total no se tocan.** Solo
+`PRINCIPIOS.md`, que desglosa por crate.
+
+### ⚠️ Lo que C NO da
+
+**Que exista un verificador independiente no hace las firmas oponibles.**
+
+Sigue faltando **la custodia declarada de la clave** del operador. §243 hace
+**posible verificar**; no hace **válido lo verificado**.
+
+Y sigue sin haber testigo: ahora hay **qué** recoger (§242), **por dónde**
+(§242) y **con qué** verificar (§243). Falta **quién**.

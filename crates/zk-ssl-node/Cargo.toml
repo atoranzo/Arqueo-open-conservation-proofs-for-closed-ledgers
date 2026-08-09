@@ -24,6 +24,10 @@ dev = ["zk-ssl/sandbox"]
 [dependencies]
 zk-ssl = { path = "../zk-ssl" }
 zk-ssl-wire = { path = "../zk-ssl-wire" }
+# ⚠️ La VERIFICACION vive fuera del nodo desde §243: el firmante usa **el
+# mismo verificador que usara el tercero**, no otro. Si el firmante y el
+# testigo no comparten codigo, pueden discrepar.
+zk-ssl-verify = { path = "../zk-ssl-verify" }
 stark-experiment = { path = "../stark-experiment" }
 winterfell = "0.13"
 # ⚠️ **0.1.0-pre.0, SIN auditoría independiente**, declarado por el propio

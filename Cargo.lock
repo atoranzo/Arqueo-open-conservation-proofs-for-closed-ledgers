@@ -3415,6 +3415,7 @@ dependencies = [
  "winterfell",
  "xmss",
  "zk-ssl",
+ "zk-ssl-verify",
  "zk-ssl-wire",
 ]
 
@@ -3433,6 +3434,13 @@ dependencies = [
  "winterfell",
  "zk-ssl",
  "zk-ssl-wire",
+]
+
+[[package]]
+name = "zk-ssl-verify"
+version = "0.1.0"
+dependencies = [
+ "xmss",
 ]
 
 [[package]]

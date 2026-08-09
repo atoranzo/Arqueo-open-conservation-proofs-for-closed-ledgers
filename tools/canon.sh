@@ -94,7 +94,8 @@ iso-bridge         sello       3   0   0   300
 zk-ssl-sdk         sello       6   0   0   300
 zk-ssl-wire        sello       2   0   0    60  openrpc: §242 lo deja en 19 metodos
 zk-ssl-cli         sello       0   0   0   300  sin tests: es un binario
-zk-ssl-node        sello      49   0   0   400  §242: 45 -> 49, +4 del metodo del testigo
+zk-ssl-node        sello      37   0   0   400  §243: 49 -> 37, la verificacion se fue a zk-ssl-verify
+zk-ssl-verify      sello      12   0   0    90  §243: el verificador independiente (11 tests + el doctest del ejemplo)
 settlement-prover  sello       0   0   0   300  sin tests
 nova-experiment    sello       0   0   0   300  0 es CORRECTO: sus 3 tests exigen --features test-setup
 halo2-experiment   largo      27   0   0  1200  caro: 438 s medidos

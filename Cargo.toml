@@ -14,6 +14,9 @@ members = [
     "crates/zk-ssl-wire",
     "crates/zk-ssl-node",
     "crates/zk-ssl-sdk",
+    # ⚠️ El verificador INDEPENDIENTE (§243): solo depende de `xmss`, para
+    # que un tercero no tenga que compilar el nodo para verificar.
+    "crates/zk-ssl-verify",
 ]
 resolver = "2"
 

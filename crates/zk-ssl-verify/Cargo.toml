@@ -1,0 +1,24 @@
+[package]
+name = "zk-ssl-verify"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+# **El verificador independiente.** Todo lo que un TERCERO necesita para
+# comprobar que una cabeza de epoca firmada la emitio quien dice, y nada mas.
+#
+# ⚠️ LA DEPENDENCIA VA EN UN SOLO SENTIDO: este crate NO depende de la capa,
+# ni del nodo, ni del cable. Solo de `xmss`. Si algun dia importa algo del
+# proyecto, se habra vuelto a caer en el problema que §243 resolvio: que la
+# unica forma de verificar una cabeza fuera compilar el codigo del operador.
+#
+# ⚠️ Y deberia ser EL CRATE QUE MENOS CAMBIE: su superficie es el dominio, la
+# version de formato y `verificar_cabeza`. Un pin que no se mueve casi no
+# cuesta.
+
+[dependencies]
+# ⚠️ **0.1.0-pre.0, SIN auditoría independiente**, declarado por el propio
+# crate. Fijada con `=`: es una pre-release y `master` diverge del tag.
+# Aqui vive tambien el APAÑO del OID multiarbol (§240) y su CENTINELA, porque
+# es un apaño de LECTURA y quien lee es quien verifica.
+xmss = "=0.1.0-pre.0"
