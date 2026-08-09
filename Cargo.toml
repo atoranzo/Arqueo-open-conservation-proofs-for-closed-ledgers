@@ -17,6 +17,10 @@ members = [
     # ⚠️ El verificador INDEPENDIENTE (§243): solo depende de `xmss`, para
     # que un tercero no tenga que compilar el nodo para verificar.
     "crates/zk-ssl-verify",
+    # ⚠️ El HASH, fuera del probador (§254). Misma regla un nivel mas
+    # abajo: un verificador tampoco compila el PROBADOR. Solo depende de
+    # `winter-math` y `winter-crypto` SUELTOS, clavados con `=`.
+    "crates/zk-ssl-hash",
 ]
 resolver = "2"
 

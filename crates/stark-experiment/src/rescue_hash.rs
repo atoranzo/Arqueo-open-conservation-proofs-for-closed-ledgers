@@ -119,13 +119,14 @@ pub fn build_trace(input_a: [BaseElement; 4], input_b: [BaseElement; 4]) -> Trac
 
 /// Calcula el digest esperado de forma nativa, con la librería.
 ///
-/// **Delegado a `merkle::native_merge`** (entrada 59, §125): eran dos
-/// copias carácter a carácter del mismo wrapper sobre `Rp64_256`. Una
-/// sola definición, por construcción — el miedo de §117 («dos Rescue que
-/// deben coincidir») quedó desmentido por lectura y cerrado aquí.
-pub fn native_merge(a: [BaseElement; 4], b: [BaseElement; 4]) -> [BaseElement; 4] {
-    crate::merkle::native_merge(a, b)
-}
+// ⚠️ §254: REEXPORTADO, ya no delegado.
+//
+// §125 (entrada 59) quito una copia caracter a caracter y dejo un
+// DELEGADO —una `pub fn` que llamaba a la otra—. Funcionaba, pero **un
+// delegado hoy es una copia mañana**: la compuerta de §254 cuenta
+// DEFINICIONES, y con razon. Ahora es un `pub use`, y ya no hay ningun
+// sitio donde alguien pueda "arreglar" una de las dos.
+pub use zk_ssl_hash::native_merge;
 
 /// Inputs públicos: solo el digest resultante. Los dos valores de entrada
 /// son PRIVADOS (testigos) — que es justo lo que necesita el árbol de

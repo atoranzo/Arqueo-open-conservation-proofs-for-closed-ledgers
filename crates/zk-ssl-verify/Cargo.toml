@@ -22,3 +22,8 @@ license.workspace = true
 # Aqui vive tambien el APAÑO del OID multiarbol (§240) y su CENTINELA, porque
 # es un apaño de LECTURA y quien lee es quien verifica.
 xmss = "=0.1.0-pre.0"
+# ⚠️ §254: el hash nativo, para poder recomputar raices SIN el probador.
+#    `zk-ssl-hash` solo depende de `winter-math` y `winter-crypto`
+#    sueltos: NO arrastra `winter-prover`, `winter-air` ni
+#    `winter-verifier`. La propiedad de §243 sigue en pie.
+zk-ssl-hash = { path = "../zk-ssl-hash" }

@@ -2471,6 +2471,7 @@ dependencies = [
  "settlement-prover",
  "sled",
  "winterfell",
+ "zk-ssl-hash",
 ]
 
 [[package]]
@@ -3402,6 +3403,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "zk-ssl-hash"
+version = "0.1.0"
+dependencies = [
+ "winter-crypto",
+ "winter-math",
+]
+
+[[package]]
 name = "zk-ssl-node"
 version = "0.1.0"
 dependencies = [
@@ -3443,6 +3452,7 @@ name = "zk-ssl-verify"
 version = "0.1.0"
 dependencies = [
  "xmss",
+ "zk-ssl-hash",
 ]
 
 [[package]]

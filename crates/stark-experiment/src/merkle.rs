@@ -87,14 +87,19 @@ type Blake3 = Blake3_256<BaseElement>;
 /// Digest de 4 elementos, la unidad de trabajo del árbol.
 pub type Digest = [BaseElement; 4];
 
-/// Hash 2-a-1 nativo, usando la implementación real de `winter-crypto`.
-pub fn native_merge(left: Digest, right: Digest) -> Digest {
-    let mut state = [BaseElement::ZERO; STATE_WIDTH];
-    state[4..8].copy_from_slice(&left);
-    state[8..12].copy_from_slice(&right);
-    Rp64_256::apply_permutation(&mut state);
-    [state[4], state[5], state[6], state[7]]
-}
+// ⚠️ §254 · `native_merge` VIVE EN `zk-ssl-hash`, no aquí.
+//
+// No es organización: **un verificador independiente no puede arrastrar
+// el probador**. §243 estableció que no compila el SERVIDOR; esto lo
+// extiende al PROBADOR. Cualquier cosa con forma *hoja → camino Merkle →
+// raíz → cabeza firmada* —el recibo de inclusión, y después el acuse—
+// necesita EL MISMO HASH QUE EL NODO, y aquí arrastraba `winterfell`
+// entero, `sled` y `settlement-prover`.
+//
+// ⚠️ Se REEXPORTA, no se copia: **dos implementaciones del mismo hash
+// divergirían en silencio**, y un recibo válido se declararía inválido —o
+// peor, al revés—. Los 172 usos en 31 ficheros siguen igual.
+pub use zk_ssl_hash::native_merge;
 
 /// Camino de autenticación: un hermano y un bit de dirección por nivel.
 #[derive(Clone, Debug)]

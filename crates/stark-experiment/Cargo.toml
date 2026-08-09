@@ -10,5 +10,8 @@ license.workspace = true
 # aislamiento que ya aplicamos con halo2-experiment.
 [dependencies]
 winterfell = "0.13"
+# ⚠️ §254: `native_merge` se mudo aqui para que el VERIFICADOR no arrastre
+#    el PROBADOR. Este crate lo REEXPORTA; no hay dos implementaciones.
+zk-ssl-hash = { path = "../zk-ssl-hash" }
 sled = "0.34"
 settlement-prover = { path = "../settlement-prover" }

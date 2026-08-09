@@ -1,0 +1,18 @@
+[package]
+name = "zk-ssl-hash"
+version = "0.1.0"
+edition = "2021"
+
+# ⚠️ Los subcrates SUELTOS, no el paraguas `winterfell`: ese arrastra
+# `winter-prover`, `winter-air` y `winter-verifier`, y el objetivo de este
+# crate es que un VERIFICADOR INDEPENDIENTE no compile el PROBADOR (§243,
+# extendido un nivel mas abajo).
+#
+# ⚠️ Clavadas con `=` a la version que el `Cargo.lock` ya tenia resuelta via
+# `winterfell 0.13`. Por rango, cargo podria meter DOS versiones del mismo
+# subcrate — y DOS `BaseElement` de versiones distintas NO SON EL MISMO
+# TIPO. El buen caso seria que no compilara; el malo, que compilara con
+# conversiones y divergiera en silencio.
+[dependencies]
+winter-math = "=0.13.1"
+winter-crypto = "=0.13.1"

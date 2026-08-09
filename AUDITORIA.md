@@ -18657,3 +18657,144 @@ escapé yo dentro de un heredoc que ya escapaba. El literal se saca con
 `repr()` y se deja que `repr()` escape.
 
 **Canon: `zk-ssl-node` de 40 a 46.** Sumas: 693 → 699.
+## 254. El hash, fuera del probador
+
+Al diseñar el **recibo de inclusión** apareció algo que no era del recibo.
+
+Cualquier cosa con forma **hoja → camino Merkle → raíz → cabeza firmada**
+—el recibo, y después el acuse— necesita **el mismo hash que el nodo**. Y
+`native_merge` **solo existía dentro de `stark-experiment`**, que arrastra
+`winterfell` entero, `sled` y `settlement-prover`.
+
+> **La primitiva de verificación independiente no estaba donde tenía que
+> estar**, y no se sabía porque **hasta ahora nadie fuera del nodo había
+> necesitado recomputar una raíz.**
+
+### Las dos salidas obvias eran malas
+
+| salida | por qué no |
+|---|---|
+| reimplementar `native_merge` en el verificador | **dos implementaciones del mismo hash**, que **divergirían en silencio**: un recibo válido declarado inválido — o peor, **al revés**. Es lo que §253 evitó reusando `GuardianIndice` **entero** |
+| que el verificador dependa de `stark-experiment` | **mata la propiedad de §243**, que tiene compuerta |
+
+### El corte, y por qué es limpio
+
+`native_merge` usa **tres cosas, y ninguna es del AIR**: `Rp64_256` (de
+`winter-crypto`), `BaseElement` (de `winter-math`) y `STATE_WIDTH`, que es
+**una constante del propio hasher** —`Rp64_256::STATE_WIDTH`—, no del
+circuito.
+
+⚠️ **No usa `apply_sbox`, ni `NUM_ROUNDS`, ni `MerkleTree`, ni
+`ColMatrix`.** El AIR del circuito de hash **se queda entero donde está**.
+
+**Es continuidad de §243, no una decisión suelta**: aquel sello estableció
+que **un verificador no compila el servidor**; éste añade que **tampoco
+compila el probador**. La misma regla, un nivel más abajo.
+
+### ⚠️ Las versiones, clavadas con `=`
+
+`winter-math` y `winter-crypto` se toman **sueltos y fijados a `=0.13.1`**,
+que es lo que el `Cargo.lock` ya tenía resuelto vía `winterfell 0.13` —los
+siete subcrates en la misma versión, **sin duplicados**—.
+
+Por rango, cargo podría resolver **dos versiones del mismo subcrate**, y
+**dos `BaseElement` de versiones distintas no son el mismo tipo**. El buen
+caso sería que no compilara; **el malo, que compilara con conversiones y
+divergiera en silencio**.
+
+### ⚠️ Un refactor puro: no cambia ni un byte
+
+`stark-experiment` **reexporta** `native_merge` desde el crate nuevo, y los
+**172 usos en 31 ficheros** siguen igual.
+
+> **La corrección no la demuestra un argumento: la demuestran las compuertas
+> que ya existen.**
+
+297 tests de `stark-experiment`, 256 de la capa, los seis censos, y **la
+conformidad `zkssl/0.2`, que pincha el `epoch_digest`**. Como `native_merge`
+es **la primitiva del árbol y de `chain_digest`**, un corte mal hecho
+**revienta la conformidad en el acto**. No hay forma de que pase
+inadvertido.
+
+### ⚠️ Un riesgo que no se pudo comprobar antes de escribir
+
+**Ningún `Cargo.toml` del proyecto tomaba un subcrate `winter-*` suelto**,
+así que el camino de importación —`winter_crypto::hashers::Rp64_256`,
+`winter_math::fields::f64::BaseElement`— **no estaba confirmado en el
+árbol**, solo en comentarios.
+
+Se trató como lo que era: **el bloque compila y revierte si falla**. Es el
+mismo criterio que *no adivinar la API: leer su fuente* — y cuando la fuente
+no está disponible, **dejar que la compuerta decida en vez de afirmarlo**.
+
+### ⚠️ El riesgo declarado se resolvió VERDE — y falló otra cosa
+
+**Los caminos de importación eran los correctos**: `zk-ssl-hash` compiló y
+sus cuatro tests pasaron a la primera. `winter_crypto::hashers::Rp64_256` y
+`winter_math::fields::f64::BaseElement` resuelven igual que a través del
+paraguas.
+
+Lo que falló fue más pequeño: **importé `winter_crypto::Hasher` suponiendo
+que `apply_permutation` venía de ese trait**, y es **un método inherente de
+`Rp64_256`**. Import sin usar → warning → rojo.
+
+⚠️ Misma familia que *no adivinar la API: leer su fuente* — solo que **aquí
+el compilador lo dice**, y por eso costó un intento en vez de un sello.
+
+### ⚠️ Y una compuerta que culpaba al código de un error suyo
+
+La compuerta de conformidad invocaba `cargo run -p zk-ssl --example
+conformance`, **que no existe**: la conformidad es **un subcomando del
+CLI**, y así la corre `canon.sh` desde siempre. **Me inventé la
+invocación en vez de leerla.**
+
+Pero lo grave no fue eso, sino lo que dijo al fallar:
+
+> *«LA CONFORMIDAD 0.2 SE ROMPIÓ: el corte cambió el hash»*
+
+**La conformidad no se rompió.** La compuerta **afirmó una causa que no
+había establecido**, y señaló al código cuando el error era suyo.
+
+⚠️ Es el reverso de §252 —*el instrumento midió la configuración que yo le
+puse*— y merece regla propia:
+
+> **Un instrumento que falla dice QUÉ falló, no QUÉ CONCLUYE.** Un
+> diagnóstico en el mensaje de error es una hipótesis, y escrita en
+> mayúsculas se lee como un hecho.
+
+### Por qué esto va antes del acuse
+
+El recibo de inclusión y el acuse **comparten forma**: hoja, camino Merkle,
+y una raíz que hereda la firma de la cabeza. Con la primitiva en su sitio,
+**el acuse deja de ser cuatro piezas nuevas encadenadas** y pasa a ser una
+pieza nueva sobre un patrón probado.
+
+⚠️ Y hay una razón más: **`zkssl/0.3` ya tiene varios candidatos esperando**
+—base64 en el cable, que subiría de 15 a 23 operaciones por lote, y la raíz
+de recepción—. **Emitir 0.3 dos veces sería el error que §209 evitó** al
+agrupar el hash con el cambio de versión. Retrasar la extensión del formato
+firmado da tiempo a que 0.3 se emita **una sola vez, con todo lo que deba
+llevar**.
+
+### ⚠️ Y la compuerta encontró un delegado de §125
+
+Al contar **definiciones** de `native_merge` apareció una tercera:
+`rescue_hash.rs` tenía **su propia `pub fn`**, que solo delegaba.
+
+Viene de **§125 (entrada 59)**, donde eran **dos copias carácter a
+carácter** y se dejó un delegado para no romper llamadores. Funcionaba —y
+su doc decía *«una sola definición, por construcción»*—, pero:
+
+> **Un delegado hoy es una copia mañana.**
+
+La compuerta es **más estricta que el diseño de §125, y tiene razón**: con
+un `pub use` ya no queda ningún sitio donde alguien pueda «arreglar» una de
+las dos.
+
+⚠️ La primera versión de esa compuerta contaba **usos de
+`apply_permutation`** y marcaba en falso una **esponja con dominio** de
+`circuit_threshold_single_nullifier.rs` —otra función, que absorbe bloques
+de ocho—. **Se arregló la compuerta, no el código**: el falso positivo era
+suyo.
+
+**Canon: `zk-ssl-hash` 4/0/0, nuevo.** Sumas: 699 → 703.
