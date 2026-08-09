@@ -27,3 +27,7 @@ xmss = "=0.1.0-pre.0"
 #    sueltos: NO arrastra `winter-prover`, `winter-air` ni
 #    `winter-verifier`. La propiedad de §243 sigue en pie.
 zk-ssl-hash = { path = "../zk-ssl-hash" }
+# ⚠️ Solo para nombrar `BaseElement` en los tests. Clavada a la MISMA
+#    version que `zk-ssl-hash`: dos `BaseElement` de versiones distintas
+#    NO son el mismo tipo.
+winter-math = "=0.13.1"

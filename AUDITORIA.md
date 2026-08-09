@@ -18871,3 +18871,96 @@ pero **la cabecera lo dice** para que nadie lo reconstruya dentro de un año.
   verificación **no duplique nada**.
 - **No toca las siete copias** de `stark-experiment`.
 - **No toca el formato firmado** ni obliga a `zkssl/0.3`.
+## 256. La inclusión, verificada sin el nodo
+
+Tres eslabones, y **el tercero es el que hace que valga**:
+
+```text
+    hoja + camino  →  raíz  →  cabeza firmada
+```
+
+⚠️ **Una raíz suelta no prueba nada**: el operador puede servir la que
+quiera. Lo que ata el recibo a algo que **no puede cambiar sin firmar** es
+que esa raíz entre en un `epoch_digest` que él firmó.
+
+Por eso `verificar_inclusion` **no recibe la raíz aparte de la cabeza**: si
+lo hiciera, un operador daría una raíz cualquiera junto a un digest
+legítimo, y **las dos mitades no se compararían nunca**. Hay test de ese
+caso exacto.
+
+### ⚠️ DOS CAPAS, y estuve a punto de construir sobre la equivocada
+
+| capa | ¿guarda saldos? |
+|---|---|
+| **`CommitmentLayer`** (`commitment.rs`) | **NO** — y su test lo comprueba **buscando el saldo entre todos sus bytes** |
+| **`AccountsLayer`** (`accounts.rs`) | **SÍ**: `balance_of` lee `records[index].balance`. Es la del **modo transparente** |
+
+**No es una contradicción del proyecto**, pero **se lee como una** si alguien
+encuentra `balance_of` sin el contexto — y en un proyecto cuyo argumento
+central es que **los saldos no están**, una función pública que devuelve un
+saldo pide una frase que lo explique. **Esa frase no existía fuera del
+código.**
+
+⚠️ **Y la consecuencia para el recibo es concreta**: el que sirve al acuse es
+el de `CommitmentLayer`. **El del árbol transparente probaría otra cosa.**
+Decirlo ahora evita que se confundan cuando §257 exponga `path_for`.
+
+### Por qué esto NO reconstruye la hoja
+
+En `CommitmentLayer`, `open(index, leaf)` recibe **la hoja ya calculada por
+el cliente**. La hoja es **un dato que el titular ya tiene**; el nodo solo
+confirma haberla colocado.
+
+> **Pedirle al nodo que la componga rompería la propiedad central del
+> proyecto.**
+
+### ⚠️ La forma es la que el ACUSE reutiliza
+
+`verificar_inclusion` toma **la raíz como parámetro** en vez de asumir cuál
+es. Para el acuse basta pasar `acuse_root` donde aquí va `accounts_root`, y
+el acuse como hoja. **Nada más.**
+
+Era **lo más importante del sello**: si hubiera acabado con una firma que el
+acuse no puede usar tal cual, habría probado **una maquinaria que no es la
+que hace falta**.
+
+### Tres errores distintos, con tres significados
+
+| clase | qué significa |
+|---|---|
+| `CaminoDescuadrado` | **el recibo está mal formado** |
+| `RaizDistinta` | **la hoja no estaba en ese árbol** |
+| ⚠️ `CabezaDistinta` | **el recibo es de OTRA cabeza** |
+
+⚠️ La tercera es la que justifica el tercer eslabón: sin ella, un operador
+serviría **un recibo correcto de una época en la que la hoja sí estaba**,
+para una cabeza en la que ya no. **Un recibo sin época es un recibo de
+cualquier época.**
+
+### ⚠️ Siete de los diez tests son NEGATIVOS
+
+**Un verificador que solo se ha visto aceptar no está probado**: falta saber
+que **rechaza cuando debe**. Es el criterio con el que L.3 comprobó los
+falsos positivos de `vista-dividida`.
+
+Se prueban: hermano alterado, **posición cambiada** —si el orden no
+importara, cualquier hoja probaría cualquier posición—, otra hoja, camino
+más corto, camino descuadrado, **recibo de otra cabeza con el camino
+perfecto**, y **una raíz declarada que sube bien pero no compone la cabeza
+firmada**.
+
+### Lo que un recibo NO dice
+
+Prueba que **la hoja estaba en el árbol**, no **qué significaba**. Si el
+titular pierde `public_id`, `balance` o `nonce`, tiene la prueba de
+inclusión de **un dato que ya no puede interpretar** — y eso es correcto: es
+**la misma propiedad que impide que la capa lo sepa**.
+
+### Lo que §256 NO hace
+
+- **No toca `zk-ssl` ni el nodo.** Servir el recibo —exponer `path_for` y
+  `zkssl_inclusionReceipt`— es **§257**, y si eso se tuerce al abrir API en
+  el crate de 256 tests, **el verificador ya está probado y no arrastra**.
+- **No toca el formato firmado** ni obliga a `zkssl/0.3`.
+
+**Canon: `zk-ssl-verify` de 12 a 22.** Sumas: 707 → 717.

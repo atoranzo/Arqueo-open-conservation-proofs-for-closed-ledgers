@@ -95,7 +95,7 @@ zk-ssl-sdk         sello       6   0   0   300
 zk-ssl-wire        sello       2   0   0    60  openrpc: §242 lo deja en 19 metodos
 zk-ssl-cli         sello      26   0   0   120  §250: 22 -> 26, la vista dividida EN FRIO
 zk-ssl-node        sello      46   0   0   400  §253: 40 -> 46, el contador de recepcion
-zk-ssl-verify      sello      12   0   0    90  §243: el verificador independiente (11 tests + el doctest del ejemplo)
+zk-ssl-verify      sello      22   0   0   120  §256: 12 -> 22, la inclusion verificable
 zk-ssl-hash        sello       8   0   0    60  §255: 4 -> 8, las primitivas de formato
 settlement-prover  sello       0   0   0   300  sin tests
 nova-experiment    sello       0   0   0   300  0 es CORRECTO: sus 3 tests exigen --features test-setup

@@ -3452,6 +3452,7 @@ dependencies = [
 name = "zk-ssl-verify"
 version = "0.1.0"
 dependencies = [
+ "winter-math",
  "xmss",
  "zk-ssl-hash",
 ]

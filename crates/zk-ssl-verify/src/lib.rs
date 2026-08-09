@@ -41,6 +41,12 @@
 
 use xmss::{Signature, VerifyingKey, XmssMtSha2_40_8_256};
 
+// ⚠️ §256: la INCLUSION, el segundo eslabon que un tercero puede
+//    comprobar sin el nodo. `verificar_cabeza` dice *quien* firmo; esto
+//    dice *que contiene* lo firmado.
+mod inclusion;
+pub use inclusion::{verificar_inclusion, InclusionError, ReciboInclusion};
+
 /// El conjunto de parámetros: 2⁴⁰ firmas, ~35.000 años a una por segundo.
 pub type Conjunto = XmssMtSha2_40_8_256;
 
