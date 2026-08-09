@@ -127,6 +127,12 @@ impl std::fmt::Display for GuardianError {
     }
 }
 
+/// Ver la nota de `firma_cabeza::FirmaError`: **un tipo de error lleva
+/// `Debug`, `Display` y `Error` desde que nace**. A éste le faltaba el
+/// tercero, y no había fallado todavía solo porque nadie lo había usado
+/// con `?` sobre `anyhow` (§241).
+impl std::error::Error for GuardianError {}
+
 /// Lo que se encuentra al comparar el contador con el índice real de la
 /// clave, tras un reinicio.
 #[derive(Debug, PartialEq, Eq)]

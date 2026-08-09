@@ -27,6 +27,13 @@ mod firma_indice;
 /// se lo pide todavía. Y **no hay custodia de clave declarada**.
 mod firma_cabeza;
 
+/// **El latido: emitir cabezas de época.** Cierra el eslabón 3.
+///
+/// ⚠️ **Sin `--clave` el nodo NO firma**: calcula la cabeza y lo dice.
+/// Mismo criterio que `--dev` — el nodo separa capacidades por bandera
+/// explícita, y firmar es algo que el operador habilita a sabiendas.
+mod latido;
+
 use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::Mutex;
@@ -58,6 +65,35 @@ struct Args {
     /// Habilita el espacio `dev_*` (fondos con custodios de PRUEBA).
     #[arg(long)]
     dev: bool,
+
+    /// **Semilla de la clave de firma de cabezas** (96 bytes, en hex).
+    ///
+    /// ⚠️ **Sin esto el nodo NO FIRMA.** El latido sigue corriendo y la
+    /// cabeza de época se calcula igual —su digest está en los vectores
+    /// de conformidad de `zkssl/0.2`—; lo que falta es la firma.
+    ///
+    /// ⚠️ Y **una firma sin custodia declarada de la clave no tiene valor
+    /// probatorio** (§236, §238). De dónde sale esta semilla y quién la
+    /// guarda es **decisión de despliegue, y no está tomada**: pasarla por
+    /// la línea de órdenes la deja en el historial del shell y en `ps`.
+    /// Esta bandera existe para **poder ejercitar el mecanismo**, no como
+    /// forma de operar.
+    #[arg(long, value_name = "HEX_96_BYTES")]
+    clave: Option<String>,
+
+    /// Fichero del contador de índices de firma (§234).
+    ///
+    /// ⚠️ El guardián **se niega a arrancar si su `fsync` no persiste**:
+    /// en `tmpfs` cuesta lo mismo que no hacerlo (K.1: 382× frente a 1×).
+    #[arg(long, default_value = "zkssl-indice-firma.bin")]
+    indice_firma: String,
+
+    /// **Segundos entre cabezas de época.** §121 lo decidió: una por
+    /// minuto, tras medir que a esa cadencia el almacenamiento cae 60
+    /// veces, al precio declarado de dar al operador **una ventana de un
+    /// minuto**. `0` apaga el latido.
+    #[arg(long, default_value_t = crate::latido::LATIDO_POR_DEFECTO_S)]
+    latido: u64,
 
     /// Límite regulatorio por operación.
     #[arg(long, default_value_t = 500_000)]
@@ -128,6 +164,34 @@ async fn main() -> anyhow::Result<()> {
         tracing::warn!("modo --dev: dev_* habilitado con custodios de PRUEBA; no usar en producción");
     }
 
+    // ── el latido, y la firma como capacidad SEPARADA ──
+    let firmante = match &args.clave {
+        Some(hex) => {
+            let semilla = descodificar_semilla(hex)?;
+            let f = firma_cabeza::FirmanteCabeza::desde_semilla(&semilla, &args.indice_firma)
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            tracing::warn!(
+                indice = args.indice_firma,
+                "--clave: las cabezas de epoca se FIRMARAN. Una firma sin custodia \
+                 declarada de la clave NO tiene valor probatorio (SECURITY.md)"
+            );
+            Some(f)
+        }
+        None => {
+            // ⚠️ EN VOZ ALTA. El silencio equivale a que nadie se entere.
+            tracing::warn!(
+                "sin --clave: las cabezas de epoca se CALCULAN pero NO se firman"
+            );
+            None
+        }
+    };
+    if args.latido > 0 {
+        tracing::info!(cada_s = args.latido, "latido de cabezas de epoca en marcha");
+        latido::arrancar(app.clone(), firmante, Duration::from_secs(args.latido));
+    } else {
+        tracing::warn!("--latido 0: NO se emiten cabezas de epoca");
+    }
+
     let router = Router::new().route("/", post(handle)).with_state(app);
     tracing::info!(listen = %args.listen, "zk-ssl-node escuchando (JSON-RPC 2.0, spec/RPC.md)");
 
@@ -188,6 +252,24 @@ async fn handle(
                     "error": { "code": e.code, "message": e.message } })
         }
     })
+}
+
+/// Lee la semilla de 96 bytes en hexadecimal.
+///
+/// ⚠️ 96 = 3×32: `SK_SEED ‖ SK_PRF ‖ PUB_SEED`. Se rechaza cualquier otra
+/// longitud **en el arranque**, no al firmar: un nodo que arranca y luego
+/// no puede firmar es peor que uno que no arranca.
+fn descodificar_semilla(hex: &str) -> anyhow::Result<Vec<u8>> {
+    let h = hex.trim().trim_start_matches("0x");
+    anyhow::ensure!(
+        h.len() == 192,
+        "la semilla debe tener 96 bytes (192 caracteres hex) y tiene {}",
+        h.len() / 2
+    );
+    (0..96)
+        .map(|i| u8::from_str_radix(&h[i * 2..i * 2 + 2], 16))
+        .collect::<Result<Vec<u8>, _>>()
+        .map_err(|e| anyhow::anyhow!("la semilla no es hexadecimal: {e}"))
 }
 
 /// ⚠️ `Debug` no estaba, y eso es un defecto por derecho propio: un tipo
@@ -763,7 +845,11 @@ mod tests {
     use super::*;
 
     /// Un nodo en memoria, con `--dev`, y la caducidad que pida el test.
-    fn nodo(ttl_segundos: u64) -> App {
+    ///
+    /// ⚠️ `pub(crate)` para que **el módulo del latido** pueda usarlo
+    /// (§241). Un helper duplicado en dos sitios se desincroniza; uno
+    /// compartido no.
+    pub(crate) fn nodo(ttl_segundos: u64) -> App {
         let layer = SovereignLayer::new(
             zk_ssl::tests_support::custodian_root(),
             zk_ssl::tests_support::governance_root(),
@@ -779,7 +865,7 @@ mod tests {
     }
 
     /// Abre una cuenta con semilla `s` y la fondea. Devuelve (indice, id).
-    fn cuenta(app: &App, s: u64, saldo: u64) -> (u64, Value) {
+    pub(crate) fn cuenta(app: &App, s: u64, saldo: u64) -> (u64, Value) {
         let r = dispatch(app, "dev_openSeeded", json!({ "seed": Q(s) })).expect("abrir");
         let idx = r["index"].as_str().expect("index").to_string();
         let idx = u64::from_str_radix(idx.trim_start_matches("0x"), 16).expect("hex");

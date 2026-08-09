@@ -17420,3 +17420,97 @@ que es el precio de citar un total y ya estaba anotado.
   que usaría, no el testigo ni el canal.
 - **El issue de RustCrypto sigue sin enviar** — ahora con **dos hallazgos**:
   la falta de `index()` y este, con mecanismo, línea y alcance.
+## 241. El latido: el nodo emite cabezas, y **no firma por defecto**
+
+§236 construyó el firmante, §240 el testigo, y **nadie emitía nada**. Con
+esto el eslabón 3 queda cerrado.
+
+### La cadencia no se decide aquí: ya estaba
+
+§121: **una vez por minuto, y además a demanda**, elegida tras medir que a
+esa cadencia el almacenamiento **cae 60 veces**, al precio declarado de dar
+al operador **una ventana de un minuto**. `--latido 0` lo apaga.
+
+Y de ella cuelga media §121: *«el plazo se cuenta en cabezas de época
+firmadas»*, *«llega en ≤1 latido»*, y **«estirar el latido para esquivar N
+es en sí evidencia oponible»**.
+
+### ⚠️ Sin `--clave` el nodo NO firma, y lo dice al arrancar
+
+```
+sin --clave: las cabezas de epoca se CALCULAN pero NO se firman
+```
+
+Es deliberado, y sigue **el precedente de `--dev`**: el nodo ya separa
+capacidades por bandera explícita, y los custodios de prueba no se activan
+solos. Firmar es la misma clase de decisión — **algo que el operador
+habilita a sabiendas**.
+
+⚠️ Y el motivo de fondo no es prudencia. **Una firma sin custodia declarada
+de la clave no tiene valor probatorio** (§236, §238). Un latido que firmara
+por defecto emitiría **1.440 evidencias sin valor al día**.
+
+El riesgo real **no es agotar la clave** —2⁴⁰ índices a una por minuto son
+dos millones de años— sino **normalizar la emisión de evidencia sin valor**
+hasta que alguien lea «el nodo firma cabezas» y concluya lo que no es. Es
+la clase de fallo que esta serie lleva cazando: no un error, sino **una
+afirmación que se vuelve cierta por repetición**.
+
+Con esta forma nace acotada: **el nodo firma cabezas si el operador le
+entrega una clave, y el arranque lo dice.** Un README se lee una vez; un
+arranque, cada vez.
+
+### Calcular y firmar son cosas distintas
+
+La cabeza de época **es útil por sí sola**: su `epoch_digest` está en los
+vectores de conformidad de `zkssl/0.2`. Lo que la clave añade es la firma.
+El código los separa, y hay test —`sin_clave_hay_cabeza_pero_no_firma`—
+para que nadie concluya que sin clave no hay cabeza.
+
+### El candado, y el orden que sí importa
+
+Calcular la cabeza **lee el estado**, así que el latido toma el mismo
+`Mutex` que `dispatch`. Pero:
+
+> se toma el candado, **se lee la cabeza, y se suelta antes de firmar.**
+
+Firmar cuesta **144,5 ms** medidos (S.3). Retener el candado ese rato
+pararía todas las escrituras — un latido de 144 ms cada 60 s es el 0,24 %
+del reloj, pero **retenido sería un 0,24 % de parada total**, y no hace
+falta: la cabeza ya está leída.
+
+⚠️ Y el `Mutex` es de `std`: **no cruza un `await`**. `latir` es síncrona y
+se llama entera entre dos `await`; dormir ocurre fuera. Cruzarlo bloquearía
+el ejecutor de tokio.
+
+⚠️ **La interacción latido/escrituras NO está medida.** Un latido por
+minuto contra 248 op/s (§229) es despreciable **en promedio**, y eso es
+todo lo que se puede decir hoy.
+
+### Seis tests
+
+- **sin clave hay cabeza y no hay firma** — el que define la forma;
+- con clave, la cabeza **va firmada y un testigo la verifica**;
+- cada latido **gasta un índice**, y guardián y clave van juntos;
+- ⚠️ **la cabeza del latido es la que sirve `zkssl_epochHead`** — si
+  firmara otra cosa, un testigo compararía peras con manzanas;
+- si el estado se mueve, **el digest cambia**: de otro modo firmar cada
+  minuto no acreditaría nada nuevo;
+- y la cadencia por defecto es la decidida.
+
+**Canon: `zk-ssl-node` de 39 a 45.**
+
+### ⚠️ Lo que §241 construye, y lo que NO
+
+**Construye el mecanismo, no la propiedad.**
+
+- ⚠️ **La custodia de la clave sigue sin decidir.** `--clave` toma una
+  semilla en hexadecimal, y eso **la deja en el historial del shell y en
+  `ps`**. La bandera existe **para poder ejercitar el mecanismo, no como
+  forma de operar**, y así está escrito en su propia documentación.
+- ⚠️ **Sigue sin haber testigo.** El nodo emite y registra; nadie recoge.
+  No hay canal, no hay quien guarde, no hay quien compare.
+- ⚠️ **La cabeza sigue incompleta por diseño** (§236): le faltan
+  `verifier_hash` —bloqueado por la entrada 54— y la raíz de recepción. Por
+  eso la firma lleva versión de formato.
+- Y la interacción con las escrituras, sin medir.

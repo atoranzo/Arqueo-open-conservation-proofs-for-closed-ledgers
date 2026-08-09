@@ -129,6 +129,17 @@ impl std::fmt::Display for FirmaError {
     }
 }
 
+/// ⚠️ **Tercer tipo de error de este nodo al que le faltaba un trait
+/// estandar**: `RpcError` no derivaba `Debug` (§228), `GuardianIndice`
+/// tampoco (§234), y éste no implementaba `Error` — así que `?` no
+/// convertía a `anyhow` y había que rodearlo con `map_err`.
+///
+/// La regla que lo evita: **un tipo de error lleva `Debug`, `Display` y
+/// `Error` desde que nace.** Sin los tres, cada consumidor se inventa un
+/// rodeo distinto — y en §241 el rodeo estaba en `main.rs` y el `?` en
+/// `latido.rs`, **incoherentes dentro del mismo sello**.
+impl std::error::Error for FirmaError {}
+
 impl From<GuardianError> for FirmaError {
     fn from(e: GuardianError) -> Self {
         FirmaError::Guardian(e)
