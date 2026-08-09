@@ -17994,3 +17994,81 @@ hashear enseñó que no había nada honesto que hashear.
 - **No toca ningún pin**: no hay código ejecutable nuevo.
 - ⚠️ Y toca `log.rs`, que estaba **intacto desde §216**. Es un comentario:
   ninguna línea de código cambia.
+## 247. L.1: el testigo, de verdad — y una frase de §242 que era imprecisa
+
+**Primera vez que §236-§245 corren de punta a punta** contra un nodo real,
+con clave, custodia declarada y un testigo mirando. Banco L.1, cuatro fases.
+
+### Lo que confirma, medido
+
+| | medido |
+|---|---|
+| firma servida | **18.519 bytes** = 18.469 RFC + 50 de preámbulo (§236) |
+| clave pública | **68 bytes**, empezando en `0x00000005` |
+| custodia | `custody: fichero` · **`custodyChecked: true`** (§244) |
+| primera cabeza firmada | **2,42 s** con `--latido 2` |
+| cambio de clave | el testigo **se detiene a la 8ª consulta** |
+
+⚠️ El OID publicado es **`0x00000005`, el del RFC, sin el apaño**: §243 tenía
+razón en que el rodeo vive **solo en la lectura** y no toca el cable.
+
+### ⚠️ Y una frase de §242 que la medida corrige
+
+§242 escribió —y era mío— que al reiniciar *«un testigo verá **un hueco real
+en la serie**»*. **No es eso lo que se ve.**
+
+Las veinte consultas de L.1.c dieron `Nueva: 10, Repetida: 8, SinFirma: 2`
+— **ni un solo `Hueco`**. La secuencia fue índice 6 → dos `SinFirma`
+mientras el nodo reiniciaba → índice **7**. **Contiguo.**
+
+> **El guardián solo incrementa AL FIRMAR.** Morir entre latidos no gasta
+> ningún índice: se pierde **tiempo, no serie**.
+
+| | §242 decía | L.1 mide |
+|---|---|---|
+| al reiniciar | un **hueco de índices** | una **ventana de `SinFirma`** |
+| a 10⁶ cuentas | ~136 s de hueco | ~136 s **sin firma**, luego índice **+1** |
+
+⚠️ Hay hueco de índices **solo si se firmó una cabeza que nadie llegó a
+recoger** — y eso depende de **la relación entre la cadencia del latido y la
+de la consulta**, no del reinicio. Ese es el dato que el histórico
+necesitaba, y sale distinto de lo que se supuso.
+
+Corregido en `main.rs` y en `spec/RPC.md`. **El asiento de §242 no se toca**:
+los registros no se reescriben, se corrigen encima.
+
+### ⚠️ §234 funcionó fuera de su banco, contra un fallo mío
+
+El primer intento puso el contador del índice en `/tmp`. El guardián **midió
+`fsync` al abrir y se negó a arrancar**:
+
+> *«no persiste nada aquí (0.6 µs con fsync frente a 0.8 µs sin él, razón
+> 0.8×, mínimo 10×). Reusar un índice XMSS filtra la clave: el nodo NO
+> arranca así.»*
+
+Podría haber arrancado y «funcionado»: el contador habría parecido persistir,
+y al primer corte se habría reusado un índice — que es **filtrar la clave
+privada**. K.1 midió 382× en ext4 y 1× en tmpfs hace trece sellos; **hoy esa
+medida evitó un daño real**.
+
+Es la diferencia entre una comprobación que se escribe y **una que se
+ejecuta cada vez**.
+
+### ⚠️ Lo que L.1 NO ejercita, y hay que decirlo
+
+- **Todos los digests salieron idénticos** (`0xf39fc7a1…` en las veinte
+  consultas): el ledger estaba vacío y sin operaciones, así que la cabeza no
+  cambia entre latidos. **Un nodo con tráfico daría digests distintos**, y
+  ese caso no se ha probado aquí.
+- **La vista dividida.** Producirla exige firmar dos cabezas con el mismo
+  índice y distinto contenido, y **el guardián lo impide por diseño**. Está
+  cubierta por test unitario.
+- **Nada de esto prueba confianza**: el testigo lo corrió el propio
+  operador. Sigue siendo la implementación de referencia de lo que correría
+  un tercero.
+
+### Lo que §247 NO hace
+
+- **No añade histórico**: ahora hay dato para decidirlo, no la decisión.
+- **No toca ningún pin**: no hay código ejecutable nuevo.
+- Y el ancla anterior sigue esperando **a que haya clave** (§246).

@@ -180,9 +180,17 @@ struct App {
     /// competir con las escrituras cuando el latido ya soltó el otro.
     ///
     /// ⚠️ **Se pierde al reiniciar**, y eso es el precio declarado de no
-    /// tener histórico (§242). Con un arranque de ~136 s a 10⁶ cuentas, un
-    /// testigo verá **un hueco real en la serie**. Es la otra cara de la
-    /// decisión, y va escrita al lado de ella.
+    /// tener histórico (§242).
+    ///
+    /// ⚠️ **MEDIDO en L.1 (§247), y §242 lo decía impreciso.** Lo que un
+    /// testigo ve al reiniciar **no es un hueco de índices**: es una
+    /// **ventana de `SinFirma`**, y después el índice sigue **contiguo**.
+    /// El guardián solo incrementa **al firmar**, así que morir entre
+    /// latidos no gasta ninguno: se pierde **tiempo, no serie**.
+    ///
+    /// Hay hueco de índices **solo si se firmó una cabeza que nadie llegó
+    /// a recoger** — y eso depende de la relación entre la cadencia del
+    /// latido y la del testigo, **no del reinicio**.
     ultima_cabeza: Mutex<Option<latido::Latido>>,
     /// La clave pública de firma, en bytes del formato RFC. **Vacía** si el
     /// nodo arrancó sin `--clave`. Un testigo la necesita para verificar.

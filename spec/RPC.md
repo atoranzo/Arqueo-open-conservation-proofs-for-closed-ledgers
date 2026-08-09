@@ -403,8 +403,17 @@ engañando»**. El `index` de XMSS ya lo permite —es monótono— pero convien
 que sea explícito.
 
 ⚠️ **Solo la última, y en memoria.** No hay histórico: **se pierde al
-reiniciar**, y con un arranque de ~136 s a 10⁶ cuentas un testigo verá un
-hueco real en la serie. Guardarlo serían **18,5 KB por minuto — 26 MB al
+reiniciar**, y con un arranque de ~136 s a 10⁶ cuentas un testigo pasará ese
+tiempo recibiendo `available: false`.
+
+⚠️ **MEDIDO en L.1 (§247).** Lo que el testigo ve **no es un hueco de
+índices**: es una **ventana de `SinFirma`**, y después el índice sigue
+**contiguo** —el guardián solo incrementa al firmar, así que morir entre
+latidos no gasta ninguno—. Hay hueco de índices **solo si se firmó una
+cabeza que nadie llegó a recoger**, y eso depende de la relación entre la
+cadencia del latido y la de la consulta, **no del reinicio**.
+
+Guardar el histórico serían **18,5 KB por minuto — 26 MB al
 día, 9,5 GB al año**, y sobre todo **un formato de archivo es una decisión
 de conformidad que ningún consumidor ha informado todavía**: cómo se pagina,
 si se pide por rango o por índice, qué pasa con los huecos. Se decide cuando
