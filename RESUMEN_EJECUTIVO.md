@@ -55,7 +55,7 @@ públicos— y recibe pruebas que verifica. La revelación selectiva
 (`audit`: "estoy entre X e Y") la produce el titular y la verifica el
 supervisor **sin acceso al ledger**.
 
-**646 tests en la compuerta de sello** —783 con todos los pines, 798
+**654 tests en la compuerta de sello** —791 con todos los pines, 806
 declarados—, todos en release, 0 fallos y 24 warnings **pinchados**.
 No se recuerdan: los ejecuta `bash tools/canon.sh --sello`.
 

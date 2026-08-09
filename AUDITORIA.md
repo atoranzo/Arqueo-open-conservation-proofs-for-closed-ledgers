@@ -17313,3 +17313,110 @@ camino de producción. Ahora lo avisa en su primera línea.
 - **No revisa los 59 `.md` uno a uno.** Cubre lo que una compuerta puede
   comprobar; el resto sigue siendo prosa sin verificar.
 - **No mide nada nuevo.**
+## 240. El testigo relee la firma — y hay un fallo en `xmss` por el camino
+
+§236 dejó el hueco declarado: `firmar()` devolvía bytes y **nadie sabía
+cómo volver de ellos a una firma verificable**. Se prefirió declararlo a
+escribir un `try_from` supuesto.
+
+### La firma: sin dilema
+
+| forma | bytes | interoperable |
+|---|---|---|
+| **`try_from(&[u8])`** | **18.475** | **sí — RFC 8391** |
+| `postcard` | 18.478 | no |
+| `serde_json` | **36.952 (2×)** | no |
+
+La sonda S.4 planteaba una decisión de mesa —*«¿el artefacto queda atado a
+este crate?»*— y **la medida la resolvió sola**: la forma interoperable es
+también la más pequeña.
+
+### ⚠️ La clave pública: un fallo de upstream, caracterizado
+
+Extendí el resultado de la firma a la clave **sin medirlo**, y los tests
+dieron `InvalidOid(5)`. **Decimocuarta conjetura de la serie**, y de la
+peor familia: *estirar un paso más un resultado medido*.
+
+S.5 y S.6 lo dejaron caracterizado línea a línea:
+
+```rust
+// xmss.rs
+let oid = XmssOid::try_from(raw).or_else(|_| XmssOid::from_xmssmt_raw_oid(raw))?;
+
+// params.rs:1031 — hace justo lo que hace falta…
+fn from_xmssmt_raw_oid(oid: u32) { Self::try_from(oid + XMSSMT_OID_OFFSET) }
+```
+
+El RFC 8391 tiene **dos registros de OID separados** —XMSS y XMSS^MT— y
+**los dos empiezan en 1**. `XMSSMT-SHA2_40/8_256` es el 5, y `try_from(5)`
+**acierta**, porque 5 también es un OID válido de árbol único
+(`XmssSha2_16_512`). **El `or_else` nunca corre.**
+
+⚠️ **Cinco de los ocho conjuntos multiárbol SHA2-256 colisionan** con OID
+válidos de árbol único. **Todas esas claves públicas son irrecuperables.**
+Las firmas no: `Signature::try_from` no parsea OID.
+
+Y los tests de round-trip de upstream usan `XmssSha2_10_256` —de árbol
+único—, así que el caso **no está cubierto**.
+
+### El rodeo, y por qué éste y no otro
+
+S.6 midió tres. Las otras dos **no existen**: `pkcs8` es un módulo privado
+y `xmssmt_core_sign_open` no está reexportado.
+
+El que queda es de **cuatro bytes**: sumar `XMSSMT_OID_OFFSET` antes de
+parsear. Medido: la clave vuelve **y la firma verifica**.
+
+⚠️ **Se aplica SOLO al leer.** `clave_publica()` devuelve los bytes con su
+OID `0x00000005` — **lo que se publica sigue siendo RFC 8391 correcto**, y
+el apaño vive en nuestro código, no en el cable. Hay test que lo comprueba.
+
+⚠️ **Y hay un test que lo matará cuando sobre**:
+`el_apano_del_oid_sigue_haciendo_falta` exige que **sin** el offset la
+clave siga sin poder releerse. El día que upstream lo arregle, se pone rojo
+y dice qué quitar.
+
+Eso es lo que separa un apaño defendible de uno que se queda para siempre:
+**no basta con que funcione, tiene que saber cuándo estorba** — y un apaño
+mudo además **enmascara el cambio de formato que venga después**.
+
+### ⚠️ Verificar no basta, y esto no se buscaba
+
+`verify()` devuelve **el mensaje que la firma lleva dentro**, no un
+booleano. Un `verify()` con éxito dice *«esta firma vale para su
+contenido»*, **no** *«para lo que tú esperas»*: un atacante puede presentar
+la firma **legítima de otra cabeza** y pasar.
+
+Lo cierra **comparar el mensaje recuperado con el preámbulo esperado**, y
+por eso `verificar_cabeza` es una función y no una llamada suelta.
+
+⚠️ Y no lo cierra el parseo: `Signature::try_from` **no valida OID ni
+longitud** —las firmas adjuntas son de longitud variable—, así que es casi
+un envoltorio. **Toda la validación real ocurre en `verify()` y en esa
+comparación.** Los tests de basura pasan por eso, no por el parseo.
+
+### El camino del testigo, completo
+
+```rust
+verificar_cabeza(clave_publica, epoch_digest, &cabeza_firmada)
+```
+
+**Sin la clave privada, sin el guardián y sin el proceso del operador.**
+
+**Ocho tests nuevos**, y seis son de rechazo: otra cabeza, otra versión, un
+bit cambiado, basura —firma vacía, corta, truncada, `0xFF`; clave vacía, de
+3 bytes, de 68, de 200— que debe dar `Err` **y no panic**, el OID publicado
+sin el apaño, y el que matará el apaño.
+
+**Canon: `zk-ssl-node` de 31 a 39.** Y las sumas: **646 → 654**, 783 → 791,
+798 → 806 — con `check_cifras.py` parando el bloque hasta actualizarlas,
+que es el precio de citar un total y ya estaba anotado.
+
+### Lo que sigue faltando
+
+- ⚠️ **No hay custodia de clave.** *Sin ella una firma no tiene valor
+  probatorio*, y eso no lo arregla poder releerla.
+- ⚠️ **No hay latido.** · ⚠️ **No hay ningún testigo**: existe la función
+  que usaría, no el testigo ni el canal.
+- **El issue de RustCrypto sigue sin enviar** — ahora con **dos hallazgos**:
+  la falta de `index()` y este, con mecanismo, línea y alcance.

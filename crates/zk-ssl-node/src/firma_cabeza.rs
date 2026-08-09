@@ -73,7 +73,7 @@
 
 use crate::firma_indice::{GuardianIndice, GuardianError, Reconciliacion};
 use std::path::Path;
-use xmss::{KeyPair, XmssMtSha2_40_8_256};
+use xmss::{KeyPair, Signature, VerifyingKey, XmssMtSha2_40_8_256};
 
 /// El conjunto elegido (entrada 53, §127.1): 2⁴⁰ firmas, ~35.000 años a una
 /// por segundo. Medido en S.3 sobre esta máquina: keygen 17,9 ms, firmar
@@ -99,6 +99,12 @@ pub enum FirmaError {
     Xmss(String),
     /// El SK no tiene la forma esperada: la serialización de upstream cambió.
     LayoutInesperado { sk_len: usize, esperado: usize },
+    /// ⚠️ **La firma es válida, pero de OTRA cosa.** `verify()` devuelve el
+    /// mensaje que llevaba dentro, no un booleano: que verifique dice «esta
+    /// firma vale para el mensaje que contiene», **no** «para el que tú
+    /// esperas». Sin comparar, un atacante presenta la firma legítima de
+    /// otra cabeza y pasa.
+    PreambuloDistinto { esperado: usize, recibido: usize },
 }
 
 impl std::fmt::Display for FirmaError {
@@ -106,6 +112,13 @@ impl std::fmt::Display for FirmaError {
         match self {
             FirmaError::Guardian(e) => write!(f, "firmante: {e}"),
             FirmaError::Xmss(e) => write!(f, "firmante: xmss rechazó: {e}"),
+            FirmaError::PreambuloDistinto { esperado, recibido } => write!(
+                f,
+                "firmante: la firma es VALIDA pero de otro mensaje \
+                 (preambulo esperado {esperado} bytes, recibido {recibido}). \
+                 Verificar sin comparar no prueba nada: `verify()` acredita lo \
+                 que la firma lleva dentro, no lo que se busca."
+            ),
             FirmaError::LayoutInesperado { sk_len, esperado } => write!(
                 f,
                 "firmante: el SK mide {sk_len} bytes y se esperaban {esperado}. \
@@ -247,6 +260,106 @@ impl FirmanteCabeza {
     pub fn indice_del_guardian(&self) -> u64 {
         self.guardian.actual()
     }
+
+    /// La clave pública **en bytes del formato RFC 8391**, para publicarla.
+    ///
+    /// ⚠️ Sale tal cual, con su OID `0x00000005`. **El apaño de
+    /// [`OFFSET_MT_UPSTREAM`] NO se aplica aquí**: lo que se publica es
+    /// correcto según el RFC, y el rodeo vive solo en la lectura.
+    pub fn clave_publica(&self) -> Vec<u8> {
+        self.par.verifying_key().as_ref().to_vec()
+    }
+}
+
+/// ⚠️ **APAÑO SOBRE UN FALLO DE `xmss 0.1.0-pre.0`** (§240, sondas S.5/S.6).
+///
+/// Una clave pública XMSS^MT **no se puede releer de sus propios bytes**.
+/// El mecanismo, leído del fuente:
+///
+/// ```text
+/// // xmss.rs
+/// let oid = XmssOid::try_from(raw).or_else(|_| XmssOid::from_xmssmt_raw_oid(raw))?;
+///
+/// // params.rs:1031 — hace justo lo que hace falta...
+/// fn from_xmssmt_raw_oid(oid: u32) { Self::try_from(oid + XMSSMT_OID_OFFSET) }
+/// ```
+///
+/// El RFC 8391 tiene **dos registros de OID separados** —XMSS y XMSS^MT— y
+/// **los dos empiezan en 1**. `XMSSMT-SHA2_40/8_256` es el 5, y
+/// `try_from(5)` **acierta** porque 5 también es un OID válido de árbol
+/// único (`XmssSha2_16_512`). El `or_else` **nunca corre**.
+///
+/// ⚠️ **Cinco de los ocho OID multiárbol de SHA2-256 colisionan** con OID
+/// válidos de árbol único. Todas esas claves son irrecuperables.
+///
+/// El apaño: sumar el offset **antes de parsear**. Medido en S.6: con
+/// `0x00010005` la clave vuelve **y la firma verifica**.
+///
+/// ⚠️ **Se aplica SOLO al leer.** Ver [`FirmanteCabeza::clave_publica`].
+///
+/// ⚠️ Y hay un test que **comprobará el día que sobre**:
+/// `el_apano_del_oid_sigue_haciendo_falta`. Si upstream lo arregla, ese
+/// test se pone rojo y avisa de que esto hay que quitarlo — un apaño que
+/// no sabe cuándo estorba se queda para siempre y **enmascara el cambio de
+/// formato que venga después**.
+///
+/// Las otras dos vías **no existen**: `pkcs8` es un módulo privado y
+/// `xmssmt_core_sign_open` no está reexportado (S.6).
+pub const OFFSET_MT_UPSTREAM: u32 = 0x0001_0000;
+
+/// Lee una clave pública publicada, aplicando el apaño del OID.
+fn clave_desde_bytes(rfc: &[u8]) -> Result<VerifyingKey<Conjunto>, FirmaError> {
+    if rfc.len() < 4 {
+        return Err(FirmaError::Xmss(format!(
+            "clave publica de {} bytes: no caben ni los 4 del OID",
+            rfc.len()
+        )));
+    }
+    let mut b = rfc.to_vec();
+    let raw = u32::from_be_bytes([b[0], b[1], b[2], b[3]]) | OFFSET_MT_UPSTREAM;
+    b[..4].copy_from_slice(&raw.to_be_bytes());
+    VerifyingKey::<Conjunto>::try_from(b.as_slice())
+        .map_err(|e| FirmaError::Xmss(format!("clave publica ilegible: {e:?}")))
+}
+
+/// **La función del testigo.** Verifica una cabeza firmada **sin la clave
+/// privada, sin el guardián y sin este proceso**: solo con lo publicado.
+///
+/// ⚠️ **Verificar con éxito NO basta, y esta función es la razón.**
+/// `verify()` devuelve **el mensaje que la firma lleva dentro**, no un
+/// booleano. Un atacante puede presentar la firma **legítima de otra
+/// cabeza** y pasaría el `verify()` a secas. Lo que cierra esa puerta es
+/// **comparar el mensaje recuperado con el preámbulo esperado**.
+///
+/// ⚠️ Y no lo cierra el parseo: `Signature::try_from` **no valida OID ni
+/// longitud** —las firmas adjuntas son de longitud variable—, así que es
+/// casi un envoltorio. **Toda la validación real ocurre en `verify()` y en
+/// la comparación de abajo.**
+///
+/// ## Por qué los bytes del RFC y no `postcard`
+///
+/// Medido en S.4: **18.475 B** frente a 18.478 por `postcard` y **36.952
+/// por `serde_json`**. Gana en tamaño **y en interoperabilidad**.
+pub fn verificar_cabeza(
+    clave_publica: &[u8],
+    epoch_digest: &[u8; 32],
+    c: &CabezaFirmada,
+) -> Result<(), FirmaError> {
+    let vk = clave_desde_bytes(clave_publica)?;
+    let sig = Signature::<Conjunto>::try_from(c.firma.as_slice())
+        .map_err(|e| FirmaError::Xmss(format!("firma ilegible: {e:?}")))?;
+    let recuperado = vk
+        .verify(&sig)
+        .map_err(|e| FirmaError::Xmss(format!("la firma no verifica: {e:?}")))?;
+    // ⚠️ EL PASO QUE NO SE PUEDE SALTAR.
+    let esperado = preambulo(c.version_formato, epoch_digest);
+    if recuperado != esperado {
+        return Err(FirmaError::PreambuloDistinto {
+            esperado: esperado.len(),
+            recibido: recuperado.len(),
+        });
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -370,6 +483,114 @@ mod tests {
         // declarado en la cola, no fingido con un `try_from` supuesto.
         assert_eq!(c.firma.len(), 18_469 + preambulo(VERSION_FORMATO, &d).len(),
                    "firma adjunta = RFC + preambulo");
+    }
+
+    // ── el TESTIGO ──
+
+    #[test]
+    fn un_testigo_verifica_con_la_clave_publica_y_los_bytes() {
+        let p = en_disco("testigo");
+        let mut f = FirmanteCabeza::desde_semilla(&semilla(), &p).expect("abrir");
+        let d = [0x77u8; 32];
+        let c = f.firmar(&d).expect("firmar");
+        let pk = f.clave_publica();
+        // ⚠️ Sin la clave privada, sin el guardian, sin el firmante.
+        verificar_cabeza(&pk, &d, &c).expect("un testigo debe poder verificar");
+    }
+
+    #[test]
+    fn una_firma_valida_de_otra_cabeza_se_rechaza() {
+        // ⚠️⚠️ EL TEST QUE JUSTIFICA LA FUNCION. `verify()` devuelve el
+        // MENSAJE, no un booleano: esta firma es PERFECTAMENTE VALIDA, solo
+        // que de otra cosa. Sin comparar el preambulo, pasaria.
+        let p = en_disco("otra_cabeza");
+        let mut f = FirmanteCabeza::desde_semilla(&semilla(), &p).expect("abrir");
+        let c = f.firmar(&[0xAAu8; 32]).expect("firmar");
+        let pk = f.clave_publica();
+        match verificar_cabeza(&pk, &[0xBBu8; 32], &c) {
+            Err(FirmaError::PreambuloDistinto { .. }) => {}
+            otro => panic!("una firma de OTRA cabeza debe rechazarse, y dio: {otro:?}"),
+        }
+    }
+
+    #[test]
+    fn una_version_de_formato_cambiada_se_rechaza() {
+        let p = en_disco("version");
+        let mut f = FirmanteCabeza::desde_semilla(&semilla(), &p).expect("abrir");
+        let d = [0x11u8; 32];
+        let mut c = f.firmar(&d).expect("firmar");
+        let pk = f.clave_publica();
+        c.version_formato = VERSION_FORMATO + 1;
+        assert!(verificar_cabeza(&pk, &d, &c).is_err(), "otra version debe fallar");
+    }
+
+    #[test]
+    fn un_byte_cambiado_en_la_firma_se_rechaza() {
+        let p = en_disco("byte");
+        let mut f = FirmanteCabeza::desde_semilla(&semilla(), &p).expect("abrir");
+        let d = [0x22u8; 32];
+        let mut c = f.firmar(&d).expect("firmar");
+        let pk = f.clave_publica();
+        c.firma[100] ^= 0x01;
+        assert!(verificar_cabeza(&pk, &d, &c).is_err(), "un bit cambiado debe fallar");
+    }
+
+    #[test]
+    fn basura_se_rechaza_sin_reventar() {
+        // ⚠️ Un testigo recibe lo que le manden. Debe dar Err, no panic.
+        let p = en_disco("basura");
+        let mut f = FirmanteCabeza::desde_semilla(&semilla(), &p).expect("abrir");
+        let d = [0x33u8; 32];
+        let c0 = f.firmar(&d).expect("firmar");
+        let pk = f.clave_publica();
+        for firma in [vec![], vec![0u8; 10], vec![0xFFu8; 18_519], c0.firma[..100].to_vec()] {
+            let c = CabezaFirmada { firma, ..c0.clone() };
+            assert!(verificar_cabeza(&pk, &d, &c).is_err(), "la basura debe dar Err");
+        }
+        for clave in [vec![], vec![0u8; 3], vec![0u8; 68], vec![0xFFu8; 200]] {
+            assert!(verificar_cabeza(&clave, &d, &c0).is_err(), "una clave rota debe dar Err");
+        }
+    }
+
+    #[test]
+    fn la_clave_publicada_lleva_el_oid_del_rfc_sin_el_apano() {
+        // ⚠️ Lo que se PUBLICA es RFC 8391 correcto: OID 0x00000005, SIN el
+        // offset. El apaño vive en la lectura, no en el cable.
+        let p = en_disco("oid_publicado");
+        let f = FirmanteCabeza::desde_semilla(&semilla(), &p).expect("abrir");
+        let pk = f.clave_publica();
+        assert_eq!(&pk[..4], &[0x00, 0x00, 0x00, 0x05], "el OID publicado debe ser el del RFC");
+        assert_eq!(pk.len(), 68, "OID(4) + root(32) + pub_seed(32)");
+    }
+
+    #[test]
+    fn el_apano_del_oid_sigue_haciendo_falta() {
+        // ⚠️⚠️ EL TEST QUE MATARA EL APAÑO CUANDO SOBRE.
+        //
+        // Comprueba que SIN sumar el offset la clave NO se puede releer. El
+        // dia que upstream arregle `parse_oid_and_params`, esto se pondra
+        // ROJO y avisara de que `OFFSET_MT_UPSTREAM` hay que quitarlo.
+        //
+        // Un apaño que no sabe cuando estorba se queda para siempre — y
+        // ademas ENMASCARA el cambio de formato que venga despues.
+        let p = en_disco("apano");
+        let f = FirmanteCabeza::desde_semilla(&semilla(), &p).expect("abrir");
+        let pk = f.clave_publica();
+        assert!(
+            VerifyingKey::<Conjunto>::try_from(pk.as_slice()).is_err(),
+            "⚠️ `xmss` YA RELEE la clave multiarbol sin el apaño: quitar \
+             `OFFSET_MT_UPSTREAM` y `clave_desde_bytes`, y cerrar el hallazgo \
+             en doc/issue-rustcrypto.md"
+        );
+    }
+
+    #[test]
+    fn la_firma_publicada_son_los_bytes_del_rfc() {
+        let p = en_disco("rfc");
+        let mut f = FirmanteCabeza::desde_semilla(&semilla(), &p).expect("abrir");
+        let c = f.firmar(&[0x44u8; 32]).expect("firmar");
+        assert_eq!(c.firma.len(), 18_469 + DOMINIO.len() + 1 + 32);
+        assert_eq!(c.firma.len(), 18_519);
     }
 
     #[test]
