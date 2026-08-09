@@ -353,6 +353,19 @@ pub enum Hallazgo {
     VersionDesconocida { linea: usize, v: u64 },
     /// La línea no es JSON, o le faltan campos.
     LineaIlegible { linea: usize, error: String },
+    /// ⚠️⚠️ **El mismo índice con dos digests, DENTRO DEL MISMO DIARIO.**
+    ///
+    /// Hasta §250 el auditor **no lo veía**: comprobaba que el índice no
+    /// retrocediera, pero no que llevara siempre el mismo contenido. Un
+    /// diario que **contiene la prueba de una vista dividida** pasaba
+    /// limpio — y en un artefacto cuyo propósito es ser oponible, **un
+    /// falso «limpio» es peor que no tener herramienta**, porque alguien
+    /// lo enseñaría como prueba de que no pasó nada.
+    ///
+    /// El testigo la caza **en vivo**, sí — pero **solo si estaba
+    /// corriendo**. Un diario que llega de un tercero se comprueba en
+    /// frío.
+    VistaDividida { linea: usize, indice: u64, digest_a: String, digest_b: String },
 }
 
 impl Hallazgo {
@@ -363,6 +376,10 @@ impl Hallazgo {
             Hallazgo::CambioDeClave { .. } => "cambio-de-clave",
             Hallazgo::VersionDesconocida { .. } => "version-desconocida",
             Hallazgo::LineaIlegible { .. } => "linea-ilegible",
+            // ⚠️ El MISMO nombre que en `Veredicto`: que la misma cosa se
+            // llame igual en las tres herramientas es lo que permite
+            // hablar de ella sin ambiguedad.
+            Hallazgo::VistaDividida { .. } => "vista-dividida",
         }
     }
 }
@@ -400,6 +417,7 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
     let mut a = Auditoria::default();
     let mut ultimo: Option<u64> = None;
     let mut clave: Option<String> = None;
+    let mut vistos: BTreeMap<u64, String> = BTreeMap::new();
 
     for (i, l) in lineas.iter().enumerate() {
         let n = i + 1;
@@ -449,6 +467,26 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
         }
         ultimo = Some(ultimo.map_or(indice, |u| u.max(indice)));
 
+        // ⚠️⚠️ EL MISMO INDICE CON DOS DIGESTS. Un indice REPETIDO es
+        // normal —el testigo anota `nueva` y luego `repetida`, y las dos
+        // llevan la cabeza—; lo que NO puede pasar es que el contenido
+        // cambie. Hasta §250 esto no se miraba.
+        let dg = v["epochDigest"].as_str().unwrap_or_default().to_string();
+        match vistos.get(&indice) {
+            None => {
+                vistos.insert(indice, dg);
+            }
+            Some(previo) if *previo == dg => {}
+            Some(previo) => {
+                a.hallazgos.push(Hallazgo::VistaDividida {
+                    linea: n,
+                    indice,
+                    digest_a: previo.clone(),
+                    digest_b: dg,
+                });
+            }
+        }
+
         // ⚠️ LA CLAVE FIJADA, no solo las firmas: un diario donde la clave
         // cambia a mitad es el caso que §244 dejo abierto, y NO PUEDE PASAR
         // EN SILENCIO.
@@ -483,9 +521,41 @@ pub fn auditar_lineas(lineas: &[String]) -> Auditoria {
 /// ⚠️ Y detecta la divergencia, **no dice cuál miente**. No hace falta: lo
 /// que queda probado es que **el operador emitió dos cosas distintas para el
 /// mismo índice**, y ninguno de los dos testigos pudo fabricar su firma.
-pub fn comparar_lineas(a: &[String], b: &[String]) -> Vec<Divergencia> {
-    let mapa = |ls: &[String]| -> BTreeMap<u64, (String, String)> {
-        let mut m = BTreeMap::new();
+/// Resultado de comparar dos diarios.
+///
+/// ⚠️ **Una vista dividida INTERNA no es una divergencia entre A y B.** Si
+/// un diario contiene el mismo índice con dos digests, el problema está
+/// **dentro de ese fichero** y se ve con `--auditar`. Presentarlo como
+/// «A difiere de B» confundiría al que mira.
+#[derive(Debug, Default)]
+pub struct Comparacion {
+    pub divergencias: Vec<Divergencia>,
+    /// El diario A se contradice a sí mismo.
+    pub interna_a: bool,
+    /// El diario B se contradice a sí mismo.
+    pub interna_b: bool,
+}
+
+/// **Compara dos diarios**: el mismo índice con distinto contenido.
+///
+/// ⚠️ Con un solo operador esto **no prueba nada** —dos diarios míos son un
+/// diario con dos ficheros—. Es la pieza que **activa** la propiedad de
+/// §248 cuando exista un segundo testigo.
+///
+/// ⚠️ Y detecta la divergencia, **no dice cuál miente**. No hace falta: lo
+/// que queda probado es que **el operador emitió dos cosas distintas para el
+/// mismo índice**, y ninguno de los dos testigos pudo fabricar su firma.
+///
+/// ⚠️⚠️ **SE QUEDA CON LA PRIMERA OCURRENCIA DE CADA ÍNDICE.** Hasta §250
+/// usaba `insert`, que **sobrescribe**: como el testigo anota `nueva` y
+/// luego `repetida` —y las dos llevan la cabeza—, **la última línea tapaba
+/// a la primera** y una manipulación de la primera desaparecía del mapa.
+/// Lo encontró el banco L.2, no los tests.
+pub fn comparar_lineas(a: &[String], b: &[String]) -> Comparacion {
+    // Devuelve (mapa con la PRIMERA de cada indice, se_contradice).
+    let mapa = |ls: &[String]| -> (BTreeMap<u64, (String, String)>, bool) {
+        let mut m: BTreeMap<u64, (String, String)> = BTreeMap::new();
+        let mut interna = false;
         for l in ls {
             let v: Value = match serde_json::from_str(l) {
                 Ok(v) => v,
@@ -495,23 +565,28 @@ pub fn comparar_lineas(a: &[String], b: &[String]) -> Vec<Divergencia> {
                 continue;
             }
             if let Ok(i) = leer_q(&v["index"]) {
-                m.insert(
-                    i,
-                    (
-                        v["epochDigest"].as_str().unwrap_or_default().to_string(),
-                        v["publicKey"].as_str().unwrap_or_default().to_string(),
-                    ),
+                let par = (
+                    v["epochDigest"].as_str().unwrap_or_default().to_string(),
+                    v["publicKey"].as_str().unwrap_or_default().to_string(),
                 );
+                match m.get(&i) {
+                    None => {
+                        m.insert(i, par);
+                    }
+                    // ⚠️ Repetir un indice es NORMAL; cambiar su digest, no.
+                    Some(p) if p.0 == par.0 => {}
+                    Some(_) => interna = true,
+                }
             }
         }
-        m
+        (m, interna)
     };
-    let (ma, mb) = (mapa(a), mapa(b));
-    let mut out = Vec::new();
+    let ((ma, ia), (mb, ib)) = (mapa(a), mapa(b));
+    let mut c = Comparacion { interna_a: ia, interna_b: ib, ..Default::default() };
     for (i, (da, ka)) in &ma {
         if let Some((db, kb)) = mb.get(i) {
             if da != db {
-                out.push(Divergencia {
+                c.divergencias.push(Divergencia {
                     indice: *i,
                     digest_a: da.clone(),
                     digest_b: db.clone(),
@@ -520,7 +595,7 @@ pub fn comparar_lineas(a: &[String], b: &[String]) -> Vec<Divergencia> {
             }
         }
     }
-    out
+    c
 }
 
 #[derive(Args)]
@@ -580,14 +655,25 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
     }
     if let Some(ps) = &a.comparar {
         let (x, y) = (leer(&ps[0])?, leer(&ps[1])?);
-        let d = comparar_lineas(&x, &y);
+        let c = comparar_lineas(&x, &y);
         println!("{} ({} lineas) vs {} ({} lineas)",
                  ps[0].display(), x.len(), ps[1].display(), y.len());
-        if d.is_empty() {
+        // ⚠️ Lo INTERNO va aparte: no es una divergencia entre A y B.
+        for (n, mal) in [(&ps[0], c.interna_a), (&ps[1], c.interna_b)] {
+            if mal {
+                println!("  ⚠️⚠️ {} CONTIENE UNA VISTA DIVIDIDA INTERNA: el mismo",
+                         n.display());
+                println!("     indice con dos digests. Mirar con --auditar.");
+            }
+        }
+        if c.divergencias.is_empty() {
+            if c.interna_a || c.interna_b {
+                anyhow::bail!("hay una vista dividida INTERNA: usar --auditar");
+            }
             println!("sin divergencias");
             return Ok(());
         }
-        for v in &d {
+        for v in &c.divergencias {
             println!("  ⚠️⚠️ VISTA DIVIDIDA en el indice {}: {} != {} (misma clave: {})",
                      v.indice, v.digest_a, v.digest_b, v.misma_clave);
         }
@@ -595,7 +681,7 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
         eprintln!("   DETECTAR NO ES DISTINGUIR: esto no dice cual miente.");
         eprintln!("   Pero el operador EMITIO LAS DOS, y ninguno de los dos");
         eprintln!("   testigos pudo fabricar su firma.");
-        anyhow::bail!("{} divergencia(s) entre los diarios", d.len());
+        anyhow::bail!("{} divergencia(s) entre los diarios", c.divergencias.len());
     }
 
     let mut m = Memoria::nueva();
@@ -660,6 +746,72 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ── §250: la vista dividida EN FRIO ──
+
+    #[test]
+    fn un_indice_repetido_con_el_mismo_digest_no_es_hallazgo() {
+        // ⚠️ ASI ESCRIBE EL TESTIGO DE VERDAD: anota `nueva` y luego
+        // `repetida`, y LAS DOS LLEVAN LA CABEZA. Los tests de §249
+        // fabricaban un indice por linea —una IDEA del diario— y por eso no
+        // vieron nada.
+        let d = vec![
+            dia("0x1", "0xaa", "0xdead"),
+            dia("0x1", "0xaa", "0xdead"),
+            dia("0x2", "0xbb", "0xdead"),
+        ];
+        let r = auditar_lineas(&d);
+        let c: Vec<_> = r.hallazgos.iter().map(|h| h.clase()).collect();
+        assert!(!c.contains(&"vista-dividida"), "repetir un indice es NORMAL: {c:?}");
+        assert!(!c.contains(&"indice-retrocede"), "{c:?}");
+    }
+
+    #[test]
+    fn auditar_ve_una_vista_dividida_dentro_del_mismo_diario() {
+        // ⚠️⚠️ EL FALLO QUE ENCONTRO EL BANCO L.2. Un diario que CONTIENE la
+        // prueba de una vista dividida pasaba limpio — y en un artefacto
+        // oponible, UN FALSO "LIMPIO" ES PEOR QUE NO TENER HERRAMIENTA.
+        let d = vec![
+            dia("0x9", "0xaaaa", "0xdead"),
+            dia("0x9", "0xbbbb", "0xdead"),
+        ];
+        let r = auditar_lineas(&d);
+        let h = r.hallazgos.iter().find(|h| h.clase() == "vista-dividida")
+            .expect("el auditor DEBE verla en frio");
+        match h {
+            Hallazgo::VistaDividida { indice, digest_a, digest_b, .. } => {
+                assert_eq!(*indice, 9);
+                assert_eq!(digest_a, "0xaaaa");
+                assert_eq!(digest_b, "0xbbbb");
+            }
+            otro => panic!("{otro:?}"),
+        }
+    }
+
+    #[test]
+    fn comparar_no_deja_que_la_ultima_linea_tape_a_la_primera() {
+        // ⚠️⚠️ LA CAUSA MECANICA DEL FALLO: `m.insert` SOBRESCRIBIA. Con el
+        // indice repetido, manipular la PRIMERA linea desaparecia del mapa.
+        let a = vec![dia("0x1", "0xaa", "0xdead"), dia("0x1", "0xaa", "0xdead")];
+        let b = vec![dia("0x1", "0xde", "0xdead"), dia("0x1", "0xaa", "0xdead")];
+        let c = comparar_lineas(&a, &b);
+        assert_eq!(c.divergencias.len(), 1, "la manipulacion de la 1a NO puede taparse: {c:?}");
+        assert_eq!(c.divergencias[0].digest_b, "0xde");
+        assert!(c.interna_b, "y B se contradice a si mismo");
+    }
+
+    #[test]
+    fn comparar_separa_la_vista_dividida_interna_de_la_divergencia() {
+        // ⚠️ Una vista dividida INTERNA no es "A difiere de B": el problema
+        // esta DENTRO de un fichero, y se mira con --auditar. Presentarlo
+        // como divergencia confundiria al que mira.
+        let a = vec![dia("0x1", "0xaa", "0xdead"), dia("0x1", "0xbb", "0xdead")];
+        let b = vec![dia("0x1", "0xaa", "0xdead")];
+        let c = comparar_lineas(&a, &b);
+        assert!(c.interna_a, "A se contradice a si mismo");
+        assert!(!c.interna_b);
+        assert!(c.divergencias.is_empty(), "la PRIMERA de A coincide con B: {c:?}");
+    }
 
     // ── §249: LEER el diario ──
 
@@ -741,7 +893,7 @@ mod tests {
     fn comparar_un_diario_consigo_mismo_da_cero() {
         // ⚠️ Comprobable HOY, sin contraparte.
         let d = vec![dia("0x1", "0xaa", "0xdead"), dia("0x2", "0xbb", "0xdead")];
-        assert!(comparar_lineas(&d, &d).is_empty());
+        assert!(comparar_lineas(&d, &d).divergencias.is_empty());
     }
 
     #[test]
@@ -750,12 +902,14 @@ mod tests {
         // partes distintas, indetectable desde un historico central.
         let a = vec![dia("0x1", "0xaa", "0xdead"), dia("0x9", "0xaaaa", "0xdead")];
         let b = vec![dia("0x1", "0xaa", "0xdead"), dia("0x9", "0xbbbb", "0xdead")];
-        let d = comparar_lineas(&a, &b);
-        assert_eq!(d.len(), 1, "{d:?}");
-        assert_eq!(d[0].indice, 9);
-        assert_eq!(d[0].digest_a, "0xaaaa");
-        assert_eq!(d[0].digest_b, "0xbbbb");
-        assert!(d[0].misma_clave, "firmadas con la misma clave: el operador emitio las dos");
+        let c = comparar_lineas(&a, &b);
+        assert_eq!(c.divergencias.len(), 1, "{c:?}");
+        let d = &c.divergencias[0];
+        assert_eq!(d.indice, 9);
+        assert_eq!(d.digest_a, "0xaaaa");
+        assert_eq!(d.digest_b, "0xbbbb");
+        assert!(d.misma_clave, "firmadas con la misma clave: el operador emitio las dos");
+        assert!(!c.interna_a && !c.interna_b, "ninguno se contradice a si mismo");
     }
 
     // ── §248: el diario, verificable y comparable ──

@@ -93,7 +93,7 @@ settlement-layer   sello      17   0   0   300
 iso-bridge         sello       3   0   0   300
 zk-ssl-sdk         sello       6   0   0   300
 zk-ssl-wire        sello       2   0   0    60  openrpc: §242 lo deja en 19 metodos
-zk-ssl-cli         sello      22   0   0   120  §249: 15 -> 22, auditar y comparar diarios
+zk-ssl-cli         sello      26   0   0   120  §250: 22 -> 26, la vista dividida EN FRIO
 zk-ssl-node        sello      40   0   0   400  §244: 37 -> 40, +3 de la custodia declarada
 zk-ssl-verify      sello      12   0   0    90  §243: el verificador independiente (11 tests + el doctest del ejemplo)
 settlement-prover  sello       0   0   0   300  sin tests

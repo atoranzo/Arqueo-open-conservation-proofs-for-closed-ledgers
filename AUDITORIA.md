@@ -18269,3 +18269,78 @@ Es la misma forma que §245 y §248: **el proyecto no puede construir la
 confianza, puede quitar la excusa de que no hay cómo.**
 
 **Canon: `zk-ssl-cli` de 15 a 22.** Sumas: 682 → 689.
+## 250. La vista dividida en frío: lo que el banco encontró
+
+**L.2 corrió y una de sus cinco fases salió roja.** No por el banco: por
+`--comparar`.
+
+### ⚠️ El auditor podía decir «sin hallazgos» sobre un diario que contiene
+la prueba
+
+`--auditar` comprobaba que el índice no retrocediera, pero **no que llevara
+siempre el mismo digest**. Un diario con el mismo índice y dos contenidos
+—**exactamente una vista dividida**— pasaba limpio.
+
+> Y en un artefacto cuyo propósito es ser **oponible**, un falso «limpio» es
+> **peor que no tener herramienta**: alguien lo enseñaría como prueba de que
+> no pasó nada.
+
+El testigo la caza **en vivo**, sí — pero **solo si estaba corriendo**. Un
+diario que llega de un tercero se comprueba **en frío**, y ahí no había
+nada.
+
+### La causa mecánica: `m.insert` sobrescribe
+
+`comparar_lineas` construía el mapa índice → digest con `insert`, y **la
+última línea tapaba a la primera**.
+
+⚠️ Eso importa porque **un índice aparece varias veces**: el testigo anota
+`nueva` y luego `repetida`, y **las dos llevan la cabeza**. L.2 manipuló la
+primera línea del índice 1, y la `repetida` posterior **la borró del mapa**.
+
+Ahora se queda con **la primera ocurrencia** y marca el conflicto.
+
+### ⚠️ Y lo interno no es una divergencia entre A y B
+
+Si un diario se contradice a sí mismo, el problema está **dentro de ese
+fichero**. `--comparar` lo dice así —*«A CONTIENE UNA VISTA DIVIDIDA
+INTERNA … mirar con `--auditar`»*— en vez de presentarlo como *«A difiere de
+B»*, que confundiría al que mira.
+
+### ⚠️ El modo de fallo, que es lo que más vale de este sello
+
+§249 tenía **siete tests en verde**, todos correctos. Ninguno vio esto.
+
+> **Los tests de §249 no midieron el diario: midieron una idea del diario.**
+
+Fabricaban la entrada **con un índice por línea**, que es la forma que yo
+imaginaba — y el diario real **repite el índice**, porque el testigo anota
+lo que ve, no lo que es único.
+
+Es el rito de §247 —*una suposición razonable sigue siendo una suposición*—
+**aplicado a los tests**, donde es mucho más difícil de ver: en un documento
+la suposición se lee; en un test, **está en verde**.
+
+⚠️ De ahí sale la regla: **un test que fabrica su entrada a mano no prueba
+nada sobre entradas reales.** El diario de L.1 existía y no se usó.
+
+### Lo que §250 añade
+
+**`vista-dividida` como clase del auditor** —el mismo nombre que en
+`Veredicto`, porque que la misma cosa se llame igual en las tres
+herramientas es lo que permite hablar de ella sin ambigüedad—, y **cuatro
+tests que construyen la entrada como el testigo la escribe de verdad**:
+índice repetido con el mismo digest (**no es hallazgo**), índice repetido
+con digest distinto (**sí lo es**), la manipulación que se tapaba, y la
+separación de lo interno.
+
+**Canon: `zk-ssl-cli` de 22 a 26.** Sumas: 689 → 693.
+
+### ⚠️ Lo que sigue faltando
+
+- **Volver a correr L.2**: un banco que encontró un defecto **debe volver a
+  correr cuando el defecto está arreglado** — si no, no sabemos si lo
+  arreglamos o **lo movimos**.
+- **Un segundo testigo.** Sigue sin ser de código.
+- Y la vista dividida de L.2.d **la fabrico yo editando un fichero**: solo
+  dos testigos independientes mirando al mismo operador prueban algo.
