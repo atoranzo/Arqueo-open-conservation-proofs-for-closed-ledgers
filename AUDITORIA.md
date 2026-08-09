@@ -18438,3 +18438,85 @@ donde encaja**.
   produce. **Hacen falta dos testigos independientes.**
 - **No mide** la interacción latido/escrituras: la ejercita.
 - **No toca ningún pin**: no hay código ejecutable nuevo.
+## 252. M.1: el latido no bloquea las escrituras — medido
+
+**Abierto desde §241.** L.3 lo **ejercitó** —se abrieron cuentas mientras el
+nodo firmaba y no hubo fallo— pero **ausencia de fallo no es medida de
+coste** (§251). Esto lo mide.
+
+### El experimento, con control y poder de refutación
+
+**Fase A**: `--latido 0`, el nodo **no firma nunca**.
+**Fase B**: `--latido 1`, firma cada segundo.
+
+⚠️ **Hipótesis refutable**: *«el latido no bloquea las escrituras»*. Si el
+candado se retuviera al firmar, **una escritura por firma** saldría con
+**+144,5 ms** — se retrasa solo **la que coincide**, porque las escrituras
+van **en serie** y mientras una espera **no hay otras encoladas**.
+
+### El resultado
+
+```text
+               p50     p95     p99     max
+  control     0,88    0,99    1,19    7,35   ms
+  firmando    0,88    1,00    1,19    8,04   ms
+```
+
+**Dos corridas**: 4.000 escrituras por fase (3 firmas) y **12.000 por fase
+(9 firmas)**. En las dos, **cero escrituras afectadas** y el pico a
+**+6,9 ms** del p99 del control — muy lejos de los 144,5 de una firma
+bloqueante.
+
+> **La hipótesis aguanta.** El candado se suelta antes de firmar, como §241
+> diseñó — y ahora está **medido, no afirmado**.
+
+⚠️ **La media lo habría escondido**: promediar 144 ms entre doce mil da
+**+0,01 ms**. Se ve en el **máximo**, y por eso el banco mira la cola.
+
+### Dos datos que no buscaba
+
+**`dev_openSeeded` cuesta 0,88 ms** por escritura. Y **la p99 apenas se
+aleja de la mediana** —1,19 frente a 0,88—: la escritura es notablemente
+estable.
+
+### ⚠️ Cuatro fallos míos, y los cuatro del mismo tipo
+
+El banco tardó cuatro intentos, y **ninguno fue del sistema**:
+
+**1 · 200 escrituras duran 0,32 s y el latido va cada segundo**: no cabía ni
+una firma. El banco comparaba **dos controles** y **concluía igual en las
+dos hipótesis**. Ahora hay **compuerta que se niega a concluir sin al menos
+tres firmas**.
+
+⚠️ Y la salida decía **«firmas: 0»**: el instrumento **reportó el dato que
+refutaba su propia conclusión**, y yo miré la conclusión.
+
+**2 · El criterio esperaba el 14,5 %** de las escrituras afectadas. Mi
+aritmética estaba mal: en serie se retrasa **una por firma**.
+
+**3 · `grep -c … || echo 0` imprimía «0\n0»** cuando no había coincidencias.
+Es **la trampa que ya estaba en los ritos**, escrita igual.
+
+**4 · `--max-accounts` por defecto es 1.000** y el banco abre miles: el
+ledger se llenaba en la escritura 1001. **Antes de un banco, los límites del
+sujeto.**
+
+**5 · Y el peor**: el latido escribe con **`tracing::info!`** y yo arranqué
+con **`--log warn`**. El nodo firmaba y **el nivel de registro se comía la
+línea que yo contaba**.
+
+> **El instrumento no midió el sistema: midió la configuración que yo le
+> puse.**
+
+⚠️ Por eso el banco reporta ahora **la duración de cada fase**: un cero de
+firmas ya **dice cuál de las dos causas es** —tiempo insuficiente, o una
+línea que no se ve—. Antes solo decía «cero».
+
+### Lo que §252 NO hace
+
+- **No mide el camino de pago** (`send`/`claim`), que lleva prueba STARK y
+  es mucho más caro que abrir cuenta.
+- **No mide concurrencia real**: las escrituras van en serie **a
+  propósito**, porque en paralelo se mide rendimiento y no latencia.
+- **No dice nada de otra máquina.**
+- **No toca ningún pin**: no hay código ejecutable nuevo.

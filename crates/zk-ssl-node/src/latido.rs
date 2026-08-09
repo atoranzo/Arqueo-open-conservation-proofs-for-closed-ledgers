@@ -90,6 +90,35 @@ pub struct Latido {
 /// las escrituras del nodo — un latido de 144 ms cada 60 s es un 0,24 %
 /// del reloj, pero **retenido es un 0,24 % de parada total**, y no hace
 /// falta: la cabeza ya está leída.
+///
+/// ## ⚠️ MEDIDO en M.1 (§252), y hasta entonces solo afirmado
+///
+/// L.3 lo **ejercitó** —se abrieron cuentas mientras el nodo firmaba y no
+/// hubo fallo— pero **ausencia de fallo no es medida de coste** (§251).
+///
+/// M.1 comparó dos fases con **control**: `--latido 0` (el nodo no firma
+/// nunca) frente a `--latido 1` (firma cada segundo). Doce mil escrituras
+/// **en serie** por fase, y las dos colas salieron **indistinguibles**:
+///
+/// ```text
+///                p50     p95     p99     max
+///   control     0,88    0,99    1,19    7,35   ms
+///   firmando    0,88    1,00    1,19    8,04   ms
+/// ```
+///
+/// **Nueve firmas solapadas, CERO escrituras afectadas.** El pico de la
+/// fase con firma quedó **+6,9 ms** sobre el p99 del control — muy lejos
+/// de los **144,5 ms** que costaría una firma bloqueante.
+///
+/// ⚠️ **Si el candado se retuviera, se vería en el MÁXIMO, no en la
+/// media**: las escrituras van en serie, así que se retrasaría **una por
+/// firma** —no una fracción—, y promediar 144 ms entre doce mil da
+/// **+0,01 ms**, que lo escondería del todo.
+///
+/// ⚠️ **Lo que M.1 NO mide**: el camino de pago (`send`/`claim`), que
+/// lleva prueba STARK y es mucho más caro que abrir cuenta; la
+/// concurrencia real —las escrituras van en serie **a propósito**, porque
+/// en paralelo se mide rendimiento y no latencia—; y otra máquina.
 pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result<Latido> {
     // ── 1 · con el candado: leer, y solo leer ──
     let (seq, epoch_digest) = {
