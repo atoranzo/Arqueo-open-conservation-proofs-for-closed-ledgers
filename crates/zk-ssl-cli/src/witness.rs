@@ -224,6 +224,19 @@ impl Memoria {
     }
 
     /// Clasifica una cabeza recién llegada. **No verifica la firma.**
+    ///
+    /// ⚠️ **MIRA EL ÍNDICE, NO EL DIGEST**, y eso importa: un operador
+    /// **sin tráfico** emite cabezas consecutivas con **el mismo
+    /// contenido** —nada cambió en el ledger—, y eso es **legítimo**. Si
+    /// esta función mirara el digest, marcaría `VistaDividida` sobre un
+    /// operador honesto: **el falso positivo más peligroso del testigo**,
+    /// porque desacreditaría a quien no hizo nada malo.
+    ///
+    /// ⚠️ **Confirmado en L.3 (§251), y NO antes**: L.1 corrió con el
+    /// ledger vacío y **un solo digest para nueve índices**, así que esa
+    /// distinción **no existía y no pudo comprobarse**. L.3 fabricó dos
+    /// pares de índices consecutivos con digest repetido —una ventana
+    /// deliberadamente quieta— y los dos salieron `Nueva`.
     pub fn clasificar(&mut self, indice: u64, digest: &str) -> Veredicto {
         if let Some(previo) = self.vistos.get(&indice) {
             if previo == digest {

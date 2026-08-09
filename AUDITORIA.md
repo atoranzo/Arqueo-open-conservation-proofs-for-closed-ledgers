@@ -18344,3 +18344,97 @@ separación de lo interno.
 - **Un segundo testigo.** Sigue sin ser de código.
 - Y la vista dividida de L.2.d **la fabrico yo editando un fichero**: solo
   dos testigos independientes mirando al mismo operador prueban algo.
+## 251. L.3: lo que L.1 no pudo medir, y por qué
+
+**L.1 no midió mal: midió una carga sin variación.** Con el ledger vacío,
+los veinte veredictos llevaron **un solo `epoch_digest`** — y por eso tres
+de las cinco dimensiones que creía estar midiendo **eran indistinguibles**.
+
+> **La entrada fabricada no estaba en los tests: estaba en el banco.** Y es
+> peor ahí, porque un banco es precisamente lo que se supone que **no**
+> fabrica su entrada.
+
+Es §250 dos niveles más arriba. **Con esto van tres apariciones del mismo
+patrón** —los tests de §249, el banco de L.1, y el contador de la salida de
+L.3—, y eso ya no es coincidencia.
+
+### Lo que L.3 establece
+
+| | L.1 | L.3 |
+|---|---|---|
+| índices | 9 | **11** |
+| digests distintos | **1** | **9** |
+| `nueva` / `repetida` | sin distinguir | **11 / 11**, cada `repetida` con el digest de su `nueva` |
+| índice nuevo, digest repetido | **no ocurría** | **2 pares**, clasificados `Nueva` |
+| firmas reverificadas | 18 **del mismo mensaje** | 22 **de mensajes distintos** |
+
+### ⚠️ El hallazgo: `clasificar` mira el ÍNDICE, no el digest
+
+Un operador **sin tráfico** emite cabezas consecutivas con **el mismo
+contenido** —nada cambió en el ledger— y eso es **legítimo**.
+
+Si `clasificar` mirara el digest, marcaría `VistaDividida` sobre un
+**operador honesto**: **el falso positivo más peligroso del testigo**,
+porque desacreditaría a quien no hizo nada malo.
+
+⚠️ **Nadie lo había comprobado, y no por descuido: con un solo digest esa
+distinción no existía.** L.3 fabricó dos pares con esa forma —una ventana
+deliberadamente quieta— y los dos salieron `Nueva`.
+
+### ⚠️ Y la comprobación de falsos positivos, que faltaba desde §250
+
+Con contenido distinto en cada latido, **`vista-dividida` no se disparó ni
+una vez**. Hasta ahora esa clase **solo se había visto editando un fichero a
+mano**, y una clase que solo aparece cuando la fabricas no está probada:
+falta saber que **no aparece cuando no debe**.
+
+### ⚠️ Dos cosas que yo había confundido
+
+**`Repetida`** depende de **la cadencia de consulta frente a la del
+latido** —con `--cada 1` y `--latido 2` el testigo pregunta dos veces por
+latido—, **no del ledger**.
+
+**La ventana quieta** produce lo otro: **índices distintos con el mismo
+digest**. Son casos distintos y el primer intento del banco los trataba como
+uno.
+
+### ⚠️ Mi contador, y por qué se salva
+
+El banco imprimió **«altas pedidas: 1»** cuando se abrieron diecisiete.
+`curl` escribe la respuesta **sin salto de línea**, así que todas cayeron en
+una sola línea y `grep -c` **cuenta líneas, no apariciones**.
+
+**Contar usos, no menciones — quinta vez esta sesión**, y ésta sobre **la
+salida de un banco**, que es el peor sitio: por un momento el experimento
+**parecía no haber hecho lo que hizo**.
+
+⚠️ **Lo que lo salvó no fue arreglar el contador: fue volver al modelo.**
+Ventana quieta de siete segundos con latido de dos → **tres latidos con el
+mismo digest** → 11 − 3 + 1 = **9**, que es exactamente lo que salió. **El
+número que no cuadraba se resolvió con aritmética**, y sólo entonces se supo
+cuál de los dos estaba mal.
+
+### ⚠️ Ejercitado, NO medido: latido frente a escrituras
+
+L.3 abrió cuentas **mientras el nodo firmaba**, y **no hubo fallo**. Eso es
+**todo lo que se sabe**: **ausencia de fallo no es medida de coste**.
+
+Firmar cuesta **144,5 ms** contra un latido cada 2 s — **el 7 % del
+tiempo**, y no es despreciable si cayera dentro del `Mutex`. Sigue siendo la
+pregunta abierta desde §241; lo que cambia es que **ahora existe un banco
+donde encaja**.
+
+### La regla, que se gana su sitio
+
+> **Un banco cuya entrada no varía no ejercita la lógica que depende de la
+> variación.** Ni en tests ni en bancos.
+>
+> Se comprueba **mirando la salida**: si un campo sale idéntico en todas las
+> repeticiones, **esa dimensión no se midió**.
+
+### Lo que §251 NO hace
+
+- **No prueba la vista dividida de verdad**: un operador honesto no la
+  produce. **Hacen falta dos testigos independientes.**
+- **No mide** la interacción latido/escrituras: la ejercita.
+- **No toca ningún pin**: no hay código ejecutable nuevo.
