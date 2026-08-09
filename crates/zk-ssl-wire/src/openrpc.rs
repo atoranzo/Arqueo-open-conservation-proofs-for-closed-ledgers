@@ -29,6 +29,7 @@ pub fn method_names() -> Vec<&'static str> {
         "zkssl_claimMaterials",
         "zkssl_applyClaim",
         "zkssl_applyMany",
+        "zkssl_signedEpochHead",
         "dev_fund",
         "dev_openSeeded",
     ]
@@ -84,6 +85,9 @@ pub fn document() -> Value {
           "Applied"),
         m("zkssl_applyMany", "Aplica N operaciones contra UNA raiz de arranque: todo o nada.",
           json!([p("ops", "BatchOp")]), "BatchApplied"),
+        m("zkssl_signedEpochHead",
+          "La ULTIMA cabeza de epoca firmada, para un TESTIGO. Aditivo: no toca zkssl_epochHead.",
+          json!([]), "SignedEpochHead"),
         m("dev_fund", "SOLO --dev: emision delegada con custodios de PRUEBA.",
           json!([p("index", "Q"), p("amount", "Q")]), "Applied"),
         m("dev_openSeeded", "SOLO --dev: abre desde una clave determinista de la suite.",
@@ -113,18 +117,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn dieciocho_metodos_unicos_y_en_orden() {
-        // §223: subio a 18 con `zkssl_applyMany`. Que este test tenga el
-        // numero en el nombre es a proposito: renombrarlo obliga a mirar.
+    fn diecinueve_metodos_unicos_y_en_orden() {
+        // §223: subio a 18 con `zkssl_applyMany`. §242: a 19 con
+        // `zkssl_signedEpochHead`. Que este test tenga el numero en el
+        // nombre es a proposito: renombrarlo OBLIGA A MIRAR.
         let nombres = method_names();
-        assert_eq!(nombres.len(), 18);
+        assert_eq!(nombres.len(), 19);
         let mut u = nombres.clone();
         u.sort();
         u.dedup();
-        assert_eq!(u.len(), 18, "nombres repetidos");
+        assert_eq!(u.len(), 19, "nombres repetidos");
         let doc = document();
         let met = doc["methods"].as_array().expect("methods");
-        assert_eq!(met.len(), 18);
+        assert_eq!(met.len(), 19);
         for (i, mm) in met.iter().enumerate() {
             assert_eq!(mm["name"].as_str().unwrap(), nombres[i]);
         }

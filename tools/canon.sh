@@ -92,9 +92,9 @@ ceremony           sello      34   0  11   300  DEUDA: 11 warnings, pinchados pa
 settlement-layer   sello      17   0   0   300
 iso-bridge         sello       3   0   0   300
 zk-ssl-sdk         sello       6   0   0   300
-zk-ssl-wire        sello       2   0   0   300  fuera de toda compuerta hasta §223
+zk-ssl-wire        sello       2   0   0    60  openrpc: §242 lo deja en 19 metodos
 zk-ssl-cli         sello       0   0   0   300  sin tests: es un binario
-zk-ssl-node        sello      45   0   0   400  §241: 39 -> 45, +6 del latido
+zk-ssl-node        sello      49   0   0   400  §242: 45 -> 49, +4 del metodo del testigo
 settlement-prover  sello       0   0   0   300  sin tests
 nova-experiment    sello       0   0   0   300  0 es CORRECTO: sus 3 tests exigen --features test-setup
 halo2-experiment   largo      27   0   0  1200  caro: 438 s medidos

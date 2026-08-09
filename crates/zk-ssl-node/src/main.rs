@@ -146,6 +146,21 @@ struct App {
     estado: Mutex<Estado>,
     dev: bool,
     reserva_ttl: Duration,
+    /// **La última cabeza firmada, en memoria.**
+    ///
+    /// ⚠️ Candado PROPIO, no el del estado: guardarla no debe volver a
+    /// competir con las escrituras cuando el latido ya soltó el otro.
+    ///
+    /// ⚠️ **Se pierde al reiniciar**, y eso es el precio declarado de no
+    /// tener histórico (§242). Con un arranque de ~136 s a 10⁶ cuentas, un
+    /// testigo verá **un hueco real en la serie**. Es la otra cara de la
+    /// decisión, y va escrita al lado de ella.
+    ultima_cabeza: Mutex<Option<latido::Latido>>,
+    /// La clave pública de firma, en bytes del formato RFC. **Vacía** si el
+    /// nodo arrancó sin `--clave`. Un testigo la necesita para verificar.
+    clave_publica_firma: Vec<u8>,
+    /// Cadencia del latido: cada cuánto esperar una cabeza nueva.
+    latido_s: u64,
 }
 
 #[tokio::main]
@@ -154,17 +169,15 @@ async fn main() -> anyhow::Result<()> {
     init_tracing(&args.log);
 
     let layer = open_layer(&args)?;
-    let app = std::sync::Arc::new(App {
-        estado: Mutex::new(Estado { layer, reservas: BTreeMap::new() }),
-        dev: args.dev,
-        reserva_ttl: Duration::from_secs(args.reserva_ttl),
-    });
 
     if args.dev {
         tracing::warn!("modo --dev: dev_* habilitado con custodios de PRUEBA; no usar en producción");
     }
 
     // ── el latido, y la firma como capacidad SEPARADA ──
+    // ⚠️ El firmante se crea ANTES de `App`: su clave pública es un campo
+    // de `App`, porque **un testigo la necesita para verificar** y tiene
+    // que poder pedirla por el cable.
     let firmante = match &args.clave {
         Some(hex) => {
             let semilla = descodificar_semilla(hex)?;
@@ -185,6 +198,20 @@ async fn main() -> anyhow::Result<()> {
             None
         }
     };
+
+    let clave_publica_firma = firmante
+        .as_ref()
+        .map(|f| f.clave_publica())
+        .unwrap_or_default();
+    let app = std::sync::Arc::new(App {
+        estado: Mutex::new(Estado { layer, reservas: BTreeMap::new() }),
+        dev: args.dev,
+        reserva_ttl: Duration::from_secs(args.reserva_ttl),
+        ultima_cabeza: Mutex::new(None),
+        clave_publica_firma,
+        latido_s: args.latido,
+    });
+
     if args.latido > 0 {
         tracing::info!(cada_s = args.latido, "latido de cabezas de epoca en marcha");
         latido::arrancar(app.clone(), firmante, Duration::from_secs(args.latido));
@@ -252,6 +279,11 @@ async fn handle(
                     "error": { "code": e.code, "message": e.message } })
         }
     })
+}
+
+/// Bytes a hexadecimal, para el cable.
+fn hex_de(b: &[u8]) -> String {
+    b.iter().map(|x| format!("{x:02x}")).collect()
 }
 
 /// Lee la semilla de 96 bytes en hexadecimal.
@@ -363,6 +395,49 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             Ok(serde_json::to_value(wire::EpochHeadDto::from(&l.epoch_head())).unwrap())
         }
 
+        // ⚠️ **El método del TESTIGO** (§242). Aditivo: no toca
+        // `zkssl_epochHead`, que sigue sirviendo la cabeza SIN firma y está
+        // en los vectores de conformidad de 0.2. **La versión no se mueve.**
+        //
+        // ⚠️ Tres respuestas, y **ninguna es un error genérico**: sin latido
+        // todavía, sin `--clave`, o la cabeza firmada. Es la forma de §241
+        // llevada al cable: **la pieza que falta se nota también aquí**.
+        "zkssl_signedEpochHead" => {
+            let u = app.ultima_cabeza.lock().map_err(|_| RpcError {
+                code: -32603,
+                message: "candado de la ultima cabeza envenenado".into(),
+            })?;
+            Ok(match u.as_ref() {
+                None => json!({
+                    "available": false,
+                    "reason": "aun no ha habido latido: el nodo acaba de arrancar",
+                    "beatSeconds": Q(app.latido_s),
+                }),
+                Some(l) if l.firma.is_none() => json!({
+                    "available": false,
+                    "reason": "el nodo arranco SIN --clave: las cabezas se calculan pero NO se firman",
+                    "seq": Q(l.seq),
+                    "epochDigest": wire::B32(l.epoch_digest),
+                    "emittedAtUnix": Q(l.emitida_unix),
+                    "beatSeconds": Q(app.latido_s),
+                }),
+                Some(l) => {
+                    let c = l.firma.as_ref().expect("comprobado en el brazo anterior");
+                    json!({
+                        "available": true,
+                        "seq": Q(l.seq),
+                        "epochDigest": wire::B32(l.epoch_digest),
+                        "domain": String::from_utf8_lossy(firma_cabeza::DOMINIO),
+                        "formatVersion": Q(u64::from(c.version_formato)),
+                        "index": Q(c.indice),
+                        "signature": format!("0x{}", hex_de(&c.firma)),
+                        "publicKey": format!("0x{}", hex_de(&app.clave_publica_firma)),
+                        "emittedAtUnix": Q(l.emitida_unix),
+                        "beatSeconds": Q(app.latido_s),
+                    })
+                }
+            })
+        }
         "zkssl_supply" => Ok(json!({
             "total": Q(l.total_supply()),
             "pending": Q(l.total_pending()),
@@ -861,6 +936,9 @@ mod tests {
             estado: Mutex::new(Estado { layer, reservas: BTreeMap::new() }),
             dev: true,
             reserva_ttl: Duration::from_secs(ttl_segundos),
+            ultima_cabeza: Mutex::new(None),
+            clave_publica_firma: Vec::new(),
+            latido_s: crate::latido::LATIDO_POR_DEFECTO_S,
         }
     }
 
@@ -910,6 +988,98 @@ mod tests {
         let e = dispatch(&app, "zkssl_loQueSea", json!({})).expect_err("deberia fallar");
         assert_eq!(e.code, -32601, "metodo desconocido debe ser MethodNotFound");
         assert_eq!(reservas_vivas(&app), 0);
+    }
+
+    // ── §242: el metodo del TESTIGO ──
+
+    /// Lee una QUANTITY del cable: hexadecimal con 0x, como {:#x}.
+    ///
+    /// ⚠️ Se escribio primero asumiendo DECIMAL y el test cayo con
+    /// left: \"0x1\" · right: \"1\" (§242). **El formato del cable se LEE,
+    /// no se supone**, aunque sea el de una cifra de un digito.
+    fn q_de(v: &Value) -> u64 {
+        let s = v.as_str().expect("QUANTITY es una cadena");
+        u64::from_str_radix(s.trim_start_matches("0x"), 16).expect("hex")
+    }
+
+    #[test]
+    fn sin_latido_todavia_el_metodo_lo_dice_y_no_falla() {
+        // ⚠️ Ninguna de las tres respuestas es un error generico.
+        let app = nodo(30);
+        let v = dispatch(&app, "zkssl_signedEpochHead", json!({})).expect("no debe fallar");
+        assert_eq!(v["available"], json!(false));
+        assert!(v["reason"].as_str().expect("reason").contains("aun no ha habido latido"));
+    }
+
+    #[test]
+    fn sin_clave_el_metodo_sirve_la_cabeza_y_dice_que_no_hay_firma() {
+        let app = nodo(30);
+        let l = crate::latido::latir(&app, None).expect("latir");
+        crate::latido::conservar(&app, l);
+        let v = dispatch(&app, "zkssl_signedEpochHead", json!({})).expect("no debe fallar");
+        assert_eq!(v["available"], json!(false));
+        assert!(v["reason"].as_str().expect("reason").contains("SIN --clave"));
+        assert!(v["epochDigest"].is_string(), "la CABEZA si viaja, aunque no haya firma");
+        assert!(v["signature"].is_null(), "y la firma NO");
+    }
+
+    #[test]
+    fn con_firma_el_metodo_da_todo_lo_que_un_testigo_necesita() {
+        use crate::firma_cabeza::{verificar_cabeza, CabezaFirmada, FirmanteCabeza};
+        let app = nodo(30);
+        let d = std::path::Path::new("target").join("rpc_testigo");
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("crear");
+        let mut s = [0u8; 96];
+        for (i, b) in s.iter_mut().enumerate() {
+            *b = (i as u8).wrapping_mul(13).wrapping_add(2);
+        }
+        let mut f = FirmanteCabeza::desde_semilla(&s, d.join("indice.bin")).expect("abrir");
+        let pk = f.clave_publica();
+        let l = crate::latido::latir(&app, Some(&mut f)).expect("latir");
+        crate::latido::conservar(&app, l);
+
+        // ⚠️ El nodo de prueba se construye SIN clave publica; se sirve la
+        // suya, asi que aqui se comprueba el resto y se verifica con `pk`.
+        let v = dispatch(&app, "zkssl_signedEpochHead", json!({})).expect("no debe fallar");
+        assert_eq!(v["available"], json!(true));
+        for k in ["seq", "epochDigest", "domain", "formatVersion", "index",
+                  "signature", "publicKey", "emittedAtUnix", "beatSeconds"] {
+            assert!(!v[k].is_null(), "falta el campo {k}");
+        }
+        assert_eq!(v["domain"], json!("ZK-SSL-epoch-head"));
+        assert_eq!(v["index"], json!("0x1"), "Q es una cantidad HEX del cable");
+
+        // ⚠️ LO QUE IMPORTA: lo servido se VERIFICA, sin el nodo.
+        let hex = v["signature"].as_str().expect("signature").trim_start_matches("0x");
+        let firma: Vec<u8> = (0..hex.len() / 2)
+            .map(|i| u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16).expect("hex"))
+            .collect();
+        let dig = v["epochDigest"].as_str().expect("digest").trim_start_matches("0x");
+        let mut digest = [0u8; 32];
+        for i in 0..32 {
+            digest[i] = u8::from_str_radix(&dig[i * 2..i * 2 + 2], 16).expect("hex");
+        }
+        let c = CabezaFirmada {
+            version_formato: q_de(&v["formatVersion"]) as u8,
+            indice: q_de(&v["index"]),
+            firma,
+        };
+        verificar_cabeza(&pk, &digest, &c).expect("lo que sirve el RPC debe verificar");
+    }
+
+    #[test]
+    fn el_metodo_nuevo_no_toca_la_version_ni_la_cabeza() {
+        // ⚠️ ADITIVO: `zkssl_epochHead` y la version siguen igual. Los
+        // vectores de conformidad de 0.2 no se mueven.
+        let app = nodo(30);
+        assert_eq!(
+            dispatch(&app, "zkssl_protocolVersion", json!([])).expect("version"),
+            json!("zkssl/0.2")
+        );
+        let h = dispatch(&app, "zkssl_epochHead", json!({})).expect("epochHead");
+        assert!(h["signature"].is_null(), "epochHead NO debe llevar firma");
+        assert!(h["epochDigest"].is_string());
     }
 
     #[test]

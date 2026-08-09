@@ -72,6 +72,14 @@ pub struct Latido {
     /// ⚠️ `None` si el nodo arrancó **sin `--clave`**. La cabeza existe
     /// igual; lo que falta es la firma.
     pub firma: Option<CabezaFirmada>,
+    /// Segundos Unix del momento de emitirla.
+    ///
+    /// ⚠️ **Un testigo que pide dos veces y recibe la misma firma necesita
+    /// distinguir «no ha habido latido» de «me están engañando».** El
+    /// índice XMSS ya lo permite —es monótono— pero conviene que sea
+    /// explícito: con esto y la cadencia, el testigo calcula si la cabeza
+    /// que recibe es la que tocaba.
+    pub emitida_unix: u64,
 }
 
 /// Calcula la cabeza y, **si hay firmante**, la firma.
@@ -99,7 +107,11 @@ pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result
         None => None,
     };
 
-    Ok(Latido { seq, epoch_digest, firma })
+    let emitida_unix = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    Ok(Latido { seq, epoch_digest, firma, emitida_unix })
 }
 
 /// Lanza el latido en una tarea de fondo.
@@ -117,6 +129,11 @@ pub fn arrancar(app: Arc<App>, mut firmante: Option<FirmanteCabeza>, cada: Durat
             match latir(&app, firmante.as_mut()) {
                 Ok(l) => {
                     let ms = t.elapsed().as_secs_f64() * 1000.0;
+                    // ⚠️ HASTA §241 ESTO SE TIRABA: se registraba una línea y
+                    // el `Latido` moría al cerrar el `match`. La firma —18.519
+                    // bytes— se destruía, y **el único rastro permanente era el
+                    // índice consumido**: coste puro. Se corrige en §242.
+                    conservar(&app, l.clone());
                     match &l.firma {
                         Some(c) => tracing::info!(
                             latido = n, seq = l.seq, indice = c.indice, ms,
@@ -132,6 +149,16 @@ pub fn arrancar(app: Arc<App>, mut firmante: Option<FirmanteCabeza>, cada: Durat
             }
         }
     });
+}
+
+/// Guarda la última cabeza, **con su propio candado**.
+///
+/// ⚠️ Candado aparte del estado a propósito: guardar no debe volver a
+/// competir con las escrituras cuando el latido ya soltó el otro.
+pub fn conservar(app: &App, l: Latido) {
+    if let Ok(mut u) = app.ultima_cabeza.lock() {
+        *u = Some(l);
+    }
 }
 
 #[cfg(test)]

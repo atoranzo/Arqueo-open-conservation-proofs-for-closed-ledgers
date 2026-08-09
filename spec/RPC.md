@@ -349,6 +349,44 @@ no los hay todavía.
 
 ---
 
+### `zkssl_signedEpochHead` — la última cabeza firmada, para un TESTIGO
+
+Devuelve la cabeza de época **más reciente que el nodo firmó**, con todo lo
+que hace falta para verificarla sin él: `publicKey`, `epochDigest`,
+`formatVersion`, `index` y `signature`.
+
+⚠️ **Aditivo**: no toca `zkssl_epochHead`, que sigue sirviendo la cabeza
+**sin firma** y está en los vectores de conformidad. **La versión no sube**,
+por la misma razón que no subió con `zkssl_applyMany`.
+
+⚠️ **Tres respuestas, y ninguna es un error genérico**:
+
+| `available` | cuándo | qué trae |
+|---|---|---|
+| `false` | aún no ha habido latido | `reason`, `beatSeconds` |
+| `false` | el nodo arrancó **sin `--clave`** | `reason`, la cabeza **sin firma** |
+| `true` | hay cabeza firmada | todo lo necesario para verificar |
+
+El segundo caso es la forma de §241 llevada al cable: **la pieza que falta
+—la firma— se nota también aquí**, y no como un fallo.
+
+`emittedAtUnix` y `beatSeconds` existen para que **un testigo que pide dos
+veces y recibe la misma firma distinga «no ha habido latido» de «me están
+engañando»**. El `index` de XMSS ya lo permite —es monótono— pero conviene
+que sea explícito.
+
+⚠️ **Solo la última, y en memoria.** No hay histórico: **se pierde al
+reiniciar**, y con un arranque de ~136 s a 10⁶ cuentas un testigo verá un
+hueco real en la serie. Guardarlo serían **18,5 KB por minuto — 26 MB al
+día, 9,5 GB al año**, y sobre todo **un formato de archivo es una decisión
+de conformidad que ningún consumidor ha informado todavía**: cómo se pagina,
+si se pide por rango o por índice, qué pasa con los huecos. Se decide cuando
+haya quien diga qué necesita.
+
+⚠️ Y **sin custodia declarada de la clave, lo que este método sirve no tiene
+valor probatorio** (`SECURITY.md`). §242 hace que el artefacto exista; no
+que valga.
+
 ## Notas operativas
 
 - Un nodo, un escritor: las escrituras serializan en el nodo (el orden

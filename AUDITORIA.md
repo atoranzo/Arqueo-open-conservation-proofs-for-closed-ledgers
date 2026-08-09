@@ -17514,3 +17514,95 @@ todo lo que se puede decir hoy.
   `verifier_hash` —bloqueado por la entrada 54— y la raíz de recepción. Por
   eso la firma lleva versión de formato.
 - Y la interacción con las escrituras, sin medir.
+## 242. La firma se calculaba y se tiraba. Ahora hay dónde recogerla
+
+### ⚠️ Lo que había antes, dicho con claridad
+
+Hasta §241 el latido hacía esto: calcular la cabeza, firmarla, **registrar
+una línea de traza y destruir el resultado**. El `Latido` moría al cerrar el
+`match`, y la traza solo anotaba `seq`, `indice` y milisegundos — **ni
+siquiera los bytes**.
+
+> **El único efecto permanente del latido era quemar un índice.**
+
+Ni un testigo ni el propio operador podían recuperar la firma del minuto
+anterior. Dieciocho mil quinientos diecinueve bytes producidos y tirados
+cada sesenta segundos, y el índice de una clave de un solo uso **que no
+vuelve**.
+
+Se escribe aquí porque el traspaso decía *«el nodo emite y nadie recoge»*, y
+**eso era inexacto y benévolo**: no emitía nada recuperable. Un lector que
+dentro de un año vea «el nodo firma cada minuto» y descubra que no había
+dónde recogerlo pensará que faltaba un trozo, **no que fue así de mal**.
+
+### `zkssl_signedEpochHead`, y por qué no toca nada
+
+Aditivo, como `zkssl_applyMany` en §222: **`zkssl_epochHead` sigue sirviendo
+la cabeza sin firma** y está en los vectores de conformidad de `zkssl/0.2`.
+**La versión no se mueve.** Es el patrón que `spec/RPC.md` ya tenía escrito.
+
+⚠️ **Tres respuestas, y ninguna es un error genérico**:
+
+| `available` | cuándo |
+|---|---|
+| `false` | aún no ha habido latido — el nodo acaba de arrancar |
+| `false` | arrancó **sin `--clave`**: la cabeza viaja, **la firma no** |
+| `true` | todo lo que un testigo necesita para verificar sin el nodo |
+
+El segundo caso es **la forma de §241 llevada al cable**: la pieza que falta
+se nota también aquí, y no como un fallo.
+
+### Lo que un testigo distingue, y por qué hacía falta
+
+`emittedAtUnix` y `beatSeconds` van en la respuesta para que **quien pida dos
+veces y reciba la misma firma distinga «no ha habido latido» de «me están
+engañando»**. El `index` de XMSS ya lo permitía —es monótono— pero conviene
+que sea explícito y no una deducción.
+
+Hay test que **verifica lo servido**: toma el `signature` y el `epochDigest`
+del JSON, reconstruye la `CabezaFirmada` y llama a `verificar_cabeza`. Si el
+método sirviera algo que no verifica, cae.
+
+### ⚠️ Solo la última, en memoria — y la otra cara
+
+**No hay histórico**, y las dos razones no pesan igual:
+
+La de fondo: **un formato de archivo es una decisión de conformidad, y no hay
+ningún consumidor que la informe.** Cómo se pagina, si se pide por rango o por
+índice, qué pasa con los huecos tras un reinicio — eso lo decide quien vaya a
+leerlo, y no existe. Fijarlo ahora es el patrón que esta serie lleva quince
+conjeturas cazando: **elegir una forma antes de tener el dato que la
+justifica**.
+
+La secundaria: **18,5 KB por minuto — 26 MB al día, 9,5 GB al año**, de
+almacenamiento permanente para un artefacto que hoy nadie consume.
+
+⚠️ **Y el precio, escrito al lado de la decisión**: una firma en memoria **se
+pierde al reiniciar**. Con un arranque de **~136 s a 10⁶ cuentas** (§221), un
+testigo verá **un hueco real en la serie**. No es un fallo de §242: es lo que
+cuesta no tener histórico, y quien revise la decisión debe ver las dos caras
+juntas.
+
+### Detalles que el cableado obligó
+
+- **El firmante se crea ANTES de `App`**: su clave pública es un campo de
+  `App` porque un testigo la necesita y tiene que poder pedirla por el cable.
+- **Candado propio** para la última cabeza: guardarla no debe volver a
+  competir con las escrituras cuando el latido ya soltó el otro.
+- **Tres listas de la especificación**, no una: `openrpc.rs` mantiene los
+  nombres y genera `spec/openrpc.json`, `main.rs` despacha, y `spec/RPC.md`
+  documenta. El test `diecinueve_metodos_unicos_y_en_orden` lleva el número
+  en el nombre **a propósito**: renombrarlo obliga a mirar.
+
+**Canon: `zk-ssl-node` de 45 a 49.** Sumas: 660 → 664.
+
+### Lo que sigue faltando
+
+- ⚠️ **La custodia de la clave.** §242 hace que el artefacto **exista**; no
+  que **valga**. Sin custodia declarada, lo que este método sirve no tiene
+  valor probatorio.
+- ⚠️ **Sigue sin haber testigo.** Ahora hay qué recoger y por dónde; no hay
+  quien.
+- **El histórico**, con su cifra y su motivo, declarado abierto.
+- `verifier_hash`, bloqueado por la entrada 54.
+- Y la interacción latido/escrituras, sin medir (§241).
