@@ -349,6 +349,51 @@ no los hay todavía.
 
 ---
 
+### `receptionSeq` — el contador de recepción (§253)
+
+`zkssl_applySend` y `zkssl_applyClaim` devuelven **`receptionSeq`**: en qué
+orden llegó esa operación **de entre las que el nodo se puso a evaluar**.
+
+⚠️ **No es `logSeq`.** `logSeq` es **el orden de aplicación** y solo existe
+si la operación se aplicó; `receptionSeq` es **el orden de llegada**. **La
+censura vive en el hueco entre los dos.**
+
+| falla en | ¿consume `receptionSeq`? |
+|---|---|
+| el parseo o el cable | **no** — eso es ruido, y si contara **cualquiera podría abrir huecos en el registro ajeno mandando basura** |
+| la capa (prueba inválida, raíz movida) | **sí** — el nodo verificó una operación de verdad, y **ahí es donde se escondería un censor** |
+
+⚠️ **Viaja también en el error**, como `[receptionSeq=0x…]` en el mensaje:
+el caso que importa es justo el rechazo.
+
+### ⚠️ Lo que `receptionSeq` NO es: evidencia oponible
+
+**Es un número que el nodo dice y que nada ata.** `chain` autentica `seq`,
+`kind`, las dos raíces, el digest de prueba y el anterior — **y nada más**.
+
+- **Dos titulares que cooperan DETECTAN la reordenación**: A tiene
+  recepción 100, B tiene 101, la de B está en el log y la de A no.
+- **No pueden PROBARLA**: ninguno tiene nada firmado por el operador que
+  diga *«recibí la tuya la 100»*, y **el operador puede negar haberlo
+  dicho**.
+
+⚠️ Y el titular **ve un hueco y no sabe si fue censura o su propia prueba
+mala**: esto **detecta la reordenación, no la explica**.
+
+Lo que falta para las dos cosas es **el acuse**, como hoja bajo una raíz en
+la cabeza — hereda la firma **sin gastar índices XMSS**.
+
+### ⚠️ `receipt` y `acuse` son cosas distintas
+
+| palabra | qué es |
+|---|---|
+| **`receipt`** | lo que **el titular entrega** al nodo: `SendReceipt` y `ClaimReceipt` llevan `proof`, `public_inputs` y `commitment` |
+| **`acuse`** | lo que **el nodo devuelve** al titular |
+
+**No se reutiliza `receipt` para el acuse**: sería un tercer significado en
+el mismo cable, y en un proyecto cuyo argumento es la conformidad
+verificable un nombre ambiguo cuesta más que en otro sitio.
+
 ### `zkssl_signedEpochHead` — la última cabeza firmada, para un TESTIGO
 
 Devuelve la cabeza de época **más reciente que el nodo firmó**, con todo lo

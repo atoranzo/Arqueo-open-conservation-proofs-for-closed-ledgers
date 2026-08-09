@@ -18520,3 +18520,140 @@ línea que no se ve—. Antes solo decía «cero».
   propósito**, porque en paralelo se mide rendimiento y no latencia.
 - **No dice nada de otra máquina.**
 - **No toca ningún pin**: no hay código ejecutable nuevo.
+## 253. El contador de recepción: la censura vive entre recibir y aplicar
+
+### ⚠️ Dos correcciones antes del código
+
+**§116 no estaba pendiente.** El traspaso decía *«§116 se cierra ANTES que
+el acuse»* y **lo arrastré veinte traspasos sin abrir §116 ni una vez**. Se
+cerró en **§124**: la entrada 58 está marcada `[x]`, con el detalle de que
+el arreglo original **no habría bastado** —apareció una segunda familia de
+colisiones— y se resolvió con limbs de 32 bits. Hay cuatro tests T6.
+
+⚠️ Y la línea de la entrada 62 era **condicional**: *«hereda §116 **si usa
+`digest_of_proof` tal cual**»*. Yo la copié como incondicional.
+
+> **Un condicional pierde su condición al resumirse si no se copia entero.**
+
+**Y el recibo de inclusión no arrastra el C3.** `path_for()` ya existe en
+`sparse_tree.rs`, devuelve hermanos y orientación, y hay test que reconstruye
+la raíz. Queda **disponible y paralelo**, no bloqueado.
+
+### Por qué `seq` no vale
+
+El camino real de una operación tiene **cuatro etapas**:
+
+```text
+  parse(params)  →  try_into()  →  apply_send(...)  →  append() → seq
+  ↑ ruido           ↑ el cable     ↑ la capa            ↑ AQUÍ
+```
+
+`seq = entries.len()`, y una entrada **solo existe si la operación se
+aplicó**.
+
+> **La censura vive en el hueco entre recibir y aplicar**, y hoy ese tramo
+> no dejaba ninguna huella. Un operador que censura **simplemente no
+> incrementa `seq`**.
+
+### Qué cuenta: lo que el nodo llegó a EVALUAR
+
+| falla en | ¿consume? | por qué |
+|---|---|---|
+| el parseo o el cable | **NO** | es ruido. Si contara, **cualquiera podría abrir huecos en el registro ajeno mandando basura** |
+| la capa | **SÍ** | el nodo **verificó una operación de verdad** — y **ahí es donde se escondería un censor**, alegando prueba inválida |
+
+⚠️ Es una distinción que **solo se ve mirando el código**: desde fuera
+«recibido» y «aplicado» parecen dos estados, y el camino tiene cuatro.
+
+### ⚠️ Y es inmune a la congestión
+
+*«Una operación posterior entró y la mía no»* es **reordenación**, y no hace
+falta elegir ningún umbral `N`:
+
+> **La congestión retrasa a todos; solo la censura adelanta.**
+
+### ⚠️⚠️ LO QUE ESTO **NO** ES: evidencia oponible
+
+El contador es **un número que el nodo dice y que nada ata**. `chain_digest`
+autentica `seq`, `kind`, las dos raíces, el digest de prueba y el anterior
+—**y nada más**—; meterlo ahí rompería la conformidad de `zkssl/0.2` y la
+propiedad retroactiva de §115.
+
+- **Dos titulares que cooperan DETECTAN** la reordenación.
+- **No pueden PROBARLA**: nadie tiene nada firmado que diga *«recibí la tuya
+  la 100»*, y **el operador puede negar haberlo dicho**.
+
+⚠️ Y **el titular ve un hueco y no sabe si fue censura o su propia prueba
+mala**: **§253 detecta la reordenación, no la explica.**
+
+> **No cierra la censura: la prepara.**
+
+Explicarla es **el acuse completo** —hoja bajo una raíz en la cabeza, que
+hereda la firma **sin gastar índices XMSS**— y es la pieza siguiente.
+Venderlo como detector oponible sería el mismo **falso «limpio»** que §250
+encontró en el auditor, una capa más arriba.
+
+Es la tercera vez con el mismo patrón: **detectar no es distinguir** (§246),
+comparar diarios no dice cuál miente (§250), y ahora esto.
+
+### ⚠️ Persiste desde el principio, y no por completismo
+
+Un contador que se reinicia en silencio **es peor que no tenerlo**: sin
+contador, el titular **sabe** que no tiene detector; con uno que vuelve a
+cero, tiene un detector que dice *«todo en orden»* mientras **dos
+operaciones distintas llevan el mismo número**.
+
+⚠️ Y hay un agravante: §242 declaró que **habrá huecos por reinicio** y el
+testigo los clasifica como **benignos**. Si el contador también se
+reiniciara, **el reinicio dejaría de ser benigno y pasaría a producir
+colisiones activas**. **Dos límites que por separado son declarables, juntos
+rompen la propiedad.**
+
+**Reusa `GuardianIndice` entero** —§234— en vez de reimplementarlo: `fsync`
+antes de devolver, y **se niega a arrancar si el medio no persiste**. Dos
+implementaciones del mismo problema pueden discrepar.
+
+### Nombres: `receipt` y `acuse` no son lo mismo
+
+`SendReceipt` y `ClaimReceipt` son **lo que el titular entrega** —llevan
+`proof`, `public_inputs`, `commitment`—. El acuse es **lo que el nodo
+devuelve**. **No se reutiliza la palabra**: sería un tercer significado en el
+mismo cable. La entrada 62 ya la había reservado.
+
+### ⚠️ Y un fallo mío, séptima vez
+
+Escribí la cirugía contra `impl App {`, que **no existe**: el fichero usa
+funciones libres. Comprobé por la cadena que imaginaba en vez de por la
+estructura — **la misma forma que buscar `witness` dentro de `witness.rs`**.
+
+> **La existencia se comprueba por la estructura, no por la cadena de
+> texto.** Si algo existe, existe una `pub fn`, un `impl`, una variante de
+> `enum`. El `grep` de una palabra busca **lo que creo, en la forma que
+> creo**.
+
+### ⚠️⚠️ Y un test INTERMITENTE que la compuerta del bloque no vio
+
+La compuerta 1 corrió los tests y dio **46**. El canon los corrió otra vez
+y dio **45 con fallo**. **Mismo código, dos resultados.**
+
+La causa: **diecisiete tests llaman a `nodo(30)`**, todos usaban el mismo
+directorio, y **`tests_dir` borra lo que encuentra**. Cargo corre los tests
+**en paralelo**: uno borraba el contador de otro mientras escribía.
+
+> **Un test intermitente pasa la mitad de las veces, y una compuerta que
+> ejecuta una sola vez lo deja pasar la mitad de las veces.**
+
+⚠️ **Lo cazó el canon, no mi compuerta** — y solo porque el canon vuelve a
+correr lo mismo. Sin esa repetición, §253 se habría sellado con un test que
+falla uno de cada dos días.
+
+Arreglado con **un nombre de directorio por instancia**, no por parámetro.
+
+### ⚠️ Y dos fallos de escritura, los dos ya en los ritos
+
+**Escribí el ancla de memoria** —tres veces en este sello— y **confundí el
+nivel de escapado**: los `\n` salieron literales en el fichero porque los
+escapé yo dentro de un heredoc que ya escapaba. El literal se saca con
+`repr()` y se deja que `repr()` escape.
+
+**Canon: `zk-ssl-node` de 40 a 46.** Sumas: 693 → 699.

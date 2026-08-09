@@ -34,6 +34,14 @@ mod firma_cabeza;
 /// explícita, y firmar es algo que el operador habilita a sabiendas.
 mod latido;
 
+/// **El contador de recepción** (§253): en qué orden llegó cada operación
+/// que el nodo **se puso a evaluar**.
+///
+/// ⚠️ `seq` no vale: sale de `entries.len()` y **solo existe si la
+/// operación se aplicó**. **La censura vive en el hueco entre recibir y
+/// aplicar.**
+mod recepcion;
+
 use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::Mutex;
@@ -108,6 +116,15 @@ struct Args {
     #[arg(long, value_name = "MODELO", default_value = "sin-declarar",
           value_parser = ["sin-declarar", "fichero", "hsm", "kms", "otro"])]
     custodia: String,
+
+    /// Fichero del **contador de recepción** (§253).
+    ///
+    /// ⚠️ Se persiste con `fsync` y **el nodo se niega a arrancar si el
+    /// medio no persiste** (K.1, §234): un contador que vuelve a cero da
+    /// **dos operaciones distintas con el mismo número**, y eso es **peor
+    /// que no tener contador**.
+    #[arg(long, value_name = "RUTA", default_value = "recepcion.bin")]
+    contador_recepcion: String,
 
     /// Fichero del contador de índices de firma (§234).
     ///
@@ -201,6 +218,12 @@ struct App {
     custodia: String,
     /// Si el nodo **pudo comprobarlo**. Solo `fichero` es comprobable.
     custodia_comprobada: bool,
+    /// **El contador de recepción** (§253), persistido con `fsync`.
+    ///
+    /// ⚠️ Candado propio, y se suelta enseguida: reservar cuesta un
+    /// `fsync` —**0,907 ms medidos en ext4** (K.1)— y retenerlo mientras
+    /// se aplica una operación pararía el nodo entero.
+    recepcion: Mutex<recepcion::ContadorRecepcion>,
 }
 
 #[tokio::main]
@@ -282,6 +305,10 @@ async fn main() -> anyhow::Result<()> {
         latido_s: args.latido,
         custodia: args.custodia.clone(),
         custodia_comprobada,
+        recepcion: Mutex::new(
+            recepcion::ContadorRecepcion::abrir(&args.contador_recepcion)
+                .map_err(|e| anyhow::anyhow!("{e}"))?,
+        ),
     });
 
     if args.latido > 0 {
@@ -381,6 +408,24 @@ fn leer_semilla_de_fichero(ruta: &str) -> anyhow::Result<String> {
 ///
 /// Se centraliza aqui para que **un test nuevo no tenga que acordarse**.
 #[cfg(test)]
+/// Un nombre de directorio **por instancia**.
+///
+/// ⚠️ `tests_dir` **BORRA lo que encuentra**, y cargo corre los tests
+/// **en paralelo**: con un nombre compartido, un test borraba el contador
+/// de otro mientras escribía. **Diecisiete tests llaman a `nodo(30)`** — y
+/// el resultado era INTERMITENTE: **46 tests una vez y 45 con fallo la
+/// siguiente**.
+///
+/// ⚠️⚠️ **Lo cazó el canon, no la compuerta del bloque**: esa los corrió
+/// UNA vez y ganó la carrera. **Un test intermitente pasa la mitad de las
+/// veces, y una compuerta que ejecuta una sola vez lo deja pasar la mitad
+/// de las veces.**
+#[cfg(test)]
+pub(crate) fn proximo_nodo() -> u64 {
+    static N: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    N.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+}
+
 pub(crate) fn tests_dir(nombre: &str) -> std::path::PathBuf {
     let d = std::path::Path::new("target").join(format!("t_{nombre}"));
     let _ = std::fs::remove_dir_all(&d);
@@ -433,6 +478,12 @@ impl RpcError {
         // -32000: rechazo de la capa. El mensaje es el Debug del error,
         // que en este proyecto es autoexplicativo.
         Self { code: -32000, message: format!("{e:?}") }
+    }
+    /// ⚠️ El número de recepción **también en el error**: el caso que
+    /// importa es el rechazo, y ahí es donde un censor se escondería.
+    fn con_recepcion(mut self, rx: u64) -> Self {
+        self.message = format!("{} [receptionSeq={rx:#x}]", self.message);
+        self
     }
     fn wire(e: wire::WireError) -> Self {
         Self::invalid_params(e)
@@ -695,14 +746,22 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             // La posicion se lee DESPUES de `apply_send`: el tipo de
             // `receipt` lo fija esa llamada, y tocar un campo antes deja la
             // inferencia coja.
+            // ⚠️⚠️ EL CONTADOR VA AQUI (§253): despues del parseo y la
+            // conversion —eso es ruido, no una operacion— y ANTES de la
+            // capa. Cuenta LO QUE EL NODO LLEGA A EVALUAR, y por eso lo
+            // consume TAMBIEN si la capa rechaza: ahi es donde se
+            // esconderia un censor, alegando prueba invalida.
+            let rx = recibir(app)?;
             let r = l.apply_send(&receipt, p.sender.0, &state, p.amount.0);
             let pos = receipt.notice.position;
             reservas.remove(&pos);
             if let Err(e) = r {
                 l.release_pending(pos);
-                return Err(RpcError::layer(e));
+                // ⚠️ El numero viaja TAMBIEN en el error: el caso que
+                // importa es justo el rechazo.
+                return Err(RpcError::layer(e).con_recepcion(rx));
             }
-            Ok(applied(l))
+            Ok(con_rx(applied(l), rx))
         }
 
         "zkssl_claimMaterials" => {
@@ -727,9 +786,10 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             let receipt = (&p.receipt).try_into().map_err(RpcError::wire)?;
             let state = (&p.receiver_state).try_into().map_err(RpcError::wire)?;
             let notice = (&p.notice).try_into().map_err(RpcError::wire)?;
+            let rx = recibir(app)?;
             l.apply_claim(&receipt, p.receiver.0, &state, &notice)
-                .map_err(RpcError::layer)?;
-            Ok(applied(l))
+                .map_err(|e| RpcError::layer(e).con_recepcion(rx))?;
+            Ok(con_rx(applied(l), rx))
         }
 
         // ── lote: N operaciones contra UNA raiz de arranque ──────
@@ -917,6 +977,33 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
 }
 
 /// Respuesta común de las escrituras: qué entrada quedó en el registro.
+/// Reserva el siguiente número de recepción, con `fsync`.
+///
+/// ⚠️ El candado se toma y **se suelta aquí dentro**: reservar cuesta un
+/// `fsync` y retenerlo durante la operación pararía el nodo. Mismo
+/// criterio que el latido (§241, medido en §252).
+fn recibir(app: &App) -> Result<u64, RpcError> {
+    app.recepcion
+        .lock()
+        .map_err(|_| RpcError {
+            code: -32603,
+            message: "candado del contador de recepcion envenenado".into(),
+        })?
+        .recibir()
+        .map_err(|e| RpcError { code: -32603, message: format!("{e}") })
+}
+
+/// Añade el número de recepción a una respuesta.
+///
+/// ⚠️ **Un contador que el titular no puede ver no le sirve para detectar
+/// nada**, así que viaja en el cable — pero **NO está firmado**: `chain`
+/// autentica `seq`, `kind`, las raíces, el digest de prueba y el anterior,
+/// **y nada más**. Es un número que el nodo dice y **que nada ata**.
+fn con_rx(mut v: Value, rx: u64) -> Value {
+    v["receptionSeq"] = json!(Q(rx));
+    v
+}
+
 fn applied(l: &SovereignLayer) -> Value {
     let last = l.transition_log().entries().last();
     json!({
@@ -1056,6 +1143,12 @@ mod tests {
             latido_s: crate::latido::LATIDO_POR_DEFECTO_S,
             custodia: "sin-declarar".into(),
             custodia_comprobada: false,
+            recepcion: Mutex::new(
+                recepcion::ContadorRecepcion::abrir(
+                    tests_dir(&format!("rec_{}", proximo_nodo())).join("recepcion.bin"),
+                )
+                .expect("contador de recepcion"),
+            ),
         }
     }
 
@@ -1105,6 +1198,27 @@ mod tests {
         let e = dispatch(&app, "zkssl_loQueSea", json!({})).expect_err("deberia fallar");
         assert_eq!(e.code, -32601, "metodo desconocido debe ser MethodNotFound");
         assert_eq!(reservas_vivas(&app), 0);
+    }
+
+    // ── §253: el contador de recepcion ──
+
+    #[test]
+    fn el_numero_de_recepcion_viaja_al_titular() {
+        // ⚠️ Un contador que el titular NO PUEDE VER no le sirve para
+        // detectar nada.
+        let v = con_rx(json!({"logSeq": Q(3)}), 7);
+        assert_eq!(v["receptionSeq"], json!("0x7"), "y en el hex del cable");
+        assert_eq!(v["logSeq"], json!("0x3"), "sin tocar lo que ya habia");
+    }
+
+    #[test]
+    fn el_numero_de_recepcion_viaja_tambien_en_el_error() {
+        // ⚠️⚠️ EL CASO QUE IMPORTA: un censor se esconderia RECHAZANDO, asi
+        // que el titular necesita su numero JUSTO cuando le dicen que no.
+        let e = RpcError { code: -32000, message: "prueba invalida".into() }
+            .con_recepcion(9);
+        assert!(e.message.contains("receptionSeq=0x9"), "{}", e.message);
+        assert!(e.message.contains("prueba invalida"), "sin perder el motivo");
     }
 
     // ── §244: la custodia, afirmada frente a comprobada ──
