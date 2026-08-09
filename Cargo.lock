@@ -3395,8 +3395,10 @@ dependencies = [
  "serde_json",
  "tracing",
  "tracing-subscriber 0.3.23",
+ "ureq",
  "winterfell",
  "zk-ssl",
+ "zk-ssl-verify",
 ]
 
 [[package]]

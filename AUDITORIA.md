@@ -17808,3 +17808,105 @@ que nadie mira.
 - **No decide la custodia**: hace posible una decente y **hace visible su
   ausencia**.
 - Y sigue sin haber testigo.
+## 245. El testigo: cuatro clases, y el primer ancla
+
+### ⚠️ El testigo no informa la decisión del ancla: **ES el ancla**
+
+§244 dejó dos cosas escritas por separado: que la clave pública **no tiene
+ancla**, y que el testigo era **el consumidor que faltaba** para decidir
+cuál. Estaban tratadas como dos problemas.
+
+> Un testigo que anota **la clave que vio la primera vez** y **se detiene si
+> cambia** está haciendo *trust-on-first-use*.
+
+Es el modelo de SSH. Débil, con nombre propio, y **es un ancla de verdad**:
+desde el primer encuentro, el operador **ya no puede cambiar de clave sin
+que un tercero lo vea**.
+
+⚠️ Estuvo a la vista todo el tiempo. Lo que lo tapaba era tratar «el ancla»
+como algo que había que **elegir** en vez de algo que **el primer testigo
+crea al mirar**.
+
+### ⚠️⚠️ Lo que TOFU NO da: el primer encuentro
+
+**Si el operador ya estaba mintiendo cuando el testigo arrancó, TOFU fija
+la mentira.** No hay nada en este código que lo detecte, y **no lo habrá**:
+es una limitación **del modelo**, no de la implementación.
+
+Cerrarla exige un ancla **anterior** —una huella publicada, una autoridad,
+una contraparte— y eso sigue sin decidirse. Lo que TOFU aporta es **acotar
+la ventana a un instante** en vez de dejarla abierta para siempre.
+
+### Cuatro clases, y **dos detienen**
+
+| clase | qué hace |
+|---|---|
+| **hueco** | anota y **sigue** |
+| **fallo de verificación** | anota y **sigue** — puede ser transitorio |
+| ⚠️ **vista dividida** | **SE DETIENE** |
+| ⚠️ **cambio de clave** | **SE DETIENE** |
+
+⚠️ **La cuarta detiene porque rotar la clave es exactamente cómo un operador
+escaparía de la tercera**: rota, y presenta otra historia firmada con otra
+clave. Un testigo que aceptara la nueva en silencio **acepta cualquier cosa
+a partir de ahí**.
+
+Y se detiene ante las dos porque **seguir sería sobrescribir el propio
+hallazgo con ruido posterior**.
+
+⚠️ La distinción no es adorno: **§242 declaró que habrá huecos**. Sin
+separarlos, **el primer reinicio produce una alarma falsa** y el testigo
+pierde credibilidad antes de servir para nada.
+
+### ⚠️ El orden: el ancla va ANTES de verificar
+
+Si la clave cambió, **verificar contra la nueva no significa nada**. Hay
+test: `el_ancla_va_antes_que_la_verificacion`.
+
+### Y lo que se dijo desde el principio, ahora en el código
+
+- ⚠️ **DETECTAR NO ES DISTINGUIR** (§110.3): el testigo no sabe si fue un
+  reinicio con el estado de travesía mal restaurado o una vista dividida
+  deliberada. Ni si el cambio de clave fue una rotación legítima **que
+  nadie anunció porque no hay canal**. Está **junto al código**, no solo
+  aquí.
+- ⚠️ **Y sigue siendo OPONIBLE**: obliga al operador a explicarse. **Ese es
+  el modelo Certificate Transparency entero.**
+- ⚠️ **Un testigo que opera el propio operador no prueba nada.** Lo que
+  aporta es **quitar la excusa de que no hay cómo**.
+
+### El testigo NO compila el probador
+
+`zk-ssl-sdk` ya tiene el cliente RPC hecho — y **no se usa**: arrastraría
+`stark-experiment`, y **un testigo no debe compilar el probador STARK para
+comprobar una firma**. Es la lección de §243 a menor escala.
+
+Se usa `ureq` directamente —veinte líneas— y `zk-ssl-verify`. **El testigo
+no reimplementa la verificación**: usa la misma que el firmante.
+
+### ⚠️ Y un instrumento mío torcido de clase nueva
+
+Mi comprobador de paréntesis dio desajuste en un fichero correcto. La causa:
+**quitaba los comentarios ANTES que las cadenas**, así que una URL dentro de
+una cadena —`"http://127.0.0.1:8545"`— se leía como comentario **y se comía
+el resto de la línea**.
+
+⚠️ **Ha estado mal en todos los ficheros que revisé esta sesión.** Solo que
+ninguno tenía una URL en una cadena hasta ahora. **Dieciochavo instrumento**,
+y el primero cuyo fallo dependía del *contenido* del fichero, no de su forma.
+
+Rito: **quitar las cadenas primero, los comentarios después.** El orden
+inverso convierte cualquier `//` dentro de una cadena en un truncamiento.
+
+**Canon: `zk-ssl-cli` de 0 a 11.** Sumas: 667 → 678.
+
+### Lo que §245 NO hace
+
+- **No cierra el ancla**: TOFU no protege el primer encuentro, y eso sigue
+  necesitando una decisión que no hay con quién tomar.
+- **No detecta omisión**: un operador que no publica una operación produce
+  cabezas perfectamente consistentes. Eso es el eslabón 5.
+- **No guarda el histórico del nodo**: guarda lo que él mismo ve (§242).
+- **No comprueba la custodia**: el nodo la *afirma* (§244).
+- Y `verifier_hash` **sigue bloqueado por la entrada 54**: exige noción de
+  «reglas vigentes», que no existe. **No es un olvido.**

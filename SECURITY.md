@@ -119,9 +119,28 @@ atado al importe (§74). Ambas corregidas y medidas.
   existe un verificador independiente** (`zk-ssl-verify`) — pero **no hay
   ningún testigo**, así que la propiedad sigue sin cerrarse.
 
-- ⚠️ **BLOQUEANTE: la clave pública de firma no tiene ancla.** No es un
-  pendiente de implementación: **es la pieza que impide que la firma sea
-  oponible**, y ningún manejo del secreto la arregla.
+- ⚠️ **El ancla de la clave pública: TOFU desde §245, y nada antes.**
+
+  Hasta §244 esto era un bloqueante sin salida. **El testigo lo resolvió a
+  medias, y por una vía que estaba a la vista**: un testigo que anota la
+  clave que ve **la primera vez** y **se detiene si cambia** hace
+  *trust-on-first-use* — el modelo de SSH.
+
+  **Lo que TOFU sí da**: desde el primer encuentro, el operador **no puede
+  cambiar de clave sin que un tercero lo vea**. Y rotar es exactamente cómo
+  escaparía de una vista dividida, así que el testigo **se detiene ante las
+  dos cosas**.
+
+  ⚠️⚠️ **Lo que TOFU NO da: el primer encuentro.** Si el operador ya
+  mentía cuando el testigo arrancó, **TOFU fija la mentira**. Es una
+  limitación **del modelo**, no de la implementación, y no se cierra con
+  más código: exige un ancla **anterior** —una huella publicada, una
+  autoridad, una contraparte—. Lo que TOFU aporta es **acotar la ventana a
+  un instante** en vez de dejarla abierta para siempre.
+
+  ⚠️ Y **un testigo que opera el propio operador no prueba nada**: es
+  circular. Lo que el proyecto puede dar es la implementación de
+  referencia — **quita la excusa de que no hay cómo**, no la desconfianza.
 
   Hoy un tercero verifica que la firma cuadra con **la clave que el mismo
   nodo le dio**. Eso es circular: un operador puede cambiar de clave entre

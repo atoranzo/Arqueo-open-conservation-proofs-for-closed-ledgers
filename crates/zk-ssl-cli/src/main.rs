@@ -16,6 +16,7 @@ mod conformance;
 mod fmt;
 mod sandbox;
 mod trace;
+mod witness;
 
 use clap::{Parser, Subcommand};
 
@@ -53,6 +54,12 @@ enum Command {
     InspectState(commands::InspectStateArgs),
     /// Vectores de conformidad: --emit los fija, --check los reproduce.
     Conformance(conformance::ConformanceArgs),
+    /// **El TESTIGO** (§245): consulta las cabezas firmadas de un nodo,
+    /// las verifica, y **fija la clave que ve la primera vez**.
+    ///
+    /// ⚠️ Un testigo que opera el propio operador **no prueba nada**: esto
+    /// es la implementación de referencia de lo que correría un TERCERO.
+    Witness(witness::WitnessArgs),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -71,6 +78,7 @@ fn main() -> anyhow::Result<()> {
         Command::TraceTx(a) => commands::trace_tx(a, tracer.as_mut()),
         Command::InspectState(a) => commands::inspect_state(a, tracer.as_mut()),
         Command::Conformance(a) => conformance::conformance(a, tracer.as_mut()),
+        Command::Witness(a) => witness::run(a),
     }
 }
 
