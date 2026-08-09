@@ -18072,3 +18072,122 @@ ejecuta cada vez**.
 - **No añade histórico**: ahora hay dato para decidirlo, no la decisión.
 - **No toca ningún pin**: no hay código ejecutable nuevo.
 - Y el ancla anterior sigue esperando **a que haya clave** (§246).
+## 248. El histórico: decidido — el operador NO lo sirve
+
+§242 aplazó el histórico por falta de consumidor. El consumidor llegó (§245)
+y el dato también (§247). **Y la respuesta disuelve la pregunta**, igual que
+§245 hizo con el ancla.
+
+> **Un histórico servido por el operador es el operador diciendo qué dijo
+> antes.** Puede reescribirlo. Un tercero que lo consulta **no gana ninguna
+> propiedad que no tuviera.**
+
+⚠️ **No es que cueste**: 26 MB al día no es caro. Es que **no aporta lo que
+se le pedía**. Almacenar 9,5 GB al año para que el operador pueda repetirse
+a sí mismo es **pagar por nada**.
+
+### ⚠️ El argumento decisivo: dos diarios
+
+Una vista dividida **entre partes distintas** es indetectable desde un
+histórico central **por construcción** — el operador que la produce es el
+mismo que sirve el histórico.
+
+**Solo dos registros independientes la revelan.** Eso convierte el diario
+del testigo de «almacén local» en **la pieza que hace posible la
+propiedad**.
+
+### El diario de hoy no servía, y era peor que no tenerlo
+
+Guardaba una cadena de `Debug`:
+
+```
+{"n": 3, "veredicto": "Nueva { indice: 7, digest: \"0x…\" }"}
+```
+
+⚠️ **Da apariencia de registro sin serlo.** No se reverifica, no se compara,
+y **cambia si alguien toca un `derive`** — *un formato de archivo que
+depende de un detalle de implementación no es un formato*.
+
+### El criterio que decide qué campos entran
+
+> **El diario debe contener lo suficiente para que un tercero reverifique
+> sin el nodo.**
+
+Por eso guarda `index`, `epochDigest`, `formatVersion`, `signature`,
+`publicKey`, `domain`, `emittedAtUnix`, `beatSeconds`, `custody` y
+`custodyChecked` — **tal como vinieron del cable**, sin transcodificar.
+
+⚠️ **Y la firma entera, 18.519 bytes.** Es lo que **impide que un testigo
+malicioso fabrique evidencia contra el operador**: sin ella, comparar
+diarios no probaría nada, porque cualquiera podría escribir el digest que
+quisiera. **Es lo que hace que el diseño funcione.**
+
+### Tres decisiones de forma
+
+**La versión va en CADA LÍNEA**, no en una cabecera: las líneas se
+concatenan, se parten y se envían sueltas, y dos testigos que comparan
+necesitan saber que hablan el mismo idioma. Es §236 —*un campo vacío miente,
+una versión dice la verdad*— aplicado al archivo.
+
+**Las clases son nombres estables** —`nueva`, `hueco`, `vista-dividida`…—,
+no `{:?}`. Son parte del formato y no se tocan sin subir `DIARIO_VERSION`.
+
+**Solo se añade**, y está dicho en el código: un diario reescribible tiene
+el mismo problema que el histórico del operador, **solo que con otro dueño**.
+
+### ⚠️ Lo que cuesta, y por qué se paga
+
+El hexadecimal dobla los bytes: **~54 MB al día, ~20 GB al año por testigo**
+— **más del doble que el histórico que se descartó**.
+
+Se paga porque **es la única versión que prueba algo**.
+
+### ⚠️ Lo que esto NO cubre
+
+**Comparar dos diarios detecta la divergencia, no dice cuál miente.**
+*Detectar no es distinguir*, otra vez. Pero no hace falta: lo que queda
+probado es que **el operador emitió dos cosas distintas para el mismo
+índice**, y eso ya es oponible — ninguno de los dos testigos pudo fabricar
+una firma suya.
+
+⚠️ **Y un testigo que no existía no tiene diario, y ahí no hay nada que
+hacer.** Es la limitación estructural del modelo entero —Certificate
+Transparency la tiene igual— y va escrita **junto a la decisión**, no en una
+nota aparte.
+
+### ⚠️ Un fallo LATENTE en `check_tests.py`, desde §224
+
+Un test usaba `'{'` —**un literal de carácter**— y el canon salió **ROJO con
+trece tests «anidados»** que no lo estaban.
+
+La causa: `check_tests.py` **cuenta llaves crudas por línea**. Leyó `'{'`
+como apertura, la pila nunca se cerró, y **todos los `#[test]` posteriores
+quedaron marcados como dentro de una `fn`**.
+
+⚠️ **El fallo no lo introdujo §248: estaba latente desde §224**, esperando
+al primer literal de carácter del proyecto. Nunca había habido uno.
+
+Y la herramienta **desconfía con razón** —un `#[test]` dentro de una `fn`
+compila y no se ejecuta, que es justo lo que §224 existía para cazar—, así
+que se arregló **el código**, no la compuerta: el test no necesitaba ese
+literal.
+
+⚠️ Mi propio contador tropezó con lo mismo el mismo día. Es la familia de
+§245 —la URL leída como comentario—: **un limpiador tiene que quitar
+caracteres, luego cadenas, y solo entonces comentarios**. Tres pasos, en ese
+orden, y ninguna de las dos herramientas los hacía.
+
+⚠️ Y el ayudante `servido()` tuvo que reescribirse por lo mismo: un
+`json!({` abierto en una línea y cerrado en otra **también desequilibra el
+conteo crudo**. Ahora cada línea abre y cierra lo suyo.
+
+### Tres veces el mismo error de método en un solo sello
+
+Escribí el ancla **de memoria** tres veces, y las tres falló. El literal
+real llevaba `\'` donde yo puse `'`, y comillas sin escapar donde las puse
+escapadas.
+
+**El ancla se saca del fichero con `repr()`, no de la cabeza.** Es el rito
+de §244, y hoy costó tres intentos aprenderlo otra vez.
+
+**Canon: `zk-ssl-cli` de 11 a 15.** Sumas: 678 → 682.

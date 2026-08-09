@@ -119,6 +119,67 @@ impl Veredicto {
     pub fn detiene(&self) -> bool {
         matches!(self, Veredicto::VistaDividida { .. } | Veredicto::CambioDeClave { .. })
     }
+
+    /// Nombre **estable** de la clase, para el diario.
+    ///
+    /// ⚠️ **No se usa `{:?}`.** Hasta §248 el diario guardaba una cadena de
+    /// `Debug`, y eso **cambia si alguien toca un `derive`**: un formato de
+    /// archivo que depende de un detalle de implementación **no es un
+    /// formato**. Estos nombres son parte del formato y no se tocan sin
+    /// subir [`DIARIO_VERSION`].
+    pub fn clase(&self) -> &'static str {
+        match self {
+            Veredicto::Nueva { .. } => "nueva",
+            Veredicto::Repetida { .. } => "repetida",
+            Veredicto::Hueco { .. } => "hueco",
+            Veredicto::SinFirma { .. } => "sin-firma",
+            Veredicto::NoVerifica { .. } => "no-verifica",
+            Veredicto::VistaDividida { .. } => "vista-dividida",
+            Veredicto::CambioDeClave { .. } => "cambio-de-clave",
+        }
+    }
+}
+
+/// Versión del formato del diario.
+///
+/// ⚠️ **Va en CADA LÍNEA, no en una cabecera.** Dos testigos que comparan
+/// diarios necesitan saber que hablan el mismo idioma, y las líneas tienen
+/// que seguir siendo independientes: se concatenan, se parten y se envían
+/// sueltas. Es el argumento de §236 —*un campo vacío miente, una versión
+/// dice la verdad*— aplicado al archivo.
+pub const DIARIO_VERSION: u8 = 1;
+
+/// Una línea del diario: **lo suficiente para que un tercero reverifique
+/// sin el nodo**, meses después.
+///
+/// ⚠️ **Ese es el criterio que decide qué campos entran.** La firma va
+/// entera —18.519 bytes, 37 KB en hexadecimal— porque **es lo que impide
+/// que un testigo malicioso fabrique evidencia contra el operador**. Sin
+/// ella, comparar diarios no probaría nada: cualquiera podría escribir el
+/// digest que quisiera.
+///
+/// ⚠️ Y el hexadecimal se guarda **tal como vino del cable**, sin
+/// transcodificar: lo que está en el diario es literalmente lo que el nodo
+/// sirvió.
+pub fn linea_de_diario(v: &Veredicto, servido: &Value, visto_unix: u64) -> Value {
+    let mut l = json!({
+        "v": DIARIO_VERSION,
+        "clase": v.clase(),
+        "vistoUnix": visto_unix,
+    });
+    // ⚠️ Solo cuando hay cabeza firmada: es lo unico reverificable.
+    if servido["available"].as_bool() == Some(true) {
+        for k in ["index", "epochDigest", "domain", "formatVersion", "signature",
+                  "publicKey", "emittedAtUnix", "beatSeconds", "custody",
+                  "custodyChecked"] {
+            if !servido[k].is_null() {
+                l[k] = servido[k].clone();
+            }
+        }
+    } else if let Some(r) = servido["reason"].as_str() {
+        l["reason"] = json!(r);
+    }
+    l
 }
 
 /// Lo que el testigo recuerda.
@@ -295,17 +356,28 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
     loop {
         n += 1;
         let cuerpo = json!({"jsonrpc":"2.0","id":n,"method":"zkssl_signedEpochHead","params":{}});
-        let veredicto = match agente.post(&a.nodo).send_json(cuerpo) {
-            Err(e) => Veredicto::SinFirma { motivo: format!("transporte: {e}") },
+        // ⚠️ `servido` se conserva: el diario guarda LO QUE EL NODO SIRVIO,
+        // no una interpretacion.
+        let servido = match agente.post(&a.nodo).send_json(cuerpo) {
+            Err(e) => json!({"available": false, "reason": format!("transporte: {e}")}),
             Ok(r) => match r.into_json::<Value>() {
-                Err(e) => Veredicto::SinFirma { motivo: format!("respuesta ilegible: {e}") },
-                Ok(v) => una_vuelta(v.get("result").unwrap_or(&Value::Null), &mut m),
+                Err(e) => json!({"available": false, "reason": format!("respuesta ilegible: {e}")}),
+                Ok(v) => v.get("result").cloned().unwrap_or(Value::Null),
             },
         };
+        let veredicto = una_vuelta(&servido, &mut m);
+        let servido = &servido;
 
         println!("[{n}] {veredicto:?}");
         if let Some(f) = diario.as_mut() {
-            writeln!(f, "{}", json!({"n": n, "veredicto": format!("{veredicto:?}")}))?;
+            // ⚠️ SOLO AÑADIR. El fichero se abre en modo `append`: un diario
+            // que se puede reescribir tiene el mismo problema que un
+            // historico servido por el operador, solo que con otro dueño.
+            let t = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+            writeln!(f, "{}", linea_de_diario(&veredicto, servido, t))?;
             f.flush()?;
         }
 
@@ -330,6 +402,85 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ── §248: el diario, verificable y comparable ──
+
+    fn servido(indice: &str, digest: &str, clave: &str) -> Value {
+        let mut v = json!({});
+        v["available"] = json!(true);
+        v["index"] = json!(indice);
+        v["epochDigest"] = json!(digest);
+        v["domain"] = json!("ZK-SSL-epoch-head");
+        v["formatVersion"] = json!("0x1");
+        v["signature"] = json!("0xabcd");
+        v["publicKey"] = json!(clave);
+        v["emittedAtUnix"] = json!("0x64");
+        v["beatSeconds"] = json!("0x3c");
+        v["custody"] = json!("fichero");
+        v["custodyChecked"] = json!(true);
+        v
+    }
+
+    #[test]
+    fn el_diario_guarda_lo_suficiente_para_reverificar_sin_el_nodo() {
+        // ⚠️ ESE es el criterio que decide que campos entran.
+        let v = Veredicto::Nueva { indice: 7, digest: "0xaa".into() };
+        let l = linea_de_diario(&v, &servido("0x7", "0xaa", "0xdead"), 1000);
+        for k in ["index", "epochDigest", "formatVersion", "signature", "publicKey"] {
+            assert!(!l[k].is_null(), "sin {k} no se puede reverificar");
+        }
+        assert_eq!(l["v"], json!(DIARIO_VERSION), "la version va en CADA linea");
+        assert_eq!(l["clase"], json!("nueva"));
+        assert_eq!(l["vistoUnix"], json!(1000));
+    }
+
+    #[test]
+    fn el_diario_no_usa_debug_y_las_clases_son_estables() {
+        // ⚠️ Una cadena de `Debug` CAMBIA si alguien toca un `derive`: un
+        // formato que depende de un detalle de implementacion NO es un formato.
+        let esperadas = [
+            (Veredicto::Nueva { indice: 1, digest: "a".into() }, "nueva"),
+            (Veredicto::Repetida { indice: 1 }, "repetida"),
+            (Veredicto::Hueco { desde: 2, hasta: 3 }, "hueco"),
+            (Veredicto::SinFirma { motivo: "x".into() }, "sin-firma"),
+            (Veredicto::NoVerifica { indice: 1, error: "x".into() }, "no-verifica"),
+            (Veredicto::VistaDividida { indice: 1, digest_a: "a".into(), digest_b: "b".into() },
+             "vista-dividida"),
+            (Veredicto::CambioDeClave { fijada: "a".into(), recibida: "b".into() },
+             "cambio-de-clave"),
+        ];
+        for (v, nombre) in esperadas {
+            assert_eq!(v.clase(), nombre);
+            assert!(!nombre.contains("Veredicto"), "una clase no puede parecerse a un Debug");
+        }
+    }
+
+    #[test]
+    fn sin_cabeza_firmada_el_diario_guarda_el_motivo_y_nada_mas() {
+        let v = Veredicto::SinFirma { motivo: "sin clave".into() };
+        let l = linea_de_diario(&v, &json!({"available": false, "reason": "sin clave"}), 5);
+        assert_eq!(l["clase"], json!("sin-firma"));
+        assert_eq!(l["reason"], json!("sin clave"));
+        assert!(l["signature"].is_null(), "no hay firma que guardar");
+    }
+
+    #[test]
+    fn dos_diarios_revelan_la_vista_dividida_que_un_historico_central_no_puede() {
+        // ⚠️⚠️ EL ARGUMENTO DECISIVO de §248. El operador sirve a A un digest
+        // y a B otro para EL MISMO indice. Ninguno de los dos lo ve solo;
+        // comparar las dos lineas lo revela.
+        let a = linea_de_diario(&Veredicto::Nueva { indice: 9, digest: "0xaaaa".into() },
+                                &servido("0x9", "0xaaaa", "0xdead"), 100);
+        let b = linea_de_diario(&Veredicto::Nueva { indice: 9, digest: "0xbbbb".into() },
+                                &servido("0x9", "0xbbbb", "0xdead"), 101);
+        assert_eq!(a["index"], b["index"], "el mismo indice");
+        assert_ne!(a["epochDigest"], b["epochDigest"], "y distinto contenido");
+        assert_eq!(a["publicKey"], b["publicKey"], "firmadas con la misma clave");
+        // ⚠️ Y la FIRMA es lo que impide que un testigo lo fabrique: sin ella,
+        // comparar diarios no probaria nada.
+        assert!(!a["signature"].is_null() && !b["signature"].is_null(),
+                "sin firma, la comparacion no prueba nada");
+    }
 
     #[test]
     fn una_cabeza_nueva_es_nueva() {

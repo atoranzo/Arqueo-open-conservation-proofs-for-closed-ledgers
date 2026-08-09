@@ -413,11 +413,43 @@ latidos no gasta ninguno—. Hay hueco de índices **solo si se firmó una
 cabeza que nadie llegó a recoger**, y eso depende de la relación entre la
 cadencia del latido y la de la consulta, **no del reinicio**.
 
-Guardar el histórico serían **18,5 KB por minuto — 26 MB al
-día, 9,5 GB al año**, y sobre todo **un formato de archivo es una decisión
-de conformidad que ningún consumidor ha informado todavía**: cómo se pagina,
-si se pide por rango o por índice, qué pasa con los huecos. Se decide cuando
-haya quien diga qué necesita.
+### ⚠️ El histórico: DECIDIDO en §248 — el operador NO lo sirve
+
+§242 lo aplazó por falta de consumidor. El consumidor llegó (§245) y el dato
+también (§247) — y la respuesta **no es la que se esperaba**:
+
+> **Un histórico servido por el operador es el operador diciendo qué dijo
+> antes.** Puede reescribirlo. Un tercero que lo consulta no gana ninguna
+> propiedad que no tuviera.
+
+No es que cueste: **26 MB al día no es caro**. Es que **no aporta lo que se
+le pedía**. Almacenar 9,5 GB al año para que el operador pueda repetirse a
+sí mismo es pagar por nada.
+
+⚠️ **Y el argumento decisivo**: una vista dividida **entre partes distintas**
+es indetectable desde un histórico central **por construcción** — el
+operador que la produce es el mismo que sirve el histórico. **Solo dos
+registros independientes la revelan.**
+
+Por eso el registro lo llevan **los testigos**, en su diario (`--diario`),
+que desde §248 guarda **la cabeza firmada entera**: un tercero reverifica
+sin el nodo, y dos diarios se comparan campo a campo.
+
+⚠️ **La firma es lo que hace que esto funcione.** Es lo que impide que un
+testigo malicioso fabrique evidencia contra el operador: sin ella, comparar
+diarios no probaría nada. Y por eso el diario cuesta **más** que el
+histórico —el hexadecimal dobla los bytes: ~54 MB al día, ~20 GB al año por
+testigo—. **Es la única versión que prueba algo.**
+
+⚠️ **Comparar dos diarios detecta la divergencia, no dice cuál miente** —
+*detectar no es distinguir*, otra vez. Pero no hace falta: lo que queda
+probado es que **el operador emitió dos cosas distintas para el mismo
+índice**, y eso ya es oponible.
+
+⚠️ **Lo que esto NO cubre: un testigo que no existía no tiene diario**, y
+ahí no hay nada que hacer. Es la limitación estructural del modelo entero
+—Certificate Transparency la tiene igual— y va escrita **junto a la
+decisión**, no en una nota aparte.
 
 ⚠️ Y **sin custodia declarada de la clave, lo que este método sirve no tiene
 valor probatorio** (`SECURITY.md`). §242 hace que el artefacto exista; no
