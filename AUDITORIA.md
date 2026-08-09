@@ -17700,3 +17700,111 @@ Sigue faltando **la custodia declarada de la clave** del operador. §243 hace
 
 Y sigue sin haber testigo: ahora hay **qué** recoger (§242), **por dónde**
 (§242) y **con qué** verificar (§243). Falta **quién**.
+## 244. La custodia: declarada, comprobada donde se puede, y el ancla que falta
+
+### ⚠️ «Custodia» eran dos problemas, y solo uno era de despliegue
+
+**El manejo del secreto** —dónde vive la clave privada, quién la lee, cómo
+se rota— es decisión de despliegue. Eso ya estaba dicho.
+
+**El anclaje de la pública** —cómo sabe un tercero que *esa* clave es la del
+operador— **no es despliegue: es protocolo, y no existe.**
+
+> Hoy un tercero verifica que la firma cuadra con **la clave que el mismo
+> nodo le dio**. Eso es circular, y **ningún manejo del secreto lo arregla**.
+
+Un operador puede cambiar de clave entre dos consultas y **ambas respuestas
+verifican**. Y aunque la privada viviera en un HSM con tres custodios, **el
+testigo seguiría sin poder afirmar de quién es la firma**: el eslabón que
+falta no está en el operador, está en **qué ancla usa el tercero**.
+
+Es lo que Certificate Transparency resuelve publicando las claves de log
+**fuera del log**.
+
+### El ancla queda como BLOQUEANTE NOMBRADO, no como pendiente
+
+En `SECURITY.md`, con las opciones enumeradas y **ninguna elegida**: una
+huella publicada fuera del nodo, un registro de transparencia, una
+contraparte que la ancle, una autoridad de certificación.
+
+⚠️ **Se elige según quién vaya a usar el ancla, y no hay nadie.** Decidirlo
+ahora sería fijar la forma antes del dato — lo que §242 evitó con el
+histórico.
+
+### Lo que sí se arregla: la fuga del secreto
+
+`--clave <hex>` deja la semilla **en el historial del shell y en `ps`**.
+Ahora hay `--clave-fichero`, y **comprueba los permisos al leer**.
+
+⚠️ El keystore de §199 ya creaba con `0600` — pero **nadie comprobaba al
+leer**, y crear bien no impide que alguien afloje después. *Un secreto
+legible por el grupo es un secreto de todos.*
+
+### La declaración de custodia, y por qué el catálogo no invita a mentir
+
+`--custodia` toma `sin-declarar` (por defecto), `fichero`, `hsm`, `kms` u
+`otro`, y viaja en `zkssl_signedEpochHead` junto a **`custodyChecked`**.
+
+⚠️ **`fichero` es la única que el nodo puede comprobar** — y si el operador
+la declara sin `--clave-fichero`, **el nodo no arranca**: no afirma lo que
+no puede comprobar.
+
+Las demás son afirmaciones puras, y **el arranque lo dice en voz alta**:
+*«custodia AFIRMADA pero NO COMPROBADA por el nodo»*. Sin eso, `hsm` invita
+a escribirse porque suena bien, no porque se tenga.
+
+⚠️ **El valor de la declaración no está en que sea cierta, sino en que
+mentir en ella es oponible.** Un operador que declara `hsm` y opera con un
+fichero ha hecho una afirmación falsa que no puede negar — el mismo modelo
+que sostiene el resto del aparato. Y así está escrito **en `spec/RPC.md`**,
+no solo aquí.
+
+### ⚠️ `sin-declarar` viaja igual
+
+El campo va en **las tres respuestas**, incluso cuando no hay firma. Si se
+omitiera al no declarar nada, un consumidor **no podría distinguir «no
+declara» de «versión vieja del nodo»**. Presente y honesto por defecto.
+
+### Y una afirmación de `SECURITY.md` que había envejecido
+
+Decía que publicar cabezas a testigos era *«una propuesta, no una función
+existente»*. Desde §241-§243 **el nodo firma, emite y sirve sus cabezas, y
+hay un verificador independiente**. Corregido — y con lo que sigue siendo
+cierto: **no hay ningún testigo**, así que la propiedad no se cierra.
+
+**Canon: `zk-ssl-node` de 37 a 40.** Sumas: 664 → 667 en el sello, y
+**818 declarados** — no 819.
+
+### ⚠️ Dos cosas que el primer intento de este sello destapó
+
+**`crates/X/target/` NUNCA estuvo ignorado.** El `/target` del
+`.gitignore` está **anclado a la raíz**, y los tests del nodo escriben
+ahí desde §234 — se libraron solo porque `*.bin` cubría los contadores.
+
+Hasta que el test de permisos escribió **`semilla.hex`** y git lo cogió.
+Un fichero llamado *semilla* a punto de entrar en un repositorio público
+de liquidación criptográfica: **el precedente exacto que la sección de
+secretos del propio `.gitignore` quería evitar** — y el contenido eran
+ceros, así que el problema no era el secreto sino el precedente.
+
+Arreglado con `**/target/`, y **los tests centralizados en
+`tests_dir()`** para que uno nuevo no tenga que acordarse. Hay compuerta
+que comprueba que el sello no arrastre nada de `target/`.
+
+⚠️ **Y «declarados» llevaba mal desde §243.** `check_tests.py` cuenta
+`#[test]` **en el fuente**; el pin del canon cuenta **lo que ejecuta
+cargo**, que incluye el doctest del verificador. **Son dos cantidades
+distintas y las igualé**: el sello suma 667 y los declarados son 818.
+
+⚠️ `check_cifras.py` **no puede ver esto**: vigila el número pegado a
+«tests», que es el del sello. Es el hueco de §239 otra vez, en una cifra
+que nadie mira.
+
+### Lo que §244 NO hace
+
+- ⚠️ **No hace las firmas oponibles.** Sin ancla, lo servido sigue sin
+  probar de quién es.
+- **No comprueba `hsm`, `kms` ni `otro`.** No puede, y no finge que sí.
+- **No decide la custodia**: hace posible una decente y **hace visible su
+  ausencia**.
+- Y sigue sin haber testigo.

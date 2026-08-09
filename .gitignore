@@ -1,4 +1,11 @@
 /target
+# ⚠️ `/target` esta ANCLADO a la raiz: `crates/X/target` NO quedaba
+# cubierto, y los tests del nodo escriben ahi desde §234. Se libraron
+# porque `*.bin` cubria los contadores — hasta que §244 escribio un
+# `semilla.hex` y git lo cogio. Un fichero llamado *semilla* a punto de
+# entrar en un repo de liquidacion criptografica: el precedente exacto que
+# la seccion de secretos de mas abajo queria evitar.
+**/target/
 **/*.rs.bk
 Cargo.lock
 # Ledgers de prueba

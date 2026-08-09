@@ -370,6 +370,33 @@ por la misma razón que no subió con `zkssl_applyMany`.
 El segundo caso es la forma de §241 llevada al cable: **la pieza que falta
 —la firma— se nota también aquí**, y no como un fallo.
 
+### ⚠️ `custody` y `custodyChecked` — afirmado frente a comprobado
+
+La respuesta lleva **siempre** los dos campos, incluso cuando no hay firma.
+
+| campo | qué es |
+|---|---|
+| `custody` | **lo que el operador AFIRMA**: `sin-declarar` (por defecto), `fichero`, `hsm`, `kms`, `otro` |
+| `custodyChecked` | si **el nodo pudo comprobarlo**. Solo `fichero` es comprobable |
+
+⚠️ **Es una afirmación del operador, no una comprobación del nodo.** El nodo
+no puede saber si hay un HSM detrás, y no finge que sí: si el operador
+declara `hsm`, la respuesta lleva `custodyChecked: false` y el arranque lo
+avisa en voz alta.
+
+⚠️ **El valor de la declaración no está en que sea cierta, sino en que
+mentir en ella es oponible.** Un operador que declara `hsm` y opera con un
+fichero ha hecho una afirmación falsa que no puede negar — el mismo modelo
+que sostiene el resto del aparato.
+
+⚠️ **`sin-declarar` viaja igual que los demás.** Si el campo se omitiera al
+no declarar nada, un consumidor no podría distinguir **«no declara»** de
+**«versión vieja del nodo»**. Presente y honesto por defecto.
+
+⚠️ Y nada de esto hace la firma oponible: **la clave pública sigue sin
+ancla** (`SECURITY.md`). Un tercero verifica contra la clave que el mismo
+nodo le dio, y eso es circular.
+
 `emittedAtUnix` y `beatSeconds` existen para que **un testigo que pide dos
 veces y recibe la misma firma distinga «no ha habido latido» de «me están
 engañando»**. El `index` de XMSS ya lo permite —es monótono— pero conviene

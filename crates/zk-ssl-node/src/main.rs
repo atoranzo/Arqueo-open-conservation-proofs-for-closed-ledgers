@@ -78,8 +78,36 @@ struct Args {
     /// la línea de órdenes la deja en el historial del shell y en `ps`.
     /// Esta bandera existe para **poder ejercitar el mecanismo**, no como
     /// forma de operar.
-    #[arg(long, value_name = "HEX_96_BYTES")]
+    ///
+    /// ⚠️ **Prefiere `--clave-fichero`.** Esta bandera existe para
+    /// ejercitar el mecanismo, no para operar.
+    #[arg(long, value_name = "HEX_96_BYTES", conflicts_with = "clave_fichero")]
     clave: Option<String>,
+
+    /// **La semilla, leída de un fichero** (96 bytes en hex).
+    ///
+    /// ⚠️ **En Unix se comprueban los permisos al LEER**: si el fichero es
+    /// legible por grupo u otros, el nodo **no arranca**. El keystore de
+    /// §199 ya creaba con `0600`; esto añade **la mitad que faltaba**,
+    /// porque crear bien no impide que alguien afloje después.
+    ///
+    /// ⚠️ Esto **no decide la custodia**: hace posible una decente.
+    #[arg(long, value_name = "RUTA")]
+    clave_fichero: Option<String>,
+
+    /// **Qué custodia AFIRMA el operador** para la clave de firma.
+    ///
+    /// ⚠️ **Es una afirmación del operador, no una comprobación del
+    /// nodo** — salvo `fichero`, que sí se comprueba. El valor de la
+    /// declaración **no está en que sea cierta, sino en que mentir en
+    /// ella es oponible**.
+    ///
+    /// ⚠️ **`sin-declarar` es el valor por defecto y VIAJA IGUAL.** Si el
+    /// campo se omitiera al no declarar nada, un consumidor no podría
+    /// distinguir «no declara» de «versión vieja del nodo».
+    #[arg(long, value_name = "MODELO", default_value = "sin-declarar",
+          value_parser = ["sin-declarar", "fichero", "hsm", "kms", "otro"])]
+    custodia: String,
 
     /// Fichero del contador de índices de firma (§234).
     ///
@@ -161,6 +189,10 @@ struct App {
     clave_publica_firma: Vec<u8>,
     /// Cadencia del latido: cada cuánto esperar una cabeza nueva.
     latido_s: u64,
+    /// Lo que el operador **afirma** sobre la custodia de la clave.
+    custodia: String,
+    /// Si el nodo **pudo comprobarlo**. Solo `fichero` es comprobable.
+    custodia_comprobada: bool,
 }
 
 #[tokio::main]
@@ -178,22 +210,52 @@ async fn main() -> anyhow::Result<()> {
     // ⚠️ El firmante se crea ANTES de `App`: su clave pública es un campo
     // de `App`, porque **un testigo la necesita para verificar** y tiene
     // que poder pedirla por el cable.
-    let firmante = match &args.clave {
+    // ⚠️ `fichero` es **la unica declaracion que el nodo puede COMPROBAR**.
+    // Las demas son afirmaciones puras, y se dice al arrancar.
+    let custodia_comprobada = args.custodia == "fichero" && args.clave_fichero.is_some();
+    if args.custodia == "fichero" && args.clave_fichero.is_none() {
+        anyhow::bail!(
+            "--custodia fichero exige --clave-fichero: el nodo NO afirma lo que no puede comprobar"
+        );
+    }
+    let semilla_hex = match (&args.clave, &args.clave_fichero) {
+        (Some(h), None) => {
+            tracing::warn!(
+                "--clave en la linea de ordenes: la semilla queda en el HISTORIAL \
+                 del shell y en `ps`. Para operar, --clave-fichero"
+            );
+            Some(h.clone())
+        }
+        (None, Some(ruta)) => Some(leer_semilla_de_fichero(ruta)?),
+        _ => None,
+    };
+    let firmante = match &semilla_hex {
         Some(hex) => {
             let semilla = descodificar_semilla(hex)?;
             let f = firma_cabeza::FirmanteCabeza::desde_semilla(&semilla, &args.indice_firma)
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
-            tracing::warn!(
-                indice = args.indice_firma,
-                "--clave: las cabezas de epoca se FIRMARAN. Una firma sin custodia \
-                 declarada de la clave NO tiene valor probatorio (SECURITY.md)"
-            );
+            if custodia_comprobada {
+                tracing::info!(custodia = args.custodia, "custodia COMPROBADA por el nodo");
+            } else if args.custodia == "sin-declarar" {
+                tracing::warn!(
+                    "las cabezas se FIRMARAN con custodia SIN DECLARAR: una firma sin \
+                     custodia declarada NO tiene valor probatorio (SECURITY.md)"
+                );
+            } else {
+                // ⚠️ La declaracion no comprobada se dice en voz alta, o el
+                //    operador se acostumbra a que suene bien y ya.
+                tracing::warn!(
+                    custodia = args.custodia,
+                    "custodia AFIRMADA pero NO COMPROBADA por el nodo: es una \
+                     afirmacion suya, y mentir en ella es oponible"
+                );
+            }
             Some(f)
         }
         None => {
             // ⚠️ EN VOZ ALTA. El silencio equivale a que nadie se entere.
             tracing::warn!(
-                "sin --clave: las cabezas de epoca se CALCULAN pero NO se firman"
+                "sin clave: las cabezas de epoca se CALCULAN pero NO se firman"
             );
             None
         }
@@ -210,6 +272,8 @@ async fn main() -> anyhow::Result<()> {
         ultima_cabeza: Mutex::new(None),
         clave_publica_firma,
         latido_s: args.latido,
+        custodia: args.custodia.clone(),
+        custodia_comprobada,
     });
 
     if args.latido > 0 {
@@ -279,6 +343,41 @@ async fn handle(
                     "error": { "code": e.code, "message": e.message } })
         }
     })
+}
+
+/// Lee la semilla de un fichero, **comprobando los permisos**.
+///
+/// ⚠️ El keystore de §199 creaba con `0600`; **nadie comprobaba al leer**.
+/// Crear bien no impide que alguien afloje despues, y un secreto legible
+/// por el grupo es un secreto de todos.
+fn leer_semilla_de_fichero(ruta: &str) -> anyhow::Result<String> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let modo = std::fs::metadata(ruta)?.permissions().mode() & 0o777;
+        anyhow::ensure!(
+            modo & 0o077 == 0,
+            "{ruta} tiene permisos {modo:04o}: es legible por grupo u otros. \
+             Un secreto legible por el grupo es un secreto de todos. `chmod 600`"
+        );
+    }
+    Ok(std::fs::read_to_string(ruta)?)
+}
+
+/// Directorio de trabajo de los tests.
+///
+/// ⚠️ **`crates/X/target/` NO estaba ignorado**: `/target` en el
+/// `.gitignore` esta anclado a la raiz. Los tests del nodo escriben ahi
+/// desde §234 y se libraron porque `*.bin` cubria los contadores — hasta
+/// que §244 escribio un `semilla.hex` y git lo cogio.
+///
+/// Se centraliza aqui para que **un test nuevo no tenga que acordarse**.
+#[cfg(test)]
+pub(crate) fn tests_dir(nombre: &str) -> std::path::PathBuf {
+    let d = std::path::Path::new("target").join(format!("t_{nombre}"));
+    let _ = std::fs::remove_dir_all(&d);
+    std::fs::create_dir_all(&d).expect("crear el directorio de trabajo del test");
+    d
 }
 
 /// Bytes a hexadecimal, para el cable.
@@ -412,6 +511,8 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                     "available": false,
                     "reason": "aun no ha habido latido: el nodo acaba de arrancar",
                     "beatSeconds": Q(app.latido_s),
+                    "custody": app.custodia,
+                    "custodyChecked": app.custodia_comprobada,
                 }),
                 Some(l) if l.firma.is_none() => json!({
                     "available": false,
@@ -420,6 +521,8 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                     "epochDigest": wire::B32(l.epoch_digest),
                     "emittedAtUnix": Q(l.emitida_unix),
                     "beatSeconds": Q(app.latido_s),
+                    "custody": app.custodia,
+                    "custodyChecked": app.custodia_comprobada,
                 }),
                 Some(l) => {
                     let c = l.firma.as_ref().expect("comprobado en el brazo anterior");
@@ -434,6 +537,10 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                         "publicKey": format!("0x{}", hex_de(&app.clave_publica_firma)),
                         "emittedAtUnix": Q(l.emitida_unix),
                         "beatSeconds": Q(app.latido_s),
+                        // ⚠️ AFIRMADO por el operador; COMPROBADO solo si es
+                        // `fichero`. El consumidor distingue las dos cosas.
+                        "custody": app.custodia,
+                        "custodyChecked": app.custodia_comprobada,
                     })
                 }
             })
@@ -939,6 +1046,8 @@ mod tests {
             ultima_cabeza: Mutex::new(None),
             clave_publica_firma: Vec::new(),
             latido_s: crate::latido::LATIDO_POR_DEFECTO_S,
+            custodia: "sin-declarar".into(),
+            custodia_comprobada: false,
         }
     }
 
@@ -990,6 +1099,50 @@ mod tests {
         assert_eq!(reservas_vivas(&app), 0);
     }
 
+    // ── §244: la custodia, afirmada frente a comprobada ──
+
+    #[test]
+    fn la_custodia_viaja_siempre_y_por_defecto_es_sin_declarar() {
+        // ⚠️ Si el campo se omitiera al no declarar nada, un consumidor no
+        // distinguiria "no declara" de "version vieja del nodo".
+        let app = nodo(30);
+        let v = dispatch(&app, "zkssl_signedEpochHead", json!({})).expect("no debe fallar");
+        assert_eq!(v["custody"], json!("sin-declarar"), "presente y honesto por defecto");
+        assert_eq!(v["custodyChecked"], json!(false));
+    }
+
+    #[test]
+    fn la_custodia_viaja_tambien_cuando_hay_firma() {
+        let app = nodo(30);
+        let l = crate::latido::latir(&app, None).expect("latir");
+        crate::latido::conservar(&app, l);
+        let v = dispatch(&app, "zkssl_signedEpochHead", json!({})).expect("no debe fallar");
+        assert!(!v["custody"].is_null(), "la custodia viaja aunque no haya firma");
+        assert!(!v["custodyChecked"].is_null());
+    }
+
+    #[test]
+    fn un_fichero_de_clave_legible_por_otros_se_rechaza() {
+        // ⚠️ El keystore de §199 creaba con 0600; NADIE comprobaba al leer.
+        // Crear bien no impide que alguien afloje despues.
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let d = crate::tests_dir("clave_permisos");
+            let p = d.join("semilla.hex");
+            std::fs::write(&p, "00".repeat(96)).expect("escribir");
+
+            std::fs::set_permissions(&p, std::fs::Permissions::from_mode(0o644)).expect("chmod");
+            let e = leer_semilla_de_fichero(p.to_str().expect("ruta"))
+                .expect_err("un fichero legible por otros debe rechazarse");
+            assert!(format!("{e}").contains("legible por grupo u otros"), "{e}");
+
+            std::fs::set_permissions(&p, std::fs::Permissions::from_mode(0o600)).expect("chmod");
+            let s = leer_semilla_de_fichero(p.to_str().expect("ruta")).expect("con 0600 debe leer");
+            assert_eq!(s.len(), 192);
+        }
+    }
+
     // ── §242: el metodo del TESTIGO ──
 
     /// Lee una QUANTITY del cable: hexadecimal con 0x, como {:#x}.
@@ -1027,7 +1180,7 @@ mod tests {
     fn con_firma_el_metodo_da_todo_lo_que_un_testigo_necesita() {
         use crate::firma_cabeza::{verificar_cabeza, CabezaFirmada, FirmanteCabeza};
         let app = nodo(30);
-        let d = std::path::Path::new("target").join("rpc_testigo");
+        let d = crate::tests_dir("rpc_testigo");
         let _ = std::fs::remove_dir_all(&d);
         std::fs::create_dir_all(&d).expect("crear");
         let mut s = [0u8; 96];

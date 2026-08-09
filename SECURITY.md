@@ -115,8 +115,36 @@ atado al importe (§74). Ambas corregidas y medidas.
 - **El operador puede censurar y ordenar.**
 - **La custodia del registro está en manos del operador.** Sin observadores
   externos de sus cabezas, podría presentar historias distintas a partes
-  distintas. Cerrarlo exige publicar cabezas a testigos: **es una propuesta,
-  no una función existente**.
+  distintas. **Desde §241-§243 el nodo firma, emite y sirve sus cabezas, y
+  existe un verificador independiente** (`zk-ssl-verify`) — pero **no hay
+  ningún testigo**, así que la propiedad sigue sin cerrarse.
+
+- ⚠️ **BLOQUEANTE: la clave pública de firma no tiene ancla.** No es un
+  pendiente de implementación: **es la pieza que impide que la firma sea
+  oponible**, y ningún manejo del secreto la arregla.
+
+  Hoy un tercero verifica que la firma cuadra con **la clave que el mismo
+  nodo le dio**. Eso es circular: un operador puede cambiar de clave entre
+  dos consultas y **ambas respuestas verifican**.
+
+  ⚠️ Aunque la clave privada viviera en un HSM con tres custodios, **el
+  testigo seguiría sin poder afirmar de quién es la firma**. El eslabón que
+  falta no está en el operador: está en **qué ancla usa el tercero**.
+
+  Opciones enumeradas, **ninguna elegida**: una huella publicada fuera del
+  nodo · un registro de transparencia · una contraparte que la ancle · una
+  autoridad de certificación. **Se elige según quién vaya a usar el ancla, y
+  no hay nadie** — decidirlo ahora sería fijar la forma antes del dato, que
+  es lo que §242 evitó con el histórico.
+
+  Es lo que Certificate Transparency resuelve publicando las claves de log
+  **fuera del log**.
+
+- **Custodia de la clave privada: declarada, no comprobada** (§244). El
+  operador afirma un modelo con `--custodia`, y el nodo lo sirve en
+  `zkssl_signedEpochHead`. ⚠️ **Solo `fichero` se comprueba**; el resto son
+  afirmaciones suyas. El valor no está en que sean ciertas, **sino en que
+  mentir en ellas es oponible**.
 - ⚠️ **El operador puede cambiar el verificador, y hoy eso es invisible.**
   Es **el poder mayor de todos** y no estaba en esta lista: quien puede
   actualizar el verificador **cambia qué es una transición válida** —más
