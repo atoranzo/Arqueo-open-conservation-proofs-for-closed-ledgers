@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 33 abiertas, 43 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 30 abiertas, 46 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 10 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -1307,7 +1307,7 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   **aqui el sistema produce el par condenatorio, no adjudica**.
   **Pendiente T4.**
 
-- [ ] **61. ⚠️⚠️ El codigo cita DOS DOCUMENTOS QUE NO EXISTEN.**
+- [x] **61. ⚠️⚠️ El codigo cita DOS DOCUMENTOS QUE NO EXISTEN.**
   Medido el 01-08-2026 (§120): `CONFIANZA_RESIDUAL.md` y `ESCALADO.md` **no
   estan en el arbol ni en el historial**, y se citan **24 veces** — **6 en
   codigo publicado** (`lib.rs`, `log.rs` ×3, `metrics.rs` ×2), 12 en
@@ -1326,6 +1326,23 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   repuntar cada cita —mas fiel, pero **algunas no tienen destino**—.
   Recomendacion: **A con cabecera de estado**.
 
+
+  ✅ **CERRADA (§266, 10-08-2026)**: **los dos documentos existen** —
+  `doc/CONFIANZA_RESIDUAL.md` y `doc/ESCALADO.md`—, añadidos **los dos en el
+  mismo commit `c46071c`**: «Commit the two ghost documents with
+  correction-map headers, and add the citation guard». Es la **decisión A**
+  que esta nota recomendaba, y las cabeceras de los propios ficheros lo
+  declaran: «añadida al committear (AUDITORIA §120, decisión A)». Vino con
+  compuerta: `tools/verificar_citas.py`.
+  ⚠️ **Estado real de esa compuerta, medido hoy**: existe, pero
+  `canon.sh` **no la invoca** y sale **en rojo sobre el árbol limpio** por
+  una **plantilla de nombre de fichero** que `spec/rfc/PROCESO.md:14` da como
+  ejemplo de cómo bautizar una RFC, y que la compuerta toma por cita. No invalida el
+  cierre de esta nota: los documentos existen. Pero el tapón no lo mira
+  nadie, y eso va con la **66**.
+  ⚠️ **Lo que NO cierra**: el ámbito de esa compuerta es sólo `.rs`, y eso
+  es la **entrada 66**, que sigue abierta. La 61 era el agujero; la 66 es
+  el alcance del tapón.
 - [x] **59. ✅ `native_merge`: una definicion (§125.1).** El miedo de §117
   —«dos Rescue que deben coincidir»— **se desmintio por lectura**: eran **el
   mismo wrapper caracter a caracter**. Cierre por **delegacion**, cero
@@ -1457,7 +1474,7 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   (§133). Hallazgos de seguridad cazados: ClientState reescribible (P2),
   atributo desplazado (P5) — ambos invisibles a un despliegue de una tacada.
 
-- [ ] **67. ⚠️ Indices predecibles — INTENTADA Y REVERTIDA (asiento del
+- [x] **67. ⚠️ Indices predecibles — INTENTADA Y REVERTIDA (asiento del
   2026-08-03): imposible EN SOLITARIO, condicionada a la migracion unica.**
   ⚠️⚠️ **El intento rompio 27 tests y la causa es UNA constante:
   `FROZEN_DEPTH = 24`.** El indice de cuenta es coordenada COMPARTIDA
@@ -1544,6 +1561,16 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   orden**: primero garantizar que el indice no retroceda. Dos vias sin medir
   en §110.5.
 
+
+  ✅ **CERRADA (§266, 10-08-2026)**: la salida que esta nota eligió
+  —`posición = H(public_id)`— es la que se desplegó. **F3 (§157,
+  `e3116c6`+`f926de6`)**: `open_account` coloca por `public_id mod
+  capacidad` con sondeo lineal, `next_index` queda como censo, y **los dos
+  contratos que esta nota perseguía vigilan en verde** —
+  `account_indices_are_not_enumerable` y `account_indices_are_not_predictable`,
+  los dos en `crates/zk-ssl/src/client.rs`—. La «dependencia dura con
+  B13/B14» que quedaba sin resolver se resolvió coordinándolas: el mismo
+  evento recomputó el árbol una vez.
 - [ ] **48. `CONFIANZA_RESIDUAL.md`: la evidencia contra el operador esta en
   manos del operador.** Documento externo del 31-07-2026, sin integrar.
   ✅ **Su tesis central se sostiene y esta bien anclada**: el README afirma
@@ -1584,7 +1611,7 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   (§136.3). **Peso muerto, no garantia falsa** —a diferencia de los
   `assert_eq!` de §125.2—. Limpieza, no hallazgo.
 
-- [ ] **50. ⚠️ PRIVACIDAD FRENTE A TERCEROS — propiedad DEMOSTRADA,
+- [x] **50. ⚠️ PRIVACIDAD FRENTE A TERCEROS — propiedad DEMOSTRADA,
   despliegue pendiente (§126).**
   ✅ **La clausula de caida de §117 se resuelve A FAVOR**: `T2b-nativo` 3/3
   demuestra que **un titular que pierde todo salvo la clave reconstruye su
@@ -1800,6 +1827,12 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   **CERO·CERO** (warnings 0·0; suites 316/0 · 242/0). Retirada del
   museo REGISTRADA como futura (⚠️ los helpers nativos se mudan
   antes). **COLA: VACÍA.**
+
+  ✅ **CERRADA (§266, 10-08-2026)**: **la nota ya declaraba su propio cierre
+  y nadie marcó la casilla** — «La entrada 50 se CIERRA» tras F3 (§157,
+  `e3116c6`+`f926de6`) y «**COLA: VACÍA**» tras F4 (§158, `a2f414d` →
+  `af75c0a`). No se añade trabajo: el cierre estaba hecho **y escrito aquí
+  dentro** desde entonces. Lo que faltaba era el corchete.
 - [ ] **51. Tres `native_leaf` con dominios de identidad distintos.**
   §94: misma estructura, **distinta anchura** — `Digest` (256 bits) en
   `circuit_settlement`, `BaseElement` (64) en `compliance_circuit` y

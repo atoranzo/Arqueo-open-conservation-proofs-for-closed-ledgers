@@ -19895,3 +19895,113 @@ identidad de commit. El zip no trae `.git`. No es grave, porque el cerrojo PRE
 lee `HEAD` en la máquina y se corrige solo, pero **no se escribe como leído**.
 
 **No mueve ningún pin.** Sumas: 736 / 873 / 887, sin cambio.
+
+## 266. Tres notas terminadas que seguían marcadas abiertas
+
+Al leer entera la sección G del `BACKLOG` —dieciocho abiertas, más de la
+mitad de todo lo vivo— tres resultaron estar **hechas**. Este sello las
+marca, cada una con su evidencia, y registra **cómo llegaron a estarlo**,
+que es lo que vale más que las tres.
+
+### Tres mecanismos distintos, no un descuido repetido
+
+| nota | por qué seguía abierta | cerrada por |
+|---|---|---|
+| **50** | **declara su propio cierre en su propio texto** —«La entrada 50 se CIERRA», «COLA: VACÍA»— y nadie marcó la casilla | §157 y §158 |
+| **61** | tenía una **decisión A/B**; se tomó la A y la nota no se enteró | `c46071c` |
+| **67** | la cerró **F3** y sus dos contratos vigilan en verde desde entonces | §157 |
+
+⚠️ **Ninguna se cerró leyendo la nota.** Cada una se comprobó contra el
+árbol: los dos documentos existen y se midió con `git log --diff-filter=A`
+el commit que los añadió; los dos contratos de la 67 son tests vivos con
+fichero y línea. Fiarse del texto de una nota para cerrarla sería repetir
+el fallo que la dejó abierta.
+
+⚠️ Y un rastro del método: el primer intento midió con `git log -1 --
+fichero`, que da **el último commit que tocó el fichero**, no aquel en el
+que entró. Devolvió §174 y §205 —dos modificaciones posteriores— y habría
+fechado el cierre cinco sellos tarde. `--diff-filter=A` es la pregunta
+correcta.
+
+⚠️ **Segundo rastro, y de la misma familia**: la compuerta que comprueba
+**qué** se borró estaba **ciega justo en lo que este sello toca**. En un
+diff, una línea borrada que ya empieza por guion —y las notas del
+`BACKLOG` empiezan por `- [ ]`— sale como **doble guion**, y el patrón
+`^-[^-]` la descarta confundiéndola con la cabecera `--- a/fichero`. En
+§264 y §265 no mordió porque allí lo borrado eran líneas de contador y
+comentarios `//!`. Dijo «1 borrada» donde había cuatro. **Una compuerta
+que no cubre el caso del sello que la usa no está protegiendo: está
+acompañando.**
+
+⚠️ **Tercer rastro, y el peor**: `tools/verificar_citas.py` —la compuerta
+que `c46071c` añadió para cerrar la 61— **no la invoca `canon.sh`** y sale
+**en rojo sobre el árbol limpio**, por una **plantilla de nombre de fichero**
+que `spec/rfc/PROCESO.md:14` da como ejemplo y que toma por cita. Lleva así sin que nadie lo
+vea, porque nada la corre. Este sello **no la arregla**: la compara
+contra su propio PRE de la misma corrida y exige que **no empeore**.
+Una compuerta roja que nadie ejecuta es peor que no tenerla: figura
+como tapón en el asiento que la creó.
+
+⚠️ **Y lo probó sobre este mismo sello**: el primer borrador del cierre de
+la 61 **escribía el nombre del fantasma** para explicarlo, y la compuerta
+pasó de una cita fantasma a dos. **Nombrar un fantasma crea otro**: el
+instrumento no distingue *mencionar* de *referenciar*. Lo cazó la propia
+comparación contra el PRE, que es para lo que estaba puesta.
+
+⚠️ **Y el propio invariante hubo que corregirlo**: el primero exigía que la
+salida fuera **idéntica**, y eso es falso — citar un fichero que existe hace
+**crecer el índice de nombres**, que es lo correcto. Lo que no puede crecer
+son **los fantasmas** y las **secciones muertas**. Una compuerta que prohibe
+todo cambio no protege: paraliza.
+
+### El contador puede cuadrar y mentir
+
+§264 arregló que el contador **se contara** en vez de sumarse a mano, y
+esta misma mañana volvió a cuadrar: 33 abiertas, 43 resueltas, contrastado
+contra el recuento. **Y tres de esas 33 estaban hechas.**
+
+> **Un contador correcto cuenta corchetes, no estados.** Nada comprueba
+> **qué** se cuenta, así que un `[ ]` sobre algo terminado pasa las dos
+> compuertas que hay.
+
+Es el escalón siguiente de la deuda que §264 dejó declarada —«nada vigila
+el contador»— y resulta ser peor de lo que allí se dijo: **ni siquiera un
+contador perfecto lo habría detectado**.
+
+### El criterio tenía tres casillas y la realidad cuatro
+
+La lectura de G se hizo con un criterio **declarado antes de abrir el
+fichero** —fuera, dentro, cajón— y umbrales fijados sobre 18. Las tres
+notas hechas son una **cuarta casilla que no estaba prevista**, y eso
+mueve el denominador.
+
+| casilla | cuenta |
+|---|---:|
+| DENTRO | 11 |
+| FUERA | 2 |
+| CAJÓN | 2 |
+| **ya hechas** | **3** |
+
+Aplicada **tal como se escribió** —umbral 12 sobre 18—, ninguna categoría
+lo alcanza: el veredicto es **cajón**. Recalculando el umbral sobre las 15
+realmente abiertas saldría lo contrario, «caducó la etiqueta».
+
+⚠️ **No se recalculó.** Ajustar el denominador después de ver los datos es
+exactamente lo que la declaración previa existía para impedir. Queda
+anotado que la otra lectura existe y por qué no se tomó.
+
+Y el veredicto no depende sólo del recuento: **la 55 y la 57 son el mismo
+programa en dos entradas**, y **la 66 pega dos asuntos sin relación** —el
+ámbito del guardián y `native_merge` duplicado—. Una sección donde lo
+terminado sigue marcado abierto **no chirría cuando se le mete algo vivo**:
+eso explica cómo los tres eslabones de la cadena de la oponibilidad —56,
+48, 62, que la cabecera del fichero pone de primeros— acabaron ahí sin que
+nadie lo notara.
+
+### Lo que este sello NO hace
+
+Partir la 66, fundir la 55 con la 57 y decidir el título de G. Con tres
+menos, el denominador ya es otro, y esa decisión se toma sobre el recuento
+limpio y no sobre éste.
+
+**No mueve ningún pin.** Sumas: 736 / 873 / 887, sin cambio.
