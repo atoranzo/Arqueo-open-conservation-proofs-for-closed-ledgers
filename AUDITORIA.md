@@ -20305,3 +20305,87 @@ vivos (§267).
   este sello necesite.
 
 **Mueve un pin**: `zk-ssl-hash` 14 → 16. Sumas: **738 / 875 / 889**.
+
+
+## 271. El campo que dice atar, y en cuatro vías no ata
+
+`LogEntry.proof_digest` existe para **atar cada entrada del registro a una
+prueba concreta** — lo dice su propia documentación—. Medido: **cuatro vías
+delegadas lo dejan sin contenido**.
+
+| vía | qué asienta |
+|---|---|
+| `mint.rs:131` | `Mint`, `root_old` ≠ `root_new`, **prueba `&[]`** |
+| `recovery.rs:166` | `Recovery`, `root_old` ≠ `root_new`, **prueba `&[]`** |
+| `freeze.rs:138` | `Freeze`, **`raiz, raiz`**, **prueba `&[]`** |
+| `governance.rs:162` | `Governance`, **`raiz, raiz`**, **prueba `&[]`** |
+
+Como `append` calcula `digest_of_proof(proof)`, las cuatro comparten **un
+único valor**, el de la prueba vacía — medido en la máquina que selló, dos
+veces y coincidentes:
+
+```text
+74de079ffffa783f99bdd9ffa25e4112f8c395b141c83325e06ad3e10625cfa1
+```
+
+⚠️ **Va con el valor delante a propósito.** Un número concreto es lo que
+impide que dentro de veinte sellos esto se reduzca a «el campo a veces está
+vacío», que es cierto y no dice nada.
+
+### La documentación no sólo se contradice: nombra las dos que fallan
+
+Sobre `root_old`/`root_new`, `log.rs` decía:
+
+> Las operaciones que no tocan el árbol de cuentas —**gobernanza,
+> congelación**— tienen `root_old == root_new`, y el detalle de lo que sí
+> cambiaron **queda atado por `proof_digest`**.
+
+Y esas dos son **exactamente** las que asientan con prueba vacía. Para ellas,
+la entrada del registro dice sólo *«pasó algo de esta clase en este `seq`»*.
+
+### Lo que SÍ está atado, y no conviene confundirlo
+
+**No es un agujero de autorización.** `apply_governance_delegated` verifica el
+par contra `commit_operation(OP_GOVERNANCE, raíz_vieja ‖ raíz_nueva ‖
+count_old ‖ count_new)`, con su razón escrita desde §56.2: *«sin él, una
+autorización para un cambio serviría para cualquier otro»*. **El cambio está
+ligado criptográficamente a la transición exacta.** Lo que no ocurre es que
+eso **llegue al registro**: el compromiso vive en las pruebas, que se
+verifican en proceso y se descartan.
+
+⚠️ Esa distinción costó una corrección. La primera lectura afirmó que «no se
+puede saber en qué se convirtió el conjunto de custodios» apoyándose en tres
+líneas, y sonaba a medida siendo razonada. **Leído el camino entero, era
+media verdad**: no se puede saber **desde el registro**; desde la
+autorización, sí. La afirmación se retiró antes de escribirse en ningún
+sitio.
+
+### Por qué la corrección va en la doc y no sólo en el backlog
+
+**La entrada de backlog es para el arreglo; la línea en la doc es para que
+mientras tanto nadie se fíe.** Quien va a usar el campo lee la doc del campo,
+no el backlog — y hoy lo lee y le dice que ata.
+
+### Dos notas, y por qué no una
+
+- **78 · presente y medido**: un campo cuya documentación contradice su uso,
+  hoy, en el código.
+- **79 · futuro y razonado**: que eso impida reverificar desde el registro el
+  día que haya réplica.
+
+> Juntas, la primera se lee como **consecuencia** de la segunda y queda
+> archivada como cosa de mañana. Sería la enfermedad de esta semana **con el
+> signo cambiado**: en vez de un asunto cerrado viajando como pendiente, un
+> defecto presente viajando como futuro.
+
+⚠️ Y la 79 **menciona** la 17 y la 23, no se ata a ellas. La 17 se leyó
+entera antes: es «constatación de arquitectura, no hallazgo», sin nada medido
+y sin plan. **Colgar una precondición de un clavo que no sujeta** es lo que
+esta sesión ha estado corrigiendo todo el día.
+
+### Lo que este sello NO hace
+
+No arregla el asiento. Asentar el digest real de la prueba que autorizó es la
+nota 78, y toca cuatro vías de la capa: es su propio sello.
+
+**No mueve ningún pin.** Sumas: 738 / 875 / 889, sin cambio.

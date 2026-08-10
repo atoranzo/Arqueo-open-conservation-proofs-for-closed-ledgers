@@ -155,6 +155,18 @@ pub struct LogEntry {
     /// siguiente. Las operaciones que no tocan el árbol de cuentas
     /// —gobernanza, congelación— tienen `root_old == root_new`, y el
     /// detalle de lo que sí cambiaron queda atado por `proof_digest`.
+    ///
+    /// ⚠️ **CORRECCIÓN (§271): esa última frase es FALSA hoy, y justo para
+    /// las dos que nombra.** `governance.rs:162` y `freeze.rs:138` asientan
+    /// con **prueba vacía**, así que su `proof_digest` es una constante y no
+    /// ata ningún detalle. Para esas dos, la entrada dice sólo *«pasó algo
+    /// de esta clase en este `seq`»*. Ver la nota 78 del BACKLOG.
+    ///
+    /// ⚠️ Lo que **sí** está atado, y conviene no confundirlo: la
+    /// AUTORIZACIÓN. `apply_governance_delegated` verifica contra
+    /// `commit_operation(OP_GOVERNANCE, raíz_vieja ‖ raíz_nueva ‖ count_old
+    /// ‖ count_new)`, así que el cambio está ligado a la transición exacta.
+    /// Lo que no ocurre es que **eso llegue al registro**.
     pub root_old: Digest,
     pub root_new: Digest,
     /// Resumen de la prueba, no la prueba entera.
@@ -162,6 +174,21 @@ pub struct LogEntry {
     /// Guardar las pruebas completas serían ~62 KB por operación: mil
     /// transferencias son 59 MB. El resumen basta para atar la entrada a
     /// una prueba concreta, y quien quiera verificarla puede pedirla.
+    ///
+    /// ⚠️ **CORRECCIÓN (§271): en CUATRO vías delegadas no ata nada.**
+    /// `mint.rs:131`, `freeze.rs:138`, `recovery.rs:166` y
+    /// `governance.rs:162` llaman a `append` con `&[]`, así que las cuatro
+    /// comparten un único valor —el de la prueba vacía— y no hay prueba
+    /// concreta que pedir. Medido: `digest_of_proof(&[])` es
+    ///
+    /// ```text
+    /// 74de079ffffa783f99bdd9ffa25e4112f8c395b141c83325e06ad3e10625cfa1
+    /// ```
+    ///
+    /// Gradación, porque no todas fallan igual: `mint` y `recovery` al menos
+    /// registran la transición —sus raíces difieren—; `freeze` y
+    /// `governance` asientan `raiz, raiz` y no registran nada de lo que
+    /// cambiaron. Ver las notas 78 y 79 del BACKLOG.
     pub proof_digest: Digest,
     /// Resumen encadenado hasta esta entrada, inclusive.
     pub chain: Digest,

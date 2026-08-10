@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 29 abiertas, 48 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 31 abiertas, 48 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 10 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -806,6 +806,41 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **Sin urgencia y sin plazo**: el sujeto no es fabricable por este
   repositorio. Cerrarla es decidir si el legacy se soporta o se declara
   fuera de alcance — decisión, no trabajo.
+
+- [ ] **78. `proof_digest` dice que ata, y en cuatro vías no ata nada.**
+  **PRESENTE y MEDIDO** sobre `bb85772`, 10-08-2026. Cuatro vías delegadas
+  llaman a `append` con `&[]` — `mint.rs:131`, `freeze.rs:138`,
+  `recovery.rs:166` y `governance.rs:162`— así que las cuatro comparten un
+  único `proof_digest`, el de la prueba vacía:
+  `74de079ffffa783f99bdd9ffa25e4112f8c395b141c83325e06ad3e10625cfa1`.
+  ⚠️ **Y la doc no sólo se contradice: nombra las dos que fallan.** Sobre
+  `root_old`/`root_new` decía que en gobernanza y congelación «el detalle de
+  lo que sí cambiaron queda atado por `proof_digest`», y son justo las dos
+  que asientan con prueba vacía. §271 corrigió **la doc**, encima y sin
+  borrar; esta entrada es para **el arreglo**.
+  **Gradación**: `mint` y `recovery` registran la transición —sus raíces
+  difieren—; `freeze` y `governance` asientan `raiz, raiz`, así que su
+  entrada dice sólo «pasó algo de esta clase en este `seq`».
+  ✅ **Lo que NO es**: un agujero de autorización.
+  `apply_governance_delegated` verifica contra `commit_operation(
+  OP_GOVERNANCE, raíz_vieja ‖ raíz_nueva ‖ count_old ‖ count_new)`, con su
+  razón escrita (§56.2). El cambio **está** ligado a la transición exacta;
+  lo que no llega es al registro.
+  **Arreglo**: asentar el digest de la prueba que autorizó, en vez de `&[]`.
+
+- [ ] **79. Sin el digest real, un log replicado no puede recomprobar que
+  aquello estaba autorizado.** **FUTURO y RAZONADO**, y va aparte de la 78 a
+  propósito: son dos naturalezas, y juntas la 78 se leería como consecuencia
+  de ésta y quedaría archivada como cosa de mañana.
+  Hoy **no muerde**, y eso está medido: no existe reconstrucción que
+  reverifique — los únicos `replay` del árbol son tests de rechazo de
+  repetición, no de reejecución. Muerde el día que alguien construya réplica
+  o verificación desde el registro.
+  ⚠️ **Menciona la 17 y la 23; NO se ata a ellas.** La 17 se leyó **entera**
+  antes de escribir esto: es «constatación de arquitectura, no hallazgo… no
+  hay nada medido que registrar», comprobable con un `grep` que no devuelve
+  nada. **No tiene plan**, y colgar una precondición de un clavo que no
+  sujeta es lo que hay que evitar.
 
 ## E. Operacion
 
