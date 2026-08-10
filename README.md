@@ -151,6 +151,17 @@ Lo que sí se cerró: **no puede reescribir el historial en secreto**
 (registro encadenado de transiciones), ni crear dinero, ni gastar de una
 cuenta ajena, ni operar sobre un estado corrupto.
 
+⚠️ **La primera lleva condición, y conviene decirla.** Un registro encadenado
+sólo impide reescrituras **detectables por quien ya vio una cabeza anterior**.
+Lo que cambió es que **hoy esa condición se puede cumplir sin pedirle nada al
+operador**: el nodo sirve la cabeza **firmada** —`zkssl_signedEpochHead`— y la
+CLI trae un **testigo** de referencia que la verifica con `zk-ssl-verify` y
+**fija la clave que ve la primera vez**. Desde ese primer encuentro, el
+operador no puede cambiar de clave sin que un tercero lo vea.
+
+**La garantía la tiene quien mira, no quien lee**: sin un testigo corriendo, la
+frase de arriba no protege a nadie.
+
 **Qué es esto**: una demostración de que las propiedades criptográficas de
 una liquidación soberana son construibles y medibles.
 **Qué no es**: una capa descentralizada.

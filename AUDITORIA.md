@@ -20065,3 +20065,65 @@ estaba auditando.
   árbol y queda declarado como tal en la 77.
 
 **No mueve ningún pin.** Sumas: 736 / 873 / 887, sin cambio.
+
+## 268. La 48 no se descarta: se reparte
+
+La sesión pidió trabajar la **48** —`CONFIANZA_RESIDUAL.md`, eslabón 4 de la
+cadena de la oponibilidad—. No es trabajo: es **un documento cuyo contenido ya
+se repartió**, y lo que quedaba suyo cabe en un párrafo del `README`.
+
+### Sus tres bloques, medidos contra el árbol
+
+| bloque | estado |
+|---|---|
+| **B10** — cabezas firmadas a testigos, con recibos | **HECHO**: `firma_cabeza.rs` firma con XMSS, `zkssl_signedEpochHead` sirve, `witness.rs` es un testigo de referencia **con mando propio en la CLI** que verifica con `zk-ssl-verify` y fija la clave del primer encuentro; recibo de inclusión §256-§259; contador de recepción en `recepcion.rs`, monótono y persistido |
+| **B11** — operador ciego | **entrada 47**, como la propia nota decía |
+| **B12.2** — especificación y auditoría | **entrada 7**, como la propia nota decía |
+
+### Una nota puede caducar sin estar hecha
+
+Las cuatro de §266 y §267 estaban **terminadas**. Ésta no: su contenido
+**migró** a otras entradas y su **tesis envejeció**. Ni el corchete vacío ni
+uno marcado a secas describen eso.
+
+> **Por eso el cierre lleva mapa**: adónde fue cada bloque, con su evidencia.
+> Un cierre sin mapa convierte tres destinos en cero.
+
+Y **repartir es lo contrario de fundir, por la misma razón**. §265 fundió tres
+entradas en la 76 porque eran un solo sujeto; aquí se reparte una en tres
+porque son tres. La regla no es «menos entradas»: es que **cada entrada tenga
+un dueño**.
+
+### La tesis cambió de signo, y el README no lo decía
+
+La 48 se apoyaba en una frase medida en julio:
+
+> «hoy nadie fuera del operador ve cabezas»
+
+**Dejó de ser cierta.** Y el `README` afirmaba, sin condición, que el operador
+«no puede reescribir el historial en secreto». Las dos cosas juntas dan el
+matiz que faltaba: la garantía **siempre fue condicional** —vale para quien ya
+vio una cabeza anterior— y lo que ha cambiado es que **ahora la condición se
+puede cumplir**, corriendo un testigo.
+
+Escribirlo importa en las dos direcciones. Sin la condición, el `README`
+promete a todo lector algo que sólo tiene quien mira. Y sin decir que la
+condición es cumplible, la nota seguiría pareciendo una objeción viva cuando
+ya está atendida. **La corrección va encima, sin tocar el párrafo**: cero
+líneas borradas del `README`.
+
+### Un duplicado más
+
+**El B11.2 de la 48 —cifrar el aviso— no tenía entrada propia**: sólo vivía
+dentro de su cuerpo. Y la **entrada 11** es el mismo objeto por la otra cara —
+el aviso pendiente viaja fuera del mensaje ISO—. Tercer duplicado del tramo,
+tras la 55 con la 57 y las tres caras que la 76 fundió.
+
+### Lo que este sello NO hace
+
+- **No cifra el aviso.** Es trabajo de circuito y de protocolo, y se decide con
+  la entrada 11 delante, no de propina.
+- **No toca la entrada 7 ni la 47**: la 48 ya decía que eran suyas, y
+  duplicarlo sería el error que este sello corrige.
+
+**No mueve ningún pin.** Sumas: 736 / 873 / 887, sin cambio.

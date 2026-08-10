@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 30 abiertas, 47 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 29 abiertas, 48 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 10 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -534,6 +534,12 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   no analisis**: no hay seccion porque no hay nada que analizar hasta que se
   especifique el canal.
 
+
+  ⚠️ **Y es el mismo objeto que el B11.2 de la entrada 48** (§268): allí se
+  pedía **cifrar** el aviso; aquí, que **viaje dentro** del mensaje. Son el
+  aviso pendiente mirado por dos caras, y desde §268 vive **sólo aquí**.
+  Cifrarlo es trabajo de circuito y de protocolo: se decide con esta entrada
+  delante, no de propina.
 - [ ] **12. Fondos muertos — POLITICA DECIDIDA (§119), piezas 1-3
   pendientes.** ✅ **La reversion es un segundo cobro**: el **emisor, con su
   clave, tras un plazo**, hacia un `refund_id` comprometido en el envio.
@@ -1589,7 +1595,7 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   los dos en `crates/zk-ssl/src/client.rs`—. La «dependencia dura con
   B13/B14» que quedaba sin resolver se resolvió coordinándolas: el mismo
   evento recomputó el árbol una vez.
-- [ ] **48. `CONFIANZA_RESIDUAL.md`: la evidencia contra el operador esta en
+- [x] **48. `CONFIANZA_RESIDUAL.md`: la evidencia contra el operador esta en
   manos del operador.** Documento externo del 31-07-2026, sin integrar.
   ✅ **Su tesis central se sostiene y esta bien anclada**: el README afirma
   que el operador «no puede reescribir el historial en secreto», y **la
@@ -1624,6 +1630,30 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   pero al integrarlo hay que fechar la maquina, como obligo §89 con
   `ESCALADO.md`.
 
+
+  ✅ **CERRADA (§268, 10-08-2026) — REPARTIDA, no descartada.** Medido contra
+  el árbol: sus tres bloques ya tienen dueño, y lo único suyo que no lo tenía
+  —la tesis— se corrige en el `README`.
+  · **B10 — cabezas firmadas a testigos, con recibos: HECHO.**
+    `crates/zk-ssl-node/src/firma_cabeza.rs` firma la cabeza con XMSS;
+    `zkssl_signedEpochHead` la sirve; `crates/zk-ssl-cli/src/witness.rs` es un
+    **testigo de referencia con mando propio en la CLI** que la verifica con
+    `zk-ssl-verify` y **fija la clave que ve la primera vez** —TOFU—. El
+    recibo de inclusión es §256-§259, y el **contador de recepción** de §121.3
+    vive en `crates/zk-ssl-node/src/recepcion.rs`, monótono y persistido.
+  · **B11 — operador ciego: va con la entrada 47**, como esta misma nota ya
+    decía (depende del C3 de `ESCALADO.md`). ⚠️ **Su excepción B11.2 —cifrar
+    el aviso— es el mismo objeto que la entrada 11**, que lo mira por la otra
+    cara: el aviso viaja fuera del mensaje ISO. **Anotado allí**, para que no
+    siga viviendo en dos sitios.
+  · **B12.2 — especificación y auditoría: es la entrada 7**, como esta nota ya
+    decía. No se duplica.
+  ⚠️ **Y su tesis cambió de signo.** Se apoyaba en que «hoy nadie fuera del
+  operador ve cabezas», y eso dejó de ser cierto: hay método que las sirve
+  firmadas y testigo que las consume sin compilar el código del operador. La
+  garantía sigue siendo **condicional** —vale para quien ya vio una cabeza
+  anterior— pero **ahora la condición se puede cumplir**. El `README` la
+  afirmaba sin condición; §268 se la pone, encima y sin tocar el párrafo.
 - [ ] **69. Tres ayudantes de test sin usar en `circuit_settlement.rs`.**
   `SK` y `d()` en `t2b_recuperacion_nativa`, `claves()` en `t2a_salt_hoja`
   (§136.3). **Peso muerto, no garantia falsa** —a diferencia de los
