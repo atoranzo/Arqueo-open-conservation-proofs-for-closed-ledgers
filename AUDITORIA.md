@@ -20005,3 +20005,63 @@ menos, el denominador ya es otro, y esa decisión se toma sobre el recuento
 limpio y no sobre éste.
 
 **No mueve ningún pin.** Sumas: 736 / 873 / 887, sin cambio.
+
+## 267. La cuarta nota terminada, y ésta estaba en la cabecera
+
+La sesión pidió trabajar la **56** —firmar las cabezas con XMSS, «decisión
+tomada, sin implementar»—. **Está implementada.** Es la cuarta nota terminada
+que aparece marcada abierta en dos días, y la primera que además contradice a
+la cabecera del propio fichero.
+
+### Medido contra el árbol
+
+| lo que la nota daba por sin resolver | lo que hay |
+|---|---|
+| persistir el índice a través de un reinicio | `firma_indice.rs`, «el guardián del índice de firma»: contador propio con `fsync` aislado del ledger (§111.1). **9 tests** |
+| elegir el tamaño del árbol | `XmssMtSha2_40_8_256` —MT 40/8— como `pub type Conjunto` en `zk-ssl-verify`. Firma de **137 bytes** |
+
+Y el eslabón que perseguía existe: `firma_cabeza.rs` firma `EpochHead` con
+XMSS con el guardián delante (§234), **5 tests**; `xmss` es dependencia con
+versión exacta en dos crates, y hay código en nueve ficheros.
+
+### La cabecera del fichero llevaba dos eslabones muertos que están vivos
+
+`BACKLOG.md` abre con «La cadena de la oponibilidad, de un vistazo», añadida
+en §233 para no tener que reconstruirla leyendo tres entradas. Decía:
+
+> `2. GUARDIAN DEL INDICE ...... 56  <-- LO UNICO VIVO DEL ESLABON 1`
+> `3. cabeza firmada, emitida .. 56  no existe: epoch_head() es constructor puro`
+
+**Los dos están implementados.** Una tabla-resumen escrita para orientar
+llevaba desorientando desde que su contenido se hizo, y por su posición es lo
+primero que lee cualquiera que abra el fichero.
+
+### El mecanismo, y es distinto del de §266
+
+En §266 las tres notas seguían abiertas por descuido de marcado. Ésta no: su
+línea de evidencia **decía «sin implementar»**, y esa frase viajó —del texto
+de la nota al traspaso de la sesión 13, escrito veinte minutos antes de
+medirlo— recomendando la 56 como *«el candidato con más fondo»*.
+
+> **Leer una nota entera no es medirla.** Leerla dice lo que la nota dice. La
+> línea de evidencia sale del árbol: `pub fn`, línea de dependencia, tests
+> contados en el canon.
+
+⚠️ **Y la asimetría es lo que hay que corregir de verdad.** En §266 se
+comprobaron contra el árbol las tres notas que se **sospechaban cerradas** —y
+se acertó—, y se dio por buena la que se **suponía abierta**. La verificación
+fue exactamente donde ya estaba la sospecha, que es donde menos falta hacía.
+El rito de §265 —cada pendiente con su evidencia— se cumplió en la forma y no
+en el fondo: se escribió una procedencia, pero copiada de la fuente que se
+estaba auditando.
+
+### Lo que este sello NO hace
+
+- **No toca la nota 67.** §266 la cerró y su cuerpo es historia: no se
+  reescribe. Lo vivo que tenía dentro sale en la **nota 77**, que dice de
+  dónde viene.
+- **No decide el título de G**, pendiente desde §266.
+- **No comprueba si el issue upstream se presentó**: eso es de fuera del
+  árbol y queda declarado como tal en la 77.
+
+**No mueve ningún pin.** Sumas: 736 / 873 / 887, sin cambio.

@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 30 abiertas, 46 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 30 abiertas, 47 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 10 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -24,8 +24,8 @@ puso **el acuse primero**, que es el ultimo eslabon.
 
 ```
   1. esquema de firma ......... 53  CERRADA (§127.1) · xmss MT 40/8, medido
-  2. GUARDIAN DEL INDICE ...... 56  <-- LO UNICO VIVO DEL ESLABON 1
-  3. cabeza firmada, emitida .. 56  no existe: epoch_head() es constructor puro
+  2. GUARDIAN DEL INDICE ...... 56  CERRADO (267) · firma_indice.rs, 9 tests
+  3. cabeza firmada, emitida .. 56  CERRADO (267) · firma_cabeza.rs, 5 tests
   4. EpochHead + 2 extensiones  48  verifier_hash (§104.3) + raiz de recepcion (§121)
   5. acuse .................... 62  politica DECIDIDA; mitad aritmetica YA construida
 ```
@@ -1183,7 +1183,7 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   ⚠️ **Van DOS de veintisiete**, con **tres garantias por consecuencia**
   documentadas. **Las 25 restantes siguen sujetas a §105.3.**
 
-- [ ] **56. Firmar las cabezas con XMSS — decision tomada, sin implementar.**
+- [x] **56. Firmar las cabezas con XMSS — decision tomada, sin implementar.**
   ⚠️ **DECISION del 01-08-2026 (§106)**: **todo el camino de produccion es
   post-cuantico**; los backends comparados se conservan **como evidencia de
   por que se eligio STARK**, no como alternativa. ✅ **Verificado**:
@@ -1199,6 +1199,24 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   que lo pierda puede reusarlo— y elegir el tamaño del arbol, que fija
   **cuantas epocas se pueden firmar antes de agotarse**.
 
+
+  ✅ **CERRADA (§267, 10-08-2026)**: **está implementada**, y las dos
+  incógnitas que esta nota daba por «sin resolver» están resueltas —medido
+  contra el árbol, no contra el texto de la nota—.
+  · **Persistir el índice a través de un reinicio**:
+    `crates/zk-ssl-node/src/firma_indice.rs`, «el guardián del índice de
+    firma» — un contador propio con `fsync`, **aislado del ledger** (§111.1),
+    que es exactamente lo que esta nota pedía. **9 tests**, pinados en el
+    canon.
+  · **El tamaño del árbol**: `XmssMtSha2_40_8_256` —MT **40/8**— fijado como
+    `pub type Conjunto` en `crates/zk-ssl-verify/src/lib.rs`. Firma de **137
+    bytes** = OID(4) + índice(5) + 4×32.
+  Y el eslabón que perseguía existe entero: `crates/zk-ssl-node/src/firma_cabeza.rs`
+  firma `EpochHead` con XMSS **con el guardián delante** (§234), **5 tests**;
+  `xmss` es dependencia con versión exacta en dos crates y hay código en
+  nueve ficheros `.rs`.
+  ⚠️ **Lo que de XMSS sí queda no desaparece**: KAT, el issue upstream y ARM
+  pasan a la **nota 77**, cada uno con su medida.
 - [ ] **55. ⚠️ B12.1: el formato de especificacion del AIR, probado en un
   circuito.** `doc/air/circuit_burn.md`, escrito el 01-08-2026 (§105).
   ✅ **El formato funciona**: la seccion «que NO se restringe» es la unica que
@@ -1860,6 +1878,31 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   que se indexe por el nullificador completo (§13, §32, §36).
 
 ---
+
+- [ ] **77. XMSS: lo que queda después de cerrar la 56 — KAT, el issue
+  upstream y ARM.** Nace en §267 al cerrar la 56. La firma de cabezas está
+  implementada y sus dos incógnitas resueltas, pero la lista de pendientes de
+  la evaluación **estaba enterrada en el cuerpo de la 67** —87 líneas y tres
+  asuntos— y §266 cerró esa nota. Aquí queda lo vivo, con su medida.
+  ⚠️ **KAT ausente.** Buscando por estructura en los dos crates que usan
+  `xmss` no aparece ningún vector de respuesta conocida. Lo que sale son los
+  **vectores de conformidad de `zkssl/0.2`**, que son del protocolo y no del
+  esquema de firma: **no sirven de KAT**. Sin uno, un cambio de versión del
+  crate no tiene quien lo cace, y la versión está fijada exacta justamente
+  porque no hay red debajo.
+  ⚠️ **El issue upstream es un BORRADOR.** `doc/issue-rustcrypto.md` abre por
+  «Issue draft — RustCrypto/signatures» y pide dos cosas concretas: que
+  `SigningKey` exponga su índice, y los planes de estado de travesía BDS. **No
+  consta que se haya presentado**, y comprobarlo es de fuera del árbol.
+  ⚠️ **ARM sin medir.** `doc/xmss-evaluacion.md` avisa de que los 0,62 ms por
+  hoja son **de esa máquina** y deja las medidas en ARM pendientes junto a B9;
+  `doc/ESCALADO.md` tiene B9 como medición pendiente. **Va con la 47.**
+  ✅ **Lo que ya NO está pendiente**, y por eso no entra aquí: el guardián del
+  índice (`firma_indice.rs`, §111.1 y §234) y fijar la versión del crate,
+  que es exacta en los dos que la usan.
+  **Evidencia**: medido sobre `af9e786`, 10-08-2026.
+  **Dónde vive**: con la 56 y la 53, donde acaben. La sección G está declarada
+  **cajón** en §266 y ese reparto no lo toca este sello.
 
 ## Lo que NO esta en esta lista
 
