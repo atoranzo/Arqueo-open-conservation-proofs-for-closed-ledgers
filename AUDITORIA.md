@@ -19625,3 +19625,162 @@ De ahí las dos precauciones que este bloque tomó y que conviene repetir:
    pasaría todo lo demás.
 
 **No mueve ningún pin.** Sumas: 736 / 873 / 887, sin cambio.
+
+## 263. El tercer fenómeno no existía: era el instrumento
+
+El tramo T.1→T.4 salió a averiguar por qué los doce tests de
+`settlement-layer` cuestan de 2,9 a 9,2 s. Vuelve con **una causa medida,
+un fenómeno retirado y cuatro reglas** — y tres de las cuatro reglas las
+pagó este mismo tramo equivocándose.
+
+### La causa, y llevaba escrita en el crate
+
+`SettlementLayer::new` hace **dos setups Groth16**, y **los doce tests** lo
+pagan sin excepción:
+
+    setup_settlement  1795,5
+    setup_mint         608,3
+    suma              2403,8
+    new()             2433,6     desvío +1,2 %
+
+No es «más o menos» los dos setups: **es** los dos setups, con el hueco no
+cronometrado en **cero**. Encima de ese suelo, cada emisión y cada
+transferencia que llega a probarse añade su prueba, y los rechazos no
+cuestan nada: una `transfer` rechazada temprano mide **0,0 ms**.
+
+⚠️ Y el árbol queda descartado **con número**, no por lectura: árbol y hoja
+sueltos **2,0 ms**, `open_account` dos veces **0,3 ms** — el 0,03 % del
+ejemplo. Esta capa **no usa** el árbol denso de `zk-core`: sus dos árboles
+son `SparseMerkleTree<20>` y `SparseMerkleTree<32>` (`lib.rs:163-167`). El
+traspaso mandó el banco a buscar en `settlement-layer` la causa de
+`iso-bridge`, que es de otro árbol y de otro crate.
+
+> **La respuesta llevaba desde antes del hilo en `lib.rs:651-653`**: «cada
+> test que crea una capa paga el setup del circuito (~2,6 s) y cada
+> transferencia una prueba (~2 s)». Un número a mano, en un comentario, que
+> nadie cruzó nunca con los tiempos del canon. Eso no deja un fenómeno en
+> *desconocido*: lo deja en **documentado y sin comprobar**, que es peor,
+> porque parece resuelto.
+
+### Lo que se RETIRA
+
+T.3 predijo los doce tiempos con una escalera de operaciones y explicó el
+**89,3 %**. El residuo no era plano: crecía con las transferencias —+218 ms
+con ninguna, +893 con una, +1191 con dos— y se anotó como **observado**.
+
+No había causa porque no había fenómeno. **Los primitivos de T.3 se
+midieron UNA vez cada uno, y salieron bajos.** Contra el rango que T.4 midió
+después:
+
+| primitivo | T.3 midió | rango de T.4 | |
+|---|---:|---|---|
+| `transfer probar` | 1933,1 | 2026 – 2525 | **FUERA, por debajo** |
+| `mint probar` | 610,3 | 613 – 889 | borde bajo |
+| `new()` | 2433,6 | 2473 – 3377 | borde bajo |
+
+Infravalorar `transfer` en ~312 ms infla el residuo **en proporción al
+número de transferencias**, que es exactamente el patrón que se tomó por un
+fenómeno. Sólo con esa infravaloración se predicen **820 ms** para los tests
+de dos emisiones y una transferencia (observado 893) y **1132** para el de
+dos y dos (observado 1191).
+
+T.4 lo remató por el otro lado. Emparejando dentro de cada repetición, con
+cinco repeticiones, **las siete diferencias de primera contra segunda
+llamada cambian de signo. Sin excepción.** Harían falta ~675 ms para
+sostener la no linealidad y no hay nada reproducible.
+
+### El suelo de ruido, y de dónde sale
+
+Dos tests que hacen exactamente la misma obra —crear la capa y nada más— se
+separaron 402 ms en T.3. Con cinco repeticiones sus medianas se separan
+**43 ms** y sus propias series dispersan **566**. Era varianza, y los siete
+residuos pequeños de T.3 no eran hallazgos.
+
+La causa del ruido también se midió, y no está donde uno la busca:
+
+| serie | dispersión sobre 5 repeticiones |
+|---|---:|
+| `new()` en frío | 904 ms |
+| `setup_settlement` suelto | 598 ms |
+| `setup_mint` suelto | 446 ms, con un pico único |
+| el arnés de `cargo test` | **9 ms** sobre 107 |
+
+`setup_settlement` trae la varianza. Como `new()` son los dos setups y **los
+doce tests pagan `new()`**, los doce heredan esa dispersión:
+
+> **El suelo de ruido de esta suite ES la inestabilidad de un setup
+> Groth16.** No de probar, que es donde se buscó.
+
+⚠️ Y la máquina se calienta mientras el banco corre: la misma réplica,
+invocación a invocación, va de **7 799 a 10 046 ms** — un **+28,8 %** dentro
+de una sola fase.
+
+### Las cuatro reglas, y lo que costó cada una
+
+**1 · Un tiempo sólo se compara contra otro de la misma corrida, y con el
+arnés en los dos lados.**
+
+Misma familia que «el pin se lee de `canon.sh`, no de la memoria» (§261),
+pero peor: un número de tests no cambia solo y un tiempo sí. La compuerta de
+T.3 disparó porque comparó un cronómetro en proceso contra un pin de **otra
+corrida**, y de paso se olvidó del arnés. Comparada bien daba +233 ms sobre
+una banda de ±9 %, y coincidía. **Un pin cruzado entre corridas no es un
+pin.**
+
+**2 · La comparación válida es la EMPAREJADA dentro de la repetición.**
+
+El ruido no es por serie: es un **factor común de la máquina por
+repetición**. Normalizadas por su mediana, series distintas suben y bajan
+juntas. Las medianas de dos series distintas no quitan ese factor; la
+diferencia dentro de la misma repetición sí.
+
+⚠️ No es teoría. Por medianas, las tres comparaciones de primera capa contra
+segunda salían positivas y parecían un calentamiento pequeño y coherente.
+Emparejadas, la primera repetición tiene el signo **al revés en las tres**.
+
+**3 · Tres repeticiones no declaran consistencia de signo.**
+
+Con n=3 una diferencia salió +2,6 / +2,7 / +2,2 y se anunció como el único
+efecto reproducible del banco. Con n=5 sale +2,6 / +2,7 / +2,2 / **−22,8** /
+**+100,2**. Es el error de n=1 un orden más arriba, cometido en el mismo
+tramo que lo estaba diagnosticando.
+
+**4 · Todo lo que se vaya a comparar va dentro del MISMO bucle de
+repetición.**
+
+T.4 entrelazó los tests entre sí y dejó la réplica en una fase aparte por
+delante: rito a medias. Como la máquina se calienta, la fase que va primera
+sale barata. El residuo de la réplica contra el test que replica iba de
+**+2100 ms** usando la primera invocación a **−147 ms** usando la última. No
+era una medida: era el orden de las fases.
+
+### Una cuarta categoría, por debajo de las tres de §260
+
+§260 dejó **medido**, **ejercitado** y **razonado**. Este tramo necesitó una
+cuarta, más baja:
+
+> **observado**: hay número y no hay causa.
+
+Sirvió para nombrar el residuo sin explicarlo, y por eso se pudo retirar
+después sin haber afirmado nada. **Un fenómeno anotado como observado no es
+una deuda de conocimiento: es una deuda de medición.**
+
+### Lo que este asiento NO cierra
+
+- **El árbol denso de `zk-core` sigue costando lo que costaba.**
+  `merkle.rs:67-84` rellena hasta 2^20 hojas y hashea el árbol entero:
+  **1.048.575 hashes para usar ocho**. La constante no está mal —2^20
+  cuentas es lo correcto en producción—; lo que está mal es pagarlo en un
+  test. El arreglo ya vive en el repositorio, en
+  `settlement-layer/src/sparse_tree.rs`, y las dos implementaciones llevan
+  conviviendo sin que nadie las pusiera una al lado de la otra. **No tiene
+  nota en el BACKLOG**, y este asiento no se la pone.
+- **El orden invertido no es constructible.** Probar una liquidación exige
+  una cuenta con fondos y financiar exige probar una emisión, y
+  `open_account` abre siempre con saldo cero: `prove_settlement` no puede
+  ser nunca la primera prueba de un proceso que use la capa. Separar
+  «calentamiento global al proceso» de «propio del circuito de emisión»
+  exigiría montar el `SettlementCircuit` a mano fuera de la capa. Queda **no
+  concluyente por construcción**, no por resultado.
+
+**No mueve ningún pin.** Sumas: 736 / 873 / 887, sin cambio.
