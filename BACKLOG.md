@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 34 abiertas, 40 resueltas — **2 suspendidas** (16 y 28).
-Ultima revision: 5 de agosto de 2026 — **contada, no recordada**.
+**Estado**: 32 abiertas, 43 resueltas — **2 suspendidas** (16 y 28).
+Ultima revision: 10 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
 
@@ -749,6 +749,28 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   han acumulado la 28 —el cobro—, la 15 —el espacio de claves de 64 bits,
   que §82.4 muestra que el paper no menciona pese a usar el criterio de los
   128 bits— y la unidad MiB/MB de la 22.
+
+- [ ] **75. El coste de la suite: dos tercios del nivel de sello, y con
+  dos causas distintas.** Medido en los bancos T.1 a T.4 y asentado en
+  §263. En el canon `--sello`, `settlement-layer` cuesta **50 s** e
+  `iso-bridge` **45 s** de los **150 s** del nivel.
+  ⚠️ **No es la misma causa en los dos, y confundirlas mandó un banco al
+  crate equivocado.** En `settlement-layer` son los **dos setups Groth16**
+  de `SettlementLayer::new`, que pagan los doce tests sin excepción — esa
+  capa no usa el árbol denso: sus dos árboles son `SparseMerkleTree<20>` y
+  `<32>`. En `iso-bridge` sí: `zk-core/src/merkle.rs:67-84` rellena hasta
+  2^20 hojas y hashea el árbol entero, **1.048.575 hashes para usar ocho**.
+  **Comprobable**: `grep -n "leaves.resize(target_len"
+  crates/zk-core/src/merkle.rs`.
+  ⚠️ **La constante no está mal**: 2^20 cuentas es lo correcto en
+  producción. Lo que está mal es pagarlo en un test. Y **el arreglo ya vive
+  en el repositorio**: `settlement-layer/src/sparse_tree.rs` es el mismo
+  árbol, disperso, para profundidades 20 y 32, y sus cinco tests cuestan
+  **0,1 s**. Las dos implementaciones llevan conviviendo sin que nadie las
+  pusiera una al lado de la otra.
+  **No es un cambio de una línea**: bajar `TREE_DEPTH` rompería la
+  conformidad, así que el arreglo es **no construir denso**, y eso toca el
+  circuito. Sin urgencia declarada: cuesta minutos de suite, no corrección.
 
 ## E. Operacion
 

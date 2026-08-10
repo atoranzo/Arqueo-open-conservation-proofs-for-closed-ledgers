@@ -19784,3 +19784,42 @@ una deuda de conocimiento: es una deuda de medición.**
   concluyente por construcción**, no por resultado.
 
 **No mueve ningún pin.** Sumas: 736 / 873 / 887, sin cambio.
+
+## 264. La nota 75, y un contador que llevaba tres sin contarse
+
+§263 dejó el hallazgo del coste de la suite **declarado dentro del propio
+asiento** y sin entrada en el registro. Esta la pone: **la 75**, en el
+grupo D, con las dos causas separadas —los dos setups de la capa por un
+lado, el árbol denso de `zk-core` por el otro— porque confundirlas fue lo
+que mandó el banco T.3 al crate equivocado.
+
+### Y al ir a añadirla, el contador
+
+`BACKLOG.md` abre diciendo **«34 abiertas, 40 resueltas»**. El recuento da
+**31 abiertas, 43 resueltas**. El total cuadra —74 en las dos cuentas—, así
+que no falta ninguna nota: son **tres que pasaron de abierta a resuelta sin
+que nadie tocara la cabecera**.
+
+⚠️ Nadie lo caza, y es deliberado: `BACKLOG.md` está en la lista de
+excluidos de `check_cifras` desde §237, porque los números de un registro
+no se renumeran ni se reescriben. La exclusión protege los números **de las
+notas** y de paso deja fuera el número **sobre** las notas, que sí envejece.
+
+> **Un contador que se incrementa a mano hereda el error del que estaba.**
+> Sumar uno a 34 habría escrito 35 sobre una cuenta que ya era falsa.
+
+Por eso el bloque **no suma: cuenta**, después de insertar la nota, y
+escribe lo que cuenta. Y pone la fecha del día en que corre, no una escrita
+a mano que envejezca igual. La propia cabecera ya lo pedía —«contada, no
+recordada»—; lo que faltaba era que algo la contara.
+
+### Lo que este asiento NO cierra
+
+**Nada vigila el contador.** Esta corrección lo deja bueno hoy y volverá a
+envejecer al primer `[ ]` que pase a `[x]` sin recontar. Cerrarlo es una
+compuerta —contar las notas y contrastar la cabecera, que es barato— o
+aceptar que el número es informativo y decirlo en el propio fichero. **Se
+deja abierto a propósito**: elegir entre las dos es una decisión, no un
+descuido, y este sello no la toma.
+
+**No mueve ningún pin.** Sumas: 736 / 873 / 887, sin cambio.
