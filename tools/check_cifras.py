@@ -112,6 +112,92 @@ def vivos():
             yield rel
 
 
+# ── §262 · los DESGLOSES ────────────────────────────────────────
+#
+# ⚠️ El hueco que esto cierra: `PRINCIPIOS.md` decia «12 del verificador
+#    independiente» cuando §256 lo habia dejado en 22, y VIAJO UN SELLO
+#    ENTERO porque en esa forma la cifra no lleva «tests» al lado ni el
+#    nombre del crate — las dos unicas formas que este fichero cazaba.
+#
+# ⚠️ Y por que NO se caza el patron suelto: se midio. Buscar «N <palabra>»
+#    por todo el documento dio CINCO discrepancias y LAS CINCO FALSAS.
+#    Una compuerta con falsos positivos se acaba ignorando, y una
+#    compuerta ignorada es peor que su ausencia declarada.
+#
+# ⚠️ Lo que la hace solida NO es acotar por acotar: es que **el ancla ya
+#    esta validada**. El desglose se lee donde el documento ya declaro un
+#    total que este mismo fichero verifica desde §239. Fuera de ahi, un
+#    numero junto a una palabra no afirma nada. Engancharse a una
+#    comprobacion que existe en vez de crear una segunda superficie.
+#
+# ⚠️ ADYACENCIA, operativa y no interpretada: entre el total y el guion NO
+#    PUEDE HABER UN PUNTO. Es decir, misma frase. Medido contra la entrada
+#    real: sin esa regla el ancla saltaba un punto y sesenta caracteres
+#    hasta OTRO parrafo de `PRINCIPIOS.md`.
+
+FRASE_DESGLOSE = re.compile(
+    r"(\d{3,4})\s*(?:tests|pruebas)([^\u2014.]*)\u2014([^\u2014]*)\u2014")
+ITEM_DESGLOSE = re.compile(
+    # ⚠️ EL CONECTOR ES OBLIGATORIO, y el ensayo lo exigio: sin el, el
+    #    tramo que sigue a un total casa TAMBIEN OTROS TOTALES —«873
+    #    contando los pines», «887 declaradas»— y da diez falsas alarmas.
+    #    Los siete items reales llevan «de», «del» o «de la»; los totales
+    #    y el ruido no llevan ninguno.
+    r"\*{0,2}(\d{1,4})\*{0,2}\s+(?:de\s+la\s+|de\s+los\s+|del\s+|de\s+)"
+    r"\*{0,2}([a-zA-Z\u00e0-\u00ff]+(?:\s+[a-zA-Z\u00e0-\u00ff]+)?)")
+
+
+def alias_de_crates():
+    """Lee de `tools/canon.sh` los alias EN PROSA de cada crate.
+
+    ⚠️ Viven en LA FILA DEL CRATE y no en este fichero **a proposito**. Una
+    copia aqui no duplicaria un dato: **afirmaria una correspondencia que
+    nadie comprueba**. El dia que el testigo cambiara de crate, `canon.sh`
+    cambiaria la fila y esto seguiria leyendo el pin viejo bajo un nombre
+    que ya no corresponde — **no fallaria: validaria mal, en silencio**.
+    """
+    ruta = os.path.join(RAIZ, "tools", "canon.sh")
+    out = {}
+    for linea in open(ruta, encoding="utf-8"):
+        m = re.match(r"^([a-z0-9-]+)\s+\w+\s+\d+\s+\d+\s+\d+\s+\d+\s+alias=([^\u00b7\n]+)",
+                     linea)
+        if m:
+            out[" ".join(m.group(2).split()).lower()] = m.group(1)
+    return out
+
+
+def desgloses(pins, alias):
+    """Comprueba las cifras POR CRATE dentro de la frase de un total.
+
+    ⚠️ **INERTE si nadie ha declarado un alias.** Una compuerta que exige
+    datos que aun no existen no es una mejora: es una parada, y con la
+    causa en el sello anterior.
+
+    ⚠️ La regla es «**todo numero que APARECE resuelve y cuadra**», no
+    «todos los pines aparecen»: un desglose parcial es prosa legitima.
+    """
+    if not alias:
+        return [], 0
+    fallos, vistas = [], 0
+    for rel in vivos():
+        texto = open(os.path.join(RAIZ, rel), encoding="utf-8").read()
+        plano = " ".join(texto.split())
+        for fr in FRASE_DESGLOSE.finditer(plano):
+            for it in ITEM_DESGLOSE.finditer(fr.group(3)):
+                v = int(it.group(1))
+                nombre = " ".join(it.group(2).split()).lower()
+                crate = alias.get(nombre) or alias.get(nombre.split()[0])
+                vistas += 1
+                if crate is None:
+                    fallos.append((rel, 0, f"desglose <{nombre}>", v,
+                                   "ningun alias declarado en tools/canon.sh",
+                                   fr.group(3)[:78]))
+                elif pins.get(crate) != v:
+                    fallos.append((rel, 0, crate, v, pins.get(crate),
+                                   fr.group(3)[:78]))
+    return fallos, vistas
+
+
 def main():
     p = pines()
     if not p:
@@ -167,6 +253,10 @@ def main():
                                   f"{suma_sello} (sello) o {suma_todos} (todos)",
                                   linea.strip()[:78]))
 
+    fallos_desglose, vistas_desglose = desgloses(p, alias_de_crates())
+    malas.extend(fallos_desglose)
+    revisadas += vistas_desglose
+
     for rel, n, crate, v, pin, l in malas:
         print(f"  RANCIA  {rel}:{n}")
         print(f"          dice {v} tests para `{crate}` y el canon pina {pin}")
@@ -177,7 +267,8 @@ def main():
               f"Un numero a mano en un .md envejece sin avisar.")
         return 1
     print(f"{revisadas} cifra(s) de tests en documentos vivos: ninguna "
-          f"contradice el canon ({len(p)} pines leidos de tools/canon.sh).")
+          f"contradice el canon ({len(p)} pines leidos de tools/canon.sh). "
+          f"De ellas, {vistas_desglose} de desglose.")
     return 0
 
 

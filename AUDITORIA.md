@@ -19540,3 +19540,88 @@ antes de tenerla; cero después.
   del `Wallet` que ya estaba en el punto de la llamada.
 
 **Canon: `zk-ssl-node` 51 → 56.** Sumas: 731 → 736, 868 → 873, 882 → 887.
+## 262. El desglose, enganchado a una comprobación que ya existe
+
+`check_cifras` cazaba dos formas —«N tests» junto al nombre de un crate, y
+los totales de 3-4 cifras— y **no veía los desgloses**. Por eso
+`PRINCIPIOS.md` decía «12 del verificador independiente» cuando §256 lo
+había dejado en 22, y **viajó un sello entero**; y por eso §261 tuvo que
+corregir a mano «56 del nodo», «23 del verificador» y «26 del testigo».
+
+### ⚠️ El patrón suelto es peor que nada, y se midió
+
+Buscar «N ‹palabra›» por todo el documento dio **cinco discrepancias, y las
+cinco falsas** — fragmentos casados a través de saltos de línea al aplanar
+el texto, ninguno con relación con cuentas de tests.
+
+> **Una compuerta con falsos positivos se acaba ignorando, y una compuerta
+> ignorada es peor que su ausencia declarada.**
+
+### Lo que la hace sólida no es acotar: es que el ancla ya está validada
+
+> **El desglose se lee donde el documento ya declaró un total que alguien
+> verifica.** Fuera de ahí, un número junto a una palabra no afirma nada.
+
+Es enganchar a una comprobación que **ya existe** —la de los totales, desde
+§239— en vez de crear **una segunda superficie** que a su vez habría que
+vigilar.
+
+⚠️ **Adyacencia, operativa y no interpretada**: entre el total y el guion
+**no puede haber un punto**; es decir, misma frase. La definición salió de
+medir la entrada real: sin ella, el ancla saltaba **un punto y sesenta
+caracteres** desde `**257 tests** (…) en `crates/zk-ssl`.` hasta el guion de
+**otro párrafo**. Ese párrafo es el test, y es el que el documento produce,
+no uno fabricado.
+
+### La regla: todo número que aparece resuelve y cuadra
+
+**No «todos los pines aparecen».** Un desglose no tiene por qué ser
+exhaustivo: si alguien escribe tres crates de dieciséis, los trece restantes
+no son una omisión, son prosa. Con esta regla un **renombrado sigue
+saltando** —el alias viejo deja de resolver— y un desglose parcial **no da
+falso positivo**.
+
+### ⚠️ Por qué el alias vive en `canon.sh` y no en la herramienta
+
+No es «dos definiciones del mismo dato». Es peor:
+
+> Una copia en la herramienta **afirmaría una correspondencia que nadie
+> comprueba**. El día que el testigo cambiara de crate, `canon.sh` cambiaría
+> la fila y `check_cifras` seguiría leyendo el pin viejo bajo un nombre que
+> ya no corresponde. **No fallaría: validaría mal, en silencio, contra el
+> crate equivocado.** El falso «limpio» de §250.
+
+La fila ya ata **crate ↔ pin**; el alias ata **nombre-en-prosa ↔ crate**, que
+es la misma clase de dato. Va como marcador `alias=… ·` **al principio de la
+nota**, que ya era un campo libre de facto: `canon.sh` la lee en `resto` y
+**no la usa nunca**. Se midió antes: los cuatro parseadores de filas
+—`check_cifras` dos veces, la coherencia con el workspace, y el bucle del
+propio canon— **la absorben sin inmutarse**. Y es **opcional**: los crates
+que nadie desglosa en prosa no necesitan nombre inventado.
+
+### ⚠️ Un instrumento del que dependen otras compuertas
+
+Los cinco tropiezos de forma de esta sesión fallaron **en su propio bloque**
+y se revirtieron. Éste no:
+
+> **Un instrumento del que dependen otras compuertas se ensaya con más
+> cuidado que un sello, porque su fallo no aparece donde se comete.** Un
+> error aquí habría salido dos sellos más adelante, con la causa ya fuera de
+> la vista.
+
+De ahí las dos precauciones que este bloque tomó y que conviene repetir:
+
+1. **Fase inerte por delante.** Se cambió la herramienta y se corrió **sin
+   un solo alias declarado**: tenía que salir verde y no revisar ningún
+   desglose. Solo después se pobló el canon. **Una compuerta que exige datos
+   que aún no existen no es una mejora: es una parada** — y con la causa en
+   el sello anterior.
+2. **El negativo sobre una copia.** Se inyectó «999 del nodo» en un
+   `PRINCIPIOS.md` copiado a `/tmp` y se exigió rojo nombrando el crate y el
+   pin. Los otros tres controles —alias únicos, alias con fila, el párrafo
+   que no debe producir ítems— comprueban **estructura**; **éste comprueba
+   que compara de verdad**, que es lo único para lo que existe. Sin él, una
+   herramienta que reconociera los siete ítems y no comparara ninguno
+   pasaría todo lo demás.
+
+**No mueve ningún pin.** Sumas: 736 / 873 / 887, sin cambio.
