@@ -33,9 +33,17 @@ for p in ficheros("md"):
 
 fallos = 0
 
+# ⚠️ PLANTILLAS DE NOMBRE, que no son citas. `spec/rfc/PROCESO.md`
+# ensena como bautizar una RFC dando el patron del nombre, y el patron
+# de arriba lo toma por una cita a un fichero que no existe. Declarado
+# y acotado: si aparece otra plantilla, se anade aqui con su fuente.
+PLANTILLAS = {"NNNN" + "-titulo-corto.md"}
+
 citas = {}
 for p in list(ficheros("rs")) + list(ficheros("md")):
     for tok in FICHERO.findall(p.read_text(encoding="utf-8", errors="replace")):
+        if tok in PLANTILLAS:
+            continue
         citas.setdefault(tok, []).append(str(p))
 for t, ps in sorted(citas.items()):
     if t not in docs:

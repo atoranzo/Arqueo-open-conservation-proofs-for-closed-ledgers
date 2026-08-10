@@ -20127,3 +20127,82 @@ tras la 55 con la 57 y las tres caras que la 76 fundió.
   duplicarlo sería el error que este sello corrige.
 
 **No mueve ningún pin.** Sumas: 736 / 873 / 887, sin cambio.
+
+## 269. Las cinco que nadie corría, y el pin que no hizo falta
+
+`canon.sh` invocaba **dos** de las siete herramientas de `tools/`. Las otras
+cinco las corría cada bloque **a mano**, y dos de ellas llevaban **rojas sin
+que nadie lo viera**. Este sello las arregla y las cablea.
+
+⚠️ El propio `canon.sh` tenía el diagnóstico escrito desde antes: «una
+compuerta que se salta no protege. **Es exactamente lo que le pasó a
+`check_tests.py`**». Se arregló para `check_tests`, que está en el canon desde
+entonces, y **no se generalizó**. Mismo patrón que las cuatro notas de §266 y
+§267: el remedio se aplica al caso y se queda ahí.
+
+### El pin de fallos que se planteó y no hizo falta
+
+Se propuso meterlas con un **pin de fallos** —el idioma que el fichero ya
+habla—. Antes de hornearlo se midió cuánto costaba arreglar los rojos, y la
+medida vació el mecanismo:
+
+| las cinco discrepancias de `check_figures` | qué eran |
+|---|---|
+| dos en `AUDITORIA.md` | **asientos**: describen un momento y no se reescriben |
+| dos en `BACKLOG.md` | notas **cerradas** que narran sellos hechos |
+| una en `VISION.md` | **real**: documento vivo con la cifra rancia |
+
+Y el rojo de `verificar_citas` era una **plantilla de nombre** que
+`spec/rfc/PROCESO.md` da como ejemplo, tomada por una cita.
+
+> **Los dos rojos eran defecto de las herramientas, no deuda de
+> documentación.** Un pin existe para deuda que hoy no se puede pagar;
+> declarar una que cuesta menos pagar que declarar deja un mecanismo nuevo
+> para nada.
+
+Con eso caen también los dos problemas que el pin traía: que **«pin de tests»
+y «pin de fallos» tienen polaridad opuesta con el mismo nombre** —subir uno es
+correcto y subir el otro es rendirse—, y que **contar agrega**, de modo que
+arreglar uno y romper otro daría neto cero y verde. Ninguno de los dos hay que
+resolverlos: no hay pin.
+
+### Lo que sí se corrige, y por qué era invisible
+
+**`check_figures` no tenía lista de excluidos.** `check_cifras` la tiene desde
+§237, con la razón escrita. Son la misma herramienta con la misma lista, y una
+no había aprendido lo que la otra ya sabía. Ahora **la importa**: una lista,
+un dueño. Dos copias del mismo criterio y una miente (§217).
+
+⚠️ **Y la exclusión lleva su premisa comprobada.** Excluir `BACKLOG.md` tiene
+consecuencia —las cifras de tests dentro de él dejan de vigilarse—, y eso hay
+que poder leerlo en el fichero, no deducirlo. Se midió antes de decidir: **cero
+cifras de tests dentro de entradas abiertas**; las dos que hay narran sellos
+cerrados. Y la herramienta **comprueba que siga siendo cero**: si alguien mete
+una cifra en una entrada abierta, lo dice en vez de quedarse muda.
+
+### La cifra real, y por qué el arreglo solo no basta
+
+`VISION.md` decía que `circuit_mint_pending` tiene **16 tests**; hay **18**.
+
+⚠️ La cabecera de `check_figures` lista entre sus hallazgos fundacionales esa
+**misma cifra**, cuando decía 13 y eran 16. **Fue 13, se corrigió a 16, y hoy
+era 18.** Se arregló una vez y volvió a envejecer.
+
+> **Lo que impide la tercera vez no es el arreglo: es que la herramienta que la
+> caza entre en el canon.** Arreglar sin cablear es lo que ya se hizo, y
+> caducó.
+
+### Cómo entró, y en qué orden
+
+El orden es **el inverso de §262**: allí lo nuevo era inerte y podía entrar
+antes que los datos; aquí las cinco cambian el veredicto en cuanto entran, así
+que cablearlas antes de arreglar habría dejado el canon rojo para todos.
+Primero las herramientas y la cifra, después **el pin cero demostrado
+corriendo las siete**, y sólo entonces el cableado — con el bloque muriendo
+antes de tocar `canon.sh` si alguna no salía verde.
+
+Y la comprobación que §263 obliga a hacer: **`check_cifras` lee sus pines de
+`canon.sh`**, así que se contó lo que reconoce **antes y después** de tocarlo,
+y tenía que ser lo mismo.
+
+**No mueve ningún pin de tests.** Sumas: 736 / 873 / 887, sin cambio.

@@ -216,6 +216,29 @@ else
   falla "hay ficheros .rs que nadie declara"
 fi
 
+# ── 2 ter · las cinco herramientas que nadie corria ────────────
+# Hasta 269 el canon invocaba DOS de las siete de `tools/`. Las otras cinco
+# las corria cada BLOQUE a mano, y una herramienta que nadie recuerda meter
+# en un bloque es una herramienta que nadie corre: DOS llevaban rojas sin
+# que nadie lo viera. Es exactamente lo que le paso a `check_tests.py`, y
+# por lo que esta aqui arriba.
+#
+# Entran a PIN CERO. No hay pin de fallos: los rojos que tenian eran defecto
+# de las propias herramientas —exclusiones que les faltaban y un patron que
+# tomaba una plantilla por cita—, no deuda de documentacion, y 269 los
+# arreglo ANTES de cablearlas.
+msg ""
+msg "== CANON · las herramientas de tools/ =="
+for H in check_cifras check_figures check_columns check_constraint_layout verificar_citas; do
+  python3 "tools/$H.py" > "$OUT/$H.txt" 2>&1
+  if [ $? -eq 0 ]; then
+    msg "  OK  $H"
+  else
+    sed 's/^/      /' "$OUT/$H.txt" >&2
+    falla "$H.py en rojo"
+  fi
+done
+
 # ── 3 · conformidad ─────────────────────────────────────────────
 msg ""
 msg "== CANON · conformidad =="

@@ -38,6 +38,62 @@ import os
 import re
 import sys
 
+# ⚠️ UNA lista de excluidos, no dos. Los REGISTROS que quedan fuera son los
+# mismos que los de `check_cifras.py` y se IMPORTAN de alli en vez de
+# copiarse: dos copias del mismo criterio y una miente (§217). Si alguien
+# anade un preprint a esa lista, esta herramienta se entera sola.
+#
+# ⚠️ Y la exclusion TIENE CONSECUENCIA, dicha aqui y no deducida: las cifras
+# de tests dentro de `AUDITORIA.md` y `BACKLOG.md` dejan de vigilarse **para
+# siempre**. Es lo correcto —un asiento describe un momento y no se
+# reescribe— pero se paga con ceguera, asi que la premisa se COMPRUEBA:
+# ver `premisa_de_la_exclusion()`.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from check_cifras import EXCLUIDOS, PREFIJOS_EXCLUIDOS  # noqa: E402
+
+
+def premisa_de_la_exclusion():
+    """Excluir `BACKLOG.md` solo es honesto mientras sus cifras de tests
+    vivan en notas CERRADAS —que narran un sello hecho—. Una cifra dentro
+    de una entrada ABIERTA es justo la clase que esta herramienta existe
+    para cazar, y la exclusion la dejaria muda. Medido al escribir esto:
+    CERO. Si deja de serlo, se dice."""
+    try:
+        texto = open("BACKLOG.md", encoding="utf-8").read()
+    except OSError:
+        return
+    notas, cur = [], None
+    for linea in texto.splitlines():
+        m = re.match(r"^- \[( |x)\] \*\*(\d+(?:-[A-Z])?)\.", linea)
+        if m:
+            if cur:
+                notas.append(cur)
+            cur = {"abierta": m.group(1) == " ", "num": m.group(2), "txt": [linea]}
+        elif cur is not None:
+            if linea.startswith("## ") or linea.startswith("---"):
+                notas.append(cur)
+                cur = None
+            else:
+                cur["txt"].append(linea)
+    if cur:
+        notas.append(cur)
+    rotas = []
+    for n in notas:
+        if not n["abierta"]:
+            continue
+        cuerpo = "\n".join(n["txt"])
+        for patron, _ in PATRONES:
+            if re.search(patron, cuerpo):
+                rotas.append(n["num"])
+                break
+    if rotas:
+        print("  !! BACKLOG.md tiene cifras de tests en entradas ABIERTAS: "
+              + ", ".join(sorted(set(rotas))))
+        print("     La exclusion las deja sin vigilar. O se quita la cifra de")
+        print("     la entrada, o la exclusion deja de ser del fichero entero.")
+        sys.exit(1)
+    print("  OK  premisa de la exclusion: cero cifras de tests en entradas abiertas")
+
 
 def cuentas_reales():
     """Tests declarados por módulo y por crate."""
@@ -80,10 +136,13 @@ PATRONES = [
 
 
 def main():
+    premisa_de_la_exclusion()
     real = cuentas_reales()
     docs = [f for f in os.listdir(".") if f.endswith(".md")]
     if os.path.isdir("doc"):
         docs += ["doc/" + f for f in os.listdir("doc") if f.endswith(".md")]
+    docs = [d for d in docs
+            if d not in EXCLUIDOS and not d.startswith(PREFIJOS_EXCLUIDOS)]
 
     malas = []
     comprobadas = 0
