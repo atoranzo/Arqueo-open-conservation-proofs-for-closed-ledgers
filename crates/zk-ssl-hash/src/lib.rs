@@ -209,6 +209,44 @@ pub fn epoch_digest(
     native_merge(native_merge(a, b), chain_digest)
 }
 
+/// **Dominio del acuse**, con version en el propio valor.
+///
+/// Son los ocho bytes ASCII de `ACUSE_V1` leidos como `u64`. Se escribe asi
+/// —y no como numero magico— para que se lea lo que es, y **con sufijo**:
+/// de los cinco dominios del arbol, tres llevan version y uno no, y el
+/// sexto no entra siendo el segundo sin ella por inercia. Si algun dia hay
+/// un acuse v2, el sufijo es lo que permite que convivan.
+///
+/// ⚠️ **No hay registro de dominios en el proyecto**: son literales sueltos
+/// en cuatro crates. Construirlo es otro sello; esto solo evita empeorarlo.
+pub const DOMINIO_ACUSE: u64 = u64::from_be_bytes(*b"ACUSE_V1");
+
+/// **Acuse de recepcion**: ata una prueba a la epoca y al `N` declarado.
+///
+/// ⚠️ **Esta es LA composicion**, por la misma razon que `epoch_digest`: un
+/// tercero que quiera comprobar un acuse **necesita componerlo exactamente
+/// igual**, y la unica forma segura de garantizarlo es que **sea la misma
+/// funcion**. Hasta §270 vivia como funcion privada dentro de un
+/// `#[cfg(test)]` de la capa — es decir, **nadie de fuera podia llamarla**,
+/// que es el defecto que §257 y §258 fueron a corregir.
+///
+/// ⚠️ **Y lleva tag de dominio mientras que `epoch_digest`, ahi arriba, no.
+/// La asimetria es deliberada.** `epoch_digest` no lo necesita porque
+/// **siempre se consume dentro de un preambulo firmado** —
+/// `b"ZK-SSL-epoch-head"`—, que es donde vive su separacion. El acuse
+/// **hoy no tiene preambulo**, y el tag hace ese papel: sin el, un acuse y
+/// un nodo interno de cualquier arbol son el mismo valor compuesto de la
+/// misma forma. **Quien las vea juntas y quiera armonizarlas, que lea esto
+/// antes de quitar la etiqueta.**
+///
+/// La forma del tag no se inventa: es la de `stark-experiment/src/
+/// native.rs`, que ya separa `SPEND_KEY_DOMAIN` y `NULLIFIER_DOMAIN`
+/// mezclando el dominio por delante.
+pub fn acuse_digest(hash_prueba: Digest, epoca: u64, n: u64) -> Digest {
+    let par = native_merge(as_digest(epoca), as_digest(n));
+    native_merge(as_digest(DOMINIO_ACUSE), native_merge(hash_prueba, par))
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 //  §257 · EL BYTE Y EL ELEMENTO
 //
@@ -441,6 +479,44 @@ mod tests {
         assert_ne!(
             native_leaf(id, saldo, nonce),
             native_leaf_salted(id, saldo, nonce, cero)
+        );
+    }
+}
+
+#[cfg(test)]
+mod acuse {
+    //! §270 · Los contratos del acuse.
+    use super::*;
+
+    #[test]
+    fn el_tag_separa_el_acuse_del_merge_pelado() {
+        // Sin tag, el acuse seria indistinguible de cualquier nodo interno
+        // compuesto con los mismos operandos. Esto es lo UNICO que el
+        // dominio existe para garantizar, y por eso se comprueba.
+        let hp = as_digest(0xA11CE);
+        let pelado = native_merge(hp, native_merge(as_digest(100), as_digest(1_440)));
+        assert_ne!(
+            acuse_digest(hp, 100, 1_440),
+            pelado,
+            "el acuse coincide con el merge pelado: el tag no esta haciendo nada"
+        );
+    }
+
+    #[test]
+    fn el_valor_del_acuse_esta_pinchado() {
+        // ⚠️ Este literal NO dice que el traslado desde la capa no movio el
+        // valor: LO MOVIO A PROPOSITO, porque §270 anadio el tag de
+        // dominio. Lo que fija es que **a partir de aqui no cambia**.
+        //
+        // Se pudo poner hoy porque el acuse NO viaja: no esta en ningun
+        // vector de conformidad, ni en el log, ni en un snapshot — solo
+        // dentro de tests. Cuando empiece a viajar, tocarlo sera un cambio
+        // de formato con version, y este literal sera lo que lo delate.
+        let hp = as_digest(0xA11CE);
+        assert_eq!(
+            digest_to_bytes(&acuse_digest(hp, 100, 1_440)),
+            [0xfb, 0x59, 0x25, 0x85, 0x8d, 0xac, 0xfd, 0x0d, 0xbb, 0x8f, 0xae, 0x00, 0xb9, 0xb3, 0x5a, 0xf3, 0x49, 0x21, 0x94, 0x5b, 0x38, 0x2f, 0xea, 0x3c, 0x72, 0x4b, 0x3b, 0x42, 0x9a, 0xa7, 0x32, 0xc1],
+            "el valor del acuse se ha movido: si es a proposito, sube la version del dominio"
         );
     }
 }

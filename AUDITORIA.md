@@ -20206,3 +20206,102 @@ Y la comprobación que §263 obliga a hacer: **`check_cifras` lee sus pines de
 y tenía que ser lo mismo.
 
 **No mueve ningún pin de tests.** Sumas: 736 / 873 / 887, sin cambio.
+
+## 270. El acuse, componible por un tercero — y la sexta condición caducada
+
+`acuse_digest` pasa a **`zk-ssl-hash`**, con su dominio propio. Hasta hoy era
+una función privada dentro de un `#[cfg(test)]` de la capa: **un tercero que
+quisiera verificar un acuse no podía llamarla**.
+
+### Por qué ahí, y no es por formato
+
+§257 movió el par byte↔`Digest` y §258 la hoja, y **ninguno de los dos lo hizo
+por ser cosas de formato**: los movió porque sin ellos **el recibo era
+ilegible para su destinatario**. El acuse es exactamente eso — evidencia cuya
+razón de ser es que un tercero la componga por su cuenta—. Dejarlo en la capa
+lo habría hecho nacer con el defecto que esos dos sellos fueron a corregir.
+
+Y el argumento no es de nadie: lo escribe `epoch_digest` en su propia doc,
+tres funciones más arriba — *«ésta es LA composición […] la única forma segura
+de garantizarlo es que sea la misma función»*.
+
+### El tag, y la asimetría que hay que poder leer
+
+`acuse_digest` lleva dominio; `epoch_digest`, en el mismo fichero, no. **La
+asimetría es deliberada y está escrita al lado**, porque quien las vea juntas
+dentro de un año va a querer armonizarlas — y quitaría la buena.
+
+> `epoch_digest` no lo necesita porque **siempre se consume dentro de un
+> preámbulo firmado**, `b"ZK-SSL-epoch-head"`, que es donde vive su
+> separación. **El acuse hoy no tiene preámbulo**, y el tag hace ese papel.
+
+La forma tampoco se inventó: `stark-experiment/src/native.rs` ya separa
+`SPEND_KEY_DOMAIN` y `NULLIFIER_DOMAIN` mezclando el dominio por delante. Se
+copió.
+
+⚠️ **Y la constante entra con versión.** Se midió antes: de los cinco dominios
+del árbol, tres llevan sufijo y uno no. El sexto **no entra siendo el segundo
+sin versión por inercia** — si algún día hay un acuse v2, el sufijo es lo que
+permite que convivan. **No hay registro de dominios**: son literales sueltos
+en cuatro crates. Construirlo es otro sello; esto sólo evita empeorarlo.
+
+### La ventana era hoy, y conviene decir por qué
+
+Se midió que **el acuse no viaja**: no aparece en `spec/vectors`, ni en el
+log, ni en un snapshot — sólo dentro de tests. Por eso añadir el tag **hoy es
+gratis**, y dentro de veinte sellos habría sido un cambio de formato con
+versión y migración.
+
+Eso cambia lo que el valor pinchado significa. **No fija que el traslado no
+movió el valor** —lo movió a propósito—: fija que **a partir de aquí no
+cambia**, y se calculó con la composición nueva. Un pin sin propósito escrito
+es el que alguien actualiza mecánicamente el día que estorbe.
+
+⚠️ **Ese literal no lo escribió quien redactó el bloque**: es Rescue sobre el
+campo y el contenedor del chat no tiene `cargo`. Lo calculó la máquina que
+selló, **dos veces, exigiendo que coincidieran** — el contrato de determinismo
+hecho en el momento de escribirlo. Consecuencia declarada: **las huellas POST
+de este sello no se pudieron anunciar de antemano**, por primera vez en la
+sesión.
+
+### La sexta condición caducada, y el rito que falta
+
+La 62 decía heredar §116 y que **«§116 se cierra antes»**. §116 se cerró en
+**§124**, cuyo título es «`digest_of_proof` inyectivo» y que dice literalmente
+*«cierra la entrada 58 y **desbloquea §121.5**»* — §121 es el acuse.
+`digest_of_proof` codifica hoy la longitud y usa Blake3. **El bloqueo llevaba
+sellos sin existir.**
+
+Es la **sexta** del día, y van juntas a propósito:
+
+| condición | decía | estaba |
+|---|---|---|
+| la sal de §117 | «condición para operar en abierto» | cumplida desde §156 (§265) |
+| la 50 | abierta | **declara su propio cierre en su propio texto** (§266) |
+| la 61 | «dos documentos que no existen» | existen desde `c46071c` (§266) |
+| la 67 | «intentada y revertida» | cerrada por F3, §157 (§266) |
+| la 56 | «sin implementar» | implementada, con nueve tests (§267) |
+| la 62 | «§116 se cierra antes» | §116 cerrado en §124 (**este sello**) |
+
+Y los dos eslabones que la cabecera del `BACKLOG` daba por muertos estando
+vivos (§267).
+
+> **Seis en un día no son seis descuidos.** Es que **nadie relee las cabeceras
+> al cerrar el sello que las cumple**. El sello que cumple una condición sabe
+> exactamente cuál cumple —y es el único momento en que alguien lo sabe—, y no
+> hay nada que lo obligue a ir a tacharla.
+
+**Eso es el rito que falta**, y este asiento lo nombra sin implementarlo:
+**cerrar un sello incluye releer lo que ese sello acaba de dejar sin efecto.**
+
+### Lo que este sello NO hace
+
+- **No construye el registro de dominios.** Queda anotado y sigue sin dueño.
+- **No toca las tres copias locales de `as_digest` en `pending.rs`**: el acuse
+  deja de usar la suya, pero el test del contador la sigue necesitando. Son de
+  la familia de las siete que §258 anotó sin tocar.
+- **No mueve `zk-ssl`**: sigue en 257. Mover un test de ese crate cuesta
+  **diez ediciones en ocho documentos vivos**, medidas, y no compraba nada que
+  este sello necesite.
+
+**Mueve un pin**: `zk-ssl-hash` 14 → 16. Sumas: **738 / 875 / 889**.

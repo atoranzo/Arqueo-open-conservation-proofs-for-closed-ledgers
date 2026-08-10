@@ -516,9 +516,20 @@ mod t4_acuse_nativo {
         [BaseElement::new(x), BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO]
     }
 
-    fn acuse(hash_prueba: Digest, epoca: u64, n: u64) -> Digest {
-        native_merge(hash_prueba, native_merge(d(epoca), d(n)))
-    }
+    // ⚠️ §270 · LA composicion del acuse vive en `zk-ssl-hash`, no aqui.
+    //
+    // Era una funcion privada dentro de este `#[cfg(test)]`: un tercero que
+    // quisiera verificar un acuse **no podia llamarla**, que es exactamente
+    // el defecto que §257 y §258 fueron a corregir. Se importa con su
+    // nombre corto **para que las aserciones de abajo no cambien ni una
+    // letra**: si siguen pasando, la funcion compartida cumple el mismo
+    // contrato. El valor SI cambia —el tag de dominio— y por eso lo que se
+    // afirma abajo son desigualdades y determinismo, no un valor concreto.
+    //
+    // ⚠️ `d()` se queda: la sigue usando el test del contador. Es una de las
+    // tres copias locales de `as_digest` en este fichero, de la familia de
+    // las siete que §258 dejo anotadas sin tocar en `stark-experiment`.
+    use zk_ssl_hash::acuse_digest as acuse;
 
     #[test]
     fn t4_acuse_liga_prueba_epoca_y_n() {
