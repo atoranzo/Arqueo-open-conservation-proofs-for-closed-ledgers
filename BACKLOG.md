@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 31 abiertas, 48 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 32 abiertas, 48 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 10 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -841,6 +841,25 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   hay nada medido que registrar», comprobable con un `grep` que no devuelve
   nada. **No tiene plan**, y colgar una precondición de un clavo que no
   sujeta es lo que hay que evitar.
+
+- [ ] **80. El diario del nodo existe; falta el mando que lo compare con
+  el del testigo.** Abierta en §272, que dejó la pieza que faltaba
+  —`diario::ausentes()`, la comprobación DIRIGIDA— **ejercitada en tests
+  pero sin mando de CLI**.
+  ⚠️ **La propiedad es real hoy; su instrumento está incompleto.** Los
+  datos están en las dos orillas y el núcleo es común —el testigo
+  transcribe las claves que el nodo sirve—, pero `comparar_lineas` mapea
+  por `index` y **sólo recorre los presentes en ambos**: una línea del
+  testigo AUSENTE del diario del nodo le pasa en silencio, y ése es el
+  caso grave —o el nodo firmó algo que no recuerda, o alguien sirvió una
+  firma que el nodo no emitió—. **Alcanzable, no ejercitada.**
+  ⚠️ **Y sólo una dirección vale.** El diario del nodo es COMPLETO —uno
+  por latido— y el del testigo MUESTREADO —sólo lo que pidió—: contar la
+  dirección contraria daría rojo en cada corrida y acabaría siendo
+  paisaje.
+  **Segunda mitad**: `--diario` es explícita, así que un nodo que firme
+  sin ella sigue sin poder reconocer su firma. Decidir si eso se queda
+  como bandera o pasa a ir con `--clave`.
 
 ## E. Operacion
 

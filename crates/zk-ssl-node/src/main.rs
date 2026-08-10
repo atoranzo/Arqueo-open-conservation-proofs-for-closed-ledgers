@@ -40,6 +40,7 @@ mod latido;
 /// ⚠️ `seq` no vale: sale de `entries.len()` y **solo existe si la
 /// operación se aplicó**. **La censura vive en el hueco entre recibir y
 /// aplicar.**
+mod diario;
 mod recepcion;
 
 use std::collections::BTreeMap;
@@ -102,6 +103,19 @@ struct Args {
     /// ⚠️ Esto **no decide la custodia**: hace posible una decente.
     #[arg(long, value_name = "RUTA")]
     clave_fichero: Option<String>,
+
+    /// **Dónde anota el nodo lo que firma** (una línea JSON por latido).
+    ///
+    /// ⚠️ Explícita, como `--clave`: el nodo no escribe en disco por su
+    /// cuenta. Sin esto el nodo sigue firmando y **sigue sin poder
+    /// reconocer su propia firma**, que es justo lo que §272 vino a
+    /// arreglar. Ver la nota 80 del BACKLOG.
+    ///
+    /// ⚠️ **NO lleva el candado del guardián.** `PersistenciaFalsa`
+    /// existe porque reusar un índice compromete la clave; perder este
+    /// diario no compromete nada.
+    #[arg(long, value_name = "RUTA")]
+    diario: Option<String>,
 
     /// **Qué custodia AFIRMA el operador** para la clave de firma.
     ///
@@ -199,6 +213,14 @@ struct App {
     /// ⚠️ **Se pierde al reiniciar**, y eso es el precio declarado de no
     /// tener histórico (§242).
     ///
+    /// ⚠️ **CORRECCIÓN (§272): ese precio CADUCÓ.** Era razonable
+    /// mientras nadie necesitara el histórico. Hoy sí: sin él **el nodo
+    /// guarda el número de sus firmas y no las firmas** —el guardián
+    /// persiste el contador de índice, no lo firmado— y el único con
+    /// historia de lo que el operador firmó es **quien lo vigila**. Con
+    /// `--diario` el nodo anota cada latido; esto sigue siendo la copia
+    /// **en memoria** y **rápida**, no la memoria del nodo.
+    ///
     /// ⚠️ **MEDIDO en L.1 (§247), y §242 lo decía impreciso.** Lo que un
     /// testigo ve al reiniciar **no es un hueco de índices**: es una
     /// **ventana de `SinFirma`**, y después el índice sigue **contiguo**.
@@ -212,6 +234,9 @@ struct App {
     /// La clave pública de firma, en bytes del formato RFC. **Vacía** si el
     /// nodo arrancó sin `--clave`. Un testigo la necesita para verificar.
     clave_publica_firma: Vec<u8>,
+    /// **Dónde anota el nodo lo que firma.** `None` si no se pasó
+    /// `--diario`: entonces no hay memoria de lo emitido (§272).
+    diario: Option<std::path::PathBuf>,
     /// Cadencia del latido: cada cuánto esperar una cabeza nueva.
     latido_s: u64,
     /// Lo que el operador **afirma** sobre la custodia de la clave.
@@ -302,6 +327,7 @@ async fn main() -> anyhow::Result<()> {
         reserva_ttl: Duration::from_secs(args.reserva_ttl),
         ultima_cabeza: Mutex::new(None),
         clave_publica_firma,
+        diario: args.diario.as_ref().map(std::path::PathBuf::from),
         latido_s: args.latido,
         custodia: args.custodia.clone(),
         custodia_comprobada,
@@ -1203,6 +1229,7 @@ mod tests {
             reserva_ttl: Duration::from_secs(ttl_segundos),
             ultima_cabeza: Mutex::new(None),
             clave_publica_firma: Vec::new(),
+            diario: None,
             latido_s: crate::latido::LATIDO_POR_DEFECTO_S,
             custodia: "sin-declarar".into(),
             custodia_comprobada: false,

@@ -20389,3 +20389,111 @@ No arregla el asiento. Asentar el digest real de la prueba que autorizó es la
 nota 78, y toca cuatro vías de la capa: es su propio sello.
 
 **No mueve ningún pin.** Sumas: 738 / 875 / 889, sin cambio.
+
+
+## 272. El nodo guardaba el número de sus firmas y no las firmas
+
+`App.ultima_cabeza` era un `Mutex<Option<Latido>>`: cada latido pisaba al
+anterior y **un reinicio borraba la única memoria de lo emitido**. Al lado,
+el guardián de §234 persiste **ocho bytes** —el contador de índice— con
+`fsync`, autocomprobación de arranque y un error propio que **se niega a
+operar** si `fsync` no cuesta nada, *porque reusar un índice compromete la
+clave*.
+
+Puestas juntas, las dos cosas dicen una sola:
+
+> **El nodo sabía cuántas veces había usado la clave, no para qué.**
+
+Y el único que conservaba historia de lo que el operador firmó era **quien
+vigila al operador**: el diario del testigo (§240). Para un sistema
+construido sobre oponibilidad eso no es un detalle de implementación — el
+firmante no podía reconocer su propia firma, ni detectar que le atribuyeran
+una que no emitió.
+
+### No es un hallazgo nuevo: es una condición de §242 que caducó
+
+El propio `App` lo decía:
+
+> ⚠️ **Se pierde al reiniciar**, y eso es el precio declarado de no tener
+> histórico (§242).
+
+Era un precio razonable **mientras nadie necesitara el histórico**. Lo
+necesita §273 —emitir acuses exige saber dónde empieza y acaba una época— y
+lo necesitaba ya la oponibilidad. Corregido **encima**, sin borrar la frase.
+
+⚠️ **La asimetría que decide el orden**: sin este registro §273 es
+imposible; **sin §273 este registro sigue haciendo falta**. Por eso es
+entrada propia y no un subproducto del acuse — si naciera dentro de §273 se
+leería para siempre como «lo que necesitaba el acuse».
+
+### El formato no se inventó ni se movió: ya viajaba
+
+Medido: el testigo **no comparte un struct** con el nodo, **transcribe** las
+claves de lo que el nodo le sirve en `zkssl_signedEpochHead`. El núcleo
+comparable ya estaba definido **y las dos orillas ya lo usaban**.
+
+Se consideró mover `linea_de_diario` a un sitio común y **se descartó con
+medida**: `zk-ssl-cli` **no depende de `zk-ssl-wire`**, así que el traslado
+habría costado una dependencia nueva; y `zk-ssl-hash` —donde fueron §255 y
+§270— **no tiene serde**, así que un formato JSON no cabe ahí.
+
+⚠️ Y no se comparte la **línea**, sólo la **carga**. El testigo envuelve con
+su `clase` y su `vistoUnix`; el nodo no envuelve. **Un formato compartido
+entre dos cosas que casi son la misma es peor que dos formatos**: parece que
+garantiza comparabilidad y lo que garantiza es un campo que miente en una de
+las dos orillas — el testigo anota lo que **recibió**, el nodo lo que
+**firmó**.
+
+### Qué se anota, y las dos cosas que NO
+
+Entran `seq`, `epochDigest`, `emittedAtUnix` y —cuando hay firma—
+`formatVersion`, `index`, `signature` y `publicKey`.
+
+**No entran `custody` ni `beatSeconds`**: son aseveraciones del operador
+sobre sí mismo, no parte de lo que se firmó.
+
+**Y no entra el candado del guardián.** `PersistenciaFalsa` existe porque
+reusar un índice **compromete la clave**; perder este diario no compromete
+nada — deja al nodo sin reconocer su firma. Son categorías distintas, y se
+dice aquí para que nadie copie aquella cerradura donde no toca. Por lo mismo,
+un fallo al anotar **avisa y no aborta el latido**: parar de firmar porque el
+disco no admite una línea sería cambiar un problema pequeño por uno grande.
+
+### Se anotan también las cabezas sin firmar
+
+Y es seguro **por una razón medida**: `comparar_lineas` **salta las líneas
+sin `signature`**, así que no ensucian ninguna comparación. A cambio dejan
+registrado el **límite de época**, que es lo que §273 necesita.
+
+### Lo que cae de regalo
+
+`comparar_lineas` ya detecta **contradicción interna** —mismo índice,
+distinto digest, con su comentario *«repetir un índice es NORMAL; cambiar su
+digest, no»*—. Sobre el diario del nodo eso es **detección a posteriori de
+reúso de índice XMSS**: el guardián lo evita a priori, el diario lo delata
+después. **Dos líneas independientes sobre lo único que compromete la
+clave**, y de naturaleza distinta.
+
+### La comparación cruzada: ALCANZABLE, no ejercitada
+
+Medido: `comparar_lineas` mapea por `index` y **sólo recorre los índices
+presentes en ambos**. Los dos campos de más del testigo no le estorban y **no
+asume simetría**, así que no daría rojos falsos. Pero por eso mismo **una
+línea del testigo ausente del diario del nodo le pasa en silencio**, y ése es
+el caso grave: *o el nodo firmó algo que no recuerda, o alguien sirvió una
+firma que el nodo no emitió*.
+
+`diario::ausentes()` trae esa comprobación **dirigida**, ejercitada en tests.
+Falta el mando de CLI que la corra sobre dos ficheros: **nota 80**.
+
+⚠️ **Y sólo esa dirección.** El diario del nodo es **completo** —uno por
+latido— y el del testigo **muestreado** —sólo lo que pidió—. Contar la
+dirección contraria daría discrepancias en cada corrida y acabaría siendo
+paisaje, que es lo que `canon.sh` dice de las compuertas que se saltan.
+
+> El asiento no dice «los dos diarios son comparables». Dice **lo son, y
+> falta la herramienta que lo comprueba**.
+
+### Pines
+
+`zk-ssl-node` **56 → 64**. Sumas **746 / 883 / 897**.

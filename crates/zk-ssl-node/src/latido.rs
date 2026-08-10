@@ -185,6 +185,20 @@ pub fn arrancar(app: Arc<App>, mut firmante: Option<FirmanteCabeza>, cada: Durat
 /// ⚠️ Candado aparte del estado a propósito: guardar no debe volver a
 /// competir con las escrituras cuando el latido ya soltó el otro.
 pub fn conservar(app: &App, l: Latido) {
+    // ⚠️ **§272: ANOTAR ANTES DE PISAR.** La copia en memoria dura hasta
+    // el latido siguiente; el diario es lo que sobrevive al reinicio. Si
+    // anotar fallara, el latido no se pierde —la copia en memoria se
+    // guarda igual—: se pierde la LINEA, no la cabeza.
+    //
+    // ⚠️ Y NO se propaga el error ni se aborta el latido. Perder el
+    // diario no compromete la clave —eso es el guardian, con su
+    // `PersistenciaFalsa`—; parar de firmar porque el disco no admite una
+    // linea seria cambiar un problema pequeno por uno grande.
+    if let Some(r) = app.diario.as_ref() {
+        if let Err(e) = crate::diario::anotar(r, &l, &app.clave_publica_firma) {
+            tracing::warn!(error = %e, "no se pudo anotar el latido en el diario");
+        }
+    }
     if let Ok(mut u) = app.ultima_cabeza.lock() {
         *u = Some(l);
     }
