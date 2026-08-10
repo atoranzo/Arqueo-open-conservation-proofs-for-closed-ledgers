@@ -7,9 +7,18 @@
 //! profundidad 32. NO toca pendientes, cuota (`next_index` = censo) ni
 //! sled (sub-bloque 3; precedente `limpieza.remove` de legacy_null).
 //!
-//! ⚠️ **No ejecutar en vivo hasta el flip de circuitos** (spec D4): los
-//! AIR de hoy verifican hoja SIN salt y frozen-24; migrar antes rompería
-//! toda prueba. Esta función existe para el flip y para sus tests.
+//! ⚠️ **Qué es hoy: la herramienta de los stores LEGACY** (§157). El flip
+//! de circuitos ya ocurrió —**§156, `2ac37c5`**— y con él los AIR pasaron a
+//! verificar hoja SALADA y frozen-32, así que la prohibición que aquí decía
+//! «no ejecutar en vivo hasta el flip» **está cumplida, no pendiente**.
+//!
+//! ⚠️ **No tiene llamador vivo, y es deliberado**: `git log -S` sobre toda
+//! la historia devuelve sólo los tres commits de su nacimiento
+//! (`dcc2af0`, `f1c08f2`, `2b4ce43`) y ninguno que quite una cadena, así
+//! que nunca lo tuvo. El mundo nuevo nace colocado y salado por
+//! `open_account` (§157); esto es para un store anterior a D4, que este
+//! código **ya no puede fabricar** —`commit()` escribe `meta:geometry_v7`
+//! en cada persistencia—. Ver la nota 76 del BACKLOG.
 
 use super::*;
 use stark_experiment::native::native_leaf_salted;

@@ -554,6 +554,36 @@ el espacio por el tamaño de la clave.
 > operar en abierto.** Un ledger sin migrar que exponga `sendMaterials` o
 > este método **publica los saldos** a quien quiera calcularlos.
 
+### ⚠️ CORRECCIÓN (§265): el enunciado sigue en pie, el sujeto caducó
+
+Lo de arriba **no era falso y no se retira**: un ledger sin sal que reparta
+caminos publica los saldos. Lo que caducó es **de quién habla**.
+
+| ledger | estado hoy |
+|---|---|
+| creado o persistido por este código | **salado**. `commit()` escribe `meta:geometry_v7` en cada persistencia (`persistence.rs:578`), y en caliente toda cuenta nueva sale salada |
+| store legacy nunca migrado, anterior a D4 | **sigue expuesto**. Su herramienta es `migrate_to_salted_positions` (§157) |
+
+**Cuándo se cumplió, con el commit delante**: el flip D4 en **§156**
+(`2ac37c5`) —la capa habla salted de punta a punta y los legacy mueren— y la
+colocación en **§157** (`e3116c6` + `f926de6`), donde `open_account` adopta
+`public_id mod capacidad` y los dos contratos de privacidad
+—`account_indices_are_not_predictable` y `_not_enumerable`— cobran. Etiqueta
+`entrada-50`.
+
+⚠️ **Lo que NO dice esta corrección**: que la condición esté cumplida *para
+todo ledger*. Un store anterior a D4 abierto en abierto sigue publicando
+saldos, y además **no vuelve a abrir** si se le crea una cuenta —§258-A—.
+Las dos cosas y su herramienta viven juntas en **la nota 76 del BACKLOG**,
+que es donde pueden marcarse.
+
+> ⚠️ **Por qué esta frase duró cinco sellos.** Nació en §259 acompañada de
+> «no es una entrada de backlog pendiente; es una condición de despliegue».
+> Eso la sacó del único sitio del proyecto donde las cosas tienen estado. Una
+> nota del BACKLOG se marca; una condición de despliegue escrita en un
+> asiento **no tiene casilla**. Se ascendió de categoría y con eso se volvió
+> incerrable.
+
 ### ⚠️ CORRECCIÓN (§261): lo anterior era falso
 
 Esta especificación afirmaba, palabra por palabra:

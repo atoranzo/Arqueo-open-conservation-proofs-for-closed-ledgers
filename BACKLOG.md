@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 32 abiertas, 43 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 33 abiertas, 43 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 10 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -771,6 +771,35 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **No es un cambio de una línea**: bajar `TREE_DEPTH` rompería la
   conformidad, así que el arreglo es **no construir denso**, y eso toca el
   circuito. Sin urgencia declarada: cuesta minutos de suite, no corrección.
+
+- [ ] **76. El store anterior a D4: una entrada, no tres.** Funde lo que
+  estaba repartido —la exposición de un ledger sin sal (§259, `spec/RPC.md`),
+  el «árbol mezclado» y §258-A—, porque **son tres caras del mismo sujeto**:
+  un store persistido por código anterior al flip D4. Listadas por separado
+  parecían tres asuntos, y eso es la mitad de por qué sobrevivieron cinco
+  sellos.
+  ⚠️ **Alcanzabilidad primero**: `commit()` escribe `meta:geometry_v7` en
+  **cada** persistencia (`persistence.rs:578`) y `migrated` es
+  `meta:migrated` **o** `meta:geometry_v7` (`persistence.rs:334` y `:339`),
+  así que **ningún ledger guardado por este código puede estar en este
+  caso**. Sólo entra un store de antes.
+  **Las tres caras**: (1) **expuesto** — sin sal, `sendMaterials` e
+  `inclusionReceipt` dejan enumerar el saldo offline; medido en §259.
+  (2) **se rompe al usarlo** — abrir una cuenta escribe hoja salada en árbol
+  sin sal, y al reabrir todas se reconstruyen saladas y la raíz no cuadra:
+  `IntegrityFailure`. **Razonado, no medido** (§258-A, §260 entrada 7): si
+  existe un ledger así, nadie ha comprobado que la cadena ocurra, sólo que el
+  código dice que ocurriría. (3) **tiene herramienta** —
+  `migrate_to_salted_positions`, que §157 deja como herramienta de stores
+  legacy y que **nunca tuvo llamador vivo**: `git log -S` da sólo sus tres
+  commits de nacimiento (`dcc2af0`, `f1c08f2`, `2b4ce43`), ninguno que quite
+  una cadena.
+  **Evidencia y fecha**: medido sobre el espejo #90, sello `8745702`
+  (10-08-2026). Condición cumplida para todo lo demás en §156 (`2ac37c5`) y
+  §157 (`e3116c6`+`f926de6`), etiqueta `entrada-50`.
+  **Sin urgencia y sin plazo**: el sujeto no es fabricable por este
+  repositorio. Cerrarla es decidir si el legacy se soporta o se declara
+  fuera de alcance — decisión, no trabajo.
 
 ## E. Operacion
 

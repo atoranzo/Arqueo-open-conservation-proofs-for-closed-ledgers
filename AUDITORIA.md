@@ -19823,3 +19823,75 @@ deja abierto a propósito**: elegir entre las dos es una decisión, no un
 descuido, y este sello no la toma.
 
 **No mueve ningún pin.** Sumas: 736 / 873 / 887, sin cambio.
+
+## 265. El sujeto que caducó, y la frase que se puso donde nada la cierra
+
+La sesión 12 abrió con «continuar — la migración de la sal, §117», que era la
+cabecera de la cola. Medido en el primer movimiento: **estaba cerrada desde
+§156**, hace cinco sellos.
+
+### La procedencia, medida y no recordada
+
+La frase nace en el asiento **§259** —`AUDITORIA.md:19227`, dentro de «Servir
+el recibo de inclusión»—, de ahí pasa a `spec/RPC.md:553`, y de ahí al
+traspaso de la sesión 12. Tres documentos repitiendo una tarea cerrada.
+
+⚠️ Al reconstruirlo se dijo §261 de memoria. **Era §259**, y se comprobó
+buscando la frase en el fichero. Reconstruir una procedencia de memoria en el
+asiento que corrige un fallo de memoria habría sido la broma completa.
+
+### Por qué duró, que no es descuido
+
+Junto a la frase, §259 escribió:
+
+> No es una entrada de backlog «pendiente»; es una condición de despliegue,
+> como el ancla de §246.
+
+**Eso la sacó del único sitio del proyecto donde las cosas tienen estado.**
+Una nota del BACKLOG pasa de `[ ]` a `[x]` y lleva commit; una condición de
+despliegue escrita en un asiento **no tiene casilla que marcar**. Se ascendió
+de categoría y con eso se volvió incerrable: podía cumplirse sin que nada lo
+registrara.
+
+> **Un pendiente sin sitio donde marcarse no es un pendiente: es una
+> advertencia perpetua.**
+
+Y estaba listada **tres veces con tres nombres** —la exposición del legacy, el
+«árbol mezclado», §258-A—, siendo un solo sujeto. Tres nombres parecen tres
+asuntos, y ninguno se cierra por su cuenta.
+
+### Qué se corrige, y qué NO
+
+El enunciado de `RPC.md` **es verdadero y no se retira**: un ledger sin sal
+que reparta caminos publica los saldos. Lo que caducó es el **sujeto**.
+Escribir «la condición ya se cumplió» a secas sería el mismo fallo con el
+signo cambiado: dentro de veinte sellos alguien abriría un store legacy en
+abierto amparado en esa frase.
+
+Por eso la corrección dice **cuándo** (§156 `2ac37c5`, §157
+`e3116c6`+`f926de6`, etiqueta `entrada-50`) y **para qué ledgers**, con el
+legacy nombrado y sin absolver.
+
+### Lo que se mide de paso
+
+`migrate_to_salted_positions` **nunca tuvo llamador vivo**: `git log -S` sobre
+toda la historia devuelve tres commits, los tres de su nacimiento
+(`dcc2af0`, `f1c08f2`, `2b4ce43`), y **ninguno que quite una cadena** — si un
+mando hubiera existido y hubiera muerto con el legacy, su borrado bajaría el
+recuento y saldría ahí. Pasa de **observado** a **medido**. F3 no la ejecutó:
+lo que hizo (§157) fue que `open_account` adoptara su política de colocación.
+
+### El rito
+
+**Cada pendiente que viaja en un traspaso lleva su línea de evidencia y su
+fecha —medido en X, sello Y— o no viaja.** El aviso de cabecera del traspaso
+ya decía «esto no es fuente, mídelo»; lo que faltaba era que **cada ítem
+dijera contra qué se midió la última vez**. Un pendiente sin procedencia es
+una afirmación anónima, y las anónimas son las que duran veinte traspasos.
+
+⚠️ Y una precisión de método del mismo día: el sello se dio por leído cuando
+lo que se tenía era **paridad de contenido** —las anclas del zip cuadran—, no
+identidad de commit. El zip no trae `.git`. No es grave, porque el cerrojo PRE
+lee `HEAD` en la máquina y se corrige solo, pero **no se escribe como leído**.
+
+**No mueve ningún pin.** Sumas: 736 / 873 / 887, sin cambio.
