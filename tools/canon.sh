@@ -94,7 +94,7 @@ iso-bridge         sello       3   0   0   300
 zk-ssl-sdk         sello       6   0   0   300
 zk-ssl-wire        sello       3   0   0    60  §259: 20 metodos, y el json publicado atado a la tabla
 zk-ssl-cli         sello      26   0   0   120  §250: 22 -> 26, la vista dividida EN FRIO
-zk-ssl-node        sello      51   0   0   400  §259: 46 -> 51, el recibo de inclusion y su cruce
+zk-ssl-node        sello      56   0   0   400  §261: 51 -> 56, la credencial para los caminos
 zk-ssl-verify      sello      23   0   0   120  §257: 22 -> 23, del cable a la cabeza sin la capa
 zk-ssl-hash        sello      14   0   0    60  §258: 11 -> 14, la hoja componible sin el probador
 settlement-prover  sello       0   0   0   300  sin tests

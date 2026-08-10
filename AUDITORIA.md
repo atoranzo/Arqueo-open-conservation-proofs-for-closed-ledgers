@@ -19432,3 +19432,111 @@ corrida**.
 La entrada 7 es de la tercera, y lo dice en su propio cuerpo.
 
 **No mueve ningún pin de tests.** Sumas: 731 / 868 / 882, sin cambio.
+## 261. La credencial para los caminos
+
+### ⚠️ No es un control nuevo: es uno que existía del lado equivocado
+
+El SDK ya comprobaba, en `claim`, que **«los materiales de cobro no
+corresponden a esta wallet»** — y lo hacía **después** de recibir los
+caminos. El nodo entregaba y confiaba en que el cliente se autocensurara.
+
+> **Eso no es un control: es un convenio entre partes bien educadas.** Un
+> cliente que no haga esa comprobación —o que la quite— obtiene los caminos
+> igual, y el nodo **nunca se entera**.
+
+⚠️ **Una comprobación del lado del cliente no protege al sistema: protege al
+cliente que la ejecuta.** Es la forma del falso «limpio» de §250 — parece
+que hay control porque alguien lo hace, y el que importa no lo hace.
+
+Así que el sello no añade credencial: **mueve al nodo una comprobación ya
+escrita, al sitio donde vale.**
+
+### ⚠️ CORRECCIÓN de §259: la afirmación sellada era falsa
+
+§259 afirmó, y se publicó en `spec/RPC.md` y se empujó al remoto:
+
+> ⚠️ **`claimMaterials` no está en el mismo caso**: exige el `PendingNotice`
+> del pagador. No es una credencial que el nodo compruebe, pero **hay que
+> tenerlo**. La puerta abierta de par en par es una, no dos.
+
+**Medido**: `claim_materials` (`client.rs:138`) hace tres cosas —busca la
+vista del receptor, comprueba que no esté congelada, y devuelve los
+caminos— y **del aviso usa únicamente `notice.position`**. El despacho
+tampoco lo valida: solo parsea el DTO. **El aviso no autentica en ningún
+punto del camino.**
+
+Cualquiera podía llamar con `receiver = X` y un aviso **inventado** y
+obtener `accounts.path_for(X)`. **Ni secreto ni pago previo: eran dos
+puertas abiertas de par en par, no una.**
+
+⚠️ El error de razonamiento tiene nombre: se dedujo de **la firma** —«toma
+un aviso, luego el aviso hace falta»— **sin leer el cuerpo**. Es la entrada
+3 de §260 otra vez, escrita en el mismo sello que la corregía. Se corrige
+**encima**, con la frase vieja citada, como §247 con §242.
+
+### ⚠️ El ayudante que tiraba la clave
+
+`dev_openSeeded` **siempre devolvió la `viewKey`**, y el ayudante `cuenta()`
+de los tests del nodo **se quedaba solo con `index` y `publicId`**.
+
+> Mientras la tiraba, los tests **no medían el cliente: medían una idea del
+> cliente**, y más pobre que la real. Por eso nueve llamadas pedían caminos
+> sin credencial — **no porque el modelo lo permitiera, sino porque el
+> andamio la descartaba.** Es la familia de §250, y explica por qué el
+> agujero sobrevivió tanto.
+
+Pasa a devolver `(index, publicId, viewKey)`: quince destructuraciones
+ganan un `_` **que el compilador vigila**, en vez de cinco indexaciones
+nuevas por cadena.
+
+### El negativo que prueba el sello
+
+`la_clave_de_otra_cuenta_no_abre_el_camino`. Ausente y malformada las caza
+cualquier cosa; **la que distingue** es si el nodo comprueba la credencial
+**contra el índice pedido** o solo que sea una clave bien formada. Si
+`account_view_authenticated` hiciera lo segundo, **todo lo demás seguiría
+verde**.
+
+Y su gemelo, `con_su_propia_clave_el_titular_sigue_pudiendo`: **que el sello
+cierra no basta — hay que probar que no cerró de más.** Un control que
+rechaza todo también pasaría los negativos.
+
+### Qué promete el recibo, antes y después
+
+| | antes | después |
+|---|---|---|
+| **verificar** un recibo | cualquiera | **cualquiera** — igual |
+| **obtener** el recibo de otro | cualquiera | solo el titular |
+
+**No se pierde «comprobable por terceros»: se pierde «obtenible por
+terceros», que era el agujero.** Lo segundo **nunca fue una propiedad
+diseñada**: era la ausencia de un control, y §259 midió lo que costaba.
+
+⚠️ **Pérdida real, dicha como conjetura:** un testigo ya no puede comprobar
+inclusiones de cuentas ajenas. Hoy tampoco lo hace, y en Certificate
+Transparency los monitores comprueban consistencia del log, no inclusiones
+individuales. **Que por eso no importe en la práctica es conjetura, no
+argumento medido.**
+
+### Dos notas de método
+
+**Un pin se lee de `canon.sh`, no de la memoria de tres sellos atrás.** Al
+preparar este sello estuvo a punto de escribirse la fila desde un 46
+recordado, cuando §259 ya lo había dejado en 51. Es la segunda vez en la
+sesión que un número de memoria casi entra en una fila.
+
+**La compuerta de §259 hizo su trabajo en el primer sello que la pisó**:
+cambiar los parámetros obligó a regenerar `spec/openrpc.json`, y el test que
+lo ata a `document()` no dejaba pasar otra cosa. Diecisiete sellos rancio
+antes de tenerla; cero después.
+
+### Lo que §261 NO hace
+
+- **No sube la versión.** Los parámetros cambian, pero `zkssl/0.2` cubre la
+  superficie; lo que movería la versión es un valor de cable distinto.
+- **No toca el sandbox del CLI**, que llama a la capa en proceso y no cruza
+  el cable.
+- **No cambia firmas del SDK**: dos líneas, porque la `viewKey` se deriva
+  del `Wallet` que ya estaba en el punto de la llamada.
+
+**Canon: `zk-ssl-node` 51 → 56.** Sumas: 731 → 736, 868 → 873, 882 → 887.

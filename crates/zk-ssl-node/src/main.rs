@@ -467,6 +467,24 @@ struct RpcError {
     message: String,
 }
 
+/// **Exige la credencial de la cuenta ANTES de entregar un camino** (§261).
+///
+/// ⚠️ Comprueba contra **el indice pedido**, no solo que la clave sea bien
+/// formada: `account_view_authenticated` devuelve `None` si la clave es de
+/// **otra** cuenta. Hay test de ese caso exacto, y es **el unico que prueba
+/// el sello** — ausente y malformada las caza cualquier cosa.
+///
+/// ⚠️ Esta comprobacion **ya existia, del lado equivocado**: el SDK miraba
+/// `materials.receiver.public_id != wallet.public_id()` **despues** de
+/// recibir los caminos. Una comprobacion del lado del cliente no protege al
+/// sistema: **protege al cliente que la ejecuta**.
+fn exige_credencial(l: &SovereignLayer, indice: u64, vk: &wire::B32) -> Result<(), RpcError> {
+    let clave = digest_from_wire(vk).map_err(RpcError::wire)?;
+    l.account_view_authenticated(indice, clave)
+        .map(|_| ())
+        .ok_or_else(|| RpcError::credencial(indice))
+}
+
 impl RpcError {
     fn invalid_params(e: impl std::fmt::Display) -> Self {
         Self { code: -32602, message: format!("parámetros inválidos: {e}") }
@@ -478,6 +496,14 @@ impl RpcError {
         // -32000: rechazo de la capa. El mensaje es el Debug del error,
         // que en este proyecto es autoexplicativo.
         Self { code: -32000, message: format!("{e:?}") }
+    }
+    /// ⚠️ §261: la credencial **no cuadra con ESA cuenta**.
+    ///
+    /// Codigo propio —-32004— y no `layer`: quien pregunta tiene que poder
+    /// distinguir «no autorizado» de «la capa rechazo la operacion». Un
+    /// instrumento que falla dice QUE fallo (§254).
+    fn credencial(indice: u64) -> Self {
+        Self { code: -32004, message: format!("credencial invalida para la cuenta {indice}") }
     }
     /// ⚠️ El número de recepción **también en el error**: el caso que
     /// importa es el rechazo, y ahí es donde un censor se escondería.
@@ -613,8 +639,13 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
         // con `zkssl_applyMany` (§222) ni con `zkssl_signedEpochHead`.
         "zkssl_inclusionReceipt" => {
             #[derive(Deserialize)]
-            struct P { index: Q }
+            #[serde(rename_all = "camelCase")]
+            struct P { index: Q, view_key: wire::B32 }
             let p: P = parse(params)?;
+            // ⚠️ §261: el recibo cambia de promesa. VERIFICARLO sigue sin
+            //    necesitar al nodo; OBTENERLO pasa a ser del titular, que
+            //    puede reenviarlo a quien quiera. Ver spec/RPC.md.
+            exige_credencial(l, p.index.0, &p.view_key)?;
             let m = l.inclusion_materials(p.index.0).map_err(RpcError::layer)?;
             Ok(serde_json::to_value(wire::InclusionReceiptDto {
                 index: Q(m.index),
@@ -712,8 +743,12 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
         "zkssl_sendMaterials" => {
             #[derive(Deserialize)]
             #[serde(rename_all = "camelCase")]
-            struct P { sender: Q, receiver_id: wire::B32, amount: Q, salt: wire::B32 }
+            struct P { sender: Q, receiver_id: wire::B32, amount: Q, salt: wire::B32,
+                       view_key: wire::B32 }
             let p: P = parse(params)?;
+            // ⚠️ §261: ANTES de tocar la capa. Este brazo repartia el camino
+            //    del remitente SIN CREDENCIAL NINGUNA desde que existe.
+            exige_credencial(l, p.sender.0, &p.view_key)?;
             let receptor = digest_from_wire(&p.receiver_id).map_err(RpcError::wire)?;
             let salt = digest_from_wire(&p.salt).map_err(RpcError::wire)?;
 
@@ -788,8 +823,14 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
 
         "zkssl_claimMaterials" => {
             #[derive(Deserialize)]
-            struct P { receiver: Q, notice: wire::PendingNoticeDto }
+            #[serde(rename_all = "camelCase")]
+            struct P { receiver: Q, notice: wire::PendingNoticeDto, view_key: wire::B32 }
             let p: P = parse(params)?;
+            // ⚠️ §261: el aviso NO autenticaba —`claim_materials` solo usa
+            //    `notice.position`—, asi que este brazo entregaba el camino
+            //    del receptor a quien inventara un aviso. §259 dijo lo
+            //    contrario y estaba equivocado.
+            exige_credencial(l, p.receiver.0, &p.view_key)?;
             let notice = (&p.notice).try_into().map_err(RpcError::wire)?;
             let m = l.claim_materials(p.receiver.0, &notice).map_err(RpcError::layer)?;
             Ok(serde_json::to_value(wire::ClaimMaterialsDto::from(&m)).unwrap())
@@ -1175,12 +1216,18 @@ mod tests {
     }
 
     /// Abre una cuenta con semilla `s` y la fondea. Devuelve (indice, id).
-    pub(crate) fn cuenta(app: &App, s: u64, saldo: u64) -> (u64, Value) {
+    /// ⚠️ §261: DEVUELVE TAMBIEN LA CLAVE DE VISTA, que `dev_openSeeded`
+    /// siempre entrego y este ayudante TIRABA. Mientras la tiraba, los
+    /// tests del nodo median **una idea del cliente mas pobre que la
+    /// real** — y por eso nueve llamadas pedian caminos sin credencial: no
+    /// porque el modelo lo permitiera, sino porque el andamio la
+    /// descartaba. Es la familia de §250.
+    pub(crate) fn cuenta(app: &App, s: u64, saldo: u64) -> (u64, Value, Value) {
         let r = dispatch(app, "dev_openSeeded", json!({ "seed": Q(s) })).expect("abrir");
         let idx = r["index"].as_str().expect("index").to_string();
         let idx = u64::from_str_radix(idx.trim_start_matches("0x"), 16).expect("hex");
         dispatch(app, "dev_fund", json!({ "index": Q(idx), "amount": Q(saldo) })).expect("fondear");
-        (idx, r["publicId"].clone())
+        (idx, r["publicId"].clone(), r["viewKey"].clone())
     }
 
     fn reservas_vivas(app: &App) -> usize {
@@ -1193,12 +1240,13 @@ mod tests {
         [E::new(n), E::new(0), E::new(0), E::new(0)]
     }
 
-    fn materiales(app: &App, emisor: u64, receptor: &Value, importe: u64, salt: u64) -> Value {
+    fn materiales(app: &App, emisor: u64, vk: &Value, receptor: &Value, importe: u64, salt: u64) -> Value {
         dispatch(
             app,
             "zkssl_sendMaterials",
             json!({
                 "sender": Q(emisor),
+                "viewKey": vk,
                 "receiverId": receptor,
                 "amount": Q(importe),
                 "salt": digest_to_wire(&sal(salt)),
@@ -1408,12 +1456,12 @@ mod tests {
         // segundo moria al aplicar. El nodo llevaba nueve sellos sin usar
         // `reserve_pending`, que la capa tenia desde §211.
         let app = nodo(30);
-        let (a, _) = cuenta(&app, 1, 100_000);
-        let (b, _) = cuenta(&app, 2, 100_000);
-        let (_, id_c) = cuenta(&app, 3, 0);
+        let (a, _, vk_a) = cuenta(&app, 1, 100_000);
+        let (b, _, vk_b) = cuenta(&app, 2, 100_000);
+        let (_, id_c, _) = cuenta(&app, 3, 0);
 
-        let m1 = materiales(&app, a, &id_c, 1_000, 7);
-        let m2 = materiales(&app, b, &id_c, 1_000, 8);
+        let m1 = materiales(&app, a, &vk_a, &id_c, 1_000, 7);
+        let m2 = materiales(&app, b, &vk_b, &id_c, 1_000, 8);
 
         assert_ne!(
             posicion(&m1),
@@ -1428,11 +1476,11 @@ mod tests {
     #[test]
     fn muchas_peticiones_seguidas_no_repiten_ninguna_posicion() {
         let app = nodo(30);
-        let (a, _) = cuenta(&app, 10, 1_000_000);
-        let (_, id) = cuenta(&app, 11, 0);
+        let (a, _, vk_a) = cuenta(&app, 10, 1_000_000);
+        let (_, id, _) = cuenta(&app, 11, 0);
         let mut vistas = std::collections::BTreeSet::new();
         for i in 0..15u64 {
-            let m = materiales(&app, a, &id, 1_000, 100 + i);
+            let m = materiales(&app, a, &vk_a, &id, 1_000, 100 + i);
             assert!(vistas.insert(posicion(&m)), "posicion repetida en la iteracion {i}");
         }
         assert_eq!(vistas.len(), 15);
@@ -1447,14 +1495,15 @@ mod tests {
         // insuficiente, limite regulatorio— dejaria una posicion muerta.
         // Y un atacante no necesitaria ni saldo para provocarlas.
         let app = nodo(30);
-        let (pobre, _) = cuenta(&app, 20, 10);
-        let (_, id) = cuenta(&app, 21, 0);
+        let (pobre, _, vk_pobre) = cuenta(&app, 20, 10);
+        let (_, id, _) = cuenta(&app, 21, 0);
 
         let e = dispatch(
             &app,
             "zkssl_sendMaterials",
             json!({
                 "sender": Q(pobre),
+                "viewKey": vk_pobre,
                 "receiverId": id,
                 "amount": Q(999_999u64),
                 "salt": digest_to_wire(&sal(1)),
@@ -1478,10 +1527,10 @@ mod tests {
         // peticion mas para que se note — y eso es correcto: un nodo
         // ocioso mantiene sus reservas hasta que alguien llama.
         let app = nodo(0);
-        let (a, _) = cuenta(&app, 30, 100_000);
-        let (_, id) = cuenta(&app, 31, 0);
+        let (a, _, vk_a) = cuenta(&app, 30, 100_000);
+        let (_, id, _) = cuenta(&app, 31, 0);
 
-        materiales(&app, a, &id, 1_000, 42);
+        materiales(&app, a, &vk_a, &id, 1_000, 42);
         assert_eq!(reservas_vivas(&app), 1, "la reserva existe nada mas crearse");
 
         std::thread::sleep(Duration::from_millis(20));
@@ -1492,9 +1541,9 @@ mod tests {
     #[test]
     fn con_caducidad_larga_el_barrido_no_toca_nada() {
         let app = nodo(3_600);
-        let (a, _) = cuenta(&app, 40, 100_000);
-        let (_, id) = cuenta(&app, 41, 0);
-        materiales(&app, a, &id, 1_000, 43);
+        let (a, _, vk_a) = cuenta(&app, 40, 100_000);
+        let (_, id, _) = cuenta(&app, 41, 0);
+        materiales(&app, a, &vk_a, &id, 1_000, 43);
         for _ in 0..5 {
             dispatch(&app, "zkssl_accountCount", json!({})).expect("peticion");
         }
@@ -1612,8 +1661,8 @@ mod tests {
         // arbol y el de `path_root` divergieran, los once de
         // `inclusion.rs` seguirian verdes y ESTE se pondria rojo.
         let app = nodo(30);
-        let (idx, _) = cuenta(&app, 70, 1_000);
-        let r = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(idx) }))
+        let (idx, _, vk) = cuenta(&app, 70, 1_000);
+        let r = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(idx), "viewKey": vk }))
             .expect("recibo");
         let firmado = digest_from_wire(
             &serde_json::from_value::<wire::B32>(r["head"]["epochDigest"].clone()).expect("B32"),
@@ -1630,8 +1679,8 @@ mod tests {
         // En caliente toda cuenta nueva sale SALADA (§258): la forma no se
         // declara de memoria, se mide contra el arbol.
         let app = nodo(30);
-        let (idx, _) = cuenta(&app, 71, 500);
-        let r = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(idx) }))
+        let (idx, _, vk) = cuenta(&app, 71, 500);
+        let r = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(idx), "viewKey": vk }))
             .expect("recibo");
         assert_eq!(r["leafFormat"], json!("salted"));
     }
@@ -1641,8 +1690,8 @@ mod tests {
         // ⚠️ El salt es lo UNICO que impide enumerar el saldo desde un
         // camino (§117). Si algun dia se colara en el DTO, esto lo dice.
         let app = nodo(30);
-        let (idx, _) = cuenta(&app, 72, 500);
-        let r = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(idx) }))
+        let (idx, _, vk) = cuenta(&app, 72, 500);
+        let r = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(idx), "viewKey": vk }))
             .expect("recibo");
         // ⚠️ Por CLAVES, no por subcadena: el valor de `leafFormat` es
         // literalmente "salted", asi que buscar "salt" en el texto entero
@@ -1666,8 +1715,8 @@ mod tests {
         // mueve. Sin la comprobacion de cabeza, un operador serviria un
         // recibo de una epoca en la que la hoja SI estaba.
         let app = nodo(30);
-        let (idx, _) = cuenta(&app, 73, 500);
-        let r = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(idx) }))
+        let (idx, _, vk) = cuenta(&app, 73, 500);
+        let r = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(idx), "viewKey": vk }))
             .expect("recibo");
         cuenta(&app, 74, 500); // la raiz se mueve
         let nueva = dispatch(&app, "zkssl_epochHead", json!({})).expect("cabeza");
@@ -1681,10 +1730,98 @@ mod tests {
         );
     }
 
+    /// Una clave de vista que no es de nadie, para los negativos.
+    ///
+    /// ⚠️ Devuelve `B32`, no `Value`: `digest_to_wire` da `B32` y `json!`
+    /// ya lo serializa. Declararlo `Value` costo una corrida.
+    fn vk_falsa() -> wire::B32 {
+        digest_to_wire(&sal(9_999))
+    }
+
+    // ── §261 · la credencial para los caminos ─────────────────────
+
+    #[test]
+    fn la_clave_de_otra_cuenta_no_abre_el_camino() {
+        // ⚠️⚠️ EL UNICO NEGATIVO QUE PRUEBA EL SELLO. Ausente y
+        // malformada las caza cualquier cosa; esta distingue si el nodo
+        // comprueba la credencial CONTRA EL INDICE PEDIDO o solo que sea
+        // una clave bien formada. Si `account_view_authenticated`
+        // comprobara lo segundo, todo lo demas seguiria verde.
+        let app = nodo(30);
+        let (a, _, _vk_a) = cuenta(&app, 80, 1_000);
+        let (_b, _, vk_b) = cuenta(&app, 81, 1_000);
+
+        for (m, params) in [
+            ("zkssl_inclusionReceipt", json!({ "index": Q(a), "viewKey": vk_b })),
+            ("zkssl_sendMaterials", json!({
+                "sender": Q(a), "viewKey": vk_b, "receiverId": digest_to_wire(&sal(1)),
+                "amount": Q(1u64), "salt": digest_to_wire(&sal(2)) })),
+            ("zkssl_claimMaterials", json!({
+                "receiver": Q(a), "viewKey": vk_b,
+                "notice": json!({ "position": Q(0u64), "salt": digest_to_wire(&sal(3)),
+                                  "amount": Q(1u64) }) })),
+        ] {
+            let e = dispatch(&app, m, params).expect_err("una clave ajena no puede abrir");
+            assert_eq!(e.code, -32004, "{m} acepto la clave de OTRA cuenta");
+        }
+    }
+
+    #[test]
+    fn sin_credencial_no_hay_camino() {
+        // Falta el campo: el despacho ni siquiera llega a la capa.
+        let app = nodo(30);
+        let (a, _, _) = cuenta(&app, 82, 1_000);
+        let e = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(a) }))
+            .expect_err("sin viewKey no hay recibo");
+        assert_eq!(e.code, -32602, "deberia ser parametros invalidos");
+    }
+
+    #[test]
+    fn una_credencial_malformada_se_rechaza_sin_reventar() {
+        let app = nodo(30);
+        let (a, _, _) = cuenta(&app, 83, 1_000);
+        let e = dispatch(&app, "zkssl_inclusionReceipt",
+                         json!({ "index": Q(a), "viewKey": "0xno-es-hex" }))
+            .expect_err("basura no puede pasar");
+        assert_ne!(e.code, -32601, "el metodo existe");
+    }
+
+    #[test]
+    fn con_su_propia_clave_el_titular_sigue_pudiendo() {
+        // ⚠️ Que el sello CIERRA no basta: hay que probar que NO cerro de
+        // mas. Un control que rechaza todo tambien pasaria los negativos.
+        let app = nodo(30);
+        let (a, _, vk_a) = cuenta(&app, 84, 1_000);
+        let r = dispatch(&app, "zkssl_inclusionReceipt",
+                         json!({ "index": Q(a), "viewKey": vk_a.clone() }))
+            .expect("con su clave, si");
+        assert_eq!(r["index"], json!(Q(a)));
+        let m = dispatch(&app, "zkssl_sendMaterials", json!({
+            "sender": Q(a), "viewKey": vk_a, "receiverId": digest_to_wire(&sal(1)),
+            "amount": Q(10u64), "salt": digest_to_wire(&sal(2)) }))
+            .expect("materiales con su clave");
+        assert!(m["senderPath"].is_object(), "el camino sigue llegando");
+    }
+
+    #[test]
+    fn el_camino_del_receptor_ya_no_lo_da_un_aviso_inventado() {
+        // ⚠️ §259 AFIRMO QUE ESTA PUERTA EXIGIA EL AVISO DEL PAGADOR. No
+        // lo exigia: `claim_materials` solo usa `notice.position`. Este
+        // test fija que ahora si hace falta ser el receptor.
+        let app = nodo(30);
+        let (a, _, _) = cuenta(&app, 85, 1_000);
+        let inventado = json!({ "position": Q(0u64), "salt": digest_to_wire(&sal(7)),
+                                "amount": Q(1u64) });
+        let e = dispatch(&app, "zkssl_claimMaterials",
+                         json!({ "receiver": Q(a), "notice": inventado, "viewKey": vk_falsa() }))
+            .expect_err("un aviso inventado ya no basta");
+        assert_eq!(e.code, -32004);
+    }
+
     #[test]
     fn una_cuenta_que_no_existe_no_da_recibo() {
         let app = nodo(30);
-        let e = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(9_999) }))
+        let e = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(9_999), "viewKey": vk_falsa() }))
             .expect_err("no deberia haber recibo");
         assert_ne!(e.code, -32601, "el metodo existe: no puede ser MethodNotFound");
     }

@@ -204,6 +204,7 @@ impl<'a> Account<'a> {
             "zkssl_sendMaterials",
             json!({
                 "sender": Q(self.index),
+                "viewKey": digest_to_wire(&self.wallet.view_key()),
                 "receiverId": digest_to_wire(receiver_id),
                 "amount": Q(amount),
                 "salt": digest_to_wire(&salt),
@@ -242,6 +243,7 @@ impl<'a> Account<'a> {
             "zkssl_claimMaterials",
             json!({
                 "receiver": Q(self.index),
+                "viewKey": digest_to_wire(&self.wallet.view_key()),
                 "notice": wire::PendingNoticeDto::from(notice),
             }),
         )?;

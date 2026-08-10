@@ -227,6 +227,13 @@
           }
         },
         {
+          "name": "viewKey",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        },
+        {
           "name": "receiverId",
           "required": true,
           "schema": {
@@ -304,6 +311,13 @@
           "required": true,
           "schema": {
             "$ref": "#/components/schemas/Q"
+          }
+        },
+        {
+          "name": "viewKey",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Digest"
           }
         },
         {
@@ -400,6 +414,13 @@
           "required": true,
           "schema": {
             "$ref": "#/components/schemas/Q"
+          }
+        },
+        {
+          "name": "viewKey",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Digest"
           }
         }
       ],

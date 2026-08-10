@@ -74,7 +74,7 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 | `zkssl_logEntry` | `{seq: Q}` | `LogEntry` |
 | `zkssl_logEntries` | `{fromSeq?: Q, limit?: Q}` | `LogEntry[]` (límite ≤ 1000) |
 | `zkssl_verifyChain` | — | `{ok: bool, entries?, error?}` |
-| `zkssl_inclusionReceipt` | `{index: Q}` | `{index, leaf, path, leafFormat, head}` |
+| `zkssl_inclusionReceipt` | `{index: Q, viewKey: Digest}` | `{index, leaf, path, leafFormat, head}` |
 
 `LogEntry = {seq: Q, kind: string, rootOld, rootNew, proofDigest, chain: Digest}`
 con `kind` ∈ {`OpenAccount`,`Mint`,`Transfer`,`Burn`,`Recovery`,
@@ -95,9 +95,9 @@ view_id_of_wide, derive_leaf_salt_wide}`.
 
 | método | params | result |
 |---|---|---|
-| `zkssl_sendMaterials` | `{sender: Q, receiverId: Digest, amount: Q, salt: Digest}` | `SendMaterials` |
+| `zkssl_sendMaterials` | `{sender: Q, viewKey: Digest, receiverId: Digest, amount: Q, salt: Digest}` | `SendMaterials` |
 | `zkssl_applySend` | `{receipt: SendReceipt, sender: Q, senderState: ClientState, amount: Q}` | `Applied` |
-| `zkssl_claimMaterials` | `{receiver: Q, notice: PendingNotice}` | `ClaimMaterials` |
+| `zkssl_claimMaterials` | `{receiver: Q, viewKey: Digest, notice: PendingNotice}` | `ClaimMaterials` |
 | `zkssl_applyClaim` | `{receipt: ClaimReceipt, receiver: Q, receiverState: ClientState, notice: PendingNotice}` | `Applied` |
 | `zkssl_applyMany` | `{ops: BatchOp[]}` | `BatchApplied` |
 
@@ -554,9 +554,56 @@ el espacio por el tamaño de la clave.
 > operar en abierto.** Un ledger sin migrar que exponga `sendMaterials` o
 > este método **publica los saldos** a quien quiera calcularlos.
 
-⚠️ **`claimMaterials` no está en el mismo caso**: exige el `PendingNotice`
-del pagador. No es una credencial que el nodo compruebe, pero **hay que
-tenerlo**. La puerta abierta de par en par es una, no dos.
+### ⚠️ CORRECCIÓN (§261): lo anterior era falso
+
+Esta especificación afirmaba, palabra por palabra:
+
+> ⚠️ **`claimMaterials` no está en el mismo caso**: exige el `PendingNotice`
+> del pagador. No es una credencial que el nodo compruebe, pero **hay que
+> tenerlo**. La puerta abierta de par en par es una, no dos.
+
+**Medido en §261: `claim_materials` (`client.rs:138`) usa del aviso
+únicamente `notice.position`, y el despacho no lo valida.** Cualquiera podía
+llamar con un aviso **inventado** y obtener el camino del receptor. **No
+hacía falta ni un secreto ni un pago previo: eran dos puertas abiertas de
+par en par, no una.**
+
+### La credencial (§261)
+
+`sendMaterials`, `claimMaterials` e `inclusionReceipt` exigen ahora la
+`viewKey` de la cuenta **cuyo camino se devuelve** —el remitente, el
+receptor y el índice pedido—, comprobada contra **ese** índice. Error
+`-32004` si no cuadra.
+
+⚠️ **No es un control nuevo: es uno que existía del lado equivocado.** El SDK
+ya comprobaba «los materiales de cobro no corresponden a esta wallet»,
+**después** de recibir los caminos. Un cliente que quite esa línea los
+obtiene igual. **Una comprobación del lado del cliente no protege al
+sistema: protege al cliente que la ejecuta.**
+
+### ⚠️ Qué promete el recibo, antes y después
+
+| | antes | después |
+|---|---|---|
+| **verificar** un recibo | cualquiera | **cualquiera** — igual |
+| **obtener** el recibo de otro | cualquiera | solo el titular |
+
+**No se pierde «comprobable por terceros»: se pierde «obtenible por
+terceros», que era el agujero.** §256 afirmó que un tercero puede comprobar
+una inclusión sin el nodo, y **eso no cambia**: el recibo es autocontenido y
+`verificar_inclusion` sigue sin necesitar al operador. Lo que cambia es
+**quién puede pedirlo** — y el titular puede reenviarlo a quien quiera, así
+que la comprobación por terceros pasa a ser **por delegación** en vez de
+abierta.
+
+⚠️ Lo segundo **nunca fue una propiedad diseñada**: era **la ausencia de un
+control**, y §259 midió lo que costaba.
+
+⚠️ **Pérdida real, dicha como conjetura:** un testigo ya no puede comprobar
+inclusiones de cuentas ajenas. Hoy tampoco lo hace —vigila cabezas, no
+cuentas—, y en Certificate Transparency los monitores comprueban
+consistencia del log, no inclusiones individuales. **Que por eso no importe
+en la práctica es una conjetura, no un argumento medido.**
 
 Cerrar la exposición —exigir credencial para los caminos— **es un sello
 aparte**: cambia superficie hoy pública y puede romper clientes. Meterlo
