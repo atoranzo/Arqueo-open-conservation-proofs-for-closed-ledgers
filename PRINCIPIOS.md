@@ -347,8 +347,8 @@ sería faltar al principio de transparencia.
 - Capa de liquidación con ciclo monetario completo, persistencia,
   auditoría y verificación de integridad.
 - **788 tests en la compuerta de sello** —262 de la capa, 297 de
-  circuitos, **79 del nodo**, 34 de la ceremonia, 17 de liquidación, **39
-  del verificador independiente**, **26 del testigo**, y los del SDK, el
+  circuitos, **77 del nodo**, 34 de la ceremonia, 17 de liquidación, **39
+  del verificador independiente**, **28 del testigo**, y los del SDK, el
   cable y el puente ISO—, **925 contando los pines de `--largo` y
   `--completo`**, y **939 declarados**. 0 fallos y 24
   warnings **pinchados** (no crecen). Cada propiedad de seguridad con

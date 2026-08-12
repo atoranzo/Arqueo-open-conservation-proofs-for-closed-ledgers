@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 30 abiertas, 52 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 29 abiertas, 53 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 12 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -889,7 +889,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   Va a la entrada **82**, que acumula las razones de rotura de formato
   para que el día que se rompa se rompa **una vez para todas**.
 
-- [ ] **80. El diario del nodo existe; falta el mando que lo compare con
+- [x] **80. El diario del nodo existe; falta el mando que lo compare con
   el del testigo.** Abierta en §272, que dejó la pieza que faltaba
   —`diario::ausentes()`, la comprobación DIRIGIDA— **ejercitada en tests
   pero sin mando de CLI**.
@@ -907,6 +907,15 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **Segunda mitad**: `--diario` es explícita, así que un nodo que firme
   sin ella sigue sin poder reconocer su firma. Decidir si eso se queda
   como bandera o pasa a ir con `--clave`.
+  - MAPA (§283): la comprobacion dirigida ya tiene mando — `--ausentes <TESTIGO> <NODO>`
+    en el testigo, con `ausentes()` mudada del nodo (pura, cero llamantes de produccion;
+    ningun `Cargo.*` tocado, la foto del `--completo` vive). Ejercitado por sus partes,
+    no de punta a punta: k=0, los tests de witness.rs no tocan ficheros. Los dos tests
+    mudados pierden el acoplamiento con `linea()`: el formato de la linea del diario es
+    un contrato compartido SIN CASA COMUN (cuarto caso del patron; ni verify ni hash
+    pueden alojarlo). SEGUNDA MITAD ABIERTA: `--diario` es bandera aparte — un nodo que
+    firma sin ella no puede reconocer su firma despues. Recomendacion SIN RATIFICAR:
+    «quien firma, anota» (que `--diario` vaya con `--clave`).
 - [ ] **81. Tres warnings en un ejemplo que el canon no ve.** El canon
   no compila ejemplos, así que la fila de zk-ssl marca 0 mientras
   `crates/zk-ssl/examples/etapa_b1_lote_medido.rs` avisa tres veces en

@@ -144,45 +144,6 @@ pub fn ultimo_seq(ruta: impl AsRef<Path>) -> Option<u64> {
     limites(ruta).into_iter().last()
 }
 
-/// **La comprobación DIRIGIDA**: índices del testigo ausentes del diario
-/// del nodo.
-///
-/// ⚠️ **Y sólo esa dirección.** El diario del nodo es COMPLETO —uno por
-/// latido— y el del testigo es MUESTREADO —sólo lo que pidió—, así que el
-/// nodo tendrá siempre líneas que el testigo no tiene y eso **no es un
-/// hallazgo, es lo normal**. Contarlo daría rojo en cada corrida y
-/// acabaría siendo paisaje.
-///
-/// La ausencia que sí importa significa una de dos cosas, y las dos son
-/// graves: **o el nodo firmó algo que no recuerda, o alguien sirvió una
-/// firma que el nodo no emitió**.
-///
-/// ⚠️ Esto es lo que `comparar_lineas` NO hace: mapea por `index` y sólo
-/// recorre los presentes en ambos, así que una ausencia le pasa en
-/// silencio.
-pub fn ausentes(testigo: &[String], nodo: &[String]) -> Vec<u64> {
-    let indices = |ls: &[String]| -> std::collections::BTreeSet<u64> {
-        let mut s = std::collections::BTreeSet::new();
-        for l in ls {
-            let v: Value = match serde_json::from_str(l) {
-                Ok(v) => v,
-                Err(_) => continue,
-            };
-            if v["signature"].is_null() {
-                continue;
-            }
-            if let Some(t) = v["index"].as_str() {
-                if let Ok(i) = u64::from_str_radix(t.trim_start_matches("0x"), 16) {
-                    s.insert(i);
-                }
-            }
-        }
-        s
-    };
-    let (t, n) = (indices(testigo), indices(nodo));
-    t.difference(&n).copied().collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -272,35 +233,6 @@ mod tests {
         serde_json::from_str::<Value>(&s).expect("no es JSON valido");
     }
 
-    #[test]
-    fn ausentes_nombra_la_linea_del_testigo_que_el_nodo_no_tiene() {
-        // El caso grave: o el nodo firmo algo que no recuerda, o alguien
-        // sirvio una firma que el nodo no emitio.
-        let t: Vec<String> = [5u64, 6, 7]
-            .iter()
-            .map(|i| linea(&cabeza(*i, 0x11, true), &[]).to_string())
-            .collect();
-        let n: Vec<String> = [5u64, 7]
-            .iter()
-            .map(|i| linea(&cabeza(*i, 0x11, true), &[]).to_string())
-            .collect();
-        assert_eq!(ausentes(&t, &n), vec![6], "no nombro el indice ausente");
-    }
-
-    #[test]
-    fn la_direccion_contraria_no_es_un_hallazgo() {
-        // El diario del nodo es COMPLETO y el del testigo MUESTREADO.
-        // Contar esta direccion daria rojo en cada corrida.
-        let t: Vec<String> = [5u64]
-            .iter()
-            .map(|i| linea(&cabeza(*i, 0x11, true), &[]).to_string())
-            .collect();
-        let n: Vec<String> = [5u64, 6, 7]
-            .iter()
-            .map(|i| linea(&cabeza(*i, 0x11, true), &[]).to_string())
-            .collect();
-        assert!(ausentes(&t, &n).is_empty(), "el muestreo del testigo no es un hallazgo");
-    }
 }
 
 #[cfg(test)]

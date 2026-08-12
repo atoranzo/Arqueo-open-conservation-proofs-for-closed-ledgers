@@ -611,6 +611,45 @@ pub fn comparar_lineas(a: &[String], b: &[String]) -> Comparacion {
     c
 }
 
+/// **La comprobación DIRIGIDA**: índices del testigo ausentes del diario
+/// del nodo.
+///
+/// ⚠️ **Y sólo esa dirección.** El diario del nodo es COMPLETO —uno por
+/// latido— y el del testigo es MUESTREADO —sólo lo que pidió—, así que el
+/// nodo tendrá siempre líneas que el testigo no tiene y eso **no es un
+/// hallazgo, es lo normal**. Contarlo daría rojo en cada corrida y
+/// acabaría siendo paisaje.
+///
+/// La ausencia que sí importa significa una de dos cosas, y las dos son
+/// graves: **o el nodo firmó algo que no recuerda, o alguien sirvió una
+/// firma que el nodo no emitió**.
+///
+/// ⚠️ Esto es lo que `comparar_lineas` NO hace: mapea por `index` y sólo
+/// recorre los presentes en ambos, así que una ausencia le pasa en
+/// silencio.
+pub fn ausentes(testigo: &[String], nodo: &[String]) -> Vec<u64> {
+    let indices = |ls: &[String]| -> std::collections::BTreeSet<u64> {
+        let mut s = std::collections::BTreeSet::new();
+        for l in ls {
+            let v: Value = match serde_json::from_str(l) {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+            if v["signature"].is_null() {
+                continue;
+            }
+            if let Some(t) = v["index"].as_str() {
+                if let Ok(i) = u64::from_str_radix(t.trim_start_matches("0x"), 16) {
+                    s.insert(i);
+                }
+            }
+        }
+        s
+    };
+    let (t, n) = (indices(testigo), indices(nodo));
+    t.difference(&n).copied().collect()
+}
+
 #[derive(Args)]
 pub struct WitnessArgs {
     /// Nodo a atestiguar.
@@ -645,6 +684,19 @@ pub struct WitnessArgs {
     /// la propiedad de §248 cuando exista un segundo testigo.
     #[arg(long, value_name = "DIARIO", num_args = 2)]
     comparar: Option<Vec<PathBuf>>,
+
+    /// **Indices que el TESTIGO tiene y el NODO no** (nota 80): la
+    /// comprobacion dirigida sobre dos diarios.
+    ///
+    /// ⚠️ DIRECCIONAL: el diario del testigo primero, el del nodo despues.
+    /// Al reves no es un hallazgo —el diario del nodo es completo y el del
+    /// testigo, muestreado—.
+    ///
+    /// ⚠️ Un testigo que opera el propio operador NO prueba nada: este
+    /// mando vale cuando el diario del testigo lo custodia un tercero.
+    #[arg(long, num_args = 2, value_names = ["TESTIGO", "NODO"],
+          conflicts_with_all = ["auditar", "comparar"])]
+    ausentes: Option<Vec<PathBuf>>,
 }
 
 fn leer(p: &std::path::Path) -> anyhow::Result<Vec<String>> {
@@ -652,7 +704,7 @@ fn leer(p: &std::path::Path) -> anyhow::Result<Vec<String>> {
 }
 
 pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
-    // ── §249 · los dos modos que LEEN, antes del que observa ──
+    // ── §249/§283 · los tres modos que LEEN, antes del que observa ──
     if let Some(p) = &a.auditar {
         let r = auditar_lineas(&leer(p)?);
         println!("{}: {} lineas · {} con firma · {} REVERIFICADAS sin el nodo",
@@ -695,6 +747,24 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
         eprintln!("   Pero el operador EMITIO LAS DOS, y ninguno de los dos");
         eprintln!("   testigos pudo fabricar su firma.");
         anyhow::bail!("{} divergencia(s) entre los diarios", c.divergencias.len());
+    }
+
+    if let Some(ps) = &a.ausentes {
+        let (te, no) = (leer(&ps[0])?, leer(&ps[1])?);
+        let faltan = ausentes(&te, &no);
+        println!("{} ({} lineas) vs {} ({} lineas)",
+                 ps[0].display(), te.len(), ps[1].display(), no.len());
+        if faltan.is_empty() {
+            println!("sin ausentes: el nodo recuerda todo lo que el testigo vio");
+            return Ok(());
+        }
+        for i in &faltan {
+            println!("  ⚠️⚠️ AUSENTE en el diario del nodo: indice {i}");
+        }
+        eprintln!();
+        eprintln!("   O el nodo firmo algo que no recuerda, o alguien sirvio una");
+        eprintln!("   firma que el nodo no emitio. En ambos casos responde el operador.");
+        anyhow::bail!("{} indice(s) del testigo ausentes en el diario del nodo", faltan.len());
     }
 
     let mut m = Memoria::nueva();
@@ -824,6 +894,27 @@ mod tests {
         assert!(c.interna_a, "A se contradice a si mismo");
         assert!(!c.interna_b);
         assert!(c.divergencias.is_empty(), "la PRIMERA de A coincide con B: {c:?}");
+    }
+
+    // ── §283 / nota 80: la comprobacion DIRECCIONAL ──
+
+    #[test]
+    fn ausentes_detecta_el_indice_que_el_testigo_tiene_y_el_nodo_no() {
+        // ⚠️ El caso grave: o el nodo firmo algo que no recuerda, o alguien
+        // sirvio una firma que el nodo no emitio. dia() lleva signature:
+        // sin firma la linea se salta y el test pasaria VACIO (§250).
+        let testigo = vec![dia("0x1", "0xaa", "0xdead"), dia("0x5", "0xbb", "0xdead")];
+        let nodo = vec![dia("0x1", "0xaa", "0xdead")];
+        assert_eq!(ausentes(&testigo, &nodo), vec![5]);
+    }
+
+    #[test]
+    fn ausentes_es_direccional_lo_que_sobra_en_el_nodo_es_paisaje() {
+        // El diario del nodo es completo y el del testigo muestreado: un
+        // indice que el nodo tiene y el testigo no NO es un hallazgo.
+        let testigo = vec![dia("0x1", "0xaa", "0xdead")];
+        let nodo = vec![dia("0x1", "0xaa", "0xdead"), dia("0x9", "0xcc", "0xdead")];
+        assert!(ausentes(&testigo, &nodo).is_empty());
     }
 
     // ── §249: LEER el diario ──

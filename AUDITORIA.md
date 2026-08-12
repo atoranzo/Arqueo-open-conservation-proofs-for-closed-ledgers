@@ -21199,3 +21199,49 @@ centinela reusa `SelloReservadoAjeno` en vez de estrenar una cuarta
 variante: el centinela está reservado a las no-delegadas, así que la
 entrada miente sobre su clase, y una mentira invalida el censo en vez de
 formar parte de él (fail-stop, `doc/CONFIANZA_RESIDUAL.md` §5.2).
+
+## §283 — la comprobacion dirigida se muda al testigo y gana su mando
+
+- QUE: `ausentes()` sale de `zk-ssl-node/src/diario.rs` y entra en
+  `zk-ssl-cli/src/witness.rs` con su doc, extraida del propio fichero (no
+  retecleada); sus dos tests se reescriben sobre `dia()`; bandera
+  `--ausentes <TESTIGO> <NODO>` en `WitnessArgs` (num_args=2, nombres en el
+  clap, `conflicts_with_all` con `auditar`/`comparar` porque aquellos son
+  simetricos o distintos y esta es DIRECCIONAL) y su brazo en `run()` junto
+  a los otros dos modos que leen: imprime, y `bail!` con hallazgos — el
+  codigo de salida distinto de cero es lo que lo hace usable en CI.
+- POR QUE mudanza y no dependencia: la fn es PURA (serde_json + BTreeSet,
+  cero tipos del nodo) y SIN llamantes de produccion — vivia en el binario
+  del operador sin que el operador la usara. El CLI no depende del nodo y
+  no hace falta que dependa. NINGUN `Cargo.*` tocado: la foto del
+  `--completo` (23 sellos, 3268 s) sobrevive, con compuerta en el bloque.
+- PINES: cli 26->28 · node 79->77. LAS SUMAS NO SE MUEVEN (788/925/939):
+  los tests migran, no nacen — PAPER/BILINGUE/EJECUTIVO fuera del sello,
+  con centinela de sha en el bloque.
+- LIMITES declarados:
+  1. el mando queda EJERCITADO POR SUS PARTES, no de punta a punta: k=0
+     medido (los 26 tests de witness.rs no tocan ficheros) y no se inventa
+     un patron nuevo para justificar un pin.
+  2. se pierde el acoplamiento con `linea()`: los fixtures pasan de la
+     linea que el nodo ESCRIBE a la que el testigo ESPERA. El formato del
+     diario es un contrato compartido SIN CASA COMUN — cuarto caso del
+     patron (§279 el sello, §282 el centinela) y el unico donde ni verify
+     ni hash pueden alojarlo. Anotado en el MAPA de la 80.
+  3. un testigo que opera el propio operador no prueba nada (main.rs:60):
+     el mando vale cuando el diario del testigo lo custodia un tercero. Lo
+     dice la doc de la bandera.
+  4. SEGUNDA MITAD de la 80 ABIERTA: `--diario` es bandera aparte — un
+     nodo que firma sin ella no puede reconocer su firma despues.
+     Recomendacion en el MAPA, SIN RATIFICAR: «quien firma, anota».
+- Los tests mudados llevan `signature` via `dia()`: sin firma, `ausentes`
+  salta la linea y pasarian VACIOS — la trampa que §250 dejo escrita tres
+  lineas mas arriba en el mismo fichero.
+- Observacion menor de traspaso: `let mut m = Memoria::nueva();` aparece
+  NUEVE veces en witness.rs (1 de produccion + 8 en tests), no ocho como
+  anuncio el traspaso-23; el ancla del brazo se probo UNICA contra el
+  fichero antes de escribirla, que es el rito.
+- DEUDA NOMBRADA, no cerrada: `estado_completo()` con diff como compuerta
+  de la foto — lista de cubiertos escrita en canon.sh junto a la fila
+  (hoy: `zk-core` sola), y clausula del `Cargo.lock` declarada ANTES de
+  mirar nada: el lock solo vence si cambio el `Cargo.toml` de un crate
+  cubierto.
