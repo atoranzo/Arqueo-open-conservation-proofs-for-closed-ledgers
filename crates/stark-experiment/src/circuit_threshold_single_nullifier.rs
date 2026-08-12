@@ -125,39 +125,14 @@ type Blake3 = Blake3_256<BaseElement>;
 // el compromiso desde las entradas publicas de la operacion y exige que sea
 // el que los custodios firmaron.
 
-/// Dominios de operacion. **Uno por tipo**, para que una autorizacion de
-/// congelacion no pueda reutilizarse como autorizacion de emision.
-pub const OP_MINT: u64 = 0x4D494E54; // "MINT"
-pub const OP_MINT_PENDING: u64 = 0x4D504E44; // "MPND"
-pub const OP_FREEZE: u64 = 0x46525A45; // "FRZE"
-pub const OP_RECOVERY: u64 = 0x5245434F; // "RECO"
-pub const OP_GOVERNANCE: u64 = 0x474F5652; // "GOVR"
+/// ⚠️ §279: **los dominios de operacion y `commit_operation` viven en
+/// `zk-ssl-hash`**, y aqui se REEXPORTAN. Misma razon que `native_merge`
+/// (§254) y `native_leaf` (§258): el verificador independiente recompone
+/// el compromiso sin arrastrar el probador. No hay dos implementaciones.
+pub use zk_ssl_hash::{
+    commit_operation, OP_FREEZE, OP_GOVERNANCE, OP_MINT, OP_MINT_PENDING, OP_RECOVERY,
+};
 
-/// Resume los parametros de una operacion en un `Digest` que los custodios
-/// firman.
-///
-/// Esponja sobre la permutacion Rescue: capacidad `state[0..4]` con el dominio
-/// en `state[0]`, ritmo `state[4..12]` de ocho elementos, modo sobrescritura.
-///
-/// ⚠️ **Supone longitud FIJA por dominio.** No lleva relleno, asi que dos
-/// mensajes del mismo dominio con longitudes distintas podrian colisionar
-/// (`[a]` y `[a, 0]` dan lo mismo). Cada operacion tiene un numero fijo de
-/// parametros, asi que la suposicion se cumple hoy —y los dominios impiden
-/// colisiones ENTRE operaciones—. **Si alguna operacion pasa a tener
-/// parametros de longitud variable, esto necesita una regla de relleno antes
-/// de usarse.** Queda escrito porque es la clase de suposicion que se olvida.
-pub fn commit_operation(domain: u64, elements: &[BaseElement]) -> Digest {
-    let zero = BaseElement::ZERO;
-    let mut state = [zero; STATE_WIDTH];
-    state[0] = BaseElement::new(domain);
-    for chunk in elements.chunks(8) {
-        for i in 0..8 {
-            state[4 + i] = if i < chunk.len() { chunk[i] } else { zero };
-        }
-        Rp64_256::apply_permutation(&mut state);
-    }
-    [state[4], state[5], state[6], state[7]]
-}
 
 /// El nulificador de un custodio **para una operacion concreta**.
 ///

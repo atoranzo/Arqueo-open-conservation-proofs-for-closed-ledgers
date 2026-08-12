@@ -20910,3 +20910,109 @@ aserciones separadas. Y una compuerta **centinela** nueva, porque la
 medición la pidió: `spec/RPC.md:633` contiene `f926de6`, un hash de
 commit con «926» dentro; el bloque comprueba antes y después que sigue
 ahí, para que ninguna sustitución de sumas lo toque.
+
+## §279 — 2026-08-12 · El registro se reverifica desde fuera, y el instrumento dice hasta donde llega
+
+**Qué cambió.** La composición del sello se muda a `zk-ssl-hash` —los
+cinco `OP_*`, `commit_operation`, los tres dominios de §278,
+`digest_of_proof` y los dos sellos— y `zk-ssl/src/log.rs` y
+`stark-experiment` la **reexportan**. Es el mismo movimiento que hicieron
+`native_merge` (§254), `as_digest` (§255) y `native_leaf` (§258), por la
+misma razón: el constructor y el verificador tienen que llamar **las
+mismas** reglas, y `zk-ssl-verify` no puede depender ni de la capa ni del
+probador. **Ningún llamante cambia** —medido: los seis sellos van por
+`crate::log::`, `digest_of_proof` sólo se usa fuera en un ejemplo y en el
+sandbox del CLI, y los 22 usos de `OP_*`/`commit_operation` van por
+`auth::`— y **ningún `Cargo.toml` se toca**: la foto del `--completo`
+sobrevive.
+
+Sobre esa base, `zk-ssl-verify` gana `reverificacion.rs`: un tercero con
+el registro y sin el nodo obtiene un **veredicto por entrada**.
+
+**La tabla que motiva el sello, y es el hallazgo.** El sello ata el
+compromiso; recomputarlo exige reconstruir `operation`, y la entrada del
+registro sólo lleva `seq`, `kind`, las dos raíces y los dos digests.
+Medido contra los `params` de producción: **`OpenAccount`** se recompone
+—su sello es una constante— y **`Recovery`** también —sus raíces son las
+del propio asiento y su contador se cuenta en el registro—. Las otras
+tres delegadas **no**: `Freeze` ata raíces del árbol de congelados,
+`Governance` del conjunto de custodios, `MintToPending` de pendientes, y
+`Mint` necesita el importe y el suministro. Es decir: §278 ató el
+registro y la atadura **sólo es comprobable por un tercero en dos de seis
+clases**. Cerrar el resto exige que el compromiso viaje en la entrada —
+rotura de formato, y por tanto otro sello.
+
+**Tres decisiones, y las tres se dejan escritas.**
+
+**(1) El veredicto es un enum, no un booleano.** `Verificada`,
+`Parcial{comprobado, falta}` y `NoDerivable{falta}`. Un instrumento que
+colapsa esto a verde/rojo miente por omisión (§254). Y `Parcial` no
+significa «medio hash» —el digest es todo o nada—: nombra una
+comprobación que de verdad ocurre, que la entrada **no lleva un sello
+reservado a otra clase**.
+
+**(2) Una entrada que MIENTE no es una clase del censo: lo invalida.**
+`SelloDiscrepante` y `SelloReservadoAjeno` son **errores**, no un cuarto
+veredicto. Precedente propio: el fail-stop de `doc/CONFIANZA_RESIDUAL.md`
+§5.2 —la capa se protege negándose a fluir sin prueba, no anotando la
+anomalía y siguiendo—. **Elegido por recomendación al montar, reversible.**
+
+**(3) El registro tiene que venir COMPLETO desde el génesis.** El
+contador de recuperaciones se deriva contando entradas anteriores, y
+`zkssl_logEntries` sirve **tramos** (`fromSeq`, límite 1000): el registro
+parcial es el caso normal, no la excepción. Con un tramo la respuesta no
+es «no coincide», es `NoDerivable` diciendo por qué. Sin este borde, el
+«Verificada» de `Recovery` sería verdad sólo en el laboratorio.
+
+**Categorías.** *Medido*: la tabla de recomputabilidad contra los
+`params` reales · que ningún llamante cambia con la reexportación · que
+`digest_to_bytes` se usaba en `log.rs` **sólo** dentro del sello (al
+mudarlo, el import vuelve a `as_digest` o queda huérfano, y los warnings
+están pinchados a 0) · que `Rp64_256` y `STATE_WIDTH` siguen usándose en
+stark, así que quitar `commit_operation` no deja imports sueltos.
+*Ejercitado*: los cinco tests nuevos, y el **censo contado sobre la
+salida del instrumento** —nunca sobre una tabla por `kind`, que sería un
+contador que cuadra midiendo lo que uno espera (§266)—. *Razonado*: el
+censo **2 · 4 · 0** del escenario canónico se predijo antes de escribir
+el test; si la salida hubiera dicho otra cosa, lo equivocado era la
+predicción.
+
+**Dos familias de dominio conviven en hash, y se dice para que nadie las
+«armonice».** Los algebraicos son `u64` porque entran en la permutación
+Rescue como elemento de campo; los de §278 son `&[u8]` porque entran en
+Blake3 como bytes. Una conversión entre ambas cambiaría digests ya
+publicados.
+
+**Una caducidad que este sello NO arregla, y por qué.** El comentario de
+`crates/zk-ssl-verify/Cargo.toml` dice que la superficie del crate «es el
+dominio, la version de formato y `verificar_cabeza`» — falso desde §275,
+que le añadió tres símbolos, y más falso ahora. No se corrige aquí porque
+tocar un `Cargo.*` vence la foto del `--completo`: **3268 s por una línea
+de comentario** cuya verdad ya vive en `lib.rs`. Se arregla cuando un
+sello toque Cargo por razón real.
+
+**Y tres fallos del método, míos, del mismo género: números que supuse
+en vez de medir.** El tercero lo dijo la compuerta de `porcelain`, que
+esperaba trece entradas y contó doce: metí `PAPER_EN.md` en la lista y
+luego no lo edito, porque **no tiene bloque de sumas** —en §278 sólo
+llevaba el pin—. La compuerta contaba bien; el número era mío. Y un
+`unused_imports` en el verificador, por importar arriba lo que sólo usan
+sus tests: los tres los cazaron los instrumentos antes del canon, con el
+árbol devuelto y sin resto.
+
+**Y cuatro fallos del método, míos, todos del mismo género — números supuestos en vez de medidos.** Dos los cazó el ensayo y dos la corrida. El gate de frescura
+de las cifras nuevas se escribió esperando **cero** y el árbol tenía
+**cinco**: los `48.782 B` de la tabla de auditoría, en cinco documentos.
+Es la misma lección que §278 acababa de dejar escrita con el `259` —una
+cifra nueva casi nunca parte de cero— y aun así se repitió; la cazó el
+cerrojo PRE, con el árbol sin tocar. Y una compuerta contaba `4` donde
+esperaba `3`, porque `^pub const OP_MINT` casa también
+`OP_MINT_PENDING`: **la forma del instrumento decide el número**, quinta
+vez.
+
+**Y un fallo del método, mío.** La paste con la que se midió el terreno
+llevaba **dos `head` dentro del banco** — la regla que este proyecto
+escribió después de contar nueve sobre un `ls` truncado donde había diez.
+La cazó el usuario antes de que corriera. Escribir el rito y romperlo en
+el mismo comando es la forma que tiene un rito de no estar
+implementado.

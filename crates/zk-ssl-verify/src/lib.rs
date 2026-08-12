@@ -61,6 +61,14 @@ pub use inclusion::{
 // MISMAS. Ver la cabecera del módulo para el borde que lo justifica.
 pub mod acuses;
 
+// ⚠️ §279 · **La superficie CRECE otra vez**, y por la misma razon que en
+// §275: el modulo es PRIVADO, asi que un `pub` que no aparezca aqui no
+// existe para nadie de fuera — y un reverificador inalcanzable no
+// reverifica nada. Lo que entra es la respuesta a la nota 79: que puede
+// comprobar un tercero del registro **sin el nodo**.
+mod reverificacion;
+pub use reverificacion::{censo, EntradaLog, ReverificacionError, Veredicto, reverificar};
+
 /// El conjunto de parámetros: 2⁴⁰ firmas, ~35.000 años a una por segundo.
 pub type Conjunto = XmssMtSha2_40_8_256;
 

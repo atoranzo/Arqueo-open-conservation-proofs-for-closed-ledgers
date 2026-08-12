@@ -213,114 +213,15 @@ pub struct LogEntry {
 // ⚠️ §255: `as_digest` vive en `zk-ssl-hash`. Es una DECISION DE FORMATO
 // —donde va el numero y con que se rellena—, y un verificador
 // independiente tiene que usar LA MISMA, no una copia. Era privada aqui.
-use zk_ssl_hash::{as_digest, digest_to_bytes};
+use zk_ssl_hash::as_digest;
 
-/// **Dominio del resumen de prueba.** Separa este uso de cualquier otro
-/// hash del proyecto: dos entradas de dominios distintos no pueden
-/// colisionar aunque compartan bytes.
-const DOMINIO_PRUEBA: &[u8] = b"ZK-SSL-proof-digest-v2";
+/// ⚠️ §279: **la composicion del sello vive en `zk-ssl-hash`**, y aqui se
+/// REEXPORTA. Misma razon que `as_digest` (§255): un verificador
+/// independiente tiene que usar LA MISMA regla, no una copia, y
+/// `zk-ssl-verify` no puede depender de esta capa. Los llamantes de
+/// `zk_ssl::log::digest_of_proof` siguen funcionando sin cambio.
+pub use zk_ssl_hash::{digest_of_proof, sello_de_autorizacion, sello_sin_prueba};
 
-/// Resumen de una prueba serializada.
-///
-/// **§209 (`zkssl/0.2`, etapa 1 del RFC-0002): esto ya no usa Rescue.**
-///
-/// La version anterior recorria la prueba en bloques de 16 bytes y
-/// aplicaba una permutacion algebraica (`native_merge`) a cada uno:
-/// **4.115 permutaciones** para una prueba de envio de 65.840 bytes.
-/// Medido en `AUDITORIA.md` §204 (banco A.4): **30,99 ms, el 93 % del
-/// coste de un `apply`, y 2.915x lo que cuesta Blake3 sobre los mismos
-/// bytes**.
-///
-/// Rescue se elige por ser **amigable con circuitos**. Este resumen
-/// **no entra en ninguno** —`proof_digest` no aparece en
-/// `stark-experiment`—: resume bytes opacos para atar una entrada del
-/// registro a una prueba concreta. Se pagaba el precio de una propiedad
-/// que aqui no se usa.
-///
-/// ⚠️ **`chain_digest` SIGUE en Rescue** y debe seguir: son 5 merges
-/// (~65 us) y podria entrar en circuito el dia de las cabezas
-/// atestiguadas (§121).
-///
-/// ## Lo que se conserva de la version anterior
-///
-/// La **codificacion inyectiva** (entrada 58, cierra §116) sigue siendo
-/// el requisito, y se obtiene ahora por construccion:
-///
-/// 1. **Dominio explicito** al frente: separa este hash de cualquier otro.
-/// 2. **Longitud en bytes** antes del contenido: dos entradas que solo
-///    difieran en ceros finales no colisionan.
-/// 3. **Blake3 sobre el resto**: la resistencia a colision descansa en un
-///    hash de proposito general, en vez de en una construccion propia.
-///
-/// Los 32 bytes de salida se parten en cuatro `u64` que el campo reduce.
-/// Goldilocks tiene p = 2^64 - 2^32 + 1, asi que la reduccion recorta una
-/// fraccion despreciable del espacio: la resistencia efectiva sigue
-/// dominada por Blake3, no por esta conversion.
-pub fn digest_of_proof(proof: &[u8]) -> Digest {
-    use winterfell::crypto::hashers::Blake3_256;
-    use winterfell::crypto::{Digest as _, Hasher as _};
-
-    let mut entrada = Vec::with_capacity(DOMINIO_PRUEBA.len() + 8 + proof.len());
-    entrada.extend_from_slice(DOMINIO_PRUEBA);
-    entrada.extend_from_slice(&(proof.len() as u64).to_le_bytes());
-    entrada.extend_from_slice(proof);
-
-    let bytes = Blake3_256::<BaseElement>::hash(&entrada).as_bytes();
-    let mut salida: Digest = [BaseElement::ZERO; 4];
-    for (i, hueco) in salida.iter_mut().enumerate() {
-        let mut w = [0u8; 8];
-        w.copy_from_slice(&bytes[i * 8..(i + 1) * 8]);
-        *hueco = BaseElement::new(u64::from_le_bytes(w));
-    }
-    salida
-}
-
-/// **Dominio del sello de autorización** (§278). Lo que una vía delegada
-/// puede atar no es una prueba sino el **compromiso que la autorizó**;
-/// mezclar los dos dominios permitiría que un compromiso pasara por
-/// prueba, y al revés. Lleva versión desde el primer día (§270).
-const DOMINIO_AUTORIZACION: &[u8] = b"ZK-SSL-authorization-seal-v1";
-
-/// **Dominio de la ausencia declarada** (§278). Separa «no demostrable
-/// por diseño» de «autorizada y no registrada» — hasta este sello las dos
-/// escribían el MISMO byte, el de la prueba vacía, y el registro no podía
-/// distinguir una decisión de una omisión.
-const DOMINIO_SIN_PRUEBA: &[u8] = b"ZK-SSL-no-proof-by-design-v1";
-
-/// **Sello de autorización**: lo que una vía delegada asienta en lugar de
-/// una prueba.
-///
-/// Las pruebas de umbral se **consumen** al verificarlas —`verify_threshold_pair`
-/// las toma por valor—, así que en el punto del asiento ya no existen. Lo
-/// que sí sigue vivo es `operation`, el compromiso contra el que se
-/// verificaron, y que cubre la transición exacta (§56.2). Atar eso es
-/// **menos** que atar la prueba y **muchísimo más** que atar nada: la
-/// entrada deja de decir «pasó algo de esta clase» y pasa a decir «pasó
-/// ESTA operación, y esto la autorizaba».
-///
-/// ⚠️ **No es el resumen de una prueba, y el nombre del campo lo sugiere.**
-/// Por eso el dominio es propio: quien lea el registro puede recomputar
-/// este valor desde el compromiso, y **no** puede confundirlo con el
-/// resumen de una prueba que nadie tiene.
-pub fn sello_de_autorizacion(operation: &Digest) -> Vec<u8> {
-    let mut v = Vec::with_capacity(DOMINIO_AUTORIZACION.len() + 32);
-    v.extend_from_slice(DOMINIO_AUTORIZACION);
-    v.extend_from_slice(&digest_to_bytes(operation));
-    v
-}
-
-/// **Sello de ausencia declarada**: lo que asienta una transición que no
-/// genera prueba **por diseño**.
-///
-/// Hoy sólo `open_account`: abrir una cuenta no crea dinero —nace a cero—
-/// pero mueve la raíz, así que tiene que dejar entrada. La diferencia con
-/// `&[]` no es cosmética: el vacío era también lo que asentaban las vías
-/// delegadas por omisión, de modo que **declarar y olvidar producían el
-/// mismo digest**. Con dominio propio, el registro dice cuál de las dos
-/// cosas ocurrió.
-pub fn sello_sin_prueba() -> Vec<u8> {
-    DOMINIO_SIN_PRUEBA.to_vec()
-}
 /// Calcula el resumen encadenado de una entrada.
 pub fn chain_digest(
     seq: u64,

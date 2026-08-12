@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 31 abiertas, 50 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 31 abiertas, 51 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 12 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -856,7 +856,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   del CLI), así que el hueco se ha cerrado **antes** de que la entrada
   exista.
 
-- [ ] **79. Sin el digest real, un log replicado no puede recomprobar que
+- [x] **79. Sin el digest real, un log replicado no puede recomprobar que
   aquello estaba autorizado.** **FUTURO y RAZONADO**, y va aparte de la 78 a
   propósito: son dos naturalezas, y juntas la 78 se leería como consecuencia
   de ésta y quedaría archivada como cosa de mañana.
@@ -869,6 +869,25 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   hay nada medido que registrar», comprobable con un `grep` que no devuelve
   nada. **No tiene plan**, y colgar una precondición de un clavo que no
   sujeta es lo que hay que evitar.
+  ✅ **HECHA (§279)**, y con la medición que la nota no tenía: el
+  reverificador existe en `zk-ssl-verify` —`reverificar`, veredicto por
+  entrada— y el tercero puede correrlo con `zkssl_logEntries` y sin el
+  nodo. Lo que hizo posible cerrarla es que la composición del sello se
+  mudó a `zk-ssl-hash` (§279), donde el verificador independiente la ve
+  sin arrastrar la capa ni el probador.
+  ⚠️ **Y hasta dónde llega, que es la parte honesta**: la atadura sólo es
+  comprobable por un tercero en **dos de seis clases** —`OpenAccount`,
+  cuyo sello es constante, y `Recovery`, cuyas raíces son las del asiento
+  y cuyo contador se cuenta en el registro—. `Freeze`, `Governance` y
+  `MintToPending` atan raíces de árboles que el registro no lleva
+  (congelados, custodios, pendientes) y `Mint` necesita importe y
+  suministro. Censo del escenario canónico, contado sobre la salida del
+  instrumento: **2 verificadas · 4 parciales · 0 no derivables**.
+  **Lo que queda, con su nombre y su precio**: cerrar las cuatro exige
+  que el compromiso viaje **en la entrada del registro**, y eso es una
+  rotura del formato del log —persistencia, store, DTO, vector, spec—.
+  Va a la entrada **82**, que acumula las razones de rotura de formato
+  para que el día que se rompa se rompa **una vez para todas**.
 
 - [ ] **80. El diario del nodo existe; falta el mando que lo compare con
   el del testigo.** Abierta en §272, que dejó la pieza que faltaba
@@ -896,6 +915,21 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   toca. Evidencia: salida de la corrida 3 del BLOQUE-275c, 12-08-2026
   (§275). Arreglo: quitar el `mut` y las dos asignaciones muertas —o
   usarlas—; se marca aquí cuando el ejemplo compile limpio.
+
+- [ ] **82. Acumulador de razones para romper el formato del log.** Una
+  rotura de formato cuesta persistencia, store, DTO, vector y spec, así
+  que «un formato se rompe una vez por razón» tiene corolario: **se rompe
+  una vez para VARIAS razones juntas**. Esta entrada existe para que esas
+  razones estén escritas cuando llegue el día, en vez de reconstruirse de
+  memoria.
+  **Razón 1 (§279)**: el compromiso autorizante como **campo propio** de
+  `LogEntry`. Hoy el sello lo ata pero sus parámetros no están en el
+  registro, así que un tercero sólo recompone `OpenAccount` y `Recovery`
+  (2 de 6). Con el compromiso en la entrada, las seis serían
+  recomputables sin el nodo.
+  **Cómo se cierra**: no se cierra sola. Se cierra el día que un sello
+  rompa el formato por cualquier razón, y entonces **entra la lista
+  entera**. Hasta entonces crece por adición.
 
 ## E. Operacion
 

@@ -598,3 +598,139 @@ mod tests_cabeza_v2 {
         );
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// §279 · LAS REGLAS DEL SELLO, DONDE LAS VE UN TERCERO
+//
+// ⚠️ Todo lo de aqui abajo **vivia en otro sitio** y se muda por la misma
+// razon que `native_merge` (§254), `as_digest` (§255) y `native_leaf`
+// (§258): el CONSTRUCTOR y el VERIFICADOR tienen que llamar LAS MISMAS
+// reglas, y `zk-ssl-verify` no puede depender ni de la capa ni del
+// probador. Los llamantes antiguos siguen funcionando por REEXPORTACION;
+// no hay dos implementaciones de nada.
+//
+// ⚠️ **Dos familias de dominio conviven aqui, y es a proposito.** Los
+// dominios algebraicos son `u64` (`DOMINIO_ACUSE`) porque entran en la
+// permutacion Rescue como elemento de campo; los de abajo son `&[u8]`
+// porque entran en Blake3 como bytes. **No se armonizan**: una conversion
+// entre las dos cambiaria digests ya publicados.
+// ═══════════════════════════════════════════════════════════════════
+
+/// Dominios de operacion. **Uno por tipo**, para que una autorizacion de
+/// congelacion no pueda reutilizarse como autorizacion de emision.
+pub const OP_MINT: u64 = 0x4D494E54; // "MINT"
+pub const OP_MINT_PENDING: u64 = 0x4D504E44; // "MPND"
+pub const OP_FREEZE: u64 = 0x46525A45; // "FRZE"
+pub const OP_RECOVERY: u64 = 0x5245434F; // "RECO"
+pub const OP_GOVERNANCE: u64 = 0x474F5652; // "GOVR"
+
+/// Resume los parametros de una operacion en un `Digest` que los custodios
+/// firman.
+///
+/// Esponja sobre la permutacion Rescue: capacidad `state[0..4]` con el dominio
+/// en `state[0]`, ritmo `state[4..12]` de ocho elementos, modo sobrescritura.
+///
+/// ⚠️ **Supone longitud FIJA por dominio.** No lleva relleno, asi que dos
+/// mensajes del mismo dominio con longitudes distintas podrian colisionar
+/// (`[a]` y `[a, 0]` dan lo mismo). Cada operacion tiene un numero fijo de
+/// parametros, asi que la suposicion se cumple hoy —y los dominios impiden
+/// colisiones ENTRE operaciones—. **Si alguna operacion pasa a tener
+/// parametros de longitud variable, esto necesita una regla de relleno antes
+/// de usarse.** Queda escrito porque es la clase de suposicion que se olvida.
+pub fn commit_operation(domain: u64, elements: &[BaseElement]) -> Digest {
+    let zero = BaseElement::ZERO;
+    let mut state = [zero; STATE_WIDTH];
+    state[0] = BaseElement::new(domain);
+    for chunk in elements.chunks(8) {
+        for i in 0..8 {
+            state[4 + i] = if i < chunk.len() { chunk[i] } else { zero };
+        }
+        Rp64_256::apply_permutation(&mut state);
+    }
+    [state[4], state[5], state[6], state[7]]
+}
+
+/// **Dominio del resumen de prueba.** Separa este uso de cualquier otro
+/// hash del proyecto: dos entradas de dominios distintos no pueden
+/// colisionar aunque compartan bytes.
+const DOMINIO_PRUEBA: &[u8] = b"ZK-SSL-proof-digest-v2";
+
+/// **Dominio del sello de autorizacion** (§278). Lo que una via delegada
+/// puede atar no es una prueba sino el **compromiso que la autorizo**.
+const DOMINIO_AUTORIZACION: &[u8] = b"ZK-SSL-authorization-seal-v1";
+
+/// **Dominio de la ausencia declarada** (§278). Separa «no demostrable por
+/// diseno» de «autorizada y no registrada».
+const DOMINIO_SIN_PRUEBA: &[u8] = b"ZK-SSL-no-proof-by-design-v1";
+
+/// Resumen de una prueba serializada, con dominio y **longitud codificada**
+/// por delante (§116: dos pruebas que difieran en ceros finales no
+/// colisionan).
+pub fn digest_of_proof(proof: &[u8]) -> Digest {
+    use winter_crypto::hashers::Blake3_256;
+    use winter_crypto::{Digest as _, Hasher as _};
+
+    let mut entrada = Vec::with_capacity(DOMINIO_PRUEBA.len() + 8 + proof.len());
+    entrada.extend_from_slice(DOMINIO_PRUEBA);
+    entrada.extend_from_slice(&(proof.len() as u64).to_le_bytes());
+    entrada.extend_from_slice(proof);
+
+    let bytes = Blake3_256::<BaseElement>::hash(&entrada).as_bytes();
+    let mut salida: Digest = [BaseElement::ZERO; 4];
+    for (i, hueco) in salida.iter_mut().enumerate() {
+        let mut w = [0u8; 8];
+        w.copy_from_slice(&bytes[i * 8..(i + 1) * 8]);
+        *hueco = BaseElement::new(u64::from_le_bytes(w));
+    }
+    salida
+}
+
+/// **Sello de autorizacion** (§278): lo que una via delegada asienta en
+/// lugar de una prueba — el compromiso contra el que se verifico.
+pub fn sello_de_autorizacion(operation: &Digest) -> Vec<u8> {
+    let mut v = Vec::with_capacity(DOMINIO_AUTORIZACION.len() + 32);
+    v.extend_from_slice(DOMINIO_AUTORIZACION);
+    v.extend_from_slice(&digest_to_bytes(operation));
+    v
+}
+
+/// **Sello de ausencia declarada** (§278): lo que asienta una transicion
+/// que no genera prueba **por diseno**.
+pub fn sello_sin_prueba() -> Vec<u8> {
+    DOMINIO_SIN_PRUEBA.to_vec()
+}
+
+#[cfg(test)]
+mod tests_sello_movido {
+    use super::*;
+
+    /// **La composicion del sello es pura**: los dominios separan, la
+    /// ausencia declarada es una CONSTANTE —cualquiera la recomputa sin
+    /// parametros— y la autorizacion es determinista y ata SU compromiso.
+    #[test]
+    fn el_sello_separa_por_dominio_y_ata_su_compromiso() {
+        let a = digest_of_proof(&sello_de_autorizacion(&as_digest(7)));
+        let b = digest_of_proof(&sello_de_autorizacion(&as_digest(8)));
+        let sin = digest_of_proof(&sello_sin_prueba());
+
+        assert_eq!(sello_sin_prueba(), sello_sin_prueba(), "constante");
+        assert_eq!(a, digest_of_proof(&sello_de_autorizacion(&as_digest(7))), "determinista");
+        assert_ne!(a, b, "ata SU compromiso, no la clase");
+        assert_ne!(a, sin, "declarar y omitir no coinciden");
+        assert_ne!(sin, digest_of_proof(&[]), "la ausencia declarada no es el vacio");
+    }
+
+    /// **El aviso de longitud fija, ejercitado.** `commit_operation` no
+    /// lleva relleno: la garantia que SI se sostiene es que dos longitudes
+    /// distintas del mismo prefijo, dentro del mismo dominio, no colisionan
+    /// mientras la longitud no cruce el borde del ritmo de ocho.
+    #[test]
+    fn commit_operation_distingue_longitudes_del_mismo_prefijo() {
+        let uno = commit_operation(OP_MINT, &[BaseElement::new(5)]);
+        let dos = commit_operation(OP_MINT, &[BaseElement::new(5), BaseElement::new(9)]);
+        assert_ne!(uno, dos, "mismo prefijo, longitud distinta");
+
+        let otro_dominio = commit_operation(OP_FREEZE, &[BaseElement::new(5)]);
+        assert_ne!(uno, otro_dominio, "el dominio separa operaciones");
+    }
+}
