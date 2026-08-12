@@ -13,7 +13,7 @@ Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
 **Estado**: 32 abiertas, 48 resueltas — **2 suspendidas** (16 y 28).
-Ultima revision: 10 de agosto de 2026 — **contada, no recordada**.
+Ultima revision: 12 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
 
@@ -827,6 +827,13 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   razón escrita (§56.2). El cambio **está** ligado a la transición exacta;
   lo que no llega es al registro.
   **Arreglo**: asentar el digest de la prueba que autorizó, en vez de `&[]`.
+  ⚠️ **CORRECCIÓN (§273)**: son **cinco** vías, no cuatro —faltaba
+  `MintToPending` (`two_phase.rs:1285`, `raiz, raiz`, `&[]`), cuyo
+  `append` multilínea el grep de línea única de §271 no podía ver— y el
+  hallazgo es un **corte**, no un reparto: `Send` y `Claim` —las del
+  **titular**— asientan `&receipt.proof` real (`two_phase.rs:804` y
+  `:999`). **Las del titular atan; las delegadas, no.** El arreglo cubre
+  las cinco.
 
 - [ ] **79. Sin el digest real, un log replicado no puede recomprobar que
   aquello estaba autorizado.** **FUTURO y RAZONADO**, y va aparte de la 78 a

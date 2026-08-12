@@ -20320,6 +20320,23 @@ delegadas lo dejan sin contenido**.
 | `freeze.rs:138` | `Freeze`, **`raiz, raiz`**, **prueba `&[]`** |
 | `governance.rs:162` | `Governance`, **`raiz, raiz`**, **prueba `&[]`** |
 
+⚠️ **CORRECCIÓN (§273), y corrige dos veces.** La frase de arriba —«cuatro
+vías delegadas lo dejan sin contenido»— es cierta y corta. Primero, son
+**cinco**: faltaba `MintToPending` (`two_phase.rs:1285`), que asienta
+`raiz, raiz` y **prueba `&[]`** — su `append` va partido en **seis
+líneas**, y el grep de línea única con que se midió §271 no podía verlo.
+Segundo, y más importante: lo medido después no es un reparto sino un
+**corte** —
+
+| vía | quién la invoca | prueba asentada |
+|---|---|---|
+| `Send`, `Claim` | **el titular** | **real** (`&receipt.proof`, `two_phase.rs:804` y `:999`) |
+| `Mint`, `MintToPending`, `Freeze`, `Recovery`, `Governance` | custodios / operador | **vacía** |
+
+**Las vías del titular atan; las delegadas, no.** Y el corte cae justo
+donde duele: lo que un tercero querría recomprobar es precisamente lo
+privilegiado. Ver el asiento §273.
+
 Como `append` calcula `digest_of_proof(proof)`, las cuatro comparten **un
 único valor**, el de la prueba vacía — medido en la máquina que selló, dos
 veces y coincidentes:
@@ -20497,3 +20514,60 @@ paisaje, que es lo que `canon.sh` dice de las compuertas que se saltan.
 ### Pines
 
 `zk-ssl-node` **56 → 64**. Sumas **746 / 883 / 897**.
+
+
+## 273. Dos deudas del propio registro, pagadas
+
+### 1 · El corte, al registro
+
+Tras sellar §271 se midió que su tabla era **cierta y corta, dos veces**.
+Faltaba una vía: `two_phase.rs:1285` asienta `MintToPending` con `raiz,
+raiz` y prueba `&[]` — son **cinco** delegadas, no cuatro. Y el hallazgo
+no era un reparto sino un **corte**: `Send` y `Claim` —las vías del
+**titular**— asientan `&receipt.proof` (`two_phase.rs:804` y `:999`), con
+`proof_digest` real y distinto por operación. **Las del titular atan; las
+delegadas, no** — y el corte cae donde duele, porque lo que un tercero
+querría recomprobar es precisamente lo privilegiado.
+
+La corrección fue **encima**, estilo §247, en los **dos** sitios donde se
+lee —el asiento §271 y la nota 78—, citando la frase corregida. Dejarla
+sólo en la conversación habría sido la deuda de siempre: la versión corta
+en el registro permanente y la larga en ningún sitio.
+
+⚠️ El mecanismo de la vía que faltó, para que viaje: su `append` va
+partido en **seis líneas**, y §271 midió con un grep de línea única. **Un
+grep mide la forma de la línea, no dónde se asienta** — el mismo defecto
+que casi selló «§272 nace roto» cuando no vio `Send` ni `Claim`
+encadenadas. Este sello verificó las siete vías con lectura multilínea, y
+esa es la forma que queda para la próxima vez.
+
+### 2 · La medida del `--completo`, rehecha
+
+`--completo` no lo fuerza nadie — *«es disciplina, no compuerta»*, dice
+`canon.sh`, y cada invocación recuerda cuántos sellos han pasado—. La
+medida que lo mantenía inofensivo —el diff vacío sobre los caminos que
+sólo corren ahí— era de §269 y **caducó dos veces**: §270 y §272 tocaron
+código.
+
+Rehecha sobre `da8e6a1`, a **13 sellos** de `6cb8883`:
+
+```text
+git diff --stat 6cb8883..HEAD -- crates/zk-core crates/halo2-experiment \
+    crates/plonk-experiment Cargo.toml Cargo.lock
+
+(vacío)
+```
+
+**Salió vacío: sigue siendo un contador, no un riesgo** — y ahora la
+afirmación está medida sobre el árbol actual, no heredada de §269. El
+coste espera entero para cuando toque: 3268 s (54 min) medidos en
+`6cb8883`.
+
+⚠️ Esta medida es una **foto**: vence con el próximo sello que toque esos
+caminos. La forma de que deje de vencer —que `estado_completo()` corra
+este mismo diff y diga *«por detrás pero limpio»* o *«por detrás Y
+tocado»*— queda **propuesta y sin dueño**, como `SELLAR=1`: se anota aquí
+porque todavía no tiene entrada.
+
+**No mueve ningún pin.** Sumas 746 / 883 / 897 y contador 32 / 48 — sin
+cambio, recontados igualmente.
