@@ -931,6 +931,35 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   rompa el formato por cualquier razón, y entonces **entra la lista
   entera**. Hasta entonces crece por adición.
 
+  **Ampliación (§280, 2026-08-12) — la lista se cierra ANTES de montar la
+  rotura; §281 la ejecuta.** Decisiones, con procedencia:
+  - **Prospectiva por NECESIDAD, no por elección**: el compromiso
+    histórico no existe en ningún sitio — no se guardó nunca, que es
+    justo el hueco que §278 cerró hacia adelante. Las entradas previas
+    quedan v1; el registro pasa a **dos eras**, como la cabeza.
+  - **Layout v2 CERRADO: 169 bytes** = los 137 de v1 (seq 8 · kind 1 ·
+    root_old 32 · root_new 32 · proof_digest 32 · chain 32) + el
+    **compromiso autorizante** como campo (32). **La longitud
+    discrimina la era** — precedente 49-A en el propio store — y esa
+    decisión sólo es válida porque esta lista se cierra ENTERA: una
+    quinta razón de formato exigiría byte de versión, no una tercera
+    longitud.
+  - **La tercera razón queda SUBSUMIDA, no ampliada** (elección del
+    asistente, REVERSIBLE): las delegadas `raiz, raiz` no ganan campos
+    propios — el compromiso, que ya CONTIENE las raíces del árbol que
+    de verdad mueven (congelados, custodios, pendientes), viaja como
+    campo y las ata. Leerlas en claro sería un RPC de parámetros, no
+    formato; y campos extra romperían además el encadenado de cuentas
+    que `verify_chain` comprueba.
+  - **Los lotes (RFC-0002 etapa 2) entran AQUÍ**: no añaden bytes por
+    entrada; su rotura es SEMÁNTICA —dentro de un lote el encadenado
+    por entrada cambia, y la spec ya lo declara— y el `verify_chain`
+    de dos eras de §281 la contempla. Dejarlos fuera sería la segunda
+    rotura que esta lista existe para prohibir.
+  - El MAL-hoy que acompañaba: la garantía 4 de `spec/RPC.md`
+    prometía «bytes» de prueba; desde §278 ata compromiso o ausencia
+    declarada según la clase. Corregida en este mismo sello.
+
 ## E. Operacion
 
 - [ ] **17. Replica y alta disponibilidad.** **Comprobable**: `grep -rn

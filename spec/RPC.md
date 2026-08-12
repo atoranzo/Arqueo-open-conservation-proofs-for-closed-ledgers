@@ -153,8 +153,12 @@ que va a cambiar.
 3. **`chain` es el resumen encadenado** de la entrada y de todo lo
    anterior: alterar cualquier campo de cualquier entrada rompe la cadena
    desde ahí hasta el final.
-4. **`proofDigest` ata la entrada a una prueba concreta** —a sus bytes—,
-   aunque el registro no guarde la prueba.
+4. **`proofDigest` ata la entrada a lo que la AUTORIZÓ**, y el dominio
+   del sello dice a qué clase pertenece (§278): a los **bytes de la
+   prueba** donde la hay (§116); al **compromiso de umbral** en las
+   vías delegadas; o a la **ausencia declarada**, con dominio propio,
+   donde no hay prueba por diseño. El registro no guarda ninguno de
+   los tres; los sellos los distinguen.
 
 Estas cuatro se mantienen con lotes o sin ellos. `zkssl_verifyChain` las
 comprueba.

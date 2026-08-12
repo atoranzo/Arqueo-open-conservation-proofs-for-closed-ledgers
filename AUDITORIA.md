@@ -21016,3 +21016,58 @@ escribió después de contar nueve sobre un `ls` truncado donde había diez.
 La cazó el usuario antes de que corriera. Escribir el rito y romperlo en
 el mismo comando es la forma que tiene un rito de no estar
 implementado.
+
+## §280 — 2026-08-12 · La lista se cierra antes que la rotura; lo normativo no puede mentir
+
+**Qué es este sello.** El terreno de la nota 82 (§279→§280) midió que
+romper el formato del log toca ~20 ficheros — el corte mayor desde
+§275. La forma elegida, a propuesta del asistente y ratificada: partir
+en dos. **§280 escribe la lista completa de razones y decisiones DENTRO
+de la nota 82** —que es literalmente para lo que la nota existe— y
+corrige lo único que estaba MAL hoy (§273); **§281 ejecuta la rotura**
+con la lista cerrada y la migración verificada. Veinte ficheros con las
+decisiones tomadas dentro del bloque es donde peor se revisan.
+
+**El hallazgo que fija la forma.** La rotura sólo puede ser
+**prospectiva**: el compromiso histórico no existe — no se guardó
+nunca. Las entradas previas quedan v1 y el registro pasa a dos eras,
+como la cabeza (137 vs 169 bytes, discriminadas por longitud; el
+precedente 49-A vive en el propio `store.rs`). El reverificador de
+§279 pasa a 6-de-6 **para las entradas nuevas**; el histórico conserva
+su tabla de 2-de-6, y el enum ya tiene sitio para decirlo sin cambiar
+de forma.
+
+**Las decisiones de la lista, con procedencia.** (1) El compromiso
+autorizante como campo — la razón fundacional de la 82. (2) Longitud
+discrimina la era, **condicionada**: sólo vale porque la lista se
+cierra entera; una quinta razón de formato exigiría byte de versión.
+La condición y la promesa se sostienen mutuamente. (3) La tercera
+razón (delegadas `raiz, raiz`) queda **subsumida** por el campo
+compromiso, que ya contiene las raíces del árbol que de verdad mueven
+— elección del asistente, REVERSIBLE; campos extra habrían roto además
+el encadenado que `verify_chain` comprueba. (4) Los lotes de RFC-0002
+etapa 2 **entran**: su rotura es semántica, no de bytes, y el
+`verify_chain` de dos eras la contempla — dejarlos fuera sería la
+segunda rotura que la lista existe para prohibir.
+
+**Lo que estaba MAL hoy, corregido aquí.** La garantía 4 de
+`spec/RPC.md` (sección normativa) afirmaba que «`proofDigest` ata la
+entrada a una prueba concreta —a sus bytes—». Falso desde §278 para
+seis clases: atan un compromiso de umbral o una ausencia declarada. La
+garantía dice ahora las tres clases con su dominio. Caducidad dejada
+por §278 y §279 — §270 (releer lo que un sello deja sin efecto) sigue
+nombrado y sin implementar, y ya van tres sellos que pagan su ausencia.
+
+**Categorías.** *Medido*: 137 bytes fijos y sus cuatro usuarios
+(`store.rs:415/430`, `persistence.rs:399/625`, `snapshot.rs:197/411`),
+`deny_unknown_fields` en el DTO, la frase normativa única en `:156`, la
+nota 82 y su cola. *Razonado*: la subsunción de la tercera razón y la
+entrada de los lotes. *Observado*: el precedente de migración de §275
+(comprobar contra la raíz almacenada y parar ante discrepancia), que
+§281 hereda.
+
+**Corte previsto de §281** (para que el terreno lo contradiga si
+toca): struct + `chain_digest` + `verify_chain` de dos eras · store con
+dos longitudes · persistence · snapshot · DTO del cable · spec
+normativa · openrpc · vector regenerado · reverificador a 6-de-6
+prospectivo · pines y prosa. ~20 ficheros.
