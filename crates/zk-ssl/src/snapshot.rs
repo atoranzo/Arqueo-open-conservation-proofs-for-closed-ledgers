@@ -108,6 +108,15 @@ fn malformed(what: &str) -> LayerError {
 }
 
 /// Marca de instantánea sin cifrar.
+/// ⚠️ §281 · **El bit alto de `n_log` versiona la sección del registro.**
+/// Un stream concatenado no puede discriminar por longitud —el lector
+/// no sabe dónde corta— así que la sección v2 prefija cada entrada con
+/// su longitud (u16 LE) y lo anuncia en el propio contador: `n_log`
+/// jamás usa ese bit como cuenta. Un fichero viejo (bit apagado) se lee
+/// como siempre, a 137. La alternativa —marcas nuevas de fichero— se
+/// descartó: había más de un escritor con marca y este bit toca UNO.
+const LOG_SECCION_V2: u64 = 1 << 63;
+
 const SNAPSHOT_PLAIN: u8 = 0x00;
 /// Marca de instantánea cifrada.
 const SNAPSHOT_ENCRYPTED: u8 = 0x01;
@@ -181,7 +190,7 @@ impl SovereignLayer {
 
         out.extend_from_slice(&(accounts.len() as u64).to_le_bytes());
         out.extend_from_slice(&(frozen.len() as u64).to_le_bytes());
-        out.extend_from_slice(&(self.log.len() as u64).to_le_bytes());
+        out.extend_from_slice(&((self.log.len() as u64) | LOG_SECCION_V2).to_le_bytes());
 
         for (index, r) in &accounts {
             out.extend_from_slice(&index.to_le_bytes());
@@ -194,7 +203,9 @@ impl SovereignLayer {
         // El registro entero. Sin el, restaurar perderia el historial y
         // la capa restaurada encadenaria desde la nada.
         for e in self.log.entries() {
-            out.extend_from_slice(&crate::store::log_entry_to_bytes(e));
+            let b = crate::store::log_entry_to_bytes(e);
+            out.extend_from_slice(&(b.len() as u16).to_le_bytes());
+            out.extend_from_slice(&b);
         }
 
         // Cifrado con la misma clave que el ledger, si la hay. Se antepone
@@ -406,9 +417,23 @@ impl SovereignLayer {
             layer.frozen.set_leaf(index, leaf);
         }
 
+        // §281: el bit alto de n_log dice la era de la SECCION. Se
+        // separa ANTES de reservar: un contador con el bit puesto no es
+        // una cuenta.
+        let seccion_v2 = n_log & LOG_SECCION_V2 != 0;
+        let n_log = n_log & !LOG_SECCION_V2;
         let mut entradas = Vec::with_capacity(n_log as usize);
         for _ in 0..n_log {
-            entradas.push(crate::store::log_entry_from_bytes(take(137, "entrada del registro")?)?);
+            if seccion_v2 {
+                let len = u16::from_le_bytes(
+                    take(2, "longitud de entrada del registro")?
+                        .try_into()
+                        .map_err(|_| malformed("longitud de entrada del registro"))?,
+                ) as usize;
+                entradas.push(crate::store::log_entry_from_bytes(take(len, "entrada del registro")?)?);
+            } else {
+                entradas.push(crate::store::log_entry_from_bytes(take(137, "entrada del registro")?)?);
+            }
         }
         layer.log = TransitionLog::from_entries(entradas);
 

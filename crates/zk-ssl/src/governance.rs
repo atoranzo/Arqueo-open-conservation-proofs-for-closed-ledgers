@@ -159,7 +159,7 @@ impl SovereignLayer {
         self.governance_change_count = count_new;
 
         let raiz = self.accounts.root();
-        self.log.append(OpKind::Governance, raiz, raiz, &crate::log::sello_de_autorizacion(&operation));
+        self.log.append_con_compromiso(OpKind::Governance, raiz, raiz, &crate::log::sello_de_autorizacion(&operation), operation);
         self.commit(&[], None)?;
         Ok(())
     }

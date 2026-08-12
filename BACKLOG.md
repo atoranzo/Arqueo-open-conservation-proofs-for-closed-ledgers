@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 31 abiertas, 51 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 30 abiertas, 52 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 12 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -916,7 +916,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   (§275). Arreglo: quitar el `mut` y las dos asignaciones muertas —o
   usarlas—; se marca aquí cuando el ejemplo compile limpio.
 
-- [ ] **82. Acumulador de razones para romper el formato del log.** Una
+- [x] **82. Acumulador de razones para romper el formato del log.** Una
   rotura de formato cuesta persistencia, store, DTO, vector y spec, así
   que «un formato se rompe una vez por razón» tiene corolario: **se rompe
   una vez para VARIAS razones juntas**. Esta entrada existe para que esas
@@ -959,6 +959,20 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   - El MAL-hoy que acompañaba: la garantía 4 de `spec/RPC.md`
     prometía «bytes» de prueba; desde §278 ata compromiso o ausencia
     declarada según la clase. Corregida en este mismo sello.
+
+  **CERRADA (§281, 2026-08-12) — el MAPA, pieza a pieza**: la lista se
+  escribió y cerró en §280 (la ampliación de arriba); §281 la ejecutó
+  ENTERA en lo de formato: compromiso como campo (`Option`, era 2
+  `Some`) → `log.rs` §281; layout 169 con la tabla exacta y longitud
+  discriminando → `store.rs`; encadenado v2 con el compromiso dentro →
+  `chain_digest_v2` y `verify`/`verify_chain` por era; snapshot con el
+  bit alto de `n_log` y prefijo u16 (un stream no discrimina por
+  longitud — borde encontrado al montar) → `snapshot.rs`; DTO aditivo
+  con rotura en voz alta → `wire`. Lo que esta nota NO cierra, y a
+  dónde va: el reverificador a 6-de-6 prospectivo → sello siguiente
+  (su fichero no viajó en el terreno y a ciegas no se parchea); la
+  semántica de lotes en `verify_chain` → queda el gancho documentado
+  en el propio código, se implementa cuando RFC-0002 etapa 2 exista.
 
 ## E. Operacion
 

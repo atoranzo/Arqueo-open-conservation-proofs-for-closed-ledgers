@@ -38,6 +38,12 @@ struct Entrada {
     root_new: String,
     proof_digest: String,
     chain: String,
+    /// Era 2 (§281): el compromiso autorizante, o el centinela
+    /// declarado. Sin el, las cadenas v2 del vector serian
+    /// irreproducibles por una segunda implementacion. Ausente solo en
+    /// entradas de la era 1, que el escenario canonico no produce.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    compromiso: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -83,6 +89,7 @@ fn recolectar(layer: &SovereignLayer) -> Vectores {
             root_new: hexd(&e.root_new),
             proof_digest: hexd(&e.proof_digest),
             chain: hexd(&e.chain),
+            compromiso: e.compromiso.as_ref().map(hexd),
         })
         .collect();
     Vectores {
@@ -90,7 +97,11 @@ fn recolectar(layer: &SovereignLayer) -> Vectores {
         // Re-emitido en §278: las cuatro entradas delegadas del escenario
         // —dos OpenAccount y dos Mint— dejan de asentar la prueba vacia,
         // asi que cambian sus digests, TODA la cadena y la cabeza.
-        sellado: "§278".into(),
+        // Re-emitido en §281: el compromiso autorizante entra como
+        // campo y en la cadena (v2) — cambian las seis cadenas, la
+        // cabeza, y cada entrada publica su compromiso (las Mint el
+        // real; el resto el centinela declarado).
+        sellado: "§281".into(),
         escenario: ESCENARIO.into(),
         // §207 sumo tres tests al arbol disperso: 242 -> 245.
         canon: [297, 245, 40, 28],

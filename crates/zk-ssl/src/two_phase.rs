@@ -1282,12 +1282,13 @@ impl SovereignLayer {
         // La MISMA raiz de cuentas en los dos lados, y es correcto: una
         // emision a un pendiente no toca ninguna cuenta. Mismo criterio que
         // la via antigua de arriba.
-        self.log.append(
+        self.log.append_con_compromiso(
             OpKind::MintToPending,
             self.accounts.root(),
             self.accounts.root(),
             &crate::log::sello_de_autorizacion(&operation),
-        );
+         operation,
+            );
         self.commit(&[], Some((position, commitment)))?;
 
         Ok(PendingNotice {

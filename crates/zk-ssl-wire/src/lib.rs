@@ -539,6 +539,12 @@ pub struct LogEntryDto {
     pub root_new: B32,
     pub proof_digest: B32,
     pub chain: B32,
+    /// Era 2 (§281): el compromiso autorizante, o el centinela declarado.
+    /// Ausente en las entradas de la era 1. `deny_unknown_fields` hace
+    /// que un cliente viejo que reciba esto **rompa en voz alta** — el
+    /// fallo honesto ya diseñado —; `default` deja al nuevo leer v1.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub compromiso: Option<B32>,
 }
 
 impl From<&LogEntry> for LogEntryDto {
@@ -550,6 +556,7 @@ impl From<&LogEntry> for LogEntryDto {
             root_new: digest_to_wire(&e.root_new),
             proof_digest: digest_to_wire(&e.proof_digest),
             chain: digest_to_wire(&e.chain),
+            compromiso: e.compromiso.as_ref().map(digest_to_wire),
         }
     }
 }

@@ -135,7 +135,7 @@ impl SovereignLayer {
         self.freeze_count = count_new;
 
         let raiz = self.accounts.root();
-        self.log.append(OpKind::Freeze, raiz, raiz, &crate::log::sello_de_autorizacion(&operation));
+        self.log.append_con_compromiso(OpKind::Freeze, raiz, raiz, &crate::log::sello_de_autorizacion(&operation), operation);
         self.commit(&[], None)?;
         Ok(())
     }

@@ -21071,3 +21071,63 @@ toca): struct + `chain_digest` + `verify_chain` de dos eras · store con
 dos longitudes · persistence · snapshot · DTO del cable · spec
 normativa · openrpc · vector regenerado · reverificador a 6-de-6
 prospectivo · pines y prosa. ~20 ficheros.
+
+## §281 — 2026-08-12 · El compromiso entra en la entrada y en la cadena; dos eras, una lista
+
+**Qué cambió.** `LogEntry` gana `compromiso: Option<Digest>` — el
+portador de la era: `None` = era 1 (anterior a este sello; su
+compromiso no existe en ningún sitio), `Some` = era 2 (toda entrada
+nueva). Las cinco delegadas asientan por `append_con_compromiso` el
+compromiso contra el que se verificaron —que CONTIENE las raíces del
+árbol que de verdad mueven—; el resto asienta `COMPROMISO_AUSENTE`,
+centinela declarado (precedente `VIEW_ID_LEGACY`). El compromiso
+**entra en la cadena**: `chain_digest_v2 = merge(chain_v1, compromiso)`
+— la misma forma que `epoch_digest_v2` (§275) — y `verify`/
+`verify_chain` eligen fórmula POR ENTRADA, así que un registro mixto
+verifica era a era y manipular el compromiso es `TamperedEntry`. En
+disco, la longitud discrimina (137/169, la tabla de la nota 82,
+precedente 49-A); en el cable, el DTO es aditivo con rotura en voz
+alta (`deny_unknown_fields` + `default`).
+
+**Los dos hallazgos del terreno que la lista de §280 no tenía.**
+(1) `append` calcula `proof_digest` por dentro, y tiene una veintena de
+llamantes contando tests — la firma no se toca: `append` queda como
+envoltorio era-2-con-centinela y solo las cinco delegadas cambian de
+llamada. Siete vías con prueba real, `OpenAccount`, `migration` y todos
+los tests quedan intactos. (2) **Un stream concatenado no puede
+discriminar por longitud**: el lector del snapshot no sabe dónde corta
+una entrada. La sección del registro se versiona con el **bit alto de
+`n_log`** —un contador jamás lo usa— y las entradas v2 van prefijadas
+con su longitud (u16). Ficheros viejos, bit apagado, se leen a 137 como
+siempre. Se descartaron marcas de fichero nuevas: había más de un
+escritor con marca y el bit toca uno.
+
+**Decisiones, con procedencia** (todas del asistente al montar,
+REVERSIBLES, sobre la lista cerrada de §280): el `Option` como portador
+de era · el centinela como const declarada · `chain_digest_v2` con la
+v1 entera como subárbol y el compromiso al final · el envoltorio en vez
+del cambio de firma · el bit alto en vez de marcas nuevas.
+
+**Lo que este sello NO hace, dicho en voz alta.** El reverificador de
+§279 sigue en 2-de-6: su fichero no viajó en el terreno y **a ciegas no
+se parchea** — la subida a 6-de-6 prospectivo es el sello siguiente,
+con su fixture delante. Y la semántica de lotes queda como gancho
+documentado dentro de `verify_chain`, sin código para llamantes que no
+existen. El MAPA de la 82 recoge ambos destinos.
+
+**Categorías.** *Medido*: las 12 llamadas de producción de `append` y
+sus formas exactas; los 6 usos de `chain_digest` (def, append, verify
+×2, tests ×2); los dos literales de `LogEntry`; los diez sitios del 259
+y los dos §259 de `RPC.md` que son historia y NO se tocan (centinelas
+del bloque); la compuerta del vector (cadenas simétricas, +6
+`compromiso`, raíces y `proof_digest` quietos). *Ejercitado*: los tres
+tests nuevos (centinela≠sello y las eras divergen · registro mixto con
+su negativo `TamperedEntry` · ida-y-vuelta 137/169 con rechazo del
+intermedio) y `canon --sello` entero. *Razonado*: la prospectividad
+(el compromiso histórico no existe) y el bit alto. *Observado*: el
+segundo escritor con marca del snapshot (`:141`), que motivó el bit.
+
+**Deuda que este sello deja escrita.** La doc de `verify()` dice «cada
+entrada esté atada a una prueba concreta» — desde §278/§281 es «a lo
+que la autorizó»; la spec ya lo dice bien (§280) y la doc del código se
+corrige cuando `log.rs` se toque por razón real, no por una frase.

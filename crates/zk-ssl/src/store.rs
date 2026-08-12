@@ -410,16 +410,22 @@ mod tests {
 
 /// Serializa una entrada del registro de transiciones.
 ///
-/// Formato explícito de 137 bytes: `seq(8) | kind(1) | root_old(32) |
-/// root_new(32) | proof_digest(32) | chain(32)`.
+/// **Dos eras, discriminadas por LONGITUD** (§281; el precedente es la
+/// lectura dual/triple de 49-A, más arriba en este fichero). Era 1
+/// (`compromiso: None`): 137 = `seq(8) | kind(1) | root_old(32) |
+/// root_new(32) | proof_digest(32) | chain(32)`. Era 2 (`Some`): 169 =
+/// lo mismo + `compromiso(32)` al final — la tabla de la nota 82.
 pub fn log_entry_to_bytes(e: &crate::log::LogEntry) -> Vec<u8> {
-    let mut out = Vec::with_capacity(137);
+    let mut out = Vec::with_capacity(if e.compromiso.is_some() { 169 } else { 137 });
     out.extend_from_slice(&e.seq.to_le_bytes());
     out.push(e.kind.tag_byte());
     out.extend_from_slice(&digest_to_bytes(&e.root_old));
     out.extend_from_slice(&digest_to_bytes(&e.root_new));
     out.extend_from_slice(&digest_to_bytes(&e.proof_digest));
     out.extend_from_slice(&digest_to_bytes(&e.chain));
+    if let Some(c) = e.compromiso.as_ref() {
+        out.extend_from_slice(&digest_to_bytes(c));
+    }
     out
 }
 
@@ -428,12 +434,15 @@ pub fn log_entry_to_bytes(e: &crate::log::LogEntry) -> Vec<u8> {
 /// Un tipo de operación desconocido se **rechaza** en vez de ignorarse:
 /// una entrada que no se puede interpretar no debe darse por buena.
 pub fn log_entry_from_bytes(b: &[u8]) -> Result<crate::log::LogEntry, StoreError> {
-    if b.len() != 137 {
-        return Err(StoreError::Malformed(format!(
-            "entrada del registro de {} bytes, se esperaban 137",
-            b.len()
-        )));
-    }
+    let compromiso = match b.len() {
+        137 => None,
+        169 => Some(digest_from_bytes(&b[137..169])?),
+        otra => {
+            return Err(StoreError::Malformed(format!(
+                "entrada del registro de {otra} bytes, se esperaban 137 (era 1) o 169 (era 2)"
+            )))
+        }
+    };
     let seq = u64::from_le_bytes(b[0..8].try_into().unwrap());
     let kind = crate::log::OpKind::from_tag_byte(b[8])
         .ok_or_else(|| StoreError::Malformed(format!("tipo de operacion {} desconocido", b[8])))?;
@@ -444,5 +453,6 @@ pub fn log_entry_from_bytes(b: &[u8]) -> Result<crate::log::LogEntry, StoreError
         root_new: digest_from_bytes(&b[41..73])?,
         proof_digest: digest_from_bytes(&b[73..105])?,
         chain: digest_from_bytes(&b[105..137])?,
+        compromiso,
     })
 }

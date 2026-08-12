@@ -176,6 +176,16 @@ pub struct LogEntry {
     /// Lo que no ocurre es que **eso llegue al registro**.
     pub root_old: Digest,
     pub root_new: Digest,
+    /// **El compromiso autorizante, como campo** (§281; la lista de la
+    /// nota 82, §280). `None` = **era 1**: entrada anterior a §281, cuyo
+    /// compromiso no existe en ningún sitio — no se guardó nunca.
+    /// `Some` = **era 2**: toda entrada nueva. Las delegadas llevan el
+    /// compromiso contra el que se verificó (que CONTIENE las raíces del
+    /// árbol que de verdad mueven); el resto lleva
+    /// [`COMPROMISO_AUSENTE`], declarado. La era elige la fórmula del
+    /// encadenado — ver [`chain_digest_v2`] — y la longitud en disco
+    /// (137/169) la discrimina, precedente 49-A del store.
+    pub compromiso: Option<Digest>,
     /// Resumen de la prueba, no la prueba entera.
     ///
     /// Guardar las pruebas completas serían ~62 KB por operación: mil
@@ -237,6 +247,34 @@ pub fn chain_digest(
     native_merge(native_merge(cuerpo, proof_digest), previous)
 }
 
+/// **Centinela de la era 2 para entradas sin compromiso autorizante**:
+/// las vías con prueba real (Send, Claim, Burn, Refund, Migration) y
+/// `OpenAccount`. Es un valor DECLARADO, no un hash — el precedente son
+/// `VIEW_ID_LEGACY`/`LEAF_SALT_LEGACY` de 49-A. Distinto de cualquier
+/// `commit_operation` con probabilidad abrumadora, y el test lo separa
+/// de los sellos.
+pub const COMPROMISO_AUSENTE: Digest = [BaseElement::new(0xC0_A9_2281); 4];
+
+/// La fórmula de la **era 2** (§281): la de la era 1 entera, en su
+/// posición, más el compromiso. Misma forma que `epoch_digest_v2`
+/// (§275): la variante reusa a la vieja como subárbol, y el
+/// desambiguador NO es un byte aquí — es la propia era de la entrada
+/// (`compromiso: Option`), que en disco discrimina la longitud.
+pub fn chain_digest_v2(
+    seq: u64,
+    kind: OpKind,
+    root_old: Digest,
+    root_new: Digest,
+    proof_digest: Digest,
+    previous: Digest,
+    compromiso: Digest,
+) -> Digest {
+    native_merge(
+        chain_digest(seq, kind, root_old, root_new, proof_digest, previous),
+        compromiso,
+    )
+}
+
 /// Registro encadenado de transiciones.
 #[derive(Clone, Debug, Default)]
 pub struct TransitionLog {
@@ -278,7 +316,11 @@ impl TransitionLog {
             .unwrap_or([BaseElement::ZERO; 4])
     }
 
-    /// Añade una entrada.
+    /// Añade una entrada **de la era 2 sin compromiso autorizante**
+    /// ([`COMPROMISO_AUSENTE`]). Es la vía de las clases con prueba real
+    /// y de `OpenAccount`; las delegadas usan
+    /// [`Self::append_con_compromiso`]. Firma intacta a propósito: los
+    /// llamantes que no tienen compromiso no cambian.
     pub fn append(
         &mut self,
         kind: OpKind,
@@ -286,15 +328,34 @@ impl TransitionLog {
         root_new: Digest,
         proof: &[u8],
     ) -> Digest {
+        self.append_con_compromiso(kind, root_old, root_new, proof, COMPROMISO_AUSENTE)
+    }
+
+    /// Añade una entrada de la **era 2** con su compromiso autorizante.
+    ///
+    /// ⚠️ El compromiso **entra en la cadena** ([`chain_digest_v2`]):
+    /// manipularlo a posteriori es `TamperedEntry`, igual que cualquier
+    /// otro campo. Prospectivo por necesidad (§280): las entradas
+    /// anteriores quedan en la era 1 — su compromiso no existe.
+    pub fn append_con_compromiso(
+        &mut self,
+        kind: OpKind,
+        root_old: Digest,
+        root_new: Digest,
+        proof: &[u8],
+        compromiso: Digest,
+    ) -> Digest {
         let seq = self.entries.len() as u64;
         let proof_digest = digest_of_proof(proof);
         let previous = self.head();
-        let chain = chain_digest(seq, kind, root_old, root_new, proof_digest, previous);
+        let chain =
+            chain_digest_v2(seq, kind, root_old, root_new, proof_digest, previous, compromiso);
         self.entries.push(LogEntry {
             seq,
             kind,
             root_old,
             root_new,
+            compromiso: Some(compromiso),
             proof_digest,
             chain,
         });
@@ -323,14 +384,19 @@ impl TransitionLog {
             if i > 0 && e.root_old != self.entries[i - 1].root_new {
                 return Err(LogError::BrokenChain { at: e.seq });
             }
-            let esperado = chain_digest(
-                e.seq,
-                e.kind,
-                e.root_old,
-                e.root_new,
-                e.proof_digest,
-                previous,
-            );
+            // §281: la ERA de la entrada elige la fórmula. Un registro
+            // mixto verifica entrada a entrada; los lotes de RFC-0002
+            // etapa 2, cuando existan, se contemplarán AQUÍ — el salto
+            // del encadenado por-entrada dentro de un lote es semántica
+            // de esta comprobación, no de la serialización (nota 82).
+            let esperado = match e.compromiso {
+                None => chain_digest(
+                    e.seq, e.kind, e.root_old, e.root_new, e.proof_digest, previous,
+                ),
+                Some(c) => chain_digest_v2(
+                    e.seq, e.kind, e.root_old, e.root_new, e.proof_digest, previous, c,
+                ),
+            };
             if esperado != e.chain {
                 return Err(LogError::TamperedEntry { at: e.seq });
             }
@@ -365,14 +431,19 @@ impl TransitionLog {
             if e.root_old != expected_root {
                 return Err(LogError::BrokenChain { at: e.seq });
             }
-            let esperado = chain_digest(
-                e.seq,
-                e.kind,
-                e.root_old,
-                e.root_new,
-                e.proof_digest,
-                previous,
-            );
+            // §281: la ERA de la entrada elige la fórmula. Un registro
+            // mixto verifica entrada a entrada; los lotes de RFC-0002
+            // etapa 2, cuando existan, se contemplarán AQUÍ — el salto
+            // del encadenado por-entrada dentro de un lote es semántica
+            // de esta comprobación, no de la serialización (nota 82).
+            let esperado = match e.compromiso {
+                None => chain_digest(
+                    e.seq, e.kind, e.root_old, e.root_new, e.proof_digest, previous,
+                ),
+                Some(c) => chain_digest_v2(
+                    e.seq, e.kind, e.root_old, e.root_new, e.proof_digest, previous, c,
+                ),
+            };
             if esperado != e.chain {
                 return Err(LogError::TamperedEntry { at: e.seq });
             }
@@ -709,13 +780,14 @@ mod tests {
         let mut l = log_de_tres();
         l.entries[1].root_new = d(99);
         // El atacante recalcula el resumen de ESA entrada.
-        l.entries[1].chain = chain_digest(
+        l.entries[1].chain = chain_digest_v2(
             1,
             l.entries[1].kind,
             l.entries[1].root_old,
             d(99),
             l.entries[1].proof_digest,
             l.entries[0].chain,
+            COMPROMISO_AUSENTE,
         );
         let r = l.verify(d(0));
         assert!(
@@ -841,14 +913,15 @@ mod t1_chain_retroactivo {
                     Some(k) if e.seq == k => digest_of_proof(b"mentira-injertada"),
                     _ => e.proof_digest,
                 };
-                prev = chain_digest(
+                prev = chain_digest_v2(
                     e.seq,
                     OpKind::from_tag_byte(e.kind.tag_byte()).unwrap(),
                     e.root_old,
                     e.root_new,
                     pd,
                     prev,
-                );
+            COMPROMISO_AUSENTE,
+        );
             }
             prev
         };
@@ -1045,5 +1118,107 @@ mod tests_sello {
         // el valor de la prueba vacia.
         let vacias = l.log.entries().iter().filter(|e| e.proof_digest == vacio()).count();
         assert_eq!(vacias, 0, "ninguna entrada puede seguir asentando el vacio");
+    }
+}
+
+#[cfg(test)]
+mod tests_dos_eras {
+    use super::*;
+    use zk_ssl_hash::as_digest;
+
+    fn d(x: u64) -> Digest {
+        as_digest(x)
+    }
+
+    #[test]
+    fn el_centinela_no_es_un_sello_y_las_dos_eras_encadenan_distinto() {
+        // El centinela es un valor declarado: distinto de cualquier
+        // compromiso real y del digest neutro.
+        // un compromiso "real" cualquiera: para estas propiedades basta
+        // un Digest distinto — la firma de commit_operation no viajo en
+        // el terreno y a ciegas no se llama.
+        let op = as_digest(0xFEED_2281);
+        assert_ne!(COMPROMISO_AUSENTE, op);
+        assert_ne!(COMPROMISO_AUSENTE, as_digest(0));
+        // Y el compromiso PARTICIPA en la cadena: dos entradas iguales
+        // salvo el compromiso divergen.
+        let a = chain_digest_v2(0, OpKind::Mint, d(0), d(1), d(9), d(7), COMPROMISO_AUSENTE);
+        let b = chain_digest_v2(0, OpKind::Mint, d(0), d(1), d(9), d(7), op);
+        assert_ne!(a, b, "el compromiso no entra en la cadena");
+        // Y la era 2 no colisiona con la era 1 de la misma entrada.
+        assert_ne!(a, chain_digest(0, OpKind::Mint, d(0), d(1), d(9), d(7)));
+    }
+
+    #[test]
+    fn un_registro_mixto_verifica_entrada_a_entrada() {
+        // Era 1 simulada como llega del DISCO: entradas v1 recompuestas
+        // con la formula vieja y compromiso None (from_entries no valida;
+        // verify si).
+        let mut v1 = Vec::new();
+        let mut prev = [BaseElement::ZERO; 4];
+        let mut root = d(100);
+        for seq in 0..3u64 {
+            let root_new = d(101 + seq);
+            let pd = digest_of_proof(b"prueba-vieja");
+            let chain = chain_digest(seq, OpKind::Mint, root, root_new, pd, prev);
+            v1.push(LogEntry {
+                seq,
+                kind: OpKind::Mint,
+                root_old: root,
+                root_new,
+                compromiso: None,
+                proof_digest: pd,
+                chain,
+            });
+            prev = chain;
+            root = root_new;
+        }
+        let mut l = TransitionLog::from_entries(v1);
+        // ...y la era 2 continua encima, por las DOS vias.
+        let op = as_digest(0xFEED);
+        l.append_con_compromiso(OpKind::Mint, root, d(200), b"sello", op);
+        l.append(OpKind::Burn, d(200), d(201), b"prueba-real");
+        assert_eq!(l.entries()[2].compromiso, None, "la era 1 se queda era 1");
+        assert_eq!(l.entries()[3].compromiso, Some(op));
+        assert_eq!(l.entries()[4].compromiso, Some(COMPROMISO_AUSENTE));
+        l.verify(d(100)).expect("el registro mixto debe verificar");
+        l.verify_chain().expect("y sin genesis tambien");
+        // El negativo que da sentido al positivo (§266): manipular el
+        // compromiso de una entrada era-2 es TamperedEntry.
+        let mut m = l.clone();
+        m.entries[3].compromiso = Some(COMPROMISO_AUSENTE);
+        assert_eq!(m.verify_chain(), Err(LogError::TamperedEntry { at: 3 }));
+    }
+
+    #[test]
+    fn la_ida_y_vuelta_del_disco_conserva_la_era() {
+        // 137 <-> None y 169 <-> Some, por el store real.
+        let mut l = TransitionLog::new();
+        l.append(OpKind::Mint, d(0), d(1), b"p");
+        let e2 = &l.entries()[0];
+        let b2 = crate::store::log_entry_to_bytes(e2);
+        assert_eq!(b2.len(), 169, "la era 2 pesa 169");
+        let r2 = crate::store::log_entry_from_bytes(&b2).expect("169 legible");
+        assert_eq!(r2.compromiso, e2.compromiso);
+        assert_eq!(r2.chain, e2.chain);
+        // Una era 1 fabricada a mano pesa 137 y vuelve como None.
+        let pd = digest_of_proof(b"p");
+        let v1 = LogEntry {
+            seq: 0,
+            kind: OpKind::Mint,
+            root_old: d(0),
+            root_new: d(1),
+            compromiso: None,
+            proof_digest: pd,
+            chain: chain_digest(0, OpKind::Mint, d(0), d(1), pd, [BaseElement::ZERO; 4]),
+        };
+        let b1 = crate::store::log_entry_to_bytes(&v1);
+        assert_eq!(b1.len(), 137, "la era 1 sigue pesando 137");
+        let r1 = crate::store::log_entry_from_bytes(&b1).expect("137 legible");
+        assert_eq!(r1.compromiso, None);
+        assert_eq!(r1.chain, v1.chain);
+        // Y una longitud intermedia se RECHAZA (un truncado no se
+        // interpreta mal) — la regla del store, ejercitada aqui.
+        assert!(crate::store::log_entry_from_bytes(&b2[..150]).is_err());
     }
 }

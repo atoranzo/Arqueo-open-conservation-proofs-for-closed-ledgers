@@ -1,6 +1,6 @@
 {
   "spec": "zkssl/0.2",
-  "sellado": "§278",
+  "sellado": "§281",
   "escenario": "open+fund(seed 0xA11CE, +1000000) x2 · send 250000 (salt 7) · claim",
   "canon": [
     297,
@@ -15,7 +15,8 @@
       "root_old": "0xcef7062263b5c3db053e011286d1b34ed498c9e6f69bc9a558246553819539bb",
       "root_new": "0x6590b0bf234a2761348e2b6f7bab35039c9e923e431a9883d44650770ebb7b1a",
       "proof_digest": "0x0d6032dfb7f7f4849af034829d53e1aa6f6c4856736daba11a08c57f24fa3fc3",
-      "chain": "0x0b7d1d36f7a8497c83239ca1d9cd4f26aebe887b1f671b1e76ff48cf68c5dc8e"
+      "chain": "0xeaf18d1547995138061ec14c3dc95c2966f4182ef731b419b8ed2d015367fdff",
+      "compromiso": "0x8122a9c0000000008122a9c0000000008122a9c0000000008122a9c000000000"
     },
     {
       "seq": "0x1",
@@ -23,7 +24,8 @@
       "root_old": "0x6590b0bf234a2761348e2b6f7bab35039c9e923e431a9883d44650770ebb7b1a",
       "root_new": "0xf3fca118e57f2d2d40a8df6dc6290b9e64e155cce6eea9cbc7e59f9b3ebc0ad6",
       "proof_digest": "0x9418ba92271a1cc16347e1c9ea92938ea8644bebd292358aaedddbf2c7e98107",
-      "chain": "0x74a199ed3709c2790a1774c1136dbce4fcf4b2de5c6f03d7f8544dbf8300eed2"
+      "chain": "0x7dc073fadfc965126c8159262b9c64725e1ef9ed988dbbc004a92076f0c149c4",
+      "compromiso": "0xd441d94f90458498e9345fe38b8a75c2d4043989aabdee901062fbc44c50121b"
     },
     {
       "seq": "0x2",
@@ -31,7 +33,8 @@
       "root_old": "0xf3fca118e57f2d2d40a8df6dc6290b9e64e155cce6eea9cbc7e59f9b3ebc0ad6",
       "root_new": "0xbee1fa003cc2da4eb950271b72b57050d2ec2e8dbe787bb65c1f444cbca74c5d",
       "proof_digest": "0x0d6032dfb7f7f4849af034829d53e1aa6f6c4856736daba11a08c57f24fa3fc3",
-      "chain": "0xfa6f886680d5ac32462f53996a251db8eb31b5d9600ed35667abec30fef81908"
+      "chain": "0x119e9550d07c633cbd16ff2f3e386a6d1687611e52aff04df4aee28b83199f37",
+      "compromiso": "0x8122a9c0000000008122a9c0000000008122a9c0000000008122a9c000000000"
     },
     {
       "seq": "0x3",
@@ -39,7 +42,8 @@
       "root_old": "0xbee1fa003cc2da4eb950271b72b57050d2ec2e8dbe787bb65c1f444cbca74c5d",
       "root_new": "0x75418f6b7f9f18f7eff20bb30a1a2da5a4dbbe43f691fa3d612a6833a592ea0b",
       "proof_digest": "0x109dc4298c5fa98a314b998ac85f8ca10bc447e37e3286e0fc89480d01a234fe",
-      "chain": "0xdcb38320049c653078ad2642c6b8c3c87a922021d7ee673743ea96f601277840"
+      "chain": "0x3b2878d041b608774066535f438445604d8d171ada4236d975b44e3cffdb5784",
+      "compromiso": "0x3938ee289f45ddf826e332183af87b12f8fd41a64d67d7a318f834469f578ad8"
     },
     {
       "seq": "0x4",
@@ -47,7 +51,8 @@
       "root_old": "0x75418f6b7f9f18f7eff20bb30a1a2da5a4dbbe43f691fa3d612a6833a592ea0b",
       "root_new": "0xd44542e01c8f055048242d571cad197371950e0817c2666824cafcaf6088e69e",
       "proof_digest": "0x4d0a52f83025eb5d51c379741c7096da47df81905de102121342b2f0f4e678ee",
-      "chain": "0x44da4a8e82cd0a69d3612b6d1add335664f0d8267b3daaa85e672ee4049389c9"
+      "chain": "0x989274c6e4b7f93f60ae8d1f965fb3e1e9f53ceaf1ef22feb3eaa57de0b6270c",
+      "compromiso": "0x8122a9c0000000008122a9c0000000008122a9c0000000008122a9c000000000"
     },
     {
       "seq": "0x5",
@@ -55,10 +60,11 @@
       "root_old": "0xd44542e01c8f055048242d571cad197371950e0817c2666824cafcaf6088e69e",
       "root_new": "0x84f8f0dbd0c02e0f5d0730065522e17914cc5a3bb5b957d9756c518995c51a39",
       "proof_digest": "0xb11c0022f59cf02427497ec6db125646c41451faaf02704a57525d40b73e3b81",
-      "chain": "0x6863f1b2100a0593f0a771c25a9fff41b1da3913da69973490073fb519a5308b"
+      "chain": "0x6db11fc61290ff194aed3f7a008c25799541b160d8774585322dcb62b2f1c315",
+      "compromiso": "0x8122a9c0000000008122a9c0000000008122a9c0000000008122a9c000000000"
     }
   ],
-  "epoch_digest": "0x397f1088e9e7ac340d2da5a73eecc8a253da2e8a9be5560e0c5254f4208b06a4",
+  "epoch_digest": "0x4aeabda24c962848e5f88815334c3a51368046b0a7d29158cf4edd9bc5751d67",
   "supply": "0x1e8480",
   "pending": "0x0"
 }
