@@ -162,6 +162,13 @@ pub struct LogEntry {
     /// ata ningún detalle. Para esas dos, la entrada dice sólo *«pasó algo
     /// de esta clase en este `seq`»*. Ver la nota 78 del BACKLOG.
     ///
+    /// ✅ **CERRADO en §278.** Las cinco vías delegadas —`mint`, `freeze`,
+    /// `recovery`, `governance` y `MintToPending`— asientan ya el **sello
+    /// de autorización** de su compromiso, así que la frase de arriba
+    /// vuelve a ser cierta con una precisión: lo que ata la entrada no es
+    /// la prueba, es **el compromiso contra el que se verificó**. Ver
+    /// [`sello_de_autorizacion`].
+    ///
     /// ⚠️ Lo que **sí** está atado, y conviene no confundirlo: la
     /// AUTORIZACIÓN. `apply_governance_delegated` verifica contra
     /// `commit_operation(OP_GOVERNANCE, raíz_vieja ‖ raíz_nueva ‖ count_old
@@ -189,6 +196,15 @@ pub struct LogEntry {
     /// registran la transición —sus raíces difieren—; `freeze` y
     /// `governance` asientan `raiz, raiz` y no registran nada de lo que
     /// cambiaron. Ver las notas 78 y 79 del BACKLOG.
+    ///
+    /// ✅ **CERRADO en §278**, y con una corrección al recuento de arriba:
+    /// eran **seis** los asientos con prueba vacía, no cuatro —faltaban
+    /// `two_phase.rs:1285` (`MintToPending`, con el `append` partido en
+    /// seis líneas) y `accounts.rs:243` (`OpenAccount`)—. Las cinco vías
+    /// delegadas asientan ahora [`sello_de_autorizacion`] de su
+    /// compromiso; `OpenAccount` asienta [`sello_sin_prueba`], que **no es
+    /// el mismo valor**: declarar que no hay prueba y olvidarse de
+    /// registrarla dejaron de ser indistinguibles.
     pub proof_digest: Digest,
     /// Resumen encadenado hasta esta entrada, inclusive.
     pub chain: Digest,
@@ -197,7 +213,7 @@ pub struct LogEntry {
 // ⚠️ §255: `as_digest` vive en `zk-ssl-hash`. Es una DECISION DE FORMATO
 // —donde va el numero y con que se rellena—, y un verificador
 // independiente tiene que usar LA MISMA, no una copia. Era privada aqui.
-use zk_ssl_hash::as_digest;
+use zk_ssl_hash::{as_digest, digest_to_bytes};
 
 /// **Dominio del resumen de prueba.** Separa este uso de cualquier otro
 /// hash del proyecto: dos entradas de dominios distintos no pueden
@@ -259,6 +275,52 @@ pub fn digest_of_proof(proof: &[u8]) -> Digest {
     salida
 }
 
+/// **Dominio del sello de autorización** (§278). Lo que una vía delegada
+/// puede atar no es una prueba sino el **compromiso que la autorizó**;
+/// mezclar los dos dominios permitiría que un compromiso pasara por
+/// prueba, y al revés. Lleva versión desde el primer día (§270).
+const DOMINIO_AUTORIZACION: &[u8] = b"ZK-SSL-authorization-seal-v1";
+
+/// **Dominio de la ausencia declarada** (§278). Separa «no demostrable
+/// por diseño» de «autorizada y no registrada» — hasta este sello las dos
+/// escribían el MISMO byte, el de la prueba vacía, y el registro no podía
+/// distinguir una decisión de una omisión.
+const DOMINIO_SIN_PRUEBA: &[u8] = b"ZK-SSL-no-proof-by-design-v1";
+
+/// **Sello de autorización**: lo que una vía delegada asienta en lugar de
+/// una prueba.
+///
+/// Las pruebas de umbral se **consumen** al verificarlas —`verify_threshold_pair`
+/// las toma por valor—, así que en el punto del asiento ya no existen. Lo
+/// que sí sigue vivo es `operation`, el compromiso contra el que se
+/// verificaron, y que cubre la transición exacta (§56.2). Atar eso es
+/// **menos** que atar la prueba y **muchísimo más** que atar nada: la
+/// entrada deja de decir «pasó algo de esta clase» y pasa a decir «pasó
+/// ESTA operación, y esto la autorizaba».
+///
+/// ⚠️ **No es el resumen de una prueba, y el nombre del campo lo sugiere.**
+/// Por eso el dominio es propio: quien lea el registro puede recomputar
+/// este valor desde el compromiso, y **no** puede confundirlo con el
+/// resumen de una prueba que nadie tiene.
+pub fn sello_de_autorizacion(operation: &Digest) -> Vec<u8> {
+    let mut v = Vec::with_capacity(DOMINIO_AUTORIZACION.len() + 32);
+    v.extend_from_slice(DOMINIO_AUTORIZACION);
+    v.extend_from_slice(&digest_to_bytes(operation));
+    v
+}
+
+/// **Sello de ausencia declarada**: lo que asienta una transición que no
+/// genera prueba **por diseño**.
+///
+/// Hoy sólo `open_account`: abrir una cuenta no crea dinero —nace a cero—
+/// pero mueve la raíz, así que tiene que dejar entrada. La diferencia con
+/// `&[]` no es cosmética: el vacío era también lo que asentaban las vías
+/// delegadas por omisión, de modo que **declarar y olvidar producían el
+/// mismo digest**. Con dominio propio, el registro dice cuál de las dos
+/// cosas ocurrió.
+pub fn sello_sin_prueba() -> Vec<u8> {
+    DOMINIO_SIN_PRUEBA.to_vec()
+}
 /// Calcula el resumen encadenado de una entrada.
 pub fn chain_digest(
     seq: u64,
@@ -970,5 +1032,117 @@ mod t6_digest_inyectivo {
         for _ in 0..n { std::hint::black_box(digest_of_proof(&prueba)); }
         eprintln!("digest de 62 KB: {:?} de media (n={n}) — {} merges",
                   t.elapsed() / n, 62_000 / 16 + 1);
+    }
+}
+/// **Los sellos de §278**: que atan, que no se pisan, y que las seis vías
+/// que antes escribían el mismo byte hoy escriben lo que les toca.
+#[cfg(test)]
+mod tests_sello {
+    use super::*;
+    use crate::tests_support::*;
+    use stark_experiment::native::derive_public_id;
+
+    /// El valor que compartían las seis, y del que hay que alejarse.
+    fn vacio() -> Digest {
+        digest_of_proof(&[])
+    }
+
+    fn ultima(l: &crate::SovereignLayer) -> LogEntry {
+        l.log.entries().last().expect("hay al menos una entrada").clone()
+    }
+
+    /// **Los tres dominios no se pisan, y el sello ata SU compromiso.**
+    ///
+    /// Sin la última aserción el sello sería decorativo: distinguiría
+    /// «delegada» de «vacía» sin distinguir una delegada de otra.
+    #[test]
+    fn los_tres_dominios_no_se_pisan() {
+        let op = as_digest(7);
+        let otra = as_digest(8);
+        let auth = digest_of_proof(&sello_de_autorizacion(&op));
+        let auth_otra = digest_of_proof(&sello_de_autorizacion(&otra));
+        let sin = digest_of_proof(&sello_sin_prueba());
+
+        assert_ne!(auth, vacio(), "una delegada ya no puede parecer vacia");
+        assert_ne!(sin, vacio(), "la ausencia declarada tiene valor propio");
+        assert_ne!(auth, sin, "declarar y omitir no pueden coincidir");
+        assert_ne!(auth, auth_otra, "el sello ata SU compromiso, no la clase");
+    }
+
+    /// **Las seis vías, una por una, contra el registro real.**
+    ///
+    /// El orden importa: la gobernanza va la última porque cambia el
+    /// conjunto de custodios con el que se autorizan las demas, y la
+    /// congelacion despues de la recuperacion para no bloquear la cuenta
+    /// que esta aun por recuperar.
+    #[test]
+    fn las_seis_vias_atan_lo_que_les_toca() {
+        let mut l = new_layer();
+
+        // 1. OpenAccount — ausencia DECLARADA.
+        // Apertura ANCHA a proposito: `open_account` esta `#[deprecated]`
+        // desde 0.1.0 (clave de 64 bits) y este modulo no silencia el aviso.
+        let idx = l.open_account_wide(wide_key(0x5E_11_0));
+        assert_eq!(
+            ultima(&l).proof_digest,
+            digest_of_proof(&sello_sin_prueba()),
+            "abrir cuenta declara que no hay prueba"
+        );
+
+        // 2. Mint delegada.
+        let op = mint_commitment(&l, idx, 1_000);
+        fund_delegated(&mut l, idx, 1_000);
+        assert_eq!(
+            ultima(&l).proof_digest,
+            digest_of_proof(&sello_de_autorizacion(&op)),
+            "la emision delegada ata su compromiso"
+        );
+
+        // 3. MintToPending delegada.
+        let receptor = derive_public_id(BaseElement::new(0xB0B));
+        let salt = salt_de(0x5A17);
+        let op = mint_pending_commitment(&l, receptor, salt, 500);
+        mint_to_pending_delegated(&mut l, receptor, salt, 500);
+        assert_eq!(
+            ultima(&l).proof_digest,
+            digest_of_proof(&sello_de_autorizacion(&op)),
+            "la emision a pendiente ata su compromiso"
+        );
+
+        // 4. Recovery delegada.
+        let nueva = derive_public_id(BaseElement::new(0xBEEF_CAFE));
+        let op = recovery_commitment(&l, idx, nueva);
+        recover_delegated(&mut l, idx, nueva);
+        assert_eq!(
+            ultima(&l).proof_digest,
+            digest_of_proof(&sello_de_autorizacion(&op)),
+            "la recuperacion delegada ata su compromiso"
+        );
+
+        // 5. Freeze delegada — la que asienta `raiz, raiz` y antes no
+        //    registraba NADA de lo que cambiaba.
+        let op = freeze_commitment(&l, idx, true);
+        set_frozen_delegated(&mut l, idx, true);
+        assert_eq!(
+            ultima(&l).proof_digest,
+            digest_of_proof(&sello_de_autorizacion(&op)),
+            "la congelacion delegada ata su compromiso"
+        );
+
+        // 6. Governance delegada — la ultima, por lo que dice el doc.
+        let nuevas: Vec<BaseElement> = (0..5).map(|i| BaseElement::new(0xD0_0D_00 + i)).collect();
+        let nueva_raiz = stark_experiment::circuit_threshold::build_custodian_set(&nuevas).0;
+        let op = governance_commitment(&l, nueva_raiz);
+        update_custodians_delegated(&mut l, nueva_raiz);
+        assert_eq!(
+            ultima(&l).proof_digest,
+            digest_of_proof(&sello_de_autorizacion(&op)),
+            "el cambio de custodios ata su compromiso"
+        );
+
+        // Y el negativo agregado: NINGUNA entrada del registro comparte ya
+        // el valor de la prueba vacia.
+        let vacias = l.log.entries().iter().filter(|e| e.proof_digest == vacio()).count();
+        assert_eq!(vacias, 0, "ninguna entrada puede seguir asentando el vacio");
     }
 }

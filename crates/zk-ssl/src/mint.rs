@@ -128,7 +128,7 @@ impl SovereignLayer {
         self.records.insert(account_index, updated);
         self.total_supply = supply_new;
 
-        self.log.append(OpKind::Mint, root_old, root_new, &[]);
+        self.log.append(OpKind::Mint, root_old, root_new, &crate::log::sello_de_autorizacion(&operation));
         self.commit(&[account_index], None)?;
         Ok(())
     }

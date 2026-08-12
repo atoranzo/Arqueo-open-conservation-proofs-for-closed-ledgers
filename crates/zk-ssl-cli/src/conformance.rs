@@ -87,9 +87,10 @@ fn recolectar(layer: &SovereignLayer) -> Vectores {
         .collect();
     Vectores {
         spec: "zkssl/0.2".into(),
-        // Re-emitido en §275: la cabeza compone v2 con pareja neutra
-        // declarada (as_digest(0), n = 0) — el escenario no late.
-        sellado: "§275".into(),
+        // Re-emitido en §278: las cuatro entradas delegadas del escenario
+        // —dos OpenAccount y dos Mint— dejan de asentar la prueba vacia,
+        // asi que cambian sus digests, TODA la cadena y la cabeza.
+        sellado: "§278".into(),
         escenario: ESCENARIO.into(),
         // §207 sumo tres tests al arbol disperso: 242 -> 245.
         canon: [297, 245, 40, 28],

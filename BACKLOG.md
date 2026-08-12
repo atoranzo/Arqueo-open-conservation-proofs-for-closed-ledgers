@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 32 abiertas, 49 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 31 abiertas, 50 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 12 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -807,7 +807,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   repositorio. Cerrarla es decidir si el legacy se soporta o se declara
   fuera de alcance — decisión, no trabajo.
 
-- [ ] **78. `proof_digest` dice que ata, y en cuatro vías no ata nada.**
+- [x] **78. `proof_digest` dice que ata, y en cuatro vías no ata nada.**
   **PRESENTE y MEDIDO** sobre `bb85772`, 10-08-2026. Cuatro vías delegadas
   llaman a `append` con `&[]` — `mint.rs:131`, `freeze.rs:138`,
   `recovery.rs:166` y `governance.rs:162`— así que las cuatro comparten un
@@ -834,6 +834,27 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **titular**— asientan `&receipt.proof` real (`two_phase.rs:804` y
   `:999`). **Las del titular atan; las delegadas, no.** El arreglo cubre
   las cinco.
+  ✅ **HECHA (§278), y con una SEGUNDA corrección al recuento**: el censo
+  estructural —paréntesis balanceados, no `grep` de línea— encontró
+  **seis** asientos con prueba vacía, no cinco: faltaba `accounts.rs:243`
+  (`OpenAccount`). Y por el otro lado atan **seis**, no dos: además de
+  `Send` y `Claim`, `burn.rs:197`, los dos `Refund` (`two_phase.rs:401` y
+  `:534`) y `migration.rs:116`. La nota se quedaba corta **en las dos
+  direcciones**.
+  **Qué hace §278**: las cinco delegadas asientan el **sello de
+  autorización** de su `commit_operation` —vivo en el punto del asiento,
+  con dominio propio y versión—, y `OpenAccount` asienta el **sello de
+  ausencia declarada**. Antes las seis escribían `74de079f…`, así que
+  *«no demostrable por diseño»* y *«autorizada y no registrada»* eran el
+  mismo byte; ya no.
+  **Lo que NO cierra, con su destino**: el sello ata el **compromiso**, no
+  la prueba —las de umbral se consumen al verificarlas—, así que un
+  tercero puede recomputar qué autorizaba la entrada pero **no** puede
+  pedir la prueba y reverificarla. Esa es la **nota 79**, que hasta hoy no
+  tenía qué recomprobar. Medido de paso: la familia delegada **no tiene
+  entrada RPC de producción** (sólo `dev_fund` tras `--dev` y el sandbox
+  del CLI), así que el hueco se ha cerrado **antes** de que la entrada
+  exista.
 
 - [ ] **79. Sin el digest real, un log replicado no puede recomprobar que
   aquello estaba autorizado.** **FUTURO y RAZONADO**, y va aparte de la 78 a

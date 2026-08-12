@@ -20820,3 +20820,93 @@ aquí. Y este sello se adelanta al arreglo de la 78: **el plan se corre**
 (la 78 pasa al sello siguiente), porque lo terminado y depositado va
 antes que lo pendiente — la regla de §273 otra vez, y el orden lo eligió
 el asistente al emitir el bloque, reversible hasta sellar.
+
+## §278 — 2026-08-12 · El registro delegado ata su autorización; la ausencia declarada tiene dominio propio
+
+**Qué cambió.** Las cinco vías delegadas —`mint`, `freeze`, `recovery`,
+`governance` y `MintToPending`— dejan de asentar `&[]` y asientan el
+**sello de autorización** de su `commit_operation`: dominio propio con
+versión (`ZK-SSL-authorization-seal-v1`) sobre los bytes del compromiso.
+`open_account` deja de compartir valor con ellas y asienta el **sello de
+ausencia declarada** (`ZK-SSL-no-proof-by-design-v1`). Cierra la nota 78.
+
+**Por qué el compromiso y no la prueba.** Medido: `verify_threshold_pair`
+toma las pruebas **por valor** y las consume, así que en el punto del
+asiento los bytes ya no existen; lo que sigue vivo es `operation`, que es
+`Copy` y cubre la transición exacta (§56.2). Atar eso es **menos** que
+atar la prueba y muchísimo más que atar nada: la entrada deja de decir
+«pasó algo de esta clase» y pasa a decir «pasó ESTA operación, y esto la
+autorizaba». Lo que NO compra —pedir la prueba y reverificarla— es la
+nota 79, que hasta hoy no tenía qué recomprobar.
+
+**Dos correcciones al recuento, y las dos son del mismo defecto.** La
+nota 78 decía cuatro vías; §273 corrigió a cinco; el censo de este sello
+—**paréntesis balanceados sobre el árbol, no `grep` de línea**— dice
+**seis**: faltaba `accounts.rs:243`. Y por el otro lado atan **seis**, no
+dos: además de `Send` y `Claim`, `burn.rs:197`, los dos `Refund`
+(`two_phase.rs:401` y `:534`) y `migration.rs:116`. **Un instrumento que
+mide la forma de la LÍNEA no mide dónde ocurre** — tercera vez que este
+defecto paga, y la primera en que se paga con el instrumento correcto
+antes de tocar nada.
+
+**El hallazgo que reencuadra la nota.** Los únicos llamantes de
+producción de la familia delegada son `dev_fund` —tras
+`#[cfg(feature = "dev")]` **y** `--dev`— y el sandbox del CLI, y ambos
+**fabrican** las pruebas con `tests_support`. La familia **no tiene
+entrada RPC de producción todavía**: el hueco no estaba sangrando, iba a
+viajar con la entrada el día que se abriera. Se cierra antes.
+
+**Lo que la declaración compra, y no es cosmético.** Hasta hoy
+`74de079f…` era a la vez «no hay prueba porque no puede haberla» y «hay
+autorización y no la registré». Un registro que no distingue una decisión
+de un olvido obliga a preguntarle al operador cuál de las dos fue — que
+es exactamente la clase de dependencia que este proyecto declara estar
+reduciendo.
+
+**Categorías.** *Medido*: el censo de los 23 `.append` con `OpKind` y su
+reparto (seis vacíos, seis atando, once en tests) · que `operation` sigue
+vivo en los cinco puntos (mint 105→131, freeze 107→138, recovery
+138→166, governance 129→162, two_phase 1245→1285) · que `digest_of_proof`
+ya enmarca con dominio y longitud (§116 cerrado) · los diez sitios de
+prosa del pin y los cinco bloques de sumas · que ningún `Cargo.toml` se
+mueve, así que la foto del `--completo` sobrevive. *Ejercitado*: los dos
+tests nuevos, uno puro sobre los tres dominios y otro que recorre las
+seis vías contra el registro real y termina exigiendo **cero** entradas
+con el valor vacío. *Razonado*: el orden del recorrido —gobernanza la
+última porque cambia el conjunto que autoriza a las demás—.
+
+**Y el instrumento volvió a decidir el número, dos veces.** La compuerta
+de los asientos vacíos, escrita como `&[]` a secas, da **7** en esos
+cuatro ficheros y no 4: también casa `commit(&[], None)`. Y el gate del
+pin nuevo daría 12 y no 10, porque `spec/RPC.md` cita **dos veces
+§259**. Las dos las cazó el ensayo antes de entregar, ninguna era el
+número que yo había supuesto, y las dos van con su forma exacta —
+`, &[]);` y el conteo con las citas previas dentro—. Además el bloque
+lleva **dos centinelas**: `f926de6` en `spec/RPC.md` y el rango
+`928-940` en `doc/mapa-geometria-circuit_send.md`, dos cadenas que
+contienen las cifras de las sumas y que una sustitución ciega
+destrozaría; se comprueban antes y después.
+
+**La corrida 1 salió ROJA, con dos causas y ninguna sorpresa.** (1) El
+test nuevo abría cuenta con `open_account`, que está **`#[deprecated]`**
+desde 0.1.0 —clave de 64 bits—; `tests.rs` y `tests_support.rs` lo
+silencian con `#![allow(deprecated)]` a nivel de módulo, y el módulo
+nuevo no. Se arregla **usando la apertura ANCHA**, no añadiendo un
+`allow`: el aviso tenía razón, y de paso el test ejercita los 256 bits.
+(2) La conformidad: el escenario canónico abre dos cuentas y emite dos
+veces, así que **cuatro de sus seis entradas asentaban el vacío**; con
+§278 cambian esos cuatro `proof_digest`, **todas** las cadenas desde
+`seq 0` y la cabeza. El vector se **regenera con la herramienta**
+—§217, decisión 7 de §275— y su diff va bajo compuerta: 12/12 líneas, y
+cero movimiento en raíces, escenario, suministro o forma. Las dos causas
+las cazó el canon en la primera corrida, con el árbol devuelto por
+`restaurar()` y sin resto.
+
+**Elección por recomendación, reversible.** Los dos tests van juntos en
+`log.rs` (`mod tests_sello`) en vez de repartidos uno por vía: el coste
+de prosa es idéntico —el pin se mueve igual— y un solo test que recorre
+las seis y luego cuenta los vacíos es mejor evidencia que seis
+aserciones separadas. Y una compuerta **centinela** nueva, porque la
+medición la pidió: `spec/RPC.md:633` contiene `f926de6`, un hash de
+commit con «926» dentro; el bloque comprueba antes y después que sigue
+ahí, para que ninguna sustitución de sumas lo toque.

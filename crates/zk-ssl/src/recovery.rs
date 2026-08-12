@@ -163,7 +163,7 @@ impl SovereignLayer {
         self.records.insert(account_index, updated);
         self.recovery_count = count_new;
 
-        self.log.append(OpKind::Recovery, root_old, root_new, &[]);
+        self.log.append(OpKind::Recovery, root_old, root_new, &crate::log::sello_de_autorizacion(&operation));
         // ⚠️ **El registro VIAJA en el lote, como en la vía-recibo.** Con
         // `&[]` la raíz rotada llegaba al disco sin el AccountRecord: al
         // reabrir, la reconstrucción no casaba con `root:state` y la

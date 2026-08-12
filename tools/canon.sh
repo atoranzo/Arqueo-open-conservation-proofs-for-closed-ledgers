@@ -86,7 +86,7 @@ SELLO_FILE=".canon/ultimo-completo"
 # el sello 06106c9, en release. `pasan` e `ignorados` son lo que el arnes
 # EJECUTA, no los `#[test]` declarados.
 TABLA=$(cat <<'FIN_TABLA'
-zk-ssl             sello     257   3   0   600  alias=capa · la capa
+zk-ssl             sello     259   3   0   600  alias=capa · la capa
 stark-experiment   sello     297  10   0   600  alias=circuitos · los circuitos
 ceremony           sello      34   0  11   300  alias=ceremonia · DEUDA: 11 warnings, pinchados para que no crezcan
 settlement-layer   sello      17   0   0   300  alias=liquidación

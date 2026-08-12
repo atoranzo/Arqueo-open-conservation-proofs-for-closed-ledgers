@@ -236,11 +236,17 @@ impl SovereignLayer {
         // cero. Pero SI mueve la raiz de estado, asi que tiene que dejar
         // entrada en el registro o la cadena se rompe.
         //
-        // Su resumen de prueba es cero, y eso es visible para quien
-        // verifique el registro: sabe que esa transicion no esta
-        // demostrada, solo registrada.
-        self.log
-            .append(OpKind::OpenAccount, root_old, self.accounts.root(), &[]);
+        // Su resumen de prueba es el de la AUSENCIA DECLARADA (§278), no
+        // el de la prueba vacia: quien verifique el registro sabe que esa
+        // transicion no esta demostrada, y sabe ademas que eso es una
+        // decision y no un olvido — las delegadas ya no comparten valor
+        // con ella.
+        self.log.append(
+            OpKind::OpenAccount,
+            root_old,
+            self.accounts.root(),
+            &crate::log::sello_sin_prueba(),
+        );
 
         // Un solo lote atomico: la cuenta nueva y los metadatos.
         self.commit(&[index], None)?;

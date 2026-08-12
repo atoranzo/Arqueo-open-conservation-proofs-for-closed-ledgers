@@ -1286,7 +1286,7 @@ impl SovereignLayer {
             OpKind::MintToPending,
             self.accounts.root(),
             self.accounts.root(),
-            &[],
+            &crate::log::sello_de_autorizacion(&operation),
         );
         self.commit(&[], Some((position, commitment)))?;
 
