@@ -42,6 +42,7 @@ mod latido;
 /// aplicar.**
 mod diario;
 mod recepcion;
+mod vista_acuses;
 
 use std::collections::BTreeMap;
 use std::net::SocketAddr;
@@ -844,7 +845,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 // importa es justo el rechazo.
                 return Err(RpcError::layer(e).con_recepcion(rx));
             }
-            Ok(con_rx(applied(l), rx))
+            Ok(con_rx(con_acuse(applied(l), l), rx))
         }
 
         "zkssl_claimMaterials" => {
@@ -878,7 +879,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             let rx = recibir(app)?;
             l.apply_claim(&receipt, p.receiver.0, &state, &notice)
                 .map_err(|e| RpcError::layer(e).con_recepcion(rx))?;
-            Ok(con_rx(applied(l), rx))
+            Ok(con_rx(con_acuse(applied(l), l), rx))
         }
 
         // ── lote: N operaciones contra UNA raiz de arranque ──────
@@ -1088,6 +1089,32 @@ fn recibir(app: &App) -> Result<u64, RpcError> {
 /// nada**, así que viaja en el cable — pero **NO está firmado**: `chain`
 /// autentica `seq`, `kind`, las raíces, el digest de prueba y el anterior,
 /// **y nada más**. Es un número que el nodo dice y **que nada ata**.
+/// §274 · **El acuse en la respuesta del titular** — la instrucción
+/// autosuficiente: el titular guarda una cosa y esa cosa dice cómo
+/// completarse.
+///
+/// - `epoca` = `seq + 1`: la **primera cabeza que puede contener** la
+///   operación (regla en `zk_ssl_verify::acuses`, la misma que usará el
+///   verificador de §275).
+/// - `n` = el techo declarado (`vista_acuses::N_MAX_CABEZAS`).
+/// - `hashPrueba` = el `proof_digest` asentado — real en las vías del
+///   titular (§273).
+///
+/// ⚠️ **Sólo lo llaman `applySend` y `applyClaim`**: las delegadas no
+/// emiten acuse (el corte, §273). Y la respuesta **no va firmada** — el
+/// acuse hereda la firma al cerrar la época, bajo la raíz (§275); el
+/// límite está declarado en `spec/RPC.md` y en el asiento §274.
+fn con_acuse(mut v: Value, l: &SovereignLayer) -> Value {
+    if let Some(e) = l.transition_log().entries().last() {
+        v["acuse"] = json!({
+            "epoca": Q(zk_ssl_verify::acuses::epoca_de_acuse(e.seq)),
+            "n": Q(vista_acuses::N_MAX_CABEZAS),
+            "hashPrueba": digest_to_wire(&e.proof_digest),
+        });
+    }
+    v
+}
+
 fn con_rx(mut v: Value, rx: u64) -> Value {
     v["receptionSeq"] = json!(Q(rx));
     v

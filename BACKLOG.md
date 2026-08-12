@@ -1368,6 +1368,16 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   que lo encontro. Criterio 6 de `VISION.md` §5 aplicado.
 
 - [ ] **62. Acuse de recepcion (B10.3) — POLITICA DECIDIDA (§121).**
+  ⚠️ **AVANCE (§274)**: emitidos y acumulados. El acuse viaja en la
+  respuesta de `applySend`/`applyClaim` —{`epoca` = seq+1, `n` = 1440,
+  `hashPrueba`}— y `vista_acuses::raiz_de_epoca` construye el arbol desde
+  el registro con las reglas de `zk_ssl_verify::acuses`, que §275 usara
+  SIN reescribir. **Queda**: raiz + `N` firmados en la cabeza y el RPC del
+  camino —§275, un solo rompimiento de formato—. **Limite declarado** en
+  el asiento §274 y en `spec/RPC.md`: la respuesta no va firmada
+  (160,5 ms/firma medidos → colapso ~x50 sobre §217, y §121.2 ya lo
+  habia matado por indices); la ventana es <=1 latido con operador
+  honesto.
   ✅ **N va comprometido en cada acuse**, inmutable y a la vista. Bajo
   congestion el operador honesto **emite N mayor y lo declara**: la
   congestion pasa de fabricar falsa evidencia a ser **degradacion visible y

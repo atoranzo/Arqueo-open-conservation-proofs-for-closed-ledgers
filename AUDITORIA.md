@@ -20571,3 +20571,95 @@ porque todavía no tiene entrada.
 
 **No mueve ningún pin.** Sumas 746 / 883 / 897 y contador 32 / 48 — sin
 cambio, recontados igualmente.
+
+
+## 274. El acuse se emite y se acumula — y las reglas viven en un solo sitio
+
+Tres piezas, y ninguna toca la cabeza:
+
+1. **Las reglas** — `zk_ssl_verify::acuses`: `pertenece`, `indice_de_hoja`,
+   `epoca_de_acuse`, `hoja_de_acuse`. Puras sobre `u64`, seis tests. Viven
+   en el **verificador** porque §275 recomputará hojas desde entradas
+   servidas: si vivieran sólo en el constructor, el verificador escribiría
+   su versión y habría **dos**.
+2. **La vista** — `vista_acuses::raiz_de_epoca` en el nodo: el árbol de una
+   época, computado del registro con las reglas compartidas. Seis tests.
+   **No es una estructura: es una vista** — nada nuevo se persiste.
+3. **El acuse en la respuesta** — `applySend` y `applyClaim` devuelven
+   `{epoca, n, hashPrueba}` junto al `logSeq` de siempre. **Sólo las vías
+   del titular**: el corte de §273 se impone por la forma del ancla — los
+   dos sitios son la misma línea exacta, y el tercer llamante de
+   `applied()` tiene otra forma.
+
+### El borde que probó la regla del sitio único
+
+La convención es **`P <= seq < S`** — la cabeza `S` contiene las entradas
+con `seq < S`, por el desfase de uno medido en la sesión 12—. ⚠️ **Con `P`
+exclusivo, la entrada 0 no pertenecería a ninguna época.** Ese borde
+apareció **al montar**: en dos definiciones, constructor y verificador
+habrían divergido exactamente ahí.
+
+### La época de la hoja es `seq + 1`, no `S`
+
+Con `S`, la hoja registra la **publicación** —ya derivable del registro y
+del `chain_digest`— y **el valor de la evidencia lo fija el acusado**: el
+titular no puede computar su hoja hasta que el operador decide qué cabeza
+la contiene. Con `seq + 1` la hoja se fija **en el apply**, para siempre, y
+lleva el dato de censura dentro: **`S − (seq + 1)` es legible desde la hoja
+y la cabeza solas** — la magnitud que la promesa acota.
+
+El índice es **denso** (`seq − P`), y la divergencia con §157 es
+deliberada: `mod capacidad` resolvía que los índices no fueran enumerables;
+aquí enumerable es justo lo que se quiere. **Toda entrada tiene hoja**,
+delegadas incluidas — la suya sale del `proof_digest` compartido (§271), y
+el día que la nota 78 les dé pruebas reales sus acuses cobran sentido sin
+cambio de formato.
+
+### `N = 1440`, declarado — y por qué raíz y `N` van juntos en §275
+
+El valor es el de §121 (24 h, precedente MMD de Certificate Transparency).
+`N` va **dentro** de cada hoja (§270): cuando viaje firmado en la cabeza,
+un operador que prometa otro `n` en la respuesta produce una hoja que no
+verifica contra el árbol recomputado con el `n` normativo. Hasta entonces,
+**un `n` mentido es ilegible** — el titular no distingue mentira de
+censura. Tercera razón escrita de que van juntos.
+
+### El límite, declarado y con sus números
+
+**La respuesta no va firmada.** Dos razones, cada una suficiente:
+
+| régimen | coste por op | techo |
+|---|---|---|
+| hoy | 3,1 ms | ~320 op/s (§217) |
+| con firma XMSS por acuse | 3,1 + 160,5 + 0,9 (fsync §234) | **~6 op/s** |
+
+Un colapso de **~×50** — con la firma **medida** en §127.1
+(`doc/xmss-evaluacion.md`, reconfirmada 144,5 ms en S.3). Y la nota 62 ya
+lo había matado por la otra vía en §121.2: *a miles de op/s se agotan los
+2^40 índices XMSS en semanas*. El diseño lo asumió desde el principio —
+`spec/RPC.md` dice *«hereda la firma sin gastar índices XMSS»*—; lo que
+este asiento añade es el número del tiempo.
+
+La consecuencia, dicha sin adorno: **la evidencia sólo se materializa al
+cerrar la época — es decir, sólo si el operador coopera, que es justo el
+caso que no importa.** La ventana es ≤1 latido con operador honesto; con
+uno malicioso, el descarte en esa ventana es **indistinguible de no haber
+enviado**. Una operación **aplicada** queda bajo la firma de la siguiente
+cabeza vía `chain_digest` — negarla exige bifurcar a la vista del testigo—;
+una **aceptada y nunca aplicada** no deja nada en ningún sitio. Va aquí y
+en `spec/RPC.md`, no dado por resuelto.
+
+### Lo que este sello NO hace
+
+No toca `EpochHead`, ni el formato, ni el cable de la cabeza. La raíz y `N`
+firmados, y el RPC del camino —sin raíz firmada, un camino no prueba
+nada—, son **§275: un solo rompimiento de formato**.
+
+**Ni un `Cargo.toml` se tocó** — `zk-ssl-verify` ya dependía de
+`zk-ssl-hash`, así que la hoja se computa allí y el nodo sólo la llama. La
+foto del `--completo` de §273 **sobrevive a este sello**.
+
+### Pines
+
+`zk-ssl-verify` **23 → 29** · `zk-ssl-node` **64 → 70**. Sumas
+**758 / 895 / 909**.

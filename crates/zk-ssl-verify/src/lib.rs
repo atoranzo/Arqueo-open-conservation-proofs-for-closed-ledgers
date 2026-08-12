@@ -47,6 +47,11 @@ use xmss::{Signature, VerifyingKey, XmssMtSha2_40_8_256};
 mod inclusion;
 pub use inclusion::{verificar_inclusion, InclusionError, ReciboInclusion};
 
+// ⚠️ §274 · Las reglas del árbol de acuses viven AQUÍ y en ningún otro
+// sitio: el constructor (nodo, §274) y el verificador (§275) llaman LAS
+// MISMAS. Ver la cabecera del módulo para el borde que lo justifica.
+pub mod acuses;
+
 /// El conjunto de parámetros: 2⁴⁰ firmas, ~35.000 años a una por segundo.
 pub type Conjunto = XmssMtSha2_40_8_256;
 

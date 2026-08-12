@@ -395,6 +395,32 @@ la cabeza — hereda la firma **sin gastar índices XMSS**.
 el mismo cable, y en un proyecto cuyo argumento es la conformidad
 verificable un nombre ambiguo cuesta más que en otro sitio.
 
+#### El acuse en la respuesta (§274)
+
+`zkssl_applySend` y `zkssl_applyClaim` —**sólo las vías del titular**—
+devuelven, junto al `logSeq` y al `receptionSeq` de siempre:
+
+```json
+"acuse": { "epoca": "0x2b", "n": "0x5a0", "hashPrueba": "0x..." }
+```
+
+- **`epoca` = `logSeq + 1`**: la **primera cabeza que puede contener** la
+  operación — no la que la contendrá, que la elige el operador. Una hoja
+  que declara esta época viviendo bajo la cabeza `S` hace legible
+  `S − epoca` desde la hoja y la cabeza solas: la magnitud que la promesa
+  acota.
+- **`n` = 1440**, el techo declarado (§121). Será **normativo** cuando
+  viaje firmado en la cabeza (§275); hasta entonces, un `n` mentido aquí
+  es ilegible.
+- La hoja es `acuse_digest(hashPrueba, epoca, n)` (§270) — el titular la
+  computa **en el apply** y queda fija para siempre.
+
+⚠️ **Límite declarado**: esta respuesta **no va firmada**. Firmar cada
+acuse cuesta 160,5 ms medidos (~×50 de colapso sobre el techo de §217) y
+gastaría índices XMSS (§121.2). El acuse hereda la firma **al cerrar la
+época**, bajo la raíz (§275): hasta entonces es palabra del nodo, y la
+ventana es ≤1 latido con operador honesto. Ver el asiento §274.
+
 ### `zkssl_signedEpochHead` — la última cabeza firmada, para un TESTIGO
 
 Devuelve la cabeza de época **más reciente que el nodo firmó**, con todo lo

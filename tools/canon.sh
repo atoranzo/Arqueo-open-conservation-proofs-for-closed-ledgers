@@ -94,8 +94,8 @@ iso-bridge         sello       3   0   0   300
 zk-ssl-sdk         sello       6   0   0   300
 zk-ssl-wire        sello       3   0   0    60  §259: 20 metodos, y el json publicado atado a la tabla
 zk-ssl-cli         sello      26   0   0   120  alias=testigo · §250: 22 -> 26, la vista dividida EN FRIO
-zk-ssl-node        sello      64   0   0   400  alias=nodo · §261: 51 -> 56, la credencial para los caminos
-zk-ssl-verify      sello      23   0   0   120  alias=verificador independiente · §257: 22 -> 23, del cable a la cabeza sin la capa
+zk-ssl-node        sello      70   0   0   400  alias=nodo · §261: 51 -> 56, la credencial para los caminos
+zk-ssl-verify      sello      29   0   0   120  alias=verificador independiente · §257: 22 -> 23, del cable a la cabeza sin la capa
 zk-ssl-hash        sello      16   0   0    60  §270: 14 -> 16, el acuse componible por un tercero
 settlement-prover  sello       0   0   0   300  sin tests
 nova-experiment    sello       0   0   0   300  0 es CORRECTO: sus 3 tests exigen --features test-setup
