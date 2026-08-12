@@ -20780,3 +20780,43 @@ registra.
 **Procedencia del corte.** Recomendado en la sesión 18 y respaldado por
 el usuario sin reservas. La regla es la de §273 —lo que está MAL hoy va
 antes que lo que está pendiente— aplicada dos veces seguidas.
+
+## §277 — 2026-08-12 · La cuarta revisión del preprint de confianza residual, depositada
+
+**Qué cambió.** `doc/preprints/ZK-SSL-residual-trust.md` pasa de la
+tercera revisión a la **cuarta**, y la cuarta queda **depositada** como
+nueva versión de su registro: DOI **10.5281/zenodo.21905595**. El PDF se
+generó con `generar.sh` tal cual (pandoc 3.1.3 + wkhtmltopdf **0.12.6**,
+la misma versión de los depósitos previos); 8 páginas, huella del PDF
+`673411932812c45b`; huella del fuente `8da04d201b016fac`, 361 líneas.
+Todo dato nuevo del texto se remidió contra el árbol en `7ad62a9`, con
+paridad de contenido verificada (AUDITORIA y BACKLOG byte-exactas en el
+zip de trabajo).
+
+**Lo que la revisión añade.** El cierre de §4.7 con la secuencia visible
+— el fuente decía «no solution is currently known» y el árbol dice otra
+cosa: §117 (salt derivado de la clave), el test
+`t2b_solo_la_clave_reconstruye_la_hoja` y la cola B13/B14 vacía —; la
+sección nueva **§4.8**: cabeza firmada, acuses y `N` firmados,
+`ackPath` de época cerrada, recomposición v2, diario, el residual con
+precio (×50) y los cuatro residuales que la propia maquinaria se nombra;
+la fila de §4.1 que **la entrada 1 de ERRATA** reclamaba («Replace the
+verifier itself»), que queda anotada como corregida; tres límites nuevos
+en §7; la conclusión re-medida (926 declarados / 775 en compuerta,
+workspace de 16); y fuera el apéndice «Suggested Zenodo metadata».
+
+**Categorías.** *Medido*: la paridad del zip con `7ad62a9` · cada cifra
+del §4.8 contra el árbol (§127.1/S.3; `N_MAX_CABEZAS`;
+`VERSION_FORMATO`; las cinco vías con `&[]`; `zkssl_ackPath`) · el
+estado del salt (§117). *Razonado y retirado*: la cláusula de cadencia
+no viaja — el árbol lleva dos eras (1 firma/min vs latido de 2 s) y
+1440×2 s ≠ 24 h; un paper cuya tercera corrección es su propia
+aritmética no hereda tensiones.
+
+**Lo que este sello deja dicho.** Las citas de los otros dos preprints a
+*residual-trust* siguen apuntando a la tercera revisión — misma clase
+que la entrada 16 de su README; se corrigen en su propia revisión, no
+aquí. Y este sello se adelanta al arreglo de la 78: **el plan se corre**
+(la 78 pasa al sello siguiente), porque lo terminado y depositado va
+antes que lo pendiente — la regla de §273 otra vez, y el orden lo eligió
+el asistente al emitir el bloque, reversible hasta sellar.

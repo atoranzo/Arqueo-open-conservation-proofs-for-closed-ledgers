@@ -52,6 +52,12 @@ noción de reglas vigentes**, que no existe.
 **Dónde vive el contenido hoy**: `SECURITY.md` §2, en la lista de lo que
 el sistema no protege.
 
+**Corregida en la cuarta revisión** (2026-08-12, versión depositada:
+[10.5281/zenodo.21905595](https://doi.org/10.5281/zenodo.21905595)): la
+tabla de §4.1 incorpora la fila «Replace the verifier itself» — el poder,
+su falta de rastro hoy, y el cierre diseñado
+(`hash_verificador_vigente` en la cabeza atestiguada) con su condición.
+
 ---
 
 ## Entrada 2 — Cuatro notas de corrección se insertaron EN el cuerpo

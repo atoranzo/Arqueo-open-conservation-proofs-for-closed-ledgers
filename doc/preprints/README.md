@@ -55,14 +55,25 @@ apuntan ya a las terceras.
 ⚠️ La entrada 16 hablaba solo de las cruzadas; las dos autocitas se
 encontraron al hacerla.
 
-## Cuarta revisión: escrita, sin depositar
+## Cuarta revisión: `ZK-SSL-residual-trust.md` DEPOSITADA; las otras dos, escritas sin depositar
 
-Los ficheros de este directorio llevan ya las correcciones de la cuarta
+Los ficheros de este directorio llevan las correcciones de la cuarta
 revisión (entrada **28**): notas sobre las dos propiedades que el diseño
 garantizaba y la implementación no imponía, el arreglo incompleto de la
-anchura de identidades, la unidad **MiB**, y una sección nueva —§4.7 de
-`ZK-SSL-residual-trust.md`— con un residual **abierto**.
+anchura de identidades, la unidad **MiB**, y —en
+`ZK-SSL-residual-trust.md`— la sección §4.7.
 
-⚠️ **No se ha depositado nada en Zenodo.** El texto está corregido; los DOI
-de arriba siguen apuntando a las terceras revisiones, que son las que un
-lector recibe hoy.
+✅ **`ZK-SSL-residual-trust.md`: cuarta revisión depositada el
+2026-08-12** — [10.5281/zenodo.21905595](https://doi.org/10.5281/zenodo.21905595) —
+como nueva versión del mismo registro. Añade sobre lo ya escrito: el
+cierre de §4.7 (salt derivado de la clave, con la secuencia visible), la
+sección nueva §4.8 (la capa de evidencia, medida, con sus cuatro
+residuales), la fila de §4.1 que la entrada 1 de `ERRATA.md` reclamaba,
+cifras re-medidas sobre `7ad62a9`, y la retirada del apéndice de
+metadatos. Este fichero del árbol ES el fuente exacto de lo depositado.
+
+⚠️ **`ZK-SSL-preprint.md` y `ZK-SSL-policy-note.md` siguen escritas y
+sin depositar**: sus DOI de arriba apuntan a las terceras revisiones,
+que son las que un lector recibe hoy. Y sus citas a *residual-trust*
+apuntan aún a la tercera — misma clase que la entrada 16, para su
+propia revisión.

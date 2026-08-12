@@ -6,7 +6,7 @@
 <p><strong>Author:</strong> Angel Jose Toranzo Portela</p>
 <p><strong>Repository:</strong> https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-</p>
 <p><strong>License:</strong> MIT OR Apache-2.0 &nbsp;·&nbsp; <strong>Status:</strong> Technical preprint / systems note &nbsp;·&nbsp; <strong>Affiliation:</strong> Independent</p>
-<p><strong>Version:</strong> third revision, July 2026. The second revision added §4.4 and §4.5, reporting residual dependencies the first version did not name. This revision reports that the nullifier tree behind the collision bound of §4.5 has been removed from the layer with a verified migration, corrects the mutation-coverage figure of §4.6 from twelve circuits to eleven, and adds a third correction to the conclusion concerning figures that disagreed across this project's own published documents.</p>
+<p><strong>Version:</strong> fourth revision, August 2026. The second revision added §4.4 and §4.5, reporting residual dependencies the first version did not name. The third reported the removal of the nullifier tree behind the collision bound of §4.5 and corrected two figures. This revision adds §4.7 — two conditions in the residual table that an audit found unenforced, fixed and measured, and a confidentiality residual toward an account's tree neighbour, published as open and since closed; adds §4.8, reporting that the evidence machinery a residual-trust schedule requires — signed epoch heads, per-entry acknowledgments under a signed retention promise, closed-epoch inclusion proofs, an independently recomposable head — has moved from proposed to built and measured, along with the four residuals it introduces; adds to the table in §4.1 the operator power an errata found missing from it; and removes the draft metadata appendix.</p>
 <p><strong>No institutional affiliation.</strong> This is independent work. It is not affiliated with, endorsed by, or commissioned by the European Central Bank, the Eurosystem, or any other institution, public or private. No claim in this document should be read as anyone's position but its author's.</p>
 <p><strong>Companion preprints:</strong> <em>Comparative Implementation of a Zero-Knowledge Settlement Layer across Five Proof Systems</em>, 10.5281/zenodo.21693706; <em>Provable Compliance without Full Ledger Disclosure</em>, 10.5281/zenodo.21693709.</p>
 </div>
@@ -21,7 +21,7 @@ We describe an architecture in which transfers preserve value, spending authorit
 
 We compare this model conceptually with core banking systems and permissioned blockchains, and argue that the main institutional value of ZK settlement is not "trustlessness," but **trust minimization with honest residual boundaries**.
 
-This revision subjects that claim to its own standard. An audit pass against the reference implementation found residual dependencies the first version of this paper had not named: a confidentiality leak toward the counterparty rather than the operator, three quantified capacity bounds, and a privilege that is counted but never expires. We report them in §4.4 and §4.5, because a paper whose contribution is naming residual trust is falsified by the trust it failed to name.
+This revision continues to hold the claim to its own standard, now in both directions. An audit pass found two conditions in the residual table that had never been verified and did not hold — three operations were not checking their proofs at all — and a confidentiality residual toward an account's *tree neighbour*; §4.7 reports both, the first fixed and measured, the second published as open and since closed. In the opposite direction, §4.8 reports the machinery that turns lying and censoring from invisible into evidencable — signed epoch heads, per-entry acknowledgments, a retention promise that travels signed, inclusion proofs for closed epochs — now built and measured, together with the four residuals that machinery introduces about itself. A residual-trust schedule behaves like a ledger: entries close, and every closure opens its own.
 
 ## 1. Introduction
 
@@ -114,12 +114,13 @@ ZK does not delete intermediaries by default. In a single-node deployment, resid
 |---|---|
 | Observe balances and state | Yes, if the node maintains plaintext or decryptable state |
 | Order transactions | Yes |
-| Censor or delay transactions | Yes |
+| Censor or delay transactions | Yes — but no longer invisibly: every accepted entry receives an acknowledgment leaf under a per-epoch root that travels **signed** in the head, together with the retention promise N; a client can prove inclusion for any closed epoch against a head it already custodies (§4.8) |
 | Become a single point of failure | Yes |
-| Silently rewrite history | Constrained by chained transition records / integrity checks |
+| Silently rewrite history | Constrained by chained transition records / integrity checks — and the epoch head is now signed and independently recomposable from its fields (§4.8) |
+| Replace the verifier itself | **Unbounded and untraceable today.** Ordering, censoring and observing act *within* the rules; replacing the verifier redefines the rules under which everything else is judged, and the system has no notion of "rules in force", so the change leaves no trace. Designed close: a hash of the active verifier inside the attested epoch head — which first requires giving the system that notion |
 | Create value outside rules | Constrained by proof verification and public supply constraints — ⚠️ **the constraint failed once; see §4.7** |
 | Spend from an account without key | Constrained if spending proofs require client-side keys — ⚠️ **the condition did not hold; see §4.7** |
-| Learn a counterparty's balance | **Constrained now:** the single-step path that exposed it has been retired and the split transition is the only path; see §4.4 — ⚠️ **but a *neighbour* can still read it; see §4.7** |
+| Learn a counterparty's balance | **Constrained now:** the single-step path that exposed it has been retired and the split transition is the only path; see §4.4 — and the *neighbour* reading of §4.7 has since been closed as well |
 | Keep an account frozen indefinitely | Not bounded: freezes are counted but never expire |
 | Refuse service once a capacity bound is reached | Partly bounded; see §4.5 — one of the three bounds has since been removed |
 
@@ -234,6 +235,30 @@ spending key is ruled out: `open_account`, `mint`, `freeze` and `recover`
 all write a holder's leaf **without knowing that holder's secret**. No
 solution is currently known, and stating that is the point of this section.
 
+✅ **Closed since this section was first written** (August 2026). The asymmetry that ruled the derivation out has been resolved: the leaf salt is now **derived from the spending key**, a certified test shows that a holder who keeps nothing but the key re-derives identity and salt and reconstructs their exact leaf, and the migration queue for pre-salt leaves has been emptied. The dictionary attack above no longer has an unsalted preimage to walk. The paragraph declaring that no solution was known is left standing, because the sequence — named while open, closed with the reasoning visible — is this paper's method applied to its hardest entry.
+
+### 4.8 From proposed to built: the evidence layer, measured
+
+Earlier revisions of this paper could only say that the operator orders and censors, and that a chained log constrains rewriting for whoever already holds an earlier head. Since the third revision, the layer has built the machinery that a residual-trust schedule actually requires — the machinery that makes lying and censoring produce evidence, in the Certificate Transparency tradition of holding a single operator accountable rather than replacing it.
+
+**What is built and measured:**
+
+- **The epoch head is signed.** XMSS^MT (SHA-2, 40/8): 160.5 ms to sign — re-measured at 144.5 ms — 2.7 ms to verify, 18,469-byte signatures. The scheme is stateful and post-quantum, and index reuse leaks the key, so a mandatory index guardian sits in front of every signature.
+- **Every accepted entry receives an acknowledgment leaf.** The per-epoch Merkle root of those leaves and the retention promise **N travel signed inside the head**. N = 1,440 signed heads — roughly 24 hours, the same order as Certificate Transparency's maximum merge delay. The promise is no longer policy prose: it is a signed field.
+- **Closed epochs serve inclusion proofs.** A dedicated RPC method returns the acknowledgment path for any closed epoch. The head does not travel with it: the client verifies against the head it already custodies, and the independent verifier **recomposes** the head from its seven fields rather than trusting a served digest. The head format is versioned — a single version byte governs recomposition, and version-1 heads keep verifying under the version-2 binary — so the format was broken once, for every field that needed to enter the signature.
+- **The node keeps an append-only journal** of every head it emits, and a witness client transcribes and compares against it.
+
+**The priced residual.** Signing every acknowledgment individually would cost one XMSS signature per entry; measured, that collapses throughput from roughly 320 to roughly 6 operations per second — a factor of fifty. The acknowledgment therefore inherits the epoch signature, and the price is a window of at most one heartbeat during which the evidence exists only if the operator cooperates — which is precisely the case that does not matter — and the window is declared where the promise is made.
+
+**Four residuals this machinery names about itself.** A schedule that taxes everyone must tax its own additions:
+
+1. Epoch boundaries are read from the node's **own** journal. Self-reported, declared as such, not yet externally verifiable.
+2. The witness compares in **one direction only** (witness against node) and by sampling. The grave case — a served signature the node does not remember emitting — is reachable and not yet exercised.
+3. Five delegated operations — mint, freeze, recovery, governance, mint-to-pending — still append an **empty proof** to the transition log. Their *authorization* is cryptographically bound to the exact transition; the **record** does not carry the authorizing proof's digest. The account-holder paths do. As it stands, the registry proves more about the holder's operations than about the operator's.
+4. There is no re-verification pass for a replicated log: a party that receives the log still trusts the writer's digests.
+
+This section is the paper's thesis executed at the smallest unit it permits: each property converted, and each conversion's own residue named in the same act.
+
 ## 5. Comparison with existing models
 
 ### 5.1 Core banking / sovereign payment systems
@@ -291,7 +316,10 @@ This work does not claim:
 - disappearance of operator power in single-node deployments,
 - benchmark completeness beyond controlled local measurements,
 - unbounded capacity: the limits of §4.5 are specific and must accompany any deployment claim — including the one that was removed, because its replacement depends on a total order that a distributed deployment would not have,
-- freedom from the residues of the split transition: the payment is not final until claimed, an unclaimed payment is immobilised with no return path, and the payer retains a timing signal.
+- freedom from the residues of the split transition: the payment is not final until claimed, an unclaimed payment is immobilised with no return path, and the payer retains a timing signal,
+- unwitnessed evidence inside the open epoch: the unsigned window of §4.8 is at most one heartbeat and exists only under an honest operator,
+- record-binding for delegated operations: they are authorization-bound but not yet record-bound (§4.8),
+- re-verification of a replicated transition log (§4.8).
 
 ⚠️ Earlier versions listed here a **conditional** limitation on confidentiality — *until the split transition is the only path, a payer may still learn a recipient's balance*. The condition has been met: the single-step path is retired and the split transition is the only path. The limitation is withdrawn, and the residues that remain in its place are the three named above.
 
@@ -317,7 +345,7 @@ The first version of this paper argued that naming residual trust is the contrib
 
 The second is smaller and more embarrassing: the cost figure this paper cited measured an operation the system had already stopped using. **A number that describes nothing executable is a residual dependency on the reader's trust in the author** — which is precisely the kind of dependency this paper claims to be about.
 
-The third is of the same family and was found while preparing this revision. Figures published across this project's own documents **did not agree with each other**: the count of executable tests, the number of circuits covered by the mutation tool, and the number of tests that fail outside release mode each appeared with more than one value across the repository and these preprints. A residual-trust schedule that cannot keep its own arithmetic consistent is asking the reader for exactly the trust it claims to remove. **All three have now been re-measured against the implementation** — 375 executable tests, eleven circuits covered of twelve, and 65 debug-mode failures of 174 — and the repository has been corrected where it disagreed.
+The third is of the same family and was found while preparing this revision. Figures published across this project's own documents **did not agree with each other**: the count of executable tests, the number of circuits covered by the mutation tool, and the number of tests that fail outside release mode each appeared with more than one value across the repository and these preprints. A residual-trust schedule that cannot keep its own arithmetic consistent is asking the reader for exactly the trust it claims to remove. **All three have now been re-measured against the implementation** — 375 executable tests, eleven circuits covered of twelve, and 65 debug-mode failures of 174 — and the repository has been corrected where it disagreed. (Re-measured once more for this revision, because the figures have kept moving in the direction this paper argues for: the 16-member workspace now declares **926 tests, 775 of them in the sealing gate** — and the growth since the previous count is, in large part, the evidence layer of §4.8.)
 
 We leave the sequence visible because it is the paper's own argument applied to itself: **a residual-trust schedule is not a document you write once. It is a claim that has to be attacked periodically, including by its author.**
 
@@ -325,15 +353,9 @@ We leave the sequence visible because it is the paper's own argument applied to 
 
 - Source repository: https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-
 - Architecture and principles documents in the repository
-- Comparative backend measurements and **375 executable tests** across the two production crates
-- A standing audit document recording open defects, their cost, and the methodology errors found while looking for them
+- Comparative backend measurements; **926 declared tests across the 16-member workspace, 775 of them in the sealing gate**
+- Versioned conformance vectors: the current vector is regenerated by tooling, byte-identical regeneration is a permanent gate, and the previous format version is rejected on purpose
+- A machine-generated OpenRPC document produced from the wire table, with byte-exact regeneration enforced
+- A standing audit document (`AUDITORIA.md`, more than 20,000 lines) recording open defects, their cost, and the methodology errors found while looking for them
 
 That last artifact is deliberate. For a paper arguing that residual trust should be design material rather than marketing residue, **a public record of what the system found wrong in itself is the claim's only real evidence.**
-
-### Suggested Zenodo metadata
-
-- **Upload type:** Publication / Preprint
-- **Communities:** Computer Science & Security; Economics & Finance (if available)
-- **Related identifiers:** GitHub commit or release URL
-- **Language:** English
-- **License:** same as repository (MIT/Apache-2.0) or CC BY 4.0 for the text
