@@ -603,7 +603,13 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
         .unwrap()),
 
         "zkssl_epochHead" => {
-            Ok(serde_json::to_value(wire::EpochHeadDto::from(&l.epoch_head())).unwrap())
+            // §275: la pareja se computa aqui IGUAL que en el latido —
+            // mismas funciones, mismo P—; el test del latido «la cabeza
+            // del latido es la que sirve el RPC» es la compuerta.
+            let p_epoca = crate::latido::limite_de_epoca(app);
+            let pares = crate::vista_acuses::pares(l.transition_log().entries());
+            let (r, n) = crate::vista_acuses::pareja_de_ahora(&pares, p_epoca);
+            Ok(serde_json::to_value(wire::EpochHeadDto::from(&l.epoch_head(r, n))).unwrap())
         }
 
         // ⚠️ **El método del TESTIGO** (§242). Aditivo: no toca
@@ -645,6 +651,15 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                         "domain": String::from_utf8_lossy(firma_cabeza::DOMINIO),
                         "formatVersion": Q(u64::from(c.version_formato)),
                         "index": Q(c.indice),
+                        // §275: los SIETE campos, del MISMO latido que
+                        // la firma — el testigo custodia campos+digest+
+                        // firma juntos y recompone sin volver a llamar.
+                        "accountsRoot": digest_to_wire(&l.cabeza.accounts_root),
+                        "pendingRoot": digest_to_wire(&l.cabeza.pending_root),
+                        "frozenRoot": digest_to_wire(&l.cabeza.frozen_root),
+                        "chainDigest": digest_to_wire(&l.cabeza.chain_digest),
+                        "acusesRoot": digest_to_wire(&l.cabeza.acuses_root),
+                        "n": Q(l.cabeza.n),
                         "signature": format!("0x{}", hex_de(&c.firma)),
                         "publicKey": format!("0x{}", hex_de(&app.clave_publica_firma)),
                         "emittedAtUnix": Q(l.emitida_unix),
@@ -679,9 +694,60 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 leaf: digest_to_wire(&m.leaf),
                 path: wire::MerklePathDto::from(&m.path),
                 leaf_format: m.forma.como_cable().to_string(),
-                head: wire::EpochHeadDto::from(&l.epoch_head()),
+                head: wire::EpochHeadDto::from(&{ let p_epoca = crate::latido::limite_de_epoca(app); let pares = crate::vista_acuses::pares(l.transition_log().entries()); let (r, n) = crate::vista_acuses::pareja_de_ahora(&pares, p_epoca); l.epoch_head(r, n) }),
             })
             .unwrap())
+        }
+
+        // ⚠️ **§275 · EL CAMINO DE UNA EPOCA CERRADA.** Lo que le falta
+        // al acuse de §274 para atarse a una firma. La cabeza NO viaja
+        // (§248): el camino se verifica contra la que el titular YA
+        // custodia — servirla aqui seria dejar que el operador fabrique
+        // la vara con la que se le mide.
+        //
+        // ⚠️ Los limites de epoca salen del DIARIO (§272). Sin `--diario`
+        // no hay limites que servir, y la respuesta LO DICE — la forma
+        // de §241: la pieza que falta se nota, no se disfraza de error.
+        // ⚠️ Aditivo: `zkssl/0.2` no sube, como con los tres anteriores.
+        "zkssl_ackPath" => {
+            #[derive(Deserialize)]
+            struct P { seq: Q }
+            let p: P = parse(params)?;
+            match app.diario.as_ref() {
+                None => Ok(json!({
+                    "available": false,
+                    "reason": "el nodo corre sin --diario: los limites de epoca no se conservan",
+                })),
+                Some(ruta) => {
+                    let limites = crate::diario::limites(ruta);
+                    match crate::vista_acuses::limites_para(&limites, p.seq.0) {
+                        None => Ok(json!({
+                            "available": false,
+                            "reason": "la epoca de esa entrada sigue ABIERTA: vuelve tras el proximo latido",
+                            "beatSeconds": Q(app.latido_s),
+                        })),
+                        Some((p_epoca, s)) => {
+                            let pares = crate::vista_acuses::pares(l.transition_log().entries());
+                            match crate::vista_acuses::camino_de_epoca(
+                                &pares, p_epoca, s, p.seq.0, crate::vista_acuses::N_MAX_CABEZAS,
+                            ) {
+                                None => Ok(json!({
+                                    "available": false,
+                                    "reason": "esa entrada no existe en el registro dentro de esa epoca",
+                                })),
+                                Some((_raiz, hermanos, derecha)) => Ok(json!({
+                                    "available": true,
+                                    "s": Q(s),
+                                    "camino": {
+                                        "siblings": hermanos.iter().map(digest_to_wire).collect::<Vec<_>>(),
+                                        "isRight": derecha,
+                                    },
+                                })),
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         "zkssl_supply" => Ok(json!({
@@ -1707,6 +1773,22 @@ mod tests {
         }
     }
 
+    /// La pareja de §275, leida del MISMO `head` que el recibo.
+    ///
+    /// ⚠️ Aparte del recibo a proposito: lo que crecio es LA CABEZA, no
+    /// el camino. `ReciboInclusion` sigue teniendo la forma que las
+    /// cabezas v1 custodiadas necesitan.
+    fn pareja_desde_cable(v: &Value) -> (zk_ssl_verify::acuses::Digest, u64) {
+        let h = &v["head"];
+        let raiz = digest_from_wire(
+            &serde_json::from_value::<wire::B32>(h["acusesRoot"].clone()).expect("B32"),
+        )
+        .expect("digest");
+        let n = u64::from_str_radix(h["n"].as_str().expect("Q").trim_start_matches("0x"), 16)
+            .expect("hex");
+        (raiz, n)
+    }
+
     #[test]
     fn el_recibo_de_inclusion_verifica_contra_la_cabeza() {
         // ⚠️⚠️ EL TEST QUE JUSTIFICA TODA LA CADENA §256-§259: un camino
@@ -1722,8 +1804,12 @@ mod tests {
             &serde_json::from_value::<wire::B32>(r["head"]["epochDigest"].clone()).expect("B32"),
         )
         .expect("digest");
+        // §275: la cabeza servida ya es v2. Recomponer con el v1 daria
+        // CabezaDistinta aunque el camino fuese perfecto — que es
+        // exactamente lo que la corrida 2 puso en rojo.
+        let (acuses_root, n) = pareja_desde_cable(&r);
         assert_eq!(
-            zk_ssl_verify::verificar_inclusion(&recibo_desde_cable(&r), firmado),
+            zk_ssl_verify::verificar_inclusion_v2(&recibo_desde_cable(&r), acuses_root, n, firmado),
             Ok(())
         );
     }
@@ -1778,8 +1864,25 @@ mod tests {
             &serde_json::from_value::<wire::B32>(nueva["epochDigest"].clone()).expect("B32"),
         )
         .expect("digest");
+        // ⚠️ §275 · PRIMERO contra SU cabeza, y esto es una CORRECCION.
+        // En la corrida 2 este negativo siguio VERDE con el recompositor
+        // equivocado: media la VERSION, no la epoca, y habria pasado
+        // igual con un recibo de la epoca correcta. Un test que cuadra y
+        // miente (§266). El positivo de al lado es lo que le devuelve el
+        // sentido: si el recibo no vale contra su propia cabeza, el
+        // negativo no prueba nada.
+        let (acuses_root, n) = pareja_desde_cable(&r);
+        let suya = digest_from_wire(
+            &serde_json::from_value::<wire::B32>(r["head"]["epochDigest"].clone()).expect("B32"),
+        )
+        .expect("digest");
         assert_eq!(
-            zk_ssl_verify::verificar_inclusion(&recibo_desde_cable(&r), firmado),
+            zk_ssl_verify::verificar_inclusion_v2(&recibo_desde_cable(&r), acuses_root, n, suya),
+            Ok(()),
+            "el recibo debe valer contra la cabeza de SU epoca"
+        );
+        assert_eq!(
+            zk_ssl_verify::verificar_inclusion_v2(&recibo_desde_cable(&r), acuses_root, n, firmado),
             Err(zk_ssl_verify::InclusionError::CabezaDistinta)
         );
     }
@@ -1878,5 +1981,21 @@ mod tests {
         let e = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(9_999), "viewKey": vk_falsa() }))
             .expect_err("no deberia haber recibo");
         assert_ne!(e.code, -32601, "el metodo existe: no puede ser MethodNotFound");
+    }
+}
+
+#[cfg(test)]
+mod tests_ack_path {
+    // §275: seguro A CIEGAS — no fija cual de las dos razones sale
+    // (sin --diario, o epoca abierta con diario vacio): en ambas,
+    // available == false y la respuesta DICE por que (forma de §241).
+    #[test]
+    fn ack_path_sin_epoca_cerrada_dice_por_que() {
+        let app = crate::tests::nodo(30);
+        let v = crate::dispatch(&app, "zkssl_ackPath", serde_json::json!({ "seq": "0x0" }))
+            .expect("ackPath");
+        assert_eq!(v["available"], false, "sin epoca cerrada no puede haber camino");
+        assert!(v["reason"].as_str().map(|s| !s.is_empty()).unwrap_or(false),
+            "la respuesta debe DECIR por que: {v}");
     }
 }

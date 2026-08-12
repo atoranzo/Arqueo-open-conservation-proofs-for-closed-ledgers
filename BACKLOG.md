@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 32 abiertas, 48 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 31 abiertas, 49 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 12 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -27,7 +27,7 @@ puso **el acuse primero**, que es el ultimo eslabon.
   2. GUARDIAN DEL INDICE ...... 56  CERRADO (267) · firma_indice.rs, 9 tests
   3. cabeza firmada, emitida .. 56  CERRADO (267) · firma_cabeza.rs, 5 tests
   4. EpochHead + 2 extensiones  48  verifier_hash (§104.3) + raiz de recepcion (§121)
-  5. acuse .................... 62  politica DECIDIDA; mitad aritmetica YA construida
+  5. acuse .................... 62  HECHO (§275): raiz y N firmados; camino servido
 ```
 
 **Cada eslabon depende del anterior.** El acuse sin cabeza firmada no es
@@ -1367,7 +1367,7 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   medido **del sistema actual**, y no depende de si se adopta la propuesta
   que lo encontro. Criterio 6 de `VISION.md` §5 aplicado.
 
-- [ ] **62. Acuse de recepcion (B10.3) — POLITICA DECIDIDA (§121).**
+- [x] **62. Acuse de recepcion (B10.3) — POLITICA DECIDIDA (§121).**
   ⚠️ **AVANCE (§274)**: emitidos y acumulados. El acuse viaja en la
   respuesta de `applySend`/`applyClaim` —{`epoca` = seq+1, `n` = 1440,
   `hashPrueba`}— y `vista_acuses::raiz_de_epoca` construye el arbol desde
@@ -1396,6 +1396,15 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   antes**. Y **reservar «acuse»**: ya hay dos `receipt` que son otro animal.
   ⚠️ **Limite sin maquillar** (§121.7): **solo encarece censurar lo
   acusado**; negarse a emitir acuses sigue sin dejar evidencia portable.
+
+  **CERRADA (§275, 2026-08-12) — el MAPA de la nota, pieza a pieza**: las
+  reglas (pertenencia, posición, época, hoja) → §274 (`verify::acuses`);
+  la emisión en la respuesta y el árbol por época → §274
+  (`vista_acuses`); la **raíz y `n` FIRMADOS en la cabeza (v2)** y el
+  **camino servido** (`zkssl_ackPath`) → §275; la firma que todo esto
+  hereda → §236, extendida en §275 (`formatVersion` 2). Lo que esta nota
+  **NO** cierra, y a dónde va: pruebas reales para las delegadas →
+  nota 78; el mando CLI que compare diarios → nota 80.
   **Para `PRINCIPIOS.md`**: **N_max = 1.440 cabezas** —24 h, precedente MMD
   de CT—; a 70 ms/apply, 24 h absorben **>1,2 M operaciones**: a ese
   horizonte «era congestion» muere como defensa. **Caveat**: CT adjudicaba;

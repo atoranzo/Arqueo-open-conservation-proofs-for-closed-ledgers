@@ -20663,3 +20663,73 @@ foto del `--completo` de §273 **sobrevive a este sello**.
 
 `zk-ssl-verify` **23 → 29** · `zk-ssl-node` **64 → 70**. Sumas
 **758 / 895 / 909**.
+
+## §275 — 2026-08-12 · La raíz y N viajan firmados; el camino se sirve y la cabeza se recompone
+
+**Qué cambió.** `EpochHead` pasa de cinco campos a **siete**:
+`acuses_root` y `n` (§121) entran en la cabeza y por tanto **en lo que se
+firma**. La composición nueva es una **variante versionada** —
+`epoch_digest_v2 = merge(v1 en su posición exacta, merge(acuses_root,
+as_digest(n)))`, decisión 1 — con el **byte de versión del preámbulo**
+como único desambiguador (§236: dos marcadores que pueden discrepar valen
+menos que uno); `VERSION_FORMATO` sube 1 → 2 ejecutando la regla que su
+propia doc ya declaraba. `zkssl_ackPath` (método 21) sirve `s` y el
+camino de una época **cerrada**; **la cabeza NO viaja** (§248): se
+recompone contra la que el titular custodia. `zkssl_signedEpochHead`
+sirve los siete campos **del mismo latido** que la firma (decisión 6b:
+`Latido` gana `cabeza`), y `zkssl_epochHead` compone la pareja con las
+**mismas funciones** que el latido — el test «la cabeza del latido es la
+que sirve el RPC» quedó de compuerta sin pedirlo.
+
+**Las siete decisiones, con procedencia.** (1) v2 como variante
+versionada, no dominio nuevo — §236. (2) `n = N_MAX_CABEZAS` constante
+del nodo, firmado por época — §121, tercera razón escrita en §274.
+(3) pines +17: hash +4, verify +4, nodo +9 — conteo del corte.
+(4) `P` sale del **diario**; la memoria es caché — §272. (5) respuesta de
+`ackPath` sin raíz y sin cabeza — §248. (6) custodia de campos+digest+
+firma **juntos** — §241 (la pieza que falta se nota), forma (b) por
+recomendación. (7) el vector se **regenera con la herramienta**, jamás a
+mano — §217. Las decisiones 1 y 6 eran reversibles-hasta-corrida y se
+fijaron por recomendación al ordenarse montar sin elegir.
+
+**Una corrección a §247.** La «medición dirigida» de §247 afirmó que la
+conformidad no tocaba la cabeza; **la conformidad SÍ lleva la cabeza**
+(`conformance.rs:95`, `epoch_digest` en el vector). La remedición de la
+sesión 16 lo cazó, y con ello los **dos llamantes** que el conteo de §247
+no vio (`two_phase.rs:1907` y `sandbox.rs:270`): 11 llamantes de
+`.epoch_head()`, no 8. Es la primera vez que el gate de frescura **paga
+antes de la corrida**: el error se corrigió en el papel, no en rojo.
+
+**Caducados corregidos, no acumulados** (regla de §273): la doc de
+`N_MAX_CABEZAS` («declarado no es todavía normativo»), la frase de
+`hoja_de_acuse` («cuando `n` viaje firmado»), el bullet de `n` y el
+límite del acuse en `RPC.md`, y «los cinco campos» ×2 — todos a hecho o a
+versión declarada, en este mismo corte.
+
+**Categorías.** *Medido*: los gates de frescura de la sesión 16 (once
+llamantes, cinco `EpochHead {`, sumas 5/5/5, vector 64/§197) y las
+compuertas de esta corrida (pines por DELTA por fichero, borrado por
+contenido, vector con solo dos valores movidos, diff == los 25).
+*Ejercitado*: los 17 tests nuevos y `canon --sello` entero. *Razonado*:
+el orden de candados (P **antes** del candado del estado; estado→última
+sin solape) y la insensibilidad de los tests de `verify::lib` al bump
+(literales relativos). *Observado*: el índice del método en
+`spec/openrpc.json` al insertarlo sin `cargo` disponible en el montaje.
+
+**Límites declarados.** El coste del árbol de acuses **dentro del
+candado** del latido NO está medido (procedencia: etapa_b2); se medirá
+con el método de M.1 —dos fases con control— y así queda dicho en el
+propio `latir`. Sin `--diario`, un reinicio pierde `P` y la primera
+época sale gorda (declarado en `limite_de_epoca` y en `RPC.md`). La
+ventana sin firma sigue siendo ≤1 latido con operador honesto: firmar
+por acuse costaría ~6 op/s frente a ~320 (§127.1; 144,5 ms por firma,
+S.3). Y el vector de 0.2 se regeneró **con su historia**: `sellado`
+§197 → §275, `epoch_digest` movido, todo lo demás byte a byte.
+
+**Factura del asiento.** Tres sesiones: la 14 quemó el presupuesto en
+`create_file` por partes (lección: la paste como **fichero con
+marcadores**, corrección incorporada al rito de traspaso), la 15 murió
+por contexto con el corte ya decidido, la 16 midió y dejó bloque y
+gates listos. El montaje final se hizo en la 17 contra los fixtures de
+la paste-275, con ensayo de anclas y compilación de cada parche antes
+de tocar el árbol.

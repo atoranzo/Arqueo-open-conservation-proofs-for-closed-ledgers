@@ -209,6 +209,33 @@ pub fn epoch_digest(
     native_merge(native_merge(a, b), chain_digest)
 }
 
+/// Compone el digest de una cabeza de epoca **v2** (§275): la composicion
+/// v1 **en su posicion exacta**, mas la pareja de acuses.
+///
+///   `v2 = merge( epoch_digest(los cinco), merge(acuses_root, as_digest(n)) )`
+///
+/// ⚠️ La composicion de cinco NO se duplica: esta funcion **llama** a
+/// [`epoch_digest`]. Dos recomponedores que compartieran solo la forma
+/// divergirian en silencio — la razon de §255, otra vez.
+///
+/// ⚠️ **El desambiguador v1/v2 es el BYTE DE VERSION del preambulo, no el
+/// dominio** (§236): los merges van a pelo, como en `epoch_digest`, y el
+/// dominio no lleva version a proposito.
+pub fn epoch_digest_v2(
+    seq: u64,
+    accounts_root: Digest,
+    pending_root: Digest,
+    frozen_root: Digest,
+    chain_digest: Digest,
+    acuses_root: Digest,
+    n: u64,
+) -> Digest {
+    native_merge(
+        epoch_digest(seq, accounts_root, pending_root, frozen_root, chain_digest),
+        native_merge(acuses_root, as_digest(n)),
+    )
+}
+
 /// **Dominio del acuse**, con version en el propio valor.
 ///
 /// Son los ocho bytes ASCII de `ACUSE_V1` leidos como `u64`. Se escribe asi
@@ -517,6 +544,57 @@ mod acuse {
             digest_to_bytes(&acuse_digest(hp, 100, 1_440)),
             [0xfb, 0x59, 0x25, 0x85, 0x8d, 0xac, 0xfd, 0x0d, 0xbb, 0x8f, 0xae, 0x00, 0xb9, 0xb3, 0x5a, 0xf3, 0x49, 0x21, 0x94, 0x5b, 0x38, 0x2f, 0xea, 0x3c, 0x72, 0x4b, 0x3b, 0x42, 0x9a, 0xa7, 0x32, 0xc1],
             "el valor del acuse se ha movido: si es a proposito, sube la version del dominio"
+        );
+    }
+}
+
+#[cfg(test)]
+mod tests_cabeza_v2 {
+    use super::*;
+
+    fn cinco() -> (u64, Digest, Digest, Digest, Digest) {
+        (7, as_digest(11), as_digest(22), as_digest(33), as_digest(44))
+    }
+
+    #[test]
+    fn v2_es_merge_de_v1_y_la_pareja_literal() {
+        // La VARIANTE de §275, comprobada letra a letra: el recomponedor
+        // v2 reusa la composicion v1 como subarbol izquierdo.
+        let (s, a, p, f, c) = cinco();
+        let (r, n) = (as_digest(55), 1_440);
+        assert_eq!(
+            epoch_digest_v2(s, a, p, f, c, r, n),
+            native_merge(epoch_digest(s, a, p, f, c), native_merge(r, as_digest(n))),
+        );
+    }
+
+    #[test]
+    fn v2_no_es_v1_con_los_mismos_cinco() {
+        // Si coincidieran, una cabeza v2 verificaria como v1 y el byte de
+        // version del preambulo no separaria nada.
+        let (s, a, p, f, c) = cinco();
+        assert_ne!(
+            epoch_digest_v2(s, a, p, f, c, as_digest(0), 0),
+            epoch_digest(s, a, p, f, c),
+        );
+    }
+
+    #[test]
+    fn mover_la_raiz_de_acuses_mueve_v2() {
+        let (s, a, p, f, c) = cinco();
+        assert_ne!(
+            epoch_digest_v2(s, a, p, f, c, as_digest(1), 9),
+            epoch_digest_v2(s, a, p, f, c, as_digest(2), 9),
+        );
+    }
+
+    #[test]
+    fn mover_n_mueve_v2() {
+        // n viaja firmado: prometer otro n produce OTRA cabeza.
+        let (s, a, p, f, c) = cinco();
+        assert_ne!(
+            epoch_digest_v2(s, a, p, f, c, as_digest(1), 1_440),
+            epoch_digest_v2(s, a, p, f, c, as_digest(1), 720),
         );
     }
 }

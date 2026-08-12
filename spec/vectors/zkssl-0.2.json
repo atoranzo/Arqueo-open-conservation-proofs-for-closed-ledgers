@@ -1,6 +1,6 @@
 {
   "spec": "zkssl/0.2",
-  "sellado": "§197",
+  "sellado": "§275",
   "escenario": "open+fund(seed 0xA11CE, +1000000) x2 · send 250000 (salt 7) · claim",
   "canon": [
     297,
@@ -58,7 +58,7 @@
       "chain": "0x7e78983cd08a95c840b98c3e7eac84ba5350e827394ce198fd312a152f6211fe"
     }
   ],
-  "epoch_digest": "0xc7ec244664de5f51b3f2bcb47b35e710994d16dc4ea68ba77d9fca686bcf4613",
+  "epoch_digest": "0x77d705ea3bb9d930130a51faf8a1fa6bc68d772f5b530f1b8558f37d5fb89c55",
   "supply": "0x1e8480",
   "pending": "0x0"
 }

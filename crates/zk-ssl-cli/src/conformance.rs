@@ -87,12 +87,14 @@ fn recolectar(layer: &SovereignLayer) -> Vectores {
         .collect();
     Vectores {
         spec: "zkssl/0.2".into(),
-        sellado: "§197".into(),
+        // Re-emitido en §275: la cabeza compone v2 con pareja neutra
+        // declarada (as_digest(0), n = 0) — el escenario no late.
+        sellado: "§275".into(),
         escenario: ESCENARIO.into(),
         // §207 sumo tres tests al arbol disperso: 242 -> 245.
         canon: [297, 245, 40, 28],
         entradas,
-        epoch_digest: hexd(&layer.epoch_head().digest()),
+        epoch_digest: hexd(&layer.epoch_head(zk_ssl_verify::acuses::as_digest(0), 0).digest()),
         supply: q(layer.total_supply()),
         pending: q(layer.total_pending()),
     }

@@ -562,6 +562,12 @@ pub struct EpochHeadDto {
     pub pending_root: B32,
     pub frozen_root: B32,
     pub chain_digest: B32,
+    /// Raíz del árbol de acuses de la época (§275). Clave nueva,
+    /// aditiva: `zkssl/0.2` no sube; la versión de FORMATO viaja en la
+    /// firma (§236) y es la que separa v1 de v2.
+    pub acuses_root: B32,
+    /// Techo de retención que la cabeza declara y firma (§275).
+    pub n: Q,
     /// `EpochHead::digest()`: la cabeza entera en un solo digest.
     pub epoch_digest: B32,
 }
@@ -574,6 +580,8 @@ impl From<&EpochHead> for EpochHeadDto {
             pending_root: digest_to_wire(&h.pending_root),
             frozen_root: digest_to_wire(&h.frozen_root),
             chain_digest: digest_to_wire(&h.chain_digest),
+            acuses_root: digest_to_wire(&h.acuses_root),
+            n: Q(h.n),
             epoch_digest: digest_to_wire(&h.digest()),
         }
     }

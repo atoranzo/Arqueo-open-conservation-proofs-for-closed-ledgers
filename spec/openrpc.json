@@ -433,6 +433,25 @@
       "summary": "Recibo de inclusion de una cuenta: hoja, camino y cabeza. leafFormat es OBSERVADO."
     },
     {
+      "name": "zkssl_ackPath",
+      "summary": "Camino de acuse de una epoca CERRADA. La cabeza NO viaja: se verifica contra la custodiada.",
+      "params": [
+        {
+          "name": "seq",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/AckPath"
+        }
+      }
+    },
+    {
       "name": "dev_fund",
       "params": [
         {

@@ -457,8 +457,15 @@ impl SovereignLayer {
     /// observa cabezas**. Esto es la mitad que se puede construir sin firma.
     ///
     /// ⚠️ **No es oponible y no hay testigos**: ver [`EpochHead`].
-    pub fn epoch_head(&self) -> crate::log::EpochHead {
+    ///
+    /// Los dos campos de §275 **los aporta el llamante**: la raíz de
+    /// acuses y `n` son del nodo (diario + `vista_acuses`), y la capa no
+    /// va a adivinarlos. Una pareja neutra (`as_digest(0)`, `0`) sirve
+    /// donde el árbol de acuses no pinta nada, y se ve que es neutra.
+    pub fn epoch_head(&self, acuses_root: zk_ssl_hash::Digest, n: u64) -> crate::log::EpochHead {
         crate::log::EpochHead {
+            acuses_root,
+            n,
             seq: self.log.len() as u64,
             accounts_root: self.accounts.root(),
             pending_root: self.pending.root(),

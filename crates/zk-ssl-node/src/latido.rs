@@ -58,6 +58,7 @@ use std::time::{Duration, Instant};
 
 use crate::firma_cabeza::{CabezaFirmada, FirmanteCabeza};
 use crate::App;
+use zk_ssl::log::EpochHead;
 
 /// Cadencia decidida en §121, tras medir el coste de almacenamiento.
 pub const LATIDO_POR_DEFECTO_S: u64 = 60;
@@ -67,6 +68,11 @@ pub const LATIDO_POR_DEFECTO_S: u64 = 60;
 pub struct Latido {
     /// `seq` del registro en el momento de mirar.
     pub seq: u64,
+    /// La cabeza **entera** (§275): los siete campos que el digest
+    /// compone. Viaja en el latido para que `zkssl_signedEpochHead`
+    /// sirva campos+digest+firma **juntos**, de la misma custodia — sin
+    /// carrera entre una llamada que trae la firma y otra los campos.
+    pub cabeza: EpochHead,
     /// `EpochHead::digest()`, en bytes de cable.
     pub epoch_digest: [u8; 32],
     /// ⚠️ `None` si el nodo arrancó **sin `--clave`**. La cabeza existe
@@ -120,14 +126,30 @@ pub struct Latido {
 /// concurrencia real —las escrituras van en serie **a propósito**, porque
 /// en paralelo se mide rendimiento y no latencia—; y otra máquina.
 pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result<Latido> {
-    // ── 1 · con el candado: leer, y solo leer ──
-    let (seq, epoch_digest) = {
+    // ── 0 · sin el candado del estado: el limite de la epoca en curso ──
+    // `limite_de_epoca` toma `ultima_cabeza` (y lee el diario). Tomarlo
+    // AQUI evita solapar los dos candados; el orden establecido
+    // estado -> ultima_cabeza no se toca.
+    let limite_anterior = limite_de_epoca(app);
+
+    // ── 1 · con el candado: leer, componer la pareja, y solo eso ──
+    //
+    // ⚠️ §275: pares -> pareja -> cabeza, TODO bajo el MISMO candado.
+    // Soltarlo entre extraer las entradas y componer la cabeza dejaria
+    // que el registro avanzara en medio: la raiz de acuses describiria
+    // un arbol que la cabeza ya no cierra. ⚠️ El coste del arbol DENTRO
+    // del candado NO esta medido (menos entradas por epoca que las 12k
+    // de M.1, pero arbol nuevo): se medira con el metodo de M.1 —dos
+    // fases con control—, y hasta entonces queda declarado aqui.
+    let (cabeza, epoch_digest) = {
         let e = app
             .estado
             .lock()
             .map_err(|_| anyhow::anyhow!("el candado del estado esta envenenado"))?;
-        let cabeza = e.layer.epoch_head();
-        (cabeza.seq, zk_ssl_wire::digest_to_wire(&cabeza.digest()).0)
+        let pares = crate::vista_acuses::pares(e.layer.transition_log().entries());
+        let (acuses_root, n) = crate::vista_acuses::pareja_de_ahora(&pares, limite_anterior);
+        let cabeza = e.layer.epoch_head(acuses_root, n);
+        (cabeza, zk_ssl_wire::digest_to_wire(&cabeza.digest()).0)
     };
 
     // ── 2 · sin el candado: firmar, que cuesta 144,5 ms ──
@@ -140,7 +162,28 @@ pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0);
-    Ok(Latido { seq, epoch_digest, firma, emitida_unix })
+    Ok(Latido { seq: cabeza.seq, cabeza, epoch_digest, firma, emitida_unix })
+}
+
+/// El límite anterior de la época en curso: el `seq` de la última
+/// cabeza emitida. **P sale del DIARIO; la memoria es caché** (§275).
+///
+/// Orden: `ultima_cabeza` si hay, el diario si no, y 0 en último
+/// término. ⚠️ El borde del REINICIO, declarado (la forma de §241): un
+/// nodo **sin `--diario`** que reinicia pierde P y su primera época
+/// sale gorda — desde 0 hasta el primer latido. Las hojas siguen siendo
+/// correctas (la época de cada una es `seq+1`, fijada en el apply); lo
+/// que engorda es UN árbol. Con `--diario`, P sobrevive.
+pub fn limite_de_epoca(app: &App) -> u64 {
+    if let Ok(u) = app.ultima_cabeza.lock() {
+        if let Some(l) = u.as_ref() {
+            return l.seq;
+        }
+    }
+    app.diario
+        .as_ref()
+        .and_then(|r| crate::diario::ultimo_seq(r))
+        .unwrap_or(0)
 }
 
 /// Lanza el latido en una tarea de fondo.
@@ -290,6 +333,18 @@ mod tests {
         crate::tests::cuenta(&app, 900, 1_000);
         let despues = latir(&app, None).expect("latir").epoch_digest;
         assert_ne!(antes, despues, "abrir una cuenta debe mover la cabeza");
+    }
+
+    #[test]
+    fn la_cabeza_viaja_entera_y_su_digest_es_el_del_latido() {
+        // §275: campos+digest JUNTOS en el latido — un solo artefacto de
+        // custodia. Y el n que viaja es el techo declarado, firmable.
+        let app = crate::tests::nodo(30);
+        let l = latir(&app, None).expect("latir");
+        let recompuesto = zk_ssl_wire::digest_to_wire(&l.cabeza.digest()).0;
+        assert_eq!(recompuesto, l.epoch_digest, "la cabeza y su digest divergen");
+        assert_eq!(l.cabeza.n, crate::vista_acuses::N_MAX_CABEZAS);
+        assert_eq!(l.cabeza.seq, l.seq);
     }
 
     #[test]

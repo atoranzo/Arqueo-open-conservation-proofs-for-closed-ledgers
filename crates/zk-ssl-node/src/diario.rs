@@ -110,6 +110,40 @@ pub fn anotar(ruta: impl AsRef<Path>, l: &Latido, clave_publica: &[u8]) -> std::
     writeln!(f, "{}", linea(l, clave_publica))
 }
 
+/// Los límites de época que el diario conserva: los `seq` de sus líneas,
+/// en el orden en que se anotaron.
+///
+/// **Las cabezas sin firmar también delimitan** — para el límite basta
+/// el `seq`, y la nota de arriba ya lo decía: se anotan justo para esto.
+/// Las líneas ilegibles se **saltan**: una línea corrupta cuesta una
+/// época gorda en la lectura, no un pánico ni un diario inservible.
+pub fn limites(ruta: impl AsRef<Path>) -> Vec<u64> {
+    let texto = match std::fs::read_to_string(ruta) {
+        Ok(t) => t,
+        Err(_) => return Vec::new(),
+    };
+    let mut v = Vec::new();
+    for l in texto.lines() {
+        let j: Value = match serde_json::from_str(l) {
+            Ok(j) => j,
+            Err(_) => continue,
+        };
+        if let Some(s) = j["seq"].as_str() {
+            if let Ok(x) = u64::from_str_radix(s.trim_start_matches("0x"), 16) {
+                v.push(x);
+            }
+        }
+    }
+    v
+}
+
+/// El último `seq` anotado, para `limite_de_epoca` cuando la memoria
+/// (`ultima_cabeza`) llega vacía tras un reinicio: **P sale del diario;
+/// la memoria es caché** (§275).
+pub fn ultimo_seq(ruta: impl AsRef<Path>) -> Option<u64> {
+    limites(ruta).into_iter().last()
+}
+
 /// **La comprobación DIRIGIDA**: índices del testigo ausentes del diario
 /// del nodo.
 ///
@@ -153,9 +187,19 @@ pub fn ausentes(testigo: &[String], nodo: &[String]) -> Vec<u64> {
 mod tests {
     use super::*;
     use zk_ssl_verify::CabezaFirmada;
+    use zk_ssl_verify::acuses::as_digest;
 
     fn cabeza(indice: u64, digest: u8, firmada: bool) -> Latido {
         Latido {
+            cabeza: zk_ssl::log::EpochHead {
+                seq: 42,
+                accounts_root: as_digest(0),
+                pending_root: as_digest(0),
+                frozen_root: as_digest(0),
+                chain_digest: as_digest(0),
+                acuses_root: as_digest(0),
+                n: 0,
+            },
             seq: 42,
             epoch_digest: [digest; 32],
             firma: if firmada {
@@ -256,5 +300,56 @@ mod tests {
             .map(|i| linea(&cabeza(*i, 0x11, true), &[]).to_string())
             .collect();
         assert!(ausentes(&t, &n).is_empty(), "el muestreo del testigo no es un hallazgo");
+    }
+}
+
+#[cfg(test)]
+mod tests_limites {
+    use super::*;
+    use zk_ssl_verify::acuses::as_digest;
+
+    fn latido_sin_firma(seq: u64) -> Latido {
+        Latido {
+            cabeza: zk_ssl::log::EpochHead {
+                seq,
+                accounts_root: as_digest(0),
+                pending_root: as_digest(0),
+                frozen_root: as_digest(0),
+                chain_digest: as_digest(0),
+                acuses_root: as_digest(0),
+                n: 0,
+            },
+            seq,
+            epoch_digest: [0x33; 32],
+            firma: None,
+            emitida_unix: 1_700_000_000,
+        }
+    }
+
+    #[test]
+    fn los_limites_salen_del_diario_y_los_ilegibles_se_saltan() {
+        let d = std::path::Path::new("target").join("diario_limites");
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("carpeta");
+        let r = d.join("diario.jsonl");
+        anotar(&r, &latido_sin_firma(5), &[]).expect("primera");
+        {
+            use std::io::Write;
+            let mut f = std::fs::OpenOptions::new().append(true).open(&r).expect("abrir");
+            writeln!(f, "esto no es json").expect("basura");
+        }
+        anotar(&r, &latido_sin_firma(9), &[]).expect("segunda");
+        assert_eq!(limites(&r), vec![5, 9], "la linea corrupta debe SALTARSE");
+        assert_eq!(ultimo_seq(&r), Some(9));
+    }
+
+    #[test]
+    fn sin_diario_no_hay_limites_ni_panico() {
+        // El RPC preguntara por rutas que pueden no existir todavia: la
+        // respuesta correcta es vacio, y el arm lo convierte en reason.
+        let r = std::path::Path::new("target").join("diario_inexistente.jsonl");
+        let _ = std::fs::remove_file(&r);
+        assert!(limites(&r).is_empty());
+        assert_eq!(ultimo_seq(&r), None);
     }
 }

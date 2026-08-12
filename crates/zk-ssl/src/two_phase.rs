@@ -1904,7 +1904,7 @@ mod tests_verificacion {
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
         let id_bob = layer.public_id_of(bob).expect("bob");
         let ea = state_of(&layer, alice);
-        let seq_antes = layer.epoch_head().seq;
+        let seq_antes = layer.epoch_head(zk_ssl_hash::as_digest(0), 0).seq;
 
         let recibo = layer
             .send(BaseElement::new(SK_ALICE), alice, &ea, id_bob, salt_de(0xB2), 250_000)

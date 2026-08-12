@@ -41,7 +41,7 @@
 use zk_ssl_hash::acuse_digest;
 // El nodo no depende de `zk-ssl-hash`: los tipos que las reglas usan
 // viajan re-exportados desde aquí — un solo cable, también para tipos.
-pub use zk_ssl_hash::{as_digest, Digest};
+pub use zk_ssl_hash::{as_digest, path_root, Digest};
 
 /// ¿Cae `seq` en la época `[limite_anterior, limite)`?
 ///
@@ -66,11 +66,11 @@ pub fn epoca_de_acuse(seq: u64) -> u64 {
 
 /// La hoja: `acuse_digest(hash_prueba, epoca_de_acuse(seq), n)`.
 ///
-/// ⚠️ `n` va **dentro** de la hoja (§270): cuando `n` viaje firmado en la
-/// cabeza (§275), un operador que prometa otro `n` en la respuesta produce
-/// una hoja que **no verifica** contra el árbol recomputado con el `n` de
-/// la cabeza. La respuesta no puede mentir sobre `n` sin que el camino
-/// falle.
+/// ⚠️ `n` va **dentro** de la hoja (§270), y **desde §275 `n` viaja
+/// firmado en la cabeza**: un operador que prometa otro `n` en la
+/// respuesta produce una hoja que no verifica contra el árbol recomputado
+/// con el `n` firmado. La respuesta no puede mentir sobre `n` sin que el
+/// camino falle.
 pub fn hoja_de_acuse(hash_prueba: Digest, seq: u64, n: u64) -> Digest {
     acuse_digest(hash_prueba, epoca_de_acuse(seq), n)
 }

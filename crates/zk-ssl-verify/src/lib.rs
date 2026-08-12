@@ -45,7 +45,16 @@ use xmss::{Signature, VerifyingKey, XmssMtSha2_40_8_256};
 //    comprobar sin el nodo. `verificar_cabeza` dice *quien* firmo; esto
 //    dice *que contiene* lo firmado.
 mod inclusion;
-pub use inclusion::{verificar_inclusion, InclusionError, ReciboInclusion};
+// ⚠️ §275 · **La superficie CRECE**, y la cabecera de este crate declara
+// que deberia ser la que menos cambia. La razon por la que se paga: el
+// modulo es PRIVADO, asi que un `pub` que no aparezca aqui **no existe
+// para nadie de fuera** — el verificador del acuse no seria independiente
+// de nada. `verificar_inclusion` NO se sustituye: v1 es el recompositor
+// de las cabezas ya custodiadas, y esas no cambian de forma.
+pub use inclusion::{
+    verificar_acuse, verificar_inclusion, verificar_inclusion_v2, InclusionError, ReciboAcuse,
+    ReciboInclusion,
+};
 
 // ⚠️ §274 · Las reglas del árbol de acuses viven AQUÍ y en ningún otro
 // sitio: el constructor (nodo, §274) y el verificador (§275) llaman LAS
@@ -64,7 +73,7 @@ pub const DOMINIO: &[u8] = b"ZK-SSL-epoch-head";
 /// ⚠️ Sube cuando cambian **los campos de `EpochHead`**, no cuando cambia el
 /// cable. Son ejes distintos: `zkssl/0.2` gobierna qué viaja; esto, qué
 /// entra en la firma.
-pub const VERSION_FORMATO: u8 = 1;
+pub const VERSION_FORMATO: u8 = 2;
 
 /// Bytes del RFC 8391 que ocupa la firma de este conjunto, sin el mensaje.
 pub const FIRMA_RFC_BYTES: usize = 18_469;

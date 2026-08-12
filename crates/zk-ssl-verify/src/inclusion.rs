@@ -353,3 +353,203 @@ mod tests_inclusion {
         assert_ne!(verificar_inclusion(&torcido, de_hex(&cable_epoch)), Ok(()));
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+//  §275 · EL ACUSE, VERIFICADO SIN EL NODO
+//
+//  Misma forma que la inclusion, otro arbol:
+//
+//      hoja de acuse + camino  →  acusesRoot  →  cabeza v2 firmada
+//
+//  Desde §275 la raiz de acuses y `n` viajan FIRMADOS en la cabeza, asi
+//  que el tercer eslabon ata a una firma, no a una promesa. ⚠️ El
+//  desambiguador v1/v2 es el **byte de version del preambulo**, no el
+//  dominio (§236).
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Lo que un tercero necesita para comprobar un acuse **sin el nodo**.
+///
+/// ⚠️ Los **siete** campos de la cabeza van enteros por la razon de
+/// [`ReciboInclusion`]: el titular recompone `epoch_digest_v2` el mismo.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReciboAcuse {
+    /// La hoja, tal como `acuses::hoja_de_acuse` la compone.
+    pub hoja: Digest,
+    /// Hermanos desde la hoja hasta la raiz de acuses.
+    pub hermanos: Vec<Digest>,
+    /// `true` = el nodo actual va a la derecha.
+    pub derecha: Vec<bool>,
+    // ── los siete de la cabeza (v2) ──
+    pub seq: u64,
+    pub accounts_root: Digest,
+    pub pending_root: Digest,
+    pub frozen_root: Digest,
+    pub chain_digest: Digest,
+    pub acuses_root: Digest,
+    pub n: u64,
+}
+
+/// Comprueba un acuse contra el `epoch_digest` de una cabeza **v2**
+/// firmada: el camino sube hasta `acuses_root`, y los siete componen el
+/// digest firmado. Reusa [`InclusionError`]: mismos fallos, misma lectura.
+pub fn verificar_acuse(
+    recibo: &ReciboAcuse,
+    epoch_digest_firmado: Digest,
+) -> Result<(), InclusionError> {
+    if recibo.hermanos.len() != recibo.derecha.len() {
+        return Err(InclusionError::CaminoDescuadrado {
+            hermanos: recibo.hermanos.len(),
+            derecha: recibo.derecha.len(),
+        });
+    }
+    let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
+    if raiz != recibo.acuses_root {
+        return Err(InclusionError::RaizDistinta);
+    }
+    // ⚠️ AQUI esta la diferencia entre un recibo y una promesa: sin este
+    //    paso, la raiz seria un numero que el operador dice.
+    let compuesto = zk_ssl_hash::epoch_digest_v2(
+        recibo.seq,
+        recibo.accounts_root,
+        recibo.pending_root,
+        recibo.frozen_root,
+        recibo.chain_digest,
+        recibo.acuses_root,
+        recibo.n,
+    );
+    if compuesto != epoch_digest_firmado {
+        return Err(InclusionError::CabezaDistinta);
+    }
+    Ok(())
+}
+
+/// La inclusion de siempre, contra una cabeza **v2**: los cinco de
+/// [`ReciboInclusion`] mas la pareja que ahora viaja firmada. El recibo
+/// custodiado viejo (v1) sigue con [`verificar_inclusion`]: la version
+/// que la firma declara elige recomponedor.
+pub fn verificar_inclusion_v2(
+    recibo: &ReciboInclusion,
+    acuses_root: Digest,
+    n: u64,
+    epoch_digest_firmado: Digest,
+) -> Result<(), InclusionError> {
+    if recibo.hermanos.len() != recibo.derecha.len() {
+        return Err(InclusionError::CaminoDescuadrado {
+            hermanos: recibo.hermanos.len(),
+            derecha: recibo.derecha.len(),
+        });
+    }
+    let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
+    if raiz != recibo.accounts_root {
+        return Err(InclusionError::RaizDistinta);
+    }
+    let compuesto = zk_ssl_hash::epoch_digest_v2(
+        recibo.seq,
+        recibo.accounts_root,
+        recibo.pending_root,
+        recibo.frozen_root,
+        recibo.chain_digest,
+        acuses_root,
+        n,
+    );
+    if compuesto != epoch_digest_firmado {
+        return Err(InclusionError::CabezaDistinta);
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests_acuse {
+    use super::*;
+
+    use winter_math::fields::f64::BaseElement;
+
+    fn d(n: u64) -> Digest {
+        [
+            BaseElement::new(n),
+            BaseElement::new(n + 1),
+            BaseElement::new(n + 2),
+            BaseElement::new(n + 3),
+        ]
+    }
+
+    /// Un acuse coherente: camino de dos niveles, hecho a mano, y la
+    /// cabeza v2 que lo firma, compuesta con la MISMA funcion.
+    fn recibo_bueno() -> (ReciboAcuse, Digest) {
+        let hoja = d(100);
+        let hermanos = vec![d(200), d(300)];
+        let derecha = vec![false, true];
+        let raiz = path_root(hoja, &hermanos, &derecha);
+        let r = ReciboAcuse {
+            hoja,
+            hermanos,
+            derecha,
+            seq: 9,
+            accounts_root: d(1),
+            pending_root: d(2),
+            frozen_root: d(3),
+            chain_digest: d(4),
+            acuses_root: raiz,
+            n: 1_440,
+        };
+        let firmado = zk_ssl_hash::epoch_digest_v2(
+            r.seq, r.accounts_root, r.pending_root, r.frozen_root,
+            r.chain_digest, r.acuses_root, r.n,
+        );
+        (r, firmado)
+    }
+
+    #[test]
+    fn un_acuse_coherente_verifica() {
+        let (r, firmado) = recibo_bueno();
+        verificar_acuse(&r, firmado).expect("debe verificar");
+    }
+
+    #[test]
+    fn una_raiz_de_acuses_ajena_al_camino_se_rechaza() {
+        let (mut r, firmado) = recibo_bueno();
+        r.acuses_root = d(999);
+        assert_eq!(verificar_acuse(&r, firmado), Err(InclusionError::RaizDistinta));
+    }
+
+    #[test]
+    fn mover_n_rompe_la_cabeza() {
+        // n viaja firmado (§275): prometer otro n en la respuesta produce
+        // una cabeza que NO es la firmada.
+        let (mut r, firmado) = recibo_bueno();
+        r.n = 720;
+        // el camino sigue subiendo a acuses_root; lo que falla es el digest
+        assert_eq!(verificar_acuse(&r, firmado), Err(InclusionError::CabezaDistinta));
+    }
+
+    #[test]
+    fn la_inclusion_v2_ata_la_pareja_a_la_firma() {
+        // Los cinco de siempre + (acuses_root, n): con la pareja firmada,
+        // Ok; con otro n, CabezaDistinta. El recibo v1 no se toca.
+        let hoja = d(500);
+        let hermanos = vec![d(600)];
+        let derecha = vec![false];
+        let accounts_root = path_root(hoja, &hermanos, &derecha);
+        let r = ReciboInclusion {
+            indice: 0,
+            hoja,
+            hermanos,
+            derecha,
+            seq: 5,
+            accounts_root,
+            pending_root: d(7),
+            frozen_root: d(8),
+            chain_digest: d(9),
+        };
+        let (ar, n) = (d(700), 1_440u64);
+        let firmado = zk_ssl_hash::epoch_digest_v2(
+            r.seq, r.accounts_root, r.pending_root, r.frozen_root,
+            r.chain_digest, ar, n,
+        );
+        verificar_inclusion_v2(&r, ar, n, firmado).expect("debe verificar");
+        assert_eq!(
+            verificar_inclusion_v2(&r, ar, n + 1, firmado),
+            Err(InclusionError::CabezaDistinta),
+        );
+    }
+}

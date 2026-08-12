@@ -66,7 +66,7 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 |---|---|---|
 | `zkssl_protocolVersion` | — | `"zkssl/0.2"` |
 | `zkssl_params` | — | `{regulatoryLimit, maxSupply, maxAccounts: Q, custodianRoot: Digest}` |
-| `zkssl_epochHead` | — | `{seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, epochDigest}` |
+| `zkssl_epochHead` | — | `{seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, acusesRoot, n, epochDigest}` |
 | `zkssl_supply` | — | `{total, pending: Q}` |
 | `zkssl_accountCount` | — | `Q` |
 | `zkssl_publicId` | `{index: Q}` | `Digest` |
@@ -75,6 +75,7 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 | `zkssl_logEntries` | `{fromSeq?: Q, limit?: Q}` | `LogEntry[]` (límite ≤ 1000) |
 | `zkssl_verifyChain` | — | `{ok: bool, entries?, error?}` |
 | `zkssl_inclusionReceipt` | `{index: Q, viewKey: Digest}` | `{index, leaf, path, leafFormat, head}` |
+| `zkssl_ackPath` | `{seq: Q}` | `{available, s?, camino?: {siblings: Digest[], isRight: bool[]}, reason?, beatSeconds?}` |
 
 `LogEntry = {seq: Q, kind: string, rootOld, rootNew, proofDigest, chain: Digest}`
 con `kind` ∈ {`OpenAccount`,`Mint`,`Transfer`,`Burn`,`Recovery`,
@@ -409,23 +410,26 @@ devuelven, junto al `logSeq` y al `receptionSeq` de siempre:
   que declara esta época viviendo bajo la cabeza `S` hace legible
   `S − epoca` desde la hoja y la cabeza solas: la magnitud que la promesa
   acota.
-- **`n` = 1440**, el techo declarado (§121). Será **normativo** cuando
-  viaje firmado en la cabeza (§275); hasta entonces, un `n` mentido aquí
-  es ilegible.
+- **`n` = 1440**, el techo declarado (§121) y **normativo desde §275**:
+  viaja firmado en la cabeza, y un `n` mentido aquí produce una hoja que
+  no verifica bajo la raíz firmada.
 - La hoja es `acuse_digest(hashPrueba, epoca, n)` (§270) — el titular la
   computa **en el apply** y queda fija para siempre.
 
 ⚠️ **Límite declarado**: esta respuesta **no va firmada**. Firmar cada
 acuse cuesta 160,5 ms medidos (~×50 de colapso sobre el techo de §217) y
 gastaría índices XMSS (§121.2). El acuse hereda la firma **al cerrar la
-época**, bajo la raíz (§275): hasta entonces es palabra del nodo, y la
-ventana es ≤1 latido con operador honesto. Ver el asiento §274.
+época**, bajo la raíz — **real desde §275**, vía `zkssl_ackPath`; hasta
+entonces es palabra del nodo, y la ventana es ≤1 latido con operador
+honesto. Ver los asientos §274 y §275.
 
 ### `zkssl_signedEpochHead` — la última cabeza firmada, para un TESTIGO
 
 Devuelve la cabeza de época **más reciente que el nodo firmó**, con todo lo
-que hace falta para verificarla sin él: `publicKey`, `epochDigest`,
-`formatVersion`, `index` y `signature`.
+que hace falta para verificarla sin él: los **siete campos** de la
+cabeza (§275), `publicKey`, `epochDigest`, `formatVersion`, `index` y
+`signature` — campos+digest+firma **juntos**, del mismo latido: un solo
+artefacto de custodia, sin carrera entre llamadas.
 
 ⚠️ **Aditivo**: no toca `zkssl_epochHead`, que sigue sirviendo la cabeza
 **sin firma** y está en los vectores de conformidad. **La versión no sube**,
@@ -527,13 +531,41 @@ decisión**, no en una nota aparte.
 valor probatorio** (`SECURITY.md`). §242 hace que el artefacto exista; no
 que valga.
 
+### `zkssl_ackPath` — el camino de acuse de una época CERRADA
+
+Devuelve lo que le falta al acuse de la respuesta (§274) para atarse a
+una firma: `s` —el `seq` de la cabeza que cierra la época— y `camino`
+(`{siblings, isRight}`) hasta la raíz de acuses de esa época.
+
+⚠️ **La cabeza NO viaja** (§248): el camino se verifica contra la que el
+titular **ya custodia**. Servirla aquí sería dejar que el operador
+fabrique la vara con la que se le mide.
+
+La cadena, entera: `hoja = acuse_digest(hashPrueba, epoca, n)` →
+`path_root` → `acusesRoot` → `epoch_digest` **v2** → la firma custodiada.
+El desambiguador v1/v2 es el **byte de versión del preámbulo**
+(`formatVersion` 1 → 2), no el dominio (§236).
+
+⚠️ **Tres formas de `available: false`, y ninguna es un error genérico**
+(la forma de §241): la época sigue **abierta** (`reason` +
+`beatSeconds`); el nodo corre **sin `--diario`** — los límites de época
+no se conservan, y tras un reinicio sin diario la primera época sale
+gorda: límite declarado —; o esa entrada **no existe** en el registro
+dentro de esa época.
+
+⚠️ **Aditivo**: `zkssl/0.2` no sube. La cabeza gana `acusesRoot` y `n`;
+`deny_unknown_fields` hace que un parser viejo **rompa en voz alta** —
+el fallo honesto ya diseñado, no una lectura a medias.
+
 ### `zkssl_inclusionReceipt` — la inclusión, comprobable sin el nodo
 
 Devuelve lo que un tercero necesita para comprobar que **una hoja estaba en
-la cabeza firmada**: `index`, `leaf`, `path` y los cinco campos de `head`.
+la cabeza firmada**: `index`, `leaf`, `path` y los campos de `head` —
+**siete desde §275**; la `formatVersion` de la firma dice cuáles
+componen.
 La verificación es la de §256: subir el camino hasta `accountsRoot` y
-comprobar que esos cinco campos componen el `epochDigest` **de una cabeza
-firmada**. Una raíz suelta no prueba nada.
+comprobar que esos campos componen —según la versión declarada— el
+`epochDigest` **de una cabeza firmada**. Una raíz suelta no prueba nada.
 
 ⚠️ **Del árbol `accounts`**, que es el que firma la cabeza. `CommitmentLayer`
 solo se instancia en sus propios tests: un camino suyo llevaría a una raíz
@@ -554,6 +586,12 @@ verifique**, solo que uno legítimo falle. Está para que el fallo sea
 reparte `senderPath` sin credencial alguna desde antes que este método
 exista.** Se dice aquí, bajo las dos puertas, porque decirlo solo bajo una
 es cómo se llega a tener dos.
+
+**El camino de acuses (§275) es distinto a propósito**: sus hojas son
+**enumerables POR DISEÑO** — digests de acuses, no saldos ni operaciones
+(la divergencia deliberada con §157 que documenta `acuses.rs`). Probar
+hojas candidatas contra `acusesRoot` no expone nada que el registro
+público no diga ya.
 
 Con un camino de cuentas y la raíz, cualquiera puede probar hojas candidatas
 **sin volver a hablar con el nodo**: compone `native_leaf(publicId, saldo,

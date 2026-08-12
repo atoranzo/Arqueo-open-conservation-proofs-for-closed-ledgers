@@ -31,6 +31,7 @@ pub fn method_names() -> Vec<&'static str> {
         "zkssl_applyMany",
         "zkssl_signedEpochHead",
         "zkssl_inclusionReceipt",
+        "zkssl_ackPath",
         "dev_fund",
         "dev_openSeeded",
     ]
@@ -92,6 +93,9 @@ pub fn document() -> Value {
         m("zkssl_inclusionReceipt",
           "Recibo de inclusion de una cuenta: hoja, camino y cabeza. leafFormat es OBSERVADO.",
           json!([p("index", "Q"), p("viewKey", "Digest")]), "InclusionReceipt"),
+        m("zkssl_ackPath",
+          "Camino de acuse de una epoca CERRADA. La cabeza NO viaja: se verifica contra la custodiada.",
+          json!([p("seq", "Q")]), "AckPath"),
         m("dev_fund", "SOLO --dev: emision delegada con custodios de PRUEBA.",
           json!([p("index", "Q"), p("amount", "Q")]), "Applied"),
         m("dev_openSeeded", "SOLO --dev: abre desde una clave determinista de la suite.",
@@ -121,20 +125,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn veinte_metodos_unicos_y_en_orden() {
+    fn veintiun_metodos_unicos_y_en_orden() {
         // §223: subio a 18 con `zkssl_applyMany`. §242: a 19 con
         // `zkssl_signedEpochHead`. §259: a 20 con
         // `zkssl_inclusionReceipt`. Que este test tenga el numero en el
         // nombre es a proposito: renombrarlo OBLIGA A MIRAR.
+        // §275: a 21 con `zkssl_ackPath`.
         let nombres = method_names();
-        assert_eq!(nombres.len(), 20);
+        assert_eq!(nombres.len(), 21);
         let mut u = nombres.clone();
         u.sort();
         u.dedup();
-        assert_eq!(u.len(), 20, "nombres repetidos");
+        assert_eq!(u.len(), 21, "nombres repetidos");
         let doc = document();
         let met = doc["methods"].as_array().expect("methods");
-        assert_eq!(met.len(), 20);
+        assert_eq!(met.len(), 21);
         for (i, mm) in met.iter().enumerate() {
             assert_eq!(mm["name"].as_str().unwrap(), nombres[i]);
         }
