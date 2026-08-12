@@ -23,10 +23,37 @@
 //!
 //! Cerrar el resto exige que el compromiso viaje en la entrada, que es
 //! una rotura de formato y por tanto **otro sello** — anotada en la 79.
+//!
+//! ✅ **Ese sello fue §281, y §282 lee las dos eras.** La tabla de arriba
+//! sigue siendo cierta para las entradas anteriores a la rotura.
+//!
+//! ## Era 2 (desde §281): el compromiso viaja en la entrada
+//!
+//! §281 rompio el formato del registro y anadio `compromiso` a cada
+//! entrada nueva. Con el, las **seis clases con sello** se recomputan:
+//!
+//! | Via | era 1 (`None`) | era 2 (`Some`) |
+//! |---|---|---|
+//! | `OpenAccount` | Si (sello constante) | Si (igual) |
+//! | `Recovery` | Si, con el log completo | **Si, y basta un TRAMO** |
+//! | `Mint` | No | **Si** |
+//! | `Freeze` | No | **Si** |
+//! | `Governance` | No | **Si** |
+//! | `MintToPending` | No | **Si** |
+//!
+//! ⚠️ **«Seis de seis» son las seis clases CON SELLO**, no todas las
+//! entradas. `Send`, `Claim`, `Burn`, `Refund` y `Migration` asientan el
+//! resumen de una prueba REAL, y el registro no guarda la prueba: no seran
+//! recomputables desde el registro nunca, y eso es diseno, no deuda.
+//!
+//! ⚠️ **La exigencia de registro completo pasa a ser POR ENTRADA.** En era
+//! 1 el contador de recuperaciones se deriva contando las anteriores, asi
+//! que hace falta el genesis. En era 2 el compromiso esta en la entrada y
+//! **un tramo de `zkssl_logEntries` basta** — que era el caso normal.
 
 use zk_ssl_hash::{
     commit_operation, digest_of_proof, sello_de_autorizacion, sello_sin_prueba, Digest,
-    OP_RECOVERY,
+    COMPROMISO_AUSENTE, OP_RECOVERY,
 };
 use winter_math::fields::f64::BaseElement;
 
@@ -43,6 +70,11 @@ pub struct EntradaLog {
     pub root_old: Digest,
     pub root_new: Digest,
     pub proof_digest: Digest,
+    /// **El portador de la era** (§281): `None` = entrada anterior a la
+    /// rotura, cuyo compromiso no existe en ningun sitio; `Some` = era 2.
+    /// El centinela `COMPROMISO_AUSENTE` marca las clases sin compromiso
+    /// propio, y no es lo mismo que no tenerlo.
+    pub compromiso: Option<Digest>,
 }
 
 /// Lo que se pudo comprobar de UNA entrada. Nunca un booleano: un
@@ -76,13 +108,13 @@ pub enum ReverificacionError {
 /// Las vias delegadas: las que deben llevar sello de AUTORIZACION.
 const DELEGADAS: [&str; 5] = ["Mint", "Freeze", "Recovery", "Governance", "MintToPending"];
 
-/// **Reverifica un registro COMPLETO desde el genesis.**
+/// **Reverifica un registro, entrada por entrada y era por era.**
 ///
-/// ⚠️ El registro tiene que empezar en `seq = 0`: el contador de
-/// recuperaciones se deriva contando las entradas anteriores, y
-/// `zkssl_logEntries` sirve TRAMOS (`fromSeq`, limite 1000), asi que el
-/// registro parcial es el caso normal, no la excepcion. Con un tramo, la
-/// respuesta no es «no coincide»: es que no se puede saber.
+/// ⚠️ Un registro de **era 1** tiene que empezar en `seq = 0` para que sus
+/// `Recovery` sean recomputables: el contador se deriva contando las
+/// anteriores. Un registro de **era 2** no lo necesita —el compromiso
+/// viaja en la entrada—, asi que un TRAMO (`fromSeq`, limite 1000) vale.
+/// La condicion es **por entrada**, no del registro entero.
 pub fn reverificar(entradas: &[EntradaLog]) -> Result<Vec<Veredicto>, ReverificacionError> {
     let completo = entradas.first().map(|e| e.seq == 0).unwrap_or(false);
     let vacio = digest_of_proof(&[]);
@@ -102,7 +134,16 @@ pub fn reverificar(entradas: &[EntradaLog]) -> Result<Vec<Veredicto>, Reverifica
         if e.kind != "OpenAccount" && !delegada && e.proof_digest == declarado {
             return Err(ReverificacionError::SelloReservadoAjeno { seq: e.seq });
         }
+        // Y el de era 2: una delegada que asienta el CENTINELA en vez de su
+        // compromiso. El centinela esta reservado a las no-delegadas, asi
+        // que esto es la capa escribiendo mal, no una entrada opaca.
+        if delegada && e.compromiso == Some(COMPROMISO_AUSENTE) {
+            return Err(ReverificacionError::SelloReservadoAjeno { seq: e.seq });
+        }
 
+        // `OpenAccount` lo decide su `proof_digest` —el sello de ausencia
+        // declarada, que es una CONSTANTE—, no su compromiso: en era 2
+        // lleva el centinela y sigue siendo verificable.
         if e.kind == "OpenAccount" {
             if e.proof_digest != declarado {
                 return Err(ReverificacionError::SelloDiscrepante { seq: e.seq });
@@ -111,11 +152,35 @@ pub fn reverificar(entradas: &[EntradaLog]) -> Result<Vec<Veredicto>, Reverifica
             continue;
         }
 
+        // ── Era 2: el compromiso esta en la entrada. Cualquier delegada
+        //    se recompone sin mirar el resto del registro.
+        if let Some(c) = e.compromiso {
+            if c != COMPROMISO_AUSENTE {
+                if e.proof_digest != digest_of_proof(&sello_de_autorizacion(&c)) {
+                    return Err(ReverificacionError::SelloDiscrepante { seq: e.seq });
+                }
+                if e.kind == "Recovery" {
+                    recuperaciones += 1;
+                }
+                fuera.push(Veredicto::Verificada { seq: e.seq });
+                continue;
+            }
+            // Centinela en una no-delegada: su prueba es real y no se
+            // guarda. Lo comprobable es que no usurpa un sello ajeno.
+            fuera.push(Veredicto::Parcial {
+                seq: e.seq,
+                comprobado: "no lleva un sello reservado a otra clase",
+                falta: "la prueba no se guarda: su resumen no es recomputable",
+            });
+            continue;
+        }
+
+        // ── Era 1: sin compromiso en la entrada.
         if e.kind == "Recovery" {
             if !completo {
                 fuera.push(Veredicto::NoDerivable {
                     seq: e.seq,
-                    falta: "el registro no empieza en seq 0: el contador no es derivable",
+                    falta: "era 1 y el registro no empieza en seq 0: el contador no es derivable",
                 });
                 recuperaciones += 1;
                 continue;
@@ -137,7 +202,7 @@ pub fn reverificar(entradas: &[EntradaLog]) -> Result<Vec<Veredicto>, Reverifica
             fuera.push(Veredicto::Parcial {
                 seq: e.seq,
                 comprobado: "no lleva un sello reservado a otra clase",
-                falta: "los parametros del compromiso no estan en el registro",
+                falta: "era 1: los parametros del compromiso no estan en el registro",
             });
         } else {
             fuera.push(Veredicto::Parcial {
@@ -180,6 +245,8 @@ mod tests {
             root_old: as_digest(seq),
             root_new: as_digest(seq + 1),
             proof_digest: pd,
+            // Era 1 por defecto: los tests de era 2 usan `entrada_v2`.
+            compromiso: None,
         }
     }
 
@@ -245,6 +312,64 @@ mod tests {
         let v = reverificar(&log).expect("un tramo no es una mentira");
         assert_eq!(censo(&v), (0, 0, 1), "sin genesis no hay contador");
         assert!(matches!(v[0], Veredicto::NoDerivable { seq: 100, .. }));
+    }
+
+    /// Una entrada de **era 2**: el compromiso viaja dentro.
+    fn entrada_v2(seq: u64, kind: &str, pd: Digest, c: Digest) -> EntradaLog {
+        EntradaLog { compromiso: Some(c), ..entrada(seq, kind, pd) }
+    }
+
+    /// Sello de una delegada cualquiera a partir de su compromiso — la
+    /// composicion es la MISMA que usa la capa (`zk-ssl-hash`).
+    fn sello(c: Digest) -> Digest {
+        digest_of_proof(&sello_de_autorizacion(&c))
+    }
+
+    /// **El censo de era 2: cuatro de seis.** Predicho antes de escribir
+    /// el test y contado sobre la SALIDA del instrumento (§266). Las dos
+    /// que faltan son `Send` y `Claim`: su prueba es real y el registro
+    /// no la guarda — no es deuda de era, es diseno.
+    #[test]
+    fn el_censo_del_escenario_canonico_en_era_2() {
+        let declarado = digest_of_proof(&sello_sin_prueba());
+        let c1 = as_digest(0xA1);
+        let c2 = as_digest(0xA2);
+        let log = vec![
+            entrada_v2(0, "OpenAccount", declarado, COMPROMISO_AUSENTE),
+            entrada_v2(1, "Mint", sello(c1), c1),
+            entrada_v2(2, "OpenAccount", declarado, COMPROMISO_AUSENTE),
+            entrada_v2(3, "Mint", sello(c2), c2),
+            entrada_v2(4, "Send", digest_of_proof(b"prueba-de-envio"), COMPROMISO_AUSENTE),
+            entrada_v2(5, "Claim", digest_of_proof(b"prueba-de-cobro"), COMPROMISO_AUSENTE),
+        ];
+        let v = reverificar(&log).expect("el escenario canonico no miente");
+        assert_eq!(censo(&v), (4, 2, 0), "era 2: cuatro verificadas, dos parciales");
+    }
+
+    /// **Una delegada con el CENTINELA es la capa escribiendo mal.** El
+    /// centinela esta reservado a las no-delegadas; el instrumento se
+    /// niega a censar el registro en vez de anotarlo y seguir.
+    #[test]
+    fn una_delegada_con_el_centinela_invalida_el_censo() {
+        let c = as_digest(0xB0);
+        let log = vec![entrada_v2(7, "Governance", sello(c), COMPROMISO_AUSENTE)];
+        assert_eq!(
+            reverificar(&log),
+            Err(ReverificacionError::SelloReservadoAjeno { seq: 7 }),
+            "el centinela no es de una delegada"
+        );
+    }
+
+    /// **Era 2 en un TRAMO**: sin genesis y aun asi verificable, porque el
+    /// compromiso no necesita contar nada anterior. Es lo que la era 1 no
+    /// podia hacer, y el tramo es el caso normal de `zkssl_logEntries`.
+    #[test]
+    fn una_recuperacion_de_era_2_verifica_en_un_tramo() {
+        let c = as_digest(0xC7);
+        let log = vec![entrada_v2(500, "Recovery", sello(c), c)];
+        let v = reverificar(&log).expect("un tramo de era 2 no es una mentira");
+        assert_eq!(censo(&v), (1, 0, 0), "el compromiso no necesita el genesis");
+        assert_eq!(v[0], Veredicto::Verificada { seq: 500 });
     }
 }
 

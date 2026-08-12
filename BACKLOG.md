@@ -974,6 +974,14 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   semántica de lotes en `verify_chain` → queda el gancho documentado
   en el propio código, se implementa cuando RFC-0002 etapa 2 exista.
 
+  ✅ **El primer destino, CUMPLIDO en §282**: el reverificador es ya de
+  dos eras — las seis clases con sello se recomputan cuando la entrada
+  trae compromiso, y `COMPROMISO_AUSENTE` se mudó a `zk-ssl-hash` para
+  que el verificador independiente pueda distinguirlo sin depender de la
+  capa. De paso cayó una restricción que esta nota no había previsto: en
+  era 2 **basta un tramo** del registro. Sigue abierto el segundo
+  destino: la semántica de lotes, con su gancho documentado.
+
 ## E. Operacion
 
 - [ ] **17. Replica y alta disponibilidad.** **Comprobable**: `grep -rn

@@ -21131,3 +21131,71 @@ segundo escritor con marca del snapshot (`:141`), que motivó el bit.
 entrada esté atada a una prueba concreta» — desde §278/§281 es «a lo
 que la autorizó»; la spec ya lo dice bien (§280) y la doc del código se
 corrige cuando `log.rs` se toque por razón real, no por una frase.
+
+## §282 — 2026-08-12 · El reverificador de dos eras: seis clases de seis, y un tramo basta
+
+**Qué cambió.** `zk-ssl-verify::reverificacion` deja de ser un
+instrumento de una sola era. `EntradaLog` gana `compromiso:
+Option<Digest>` —el mismo portador que §281 puso en el registro— y el
+veredicto se decide **por entrada**: con compromiso real se recompone
+`digest_of_proof(sello_de_autorizacion(c))` contra el `proof_digest`
+asentado; con el centinela se comprueba lo comprobable; sin compromiso
+se aplica la tabla de era 1 intacta. Cumple el destino que el MAPA de la
+nota 82 dejó escrito al cerrarse en §281.
+
+**El movimiento que lo hizo posible.** `COMPROMISO_AUSENTE` vivía en
+`zk-ssl/src/log.rs` y **`zk-ssl-verify` no puede depender de la capa**;
+duplicar la constante habría sido duplicar una regla. Se muda a
+`zk-ssl-hash` y `log.rs` la **reexporta** — patrón de §254, §255, §258 y
+§279, por sexta vez. Medido antes de moverla: una declaración, **un solo
+uso de producción** (`append`, log.rs:331), dos menciones de doc y siete
+usos en tests; con la reexportación **ninguno cambia**.
+
+**Lo que ahora se comprueba, y lo que no se comprobará nunca.** Las seis
+clases con sello —las cinco delegadas y `OpenAccount`— son recomputables
+en era 2. `Send`, `Claim`, `Burn`, `Refund` y `Migration` asientan el
+resumen de una prueba **real**, y el registro no guarda la prueba: no
+son recomputables desde el registro, ni lo serán. Es diseño, no deuda, y
+va escrito en el módulo para que nadie lea «seis de seis» como «todo
+verifica».
+
+**La relajación que no estaba en el plan.** La exigencia de registro
+completo desde el génesis pasa a ser **por entrada**. En era 1 el
+contador de recuperaciones se deriva contando las anteriores, así que
+hace falta el génesis; en era 2 el compromiso está en la entrada y **un
+TRAMO basta** — y el tramo es el caso normal, porque `zkssl_logEntries`
+sirve `fromSeq` con límite 1000. El instrumento pasa de decir «no se
+puede saber» en el caso frecuente a verificarlo.
+
+**Categorías.** *Medido*: los nueve puntos de `COMPROMISO_AUSENTE` antes
+de moverla · la fila de canon y los cinco bloques de sumas contra el
+árbol de §281, no contra la memoria · que **`SECURITY.md:119` también
+dice «verificador independiente»**, así que un gate sobre esa frase
+cuenta dos y no uno — octava entrada de «la forma del instrumento decide
+el número», y la primera cazada **antes** de escribir el gate.
+*Ejercitado*: los tres tests nuevos. Y **tres gates míos con número
+supuesto**, novena a undécima de la familia: los usos del centinela eran
+**11** líneas y no 9, las menciones de `compromiso` en el reverificador
+**5** y no 6 —las dos muertas en el banco— y la frase «verificador
+independiente» aparecía en **cuatro** documentos y no en dos, porque la
+medición que la contó filtraba `AUDITORIA` y `BACKLOG` y **el gate no**.
+Y una cuarta, la misma en otro sitio: el centinela `48.782 B` daba
+**seis** y no dos, porque la cifra vive también en `PAPER_EN`, `README`,
+`ARQUITECTURA` y en el propio `AUDITORIA`, que cita el centinela al
+contarlo.
+
+Ésa es la forma del defecto, y ahora tiene regla: *el instrumento del
+gate no era el instrumento de la medición*, y **todo conteo agregado
+sobre el árbol miente** en un repositorio con un `AUDITORIA.md` de
+21.000 líneas que menciona cada cifra que este proyecto ha medido
+jamás. **Ningún gate cuenta con `grep -r … | wc -l`: se cuenta POR
+FICHERO**, que es el rito de §275 —«se mide el reparto por fichero, no
+el total»— aplicado también a los guardias, y no sólo a los pines. *Razonado y CUMPLIDO*: el censo de
+era 2 se predijo **4 · 2 · 0** antes de escribir el test; si hubiera
+salido otro, lo equivocado era la predicción.
+
+**Elección por recomendación, reversible.** Una delegada que asiente el
+centinela reusa `SelloReservadoAjeno` en vez de estrenar una cuarta
+variante: el centinela está reservado a las no-delegadas, así que la
+entrada miente sobre su clase, y una mentira invalida el censo en vez de
+formar parte de él (fail-stop, `doc/CONFIANZA_RESIDUAL.md` §5.2).

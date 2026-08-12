@@ -253,7 +253,11 @@ pub fn chain_digest(
 /// `VIEW_ID_LEGACY`/`LEAF_SALT_LEGACY` de 49-A. Distinto de cualquier
 /// `commit_operation` con probabilidad abrumadora, y el test lo separa
 /// de los sellos.
-pub const COMPROMISO_AUSENTE: Digest = [BaseElement::new(0xC0_A9_2281); 4];
+// ⚠️ §282: la constante se MUDO a `zk-ssl-hash` y aqui se REEXPORTA.
+// El reverificador independiente tiene que distinguir centinela de
+// compromiso real, y no puede depender de esta capa; duplicarla seria
+// duplicar una regla. Los llamantes de este modulo no cambian.
+pub use zk_ssl_hash::COMPROMISO_AUSENTE;
 
 /// La fórmula de la **era 2** (§281): la de la era 1 entera, en su
 /// posición, más el compromiso. Misma forma que `epoch_digest_v2`

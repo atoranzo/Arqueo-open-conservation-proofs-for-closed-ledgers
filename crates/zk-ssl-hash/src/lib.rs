@@ -734,3 +734,16 @@ mod tests_sello_movido {
         assert_ne!(uno, otro_dominio, "el dominio separa operaciones");
     }
 }
+/// **Centinela de compromiso ausente** (§281, mudado aqui en §282).
+///
+/// Lo asientan las clases que NO son delegadas —las que llevan resumen de
+/// prueba real y `OpenAccount`—, para que el campo `compromiso` de una
+/// entrada de era 2 nunca quede sin significado. **No es un hash**: es una
+/// constante declarada, del mismo genero que `VIEW_ID_LEGACY`.
+///
+/// ⚠️ Vive aqui y no en la capa porque **el reverificador independiente
+/// tiene que distinguir centinela de compromiso real**, y `zk-ssl-verify`
+/// no puede depender de `zk-ssl`. Duplicar la constante seria duplicar una
+/// regla: misma razon que `native_merge` (§254), `as_digest` (§255),
+/// `native_leaf` (§258) y la composicion del sello (§279).
+pub const COMPROMISO_AUSENTE: Digest = [BaseElement::new(0xC0_A9_2281); 4];
