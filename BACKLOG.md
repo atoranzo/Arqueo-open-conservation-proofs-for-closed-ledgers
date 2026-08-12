@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 31 abiertas, 49 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 32 abiertas, 49 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 12 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -867,6 +867,14 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **Segunda mitad**: `--diario` es explícita, así que un nodo que firme
   sin ella sigue sin poder reconocer su firma. Decidir si eso se queda
   como bandera o pasa a ir con `--clave`.
+- [ ] **81. Tres warnings en un ejemplo que el canon no ve.** El canon
+  no compila ejemplos, así que la fila de zk-ssl marca 0 mientras
+  `crates/zk-ssl/examples/etapa_b1_lote_medido.rs` avisa tres veces en
+  cada compilación: un `mut` inútil (:254) y `stale` asignado y nunca
+  leído (:244 y :289). Preexistentes — §275 no los introdujo y no los
+  toca. Evidencia: salida de la corrida 3 del BLOQUE-275c, 12-08-2026
+  (§275). Arreglo: quitar el `mut` y las dos asignaciones muertas —o
+  usarlas—; se marca aquí cuando el ejemplo compile limpio.
 
 ## E. Operacion
 

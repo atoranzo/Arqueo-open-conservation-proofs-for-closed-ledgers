@@ -20733,3 +20733,50 @@ por contexto con el corte ya decidido, la 16 midió y dejó bloque y
 gates listos. El montaje final se hizo en la 17 contra los fixtures de
 la paste-275, con ensayo de anclas y compilación de cada parche antes
 de tocar el árbol.
+
+## §276 — 2026-08-12 · La octava decisión, en el registro; y la nota 81
+
+**Una corrección a §275.** El asiento dice «**Las siete decisiones, con
+procedencia.**» y enumera siete. Eran **ocho**. La octava:
+
+**(8)** la pareja `(acuses_root, n)` se lee del cable con un ayudante
+APARTE — `pareja_desde_cable` — en vez de hacer que `recibo_desde_cable`
+devuelva una tripleta. Razón: lo que creció es **la cabeza**, no el
+camino, y `ReciboInclusion` conserva la forma de cinco campos que las
+cabezas v1 custodiadas necesitan. Procedencia: elegida por recomendación
+al montar el BLOQUE-275c (sesión 17), sin ratificar en su momento —
+reversible, la misma figura que fijó la 1 y la 6. La corrida 3 la dejó
+**ejercitada**.
+
+La ironía merece su línea: el asiento que documenta un negativo que
+pasaba por la razón equivocada llevaba un recuento de decisiones que
+**cuadraba y mentía** — §266 otra vez. Un recuento de decisiones también
+es un contador: se cuenta tras aplicar, no se hereda del plan.
+
+**Nota 81, abierta.** `crates/zk-ssl/examples/etapa_b1_lote_medido.rs`
+arrastra tres warnings preexistentes: un `mut` inútil (:254) y `stale`
+asignado y nunca leído (:244, :289). **El canon no compila ejemplos**:
+la fila de zk-ssl marca 0 mientras el ejemplo avisa tres veces en cada
+compilación. §275 no los introdujo y este sello no los toca — se anotan
+con su procedencia para que no se queden diez sellos. Va al grupo D,
+que es su definición: declarada, acotada, sin urgencia.
+
+**Qué toca este sello.** Dos documentos: AUDITORIA.md (este asiento,
+append — los asientos no se reescriben, §247) y BACKLOG.md (la nota al
+final del grupo D y el contador 31→32 abiertas). El índice de un
+vistazo no procede: es la cadena de la oponibilidad y la 81 no es
+eslabón. Cero `.rs`, cero pines, ningún `Cargo.*`: la foto del
+`--completo` no se entera.
+
+**Categorías.** *Medido*: la frase citada, única en AUDITORIA
+(`grep -ci` == 1, sesión 18, sobre `8900cd6`) · los tres warnings, con
+su salida (corrida 3 del 275c) · las casillas del BACKLOG, contadas
+**ancladas a columna 0** (31/49 → 32/49): la línea :66 —la que narra
+cómo se cazó la NOVENA contando `- [ ]` y `- [x]`— dispara cualquier
+cuenta sin anclar (+1/+1); el instrumento viaja con su forma, §263 y
+§266 en la misma línea. *Razonado*: nada — este sello no decide diseño;
+registra.
+
+**Procedencia del corte.** Recomendado en la sesión 18 y respaldado por
+el usuario sin reservas. La regla es la de §273 —lo que está MAL hoy va
+antes que lo que está pendiente— aplicada dos veces seguidas.
