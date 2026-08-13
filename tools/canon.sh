@@ -105,6 +105,20 @@ zk-core            completo   74   0  10  3600  2075 s medidos en 6cb8883 (§260
 FIN_TABLA
 )
 
+# ── lo que cubre el nivel --completo, y nadie mas (§284) ────────
+# La regla vieja «tocar un Cargo.* vence la foto» era SINTACTICA donde el
+# riesgo es SEMANTICO: sobredisparaba sobre todo el proyecto salvo esto.
+# `--completo` añade UNA fila sobre --sello: zk-core (su fila, arriba).
+# Cierre real, leido de crates/zk-core/Cargo.toml: settlement-prover
+# (path), ceremony (dev-dependency a proposito, grafo aciclico) y los
+# ark-* que pincha el [workspace.dependencies] del Cargo.toml RAIZ.
+#   - VENCE la foto: un cambio bajo estas rutas, o lineas ark-* en el
+#     diff del Cargo.toml raiz.
+#   - NO la vence (declarado ANTES de mirar nada): el Cargo.lock solo
+#     —un lock movido sin toml cubierto imprime que VALE, con la razon—
+#     ni la raiz tocada sin ark-*.
+COMPLETO_CUBRE="crates/zk-core crates/settlement-prover crates/ceremony"
+
 # ── utilidades ──────────────────────────────────────────────────
 rojo=0
 fallos=()
@@ -124,13 +138,34 @@ miembros_del_workspace() {
 
 estado_completo() {
   if [ -f "$SELLO_FILE" ]; then
-    local c f n
+    local c f n toc raiz lock ark
     read -r c f < "$SELLO_FILE"
     n=$(git rev-list --count "$c..HEAD" 2>/dev/null || echo "?")
     if [ "$n" = "0" ]; then
       msg "  ultimo --completo: $c ($f) · AL DIA"
     else
       msg "  ultimo --completo: $c ($f) · **$n sello(s) por detras de HEAD**"
+      if [ "$n" = "?" ]; then
+        msg "  la foto apunta a $c y ese sello ya no se alcanza: se remide con --completo"
+      else
+        toc=$(git diff --name-only "$c..HEAD" -- $COMPLETO_CUBRE 2>/dev/null)
+        raiz=$(git diff --name-only "$c..HEAD" -- Cargo.toml 2>/dev/null)
+        lock=$(git diff --name-only "$c..HEAD" -- Cargo.lock 2>/dev/null)
+        ark=0
+        [ -n "$raiz" ] && ark=$(git diff "$c..HEAD" -- Cargo.toml 2>/dev/null | grep -cE '^[+-].*ark-')
+        if [ -n "$toc" ]; then
+          msg "  ⚠️ VENCIDA: lo cubierto cambio desde la foto — toca --completo:"
+          sed 's/^/      /' <<< "$toc" >&2
+        elif [ "${ark:-0}" -gt 0 ]; then
+          msg "  ⚠️ VENCIDA: el Cargo.toml raiz movio lineas ark-* ($ark) — toca --completo"
+        elif [ -n "$raiz" ]; then
+          msg "  la raiz cambio sin mover ark-*: por detras pero limpio en lo cubierto, la foto VALE"
+        elif [ -n "$lock" ]; then
+          msg "  el lock se movio sin un Cargo.toml cubierto: por detras pero limpio en lo cubierto, la foto VALE"
+        else
+          msg "  por detras pero limpio en lo cubierto: la foto VALE"
+        fi
+      fi
     fi
   else
     msg "  ultimo --completo: **NUNCA**. Los 54 min del nivel completo no los ha corrido nadie."

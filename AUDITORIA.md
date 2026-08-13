@@ -21245,3 +21245,43 @@ formar parte de él (fail-stop, `doc/CONFIANZA_RESIDUAL.md` §5.2).
   (hoy: `zk-core` sola), y clausula del `Cargo.lock` declarada ANTES de
   mirar nada: el lock solo vence si cambio el `Cargo.toml` de un crate
   cubierto.
+
+## §284 — la foto del --completo gana su compuerta: el diff decide, no el calendario
+
+- QUE: `estado_completo()` (canon.sh) deja de solo contar sellos: con la
+  foto por detras, corre `git diff --name-only <foto>..HEAD` filtrado por
+  `COMPLETO_CUBRE` y dicta — VENCIDA con la lista de tocados, o «por
+  detras pero limpio en lo cubierto: la foto VALE». Cierra la deuda que
+  §283 dejo nombrada.
+- COBERTURA, leida del arbol (no del recuerdo): `--completo` añade UNA
+  fila sobre --sello, `zk-core`; su cierre real segun
+  crates/zk-core/Cargo.toml es settlement-prover (path), ceremony
+  (dev-dependency a proposito, grafo aciclico) y los ark-* pinchados en el
+  [workspace.dependencies] del Cargo.toml RAIZ. La lista vive EN canon.sh,
+  junto a la tabla, para que no envejezca en un documento aparte.
+- CLAUSULA DEL LOCK, declarada ANTES de mirar nada: el Cargo.lock solo NO
+  vence la foto; sin ella la compuerta habria dado rojo en su estreno por
+  el mismo sobredisparo sintactico que viene a quitar. Un lock movido sin
+  toml cubierto imprime que VALE, con la razon.
+- DECISION del asistente, REVERSIBLE (patron ratificado): el Cargo.toml
+  raiz tocado solo vence si su diff mueve lineas `ark-*`; tocado sin eso
+  (alta de un member, p.ej.) imprime que VALE, con la razon. Los crates de
+  registro (sled, ark-crypto-primitives) quedan cubiertos via los toml.
+- Guardas: foto inalcanzable (`git rev-list` no resuelve) se dice y se
+  manda remedir, no se finge verde. Ni una tuberia a `grep -q` (punto 6 de
+  la cabecera del propio canon): todo por variables y here-strings.
+- EJERCITADO: siete casos sobre repos git reales con CANON_RAIZ (para eso
+  existe) — al dia · docs solos VALE · zk-core tocado VENCIDA con lista ·
+  lock solo VALE con razon · raiz con ark VENCIDA · raiz sin ark VALE con
+  razon · foto inalcanzable se remide. El primer arnes del ensayo mintio
+  (commits fallidos dejaron el arbol contaminado y un commit -am arrastro
+  todo): se detecto porque el caso «docs solos» dio VENCIDA, se reconstruyo
+  limpio y los siete salieron. La compuerta no fallo ni una vez; el arnes si.
+- ESTRENO medido sobre el arbol real ANTES de montar: 50 tocados desde
+  6cb8883, CERO bajo lo cubierto y ningun Cargo — la primera frase de la
+  compuerta es que la foto VALE, que es exactamente el sobredisparo que
+  esta entrada quita.
+- Sin `.rs`, sin pines, sumas quietas: canon.sh 264 -> 299 (+35) y este
+  asiento. La deuda que SIGUE abierta no cambia: segunda mitad de la 80,
+  lotes (RFC-0002 etapa 2), nota 81 y los 6 warnings preexistentes del bin
+  del nodo que la INERTE de §283 dejo a la vista.
