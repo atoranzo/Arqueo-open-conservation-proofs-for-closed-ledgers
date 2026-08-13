@@ -10,15 +10,15 @@
 //! - el CLIENTE (zk-ssl-sdk) deriva sus identificadores y PRUEBA en local.
 //!   Ninguna clave de gasto viaja por este RPC.
 
-/// **El guardián del índice de firma XMSS.**
-///
-/// Aquí y no en la capa por el mismo criterio que las reservas de
-/// posición: firmar cabezas es **política del operador**, no invariante
-/// de la liquidación. Ver la cabecera del módulo.
-///
-/// ⚠️ **Sin consumidor todavía**: es el eslabón 2 de la cadena de la
-/// oponibilidad (`BACKLOG.md`) y el 3 —la cabeza firmada— no existe.
-mod firma_indice;
+// ⚠️ §296 · **El guardián del índice ya NO vive aquí.** Se mudó a
+// `crates/zk-ssl-guardian` para que el TESTIGO pueda usar **la misma
+// implementación** sin compilar el nodo. Es la regla de §243 (el
+// verificador) y §254 (el hash) por tercera vez, y la razón es la de
+// §253: dos implementaciones del mismo invariante pueden discrepar — y
+// aquí discrepar significa **filtrar una clave**.
+//
+// ⚠️ Su doc viajó con él: cuando aquella decía «sin consumidor
+// todavía» ya tenía dos (`firma_cabeza`, `recepcion`).
 
 /// **El firmante de cabezas de época.** Eslabón 3 de la cadena de la
 /// oponibilidad, y el **consumidor** que al guardián le faltaba (§234).

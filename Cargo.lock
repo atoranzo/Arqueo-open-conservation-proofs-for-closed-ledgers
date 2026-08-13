@@ -3404,6 +3404,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "zk-ssl-guardian"
+version = "0.1.0"
+
+[[package]]
 name = "zk-ssl-hash"
 version = "0.1.0"
 dependencies = [
@@ -3427,6 +3431,7 @@ dependencies = [
  "winterfell",
  "xmss",
  "zk-ssl",
+ "zk-ssl-guardian",
  "zk-ssl-verify",
  "zk-ssl-wire",
 ]

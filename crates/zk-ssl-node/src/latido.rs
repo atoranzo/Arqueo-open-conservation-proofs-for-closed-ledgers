@@ -279,7 +279,7 @@ pub fn pareja_mmr(app: &App) -> (zk_ssl_verify::acuses::Digest, u64) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::firma_indice::Reconciliacion;
+    use zk_ssl_guardian::Reconciliacion;
     use serde_json::json;
 
     fn en_disco(nombre: &str) -> std::path::PathBuf {

@@ -28,6 +28,9 @@ zk-ssl-wire = { path = "../zk-ssl-wire" }
 # mismo verificador que usara el tercero**, no otro. Si el firmante y el
 # testigo no comparten codigo, pueden discrepar.
 zk-ssl-verify = { path = "../zk-ssl-verify" }
+# ⚠️ §296: el GUARDIAN del indice, compartido con el testigo. Solo `std`:
+# no arrastra nada, y por eso el cli tambien podra usarlo sin romper §243.
+zk-ssl-guardian = { path = "../zk-ssl-guardian" }
 stark-experiment = { path = "../stark-experiment" }
 winterfell = "0.13"
 # ⚠️ **0.1.0-pre.0, SIN auditoría independiente**, declarado por el propio

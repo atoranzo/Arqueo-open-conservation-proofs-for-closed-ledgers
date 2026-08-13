@@ -73,7 +73,7 @@
 
 use std::path::Path;
 
-use crate::firma_indice::{GuardianError, GuardianIndice};
+use zk_ssl_guardian::{GuardianError, GuardianIndice};
 
 /// Cuenta, con `fsync`, las operaciones que el nodo **llega a evaluar**.
 ///

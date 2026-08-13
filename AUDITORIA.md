@@ -21888,3 +21888,105 @@ por COLUMNA; sumas 816/953/967 → **820/957/971** («del testigo»
 (banco_consistencia.sh, FUERA del canon como sus dos hermanos).
 witness.rs 1830→1974. Ningun .rs nuevo (115 siguen); ningun Cargo
 tocado. La foto del completo sigue por la clausula de §284.
+
+## §296 — la mudanza del guardian: un testigo no debe compilar el nodo para firmar
+
+**Que.** `crates/zk-ssl-node/src/firma_indice.rs` pasa a ser
+`crates/zk-ssl-guardian/src/lib.rs`, un crate propio SIN NINGUNA
+dependencia —solo `std`—. No es una reorganizacion por gusto: es la
+precondicion del tramo (ii) de la nota 83. El testigo vive en
+`zk-ssl-cli`, que NO PUEDE depender del nodo (arrastraria la capa y el
+probador; su propio Cargo lo prohibe citando §243), y para cofirmar
+necesita el guardian del indice. Tercera vez de la misma regla: §243
+saco `zk-ssl-verify` porque **un tercero no debe compilar el nodo para
+verificar**; §254 saco `zk-ssl-hash` porque **un verificador tampoco
+compila el probador**; y ahora, **un testigo no debe compilar el nodo
+para firmar**.
+
+**Por que MUDAR y no reimplementar.** Lo decidio la casa antes que este
+corte: §253 necesito un contador persistido para la recepcion y
+**reuso `GuardianIndice` ENTERO** en vez de escribir otro
+—`recepcion.rs` lo dice en su doc, y la tabla de `zk-ssl-hash` lo cita
+como precedente—. Dos implementaciones del mismo invariante pueden
+discrepar, y aqui discrepar significa **filtrar una clave**: la curva
+QRL da ~2^18 hashes a la cuarta repeticion de un indice. Lo que se
+comparte es el INVARIANTE —«ninguna firma puede existir con un indice
+mayor que el contador persistido»—, no el dominio: `FirmanteCabeza` se
+queda en el nodo con el suyo, y el firmante del testigo llevara otro.
+
+**Donde toco, y por que en cada sitio.** El fichero se MOVIO con `mv`,
+no se retecleo (§283): su huella sale del corte **identica a como
+entro** —381cb8d78020e44a, 444 lineas—, y eso se comprueba dentro del
+propio bloque justo despues del movimiento. Los enganches: tres `use`
+del nodo pasan de `crate::firma_indice::` a `zk_ssl_guardian::`
+(`firma_cabeza`, `recepcion`, `latido`); el `mod firma_indice;` de
+`main.rs` deja en su lugar un comentario que dice DONDE vive ahora —y
+su doc viajo con el, que aun decia «sin consumidor todavia» cuando ya
+tenia dos—. El Cargo del nodo gana la dependencia; el del workspace,
+el miembro; `canon.sh`, la fila nueva y el pin del nodo por COLUMNA.
+
+**Ejercitado.** Los 9 tests del guardian, en su crate y en release. Los
+73 del nodo, que es la cifra tras la mudanza. Y tres `cargo build`
+SEPARADOS —no uno conjunto, donde los warnings se mezclan y no se sabe
+de quien es cada uno—: guardian CERO, cli CERO, nodo por DELTA.
+
+**Un hallazgo que este corte destapo sin buscarlo (observado, §265).**
+**La mudanza QUITA dos warnings.** Medido: el nodo traia SEIS en
+`cargo build` antes y CUATRO despues. Los dos que desaparecen son
+`enum Reconciliacion` y `GuardianIndice::{actual, reconciliar}`, y la
+razon es de Rust: en un crate de biblioteca lo publico ES superficie
+publica de verdad, mientras que dentro de un binario un `pub` de modulo
+interno no exporta a nadie y rustc lo cuenta como muerto. **El guardian,
+como crate propio, deja de acumular falsos «nunca usado»** — un
+argumento a favor del refactor que no estaba en su motivacion.
+
+**Y un segundo: `Cargo.lock` esta VERSIONADO y a la vez aparece en
+`.gitignore`.** No es contradictorio para git —el ignore no afecta a lo
+ya seguido— pero si engañoso al leerlo. Un miembro nuevo del workspace
+lo modifica NECESARIAMENTE, lo hace cargo solo. Aqui dejo de vigilarse
+con un centinela de inmovilidad y paso a compuerta de CONTENIDO: su
+diff no puede traer ningun paquete que no sea el crate nuevo, porque
+una resolucion de dependencias colandose en un refactor tocaria ademas
+la clausula de la foto (§284).
+
+**Decisiones y precios, escritos.** El nombre `zk-ssl-guardian`: una
+palabra, como `hash`, `verify` y `wire`; es la que el propio codigo usa;
+y casa `[a-z0-9-]+`, que es lo que el canon extrae del workspace. Se
+muda SOLO el guardian —`GuardianIndice`, `Reconciliacion`,
+`GuardianError`— y no el firmante. La compuerta de este corte no puede
+ser «Cargo intacto» como en los anteriores: es **«Cargo cambia SOLO
+donde debe»**, raiz y nodo, con los demas de centinela.
+
+**SIETE rojos propios, escritos porque un rojo que no se escribe se
+repite.** Ninguno toco el arbol; los seis fueron de MIS INSTRUMENTOS, y
+el parche no cambio un byte entre la primera version y la sexta.
+(1) Un gate preguntaba `git check-ignore` por una ruta **que aun no
+existia**: un patron que exige directorio no puede casar contra algo que
+git no sabe si sera fichero o carpeta — se pregunta por EL PATRON, y por
+la ruta solo cuando ya esta. (2) Puse `warnings==0` sobre el build del
+nodo, un liston que ese crate **nunca cumplio**: para una deuda
+PREEXISTENTE con dueño declarado (la nota 94) el gate correcto es el
+DELTA, no el absoluto. (3) `restaurar()` decia CUANTAS entradas
+quedaban, no CUALES — §254 incumplido por mi propio codigo, y por eso se
+perdio la evidencia de un porcelain sucio. (4) Un centinela de
+inmovilidad sobre el lock, que se mueve por diseño. (5) Backticks dentro
+de un `msg "..."`, que bash EJECUTO — para eso existe la guardia `BT`.
+(6) `restaurar()` no devolvia el lock, asi que el arbol quedaba sucio y
+**el PRE del pase siguiente moria por ello**: lo que un bloque ensucia
+lo devuelve, lo haya escrito el o una herramienta suya. (7) Y el septimo
+lo canto el canon: di por hecho que «sumas quietas» equivalia a
+«ningun documento se toca», y `PRINCIPIOS.md` llevaba la cifra
+POR-CRATE del nodo. Es la misma leccion que §294 ya dejo escrita con
+«28 del testigo»: **las sumas y las cifras por-crate envejecen por
+separado**, y `check_cifras` vigila las dos.
+
+**Contadores.** `zk-ssl-node` 82 -> 73; `zk-ssl-guardian` 9, nuevo. Y la
+cifra POR-CRATE del nodo en `PRINCIPIOS.md`, 82 -> 73: las SUMAS no se
+mueven, pero una cifra suelta si.
+**Las sumas NO se mueven: 820/957/971** — los 9 tests se MUDAN, no
+nacen. Es la diferencia con §254, cuyo asiento registra 699 -> 703
+porque aquella extraccion añadio tests. Miembros del workspace 16 -> 17,
+y filas de la tabla del canon igual. 115 ficheros .rs, los mismos: uno
+sale del nodo y otro entra en el crate nuevo. BACKLOG QUIETO en 40/54:
+esto no cierra ninguna nota ni abre otra — es la precondicion del (ii),
+y un refactor preparatorio no es un cumplido.

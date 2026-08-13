@@ -43,7 +43,10 @@ use std::path::Path;
 
 use xmss::KeyPair;
 
-use crate::firma_indice::{GuardianError, GuardianIndice, Reconciliacion};
+// ⚠️ §296: el guardian vive en su propio crate. El nodo y el TESTIGO
+// comparten LA MISMA implementacion — dos del mismo invariante pueden
+// discrepar, y aqui discrepar significa FILTRAR UNA CLAVE (§253, §243).
+use zk_ssl_guardian::{GuardianError, GuardianIndice, Reconciliacion};
 
 // ⚠️ Reexportado, no reimplementado: la verificación vive en `zk-ssl-verify`
 // y quien la usaba desde aquí (main.rs, latido.rs) no cambia.

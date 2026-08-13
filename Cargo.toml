@@ -21,6 +21,9 @@ members = [
     # abajo: un verificador tampoco compila el PROBADOR. Solo depende de
     # `winter-math` y `winter-crypto` SUELTOS, clavados con `=`.
     "crates/zk-ssl-hash",
+    # ⚠️ El GUARDIAN del indice (§296). Tercera vez de la misma regla: un
+    # TESTIGO no debe compilar el NODO para firmar. Solo depende de `std`.
+    "crates/zk-ssl-guardian",
 ]
 resolver = "2"
 

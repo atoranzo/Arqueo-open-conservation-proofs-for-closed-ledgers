@@ -1,0 +1,23 @@
+[package]
+name = "zk-ssl-guardian"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+# **El guardián del índice de firma.** Un contador monótono persistido con
+# `fsync`, con una autocomprobación que se niega a operar donde `fsync` no
+# persiste de verdad (K.1, §234: en `tmpfs` devuelve éxito sin escribir).
+#
+# ⚠️ **Vive en su propio crate desde §296**, y la razón es la misma que
+# saco `zk-ssl-verify` (§243) y `zk-ssl-hash` (§254) un nivel mas abajo:
+# **un TESTIGO no debe compilar el NODO para firmar**. Lo que se comparte
+# es el INVARIANTE —«ninguna firma puede existir con un indice mayor que
+# el contador persistido»—, no el dominio: cada firmante lleva el suyo.
+#
+# ⚠️ Y se comparte ENTERO, no se reimplementa: es lo que §253 hizo con el
+# contador de recepcion. Dos implementaciones del mismo invariante pueden
+# discrepar, y aqui discrepar significa **filtrar una clave** (curva QRL:
+# a la cuarta repeticion, ~2^18 hashes).
+
+[dependencies]
+# NINGUNA. Solo `std`: un fichero, ocho bytes y un orden.
