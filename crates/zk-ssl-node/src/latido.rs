@@ -141,6 +141,9 @@ pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result
     // del candado NO esta medido (menos entradas por epoca que las 12k
     // de M.1, pero arbol nuevo): se medira con el metodo de M.1 —dos
     // fases con control—, y hasta entonces queda declarado aqui.
+    // §292: la pareja del MMR se lee ANTES y con SU candado — no depende
+    // del estado de la capa, y meterla dentro alargaria el candado gordo.
+    let (cima_mmr, t_mmr) = pareja_mmr(app);
     let (cabeza, epoch_digest) = {
         let e = app
             .estado
@@ -148,7 +151,7 @@ pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result
             .map_err(|_| anyhow::anyhow!("el candado del estado esta envenenado"))?;
         let pares = crate::vista_acuses::pares(e.layer.transition_log().entries());
         let (acuses_root, n) = crate::vista_acuses::pareja_de_ahora(&pares, limite_anterior);
-        let cabeza = e.layer.epoch_head(acuses_root, n);
+        let cabeza = e.layer.epoch_head(acuses_root, n, cima_mmr, t_mmr);
         (cabeza, zk_ssl_wire::digest_to_wire(&cabeza.digest()).0)
     };
 
@@ -242,9 +245,35 @@ pub fn conservar(app: &App, l: Latido) {
             tracing::warn!(error = %e, "no se pudo anotar el latido en el diario");
         }
     }
+    // §292: la hoja del MMR entra AQUI, en el mismo sitio que anota el
+    // diario — cache y diario avanzan juntos, y tras un reinicio la
+    // siembra del diario reconstruye exactamente esta serie (P-doctrina:
+    // el diario manda; la memoria es cache).
+    let hoja = l.cabeza.digest();
     if let Ok(mut u) = app.ultima_cabeza.lock() {
         *u = Some(l);
     }
+    if let Ok(mut h) = app.hojas_mmr.lock() {
+        h.push(hoja);
+    }
+}
+
+/// La pareja `(cima, t)` que la cabeza de este latido va a firmar
+/// (§292): la cima del MMR sobre las cabezas YA emitidas, y cuantas son.
+///
+/// ⚠️ Genesis declarado: sin hojas, `(as_digest(0), 0)` — el valor que
+/// la composicion v3 fija. ⚠️ La cima se RECOMPONE de las hojas en cada
+/// latido: O(hojas) por latido, despreciable a 1/min durante meses
+/// (§292 lo declara y deja los picos incrementales anotados en el
+/// BACKLOG — no se optimiza sin medir).
+pub fn pareja_mmr(app: &App) -> (zk_ssl_verify::acuses::Digest, u64) {
+    if let Ok(h) = app.hojas_mmr.lock() {
+        let t = h.len() as u64;
+        let cima = zk_ssl_verify::mmr::cima(&h)
+            .unwrap_or_else(|| zk_ssl_verify::acuses::as_digest(0));
+        return (cima, t);
+    }
+    (zk_ssl_verify::acuses::as_digest(0), 0)
 }
 
 #[cfg(test)]

@@ -52,8 +52,8 @@ mod inclusion;
 // de nada. `verificar_inclusion` NO se sustituye: v1 es el recompositor
 // de las cabezas ya custodiadas, y esas no cambian de forma.
 pub use inclusion::{
-    verificar_acuse, verificar_inclusion, verificar_inclusion_v2, InclusionError, ReciboAcuse,
-    ReciboInclusion,
+    verificar_acuse, verificar_acuse_v3, verificar_inclusion, verificar_inclusion_v2,
+    verificar_inclusion_v3, InclusionError, ReciboAcuse, ReciboInclusion,
 };
 
 // ⚠️ §274 · Las reglas del árbol de acuses viven AQUÍ y en ningún otro
@@ -65,6 +65,10 @@ pub mod acuses;
 /// aquella» sin descargar el registro — eslabon 2 de la nota 83, puro.
 /// La atadura al formato firmado (v3) es decision aparte y llega despues.
 pub mod mmr;
+
+// §292: las composiciones del digest, reexportadas para que quien ya
+// depende de verify (cli, bin) no gane una dependencia solo por ellas.
+pub use zk_ssl_hash::{epoch_digest_v2, epoch_digest_v3};
 
 // ⚠️ §279 · **La superficie CRECE otra vez**, y por la misma razon que en
 // §275: el modulo es PRIVADO, asi que un `pub` que no aparezca aqui no
@@ -86,7 +90,7 @@ pub const DOMINIO: &[u8] = b"ZK-SSL-epoch-head";
 /// ⚠️ Sube cuando cambian **los campos de `EpochHead`**, no cuando cambia el
 /// cable. Son ejes distintos: `zkssl/0.2` gobierna qué viaja; esto, qué
 /// entra en la firma.
-pub const VERSION_FORMATO: u8 = 2;
+pub const VERSION_FORMATO: u8 = 3;
 
 /// Bytes del RFC 8391 que ocupa la firma de este conjunto, sin el mensaje.
 pub const FIRMA_RFC_BYTES: usize = 18_469;

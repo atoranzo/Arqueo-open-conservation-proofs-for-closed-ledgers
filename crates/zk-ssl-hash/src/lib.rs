@@ -236,6 +236,65 @@ pub fn epoch_digest_v2(
     )
 }
 
+/// **v3 (§292): la envoltura de v2, otra vez** — el molde de §275:
+///
+/// ```text
+///   v3 = merge( epoch_digest_v2(los siete), merge(cima_mmr, as_digest(t)) )
+/// ```
+///
+/// `cima_mmr` es la cima del MMR de cabezas (§291) sobre los digests de
+/// TODAS las cabezas anteriores, y `t` cuantas hojas acumula. Con esto
+/// **una cabeza nueva prueba que EXTIENDE a la vieja** (eslabon 2 de la
+/// nota 83): la prueba de consistencia sube de cima a cima.
+///
+/// ⚠️ **Genesis, DECLARADO**: la PRIMERA cabeza compone con
+/// `cima_mmr = as_digest(0)` y `t = 0` — un acumulador vacio no tiene
+/// cima y este es el valor que la composicion fija para ese caso.
+///
+/// ⚠️ Sin tag de dominio, por la razon de `epoch_digest`: siempre se
+/// consume dentro de un preambulo firmado, y el **byte de version** del
+/// preambulo (2 → 3) es lo que separa las composiciones (§236).
+pub fn epoch_digest_v3(
+    seq: u64,
+    accounts_root: Digest,
+    pending_root: Digest,
+    frozen_root: Digest,
+    chain_digest: Digest,
+    acuses_root: Digest,
+    n: u64,
+    cima_mmr: Digest,
+    t: u64,
+) -> Digest {
+    native_merge(
+        epoch_digest_v2(seq, accounts_root, pending_root, frozen_root, chain_digest, acuses_root, n),
+        native_merge(cima_mmr, as_digest(t)),
+    )
+}
+
+#[cfg(test)]
+mod tests_digest_v3 {
+    use super::*;
+
+    #[test]
+    fn v3_no_es_v2_ni_con_la_pareja_de_genesis() {
+        // La envoltura SIEMPRE separa: hasta el genesis (cima=0, t=0)
+        // compone distinto de v2 — si no, una cabeza v3 recien nacida
+        // seria confundible con una v2.
+        let d = as_digest(7);
+        let v2 = epoch_digest_v2(1, d, d, d, d, d, 5);
+        let v3 = epoch_digest_v3(1, d, d, d, d, d, 5, as_digest(0), 0);
+        assert_ne!(v2, v3);
+    }
+
+    #[test]
+    fn la_cima_y_t_mueven_el_digest_cada_uno_por_su_lado() {
+        let d = as_digest(7);
+        let base = epoch_digest_v3(1, d, d, d, d, d, 5, as_digest(0), 0);
+        assert_ne!(base, epoch_digest_v3(1, d, d, d, d, d, 5, as_digest(9), 0));
+        assert_ne!(base, epoch_digest_v3(1, d, d, d, d, d, 5, as_digest(0), 1));
+    }
+}
+
 /// **Dominio del acuse**, con version en el propio valor.
 ///
 /// Son los ocho bytes ASCII de `ACUSE_V1` leidos como `u64`. Se escribe asi

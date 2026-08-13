@@ -144,6 +144,51 @@ pub fn ultimo_seq(ruta: impl AsRef<Path>) -> Option<u64> {
     limites(ruta).into_iter().last()
 }
 
+/// Los `epochDigest` que el diario conserva, en orden de anotacion:
+/// **las hojas del MMR de cabezas** (§292). Misma doctrina que
+/// [`limites`]: el diario manda, la memoria es cache, y una linea
+/// ilegible o sin digest legible se SALTA — cuesta una hoja en la
+/// lectura, no un panico.
+pub fn digests(ruta: impl AsRef<Path>) -> Vec<zk_ssl_verify::acuses::Digest> {
+    let texto = match std::fs::read_to_string(ruta) {
+        Ok(t) => t,
+        Err(_) => return Vec::new(),
+    };
+    let mut v = Vec::new();
+    for l in texto.lines() {
+        let j: Value = match serde_json::from_str(l) {
+            Ok(j) => j,
+            Err(_) => continue,
+        };
+        let s = match j["epochDigest"].as_str() {
+            Some(s) => s,
+            None => continue,
+        };
+        let h = s.trim_start_matches("0x");
+        if h.len() != 64 {
+            continue;
+        }
+        let mut b = [0u8; 32];
+        let mut mal = false;
+        for (i, par) in (0..64).step_by(2).enumerate() {
+            match u8::from_str_radix(&h[par..par + 2], 16) {
+                Ok(x) => b[i] = x,
+                Err(_) => {
+                    mal = true;
+                    break;
+                }
+            }
+        }
+        if mal {
+            continue;
+        }
+        if let Some(dig) = zk_ssl_verify::mmr::hoja_desde_bytes(&b) {
+            v.push(dig);
+        }
+    }
+    v
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -160,6 +205,8 @@ mod tests {
                 chain_digest: as_digest(0),
                 acuses_root: as_digest(0),
                 n: 0,
+                mmr_cima: as_digest(0),
+                mmr_t: 0,
             },
             seq: 42,
             epoch_digest: [digest; 32],
@@ -250,6 +297,8 @@ mod tests_limites {
                 chain_digest: as_digest(0),
                 acuses_root: as_digest(0),
                 n: 0,
+                mmr_cima: as_digest(0),
+                mmr_t: 0,
             },
             seq,
             epoch_digest: [0x33; 32],
@@ -273,6 +322,30 @@ mod tests_limites {
         anotar(&r, &latido_sin_firma(9), &[]).expect("segunda");
         assert_eq!(limites(&r), vec![5, 9], "la linea corrupta debe SALTARSE");
         assert_eq!(ultimo_seq(&r), Some(9));
+    }
+
+    #[test]
+    fn los_digests_salen_del_diario_en_orden_y_lo_ilegible_se_salta() {
+        // §292: la siembra del MMR lee EXACTAMENTE lo que el diario
+        // conserva. Una linea basura cuesta una hoja, no un panico.
+        let dir = std::path::Path::new("target").join("diario_digests");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("carpeta");
+        let r = dir.join("diario.jsonl");
+        let mut a = latido_sin_firma(1);
+        a.epoch_digest = [0x11; 32];
+        let mut b = latido_sin_firma(2);
+        b.epoch_digest = [0x22; 32];
+        anotar(&r, &a, &[]).expect("primera");
+        {
+            use std::io::Write;
+            let mut f = std::fs::OpenOptions::new().append(true).open(&r).expect("abrir");
+            writeln!(f, "esto no es json").expect("basura");
+        }
+        anotar(&r, &b, &[]).expect("segunda");
+        let v = digests(&r);
+        assert_eq!(v.len(), 2, "dos hojas, la basura saltada");
+        assert_ne!(v[0], v[1], "el orden y el contenido deben conservarse");
     }
 
     #[test]

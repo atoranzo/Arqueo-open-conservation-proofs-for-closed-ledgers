@@ -458,6 +458,156 @@ pub fn verificar_inclusion_v2(
     Ok(())
 }
 
+/// El acuse contra una cabeza **v3** (§292): mismos pasos que
+/// [`verificar_acuse`], pero el digest firmado se recompone con la
+/// pareja del MMR. **La version que la firma declara elige
+/// recomponedor** — el mismo patron que separa v1 de v2 aqui arriba.
+pub fn verificar_acuse_v3(
+    recibo: &ReciboAcuse,
+    mmr_cima: Digest,
+    mmr_t: u64,
+    epoch_digest_firmado: Digest,
+) -> Result<(), InclusionError> {
+    if recibo.hermanos.len() != recibo.derecha.len() {
+        return Err(InclusionError::CaminoDescuadrado {
+            hermanos: recibo.hermanos.len(),
+            derecha: recibo.derecha.len(),
+        });
+    }
+    let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
+    if raiz != recibo.acuses_root {
+        return Err(InclusionError::RaizDistinta);
+    }
+    let compuesto = zk_ssl_hash::epoch_digest_v3(
+        recibo.seq,
+        recibo.accounts_root,
+        recibo.pending_root,
+        recibo.frozen_root,
+        recibo.chain_digest,
+        recibo.acuses_root,
+        recibo.n,
+        mmr_cima,
+        mmr_t,
+    );
+    if compuesto != epoch_digest_firmado {
+        return Err(InclusionError::CabezaDistinta);
+    }
+    Ok(())
+}
+
+/// La inclusion contra una cabeza **v3** (§292). Ver
+/// [`verificar_inclusion_v2`]: mismos pasos, recomponedor v3.
+pub fn verificar_inclusion_v3(
+    recibo: &ReciboInclusion,
+    acuses_root: Digest,
+    n: u64,
+    mmr_cima: Digest,
+    mmr_t: u64,
+    epoch_digest_firmado: Digest,
+) -> Result<(), InclusionError> {
+    if recibo.hermanos.len() != recibo.derecha.len() {
+        return Err(InclusionError::CaminoDescuadrado {
+            hermanos: recibo.hermanos.len(),
+            derecha: recibo.derecha.len(),
+        });
+    }
+    let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
+    if raiz != recibo.accounts_root {
+        return Err(InclusionError::RaizDistinta);
+    }
+    let compuesto = zk_ssl_hash::epoch_digest_v3(
+        recibo.seq,
+        recibo.accounts_root,
+        recibo.pending_root,
+        recibo.frozen_root,
+        recibo.chain_digest,
+        acuses_root,
+        n,
+        mmr_cima,
+        mmr_t,
+    );
+    if compuesto != epoch_digest_firmado {
+        return Err(InclusionError::CabezaDistinta);
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests_v3 {
+    use super::*;
+    use winter_math::fields::f64::BaseElement;
+
+    fn d(n: u64) -> Digest {
+        [
+            BaseElement::new(n),
+            BaseElement::new(n + 1),
+            BaseElement::new(n + 2),
+            BaseElement::new(n + 3),
+        ]
+    }
+
+    /// Un acuse de camino VACIO (la hoja ES la raiz) contra el digest v3:
+    /// verifica con el recomponedor v3 y CAE con el v2 — la version que
+    /// la firma declara elige recomponedor, y elegir mal es CabezaDistinta.
+    #[test]
+    fn el_acuse_v3_verifica_y_el_recomponedor_v2_lo_rechaza() {
+        let hoja = d(40);
+        let recibo = ReciboAcuse {
+            hoja,
+            hermanos: Vec::new(),
+            derecha: Vec::new(),
+            seq: 9,
+            accounts_root: d(1),
+            pending_root: d(2),
+            frozen_root: d(3),
+            chain_digest: d(4),
+            acuses_root: hoja,
+            n: 5,
+        };
+        let cima = d(60);
+        let firmado_v3 = zk_ssl_hash::epoch_digest_v3(
+            9, d(1), d(2), d(3), d(4), hoja, 5, cima, 2,
+        );
+        verificar_acuse_v3(&recibo, cima, 2, firmado_v3).expect("v3 debe verificar");
+        assert!(
+            matches!(
+                verificar_acuse(&recibo, firmado_v3),
+                Err(InclusionError::CabezaDistinta)
+            ),
+            "el recomponedor v2 no puede aceptar un digest v3"
+        );
+    }
+
+    #[test]
+    fn la_pareja_del_mmr_no_es_decorativa_en_la_inclusion_v3() {
+        let hoja = d(70);
+        let recibo = ReciboInclusion {
+            indice: 0,
+            hoja,
+            hermanos: Vec::new(),
+            derecha: Vec::new(),
+            seq: 3,
+            accounts_root: hoja,
+            pending_root: d(2),
+            frozen_root: d(3),
+            chain_digest: d(4),
+        };
+        let cima = d(80);
+        let firmado = zk_ssl_hash::epoch_digest_v3(
+            3, hoja, d(2), d(3), d(4), d(5), 7, cima, 4,
+        );
+        verificar_inclusion_v3(&recibo, d(5), 7, cima, 4, firmado)
+            .expect("v3 debe verificar");
+        assert!(
+            matches!(
+                verificar_inclusion_v3(&recibo, d(5), 7, cima, 5, firmado),
+                Err(InclusionError::CabezaDistinta)
+            ),
+            "un t distinto debe romper la recomposicion"
+        );
+    }
+}
+
 #[cfg(test)]
 mod tests_acuse {
     use super::*;

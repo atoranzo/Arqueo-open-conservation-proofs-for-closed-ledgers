@@ -41,6 +41,13 @@
 
 use zk_ssl_hash::{mmr_hoja, mmr_nodo, Digest};
 
+/// Una hoja del MMR desde los 32 bytes del cable (§292): el envoltorio
+/// que permite al NODO sembrar la vista desde su diario sin ganar la
+/// dependencia de hash — la conversion vive aqui, con el acumulador.
+pub fn hoja_desde_bytes(b: &[u8; 32]) -> Option<Digest> {
+    zk_ssl_hash::digest_from_bytes(b).ok()
+}
+
 /// La mayor potencia de dos ESTRICTAMENTE menor que `n`. Solo para
 /// `n >= 2`: es la particion de RFC 6962, compartida por generacion y
 /// verificacion.

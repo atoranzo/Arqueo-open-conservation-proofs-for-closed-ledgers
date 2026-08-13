@@ -106,7 +106,20 @@ fn recolectar(layer: &SovereignLayer) -> Vectores {
         // §207 sumo tres tests al arbol disperso: 242 -> 245.
         canon: [297, 245, 40, 28],
         entradas,
-        epoch_digest: hexd(&layer.epoch_head(zk_ssl_verify::acuses::as_digest(0), 0).digest()),
+        // ⚠️ §292: el vector SELLADO pina LA COMPOSICION V2 — es un artefacto
+        // congelado y su significado no se mueve con el formato vivo. Por eso
+        // aqui se compone v2 EXPLICITO en vez de llamar a digest(), que desde
+        // §292 compone v3. Los campos son los mismos siete de siempre.
+        epoch_digest: hexd(&{
+            let h = layer.epoch_head(
+                zk_ssl_verify::acuses::as_digest(0), 0,
+                zk_ssl_verify::acuses::as_digest(0), 0,
+            );
+            zk_ssl_verify::epoch_digest_v2(
+                h.seq, h.accounts_root, h.pending_root, h.frozen_root,
+                h.chain_digest, h.acuses_root, h.n,
+            )
+        }),
         supply: q(layer.total_supply()),
         pending: q(layer.total_pending()),
     }

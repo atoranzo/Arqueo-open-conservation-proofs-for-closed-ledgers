@@ -236,6 +236,12 @@ struct App {
     /// a recoger** — y eso depende de la relación entre la cadencia del
     /// latido y la del testigo, **no del reinicio**.
     ultima_cabeza: Mutex<Option<latido::Latido>>,
+    /// **Las hojas del MMR de cabezas** (§292): los digests de las
+    /// cabezas ya emitidas, en orden. La memoria es cache — al arrancar
+    /// se SIEMBRA del diario, y sin diario nace vacia: el `t` de la
+    /// cabeza se resetea VISIBLEMENTE, y quien firma lleva diario
+    /// obligado (§285), asi que toda cabeza FIRMADA lleva continuidad.
+    hojas_mmr: Mutex<Vec<zk_ssl_verify::acuses::Digest>>,
     /// La clave pública de firma, en bytes del formato RFC. **Vacía** si el
     /// nodo arrancó sin `--clave`. Un testigo la necesita para verificar.
     clave_publica_firma: Vec<u8>,
@@ -347,11 +353,18 @@ async fn main() -> anyhow::Result<()> {
         .as_ref()
         .map(|f| f.clave_publica())
         .unwrap_or_default();
+    // §292: la siembra del MMR — el diario manda, la memoria es cache.
+    let hojas_mmr_iniciales = args
+        .diario
+        .as_ref()
+        .map(crate::diario::digests)
+        .unwrap_or_default();
     let app = std::sync::Arc::new(App {
         estado: Mutex::new(Estado { layer, reservas: BTreeMap::new() }),
         dev: args.dev,
         reserva_ttl: Duration::from_secs(args.reserva_ttl),
         ultima_cabeza: Mutex::new(None),
+        hojas_mmr: Mutex::new(hojas_mmr_iniciales),
         clave_publica_firma,
         diario: args.diario.as_ref().map(std::path::PathBuf::from),
         latido_s: args.latido,
@@ -634,7 +647,10 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             let p_epoca = crate::latido::limite_de_epoca(app);
             let pares = crate::vista_acuses::pares(l.transition_log().entries());
             let (r, n) = crate::vista_acuses::pareja_de_ahora(&pares, p_epoca);
-            Ok(serde_json::to_value(wire::EpochHeadDto::from(&l.epoch_head(r, n))).unwrap())
+            {
+                let (cm, tm) = crate::latido::pareja_mmr(app);
+                Ok(serde_json::to_value(wire::EpochHeadDto::from(&l.epoch_head(r, n, cm, tm))).unwrap())
+            }
         }
 
         // ⚠️ **El método del TESTIGO** (§242). Aditivo: no toca
@@ -719,7 +735,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 leaf: digest_to_wire(&m.leaf),
                 path: wire::MerklePathDto::from(&m.path),
                 leaf_format: m.forma.como_cable().to_string(),
-                head: wire::EpochHeadDto::from(&{ let p_epoca = crate::latido::limite_de_epoca(app); let pares = crate::vista_acuses::pares(l.transition_log().entries()); let (r, n) = crate::vista_acuses::pareja_de_ahora(&pares, p_epoca); l.epoch_head(r, n) }),
+                head: wire::EpochHeadDto::from(&{ let p_epoca = crate::latido::limite_de_epoca(app); let pares = crate::vista_acuses::pares(l.transition_log().entries()); let (r, n) = crate::vista_acuses::pareja_de_ahora(&pares, p_epoca); let (cm, tm) = crate::latido::pareja_mmr(app); l.epoch_head(r, n, cm, tm) }),
             })
             .unwrap())
         }
@@ -1346,6 +1362,7 @@ mod tests {
             dev: true,
             reserva_ttl: Duration::from_secs(ttl_segundos),
             ultima_cabeza: Mutex::new(None),
+            hojas_mmr: Mutex::new(Vec::new()),
             clave_publica_firma: Vec::new(),
             diario: None,
             latido_s: crate::latido::LATIDO_POR_DEFECTO_S,
@@ -1834,7 +1851,7 @@ mod tests {
         // exactamente lo que la corrida 2 puso en rojo.
         let (acuses_root, n) = pareja_desde_cable(&r);
         assert_eq!(
-            zk_ssl_verify::verificar_inclusion_v2(&recibo_desde_cable(&r), acuses_root, n, firmado),
+            zk_ssl_verify::verificar_inclusion_v3(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, firmado),
             Ok(())
         );
     }
@@ -1902,12 +1919,12 @@ mod tests {
         )
         .expect("digest");
         assert_eq!(
-            zk_ssl_verify::verificar_inclusion_v2(&recibo_desde_cable(&r), acuses_root, n, suya),
+            zk_ssl_verify::verificar_inclusion_v3(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, suya),
             Ok(()),
             "el recibo debe valer contra la cabeza de SU epoca"
         );
         assert_eq!(
-            zk_ssl_verify::verificar_inclusion_v2(&recibo_desde_cable(&r), acuses_root, n, firmado),
+            zk_ssl_verify::verificar_inclusion_v3(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, firmado),
             Err(zk_ssl_verify::InclusionError::CabezaDistinta)
         );
     }

@@ -462,10 +462,18 @@ impl SovereignLayer {
     /// acuses y `n` son del nodo (diario + `vista_acuses`), y la capa no
     /// va a adivinarlos. Una pareja neutra (`as_digest(0)`, `0`) sirve
     /// donde el árbol de acuses no pinta nada, y se ve que es neutra.
-    pub fn epoch_head(&self, acuses_root: zk_ssl_hash::Digest, n: u64) -> crate::log::EpochHead {
+    pub fn epoch_head(
+        &self,
+        acuses_root: zk_ssl_hash::Digest,
+        n: u64,
+        mmr_cima: zk_ssl_hash::Digest,
+        mmr_t: u64,
+    ) -> crate::log::EpochHead {
         crate::log::EpochHead {
             acuses_root,
             n,
+            mmr_cima,
+            mmr_t,
             seq: self.log.len() as u64,
             accounts_root: self.accounts.root(),
             pending_root: self.pending.root(),

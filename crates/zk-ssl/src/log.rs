@@ -568,6 +568,15 @@ pub struct EpochHead {
     /// Techo de cabezas retenidas que el nodo declara (§275, §121). El
     /// verificador lo lee de aquí; `N_MAX_CABEZAS` es asunto del nodo.
     pub n: u64,
+    /// **La cima del MMR de cabezas** (§291, §292). Junto con `mmr_t`
+    /// viaja **firmada** desde el formato v3: una cabeza nueva prueba que
+    /// EXTIENDE a la anterior — eslabon 2 de la nota 83. El acumulador y
+    /// sus reglas: `zk_ssl_verify::mmr`; quien lo alimenta: el diario del
+    /// nodo (la memoria es cache, §275).
+    pub mmr_cima: Digest,
+    /// Cuantas hojas —cabezas anteriores— acumula la cima. Genesis: 0,
+    /// con `mmr_cima = as_digest(0)`, DECLARADO en la composicion v3.
+    pub mmr_t: u64,
     // ⚠️ **FALTA `verifier_hash`, y no por olvido.**
     //
     // `CONFIANZA_RESIDUAL.md` §2.2 lo propone con el mejor argumento de esa
@@ -622,7 +631,7 @@ impl EpochHead {
     /// igual**, y la única forma segura de garantizarlo es que **sea la
     /// misma función**. Dos composiciones divergirían **en silencio**.
     pub fn digest(&self) -> Digest {
-        zk_ssl_hash::epoch_digest_v2(
+        zk_ssl_hash::epoch_digest_v3(
             self.seq,
             self.accounts_root,
             self.pending_root,
@@ -630,7 +639,29 @@ impl EpochHead {
             self.chain_digest,
             self.acuses_root,
             self.n,
+            self.mmr_cima,
+            self.mmr_t,
         )
+    }
+}
+
+#[cfg(test)]
+mod tests_mmr_en_cabeza {
+    use crate::tests_support::*;
+
+    /// **La cima entra en el digest**: dos cabezas identicas en todo salvo
+    /// la pareja del MMR componen digests distintos — sin esto, «esta
+    /// cabeza extiende a aquella» seria una frase, no un valor firmado.
+    #[test]
+    fn la_pareja_del_mmr_mueve_el_digest() {
+        let layer = new_layer();
+        let a = layer
+            .epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0)
+            .digest();
+        let b = layer
+            .epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(3), 1)
+            .digest();
+        assert_ne!(a, b, "la cima del MMR debe mover el digest");
     }
 }
 
@@ -656,16 +687,16 @@ mod tests_cabeza {
         let alice_a = open_and_fund(&mut a, SK_ALICE, 1_000_000);
         let _alice_b = open_and_fund(&mut b, SK_ALICE, 1_000_000);
         assert_eq!(
-            a.epoch_head(zk_ssl_hash::as_digest(0), 0).digest(),
-            b.epoch_head(zk_ssl_hash::as_digest(0), 0).digest(),
+            a.epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0).digest(),
+            b.epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0).digest(),
             "dos nodos con la misma historia deben tener la misma cabeza"
         );
 
         // La vista A recibe una operación que la B no ve.
         open_and_fund(&mut a, SK_BOB, 0);
 
-        let ha = a.epoch_head(zk_ssl_hash::as_digest(0), 0);
-        let hb = b.epoch_head(zk_ssl_hash::as_digest(0), 0);
+        let ha = a.epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0);
+        let hb = b.epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0);
         assert_ne!(
             ha.digest(),
             hb.digest(),
@@ -692,12 +723,14 @@ mod tests_cabeza {
     #[test]
     fn a_head_does_not_say_who_issued_it() {
         let layer = new_layer();
-        let legitima = layer.epoch_head(zk_ssl_hash::as_digest(0), 0);
+        let legitima = layer.epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0);
 
         // Cualquiera puede construir esto. No hace falta ser el operador.
         let inventada = crate::log::EpochHead {
             acuses_root: zk_ssl_hash::as_digest(0),
             n: 0,
+            mmr_cima: zk_ssl_hash::as_digest(0),
+            mmr_t: 0,
             seq: legitima.seq,
             accounts_root: [BaseElement::new(0xFA15A); 4],
             pending_root: legitima.pending_root,

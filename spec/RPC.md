@@ -66,7 +66,7 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 |---|---|---|
 | `zkssl_protocolVersion` | — | `"zkssl/0.2"` |
 | `zkssl_params` | — | `{regulatoryLimit, maxSupply, maxAccounts: Q, custodianRoot: Digest}` |
-| `zkssl_epochHead` | — | `{seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, acusesRoot, n, epochDigest}` |
+| `zkssl_epochHead` | — | `{seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, acusesRoot, n, mmrRoot, mmrSize, epochDigest}` |
 | `zkssl_supply` | — | `{total, pending: Q}` |
 | `zkssl_accountCount` | — | `Q` |
 | `zkssl_publicId` | `{index: Q}` | `Digest` |
@@ -430,14 +430,37 @@ honesto. Ver los asientos §274 y §275.
 ### `zkssl_signedEpochHead` — la última cabeza firmada, para un TESTIGO
 
 Devuelve la cabeza de época **más reciente que el nodo firmó**, con todo lo
-que hace falta para verificarla sin él: los **siete campos** de la
-cabeza (§275), `publicKey`, `epochDigest`, `formatVersion`, `index` y
+que hace falta para verificarla sin él: los **nueve campos** de la
+cabeza (§275, §292), `publicKey`, `epochDigest`, `formatVersion`, `index` y
 `signature` — campos+digest+firma **juntos**, del mismo latido: un solo
 artefacto de custodia, sin carrera entre llamadas.
 
 ⚠️ **Aditivo**: no toca `zkssl_epochHead`, que sigue sirviendo la cabeza
 **sin firma** y está en los vectores de conformidad. **La versión no sube**,
 por la misma razón que no subió con `zkssl_applyMany`.
+
+### ⚠️ Formato **v3** (§292): la cabeza prueba que EXTIENDE
+
+La cabeza gana `mmrRoot` y `mmrSize`: la **cima del MMR de cabezas**
+sobre los digests de todas las anteriores, y cuántas acumula. Viajan
+**firmadas** — `formatVersion: 3` — y con ellas un cliente que custodia
+una cabeza vieja puede verificar que la nueva la EXTIENDE con una prueba
+de consistencia O(log N), sin descargarse el registro (eslabón 2 de la
+cadena de confianza residual).
+
+La composición, por envoltura como v1→v2:
+```text
+v3 = merge( epoch_digest_v2(los siete), merge(mmrRoot, mmrSize) )
+```
+**Génesis declarado**: la primera cabeza compone con cima `as_digest(0)`
+y `mmrSize: 0`. ⚠️ **Aditivo en el cable, rotura en el parser**:
+`zkssl/0.2` no sube (el precedente de §275), y un consumidor con
+`deny_unknown_fields` **rompe en voz alta** — el fallo honesto ya
+diseñado. Una cabeza **v2 custodiada sigue verificando**: la versión que
+la firma declara elige recomponedor, en la biblioteca y en el mando.
+Un nodo **sin diario** rearranca con el acumulador vacío y su
+`mmrSize` se resetea de forma VISIBLE; quien firma lleva diario
+obligado (§285), así que toda cabeza firmada lleva continuidad.
 
 ⚠️ **Tres respuestas, y ninguna es un error genérico**:
 
@@ -546,7 +569,7 @@ titular **ya custodia**. Servirla aquí sería dejar que el operador
 fabrique la vara con la que se le mide.
 
 La cadena, entera: `hoja = acuse_digest(hashPrueba, epoca, n)` →
-`path_root` → `acusesRoot` → `epoch_digest` **v2** → la firma custodiada.
+`path_root` → `acusesRoot` → `epoch_digest` **v2/v3** (según `formatVersion`) → la firma custodiada.
 El desambiguador v1/v2 es el **byte de versión del preámbulo**
 (`formatVersion` 1 → 2), no el dominio (§236).
 

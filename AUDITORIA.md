@@ -21581,3 +21581,80 @@ vecino de la familia 19-84-92.
 **Contadores.** BACKLOG QUIETO (39/54): la 83 sigue abierta. Un `.rs`
 nuevo declarado por su padre (114→115). Ningun Cargo tocado; la foto
 del completo sigue rigiendose por la clausula de §284.
+
+## §292 — la cima en el digest: el eslabon 2, cerrado con firma
+
+**Que.** El formato v3 de la cabeza: `epoch_digest_v3 = merge(v2,
+merge(cima_mmr, t))` — la envoltura de siempre (§275), el byte de
+version del preambulo gobernando (2 → 3), y la pareja del MMR de §291
+viajando FIRMADA. Con esto «esta cabeza extiende a aquella» deja de ser
+una frase y pasa a ser un valor que la firma ata. Genesis declarado en
+la composicion: primera cabeza con cima `as_digest(0)` y t = 0.
+
+**Donde toco, y por que en cada sitio.** La composicion en hash (§255:
+un solo productor); el constructor de la capa gana la pareja como gano
+la de acuses — la computa el LLAMANTE —; el DTO del cable gana
+`mmrRoot`/`mmrSize` con la doc calcada del precedente (aditivo:
+`zkssl/0.2` NO sube, tercer precedente seguido; un parser viejo con
+`deny_unknown_fields` rompe en voz alta — el fallo honesto
+disenado); inclusion gana `verificar_acuse_v3` y
+`verificar_inclusion_v3` por el patron de la casa — **la version que
+la firma declara elige recomponedor** — sin tocar una linea de los
+caminos v1/v2; el mando de §289 acepta v2 Y v3, asi que **el paquete
+del apagado custodiado no caduca**; y el nodo guarda sus hojas en
+memoria como CACHE del diario — se siembran al arrancar con
+`diario::digests`, el push vive en `conservar` junto al anotar
+(anotar antes de pisar, §272), y un nodo sin diario rearranca con t = 0
+de forma VISIBLE, lo que con «quien firma, anota» (§285) da la
+carambola: **toda cabeza firmada lleva continuidad por construccion**.
+
+**El vector de conformidad, y el 9.º caso de la familia.** La medicion
+de §83.(i) juro que los vectores no pinaban la cabeza — grep de
+`epochDigest` — y mentia: la clave del vector es `epoch_digest`,
+en snake_case. **El nombre de la clave decide el grep.** La salida:
+el vector SELLADO pina LA COMPOSICION V2 para siempre — es un artefacto
+congelado — y `conformance` la compone EXPLICITA en vez de llamar a
+`digest()`; el significado queda escrito en el propio sitio.
+
+**Ejercitado.** Seis tests que NACEN: v3 ≠ v2 hasta en el genesis y la
+pareja mueve el digest cada uno por su lado (hash, 22→24); la pareja
+mueve el digest de una cabeza real (capa, 262→263); el acuse v3
+verifica y el recomponedor v2 lo RECHAZA, y un t distinto rompe la
+inclusion v3 (verify, 46→48); la siembra lee el diario en orden y la
+basura se salta (nodo, 79→80). Sumas 797/934/948 → **803/941/954**;
+PAPER.md solo en cifras (precedente §285).
+
+**Decisiones y precios, escritos.** (1) La tension con el corolario de
+la 82 —un formato se rompe UNA vez para varias razones— se ASUME: el
+eslabon 4 (`hash_verificador_vigente`) exige la nocion de «reglas
+vigentes», que no existe, y encadenarlo habria bloqueado la cadena; la
+v4 futura queda reservada para el. (2) La cima se RECOMPONE de las
+hojas en cada latido: O(hojas), despreciable a 1/min durante meses —
+declarado, no medido; los picos incrementales quedan como mejora
+anotada para cuando un numero lo pida. (3) El eslabon 2 queda CERRADO:
+el objeto existe (§291) y la firma lo ata (§292); servir la prueba de
+consistencia por el cable es SERVICIO y vive como corte propio.
+
+**Un hallazgo que este corte destapo sin buscarlo (observado, §265).**
+Este fue el primer bloque que corrio la capa entera en DEBUG, y ahi
+aparecio lo que el canon no puede ver: **80 tests de la capa caen en
+debug** con «transition constraint degrees didn't match» del prover de
+winterfell — los grados DECLARADOS de varios AIR no casan con los
+reales, y esa comprobacion es un debug_assert que en release no existe.
+Verificado contra el ARBOL VIRGEN (porcelain 0, 13 ago 2026):
+`freeze::tests_delegada::a_delegated_freeze_applies` revienta igual
+sin una linea de este corte puesta. PREEXISTENTE; este sello no lo
+introduce ni lo arregla. Queda como PENDIENTE con su evidencia — el
+log en /tmp/b292_cargo.txt de la corrida v5 y la verificacion virgen —
+y la nota de BACKLOG que le corresponde es corte propio: el instrumento
+de la casa corre en release, y existe una clase de asserts que solo
+vive en debug.
+
+**Contadores.** BACKLOG QUIETO (39/54): la 83 sigue abierta con dos
+eslabones cerrados por dentro. Pines 263 · 24 · 80 · 48; 954
+declarados — y `check_cifras` hizo su oficio en la corrida: las
+NUEVE cifras por-crate («262 tests») que acompanan a las sumas en ocho
+documentos —ARQUITECTURA por partida doble, los dos PAPER solo en
+cifras, README y los dos institucionales— las nombro la herramienta con
+linea y texto, y viajan en este corte a 263. Ningun Cargo tocado; la
+foto del completo sigue por la clausula de §284.

@@ -25,7 +25,7 @@
 //!
 //! ## Lo que se comprueba, en orden
 //!
-//! 1. los SIETE campos de la cabeza recomponen `epoch_digest_v2` == el
+//! 1. los campos de la cabeza recomponen el digest DE SU VERSION == el
 //!    `epochDigest` empaquetado — el digest no se cree: se recomputa;
 //! 2. la firma XMSS verifica contra `publicKey` Y el preambulo recuperado
 //!    es el esperado (verificar sin comparar no prueba nada, ver lib.rs);
@@ -33,9 +33,11 @@
 //!    camino hasta `acusesRoot`, y los siete vuelven a componer el digest
 //!    firmado (`verificar_acuse`).
 //!
-//! ⚠️ Solo cabezas **v2** (`formatVersion: 2`): el paquete existe desde
-//! que la pareja `(acusesRoot, n)` viaja firmada (§275). Una cabeza v1
-//! custodiada se verifica con la biblioteca, no con este mando.
+//! ⚠️ Cabezas **v2 y v3** (`formatVersion`): la version que la firma
+//! declara ELIGE RECOMPONEDOR — v2 con la pareja de acuses (§275), v3
+//! ademas con la del MMR (`mmrRoot`/`mmrSize`, §292). Una cabeza v2
+//! custodiada SIGUE verificando: el apagado de §290 no caduca. Una v1
+//! se verifica con la biblioteca, no con este mando.
 //!
 //! ⚠️ Este binario tambien es **el procedimiento de apagado** (nota 91):
 //! apaga el nodo, y una posicion sigue siendo demostrable sin el.
@@ -43,8 +45,8 @@
 //! Salida: VERDE y exit 0, o el primer fallo con nombre y exit 1.
 use std::process::ExitCode;
 
-use zk_ssl_verify::{acuses, verificar_acuse, verificar_cabeza, CabezaFirmada, ReciboAcuse};
-use zk_ssl_hash::{digest_from_bytes, epoch_digest_v2, Digest};
+use zk_ssl_verify::{acuses, verificar_acuse, verificar_acuse_v3, verificar_cabeza, CabezaFirmada, ReciboAcuse};
+use zk_ssl_hash::{digest_from_bytes, epoch_digest_v2, epoch_digest_v3, Digest};
 
 /// Punto unico de forma de error del binario (hoy identidad; el dia que
 /// haga falta contexto comun, se anade AQUI y no en veinte sitios).
@@ -97,10 +99,10 @@ fn correr(ruta: &str) -> Result<(), String> {
         return Err(err("la cabeza empaquetada no era available:true".into()));
     }
     let version = u64_de(c, "formatVersion")?;
-    if version != 2 {
+    if version != 2 && version != 3 {
         return Err(err(format!(
-            "formatVersion {version}: el paquete v1 solo empaqueta cabezas v2 \
-             (la pareja acusesRoot/n viaja firmada desde §275)"
+            "formatVersion {version}: el paquete v1 empaqueta cabezas v2 o v3 \
+             (la pareja acusesRoot/n viaja firmada desde §275; la del MMR, desde §292)"
         )));
     }
     let seq = u64_de(c, "seq")?;
@@ -112,8 +114,18 @@ fn correr(ruta: &str) -> Result<(), String> {
     let acuses_root = digest_de(c, "acusesRoot")?;
     let epoch_digest = digest_de(c, "epochDigest")?;
 
-    // 1 · el digest NO se cree: se recompone de los siete
-    let compuesto = epoch_digest_v2(seq, accounts, pending, frozen, chain, acuses_root, n);
+    // 1 · el digest NO se cree: se recompone — y LA VERSION ELIGE RECOMPONEDOR
+    let mmr = if version == 3 {
+        Some((digest_de(c, "mmrRoot")?, u64_de(c, "mmrSize")?))
+    } else {
+        None
+    };
+    let compuesto = match mmr {
+        None => epoch_digest_v2(seq, accounts, pending, frozen, chain, acuses_root, n),
+        Some((cima, t)) => {
+            epoch_digest_v3(seq, accounts, pending, frozen, chain, acuses_root, n, cima, t)
+        }
+    };
     if compuesto != epoch_digest {
         return Err(err(
             "los siete campos NO recomponen el epochDigest empaquetado: \
@@ -121,7 +133,7 @@ fn correr(ruta: &str) -> Result<(), String> {
                 .into(),
         ));
     }
-    println!("1/3 los siete campos recomponen el epochDigest — el digest no se ha creido");
+    println!("1/3 los campos de la cabeza (v{version}) recomponen el epochDigest — el digest no se ha creido");
 
     // 2 · la firma, contra la clave publicada, comparando el preambulo
     let clave = c
@@ -188,7 +200,12 @@ fn correr(ruta: &str) -> Result<(), String> {
                 acuses_root,
                 n,
             };
-            verificar_acuse(&recibo, epoch_digest).map_err(|e| err(format!("acuse: {e:?}")))?;
+            match mmr {
+                None => verificar_acuse(&recibo, epoch_digest)
+                    .map_err(|e| err(format!("acuse: {e:?}")))?,
+                Some((cima, t)) => verificar_acuse_v3(&recibo, cima, t, epoch_digest)
+                    .map_err(|e| err(format!("acuse: {e:?}")))?,
+            }
             println!("3/3 el acuse sube hasta la raiz firmada: la entrada {seq_a} queda demostrada");
         }
     }

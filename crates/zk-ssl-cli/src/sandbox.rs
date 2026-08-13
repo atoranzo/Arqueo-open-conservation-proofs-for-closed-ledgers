@@ -267,7 +267,7 @@ pub fn run_claim(
 
 /// Resumen del estado, leído entero de la API pública de la capa.
 pub fn emit_summary(layer: &SovereignLayer, tr: &mut dyn Tracer) {
-    let head = layer.epoch_head(zk_ssl_verify::acuses::as_digest(0), 0);
+    let head = layer.epoch_head(zk_ssl_verify::acuses::as_digest(0), 0, zk_ssl_verify::acuses::as_digest(0), 0);
     tr.emit(&TraceEvent::StateSummary {
         accounts: layer.account_count(),
         total_supply: layer.total_supply(),

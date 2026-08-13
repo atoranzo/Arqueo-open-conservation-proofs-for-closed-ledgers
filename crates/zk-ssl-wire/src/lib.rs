@@ -575,6 +575,12 @@ pub struct EpochHeadDto {
     pub acuses_root: B32,
     /// Techo de retención que la cabeza declara y firma (§275).
     pub n: Q,
+    /// La cima del MMR de cabezas (§292). Clave nueva, aditiva como
+    /// `acusesRoot` en su dia: `zkssl/0.2` no sube; la version de
+    /// FORMATO viaja en la firma y es la que separa v2 de v3.
+    pub mmr_root: B32,
+    /// Cuantas cabezas acumula la cima. Genesis: 0.
+    pub mmr_size: Q,
     /// `EpochHead::digest()`: la cabeza entera en un solo digest.
     pub epoch_digest: B32,
 }
@@ -589,6 +595,8 @@ impl From<&EpochHead> for EpochHeadDto {
             chain_digest: digest_to_wire(&h.chain_digest),
             acuses_root: digest_to_wire(&h.acuses_root),
             n: Q(h.n),
+            mmr_root: digest_to_wire(&h.mmr_cima),
+            mmr_size: Q(h.mmr_t),
             epoch_digest: digest_to_wire(&h.digest()),
         }
     }

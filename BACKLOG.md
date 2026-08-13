@@ -436,6 +436,14 @@ instrumentacion) al grupo E.*
   no lo compromete**: la cima dentro del digest firmado (v3, rotura
   declarada) es el siguiente corte de la familia, y hasta entonces el
   eslabon NO esta cerrado — un objeto que nadie firma no ata a nadie.
+  ✅ **ATADURA CUMPLIDA (§292) — el ESLABON 2 queda CERRADO.** La cima
+  y su tamano viajan FIRMADOS: formato v3 por envoltura (el molde de
+  §275), genesis declarado, el vector de conformidad pinando la
+  composicion v2 para siempre, el mando de §289 aceptando v2 Y v3 (lo
+  custodiado no caduca), y el nodo sembrando sus hojas del diario — el
+  diario manda, la memoria es cache. Servir la prueba de consistencia
+  por el cable es SERVICIO, no atadura: vive como corte propio (el
+  (iii) de la familia). El eslabon 3 ya tiene su precondicion.
 
   **Eslabón 3 — Cofirma del testigo, con política de CLIENTE.** Hoy el
   operador firma la cabeza y el testigo la observa **después**: la vista
