@@ -444,6 +444,16 @@ instrumentacion) al grupo E.*
   diario manda, la memoria es cache. Servir la prueba de consistencia
   por el cable es SERVICIO, no atadura: vive como corte propio (el
   (iii) de la familia). El eslabon 3 ya tiene su precondicion.
+  ✅ **SERVICIO CUMPLIDO (§293) — la familia del eslabon 2, COMPLETA.**
+  `zkssl_consistencyProof` (metodo 22) sirve el camino; el mando come
+  el paquete de extension (dos cabezas v3, misma clave, el objeto de
+  §291 como juez); `tools/banco_extension.sh` lo demuestra contra un
+  nodo vivo — incluido el rearranque sin diario respondiendo «va por
+  detras»: la promesa del reseteo visible, hecha cable. Y la reparacion
+  que esto destapo: la pareja del MMR no viajaba en `signedEpochHead`
+  (hueco de §292); ahora viaja, y el banco del apagado vuelve a verde
+  sobre cabezas v3. Del eslabon 2 no queda nada; siguen el 3 (cofirma)
+  y el 4 (v4, hash del verificador).
 
   **Eslabón 3 — Cofirma del testigo, con política de CLIENTE.** Hoy el
   operador firma la cabeza y el testigo la observa **después**: la vista

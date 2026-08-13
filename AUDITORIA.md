@@ -21658,3 +21658,53 @@ documentos —ARQUITECTURA por partida doble, los dos PAPER solo en
 cifras, README y los dos institucionales— las nombro la herramienta con
 linea y texto, y viajan en este corte a 263. Ningun Cargo tocado; la
 foto del completo sigue por la clausula de §284.
+
+## §293 — la extension como servicio: la familia del eslabon 2, completa
+
+**Que.** El cierre del eslabon 2 en tres piezas. (1) El cable:
+`zkssl_consistencyProof` — metodo 22 — sirve el camino de
+consistencia desde las hojas que §292 dejo en el nodo, con las tres
+negativas nombradas (`oldSize 0`, identidad, y «va POR DETRAS» —
+el reseteo sin diario, VISIBLE en el cable como §292 prometio). La
+semantica del emparejamiento quedo escrita donde se usa: **la pareja
+firmada es el acumulador ANTES de cada cabeza**, asi que el camino de
+tamano t lo firma la cabeza SIGUIENTE en emitirse — lo cazo el BANCO
+en su primera corrida (el sondeo exigia igualdad instantanea, que no
+casa JAMAS por diseno), y el test unitario no podia verlo: verificaba
+la matematica contra las hojas, no el flujo del cliente. §266 otra
+vez, esta vez en un banco: por eso el banco existe. (2) El
+verificador: el mando come un paquete de EXTENSION — dos cabezas v3
+TAL CUAL servidas, la MISMA `publicKey` (la continuidad es de un
+firmante), y el objeto de §291 juzgando la consistencia — todo sin el
+nodo, autodetectado por el campo `tipo` sin tocar el paquete
+clasico. (3) El banco: `tools/banco_extension.sh`, fuera del canon,
+con el positivo y LOS DOS negativos de verdad: el camino adulterado
+cayendo en el mando, y el rearranque con diario nuevo declarandose por
+detras en el cable.
+
+**Correccion sobre §292, encima y citando (§247).** El corte de §292
+anadio la pareja del MMR al DTO de `epochHead` pero NO al payload de
+`signedEpochHead`, que se construye a mano: una cabeza v3 firmada
+viajaba SIN `mmrRoot`/`mmrSize` y el paquete del apagado (§289)
+no podia recomponerla — el banco de §290 estaba en rojo latente desde
+§292. Este corte lo repara y lo DEMUESTRA: la corrida vuelve a pasar
+`tools/banco_apagado.sh` entero como regresion, ademas del banco
+nuevo. La leccion queda dicha: un DTO y un payload a mano son DOS
+productores del mismo contrato, y el corte que toca uno se mide contra
+el otro.
+
+**Ejercitado.** Dos tests del dispatch que NACEN (el camino servido
+verifica con las mismas funciones que usaria un tercero; el acumulador
+por detras lo dice con su razon) — node 80→82, sumas 803/941/954 →
+**805/943/956**, PAPER solo en cifras (§285). Y las dos corridas vivas
+del bloque: el banco de extension entero y el del apagado como
+regresion de la reparacion.
+
+**La familia, cerrada; la 83, viva.** Eslabon 2: objeto (§291) →
+firma (§292) → servicio (§293). Quedan el eslabon 3 —la cofirma, que
+ya tiene su precondicion— y el 4 —el hash del verificador, con su v4
+reservada y su precondicion («reglas vigentes») aun por nacer.
+
+**Contadores.** BACKLOG QUIETO (39/54). Pin del nodo 80→82 por
+COLUMNA (el rito del 10.º caso); 956 declarados. Ningun Cargo tocado;
+la foto del completo sigue por la clausula de §284.

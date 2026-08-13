@@ -76,6 +76,7 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 | `zkssl_verifyChain` | — | `{ok: bool, entries?, error?}` |
 | `zkssl_inclusionReceipt` | `{index: Q, viewKey: Digest}` | `{index, leaf, path, leafFormat, head}` |
 | `zkssl_ackPath` | `{seq: Q}` | `{available, s?, camino?: {siblings: Digest[], isRight: bool[]}, reason?, beatSeconds?}` |
+| `zkssl_consistencyProof` | `{oldSize: Q}` | `{available, mmrSize: Q, camino?: Digest[], reason?}` |
 
 `LogEntry = {seq: Q, kind: string, rootOld, rootNew, proofDigest, chain: Digest}`
 con `kind` ∈ {`OpenAccount`,`Mint`,`Transfer`,`Burn`,`Recovery`,
@@ -730,6 +731,35 @@ Cerrar la exposición —exigir credencial para los caminos— **es un sello
 aparte**: cambia superficie hoy pública y puede romper clientes. Meterlo
 aquí encadenaría «servir el recibo» con «cerrar `sendMaterials`», y si algo
 se torciera no se sabría cuál de los dos fue.
+
+## La prueba de extension (§293)
+
+`zkssl_consistencyProof` convierte el eslabon 2 en SERVICIO: quien
+custodia una cabeza v3 pide el camino con su `mmrSize` como
+`oldSize`, captura la cabeza cuyo `mmrSize` IGUALA al de la
+respuesta — ⚠️ la pareja firmada es el acumulador ANTES de cada
+cabeza, asi que esa es **la siguiente en emitirse**, a lo sumo un
+latido despues (§248: la cabeza no viaja en el camino) — y verifica **sin el registro** que la cima
+nueva EXTIENDE a la suya — consistencia O(log N) del arbol de historia
+(§291).
+
+Tres respuestas sin camino, cada una con su razon: `oldSize: 0`
+(no hay historia que extender), `oldSize` igual al `mmrSize`
+actual (identidad: camino vacio), y `oldSize` MAYOR que el actual —
+**el acumulador va por detras**: un nodo que rearranco sin diario lo
+dice en el cable, que es exactamente el reseteo VISIBLE que el formato
+v3 promete.
+
+**El paquete de extension** del verificador de terceros:
+```text
+{ "v": 1, "tipo": "extension", "vieja": {…}, "nueva": {…}, "camino": […] }
+```
+Las dos cabezas van TAL CUAL las sirvio `signedEpochHead` (ambas
+**v3**: una v2 no lleva pareja que extender) y el mando exige ademas la
+MISMA `publicKey`: la continuidad es de un firmante. La
+demostracion: `tools/banco_extension.sh` — nodo vivo, paquete
+capturado, verificacion sin el nodo, el camino adulterado en rojo, y el
+rearranque sin diario respondiendo por detras.
 
 ## Apagado — el fin de vida, declarado (nota 91)
 

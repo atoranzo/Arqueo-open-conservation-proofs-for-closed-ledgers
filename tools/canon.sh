@@ -94,7 +94,7 @@ iso-bridge         sello       3   0   0   300
 zk-ssl-sdk         sello       6   0   0   300
 zk-ssl-wire        sello       3   0   0    60  §259: 20 metodos, y el json publicado atado a la tabla
 zk-ssl-cli         sello      28   0   0   120  alias=testigo · §250: 22 -> 26, la vista dividida EN FRIO
-zk-ssl-node        sello      80   0   0   400  alias=nodo · §261: 51 -> 56, la credencial para los caminos · §292: 79 -> 80, la cima en el digest
+zk-ssl-node        sello      82   0   0   400  alias=nodo · §261: 51 -> 56, la credencial para los caminos · §292: 79 -> 80, la cima en el digest · §293: 80 -> 82, la extension servida
 zk-ssl-verify      sello      48   0   0   120  alias=verificador independiente · §257: 22 -> 23, del cable a la cabeza sin la capa · §291: 39 -> 46, el MMR de cabezas · §292: 46 -> 48, la cima en el digest
 zk-ssl-hash        sello      24   0   0    60  §270: 14 -> 16, el acuse componible por un tercero · §292: 22 -> 24, la cima en el digest
 settlement-prover  sello       0   0   0   300  sin tests

@@ -94,6 +94,9 @@ fn correr(ruta: &str) -> Result<(), String> {
     if p.get("v").and_then(|x| x.as_u64()) != Some(1) {
         return Err(err("el paquete no declara v:1".into()));
     }
+    if p.get("tipo").and_then(|x| x.as_str()) == Some("extension") {
+        return verificar_extension(&p);
+    }
     let c = p.get("cabeza").ok_or_else(|| err("falta cabeza".into()))?;
     if c.get("available").and_then(|x| x.as_bool()) != Some(true) {
         return Err(err("la cabeza empaquetada no era available:true".into()));
@@ -213,12 +216,115 @@ fn correr(ruta: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Una cabeza **v3** del paquete de extension: se verifica ENTERA — el
+/// digest se recompone (nunca se cree) y la firma se comprueba — y
+/// devuelve lo que la consistencia necesita: su pareja del MMR y la
+/// clave que la firmo.
+fn cabeza_v3_verificada(c: &serde_json::Value, cual: &str) -> Result<(Digest, u64, String), String> {
+    if c.get("available").and_then(|x| x.as_bool()) != Some(true) {
+        return Err(err(format!("{cual}: la cabeza no era available:true")));
+    }
+    let version = u64_de(c, "formatVersion")?;
+    if version != 3 {
+        return Err(err(format!(
+            "{cual}: formatVersion {version} — la extension exige cabezas v3: \
+             una v2 no lleva la pareja del MMR que extender"
+        )));
+    }
+    let seq = u64_de(c, "seq")?;
+    let compuesto = epoch_digest_v3(
+        seq,
+        digest_de(c, "accountsRoot")?,
+        digest_de(c, "pendingRoot")?,
+        digest_de(c, "frozenRoot")?,
+        digest_de(c, "chainDigest")?,
+        digest_de(c, "acusesRoot")?,
+        u64_de(c, "n")?,
+        digest_de(c, "mmrRoot")?,
+        u64_de(c, "mmrSize")?,
+    );
+    if compuesto != digest_de(c, "epochDigest")? {
+        return Err(err(format!(
+            "{cual}: los campos NO recomponen su epochDigest — adulterada o inventada"
+        )));
+    }
+    let clave = c
+        .get("publicKey")
+        .and_then(|x| x.as_str())
+        .ok_or_else(|| err(format!("{cual}: falta publicKey")))?;
+    let firma = c
+        .get("signature")
+        .and_then(|x| x.as_str())
+        .ok_or_else(|| err(format!("{cual}: falta signature")))?;
+    let cf = CabezaFirmada {
+        version_formato: version as u8,
+        indice: u64_de(c, "index")?,
+        firma: hex_a_bytes(firma)?,
+    };
+    let mut ed = [0u8; 32];
+    ed.copy_from_slice(&hex_a_bytes(
+        c.get("epochDigest").and_then(|x| x.as_str()).unwrap(),
+    )?);
+    verificar_cabeza(&hex_a_bytes(clave)?, &ed, &cf)
+        .map_err(|e| err(format!("{cual}: cabeza: {e}")))?;
+    Ok((digest_de(c, "mmrRoot")?, u64_de(c, "mmrSize")?, clave.to_string()))
+}
+
+/// El paquete de EXTENSION (§293): dos cabezas v3 firmadas y el camino
+/// de consistencia entre sus cimas — el eslabon 2 entero, verificable
+/// **sin el nodo**: quien custodia la vieja comprueba que la nueva la
+/// EXTIENDE, con el objeto de §291 como juez.
+fn verificar_extension(p: &serde_json::Value) -> Result<(), String> {
+    let (cima_v, t_v, clave_v) = cabeza_v3_verificada(
+        p.get("vieja").ok_or_else(|| err("falta vieja".into()))?,
+        "vieja",
+    )?;
+    let (cima_n, t_n, clave_n) = cabeza_v3_verificada(
+        p.get("nueva").ok_or_else(|| err("falta nueva".into()))?,
+        "nueva",
+    )?;
+    println!("1/3 las DOS cabezas v3 recomponen su digest y sus firmas verifican");
+    if clave_v != clave_n {
+        return Err(err(
+            "las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante".into(),
+        ));
+    }
+    println!("2/3 misma publicKey: el mismo firmante en los dos extremos");
+    let cam = p
+        .get("camino")
+        .and_then(|x| x.as_array())
+        .ok_or_else(|| err("falta camino (lista de digests)".into()))?;
+    let camino = cam
+        .iter()
+        .enumerate()
+        .map(|(i, s)| {
+            let s = s.as_str().ok_or_else(|| err(format!("camino[{i}] no es cadena")))?;
+            let bts = hex_a_bytes(s)?;
+            let arr: [u8; 32] = bts
+                .as_slice()
+                .try_into()
+                .map_err(|_| err(format!("camino[{i}]: {} bytes", bts.len())))?;
+            digest_from_bytes(&arr).map_err(|e| err(format!("camino[{i}]: {e:?}")))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if !zk_ssl_verify::mmr::verificar_consistencia(cima_v, t_v, cima_n, t_n, &camino) {
+        return Err(err(format!(
+            "la nueva (t={t_n}) NO extiende a la vieja (t={t_v}): historia \
+             bifurcada, recortada, o camino que no es el suyo"
+        )));
+    }
+    println!("3/3 la cima nueva EXTIENDE a la vieja: consistencia O(log N), sin el registro");
+    println!("VERDE: la extension se sostiene sin el nodo");
+    Ok(())
+}
+
 fn main() -> ExitCode {
     let mut args = std::env::args().skip(1);
     let ruta = match (args.next(), args.next()) {
         (Some(r), None) => r,
         _ => {
             eprintln!("uso: zk-ssl-verify <paquete.json>");
+            eprintln!("     (o de extension: {{v:1, tipo: extension, vieja, nueva, camino}})");
             eprintln!("     (formato v1 en la cabecera de este binario)");
             return ExitCode::from(2);
         }

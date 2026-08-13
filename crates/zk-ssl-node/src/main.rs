@@ -691,6 +691,8 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                         "epochDigest": wire::B32(l.epoch_digest),
                         "domain": String::from_utf8_lossy(firma_cabeza::DOMINIO),
                         "formatVersion": Q(u64::from(c.version_formato)),
+                        "mmrRoot": digest_to_wire(&l.cabeza.mmr_cima),
+                        "mmrSize": Q(l.cabeza.mmr_t),
                         "index": Q(c.indice),
                         // §275: los SIETE campos, del MISMO latido que
                         // la firma — el testigo custodia campos+digest+
@@ -791,6 +793,54 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             }
         }
 
+        "zkssl_consistencyProof" => {
+            // §293: el eslabon 2 como SERVICIO. El camino que prueba que la
+            // cima ACTUAL extiende a la de una cabeza custodiada de tamano
+            // oldSize. Doctrina §248: la cabeza NO viaja aqui. ⚠️ La pareja
+            // FIRMADA es el acumulador ANTES de cada cabeza (el push va tras
+            // el emit): el camino de tamano t lo firma la cabeza SIGUIENTE
+            // en emitirse — el cliente espera a la que firme el mmrSize de
+            // esta respuesta, a lo sumo un latido.
+            let viejo = params
+                .get("oldSize")
+                .and_then(|v| serde_json::from_value::<Q>(v.clone()).ok())
+                .ok_or_else(|| RpcError {
+                    code: -32602,
+                    message: "falta oldSize (Q): el mmrSize de la cabeza custodiada".into(),
+                })?
+                .0;
+            let h = app.hojas_mmr.lock().map_err(|_| RpcError {
+                code: -32603,
+                message: "candado de las hojas del MMR envenenado".into(),
+            })?;
+            let t = h.len() as u64;
+            if viejo == 0 {
+                Ok(json!({
+                    "available": false,
+                    "reason": "oldSize 0: no hay historia que extender",
+                    "mmrSize": Q(t),
+                }))
+            } else if viejo > t {
+                // §292 prometio el reseteo VISIBLE; esta es la promesa en el
+                // cable: un nodo que rearranco sin diario lo DICE.
+                Ok(json!({
+                    "available": false,
+                    "reason": format!(
+                        "el acumulador de este nodo va POR DETRAS: lleva t={t} y se piden {viejo} — \
+                         reinicio sin diario, o no es el mismo nodo"
+                    ),
+                    "mmrSize": Q(t),
+                }))
+            } else {
+                let camino = zk_ssl_verify::mmr::prueba_de_consistencia(&h, viejo)
+                    .expect("0 < viejo <= t: la prueba existe por construccion");
+                Ok(json!({
+                    "available": true,
+                    "mmrSize": Q(t),
+                    "camino": camino.iter().map(digest_to_wire).collect::<Vec<_>>(),
+                }))
+            }
+        }
         "zkssl_supply" => Ok(json!({
             "total": Q(l.total_supply()),
             "pending": Q(l.total_pending()),
@@ -1927,6 +1977,59 @@ mod tests {
             zk_ssl_verify::verificar_inclusion_v3(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, firmado),
             Err(zk_ssl_verify::InclusionError::CabezaDistinta)
         );
+    }
+
+    // ── §293 · la prueba de extension, servida ─────────────────
+
+    #[test]
+    fn la_prueba_de_extension_se_sirve_y_verifica() {
+        // El eslabon 2 como servicio: lo que el cable da, el objeto de
+        // §291 lo juzga — las MISMAS funciones que usaria un tercero.
+        let app = nodo(30);
+        for _ in 0..3 {
+            let l = crate::latido::latir(&app, None).expect("latir");
+            crate::latido::conservar(&app, l);
+        }
+        let (vieja, nueva, t) = {
+            let h = app.hojas_mmr.lock().expect("hojas");
+            (
+                zk_ssl_verify::mmr::cima(&h[..1]).expect("cima vieja"),
+                zk_ssl_verify::mmr::cima(&h).expect("cima nueva"),
+                h.len() as u64,
+            )
+        };
+        let r = dispatch(&app, "zkssl_consistencyProof", json!({ "oldSize": Q(1u64) }))
+            .expect("consistencyProof");
+        assert_eq!(r["available"], json!(true));
+        assert_eq!(r["mmrSize"], serde_json::to_value(Q(t)).unwrap());
+        let camino: Vec<_> = r["camino"]
+            .as_array()
+            .expect("camino")
+            .iter()
+            .map(|s| {
+                digest_from_wire(&serde_json::from_value::<wire::B32>(s.clone()).expect("B32"))
+                    .expect("digest")
+            })
+            .collect();
+        assert!(
+            zk_ssl_verify::mmr::verificar_consistencia(vieja, 1, nueva, t, &camino),
+            "el camino servido debe probar la extension"
+        );
+    }
+
+    #[test]
+    fn un_acumulador_que_va_por_detras_lo_dice() {
+        // §292 prometio el reseteo VISIBLE; esto es la promesa en el cable.
+        let app = nodo(30);
+        let l = crate::latido::latir(&app, None).expect("latir");
+        crate::latido::conservar(&app, l);
+        let r = dispatch(&app, "zkssl_consistencyProof", json!({ "oldSize": Q(9u64) }))
+            .expect("consistencyProof");
+        assert_eq!(r["available"], json!(false));
+        assert!(r["reason"].as_str().expect("reason").contains("POR DETRAS"));
+        let r0 = dispatch(&app, "zkssl_consistencyProof", json!({ "oldSize": Q(0u64) }))
+            .expect("consistencyProof oldSize 0");
+        assert_eq!(r0["available"], json!(false));
     }
 
     /// Una clave de vista que no es de nadie, para los negativos.
