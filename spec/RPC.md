@@ -708,6 +708,38 @@ aparte**: cambia superficie hoy pública y puede romper clientes. Meterlo
 aquí encadenaría «servir el recibo» con «cerrar `sendMaterials`», y si algo
 se torciera no se sabría cuál de los dos fue.
 
+## Apagado — el fin de vida, declarado (nota 91)
+
+Toda capa de liquidacion termina — por cierre, por migracion o por
+abandono. Lo que este protocolo declara para ese dia:
+
+**Que publica el operador al cerrar**: nada que no este ya publicado.
+Las dos respuestas que sostienen una posicion — `zkssl_signedEpochHead`
+y `zkssl_ackPath` — viajaron en cada latido; un cierre ordenado solo
+exige servirlas hasta el ultimo.
+
+**Que se lleva el titular**: lo que ya custodia. La ultima cabeza
+firmada (los siete campos con `publicKey`, `epochDigest`,
+`formatVersion`, `index` y `signature`, juntos, del mismo latido), el
+`hashPrueba` de su entrada (el `proofDigest` asentado, servido en el
+acuse de la respuesta y en `zkssl_logEntry`), y el camino de acuse
+(`s`, `siblings`, `isRight`).
+
+**Con que sostiene su posicion despues**: el paquete de evidencia
+portable — formato v1, declarado en la cabecera del binario de
+`zk-ssl-verify` — las respuestas del cable TAL CUAL, reunidas en un
+fichero y verificadas sin el nodo, sin la capa y sin el probador.
+
+⚠️ Es lo contrario del fallo caracteristico de validium: aqui no hay
+comite al que pedir los datos, porque el titular ya los tiene. **Nadie
+queda dentro.**
+
+**La demostracion, no la promesa**: `tools/banco_apagado.sh` levanta un
+nodo real, fondea una posicion, captura el paquete por el cable, mata
+el proceso con `kill -9` y verifica en VERDE — y en ROJO el mismo
+paquete con un solo nibble adulterado. **Un sistema que dice como muere
+se demuestra muriendo**, no prometiendo.
+
 ## Notas operativas
 
 - Un nodo, un escritor: las escrituras serializan en el nodo (el orden

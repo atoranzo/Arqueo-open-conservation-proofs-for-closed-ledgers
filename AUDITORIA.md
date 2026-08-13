@@ -21482,3 +21482,50 @@ formar parte de él (fail-stop, `doc/CONFIANZA_RESIDUAL.md` §5.2).
   del nodo y hash EN MANO por reconstruccion sha-identica) pero sin
   poder compilar en el contenedor — las INERTES y el canon son el juez,
   y un rojo restaura a nivel de fichero incluida la retirada del bin.
+
+## §290 — la 91 cerrada: el apagado, declarado y demostrado
+
+**Que.** La nota 91 pedia dos mitades y llevaba una hecha sin nombre.
+La primera — DECLARAR el apagado — es la seccion «Apagado» de
+`spec/RPC.md`, normativa: que publica el operador al cerrar (nada que
+no viaje ya), que se lleva el titular (lo que ya custodia), con que
+sostiene su posicion (el paquete v1 y el mando de `zk-ssl-verify`,
+§289). La segunda — EJERCITARLO — es `tools/banco_apagado.sh`: nodo
+real con `--clave-fichero`, `--custodia fichero`, `--diario`,
+`--ledger` y `--latido 3`; posicion fondeada por la via dev; capturas
+de `zkssl_ackPath` y `zkssl_signedEpochHead` espalda contra espalda
+dentro del mismo latido (la cabeza no viaja en el camino, §248: se
+capturan juntas o el paquete no casa); `kill -9` comprobado — el
+proceso muere y el cable deja de responder — y el binario de §289 en
+VERDE con exit 0 sobre el paquete, en ROJO con exit 1 sobre el mismo
+paquete con UN nibble del `hashPrueba` adulterado (mutacion con
+python y assert, no con sed).
+
+**Categorias.** Ejercitado: la corrida del banco dentro del bloque,
+positivo y negativo. Declarado, dos supuestos del banco: la forma de
+`zkssl_logEntry` se tomo del contrato de `spec/RPC.md` (el `LogEntry`
+lleva `proofDigest`), y el `hashPrueba` se lee del REGISTRO y no del
+acuse de la respuesta — `con_acuse` solo lo llaman `applySend` y
+`applyClaim` (el corte de §273); en las vias delegadas la realidad de
+ese digest como digest de prueba es la que §273 dejo escrita. El banco
+queda FUERA del canon a proposito: levanta procesos y espera latidos,
+y el suelo doc-only del canon (~150 s) no debe cargar con eso. Y un
+rojo que fue un acierto: la primera corrida del banco puso su casa en
+/tmp y el guardian del indice (K.1, §234) se nego a arrancar — en WSL
+/tmp es tmpfs y el fsync dio razon 1.0x frente al minimo 10x. El
+guardian hizo exactamente su oficio con un nodo REAL delante; el banco
+vive ahora bajo $HOME (ext4, medido con findmnt y con el propio
+guardian aceptando el suelo antes de reemitir).
+
+**Fe de erratas del traspaso de la sesion 24.** Las anclas de su §2
+para tres ficheros no eran las del arbol: el bin de verify decia
+71c14875a95a7e1c/215 y el arbol da 6683b302051cbe51/216; BACKLOG decia
+1c40e97d92eab551/2656 y da f6e284491e44779f/2655; AUDITORIA decia
+84b3b57692055bee/21483 y da 3761579ca5b55cdd/21484. Se comprobo
+`git show HEAD:` == copia de trabajo en los tres: el arbol nunca
+estuvo en cuestion — la transcripcion del traspaso si. Regla aplicada:
+manda el arbol; las anclas PRE de este bloque son las medidas hoy.
+
+**Contadores.** BACKLOG 40/53 -> **39 abiertas / 54 resueltas**. Sumas
+de tests quietas (790/927/941): ningun `.rs` tocado, ningun Cargo — la
+foto del completo sigue VALIENDO por la clausula de §284.

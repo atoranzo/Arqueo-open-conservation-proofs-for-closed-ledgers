@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 40 abiertas, 53 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 39 abiertas, 54 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 13 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -663,7 +663,7 @@ instrumentacion) al grupo E.*
   regla de ruptura escrita. Y una compuerta que la haga cierta: lo
   declarado estable no cambia sin que el canon lo diga.
 
-- [ ] **91. El fin de vida: cómo se apaga esto sin dejar a nadie
+- [x] **91. El fin de vida: cómo se apaga esto sin dejar a nadie
   dentro.** Toda capa de liquidación termina — por cierre, por
   migración o por abandono. Hoy **no hay apagado declarado**: qué debe
   publicar el operador al cerrar, qué se lleva el titular, y con qué
@@ -680,6 +680,16 @@ instrumentacion) al grupo E.*
   congelado indefinidamente. **Un sistema que dice cómo muere merece
   más confianza que uno que presume que no morirá**, y este puede
   decirlo con una demostración en vez de con una promesa.
+
+  ✅ **CERRADO (§290): declarado y demostrado.** La declaracion:
+  seccion «Apagado» en `spec/RPC.md`, normativa — que publica el
+  operador (nada nuevo), que se lleva el titular (lo que ya custodia),
+  con que sostiene la posicion (el paquete v1 y el mando de
+  `zk-ssl-verify`). La demostracion: `tools/banco_apagado.sh` — nodo
+  real con clave, diario y ledger; posicion fondeada; paquete capturado
+  del cable; kill -9; y **la posicion en VERDE sin el nodo**, con el
+  negativo de un nibble adulterado en ROJO. El banco queda para
+  repetirlo cuando se quiera; fuera del canon, que no levanta procesos.
 
 - [ ] **92. Custodia de la clave y SUPERVIVENCIA del índice: la
   mitigación que QRL tiene y aquí no está escrita.** El guardián del
