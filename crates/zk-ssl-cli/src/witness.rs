@@ -299,8 +299,36 @@ pub fn al_llegar_cabeza(m: &mut Memoria, v: &Value) -> Option<Consistencia> {
     let cima = v["mmrRoot"].as_str()?.to_string();
     let t = leer_q(&v["mmrSize"]).ok()?;
 
+    // ⚠️⚠️ §295 · **EL RETROCESO MANDA SOBRE LO PENDIENTE**, y va ANTES
+    // que nada. Si el acumulador del nodo va POR DETRAS de lo custodiado,
+    // el camino que esperaba **no puede llegar JAMAS**: su `esperando_t`
+    // pertenece a una historia que este nodo ya no tiene. Sin esta regla,
+    // un reseteo pillaba al testigo con una pendiente viva y lo dejaba
+    // **ciego para siempre** — anotando `consistencia-pendiente` vuelta
+    // tras vuelta sin decir nunca lo que estaba pasando.
+    //
+    // ⚠️ Lo cazo el BANCO del §295 **antes de correrlo**, al diseñar su
+    // negativo: ningun unitario del §294 podia verlo, porque el caso
+    // exige un nodo que se resetea DEBAJO de un cliente vivo. Es la
+    // leccion de §293 otra vez — el banco ve el flujo, el unitario la
+    // pieza.
+    if let Some(pt) = m.pareja.as_ref().map(|(_, t)| *t) {
+        if t < pt {
+            m.pendiente = None;
+            return Some(Consistencia::PorDetras { t_nodo: t, pedido: pt });
+        }
+    }
+
     if let Some(p) = m.pendiente.take() {
-        if t != p.esperando_t {
+        if t > p.esperando_t {
+            // ⚠⚠ §295 · **LA PENDIENTE CADUCA.** El testigo muestrea; el
+            // nodo late. Si consulta mas despacio que el latido, la cabeza
+            // que firmaba `esperando_t` **ya paso sin que la viera**, y esa
+            // pendiente no casara nunca. Se descarta y se vuelve a pedir en
+            // esta misma vuelta: `None` deja pasar al bucle, que tiene red.
+            return None;
+        }
+        if t < p.esperando_t {
             let (de_t, esperando_t) = (p.de_t, p.esperando_t);
             m.pendiente = Some(p);
             return Some(Consistencia::Pendiente { de_t, esperando_t });
@@ -322,9 +350,25 @@ pub fn al_llegar_cabeza(m: &mut Memoria, v: &Value) -> Option<Consistencia> {
             m.pareja = Some((cima, t));
             Some(Consistencia::Anclando { t })
         }
-        // El acumulador del nodo RETROCEDIO respecto a lo custodiado.
-        Some(pt) if t < pt => Some(Consistencia::PorDetras { t_nodo: t, pedido: pt }),
-        // Sin pendiente y sin retroceso: el camino se pide fuera (hay red).
+        // ⚠️⚠️ §295 · **UN ANCLA EN t=0 NO ES UN ANCLA.** El genesis
+        // declara cima=as_digest(0) y t=0 (§292), y el servicio responde a
+        // un `oldSize` de 0 con «no hay historia que extender»: un testigo
+        // que arranca contra un nodo RECIEN NACIDO se anclaba ahi y **no
+        // podia salir JAMAS** —pedia camino, se lo negaban por diseno, y su
+        // ancla no se movia nunca—. Se re-ancla en la primera cabeza con
+        // historia de verdad.
+        //
+        // ⚠⚠ **Lo cazo EL BANCO en su primera corrida**: siete vueltas,
+        // siete `sin-camino`. Ningun unitario lo vio porque todos fabricaban
+        // cabezas con t>0 — el caso limite estaba en el arranque, no en la
+        // matematica.
+        Some(0) if t > 0 => {
+            m.pareja = Some((cima, t));
+            Some(Consistencia::Anclando { t })
+        }
+        // El retroceso ya no se decide aqui (§295): se resuelve arriba,
+        // ANTES de lo pendiente. Sin pendiente y sin retroceso, el camino
+        // se pide fuera (ahi hay red).
         Some(_) => None,
     }
 }
@@ -407,9 +451,25 @@ pub fn linea_de_diario(v: &Veredicto, servido: &Value, visto_unix: u64) -> Value
         // ⚠️ §294: `mmrRoot`/`mmrSize` entran por el criterio de §248 —lo
         // suficiente para reverificar SIN el nodo—: sin la pareja, la
         // extension no se puede reauditar meses despues.
+        // ⚠⚠ §295 · **LOS SIETE CAMPOS DE LA CABEZA, TAMBIEN.** §248
+        // eligio estos campos para comprobar LA FIRMA; desde §294
+        // `verificar` ademas RECOMPONE, y `auditar_lineas` lo reutiliza tal
+        // cual — asi que un diario sin `seq`, `n` y las cinco raices **no
+        // se puede reauditar**: trece lineas legitimas salieron como
+        // `firma-no-verifica` con «QUANTITY no es cadena» en la primera
+        // corrida del banco.
+        //
+        // ⚠️ Es el hueco de §292 por TERCERA vez: **dos listas son dos
+        // productores del mismo contrato**, y quien toca una se mide contra
+        // la otra. Aqui las ata un test.
+        //
+        // ⚠️ Coste: siete campos mas por linea — medio KB frente a los
+        // ~37 KB que ya ocupa la firma (§248). Despreciable.
         for k in ["index", "epochDigest", "domain", "formatVersion", "signature",
                   "publicKey", "emittedAtUnix", "beatSeconds", "custody",
-                  "custodyChecked", "mmrRoot", "mmrSize"] {
+                  "custodyChecked", "mmrRoot", "mmrSize",
+                  "seq", "n", "accountsRoot", "pendingRoot", "frozenRoot",
+                  "chainDigest", "acusesRoot"] {
             if !servido[k].is_null() {
                 l[k] = servido[k].clone();
             }
@@ -503,15 +563,17 @@ impl Memoria {
     pub fn pareja(&self) -> Option<(&str, u64)> {
         self.pareja.as_ref().map(|(c, t)| (c.as_str(), *t))
     }
-    pub fn pendiente(&self) -> Option<&Pendiente> {
-        self.pendiente.as_ref()
-    }
     /// ⚠️ Se pide camino cuando **hay de donde partir y no hay nada
     /// pendiente**: dos peticiones por latido contra un nodo que mide
     /// 0,255 ms fijos (§217) no cuestan nada, y el caso identidad tiene
     /// respuesta declarada (camino vacio).
+    ///
+    /// ⚠⚠ **Nunca con t=0**: el servicio niega ese `oldSize` POR DISENO
+    /// («no hay historia que extender»), asi que pedirlo solo llena el
+    /// diario de negativas que no dicen nada — siete seguidas en la
+    /// primera corrida del banco del §295.
     pub fn debe_pedir_camino(&self) -> bool {
-        self.pareja.is_some() && self.pendiente.is_none()
+        self.pendiente.is_none() && self.pareja.as_ref().map_or(false, |(_, t)| *t > 0)
     }
 
     /// Fija la clave la primera vez, y **la compara siempre después**.
@@ -1300,7 +1362,7 @@ mod tests {
         // llega una cabeza que NO es la que firma el camino: sigue esperando
         let c = al_llegar_cabeza(&mut m, &cabeza_v3(&cima(2), 5));
         assert_eq!(c, Some(Consistencia::Pendiente { de_t: 4, esperando_t: 6 }));
-        assert!(m.pendiente().is_some(), "la pendiente NO se pierde por el camino");
+        assert!(m.pendiente.is_some(), "la pendiente NO se pierde por el camino");
     }
 
     #[test]
@@ -1316,7 +1378,7 @@ mod tests {
             c,
             Some(Consistencia::Extiende { de_t: 4, a_t: 4, camino: vec![] })
         );
-        assert!(m.pendiente().is_none(), "juzgada, la pendiente se consume");
+        assert!(m.pendiente.is_none(), "juzgada, la pendiente se consume");
         let c1 = cima(1);
         assert_eq!(m.pareja(), Some((c1.as_str(), 4)));
     }
@@ -1364,6 +1426,79 @@ mod tests {
         let c = al_llegar_cabeza(&mut m, &cabeza_v3(&cima(1), 3)).expect("hay veredicto");
         assert_eq!(c, Consistencia::PorDetras { t_nodo: 3, pedido: 9 });
         assert!(!c.detiene(), "un reseteo VISIBLE no es un hallazgo oponible");
+    }
+
+    #[test]
+    fn un_reseteo_descarta_la_pendiente_en_vez_de_dejar_al_testigo_ciego() {
+        // ⚠️⚠️ LA FE DE ERRATAS DEL §295. Antes: con una pendiente viva,
+        // un nodo reseteado no alcanzaba JAMAS su `esperando_t`, asi que
+        // el canal decia `consistencia-pendiente` para siempre y el
+        // reseteo no se anotaba nunca. Ahora el retroceso manda.
+        let mut m = Memoria::nueva();
+        al_llegar_cabeza(&mut m, &cabeza_v3(&cima(1), 9));
+        let r = json!({"available": true, "mmrSize": "0xc", "camino": [cima(5)]});
+        al_llegar_camino(&mut m, &r);
+        assert!(m.pendiente.is_some(), "hay un camino esperando a t=12");
+        // el nodo rearranca sin diario: vuelve a t=2, que NO es 12
+        let c = al_llegar_cabeza(&mut m, &cabeza_v3(&cima(2), 2)).expect("hay veredicto");
+        assert_eq!(c, Consistencia::PorDetras { t_nodo: 2, pedido: 9 });
+        assert!(m.pendiente.is_none(), "la pendiente de una historia muerta se DESCARTA");
+        assert!(!c.detiene(), "un reseteo VISIBLE sigue sin ser un hallazgo oponible");
+    }
+
+    #[test]
+    fn el_diario_guarda_todo_lo_que_la_recomposicion_lee() {
+        // ⚠⚠ EL CONTRATO QUE ROMPIO EL BANCO. Dos listas —la del diario
+        // y la que `recomponer` lee— son DOS PRODUCTORES DEL MISMO
+        // CONTRATO (§292, tercera vez). Este test las ata: si alguien anade
+        // un campo a la recomposicion y no al diario, `--auditar` deja de
+        // funcionar sobre diarios legitimos y **nadie se entera**.
+        let servido = json!({
+            "available": true, "index": "0x7", "epochDigest": "0xaa",
+            "signature": "0xbb", "publicKey": "0xcc", "formatVersion": "0x3",
+            "seq": "0x1", "n": "0x2", "accountsRoot": "0xd1", "pendingRoot": "0xd2",
+            "frozenRoot": "0xd3", "chainDigest": "0xd4", "acusesRoot": "0xd5",
+            "mmrRoot": "0xd6", "mmrSize": "0x3",
+        });
+        let l = linea_de_diario(&Veredicto::Nueva { indice: 7, digest: "0xaa".into() },
+                                &servido, 1000);
+        for k in ["seq", "n", "accountsRoot", "pendingRoot", "frozenRoot",
+                  "chainDigest", "acusesRoot", "mmrRoot", "mmrSize",
+                  "epochDigest", "formatVersion", "signature", "publicKey"] {
+            assert!(!l[k].is_null(),
+                    "el diario NO guarda {k}, y la recomposicion lo LEE: --auditar moriria");
+        }
+    }
+
+    #[test]
+    fn un_ancla_en_cero_no_es_un_ancla_y_se_vuelve_a_anclar() {
+        // ⚠⚠ LO CAZO EL BANCO: contra un nodo RECIEN NACIDO la primera
+        // cabeza trae mmrSize=0, y el servicio niega ese oldSize por
+        // diseno. Anclarse ahi dejaba al testigo atascado PARA SIEMPRE.
+        let mut m = Memoria::nueva();
+        let c = al_llegar_cabeza(&mut m, &cabeza_v3(&cima(0), 0));
+        assert_eq!(c, Some(Consistencia::Anclando { t: 0 }));
+        assert!(!m.debe_pedir_camino(), "con t=0 no se pide lo que el servicio niega");
+        let c = al_llegar_cabeza(&mut m, &cabeza_v3(&cima(3), 2));
+        assert_eq!(c, Some(Consistencia::Anclando { t: 2 }), "se RE-ancla con historia de verdad");
+        let c3 = cima(3);
+        assert_eq!(m.pareja(), Some((c3.as_str(), 2)));
+        assert!(m.debe_pedir_camino());
+    }
+
+    #[test]
+    fn una_pendiente_que_el_testigo_se_perdio_caduca() {
+        // El testigo MUESTREA y el nodo LATE: si consulta mas despacio, la
+        // cabeza que firmaba `esperando_t` pasa sin que la vea. Sin
+        // caducidad, esa pendiente no casaria jamas.
+        let mut m = Memoria::nueva();
+        al_llegar_cabeza(&mut m, &cabeza_v3(&cima(1), 4));
+        al_llegar_camino(&mut m, &json!({"available": true, "mmrSize": "0x6", "camino": [cima(9)]}));
+        assert!(m.pendiente.is_some());
+        // llega una cabeza YA PASADA de largo: t=9 > esperando 6
+        assert_eq!(al_llegar_cabeza(&mut m, &cabeza_v3(&cima(2), 9)), None);
+        assert!(m.pendiente.is_none(), "la pendiente perdida se DESCARTA");
+        assert!(m.debe_pedir_camino(), "y se vuelve a pedir en esta misma vuelta");
     }
 
     #[test]
@@ -1535,6 +1670,15 @@ mod tests {
         // asi que una firma valida no se puede fabricar aqui. Lo que SI se
         // prueba: que una linea estructuralmente sana produce UN SOLO
         // hallazgo, el de la firma. Si hubiera mas, fallaria la estructura.
+        //
+        // ⚠⚠ **ESTE TEST CUADRABA Y MENTIA** (§266, §295): desde §294
+        // `verificar` RECOMPONE antes de mirar la firma, asi que sobre esta
+        // linea sintetica —que no lleva los campos de la cabeza— el
+        // hallazgo sigue siendo UNO y sigue siendo de clase
+        // `firma-no-verifica`, pero por OTRA razon: muere recomponiendo, no
+        // verificando. El contador cuadraba; el significado, no. Queda
+        // dicho aqui en vez de arreglado a la fuerza: el fixture `dia()` es
+        // de ESTRUCTURA, y el contrato de campos lo ata el test de arriba.
         let r = auditar_lineas(&[dia("0x1", "0xaa", "0xdead")]);
         assert_eq!(r.lineas, 1);
         assert_eq!(r.con_firma, 1);

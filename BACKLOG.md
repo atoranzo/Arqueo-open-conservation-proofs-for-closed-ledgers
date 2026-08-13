@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 39 abiertas, 54 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 40 abiertas, 54 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 13 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -499,6 +499,13 @@ instrumentacion) al grupo E.*
   ⚠️ **Esto NO cierra el eslabon 3**: la cofirma —clave XMSS PROPIA
   del testigo, guardian de indice, dominio nuevo— sigue abierta, y con
   ella la pregunta de arriba, que este tramo NO responde.
+  ✅ **Y DEMOSTRADO EN VIVO (§295).** `tools/banco_consistencia.sh`:
+  la extension NO trivial juzgada por el testigo (deT distinto de aT,
+  camino no vacio), el diario v2 REVERIFICADO sin el nodo (--auditar:
+  el criterio de §248, ejecutable), la adulteracion DETENIDA
+  (no-extiende, exit 1, via proxy adulterador embebido) y el reseteo
+  anotado SIN quemar al testigo (por-detras, exit 0 — la decision D1,
+  en vivo). El limite que §294 declaro pendiente ya no lo es.
 
   **Eslabón 4 — El hash del verificador dentro de la cabeza
   atestiguada.** Ya está diseñado en `doc/preprints/ERRATA.md`, entrada
@@ -1485,6 +1492,35 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   el crate mentiroso salvo como dev-dependency.
   ⚠️ Ningun auto-informe del nodo protege de nada: «yo soy honesto» es
   el operador hablando de si mismo.
+
+- [ ] **94. Clases de resultado que el canon NO VE: las cegueras del
+  instrumento, medidas.** El canon corre en release y cuenta los
+  warnings de la compilación de TESTS; fuera de su vista quedan clases
+  enteras de resultado, y ya hay dos medidas más la que la 81 tenía:
+  **(a)** los `debug_assert` sólo viven en DEBUG — hay tests de
+  la capa que caen hoy en depuración («transition constraint degrees
+  didn't match», winter-prover; verificado contra el árbol virgen el
+  13-08-2026) y el canon es estructuralmente ciego a ellos. ⚠️ **La
+  cifra no vive aquí**: es de la **41**, que posee los fallos, y del
+  asiento §292, que la mide — esta nota es del INSTRUMENTO que no los
+  ve, no de los grados. **(b)** los warnings de `cargo build` no
+  son los de `cargo test`: un accesor usado sólo por tests da
+  cero warnings en el canon y warning en el build normal — cazado por
+  un `--help` (§295, y corregido allí borrando el accesor).
+  **(c)** la **81**: los warnings de un ejemplo, que el canon tampoco
+  compila. Cerrarla exige decidir POR CLASE: o el canon gana pasadas
+  nuevas con pines propios —un build normal; un `cargo test` en
+  debug ACOTADO a los crates sin prover—, o la ceguera se declara
+  PERMANENTE con su razón escrita. Lo que no vale es el estado de hoy:
+  ceguera sin declarar, que es exactamente la clase de silencio que
+  `check_cifras` vino a impedir con los números.
+  ⚠⚠ **Y esta entrada nacio en ROJO, por su propio tema.** La primera
+  version llevaba la cifra de los fallos de debug, y `check_figures`
+  la tumbo: vigila LA PREMISA de la exclusion de este fichero —cero
+  cifras de tests en entradas ABIERTAS—, y `check_cifras` lo
+  aviso a la vez. La nota que habla de lo que el instrumento NO VE fue
+  cazada por el instrumento en lo que SI ve. Queda escrito porque es el
+  argumento de la propia nota, del derecho.
 
 ## F. Publicacion, cuando el circuito este cerrado
 

@@ -21810,3 +21810,81 @@ fichero .rs nuevo (115 siguen). Ningun Cargo tocado: **la tesis del
 tramo (i) es que no hace falta ninguna dependencia nueva**, y la
 compuerta lo comprobo. La foto del completo sigue por la clausula de
 §284.
+
+## §295 — el banco del consumidor: cuatro veredictos en vivo, y el instrumento aprende lo que no ve
+
+**Que.** `tools/banco_consistencia.sh` — el tercero de la familia
+(§290, §293), y el primero cuyo sujeto es UN CLIENTE VIVO: el testigo
+de §294 contra un nodo real. Cuatro tramos, los cuatro en verde:
+POSITIVO (la extension NO trivial juzgada por el testigo: deT=0x1,
+aT=0x3, camino de 2), BONUS (--auditar reverifica el diario v2 SIN el
+nodo — trece lineas, cero hallazgos: el criterio de §248 dejo de ser
+prosa), NEGATIVO-A (un proxy adulterador EMBEBIDO en el banco —nace en
+$DIR y muere con el trap, tonto a proposito: reenvia todo y toca un
+nibble del camino— y el testigo SE DETIENE: exit 1, ultima palabra
+no-extiende) y NEGATIVO-B (rearranque con diario nuevo: por-detras
+anotado y el testigo SIGUE, exit 0 — la decision D1, demostrada). Un
+nodo honesto siempre extiende: el proxy es la UNICA forma de fabricar
+el rojo, y un banco sin su rojo es un adorno.
+
+**Cinco fes de erratas del §294 — cuatro cazadas por el banco, que es
+exactamente para lo que se construyo.** (1) El accesor `pendiente()`
+solo lo usaban los tests: warning en `cargo build` que el canon no
+ve (lo recoge la nota 94); cazado por un `--help`, corregido
+borrandolo — los tests leen el campo. (2) EL RETROCESO MANDA SOBRE LO
+PENDIENTE: cazado al disenar el negativo-B. (3) UN ANCLA EN t=0 NO ES
+UN ANCLA: el testigo se anclaba en el genesis y el servicio le negaba
+el camino POR DISENO — atascado para siempre; cazado por la v1 del
+banco (siete sin-camino seguidos). (4) LA PENDIENTE CADUCA: el testigo
+muestrea y el nodo late; si t supera a la esperada, esa cabeza se
+perdio — descartar y re-pedir; cazado por el banco. (5) EL DIARIO NO
+GUARDABA LO QUE LA RECOMPOSICION LEE: --auditar moria sobre un diario
+LEGITIMO (QUANTITY no es cadena, trece veces); cazado por la v2 del
+banco. Ahora guarda tambien seq, n y las cinco raices, y **un test ata
+las dos listas** — tercera encarnacion de «dos listas son dos
+productores del mismo contrato» (§292→§293, §294→§295).
+
+**Y una sexta, del propio asiento: la nota 94 nacio en ROJO.** Su
+primera version llevaba la cifra de los fallos de debug, y
+`check_figures` la tumbo — vigila LA PREMISA de la exclusion de
+BACKLOG: cero cifras de tests en entradas ABIERTAS. `check_cifras`
+lo habia avisado en la misma corrida. **La nota que habla de lo que el
+instrumento NO VE fue cazada por el instrumento en lo que SI ve**, y la
+cifra volvio a donde se vigila: la 41 y el asiento §292. No es una
+anecdota: es la respuesta a la propia nota — lo que esta declarado se
+comprueba, y lo que no, no.
+
+**Un test propio que cuadraba y mentia, dicho donde vive.**
+`una_linea_sana_solo_falla_en_la_firma` seguia verde contando UN
+hallazgo — pero desde §294 muere recomponiendo, no verificando la
+firma. Queda DICHO en el propio test (§266): arreglarlo a la fuerza
+habria sido fabricar una firma que la sesion no necesita.
+
+**PorDetras, RAZONADO — la traza del negativo-B responde a la objecion
+contra D1.** Las clases fueron: anclando · consistencia-pendiente ·
+por-detras (quince veces, con el ancla QUIETA) · consistencia-pendiente
+— el nodo nuevo supero el punto custodiado y el testigo volvio a
+juzgar. «Si PorDetras no detiene, el operador resetea y escapa»: NO
+escapa — en cuanto la historia nueva pretende pasar por encima del
+punto FIRMADO que el testigo custodia, el juicio corre contra una cima
+que no lo contiene, NoExtiende, y SE DETIENE. El reseteo compra
+silencio mientras va por detras, ni un latido mas. El banco no llego a
+ejercitar ese cruce (veinte vueltas cortas): queda como RAZONADO, con
+el ejercicio como candidato a tramo futuro.
+
+**El PENDIENTE de §292, SALDADO citandolo.** Aquel asiento dejo
+escrito: «la nota de BACKLOG que le corresponde es corte propio: el
+instrumento de la casa corre en release, y existe una clase de asserts
+que solo vive en debug». Este es ese corte: nace la **nota 94** —
+clases de resultado que el canon NO VE — con las dos cegueras medidas
+(debug_assert; warnings de build vs de test) y la 81 como hermana ya
+conocida, citando a la 41 como duena de los fallos mismos. Contador
+39→40: se abre deuda A PROPOSITO, porque una ceguera sin declarar es
+la clase de silencio que esta casa no se permite.
+
+**Contadores.** BACKLOG 40 abiertas / 54 resueltas. Pin del cli 39→43
+por COLUMNA; sumas 816/953/967 → **820/957/971** («del testigo»
+39→43); PAPER solo en cifras (§285). Un fichero nuevo en tools/
+(banco_consistencia.sh, FUERA del canon como sus dos hermanos).
+witness.rs 1830→1974. Ningun .rs nuevo (115 siguen); ningun Cargo
+tocado. La foto del completo sigue por la clausula de §284.
