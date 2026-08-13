@@ -428,6 +428,14 @@ instrumentacion) al grupo E.*
   imposible**: un testigo no puede cofirmar lo que no puede comprobar.
   Deja de ser un acumulador porque sí y pasa a ser la precondición de la
   cofirma.
+  ✅ **ESLABON 2 — estructura CUMPLIDA (§291), atadura al formato
+  PENDIENTE.** El objeto existe: `mmr.rs` en el verificador (cima,
+  inclusion, consistencia — RFC 6962 sobre las primitivas de la casa,
+  dominios `MMRHOJA1`/`MMRNODO1` en el registro), con la bifurcacion, el
+  recorte y el interior-como-hoja ejercitados en rojo. **La cabeza aun
+  no lo compromete**: la cima dentro del digest firmado (v3, rotura
+  declarada) es el siguiente corte de la familia, y hasta entonces el
+  eslabon NO esta cerrado — un objeto que nadie firma no ata a nadie.
 
   **Eslabón 3 — Cofirma del testigo, con política de CLIENTE.** Hoy el
   operador firma la cabeza y el testigo la observa **después**: la vista

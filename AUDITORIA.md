@@ -21529,3 +21529,55 @@ manda el arbol; las anclas PRE de este bloque son las medidas hoy.
 **Contadores.** BACKLOG 40/53 -> **39 abiertas / 54 resueltas**. Sumas
 de tests quietas (790/927/941): ningun `.rs` tocado, ningun Cargo — la
 foto del completo sigue VALIENDO por la clausula de §284.
+
+## §291 — el MMR de cabezas: el eslabon 2 gana su estructura
+
+**Que.** La familia del eslabon 2 quedo decidida en tres cortes —(i) la
+estructura pura, (ii) la atadura al formato, (iii) la vista y el
+cable— y este es el (i): `crates/zk-ssl-verify/src/mmr.rs`, hermano de
+`acuses.rs`, con los algoritmos del arbol de historia de RFC 6962
+(`MTH`/`PATH`/`SUBPROOF`) sobre dos primitivas nuevas de la casa —
+`mmr_hoja` y `mmr_nodo` en `zk-ssl-hash`, molde de `acuse_digest`, tag
+por delante— y dos dominios con version en el valor (`MMRHOJA1`,
+`MMRNODO1`) altas en la tabla del registro de §286. La verificacion es
+la RECURSION ESPEJO de la generacion —misma particion k, camino
+consumido posicion a posicion, `consumido == len` como compuerta—, de
+modo que generador y verificador no pueden desalinearse por
+construccion. **El formato de la cabeza no se toca**: nada de lo que
+viaja cambia en este corte.
+
+**Por que RFC 6962 y no un MMR de picos.** El mismo objeto —prueba de
+consistencia O(log N) vieja→nueva— con el algoritmo ESPECIFICADO en un
+estandar que lleva una decada en produccion (Certificate Transparency),
+frente a variantes de picos con mas grados de libertad de
+implementacion. Razonado; la eleccion no cambia la promesa del eslabon.
+
+**Ejercitado.** Siete tests que NACEN: extension honesta en verde
+(seis tamanos, potencias y no potencias, mas el caso identidad) y los
+rojos que definen el objeto —una historia BIFURCADA no prueba
+consistencia, una RECORTADA no extiende, un interior no se hace pasar
+por hoja (la defensa de segunda preimagen que justifica los DOS
+dominios), un camino con sobras o faltas cae, una inclusion adulterada
+o transplantada cae. verify 39→46; sumas 790/927/941 →
+**797/934/948** en PRINCIPIOS (con su desglose), BILINGUE (ES y EN),
+EJECUTIVO y PAPER.md — PAPER tocado SOLO en las cifras, con §285 como
+precedente: las sumas se mantienen vivas; el contenido nuevo espera a
+la 5.ª revision, donde el propio MMR tiene silla reservada junto a la
+topologia del firmante.
+
+**Decisiones que este corte deja escritas.** (1) Familia de tres, y el
+v3 del (ii) sera SOLO-MMR: el eslabon 4 (`hash_verificador_vigente`,
+ERRATA entrada 1) exige antes la nocion de «reglas vigentes», que no
+existe, y encadenarlo al MMR bloquearia la cadena entera — la tension
+con el corolario de la 82 («un formato se rompe una vez para varias
+razones») queda asumida y se repetira, con nombre, en el asiento del
+(ii). (2) El cumplido es PARCIAL y VISIBLE dentro de la 83, redactado
+para que no pueda leerse como eslabon cerrado: un objeto que nadie
+firma no ata a nadie. (3) La vista se reconstruira del diario (patron
+`vista_acuses`), y el precio —perder el diario rompe la continuidad de
+las pruebas de extension, fallo visible— se declarara junto al (iii),
+vecino de la familia 19-84-92.
+
+**Contadores.** BACKLOG QUIETO (39/54): la 83 sigue abierta. Un `.rs`
+nuevo declarado por su padre (114→115). Ningun Cargo tocado; la foto
+del completo sigue rigiendose por la clausula de §284.

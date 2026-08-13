@@ -276,6 +276,35 @@ pub fn acuse_digest(hash_prueba: Digest, epoca: u64, n: u64) -> Digest {
     native_merge(as_digest(DOMINIO_ACUSE), native_merge(hash_prueba, par))
 }
 
+
+/// **Dominios del MMR de cabezas** (§291, eslabon 2 de la nota 83), con
+/// version en el propio valor, como `ACUSE_V1`: ocho bytes ASCII leidos
+/// como `u64`, sufijo incluido para que un futuro v2 conviva sin pisar.
+///
+/// Dos y no uno porque la separacion hoja/interior es la defensa
+/// clasica de segunda preimagen del arbol de historia (RFC 6962): sin
+/// ella, un nodo interno presentado como hoja compone el mismo valor.
+pub const DOMINIO_MMR_HOJA: u64 = u64::from_be_bytes(*b"MMRHOJA1");
+/// El dominio de los nodos interiores del MMR. Ver [`DOMINIO_MMR_HOJA`].
+pub const DOMINIO_MMR_NODO: u64 = u64::from_be_bytes(*b"MMRNODO1");
+
+/// **La hoja del MMR de cabezas**: un digest de cabeza, etiquetado.
+///
+/// ⚠️ **Esta es LA composicion**, por la misma razon que
+/// [`acuse_digest`]: el cliente que verifica una extension tiene que
+/// componer exactamente igual que el nodo que la sirve, y la unica
+/// forma segura es que sea la misma funcion. La forma del tag es la de
+/// siempre: el dominio mezclado por delante.
+pub fn mmr_hoja(cabeza: Digest) -> Digest {
+    native_merge(as_digest(DOMINIO_MMR_HOJA), cabeza)
+}
+
+/// **El nodo interior del MMR de cabezas**. Ver [`mmr_hoja`]: mismo
+/// contrato, dominio propio.
+pub fn mmr_nodo(izquierda: Digest, derecha: Digest) -> Digest {
+    native_merge(as_digest(DOMINIO_MMR_NODO), native_merge(izquierda, derecha))
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 //  §257 · EL BYTE Y EL ELEMENTO
 //
@@ -641,6 +670,8 @@ mod tests_cabeza_v2 {
 // REGISTRO: u64 produccion OP_FREEZE 0x46525A45
 // REGISTRO: u64 produccion OP_RECOVERY 0x5245434F
 // REGISTRO: u64 produccion OP_GOVERNANCE 0x474F5652
+// REGISTRO: u64 produccion DOMINIO_MMR_HOJA 0x4D4D52484F4A4131
+// REGISTRO: u64 produccion DOMINIO_MMR_NODO 0x4D4D524E4F444F31
 // REGISTRO: u64 zk-core NULLIFIER_DOMAIN 0x4E554C4C
 // REGISTRO: u64 zk-core SPEND_KEY_DOMAIN 0x53504B59
 // REGISTRO: u64 zk-core ISSUER_DOMAIN 0x49535355

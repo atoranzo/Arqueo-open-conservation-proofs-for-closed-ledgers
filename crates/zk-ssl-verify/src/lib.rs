@@ -61,6 +61,11 @@ pub use inclusion::{
 // MISMAS. Ver la cabecera del módulo para el borde que lo justifica.
 pub mod acuses;
 
+/// El MMR de cabezas (§291): el objeto que prueba «esta cabeza contiene
+/// aquella» sin descargar el registro — eslabon 2 de la nota 83, puro.
+/// La atadura al formato firmado (v3) es decision aparte y llega despues.
+pub mod mmr;
+
 // ⚠️ §279 · **La superficie CRECE otra vez**, y por la misma razon que en
 // §275: el modulo es PRIVADO, asi que un `pub` que no aparezca aqui no
 // existe para nadie de fuera — y un reverificador inalcanzable no
