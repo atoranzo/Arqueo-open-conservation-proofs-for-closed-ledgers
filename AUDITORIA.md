@@ -21285,3 +21285,36 @@ formar parte de él (fail-stop, `doc/CONFIANZA_RESIDUAL.md` §5.2).
   asiento. La deuda que SIGUE abierta no cambia: segunda mitad de la 80,
   lotes (RFC-0002 etapa 2), nota 81 y los 6 warnings preexistentes del bin
   del nodo que la INERTE de §283 dejo a la vista.
+
+## §285 — quien firma, anota: un nodo con clave no arranca sin --diario
+
+- QUE: la segunda mitad de la nota 80, RATIFICADA por el usuario
+  (semantica A de tres): `firma_sin_diario(semilla.is_some(),
+  diario.is_some())` → `bail!` al arrancar, con el molde EXACTO de
+  `--custodia fichero exige --clave-fichero` que vive unas lineas encima.
+  Docs de `--clave`, `--clave-fichero`, `--diario` y del campo `App.diario`
+  puestas al dia —la frase «el nodo sigue firmando» de `--diario` habia
+  quedado FALSA con la guarda y se reescribio.
+- Las alternativas, y por que no: la ruta por defecto la mata el propio
+  fichero («el nodo no escribe en disco por su cuenta», doc de --diario);
+  el aviso sin dientes deja el agujero (un nodo que olvida el diario sigue
+  sin poder reconocer su firma). El precedente interno decidio la forma.
+- EJERCITADO POR SUS PARTES, declarado como en §283: los 33 tests de
+  main.rs no ejercitan `Args`, asi que la decision es un predicado PURO
+  probado en frio (2 tests: rechazo + las otras tres combinaciones) y el
+  cableado lo cubre el molde. Sin clave, el diario sigue OPCIONAL: anota
+  limites de epoca (§272) sin que nadie firme nada que haya que recordar.
+- ROTURA OPERATIVA CONSCIENTE: un nodo que hoy arranca con clave y sin
+  diario dejara de arrancar, y el mensaje del bail dice por que y que
+  falta. Es el punto: imposible por construccion, no disciplina.
+- PINES Y SUMAS: aqui los tests NACEN (no migran, al reves que §283):
+  node 77→79 · sumas 788/925/939 → **790/927/941** en PRINCIPIOS
+  (:349-353, desglose incluido), BILINGUE (¡dos veces: ES :85 y EN :162!),
+  EJECUTIVO (:58) y PAPER.md (:36-38 — PAPER.md SI lleva sumas; el que no
+  las lleva es PAPER_EN: medido, no recordado).
+- La 80 queda ENTERA —mando (§283) + memoria obligada al firmar (§285)—
+  con la linea de cumplido DENTRO de su MAPA y el contador QUIETO (29/53):
+  una nota cerrada no se reabre.
+- La foto del --completo: main.rs no esta bajo COMPLETO_CUBRE → la
+  compuerta de §284 dira que VALE, y este sello es su primer uso real
+  tras el estreno.

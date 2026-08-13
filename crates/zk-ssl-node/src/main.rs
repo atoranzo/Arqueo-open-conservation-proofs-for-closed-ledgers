@@ -91,6 +91,8 @@ struct Args {
     ///
     /// ⚠️ **Prefiere `--clave-fichero`.** Esta bandera existe para
     /// ejercitar el mecanismo, no para operar.
+    /// ⚠️ Y **exige `--diario`** (nota 80; §285): quien firma, anota.
+    ///
     #[arg(long, value_name = "HEX_96_BYTES", conflicts_with = "clave_fichero")]
     clave: Option<String>,
 
@@ -102,15 +104,17 @@ struct Args {
     /// porque crear bien no impide que alguien afloje después.
     ///
     /// ⚠️ Esto **no decide la custodia**: hace posible una decente.
+    ///
+    /// ⚠️ Y **exige `--diario`** (nota 80; §285): quien firma, anota.
     #[arg(long, value_name = "RUTA")]
     clave_fichero: Option<String>,
 
     /// **Dónde anota el nodo lo que firma** (una línea JSON por latido).
     ///
     /// ⚠️ Explícita, como `--clave`: el nodo no escribe en disco por su
-    /// cuenta. Sin esto el nodo sigue firmando y **sigue sin poder
-    /// reconocer su propia firma**, que es justo lo que §272 vino a
-    /// arreglar. Ver la nota 80 del BACKLOG.
+    /// cuenta. Y desde §285 **un nodo con clave NO ARRANCA sin esto**
+    /// (quien firma, anota, nota 80): firmar sin poder reconocer la
+    /// propia firma era justo lo que §272 vino a arreglar. Ver la nota 80 del BACKLOG.
     ///
     /// ⚠️ **NO lleva el candado del guardián.** `PersistenciaFalsa`
     /// existe porque reusar un índice compromete la clave; perder este
@@ -237,6 +241,7 @@ struct App {
     clave_publica_firma: Vec<u8>,
     /// **Dónde anota el nodo lo que firma.** `None` si no se pasó
     /// `--diario`: entonces no hay memoria de lo emitido (§272).
+    /// Desde §285, si hay clave esto nunca es `None`: quien firma, anota.
     diario: Option<std::path::PathBuf>,
     /// Cadencia del latido: cada cuánto esperar una cabeza nueva.
     latido_s: u64,
@@ -250,6 +255,14 @@ struct App {
     /// `fsync` —**0,907 ms medidos en ext4** (K.1)— y retenerlo mientras
     /// se aplica una operación pararía el nodo entero.
     recepcion: Mutex<recepcion::ContadorRecepcion>,
+}
+
+/// «Quien firma, anota» (nota 80, segunda mitad; §285): la decision de
+/// arranque, PURA para poder probarse en frio — los tests de este binario
+/// no ejercitan `Args`, asi que el predicado se prueba solo y el cableado
+/// lo cubre el molde de `--custodia fichero`, tres lineas encima del bail.
+fn firma_sin_diario(firmara: bool, con_diario: bool) -> bool {
+    firmara && !con_diario
 }
 
 #[tokio::main]
@@ -286,6 +299,18 @@ async fn main() -> anyhow::Result<()> {
         (None, Some(ruta)) => Some(leer_semilla_de_fichero(ruta)?),
         _ => None,
     };
+    // ── «quien firma, anota» (nota 80, segunda mitad; §285) ──
+    // ⚠️ Mismo molde que --custodia fichero, unas lineas arriba: el nodo
+    // NO arranca. Un nodo que firma sin --diario no puede reconocer su
+    // propia firma despues ni negar una que no emitio — y el mando
+    // `--ausentes` del testigo (§283) compararia un diario que este nodo
+    // nunca habria escrito.
+    if firma_sin_diario(semilla_hex.is_some(), args.diario.is_some()) {
+        anyhow::bail!(
+            "quien firma, anota: --clave/--clave-fichero exige --diario. \
+             Un nodo que firma sin diario no puede reconocer su propia firma"
+        );
+    }
     let firmante = match &semilla_hex {
         Some(hex) => {
             let semilla = descodificar_semilla(hex)?;
@@ -1981,6 +2006,25 @@ mod tests {
         let e = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(9_999), "viewKey": vk_falsa() }))
             .expect_err("no deberia haber recibo");
         assert_ne!(e.code, -32601, "el metodo existe: no puede ser MethodNotFound");
+    }
+
+    // ── §285 / nota 80, segunda mitad: quien firma, anota ──
+
+    #[test]
+    fn quien_firma_anota_firmar_sin_diario_se_rechaza() {
+        // El molde de --custodia fichero. El cableado real es el bail de
+        // main(); esto prueba la DECISION, que es lo que este binario
+        // puede probar en frio.
+        assert!(firma_sin_diario(true, false), "clave sin diario tiene que rechazarse");
+    }
+
+    #[test]
+    fn quien_firma_anota_las_otras_tres_combinaciones_arrancan() {
+        // Sin clave, el diario sigue siendo opcional: anota limites de
+        // epoca (§272) sin que nadie firme nada que haya que recordar.
+        assert!(!firma_sin_diario(true, true));
+        assert!(!firma_sin_diario(false, true));
+        assert!(!firma_sin_diario(false, false));
     }
 }
 

@@ -916,6 +916,9 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
     pueden alojarlo). SEGUNDA MITAD ABIERTA: `--diario` es bandera aparte — un nodo que
     firma sin ella no puede reconocer su firma despues. Recomendacion SIN RATIFICAR:
     «quien firma, anota» (que `--diario` vaya con `--clave`).
+    CUMPLIDA (§285), ratificada la recomendacion: un nodo con clave NO
+    ARRANCA sin `--diario` —el molde de `--custodia fichero`—. La 80
+    queda entera: mando (§283) + memoria obligada al firmar (§285).
 - [ ] **81. Tres warnings en un ejemplo que el canon no ve.** El canon
   no compila ejemplos, así que la fila de zk-ssl marca 0 mientras
   `crates/zk-ssl/examples/etapa_b1_lote_medido.rs` avisa tres veces en
