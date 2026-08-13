@@ -413,6 +413,11 @@ instrumentacion) al grupo E.*
   puede robar pero **sí congelar indefinidamente**. Aquí el titular ya
   custodia lo suyo: no hay a quién pedírselo. Eso es un capítulo del
   paper, no una nota de ingeniería.
+  ✅ **ESLABON 1 CUMPLIDO (§289)**: el paquete existe con nombre, formato
+  y comando — formato v1 declarado en la cabecera del binario de
+  `zk-ssl-verify` (las respuestas del cable TAL CUAL, reunidas), y el
+  mando verifica cabeza y acuse sin el nodo. La entrada sigue ABIERTA:
+  quedan los eslabones 2-4. Y la 91 ya tiene su mecanismo con nombre.
 
   **Eslabón 2 — MMR, y por fin con su razón concreta.** Hoy el MMR es un
   titular razonado —«acumulador sin hojas»— sin motivo escrito. El

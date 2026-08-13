@@ -17,6 +17,7 @@ license.workspace = true
 # cuesta.
 
 [dependencies]
+serde_json = "1"
 # ⚠️ **0.1.0-pre.0, SIN auditoría independiente**, declarado por el propio
 # crate. Fijada con `=`: es una pre-release y `master` diverge del tag.
 # Aqui vive tambien el APAÑO del OID multiarbol (§240) y su CENTINELA, porque

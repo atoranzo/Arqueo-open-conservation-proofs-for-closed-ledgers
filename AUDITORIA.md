@@ -21443,3 +21443,42 @@ formar parte de él (fail-stop, `doc/CONFIANZA_RESIDUAL.md` §5.2).
 - Doc-only: ningun codigo, ningun pin, sumas quietas (790/927/941),
   ningun Cargo —la foto sigue valiendo—. Con esto el borrador de la
   sesion 22 queda DISUELTO ENTERO y muere fuera del arbol.
+
+## §289 — el paquete de evidencia portable: nombre, formato y comando (eslabon 1 de la 83)
+
+- QUE: el arco §275-§282 ya habia construido las piezas; este sello las
+  JUNTA y las DECLARA entregable. Un binario nuevo en `zk-ssl-verify`
+  —autodescubierto por cargo desde src, mismo nombre del crate— que toma
+  UN fichero JSON (formato v1, declarado en su cabecera: las respuestas
+  de zkssl_signedEpochHead y zkssl_ackPath TAL CUAL el nodo las sirve,
+  reunidas con el hashPrueba del titular) y lo verifica SIN el nodo, sin
+  la capa y sin el probador (§243): recompone epoch_digest_v2 de los
+  siete campos, verifica la firma XMSS comparando el preambulo, y sube
+  el acuse hasta la raiz firmada. VERDE/exit 0 o el primer fallo con
+  nombre/exit 1; uso mal llamado/exit 2.
+- CERO logica nueva de verificacion: el bin es un ADAPTADOR sobre
+  `verificar_cabeza`, `verificar_acuse`, `hoja_de_acuse` y
+  `epoch_digest_v2`, todas publicas y ya testadas — ejercitado POR SUS
+  PARTES, declarado como §283/§285. Cero tests Rust nuevos: sumas
+  quietas (790/927/941); .rs 114 -> 115 y ningun documento pinaba 114
+  (medido con grep en los cuatro antes de escribir).
+- ⚠⚠ PRIMER Cargo tocado desde §273, y A PROPOSITO: serde_json entra
+  en las dependencias de zk-ssl-verify para leer el paquete. Es el
+  PRIMER EJERCICIO REAL de la clausula del lock de §284: verify no esta
+  bajo COMPLETO_CUBRE, asi que la compuerta semantica dice que la foto
+  VALE, con la razon impresa — exactamente el sobredisparo que §284
+  vino a quitar, absuelto en su estreno de verdad. La regla de §243 no
+  se toca: verify sigue sin compilar capa, nodo, cable ni probador.
+- Solo cabezas v2 (formatVersion 2): el paquete existe desde que la
+  pareja (acusesRoot, n) viaja FIRMADA (§275). Una v1 custodiada se
+  verifica con la biblioteca; el mando lo dice en su error.
+- La nota 91 tiene ya su mecanismo con nombre: este binario ES el
+  procedimiento de apagado — apaga el nodo y una posicion sigue siendo
+  demostrable. Queda el banco que lo demuestre apagando de verdad
+  (la 91 sigue abierta; el eslabon 1 queda CUMPLIDO dentro de la 83,
+  que sigue abierta con los eslabones 2-4).
+- Riesgo asumido y declarado: sello montado al final de una sesion de
+  seis, con fixtures verificados (lib/inclusion/acuses viajaron; main
+  del nodo y hash EN MANO por reconstruccion sha-identica) pero sin
+  poder compilar en el contenedor — las INERTES y el canon son el juez,
+  y un rojo restaura a nivel de fichero incluida la retirada del bin.
