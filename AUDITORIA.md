@@ -21354,3 +21354,61 @@ formar parte de él (fail-stop, `doc/CONFIANZA_RESIDUAL.md` §5.2).
   entre si porque sus hashes no comparten espacio. Si aparece una familia
   nueva (otro hash), su grupo se anade a la tabla y a GRUPO en la
   herramienta —dos lineas—.
+
+## §287 — el modelo de confianza escribe su mapa: ocho destinos razonados al grupo B
+
+- QUE: el material de la comparacion externa de la sesion 22 —que NO
+  existia en el arbol y se habria perdido— se DISUELVE en su sitio: las
+  entradas 83 y 85-91 al grupo B de BACKLOG.md, la procedencia y el
+  veredicto a este asiento, y el borrador se queda FUERA del arbol (un
+  documento paralelo seria el fallo de §233 desde el dia uno). Contador
+  29/53 -> 37/53, contado a columna 0, no sumado.
+- PROCEDENCIA de la comparacion, consultada el 2026-08-12: Sigsum
+  (sigsum.org/docs y su documento de diseño en git.sigsum.org), Validium/StarkEx
+  (docs.starkware.co/starkex, ethereum.org), QRL (docs.theqrl.org,
+  theqrl.org, github.com/theQRL/QRL, el articulo «Statefulness and
+  security», y el informe de qrindex.org de jun-2026).
+- ESTATUTO, sin adornos: TODO es RAZONADO, no medido. Ninguna entrada
+  tiene terreno; son destinos con su razon escrita, no cortes, y cada
+  cierre sera un sello con su paste.
+- CORRECCION A LA PROPIA NARRATIVA, y va aqui porque es del discurso
+  del proyecto: QRL tambien declara sus residuales sin adornos, asi que
+  «este proyecto es mas honesto» NO SE SOSTIENE como diferenciador. Lo
+  que se sostiene es mas estrecho y comprobable: el calendario de
+  confianza residual como artefacto SISTEMATICO del propio sistema, y
+  un paper que se falsa a si mismo cuando la implementacion le
+  contradice. Declarar caveats lo hace mas gente de la que pensabamos;
+  llevar la contabilidad completa, no.
+- EL VEREDICTO por ejes: ZK-SSL esta POR DETRAS en tres —agilidad
+  criptografica (QRL desde el genesis; aqui ni identificador de
+  esquema), auditoria externa (ellos dos firmas; aqui ninguna) y
+  madurez operativa— y MEJOR en uno, estructural: la topologia del
+  firmante —una firma por epoca desde un solo firmante con guardian,
+  frente al estado repartido entre miles de carteras cuyo caveat es
+  perdida permanente—. Esa linea MERECE EL PAPER y queda PENDIENTE
+  para la quinta revision: PAPER.md no se toca en este sello porque es
+  la fuente byte-exacta de la cuarta depositada en Zenodo.
+- DECISIONES de insercion, medidas contra el arbol (no contra el
+  recuerdo de la sesion 22):
+  1. el MMR NO tiene entrada titular en el BACKLOG —el grep vino
+     vacio; «MMR» vivia en traspasos—, asi que el eslabon 2 va DENTRO
+     de la 83, que es donde el borrador ya lo tenia;
+  2. segundas implementaciones no tiene entrada que lo recoja (la
+     mencion :2293 vive dentro de la cerrada del keystore) → la 85
+     entra con numero;
+  3. los numeros 84 y 92 SE RESERVAN sin insertarse —llegan en §288,
+     cortadas juntas con la ampliacion de la 19 (el ciclo de vida del
+     firmante)— porque renumerar romperia las referencias cruzadas del
+     propio material; el hueco esta declarado en la intro del grupo;
+  4. el NODO MENTIROSO va a §288, no aqui: es instrumentacion del
+     firmante, no modelo de confianza;
+  5. la adenda ML-DSA (posterior al COMO-INSERTAR: el borrador crecio
+     488→553 con ella) va DENTRO de la 87 como su propia regla manda,
+     condensada y con las cifras marcadas POR VERIFICAR contra FIPS 204.
+- Las incorporaciones de QRL a la 87 (precedente cripto-agil: aqui no
+  estamos por delante, estamos por detras) y a la 89 (dos auditorias
+  externas publicadas: la norma del genero) van dentro de sus entradas;
+  la curva de reutilizacion de indice (2 firmas ~2^34, 3 ~2^23, 4
+  ~2^18) va con la 84 en §288.
+- Doc-only: ningun codigo, ningun pin, sumas quietas (790/927/941),
+  ningun Cargo —la foto del --completo sigue valiendo—.

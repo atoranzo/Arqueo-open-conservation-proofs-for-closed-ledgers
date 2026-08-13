@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 29 abiertas, 53 resueltas — **2 suspendidas** (16 y 28).
-Ultima revision: 12 de agosto de 2026 — **contada, no recordada**.
+**Estado**: 37 abiertas, 53 resueltas — **2 suspendidas** (16 y 28).
+Ultima revision: 13 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
 
@@ -378,6 +378,268 @@ decidir.
   caso B). Es la causa de los 2 tests que `stark-experiment` se salta en
   depuracion. ✅ **Cerrada** con la 6 (§46, §34): declarada como limite de
   winterfell; para valores de dominio no hay arreglo posible (§37.2 caso B).
+
+*Las ocho siguientes (83, 85-91) entran en §287: la comparacion externa
+de la sesion 22 (Sigsum · Validium/StarkEx · QRL, consultados el
+2026-08-12; procedencia completa en el asiento §287 de AUDITORIA.md),
+disuelta aqui para que no viva en un documento paralelo. **Todas son
+RAZONADAS, sin terreno**: destinos con su razon escrita, no cortes. La
+**84** y la **92** —el ciclo de vida del firmante— llegan juntas en
+§288, con la ampliacion de la 19.*
+
+- [ ] **83. La cadena de la confianza residual: cuatro eslabones, en
+  este orden.** Las cuatro piezas que quedan entre «la censura es
+  evidenciable» y «la censura es imposible en solitario». **Van juntas
+  en una entrada porque cada eslabón es la precondición del siguiente**:
+  separadas vuelven a parecer ideas sueltas, que es lo que ya pasó con
+  el acuse hasta §233.
+
+  **Eslabón 1 — El paquete de evidencia portable.** *Casi hecho; lo que
+  falta es empaquetarlo y declararlo.* La escotilla de Validium existe
+  porque sin los datos el titular **no puede computar la prueba de
+  Merkle** que necesita para demostrar su posición: la escotilla es el
+  derecho a **construir tu prueba**, no el contrato. ZK-SSL no tiene L1,
+  pero el arco §275-§282 ya construyó las piezas: cabeza firmada que el
+  titular custodia, camino de acuse de época cerrada, compromiso
+  recomputable, y un verificador independiente que compila **sin el
+  probador** (§243). Falta juntarlo en un artefacto con nombre, formato
+  y comando, y **declararlo como entregable** — lo que sostiene la
+  posición del titular ante un tercero cuando el operador desaparece o
+  miente.
+  ⚠️ **Y es MEJOR que la escotilla de Validium en un eje concreto**: en
+  validium el titular **depende** de que el comité le entregue los
+  datos, y el fallo característico de ese modelo es que el comité no
+  puede robar pero **sí congelar indefinidamente**. Aquí el titular ya
+  custodia lo suyo: no hay a quién pedírselo. Eso es un capítulo del
+  paper, no una nota de ingeniería.
+
+  **Eslabón 2 — MMR, y por fin con su razón concreta.** Hoy el MMR es un
+  titular razonado —«acumulador sin hojas»— sin motivo escrito. El
+  motivo es éste: **un cliente con una cabeza vieja debe poder verificar
+  que la nueva la EXTIENDE**, sin descargarse el registro. Hoy el
+  encadenado existe entrada a entrada, pero no hay un objeto que pruebe
+  «esta cabeza contiene aquélla». Y sin ese objeto **el eslabón 3 es
+  imposible**: un testigo no puede cofirmar lo que no puede comprobar.
+  Deja de ser un acumulador porque sí y pasa a ser la precondición de la
+  cofirma.
+
+  **Eslabón 3 — Cofirma del testigo, con política de CLIENTE.** Hoy el
+  operador firma la cabeza y el testigo la observa **después**: la vista
+  dividida se detecta *a posteriori*. Si la cabeza no es válida sin
+  **k cofirmas**, el operador deja de poder emitir dos cabezas para el
+  mismo índice: pasa de **evidenciable** a **imposible en solitario**.
+  Modelo de referencia (Sigsum): el testigo pide una **prueba de
+  consistencia** contra la última cabeza que él mismo cofirmó,
+  comprueba frescura y append-only, y sólo entonces firma; **qué
+  testigos valen y cuántos lo decide el CLIENTE**, con su política, no
+  el operador con su declaración.
+  ✅ **Más barato de lo que parece**: el testigo sólo guarda **la última
+  cabeza observada**, y la prueba de consistencia es O(log N) — por eso
+  en ese ecosistema los testigos se operan como infraestructura pública
+  sin coste. Y en ZK-SSL la cabeza **ya se firma una vez por época**,
+  así que el coste de XMSS está amortizado ahí y no por operación
+  (§127.1: firmar por acuse colapsaría de ~320 a ~6 op/s).
+  ⚠️ **Tres precios, los tres declarados**: (a) la propiedad pasa a ser
+  **de umbral**, no absoluta — un atacante que controle más del umbral
+  de testigos la rompe; (b) **liveness**: si los testigos no responden,
+  la época no cierra, y en el modelo de referencia eso se acepta
+  explícitamente renunciando a promesas de inclusión de baja latencia;
+  (c) exige **terceros de verdad** — es tanto organización como código.
+  ⚠️⚠️ **PREGUNTA ABIERTA, y no es de implementación**: el diseño de
+  referencia usa Ed25519 y **ZK-SSL firma con XMSS con estado**. Una
+  cofirma de umbral sobre firmas hash-based con índice —presupuesto
+  finito, reutilizar el índice filtra la clave (ver entrada 84)— **no
+  es un detalle**: hay que medir si cada testigo firma con su propia
+  clave XMSS o si ahí conviene otra primitiva. **Esto se mide antes de
+  diseñar nada.**
+
+  **Eslabón 4 — El hash del verificador dentro de la cabeza
+  atestiguada.** Ya está diseñado en `doc/preprints/ERRATA.md`, entrada
+  1, y recogido en la tabla de §4.1 de la cuarta revisión del preprint:
+  **reemplazar el verificador es hoy ilimitado y sin rastro**, porque
+  ordenar, censurar y observar actúan *dentro* de las reglas, mientras
+  que cambiar el verificador **redefine las reglas** bajo las que se
+  juzga todo lo demás — y el sistema no tiene noción de «reglas en
+  vigor». Mientras siga abierto, **toda otra propiedad lleva un
+  asterisco**. Encaja con el eslabón 3: un testigo que cofirma está
+  atestiguando también **qué reglas regían**.
+
+  **Cómo se cierra**: no se cierra de una vez. Cada eslabón es un sello
+  o más, en el orden de arriba, y **ninguno se monta sin su terreno
+  medido**. El eslabón 1 es el más barato y el que más paga en el paper;
+  el 3 es el que de verdad cambia el modelo de confianza.
+
+- [ ] **85. Una SEGUNDA implementación que pase los vectores.** Lo caro
+  ya está hecho: vectores de conformidad versionados (`0.2` idéntico,
+  `0.1` rechazado), OpenRPC **generado** desde la tabla de
+  `zk-ssl-wire`, y regeneración byte-exacta como compuerta permanente.
+  Lo que falta es el uso para el que existen: **que otro código los
+  reproduzca**.
+  ⚠️ **Una spec que sólo implementa un código no es una spec, es
+  documentación**; y una conformidad que sólo se comprueba contra sí
+  misma es **autoconformidad**. Mientras no exista una segunda
+  implementación, la afirmación «esto es un protocolo» es una promesa.
+  **Alcance mínimo suficiente**: no hace falta reimplementar la capa.
+  Basta un **verificador** en otro lenguaje que reproduzca el escenario
+  canónico y recompute las cabezas — el día que pase los vectores, la
+  conformidad deja de ser autoconformidad. Está en la Fase 1 del
+  `ROADMAP-ECOSISTEMA.md` («para que existan SEGUNDAS
+  implementaciones»); esta entrada le pone el listón medible.
+
+- [ ] **86. Anclar las cabezas de época en un log de transparencia
+  externo.** Sin L1, el talón sigue siendo el **tiempo**: los límites de
+  época salen del **diario del propio nodo** (autoreporte, declarado en
+  §4.8 del preprint). Publicar el digest de cabeza en un log público de
+  transparencia da **frescura y no-equivocación verificables por un
+  tercero**, barato, **sin consenso y sin cadena**.
+  Es la escotilla que ZK-SSL **sí** puede tener: no requiere contrato,
+  no requiere L1, no requiere comité de disponibilidad de datos. Y
+  compone con la entrada 83: un ancla externa acota la ventana del
+  primer encuentro que el TOFU del testigo deja abierta —hoy declarada
+  como limitación **del modelo**, no de la implementación
+  (`witness.rs`, cabecera).
+  ⚠️ **Por medir antes de decidir nada**: qué logs aceptan digests
+  arbitrarios, con qué cadencia, y qué coste tiene por época. Y si el
+  ancla externa se convierte en dependencia de liveness, va declarada
+  como tal.
+
+- [ ] **87. Agilidad criptográfica: el ESQUEMA DE FIRMA no está
+  versionado.** La cabeza tiene byte de versión (§275) y el registro
+  tiene dos eras (§281). **El esquema de firma no tiene ninguna de las
+  dos cosas.** Y la base sobre la que descansa está declarada como
+  frágil por el propio árbol: `xmss = "=0.1.0-pre.0"`, **sin auditoría
+  independiente**, fijada con `=` porque es una pre-release y `master`
+  ya diverge del tag (`sha3` → `shake`), más el apaño del OID
+  multiárbol (§240) y su centinela.
+  **El hueco**: si esa dependencia muere, si aparece un ataque, o si
+  simplemente hay que pasar a otra primitiva, **no hay camino
+  declarado**. Toda la cadena de custodia —las cabezas que los
+  titulares guardan— quedaría atada a un esquema que ya no se puede
+  emitir.
+  **Qué lo cierra**: un identificador de esquema **dentro de lo que se
+  firma**, y la regla escrita de cómo una cabeza firmada con el
+  esquema A sigue verificando cuando el nodo ya emite con el B. Es
+  exactamente la forma de §275 —el byte de versión gobierna al
+  recompositor— aplicada a la firma en vez de al formato.
+  ⚠️ Compone con la **84**: cambiar de algoritmo **es** una rotación,
+  con un paso más. Si no hay transición firmada por la clave anterior,
+  cambiar de esquema es indistinguible de un compromiso de clave.
+
+  **A la 87 (agilidad criptográfica) — el precedente, y un destino con
+  nombre.** QRL declara que su modelo de direcciones 2.0 es
+  **intrínsecamente cripto-ágil**, y que SLH-DSA y otros algoritmos
+  futuros pueden integrarse una vez viva la red; su repositorio ya decía
+  que XMSS/W-OTS+ son nativos **con soporte extensible a más esquemas
+  incorporado**.
+  ⚠️ **Aquí no estamos por delante: estamos por detrás.** Ellos lo
+  diseñaron desde el génesis; ZK-SSL no tiene identificador de esquema en
+  lo que firma. La 87 gana con esto **un objetivo concreto** —un
+  sucesor con nombre, sin estado, ya estandarizado— en vez de un
+  «identificador de esquema» abstracto.
+
+  **Adenda — ML-DSA (CRYSTALS-Dilithium) como candidato.** No abre
+  entrada propia: es **el caso de prueba** que justifica esta — sin
+  esquema versionado, la discusion no se puede tener; con la 87 hecha,
+  se vuelve una decision medible. ⚠️ Cifras por verificar contra FIPS
+  204; aqui son ordenes de magnitud:
+
+  | | XMSS^MT 40/8 (hoy) | SLH-DSA | ML-DSA |
+  |---|---|---|---|
+  | Supuesto | solo el hash | solo el hash | reticulos (Module-LWE/SIS) |
+  | Estado | **con estado** | sin estado | sin estado |
+  | Firma | 18.469 B (medido) | decenas de KB | ~2,4-4,6 KB |
+  | Firmar | 144,5-160,5 ms (medido) | lento | sub-ms a pocos ms |
+
+  ⚠️⚠️ **Lo decisivo no es el tamaño: sin estado, las entradas 84 y 92
+  casi desaparecen** —sin indice no hay guardian, ni agotamiento, ni la
+  ambiguedad rotacion/robo, ni estado que sobrevivir a un reinicio— y
+  **se desbloquea la pregunta abierta del eslabon 3 de la 83**: la
+  cofirma deja de ser coordinacion de indices entre testigos. **Lo que
+  se perderia es el corazon del proyecto**: XMSS descansa solo en el
+  hash; ML-DSA en reticulos, mas recientes y menos curtidos — moverse
+  en el eje supuestos-operabilidad, no mejorar en todo, y un proyecto
+  cuya tesis es «demuestra y declara» no hace ese cambio en silencio.
+  **Hipotesis que merece medirse (razonada, NO medida): las DOS** —
+  hash-based para la raiz de larga vida (una firma por epoca, 160 ms no
+  molestan, supuestos minimos) y sin estado para lo frecuente y
+  coordinado (las cofirmas de la 83). **Como se decide, y NO es en una
+  conversacion**: (1) la 87 primero; (2) un banco con las tres
+  primitivas sobre el hardware real, metodo de §263; (3) la decision
+  escrita con su procedencia y su precio, en el paper.
+
+- [ ] **88. Sucesión: qué pasa el día que el autor pare.** El proyecto
+  lo lleva **una persona** con asistencia de IA, con una disciplina que
+  está registrada sello a sello. Eso es una fortaleza y **el mayor
+  riesgo de continuidad que tiene**. No hay mantenimiento declarado, no
+  hay segundo par de manos, y el factor bus es uno.
+  ⚠️ Para un artefacto cuyo objetivo es **tener segundas
+  implementaciones** (entrada 85), la sucesión no es administración:
+  **es una propiedad del artefacto**. Una spec que sólo su autor sabe
+  interpretar no es una spec.
+  **Qué lo cierra, en orden de coste**: declarar el mantenimiento y el
+  criterio de aceptación de un RFC —el proceso ya existe en
+  `spec/rfc/`, le falta quién decide y con qué regla—; hacer las
+  **construcciones reproducibles con huellas publicadas** (anexo), para
+  que un extraño pueda comprobar que el binario es el fuente; y dejar
+  escrito el «cómo se trabaja aquí» fuera de los traspasos de sesión,
+  que hoy son el único sitio donde vive el método.
+
+- [ ] **89. El proyecto sólo se ha auditado a SÍ MISMO.** `AUDITORIA.md`
+  tiene más de 21.000 líneas y registra los errores del propio método
+  en vez de ocultarlos. Eso es evidencia de **disciplina**, no de
+  **corrección verificada por un tercero**. Nadie de fuera ha mirado
+  esto nunca.
+  ⚠️ Y es el punto ciego que el propio estándar del paper implica: **un
+  calendario de confianza residual auditado sólo por su autor tiene una
+  entrada que no puede ver**. Es la misma asimetría de §267 —la
+  verificación va donde ya está la sospecha— aplicada al proyecto
+  entero: el autor no sospecha donde no mira.
+  **Alcance mínimo suficiente**, para que no sea una aspiración: una
+  revisión externa **dirigida** a los dos sitios donde una rotura es
+  fatal —la ruta de firma con el guardián del índice, y la
+  recomposición de la cabeza de época—. No hace falta auditar 21.000
+  líneas para que deje de ser autoauditoría.
+
+  **A la 89 (auditoría externa) — deja de ser una aspiración y pasa a ser
+  la norma del género.** QRL está auditado por **dos** firmas externas
+  (red4sec y x41 D-sec) y lo publica como parte de su descripción. En
+  este ámbito, una implementación de referencia sin mirada de fuera es la
+  excepción, no la regla. **Ellos lo tienen; nosotros no.**
+
+- [ ] **90. La política de compatibilidad, escrita como PROMESA y no
+  como práctica.** Hoy la práctica es buena: una cabeza v1 sigue
+  verificando bajo binario v2, el registro lee sus dos eras, el vector
+  anterior se rechaza **a propósito**, y la 82 dejó el corolario de que
+  un formato se rompe **una vez para varias razones juntas**. Nada de
+  eso está prometido a nadie: está **hecho**.
+  ⚠️ La diferencia importa para quien construya encima. **Un protocolo
+  es su promesa, no su historial**: qué superficie es estable, qué
+  puede romperse, con cuánto aviso, y qué se garantiza que seguirá
+  verificando después de una rotura. Sin eso, una segunda
+  implementación (85) no tiene contra qué comprometerse, y un titular
+  no sabe cuánto dura la validez de lo que custodia.
+  **Qué lo cierra**: una sección normativa —al lado de la de
+  `spec/RPC.md`, que ya lo es— con la superficie estable enumerada y la
+  regla de ruptura escrita. Y una compuerta que la haga cierta: lo
+  declarado estable no cambia sin que el canon lo diga.
+
+- [ ] **91. El fin de vida: cómo se apaga esto sin dejar a nadie
+  dentro.** Toda capa de liquidación termina — por cierre, por
+  migración o por abandono. Hoy **no hay apagado declarado**: qué debe
+  publicar el operador al cerrar, qué se lleva el titular, y con qué
+  sostiene su posición después.
+  ✅ **Y aquí está lo bueno: el mecanismo ya existe y nadie lo ha
+  llamado por su nombre.** El **paquete de evidencia portable**
+  (entrada 83, eslabón 1) **es** el procedimiento de apagado: cabeza
+  firmada custodiada, camino de acuse, compromiso recomputable,
+  verificador que compila sin el probador. Falta declararlo como tal y
+  ejercitarlo — un banco que apague el nodo y compruebe que una
+  posición **sigue siendo demostrable sin él**.
+  ⚠️ Es lo contrario del fallo característico de validium, donde el
+  titular depende de que alguien le entregue los datos y puede quedar
+  congelado indefinidamente. **Un sistema que dice cómo muere merece
+  más confianza que uno que presume que no morirá**, y este puede
+  decirlo con una demostración en vez de con una promesa.
 
 ## C. Solidez y verificacion: resueltas y en revision
 
