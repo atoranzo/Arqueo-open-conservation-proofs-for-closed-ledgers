@@ -21412,3 +21412,34 @@ formar parte de él (fail-stop, `doc/CONFIANZA_RESIDUAL.md` §5.2).
   ~2^18) va con la 84 en §288.
 - Doc-only: ningun codigo, ningun pin, sumas quietas (790/927/941),
   ningun Cargo —la foto del --completo sigue valiendo—.
+
+## §288 — el ciclo de vida del firmante entra entero: 84, 92, la familia en la 19, y el 93 al grupo E
+
+- QUE: la mitad hermana de §287, cortada JUNTA porque es el mismo asunto
+  —agotamiento, rotacion, supervivencia del indice y custodia de la
+  clave—: la **84** a su hueco reservado (con la curva de reutilizacion
+  dentro), la **92** tras la 91, una linea de FAMILIA dentro de la 19
+  (el estado que importa alli no es el del ledger sino el del FIRMANTE),
+  y el **93** —el nodo mentiroso— al grupo E como instrumentacion, con
+  numero pese a que el borrador no se lo daba: en Operacion un destino
+  que puede ser sello lleva casilla. La intro del grupo B pasa a pasado.
+  Contador 37/53 -> 40/53, contado a columna 0.
+- La CURVA de la reutilizacion, incorporada a la 84 con su procedencia
+  (QRL, consultado 2026-08-12): 2 firmas ~2^34 hashes, 3 ~2^23, 4 ~2^18.
+  Cambia el estatuto del guardian del indice (§56): de precaucion
+  cualitativa (§110.2) a lo unico que separa una repeticion de una
+  perdida total a la cuarta. Es medible en el propio arbol y merece un
+  banco.
+- El 93 lleva DENTRO su forma de no llegar a produccion (crate aparte
+  como dev-dependency, el precedente del grafo aciclico; costura, no
+  rama; envoltorio en vez de cambio de firma, §281) y la compuerta
+  futura que lo hace comprobable: el arbol de dependencias del nodo sin
+  el crate mentiroso salvo como dev. Sin el 93, media docena de
+  propiedades se quedan en «alcanzable, no ejercitada» y el mando
+  `--ausentes` de §283 no puede dar rojo en un banco.
+- ESTATUTO, igual que §287: RAZONADO, no medido; tres destinos con su
+  razon, ningun corte. La familia queda completa y contigua: 19-84-92
+  se citan entre si y convendria cortarlas juntas cuando toque.
+- Doc-only: ningun codigo, ningun pin, sumas quietas (790/927/941),
+  ningun Cargo —la foto sigue valiendo—. Con esto el borrador de la
+  sesion 22 queda DISUELTO ENTERO y muere fuera del arbol.

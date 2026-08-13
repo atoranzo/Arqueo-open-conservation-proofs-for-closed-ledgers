@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 37 abiertas, 53 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 40 abiertas, 53 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 13 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -384,8 +384,9 @@ de la sesion 22 (Sigsum · Validium/StarkEx · QRL, consultados el
 2026-08-12; procedencia completa en el asiento §287 de AUDITORIA.md),
 disuelta aqui para que no viva en un documento paralelo. **Todas son
 RAZONADAS, sin terreno**: destinos con su razon escrita, no cortes. La
-**84** y la **92** —el ciclo de vida del firmante— llegan juntas en
-§288, con la ampliacion de la 19.*
+**84** y la **92** —el ciclo de vida del firmante— llegaron en §288,
+con su linea de familia dentro de la 19 y el **93** (el nodo mentiroso,
+instrumentacion) al grupo E.*
 
 - [ ] **83. La cadena de la confianza residual: cuatro eslabones, en
   este orden.** Las cuatro piezas que quedan entre «la censura es
@@ -468,6 +469,40 @@ RAZONADAS, sin terreno**: destinos con su razon escrita, no cortes. La
   o más, en el orden de arriba, y **ninguno se monta sin su terreno
   medido**. El eslabón 1 es el más barato y el que más paga en el paper;
   el 3 es el que de verdad cambia el modelo de confianza.
+
+- [ ] **84. El ciclo de vida de la clave XMSS: sin respuesta escrita.**
+  Las firmas con estado tienen **presupuesto finito** y **reutilizar el
+  índice filtra la clave** (§110.2) — por eso existe el guardián del
+  índice (§56). Lo que no existe es qué pasa **después**. Tres huecos,
+  y ninguno es teórico para un sistema de liquidación:
+  - **Agotamiento**: XMSS^MT 40/8 tiene un número finito de firmas. Qué
+    ocurre cuando el árbol se acaba no está escrito en ningún sitio.
+  - **Rotación**: hoy no hay una **transición firmada por la clave
+    anterior**. Sin ella, rotar es **indistinguible de un robo de
+    clave**, y el TOFU del testigo se detendría — con razón. El testigo
+    fija la clave que ve la primera vez y se para si cambia
+    (`witness.rs`, §245): sin transición firmada, una rotación legítima
+    rompe a todos los testigos honestos.
+  - **Pérdida del estado del índice**: qué hace el nodo si arranca sin
+    saber por qué índice iba. Relacionado con la entrada 19 (sin WAL).
+  ⚠️ **Un sistema de liquidación que no tiene respuesta a «hoy toca
+  cambiar de clave» no está terminado**, por muchas propiedades que
+  demuestre. Y toca a la entrada 83: la rotación es precisamente lo que
+  una cofirma de umbral tendría que saber manejar.
+
+  **A la 84 (ciclo de vida de la clave) — la curva de la reutilización,
+  con números.** El proyecto QRL cuantificó lo que cuesta extraer la
+  clave privada a partir de firmas repetidas del mismo índice: con **2**
+  firmas, ~2³⁴ hashes; con **3**, ~2²³; con **4**, ~2¹⁸. Y su
+  documentación operativa es tajante: un índice OTS expuesto más de una
+  vez convierte la dirección en **comprometida**, y hay que mover los
+  fondos.
+  ⚠️ Eso cambia el estatuto del guardián del índice (§56) en la doc de
+  ZK-SSL: hoy se justifica con «reutilizar el índice filtra la clave»
+  (§110.2), que es cualitativo. **Con la curva, el guardián deja de ser
+  una precaución y pasa a ser lo único que separa una repetición de una
+  pérdida total de clave a la cuarta.** Es un dato que se puede **medir
+  en el propio árbol** —no hace falta creerse el suyo— y merece un banco.
 
 - [ ] **85. Una SEGUNDA implementación que pase los vectores.** Lo caro
   ya está hecho: vectores de conformidad versionados (`0.2` idéntico,
@@ -640,6 +675,27 @@ RAZONADAS, sin terreno**: destinos con su razon escrita, no cortes. La
   congelado indefinidamente. **Un sistema que dice cómo muere merece
   más confianza que uno que presume que no morirá**, y este puede
   decirlo con una demostración en vez de con una promesa.
+
+- [ ] **92. Custodia de la clave y SUPERVIVENCIA del índice: la
+  mitigación que QRL tiene y aquí no está escrita.** El guardián del
+  índice (§56) impide reutilizar dentro de una ejecución. Lo que no
+  hay es respuesta a **dónde vive el índice y qué pasa si se pierde**.
+  QRL mitiga exactamente esto con dos cosas que ZK-SSL no tiene: sus
+  herramientas de cartera **siguen el estado OTS**, y hay integración
+  con hardware (Ledger) para custodiar la clave — y aun así el informe
+  externo lo mantiene como **riesgo operativo inherente**, distinto del
+  ataque cuántico.
+  **Los tres huecos**: (a) el estado del índice debe **sobrevivir a un
+  reinicio** —hoy no hay WAL (entrada 19), así que un fallo entre
+  operaciones puede dejarlo indeterminado, y un índice indeterminado es
+  peor que uno perdido: invita a reutilizar—; (b) la clave del operador
+  no tiene custodia declarada —está listado como condición de producto
+  **sin sello**—; (c) no hay **procedimiento de emergencia** para
+  «creo que se ha reutilizado un índice»: QRL sí lo tiene, y es mover
+  los fondos.
+  ⚠️ Compone con la **84** (agotamiento y rotación) y con la **19**
+  (sin WAL). **Son la misma familia y convendría cortarlas juntas**:
+  las tres son el ciclo de vida del firmante.
 
 ## C. Solidez y verificacion: resueltas y en revision
 
@@ -1290,6 +1346,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   contador con `fsync`**, no un WAL del ledger. El argumento de
   `persistence.rs` —un WAL propio añade superficie sobre lo que `sled` ya
   hace— **sigue siendo valido**.
+  ⚠️ Compone con la **84** y la **92** (§288): el estado que aqui
+  importa no es el del ledger sino el del FIRMANTE —el indice XMSS que
+  debe sobrevivir a un reinicio—. Las tres son el ciclo de vida del
+  firmante y convendria cortarlas juntas.
 
 - [ ] **20. Rotacion de claves: DOS de cuatro casos, y uno no es un hueco.**
   ~~Implementada solo en parte.~~ ⚠️ **«En parte» no se podia ni confirmar ni
@@ -1345,6 +1405,30 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   `1_048_576` —MiB— y lo imprime como «MB», y esa etiqueta llega a
   `PAPER.md`, `PAPER_EN.md` y `QUESTIONS.md`. Un lector que tome MB = 10⁶
   leera **7,2 % menos** de lo real: son **129,0 MB**. Va con la 16 y la 28.
+
+- [ ] **93. El nodo MENTIROSO: la variante que hace ejercitables las
+  defensas.** Instrumentacion, no modelo de confianza: una variante que
+  sirva dos cabezas para el mismo indice, censure una entrada, omita un
+  acuse o firme algo que su diario no recoge. Sin el, media docena de
+  propiedades se quedan en «alcanzable, no ejercitada» — y `--ausentes`
+  (§283) nunca dara rojo en un banco.
+  **Como se garantiza que no llega a produccion**, de mas fuerte a mas
+  debil: (1) **crate aparte del que el nodo no depende** —precedente
+  medido: `zk-core` depende de `ceremony` solo como dev-dependency, a
+  proposito, para el grafo aciclico—; (2) `#[cfg(feature)]` no-default,
+  pero vive en el mismo crate y `--all-features` lo compila; (3) bandera
+  en tiempo de ejecucion, la mas debil.
+  ⚠️ Las mentiras que interesan —vista dividida, o una firma que el
+  diario no recoge— **exigen la clave**: un proxy delante del nodo solo
+  puede mentir por omision. La forma seria **una costura, no una rama**:
+  el nodo expone el punto de extension, el binario de produccion
+  construye solo la implementacion honesta, y la mentirosa vive en el
+  crate aparte (patron «envoltorio en vez de cambio de firma», §281). Y
+  lo que lo hace COMPROBABLE en vez de prometido: una compuerta del
+  canon que verifique que el arbol de dependencias del nodo no contiene
+  el crate mentiroso salvo como dev-dependency.
+  ⚠️ Ningun auto-informe del nodo protege de nada: «yo soy honesto» es
+  el operador hablando de si mismo.
 
 ## F. Publicacion, cuando el circuito este cerrado
 
