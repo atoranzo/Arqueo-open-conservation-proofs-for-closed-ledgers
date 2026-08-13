@@ -21318,3 +21318,39 @@ formar parte de él (fail-stop, `doc/CONFIANZA_RESIDUAL.md` §5.2).
 - La foto del --completo: main.rs no esta bajo COMPLETO_CUBRE → la
   compuerta de §284 dira que VALE, y este sello es su primer uso real
   tras el estreno.
+
+## §286 — el registro de dominios: la tabla en la casa comun y el censo que la vigila
+
+- QUE: la deuda que DOMINIO_ACUSE dejo escrita en zk-ssl-hash («literales
+  sueltos en cuatro crates; construirlo es otro sello») se cumple. La
+  TABLA vive en lib.rs de hash, junto a la nota de las dos familias, y
+  `tools/check_dominios.py` —sexta herramienta del canon, a pin cero como
+  las cinco de §269— la compara contra el CENSO del arbol en cada sello.
+- REGLAS, declaradas ANTES de mirar: R1 todo literal `ZK-SSL-` en codigo
+  vive en una const (inline = rojo) · R2 (solo u64) mismo nombre => mismo
+  valor en todas sus declaraciones · R3 valores unicos DENTRO de cada
+  espacio de hash (produccion = stark + hash, misma permutacion Rescue;
+  cada paradigma el suyo; reutilizar el mnemonico ENTRE espacios es
+  legitimo) · R4 cadenas Blake3 unicas globalmente y con una sola casa ·
+  R5 tabla == censo en las dos direcciones, y el rojo dice que editar.
+  R2 no se aplica a la familia bytes a proposito: `DOMINIO` de verify y
+  `DOMINIO` del sdk son nombres LOCALES de dominios distintos —a esa
+  familia la protege R4 por valor—.
+- CENSO en el estreno (medido, no supuesto): u64 = 21 declaraciones, 18
+  tuplas (grupo,nombre,valor); produccion son 12 valores todos distintos
+  —GOVE y GOVR se separan por un byte—. NULLIFIER_DOMAIN esta declarado
+  SIETE veces en el arbol (3 halo2, 2 zk-core, 1 stark, 1 plonk), hoy con
+  el mismo valor: exactamente la deriva latente que R2 congela. bytes = 6
+  cadenas en 4 crates.
+- El UNICO arreglo de codigo que el estreno exigia: `ZK-SSL-ledger-key-v1`
+  estaba inline en zk-ssl/src/crypto.rs:87 —el unico literal suelto del
+  arbol— y se iza a `DOMINIO_CLAVE_LEDGER` con los MISMOS bytes: ningun
+  digest se mueve, ningun test cambia, las sumas quedan en 790/927/941.
+- La nota 51 es VECINA y sigue abierta: habla de tres FUNCIONES
+  `native_leaf` con anchuras distintas, no de constantes; el registro
+  la deja nombrada donde estaba.
+- Alcance dicho: el registro censa `crates/*/src/**.rs`, el mismo terreno
+  que el censo de esta sesion; los grupos de paradigma no se comparan
+  entre si porque sus hashes no comparten espacio. Si aparece una familia
+  nueva (otro hash), su grupo se anade a la tabla y a GRUPO en la
+  herramienta —dos lineas—.

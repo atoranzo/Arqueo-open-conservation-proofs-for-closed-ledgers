@@ -244,8 +244,10 @@ pub fn epoch_digest_v2(
 /// sexto no entra siendo el segundo sin ella por inercia. Si algun dia hay
 /// un acuse v2, el sufijo es lo que permite que convivan.
 ///
-/// ⚠️ **No hay registro de dominios en el proyecto**: son literales sueltos
-/// en cuatro crates. Construirlo es otro sello; esto solo evita empeorarlo.
+/// ⚠️ **El registro de dominios existe desde §286**: la tabla vive mas
+/// abajo, junto a las dos familias, y `tools/check_dominios.py` la compara
+/// con el CENSO del arbol en cada sello — un literal suelto, una deriva de
+/// valor o una linea de tabla que miente es rojo que dice que editar.
 pub const DOMINIO_ACUSE: u64 = u64::from_be_bytes(*b"ACUSE_V1");
 
 /// **Acuse de recepcion**: ata una prueba a la epoca y al `N` declarado.
@@ -615,6 +617,42 @@ mod tests_cabeza_v2 {
 // porque entran en Blake3 como bytes. **No se armonizan**: una conversion
 // entre las dos cambiaria digests ya publicados.
 // ═══════════════════════════════════════════════════════════════════
+
+// ── EL REGISTRO DE DOMINIOS (§286) ─────────────────────────────────
+// La deuda que DOMINIO_ACUSE dejo escrita arriba prometia este sello.
+// La tabla es lo que `tools/check_dominios.py` compara contra el CENSO
+// del arbol en cada --sello: una linea de menos, un literal suelto o una
+// deriva de valor es ROJO que dice que editar. Los grupos separan
+// ESPACIOS DE HASH: `produccion` (stark-experiment + zk-ssl-hash, la
+// misma permutacion Rescue) exige valores unicos entre si; cada
+// paradigma es su propio espacio, y reutilizar el mnemonico entre grupos
+// es legitimo —"NULL" en cinco crates es el mismo proposito sobre
+// hashes que no colisionan entre si—. La familia bytes entra entera en
+// Blake3: valor unico GLOBAL y un solo sitio de declaracion por cadena.
+// REGISTRO: u64 produccion SPEND_KEY_DOMAIN 0x53504B59
+// REGISTRO: u64 produccion NULLIFIER_DOMAIN 0x4E554C4C
+// REGISTRO: u64 produccion CUSTODIAN_DOMAIN 0x43555354
+// REGISTRO: u64 produccion GOVERNANCE_DOMAIN 0x474F5645
+// REGISTRO: u64 produccion LEAF_SALT_DOMAIN 0x53414C544C454146
+// REGISTRO: u64 produccion VIEW_KEY_DOMAIN 0x564945574B455900
+// REGISTRO: u64 produccion DOMINIO_ACUSE 0x41435553455F5631
+// REGISTRO: u64 produccion OP_MINT 0x4D494E54
+// REGISTRO: u64 produccion OP_MINT_PENDING 0x4D504E44
+// REGISTRO: u64 produccion OP_FREEZE 0x46525A45
+// REGISTRO: u64 produccion OP_RECOVERY 0x5245434F
+// REGISTRO: u64 produccion OP_GOVERNANCE 0x474F5652
+// REGISTRO: u64 zk-core NULLIFIER_DOMAIN 0x4E554C4C
+// REGISTRO: u64 zk-core SPEND_KEY_DOMAIN 0x53504B59
+// REGISTRO: u64 zk-core ISSUER_DOMAIN 0x49535355
+// REGISTRO: u64 halo2 NULLIFIER_DOMAIN 0x4E554C4C
+// REGISTRO: u64 plonk LEAF_DOMAIN 0x4C454146
+// REGISTRO: u64 plonk NULLIFIER_DOMAIN 0x4E554C4C
+// REGISTRO: bytes ZK-SSL-ledger-key-v1
+// REGISTRO: bytes ZK-SSL-epoch-head
+// REGISTRO: bytes ZK-SSL-keystore-v1
+// REGISTRO: bytes ZK-SSL-proof-digest-v2
+// REGISTRO: bytes ZK-SSL-authorization-seal-v1
+// REGISTRO: bytes ZK-SSL-no-proof-by-design-v1
 
 /// Dominios de operacion. **Uno por tipo**, para que una autorizacion de
 /// congelacion no pueda reutilizarse como autorizacion de emision.

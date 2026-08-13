@@ -59,6 +59,13 @@ use sha2::{Digest as _, Sha256};
 
 use crate::store::StoreError;
 
+/// **Dominio de la clave del ledger en reposo** (registro de dominios:
+/// `zk-ssl-hash/src/lib.rs`, §286). Era el unico literal `ZK-SSL-` suelto
+/// del arbol. El keystore del SDK usa `ZK-SSL-keystore-v1`, y su test
+/// exige que la clave de uno no abra al otro: la separacion que estas
+/// cadenas garantizan se comprueba, no se supone.
+const DOMINIO_CLAVE_LEDGER: &[u8] = b"ZK-SSL-ledger-key-v1";
+
 /// Clave de cifrado del ledger.
 ///
 /// No se serializa ni se guarda: vive solo en memoria mientras el nodo
@@ -84,7 +91,7 @@ impl LedgerKey {
     /// o scrypt.
     pub fn from_passphrase(passphrase: &str) -> Self {
         let mut h = Sha256::new();
-        h.update(b"ZK-SSL-ledger-key-v1");
+        h.update(DOMINIO_CLAVE_LEDGER);
         h.update(passphrase.as_bytes());
         let key = h.finalize();
         Self {
