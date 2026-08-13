@@ -484,6 +484,21 @@ instrumentacion) al grupo E.*
   es un detalle**: hay que medir si cada testigo firma con su propia
   clave XMSS o si ahí conviene otra primitiva. **Esto se mide antes de
   diseñar nada.**
+  ✅ **TRAMO (i) CUMPLIDO (§294) — el testigo CONSUME la extension.**
+  Antes de anclar, el testigo pide `zkssl_consistencyProof` con el
+  `mmrSize` que custodia y juzga con `mmr::verificar_consistencia`: si
+  la cima nueva NO extiende a la suya, **SE DETIENE** — la clase
+  hermana de la vista dividida. Canal APARTE del veredicto de la cabeza
+  (son dos preguntas ortogonales), diario v2 con la pareja y el camino
+  para que un tercero reaudite sin el nodo, y juicio ASINCRONO por
+  diseno: la pareja firmada es el acumulador ANTES de cada cabeza, asi
+  que el camino de tamano t lo firma la SIGUIENTE en emitirse. De paso
+  repara un hueco declarado-vs-hecho: el testigo se CREIA el
+  `epochDigest` y ahora lo RECOMPONE — lo unico que hace legitimo
+  anclar una pareja que la firma cubre.
+  ⚠️ **Esto NO cierra el eslabon 3**: la cofirma —clave XMSS PROPIA
+  del testigo, guardian de indice, dominio nuevo— sigue abierta, y con
+  ella la pregunta de arriba, que este tramo NO responde.
 
   **Eslabón 4 — El hash del verificador dentro de la cabeza
   atestiguada.** Ya está diseñado en `doc/preprints/ERRATA.md`, entrada

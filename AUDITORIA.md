@@ -21708,3 +21708,105 @@ reservada y su precondicion («reglas vigentes») aun por nacer.
 **Contadores.** BACKLOG QUIETO (39/54). Pin del nodo 80→82 por
 COLUMNA (el rito del 10.º caso); 956 declarados. Ningun Cargo tocado;
 la foto del completo sigue por la clausula de §284.
+
+## §294 — el testigo consume la extension: el eslabon 3, por dentro
+
+**Que.** El tramo (i) de la familia del eslabon 3. El testigo de
+`zk-ssl-cli` deja de mirar SOLO la cabeza y pasa a juzgar LA HISTORIA:
+pide `zkssl_consistencyProof` con el `mmrSize` que custodia y, cuando
+llega la cabeza que firma ese camino, lo juzga con
+`mmr::verificar_consistencia` (§291). Si la cima nueva no extiende a la
+suya, SE DETIENE. Sin dependencias nuevas —el crate ya tenia
+`zk-ssl-verify`, y el Cargo no se toca—: **esto NO es el eslabon 3, es
+su primer tramo**. La cofirma con clave propia del testigo —el (ii)—
+sigue abierta, y con ella la tension que la 83 dejo escrita.
+
+**El segundo canal, y por que va APARTE.** La consistencia NO entra en
+`Veredicto`: nace como `Consistencia`, con sus siete clases y su propio
+`clase()`/`detiene()`. La razon es que son **dos preguntas
+ortogonales** — una cabeza `Nueva`, perfectamente firmada, puede venir
+de una historia RECORTADA. Meterlas en un enum obligaria a elegir cual
+de las dos se anota, y dos testigos que comparan diarios necesitan LAS
+DOS. En la linea del diario van como campos separados.
+
+**Lo que el juicio NO puede ser: sincrono.** La pareja firmada es el
+acumulador ANTES de cada cabeza —el push va tras el emit (§293)—, asi
+que **el camino de tamano t lo firma la cabeza SIGUIENTE en emitirse**.
+El testigo guarda el camino como PENDIENTE y espera, a lo sumo un
+latido. Un testigo que exigiera igualdad instantanea no casaria JAMAS:
+es el mismo fallo que el banco de §293 cazo en su primera corrida, y
+aqui se evito por diseno en vez de por corrida.
+
+**Un hueco declarado-vs-hecho, reparado (familia del §292).** El testigo
+comprobaba que la firma cubria un digest, **no que los campos lo
+COMPUSIERAN** — se creia el `epochDigest`. Y el nodo esta escrito
+suponiendo lo contrario: *«el testigo custodia campos+digest+firma
+juntos y recompone sin volver a llamar»* (§275, en el dispatch de
+`signedEpochHead`). Declarado y no hecho, la misma familia que el hueco
+DTO-vs-payload de §292. Este corte lo cierra: `recomponer()` recompone
+v2 y v3 —la version elige recompositor (§292)— y **solo entonces** se
+ancla la pareja. No es higiene: sin recomponer, `mmrRoot`/`mmrSize` son
+campos que la firma NO cubre, y anclarlos seria anclar lo que el
+operador quiera.
+
+**Ejercitado.** Once tests que NACEN, cli 28→39: la primera cabeza v3
+ancla y no juzga; una v2 no tiene historia que extender; con pareja y
+sin pendiente el canal calla; el camino ESPERA a la cabeza que lo
+firma; la que lo firma lo juzga y el ancla avanza; una cima que NO
+extiende detiene **y no mueve el ancla** —preservar la evidencia, la
+razon de §245—; un camino ilegible no pasa por bueno; el acumulador por
+detras se anota y NO detiene; la negativa del servicio se mide por
+ESTRUCTURA y no por su frase; la linea lleva los dos canales con el
+camino del que juzgo; y sin canal la linea es exactamente la de antes.
+
+**El limite, declarado (§265).** La extension NO TRIVIAL —`viejo <
+nuevo` con camino real— **ningun unitario de este crate puede
+ejercitarla**: el cli convierte hex a `Digest` pero no al reves, asi
+que no puede fabricar el caso ni compararlo. Lo que los once tests
+cubren es la MAQUINA DE ESTADOS entera, con el caso identidad
+(`viejo == nuevo`, camino vacio, que exige cima igual) como positivo y
+negativo de verdad. La extension no trivial pide **banco contra nodo
+vivo**, al molde de `banco_extension.sh`, y queda PENDIENTE con esta
+fecha: 13 ago 2026. El precedente esta dicho en §293 — el banco caza lo
+que el unitario no puede.
+
+**Decisiones y precios, escritos.** (1) `PorDetras` **anota y SIGUE**:
+es el nodo DICIENDO la verdad sobre su reseteo —§292 lo prometio
+visible, §293 lo hizo cable— y detener ahi quemaria al testigo en cada
+reinicio legitimo, que es el argumento de §242 por el que `Hueco` no es
+una alarma. Solo `NoExtiende` detiene, hermana de la vista dividida.
+(2) `DIARIO_VERSION` sube 1→2 porque la linea gana la pareja del MMR y
+el camino: sin ellos un diario no permite reauditar la extension sin el
+nodo, que es el criterio de §248 con el que se eligieron sus campos. Los
+v1 siguen valiendo —`auditar_lineas` acepta toda version `<=`—, y la
+homonima del NODO (`node/src/diario.rs`) es OTRO formato y no se toca.
+(3) `mmr::hoja_desde_bytes` **dice «hoja» y aqui se usa sobre cimas y
+caminos**: su cuerpo es la conversion pura, sin dominio, asi que vale.
+Se DECLARA en vez de pedir un reexport de `Digest` — la superficie del
+verificador no crece por cosmetica de nombre. (4) `linea_de_diario`
+conserva su firma y nace `linea_de_diario_con`: cambiarla habria movido
+cuatro tests del auditor que no son de este corte.
+
+**Dos rojos propios, escritos porque un rojo que no se escribe se
+repite.** (1) Cinco identificadores de test en MAYUSCULAS
+(`..._NO_pasa_por_bueno`) dispararon `non_snake_case` y subieron el
+crate de 0 a 6 warnings: **el enfasis de esta casa vive en los
+COMENTARIOS, no en los identificadores**. El canon lo canto y el corte
+lo corrigio antes de sellar. (2) `check_cifras` canto seis rancias, lo
+esperado — pero al aplicarlas aparecio que **el 943 llevaba +1 de mas
+desde antes de este corte**: el total con pines es sello + los tres
+niveles caros (816+27+36+74 = 953), y con las cifras viejas daba
+805+137 = 942, no 943. La herramienta no lo veia porque **solo vigila
+el TOTAL**, no ese numero. Corregido aqui de paso, y dicho: una cifra
+que ningun instrumento mira envejece sin avisar, que es exactamente lo
+que `check_cifras` vino a impedir.
+
+**Contadores.** BACKLOG QUIETO (39/54): la 83 sigue abierta, ahora con
+el eslabon 3 empezado por dentro. Pin del cli 28→39 por COLUMNA (el
+rito del 10.º caso); sumas 805/943/956 → **816/953/967** en PRINCIPIOS
+(con su desglose, donde el testigo pasa de 28 a 39), BILINGUE (ES y
+EN), EJECUTIVO y PAPER — PAPER solo en cifras, precedente §285. Ningun
+fichero .rs nuevo (115 siguen). Ningun Cargo tocado: **la tesis del
+tramo (i) es que no hace falta ninguna dependencia nueva**, y la
+compuerta lo comprobo. La foto del completo sigue por la clausula de
+§284.

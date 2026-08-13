@@ -57,6 +57,31 @@
 //! produce una alarma falsa** y el testigo pierde credibilidad antes de
 //! servir para nada.
 //!
+//! ## El segundo canal: **la historia** (§294)
+//!
+//! Las cuatro clases de arriba juzgan **la cabeza**. Desde §294 hay un
+//! canal aparte que juzga **la historia**: el testigo pide
+//! `zkssl_consistencyProof` con el `mmrSize` que custodia y comprueba que
+//! la cima nueva EXTIENDE a la suya, con el objeto de §291 como juez.
+//!
+//! | clase | qué es | qué hace |
+//! |---|---|---|
+//! | **anclando** | primera cabeza v3: se fija la pareja de partida | anota y **sigue** |
+//! | **consistencia-pendiente** | el camino espera a la cabeza que lo firma | anota y **sigue** |
+//! | **extiende** | la nueva contiene a la custodiada | anota y **sigue** |
+//! | ⚠️ **no-extiende** | **la historia se bifurcó o se recortó** | **SE DETIENE** |
+//! | **por-detras** | el acumulador del nodo va detrás: reseteo VISIBLE | anota y **sigue** |
+//!
+//! ⚠️ **`por-detras` no detiene a propósito**: es el nodo **diciendo la
+//! verdad** sobre su reinicio sin diario (§292 lo prometió visible, §293 lo
+//! hizo cable). Detener ahí quemaría al testigo en cada reinicio legítimo.
+//!
+//! ⚠️⚠️ **Y el juicio NO es síncrono.** La pareja firmada es el acumulador
+//! ANTES de cada cabeza, así que **el camino de tamaño `t` lo firma la
+//! cabeza siguiente en emitirse**: el testigo guarda el camino y espera, a
+//! lo sumo un latido. Un testigo que exigiera igualdad instantánea no
+//! casaría jamás.
+//!
 //! ## ⚠️⚠️ DETECTAR NO ES DISTINGUIR
 //!
 //! **Quien modifique este código tiene que leerlo aquí, no en un asiento.**
@@ -93,7 +118,9 @@ use std::time::Duration;
 
 use clap::Args;
 use serde_json::{json, Value};
-use zk_ssl_verify::{verificar_cabeza, CabezaFirmada};
+// ⚠️ Import EXPLICITO, nunca glob: `zk-ssl-verify` reexporta **su propio**
+// `Veredicto` (el de `reverificacion`, §279), homonimo del de este modulo.
+use zk_ssl_verify::{mmr, verificar_cabeza, CabezaFirmada};
 
 /// Lo que el testigo concluye de cada consulta.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -140,6 +167,204 @@ impl Veredicto {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+//  §294 · EL SEGUNDO CANAL: la historia (eslabon 3 de la 83, tramo (i))
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Lo que el testigo concluye sobre **la historia**, no sobre la cabeza.
+///
+/// ⚠️ **Canal APARTE de [`Veredicto`], y no es cosmetica.** Son dos
+/// preguntas ortogonales: una cabeza `Nueva`, perfectamente firmada, puede
+/// venir de una historia RECORTADA. Meter esto en `Veredicto` obligaria a
+/// elegir cual de las dos se anota, y dos testigos que comparan diarios
+/// necesitan **las dos**.
+///
+/// ⚠️⚠️ **La comprobacion NO es sincrona, y el diseño lo dice.** La pareja
+/// firmada es el acumulador ANTES de cada cabeza —el push va tras el emit
+/// (§293)—, asi que **el camino de tamaño `t` lo firma la cabeza SIGUIENTE
+/// en emitirse**. Por eso existe [`Consistencia::Pendiente`]: un testigo
+/// que exigiera igualdad instantanea no casaria JAMAS.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Consistencia {
+    /// Primera cabeza v3: se fija la pareja de partida. No juzga nada.
+    Anclando { t: u64 },
+    /// Camino pedido y guardado; falta la cabeza que lo firma. Sigue.
+    Pendiente { de_t: u64, esperando_t: u64 },
+    /// La cima nueva EXTIENDE a la custodiada. Append-only, comprobado.
+    Extiende { de_t: u64, a_t: u64, camino: Vec<String> },
+    /// ⚠️⚠️ **La nueva NO extiende a la custodiada.** Se DETIENE.
+    NoExtiende { de_t: u64, a_t: u64, camino: Vec<String> },
+    /// El acumulador del nodo va POR DETRAS de lo custodiado. Anota y sigue.
+    PorDetras { t_nodo: u64, pedido: u64 },
+    /// El servicio no dio camino, con su razon. Anota y sigue.
+    SinCamino { motivo: String },
+    /// La cabeza no es v3: no lleva pareja que extender. Anota y sigue.
+    NoAplica,
+}
+
+impl Consistencia {
+    /// ⚠️ **Solo una detiene**, y es la hermana de la vista dividida: una
+    /// historia bifurcada o recortada es exactamente aquello para lo que
+    /// este testigo existe.
+    ///
+    /// ⚠️ **`PorDetras` NO detiene**: es el nodo **diciendo la verdad**
+    /// sobre su propio reseteo —§292 lo prometio VISIBLE y §293 lo hizo
+    /// cable—. Detener ahi quemaria al testigo en cada reinicio legitimo,
+    /// que es el argumento de §242 por el que `Hueco` no es una alarma.
+    pub fn detiene(&self) -> bool {
+        matches!(self, Consistencia::NoExtiende { .. })
+    }
+
+    /// Nombre **estable** de la clase, para el diario. Mismo criterio que
+    /// [`Veredicto::clase`]: no se tocan sin subir [`DIARIO_VERSION`].
+    pub fn clase(&self) -> &'static str {
+        match self {
+            Consistencia::Anclando { .. } => "anclando",
+            Consistencia::Pendiente { .. } => "consistencia-pendiente",
+            Consistencia::Extiende { .. } => "extiende",
+            Consistencia::NoExtiende { .. } => "no-extiende",
+            Consistencia::PorDetras { .. } => "por-detras",
+            Consistencia::SinCamino { .. } => "sin-camino",
+            Consistencia::NoAplica => "no-aplica",
+        }
+    }
+}
+
+/// Un camino pedido y **aun no juzgado**.
+///
+/// ⚠️ Todo en **hex tal cual vino del cable**: el testigo no transcodifica
+/// nada (§248). El `Digest` solo vive en variables locales, dentro de
+/// [`juzgar`] — asi `zk-ssl-verify` no crece su superficie por un tipo.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Pendiente {
+    pub de_cima: String,
+    pub de_t: u64,
+    /// El `mmrSize` que la respuesta anuncio: la cabeza que lo firma es
+    /// **la siguiente en emitirse**, a lo sumo un latido despues.
+    pub esperando_t: u64,
+    pub camino: Vec<String>,
+}
+
+/// 32 bytes desde el hex del cable. `None` si no son exactamente 32.
+fn hex32(s: &str) -> Option<[u8; 32]> {
+    let h = s.trim_start_matches("0x");
+    if h.len() != 64 {
+        return None;
+    }
+    let mut o = [0u8; 32];
+    for i in 0..32 {
+        o[i] = u8::from_str_radix(&h[i * 2..i * 2 + 2], 16).ok()?;
+    }
+    Some(o)
+}
+
+/// El juicio: ¿la cima nueva EXTIENDE a la custodiada?
+///
+/// ⚠️ **Lo ilegible no pasa por bueno**: cualquier hex que no convierta da
+/// `false`. Un juez que se saltara lo que no entiende absolveria por
+/// ignorancia.
+///
+/// ⚠️ `mmr::hoja_desde_bytes` **dice «hoja» y aqui se usa sobre cimas y
+/// caminos**. Su cuerpo es la conversion PURA (`digest_from_bytes`), sin
+/// dominio: vale. Se usa tal cual en vez de pedir un reexport de `Digest`
+/// —no se crece la superficie del verificador por cosmetica de nombre—.
+fn juzgar(p: &Pendiente, cima_nueva: &str, t_nueva: u64) -> bool {
+    let leer = |s: &str| hex32(s).and_then(|b| mmr::hoja_desde_bytes(&b));
+    let vieja = match leer(&p.de_cima) {
+        Some(d) => d,
+        None => return false,
+    };
+    let nueva = match leer(cima_nueva) {
+        Some(d) => d,
+        None => return false,
+    };
+    let mut camino = Vec::with_capacity(p.camino.len());
+    for s in &p.camino {
+        match leer(s) {
+            Some(d) => camino.push(d),
+            None => return false,
+        }
+    }
+    mmr::verificar_consistencia(vieja, p.de_t, nueva, t_nueva, &camino)
+}
+
+/// **Al llegar una cabeza**: juzga el camino pendiente si esta es la que lo
+/// firma, ancla la pareja de partida, o no dice nada.
+///
+/// `None` = nada que decir del canal de la historia esta vuelta.
+pub fn al_llegar_cabeza(m: &mut Memoria, v: &Value) -> Option<Consistencia> {
+    if leer_q(&v["formatVersion"]).unwrap_or(0) != 3 {
+        return Some(Consistencia::NoAplica);
+    }
+    let cima = v["mmrRoot"].as_str()?.to_string();
+    let t = leer_q(&v["mmrSize"]).ok()?;
+
+    if let Some(p) = m.pendiente.take() {
+        if t != p.esperando_t {
+            let (de_t, esperando_t) = (p.de_t, p.esperando_t);
+            m.pendiente = Some(p);
+            return Some(Consistencia::Pendiente { de_t, esperando_t });
+        }
+        // ⚠️ Esta es la cabeza que FIRMA el camino: se juzga.
+        return Some(if juzgar(&p, &cima, t) {
+            // El ancla avanza SOLO cuando la historia se demostro.
+            m.pareja = Some((cima, t));
+            Consistencia::Extiende { de_t: p.de_t, a_t: t, camino: p.camino }
+        } else {
+            // ⚠️ El ancla NO se mueve ante un hallazgo: preservar la
+            // evidencia importa mas que seguir (la razon de §245).
+            Consistencia::NoExtiende { de_t: p.de_t, a_t: t, camino: p.camino }
+        });
+    }
+
+    match m.pareja.as_ref().map(|(_, t)| *t) {
+        None => {
+            m.pareja = Some((cima, t));
+            Some(Consistencia::Anclando { t })
+        }
+        // El acumulador del nodo RETROCEDIO respecto a lo custodiado.
+        Some(pt) if t < pt => Some(Consistencia::PorDetras { t_nodo: t, pedido: pt }),
+        // Sin pendiente y sin retroceso: el camino se pide fuera (hay red).
+        Some(_) => None,
+    }
+}
+
+/// **Al llegar la respuesta de `zkssl_consistencyProof`**: guarda el camino
+/// como pendiente, o **nombra** la negativa.
+///
+/// ⚠️ **La negativa se decide por ESTRUCTURA, no por su texto.** El nodo
+/// sirve `mmrSize` en las tres respuestas; si va por detras de lo
+/// custodiado, eso se **mide**. Parsear la frase seria atarse a una
+/// redaccion.
+pub fn al_llegar_camino(m: &mut Memoria, r: &Value) -> Consistencia {
+    let pedido = match m.pareja.as_ref() {
+        Some((_, t)) => *t,
+        None => return Consistencia::SinCamino { motivo: "sin pareja custodiada".into() },
+    };
+    let t_nodo = leer_q(&r["mmrSize"]).ok();
+    if r["available"].as_bool() != Some(true) {
+        if let Some(tn) = t_nodo {
+            if tn < pedido {
+                return Consistencia::PorDetras { t_nodo: tn, pedido };
+            }
+        }
+        return Consistencia::SinCamino {
+            motivo: r["reason"].as_str().unwrap_or("sin motivo declarado").into(),
+        };
+    }
+    let esperando_t = match t_nodo {
+        Some(t) => t,
+        None => return Consistencia::SinCamino { motivo: "respuesta sin mmrSize".into() },
+    };
+    let camino: Vec<String> = match r["camino"].as_array() {
+        Some(a) => a.iter().filter_map(|x| x.as_str().map(str::to_string)).collect(),
+        None => return Consistencia::SinCamino { motivo: "respuesta sin camino".into() },
+    };
+    let de_cima = m.pareja.as_ref().map(|(c, _)| c.clone()).unwrap_or_default();
+    m.pendiente = Some(Pendiente { de_cima, de_t: pedido, esperando_t, camino });
+    Consistencia::Pendiente { de_t: pedido, esperando_t }
+}
+
 /// Versión del formato del diario.
 ///
 /// ⚠️ **Va en CADA LÍNEA, no en una cabecera.** Dos testigos que comparan
@@ -147,7 +372,17 @@ impl Veredicto {
 /// que seguir siendo independientes: se concatenan, se parten y se envían
 /// sueltas. Es el argumento de §236 —*un campo vacío miente, una versión
 /// dice la verdad*— aplicado al archivo.
-pub const DIARIO_VERSION: u8 = 1;
+/// ⚠️ **1 → 2 en §294**: la linea gana la pareja del MMR
+/// (`mmrRoot`/`mmrSize`) y el canal `consistencia`. Sin la pareja, un
+/// diario **no permite reauditar la extension sin el nodo**, que es el
+/// criterio de §248 con el que se eligieron sus campos.
+///
+/// ⚠️ Los diarios **v1 siguen valiendo**: `auditar_lineas` acepta toda
+/// version `<= DIARIO_VERSION`. Lo custodiado no caduca (§289, §292).
+///
+/// ⚠️ **NO confundir con `DIARIO_VERSION` del NODO** (`node/src/diario.rs`):
+/// homonimas, formatos DISTINTOS, y ninguna gobierna a la otra.
+pub const DIARIO_VERSION: u8 = 2;
 
 /// Una línea del diario: **lo suficiente para que un tercero reverifique
 /// sin el nodo**, meses después.
@@ -169,9 +404,12 @@ pub fn linea_de_diario(v: &Veredicto, servido: &Value, visto_unix: u64) -> Value
     });
     // ⚠️ Solo cuando hay cabeza firmada: es lo unico reverificable.
     if servido["available"].as_bool() == Some(true) {
+        // ⚠️ §294: `mmrRoot`/`mmrSize` entran por el criterio de §248 —lo
+        // suficiente para reverificar SIN el nodo—: sin la pareja, la
+        // extension no se puede reauditar meses despues.
         for k in ["index", "epochDigest", "domain", "formatVersion", "signature",
                   "publicKey", "emittedAtUnix", "beatSeconds", "custody",
-                  "custodyChecked"] {
+                  "custodyChecked", "mmrRoot", "mmrSize"] {
             if !servido[k].is_null() {
                 l[k] = servido[k].clone();
             }
@@ -179,6 +417,56 @@ pub fn linea_de_diario(v: &Veredicto, servido: &Value, visto_unix: u64) -> Value
     } else if let Some(r) = servido["reason"].as_str() {
         l["reason"] = json!(r);
     }
+    l
+}
+
+/// La linea con **los dos canales** (§294).
+///
+/// ⚠️ [`linea_de_diario`] se conserva **con su firma intacta**: es la que
+/// usan el auditor y sus pruebas, y cambiarla habria movido codigo que no
+/// es de este corte.
+///
+/// ⚠️ **El camino viaja en la linea del veredicto que lo JUZGO**, no en la
+/// que lo pidio: con la pareja de la linea previa, la de esta y el camino,
+/// un tercero re-verifica la extension **offline**. Un camino no anotado no
+/// se puede reauditar.
+pub fn linea_de_diario_con(
+    v: &Veredicto,
+    servido: &Value,
+    visto_unix: u64,
+    c: Option<&Consistencia>,
+) -> Value {
+    let mut l = linea_de_diario(v, servido, visto_unix);
+    let c = match c {
+        Some(c) => c,
+        None => return l,
+    };
+    let q = |x: u64| json!(format!("{x:#x}"));
+    let mut o = json!({ "clase": c.clase() });
+    match c {
+        Consistencia::Anclando { t } => {
+            o["t"] = q(*t);
+        }
+        Consistencia::Pendiente { de_t, esperando_t } => {
+            o["deT"] = q(*de_t);
+            o["esperandoT"] = q(*esperando_t);
+        }
+        Consistencia::Extiende { de_t, a_t, camino }
+        | Consistencia::NoExtiende { de_t, a_t, camino } => {
+            o["deT"] = q(*de_t);
+            o["aT"] = q(*a_t);
+            o["camino"] = json!(camino);
+        }
+        Consistencia::PorDetras { t_nodo, pedido } => {
+            o["tNodo"] = q(*t_nodo);
+            o["pedido"] = q(*pedido);
+        }
+        Consistencia::SinCamino { motivo } => {
+            o["reason"] = json!(motivo);
+        }
+        Consistencia::NoAplica => {}
+    }
+    l["consistencia"] = o;
     l
 }
 
@@ -191,6 +479,14 @@ pub struct Memoria {
     ultimo: Option<u64>,
     /// ⚠️ **EL ANCLA.** La clave pública que se vio la primera vez.
     clave_fijada: Option<String>,
+    /// ⚠️ **EL ANCLA DE LA HISTORIA** (§294): la pareja del MMR de la
+    /// ultima cabeza v3 cuyo digest se RECOMPUSO. Hex tal cual del cable.
+    ///
+    /// ⚠️ Solo se fija tras recomponer: anclar una cima que la firma **no
+    /// cubre** no ancla nada.
+    pareja: Option<(String, u64)>,
+    /// El camino pedido y aun no juzgado.
+    pendiente: Option<Pendiente>,
 }
 
 impl Memoria {
@@ -202,6 +498,20 @@ impl Memoria {
     }
     pub fn clave_fijada(&self) -> Option<&str> {
         self.clave_fijada.as_deref()
+    }
+    /// La pareja del MMR custodiada: `(mmrRoot hex, mmrSize)`.
+    pub fn pareja(&self) -> Option<(&str, u64)> {
+        self.pareja.as_ref().map(|(c, t)| (c.as_str(), *t))
+    }
+    pub fn pendiente(&self) -> Option<&Pendiente> {
+        self.pendiente.as_ref()
+    }
+    /// ⚠️ Se pide camino cuando **hay de donde partir y no hay nada
+    /// pendiente**: dos peticiones por latido contra un nodo que mide
+    /// 0,255 ms fijos (§217) no cuestan nada, y el caso identidad tiene
+    /// respuesta declarada (camino vacio).
+    pub fn debe_pedir_camino(&self) -> bool {
+        self.pareja.is_some() && self.pendiente.is_none()
     }
 
     /// Fija la clave la primera vez, y **la compara siempre después**.
@@ -310,7 +620,76 @@ fn verificar(v: &Value) -> Result<(), String> {
         indice: 0, // no entra en el preámbulo
         firma,
     };
-    verificar_cabeza(&clave, &digest, &c).map_err(|e| format!("{e}"))
+    verificar_cabeza(&clave, &digest, &c).map_err(|e| format!("{e}"))?;
+    // ── §294 · Y EL DIGEST NO SE CREE: SE RECOMPONE ──
+    recomponer(v, &digest)
+}
+
+/// **Recompone el `epochDigest` de los campos servidos** y lo compara con
+/// el que la firma cubre.
+///
+/// ⚠️⚠️ **EL HUECO QUE ESTO CIERRA.** Hasta §294 el testigo comprobaba que
+/// la firma cubria un digest, **no que los campos lo COMPUSIERAN** — y el
+/// nodo esta escrito suponiendo lo contrario: *«el testigo custodia
+/// campos+digest+firma juntos y recompone sin volver a llamar»* (§275, en
+/// el dispatch de `zkssl_signedEpochHead`). Declarado y no hecho: **la
+/// misma familia que el hueco DTO-vs-payload de §292**.
+///
+/// ⚠️ Y no es higiene para el tramo (i): sin recomponer, `mmrRoot` y
+/// `mmrSize` son campos **que la firma no cubre**, y anclarlos seria anclar
+/// lo que el operador quiera.
+///
+/// ⚠️ **La version elige recompositor** (§292), como en el mando de §289:
+/// v3 con la pareja del MMR, v2 sin ella. Otra version no se recompone
+/// aqui — se verifica con la biblioteca, no con el testigo.
+fn recomponer(v: &Value, firmado: &[u8; 32]) -> Result<(), String> {
+    let version = leer_q(&v["formatVersion"])?;
+    if version != 2 && version != 3 {
+        return Ok(());
+    }
+    let b32 = |k: &str| -> Result<[u8; 32], String> {
+        let b = leer_hex(&v[k])?;
+        b.as_slice()
+            .try_into()
+            .map_err(|_| format!("{k}: {} bytes, se esperaban 32", b.len()))
+    };
+    // ⚠️ Macro y no closure: un closure tendria que NOMBRAR `Digest` en su
+    // tipo de retorno, y `Digest` no lo reexporta el verificador (D5). La
+    // macro deja que la inferencia lo resuelva en el punto de uso.
+    macro_rules! dg {
+        ($k:expr) => {
+            mmr::hoja_desde_bytes(&b32($k)?)
+                .ok_or_else(|| format!("{}: no es un digest del campo", $k))?
+        };
+    }
+    let (seq, n) = (leer_q(&v["seq"])?, leer_q(&v["n"])?);
+    let (accounts, pending) = (dg!("accountsRoot"), dg!("pendingRoot"));
+    let (frozen, chain) = (dg!("frozenRoot"), dg!("chainDigest"));
+    let acuses = dg!("acusesRoot");
+    let compuesto = if version == 3 {
+        zk_ssl_verify::epoch_digest_v3(
+            seq,
+            accounts,
+            pending,
+            frozen,
+            chain,
+            acuses,
+            n,
+            dg!("mmrRoot"),
+            leer_q(&v["mmrSize"])?,
+        )
+    } else {
+        zk_ssl_verify::epoch_digest_v2(seq, accounts, pending, frozen, chain, acuses, n)
+    };
+    let esperado = mmr::hoja_desde_bytes(firmado)
+        .ok_or_else(|| "epochDigest: no es un digest del campo".to_string())?;
+    if compuesto != esperado {
+        return Err(format!(
+            "los campos NO recomponen el epochDigest firmado (v{version}): \
+             o el servido esta adulterado o la cabeza nunca fue esa"
+        ));
+    }
+    Ok(())
 }
 
 /// ⚠️ El cable usa cantidades **hexadecimales** (`{:#x}`), no decimales.
@@ -793,9 +1172,35 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             },
         };
         let veredicto = una_vuelta(&servido, &mut m);
+
+        // ── §294 · el SEGUNDO canal: la historia ──
+        // ⚠️ Solo si la cabeza VERIFICO. Juzgar la historia de una cabeza
+        // que no verifica seria dar valor a lo que acaba de fallar.
+        let mut cons = match &veredicto {
+            Veredicto::Nueva { .. } | Veredicto::Repetida { .. } | Veredicto::Hueco { .. } => {
+                al_llegar_cabeza(&mut m, &servido)
+            }
+            _ => None,
+        };
+        if cons.is_none() && m.debe_pedir_camino() {
+            let viejo = m.pareja().map(|(_, t)| t).unwrap_or(0);
+            let peticion = json!({"jsonrpc":"2.0","id":n,"method":"zkssl_consistencyProof",
+                                  "params":{"oldSize": format!("{viejo:#x}")}});
+            let r = match agente.post(&a.nodo).send_json(peticion) {
+                Err(e) => json!({"available": false, "reason": format!("transporte: {e}")}),
+                Ok(r) => match r.into_json::<Value>() {
+                    Err(e) => json!({"available": false, "reason": format!("respuesta ilegible: {e}")}),
+                    Ok(v) => v.get("result").cloned().unwrap_or(Value::Null),
+                },
+            };
+            cons = Some(al_llegar_camino(&mut m, &r));
+        }
         let servido = &servido;
 
-        println!("[{n}] {veredicto:?}");
+        match &cons {
+            Some(c) => println!("[{n}] {veredicto:?} · {c:?}"),
+            None => println!("[{n}] {veredicto:?}"),
+        }
         if let Some(f) = diario.as_mut() {
             // ⚠️ SOLO AÑADIR. El fichero se abre en modo `append`: un diario
             // que se puede reescribir tiene el mismo problema que un
@@ -804,14 +1209,21 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
                 .duration_since(std::time::UNIX_EPOCH)
                 .map(|d| d.as_secs())
                 .unwrap_or(0);
-            writeln!(f, "{}", linea_de_diario(&veredicto, servido, t))?;
+            writeln!(f, "{}", linea_de_diario_con(&veredicto, servido, t, cons.as_ref()))?;
             f.flush()?;
         }
 
-        if veredicto.detiene() {
+        let para_la_historia = cons.as_ref().map_or(false, |c| c.detiene());
+        if veredicto.detiene() || para_la_historia {
             // ⚠️ SE DETIENE. Seguir seria sobrescribir el hallazgo con ruido.
             eprintln!();
-            eprintln!("⚠️⚠️ EL TESTIGO SE DETIENE: {veredicto:?}");
+            if para_la_historia {
+                eprintln!("⚠️⚠️ EL TESTIGO SE DETIENE: {:?}", cons.as_ref().expect("comprobado"));
+                eprintln!("   La cima nueva NO extiende a la custodiada: la historia se");
+                eprintln!("   bifurco o se recorto POR DEBAJO de una cabeza ya firmada.");
+            } else {
+                eprintln!("⚠️⚠️ EL TESTIGO SE DETIENE: {veredicto:?}");
+            }
             eprintln!("   Preservar la evidencia importa mas que acumular registros.");
             eprintln!("   DETECTAR NO ES DISTINGUIR: puede ser un accidente. Pero es");
             eprintln!("   OPONIBLE: el operador no puede negar haber emitido lo que firmo.");
@@ -829,6 +1241,190 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ── §294 · EL SEGUNDO CANAL: la historia ──────────────────────────
+
+    /// Una cabeza v3 servida, con la pareja del MMR. **No verifica firma**:
+    /// estas pruebas son de la MAQUINA DE ESTADOS del canal, no de la
+    /// criptografia (que ya tiene las suyas en `zk-ssl-verify`).
+    fn cabeza_v3(cima: &str, t: u64) -> Value {
+        json!({
+            "available": true,
+            "formatVersion": "0x3",
+            "mmrRoot": cima,
+            "mmrSize": format!("{t:#x}"),
+        })
+    }
+
+    fn cima(b: u8) -> String {
+        format!("0x{}", hex::encode_32(b))
+    }
+
+    #[test]
+    fn la_primera_cabeza_v3_ancla_la_pareja_y_no_juzga_nada() {
+        let mut m = Memoria::nueva();
+        let c = al_llegar_cabeza(&mut m, &cabeza_v3(&cima(1), 4));
+        assert_eq!(c, Some(Consistencia::Anclando { t: 4 }));
+        let c1 = cima(1);
+        assert_eq!(m.pareja(), Some((c1.as_str(), 4)));
+    }
+
+    #[test]
+    fn una_cabeza_que_no_es_v3_no_tiene_historia_que_extender() {
+        let mut m = Memoria::nueva();
+        let v2 = json!({"available": true, "formatVersion": "0x2"});
+        assert_eq!(al_llegar_cabeza(&mut m, &v2), Some(Consistencia::NoAplica));
+        assert!(m.pareja().is_none(), "una v2 NO puede anclar pareja");
+    }
+
+    #[test]
+    fn con_pareja_y_sin_pendiente_el_canal_calla_y_el_bucle_pide_camino() {
+        let mut m = Memoria::nueva();
+        al_llegar_cabeza(&mut m, &cabeza_v3(&cima(1), 4));
+        assert_eq!(al_llegar_cabeza(&mut m, &cabeza_v3(&cima(1), 4)), None);
+        assert!(m.debe_pedir_camino(), "hay de donde partir y nada pendiente");
+    }
+
+    #[test]
+    fn el_camino_se_guarda_y_espera_a_la_cabeza_que_lo_firma() {
+        // ⚠️⚠️ LA PROPIEDAD DE §293: el camino de tamaño t lo firma la
+        // cabeza SIGUIENTE. Un testigo que exigiera igualdad instantanea no
+        // casaria jamas.
+        let mut m = Memoria::nueva();
+        al_llegar_cabeza(&mut m, &cabeza_v3(&cima(1), 4));
+        let r = json!({"available": true, "mmrSize": "0x6", "camino": [cima(9)]});
+        assert_eq!(
+            al_llegar_camino(&mut m, &r),
+            Consistencia::Pendiente { de_t: 4, esperando_t: 6 }
+        );
+        // llega una cabeza que NO es la que firma el camino: sigue esperando
+        let c = al_llegar_cabeza(&mut m, &cabeza_v3(&cima(2), 5));
+        assert_eq!(c, Some(Consistencia::Pendiente { de_t: 4, esperando_t: 6 }));
+        assert!(m.pendiente().is_some(), "la pendiente NO se pierde por el camino");
+    }
+
+    #[test]
+    fn la_cabeza_que_firma_el_camino_lo_juzga_y_el_ancla_avanza() {
+        // Caso IDENTIDAD (viejo == nuevo, camino vacio): la consistencia
+        // exige cima igual, y eso es comprobable sin fabricar un MMR.
+        let mut m = Memoria::nueva();
+        al_llegar_cabeza(&mut m, &cabeza_v3(&cima(1), 4));
+        let r = json!({"available": true, "mmrSize": "0x4", "camino": []});
+        al_llegar_camino(&mut m, &r);
+        let c = al_llegar_cabeza(&mut m, &cabeza_v3(&cima(1), 4));
+        assert_eq!(
+            c,
+            Some(Consistencia::Extiende { de_t: 4, a_t: 4, camino: vec![] })
+        );
+        assert!(m.pendiente().is_none(), "juzgada, la pendiente se consume");
+        let c1 = cima(1);
+        assert_eq!(m.pareja(), Some((c1.as_str(), 4)));
+    }
+
+    #[test]
+    fn una_cima_que_no_extiende_detiene_al_testigo_y_no_mueve_el_ancla() {
+        // ⚠️⚠️ EL TEST QUE HACE QUE ESTO SEA UN ESLABON. Sin el, el canal
+        // seria decorativo.
+        let mut m = Memoria::nueva();
+        al_llegar_cabeza(&mut m, &cabeza_v3(&cima(1), 4));
+        let r = json!({"available": true, "mmrSize": "0x4", "camino": []});
+        al_llegar_camino(&mut m, &r);
+        // misma t, OTRA cima: la identidad exige cima igual
+        let c = al_llegar_cabeza(&mut m, &cabeza_v3(&cima(7), 4)).expect("hay veredicto");
+        assert!(matches!(c, Consistencia::NoExtiende { .. }), "{c:?}");
+        assert!(c.detiene(), "una historia que no extiende DEBE detener");
+        let c1 = cima(1);
+        assert_eq!(
+            m.pareja(),
+            Some((c1.as_str(), 4)),
+            "el ancla NO se mueve ante un hallazgo: preservar la evidencia"
+        );
+    }
+
+    #[test]
+    fn un_camino_ilegible_no_pasa_por_bueno() {
+        // Un juez que se saltara lo que no entiende absolveria por ignorancia.
+        let p = Pendiente {
+            de_cima: cima(1),
+            de_t: 4,
+            esperando_t: 4,
+            camino: vec!["0xnoesunhex".into()],
+        };
+        assert!(!juzgar(&p, &cima(1), 4), "el hex ilegible no puede dar VERDE");
+        let mala = Pendiente { de_cima: "0x00".into(), ..p.clone() };
+        assert!(!juzgar(&mala, &cima(1), 4), "una cima corta tampoco");
+    }
+
+    #[test]
+    fn el_acumulador_que_va_por_detras_se_anota_pero_no_detiene() {
+        // ⚠️ Es el nodo DICIENDO la verdad sobre su reseteo (§292/§293).
+        // Detener aqui quemaria al testigo en cada reinicio legitimo.
+        let mut m = Memoria::nueva();
+        al_llegar_cabeza(&mut m, &cabeza_v3(&cima(1), 9));
+        let c = al_llegar_cabeza(&mut m, &cabeza_v3(&cima(1), 3)).expect("hay veredicto");
+        assert_eq!(c, Consistencia::PorDetras { t_nodo: 3, pedido: 9 });
+        assert!(!c.detiene(), "un reseteo VISIBLE no es un hallazgo oponible");
+    }
+
+    #[test]
+    fn la_negativa_del_servicio_se_mide_por_estructura_no_por_su_frase() {
+        let mut m = Memoria::nueva();
+        al_llegar_cabeza(&mut m, &cabeza_v3(&cima(1), 9));
+        let r = json!({"available": false, "mmrSize": "0x3", "reason": "lo que sea"});
+        assert_eq!(
+            al_llegar_camino(&mut m, &r),
+            Consistencia::PorDetras { t_nodo: 3, pedido: 9 },
+            "el mmrSize servido decide, no el texto"
+        );
+        let r2 = json!({"available": false, "mmrSize": "0x9", "reason": "oldSize 0"});
+        assert!(matches!(
+            al_llegar_camino(&mut m, &r2),
+            Consistencia::SinCamino { .. }
+        ));
+    }
+
+    #[test]
+    fn la_linea_lleva_los_dos_canales_y_el_camino_del_que_juzgo() {
+        // ⚠️ D3: sin el camino anotado, la extension no se reaudita.
+        let v = Veredicto::Nueva { indice: 7, digest: "0xaa".into() };
+        let servido = json!({
+            "available": true, "index": "0x7", "epochDigest": "0xaa",
+            "signature": "0xbb", "publicKey": "0xcc",
+            "mmrRoot": cima(1), "mmrSize": "0x4",
+        });
+        let c = Consistencia::Extiende { de_t: 3, a_t: 4, camino: vec![cima(9)] };
+        let l = linea_de_diario_con(&v, &servido, 1000, Some(&c));
+        assert_eq!(l["v"], json!(2), "la version del diario SUBE");
+        assert_eq!(l["clase"], json!("nueva"), "la clase de la CABEZA no se pierde");
+        assert_eq!(l["mmrRoot"], json!(cima(1)));
+        assert_eq!(l["mmrSize"], json!("0x4"));
+        assert_eq!(l["consistencia"]["clase"], json!("extiende"));
+        assert_eq!(l["consistencia"]["deT"], json!("0x3"));
+        assert_eq!(l["consistencia"]["camino"], json!([cima(9)]));
+    }
+
+    #[test]
+    fn sin_canal_la_linea_es_exactamente_la_de_antes() {
+        // ⚠️ Compatibilidad: `linea_de_diario` no cambio de forma.
+        let v = Veredicto::Repetida { indice: 3 };
+        let s = json!({"available": false, "reason": "sin latido"});
+        assert_eq!(
+            linea_de_diario_con(&v, &s, 7, None),
+            linea_de_diario(&v, &s, 7)
+        );
+    }
+
+    /// Hex de 32 bytes con un byte distintivo: no hace falta que sea un
+    /// digest valido para las pruebas de MAQUINA DE ESTADOS.
+    mod hex {
+        pub fn encode_32(b: u8) -> String {
+            let mut s = String::with_capacity(64);
+            for i in 0..32u8 {
+                s.push_str(&format!("{:02x}", if i == 31 { b } else { 0 }));
+            }
+            s
+        }
+    }
 
     // ── §250: la vista dividida EN FRIO ──
 
