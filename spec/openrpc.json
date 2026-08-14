@@ -434,7 +434,6 @@
     },
     {
       "name": "zkssl_ackPath",
-      "summary": "Camino de acuse de una epoca CERRADA. La cabeza NO viaja: se verifica contra la custodiada.",
       "params": [
         {
           "name": "seq",
@@ -449,7 +448,27 @@
         "schema": {
           "$ref": "#/components/schemas/AckPath"
         }
-      }
+      },
+      "summary": "Camino de acuse de una epoca CERRADA. La cabeza NO viaja: se verifica contra la custodiada."
+    },
+    {
+      "name": "zkssl_consistencyProof",
+      "params": [
+        {
+          "name": "oldSize",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ConsistencyProof"
+        }
+      },
+      "summary": "Prueba de consistencia del MMR entre un tamano antiguo y la cima actual (eslabon 2 como SERVICIO)."
     },
     {
       "name": "dev_fund",

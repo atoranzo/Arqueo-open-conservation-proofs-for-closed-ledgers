@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 40 abiertas, 54 resueltas — **2 suspendidas** (16 y 28).
-Ultima revision: 13 de agosto de 2026 — **contada, no recordada**.
+**Estado**: 41 abiertas, 54 resueltas — **2 suspendidas** (16 y 28).
+Ultima revision: 14 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
 
@@ -1400,6 +1400,37 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   capa. De paso cayó una restricción que esta nota no había previsto: en
   era 2 **basta un tramo** del registro. Sigue abierto el segundo
   destino: la semántica de lotes, con su gancho documentado.
+
+- [ ] **95. El documento OpenRPC publicado no es autocontenido: cuatro
+  defectos del ARTEFACTO, medidos.** ⚠️ **No es una ampliación de la 94**,
+  y conviene decir por qué: la 94 es del INSTRUMENTO —clases de resultado
+  que el canon no ve—; ésta es del ARTEFACTO que se publica a terceros,
+  cuya cabecera promete que «una herramienta o una SEGUNDA implementacion
+  la consume sin leer el codigo del nodo». Medidos los cuatro en §302:
+  **(a)** los `$ref` de resultado **cuelgan**: el documento emite 23
+  destinos distintos y `components/schemas` declara 4; sólo `Q`, `Digest`
+  y `ProtocolVersion` resuelven. Un validador OpenRPC lo rechazaría.
+  **(b)** y al revés: `DATA` está declarado y **no lo referencia nadie**.
+  **(c)** `SignedEpochHead` figura como esquema de resultado **aunque el
+  cable no tenga ese DTO** —el cable tipa la cabeza SIN firma
+  (`EpochHeadDto`) y no la firmada—. ✅ Este punto **se cierra solo**
+  cuando el tramo (iii) del eslabón 3 haga nacer `SignedEpochHeadDto`.
+  **(d)** la pieza que ata `spec/openrpc.json` a `document()` compara
+  **valores parseados, no bytes**, y es ciega a la FORMA: medido en §302,
+  el artefacto llevaba **desde §275** con la clave `summary` fuera de
+  orden en una entrada, y ninguna compuerta lo vio. El §302 lo normalizó
+  al regenerar; **la ceguera sigue**. Arreglarla es un `assert_eq!`
+  contra `to_string_pretty(&document())` en la pieza que ya existe, y
+  **no mueve ninguna cifra**.
+  **Dónde se mide la verdad**, para no escribir aquí una lista que
+  envejezca: el censo de destinos emitidos contra esquemas declarados
+  —`grep -oE '#/components/schemas/[A-Za-z]+' spec/openrpc.json` frente a
+  las claves de `components.schemas`—, **re-medible con el mismo
+  instrumento** el día que alguien lo revise.
+  ⚠️ Cerrarla exige decidir **por clase**: (a) y (b) son el espacio de
+  nombres de resultado y piden casar una veintena de tipos contra
+  `spec/RPC.md`; (c) se resuelve solo con el (iii); (d) es barato y no
+  depende de los otros.
 
 ## E. Operacion
 

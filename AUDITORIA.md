@@ -22405,3 +22405,112 @@ cadena sin llaves prueba lo mismo— y **queda declarado el candidato 22 de
 (FUERA del canon, como sus tres hermanos). Ningun Cargo tocado. BACKLOG
 QUIETO en 40/54: la **83** gana el «Y DEMOSTRADO EN VIVO» del tramo (ii)
 **y sigue abierta** — el (iii) esta entero.
+
+## §302 — el contrato publicado y el despacho, atados: un metodo que se servia sin estar publicado
+
+**Que.** `zkssl_consistencyProof` entra en el documento OpenRPC del
+protocolo y nace la pieza que ata el DESPACHO del nodo a la tabla del
+cable. El §293 sirvio ese metodo y lo escribio en `spec/RPC.md`, y no en
+`crates/zk-ssl-wire/src/openrpc.rs`. OCHO sellos en verde con el eslabon 2
+SERVIDO y NO PUBLICADO: quien se guiara por el documento no sabia que
+existia.
+
+**⚠⚠ EL HALLAZGO: tres productores del mismo contrato, y ningun atado que
+cruce una frontera.** El contrato lo declaran tres sitios —el dispatch de
+`crates/zk-ssl-node/src/main.rs`, la tabla de `spec/RPC.md` y
+`openrpc.rs`— y solo habia dos comprobaciones, las dos ENDOGAMAS:
+`document()` contra `method_names()`, que viven en el MISMO fichero, y
+`spec/openrpc.json` contra `document()`, que es artefacto contra su
+generador. **Nadie comparaba el documento publicado con el despacho que
+los clientes ejecutan.** La regla estaba escrita desde el §292 —dos listas
+son dos productores y se atan con una comprobacion—; lo que faltaba no era
+la regla, era la FRONTERA.
+
+**El censo, y por que ninguna cuenta cuadraba con otra.** Medido: dispatch
+22 brazos = 20 `zkssl_` + 2 `dev_`; `spec/RPC.md` 19 filas mas 4 secciones;
+`method_names()` 21 = 19 `zkssl_` + los 2 `dev_`. **Dos listas de 19 que no
+son la misma lista**: a la tabla le falta `zkssl_signedEpochHead` —vive
+como seccion y no como fila— y al documento le faltaba
+`zkssl_consistencyProof`. `NODO menos CABLE` daba ese metodo; `CABLE menos
+NODO`, vacio.
+
+**El atado vive en el NODO, y DECLARA LO QUE NO VE.** El nodo depende del
+cable y el cable no sabe del nodo: la comprobacion que cruza el crate solo
+puede vivir en el nodo. Lee la FUENTE de su propio fichero con
+`include_str!` y reconoce un brazo como un literal entre comillas seguido,
+en la MISMA linea, de `=>` o de `|`. Su ceguera va ESCRITA al lado: no ve
+un brazo construido dinamicamente, ni un multipatron partido por un salto
+de linea, ni un literal con comillas escapadas; y por el lado del nombre
+censa `zkssl_` mas una lista EXPLICITA de excepciones —nunca por prefijo—,
+de modo que un metodo con un prefijo nuevo seria invisible ahi. Por eso la
+otra direccion se comprueba nombre a nombre y sin filtrar, y un assert
+exige que todo nombre del cable lleve prefijo conocido: el dia que nazca
+uno con otro prefijo, **lo dice ANTES de volverse ciego**.
+
+**Nacio ROJO, y se enseño.** `DESPACHADOS y no publicados en el OpenRPC:
+["zkssl_consistencyProof"]`. Un banco sin su rojo es un adorno, y este
+tenia el suyo antes de repararse.
+
+**⚠ La cabecera que mentia sobre el ORDEN: citada, no borrada (§247).**
+Decia que los metodos van «en el orden de `spec/RPC.md`», y no van: en
+RPC.md `inclusionReceipt`, `ackPath` y `consistencyProof` estan ANTES de
+`openAccount`, y en la lista van DESPUES de `applyMany`. El orden real es
+el de INCORPORACION, con los dos `dev_` cerrando. La comprobacion que dice
+«y en orden» solo compara `document()` con `method_names()` —coherencia
+interna, no el orden que la prosa promete—. La frase se cita encima y la
+verdad se remite al registro cronologico del propio fichero (§223, §242,
+§259, §275 y ahora §302), que crece con cada metodo, en vez de a un censo
+nuevo que envejezca igual. **La lista NO se reordena**: hacerlo churnearia
+el artefacto entero y enterraria el diff del metodo que importa.
+
+**El artefacto estaba tocado A MANO, y salio de una compuerta de propina.**
+La compuerta exigia que el diff de `spec/openrpc.json` fuera EXACTAMENTE la
+adicion del metodo, y dio rojo por dos lineas que nadie habia pedido: en la
+entrada de `zkssl_ackPath` la clave `summary` estaba en segunda posicion y
+el generador la pone la ultima —`serde_json` sin `preserve_order` ordena
+alfabeticamente, y TODAS las demas entradas lo estan—. El artefacto llevaba
+**desde el §275** sin ser byte a byte lo que produce su generador, y
+sobrevivio porque la comprobacion que lo ata compara VALORES PARSEADOS y es
+ciega a la FORMA. El §302 lo normaliza al regenerar y lo declara: queda en
+la nota **95**.
+
+**Decisiones y precios, escritos.** El resultado nuevo se llama
+`ConsistencyProof` por la convencion de `AckPath`, y eso añade un `$ref`
+colgante mas a los que ya habia: **deuda preexistente con dueño, liston por
+DELTA**, declarada en la 95 en vez de arreglada de propina —casar los
+nombres de resultado contra `spec/RPC.md` y sobrevivir a un validador es
+otro sello, y se mide antes, no se improvisa—. Los dos `dev_` SE QUEDAN
+publicados: `spec/RPC.md` los declara en seccion propia con su candado, el
+`-32601` contempla que esten deshabilitados, el gate real es de EJECUCION
+—`--dev`, con su propia comprobacion— y el documento lleva el candado
+escrito en su resumen. Y la comprobacion nueva va en un modulo de pruebas
+YA EXISTENTE de `main.rs`, no en fichero nuevo: **el recuento de `.rs`
+sigue sin dueño** y no se le añade una unidad mientras este fuera de todo
+gate.
+
+**Cuatro rojos propios, y ninguno en el Rust.** (1) Conte MENCIONES en vez
+de DECLARACIONES, y el propio parche escribe prosa que nombra lo que se
+cuenta: exigi dos apariciones y salieron tres. (2) Medi el delta del
+artefacto contra el ARBOL en vez de contra la BASE que produce el
+generador, y la deriva previa lo enmascaro. (3) `diff` sale con estado 1
+cuando los ficheros DIFIEREN, y con `pipefail` ese 1 gobierna la tuberia
+entera aunque los dos `grep` acierten: el delta se vuelca a fichero y se
+mide alli. (4) Ancle un INERTE por caracteres de dibujo de caja
+retecleados de un pegado —tres bytes cada uno, contados como dos por el
+patron—: **las marcas se COPIAN del texto, no se recuerdan**. Y dos
+cegueras nuevas para la familia, las dos de instrumentos propios: un grep
+del nombre del CABLE en camelCase no ve el nombre del TIPO en Rust, que va
+en PascalCase; y un censo de crate medido sobre `lib.rs` es ciego a sus
+modulos hermanos y devuelve **CERO en vez de fallar** —un cero no parece
+error, parece hallazgo—.
+
+**Contadores.** `zk-ssl-node` 71 -> 72 (1 test). Sumas 842/979/993 ->
+**843/980/994**, y la cifra POR-CRATE del nodo en `PRINCIPIOS.md`,
+71 -> 72, **en el mismo bloque que el pin**. Ningun fichero nuevo. Ningun
+Cargo tocado. BACKLOG 40/54 -> **41/54**: nace la **95**. Y una medicion
+para quien venga: de las TRES cifras que los documentos vivos citan, **solo
+la primera tiene compuerta** —`check_cifras` reconoce un TOTAL por la cifra
+pegada a «tests» o «pruebas», y ni «979 contando los pines» ni «993
+declarados» lo estan—; el 979 si esta en el conjunto de sumas posibles y
+nunca se le compara, y el 993 **no lo deriva nadie**: su +1 es RAZONADO, no
+medido.

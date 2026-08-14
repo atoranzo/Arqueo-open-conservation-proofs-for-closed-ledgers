@@ -1805,6 +1805,62 @@ mod tests {
         }
     }
 
+    // --- el contrato PUBLICADO y el despacho, atados ---
+    /// CEGUERA DECLARADA de este censo (302). Lee la FUENTE de este mismo
+    /// fichero y reconoce un brazo como un literal entre comillas seguido,
+    /// en la MISMA linea, de => o de |. NO ve: un brazo construido
+    /// dinamicamente, un multipatron partido por un salto de linea, ni un
+    /// literal con comillas escapadas. Y por el lado del nombre censa los
+    /// brazos que empiezan por zkssl_ mas los de EXCEPCIONES: un metodo con
+    /// un prefijo NUEVO seria invisible aqui, y por eso la otra direccion
+    /// (cable subconjunto del despacho) se comprueba nombre a nombre y SIN
+    /// filtrar por prefijo, y hay un assert que exige que todo nombre del
+    /// cable lleve un prefijo conocido.
+    #[test]
+    fn el_despacho_y_el_documento_publican_los_mismos_metodos() {
+        const EXCEPCIONES: &[&str] = &["dev_fund", "dev_openSeeded"];
+        let fuente = include_str!("main.rs");
+        let mut brazos: Vec<String> = Vec::new();
+        for linea in fuente.lines() {
+            let cs: Vec<char> = linea.chars().collect();
+            let mut i = 0usize;
+            while i < cs.len() {
+                if cs[i] != '"' { i += 1; continue; }
+                let ini = i + 1;
+                let mut j = ini;
+                while j < cs.len() && cs[j] != '"' { j += 1; }
+                if j >= cs.len() { break; }
+                let lit: String = cs[ini..j].iter().collect();
+                let resto: String = cs[j + 1..].iter().collect();
+                let r = resto.trim_start();
+                if r.starts_with("=>") || r.starts_with('|') { brazos.push(lit); }
+                i = j + 1;
+            }
+        }
+        let del_despacho: std::collections::BTreeSet<String> = brazos
+            .into_iter()
+            .filter(|n| n.starts_with("zkssl_") || EXCEPCIONES.contains(&n.as_str()))
+            .collect();
+        let del_cable: std::collections::BTreeSet<String> =
+            zk_ssl_wire::openrpc::method_names().iter().map(|s| s.to_string()).collect();
+        for n in &del_cable {
+            assert!(
+                n.starts_with("zkssl_") || EXCEPCIONES.contains(&n.as_str()),
+                "{n}: prefijo desconocido, el censo del despacho no lo veria"
+            );
+        }
+        let solo_despacho: Vec<&String> = del_despacho.difference(&del_cable).collect();
+        let solo_cable: Vec<&String> = del_cable.difference(&del_despacho).collect();
+        assert!(
+            solo_despacho.is_empty(),
+            "DESPACHADOS y no publicados en el OpenRPC: {solo_despacho:?}"
+        );
+        assert!(
+            solo_cable.is_empty(),
+            "PUBLICADOS en el OpenRPC y no despachados: {solo_cable:?}"
+        );
+    }
+
     // ── consultas de solo lectura ─────────────────────────────────
 
     #[test]

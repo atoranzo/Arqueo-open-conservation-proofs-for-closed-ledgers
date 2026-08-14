@@ -10,7 +10,17 @@
 
 use serde_json::{json, Value};
 
-/// Los metodos del protocolo, en el orden de `spec/RPC.md`.
+/// Los metodos del protocolo, en el ORDEN DE INCORPORACION, con los dos
+/// `dev_*` cerrando la lista.
+///
+/// > « Los metodos del protocolo, en el orden de `spec/RPC.md`. »
+///
+/// Esa linea dejo de ser cierta y se CITA, no se borra (247). MEDIDO en
+/// el 302: `spec/RPC.md` lista `inclusionReceipt`, `ackPath` y
+/// `consistencyProof` ANTES de `openAccount`, y aqui van DESPUES de
+/// `applyMany`. Donde vive la verdad: en el registro cronologico del
+/// test de mas abajo (223 -> 242 -> 259 -> 275 -> 293/302), que crece
+/// con cada metodo; no en un censo nuevo que envejezca igual.
 pub fn method_names() -> Vec<&'static str> {
     vec![
         "zkssl_protocolVersion",
@@ -32,6 +42,7 @@ pub fn method_names() -> Vec<&'static str> {
         "zkssl_signedEpochHead",
         "zkssl_inclusionReceipt",
         "zkssl_ackPath",
+        "zkssl_consistencyProof",
         "dev_fund",
         "dev_openSeeded",
     ]
@@ -96,6 +107,9 @@ pub fn document() -> Value {
         m("zkssl_ackPath",
           "Camino de acuse de una epoca CERRADA. La cabeza NO viaja: se verifica contra la custodiada.",
           json!([p("seq", "Q")]), "AckPath"),
+        m("zkssl_consistencyProof",
+          "Prueba de consistencia del MMR entre un tamano antiguo y la cima actual (eslabon 2 como SERVICIO).",
+          json!([p("oldSize", "Q")]), "ConsistencyProof"),
         m("dev_fund", "SOLO --dev: emision delegada con custodios de PRUEBA.",
           json!([p("index", "Q"), p("amount", "Q")]), "Applied"),
         m("dev_openSeeded", "SOLO --dev: abre desde una clave determinista de la suite.",
@@ -125,21 +139,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn veintiun_metodos_unicos_y_en_orden() {
+    fn veintidos_metodos_unicos_y_en_orden() {
         // §223: subio a 18 con `zkssl_applyMany`. §242: a 19 con
         // `zkssl_signedEpochHead`. §259: a 20 con
         // `zkssl_inclusionReceipt`. Que este test tenga el numero en el
         // nombre es a proposito: renombrarlo OBLIGA A MIRAR.
         // §275: a 21 con `zkssl_ackPath`.
+        // §293 lo sirvio y NO lo publico; §302: a 22 con `zkssl_consistencyProof`.
         let nombres = method_names();
-        assert_eq!(nombres.len(), 21);
+        assert_eq!(nombres.len(), 22);
         let mut u = nombres.clone();
         u.sort();
         u.dedup();
-        assert_eq!(u.len(), 21, "nombres repetidos");
+        assert_eq!(u.len(), 22, "nombres repetidos");
         let doc = document();
         let met = doc["methods"].as_array().expect("methods");
-        assert_eq!(met.len(), 21);
+        assert_eq!(met.len(), 22);
         for (i, mm) in met.iter().enumerate() {
             assert_eq!(mm["name"].as_str().unwrap(), nombres[i]);
         }
