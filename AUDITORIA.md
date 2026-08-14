@@ -22238,3 +22238,84 @@ comprueba contra el fichero de ese crate antes de emitir**.
 43 -> 51, **en el mismo bloque que el pin** — tres sellos seguidos murieron
 por separarlas. Ningun `.rs` nuevo. BACKLOG QUIETO en 40/54: **el tramo (ii)
 sigue abierto** y la 83 no recibe cumplido aqui.
+
+## §300 — el mando: el testigo cofirma lo que juzga, y nada mas
+
+**Que.** El bucle del testigo gana tres mandos —`--cofirmar SEMILLA`,
+`--indice-cofirma CONTADOR`, `--cofirmas FICHERO`— y con ellos **el testigo
+empieza a firmar**. Cierra el tramo (ii) de la nota 83 junto a §297 (el
+objeto), §298 (el invariante entero en el guardian) y §299 (la pieza).
+
+**⚠⚠ LA REGLA: cofirma ⇔ `Nueva` ∧ `Extiende`. NADA MAS.** Un aval sobre
+algo que hizo saltar al testigo no es un aval, y la regla se aplica ENTERA:
+
+- **`Anclando` FUERA.** Anclar no es juzgar: es el TOFU del MMR —la primera
+  vez que se ve— y **la consistencia no se ha juzgado porque no habia con
+  que**. Cofirmar ahi seria avalar sin ese juicio, y **un tercero no podria
+  distinguir una cofirma-tras-consistencia de una cofirma-en-anclaje sin
+  mirar el diario**, que es exactamente la carga que este diseno no le
+  reparte. La primera cofirma llega en la primera `Extiende`, un muestreo
+  despues: **el arranque se resuelve solo**.
+- **`Pendiente` FUERA** por lo mismo: «aun no pude verificar la extension»
+  es tan anomalia-para-avalar como «va por detras».
+- **`Repetida` y `NoAplica` FUERA por PRESUPUESTO.** Cada cofirma **quema un
+  indice de la serie XMSS** —la 83 lo declaro como EL precio de este
+  eslabon— y re-avalar una cabeza ya avalada gasta serie sin informacion
+  nueva. **Una cofirma por cabeza, en la vuelta que la juzgo.**
+
+**La cofirma va a su PROPIO fichero.** Dos razones, y la segunda pesa mas:
+una firma XMSS son ~18 KB en hex sobre una linea de diario que ya pesa ~37
+KB; y **son artefactos con destinatarios distintos** —el diario es del
+testigo para si mismo, la cofirma es **para terceros**—. En el diario queda
+solo una marca ligera con el indice. ⚠️ Y **la marca y la linea de cofirmas
+son DOS LISTAS DEL MISMO CONTRATO**: la casa ya lo pago tres veces
+(§292→§293, §294→§295, §297), asi que **esta nace atada con su test** —y
+otro exige que la linea **baste por si sola** para verificar, sin el diario
+y sin el testigo.
+
+**⚠⚠ El DOMINIO no se escribe en el fichero de cofirmas, y esa es la
+decision.** Ya viaja **dentro del preambulo firmado**, puesto por
+`preambulo_cofirma`: ponerlo tambien en el JSON serian **dos marcadores que
+pueden discrepar** —§236, el mismo argumento que mantiene la version fuera
+del nombre del dominio—. Como efecto, **la ceguera (e) de la nota 94 NO
+gana un caso vivo aqui**: `LIT_ZK` no ve los dominios escritos como cadena
+JSON, y este corte no escribe ninguno. **No por suerte, sino porque
+escribirlo habria sido un error aparte.** La 94 queda como estaba.
+
+**Reconciliar al arrancar, y una negativa nueva.** Al abrir el cofirmante
+se **reconcilia y se dice que salio**: `ContadorAdelantado` es **el caso
+NORMAL tras una caida** —13 de 25 en K.1— y significa indices quemados sin
+firma; se informa y se sigue, porque es el precio del orden. Pero
+**`ClaveAdelantada` DETIENE EL ARRANQUE**: si la clave firmo con indices que
+el contador no registro, o el orden se invirtio o `fsync` no hizo lo que
+dijo, y **la clave debe considerarse comprometida**. Un testigo que
+arrancara ahi estaria firmando con una clave que ya no puede defender.
+
+**⚠ Lo que el testigo HEREDA, y ahora se lo dice a quien lo activa.** La
+advertencia ya no vive solo en este asiento: **esta en el `--help`**. Quien
+escriba `--cofirmar` lee que la semilla es material de clave, que su
+custodia es **decision de despliegue y NO ESTA TOMADA** (nota 92), y que
+activarlo **le convierte en parte interesada**, duplicando la superficie de
+las notas 84, 92 y 19.
+
+**Decisiones y precios, escritos.** Un fallo al cofirmar **NO detiene al
+testigo** —observar es lo primero, avalar lo segundo— pero se dice por
+stderr. Un `epochDigest` que no sea hex de 32 tampoco se cofirma, y se
+anota. `COFIRMA_VERSION` es **propia**, distinta de `DIARIO_VERSION`: dos
+artefactos que pueden evolucionar por separado. Y `linea_de_diario_con`
+conserva **su firma intacta** (§294): la marca se anade fuera.
+
+**Un rojo propio, y con vuelta de tuerca.** Al retirar los tres
+`#[allow(dead_code)]` que el §299 puso **con fecha de caducidad**, `cargo`
+canto `reconciliar` sin llamante. La salida facil era devolverle su allow;
+la correcta era **hacer lo que faltaba**: el arranque no reconciliaba. **Un
+`dead_code` puede estar senalando que FALTA una llamada, no que sobre una
+funcion** — y de ahi salio la negativa ante `ClaveAdelantada`, que no
+estaba en el plan.
+
+**Contadores.** `zk-ssl-cli` 51 -> 54 (3 tests). Sumas 835/972/986 ->
+**838/975/989**, y la cifra POR-CRATE del testigo en `PRINCIPIOS.md`,
+51 -> 54, **en el mismo bloque que el pin**. Los tres `allow`, RETIRADOS.
+Ningun Cargo tocado; ningun `.rs` nuevo. BACKLOG QUIETO en 40/54: la **83**
+recibe el ✅ del tramo (ii) **pero no se cierra** — falta el banco vivo
+(§301) y queda el (iii) entero.

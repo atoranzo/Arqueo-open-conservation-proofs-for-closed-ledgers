@@ -506,6 +506,19 @@ instrumentacion) al grupo E.*
   (no-extiende, exit 1, via proxy adulterador embebido) y el reseteo
   anotado SIN quemar al testigo (por-detras, exit 0 — la decision D1,
   en vivo). El limite que §294 declaro pendiente ya no lo es.
+  ✅ **TRAMO (ii) CUMPLIDO (§297-§300) — el testigo COFIRMA.** El objeto
+  lo definio §297 en `zk-ssl-verify`: dominio propio, preambulo con la
+  clave del OPERADOR dentro —sin ella la cofirma seria TRANSFERIBLE— y
+  `verificar_cofirma` para terceros, **verificable antes de que existiera
+  ninguna**. §298 mudo la lectura del indice al guardian para que el testigo
+  no reimplementara el invariante. §299 le dio clave XMSS propia y
+  `cofirmar()`: reservar con fsync → firmar → AUTOVERIFICARSE. Y §300 el
+  mando: **cofirma `Nueva` ∧ `Extiende` y NADA MAS**, a su propio fichero,
+  **con la clave que ANCLO** —sin ancla la cofirma es imposible, falla
+  cerrada—. Al arrancar reconcilia, y **si la clave va por delante del
+  contador NO ARRANCA**.
+  ⚠️ **Falta el BANCO VIVO (§301).** Y **esto NO cierra el eslabon 3**:
+  queda el (iii) —recoleccion y politica k del CLIENTE— entero.
 
   **Eslabón 4 — El hash del verificador dentro de la cabeza
   atestiguada.** Ya está diseñado en `doc/preprints/ERRATA.md`, entrada

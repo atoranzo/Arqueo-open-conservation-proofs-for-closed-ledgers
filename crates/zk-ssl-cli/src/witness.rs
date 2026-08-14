@@ -1143,6 +1143,81 @@ pub struct WitnessArgs {
     #[arg(long, num_args = 2, value_names = ["TESTIGO", "NODO"],
           conflicts_with_all = ["auditar", "comparar"])]
     ausentes: Option<Vec<PathBuf>>,
+
+    /// **Cofirma cada cabeza que EXTIENDE** (§300). Ruta a la semilla.
+    ///
+    /// ⚠️⚠️ **La semilla es material de clave.** De donde sale y quien la
+    /// guarda es **decision de despliegue, y no esta tomada** (nota 92).
+    ///
+    /// ⚠️ Activar esto convierte al testigo en **parte interesada**: hereda
+    /// las mismas obligaciones que audita —guardian del indice, custodia
+    /// declarada, transicion firmada al rotar (nota 84)— y **duplica la
+    /// superficie de las notas 84, 92 y 19**.
+    #[arg(long, value_name = "SEMILLA", requires_all = ["indice_cofirma", "cofirmas"])]
+    cofirmar: Option<PathBuf>,
+
+    /// El contador del guardian del testigo, **su propio fichero**.
+    ///
+    /// ⚠️ NO se comparte con el del nodo: son dos claves distintas y dos
+    /// series distintas. Compartirlo seria reusar indices entre firmantes.
+    #[arg(long, value_name = "CONTADOR")]
+    indice_cofirma: Option<PathBuf>,
+
+    /// Donde se anotan las cofirmas, **una linea JSON por cofirma**.
+    ///
+    /// ⚠️ **Fichero PROPIO, no el diario** (§300): una firma XMSS son ~18 KB
+    /// en hex sobre una linea de diario que ya pesa ~37 KB, y sobre todo
+    /// **son artefactos con destinatarios distintos** — el diario es del
+    /// testigo para si mismo; la cofirma es **para terceros**. En el diario
+    /// queda solo una marca que las ata.
+    #[arg(long, value_name = "COFIRMAS")]
+    cofirmas: Option<PathBuf>,
+}
+
+/// Version del formato del fichero de cofirmas.
+///
+/// ⚠️ **Propia**, distinta de `DIARIO_VERSION`: son dos artefactos con
+/// destinatarios distintos y pueden evolucionar por separado.
+pub const COFIRMA_VERSION: u64 = 1;
+
+/// La linea del fichero de cofirmas. **AUTOSUFICIENTE**: lleva todo lo que
+/// [`zk_ssl_verify::verificar_cofirma`] consume y **nada mas**.
+///
+/// ```text
+/// verificar_cofirma(clave_del_testigo, epoch_digest, clave_del_operador, c)
+///                          |                 |               |          |
+///     clavePublicaTestigo <-+   epochDigest <-+               |          |
+///                     clavePublicaOperador <------------------+          |
+///          CabezaFirmada{ versionFormato, indice, firma } <--------------+
+/// ```
+///
+/// ⚠️⚠️ **El DOMINIO no se escribe aqui, y es la decision del corte.** Ya
+/// viaja **dentro del preambulo firmado**, puesto por `preambulo_cofirma`:
+/// ponerlo tambien en el JSON serian **dos marcadores que pueden discrepar**
+/// (§236, el mismo argumento que mantiene la version fuera del nombre del
+/// dominio). Como efecto, la ceguera (e) de la nota 94 —`LIT_ZK` no ve los
+/// dominios escritos como cadena JSON— **NO gana un caso vivo aqui**, y no
+/// por suerte sino porque escribirlo habria sido un error aparte.
+///
+/// ⚠️ Todo en hex tal cual, sin transcodificar (§248).
+pub fn linea_de_cofirma(
+    epoch_digest: &[u8; 32],
+    clave_del_operador: &[u8],
+    clave_del_testigo: &[u8],
+    c: &CabezaFirmada,
+    visto_unix: u64,
+) -> Value {
+    let hx = |b: &[u8]| format!("0x{}", b.iter().map(|x| format!("{x:02x}")).collect::<String>());
+    json!({
+        "v": COFIRMA_VERSION,
+        "epochDigest": hx(epoch_digest),
+        "clavePublicaOperador": hx(clave_del_operador),
+        "clavePublicaTestigo": hx(clave_del_testigo),
+        "versionFormato": format!("{:#x}", c.version_formato),
+        "indice": format!("{:#x}", c.indice),
+        "firma": hx(&c.firma),
+        "vistoUnix": visto_unix,
+    })
 }
 
 fn leer(p: &std::path::Path) -> anyhow::Result<Vec<String>> {
@@ -1221,6 +1296,54 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
         .map(|p| std::fs::OpenOptions::new().create(true).append(true).open(p))
         .transpose()?;
 
+    // ── §300 · el cofirmante, si se pidio ──
+    // ⚠️ Se abre AQUI, antes del bucle: `desde_semilla` comprueba el layout
+    //    del SK y el guardian su propio `fsync`. **Mejor no arrancar que
+    //    arrancar y descubrirlo en la primera firma.**
+    let mut cofirmante = match &a.cofirmar {
+        None => None,
+        Some(p) => {
+            let semilla = std::fs::read(p)?;
+            let ruta = a.indice_cofirma.as_ref().expect("clap lo exige");
+            let mut c = Cofirmante::desde_semilla(&semilla, ruta)
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            println!("⚠️ COFIRMANDO: el testigo pasa a ser PARTE INTERESADA y hereda");
+            println!("   las obligaciones que audita (notas 84, 92 y 19).");
+            // ⚠️⚠️ §300 · **RECONCILIAR AL ARRANCAR, y decir que salio.** El
+            //    contador adelantado es el caso NORMAL tras una caida —13 de
+            //    25 en K.1—, no la excepcion: hay indices QUEMADOS SIN FIRMA.
+            //    Un testigo que empieza a firmar sin mirar esto esta
+            //    ignorando su propio invariante.
+            match c.reconciliar().map_err(|e| anyhow::anyhow!("{e}"))? {
+                Reconciliacion::Coincide { indice } => {
+                    println!("   guardian y clave a la par en el indice {indice}.");
+                }
+                Reconciliacion::ContadorAdelantado { contador, clave, huerfanos } => {
+                    println!("   contador {contador} por delante de la clave {clave}:");
+                    println!("   {huerfanos} indice(s) quemados sin firma. Es el caso");
+                    println!("   NORMAL tras una caida —el precio del orden—, no un fallo.");
+                }
+                // ⚠️⚠️ LO QUE NUNCA DEBE PASAR: la clave firmo con indices que
+                //    el contador no registro. **El testigo NO arranca**: seguir
+                //    seria firmar con una clave que hay que dar por comprometida.
+                Reconciliacion::ClaveAdelantada { contador, clave, sin_registrar } => {
+                    eprintln!();
+                    eprintln!("⚠️⚠️ LA CLAVE VA POR DELANTE DEL CONTADOR: {clave} frente a {contador}.");
+                    eprintln!("   {sin_registrar} firma(s) sin registrar: o el orden se invirtio,");
+                    eprintln!("   o `fsync` no hizo lo que dijo. **LA CLAVE DEBE CONSIDERARSE");
+                    eprintln!("   COMPROMETIDA**, y el testigo no firma nada mas con ella.");
+                    anyhow::bail!("clave adelantada: {sin_registrar} firma(s) sin registrar");
+                }
+            }
+            Some(c)
+        }
+    };
+    let mut cofirmas = a
+        .cofirmas
+        .as_ref()
+        .map(|p| std::fs::OpenOptions::new().create(true).append(true).open(p))
+        .transpose()?;
+
     println!("testigo: {} cada {} s", a.nodo, a.cada);
     println!("⚠️ un testigo que opera el propio operador NO prueba nada: esto es la");
     println!("   implementacion de referencia de lo que correria un TERCERO.");
@@ -1268,6 +1391,58 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             Some(c) => println!("[{n}] {veredicto:?} · {c:?}"),
             None => println!("[{n}] {veredicto:?}"),
         }
+        // ── §300 · COFIRMA ⇔ `Nueva` ∧ `Extiende`. NADA MAS. ──
+        //
+        // ⚠️⚠️ Un aval sobre algo que hizo saltar al testigo no es un aval, y
+        // la regla se aplica ENTERA:
+        //   · `Anclando` FUERA: anclar no es juzgar. Es el TOFU del MMR —la
+        //     primera vez que se ve—, y la consistencia **no se ha juzgado
+        //     porque no habia con que**. Cofirmar ahi seria avalar sin ese
+        //     juicio, y **el tercero no puede distinguir una cofirma-tras-
+        //     consistencia de una cofirma-en-anclaje sin mirar el diario**,
+        //     que es justo la carga que este diseno no le reparte. La
+        //     primera cofirma llega en la primera `Extiende`, un muestreo
+        //     despues: el arranque se resuelve solo.
+        //   · `Pendiente` FUERA por lo mismo: «aun no pude verificar la
+        //     extension» es tan anomalia-para-avalar como «va por detras».
+        //   · `Repetida` y `NoAplica` FUERA por **PRESUPUESTO**: cada
+        //     cofirma **quema un indice de la serie XMSS** —la 83 lo declaro
+        //     como EL precio de este eslabon— y re-avalar una cabeza ya
+        //     avalada gasta serie sin informacion nueva. **Una cofirma por
+        //     cabeza, en la vuelta que la juzgo.**
+        let cofirmable = matches!(veredicto, Veredicto::Nueva { .. })
+            && matches!(cons, Some(Consistencia::Extiende { .. }));
+        let mut marca: Option<Value> = None;
+        if let (Some(cf), true) = (cofirmante.as_mut(), cofirmable) {
+            let d = servido.get("epochDigest").and_then(|v| v.as_str()).and_then(hex32);
+            match d {
+                None => eprintln!("[{n}] no se cofirma: el epochDigest no es hex de 32"),
+                Some(d) => match cf.cofirmar_lo_anclado(&m, &d) {
+                    // ⚠️ Un fallo al cofirmar NO detiene al testigo: observar
+                    //    es lo primero, avalar es lo segundo. Pero se DICE.
+                    Err(e) => eprintln!("[{n}] ⚠️ no se pudo cofirmar: {e}"),
+                    Ok(c) => {
+                        let pk = cf.clave_publica();
+                        let op = m.clave_fijada().unwrap_or_default();
+                        let opb = leer_hex(&json!(op)).unwrap_or_default();
+                        let t = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|x| x.as_secs())
+                            .unwrap_or(0);
+                        if let Some(f) = cofirmas.as_mut() {
+                            writeln!(f, "{}", linea_de_cofirma(&d, &opb, &pk, &c, t))?;
+                            f.flush()?;
+                        }
+                        // ⚠️ La MARCA y la linea de cofirmas son **dos listas
+                        //    del mismo contrato**: el indice las ata, y hay un
+                        //    test que lo exige (§292→§293, §294→§295, §297).
+                        marca = Some(json!({ "indice": format!("{:#x}", c.indice) }));
+                        println!("[{n}] cofirmada · indice {:#x}", c.indice);
+                    }
+                },
+            }
+        }
+
         if let Some(f) = diario.as_mut() {
             // ⚠️ SOLO AÑADIR. El fichero se abre en modo `append`: un diario
             // que se puede reescribir tiene el mismo problema que un
@@ -1276,7 +1451,14 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
                 .duration_since(std::time::UNIX_EPOCH)
                 .map(|d| d.as_secs())
                 .unwrap_or(0);
-            writeln!(f, "{}", linea_de_diario_con(&veredicto, servido, t, cons.as_ref()))?;
+            // ⚠️ `linea_de_diario_con` se conserva CON SU FIRMA INTACTA
+            //    (§294): la marca se anade fuera, no cambiando la funcion
+            //    que el auditor y sus pruebas usan.
+            let mut l = linea_de_diario_con(&veredicto, servido, t, cons.as_ref());
+            if let Some(mm) = &marca {
+                l["cofirmada"] = mm.clone();
+            }
+            writeln!(f, "{l}")?;
             f.flush()?;
         }
 
@@ -1319,16 +1501,10 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
 //  `verificar_cofirma` viven en `zk-ssl-verify`, no aqui.
 // ═══════════════════════════════════════════════════════════════════════
 
-// ⚠️⚠️ **MUERTO A PROPOSITO HASTA EL §300.** El bucle todavia no cofirma
-// —el mando va aparte para que este corte sea auditable—, asi que
-// `cargo build` ve la pieza sin llamantes. Los TESTS si la usan, por eso
-// `cargo test` casi no se queja: es la ceguera (b) de la nota 94 vista
-// desde el otro lado, y aqui la estructura del corte la provoca.
-//
-// ⚠️ **Este `allow` LO QUITA EL §300**, y su asiento lo declara. Un `allow`
-// sin fecha de caducidad se queda para siempre — y entonces tapa el
-// dead_code de verdad que venga despues.
-#[allow(dead_code)]
+// ⚠️ §300 · el `allow(dead_code)` que el §299 puso **con fecha de
+// caducidad escrita** se retira aqui: el bucle ya llama al cofirmante, asi
+// que la pieza tiene llamante de verdad. Un allow que se cumple es un
+// allow que se quita.
 #[derive(Debug)]
 pub enum CofirmaError {
     Guardian(GuardianError),
@@ -1385,13 +1561,11 @@ impl std::error::Error for CofirmaError {}
 /// clave privada del testigo esta en un fichero de texto. `FirmanteCabeza`
 /// tampoco lo deriva. Si un test necesita formatear un fallo, que formatee
 /// **el error**, que si lo implementa.
-#[allow(dead_code)]
 pub struct Cofirmante {
     par: KeyPair<Conjunto>,
     guardian: GuardianIndice,
 }
 
-#[allow(dead_code)]
 impl Cofirmante {
     /// ⚠️ **La semilla es material de clave.** De donde sale y quien la
     /// guarda es **decision de despliegue**, y no esta tomada (nota 92).
@@ -2278,6 +2452,68 @@ mod tests {
             Err(otro) => panic!("en tmpfs debe negarse por PersistenciaFalsa, y dio: {otro:?}"),
             Ok(_) => panic!("en tmpfs NO debe arrancar: fsync no persiste nada ahi"),
         }
+    }
+
+    #[test]
+    fn la_linea_de_cofirma_basta_por_si_sola_para_un_tercero() {
+        // ⚠️⚠️ EL TEST QUE ATA LAS DOS LISTAS. La linea de cofirmas y lo que
+        //    `verificar_cofirma` consume son **dos productores del mismo
+        //    contrato**: si alguien anade un campo a la verificacion y no a
+        //    la linea, el tercero se queda sin poder comprobar nada. La casa
+        //    ya lo pago tres veces (§292→§293, §294→§295, §297); esta nace
+        //    atada.
+        let p = en_disco("autosuficiente");
+        let mut cf = Cofirmante::desde_semilla(&semilla_testigo(), &p).expect("abrir");
+        let op = clave_operador();
+        let d = [0x3Cu8; 32];
+        let c = cf.cofirmar(&d, &op).expect("cofirmar");
+        let pk = cf.clave_publica();
+        let l = linea_de_cofirma(&d, &op, &pk, &c, 1000);
+        for k in ["v", "epochDigest", "clavePublicaOperador", "clavePublicaTestigo",
+                  "versionFormato", "indice", "firma", "vistoUnix"] {
+            assert!(!l[k].is_null(), "la linea no lleva {k}, y el tercero lo necesita");
+        }
+        // Y con SOLO la linea, sin el diario y sin el testigo, se verifica.
+        let leer = |k: &str| leer_hex(&l[k]).expect("hex");
+        let rec = CabezaFirmada {
+            version_formato: leer_q(&l["versionFormato"]).expect("q") as u8,
+            indice: leer_q(&l["indice"]).expect("q"),
+            firma: leer("firma"),
+        };
+        let dd: [u8; 32] = leer("epochDigest").try_into().expect("32");
+        verificar_cofirma(&leer("clavePublicaTestigo"), &dd,
+                          &leer("clavePublicaOperador"), &rec)
+            .expect("la linea SOLA basta para verificar");
+    }
+
+    #[test]
+    fn el_dominio_no_se_escribe_en_la_linea_de_cofirma() {
+        // ⚠️ Ya viaja DENTRO del preambulo firmado: escribirlo tambien en el
+        //    JSON serian dos marcadores que pueden discrepar (§236). Y de
+        //    paso, la ceguera (e) de la nota 94 no gana un caso vivo.
+        let p = en_disco("sin_dominio");
+        let mut cf = Cofirmante::desde_semilla(&semilla_testigo(), &p).expect("abrir");
+        let op = clave_operador();
+        let c = cf.cofirmar(&[1u8; 32], &op).expect("cofirmar");
+        let pk = cf.clave_publica();
+        let s = linea_de_cofirma(&[1u8; 32], &op, &pk, &c, 0).to_string();
+        assert!(!s.contains("ZK-SSL"), "el dominio NO va en el JSON: {s:.80}");
+    }
+
+    #[test]
+    fn la_marca_del_diario_y_la_cofirma_llevan_el_mismo_indice() {
+        // ⚠️ La otra mitad del contrato: la marca ligera del diario ata con
+        //    la linea del fichero de cofirmas POR EL INDICE. Si divergen, un
+        //    tercero no puede emparejarlas.
+        let p = en_disco("misma_marca");
+        let mut cf = Cofirmante::desde_semilla(&semilla_testigo(), &p).expect("abrir");
+        let op = clave_operador();
+        let d = [9u8; 32];
+        let c = cf.cofirmar(&d, &op).expect("cofirmar");
+        let pk = cf.clave_publica();
+        let l = linea_de_cofirma(&d, &op, &pk, &c, 0);
+        let marca = json!({ "indice": format!("{:#x}", c.indice) });
+        assert_eq!(marca["indice"], l["indice"], "la marca y la cofirma deben atar");
     }
 
     #[test]
