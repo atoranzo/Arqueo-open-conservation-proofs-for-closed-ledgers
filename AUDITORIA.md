@@ -22512,5 +22512,51 @@ para quien venga: de las TRES cifras que los documentos vivos citan, **solo
 la primera tiene compuerta** —`check_cifras` reconoce un TOTAL por la cifra
 pegada a «tests» o «pruebas», y ni «979 contando los pines» ni «993
 declarados» lo estan—; el 979 si esta en el conjunto de sumas posibles y
-nunca se le compara, y el 993 **no lo deriva nadie**: su +1 es RAZONADO, no
-medido.
+nunca se le compara. **⚠ Y hasta aqui llego un error, corregido en el §303 y
+CITADO en vez de borrado (§247)**: este parrafo decia que «el 993 **no lo
+deriva nadie**: su +1 es RAZONADO, no medido». **Falso, y lo desmintio el
+canon de este mismo corte**: `tools/check_tests.py` imprime «994 tests
+declarados» en cada corrida. La cifra SI se deriva —y la deriva justo el
+instrumento del caso 22, del que ya consta que ve de MAS—; lo que falta es
+el ATADO entre ese numero y la prosa, que es otra cosa y peor.
+
+## §303 — una ausencia se afirma midiendo: la cifra que si la derivaba alguien
+
+**Que.** El asiento del §302 afirmo que una de las tres cifras que citan los
+documentos vivos «no la deriva nadie» y que su +1 era RAZONADO. **Es falso**,
+y lo desmintio el canon del propio §302-C en la misma corrida que sello el
+corte: `tools/check_tests.py` imprime **«994 tests declarados»**. La frase se
+CITA arriba, en el parrafo que se contradice, y no se borra (§247). Este
+corte no toca codigo ni mueve una sola cifra: repara el registro.
+
+**⚠⚠ La raiz es la de siempre, y esta vez la victima fue una HERRAMIENTA
+ENTERA.** El §299, el §300 y el §301 la escribieron tres veces: **un
+identificador ajeno afirmado SIN ABRIR SU FUENTE**. Aqui no fue un flag de
+otro binario ni una variante de enum: fue dar por hecho que ninguna
+herramienta derivaba esa cifra **sin haber mirado `tools/canon.sh:233`**,
+donde `check_tests.py` lleva corriendo desde mucho antes de este tramo. **Una
+AUSENCIA se afirma midiendo, igual que una presencia**, y se cuela mas facil:
+un censo vacio no parece un error, parece un hallazgo.
+
+**Lo que si es cierto, y es peor que lo que se escribio.** El 994 lo deriva
+`check_tests.py`, que es el instrumento del **caso 22** de la familia «la
+forma del instrumento decide el numero»: el que cuenta llaves SIN excluir
+literales y del que ya consta —medido en el §301— que **ve de MAS, no de
+menos**. O sea: la cifra existe, se recalcula en cada corrida, y **la produce
+el unico contador de la casa del que hay constancia de que puede contar de
+mas**. Lo que falta no es el numero, es el **ATADO** entre ese numero y la
+prosa: `check_cifras` no lo mira porque su reconocedor de TOTALES exige la
+cifra **pegada** a «tests» o «pruebas», y «993 declarados» —ahora 994— no lo
+esta. Mismo estatus para el 979, con el agravante de que ese **si** entra en
+el conjunto de sumas posibles y aun asi nunca se le compara.
+
+**Un universo mas para el 115 sin dueño.** `tools/check_modulos.py` reporta
+**114 ficheros `.rs` bajo `src/`, todos declarados por su padre**. Es el
+SEPTIMO censo distinto y tampoco da el 115: git 153, bajo `/src/` 134,
+`crates/zk-ssl*` 66, la linea resumen del canon 115, y ahora este 114. Se
+anota aqui porque quien lo persiga necesita **la lista de universos ya
+descartados**, no volver a recorrerlos.
+
+**Contadores.** Ninguno se mueve: ni pines, ni sumas, ni cifras por-crate, ni
+`.rs`, ni Cargo. BACKLOG QUIETO en 41/54 — la **95** sigue abierta y este
+corte no la toca. Un solo fichero: `AUDITORIA.md`.
