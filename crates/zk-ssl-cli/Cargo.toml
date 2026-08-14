@@ -36,3 +36,15 @@ anyhow = "1"
 # §243 a menor escala.
 zk-ssl-verify = { path = "../zk-ssl-verify" }
 ureq = { version = "2.10", features = ["json"] }
+
+# ⚠️ **El COFIRMANTE** (§299). El testigo ya no solo mira: firma, y para
+# firmar necesita el GUARDIAN del indice —**el mismo crate que usa el nodo**
+# (§296, §298), no una copia: dos implementaciones del mismo invariante
+# pueden discrepar, y aqui discrepar significa filtrar una clave (§253)— y
+# `xmss` para la clave propia.
+#
+# ⚠️ Esto NO rompe §243: lo prohibido es depender de la CAPA o del NODO.
+# El guardian no tiene dependencias y `xmss` ya llegaba de forma transitiva
+# por `zk-ssl-verify`; declararla aqui la hace explicita, no nueva.
+zk-ssl-guardian = { path = "../zk-ssl-guardian" }
+xmss = "=0.1.0-pre.0"

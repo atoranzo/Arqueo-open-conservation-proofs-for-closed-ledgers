@@ -120,7 +120,12 @@ use clap::Args;
 use serde_json::{json, Value};
 // ⚠️ Import EXPLICITO, nunca glob: `zk-ssl-verify` reexporta **su propio**
 // `Veredicto` (el de `reverificacion`, §279), homonimo del de este modulo.
-use zk_ssl_verify::{mmr, verificar_cabeza, CabezaFirmada};
+use xmss::KeyPair;
+use zk_ssl_guardian::{GuardianError, GuardianIndice, Reconciliacion};
+use zk_ssl_verify::{
+    mmr, preambulo_cofirma, verificar_cabeza, verificar_cofirma, CabezaFirmada, Conjunto,
+    VerificaError, VERSION_FORMATO,
+};
 
 /// Lo que el testigo concluye de cada consulta.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1300,6 +1305,195 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+//  §299 · EL COFIRMANTE: el testigo tambien firma
+//
+//  ⚠️ Hasta aqui el testigo solo MIRABA. Cofirmar lo convierte en parte
+//  interesada: hereda **las mismas obligaciones que audita** —guardian del
+//  indice (§234), custodia declarada (nota 92), transicion firmada al
+//  rotar (nota 84)— y **duplica la superficie de esas notas**. Eso esta
+//  declarado en el asiento, no de perfil.
+//
+//  ⚠️ El objeto que se firma lo definio el §297 y **un tercero ya podia
+//  verificarlo antes de que existiera ninguno**: `preambulo_cofirma` y
+//  `verificar_cofirma` viven en `zk-ssl-verify`, no aqui.
+// ═══════════════════════════════════════════════════════════════════════
+
+// ⚠️⚠️ **MUERTO A PROPOSITO HASTA EL §300.** El bucle todavia no cofirma
+// —el mando va aparte para que este corte sea auditable—, asi que
+// `cargo build` ve la pieza sin llamantes. Los TESTS si la usan, por eso
+// `cargo test` casi no se queja: es la ceguera (b) de la nota 94 vista
+// desde el otro lado, y aqui la estructura del corte la provoca.
+//
+// ⚠️ **Este `allow` LO QUITA EL §300**, y su asiento lo declara. Un `allow`
+// sin fecha de caducidad se queda para siempre — y entonces tapa el
+// dead_code de verdad que venga despues.
+#[allow(dead_code)]
+#[derive(Debug)]
+pub enum CofirmaError {
+    Guardian(GuardianError),
+    /// El crate `xmss` rechazo la operacion. Incluye `KeyExhausted`.
+    Xmss(String),
+    /// La cofirma recien hecha no verifica, o verifica contra otra cosa.
+    Verifica(VerificaError),
+    /// ⚠️ **No hay clave anclada, asi que no hay a quien atestiguar.**
+    SinAncla,
+    /// El hex de la clave anclada no se pudo leer.
+    ClaveIlegible(String),
+}
+
+impl From<GuardianError> for CofirmaError {
+    fn from(e: GuardianError) -> Self {
+        CofirmaError::Guardian(e)
+    }
+}
+
+impl From<VerificaError> for CofirmaError {
+    fn from(e: VerificaError) -> Self {
+        CofirmaError::Verifica(e)
+    }
+}
+
+impl core::fmt::Display for CofirmaError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            CofirmaError::Guardian(e) => write!(f, "cofirmante: {e}"),
+            CofirmaError::Xmss(e) => write!(f, "cofirmante: xmss rechazo: {e}"),
+            CofirmaError::Verifica(e) => write!(f, "cofirmante: {e}"),
+            CofirmaError::SinAncla => write!(
+                f,
+                "cofirmante: el testigo no ha anclado ninguna clave todavia, \
+                 asi que no hay operador a quien atestiguar. Una cofirma sin \
+                 ancla no diria de QUIEN es la cabeza."
+            ),
+            CofirmaError::ClaveIlegible(e) => write!(f, "cofirmante: clave anclada ilegible: {e}"),
+        }
+    }
+}
+
+impl std::error::Error for CofirmaError {}
+
+/// **El cofirmante del testigo.** Clave XMSS propia y guardian del indice.
+///
+/// ⚠️ El guardian es **el mismo crate que usa el nodo** (§296, §298), no
+/// una copia: dos implementaciones del mismo invariante pueden discrepar, y
+/// aqui discrepar significa **filtrar una clave**.
+///
+/// ⚠️⚠️ **NO implementa `Debug`, y es a proposito.** Dentro vive un
+/// `KeyPair`: **material de clave**. Un `Debug` derivado por comodidad
+/// acaba en un log el dia que alguien depure con `{:?}`, y entonces la
+/// clave privada del testigo esta en un fichero de texto. `FirmanteCabeza`
+/// tampoco lo deriva. Si un test necesita formatear un fallo, que formatee
+/// **el error**, que si lo implementa.
+#[allow(dead_code)]
+pub struct Cofirmante {
+    par: KeyPair<Conjunto>,
+    guardian: GuardianIndice,
+}
+
+#[allow(dead_code)]
+impl Cofirmante {
+    /// ⚠️ **La semilla es material de clave.** De donde sale y quien la
+    /// guarda es **decision de despliegue**, y no esta tomada (nota 92).
+    ///
+    /// ⚠️ El layout del SK se comprueba **AL ABRIR**, no al firmar: si
+    /// upstream cambio la serializacion, es mejor no arrancar que firmar y
+    /// anotar mal. Es el molde de `firma_cabeza` (§234), con la lectura ya
+    /// compartida desde el §298.
+    pub fn desde_semilla(
+        semilla: &[u8],
+        ruta_contador: impl AsRef<std::path::Path>,
+    ) -> Result<Self, CofirmaError> {
+        let guardian = GuardianIndice::abrir(ruta_contador)?;
+        let par = KeyPair::<Conjunto>::from_seed(semilla)
+            .map_err(|e| CofirmaError::Xmss(format!("{e:?}")))?;
+        let mut c = Cofirmante { par, guardian };
+        let _ = c.indice_de_la_clave()?;
+        Ok(c)
+    }
+
+    /// La clave publica del TESTIGO, tal como la publicaria.
+    pub fn clave_publica(&mut self) -> Vec<u8> {
+        self.par.verifying_key().as_ref().to_vec()
+    }
+
+    /// El indice que la clave dice tener, leido de su SK.
+    ///
+    /// ⚠️ `&mut` porque `signing_key()` de `xmss` lo exige, como en el molde
+    /// del nodo. No es capricho de esta funcion.
+    pub fn indice_de_la_clave(&mut self) -> Result<u64, CofirmaError> {
+        Ok(zk_ssl_guardian::indice_de_sk(self.par.signing_key().as_ref())?)
+    }
+
+    /// Compara el contador con el indice real de la clave.
+    ///
+    /// ⚠️ [`Reconciliacion::ContadorAdelantado`] es **el caso normal tras
+    /// una caida**, no la excepcion: K.1 lo midio en 13 de 25.
+    pub fn reconciliar(&mut self) -> Result<Reconciliacion, CofirmaError> {
+        // ⚠️ En dos pasos a proposito: `self.guardian.reconciliar(...)` con
+        //    `self.indice_de_la_clave()` dentro toma `self` prestado DOS
+        //    veces a la vez y no compila.
+        let i = self.indice_de_la_clave()?;
+        Ok(self.guardian.reconciliar(i))
+    }
+
+    /// **Reserva el indice y luego firma. Ese orden es la pieza.**
+    ///
+    /// ⚠️ Y despues **se verifica a si misma** con el mismo verificador que
+    /// usara el tercero: 2,4 ms sobre 144,5 es el 1,7 %, y una firma que no
+    /// verifica no debe salir de aqui creyendose buena.
+    pub fn cofirmar(
+        &mut self,
+        epoch_digest: &[u8; 32],
+        clave_del_operador: &[u8],
+    ) -> Result<CabezaFirmada, CofirmaError> {
+        // ── 1 · persistir con fsync ANTES de firmar ──
+        let indice = self.guardian.reservar()?;
+        // ── 2 · y solo entonces gastar el indice de la clave ──
+        let pre = preambulo_cofirma(VERSION_FORMATO, epoch_digest, clave_del_operador)?;
+        let sig = self
+            .par
+            .signing_key()
+            .sign(&pre)
+            .map_err(|e| CofirmaError::Xmss(format!("{e:?}")))?;
+        let c = CabezaFirmada {
+            version_formato: VERSION_FORMATO,
+            indice,
+            firma: sig.as_ref().to_vec(),
+        };
+        // ── 3 · y NO se devuelve sin comprobarla ──
+        let pk = self.clave_publica();
+        verificar_cofirma(&pk, epoch_digest, clave_del_operador, &c)?;
+        Ok(c)
+    }
+
+    /// **Cofirma bajo la clave que el testigo ANCLO**, no bajo la que venga
+    /// en el mensaje.
+    ///
+    /// ⚠️⚠️ **Esta funcion es la decision, escrita en el tipo.** Misma
+    /// doctrina que §294 —el testigo dejo de creerse el `epochDigest` y paso
+    /// a recomponerlo—: **no firmes lo que te dan, firma lo que anclaste**.
+    ///
+    /// ⚠️ Y **falla CERRADA**: sin ancla no hay nada que escribir en el
+    /// preambulo, asi que la cofirma es IMPOSIBLE, no aproximada. Hoy la
+    /// clave anclada y la recibida coinciden en valor —`anclar()` corre
+    /// antes y `CambioDeClave` detiene—, pero **el orden es una convencion y
+    /// el tipo es una garantia**: si algun dia alguien reordena las
+    /// llamadas, esto sigue negandose y la otra version firmaria lo que le
+    /// pusieran delante.
+    pub fn cofirmar_lo_anclado(
+        &mut self,
+        m: &Memoria,
+        epoch_digest: &[u8; 32],
+    ) -> Result<CabezaFirmada, CofirmaError> {
+        let hex = m.clave_fijada().ok_or(CofirmaError::SinAncla)?;
+        // ⚠️ Se reusa el lector del cable en vez de escribir otro: un
+        //    segundo lector de hex es una segunda forma de equivocarse.
+        let bytes = leer_hex(&json!(hex)).map_err(CofirmaError::ClaveIlegible)?;
+        self.cofirmar(epoch_digest, &bytes)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1970,5 +2164,161 @@ mod tests {
         assert!(leer_hex(&json!("0xzz")).is_err(), "no es hex");
         assert!(leer_hex(&json!(7)).is_err(), "no es cadena");
         assert_eq!(leer_hex(&json!("0x0a1b")).expect("hex"), vec![0x0a, 0x1b]);
+    }
+
+    // ── §299 · el COFIRMANTE ──
+
+    /// ⚠️ En `target/`, no en `temp_dir()`: el guardian **se niega a operar
+    /// en tmpfs** (§234, K.1) y `/tmp` suele serlo.
+    fn en_disco(nombre: &str) -> std::path::PathBuf {
+        let d = std::path::PathBuf::from("target").join("cofirmante_tests");
+        std::fs::create_dir_all(&d).expect("crear");
+        let p = d.join(nombre);
+        let _ = std::fs::remove_file(&p);
+        p
+    }
+
+    fn semilla_testigo() -> [u8; 96] {
+        let mut s = [0u8; 96];
+        for (i, b) in s.iter_mut().enumerate() {
+            *b = (i as u8).wrapping_mul(31).wrapping_add(9);
+        }
+        s
+    }
+
+    /// Una clave de operador cualquiera, con la forma de una de verdad.
+    fn clave_operador() -> Vec<u8> {
+        let mut s = [0u8; 96];
+        for (i, b) in s.iter_mut().enumerate() {
+            *b = (i as u8).wrapping_mul(17).wrapping_add(4);
+        }
+        // ⚠️ Sin `mut`: aqui solo se LEE la clave publica. Con `mut` sale
+        //    `unused_mut` y el cli deja de estar en cero warnings.
+        let kp = KeyPair::<Conjunto>::from_seed(&s).expect("keygen");
+        kp.verifying_key().as_ref().to_vec()
+    }
+
+    #[test]
+    fn una_cofirma_recien_hecha_verifica_con_lo_publicado() {
+        let p = en_disco("verifica");
+        let mut c = Cofirmante::desde_semilla(&semilla_testigo(), &p).expect("abrir");
+        let op = clave_operador();
+        let d = [0x5Au8; 32];
+        let firmada = c.cofirmar(&d, &op).expect("cofirmar");
+        // Y un TERCERO la comprueba con lo publicado, sin el testigo.
+        let pk = c.clave_publica();
+        verificar_cofirma(&pk, &d, &op, &firmada).expect("un tercero debe poder");
+    }
+
+    #[test]
+    fn el_indice_se_reserva_antes_de_firmar_y_los_dos_avanzan() {
+        // ⚠️ EL INVARIANTE: ninguna firma puede existir con un indice mayor
+        //    que el contador persistido. Por eso se reserva PRIMERO.
+        let p = en_disco("orden");
+        let mut c = Cofirmante::desde_semilla(&semilla_testigo(), &p).expect("abrir");
+        assert_eq!(c.indice_de_la_clave().expect("indice"), 0, "clave nueva en 0");
+        let op = clave_operador();
+        let a = c.cofirmar(&[1u8; 32], &op).expect("una");
+        let b = c.cofirmar(&[2u8; 32], &op).expect("dos");
+        assert_ne!(a.indice, b.indice, "dos cofirmas NO repiten indice");
+        assert_eq!(c.indice_de_la_clave().expect("indice"), 2, "la clave gasto dos");
+    }
+
+    #[test]
+    fn sin_ancla_no_se_puede_cofirmar() {
+        // ⚠️⚠️ LA DECISION, EN EL TIPO. Una memoria recien nacida no tiene
+        //    clave anclada, asi que no hay operador a quien atestiguar y la
+        //    cofirma es IMPOSIBLE — no aproximada.
+        let p = en_disco("sin_ancla");
+        let mut c = Cofirmante::desde_semilla(&semilla_testigo(), &p).expect("abrir");
+        let m = Memoria::nueva();
+        assert!(m.clave_fijada().is_none());
+        match c.cofirmar_lo_anclado(&m, &[3u8; 32]) {
+            Err(CofirmaError::SinAncla) => {}
+            otro => panic!("sin ancla debe negarse, y dio: {otro:?}"),
+        }
+    }
+
+    #[test]
+    fn la_cofirma_sale_bajo_la_clave_anclada_no_bajo_otra() {
+        // ⚠️⚠️ El testigo firma LO QUE ANCLO. Se ancla una clave, se cofirma
+        //    por la via de la memoria, y la cofirma resultante verifica
+        //    contra ESA y **no** contra otra distinta.
+        let p = en_disco("anclada");
+        let mut c = Cofirmante::desde_semilla(&semilla_testigo(), &p).expect("abrir");
+        let op = clave_operador();
+        let hex: String = op.iter().map(|b| format!("{b:02x}")).collect();
+        let mut m = Memoria::nueva();
+        assert!(m.anclar(&format!("0x{hex}")).is_none(), "el primer anclaje no alarma");
+        let d = [0x7Eu8; 32];
+        let firmada = c.cofirmar_lo_anclado(&m, &d).expect("cofirmar");
+        let pk = c.clave_publica();
+        verificar_cofirma(&pk, &d, &op, &firmada).expect("verifica bajo la anclada");
+        let mut otra = op.clone();
+        otra[10] ^= 0x01;
+        assert!(
+            verificar_cofirma(&pk, &d, &otra, &firmada).is_err(),
+            "no puede valer para otro operador"
+        );
+    }
+
+    #[test]
+    fn el_cofirmante_hereda_la_negativa_en_tmpfs() {
+        // ⚠️ El guardian no arranca donde `fsync` no persiste, y el testigo
+        //    hereda esa negativa ENTERA: es la misma implementacion (§296).
+        let p = std::path::PathBuf::from("/dev/shm").join("cofirma_tmpfs.bin");
+        if !std::path::Path::new("/dev/shm").is_dir() {
+            return; // sin tmpfs a mano, no hay nada que probar
+        }
+        let _ = std::fs::remove_file(&p);
+        match Cofirmante::desde_semilla(&semilla_testigo(), &p) {
+            Err(CofirmaError::Guardian(GuardianError::PersistenciaFalsa { .. })) => {}
+            // ⚠️ Los dos modos de fallo, separados. Y el `Ok` NO se formatea:
+            //    `Cofirmante` no implementa `Debug` A PROPOSITO (ver su doc).
+            Err(otro) => panic!("en tmpfs debe negarse por PersistenciaFalsa, y dio: {otro:?}"),
+            Ok(_) => panic!("en tmpfs NO debe arrancar: fsync no persiste nada ahi"),
+        }
+    }
+
+    #[test]
+    fn reconciliar_ve_el_contador_y_la_clave_a_la_par() {
+        // ⚠️ Tras una caida, el contador puede ir POR DELANTE de la clave:
+        //    K.1 lo midio en 13 de 25. Aqui, sin caida, van a la par.
+        let p = en_disco("reconciliar");
+        let mut c = Cofirmante::desde_semilla(&semilla_testigo(), &p).expect("abrir");
+        assert!(
+            matches!(c.reconciliar().expect("reconciliar"), Reconciliacion::Coincide { indice: _ }),
+            "una clave nueva y un contador nuevo COINCIDEN"
+        );
+        c.cofirmar(&[4u8; 32], &clave_operador()).expect("cofirmar");
+        assert!(
+            matches!(c.reconciliar().expect("reconciliar"), Reconciliacion::Coincide { indice: _ }),
+            "tras una cofirma limpia siguen a la par"
+        );
+    }
+
+    #[test]
+    fn el_error_dice_que_paso_y_se_puede_leer() {
+        // Debug, Display y Error desde que nace (§228, §234, §241).
+        let e = CofirmaError::SinAncla;
+        assert!(format!("{e}").contains("no ha anclado"));
+        assert!(!format!("{e:?}").is_empty());
+        let _: &dyn std::error::Error = &e;
+    }
+
+    #[test]
+    fn una_cofirma_no_es_una_firma_de_cabeza() {
+        // ⚠️ Dominios distintos: la cofirma del testigo NO puede presentarse
+        //    como cabeza del operador, aunque el digest sea el mismo.
+        let p = en_disco("dominios");
+        let mut c = Cofirmante::desde_semilla(&semilla_testigo(), &p).expect("abrir");
+        let op = clave_operador();
+        let d = [0x11u8; 32];
+        let firmada = c.cofirmar(&d, &op).expect("cofirmar");
+        let pk = c.clave_publica();
+        assert!(
+            verificar_cabeza(&pk, &d, &firmada).is_err(),
+            "una cofirma no vale como cabeza: el dominio es otro"
+        );
     }
 }

@@ -22156,3 +22156,85 @@ Ningun Cargo tocado: el del cli gana `zk-ssl-guardian` y `xmss` en el
 §299, cuando haya quien los use — anadir dependencias que nadie usa es
 ruido. BACKLOG QUIETO en 40/54: esto no cierra ni abre nota, es la
 precondicion de la precondicion.
+
+## §299 — el cofirmante: el testigo tambien firma, y lo que firma es lo que anclo
+
+**Que.** `Cofirmante` en `cli/src/witness.rs`: clave XMSS propia, el guardian
+del indice **compartido con el nodo** (§296, §298) y `cofirmar()`. Con esto
+el testigo deja de solo mirar. **El bucle NO se toca**: el mando, el diario
+y el banco vivo son el §300, y separarlos deja auditable lo que de verdad
+importa aqui — QUE se firma y COMO se protege el indice.
+
+**El orden es la pieza.** `cofirmar()` hace tres cosas y en este orden:
+**(1) reserva el indice con `fsync`**, **(2) firma** el preambulo que el
+§297 definio, y **(3) verifica su propia salida** con `verificar_cofirma`
+—el mismo verificador que usara el tercero—. El (1) antes que el (2) es el
+invariante entero: **ninguna firma puede existir con un indice mayor que el
+contador persistido**. El (3) cuesta 2,4 ms sobre 144,5 —el 1,7 %— y evita
+que salga de aqui una firma que no verifica creyendose buena.
+
+**La decision, escrita en el TIPO.** `cofirmar_lo_anclado()` no toma la
+clave del mensaje: la saca de la que el testigo **anclo** (TOFU, §245).
+Misma doctrina que §294, donde el testigo dejo de creerse el `epochDigest`
+y paso a recomponerlo: **no firmes lo que te dan, firma lo que anclaste**.
+Y **falla CERRADA**: `clave_fijada` es un `Option`, asi que sin ancla no hay
+nada que escribir en el preambulo y la cofirma es **IMPOSIBLE**, no
+aproximada. Hoy la anclada y la recibida coinciden en valor —`anclar()`
+corre antes y `CambioDeClave` detiene—, asi que esto va como **RAZONADO**:
+la diferencia protege contra un reordenamiento futuro, porque **el orden es
+una convencion y el tipo es una garantia**. Lo hace cumplir
+`sin_ancla_no_se_puede_cofirmar`.
+
+**⚠⚠ `Cofirmante` NO implementa `Debug`, y es a proposito.** Dentro vive un
+`KeyPair`: **material de clave**. Un `Debug` derivado por comodidad acaba en
+un log el dia que alguien depure con `{:?}`, y entonces la clave privada del
+testigo esta en un fichero de texto. `FirmanteCabeza` tampoco lo deriva. **Lo
+descubrio `cargo`**: un test formateaba un `Result<Cofirmante, _>`; se
+arreglo **el test** —que ademas quedo mejor, separando los dos modos de
+fallo— y **no el struct**. Hay un INERTE que vigila que nadie lo derive.
+
+**Lo que este corte NO hace, y por que se declara.** El testigo **no cofirma
+todavia**: la pieza existe y esta probada, pero **nadie la llama fuera de los
+tests**. Eso da `dead_code` en `cargo build`, y **es estructural**: una pieza
+construida en un sello y consumida en el siguiente siempre lo da. Las
+salidas malas eran borrarla —la pieza ES el corte— o adelantar el mando
+—que rompe la auditabilidad—. Va un `#[allow(dead_code)]` **declarado y con
+fecha de caducidad escrita al lado: LO QUITA EL §300**. Un allow sin
+caducidad se queda para siempre, y entonces tapa el dead_code de verdad que
+venga despues.
+
+**Lo que el testigo HEREDA al firmar, dicho sin adornos.** Deja de ser un
+observador y pasa a ser parte interesada: **las mismas obligaciones que
+audita**. El guardian del indice (§234), la custodia declarada de su clave
+(**nota 92**, que sigue sin procedimiento de emergencia) y la transicion
+firmada al rotar (**nota 84**: rotar sin ella **rompe a todos los testigos
+honestos**). **Un segundo firmante DUPLICA la superficie de esas notas**, y
+las dos piden cortarse juntas con la 19. Esto no lo cierra el §299.
+
+**Donde toco, y lo que NO.** Solo `cli/src/witness.rs` y el `Cargo.toml` del
+cli, que gana `zk-ssl-guardian` y `xmss`. **Las dos lineas se COPIARON del
+Cargo del nodo, no se tecleraron**: la version de `xmss` esta clavada alli
+(`=0.1.0-pre.0`, sin auditoria independiente) y teclearla seria una segunda
+fuente. Esto **no rompe §243**: lo prohibido es depender de la CAPA o del
+NODO; el guardian no tiene dependencias y `xmss` ya llegaba de forma
+transitiva por `zk-ssl-verify` — declararla la hace explicita, no nueva. El
+lock **no gano ni perdio paquetes**, y se comprobo.
+
+**Cinco rojos propios, escritos porque un rojo que no se escribe se
+repite.** (1) Un gate exigia la AUSENCIA de `clave_fijada()` —que YA
+EXISTIA— y la pieza iba a duplicar el metodo: el gate murio limpio y con
+razon. **Se descubrio porque el ensayo del asistente probaba el parche y los
+INERTES pero NO LOS GATES**, que son la mitad del bloque. (2) Un INERTE
+contaba MENCIONES de `xmss` en el Cargo (3) donde debia contar la
+DECLARACION (1) — **y las dos sobrantes las escribe el comentario que este
+mismo bloque anade**. (3) El `Debug` de arriba. (4) El `dead_code`
+estructural. (5) `Reconciliacion::Coinciden` escrito de memoria cuando la
+variante es `Coincide`, **teniendo el fichero del guardian delante**. De ahi
+sale un chequeo nuevo: **todo identificador tomado de otro crate se
+comprueba contra el fichero de ese crate antes de emitir**.
+
+**Contadores.** `zk-ssl-cli` 43 -> 51 (8 tests). Sumas 827/964/978 ->
+**835/972/986**, y la cifra POR-CRATE del testigo en `PRINCIPIOS.md`,
+43 -> 51, **en el mismo bloque que el pin** — tres sellos seguidos murieron
+por separarlas. Ningun `.rs` nuevo. BACKLOG QUIETO en 40/54: **el tramo (ii)
+sigue abierto** y la 83 no recibe cumplido aqui.
