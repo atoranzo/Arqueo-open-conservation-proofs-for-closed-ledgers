@@ -22090,3 +22090,69 @@ esta cerrado**, y la 83 no recibe cumplido en este sello.
 **827/964/978**; la cifra POR-CRATE del verificador en `PRINCIPIOS.md`,
 48 -> 55. **Ningun Cargo tocado**; ningun `.rs` nuevo. BACKLOG QUIETO en
 40/54: la **94** se AMPLIA —no se abre nada— con dos cegueras mas.
+
+## §298 — la lectura del indice se muda al guardian: el invariante no se parte
+
+**Que.** `indice_de_sk` —y con ella `OID_BYTES`, `N`, `ancho_indice()` y el
+error de layout— pasa de `crates/zk-ssl-node/src/firma_cabeza.rs` a
+`crates/zk-ssl-guardian`. Es el hermano pequeno del §296 y sale del mismo
+sitio: **lo compartible no era el CONTADOR, era el INVARIANTE ENTERO**.
+Reservar el indice, comprobar el layout del SK y reconciliar tras una caida
+son **la misma pieza**, y el §296 solo mudo la primera.
+
+**Por que aparece ahora y no en el §296.** Porque hasta que no hubo un
+SEGUNDO firmante a la vista —el testigo del §299— la mitad que faltaba no
+molestaba a nadie. Al ir a montarlo, las opciones eran tres y dos eran
+malas: **(a)** reimplementar la lectura del layout en el cli —dos lecturas
+del mismo formato que pueden discrepar, exactamente lo que §253 evito
+reusando este guardian entero—; **(b)** mudarla; **(c)** que el testigo
+firme sin esa proteccion, que es dejarle abierto **el agujero que la nota
+92 tiene declarado**, en la pieza construida para cerrarlo. Se eligio (b).
+
+**Que se muda y que NO.** Van la funcion, sus tres constantes, la variante
+`LayoutInesperado` con su `Display` y **dos de sus tres tests**: el del
+acarreo —que prueba el lector exhaustivamente en vez de firmar 256 veces,
+37 s medidos— y el del SK de otro tamano. **El tercero se queda en el
+nodo**: `el_sk_real_mide_137_y_el_indice_esta_donde_se_midio` necesita una
+clave XMSS de verdad, y **el guardian no depende de `xmss` ni debe**. Tras
+la mudanza sus cuatro `use` siguen siendo todos de `std`: el crate sigue
+**sin una sola dependencia**, porque leer un indice es aritmetica de
+offsets sobre `&[u8]`.
+
+**El censo que protegio la mudanza.** Mover una funcion publica rompe a
+quien la llame, y **no habia censo de sus llamantes**. En vez de suponerlo,
+el bloque lo mide **por fichero en todo el arbol** (§282) y muere
+nombrando al culpable si aparece uno fuera del fichero que se muda. Dijo lo
+que hacia falta: `indice_de_sk` solo vivia ahi.
+
+**⚠️ Un fallo de compilacion que ningun gate habria visto, cazado por el
+ENSAYO.** `indice_de_la_clave()` devolvia `indice_de_sk(...)` **sin `?`**.
+Al cambiar el tipo del error —`GuardianError` en vez de `FirmaError`— eso
+**deja de compilar**: existe el `impl From`, pero hay que invocarlo. En el
+contenedor del asistente no hay `cargo`, asi que no podia saltar por
+compilacion; salto **leyendo el codigo contra los bytes reales**, que es
+para lo que sirve reconstruir el fichero byte a byte antes de tocarlo. Las
+dos huellas del POST salieron identicas a las del ensayo.
+
+**Ejercitado.** Los 11 tests del guardian —los 9 suyos mas los 2 mudados—
+y los 71 del nodo, todos en release. El build del guardian, en CERO
+warnings. El del nodo, contra el **techo heredado de 5 lineas** (nota 94):
+no empeora, que es el liston correcto para una deuda con dueno declarado.
+
+**El rojo de este corte, escrito porque es el TERCERO igual.** El pin del
+nodo se movio y **la cifra POR-CRATE de `PRINCIPIOS.md` se quedo en 73**:
+el canon lo canto tras 153 s. Es el mismo rojo que §296 («82 del nodo») y
+§297 («48 del verificador»), y la causa siempre es el mismo salto de
+razonamiento: **«las sumas no se mueven» no implica «ningun documento se
+toca»**. Lo que faltaba no era saberlo —estaba escrito— sino el
+INSTRUMENTO: **un bloque que mueve un pin por-crate corre `check_cifras`
+como gate barato ANTES del canon**, que lo habria dicho en dos segundos.
+Queda como regla del oficio: **pin por-crate y cifra por-crate se mueven
+en el MISMO bloque**.
+
+**Contadores.** `zk-ssl-node` 73 -> 71; `zk-ssl-guardian` 9 -> 11. **Las
+sumas NO se mueven — 827/964/978—: los dos tests se MUDAN, no nacen.**
+Ningun Cargo tocado: el del cli gana `zk-ssl-guardian` y `xmss` en el
+§299, cuando haya quien los use — anadir dependencias que nadie usa es
+ruido. BACKLOG QUIETO en 40/54: esto no cierra ni abre nota, es la
+precondicion de la precondicion.

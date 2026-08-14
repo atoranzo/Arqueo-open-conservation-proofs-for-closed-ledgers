@@ -46,7 +46,7 @@ use xmss::KeyPair;
 // ⚠️ §296: el guardian vive en su propio crate. El nodo y el TESTIGO
 // comparten LA MISMA implementacion — dos del mismo invariante pueden
 // discrepar, y aqui discrepar significa FILTRAR UNA CLAVE (§253, §243).
-use zk_ssl_guardian::{GuardianError, GuardianIndice, Reconciliacion};
+use zk_ssl_guardian::{indice_de_sk, GuardianError, GuardianIndice, Reconciliacion};
 
 // ⚠️ Reexportado, no reimplementado: la verificación vive en `zk-ssl-verify`
 // y quien la usaba desde aquí (main.rs, latido.rs) no cambia.
@@ -55,18 +55,12 @@ pub use zk_ssl_verify::{
     FIRMA_RFC_BYTES, VERSION_FORMATO,
 };
 
-/// Bytes del OID al principio del SK, en el formato de referencia.
-const OID_BYTES: usize = 4;
-/// Longitud del hash del conjunto `_256`.
-const N: usize = 32;
 
 #[derive(Debug)]
 pub enum FirmaError {
     Guardian(GuardianError),
     /// El crate `xmss` rechazó la operación. Incluye `KeyExhausted`.
     Xmss(String),
-    /// El SK no tiene la forma esperada: la serialización de upstream cambió.
-    LayoutInesperado { sk_len: usize, esperado: usize },
     /// La firma recién hecha no verifica, o verifica contra otra cosa.
     Verifica(VerificaError),
 }
@@ -77,12 +71,6 @@ impl std::fmt::Display for FirmaError {
             FirmaError::Guardian(e) => write!(f, "firmante: {e}"),
             FirmaError::Xmss(e) => write!(f, "firmante: xmss rechazó: {e}"),
             FirmaError::Verifica(e) => write!(f, "firmante: {e}"),
-            FirmaError::LayoutInesperado { sk_len, esperado } => write!(
-                f,
-                "firmante: el SK mide {sk_len} bytes y se esperaban {esperado}. \
-                 La serialización de `xmss` ha cambiado: el índice ya no está \
-                 donde se midió, y leerlo daría un valor falso."
-            ),
         }
     }
 }
@@ -102,30 +90,11 @@ impl From<VerificaError> for FirmaError {
     }
 }
 
-/// Ancho del índice en bytes: ⌈h/8⌉ = 5 para `h = 40`.
-const fn ancho_indice() -> usize {
-    5
-}
-
-/// Lee el índice del SK: bytes `[4, 9)` en **big-endian**.
-///
-/// ⚠️ **El offset y el ancho están MEDIDOS** (S.3), no deducidos: el SK mide
-/// **137 bytes** = OID(4) + índice(5) + 4×32, y al firmar cambia el byte 8
-/// —el menos significativo de un entero big-endian que ocupa [4, 9)—.
-///
-/// ⚠️ La evaluación registró «SK = 136 B, índice de 4 bytes»: eso es del
-/// conjunto de **árbol único**. Para el elegido son **137 y 5** (§236).
-pub fn indice_de_sk(sk: &[u8]) -> Result<u64, FirmaError> {
-    let esperado = OID_BYTES + ancho_indice() + 4 * N;
-    if sk.len() != esperado {
-        return Err(FirmaError::LayoutInesperado { sk_len: sk.len(), esperado });
-    }
-    let mut v = 0u64;
-    for b in &sk[OID_BYTES..OID_BYTES + ancho_indice()] {
-        v = (v << 8) | *b as u64;
-    }
-    Ok(v)
-}
+// ⚠️ §298 · **La lectura del índice YA NO VIVE AQUÍ.** Se mudó a
+// `zk-ssl-guardian`, junto al contador que protege: reservar, comprobar el
+// layout y reconciliar son **la misma pieza**, y el TESTIGO (§299) necesita
+// las tres. Tenerla partida le habría obligado a reimplementar la lectura
+// del layout —dos lecturas del mismo formato que pueden discrepar (§253)—.
 
 /// Firma cabezas, con el guardián del índice delante.
 pub struct FirmanteCabeza {
@@ -179,7 +148,9 @@ impl FirmanteCabeza {
 
     /// El índice que la clave dice tener, leído de su SK.
     pub fn indice_de_la_clave(&mut self) -> Result<u64, FirmaError> {
-        indice_de_sk(self.par.signing_key().as_ref())
+        // ⚠️ §298: la lectura vive en el guardián y su error es el suyo. El
+        // `?` lo convierte con el `From` de arriba — sin él no compila.
+        Ok(indice_de_sk(self.par.signing_key().as_ref())?)
     }
 
     /// Compara el contador con el índice real de la clave.
@@ -229,39 +200,9 @@ mod tests {
 
     // ── el layout del SK: MEDIDO, y probado sin gastar 37 s ──
 
-    #[test]
-    fn el_lector_del_indice_maneja_el_acarreo() {
-        // ⚠️ EL TEST DE LAYOUT, mitad sintetica. Firmar 256 veces contra la
-        // clave real costaria **37 s medidos** (256 x 144,5 ms). El acarreo
-        // es una propiedad del LECTOR, y aqui se prueba exhaustivamente.
-        let largo = OID_BYTES + ancho_indice() + 4 * N;
-        let mut sk = vec![0u8; largo];
-        for (bytes, esperado) in [
-            ([0, 0, 0, 0, 1u8], 1u64),
-            ([0, 0, 0, 1, 0], 256),
-            ([0, 0, 1, 0, 0], 65_536),
-            ([0, 1, 0, 0, 0], 16_777_216),
-            ([1, 0, 0, 0, 0], 4_294_967_296),
-            ([0xff, 0xff, 0xff, 0xff, 0xff], (1u64 << 40) - 1),
-        ] {
-            sk[OID_BYTES..OID_BYTES + 5].copy_from_slice(&bytes);
-            assert_eq!(indice_de_sk(&sk).expect("leer"), esperado, "bytes {bytes:02x?}");
-        }
-        assert_eq!((1u64 << 40) - 1, 1_099_511_627_775);
-    }
-
-    #[test]
-    fn un_sk_de_otro_tamano_se_rechaza_en_vez_de_leerse() {
-        // ⚠️ La otra mitad del test de layout: si upstream cambia la
-        // serializacion, **falla aqui y no en produccion**.
-        match indice_de_sk(&[0u8; 136]) {
-            Err(FirmaError::LayoutInesperado { sk_len, esperado }) => {
-                assert_eq!(sk_len, 136);
-                assert_eq!(esperado, 137, "OID(4) + indice(5) + 4x32 = 137");
-            }
-            otro => panic!("un SK de 136 bytes debe rechazarse, y dio: {otro:?}"),
-        }
-    }
+    // ⚠️ §298 · los dos tests del LAYOUT se mudaron con la pieza, a
+    // `zk-ssl-guardian`. El de abajo se queda: necesita una clave XMSS de
+    // verdad, y el guardian no depende de `xmss` — ni debe.
 
     // ── contra la clave real ──
 

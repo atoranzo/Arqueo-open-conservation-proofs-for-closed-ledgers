@@ -94,10 +94,10 @@ iso-bridge         sello       3   0   0   300
 zk-ssl-sdk         sello       6   0   0   300
 zk-ssl-wire        sello       3   0   0    60  §259: 20 metodos, y el json publicado atado a la tabla
 zk-ssl-cli         sello      43   0   0   120  alias=testigo · §250: 22 -> 26, la vista dividida EN FRIO · §294: 28 -> 39, la historia como segundo canal · §295: 39 -> 43, el banco del consumidor
-zk-ssl-node        sello      73   0   0   400  alias=nodo · §261: 51 -> 56, la credencial para los caminos · §292: 79 -> 80, la cima en el digest · §293: 80 -> 82, la extension servida · §296: 82 -> 73, el guardian se muda a su crate
+zk-ssl-node        sello      71   0   0   400  alias=nodo · §261: 51 -> 56, la credencial para los caminos · §292: 79 -> 80, la cima en el digest · §293: 80 -> 82, la extension servida · §296: 82 -> 73, el guardian se muda a su crate · §298: 73 -> 71, la lectura del indice se muda
 zk-ssl-verify      sello      55   0   0   120  alias=verificador independiente · §257: 22 -> 23, del cable a la cabeza sin la capa · §291: 39 -> 46, el MMR de cabezas · §292: 46 -> 48, la cima en el digest · §297: 48 -> 55, el objeto de la cofirma
 zk-ssl-hash        sello      24   0   0    60  §270: 14 -> 16, el acuse componible por un tercero · §292: 22 -> 24, la cima en el digest
-zk-ssl-guardian    sello       9   0   0    60  §296: el guardian del indice, MUDADO del nodo (sus 9 tests salen del pin 82)
+zk-ssl-guardian    sello       11   0   0    60  §296: el guardian del indice, MUDADO del nodo (sus 9 tests salen del pin 82) · §298: 9 -> 11, y llega con sus dos tests de layout
 settlement-prover  sello       0   0   0   300  sin tests
 nova-experiment    sello       0   0   0   300  0 es CORRECTO: sus 3 tests exigen --features test-setup
 halo2-experiment   largo      27   0   0  1200  caro: 438 s medidos

@@ -83,6 +83,15 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
+/// Bytes del OID al principio del SK, en el formato de referencia.
+const OID_BYTES: usize = 4;
+/// Longitud del hash del conjunto `_256`.
+const N: usize = 32;
+/// Ancho del índice en bytes: ⌈h/8⌉ = 5 para `h = 40`.
+const fn ancho_indice() -> usize {
+    5
+}
+
 /// Cuántas escrituras usa la autocomprobación de arranque.
 const MUESTRAS_AUTOCOMPROBACION: u32 = 20;
 
@@ -97,6 +106,37 @@ const RAZON_MINIMA: f64 = 10.0;
 /// caso «no hay disco».
 const SUELO_MICROS: f64 = 20.0;
 
+/// Lee el índice del SK: bytes `[4, 9)` en **big-endian**.
+///
+/// ⚠️ **El offset y el ancho están MEDIDOS** (S.3), no deducidos: el SK mide
+/// **137 bytes** = OID(4) + índice(5) + 4×32, y al firmar cambia el byte 8
+/// —el menos significativo de un entero big-endian que ocupa [4, 9)—.
+///
+/// ⚠️ La evaluación registró «SK = 136 B, índice de 4 bytes»: eso es del
+/// conjunto de **árbol único**. Para el elegido son **137 y 5** (§236).
+///
+/// ⚠️⚠️ **Vive aquí desde §298, y no en el firmante del nodo.** Lo
+/// compartible no era el contador sino **el invariante entero**: reservar,
+/// comprobar el layout y reconciliar son la misma pieza. Dejarla partida
+/// obligaba al TESTIGO a reimplementar la lectura del layout —dos lecturas
+/// del mismo formato que pueden discrepar, que es justo lo que §253 evitó
+/// reusando este guardián entero— o a firmar sin esa protección, que es el
+/// agujero que la nota 92 tiene abierto.
+///
+/// ⚠️ No arrastra `xmss`: es aritmética de offsets sobre `&[u8]`. Este
+/// crate sigue sin una sola dependencia.
+pub fn indice_de_sk(sk: &[u8]) -> Result<u64, GuardianError> {
+    let esperado = OID_BYTES + ancho_indice() + 4 * N;
+    if sk.len() != esperado {
+        return Err(GuardianError::LayoutInesperado { sk_len: sk.len(), esperado });
+    }
+    let mut v = 0u64;
+    for b in &sk[OID_BYTES..OID_BYTES + ancho_indice()] {
+        v = (v << 8) | *b as u64;
+    }
+    Ok(v)
+}
+
 #[derive(Debug)]
 pub enum GuardianError {
     Io(String),
@@ -105,6 +145,10 @@ pub enum GuardianError {
     /// ⚠️ `fsync` no cuesta nada: casi seguro `tmpfs` o un montaje sin
     /// persistencia real. **Operar aquí pondría la clave en riesgo.**
     PersistenciaFalsa { con_fsync_us: f64, sin_fsync_us: f64, razon: f64 },
+    /// ⚠️ **El SK no tiene la forma esperada: la serialización de upstream
+    /// cambió.** Vive aquí desde §298, con [`indice_de_sk`]: quien custodia
+    /// el índice es quien tiene que saber leerlo.
+    LayoutInesperado { sk_len: usize, esperado: usize },
 }
 
 impl std::fmt::Display for GuardianError {
@@ -122,6 +166,12 @@ impl std::fmt::Display for GuardianError {
                  razón {razon:.1}×, mínimo {RAZON_MINIMA:.0}×). \
                  Casi seguro es tmpfs o un montaje sin disco. \
                  Reusar un índice XMSS filtra la clave: el nodo NO arranca así."
+            ),
+            GuardianError::LayoutInesperado { sk_len, esperado } => write!(
+                f,
+                "guardián del índice: el SK mide {sk_len} bytes y se esperaban \
+                 {esperado}. La serialización de `xmss` cambió: NO se lee el \
+                 índice a ciegas."
             ),
         }
     }
@@ -382,6 +432,40 @@ mod tests {
         match GuardianIndice::abrir(&p) {
             Err(GuardianError::Corrupto { bytes }) => assert_eq!(bytes, 22),
             otro => panic!("deberia rechazarse por corrupto, y dio: {otro:?}"),
+        }
+    }
+
+    #[test]
+    fn el_lector_del_indice_maneja_el_acarreo() {
+        // ⚠️ EL TEST DE LAYOUT, mitad sintetica. Firmar 256 veces contra la
+        // clave real costaria **37 s medidos** (256 x 144,5 ms). El acarreo
+        // es una propiedad del LECTOR, y aqui se prueba exhaustivamente.
+        let largo = OID_BYTES + ancho_indice() + 4 * N;
+        let mut sk = vec![0u8; largo];
+        for (bytes, esperado) in [
+            ([0, 0, 0, 0, 1u8], 1u64),
+            ([0, 0, 0, 1, 0], 256),
+            ([0, 0, 1, 0, 0], 65_536),
+            ([0, 1, 0, 0, 0], 16_777_216),
+            ([1, 0, 0, 0, 0], 4_294_967_296),
+            ([0xff, 0xff, 0xff, 0xff, 0xff], (1u64 << 40) - 1),
+        ] {
+            sk[OID_BYTES..OID_BYTES + 5].copy_from_slice(&bytes);
+            assert_eq!(indice_de_sk(&sk).expect("leer"), esperado, "bytes {bytes:02x?}");
+        }
+        assert_eq!((1u64 << 40) - 1, 1_099_511_627_775);
+    }
+
+    #[test]
+    fn un_sk_de_otro_tamano_se_rechaza_en_vez_de_leerse() {
+        // ⚠️ La otra mitad del test de layout: si upstream cambia la
+        // serializacion, **falla aqui y no en produccion**.
+        match indice_de_sk(&[0u8; 136]) {
+            Err(GuardianError::LayoutInesperado { sk_len, esperado }) => {
+                assert_eq!(sk_len, 136);
+                assert_eq!(esperado, 137, "OID(4) + indice(5) + 4x32 = 137");
+            }
+            otro => panic!("un SK de 136 bytes debe rechazarse, y dio: {otro:?}"),
         }
     }
 
