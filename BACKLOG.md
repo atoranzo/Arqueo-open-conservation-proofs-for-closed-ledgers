@@ -519,6 +519,19 @@ instrumentacion) al grupo E.*
   contador NO ARRANCA**.
   ⚠️ **Falta el BANCO VIVO (§301).** Y **esto NO cierra el eslabon 3**:
   queda el (iii) —recoleccion y politica k del CLIENTE— entero.
+  ✅ **Y DEMOSTRADO EN VIVO (§301).** `tools/banco_cofirma.sh`: cinco
+  tramos en verde contra un nodo real. **El banco que la linea de arriba
+  echaba en falta YA ESTA** — queda dicho aqui en vez de borrarla (§247).
+  POSITIVO: cofirmas emitidas y verificadas **solo con el fichero**, por
+  `--verificar-cofirmas`, el mando del TERCERO que este mismo sello trajo
+  —sin el, «la linea basta por si sola» era una propiedad que **nadie podia
+  ejercer**—. CONTRATO: las marcas del diario y las lineas del fichero
+  cuadran, mismos indices y ninguno repetido. Y **la REGLA, en vivo**: tras
+  resetear el nodo debajo del testigo, **nueve vueltas con anomalia y
+  NINGUNA cofirmada**, mientras dos legitimas si lo fueron. Mas dos rojos:
+  una firma con un nibble tocado (`no-verifica`) y un indice repetido
+  visto DESDE FUERA (`indice-repetido`).
+  ⚠️ **Sigue sin cerrar el eslabon 3**: el (iii) esta entero.
 
   **Eslabón 4 — El hash del verificador dentro de la cabeza
   atestiguada.** Ya está diseñado en `doc/preprints/ERRATA.md`, entrada

@@ -22319,3 +22319,89 @@ estaba en el plan.
 Ningun Cargo tocado; ningun `.rs` nuevo. BACKLOG QUIETO en 40/54: la **83**
 recibe el ✅ del tramo (ii) **pero no se cierra** — falta el banco vivo
 (§301) y queda el (iii) entero.
+
+## §301 — el banco de la cofirma, y la herramienta que la hacia ejercible
+
+**Que.** `tools/banco_cofirma.sh` —el cuarto banco de la casa (§290, §293,
+§295)— y `--verificar-cofirmas`, **el mando del TERCERO**. Los dos juntos y
+no por comodidad: **sin la herramienta, el banco no podia tener ni positivo
+ni rojo**.
+
+**⚠⚠ El hallazgo que obligo a ampliar el corte.** El §300 declaro la linea
+de cofirmas **autosuficiente para un tercero** y lo probo en unitario —pero
+**nadie podia ejercer esa propiedad**: `verificar_cofirma` solo se llamaba
+desde dentro del propio Cofirmante y desde los tests. Un tercero que
+recibiera el fichero **no tenia con que**. Es exactamente lo que §249 hizo
+por §248: un criterio que no se puede correr **no esta terminado**. Si para
+comprobar una cofirma hiciera falta escribir un programa, el formato seguia
+a medias.
+
+**La herramienta, y algo que no estaba en el plan.** `--verificar-cofirmas`
+lee el fichero **sin el nodo, sin el diario y sin el testigo**, con cinco
+clases estables: `ilegible`, `version-desconocida`, `campo-ausente`,
+`no-verifica` e **`indice-repetido`**. Esta ultima aparecio al escribirla y
+merece su parrafo: **dos cofirmas con el mismo indice son un hallazgo
+AUNQUE LAS DOS VERIFIQUEN**. Reusar un indice XMSS filtra la clave —curva
+QRL: a la cuarta repeticion, ~2^18 hashes—; el guardian lo impide DENTRO
+del testigo, y esto permite verlo **DESDE FUERA**, que es lo que un tercero
+necesita poder hacer sin preguntarle a nadie. Por eso **la SERIE se
+comprueba ANTES que la firma**: ese orden es la pieza.
+
+**El banco, cinco tramos, todos en verde contra un nodo real.**
+POSITIVO: cinco cofirmas emitidas y verificadas solo con el fichero.
+CONTRATO: las marcas del diario y las lineas del fichero **cuadran en
+vivo** —mismos indices, ninguno repetido—; en unitario ya estaba atado
+(§300), aqui se ejercita con ficheros de verdad. **NEGATIVO-A, la regla**:
+se resetea el nodo debajo del testigo y salen **nueve vueltas con anomalia,
+NINGUNA cofirmada**, mientras dos legitimas si lo fueron cuando el nodo
+nuevo volvio a extender. **Cofirmas 5 -> 7.** La regla `Nueva` ∧ `Extiende`
+deja de ser una frase del asiento. NEGATIVO-B: un nibble de una firma y
+muere en `no-verifica`. NEGATIVO-B2: un indice repetido, visto desde fuera.
+
+**⚠⚠ Un hallazgo que no es del banco sino DEL PROYECTO: hay DOS FORMATOS
+DE SEMILLA.** El NODO lee su clave en **HEX** (`--clave-fichero` +
+`--custodia fichero`, con `chmod 600`); el TESTIGO, en **BINARIO crudo**
+(`--cofirmar`, que hace `fs::read`). Un operador que ya custodia la semilla
+del nodo se encuentra otro formato al montar el testigo, **sin razon**. No
+se arregla aqui —tocaria el §300 ya sellado y agrandaria este corte— pero
+queda **declarado**: dos formatos para lo mismo son la clase de divergencia
+que esta casa persigue en todo lo demas.
+
+**Decisiones y precios, escritos.** El banco corre en **RELEASE**, no en
+debug como su hermano: aqui el testigo FIRMA, y una firma XMSS mide 144,5
+ms en release (§292) — en debug tardaria minutos. Sus directorios van bajo
+`$HOME` y nunca en `/tmp`, porque **el guardian se niega a operar donde
+`fsync` no persiste** (K.1, §234). Y en un fallo se enseñan **clases y
+conteos**, nunca los ficheros: una linea de diario pesa ~37 KB y una
+cofirma ~18 KB mas.
+
+**Tres rojos propios, y los tres de la misma familia.** (1) Escribi los
+flags del nodo **de memoria** —`--puerto`, que no existe— teniendo el banco
+hermano delante; los reales son `--listen`, `--clave-fichero`,
+`--custodia`, `--contador-recepcion`, `--indice-firma`. (2) Lei
+`consistencia` como una CADENA cuando es un **OBJETO** con su `clase`
+dentro — asi lo escribe `linea_de_diario_con` y asi lo lee el analizador
+del §295, tambien delante—: la lista de vueltas debidas salia vacia y
+TODAS las cofirmas parecian indebidas. (3) Un gate conto **apariciones** de
+`COFIRMA_VERSION` esperando una, y hay dos. **Los tres eran identificadores
+ajenos escritos sin abrir su fuente**, y la fuente estaba a un `grep`. El
+bloque lleva ahora INERTES que comprueban los flags **contra el fichero del
+hermano** y que la consistencia se lee como objeto.
+
+**⚠⚠ Y un CUARTO rojo, este del INSTRUMENTO y no mio del todo.** Un test
+escribia `verificar_cofirmas(&["{".into()])` para comprobar que una linea
+ilegible no revienta — y ese `{` **dentro de un literal de cadena** hizo que
+`check_tests.py` diera por ANIDADOS los seis tests siguientes: cuenta
+llaves **sin excluir los literales**, asi que una llave en un string le
+desplaza el ambito. El canon canto «6 test(s) que no protegen» sobre un
+fichero cuyos 58 tests se ejecutaban todos. Se corrige el literal —una
+cadena sin llaves prueba lo mismo— y **queda declarado el candidato 22 de
+«la forma del instrumento decide el numero»**, con una vuelta de tuerca: los
+21 anteriores eran instrumentos que veian de MENOS; este ve de MAS.
+
+**Contadores.** `zk-ssl-cli` 54 -> 58 (4 tests). Sumas 838/975/989 ->
+**842/979/993**, y la cifra POR-CRATE del testigo en `PRINCIPIOS.md`,
+54 -> 58, **en el mismo bloque que el pin**. Un fichero nuevo en `tools/`
+(FUERA del canon, como sus tres hermanos). Ningun Cargo tocado. BACKLOG
+QUIETO en 40/54: la **83** gana el «Y DEMOSTRADO EN VIVO» del tramo (ii)
+**y sigue abierta** — el (iii) esta entero.

@@ -1172,6 +1172,20 @@ pub struct WitnessArgs {
     /// queda solo una marca que las ata.
     #[arg(long, value_name = "COFIRMAS")]
     cofirmas: Option<PathBuf>,
+
+    /// **Relee un fichero de cofirmas y las verifica** (§301).
+    ///
+    /// ⚠️ Es lo que convierte en EJECUTABLE la autosuficiencia que el §300
+    /// declaro: sin esto, «la linea basta por si sola para un tercero» era
+    /// una propiedad que **nadie podia ejercer**. Mismo papel que
+    /// `--auditar` (§249) para el diario.
+    ///
+    /// ⚠️ No necesita el nodo, ni el diario, ni al testigo: **solo el
+    /// fichero**. Cada linea trae la clave del testigo, la del operador, el
+    /// digest y la firma.
+    #[arg(long, value_name = "COFIRMAS",
+          conflicts_with_all = ["auditar", "comparar", "ausentes", "cofirmar"])]
+    verificar_cofirmas: Option<PathBuf>,
 }
 
 /// Version del formato del fichero de cofirmas.
@@ -1220,6 +1234,116 @@ pub fn linea_de_cofirma(
     })
 }
 
+/// Lo que un tercero puede encontrar mal en un fichero de cofirmas.
+#[derive(Debug, PartialEq, Eq)]
+pub enum HallazgoCofirma {
+    Ilegible { linea: usize, error: String },
+    VersionDesconocida { linea: usize, v: u64 },
+    CampoAusente { linea: usize, campo: String },
+    /// La firma no verifica, o verifica sobre OTRA cosa.
+    NoVerifica { linea: usize, indice: u64, error: String },
+    /// ⚠️⚠️ **DOS COFIRMAS CON EL MISMO INDICE.** Es lo que el guardian
+    /// existe para impedir: un indice XMSS reutilizado **filtra la clave**
+    /// (curva QRL: a la cuarta repeticion, ~2^18 hashes). Un tercero que
+    /// recibe el fichero tiene que poder verlo **sin preguntarle a nadie**.
+    IndiceRepetido { linea: usize, indice: u64, antes: usize },
+}
+
+impl HallazgoCofirma {
+    /// Clases estables: se leen desde fuera y no cambian sin subir version.
+    pub fn clase(&self) -> &'static str {
+        match self {
+            HallazgoCofirma::Ilegible { .. } => "ilegible",
+            HallazgoCofirma::VersionDesconocida { .. } => "version-desconocida",
+            HallazgoCofirma::CampoAusente { .. } => "campo-ausente",
+            HallazgoCofirma::NoVerifica { .. } => "no-verifica",
+            HallazgoCofirma::IndiceRepetido { .. } => "indice-repetido",
+        }
+    }
+}
+
+/// **Verifica un fichero de cofirmas SIN el nodo, sin el diario y sin el
+/// testigo.** Solo con lo publicado.
+///
+/// ⚠️ Esto convierte en EJECUTABLE lo que el §300 declaro: si para
+/// comprobar una cofirma hiciera falta escribir un programa, **el formato
+/// no estaria terminado**. Es el papel que `--auditar` cumple para el
+/// diario (§249).
+///
+/// ⚠️ Y ademas **audita la SERIE**: dos cofirmas con el mismo indice son un
+/// hallazgo por si solas, verifiquen o no. El guardian impide reutilizar un
+/// indice **en el testigo**; esto lo comprueba **desde fuera**.
+pub fn verificar_cofirmas(lineas: &[String]) -> Vec<HallazgoCofirma> {
+    let mut h = Vec::new();
+    let mut vistos: BTreeMap<u64, usize> = BTreeMap::new();
+    for (i, l) in lineas.iter().enumerate() {
+        let n = i + 1;
+        let v: Value = match serde_json::from_str(l) {
+            Ok(v) => v,
+            Err(e) => {
+                h.push(HallazgoCofirma::Ilegible { linea: n, error: e.to_string() });
+                continue;
+            }
+        };
+        match v["v"].as_u64() {
+            Some(x) if x <= COFIRMA_VERSION => {}
+            Some(x) => {
+                h.push(HallazgoCofirma::VersionDesconocida { linea: n, v: x });
+                continue;
+            }
+            None => {
+                h.push(HallazgoCofirma::CampoAusente { linea: n, campo: "v".into() });
+                continue;
+            }
+        }
+        let mut falta = None;
+        for k in ["epochDigest", "clavePublicaOperador", "clavePublicaTestigo",
+                  "versionFormato", "indice", "firma"] {
+            if v[k].is_null() {
+                falta = Some(k);
+                break;
+            }
+        }
+        if let Some(k) = falta {
+            h.push(HallazgoCofirma::CampoAusente { linea: n, campo: k.into() });
+            continue;
+        }
+        let hx = |k: &str| leer_hex(&v[k]);
+        let (dig, op, testigo, firma) = match (hx("epochDigest"), hx("clavePublicaOperador"),
+                                               hx("clavePublicaTestigo"), hx("firma")) {
+            (Ok(a), Ok(b), Ok(c), Ok(d)) => (a, b, c, d),
+            _ => {
+                h.push(HallazgoCofirma::Ilegible { linea: n, error: "hex torcido".into() });
+                continue;
+            }
+        };
+        let d32: [u8; 32] = match dig.try_into() {
+            Ok(x) => x,
+            Err(_) => {
+                h.push(HallazgoCofirma::Ilegible { linea: n, error: "epochDigest no mide 32".into() });
+                continue;
+            }
+        };
+        let (vf, idx) = match (leer_q(&v["versionFormato"]), leer_q(&v["indice"])) {
+            (Ok(a), Ok(b)) => (a, b),
+            _ => {
+                h.push(HallazgoCofirma::Ilegible { linea: n, error: "cantidad torcida".into() });
+                continue;
+            }
+        };
+        // ⚠️ La SERIE, antes que la firma: un indice repetido es un hallazgo
+        //    aunque las dos firmas verifiquen. Precisamente por eso.
+        if let Some(antes) = vistos.insert(idx, n) {
+            h.push(HallazgoCofirma::IndiceRepetido { linea: n, indice: idx, antes });
+        }
+        let c = CabezaFirmada { version_formato: vf as u8, indice: idx, firma };
+        if let Err(e) = verificar_cofirma(&testigo, &d32, &op, &c) {
+            h.push(HallazgoCofirma::NoVerifica { linea: n, indice: idx, error: format!("{e}") });
+        }
+    }
+    h
+}
+
 fn leer(p: &std::path::Path) -> anyhow::Result<Vec<String>> {
     Ok(std::fs::read_to_string(p)?.lines().map(str::to_string).collect())
 }
@@ -1238,6 +1362,20 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             return Ok(());
         }
         anyhow::bail!("{} hallazgo(s) en el diario", r.hallazgos.len());
+    }
+    if let Some(p) = &a.verificar_cofirmas {
+        let ls = leer(p)?;
+        let h = verificar_cofirmas(&ls);
+        println!("{}: {} cofirma(s) leidas SIN el nodo, sin el diario y sin el testigo",
+                 p.display(), ls.len());
+        for x in &h {
+            println!("  ⚠️ {} · {x:?}", x.clase());
+        }
+        if h.is_empty() {
+            println!("sin hallazgos: todas verifican y ningun indice se repite");
+            return Ok(());
+        }
+        anyhow::bail!("{} hallazgo(s) en las cofirmas", h.len());
     }
     if let Some(ps) = &a.comparar {
         let (x, y) = (leer(&ps[0])?, leer(&ps[1])?);
@@ -2452,6 +2590,82 @@ mod tests {
             Err(otro) => panic!("en tmpfs debe negarse por PersistenciaFalsa, y dio: {otro:?}"),
             Ok(_) => panic!("en tmpfs NO debe arrancar: fsync no persiste nada ahi"),
         }
+    }
+
+    /// Un fichero de cofirmas de verdad, con `n` lineas.
+    fn fichero_de_cofirmas(n: usize, nombre: &str) -> (Vec<String>, Vec<u8>) {
+        let p = en_disco(nombre);
+        let mut cf = Cofirmante::desde_semilla(&semilla_testigo(), &p).expect("abrir");
+        let op = clave_operador();
+        let mut ls = Vec::new();
+        for i in 0..n {
+            let d = [i as u8 + 1; 32];
+            let c = cf.cofirmar(&d, &op).expect("cofirmar");
+            let pk = cf.clave_publica();
+            ls.push(linea_de_cofirma(&d, &op, &pk, &c, 1000 + i as u64).to_string());
+        }
+        (ls, op)
+    }
+
+    #[test]
+    fn un_fichero_de_cofirmas_bien_hecho_verifica_sin_nada_mas() {
+        // ⚠️ EL CRITERIO, EJECUTABLE. Ni nodo, ni diario, ni testigo: solo
+        //    las lineas. Si esto necesitara mas, el formato no estaria hecho.
+        let (ls, _) = fichero_de_cofirmas(3, "fichero_ok");
+        assert!(verificar_cofirmas(&ls).is_empty(), "un fichero sano no da hallazgos");
+    }
+
+    #[test]
+    fn una_cofirma_adulterada_no_pasa() {
+        let (mut ls, _) = fichero_de_cofirmas(2, "fichero_adulterado");
+        // Un solo nibble de la firma, y ya no verifica.
+        let v: Value = serde_json::from_str(&ls[1]).expect("json");
+        let f = v["firma"].as_str().expect("hex").to_string();
+        let mut b: Vec<char> = f.chars().collect();
+        b[20] = if b[20] == 'a' { 'b' } else { 'a' };
+        let mut w = v.clone();
+        w["firma"] = json!(b.into_iter().collect::<String>());
+        ls[1] = w.to_string();
+        let h = verificar_cofirmas(&ls);
+        assert_eq!(h.len(), 1, "un solo hallazgo: {h:?}");
+        assert_eq!(h[0].clase(), "no-verifica");
+    }
+
+    #[test]
+    fn dos_cofirmas_con_el_mismo_indice_son_hallazgo() {
+        // ⚠️⚠️ EL QUE MAS IMPORTA. Reusar un indice XMSS **filtra la clave**;
+        //    el guardian lo impide DENTRO del testigo, y esto lo detecta
+        //    DESDE FUERA — que es lo que un tercero necesita poder hacer.
+        let (ls, _) = fichero_de_cofirmas(1, "fichero_repe");
+        let dos = vec![ls[0].clone(), ls[0].clone()];
+        let h = verificar_cofirmas(&dos);
+        assert!(h.iter().any(|x| x.clase() == "indice-repetido"), "{h:?}");
+        match h.iter().find(|x| x.clase() == "indice-repetido") {
+            Some(HallazgoCofirma::IndiceRepetido { linea, antes, .. }) => {
+                assert_eq!((*linea, *antes), (2, 1), "dice DONDE estaba antes");
+            }
+            otro => panic!("{otro:?}"),
+        }
+    }
+
+    #[test]
+    fn una_linea_incompleta_dice_que_campo_falta() {
+        let (ls, _) = fichero_de_cofirmas(1, "fichero_incompleto");
+        let mut v: Value = serde_json::from_str(&ls[0]).expect("json");
+        v["clavePublicaTestigo"] = Value::Null;
+        let h = verificar_cofirmas(&[v.to_string()]);
+        assert_eq!(h.len(), 1);
+        match &h[0] {
+            HallazgoCofirma::CampoAusente { campo, .. } => assert_eq!(campo, "clavePublicaTestigo"),
+            otro => panic!("debe decir QUE campo falta: {otro:?}"),
+        }
+        // Y una linea ilegible tampoco revienta.
+        // ⚠⚠ Cadena SIN llaves A PROPOSITO. Un `{` dentro de un literal
+        //    desplaza el ambito de `check_tests.py`, que cuenta llaves **sin
+        //    excluir cadenas**, y marca como ANIDADOS los tests que vengan
+        //    detras — seis, en la primera corrida del §301. Una cadena
+        //    cualquiera prueba lo mismo: que lo ilegible no revienta.
+        assert_eq!(verificar_cofirmas(&["no es json".into()])[0].clase(), "ilegible");
     }
 
     #[test]
