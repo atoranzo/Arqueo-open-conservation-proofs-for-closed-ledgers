@@ -1496,7 +1496,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
 - [ ] **94. Clases de resultado que el canon NO VE: las cegueras del
   instrumento, medidas.** El canon corre en release y cuenta los
   warnings de la compilación de TESTS; fuera de su vista quedan clases
-  enteras de resultado, y ya hay dos medidas más la que la 81 tenía:
+  enteras de resultado, y ya hay CUATRO medidas más la que la 81 tenía:
   **(a)** los `debug_assert` sólo viven en DEBUG — hay tests de
   la capa que caen hoy en depuración («transition constraint degrees
   didn't match», winter-prover; verificado contra el árbol virgen el
@@ -1514,6 +1514,20 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   PERMANENTE con su razón escrita. Lo que no vale es el estado de hoy:
   ceguera sin declarar, que es exactamente la clase de silencio que
   `check_cifras` vino a impedir con los números.
+  **(d) La PROSA envejece sin que ningún gate se ponga rojo.** §297 lo
+  midió en la cabecera de `zk-ssl-verify`: dos afirmaciones caducadas
+  —«solo de xmss», que §292 dejó falsa, y «su superficie es el dominio, la
+  versión y verificar_cabeza», que eran quince elementos—. **Y §275 y §279
+  escribieron AL LADO que la superficie crecía, citando esa cabecera, sin
+  subir la corrección al párrafo que contradecían**: no es que nadie lo
+  viera, es que ningún instrumento contrasta un doc-comment contra lo que
+  describe. **(e) `check_dominios` sólo ve literales de BYTES**: su
+  `LIT_ZK` casa `b"ZK-SSL-..."`, y los dominios que viajan como
+  cadena JSON —`witness.rs`, `node/main.rs`— son invisibles al censo,
+  así que **R5 no los protege**. Puede ser por diseño —el registro cubre
+  entradas de hash— pero no está declarado, y **el §298 va a agravarlo** en
+  cuanto el diario del testigo escriba el dominio de la cofirma. Se nombra
+  ahora porque el corte que agrava una ceguera es el que mejor la conoce.
   ⚠⚠ **Y esta entrada nacio en ROJO, por su propio tema.** La primera
   version llevaba la cifra de los fallos de debug, y `check_figures`
   la tumbo: vigila LA PREMISA de la exclusion de este fichero —cero

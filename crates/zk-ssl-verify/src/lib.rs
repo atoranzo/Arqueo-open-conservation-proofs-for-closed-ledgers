@@ -1,7 +1,15 @@
 //! # `zk-ssl-verify` — verificar una cabeza de época **sin el operador**
 //!
-//! Todo lo que un **tercero** necesita para comprobar que una cabeza de
-//! época firmada la emitió quien dice. Nada más.
+//! Todo lo que un **tercero** necesita para comprobar **dos** cosas sobre
+//! una cabeza de época firmada: **quién la emitió** —[`verificar_cabeza`],
+//! desde §243— y **quién la atestiguó** —[`verificar_cofirma`], desde
+//! §297—. Las dos afirmaciones son distintas y ninguna implica a la otra:
+//! un operador puede firmar solo, y un testigo puede cofirmar una cabeza
+//! que resulte estar mal.
+//!
+//! ⚠️ Aquí decía «Nada más» y **era verdad hasta que dejó de serlo**. Se
+//! corrige nombrando lo que hay en vez de cerrando la puerta: quien añada
+//! una tercera afirmación repara esta frase en el mismo corte.
 //!
 //! ## ⚠️ Por qué es un crate aparte
 //!
@@ -14,12 +22,31 @@
 //! > algo verificable si te tragas nuestro servidor»*.
 //!
 //! ⚠️ **La dependencia va en UN SOLO SENTIDO.** Este crate **no depende de
-//! la capa, ni del nodo, ni del cable**: solo de `xmss`. Si algún día
-//! importa algo del proyecto, se habrá vuelto a caer en el problema.
+//! la capa, ni del nodo, ni del cable**. Si algún día importa algo de
+//! ellos, se habrá vuelto a caer en el problema.
 //!
-//! ⚠️ Y debería ser **el crate que menos cambie**: su superficie es el
-//! dominio, la versión de formato y [`verificar_cabeza`]. Un pin que no se
-//! mueve casi no cuesta.
+//! ⚠️ Aquí decía «solo de `xmss`», y **§292 lo dejó falso** al reexportar
+//! `zk_ssl_hash` para que el cli y el bin no ganaran una dependencia por
+//! las composiciones del digest. La letra se corrige; el espíritu —qué NO
+//! puede entrar— se mantiene. **La verdad de hoy se mide en su
+//! `[dependencies]`, no aquí**: una lista en prosa vuelve a caducar a la
+//! primera dependencia legítima, y ya caducó una vez.
+//!
+//! ⚠️ Y debería ser **el crate que menos cambie**. Su superficie son hoy
+//! **cuatro familias**: las FIRMAS (dominios, versión de formato,
+//! `verificar_cabeza`, `verificar_cofirma`), las PRUEBAS de contenido
+//! (inclusión, acuses, MMR), la REVERIFICACIÓN de un registro sin el nodo,
+//! y las composiciones del digest **reexportadas** de `zk-ssl-hash`.
+//!
+//! ⚠️ **Las familias se nombran; los elementos NO se enumeran.** Aquí
+//! decía «el dominio, la versión de formato y `verificar_cabeza`», y para
+//! cuando alguien volvió a leerlo eran quince: §256 y §275 metieron la
+//! inclusión, §274 los acuses, §279 la reverificación, §291 el MMR y §292
+//! los reexports. **Dos de esos sellos escribieron al lado que la
+//! superficie crecía —y no subieron la corrección a este párrafo**, que es
+//! justo lo que §247 manda hacer. **La verdad se mide en los `pub` de este
+//! fichero.** Un pin que no se mueve casi no cuesta; una prosa que no
+//! puede caducar, tampoco.
 //!
 //! ## ⚠️ Lo que este crate NO da
 //!
@@ -85,6 +112,18 @@ pub type Conjunto = XmssMtSha2_40_8_256;
 /// marcadores de versión que pueden discrepar valen menos que uno (§236).
 pub const DOMINIO: &[u8] = b"ZK-SSL-epoch-head";
 
+/// Separación de dominio de **la cofirma del testigo** (§297).
+///
+/// ⚠️ **Sin versión dentro**, por lo mismo que el de arriba (§236): la
+/// versión va en el preámbulo, y dos marcadores que pueden discrepar valen
+/// menos que uno. Lo hace cumplir [`el_dominio_de_cofirma_no_lleva_la_version_dentro`].
+///
+/// ⚠️ Es un dominio **distinto** a propósito: una firma de operador nunca
+/// puede presentarse como cofirma de testigo, ni al revés.
+///
+/// [`el_dominio_de_cofirma_no_lleva_la_version_dentro`]: #
+pub const DOMINIO_COFIRMA: &[u8] = b"ZK-SSL-witness-cosign";
+
 /// Versión del formato de cabeza que entra en la firma.
 ///
 /// ⚠️ Sube cuando cambian **los campos de `EpochHead`**, no cuando cambia el
@@ -124,6 +163,14 @@ pub enum VerificaError {
     /// **no** *«para lo que tú esperas»*. Sin comparar, un atacante presenta
     /// la firma legítima de otra cabeza y pasa.
     PreambuloDistinto { esperado: usize, recibido: usize },
+    /// ⚠️ **La clave del operador no cabe en el prefijo de longitud.**
+    ///
+    /// El preámbulo de cofirma lleva la longitud en `u16`: 65 535 bytes de
+    /// techo, holgadísimo para XMSS (decenas) y para ML-DSA (1-2,6 KB). Lo
+    /// que NO se hace es `len() as u16`: eso truncaría **en silencio** y el
+    /// testigo firmaría un preámbulo que miente sobre su propio contenido.
+    /// El día que el techo estorbe, esto se pone rojo y se ve.
+    ClaveDemasiadoLarga { bytes: usize },
 }
 
 impl core::fmt::Display for VerificaError {
@@ -137,6 +184,11 @@ impl core::fmt::Display for VerificaError {
                 "la firma es VALIDA pero de otro mensaje (preambulo esperado \
                  {esperado} bytes, recibido {recibido}). Verificar sin comparar \
                  no prueba nada."
+            ),
+            VerificaError::ClaveDemasiadoLarga { bytes } => write!(
+                f,
+                "la clave del operador mide {bytes} bytes y el prefijo de \
+                 longitud del preambulo es u16 (techo 65535)"
             ),
         }
     }
@@ -158,6 +210,55 @@ pub fn preambulo(version: u8, epoch_digest: &[u8; 32]) -> Vec<u8> {
     v.push(version);
     v.extend_from_slice(epoch_digest);
     v
+}
+
+/// El preámbulo exacto de **una cofirma de testigo**. Como el de arriba,
+/// **es superficie de conformidad**: una segunda implementación tiene que
+/// producir estos bytes.
+///
+/// ```text
+/// b"ZK-SSL-witness-cosign" ‖ version ‖ epoch_digest ‖ len(u16 BE) ‖ clave_op
+///          21                    1          32            2            N
+/// ```
+///
+/// ⚠️ **La clave del operador va DENTRO, y esa es la razón de ser de esta
+/// función.** Sin ella, una cofirma sería **transferible**: valdría para
+/// cualquiera que emitiese ese mismo `epoch_digest`. Lo que el testigo
+/// atestigua no es «este digest existe», sino «**este operador** publicó
+/// este digest». Lo hace cumplir [`una_cofirma_bajo_otra_clave_de_operador_se_rechaza`].
+///
+/// ⚠️ **En BYTES, no en hex.** El testigo custodia la clave como hex del
+/// cable, pero el verificador tercero la recibe en bytes: pedirle que
+/// reconstruya la misma cadena hex —capitalización, prefijo, ceros a la
+/// izquierda— es fabricar discrepancias entre implementaciones que no
+/// mienten. Los bytes tienen una representación; el hex, muchas.
+///
+/// ⚠️ **El prefijo de longitud NO es adorno.** El cuarto campo es de
+/// longitud variable, y `zk-ssl-hash` ya dejó escrito el precedente para
+/// `commit_operation`: sin relleno ni prefijo, dos mensajes del mismo
+/// dominio con longitudes distintas **podrían colisionar**. Allí la
+/// suposición de longitud fija se cumplía y se declaró; aquí NO se cumple
+/// —la nota 87 (ML-DSA) trae claves de otro tamaño— así que se resuelve en
+/// vez de suponerse. Un `assert` de longitud fija sería una trampa armada:
+/// funciona hoy y el día que estorbe alguien lo relaja para que pase.
+///
+/// ⚠️ **El campo con prefijo va el ÚLTIMO por diseño.** Si algún día entra
+/// un quinto campo, lo gobierna el byte de versión (§236), no la posición.
+pub fn preambulo_cofirma(
+    version: u8,
+    epoch_digest: &[u8; 32],
+    clave_del_operador: &[u8],
+) -> Result<Vec<u8>, VerificaError> {
+    let n: u16 = clave_del_operador.len().try_into().map_err(|_| {
+        VerificaError::ClaveDemasiadoLarga { bytes: clave_del_operador.len() }
+    })?;
+    let mut v = Vec::with_capacity(DOMINIO_COFIRMA.len() + 1 + 32 + 2 + n as usize);
+    v.extend_from_slice(DOMINIO_COFIRMA);
+    v.push(version);
+    v.extend_from_slice(epoch_digest);
+    v.extend_from_slice(&n.to_be_bytes());
+    v.extend_from_slice(clave_del_operador);
+    Ok(v)
 }
 
 /// ⚠️ **APAÑO SOBRE UN FALLO DE `xmss 0.1.0-pre.0`** (§240, sondas S.5/S.6).
@@ -233,6 +334,42 @@ pub fn verificar_cabeza(
         .map_err(|e| VerificaError::NoVerifica(format!("{e:?}")))?;
     // ⚠️ EL PASO QUE NO SE PUEDE SALTAR.
     let esperado = preambulo(c.version_formato, epoch_digest);
+    if recuperado != esperado {
+        return Err(VerificaError::PreambuloDistinto {
+            esperado: esperado.len(),
+            recibido: recuperado.len(),
+        });
+    }
+    Ok(())
+}
+
+/// **La función del tercero, para la cofirma.** Comprueba que **este
+/// testigo** atestiguó **esta cabeza de este operador**, sin el nodo, sin
+/// el testigo y sin el operador: solo con lo publicado.
+///
+/// ⚠️ Mismo paso que no se puede saltar que en [`verificar_cabeza`]:
+/// `verify()` devuelve **el mensaje que la firma lleva dentro**, así que
+/// una cofirma legítima de OTRA cabeza —o de la misma bajo OTRO operador—
+/// pasaría el `verify()` a secas. Lo que cierra la puerta es comparar con
+/// el preámbulo esperado.
+///
+/// ⚠️ La clave del operador que se pasa aquí es **la que el tercero tiene
+/// por buena**. Si no es la que el testigo ancló, la cofirma no verifica —
+/// y eso es exactamente lo que debe pasar.
+pub fn verificar_cofirma(
+    clave_del_testigo: &[u8],
+    epoch_digest: &[u8; 32],
+    clave_del_operador: &[u8],
+    c: &CabezaFirmada,
+) -> Result<(), VerificaError> {
+    let vk = clave_desde_bytes(clave_del_testigo)?;
+    let sig = Signature::<Conjunto>::try_from(c.firma.as_slice())
+        .map_err(|e| VerificaError::FirmaIlegible(format!("{e:?}")))?;
+    let recuperado = vk
+        .verify(&sig)
+        .map_err(|e| VerificaError::NoVerifica(format!("{e:?}")))?;
+    // ⚠️ EL PASO QUE NO SE PUEDE SALTAR.
+    let esperado = preambulo_cofirma(c.version_formato, epoch_digest, clave_del_operador)?;
     if recuperado != esperado {
         return Err(VerificaError::PreambuloDistinto {
             esperado: esperado.len(),
@@ -389,5 +526,112 @@ mod tests {
         );
         // Y con el apaño, vuelve.
         assert!(clave_desde_bytes(&pk).is_ok(), "con el offset la clave debe volver");
+    }
+
+    // ── la COFIRMA del testigo (§297) ──
+
+    /// Un testigo con clave propia, cofirmando una cabeza de un operador.
+    fn cofirmado(digest: &[u8; 32], clave_op: &[u8]) -> (Vec<u8>, CabezaFirmada) {
+        let mut s = [0u8; 96];
+        for (i, b) in s.iter_mut().enumerate() {
+            // ⚠️ Semilla DISTINTA de la de `firmado`: el testigo no es el
+            //    operador, y un test que los confunda no probaria nada.
+            *b = (i as u8).wrapping_mul(31).wrapping_add(9);
+        }
+        let mut kp = KeyPair::<Conjunto>::from_seed(&s).expect("keygen");
+        let pk = kp.verifying_key().as_ref().to_vec();
+        let pre = preambulo_cofirma(VERSION_FORMATO, digest, clave_op).expect("preambulo");
+        let sig = kp.signing_key().sign(&pre).expect("firmar");
+        (pk, CabezaFirmada { version_formato: VERSION_FORMATO, indice: 1, firma: sig.as_ref().to_vec() })
+    }
+
+    #[test]
+    fn el_preambulo_de_cofirma_lleva_los_cinco_campos_en_ese_orden() {
+        let d = [0xABu8; 32];
+        let k = vec![0xCDu8; 68];
+        let p = preambulo_cofirma(3, &d, &k).expect("cabe");
+        assert_eq!(p.len(), DOMINIO_COFIRMA.len() + 1 + 32 + 2 + 68);
+        assert_eq!(p.len(), 21 + 1 + 32 + 2 + 68);
+        let o = DOMINIO_COFIRMA.len();
+        assert_eq!(&p[..o], DOMINIO_COFIRMA);
+        assert_eq!(p[o], 3);
+        assert_eq!(&p[o + 1..o + 33], &d);
+        assert_eq!(&p[o + 33..o + 35], &68u16.to_be_bytes(), "la longitud, big-endian");
+        assert_eq!(&p[o + 35..], &k[..]);
+    }
+
+    #[test]
+    fn el_dominio_de_cofirma_no_lleva_la_version_dentro() {
+        // Dos marcadores de version que pueden discrepar valen menos que uno.
+        let s = String::from_utf8(DOMINIO_COFIRMA.to_vec()).expect("utf8");
+        assert!(!s.contains("v1"), "el dominio no debe llevar version: {s}");
+        assert!(!s.contains("-v"), "el dominio no debe llevar version: {s}");
+    }
+
+    #[test]
+    fn los_dos_dominios_son_distintos_y_ninguno_prefija_al_otro() {
+        // ⚠️ Una firma de operador no puede presentarse como cofirma, ni al
+        //    reves. Si uno fuera prefijo del otro, el preambulo dejaria de
+        //    separarlos por si solo.
+        assert_ne!(DOMINIO, DOMINIO_COFIRMA);
+        assert!(!DOMINIO_COFIRMA.starts_with(DOMINIO));
+        assert!(!DOMINIO.starts_with(DOMINIO_COFIRMA));
+    }
+
+    #[test]
+    fn dos_claves_de_longitudes_distintas_no_dan_el_mismo_preambulo() {
+        // ⚠️⚠️ EL TEST DEL PREFIJO. Es la respuesta al precedente que
+        //    `zk-ssl-hash` dejo escrito para `commit_operation`: sin relleno
+        //    ni prefijo, dos mensajes del mismo dominio con longitudes
+        //    distintas podrian colisionar. Con el prefijo, no.
+        let d = [7u8; 32];
+        let a = preambulo_cofirma(3, &d, &[0xAA; 4]).expect("cabe");
+        let b = preambulo_cofirma(3, &d, &[0xAA; 5]).expect("cabe");
+        assert_ne!(a, b);
+        assert!(!b.starts_with(&a), "uno no puede ser prefijo del otro");
+    }
+
+    #[test]
+    fn una_clave_que_no_cabe_en_el_prefijo_da_error_en_vez_de_truncar() {
+        // ⚠️⚠️ `len() as u16` daria 4464 para 70000 bytes: el testigo
+        //    firmaria un preambulo que MIENTE sobre su propio contenido.
+        let d = [0u8; 32];
+        let enorme = vec![0u8; 70_000];
+        match preambulo_cofirma(3, &d, &enorme) {
+            Err(VerificaError::ClaveDemasiadoLarga { bytes }) => assert_eq!(bytes, 70_000),
+            otro => panic!("debia decir que no cabe, no truncar: {otro:?}"),
+        }
+        // Y el techo exacto SI cabe.
+        assert!(preambulo_cofirma(3, &d, &vec![0u8; 65_535]).is_ok());
+    }
+
+    #[test]
+    fn una_cofirma_bien_hecha_verifica() {
+        let d = [0x5Au8; 32];
+        let (pk_op, _) = firmado(&d);
+        let (pk_testigo, c) = cofirmado(&d, &pk_op);
+        verificar_cofirma(&pk_testigo, &d, &pk_op, &c).expect("debe verificar");
+        assert_eq!(c.firma.len(), FIRMA_RFC_BYTES + 21 + 1 + 32 + 2 + 68);
+    }
+
+    #[test]
+    fn una_cofirma_bajo_otra_clave_de_operador_se_rechaza() {
+        // ⚠️⚠️ EL TEST QUE JUSTIFICA EL CUARTO CAMPO. Sin la clave del
+        //    operador dentro, esta cofirma seria TRANSFERIBLE: valdria para
+        //    cualquiera que emitiese el mismo digest. Con ella, no.
+        let d = [0x5Au8; 32];
+        let (pk_op, _) = firmado(&d);
+        let (pk_testigo, c) = cofirmado(&d, &pk_op);
+        let mut otro_op = pk_op.clone();
+        otro_op[10] ^= 0x01;
+        assert!(
+            verificar_cofirma(&pk_testigo, &d, &otro_op, &c).is_err(),
+            "una cofirma NO puede valer para otro operador"
+        );
+        // Y una cofirma de OTRA cabeza tampoco.
+        assert!(verificar_cofirma(&pk_testigo, &[0x11u8; 32], &pk_op, &c).is_err());
+        // Ni la firma del OPERADOR puede pasar por cofirma: otro dominio.
+        let (_, c_op) = firmado(&d);
+        assert!(verificar_cofirma(&pk_testigo, &d, &pk_op, &c_op).is_err());
     }
 }

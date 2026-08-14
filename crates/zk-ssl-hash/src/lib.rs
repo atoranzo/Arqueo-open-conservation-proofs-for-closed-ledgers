@@ -743,6 +743,7 @@ mod tests_cabeza_v2 {
 // REGISTRO: bytes ZK-SSL-proof-digest-v2
 // REGISTRO: bytes ZK-SSL-authorization-seal-v1
 // REGISTRO: bytes ZK-SSL-no-proof-by-design-v1
+// REGISTRO: bytes ZK-SSL-witness-cosign
 
 /// Dominios de operacion. **Uno por tipo**, para que una autorizacion de
 /// congelacion no pueda reutilizarse como autorizacion de emision.

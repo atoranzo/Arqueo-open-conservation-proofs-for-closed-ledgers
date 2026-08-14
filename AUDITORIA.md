@@ -21990,3 +21990,103 @@ y filas de la tabla del canon igual. 115 ficheros .rs, los mismos: uno
 sale del nodo y otro entra en el crate nuevo. BACKLOG QUIETO en 40/54:
 esto no cierra ninguna nota ni abre otra — es la precondicion del (ii),
 y un refactor preparatorio no es un cumplido.
+
+## §297 — el objeto de la cofirma: verificable antes de que nadie la emita
+
+**Que.** El tramo (ii) de la nota 83 —la cofirma del testigo— se parte en
+DOS sellos por el molde del eslabon 2 (§291 estructura, §292 firma, §293
+servicio): este define **QUE se firma y como se comprueba**; el §298 hara
+que el testigo firme. Juntarlos habria dejado inauditable justo la parte
+que fija el objeto. Al cerrar este corte, **un tercero puede verificar una
+cofirma sin que exista todavia ni una sola**.
+
+**La forma, y por que cada campo.**
+
+```text
+b"ZK-SSL-witness-cosign" | version | epoch_digest | len(u16 BE) | clave_op
+           21                  1          32             2           N
+```
+
+El **cuarto campo es la clave publica DEL OPERADOR**, y es la razon de ser
+de la funcion: sin el, una cofirma seria **TRANSFERIBLE** —valdria para
+cualquiera que emitiese ese mismo digest—. Lo que el testigo atestigua no
+es «este digest existe» sino «**este operador** publico este digest». Lo
+hace cumplir un test que altera un byte de la clave y exige rechazo.
+
+**En BYTES, no en hex.** El testigo custodia la clave como hex del cable,
+pero **el verificador tercero la recibe en bytes**: pedirle que reconstruya
+la misma cadena hex —capitalizacion, prefijo, ceros a la izquierda— es
+fabricar discrepancias entre implementaciones que no mienten. Los bytes
+tienen una representacion; el hex, muchas. La regla de §248 no lo impide:
+prohibe transcodificar EN EL DIARIO, no al firmar.
+
+**El prefijo de longitud NO es adorno**, y su precedente estaba escrito en
+esta misma casa: `zk-ssl-hash` documento para `commit_operation` que sin
+relleno ni prefijo **dos mensajes del mismo dominio con longitudes
+distintas podrian colisionar**. Alli la suposicion de longitud fija se
+cumplia y se declaro; aqui NO se cumple —la nota 87 (ML-DSA) trae claves
+de otro tamano— asi que **se resuelve en vez de suponerse**. Un `assert`
+de longitud fija seria una trampa armada: funciona hoy, y el dia que
+estorbe alguien lo relaja para que pase. Y el prefijo se escribe con
+`try_into()`, **nunca `len() as u16`**: eso truncaria EN SILENCIO y el
+testigo firmaria un preambulo que miente sobre su propio contenido.
+
+**Donde vive, y el precio escrito.** En `zk-ssl-verify`, porque el
+verificador de una cofirma es **de terceros**: meterla en el cli obligaria
+a compilar el CLI para verificar, que es la regla de §243/§254/§296 rota
+por cuarta vez. Se descarto un crate `zk-ssl-cosign` propio: el tercero
+**ya importa verify** para la cabeza, y una dependencia mas para cofirmar
+esa misma cabeza es coste sin contrapartida. El precio —verify crece— va
+pagado con tres condiciones: funciones NUEVAS y separadas (el preambulo de
+50 bytes y `DOMINIO` **no se tocan**), la cabecera reescrita, y **ningun
+tipo nuevo en la superficie** (la regla de §248 sigue viva).
+
+**La cabecera, reparada TRES veces — y DOS eran deuda heredada.**
+§248 decia «Nada mas», y este corte lo rompe. Pero al medirla aparecieron
+dos afirmaciones **ya falsas antes de llegar**: «solo de `xmss`», que
+**§292 dejo caduca** al reexportar `zk_ssl_hash`; y «su superficie es el
+dominio, la version y `verificar_cabeza`», que para cuando alguien volvio a
+leerla eran quince elementos —§256 y §275 la inclusion, §274 los acuses,
+§279 la reverificacion, §291 el MMR, §292 los reexports—.
+
+⚠️ **Y lo que mas ensena: §275 y §279 escribieron AL LADO que la superficie
+crecia, citando esta misma cabecera, y no subieron la correccion al parrafo
+que contradecian.** No es que nadie lo viera: se vio dos veces y se anoto
+abajo. Es §247 al reves. Las tres se reparan **por FAMILIAS y diciendo
+donde se mide la verdad** —los `pub` del fichero, su `[dependencies]`— y NO
+enumerando: una lista exacta es el mismo reloj de arena puesto a contar
+otra vez, y ya caduco una vez.
+
+**Ejercitado.** Siete tests nuevos, y `check_dominios` en verde con el
+dominio dado de alta por R1-R5 («siete cadenas ZK-SSL declaradas; el censo
+y el registro dicen lo mismo»). Tres sostienen el corte: la cofirma bajo
+otra clave de operador **se rechaza** —y la firma del operador tampoco
+pasa por cofirma, porque el dominio es otro—; dos claves de longitudes
+distintas **no dan el mismo preambulo**; y una clave que no cabe en el
+prefijo **da error en vez de truncar**. De propina, el doc-test de la
+cabecera siguio compilando tras la reescritura triple.
+
+**Decisiones y precios, escritos.** La clave que entra en el preambulo es
+**la FIJADA por el testigo**, no la recibida en el mensaje: misma doctrina
+que §294 —no firmes lo que te dan, firma lo que anclaste— y **falla
+CERRADA**, porque `clave_fijada` es un `Option` y sin ancla no hay nada que
+escribir. Hoy ambas coinciden en valor; la diferencia protege contra un
+reordenamiento futuro, asi que queda como **RAZONADO**, no medido. La
+propiedad ganada, dicha: **la cofirma exige ancla por construccion**.
+
+**Un rojo propio, escrito porque un rojo que no se escribe se repite.**
+El gate de este bloque conto los tests con la PRIMERA linea `result: ok` y
+puso rojo un corte correcto: `cargo test -p X` imprime **tres** —`lib.rs`,
+el binario y los DOC-TESTS— y **el pin del canon los suma** (54+0+1 = 55, y
+antes 47+0+1 = 48). Es candidato **21** de «la forma del instrumento decide
+el numero», y hermano de los casos 17 y 19: **el canon mide un AGREGADO y
+el instrumento leia una PARTE**.
+
+**Lo que este corte NO hace.** **Nadie firma todavia.** El testigo no tiene
+clave propia, ni guardian, ni mando: eso es el §298. El tramo (ii) **NO
+esta cerrado**, y la 83 no recibe cumplido en este sello.
+
+**Contadores.** `zk-ssl-verify` 48 -> 55 (7 tests). Sumas 820/957/971 ->
+**827/964/978**; la cifra POR-CRATE del verificador en `PRINCIPIOS.md`,
+48 -> 55. **Ningun Cargo tocado**; ningun `.rs` nuevo. BACKLOG QUIETO en
+40/54: la **94** se AMPLIA —no se abre nada— con dos cegueras mas.
