@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 42 abiertas, 54 resueltas — **2 suspendidas** (16 y 28).
-Ultima revision: 14 de agosto de 2026 — **contada, no recordada**.
+**Estado**: 43 abiertas, 54 resueltas — **2 suspendidas** (16 y 28).
+Ultima revision: 15 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
 
@@ -1451,6 +1451,26 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   repara. Entra REVERSIBLE: si se prefiere, su contenido cabe en el
   cuerpo de la 28 y esta se retira.
 
+- [ ] **97. Lo que costaria un `zk-ssl-air` de verdad, ya medido.** El
+  spike del §305 extrajo la mitad verificadora del AIR a un crate propio
+  y la llevo hasta un guest bare-metal. Si algun dia se parte de verdad,
+  el camino esta MEDIDO y no hay que redescubrirlo. **Soltar la fachada**:
+  depender de `winter-air`, `winter-crypto`, `winter-math` y
+  `winter-verifier` por separado, porque `winterfell` sirve el AIR A
+  TRAVES del probador y con el arrastra `tracing`. **Podar**: los tres
+  modulos hermanos llevan cada uno su `build_trace` y su `impl Prover`, y
+  el modulo de nullifiers entra en el grafo solo porque el de nativo
+  importa UNA constante suya. **Dar `alloc`**: dos lineas por modulo en
+  los tres que lo piden. **En el hash**, `extern crate alloc` y **un solo
+  `std::`** que resolver, el `impl std::error::Error`, mejor con
+  `core::error::Error` —estable desde 1.81 y disponible: el toolchain de
+  la casa es 1.97—. **Y sobra**: `AuxRandElements`,
+  `ConstraintCompositionCoefficients`, `PartitionOptions`,
+  `DefaultRandomCoin`, `MerkleTree`, `MerklePath`, el alias del hasher y
+  la funcion de bits, que el compilador nombra uno a uno. ⚠️ Esto
+  **sobrevive a la decision sobre la rama B**: vale aunque la agregacion
+  se abandone, y por eso no vive dentro de la 22.
+
 ## E. Operacion
 
 - [ ] **17. Replica y alta disponibilidad.** **Comprobable**: `grep -rn
@@ -1565,6 +1585,20 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   estructura; lo RAZONADO es que la curva sea plana: **nunca se corrio un
   lote de 100**, y eso se declara en vez de absorberse. Queda viva la
   envoltura recursiva, con su puerta G1 sin jugar.
+  ⚠️⚠️ **G1 JUGADA (§305): ROJA por COSTE, no por imposibilidad.** El
+  verificador de la capa, extraido a un crate de solo-verificador sin la
+  fachada `winterfell`, **corre dentro de una zkVM y dice VERIFICA** con
+  una prueba real: 47.513.440 ciclos, 49 segmentos, 955 ms de ejecucion,
+  `Halted(0)`. Probarlo es lo que no sale: medido en un portatil de ocho
+  nucleos sin GPU, **2.109 ciclos/s** con segmentos de 2^18 y cuatro
+  hilos y **2.621 ciclos/s** con 2^20 y ocho —doblar los hilos solo da un
+  24 %, asi que el probador no escala aqui—, lo que proyecta **5 h 07 por
+  UNA prueba** contra un umbral de sesenta minutos. Un pago son dos
+  pruebas: unas 10,1 horas; mil pagos, 420 dias de CPU. ⚠️ **El rojo es
+  de ESTA maquina**: ninguna con GPU esta medida, y ahi la cifra podria
+  caer en minutos. **La nota NO se cierra**: M1b sigue estimada y no
+  medida, y el eje de la decision se ha movido de «se puede» a **«quien
+  paga los ciclos»**. Lo que un crate de verdad costaria vive en la 97.
 
 - [ ] **93. El nodo MENTIROSO: la variante que hace ejercitables las
   defensas.** Instrumentacion, no modelo de confianza: una variante que

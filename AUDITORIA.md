@@ -22656,3 +22656,139 @@ capa, en el mismo bloque que el pin. Las herramientas de `tools/` pasan
 de **seis a siete** en la lista dura de `canon.sh`. BACKLOG **41 -> 42
 abiertas**, resueltas quietas en 54: nace la **96**, y la **22** se
 reescribe con su cifra. Ningun Cargo tocado.
+
+## §305 — 2026-08-15 · El verificador corre dentro de la zkVM, y G1 sale ROJA por coste
+**Que.** La puerta G1 de la nota 22 preguntaba si la envoltura recursiva
+es viable. La respuesta tiene dos mitades y no coinciden: el verificador
+de la capa **corre dentro de una zkVM y dice VERIFICA** con una prueba
+real producida por el AIR del arbol, y **probarlo cuesta cinco horas por
+prueba** en la maquina de casa. G1 se declara **ROJA por COSTE**, no por
+imposibilidad.
+**UNA CONSECUENCIA RAZONADA NO HEREDA LA FIRMEZA DE LA MEDICION QUE LA
+SUGIERE.** La fase M2.2b-1 midio una cadena de dependencias real
+—`tracing-core` <- `tracing` <- `winter-prover` <- `winterfell`— y de ahi
+razone que la fachada NO PODIA llegar a un guest, porque `tracing` pide
+atomicos y el zkVM no tiene la extension A. Lo medido era cierto; la
+consecuencia, falsa. El target de Rust del guest,
+`riscv32im-risc0-zkvm-elf`, declara `max_atomic_width 64` y `atomic_cas`
+porque al ser monohilo los atomicos le salen gratis, y el build de la
+plantilla compilo `tracing-core v0.1.36` para ese target sin inmutarse.
+**Confundi la especificacion del HARDWARE con la del TARGET DE
+COMPILACION**, y las dos son ciertas a la vez. Era un «no DEBE» de
+diseno, nunca un «no PUEDE» de fisica.
+**El §254 llega al grafo de dependencias.** La fachada `winterfell` no es
+que ademas traiga el probador: **sirve el AIR A TRAVES del probador**. Su
+`lib.rs:632-640` reexporta de `prover` los modulos `crypto`, `math` y
+`matrix` y los tipos `Air`, `AirContext`, `Assertion`, `EvaluationFrame`,
+`ProofOptions`, `TraceInfo` y `Proof`; y `winter-prover` **no origina
+ninguno**: los reexporta de `air`, `crypto` y `math`. Lo unico suyo es
+`pub mod matrix`. Un pasamanos que arrastra `tracing` para servir cosas
+que no son suyas. La propia fachada se topo con el hueco y lo parcheo con
+una linea directa a `air` para los tres tipos que la lista del probador
+no lleva.
+**Lo medido, en orden.** Un crate de solo-verificador —los cuatro
+sub-crates sueltos, sin fachada— compila para `riscv32im-unknown-none-elf`
+y **verifica el fixture en nativo** en 2,37-2,86 ms, la misma banda que
+el AIR del arbol: soltar la fachada y el probador no cambio el trabajo,
+solo lo que se arrastra. Son **1528 lineas** frente a 2222 de la copia
+podada y 2618 de la copia fiel. Entre esa capa y un guest bare-metal solo
+faltaba `alloc`: cuarenta y nueve errores, veintidos `vec!` y veintisiete
+`Vec`, y ni un `std`, ni un atomico, ni un trait ausente. Dentro de la
+zkVM el guest dice **VERIFICA**, con `exit_code Halted(0)`, en
+**47.513.440 ciclos** repartidos en 49 segmentos y 955 ms de ejecucion,
+con 67.208 bytes de entrada. La ejecucion es **unas 400 veces mas lenta
+que en nativo, y eso es ANTES de probar**.
+**G1: ROJA, y con su acotacion escrita.** Dos configuraciones medidas en
+un portatil de ocho nucleos SIN GPU, bajo WSL. Con segmentos de 2^18 y
+cuatro hilos: 124 segmentos en 4 h 16 min 56 s, **124,3 s por segmento**,
+**2.109 ciclos por segundo**, pico de 3.008 MiB, proyeccion **6 h 17**.
+Con segmentos de 2^20 y ocho hilos: **400 s por segmento**, **2.621
+ciclos por segundo**, pico de r0vm en **9.375 MiB**, proyeccion **5 h
+07**. **Doblar los hilos y cuadruplicar el segmento solo da un 24 %**: el
+probador no escala con el paralelismo aqui, asi que afinar la CPU no
+rescata esto. El umbral rojo del plan eran sesenta minutos. Se cumple
+R-PQ2: no se llego a tocar Groth16.
+**Lo que NO cae.** A 2.621 ciclos por segundo, un pago son dos pruebas y
+unas **10,1 horas**; mil pagos, **420 dias de CPU**. Pero la rama B no
+muere de imposibilidad tecnica: muere de coste de prueba. La pregunta
+deja de ser «se puede» y pasa a ser **«quien paga los ciclos»**, que es
+de diseno del sistema y no de ingenieria. Y el rojo es **de esta
+maquina**: ninguna con GPU esta medida, y ahi estos 51,4 M ciclos con
+relleno podrian caer en la banda de minutos.
+**Rojos propios de este corte, los quince escritos.** (1) El gate que
+contaba MENCIONES de `winterfell` en vez de lineas de CODIGO mato dos
+bloques, y la segunda vez el arreglo **ya estaba escrito en la misma
+sesion**. La diferencia con el clasificador de errores, que si viajo, es
+que aquel era una FUNCION y este iba en linea: **una correccion escrita
+como funcion viaja; escrita en linea, se queda en su bloque**. (2) La
+consecuencia razonada de los atomicos, ya dicha: me retracte del proxy,
+me des-retracte citando la spec del hardware, y **la des-retraccion era
+la equivocada**. (3) Un censo que busca el TIPO es ciego al MACRO del
+mismo nombre: grepee `\bVec\b` y me perdi veintidos `vec!`. (4) La regla
+«`error[E####]` lo emite el compilador y `error:` a secas lo emite cargo»
+es FALSA: los fallos de resolucion de macro salen como `error:` sin
+codigo y son del compilador. **La discriminacion real es el SPAN.** (5)
+El PRE imprimio «RAM total 7 GiB» y no lo use de gate: **un numero
+impreso y no comparado con nada no es una medicion**, y la prueba murio
+por memoria. (6) Puse el log del gasto mas caro en `/tmp`, con la regla
+«bajo $HOME, nunca en /tmp» ya escrita: WSL se reinicio y se llevo la
+unica evidencia. (7) **La documentacion publicada no es la fuente: la
+fuente es el binario instalado** —copie una opcion de la web que la
+version instalada no tiene—. (8) Anote que el probador se va a `r0vm`
+como subproceso y **por eso no emite logs en proceso**, y aun asi confie
+en `RUST_LOG` para ver el progreso: cuatro horas a ciegas. (9) El
+unico que murio en el ensayo y no en la maquina, y por eso vale doble:
+el gate que comprueba que este mismo asiento no lleva tildes daba ROJO
+sobre el emoji de aviso. **En locale C, un patron de caracteres
+acentuados sobre un fichero UTF-8 es un patron de BYTES**, y los del
+emoji caen dentro del rango. Otra vez un gate cazando mi propia prosa,
+disfrazado de otra cosa.
+Y seis mas, que no entraron en el primer cuerpo de este mismo asiento
+porque escribi el catalogo de memoria en vez de recorrer la sesion: **un
+catalogo escrito de memoria es un censo por enumeracion, y es ciego a lo
+que no lista**. (10) Una orden de verificacion **sin rama `else`**: su
+salida vacia no distingue «no existe» de «no lo he corrido», y llevaba
+ademas un `| cut` que se lleva el codigo de salida de lo que va delante.
+**Una orden de verificacion tiene que imprimir algo en TODAS sus ramas y
+decir cual tomo.** (11) Un `grep` de `pub use` **solo ensena el ABRIDOR**
+de un bloque con llaves, y el agujero cayo justo donde vivia el mapa de
+reexportaciones que habia ido a buscar. (12) **Un numero de linea
+recordado se desplaza**, dos veces en el mismo corte: el unico `std::`
+del hash era `:409` y no `:408` —una linea prepuesta habia corrido el
+fichero entero— y el contador del BACKLOG vive en la 15 y no en la 14.
+**Una huella POST no arrastra los numeros de linea.** (13) El mas gordo
+de los seis: **la poda de la fase M2.2b-1 podo UN SOLO FICHERO y yo la
+declare «la podada»**. Su gate decia «fuera de estos dos ficheros no
+cambia un byte»: media **fidelidad de la copia**, no **completitud de la
+poda**, y protegia exactamente la propiedad contraria a la que hacia
+falta. El verde del nativo era **cierto y parcial a la vez**, porque el
+AIR que se ejercitaba si estaba bien podado mientras los tres modulos
+hermanos seguian llevando su probador dentro. (14) Un `restaurar()`
+**incompleto**: devolvia el `Cargo.toml` de la raiz y dejaba escritos el
+crate y el binario. El restaurar devuelve tambien lo que el bloque no
+ensucio a mano. (15) Y uno de entorno: di un one-liner de PowerShell en
+una sesion donde treinta ordenes seguidas habian sido de bash, y con
+acentos graves, que en bash son sustitucion de ordenes; la linea se
+comio el `wsl --shutdown` y dejo la terminal esperando un cierre que no
+llegaba.
+**Lo que salio bien y tambien se anota.** Tres predicciones escritas
+ANTES de correr y acertadas: los ciclos entre 3e7 y 1e8 —salieron
+4,75e7—, la memoria a 2^20 entre 6 y 9 GiB —salieron 9,4—, y que el
+muro se moveria del hash al AIR. Y las diez rutas del `use` nuevo,
+escritas leyendo las reexportaciones en vez de recordarlas, resolvieron a
+la primera.
+**Lo que se declara y no se repara aqui.** No hay tamano de receipt, ni
+composite ni sucinto: **ninguna corrida llego a terminar**. El ritmo de
+2^20 descansa en **un solo intervalo** entre dos caidas, y se declara con
+esa resolucion en vez de redondearse. El diario del guest publica un
+`u32` con 1 o 0 y no las entradas publicas, asi que el receipt diria
+«algo verifico» y no «verifico ESTO»: para medir coste da igual, y
+cambiarlo habria cambiado el ELF y con el las cifras. Y no se toco nada
+del arbol para todo esto: el spike vivio fuera y `HEAD` no se movio en
+ninguna de las trece mediciones.
+**Contadores.** BACKLOG **42 -> 43 abiertas**, resueltas quietas en 54:
+nace la **97** y la **22** gana su desenlace de G1 sin cerrarse, porque
+M1b sigue estimada y no medida. Ningun test nuevo, ningun Cargo tocado,
+ningun pin movido. La cifra de sellos **no se incrementa**: sigue sin
+definicion operativa desde el §304, y lo que se arrastra son los HEAD
+medidos.
