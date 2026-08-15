@@ -318,7 +318,7 @@ producing a proof that will not verify.
 
 #### 3. Proof accumulation
 
-**One thousand transfers accumulate 120.4 MB.** This is a storage and
+**One thousand transfers accumulate 126.2 MiB.** This is a storage and
 bandwidth cost, not a stop: the system keeps working.
 
 #### 4. Custodian set size
@@ -479,7 +479,7 @@ Nothing in this document requires trusting its author.
 ```bash
 git clone [repository]
 cd zk-ssl
-cargo test -p zk-ssl --release              # 263 tests (3 ignored)
+cargo test -p zk-ssl --release              # 264 tests (3 ignored)
 cargo test -p stark-experiment --release    # 297 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```

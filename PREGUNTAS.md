@@ -248,7 +248,7 @@ magnitud, no como benchmark.
 
 ### 21. ¿Cuánto ocupa? ¿Escala?
 
-**62 KB por transferencia. Mil transferencias son 120,4 MB acumulados.**
+**62 KB por transferencia. Mil transferencias son 126,2 MiB acumulados.**
 
 Resolverlo exige agregación recursiva o pruebas por lote, que no están
 implementadas.

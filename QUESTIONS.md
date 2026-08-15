@@ -232,9 +232,9 @@ not as a benchmark.
 
 ### 21. How large is it? Does it scale?
 
-**62 KB per transfer. One thousand transfers accumulate 120.4 MiB.**
+**62 KB per transfer. One thousand transfers accumulate 126.2 MiB.**
 (Unit corrected in the fourth revision: the figure was always binary
-and was labelled "MB"; in SI units it is 129.0 MB.)
+and was labelled "MB"; in SI units it is 132.3 MB.)
 
 Resolving it requires recursive aggregation or batched proofs, neither of
 which is implemented.

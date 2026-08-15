@@ -462,7 +462,7 @@ on the party accepting it.
 > **verifies, mutates the tree and writes to disk**. The two are not
 > comparable. See `AUDITORIA.md` §22.
 
-**Quantified scaling limit**: one thousand transfers accumulate 120.4 MiB of
+**Quantified scaling limit**: one thousand transfers accumulate 126.2 MiB of
 proofs. This is the dominant practical constraint of choosing STARK, and
 the quantitative argument for recursive aggregation or batched proofs.
 
@@ -885,9 +885,9 @@ trace.
 
 Measurements show that verification costs 0.5–0.8% of proving — an
 asymmetry that makes the model viable — and quantify its principal limit:
-**120.4 MiB of accumulated proofs per thousand transfers** — unit
+**126.2 MiB of accumulated proofs per thousand transfers** — unit
 corrected in the fourth revision: the figure was always binary and was
-labelled "MB"; in SI units it is 129.0 MB.
+labelled "MB"; in SI units it is 132.3 MB.
 
 ⚠️ That asymmetry is measured on **audit disclosures**, which verify without
 mutating state — precisely the supervisory case. A transfer's apply step
@@ -921,7 +921,7 @@ non-stable compilers are used.
 # Or all at once, with the canon's pinned counts checked:
 bash tools/canon.sh --sello
 
-cargo test -p zk-ssl --release              # layer: 263 tests (3 ignored)
+cargo test -p zk-ssl --release              # layer: 264 tests (3 ignored)
 cargo test -p stark-experiment --release    # circuits: 297 (10 ignored)
 cargo test -p zk-ssl-node --release         # node: 31
 cargo test -p zk-ssl --release metrics -- --nocapture

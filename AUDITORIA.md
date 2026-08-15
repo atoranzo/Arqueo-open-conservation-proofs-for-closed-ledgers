@@ -22560,3 +22560,99 @@ descartados**, no volver a recorrerlos.
 **Contadores.** Ninguno se mueve: ni pines, ni sumas, ni cifras por-crate, ni
 `.rs`, ni Cargo. BACKLOG QUIETO en 41/54 — la **95** sigue abierta y este
 corte no la toca. Un solo fichero: `AUDITORIA.md`.
+
+## §304 — 2026-08-14 · La cifra publicada, con fuente y con atado
+
+**Que.** Once documentos publicaban **120,4 MB por mil pagos**. El
+instrumento de la casa mide **126,2 MiB** y lo imprime en cada corrida.
+La cifra no era un recuerdo sin fuente: era una MEDIDA que nadie
+comparaba con lo publicado. Este corte le da fuente unica, la ata por los
+dos lados y repara diecinueve numeros en nueve documentos.
+
+**No se buscaba.** La fase M0 del plan de la nota 22 midio el coste por
+pago para decidir la agregacion, y el numero no cuadro con el publicado.
+El sello nace de una medicion hecha para otra cosa.
+
+**UNA TOLERANCIA DECLARADA UNA VEZ SOBRE ALGO QUE CRECE ES UNA PROMESA,
+NO UN GATE.** El §83.3 midio esta misma deriva el 31-07-2026, la cifro en
+**2,2 %** y la declaro «dentro de la guarda». El 14-08 era **4,8 %**:
+habia duplicado, y nada vigilaba si seguia dentro. Es el simetrico de «un
+contador EXACTO sobre algo que puede crecer es un rojo esperando turno»,
+y merece quedarse como regla de casa. El §172 ya habia registrado 132.311
+B y 126,2 MB; lo que no se actualizo fueron los documentos.
+
+**Dos eslabones, porque ninguno cubre la distancia entera.** Una
+herramienta de `tools/` no puede correr `cargo`; un test de Rust no puede
+barrer el markdown del repo ni entrar en el bucle del canon. La constante
+es el puente: instrumento -> `PUBLICADA_PAGO_B` -> documentos. El atado A
+(`la_cifra_publicada_sigue_siendo_la_medida`, sin `ignore`) dice que se
+movio el SISTEMA; el atado B (`tools/check_publicadas.py`, septima del
+bucle) dice que se quedo atras un DOCUMENTO. Cada rojo nombra un hecho
+distinto.
+
+**La relacion va con BANDA y no con valor.** Los bytes son deterministas
+—66.998 y 65.313, identicos en cuatro corridas—; los tiempos dependen de
+la maquina. Por eso el gate de bytes es exacto y el de la relacion
+envio/cobro afirma el SENTIDO con margen.
+
+**El tamano de prueba NO es determinista entre entradas distintas.** Lo
+mide `proof_size_does_not_correlate_with_amount`: 4,03 % de variacion. De
+ahi que el gate exacto exija un montaje GEMELO del de
+`metrics_of_the_layer`, y que `medir_el_pago_publicado` exista y lo
+declare. Es un segundo productor del mismo montaje —la figura que este
+sello repara— y se acepta declarado, porque la alternativa era cirugia
+sobre el instrumento que sirve de ancla.
+
+**DE LAS TRES CIFRAS, SOLO LA PRIMERA TIENE COMPUERTA, Y AHORA ESTA
+DEMOSTRADO.** Con el pin ya movido, `check_cifras` delato **15 de las 19**
+cifras: los nueve **263** por-crate y los cinco **843** de TOTAL, con
+fichero y linea. **No vio los cuatro 980 ni los 994**, porque su patron
+exige el numero pegado a «tests» o «pruebas». Este sello acaba de mover
+cuatro cifras publicadas que **ningun gate habria vigilado** si se
+olvidan. Lo que el §302-B dejo escrito como sospecha, aqui esta medido en
+vivo. De propina, el desglose se sigue reportando como `PRINCIPIOS.md:0`:
+dice QUE fallo pero no DONDE.
+
+**El desenlace por lote muere por ESTRUCTURA, no por curva.** `apply_many`
+consume recibos ya probados y devuelve `Result<(), LayerError>`: apila
+pruebas, no las agrega. Nacio contra la contencion del §204 —3,83
+regeneraciones por pago, el 66 % del trabajo criptografico tirado—, que
+es tiempo y no bytes. La puerta G0 del plan **no se declara verde ni
+roja: se declara INAPLICABLE**. Lo MEDIDO es la estructura; lo RAZONADO
+es la planitud de la curva, y nunca se corrio un lote de 100. Esa
+sustitucion de una curva por un argumento se declara, no se absorbe.
+
+**Lo que NO se toca, y por que.** `README.md:482`, `INSTITUCIONAL.md:346`
+e `INSTITUTIONAL.md:332` citan lo que publicaba una version ANTERIOR, la
+primera con su DOI. Cambiar esas cifras seria falsificar el registro. El
+atado B las salta por marca historica y **lo imprime**: una exclusion
+silenciosa es un agujero.
+
+**Rojos propios de este corte, los cuatro escritos.** (1) El primer
+BLOQUE-304 murio contando la palabra `ignore` en un comentario **que el
+propio parche acababa de escribir** —el mismo error que mato al §302, con
+la regla ya escrita delante—. (2) Su mensaje decia «10/13 cadenas nuevas»
+cuando las trece estaban bien: el contador sumaba dos clases de fallo en
+una cifra, y un instrumento que falla tiene que decir QUE fallo. (3) El
+primer 304-B murio con un barrido **mas estricto que el instrumento**,
+que delataba tres restos legitimos. (4) En el censo, `\b994\b` caso dentro
+de `41.994`: **un separador de miles crea un limite de palabra**, y un
+patron numerico tampoco distingue una CIFRA de un NUMERO DE SELLO.
+
+**Lo que se declara y no se repara aqui.** `ARQUITECTURA.md:615` publica
+**~620 s** por mil pagos; hoy son ~450 y el §172 midio ~380: publicar un
+tiempo ABSOLUTO depende de la maquina y es un defecto de diseno, no una
+cifra que cambiar. `PAPER.md` y `PAPER_EN.md` publican que verificar
+cuesta el **0,5-0,8 %** de generar; el §172 midio ~18 % y hoy sale 2,1 %:
+tres valores, ninguno atado. `PREGUNTAS.md:251` y `QUESTIONS.md:235`
+dicen «62 KB por transferencia», que por mil serian 62 MB y no 126,2: el
+62 KB es por PRUEBA y un pago son DOS. Y los tres preprints siguen bajo
+la **28**.
+
+**Contadores.** Pin `zk-ssl` **263 -> 264** (un test nuevo, no ignorado;
+los ignorados siguen en 3 y los 13 instrumentos de medida son derivados,
+no cableados). Sumas **843/980/994 -> 844/981/995** y el desglose de la
+capa, en el mismo bloque que el pin. Las herramientas de `tools/` pasan
+de **seis a siete** en la lista dura de `canon.sh`. BACKLOG **41 -> 42
+abiertas**, resueltas quietas en 54: nace la **96**, y la **22** se
+reescribe con su cifra. Ningun Cargo tocado.

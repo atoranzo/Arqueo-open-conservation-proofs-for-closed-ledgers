@@ -45,6 +45,89 @@ mod tests {
     use std::time::{Duration, Instant};
     use winterfell::math::fields::f64::BaseElement;
 
+    // ===== LA CIFRA PUBLICADA - FUENTE UNICA =====
+    //
+    // Medida el 2026-08-14, en release, con la configuracion real de la
+    // capa (proof_options) y el montaje de metrics_of_the_layer.
+    //
+    // UNIDAD: MiB = 2^20. NO son MB de 10^6. Un lector que tome MB
+    // decimal lee un 9,9 % menos de lo real. La etiqueta ya la cazo
+    // AUDITORIA.md §83.3 y nadie la arreglo.
+    //
+    // El tamano de una prueba es DETERMINISTA para las MISMAS entradas
+    // (cuatro corridas, byte a byte), pero varia ~4 % entre entradas
+    // distintas: lo mide proof_size_does_not_correlate_with_amount. Por
+    // eso el gate exacto exige un montaje GEMELO, y por eso existe
+    // medir_el_pago_publicado.
+    //
+    // Quien mueva esta constante mueve tambien los documentos:
+    // tools/check_publicadas.py los ata y dice cuales faltan.
+    const PUBLICADA_FECHA: &str = "2026-08-14";
+    const PUBLICADA_ENVIO_B: usize = 66_998;
+    const PUBLICADA_COBRO_B: usize = 65_313;
+    const PUBLICADA_PAGO_B: usize = 132_311;
+    const PUBLICADA_MIL_MIB: &str = "126,2";
+
+    // La RELACION va con BANDA y no con valor: los bytes no dependen de
+    // la maquina, los tiempos SI. Medido cuatro veces: envio 260,7-286,8
+    // ms, cobro 159,4-189,6 ms. Las bandas no se solapan. Se afirma el
+    // SENTIDO con margen, nunca un valor.
+    //
+    // Esto importa mas que los bytes: los preprints afirman que la mitad
+    // cara cae en el RECEPTOR (cobro ~500 ms contra 283 ms de envio) y
+    // construyen sobre ello un argumento normativo. Hoy es al reves. Los
+    // preprints los suspende la entrada 28; este gate impide que la
+    // inversion vuelva a pasar inadvertida.
+    const PUBLICADA_ENVIO_SOBRE_COBRO_MIN: f64 = 1.20;
+
+    /// El montaje que produce la cifra publicada.
+    ///
+    /// **GEMELO del de metrics_of_the_layer**: mismas cuentas, mismos
+    /// importes, misma semilla. Tiene que serlo, porque el tamano de una
+    /// prueba solo es exacto para las mismas entradas. Si uno de los dos
+    /// cambia y el otro no, este atado miente.
+    fn medir_el_pago_publicado() -> (usize, usize, f64, f64) {
+        let mut layer = new_layer();
+        #[allow(deprecated)]
+        let alice = layer.open_account(BaseElement::new(SK_ALICE));
+        #[allow(deprecated)]
+        let bob = layer.open_account(BaseElement::new(SK_BOB));
+        let op = mint_commitment(&layer, alice, 1_000_000);
+        let subida = mint_climb_proof(&layer, alice, 1_000_000);
+        let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+        layer
+            .apply_mint_delegated(subida, pa, ia, pb, ib, alice, 1_000_000)
+            .expect("aplicar emision");
+        fund_delegated(&mut layer, bob, 50_000);
+        let estado_a = state_of(&layer, alice);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+        let t = Instant::now();
+        let envio = layer
+            .send(
+                BaseElement::new(SK_ALICE),
+                alice,
+                &estado_a,
+                receptor,
+                salt_de(0x11E7),
+                250_000,
+            )
+            .expect("envio");
+        let envio_ms = t.elapsed().as_secs_f64() * 1000.0;
+        layer
+            .apply_send(&envio, alice, &estado_a, 250_000)
+            .expect("aplicar envio");
+        let estado_b = state_of(&layer, bob);
+        let t = Instant::now();
+        let cobro = layer
+            .claim(BaseElement::new(SK_BOB), bob, &estado_b, &envio.notice)
+            .expect("cobro");
+        let cobro_ms = t.elapsed().as_secs_f64() * 1000.0;
+        layer
+            .apply_claim(&cobro, bob, &estado_b, &envio.notice)
+            .expect("aplicar cobro");
+        (envio.proof.len(), cobro.proof.len(), envio_ms, cobro_ms)
+    }
+
     fn ms(d: Duration) -> f64 {
         d.as_secs_f64() * 1000.0
     }
@@ -328,7 +411,7 @@ mod tests {
             100.0 * audit_gen.as_secs_f64() / tx_gen.as_secs_f64()
         );
         println!(
-            "Jornada de 1.000 pagos (envio+cobro): {:.1} s de prueba, {:.1} MB acumulados",
+            "Jornada de 1.000 pagos (envio+cobro): {:.1} s de prueba, {:.1} MiB acumulados",
             tx_gen.as_secs_f64() * 1000.0,
             (tx_bytes * 1000) as f64 / 1_048_576.0
         );
@@ -365,9 +448,9 @@ mod tests {
         // de orden de magnitud, no de fijar el byte exacto.
         //
         // ⚠️⚠️ **ESTA GUARDA SALTO AL MIGRAR A LA VIA EN DOS FASES**, y tenia
-        // razon. Cada prueba sigue midiendo ~62 KB —eso no ha cambiado— pero
+        // razon. Cada prueba medía ~62 KB; §304 remidio 65,4 y 63,8 KB —eso no ha cambiado— pero
         // **un pago son ahora DOS pruebas**, asi que la acumulacion por mil
-        // pagos pasa de 59,1 MB a **120,4 MB**.
+        // pagos paso de 59,1 MB a 120,4 MB, y en §304 a **126,2 MiB**.
         //
         // La cifra vieja no era un error de medicion: medía una operacion
         // que dejo de ser la de produccion. Ver `AUDITORIA.md` §31.
@@ -382,7 +465,7 @@ mod tests {
         assert!(
             (100_000..160_000).contains(&tx_bytes),
             "un PAGO COMPLETO mide {tx_bytes} bytes. Los documentos publican \
-             ~126 KB por pago y 120,4 MB por cada mil: si el tamaño ha \
+             ~129 KiB por pago y 126,2 MiB por cada mil: si el tamaño ha \
              cambiado de orden, esas cifras son falsas"
         );
 
@@ -404,6 +487,65 @@ mod tests {
     /// mantiene estable. Si creciera —por los árboles llenándose o por
     /// otra causa— el sistema no escalaría linealmente y eso hay que
     /// saberlo.
+    /// **ATADO A - el instrumento contra la cifra publicada.**
+    ///
+    /// Falla si el SISTEMA se movio y la constante no.
+    ///
+    /// Su gemelo vive en tools/check_publicadas.py y falla si la
+    /// CONSTANTE se movio y los documentos no. Dos eslabones, dos
+    /// mensajes distintos: cada rojo dice cual de las dos cosas paso.
+    ///
+    /// Sin atributo de ignorar: es una COMPROBACION, no un instrumento
+    /// de medida. Un gate ignorado es un gate que no puede hablar.
+    #[test]
+    fn la_cifra_publicada_sigue_siendo_la_medida() {
+        let (envio_b, cobro_b, envio_ms, cobro_ms) = medir_el_pago_publicado();
+
+        assert_eq!(
+            envio_b, PUBLICADA_ENVIO_B,
+            "el ENVIO mide {} B; la constante dice {} (medida el {}). El \
+             sistema se movio: remide, mueve la constante y deja que \
+             check_publicadas.py senale los documentos que se quedan atras",
+            envio_b, PUBLICADA_ENVIO_B, PUBLICADA_FECHA
+        );
+        assert_eq!(
+            cobro_b, PUBLICADA_COBRO_B,
+            "el COBRO mide {} B; la constante dice {} (medida el {})",
+            cobro_b, PUBLICADA_COBRO_B, PUBLICADA_FECHA
+        );
+        assert_eq!(
+            envio_b + cobro_b,
+            PUBLICADA_PAGO_B,
+            "un PAGO mide {} B; la constante dice {}. Un pago son DOS \
+             pruebas: envio + cobro",
+            envio_b + cobro_b,
+            PUBLICADA_PAGO_B
+        );
+
+        // La jornada de mil pagos, DERIVADA aqui y no recordada.
+        // MiB = 2^20, con una decimal y coma, como la escriben los
+        // documentos en castellano.
+        let mil = (PUBLICADA_PAGO_B * 1000) as f64 / 1_048_576.0;
+        let escrito = format!("{:.1}", mil).replace('.', ",");
+        assert_eq!(
+            escrito, PUBLICADA_MIL_MIB,
+            "la jornada de mil pagos deriva {} MiB y la constante dice {} \
+             MiB. La unidad es 2^20: quien escriba MB de 10^6 publica un \
+             9,9 % menos",
+            escrito, PUBLICADA_MIL_MIB
+        );
+
+        // La RELACION, con banda. Afirma el sentido, no el valor.
+        assert!(
+            envio_ms > cobro_ms * PUBLICADA_ENVIO_SOBRE_COBRO_MIN,
+            "generar el ENVIO tardo {:.1} ms y el COBRO {:.1} ms. Se exige \
+             envio > cobro x {:.2}. Si esto se invierte, la mitad cara pasa \
+             al receptor y el argumento normativo de los preprints (entrada \
+             28) cambia de sentido: no se absorbe, se declara",
+            envio_ms, cobro_ms, PUBLICADA_ENVIO_SOBRE_COBRO_MIN
+        );
+    }
+
     #[test]
     fn cost_per_transfer_stays_stable() {
         const N: usize = 5;

@@ -34,7 +34,7 @@ verify_audit(&d)?;                                      // el supervisor, SIN la
 Con el **ciclo monetario completo**: el dinero puede crearse, moverse y
 retirarse, y la invariante global se mantiene en cada paso.
 
-`crates/zk-ssl` — **263 tests** (3 ignorados, declarados). Material para
+`crates/zk-ssl` — **264 tests** (3 ignorados, declarados). Material para
 auditoría externa en [`AUDITORIA.md`](./AUDITORIA.md), todos en release.
 El backend STARK añade **18 circuitos** verificados por separado.
 
@@ -612,7 +612,7 @@ eso se ve en el propio constructor.
 
 ### El límite cuantificado
 
-**Mil transferencias: ~620 s de prueba y 120,4 MB acumulados.** Ese es el
+**Mil transferencias: ~620 s de prueba y 126,2 MiB acumulados.** Ese es el
 argumento numérico a favor de las pruebas por lote — no una intuición.
 
 ⚠️ **Pero no es el límite más restrictivo.** La posición del nullifier se
@@ -1085,7 +1085,7 @@ comprueba que transferir no altera el suministro.
 >
 > Se conserva porque documenta cómo se llegó al diseño actual —incluidos
 > **dos errores propios** que se cuentan más abajo— pero **no es la capa
-> del sistema**. La capa es `zk-ssl`: 22 módulos y **263 tests**, frente a
+> del sistema**. La capa es `zk-ssl`: 22 módulos y **264 tests**, frente a
 > los 2 módulos y 17 de este.
 >
 > Una versión anterior de este documento lo titulaba *"La capa"* sin más,

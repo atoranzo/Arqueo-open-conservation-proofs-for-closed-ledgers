@@ -332,7 +332,7 @@ una prueba que no verifica.
 
 #### 3. Acumulación de pruebas
 
-**Mil transferencias acumulan 120,4 MB.** Es un coste de almacenamiento y
+**Mil transferencias acumulan 126,2 MiB.** Es un coste de almacenamiento y
 ancho de banda, no una parada: el sistema sigue funcionando.
 
 #### 4. Tamaño del conjunto de custodios
@@ -497,7 +497,7 @@ Nada de este documento requiere confianza en su autor.
 ```bash
 git clone [repositorio]
 cd zk-ssl
-cargo test -p zk-ssl --release              # 263 tests (3 ignorados)
+cargo test -p zk-ssl --release              # 264 tests (3 ignorados)
 cargo test -p stark-experiment --release    # 297 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```

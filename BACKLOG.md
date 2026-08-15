@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 41 abiertas, 54 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 42 abiertas, 54 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 14 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -1432,6 +1432,25 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   `spec/RPC.md`; (c) se resuelve solo con el (iii); (d) es barato y no
   depende de los otros.
 
+- [ ] **96. Una RELACION publicada, INVERTIDA.** Los tres preprints afirman
+  que la mitad cara de un pago cae en el RECEPTOR —cobro de unos 500 ms
+  contra 283 ms de envio— y construyen sobre eso un argumento normativo:
+  que la parte con menos capacidad de elegir si participa carga con el
+  coste mayor. **Medido cuatro veces el 14-08-2026, es al reves**: envio
+  260,7-286,8 ms, cobro 159,4-189,6 ms, y las bandas **no se solapan**. El
+  envio no crecio —el 283 publicado sigue siendo bueno—; el que encogio
+  es el cobro, unas 2,7 veces, y **nadie reviso el argumento que dependia
+  de el**. **Tesis distinta de la 95**: aquella es un defecto del
+  artefacto publicado; esta es una afirmacion con carga normativa que hoy
+  es falsa **por inversion, no por magnitud**. **Donde se mide la
+  verdad**: la banda `PUBLICADA_ENVIO_SOBRE_COBRO_MIN` de `metrics.rs`,
+  que desde §304 da rojo si el sentido se invierte —con BANDA y no con
+  valor, porque los tiempos dependen de la maquina y los bytes no—.
+  **Cruce**: el texto vive solo en `doc/preprints/`, que la **28**
+  suspende hasta el fin del proyecto, asi que aqui se DECLARA y no se
+  repara. Entra REVERSIBLE: si se prefiere, su contenido cabe en el
+  cuerpo de la 28 y esta se retira.
+
 ## E. Operacion
 
 - [ ] **17. Replica y alta disponibilidad.** **Comprobable**: `grep -rn
@@ -1514,17 +1533,38 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   error en §42.3 dandola por inventada, y se **restituye** (§42.5): estaba
   en el codigo, se busco donde no estaba. Mismo primitivo que la 33.
 
-- [ ] **22. Agregacion de pruebas.** 120,4 MB por mil pagos es coste, no
-  parada, pero crece linealmente. **Respaldo**: §31 explica por que la cifra
-  paso de 59,1 a 120,4 —un pago son DOS pruebas desde la via en dos fases— y
-  la guarda `metrics::tests::cost_per_transfer_stays_stable` la vigila con
-  margenes anchos a proposito, **para detectar un cambio de orden de
-  magnitud, no el byte exacto**. Ya salto una vez, en esa migracion, y tenia
-  razon. Medido el 31-07-2026: **123,0 por mil**, dentro de la guarda.
-  ⚠️ **Pero la UNIDAD esta mal etiquetada** (§83.3): el arnes divide entre
-  `1_048_576` —MiB— y lo imprime como «MB», y esa etiqueta llega a
-  `PAPER.md`, `PAPER_EN.md` y `QUESTIONS.md`. Un lector que tome MB = 10⁶
-  leera **7,2 % menos** de lo real: son **129,0 MB**. Va con la 16 y la 28.
+- [ ] **22. Agregacion de pruebas.** 126,2 MiB por mil pagos es coste, no
+  parada, pero crece linealmente: un pago son **DOS pruebas** y **132.311
+  bytes**, medidos el 14-08-2026 en release con la configuracion real de
+  la capa. **Donde se mide la verdad**: la constante `PUBLICADA_PAGO_B` en
+  `crates/zk-ssl/src/metrics.rs`, atada al instrumento por el gemelo
+  `la_cifra_publicada_sigue_siendo_la_medida` y a los documentos por
+  `tools/check_publicadas.py`. Cada eslabon dice una cosa distinta al
+  fallar: uno que se movio el sistema, otro que se quedo atras un
+  documento.
+  **Respaldo**: §31 explica por que la cifra paso de 59,1 a 120,4 —un pago
+  son DOS pruebas desde la via en dos fases—; §304 explica por que paso de
+  120,4 a 126,2 y, sobre todo, por que nadie lo vio en dos semanas.
+  ⚠️ Correccion (§304): este cuerpo citaba
+  `cost_per_transfer_stays_stable` como la guarda de la acumulacion. **No
+  lo es**: esa mide la estabilidad del coste entre envios sucesivos. La
+  guarda ancha de la acumulacion vive en `metrics_of_the_layer`, y es
+  ancha a proposito —detecta un cambio de orden de magnitud, no el byte
+  exacto—. Salto una vez, en la migracion, y tenia razon.
+  ⚠️ **La UNIDAD ya no esta mal etiquetada** (§83.3, cerrado en §304): el
+  arnes imprime MiB, y `PAPER.md`, `PAPER_EN.md` y `QUESTIONS.md` dan el
+  equivalente SI cuando lo dan. Lo que queda de aquel punto son los tres
+  preprints, bajo la **28**.
+  ⚠⚠ **El desenlace por LOTE esta descartado, y por ESTRUCTURA.**
+  `apply_many` consume recibos **ya probados** —`BatchOp` los lleva
+  dentro— y devuelve `Result<(), LayerError>`: **apila pruebas, no las
+  agrega**. Nacio contra la contencion del §204, que es un problema de
+  tiempo, no de bytes. Por eso la puerta G0 del plan **no se declara
+  verde ni roja: se declara INAPLICABLE**, porque medía bytes para
+  evaluar una herramienta hecha para otra cosa. Lo MEDIDO es la
+  estructura; lo RAZONADO es que la curva sea plana: **nunca se corrio un
+  lote de 100**, y eso se declara en vez de absorberse. Queda viva la
+  envoltura recursiva, con su puerta G1 sin jugar.
 
 - [ ] **93. El nodo MENTIROSO: la variante que hace ejercitables las
   defensas.** Instrumentacion, no modelo de confianza: una variante que
