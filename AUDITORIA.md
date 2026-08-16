@@ -22939,3 +22939,105 @@ guest agregador esta sin medir. Ningun test nuevo, ningun Cargo del arbol
 tocado, ningun pin movido. La cifra de sellos **no se incrementa**: sigue
 sin definicion operativa desde el §304, y lo que se arrastra son los HEAD
 medidos.
+
+## §307 — 2026-08-16 · LA CONSTANCIA DEL RECEIPT SUCINTO, MEDIDA: 223.234 B A 49 Y A 222 SEGMENTOS.
+
+**Este asiento existe para corregir una frase del §306**, escrita el mismo
+dia y unas horas antes. Alli, en «lo que se declara y no se repara», puse:
+*el receipt sucinto medido es el de una sesion que verifica UNA prueba; que
+su tamano se mantenga constante al agregar es
+propiedad conocida de la recursion, no medida aqui*.
+**Ya no lo es: esta medida.** La frase del §306 no se borra —se cita, y se
+corrige aqui—, que es la regla de la casa desde el §247.
+
+**El falsador fue barato y no toco una linea de codigo.** `SEG_PO2` es
+opcion de EJECUCION, no de compilacion, asi que relanzar el mismo binario
+con `SEG_PO2=18` parte el mismo trabajo en muchos mas trozos: otro arbol de
+join, mismo ELF, mismo fixture, cero cirugia. Si el sucinto se movia, el
+factor 600 de la nota 22 se caia el mismo dia en vez de dentro de un tiempo.
+
+**Lo medido, con su control.** Las dos corridas son el mismo trabajo —
+`user_cycles` clavado en **47.513.440** en las dos— partido distinto:
+
+```
+                        po2 20        po2 18        ratio
+segmentos                   49           222        x4,53
+receipt composite   13.784.514 B  56.762.300 B      x4,12
+verificar composite   1.103,87 ms   4.380,23 ms     x3,97
+receipt SUCINTO        223.234 B     223.234 B      x1,000
+verificar sucinto        18,23 ms      18,21 ms     x0,999
+tiempo de prueba           40,9 s        57,8 s     x1,41
+tiempo de compresion       23,8 s       105,6 s     x4,44
+VRAM maxima            14.964 MiB     7.960 MiB
+```
+
+**El control es lo que convierte esto en medicion.** El instrumento ve la
+diferencia por **tres** vias independientes —numero de segmentos, tamano del
+composite y tiempo de verificarlo— y el sucinto no se mueve por ninguna. Si
+las cinco cifras se hubieran quedado quietas, lo que estaria roto seria el
+experimento. **Y de propina, algo que no se buscaba: el sucinto tambien es
+constante en TIEMPO de verificacion**, 18,2 ms pase lo que pase debajo.
+
+**Dos predicciones escritas antes de correr, las dos FALSADAS, y las dos
+ensenan mas que si hubieran acertado.**
+
+**(1) Escribi 182 segmentos y salieron 222.** Calcule sobre los ciclos de
+USUARIO —47.513.440 / 2^18— cuando la segmentacion va sobre los TOTALES, y
+esos crecieron: 51.380.224 a **57.999.360**. El desglose dice por que:
+`paging` casi se dobla (2.081.341 a 4.037.663) y `reserved` se multiplica
+por 3,6 (1.785.443 a **6.448.257**). **El sobrecoste pasa del 7,5 % al
+18,1 % al cuartear el segmento**, y ahi esta la forma: **mas segmentos
+generan mas paginacion, que genera mas segmentos.** No es un termino fijo
+que se pueda ignorar al cambiar de po2.
+
+**(2) Escribi que la compresion subiria «algo mas» y subio x4,44.** Pense en
+PROFUNDIDAD de arbol —de 6 a 8 niveles, dos mas— y el coste no va por ahi:
+va por **NUMERO DE JOINS, que son N-1, y es LINEAL**. La aritmetica lo
+ensena sin ambiguedad:
+
+```
+23,8 s /  48 joins = 0,496 s
+105,6 s / 221 joins = 0,478 s
+```
+
+⇒ **el join cuesta ~0,49 s en una RTX 5090, y es constante.** Eso deja de
+ser una observacion y pasa a ser un **modelo de coste**: con el se predice
+cualquier agregacion sin volver a alquilar una maquina. Agregar N pruebas
+son N x 49 segmentos y otros tantos joins, o sea **N x 24 s de compresion
+sobre N x 40,9 s de prueba**, con la salida quieta en 223.234 B. Mil pagos:
+del orden de **36 horas de GPU** para un receipt de 218 KiB frente a los
+127,8 MiB de STARKs sueltos.
+
+**Lo que este test NO establece, y conviene decirlo antes de que alguien lo
+use de mas.** Prueba constancia frente a **numero de segmentos**, que es la
+dimension por la que la agregacion entraria —para la maquinaria de join un
+segmento es un segmento, y 222 son mas de los que darian tres pruebas a
+`po2 20`—. Pero **el DIARIO sigue sin medir**: el guest publica un `u32`, y
+un agregador de verdad publicaria N digests de entradas publicas. Ese es el
+unico termino que crece de verdad con el numero de pruebas distintas, y
+ninguna corrida lo ha tocado. La frase honesta que sale de aqui es: **el
+sello es constante en tamano y en tiempo de verificacion; el diario crece
+linealmente con constante pequena, y esa constante no esta medida.**
+
+**Un defecto de instrumento, de la familia de siempre.** Mirando el avance
+con `tail -f` sobre el fichero del vigia, lo que se veia eran las lineas de
+la corrida ANTERIOR: el bloque trunca ese fichero al empezar la fase de
+prueba y no antes, asi que durante la compilacion y el atado el `tail`
+ensena datos viejos con total aplomo. **Un instrumento diciendo algo cierto
+sobre la cosa equivocada.** Se distingue por la marca de tiempo, y el
+`tail -f` avisa con un `file truncated` cuando por fin llega lo nuevo.
+
+**Y una regla de higiene que si se aplico a tiempo:** antes de relanzar se
+copiaron los cinco logs de la corrida de `po2 20` a nombres con sufijo. El
+bloque escribe siempre en las mismas rutas y los habria pisado — es la misma
+precaucion que el sondeo de la sesion 29 tomo por la misma razon.
+
+**El arbol no se toco para medir nada de esto.** Todo ocurrio en un pod
+alquilado sobre una copia; `HEAD` sigue donde lo dejo el §306.
+
+**Contadores.** BACKLOG **quieto en 43 abiertas y 54 resueltas**: la **22**
+gana la fuente de una afirmacion que hacia unas horas no la tenia, y **no se
+cierra** — su disposicion es decision de sesion, no de este bloque. Ningun
+test nuevo, ningun Cargo tocado, ningun pin movido. La cifra de sellos **no
+se incrementa**: sigue sin definicion operativa desde el §304, y lo que se
+arrastra son los HEAD medidos.

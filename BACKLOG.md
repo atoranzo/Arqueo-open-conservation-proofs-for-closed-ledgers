@@ -1613,6 +1613,18 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   factor de **600**. **No se cierra**: falta el coste del guest agregador
   —verificar N pruebas cuesta N x 47,5 M ciclos y no cabe en una sesion sin
   arbol de recursion— y M1b sigue estimada.
+  ✅ **Constancia MEDIDA (§307).** Lo que la linea de arriba afirmaba como
+  propiedad de la recursion **ya esta medido**: el receipt sucinto mide
+  **223.234 B exactos** tanto a 49 segmentos (`po2 20`) como a **222**
+  (`po2 18`), mientras el composite crece de 13.784.514 a **56.762.300 B** y
+  su verificacion de 1.103,87 a **4.380,23 ms**. El control ve la diferencia
+  por tres vias y el sucinto no se mueve por ninguna; y verificarlo cuesta
+  18,2 ms en los dos casos. Sale ademas el **modelo de coste**: los joins son
+  **N-1** y cada uno cuesta **~0,49 s** en una RTX 5090, asi que agregar N
+  pruebas son **N x 24 s de compresion sobre N x 40,9 s de prueba**, con la
+  salida quieta. ⚠️ **Sigue SIN medir el DIARIO**: el guest publica un `u32`
+  y un agregador publicaria N digests — el unico termino que crece con el
+  numero de pruebas distintas.
 
 - [ ] **93. El nodo MENTIROSO: la variante que hace ejercitables las
   defensas.** Instrumentacion, no modelo de confianza: una variante que
