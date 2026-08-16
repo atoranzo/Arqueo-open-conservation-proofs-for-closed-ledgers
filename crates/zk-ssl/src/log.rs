@@ -192,6 +192,14 @@ pub struct LogEntry {
     /// transferencias son 59 MB. El resumen basta para atar la entrada a
     /// una prueba concreta, y quien quiera verificarla puede pedirla.
     ///
+    /// ⚠️ **CORRECCIÓN (§308): la segunda frase es de la vía de UN PASO.**
+    /// Un pago son DOS entradas —`Send` y `Claim`—, así que mil
+    /// transferencias son **dos mil** pruebas: hoy **126,2 MiB**, no 59 MB.
+    /// El «~62 KB por operación» sigue siendo bueno: es por PRUEBA.
+    /// La cifra viva es `PUBLICADA_PAGO_B`, en
+    /// `crates/zk-ssl/src/metrics.rs`. Esta línea no tenía gate: el atado
+    /// B solo recorre los `.md` de la raiz.
+    ///
     /// ⚠️ **CORRECCIÓN (§271): en CUATRO vías delegadas no ata nada.**
     /// `mint.rs:131`, `freeze.rs:138`, `recovery.rs:166` y
     /// `governance.rs:162` llaman a `append` con `&[]`, así que las cuatro

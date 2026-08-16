@@ -99,7 +99,7 @@ claves: no hay ceremonia ni secreto que destruir.
 
 **Límites cuantificados**: mil transferencias son **~590 s** de prueba
 (un pago son dos: send 353,2 ms + claim 237 ms, protocolo §89.1) y
-**~124 MiB** acumulados.
+**126,2 MiB** acumulados.
 
 ⚠️ **Aquí decía que el techo era «1,5–1,9 TPS». Era falso** (§229): esa
 cifra medía el ciclo entero en una sola máquina y se atribuía al nodo. El

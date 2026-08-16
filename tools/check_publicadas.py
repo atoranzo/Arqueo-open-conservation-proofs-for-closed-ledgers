@@ -27,6 +27,13 @@ anterior NO es lo que este repo publica: es lo que publico otro deposito.
 Cambiarla seria falsificar el registro. Se salta, y **se imprime**: una
 exclusion silenciosa es un agujero.
 
+SIN DECIMAL (§308). Hasta aqui el patron EXIGIA parte decimal, y por eso
+no veia siete citas vivas escritas con el entero pelado: 59 MB y 124 MiB.
+Ahora el decimal es OPCIONAL. Y el patron ancla su borde IZQUIERDO: sin
+eso "1.126,2 MiB" casaria como "126,2" -el separador de miles, el mismo
+caso que ya mordio con un patron de 994 sobre 41.994-, y ese agujero lo
+tenia la version anterior sin saberlo.
+
 Ceguera declarada:
   - no ve una cifra escrita con palabras;
   - no entra en AUDITORIA.md: los asientos son REGISTRO HISTORICO y una
@@ -36,6 +43,14 @@ Ceguera declarada:
   - no vigila TIEMPOS ni RATIOS: dependen de la maquina y publicarlos en
     absoluto es una decision de diseno, no un numero que atar. Declarado
     en el asiento del §304.
+  - no ve GB ni GiB, ni ninguna escala que no sea POR MIL: la CIFRA solo
+    casa MiB|MB y los dos valores esperados salen de PAGO_B x 1000. Una
+    cifra derivada al millon queda fuera del gate por construccion;
+  - el CONTEXTO es un vocabulario fijo de frases "por mil", asi que una
+    tabla que dice "1M op/dia" no lo dispara y sus cifras no se miran;
+  - no entra en el CODIGO: solo recorre los .md de la raiz. log.rs:191
+    publicaba la aritmetica de un paso y ningun gate la veia; se reparo a
+    mano en §308, y extender el atado a los .rs queda por censar.
 """
 import os
 import re
@@ -47,6 +62,9 @@ VENTANA = 2
 
 EXCLUIDOS = {
     "AUDITORIA.md": "registro historico: una cifra vieja en un asiento es correcta",
+    "VISION.md": "nota 98: la seccion 3.8 ENTERA deriva de la era de UN PASO "
+                 "-59 MB/mil, 59 GB/dia x3, 131 MB/dia, 463x, 137 B por entrada-. "
+                 "No es una cifra rancia: es un analisis. Corte propio",
 }
 
 CONTEXTO = re.compile(
@@ -59,7 +77,7 @@ HISTORICA = re.compile(
     r"earlier version|previous version|retirada desde entonces",
     re.I,
 )
-CIFRA = re.compile(r"(\d{2,3})[.,](\d)\s*(MiB|MB)\b")
+CIFRA = re.compile(r"(?<![\d.,])(\d{2,3})(?:[.,](\d))?\s*(MiB|MB)\b")
 
 
 def constante():
@@ -110,11 +128,12 @@ def main():
             for m in CIFRA.finditer(linea):
                 par = (m.group(1), m.group(2))
                 unidad = m.group(3)
+                citada = par[0] if par[1] is None else "%s,%s" % par
                 if HISTORICA.search(bloque):
                     saltadas.append(
                         (nombre, i + 1,
-                         "%s,%s %s - cita de una version anterior"
-                         % (par[0], par[1], unidad))
+                         "%s %s - cita de una version anterior"
+                         % (citada, unidad))
                     )
                     continue
                 vistos += 1
@@ -131,8 +150,8 @@ def main():
                 else:
                     fallos.append(
                         (nombre, i + 1, "VALOR",
-                         "dice %s,%s %s; se esperan %s MiB o %s MB"
-                         % (par[0], par[1], unidad, mib, msi))
+                         "dice %s %s; se esperan %s MiB o %s MB"
+                         % (citada, unidad, mib, msi))
                     )
 
     print("check_publicadas: %d B por pago -> %s MiB / %s MB por mil (medido el %s)"

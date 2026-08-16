@@ -437,7 +437,7 @@ literature:
 
 The debate on privacy in central bank digital currencies is rich in
 positions and poor in figures. Here there are some: **verification costs
-4 ms, proving 620 ms, and one thousand transfers are 59 MB**.
+4 ms, proving 620 ms, and one thousand transfers are 126.2 MiB**.
 
 And there is an ECB data point that frames the problem: in its public
 consultation, privacy was the most valued aspect (43%), and **fewer than

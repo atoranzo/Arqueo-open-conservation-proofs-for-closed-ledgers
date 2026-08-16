@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 43 abiertas, 54 resueltas — **2 suspendidas** (16 y 28).
+**Estado**: 44 abiertas, 54 resueltas — **2 suspendidas** (16 y 28).
 Ultima revision: 15 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -1470,6 +1470,28 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   la funcion de bits, que el compilador nombra uno a uno. ⚠️ Esto
   **sobrevive a la decision sobre la rama B**: vale aunque la agregacion
   se abandone, y por eso no vive dentro de la 22.
+
+- [ ] **98. `VISION.md` §3.8: una seccion entera construida sobre la aritmetica de la era de UN PASO.**
+  «Sobre la retencion de pruebas — P7 aplicado» compara retencion central
+  contra distribuida, y su aparato numerico entero viene de la via de un paso,
+  **retirada desde entonces**: la acumulacion por millar (`:325`), su derivada
+  diaria repetida tres veces (`:326`, `:346`, `:365`), la tabla de `:346-347`
+  y el «463 veces menos» de `:349`, que sale de dividir una prueba entre una
+  entrada del registro encadenado.
+  ⚠️ **No es una cifra rancia: es un ANALISIS.** Repararla exige decidir que
+  cuenta como «op» y, sobre todo, **que tamano de entrada aplica**: el que la
+  seccion usa es el de la ERA 1, y la era 2 tiene otro —`log.rs` lo documenta
+  al hablar de la longitud en disco que discrimina las dos eras—. Media
+  reparacion dejaria la seccion contradiciendose a si misma, que es peor que
+  dejarla coherentemente vieja con una nota que la senala.
+  **Donde se mide la verdad**: el numerador es `PUBLICADA_PAGO_B` de
+  `metrics.rs`, atado desde el §304. El denominador —el tamano de la entrada en
+  disco— **no esta medido**, y es lo primero que hay que medir para cerrarla.
+  **Cruce**: `tools/check_publicadas.py` EXCLUYE `VISION.md` por esta nota e
+  imprime la razon en cada corrida; cerrar la nota es lo que retira la
+  exclusion. La conclusion cualitativa de la seccion —la retencion distribuida
+  gana por dos ordenes de magnitud— **probablemente sobrevive**: lo que cambia
+  es la magnitud del factor, no su signo.
 
 ## E. Operacion
 

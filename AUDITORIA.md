@@ -23041,3 +23041,80 @@ cierra** — su disposicion es decision de sesion, no de este bloque. Ningun
 test nuevo, ningun Cargo tocado, ningun pin movido. La cifra de sellos **no
 se incrementa**: sigue sin definicion operativa desde el §304, y lo que se
 arrastra son los HEAD medidos.
+
+## §308 — 2026-08-16 · EL ATADO B VE LO QUE NO VEIA: OCHO INSTANCIAS DE LA MISMA CIFRA RETIRADA, Y CUATRO CEGUERAS DEL INSTRUMENTO
+
+**Que.** El §304 puso la cifra de acumulacion en un sitio con su fecha y su
+banda, y la ato a los documentos con `tools/check_publicadas.py`. Este corte
+descubre que ese vigilante no veia una familia entera de escrituras de la misma
+cifra, lo ensancha, repara las ocho instancias vivas que aparecieron al hacerlo,
+y escribe las cegueras que le quedan.
+
+**El defecto.** Su patron EXIGIA parte decimal. Una cifra escrita con el entero
+pelado —«59 MB», «124 MiB»— le era invisible. Eso no estaba entre las cegueras
+que el propio fichero declaraba: era un defecto y no una decision, y por eso se
+repara en vez de declararse.
+
+**Un agujero que ya tenia sin saberlo, cerrado de paso.** El mismo patron
+casaba «1.126,2 MiB» como «126,2» y lo daba por CORRECTO: el separador de miles
+es limite de palabra, la misma figura que en su dia mordio con un patron de 994
+sobre «41.994». Anclar el borde izquierdo hace la herramienta MAS ESTRICTA, no
+solo mas ancha. Se demostro contra bytes reales antes de tocar el arbol: la
+version sin parchear daba VERDE sobre un fixture con tres cifras rancias dentro,
+y ademas contaba el falso positivo del separador como cita valida.
+
+**Las ocho, y ninguna es conjetura.** `INSTITUCIONAL.md:457` ·
+`INSTITUTIONAL.md:440` · `PUBLICACION.md:60` · `README.md:250` ·
+`RESUMEN_BILINGUE.md:45` y `:134` · `RESUMEN_EJECUTIVO.md:102` ·
+`VISION.md:325`. Siete se reparan aqui; la octava se EXCLUYE con su razon
+impresa en cada corrida y se va a la nota 98. Fuera del gate y reparada a mano
+en el mismo corte: `crates/zk-ssl/src/log.rs:191`, que justificaba guardar solo
+el digest con la aritmetica de un paso, y que ningun instrumento miraba.
+
+**Las cegueras que quedan, ahora escritas en el docstring.** No ve `GB` ni
+`GiB`, ni ninguna escala que no sea POR MIL: sus dos valores esperados salen de
+la constante por mil, asi que una cifra derivada al millon esta fuera del gate
+por construccion. Su `CONTEXTO` es un vocabulario fijo de frases «por mil», de
+modo que una tabla que dice «1M op/dia» no lo dispara y sus cifras ni se miran
+—asi escondia dos de `VISION.md`—. Y no entra en el CODIGO: solo recorre los
+`.md` de la raiz. Las tres ya declaradas siguen en pie.
+
+**Rojos propios de este corte, y el primero es el que mas ensena.** El
+`BLOQUE-308` murio en su propia VIVA A prediciendo TRES fallos cuando la
+herramienta delato OCHO. La causa no era deriva: **mi censo iba por una lista de
+ficheros escrita de memoria —los que el §304 habia tocado— y la herramienta
+ENUMERA el directorio.** La raiz tiene 26 ficheros `.md`; mi lista tenia diez.
+Es el catalogo escrito de memoria, aplicado esta vez a un censo mio. El bloque
+hizo lo que debia: imprimio las ocho, dijo que la prediccion era tres, restauro
+los cinco ficheros y aborto. **Sin la prediccion escrita dentro del bloque, esto
+habria sido un sello verde que repara tres cosas y deja cinco.**
+
+**Y el recuento crecio por ANGULOS, no por deriva.** Empezo en una instancia y
+acabo en doce, y cada salto vino de un angulo de censo que faltaba: los `.rs`,
+el separador decimal, enumerar el directorio en vez de listarlo, y la unidad
+`GB`. La cifra llevaba rancia desde el principio; lo que iba apareciendo era
+instrumento. El censo de `TB` y `PB` sobre los 26 dio CERO: la familia de
+unidades queda cerrada.
+
+**Lo que se declara y NO se repara aqui.** La familia de TIEMPOS: el «~590 s»
+por mil y el «send 353,2 ms + claim 237 ms» de `README.md` y
+`RESUMEN_EJECUTIVO.md`, el «~620 ms» de transferencia en OCHO documentos y el
+«~600 ms» de `ARQUITECTURA.md:319` —el mismo numero publicado con dos valores—.
+La herramienta declara que no vigila tiempos porque publicarlos en absoluto es
+una decision de diseno que el §304 dejo aparcada, y este corte no la desaparca:
+tocarlos aqui seria colar un cambio de diseno dentro de un sello de instrumento.
+Y el ratio «0,5% de generarla» de `PUBLICACION.md:59`, que ademas viaja en un
+texto **destinado a salir**: su sitio natural es una casilla en la lista «Antes
+de publicar» de ese mismo fichero.
+
+**Un numero que se movio y que nadie vigila.** El canon de este corte dice
+**252 s** frente a los ~170 s del §304-D y los 164 s del §305. Es un +50 % con
+causa NO medida —carga de la maquina, o las herramientas creciendo—. Se anota
+antes de que se convierta en la proxima cifra sin dueno.
+
+**Contadores.** BACKLOG **43 -> 44 abiertas**, resueltas quietas en 54: nace la
+**98** por `VISION.md` §3.8. Ningun pin movido, ningun test nuevo, ningun Cargo
+tocado. `tools/check_publicadas.py` pasa de 169 a 188 lineas y
+`crates/zk-ssl/src/log.rs` de 1261 a 1269; los seis documentos reparados no
+mueven una sola linea. La cifra de sellos **no se incrementa**: sigue sin
+definicion operativa desde el §304, y lo que se arrastra son los HEAD medidos.

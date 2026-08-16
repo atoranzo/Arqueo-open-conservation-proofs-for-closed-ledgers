@@ -42,7 +42,7 @@ clave maestra que robar.
 | Generarla | ~620 ms |
 | **Verificar / generar** | **0,5 %** |
 | Prueba de liquidación | 62 KB |
-| **Mil transferencias** | **~590 s** y **~124 MiB** acumulados |
+| **Mil transferencias** | **~590 s** y **126,2 MiB** acumulados |
 | ⚠️ **Techo real bajo concurrencia** | **1,5-1,9 TPS** ← el que muerde antes (anclaje de raíz, §123) |
 
 > ⚠️ **Esa razón es la de la AUDITORÍA, no la de la transferencia.**
@@ -131,7 +131,7 @@ There is no master key to steal.
 | Proving it | ~620 ms |
 | **Verify / prove** | **0.5 %** |
 | Settlement proof | 62 KB |
-| **One thousand transfers** | **~590 s**, **~124 MiB** accumulated |
+| **One thousand transfers** | **~590 s**, **126.2 MiB** accumulated |
 | ⚠️ **Real ceiling under concurrency** | **1.5-1.9 TPS** ← the limit that bites first (root anchoring) |
 
 ### The decision that defines the design

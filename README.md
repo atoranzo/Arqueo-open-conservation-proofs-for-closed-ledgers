@@ -247,7 +247,7 @@ misma máquina difieren un ~9 %** (`AUDITORIA.md` §131). Los tiempos van como
 
 **Límites cuantificados**: mil transferencias son **~590 s** de prueba
 (un pago son dos: send 353,2 ms · σ 0,6 % + claim 237 ms, protocolo
-§89.1, `AUDITORIA.md` §130) y **~124 MiB** acumulados (64,7 + 65,2 KB
+§89.1, `AUDITORIA.md` §130) y **126,2 MiB** acumulados (envío 65,4 + cobro 63,8 KiB
 por pago, medidos).
 
 ⚠️ **Un límite que existió, y cómo se fue**: la vía de un paso derivaba

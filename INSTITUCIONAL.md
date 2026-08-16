@@ -454,7 +454,7 @@ no aparecen en la literatura:
 
 El debate sobre privacidad en monedas digitales de banco central está
 lleno de posiciones y escaso de cifras. Aquí las hay: **verificar cuesta 4
-ms, generar 620, y mil transferencias son 59 MB**.
+ms, generar 620, y mil transferencias son 126,2 MiB**.
 
 Y hay un dato del propio BCE que enmarca el problema: en su consulta
 pública, la privacidad fue el aspecto más valorado (43%), y **menos de una
