@@ -23118,3 +23118,116 @@ tocado. `tools/check_publicadas.py` pasa de 169 a 188 lineas y
 `crates/zk-ssl/src/log.rs` de 1261 a 1269; los seis documentos reparados no
 mueven una sola linea. La cifra de sellos **no se incrementa**: sigue sin
 definicion operativa desde el §304, y lo que se arrastra son los HEAD medidos.
+
+## §309 — 2026-08-16 · EL CONJUNTO DE CLAVES SERVIDAS, DECLARADO DONDE SE PRODUCE
+
+**Que.** El brazo de `zkssl_signedEpochHead` servia VEINTE campos en su caso
+firmado y el test de al lado asertaba NUEVE con `!is_null()`. Este corte
+declara los TRES conjuntos que el brazo sirve —cinco, ocho y veinte— en el
+mismo sitio donde se producen, y los ata a la fuente.
+
+**Por que hacia falta, y es la figura del §304.** El conjunto mas completo de
+esas claves no vivia en el productor: vivia en un test del CONSUMIDOR
+—`cli/src/witness.rs`, diecinueve claves, las que el diario captura—. Habia
+cuatro listas escritas a mano repartidas por dos crates, y ninguna atada a
+ninguna. No eran afirmaciones rivales —cada una tenia su proposito: nueve de
+humo, diecinueve del diario, trece que la recomposicion lee, cinco minimas
+para reverificar sin el nodo— pero **ninguna era el contrato**.
+
+**La forma de la respuesta, medida y no supuesta.** Tres formas discriminadas
+por `available`, que en realidad son DOS CONDICIONES INDEPENDIENTES —ha
+emitido cabeza, hay firma— con una de las cuatro combinaciones inalcanzable.
+La descomposicion cuadra exacta en cuatro grupos: **cuatro** campos en las
+tres formas (`available`, `beatSeconds`, `custody`, `custodyChecked`),
+**tres** cuando hay cabeza (`seq`, `epochDigest`, `emittedAtUnix`), **uno**
+cuando no hay firma (`reason`) y **trece** cuando la hay. 4+1=5, 4+3+1=8,
+4+3+13=20. De ahi sale que **`reason` equivale a la negacion de `available`**,
+y que la cadena esta anidada del caso 1 al 2 pero se bifurca en el 3.
+
+**Por que el gate lee la FUENTE y no monta los tres estados.** Hay precedente
+en el mismo modulo: el atado del §302 ya lee `include_str!` de este fichero y
+censa por forma de linea. Y el caso firmado exige directorio y semilla,
+mientras el censo de fuente ve los tres `json!` sin montar nada. Los casos 1
+y 2 se cruzan ADEMAS contra el `dispatch` real —son gratis— y el 3 lo cubre
+el test que ya lo ejercitaba. La ceguera va escrita en el docstring, y el
+`assert` de que hay exactamente tres bloques es lo que protege de que el
+escaner se pase de largo.
+
+**Es TEMPORAL por diseno y lo dice en su sitio.** Cuando exista
+`SignedEpochHeadDto`, las tres listas se derivan serializando el DTO y dejan
+de estar escritas a mano. Hasta entonces son UNA lista completa en el
+productor, en vez de cuatro parciales repartidas.
+
+**LA NOTA 41, CON INSTANCIA MEDIDA EN EL NODO.** Al correr la suite entera
+aparecieron CINCO rojos: `con_caducidad_larga_el_barrido_no_toca_nada`,
+`dos_peticiones_de_materiales_reciben_posiciones_distintas`,
+`el_barrido_libera_las_reservas_caducadas_en_la_siguiente_peticion`,
+`muchas_peticiones_seguidas_no_repiten_ninguna_posicion` y
+`si_la_capa_rechaza_los_materiales_la_reserva_se_suelta`. Los cinco panican
+en el MISMO punto —`winter-prover-0.13.1/src/constraints/evaluation_table.rs:214`,
+*transition constraint degrees didn't match*— y **los cinco fallaban ya**:
+medido con un control sobre el arbol limpio, debug da 67+5 antes de este
+corte y 68+5 despues. **Este corte no los causa.** La 41 estaba registrada
+como *tests de la capa que caen en debug*; ahora se mide tambien en el nodo,
+con nombre y con el panic exacto.
+
+**Y por que el canon no los ve: el caso 17 de la familia.** El canon cuenta
+en RELEASE y esa validacion de winterfell es de DEBUG. Por eso el §308 pudo
+cerrar en verde hace unas horas sobre una suite que en debug tiene cinco
+rojos. No es tolerancia: es ceguera, que es lo que la nota 94 registra. Del
+contenido del desajuste se anota una cosa y NO se diagnostica: `expected`
+lleva doce posiciones de grado 1022 y `actual` solo ocho, con cuatro ceros en
+su lugar —cuatro restricciones de transicion evaluando al polinomio cero para
+esa entrada—. Si eso es legitimo o es un hueco de modelado pertenece al
+diagnostico de la 41.
+
+**Rojos propios de este corte, tres, y el primero es el caso 17 otra vez.**
+(1) El primer intento media el pin con `cargo test` en DEBUG para comprobar
+un pin que `canon.sh` cuenta en RELEASE: el gate media una cosa distinta de
+la que comprobaba, y murio contra los cinco rojos de la 41. (2) Al fallar, el
+gate imprimia el resumen y NINGUN nombre —el mismo `grep` de titulares que en
+la nube oculto la causa dos veces—: **un gate que falla dice QUIEN fallo, no
+cuantos**. (3) La extraccion del pin usaba un patron anclado al final sobre
+una cadena que acaba en «passed», asi que habria dado vacio; cazado en el
+ensayo y sustituido por un campo de `awk`.
+
+**UN MODO DE FALLO NUEVO, Y ES EL PEOR DE TODOS.** Dos bloques de esta cadena
+**pararon EN SILENCIO a mitad**: ni verde ni rojo, sin pasar por `restaurar()`
+y sin marca final, **dejando el arbol tocado y las compuertas sin correr**. Es
+el estado que toda esta maquinaria existe para que no pueda ocurrir. El
+patron es exacto, dos de dos por los dos lados: paran en una asignacion
+`VAR=$(... | grep ... | wc -l)` con el `grep` SIN coincidencias y `pipefail`
+activo; los dos bloques del §308, que en ese mismo sitio llevaban `|| true`,
+terminaron. **Es el hermano invertido del caso 45**: alli la clausula
+defensiva fue lo que rompio, aqui es su ausencia. Descartadas dos hipotesis
+por medicion: no es `drvfs` —el segundo bloque se copio a `$HOME` antes de
+correrlo— y no es truncamiento de lectura —las paradas caen en los bytes
+10.941 y 9.234, ni el mismo offset ni un limite redondo—. **El mecanismo
+queda SIN DETERMINAR**, y no se sustituye por una teoria comoda. La regla que
+si sale: **nunca un `VAR=$(pipeline)` pelado que pueda fallar legitimamente**.
+
+**Y la leccion de instrumento que lo salva.** Lo que distinguio «el bloque
+paro» de «el pegado se corto» fue el fichero del `tee`, no la pantalla. Sin
+el, la conclusion habria sido la comoda y falsa. **La marca final se
+comprueba en el fichero, no en la pantalla**: si `# FIN-BLOQUE-NNN` no esta
+ahi, el bloque no termino, parezca lo que parezca la salida.
+
+**Lo que se declara y NO se repara aqui.** `PAPER.md:967` y `PAPER_EN.md:926`
+publican `cargo test -p zk-ssl-node --release   # nodo: 31` cuando el nodo
+tiene **73**: el 31 es del §235 y lleva **cuarenta y dos tests de retraso**. Y
+`check_cifras` NO lo ve —acaba de pasar en verde con esa linea dentro—, asi
+que es una ceguera suya: **no mira las cifras por-crate dentro de bloques de
+ordenes de ejemplo**. No se repara aqui porque vive en un bloque que hay que
+leer entero: casi seguro lleva mas crates con la misma deriva. **Candidato a
+corte propio.**
+
+**Contadores.** Pin `zk-ssl-node` **72 -> 73** (un test), con su nota de
+historia en la propia fila de `canon.sh`. Sumas **844/981/995 ->
+845/982/996** en NUEVE lineas de cuatro documentos —`PAPER`, `PRINCIPIOS`,
+`RESUMEN_BILINGUE` en sus dos mitades y `RESUMEN_EJECUTIVO`— y la cifra
+POR-CRATE del nodo en `PRINCIPIOS`, 72 -> 73, **en el mismo bloque que el
+pin**. La cita de las sumas viejas en el asiento del §304 **no se toca**: es
+registro historico. BACKLOG **quieto en 44 abiertas y 54 resueltas**. Ningun
+Cargo tocado. Canon VERDE: **996 tests declarados**, 13 instrumentos, 114
+ficheros `.rs`, las siete herramientas. La cifra de sellos **no se
+incrementa**: sigue sin definicion operativa desde el §304.

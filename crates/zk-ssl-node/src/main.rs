@@ -1861,6 +1861,131 @@ mod tests {
         );
     }
 
+    // --- el CONJUNTO DE CLAVES SERVIDAS, declarado donde se produce (309) ---
+    /// El brazo servia VEINTE campos en el caso firmado y el test de al lado
+    /// asertaba NUEVE con `!is_null()`: once claves del contrato SIN gate del
+    /// lado del productor. Y el conjunto mas completo vivia en un test del
+    /// CONSUMIDOR (`cli/src/witness.rs`, diecinueve claves), que es la figura
+    /// del §304 otra vez: la verdad mas completa, lejos de donde se produce.
+    ///
+    /// CEGUERA DECLARADA de este censo. Lee la FUENTE de este mismo fichero y
+    /// reconoce una clave como un literal entre comillas al PRINCIPIO de la
+    /// linea seguido de `:`. NO ve: un `json!` construido dinamicamente, una
+    /// clave insertada despues con `v["x"] = ...`, ni un bloque cuyo cierre no
+    /// sea `})` o `}),` en su propia linea. El `assert` de que hay EXACTAMENTE
+    /// tres bloques es lo que protege de que el escaner se pase de largo.
+    ///
+    /// Y mide la FUENTE, no la ejecucion: por eso los casos 1 y 2 se cruzan
+    /// ademas contra el `dispatch` real. El 3 no se cruza aqui porque montar
+    /// el firmante pide directorio y semilla, y de eso ya se encarga
+    /// `con_firma_el_metodo_da_todo_lo_que_un_testigo_necesita`.
+    ///
+    /// TEMPORAL POR DISENO: cuando exista `SignedEpochHeadDto`, estas tres
+    /// listas se derivan serializando el DTO y dejan de estar escritas a mano.
+    /// Hasta entonces son UNA lista completa en el productor en vez de cuatro
+    /// parciales repartidas por dos crates.
+    #[test]
+    fn el_conjunto_de_claves_servidas_esta_declarado_y_no_se_mueve_solo() {
+        const SIN_LATIDO: &[&str] = &[
+            "available", "beatSeconds", "custody", "custodyChecked", "reason",
+        ];
+        const SIN_CLAVE: &[&str] = &[
+            "available", "beatSeconds", "custody", "custodyChecked",
+            "emittedAtUnix", "epochDigest", "reason", "seq",
+        ];
+        const FIRMADA: &[&str] = &[
+            "accountsRoot", "acusesRoot", "available", "beatSeconds",
+            "chainDigest", "custody", "custodyChecked", "domain",
+            "emittedAtUnix", "epochDigest", "formatVersion", "frozenRoot",
+            "index", "mmrRoot", "mmrSize", "n", "pendingRoot", "publicKey",
+            "seq", "signature",
+        ];
+
+        let fuente = include_str!("main.rs");
+        let mut bloques: Vec<std::collections::BTreeSet<String>> = Vec::new();
+        let mut actual: std::collections::BTreeSet<String> = Default::default();
+        let mut dentro_arm = false;
+        let mut dentro_bloque = false;
+        for linea in fuente.lines() {
+            let t = linea.trim_start();
+            if t.starts_with("\"zkssl_signedEpochHead\" =>") {
+                dentro_arm = true;
+                continue;
+            }
+            if !dentro_arm {
+                continue;
+            }
+            if !dentro_bloque && t.starts_with("\"zkssl_") && t.contains("=>") {
+                break;
+            }
+            if t.contains("json!({") {
+                dentro_bloque = true;
+                actual = Default::default();
+                continue;
+            }
+            if dentro_bloque && (t == "})," || t == "})") {
+                bloques.push(std::mem::take(&mut actual));
+                dentro_bloque = false;
+                continue;
+            }
+            if dentro_bloque && t.starts_with('"') {
+                let cs: Vec<char> = t.chars().collect();
+                let mut j = 1usize;
+                while j < cs.len() && cs[j] != '"' {
+                    j += 1;
+                }
+                if cs.get(j + 1) == Some(&':') {
+                    actual.insert(cs[1..j].iter().collect());
+                }
+            }
+        }
+        assert_eq!(
+            bloques.len(),
+            3,
+            "el brazo debe tener EXACTAMENTE tres json!; el escaner vio {}",
+            bloques.len()
+        );
+
+        let esperados: [(&str, &[&str]); 3] = [
+            ("sin latido", SIN_LATIDO),
+            ("sin clave", SIN_CLAVE),
+            ("firmada", FIRMADA),
+        ];
+        for (i, (caso, decl)) in esperados.iter().enumerate() {
+            let d: std::collections::BTreeSet<String> =
+                decl.iter().map(|s| s.to_string()).collect();
+            let sobran: Vec<&String> = bloques[i].difference(&d).collect();
+            let faltan: Vec<&String> = d.difference(&bloques[i]).collect();
+            assert!(
+                sobran.is_empty(),
+                "caso {caso}: el dispatch SIRVE claves no declaradas: {sobran:?}"
+            );
+            assert!(
+                faltan.is_empty(),
+                "caso {caso}: declaradas y NO servidas: {faltan:?}"
+            );
+        }
+
+        // Los dos cruces que atan la FUENTE a lo que el dispatch DEVUELVE.
+        let app = nodo(30);
+        let v = dispatch(&app, "zkssl_signedEpochHead", json!({})).expect("no debe fallar");
+        let vistas: std::collections::BTreeSet<String> =
+            v.as_object().expect("objeto").keys().cloned().collect();
+        let d1: std::collections::BTreeSet<String> =
+            SIN_LATIDO.iter().map(|s| s.to_string()).collect();
+        assert_eq!(vistas, d1, "sin latido: la fuente y la ejecucion discrepan");
+
+        let app = nodo(30);
+        let l = crate::latido::latir(&app, None).expect("latir");
+        crate::latido::conservar(&app, l);
+        let v = dispatch(&app, "zkssl_signedEpochHead", json!({})).expect("no debe fallar");
+        let vistas: std::collections::BTreeSet<String> =
+            v.as_object().expect("objeto").keys().cloned().collect();
+        let d2: std::collections::BTreeSet<String> =
+            SIN_CLAVE.iter().map(|s| s.to_string()).collect();
+        assert_eq!(vistas, d2, "sin clave: la fuente y la ejecucion discrepan");
+    }
+
     // ── consultas de solo lectura ─────────────────────────────────
 
     #[test]
