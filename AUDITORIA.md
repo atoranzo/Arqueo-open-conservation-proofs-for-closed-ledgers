@@ -23335,3 +23335,137 @@ resueltas**; la ceguera declarada no abre nota, y esa eleccion es REVERSIBLE.
 Ningun Cargo tocado. Canon VERDE: **997 tests declarados**, 13 instrumentos,
 114 ficheros `.rs`, las siete herramientas. La cifra de sellos **no se
 incrementa**: sigue sin definicion operativa desde el §304.
+
+## §311 — 2026-08-16 · EL CABLE TIPA LA CABEZA FIRMADA: SignedEpochHeadDto
+
+**Que.** El decimoquinto DTO del cable, y el primero que describe una
+respuesta con MAS DE UNA FORMA. `zkssl_signedEpochHead` se ensamblaba a mano
+con `json!` en tres brazos del dispatch y se consumia sin tipo; ahora existe
+el molde que los sustituira. Este corte crea el TIPO y lo prueba; el nodo y
+el testigo no se tocan.
+
+**Las TRES decisiones, tomadas, y el usuario las delego.** Estaban abiertas
+desde la sesion 31 y se cerraron aqui. Van marcadas REVERSIBLES, que es el
+rito cuando el asistente elige.
+
+**D1: struct plano, con diecisiete opcionales.** Un enum etiquetado haria los
+estados ilegales INCONSTRUIBLES; el struct plano solo los hace DETECTABLES, y
+eso se dice entero. A cambio: catorce precedentes en el mismo fichero, el
+cable sigue con CERO enums, y no nace un segundo productor del discriminante
+—`serde` no puede etiquetar por un booleano, asi que un enum con `tag`
+exigiria un campo `status` que codificaria el mismo hecho que `available` DOS
+veces, y ese coste seria permanente y viajaria en el cable—.
+
+**D2 SE RESOLVIO SOLO, Y MEJOR DE LO QUE SE HABIA DECIDIDO.** La decision fue
+adoptar `DATA` con un falsador nombrado: solo si su definicion en
+`spec/openrpc.json` decia lo correcto. Al abrirla dice
+`^0x([0-9a-f][0-9a-f])*$`, que es exactamente hex de longitud par arbitraria
+—resuelve a favor—. Pero ademas la cabecera del propio cable declaraba desde
+siempre una tercera convencion que nadie habia mirado: **`Blob` — DATA de
+longitud libre**, `pub struct Blob(pub Vec<u8>)`, **con dos consumidores ya
+en el fichero**. No hacia falta newtype nuevo NI adoptar nada huerfano: el
+tipo estaba. Y la cautela que abria el patron —`DATA` exige MINUSCULAS—
+tambien resuelve en verde: `hex_de` es `format!("{x:02x}")`.
+
+**D3: lleva `deny_unknown_fields`, como sus catorce hermanos, y el precio va
+escrito.** El dia que las cofirmas entren como campo aditivo, todo consumidor
+tipado viejo dejara de deserializar. Lo que inclina la decision es lo que
+esta sesion midio: el unico consumidor tipado posible es de esta casa
+—`zk-ssl-verify` no puede depender del cable sin arrastrar la capa Y el
+probador, medido en su `Cargo.toml`— y **un tercero no puede generar tipos
+aunque quiera**, porque el esquema `SignedEpochHead` figura en el documento
+publicado SIN DEFINICION. La rotura futura ocurrira dentro del mismo commit
+que la causa.
+
+**LA FORMA FIRMADA CONTIENE ENTERA A LA CABEZA SIN FIRMAR, y eso no se
+suponia.** Los DIEZ campos de `EpochHeadDto` estan los diez en la respuesta
+firmada, con el mismo nombre de cable. La cabeza firmada es la cabeza mas
+diez. Un test lo comprueba derivando los dos conjuntos por serializacion, sin
+escribir ninguna lista, y de ahi sale la forma del constructor que vendra:
+puede tomar un `&EpochHeadDto` en vez de veinte argumentos sueltos.
+
+**El precio de D3, hecho EJECUTABLE.** Uno de los cuatro tests mete un
+`"cofirmas":[]` en la forma firmada y EXIGE que la deserializacion rompa. El
+dia que las cofirmas entren de verdad ese test se pondra rojo, y eso es lo
+que tiene que pasar: la rotura esta declarada y con centinela, no escondida
+en una nota.
+
+**Ninguno de los cuatro tests compara contra una lista escrita a mano.** Las
+cuentas 5, 8 y 20 se DERIVAN serializando el DTO. Una lista aqui recrearia
+exactamente la figura que este tipo viene a quitar: cuatro listas parciales
+sin atar, repartidas por dos crates.
+
+**Lo que se aplazo A PROPOSITO, y por una sola razon.** Los tres
+constructores nombrados, el accesor falible de tres desenlaces, la linea
+`zk-ssl-wire` en el `Cargo.toml` del cli y el esquema en `openrpc.rs`: todo
+eso llega con su CONSUMIDOR delante. Disenar una firma sin el llamante es
+como se eligen los ordenes de argumentos equivocados. Y `zk-ssl-wire` es un
+crate LIB, asi que un tipo publico sin consumidor **no da `dead_code`**: el
+unico argumento fuerte para meterlo todo en un corte no existia.
+
+**EL CANDIDATO 22 DEJA DE SER CANDIDATO: tiene instancia medida.**
+`check_tests.py` marco DOS de los cuatro tests nuevos como ANIDADO —*compila
+pero no se ejecuta*, `wire/src/lib.rs:837` y `:854`— mientras el pin decia
+`7(7)`, o sea que los siete SI se ejecutaron. Es un FALSO POSITIVO, y la
+causa estaba localizada: el instrumento **cuenta llaves sin excluir literales
+de cadena**, y dos literales del test abrian `{` sin cerrarla, desplazando el
+ambito en +2 y marcando como anidados **los que venian detras**. Las tres
+cadenas `r#"..."#` de JSON no molestan porque estan BALANCEADAS, y por eso el
+canon marco dos y no cinco. El corte esquiva el literal; **arreglar el
+contador es corte propio y queda declarado**.
+
+**Y EL CANON SE GANO SUS 166 SEGUNDOS: fue lo unico que lo vio.** Los INERTES
+contaban y comprobaban UTF-8; la VIVA corrio los tests y pasaron los siete.
+Solo `check_tests.py`, dentro del canon, lo noto. Un sello mas rapido habria
+commiteado dos tests marcados como que no protegen.
+
+**LA COLISION DEL 997, cazada por el censo antes de escribir una linea.** Las
+sumas entraron en el rango de cifras ajenas: `FIVE_BACKENDS.md:117` y
+`FOUR_BACKENDS.md:73` dicen *997 puertas* por hash, que no son tests. Un
+reemplazo global de 997 a 1001 los habria corrompido. Es la familia del
+`\b994\b` sobre `41.994`: **el numero desnudo es ambiguo**. El bloque no
+sustituye nada globalmente, y ademas mide la huella de los dos ficheros en el
+PRE y **exige que sigan identicas al final**: la colision pasa de cosa que
+hay que recordar a compuerta.
+
+**Rojos propios de esta cadena, CUATRO, y los cuatro de la misma familia.**
+(1) El primer intento gateo `skip_serializing_if` por su TOTAL y murio con 18
+frente a 17: habia uno preexistente. **La cirugia era correcta; el gate
+estaba mal** — y el mismo bloque llevaba el patron bueno al lado, porque
+`deny_unknown_fields` si lo media en el PRE y lo gateaba por DELTA. Suponer
+que un constructo es nuevo es la misma clase de error que suponer un numero.
+(2) Cazado en el reensayo: `deny_unknown_fields` habria dado delta 4 en vez
+de 1 porque **el propio parche escribe prosa que nombra lo que cuenta**. Se
+cuentan ATRIBUTOS por forma de linea, no menciones. (3) Una VIVA filtrada
+**paso en VERDE sin ejecutar nada**: el filtro no casaba con ningun test y
+`cargo test` sale 0 con *0 passed*. Una VIVA filtrada gatea sobre el numero
+de tests EJECUTADOS, no sobre el `rc`. (4) El literal que engano al contador
+de llaves, arriba.
+
+**El 15 contra 14, resuelto de paso.** La PALABRA `deny_unknown_fields`
+aparece quince veces en el cable y la sesion 31 censo CATORCE `struct *Dto`.
+Medido el ATRIBUTO por forma de linea: son CATORCE, y la decimoquinta es
+prosa. No hay ningun DTO sin censar; lo que enganaba era el contador por
+palabra.
+
+**Lo que se declara y NO se repara aqui.** (1) **`check_tests.py` cuenta
+llaves sin excluir literales**: candidato 22 con fichero y dos lineas.
+Candidato a corte propio. (2) El esquema `SignedEpochHead` en `openrpc.rs`
+apuntando a `DATA`, que cerraria DOS defectos de la nota 95 —el esquema sin
+DTO y el `DATA` huerfano— y arrastra la maquinaria de regeneracion del §302.
+(3) La foto del `--completo` (`6cb8883`) esta a **cincuenta y un sellos** por
+detras de HEAD y sigue valiendo por §284; en el §301 iban cuarenta y uno.
+(4) `PAPER.md:967` y `PAPER_EN.md:926` siguen con `# nodo: 31`.
+
+**Contadores.** Pin `zk-ssl-wire` **3 -> 7** (cuatro tests), con su nota de
+historia en la propia fila de `canon.sh`. Sumas **846/983/997 ->
+850/987/1001** en NUEVE lineas de cuatro documentos. **El cable NO tiene
+cifra por-crate publicada** —`PRINCIPIOS` lo mete en *y los del SDK, el cable
+y el puente ISO*, sin numero—, medido y no supuesto, asi que no hubo desglose
+que mover: diez sustituciones y no once. De esas cifras **solo los cinco 846
+tienen compuerta**: `check_cifras` exige el numero pegado a la palabra, y
+delato exactamente cinco. Los `983` y los `997` se movieron POR CENSO y queda
+dicho. BACKLOG **quieto en 44 abiertas y 54 resueltas**. Ningun Cargo tocado.
+Canon VERDE: **1001 tests declarados**, 13 instrumentos, 114 ficheros `.rs`,
+las siete herramientas. La cifra de sellos **no se incrementa**: sigue sin
+definicion operativa desde el §304.

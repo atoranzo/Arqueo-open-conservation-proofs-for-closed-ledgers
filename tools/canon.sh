@@ -92,7 +92,7 @@ ceremony           sello      34   0  11   300  alias=ceremonia · DEUDA: 11 war
 settlement-layer   sello      17   0   0   300  alias=liquidación
 iso-bridge         sello       3   0   0   300
 zk-ssl-sdk         sello       6   0   0   300
-zk-ssl-wire        sello       3   0   0    60  §259: 20 metodos, y el json publicado atado a la tabla
+zk-ssl-wire        sello       7   0   0    60  §259: 20 metodos, y el json publicado atado a la tabla · §311: 3 -> 7, el DTO de la cabeza firmada
 zk-ssl-cli         sello      59   0   0   120  alias=testigo · §250: 22 -> 26, la vista dividida EN FRIO · §294: 28 -> 39, la historia como segundo canal · §295: 39 -> 43, el banco del consumidor · §299: 43 -> 51, el cofirmante del testigo · §300: 51 -> 54, el mando de la cofirma · §301: 54 -> 58, la herramienta del tercero · §310: 58 -> 59, la serie de cofirmas es por testigo
 zk-ssl-node        sello      73   0   0   400  alias=nodo · §261: 51 -> 56, la credencial para los caminos · §292: 79 -> 80, la cima en el digest · §293: 80 -> 82, la extension servida · §296: 82 -> 73, el guardian se muda a su crate · §298: 73 -> 71, la lectura del indice se muda · §302: 71 -> 72, el contrato publicado atado al despacho · §309: 72 -> 73, el conjunto de claves servidas, declarado
 zk-ssl-verify      sello      55   0   0   120  alias=verificador independiente · §257: 22 -> 23, del cable a la cabeza sin la capa · §291: 39 -> 46, el MMR de cabezas · §292: 46 -> 48, la cima en el digest · §297: 48 -> 55, el objeto de la cofirma

@@ -633,5 +633,247 @@ pub struct ParamsDto {
     pub custodian_root: B32,
 }
 
+/// **La cabeza firmada, tal como `zkssl_signedEpochHead` la sirve** (nota 95).
+///
+/// El decimoquinto DTO del cable, y el primero que describe una respuesta con
+/// MAS DE UNA FORMA. El dispatch del nodo la ensambla hoy a mano con `json!`
+/// en tres brazos; esto es el molde que los sustituye.
+///
+/// ## Las tres formas, y por que es un struct plano
+///
+/// Hay TRES respuestas, discriminadas por `available`, que en realidad son
+/// **dos condiciones independientes** —ha emitido cabeza, hay firma— con una
+/// de las cuatro combinaciones inalcanzable. Los campos se reparten en cuatro
+/// grupos y la cuenta cuadra exacta:
+///
+/// ```text
+/// cara minima, en las TRES (4)  available · beatSeconds · custody · custodyChecked
+/// no hay firma, en 1 y 2  (1)   reason
+/// hay cabeza, en 2 y 3    (3)   seq · epochDigest · emittedAtUnix
+/// hay firma, solo en 3   (13)   domain · formatVersion · mmrRoot · mmrSize ·
+///                               index · accountsRoot · pendingRoot ·
+///                               frozenRoot · chainDigest · acusesRoot · n ·
+///                               signature · publicKey
+///
+/// 4+1 = 5     4+3+1 = 8     4+3+13 = 20
+/// ```
+///
+/// De ahi que **`reason` equivalga a la negacion de `available`**, y que la
+/// cadena este anidada del caso 1 al 2 pero **se bifurque** en el 3.
+///
+/// **Es un struct plano y no un tipo suma, y la eleccion se declara entera.**
+/// Un enum etiquetado haria los estados ilegales INCONSTRUIBLES; el struct
+/// plano solo los hace DETECTABLES. A cambio: catorce precedentes en este
+/// mismo fichero, el cable sigue con **cero enums**, y no nace un segundo
+/// productor del discriminante —`serde` no puede etiquetar por un booleano,
+/// asi que un enum con `tag` exigiria un campo `status` que codificaria el
+/// mismo hecho que `available` **dos veces**—. El coste del `status` seria
+/// permanente y viajaria en el cable; el del struct plano es local.
+///
+/// ⚠️ **Lo que falta a proposito y llega con su consumidor:** los tres
+/// constructores nombrados (`sin_latido`, `sin_clave`, `firmada`) y el
+/// accesor falible que distingue *no disponible* de *malformada* con error
+/// nombrado (§254). Se escriben cuando exista quien los llame, no antes:
+/// disenar una firma sin el llamante delante es como se eligen los ordenes
+/// de argumentos equivocados.
+///
+/// ⚠️ **Lleva `deny_unknown_fields`, como sus catorce hermanos, y eso tiene
+/// precio declarado:** el dia que las cofirmas entren como campo aditivo,
+/// **todo consumidor tipado viejo dejara de deserializar**. Se acepta porque
+/// hoy el unico consumidor tipado posible es de esta casa —`zk-ssl-verify` no
+/// puede depender del cable sin arrastrar la capa y el probador— y porque un
+/// tercero **no puede generar tipos aunque quiera**: el esquema
+/// `SignedEpochHead` figura en el documento publicado **sin definicion**.
+/// La rotura futura ocurrira dentro del mismo commit que la causa.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SignedEpochHeadDto {
+    // ── la cara minima: en las TRES formas ──
+    /// Hay cabeza FIRMADA que servir. Es el discriminante.
+    pub available: bool,
+    /// Cadencia del latido, para que el consumidor sepa cuando volver.
+    pub beat_seconds: Q,
+    /// ⚠️ AFIRMADO por el operador. Que este comprobado lo dice el campo
+    /// de al lado, y son dos cosas distintas.
+    pub custody: String,
+    /// COMPROBADO por el nodo, solo posible con custodia `fichero`.
+    pub custody_checked: bool,
+
+    // ── cuando NO hay firma: en las formas 1 y 2 ──
+    /// Por que no hay firma, en prosa. Equivale a `!available`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+
+    // ── cuando ya ha emitido cabeza: en las formas 2 y 3 ──
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub seq: Option<Q>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub epoch_digest: Option<B32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub emitted_at_unix: Option<Q>,
+
+    // ── cuando hay firma: solo en la forma 3 ──
+    /// El dominio de separacion con el que se firmo (§286).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub domain: Option<String>,
+    /// ⚠️ **La version elige recompositor** (§292): sin esto el consumidor
+    /// no sabe si `mmrRoot`/`mmrSize` entran en lo que la firma cubre.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format_version: Option<Q>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mmr_root: Option<B32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mmr_size: Option<Q>,
+    /// ⚠️ Cuantas firmas lleva la clave, contando esta. **No entra en el
+    /// preambulo**: es metadato para detectar reuso, no algo que la firma
+    /// acredite (ver `zk_ssl_verify::CabezaFirmada`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub index: Option<Q>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accounts_root: Option<B32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pending_root: Option<B32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frozen_root: Option<B32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub chain_digest: Option<B32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub acuses_root: Option<B32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub n: Option<Q>,
+    /// ⚠️ ~37 KB de hex: XMSS^MT 40/8 da firmas de 18.469 bytes. Va por
+    /// `Blob` —hex de longitud libre, `DATA` en el documento publicado— y no
+    /// por `B32`, que son 32 bytes clavados.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub signature: Option<Blob>,
+    /// La clave publica del operador, en bytes del formato RFC.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub public_key: Option<Blob>,
+}
+
 /// Documento OpenRPC del protocolo (nota 74): la tabla vive aqui.
 pub mod openrpc;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::Value;
+    use std::collections::BTreeSet;
+
+    // Los TRES cuerpos que el dispatch sirve hoy, uno por brazo del `match`
+    // de `main.rs`. Son un FIXTURE del contrato, no una lista de claves: lo
+    // que el test compara se DERIVA serializando (ver abajo).
+    const SIN_LATIDO: &str = r#"{"available":false,
+        "reason":"aun no ha habido latido: el nodo acaba de arrancar",
+        "beatSeconds":"0x1e","custody":"fichero","custodyChecked":true}"#;
+
+    const SIN_CLAVE: &str = r#"{"available":false,
+        "reason":"el nodo arranco SIN --clave",
+        "seq":"0x7",
+        "epochDigest":"0x1111111111111111111111111111111111111111111111111111111111111111",
+        "emittedAtUnix":"0x66c0",
+        "beatSeconds":"0x1e","custody":"fichero","custodyChecked":true}"#;
+
+    const FIRMADA: &str = r#"{"available":true,
+        "seq":"0x7",
+        "epochDigest":"0x1111111111111111111111111111111111111111111111111111111111111111",
+        "domain":"ZK-SSL-epoch-head","formatVersion":"0x3",
+        "mmrRoot":"0x2222222222222222222222222222222222222222222222222222222222222222",
+        "mmrSize":"0x5","index":"0x2",
+        "accountsRoot":"0x3333333333333333333333333333333333333333333333333333333333333333",
+        "pendingRoot":"0x4444444444444444444444444444444444444444444444444444444444444444",
+        "frozenRoot":"0x5555555555555555555555555555555555555555555555555555555555555555",
+        "chainDigest":"0x6666666666666666666666666666666666666666666666666666666666666666",
+        "acusesRoot":"0x7777777777777777777777777777777777777777777777777777777777777777",
+        "n":"0x64","signature":"0xdeadbeef","publicKey":"0xabcd",
+        "emittedAtUnix":"0x66c0",
+        "beatSeconds":"0x1e","custody":"fichero","custodyChecked":true}"#;
+
+    /// Las claves que el DTO EMITE, derivadas serializandolo.
+    fn claves(j: &str) -> BTreeSet<String> {
+        let d: SignedEpochHeadDto = serde_json::from_str(j).expect("deserializa");
+        let v = serde_json::to_value(&d).expect("serializa");
+        v.as_object().expect("objeto").keys().cloned().collect()
+    }
+
+    /// ⚠️ Las cuentas NO se comparan contra una lista escrita a mano: se
+    /// DERIVAN serializando el DTO. Una lista aqui recrearia exactamente la
+    /// figura que este tipo viene a quitar — cuatro listas parciales sin
+    /// atar, repartidas por dos crates.
+    #[test]
+    fn las_tres_formas_dan_cinco_ocho_y_veinte_claves() {
+        assert_eq!(claves(SIN_LATIDO).len(), 5, "la forma sin latido son cinco");
+        assert_eq!(claves(SIN_CLAVE).len(), 8, "la forma sin clave son ocho");
+        assert_eq!(claves(FIRMADA).len(), 20, "la forma firmada son veinte");
+        for j in &[SIN_LATIDO, SIN_CLAVE, FIRMADA] {
+            let d: SignedEpochHeadDto = serde_json::from_str(j).expect("deserializa");
+            assert_eq!(
+                d.reason.is_some(),
+                !d.available,
+                "`reason` equivale a la negacion de `available`, y aqui no: {j}"
+            );
+        }
+    }
+
+    /// ⚠️ **EL PRECIO DE `deny_unknown_fields`, EJECUTABLE.** El dia que las
+    /// cofirmas entren como campo aditivo, este test se pondra ROJO — y eso
+    /// es lo que tiene que pasar: la rotura esta declarada, no escondida.
+    #[test]
+    fn un_campo_aditivo_futuro_rompe_a_este_consumidor_y_asi_esta_declarado() {
+        let con_cofirmas = FIRMADA.replace(
+            "\"available\":true,",
+            "\"available\":true,\"cofirmas\":[],",
+        );
+        let r: Result<SignedEpochHeadDto, _> = serde_json::from_str(&con_cofirmas);
+        assert!(
+            r.is_err(),
+            "con deny_unknown_fields un campo nuevo TIENE que romper la deserializacion"
+        );
+    }
+
+    /// La firma son ~37 KB de hex y no caben en `B32`: van por `Blob`, que es
+    /// `DATA` en el documento publicado. Se comprueba ida y vuelta, prefijo
+    /// incluido: el patron de `DATA` exige minusculas.
+    #[test]
+    fn la_firma_y_la_clave_van_por_blob_y_conservan_el_hex() {
+        let d: SignedEpochHeadDto = serde_json::from_str(FIRMADA).expect("deserializa");
+        assert_eq!(
+            d.signature.as_ref().expect("hay firma").0,
+            vec![0xde, 0xad, 0xbe, 0xef],
+            "el Blob guarda los BYTES, no la cadena"
+        );
+        let v = serde_json::to_value(&d).expect("serializa");
+        assert_eq!(v["signature"], Value::String("0xdeadbeef".into()));
+        assert_eq!(v["publicKey"], Value::String("0xabcd".into()));
+    }
+
+    /// ⚠️ **MEDIDO, no supuesto: la forma firmada CONTIENE entera la cabeza
+    /// sin firmar.** Los diez campos de `EpochHeadDto` estan los diez en la
+    /// respuesta firmada, con el mismo nombre de cable. Los dos conjuntos se
+    /// derivan serializando; ninguno se escribe a mano.
+    #[test]
+    fn la_forma_firmada_contiene_entera_la_cabeza_sin_firmar() {
+        let cabeza = EpochHeadDto {
+            seq: Q(7),
+            accounts_root: B32([0x33; 32]),
+            pending_root: B32([0x44; 32]),
+            frozen_root: B32([0x55; 32]),
+            chain_digest: B32([0x66; 32]),
+            acuses_root: B32([0x77; 32]),
+            n: Q(100),
+            mmr_root: B32([0x22; 32]),
+            mmr_size: Q(5),
+            epoch_digest: B32([0x11; 32]),
+        };
+        let v = serde_json::to_value(&cabeza).expect("serializa");
+        let suyas: BTreeSet<String> =
+            v.as_object().expect("objeto").keys().cloned().collect();
+        let firmadas = claves(FIRMADA);
+        assert_eq!(suyas.len(), 10, "la cabeza sin firmar son diez campos");
+        let fuera: Vec<&String> = suyas.difference(&firmadas).collect();
+        assert!(
+            fuera.is_empty(),
+            "estos campos de la cabeza NO estan en la firmada: {fuera:?}"
+        );
+    }
+}
