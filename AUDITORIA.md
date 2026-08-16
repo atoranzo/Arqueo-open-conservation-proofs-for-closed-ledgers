@@ -22792,3 +22792,150 @@ M1b sigue estimada y no medida. Ningun test nuevo, ningun Cargo tocado,
 ningun pin movido. La cifra de sellos **no se incrementa**: sigue sin
 definicion operativa desde el §304, y lo que se arrastra son los HEAD
 medidos.
+
+## §306 — 2026-08-16 · G1 EN GPU: VERDE. LA PRUEBA TARDA 40,9 s Y EL RECEIPT SUCINTO MIDE 223.234 B.
+
+**El §305 dejo G1 en ROJO y acotado**: rojo por coste de prueba, medido en
+un portatil de ocho nucleos sin GPU, con la frase «ninguna maquina con GPU
+esta medida» escrita como limite explicito. Este asiento cierra esa
+acotacion. **En una RTX 5090 la prueba tarda 40,9 segundos.** El rojo
+anterior no estaba equivocado: lo que ha cambiado no es el veredicto, es el
+universo al que se aplicaba.
+
+**El atado, primero, porque sin el lo demas no vale.** El guest se
+recompilo entero en otra maquina, con otra CPU y otro sistema, y la
+ejecucion volvio a dar **47.513.440 ciclos**, **49 segmentos**, **67.208 B
+de blob de entrada** y **VERIFICA**. Identico al portatil, hasta el ultimo
+digito. El ELF es determinista y la entrada llego byte a byte, asi que todo
+lo medido despues es comparable **sin asteriscos**. Ejecucion 885,3 ms
+frente a los 955,5 del portatil: un 7 % de CPU, nada mas.
+
+**Las cifras de G1, todas nuevas.** Prueba composite **40,9 s**. Compresion
+a receipt sucinto **23,8 s**. Suma **64,7 s**. Receipt composite
+**13.784.514 B (13,15 MiB)**; receipt **SUCINTO 223.234 B (218,0 KiB)**,
+sesenta y dos veces mas pequeno. Verificar el composite **1.103,87 ms**;
+verificar el sucinto **18,23 ms**. El diario devuelve 1. Umbrales de G1:
+verde por debajo de 10 minutos, ambar de 10 a 60, rojo por encima. **Sale
+verde por un orden de magnitud.** Contra los 18.420 s proyectados en el
+portatil, el factor de la prueba es **~450x**, y el pod prueba a ~1,26
+millones de ciclos por segundo frente a 2.621. El bloque imprimio 104,7x
+porque midio el binario entero, que incluia recompilar el host: **la cifra
+honesta es la de la prueba, no la del proceso que la envuelve.**
+
+**Y la GPU se uso de verdad, que no era gratis darlo por hecho.** Un vigia
+muestreo `utilization.gpu` cada cinco segundos durante la corrida: **pico
+100 %**, VRAM maxima **14.964 MiB** de 32.607. Sin ese gate, una corrida de
+CPU con la feature mal enchufada habria dado un numero creible y falso, y
+ningun cronometro lo habria delatado. El gate se anadio despues de escribir
+el bloque entero sin el.
+
+**Lo que ninguna corrida habia dado nunca, y cambia la forma de la nota
+22.** El receipt sucinto mide **223.234 B**. Una prueba original de la capa
+mide **66.998 B**. Es decir: **envolver UNA prueba la hace 3,3 veces mas
+GRANDE**. La rama B no ahorra bytes por envolver — los pierde. Ahorra por
+**AGREGAR**: como el receipt sucinto es de tamano constante, el punto de
+equilibrio esta en unas **cuatro pruebas**, y a mil pagos —2.000 pruebas,
+127,8 MiB de STARKs— el mismo receipt de 218 KiB da un factor de **600**.
+El eje de la nota 22 se mueve otra vez: del §305, que la movio de «se
+puede» a «quien paga los ciclos», a este, que la mueve a **«cuantas pruebas
+entran en un receipt»**.
+
+**La aritmetica rehecha.** Portatil: un pago 10,1 h, mil pagos **420 dias
+de CPU**. RTX 5090: un pago **81,8 s**, mil pagos **~23 h de GPU**
+(composite; ~36 h si cada una se comprime). De medio ano de maquina a una
+noche.
+
+**Una derivacion del §305, confirmada y con su interpretacion corregida.**
+Alli se razono «49 x 2^20 = 51.380.224 ciclos con relleno, ocupacion
+92,5 %». El `SessionStats` de esta corrida da ese total **exacto** y ademas
+lo desglosa: `user_cycles 47.513.440 + paging_cycles 2.081.341 +
+reserved_cycles 1.785.443`, suma clavada. **Asi que aquel «8 % de relleno»
+no era relleno: era paginacion y reserva.** El numero estaba bien y la
+interpretacion no, que es una forma de error mas silenciosa que la
+contraria.
+
+**El camino: el banco de medida solto el arbol.** Antes de subir nada se
+midio que `~/spike-22-guest` dependia del repo por **una sola linea**,
+`host/Cargo.toml:10`, y solo para obtener los **diez bytes** de
+`zk_ssl::proof_options()` serializadas. Se exportaron esos diez bytes a
+`send.opts` con su huella, y el host perdio **dos** dependencias —`zk-ssl` y
+tambien `winter-verifier`, que solo estaba por el `Serializable`—. El
+lockfile del banco adelgazo de 4107 a **3714 lineas** y el del guest **no se
+movio ni una**, lo que confirma por estructura lo que decian los
+manifiestos: **el guest nunca dependio del arbol**. Lo que viaja al pod son
+**23 ficheros y 312.089 B** (129 KB comprimidos), con manifiesto de huellas
+y verificador en destino; llegaron los 23 byte a byte. **El repo privado no
+salio del portatil**, y no por intencion sino por gate: el empaquetador
+muere si el tar contiene algo de la fabrica.
+
+**Los rojos de esta sesion, y son seis, todos mios.**
+(1) **Un `grep -c` sin coincidencias imprime `0` y ademas devuelve estado
+1**, asi que mi clausula defensiva `|| echo 0` capturaba `0\n0` —dos
+lineas— y el gate comparaba mal. **La defensa que puse para que no fallara
+es exactamente lo que lo hizo fallar.** Costo un build verde tirado.
+Hermano invertido del caso 38: alli una rama else que faltaba no distinguia
+nada; aqui una rama else de mas **inventa un valor que no existe**.
+(2) **El titular `error:` de cargo es identico para causas distintas**, y mi
+propio filtro `grep -E '^error'` solo imprime titulares: la causa vive en
+las secciones `--- stdout` y `--- stderr` de debajo. Me tuvo dos turnos
+teorizando sobre Groth16 cuando el motivo era «falta protoc», y despues me
+hizo creer que el mismo fallo se repetia cuando en realidad **el crate
+habia avanzado y moria en el paso siguiente**, por falta de `libclang`.
+**Para diagnosticar un build de cargo se lee el bloque entero, nunca la
+linea `error:`.**
+(3) **En un contenedor, `nproc` y `free` mienten**: veian 128 nucleos y 754
+GiB de la maquina anfitriona cuando el cgroup daba **15,3 nucleos y 99,65
+GiB**. Sin corregirlo, cargo habria lanzado 128 procesos y rayon 128 hilos
+sobre quince nucleos. Y `memory.high = max` significa que **no hay freno
+suave**: el nucleo no ralentiza avisando, mata de golpe — la misma firma
+que el SIGTERM del §305.
+(4) **El nombre de una imagen da falsos negativos.** La etiqueta
+`cu1281-torch280-ubuntu2404` **no dice `devel`** y sin embargo trae el
+toolkit de CUDA completo. Descartarla por el nombre habria tirado la imagen
+buena. El §5 tenia escrito que el nombre no basta para **aceptar**; esto
+anade que tampoco basta para **rechazar**.
+(5) **Cuatro predicciones falsadas.** Escribi que el fallo de Blackwell
+nombraria `sm_120` y fue `protoc`. Diagnostique limitacion de GitHub y las
+rafagas de 2,5 MB/s lo desmintieron. Predije que `keccak` y `rv32im`
+bajarian artefactos y solo lo hace `recursion`. Y dije que `du` salia plano
+porque `rzup` escribia fuera de `.risc0`, cuando el descriptor de fichero
+mostro que escribia justo dentro y lo plano era que aun no habia empezado:
+**acerte el veredicto y falle la razon**, que no es acertar.
+(6) **Un aviso que no es un gate no protege de nada.** El bloque detectaba
+correctamente que no corria dentro de `tmux`, lo decia, esperaba veinte
+segundos y **seguia**. La corrida arranco fuera de sesion **tres veces**.
+Es el «RAM 7 GiB» del §305 con otra ropa: **un umbral que se imprime en vez
+de gatearse no es una medida, es decoracion.**
+
+**Lo que salio bien y tambien se anota.** El vigia de GPU, que se anadio
+tarde y resulto ser el gate que separaba una medicion de un numero bonito.
+El atado en VIVA B, que habria parado la corrida antes de gastar un ciclo
+de probador si el guest recompilado no hubiera sido el mismo. Que
+`risc0-artifacts` **nombre sus ficheros con su propio sha256**: la unica
+razon de que una descarga truncada al 13 % —7.989.845 B de 59.768.781—
+saliera a la cara en vez de colarse. Y las tres huellas del paquete
+comprobadas en destino, que hicieron redundante el verificador fichero a
+fichero y por eso mismo lo hicieron util.
+
+**Lo que se declara y no se repara aqui.** El **coste del guest agregador**
+sigue sin medir: verificar N pruebas dentro del zkVM cuesta N x 47,5 M
+ciclos y no cabe en una sesion sin arbol de recursion — eso ya es diseno,
+no viabilidad. **M1b sigue estimada.** El receipt sucinto medido es el de
+una sesion que verifica **UNA** prueba; que su tamano se mantenga constante
+al agregar es propiedad conocida de la recursion, **no medida aqui**. El
+diario del guest sigue publicando un `u32` y no las entradas publicas. Y
+todo el coste de compilacion de `circom-witnesscalc` y sus dependencias de
+sistema es del camino de **Groth16**, que R-PQ2 prohibe ejecutar: se paga
+porque la feature `cuda` lo arrastra en bloque, no porque se use. **R-PQ2
+se respeto**: la corrida se paro en el receipt sucinto.
+
+**El arbol no se toco para nada de esto.** El spike vivio fuera, el pod
+recibio una copia y `HEAD` no se movio en ninguna de las mediciones:
+`096572a` antes y despues.
+
+**Contadores.** BACKLOG **quieto en 43 abiertas y 54 resueltas**: la **22**
+gana su desenlace de G1 y **no se cierra**, porque M1b sigue estimada y el
+guest agregador esta sin medir. Ningun test nuevo, ningun Cargo del arbol
+tocado, ningun pin movido. La cifra de sellos **no se incrementa**: sigue
+sin definicion operativa desde el §304, y lo que se arrastra son los HEAD
+medidos.

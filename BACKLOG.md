@@ -1599,6 +1599,20 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   caer en minutos. **La nota NO se cierra**: M1b sigue estimada y no
   medida, y el eje de la decision se ha movido de «se puede» a **«quien
   paga los ciclos»**. Lo que un crate de verdad costaria vive en la 97.
+  **Desenlace de G1 (§306): VERDE en GPU.** En una RTX 5090 la prueba
+  composite del verificador dentro del zkVM tarda **40,9 s**, y comprimir a
+  sucinto **23,8 s** mas; en el portatil sin GPU la proyeccion era 5 h 07.
+  El coste deja de ser la barrera: un pago son **81,8 s** y mil pagos
+  **~23 h de GPU**, contra los 420 dias de CPU del §305.
+  ⚠️ **Y aparece el dato que cambia la forma de esta nota**: el receipt
+  **sucinto mide 223.234 B**, o sea **3,3 veces mas que una prueba suelta de
+  66.998 B**. Envolver UNA prueba no ahorra bytes: los pierde. La rama B
+  ahorra por **AGREGAR**, no por envolver — el sucinto es de tamano
+  constante, asi que el equilibrio esta en unas **cuatro pruebas** y a mil
+  pagos el mismo receipt de 218 KiB frente a 127,8 MiB de STARKs da un
+  factor de **600**. **No se cierra**: falta el coste del guest agregador
+  —verificar N pruebas cuesta N x 47,5 M ciclos y no cabe en una sesion sin
+  arbol de recursion— y M1b sigue estimada.
 
 - [ ] **93. El nodo MENTIROSO: la variante que hace ejercitables las
   defensas.** Instrumentacion, no modelo de confianza: una variante que
