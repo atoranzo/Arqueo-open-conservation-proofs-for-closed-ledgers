@@ -23622,3 +23622,132 @@ sustituciones: 26 cifras vivas, 17 pines leidos, 7 de desglose. Canon VERDE:
 0.2 IDENTICO / 0.1 RECHAZADO. Ningun Cargo tocado salvo el del cli, que gana
 `zk-ssl-wire` y con el mueve `Cargo.lock`. BACKLOG quieto en 44 abiertas / 54
 resueltas.
+
+## §313 — 2026-08-16 · El PRODUCTOR: el nodo deja de montar la cabeza a mano
+
+**Que.** El §311 creo el tipo y el §312 le dio su primer consumidor. Este
+corte le da el PRODUCTOR: tres constructores nombrados en el cable, el
+dispatch del nodo montando las tres formas con ellos en vez de con tres
+`json!`, y el gate del §309 reconvertido. Es el unico corte de la sesion que
+ADELGAZA el arbol: `node/src/main.rs` pasa de 2346 a 2311 lineas.
+
+**Los tres constructores, y por que el de la forma firmada NO se llama
+`firmada`.** Ese nombre lo ocupa el accesor que el §312 puso en el mismo
+`impl`, asi que el constructor es **`con_firma`** — con precedente en el
+propio arbol, el test `con_firma_el_metodo_da_todo_lo_que_un_testigo_necesita`.
+La colision se cazo ANTES de compilar, leyendo el `impl`. Los otros dos
+conservan los nombres que el traspaso declaro: `sin_latido` y `sin_clave`.
+
+**`sin_clave` se construye SOBRE `sin_latido`, no copiando sus campos.** Con
+`..Self::sin_latido(...)` la forma 2 contiene entera a la 1 **por
+construccion**; si se hubieran copiado los cuatro campos, contenerla seria una
+coincidencia que un descuido futuro rompe en silencio.
+
+**`con_firma` toma la cabeza sin firmar ENTERA, y eso no es ahorro de
+argumentos.** El §311 midio que la forma firmada contiene entera a
+`EpochHeadDto`; pasarla como un solo `&EpochHeadDto` deja el
+`impl From<&EpochHead>` del cable como **unico productor de la forma de cable
+de la cabeza**, y con ello **desaparecen del dispatch seis `digest_to_wire`
+escritos a mano**. Es el §292 resuelto de paso.
+
+**CAMBIO DE RUTA DECLARADO, y NO de valor.** `epochDigest` pasa a salir de
+`EpochHeadDto::from(&l.cabeza)` — o sea de `cabeza.digest()` — en vez del
+campo `epoch_digest` del latido. **No es un valor distinto**: `latido.rs:155`
+construye ese campo con `digest_to_wire(&cabeza.digest()).0`, **la misma
+expresion**, y el test `la_cabeza_viaja_entera_y_su_digest_es_el_del_latido`
+ya ata las dos. Se comprobo abriendo el constructor del latido, no leyendo el
+docstring de su campo: **el doc de un tipo puede afirmar lo que sus llamantes
+no cumplen**.
+
+**EL GATE DEL §309 SE RECONVIERTE, Y LA FRASE QUE PROMETIA SU SUCESOR DEJA DE
+SER CIERTA.** Se CITA, no se borra (§247), y la correccion vive en su propio
+docstring. Decia: *«TEMPORAL POR DISENO: cuando exista `SignedEpochHeadDto`,
+estas tres listas se derivan serializando el DTO y dejan de estar escritas a
+mano»*. El DTO existe y este corte lo pone a producir — pero **derivar las
+listas de el habria sido un ESPEJO**: si el dispatch construye y serializa el
+DTO, comparar su salida contra la serializacion del DTO **no puede fallar
+nunca**, y un banco sin su rojo es un adorno. El conjunto de claves lo pina
+ahora el CABLE, donde el test del §311 lo deriva serializando (5 / 8 / 20).
+
+**Lo que el gate afirma desde hoy es lo unico que el tipo NO puede decir de si
+mismo: que nadie vuelva a montar la respuesta a mano en el brazo.** Cero
+`json!` dentro, y **tres** construcciones por el tipo.
+
+**Y lleva dos endurecimientos que el gate anterior no tenia, que son la misma
+figura dos veces.** **(1)** Un cero solo vale si antes se demuestra que se
+miro donde habia algo: las dos marcas de delimitacion se exigen **una sola
+vez** y la region **no vacia** ANTES de contar nada — si la delimitacion se
+desplazara y acabara mirando una region vacia, el gate se pondria verde por
+nada (es el caso 24 y el 67 de la familia). **(2)** Prohibir sin exigir
+dejaria verde un brazo borrado: por eso junto al cero `json!` va el positivo
+de las tres construcciones. El centinela ya no puede aprobarse por vacio.
+
+**Los tres tests del cable no traen ni un helper ni un fixture.** Atan cada
+constructor a **el cuerpo que el §311 ya pino**, comparando
+`to_value(constructor(...))` contra `to_value(from_str(FIXTURE))`: **los dos
+lados derivados, ninguna lista escrita a mano**. Una lista aqui habria
+recreado exactamente la figura que el tipo viene a quitar.
+
+**MIS TRES ROJOS, y los tres son el MISMO por ambito.** **(1)** El instrumento
+que escribi para el INERTE de las llaves **imprimia el diagnostico y el numero
+por el mismo canal**, asi que la asignacion capturo cuatro lineas y la
+comparacion aritmetica murio con «integer expected» — y el mensaje de rojo
+salio con el diagnostico incrustado, **como si el gate hubiera detectado
+algo**. Regla: un instrumento que devuelve un NUMERO escribe el numero en
+`stdout` y todo lo demas en `stderr`. **(2)** Escribi un helper `claves` en el
+`mod tests` del cable **habiendo leido solo sus tres primeras lineas** —las
+que necesitaba para el ancla—: el modulo ya tenia un `claves`, tres `const` y
+un `use` propios, y el compilador lo dijo con `E0428`. **Un ancla unica no es
+una lectura.** **(3)** Borre `hex_de` del nodo por «sin llamantes» habiendo
+censado **un fichero**: `diario.rs` lo llama tres veces por `crate::`, y un
+`fn` privado en la raiz de un binario lo ve todo el crate.
+
+**La regla que sale de los tres: EL AMBITO DEL CENSO TIENE QUE SER EL AMBITO
+DEL CAMBIO.** Tres lineas de un modulo para concluir sobre el modulo, un
+fichero para concluir sobre el crate. Es el §282 y el §298 por el lado del
+ALCANCE, no del patron.
+
+**Me retracto de una frase mia, y queda escrita como falsa.** Dije que este
+corte colapsaba «dos productores del mismo hex» en uno. **Es falso**: el nodo
+conserva su `hex_de` porque el diario lo necesita.
+
+**HALLAZGO QUE REGALO ESE ROJO, declarado y NO reparado: `node/src/diario.rs`
+es un CUARTO productor de la cabeza firmada.** Monta a mano la misma forma que
+el dispatch acaba de dejar de montar: `format!("0x{}", crate::hex_de(...))`
+para `epochDigest`, `signature` y `publicKey`. Dentro del propio nodo, y sin
+migrar.
+
+**Otra duplicacion declarada, y esta la metio el §312:** `FIRMADA_JSON` y
+`FIRMADA` en el `mod tests` del cable son **dos fixtures del mismo contrato
+con valores distintos** — `domain` en mayusculas contra minusculas, `index`
+0x7 contra 0x2, `signature` 0xaabb contra 0xdeadbeef. Colapsarlas exige tocar
+los asserts de tres tests del §312 y es alcance que el §313 no pidio.
+
+**La colision de las cifras, medida ANTES de escribirlas — que ya es rito.**
+`858` casa **dentro** de `54.858` en la tabla de tiempos de `mint` de esta
+misma `AUDITORIA`, y `995` sale en **dos asientos historicos**: las sumas
+844/981/**995** del §304 y del §310. Ninguno se toca —las nueve lineas se
+editan una a una por su texto— y **cinco ficheros entraron como compuerta por
+huella** y salieron intactos. Dato que conviene no perder: **las sumas ya
+reciclan numeros que su propio registro uso**, asi que el censo previo deja de
+ser precaucion y pasa a ser obligatorio.
+
+**Y un INERTE que nacio mal y se corrigio por lo mismo que persigue.** El que
+exige llaves balanceadas en los literales no crudos —el candidato 22 atacado
+en la fuente del propio parche— estaba escrito como **TOTAL sobre deuda
+preexistente**: el gate VIEJO ya llevaba tres literales desbalanceados que se
+compensaban entre si, asi que un liston absoluto habria matado el bloque por
+algo ajeno. Convertido a **DELTA**, midio la linea base en el PRE y la vio
+bajar de tres a cero.
+
+**Contadores.** Pin `zk-ssl-wire` 10 -> 13, en el mismo bloque que las cifras;
+`zk-ssl-cli` queda en 61 y `zk-ssl-node` en 73 — el gate se TRANSFORMA, no se
+suma. Sumas 855/992/1006 -> **858/995/1009** en las nueve lineas de cuatro
+documentos, y **ningun desglose por-crate se mueve**: el cable no tiene y el
+del testigo sigue en 61. `check_cifras` delato **cinco** con solo el pin
+movido —las cinco del TOTAL, y no seis como en el §312-B, que es la diferencia
+que el cable sin desglose predice— y quedo verde tras las sustituciones: 26
+cifras vivas, 17 pines leidos, 7 de desglose. Canon VERDE: **1009 tests
+declarados**, 13 instrumentos, 114 ficheros `.rs`, conformidad 0.2 IDENTICO /
+0.1 RECHAZADO. Ningun Cargo tocado. BACKLOG quieto en 44 abiertas / 54
+resueltas.

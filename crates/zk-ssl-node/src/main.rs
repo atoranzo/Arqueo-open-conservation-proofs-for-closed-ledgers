@@ -665,54 +665,56 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 code: -32603,
                 message: "candado de la ultima cabeza envenenado".into(),
             })?;
-            Ok(match u.as_ref() {
-                None => json!({
-                    "available": false,
-                    "reason": "aun no ha habido latido: el nodo acaba de arrancar",
-                    "beatSeconds": Q(app.latido_s),
-                    "custody": app.custodia,
-                    "custodyChecked": app.custodia_comprobada,
-                }),
-                Some(l) if l.firma.is_none() => json!({
-                    "available": false,
-                    "reason": "el nodo arranco SIN --clave: las cabezas se calculan pero NO se firman",
-                    "seq": Q(l.seq),
-                    "epochDigest": wire::B32(l.epoch_digest),
-                    "emittedAtUnix": Q(l.emitida_unix),
-                    "beatSeconds": Q(app.latido_s),
-                    "custody": app.custodia,
-                    "custodyChecked": app.custodia_comprobada,
-                }),
+            // ⚠️ §313 · las tres formas las monta el TIPO, no un `json!`.
+            // El invariante «si `available`, esos trece son todos `Some`»
+            // se vigila ahora en la construccion y en la lectura.
+            let dto = match u.as_ref() {
+                None => wire::SignedEpochHeadDto::sin_latido(
+                    Q(app.latido_s),
+                    app.custodia.clone(),
+                    app.custodia_comprobada,
+                    "aun no ha habido latido: el nodo acaba de arrancar".into(),
+                ),
+                Some(l) if l.firma.is_none() => wire::SignedEpochHeadDto::sin_clave(
+                    Q(app.latido_s),
+                    app.custodia.clone(),
+                    app.custodia_comprobada,
+                    "el nodo arranco SIN --clave: las cabezas se calculan pero NO se firman".into(),
+                    Q(l.seq),
+                    wire::B32(l.epoch_digest),
+                    Q(l.emitida_unix),
+                ),
                 Some(l) => {
                     let c = l.firma.as_ref().expect("comprobado en el brazo anterior");
-                    json!({
-                        "available": true,
-                        "seq": Q(l.seq),
-                        "epochDigest": wire::B32(l.epoch_digest),
-                        "domain": String::from_utf8_lossy(firma_cabeza::DOMINIO),
-                        "formatVersion": Q(u64::from(c.version_formato)),
-                        "mmrRoot": digest_to_wire(&l.cabeza.mmr_cima),
-                        "mmrSize": Q(l.cabeza.mmr_t),
-                        "index": Q(c.indice),
-                        // §275: los SIETE campos, del MISMO latido que
-                        // la firma — el testigo custodia campos+digest+
-                        // firma juntos y recompone sin volver a llamar.
-                        "accountsRoot": digest_to_wire(&l.cabeza.accounts_root),
-                        "pendingRoot": digest_to_wire(&l.cabeza.pending_root),
-                        "frozenRoot": digest_to_wire(&l.cabeza.frozen_root),
-                        "chainDigest": digest_to_wire(&l.cabeza.chain_digest),
-                        "acusesRoot": digest_to_wire(&l.cabeza.acuses_root),
-                        "n": Q(l.cabeza.n),
-                        "signature": format!("0x{}", hex_de(&c.firma)),
-                        "publicKey": format!("0x{}", hex_de(&app.clave_publica_firma)),
-                        "emittedAtUnix": Q(l.emitida_unix),
-                        "beatSeconds": Q(app.latido_s),
+                    // ⚠️ §275 sigue vigente: campos+digest+firma del MISMO
+                    // latido. Lo que cambia es QUIEN convierte: el `From` del
+                    // cable, en vez de seis `digest_to_wire` a mano aqui.
+                    //
+                    // ⚠️ `epochDigest` pasa a salir de `cabeza.digest()` en vez
+                    // del campo del latido. NO es un valor distinto: `latido.rs`
+                    // construye ese campo con `digest_to_wire(&cabeza.digest()).0`
+                    // —la misma expresion— y `la_cabeza_viaja_entera_y_su_digest_
+                    // es_el_del_latido` ya lo ata. El cambio es de RUTA, no de
+                    // valor, y va declarado.
+                    wire::SignedEpochHeadDto::con_firma(
+                        &wire::EpochHeadDto::from(&l.cabeza),
+                        String::from_utf8_lossy(firma_cabeza::DOMINIO).into_owned(),
+                        Q(u64::from(c.version_formato)),
+                        Q(c.indice),
+                        wire::Blob(c.firma.clone()),
+                        wire::Blob(app.clave_publica_firma.clone()),
+                        Q(l.emitida_unix),
+                        Q(app.latido_s),
                         // ⚠️ AFIRMADO por el operador; COMPROBADO solo si es
                         // `fichero`. El consumidor distingue las dos cosas.
-                        "custody": app.custodia,
-                        "custodyChecked": app.custodia_comprobada,
-                    })
+                        app.custodia.clone(),
+                        app.custodia_comprobada,
+                    )
                 }
+            };
+            serde_json::to_value(dto).map_err(|e| RpcError {
+                code: -32603,
+                message: format!("la cabeza firmada no serializa: {e}"),
             })
         }
         // ⚠️ **§259 · EL RECIBO DE INCLUSION.** Del arbol `accounts`, que es
@@ -1861,129 +1863,92 @@ mod tests {
         );
     }
 
-    // --- el CONJUNTO DE CLAVES SERVIDAS, declarado donde se produce (309) ---
+    // --- el brazo NO monta JSON a mano: lo monta el TIPO (309 -> 313) ---
     /// El brazo servia VEINTE campos en el caso firmado y el test de al lado
     /// asertaba NUEVE con `!is_null()`: once claves del contrato SIN gate del
     /// lado del productor. Y el conjunto mas completo vivia en un test del
     /// CONSUMIDOR (`cli/src/witness.rs`, diecinueve claves), que es la figura
     /// del §304 otra vez: la verdad mas completa, lejos de donde se produce.
     ///
-    /// CEGUERA DECLARADA de este censo. Lee la FUENTE de este mismo fichero y
-    /// reconoce una clave como un literal entre comillas al PRINCIPIO de la
-    /// linea seguido de `:`. NO ve: un `json!` construido dinamicamente, una
-    /// clave insertada despues con `v["x"] = ...`, ni un bloque cuyo cierre no
-    /// sea `})` o `}),` en su propia linea. El `assert` de que hay EXACTAMENTE
-    /// tres bloques es lo que protege de que el escaner se pase de largo.
+    /// CORRECCION §247 — la frase de abajo dejo de ser cierta y se CITA, no se
+    /// borra. Decia: *«TEMPORAL POR DISENO: cuando exista `SignedEpochHeadDto`,
+    /// estas tres listas se derivan serializando el DTO y dejan de estar
+    /// escritas a mano»*. El DTO existe desde §311 y el §313 lo pone a
+    /// producir — pero **derivar las listas de el habria sido un ESPEJO**: si
+    /// el dispatch construye y serializa el DTO, comparar su salida contra la
+    /// serializacion del DTO no puede fallar nunca, y un banco sin su rojo es
+    /// un adorno. El conjunto de claves lo pina ahora el CABLE, donde el test
+    /// del §311 lo deriva serializando (5 / 8 / 20). Lo que el tipo NO puede
+    /// decir de si mismo —y es lo que este gate afirma desde §313— es que
+    /// **nadie vuelva a montar la respuesta a mano en el brazo**.
     ///
-    /// Y mide la FUENTE, no la ejecucion: por eso los casos 1 y 2 se cruzan
-    /// ademas contra el `dispatch` real. El 3 no se cruza aqui porque montar
-    /// el firmante pide directorio y semilla, y de eso ya se encarga
-    /// `con_firma_el_metodo_da_todo_lo_que_un_testigo_necesita`.
+    /// CEGUERA DECLARADA, distinta de la anterior. Lee la FUENTE de este mismo
+    /// fichero y delimita el brazo por dos marcas al PRINCIPIO de linea. NO
+    /// ve: un `json!` construido en una funcion auxiliar llamada desde el
+    /// brazo, ni una clave insertada despues con `v["x"] = ...`.
     ///
-    /// TEMPORAL POR DISENO: cuando exista `SignedEpochHeadDto`, estas tres
-    /// listas se derivan serializando el DTO y dejan de estar escritas a mano.
-    /// Hasta entonces son UNA lista completa en el productor en vez de cuatro
-    /// parciales repartidas por dos crates.
+    /// Y lleva los dos endurecimientos que el gate anterior no tenia, que son
+    /// la misma figura dos veces. **Un cero solo vale si antes se demuestra
+    /// que se miro donde habia algo**: por eso las dos marcas se exigen UNA
+    /// sola vez y la region NO VACIA *antes* de contar nada — si la
+    /// delimitacion se desplaza y acaba mirando una region vacia, el gate se
+    /// pondria verde por nada (caso 24 y 67 de la familia). Y **prohibir sin
+    /// exigir dejaria verde un brazo borrado**: por eso junto al cero `json!`
+    /// va el positivo de las TRES construcciones por el tipo.
     #[test]
-    fn el_conjunto_de_claves_servidas_esta_declarado_y_no_se_mueve_solo() {
-        const SIN_LATIDO: &[&str] = &[
-            "available", "beatSeconds", "custody", "custodyChecked", "reason",
-        ];
-        const SIN_CLAVE: &[&str] = &[
-            "available", "beatSeconds", "custody", "custodyChecked",
-            "emittedAtUnix", "epochDigest", "reason", "seq",
-        ];
-        const FIRMADA: &[&str] = &[
-            "accountsRoot", "acusesRoot", "available", "beatSeconds",
-            "chainDigest", "custody", "custodyChecked", "domain",
-            "emittedAtUnix", "epochDigest", "formatVersion", "frozenRoot",
-            "index", "mmrRoot", "mmrSize", "n", "pendingRoot", "publicKey",
-            "seq", "signature",
-        ];
+    fn el_brazo_no_monta_json_a_mano_y_lo_monta_el_tipo() {
+        const APERTURA: &str = "\"zkssl_signedEpochHead\" =>";
+        const CIERRE: &str = "\"zkssl_inclusionReceipt\" =>";
 
         let fuente = include_str!("main.rs");
-        let mut bloques: Vec<std::collections::BTreeSet<String>> = Vec::new();
-        let mut actual: std::collections::BTreeSet<String> = Default::default();
-        let mut dentro_arm = false;
-        let mut dentro_bloque = false;
-        for linea in fuente.lines() {
-            let t = linea.trim_start();
-            if t.starts_with("\"zkssl_signedEpochHead\" =>") {
-                dentro_arm = true;
-                continue;
-            }
-            if !dentro_arm {
-                continue;
-            }
-            if !dentro_bloque && t.starts_with("\"zkssl_") && t.contains("=>") {
-                break;
-            }
-            if t.contains("json!({") {
-                dentro_bloque = true;
-                actual = Default::default();
-                continue;
-            }
-            if dentro_bloque && (t == "})," || t == "})") {
-                bloques.push(std::mem::take(&mut actual));
-                dentro_bloque = false;
-                continue;
-            }
-            if dentro_bloque && t.starts_with('"') {
-                let cs: Vec<char> = t.chars().collect();
-                let mut j = 1usize;
-                while j < cs.len() && cs[j] != '"' {
-                    j += 1;
-                }
-                if cs.get(j + 1) == Some(&':') {
-                    actual.insert(cs[1..j].iter().collect());
-                }
-            }
-        }
+        let lineas: Vec<&str> = fuente.lines().map(|l| l.trim_start()).collect();
+        let aperturas: Vec<usize> = lineas
+            .iter()
+            .enumerate()
+            .filter(|(_, t)| t.starts_with(APERTURA))
+            .map(|(i, _)| i)
+            .collect();
+        let cierres: Vec<usize> = lineas
+            .iter()
+            .enumerate()
+            .filter(|(_, t)| t.starts_with(CIERRE))
+            .map(|(i, _)| i)
+            .collect();
+
+        // ── 1 · PRIMERO se demuestra que la region existe ──
         assert_eq!(
-            bloques.len(),
-            3,
-            "el brazo debe tener EXACTAMENTE tres json!; el escaner vio {}",
-            bloques.len()
+            aperturas.len(),
+            1,
+            "la marca de APERTURA aparece {} veces: sin delimitacion, el cero de abajo no vale nada",
+            aperturas.len()
         );
+        assert_eq!(
+            cierres.len(),
+            1,
+            "la marca de CIERRE aparece {} veces",
+            cierres.len()
+        );
+        let (abre, cierra) = (aperturas[0], cierres[0]);
+        assert!(
+            cierra > abre + 1,
+            "la region del brazo esta VACIA o invertida: de {abre} a {cierra}"
+        );
+        let region = &lineas[abre + 1..cierra];
 
-        let esperados: [(&str, &[&str]); 3] = [
-            ("sin latido", SIN_LATIDO),
-            ("sin clave", SIN_CLAVE),
-            ("firmada", FIRMADA),
-        ];
-        for (i, (caso, decl)) in esperados.iter().enumerate() {
-            let d: std::collections::BTreeSet<String> =
-                decl.iter().map(|s| s.to_string()).collect();
-            let sobran: Vec<&String> = bloques[i].difference(&d).collect();
-            let faltan: Vec<&String> = d.difference(&bloques[i]).collect();
-            assert!(
-                sobran.is_empty(),
-                "caso {caso}: el dispatch SIRVE claves no declaradas: {sobran:?}"
-            );
-            assert!(
-                faltan.is_empty(),
-                "caso {caso}: declaradas y NO servidas: {faltan:?}"
-            );
-        }
-
-        // Los dos cruces que atan la FUENTE a lo que el dispatch DEVUELVE.
-        let app = nodo(30);
-        let v = dispatch(&app, "zkssl_signedEpochHead", json!({})).expect("no debe fallar");
-        let vistas: std::collections::BTreeSet<String> =
-            v.as_object().expect("objeto").keys().cloned().collect();
-        let d1: std::collections::BTreeSet<String> =
-            SIN_LATIDO.iter().map(|s| s.to_string()).collect();
-        assert_eq!(vistas, d1, "sin latido: la fuente y la ejecucion discrepan");
-
-        let app = nodo(30);
-        let l = crate::latido::latir(&app, None).expect("latir");
-        crate::latido::conservar(&app, l);
-        let v = dispatch(&app, "zkssl_signedEpochHead", json!({})).expect("no debe fallar");
-        let vistas: std::collections::BTreeSet<String> =
-            v.as_object().expect("objeto").keys().cloned().collect();
-        let d2: std::collections::BTreeSet<String> =
-            SIN_CLAVE.iter().map(|s| s.to_string()).collect();
-        assert_eq!(vistas, d2, "sin clave: la fuente y la ejecucion discrepan");
+        // ── 2 · y SOLO entonces se cuenta ──
+        let a_mano = region.iter().filter(|t| t.contains("json!(")).count();
+        assert_eq!(
+            a_mano, 0,
+            "el brazo vuelve a montar la respuesta a mano: {a_mano} usos de json!"
+        );
+        let por_el_tipo = region
+            .iter()
+            .filter(|t| t.contains("SignedEpochHeadDto::"))
+            .count();
+        assert_eq!(
+            por_el_tipo, 3,
+            "el brazo tiene que construir las TRES formas con el tipo; vi {por_el_tipo}"
+        );
     }
 
     // ── consultas de solo lectura ─────────────────────────────────

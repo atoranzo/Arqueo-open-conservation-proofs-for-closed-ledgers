@@ -811,6 +811,113 @@ pub struct VistaFirmada<'a> {
 }
 
 impl SignedEpochHeadDto {
+    // ─────────── §313 · los TRES constructores nombrados ───────────
+    //
+    // ⚠️ Con struct plano los estados ilegales eran DETECTABLES pero no
+    // inconstruibles (D1, §311). Estos tres no lo arreglan del todo —el
+    // struct sigue siendo construible a mano— pero **hacen que construir
+    // uno ilegal deje de ser el camino fácil**: el productor pasa de tres
+    // `json!` a tres llamadas, y el invariante se vigila **en la
+    // construcción y en la lectura**, no sólo en la lectura.
+    //
+    // ⚠️ El de la forma firmada se llama `con_firma` y **no `firmada`**:
+    // ese nombre lo ocupa el accesor de arriba (§312), que lee. El nombre
+    // tiene precedente en el árbol —`con_firma_el_metodo_da_todo_lo_que_
+    // un_testigo_necesita`, el test del nodo—.
+
+    /// Forma 1: **no ha habido latido todavía**. Cinco claves.
+    pub fn sin_latido(beat_seconds: Q, custody: String, custody_checked: bool, reason: String) -> Self {
+        Self {
+            available: false,
+            beat_seconds,
+            custody,
+            custody_checked,
+            reason: Some(reason),
+            seq: None,
+            epoch_digest: None,
+            emitted_at_unix: None,
+            domain: None,
+            format_version: None,
+            mmr_root: None,
+            mmr_size: None,
+            index: None,
+            accounts_root: None,
+            pending_root: None,
+            frozen_root: None,
+            chain_digest: None,
+            acuses_root: None,
+            n: None,
+            signature: None,
+            public_key: None,
+        }
+    }
+
+    /// Forma 2: **hay cabeza pero no hay firma** —el nodo arrancó sin
+    /// clave—. Ocho claves: las cinco de arriba más las tres de la cabeza
+    /// que sí se pueden servir.
+    #[allow(clippy::too_many_arguments)]
+    pub fn sin_clave(
+        beat_seconds: Q,
+        custody: String,
+        custody_checked: bool,
+        reason: String,
+        seq: Q,
+        epoch_digest: B32,
+        emitted_at_unix: Q,
+    ) -> Self {
+        Self {
+            seq: Some(seq),
+            epoch_digest: Some(epoch_digest),
+            emitted_at_unix: Some(emitted_at_unix),
+            ..Self::sin_latido(beat_seconds, custody, custody_checked, reason)
+        }
+    }
+
+    /// Forma 3: **la cabeza firmada**. Veinte claves.
+    ///
+    /// ⚠️ Toma la cabeza sin firmar ENTERA y no sus diez campos sueltos:
+    /// el §311 midió que **la forma firmada contiene entera a
+    /// `EpochHeadDto`**, así que el `impl From<&EpochHead>` de más arriba
+    /// queda como **único productor de la forma de cable de la cabeza** y
+    /// el llamante deja de escribir a mano seis `digest_to_wire`.
+    #[allow(clippy::too_many_arguments)]
+    pub fn con_firma(
+        cabeza: &EpochHeadDto,
+        domain: String,
+        format_version: Q,
+        index: Q,
+        signature: Blob,
+        public_key: Blob,
+        emitted_at_unix: Q,
+        beat_seconds: Q,
+        custody: String,
+        custody_checked: bool,
+    ) -> Self {
+        Self {
+            available: true,
+            beat_seconds,
+            custody,
+            custody_checked,
+            reason: None,
+            seq: Some(cabeza.seq),
+            epoch_digest: Some(cabeza.epoch_digest),
+            emitted_at_unix: Some(emitted_at_unix),
+            domain: Some(domain),
+            format_version: Some(format_version),
+            mmr_root: Some(cabeza.mmr_root),
+            mmr_size: Some(cabeza.mmr_size),
+            index: Some(index),
+            accounts_root: Some(cabeza.accounts_root),
+            pending_root: Some(cabeza.pending_root),
+            frozen_root: Some(cabeza.frozen_root),
+            chain_digest: Some(cabeza.chain_digest),
+            acuses_root: Some(cabeza.acuses_root),
+            n: Some(cabeza.n),
+            signature: Some(signature),
+            public_key: Some(public_key),
+        }
+    }
+
     /// **Tres desenlaces, y ninguno colapsado** (§254):
     ///
     /// - `Ok(None)` — no hay cabeza firmada que servir. Es una respuesta
@@ -870,6 +977,97 @@ pub mod openrpc;
 mod tests {
     use super::*;
     use serde_json::Value;
+
+    // ────────────── §313 · los tres constructores nombrados ──────────────
+    //
+    // ⚠️ No nacen helpers ni fixtures nuevos: los tres cuerpos ya están
+    // arriba (`SIN_LATIDO`, `SIN_CLAVE`, `FIRMADA`) y son los que el §311
+    // pinó. Lo que estos tres tests atan es que **el constructor produce
+    // EXACTAMENTE el cuerpo que el nodo sirve** — y los dos lados se
+    // derivan serializando, ninguno se escribe a mano.
+
+    #[test]
+    fn sin_latido_produce_exactamente_el_cuerpo_que_el_nodo_sirve() {
+        let d = SignedEpochHeadDto::sin_latido(
+            Q(30),
+            "fichero".into(),
+            true,
+            "aun no ha habido latido: el nodo acaba de arrancar".into(),
+        );
+        let del_fixture: SignedEpochHeadDto =
+            serde_json::from_str(SIN_LATIDO).expect("el cuerpo del brazo 1 deserializa");
+        assert_eq!(
+            serde_json::to_value(&d).expect("serializa"),
+            serde_json::to_value(&del_fixture).expect("serializa"),
+            "el constructor y el cuerpo que sirve el nodo han divergido"
+        );
+    }
+
+    #[test]
+    fn sin_clave_produce_exactamente_el_cuerpo_que_el_nodo_sirve() {
+        let d = SignedEpochHeadDto::sin_clave(
+            Q(30),
+            "fichero".into(),
+            true,
+            "el nodo arranco SIN --clave".into(),
+            Q(7),
+            B32([0x11; 32]),
+            Q(0x66c0),
+        );
+        let del_fixture: SignedEpochHeadDto =
+            serde_json::from_str(SIN_CLAVE).expect("el cuerpo del brazo 2 deserializa");
+        assert_eq!(
+            serde_json::to_value(&d).expect("serializa"),
+            serde_json::to_value(&del_fixture).expect("serializa"),
+            "el constructor y el cuerpo que sirve el nodo han divergido"
+        );
+        // Y la forma 2 contiene entera a la 1 POR CONSTRUCCION: `sin_clave`
+        // se construye sobre `sin_latido`, no copiando sus campos.
+        assert!(!d.available);
+        assert!(d.reason.is_some(), "sin firma, `reason` siempre viaja");
+    }
+
+    #[test]
+    fn con_firma_produce_exactamente_el_cuerpo_que_el_nodo_sirve() {
+        // ⚠️ La cabeza sin firmar entra ENTERA: es el hallazgo del §311, y es
+        // lo que deja el `impl From<&EpochHead>` como unico productor de la
+        // forma de cable de la cabeza.
+        let cabeza = EpochHeadDto {
+            seq: Q(7),
+            accounts_root: B32([0x33; 32]),
+            pending_root: B32([0x44; 32]),
+            frozen_root: B32([0x55; 32]),
+            chain_digest: B32([0x66; 32]),
+            acuses_root: B32([0x77; 32]),
+            n: Q(100),
+            mmr_root: B32([0x22; 32]),
+            mmr_size: Q(5),
+            epoch_digest: B32([0x11; 32]),
+        };
+        let d = SignedEpochHeadDto::con_firma(
+            &cabeza,
+            "ZK-SSL-epoch-head".into(),
+            Q(3),
+            Q(2),
+            Blob(vec![0xde, 0xad, 0xbe, 0xef]),
+            Blob(vec![0xab, 0xcd]),
+            Q(0x66c0),
+            Q(30),
+            "fichero".into(),
+            true,
+        );
+        let del_fixture: SignedEpochHeadDto =
+            serde_json::from_str(FIRMADA).expect("el cuerpo del brazo 3 deserializa");
+        assert_eq!(
+            serde_json::to_value(&d).expect("serializa"),
+            serde_json::to_value(&del_fixture).expect("serializa"),
+            "el constructor y el cuerpo que sirve el nodo han divergido"
+        );
+        // Y lo construido pasa el accesor: los diecinueve estan.
+        let vista = d.firmada().expect("bien formada").expect("hay cabeza firmada");
+        assert_eq!(vista.index, Q(2));
+        assert_eq!(vista.signature, &Blob(vec![0xde, 0xad, 0xbe, 0xef]));
+    }
 
     // ─────────────── §312 · el accesor falible de la cabeza ───────────────
 
