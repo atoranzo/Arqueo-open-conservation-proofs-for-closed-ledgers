@@ -29,6 +29,15 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"
 
+# ⚠️⚠️ **§312 · CORRECCION. La frase de abajo se CITA, no se borra**
+# (§247). El parrafo siguiente excluye `zk-ssl-sdk` porque «arrastraria
+# stark-experiment», y ese argumento ya era FALSO cuando se escribio: la
+# PRIMERA dependencia de este crate —`zk-ssl` con `sandbox`, linea 21—
+# declara `stark-experiment` de forma llana (`crates/zk-ssl/Cargo.toml:25`),
+# asi que el probador STARK ya se compila aqui. MEDIDO, no supuesto.
+#
+# Lo que sigue vivo del §243 es lo que el arbol enuncia y nada mas: **lo
+# prohibido es depender de la CAPA o del NODO**. El CABLE no lo esta.
 # ⚠️ **El testigo** (§245). Solo esto: `zk-ssl-verify` para verificar y
 # `ureq` para hablar. **NO se usa `zk-ssl-sdk`** aunque tenga el cliente
 # RPC hecho: arrastraria `stark-experiment`, y **un testigo no debe
@@ -36,6 +45,13 @@ anyhow = "1"
 # §243 a menor escala.
 zk-ssl-verify = { path = "../zk-ssl-verify" }
 ureq = { version = "2.10", features = ["json"] }
+
+# ⚠️ **El CABLE** (§312). El testigo deja de leer la cabeza firmada a pelo
+# y la tipa con `SignedEpochHeadDto`. **Suma exactamente UN nodo al grafo**
+# —el cable mismo—: sus cinco dependencias (`zk-ssl`, `winterfell`, `serde`,
+# `serde_json`, `stark-experiment`) ya estaban todas en este crate, cuatro
+# declaradas arriba y `stark-experiment` por via de `zk-ssl`. MEDIDO.
+zk-ssl-wire = { path = "../zk-ssl-wire" }
 
 # ⚠️ **El COFIRMANTE** (§299). El testigo ya no solo mira: firma, y para
 # firmar necesita el GUARDIAN del indice —**el mismo crate que usa el nodo**

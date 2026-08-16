@@ -117,6 +117,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use clap::Args;
+use serde::Deserialize;
 use serde_json::{json, Value};
 // ⚠️ Import EXPLICITO, nunca glob: `zk-ssl-verify` reexporta **su propio**
 // `Veredicto` (el de `reverificacion`, §279), homonimo del de este modulo.
@@ -126,6 +127,7 @@ use zk_ssl_verify::{
     mmr, preambulo_cofirma, verificar_cabeza, verificar_cofirma, CabezaFirmada, Conjunto,
     VerificaError, VERSION_FORMATO,
 };
+use zk_ssl_wire::SignedEpochHeadDto;
 
 /// Lo que el testigo concluye de cada consulta.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -659,12 +661,43 @@ pub fn una_vuelta(v: &Value, m: &mut Memoria) -> Veredicto {
     if let Some(cambio) = m.anclar(&clave_hex) {
         return cambio;
     }
-    let indice = match leer_q(&v["index"]) {
-        Ok(i) => i,
-        Err(e) => return Veredicto::NoVerifica { indice: 0, error: e },
+    // ── 2 · AHORA el cable tipa lo servido, y NO ANTES ──
+    //
+    // ⚠️⚠️ El orden de estas dos etapas es una PROPIEDAD, no una comodidad:
+    // un parseo estructural delante del ancla dejaría que el operador
+    // ENMASCARE un cambio de clave malformando cualquier otro campo —la
+    // vuelta moriría por forma y nunca llegaría a comparar la clave—. Por eso
+    // el ancla de arriba lee `publicKey` a pelo, a propósito.
+    //
+    // ⚠️ §312 · esto es MÁS ESTRICTO que lo anterior, y es cambio de
+    // comportamiento DECLARADO: una respuesta a la que le falte `custody` o
+    // `beatSeconds` clasificaba como cabeza buena y ahora sale `NoVerifica`
+    // con la forma nombrada. El dispatch del nodo sirve esos campos en las
+    // TRES formas, así que quien no los sirve está roto.
+    let dto = match SignedEpochHeadDto::deserialize(v) {
+        Ok(d) => d,
+        Err(e) => {
+            return Veredicto::NoVerifica { indice: 0, error: format!("forma del cable: {e}") }
+        }
     };
+    let vista = match dto.firmada() {
+        Ok(Some(c)) => c,
+        // Inalcanzable por la salida temprana de arriba. No se colapsa con un
+        // `unwrap`: el tipo lo contempla, y fingir que no existe es como se
+        // entra en los pánicos que un testigo no puede permitirse.
+        Ok(None) => {
+            return Veredicto::SinFirma {
+                motivo: "el cable dice que no hay cabeza firmada".into(),
+            }
+        }
+        Err(e) => return Veredicto::NoVerifica { indice: 0, error: format!("{e}") },
+    };
+    let indice = vista.index.0;
+    // ⚠️ El digest se lee de lo SERVIDO y no se recompone desde la vista:
+    // `m.clasificar` compara esta cadena entre vueltas, y devolver los bytes
+    // a hex sería REESCRIBIR lo que el nodo sirvió. Quien reescribe, adultera.
     let digest = v["epochDigest"].as_str().unwrap_or_default().to_string();
-    // ── 2 · verificar, con el MISMO codigo que usa el firmante ──
+    // ── 3 · verificar, con el MISMO codigo que usa el firmante ──
     match verificar(v) {
         Err(e) => Veredicto::NoVerifica { indice, error: e },
         Ok(()) => m.clasificar(indice, &digest),
@@ -2462,6 +2495,12 @@ mod tests {
     fn el_ancla_va_antes_que_la_verificacion() {
         // ⚠️ Si la clave cambio, verificar contra la NUEVA no significa nada:
         // el veredicto tiene que ser el cambio, no un fallo de firma.
+        //
+        // ⚠️⚠️ §312 · Y AHORA ADEMÁS ES EL GUARDIÁN DEL ORDEN. Esta fixture
+        // es INVÁLIDA para `SignedEpochHeadDto` —le faltan `beatSeconds`,
+        // `custody` y `custodyChecked`, y su `epochDigest` es de un byte—:
+        // si el tipado se colase delante del ancla, este test moriría. Que
+        // siga en verde es la prueba EJECUTABLE de que no se ha colado.
         let mut m = Memoria::nueva();
         m.anclar("0xaaaa");
         let v = una_vuelta(
@@ -2483,6 +2522,69 @@ mod tests {
         assert!(matches!(v, Veredicto::SinFirma { .. }));
         assert!(!v.detiene());
         assert_eq!(m.clave_fijada(), None, "sin firma no hay clave que fijar");
+    }
+
+    /// La forma firmada COMPLETA, con las veinte claves que sirve el dispatch
+    /// del nodo (`main.rs:663-717`).
+    ///
+    /// ⚠️ **Fuente única de los dos tests de abajo**: el que necesita una
+    /// respuesta rota se la quita a ESTA, no escribe una segunda copia.
+    fn cabeza_firmada_completa() -> Value {
+        json!({
+            "available": true,
+            "beatSeconds": "0x1e",
+            "custody": "fichero",
+            "custodyChecked": true,
+            "seq": "0x5",
+            "epochDigest": "0x1111111111111111111111111111111111111111111111111111111111111111",
+            "emittedAtUnix": "0x64",
+            "domain": "ZK-SSL-EPOCH-HEAD",
+            "formatVersion": "0x3",
+            "mmrRoot": "0x2222222222222222222222222222222222222222222222222222222222222222",
+            "mmrSize": "0x9",
+            "index": "0x7",
+            "accountsRoot": "0x3333333333333333333333333333333333333333333333333333333333333333",
+            "pendingRoot": "0x4444444444444444444444444444444444444444444444444444444444444444",
+            "frozenRoot": "0x5555555555555555555555555555555555555555555555555555555555555555",
+            "chainDigest": "0x6666666666666666666666666666666666666666666666666666666666666666",
+            "acusesRoot": "0x7777777777777777777777777777777777777777777777777777777777777777",
+            "n": "0x3",
+            "signature": "0xaabb",
+            "publicKey": "0xccdd"
+        })
+    }
+
+    #[test]
+    fn la_respuesta_del_nodo_deserializa_en_el_dto_y_la_vista_trae_el_indice() {
+        // ⚠️ §312 · el primer consumidor TIPADO del cable, y vive aquí: el
+        // verificador no puede tener `zk-ssl-wire` sin arrastrar la capa.
+        //
+        // ⚠️ Este test **no pasa por `verificar`** a propósito: una firma de
+        // mentira contra `verificar_cabeza` mide la librería de abajo, no la
+        // migración. Lo que se prueba es el tramo nuevo, y nada más.
+        let v = cabeza_firmada_completa();
+        let dto = SignedEpochHeadDto::deserialize(&v).expect("la respuesta del nodo es del cable");
+        let vista = dto.firmada().expect("bien formada").expect("hay cabeza firmada");
+        assert_eq!(vista.index.0, 7, "el indice sale tipado, sin leer_q");
+        assert_eq!(vista.custody, "fichero");
+    }
+
+    #[test]
+    fn una_cabeza_sin_custody_ya_no_clasifica_y_lo_dice_por_su_nombre() {
+        // ⚠️⚠️ §312 · éste es el que prueba DÓNDE vive el tipado: dentro de
+        // `una_vuelta` y **después** del ancla. Con la clave sin fijar el
+        // ancla deja pasar, así que lo único que puede matar la vuelta es el
+        // cable — y antes de este corte esta misma respuesta clasificaba.
+        let mut v = cabeza_firmada_completa();
+        v.as_object_mut().expect("objeto").remove("custody");
+        let mut m = Memoria::nueva();
+        match una_vuelta(&v, &mut m) {
+            Veredicto::NoVerifica { indice, error } => {
+                assert_eq!(indice, 0, "sin forma no hay indice que declarar");
+                assert!(error.starts_with("forma del cable"), "dio: {error}");
+            }
+            otro => panic!("una cabeza sin custody no puede clasificar: {otro:?}"),
+        }
     }
 
     #[test]

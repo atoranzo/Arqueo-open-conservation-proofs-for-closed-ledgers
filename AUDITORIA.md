@@ -23469,3 +23469,156 @@ dicho. BACKLOG **quieto en 44 abiertas y 54 resueltas**. Ningun Cargo tocado.
 Canon VERDE: **1001 tests declarados**, 13 instrumentos, 114 ficheros `.rs`,
 las siete herramientas. La cifra de sellos **no se incrementa**: sigue sin
 definicion operativa desde el §304.
+
+## §312 — 2026-08-16 · El CONSUMIDOR: el testigo lee la cabeza firmada TIPADA
+
+**Que.** El §311 creo `SignedEpochHeadDto` y lo dejo sin un solo consumidor.
+Este corte le da el primero: el cli gana `zk-ssl-wire`, el cable gana un
+**accesor falible**, y `una_vuelta` deja de leer la respuesta del nodo a pelo.
+El alcance es el minimo que demuestra la tesis —que el DTO es usable por un
+consumidor real—, y **se movio dos veces al medir**, las dos por la misma
+razon.
+
+**El alcance (A) no era alcanzable como estaba escrito, y lo dijo el censo del
+§298.** El traspaso decia «solo `verificar` migrado». Medido: **`verificar`
+tiene DOS llamantes** —`:668` desde `una_vuelta`, que lee la respuesta del
+nodo, y `:965` desde `auditar_lineas`, que lee LINEAS DE DIARIO—. Y una linea
+de diario **no puede deserializar en el DTO por dos razones a la vez**: trae
+tres campos desconocidos (`v`, `clase`, `vistoUnix`) contra
+`deny_unknown_fields`, y **le falta `available`**, que no es `Option`. Migrar
+`verificar` habria roto `--auditar`; duplicarlo en dos verificadores es dos
+implementaciones del mismo invariante, que es lo que el §296 y el §298
+mataron. De ahi la forma final: **se migra `una_vuelta`, no `verificar`.**
+
+**Por que la linea de diario funciona hoy con el mismo `verificar`.**
+`linea_de_diario` copia **a la raiz** las diecinueve claves de la cabeza —las
+veinte de la forma firmada menos `available`, que la linea sustituye por
+`clase`—, asi que `verificar` y `recomponer` leen en el mismo sitio venga de
+donde venga. El propio fichero ya avisaba del acoplamiento y ya lo habia
+cobrado una vez: trece lineas legitimas salieron como `firma-no-verifica`
+cuando faltaban `seq`, `n` y las cinco raices.
+
+**EL ORDEN ES UNA PROPIEDAD, NO UNA COMODIDAD.** Un parseo estructural
+delante del ancla dejaria que el operador **ENMASCARE un cambio de clave
+malformando cualquier otro campo**: la vuelta moriria por forma y nunca
+llegaria a comparar la clave. Por eso la salida temprana y el ancla siguen
+leyendo `available`, `reason` y `publicKey` a pelo, **a proposito y con la
+razon escrita en el codigo**, y el DTO entra justo despues. Y el test
+`el_ancla_va_antes_que_la_verificacion` pasa a ser **el guardian ejecutable de
+ese orden**: su fixture es invalida para el DTO —faltan tres campos llanos y
+su `epochDigest` es de un byte— y aun asi debe dar `CambioDeClave`. Que siga
+en verde es la prueba de que el tipado no se ha colado delante.
+
+**El falso verde que se evito por medir.** Con el DTO arriba, el test
+`sin_firma_no_ancla_ni_alarma` **habria seguido en verde por la ruta
+equivocada**: `SinFirma` por fallo de deserializacion en vez de por
+`available:false`. Veredicto correcto, camino distinto, y ningun gate lo
+habria dicho.
+
+**El accesor: tres desenlaces y ninguno colapsado (§254).** `Ok(None)` es «no
+hay cabeza firmada que servir», una respuesta legitima del operador;
+`Ok(Some(v))` es la vista con los diecinueve campos **sin `Option`**; y
+`Err(CabezaMalformada::FaltaCampo(k))` **dice QUE campo falta**, no que algo
+falta. Un `Option` a secas habria juntado el primero con el tercero, que es
+justo la figura que el §254 persigue. El orden de los campos en el literal
+decide cual se reporta primero, y es determinista.
+
+**El nombre no es `CabezaFirmada` porque ese estaba tomado.** Lo ocupa
+`zk_ssl_verify::CabezaFirmada` —el preambulo de la firma, otra cosa—, y el
+testigo importa los dos en el mismo fichero. Se llama `VistaFirmada`. El
+propio DTO ya citaba el homonimo en el doc de su campo `index`.
+
+**Los diecinueve de la vista son EXACTAMENTE los diecinueve que el diario
+captura a mano.** Eso convierte la lista de `linea_de_diario` en un **tercer
+productor del mismo conjunto**, y se declara **con su sucesor NOMBRADO**: la
+etapa 2 del §309, derivar la lista serializando el DTO. Deuda con salida, no
+deuda a secas.
+
+**El digest se lee de lo SERVIDO y no se recompone desde la vista.**
+`epoch_digest` viaja como `B32` —bytes—, y devolverlo a hex seria reescribir
+lo que el nodo sirvio, con `m.clasificar` comparando esa cadena entre vueltas.
+Quien reescribe, adultera. La vista aporta el indice tipado; la cadena del
+digest se queda como vino.
+
+**CAMBIO DE COMPORTAMIENTO, DECLARADO Y NO COLADO.** La migracion es mas
+estricta: una respuesta con firma valida a la que le falte `custody` o
+`beatSeconds` **clasificaba como cabeza buena y ahora sale `NoVerifica`** con
+la forma nombrada. Es la direccion correcta —el dispatch del nodo sirve esos
+campos en las tres formas, asi que quien no los sirve esta roto—, pero es un
+cambio de veredicto y va escrito aqui, no escondido en un refactor.
+
+**La correccion del §247 en `cli/Cargo.toml`, citada y no borrada.** El
+comentario excluia `zk-ssl-sdk` porque «arrastraria stark-experiment, y un
+testigo no debe compilar el probador STARK para comprobar una firma». **Ese
+argumento ya era falso cuando se escribio**: la PRIMERA dependencia del crate
+—`zk-ssl` con `sandbox`— declara `stark-experiment` de forma llana
+(`crates/zk-ssl/Cargo.toml:25`, seccion `[dependencies]`, enumeradas todas sus
+secciones y sin ningun `[dev-dependencies]` en medio). Y hay una segunda via:
+**el propio cable que se adopta declara `stark-experiment` directo**. Lo que
+sigue vivo del §243 es lo que el arbol enuncia y nada mas: lo prohibido es
+depender de la CAPA o del NODO. El cable no lo esta.
+
+**El cable suma exactamente UN nodo al grafo, y ahora esta medido.** Sus cinco
+dependencias son `zk-ssl`, `winterfell`, `serde`, `serde_json` y
+`stark-experiment`; las cuatro primeras ya estaban en el cli con la misma
+version y la quinta ya llegaba por `zk-ssl`.
+
+**Lo que decidio el compilador y no la conjetura.** `serde_json::from_value`
+toma el `Value` POR VALOR, asi que usarlo habria obligado a un `v.clone()` con
+~37 KB de firma **en cada latido**. La alternativa —`SignedEpochHeadDto::
+deserialize(v)` con `&Value` como `Deserializer`— **compila**, y con ella el
+coste no llega a existir. Se midio compilando, que era lo pactado.
+
+**La colision de las cifras, y esta vez es DENTRO de otro numero.** El §311
+descubrio que `997` colisionaba con «997 puertas». Aqui es peor: **`\b850\b`
+casa con `122.850`**, porque el punto decimal es frontera de palabra, y un
+reemplazo global habria corrompido «122.850 derivaciones/s» en `BACKLOG.md` y
+en esta misma `AUDITORIA.md`. Ademas `1001` aparece como **numero de fila de
+traza** en `doc/mapa-geometria-circuit_send.md`. Las nueve lineas se editaron
+una a una por su texto, y **cinco ficheros entraron como compuerta por
+huella** y salieron intactos. **Regla nueva: la colision de la cifra NUEVA se
+mide ANTES de escribirla** —855, 992 y 1006 no aparecian en ningun `.md`, y el
+cero esta controlado porque el mismo patron encontro diecisiete lineas para
+las viejas—.
+
+**Mis rojos.** Dos, y de la misma familia. **(1)** Recomende migrar
+`una_vuelta` **sin censar sus llamantes**, en la frase siguiente a senalar esa
+misma omision: son tres, `:1526` y dos tests. **(2)** El INERTE que escribi
+para atacar el candidato 22 —exigir llaves balanceadas en los literales no
+crudos— llevaba la **regex sobre-escapada** y no veia nada: exigia dos barras
+invertidas donde el escape lleva una, y salia VERDE sobre un literal torcido a
+proposito. Se caza en el ensayo porque se probo **por los dos lados**. Un gate
+que solo se prueba por el lado verde es un adorno.
+
+**Y un rojo del otro lado, escrito igual.** La forma del §312 se etiqueto como
+«medida y no supuesta» cuando **la parte que la decidia —los llamantes de
+`verificar`— no estaba medida**. La regla del §298 estaba escrita desde hace
+catorce sellos. Etiquetar de medido lo que no lo esta es peor que no medirlo:
+le pone barniz.
+
+**Lo declarado y NO reparado.** El **split `SinRespuesta`**, que sigue siendo
+corte propio porque arrastra subir `DIARIO_VERSION` a 3 · el **cuarto camino
+hacia `servido`**, que el traspaso no listaba: ademas del `result` real, de la
+fabricacion por transporte y del `Null`, hay una **fabricacion por «respuesta
+ilegible»**, otro objeto de dos claves que inventa el cliente y que el diario
+registra como si lo hubiera servido el nodo · **`check_tests.py` contando
+llaves sin excluir literales**, candidato 22 con instancia medida · el esquema
+`SignedEpochHead` en `openrpc.rs` apuntando a `DATA` · y **`PAPER:967` y
+`PAPER_EN:926` con `# nodo: 31`**, ahora **con su alcance medido**: el bloque
+de ordenes tiene cuatro lineas `cargo test` y solo tres llevan cifra; la capa
+(264) y los circuitos (297) estan al dia, **la deriva es de una sola linea**, y
+no hay linea para el cli ni para el cable, asi que este corte no anade ninguna
+mentira nueva ahi.
+
+**Contadores.** Pin `zk-ssl-wire` 7 -> 10 y pin `zk-ssl-cli` 59 -> 61, los dos
+por COLUMNA y en el mismo bloque que las cifras. Sumas 850/987/1001 ->
+**855/992/1006** en las nueve lineas de cuatro documentos, y la cifra
+POR-CRATE del testigo en `PRINCIPIOS.md`, 59 -> 61; el cable sigue sin
+desglose publicado. `check_cifras` delato **seis** con solo los pines movidos
+—las cinco del TOTAL mas el desglose del testigo, este reportado con linea 0,
+que es el defecto conocido de `desgloses()`— y quedo verde tras las
+sustituciones: 26 cifras vivas, 17 pines leidos, 7 de desglose. Canon VERDE:
+**1006 tests declarados**, 13 instrumentos, 114 ficheros `.rs`, conformidad
+0.2 IDENTICO / 0.1 RECHAZADO. Ningun Cargo tocado salvo el del cli, que gana
+`zk-ssl-wire` y con el mueve `Cargo.lock`. BACKLOG quieto en 44 abiertas / 54
+resueltas.

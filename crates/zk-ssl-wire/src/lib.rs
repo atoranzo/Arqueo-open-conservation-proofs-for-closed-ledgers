@@ -751,6 +751,118 @@ pub struct SignedEpochHeadDto {
     pub public_key: Option<Blob>,
 }
 
+// ───────────── el accesor falible de la cabeza firmada (§312) ─────────────
+
+/// Lo que el struct plano **no puede impedir** y aquí se detecta: con
+/// `available: true`, los diecinueve campos restantes tienen que estar.
+///
+/// ⚠️ Es la mitad del precio de D1 (§311). El struct plano hace los estados
+/// ilegales DETECTABLES, no inconstruibles; esto es la detección — y **dice
+/// QUÉ falta**, no que algo falta (§254).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CabezaMalformada {
+    /// `available: true` y sin el campo que la forma firmada exige.
+    FaltaCampo(&'static str),
+}
+
+impl std::fmt::Display for CabezaMalformada {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CabezaMalformada::FaltaCampo(k) => {
+                write!(f, "cabeza firmada sin {k}: el productor la sirvio incompleta")
+            }
+        }
+    }
+}
+
+impl std::error::Error for CabezaMalformada {}
+
+/// Vista **sin `Option`** de una cabeza firmada bien formada: los diecinueve
+/// campos que acompañan a `available`, ya comprobados.
+///
+/// ⚠️ El nombre **no** es `CabezaFirmada` a propósito: ese lo ocupa
+/// `zk_ssl_verify::CabezaFirmada`, que es el preámbulo de la firma y no esto.
+/// El testigo importa los dos en el mismo fichero.
+///
+/// 💡 Son **exactamente** los diecinueve que el diario del testigo captura
+/// por su lista escrita a mano. Cuando esa lista se derive de aquí (etapa 2
+/// del §309), dejarán de ser dos productores del mismo conjunto.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VistaFirmada<'a> {
+    pub beat_seconds: Q,
+    pub custody: &'a str,
+    pub custody_checked: bool,
+    pub seq: Q,
+    pub epoch_digest: B32,
+    pub emitted_at_unix: Q,
+    pub domain: &'a str,
+    pub format_version: Q,
+    pub mmr_root: B32,
+    pub mmr_size: Q,
+    pub index: Q,
+    pub accounts_root: B32,
+    pub pending_root: B32,
+    pub frozen_root: B32,
+    pub chain_digest: B32,
+    pub acuses_root: B32,
+    pub n: Q,
+    pub signature: &'a Blob,
+    pub public_key: &'a Blob,
+}
+
+impl SignedEpochHeadDto {
+    /// **Tres desenlaces, y ninguno colapsado** (§254):
+    ///
+    /// - `Ok(None)` — no hay cabeza firmada que servir. Es una respuesta
+    ///   legítima del operador, no un defecto suyo.
+    /// - `Ok(Some(v))` — la hay y está completa.
+    /// - `Err(..)` — dice `available: true` y **le falta un campo, nombrado**.
+    ///
+    /// ⚠️ Un `Option` a secas juntaría el primero con el tercero, que es la
+    /// figura que el §254 persigue: «no disponible» y «disponible y rota» no
+    /// son la misma noticia.
+    ///
+    /// ⚠️ El orden de los campos aquí decide **cuál falta se reporta
+    /// primero**, y es determinista: se evalúan en el orden escrito.
+    pub fn firmada(&self) -> Result<Option<VistaFirmada<'_>>, CabezaMalformada> {
+        if !self.available {
+            return Ok(None);
+        }
+        // ⚠️ Macro y no closure, con el precedente de `recomponer` en el
+        // testigo: un closure tendría que nombrar el tipo de retorno de cada
+        // campo, y son cuatro tipos distintos.
+        macro_rules! exige {
+            ($campo:ident, $nombre:literal) => {
+                match &self.$campo {
+                    Some(x) => x,
+                    None => return Err(CabezaMalformada::FaltaCampo($nombre)),
+                }
+            };
+        }
+        Ok(Some(VistaFirmada {
+            beat_seconds: self.beat_seconds,
+            custody: self.custody.as_str(),
+            custody_checked: self.custody_checked,
+            seq: *exige!(seq, "seq"),
+            epoch_digest: *exige!(epoch_digest, "epochDigest"),
+            emitted_at_unix: *exige!(emitted_at_unix, "emittedAtUnix"),
+            domain: exige!(domain, "domain").as_str(),
+            format_version: *exige!(format_version, "formatVersion"),
+            mmr_root: *exige!(mmr_root, "mmrRoot"),
+            mmr_size: *exige!(mmr_size, "mmrSize"),
+            index: *exige!(index, "index"),
+            accounts_root: *exige!(accounts_root, "accountsRoot"),
+            pending_root: *exige!(pending_root, "pendingRoot"),
+            frozen_root: *exige!(frozen_root, "frozenRoot"),
+            chain_digest: *exige!(chain_digest, "chainDigest"),
+            acuses_root: *exige!(acuses_root, "acusesRoot"),
+            n: *exige!(n, "n"),
+            signature: exige!(signature, "signature"),
+            public_key: exige!(public_key, "publicKey"),
+        }))
+    }
+}
+
 /// Documento OpenRPC del protocolo (nota 74): la tabla vive aqui.
 pub mod openrpc;
 
@@ -758,6 +870,61 @@ pub mod openrpc;
 mod tests {
     use super::*;
     use serde_json::Value;
+
+    // ─────────────── §312 · el accesor falible de la cabeza ───────────────
+
+    /// La forma firmada COMPLETA, con las veinte claves del dispatch.
+    ///
+    /// ⚠️ **Fuente única de las tres pruebas del accesor**: la que necesita
+    /// un campo de menos se lo quita a ESTA, no escribe una segunda copia.
+    const FIRMADA_JSON: &str = r#"{"available":true,"beatSeconds":"0x1e","custody":"fichero","custodyChecked":true,"seq":"0x5","epochDigest":"0x1111111111111111111111111111111111111111111111111111111111111111","emittedAtUnix":"0x64","domain":"ZK-SSL-EPOCH-HEAD","formatVersion":"0x3","mmrRoot":"0x2222222222222222222222222222222222222222222222222222222222222222","mmrSize":"0x9","index":"0x7","accountsRoot":"0x3333333333333333333333333333333333333333333333333333333333333333","pendingRoot":"0x4444444444444444444444444444444444444444444444444444444444444444","frozenRoot":"0x5555555555555555555555555555555555555555555555555555555555555555","chainDigest":"0x6666666666666666666666666666666666666666666666666666666666666666","acusesRoot":"0x7777777777777777777777777777777777777777777777777777777777777777","n":"0x3","signature":"0xaabb","publicKey":"0xccdd"}"#;
+
+    #[test]
+    fn sin_cabeza_firmada_el_accesor_dice_que_no_hay_y_eso_no_es_un_error() {
+        let d: SignedEpochHeadDto = serde_json::from_str(
+            r#"{"available":false,"reason":"el nodo arranco SIN --clave","beatSeconds":"0x1e","custody":"memoria","custodyChecked":false}"#,
+        )
+        .expect("la cara minima deserializa");
+        assert_eq!(
+            d.firmada(),
+            Ok(None),
+            "no disponible es una respuesta legitima, no un defecto del productor"
+        );
+    }
+
+    #[test]
+    fn la_forma_firmada_completa_da_la_vista_con_los_diecinueve() {
+        let d: SignedEpochHeadDto = serde_json::from_str(FIRMADA_JSON).expect("la forma 3 deserializa");
+        // ⚠️ El conjunto de claves NO se compara contra una lista escrita a
+        // mano: se DERIVA serializando el propio DTO.
+        let servido: Value = serde_json::to_value(&d).expect("serializa");
+        assert_eq!(
+            servido.as_object().expect("objeto").len(),
+            20,
+            "la forma firmada son veinte claves"
+        );
+        let vista = d.firmada().expect("bien formada").expect("hay cabeza firmada");
+        // Que la vista EXISTA ya prueba que los diecinueve estaban: si alguno
+        // fuera `None`, el accesor habria devuelto `Err` con su nombre.
+        assert_eq!(vista.index, Q(7));
+        assert_eq!(vista.n, Q(3));
+        assert_eq!(vista.epoch_digest, B32([0x11; 32]));
+        assert_eq!(vista.custody, "fichero");
+        assert_eq!(vista.signature, &Blob(vec![0xaa, 0xbb]));
+    }
+
+    #[test]
+    fn si_falta_un_campo_el_accesor_dice_cual_y_no_solo_que_falta() {
+        let mut v: Value = serde_json::from_str(FIRMADA_JSON).expect("json");
+        v.as_object_mut().expect("objeto").remove("signature");
+        let d: SignedEpochHeadDto =
+            serde_json::from_value(v).expect("quitar un Option no impide deserializar");
+        assert_eq!(d.firmada(), Err(CabezaMalformada::FaltaCampo("signature")));
+        // §254 · el mensaje NOMBRA el campo; un gate que solo dice cuantos
+        // fallan no es auditable.
+        let texto = format!("{}", CabezaMalformada::FaltaCampo("signature"));
+        assert!(texto.contains("signature"), "el error no nombra el campo: {texto}");
+    }
     use std::collections::BTreeSet;
 
     // Los TRES cuerpos que el dispatch sirve hoy, uno por brazo del `match`

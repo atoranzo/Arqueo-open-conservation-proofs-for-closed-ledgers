@@ -3403,6 +3403,7 @@ dependencies = [
  "zk-ssl",
  "zk-ssl-guardian",
  "zk-ssl-verify",
+ "zk-ssl-wire",
 ]
 
 [[package]]
