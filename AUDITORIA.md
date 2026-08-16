@@ -23231,3 +23231,107 @@ registro historico. BACKLOG **quieto en 44 abiertas y 54 resueltas**. Ningun
 Cargo tocado. Canon VERDE: **996 tests declarados**, 13 instrumentos, 114
 ficheros `.rs`, las siete herramientas. La cifra de sellos **no se
 incrementa**: sigue sin definicion operativa desde el §304.
+
+## §310 — 2026-08-16 · LA SERIE DE COFIRMAS ES POR TESTIGO, NO POR INDICE A SECAS
+
+**Que.** El detector de indices repetidos de `--verificar-cofirmas` llevaba su
+mapa indexado SOLO por el indice. Este corte lo pasa a `(clave del testigo,
+indice)`, hace que el hallazgo diga DE QUIEN es el indice repetido, y anade un
+test que cubre las dos direcciones.
+
+**Hoy no estaba roto, y eso importa para leer el corte.** El fichero que
+`--cofirmas` escribe es de UN testigo, asi que un indice repetido dentro de el
+es siempre el mismo firmante reusando su clave, que es justo el hallazgo. Lo
+que rompe es el paso siguiente: en cuanto un cliente junte cofirmas de VARIOS
+testigos —que es el proposito entero del eslabon 3—, el mismo indice aparece
+tantas veces como testigos haya, **por diseno**. Y lo declara el propio
+`--indice-cofirma`: *son dos claves distintas y dos series distintas*. El
+detector habria disparado falso en su primer uso real. Se arregla antes de
+tener el problema, no despues.
+
+**El hallazgo del que sale, y converge con la nota 83.** Midiendo el terreno
+del tramo (iii) aparecio algo mas gordo: las DOS claves —la del testigo y la
+del operador— viajan DENTRO de cada linea de cofirma, y `verificar_cofirma`
+las toma de ahi. Eso significa que `--verificar-cofirmas` comprueba COHERENCIA
+INTERNA, no autenticidad: cualquiera fabrica una cofirma con SU clave y
+verifica. El mando no miente —dice exactamente *todas verifican y ningun
+indice se repite*—, pero el hueco existe y lo cierra la POLITICA DEL CLIENTE,
+que tiene que NOMBRAR que testigos valen. La nota 83 llegaba a esa misma
+condicion leyendo el texto; el censo llega midiendo codigo. **Dos caminos
+independientes, la misma condicion: no es preferencia de diseno, es
+requisito.** Y el censo lo remata: de diez nombres candidatos a lista de
+testigos validos, ocho dan CERO en todo el arbol.
+
+**Por que la clave del mapa lleva la clave ENTERA y el hallazgo solo un
+prefijo.** Truncar la clave para indexar seria invitar a la colision: dos
+testigos con los mismos primeros bytes se fundirian en uno. Lo que se trunca
+es lo que se IMPRIME, con el mismo corte de dieciocho caracteres que el
+resumen de cabezas ya usaba en este fichero. Y el hallazgo lleva el testigo
+porque, con varios firmantes, *indice repetido* sin decir de quien no informa
+de nada: es el §254 otra vez.
+
+**La CLASE no cambia.** `indice-repetido` sigue llamandose igual, y el
+docstring de `clase()` dice que las clases se leen desde fuera y no cambian
+sin subir version. Se anade un campo a la variante, no una clase nueva. El
+test viejo sobrevive sin tocarlo porque destructura con puntos suspensivos.
+
+**El test nuevo se construye A MANO, y es a proposito.** Sus lineas no salen
+de un `Cofirmante` ni tocan disco: son JSON escrito en el test. Lo que se mide
+es la CLAVE DEL MAPA, no la criptografia, y montar dos testigos de verdad
+—dos semillas, dos guardianes, dos ficheros— para comprobar un `BTreeMap`
+seria pagar un banco por un unitario. Las firmas son invencion, asi que cada
+linea da ademas su `no-verifica`, y **el test lo EXIGE en vez de callarlo**:
+un test que no dice lo que espera tapa lo que cambie. El control va dentro: el
+mismo testigo repitiendo indice tiene que seguir siendo hallazgo.
+
+**LA CEGUERA QUE SE DECLARA Y NO SE REPARA, y va en el docstring.** Esto no
+mira si un MISMO testigo cofirma DOS digests distintos para la MISMA epoca.
+Eso es vista dividida FIRMADA —peor que la que el eslabon 2 detecta— y pide
+comparar epocas, no series. No cabe en este corte y no se disimula: queda
+escrita donde se aplica.
+
+**Rojos propios de este corte, dos, y los dos cazados antes de correr.** (1) El
+bloque llevaba acentos graves DENTRO de un `msg`, que en bash son sustitucion
+de orden; lo delato la propia lista de auditoria previa a emitir. (2) En el
+segundo eslabon puse un contador auxiliar sobre la salida de `check_cifras`
+etiquetado *delaciones* que contaba LINEAS y dio diez, cuando el instrumento
+ya imprime su propio numero y dijo seis. **Un contador propio al lado de un
+instrumento que ya cuenta es un segundo productor del mismo dato**, y encima
+con la etiqueta equivocada. Se lee el del instrumento.
+
+**Un afinado del caso 21, medido.** El caso decia que `cargo test -p X` imprime
+TRES bloques `test result: ok` y que el pin los suma. Con `zk-ssl-cli` imprime
+UNO, porque es un crate solo-binario: no hay `lib` ni doc-tests que contar. No
+contradice el caso, lo precisa: **lo robusto es la SUMA, no el numero de
+bloques**, que depende de los targets del crate. Un gate que exigiera tres
+habria muerto por su propia forma. El pin quedo cruzado por dos instrumentos
+que coinciden: el test solo dio *1 passed, 58 filtered out* y la suite entera
+dio *59 passed*.
+
+**Lo que se declara y NO se repara aqui.** (1) `PAPER.md:967` y
+`PAPER_EN.md:926` siguen publicando `# nodo: 31` con el nodo en 73, declarado
+ya en el §309 y sin tocar. (2) Mi censo de esas cifras uso vocabulario
+ESPANOL —`# nodo:`, `# cli:`— y por eso no vio `PAPER_EN`, que escribiria
+`# node:`: la ausencia ahi **no esta medida**, es ceguera de mi patron. (3) El
+canon resume *siete herramientas en el bucle, nueve en el directorio* y el
+`ls` enumerado da DIEZ `.py` mas cinco `.sh`: el nueve no lo explica ninguno
+de los dos conteos, y es del linaje del 115 y del 39. (4) La linea de historia
+del pin del cli salta de `§250: 22 -> 26` a `§294: 28 -> 39`: el tramo 26 -> 28
+no lo explica ningun sello citado. (5) La propiedad del §243 se ha citado en
+esta sesion como *ni la capa, ni el nodo, ni el CABLE*, y los dos sitios del
+arbol que la enuncian —el comentario de `cli/Cargo.toml` y la cabecera de
+`verify/src/main.rs`— NO nombran el cable: la redaccion real esta sin leer.
+
+**Contadores.** Pin `zk-ssl-cli` **58 -> 59** (un test), con su nota de
+historia en la propia fila de `canon.sh`. Sumas **845/982/996 -> 846/983/997**
+en NUEVE lineas de cuatro documentos —`PAPER`, `PRINCIPIOS`,
+`RESUMEN_BILINGUE` en sus dos mitades y `RESUMEN_EJECUTIVO`— y la cifra
+POR-CRATE del testigo en `PRINCIPIOS`, 58 -> 59, **en el mismo bloque que el
+pin**. De esas cifras solo los cinco `845` tienen compuerta: `check_cifras`
+exige el numero pegado a la palabra, asi que los `982` y los `996` se mueven
+POR CENSO y queda dicho. La cita de las sumas viejas en asientos anteriores
+**no se toca**: es registro historico. BACKLOG **quieto en 44 abiertas y 54
+resueltas**; la ceguera declarada no abre nota, y esa eleccion es REVERSIBLE.
+Ningun Cargo tocado. Canon VERDE: **997 tests declarados**, 13 instrumentos,
+114 ficheros `.rs`, las siete herramientas. La cifra de sellos **no se
+incrementa**: sigue sin definicion operativa desde el §304.

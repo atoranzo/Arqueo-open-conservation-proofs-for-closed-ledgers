@@ -1242,11 +1242,19 @@ pub enum HallazgoCofirma {
     CampoAusente { linea: usize, campo: String },
     /// La firma no verifica, o verifica sobre OTRA cosa.
     NoVerifica { linea: usize, indice: u64, error: String },
-    /// ⚠️⚠️ **DOS COFIRMAS CON EL MISMO INDICE.** Es lo que el guardian
-    /// existe para impedir: un indice XMSS reutilizado **filtra la clave**
-    /// (curva QRL: a la cuarta repeticion, ~2^18 hashes). Un tercero que
-    /// recibe el fichero tiene que poder verlo **sin preguntarle a nadie**.
-    IndiceRepetido { linea: usize, indice: u64, antes: usize },
+    /// ⚠️⚠️ **DOS COFIRMAS DEL MISMO TESTIGO CON EL MISMO INDICE.** Es lo
+    /// que el guardian existe para impedir: un indice XMSS reutilizado
+    /// **filtra la clave** (curva QRL: a la cuarta repeticion, ~2^18 hashes).
+    /// Un tercero que recibe el fichero tiene que poder verlo **sin
+    /// preguntarle a nadie**.
+    ///
+    /// ⚠️ **La serie es POR TESTIGO** (§310): cada cofirmante lleva su propia
+    /// clave y su propio contador —lo declara `--indice-cofirma`: «son dos
+    /// claves distintas y dos series distintas»—, asi que en un fichero que
+    /// junte cofirmas de VARIOS el mismo indice aparece por diseno. Por eso
+    /// `testigo` viaja dentro del hallazgo: sin el, «indice repetido» no dice
+    /// DE QUIEN (§254).
+    IndiceRepetido { linea: usize, indice: u64, antes: usize, testigo: String },
 }
 
 impl HallazgoCofirma {
@@ -1270,12 +1278,19 @@ impl HallazgoCofirma {
 /// no estaria terminado**. Es el papel que `--auditar` cumple para el
 /// diario (§249).
 ///
-/// ⚠️ Y ademas **audita la SERIE**: dos cofirmas con el mismo indice son un
-/// hallazgo por si solas, verifiquen o no. El guardian impide reutilizar un
-/// indice **en el testigo**; esto lo comprueba **desde fuera**.
+/// ⚠️ Y ademas **audita la SERIE**: dos cofirmas **del mismo testigo** con el
+/// mismo indice son un hallazgo por si solas, verifiquen o no. El guardian
+/// impide reutilizar un indice **en el testigo**; esto lo comprueba **desde
+/// fuera**.
+///
+/// ⚠️ **CEGUERA DECLARADA (§310)**: NO mira si un mismo testigo cofirma DOS
+/// digests distintos para la misma epoca. Eso es vista dividida FIRMADA, y
+/// pide comparar epocas, no series: queda declarado y sin reparar aqui.
 pub fn verificar_cofirmas(lineas: &[String]) -> Vec<HallazgoCofirma> {
     let mut h = Vec::new();
-    let mut vistos: BTreeMap<u64, usize> = BTreeMap::new();
+    // ⚠️ La clave es (CLAVE DEL TESTIGO, indice), no el indice a secas: cada
+    //    cofirmante lleva su propia serie (§310).
+    let mut vistos: BTreeMap<(Vec<u8>, u64), usize> = BTreeMap::new();
     for (i, l) in lineas.iter().enumerate() {
         let n = i + 1;
         let v: Value = match serde_json::from_str(l) {
@@ -1333,8 +1348,17 @@ pub fn verificar_cofirmas(lineas: &[String]) -> Vec<HallazgoCofirma> {
         };
         // ⚠️ La SERIE, antes que la firma: un indice repetido es un hallazgo
         //    aunque las dos firmas verifiquen. Precisamente por eso.
-        if let Some(antes) = vistos.insert(idx, n) {
-            h.push(HallazgoCofirma::IndiceRepetido { linea: n, indice: idx, antes });
+        // ⚠️ La clave del mapa lleva la clave ENTERA del testigo; lo que se
+        //    IMPRIME es un prefijo, con el mismo corte que el resumen de
+        //    cabezas de arriba. Truncar la CLAVE seria invitar a la colision.
+        if let Some(antes) = vistos.insert((testigo.clone(), idx), n) {
+            let tg = v["clavePublicaTestigo"].as_str().unwrap_or("");
+            h.push(HallazgoCofirma::IndiceRepetido {
+                linea: n,
+                indice: idx,
+                antes,
+                testigo: tg[..18.min(tg.len())].to_string(),
+            });
         }
         let c = CabezaFirmada { version_formato: vf as u8, indice: idx, firma };
         if let Err(e) = verificar_cofirma(&testigo, &d32, &op, &c) {
@@ -2646,6 +2670,50 @@ mod tests {
             }
             otro => panic!("{otro:?}"),
         }
+    }
+
+    /// ⚠️⚠️ **DOS TESTIGOS DISTINTOS PUEDEN LLEVAR EL MISMO INDICE, y eso NO
+    /// es hallazgo.** Cada cofirmante tiene clave y contador propios —lo
+    /// declara `--indice-cofirma`—, asi que un fichero que junte cofirmas de
+    /// VARIOS repite indices por diseno. El control va DENTRO del test: el
+    /// mismo testigo repitiendo indice tiene que seguir siendo hallazgo.
+    ///
+    /// Las lineas se construyen a mano A PROPOSITO: lo que se mide aqui es la
+    /// CLAVE DEL MAPA, no la criptografia. Las firmas son invencion, asi que
+    /// cada linea da ademas su `no-verifica`, y el test lo EXIGE en vez de
+    /// callarlo — un test que no dice lo que espera tapa lo que cambie.
+    #[test]
+    fn dos_testigos_distintos_con_el_mismo_indice_no_son_hallazgo() {
+        let linea = |testigo: &str| {
+            json!({
+                "v": 1,
+                "epochDigest":
+                    "0x1111111111111111111111111111111111111111111111111111111111111111",
+                "clavePublicaOperador": "0xaabb",
+                "clavePublicaTestigo": testigo,
+                "versionFormato": "0x3",
+                "indice": "0x7",
+                "firma": "0xdd"
+            })
+            .to_string()
+        };
+
+        let mismo = verificar_cofirmas(&[linea("0xcc"), linea("0xcc")]);
+        assert!(
+            mismo.iter().any(|x| x.clase() == "indice-repetido"),
+            "el MISMO testigo repitiendo indice sigue siendo hallazgo: {mismo:?}"
+        );
+
+        let distintos = verificar_cofirmas(&[linea("0xcc"), linea("0xdd")]);
+        assert!(
+            !distintos.iter().any(|x| x.clase() == "indice-repetido"),
+            "dos testigos DISTINTOS con el mismo indice NO son hallazgo: {distintos:?}"
+        );
+        assert_eq!(
+            distintos.iter().filter(|x| x.clase() == "no-verifica").count(),
+            2,
+            "las dos firmas son invencion: las dos dan no-verifica: {distintos:?}"
+        );
     }
 
     #[test]
