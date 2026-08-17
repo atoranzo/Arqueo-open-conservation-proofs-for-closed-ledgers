@@ -24119,3 +24119,145 @@ sustituciones: 26 cifras vivas, 17 pines leidos, 7 de desglose. Ningun
 fichero cambio de numero de lineas. Canon VERDE: **1016 tests declarados**,
 13 instrumentos, 114 ficheros `.rs`, conformidad 0.2 IDENTICO / 0.1
 RECHAZADO. Ningun Cargo tocado. BACKLOG quieto en 44 abiertas / 54 resueltas.
+
+## §318 — 2026-08-17 · LA ESCALA DEJA DE SER UNA PROMESA: se nombra, y el aviso va cableado
+
+**Que.** La nota 22 pasa a SUSPENDIDA con su escala escrita —no es cuello por
+debajo de 100.000 pagos, unos 12,3 GiB— y esa escala deja de ser una frase:
+el latido del nodo cuenta los pagos del registro de transiciones y avisa una
+sola vez al cruzarla. La cifra por pago sale del arnes del §304, que hasta hoy
+vivia dentro de `mod tests` y desde este corte es API.
+
+**El reencuadre no es cosmetico, y va en la NOTA porque la nota es lo que lee
+un tercero.** La primera redaccion decia «la ultima escala en la que la copia
+sigue siendo una descarga rutinaria», y contra eso cualquiera mide 12,3 GiB el
+dia que suene, ve que se descargan de una sentada y el aviso queda
+desacreditado. La forma que aguanta es la inversa: **12,3 GiB es la ultima
+escala en la que NO DUELE**, y cruzarla no dice que ya duela sino que **se
+acabo el margen**.
+
+**NO HAY CRUCE DE CURVAS, y por eso la escala no sale de comparar costes.** Con
+el modelo del §307 —49 joins por prueba a unos 0,49 s, mas 40,9 s de prueba en
+la RTX 5090— agregar cuesta unos 65 s de GPU por prueba y ahorra unos 67 KB
+por prueba, a CUALQUIER escala: las dos magnitudes son lineales en N y la
+razon es constante. No existe un punto en que agregar se vuelva rentable por
+tamano. Lo que NO es lineal es la CAPACIDAD de quien descarga —12 GiB se bajan
+sin pensarlo y 12 TiB no—, y de ahi que el disparador vaya sobre stock
+acumulado. Una suspension que se apoyara en un cruce se apoyaria en algo que
+no existe.
+
+**Un disparador que no esta cableado es un comentario.** El precedente que lo
+enseno no es teorico: el aviso de `protoc` del entorno del pod salto solo, y el
+mismo hueco escrito en una nota no habria saltado nunca. Por eso N va FIJA EN
+CODIGO y no como bandera. `--max-cofirmas`, `--latido` y `--limit` son recursos
+del despliegue y el operador los ajusta; N es la escala que el proyecto declara
+y la nota publica. Con una bandera, un test solo podria atar el valor por
+defecto y lo que sonara en produccion podria no corresponder a lo publicado:
+dos productores del mismo contrato sin atar, que es la figura que el §304 vino
+a reparar. Silenciar sigue siendo posible, y por otro camino: el aviso lleva
+`target` propio.
+
+**La razon del §304 para esconder la constante CADUCO, y el compilador lo dijo
+mejor que yo.** Aquella la metio en `mod tests` porque no habia consumidor y
+una `const` fuera habria sido codigo muerto en release; hoy el latido la lee.
+Al promoverla, el primer intento murio con `error[E0432]: unresolved import
+crate::metrics`, y la nota de rustc dio la causa: `mod metrics;` no era solo
+PRIVADO, iba tras `#[cfg(test)]`. El censo previo pidio la FORMA DE LA LINEA
+—`^mod `, `^pub mod `— y fue ciego al ATRIBUTO, que en Rust vive en la linea
+de A—IBA. La salida elegida es la que NO depende de nada sin medir: se
+desgatea el modulo en vez de mudar la constante, porque mudarla habria
+arriesgado romper `tools/check_publicadas.py`, del que no esta medido de donde
+lee el valor. En release ese modulo queda vacio: todo su contenido sigue tras
+sus dos `#[cfg(test)]`.
+
+**Y el hallazgo que vale mas que el caso: `rustc` es el unico instrumento de
+esta casa que ve la estructura de Rust, y el contenedor donde se escriben los
+bloques no lo tiene.** Eso convierte la VIVA en la MEDICION y no en una
+comprobacion, y explica por que el corte se partio por dependencia: el fallo
+tardo un segundo y llego aislado, en vez de enterrado en un bloque de cinco
+ficheros.
+
+**Donde cae el conteo, y lo que cuesta.** El pre-filtro va DENTRO del candado
+del estado porque el slice vive con el, y en el caso normal es O(1): `len()` no
+recorre nada y `len() < N` implica `pagos < N`. Se declara lo que no es gratis:
+entre `len() = N` y `pagos = N` hay una ventana en que se recorre cada vuelta
+—una pasada mas sobre un slice que `vista_acuses::pares` ya recorre entero y
+copia entero—, y en cuanto la bandera queda puesta se vuelve a O(1) para
+siempre. La primera version de esta frase decia «como mucho una vez» y era
+FALSA: cada pago escribe dos entradas, asi que esa ventana va de `len = N` a
+`len` cerca de `2N`. Se cita y se corrige, no se borra.
+
+**La bandera es ATOMICA y no un `Mutex`, y el argumento estaba escrito en el
+propio fichero.** `latido.rs` dice en su paso 0 que toma `limite_de_epoca` fuera
+para no solapar candados y que **el orden establecido `estado -> ultima_cabeza`
+no se toca**, y repite la idea con la pareja del MMR. Un `Mutex` mas comprobado
+dentro del candado del estado seria un TERCER candado en un orden que ese
+fichero trabaja explicitamente para evitar. Ademas el mismo comentario declara
+que **el coste del arbol DENTRO del candado no esta medido**, asi que ensanchar
+esa seccion critica toca deuda ya declarada.
+
+**El aviso suena UNA vez, y nombra su propio silenciador.** El stock no baja:
+con `--latido 1` un aviso por vuelta serian 86.400 al dia, que no es un
+despertador sino ruido que alguien silencia el primer dia, reintroduciendo
+justo el fallo que esto viene a evitar. Lo garantiza el `swap`: quien pone la
+bandera a `true` es quien avisa. Y lleva `target` propio para poder apagarlo
+sin desactivar el resto; el mensaje escribe la receta dentro porque
+`init_tracing` usa `.with_target(false)` y sin eso el nombre del target seria
+indescubrible. Se declara ademas que un filtro mal escrito **cae en silencio a
+`info`**: una directiva con errata no silencia y no avisa de que no silencio.
+
+**Suspender no cambia la casilla.** Las entradas 16 y 28 son `- [ ]` con la
+marca de pausa en el titulo, asi que las suspendidas son un SUBCONJUNTO de las
+abiertas y no un cubo aparte: el 44 se queda quieto y solo se mueve el recuento
+de suspendidas, de dos a tres. El gate del corte fue exactamente ese: recontar
+con el regex del propio parser y exigir que no se moviera.
+
+**Rojos propios de este corte, y los cinco son de GATE, no de Rust.** (1) Un
+liston TOTAL sobre deuda ajena: la primera VIVA del nodo exigia cero warnings
+en el build sin tests y murio con cuatro que ya estaban; para deuda
+preexistente con dueno el liston es el DELTA, y asi quedo, con la base medida
+antes de tocar y ni un titular nuevo despues. (2) Un gate mas estricto que la
+realidad: exigia que la receta del silenciador apareciera UNA vez y aparece
+dos, a proposito. (3) Un gate que contaba MI PROPIA PROSA: pedia tres glifos de
+pausa y el parrafo que el corte inserta tambien abre con uno; se cambio a
+contar ENTRADAS marcadas. (4) El instrumento con el que probaba el instrumento
+estaba mal calibrado: el fixture no llevaba los glifos que el fichero real si
+usa, y el gate del vocabulario del vecino lo delato con razon. (5) Y dentro del
+propio bloque, la huella de los cuatro ficheros de la colision estaba escrita
+DOS VECES —en el cerrojo y en el inerte— y podian divergir: ahora el cerrojo
+guarda lo que mide y el inerte compara contra eso.
+
+**Lo que se declara y NO se repara aqui.** El build del nodo SIN tests lleva
+cuatro warnings —`tests_dir`, `FIRMA_RFC_BYTES`, `reconciliar` con
+`indice_del_guardian`, y `actual`— y **no lo mira nadie**: el canon corre
+`cargo test`, que compila con `cfg(test)`, donde `tests_dir` si se usa. Es el
+caso 17 en una tercera cara. · `check_figures` avisa de **21 cifras que hablan
+de tests y no puede atribuir a ningun crate**, y entre ellas esta el TOTAL que
+este corte mueve; nueve quedan ocultas tras su propio recorte. · `PAPER.md:967`
+y `PAPER_EN.md:926` siguen publicando `# nodo: 31`, ahora con **cuarenta y
+nueve** de retraso; y el censo de eso tuvo **ceguera de idioma**, porque busco
+la forma castellana y el fichero ingles escribe `node`. · El bloque de la nota
+imprimio «7 glifos de pausa: 3 titulos mas 1 del parrafo», y tres mas uno no
+son siete: **hay tres glifos de pausa en ese fichero que no se midieron**, y se
+dice en vez de inventar la descomposicion. · Y `check_cifras` sigue diciendo
+«868 (sello) o 1005 (todos)» y aceptando cualquiera: de las tres cifras que
+los documentos citan **solo la primera tiene compuerta**, deuda del §302-B
+todavia viva, y el 1005 y el 1019 los movio la cirugia y no el instrumento.
+
+**Contadores.** Pin `zk-ssl-node` 77 -> 80, por COLUMNA y en el mismo bloque
+que las cifras; `wire` queda en 15, `cli` en 62 y `zk-ssl` en 264, porque la
+promocion de la constante no anade ningun test. Sumas 865/1002/1016 ->
+**868/1005/1019** en las nueve lineas de cuatro documentos, y la cifra
+POR-CRATE del **nodo** en `PRINCIPIOS.md`, 77 -> 80; el desglose del testigo
+sigue en 62 y el cable sigue sin tener. La colision se midio antes de escribir:
+**1005 limpio** y **1019 en UNA sola linea**, la 76 de
+`doc/mapa-geometria-circuit_send.md`, donde es un numero de fila; pero **868
+sale CUATRO veces en este mismo fichero y las cuatro son sumas historicas de
+verdad**, de la era §255-§257, asi que AUDITORIA y los tres de la colision
+fueron gateados por huella y remedidos al final. `check_cifras` delato **seis**
+con solo el pin movido —las cinco del TOTAL mas el desglose del nodo, este con
+linea 0— y quedo verde tras las sustituciones: 26 cifras vivas, 17 pines
+leidos, 7 de desglose. Ningun fichero cambio de numero de lineas. Canon VERDE:
+**1019 tests declarados**, 13 instrumentos, 114 ficheros `.rs`, conformidad 0.2
+IDENTICO / 0.1 RECHAZADO. Ningun Cargo tocado. BACKLOG en 44 abiertas / 54
+resueltas, con **tres suspendidas** (16, 22 y 28).

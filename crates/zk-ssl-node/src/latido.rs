@@ -144,16 +144,43 @@ pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result
     // §292: la pareja del MMR se lee ANTES y con SU candado — no depende
     // del estado de la capa, y meterla dentro alargaria el candado gordo.
     let (cima_mmr, t_mmr) = pareja_mmr(app);
-    let (cabeza, epoch_digest) = {
+    // ⚠ §318 - EL PRE-FILTRO VA AQUI PORQUE EL SLICE VIVE CON EL
+    // CANDADO, y en el caso normal es O(1): `len()` no recorre nada, y
+    // `len() < N` implica `pagos < N` porque cada pago escribe al menos una
+    // entrada. Solo al cruzar se paga el recorrido, y en cuanto la bandera
+    // queda puesta se vuelve a O(1) para siempre. ⚠ Entre `len() = N` y
+    // `pagos = N` SI hay una ventana en que se recorre cada vuelta: es una
+    // pasada mas sobre un slice que `pares` ya recorre entero, y se declara
+    // en vez de fingir que no existe. El aviso se emite FUERA, en el paso 2.
+    let (cabeza, epoch_digest, pagos_al_cruzar) = {
         let e = app
             .estado
             .lock()
             .map_err(|_| anyhow::anyhow!("el candado del estado esta envenenado"))?;
-        let pares = crate::vista_acuses::pares(e.layer.transition_log().entries());
+        let entradas = e.layer.transition_log().entries();
+        let pagos_al_cruzar = if app
+            .aviso_acumulacion
+            .load(std::sync::atomic::Ordering::Relaxed)
+            || entradas.len() < AVISO_ACUMULACION_PAGOS
+        {
+            None
+        } else {
+            Some(pagos_registrados(entradas))
+        };
+        let pares = crate::vista_acuses::pares(entradas);
         let (acuses_root, n) = crate::vista_acuses::pareja_de_ahora(&pares, limite_anterior);
         let cabeza = e.layer.epoch_head(acuses_root, n, cima_mmr, t_mmr);
-        (cabeza, zk_ssl_wire::digest_to_wire(&cabeza.digest()).0)
+        (
+            cabeza,
+            zk_ssl_wire::digest_to_wire(&cabeza.digest()).0,
+            pagos_al_cruzar,
+        )
     };
+
+    // §318: el aviso, FUERA del candado. Ver `avisar_acumulacion`.
+    if let Some(pagos) = pagos_al_cruzar {
+        avisar_acumulacion(app, pagos);
+    }
 
     // ── 2 · sin el candado: firmar, que cuesta 144,5 ms ──
     let firma = match firmante {
@@ -187,6 +214,92 @@ pub fn limite_de_epoca(app: &App) -> u64 {
         .as_ref()
         .and_then(|r| crate::diario::ultimo_seq(r))
         .unwrap_or(0)
+}
+
+/// **El umbral del aviso de acumulacion, en PAGOS** (§318).
+///
+/// ⚠ **NO es una bandera de la linea de ordenes, y eso es deliberado.**
+/// `--max-cofirmas`, `--latido` y `--limit` son recursos del despliegue y el
+/// operador los ajusta; esto es **la escala que el proyecto declara y que la
+/// nota 22 publica**. Si cada despliegue la moviera, un test solo podria
+/// atar el valor por defecto y lo que sonara en produccion podria no
+/// corresponder a lo publicado: dos productores del mismo contrato sin
+/// atar, que es la figura que el §304 vino a reparar.
+///
+/// **Por que 100.000 y no otro.** Son dos ordenes de magnitud por encima
+/// del unico punto medido -mil pagos = 126,2 MiB, `metrics.rs`- y con
+/// `PUBLICADA_PAGO_B` salen unos 12,3 GiB. **Es la ultima escala en la que
+/// la copia del auditor NO DUELE**: cruzarla no dice que ya duela, dice que
+/// **se acabo el margen**. Escrito al reves -"la ultima escala rutinaria"-
+/// el aviso quedaria desacreditado el dia que sonara, porque 12,3 GiB se
+/// descargan de una sentada.
+///
+/// ⚠ **Lo que este numero NO sostiene: no hay cruce de curvas.**
+/// Agregar cuesta ~65 s de GPU por prueba y ahorra ~67 KB por prueba a
+/// CUALQUIER escala (§307), asi que la razon es constante y no existe un
+/// punto en que la agregacion se vuelva rentable por tamano. Lo que no es
+/// lineal es la capacidad de quien descarga, y por eso el disparador va
+/// sobre stock acumulado y no sobre una comparacion de costes.
+///
+/// **Silenciarlo sin desactivarlo:** el aviso lleva `target` propio, asi que
+/// `--log zk_ssl_node::acumulacion=off` lo apaga y deja el resto en pie. El
+/// mensaje lo dice dentro, porque `init_tracing` usa `.with_target(false)` y
+/// sin eso el nombre del target seria indescubrible.
+pub(crate) const AVISO_ACUMULACION_PAGOS: usize = 100_000;
+
+/// Cuantos **PAGOS** registra el log de transiciones.
+///
+/// **Un pago es UNA entrada, y de que clase depende de la ERA.** La via de
+/// dos fases escribe `Send` y `Claim` por pago, asi que los `Send` cuentan
+/// los pagos; la via de un paso, retirada, escribia UNA entrada `Transfer`.
+/// Se suman las dos: contar solo `Send` infravalora los pagos viejos.
+///
+/// ⚠ **Y el byte por pago SOBREVALORA la era 1, a proposito.**
+/// `PUBLICADA_PAGO_B` se midio con la via de dos fases; aplicarlo tambien a
+/// los `Transfer` -que costaban unos 59.100 B- adelanta el aviso. Es la
+/// direccion correcta para un despertador, y va declarado en vez de
+/// escondido.
+pub(crate) fn pagos_registrados(entradas: &[zk_ssl::log::LogEntry]) -> usize {
+    entradas
+        .iter()
+        .filter(|e| {
+            matches!(
+                e.kind,
+                zk_ssl::log::OpKind::Send | zk_ssl::log::OpKind::Transfer
+            )
+        })
+        .count()
+}
+
+/// Avisa **UNA SOLA VEZ** de que la acumulacion cruzo la escala declarada.
+///
+/// Lo garantiza el `swap`: quien pone la bandera a `true` es quien avisa, y
+/// el que llegue despues sale por la puerta de arriba. Sin eso, con
+/// `--latido 1` serian 86.400 avisos al dia.
+///
+/// El mensaje lleva **los bytes dentro y no solo el recuento**, que es lo
+/// que pide el §254: la magnitud que le importa a quien reverifica es
+/// cuanto tiene que descargarse, no cuantos pagos hubo.
+pub(crate) fn avisar_acumulacion(app: &App, pagos: usize) {
+    if pagos < AVISO_ACUMULACION_PAGOS {
+        return;
+    }
+    if app
+        .aviso_acumulacion
+        .swap(true, std::sync::atomic::Ordering::Relaxed)
+    {
+        return;
+    }
+    let bytes = pagos as u128 * zk_ssl::PUBLICADA_PAGO_B as u128;
+    let gib = format!("{:.1}", bytes as f64 / (1024.0 * 1024.0 * 1024.0));
+    tracing::warn!(
+        target: "zk_ssl_node::acumulacion",
+        pagos = pagos as u64,
+        gib = gib.as_str(),
+        "la acumulacion cruzo la escala declarada en la nota 22: esto es lo \
+         que tendria que descargarse quien reverifique sin fiarse del \
+         operador. Silenciar sin desactivar: --log zk_ssl_node::acumulacion=off"
+    );
 }
 
 /// Lanza el latido en una tarea de fondo.

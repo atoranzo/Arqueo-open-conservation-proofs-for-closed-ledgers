@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 44 abiertas, 54 resueltas — **2 suspendidas** (16 y 28).
-Ultima revision: 15 de agosto de 2026 — **contada, no recordada**.
+**Estado**: 44 abiertas, 54 resueltas — **3 suspendidas** (16, 22 y 28).
+Ultima revision: 17 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
 
@@ -1575,7 +1575,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   error en §42.3 dandola por inventada, y se **restituye** (§42.5): estaba
   en el codigo, se busco donde no estaba. Mismo primitivo que la 33.
 
-- [ ] **22. Agregacion de pruebas.** 126,2 MiB por mil pagos es coste, no
+- [ ] **22. ⏸️ SUSPENDIDA. Agregacion de pruebas.** 126,2 MiB por mil pagos es coste, no
   parada, pero crece linealmente: un pago son **DOS pruebas** y **132.311
   bytes**, medidos el 14-08-2026 en release con la configuracion real de
   la capa. **Donde se mide la verdad**: la constante `PUBLICADA_PAGO_B` en
@@ -1647,6 +1647,42 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   salida quieta. ⚠️ **Sigue SIN medir el DIARIO**: el guest publica un `u32`
   y un agregador publicaria N digests — el unico termino que crece con el
   numero de pruebas distintas.
+  ⏸️ **SUSPENDIDA (§318), Y LA ESCALA VA NOMBRADA.** No es cuello **por
+  debajo de 100.000 pagos** — unos **12,3 GiB** de pruebas acumuladas, que es
+  `AVISO_ACUMULACION_PAGOS` por `PUBLICADA_PAGO_B` y lo ata una comprobacion
+  del nodo. **Donde se mide la verdad**: el umbral en
+  `crates/zk-ssl-node/src/latido.rs`, el byte por pago en
+  `crates/zk-ssl/src/metrics.rs`, y la aritmetica entre los dos en
+  `el_umbral_de_acumulacion_cuadra_con_la_cifra_publicada`.
+  ⚠️ **Y lo que significa cruzar esa escala, escrito al derecho: 12,3 GiB es
+  la ultima en la que NO DUELE.** Sonar no dice que ya duela: dice que **se
+  acabo el margen** y que la siguiente si. Escrito al reves — la ultima
+  escala rutinaria — el aviso quedaria desacreditado el dia que sonara,
+  porque 12,3 GiB se descargan de una sentada.
+  ⚠️⚠️ **NO HAY CRUCE DE CURVAS, y por eso la escala no sale de comparar
+  costes.** Agregar cuesta unos 65 s de GPU por prueba y ahorra unos 67 KB
+  por prueba **a cualquier escala** (§307: 49 joins a ~0,49 s mas 40,9 s de
+  prueba, contra 66.998 B): las dos magnitudes son lineales en N y la razon
+  es constante, asi que **no existe un punto en que agregar se vuelva
+  rentable por tamano**. Lo que NO es lineal es la CAPACIDAD de quien
+  descarga — 12 GiB se bajan sin pensarlo y 12 TiB no —, y de ahi que el
+  disparador vaya sobre stock acumulado y no sobre una comparacion.
+  ✅ **Y no es una tolerancia declarada una vez: esta CABLEADA.** El latido
+  del nodo cuenta los pagos del registro de transiciones — `Send` de la via
+  de dos fases mas `Transfer` de la de un paso, que infravalorar los viejos
+  seria contar solo los primeros — y avisa **una sola vez** con `tracing`
+  y target propio. Un disparador que no esta cableado es un comentario; el
+  precedente que lo enseno fue el aviso de `protoc` del entorno del pod, que
+  salto solo. **Silenciarlo sin desactivarlo**: `--log
+  zk_ssl_node::acumulacion=off`.
+  ⚠️ **Lo que esta suspension NO afirma.** No dice que la rama B sea
+  inviable: G1 esta VERDE en GPU (§306) y la constancia del receipt, medida
+  (§307). Lo que se suspende es **construirla**, porque el trueque es malo
+  hoy y lo seguira siendo a cualquier escala mientras el precio no cambie.
+  **Lo que la reabriria**: que el byte por pago suba, que el ciclo de GPU
+  baje, o que suene el disparador. Y el cambio de razon respecto al §305:
+  **M1b sigue estimada y el coste del guest agregador sin medir**, pero
+  ninguna de las dos importa mientras no se construya.
 
 - [ ] **93. El nodo MENTIROSO: la variante que hace ejercitables las
   defensas.** Instrumentacion, no modelo de confianza: una variante que

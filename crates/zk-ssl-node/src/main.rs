@@ -229,6 +229,23 @@ struct Estado {
 struct App {
     estado: Mutex<Estado>,
     dev: bool,
+    /// **Si ya se aviso de que la acumulacion cruzo la escala** (§318).
+    ///
+    /// Bandera de UNA SOLA VEZ. El stock no baja, asi que avisar en cada
+    /// latido serian 86.400 avisos al dia con `--latido 1`: eso no es un
+    /// despertador, es ruido que alguien silencia el primer dia -y con el
+    /// silenciaria justo lo que este aviso viene a evitar-.
+    ///
+    /// ⚠ **Atomica y SIN candado propio, al reves que sus vecinas**, y por
+    /// una razon medida: se lee DENTRO del candado del estado, y un `Mutex`
+    /// mas ahi seria un TERCER candado en un orden que `latido.rs` trabaja
+    /// explicitamente para evitar (ver su paso 0: `estado -> ultima_cabeza`
+    /// no se toca).
+    ///
+    /// ⚠ **Se pierde al reiniciar**, como `ultima_cabeza` y `cofirmas`. Un
+    /// nodo que reinicia vuelve a avisar una vez, y eso es lo correcto: el
+    /// aviso es para quien opera, no un registro.
+    aviso_acumulacion: std::sync::atomic::AtomicBool,
     reserva_ttl: Duration,
     /// **La última cabeza firmada, en memoria.**
     ///
@@ -407,6 +424,7 @@ async fn main() -> anyhow::Result<()> {
     let app = std::sync::Arc::new(App {
         estado: Mutex::new(Estado { layer, reservas: BTreeMap::new() }),
         dev: args.dev,
+        aviso_acumulacion: std::sync::atomic::AtomicBool::new(false),
         reserva_ttl: Duration::from_secs(args.reserva_ttl),
         ultima_cabeza: Mutex::new(None),
         hojas_mmr: Mutex::new(hojas_mmr_iniciales),
@@ -1576,6 +1594,7 @@ mod tests {
         App {
             estado: Mutex::new(Estado { layer, reservas: BTreeMap::new() }),
             dev: true,
+            aviso_acumulacion: std::sync::atomic::AtomicBool::new(false),
             reserva_ttl: Duration::from_secs(ttl_segundos),
             ultima_cabeza: Mutex::new(None),
             hojas_mmr: Mutex::new(Vec::new()),
@@ -1593,6 +1612,78 @@ mod tests {
                 .expect("contador de recepcion"),
             ),
         }
+    }
+
+    /// §318 - EL UMBRAL SE PRUEBA CON NUMEROS, no fabricando cien mil
+    /// entradas. Por eso la decision vive separada del recorrido.
+    ///
+    /// Y el segundo assert es EL ATADO: N y `PUBLICADA_PAGO_B` son dos
+    /// productores de la misma afirmacion -la escala que la nota 22
+    /// publica- y aqui se comparan. Si alguien mueve la constante de la
+    /// capa, esto se pone rojo y la nota deja de mentir en silencio.
+    #[test]
+    fn el_umbral_de_acumulacion_cuadra_con_la_cifra_publicada() {
+        assert_eq!(crate::latido::AVISO_ACUMULACION_PAGOS, 100_000);
+        let bytes =
+            crate::latido::AVISO_ACUMULACION_PAGOS as u128 * zk_ssl::PUBLICADA_PAGO_B as u128;
+        assert_eq!(
+            bytes, 13_231_100_000u128,
+            "N x PUBLICADA_PAGO_B se movio: la nota 22 publica otra cosa"
+        );
+        let gib = bytes as f64 / (1024.0 * 1024.0 * 1024.0);
+        assert!(
+            (gib - 12.3).abs() < 0.05,
+            "la nota 22 publica ~12,3 GiB y la aritmetica da {gib:.2}"
+        );
+    }
+
+    /// §318 - ABRIR UNA CUENTA NO ES UN PAGO, y esa es la propiedad
+    /// que discrimina: un contador sobre `len()` pelado contaria estas.
+    /// El `len()` solo vale como PRE-FILTRO, porque `len() < N` implica
+    /// `pagos < N`; no vale como cuenta.
+    #[test]
+    fn abrir_cuentas_no_cuenta_como_pagos() {
+        let app = nodo(30);
+        let antes = {
+            let e = app.estado.lock().expect("candado");
+            crate::latido::pagos_registrados(e.layer.transition_log().entries())
+        };
+        cuenta(&app, 0xA1, 10_000);
+        cuenta(&app, 0xB2, 10_000);
+        let (n_entradas, pagos) = {
+            let e = app.estado.lock().expect("candado");
+            let ent = e.layer.transition_log().entries();
+            (ent.len(), crate::latido::pagos_registrados(ent))
+        };
+        assert!(
+            n_entradas > 0,
+            "el log tenia que haber crecido al abrir cuentas, y da {n_entradas}"
+        );
+        assert_eq!(pagos, antes, "abrir cuentas no puede contar como pagos");
+    }
+
+    /// §318 - LA BANDERA SE ENCIENDE AL CRUZAR Y NO ANTES, y una vez
+    /// encendida se queda.
+    ///
+    /// ⚠ CEGUERA DECLARADA: esto mide la BANDERA, no la emision.
+    /// Comprobar que `tracing` no vuelve a escribir exigiria capturar al
+    /// subscriber, y lo que garantiza la emision unica es el `swap` -quien
+    /// lo pone a true es quien avisa-, que se lee en tres lineas.
+    #[test]
+    fn el_aviso_de_acumulacion_se_enciende_al_cruzar_y_no_antes() {
+        use std::sync::atomic::Ordering::Relaxed;
+        let app = nodo(30);
+        let n = crate::latido::AVISO_ACUMULACION_PAGOS;
+        assert!(!app.aviso_acumulacion.load(Relaxed), "nace apagada");
+        crate::latido::avisar_acumulacion(&app, n - 1);
+        assert!(
+            !app.aviso_acumulacion.load(Relaxed),
+            "por debajo del umbral no se enciende"
+        );
+        crate::latido::avisar_acumulacion(&app, n);
+        assert!(app.aviso_acumulacion.load(Relaxed), "al cruzar se enciende");
+        crate::latido::avisar_acumulacion(&app, n * 10);
+        assert!(app.aviso_acumulacion.load(Relaxed), "y se queda encendida");
     }
 
     /// Abre una cuenta con semilla `s` y la fondea. Devuelve (indice, id).

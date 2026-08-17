@@ -100,7 +100,10 @@ pub mod snapshot;
 pub mod sparse_tree;
 pub mod store;
 
-#[cfg(test)]
+// §318: este modulo YA NO va tras cfg(test). Su CONTENIDO entero sigue
+// estandolo -las dos regiones #[cfg(test)] de metrics.rs-, asi que en
+// release compila VACIO salvo por la cifra publicada, que es lo unico
+// que sale de aqui y lo unico que el nodo consume.
 mod metrics;
 #[cfg(test)]
 mod tests;
@@ -130,6 +133,9 @@ pub use stark_experiment::circuit_governance::{build_governance_set};
 /// Construcción del conjunto de custodios: devuelve su raíz y los
 /// caminos de cada miembro.
 pub use stark_experiment::circuit_threshold::build_custodian_set;
+// §318: la cifra por pago se hace API porque el nodo la consume.
+// `mod metrics` sigue privado; lo que se publica es solo esta const.
+pub use crate::metrics::PUBLICADA_PAGO_B;
 use stark_experiment::native::{
     derive_public_id, native_leaf, native_leaf_salted,
 };

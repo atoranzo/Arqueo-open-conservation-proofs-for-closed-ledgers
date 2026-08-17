@@ -33,6 +33,37 @@
 //! cargo test -p zk-ssl --release metrics -- --nocapture
 //! ```
 
+// ===== LA CIFRA PUBLICADA - LA PARTE QUE EL NODO CONSUME =====
+//
+// **PUBLICADA_PAGO_B sale de `mod tests` en el §318 y se hace publica.**
+// La razon del §304 para tenerla dentro CADUCO: entonces no habia
+// consumidor y una const a nivel de fichero habria sido codigo muerto en
+// release. Ahora el latido del nodo la lee para poder decir cuantos BYTES
+// son los pagos acumulados, y no solo cuantos pagos. Un aviso que dice la
+// magnitud que importa cumple el §254; uno que dice un recuento, no.
+//
+// **`mod metrics` iba tras `#[cfg(test)]` y era ademas PRIVADO**, asi que
+// en un build sin tests el modulo NO EXISTIA y reexportar de el daba E0432.
+// El §318 le quita ese atributo: el CONTENIDO del fichero sigue entero
+// tras cfg(test), de modo que en release este modulo compila vacio salvo
+// por esta constante. Quien la hace API es el `pub use` de `lib.rs`. Y ese
+// gate NO lo ve `cargo test` -que compila con cfg(test), donde la const si
+// tiene usuario-: lo ve un build SIN tests, que es por lo que VIVA A va
+// primero.
+//
+// **Las otras cinco se quedan DENTRO, y no por gusto.** Una const privada
+// a nivel de fichero usada solo desde codigo cfg(test) es codigo muerto en
+// release: el racimo lo parte el compilador, no una preferencia. Su
+// documentacion entera -fecha, unidad, determinismo, y el aviso de que
+// quien la mueva mueve los documentos- sigue abajo, en `mod tests`, y vale
+// igual para esta.
+//
+// UNIDAD: bytes de UN pago, que son DOS pruebas (envio + cobro). Mil pagos
+// son PUBLICADA_PAGO_B * 1000 / 2^20 MiB. Medida el 2026-08-14 y remedida
+// el 2026-08-17 sin variacion. Quien la mueva mueve tambien los
+// documentos: `tools/check_publicadas.py` los ata y dice cuales faltan.
+pub const PUBLICADA_PAGO_B: usize = 132_311;
+
 #[cfg(test)]
 mod tests {
     // El arnes mide la via ANTIGUA a proposito: es la que las cifras
@@ -65,7 +96,9 @@ mod tests {
     const PUBLICADA_FECHA: &str = "2026-08-14";
     const PUBLICADA_ENVIO_B: usize = 66_998;
     const PUBLICADA_COBRO_B: usize = 65_313;
-    const PUBLICADA_PAGO_B: usize = 132_311;
+    // PUBLICADA_PAGO_B vive AHORA a nivel de fichero y es publica
+    // (§318): el latido del nodo la consume. Llega hasta aqui por el
+    // `use crate::*` de arriba, via el `pub use` de lib.rs.
     const PUBLICADA_MIL_MIB: &str = "126,2";
 
     // La RELACION va con BANDA y no con valor: los bytes no dependen de
