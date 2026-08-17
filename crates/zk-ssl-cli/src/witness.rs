@@ -127,7 +127,7 @@ use zk_ssl_verify::{
     mmr, preambulo_cofirma, verificar_cabeza, verificar_cofirma, CabezaFirmada, Conjunto,
     VerificaError, VERSION_FORMATO,
 };
-use zk_ssl_wire::SignedEpochHeadDto;
+use zk_ssl_wire::{CofirmaDto, SignedEpochHeadDto};
 
 /// Lo que el testigo concluye de cada consulta.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1206,6 +1206,23 @@ pub struct WitnessArgs {
     #[arg(long, value_name = "COFIRMAS")]
     cofirmas: Option<PathBuf>,
 
+    /// **Envia cada cofirma al nodo** (§316), con `zkssl_submitCosig`.
+    ///
+    /// ⚠️⚠️ **SEGUNDA escalada, y por eso lleva flag propio y nace
+    /// APAGADO.** `--cofirmar` ya convierte al testigo en parte interesada;
+    /// esto ademas **publica su clave publica ante el operador al que
+    /// vigila**. Un testigo que enviara por defecto perderia la posibilidad
+    /// de ser observador ANONIMO que publica su evidencia por otro canal —
+    /// que es justo lo que `--verificar-cofirmas` le permite a un tercero
+    /// sin tocar el nodo.
+    ///
+    /// ⚠️ Un envio que falla **NO detiene al testigo**: se imprime y se
+    /// sigue. Vigilar es lo primero, avalar lo segundo y publicar el aval lo
+    /// tercero. **No se anota en el diario**: eso subiria `DIARIO_VERSION`,
+    /// y eso es corte propio.
+    #[arg(long, requires_all = ["cofirmar"])]
+    enviar_cofirmas: bool,
+
     /// **Relee un fichero de cofirmas y las verifica** (§301).
     ///
     /// ⚠️ Es lo que convierte en EJECUTABLE la autosuficiencia que el §300
@@ -1265,6 +1282,40 @@ pub fn linea_de_cofirma(
         "firma": hx(&c.firma),
         "vistoUnix": visto_unix,
     })
+}
+
+/// **La MISMA cofirma, en convencion de CABLE** (§316).
+///
+/// ⚠️⚠️ Toma **los mismos cinco argumentos** que `linea_de_cofirma` y se
+/// alimenta **del mismo punto de llamada**: son dos productores del mismo
+/// contrato. El doc de `CofirmaDto` dejo escrito que lo que los ata es un
+/// test sobre el **CONJUNTO de claves**, no sobre la representacion
+/// —unificarlos exigiria subir `COFIRMA_VERSION`, que es corte propio— y
+/// que ese test **vive donde esten los dos productores**. Es aqui, y esta
+/// abajo.
+///
+/// ⚠️ El fichero JSONL del testigo **no cambia**: `linea_de_cofirma`
+/// sigue emitiendo lo suyo, con su hex y sus cantidades como cadena.
+fn cofirma_dto(
+    epoch_digest: &[u8; 32],
+    clave_del_operador: &[u8],
+    clave_del_testigo: &[u8],
+    c: &CabezaFirmada,
+    visto_unix: u64,
+) -> CofirmaDto {
+    // ⚠️ Alcance minimo A PROPOSITO: `Q`, `B32` y `Blob` son nombres de
+    //    una letra o tres y este fichero tiene casi tres mil lineas.
+    use zk_ssl_wire::{Blob, B32, Q};
+    CofirmaDto {
+        v: Q(COFIRMA_VERSION),
+        epoch_digest: B32(*epoch_digest),
+        clave_publica_operador: Blob(clave_del_operador.to_vec()),
+        clave_publica_testigo: Blob(clave_del_testigo.to_vec()),
+        version_formato: Q(c.version_formato as u64),
+        indice: Q(c.indice),
+        firma: Blob(c.firma.clone()),
+        visto_unix: Q(visto_unix),
+    }
 }
 
 /// Lo que un tercero puede encontrar mal en un fichero de cofirmas.
@@ -1627,6 +1678,48 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
                         if let Some(f) = cofirmas.as_mut() {
                             writeln!(f, "{}", linea_de_cofirma(&d, &opb, &pk, &c, t))?;
                             f.flush()?;
+                        }
+                        // ── §316 · y AHORA se publica, si se pidio ──
+                        //
+                        // ⚠️ DESPUES del fichero A PROPOSITO: la evidencia
+                        //    propia del testigo sobrevive aunque la red
+                        //    falle. El diario es del testigo para si mismo;
+                        //    la cofirma es para terceros, y publicarla es lo
+                        //    ultimo que se hace.
+                        if a.enviar_cofirmas {
+                            let dto = cofirma_dto(&d, &opb, &pk, &c, t);
+                            let envio = json!({"jsonrpc":"2.0","id":n,
+                                "method":"zkssl_submitCosig",
+                                "params":{"cosig": dto}});
+                            // ⚠️⚠️ Esta peticion LEE `error` y las dos de
+                            //    arriba NO. No es repararlas —eso es corte
+                            //    propio—: es no heredar el defecto en codigo
+                            //    que nace hoy. Sin esto, un nodo sin el
+                            //    metodo contesta -32601, `result` viene
+                            //    ausente, y el testigo imprimiria un fallo
+                            //    MUDO en cada vuelta.
+                            match agente.post(&a.nodo).send_json(envio) {
+                                Err(e) => eprintln!("[{n}] no se pudo enviar la cofirma · transporte: {e}"),
+                                Ok(r) => match r.into_json::<Value>() {
+                                    Err(e) => eprintln!("[{n}] no se pudo enviar la cofirma · respuesta ilegible: {e}"),
+                                    Ok(v) => match v.get("error") {
+                                        Some(err) => eprintln!("[{n}] el nodo dio ERROR a la cofirma: {err}"),
+                                        None => {
+                                            let res = v.get("result").cloned().unwrap_or(Value::Null);
+                                            if res.get("accepted").and_then(|x| x.as_bool()).unwrap_or(false) {
+                                                let g = res.get("stored").cloned().unwrap_or(Value::Null);
+                                                println!("[{n}] cofirma enviada · guardadas {g}");
+                                            } else {
+                                                let razon = res
+                                                    .get("reason")
+                                                    .and_then(|x| x.as_str())
+                                                    .unwrap_or("el nodo no dijo por que");
+                                                eprintln!("[{n}] el nodo NO acepto la cofirma: {razon}");
+                                            }
+                                        }
+                                    },
+                                },
+                            }
                         }
                         // ⚠️ La MARCA y la linea de cofirmas son **dos listas
                         //    del mismo contrato**: el indice las ata, y hay un
@@ -2868,6 +2961,44 @@ mod tests {
         verificar_cofirma(&leer("clavePublicaTestigo"), &dd,
                           &leer("clavePublicaOperador"), &rec)
             .expect("la linea SOLA basta para verificar");
+    }
+
+    /// ⚠️⚠️ **EL ATADO QUE EL §315 DEJO ESCRITO, ejecutado aqui porque
+    ///    aqui viven LOS DOS PRODUCTORES.** El doc de `CofirmaDto` lo dice
+    ///    con todas las letras: la linea del fichero y el DTO del cable son
+    ///    dos artefactos con dos convenciones, y lo que los ata es un test
+    ///    sobre el **CONJUNTO DE CLAVES**, no sobre la representacion. El
+    ///    fichero manda las cantidades como cadena hex y el cable como `Q`;
+    ///    unificarlos exigiria subir `COFIRMA_VERSION`, que es corte propio.
+    ///
+    /// ⚠️ La casa ya pago tres veces por no atar dos listas (§292→§293,
+    ///    §294→§295, §297). Si alguien anade un campo a uno y no al otro,
+    ///    esto lo dice y dice CUAL.
+    #[test]
+    fn la_linea_y_el_dto_llevan_el_mismo_conjunto_de_claves() {
+        let d = [0x5Au8; 32];
+        let op = vec![0xAAu8, 0xBB];
+        let tg = vec![0xCCu8, 0xDD];
+        let c = CabezaFirmada { version_formato: 3, indice: 7, firma: vec![0xEE] };
+        let t = 1_700_000_000u64;
+
+        let linea = linea_de_cofirma(&d, &op, &tg, &c, t);
+        let dto = serde_json::to_value(cofirma_dto(&d, &op, &tg, &c, t))
+            .expect("el dto serializa");
+
+        let claves = |v: &Value| -> Vec<String> {
+            let mut k: Vec<String> =
+                v.as_object().expect("objeto").keys().cloned().collect();
+            k.sort();
+            k
+        };
+        let kl = claves(&linea);
+        let kd = claves(&dto);
+        assert_eq!(
+            kl, kd,
+            "la linea del fichero y el DTO del cable publican conjuntos DISTINTOS"
+        );
+        assert_eq!(kl.len(), 8, "son ocho claves; si cambian, se decide: {kl:?}");
     }
 
     #[test]

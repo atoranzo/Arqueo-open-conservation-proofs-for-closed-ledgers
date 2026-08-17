@@ -23880,3 +23880,145 @@ desglose. Canon VERDE: **1014 tests declarados**, 13 instrumentos, 114 ficheros
 `.rs`, conformidad 0.2 IDENTICO / 0.1 RECHAZADO. Ningun Cargo tocado: el nodo
 ya declaraba `zk-ssl-wire` y `zk-ssl-verify`. BACKLOG quieto en 44 abiertas /
 54 resueltas.
+
+## §316 — 2026-08-17 · EL TESTIGO ENVIA SU COFIRMA: el circulo se cierra
+
+**Que.** El §315 dejo al nodo capaz de recibir cofirmas y de servirlas, y al
+testigo sin manera de mandarlas: un solo agente `ureq` y **dos** metodos
+nombrados en 2.944 lineas, los dos de lectura. Su cofirma se quedaba en un
+fichero local. Este corte abre el camino de escritura, y con el **el camino de
+ACEPTACION gana su prueba** — lo unico que el §315 dejo declarado y sin cubrir.
+
+**El flag nace APAGADO, y la razon no es prudencia generica.** `--cofirmar` ya
+convierte al testigo en **parte interesada**, y su doc lo dice. Enviar es una
+**segunda escalada distinta**: publica **la clave publica del testigo ante el
+operador al que vigila**. Un testigo que enviara por defecto perderia la
+posibilidad de ser observador ANONIMO que publica su evidencia por otro canal,
+que es justo lo que `--verificar-cofirmas` le permite a un tercero sin tocar el
+nodo. Por eso `--enviar-cofirmas` requiere `--cofirmar` y no se enciende solo.
+
+**El atado que el §315 dejo escrito, cumplido donde dijo que viviria.** El doc
+de `CofirmaDto` decia que la linea del fichero y el DTO del cable son dos
+artefactos con dos convenciones, que **lo que los ata es un test sobre el
+CONJUNTO DE CLAVES** y que ese test **vive donde esten los dos productores**.
+Es aqui. `cofirma_dto()` toma **los mismos cinco argumentos** que
+`linea_de_cofirma` y se alimenta **del mismo punto de llamada**; el test compara
+sus conjuntos y exige **ocho**. El fichero JSONL no cambia, y su test de
+autosuficiencia sigue verde.
+
+**Primero el fichero, despues la red.** El envio va **detras** del `writeln!`, a
+proposito: la evidencia propia del testigo sobrevive aunque la red falle. Es la
+misma distincion que el flag `--cofirmas` ya declaraba — el diario es del
+testigo para si mismo; la cofirma es para terceros, y publicarla es lo ultimo
+que se hace. Y un envio que falla **no detiene la vigilancia**: se imprime y se
+sigue. No se anota en el diario, porque eso subiria `DIARIO_VERSION`.
+
+**La peticion nueva LEE `error`, y las dos viejas lo tiran.** `una_vuelta`
+recoge la respuesta con `v.get("result")`, asi que un `-32601` llega como
+`Null`: **indistinguible de un resultado vacio y sin su razon**. Es el caso que
+un usuario toca de verdad —testigo nuevo contra nodo viejo, sin
+`zkssl_submitCosig`— y con esa forma el testigo imprimiria un fallo MUDO en
+cada vuelta. La tercera peticion **no hereda el defecto**: distingue transporte,
+respuesta ilegible, `error` y rechazo con motivo. **No es reparar las dos
+viejas** —eso es corte propio, el §314— es no escribirlo mal en codigo que nace
+hoy.
+
+**El banco gana su tramo, y el tramo lleva su rojo delante.** Cuatro pasos:
+nodo virgen da `n:0`; el testigo con el flag obtiene **siete aceptaciones y
+cero rechazos**; pedir por `epochDigest` devuelve la cofirma con la clave del
+testigo cuadrando; y sin parametros se MUESTRA lo que salga sin exigirlo. Son
+cofirmas XMSS **reales**, hechas por un testigo real y verificadas por el nodo:
+lo que no cabia en un unitario porque el cofirmante vive en el cli y hacerlo
+otra vez en los tests del nodo serian **dos implementaciones del mismo
+invariante**.
+
+**Y ESCRIBIR EL BANCO DESTAPO LO QUE NINGUN UNITARIO HABIA VISTO: la
+RETENCION.** El almacen **no se purga al cambiar de epoca** — el `retain` vive
+DENTRO de `submitCosig`, no en el latido—, asi que la cofirma de la epoca X
+sigue en memoria hasta que llegue una submision de otra. Pedirla por su
+`epochDigest` la devuelve. **El asiento del §315 describio el mecanismo bien**
+—«la submision descarta las viejas antes de insertar»—: lo que nadie siguio es
+su consecuencia. La conclusion FALSA vive en otro sitio, y en dos: **el
+comentario del brazo** («el nodo NO guarda historico: pedir una epoca que no es
+la actual devuelve CERO») y, peor, **`spec/RPC.md`, contrato publicado**, con
+la misma frase. No es codigo contra comentario: es **codigo contra contrato**,
+escrito hace un sello.
+
+**Y el test que deberia haberlo cazado promete en su nombre mas de lo que
+mide.** `pedir_cofirmas_de_una_epoca_que_no_es_la_actual_da_cero_y_no_es_error`
+pide con un digest cualquiera y luego sin parametros, las dos veces **sobre un
+nodo virgen**: pasa porque el almacen esta VACIO, no por ninguna purga. Un
+nombre que afirma una propiedad general que el codigo no da.
+
+**La pregunta tenia TRES salidas, no dos, y la decide el propio DEC-2.**
+Garantizar el CERO —purgar en el latido— haria cierto el contrato **pero
+crearia la carrera que DEC-2 dio por cerrada**. Declarar lo observado deja la
+retencion como accidente del que un cliente no puede fiarse. Se elige la
+tercera: **garantizar la RETENCION**. El argumento es que DEC-2 se cerro
+diciendo «la objecion de las dos vueltas se cierra sola: la cofirma lleva
+`epochDigest` y el cliente lo compara», **pero comparar solo sirve si el nodo
+TIENE la cofirma de la epoca que el cliente custodia**. Con purga estricta, el
+cliente que pide en T+1 la cabeza de T se queda sin cofirmas y **(2b) se
+apoyaria en aire**. La retencion no es un accidente afortunado: **es lo que
+hace viable el metodo propio**. Lo ata el **§317**, y es barato porque es atar
+lo que el codigo ya hace.
+
+**MIS CUATRO ROJOS DEL BANCO, y los cuatro son de instrumento.** **(1)
+DIMENSIONADO**: latido 8 con 20 vueltas no sale del calentamiento —el testigo
+no cofirma hasta `Nueva` mas `Extiende`, y eso son unos seis latidos—. **Dos
+magnitudes tiran del mismo parametro en sentidos opuestos** —la ventana de
+epoca y el calentamiento— y solo mire una; la evidencia estaba en los tramos
+vecinos del mismo fichero que habia leido entero. **(2) EL INSTRUMENTO NO
+DISTINGUIA** «no cofirmo» de «cofirmo y no envio»: dos causas distintas con
+arreglos distintos, y un solo mensaje para las dos (§254). **(3) EL BUCLE SOLO
+IMPRIMIA AL ACERTAR** y por tanto ciego justo en el camino que importa; el rastro se deja
+ANTES de juzgar, no despues de acertar. **(4) ESCAPADO A CUATRO CAPAS Y CONTE
+TRES**: el cuerpo JSON perdia sus comillas y el nodo recibia `{epochDigest:
+0x...}`. Su error lo dijo con precision quirurgica —«key must be a string at
+column 59», el primer caracter dentro de `params`—. **`bash -n` lo acepta
+feliz: es sintaxis valida que significa otra cosa** y de ahi que un comprobador de
+SINTAXIS no vea un fallo de COMILLAS con sentido. El arreglo mata la clase y no
+el caso: **ni una comilla de JSON escrita a mano**, `json.dumps` arma el cuerpo
+y curl lo manda desde fichero, con un INERTE que lo vigila.
+
+**Y un quinto, que fue una prediccion falsada antes de escribirla.** Predije
+CINCO delaciones porque el censo de `zk-ssl-cli` en los documentos no dio
+ninguna cifra. **El desglose no se publica por el nombre del crate sino por su ALIAS**:
+`PRINCIPIOS.md` dice «61 del testigo», y `canon.sh` lleva `alias=testigo`
+escrito **en la propia fila que yo acababa de leer**. De ahi sale algo
+verificable: **la columna `alias=` predice que crates tienen cifra propia en el
+desglose**. Siete alias, siete cifras, y `check_cifras` reporta siete de
+desglose. `zk-ssl-wire` no tiene alias, y por eso el §313-B delato cinco.
+
+**Lo declarado y NO reparado.** **El tramo del banco no cruza un cambio de
+epoca**: sus dos preguntas caen en la misma, asi que prueba que el nodo sirve
+por digest explicito pero no la retencion **a traves** del limite; lo mide
+bien un unitario, y va al §317 · **`NEGATIVO-B2` ya faltaba en la lista de
+tramos de la cabecera del banco** antes de este corte, y sigue faltando:
+liston por DELTA, deuda ajena declarada · **de las tres cifras que los
+documentos citan, solo la primera tiene compuerta**: el mensaje de
+`check_cifras` dice «864 (sello) o 1001 (todos)» y acepta cualquiera de las
+dos, asi que el 1000 y el 1014 los movio la cirugia y no el instrumento —es la
+deuda que el §302-B declaro, todavia viva— · y **un camino que solo enciende el
+banco puede pudrirse**, la figura de `consistencyProof` despachado y no
+publicado durante ocho sellos; el banco lo enciende, pero **no esta medido si
+el canon corre los bancos**.
+
+**Contadores.** Pin `zk-ssl-cli` 61 -> 62, por COLUMNA y en el mismo bloque que
+las cifras; `wire` queda en 15 y `node` en 76. Sumas 863/1000/1014 ->
+**864/1001/1015** en las nueve lineas de cuatro documentos, y la cifra
+POR-CRATE del **testigo** en `PRINCIPIOS.md`, 61 -> 62; el desglose del nodo
+sigue en 76 y el cable sigue sin tener. La colision se midio antes de escribir:
+**864 y 1015 limpios**, y **1001 en SIETE lineas** —cinco en esta misma
+`AUDITORIA.md`, todas historicas y una pegada a «tests», y dos en
+`doc/mapa-geometria-circuit_send.md` como numeros de fila—, asi que los tres
+ficheros que la llevan van gateados por huella medida en el PRE, no recordada.
+`check_cifras` delato **seis** con solo el pin movido —las cinco del TOTAL mas
+el desglose del testigo, este con linea 0— y quedo verde tras las
+sustituciones: 26 cifras vivas, 17 pines leidos, 7 de desglose. Ningun fichero
+cambio de numero de lineas: los cuatro numeros conservan sus digitos y la
+historia entra dentro de la fila del pin. Canon VERDE: **1015 tests
+declarados**, 13 instrumentos, 114 ficheros `.rs`, conformidad 0.2 IDENTICO /
+0.1 RECHAZADO. Ningun Cargo tocado: el testigo ya declaraba `zk-ssl-wire` desde
+el §312. BACKLOG quieto en 44 abiertas / 54 resueltas: la retencion no queda
+como deuda porque el §317 la repara acto seguido.
