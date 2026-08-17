@@ -767,8 +767,16 @@ cofirma viva por clave de testigo** —la serie es por testigo (§310), asi que
 reenviar sustituye en vez de acumular— y **solo la epoca en curso**: cada
 cofirma lleva su `epochDigest` y las viejas se descartan en la siguiente
 submision. Encima va un tope duro, `--max-cofirmas`, porque cada cofirma
-son ~37 KB. Pedir una epoca que no es la actual devuelve `n: 0`, y eso **no
-es un error**: el nodo no guarda historico, igual que con la cabeza.
+son ~37 KB.
+
+⚠️ **Lo que el almacen SI garantiza (§317).** Las cofirmas de una epoca
+**siguen servidas por su `epochDigest`** hasta que llegue una submision de
+otra. No es historico —se conserva UNA epoca, la ultima con submisiones—
+pero es lo que hace utilizable el metodo: un cliente pide la cabeza en T y
+las cofirmas despues, y **comparar los digests solo sirve si el nodo tiene
+la de la epoca que el custodia**. Pedir una epoca sin cofirmas devuelve
+`n: 0`, y eso **no es un error**. Esta seccion publicaba lo contrario
+desde el §315; lo destapo el banco del §316.
 
 ## La prueba de extension (§293)
 

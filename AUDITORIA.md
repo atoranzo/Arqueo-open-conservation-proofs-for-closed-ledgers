@@ -24022,3 +24022,100 @@ declarados**, 13 instrumentos, 114 ficheros `.rs`, conformidad 0.2 IDENTICO /
 0.1 RECHAZADO. Ningun Cargo tocado: el testigo ya declaraba `zk-ssl-wire` desde
 el §312. BACKLOG quieto en 44 abiertas / 54 resueltas: la retencion no queda
 como deuda porque el §317 la repara acto seguido.
+
+## §317 — 2026-08-17 · LA RETENCION DEJA DE SER ACCIDENTE: se garantiza, no se purga
+
+**Que.** El almacen de cofirmas **no se purga al cambiar de epoca**: el
+`retain` vive DENTRO de `zkssl_submitCosig` y no en el latido, asi que la
+cofirma de una epoca sigue en memoria y se sirve por su `epochDigest` aunque
+la cabeza ya haya cambiado. El codigo hacia eso desde el §315. Lo que decian
+el comentario del brazo y **`spec/RPC.md`** era lo contrario. Este corte
+elige cual de los dos gana, y gana el codigo.
+
+**Lo destapo escribir un banco, no leer el codigo.** El §316 anadio al
+`banco_cofirma.sh` un tramo que pregunta `zkssl_cosigs` despues de que el
+testigo envie. Fallo, y al instrumentarlo para saber por que, la sonda de
+vida —sin parametros— devolvio la cofirma. Nadie lo habia visto en tres
+sellos de leer ese brazo.
+
+**La verdad ya estaba escrita, y a tres lineas de su negacion.** El asiento
+del §315 dice «cada cofirma guardada lleva su `epochDigest`, de modo que **la
+submision descarta las viejas antes de insertar**», que es exacto.
+`spec/RPC.md:767` lo repite igual de bien. Y `:770` cierra con «Pedir una
+epoca que no es la actual devuelve `n: 0`... el nodo no guarda historico».
+Premisa correcta y conclusion falsa **en el mismo parrafo**. No hay frase que
+corregir en el asiento: hay una consecuencia que nadie saco.
+
+**Y el test que deberia haberlo cazado prometia mas de lo que mide.** `pedir_cofirmas_de_una_epoca_que_no_es_la_actual_da_cero_y_no_es_error`
+pide con un digest cualquiera y luego sin parametros, **las dos veces sobre
+un nodo virgen**: pasa porque el almacen esta VACIO, no por ninguna purga. Su
+`expect` repetia la frase falsa palabra por palabra. Se renombra a
+`pedir_una_epoca_sin_cofirmas_da_cero_y_no_es_error`, que es lo que mide.
+
+**TRES salidas, no dos, y la decide el propio DEC-2.** Garantizar el CERO
+—purgar en el latido— haria cierto el contrato **pero crearia la carrera que
+DEC-2 dio por cerrada**. Declarar lo observado deja la retencion como
+accidente del que un cliente no puede fiarse. Se elige **garantizar la
+RETENCION**, y el argumento es de aquella decision: se cerro diciendo «la
+objecion de las dos vueltas se cierra sola, la cofirma lleva `epochDigest` y
+el cliente lo compara» — **pero comparar solo sirve si el nodo TIENE la
+cofirma de la epoca que el cliente custodia**. Con purga estricta, quien pide
+en T+1 la cabeza de T se queda sin cofirmas y el metodo propio se apoya en
+aire. La retencion no es un accidente afortunado: **es lo que lo hace
+viable**.
+
+**Lo que se escribe es lo que el codigo YA hacia.** El `retain` no se mueve
+ni una linea. Cambian el comentario del brazo, el doc del campo, el doc del
+flag y el contrato publicado; y nace el test que ata la propiedad. Un corte
+que no cambia comportamiento y si cambia lo que se promete.
+
+**EL TEST CABE AQUI Y NO EN EL BANCO, y la razon es que `zkssl_cosigs` NO
+VERIFICA.** Solo filtra el almacen por `epochDigest`, asi que la cofirma se
+pone a mano —con el mismo helper `cofirma_de` que los tres tests de rechazo
+del §315 ya usaban— y se cruza la epoca con **un solo latido**. Sin
+cofirmante, sin `sleep` y sin reloj. El problema que dejo el camino de
+ACEPTACION fuera del unitario **no bloquea este**: aceptar exige firmar,
+servir no. Y el banco del §316 no puede probarlo: sus dos preguntas caen en
+la misma epoca.
+
+**Cuatro sitios decian «la epoca en curso» y solo uno era falso.** El doc del
+flag y el del campo no mentian —solo hay una epoca a la vez— pero quedarian
+contradiciendo al test nuevo, asi que pasan a decir «una sola epoca, la
+ultima con submisiones». El parrafo del autolimpiado **no se toca: ya era
+exacto**. Corregir lo que envejece sin tocar lo que acierta.
+
+**Mis rojos, y los dos son de instrumento.** **(1)** El bloque de las cifras
+murio en el cerrojo PRE llevando la huella de `tools/canon.sh` del §315-B en
+vez de la del §316-B: al adaptar el bloque anterior escribi la sustitucion
+**con los dos lados iguales**, asi que no caso nada y sobrevivio la vieja.
+**(2)** Y el ensayo **no podia verlo**: su adaptador REESCRIBE las anclas
+para apuntarlas al arbol sintetico, de modo que valida la LOGICA del cerrojo
+y queda ciego a que los VALORES emitidos sean los equivocados — que es justo
+para lo que existe un PRE. **Un ensayo que sobreescribe lo que el gate
+comprueba no puede comprobar el gate.** La comprobacion que faltaba se hace
+ahora fuera: extraer las `anclar` del fichero YA EMITIDO y cotejarlas una a
+una contra lo medido. Nueve anclas, ocho buenas.
+
+**Lo declarado y NO reparado.** **La segunda y la tercera cifra siguen sin
+compuerta**: el mensaje de `check_cifras` dice «865 (sello) o 1002 (todos)» y
+acepta cualquiera de las dos, asi que el 1001 y el 1015 los movio la cirugia
+y no el instrumento — deuda que el §302-B declaro y sigue viva ·
+**`NEGATIVO-B2` sigue fuera de la lista de tramos de la cabecera del banco**,
+como estaba antes del §316 · **contar `#[test]` NO da el pin**: el nodo lleva
+42 literales y su pin es 77, asi que ese contador nunca sirve de gate · y **el
+tramo del banco sigue sin cruzar un cambio de epoca**, que es lo que este
+test cubre por dentro.
+
+**Contadores.** Pin `zk-ssl-node` 76 -> 77, por COLUMNA y en el mismo bloque
+que las cifras; `wire` queda en 15 y `cli` en 62. Sumas 864/1001/1015 ->
+**865/1002/1016** en las nueve lineas de cuatro documentos, y la cifra
+POR-CRATE del **nodo** en `PRINCIPIOS.md`, 76 -> 77; el desglose del testigo
+sigue en 62 y el cable sigue sin tener. La colision se midio antes de
+escribir: **865 y 1016 limpios**, y **1002 en UNA sola linea**, la 206 de
+`doc/mapa-geometria-circuit_send.md`, donde es un numero de fila.
+`check_cifras` delato **seis** con solo el pin movido —las cinco del TOTAL
+mas el desglose del nodo, este con linea 0— y quedo verde tras las
+sustituciones: 26 cifras vivas, 17 pines leidos, 7 de desglose. Ningun
+fichero cambio de numero de lineas. Canon VERDE: **1016 tests declarados**,
+13 instrumentos, 114 ficheros `.rs`, conformidad 0.2 IDENTICO / 0.1
+RECHAZADO. Ningun Cargo tocado. BACKLOG quieto en 44 abiertas / 54 resueltas.

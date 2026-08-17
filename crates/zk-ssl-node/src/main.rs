@@ -192,7 +192,8 @@ struct Args {
     /// **Cuantas cofirmas de testigo guarda el nodo por epoca** (§315).
     ///
     /// El almacen es una cota de RECURSO, no de confianza: guarda una sola
-    /// cofirma viva por clave de testigo y solo de la epoca en curso, y esto
+    /// cofirma viva por clave de testigo y de UNA SOLA epoca —la ultima
+    /// con submisiones (§317)—, y esto
     /// pone el techo encima. Cada cofirma son **~37 KB** de hex
     /// (`FIRMA_RFC_BYTES = 18_469`), asi que 32 son ~1,2 MB por epoca.
     ///
@@ -274,7 +275,17 @@ struct App {
     custodia: String,
     /// Si el nodo **pudo comprobarlo**. Solo `fichero` es comprobable.
     custodia_comprobada: bool,
-    /// **Las cofirmas de la epoca en curso** (§315), por clave de testigo.
+    /// **Las cofirmas de la ultima epoca con submisiones** (§315, §317),
+    /// por clave de testigo.
+    ///
+    /// ⚠⚠ **§317 · LA RETENCION ES GARANTIA, no accidente.** De que el
+    /// `retain` viva en la SUBMISION y no en el latido se sigue que las
+    /// cofirmas de una epoca **siguen servidas por su `epochDigest`**
+    /// aunque la cabeza ya haya cambiado. No es historico —se conserva
+    /// UNA epoca— pero es lo que hace utilizable el metodo propio: el
+    /// cliente pide la cabeza en T y las cofirmas despues, y **comparar
+    /// los digests solo sirve si el nodo TIENE la de la epoca que el
+    /// custodia**. Lo ata un test.
     ///
     /// ⚠️ Candado PROPIO, como `ultima_cabeza` y por la misma razon: una
     /// submision no debe competir con las escrituras del estado.
@@ -851,9 +862,15 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 code: -32603,
                 message: "candado de las cofirmas envenenado".into(),
             })?;
-            // ⚠️ El nodo NO guarda historico: pedir una epoca que no es la
-            // actual devuelve CERO, y eso no es un error — es la misma
-            // promesa que ya hace con la cabeza.
+            // ⚠️⚠️ §317 · EL NODO CONSERVA LAS COFIRMAS DE LA ULTIMA
+            // EPOCA CON SUBMISIONES, hasta que llegue una de otra epoca;
+            // el tope las acota. Esta linea decia lo contrario —«no
+            // guarda historico: pedir una epoca que no es la actual
+            // devuelve CERO»— y era falso: el `retain` esta en la
+            // SUBMISION, no en el latido. Historico no hay —una sola
+            // epoca—, pero la que hay **se sirve por su nombre**, y eso
+            // es lo que hace utilizable este metodo (DEC-2). Pedir una
+            // epoca sin cofirmas devuelve cero, y eso no es un error.
             let lista: Vec<&wire::CofirmaDto> = match pedida {
                 Some(d) => g.values().filter(|v| v.epoch_digest.0 == d).collect(),
                 None => Vec::new(),
@@ -2066,16 +2083,55 @@ mod tests {
     }
 
     #[test]
-    fn pedir_cofirmas_de_una_epoca_que_no_es_la_actual_da_cero_y_no_es_error() {
+    fn pedir_una_epoca_sin_cofirmas_da_cero_y_no_es_error() {
         let app = nodo(30);
         let otro = format!("0x{}", "33".repeat(32));
         let v = dispatch(&app, "zkssl_cosigs", json!({ "epochDigest": otro }))
-            .expect("no debe fallar: el nodo NO guarda historico y lo dice con un cero");
+            .expect("no debe fallar: una epoca sin cofirmas se contesta con un cero");
         assert_eq!(v["n"], json!("0x0"));
         assert_eq!(v["cosigs"].as_array().expect("cosigs").len(), 0);
         // Y sin parametro, con nodo recien arrancado, tampoco hay epoca.
         let v2 = dispatch(&app, "zkssl_cosigs", json!({})).expect("no debe fallar");
         assert_eq!(v2["n"], json!("0x0"));
+    }
+
+    /// ⚠⚠ **§317 · LA RETENCION, ATADA.** El `retain` vive dentro de
+    ///    `submitCosig` y no en el latido, asi que una cofirma sigue servida
+    ///    por su `epochDigest` despues de que la cabeza cambie. **No es un
+    ///    accidente afortunado: es lo que hace viable el metodo propio.**
+    ///    DEC-2 cerro la objecion de las dos vueltas diciendo que el cliente
+    ///    compara `epochDigest` — y comparar solo sirve si el nodo TIENE la
+    ///    cofirma de la epoca que el cliente custodia.
+    ///
+    /// ⚠ El banco del §316 no puede probar esto: sus dos preguntas caen en
+    ///    la MISMA epoca. Aqui se cruza el limite **sin reloj y sin `sleep`**,
+    ///    y sin fabricar una cofirma XMSS valida — `zkssl_cosigs` no
+    ///    verifica, solo filtra, asi que la cofirma se pone en el almacen a
+    ///    mano con el mismo helper que usan los tres tests de rechazo.
+    #[test]
+    fn una_cofirma_sobrevive_al_cambio_de_epoca_y_se_sirve_por_su_digest() {
+        let app = nodo(30);
+        let vieja = format!("0x{}", "33".repeat(32));
+        let dto: wire::CofirmaDto =
+            serde_json::from_value(cofirma_de(&vieja)).expect("el dto deserializa");
+        let clave = dto.clave_publica_testigo.0.clone();
+        app.cofirmas.lock().expect("candado").insert(clave, dto);
+
+        // La cabeza en curso pasa a ser OTRA, y NADIE submite despues: nadie
+        // purga. Es exactamente el caso del cliente que pide en T+1.
+        let l = crate::latido::latir(&app, None).expect("latir");
+        crate::latido::conservar(&app, l);
+
+        let ahora = dispatch(&app, "zkssl_cosigs", json!({})).expect("no debe fallar");
+        assert_eq!(ahora["n"], json!("0x0"), "la epoca EN CURSO no tiene cofirmas");
+
+        let antes = dispatch(&app, "zkssl_cosigs", json!({ "epochDigest": vieja }))
+            .expect("no debe fallar");
+        assert_eq!(antes["n"], json!("0x1"), "la de la epoca VIEJA sigue servida");
+        assert_eq!(
+            antes["cosigs"][0]["clavePublicaTestigo"], json!("0xbeef"),
+            "y es la que se guardo, no otra"
+        );
     }
 
     // --- el brazo NO monta JSON a mano: lo monta el TIPO (309 -> 313) ---
