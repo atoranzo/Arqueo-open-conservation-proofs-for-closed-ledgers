@@ -189,6 +189,25 @@ struct Args {
     #[arg(long, default_value_t = 30)]
     reserva_ttl: u64,
 
+    /// **Cuantas cofirmas de testigo guarda el nodo por epoca** (§315).
+    ///
+    /// El almacen es una cota de RECURSO, no de confianza: guarda una sola
+    /// cofirma viva por clave de testigo y solo de la epoca en curso, y esto
+    /// pone el techo encima. Cada cofirma son **~37 KB** de hex
+    /// (`FIRMA_RFC_BYTES = 18_469`), asi que 32 son ~1,2 MB por epoca.
+    ///
+    /// ⚠️ **El valor por defecto esta DECLARADO, no medido.** Lo que hay
+    /// medido es el tamano de una firma; **cuantos testigos habra no lo sabe
+    /// nadie todavia**, porque no hay ni uno operando de tercero. Treinta y
+    /// dos es un techo que no estorba a un despliegue real y acota el gasto
+    /// de uno hostil. Medir cuantos testigos aparecen y ajustar esta en la
+    /// cola.
+    ///
+    /// Corto: un testigo legitimo se queda fuera y su cofirma no viaja.
+    /// Largo: quien fabrique claves acumula ~37 KB por cada una.
+    #[arg(long, default_value_t = 32)]
+    max_cofirmas: usize,
+
     /// Filtro de tracing (stderr).
     #[arg(long, default_value = "info")]
     log: String,
@@ -255,6 +274,21 @@ struct App {
     custodia: String,
     /// Si el nodo **pudo comprobarlo**. Solo `fichero` es comprobable.
     custodia_comprobada: bool,
+    /// **Las cofirmas de la epoca en curso** (§315), por clave de testigo.
+    ///
+    /// ⚠️ Candado PROPIO, como `ultima_cabeza` y por la misma razon: una
+    /// submision no debe competir con las escrituras del estado.
+    ///
+    /// ⚠️ **Se AUTOLIMPIA y por eso no hay un segundo campo con la epoca:**
+    /// cada cofirma guardada lleva su `epochDigest`, y la submision descarta
+    /// las que no son de la cabeza en curso antes de insertar.
+    ///
+    /// ⚠️ **Se pierde al reiniciar**, como `ultima_cabeza`. Es coherente
+    /// con no guardar historico: lo que un tercero quiera conservar, lo
+    /// conserva el.
+    cofirmas: Mutex<BTreeMap<Vec<u8>, wire::CofirmaDto>>,
+    /// Techo de cofirmas por epoca. Cota de RECURSO, no de confianza.
+    max_cofirmas: usize,
     /// **El contador de recepción** (§253), persistido con `fsync`.
     ///
     /// ⚠️ Candado propio, y se suelta enseguida: reservar cuesta un
@@ -370,6 +404,8 @@ async fn main() -> anyhow::Result<()> {
         latido_s: args.latido,
         custodia: args.custodia.clone(),
         custodia_comprobada,
+        cofirmas: Mutex::new(BTreeMap::new()),
+        max_cofirmas: args.max_cofirmas,
         recepcion: Mutex::new(
             recepcion::ContadorRecepcion::abrir(&args.contador_recepcion)
                 .map_err(|e| anyhow::anyhow!("{e}"))?,
@@ -716,6 +752,117 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 code: -32603,
                 message: format!("la cabeza firmada no serializa: {e}"),
             })
+        }
+        // ── §315 · EL TRANSPORTE DE LA COFIRMA: el testigo la deja aqui ──
+        //
+        // ⚠️ El nodo pasa a ser el transporte —lo que decidio la nota 83— y
+        // **no** la autoridad. Lo que comprueba y lo que no está escrito en
+        // `spec/RPC.md`, y el resumen es: la forma sí, el testigo no.
+        "zkssl_submitCosig" => {
+            #[derive(Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct P {
+                cosig: wire::CofirmaDto,
+            }
+            let p: P = parse(params)?;
+
+            // ── 1 · la epoca EN CURSO ──
+            // Sin latido no hay nada que cofirmar, y eso NO es un error del
+            // que llama: se dice, como hacen `ackPath` y `consistencyProof`.
+            let actual = {
+                let u = app.ultima_cabeza.lock().map_err(|_| RpcError {
+                    code: -32603,
+                    message: "candado de la ultima cabeza envenenado".into(),
+                })?;
+                u.as_ref().map(|l| l.epoch_digest)
+            };
+            let actual = match actual {
+                Some(d) => d,
+                None => {
+                    return Ok(json!({ "accepted": false, "stored": Q(0),
+                        "reason": "aun no ha habido latido: no hay epoca que cofirmar" }))
+                }
+            };
+            if p.cosig.epoch_digest.0 != actual {
+                return Ok(json!({ "accepted": false, "stored": Q(0),
+                    "reason": "la cofirma no es de la epoca en curso" }));
+            }
+
+            // ── 2 · VERIFICAR, con el mismo verificador que usara el tercero ──
+            //
+            // ⚠️⚠️ Y lo que esto NO acota, declarado aqui y no escondido: la
+            // clave del testigo viaja DENTRO del objeto y nada la acredita,
+            // asi que cualquiera puede firmar con la suya y esto pasara. Esto
+            // es cota de FORMA. La cota de CONFIANZA es la politica del
+            // cliente, que nombra testigos — y tiene que vivir alli, porque
+            // el nodo es el operador.
+            let c = zk_ssl_verify::CabezaFirmada {
+                version_formato: p.cosig.version_formato.0 as u8,
+                indice: p.cosig.indice.0,
+                firma: p.cosig.firma.0.clone(),
+            };
+            if let Err(e) = zk_ssl_verify::verificar_cofirma(
+                &p.cosig.clave_publica_testigo.0,
+                &actual,
+                &p.cosig.clave_publica_operador.0,
+                &c,
+            ) {
+                return Ok(json!({ "accepted": false, "stored": Q(0),
+                    "reason": format!("la cofirma no verifica: {e}") }));
+            }
+
+            // ── 3 · guardar, con las dos cotas de RECURSO ──
+            //
+            // La clave del mapa es la del TESTIGO: la serie es por testigo
+            // (§310), asi que reenviar SUSTITUYE en vez de acumular. Y el
+            // almacen se autolimpia aqui: cada cofirma lleva su epoca.
+            let mut g = app.cofirmas.lock().map_err(|_| RpcError {
+                code: -32603,
+                message: "candado de las cofirmas envenenado".into(),
+            })?;
+            g.retain(|_, v| v.epoch_digest.0 == actual);
+            let nueva = !g.contains_key(&p.cosig.clave_publica_testigo.0);
+            if nueva && g.len() >= app.max_cofirmas {
+                let n = g.len() as u64;
+                return Ok(json!({ "accepted": false, "stored": Q(n),
+                    "reason": "tope de cofirmas por epoca alcanzado: ver --max-cofirmas" }));
+            }
+            let clave = p.cosig.clave_publica_testigo.0.clone();
+            g.insert(clave, p.cosig);
+            Ok(json!({ "accepted": true, "stored": Q(g.len() as u64) }))
+        }
+        // ── §315 · y el cliente se las lleva cuando las necesita ──
+        "zkssl_cosigs" => {
+            #[derive(Deserialize, Default)]
+            #[serde(rename_all = "camelCase")]
+            struct P {
+                epoch_digest: Option<wire::B32>,
+            }
+            let p: P = if params.is_null() { P::default() } else { parse(params)? };
+            let actual = {
+                let u = app.ultima_cabeza.lock().map_err(|_| RpcError {
+                    code: -32603,
+                    message: "candado de la ultima cabeza envenenado".into(),
+                })?;
+                u.as_ref().map(|l| l.epoch_digest)
+            };
+            let pedida = p.epoch_digest.map(|b| b.0).or(actual);
+            let g = app.cofirmas.lock().map_err(|_| RpcError {
+                code: -32603,
+                message: "candado de las cofirmas envenenado".into(),
+            })?;
+            // ⚠️ El nodo NO guarda historico: pedir una epoca que no es la
+            // actual devuelve CERO, y eso no es un error — es la misma
+            // promesa que ya hace con la cabeza.
+            let lista: Vec<&wire::CofirmaDto> = match pedida {
+                Some(d) => g.values().filter(|v| v.epoch_digest.0 == d).collect(),
+                None => Vec::new(),
+            };
+            Ok(json!({
+                "epochDigest": pedida.map(wire::B32),
+                "n": Q(lista.len() as u64),
+                "cosigs": lista,
+            }))
         }
         // ⚠️ **§259 · EL RECIBO DE INCLUSION.** Del arbol `accounts`, que es
         // el que firma la cabeza. `leafFormat` va OBSERVADO: la capa
@@ -1420,6 +1567,8 @@ mod tests {
             latido_s: crate::latido::LATIDO_POR_DEFECTO_S,
             custodia: "sin-declarar".into(),
             custodia_comprobada: false,
+            cofirmas: Mutex::new(BTreeMap::new()),
+            max_cofirmas: 32,
             recepcion: Mutex::new(
                 recepcion::ContadorRecepcion::abrir(
                     tests_dir(&format!("rec_{}", proximo_nodo())).join("recepcion.bin"),
@@ -1863,6 +2012,72 @@ mod tests {
         );
     }
 
+    // ─────────── §315 · el transporte de la cofirma ───────────
+
+    /// Una cofirma con la forma del cable. La firma es de mentira a
+    /// proposito: estos tres tests miden los caminos de RECHAZO, que son los
+    /// que se pueden construir sin fabricar una cofirma XMSS valida.
+    ///
+    /// ⚠️ **DECLARADO Y NO CUBIERTO: el camino de ACEPTACION no tiene test
+    /// aqui.** Exige un cofirmante real —clave, guardian y preambulo de
+    /// cofirma— que vive en el testigo, no en el nodo. Lo cierra el §316,
+    /// cuando el testigo submita de verdad.
+    fn cofirma_de(digest: &str) -> Value {
+        json!({
+            "v": "0x1",
+            "epochDigest": digest,
+            "clavePublicaOperador": "0xabcd",
+            "clavePublicaTestigo": "0xbeef",
+            "versionFormato": "0x3",
+            "indice": "0x2",
+            "firma": "0xdeadbeef",
+            "vistoUnix": "0x66c0"
+        })
+    }
+
+    #[test]
+    fn sin_latido_una_cofirma_no_se_acepta_y_el_nodo_dice_por_que() {
+        let app = nodo(30);
+        let d = format!("0x{}", "11".repeat(32));
+        let v = dispatch(&app, "zkssl_submitCosig", json!({ "cosig": cofirma_de(&d) }))
+            .expect("no debe fallar: no hay epoca NO es un error del que llama");
+        assert_eq!(v["accepted"], json!(false));
+        assert_eq!(v["stored"], json!("0x0"));
+        assert!(
+            v["reason"].as_str().expect("reason").contains("latido"),
+            "dio: {}", v["reason"]
+        );
+    }
+
+    #[test]
+    fn una_cofirma_de_otra_epoca_se_rechaza_antes_de_verificar_nada() {
+        let app = nodo(30);
+        let l = crate::latido::latir(&app, None).expect("latir");
+        crate::latido::conservar(&app, l);
+        // Un digest que NO es el de la cabeza en curso.
+        let otro = format!("0x{}", "22".repeat(32));
+        let v = dispatch(&app, "zkssl_submitCosig", json!({ "cosig": cofirma_de(&otro) }))
+            .expect("no debe fallar");
+        assert_eq!(v["accepted"], json!(false));
+        assert!(
+            v["reason"].as_str().expect("reason").contains("epoca en curso"),
+            "dio: {}", v["reason"]
+        );
+    }
+
+    #[test]
+    fn pedir_cofirmas_de_una_epoca_que_no_es_la_actual_da_cero_y_no_es_error() {
+        let app = nodo(30);
+        let otro = format!("0x{}", "33".repeat(32));
+        let v = dispatch(&app, "zkssl_cosigs", json!({ "epochDigest": otro }))
+            .expect("no debe fallar: el nodo NO guarda historico y lo dice con un cero");
+        assert_eq!(v["n"], json!("0x0"));
+        assert_eq!(v["cosigs"].as_array().expect("cosigs").len(), 0);
+        // Y sin parametro, con nodo recien arrancado, tampoco hay epoca.
+        let v2 = dispatch(&app, "zkssl_cosigs", json!({})).expect("no debe fallar");
+        assert_eq!(v2["n"], json!("0x0"));
+    }
+
     // --- el brazo NO monta JSON a mano: lo monta el TIPO (309 -> 313) ---
     /// El brazo servia VEINTE campos en el caso firmado y el test de al lado
     /// asertaba NUEVE con `!is_null()`: once claves del contrato SIN gate del
@@ -1897,8 +2112,14 @@ mod tests {
     /// va el positivo de las TRES construcciones por el tipo.
     #[test]
     fn el_brazo_no_monta_json_a_mano_y_lo_monta_el_tipo() {
+        // ⚠️ §315 · EL CIERRE CAMBIA PORQUE EL VECINO CAMBIO: los dos
+        // brazos de la cofirma entraron entre este y `inclusionReceipt`, y
+        // el gate lo CAZO — que es exactamente para lo que esta. Los brazos
+        // nuevos SI montan `json!` a mano y DEBEN: sus respuestas son formas
+        // ad-hoc de dos y tres claves, no el DTO. Lo que este gate vigila es
+        // que la CABEZA FIRMADA no vuelva a montarse a pelo, y eso sigue.
         const APERTURA: &str = "\"zkssl_signedEpochHead\" =>";
-        const CIERRE: &str = "\"zkssl_inclusionReceipt\" =>";
+        const CIERRE: &str = "\"zkssl_submitCosig\" =>";
 
         let fuente = include_str!("main.rs");
         let lineas: Vec<&str> = fuente.lines().map(|l| l.trim_start()).collect();

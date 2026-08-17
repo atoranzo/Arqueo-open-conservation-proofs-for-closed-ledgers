@@ -23751,3 +23751,132 @@ cifras vivas, 17 pines leidos, 7 de desglose. Canon VERDE: **1009 tests
 declarados**, 13 instrumentos, 114 ficheros `.rs`, conformidad 0.2 IDENTICO /
 0.1 RECHAZADO. Ningun Cargo tocado. BACKLOG quieto en 44 abiertas / 54
 resueltas.
+
+## §315 — 2026-08-17 · EL TRANSPORTE DE LA COFIRMA: el nodo la lleva, no la avala
+
+**Que.** El eslabon 3 tenia un hueco que no era del cable: un testigo cofirma
+una cabeza y **la escribe en un fichero suyo**, donde nadie mas la ve. La nota
+83 ya habia decidido que el transporte fuera el NODO, pero eso era arquitectura
+y no codigo — el nodo daba **cero** en cofirma. Este corte lo construye: un DTO
+en el cable, dos metodos publicados, y un almacen en el nodo con dos cotas.
+
+**Lo que la fila de F3 decia y lo que no.** «Desbloqueado del todo: ya no le
+falta nada DEL CABLE» era literal y correcto — lo que F3 ya no espera es el
+DTO. Pero de sus tres piezas **solo una dependia del cable**: la politica que
+NOMBRA sigue a cero en el arbol, la *k* sigue sin existir, y el campo aditivo
+**presuponia un camino testigo -> nodo que no existia**. Por eso el primer
+corte de F3 es el transporte y no la politica.
+
+**Las CUATRO decisiones, y la cuarta no estaba en la lista.** El usuario delego
+las tres que el F3-M4 puso sobre la mesa y acepto la cuarta, que aparecio
+midiendo. **(1a)** la cofirma ENTRA por un metodo RPC, no leyendo el fichero
+del testigo — que seria mas barato pero **acopla nodo y testigo al mismo
+sistema de ficheros y contradice el precio (c) de la nota 83, «terceros de
+verdad»**. **(2b)** metodo propio en vez de campo aditivo en
+`signedEpochHead`: el aditivo mete **k x ~37 KB en CADA latido** —con k=3 la
+respuesta pasa de ~37 KB a ~148 KB— mientras el metodo se pide cuando hace
+falta. **(3a)** solo la epoca en curso, coherente con `ultima_cabeza` y su «se
+pierde al reiniciar». **(4b)+(4a)** dedupe por clave de testigo mas tope duro.
+
+**La cuarta salio de una pregunta que la medicion respondio al reves de lo
+esperado.** Se midio si (1a) abria una superficie de escritura nueva: **no la
+abre** — los cuatro brazos que ya reciben y mutan (`openAccount`, `applySend`,
+`applyClaim`, `applyMany`) **no comprueban quien llama**, y el unico control de
+acceso del fichero es `account_view_authenticated`, que es de LECTURA. La
+objecion se debilito. Pero se afilo en otra: los cuatro existentes **estan
+acotados por la capa** y un almacen de cofirmas no. Y **verificar al recibir no
+da esa cota**: como las dos claves viajan dentro de la propia cofirma,
+cualquiera fabrica una VALIDA con SU clave. De ahi la cuarta decision.
+
+**El DTO no COPIA el formato del fichero: copia el CONJUNTO DE CAMPOS.**
+`linea_de_cofirma` emite `v` y `vistoUnix` como **numeros crudos** mientras
+`versionFormato` e `indice` van en hex — mezcla dos convenciones dentro de la
+misma linea. La cabecera del cable declara que **toda QUANTITY viaja como
+`Q`**, asi que copiar la forma habria roto la convencion del propio cable. Son
+**dos artefactos con dos convenciones**, se dice en vez de disimularse, y
+unificarlos exigiria subir `COFIRMA_VERSION`: corte propio.
+
+**El almacen se AUTOLIMPIA, y por eso no hay un segundo campo con la epoca.**
+`BTreeMap<Vec<u8>, CofirmaDto>` indexado por **clave de testigo** —la serie es
+por testigo (§310), asi que reenviar SUSTITUYE en vez de acumular— y cada
+cofirma guardada lleva su `epochDigest`, de modo que la submision descarta las
+viejas antes de insertar. Encima, un tope duro con **flag y default**, como
+`latido`, `limit` y `max_accounts`. El default va documentado con la forma que
+`reserva_ttl` estreno: **DECLARADO, no medido**, diciendo que lo medido es el
+tamano de una firma y que **cuantos testigos habra no lo sabe nadie**, porque
+no hay ni uno operando de tercero.
+
+**LO QUE EL NODO COMPRUEBA Y LO QUE NO, escrito en el codigo y en el contrato
+publicado.** Comprueba la epoca y **que la firma cierre** — rechazar lo
+malformado es barato y el motivo va nombrado (§254). **No acredita al testigo,
+y no puede**: la clave del testigo viaja en el objeto y nada la respalda. Es
+cota de FORMA. La cota de CONFIANZA es la politica del cliente, y **tiene que
+vivir alli porque el nodo es el operador**: un operador que nombra a sus
+vigilantes no esta vigilado.
+
+**El corte se partio en DOS bloques, y la razon la puso un test.** Publicar un
+nombre en `method_names()` sin despacharlo pone ROJO
+`el_despacho_y_el_documento_publican_los_mismos_metodos`, asi que los dos
+metodos, `spec/RPC.md` y el nodo **no se pueden partir**. El DTO si va solo, y
+partirlo bajo el bloque de quince anclas a dos y a doce.
+
+**Y ese atador merece una correccion mia: NO es un quinto productor.** Lo llame
+asi antes de leerlo. No lleva ninguna lista: escanea la fuente buscando
+literales seguidos de `=>`, filtra por prefijo y compara **conjuntos en las dos
+direcciones**. Es un ATADOR — queda verde solo si los dos lados se mueven a la
+vez, y no hubo que tocarlo.
+
+**MI GATE DEL §313 ME MATO EL BLOQUE, Y TENIA RAZON.** El
+`el_brazo_no_monta_json_a_mano_y_lo_monta_el_tipo` conto **seis usos de
+`json!`** dentro de la region que vigila: meti los dos brazos nuevos **entre su
+apertura y su cierre**. Lo que cambio **no fue la propiedad —la cabeza firmada
+sigue sin montarse a pelo— sino EL VECINO**, y la delimitacion se quedo vieja.
+El arreglo es mover su `CIERRE` a `"zkssl_submitCosig" =>`, con dos centinelas
+nuevos: que el nuevo este **y que el viejo NO**, porque dejar los dos haria que
+el gate mirase la region equivocada **sin decirlo**. Es la misma figura que el
+test de los metodos, que obliga a mirar al renombrarse.
+
+**Mis otros dos rojos.** **(1)** Los dos `replace` de un test llevaban
+`"{\"v\":\"0x1\","`, con **una llave que abre y no cierra** — lo cazo el propio
+INERTE del candidato 22 en el ensayo, y habria tumbado el canon como en el
+§311. **Tercera vez en tres sellos que ese INERTE se paga solo.** **(2)** Un
+censo mio de control de acceso conto `limit` y era el **limite REGULATORIO**,
+no un rate limit: el nombre decide el grep, y lo salvo volcar las lineas.
+
+**LA COLISION, y `1000` es la peor cifra que ha tocado.** Sale en **SIETE**
+lineas, y una esta en **`spec/RPC.md`** —contrato publicado, y un fichero que
+este mismo corte acaba de tocar—. Y **`863` cae DENTRO de `35.863`** en la
+medicion apareada: **tercera vez** que la colision esta dentro de otro numero,
+tras `122.850` y `54.858`. La compuerta por huella pasa de **cinco ficheros a
+OCHO**. Medir la colision de la cifra NUEVA antes de escribirla dejo de ser
+precaucion hace dos sellos; hoy es lo unico que separa esto de corromper el
+contrato publicado con un reemplazo global.
+
+**Lo declarado y NO reparado.** **El camino de ACEPTACION no tiene test**: los
+tres del nodo miden los rechazos, porque aceptar exige fabricar una cofirma
+XMSS valida y el cofirmante vive en el testigo. **Lo cierra el §316**, que es
+el que hara que el testigo submita · **los dieciseis nombres de esquema que el
+documento OpenRPC referencia y no define** —`Applied`, `SignedEpochHead`,
+`ConsistencyProof` y trece mas—: los dos nuevos **heredan el defecto**, no lo
+estrenan, y es material de la nota 95 · **la tabla de `spec/RPC.md` es el
+productor HUERFANO**: `method_names()` <-> `document()` los ata el test de los
+metodos, `document()` <-> `spec/openrpc.json` los ata el test del JSON
+publicado, el despacho <-> `method_names()` los ata el §302 — **la tabla de
+prosa no la ata nada, y es contrato publicado** · **`node/src/diario.rs` es un
+CUARTO productor de la cabeza firmada**, hallazgo del §313 · y la duplicacion
+`FIRMADA_JSON` / `FIRMADA` que introdujo el §312.
+
+**Contadores.** Pines `zk-ssl-wire` 13 -> 15 y `zk-ssl-node` 73 -> 76, los dos
+por COLUMNA y en el mismo bloque que las cifras; el `cli` queda en 61. Metodos
+publicados **22 -> 24**, con el test renombrado a `veinticuatro_...` — que es
+para lo que lleva el numero en el nombre. Sumas 858/995/1009 ->
+**863/1000/1014** en las nueve lineas de cuatro documentos, y la cifra
+POR-CRATE del **nodo** en `PRINCIPIOS.md`, 73 -> 76; el desglose del testigo
+sigue en 61 y el cable sigue sin tener. `spec/openrpc.json` **REGENERADO** con
+`gen_openrpc`, 558 lineas. `check_cifras` delato **seis** con solo los pines
+movidos —las cinco del TOTAL mas el desglose del nodo, este con linea 0— y
+quedo verde tras las sustituciones: 26 cifras vivas, 17 pines leidos, 7 de
+desglose. Canon VERDE: **1014 tests declarados**, 13 instrumentos, 114 ficheros
+`.rs`, conformidad 0.2 IDENTICO / 0.1 RECHAZADO. Ningun Cargo tocado: el nodo
+ya declaraba `zk-ssl-wire` y `zk-ssl-verify`. BACKLOG quieto en 44 abiertas /
+54 resueltas.

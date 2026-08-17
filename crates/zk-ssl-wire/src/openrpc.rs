@@ -43,6 +43,8 @@ pub fn method_names() -> Vec<&'static str> {
         "zkssl_inclusionReceipt",
         "zkssl_ackPath",
         "zkssl_consistencyProof",
+        "zkssl_submitCosig",
+        "zkssl_cosigs",
         "dev_fund",
         "dev_openSeeded",
     ]
@@ -110,6 +112,12 @@ pub fn document() -> Value {
         m("zkssl_consistencyProof",
           "Prueba de consistencia del MMR entre un tamano antiguo y la cima actual (eslabon 2 como SERVICIO).",
           json!([p("oldSize", "Q")]), "ConsistencyProof"),
+        m("zkssl_submitCosig",
+          "Submision de una cofirma de testigo para la epoca EN CURSO. El nodo VERIFICA la firma y deduplica por clave de testigo; NO acredita al testigo: eso es politica del cliente.",
+          json!([p("cosig", "Cosig")]), "CosigAccepted"),
+        m("zkssl_cosigs",
+          "Las cofirmas que el nodo tiene de una epoca. Sin parametro, la epoca en curso. El nodo NO guarda historico: otra epoca da cero.",
+          json!([p_opt("epochDigest", "Digest")]), "Cosigs"),
         m("dev_fund", "SOLO --dev: emision delegada con custodios de PRUEBA.",
           json!([p("index", "Q"), p("amount", "Q")]), "Applied"),
         m("dev_openSeeded", "SOLO --dev: abre desde una clave determinista de la suite.",
@@ -139,22 +147,25 @@ mod tests {
     use super::*;
 
     #[test]
-    fn veintidos_metodos_unicos_y_en_orden() {
+    fn veinticuatro_metodos_unicos_y_en_orden() {
         // §223: subio a 18 con `zkssl_applyMany`. §242: a 19 con
         // `zkssl_signedEpochHead`. §259: a 20 con
         // `zkssl_inclusionReceipt`. Que este test tenga el numero en el
         // nombre es a proposito: renombrarlo OBLIGA A MIRAR.
         // §275: a 21 con `zkssl_ackPath`.
         // §293 lo sirvio y NO lo publico; §302: a 22 con `zkssl_consistencyProof`.
+        // §315: a 24 con `zkssl_submitCosig` y `zkssl_cosigs` — el TRANSPORTE
+        // de la cofirma, que hasta hoy no existia: el testigo la escribia en
+        // un fichero suyo y nadie mas la veia.
         let nombres = method_names();
-        assert_eq!(nombres.len(), 22);
+        assert_eq!(nombres.len(), 24);
         let mut u = nombres.clone();
         u.sort();
         u.dedup();
-        assert_eq!(u.len(), 22, "nombres repetidos");
+        assert_eq!(u.len(), 24, "nombres repetidos");
         let doc = document();
         let met = doc["methods"].as_array().expect("methods");
-        assert_eq!(met.len(), 22);
+        assert_eq!(met.len(), 24);
         for (i, mm) in met.iter().enumerate() {
             assert_eq!(mm["name"].as_str().unwrap(), nombres[i]);
         }

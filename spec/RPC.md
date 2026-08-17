@@ -77,6 +77,8 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 | `zkssl_inclusionReceipt` | `{index: Q, viewKey: Digest}` | `{index, leaf, path, leafFormat, head}` |
 | `zkssl_ackPath` | `{seq: Q}` | `{available, s?, camino?: {siblings: Digest[], isRight: bool[]}, reason?, beatSeconds?}` |
 | `zkssl_consistencyProof` | `{oldSize: Q}` | `{available, mmrSize: Q, camino?: Digest[], reason?}` |
+| `zkssl_submitCosig` | `{cosig: Cosig}` | `{accepted: bool, stored: Q, reason?}` |
+| `zkssl_cosigs` | `{epochDigest?: Digest}` | `{epochDigest, n: Q, cosigs: Cosig[]}` |
 
 `LogEntry = {seq: Q, kind: string, rootOld, rootNew, proofDigest, chain: Digest}`
 con `kind` ∈ {`OpenAccount`,`Mint`,`Transfer`,`Burn`,`Recovery`,
@@ -731,6 +733,42 @@ Cerrar la exposición —exigir credencial para los caminos— **es un sello
 aparte**: cambia superficie hoy pública y puede romper clientes. Meterlo
 aquí encadenaría «servir el recibo» con «cerrar `sendMaterials`», y si algo
 se torciera no se sabría cuál de los dos fue.
+
+## El transporte de la cofirma (§315)
+
+`zkssl_submitCosig` y `zkssl_cosigs` son el camino que el eslabon 3
+necesitaba y no tenia: hasta hoy un testigo cofirmaba una cabeza y la
+escribia **en un fichero suyo**, donde nadie mas la veia. El nodo pasa a
+ser el TRANSPORTE — que es lo que decidio la nota 83 — sin pasar a ser la
+autoridad.
+
+```text
+Cosig = {v: Q, epochDigest: Digest, clavePublicaOperador: DATA,
+         clavePublicaTestigo: DATA, versionFormato: Q, indice: Q,
+         firma: DATA, vistoUnix: Q}
+```
+
+Son los ocho campos que el testigo ya escribe en su fichero JSONL, **en
+convencion de cable**: alli `v` y `vistoUnix` van como numeros crudos y
+aqui como QUANTITY. Son dos artefactos con dos convenciones, y se dice en
+vez de disimularse.
+
+⚠️ **Lo que el nodo comprueba y lo que NO.** Comprueba que la cofirma es de
+la epoca EN CURSO y que **la firma cierra**: rechazar lo malformado es
+barato y el motivo va nombrado. **No acredita al testigo**, y no puede: la
+clave del testigo viaja en el propio objeto y nada la respalda, asi que
+cualquiera puede firmar con la suya y esto pasara. **Quien decide que
+testigos cuentan es el cliente, con su politica** — y tiene que ser asi,
+porque el nodo es el operador y un operador que nombra a sus vigilantes no
+esta vigilado.
+
+⚠️ **Cotas de recurso, no de confianza.** El almacen guarda **una sola
+cofirma viva por clave de testigo** —la serie es por testigo (§310), asi que
+reenviar sustituye en vez de acumular— y **solo la epoca en curso**: cada
+cofirma lleva su `epochDigest` y las viejas se descartan en la siguiente
+submision. Encima va un tope duro, `--max-cofirmas`, porque cada cofirma
+son ~37 KB. Pedir una epoca que no es la actual devuelve `n: 0`, y eso **no
+es un error**: el nodo no guarda historico, igual que con la cabeza.
 
 ## La prueba de extension (§293)
 

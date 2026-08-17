@@ -970,6 +970,55 @@ impl SignedEpochHeadDto {
     }
 }
 
+
+// ────────────── la cofirma del testigo, en el cable (§315) ──────────────
+
+/// **Una cofirma de testigo, tal como viaja por el cable.**
+///
+/// Los MISMOS ocho campos que el testigo escribe hoy en su fichero JSONL
+/// —`linea_de_cofirma`, en `zk-ssl-cli`— pero **no es el mismo FORMATO**:
+/// aquel emite `v` y `vistoUnix` como **números crudos** y aquí van como
+/// `Q`, porque la cabecera de este módulo declara que toda QUANTITY viaja
+/// en hex con `0x`.
+///
+/// ⚠️ **Son dos artefactos con dos convenciones, y se declara así en vez de
+/// disimularlo.** Unificarlos exigiría cambiar lo que el testigo escribe, y
+/// eso es subir `COFIRMA_VERSION`: corte propio. Lo que atará a los dos es
+/// un test sobre el **CONJUNTO de claves**, no sobre la representación — y
+/// vive donde estén los dos productores, que no es aquí.
+///
+/// ⚠️ La firma son ~37 KB de hex (`FIRMA_RFC_BYTES = 18_469`): va por
+/// `Blob`, como en la cabeza firmada, y **no** por `B32`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CofirmaDto {
+    /// Versión del formato de cofirma del testigo (`COFIRMA_VERSION`).
+    pub v: Q,
+    /// La cabeza que se cofirma. **Es lo que ata la cofirma a una época**, y
+    /// por eso un consumidor puede pedir cabeza y cofirmas en dos vueltas
+    /// sin riesgo: si no coinciden, se ve.
+    pub epoch_digest: B32,
+    /// ⚠️ Va **dentro del preámbulo firmado** (`preambulo_cofirma`): una
+    /// cofirma **no vale para otro operador**.
+    pub clave_publica_operador: Blob,
+    /// ⚠️ **NO va en el preámbulo.** Viaja en el objeto y nada la acredita,
+    /// así que **quien la recibe no puede creérsela**: sólo el cliente, con
+    /// su política, decide si este testigo cuenta. Un nodo que la aceptara
+    /// como identidad estaría dejando que cualquiera se nombre testigo.
+    pub clave_publica_testigo: Blob,
+    /// La versión de FORMATO de la cabeza cofirmada, que elige recompositor.
+    pub version_formato: Q,
+    /// ⚠️ Cuántas firmas lleva la clave del testigo, contando ésta.
+    /// **Metadato para detectar reúso: la firma no lo acredita.** Y la serie
+    /// es **por testigo** (§310), no global.
+    pub indice: Q,
+    /// La firma del testigo sobre el preámbulo de cofirma.
+    pub firma: Blob,
+    /// Segundos Unix en que el testigo vio la cabeza. **Es del testigo, no
+    /// del nodo**, y quien lo lea debe saberlo.
+    pub visto_unix: Q,
+}
+
 /// Documento OpenRPC del protocolo (nota 74): la tabla vive aqui.
 pub mod openrpc;
 
@@ -977,6 +1026,51 @@ pub mod openrpc;
 mod tests {
     use super::*;
     use serde_json::Value;
+
+    // ───────────────── §315 · la cofirma en el cable ─────────────────
+
+    /// Una cofirma como la sirve el cable: los ocho campos del testigo,
+    /// **en convención de cable**.
+    const COFIRMA_JSON: &str = r#"{"v":"0x1","epochDigest":"0x1111111111111111111111111111111111111111111111111111111111111111","clavePublicaOperador":"0xabcd","clavePublicaTestigo":"0xbeef","versionFormato":"0x3","indice":"0x2","firma":"0xdeadbeef","vistoUnix":"0x66c0"}"#;
+
+    #[test]
+    fn la_cofirma_del_cable_son_ocho_claves_y_todas_en_convencion_de_cable() {
+        let d: CofirmaDto = serde_json::from_str(COFIRMA_JSON).expect("la cofirma deserializa");
+        // ⚠️ El conjunto NO se compara contra una lista escrita a mano: se
+        // DERIVA serializando el propio DTO.
+        let v: Value = serde_json::to_value(&d).expect("serializa");
+        let o = v.as_object().expect("objeto");
+        assert_eq!(o.len(), 8, "la cofirma son ocho claves: {:?}", o.keys().collect::<Vec<_>>());
+        // ⚠️ Lo que este DTO CAMBIA respecto al fichero del testigo: alli `v`
+        // y `vistoUnix` son numeros crudos; aqui son QUANTITY, como manda la
+        // cabecera de este modulo. Si alguien los devuelve a numero, esto cae.
+        assert_eq!(v["v"], Value::String("0x1".into()));
+        assert_eq!(v["vistoUnix"], Value::String("0x66c0".into()));
+        assert_eq!(v["versionFormato"], Value::String("0x3".into()));
+        assert_eq!(v["indice"], Value::String("0x2".into()));
+        // Y los bytes son bytes, no cadenas.
+        assert_eq!(d.firma.0, vec![0xde, 0xad, 0xbe, 0xef]);
+        assert_eq!(d.epoch_digest, B32([0x11; 32]));
+        assert_eq!(d.clave_publica_testigo, Blob(vec![0xbe, 0xef]));
+    }
+
+    /// ⚠️ **El precio de `deny_unknown_fields`, ejecutable también aquí.** El
+    /// dia que la cofirma gane un campo, este test se pone ROJO — y eso es lo
+    /// que tiene que pasar: la rotura se declara, no se esconde.
+    #[test]
+    fn un_campo_nuevo_en_la_cofirma_rompe_a_este_consumidor_y_asi_esta_declarado() {
+        let con_extra = COFIRMA_JSON.replace("\"v\":\"0x1\",", "\"v\":\"0x1\",\"dominio\":\"x\",");
+        let r: Result<CofirmaDto, _> = serde_json::from_str(&con_extra);
+        assert!(
+            r.is_err(),
+            "con deny_unknown_fields un campo nuevo TIENE que romper la deserializacion"
+        );
+        // Y el numero crudo del fichero del testigo TAMPOCO cuela: son dos
+        // convenciones distintas y el tipo lo hace visible.
+        let crudo = COFIRMA_JSON.replace("\"v\":\"0x1\"", "\"v\":1");
+        let r2: Result<CofirmaDto, _> = serde_json::from_str(&crudo);
+        assert!(r2.is_err(), "`v` como numero crudo es la convencion del FICHERO, no la del cable");
+    }
 
     // ────────────── §313 · los tres constructores nombrados ──────────────
     //

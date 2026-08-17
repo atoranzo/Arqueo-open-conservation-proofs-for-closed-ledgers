@@ -471,6 +471,44 @@
       "summary": "Prueba de consistencia del MMR entre un tamano antiguo y la cima actual (eslabon 2 como SERVICIO)."
     },
     {
+      "name": "zkssl_submitCosig",
+      "params": [
+        {
+          "name": "cosig",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Cosig"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/CosigAccepted"
+        }
+      },
+      "summary": "Submision de una cofirma de testigo para la epoca EN CURSO. El nodo VERIFICA la firma y deduplica por clave de testigo; NO acredita al testigo: eso es politica del cliente."
+    },
+    {
+      "name": "zkssl_cosigs",
+      "params": [
+        {
+          "name": "epochDigest",
+          "required": false,
+          "schema": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/Cosigs"
+        }
+      },
+      "summary": "Las cofirmas que el nodo tiene de una epoca. Sin parametro, la epoca en curso. El nodo NO guarda historico: otra epoca da cero."
+    },
+    {
       "name": "dev_fund",
       "params": [
         {
