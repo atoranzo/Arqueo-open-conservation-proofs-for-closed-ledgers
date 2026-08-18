@@ -24261,3 +24261,125 @@ leidos, 7 de desglose. Ningun fichero cambio de numero de lineas. Canon VERDE:
 **1019 tests declarados**, 13 instrumentos, 114 ficheros `.rs`, conformidad 0.2
 IDENTICO / 0.1 RECHAZADO. Ningun Cargo tocado. BACKLOG en 44 abiertas / 54
 resueltas, con **tres suspendidas** (16, 22 y 28).
+
+## §319 — 2026-08-18 · VERIFICAR NO ES ACREDITAR: el cliente NOMBRA a sus testigos y la k falla cerrada
+
+**Que.** El mando del tercero gana dos banderas, `--testigos` y `--k`: la
+politica que NOMBRA que claves de testigo valen, y el umbral por debajo del
+cual la cabeza NO se acepta. Todo sobre el fichero de cofirmas que ya
+existia: sin red, sin el nodo y sin el cable.
+
+**Esto no cierra una fila de la cola: cumple una PROMESA PUBLICADA.** El
+summary de `zkssl_submitCosig`, que va al documento OpenRPC, dice desde el
+§315 que el nodo verifica y deduplica pero «NO acredita al testigo: eso
+es politica del cliente», y el brazo del nodo lo repite: es cota de FORMA,
+y la cota de CONFIANZA es la politica del cliente. Habia contrato publicado
+y no habia quien lo cumpliera. Ahora lo hay.
+
+**Verificar no es autenticar, y la razon estaba medida por dos caminos.**
+Las DOS claves, la del testigo y la del operador, viajan DENTRO de la
+propia cofirma, asi que cualquiera fabrica una que verifica con SU clave:
+el mando comprobaba coherencia interna y no autenticidad. F2 llego a esa
+condicion leyendo la nota 83 y el F3-M2 llego a la misma midiendo el
+codigo. Dos caminos independientes y una sola conclusion: no es preferencia
+de diseno, es requisito.
+
+**La acreditacion no reparsea ni revalida, y eso no es economia sino
+contrato.** `verificar_cofirmas` no se toca, conserva sus siete tests y
+sigue siendo el UNICO productor del veredicto criptografico. Lo que este
+sello anade LEE ese veredicto: las cinco variantes de `HallazgoCofirma`
+llevan `linea`, asi que las lineas descartadas se derivan de el, y de las
+limpias solo se vuelve a leer UN campo. Si ese campo no fuera legible
+habria un hallazgo para esa linea, de modo que la garantia la pone el
+vecino y no una segunda lectura.
+
+**Un indice repetido QUEMA al testigo entero.** El doc de `IndiceRepetido`
+dice que reusar un indice XMSS FILTRA la clave. Una clave filtrada no avala
+nada, asi que no cuenta ninguna de sus cofirmas, tampoco las que verifican.
+Es la lectura estricta, y es la que falla cerrada.
+
+**La unidad de la k son testigos DISTINTOS, y se cuenta POR EPOCA.** El
+mismo testigo dos veces cuenta uno. Y una k sobre cofirmas de epocas
+distintas no significa nada: cada testigo cofirma una vez por epoca, asi
+que sumarlas juntaria avales de cosas distintas. El desenlace lo decide la
+epoca de la ULTIMA linea del fichero, la mas reciente que el testigo anoto
+y el mando lo dice en su salida; sin ninguna epoca no acredita, porque la
+ausencia de datos no es una acreditacion.
+
+**Los nombres los decidio la medicion, no el gusto.** `veredicto` estaba
+TOMADO, y por partida doble: `pub enum Veredicto` con siete variantes es el
+veredicto del testigo sobre la C«EZA, y ya convivia con un homonimo
+declarado. Ademas esta ATADO: su `clase()` no se toca sin subir
+`DIARIO_VERSION`, asi que meter la acreditacion ahi habria arrastrado el
+diario, que es justo lo que F3 llevaba tres sellos evitando. Y `umbral`
+esta pisado por veintiun ficheros de circuitos, donde significa otra cosa.
+De ahi un tipo NUEVO, y una k que se llama k.
+
+**El valor por defecto de la k es 1, y esta DECLARADO, no medido.** Cuantos
+testigos independientes hacen falta depende de a cuantos tenga acceso el
+cliente, y eso no lo sabe el proyecto. Lo que si es del proyecto es la
+forma: por debajo de k el mando sale con error, y el error nombra la epoca,
+el recuento y la k.
+
+**El corte se partio por DEPENDENCIA y volvio a pagarse solo.** El primer
+bloque llevaba todo el Rust nuevo, un struct y cuatro funciones con sus
+cuatro tests, y fue SOLO, porque lo unico que puede juzgar Rust es el
+compilador y el contenedor donde se escriben los bloques no lo tiene. El
+segundo fue cirugia sobre codigo que ya compila. Las dos veces que el Rust
+llego al compilador, compilo limpio a la primera y sin una advertencia.
+
+**Dos bloques del mismo corte tocando el MISMO fichero: `restaurar()` no
+puede ser un `git checkout`.** El trabajo del primero estaba aplicado y SIN
+COMMITEAR en `witness.rs` cuando corrio el segundo, y un checkout en su
+camino rojo se lo habria llevado entero. Se copia el fichero en el cerrojo,
+con su huella comprobada contra el ancla, y se restaura desde esa copia. Lo
+estreno el primer rojo y aguanto dos.
+
+**Rojos propios de este corte, y los TRES son de GATE.** (1) Un gate
+anclado en PROSA: contaba la frase «NO acredita» esperando una y habia
+tres, porque el primer bloque la habia escrito dos veces en sus
+comentarios, una de ellas la cita literal del summary publicado. Es el gate
+que cuenta lo que el propio parche escribe, con cara nueva: aqui lo
+escribio el BLOQUE HERMANO del mismo corte, ya aplicado cuando el segundo
+mide. Un gate se ancla en algo ESTRUCTURAL, nunca en prosa que otro bloque
+pueda escribir. (2) Un liston TOTAL sobre deuda ajena: exigia cero
+`allow(dead_code)` en todo el fichero y ya habia dos que no son de este
+corte. Es EXACTAMENTE el defecto que mato al §318, repetido un sello
+despues; para deuda preexistente con dueno el liston es el DELTA, con la
+base medida en el cerrojo. (3) El fixture del ensayo hubo que calibrarlo
+TRES veces: le faltaba el control positivo, luego la frase del bloque
+hermano, luego la deuda ajena. Un ensayo solo ve el rojo si el arbol
+sintetico lleva lo que el real lleva.
+
+**Lo que se declara y NO se repara aqui.** El camino del mando no tiene
+unitario: corre sobre ficheros y banderas, y quien lo ejercitara es el
+banco. · La RECOLECCION sigue sin existir: hoy el unico que pide
+`zkssl_cosigs` es `tools/banco_cofirma.sh`, en shell con curl, y ningun
+`.rs` del cli lo nombra. · Un `--epoca` explicito queda fuera, y sin el la
+epoca que decide es la de la ultima linea. · El paquete de evidencia
+portable sigue en v1 y no conoce la cofirma. · Y `check_cifras` sigue
+derivando las dos sumas y aceptando cualquiera: su propio rojo dijo 872
+(sello) o 1009 (todos), de modo que de las tres cifras que los documentos
+citan solo la primera tiene compuerta. Deuda del §302-B, tercera vez que
+se anota.
+
+**Contadores.** Pin `zk-ssl-cli` 62 -> 66, cuatro tests nuevos y todos del
+nucleo: el segundo bloque no anadio ninguno. `wire` queda en 15, `node` en
+80 y `zk-ssl` en 264. Sumas 868/1005/1019 -> **872/1009/1023** en las nueve
+lineas de cuatro documentos, y la cifra POR-CRATE del **testigo** en
+`PRINCIPIOS.md`, 62 -> 66; el desglose del nodo sigue en 80. La colision se
+midio antes de escribir: **872 limpio** y **1009 limpio** fuera de
+`AUDITORIA`, y **1023 en cuatro lineas** de
+`doc/mapa-geometria-circuit_send.md`, donde son numeros de fila de un
+circuito. Los cuatro ficheros de la colision fueron gateados por huella y
+remedidos al final, y los dos de `doc/` ya con sus lineas, que hasta hoy no
+se habian medido. `check_cifras` delato **seis** con solo el pin movido,
+las cinco del TOTAL mas el desglose del testigo con linea 0, quinta vez que
+la columna `alias=` predice bien el numero. Quedo verde tras las
+sustituciones con 26 cifras vivas, 17 pines leidos y 7 de desglose,
+identicos a la base. Ningun fichero cambio de numero de lineas. Canon
+VERDE: **1023 tests declarados**, 13 instrumentos, 114 ficheros `.rs`.
+Ningun Cargo tocado. BACKLOG en 44 abiertas / 54 resueltas, con tres
+suspendidas (16, 22 y 28): la entrada del eslabon 3 no se resuelve entera
+porque le queda la recoleccion, y las dos lineas que la daban por ENTERA
+quedan corregidas con una linea nueva debajo, no borradas (§247).

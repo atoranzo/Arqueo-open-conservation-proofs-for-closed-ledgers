@@ -1236,6 +1236,35 @@ pub struct WitnessArgs {
     #[arg(long, value_name = "COFIRMAS",
           conflicts_with_all = ["auditar", "comparar", "ausentes", "cofirmar"])]
     verificar_cofirmas: Option<PathBuf>,
+
+    /// **La politica que NOMBRA que testigos valen** (S319).
+    ///
+    /// Un fichero de texto: una clave publica de testigo en hexadecimal
+    /// por linea. Se ignoran las lineas en blanco y las que empiezan por
+    /// almohadilla.
+    ///
+    /// ⚠️⚠️ **Sin esto, `--verificar-cofirmas` comprueba COHERENCIA
+    /// INTERNA y no autenticidad**: las dos claves viajan DENTRO de la
+    /// cofirma, asi que cualquiera fabrica una que verifica con SU clave.
+    /// Lo que convierte "verifica" en "vale" es que el cliente haya
+    /// NOMBRADO antes que claves acepta.
+    ///
+    /// ⚠️ **Entra por FUERA a proposito**: no puede venir del nodo -que
+    /// es el operador- ni del paquete de evidencia -que lo entrega el
+    /// operador-. Quien nombra es el cliente, o no es politica. El
+    /// contrato publicado ya lo decia y hasta aqui no se cumplia.
+    #[arg(long, value_name = "TESTIGOS", requires_all = ["verificar_cofirmas"])]
+    testigos: Option<PathBuf>,
+
+    /// **Cuantas cofirmas de testigos NOMBRADOS hacen falta** (S319).
+    ///
+    /// ⚠️ El valor por defecto es **1**, y esta DECLARADO, no medido: la
+    /// k que de verdad vale depende de a cuantos testigos independientes
+    /// tenga acceso el cliente, y eso no lo sabe el proyecto. Lo que si es
+    /// del proyecto es la forma: **por debajo de k la cabeza NO se acepta**
+    /// y el mando sale con error. Falla cerrada.
+    #[arg(long, value_name = "K", requires_all = ["testigos"])]
+    k: Option<usize>,
 }
 
 /// Version del formato del fichero de cofirmas.
@@ -1352,6 +1381,22 @@ impl HallazgoCofirma {
             HallazgoCofirma::IndiceRepetido { .. } => "indice-repetido",
         }
     }
+
+    /// La linea del fichero a la que apunta el hallazgo. S319
+    ///
+    /// ⚠️ Las CINCO variantes la llevan, y de ahi sale la propiedad que
+    /// hace barato el S319: la acreditacion puede DESCARTAR lineas sin
+    /// volver a verificar nada. Quien decide que una linea esta mal sigue
+    /// siendo `verificar_cofirmas`; esto solo LEE su veredicto.
+    pub fn linea(&self) -> usize {
+        match self {
+            HallazgoCofirma::Ilegible { linea, .. } => *linea,
+            HallazgoCofirma::VersionDesconocida { linea, .. } => *linea,
+            HallazgoCofirma::CampoAusente { linea, .. } => *linea,
+            HallazgoCofirma::NoVerifica { linea, .. } => *linea,
+            HallazgoCofirma::IndiceRepetido { linea, .. } => *linea,
+        }
+    }
 }
 
 /// **Verifica un fichero de cofirmas SIN el nodo, sin el diario y sin el
@@ -1452,6 +1497,181 @@ pub fn verificar_cofirmas(lineas: &[String]) -> Vec<HallazgoCofirma> {
     h
 }
 
+// -- S319 . LA POLITICA DEL CLIENTE Y LA k QUE FALLA CERRADA ---------
+//
+// ⚠️⚠️ POR QUE EXISTE, y no es comodidad: las DOS claves -la del
+//    testigo y la del operador- viajan DENTRO de la propia cofirma, asi
+//    que `verificar_cofirmas` comprueba COHERENCIA INTERNA, no
+//    autenticidad: cualquiera fabrica una cofirma que verifica con SU
+//    clave. Lo que convierte "verifica" en "vale" es que el CLIENTE haya
+//    NOMBRADO antes que claves acepta. El nodo no puede hacerlo porque el
+//    nodo ES el operador -- y el contrato publicado ya lo dice, en el
+//    summary de `zkssl_submitCosig`: "NO acredita al testigo: eso es
+//    politica del cliente". Esto es esa promesa, cumplida.
+//
+// ⚠️ TODO lo de aqui lleva `allow(dead_code)` CON CADUCIDAD DECLARADA:
+//    hasta el S319-2 -los dos flags y el mando- nadie lo llama fuera de
+//    los tests, y `cargo test` compila CON cfg(test), donde si se usa. El
+//    unico que lo veria muerto es un build SIN tests, que es justo el que
+//    la VIVA de este bloque corre.
+
+/// Lo que la politica dice de un fichero de cofirmas, POR EPOCA. S319
+///
+/// ⚠️ Se agrupa por `epochDigest` porque una k sobre cofirmas de
+/// epocas DISTINTAS no significa nada: cada testigo cofirma una vez por
+/// epoca, asi que juntarlas sumaria testigos que nunca avalaron lo mismo.
+pub struct Acreditacion {
+    /// `(epochDigest tal cual viene, testigos NOMBRADOS distintos)`, en el
+    /// orden en que las epocas aparecen en el fichero.
+    pub por_epoca: Vec<(String, usize)>,
+    /// La epoca de la ULTIMA linea: la mas reciente que el testigo anoto,
+    /// y la que decide el desenlace del mando.
+    pub ultima: Option<String>,
+    /// Cofirmas descartadas porque su testigo NO esta nombrado.
+    pub no_nombrados: usize,
+    /// Cofirmas descartadas porque `verificar_cofirmas` les puso hallazgo.
+    pub con_hallazgo: usize,
+    /// Testigos QUEMADOS: reusaron indice, asi que su clave se da por
+    /// filtrada y no cuenta NINGUNA de sus cofirmas.
+    pub quemados: usize,
+}
+
+impl Acreditacion {
+    /// Testigos nombrados distintos en una epoca concreta.
+    pub fn en(&self, epoca: &str) -> usize {
+        self.por_epoca
+            .iter()
+            .find(|(e, _)| e == epoca)
+            .map(|(_, n)| *n)
+            .unwrap_or(0)
+    }
+
+    /// ⚠️⚠️ FALLA CERRADA. Sin epoca ultima -fichero vacio, o
+    /// ninguna linea con `epochDigest`- NO acredita. La ausencia de datos
+    /// no es una acreditacion.
+    pub fn acreditada(&self, k: usize) -> bool {
+        match &self.ultima {
+            None => false,
+            Some(e) => self.en(e) >= k,
+        }
+    }
+}
+
+/// Las claves de testigo que el cliente acepta, leidas de un fichero. S319
+///
+/// Una clave en hexadecimal por linea; se ignoran las lineas en blanco y
+/// las que empiezan por `#`.
+///
+/// ⚠️ El hex lo parsea `leer_hex`, EL MISMO de las cofirmas, envolviendo
+/// la linea en un `Value`. Si naciera aqui un segundo parser, el fichero y
+/// las cofirmas podrian aceptar formas distintas de la misma clave: dos
+/// productores del mismo contrato, que es lo que esta casa repara.
+fn leer_politica(lineas: &[String]) -> Result<std::collections::BTreeSet<Vec<u8>>, String> {
+    let mut p = std::collections::BTreeSet::new();
+    for (i, l) in lineas.iter().enumerate() {
+        let t = l.trim();
+        if t.is_empty() || t.starts_with('#') {
+            continue;
+        }
+        match leer_hex(&Value::String(t.to_string())) {
+            Ok(b) => {
+                p.insert(b);
+            }
+            Err(e) => return Err(format!("linea {}: {e}", i + 1)),
+        }
+    }
+    Ok(p)
+}
+
+/// La clave del testigo de una linea, si se deja leer. S319
+fn testigo_de(lineas: &[String], linea: usize) -> Option<Vec<u8>> {
+    let l = lineas.get(linea.checked_sub(1)?)?;
+    let v: Value = serde_json::from_str(l).ok()?;
+    leer_hex(&v["clavePublicaTestigo"]).ok()
+}
+
+/// El nucleo del S319: testigos NOMBRADOS distintos por epoca.
+///
+/// ⚠️⚠️ PRIVADA, Y CON `hallazgos` COMO PARAMETRO A PROPOSITO. Asi se
+/// prueba sin firmar un solo XMSS -un test le pasa lineas hechas a mano y
+/// `&[]`-, y a la vez no recorre la criptografia dos veces: quien la corre
+/// es el mando, UNA vez, y le pasa aqui lo que salio. El invariante -que
+/// `hallazgos` sea el de ESTAS lineas- vive en su unico llamante.
+///
+/// ⚠️ Un INDICE REPETIDO QUEMA AL TESTIGO. El doc de `IndiceRepetido`
+/// lo dice: reusar un indice XMSS FILTRA la clave. Una clave filtrada no
+/// avala nada, asi que no cuenta ninguna de sus cofirmas, ni las que
+/// verifican. Es la lectura estricta, y es la que falla cerrada.
+fn contar_acreditacion(
+    lineas: &[String],
+    hallazgos: &[HallazgoCofirma],
+    politica: &std::collections::BTreeSet<Vec<u8>>,
+) -> Acreditacion {
+    let malas: std::collections::BTreeSet<usize> =
+        hallazgos.iter().map(|h| h.linea()).collect();
+
+    let mut quemados: std::collections::BTreeSet<Vec<u8>> =
+        std::collections::BTreeSet::new();
+    for h in hallazgos {
+        if h.clase() == "indice-repetido" {
+            if let Some(t) = testigo_de(lineas, h.linea()) {
+                quemados.insert(t);
+            }
+        }
+    }
+
+    let mut orden: Vec<String> = Vec::new();
+    let mut por: std::collections::BTreeMap<String, std::collections::BTreeSet<Vec<u8>>> =
+        std::collections::BTreeMap::new();
+    let mut no_nombrados = 0usize;
+    let mut con_hallazgo = 0usize;
+    let mut ultima: Option<String> = None;
+
+    for (i, l) in lineas.iter().enumerate() {
+        let n = i + 1;
+        // Lo ilegible ya lo dijo `verificar_cofirmas` con su clase propia.
+        let v: Value = match serde_json::from_str(l) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        let ep = match v["epochDigest"].as_str() {
+            Some(s) => s.to_string(),
+            None => continue,
+        };
+        ultima = Some(ep.clone());
+        if !orden.contains(&ep) {
+            orden.push(ep.clone());
+        }
+        if malas.contains(&n) {
+            con_hallazgo += 1;
+            continue;
+        }
+        let t = match leer_hex(&v["clavePublicaTestigo"]) {
+            Ok(t) => t,
+            Err(_) => continue,
+        };
+        if quemados.contains(&t) {
+            continue;
+        }
+        if !politica.contains(&t) {
+            no_nombrados += 1;
+            continue;
+        }
+        por.entry(ep).or_default().insert(t);
+    }
+
+    Acreditacion {
+        por_epoca: orden
+            .iter()
+            .map(|e| (e.clone(), por.get(e).map(|s| s.len()).unwrap_or(0)))
+            .collect(),
+        ultima,
+        no_nombrados,
+        con_hallazgo,
+        quemados: quemados.len(),
+    }
+}
+
 fn leer(p: &std::path::Path) -> anyhow::Result<Vec<String>> {
     Ok(std::fs::read_to_string(p)?.lines().map(str::to_string).collect())
 }
@@ -1478,6 +1698,36 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
                  p.display(), ls.len());
         for x in &h {
             println!("  ⚠️ {} · {x:?}", x.clase());
+        }
+        // -- S319 . LA POLITICA DEL CLIENTE, si se dio ----------------
+        // ⚠️ Aqui es donde "verifica" se convierte en "vale". Los
+        //    hallazgos ya estan calculados arriba y se le PASAN: la
+        //    criptografia no se recorre dos veces, y quien decide que una
+        //    linea esta mal sigue siendo `verificar_cofirmas`.
+        if let Some(pt) = &a.testigos {
+            let politica = leer_politica(&leer(pt)?)
+                .map_err(|e| anyhow::anyhow!("{}: {e}", pt.display()))?;
+            let k = a.k.unwrap_or(1);
+            let ac = contar_acreditacion(&ls, &h, &politica);
+            let corto = |e: &str| e[..18.min(e.len())].to_string();
+            println!("politica: {} testigo(s) NOMBRADO(s) · k = {k}", politica.len());
+            for (e, n) in &ac.por_epoca {
+                println!("  epoca {} · {} testigo(s) nombrado(s)", corto(e), n);
+            }
+            println!("  descartadas: {} con hallazgo · {} de testigo NO nombrado · {} testigo(s) QUEMADO(s)",
+                     ac.con_hallazgo, ac.no_nombrados, ac.quemados);
+            match &ac.ultima {
+                // ⚠️⚠️ FALLA CERRADA: un fichero sin epocas no acredita
+                //    nada. La ausencia de datos no es una acreditacion.
+                None => anyhow::bail!("ninguna linea trae epoca: no hay nada que acreditar"),
+                Some(e) if ac.acreditada(k) => {
+                    println!("ACREDITADA la epoca {}: {} cofirma(s) nombradas, k = {k}",
+                             corto(e), ac.en(e));
+                }
+                Some(e) => anyhow::bail!(
+                    "la epoca {} tiene {} cofirma(s) de testigos NOMBRADOS y k = {k}: NO acredita",
+                    corto(e), ac.en(e)),
+            }
         }
         if h.is_empty() {
             println!("sin hallazgos: todas verifican y ningun indice se repite");
@@ -2929,6 +3179,124 @@ mod tests {
         //    detras — seis, en la primera corrida del §301. Una cadena
         //    cualquiera prueba lo mismo: que lo ilegible no revienta.
         assert_eq!(verificar_cofirmas(&["no es json".into()])[0].clase(), "ilegible");
+    }
+
+    /// La politica del cliente: un fichero de texto, y nada mas.
+    #[test]
+    fn la_politica_se_lee_ignorando_blancos_y_comentarios() {
+        let ls: Vec<String> = vec![
+            "# los tres testigos que este cliente acepta".into(),
+            "0xaabb".into(),
+            "".into(),
+            "   0xccdd   ".into(),
+            "0xaabb".into(),
+        ];
+        let p = leer_politica(&ls).expect("se lee");
+        assert_eq!(p.len(), 2, "la repetida no cuenta dos veces: {p:?}");
+        assert!(p.contains(&vec![0xaa, 0xbb]));
+        assert!(p.contains(&vec![0xcc, 0xdd]));
+        assert!(leer_politica(&["0xzz".into()]).is_err(), "el hex torcido se dice");
+    }
+
+    /// ⚠️⚠️ EL TEST QUE MIDE LA UNIDAD DE LA k: testigos DISTINTOS,
+    /// y por EPOCA. Las lineas van a mano a proposito -lo que se mide es
+    /// el conteo, no la criptografia-, y por eso se le pasa `&[]` como
+    /// hallazgos: es justo la razon por la que `contar_acreditacion` los
+    /// recibe en vez de calcularlos.
+    #[test]
+    fn la_k_cuenta_testigos_distintos_y_por_epoca() {
+        let linea = |ep: &str, testigo: &str| {
+            json!({
+                "v": 1,
+                "epochDigest": ep,
+                "clavePublicaOperador": "0xaabb",
+                "clavePublicaTestigo": testigo,
+                "versionFormato": "0x3",
+                "indice": "0x7",
+                "firma": "0xdd"
+            })
+            .to_string()
+        };
+        let e1 = "0x1111111111111111111111111111111111111111111111111111111111111111";
+        let e2 = "0x2222222222222222222222222222222222222222222222222222222222222222";
+        let ls = vec![
+            linea(e1, "0xc1"),
+            linea(e1, "0xc1"),
+            linea(e1, "0xc2"),
+            linea(e2, "0xc1"),
+        ];
+        let mut pol = std::collections::BTreeSet::new();
+        pol.insert(vec![0xc1u8]);
+        pol.insert(vec![0xc2u8]);
+        let a = contar_acreditacion(&ls, &[], &pol);
+        assert_eq!(a.en(e1), 2, "el mismo testigo dos veces cuenta UNO");
+        assert_eq!(a.en(e2), 1, "la otra epoca va por su cuenta");
+        assert_eq!(a.ultima.as_deref(), Some(e2), "la ultima linea manda");
+        assert!(!a.acreditada(2), "la epoca ultima solo tiene uno");
+        assert!(a.acreditada(1));
+    }
+
+    /// ⚠️⚠️ UN INDICE REPETIDO QUEMA AL TESTIGO, y sus cofirmas
+    /// BUENAS tampoco cuentan: reusar el indice FILTRA la clave, y una
+    /// clave filtrada no avala. La linea 1 aqui esta limpia -no lleva
+    /// hallazgo- y aun asi no suma.
+    #[test]
+    fn un_indice_repetido_quema_al_testigo_entero() {
+        let linea = |testigo: &str, idx: &str| {
+            json!({
+                "v": 1,
+                "epochDigest":
+                    "0x1111111111111111111111111111111111111111111111111111111111111111",
+                "clavePublicaOperador": "0xaabb",
+                "clavePublicaTestigo": testigo,
+                "versionFormato": "0x3",
+                "indice": idx,
+                "firma": "0xdd"
+            })
+            .to_string()
+        };
+        let ls = vec![linea("0xc1", "0x7"), linea("0xc1", "0x7"), linea("0xc2", "0x9")];
+        let h = vec![HallazgoCofirma::IndiceRepetido {
+            linea: 2,
+            indice: 7,
+            antes: 1,
+            testigo: "0xc1".into(),
+        }];
+        let mut pol = std::collections::BTreeSet::new();
+        pol.insert(vec![0xc1u8]);
+        pol.insert(vec![0xc2u8]);
+        let a = contar_acreditacion(&ls, &h, &pol);
+        assert_eq!(a.quemados, 1, "el testigo que repitio esta quemado");
+        assert_eq!(
+            a.por_epoca[0].1, 1,
+            "solo cuenta el testigo limpio, no el quemado: {:?}",
+            a.por_epoca
+        );
+        assert!(!a.acreditada(2));
+    }
+
+    /// ⚠️⚠️ EL TEST QUE DEMUESTRA LA PROPIEDAD ENTERA, con una
+    /// cofirma XMSS DE VERDAD: la misma linea que VERIFICA no acredita si
+    /// su testigo no esta NOMBRADO. Verificar no es acreditar, y hasta
+    /// este sello el mando no sabia decir la diferencia.
+    #[test]
+    fn una_cofirma_que_verifica_no_acredita_si_el_testigo_no_esta_nombrado() {
+        let (ls, _) = fichero_de_cofirmas(1, "acreditacion_real");
+        assert!(verificar_cofirmas(&ls).is_empty(), "la cofirma es buena");
+        let v: Value = serde_json::from_str(&ls[0]).expect("json");
+        let pk = leer_hex(&v["clavePublicaTestigo"]).expect("hex");
+        let h = verificar_cofirmas(&ls);
+
+        let ajena = leer_politica(&["0xdeadbeef".into()]).expect("politica");
+        let a = contar_acreditacion(&ls, &h, &ajena);
+        assert_eq!(a.no_nombrados, 1, "verifica, pero nadie la nombro");
+        assert!(!a.acreditada(1), "sin nombrar no hay acreditacion");
+
+        let mut propia = std::collections::BTreeSet::new();
+        propia.insert(pk);
+        let b = contar_acreditacion(&ls, &h, &propia);
+        assert!(b.acreditada(1), "nombrada y verificando: acredita");
+        assert!(!b.acreditada(2), "una sola cofirma no llega a dos");
     }
 
     #[test]

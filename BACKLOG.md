@@ -532,6 +532,12 @@ instrumentacion) al grupo E.*
   una firma con un nibble tocado (`no-verifica`) y un indice repetido
   visto DESDE FUERA (`indice-repetido`).
   ⚠️ **Sigue sin cerrar el eslabon 3**: el (iii) esta entero.
+  ✅ **DOS DE LAS TRES PIEZAS DEL (iii), HECHAS (§319).** El mando del
+  tercero gana `--testigos` y `--k`: la politica que NOMBRA que claves de
+  testigo valen, y la k que falla cerrada, sobre el fichero que ya existia.
+  **Queda la RECOLECCION**: hoy el unico que pide `zkssl_cosigs` es el banco,
+  en shell, y ningun `.rs` del cli lo nombra. Las dos lineas de arriba que dan
+  el (iii) por ENTERO quedan corregidas aqui en vez de borrarlas (§247).
 
   **Eslabón 4 — El hash del verificador dentro de la cabeza
   atestiguada.** Ya está diseñado en `doc/preprints/ERRATA.md`, entrada
