@@ -185,6 +185,18 @@ atado al importe (§74). Ambas corregidas y medidas.
   —`hash_verificador_vigente` en la cabeza atestiguada, que vuelve pública
   toda actualización— está en `doc/CONFIANZA_RESIDUAL.md` §2.2 y es la
   entrada 54; **requiere primero dar al sistema esa noción**.
+  ⚠️ **CORRECCIÓN (§321, 2026-08-19): la condición de la línea
+  anterior está corregida desde el §246.** «Dar al sistema esa
+  noción» es casi circular —`hash_verificador_vigente` ES ese
+  mecanismo—. La razón real por la que no puede rellenarse hoy: **el AIR
+  es CÓDIGO, no datos**. Lo único hasheable en ejecución son las
+  `ProofOptions`, y **un operador puede cambiar el AIR dejándolas
+  idénticas**: el campo no sería vacío, sería **ciego** — y un campo
+  ciego pasa desapercibido mintiendo justo sobre lo que existe para detectar.
+  Depende de la **entrada 55** (el AIR como datos) o de **compilación
+  reproducible**; hashear el fuente al compilar no vale, porque no prueba que
+  el binario se construyera de ese fuente. La línea anterior se conserva y
+  se cita en vez de borrarla (§247).
 - **No hay recuperación si el nodo desaparece.**
 - **Metadatos**: qué posiciones cambian y cuándo siguen siendo observables.
   Medido campo a campo en §231: un envío revela **emisor, importe y

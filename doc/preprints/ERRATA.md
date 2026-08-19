@@ -87,6 +87,53 @@ no como el patrón.
 
 ---
 
+## Entrada 3 — `ZK-SSL-residual-trust.md` §4.1: la condición del cierre
+
+**Detectada**: 2026-08-19 · **Backlog**: entradas 54 y 83 · `AUDITORIA.md`
+§246, §321.
+
+La **cuarta revisión** (2026-08-12,
+[10.5281/zenodo.21905595](https://doi.org/10.5281/zenodo.21905595)) incorporó
+a la tabla de §4.1 la fila «Replace the verifier itself» **con su
+condición**, tal como la registró la entrada 1 de este fichero: el cierre
+—`hash_verificador_vigente` en la cabeza atestiguada— **dependería de dar
+antes al sistema una noción de «reglas vigentes»**.
+
+**Esa condición es incorrecta, y el árbol la había corregido en el §246**
+—antes de la revisión que la publicó—. Es **casi circular**:
+`hash_verificador_vigente` **es** el mecanismo para tener esa noción, así
+que la condición se pide a sí misma.
+
+> **La razón real: el AIR es código, no datos.** Lo que el campo debe delatar
+> es qué es una transición válida, y eso lo define el AIR. Lo único
+> hasheable en ejecución son las `ProofOptions`, y **un operador puede cambiar
+> el AIR dejándolas idénticas**. Un `verifier_hash` así no sería un campo
+> vacío: sería un campo **ciego** — y un campo ciego pasa desapercibido
+> **mintiendo justo sobre lo que existe para detectar**.
+
+⚠️ **Y las dos salidas están cerradas por razones ajenas al protocolo**:
+
+- **Hashear el fuente al compilar** no prueba que el binario se construyera de
+  ese fuente. Sin **compilación reproducible**, el operador reporta el hash
+  grabado y corre otra cosa: miente en el caso que importa.
+- **El AIR como datos** —entrada 55— sí sería hasheable, y está parada
+  por un motivo que no es esfuerzo: *una especificación escrita por quien
+  escribió el circuito hereda sus puntos ciegos*, y debe escribirse **con la
+  auditoría, no antes**.
+
+**Consecuencia para el lector del preprint**: el cierre diseñado sigue siendo
+el correcto, pero **no es una tarea pendiente de implementación**: es una
+decisión de arquitectura con dos precondiciones que viven fuera del
+protocolo. La condición publicada subestima el coste.
+
+**La entrada 1 no se edita** — este fichero crece por adición: queda como fue
+escrita, y esta entrada la corrige encima. El texto vivo del árbol queda
+corregido en `BACKLOG.md` (entrada 83; la 54 ya lo decía), `SECURITY.md` §2,
+la cabecera-mapa de `doc/CONFIANZA_RESIDUAL.md` y
+`crates/zk-ssl/src/log.rs`, dentro del propio `EpochHead`.
+
+---
+
 *Este fichero crece por adición. Las entradas no se editan ni se borran:
 si una errata se corrige en una revisión posterior, se anota debajo con su
 fecha y su versión.*

@@ -24581,3 +24581,84 @@ fichero de cifras cambio de numero de lineas; `witness.rs` 3760 -> 3901 y
 compilador compilo limpio a la primera**, con 75 passed, 0 failed y 0 warnings.
 BACKLOG en 44 abiertas / 54 resueltas, con tres suspendidas (16, 22 y 28): el
 §314 era corte propio declarado por el §312, no una entrada numerada.
+
+## §321 — 2026-08-19 · LA RAZON DEL ESLABON 4, CORREGIDA DONDE ESTABA RANCIA
+
+**Que.** El §246 corrigio la razon por la que `hash_verificador_vigente` no
+se puede rellenar hoy. Esa correccion vivia en dos sitios que el frente no lee:
+la entrada 54 del BACKLOG y un comentario dentro del propio `struct EpochHead`
+(`crates/zk-ssl/src/log.rs`). La razon VIEJA —«el sistema no tiene nocion
+de reglas vigentes»— seguia viva en la entrada 83, en `SECURITY.md` §2,
+en la cabecera-mapa de `doc/CONFIANZA_RESIDUAL.md` y PUBLICADA bajo DOI en la
+cuarta revision del preprint. Este sello la corrige en los cuatro sitios sin
+borrar una sola linea (§247), y no toca ni un byte de codigo.
+
+**⚠️⚠️ DOS ENTRADAS NUMERADAS DEL BACKLOG, DUENAS DEL MISMO ASUNTO, Y
+CONTRADICIENDOSE.** La 54 lleva la razon corregida desde el §246, con la
+forma §247 exacta: la linea vieja se queda y la correcta va debajo. La 83
+—que es la que gobierna el frente funcional, porque el eslabon 4 ES F4—
+lleva la razon vieja. El productor que mandaba era el rancio. Es la figura
+«dos productores del mismo contrato» a escala de BACKLOG, y ningun gate la
+ve: las herramientas vigilan cifras, no razonamientos.
+
+**La razon real, y por que no es un detalle.** Lo que el campo debe delatar es
+que es una transicion valida, y eso lo define el AIR. Lo unico hasheable en
+ejecucion son las `ProofOptions`, y un operador puede cambiar el AIR dejandolas
+identicas. Un `verifier_hash` asi no seria un campo vacio: seria un campo
+CIEGO, y eso es peor — un campo vacio se nota, uno ciego pasa desapercibido
+mintiendo justo sobre lo que existe para detectar. La condicion vieja ademas es
+casi circular: el campo ES el mecanismo que la condicion pide.
+
+**Las dos salidas estan cerradas por razones ajenas al protocolo.** Hashear el
+fuente al compilar no prueba que el binario se construyera de ese fuente: sin
+compilacion reproducible el operador reporta el hash grabado y corre otra cosa,
+que es mentir en el caso que importa. Y el AIR como datos —entrada 55— si
+seria hasheable, pero esta parado por un motivo que no es esfuerzo: una
+especificacion escrita por quien escribio el circuito hereda sus puntos ciegos,
+y debe escribirse CON la auditoria, no antes.
+
+**Por tanto el eslabon 4 no es un sello: es una decision de arquitectura con
+dos precondiciones que viven fuera del protocolo.** La cola lo presentaba como
+«la ultima pieza, grande». Es mas que grande: hoy no se puede montar, y no
+por falta de trabajo. Esto no cierra la entrada 83 ni la 54 -las dos siguen
+ABIERTAS con razon-: cambia lo que significa tenerlas abiertas.
+
+**Lo publicado exige vehiculo propio, y el fichero lo dice de si mismo.** La
+cuarta revision (DOI 10.5281/zenodo.21905595) incorporo la fila «Replace the
+verifier itself» CON SU CONDICION, que es la condicion refutada. Un preprint
+depositado no se reescribe: la correccion entra por `doc/preprints/ERRATA.md`,
+que crece por adicion y cuyas entradas no se editan nunca. Nace la entrada 3, y
+la 1 se queda intacta y citada.
+
+**Lo que NO se toco, y con razon medida.** La entrada 54, porque ya dice lo
+correcto. El CUERPO de `doc/CONFIANZA_RESIDUAL.md`, porque es texto de sesion
+VERBATIM: se escribe solo en su cabecera-mapa, que es donde el propio fichero
+declara que vive el estado, y la cabecera de `ERRATA.md` nombra ese mismo
+criterio como precedente. Las entradas 1 y 2 de `ERRATA.md`. Y el contador del
+BACKLOG, porque ninguna entrada se cierra.
+
+**Como se midio, y lo que la medicion falso.** El bloque de terreno (lectura
+pura, ocho fases, cero bytes tocados) predijo que `hash_verificador_vigente`
+saldria CERO veces en el arbol y salio ONCE, en cinco ficheros y TODAS en
+documentos: el primitivo esta enteramente disenado en prosa y enteramente
+ausente del codigo. Y quien esto escribe afirmo que la entrada 54 no se habia
+abierto nunca: FALSO, existe, esta abierta y es la que mas sabe. Queda escrito
+como falso.
+
+**⚠️ Declarado y NO reparado.** `BACKLOG.md` tiene una linea malformada dentro
+de la entrada 54, que empieza a mitad de frase; es deuda anterior y el liston es
+el DELTA. Y una trampa armada para el proximo salto de formato: `recomponer`
+(`crates/zk-ssl-cli/src/witness.rs`) devuelve Ok para toda version que no sea 2
+ni 3, con la justificacion de que «se verifica con la biblioteca», que es
+exactamente lo que el §294 declaro insuficiente. Hoy no rompe nada porque solo
+existen v2 y v3; quien emita v4 sin anadir su brazo dejara al testigo
+verificando la firma y sin comprobar la composicion, en silencio.
+
+**Contadores.** Ningun pin movido: el corte no toca ni un fichero `.rs`. Las
+tres sumas quietas. Ninguna cifra por-crate. Ningun Cargo tocado. El contador
+del BACKLOG sigue igual, con sus tres suspendidas. Las SIETE herramientas de
+`tools/` en verde antes y despues, y son la puerta de este sello: el canon no
+se corre porque el corte no toca codigo y no habria nada que re-medir
+(precedente §303). Cinco ficheros en el corte: `BACKLOG.md`,
+`doc/CONFIANZA_RESIDUAL.md`, `SECURITY.md`, `doc/preprints/ERRATA.md` y esta
+`AUDITORIA.md`.

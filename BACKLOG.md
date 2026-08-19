@@ -579,6 +579,26 @@ instrumentacion) al grupo E.*
   vigor». Mientras siga abierto, **toda otra propiedad lleva un
   asterisco**. Encaja con el eslabón 3: un testigo que cofirma está
   atestiguando también **qué reglas regían**.
+  ⚠️ **LA RAZON DE ESTE PARRAFO ESTA CORREGIDA DESDE EL §246 (§321).**
+  La condicion que da arriba —que falta «nocion de reglas en vigor»— **es
+  casi circular**: `hash_verificador_vigente` **ES** el mecanismo para tener
+  esa nocion, asi que la condicion se pide a si misma.
+  ⚠️ **La razon real: el AIR es CODIGO, no datos.** Lo que el campo debe
+  delatar es que es una transicion valida, y eso lo define el AIR. Lo unico
+  hasheable en ejecucion son las `ProofOptions`, y **un operador puede cambiar
+  el AIR dejandolas identicas**: el campo no seria vacio, seria **CIEGO** — y
+  un campo ciego pasa desapercibido mintiendo justo sobre lo que existe para
+  detectar. La correccion entera vive en la **entrada 54** y en
+  `crates/zk-ssl/src/log.rs`, dentro del propio `EpochHead`.
+  ⚠️ **Las dos salidas estan cerradas por razones ajenas al protocolo**:
+  **hashear el fuente al compilar** no prueba que el binario se construyera de
+  ese fuente —hace falta **compilacion reproducible**—, y **el AIR como
+  datos** es la **entrada 55**, parada porque una especificacion escrita por
+  quien escribio el circuito hereda sus puntos ciegos y debe escribirse **con
+  la auditoria, no antes**.
+  ⚠️ **Por tanto el eslabon 4 NO es un sello: es una decision de arquitectura
+  con dos precondiciones que viven fuera del protocolo.** Las lineas de arriba
+  quedan corregidas aqui en vez de borrarlas (§247).
 
   **Cómo se cierra**: no se cierra de una vez. Cada eslabón es un sello
   o más, en el orden de arriba, y **ninguno se monta sin su terreno

@@ -29,6 +29,17 @@ decidido, y dónde):
   EXCLUYE deliberadamente, con la razón en el código: no existe noción
   de «reglas vigentes» y un campo vacío sería peor que su ausencia.
   Backlog 54. La fila 4 de §7 NO está comprada aún.
+· §2.1 `hash_verificador_vigente` — CORRECCIÓN (§321, 2026-08-19):
+  la razón que da la línea de arriba —no existe noción de «reglas
+  vigentes»— está corregida desde el §246, y es casi circular: el campo
+  ES ese mecanismo. La razón real: **el AIR es CÓDIGO, no datos**; lo
+  único hasheable en ejecución son las `ProofOptions`, y un operador
+  puede cambiar el AIR dejándolas idénticas, así que el campo sería
+  CIEGO, no vacío. Depende de la entrada 55 (el AIR como datos) o de
+  compilación reproducible; hashear el fuente al compilar no vale, porque
+  no prueba que el binario se construyera de ese fuente. La línea de
+  arriba se conserva y se cita en vez de borrarla (§247), y el CUERPO de
+  este documento no se toca: sigue siendo texto de sesión verbatim.
 · B10.2  → primitiva construida y testada (`first_divergence`, T1);
   falta el componente de testigos.
 · B10.3 y §10.2 (el plazo N)  → DECIDIDOS en §121: el «acuse» (nombre
