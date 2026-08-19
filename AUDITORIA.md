@@ -24383,3 +24383,110 @@ Ningun Cargo tocado. BACKLOG en 44 abiertas / 54 resueltas, con tres
 suspendidas (16, 22 y 28): la entrada del eslabon 3 no se resuelve entera
 porque le queda la recoleccion, y las dos lineas que la daban por ENTERA
 quedan corregidas con una linea nueva debajo, no borradas (§247).
+## §320 — 2026-08-19 · LA RECOLECCION: el cliente recoge las cofirmas y rehace la linea del testigo
+
+**Que.** El testigo gana `--recolectar-cofirmas <FICHERO>`: pide `zkssl_cosigs`
+al nodo, abre el sobre TIPADO en `CofirmaDto` y **rehace** cada linea llamando a
+`linea_de_cofirma`, que ya era el unico escritor de ese formato. Hasta hoy el
+unico que pedia cofirmas al nodo era `tools/banco_cofirma.sh`, en shell y con
+curl, y ningun `.rs` del cli nombraba el metodo. Con esto lo que el §319 entrego
+como propiedad DEMOSTRABLE pasa a ser propiedad USABLE. **Cierra el (iii) del
+eslabon 3, y con el el eslabon 3 entero**; de la entrada 83 queda el eslabon 4.
+
+**Los mismos ocho campos, y NO la misma convencion.** El arbol ya lo tenia
+escrito en `wire/src/lib.rs`: en el cable `v` y `vistoUnix` viajan como QUANTITY
+en hex y en el fichero del testigo van como numeros crudos. **El punto que rompe
+es uno solo**: `verificar_cofirmas` hace `as_u64()` sobre `"0x1"` y recibe
+`None`, de modo que la linea muere en `CampoAusente` antes de mirar nada mas.
+`versionFormato` e `indice` NO rompen porque los dos lados ya son hex, y
+`vistoUnix` diverge pero es INERTE: no esta en la lista obligatoria.
+
+**La frontera se cruza por la SERIALIZACION DECLARADA, no leyendo el DTO por
+dentro.** `serde_json::to_value` y despues `leer_hex` y `leer_q`, que son **los
+mismos** que usa el lector. Asi el corte no necesita conocer los internos de
+`Q`, `B32` ni `Blob`, y si el cable cambia de representacion esto la sigue. El
+coste va dicho a la vista: la linea recompuesta **no es literalmente el payload
+del nodo**, y se cruza una frontera de convencion.
+
+**El BLANQUEO DE VERSION, que es la propiedad de seguridad del corte.**
+`linea_de_cofirma` estampa `COFIRMA_VERSION` **sin preguntar**. Recomponer sin
+mirar antes lo que el cable declara habria convertido una cofirma de version
+DESCONOCIDA en una linea que dice ser de la nuestra, y `verificar_cofirmas` la
+habria aceptado. Por eso `v` se mira **primero** y se **rechaza**, nunca se
+reescribe. Lo fija `una_cofirma_de_version_desconocida_no_se_blanquea`.
+
+**LA ACUSACION FABRICADA.** Recolectar dos veces reanadiria las mismas cofirmas
+y el lector las denunciaria como `IndiceRepetido`: **una doble firma inventada
+por la herramienta**. Por eso la criba va por la **LINEA ENTERA** y nunca por
+`(testigo, indice)`: cribar por la clave borraria justo la evidencia que el
+§310 existe para cazar. Lo fija por las dos mitades
+`recolectar_dos_veces_no_fabrica_un_indice_repetido`: la misma cofirma no pasa,
+y una distinta con el mismo indice si.
+
+**El test que el §315 reservo por fin tiene casa.** El doc del `CofirmaDto` decia
+que lo que ata a los dos productores es un test sobre el CONJUNTO de claves, no
+sobre la representacion, y que vive donde esten los dos productores. La
+recoleccion es ese sitio:
+`el_cable_y_la_linea_del_testigo_llevan_el_mismo_conjunto_de_claves`. Con el van
+`recomponer_desde_el_cable_da_la_misma_linea_que_escribe_el_testigo` y
+`el_payload_del_cable_a_pelo_muere_en_v_y_recompuesto_se_lee`. **Cinco tests,
+todos del nucleo del corte.**
+
+**La forma del corte la fijo el §317, y no se discutio.** El nodo conserva las
+cofirmas de la ultima epoca con submisiones, se sirven por su nombre y pedir una
+epoca sin cofirmas devuelve cero sin ser error; `--max-cofirmas` es cota de
+RECURSO, no de confianza. De ahi que la recoleccion traiga **una epoca por vez** y
+que acumular sea del cliente, que es exactamente la unidad de la `k`. El mando
+dice en voz alta que lo anadido NO esta verificado y remite a
+`--verificar-cofirmas`, a `--testigos` y a `--k`.
+
+**Lo que el sello NO hizo, y se declara.** Un `--epoca` explicito queda fuera:
+hoy pide la actual y dice cual le sirvieron, aunque el nodo ya sabe servir por
+nombre. El mando no tiene unitario: la pieza pura si, con sus cinco tests, pero
+el camino con red lo ejercitara el banco. Y el canon completo del workspace no
+se corrio.
+
+**LA DEUDA DOBLE DEL §320, y este corte la paga.** El commit `ebb3f02` toco
+**exactamente dos ficheros** — `witness.rs` (+317) y `BACKLOG.md` (+30), 347
+inserciones y ningun borrado — de modo que salio con **dos huecos**: no movio el
+pin `zk-ssl-cli`, que quedo en 66 contra un arbol de 71, y **no escribio este
+asiento**. El primero dejo el canon en rojo desde `ebb3f02`; el segundo no lo
+dejo en rojo en ninguna parte, y esa es la diferencia que importa: **el pin lo
+caza `canon.sh`, un asiento ausente no lo caza nadie**. La regla que sale de
+aqui: **la forma de una cadena de sello no se improvisa, se copia de la
+anterior** — si el sello de al lado tuvo su `-B` para el pin y su `-C` para el
+asiento, este los necesita igual.
+
+**Por que el canon completo del workspace no se corrio, ahora medido.** El
+intento en perfil `dev` estuvo **4.424 s al 725 por ciento de CPU sin acabar un
+solo test** de `plonk_experiment`: PLONK probando sin optimizar. Pero la tabla de
+`canon.sh` no tiene catorce filas sino **diecisiete**, y las tres que faltaban
+llevan su coste escrito: `halo2-experiment` 27 tests en 438 s, `plonk-experiment`
+36 en 749 s y `zk-core` 74 en 2075 s, las tres **en release** y **fuera del nivel
+`--sello`**. La suma de la columna `pasan` del nivel sello es lo que los
+documentos llaman la compuerta de sello, y sumada a esas tres da la cifra de
+todos los pines. **No es que PLONK sea impracticable: es que en `dev` lo es**, y
+el nivel que sella no lo corre. La pregunta de donde sale la cifra de la
+compuerta queda contestada: **la deriva la tabla**.
+
+**Contadores.** Pin `zk-ssl-cli` 66 -> 71, cinco tests nuevos y los cinco del
+nucleo de la recoleccion. `wire` queda en 15, `node` en 80 y `zk-ssl` en 264, y
+ningun otro pin se mueve. Sumas 872/1009/1023 -> **877/1014/1028** en las nueve
+lineas de cuatro documentos, y la cifra POR-CRATE del **testigo** en
+`PRINCIPIOS.md`, 66 -> 71; el desglose del nodo sigue en 80. La colision se midio
+antes de escribir: **877 y 1014 limpios** en todo el arbol, y el peligro estaba
+en el **1023 viejo**, que fuera de los documentos vivos aparece en **cuatro
+lineas** de `doc/mapa-geometria-circuit_send.md`, donde son numeros de fila de un
+circuito, y en nueve de `AUDITORIA`, donde son grados de restriccion; por eso las
+diez sustituciones fueron por cadena exacta y **ninguna global**. `check_cifras`
+delato **seis** con solo el pin movido, las cinco del TOTAL mas el desglose del
+testigo, **sexta vez** que la columna `alias=` predice bien el numero; y el
+desglose volvio a reportarse en **linea 0**, que dice QUE falla pero no DONDE.
+Y `check_cifras` sigue derivando las dos sumas y aceptando cualquiera: de las
+tres cifras que los documentos citan **solo la primera tiene compuerta**, de modo
+que el 1014 y el 1028 se han movido a mano y sin gate que los vigile. Deuda del
+§302-B, **cuarta** vez que se anota. Quedo verde tras las sustituciones con 26
+cifras vivas, 17 pines leidos y 7 de desglose, identicos a la base. Ningun
+fichero cambio de numero de lineas. Ningun Cargo tocado. BACKLOG en 44 abiertas /
+54 resueltas, con tres suspendidas (16, 22 y 28): la entrada 83 sigue abierta con
+razon, porque le queda el eslabon 4.
