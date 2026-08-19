@@ -1265,6 +1265,21 @@ pub struct WitnessArgs {
     /// y el mando sale con error. Falla cerrada.
     #[arg(long, value_name = "K", requires_all = ["testigos"])]
     k: Option<usize>,
+
+    /// **RECOLECTA del nodo las cofirmas que otros le enviaron** (§320) y
+    /// las añade al fichero, en el formato que lee `--verificar-cofirmas`.
+    ///
+    /// ⚠️ Lo que se añade **NO está verificado**: `zkssl_cosigs` en el nodo
+    /// *«no verifica, sólo filtra»*. Quien comprueba es `--verificar-cofirmas`,
+    /// y quien decide si valen es la política de `--testigos` (§319).
+    ///
+    /// ⚠️ El nodo guarda **una sola época** (§317), así que esto trae una
+    /// época por vez: **acumular es trabajo de este mando**, corriéndolo más
+    /// de una vez. Declarado y no hecho: pedir una época **por su nombre**,
+    /// que el nodo ya sabe servir.
+    #[arg(long, value_name = "COFIRMAS")]
+    recolectar_cofirmas: Option<PathBuf>,
+
 }
 
 /// Version del formato del fichero de cofirmas.
@@ -1496,6 +1511,116 @@ pub fn verificar_cofirmas(lineas: &[String]) -> Vec<HallazgoCofirma> {
     }
     h
 }
+
+// ---------------------------------------------------------------------
+//  §320 · LA RECOLECCIÓN · rehacer la línea del TESTIGO desde el CABLE
+// ---------------------------------------------------------------------
+
+/// **Lo que impide recomponer una cofirma llegada del cable.**
+///
+/// ⚠️ No es un hallazgo sobre el testigo que la firmó: es que **esta**
+/// recolección no sabe rehacerla. Se cuenta y se dice; no se calla.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RecogidaRechazada {
+    /// El cable declara una versión de cofirma que este cliente no conoce.
+    VersionDesconocida { v: u64 },
+    /// Un campo del cable no se deja leer con la convención declarada.
+    CampoTorcido { campo: &'static str },
+}
+
+impl RecogidaRechazada {
+    /// Nombre **estable** de la clase. Mismo criterio que §248: nunca `{:?}`.
+    pub fn clase(&self) -> &'static str {
+        match self {
+            RecogidaRechazada::VersionDesconocida { .. } => "version-desconocida",
+            RecogidaRechazada::CampoTorcido { .. } => "campo-torcido",
+        }
+    }
+}
+
+/// **Rehace la línea del TESTIGO a partir de la cofirma del CABLE.**
+///
+/// `CofirmaDto` lleva los **mismos ocho campos** que escribe
+/// [`linea_de_cofirma`], pero **no la misma convención**: en el cable `v` y
+/// `vistoUnix` viajan como QUANTITY (hex con `0x`) y en el fichero del
+/// testigo van como números crudos. Sin cruzar esa frontera,
+/// [`verificar_cofirmas`] mata la línea en el primer campo —`v["v"]`
+/// `.as_u64()` sobre `"0x1"` da `None`— y el resto ni se mira.
+///
+/// ⚠️⚠️ **EL GATE DE VERSIÓN NO ES ADORNO.** [`linea_de_cofirma`] estampa
+/// `COFIRMA_VERSION` **sin preguntar**. Recomponer sin comprobar antes lo
+/// que el cable declara convertiría una cofirma de versión DESCONOCIDA en
+/// una línea que dice ser de la nuestra, y [`verificar_cofirmas`] la
+/// aceptaría: **blanqueo de versión**. Por eso `v` se mira **primero** y se
+/// RECHAZA, en vez de reescribirlo.
+///
+/// ⚠️ La frontera se cruza **por la serialización declarada**, no leyendo
+/// el DTO por dentro: se serializa con su propio `serde` y se leen los
+/// valores con `leer_hex`/`leer_q`, **los mismos** que usa
+/// [`verificar_cofirmas`]. Si el cable cambia de representación, esto la
+/// sigue; leyéndolo por dentro, no.
+///
+/// ⚠️ La línea que sale **no es literalmente el payload del nodo**: se
+/// cruza una frontera de convención, y se cruza a la vista.
+pub fn linea_desde_dto(dto: &CofirmaDto) -> Result<Value, RecogidaRechazada> {
+    let j = serde_json::to_value(dto)
+        .map_err(|_| RecogidaRechazada::CampoTorcido { campo: "cofirma" })?;
+
+    // ⚠️ PRIMERO la versión, antes de tocar ningún otro campo.
+    let v = leer_q(&j["v"]).map_err(|_| RecogidaRechazada::CampoTorcido { campo: "v" })?;
+    if v > COFIRMA_VERSION {
+        return Err(RecogidaRechazada::VersionDesconocida { v });
+    }
+
+    let hx = |k: &'static str| {
+        leer_hex(&j[k]).map_err(|_| RecogidaRechazada::CampoTorcido { campo: k })
+    };
+    let dig = hx("epochDigest")?;
+    let op = hx("clavePublicaOperador")?;
+    let testigo = hx("clavePublicaTestigo")?;
+    let firma = hx("firma")?;
+
+    let d32: [u8; 32] = dig
+        .try_into()
+        .map_err(|_| RecogidaRechazada::CampoTorcido { campo: "epochDigest" })?;
+
+    let q = |k: &'static str| {
+        leer_q(&j[k]).map_err(|_| RecogidaRechazada::CampoTorcido { campo: k })
+    };
+    let vf = q("versionFormato")?;
+    let idx = q("indice")?;
+    let visto = q("vistoUnix")?;
+
+    let c = CabezaFirmada { version_formato: vf as u8, indice: idx, firma };
+    Ok(linea_de_cofirma(&d32, &op, &testigo, &c, visto))
+}
+
+/// **Deja pasar sólo las líneas que no estaban ya, comparadas ENTERAS.**
+///
+/// ⚠️⚠️ **Se criba por la LÍNEA COMPLETA, nunca por `(testigo, índice)`.**
+/// Cribar por la clave borraría exactamente la evidencia que
+/// [`verificar_cofirmas`] existe para cazar: dos cofirmas **distintas** con
+/// el mismo índice del mismo testigo son un hallazgo del §310, no un
+/// duplicado. Aquí sólo se descarta lo que es **byte a byte lo mismo**.
+///
+/// ⚠️ Sin esto, recolectar dos veces volvería a escribir las mismas
+/// cofirmas y el lector las denunciaría como `IndiceRepetido`: **una
+/// acusación de doble firma fabricada por la herramienta**.
+pub fn cribar_repetidas(
+    ya: &std::collections::BTreeSet<String>,
+    nuevas: &[String],
+) -> Vec<String> {
+    let mut visto = ya.clone();
+    let mut fuera = Vec::new();
+    for l in nuevas {
+        if visto.insert(l.clone()) {
+            fuera.push(l.clone());
+        }
+    }
+    fuera
+}
+
+
 
 // -- S319 . LA POLITICA DEL CLIENTE Y LA k QUE FALLA CERRADA ---------
 //
@@ -1783,6 +1908,80 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
         eprintln!("   firma que el nodo no emitio. En ambos casos responde el operador.");
         anyhow::bail!("{} indice(s) del testigo ausentes en el diario del nodo", faltan.len());
     }
+
+    // ── §320 · la RECOLECCIÓN: pedir al nodo lo que OTROS firmaron ──
+    //
+    // ⚠️ Va detrás de los modos que sólo LEEN y delante del que observa:
+    //    habla con el nodo, pero no se queda mirando.
+    if let Some(p) = &a.recolectar_cofirmas {
+        let agente = ureq::AgentBuilder::new().timeout(Duration::from_secs(10)).build();
+        let peticion = json!({"jsonrpc":"2.0","id":1,
+            "method":"zkssl_cosigs","params":{}});
+        // ⚠️⚠️ LEE `error`. Es la regla que el §316 dejó escrita para el
+        //    código que NACE HOY: sin ella, un nodo sin el método contesta
+        //    -32601, `result` viene ausente, y esto diría «cero cofirmas»
+        //    en vez de decir que el nodo no sabe servirlas.
+        let v: Value = match agente.post(&a.nodo).send_json(peticion) {
+            Err(e) => anyhow::bail!("no se pudieron pedir las cofirmas · transporte: {e}"),
+            Ok(r) => match r.into_json::<Value>() {
+                Err(e) => anyhow::bail!("respuesta ilegible: {e}"),
+                Ok(v) => v,
+            },
+        };
+        if let Some(err) = v.get("error") {
+            anyhow::bail!("el nodo dio ERROR a zkssl_cosigs: {err}");
+        }
+        let res = v.get("result").cloned().unwrap_or(Value::Null);
+        let epoca = res
+            .get("epochDigest")
+            .and_then(|x| x.as_str())
+            .unwrap_or("(el nodo no dijo cual)")
+            .to_string();
+        // ⚠️ El sobre se abre TIPADO: `deny_unknown_fields` en `CofirmaDto`
+        //    hace que un campo que el cable no conoce sea un error aquí, y
+        //    no una línea silenciosamente incompleta más abajo.
+        let brutas: Vec<CofirmaDto> = match res.get("cosigs").cloned() {
+            None => anyhow::bail!("el nodo no sirvio el campo cosigs"),
+            Some(c) => serde_json::from_value(c).map_err(|e| {
+                anyhow::anyhow!("el sobre trae cofirmas que el cable no reconoce: {e}")
+            })?,
+        };
+
+        let mut rehechas = Vec::new();
+        let mut rechazadas = 0usize;
+        for dto in &brutas {
+            match linea_desde_dto(dto) {
+                Ok(l) => rehechas.push(l.to_string()),
+                Err(r) => {
+                    rechazadas += 1;
+                    eprintln!("  ⚠️ cofirma RECHAZADA · {} · {r:?}", r.clase());
+                }
+            }
+        }
+
+        let ya: std::collections::BTreeSet<String> = if p.exists() {
+            leer(p)?.into_iter().filter(|l| !l.trim().is_empty()).collect()
+        } else {
+            std::collections::BTreeSet::new()
+        };
+        let ponen = cribar_repetidas(&ya, &rehechas);
+        let repetidas = rehechas.len() - ponen.len();
+
+        let mut f = std::fs::OpenOptions::new().create(true).append(true).open(p)?;
+        for l in &ponen {
+            writeln!(f, "{l}")?;
+        }
+        f.flush()?;
+
+        println!("{}: {} cofirma(s) del nodo · {} anadida(s), {} ya estaba(n), {} rechazada(s)",
+                 p.display(), brutas.len(), ponen.len(), repetidas, rechazadas);
+        println!("epoca servida: {epoca}");
+        println!("⚠️ lo anadido NO esta verificado: el nodo no verifica, solo filtra.");
+        println!("   Compruebalo con --verificar-cofirmas, y con --testigos y --k");
+        println!("   si quieres saber si ademas VALE.");
+        return Ok(());
+    }
+
 
     let mut m = Memoria::nueva();
     let agente = ureq::AgentBuilder::new().timeout(Duration::from_secs(10)).build();
@@ -3367,6 +3566,124 @@ mod tests {
             "la linea del fichero y el DTO del cable publican conjuntos DISTINTOS"
         );
         assert_eq!(kl.len(), 8, "son ocho claves; si cambian, se decide: {kl:?}");
+    }
+
+
+    // -- §320 · la recolección: del cable a la línea del testigo --------
+
+    /// Material de cofirma **de mentira** para las pruebas de FORMA. La
+    /// firma no verifica y no tiene que hacerlo: aquí se mide la
+    /// representación, no la criptografía.
+    fn material_320() -> ([u8; 32], Vec<u8>, Vec<u8>, CabezaFirmada, u64) {
+        (
+            [7u8; 32],
+            vec![0xaa, 0xbb, 0xcc, 0xdd],
+            vec![0x11, 0x22, 0x33, 0x44],
+            CabezaFirmada { version_formato: 1, indice: 3, firma: vec![0xce; 8] },
+            1_723_000_000,
+        )
+    }
+
+    /// ⚠️⚠️ **EL TEST QUE EL §315 RESERVÓ Y NO TENÍA CASA.** El doc de
+    /// `CofirmaDto` dice que lo que ata a los dos productores es un test
+    /// sobre el **CONJUNTO de claves**, no sobre la representación, y que
+    /// vive «donde estén los dos productores». Aquí es donde están.
+    #[test]
+    fn el_cable_y_la_linea_del_testigo_llevan_el_mismo_conjunto_de_claves() {
+        let (d, op, tg, c, t) = material_320();
+        let linea = linea_de_cofirma(&d, &op, &tg, &c, t);
+        let cable = serde_json::to_value(cofirma_dto(&d, &op, &tg, &c, t))
+            .expect("el DTO serializa");
+        let mut ka: Vec<String> =
+            linea.as_object().expect("la linea es objeto").keys().cloned().collect();
+        let mut kb: Vec<String> =
+            cable.as_object().expect("el cable es objeto").keys().cloned().collect();
+        ka.sort();
+        kb.sort();
+        assert_eq!(
+            ka, kb,
+            "los dos productores dejaron de llevar las MISMAS claves"
+        );
+    }
+
+    /// La vuelta completa: lo que el cable trae, recompuesto, es **byte a
+    /// byte** lo que habría escrito un testigo local.
+    #[test]
+    fn recomponer_desde_el_cable_da_la_misma_linea_que_escribe_el_testigo() {
+        let (d, op, tg, c, t) = material_320();
+        let esperada = linea_de_cofirma(&d, &op, &tg, &c, t);
+        let dto = cofirma_dto(&d, &op, &tg, &c, t);
+        assert_eq!(linea_desde_dto(&dto).expect("recompone"), esperada);
+    }
+
+    /// ⚠️⚠️ **EL TEST QUE JUSTIFICA EL CORTE ENTERO.** Volcar el payload
+    /// del cable tal cual mata la línea en `v` y el resto ni se mira;
+    /// recompuesta, se lee entera. Se comprueba por la VARIANTE del
+    /// hallazgo: la firma de este material es de mentira, así que
+    /// `NoVerifica` es **lo esperado** y no un fallo.
+    #[test]
+    fn el_payload_del_cable_a_pelo_muere_en_v_y_recompuesto_se_lee() {
+        let (d, op, tg, c, t) = material_320();
+        let dto = cofirma_dto(&d, &op, &tg, &c, t);
+
+        let crudo = serde_json::to_value(&dto).expect("serializa").to_string();
+        let h = verificar_cofirmas(&[crudo]);
+        assert!(
+            h.iter().any(|x| matches!(x, HallazgoCofirma::CampoAusente { campo, .. }
+                                      if campo.as_str() == "v")),
+            "el payload del cable a pelo deberia morir por el campo v: {h:?}"
+        );
+
+        let buena = linea_desde_dto(&dto).expect("recompone").to_string();
+        let r = verificar_cofirmas(&[buena]);
+        assert!(
+            r.iter().all(|x| matches!(x, HallazgoCofirma::NoVerifica { .. })),
+            "recompuesta solo deberia fallar la FIRMA: {r:?}"
+        );
+    }
+
+    /// ⚠️⚠️ **NO SE BLANQUEA UNA VERSIÓN DESCONOCIDA.** Sin este gate,
+    /// `linea_de_cofirma` estamparía `COFIRMA_VERSION` sobre una cofirma
+    /// que declara otra cosa, y el lector la aceptaría creyéndola nuestra.
+    #[test]
+    fn una_cofirma_de_version_desconocida_no_se_blanquea() {
+        let (d, op, tg, c, t) = material_320();
+        let mut j = serde_json::to_value(cofirma_dto(&d, &op, &tg, &c, t))
+            .expect("serializa");
+        j["v"] = json!(format!("{:#x}", COFIRMA_VERSION + 1));
+        let futura: CofirmaDto =
+            serde_json::from_value(j).expect("el cable acepta la version futura");
+        assert_eq!(
+            linea_desde_dto(&futura),
+            Err(RecogidaRechazada::VersionDesconocida { v: COFIRMA_VERSION + 1 }),
+            "una version desconocida NO puede salir como linea nuestra"
+        );
+    }
+
+
+    /// ⚠️⚠️ **EL TEST QUE IMPIDE UNA ACUSACIÓN FABRICADA.** Recolectar dos
+    /// veces no puede convertir la misma cofirma en un `IndiceRepetido`;
+    /// pero una cofirma **distinta** con el mismo índice del mismo testigo
+    /// tiene que seguir pasando, porque **ése sí es el hallazgo del §310**.
+    #[test]
+    fn recolectar_dos_veces_no_fabrica_un_indice_repetido() {
+        let (d, op, tg, c, t) = material_320();
+        let l = linea_de_cofirma(&d, &op, &tg, &c, t).to_string();
+        let ya: std::collections::BTreeSet<String> =
+            [l.clone()].into_iter().collect();
+        assert!(
+            cribar_repetidas(&ya, &[l.clone()]).is_empty(),
+            "la MISMA cofirma no puede anadirse dos veces"
+        );
+
+        let otra = CabezaFirmada { version_formato: 1, indice: 3, firma: vec![0x99; 8] };
+        let l2 = linea_de_cofirma(&d, &op, &tg, &otra, t).to_string();
+        assert_ne!(l, l2, "el material de prueba deberia dar lineas distintas");
+        assert_eq!(
+            cribar_repetidas(&ya, &[l2.clone()]),
+            vec![l2],
+            "una cofirma DISTINTA con el mismo indice TIENE que pasar: es el §310"
+        );
     }
 
     #[test]

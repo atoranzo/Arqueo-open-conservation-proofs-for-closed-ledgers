@@ -538,6 +538,36 @@ instrumentacion) al grupo E.*
   **Queda la RECOLECCION**: hoy el unico que pide `zkssl_cosigs` es el banco,
   en shell, y ningun `.rs` del cli lo nombra. Las dos lineas de arriba que dan
   el (iii) por ENTERO quedan corregidas aqui en vez de borrarlas (§247).
+  ✅ **EL (iii) CERRADO, Y CON EL EL ESLABON 3 (§320) — la RECOLECCION.**
+  El mando del tercero gana `--recolectar-cofirmas`: pide `zkssl_cosigs` al
+  nodo, **LEE `error`** —la regla que §316 dejo para el codigo que nace hoy—,
+  abre el sobre TIPADO en `CofirmaDto` y **rehace cada linea llamando a
+  `linea_de_cofirma`**, el unico escritor de ese formato. Lo que sale es byte
+  a byte la linea que habria escrito un testigo local, y el test que §315
+  reservo —el del CONJUNTO de claves, «donde esten los dos productores»— por
+  fin tiene casa. Cinco tests nuevos.
+  ⚠️ **El DTO y la linea llevan los mismos ocho campos pero NO la misma
+  convencion**: en el cable `v` y `vistoUnix` viajan como QUANTITY en hex y
+  en el fichero del testigo van como numeros crudos. Volcar el payload del
+  nodo tal cual muere en `v` —`as_u64()` sobre `"0x1"` da `None`— y el resto
+  ni se mira. La frontera se cruza **por la serializacion declarada**, no
+  leyendo el DTO por dentro, y se cruza A LA VISTA.
+  ⚠️ **El gate de version no es adorno**: `linea_de_cofirma` estampa
+  `COFIRMA_VERSION` **sin preguntar**, asi que recomponer sin mirar antes lo
+  que el cable declara convertiria una cofirma de version DESCONOCIDA en una
+  linea que dice ser nuestra, y el lector la aceptaria — **blanqueo de
+  version**. Se mira `v` primero y se RECHAZA.
+  ⚠️ **La criba va por la LINEA ENTERA, nunca por `(testigo, indice)`**:
+  cribar por la clave borraria justo la evidencia que §310 existe para cazar.
+  Sin ella, recolectar dos veces **fabricaba una acusacion de doble firma**.
+  ⚠️ Lo recolectado **NO esta verificado** —el nodo «no verifica, solo
+  filtra»—: comprueba `--verificar-cofirmas` y decide `--testigos`/`--k`. Y
+  el nodo guarda **una sola epoca** (§317), asi que acumular entre epocas es
+  trabajo del mando, corriendolo mas de una vez. Declarado y no hecho: pedir
+  una epoca **por su nombre**, que el nodo ya sabe servir.
+  **La linea de arriba que decia «Queda la RECOLECCION» queda corregida aqui
+  en vez de borrarla (§247)**, y con ella las de §301 y §319 que daban el
+  (iii) por abierto.
 
   **Eslabón 4 — El hash del verificador dentro de la cabeza
   atestiguada.** Ya está diseñado en `doc/preprints/ERRATA.md`, entrada
