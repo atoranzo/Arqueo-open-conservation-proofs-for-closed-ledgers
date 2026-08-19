@@ -3719,10 +3719,19 @@ mod tests {
         )
     }
 
-    /// ⚠️⚠️ **EL TEST QUE EL §315 RESERVÓ Y NO TENÍA CASA.** El doc de
-    /// `CofirmaDto` dice que lo que ata a los dos productores es un test
-    /// sobre el **CONJUNTO de claves**, no sobre la representación, y que
-    /// vive «donde estén los dos productores». Aquí es donde están.
+    /// ⚠️⚠️ **§327: CORRECCION. Decía «EL TEST QUE EL §315 RESERVÓ Y NO
+    /// TENÍA CASA», y la tenía** (§247: se cita, no se borra). El atado del
+    /// conjunto de claves ya estaba más arriba en este mismo módulo, en
+    /// `la_linea_y_el_dto_llevan_el_mismo_conjunto_de_claves`, que además
+    /// fija que son OCHO.
+    ///
+    /// ⚠️ **Este no aserta nada que aquél no aserte**: es el MISMO
+    /// invariante con otro material (`material_320`, con firma de ocho
+    /// bytes y `versionFormato` 1, frente al de uno y 3). Se conserva por
+    /// eso —dos materiales sobre un invariante no sobran— y no por lo que
+    /// su cabecera decía. Retirarlo costaría el pin del cli, las tres sumas
+    /// en los diez sitios y **resucitar el homónimo del 1024** que el §324
+    /// había matado: no compensa.
     #[test]
     fn el_cable_y_la_linea_del_testigo_llevan_el_mismo_conjunto_de_claves() {
         let (d, op, tg, c, t) = material_320();

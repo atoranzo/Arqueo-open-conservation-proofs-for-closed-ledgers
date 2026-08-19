@@ -983,9 +983,20 @@ impl SignedEpochHeadDto {
 ///
 /// ⚠️ **Son dos artefactos con dos convenciones, y se declara así en vez de
 /// disimularlo.** Unificarlos exigiría cambiar lo que el testigo escribe, y
-/// eso es subir `COFIRMA_VERSION`: corte propio. Lo que atará a los dos es
-/// un test sobre el **CONJUNTO de claves**, no sobre la representación — y
-/// vive donde estén los dos productores, que no es aquí.
+/// eso es subir `COFIRMA_VERSION`: corte propio. Lo que ata a los dos es un
+/// test sobre el **CONJUNTO de claves**, no sobre la representación — y no
+/// vive aquí, sino donde están los dos productores: `cli/src/witness.rs`.
+///
+/// ⚠️⚠️ **§327: CORRECCION. Aquí se leía "lo que atará a los dos es
+/// un test", en futuro y sin nombrarlo** (§247: se cita y se corrige encima).
+/// Ese test ya existe, y **por duplicado**, los dos en `cli/src/witness.rs`:
+/// `la_linea_y_el_dto_llevan_el_mismo_conjunto_de_claves` —que se declara a
+/// sí mismo como el atado que el §315 dejó escrito, y que además fija que
+/// son OCHO— y
+/// `el_cable_y_la_linea_del_testigo_llevan_el_mismo_conjunto_de_claves`,
+/// que el §320 escribió con otro material. El segundo nació de leer esta
+/// frase: **prometer en futuro un test que ya está escrito hace que se
+/// escriba otra vez**, y aquí ya pasó una vez dentro del árbol.
 ///
 /// ⚠️ La firma son ~37 KB de hex (`FIRMA_RFC_BYTES = 18_469`): va por
 /// `Blob`, como en la cabeza firmada, y **no** por `B32`.

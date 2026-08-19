@@ -25120,3 +25120,66 @@ tras la compuerta que suele prohibirlo. El canon SI se corre y es la puerta,
 porque el corte toca codigo Rust, al reves que en el §325. BACKLOG sin tocar:
 no abre ni cierra ninguna entrada, y lo que este sello deja declarado viaja en
 la cola del traspaso, no como entrada nueva.
+
+## §327 — 2026-08-20 · LA PROSA QUE PROMETIA UN TEST QUE YA ESTABA ESCRITO
+
+**Que.** Dos frases de doc que prometian en futuro un test que ya estaba
+escrito, corregidas donde se contradicen. La cabecera de `CofirmaDto` en el
+cable decia que lo que ATARA a los dos productores es un test sobre el CONJUNTO
+de claves, y no lo nombraba; el doc de uno de los tests del testigo se
+anunciaba como el que el §315 reservo y NO TENIA CASA, cuando la casa ya la
+tenia desde antes. Se citan las dos y se corrigen encima (§247). Ningun test
+nace ni muere y ningun pin se mueve.
+
+**Lo que la medicion encontro, y no era lo que se buscaba.** Este corte se
+abrio para ESCRIBIR ese atado, obedeciendo el encargo de la cabecera del cable.
+La medicion previa lo mato antes de teclear una linea de Rust: el atado ya
+existe, y por duplicado. `la_linea_y_el_dto_llevan_el_mismo_conjunto_de_claves`
+compara los conjuntos de claves de los dos productores y ademas fija que son
+OCHO; `el_cable_y_la_linea_del_testigo_llevan_el_mismo_conjunto_de_claves` hace
+lo mismo con otro material y no aserta nada que el primero no asierte. La
+prediccion escrita antes de medir decia que si el atado existia el corte se
+caia entero, y eso es lo que paso.
+
+**El duplicado se conserva, y el precio de quitarlo esta medido.** Retirar el
+segundo bajaria el pin del testigo de 75 a 74 y arrastraria las tres sumas a
+887 / 1024 / 1038 en los diez sitios de siempre. Y el 1024 no es un numero
+cualquiera: el §324 celebro que al pasar a 1025 dejaba de haber dos cosas con
+ese nombre, porque los homonimos que quedan son geometria de circuito en quince
+ficheros. Volver a 1024 los resucita. Dos materiales sobre un mismo invariante
+no sobran; lo que sobraba era la cabecera que decia ser la primera.
+
+**El defecto tiene forma, y ya cobro dos veces.** Prometer en futuro un test
+que ya esta escrito hace que se vuelva a escribir. La primera vez cobro dentro
+del arbol: el segundo test nacio de leer la promesa del cable y de no encontrar
+al primero. La segunda estuvo a punto de cobrar en esta misma sesion, con un
+corte entero planificado para construir lo que ya estaba, y lo detuvo una
+medicion de lectura pura que costo segundos. Es §297, la prosa que envejece
+sin que ningun gate se ponga rojo, con el coste demostrado en vivo y no
+razonado.
+
+**El instrumento que sale de aqui: el gate de repertorio.** Al escribir la
+correccion se colo un aviso SIN su selector de variacion, distinto del que usa
+todo el fichero, y lo caza leer el texto renderizado y no ningun contador. El
+remedio no es mirar mejor: todo byte no-ASCII que un bloque escriba tiene que
+EXISTIR YA en el fichero que lo recibe, y se comprueba contra el. Es la regla
+del §325, que dice que los bytes no-ASCII se extraen del arbol y no se
+teclean, convertida en compuerta. Ensayado con una mayuscula acentuada ajena al
+cable: muere nombrando el byte, en segundos y sin tocar nada. De propina obligo
+a bajar la prosa al repertorio probado del fichero.
+
+**Cifras y su procedencia.** Los dos pines se midieron en vivo antes y despues,
+con cada crate corrido por separado en release: el testigo en 75 y el cable en
+15, identicos a los dos lados, que es lo unico que un corte de prosa puede
+prometer. El cable crecio once lineas y el testigo nueve, y ese nueve merece un
+renglon: la prediccion escrita a mano decia ocho y el presupuesto, que lo
+DERIVA de los propios parrafos, dijo nueve. Gano el que deriva, y es el mismo
+defecto que este arco ya pago cuando una lista de herramientas se escribio al
+lado de la linea que la produce. El balance de llaves no se movio en ninguno de
+los dos; el del testigo sigue en 844 contra 843, la llave suelta dentro de una
+cadena que ya estaba y que el §324 diagnostico.
+
+**Contadores.** Ningun pin movido: 75 y 15 antes y despues. Ninguna suma
+movida. Ningun Cargo tocado. Ninguna herramienta tocada. El canon SI se corre y
+es la puerta, porque el corte toca ficheros `.rs` aunque solo sea su prosa.
+BACKLOG sin tocar: no abre ni cierra ninguna entrada.
