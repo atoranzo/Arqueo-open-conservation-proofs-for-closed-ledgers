@@ -169,7 +169,8 @@ assert not sobra, ("%d cofirma(s) sobre vueltas que NO eran nueva+extiende: %r"
 assert not falta, ("%d vuelta(s) nueva+extiende SIN cofirmar: %r"
                    % (len(falta), [(f.get("clase"), cons(f)) for f in falta]))
 anomalas = [f for f in filas if cons(f) in ("por-detras", "consistencia-pendiente",
-                                            "sin-camino", "no-extiende")]
+                                            "sin-camino", "consistencia-sin-respuesta",
+                                            "no-extiende")]
 assert not [f for f in anomalas if "cofirmada" in f], "se cofirmo una vuelta con ANOMALIA"
 n = len([l for l in open(cof, encoding="utf-8")])
 print("BANCO-COFIRMA| NEGATIVO-A: %d vuelta(s) con anomalia, NINGUNA cofirmada."

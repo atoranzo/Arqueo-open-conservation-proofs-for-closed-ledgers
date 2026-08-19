@@ -139,6 +139,11 @@ pub enum Veredicto {
     Hueco { desde: u64, hasta: u64 },
     /// El nodo sirve, pero sin firma. Anota y **sigue**.
     SinFirma { motivo: String },
+    /// ⚠️ **§314 - NO hubo respuesta usable del nodo.** Transporte caido,
+    /// respuesta ilegible o cuerpo sin `result`. El `motivo` lo escribe el
+    /// CLIENTE: no confundir con el `reason` de [`Veredicto::SinFirma`], que
+    /// lo dice el nodo. Anota y **sigue**.
+    SinRespuesta { motivo: String },
     /// La firma no valida. Anota y **sigue**: puede ser transitorio.
     NoVerifica { indice: u64, error: String },
     /// ⚠️ **MISMO ÍNDICE, DIGEST DISTINTO.** Se DETIENE.
@@ -167,6 +172,7 @@ impl Veredicto {
             Veredicto::Repetida { .. } => "repetida",
             Veredicto::Hueco { .. } => "hueco",
             Veredicto::SinFirma { .. } => "sin-firma",
+            Veredicto::SinRespuesta { .. } => "sin-respuesta",
             Veredicto::NoVerifica { .. } => "no-verifica",
             Veredicto::VistaDividida { .. } => "vista-dividida",
             Veredicto::CambioDeClave { .. } => "cambio-de-clave",
@@ -205,6 +211,10 @@ pub enum Consistencia {
     PorDetras { t_nodo: u64, pedido: u64 },
     /// El servicio no dio camino, con su razon. Anota y sigue.
     SinCamino { motivo: String },
+    /// ⚠️ **§314 - No hubo respuesta usable a la peticion de camino.**
+    /// Mismo criterio que [`Veredicto::SinRespuesta`]: lo dice el cliente, no
+    /// el servicio. Anota y sigue.
+    SinRespuesta { motivo: String },
     /// La cabeza no es v3: no lleva pareja que extender. Anota y sigue.
     NoAplica,
 }
@@ -232,6 +242,7 @@ impl Consistencia {
             Consistencia::NoExtiende { .. } => "no-extiende",
             Consistencia::PorDetras { .. } => "por-detras",
             Consistencia::SinCamino { .. } => "sin-camino",
+            Consistencia::SinRespuesta { .. } => "consistencia-sin-respuesta",
             Consistencia::NoAplica => "no-aplica",
         }
     }
@@ -433,7 +444,11 @@ pub fn al_llegar_camino(m: &mut Memoria, r: &Value) -> Consistencia {
 ///
 /// ⚠️ **NO confundir con `DIARIO_VERSION` del NODO** (`node/src/diario.rs`):
 /// homonimas, formatos DISTINTOS, y ninguna gobierna a la otra.
-pub const DIARIO_VERSION: u8 = 2;
+/// ⚠️ **2 -> 3 en §314**: nacen las clases `sin-respuesta` y
+/// `consistencia-sin-respuesta`, y con ellas el campo `motivo`. **No es
+/// solo un valor mas**: el significado de `sin-firma` se ESTRECHA, porque
+/// deja de cubrir <<no hubo respuesta>>. Por eso sube la version.
+pub const DIARIO_VERSION: u8 = 3;
 
 /// Una línea del diario: **lo suficiente para que un tercero reverifique
 /// sin el nodo**, meses después.
@@ -447,6 +462,12 @@ pub const DIARIO_VERSION: u8 = 2;
 /// ⚠️ Y el hexadecimal se guarda **tal como vino del cable**, sin
 /// transcodificar: lo que está en el diario es literalmente lo que el nodo
 /// sirvió.
+/// ⚠️ **§314 - CORRECCION.** La frase de arriba -- <<lo que esta en el
+/// diario es literalmente lo que el nodo sirvio>> -- era FALSA cuando no
+/// habia respuesta: el cliente FABRICABA el objeto. Se cita y se corrige
+/// (§247), no se borra. Desde §314 esa clase de linea lleva
+/// `clase: "sin-respuesta"` y su `motivo`, **nunca un `reason` que el nodo
+/// no dijo**.
 pub fn linea_de_diario(v: &Veredicto, servido: &Value, visto_unix: u64) -> Value {
     let mut l = json!({
         "v": DIARIO_VERSION,
@@ -483,6 +504,11 @@ pub fn linea_de_diario(v: &Veredicto, servido: &Value, visto_unix: u64) -> Value
         }
     } else if let Some(r) = servido["reason"].as_str() {
         l["reason"] = json!(r);
+    }
+    // ⚠️ §314 - El motivo del CLIENTE va en `motivo`, nunca en `reason`:
+    // `reason` significa <<lo que dijo el nodo>>, y aqui el nodo no dijo nada.
+    if let Veredicto::SinRespuesta { motivo } = v {
+        l["motivo"] = json!(motivo);
     }
     l
 }
@@ -531,10 +557,60 @@ pub fn linea_de_diario_con(
         Consistencia::SinCamino { motivo } => {
             o["reason"] = json!(motivo);
         }
+        Consistencia::SinRespuesta { motivo } => {
+            o["motivo"] = json!(motivo);
+        }
         Consistencia::NoAplica => {}
     }
     l["consistencia"] = o;
     l
+}
+
+// ⚠️⚠️ §314 - LA AUSENCIA DE RESPUESTA ES UNA CLASE, NO UN OBJETO
+// INVENTADO. Hasta aqui, cuando el transporte fallaba, la respuesta era
+// ilegible o el cuerpo no traia `result`, el cliente FABRICABA un
+// `{"available": false, "reason": ...}` y se lo pasaba al juez como si lo
+// hubiera servido el nodo -- y el diario lo guardaba asi. Un tercero no podia
+// distinguir <<el nodo dijo que no>> de <<no hubo nodo>> mas que leyendo prosa.
+
+/// Lo que devuelve pedirle algo al nodo.
+pub enum Servido {
+    /// El `result` del nodo, **tal cual vino**.
+    Respuesta(Value),
+    /// No hubo respuesta usable. **Lo dice el CLIENTE**, no el nodo: por eso
+    /// su campo se llama `motivo` y no `reason`.
+    SinRespuesta { motivo: String },
+}
+
+/// La parte PURA: que es un cuerpo JSON-RPC ya parseado.
+///
+/// ⚠️ Se separa de [`pedir`] para que **sea testeable sin red**. La tercera
+/// fabricacion -- la respuesta sin `result` -- era la mas callada de las
+/// tres: se convertia en `Value::Null` y acababa clasificada como `sin-firma`
+/// con el `reason` **ausente**.
+pub fn del_cuerpo(v: Value) -> Servido {
+    match v.get("result") {
+        Some(r) => Servido::Respuesta(r.clone()),
+        None => Servido::SinRespuesta { motivo: "respuesta sin `result`".into() },
+    }
+}
+
+/// Una peticion al nodo, con la ausencia de respuesta EN EL TIPO.
+///
+/// ⚠️⚠️ **Un solo sitio.** Hasta §314 este `match` estaba escrito DOS veces
+/// en `run`, a veinte lineas de distancia: dos productores del mismo contrato
+/// (§292), y por eso el mismo defecto vivia en los dos canales.
+///
+/// ⚠️ La red no se prueba en un unitario: lo que se testea es
+/// [`del_cuerpo`]; el camino con red lo ejercita el banco.
+pub fn pedir(agente: &ureq::Agent, url: &str, cuerpo: Value) -> Servido {
+    match agente.post(url).send_json(cuerpo) {
+        Err(e) => Servido::SinRespuesta { motivo: format!("transporte: {e}") },
+        Ok(r) => match r.into_json::<Value>() {
+            Err(e) => Servido::SinRespuesta { motivo: format!("respuesta ilegible: {e}") },
+            Ok(v) => del_cuerpo(v),
+        },
+    }
 }
 
 /// Lo que el testigo recuerda.
@@ -2049,14 +2125,21 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
         let cuerpo = json!({"jsonrpc":"2.0","id":n,"method":"zkssl_signedEpochHead","params":{}});
         // ⚠️ `servido` se conserva: el diario guarda LO QUE EL NODO SIRVIO,
         // no una interpretacion.
-        let servido = match agente.post(&a.nodo).send_json(cuerpo) {
-            Err(e) => json!({"available": false, "reason": format!("transporte: {e}")}),
-            Ok(r) => match r.into_json::<Value>() {
-                Err(e) => json!({"available": false, "reason": format!("respuesta ilegible: {e}")}),
-                Ok(v) => v.get("result").cloned().unwrap_or(Value::Null),
-            },
+        // ⚠️ §314 - CORRECCION del comentario de arriba: era FALSO en tres de
+        // los cuatro caminos. `servido` NO era siempre lo que el nodo sirvio -- si
+        // el transporte fallaba, si la respuesta era ilegible o si no traia
+        // `result`, lo fabricaba el cliente. Se cita y se corrige (§247).
+        //
+        // ⚠️⚠️ La ausencia de respuesta se decide AQUI, donde se sabe, y no
+        // dentro del juez: `una_vuelta` solo veria un objeto indistinguible de
+        // una negativa legitima del nodo. Su firma queda INTACTA.
+        let (veredicto, servido) = match pedir(&agente, &a.nodo, cuerpo) {
+            Servido::SinRespuesta { motivo } => (Veredicto::SinRespuesta { motivo }, Value::Null),
+            Servido::Respuesta(v) => {
+                let ver = una_vuelta(&v, &mut m);
+                (ver, v)
+            }
         };
-        let veredicto = una_vuelta(&servido, &mut m);
 
         // ── §294 · el SEGUNDO canal: la historia ──
         // ⚠️ Solo si la cabeza VERIFICO. Juzgar la historia de una cabeza
@@ -2071,14 +2154,12 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             let viejo = m.pareja().map(|(_, t)| t).unwrap_or(0);
             let peticion = json!({"jsonrpc":"2.0","id":n,"method":"zkssl_consistencyProof",
                                   "params":{"oldSize": format!("{viejo:#x}")}});
-            let r = match agente.post(&a.nodo).send_json(peticion) {
-                Err(e) => json!({"available": false, "reason": format!("transporte: {e}")}),
-                Ok(r) => match r.into_json::<Value>() {
-                    Err(e) => json!({"available": false, "reason": format!("respuesta ilegible: {e}")}),
-                    Ok(v) => v.get("result").cloned().unwrap_or(Value::Null),
-                },
-            };
-            cons = Some(al_llegar_camino(&mut m, &r));
+            // ⚠️ §314 - El mismo `pedir`: aqui vivia la copia del bloque de
+            // arriba, que es por lo que el defecto estaba en los DOS canales.
+            cons = Some(match pedir(&agente, &a.nodo, peticion) {
+                Servido::SinRespuesta { motivo } => Consistencia::SinRespuesta { motivo },
+                Servido::Respuesta(r) => al_llegar_camino(&mut m, &r),
+            });
         }
         let servido = &servido;
 
@@ -2634,7 +2715,7 @@ mod tests {
         });
         let c = Consistencia::Extiende { de_t: 3, a_t: 4, camino: vec![cima(9)] };
         let l = linea_de_diario_con(&v, &servido, 1000, Some(&c));
-        assert_eq!(l["v"], json!(2), "la version del diario SUBE");
+        assert_eq!(l["v"], json!(3), "la version del diario SUBE");
         assert_eq!(l["clase"], json!("nueva"), "la clase de la CABEZA no se pierde");
         assert_eq!(l["mmrRoot"], json!(cima(1)));
         assert_eq!(l["mmrSize"], json!("0x4"));
@@ -2893,6 +2974,65 @@ mod tests {
     }
 
     #[test]
+    fn una_respuesta_sin_result_no_es_una_negativa_del_nodo() {
+        // ⚠️ §314 - La fabricacion mas callada de las tres: hasta hoy esto
+        // acababa en `Value::Null` y se clasificaba como `sin-firma` con el
+        // `reason` AUSENTE, indistinguible de un nodo que dice que no.
+        match del_cuerpo(json!({"jsonrpc": "2.0", "id": 1, "error": {"code": -32601}})) {
+            Servido::SinRespuesta { motivo } => {
+                assert!(motivo.contains("result"), "el motivo debe decirlo: {motivo}");
+            }
+            Servido::Respuesta(_) => panic!("sin `result` no hay respuesta usable"),
+        }
+    }
+
+    #[test]
+    fn un_result_presente_llega_tal_cual_al_juez() {
+        let cuerpo = json!({"jsonrpc": "2.0", "id": 1,
+                            "result": {"available": false, "reason": "sin clave"}});
+        match del_cuerpo(cuerpo) {
+            Servido::Respuesta(v) => {
+                assert_eq!(v["reason"], json!("sin clave"), "el result no se toca");
+            }
+            Servido::SinRespuesta { motivo } => panic!("habia result y dio: {motivo}"),
+        }
+    }
+
+    #[test]
+    fn sin_respuesta_y_sin_firma_son_clases_distintas_en_el_diario() {
+        // ⚠️⚠️ LA PROPIEDAD DEL §314: el diario distingue <<el nodo dijo que
+        // no>> de <<no hubo nodo>>, y por ESTRUCTURA, no por prosa.
+        let negativa = Veredicto::SinFirma { motivo: "sin clave".into() };
+        let ausencia = Veredicto::SinRespuesta { motivo: "transporte: rechazado".into() };
+        assert_ne!(negativa.clase(), ausencia.clase(), "dos clases, no una");
+
+        let l = linea_de_diario(&negativa, &json!({"available": false, "reason": "sin clave"}), 7);
+        assert_eq!(l["clase"], json!("sin-firma"));
+        assert_eq!(l["reason"], json!("sin clave"), "lo que dijo el nodo va en `reason`");
+        assert!(l["motivo"].is_null(), "el nodo respondio: no hay motivo del cliente");
+
+        let a = linea_de_diario(&ausencia, &Value::Null, 7);
+        assert_eq!(a["clase"], json!("sin-respuesta"));
+        assert_eq!(a["motivo"], json!("transporte: rechazado"),
+                   "lo que vio el cliente va en `motivo`");
+        assert!(a["reason"].is_null(),
+                "el nodo no dijo nada: no se le atribuye un `reason`");
+        assert_eq!(a["v"], json!(3), "la clase nueva vive en el formato v3");
+    }
+
+    #[test]
+    fn el_canal_de_consistencia_tambien_distingue_la_ausencia_de_respuesta() {
+        let v = Veredicto::Nueva { indice: 7, digest: "0xaa".into() };
+        let s = json!({"available": true, "index": "0x7", "epochDigest": "0xaa"});
+        let c = Consistencia::SinRespuesta { motivo: "respuesta ilegible: x".into() };
+        let l = linea_de_diario_con(&v, &s, 1000, Some(&c));
+        assert_eq!(l["consistencia"]["clase"], json!("consistencia-sin-respuesta"));
+        assert_eq!(l["consistencia"]["motivo"], json!("respuesta ilegible: x"));
+        assert!(l["consistencia"]["reason"].is_null(),
+                "el canal tampoco atribuye al nodo lo que no dijo");
+    }
+
+    #[test]
     fn el_diario_no_usa_debug_y_las_clases_son_estables() {
         // ⚠️ Una cadena de `Debug` CAMBIA si alguien toca un `derive`: un
         // formato que depende de un detalle de implementacion NO es un formato.
@@ -3023,6 +3163,7 @@ mod tests {
             Veredicto::Hueco { desde: 2, hasta: 3 },
             Veredicto::SinFirma { motivo: "sin clave".into() },
             Veredicto::NoVerifica { indice: 4, error: "x".into() },
+            Veredicto::SinRespuesta { motivo: "transporte: x".into() },
         ] {
             assert!(!v.detiene(), "no debia detener: {v:?}");
         }

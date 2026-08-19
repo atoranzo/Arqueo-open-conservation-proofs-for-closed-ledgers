@@ -24490,3 +24490,94 @@ cifras vivas, 17 pines leidos y 7 de desglose, identicos a la base. Ningun
 fichero cambio de numero de lineas. Ningun Cargo tocado. BACKLOG en 44 abiertas /
 54 resueltas, con tres suspendidas (16, 22 y 28): la entrada 83 sigue abierta con
 razon, porque le queda el eslabon 4.
+## §314 — 2026-08-19 · LA AUSENCIA DE RESPUESTA ES UNA CLASE, NO UN OBJETO INVENTADO
+
+**Que.** El testigo deja de FABRICAR respuestas. Nace `Servido`
+—`Respuesta(Value)` o `SinRespuesta { motivo }`— y una sola funcion `pedir`
+que sustituye a los DOS bloques identicos que hacian la peticion a mano.
+`Veredicto` gana `SinRespuesta` (clase `sin-respuesta`) y `Consistencia` gana la
+suya (clase `consistencia-sin-respuesta`). `DIARIO_VERSION` sube **2 -> 3**.
+
+**El defecto estaba ESCRITO en el arbol, contradiciendose a si mismo en tres
+lineas.** Un comentario del bucle decia *`servido` se conserva: el diario guarda
+LO QUE EL NODO SIRVIO, no una interpretacion*, y las dos lineas siguientes
+fabricaban `{"available": false, "reason": "transporte: ..."}` cuando el nodo no
+habia servido nada. El doc de `linea_de_diario` lo repetia por su cuenta: *lo que
+esta en el diario es literalmente lo que el nodo sirvio*. **Las dos frases se
+citan y se corrigen encima (§247), no se borran.**
+
+**Por que el alcance eran los DOS canales y no uno.** Las dos peticiones
+—`zkssl_signedEpochHead` y `zkssl_consistencyProof`— eran **el mismo `match`
+copiado**, a veinte lineas de distancia: dos productores del mismo contrato,
+la figura de §292 dentro de una sola funcion. Partir solo `Veredicto` habria
+dejado el bug vivo en la funcion de al lado, alimentado por el clon. La
+reparacion mata la duplicacion de paso: **un solo `pedir`**.
+
+**`motivo` y `reason`: el nombre del campo dice QUIEN habla.** En el cable
+`reason` significa *lo que dijo el nodo*. Lo que el cliente observa va en
+`motivo`, y por eso la clase nueva escribe `motivo` y **nunca** un `reason` que
+el nodo no dijo. Vale para los dos canales, y es formato publicado: cambiarlo
+despues costaria otra version.
+
+**La tercera fabricacion era la mas callada.** Un cuerpo JSON-RPC **sin
+`result`** —tipicamente un `error`— se convertia en `Value::Null` y acababa
+clasificado como `sin-firma` **con el `reason` AUSENTE**: indistinguible de un
+nodo que responde y dice que no. Ahora es `SinRespuesta` con su motivo dicho.
+**Es cambio de comportamiento y va declarado, no colado.**
+
+**La decision se toma donde esta la informacion, no dentro del juez.** Por eso
+las firmas de `una_vuelta`, `al_llegar_camino`, `linea_de_diario` y
+`linea_de_diario_con` quedan **INTACTAS** y sus doce llamantes no se tocan: el
+brazo que decide vive en `run`, que es el unico sitio que sabe si hubo
+respuesta. Precedente de la casa, y del mismo fichero: §294 conservo
+`linea_de_diario` con su firma y anadio `linea_de_diario_con` al lado.
+
+**Lo que un lector viejo hace con una linea v3, medido antes de subir.**
+`auditar_lineas` acepta toda version `<= DIARIO_VERSION`; una mayor da
+`Hallazgo::VersionDesconocida` y `continue`. => un binario viejo sobre un diario
+v3 **no falla: cuenta CERO lineas auditadas y denuncia cada una**. Es silencio
+contado, no error, y se dice aqui porque es peor de leer que un rojo.
+
+**Y por que sube la version, que tampoco se decidio aqui.** El doc de
+`Veredicto::clase` lo tiene escrito desde §248: *estos nombres son parte del
+formato y no se tocan sin subir `DIARIO_VERSION`*, y `Consistencia::clase` se
+remite a el. El argumento sustantivo lo acompana: el significado de `sin-firma`
+**se ESTRECHA** —deja de cubrir <<no hubo respuesta>>—, asi que no basta con
+anadir un valor.
+
+**El banco entra en el corte, y no como cortesia.** `tools/banco_cofirma.sh`
+lee la `clase` por su VALOR LITERAL: su lista de vueltas anomalas enumeraba
+`por-detras`, `consistencia-pendiente`, `sin-camino` y `no-extiende`. Sin la
+clase nueva ahi, una vuelta sin respuesta habria pasado por no-anomala.
+`banco_consistencia.sh` **no** se toca: sus tres preguntas no enumeran el
+conjunto de clases, lo imprimen.
+
+**Un numero reservado que se gasta tarde, y la rareza que deja.** El §314 se
+reservo hace cinco sesiones y se sella despues del §320. La historia de la fila
+del canon y el diario de este fichero van en orden **CRONOLOGICO**, que hasta hoy
+coincidia con el ascendente; desde hoy no. **Se declara y no se reordena**: el
+orden que cuentan es el de los hechos.
+
+**Lo declarado y no reparado.** `pedir` toca red y **no tiene unitario**: lo que
+se testea es su parte pura `del_cuerpo`, y el camino con red lo ejercita el
+banco. Los otros dos sitios que hacen peticiones a mano —el mando de
+reconciliacion y el envio de cofirmas de §316— **no se migran**: tienen otra
+forma y no alimentan a los jueces. Y sigue la deuda del §302-B, **quinta vez que
+se anota**: de las tres cifras que los documentos citan solo la primera tiene
+compuerta, asi que el 1018 y el 1032 se han movido a mano y sin gate.
+
+**Contadores.** Pin `zk-ssl-cli` 71 -> 75, cuatro tests nuevos y los cuatro del
+nucleo del corte. `wire` queda en 15, `node` en 80 y `zk-ssl` en 264, y ningun
+otro pin se mueve. Sumas 877/1014/1028 -> **881/1018/1032** en las nueve lineas
+de cuatro documentos, y la cifra POR-CRATE del **testigo** en `PRINCIPIOS.md`,
+71 -> 75; el desglose del nodo sigue en 80. La colision de las cifras NUEVAS se
+midio antes de escribirlas: **881, 1018 y 1032 salen a CERO** en todo el arbol,
+asi que esta vez no habia nada que esquivar. `check_cifras` delato **seis** con
+solo el pin movido, las cinco del TOTAL mas el desglose del testigo con linea 0,
+**septima vez** que la columna `alias=` predice bien el numero. Quedo verde con
+26 cifras vivas, 17 pines leidos y 7 de desglose, identicos a la base. Ningun
+fichero de cifras cambio de numero de lineas; `witness.rs` 3760 -> 3901 y
+`banco_cofirma.sh` 414 -> 415. Ningun Cargo tocado. **El Rust escrito sin
+compilador compilo limpio a la primera**, con 75 passed, 0 failed y 0 warnings.
+BACKLOG en 44 abiertas / 54 resueltas, con tres suspendidas (16, 22 y 28): el
+§314 era corte propio declarado por el §312, no una entrada numerada.
