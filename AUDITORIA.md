@@ -24862,3 +24862,91 @@ porque cuenta `__pycache__`. Las siete herramientas en rc=0 antes y despues.
 El banco: 300 lineas, verde en DOS corridas seguidas con los mismos numeros
 (el par casa en la vuelta 13 con n:1, siete cofirmas enviadas, cero fallos
 duros de envio, una cofirma dentro del paquete).
+## §324 — los tres productores de COFIRMA_VERSION, y el literal muere
+
+**Que.** La constante que gobierna la version de una cofirma vivia en
+`zk-ssl-cli` (`witness.rs`), y el binario de `zk-ssl-verify` llevaba **un
+literal desnudo** como tope porque no podia importarla. Este sello la muda a
+`zk-ssl-verify/src/lib.rs`, la parte en DOS nombres con papeles distintos, y
+los ata con un test. El literal desaparece.
+
+**Los TRES productores, y de donde sale el tres.** No lo dijo un censo: lo
+dicen dos docs del propio arbol. `witness.rs` declara que `linea_de_cofirma` y
+`cofirma_dto` **son dos productores del mismo contrato** (el fichero del
+testigo con numeros crudos, el cable con `Q` hex), y el doc del binario del
+verificador se llamaba a si mismo **un TERCER productor de la misma
+constante**. Medido ademas: `COFIRMA_VERSION` se declaraba **una sola vez**
+(de 1.400 declaraciones `const`/`static` en 153 ficheros `.rs`, seis son de
+version), y los otros tres sitios que escriben el numero a mano
+—`node/main.rs`, `wire/lib.rs` y el propio `verify/main.rs`— caen **los
+tres dentro de un `#[cfg(test)]`**.
+
+**El NUMERO tenia DOS fuentes, no tres, y el corte mata una.** Los productores
+(1) y (2) leen **la misma constante**; solo el tope del verificador era una
+cifra escrita aparte. Por eso este sello es mas pequeno de lo que su nombre
+sugiere: no unifica tres cosas, **quita la unica que estaba suelta**.
+
+**Por que aterriza en `zk-ssl-verify` y no al reves.** La dependencia va en un
+solo sentido (§243): `zk-ssl-cli` depende de `zk-ssl-verify` y no al contrario,
+asi que el verificador nunca podria haber importado del cli. Y el camino ya
+estaba andado en el mismo fichero: `VERSION_FORMATO` se declara solo en
+`verify/lib.rs` y lo consumen el cli y el nodo. La constante nueva viaja por
+una via que esta clase de constante ya usaba.
+
+**Correccion §247, dentro del corte.** El parrafo que sostenia el literal decia
+que este crate "no depende de nadie del proyecto". **Es falso como estaba
+escrito**: `zk-ssl-verify` depende de `zk-ssl-hash` (`Cargo.toml:30`). Lo cierto,
+y lo que la regla pide, es que no depende de la capa, ni del nodo, ni del
+cable. La frase se corrige donde se contradecia.
+
+**DOS nombres, no uno, y esa es la decision.** `COFIRMA_VERSION` es **lo que se
+ESTAMPA**; `COFIRMA_V_MAX` es **el TOPE que se ACEPTA**. En el cli una sola
+constante hacia los dos trabajos (estampaba en `linea_de_cofirma` y
+`cofirma_dto`, y topaba en `verificar_cofirmas` y `linea_desde_dto`). Fundirlas
+habria decidido por accidente que no pueden divergir nunca, y el gate del
+blanqueo existe justamente porque pueden. Los dos topes del testigo pasan a
+`COFIRMA_V_MAX`; lo que estampa no cambia.
+
+**El atado.** `el_testigo_no_estampa_una_version_que_el_lector_no_lea` exige
+`COFIRMA_VERSION <= COFIRMA_V_MAX` y lo dice **con los dos numeros**. Fija la
+unica relacion que no puede romperse: **quien lee puede ir por delante de quien
+escribe, nunca al reves**. Vive junto a las dos constantes, que es donde la casa
+pone los atados desde el §292.
+
+**Los tipos NO se unifican.** La constante es `u64` y su vecina
+`VERSION_FORMATO` es `u8`. Son ejes distintos —una dice que campos de la cabeza
+entran en la firma, la otra que formato tiene la cofirma— y cambiar el tipo
+cambiaria lo que se serializa. Se declara la asimetria en vez de disimularla.
+
+**Declarado y NO reparado.** Los **tres fixtures** que escriben el numero a mano
+—`node/main.rs:2135`, `wire/lib.rs:1034`, `verify/main.rs:525`— no entran en
+este corte: cruzarlos habria hecho el sello grande sin arreglar nada roto hoy.
+Lo que hay que saber de ellos es que **el dia que la version suba no se rompen**:
+siguen diciendo `0x1` en silencio y dejan de probar lo que dicen probar. Atarlos
+es corte propio.
+
+**Efecto lateral que conviene saber: el homonimo del 1024 desaparece.** Hasta
+hoy el 1024 nombraba dos cosas en este arbol, la suma de todos los pines y la
+geometria de nueve circuitos (`TRACE_LENGTH`, filas de traza), en quince
+ficheros ademas de este. Al pasar la suma a **1025**, lo unico que sigue
+llamandose 1024 fuera de los asientos historicos es geometria. El riesgo de
+lectura que el §322 declaro **se cierra solo**.
+
+**Lo que este arco pago, y no fue el Rust.** El Rust —escrito sin compilador—
+compilo limpio a la primera. Los dos rojos fueron de INSTRUMENTO, y los dos
+mios: un balance de llaves que contaba caracteres crudos llamo defecto a
+`witness.rs` por **una llave suelta dentro de una cadena que ya estaba ahi**
+(la familia del candidato 22, ahora dentro de mi propio gate), y un arbol de
+ensayo **mas limpio que el real** lo escondio hasta la corrida. El liston
+correcto no era el cero absoluto sino el DELTA contra el PRE. De propina, una
+compuerta imprimia una linea de alarma en un camino correcto: **un mensaje que
+miente sobre un verde es tan malo como uno que miente sobre un rojo**.
+
+**Contadores.** Pin `zk-ssl-verify` **61 -> 62** (el test del atado), medido en
+vivo antes y despues con el arbol intacto. `zk-ssl-cli` **75 -> 75**: este corte
+no le anade ni le quita tests. Sumas **887/1024/1038 -> 888/1025/1039**, quince
+ocurrencias en nueve lineas de cuatro documentos, mas el desglose por-crate del
+verificador —que va PARTIDO por el salto de linea— en el mismo bloque que el
+pin. Cero warnings antes y despues en los dos crates. **Ningun Cargo tocado.**
+BACKLOG quieto: **44 abiertas / 54 resueltas**, ninguna entrada se cierra ni se
+abre. Nueve ficheros en el corte.

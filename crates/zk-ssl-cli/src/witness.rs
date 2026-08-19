@@ -124,8 +124,8 @@ use serde_json::{json, Value};
 use xmss::KeyPair;
 use zk_ssl_guardian::{GuardianError, GuardianIndice, Reconciliacion};
 use zk_ssl_verify::{
-    mmr, preambulo_cofirma, verificar_cabeza, verificar_cofirma, CabezaFirmada, Conjunto,
-    VerificaError, VERSION_FORMATO,
+    mmr, preambulo_cofirma, verificar_cabeza, verificar_cofirma, CabezaFirmada,
+    COFIRMA_V_MAX, COFIRMA_VERSION, Conjunto, VerificaError, VERSION_FORMATO,
 };
 use zk_ssl_wire::{CofirmaDto, SignedEpochHeadDto};
 
@@ -1358,12 +1358,6 @@ pub struct WitnessArgs {
 
 }
 
-/// Version del formato del fichero de cofirmas.
-///
-/// ⚠️ **Propia**, distinta de `DIARIO_VERSION`: son dos artefactos con
-/// destinatarios distintos y pueden evolucionar por separado.
-pub const COFIRMA_VERSION: u64 = 1;
-
 /// La linea del fichero de cofirmas. **AUTOSUFICIENTE**: lleva todo lo que
 /// [`zk_ssl_verify::verificar_cofirma`] consume y **nada mas**.
 ///
@@ -1521,7 +1515,7 @@ pub fn verificar_cofirmas(lineas: &[String]) -> Vec<HallazgoCofirma> {
             }
         };
         match v["v"].as_u64() {
-            Some(x) if x <= COFIRMA_VERSION => {}
+            Some(x) if x <= COFIRMA_V_MAX => {}
             Some(x) => {
                 h.push(HallazgoCofirma::VersionDesconocida { linea: n, v: x });
                 continue;
@@ -1644,7 +1638,7 @@ pub fn linea_desde_dto(dto: &CofirmaDto) -> Result<Value, RecogidaRechazada> {
 
     // ⚠️ PRIMERO la versión, antes de tocar ningún otro campo.
     let v = leer_q(&j["v"]).map_err(|_| RecogidaRechazada::CampoTorcido { campo: "v" })?;
-    if v > COFIRMA_VERSION {
+    if v > COFIRMA_V_MAX {
         return Err(RecogidaRechazada::VersionDesconocida { v });
     }
 

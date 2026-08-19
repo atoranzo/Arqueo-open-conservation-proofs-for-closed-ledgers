@@ -92,7 +92,7 @@ use std::process::ExitCode;
 
 use zk_ssl_verify::{
     acuses, verificar_acuse, verificar_acuse_v3, verificar_cabeza, verificar_cofirma,
-    CabezaFirmada, ReciboAcuse,
+    CabezaFirmada, COFIRMA_V_MAX, ReciboAcuse,
 };
 use zk_ssl_hash::{digest_from_bytes, epoch_digest_v2, epoch_digest_v3, Digest};
 
@@ -294,14 +294,6 @@ fn correr(ruta: &str) -> Result<(), String> {
     println!("VERDE: el paquete se sostiene sin el nodo");
     Ok(())
 }
-
-/// ⚠️ **DECLARADO Y NO REPARADO**: este tope es un literal, porque
-/// `COFIRMA_VERSION` vive en el cli y **este crate no depende de nadie del
-/// proyecto** (§243, y su `Cargo.toml` lo manda). Es un TERCER productor de
-/// la misma constante. Sucesor nombrado: mudarla a `zk-ssl-verify`, junto a
-/// `verificar_cofirma`, donde `VERSION_FORMATO` ya vive junto a
-/// `verificar_cabeza`. Corte propio.
-const COFIRMA_V_MAX: u64 = 1;
 
 /// Un campo hex de una cofirma, con su numero en el error: un instrumento
 /// que falla dice QUE fallo, no cuantos (§254).

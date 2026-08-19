@@ -134,6 +134,52 @@ pub const VERSION_FORMATO: u8 = 3;
 /// Bytes del RFC 8391 que ocupa la firma de este conjunto, sin el mensaje.
 pub const FIRMA_RFC_BYTES: usize = 18_469;
 
+/// Version del formato de cofirma que **el testigo ESTAMPA** (§297, §315).
+///
+/// ⚠️ Vivio en `zk-ssl-cli` hasta el §324, y el binario de este crate
+/// llevaba **un literal desnudo** como tope porque no podia importarla: la
+/// dependencia va en un solo sentido (§243). Al mudarla aqui el numero pasa a
+/// tener **una sola fuente**, y aquel literal desaparece.
+///
+/// ⚠️ Es `u64` y su vecina [`VERSION_FORMATO`] es `u8`, **a proposito**: son
+/// dos ejes distintos y no se unifican. Aquella dice QUE CAMPOS de la cabeza
+/// entran en la firma; esta, QUE FORMATO tiene la cofirma. Y es **propia**,
+/// distinta de los dos `DIARIO_VERSION` (el del testigo y el del nodo, §314):
+/// artefactos con destinatarios distintos evolucionan por separado.
+///
+/// ⚠️ El parrafo que justificaba el literal decia que este crate "no depende
+/// de nadie del proyecto". Depende de `zk-ssl-hash`. Lo cierto, y lo que la
+/// regla del §243 pide, es que **no depende de la capa, ni del nodo, ni del
+/// cable**. Corregido al pasar (§324, §247).
+pub const COFIRMA_VERSION: u64 = 1;
+
+/// La version de cofirma mas alta que este arbol sabe **LEER**.
+///
+/// ⚠️⚠️ **No es la misma pregunta que [`COFIRMA_VERSION`]**, y por eso son dos
+/// nombres: aquella es lo que se ESCRIBE, esta es el TOPE que se ACEPTA. Hoy
+/// valen lo mismo. El dia que no, quien lee puede ir por delante de quien
+/// escribe y **nunca al reves**; lo hace cumplir el test de aqui abajo.
+pub const COFIRMA_V_MAX: u64 = 1;
+
+#[cfg(test)]
+mod atado_de_las_dos_versiones_de_cofirma {
+    use super::{COFIRMA_VERSION, COFIRMA_V_MAX};
+
+    /// ⚠️⚠️ **EL ATADO.** Dos constantes que hoy valen lo mismo son dos
+    /// productores esperando a discrepar, y la casa ya pago tres veces por no
+    /// atar dos listas (§292 -> §293, §294 -> §295, §297). Esto fija la
+    /// unica relacion que no puede romperse, y lo dice con los dos numeros.
+    #[test]
+    fn el_testigo_no_estampa_una_version_que_el_lector_no_lea() {
+        assert!(
+            COFIRMA_VERSION <= COFIRMA_V_MAX,
+            "el testigo estampa v{} y este arbol lee hasta la v{}",
+            COFIRMA_VERSION,
+            COFIRMA_V_MAX
+        );
+    }
+}
+
 /// Una cabeza firmada, tal como la publica el operador.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CabezaFirmada {
