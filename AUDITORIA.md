@@ -24950,3 +24950,86 @@ verificador —que va PARTIDO por el salto de linea— en el mismo bloque que el
 pin. Cero warnings antes y despues en los dos crates. **Ningun Cargo tocado.**
 BACKLOG quieto: **44 abiertas / 54 resueltas**, ninguna entrada se cierra ni se
 abre. Nueve ficheros en el corte.
+
+## §325 — el banco del paquete COMPLETO: cabeza, acuse y cofirmas en una ventana
+
+**Que.** Nace `tools/banco_completo.sh`, el banco que demuestra las TRES piezas a
+la vez. `banco_apagado` (§290) demostro que una posicion se sostiene sin el
+nodo con cabeza + acuse; `banco_cofirma` (§301), que el testigo avala y solo
+cuando debe; `banco_evidencia_v2` (§323), que las cofirmas viajan DENTRO del
+paquete, pero en su MINIMO: sin acuse y sin fondeo. Aqui van las tres juntas,
+armadas en UNA ventana de epoca y verificadas por un tercero sin el nodo, sin el
+testigo y sin el diario. El binario no necesito codigo nuevo: su cabecera ya
+declaraba el v2 con `acuse` y `cofirmas` OPCIONALES, y el tramo del acuse corre
+sea cual sea la version. Lo que faltaba no era formato: era la VENTANA.
+
+**Lo que ata, y por que la ventana es UN latido.** El `acusesRoot` de una cabeza
+es la raiz de la epoca que ESA cabeza cierra, asi que el acuse de una entrada
+verifica contra UNA sola cabeza: la que cerro su epoca. Una posterior lleva otra
+raiz. El "espalda contra espalda" de `banco_apagado` no era una optimizacion:
+es obligatorio. Y `n` es un techo fijo declarado (`N_MAX_CABEZAS`), de modo que
+la hoja del acuse es estable; la conjetura de que `n` derivaba entre cabezas
+quedo FALSADA y se escribe aqui como falsa.
+
+**El "acto seguido", FALSADO para las cofirmas.** El diseno decia: esperar a que
+la epoca cierre, pedir la cabeza acto seguido, y pedir las cofirmas por su
+nombre; si salia cero, fondear otra vez. La primera corrida dio SEIS fondeos y
+SEIS ceros, con las otras tres causas a CERO. El diagnostico que esos ceros
+hacen inequivoco: la cofirma de una cabeza NO EXISTE cuando la cabeza aparece.
+El testigo tiene que VERLA, y sondea cada segundo; luego firmar XMSS, que cuesta
+~145 ms; luego submitirla. Se preguntaba menos de un segundo antes de que
+existiera. Corregido: las cofirmas se SONDEAN, y preguntar POR SU NOMBRE es lo
+que hace seguro el sondeo, porque o llega la que se pide o sigue dando cero,
+nunca la de otra epoca. Medido tras el arreglo: llegan en el sondeo 2, y el trio
+casa en el intento 1 de 6.
+
+**Un reintento no arregla un ORDEN equivocado.** Seis fallos identicos con las
+demas causas a cero no son una carrera de la que se pueda salir reintentando:
+son una secuencia mal puesta. El bucle repetia el mismo instante seis veces, y
+encima con cara de haberlo intentado. Un bucle de reintentos sobre un defecto
+determinista es un adorno caro.
+
+**Las cuatro causas, contadas por separado.** El banco no dice "no caso": separa
+que la epoca de la entrada no cerro, que la cabeza ya avanzo, que esa epoca no
+dio cofirmas, y que el testigo agoto sus vueltas. Son cuatro arreglos distintos,
+y sin esa separacion la primera corrida no habria dicho nada util. Al agotarse
+el sondeo se pregunta ademas SIN nombre, lo que separa "el nodo tiene cofirmas
+de otra epoca" de "el nodo no tiene ninguna".
+
+**Los negativos, y por que el cuarto va donde va.** Son cuatro: un v1 que trae
+cofirmas, un v3 desconocido, un nibble de la firma de una cofirma, y un nibble
+del `hashPrueba` del acuse. El cuarto es el que este banco anade sobre el de v2,
+y va sobre `hashPrueba` y no sobre `s` por una razon medida, no por gusto: el
+binario NO LEE `s`. Un negativo que no puede fallar es un adorno con cara de
+demostracion.
+
+**Lo que se asierta, y por que no basta el VERDE.** Un paquete SIN acuse imprime
+que no lo trae, y un v2 con CERO cofirmas imprime que no trae ninguna, y los dos
+acaban en VERDE. Por eso el positivo exige TRES lineas: la del acuse subiendo a
+la raiz firmada, la del conteo de cofirmas, y el VERDE. Mirar solo el VERDE
+dejaria pasar un paquete que no es el completo, y el banco diria que si lo es.
+
+**Declarado y NO reparado (§247).** La cabecera de `zk-ssl-verify` declara un
+campo `s` dentro del acuse que ningun codigo lee: el tramo lee `hashPrueba`,
+`seq`, `siblings` e `isRight`, y nada mas. Se empaqueta igual, tal cual lo hace
+`banco_apagado`, porque quien reescribe adultera. Si `s` es vestigio de un
+diseno anterior o reserva deliberada NO ESTA MEDIDO, y este asiento no lo
+elige. Mezclar esa correccion de superficie con la maquina de un banco nuevo
+haria el sello menos legible, asi que se declara y se deja. Darle clases
+estables al binario del verificador sigue siendo corte propio.
+
+**Cifras y su procedencia.** El calentamiento del testigo son 13 vueltas,
+medido DOS veces, una por corrida del banco. El presupuesto del bucle se
+escribio con dos cuentas y conviene que las dos queden dichas: seis intentos a
+un latido de 4 s son 24 s, y la cifra de 36 s es el PEOR caso, con una
+sobrecarga por intento que nunca se midio; las dos caben en las 90 vueltas con
+holgura. La corrida verde uso 20 envios de cofirma y cero fallos duros, y
+empaqueto una sola cofirma porque hay un solo testigo. De propina, el `cargo
+build` del banco imprimio en vivo los CUATRO avisos del nodo que el canon no ve,
+en sus lineas exactas: salen de construir, no de probar.
+
+**Contadores.** Ningun pin movido. Ninguna suma movida. Ningun Cargo tocado. El
+canon no se corre, y se dice por que: este corte no toca codigo Rust, y su
+puerta es el BANCO en verde, con el precedente de §321, donde un sello sin
+codigo justifico su propia puerta midiendo en vez de invocarla. BACKLOG sin
+tocar: no abre ni cierra ninguna entrada.
