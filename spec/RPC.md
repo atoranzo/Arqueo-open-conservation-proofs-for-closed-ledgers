@@ -829,6 +829,20 @@ portable — formato v1, declarado en la cabecera del binario de
 `zk-ssl-verify` — las respuestas del cable TAL CUAL, reunidas en un
 fichero y verificadas sin el nodo, sin la capa y sin el probador.
 
+**ACTUALIZACION (§322): el paquete tiene formato v2.** El v2 anade una
+clave `cofirmas` con la respuesta de `zkssl_cosigs` TAL CUAL, sin
+reescribir, y el mando comprueba que cada una acredita ESA cabeza y ESE
+operador. El binario lee **v1 y v2**: lo custodiado no caduca. Un v1 que
+traiga `cofirmas` se RECHAZA, porque subir la version es exactamente lo
+que las hace parte del contrato.
+
+⚠️ **El paquete REPORTA, no juzga.** Dice cuantas cofirmas verifican
+contra la cabeza empaquetada. **Que testigos valen y cuantos hacen falta
+lo decide el CLIENTE**, con su politica, no el paquete: quien lo arma
+puede ser el operador. Los mandos de la politica viven en el testigo.
+
+La linea de arriba se conserva y se cita en vez de borrarla (§247).
+
 ⚠️ Es lo contrario del fallo caracteristico de validium: aqui no hay
 comite al que pedir los datos, porque el titular ya los tiene. **Nadie
 queda dentro.**

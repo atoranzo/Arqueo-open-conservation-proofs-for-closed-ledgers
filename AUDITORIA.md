@@ -24662,3 +24662,112 @@ se corre porque el corte no toca codigo y no habria nada que re-medir
 (precedente §303). Cinco ficheros en el corte: `BACKLOG.md`,
 `doc/CONFIANZA_RESIDUAL.md`, `SECURITY.md`, `doc/preprints/ERRATA.md` y esta
 `AUDITORIA.md`.
+
+## §322 — 2026-08-19 · EL PAQUETE DE EVIDENCIA v2: LAS COFIRMAS DENTRO
+
+**Que.** El paquete de evidencia existe desde el §289 con formato v1 —las
+respuestas del cable TAL CUAL, reunidas, verificables sin el nodo, sin la capa
+y sin el probador (§243)— y las cofirmas existen desde el §297, pero vivian
+enteras en el cli. Este sello las mete DENTRO del paquete: una clave
+`cofirmas` con la respuesta de `zkssl_cosigs` sin reescribir, y el binario del
+verificador comprobando que cada una acredita ESA cabeza y ESE operador. Lo
+que el usuario tenia como propiedad demostrable pasa a viajar en el artefacto
+que sostiene su posicion cuando el operador desaparece.
+
+**⚠️ Donde vive el codigo lo decidio una medicion, no un gusto.** El lib de
+`zk-ssl-verify` nombra `serde_json` CERO veces y su binario SEIS: la superficie
+del lib es criptografia pura, y su propio `Cargo.toml` pide que sea el crate
+que MENOS cambie. Leer el JSON del paquete es formato del PAQUETE, no del
+verificador. La criptografia no se duplica: se llama a `verificar_cofirma`,
+que el §297 ya dejo puesta y que estaba **a un `use` de distancia, dentro del
+mismo crate**, sin que su propio binario la llamara.
+
+**⚠️⚠️ Y la regla del `Cargo.toml` es mas fuerte que la comodidad**: la
+dependencia va en UN SOLO SENTIDO (§243), asi que el verificador NO puede usar
+`CofirmaDto`, que vive en el cable. Lee el objeto con `serde_json::Value` a
+mano, igual que ya hacia con la cabeza.
+
+**La doctrina del TAL CUAL decidio el formato sin que nadie eligiera.** «Las
+respuestas del cable tal cual, quien reescribe adultera» lo dice la cabecera
+del propio binario. Por eso `cofirmas` es el sobre de `zkssl_cosigs` verbatim,
+y sale gratis: `to_hex` del cable empuja el prefijo, asi que `u64_de` y
+`hex_a_bytes` ya leian todo lo que hace falta. **Cero maquinaria nueva de
+lectura**, y sin recomponer nada **no puede haber blanqueo de version (§320)**.
+
+**⚠️⚠️ EL PAQUETE REPORTA, NO JUZGA.** Dice cuantas cofirmas verifican contra
+la cabeza empaquetada. Que testigos valen y cuantos hacen falta lo decide el
+CLIENTE con su politica (§319), y NO por elegancia: **quien arma el paquete
+puede ser el operador**, y dejarle elegir su propia k le devolveria justo lo
+que la cofirma le quita. Ademas el binario tiene CERO banderas y su interfaz es
+una ruta posicional: meter politica ahi habria exigido inventarle una.
+
+**v1 Y v2, y la asimetria es deliberada.** La compuerta era `!= Some(1)`,
+igualdad estricta y un solo sitio en todo el crate. Con v1 y una clave nueva un
+binario ya distribuido la IGNORARIA e imprimiria VERDE: no mentiria, pero
+infra-reportaria en silencio, y la omision beneficia a quien arma el paquete.
+Con v2 se niega en voz alta. El binario nuevo lee las dos, porque **lo
+custodiado no caduca** (§290, la misma regla que hace que una cabeza v2 siga
+verificando). Incompatible hacia adelante, compatible hacia atras. Y un v1 que
+traiga `cofirmas` se RECHAZA: subir la version es lo que las hace contrato.
+
+**⚠️ Los dos bancos NO entraron en el corte, y su verde pasa a demostrar algo
+nuevo.** `banco_apagado.sh` y `banco_extension.sh` escriben `v: 1` a mano y
+siguen verdes SIN TOCARSE: eso es la compatibilidad hacia atras, ejercitada en
+vez de prometida. El banco de v2 con cofirmas de verdad exige un testigo
+corriendo y es sello aparte, como el §295 siguio al §294.
+
+**⚠️ La superficie declarada estaba a medias, y el productor rancio era el que
+mas cerca queda del codigo (§247).** La cabecera del binario titulaba «El
+formato, v1 — superficie declarada» y enumeraba UNA forma; el paquete de
+EXTENSION existe desde el §293 y no aparecia. No era una contradiccion: era una
+superficie declarada COMO SI FUERA COMPLETA, que se lee peor que una incompleta
+que se sabe incompleta. Y estaba PUBLICADA en `spec/RPC.md`. La cabecera gana
+las dos formas y la seccion Apagado del spec gana la actualizacion.
+
+**El binario pasa de CERO cobertura a seis pruebas.** No tenia ni una: toda su
+garantia era `banco_apagado.sh`, que levanta un nodo real y lo mata. Las seis
+nuevas cubren lo que este binario APORTA —el atado a la cabeza empaquetada, la
+version y la forma— y NO tocan criptografia: firmar es del lib, que tiene con
+que. Eso no estaba en el encargo y es la mitad de lo que este sello deja.
+
+**⚠️⚠️ LA COLISION DEL 1024, Y ES LA PEOR DEL ARBOL.** Antes de escribir las
+cifras nuevas se midio la colision, que es el rito de la casa: 887 sale en diez
+lineas (asientos historicos y un comentario de `check_cifras.py`), 1038 sale
+limpia, y **1024 sale en TREINTA Y SIETE**, todas de geometria: `TRACE_LENGTH`,
+filas de traza, holguras de nueve circuitos. Ningun reemplazo global: se
+sustituyo por fichero, sobre los cuatro gateados por huella y con la cuenta
+exigida. Y queda un riesgo que no se puede reparar, solo declarar: **desde hoy
+quien busque 1024 en este repositorio encuentra dos cosas distintas**.
+
+**⚠️⚠️ El Rust se escribio SIN COMPILADOR delante, y costo un rojo que ensena
+mas que el sello.** El primer bloque murio en la VIVA con cuatro `E0425`: al
+convertir un helper de closure a funcion libre, el renombrado se hizo con un
+reemplazo de cadena que **no caso porque las comillas iban escapadas**, asi que
+se renombro la definicion y no los cuatro puntos de llamada. La maquinaria
+hizo lo suyo: volco el error con nombre y linea, restauro el fichero y dejo el
+arbol intacto. **Y el ensayo no lo habia visto porque su `cargo` era un DOBLE
+que nunca compila**: un ensayo con la herramienta sustituida demuestra el
+andamiaje, jamas la carga. De ahi sale un instrumento nuevo, ya construido: un
+censo que, sobre el Rust generado, exige que **todo identificador llamado este
+definido en el fichero o importado**. Habria cazado esto exacto sin compilador.
+
+**⚠️ Declarado y NO reparado.** El tope de version de cofirma es un literal en
+el binario, porque `COFIRMA_VERSION` vive en el cli y este crate no depende de
+nadie del proyecto: es un TERCER productor de la misma constante, con sucesor
+nombrado (mudarla a `zk-ssl-verify`, donde la version de formato ya vive junto
+a su verificador). `check_cifras` sigue sin ver dos de las tres sumas, y el
+desglose sigue reportandose con LINEA 0, defecto conocido desde el 302-B. Y la
+trampa del proximo salto de formato sigue armada: el recompositor del testigo
+devuelve Ok para toda version que no sea 2 ni 3 (dicho en el §321).
+
+**Contadores.** Pin `zk-ssl-verify` 55 -> 61, y son 61 = 54 del lib + 6 del
+binario + 1 de doc-test, los tres bloques sumados: la BASE se midio con el
+arbol INTACTO antes de tocar, para que el delta fuera del corte y no de una
+deriva heredada. Los otros pines, quietos. Sumas 881/1018/1032 -> 887/1024/1038
+en las nueve lineas de cuatro documentos (quince ocurrencias: los dos resumenes
+llevan las tres en una sola linea, en las dos lenguas), mas la cifra por-crate
+del verificador, que esta PARTIDA por el salto y se sustituyo con regex
+tolerante. `check_cifras` delato SEIS con solo el pin movido, las seis
+predichas, y es la octava vez que la columna alias predice bien. Ningun Cargo
+tocado. El contador del BACKLOG, quieto. Canon VERDE en el nivel sello con
+1038 declarados. Ocho ficheros en el corte.

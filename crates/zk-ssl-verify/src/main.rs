@@ -23,6 +23,51 @@
 //! }
 //! ```
 //!
+//! ## El formato, v2 — las cofirmas dentro (§322)
+//!
+//! El MISMO objeto, con una clave mas y la version subida:
+//!
+//! ```text
+//! {
+//!   "v": 2,
+//!   "cabeza":   { …igual que en v1… },
+//!   "acuse":    { …igual que en v1, OPCIONAL… },
+//!   "cofirmas": [ …la respuesta de zkssl_cosigs TAL CUAL, OPCIONAL… ]
+//! }
+//! ```
+//!
+//! ⚠️ **Este binario lee v1 Y v2**: lo custodiado no caduca (§290), igual
+//! que el mando acepta cabezas v2 y v3. Lo que la subida compra es que un
+//! binario VIEJO se niegue en voz alta ante un v2 en vez de ignorar las
+//! cofirmas e imprimir VERDE: **un campo que nadie mira es peor que un campo
+//! que falta**. Por eso un v1 que traiga `cofirmas` se RECHAZA — subir la
+//! version es exactamente lo que las hace parte del contrato.
+//!
+//! ⚠️ **El paquete REPORTA, no juzga.** Dice cuantas cofirmas verifican
+//! contra ESTA cabeza y ESTE operador. **Que testigos valen y cuantos hacen
+//! falta lo decide el CLIENTE** con su politica (§319): quien arma el
+//! paquete puede ser el operador, y dejarle elegir su propia k le devolveria
+//! justo lo que la cofirma le quita.
+//!
+//! ⚠️ Dos convenciones de version en el mismo fichero, y conviene saberlo:
+//! la del PAQUETE (`v`) es un numero JSON desnudo; la de cada COFIRMA (`v`)
+//! viaja como `Q`, o sea cadena hex con `0x`, porque llega del cable TAL
+//! CUAL. No se unifican: reescribir es adulterar.
+//!
+//! ## La tercera forma, que esta cabecera NO declaraba (§247)
+//!
+//! Ademas del paquete de posicion, este binario verifica desde el
+//! §293 el **paquete de EXTENSION**, y el bloque de arriba nunca lo dijo:
+//!
+//! ```text
+//! { "v": 1, "tipo": "extension", "vieja": {…}, "nueva": {…}, "camino": […] }
+//! ```
+//!
+//! No es una contradiccion: es una superficie declarada **como si fuera
+//! completa**, que se lee peor que una incompleta que se sabe incompleta.
+//! Estaba publicada en `spec/RPC.md` y ausente aqui: **el productor rancio
+//! era el que mas cerca queda del codigo**.
+//!
 //! ## Lo que se comprueba, en orden
 //!
 //! 1. los campos de la cabeza recomponen el digest DE SU VERSION == el
@@ -45,7 +90,10 @@
 //! Salida: VERDE y exit 0, o el primer fallo con nombre y exit 1.
 use std::process::ExitCode;
 
-use zk_ssl_verify::{acuses, verificar_acuse, verificar_acuse_v3, verificar_cabeza, CabezaFirmada, ReciboAcuse};
+use zk_ssl_verify::{
+    acuses, verificar_acuse, verificar_acuse_v3, verificar_cabeza, verificar_cofirma,
+    CabezaFirmada, ReciboAcuse,
+};
 use zk_ssl_hash::{digest_from_bytes, epoch_digest_v2, epoch_digest_v3, Digest};
 
 /// Punto unico de forma de error del binario (hoy identidad; el dia que
@@ -91,8 +139,23 @@ fn correr(ruta: &str) -> Result<(), String> {
     let crudo = std::fs::read_to_string(ruta).map_err(|e| err(format!("no se puede leer {ruta}: {e}")))?;
     let p: serde_json::Value =
         serde_json::from_str(&crudo).map_err(|e| err(format!("JSON ilegible: {e}")))?;
-    if p.get("v").and_then(|x| x.as_u64()) != Some(1) {
-        return Err(err("el paquete no declara v:1".into()));
+    // §322 · v1 Y v2: lo custodiado no caduca. Un v1 con `cofirmas` se
+    //          rechaza, porque subir la version es lo que las hace contrato.
+    let v_paquete = p
+        .get("v")
+        .and_then(|x| x.as_u64())
+        .ok_or_else(|| err("el paquete no declara su version en `v`".into()))?;
+    if v_paquete != 1 && v_paquete != 2 {
+        return Err(err(format!(
+            "el paquete declara v:{v_paquete} — este binario lee v1 y v2"
+        )));
+    }
+    if v_paquete == 1 && p.get("cofirmas").is_some() {
+        return Err(err(
+            "un paquete v1 con `cofirmas`: subir la version es lo que las hace \
+             parte del contrato — declaralo v2, o quitalas"
+                .into(),
+        ));
     }
     if p.get("tipo").and_then(|x| x.as_str()) == Some("extension") {
         return verificar_extension(&p);
@@ -154,7 +217,10 @@ fn correr(ruta: &str) -> Result<(), String> {
     };
     let mut ed = [0u8; 32];
     ed.copy_from_slice(&hex_a_bytes(c.get("epochDigest").and_then(|x| x.as_str()).unwrap())?);
-    verificar_cabeza(&hex_a_bytes(clave)?, &ed, &cf).map_err(|e| err(format!("cabeza: {e}")))?;
+    // §322 · los bytes de la clave se atan a un nombre: las cofirmas los
+    //          necesitan, y recomputarlos seria un segundo productor.
+    let clave_op = hex_a_bytes(clave)?;
+    verificar_cabeza(&clave_op, &ed, &cf).map_err(|e| err(format!("cabeza: {e}")))?;
     println!("2/3 la firma verifica y el preambulo ES el esperado (indice de firma {})", cf.indice);
 
     // 3 · el acuse, si viaja
@@ -212,8 +278,102 @@ fn correr(ruta: &str) -> Result<(), String> {
             println!("3/3 el acuse sube hasta la raiz firmada: la entrada {seq_a} queda demostrada");
         }
     }
+
+    // 4 · las cofirmas, si el paquete es v2 (§322)
+    if v_paquete == 2 {
+        let k = verificar_cofirmas_del_paquete(&p, &ed, &clave_op)?;
+        if k == 0 {
+            println!("cofirmas: el paquete v2 no trae ninguna: la cabeza queda sola");
+        } else {
+            println!(
+                "cofirmas: {k} verifican contra ESTA cabeza y ESTE operador \
+                 (cuantas hacen falta lo decide TU politica, no el paquete)"
+            );
+        }
+    }
     println!("VERDE: el paquete se sostiene sin el nodo");
     Ok(())
+}
+
+/// ⚠️ **DECLARADO Y NO REPARADO**: este tope es un literal, porque
+/// `COFIRMA_VERSION` vive en el cli y **este crate no depende de nadie del
+/// proyecto** (§243, y su `Cargo.toml` lo manda). Es un TERCER productor de
+/// la misma constante. Sucesor nombrado: mudarla a `zk-ssl-verify`, junto a
+/// `verificar_cofirma`, donde `VERSION_FORMATO` ya vive junto a
+/// `verificar_cabeza`. Corte propio.
+const COFIRMA_V_MAX: u64 = 1;
+
+/// Un campo hex de una cofirma, con su numero en el error: un instrumento
+/// que falla dice QUE fallo, no cuantos (§254).
+fn hex_de_cofirma(c: &serde_json::Value, campo: &str, n: usize) -> Result<Vec<u8>, String> {
+    let s = c
+        .get(campo)
+        .and_then(|x| x.as_str())
+        .ok_or_else(|| err(format!("cofirma {n}: falta {campo}")))?;
+    hex_a_bytes(s)
+}
+
+/// **Las cofirmas del paquete v2** (§322). Cada una acredita que UN testigo
+/// vio ESTA cabeza de ESTE operador, y nada mas.
+///
+/// ⚠️⚠️ **REPORTA, NO JUZGA.** Devuelve CUANTAS verifican. Que testigos
+/// valen y cuantos hacen falta lo decide el CLIENTE (§319, `--testigos` y
+/// `--k` del mando del testigo), NO el paquete: quien lo arma puede ser el
+/// operador. Una cofirma que NO verifica si es un fallo del paquete y para el
+/// binario en rojo; cuantas hacen falta no es asunto suyo.
+///
+/// ⚠️ **Las respuestas del cable TAL CUAL.** `cofirmas` es el contenido de
+/// `zkssl_cosigs` sin reescribir, asi que sus cantidades vienen en convencion
+/// `Q` (cadena hex con `0x`) y sus bytes en hex: justo lo que `u64_de` y
+/// `hex_a_bytes` ya leen. **No se recompone nada**, y por eso aqui no puede
+/// haber blanqueo de version (§320).
+///
+/// ⚠️ El atado sale del propio paquete: `epoch_digest` es el de la cabeza
+/// empaquetada y `clave_operador` es su `publicKey`. Una cofirma que nombre
+/// otra cabeza u otro operador se rechaza ANTES de tocar la criptografia.
+fn verificar_cofirmas_del_paquete(
+    p: &serde_json::Value,
+    epoch_digest: &[u8; 32],
+    clave_operador: &[u8],
+) -> Result<usize, String> {
+    let lista = match p.get("cofirmas") {
+        None => return Ok(0),
+        Some(x) => x
+            .as_array()
+            .ok_or_else(|| err("cofirmas no es una lista".into()))?,
+    };
+    for (i, c) in lista.iter().enumerate() {
+        let n = i + 1;
+        let cv = u64_de(c, "v")?;
+        if cv > COFIRMA_V_MAX {
+            return Err(err(format!(
+                "cofirma {n}: version {cv} desconocida, este binario lee hasta la {}",
+                COFIRMA_V_MAX
+            )));
+        }
+        let d = hex_de_cofirma(c, "epochDigest", n)?;
+        if d.as_slice() != &epoch_digest[..] {
+            return Err(err(format!(
+                "cofirma {n}: acredita OTRA cabeza, no la empaquetada"
+            )));
+        }
+        let ko = hex_de_cofirma(c, "clavePublicaOperador", n)?;
+        if ko.as_slice() != clave_operador {
+            return Err(err(format!(
+                "cofirma {n}: acredita a OTRO operador, no al que firmo la cabeza"
+            )));
+        }
+        let kt = hex_de_cofirma(c, "clavePublicaTestigo", n)?;
+        let firma = hex_de_cofirma(c, "firma", n)?;
+        let cf = CabezaFirmada {
+            version_formato: u64_de(c, "versionFormato")? as u8,
+            indice: u64_de(c, "indice")?,
+            firma,
+        };
+        verificar_cofirma(&kt, epoch_digest, &ko, &cf)
+            .map_err(|e| err(format!("cofirma {n}: {e}")))?;
+    }
+    Ok(lista.len())
 }
 
 /// Una cabeza **v3** del paquete de extension: se verifica ENTERA — el
@@ -325,7 +485,7 @@ fn main() -> ExitCode {
         _ => {
             eprintln!("uso: zk-ssl-verify <paquete.json>");
             eprintln!("     (o de extension: {{v:1, tipo: extension, vieja, nueva, camino}})");
-            eprintln!("     (formato v1 en la cabecera de este binario)");
+            eprintln!("     (formatos v1 y v2 en la cabecera de este binario)");
             return ExitCode::from(2);
         }
     };
@@ -335,5 +495,96 @@ fn main() -> ExitCode {
             eprintln!("ROJO: {e}");
             ExitCode::FAILURE
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    /// ⚠️ Lo que estos tests prueban es **lo que este binario aporta**: el
+    /// atado de la cofirma a la cabeza empaquetada, la version y la forma.
+    /// La criptografia la prueban los tests del lib, que tienen con que
+    /// firmar; aqui la firma es de mentira A PROPOSITO y por eso ningun test
+    /// llega a `verificar_cofirma`.
+    const DIG: &str = "0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20";
+    const OTRO: &str = "0x0000000000000000000000000000000000000000000000000000000000000000";
+    const OP: &str = "0xaa";
+
+    fn ed() -> [u8; 32] {
+        let mut a = [0u8; 32];
+        for (i, b) in a.iter_mut().enumerate() {
+            *b = (i + 1) as u8;
+        }
+        a
+    }
+
+    fn cofirma(dig: &str, op: &str) -> serde_json::Value {
+        json!({
+            "v": "0x1",
+            "epochDigest": dig,
+            "clavePublicaOperador": op,
+            "clavePublicaTestigo": "0xbb",
+            "versionFormato": "0x3",
+            "indice": "0x0",
+            "firma": "0xcc",
+            "vistoUnix": "0x0"
+        })
+    }
+
+    /// Un paquete sin la clave no es un error: es un paquete sin cofirmas.
+    #[test]
+    fn sin_la_clave_no_hay_cofirmas_y_no_es_un_error() {
+        let p = json!({ "v": 2 });
+        assert_eq!(verificar_cofirmas_del_paquete(&p, &ed(), &[0xaa_u8]), Ok(0));
+    }
+
+    /// Y una lista vacia tampoco: cero cofirmas es una respuesta legitima
+    /// del nodo (S317), no un fallo.
+    #[test]
+    fn una_lista_vacia_es_cero_y_no_un_error() {
+        let p = json!({ "v": 2, "cofirmas": [] });
+        assert_eq!(verificar_cofirmas_del_paquete(&p, &ed(), &[0xaa_u8]), Ok(0));
+    }
+
+    /// ⚠️⚠️ **EL TEST QUE JUSTIFICA EL ATADO.** Una cofirma legitima de OTRA
+    /// cabeza pasaria su propia verificacion criptografica: lo que la hace
+    /// inservible aqui es que no acredita LA cabeza del paquete.
+    #[test]
+    fn una_cofirma_de_otra_cabeza_no_ata() {
+        let p = json!({ "v": 2, "cofirmas": [cofirma(OTRO, OP)] });
+        let e = verificar_cofirmas_del_paquete(&p, &ed(), &[0xaa_u8]).unwrap_err();
+        assert!(e.contains("OTRA cabeza"), "{e}");
+    }
+
+    /// Misma cabeza, otro operador: tampoco vale, y por la misma razon que
+    /// el operador va DENTRO del preambulo firmado.
+    #[test]
+    fn una_cofirma_de_otro_operador_no_ata() {
+        let p = json!({ "v": 2, "cofirmas": [cofirma(DIG, "0xab")] });
+        let e = verificar_cofirmas_del_paquete(&p, &ed(), &[0xaa_u8]).unwrap_err();
+        assert!(e.contains("OTRO operador"), "{e}");
+    }
+
+    /// Una version que este binario no sabe leer se RECHAZA, no se supone.
+    #[test]
+    fn una_version_de_cofirma_desconocida_se_rechaza() {
+        let mut c = cofirma(DIG, OP);
+        c["v"] = json!("0x2");
+        let p = json!({ "v": 2, "cofirmas": [c] });
+        let e = verificar_cofirmas_del_paquete(&p, &ed(), &[0xaa_u8]).unwrap_err();
+        assert!(e.contains("desconocida"), "{e}");
+    }
+
+    /// Y un campo que falta se NOMBRA: un instrumento que falla dice QUE
+    /// fallo, no cuantos (§254).
+    #[test]
+    fn un_campo_ausente_se_nombra() {
+        let mut c = cofirma(DIG, OP);
+        let _ = c.as_object_mut().expect("objeto").remove("firma");
+        let p = json!({ "v": 2, "cofirmas": [c] });
+        let e = verificar_cofirmas_del_paquete(&p, &ed(), &[0xaa_u8]).unwrap_err();
+        assert!(e.contains("falta firma"), "{e}");
     }
 }
