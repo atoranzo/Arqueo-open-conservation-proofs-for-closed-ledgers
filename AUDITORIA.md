@@ -24771,3 +24771,94 @@ tolerante. `check_cifras` delato SEIS con solo el pin movido, las seis
 predichas, y es la octava vez que la columna alias predice bien. Ningun Cargo
 tocado. El contador del BACKLOG, quieto. Canon VERDE en el nivel sello con
 1038 declarados. Ocho ficheros en el corte.
+
+## §323 — 2026-08-19 · EL BANCO DEL PAQUETE v2: LAS COFIRMAS, DEMOSTRADAS EN VIVO
+
+**Que.** Nace `tools/banco_evidencia_v2.sh` (300 lineas): un nodo real, un
+testigo real cofirmando y enviando, y el paquete de evidencia v2 armado con lo
+que el nodo sirve y verificado por `zk-ssl-verify` SIN el nodo, sin el testigo
+y sin el diario. El §322 dejo el formato v2 con seis unitarios que no tocan
+criptografia; esto es el flujo entero, y su rojo. Sigue al §322 como el
+§295 siguio al §294.
+
+**El banco es una COSTURA, y la medicion lo dijo antes que nadie.**
+`banco_apagado.sh` nombra `paquete` nueve veces y `cofirma` CERO;
+`banco_cofirma.sh` nombra `cofirma` setenta y ocho veces y `paquete` CERO. Los
+dos bancos que ya existian son disjuntos, y lo que faltaba era exactamente la
+juntura. No es una maquina nueva: es la costura que ninguno de los dos tenia.
+
+**El paquete se arma con `result.cosigs`, no con el sobre.** El nodo sirve
+`{epochDigest, n, cosigs}` y la clave del paquete es `cofirmas`: dentro van
+los ELEMENTOS, no la respuesta entera. El TAL CUAL es por elemento. Y el banco
+no transcodifica un solo campo, porque no puede: `u64_de` del verificador hace
+`.as_str()` y exige `0x`, o sea la convencion del CABLE; la del fichero del
+testigo, numeros crudos, moriria en el primer campo. Por eso este banco NO usa
+`--recolectar-cofirmas`: ese mando rehace la linea del TESTIGO, que es la forma
+contraria. Los dos son correctos, cada uno para su consumidor, y ahora esta
+escrito cual sirve para que.
+
+**La VENTANA DE EPOCA era lo unico que podia volver esto intermitente.** El
+verificador exige que el `epochDigest` de cada cofirma sea el de la cabeza
+empaquetada, y el nodo retiene UNA sola epoca (§317). Con el testigo en
+primer plano, como en `banco_cofirma`, la epoca ya ha avanzado cuando el
+testigo termina y el par depende del instante: el propio r3 del §316 lo dejo
+escrito, "el numero depende del latido y del momento, no de una regla". Aqui
+el testigo va al FONDO y se sondea el PAR (cabeza, cofirmas de SU digest)
+mientras sigue cofirmando. Converge en vez de rifarse. Y el molde ya lo
+reservaba: `limpiar()` de `banco_cofirma` mata `$TESTIGO` y ningun tramo suyo
+asigna esa variable.
+
+**Los TRES rojos, y dos no los cubria nadie.** Las dos compuertas de version
+del PAQUETE, una `v` desconocida y un v1 que trae `cofirmas`, viven en
+`correr()`, y los seis tests del §322 llaman a
+`verificar_cofirmas_del_paquete`, no a `correr`: nunca las tocaron. Se fabrican
+editando el JSON, sin testigo. El tercero, un nibble de la firma, es el que
+exige testigo vivo y el que demuestra que la criptografia corre de verdad:
+`cofirma 1: la firma no verifica: VerificationFailed`.
+
+**Lo que la primera corrida destapo, y se reparo ANTES del sello.** El mensaje
+del NEGATIVO-3 hacia `head -1` sobre la salida del verificador, y la primera
+linea de esa salida es el PROGRESO, no el fallo: un rojo se reportaba con una
+linea de exito. El gate acertaba y el mensaje mentia. Reparado en el bloque
+`323-2`, con el porque escrito dentro del propio fichero. Lo instructivo es que
+el mismo idiom acertaba en el NEGATIVO-1 y fallaba en el NEGATIVO-3, porque una
+compuerta que dispara ANTES de imprimir deja el error en la primera linea y una
+que dispara DESPUES no.
+
+**El alcance, declarado: este banco es el MINIMO.** Cabeza y cofirmas, sin
+acuse. El acuse ya lo demuestra `banco_apagado` desde el §290, y el paquete
+COMPLETO exigiria combinar `--dev` y fondeo con un testigo cofirmante, cosa que
+hoy no hace ningun banco, y subir a TRES las capturas dentro de la misma
+ventana. Queda como sucesor nombrado, no como olvido.
+
+**Lo que el banco destapa de paso.** El paquete se lleva las cofirmas de UNA
+epoca: una de las siete que el testigo envio. No es un defecto, es la retencion
+del §317 asomando por primera vez en un artefacto. Y el `cargo build` del
+banco imprime los CUATRO warnings del nodo, que el canon no ve porque mide los
+de `cargo test`: el caso 19 de la familia, en vivo.
+
+**La PUERTA de este sello no es el canon, y va medido.** `tools/canon.sh`
+nombra "banco" cuatro veces y las cuatro son PROCEDENCIA de cifras (§224,
+§225): ninguna es una ejecucion. El canon no corre los bancos, y el propio
+`banco_apagado` lo declara de si mismo, "FUERA del canon: levanta procesos y
+espera latidos". Un banco nuevo no mueve el pin ni las sumas. La puerta son las
+SIETE herramientas de `tools/`, invocadas como las invoca el canon, exigidas en
+rc=0 antes de tocar un byte y otra vez despues. Precedentes: §303 y §321.
+
+**Declarado y no reparado.** El binario del verificador devuelve `Err(String)`
+y su `main` imprime `ROJO: (e)`: no tiene CLASES estables, mientras el cli
+declara `HallazgoCofirma` y `RecogidaRechazada` con su `clase()` y el criterio
+del §248. Este banco asierta sobre subcadenas de esos mensajes, y eso es
+fragil por construccion: el dia que una cadena cambie, el banco dira que el
+paquete esta roto cuando lo que cambio es la prosa. Darle clases al verificador
+es corte propio.
+
+**Contadores.** Ningun pin movido y ninguna cifra de tests movida: el corte no
+anade un solo `#[test]` y el canon no corre los bancos. Sumas quietas en
+887/1024/1038. Ningun `.rs` tocado. Ningun Cargo tocado. `BACKLOG.md` intacto:
+44 abiertas, 54 resueltas, tres suspendidas (16, 22 y 28). `tools/` pasa de
+quince a DIECISEIS ficheros, contados con `-type f`; `ls` dice diecisiete
+porque cuenta `__pycache__`. Las siete herramientas en rc=0 antes y despues.
+El banco: 300 lineas, verde en DOS corridas seguidas con los mismos numeros
+(el par casa en la vuelta 13 con n:1, siete cofirmas enviadas, cero fallos
+duros de envio, una cofirma dentro del paquete).
