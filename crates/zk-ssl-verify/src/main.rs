@@ -514,7 +514,7 @@ mod tests {
 
     fn cofirma(dig: &str, op: &str) -> serde_json::Value {
         json!({
-            "v": "0x1",
+            "v": format!("0x{:x}", zk_ssl_verify::COFIRMA_VERSION),
             "epochDigest": dig,
             "clavePublicaOperador": op,
             "clavePublicaTestigo": "0xbb",

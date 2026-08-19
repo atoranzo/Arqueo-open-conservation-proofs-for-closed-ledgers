@@ -24862,7 +24862,7 @@ porque cuenta `__pycache__`. Las siete herramientas en rc=0 antes y despues.
 El banco: 300 lineas, verde en DOS corridas seguidas con los mismos numeros
 (el par casa en la vuelta 13 con n:1, siete cofirmas enviadas, cero fallos
 duros de envio, una cofirma dentro del paquete).
-## §324 — los tres productores de COFIRMA_VERSION, y el literal muere
+## §324 — 2026-08-19 · los tres productores de COFIRMA_VERSION, y el literal muere
 
 **Que.** La constante que gobierna la version de una cofirma vivia en
 `zk-ssl-cli` (`witness.rs`), y el binario de `zk-ssl-verify` llevaba **un
@@ -24951,7 +24951,7 @@ pin. Cero warnings antes y despues en los dos crates. **Ningun Cargo tocado.**
 BACKLOG quieto: **44 abiertas / 54 resueltas**, ninguna entrada se cierra ni se
 abre. Nueve ficheros en el corte.
 
-## §325 — el banco del paquete COMPLETO: cabeza, acuse y cofirmas en una ventana
+## §325 — 2026-08-19 · el banco del paquete COMPLETO: cabeza, acuse y cofirmas en una ventana
 
 **Que.** Nace `tools/banco_completo.sh`, el banco que demuestra las TRES piezas a
 la vez. `banco_apagado` (§290) demostro que una posicion se sostiene sin el
@@ -25033,3 +25033,90 @@ canon no se corre, y se dice por que: este corte no toca codigo Rust, y su
 puerta es el BANCO en verde, con el precedente de §321, donde un sello sin
 codigo justifico su propia puerta midiendo en vez de invocarla. BACKLOG sin
 tocar: no abre ni cierra ninguna entrada.
+
+## §326 — 2026-08-19 · LOS DOS FIXTURES DEJAN DE ESTAMPAR LA VERSION DE COFIRMA A MANO
+
+**Que.** Los dos fixtures que montaban una cofirma con la version escrita a
+mano dejan de hacerlo. `node/main.rs` y `verify/main.rs` leen ahora
+`zk_ssl_verify::COFIRMA_VERSION`, la constante que el §324 mudo a
+`zk-ssl-verify/src/lib.rs`. Es exactamente la deuda que aquel sello declaro en
+su tercera decision y no reparo: tres fixtures que seguirian diciendo `0x1` en
+silencio el dia que la version subiera. Dos ficheros, una linea en cada uno, y
+ni un `use` tocado.
+
+**Por que RUTA COMPLETA y no un `use`.** La forma obvia era anadir
+`COFIRMA_VERSION` al bloque `use zk_ssl_verify::{...}` que el binario del
+verificador ya tiene, junto a `COFIRMA_V_MAX`. Se descarto midiendo: la
+constante solo se usa dentro de `#[cfg(test)]`, asi que un import a nivel de
+fichero daria `unused import` en `cargo build` y NO en `cargo test`, que es
+justo el punto ciego del canon ya declarado en la familia, y del que este arbol
+arrastra cuatro avisos del nodo. Se habria anadido un quinto invisible para la
+puerta. La ruta completa no tiene ese precio y ademas es el idioma que los dos
+ficheros ya hablan: el nodo nombra ese crate asi en DIECISEIS lineas y el
+verificador en su tramo del MMR.
+
+**El alcance era de TRES sitios, el censo dio CUATRO, y el cuarto queda fuera
+POR MEDICION.** El censo del literal bajo `crates/` da 29 ocurrencias en cinco
+ficheros, casi todas indices, secuencias y cuentas: el ambito se acota por la
+clave `v` de la cofirma, nunca por el literal suelto. Con ese filtro aparece un
+sitio que el §324 no habia contado, en el cable: ademas de la constante de
+entrada hay un assert que compara `v` contra `0x1`. Parecia el mas importante
+de los cuatro, porque es el unico que AFIRMA. Leerlo dijo lo contrario. Sus
+cuatro asserts van en fila y tienen la misma forma sobre cuatro campos
+distintos, y el comentario de encima declara para que estan: alli `v` y
+`vistoUnix` son numeros crudos y aqui son QUANTITY, y si alguien los devuelve a
+numero, eso cae. Es un ida y vuelta que prueba cadena-y-no-numero. El numero es
+una muestra, no una afirmacion sobre la version. Atarlo habria exigido una
+arista nueva desde el cable hacia el verificador para cero beneficio, y habria
+hecho que un test de CONVENCION dependiera de un valor que no tiene nada que
+ver con ella.
+
+**Y el propio fichero lo tenia escrito.** La cabecera del DTO de cofirma dice
+que lo que atara a los dos artefactos es un test sobre el CONJUNTO de claves,
+no sobre la representacion, y que vive donde esten los dos productores, que no
+es el cable. Ese test no consta que exista. Los dos productores del artefacto
+son `linea_de_cofirma`, que escribe el fichero del testigo con numeros crudos,
+y `cofirma_dto`, que emite el cable en hexadecimal, y los dos viven en
+`cli/witness.rs`. Queda DECLARADO y NO REPARADO, como corte propio: es el
+encargo del cable, no un acompanante de este sello.
+
+**La correccion 247 de la cabecera del Cargo: la familia tenia dos miembros y
+solo se reparo uno.** El §324 corrigio la frase que decia que `zk-ssl-verify`
+no depende de nadie del proyecto, y la corrigio en el doc de la constante. La
+misma frase seguia viva en `crates/zk-ssl-verify/Cargo.toml`, donde dice que
+depende solo de `xmss` y tres lineas mas abajo declara `zk-ssl-hash` y
+`winter-math`. Se cita y se corrige donde se contradice, no se borra. La
+propiedad que de verdad manda el §243 sigue en pie y se escribe entera: no
+depende de la capa, ni del nodo, ni del cable.
+
+**Las dos cabeceras sin fecha, y una norma que no era la que se decia.** Los
+asientos del §324 y del §325 nacieron sin la fecha que llevan sus vecinos, y se
+les pone aqui porque este es el proximo bloque que toca el fichero. Al medir la
+serie para imitarla aparecio que la norma arrastrada era mas estrecha de lo
+cierto: se venia diciendo que las doce cabeceras del §312 al §323 llevan fecha
+y TITULO EN MAYUSCULAS, y la fecha si la llevan las doce, pero la caja no: las
+del §312 y el §313 no estan en mayusculas. Se repara lo que la serie sostiene,
+que es la fecha, y no se toca la caja de ningun titulo. La fecha de cada una no
+se teclea: se lee del commit que la sello.
+
+**Cifras y su procedencia.** Los dos pines se midieron en vivo antes y despues
+de la cirugia, con el crate corrido por separado en release: el nodo en 80 y el
+verificador en 62, que son exactamente los que la tabla del canon pina, de modo
+que queda medido de paso que correr un crate suelto reproduce esa columna. Los
+dos conteos salieron identicos despues, y tenian que salirlo: formatear el uno
+en hexadecimal produce exactamente la cadena que se sustituye, asi que ningun
+test podia cambiar de resultado, y si alguno se hubiera movido el defecto
+habria sido del corte. Ninguno de los dos ficheros cambio de numero de lineas,
+porque es sustitucion y no adicion, y el balance de llaves no se movio: el
+texto nuevo mete una llave de cada dentro de una cadena. Tres lineas heredadas
+del censo viejo se remidieron y solo una se habia movido, ocho lineas arriba,
+que es exactamente lo que el §324 quito de ese fichero; el mismo desfase
+explica las otras dos referencias que se arrastraban.
+
+**Contadores.** Ningun pin movido: 80 y 62 antes y despues. Ninguna suma
+movida. UN Cargo tocado, y solo en su prosa: la correccion de arriba no cambia
+ninguna dependencia ni ningun perfil, y se declara aqui en vez de esconderla
+tras la compuerta que suele prohibirlo. El canon SI se corre y es la puerta,
+porque el corte toca codigo Rust, al reves que en el §325. BACKLOG sin tocar:
+no abre ni cierra ninguna entrada, y lo que este sello deja declarado viaja en
+la cola del traspaso, no como entrada nueva.

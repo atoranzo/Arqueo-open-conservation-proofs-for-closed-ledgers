@@ -2132,7 +2132,7 @@ mod tests {
     /// cuando el testigo submita de verdad.
     fn cofirma_de(digest: &str) -> Value {
         json!({
-            "v": "0x1",
+            "v": format!("0x{:x}", zk_ssl_verify::COFIRMA_VERSION),
             "epochDigest": digest,
             "clavePublicaOperador": "0xabcd",
             "clavePublicaTestigo": "0xbeef",

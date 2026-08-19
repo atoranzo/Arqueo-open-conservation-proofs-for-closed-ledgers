@@ -8,7 +8,10 @@ license.workspace = true
 # comprobar que una cabeza de epoca firmada la emitio quien dice, y nada mas.
 #
 # ⚠️ LA DEPENDENCIA VA EN UN SOLO SENTIDO: este crate NO depende de la capa,
-# ni del nodo, ni del cable. Solo de `xmss`. Si algun dia importa algo del
+# ni del nodo, ni del cable. Decia ademas "Solo de `xmss`" y eso NO aguanta la
+# medicion: depende de `zk-ssl-hash` y de `winter-math`, ninguno con prover ni
+# verifier de winterfell. Lo de arriba sigue en pie; la frase no, y la misma se
+# corrigio en el doc de la constante (§324). Si algun dia importa algo del
 # proyecto, se habra vuelto a caer en el problema que §243 resolvio: que la
 # unica forma de verificar una cabeza fuera compilar el codigo del operador.
 #
