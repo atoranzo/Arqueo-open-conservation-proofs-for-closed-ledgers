@@ -137,9 +137,96 @@ pub fn indice_de_sk(sk: &[u8]) -> Result<u64, GuardianError> {
     Ok(v)
 }
 
+/// Escribe el indice EN los bytes del SK. Espejo exacto de [`indice_de_sk`]:
+/// mismo layout, mismo ancho, mismo orden de bytes.
+///
+/// ⚠️⚠️ **Es CONSERVADOR, no arriesgado.** El contador se persiste
+/// ANTES de firmar, asi que como mucho se gasto la hoja `contador - 1`.
+/// Poner la clave en `contador` usa una hoja que NUNCA se reservo: no puede
+/// estar quemada. Las hojas de abajo quedan PERDIDAS, que es lo que la nota
+/// 92 pide -un indice perdido es mejor que uno indeterminado-.
+///
+/// ⚠️ Falla CERRADA por el ANCHO DEL CAMPO: el techo es
+/// `2^(8 * ancho_indice())`, DERIVADO y no tecleado.
+///
+/// ⚠️ No es una tercera copia del layout: usa [`ancho_indice`], la misma
+/// fuente que el lector.
+pub fn poner_indice_en_sk(sk: &mut [u8], indice: u64) -> Result<(), GuardianError> {
+    let esperado = OID_BYTES + ancho_indice() + 4 * N;
+    if sk.len() != esperado {
+        return Err(GuardianError::LayoutInesperado { sk_len: sk.len(), esperado });
+    }
+    let ancho = ancho_indice();
+    if ancho < 8 && indice >= (1u64 << (8 * ancho)) {
+        return Err(GuardianError::IndiceFueraDeCampo { indice, ancho });
+    }
+    for i in 0..ancho {
+        let desplazamiento = 8 * (ancho - 1 - i);
+        sk[OID_BYTES + i] = ((indice >> desplazamiento) & 0xff) as u8;
+    }
+    Ok(())
+}
+
+/// ⚠️ Mod PROPIO y no dentro del de abajo: un item de Rust empieza en sus
+/// ATRIBUTOS, y meter tests entre un `#[test]` y su `fn` los deja huerfanos
+/// -el defecto que costo el cierre del S331-.
+#[cfg(test)]
+mod indice_en_el_sk {
+    use super::*;
+
+    fn sk_de_prueba() -> Vec<u8> {
+        vec![0u8; OID_BYTES + ancho_indice() + 4 * N]
+    }
+
+    /// ⚠️⚠️ Lector y escritor son DOS productores del mismo layout: se
+    /// ATAN aqui, no se confia en que coincidan.
+    #[test]
+    fn lo_que_se_escribe_es_lo_que_se_lee() {
+        let ancho = ancho_indice();
+        let tope = 1u64 << (8 * ancho);
+        for n in [0u64, 1, 2, 255, 256, tope - 1] {
+            let mut sk = sk_de_prueba();
+            poner_indice_en_sk(&mut sk, n).expect("escribir");
+            let leido = indice_de_sk(&sk).expect("leer");
+            assert_eq!(leido, n, "el lector no devuelve lo que el escritor puso");
+        }
+    }
+
+    /// ⚠️⚠️ EL ROJO del techo. El limite se DERIVA de `ancho_indice()`.
+    #[test]
+    fn un_indice_que_no_cabe_falla_cerrada_y_no_toca_nada() {
+        let ancho = ancho_indice();
+        let tope = 1u64 << (8 * ancho);
+        let mut sk = sk_de_prueba();
+        match poner_indice_en_sk(&mut sk, tope) {
+            Err(GuardianError::IndiceFueraDeCampo { indice, ancho: a }) => {
+                assert_eq!(indice, tope, "el error nombra el indice que no cupo");
+                assert_eq!(a, ancho, "y el ancho contra el que no cupo");
+            }
+            otro => panic!("un indice que no cabe NO puede escribirse: {otro:?}"),
+        }
+        assert!(sk.iter().all(|b| *b == 0), "y no toca un solo byte al fallar");
+    }
+
+    #[test]
+    fn un_sk_con_otra_longitud_no_se_toca() {
+        let mut corto = vec![0u8; 10];
+        assert!(matches!(
+            poner_indice_en_sk(&mut corto, 1),
+            Err(GuardianError::LayoutInesperado { .. })
+        ));
+    }
+}
+
 #[derive(Debug)]
 pub enum GuardianError {
     Io(String),
+    /// ⚠️ El indice no cabe en el CAMPO del SK. El ancho lo fija
+    /// [`ancho_indice`], y aqui coincide con la altura del arbol porque
+    /// h = 40 = 8 x 5; con una `h` que no fuera multiplo de 8 el techo
+    /// quedaria laxo por arriba y habria que atarlo a la altura real.
+    /// Falla CERRADA: un contador corrupto no se cuela dentro de un SK.
+    IndiceFueraDeCampo { indice: u64, ancho: usize },
     /// El fichero existe pero no tiene ocho bytes.
     Corrupto { bytes: usize },
     /// ⚠️ `fsync` no cuesta nada: casi seguro `tmpfs` o un montaje sin
@@ -166,6 +253,12 @@ pub enum GuardianError {
 impl std::fmt::Display for GuardianError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            GuardianError::IndiceFueraDeCampo { indice, ancho } => write!(
+                f,
+                "guardian del indice: el indice {indice} no cabe en un campo \
+                 de {ancho} byte(s). El contador esta corrupto o el conjunto \
+                 de parametros cambio"
+            ),
             GuardianError::Io(e) => write!(f, "guardián del índice: {e}"),
             GuardianError::Corrupto { bytes } => write!(
                 f,

@@ -144,6 +144,74 @@ pub fn ultimo_seq(ruta: impl AsRef<Path>) -> Option<u64> {
     limites(ruta).into_iter().last()
 }
 
+/// El MAXIMO `index` anotado, o `None` si el diario no tiene ni una firma.
+///
+/// ⚠️⚠️ **MAXIMO y no ULTIMO**, a diferencia de [`ultimo_seq`]: el caso
+/// del que esto defiende -un contador restaurado hacia atras- hace que el nodo
+/// escriba indices MENORES detras de mayores, asi que agregar por el ultimo
+/// seria medir con un instrumento que el propio caso desarma.
+///
+/// ⚠️ Este maximo puede quedar POR DEBAJO del real por dos vias, las dos a
+/// proposito: [`anotar`] no hace `fsync`, y las lineas ilegibles se SALTAN como
+/// en [`limites`]. Las dos empujan al mismo lado: quien lo use falla hacia el
+/// lado PERMISIVO -deja arrancar-, nunca hacia un rojo falso.
+pub fn maximo_indice(ruta: impl AsRef<Path>) -> Option<u64> {
+    let texto = match std::fs::read_to_string(ruta) {
+        Ok(t) => t,
+        Err(_) => return None,
+    };
+    let mut max: Option<u64> = None;
+    for l in texto.lines() {
+        let j: Value = match serde_json::from_str(l) {
+            Ok(j) => j,
+            Err(_) => continue,
+        };
+        if let Some(s) = j["index"].as_str() {
+            if let Ok(x) = u64::from_str_radix(s.trim_start_matches("0x"), 16) {
+                if max.map_or(true, |m| x > m) {
+                    max = Some(x);
+                }
+            }
+        }
+    }
+    max
+}
+
+#[cfg(test)]
+mod maximo_del_diario {
+    use super::*;
+
+    fn linea_con(indice: u64) -> String {
+        json!({"seq": q(1), "index": q(indice)}).to_string()
+    }
+
+    fn en_disco(nombre: &str, cuerpo: &str) -> std::path::PathBuf {
+        let p = std::env::temp_dir().join(nombre);
+        let _ = std::fs::remove_file(&p);
+        std::fs::write(&p, cuerpo).expect("escribir el diario de prueba");
+        p
+    }
+
+    /// ⚠️⚠️ EL CASO ADVERSARIO: un indice MENOR detras de uno mayor, que
+    /// es justo lo que escribe un nodo con el contador retrocedido. Agregar por
+    /// el ultimo daria 2 y taparia el retroceso.
+    #[test]
+    fn se_agrega_por_el_maximo_y_no_por_el_ultimo() {
+        let cuerpo = [linea_con(1), linea_con(2), linea_con(3), linea_con(2)].join("\n");
+        let p = en_disco("zkssl_max_indice.jsonl", &(cuerpo + "\n"));
+        assert_eq!(maximo_indice(&p), Some(3), "tiene que dar el MAXIMO, no el ultimo");
+        let _ = std::fs::remove_file(&p);
+    }
+
+    #[test]
+    fn sin_firmas_no_hay_indice_que_leer() {
+        let cuerpo = json!({"seq": q(1)}).to_string() + "\n";
+        let p = en_disco("zkssl_max_indice_vacio.jsonl", &cuerpo);
+        assert_eq!(maximo_indice(&p), None, "sin firma no hay indice anotado");
+        let _ = std::fs::remove_file(&p);
+    }
+}
+
 /// Los `epochDigest` que el diario conserva, en orden de anotacion:
 /// **las hojas del MMR de cabezas** (§292). Misma doctrina que
 /// [`limites`]: el diario manda, la memoria es cache, y una linea

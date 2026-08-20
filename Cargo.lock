@@ -3433,6 +3433,7 @@ dependencies = [
  "tracing-subscriber 0.3.23",
  "winterfell",
  "xmss",
+ "zeroize",
  "zk-ssl",
  "zk-ssl-guardian",
  "zk-ssl-verify",

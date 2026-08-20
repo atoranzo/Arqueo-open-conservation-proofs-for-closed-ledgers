@@ -42,6 +42,22 @@ decidido, y dónde):
   este documento no se toca: sigue siendo texto de sesión verbatim.
 · B10.2  → primitiva construida y testada (`first_divergence`, T1);
   falta el componente de testigos.
+· B10.1 / guardian del indice — AMPLIADO (§335, 2026-08-20): el nodo
+  ya no muere al reiniciar. La clave se resincroniza al contador y **abandona**
+  los indices de abajo, que quedan perdidos y no reutilizables. Para detectar un
+  contador RESTAURADO HACIA ATRAS se ata al maximo indice anotado en el diario y
+  se falla cerrada si el contador va por debajo.
+  ⚠️ **Lo que ese gate NO detecta, dicho aqui y no en el codigo**: no ve una
+  restauracion del DIRECTORIO ENTERO, porque contador y diario viven en el mismo
+  disco y vuelven juntos —**dos testigos en el mismo disco son un solo
+  testigo frente a una restauracion**—. Se apaga ademas quitando el fichero
+  del diario, y una rotacion de logs rutinaria lo apagaria **sin mala fe**. Y
+  falla hacia el lado PERMISIVO por dos vias mas, las dos deliberadas: el diario
+  no hace `fsync` y las lineas ilegibles se saltan. **Permisivo significa que
+  puede no ver un rollback, no que sea seguro.** Backlog 103.
+  ⚠️ El borrado del buffer temporal del SK es **best-effort** y la fuga de
+  `KeyPair::from_seed` es de un crate ajeno: backlog 102. El cuerpo de este
+  documento no se toca —sigue siendo texto de sesion verbatim—.
 · B10.3 y §10.2 (el plazo N)  → DECIDIDOS en §121: el «acuse» (nombre
   reservado en §120: ya hay dos `*Receipt` de otra especie) compromete
   su propio N bajo N_max = 1.440 cabezas firmadas (24 h, precedente MMD

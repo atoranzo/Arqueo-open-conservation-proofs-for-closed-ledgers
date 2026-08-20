@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 45 abiertas, 55 resueltas — **3 suspendidas** (16, 22 y 28).
+**Estado**: 47 abiertas, 55 resueltas — **3 suspendidas** (16, 22 y 28).
 Ultima revision: 20 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -1831,7 +1831,12 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   cazada por el instrumento en lo que SI ve. Queda escrito porque es el
   argumento de la propia nota, del derecho.
 
-- [ ] **100. Un nodo que ha firmado no vuelve a arrancar.** El SK no se
+- [x] **100. Un nodo que ha firmado no vuelve a arrancar.** ⚠️ **RESUELTA
+  en el §335.** La clave se resincroniza al contador al arrancar, y el
+  contador se ata al **maximo indice anotado en el diario**: si ha retrocedido,
+  se falla cerrada. Demostrado en vivo por el `NEGATIVO-A` del propio banco, que
+  vuelve a dar su veredicto. El parche del `NEGATIVO-B2` **sigue pendiente** y va
+  detras, como emision propia. Lo que sigue abajo es el texto original. El SK no se
   persiste: al reiniciar, la clave se rederiva de la semilla y su índice vuelve a
   **cero**, mientras el contador del guardián sobrevive en el fichero de
   `--indice-firma`. Esa pareja es exactamente `ClaveEnCero`, que desde el §331
@@ -1850,6 +1855,42 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   Repararlo de verdad es territorio de la **84** y la **92**: que la clave sepa
   volver a su índice. Con esta entrada va también el parche del `NEGATIVO-B2`
   que el §334 dejó escrito y sin aplicar.
+
+- [ ] **101. El ancho del indice esta declarado en DOS sitios y ninguno lo lee
+  de `xmss`.** `zk-ssl-guardian::ancho_indice()` devuelve 5 y
+  `zk-ssl-verify::ANCHO_INDICE` vale lo mismo; el §332 dejo el test que
+  **los ata entre si**, y el doc de `verify` dice con todas las letras que es
+  «la segunda copia, no una tercera». El residuo real es otro:
+  **ninguna de las dos esta atada a lo que `xmss` sabe**, porque `full_height`
+  e `index_bytes` son `pub(crate)`. Lo unico publico es el NOMBRE DEL TIPO,
+  `XmssMtSha2_40_8_256`. Mientras siga asi, un cambio de conjunto de parametros
+  no rompe ningun test nuestro: **valida mal, en silencio**. Tercera vez que la
+  grieta asoma (§296, §298, §335) y primera que tiene entrada.
+  ⚠️ El §335 la estrecha sin cerrarla: `poner_indice_en_sk` **no anade una
+  tercera copia** —usa `ancho_indice()`— y su techo se DERIVA del ancho
+  del campo, `2^(8*ancho)`, que aqui coincide con `2^h` porque 40 = 8x5.
+
+- [ ] **102. El borrado del buffer del SK es BEST-EFFORT, y upstream deja una
+  copia sin borrar.** `resincronizar_a` saca los bytes del SK a un `Vec` para
+  parchear el indice y lo borra con `zeroize` al terminar; el SK **viejo** si se
+  zeroiza solo, porque `SigningKey` tiene `Drop`. Pero un `Vec` pudo REUBICARSE
+  mientras se construia, asi que borrar el ultimo puntero **no promete nada
+  sobre las copias intermedias**, y el doc lo dice.
+  ⚠️⚠️ Y hay una fuga que no es nuestra: `KeyPair::from_seed` construye el
+  SK en un `Vec`, lo copia a su `Array` y **suelta el `Vec` sin borrar**, en cada
+  arranque. Leido en `xmss.rs:620-645`; `init_keypair_buffers` NO esta leida, asi
+  que la lectura es parcial y se declara. No se arregla aqui —es de un crate
+  ajeno, una herencia por corte—: se DECLARA.
+
+- [ ] **103. El gate del contador contra el diario se apaga quitando un
+  fichero.** Con `--diario` ausente o vacio no hay segundo testigo y el arranque
+  resincroniza igual, que es lo correcto —el caso del `NEGATIVO-A` es
+  exactamente ese— pero significa que **una rotacion de logs rutinaria apaga
+  la comprobacion sin mala fe**. Se midio que el nodo NO rota el diario, asi que
+  hoy es accion de operador y no camino de codigo. Y ante una restauracion del
+  DIRECTORIO ENTERO no hay nada que hacer: contador y diario vuelven juntos.
+  **Dos testigos en el mismo disco son un solo testigo frente a una
+  restauracion.** Declarado tambien en `doc/CONFIANZA_RESIDUAL.md`.
 
 ## F. Publicacion, cuando el circuito este cerrado
 

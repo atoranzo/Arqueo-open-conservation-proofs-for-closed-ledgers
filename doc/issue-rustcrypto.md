@@ -32,7 +32,8 @@ parameter set, XMSS-SHA2_10_256) but it shows the accessor is practical.
 
 ---
 
-**2. XMSS^MT verifying keys cannot be parsed back from their own bytes**
+**2. XMSS^MT keys cannot be parsed back from their own bytes** (verifying
+**and signing**)
 
 ```rust
 let kp = KeyPair::<XmssMtSha2_40_8_256>::from_seed(&seed)?;
@@ -66,10 +67,28 @@ One possible fix: have the caller pass the expected registry, or try the
 XMSS^MT branch when the parsed single-tree variant does not match `P::oid()`.
 Happy to send a PR.
 
-*(Workaround in use meanwhile: add `XMSSMT_OID_OFFSET` to the first four
-bytes before calling `try_from`. Published keys keep the correct RFC OID.)*
+**The same happens to `SigningKey`**, and there it is worse than an
+inconvenience:
 
-**2. Is cached traversal state (BDS) on the roadmap?** Signing currently
+```rust
+let kp = KeyPair::<XmssMtSha2_40_8_256>::from_seed(&seed)?;
+let sk = kp.signing_key().as_ref().to_vec();          // untouched bytes
+SigningKey::<XmssMtSha2_40_8_256>::try_from(sk.as_slice())
+// => Err(InvalidOid(5))
+```
+
+Because `KeyPair::new` is `pub(crate)` and gated behind the `pkcs8` feature,
+`generate` and `from_seed` are the only public constructors — so a signing key
+**cannot be restored at a given index at all**. For a stateful scheme that is
+the difference between a node that survives a restart and one that does not:
+persisting the key is pointless if it cannot be loaded back, and rebuilding it
+at the counter's index is impossible through the public API.
+
+*(Workaround in use meanwhile: add `XMSSMT_OID_OFFSET` to the first four
+bytes before calling `try_from`, for both key kinds. Published keys keep the
+correct RFC OID.)*
+
+**3. Is cached traversal state (BDS) on the roadmap?** Signing currently
 appears to rebuild the tree each time — sign ≈ keygen in our measurements
 (~0.62 ms/leaf, x86-64, release): XMSS-SHA2_10_256 signs in ~645 ms vs
 ~634 ms keygen, and XMSSMT-SHA2_40/8_256 signs in ~160 ms (8 layers × 2⁵).
@@ -77,7 +96,7 @@ That is O(d·2^(h/d)) per signature; with BDS state it would be O(h). Fully
 understandable for a pre-release — mostly asking whether it's planned, since
 it decides which parameter sets are usable at ~1 signature/second.
 
-**3. Minor: `Clone` on `SigningKey` is a footgun for a stateful scheme** —
+**4. Minor: `Clone` on `SigningKey` is a footgun for a stateful scheme** —
 `let k2 = sk.clone()` followed by signing with both silently reuses an index
 (we verified both signatures validate). Perhaps worth a doc warning, or
 gating `Clone` behind a feature so the misuse is at least deliberate.

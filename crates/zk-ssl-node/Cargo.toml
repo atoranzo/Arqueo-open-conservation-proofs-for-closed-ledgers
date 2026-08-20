@@ -47,3 +47,8 @@ serde_json = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 anyhow = "1"
+# ⚠️ Solo para BORRAR el buffer temporal del SK al resincronizar (S335).
+# Ya estaba en el arbol como transitiva de `xmss`: declararla directa no mete
+# un crate nuevo en el binario que firma. El borrado es BEST-EFFORT y su doc
+# lo dice: un `Vec` pudo reubicarse mientras se construia.
+zeroize = "1"

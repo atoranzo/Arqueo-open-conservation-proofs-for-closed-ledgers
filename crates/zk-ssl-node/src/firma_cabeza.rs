@@ -41,20 +41,76 @@
 
 use std::path::Path;
 
-use xmss::KeyPair;
+use xmss::{KeyPair, SigningKey};
+use zeroize::Zeroize;
 
 // ⚠️ §296: el guardian vive en su propio crate. El nodo y el TESTIGO
 // comparten LA MISMA implementacion — dos del mismo invariante pueden
 // discrepar, y aqui discrepar significa FILTRAR UNA CLAVE (§253, §243).
-use zk_ssl_guardian::{indice_de_sk, GuardianError, GuardianIndice, Reconciliacion};
+use zk_ssl_guardian::{
+    indice_de_sk, poner_indice_en_sk, GuardianError, GuardianIndice, Reconciliacion,
+};
 
 // ⚠️ Reexportado, no reimplementado: la verificación vive en `zk-ssl-verify`
 // y quien la usaba desde aquí (main.rs, latido.rs) no cambia.
 pub use zk_ssl_verify::{
-    preambulo, verificar_cabeza, CabezaFirmada, Conjunto, VerificaError, DOMINIO,
-    FIRMA_RFC_BYTES, VERSION_FORMATO,
+    aplicar_apano_del_oid, indice_de_firma, preambulo, verificar_cabeza,
+    CabezaFirmada, Conjunto, VerificaError, DOMINIO, FIRMA_RFC_BYTES,
+    VERSION_FORMATO,
 };
 
+
+/// ⚠️⚠️ **El invariante que el `&mut` deja huerfano.**
+/// `KeyPair::signing_key()` devuelve `&mut`, asi que nada impide asignar un SK
+/// de OTRA semilla y romper la pareja `sk`/`vk` sin que el tipo lo note. Este
+/// mod lo ATA: se resincroniza, se firma, y se verifica **con la clave publica
+/// que NO se toco**. Sin el, el S335 abre una puerta que el tipo cerraba.
+///
+/// ⚠️ No pasa por `FirmanteCabeza` a proposito: asi no necesita guardian ni
+/// fichero en disco, y aisla exactamente lo que se quiere probar.
+#[cfg(test)]
+mod el_par_sigue_atado {
+    use super::*;
+    use zk_ssl_guardian::{indice_de_sk, poner_indice_en_sk};
+
+    #[test]
+    fn resincronizar_no_rompe_la_pareja_y_usa_la_hoja_pedida() {
+        let semilla = [7u8; 96];
+        let mut par = KeyPair::<Conjunto>::from_seed(&semilla).expect("keygen");
+        let pk_antes = par.verifying_key().as_ref().to_vec();
+
+        let mut sk = par.signing_key().as_ref().to_vec();
+        poner_indice_en_sk(&mut sk, 5).expect("poner el indice");
+        aplicar_apano_del_oid(&mut sk).expect("el apano del OID");
+        *par.signing_key() =
+            SigningKey::<Conjunto>::try_from(sk.as_slice()).expect("rehacer el SK");
+        sk.zeroize();
+
+        assert_eq!(
+            indice_de_sk(par.signing_key().as_ref()).expect("leer"),
+            5,
+            "la clave tiene que quedar EN el indice pedido"
+        );
+
+        let digest = [9u8; 32];
+        let pre = preambulo(VERSION_FORMATO, &digest);
+        let sig = par.signing_key().sign(&pre).expect("firmar");
+        let c = CabezaFirmada {
+            version_formato: VERSION_FORMATO,
+            indice: 6,
+            firma: sig.as_ref().to_vec(),
+        };
+
+        verificar_cabeza(&pk_antes, &digest, &c)
+            .expect("la clave publica que NO se toco tiene que verificar la firma");
+
+        assert_eq!(
+            indice_de_firma(&c.firma).expect("indice embebido"),
+            5,
+            "la hoja gastada es la resincronizada, no otra"
+        );
+    }
+}
 
 #[derive(Debug)]
 pub enum FirmaError {
@@ -151,6 +207,43 @@ impl FirmanteCabeza {
         // ⚠️ §298: la lectura vive en el guardián y su error es el suyo. El
         // `?` lo convierte con el `From` de arriba — sin él no compila.
         Ok(indice_de_sk(self.par.signing_key().as_ref())?)
+    }
+
+    /// Pone la clave EN el indice que el guardian tiene registrado.
+    ///
+    /// ⚠️⚠️ Es CONSERVADOR: como el contador se persiste ANTES de
+    /// firmar, la hoja `indice` NUNCA se reservo y no puede estar quemada. Las
+    /// de abajo quedan PERDIDAS -no reutilizables-, que es lo que la nota 92
+    /// pide frente a dejarlas indeterminadas.
+    ///
+    /// ⚠️ El SK viejo se ZEROIZA solo al asignar: `SigningKey` tiene `Drop`.
+    /// El buffer temporal se borra a mano y es **BEST-EFFORT**: un `Vec` pudo
+    /// reubicarse mientras se construia, asi que borrar el ultimo puntero no
+    /// promete nada sobre copias intermedias. Y `KeyPair::from_seed` de upstream
+    /// ya deja una copia sin borrar en cada arranque: eso es del crate ajeno y
+    /// va DECLARADO, no arreglado aqui.
+    pub fn resincronizar_a(&mut self, indice: u64) -> Result<(), FirmaError> {
+        let mut sk = self.par.signing_key().as_ref().to_vec();
+        poner_indice_en_sk(&mut sk, indice)?;
+        // ⚠️⚠️ EL APANO DEL OID, y es EL MISMO que usa el verificador.
+        //    `xmss` prueba los OID de arbol unico ANTES que los de XMSS^MT, y
+        //    el 5 acierta con el significado equivocado, asi que sin esto
+        //    `try_from` rechaza un SK que el propio crate acaba de producir.
+        //    Solo para volver a ENTRAR: el SK no se publica jamas.
+        aplicar_apano_del_oid(&mut sk).map_err(|e| FirmaError::Xmss(format!("{e:?}")))?;
+        let nueva = SigningKey::<Conjunto>::try_from(sk.as_slice())
+            .map_err(|e| FirmaError::Xmss(format!("{e}")))?;
+        *self.par.signing_key() = nueva;
+        sk.zeroize();
+        // ⚠️ Se AUTOCOMPRUEBA antes de devolver, como el firmar del S299:
+        //    no se afirma que la clave esta donde se pidio sin releerlo.
+        let leido = self.indice_de_la_clave()?;
+        if leido != indice {
+            return Err(FirmaError::Xmss(format!(
+                "resincronizar pidio el indice {indice} y la clave dice {leido}"
+            )));
+        }
+        Ok(())
     }
 
     /// Compara el contador con el índice real de la clave.

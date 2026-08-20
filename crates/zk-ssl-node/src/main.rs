@@ -347,6 +347,10 @@ enum DecisionDeArranque {
     ArrancaAvisando(String),
     /// ⚠️⚠️ No se arranca.
     NoArranca(String),
+    /// ⚠️⚠️ S335: la clave estaba en cero y se la pone donde el contador
+    /// dice. `hasta` es el indice al que se resincroniza; `aviso` DICE LO QUE SE
+    /// ABANDONA, porque esa es toda la justificacion del arranque.
+    ArrancaResincronizando { hasta: u64, aviso: String },
 }
 
 /// La politica del arranque ante cada caso del guardian.
@@ -357,7 +361,10 @@ enum DecisionDeArranque {
 ///
 /// ⚠⚠ Y su hermano `ClaveEnCero` SI para: K.1 midio DENTRO de un proceso,
 /// no tras un reinicio, y al reiniciar la clave vuelve a cero.
-fn politica_de_reconciliacion(r: &zk_ssl_guardian::Reconciliacion) -> DecisionDeArranque {
+fn politica_de_reconciliacion(
+    r: &zk_ssl_guardian::Reconciliacion,
+    tope_diario: Option<u64>,
+) -> DecisionDeArranque {
     match r {
         zk_ssl_guardian::Reconciliacion::Coincide { indice } => {
             DecisionDeArranque::Arranca(format!(
@@ -371,12 +378,40 @@ fn politica_de_reconciliacion(r: &zk_ssl_guardian::Reconciliacion) -> DecisionDe
             ))
         }
         zk_ssl_guardian::Reconciliacion::ClaveEnCero { contador, indeterminados } => {
-            DecisionDeArranque::NoArranca(format!(
-                "LA CLAVE ESTA EN CERO Y EL CONTADOR EN {contador}: {indeterminados} \
-                 indice(s) INDETERMINADOS. El SK no se persiste, asi que firmar ahora \
-                 reutilizaria indices que pueden estar quemados. No se puede probar lo \
-                 contrario, y se falla cerrada"
-            ))
+            // ⚠️⚠️ El contador y el DIARIO son dos productores del mismo
+            //    hecho -quien firma, anota (S285)-: se atan aqui. Si el contador
+            //    ha RETROCEDIDO por debajo de lo que el diario dice haber
+            //    firmado, resincronizar reutilizaria hojas: se falla cerrada.
+            //
+            // ⚠️⚠️ El operador es `<` y esta DERIVADO, no elegido: el
+            //    estado LIMPIO es la IGUALDAD -reservar devuelve C+1, la cabeza
+            //    declara C+1 y el diario anota ese mismo C+1-, asi que con `<=`
+            //    el reinicio normal no arrancaria NUNCA.
+            //
+            // ⚠️ LIMITE DECLARADO: sin diario no hay segundo testigo y esto
+            //    pasa. El gate se apaga quitando un fichero, y una rotacion de
+            //    logs rutinaria lo apaga sin mala fe. Va en CONFIANZA_RESIDUAL.
+            match tope_diario {
+                Some(d) if *contador < d => DecisionDeArranque::NoArranca(format!(
+                    "EL CONTADOR HA RETROCEDIDO: dice {contador} y el diario tiene \
+                     anotado el indice {d}. El contador sale de --indice-firma y el \
+                     {d} del diario: resincronizar aqui reutilizaria hojas ya \
+                     firmadas, y eso filtra la clave. Se falla cerrada"
+                )),
+                _ => {
+                    let ultima = contador.saturating_sub(1);
+                    DecisionDeArranque::ArrancaResincronizando {
+                        hasta: *contador,
+                        aviso: format!(
+                            "LA CLAVE ESTABA EN CERO Y EL CONTADOR EN {contador}: la \
+                             clave se resincroniza hasta {contador}. SE ABANDONAN \
+                             {indeterminados} indice(s), de 0 a {ultima}, que quedan \
+                             PERDIDOS y NO REUTILIZABLES. Un indice perdido es mejor \
+                             que uno indeterminado (nota 92)"
+                        ),
+                    }
+                }
+            }
         }
         zk_ssl_guardian::Reconciliacion::ClaveAdelantada { contador, clave, sin_registrar } => {
             DecisionDeArranque::NoArranca(format!(
@@ -395,7 +430,7 @@ mod politica_de_arranque {
 
     #[test]
     fn a_la_par_arranca_y_lo_dice() {
-        match politica_de_reconciliacion(&Reconciliacion::Coincide { indice: 7 }) {
+        match politica_de_reconciliacion(&Reconciliacion::Coincide { indice: 7 }, None) {
             DecisionDeArranque::Arranca(m) => {
                 assert!(m.contains('7'), "el aviso nombra el indice: {m}");
             }
@@ -410,7 +445,7 @@ mod politica_de_arranque {
             contador: 9,
             clave: 7,
             huerfanos: 2,
-        }) {
+        }, None) {
             DecisionDeArranque::ArrancaAvisando(m) => {
                 assert!(m.contains("NORMAL"), "el aviso dice que NO es un fallo: {m}");
             }
@@ -419,17 +454,22 @@ mod politica_de_arranque {
     }
 
     #[test]
-    fn la_clave_en_cero_no_arranca_aunque_el_contador_vaya_por_delante() {
+    fn la_clave_en_cero_resincroniza_si_el_diario_no_lo_contradice() {
         // ⚠⚠ EL ROJO NUEVO. `ContadorAdelantado` sigue siendo el caso normal;
         // esto es su hermano, y no se puede probar que 0..contador-1 esten libres.
+        // ⚠️⚠️ S335 CORRIGE lo de arriba SIN BORRARLO: ya NO es un rojo.
+        //    No hace falta probar que 0..contador-1 esten libres: se ABANDONAN,
+        //    y la clave arranca en `contador`, una hoja que NUNCA se reservo.
+        //    El rojo se mudo al caso en que el DIARIO contradice al contador.
         match politica_de_reconciliacion(&Reconciliacion::ClaveEnCero {
             contador: 9,
             indeterminados: 9,
-        }) {
-            DecisionDeArranque::NoArranca(m) => {
-                assert!(m.contains("INDETERMINADOS"), "el motivo nombra lo que no se puede probar: {m}");
+        }, None) {
+            DecisionDeArranque::ArrancaResincronizando { hasta, aviso } => {
+                assert_eq!(hasta, 9, "se resincroniza hasta el contador");
+                assert!(aviso.contains("ABANDONAN"), "el aviso dice lo que se pierde: {aviso}");
             }
-            otra => panic!("la clave en cero con el contador vivo NO puede arrancar: {otra:?}"),
+            otra => panic!("sin diario que lo contradiga, la clave en cero resincroniza: {otra:?}"),
         }
     }
 
@@ -440,12 +480,67 @@ mod politica_de_arranque {
             contador: 7,
             clave: 9,
             sin_registrar: 2,
-        }) {
+        }, None) {
             DecisionDeArranque::NoArranca(m) => {
                 assert!(m.contains("COMPROMETIDA"), "el motivo nombra la consecuencia: {m}");
             }
             otra => panic!("la clave por delante del contador NO puede arrancar: {otra:?}"),
         }
+    }
+}
+
+/// El gate del diario, que es la mitad nueva de la politica.
+#[cfg(test)]
+mod gate_del_diario {
+    use super::*;
+    use zk_ssl_guardian::Reconciliacion;
+
+    fn en_cero(contador: u64) -> Reconciliacion {
+        Reconciliacion::ClaveEnCero { contador, indeterminados: contador }
+    }
+
+    /// ⚠️⚠️ EL CASO LIMPIO ES LA IGUALDAD. Con `<=` esto no arrancaria
+    /// nunca, que es justo lo que el sello existe para arreglar.
+    #[test]
+    fn contador_igual_al_diario_es_el_caso_limpio_y_resincroniza() {
+        match politica_de_reconciliacion(&en_cero(5), Some(5)) {
+            DecisionDeArranque::ArrancaResincronizando { hasta, aviso } => {
+                assert_eq!(hasta, 5, "se resincroniza hasta el contador");
+                assert!(aviso.contains("ABANDONAN"), "dice lo que se pierde: {aviso}");
+                assert!(aviso.contains("PERDIDOS"), "y que no son reutilizables: {aviso}");
+            }
+            otra => panic!("la igualdad es el caso LIMPIO: {otra:?}"),
+        }
+    }
+
+    #[test]
+    fn el_contador_por_delante_del_diario_tambien_resincroniza() {
+        assert!(matches!(
+            politica_de_reconciliacion(&en_cero(9), Some(4)),
+            DecisionDeArranque::ArrancaResincronizando { hasta: 9, .. }
+        ));
+    }
+
+    /// ⚠️⚠️ EL ROJO. Un rojo sin su test es un adorno.
+    #[test]
+    fn un_contador_por_debajo_del_diario_no_arranca_y_nombra_los_dos() {
+        match politica_de_reconciliacion(&en_cero(4), Some(9)) {
+            DecisionDeArranque::NoArranca(m) => {
+                assert!(m.contains('4') && m.contains('9'), "nombra los dos numeros: {m}");
+                assert!(m.contains("diario"), "y sus dos fuentes: {m}");
+            }
+            otra => panic!("un contador que retrocede NO puede resincronizar: {otra:?}"),
+        }
+    }
+
+    /// ⚠️⚠️ EL INTERRUPTOR, ESCRITO COMO TEST: sin diario no hay segundo
+    /// testigo y el gate PASA. No se tapa: se declara.
+    #[test]
+    fn sin_diario_el_gate_pasa_y_ese_es_su_limite() {
+        assert!(matches!(
+            politica_de_reconciliacion(&en_cero(3), None),
+            DecisionDeArranque::ArrancaResincronizando { hasta: 3, .. }
+        ));
     }
 }
 
@@ -522,11 +617,19 @@ async fn main() -> anyhow::Result<()> {
             //    arranque no la llamaba. desde_semilla LEE el indice de la
             //    clave y lo TIRA con un let _ = -solo comprueba el layout-,
             //    asi que nadie comparaba el contador con la clave.
-            match politica_de_reconciliacion(
-                &f.reconciliar().map_err(|e| anyhow::anyhow!("{e}"))?,
-            ) {
+            // ⚠️⚠️ S335 - EN DOS PASOS A PROPOSITO: si `f.reconciliar()`
+            //    va dentro del escrutinio, su temporal mantiene a `f` prestado
+            //    durante TODO el match y `resincronizar_a` no compila. Es el
+            //    mismo molde que el testigo dejo escrito para su reconciliar.
+            let reconciliacion = f.reconciliar().map_err(|e| anyhow::anyhow!("{e}"))?;
+            let tope_diario = args.diario.as_deref().and_then(|r| diario::maximo_indice(r));
+            match politica_de_reconciliacion(&reconciliacion, tope_diario) {
                 DecisionDeArranque::Arranca(m) => tracing::info!("{m}"),
                 DecisionDeArranque::ArrancaAvisando(m) => tracing::warn!("{m}"),
+                DecisionDeArranque::ArrancaResincronizando { hasta, aviso } => {
+                    f.resincronizar_a(hasta).map_err(|e| anyhow::anyhow!("{e}"))?;
+                    tracing::warn!("{aviso}");
+                }
                 DecisionDeArranque::NoArranca(m) => anyhow::bail!("{m}"),
             }
             Some(f)

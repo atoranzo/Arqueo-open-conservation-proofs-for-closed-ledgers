@@ -400,16 +400,74 @@ pub const OFFSET_MT_UPSTREAM: u32 = 0x0001_0000;
 ///
 /// ⚠️ **Solo al leer.** Lo que el operador publica lleva su OID `0x00000005`
 /// y es **RFC 8391 correcto**: el apaño no toca el cable.
-pub fn clave_desde_bytes(rfc: &[u8]) -> Result<VerifyingKey<Conjunto>, VerificaError> {
-    if rfc.len() < 4 {
+/// Aplica el apano del OID sobre los CUATRO primeros bytes, EN SU SITIO.
+///
+/// ⚠️⚠️ **Este es el UNICO sitio donde el apano se aplica.** Entran por
+/// aqui [`clave_desde_bytes`] -que lee lo publicado- y el FIRMANTE, cuando
+/// resincroniza su clave. Dos copias del mismo apano podrian discrepar, y
+/// discrepar aqui significa no poder leer una clave legitima (S243).
+///
+/// ⚠️ Su centinela sigue siendo el de siempre:
+/// `el_apano_del_oid_sigue_haciendo_falta` se pone ROJO el dia que upstream
+/// arregle `parse_oid_and_params`, y entonces esto sobra entero.
+pub fn aplicar_apano_del_oid(bytes: &mut [u8]) -> Result<(), VerificaError> {
+    if bytes.len() < 4 {
         return Err(VerificaError::ClaveIlegible(format!(
             "{} bytes: no caben ni los 4 del OID",
-            rfc.len()
+            bytes.len()
         )));
     }
+    let raw = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) | OFFSET_MT_UPSTREAM;
+    bytes[..4].copy_from_slice(&raw.to_be_bytes());
+    Ok(())
+}
+
+#[cfg(test)]
+mod el_apano_tiene_un_solo_dueno {
+    use super::*;
+
+    #[test]
+    fn deja_el_oid_que_xmss_espera_y_no_toca_nada_mas() {
+        let mut b = vec![0u8; 68];
+        b[3] = 5;
+        b[10] = 0xab;
+        aplicar_apano_del_oid(&mut b).expect("aplicar");
+        assert_eq!(
+            u32::from_be_bytes([b[0], b[1], b[2], b[3]]),
+            0x0001_0005,
+            "el OID tiene que pasar al registro de XMSS^MT"
+        );
+        assert_eq!(b[10], 0xab, "y no toca un byte mas alla del OID");
+    }
+
+    /// El apano es un OR de un bit, asi que aplicarlo dos veces da lo mismo.
+    /// No es una excusa para aplicarlo dos veces: es que no puede corromper.
+    #[test]
+    fn aplicarlo_dos_veces_da_lo_mismo() {
+        let mut una = vec![0u8; 68];
+        una[3] = 5;
+        aplicar_apano_del_oid(&mut una).expect("una");
+        let mut dos = una.clone();
+        aplicar_apano_del_oid(&mut dos).expect("dos");
+        assert_eq!(una, dos, "el apano es idempotente");
+    }
+
+    #[test]
+    fn un_buffer_corto_falla_y_no_se_toca() {
+        let mut corto = vec![9u8, 9, 9];
+        assert!(aplicar_apano_del_oid(&mut corto).is_err());
+        assert_eq!(corto, vec![9u8, 9, 9], "y no se toca al fallar");
+    }
+}
+
+/// ⚠️⚠️ S335 CORRIGE, SIN BORRARLO, el "Solo al leer" de arriba: el
+///    FIRMANTE tambien entra por el apano, al resincronizar su clave. Lo que
+///    SIGUE siendo cierto es lo que importa: **el apano no toca el cable**. El
+///    SK no se publica jamas, y lo publicado sigue llevando su OID del RFC,
+///    `0x00000005`, sin apano ninguno.
+pub fn clave_desde_bytes(rfc: &[u8]) -> Result<VerifyingKey<Conjunto>, VerificaError> {
     let mut b = rfc.to_vec();
-    let raw = u32::from_be_bytes([b[0], b[1], b[2], b[3]]) | OFFSET_MT_UPSTREAM;
-    b[..4].copy_from_slice(&raw.to_be_bytes());
+    aplicar_apano_del_oid(&mut b)?;
     VerifyingKey::<Conjunto>::try_from(b.as_slice())
         .map_err(|e| VerificaError::ClaveIlegible(format!("{e:?}")))
 }

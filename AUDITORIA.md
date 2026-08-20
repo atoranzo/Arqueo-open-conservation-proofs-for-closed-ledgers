@@ -25913,3 +25913,124 @@ sigue fuera por tercera vez consecutiva: **una herencia por corte**. La
 correccion §247 del asiento del §331 sigue sin tocarse, por la misma razon
 de siempre: **no se reescribe lo que no se ha leido**. Y las cinco citas del
 «13 de 25» siguen esperando.
+
+## §335 — 2026-08-20 · LA CLAVE VUELVE A SU INDICE, Y EL CONTADOR SE ATA AL DIARIO
+
+**Lo que estaba roto.** El SK no se persiste: al reiniciar, la clave se rederiva
+de la semilla y su indice vuelve a **cero** mientras el contador del guardian
+sobrevive. Eso es `ClaveEnCero`, que desde el §331 falla cerrada, asi que
+**cualquier reinicio posterior a la primera cabeza firmada dejaba el nodo
+muerto**. La entrada **100**.
+
+**El arreglo es CONSERVADOR, no arriesgado, y ahi esta todo.** El guardian
+persiste `actual+1` **antes** de firmar, luego como mucho se gasto la hoja
+`contador-1`; poner la clave **en** `contador` usa una hoja que **nunca se
+reservo** y que por tanto no puede estar quemada. Las de abajo quedan
+**PERDIDAS y no reutilizables**, que es exactamente lo que la nota **92** pide:
+un indice perdido es mejor que uno indeterminado. El aviso al operador **dice lo
+que se abandona**, en la salida y no solo en un doc, porque esa frase es toda la
+justificacion del arranque.
+
+**El contador se ata al DIARIO, y el operador de comparacion se DERIVA.** Quien
+firma anota (§285), asi que contador y diario son **dos productores del mismo
+hecho**: se atan. Si el contador ha RETROCEDIDO por debajo del maximo anotado,
+resincronizar reutilizaria hojas y se falla cerrada nombrando los dos numeros y
+sus dos fuentes (§254). El operador es `<` y no `<=` **por aritmetica**: el
+estado limpio es la IGUALDAD —`reservar()` devuelve C+1, la cabeza declara
+C+1 y el diario anota ese mismo C+1—, asi que con `<=` el reinicio normal no
+habria arrancado NUNCA. **Elegir el operador por prudencia convierte el gate en
+un bloqueo**; se deriva del invariante o no se pone.
+
+**Y el lector es MAXIMO, no ULTIMO.** El caso del que esto defiende es
+precisamente el que hace escribir indices menores detras de mayores: agregar por
+el ultimo seria medir con un instrumento que el propio ataque desarma.
+
+**Los limites del gate, escritos.** Sin diario **pasa**: el gate se apaga
+quitando un fichero, y una rotacion de logs rutinaria lo apaga **sin mala fe**.
+Se midio que **el nodo NO rota el diario** —`anotar` abre en `append`, su doc
+dice que nunca reescribe, y el unico `remove_file` esta en tests—, asi que el
+interruptor es accion de operador y no camino de codigo. Y falla permisivo **por
+dos vias mas**, las dos a proposito: `anotar` no hace `fsync` y `limites` salta
+lineas ilegibles. Todo empuja al mismo lado: deja arrancar, nunca da rojo falso.
+**Dos testigos en el mismo disco son un solo testigo frente a una restauracion**,
+y eso va a `CONFIANZA_RESIDUAL`.
+
+**El muro, y la leccion mas cara del arco.** Rehacer la clave exige volver a
+entrar en `xmss`, y `SigningKey::try_from` **rechaza los bytes que
+`KeyPair::from_seed` acaba de producir**: `InvalidOid(5)`. Medido con un test
+temporal que solo imprime y devuelve el fichero a su huella. La causa la escribe
+el propio crate en su doc: `parse_oid_and_params` prueba los OID de arbol unico
+**antes** que los de XMSS^MT, y el 5 acierta con el significado equivocado
+—`XmssSha2_16_512`—, asi que la rama correcta nunca corre. Los dos
+registros del RFC 8391 se solapan.
+
+**Pero el arbol YA LO SABIA, y eso es lo que hay que aprender.** `verify` tiene
+`OFFSET_MT_UPSTREAM` desde antes, `clave_desde_bytes` aplicando el apano, un
+CENTINELA que se pondra rojo el dia que upstream lo arregle, y
+`doc/issue-rustcrypto.md` con el hallazgo **entero** y mejor contado que el mio
+—cinco de los ocho conjuntos SHA2-256 colisionan—. Se gastaron **cinco
+bloques** redescubriendo lo que estaba a cuarenta lineas de una funcion que si se
+habia leido. **Antes de tasar una puerta ajena, censar el arbol propio por si ya
+la abrio**: el censo que lo encontro es una linea, y podia haber sido el primero
+del arco en vez del sexto.
+
+**El apano pasa a tener UN SOLO DUENO.** Nace `aplicar_apano_del_oid` y
+`clave_desde_bytes` **se reescribe para usarlo**: no hay dos copias, hay una
+funcion y dos consumidores —el que lee lo publicado y el firmante al
+resincronizar—. Es el §243 aplicado al propio apano. Y con ello la frase
+«solo al leer» queda contradicha: se **cita y se corrige encima**
+(§247), dejando en pie lo que sigue siendo cierto, que **el apano no toca el
+cable**: el SK no se publica jamas y lo publicado sigue llevando su OID del RFC.
+
+**El invariante que el `&mut` dejaba huerfano, atado.** `signing_key()` devuelve
+`&mut`, asi que nada impedia asignar un SK de otra semilla y romper la pareja
+`sk`/`vk` sin que el tipo lo notara. El test lo ata: resincroniza, firma, y
+**verifica con la clave publica que NO se toco**, comprobando ademas que el
+indice embebido es el pedido. **Ese test es el que cazo el muro**, antes de que
+nada se sellara.
+
+**Lo que la VIVA demostro en vivo, y estaba PREDICHO.** El banco, **sin
+parchear**, pasa del `NEGATIVO-A` con su veredicto propio —seis vueltas con
+anomalia, ninguna cofirmada—, lo que significa que **el segundo nodo
+arranca**: el reinicio ya no mata al nodo, y lo demuestra un banco escrito para
+otra cosa hace sellos. Y muere despues, donde se dijo, en el `NEGATIVO-B2`. **No
+se predijo verde y no salio verde.**
+
+**Los rojos del arco fueron CINCO, y los cinco MIOS y de la misma familia: un
+dato tecleado dentro de un instrumento.** El HEAD esperado escrito **dos veces**
+en la misma linea, sin nada que atara la comparacion con su mensaje. Una prueba
+de vida anclada a una **ruta tomada de un texto** cuando mi propia corrida
+anterior ya habia volcado la buena. Un gate que **contaba 1 donde hay 2**, siendo
+las dos legitimas —y la correccion no fue poner un 2: un «2» no
+dice nada, se parten en dos gates que dicen **cuales**—. Un `--exclude-dir`
+**detras del `--`**, donde `grep` lo toma por nombre de fichero. Y un `printf`
+de un escape unicode que **no produce el simbolo en este shell**, que habria dado
+un rojo FALSO. Los cinco los cazo un ensayo antes de emitir; ninguno toco el
+arbol.
+
+**Un defecto que ningun gate miraba: el `__pycache__`.** Interrogar a
+`check_cifras` importandola escribe `tools/__pycache__/`, un directorio **sin
+trackear** que `git add -A` barreria DENTRO del sello. Lo caza el POST y desde
+hoy se corre con `python3 -B`.
+
+**Contadores.** Pines **84 → 91** (nodo), **66 → 69** (verificador) y
+**22 → 25** (guardian), cada uno con su historia apendada a su fila.
+Sumas **913/1050/1064 → 926/1063/1077** en los CINCO SITIOS VIVOS mas el
+desglose por-crate de `PRINCIPIOS.md`, que se mueve porque nombra al nodo y al
+verificador. `check_cifras` se midio VERDE **antes** de tocar y volvio a salir
+verde. Los pines se ataron a `cargo test` **en la misma corrida**: el pin dice lo
+que el arbol DA, no lo que el documento dice. **Un Cargo tocado y declarado**:
+`node/Cargo.toml` gana `zeroize` —ya estaba en el lock como transitiva de
+`xmss`, asi que no entra un crate nuevo en el binario que firma— y el lock
+**+1/-0**, con la compuerta estrechada **antes** de emitir y no despues del rojo.
+El borrado del buffer es **best-effort y se dice por que**. La entrada **100**
+queda RESUELTA y nacen la **101**, la **102** y la **103**.
+
+**Lo que este sello NO hace, y queda con nombre.** El `NEGATIVO-B2` del banco:
+su parche lleva escrito desde el §334 y ahora **si puede correr su VIVA**,
+pero va **detras y como emision propia** —si el banco se edita en el mismo
+sello que lo usa de regresion, su verde ya no dice que lo causo—.
+`verificar_cabeza` sigue con el defecto del §332 y sigue fuera por **cuarta**
+vez: una herencia por corte. La correccion §247 del asiento del §331
+sigue sin tocarse, por la misma razon de siempre: **no se reescribe lo que no se
+ha leido**. Y las cinco citas del «13 de 25» siguen esperando.
