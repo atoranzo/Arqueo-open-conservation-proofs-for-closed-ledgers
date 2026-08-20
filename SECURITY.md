@@ -116,8 +116,8 @@ atado al importe (§74). Ambas corregidas y medidas.
 - **La custodia del registro está en manos del operador.** Sin observadores
   externos de sus cabezas, podría presentar historias distintas a partes
   distintas. **Desde §241-§243 el nodo firma, emite y sirve sus cabezas, y
-  existe un verificador independiente** (`zk-ssl-verify`) — pero **no hay
-  ningún testigo**, así que la propiedad sigue sin cerrarse.
+  existe un verificador independiente** (`zk-ssl-verify`); **desde el §245 hay
+  testigo, con TOFU** — pero uno que opere el propio operador no prueba nada.
 
 - ⚠️ **El ancla de la clave pública: TOFU desde §245, y nada antes.**
 

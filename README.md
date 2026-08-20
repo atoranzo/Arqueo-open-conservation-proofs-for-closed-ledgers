@@ -422,20 +422,33 @@ conviene que se lea aquí y no en un `Cargo.toml`.
 |---|---|
 | guardián del índice de firma | **construido** (§234). Contador con `fsync` antes de firmar, y **se niega a arrancar si su `fsync` no persiste** — en `tmpfs` cuesta lo mismo que no hacerlo |
 | firmante de cabezas | **construido** (§236). Dominio, versión de formato, y verifica su propia salida |
-| **custodia de la clave** | ⚠️ **no existe.** El firmante toma una semilla; de dónde sale y quién la guarda **no está decidido** |
-| **latido** | ⚠️ **no existe.** Nada emite cabezas por época: el firmante firma cuando se le pide, y nadie se lo pide |
-| **releer una firma desde sus bytes** | ⚠️ **no existe**, y es lo que necesita un testigo |
-| testigos | ⚠️ **ninguno.** Nadie fuera del operador ve cabezas |
+| **custodia de la clave** | **declarada, no comprobada** (§244). El nodo AFIRMA un modelo con `--custodia` y sólo `fichero` lo puede comprobar; de dónde sale la semilla sigue siendo decisión de despliegue |
+| latido | **construido** (§241). Emite cabezas por época cada `--latido` segundos, y con `--latido 0` lo dice en voz alta |
+| releer una firma desde sus bytes | **construido** (§243). `zk-ssl-verify` recompone la cabeza y comprueba quién la firmó, sin el nodo |
+| testigos | **construido** (§245). El testigo fija la clave la primera vez y **se detiene** ante una vista dividida o un cambio de clave |
 
-⚠️ **Y sin custodia declarada de la clave, una firma NO tiene valor probatorio.**
+⚠️ **Corrección §329 (§247: se cita, no se borra).** Hasta este sello las
+cuatro filas de arriba decían **no existe** para la custodia de la clave, el
+latido, releer una firma desde sus bytes y los testigos. Las cuatro estaban
+rancias: la prosa envejeció mientras el árbol avanzaba, y los sellos que la
+desmienten —§241, §243, §244 y §245— ya se citaban en `SECURITY.md`
+unas líneas antes de negarlos. Lo que sí sigue faltando está en su sitio,
+más abajo y en `SECURITY.md`: un ancla anterior al primer encuentro del
+TOFU, y una custodia **comprobada**, no sólo declarada.
+
+⚠️ **La custodia está declarada desde el §244, pero declarada no es
+comprobada:** mientras el operador sólo la afirme, el valor probatorio de
+la firma depende de creerle.
 Que el sistema firme no es que la firma sirva.
 
 Lo que falta, por orden de importancia:
 
 - **Consenso distribuido.** Sin él, el operador ve los saldos y puede
   censurar. La alternativa que este proyecto sí persigue —responsabilidad
-  demostrable, al modo de Certificate Transparency— **necesita las cuatro
-  filas de arriba marcadas con ⚠️**.
+  demostrable, al modo de Certificate Transparency— **ya tiene las cuatro
+  piezas de arriba (§241, §243, §244 y §245): lo que le falta es un
+  ancla anterior al primer encuentro y una custodia comprobada, no sólo
+  declarada**.
 - **Auditoría externa.**
 - **El recibo de admisión** (§121): cuatro cosas independientes apuntan a
   esa pieza, y sigue sin construirse.

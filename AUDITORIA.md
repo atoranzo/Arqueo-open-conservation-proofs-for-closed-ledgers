@@ -25259,3 +25259,74 @@ que se mide y sigue sin reparar. Ningun Cargo tocado. Ninguna herramienta
 tocada. El canon SI se corre y es la puerta, porque el corte toca codigo Rust.
 BACKLOG sin tocar: no abre ni cierra ninguna entrada, y lo que este sello deja
 declarado viaja en la cola del traspaso.
+
+## §329 — 2026-08-20 · EL README DECIA "NO EXISTE" SOBRE CUATRO COSAS QUE EXISTEN
+
+**Que.** La tabla de `README.md` titulada "Lo que existe hoy, y lo que le
+falta para valer" declaraba **no existe** para la custodia de la clave, el
+latido, releer una firma desde sus bytes y los testigos. Las cuatro estaban
+rancias: las cuatro se construyeron entre el §241 y el §245. Se corrigen las
+cuatro celdas, la frase de debajo que cambiaba de sentido, la que CONTABA las
+filas marcadas, y un renglon de `SECURITY.md` que se contradecia a si mismo.
+Ningun `.rs` tocado.
+
+**Como se encontro, y por que duele.** Salio de lado, midiendo el terreno de
+la familia 19-84-92 para otro sello. Al leer `SECURITY.md` entero aparecio que
+su parrafo de la custodia del registro **cita "Desde §241-§243"** y dos lineas
+despues niega que exista testigo, mientras el renglon siguiente empieza por
+"El ancla de la clave publica: TOFU desde el §245". La prosa se desmentia
+citando los sellos que la desmienten. Es el §297 otra vez -la prosa envejece
+sin que ningun gate se ponga rojo- y esta vez en la portada del repositorio.
+
+**El AMBITO se midio ANTES de tocar un byte, y eso decidio el corte.** Un
+censo de afirmaciones de ausencia sobre los veinticuatro documentos de primera
+linea dio **treinta**. Leidas una a una, veintiseis son legitimas y de otra
+cosa: los seis "Setup: ninguno" de la tabla comparativa de backends, porque
+STARK no tiene setup; los agujeros que STARK tiene y Groth16 o Plonkish no;
+"no existe ninguna clave que robar"; la agregacion recursiva, que es la nota
+22; la caducidad de congelaciones. **Las rancias eran exactamente las cuatro
+del README.** El defecto es LOCAL, y por eso el corte lo es: si hubieran
+salido veinte, la decision del alcance habria sido otra y previa.
+
+**La tabla tenia un SEGUNDO PRODUCTOR tres lineas mas abajo.** El parrafo del
+consenso distribuido decia que la responsabilidad demostrable "necesita las
+cuatro filas de arriba marcadas con el aviso". Reparar las celdas y dejar esa
+frase habria cambiado un renglon falso por otro: la cuenta de filas marcadas
+pasaba a ser cero. Se reescribe con las dos cosas que si siguen faltando. Es
+la figura de siempre -dos productores del mismo contrato- en prosa y sin test
+que los ate; lo unico que los ata aqui es haber censado el vecindario.
+
+**Lo que sigue faltando, y va escrito donde toca.** El ancla ANTERIOR al
+primer encuentro del TOFU: si el operador ya mentia cuando el testigo arranco,
+TOFU fija la mentira, y eso no lo cierra mas codigo. Y la custodia
+**comprobada**: hoy solo `fichero` se puede comprobar y el resto son
+afirmaciones del operador. Quedan declarados en las dos piezas, no borrados.
+**No se toca** `SECURITY.md:145`, que no se ha leido entera, ni las dos
+ocurrencias de "ningun" que siguen en ese fichero -una de ellas es el
+HOMONIMO: "ningun testigo-fantasma" habla del testigo de un circuito, no del
+observador-.
+
+**Cifras y su procedencia.** `README.md` 543 -> 556 y `SECURITY.md` 651 ->
+651, que es sustitucion pura de tres lineas por tres. En el README, "no
+existe" pasa de tres a **una**, y esa una es la CITA del parrafo de
+correccion; "ninguno" pasa de dos a una, y la que sobrevive es el "Setup:
+ninguno" de la tabla de backends. El canon NO es la puerta, porque el corte no
+toca un solo `.rs`: lo son las siete herramientas de `tools/`, medidas en BASE
+con el arbol intacto y gateadas solo las que salieron verdes. Las siete lo
+estaban, y las siete siguen verdes.
+
+**Los dos defectos del corte, y los dos los cazo LEER.** El texto nuevo se
+sustituia dentro de una lista y **perdio la sangria** de dos espacios que hace
+que el renglon siga siendo parte de su lista; y al reescribir dos lineas en
+tres **se cayo el cierre de la frase**, que acababa en "no solo". Ningun
+contador podia ver ninguno de los dos: los INERTES cuentan y comparan, no
+leen. De ahi sale un inerte nuevo que exige el cierre, y una regla: **al
+sustituir un tramo dentro de una lista, la sangria es parte del contenido**, y
+una sustitucion que cambia el numero de lineas puede perder texto por el
+borde.
+
+**Contadores.** Ningun pin movido. Ninguna suma movida. Ningun Cargo tocado.
+Ninguna herramienta tocada. Ningun `.rs` tocado, y por eso el canon no se
+corre -precedente del §303 y del §321-. BACKLOG sin tocar: no abre ni cierra
+ninguna entrada. Lo que este sello deja declarado viaja en la cola del
+traspaso.
