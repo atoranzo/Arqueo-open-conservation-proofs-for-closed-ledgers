@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 45 abiertas, 54 resueltas — **3 suspendidas** (16, 22 y 28).
+**Estado**: 45 abiertas, 55 resueltas — **3 suspendidas** (16, 22 y 28).
 Ultima revision: 20 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -1549,7 +1549,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   gana por dos ordenes de magnitud— **probablemente sobrevive**: lo que cambia
   es la magnitud del factor, no su signo.
 
-- [ ] **99. La marca del cofirmante se dispara también cuando las dos líneas
+- [x] **99. La marca del cofirmante se dispara también cuando las dos líneas
   son IDÉNTICAS.** `contar_acreditacion` marca a un cofirmante en cuanto
   `verificar_cofirmas` levanta `indice-repetido`, y desde el §333 ese hallazgo
   mira el índice que va dentro de la firma. Pero **repetir la MISMA línea no
@@ -1562,6 +1562,16 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   digest distinto** (grave) de **línea duplicada** (inocua), y decidir qué hace
   cada una con la acreditación. Medido en el §333 y dejado fuera a propósito:
   una herencia por corte.
+  ✅ **RESUELTA (§334).** El hallazgo exige ahora **dos mensajes distintos** —el
+  valor del mapa de la serie lleva el preámbulo, no sólo la línea previa— y la
+  marca de `contar_acreditacion` exige además que la línea **no traiga ningún
+  otro hallazgo**, con lo que una copia forjada que no verifica se dice pero no
+  quema. Dos pruebas nuevas lo fijan, y la VIVA enseñó el rojo antes de tocar los
+  tests: los dos únicos casos que se rompieron eran justo los que ejercitaban el
+  caso inocuo.
+  ⚠️ El `NEGATIVO-B2` del banco **sigue sin reparar**: su parche está escrito y
+  con sus compuertas verdes, pero el banco no llega hasta él desde el §331 —ver
+  la **100**—, así que se aplicará con ella.
 
 ## E. Operacion
 
@@ -1820,6 +1830,26 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   aviso a la vez. La nota que habla de lo que el instrumento NO VE fue
   cazada por el instrumento en lo que SI ve. Queda escrito porque es el
   argumento de la propia nota, del derecho.
+
+- [ ] **100. Un nodo que ha firmado no vuelve a arrancar.** El SK no se
+  persiste: al reiniciar, la clave se rederiva de la semilla y su índice vuelve a
+  **cero**, mientras el contador del guardián sobrevive en el fichero de
+  `--indice-firma`. Esa pareja es exactamente `ClaveEnCero`, que desde el §331
+  **falla cerrada y no arranca** —y hace bien, porque firmar ahí reutilizaría
+  índices que pueden estar quemados—. Pero el efecto es que **cualquier reinicio
+  posterior a la primera cabeza firmada deja el nodo muerto**. Medido en vivo:
+  `tools/banco_cofirma.sh` muere en `NEGATIVO-A` con «LA CLAVE ESTA EN CERO Y EL
+  CONTADOR EN 13», y ese literal vive **sólo** en `crates/zk-ssl-node/src/main.rs`,
+  lo que desempata quién se negó a arrancar.
+  ⚠️⚠️ **El banco lleva rojo desde el §331 y nadie lo vio en tres sellos**, porque
+  el canon no corre los bancos: sus siete herramientas no los incluyen. Un banco
+  que no se corre no es un adorno: es una afirmación caducada.
+  ⚠️ El montaje del `NEGATIVO-A` lo agrava: pasa `--indice-firma` **sin el
+  sufijo** que sí llevan el ledger, el diario y el contador de recepción, así que
+  el contador del nodo sobrevive a un reseteo que se pretendía completo.
+  Repararlo de verdad es territorio de la **84** y la **92**: que la clave sepa
+  volver a su índice. Con esta entrada va también el parche del `NEGATIVO-B2`
+  que el §334 dejó escrito y sin aplicar.
 
 ## F. Publicacion, cuando el circuito este cerrado
 

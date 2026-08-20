@@ -1463,6 +1463,12 @@ pub enum HallazgoCofirma {
     /// que indexar por el dejaba pasar el REINICIO: al perderse el SK la
     /// clave vuelve a cero y el firmante emite ordinales NUEVOS con indices
     /// de hoja ya gastados. El embebido no se falsea sin romper la firma.
+    ///
+    /// ⚠️⚠️ **Y EL MENSAJE TIENE QUE SER DISTINTO** (§334). Repetir el
+    /// indice con el MISMO preambulo -version, epochDigest y clave del
+    /// operador- es la misma firma sobre el mismo mensaje: no revela nada.
+    /// Levantarlo como hallazgo dejaba desacreditar a un cofirmante honesto
+    /// duplicandole una linea. Lo que filtra la clave son DOS mensajes.
     IndiceRepetido { linea: usize, indice: u64, antes: usize, testigo: String },
     /// ⚠️⚠️ **EL ORDINAL DECLARADO NO CUADRA CON EL QUE VA DENTRO DE LA
     /// FIRMA** (§333). El §332 ato los dos numeros al final de
@@ -1535,7 +1541,9 @@ pub fn verificar_cofirmas(lineas: &[String]) -> Vec<HallazgoCofirma> {
     let mut h = Vec::new();
     // ⚠️ La clave es (CLAVE DEL TESTIGO, indice), no el indice a secas: cada
     //    cofirmante lleva su propia serie (§310).
-    let mut vistos: BTreeMap<(Vec<u8>, u64), usize> = BTreeMap::new();
+    // ⚠️⚠️ El VALOR lleva la linea previa **y el PREAMBULO** (§334): repetir
+    //    un indice solo prueba algo si los dos MENSAJES son distintos.
+    let mut vistos: BTreeMap<(Vec<u8>, u64), (usize, Vec<u8>)> = BTreeMap::new();
     for (i, l) in lineas.iter().enumerate() {
         let n = i + 1;
         let v: Value = match serde_json::from_str(l) {
@@ -1605,16 +1613,41 @@ pub fn verificar_cofirmas(lineas: &[String]) -> Vec<HallazgoCofirma> {
         //    repetir un indice que no tiene, y su clase la pone la firma unas
         //    lineas mas abajo. Antes, dos lineas de basura con el mismo
         //    ordinal contaban como reuso y quemaban a un testigo honesto.
+        // ⚠️⚠️⚠️ EL MENSAJE TIENE QUE SER DISTINTO (§334). Lo que filtra
+        //    una clave de un solo uso son DOS mensajes bajo el mismo indice.
+        //    Dos lineas IDENTICAS son la misma firma sobre el mismo mensaje:
+        //    no revelan nada, y levantarlo como hallazgo dejaba que cualquiera
+        //    desacreditara a un cofirmante honesto **duplicandole una linea**.
+        //    El mensaje es el PREAMBULO entero -version, epochDigest y clave
+        //    del operador-, no solo el digest: con el mismo digest y otra
+        //    clave de operador ya son dos mensajes. Es la regla que
+        //    `cribar_repetidas` declara para la recoleccion -"acusacion de
+        //    doble firma fabricada por la herramienta"- traida al verificador
+        //    del tercero, que se habia quedado sin ella.
+        // ⚠️ Si el preambulo no se puede construir, la linea NO entra en la
+        //    serie: morira unas lineas mas abajo con su clase de siempre.
         let emb = indice_de_firma(&firma).ok();
-        let repetida = emb.and_then(|e| vistos.insert((testigo.clone(), e), n));
-        if let (Some(e), Some(antes)) = (emb, repetida) {
-            let tg = v["clavePublicaTestigo"].as_str().unwrap_or("");
-            h.push(HallazgoCofirma::IndiceRepetido {
-                linea: n,
-                indice: e,
-                antes,
-                testigo: tg[..18.min(tg.len())].to_string(),
-            });
+        let pre = preambulo_cofirma(vf as u8, &d32, &op).ok();
+        if let (Some(e), Some(p)) = (emb, pre) {
+            let clave = (testigo.clone(), e);
+            match vistos.get(&clave).cloned() {
+                None => {
+                    vistos.insert(clave, (n, p));
+                }
+                // ⚠️ Mismo mensaje: NO se toca la entrada, para que `antes`
+                //    siga senalando la PRIMERA aparicion y no la ultima copia.
+                Some((antes, previo)) => {
+                    if previo != p {
+                        let tg = v["clavePublicaTestigo"].as_str().unwrap_or("");
+                        h.push(HallazgoCofirma::IndiceRepetido {
+                            linea: n,
+                            indice: e,
+                            antes,
+                            testigo: tg[..18.min(tg.len())].to_string(),
+                        });
+                    }
+                }
+            }
         }
         let c = CabezaFirmada { version_formato: vf as u8, indice: idx, firma };
         if let Err(err) = verificar_cofirma(&testigo, &d32, &op, &c) {
@@ -1785,8 +1818,11 @@ pub struct Acreditacion {
     pub no_nombrados: usize,
     /// Cofirmas descartadas porque `verificar_cofirmas` les puso hallazgo.
     pub con_hallazgo: usize,
-    /// Testigos QUEMADOS: reusaron indice, asi que su clave se da por
-    /// filtrada y no cuenta NINGUNA de sus cofirmas.
+    /// Testigos QUEMADOS: reusaron indice SOBRE MENSAJES DISTINTOS, asi que
+    /// su clave se da por filtrada y no cuenta NINGUNA de sus cofirmas.
+    ///
+    /// ⚠️ Solo queman las lineas SIN ningun otro hallazgo (§334): una linea
+    /// forjada produce el hallazgo pero no prueba reuso de nada.
     pub quemados: usize,
 }
 
@@ -1864,10 +1900,25 @@ fn contar_acreditacion(
     let malas: std::collections::BTreeSet<usize> =
         hallazgos.iter().map(|h| h.linea()).collect();
 
+    // ⚠️⚠️⚠️ LA MARCA SOLO SE DISPARA SOBRE MATERIAL QUE VERIFICA (§334).
+    //    La SERIE se comprueba ANTES que la firma a proposito, asi que una
+    //    linea FORJADA -copiar una cofirma real y reescribirle el
+    //    epochDigest- colisiona con la buena y produce `indice-repetido`
+    //    aunque nadie la haya firmado. Quemar por eso seria dejar que un
+    //    tercero desacredite a un cofirmante honesto con una linea inventada.
+    //    El hallazgo se DICE igual -la linea es mala y queda descartada-,
+    //    pero la MARCA exige que la linea no traiga ningun OTRO hallazgo.
+    //    Es la regla que el §332 escribio para el atado -solo dispara sobre
+    //    lo que verifica- un piso mas arriba.
+    let otros: std::collections::BTreeSet<usize> = hallazgos
+        .iter()
+        .filter(|h| h.clase() != "indice-repetido")
+        .map(|h| h.linea())
+        .collect();
     let mut quemados: std::collections::BTreeSet<Vec<u8>> =
         std::collections::BTreeSet::new();
     for h in hallazgos {
-        if h.clase() == "indice-repetido" {
+        if h.clase() == "indice-repetido" && !otros.contains(&h.linea()) {
             if let Some(t) = testigo_de(lineas, h.linea()) {
                 quemados.insert(t);
             }
@@ -1984,7 +2035,7 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             }
         }
         if h.is_empty() {
-            println!("sin hallazgos: todas verifican y ningun indice DE FIRMA se repite");
+            println!("sin hallazgos: todas verifican y ningun indice DE FIRMA se repite sobre mensajes distintos");
             return Ok(());
         }
         anyhow::bail!("{} hallazgo(s) en las cofirmas", h.len());
@@ -3505,12 +3556,19 @@ mod tests {
     }
 
     #[test]
-    fn dos_cofirmas_con_el_mismo_indice_son_hallazgo() {
+    fn el_mismo_indice_sobre_mensajes_distintos_es_hallazgo() {
         // ⚠️⚠️ EL QUE MAS IMPORTA. Reusar un indice XMSS **filtra la clave**;
         //    el guardian lo impide DENTRO del testigo, y esto lo detecta
         //    DESDE FUERA — que es lo que un tercero necesita poder hacer.
+        // ⚠️⚠️⚠️ §334: antes este test CLONABA la linea, o sea el MISMO
+        //    mensaje, que es justo el caso que NO revela nada. Se reescribe el
+        //    epochDigest: mismo indice embebido, mensaje distinto, que es lo
+        //    unico que de verdad quema una clave de un solo uso.
         let (ls, _) = fichero_de_cofirmas(1, "fichero_repe");
-        let dos = vec![ls[0].clone(), ls[0].clone()];
+        let mut w: Value = serde_json::from_str(&ls[0]).expect("json");
+        w["epochDigest"] =
+            json!("0x9999999999999999999999999999999999999999999999999999999999999999");
+        let dos = vec![ls[0].clone(), w.to_string()];
         let h = verificar_cofirmas(&dos);
         assert!(h.iter().any(|x| x.clase() == "indice-repetido"), "{h:?}");
         match h.iter().find(|x| x.clase() == "indice-repetido") {
@@ -3519,6 +3577,57 @@ mod tests {
             }
             otro => panic!("{otro:?}"),
         }
+    }
+
+    #[test]
+    fn duplicar_una_linea_no_es_hallazgo_ni_quema_al_testigo() {
+        // ⚠️⚠️⚠️ LA NOTA 99. Antes del §334 cualquiera desacreditaba a un
+        //    cofirmante honesto duplicandole una linea: el indice se repetia,
+        //    saltaba `indice-repetido` y la politica lo quemaba entero. Pero la
+        //    misma linea es la misma firma sobre el MISMO mensaje y no revela
+        //    nada. Lo que filtra la clave son DOS mensajes.
+        let (ls, _) = fichero_de_cofirmas(1, "fichero_duplicado");
+        let dos = vec![ls[0].clone(), ls[0].clone()];
+        let h = verificar_cofirmas(&dos);
+        assert!(h.is_empty(), "duplicar una linea no acusa a nadie: {h:?}");
+
+        let v: Value = serde_json::from_str(&ls[0]).expect("json");
+        let pk = leer_hex(&v["clavePublicaTestigo"]).expect("hex");
+        let mut pol = std::collections::BTreeSet::new();
+        pol.insert(pk);
+        let a = contar_acreditacion(&dos, &h, &pol);
+        assert_eq!(a.quemados, 0, "el testigo honesto sigue limpio");
+        assert!(a.acreditada(1), "y su cofirma sigue acreditando");
+    }
+
+    #[test]
+    fn una_linea_forjada_no_puede_quemar_a_un_testigo_honesto() {
+        // ⚠️⚠️⚠️ §334, LA OTRA MITAD. La SERIE se comprueba ANTES que la
+        //    firma a proposito, asi que una copia con el epochDigest reescrito
+        //    colisiona con la buena y produce `indice-repetido` aunque sea una
+        //    FORJA que nadie firmo. El hallazgo se DICE -la linea es mala-,
+        //    pero la MARCA no se dispara: solo queman las lineas sin ningun
+        //    otro hallazgo.
+        // ⚠️⚠️ Lo que se reescribe es la CLAVE DEL OPERADOR y no el
+        //    epochDigest, por dos razones: demuestra que el mensaje es el
+        //    PREAMBULO entero y no solo el digest, y deja la epoca intacta
+        //    -si la forja trajera epoca nueva se convertiria en la ULTIMA y
+        //    la acreditacion caeria por otro motivo, tapando lo que se mide.
+        let (ls, _) = fichero_de_cofirmas(1, "fichero_forjado");
+        let mut w: Value = serde_json::from_str(&ls[0]).expect("json");
+        w["clavePublicaOperador"] = json!("0xdeadbeef");
+        let dos = vec![ls[0].clone(), w.to_string()];
+        let h = verificar_cofirmas(&dos);
+        assert!(h.iter().any(|x| x.clase() == "indice-repetido"), "se DICE: {h:?}");
+        assert!(h.iter().any(|x| x.clase() == "no-verifica"), "la forja no verifica: {h:?}");
+
+        let v: Value = serde_json::from_str(&ls[0]).expect("json");
+        let pk = leer_hex(&v["clavePublicaTestigo"]).expect("hex");
+        let mut pol = std::collections::BTreeSet::new();
+        pol.insert(pk);
+        let a = contar_acreditacion(&dos, &h, &pol);
+        assert_eq!(a.quemados, 0, "una forja no prueba reuso de nada");
+        assert!(a.acreditada(1), "la cofirma buena sigue en pie");
     }
 
     /// ⚠️⚠️ **DOS TESTIGOS DISTINTOS PUEDEN LLEVAR EL MISMO INDICE, y eso NO
@@ -3540,11 +3649,10 @@ mod tests {
     /// serie y el test dejaba de medir lo que dice medir.
     #[test]
     fn dos_testigos_distintos_con_el_mismo_indice_no_son_hallazgo() {
-        let linea = |testigo: &str| {
+        let linea = |testigo: &str, ep: &str| {
             json!({
                 "v": 1,
-                "epochDigest":
-                    "0x1111111111111111111111111111111111111111111111111111111111111111",
+                "epochDigest": ep,
                 "clavePublicaOperador": "0xaabb",
                 "clavePublicaTestigo": testigo,
                 "versionFormato": "0x3",
@@ -3553,14 +3661,19 @@ mod tests {
             })
             .to_string()
         };
+        let e1 = "0x1111111111111111111111111111111111111111111111111111111111111111";
+        let e2 = "0x2222222222222222222222222222222222222222222222222222222222222222";
 
-        let mismo = verificar_cofirmas(&[linea("0xcc"), linea("0xcc")]);
+        // ⚠️ §334: los MENSAJES tienen que ser distintos. Con las dos lineas
+        //    identicas el hallazgo no diria nada, y era el caso que quemaba a
+        //    un testigo honesto.
+        let mismo = verificar_cofirmas(&[linea("0xcc", e1), linea("0xcc", e2)]);
         assert!(
             mismo.iter().any(|x| x.clase() == "indice-repetido"),
             "el MISMO testigo repitiendo indice sigue siendo hallazgo: {mismo:?}"
         );
 
-        let distintos = verificar_cofirmas(&[linea("0xcc"), linea("0xdd")]);
+        let distintos = verificar_cofirmas(&[linea("0xcc", e1), linea("0xdd", e2)]);
         assert!(
             !distintos.iter().any(|x| x.clase() == "indice-repetido"),
             "dos testigos DISTINTOS con el mismo indice NO son hallazgo: {distintos:?}"
@@ -3778,11 +3891,10 @@ mod tests {
     /// hallazgo- y aun asi no suma.
     #[test]
     fn un_indice_repetido_quema_al_testigo_entero() {
-        let linea = |testigo: &str, idx: &str| {
+        let linea = |testigo: &str, idx: &str, ep: &str| {
             json!({
                 "v": 1,
-                "epochDigest":
-                    "0x1111111111111111111111111111111111111111111111111111111111111111",
+                "epochDigest": ep,
                 "clavePublicaOperador": "0xaabb",
                 "clavePublicaTestigo": testigo,
                 "versionFormato": "0x3",
@@ -3791,7 +3903,17 @@ mod tests {
             })
             .to_string()
         };
-        let ls = vec![linea("0xc1", "0x7"), linea("0xc1", "0x7"), linea("0xc2", "0x9")];
+        // ⚠️ §334: las dos primeras llevan MENSAJES distintos. Eran identicas,
+        //    o sea el caso inocuo, asi que este test afirmaba como deseable
+        //    justo lo que la nota 99 denuncia. El hallazgo se le sigue pasando
+        //    a mano: lo que se prueba aqui es la POLITICA, no la deteccion.
+        let e1 = "0x1111111111111111111111111111111111111111111111111111111111111111";
+        let e2 = "0x2222222222222222222222222222222222222222222222222222222222222222";
+        let ls = vec![
+            linea("0xc1", "0x7", e1),
+            linea("0xc1", "0x7", e2),
+            linea("0xc2", "0x9", e1),
+        ];
         let h = vec![HallazgoCofirma::IndiceRepetido {
             linea: 2,
             indice: 7,

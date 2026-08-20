@@ -25809,3 +25809,107 @@ por corte**. La correccion §247 del asiento del §331 -que dice «no se explica
 da la causa en el parrafo siguiente- queda declarada y **sin tocar, porque no se
 reescribe lo que no se ha leido**: solo se leyo su linea suelta, no sus parrafos.
 Y las cinco citas del «13 de 25» siguen esperando.
+
+## §334 — 2026-08-20 · LA MARCA SOLO SE DISPARA SOBRE MATERIAL QUE PRUEBA
+
+**Que.** `contar_acreditacion` marcaba a un cofirmante en cuanto
+`verificar_cofirmas` levantaba `indice-repetido`, y estar marcado significa que
+**ni sus cofirmas buenas cuentan**. Pero esa clase saltaba tambien con **dos
+lineas IDENTICAS**, que son la misma firma sobre el mismo mensaje y no revelan
+nada. Cualquiera podia desacreditar a un cofirmante honesto **duplicandole una
+linea**. Desde este sello el hallazgo exige **dos MENSAJES distintos**, y la
+marca exige ademas que la linea **no traiga ningun otro hallazgo**.
+
+**El discriminante no es el digest: es el PREAMBULO.** Lo que compromete una
+clave de un solo uso son dos mensajes firmados con el mismo indice de hoja, y el
+mensaje es `preambulo_cofirma` entero -version, epochDigest y clave del
+operador-. Dos lineas con el mismo digest y OTRA clave de operador ya son dos
+mensajes, asi que comparar solo el digest habria dejado ese hueco abierto. El
+valor del mapa de la serie pasa de ser la linea previa a ser **la linea previa y
+su preambulo**; la funcion ya estaba importada en el testigo y ya se llamaba
+cuatro veces, de modo que el cambio no gana ni una dependencia.
+
+**La segunda mitad, que la nota 99 no nombraba.** La SERIE se comprueba ANTES
+que la firma **a proposito** -un indice repetido es un hallazgo aunque las dos
+firmas verifiquen, precisamente por eso-, y de ahi salia un segundo agujero:
+copiar una cofirma real y reescribirle un campo del preambulo produce una linea
+que **colisiona con la buena y no verifica**, y aun asi marcaba al testigo. Se
+cierra en `contar_acreditacion`: **solo queman las lineas sin ningun OTRO
+hallazgo**. El hallazgo se sigue DICIENDO -la linea es mala y queda descartada-
+pero la marca no se dispara. Es la regla que el §332 escribio para el atado,
+un piso mas arriba.
+
+**El molde ya estaba en casa, y dos veces.** El DIARIO resuelve exactamente esta
+figura: su test dice que repetir un indice con el mismo digest **no es hallazgo
+de ninguna clase** -«repetir un indice es NORMAL»- y solo levanta
+`vista-dividida` cuando los digests DIFIEREN. Y `cribar_repetidas`, del §320,
+descarta duplicados exactos en la recoleccion **hablando en su doc de una
+«acusacion de doble firma fabricada por la herramienta»**. La casa habia nombrado
+el peligro y lo habia cerrado en dos sitios; el verificador del tercero se quedo
+sin ello. Este sello no inventa una regla: **la lleva donde faltaba**.
+
+**Por eso NO nace una septima clase.** El repertorio de las seis queda intacto y
+el contrato del tercero no cambia: lo que cambia es **cuando** se levanta
+`indice-repetido` y **cuando** marca. El gate de repertorio del §333 sirvio de
+compuerta para probarlo.
+
+**Lo que la VIVA A demostro en vivo.** Con el codigo aplicado y los tests aun
+sin tocar, la corrida fallo con **exactamente DOS** pruebas y ninguna mas, y las
+dos eran las que ejercitaban el caso inocuo: una clonaba la linea y la otra
+repetia una invencion identica. La suma **77 mas 2 = 79** cuadro con el pin
+viejo, asi que el instrumento quedo validado de paso. Una de ellas se anunciaba
+en su propio comentario como «EL QUE MAS IMPORTA» mientras media el caso que no
+revela nada.
+
+**El banco queda FUERA de este sello, y por una razon MEDIDA.** Su
+`NEGATIVO-B2` pide la clase que este corte acaba de retirar, y su parche esta
+escrito y con sus compuertas en verde; pero **el banco no llega hasta ese tramo
+desde el §331**. Apartando este corte del arbol y corriendolo sobre HEAD se
+comprobo que el rojo **ya estaba** y no es de aqui: muere antes, en el
+`NEGATIVO-A`, porque **el nodo se niega a arrancar** con la clave en cero y el
+contador en 13. El literal de ese mensaje vive **solo** en el `main` del nodo, lo
+que desempata quien murio. De ahi nace la entrada **100**, y con ella se aplicara
+el parche del banco.
+
+**Los rojos del arco fueron DOS, y por primera vez uno NO es mio.** Recontados al
+cerrar. El primero es mio y de la familia de siempre: un gate contaba las
+entradas del catalogo del banco **sobre el fichero entero** cuando el ambito era
+la CABECERA, y en el cuerpo hay una linea de continuacion que casa el mismo
+patron. Su forma fina es peor que el fallo: **la base cuadraba por CASUALIDAD**
+-catalogo 6 y secciones 6- porque el falso positivo compensaba justo la entrada
+que faltaba, mientras mi lectura decia que faltaba una. Las dos cosas no podian
+ser ciertas. **Un gate de igualdad entre dos censos de AMBITOS DISTINTOS no
+prueba nada, aunque salga verde**, y un verde asi es peor que un rojo porque no
+pide explicacion. El segundo rojo es de la VIVA y es AJENO: el banco.
+
+**Y un defecto de instrumento que ningun gate miraba: el MODO.** Mi motor de
+parche escribe un fichero nuevo y lo mueve encima; el nuevo nace con el umask, y
+`banco_cofirma.sh` es **ejecutable**. El arbol quedo con `old mode 100755 / new
+mode 100644` y **porcelain distinto de cero sin un solo byte cambiado**, y
+`restaurar()` con `cp` a un destino que ya existe **no devuelve el modo**. Desde
+hoy el motor copia el modo del original y **el POST lo lista**: el modo es parte
+de lo que un bloque toca.
+
+**El homonimo peor hasta hoy: una cifra DENTRO de un hash.** La suma de tests
+declarados casa como subcadena de un digest hexadecimal publicado, en
+`AUDITORIA.md` y en `BACKLOG.md`. Un `sed` global de la cifra vieja no habria
+reescrito una latencia ni un porcentaje -los dos casos del §333-: habria
+reescrito **material criptografico**. Por eso las once anclas del corte de
+cifras son **lineas enteras extraidas de una medicion previa**, nunca la cifra
+suelta, y el digest se conto antes y despues.
+
+**Contadores.** Pin del testigo **79 -> 81** (dos pruebas nuevas: la linea
+duplicada que no acusa ni quema, y la linea forjada que se dice pero no marca).
+Sumas **911/1048/1062 -> 913/1050/1064** en los **CINCO SITIOS VIVOS** mas el
+**desglose por-crate** de `PRINCIPIOS.md`, que se mueve porque nombra al testigo.
+`check_cifras` se midio VERDE **antes** de tocar -o su rojo no habria sido de
+este corte- y volvio a salir verde con el pin y las cifras movidos. **Ningun
+Cargo tocado.** La entrada **99** queda RESUELTA y nace la **100**. El canon SI
+se corre y es la puerta, porque el corte toca codigo Rust.
+
+**Lo que este sello NO hace, y queda con nombre.** El `NEGATIVO-B2` del banco,
+que va con la **100**. `verificar_cabeza`, que sigue con el defecto del §332 y
+sigue fuera por tercera vez consecutiva: **una herencia por corte**. La
+correccion §247 del asiento del §331 sigue sin tocarse, por la misma razon
+de siempre: **no se reescribe lo que no se ha leido**. Y las cinco citas del
+«13 de 25» siguen esperando.
