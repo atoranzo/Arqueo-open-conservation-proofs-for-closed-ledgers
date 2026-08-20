@@ -217,6 +217,16 @@ pub enum VerificaError {
     /// testigo firmaría un preámbulo que miente sobre su propio contenido.
     /// El día que el techo estorbe, esto se pone rojo y se ve.
     ClaveDemasiadoLarga { bytes: usize },
+    /// ⚠️⚠️ **El indice declarado y el que va dentro de la firma no
+    /// coinciden.** Dice lo que puede afirmar —los dos numeros no
+    /// cuadran— y **no acusa a nadie de mentir**.
+    ///
+    /// ⚠️ Mira el indice de HOJA, el que la firma acredita. No confundir
+    /// con la clase `indice-repetido` del tercero, que mira la REPETICION
+    /// sobre ese mismo numero: son dos cosas distintas.
+    IndiceDiscordante { declarado: u64, embebido: u64 },
+    /// La firma no llega ni al ancho del indice, asi que no lo lleva.
+    FirmaSinIndice { bytes: usize, esperado: usize },
 }
 
 impl core::fmt::Display for VerificaError {
@@ -235,6 +245,17 @@ impl core::fmt::Display for VerificaError {
                 f,
                 "la clave del operador mide {bytes} bytes y el prefijo de \
                  longitud del preambulo es u16 (techo 65535)"
+            ),
+            VerificaError::IndiceDiscordante { declarado, embebido } => write!(
+                f,
+                "el indice declarado ({declarado}) no cuadra con el que va \
+                 dentro de la firma ({embebido}): el declarado no entra en el \
+                 preambulo, asi que la firma no lo acredita"
+            ),
+            VerificaError::FirmaSinIndice { bytes, esperado } => write!(
+                f,
+                "la firma mide {bytes} bytes y el indice de hoja ocupa \
+                 {esperado}: no lleva indice que comprobar"
             ),
         }
     }
@@ -306,6 +327,45 @@ pub fn preambulo_cofirma(
     v.extend_from_slice(clave_del_operador);
     Ok(v)
 }
+
+/// **El indice de hoja que va DENTRO de la firma.**
+///
+/// ⚠️ **Lectura de material PUBLICADO**, y por eso vive aqui y no en el
+/// guardian: `zk_ssl_guardian::indice_de_sk` lee el **SK**, material
+/// secreto del firmante. Sacar esta funcion alli obligaria a un tercero a
+/// compilar el crate del firmante para verificar, que es justo lo que el
+/// §243 deshizo. Comparten el ancho del campo; no comparten el invariante.
+///
+/// ```text
+/// firma := indice(ANCHO_INDICE bytes, big-endian) ‖ R(n) ‖ ...
+/// ```
+///
+/// ⚠️ Falla **CERRADA**: una firma que no llega al ancho no da indice, da
+/// error. `Signature::try_from` no valida longitud —es casi un envoltorio—
+/// asi que esta comprobacion no la hace nadie mas.
+pub fn indice_de_firma(firma: &[u8]) -> Result<u64, VerificaError> {
+    if firma.len() < ANCHO_INDICE {
+        return Err(VerificaError::FirmaSinIndice {
+            bytes: firma.len(),
+            esperado: ANCHO_INDICE,
+        });
+    }
+    let mut v = 0u64;
+    for b in &firma[..ANCHO_INDICE] {
+        v = (v << 8) | *b as u64;
+    }
+    Ok(v)
+}
+
+/// Ancho del indice de hoja en bytes: ⌈h/8⌉ = 5 para `h = 40`.
+///
+/// ⚠️⚠️ **ES LA SEGUNDA COPIA, NO UNA TERCERA.** `xmss` **no expone**
+/// `index_bytes` —es `pub(crate)` en `params.rs`— asi que el ancho esta
+/// DECLARADO en dos sitios: aqui y en `zk-ssl-guardian::ancho_indice()`,
+/// que es la primera. **Las ata un test**, no la buena fe:
+/// `el_ancho_del_indice_esta_atado_al_guardian`. Un censo que cuente tres
+/// fuentes se estara equivocando; si algun dia hay una tercera, sobra.
+pub const ANCHO_INDICE: usize = 5;
 
 /// ⚠️ **APAÑO SOBRE UN FALLO DE `xmss 0.1.0-pre.0`** (§240, sondas S.5/S.6).
 ///
@@ -421,6 +481,28 @@ pub fn verificar_cofirma(
             esperado: esperado.len(),
             recibido: recuperado.len(),
         });
+    }
+    // ⚠️⚠️ EL ATADO (§332). El `indice` declarado **no entra en el
+    // preambulo** —lo dice el doc de `CabezaFirmada`— asi que un tercero se
+    // estaba creyendo un numero que la firma no acredita. Aqui se compara
+    // con el que va DENTRO, que no se puede falsear sin romper la firma.
+    //
+    // ⚠️⚠️ El invariante es `embebido < declarado`, **NO**
+    // `declarado == embebido + 1`. `GuardianIndice::reservar` persiste
+    // `actual + 1` ANTES de firmar y el contador **nunca retrocede**, asi
+    // que un indice HUERFANO —proceso muerto entre la reserva y la firma,
+    // «correcto y esperado» segun su propio doc— ensancha el desfase para
+    // siempre. Exigir el +1 daria rojo sobre material legitimo.
+    //
+    // ⚠️ Convencion del PRODUCTOR, y se dice: `reservar()` -> `sign`. Con
+    // `declarado == 0` no cuadra nunca, y es correcto: el contador empieza
+    // a devolver en 1.
+    //
+    // ⚠️ Esto NO caza el reinicio —contador 6 y clave 0 dan 0 < 7— y no
+    // pretende hacerlo: de eso se ocupa la REPETICION del indice embebido.
+    let embebido = indice_de_firma(&c.firma)?;
+    if embebido >= c.indice {
+        return Err(VerificaError::IndiceDiscordante { declarado: c.indice, embebido });
     }
     Ok(())
 }
@@ -679,5 +761,79 @@ mod tests {
         // Ni la firma del OPERADOR puede pasar por cofirma: otro dominio.
         let (_, c_op) = firmado(&d);
         assert!(verificar_cofirma(&pk_testigo, &d, &pk_op, &c_op).is_err());
+    }
+
+    // ── el indice que va DENTRO de la firma (§332) ──
+
+    #[test]
+    fn el_ancho_del_indice_esta_atado_al_guardian() {
+        // ⚠️⚠️ DOS PRODUCTORES DEL MISMO CONTRATO, y llevaban sin atar desde
+        // el §298. `xmss` no expone `index_bytes`, asi que el ancho vive
+        // declarado aqui y en `zk-ssl-guardian`. Esto los ata.
+        //
+        // ⚠️ Se ata por el ANCHO, no por el total: un cambio que
+        // redistribuyera OID e indice dejando 137 bytes pasaria limpio.
+        const OID: usize = 4;
+        let mut sk = vec![0u8; OID + ANCHO_INDICE + 4 * 32];
+        for i in 0..ANCHO_INDICE {
+            sk[OID + i] = (i as u8) + 1;
+        }
+        let mut esperado = 0u64;
+        for i in 0..ANCHO_INDICE {
+            esperado = (esperado << 8) | (i as u64 + 1);
+        }
+        match zk_ssl_guardian::indice_de_sk(&sk) {
+            Ok(v) => assert_eq!(
+                v, esperado,
+                "el ancho o el orden de bytes han discrepado: zk-ssl-verify::\
+                 ANCHO_INDICE = {ANCHO_INDICE} espera {esperado}, y \
+                 zk-ssl-guardian::indice_de_sk lee {v}"
+            ),
+            Err(e) => panic!(
+                "las DOS fuentes del ancho del indice han discrepado. \
+                 zk-ssl-verify::ANCHO_INDICE = {ANCHO_INDICE} (verify/src/lib.rs) \
+                 y zk-ssl-guardian::ancho_indice() (guardian/src/lib.rs) \
+                 rechaza un SK de ese ancho: {e}"
+            ),
+        }
+    }
+
+    #[test]
+    fn el_indice_embebido_de_una_clave_recien_nacida_es_cero() {
+        // ⚠️ El INSTRUMENTO se valida contra lo que ya se sabe cierto: una
+        // clave que acaba de nacer firma con la hoja 0, y el guardian
+        // declara 1 porque `reservar()` persiste `actual + 1`.
+        let (_, c) = cofirmado(&[0x5Au8; 32], &[0xAAu8; 68]);
+        assert_eq!(indice_de_firma(&c.firma).expect("la firma lleva indice"), 0);
+        assert_eq!(c.indice, 1, "y el declarado va uno por delante");
+    }
+
+    #[test]
+    fn una_firma_mas_corta_que_el_ancho_no_da_indice() {
+        // Falla CERRADA: sin bytes no hay numero, y no se inventa uno.
+        match indice_de_firma(&[0xAAu8; ANCHO_INDICE - 1]) {
+            Err(VerificaError::FirmaSinIndice { bytes, esperado }) => {
+                assert_eq!((bytes, esperado), (ANCHO_INDICE - 1, ANCHO_INDICE));
+            }
+            otro => panic!("una firma corta no puede dar indice: {otro:?}"),
+        }
+    }
+
+    #[test]
+    fn un_indice_declarado_que_no_cuadra_con_la_firma_se_rechaza() {
+        // ⚠️⚠️ EL ROJO DEL §332. La firma es PERFECTAMENTE VALIDA; lo que
+        // esta reescrito es el numero de al lado, que nadie firmaba y nadie
+        // miraba.
+        let d = [0x5Au8; 32];
+        let (pk_op, _) = firmado(&d);
+        let (pk_t, mut c) = cofirmado(&d, &pk_op);
+        verificar_cofirma(&pk_t, &d, &pk_op, &c).expect("intacta, debe verificar");
+        c.indice = 0;
+        match verificar_cofirma(&pk_t, &d, &pk_op, &c) {
+            Err(VerificaError::IndiceDiscordante { declarado, embebido }) => {
+                assert_eq!((declarado, embebido), (0, 0), "dice los DOS numeros");
+            }
+            otro => panic!("el ordinal reescrito tiene que verse: {otro:?}"),
+        }
     }
 }

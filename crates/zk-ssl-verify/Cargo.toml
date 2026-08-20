@@ -18,6 +18,13 @@ license.workspace = true
 # ⚠️ Y deberia ser EL CRATE QUE MENOS CAMBIE: su superficie es el dominio, la
 # version de formato y `verificar_cabeza`. Un pin que no se mueve casi no
 # cuesta.
+#
+# ⚠️ §247 (§332): la enumeracion de arriba **ya estaba incompleta** cuando se
+# escribio -no nombra `verificar_cofirma`, `preambulo_cofirma` ni
+# `clave_desde_bytes`- y este sello la deja peor: anade `indice_de_firma` y
+# `ANCHO_INDICE`, y mueve el pin de 62 a 66. La frase de fondo sigue en pie
+# -este crate deberia cambiar poco- pero **la lista no es su superficie**: la
+# superficie se lee de los `pub` de `src/lib.rs`, no de aqui.
 
 [dependencies]
 serde_json = "1"
@@ -35,3 +42,10 @@ zk-ssl-hash = { path = "../zk-ssl-hash" }
 #    version que `zk-ssl-hash`: dos `BaseElement` de versiones distintas
 #    NO son el mismo tipo.
 winter-math = "=0.13.1"
+
+# ⚠️ Solo para el ATADO del ancho del indice de hoja. Es dev-dependency a
+#    proposito: `zk-ssl-verify` NO depende del guardian para funcionar —un
+#    tercero no compila el crate del firmante— y el grafo queda aciclico
+#    (verify --dev--> guardian, que no depende de nadie).
+[dev-dependencies]
+zk-ssl-guardian = { path = "../zk-ssl-guardian" }

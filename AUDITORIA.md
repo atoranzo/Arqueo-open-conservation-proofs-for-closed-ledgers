@@ -25601,3 +25601,99 @@ siete**, contados con `ls` y no recordados. El canon SI se corre y es la
 puerta, porque el corte toca codigo Rust. BACKLOG sin tocar: la nota 84 **no
 se cierra** -sus tres huecos siguen abiertos- y lo que este sello le agrega es
 que su curva ya no es una cita ajena sino un riesgo medido en casa.
+
+## §332 — 2026-08-20 · EL INDICE DECLARADO SE ATA AL QUE VA DENTRO DE LA FIRMA
+
+**Que.** El campo `indice` de una cofirma **no entra en el preambulo firmado**,
+asi que la firma no lo acredita, y **nadie lo comprobaba**. Un tercero se creia
+un numero que el firmante habia escrito al lado. Este sello lo ata.
+
+**El hallazgo ya estaba escrito, y esa es la parte rara.** El doc de
+`CabezaFirmada::indice` dice, literalmente, que es «metadato para detectar
+reuso, no algo que la firma acredite». O sea: **el campo con el que se detecta
+el reuso es exactamente el unico que la firma no acredita**. Es §297 en una
+forma que no habiamos visto: **la prosa no envejecio**, dice la verdad, y aun
+asi el sistema estaba mal. Ningun gate de prosa podia verlo porque no habia
+nada que corregir en el texto.
+
+**El invariante es `embebido < declarado`, y NO `declarado == embebido + 1`.**
+`GuardianIndice::reservar` persiste `actual + 1` **antes** de firmar y el
+contador **nunca retrocede**, asi que un indice **huerfano** -proceso muerto
+entre la reserva y la firma, «correcto y esperado» segun su propio doc- ensancha
+el desfase **para siempre**. Exigir el `+1` habria puesto rojo sobre material
+legitimo: un gate mas estricto que el instrumento real. Queda escrito tambien lo
+que el atado **no** hace: con contador 6 y clave 0 el declarado es 7 y el
+embebido 0, asi que **no caza el reinicio**. De eso se ocupara la repeticion
+sobre el indice embebido.
+
+**Donde vive el lector, y por que no en el guardian.** `indice_de_sk` lee el
+**SK, material secreto del firmante**; `indice_de_firma` lee **material
+publicado**. No son el mismo invariante aunque compartan el ancho del campo, y
+el §243 saco este crate precisamente para que **un tercero no tenga que compilar
+el codigo del operador**. Meter el lector en el guardian lo habria deshecho por
+un `usize`.
+
+**Y con ello se cierra una discrepancia que llevaba abierta desde el §298.**
+El guardian **no puede preguntarle a `xmss`** -no tiene ni una dependencia- asi
+que su `ancho_indice()` es una **copia mantenida a mano**; y `xmss` no expone
+`index_bytes`, que es `pub(crate)`. Eran **dos productores del mismo contrato
+sin atar**, la figura del §324 y del §327, y nadie los habia mirado. El §332 no
+la crea: **la encuentra y la cierra** con `zk-ssl-guardian` como
+**dev-dependency** -el binario del tercero no gana dependencia de ejecucion- y
+un test que ata **por el ANCHO, no por el total**: comparar solo `sk_len == 137`
+dejaria pasar un cambio que redistribuyera OID e indice. Si discrepan, el
+mensaje **nombra los dos valores y sus dos fuentes**, porque quien lo lea dentro
+de tres sellos no tendra este contexto.
+
+**Tres consumidores, y UNA sola herencia.** El atado vive dentro de
+`verificar_cofirma`, asi que lo heredan el tercero, **el paquete de evidencia**
+-que llama a la misma funcion- y **el propio `Cofirmante::cofirmar`, que se
+autoverifica antes de devolver**. `verificar_cabeza` tiene el mismo defecto y
+queda **FUERA a proposito**: no por el ambito del censo -un tercero verifica
+cabezas ajenas igual que cofirmas ajenas- sino porque el corte ya arrastra una
+consecuencia heredada, y con dos **un rojo del arco no diria cual de las dos lo
+causo**. Una herencia por corte.
+
+**Lo que este sello NO hace, y queda con nombre.** La clave del mapa de
+`verificar_cofirmas` **sigue siendo el ordinal declarado**, asi que
+`--verificar-cofirmas` todavia no caza el reinicio; y la sexta clase
+`indice-discordante` del cli no nace aqui. ⚠️ Y un aviso para quien la escriba:
+quedaran **dos clases que empiezan por «indice» y miran numeros distintos** -una
+el de la firma, otra la repeticion sobre ese mismo numero- y un tercero que lea
+un informe con las dos no tiene por que saberlo. **La doc de cada clase tiene
+que decir QUE numero mira.**
+
+**Los rojos del arco fueron CUATRO y los cuatro son la misma clase: teclear un
+numero en vez de derivarlo.** Ocho bancos que eran siete, tres pines que eran
+dos, cinco ocurrencias que eran cuatro, y una fila con `61 -> 62` que eran dos
+-porque esa cadena vive tambien en la fila del cli, con su §316-. Ninguno toco
+el codigo: todos murieron en gates propios y restauraron limpio. El remedio
+quedo escrito y aplicado: **toda cuenta se mide como BASE antes de tocar y el
+gate compara contra ella**, nunca contra un numero recordado. Y uno mas fino:
+**cuando el ambito de lo que se protege es UNA FILA, el gate no se hace con
+`grep -c` sobre el fichero** -es la regla §282 bajada un nivel-.
+
+**Y una leccion de instrumento que no costo rojo pero pudo costarlo.** El gate
+de CONJUNTO EXACTO del primer bloque corrio **antes de la VIVA**, o sea antes de
+la corrida que puede ensuciar: salio verde con dos ficheros y `cargo test`
+anadio un tercero -`Cargo.lock`, una linea- que su POST nunca llego a listar. El
+conjunto exacto **se comprueba tambien al final**.
+
+**Cargo TOCADO, y declarado.** `verify/Cargo.toml` gana su `[dev-dependencies]`
+y `Cargo.lock` una linea. La compuerta «ningun Cargo tocado» que heredaban los
+bloques del §330 y del §331 **habria matado a este por algo legitimo**, y se
+cambio por «**solo `verify/Cargo.toml`, y con el diff a la vista**».
+
+**Contadores.** Pin del verificador **62 -> 66** (cuatro tests: el atado del
+ancho, el indice embebido de una clave recien nacida, la firma demasiado corta y
+el rojo del indice reescrito). Sumas **903/1040/1054 -> 907/1044/1058** en los
+**CINCO SITIOS VIVOS** mas el **desglose por-crate** de `PRINCIPIOS.md`, que
+esta vez si se mueve porque nombra al verificador y cuya cifra estaba **PARTIDA
+por el salto de linea**, asi que se anclo con el salto dentro y nunca como
+cadena contigua. El **censo de homonimos** que el TRASPASO-49 pedia antes de
+mover pin **se hizo**: de las veinte lineas que llevan esos numeros, **CINCO son
+asientos de este mismo fichero** -el del §331- y no se tocaron; un `sed` global
+habria reescrito su historia. `check_cifras` corrio como gate barato con **solo
+el pin movido** y delato **SEIS** cifras. Ningun banco tocado: siguen **siete**,
+contados con `ls` y no recordados. BACKLOG sin tocar. El canon SI se corre y es
+la puerta, porque el corte toca codigo Rust.
