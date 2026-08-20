@@ -235,10 +235,27 @@ pub enum Reconciliacion {
     /// ⚠️ **El caso normal tras una caída** —13 de 25 en K.1—: se persistió
     /// el índice y el proceso murió antes de firmar. Hay índices
     /// **quemados sin firma**. No es un fallo: es el precio del orden.
+    ///
+    /// ⚠️ **K.1 midió esto DENTRO de un proceso** -un hijo que persiste y
+    /// firma, matado en un instante aleatorio-, **no tras un REINICIO**. Al
+    /// reiniciar la clave vuelve a cero y el caso es [`Reconciliacion::ClaveEnCero`].
+    /// La cifra es correcta; lo que no cubre es el reinicio.
     ContadorAdelantado { contador: u64, clave: u64, huerfanos: u64 },
     /// ⚠️⚠️ **LO QUE NUNCA DEBE PASAR.** La clave ha firmado con índices
     /// que el contador no registró: o el orden se invirtió, o `fsync` no
     /// hizo lo que dijo. **La clave debe considerarse comprometida.**
+    /// ⚠️⚠️ **La clave viene de la semilla y el contador dice que ya se
+    /// firmó.** El SK **no se persiste**: al rearrancar, `from_seed` la devuelve
+    /// en CERO. No faltan firmas: lo que hay es que **0..contador-1 quedan
+    /// INDETERMINADOS**, y volver a firmar los reutilizaría -curva QRL: a la
+    /// segunda repetición, ~2^34 hashes-.
+    ///
+    /// ⚠️ **Falla cerrada, y no por prudencia sino porque no se puede
+    /// discriminar**: con contador 1 y clave 0, morir en la ventana de
+    /// [`GuardianIndice::reservar`] y morir tras firmar dejan el **mismo estado en
+    /// disco**. Es la nota 92: «un índice indeterminado es peor que uno perdido:
+    /// invita a reutilizar».
+    ClaveEnCero { contador: u64, indeterminados: u64 },
     ClaveAdelantada { contador: u64, clave: u64, sin_registrar: u64 },
 }
 
@@ -316,6 +333,10 @@ impl GuardianIndice {
         use std::cmp::Ordering::*;
         match self.actual.cmp(&indice_de_la_clave) {
             Equal => Reconciliacion::Coincide { indice: self.actual },
+            Greater if indice_de_la_clave == 0 => Reconciliacion::ClaveEnCero {
+                contador: self.actual,
+                indeterminados: self.actual,
+            },
             Greater => Reconciliacion::ContadorAdelantado {
                 contador: self.actual,
                 clave: indice_de_la_clave,
@@ -457,6 +478,59 @@ mod tests {
             g.reconciliar(9),
             Reconciliacion::ClaveAdelantada { contador: 1, clave: 9, sin_registrar: 8 }
         );
+    }
+
+    #[test]
+    fn la_clave_en_cero_con_el_contador_vivo_no_es_un_huerfano() {
+        // ⚠⚠ El SK no se persiste: al rearrancar, la clave vuelve a CERO y
+        // 0..contador-1 quedan INDETERMINADOS, no huerfanos.
+        // ⚠ Se afirma la RELACION, no un numero: el contador se DERIVA de
+        // `actual()`. Tecleado, dependeria del estado que traiga el fixture -el
+        // r1 murio por eso: pidio 4 y el fichero venia con 4 puestos-.
+        let p = en_disco("clave_en_cero");
+        let mut g = GuardianIndice::abrir(&p).expect("abrir");
+        for _ in 0..4 {
+            g.reservar().expect("reservar");
+        }
+        let n = g.actual();
+        assert!(n >= 4, "el contador tiene que haber avanzado y esta en {n}");
+        match g.reconciliar(0) {
+            Reconciliacion::ClaveEnCero { contador, indeterminados } => {
+                assert_eq!(contador, n, "reporta el contador que hay");
+                assert_eq!(indeterminados, contador, "TODOS quedan indeterminados");
+            }
+            otro => panic!("la clave en cero con el contador vivo NO es un huerfano: {otro:?}"),
+        }
+    }
+
+    #[test]
+    fn con_el_contador_en_uno_y_la_clave_en_cero_falla_cerrada() {
+        // ⚠⚠ EL CASO QUE NO SE PUEDE DISCRIMINAR: morir en la ventana de
+        // `reservar` y morir tras firmar dejan el MISMO estado en disco. Por eso
+        // no se adivina: se resuelve por el lado seguro.
+        let p = en_disco("cerrada");
+        let mut g = GuardianIndice::abrir(&p).expect("abrir");
+        let antes = g.actual();
+        g.reservar().expect("reservar");
+        let n = g.actual();
+        assert_eq!(n, antes + 1, "una reserva avanza exactamente uno");
+        match g.reconciliar(0) {
+            Reconciliacion::ClaveEnCero { contador, indeterminados } => {
+                assert_eq!(contador, n);
+                assert_eq!(indeterminados, n, "con contador 1 y clave 0 tampoco se adivina");
+            }
+            otro => panic!("no se adivina: se falla cerrada. Y dio: {otro:?}"),
+        }
+    }
+
+    #[test]
+    fn el_arranque_limpio_no_cae_en_la_variante_nueva() {
+        // ⚠ Contador 0 y clave 0 COINCIDEN: la guarda no puede robarle el caso
+        // bueno al arranque de siempre.
+        let p = en_disco("cero_cero");
+        let g = GuardianIndice::abrir(&p).expect("abrir");
+        assert_eq!(g.actual(), 0, "el fixture tiene que dar un contador limpio");
+        assert_eq!(g.reconciliar(0), Reconciliacion::Coincide { indice: 0 });
     }
 
     #[test]

@@ -354,6 +354,9 @@ enum DecisionDeArranque {
 /// ⚠️ `ContadorAdelantado` es el caso NORMAL tras una caida -13 de 25 en
 /// K.1-, no la excepcion: hay indices quemados sin firma. Pararse ahi seria
 /// negarse a arrancar en el camino bueno.
+///
+/// ⚠⚠ Y su hermano `ClaveEnCero` SI para: K.1 midio DENTRO de un proceso,
+/// no tras un reinicio, y al reiniciar la clave vuelve a cero.
 fn politica_de_reconciliacion(r: &zk_ssl_guardian::Reconciliacion) -> DecisionDeArranque {
     match r {
         zk_ssl_guardian::Reconciliacion::Coincide { indice } => {
@@ -365,6 +368,14 @@ fn politica_de_reconciliacion(r: &zk_ssl_guardian::Reconciliacion) -> DecisionDe
             DecisionDeArranque::ArrancaAvisando(format!(
                 "contador {contador} por delante de la clave {clave}: {huerfanos} indice(s) \
                  quemados sin firma. Es el caso NORMAL tras una caida, el precio del orden"
+            ))
+        }
+        zk_ssl_guardian::Reconciliacion::ClaveEnCero { contador, indeterminados } => {
+            DecisionDeArranque::NoArranca(format!(
+                "LA CLAVE ESTA EN CERO Y EL CONTADOR EN {contador}: {indeterminados} \
+                 indice(s) INDETERMINADOS. El SK no se persiste, asi que firmar ahora \
+                 reutilizaria indices que pueden estar quemados. No se puede probar lo \
+                 contrario, y se falla cerrada"
             ))
         }
         zk_ssl_guardian::Reconciliacion::ClaveAdelantada { contador, clave, sin_registrar } => {
@@ -404,6 +415,21 @@ mod politica_de_arranque {
                 assert!(m.contains("NORMAL"), "el aviso dice que NO es un fallo: {m}");
             }
             otra => panic!("el caso normal tras una caida NO puede parar el arranque: {otra:?}"),
+        }
+    }
+
+    #[test]
+    fn la_clave_en_cero_no_arranca_aunque_el_contador_vaya_por_delante() {
+        // ⚠⚠ EL ROJO NUEVO. `ContadorAdelantado` sigue siendo el caso normal;
+        // esto es su hermano, y no se puede probar que 0..contador-1 esten libres.
+        match politica_de_reconciliacion(&Reconciliacion::ClaveEnCero {
+            contador: 9,
+            indeterminados: 9,
+        }) {
+            DecisionDeArranque::NoArranca(m) => {
+                assert!(m.contains("INDETERMINADOS"), "el motivo nombra lo que no se puede probar: {m}");
+            }
+            otra => panic!("la clave en cero con el contador vivo NO puede arrancar: {otra:?}"),
         }
     }
 

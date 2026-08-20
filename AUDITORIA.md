@@ -25442,3 +25442,162 @@ esa cifra no esta pinchada en ningun documento. El canon SI se corre y es la
 puerta, porque el corte toca codigo Rust. BACKLOG sin tocar: no abre ni cierra
 ninguna entrada, y lo que este sello deja declarado viaja en la cola del
 traspaso.
+
+## §331 — 2026-08-20 · CLAVEENCERO: LA VARIANTE QUE FALLA CERRADA
+
+**Que.** `ContadorAdelantado` estaba **SUB-DISCRIMINADO**: cargaba con dos
+situaciones de consecuencia opuesta. Una, contador por delante por unos pocos
+con el indice de la clave preservado -reservo y murio antes de firmar-:
+huerfanos, benigno, y es lo que su doc describe. Otra, contador por delante
+**porque la clave volvio a cero**: no hay huerfanos, hay **reutilizacion
+inminente de 0 a N-1**. Se parte la **VARIANTE**, no la politica: nace
+`ClaveEnCero { contador, indeterminados }`, que **falla cerrada** en los dos
+firmantes, y nace con su banco propio. `ContadorAdelantado` sigue diciendo lo
+que decia, para el caso que de verdad describia.
+
+**La reutilizacion, DEMOSTRADA con el arbol de HOY y antes de tocar un byte.**
+La BASE del bloque -molde del §328- levanto un nodo y corrio el testigo **dos
+veces con la misma semilla y el mismo contador**. Corrida 1: cinco cofirmas,
+declarados 1-5, **embebidos 0-4**. Corrida 2, proceso nuevo: seis cofirmas,
+declarados 6-11, **embebidos 0-5**. **Solapamiento 0,1,2,3,4 y LOS CINCO con
+digest distinto** — cinco indices WOTS firmando **dos mensajes distintos cada
+uno**, que es el caso de dos firmas de la curva de QRL: ~2^34 hashes, cinco
+veces. El testigo lo dijo al arrancar: «contador 5 por delante de la clave 0».
+
+**El instrumento se valido contra el arbol ANTES de acusar a nadie.** El
+indice de hoja viaja en los primeros bytes de la firma -`index_bytes =
+ceil(h/8) = 5` para 40/8, y cuadra con el SK de 137 = 4 + 5 + 4x32-, pero eso
+era una lectura por ESTRUCTURA. El bloque exigio primero que en la corrida
+limpia **el embebido fuera el declarado menos uno**, y solo entonces mostro el
+solapamiento. Salio **5 de 5**. Si hubiera fallado, el bloque imprimia «no se
+acusa a nadie» y moria.
+
+**LA CEGUERA: el detector mide el numero equivocado.** `--verificar-cofirmas`
+sobre las once cofirmas de las dos corridas sale **exit 0** y sentencia «sin
+hallazgos: todas verifican y **ningun indice se repite**». Afirma lo contrario
+de lo que pasa, porque `IndiceRepetido` y el `NEGATIVO-B2` de
+`banco_cofirma.sh` miran **el ordinal del guardian** y el que se repite es
+**el indice WOTS de la clave**. Dos cosas distintas llamadas «indice»: es el
+caso 166 -una raiz lexica compartida mide el homonimo- y es la version que mas
+dano hace, porque las otras dan numeros equivocados y esta da **tranquilidad**
+equivocada. Y el `NEGATIVO-B2` duplica **la misma linea** del fichero, o sea
+la misma firma dos veces, que no revela ni un byte nuevo: cubre el caso
+barato, no el peligroso. **Queda para el §332**, con su molde ya escrito -dos
+productores del mismo contrato, atados con un test-, y con DOS aserciones y no
+una: que el ordinal reescrito pase prueba que el atado no existe, y no prueba
+que el detector mire el ordinal.
+
+**K.1: la cifra es correcta y la inferencia no.** El §234 midio «13 de 25» con
+**un hijo que persiste-y-luego-firma y un padre que lo mata en un instante
+aleatorio**: es la ventana **DENTRO de un proceso**, y era ademas un
+subproducto -«algo que no era el objetivo de la medida»-. Tras un REINICIO la
+clave nace en cero, asi que `ContadorAdelantado` no ocurre el 52 % de las
+veces sino el **100 %**, y no significa «unos pocos huerfanos» sino «N indices
+por reutilizar». **Es §297 en su forma mas cara**: no es prosa rancia, es una
+**inferencia rancia sobre un numero sano**, y ningun gate de cifras podia
+verla porque el numero nunca cambio. La cita viaja por **DOCE** sitios,
+censados en el bloque; **siete** caen en ficheros que este corte toca y se
+completan **tres**; los **cinco** restantes quedan nombrados para el **§333**,
+con las herramientas por puerta.
+
+**Por que la VARIANTE y no la politica.** Partir la variante **respeta el §300
+y el §328 en vez de contradecirlos**: el caso que ellos declararon normal
+sigue siendo normal. El discriminador no es una investigacion sino una
+comparacion, y es **exacta, no aproximada**: como `huerfanos = contador -
+clave`, decir `huerfanos == contador` es decir `clave == 0`. Y **falla cerrada
+por medicion, no por prudencia**: con contador 1 y clave 0, morir en la
+ventana de `reservar` y morir tras firmar dejan el **mismo estado en disco**,
+y esa informacion no esta -ni puede estar- en los ocho bytes del contador.
+
+**El nombre dice lo que se ve, no la causa.** Los tres hermanos son
+relacionales y solo afirman posicion -`Coincide`, `ContadorAdelantado`,
+`ClaveAdelantada`-, y `ClaveEnCero` mantiene esa gramatica; un
+`ClaveDesdeCero` insinuaria trayectoria, que es justo lo que no consta. El
+campo se llama `indeterminados` porque la palabra ya estaba en el arbol: la
+nota 92 dice que «un indice indeterminado es peor que uno perdido: invita a
+reutilizar».
+
+**El banco es OTRO banco, y por una razon que no es el numero.** Su andamio es
+distinto -dos procesos y un contador compartido, no uno- y mezclar dos
+invariantes haria que su rojo no dijera cual de los dos fallo:
+`banco_cofirma.sh` asierta el contrato de las cofirmas y
+`banco_reutilizacion.sh` asierta que **el firmante se niega**. **Nada se
+rodea**: el estado no se fabrica, lo produce un reinicio normal, y proponer un
+rodeo del gate para que el banco tuviera rojo habria sido meter una puerta
+trasera en produccion. La demostracion de la reutilizacion vive **aqui**, en
+el asiento, no en `tools/`. Y el banco es ademas **el unico sitio donde el
+brazo nuevo del testigo puede probarse**, porque su politica va incrustada en
+el `match` de `run()` **sin un solo test unitario** -ni siquiera el `bail!`
+que ya tenia-. Extraerla al molde del nodo -`politica_de_reconciliacion` +
+`DecisionDeArranque`, del §328- le daria tres tests, mueve el pin del `cli` y
+**queda nombrado como sello propio, corto y con molde escrito**: no se suelta
+como deuda sin dueno.
+
+**Los defectos del arco, y ninguno lo cazo un gate del arbol salvo uno.**
+**(1)** El primer bloque murio en la VIVA porque un test **tecleaba un valor
+absoluto** -`contador: 4`- sobre un fixture que no lo garantiza: `en_disco` da
+`target/guardian_{nombre}` y yo lo use sin leerlo. El remedio no fue poner el
+numero bueno sino **derivar el esperado de `g.actual()` y afirmar la
+RELACION** `indeterminados == contador`, que es lo que de verdad importa.
+**(2)** El segundo murio porque el bloque corria `cargo test` **dos veces**
+-una para imprimir y otra para medir-: la impresa dijo `22 passed; 0 failed` y
+la medida devolvio 21, **y la medida no se imprimia**. Es el hermano del `tail
+-5` del §330 y peor: alli despistaba lo impreso, aqui **lo medido era
+invisible**. Remedio: una sola corrida por crate, a fichero, y se muestra y se
+mide de ahi. **(3)** Un `fn` con mayusculas hubiera disparado `non_snake_case`
+con el canon a cero warnings: **quinta vez** que la casa lo paga. **(4)** Yo
+iba a teclear 20 espacios de sangria para el brazo del testigo, leyendolos de
+una salida con el tabulador expandido; **eran 16 y 12**. No paso porque el
+parcheador **deriva la sangria de la linea ancla** en vez de teclearla, que es
+el instrumento que este sello estrena y que mata de raiz la clase que mato al
+§330.
+
+**Declarado y sin explicar.** En la lista de `cargo test` del guardian **un
+nombre aparece dos veces** con `22 passed; 0 failed`. La cifra cuadra por los
+dos lados -19 + 3- y el binario no compilaria con dos `fn` iguales, asi que no
+bloquea; pero no se explica, y se anota. Y el desglose por-crate volvio a
+reportarse con **LINEA 0**: es la **cuarta** confirmacion sin reparar.
+
+**Cifras y su procedencia.** `guardian/src/lib.rs` 571 -> 645;
+`node/src/main.rs` 2765 -> 2791; `cli/src/witness.rs` 3908 -> 3918; y
+`tools/banco_reutilizacion.sh` nuevo con **72** lineas. El corte de codigo son
+**110 inserciones y CERO borrados** -74 + 26 + 10-, porque solo agrega brazos,
+docs y tests. Con las cifras, el arco queda en **122 inserciones y 12
+borrados** sobre ocho ficheros. La puerta de tests se corrio ANTES de tocar
+nada.
+
+**Y dos defectos mas, que salen al CERRAR.** El primero: el gate de ausencia
+del `-C` preguntaba por el asiento con un patron que llevaba el signo de
+seccion como `\xc2\xa7`, y entre comillas simples eso **no es el glifo: son
+ocho caracteres literales**. Como el gate era NEGATIVO -«si ya existe,
+muere»-, **un patron que no casa nada da VERDE y parece que protege**: el
+`330-C` corrio sin su gate y nadie lo vio. De ahi la regla: **todo gate de
+AUSENCIA lleva su prueba de vida**, el mismo patron contra algo que SI debe
+casar. El segundo es el mas caro del arco: el parcheador anclaba en la linea
+del `fn` y **un item de Rust no empieza en su `fn`, empieza en sus
+ATRIBUTOS**. Los tests nuevos entraron **entre el `#[test]` y su funcion**,
+asi que el atributo quedo huerfano -«duplicated attribute»- y
+**`coincidir_es_coincidir` y `clave_adelantada_no_arranca` perdieron el suyo y
+dejaron de ser tests**; el segundo es justamente EL ROJO del §300, el que
+lleva escrito que un rojo sin su test es un adorno. Lo grave no es el fallo
+sino que **las cifras cuadraban por COMPENSACION**: uno se perdia y otro se
+registraba dos veces, asi que el pin daba 22 y 84 igual y el conteo no vio
+nada. **Lo cazo el gate de warnings**, que es el unico que miraba otra cosa.
+De ahi la segunda regla: **un pin que cuadra no prueba que los tests sean los
+mismos**.
+
+**Contadores.** Pin del guardian **19 -> 22** (tres tests) y del **NODO 83 ->
+84** (un test). Sumas **899/1036/1050 -> 903/1040/1054** en **LOS DIEZ
+SITIOS**: las nueve lineas de los cuatro documentos **mas el desglose
+por-crate**, que esta vez SI se mueve porque `PRINCIPIOS.md` nombra los 83 del
+nodo -a diferencia del §330, que fueron nueve porque el desglose no nombra al
+guardian-. `check_cifras` corrio como gate barato con **SOLO los pines
+movidos** y delato **SEIS** cifras: las cinco pegadas a la palabra tests y
+**tambien el desglose**, derivando el 903 y el 1040 desde los pines. Los dos
+pines se mutaron **por posicion de campo**, nunca por su valor, porque en esas
+mismas filas viven un `§328: 80 -> 83` y un `§330: 11 -> 19`. Ningun Cargo
+tocado. Ningun otro banco tocado. Los bancos de `tools/` pasan de **seis a
+siete**, contados con `ls` y no recordados. El canon SI se corre y es la
+puerta, porque el corte toca codigo Rust. BACKLOG sin tocar: la nota 84 **no
+se cierra** -sus tres huecos siguen abiertos- y lo que este sello le agrega es
+que su curva ya no es una cita ajena sino un riesgo medido en casa.

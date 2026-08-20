@@ -2083,6 +2083,8 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             //    25 en K.1—, no la excepcion: hay indices QUEMADOS SIN FIRMA.
             //    Un testigo que empieza a firmar sin mirar esto esta
             //    ignorando su propio invariante.
+            //    ⚠⚠ K.1 midio DENTRO de un proceso, no tras un reinicio: al
+            //    reiniciar la clave vuelve a cero y sale `ClaveEnCero`, que NO arranca.
             match c.reconciliar().map_err(|e| anyhow::anyhow!("{e}"))? {
                 Reconciliacion::Coincide { indice } => {
                     println!("   guardian y clave a la par en el indice {indice}.");
@@ -2095,6 +2097,14 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
                 // ⚠️⚠️ LO QUE NUNCA DEBE PASAR: la clave firmo con indices que
                 //    el contador no registro. **El testigo NO arranca**: seguir
                 //    seria firmar con una clave que hay que dar por comprometida.
+                Reconciliacion::ClaveEnCero { contador, indeterminados } => {
+                    eprintln!();
+                    eprintln!("⚠️⚠️ LA CLAVE ESTA EN CERO Y EL CONTADOR EN {contador}.");
+                    eprintln!("   {indeterminados} indice(s) INDETERMINADOS: el SK no se persiste,");
+                    eprintln!("   asi que firmar ahora reutilizaria indices que pueden estar");
+                    eprintln!("   quemados. No se puede probar lo contrario, y se falla cerrada.");
+                    anyhow::bail!("clave en cero: {indeterminados} indice(s) indeterminados");
+                }
                 Reconciliacion::ClaveAdelantada { contador, clave, sin_registrar } => {
                     eprintln!();
                     eprintln!("⚠️⚠️ LA CLAVE VA POR DELANTE DEL CONTADOR: {clave} frente a {contador}.");
