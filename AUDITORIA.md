@@ -25330,3 +25330,115 @@ Ninguna herramienta tocada. Ningun `.rs` tocado, y por eso el canon no se
 corre -precedente del §303 y del §321-. BACKLOG sin tocar: no abre ni cierra
 ninguna entrada. Lo que este sello deja declarado viaja en la cola del
 traspaso.
+
+## §330 — 2026-08-20 · EL LECTOR COMUN DE LA SEMILLA
+
+**Que.** La semilla del firmante pasa a leerse, comprobarse y descodificarse
+en UN sitio: el modulo nuevo `semilla.rs` de `zk-ssl-guardian`. Comprueba los
+permisos y la longitud **antes de abrir el guardian** -que crea el fichero del
+contador al abrirse-, y su error **NOMBRA el formato** que el mando esperaba.
+Los DOS FORMATOS siguen vivos y siguen siendo del proyecto: el nodo lee HEX
+(`--clave-fichero`), el testigo BINARIO crudo (`--cofirmar`). Lo que deja de
+ser distinto es **lo que se comprueba**. El nodo delega sin cambiar ni una
+firma, el testigo deja de hacer `fs::read` a pelo, el formato entra en el
+`--help`, y el volcado `Debug` de `xmss` pasa a `Display` en los cuatro sitios
+que lo tiraban.
+
+**La nota se titulaba por lo cosmetico, y eso escondia el agujero.** F6 estaba
+fichada como "los dos formatos de semilla". Al medirla, el formato resulto ser
+el punto **2 de 5**: el 1 era que el testigo **no miraba los permisos** de un
+fichero que su propio doc llama material de clave, y el nodo si. De ahi sale
+una regla: **el titulo de una nota del BACKLOG no es su alcance, y solo se
+sabe midiendo**. Un titulo cosmetico puede bajarle la prioridad a un agujero
+real.
+
+**La asimetria era TRIPLE, y tenia una razon estructural.** Sobre su semilla
+el nodo comprobaba permisos (`modo & 0o077`), longitud (96 bytes, 192
+caracteres hex) y que fuera hexadecimal, con mensajes que dicen que quieren.
+El testigo no hacia ninguna de las tres: leia los bytes y se los pasaba a
+`from_seed`. No era descuido: la proteccion del nodo vivia en `main.rs`, que
+es un **BINARIO**, asi que el testigo **no podia reutilizarla aunque
+quisiera**. Nunca hubo donde ponerla, y por eso va al guardian, que es el
+crate que los dos ya abrian.
+
+**La rama peligrosa se midio, esta MUERTA, y eso cambio la decision.** Se leyo
+`xmss-0.1.0-pre.0`: `from_seed` llama a `init_keypair_buffers`, y en
+`params.rs:1177` compara contra `get_seed_length()` y devuelve
+`InvalidSeedLength`. **No trunca ni rellena: rechaza.** Con eso, pasarle al
+testigo el fichero HEX del nodo nunca fue una clave distinta en silencio, solo
+un error feo. Eso BAJO la gravedad del formato y dejo intacta la de los
+permisos. La propuesta inicial era unificar en HEX; se **descarto por
+medicion**, porque habria roto tres bancos a cambio de consistencia estetica
+sin tocar lo unico grave. Queda escrito que la inclinacion cambio y por que.
+
+**El ambito se midio antes de decidir el alcance.** Solo **DOS** sitios del
+arbol leen una semilla de fichero, y las dos `desde_semilla` ya coincidian en
+tomar `&[u8]`: la divergencia entera vivia en las dos lineas de encima. Pero
+**SEIS bancos fabrican semillas** y tres de ellos escriben los dos formatos, y
+`banco_completo.sh` lo dice a la cara: esa divergencia es del proyecto, no del
+banco. Por eso **no se unifica y no se toca ni un banco**. De propina, el
+censo de la raiz `semilla|seed` dio **224** lineas en `.rs` y solo ~14 son de
+la semilla XMSS: el resto es `rng_seed`, `key_seed`, `SeedableRng` y
+`dev_openSeeded`. Homonimo al 94%, y lo caza imprimir, no contar.
+
+**El mensaje que se contradecia a si mismo.** `descodificar_semilla` reportaba
+los bytes con **division entera**: con 193 caracteres decia "y tiene 96", que
+es exactamente la cifra que estaba exigiendo. Ahora se cuentan **CARACTERES**,
+que es lo medido, y no un derivado. Es la familia del caso 140, en miniatura:
+un numero derivado sin decirlo tiene apariencia de calculo.
+
+**El volcado `Debug`, y la regla estaba escrita en el crate que se toca.**
+`guardian/src/lib.rs:180` dice que **un tipo de error lleva `Debug`, `Display`
+y `Error` desde que nace**. Los cuatro sitios que envuelven `xmss::Error` lo
+hacian con `{e:?}`, tirando el `Display` que thiserror ya les da. Se habia
+leido **UNO** y el gate de anclas conto **DOS**; medido despues, son
+**CUATRO**: dos por firmante, `from_seed` y `sign`, en el testigo y en su
+propio molde. Se cambian los cuatro. El ancla lleva el `Xmss(` delante a
+proposito, porque hay un `format!("{e:?}")` en un test que no debe tocarse.
+
+**Los defectos del corte, y ninguno lo cazo una corrida contra el arbol.**
+**(1)** El ancla de las armas del `Display` se escribio con **8** espacios y
+van a **12**: `grep -F` y `str.count` la dieron por unica porque casaba como
+**SUBCADENA dentro** de la linea, y el parche entraba desplazado cuatro
+columnas. Lo cazo el ENSAYO contra un fixture con los bytes del arbol.
+Remedio: anclar con salto de linea delante y gatear con `grep -cxF`, con
+salida explicita para los anclajes que si son fragmento. Es el hermano por el
+otro extremo de "un patron que no ancla su FINAL cuenta lo que empieza igual".
+**(2)** `grep -c` con VARIOS ficheros antepone el nombre a cada cuenta; con
+UNO solo no lo pone. Un inerte sumaba con `bc` y recibia `ruta:2+ruta:2`. Es
+el mismo defecto que obligo a poner `-H` unas horas antes, **pagado dos veces
+el mismo dia y en los dos sentidos**. **(3)** El gate de anclas mato el primer
+bloque en FASE 0, sin tocar un byte, por el `{e:?}` que aparecia dos veces.
+**(4)** Dos de prosa propia que cazo LEER la salida: `restaurar()` decia "los
+tres ficheros" cuando ya eran cuatro, y la puerta imprimia con `tail -5` el
+bloque de doc-tests -0 passed- en vez del de la lib; la cifra medida era buena
+y lo que despistaba era lo impreso.
+
+**Cifras y su procedencia.** `guardian/src/lib.rs` 528 -> 571 y el modulo
+nuevo con **247** lineas; `node/src/main.rs` 2782 -> 2765;
+`cli/src/witness.rs` 3904 -> 3908; `node/src/firma_cabeza.rs` 258 -> 258,
+sustitucion pura. Diffstat del arco completo: **65 inserciones, 35 borrados**
+en nueve ficheros. `main.rs` sale **+3/-20 y no +4/-21** porque `git diff`
+conserva como CONTEXTO la linea `Ok(read_to_string)` que el parche reescribia
+identica: una prediccion de diffstat tecleada a mano habria fallado por esa
+linea. La puerta de tests se corrio **ANTES** de tocar nada y dio la BASE 11,
+porque una puerta que falla no deja nada que restaurar.
+
+**Contadores.** Pin del guardian **11 -> 19**, ocho tests. Sumas
+**891/1028/1042 -> 899/1036/1050** en **NUEVE** sitios y no en los diez de
+siempre, porque el desglose por-crate de `PRINCIPIOS.md` **no nombra al
+guardian**. Declarado y NO reparado: ese desglose enumera siete crates y
+agrupa tres, y suma **856 de los 899** -omite `hash` y `guardian`- mientras la
+frase se lee como si los enumerara todos; repararlo seria enumerar mas, que es
+justo lo que la casa dice que no se haga con la prosa. `check_cifras` corrio
+como gate barato con **SOLO el pin movido** y delato **CINCO** cifras rancias
+-las cinco pegadas a la palabra tests o pruebas-, derivando el 899 y el 1036
+desde los pines; el **1050** no lo deriva nadie y lo cubren los INERTES del
+bloque. El pin se muto **por posicion de campo**, nunca por el numero, porque
+en esa misma fila vive un `§298: 9 -> 11`. Ningun Cargo tocado: los dos crates
+ya declaraban el guardian por `path`. Ningun banco tocado. Ninguna herramienta
+tocada salvo el pin. Los ficheros `.rs` bajo `src/` pasan de **114 a 115**, y
+esa cifra no esta pinchada en ningun documento. El canon SI se corre y es la
+puerta, porque el corte toca codigo Rust. BACKLOG sin tocar: no abre ni cierra
+ninguna entrada, y lo que este sello deja declarado viaja en la cola del
+traspaso.

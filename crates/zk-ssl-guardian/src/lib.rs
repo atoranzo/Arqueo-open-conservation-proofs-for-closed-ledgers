@@ -148,6 +148,18 @@ pub enum GuardianError {
     /// ⚠️ **El SK no tiene la forma esperada: la serialización de upstream
     /// cambió.** Vive aquí desde §298, con [`indice_de_sk`]: quien custodia
     /// el índice es quien tiene que saber leerlo.
+    /// ⚠️ El fichero de la semilla es legible por grupo u otros. Crear con
+    /// `0600` no impide que alguien afloje despues: se comprueba AL LEER.
+    PermisosAbiertos { ruta: String, modo: u32 },
+    /// ⚠️ La semilla en BINARIO crudo no mide lo que debe. `parece_hex`
+    /// distingue el error que de verdad comete la gente: darle a `--cofirmar`
+    /// el fichero HEX del nodo.
+    SemillaLongitud { esperado: usize, encontrado: usize, parece_hex: bool },
+    /// ⚠️ La semilla en HEX no mide lo que debe. Se cuentan CARACTERES: un
+    /// byte derivado con division entera hacia que 193 dijera «96».
+    SemillaHexLongitud { esperado_car: usize, encontrado_car: usize },
+    /// La semilla en HEX trae algo que no es un digito hexadecimal.
+    SemillaNoHex { detalle: String },
     LayoutInesperado { sk_len: usize, esperado: usize },
 }
 
@@ -167,6 +179,34 @@ impl std::fmt::Display for GuardianError {
                  Casi seguro es tmpfs o un montaje sin disco. \
                  Reusar un índice XMSS filtra la clave: el nodo NO arranca así."
             ),
+            GuardianError::PermisosAbiertos { ruta, modo } => write!(
+                f,
+                "{ruta} tiene permisos {modo:04o}: es legible por grupo u otros. \
+                 Un secreto legible por el grupo es un secreto de todos. `chmod 600`"
+            ),
+            GuardianError::SemillaLongitud { esperado, encontrado, parece_hex } => {
+                write!(
+                    f,
+                    "la semilla en BINARIO crudo debe tener {esperado} bytes y tiene {encontrado}"
+                )?;
+                if *parece_hex {
+                    write!(
+                        f,
+                        ". Son {encontrado} caracteres hexadecimales: parece el fichero \
+                         HEX del nodo, y este mando quiere los bytes CRUDOS"
+                    )?;
+                }
+                Ok(())
+            }
+            GuardianError::SemillaHexLongitud { esperado_car, encontrado_car } => write!(
+                f,
+                "la semilla debe tener {} bytes ({esperado_car} caracteres hex) y tiene \
+                 {encontrado_car} caracteres",
+                esperado_car / 2
+            ),
+            GuardianError::SemillaNoHex { detalle } => {
+                write!(f, "la semilla no es hexadecimal: {detalle}")
+            }
             GuardianError::LayoutInesperado { sk_len, esperado } => write!(
                 f,
                 "guardián del índice: el SK mide {sk_len} bytes y se esperaban \
@@ -182,6 +222,9 @@ impl std::fmt::Display for GuardianError {
 /// tercero, y no había fallado todavía solo porque nadie lo había usado
 /// con `?` sobre `anyhow` (§241).
 impl std::error::Error for GuardianError {}
+
+/// **La semilla del firmante, leida y comprobada en un solo sitio** (§330).
+pub mod semilla;
 
 /// Lo que se encuentra al comparar el contador con el índice real de la
 /// clave, tras un reinicio.

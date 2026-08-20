@@ -1262,6 +1262,9 @@ pub struct WitnessArgs {
     /// las mismas obligaciones que audita —guardian del indice, custodia
     /// declarada, transicion firmada al rotar (nota 84)— y **duplica la
     /// superficie de las notas 84, 92 y 19**.
+    /// ⚠️ **Formato: 96 bytes en BINARIO crudo.** El nodo lee su semilla en
+    /// HEX (`--clave-fichero`); este mando NO. Los dos formatos son del proyecto
+    /// (§301) y desde el §330 el error dice cual has confundido.
     #[arg(long, value_name = "SEMILLA", requires_all = ["indice_cofirma", "cofirmas"])]
     cofirmar: Option<PathBuf>,
 
@@ -2068,7 +2071,8 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
     let mut cofirmante = match &a.cofirmar {
         None => None,
         Some(p) => {
-            let semilla = std::fs::read(p)?;
+            let semilla = zk_ssl_guardian::semilla::leer_cruda(p)
+                    .map_err(|e| anyhow::anyhow!("{e}"))?;
             let ruta = a.indice_cofirma.as_ref().expect("clap lo exige");
             let mut c = Cofirmante::desde_semilla(&semilla, ruta)
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
@@ -2392,7 +2396,7 @@ impl Cofirmante {
     ) -> Result<Self, CofirmaError> {
         let guardian = GuardianIndice::abrir(ruta_contador)?;
         let par = KeyPair::<Conjunto>::from_seed(semilla)
-            .map_err(|e| CofirmaError::Xmss(format!("{e:?}")))?;
+            .map_err(|e| CofirmaError::Xmss(format!("{e}")))?;
         let mut c = Cofirmante { par, guardian };
         let _ = c.indice_de_la_clave()?;
         Ok(c)
@@ -2441,7 +2445,7 @@ impl Cofirmante {
             .par
             .signing_key()
             .sign(&pre)
-            .map_err(|e| CofirmaError::Xmss(format!("{e:?}")))?;
+            .map_err(|e| CofirmaError::Xmss(format!("{e}")))?;
         let c = CabezaFirmada {
             version_formato: VERSION_FORMATO,
             indice,

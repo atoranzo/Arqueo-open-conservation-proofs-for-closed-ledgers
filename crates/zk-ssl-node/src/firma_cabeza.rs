@@ -111,7 +111,7 @@ impl FirmanteCabeza {
     ) -> Result<Self, FirmaError> {
         let guardian = GuardianIndice::abrir(ruta_contador)?;
         let par = KeyPair::<Conjunto>::from_seed(semilla)
-            .map_err(|e| FirmaError::Xmss(format!("{e:?}")))?;
+            .map_err(|e| FirmaError::Xmss(format!("{e}")))?;
         let mut f = FirmanteCabeza { par, guardian };
         // Se comprueba el layout AL ABRIR, no al firmar: si upstream cambió
         // la serialización, es mejor no arrancar que firmar y anotar mal.
@@ -129,7 +129,7 @@ impl FirmanteCabeza {
             .par
             .signing_key()
             .sign(&pre)
-            .map_err(|e| FirmaError::Xmss(format!("{e:?}")))?;
+            .map_err(|e| FirmaError::Xmss(format!("{e}")))?;
         let c = CabezaFirmada {
             version_formato: VERSION_FORMATO,
             indice,

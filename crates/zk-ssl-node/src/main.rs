@@ -619,16 +619,8 @@ async fn handle(
 /// Crear bien no impide que alguien afloje despues, y un secreto legible
 /// por el grupo es un secreto de todos.
 fn leer_semilla_de_fichero(ruta: &str) -> anyhow::Result<String> {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let modo = std::fs::metadata(ruta)?.permissions().mode() & 0o777;
-        anyhow::ensure!(
-            modo & 0o077 == 0,
-            "{ruta} tiene permisos {modo:04o}: es legible por grupo u otros. \
-             Un secreto legible por el grupo es un secreto de todos. `chmod 600`"
-        );
-    }
+    zk_ssl_guardian::semilla::comprobar_permisos(std::path::Path::new(ruta))
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
     Ok(std::fs::read_to_string(ruta)?)
 }
 
@@ -677,16 +669,7 @@ fn hex_de(b: &[u8]) -> String {
 /// longitud **en el arranque**, no al firmar: un nodo que arranca y luego
 /// no puede firmar es peor que uno que no arranca.
 fn descodificar_semilla(hex: &str) -> anyhow::Result<Vec<u8>> {
-    let h = hex.trim().trim_start_matches("0x");
-    anyhow::ensure!(
-        h.len() == 192,
-        "la semilla debe tener 96 bytes (192 caracteres hex) y tiene {}",
-        h.len() / 2
-    );
-    (0..96)
-        .map(|i| u8::from_str_radix(&h[i * 2..i * 2 + 2], 16))
-        .collect::<Result<Vec<u8>, _>>()
-        .map_err(|e| anyhow::anyhow!("la semilla no es hexadecimal: {e}"))
+    zk_ssl_guardian::semilla::descodificar_hex(hex).map_err(|e| anyhow::anyhow!("{e}"))
 }
 
 /// ⚠️ `Debug` no estaba, y eso es un defecto por derecho propio: un tipo
