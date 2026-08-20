@@ -25673,6 +25673,18 @@ gate compara contra ella**, nunca contra un numero recordado. Y uno mas fino:
 **cuando el ambito de lo que se protege es UNA FILA, el gate no se hace con
 `grep -c` sobre el fichero** -es la regla §282 bajada un nivel-.
 
+⚠️ **CORRECCION (§247, escrita por el §333).** El parrafo de arriba publica una
+cifra que no es. **Los rojos de BLOQUE del arco §332 fueron TRES** -el `332` en
+su INERTE, el `332-B-M` en su cerrojo PRE y el `332-B` en un gate propio- y de
+ellos **solo DOS son de la clase «teclear un numero»**. Los otros dos casos de
+esa clase -los ocho bancos que eran siete y los tres pines que eran dos- fueron
+**predicciones falsas corregidas sin que muriera ningun bloque**, y el rojo del
+`332-B-M` no es de esa clase en absoluto: fue el PRE viendo una diferencia
+legitima, `Cargo.lock`. La frase no se borra, se cita. Y el borde que ensena es
+este: **la prosa de un asiento no pasa por ningun gate**, asi que ahi el unico
+instrumento es RECONTAR AL CERRAR. Lo cazo la comprobacion de coherencia del
+TRASPASO-50, no el repo.
+
 **Y una leccion de instrumento que no costo rojo pero pudo costarlo.** El gate
 de CONJUNTO EXACTO del primer bloque corrio **antes de la VIVA**, o sea antes de
 la corrida que puede ensuciar: salio verde con dos ficheros y `cargo test`
@@ -25697,3 +25709,103 @@ habria reescrito su historia. `check_cifras` corrio como gate barato con **solo
 el pin movido** y delato **SEIS** cifras. Ningun banco tocado: siguen **siete**,
 contados con `ls` y no recordados. BACKLOG sin tocar. El canon SI se corre y es
 la puerta, porque el corte toca codigo Rust.
+
+## §333 — 2026-08-20 · LA CLAVE DE LA SERIE PASA AL INDICE EMBEBIDO
+
+**Que.** `--verificar-cofirmas` indexaba la serie por el **ordinal declarado en
+la linea**, que es justo el campo que la firma **no acredita** (§332). Por eso no
+veia el REINICIO: al perderse el SK la clave vuelve a cero y un firmante honesto
+emite ordinales NUEVOS con indices de hoja ya gastados. Desde este sello la clave
+del mapa es **el indice que va DENTRO de la firma**, que no se puede falsear sin
+romperla.
+
+**La sexta clase no crea la deteccion: la DESAMBIGUA.** El atado del §332 vive
+dentro de `verificar_cofirma`, asi que una linea con el ordinal reescrito **ya se
+cazaba** -y salia como `no-verifica`, con el motivo escondido dentro de una
+cadena de error-. El cli no hace `match` sobre `VerificaError` en ningun sitio, y
+sigue sin hacerlo: la regla vive en el verificador y aqui solo se **TRADUCE**,
+con `if let` y no con un `match` exhaustivo, porque `VerificaError` no es
+`#[non_exhaustive]` y cerrarlo obligaria a tocar el testigo cada vez que aquel
+gane una variante.
+
+**El atado solo dispara sobre material que VERIFICA, y eso decidio el alcance.**
+El orden dentro de `verificar_cofirma` es `try_from` -> `verify()` -> preambulo
+-> atado, asi que toda firma de mentira muere antes y **nunca llega** a
+`IndiceDiscordante`. Medido: de los siete consumidores en el modulo de pruebas
+**solo uno se rompio** -el que construye lineas a mano con una firma de UN
+byte-, y se rompio por la clave del mapa, no por el atado. Su rojo se enseno en
+vivo antes de tocarlo.
+
+**La consecuencia heredada no esta en el listado de hallazgos: esta en la
+POLITICA.** `contar_acreditacion` (§319) lee la clase **por su nombre** -
+`h.clase() == "indice-repetido"` decide que cofirmantes quedan MARCADOS, y estar
+marcado significa que ni sus cofirmas buenas cuentan. Cambiar QUE numero mira esa
+clase cambia por tanto **quien acredita una epoca**. Es lo correcto -lo que
+compromete una clave de un solo uso es la repeticion del indice de hoja, no la
+del ordinal- pero habia que decirlo, porque el literal de la clase es un contrato
+consumido dentro del mismo fichero: dos productores otra vez.
+
+**Y por eso la clase nueva NO entra en esa regla.** Su linea queda descartada
+como cualquier otra con hallazgo -eso lo hace el conjunto `malas`, que sale de
+`linea()`- pero el cofirmante no queda marcado: `embebido >= declarado` significa
+ordinal reescrito o clave adelantada, y **ninguna de las dos demuestra lo que esa
+regla castiga**. Queda escrito en el doc de la variante, con su porque.
+
+**Una firma que no llega al ancho NO entra en la serie.** No puede repetir un
+indice que no tiene, y su clase la sigue poniendo la firma. De paso se cierra un
+efecto lateral que nadie habia mirado: antes, **dos lineas de pura invencion con
+el mismo ordinal declarado marcaban a un cofirmante honesto**.
+
+**Nace un GATE DE REPERTORIO donde no habia ninguno** (§326): las seis clases se
+comparan **por su NOMBRE y en orden**. El doc de `clase` promete que se leen
+desde fuera y que no cambian sin subir version; hasta hoy esa promesa no tenia
+instrumento.
+
+**Y la doc de cada clase dice QUE numero mira**, que es lo que el §332 dejo
+pedido: `indice-repetido` mira el **embebido**; `indice-discordante` **compara el
+declarado con el embebido**. Quedan dos clases que empiezan igual y miran cosas
+distintas, y ahora quien lea un informe puede saber cual es cual.
+
+**Los rojos del arco fueron DOS, y son de CLASES DISTINTAS.** Recontados al
+cerrar, no recordados -que es justo lo que el parrafo corregido de mas arriba no
+hizo-. El primero: un INERTE mio afirmaba `vistos.insert` **una vez** y son
+**TRES**, porque el fichero lleva otros dos `vistos`, los del diario, que **mi
+propia medicion anterior ya habia impreso**. Es el caso de siempre -teclear un
+numero en vez de derivarlo- y el remedio fue llevar la regla hasta el final: **en
+bash no queda ni un numero tecleado**; todo conteo vive en el motor que mide la
+base y deriva el delta del texto que inserta.
+
+**El segundo rojo es de clase NUEVA y merece nombre: un `set -e` de RESTAURAR
+restaura a un estado que nunca existio.** El bloque arranca con `set -uo
+pipefail` -sin `-e`-, asi que un `set +e` ... `set -e` alrededor de una corrida
+deja **errexit ENCENDIDO** a partir de ahi. La primera asignacion cuyo comando
+devuelve distinto de cero mata el subshell **en silencio**: sin mensaje y sin
+restaurar. Y la forma fina, que es lo que hay que recordar: **la compuerta murio
+POR TENER RAZON**. `grep` devuelve 1 cuando no encuentra nada, y no encontrar
+nada era exactamente el resultado buscado. **Un exito semantico con salida
+distinta de cero es letal bajo errexit.** El corte no se rehizo: estaba entero y
+verde, y lo que faltaba eran comprobaciones, no escrituras.
+
+**El homonimo que la medicion previa salvo.** Este mismo fichero lleva un
+**`0,907 ms`** que es una LATENCIA, no una suma. Un `sed` global de la cifra
+vieja habria reescrito una **medicion**, ademas del asiento del §332. Y el `75`
+del desglose tiene dos homonimos vivos, en `README.md` y en `SECURITY.md`, que
+son **porcentajes**: por eso el ancla fue `**75 del testigo**` y jamas `75`. Los
+tres quedaron comprobados por huella al cerrar.
+
+**Contadores.** Pin del testigo **75 -> 79** (cuatro pruebas nuevas: el reinicio
+visto desde fuera, la firma sin indice que no entra en la serie, la clase nueva
+sobre material que verifica, y el repertorio de las seis). Sumas
+**907/1044/1058 -> 911/1048/1062** en los **CINCO SITIOS VIVOS** mas el
+**desglose por-crate** de `PRINCIPIOS.md`, que se mueve porque nombra al testigo.
+`check_cifras` corrio como gate barato con **solo el pin movido** y delato
+**SEIS** cifras, que era la prediccion escrita antes de correr. **Ningun Cargo
+tocado.** Nace la entrada **99** del BACKLOG. El canon SI se corre y es la
+puerta, porque el corte toca codigo Rust.
+
+**Lo que este sello NO hace, y queda con nombre.** `verificar_cabeza` sigue con
+el mismo defecto y sigue fuera, por la misma razon que en el §332: **una herencia
+por corte**. La correccion §247 del asiento del §331 -que dice «no se explica» y
+da la causa en el parrafo siguiente- queda declarada y **sin tocar, porque no se
+reescribe lo que no se ha leido**: solo se leyo su linea suelta, no sus parrafos.
+Y las cinco citas del «13 de 25» siguen esperando.

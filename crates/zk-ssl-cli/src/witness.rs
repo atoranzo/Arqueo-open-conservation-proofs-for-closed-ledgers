@@ -124,7 +124,8 @@ use serde_json::{json, Value};
 use xmss::KeyPair;
 use zk_ssl_guardian::{GuardianError, GuardianIndice, Reconciliacion};
 use zk_ssl_verify::{
-    mmr, preambulo_cofirma, verificar_cabeza, verificar_cofirma, CabezaFirmada,
+    indice_de_firma, mmr, preambulo_cofirma, verificar_cabeza, verificar_cofirma,
+    CabezaFirmada,
     COFIRMA_V_MAX, COFIRMA_VERSION, Conjunto, VerificaError, VERSION_FORMATO,
 };
 use zk_ssl_wire::{CofirmaDto, SignedEpochHeadDto};
@@ -1455,11 +1456,36 @@ pub enum HallazgoCofirma {
     /// junte cofirmas de VARIOS el mismo indice aparece por diseno. Por eso
     /// `testigo` viaja dentro del hallazgo: sin el, «indice repetido» no dice
     /// DE QUIEN (§254).
+    ///
+    /// ⚠️⚠️ **EL NUMERO QUE MIRA ES EL EMBEBIDO EN LA FIRMA** (§333), no el
+    /// ordinal declarado en la linea. El declarado es metadato que la firma
+    /// NO acredita —lo dice el doc de `CabezaFirmada` y lo ato el §332—, asi
+    /// que indexar por el dejaba pasar el REINICIO: al perderse el SK la
+    /// clave vuelve a cero y el firmante emite ordinales NUEVOS con indices
+    /// de hoja ya gastados. El embebido no se falsea sin romper la firma.
     IndiceRepetido { linea: usize, indice: u64, antes: usize, testigo: String },
+    /// ⚠️⚠️ **EL ORDINAL DECLARADO NO CUADRA CON EL QUE VA DENTRO DE LA
+    /// FIRMA** (§333). El §332 ato los dos numeros al final de
+    /// `verificar_cofirma`; esto solo le pone NOMBRE, para que un tercero no
+    /// tenga que leerse una cadena de error para distinguirlo.
+    ///
+    /// ⚠️ Dice que los dos numeros no cuadran y **no acusa a nadie de
+    /// mentir**: puede ser un ordinal reescrito o una clave adelantada. Por
+    /// eso **no quema al testigo** —eso lo hace `IndiceRepetido`, que es el
+    /// que prueba el reuso—, aunque su linea queda descartada como cualquier
+    /// otra con hallazgo.
+    IndiceDiscordante { linea: usize, declarado: u64, embebido: u64 },
 }
 
 impl HallazgoCofirma {
     /// Clases estables: se leen desde fuera y no cambian sin subir version.
+    ///
+    /// ⚠️⚠️ **DOS EMPIEZAN POR «indice» Y MIRAN NUMEROS DISTINTOS** (§333):
+    /// `indice-repetido` mira **el indice EMBEBIDO** —dos cofirmas del mismo
+    /// testigo con el mismo indice de hoja, que es lo que filtra la clave— y
+    /// `indice-discordante` **compara el ordinal declarado con el embebido**.
+    /// Quien lea una clase desde fuera tiene que saber cual de los dos
+    /// numeros la produjo.
     pub fn clase(&self) -> &'static str {
         match self {
             HallazgoCofirma::Ilegible { .. } => "ilegible",
@@ -1467,12 +1493,13 @@ impl HallazgoCofirma {
             HallazgoCofirma::CampoAusente { .. } => "campo-ausente",
             HallazgoCofirma::NoVerifica { .. } => "no-verifica",
             HallazgoCofirma::IndiceRepetido { .. } => "indice-repetido",
+            HallazgoCofirma::IndiceDiscordante { .. } => "indice-discordante",
         }
     }
 
     /// La linea del fichero a la que apunta el hallazgo. S319
     ///
-    /// ⚠️ Las CINCO variantes la llevan, y de ahi sale la propiedad que
+    /// ⚠️ Las SEIS variantes la llevan, y de ahi sale la propiedad que
     /// hace barato el S319: la acreditacion puede DESCARTAR lineas sin
     /// volver a verificar nada. Quien decide que una linea esta mal sigue
     /// siendo `verificar_cofirmas`; esto solo LEE su veredicto.
@@ -1483,6 +1510,7 @@ impl HallazgoCofirma {
             HallazgoCofirma::CampoAusente { linea, .. } => *linea,
             HallazgoCofirma::NoVerifica { linea, .. } => *linea,
             HallazgoCofirma::IndiceRepetido { linea, .. } => *linea,
+            HallazgoCofirma::IndiceDiscordante { linea, .. } => *linea,
         }
     }
 }
@@ -1568,18 +1596,46 @@ pub fn verificar_cofirmas(lineas: &[String]) -> Vec<HallazgoCofirma> {
         // ⚠️ La clave del mapa lleva la clave ENTERA del testigo; lo que se
         //    IMPRIME es un prefijo, con el mismo corte que el resumen de
         //    cabezas de arriba. Truncar la CLAVE seria invitar a la colision.
-        if let Some(antes) = vistos.insert((testigo.clone(), idx), n) {
+        // ⚠️⚠️ LA CLAVE DE LA SERIE ES EL INDICE EMBEBIDO (§333). El ordinal
+        //    declarado no entra en el preambulo y nadie lo acredita, asi que
+        //    indexar por el dejaba pasar el REINICIO: contador 6 y clave 0
+        //    dan ordinales nuevos con indices de hoja ya quemados. El que va
+        //    DENTRO de la firma no se puede falsear sin romperla.
+        // ⚠️ Una firma que no llega al ancho NO entra en la serie: no puede
+        //    repetir un indice que no tiene, y su clase la pone la firma unas
+        //    lineas mas abajo. Antes, dos lineas de basura con el mismo
+        //    ordinal contaban como reuso y quemaban a un testigo honesto.
+        let emb = indice_de_firma(&firma).ok();
+        let repetida = emb.and_then(|e| vistos.insert((testigo.clone(), e), n));
+        if let (Some(e), Some(antes)) = (emb, repetida) {
             let tg = v["clavePublicaTestigo"].as_str().unwrap_or("");
             h.push(HallazgoCofirma::IndiceRepetido {
                 linea: n,
-                indice: idx,
+                indice: e,
                 antes,
                 testigo: tg[..18.min(tg.len())].to_string(),
             });
         }
         let c = CabezaFirmada { version_formato: vf as u8, indice: idx, firma };
-        if let Err(e) = verificar_cofirma(&testigo, &d32, &op, &c) {
-            h.push(HallazgoCofirma::NoVerifica { linea: n, indice: idx, error: format!("{e}") });
+        if let Err(err) = verificar_cofirma(&testigo, &d32, &op, &c) {
+            // ⚠️ `if let` y NO un `match` exhaustivo: `VerificaError` no es
+            //    `#[non_exhaustive]`, asi que cerrarlo obligaria a tocar el
+            //    testigo cada vez que el verificador gane una variante. La
+            //    REGLA vive en `verificar_cofirma` (§332) y aqui solo se
+            //    TRADUCE a la clase que el tercero lee.
+            if let VerificaError::IndiceDiscordante { declarado, embebido } = &err {
+                h.push(HallazgoCofirma::IndiceDiscordante {
+                    linea: n,
+                    declarado: *declarado,
+                    embebido: *embebido,
+                });
+            } else {
+                h.push(HallazgoCofirma::NoVerifica {
+                    linea: n,
+                    indice: idx,
+                    error: format!("{err}"),
+                });
+            }
         }
     }
     h
@@ -1928,7 +1984,7 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             }
         }
         if h.is_empty() {
-            println!("sin hallazgos: todas verifican y ningun indice se repite");
+            println!("sin hallazgos: todas verifican y ningun indice DE FIRMA se repite");
             return Ok(());
         }
         anyhow::bail!("{} hallazgo(s) en las cofirmas", h.len());
@@ -3475,6 +3531,13 @@ mod tests {
     /// CLAVE DEL MAPA, no la criptografia. Las firmas son invencion, asi que
     /// cada linea da ademas su `no-verifica`, y el test lo EXIGE en vez de
     /// callarlo — un test que no dice lo que espera tapa lo que cambie.
+    ///
+    /// ⚠️ **DESDE EL §333 LA CLAVE DEL MAPA ES EL INDICE EMBEBIDO**, asi que
+    /// la firma inventada lleva un prefijo de cinco bytes con un indice de
+    /// hoja (3) MENOR que el ordinal declarado (7), como en el material
+    /// legitimo. Sigue sin verificar —y el test lo exige—, pero su indice ya
+    /// es legible: con un solo byte estas lineas se quedaban FUERA de la
+    /// serie y el test dejaba de medir lo que dice medir.
     #[test]
     fn dos_testigos_distintos_con_el_mismo_indice_no_son_hallazgo() {
         let linea = |testigo: &str| {
@@ -3486,7 +3549,7 @@ mod tests {
                 "clavePublicaTestigo": testigo,
                 "versionFormato": "0x3",
                 "indice": "0x7",
-                "firma": "0xdd"
+                "firma": "0x00000000030d"
             })
             .to_string()
         };
@@ -3507,6 +3570,131 @@ mod tests {
             2,
             "las dos firmas son invencion: las dos dan no-verifica: {distintos:?}"
         );
+    }
+
+    /// ⚠️⚠️⚠️ **EL REINICIO, VISTO DESDE FUERA** (§333). Al perderse el SK la
+    /// clave vuelve a cero y el firmante honesto emite ordinales NUEVOS con
+    /// indices de hoja ya gastados: dos digests distintos firmados con el
+    /// mismo indice, que es exactamente lo que filtra la clave. Con la clave
+    /// del mapa en el ordinal declarado esto pasaba por bueno.
+    #[test]
+    fn el_reinicio_se_ve_aunque_el_ordinal_declarado_avance() {
+        let linea = |ordinal: &str, ep: &str| {
+            json!({
+                "v": 1,
+                "epochDigest": ep,
+                "clavePublicaOperador": "0xaabb",
+                "clavePublicaTestigo": "0xcc",
+                "versionFormato": "0x3",
+                "indice": ordinal,
+                "firma": "0x00000000030d"
+            })
+            .to_string()
+        };
+        let e1 = "0x1111111111111111111111111111111111111111111111111111111111111111";
+        let e2 = "0x2222222222222222222222222222222222222222222222222222222222222222";
+        let h = verificar_cofirmas(&[linea("0x7", e1), linea("0x8", e2)]);
+        match h.iter().find(|x| x.clase() == "indice-repetido") {
+            Some(HallazgoCofirma::IndiceRepetido { linea, indice, antes, .. }) => {
+                assert_eq!(
+                    (*linea, *indice, *antes),
+                    (2, 3, 1),
+                    "el numero que se repite es el EMBEBIDO, no el declarado: {h:?}"
+                );
+            }
+            otro => panic!("el reinicio tiene que verse: {otro:?} · {h:?}"),
+        }
+    }
+
+    /// ⚠️ **UNA FIRMA QUE NO LLEGA AL ANCHO NO ENTRA EN LA SERIE** (§333): no
+    /// puede repetir un indice que no tiene. Antes, dos lineas de pura
+    /// invencion con el mismo ordinal declarado se contaban como reuso, y el
+    /// reuso QUEMA al testigo: se le podia quemar con basura.
+    #[test]
+    fn una_firma_sin_indice_no_entra_en_la_serie() {
+        let linea = || {
+            json!({
+                "v": 1,
+                "epochDigest":
+                    "0x1111111111111111111111111111111111111111111111111111111111111111",
+                "clavePublicaOperador": "0xaabb",
+                "clavePublicaTestigo": "0xcc",
+                "versionFormato": "0x3",
+                "indice": "0x7",
+                "firma": "0xdd"
+            })
+            .to_string()
+        };
+        let h = verificar_cofirmas(&[linea(), linea()]);
+        assert!(
+            !h.iter().any(|x| x.clase() == "indice-repetido"),
+            "una firma de un byte no da indice: no hay serie que comprobar: {h:?}"
+        );
+        assert_eq!(
+            h.iter().filter(|x| x.clase() == "no-verifica").count(),
+            2,
+            "y las dos siguen muriendo por la firma: {h:?}"
+        );
+    }
+
+    /// ⚠️⚠️ **LA SEXTA CLASE, Y SOLO SOBRE MATERIAL QUE VERIFICA** (§333). El
+    /// atado del §332 vive al FINAL de `verificar_cofirma`, asi que solo se
+    /// llega a el cuando la firma es buena y el preambulo cuadra. Se reescribe
+    /// el ordinal —que la firma no acredita— y el hallazgo lo dice con clase
+    /// propia en vez de esconderlo dentro de un `no-verifica`.
+    #[test]
+    fn el_ordinal_reescrito_tiene_su_propia_clase() {
+        let (ls, _) = fichero_de_cofirmas(1, "fichero_discordante");
+        let v: Value = serde_json::from_str(&ls[0]).expect("json");
+        let mut w = v.clone();
+        w["indice"] = json!("0x0");
+        let h = verificar_cofirmas(&[w.to_string()]);
+        assert_eq!(h.len(), 1, "un solo hallazgo: {h:?}");
+        assert_eq!(h[0].clase(), "indice-discordante");
+        match &h[0] {
+            HallazgoCofirma::IndiceDiscordante { declarado, embebido, .. } => {
+                assert_eq!(*declarado, 0, "es el ordinal que acabamos de reescribir");
+                assert!(
+                    *embebido >= *declarado,
+                    "y por eso es discordante, no por un numero tecleado: {h:?}"
+                );
+            }
+            otro => panic!("{otro:?}"),
+        }
+    }
+
+    /// ⚠️⚠️ **EL REPERTORIO, ATADO** (§326). El doc de `clase` promete que
+    /// estos nombres se leen desde fuera y no cambian sin subir version. Si
+    /// nace una septima o alguien renombra una, esto lo dice POR SU NOMBRE y
+    /// no por un numero.
+    #[test]
+    fn las_seis_clases_del_tercero_son_estas() {
+        let todas = vec![
+            HallazgoCofirma::Ilegible { linea: 1, error: "x".into() },
+            HallazgoCofirma::VersionDesconocida { linea: 1, v: 9 },
+            HallazgoCofirma::CampoAusente { linea: 1, campo: "v".into() },
+            HallazgoCofirma::NoVerifica { linea: 1, indice: 1, error: "x".into() },
+            HallazgoCofirma::IndiceRepetido {
+                linea: 2,
+                indice: 1,
+                antes: 1,
+                testigo: "0xcc".into(),
+            },
+            HallazgoCofirma::IndiceDiscordante { linea: 1, declarado: 0, embebido: 0 },
+        ];
+        let clases: Vec<&str> = todas.iter().map(|h| h.clase()).collect();
+        assert_eq!(
+            clases,
+            vec![
+                "ilegible",
+                "version-desconocida",
+                "campo-ausente",
+                "no-verifica",
+                "indice-repetido",
+                "indice-discordante"
+            ]
+        );
+        assert!(todas.iter().all(|h| h.linea() >= 1), "las SEIS llevan linea");
     }
 
     #[test]

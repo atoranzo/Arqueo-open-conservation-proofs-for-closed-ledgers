@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 44 abiertas, 54 resueltas — **3 suspendidas** (16, 22 y 28).
-Ultima revision: 17 de agosto de 2026 — **contada, no recordada**.
+**Estado**: 45 abiertas, 54 resueltas — **3 suspendidas** (16, 22 y 28).
+Ultima revision: 20 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
 
@@ -1548,6 +1548,20 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   exclusion. La conclusion cualitativa de la seccion —la retencion distribuida
   gana por dos ordenes de magnitud— **probablemente sobrevive**: lo que cambia
   es la magnitud del factor, no su signo.
+
+- [ ] **99. La marca del cofirmante se dispara también cuando las dos líneas
+  son IDÉNTICAS.** `contar_acreditacion` marca a un cofirmante en cuanto
+  `verificar_cofirmas` levanta `indice-repetido`, y desde el §333 ese hallazgo
+  mira el índice que va dentro de la firma. Pero **repetir la MISMA línea no
+  revela nada**: es la misma firma sobre el mismo mensaje. Lo que compromete una
+  clave de un solo uso son **dos mensajes distintos** firmados con el mismo
+  índice de hoja. ⇒ hoy quien reciba un fichero puede desacreditar a un
+  cofirmante honesto **duplicándole una línea**, y el `NEGATIVO-B2` de
+  `tools/banco_cofirma.sh` ejercita justo ese caso —el inocuo— porque hace
+  `head -1` dos veces. Repararlo exige distinguir **repetición del índice con
+  digest distinto** (grave) de **línea duplicada** (inocua), y decidir qué hace
+  cada una con la acreditación. Medido en el §333 y dejado fuera a propósito:
+  una herencia por corte.
 
 ## E. Operacion
 
