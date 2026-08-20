@@ -25183,3 +25183,79 @@ cadena que ya estaba y que el §324 diagnostico.
 movida. Ningun Cargo tocado. Ninguna herramienta tocada. El canon SI se corre y
 es la puerta, porque el corte toca ficheros `.rs` aunque solo sea su prosa.
 BACKLOG sin tocar: no abre ni cierra ninguna entrada.
+
+## §328 — 2026-08-20 · EL ARRANQUE DEL NODO RECONCILIA
+
+**Que.** El nodo tenia construida la pieza que compara el contador del
+guardian con el indice que la clave dice tener -`FirmanteCabeza::reconciliar`,
+en `firma_cabeza.rs`- y el arranque no la llamaba nunca. Desde este sello la
+llama, dice en voz alta lo que encuentra, y NO ARRANCA si la clave va por
+delante del contador. El testigo ya lo hacia desde el §300; el nodo, no.
+
+**El agujero, y como se encontro.** Salio de medir el terreno de las notas 19,
+84 y 92 -el ciclo de vida del firmante- antes de tocar nada. Un censo por
+fichero dio `ClaveAdelantada` en el guardian y en el testigo y CERO en el nodo,
+y leer `desde_semilla` explico por que: abre el guardian, lee el indice de la
+clave con `indice_de_la_clave` y lo TIRA con un `let _ =`. Esa lectura
+comprueba el LAYOUT -si upstream cambio la serializacion, mejor no arrancar que
+firmar y anotar mal- y no compara nada con el contador. El `let f` sin `mut`
+del arranque era el fosil de no haber llamado nunca a la pieza: el testigo, en
+el mismo sitio, liga `let mut c`.
+
+**La politica vive en el arranque, no en la pieza.** La funcion
+`politica_de_reconciliacion` es libre, vive en `main.rs` al lado de
+`firma_sin_diario`, toma una `Reconciliacion` y devuelve una
+`DecisionDeArranque`. Es la forma del §319: la
+politica NOMBRA donde se decide, y la pieza se queda siendo un invariante. El
+constructor no cambia, asi que los tests que lo usan siguen valiendo, y ni el
+guardian ni `firma_cabeza.rs` se tocan: este corte toca UN SOLO fichero. Se
+nombra el tipo por RUTA COMPLETA, `zk_ssl_guardian::Reconciliacion`, para no
+tocar ni un `use`: es la leccion del §326, donde un import a nivel de fichero
+para uso solo-de-test daba `unused import` en `cargo build` y no en
+`cargo test`.
+
+**El caso normal no puede parar el arranque.** De los tres casos, el contador
+por delante de la clave es el NORMAL tras una caida -el guardian lo declara en
+su propio doc, 13 de 25 en K.1-: hay indices quemados sin firma, y eso es el
+precio del orden, no un fallo. Negarse ahi seria un rojo en el camino bueno.
+Se avisa y se sigue. El que no admite matiz es el contrario: la clave ha
+firmado con indices que el contador no registro, o el orden se invirtio o
+`fsync` no hizo lo que dijo, y el guardian ya escribe en su propio doc que la
+clave debe considerarse comprometida. Ahi el nodo no arranca, igual que el
+testigo. Los tres brazos van probados, el rojo incluido: un rojo sin su test es
+un adorno.
+
+**Lo que este sello NO cierra.** No hay transicion firmada al rotar (nota 84)
+-medido: ni un solo `.rs` del arbol habla de eso, y las ochenta y siete
+apariciones de la raiz son transicion de ESTADO, de AIR o de ledger- ni
+procedimiento de emergencia escrito (nota 92c). La custodia declarada de la
+clave, en cambio, YA EXISTIA desde el §244, con su bandera, su bail y dos
+tests, aunque la nota 92 siga diciendo que no. Nada de eso se toca aqui. Y el
+`let _ =` del layout se queda, de modo que desde este sello el arranque lee el
+indice de la clave dos veces: una para el layout y otra para la politica.
+
+**Cifras y su procedencia.** El pin del nodo se midio en vivo ANTES de tocar un
+byte, corriendo el crate suelto en release: dio 80, exactamente lo que la tabla
+pina, y esa medicion fue la puerta de entrada del corte. Despues dio 83, los
+tres tests nuevos, uno por brazo. De paso queda medido que ese crate imprime UN
+SOLO bloque `test result: ok` y no tres, porque es un binario sin lib ni
+doc-tests: lo que vale del pin es la SUMA, no el numero de bloques. `main.rs`
+paso de 2679 a 2782 lineas, 103 insertadas y una sustituida, y el balance de
+llaves no se movio: el texto abre cuarenta y cierra cuarenta, contando los
+huecos de `format!`. Los cuatro warnings de `cargo build` que el canon no ve
+siguen siendo cuatro, y dos de ellos nombran metodos del indice
+-`indice_del_guardian` y `actual`- que nadie llama fuera de los tests; queda
+declarado, porque un `dead_code` puede estar diciendo que FALTA una llamada y
+no que sobre una funcion.
+
+**Contadores.** Pin del nodo 80 -> 83, tres tests. Sumas 888/1025/1039 ->
+891/1028/1042 en los diez sitios de siempre: nueve lineas con las sumas en
+cuatro documentos, mas el desglose por-crate del nodo, que viaja en el mismo
+bloque que el pin. De los DIECISEIS numeros movidos `check_cifras` solo protege
+SEIS -los cinco totales pegados a la palabra tests o pruebas, y el desglose-;
+los otros diez se mueven a mano y ningun gate los vigila, que es el hueco que
+el §302-B ya midio. El desglose vuelve a reportarse con LINEA 0, tercera vez
+que se mide y sigue sin reparar. Ningun Cargo tocado. Ninguna herramienta
+tocada. El canon SI se corre y es la puerta, porque el corte toca codigo Rust.
+BACKLOG sin tocar: no abre ni cierra ninguna entrada, y lo que este sello deja
+declarado viaja en la cola del traspaso.

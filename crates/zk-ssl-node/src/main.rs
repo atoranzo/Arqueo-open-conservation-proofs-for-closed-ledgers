@@ -333,6 +333,96 @@ fn firma_sin_diario(firmara: bool, con_diario: bool) -> bool {
     firmara && !con_diario
 }
 
+/// Que hace el ARRANQUE con lo que el guardian encuentra al reconciliar.
+///
+/// ⚠️ Vive aqui y no en `firma_cabeza`: es POLITICA del nodo, no invariante
+/// de la pieza -la forma del S319-. El TESTIGO tiene la suya desde el S300 y
+/// las dos coinciden en el unico caso que no admite matiz: la clave por
+/// delante del contador NO ARRANCA.
+#[derive(Debug, PartialEq, Eq)]
+enum DecisionDeArranque {
+    /// Todo cuadra: se dice y se sigue.
+    Arranca(String),
+    /// Anomalia ESPERADA: se sigue, pero tiene que verse en el log.
+    ArrancaAvisando(String),
+    /// ⚠️⚠️ No se arranca.
+    NoArranca(String),
+}
+
+/// La politica del arranque ante cada caso del guardian.
+///
+/// ⚠️ `ContadorAdelantado` es el caso NORMAL tras una caida -13 de 25 en
+/// K.1-, no la excepcion: hay indices quemados sin firma. Pararse ahi seria
+/// negarse a arrancar en el camino bueno.
+fn politica_de_reconciliacion(r: &zk_ssl_guardian::Reconciliacion) -> DecisionDeArranque {
+    match r {
+        zk_ssl_guardian::Reconciliacion::Coincide { indice } => {
+            DecisionDeArranque::Arranca(format!(
+                "guardian y clave a la par en el indice {indice}"
+            ))
+        }
+        zk_ssl_guardian::Reconciliacion::ContadorAdelantado { contador, clave, huerfanos } => {
+            DecisionDeArranque::ArrancaAvisando(format!(
+                "contador {contador} por delante de la clave {clave}: {huerfanos} indice(s) \
+                 quemados sin firma. Es el caso NORMAL tras una caida, el precio del orden"
+            ))
+        }
+        zk_ssl_guardian::Reconciliacion::ClaveAdelantada { contador, clave, sin_registrar } => {
+            DecisionDeArranque::NoArranca(format!(
+                "LA CLAVE VA POR DELANTE DEL CONTADOR: {clave} frente a {contador}. \
+                 {sin_registrar} firma(s) sin registrar: o el orden se invirtio, o fsync no \
+                 hizo lo que dijo. LA CLAVE DEBE CONSIDERARSE COMPROMETIDA"
+            ))
+        }
+    }
+}
+
+#[cfg(test)]
+mod politica_de_arranque {
+    use super::*;
+    use zk_ssl_guardian::Reconciliacion;
+
+    #[test]
+    fn a_la_par_arranca_y_lo_dice() {
+        match politica_de_reconciliacion(&Reconciliacion::Coincide { indice: 7 }) {
+            DecisionDeArranque::Arranca(m) => {
+                assert!(m.contains('7'), "el aviso nombra el indice: {m}");
+            }
+            otra => panic!("a la par tiene que ARRANCAR y sin aviso: {otra:?}"),
+        }
+    }
+
+    #[test]
+    fn contador_adelantado_arranca_avisando_porque_es_el_caso_normal() {
+        // ⚠️ 13 de 25 en K.1: parar aqui seria negarse en el camino bueno.
+        match politica_de_reconciliacion(&Reconciliacion::ContadorAdelantado {
+            contador: 9,
+            clave: 7,
+            huerfanos: 2,
+        }) {
+            DecisionDeArranque::ArrancaAvisando(m) => {
+                assert!(m.contains("NORMAL"), "el aviso dice que NO es un fallo: {m}");
+            }
+            otra => panic!("el caso normal tras una caida NO puede parar el arranque: {otra:?}"),
+        }
+    }
+
+    #[test]
+    fn clave_adelantada_no_arranca() {
+        // ⚠️⚠️ EL ROJO. Un rojo sin su test es un adorno.
+        match politica_de_reconciliacion(&Reconciliacion::ClaveAdelantada {
+            contador: 7,
+            clave: 9,
+            sin_registrar: 2,
+        }) {
+            DecisionDeArranque::NoArranca(m) => {
+                assert!(m.contains("COMPROMETIDA"), "el motivo nombra la consecuencia: {m}");
+            }
+            otra => panic!("la clave por delante del contador NO puede arrancar: {otra:?}"),
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
@@ -382,7 +472,7 @@ async fn main() -> anyhow::Result<()> {
     let firmante = match &semilla_hex {
         Some(hex) => {
             let semilla = descodificar_semilla(hex)?;
-            let f = firma_cabeza::FirmanteCabeza::desde_semilla(&semilla, &args.indice_firma)
+            let mut f = firma_cabeza::FirmanteCabeza::desde_semilla(&semilla, &args.indice_firma)
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
             if custodia_comprobada {
                 tracing::info!(custodia = args.custodia, "custodia COMPROBADA por el nodo");
@@ -399,6 +489,19 @@ async fn main() -> anyhow::Result<()> {
                     "custodia AFIRMADA pero NO COMPROBADA por el nodo: es una \
                      afirmacion suya, y mentir en ella es oponible"
                 );
+            }
+            // ⚠️⚠️ S328 - RECONCILIAR AL ARRANCAR, y decir que salio.
+            //    El testigo lo hace desde el S300 (cli/src/witness.rs) y el
+            //    nodo NO: tenia la pieza -FirmanteCabeza::reconciliar- y el
+            //    arranque no la llamaba. desde_semilla LEE el indice de la
+            //    clave y lo TIRA con un let _ = -solo comprueba el layout-,
+            //    asi que nadie comparaba el contador con la clave.
+            match politica_de_reconciliacion(
+                &f.reconciliar().map_err(|e| anyhow::anyhow!("{e}"))?,
+            ) {
+                DecisionDeArranque::Arranca(m) => tracing::info!("{m}"),
+                DecisionDeArranque::ArrancaAvisando(m) => tracing::warn!("{m}"),
+                DecisionDeArranque::NoArranca(m) => anyhow::bail!("{m}"),
             }
             Some(f)
         }
