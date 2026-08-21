@@ -352,6 +352,55 @@ pub enum Reconciliacion {
     ClaveAdelantada { contador: u64, clave: u64, sin_registrar: u64 },
 }
 
+/// El único caso que **NO ADMITE MATIZ**, con independencia de quién pregunte.
+///
+/// ⚠️⚠️ **El invariante es del guardián; la política, de cada dueño.** El nodo
+/// y el cofirmante deciden cosas distintas ante `ContadorAdelantado` o ante
+/// `ClaveEnCero` —y hacen bien: eso es política—, pero ninguno de los dos
+/// puede arrancar con la clave por delante del contador. Esa parte no es
+/// suya: se decide aquí, en el crate que las dos comparten (§296, §298).
+///
+/// ⚠️ **La producción no lo llama, y es a propósito.** Para construir su
+/// mensaje cada política necesita los CAMPOS de la variante, así que su
+/// `match` es inevitable y un `if` delante sugeriría una restricción que no
+/// existe. Quien lo consume es **el test de cada crate**, y ese test enumera
+/// las variantes con un `match` sin comodín: el día que nazca una quinta,
+/// los dos crates dejan de compilar hasta que alguien decida.
+pub fn no_admite_matiz(r: &Reconciliacion) -> bool {
+    match r {
+        Reconciliacion::Coincide { .. } => false,
+        Reconciliacion::ContadorAdelantado { .. } => false,
+        Reconciliacion::ClaveEnCero { .. } => false,
+        Reconciliacion::ClaveAdelantada { .. } => true,
+    }
+}
+
+#[cfg(test)]
+mod invariante_del_arranque {
+    use super::*;
+
+    /// Los cuatro valores, escritos como literales y no derivados del propio
+    /// `match`: un test que reproduce la implementación no prueba nada.
+    #[test]
+    fn solo_la_clave_adelantada_no_admite_matiz() {
+        assert!(!no_admite_matiz(&Reconciliacion::Coincide { indice: 7 }));
+        assert!(!no_admite_matiz(&Reconciliacion::ContadorAdelantado {
+            contador: 9,
+            clave: 7,
+            huerfanos: 2
+        }));
+        assert!(!no_admite_matiz(&Reconciliacion::ClaveEnCero {
+            contador: 5,
+            indeterminados: 5
+        }));
+        assert!(no_admite_matiz(&Reconciliacion::ClaveAdelantada {
+            contador: 3,
+            clave: 9,
+            sin_registrar: 6
+        }));
+    }
+}
+
 /// Contador monótono de índices de firma, persistido antes de cada uso.
 ///
 /// ⚠️ `Debug` porque aparece en un `Result` que los tests inspeccionan con

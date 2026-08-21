@@ -2192,33 +2192,19 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             //    ignorando su propio invariante.
             //    ⚠⚠ K.1 midio DENTRO de un proceso, no tras un reinicio: al
             //    reiniciar la clave vuelve a cero y sale `ClaveEnCero`, que NO arranca.
-            match c.reconciliar().map_err(|e| anyhow::anyhow!("{e}"))? {
-                Reconciliacion::Coincide { indice } => {
-                    println!("   guardian y clave a la par en el indice {indice}.");
-                }
-                Reconciliacion::ContadorAdelantado { contador, clave, huerfanos } => {
-                    println!("   contador {contador} por delante de la clave {clave}:");
-                    println!("   {huerfanos} indice(s) quemados sin firma. Es el caso");
-                    println!("   NORMAL tras una caida —el precio del orden—, no un fallo.");
-                }
-                // ⚠️⚠️ LO QUE NUNCA DEBE PASAR: la clave firmo con indices que
-                //    el contador no registro. **El testigo NO arranca**: seguir
-                //    seria firmar con una clave que hay que dar por comprometida.
-                Reconciliacion::ClaveEnCero { contador, indeterminados } => {
+            // ⚠️⚠️ §336 - EN DOS PASOS A PROPOSITO, como el nodo en el §335:
+            //    si `c.reconciliar()` va dentro del escrutinio, su temporal
+            //    mantiene `c` prestado durante TODO el match, y el dia que un
+            //    brazo pida `&mut c` -resincronizar- deja de compilar. Se
+            //    prepaga hoy, que cuesta una linea.
+            let reconciliacion = c.reconciliar().map_err(|e| anyhow::anyhow!("{e}"))?;
+            match politica_del_cofirmante(&reconciliacion) {
+                DecisionDelCofirmante::Arranca(m) => println!("{m}"),
+                DecisionDelCofirmante::ArrancaAvisando(m) => println!("{m}"),
+                DecisionDelCofirmante::NoArranca { aviso, razon } => {
                     eprintln!();
-                    eprintln!("⚠️⚠️ LA CLAVE ESTA EN CERO Y EL CONTADOR EN {contador}.");
-                    eprintln!("   {indeterminados} indice(s) INDETERMINADOS: el SK no se persiste,");
-                    eprintln!("   asi que firmar ahora reutilizaria indices que pueden estar");
-                    eprintln!("   quemados. No se puede probar lo contrario, y se falla cerrada.");
-                    anyhow::bail!("clave en cero: {indeterminados} indice(s) indeterminados");
-                }
-                Reconciliacion::ClaveAdelantada { contador, clave, sin_registrar } => {
-                    eprintln!();
-                    eprintln!("⚠️⚠️ LA CLAVE VA POR DELANTE DEL CONTADOR: {clave} frente a {contador}.");
-                    eprintln!("   {sin_registrar} firma(s) sin registrar: o el orden se invirtio,");
-                    eprintln!("   o `fsync` no hizo lo que dijo. **LA CLAVE DEBE CONSIDERARSE");
-                    eprintln!("   COMPROMETIDA**, y el testigo no firma nada mas con ella.");
-                    anyhow::bail!("clave adelantada: {sin_registrar} firma(s) sin registrar");
+                    eprintln!("{aviso}");
+                    anyhow::bail!("{razon}");
                 }
             }
             Some(c)
@@ -2482,6 +2468,80 @@ impl core::fmt::Display for CofirmaError {
 
 impl std::error::Error for CofirmaError {}
 
+/// Que hace el ARRANQUE DEL COFIRMANTE con lo que el guardian encuentra al
+/// reconciliar.
+///
+/// ⚠️ Es la POLITICA DEL COFIRMANTE, hermana de `DecisionDeArranque` del
+/// nodo: cada dueno tiene la suya A PROPOSITO -es politica, no invariante de
+/// la pieza, la forma del §319- y el guardian solo aporta el INVARIANTE.
+/// **Cual es el caso que no admite matiz lo dice
+/// `zk_ssl_guardian::no_admite_matiz`**, y hay un test que exige que esta
+/// politica lo honre.
+///
+/// ⚠️⚠️ `NoArranca` lleva DOS cadenas porque el arranque hace dos cosas
+/// distintas con ellas: `aviso` sale ENTERO por stderr y `razon` es lo que
+/// viaja en el error. Fundirlas cambiaria los bytes que el banco lee.
+#[derive(Debug, PartialEq, Eq)]
+enum DecisionDelCofirmante {
+    /// Todo cuadra: se dice por stdout y se sigue.
+    Arranca(String),
+    /// Anomalia ESPERADA: se dice por stdout y se sigue.
+    ArrancaAvisando(String),
+    /// No se arranca: `aviso` por stderr, `razon` al error.
+    NoArranca { aviso: String, razon: String },
+}
+
+/// La politica del arranque del cofirmante ante cada caso del guardian.
+///
+/// ⚠️ PURA: no imprime, no toca disco y no mira el reloj. Vivia dentro de
+/// `run` y por eso no tenia un solo test unitario; el §336 la saca al molde
+/// del §328 **sin cambiar un byte de lo que se imprime**, y por eso los
+/// textos van tal cual estaban -incluida la sangria de tres espacios-.
+fn politica_del_cofirmante(r: &Reconciliacion) -> DecisionDelCofirmante {
+    match r {
+        Reconciliacion::Coincide { indice } => DecisionDelCofirmante::Arranca(format!(
+            "   guardian y clave a la par en el indice {indice}."
+        )),
+        Reconciliacion::ContadorAdelantado { contador, clave, huerfanos } => {
+            DecisionDelCofirmante::ArrancaAvisando(
+                [
+                    format!("   contador {contador} por delante de la clave {clave}:"),
+                    format!("   {huerfanos} indice(s) quemados sin firma. Es el caso"),
+                    "   NORMAL tras una caida —el precio del orden—, no un fallo.".to_string(),
+                ]
+                .join("\n"),
+            )
+        }
+        // ⚠️⚠️ LO QUE NUNCA DEBE PASAR: la clave firmo con indices que
+        //    el contador no registro. **El testigo NO arranca**: seguir
+        //    seria firmar con una clave que hay que dar por comprometida.
+        Reconciliacion::ClaveEnCero { contador, indeterminados } => {
+            DecisionDelCofirmante::NoArranca {
+                aviso: [
+                    format!("⚠️⚠️ LA CLAVE ESTA EN CERO Y EL CONTADOR EN {contador}."),
+                    format!("   {indeterminados} indice(s) INDETERMINADOS: el SK no se persiste,"),
+                    "   asi que firmar ahora reutilizaria indices que pueden estar".to_string(),
+                    "   quemados. No se puede probar lo contrario, y se falla cerrada.".to_string(),
+                ]
+                .join("\n"),
+                razon: format!("clave en cero: {indeterminados} indice(s) indeterminados"),
+            }
+        }
+        Reconciliacion::ClaveAdelantada { contador, clave, sin_registrar } => {
+            DecisionDelCofirmante::NoArranca {
+                aviso: [
+                    format!("⚠️⚠️ LA CLAVE VA POR DELANTE DEL CONTADOR: {clave} frente a {contador}."),
+                    format!("   {sin_registrar} firma(s) sin registrar: o el orden se invirtio,"),
+                    "   o `fsync` no hizo lo que dijo. **LA CLAVE DEBE CONSIDERARSE".to_string(),
+                    "   COMPROMETIDA**, y el testigo no firma nada mas con ella.".to_string(),
+                ]
+                .join("\n"),
+                razon: format!("clave adelantada: {sin_registrar} firma(s) sin registrar"),
+            }
+        }
+    }
+}
+
 /// **El cofirmante del testigo.** Clave XMSS propia y guardian del indice.
 ///
 /// ⚠️ El guardian es **el mismo crate que usa el nodo** (§296, §298), no
@@ -2604,6 +2664,102 @@ impl Cofirmante {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ── §336 · LA POLITICA DEL COFIRMANTE, que hasta hoy no tenia tests ──
+
+    /// Los cuatro casos, con su texto EXACTO: si alguien reescribe una frase,
+    /// el banco se entera tarde y este test se entera ya.
+    #[test]
+    fn a_la_par_el_cofirmante_arranca_y_lo_dice() {
+        match politica_del_cofirmante(&Reconciliacion::Coincide { indice: 7 }) {
+            DecisionDelCofirmante::Arranca(m) => {
+                assert_eq!(m, "   guardian y clave a la par en el indice 7.");
+            }
+            otra => panic!("a la par se arranca: {otra:?}"),
+        }
+    }
+
+    #[test]
+    fn el_contador_adelantado_arranca_avisando_porque_es_el_caso_normal() {
+        match politica_del_cofirmante(&Reconciliacion::ContadorAdelantado {
+            contador: 9,
+            clave: 7,
+            huerfanos: 2,
+        }) {
+            DecisionDelCofirmante::ArrancaAvisando(m) => {
+                assert!(m.contains("contador 9 por delante de la clave 7:"), "{m}");
+                assert!(m.contains("2 indice(s) quemados sin firma"), "{m}");
+                assert_eq!(m.lines().count(), 3, "el aviso son TRES lineas: {m}");
+            }
+            otra => panic!("el caso normal no para: {otra:?}"),
+        }
+    }
+
+    #[test]
+    fn la_clave_en_cero_no_arranca_y_dice_cuantos_quedan_indeterminados() {
+        match politica_del_cofirmante(&Reconciliacion::ClaveEnCero {
+            contador: 5,
+            indeterminados: 5,
+        }) {
+            DecisionDelCofirmante::NoArranca { aviso, razon } => {
+                assert!(aviso.contains("LA CLAVE ESTA EN CERO Y EL CONTADOR EN 5."), "{aviso}");
+                assert_eq!(aviso.lines().count(), 4, "el aviso son CUATRO lineas");
+                assert_eq!(razon, "clave en cero: 5 indice(s) indeterminados");
+            }
+            otra => panic!("la clave en cero falla cerrada: {otra:?}"),
+        }
+    }
+
+    #[test]
+    fn la_clave_adelantada_no_arranca_y_la_da_por_comprometida() {
+        match politica_del_cofirmante(&Reconciliacion::ClaveAdelantada {
+            contador: 3,
+            clave: 9,
+            sin_registrar: 6,
+        }) {
+            DecisionDelCofirmante::NoArranca { aviso, razon } => {
+                assert!(aviso.contains("LA CLAVE VA POR DELANTE DEL CONTADOR: 9 frente a 3."), "{aviso}");
+                assert!(aviso.contains("COMPROMETIDA**"), "{aviso}");
+                assert_eq!(razon, "clave adelantada: 6 firma(s) sin registrar");
+            }
+            otra => panic!("la clave adelantada NUNCA arranca: {otra:?}"),
+        }
+    }
+
+    /// ⚠️⚠️ **EL INVARIANTE ES DEL GUARDIAN, LA POLITICA ES DE CADA DUENO.**
+    /// Este test no ata las dos politicas entre si -no lo llames atado-: son
+    /// **dos afirmaciones paralelas** del mismo invariante, una en cada crate.
+    /// Lo que las mantiene juntas es que el PREDICADO tiene un solo dueno y
+    /// que el `match` de abajo es EXHAUSTIVO: el dia que nazca una quinta
+    /// variante de `Reconciliacion`, este fichero deja de compilar hasta que
+    /// alguien decida que hace la politica con ella.
+    #[test]
+    fn la_politica_honra_el_invariante_del_guardian_en_todas_las_variantes() {
+        let casos = [
+            Reconciliacion::Coincide { indice: 7 },
+            Reconciliacion::ContadorAdelantado { contador: 9, clave: 7, huerfanos: 2 },
+            Reconciliacion::ClaveEnCero { contador: 5, indeterminados: 5 },
+            Reconciliacion::ClaveAdelantada { contador: 3, clave: 9, sin_registrar: 6 },
+        ];
+        for r in &casos {
+            // el match SIN comodin es el atado: una variante nueva rompe aqui
+            match r {
+                Reconciliacion::Coincide { .. }
+                | Reconciliacion::ContadorAdelantado { .. }
+                | Reconciliacion::ClaveEnCero { .. }
+                | Reconciliacion::ClaveAdelantada { .. } => {}
+            }
+            if zk_ssl_guardian::no_admite_matiz(r) {
+                assert!(
+                    matches!(
+                        politica_del_cofirmante(r),
+                        DecisionDelCofirmante::NoArranca { .. }
+                    ),
+                    "el guardian dice que {r:?} no admite matiz y la politica arranca"
+                );
+            }
+        }
+    }
 
     // ── §294 · EL SEGUNDO CANAL: la historia ──────────────────────────
 

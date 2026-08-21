@@ -26034,3 +26034,81 @@ sello que lo usa de regresion, su verde ya no dice que lo causo—.
 vez: una herencia por corte. La correccion §247 del asiento del §331
 sigue sin tocarse, por la misma razon de siempre: **no se reescribe lo que no se
 ha leido**. Y las cinco citas del «13 de 25» siguen esperando.
+
+## §336 — 2026-08-21 · LA POLITICA DEL COFIRMANTE SALE DE `fn run`, Y EL INVARIANTE DEL ARRANQUE TIENE DUENO
+
+**Lo que estaba mal.** El testigo decidia que hacer con cada caso del guardian
+DENTRO de `fn run`, en un `match` de cuatro brazos metido en una funcion de mas
+de seiscientas lineas, y por eso **no tenia un solo test unitario**. La cola lo
+pedia desde la sesion 47, con el molde del §328 escrito al lado.
+
+**Lo que este sello NO hace, y se dice por que.** No se muda la politica al
+guardian, que era el plan al empezar. La doc de `DecisionDeArranque` ya lo
+decia y estaba escrita a proposito: **es POLITICA del nodo, no invariante de la
+pieza** —la forma del §319—, y el TESTIGO tiene la suya desde el §300. Se leyo
+antes de mudar nada, y por eso no se mudo. Quinta vez en este arco que algo
+que se creia nuevo ya estaba decidido en el arbol: **antes de MUDAR algo, leer
+si el arbol ya dijo POR QUE vive donde vive**.
+
+**El invariante SI tiene dueno.** Nace `zk_ssl_guardian::no_admite_matiz`: cual
+es el unico caso que no admite matiz —la clave por delante del contador— lo
+decide el crate que el nodo y el testigo comparten (§296, §298), no cada
+politica por su cuenta. Cada dueno pone su discrecion encima, que es lo que
+una politica es.
+
+**La produccion NO llama al predicado, y es a proposito.** Para construir su
+mensaje cada politica necesita los CAMPOS de la variante, asi que su `match`
+es inevitable y un `if` delante **sugeriria una restriccion que no existe**:
+seria el caso 203 en su forma peor, un verde que no pide explicacion. Quien lo
+consume es el TEST de cada crate, que es la regla de la casa para dos
+productores del mismo contrato (§292, §294, §297).
+
+**Dos afirmaciones paralelas, y no se llaman ATADO.** Llamarlo atado seria
+falso. Lo que las mantiene juntas es doble: el predicado tiene **un solo
+dueno**, y el test del cli enumera las variantes con un `match` **sin
+comodin**, de modo que el dia que nazca una quinta variante de
+`Reconciliacion` **los dos crates dejan de compilar** hasta que alguien decida
+que hace cada politica con ella. Es un atado del COMPILADOR, mas fuerte que
+cualquier gate de ejecucion y imposible de olvidar.
+
+**Cero cambio de comportamiento, y esta MEDIDO.** Los cuatro brazos conservan
+su texto byte a byte, incluida la sangria de tres espacios y la linea en
+blanco por stderr; `Coincide` y `ContadorAdelantado` siguen saliendo por
+stdout y los dos que matan por stderr, con su `bail!` corto y distinto —por eso
+`NoArranca` lleva DOS cadenas y no una—. Se comprobo corriendo
+`banco_cofirma.sh` **sobre el arbol sin el parche y sobre el arbol con el**,
+apartando el corte a `/tmp` con su huella y devolviendolo despues (§334): misma
+firma normalizada de once lineas y mismo veredicto. Y un INERTE exige que las
+CATORCE frases del `match` viejo y los patrones que el banco busca con `grep`
+sigan literalmente en el fichero, porque **el banco no ejercita
+`ClaveAdelantada` ni `Coincide`** y ahi la VIVA no llega.
+
+**Dos defectos de INSTRUMENTO que este sello pago, y quedan escritos.** El
+primero: el `trap` de los bloques cubria `INT` y `TERM` **pero no `HUP`**, asi
+que un cierre de terminal dejo el arbol parcheado sin restaurar y la corrida
+siguiente murio en el cerrojo. El segundo: al devolver un fichero apartado se
+uso `cp -p`, que preserva el MODO —que era la leccion del §334— **pero tambien
+el MTIME**, y `cargo` decide la frescura por mtime: dio por buena la rlib vieja
+del guardian y el cli no compilo. Los dos son la misma clase: **coger una
+bandera entera en vez de la propiedad que se necesitaba**. Desde aqui, `trap
+... INT TERM HUP QUIT` y `cp --preserve=mode` para devolver.
+
+**Contadores.** Pines **25 -> 26** (guardian) y **81 -> 86** (testigo), cada uno
+con su historia apendada a su fila. Sumas **926/1063/1077 -> 932/1069/1083** en
+los CINCO SITIOS VIVOS mas el desglose por-crate de `PRINCIPIOS.md`, que se
+mueve porque nombra al testigo; **el guardian NO esta itemizado** —el desglose
+lo mete en el cajon del SDK, el cable y el puente ISO— y por eso no aparece
+ahi. `check_cifras` se midio VERDE **antes** de tocar y volvio a salir verde.
+Los pines se ataron a `cargo test` en la misma corrida. **Ningun Cargo
+tocado**, y **el BACKLOG no se mueve**: este sello no abre ni cierra ninguna
+entrada.
+
+**Lo que queda con nombre.** La mitad del TESTIGO de la nota **100** sigue
+abierta: el cofirmante no vuelve a arrancar despues de haber cofirmado, y el
+banco muere en `ENVIO` por eso. Su arreglo tiene la forma ya medida —el
+segundo testigo es el fichero de cofirmas, cuyo indice va **dentro de la
+firma** desde el §332/§333 y que `--cofirmar` exige, asi que **ese gate no se
+apaga quitando un fichero** como el del nodo (nota 103)— y la pieza compartida
+seria la reconstruccion de la clave en `zk-ssl-verify`, que ya tiene `xmss` y
+el apano del OID. El parche del `NEGATIVO-B2` sigue escrito y sin aplicar.
+`verificar_cabeza` sigue con el defecto del §332 y sale por QUINTA vez.
