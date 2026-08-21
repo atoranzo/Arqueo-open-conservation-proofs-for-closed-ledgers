@@ -1614,6 +1614,18 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   del código; el censo de aquellos miró `*.md`, `doc/` y `spec/` y no los
   `.rs`. Nace en el §340, que la declara en vez de colarla.
 
+  ✅ MEDIDO Y CORREGIDO EN PARTE (§341). La cabecera son ochenta lineas y la
+  seccion tiene SEIS vinetas, no cuatro. Reparadas TRES: la persistencia (existe:
+  `persistence.rs`, `sled` y cifrado en reposo, con el arbol de cuentas
+  guardado bajo `acct:` y su raiz en `root:state`), la destruccion de circulante
+  (existe: `burn.rs`, con circuito y con medida) y la coletilla «en memoria»
+  de la vineta de la red. La vineta de la RED se sostiene y no se toco.
+  **SIGUE ABIERTA** por tres: la delegacion de la prueba esta respaldada por la
+  cabecera de `client.rs` pero no declarada aqui; el umbral del emisor NO esta
+  medido, y ademas la cabecera se contradice (§341 lo declara); y la auditoria
+  por terceros sigue sin medir. Medido tambien que la misma lista vive en
+  `settlement-layer`, en `zk-core` y en `ARQUITECTURA.md`, y que en los TRES es
+  CIERTA porque su ambito lo fija el encabezado que la manda.
 ## E. Operacion
 
 - [ ] **17. Replica y alta disponibilidad.** **Comprobable**: `grep -rn

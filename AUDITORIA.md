@@ -26430,3 +26430,93 @@ DENTRO de `XMSS` y corrompio la palabra en un comentario; una cuenta tecleada
 de diecinueve donde eran veinticinco; y una nota apendada al pin sin el
 separador que llevan las demas. **Los gates cuentan y comparan. Leer es otra
 compuerta, y en este arco fue la que mas cazo.**
+
+## §341 — la cabecera de la capa dejaba de ser cierta, y la lista era HEREDADA
+
+**Que.** `crates/zk-ssl/src/lib.rs` abre con ochenta lineas de documentacion, y
+su seccion "Lo que esta capa NO es" afirmaba EN PRESENTE tres cosas que el arbol
+desmiente. Se corrigen TRES vinetas y nada mas: un fichero, y solo lineas `//!`.
+Ningun pin, ninguna cifra, ningun desglose, ningun Cargo.
+
+**Lo que decia y lo que dice.** Decia "No hay persistencia. Reiniciar pierde el
+ledger", y ahora dice "No persiste por si sola", con como persiste cuando
+persiste. Decia "No hay destruccion de circulante (burn) ni politica monetaria",
+y ahora dice "No hay politica monetaria", declarando que la destruccion SI
+existe. Y en la vineta de la red se cae la coletilla "es un nodo unico en
+memoria", que era la misma falsedad dicha de paso.
+
+**La persistencia, medida.** `lib.rs:97` declara `mod persistence;`, el fichero
+tiene 689 lineas, y `crates/zk-ssl/Cargo.toml:28` trae `sled` con el comentario
+"Persistencia del ledger. Sin esto, reiniciar el nodo pierde el estado", mas
+`chacha20poly1305` declarado como cifrado autenticado en reposo. El arbol de
+cuentas viaja entero: `persistence.rs:347` recorre el prefijo `acct:`, `:378`
+hace `accounts.rebuild_from(hojas)`, `:603` guarda `root:state` sellado con
+`accounts.root()`, y `:477` comprueba al abrir que la raiz reconstruida cuadra.
+**Dos productores del mismo contrato decian lo contrario dentro del mismo
+crate**, y ninguna compuerta podia verlo.
+
+**La destruccion de circulante, medida.** `lib.rs:93` declara `mod burn;`,
+`burn.rs` tiene 203 lineas con `pub fn burn` (:19) y `pub fn apply_burn` (:122),
+`lib.rs:126` importa `BurnAir` y `BurnProver` de `circuit_burn`, `lib.rs:428`
+documenta el recibo de una destruccion, y `metrics.rs:405-431` la mide y la
+imprime. No admitia discusion.
+
+**Lo que NO se toca, y por que.** La vineta de la red SE SOSTIENE: cero lineas
+con `tokio`, `reqwest`, `axum`, `hyper`, `TcpListener` o `jsonrpc` en los 23
+`.rs` de la capa, y sus dependencias son solo `zk-ssl-hash`,
+`stark-experiment`, `winterfell`, `sled`, `chacha20poly1305` y `sha2`. La
+vineta de la delegacion de la prueba tambien: la cabecera de `client.rs` tiene
+una seccion "Lo que esto NO resuelve" que la respalda y cifra el precio de
+delegar. Y las de umbral y auditoria por terceros siguen SIN MEDIR, asi que se
+quedan como estaban.
+
+**La misma lista vive en otros TRES sitios, y en los tres es CIERTA.** Esto es
+la mitad del sello. `crates/settlement-layer/src/lib.rs:40,44` dice lo mismo, y
+alli es verdad: su `Cargo.toml` depende de `zk-core` y de `ark-*`, sin `sled`, y
+no tiene `persistence.rs`. `crates/zk-core/src/circuit_mint.rs:50` niega el
+burn, y alli tambien es verdad: cero `circuit_burn*.rs` y cero `fn burn`,
+`BurnAir` o `BurnProver`, con prueba de vida en verde. Y `ARQUITECTURA.md` lo
+dice en :1071, :1152 y :1155 sin equivocarse.
+
+**Como se supo, y es el caso nuevo: el ambito lo fija el ENCABEZADO que manda la
+frase, no el fichero donde vive.** En `ARQUITECTURA.md`, la frase del burn de
+:1071 cuelga de `### Lo que este circuito NO resuelve` (:1069), que a su vez
+cuelga de `## Emision: la ultima puerta por la que se podia crear dinero`
+(:1016) — habla de los circuitos de `zk-core`. Y la lista de :1150-:1161
+cuelga de `### Lo que esta capa NO es` (:1150), que cae DESPUES de
+`## La capa ANTERIOR: crates/settlement-layer` (:1077); entre :1083 y :1139 solo
+hay dos `###` y ningun `##`. Sus propias vinetas lo confirman por dentro: "Solo
+sobre Groth16" (:1161) y "`open_account` no esta demostrada" (:1156) no pueden
+hablar de `zk-ssl`, que es STARK/FRI sobre Blake3 y tiene la apertura a cero
+cerrada en su propia tabla. **Un censo por texto encuentra los sitios y NO puede
+decidirlos.**
+
+**De donde venia, razonado y no medido.** `ARQUITECTURA.md:1152` es casi byte a
+byte `lib.rs:71`, y `:1074` es `lib.rs:79`. La hipotesis es que la cabecera de
+`zk-ssl` **heredo la lista de la capa ANTERIOR** y nadie la remidio al construir
+la nueva. Queda escrita como hipotesis.
+
+**Lo que queda declarado y sin cerrar.** La cabecera se contradice a si misma:
+`lib.rs:56` dice que `mint` "EXIGE DOS custodios", `:79` dice que la clave del
+emisor es "unica, no de umbral", y `mint.rs:3` dice "Requiere la clave del
+emisor", en singular. Tres frases del mismo crate que no dicen lo mismo. Pueden
+ser compatibles si la autoridad agrupa dos custodios, pero **no se concluye**: la
+firma real de `mint` no se llego a encontrar, porque el censo la busco por una
+forma supuesta en vez de abrirla. La nota 105 sigue ABIERTA por esto, por la
+auditoria por terceros y por la delegacion de la prueba, que esta respaldada
+pero no declarada.
+
+**Contadores.** Ningun pin se mueve: la capa sigue en 265 y `canon.sh` no se
+toca. Ninguna suma se mueve y ninguna cifra por-crate tampoco: el corte solo
+toco lineas `//!`. `crates/zk-ssl/src/lib.rs` 676 -> 681 lineas, 11 lineas de
+diff y CERO que no sean documentacion. La medicion previa y la posterior del
+crate dan lo mismo. Ningun Cargo tocado. El BACKLOG **no mueve su contador**: la
+105 se amplia y sigue abierta.
+
+**Erratum del propio asiento, cazado al LEERLO (§341-C).** Este texto salio con
+`### §§ Lo que esta capa NO es` donde el encabezado real de `ARQUITECTURA.md`
+lleva un AVISO, no dos signos de seccion: compuse a mano un token de
+sustitucion DENTRO DE UNA CITA y la corrompi, justo sobre el encabezado que el
+asiento usa como prueba. Hermano exacto del `XM§` del §340. Corregido antes de
+commitear, y la regla que deja: **una cita se COPIA de su fuente, nunca se
+compone.**

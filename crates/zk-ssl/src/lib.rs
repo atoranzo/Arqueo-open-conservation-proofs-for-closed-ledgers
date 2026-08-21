@@ -68,14 +68,19 @@
 //!
 //! ## ⚠️ Lo que esta capa NO es
 //!
-//! - **No hay red ni consenso.** Es un nodo único en memoria. Una
+//! - **No hay red ni consenso.** Es un nodo único. Una
 //!   federación real necesita acuerdo sobre el orden de las operaciones —
 //!   un problema de sistemas distribuidos, no de criptografía.
-//! - **No hay persistencia.** Reiniciar pierde el ledger.
+//! - **No persiste por sí sola.** Abierta sin almacenamiento vive en
+//!   memoria y reiniciar pierde el ledger; con él, `persistence.rs` lo
+//!   guarda en `sled`, con cifrado autenticado en reposo.
 //! - **No hay delegación de la prueba.** Quien la genera necesita la
 //!   clave de gasto; en un banco, la clave estaría en un HSM y el cómputo
 //!   en otro servicio.
-//! - **No hay destrucción de circulante (burn)** ni política monetaria.
+//! - **No hay política monetaria.** La destrucción de circulante SÍ
+//!   existe —`burn.rs`, con su circuito y su medida en `metrics.rs`—;
+//!   lo que no hay es una regla que gobierne emisión y destrucción
+//!   más allá del tope inmutable del ledger.
 //! - **La clave del emisor es única**, no de umbral.
 //! - **Nada de esto ha sido auditado por terceros.**
 
