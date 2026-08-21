@@ -1572,6 +1572,11 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   ⚠️ El `NEGATIVO-B2` del banco **sigue sin reparar**: su parche está escrito y
   con sus compuertas verdes, pero el banco no llega hasta él desde el §331 —ver
   la **100**—, así que se aplicará con ella.
+  ✅ **§338** · el parche del `NEGATIVO-B2` YA ESTA APLICADO. El banco
+  distingue duplicar una linea -que no acusa a nadie- de repetir el indice sobre
+  OTRO mensaje -que si-, y su VIVA corrio ENTERA por primera vez desde el §331.
+  Lo que faltaba no era el parche, que llevaba escrito desde el §334, sino un
+  arbol donde el TESTIGO reiniciara (§337).
 
 - [ ] **104. El fichero de cofirmas es un DETECTOR, no una prueba.** El §337 ata
   el contador del guardián del testigo a lo que las cofirmas acreditan: si el
@@ -1868,6 +1873,11 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   Repararlo de verdad es territorio de la **84** y la **92**: que la clave sepa
   volver a su índice. Con esta entrada va también el parche del `NEGATIVO-B2`
   que el §334 dejó escrito y sin aplicar.
+  ✅ **§338** · el parche del `NEGATIVO-B2` YA ESTA APLICADO. El banco
+  distingue duplicar una linea -que no acusa a nadie- de repetir el indice sobre
+  OTRO mensaje -que si-, y su VIVA corrio ENTERA por primera vez desde el §331.
+  Lo que faltaba no era el parche, que llevaba escrito desde el §334, sino un
+  arbol donde el TESTIGO reiniciara (§337).
 
 - [ ] **101. El ancho del indice esta declarado en DOS sitios y ninguno lo lee
   de `xmss`.** `zk-ssl-guardian::ancho_indice()` devuelve 5 y

@@ -26198,3 +26198,51 @@ movido —delato SEIS: los cinco TOTALes y el desglose— y volvio a VERDE. El p
 nuevo NO se tecleo: se midio corriendo `cargo test -p zk-ssl-cli --release` en
 la misma corrida que lo escribio. **Un Cargo tocado** y `Cargo.lock` +1/-0. El
 BACKLOG pasa de 47 a 48 abiertas.
+
+## §338 — el banco cobra la doctrina del §334, cuatro sellos despues
+
+**Que.** El §334 establecio que **repetir un indice solo prueba algo si los dos
+MENSAJES son distintos**, y retiro la clase `indice-repetido` del caso inocuo:
+duplicar una linea es la misma firma sobre el mismo mensaje, no revela nada, y
+levantarlo como hallazgo dejaba que cualquiera desacreditara a un cofirmante
+honesto duplicandole una linea. El BANCO se quedo detras: su `NEGATIVO-B2`
+seguia exigiendo la clase que aquel corte acababa de retirar.
+
+**Por que tardo, y quien lo desbloqueo.** El parche estaba escrito desde el
+propio §334, con sus compuertas en verde, y aquel asiento lo dejo dicho en su
+«lo que este sello NO hace», con la razon medida: **su VIVA es el banco
+ENTERO**, y el banco moria antes de llegar a ese tramo. Moria en `NEGATIVO-A`
+porque el NODO no arrancaba con la clave en cero; el §335 lo arreglo y la muerte
+se corrio a `ENVIO`, porque tampoco arrancaba el TESTIGO; el §337 lo arreglo y
+el camino quedo libre. **Un parche cuya VIVA es el flujo entero depende de que
+el flujo entero arranque**, y por eso este cabo sobrevivio a tres sellos.
+
+**Lo que el banco dice ahora.** `NEGATIVO-B2` comprueba que duplicar una linea
+**NO acusa a nadie**: salida 0 y «sin hallazgos». Y nace `NEGATIVO-B3`, que es
+el caso que de verdad quema una clave de un solo uso: **el mismo indice embebido
+sobre OTRO mensaje**. Lo que se reescribe en la copia es la CLAVE DEL OPERADOR y
+no el `epochDigest`, porque el mensaje firmado es el PREAMBULO entero: con eso
+bastan dos mensajes distintos bajo el mismo indice, y sale `indice-repetido`.
+
+**Las dos listas del banco cuadran por primera vez.** La cabecera documentaba
+CINCO entradas de catalogo y el cuerpo tenia SEIS secciones: **la cabecera nunca
+documento el `NEGATIVO-B2`**. La base se midio antes de tocar y el gate exigia
+esa desigualdad; despues del corte son SIETE y SIETE. El censo del catalogo se
+hace **sobre la cabecera y no sobre el fichero entero**, porque en el cuerpo hay
+una linea de continuacion que casa el mismo patron: va censada y no supuesta
+ausente.
+
+**Contadores.** **Ningun pin se mueve y ninguna cifra**: el canon **no corre los
+bancos**. `canon.sh --sello` se corre igual, como compuerta, y sale VERDE.
+Ningun Cargo tocado. **El contador del BACKLOG no se mueve**, pero el fichero
+si: las entradas 99 y 100 lo nombraban y las dos decian que el parche «sigue sin
+reparar» y «sigue pendiente». Estaban ya CERRADAS, asi que no hay nada que
+cerrar; se les anade la marca de este sello **sin borrar la frase** (§247), y
+que estuvieran cerradas se comprobo MIDIENDO: un bloque no decide si un sello
+cierra una entrada. El banco pasa de 415 a 447 lineas y conserva su modo 755,
+que es lo que el §334 pago a precio de rojo.
+
+**Lo que sigue con nombre.** **El canon NO corre los bancos.** Un banco roto
+puede pasar desapercibido entre sellos, y de hecho paso: este lo estuvo desde el
+§331 hasta hoy, y quien lo destapo fue una VIVA, no una compuerta. Es la fila F6
+del frente y sigue sin dueno.

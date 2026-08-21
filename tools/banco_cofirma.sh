@@ -19,6 +19,14 @@
 #   NEGATIVO-B  una cofirma ADULTERADA (un nibble de la firma) muere en
 #               `--verificar-cofirmas` con clase `no-verifica`. Sin su rojo,
 #               un banco es un adorno.
+#   NEGATIVO-B2 (§334) duplicar una linea NO acusa a nadie: es la misma
+#               firma sobre el MISMO mensaje. Antes exigia `indice-repetido`,
+#               y por eso cualquiera podia desacreditar a un cofirmante
+#               honesto duplicandole una linea.
+#   NEGATIVO-B3 (§334) el mismo indice sobre OTRO mensaje SI acusa: se
+#               reescribe la clave del operador de una copia -mismo indice
+#               embebido, preambulo distinto- y sale `indice-repetido`. Es
+#               el caso que de verdad quema una clave de un solo uso.
 #   ENVIO       (§316) el testigo ENVIA la cofirma al nodo y el nodo la
 #               SIRVE. Cuatro pasos: el nodo virgen da `n:0` —el rojo—;
 #               el testigo con `--enviar-cofirmas` obtiene aceptaciones y
@@ -197,16 +205,40 @@ RC=$?
 grep -q 'no-verifica' "$DIR/v2.out" || { cat "$DIR/v2.out" >&2; fallo "murio, pero no por 'no-verifica'"; }
 msg "NEGATIVO-B: exit $RC — clase 'no-verifica', como debe"
 
-# ══ NEGATIVO-B2 · un indice repetido ══════════════════════════════════
+# ══ NEGATIVO-B2 · una linea duplicada NO acusa ════════════════════════
+# ⚠️⚠️ §334 · esto duplicaba la primera linea y EXIGIA `indice-repetido`.
+#    Pero la misma linea es la misma firma sobre el MISMO mensaje: no revela
+#    nada, y quemaba a un cofirmante honesto. Ahora se comprueba que NO acusa.
+head -1 "$DIR/cofirmas.jsonl" > "$DIR/duplicado.jsonl"
+head -1 "$DIR/cofirmas.jsonl" >> "$DIR/duplicado.jsonl"
+"$CB" witness --verificar-cofirmas "$DIR/duplicado.jsonl" > "$DIR/v3.out" 2>&1
+RC=$?
+[ "$RC" = "0" ] || { cat "$DIR/v3.out" >&2; fallo "duplicar una linea ACUSA a alguien"; }
+grep -q 'sin hallazgos' "$DIR/v3.out" || { cat "$DIR/v3.out" >&2; fallo "salio 0 pero no dijo 'sin hallazgos'"; }
+msg "NEGATIVO-B2: exit $RC — duplicar una linea NO acusa a nadie"
+
+# ══ NEGATIVO-B3 · el mismo indice sobre OTRO mensaje ══════════════════
 # ⚠️ Reusar un indice XMSS filtra la clave. El guardian lo impide DENTRO;
 #    esto comprueba que un tercero lo ve DESDE FUERA.
-head -1 "$DIR/cofirmas.jsonl" > "$DIR/repetido.jsonl"
-head -1 "$DIR/cofirmas.jsonl" >> "$DIR/repetido.jsonl"
-"$CB" witness --verificar-cofirmas "$DIR/repetido.jsonl" > "$DIR/v3.out" 2>&1
+# ⚠️⚠️ Lo que se reescribe es la CLAVE DEL OPERADOR y no el epochDigest:
+#    el mensaje firmado es el PREAMBULO entero, asi que basta con eso para
+#    que sean dos mensajes distintos bajo el MISMO indice embebido. Molde:
+#    el adulterador del NEGATIVO-B, unas lineas mas arriba.
+python3 - "$DIR/cofirmas.jsonl" "$DIR/repetido.jsonl" <<'PYEOF' || fallo "no pude forjar la copia"
+import json, sys
+ls = [json.loads(l) for l in open(sys.argv[1], encoding="utf-8") if l.strip()]
+uno = ls[0]
+otro = dict(uno)
+otro["clavePublicaOperador"] = "0xdeadbeef"
+with open(sys.argv[2], "w", encoding="utf-8") as w:
+    w.write(json.dumps(uno) + "\n")
+    w.write(json.dumps(otro) + "\n")
+PYEOF
+"$CB" witness --verificar-cofirmas "$DIR/repetido.jsonl" > "$DIR/v4.out" 2>&1
 RC=$?
-[ "$RC" != "0" ] || { cat "$DIR/v3.out" >&2; fallo "un indice REPETIDO paso por bueno"; }
-grep -q 'indice-repetido' "$DIR/v3.out" || { cat "$DIR/v3.out" >&2; fallo "murio, pero no por 'indice-repetido'"; }
-msg "NEGATIVO-B2: exit $RC — clase 'indice-repetido', vista desde fuera"
+[ "$RC" != "0" ] || { cat "$DIR/v4.out" >&2; fallo "el mismo indice sobre OTRO mensaje paso por bueno"; }
+grep -q 'indice-repetido' "$DIR/v4.out" || { cat "$DIR/v4.out" >&2; fallo "murio, pero no por 'indice-repetido'"; }
+msg "NEGATIVO-B3: exit $RC — clase 'indice-repetido', vista desde fuera"
 
 # ══ ENVIO · el testigo SUBMITE y el nodo SIRVE (§316) ═════════════
 #
