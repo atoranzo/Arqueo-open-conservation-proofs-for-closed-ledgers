@@ -32,7 +32,10 @@ raíces —datos públicos—; lo que recibe son pruebas que verifica. Lo demues
 `a_whole_payment_without_giving_any_key_to_the_layer`.
 
 ⚠️ **Con dos costes declarados**: el pago no es firme hasta que se cobra, y
-si el receptor nunca cobra **el importe queda inmovilizado sin devolución**.
+si el receptor nunca cobra **el importe queda inmovilizado hasta que el emisor
+lo reembolse** (§178-§181). ⚠️ Ese plazo **no se cuenta en tiempo, sino en
+entradas del registro**, y quien las hace avanzar es el operador. Los pendientes
+anteriores a ese mecanismo no llevan destino anotado y **son irreembolsables**.
 Ver `AUDITORIA.md` §29 y §30.
 
 ---

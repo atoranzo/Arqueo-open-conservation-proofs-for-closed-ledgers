@@ -2388,6 +2388,15 @@ acción del receptor**, y tanto `claim` como `circuit_claim` —que lleva
 | El dinero sale del pagador al pendiente | ✅ |
 | Que la congelada lo cobre | ❌ `AccountFrozen` |
 
+> ⚠️ **CORRECCIÓN (§247).** Esta sección decía que el dinero del limbo
+> «solo se libera si alguien levanta la congelación», y dejó de ser cierto
+> el 05-08-2026: desde §178-§181 el **emisor** lo recupera con `refund()` una
+> vez pasado `T`, y `circuit_refund` va **sin comprobación de congelación** a
+> propósito —devolver no es cobrar—. Sale del limbo **devuelto al pagador**,
+> no cobrado por la congelada, así que **la decisión pendiente de más abajo
+> sigue abierta**: el reembolso no contesta si una congelada debe poder cobrar
+> lo que ya le enviaron.
+
 ⚠️ **El dinero queda exactamente en el limbo que la decisión original quería
 evitar**: salió del pagador, no llegó al receptor, y solo se libera si alguien
 levanta la congelación.
@@ -2421,6 +2430,17 @@ identidad fue lo que delató el cambio de propiedad.
 ---
 
 ## 30. ⚠️ Enviar a un identificador inexistente pierde el dinero
+
+> ⚠️ **CORRECCIÓN (§247).** Tres afirmaciones de esta sección dejaron de ser
+> ciertas el 05-08-2026, con §178-§181: «no hay devolución», la fila
+> «Devolución tras un plazo — exige tiempo en el circuito, que no existe» y
+> «ninguna está implementada». La devolución existe: `refund()` del emisor
+> tras `T`, con `circuit_refund` (#27) y `circuit_credit_climb` (#28), y el
+> destino lo fija `pending_meta`, no la prueba. **Lo que sigue siendo cierto es
+> la mitad del legado**: un pendiente creado antes de ese mecanismo no lleva
+> meta y `apply_refund` lo rechaza por construcción, así que para él el
+> dinero sigue siendo inalcanzable. Y `send` sigue sin comprobar que el
+> identificador exista.
 
 **No es un defecto de implementación. Es un coste del modelo que no estaba
 declarado.**
@@ -26246,3 +26266,82 @@ que es lo que el §334 pago a precio de rojo.
 puede pasar desapercibido entre sellos, y de hecho paso: este lo estuvo desde el
 §331 hasta hoy, y quien lo destapo fue una VIVA, no una compuerta. Es la fila F6
 del frente y sigue sin dueno.
+
+## §339 — la prosa decia que no hay devolucion, y la hay desde el §178
+
+**Que.** Cuatro documentos afirmaban que un pendiente no cobrado se queda
+inmovilizado «sin devolucion», y la devolucion existe desde el §178-§181, del
+05-08-2026: `refund()` del emisor con su clave, con `circuit_refund` (#27) y
+`circuit_credit_climb` (#28). El `README`, el `PAPER` y las secciones 29 y 30 de
+este mismo fichero llevaban dieciseis dias diciendo lo contrario de lo que el
+arbol hace.
+
+**Como se encontro, y no fue revisando prosa.** El usuario trajo un diseno de
+cuatro piezas y un plan de MEDICION para la primera, la caducidad. Su puerta G1
+preguntaba si el arbol ya habia decidido algo aqui. El primer censo contesto que
+si, y mas: `doc/CADUCIDAD_PENDIENTE.md`, el circuito, la operacion, el plazo con
+su knob persistido y cuatro tests que lo ejercitan. **El plan se mato a si mismo
+en su primera fase**, que es lo que un protocolo de medicion honesto tiene que
+poder hacer. De las cuatro piezas ninguna era nueva: la 2 es la B10.4 de
+`doc/CONFIANZA_RESIDUAL.md`, la 3 choca con la politica del §319 — que es del
+CLIENTE — y la 4 es la entrada 19.
+
+**El ambito se midio ANTES de tocar.** El censo de las once formas de decir la
+ausencia devolvio **55 lineas en 16 ficheros**. Se leyeron los contextos, y de
+ahi salen CINCO que se tocan y CUATRO que se declaran y no: `doc/ESCALADO.md` y
+la entrada 47 hablan del coste ARQUITECTONICO de las dos fases, que sigue
+existiendo con reembolso, y ademas ESCALADO es documento externo con cuerpo
+intacto por regla; `BACKLOG.md:1142` y este fichero en `:8074` narran la
+migracion de `open_account` con clave ancha, ciertas en su contexto. **Y la
+version corregida ya estaba escrita en el arbol**: `spec/RPC.md:117` dice
+«inmovilizado hasta claim o refund». La especificacion lo sabia y la prosa no.
+
+**El matiz es la mitad de la correccion.** La seccion 30 no era simplemente
+falsa. Dejo de ser cierta para todo pendiente creado con `pending_meta`, y
+**sigue siendo cierta para el legado**: `apply_refund` rechaza con
+`RefundUnavailable` cuando el meta dice `REFUND_SENDER_NONE`, asi que un
+pendiente anterior al mecanismo es irreembolsable por construccion. Una
+correccion que dijera solo «esto es falso» seria falsa a su vez. Y en la
+seccion 29 el dinero sale del limbo **devuelto al pagador**, no cobrado por la
+congelada: la decision pendiente que esa seccion plantea sigue abierta, y el
+reembolso no la contesta.
+
+**Y una frase corregida que tranquilizaba sin derecho.** El primer texto de este
+sello decia que el importe queda inmovilizado «hasta que el emisor lo reembolse
+pasado el plazo T». Eso le dice al lector que su dinero vuelve con el
+calendario, y **no vuelve con el calendario**: `apply_refund` compara
+`self.log.len()` contra `refund_ttl`, asi que `T` se cuenta en ENTRADAS DEL
+REGISTRO y quien las hace avanzar es el operador — que es exactamente lo que el
+§119.3 descarto como reloj. **Sustituir una frase falsa por otra que suena a
+garantia es peor bajo imagen fiel**, y ningun gate de este sello podia cazarlo:
+los gates cuentan y comparan, y la frase era correcta en todo lo contable. Lo
+cazo LEERLA. El texto final dice que el plazo no se cuenta en tiempo sino en
+entradas del registro, y quien las hace avanzar.
+
+**La precondicion que la entrada 12 daba por incumplida ya se cumplia.** Su
+divergencia (i) dice que `T` cuenta latidos de `log.seq` porque las cabezas
+firmadas-publicadas «no existen aun». La entrada 48 se cerro en el §268, el
+10-08-2026, con **B10 HECHO**: `firma_cabeza.rs`, `zkssl_signedEpochHead`, el
+testigo de la CLI y el contador de recepcion. La 12 arrastraba esa frase desde
+cinco dias antes, en el fichero cuya norma es «contada, no recordada». Se
+corrige aqui, y con ella queda escrito donde vive el reloj:
+`two_phase.rs:472-475`.
+
+**Contadores.** **Ningun pin se mueve y ninguna cifra**: el corte no toca un
+solo `.rs`, ningun Cargo y ninguna herramienta, asi que la puerta son **las
+siete herramientas de `tools/`**, medidas como BASE y comparadas despues; el
+canon no es la puerta (§303, §321, §329). **El contador del BACKLOG no se
+mueve** y la entrada 12 sigue ABIERTA: lo que cambia es su cuerpo. `README.md`
+556 -> 559, `BACKLOG.md` 3135 -> 3139, `PAPER.md` 986 -> 988, y este fichero
+26248 -> 26268 antes de que este asiento se anada.
+
+**Lo que sigue con nombre.** **Migrar `T` a las cabezas firmadas**: es la
+divergencia (i) de la entrada 12, y con la 48 cerrada esta desbloqueada. Son dos
+sitios — el reloj de `two_phase.rs:472-475` y el `born` que anota `apply_send`
+en `pending_meta` —, y mientras no se haga, la precision escrita arriba es la
+unica defensa del lector. Y **DOS gates propios que no podian hablar**, los dos
+vistos solo en el arbol real: el del borde del `README` anclaba en
+`AUDITORIA.md`, que ahi aparece catorce veces, y exigia «al menos una»; y el
+de tokens de la primera version de este asiento conto sobre el FICHERO ENTERO
+cuando el liston era el DELTA, y murio por tres lineas de codigo preexistentes.
+**Un fixture no destapa ninguno de los dos: los destapa el conteo real.**

@@ -1031,8 +1031,12 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   ⚠️⚠️ **DOS DIVERGENCIAS con la política, DECLARADAS**: (i) **T cuenta
   latidos de `log.seq`** — exactamente lo que §119.3 descartó como reloj
   («un mes quieto son cero entradas») — porque las cabezas
-  firmadas-publicadas (48/B10) **no existen aún**: cuando existan, **T
-  migra a cabezas**; hasta entonces el poder compuesto de §119.5 (ordenar
+  firmadas-publicadas (48/B10) no existían cuando esto se escribió.
+  ⚠️ **YA EXISTEN: la 48 se cerró en el §268 (10-08-2026), con B10 HECHO**
+  —`firma_cabeza.rs`, `zkssl_signedEpochHead`, el testigo de la CLI y el
+  contador de recepción—, así que **la migración de `T` a cabezas está
+  DESBLOQUEADA**: hoy el reloj es `self.log.len()`, en `two_phase.rs:472-475`.
+  Hasta que se haga, el poder compuesto de §119.5 (ordenar
   la carrera Y acelerar el reloj) sigue vivo, ahora con mecanismo real.
   (ii) **Sin Δ por pago**: el «Δ=∞ elección del emisor» no está — T es
   global con knob (`set_refund_ttl`, persistida). **La entrada queda

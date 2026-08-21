@@ -650,8 +650,10 @@ por el pagador y el importe. **Ninguna fase lee el saldo del otro**, y va en
 la firma: no hay parámetro por donde entrara.
 
 ⚠️ **Coste declarado.** El pago no es firme hasta que se cobra; si el receptor
-nunca cobra, el valor queda inmovilizado y **no hay devolución
-implementada**; y el pagador, que eligió el aleatorio, puede recalcular el
+nunca cobra, el valor queda inmovilizado **hasta que el emisor lo reembolse**
+(§178-§181; el plazo **no se cuenta en tiempo sino en entradas del registro**,
+que hace avanzar el operador; y los pendientes anteriores a ese mecanismo son
+irreembolsables); y el pagador, que eligió el aleatorio, puede recalcular el
 compromiso y ver **cuándo** se cobra — no cuánto tiene, pero sí una señal
 temporal que el diseño no elimina.
 
