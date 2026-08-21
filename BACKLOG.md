@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 49 abiertas, 56 resueltas — **3 suspendidas** (16, 22 y 28).
+**Estado**: 50 abiertas, 56 resueltas — **3 suspendidas** (16, 22 y 28).
 Ultima revision: 21 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -1046,6 +1046,17 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   (ii) **Sin Δ por pago**: el «Δ=∞ elección del emisor» no está — T es
   global con knob (`set_refund_ttl`, persistida). **La entrada queda
   ABIERTA por estas dos divergencias, no por el mecanismo.**
+
+  ⚠️⚠️ **MEDIDO (§342): la (ii) es ROTURA DE FORMATO.** El compromiso de
+  produccion es `pending_commitment(receiver_id, salt, amount)` —tres campos, ni
+  identidad de reembolso ni caducidad— y el nativo del circuito
+  (`native_refund_commitment`) declara por escrito ser identico. Para que el
+  Δ sea «eleccion del emisor» tiene que entrar en el compromiso, y eso mueve sus
+  cinco sitios de produccion, el nativo de `RefundAir` y los vectores que el
+  canon exige identicos ⇒ **version nueva, RFC y vectores**.
+  💡 El RFC no parte de cero: `t3a_reversion_como_segundo_cobro` y
+  `t3b_reversion_temporal_nativa` de `pending.rs` son el prototipo del compromiso
+  v2, escrito y ejercitado y nunca adoptado en produccion.
 - [x] **13. Senal temporal para el pagador: ya declarada, coherente.**
   ~~Puede recomputar el compromiso y ver cuando se cobra; declarado, no
   eliminado.~~ **Cerrada** el 30-07-2026: verificado que ya esta declarada
@@ -1626,6 +1637,34 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   por terceros sigue sin medir. Medido tambien que la misma lista vive en
   `settlement-layer`, en `zk-core` y en `ARQUITECTURA.md`, y que en los TRES es
   CIERTA porque su ambito lo fija el encabezado que la manda.
+
+  ✅ **EL UMBRAL, CERRADO (§342).** La vineta «la clave del emisor es unica, no
+  de umbral» era **FALSA**. No existe ningun `fn mint` en la capa —el unico
+  `pub fn mint(` del arbol vive en `crates/settlement-layer`, la capa ANTERIOR—
+  y lo que hay es `apply_mint_delegated`, que toma **dos pruebas de custodio**.
+  `verify_threshold_pair` comprueba dominio, raiz puesta por la capa, operacion
+  comprometida, **custodios distintos** y las dos pruebas; y ese umbral gobierna
+  **cinco** operaciones: emitir, emitir a pendiente, gobernanza, congelar y
+  recuperar. Corregida tambien la copia de `RESUMEN_EJECUTIVO.md`, que es
+  documento publico y cuyo propio texto ya se desmentia dos veces.
+  ⚠️ **SIGUE ABIERTA por DOS**: la auditoria por terceros, y la delegacion de
+  la prueba, respaldada por la cabecera de `client.rs` pero no declarada aqui.
+
+- [ ] **106. La API de emisión RETIRADA sigue documentada en tres sitios.**
+  Medido en el §342 al censar el ámbito de la cabecera de la capa.
+  `ARQUITECTURA.md:6-17` abre el documento con un ejemplo que usa
+  `SovereignLayer::open(..., issuer_key, ...)`, `layer.mint(issuer_key, ...)` y
+  `layer.send(sk_alice, ...)` —mientras el **mismo documento** titula en `:776`
+  «Emisión con umbral: se acabó la clave única» y usa `raiz` y `&auth`—. Y
+  `crates/zk-ssl/src/accounts.rs:5` y `:72` siguen diciendo que emitir «exige la
+  clave del emisor».
+  ⚠⚠ **Hallazgo estructural de la misma medición**: las líneas `:69-72` de
+  `accounts.rs` describen `open_account` y están pegadas **encima de
+  `stored_view_id`**; el `open_account` real vive en `:112` y tiene doc propio.
+  Es un comentario **huérfano documentando la función equivocada**, no prosa
+  envejecida, y por eso no se tocó nada: decidirlo exige leer entero cada sitio.
+  **Cruce**: misma familia que el §329, el §339 y el §341, ahora también en el
+  documento principal y en el resumen público.
 ## E. Operacion
 
 - [ ] **17. Replica y alta disponibilidad.** **Comprobable**: `grep -rn

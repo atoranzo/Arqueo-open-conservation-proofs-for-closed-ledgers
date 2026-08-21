@@ -1,6 +1,6 @@
 //! Emisión de circulante.
 //!
-//! Requiere la clave del **emisor** y respeta un **tope inmutable** del
+//! Requiere **DOS custodios distintos** y respeta un **tope inmutable** del
 //! ledger. El suministro público sube exactamente en lo emitido, lo que
 //! hace la conservación auditable globalmente.
 use super::*;

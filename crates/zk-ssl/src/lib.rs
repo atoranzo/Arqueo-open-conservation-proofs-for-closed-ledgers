@@ -53,7 +53,7 @@
 //!
 //! ```text
 //! layer.open_account(sk)                    → cuenta con saldo CERO
-//! layer.mint(&auth, cuenta, importe)        → EXIGE DOS custodios
+//! layer.apply_mint_delegated(...)           → DOS custodios DISTINTOS
 //!
 //! // Pago en dos fases, SIN entregar ninguna clave a la capa:
 //! let m = layer.send_materials(origen, id_receptor, importe, aleatorio)?;
@@ -81,7 +81,9 @@
 //!   existe —`burn.rs`, con su circuito y su medida en `metrics.rs`—;
 //!   lo que no hay es una regla que gobierne emisión y destrucción
 //!   más allá del tope inmutable del ledger.
-//! - **La clave del emisor es única**, no de umbral.
+//! - **No hay umbral configurable.** Emitir, gobernar, congelar y recuperar
+//!   exigen DOS custodios distintos del conjunto autorizado, y ese dos es
+//!   fijo: no hay k-de-n.
 //! - **Nada de esto ha sido auditado por terceros.**
 
 mod accounts;

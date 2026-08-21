@@ -283,7 +283,10 @@ rendimiento.
 - **No hay copias ni replicación.** El cifrado en reposo **sí** existe
   —ledger y keystore del wallet (`zk-ssl::crypto`, XChaCha20-Poly1305)—
   con su alcance declarado: protege el disco robado, no al operador.
-- **La clave del emisor es única**, no de umbral.
+- **No hay umbral configurable.** Emitir, gobernar, congelar y recuperar
+  exigen dos custodios distintos de un conjunto con raíz pública, y ese
+  dos es fijo: no hay k-de-n. Y en nodo único la garantía es "dos claves
+  comprometidas en vez de una", no "dos voluntades independientes".
 - **Las mediciones son una sola ejecución en una máquina.** Sirven para
   comparar órdenes de magnitud, no como benchmark riguroso.
 - **Nada de esto ha sido auditado por terceros.** Ninguna cantidad de

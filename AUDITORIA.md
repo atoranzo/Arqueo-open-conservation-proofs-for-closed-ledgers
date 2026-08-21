@@ -26506,6 +26506,13 @@ forma supuesta en vez de abrirla. La nota 105 sigue ABIERTA por esto, por la
 auditoria por terceros y por la delegacion de la prueba, que esta respaldada
 pero no declarada.
 
+**CORREGIDO EN EL §342.** La firma real se abrio, y la frase era FALSA: no hay
+ningun `fn mint` en `crates/zk-ssl/src/`, y lo que la capa tiene es
+`apply_mint_delegated`, que toma DOS pruebas de custodio, con
+`verify_threshold_pair` exigiendo custodios DISTINTOS sobre una raiz que pone la
+capa. El umbral existe y gobierna CINCO operaciones. Corregidas `lib.rs:56`,
+`lib.rs:84` y `mint.rs:3`, y tambien la copia de `RESUMEN_EJECUTIVO.md:286`.
+
 **Contadores.** Ningun pin se mueve: la capa sigue en 265 y `canon.sh` no se
 toca. Ninguna suma se mueve y ninguna cifra por-crate tampoco: el corte solo
 toco lineas `//!`. `crates/zk-ssl/src/lib.rs` 676 -> 681 lineas, 11 lineas de
@@ -26520,3 +26527,69 @@ sustitucion DENTRO DE UNA CITA y la corrompi, justo sobre el encabezado que el
 asiento usa como prueba. Hermano exacto del `XM§` del §340. Corregido antes de
 commitear, y la regla que deja: **una cita se COPIA de su fuente, nunca se
 compone.**
+
+## §342 — la cabecera documentaba un metodo que no existe, y negaba un umbral que si existe
+
+**Que.** Tres frases de la capa y una del resumen publico decian lo contrario de
+lo que el arbol hace. `crates/zk-ssl/src/lib.rs:56` documentaba
+`layer.mint(&auth, cuenta, importe)`, `:84` afirmaba que «la clave del emisor
+es unica, no de umbral», `crates/zk-ssl/src/mint.rs:3` pedia «la clave del
+emisor», y `RESUMEN_EJECUTIVO.md:286` repetia la segunda. Solo lineas de
+documentacion: ningun test, ningun pin, ninguna cifra, ningun doctest.
+
+**La medicion, y por que la frase era falsa.** No existe ningun `fn mint` en
+`crates/zk-ssl/src/`. El censo ancho por estructura da un solo `pub fn mint(` en
+todo el arbol y vive en `crates/settlement-layer/src/lib.rs:307`, la capa
+ANTERIOR. Lo que esta capa tiene es `apply_mint_delegated` (`mint.rs:24-134`,
+ciento once lineas), que toma DOS pruebas de custodio en su propia firma, y
+`apply_mint_pending_delegated`. La autoridad la comprueba `verify_threshold_pair`
+(`circuit_threshold_single_nullifier.rs:627-676`), que mira cinco cosas: el
+dominio de identidad, que la raiz del conjunto la pone la CAPA y no la prueba,
+que autorizan ESTA operacion, que son custodios distintos —su propio
+comentario dice «Son custodios DISTINTOS. Aqui es donde el umbral es
+umbral.»— y que las dos pruebas valen. Ese umbral gobierna CINCO
+operaciones: emitir, emitir a pendiente, gobernanza, congelar y recuperar.
+
+**Ningun gate lo vigilaba, y esta medido por que.** El ejemplo de `:56` cae
+dentro de una valla de documentacion con atributo `text`: no es doctest, no se
+compila, y el canon no podia verlo. La sospecha de que el canon lo habria cazado
+queda medida y declarada FALSA. Es la cuarta instancia de «una compuerta
+verde solo prueba que no queda ninguna DE LAS QUE ELLA MIRA».
+
+**El ambito, otra vez decidido por el encabezado que manda.** El censo encontro
+la misma frase en `ARQUITECTURA.md:1074` y en
+`crates/zk-core/src/circuit_mint.rs:55`, y las dos son CIERTAS: la primera cuelga
+de `### Lo que este circuito NO resuelve` y la segunda es de zk-core. No se
+tocaron. En cambio `RESUMEN_EJECUTIVO.md:286` cuelga de `## 6. Lo que NO es` del
+propio resumen de ZK-SSL, asi que alli era FALSA —y ademas el mismo
+documento ya se desmentia en `:68` («Dos custodios demostrados en
+circuito») y en `:92` («Emision (2-de-N custodios)»)—. Se
+corrigio.
+
+**De donde venia, y ahora con testigo.** `ARQUITECTURA.md:776` titula
+«Emision con umbral: se acabo la clave unica» y `:787` escribe
+`layer.mint(&auth, cuenta, importe)?;   // auth = dos custodios`. El documento se
+actualizo y la cabecera del crate se quedo atras: la hipotesis de la herencia que
+el §341 dejo escrita gana un testigo, y deja de ser solo razonada.
+
+**La cita del resumen se copio de su fuente.** El cierre de la vineta nueva
+—«dos claves comprometidas en vez de una», no «dos voluntades
+independientes»— es `ARQUITECTURA.md:823-824` copiado literal, por la
+regla que el §341-C dejo: una cita se COPIA, nunca se compone. Alli las
+comillas son rectas y aqui van angulares, que es la convencion medida de este
+fichero.
+
+**Lo que queda declarado y SIN tocar, con nota propia.** El arranque de
+`ARQUITECTURA.md` (`:6-17`) abre el documento con dos APIs retiradas, y
+`accounts.rs:5` y `:72` siguen pidiendo la clave del emisor. Y medido de paso:
+las lineas 69-72 de `accounts.rs` describen `open_account` y estan pegadas
+ENCIMA de `stored_view_id`, mientras el `open_account` real vive en `:112` con
+doc propio. Es un comentario HUERFANO documentando la funcion equivocada, no
+prosa envejecida. Nace la nota 106 y no se toco ninguno de los tres: decidirlo
+exige leer entero cada sitio, que es la regla que este arco ha pagado dos veces.
+
+**Contadores.** Ningun pin se mueve: la capa sigue en 265 y `canon.sh` no se
+toca. Ninguna suma se mueve y ninguna cifra por-crate tampoco: el corte solo toco
+lineas `//!` y una vineta de prosa. La medicion previa y la posterior del crate
+dan lo mismo. Ningun Cargo tocado. El BACKLOG SI mueve su contador por primera
+vez en el arco: nace la 106, contada con el regex del parser.
