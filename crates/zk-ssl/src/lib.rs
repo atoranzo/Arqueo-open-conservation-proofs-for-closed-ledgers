@@ -459,10 +459,12 @@ impl SovereignLayer {
     /// ⚠️ **Todo esto ya existía**; lo que faltaba era **exponerlo junto**.
     /// La garantía del README —«no puede reescribir el historial en
     /// secreto»— es condicional a que alguien haya observado una cabeza
-    /// anterior (`AUDITORIA.md` §76), y hoy **nadie fuera del operador
-    /// observa cabezas**. Esto es la mitad que se puede construir sin firma.
-    ///
-    /// ⚠️ **No es oponible y no hay testigos**: ver [`EpochHead`].
+    /// anterior (`AUDITORIA.md` §76). ⚠️ **Eso dejó de ser cierto en el
+    /// §268**: el nodo firma la cabeza con XMSS (`firma_cabeza.rs`), la sirve
+    /// por `zkssl_signedEpochHead` y el testigo de la CLI la consume y la
+    /// verifica. Sigue siendo **detectable, no impedido**: vale para quien ya
+    /// observó una cabeza anterior y guarde con qué comparar, y el nodo solo
+    /// firma si tiene clave (`sin_clave_hay_cabeza_pero_no_firma`).
     ///
     /// Los dos campos de §275 **los aporta el llamante**: la raíz de
     /// acuses y `n` son del nodo (diario + `vista_acuses`), y la capa no

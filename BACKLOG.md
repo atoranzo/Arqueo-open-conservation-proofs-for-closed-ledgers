@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 48 abiertas, 56 resueltas — **3 suspendidas** (16, 22 y 28).
+**Estado**: 49 abiertas, 56 resueltas — **3 suspendidas** (16, 22 y 28).
 Ultima revision: 21 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
@@ -1034,10 +1034,15 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   firmadas-publicadas (48/B10) no existían cuando esto se escribió.
   ⚠️ **YA EXISTEN: la 48 se cerró en el §268 (10-08-2026), con B10 HECHO**
   —`firma_cabeza.rs`, `zkssl_signedEpochHead`, el testigo de la CLI y el
-  contador de recepción—, así que **la migración de `T` a cabezas está
-  DESBLOQUEADA**: hoy el reloj es `self.log.len()`, en `two_phase.rs:472-475`.
-  Hasta que se haga, el poder compuesto de §119.5 (ordenar
-  la carrera Y acelerar el reloj) sigue vivo, ahora con mecanismo real.
+  contador de recepción—, así que la migración estaba hecha sin saberlo.
+  ✅✅ **MEDIDO en el §340: no había reloj que migrar.** `apply_refund`
+  compara `self.log.len()` y `epoch_head` publica `seq: self.log.len()`
+  —**el mismo número**—, y `seq` entra en `epoch_digest_v3`, que es lo
+  que el nodo firma. ⚠️ **El atado NO existía y ahora sí**:
+  `la_altura_entra_en_el_digest` se pone rojo si alguien saca `seq` del
+  digest. Sigue siendo **detectable, no impedido**: el poder compuesto de
+  §119.5 (ordenar la carrera Y acelerar el reloj) deja rastro **sólo si hay
+  quien retenga una cabeza anterior y compare**.
   (ii) **Sin Δ por pago**: el «Δ=∞ elección del emisor» no está — T es
   global con knob (`set_refund_ttl`, persistida). **La entrada queda
   ABIERTA por estas dos divergencias, no por el mecanismo.**
@@ -1594,6 +1599,20 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **detecta un subconjunto, no demuestra nada**. Lo que falta no es código sino
   ponerlo por escrito donde se leen los límites: `doc/CONFIANZA_RESIDUAL.md`.
   Corte propio, sin urgencia.
+
+- [ ] **105. La cabecera del crate de la capa dice en presente lo que dejó de
+  ser cierto.** `crates/zk-ssl/src/lib.rs` titula una sección **⚠️ Lo que esta
+  capa NO es** y afirma, sin marca histórica, que **no hay persistencia**
+  —«reiniciar pierde el ledger»— y que **no hay destrucción de
+  circulante (burn)**. El árbol tiene `persistence.rs` con sled y clave
+  sellada, y la destrucción está medida por el instrumento de la capa.
+  ⚠️ **Dos viñetas más siguen SIN MEDIR** y por eso la nota nace abierta y no
+  como corte: «ni política monetaria» y «la clave del emisor es única, no
+  de umbral» —ésta última choca con que `mint` **exija dos custodios**,
+  veintitrés líneas más arriba en el mismo comentario—.
+  **Cruce**: misma figura que el §329 y el §339, ahora en los comentarios
+  del código; el censo de aquellos miró `*.md`, `doc/` y `spec/` y no los
+  `.rs`. Nace en el §340, que la declara en vez de colarla.
 
 ## E. Operacion
 

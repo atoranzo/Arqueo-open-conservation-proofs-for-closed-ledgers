@@ -671,6 +671,44 @@ mod tests_mmr_en_cabeza {
             .digest();
         assert_ne!(a, b, "la cima del MMR debe mover el digest");
     }
+
+    /// **La ALTURA entra en el digest**: dos cabezas identicas en todo salvo
+    /// `seq` componen digests distintos.
+    ///
+    /// Sin esto, el reloj de la caducidad seria un numero interno y no un
+    /// valor firmado: `apply_refund` compara contra `self.log.len()`, y
+    /// `epoch_head` publica `seq: self.log.len()` -- **el mismo numero**.
+    /// Atarlo aqui es lo que hace que estirar o acelerar ese reloj deje
+    /// rastro en una cabeza firmada.
+    ///
+    /// ⚠️ **No vale variarlo llamando a `epoch_head`**: `seq` sale de
+    /// `self.log.len()` y cualquier cosa que lo mueva mueve tambien
+    /// `accounts_root`, asi que el assert pasaria por otra razon. La cabeza
+    /// se fabrica a mano y se cambia UN campo. El precedente de fabricarla
+    /// asi esta unas lineas mas abajo, en `tests_cabeza`.
+    #[test]
+    fn la_altura_entra_en_el_digest() {
+        let d = zk_ssl_hash::as_digest(0);
+        let base = crate::log::EpochHead {
+            seq: 7,
+            accounts_root: d,
+            pending_root: d,
+            frozen_root: d,
+            chain_digest: d,
+            acuses_root: d,
+            n: 0,
+            mmr_cima: d,
+            mmr_t: 0,
+        };
+        let mut otra = base;
+        otra.seq = base.seq + 1;
+        assert_ne!(
+            base.digest(),
+            otra.digest(),
+            "SOLO cambia la altura: si el digest no se mueve, seq no entra y \
+             el reloj de la caducidad no esta atestiguado"
+        );
+    }
 }
 
 #[cfg(test)]
@@ -684,8 +722,10 @@ mod tests_cabeza {
     /// mostró historiales distintos a dos partes, sus cabezas difieren y
     /// **cualquiera de las dos puede notarlo** comparando con la otra.
     ///
-    /// Hoy eso es imposible porque nadie fuera del operador ve cabezas
-    /// (`AUDITORIA.md` §76).
+    /// ⚠️ Esto era imposible mientras nadie fuera del operador viera cabezas
+    /// (`AUDITORIA.md` §76). **Desde el §268 ya no**: hay cabeza firmada, un
+    /// método que la sirve y un testigo que la verifica. Comparar sigue
+    /// exigiendo que alguien retenga una cabeza anterior.
     #[test]
     fn two_divergent_views_produce_different_heads() {
         let mut a = new_layer();
@@ -725,9 +765,10 @@ mod tests_cabeza {
     /// no solo en un comentario: dos cabezas contradictorias **detectan**
     /// la inconsistencia; **no prueban ante un tercero quién mintió**.
     ///
-    /// Cerrar esto exige una primitiva de firma que el proyecto **no tiene**
-    /// (§103.1), y elegirla es una decisión de tesis: `ed25519` no es
-    /// post-cuántico (§103.2). Backlog 53.
+    /// ⚠️ **La primitiva ya está elegida y desplegada**: XMSS, entrada 53
+    /// CERRADA en §127.1, y el nodo firma la cabeza con ella. Lo que este
+    /// test fija sigue en pie: **una cabeza SIN firma no dice quién la
+    /// emitió**, y por eso la firma la pone el nodo, no la capa.
     #[test]
     fn a_head_does_not_say_who_issued_it() {
         let layer = new_layer();

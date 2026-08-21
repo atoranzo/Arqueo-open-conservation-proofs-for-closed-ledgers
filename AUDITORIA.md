@@ -26345,3 +26345,88 @@ vistos solo en el arbol real: el del borde del `README` anclaba en
 de tokens de la primera version de este asiento conto sobre el FICHERO ENTERO
 cuando el liston era el DELTA, y murio por tres lineas de codigo preexistentes.
 **Un fixture no destapa ninguno de los dos: los destapa el conteo real.**
+
+## §340 -- el reloj de la caducidad, atado; y el codigo decia que nadie ve cabezas
+
+**Que.** `apply_refund` compara `self.log.len()` contra `refund_ttl`, y
+`epoch_head` publica `seq: self.log.len()`. **Son el mismo numero**, y viaja
+dentro del digest que el nodo firma con XMSS. La divergencia (i) de la entrada
+12 --«T migra a cabezas cuando las cabezas firmadas existan»-- estaba
+CUMPLIDA DE HECHO desde el §268, y nadie lo habia comprobado. Este sello la
+ata con un test y repara tres frases del codigo que decian lo contrario.
+
+**No habia reloj que migrar, y eso lo dijo la medicion.** El arco abrio con la
+hipotesis de que el contador de cabezas vivia en el NODO y habria que cruzar
+el grafo cambiando una firma, como el §337. **Falso**: `epoch_head` esta en
+`lib.rs` de la propia capa y `EpochHead` en `log.rs`. Y `doc/CADUCIDAD_PENDIENTE.md`
+lo habia predicho con precision --«cuando las cabezas firmadas existan, T
+hereda su reloj sin cambiar el diseno»--: la herencia era automatica porque
+los dos cuentan el mismo `log.len()`. Lo que falto fue comprobarlo y anotarlo.
+
+**El atado no existia, y el test que lo parecia no ataba.** `log.rs` ya hacia
+`assert_ne!(ha.seq, hb.seq)`, que comprueba que el CAMPO varia, **no que entre
+en el digest**. Si alguien sacara `seq` de `epoch_digest_v3`, ese assert
+seguiria verde -- y el de los digests de al lado tambien, porque esas dos
+cabezas difieren ademas en `accounts_root`. **Una base que cuadra por
+casualidad**: un verde que no pide explicacion. El test nuevo fabrica la
+cabeza a mano y cambia UN campo, porque variarlo llamando a `epoch_head`
+moveria tambien la raiz de cuentas y el assert pasaria por otra razon.
+
+**Las tres frases.** `lib.rs` decia «hoy nadie fuera del operador observa
+cabezas» y «no es oponible y no hay testigos»; `log.rs` repetia lo primero
+y anadia que cerrar la oponibilidad «exige una primitiva de firma que el
+proyecto NO TIENE», remitiendo a la entrada 53. **La 53 esta CERRADA desde el
+§127.1 y la primitiva es XMSS, firmando en produccion.** Las tres dicen
+ahora lo que el arbol hace, **con el limite dentro**: detectable no es
+impedido -- vale para quien ya observo una cabeza anterior y guarde con que
+comparar, y el nodo solo firma si tiene clave.
+
+**El ambito NO se barrio, y esa decision se declara.** El censo de
+afirmaciones de ausencia en comentarios de codigo devolvio **106 en la capa y
+412 en todos los crates**, y al leerlas la inmensa mayoria son legitimas y de
+diseno: «aqui no hay saldo del receptor», «NO HAY COMODIN, Y ES
+DELIBERADO». **El enfoque del §329 --censar y clasificar leyendo-- NO
+ESCALA al codigo**: alli eran treinta en veinticuatro documentos. La forma
+correcta es la inversa y ya esta probada en la casa: **atar las pocas que
+importan con un predicado medible**, que es el patron del §304. Este sello
+hace eso con una.
+
+**Lo que la VIVA A regalo, y vale mas que el sello.** Al mover el pin,
+`check_cifras` delato QUINCE rancias; el corte reparo DIECIOCHO lineas. **La
+herramienta es ciega a cuatro**: reconoce un TOTAL por la cifra pegada a
+«tests» o «pruebas», y ni el «1074 contando los pines» ni el «1088
+declarados» de `PAPER.md` y `PRINCIPIOS.md` lo estan. En los dos resumenes se
+repararon **por suerte**, porque alli las tres cifras comparten linea con la
+primera. Si el corte se hubiera fiado de la VIVA para saber QUE reparar,
+habria dejado cuatro rancias **y la VIVA B habria salido verde igual**. Queda
+escrito: **una compuerta verde no prueba que no queden rancias; prueba que no
+queda ninguna DE LAS QUE ELLA MIRA.** Y el defecto de `desgloses()` sigue vivo
+y se ve en su salida: reporta `PRINCIPIOS.md:0` --dice QUE fallo y no DONDE.
+
+**Contadores.** Pin `zk-ssl` **264 -> 265**, con su historia apendada a la
+fila. Sumas **937/1074/1088 -> 938/1075/1089**: **veinticinco sustituciones en
+dieciocho lineas de nueve documentos**, ancladas POR LINEA y no por numero --
+el censo por numero da falsos positivos, porque el DOI `zenodo.21693706`
+contiene «937» y los vectores `0.1.json` lo llevan dentro de un hex; el
+inerte que exige `spec/` intacto salio a cero. El BACKLOG pasa de 48 a 49
+abiertas por la nota **105**. Ningun Cargo tocado.
+
+**Lo que sigue con nombre.** **La divergencia (ii) de la entrada 12**: no hay
+Delta por pago, `T` es global con knob. Es lo unico que queda del arco de la
+caducidad, y es politica antes que codigo. Y la nota **105**: la cabecera del
+crate de la capa titula «Lo que esta capa NO es» y afirma en presente que no
+hay persistencia ni destruccion de circulante, cuando `persistence.rs` y el
+instrumento de metricas dicen lo contrario. **No entra en este sello porque no
+esta medida entera** --«ni politica monetaria» y «la clave del emisor es
+unica» exigen medirse-- y colar juicios sin medir es lo que el §329-M
+enseno a no hacer.
+
+**El precio de este arco, para que conste.** Seis defectos propios cazados en
+el ensayo o al leer, y **ninguno lo habria cazado un contador**: un gate de
+borde anclado en una cadena que salia catorce veces en el fichero; un gate de
+tokens que midio el fichero ENTERO donde el liston era el DELTA; un `tr` que
+destrozaba los identificadores con guion bajo; un token de dos letras que caso
+DENTRO de `XMSS` y corrompio la palabra en un comentario; una cuenta tecleada
+de diecinueve donde eran veinticinco; y una nota apendada al pin sin el
+separador que llevan las demas. **Los gates cuentan y comparan. Leer es otra
+compuerta, y en este arco fue la que mas cazo.**
