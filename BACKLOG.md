@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 47 abiertas, 55 resueltas — **3 suspendidas** (16, 22 y 28).
-Ultima revision: 20 de agosto de 2026 — **contada, no recordada**.
+**Estado**: 48 abiertas, 56 resueltas — **3 suspendidas** (16, 22 y 28).
+Ultima revision: 21 de agosto de 2026 — **contada, no recordada**.
 
 ## La cadena de la oponibilidad, de un vistazo
 
@@ -1572,6 +1572,19 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   ⚠️ El `NEGATIVO-B2` del banco **sigue sin reparar**: su parche está escrito y
   con sus compuertas verdes, pero el banco no llega hasta él desde el §331 —ver
   la **100**—, así que se aplicará con ella.
+
+- [ ] **104. El fichero de cofirmas es un DETECTOR, no una prueba.** El §337 ata
+  el contador del guardián del testigo a lo que las cofirmas acreditan: si el
+  contador ha retrocedido por debajo del índice que va **dentro de una firma**,
+  el testigo no arranca. El atado funciona mientras el fichero esté ahí.
+  `--cofirmar` lo exige por `requires_all`, pero se abre en modo añadir y
+  **borrarlo lo recrea vacío**: un contador restaurado hacia atrás junto con el
+  fichero borrado pasa el gate sin que nadie se entere, y una rotación rutinaria
+  de ficheros lo apaga sin mala fe. Es la misma forma que la nota del diario del
+  nodo (§335) y que el caso «dos testigos en el mismo disco son un solo testigo»:
+  **detecta un subconjunto, no demuestra nada**. Lo que falta no es código sino
+  ponerlo por escrito donde se leen los límites: `doc/CONFIANZA_RESIDUAL.md`.
+  Corte propio, sin urgencia.
 
 ## E. Operacion
 

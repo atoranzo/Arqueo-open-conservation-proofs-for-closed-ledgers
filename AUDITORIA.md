@@ -26112,3 +26112,89 @@ apaga quitando un fichero** como el del nodo (nota 103)— y la pieza compartida
 seria la reconstruccion de la clave en `zk-ssl-verify`, que ya tiene `xmss` y
 el apano del OID. El parche del `NEGATIVO-B2` sigue escrito y sin aplicar.
 `verificar_cabeza` sigue con el defecto del §332 y sale por QUINTA vez.
+
+## §337 — el testigo vuelve a arrancar tras cofirmar
+
+**Que.** Un testigo que habia cofirmado alguna vez **no volvia a arrancar**. Su
+clave se rederiva de la semilla y vuelve a CERO mientras el contador del
+guardian sobrevive en disco, asi que `reconciliar` daba `ClaveEnCero` y la
+politica fallaba cerrada. El §335 arreglo esto mismo en el NODO; esta es la otra
+mitad, la que el banco `banco_cofirma.sh` gritaba en su tramo `ENVIO`.
+
+**Lo que se anade.** `politica_del_cofirmante` gana un segundo argumento
+`tope_cofirmas: Option<u64>` y el brazo `ClaveEnCero` se parte en dos:
+resincroniza la clave hasta el contador, o **falla cerrada** si el contador ha
+retrocedido por debajo de lo que las cofirmas prueban. `impl Cofirmante` gana
+`resincronizar_a`, y nace `tope_de_cofirmas`, que lee el fichero y saca el
+indice **de dentro de la firma**.
+
+**EL OPERADOR ES `<=` Y ESTA DERIVADO, no copiado del nodo.** Es la decision
+tecnica del sello. `verificar_cofirma` exige `embebido < declarado` (§332)
+porque `GuardianIndice::reservar` persiste `actual + 1` y lo devuelve, mientras
+la clave firma con el SUYO: en estado limpio el indice embebido va **por
+debajo** del contador. El nodo compara su contador contra el indice DECLARADO
+que anota su diario, y por eso alli el operador es `<`. Copiar aquel `<` habria
+dejado pasar `contador == tope`, que es exactamente resincronizar sobre una
+hoja **probadamente gastada**. Hay un test dedicado a ese borde.
+
+**§247 — CORRECCION DEL ASIENTO DEL §336.** Aquel asiento dejo escrito que la
+pieza compartida «seria la reconstruccion de la clave en `zk-ssl-verify`, que
+ya tiene `xmss` y el apano del OID». **Es FALSO, y se cita en vez de borrarse.**
+`crates/zk-ssl-verify/Cargo.toml` declara `zk-ssl-guardian` como
+**dev-dependency A PROPOSITO**, con el motivo escrito en el propio fichero: un
+tercero no compila el crate del firmante y el grafo queda aciclico. Meter ahi
+`poner_indice_en_sk` convertiria esa dev en dependencia real y **rompeia una
+propiedad que el arbol declara**. La medicion tambien mostro que no hacia
+falta: el `Cargo.toml` del cli **ya declara** `zk-ssl-guardian`, `zk-ssl-verify`
+y `xmss` directo, asi que `resincronizar_a` vive en el testigo y **no cuesta un
+edge nuevo**. Sexta vez en el arco que algo «nuevo» ya estaba decidido.
+
+**Dos afirmaciones paralelas, no una llamada compartida.**
+`Cofirmante::resincronizar_a` y `FirmanteCabeza::resincronizar_a` hacen la misma
+secuencia en dos crates. La casa mantiene dos productores del mismo contrato con
+**un test en cada lado**, no con una funcion comun (§319): el invariante es del
+guardian y la politica de cada dueno. Lo que si tiene **un solo dueno** es el
+apano del OID, que sigue viviendo en `zk-ssl-verify` y lo llaman los dos.
+
+**Un test que CAMBIO DE TESIS, y la vieja se cita.** El §336 escribio
+`la_clave_en_cero_no_arranca_y_dice_cuantos_quedan_indeterminados`, y era
+correcto **mientras nadie supiera resincronizar**: sin esa capacidad, negarse
+era lo unico honesto. Con la hoja `contador` demostrablemente virgen, negarse
+dejaba al testigo inservible tras su primera cofirma. El test se sustituye por
+cuatro, uno de ellos el borde del `<=`, y el motivo queda escrito en su doc.
+
+**El limite, DECLARADO y no reparado aqui.** `--cofirmar` exige `--cofirmas`
+por `requires_all`, asi que la ruta siempre esta nombrada; pero el fichero se
+abre en `append` y **borrarlo lo recrea vacio**. Un contador restaurado hacia
+atras JUNTO CON el fichero borrado pasa el gate. Esto **DETECTA un subconjunto,
+no PRUEBA nada**, y es la misma forma que el caso 212. Nace la nota 104 y su
+sitio final es `doc/CONFIANZA_RESIDUAL.md`, que es corte propio.
+
+**Un Cargo SI tocado**, a diferencia del §336: el del cli gana `zeroize`, con la
+linea **copiada** de `crates/zk-ssl-node/Cargo.toml` y no tecleada, para borrar
+el buffer temporal del SK. Es BEST-EFFORT y va dicho en la doc de la funcion.
+`Cargo.lock` se mueve en una sola linea, el edge nuevo del cli.
+
+**La nota 100 NO se reabre.** Se titula «Un **nodo** que ha firmado no vuelve a
+arrancar» y su cuerpo no nombra al testigo ni una vez: el §335 la cerro bien.
+Lo que faltaba era esta mitad, que el §335 tampoco declaro en su «lo que NO
+hace», y que aqui queda **cerrada y EJERCITADA**: el test
+`tras_cofirmar_y_reiniciar_la_clave_se_resincroniza_y_el_testigo_sigue` cofirma,
+reinicia, resincroniza, vuelve a firmar y un TERCERO lo verifica.
+
+**UN HALLAZGO DEL PROPIO GATE: la linea de Estado del BACKLOG iba
+rancia.** Este bloque cuenta las entradas con el regex del parser ANTES de
+tocar nada y exige que el contador escrito coincida. No coincidia: decia
+**47 abiertas, 55 resueltas** y el parser contaba **47/56**. Una entrada
+se marco resuelta sin registrarla en la linea que el propio fichero manda
+«contar, no recordar», y ninguna herramienta se puso roja por ello: la misma
+familia que el «39 sellos» y el «115». Se corrige aqui CONTANDO. **Cual
+entrada se quedo sin registrar NO se ha medido**, y eso es corte propio.
+
+**Contadores.** Pin **86 -> 91** (testigo), con su historia apendada a su fila.
+Sumas **932/1069/1083 -> 937/1074/1088** en los CINCO SITIOS VIVOS mas el
+desglose por-crate de `PRINCIPIOS.md`. `check_cifras` se midio ROJO con el pin
+movido —delato SEIS: los cinco TOTALes y el desglose— y volvio a VERDE. El pin
+nuevo NO se tecleo: se midio corriendo `cargo test -p zk-ssl-cli --release` en
+la misma corrida que lo escribio. **Un Cargo tocado** y `Cargo.lock` +1/-0. El
+BACKLOG pasa de 47 a 48 abiertas.

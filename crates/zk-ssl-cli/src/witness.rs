@@ -121,7 +121,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 // ⚠️ Import EXPLICITO, nunca glob: `zk-ssl-verify` reexporta **su propio**
 // `Veredicto` (el de `reverificacion`, §279), homonimo del de este modulo.
-use xmss::KeyPair;
+use xmss::{KeyPair, SigningKey};
 use zk_ssl_guardian::{GuardianError, GuardianIndice, Reconciliacion};
 use zk_ssl_verify::{
     indice_de_firma, mmr, preambulo_cofirma, verificar_cabeza, verificar_cofirma,
@@ -129,6 +129,7 @@ use zk_ssl_verify::{
     COFIRMA_V_MAX, COFIRMA_VERSION, Conjunto, VerificaError, VERSION_FORMATO,
 };
 use zk_ssl_wire::{CofirmaDto, SignedEpochHeadDto};
+use zeroize::Zeroize;
 
 /// Lo que el testigo concluye de cada consulta.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -2198,9 +2199,19 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
             //    brazo pida `&mut c` -resincronizar- deja de compilar. Se
             //    prepaga hoy, que cuesta una linea.
             let reconciliacion = c.reconciliar().map_err(|e| anyhow::anyhow!("{e}"))?;
-            match politica_del_cofirmante(&reconciliacion) {
+            // ⚠️⚠️ S337 - el TOPE se lee AQUI, antes del escrutinio: la
+            //    politica es PURA y no toca disco, igual que la del nodo, que
+            //    recibe el suyo del diario ya leido.
+            let tope = a.cofirmas.as_deref().and_then(tope_de_cofirmas);
+            match politica_del_cofirmante(&reconciliacion, tope) {
                 DecisionDelCofirmante::Arranca(m) => println!("{m}"),
                 DecisionDelCofirmante::ArrancaAvisando(m) => println!("{m}"),
+                DecisionDelCofirmante::ArrancaResincronizando { hasta, aviso } => {
+                    eprintln!();
+                    eprintln!("{aviso}");
+                    c.resincronizar_a(hasta).map_err(|e| anyhow::anyhow!("{e}"))?;
+                    println!("   clave resincronizada en el indice {hasta}.");
+                }
                 DecisionDelCofirmante::NoArranca { aviso, razon } => {
                     eprintln!();
                     eprintln!("{aviso}");
@@ -2487,8 +2498,49 @@ enum DecisionDelCofirmante {
     Arranca(String),
     /// Anomalia ESPERADA: se dice por stdout y se sigue.
     ArrancaAvisando(String),
+    /// ⚠️⚠️ S337 - La clave estaba en cero y NADA prueba que el
+    /// contador haya retrocedido: se resincroniza hasta `hasta` y se sigue.
+    /// Hermana de `DecisionDeArranque::ArrancaResincronizando` del nodo.
+    ArrancaResincronizando { hasta: u64, aviso: String },
     /// No se arranca: `aviso` por stderr, `razon` al error.
     NoArranca { aviso: String, razon: String },
+}
+
+/// El TOPE del fichero de cofirmas: el mayor indice de hoja que el testigo
+/// puede PROBAR que ya gasto.
+///
+/// ⚠️⚠️ **El indice sale de DENTRO de la firma** (§332, §333), no del campo
+/// `indice` declarado: el ordinal declarado no entra en el preambulo y nadie
+/// lo acredita, asi que tras un reinicio da ordinales NUEVOS sobre hojas ya
+/// quemadas. El que va dentro no se puede falsear sin romper la firma.
+///
+/// ⚠️⚠️ **MAXIMO y no ULTIMO**, como `diario::maximo_indice` del nodo: el
+/// caso del que esto defiende -un contador restaurado hacia atras- hace
+/// escribir indices MENORES detras de mayores, asi que agregar por el ultimo
+/// seria medir con un instrumento que el propio caso desarma.
+///
+/// ⚠️ Falla hacia el lado PERMISIVO: una linea ilegible se SALTA. Este
+/// tope puede quedar POR DEBAJO del real y nunca por encima, asi que solo
+/// puede dejar arrancar de mas, jamas dar un rojo falso.
+fn tope_de_cofirmas(p: &std::path::Path) -> Option<u64> {
+    let lineas = leer(p).ok()?;
+    let mut max: Option<u64> = None;
+    for l in lineas {
+        let v: Value = match serde_json::from_str(&l) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        let firma = match leer_hex(&v["firma"]) {
+            Ok(f) => f,
+            Err(_) => continue,
+        };
+        if let Ok(e) = indice_de_firma(&firma) {
+            if max.map_or(true, |m| e > m) {
+                max = Some(e);
+            }
+        }
+    }
+    max
 }
 
 /// La politica del arranque del cofirmante ante cada caso del guardian.
@@ -2497,7 +2549,10 @@ enum DecisionDelCofirmante {
 /// `run` y por eso no tenia un solo test unitario; el §336 la saca al molde
 /// del §328 **sin cambiar un byte de lo que se imprime**, y por eso los
 /// textos van tal cual estaban -incluida la sangria de tres espacios-.
-fn politica_del_cofirmante(r: &Reconciliacion) -> DecisionDelCofirmante {
+fn politica_del_cofirmante(
+    r: &Reconciliacion,
+    tope_cofirmas: Option<u64>,
+) -> DecisionDelCofirmante {
     match r {
         Reconciliacion::Coincide { indice } => DecisionDelCofirmante::Arranca(format!(
             "   guardian y clave a la par en el indice {indice}."
@@ -2512,21 +2567,50 @@ fn politica_del_cofirmante(r: &Reconciliacion) -> DecisionDelCofirmante {
                 .join("\n"),
             )
         }
-        // ⚠️⚠️ LO QUE NUNCA DEBE PASAR: la clave firmo con indices que
-        //    el contador no registro. **El testigo NO arranca**: seguir
-        //    seria firmar con una clave que hay que dar por comprometida.
-        Reconciliacion::ClaveEnCero { contador, indeterminados } => {
-            DecisionDelCofirmante::NoArranca {
+        // ⚠️⚠️ S337 - El contador y el FICHERO DE COFIRMAS son dos
+        //    productores del mismo hecho -quien firma, anota (§285)-: se atan
+        //    aqui. La hoja `contador` NUNCA se reservo -`reservar` persiste
+        //    ANTES de firmar-, asi que ponerse ahi es CONSERVADOR y las de
+        //    abajo quedan PERDIDAS, que es lo que la nota 92 pide.
+        //
+        // ⚠️⚠️ EL OPERADOR ES `<=` Y ESTA DERIVADO, no copiado del nodo.
+        //    El invariante que `verificar_cofirma` exige es `embebido <
+        //    declarado` (§332), y aqui el tope es el EMBEBIDO: en estado
+        //    limpio va por DEBAJO del contador. El nodo compara contra el
+        //    indice DECLARADO que anota su diario y por eso alli el operador
+        //    es `<`. Copiarlo habria dejado pasar `contador == tope`, que es
+        //    exactamente reutilizar una hoja PROBADA.
+        //
+        // ⚠️ LIMITE DECLARADO: `--cofirmar` exige `--cofirmas`
+        //    (`requires_all`), pero el fichero se abre en `append` y borrarlo
+        //    lo recrea VACIO. Esto DETECTA un subconjunto, no PRUEBA nada.
+        //    Va a CONFIANZA_RESIDUAL.
+        Reconciliacion::ClaveEnCero { contador, indeterminados } => match tope_cofirmas {
+            Some(t) if *contador <= t => DecisionDelCofirmante::NoArranca {
                 aviso: [
-                    format!("⚠️⚠️ LA CLAVE ESTA EN CERO Y EL CONTADOR EN {contador}."),
-                    format!("   {indeterminados} indice(s) INDETERMINADOS: el SK no se persiste,"),
-                    "   asi que firmar ahora reutilizaria indices que pueden estar".to_string(),
-                    "   quemados. No se puede probar lo contrario, y se falla cerrada.".to_string(),
+                    format!("⚠️⚠️ EL CONTADOR HA RETROCEDIDO: dice {contador} y las"),
+                    format!("   cofirmas prueban el indice {t}, que sale de DENTRO de una"),
+                    "   firma y no se puede falsear. Resincronizar aqui reutilizaria".to_string(),
+                    "   una hoja ya gastada, y eso filtra la clave. Se falla cerrada.".to_string(),
                 ]
                 .join("\n"),
-                razon: format!("clave en cero: {indeterminados} indice(s) indeterminados"),
+                razon: format!("contador retrocedido: dice {contador} y las cofirmas prueban {t}"),
+            },
+            _ => {
+                let ultima = contador.saturating_sub(1);
+                DecisionDelCofirmante::ArrancaResincronizando {
+                    hasta: *contador,
+                    aviso: [
+                        format!("⚠️⚠️ LA CLAVE ESTABA EN CERO Y EL CONTADOR EN {contador}:"),
+                        format!("   la clave se resincroniza hasta {contador}. SE ABANDONAN"),
+                        format!("   {indeterminados} indice(s), de 0 a {ultima}, que quedan"),
+                        "   PERDIDOS y NO REUTILIZABLES. Un indice perdido es mejor que".to_string(),
+                        "   uno indeterminado (nota 92).".to_string(),
+                    ]
+                    .join("\n"),
+                }
             }
-        }
+        },
         Reconciliacion::ClaveAdelantada { contador, clave, sin_registrar } => {
             DecisionDelCofirmante::NoArranca {
                 aviso: [
@@ -2659,6 +2743,43 @@ impl Cofirmante {
         let bytes = leer_hex(&json!(hex)).map_err(CofirmaError::ClaveIlegible)?;
         self.cofirmar(epoch_digest, &bytes)
     }
+
+    /// Pone la clave EN el indice que el guardian tiene registrado.
+    ///
+    /// ⚠️⚠️ **Es CONSERVADOR**: `reservar` persiste ANTES de firmar, asi
+    /// que la hoja `indice` NUNCA se reservo y no puede estar quemada. Las de
+    /// abajo quedan PERDIDAS -no reutilizables-, que es lo que la nota 92
+    /// pide frente a dejarlas indeterminadas.
+    ///
+    /// ⚠️⚠️ **Es la HERMANA de `FirmanteCabeza::resincronizar_a`, y no una
+    /// llamada compartida A PROPOSITO**: son dos duenos del mismo invariante y
+    /// la casa los mantiene con DOS AFIRMACIONES PARALELAS mas su test, no con
+    /// una funcion comun (§319). Lo que si tiene un solo dueno es el APANO
+    /// DEL OID, que vive en `zk-ssl-verify` y se llama desde los dos.
+    ///
+    /// ⚠️ El SK viejo se zeroiza solo al asignar (`SigningKey` tiene
+    /// `Drop`). El buffer temporal se borra a mano y es **BEST-EFFORT**: un
+    /// `Vec` pudo reubicarse mientras se construia. Y `from_seed` de upstream
+    /// ya deja una copia sin borrar en cada arranque: eso es del crate ajeno y
+    /// va DECLARADO, no arreglado aqui.
+    pub fn resincronizar_a(&mut self, indice: u64) -> Result<(), CofirmaError> {
+        let mut sk = self.par.signing_key().as_ref().to_vec();
+        zk_ssl_guardian::poner_indice_en_sk(&mut sk, indice)?;
+        zk_ssl_verify::aplicar_apano_del_oid(&mut sk)?;
+        let nueva = SigningKey::<Conjunto>::try_from(sk.as_slice())
+            .map_err(|e| CofirmaError::Xmss(format!("{e}")))?;
+        *self.par.signing_key() = nueva;
+        sk.zeroize();
+        // ⚠️ Se AUTOCOMPRUEBA antes de devolver, como el firmar del §299:
+        //    no se afirma que la clave esta donde se pidio sin releerlo.
+        let leido = self.indice_de_la_clave()?;
+        if leido != indice {
+            return Err(CofirmaError::Xmss(format!(
+                "resincronizar pidio el indice {indice} y la clave dice {leido}"
+            )));
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -2671,7 +2792,7 @@ mod tests {
     /// el banco se entera tarde y este test se entera ya.
     #[test]
     fn a_la_par_el_cofirmante_arranca_y_lo_dice() {
-        match politica_del_cofirmante(&Reconciliacion::Coincide { indice: 7 }) {
+        match politica_del_cofirmante(&Reconciliacion::Coincide { indice: 7 }, None) {
             DecisionDelCofirmante::Arranca(m) => {
                 assert_eq!(m, "   guardian y clave a la par en el indice 7.");
             }
@@ -2685,7 +2806,7 @@ mod tests {
             contador: 9,
             clave: 7,
             huerfanos: 2,
-        }) {
+        }, None) {
             DecisionDelCofirmante::ArrancaAvisando(m) => {
                 assert!(m.contains("contador 9 por delante de la clave 7:"), "{m}");
                 assert!(m.contains("2 indice(s) quemados sin firma"), "{m}");
@@ -2695,18 +2816,67 @@ mod tests {
         }
     }
 
+    /// ⚠️⚠️ **ESTE TEST CAMBIO DE TESIS EN EL S337, y la vieja se CITA**
+    /// (§247): hasta el §336 afirmaba que la clave en cero NO arranca
+    /// nunca. Era correcto mientras nadie supiera resincronizar; ahora la hoja
+    /// `contador` es demostrablemente virgen y negarse dejaba al testigo
+    /// inservible tras su primera cofirma.
     #[test]
-    fn la_clave_en_cero_no_arranca_y_dice_cuantos_quedan_indeterminados() {
-        match politica_del_cofirmante(&Reconciliacion::ClaveEnCero {
-            contador: 5,
-            indeterminados: 5,
-        }) {
-            DecisionDelCofirmante::NoArranca { aviso, razon } => {
-                assert!(aviso.contains("LA CLAVE ESTA EN CERO Y EL CONTADOR EN 5."), "{aviso}");
-                assert_eq!(aviso.lines().count(), 4, "el aviso son CUATRO lineas");
-                assert_eq!(razon, "clave en cero: 5 indice(s) indeterminados");
+    fn la_clave_en_cero_sin_prueba_en_contra_se_resincroniza_hasta_el_contador() {
+        match politica_del_cofirmante(
+            &Reconciliacion::ClaveEnCero { contador: 5, indeterminados: 5 },
+            None,
+        ) {
+            DecisionDelCofirmante::ArrancaResincronizando { hasta, aviso } => {
+                assert_eq!(hasta, 5, "se va al contador, no a otro sitio");
+                assert!(aviso.contains("de 0 a 4"), "nombra lo que abandona: {aviso}");
+                assert_eq!(aviso.lines().count(), 5, "el aviso son CINCO lineas: {aviso}");
             }
-            otra => panic!("la clave en cero falla cerrada: {otra:?}"),
+            otra => panic!("sin prueba en contra se resincroniza: {otra:?}"),
+        }
+    }
+
+    /// El estado LIMPIO es `tope < contador`: `reservar` devuelve `actual + 1`
+    /// y la clave firma con el SUYO, asi que el embebido va por debajo. Con
+    /// cuatro cofirmadas y el contador en 5 se resincroniza.
+    #[test]
+    fn con_el_tope_por_debajo_del_contador_se_resincroniza_igual() {
+        match politica_del_cofirmante(
+            &Reconciliacion::ClaveEnCero { contador: 5, indeterminados: 5 },
+            Some(4),
+        ) {
+            DecisionDelCofirmante::ArrancaResincronizando { hasta: 5, .. } => {}
+            otra => panic!("el estado limpio tiene que arrancar: {otra:?}"),
+        }
+    }
+
+    /// ⚠️⚠️ **EL OPERADOR ES `<=` Y AQUI SE EJERCITA EL BORDE.** Con el
+    /// tope IGUAL al contador, la hoja `contador` esta PROBADAMENTE gastada:
+    /// con el `<` del nodo esto habria arrancado y reutilizado una hoja.
+    #[test]
+    fn con_el_tope_a_la_par_del_contador_no_arranca() {
+        match politica_del_cofirmante(
+            &Reconciliacion::ClaveEnCero { contador: 5, indeterminados: 5 },
+            Some(5),
+        ) {
+            DecisionDelCofirmante::NoArranca { razon, .. } => {
+                assert!(razon.contains("retrocedido"), "{razon}");
+            }
+            otra => panic!("la hoja 5 esta probada: no se puede reutilizar: {otra:?}"),
+        }
+    }
+
+    #[test]
+    fn un_contador_por_debajo_de_lo_cofirmado_no_arranca_y_lo_dice() {
+        match politica_del_cofirmante(
+            &Reconciliacion::ClaveEnCero { contador: 4, indeterminados: 4 },
+            Some(9),
+        ) {
+            DecisionDelCofirmante::NoArranca { aviso, razon } => {
+                assert!(aviso.contains("EL CONTADOR HA RETROCEDIDO"), "{aviso}");
+                assert!(razon.contains("dice 4") && razon.contains("prueban 9"), "{razon}");
+            }
+            otra => panic!("un contador que retrocede filtra la clave: {otra:?}"),
         }
     }
 
@@ -2716,7 +2886,7 @@ mod tests {
             contador: 3,
             clave: 9,
             sin_registrar: 6,
-        }) {
+        }, None) {
             DecisionDelCofirmante::NoArranca { aviso, razon } => {
                 assert!(aviso.contains("LA CLAVE VA POR DELANTE DEL CONTADOR: 9 frente a 3."), "{aviso}");
                 assert!(aviso.contains("COMPROMETIDA**"), "{aviso}");
@@ -2752,7 +2922,7 @@ mod tests {
             if zk_ssl_guardian::no_admite_matiz(r) {
                 assert!(
                     matches!(
-                        politica_del_cofirmante(r),
+                        politica_del_cofirmante(r, None),
                         DecisionDelCofirmante::NoArranca { .. }
                     ),
                     "el guardian dice que {r:?} no admite matiz y la politica arranca"
@@ -3588,6 +3758,72 @@ mod tests {
         //    `unused_mut` y el cli deja de estar en cero warnings.
         let kp = KeyPair::<Conjunto>::from_seed(&s).expect("keygen");
         kp.verifying_key().as_ref().to_vec()
+    }
+
+    /// ⚠️⚠️ El tope NO sale del campo `indice` declarado sino de DENTRO
+    /// de la firma, y **el numero esperado se DERIVA**, no se teclea: se lee
+    /// con el mismo `indice_de_firma` que usa el tercero.
+    #[test]
+    fn el_tope_sale_de_dentro_de_la_firma_y_es_el_maximo() {
+        let p = en_disco("tope_contador");
+        let mut c = Cofirmante::desde_semilla(&semilla_testigo(), &p).expect("abrir");
+        let op = clave_operador();
+        let pk = c.clave_publica();
+        let mut lineas: Vec<String> = Vec::new();
+        let mut esperado = 0u64;
+        for k in 0..3u8 {
+            let d = [k; 32];
+            let f = c.cofirmar(&d, &op).expect("cofirmar");
+            let e = indice_de_firma(&f.firma).expect("indice embebido");
+            if e > esperado {
+                esperado = e;
+            }
+            lineas.push(linea_de_cofirma(&d, &op, &pk, &f, 0).to_string());
+        }
+        let fichero = en_disco("tope_fichero");
+        std::fs::write(&fichero, lineas.join("\n") + "\n").expect("escribir");
+        assert_eq!(tope_de_cofirmas(&fichero), Some(esperado), "el maximo embebido");
+        // ⚠️ y una linea de basura se SALTA, no tumba la lectura
+        std::fs::write(&fichero, lineas.join("\n") + "\nno soy json\n").expect("escribir");
+        assert_eq!(tope_de_cofirmas(&fichero), Some(esperado), "la basura se salta");
+    }
+
+    /// ⚠️⚠️ **LA MITAD DEL TESTIGO DE LA NOTA 100, EJERCITADA DE
+    /// PUNTA A PUNTA**: se cofirma, se REINICIA -la clave se rederiva de la
+    /// semilla y vuelve a cero mientras el contador sobrevive-, se resincroniza
+    /// y el testigo vuelve a firmar algo que un TERCERO verifica.
+    ///
+    /// ⚠️⚠️ El contador se mueve con la clave, y por eso el invariante
+    /// `embebido < declarado` sigue en pie: `reservar` devuelve `contador + 1`
+    /// y la clave firma con `contador`. Resincronizar la clave SIN mover el
+    /// contador romperia ese invariante, y este test lo recorre por el camino
+    /// bueno para que se vea cual es.
+    #[test]
+    fn tras_cofirmar_y_reiniciar_la_clave_se_resincroniza_y_el_testigo_sigue() {
+        let p = en_disco("reinicio_testigo");
+        let op = clave_operador();
+        {
+            let mut c = Cofirmante::desde_semilla(&semilla_testigo(), &p).expect("abrir");
+            for k in 0..2u8 {
+                c.cofirmar(&[k; 32], &op).expect("cofirmar");
+            }
+        }
+        // EL REINICIO.
+        let mut c = Cofirmante::desde_semilla(&semilla_testigo(), &p).expect("reabrir");
+        assert_eq!(c.indice_de_la_clave().expect("indice"), 0, "el SK no se persiste");
+        // ⚠️ en dos pasos, como en `run`: el temporal mantendria `c`
+        //    prestado durante todo el match.
+        let rec = c.reconciliar().expect("reconciliar");
+        let hasta = match politica_del_cofirmante(&rec, None) {
+            DecisionDelCofirmante::ArrancaResincronizando { hasta, .. } => hasta,
+            otra => panic!("tras reiniciar toca resincronizar: {otra:?}"),
+        };
+        c.resincronizar_a(hasta).expect("resincronizar");
+        assert_eq!(c.indice_de_la_clave().expect("indice"), hasta, "la clave se movio");
+        let d = [0x11u8; 32];
+        let f = c.cofirmar(&d, &op).expect("cofirmar tras resincronizar");
+        let pk = c.clave_publica();
+        verificar_cofirma(&pk, &d, &op, &f).expect("un tercero debe poder");
     }
 
     #[test]

@@ -3400,6 +3400,7 @@ dependencies = [
  "ureq",
  "winterfell",
  "xmss",
+ "zeroize",
  "zk-ssl",
  "zk-ssl-guardian",
  "zk-ssl-verify",
