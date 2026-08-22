@@ -211,6 +211,17 @@ las aperturas se generan y se quedan en el cliente.
    (persistencia tras reinicio incluida).
 4. **E4 (opcional) — el cable**: exponer Δ por RPC, con su versión de cable.
 
+> ⚠️ **La puerta de E1, re-escalonada (§345).** Tal como quedó escrita
+> arriba, «el conformance acepta 0.3» exige que el `run_send`/`run_claim` del
+> escenario canónico PRODUZCAN compromisos v2 — el aviso con X y el claim que
+> recompone C2 son materia de E3, y el escenario corre **pruebas reales**,
+> así que también pisa E2. Medido en la sesión 57 sobre `conformance.rs`
+> (`--emit`/`--check`, `fn escenario`). **E1 queda en los compositores de
+> producción y sus tests** (`pending_commitment_v2`, `refund_envelope`, el
+> gemelo nativo); la emisión 0.3 y el triple gate del conformance **se mudan
+> a E3**. Mientras tanto `zkssl-0.2` sigue IDENTICO en cada canon: la
+> convivencia, probada por el gate existente en vez de prometida.
+
 **El primer paso medible ya está dado** (sesión 57, `PASTE-E1-M`, salida
 `b44b24915a67c268`/1175): `circuit_claim` abierto y medido. La reconstrucción
 NO admite X tal cual; el claim v2 gana una fase de merge con coste DERIVADO

@@ -80,6 +80,113 @@ pub fn pending_commitment(receiver_id: Digest, salt: Digest, amount: u64) -> Dig
     )
 }
 
+
+/// Era 3 (RFC-0003, §343): el sobre de reversion `X = M(f, d(delta))` — las
+/// elecciones de retorno del emisor, compuestas aparte. Es EXACTAMENTE lo que
+/// el aviso llevara OPACO (E3): el receptor reconstruye `C2 = M(C1, X)` sin
+/// aprender ni `f` ni `delta`.
+pub fn refund_envelope(refund_id: Digest, delta: u64) -> Digest {
+    native_merge(
+        refund_id,
+        [
+            BaseElement::new(delta),
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+        ],
+    )
+}
+
+/// Era 3 (RFC-0003, §343-§345): el compromiso v2 — las elecciones del emisor,
+/// COMPLETAS. `C2 = M(C1, X)` con el v1 INTACTO de prefijo (los legados son
+/// inmunes por dominio, no por marca). `delta` es RELATIVO en alturas de epoca
+/// (D1); `u64::MAX` es el «nadie nunca» del §119 como caso particular (la
+/// saturacion la aplica la capa al computar `expiry = born + delta`).
+/// `refund_id` es la identidad publica de la clave de retorno (D2: viaja
+/// comprometida; solo se abre al reembolsar). Industrializa el prototipo
+/// t3a/t3b de este mismo fichero.
+pub fn pending_commitment_v2(
+    receiver_id: Digest,
+    salt: Digest,
+    amount: u64,
+    refund_id: Digest,
+    delta: u64,
+) -> Digest {
+    native_merge(
+        pending_commitment(receiver_id, salt, amount),
+        refund_envelope(refund_id, delta),
+    )
+}
+
+/// Era 3 (RFC-0003, §345): el compositor v2, probado contra el REAL de
+/// produccion — los prototipos t3a/t3b de abajo quedan como historia.
+#[cfg(test)]
+mod v2_compositor {
+    use super::*;
+
+    fn dg(a: u64, b: u64, c: u64, d: u64) -> Digest {
+        [
+            BaseElement::new(a),
+            BaseElement::new(b),
+            BaseElement::new(c),
+            BaseElement::new(d),
+        ]
+    }
+
+    /// C2 = M(C1, X): el v1 es PREFIJO y el sobre es `refund_envelope` —
+    /// la identidad composicional que el aviso usara en E3.
+    #[test]
+    fn v2_es_v1_mas_el_sobre() {
+        let (r, s) = (dg(1, 2, 3, 4), dg(5, 6, 7, 8));
+        let f = dg(9, 10, 11, 12);
+        let c1 = pending_commitment(r, s, 250_000);
+        let x = refund_envelope(f, 40);
+        assert_eq!(
+            pending_commitment_v2(r, s, 250_000, f, 40),
+            native_merge(c1, x)
+        );
+    }
+
+    /// Un compromiso v1 NO abre como v2 (dominio, no marca): 3 retornos x
+    /// 3 deltas contra el compositor real, ninguno colisiona.
+    #[test]
+    fn v1_no_es_reversible_con_el_compositor_real() {
+        let (r, s) = (dg(1, 2, 3, 4), dg(5, 6, 7, 8));
+        let c1 = pending_commitment(r, s, 7);
+        for fk in [21u64, 22, 23] {
+            for delta in [0u64, 40, u64::MAX] {
+                let f = dg(fk, fk + 1, fk + 2, fk + 3);
+                assert_ne!(pending_commitment_v2(r, s, 7, f, delta), c1);
+            }
+        }
+    }
+
+    /// D1: para el compositor, el centinela u64::MAX es un delta mas —
+    /// sobre distinto, C2 distinto. La semantica «inalcanzable» es de la capa.
+    #[test]
+    fn el_centinela_es_un_delta_mas() {
+        let (r, s) = (dg(1, 2, 3, 4), dg(5, 6, 7, 8));
+        let f = dg(9, 9, 9, 9);
+        assert_ne!(
+            refund_envelope(f, u64::MAX),
+            refund_envelope(f, u64::MAX - 1)
+        );
+        assert_ne!(
+            pending_commitment_v2(r, s, 7, f, u64::MAX),
+            pending_commitment_v2(r, s, 7, f, u64::MAX - 1)
+        );
+    }
+
+    /// D2: cambiar f o delta cambia C2 — las elecciones del emisor ATAN.
+    #[test]
+    fn las_elecciones_atan() {
+        let (r, s) = (dg(1, 2, 3, 4), dg(5, 6, 7, 8));
+        let base = pending_commitment_v2(r, s, 7, dg(9, 9, 9, 9), 40);
+        assert_ne!(base, pending_commitment_v2(r, s, 7, dg(8, 8, 8, 8), 40));
+        assert_ne!(base, pending_commitment_v2(r, s, 7, dg(9, 9, 9, 9), 41));
+    }
+}
+
 /// Lo que el pagador entrega al receptor por un canal aparte.
 ///
 /// Sin esto el receptor no puede reclamar: necesita el aleatorio y el

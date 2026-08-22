@@ -90,6 +90,73 @@ pub fn native_refund_commitment(
     )
 }
 
+
+/// Era 3 (RFC-0003, §345): identico a `pending_commitment_v2` de `zk-ssl`
+/// (pending.rs) — `C2 = M(C1, M(f, d(delta)))`, con
+/// `native_refund_commitment` de prefijo. El AIR v2 que lo reconstruya es
+/// materia de E2; este nativo fija el juez.
+pub fn native_refund_commitment_v2(
+    receiver_id: Digest,
+    salt: Digest,
+    amount: u64,
+    refund_id: Digest,
+    delta: u64,
+) -> Digest {
+    let x = native_merge(
+        refund_id,
+        [
+            BaseElement::new(delta),
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+        ],
+    );
+    native_merge(native_refund_commitment(receiver_id, salt, amount), x)
+}
+
+#[cfg(test)]
+mod v2_nativo {
+    use super::*;
+
+    fn dg(a: u64) -> Digest {
+        [
+            BaseElement::new(a),
+            BaseElement::new(a + 1),
+            BaseElement::new(a + 2),
+            BaseElement::new(a + 3),
+        ]
+    }
+
+    /// El v1 nativo es prefijo del v2 nativo, como en la capa.
+    #[test]
+    fn v2_nativo_lleva_el_v1_de_prefijo() {
+        let c1 = native_refund_commitment(dg(1), dg(5), 7);
+        let x = native_merge(
+            dg(9),
+            [
+                BaseElement::new(40),
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+                BaseElement::ZERO,
+            ],
+        );
+        assert_eq!(
+            native_refund_commitment_v2(dg(1), dg(5), 7, dg(9), 40),
+            native_merge(c1, x)
+        );
+    }
+
+    /// Un C1 nativo no abre como C2 nativo: dominio, no marca.
+    #[test]
+    fn v1_nativo_no_es_v2() {
+        let c1 = native_refund_commitment(dg(1), dg(5), 7);
+        assert_ne!(
+            native_refund_commitment_v2(dg(1), dg(5), 7, dg(9), 40),
+            c1
+        );
+    }
+}
+
 /// Construye la traza de la apertura: dos permutaciones encadenadas.
 ///
 /// El receptor y el aleatorio entran SOLO aquí (testigo); el importe y el

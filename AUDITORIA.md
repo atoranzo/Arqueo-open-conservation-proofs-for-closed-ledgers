@@ -26655,3 +26655,62 @@ Un lector que abra el 0002 ya no sale con la version comprometida.
 
 Doble hilo: la nota del 0002 referencia este §344; este asiento nombra al
 0002 y al RFC-0003. Deuda declarada: el EMPUJE queda fuera del bloque.
+
+## §345 — E1a del RFC-0003: los compositores v2, de produccion y con juez
+
+Primera etapa ejecutada del RFC-0003, con su alcance RE-ESCALONADO por
+medicion. La puerta de E1 tal como el RFC la escribio («el conformance
+acepta 0.3») exige que el run_send/run_claim del escenario canonico
+produzcan compromisos v2 — aviso con X y claim que recompone C2 (E3), sobre
+pruebas reales (E2). Lo enseno conformance.rs entero (sesion 57): --emit es
+el generador, --check re-ejecuta y compara, y el campo compromiso del vector
+es el AUTORIZANTE de la era 2, no el del pendiente. La respuesta NO fue
+doblar el corte para cumplir la letra: fue corregir la letra donde nacio,
+como el §344 hizo con el 0002 — las Etapas del RFC ganan una nota fechada, y
+la emision 0.3 con su triple gate (0.3 IDENTICO, 0.2 y 0.1 RECHAZADOS) se
+muda a E3. Vara aplicada: cumplimiento verificable, pureza, imagen fiel —
+un vector que dijera 0.3 sin circuitos v2 detras seria mentira.
+
+Lo que entra, y donde:
+- pending.rs: refund_envelope(f, delta) — el sobre X que el aviso llevara
+  OPACO en E3 — y pending_commitment_v2(rec, salt, amount, f, delta) =
+  M(C1, X), con el v1 INTACTO de prefijo. D1 (delta RELATIVO; u64::MAX
+  centinela, la saturacion es de la capa) y D2 (f comprometida) en el doc.
+- circuit_refund.rs: native_refund_commitment_v2, el gemelo que fija el juez
+  del AIR v2 (E2), identico al de la capa por construccion declarada.
+- CUATRO tests en zk-ssl (prefijo composicional; v1 no reversible contra el
+  compositor REAL, 3x3; el centinela es un delta mas; las elecciones atan) y
+  DOS en stark-experiment (prefijo nativo; v1 no es v2). Industrializan los
+  prototipos t3a/t3b, que quedan como historia.
+- canon.sh: la TABLA pasa zk-ssl 265 -> 269 y stark-experiment 297 -> 299,
+  con su anotacion, como cada sello que suma tests.
+- Las CIFRAS PUBLICADAS, en NUEVE documentos vivos: los trece «265/297
+  tests» pasan a 269/299 (ARQUITECTURA x2 · PAPER · PAPER_EN ·
+  INSTITUTIONAL x2 · INSTITUCIONAL x2 · RESUMEN_EJECUTIVO x2 · README x2 ·
+  PRINCIPIOS), y los TOTALES de las mismas frases suben +6 con su
+  aritmetica conservada: 938 -> 944 en la compuerta de sello (y «938
+  pruebas» del PAPER), 1075 -> 1081 con todos los pines, 1089 -> 1095
+  declarados. Las dos primeras corridas del bloque salieron ROJAS aqui:
+  check_cifras (la compuerta del §237) ata la tabla a los documentos, la
+  restauracion devolvio todo byte a byte las dos veces, y el censo se cerro
+  LEYENDO AL JUEZ entero en vez de iterar contra el. El truncado a dos
+  rancias por corrida era del bloque (mostraba seis lineas del rojo), no de
+  la herramienta: corregido. La TERCERA corrida cayo en el DESGLOSE de
+  PRINCIPIOS («265 de la capa, 297 de circuitos», que el juez verifica
+  sobre el texto APLANADO — el «297 de circuitos» esta partido por el salto
+  de linea y un censo lineal no lo ve entero): estaba censado y no entro en
+  la especificacion; pasa a 269/299 con las demas cuentas del desglose
+  intactas. AUDITORIA:18733 y doc/ZENODO.md:200 NO se tocan: el juez
+  excluye los registros y las lineas historicas a proposito.
+
+Lo que NO entra, declarado: ni una linea de la capa (send/claim/aviso: E3),
+ni del AIR (E2), ni de los vectores (recolectar sigue en 0.2 y el cuadruple
+canon de conformance.rs:107 no se toca: esta cableado a los dos lados del
+check, y por eso sumar tests NO rompe el 0.2 — medido, no supuesto). El
+guardian de layout sigue en 26+2: E1a no toca columnas.
+
+Puerta de esta corrida: las herramientas de tools/ + el canon --sello
+entero (que verifica las cuentas nuevas de la tabla y corre el conformance:
+0.2 debe seguir IDENTICO — la convivencia probada) . Doble hilo: la nota del
+RFC cita este §345; este asiento cita el RFC-0003 y el §343. Deuda
+declarada: el EMPUJE queda fuera del bloque.
