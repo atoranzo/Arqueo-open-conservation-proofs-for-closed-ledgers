@@ -61,6 +61,12 @@ pub struct PendingNotice {
     /// Aleatorio que eligió el pagador.
     pub salt: Digest,
     pub amount: u64,
+    /// Era 3 (RFC-0003, E3a / D-1): el sobre de reversion `X = M(f, d(delta))`,
+    /// OPACO para el receptor. `None` = pendiente v1 (sin sobre); `Some(X)` =
+    /// pendiente v2 -- y la propia opcion es la senal de dispatch del cobro.
+    /// El receptor reconstruye `C2 = M(C1, X)` sin aprender `f` ni `delta`
+    /// (la identidad esta probada en `pending::v2_compositor`).
+    pub x: Option<Digest>,
 }
 
 #[derive(Debug)]
@@ -647,6 +653,7 @@ impl SovereignLayer {
                 position,
                 salt,
                 amount,
+                x: None,
             },
         })
     }
@@ -1295,6 +1302,7 @@ impl SovereignLayer {
             position,
             salt,
             amount,
+            x: None,
         })
     }
 }
@@ -2384,6 +2392,7 @@ mod tests_verificacion {
                 position,
                 salt,
                 amount: IMPORTE,
+                x: None,
             },
         };
 

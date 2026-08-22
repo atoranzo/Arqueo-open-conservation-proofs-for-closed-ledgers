@@ -280,6 +280,8 @@ impl TryFrom<&PendingNoticeDto> for PendingNotice {
             position: d.position.0,
             salt: digest_from_wire(&d.salt)?,
             amount: d.amount.0,
+            // E3a / D-1: el 0.2 no transporta el sobre -- el cobro v2 por RPC es de E4.
+            x: None,
         })
     }
 }

@@ -353,6 +353,7 @@ pub fn prove_send(
             position: materials.pending_position,
             salt: materials.salt,
             amount: materials.amount,
+            x: None,
         },
     })
 }
@@ -720,7 +721,7 @@ mod tests_privacidad {
 
     /// **CONTRAPARTE (el receptor): qué aprende del emisor al cobrar.**
     ///
-    /// El receptor recibe un `PendingNotice { position, salt, amount }`.
+    /// El receptor recibe un `PendingNotice { position, salt, amount, x }`.
     /// **Ninguno de esos campos es la identidad del emisor** —el diseño lo
     /// fija en el tipo: no hay un campo `sender`—. El receptor sabe cuánto
     /// cobra y desde qué posición, pero no de quién. Es la propiedad
