@@ -49,6 +49,9 @@ use stark_experiment::circuit_claim::{
 use stark_experiment::circuit_send::{
     build_trace as build_send_trace, SendAir, SendProver, SendPublicInputs,
 };
+use stark_experiment::circuit_claim_v2::{
+    build_trace as build_claim_trace_v2, ClaimAirV2, ClaimV2Prover,
+};
 
 /// Lo que el pagador envía al receptor **por otro canal**.
 ///
@@ -871,31 +874,64 @@ impl SovereignLayer {
 
         // ⚠️ Clave RELLENADA a cuatro elementos: via antigua, y §90
         // garantiza la misma identidad (§92.9).
-        let trace = build_claim_trace(
-            [
-                spend_key,
-                BaseElement::ZERO,
-                BaseElement::ZERO,
-                BaseElement::ZERO,
-            ],
-            receiver.public_id,
-            receiver.balance,
-            receiver.nonce,
-            leaf_salt_rec,
-            &path,
-            &frozen_path,
-            notice.amount,
-            self.total_supply,
-            0,
-            receiver.public_id,
-            notice.salt,
-            &pending_path,
-        );
-        let prover = ClaimProver::new(self.options.clone());
-        let public_inputs = prover.get_pub_inputs(&trace);
-        let proof = prover
-            .prove(trace)
-            .map_err(|e| LayerError::ProofFailed(format!("{e:?}")))?;
+        // E3b-1 (RFC-0003): el aviso decide la via. None = hoja v1;
+        // Some(sobre) = hoja v2, la traza gana el cuarto merge y el
+        // verificador sera ClaimAirV2. Los publics son LOS MISMOS.
+        let clave = [
+            spend_key,
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+        ];
+        let (public_inputs, proof) = match notice.x {
+            None => {
+                let trace = build_claim_trace(
+                    clave,
+                    receiver.public_id,
+                    receiver.balance,
+                    receiver.nonce,
+                    leaf_salt_rec,
+                    &path,
+                    &frozen_path,
+                    notice.amount,
+                    self.total_supply,
+                    0,
+                    receiver.public_id,
+                    notice.salt,
+                    &pending_path,
+                );
+                let prover = ClaimProver::new(self.options.clone());
+                let public_inputs = prover.get_pub_inputs(&trace);
+                let proof = prover
+                    .prove(trace)
+                    .map_err(|e| LayerError::ProofFailed(format!("{e:?}")))?;
+                (public_inputs, proof)
+            }
+            Some(sobre) => {
+                let trace = build_claim_trace_v2(
+                    clave,
+                    receiver.public_id,
+                    receiver.balance,
+                    receiver.nonce,
+                    leaf_salt_rec,
+                    &path,
+                    &frozen_path,
+                    notice.amount,
+                    self.total_supply,
+                    0,
+                    receiver.public_id,
+                    notice.salt,
+                    sobre,
+                    &pending_path,
+                );
+                let prover = ClaimV2Prover::new(self.options.clone());
+                let public_inputs = prover.get_pub_inputs(&trace);
+                let proof = prover
+                    .prove(trace)
+                    .map_err(|e| LayerError::ProofFailed(format!("{e:?}")))?;
+                (public_inputs, proof)
+            }
+        };
 
         Ok(ClaimReceipt {
             proof: proof.to_bytes(),
@@ -924,15 +960,25 @@ impl SovereignLayer {
             return Err(LayerError::StaleState);
         }
 
-        // Se verifica la prueba ANTES de tocar el estado (§73).
+        // Se verifica la prueba ANTES de tocar el estado (§73). E3b-1:
+        // el aviso decide el verificador - None = ClaimAir, Some = ClaimAirV2.
         let proof = winterfell::Proof::from_bytes(&receipt.proof)
             .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
         let min_opts = AcceptableOptions::OptionSet(vec![self.options.clone()]);
-        verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
-            proof,
-            pi.clone(),
-            &min_opts,
-        )
+        match notice.x {
+            None => verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                proof,
+                pi.clone(),
+                &min_opts,
+            ),
+            Some(_) => {
+                verify::<ClaimAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                    proof,
+                    pi.clone(),
+                    &min_opts,
+                )
+            }
+        }
         .map_err(|e| LayerError::VerificationFailed(format!("cobro: {e:?}")))?;
 
         let updated = ClientState {
@@ -2548,4 +2594,91 @@ mod tests_verificacion {
         );
     }
 
+
+    /// E3b-1: LA IDENTIDAD DEL AVISO. Some(sobre) permite al receptor
+    /// recomponer C2 = M(C1, X) sin aprender f ni delta.
+    #[test]
+    fn el_aviso_v2_reconstruye_c2_con_el_sobre_opaco() {
+        use crate::pending::{pending_commitment_v2, refund_envelope};
+        use stark_experiment::merkle::native_merge;
+        let (r, s, fk) = (salt_de(1), salt_de(2), salt_de(9));
+        let (amt, delta) = (250_000u64, 40u64);
+        let sobre = refund_envelope(fk, delta);
+        assert_eq!(
+            native_merge(pending_commitment(r, s, amt), sobre),
+            pending_commitment_v2(r, s, amt, fk, delta),
+            "el aviso con el sobre opaco recompone C2 exacto"
+        );
+    }
+
+    /// E3b-1: UN COBRO v2 ATRAVIESA LA CAPA ENTERA. El C2 se PLANTA
+    /// (nadie lo produce aun: el envio v2 es de otro corte; los tests de
+    /// este fichero tocan el arbol, molde del test de Mallory). El aviso
+    /// lleva Some(sobre) y el cobro prueba y verifica con ClaimAirV2.
+    #[test]
+    fn un_cobro_v2_atraviesa_la_capa() {
+        use crate::pending::{pending_commitment_v2, refund_envelope};
+        let mut layer = new_layer();
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let id_bob = layer.public_id_of(bob).expect("cuenta");
+        let (salt, fk, delta) = (salt_de(0x5EED), salt_de(0xF00D), 40u64);
+
+        let pos = layer.next_pending;
+        let c2 = pending_commitment_v2(id_bob, salt, IMPORTE, fk, delta);
+        layer.pending.set_leaf(pos, c2);
+        layer.next_pending += 1;
+        layer.pending_amounts.insert(pos, IMPORTE);
+        layer
+            .pending_meta
+            .insert(pos, (crate::REFUND_SENDER_NONE, layer.log.len() as u64));
+
+        let aviso = PendingNotice {
+            position: pos,
+            salt,
+            amount: IMPORTE,
+            x: Some(refund_envelope(fk, delta)),
+        };
+        let estado = state_of(&layer, bob);
+        let cobro = layer
+            .claim(BaseElement::new(SK_BOB), bob, &estado, &aviso)
+            .expect("el productor v2 debe probar");
+        layer
+            .apply_claim(&cobro, bob, &estado, &aviso)
+            .expect("el cobro v2 debe verificar y aplicarse");
+        assert_eq!(layer.balance_of(bob), Some(IMPORTE), "Bob cobra su v2");
+        assert_eq!(
+            layer.pending.leaf(pos),
+            [BaseElement::ZERO; 4],
+            "el pendiente v2 queda consumido"
+        );
+    }
+
+    /// E3b-1, dominio y no marca EN LA CAPA: el mismo C2 no se cobra por
+    /// la via v1 (aviso sin sobre) - la raiz que la prueba acredita no es
+    /// la del arbol real, y el estado no se toca.
+    #[test]
+    fn un_pendiente_v2_no_se_cobra_sin_el_sobre() {
+        use crate::pending::pending_commitment_v2;
+        let mut layer = new_layer();
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let id_bob = layer.public_id_of(bob).expect("cuenta");
+        let (salt, fk, delta) = (salt_de(0x5EED), salt_de(0xF00D), 40u64);
+        let pos = layer.next_pending;
+        layer
+            .pending
+            .set_leaf(pos, pending_commitment_v2(id_bob, salt, IMPORTE, fk, delta));
+        layer.next_pending += 1;
+        layer.pending_amounts.insert(pos, IMPORTE);
+        layer
+            .pending_meta
+            .insert(pos, (crate::REFUND_SENDER_NONE, layer.log.len() as u64));
+
+        let aviso_v1 = PendingNotice { position: pos, salt, amount: IMPORTE, x: None };
+        let estado = state_of(&layer, bob);
+        let r = layer
+            .claim(BaseElement::new(SK_BOB), bob, &estado, &aviso_v1)
+            .and_then(|c| layer.apply_claim(&c, bob, &estado, &aviso_v1));
+        assert!(r.is_err(), "sin el sobre no hay C2: el cobro debe rebotar");
+        assert_eq!(layer.balance_of(bob), Some(0), "nada acreditado");
+    }
 }

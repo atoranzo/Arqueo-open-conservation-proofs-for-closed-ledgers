@@ -51,6 +51,9 @@ use super::*;
 use stark_experiment::native::{derive_public_id_wide, view_id_from_view_key};
 use crate::pending::pending_commitment;
 use crate::two_phase::{ClaimReceipt, PendingNotice, SendReceipt};
+use stark_experiment::circuit_claim_v2::{
+    build_trace as build_claim_trace_v2, ClaimV2Prover,
+};
 
 /// Vista pública de una cuenta. **No incluye ninguna clave.**
 ///
@@ -397,28 +400,60 @@ pub fn prove_claim(
         return Err(LayerError::NotTheAccountHolder);
     }
 
-    let trace = build_claim_trace(
-        spend_key,
-        materials.receiver.public_id,
-        materials.receiver.balance,
-        materials.receiver.nonce,
-        materials.receiver.leaf_salt,
-        &materials.receiver_path,
-        &materials.frozen_path,
-        materials.notice.amount,
-        materials.total_supply,
-        0,
-        // El destinatario del compromiso es el propio receptor: cobrar es
-        // demostrar que el pendiente estaba a su nombre.
-        materials.receiver.public_id,
-        materials.notice.salt,
-        &materials.pending_path,
-    );
-    let prover = ClaimProver::new(options);
-    let public_inputs = prover.get_pub_inputs(&trace);
-    let proof = prover
-        .prove(trace)
-        .map_err(|e| LayerError::ProofFailed(format!("{e:?}")))?;
+    // E3b-1 (RFC-0003): el aviso decide la via, tambien en el cliente.
+    let (public_inputs, proof) = match materials.notice.x {
+        None => {
+            let trace = build_claim_trace(
+                spend_key,
+                materials.receiver.public_id,
+                materials.receiver.balance,
+                materials.receiver.nonce,
+                materials.receiver.leaf_salt,
+                &materials.receiver_path,
+                &materials.frozen_path,
+                materials.notice.amount,
+                materials.total_supply,
+                0,
+                // El destinatario es el propio receptor: cobrar es
+                // demostrar que el pendiente estaba a su nombre.
+                materials.receiver.public_id,
+                materials.notice.salt,
+                &materials.pending_path,
+            );
+            let prover = ClaimProver::new(options);
+            let public_inputs = prover.get_pub_inputs(&trace);
+            let proof = prover
+                .prove(trace)
+                .map_err(|e| LayerError::ProofFailed(format!("{e:?}")))?;
+            (public_inputs, proof)
+        }
+        Some(sobre) => {
+            let trace = build_claim_trace_v2(
+                spend_key,
+                materials.receiver.public_id,
+                materials.receiver.balance,
+                materials.receiver.nonce,
+                materials.receiver.leaf_salt,
+                &materials.receiver_path,
+                &materials.frozen_path,
+                materials.notice.amount,
+                materials.total_supply,
+                0,
+                // El destinatario es el propio receptor: cobrar es
+                // demostrar que el pendiente estaba a su nombre.
+                materials.receiver.public_id,
+                materials.notice.salt,
+                sobre,
+                &materials.pending_path,
+            );
+            let prover = ClaimV2Prover::new(options);
+            let public_inputs = prover.get_pub_inputs(&trace);
+            let proof = prover
+                .prove(trace)
+                .map_err(|e| LayerError::ProofFailed(format!("{e:?}")))?;
+            (public_inputs, proof)
+        }
+    };
 
     Ok(ClaimReceipt {
         proof: proof.to_bytes(),

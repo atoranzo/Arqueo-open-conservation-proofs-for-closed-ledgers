@@ -328,7 +328,7 @@ Requiere Rust estable. Sin instaladores externos ni toolchains aparte.
 > Y **0 warnings** en ambos: el verificador de cada sello los cuenta.
 
 ```bash
-cargo test -p zk-ssl --release              # la capa: 269 tests (3 ign.)
+cargo test -p zk-ssl --release              # la capa: 272 tests (3 ign.)
 cargo test -p stark-experiment --release    # los circuitos: 312 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
