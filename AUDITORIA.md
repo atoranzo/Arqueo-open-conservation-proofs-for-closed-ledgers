@@ -26714,3 +26714,42 @@ entero (que verifica las cuentas nuevas de la tabla y corre el conformance:
 0.2 debe seguir IDENTICO — la convivencia probada) . Doble hilo: la nota del
 RFC cita este §345; este asiento cita el RFC-0003 y el §343. Deuda
 declarada: el EMPUJE queda fuera del bloque.
+
+## §346 -- E2a del RFC-0003: RefundAirV2 EN PARALELO, y el 0.2 sigue IDENTICO
+
+El PASTE-E2-M (salida a1b6771a556b308d/2375, sobre bdfa428) midio tres cosas
+que fijaron la forma de este corte: (1) el guardian de layout barre POR
+FICHERO - dos Air en un fichero mezclarian sus ranuras C_* y darian
+colisiones falsas -> el circuito nuevo nace en fichero propio; (2) no habia
+NINGUN precedente de Air paralelo en el crate (el unico _v2 era el gemelo
+nativo del S345) -> este corte ESTRENA el patron de convivencia de circuitos,
+hermano del de pending_commitment_v2; (3) tocar RefundAir o ClaimAir en el
+sitio moveria los bytes de las pruebas y el 0.2 dejaria de ser IDENTICO ->
+la convivencia es obligatoria, no estetica.
+
+`circuit_refund_v2.rs`: CUATRO merges en una via (la traza debe ser potencia
+de 2: 3 merges son 24 filas y no valen; 4 son 32). Orden: (f, d(delta)) -> X,
+un enlace de RESIEMBRA que este circuito estrena (capacidad a cero, digest NO
+arrastrado - el siguiente digest es testigo - y X capturado a 4 columnas de
+transporte COL_X, el patron del salt de hoja del claim, S117), luego la
+cadena clasica (receptor, aleatorio) -> d1 -> C1, y el enlace de X que
+absorbe el sobre transportado: (C1, X) -> C2. TRACE_WIDTH 12 -> 16.
+NUM_CONSTRAINTS = 32, declarado (el v1 no lo declaraba y el guardian no podia
+contar muertas alli; aqui si puede). RefundPublicInputs {commitment, amount}
+SOBREVIVE tal cual - el struct es del v1, importado, y f y delta jamas salen
+del testigo: ni en entradas publicas, ni en aserciones, ni en el cable.
+
+CINCO tests, calcados del molde del v1 mas la punta nueva: paridad
+traza<->nativo contra native_refund_commitment_v2 (el juez del S345, con
+COL_X verificado contra el X nativo), el verde, el discriminante del importe,
+el discriminante del DELTA (la prueba de (f,delta) no abre el C2 de
+(f,delta+1) - la punta que el v1 no podia tener), y dominio-no-marca (la
+prueba v2 no abre un C1). Cifras: stark-experiment 299 -> 304; sumas
+944 -> 949, 1081 -> 1086, 1095 -> 1100, publicadas en los nueve documentos.
+
+Lo que este corte NO hace, a proposito: no cablea el circuito a la capa (los
+dos verify::<RefundAir de two_phase.rs siguen en v1 - eso es E3, con la
+emision de zkssl/0.3), y no toca el claim (E2b queda condicionado a medir que
+pina exactamente spec/vectors/zkssl-0.2.json antes de decidir su forma).
+Doble hilo: este asiento cita el RFC-0003 (etapa E2, primera mitad); el RFC
+queda con E2a sellada aqui. Deuda declarada: el EMPUJE queda fuera del bloque.
