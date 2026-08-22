@@ -26593,3 +26593,38 @@ toca. Ninguna suma se mueve y ninguna cifra por-crate tampoco: el corte solo toc
 lineas `//!` y una vineta de prosa. La medicion previa y la posterior del crate
 dan lo mismo. Ningun Cargo tocado. El BACKLOG SI mueve su contador por primera
 vez en el arco: nace la 106, contada con el regex del parser.
+
+## §343 — el RFC-0003 (compromiso v2) entra en spec/rfc/ como PROPUESTO
+
+El compromiso del pendiente tiene camino formal: la r2 del RFC-0003 —Δ por
+pago e identidad de reembolso comprometidas, C2 = M(C1, M(f, d(Δ)))— se
+adopta en `spec/rfc/0003-compromiso-v2.md`. Numero FIRME por la regla 1 del
+PROCESO (correlativa desde 0001; el 0001 esta RESERVADO al KDF Argon2id, nota
+de numeracion del 0002:30-34). Version objetivo `zkssl/0.3`, LIBRE: la tabla
+de estado del 0002 da sus TRES etapas CERRADAS y la 2 se redefinio sin romper
+el cable (§210). Su linea :24 —que aun anuncia que la etapa 2 «necesitara
+zkssl/0.3»— caduco en ese mismo §210 y queda DECLARADA aqui como defecto vivo
+del 0002; su correccion va en bloque propio, no en este.
+
+Base medida (toda sobre 6a1c1bb): PASTE-E1-M (salida b44b24915a67c268/1175) —
+circuit_claim (905495e70251de86/2208) reconstruye C_PEND_IN por campos
+SEPARADOS, un X opaco no encaja tal cual, y el claim v2 gana UNA fase de
+merge (8 filas de 208 libres; molde: el tercer merge del §117, :883-896) — y
+PASTE-RFC-N (salida 845c692ce353265b/384) — la nota de numeracion, la regla
+de version («la suben los valores que VIAJAN», RPC.md, Notas operativas) y
+los moldes de Compatibilidad y Seguridad del 0002, que la r2 cumple enteros:
+tabla + regla 2 citada, y las tres deudas declaradas (la del §21 con
+contenido: el sobre X viaja EN el aviso).
+
+Decisiones de este corte, las dos REVERSIBLES y tomadas al montar:
+- D-1: el Estado pasa de BORRADOR a PROPUESTO — entrar numerado en spec/rfc/
+  con asiento ES proponerlo; ACEPTADO sigue exigiendo la regla 4 entera
+  (spec + OpenRPC + vectores + suites) y aqui no se toca.
+- D-2: el campo Asiento(s) concreta el «## NNN. al sellar» en este §343.
+El resto del fichero es byte a byte la r2 que su autor verifico en su maquina
+(c542ac51e882a9b7/229/13476; la r1, 9bc8f30d3a14e0de/182, se conserva fuera
+del arbol para el diff).
+
+Doble hilo (regla 5): este asiento referencia el RFC-0003 por numero, y el
+RFC referencia este §343 en su cabecera. Deuda declarada: el EMPUJE del
+commit queda fuera del bloque y se salda con `git push`.
