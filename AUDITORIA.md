@@ -26834,3 +26834,50 @@ circuitos nuevos.
 ganan un test cada uno en su mod tests. E3 queda intacta por delante (la capa,
 el aviso con X, la emision 0.3 y el triple gate). El 0.2 sigue IDENTICO en
 cada canon. El EMPUJE queda fuera del bloque: deuda declarada.
+
+## §349 -- E3a-1 del RFC-0003: el aviso gana la X opcional, y el 0.2 sigue IDENTICO
+
+**Que se sella.** El primer corte de E3 (commit 20e96a8): `PendingNotice` gana
+`x: Option<Digest>` -- el sobre de reversion del RFC-0003, opaco. `None` =
+pendiente v1 (sin sobre); `Some(X)` = v2, y la propia opcion es la senal de
+dispatch del cobro; el receptor reconstruira `C2 = M(C1, X)` sin aprender `f`
+ni `delta` (identidad probada en `pending::v2_compositor`). Cinco literales
+construyen el aviso y los cinco ganan `x: None` -- two_phase :646 (en `send`),
+:1294 (mint delegado), :2383 (test, interior medido por el propio bloque:
+`amount: IMPORTE`), client :352 (en `prove_send`, no en el SDK) y wire :279
+(el `TryFrom`) -- mas la enumeracion del doc de client :723. El cable declara
+en comentario su limite: el 0.2 NO transporta el sobre; el cobro v2 por RPC es
+de E4. El compilador hizo de censor y no nombro un sexto sitio.
+
+**Las decisiones del corte (todas REVERSIBLES).**
+- D-1 (APLICADA): la X vive como `Option`, no como campo con centinela. El
+  dominio tiene dos variantes reales (v1 sin sobre, v2 con el); un "neutro"
+  no existe -- `M(C1, 0) != C1` -- y seria un sobre que miente que hay sobre.
+  El anti-patron ya vive en casa (`REFUND_SENDER_NONE = u64::MAX`, §180) y
+  no se repite. Rompe los cinco sitios en compilacion: el rojo bueno.
+- D-2 (DECLARADA, para el corte del gate temporal): el delta viaja EN EL
+  RECIBO y lo ata C2 -- el arbol es la unica fuente; `pending_meta` y el
+  snapshot quedan INTACTOS (la rotura de formato de persistencia no se paga).
+  La capa computara `expiry = born.saturating_add(delta)` contra
+  `now = log.len()`, que ya ES la altura de epoca publicada (log.rs:679-680:
+  el mismo numero que `epoch_head`). Queda viva la decision que el RFC deja
+  abierta en su :137: `refund_ttl` como techo sistemico o retirada.
+- D-3 (DECLARADA): `apply_refund`/`apply_deissue` NO se parten. La particion
+  validate/commit existe donde el lote la exige (§214) y solo ahi -- forma
+  medida, no supuesta. El v2 entrara en los monolitos con su dispatch dentro;
+  si el reembolso entra algun dia en `apply_many`, se parten entonces.
+
+**Cifras.** No se mueven: cero tests nuevos, cero pines tocados. Las suites
+del corte, en release: two_phase 33 verdes, client 17 (+1 ignorado), wire 15;
+y la compuerta reina tras el cambio: `conformance --check 0.2` da "todo
+IDENTICO" -- el aviso gano un campo y el camino por defecto no movio un byte.
+
+**Doble hilo (PROCESO regla 5).** Este asiento referencia el RFC-0003; el
+hilo inverso (el RFC nombrando los asientos de sus etapas) queda para el pase
+a ACEPTADO al cerrar E3/E4, siguiendo el precedente de E2: los §346-§348
+tampoco tocaron el RFC (huella `17330bcfdb90fbf5` intacta desde el §345).
+
+**Lo que NO hace.** No produce ningun `Some(X)`: nadie compone C2 todavia --
+eso es el siguiente corte (dispatch v2 en claim/refund/deissue, el delta en el
+recibo, el test de identidad del aviso; ahi se mueven las cifras). El EMPUJE
+queda fuera del bloque: deuda declarada, dos commits (20e96a8 y este).
