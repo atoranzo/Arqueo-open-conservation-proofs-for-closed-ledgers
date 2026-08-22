@@ -26881,3 +26881,52 @@ tampoco tocaron el RFC (huella `17330bcfdb90fbf5` intacta desde el §345).
 eso es el siguiente corte (dispatch v2 en claim/refund/deissue, el delta en el
 recibo, el test de identidad del aviso; ahi se mueven las cifras). El EMPUJE
 queda fuera del bloque: deuda declarada, dos commits (20e96a8 y este).
+
+## §350 -- E3b-1 del RFC-0003: el cobro aprende Some(X), y el juez censa el perimetro
+
+**Que se sella.** El dispatch v1/v2 del cobro (commit 045d09d): `claim` y
+`validate_claim` en la capa y `prove_claim` en el cliente eligen via por
+`notice.x` -- `None` = ClaimAir, `Some(sobre)` = ClaimAirV2, con los MISMOS
+publics. Tres testigos nuevos en `tests_verificacion`:
+`el_aviso_v2_reconstruye_c2_con_el_sobre_opaco` (la identidad, sin probar
+nada), `un_cobro_v2_atraviesa_la_capa` (un C2 PLANTADO al molde del test de
+Mallory: primera vez que ClaimAirV2 verifica DENTRO de `apply_claim`) y
+`un_pendiente_v2_no_se_cobra_sin_el_sobre` (dominio y no marca, en la capa).
+El 0.2 sigue IDENTICO: el escenario canonico aun no produce ningun `Some`.
+
+**El rojo bueno, y las dos lecciones.** La primera emision murio en
+check_cifras con NUEVE rancias y restauracion total verificada por huella.
+El censo del perimetro se habia hecho con grep propio (la formula del
+desglose) y la cifra vivia ademas como comentario de comando en seis
+ficheros mas -- ARQUITECTURA y PAPER_EN incluidos, que el corte del §347
+declaraba fuera: el perimetro se mide POR CORTE, y lo censa mejor quien lo
+vigila. Doctrina: **el perimetro de cifras lo censa el JUEZ, no el grep de
+quien edita** -- se corre o se calca check_cifras ANTES de decidir que
+renglones se mueven. Y la segunda: el tail -20 del bloque escondio 3 de las
+9 -- **un juez que muere ensena su salida ENTERA**.
+
+**Decisiones vigentes para el siguiente corte (REVERSIBLES).**
+- D-2, refinada tras volcar RefundAirV2 entero: sus publics son
+  {commitment, amount} y el sobre queda LIBRE en la fila 0 -- un delta solo
+  DECLARADO no estaria atado (el emisor mentiria a la baja y cobraria antes
+  de plazo). La salida es la que el RFC ya escribia (:125-127, :169): el
+  recibo v2 lleva la APERTURA `(c1, f, delta)` publica y la capa recompone
+  `M(c1, M(f, d(delta))) == hoja[pos]` -- el compromiso como juez, por
+  resistencia a colisiones, con CERO lineas de persistencia; la prueba
+  conserva su papel de conocimiento de la apertura.
+- D-4 (nueva): `refund_ttl` queda SOLO para el camino v1. Ni techo (dejaria
+  al operador pisar la eleccion del emisor, contra el propio RFC) ni
+  retirada (romperia los nueve testigos v1). Salda la decision que el RFC
+  dejaba abierta en su :137.
+
+**Cifras.** capa 269 -> 272 (la fila de la tabla lleva este asiento); sello
+957 -> 960, con todos los pines 1094 -> 1097, declarados 1108 -> 1111.
+Diecinueve renglones de docs, los nueve del juez incluidos. El "30
+circuitos" del README y las "13 ignoradas" no se mueven.
+
+**Doble hilo (PROCESO regla 5).** Este asiento referencia el RFC-0003; el
+hilo inverso queda para el pase a ACEPTADO, precedente de E2.
+
+**Lo que NO hace.** El envio sigue sin producir `Some(X)` y refund/deissue
+siguen en v1: eso es E3b-2 (la apertura en el recibo, D-2 y D-4). El EMPUJE
+queda fuera: CUATRO commits en deuda (20e96a8, 79ff693, 045d09d y este).
