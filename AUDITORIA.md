@@ -26628,3 +26628,30 @@ del arbol para el diff).
 Doble hilo (regla 5): este asiento referencia el RFC-0003 por numero, y el
 RFC referencia este §343 en su cabecera. Deuda declarada: el EMPUJE del
 commit queda fuera del bloque y se salda con `git push`.
+
+## §344 — la correccion del 0002 habia envejecido a su vez, y ahora lo dice
+
+El RFC-0002 llevaba una afirmacion falsa en su cabecera de estado: su
+«Correccion a la seccion Compatibilidad» (:21-28) anunciaba que la etapa 2
+«volvera a romper el cable y necesitara zkssl/0.3» y que «introduce
+circuitos nuevos y su escalera FV». Las dos cosas caducaron en §210, que
+redefinio la etapa 2 SIN circuitos y sin romper el cable; quedo CERRADA en
+§215. La tabla de estado y la seccion Compatibilidad del propio documento
+SI se actualizaron; el parrafo de la correccion, no — la correccion
+envejecio a su vez, al reves de la forma de §247, donde lo apilado arriba
+es lo vigente.
+
+Lo cazo el PASTE-RFC-N (salida 845c692ce353265b/384, sobre 6a1c1bb) al
+volcar la tabla de estado ENTERA: media sesion 57 habia concluido «hay
+colision de version» leyendo solo las lineas :24 y :151, con la tabla once
+lineas mas arriba desmintiendolo. Aquella conclusion quedo escrita como
+falsa en su momento; este asiento corrige el documento que la indujo.
+
+El arreglo respeta la forma de la casa: el parrafo caducado SE CONSERVA
+byte a byte, y debajo entra una TERCERA nota de cita (>) — como las dos que
+la cabecera ya tiene — que lo fecha, nombra el §210 donde caduco, y deja
+dicho que zkssl/0.3 nunca fue de este RFC: la emite el RFC-0003 (§343).
+Un lector que abra el 0002 ya no sale con la version comprometida.
+
+Doble hilo: la nota del 0002 referencia este §344; este asiento nombra al
+0002 y al RFC-0003. Deuda declarada: el EMPUJE queda fuera del bloque.

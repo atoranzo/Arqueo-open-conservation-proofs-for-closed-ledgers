@@ -27,6 +27,15 @@ función con un ×10 medido, y retenerla meses esperando a la etapa 2
 —que introduce circuitos nuevos y su escalera FV— habría sido pagar un
 coste real por una elegancia de numeración.
 
+> ⚠️ **Esta corrección envejeció a su vez (§344).** Se escribió al sellar la
+> etapa 1 sola (§209); su pronóstico sobre la etapa 2 —«volverá a romper el
+> cable y necesitará `zkssl/0.3`», «introduce circuitos nuevos y su escalera
+> FV»— caducó en §210, que la redefinió **sin circuitos y sin romper el
+> cable** (CERRADA en §215). La tabla de arriba y la sección «Compatibilidad»
+> sí se actualizaron; el párrafo anterior no, y se conserva sin tocar: el
+> error se registra, no se borra. `zkssl/0.3` nunca fue de este RFC — la
+> emite el **RFC-0003** (§343).
+
 > **Nota de numeración.** El **RFC-0001** queda reservado al
 > endurecimiento del KDF del keystore (SHA-256 → Argon2id), señalado en
 > `crates/zk-ssl/src/crypto.rs` y en `zk-ssl-sdk/src/keystore.rs`. **No
