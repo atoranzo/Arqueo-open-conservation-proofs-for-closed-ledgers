@@ -528,4 +528,32 @@ mod tests {
         );
         assert!(mal.is_err(), "un C1 no es apertura valida de la forma C2");
     }
+
+    /// TERCERO-COMO-RETORNO (la puerta de E2 del RFC-0003, en rojo).
+    ///
+    /// La prueba de quien conoce (f', delta) NO abre el C2 comprometido
+    /// con (f, delta): un tercero no puede ponerse como destino del
+    /// retorno. Es la punta que da nombre al ataque; another_delta cubre
+    /// el plazo, este cubre el destino.
+    #[test]
+    fn un_tercero_como_retorno_no_abre_el_c2() {
+        let (receptor, salt, importe) = (digest_from(1000), digest_from(2000), 250_000u64);
+        let (f, delta) = (digest_from(9000), 40u64);
+        let otro_f = digest_from(7777);
+
+        let trace = build_trace(receptor, salt, importe, otro_f, delta);
+        let prover = RefundV2Prover::new(default_options());
+        let proof = prover.prove(trace).expect("prueba");
+
+        let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
+        let mal = verify::<RefundAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+            proof,
+            RefundPublicInputs {
+                commitment: native_refund_commitment_v2(receptor, salt, importe, f, delta),
+                amount: BaseElement::new(importe),
+            },
+            &min_opts,
+        );
+        assert!(mal.is_err(), "otro f NO debe abrir el C2: el retorno es del emisor");
+    }
 }

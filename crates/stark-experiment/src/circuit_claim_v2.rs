@@ -1409,4 +1409,47 @@ mod tests {
              forma v2 - el dominio separa, no la marca"
         );
     }
+
+    /// LADRON-CON-AVISO (la puerta de E2 del RFC-0003, en rojo).
+    ///
+    /// Mallory tiene SU cuenta y SU clave, y el aviso ENTERO de un
+    /// pendiente dirigido a OTRA identidad: el sobre X, el aleatorio y
+    /// el importe. No cobra: el compromiso se reconstruye con la
+    /// identidad de quien cobra (S39, C_PEND_IN sobre COL_ACC_ID), asi
+    /// que su C2 es otro y la subida no llega a la raiz del arbol donde
+    /// vive el pendiente ajeno. El validador del par es el test verde:
+    /// sin el, esto pasaria aunque cobrar fallara siempre.
+    #[test]
+    fn un_ladron_con_el_aviso_no_cobra_un_pendiente_ajeno() {
+        let mut s = scenario(1_000_000, 250_000, 10_000_000);
+        let ajeno: Digest = [
+            BaseElement::new(0xB0B_0001),
+            BaseElement::new(0xB0B_0002),
+            BaseElement::new(0xB0B_0003),
+            BaseElement::new(0xB0B_0004),
+        ];
+        assert_ne!(ajeno, s.account_id);
+
+        // El arbol contiene el C2 del pendiente AJENO, con el MISMO
+        // aleatorio, el MISMO importe y el MISMO sobre del aviso.
+        let c2_ajeno = native_merge(
+            native_merge(
+                native_merge(ajeno, s.salt),
+                [
+                    BaseElement::new(s.amount),
+                    BaseElement::ZERO,
+                    BaseElement::ZERO,
+                    BaseElement::ZERO,
+                ],
+            ),
+            s.sobre,
+        );
+        s.public_inputs.pending_root_old = climb_pending_de(&s, c2_ajeno);
+
+        assert!(
+            !prueba_verifica(&s, trace_de(&s)),
+            "CRITICO (puerta de E2 del RFC-0003): con el aviso entero pero \
+             sin ser el destinatario no debe poderse cobrar"
+        );
+    }
 }

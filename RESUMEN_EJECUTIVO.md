@@ -55,7 +55,7 @@ públicos— y recibe pruebas que verifica. La revelación selectiva
 (`audit`: "estoy entre X e Y") la produce el titular y la verifica el
 supervisor **sin acceso al ledger**.
 
-**955 tests en la compuerta de sello** —1092 con todos los pines, 1106
+**957 tests en la compuerta de sello** —1094 con todos los pines, 1108
 declarados—, todos en release, 0 fallos y 24 warnings **pinchados**.
 No se recuerdan: los ejecuta `bash tools/canon.sh --sello`.
 
@@ -313,7 +313,7 @@ estado.
 
 ```bash
 cargo test -p zk-ssl --release              # la capa, 269 tests (3 ign.)
-cargo test -p stark-experiment --release    # los circuitos, 310 tests
+cargo test -p stark-experiment --release    # los circuitos, 312 tests
 cargo test -p zk-core --release performance -- --nocapture
 cargo test -p halo2-experiment --release real_proof -- --nocapture
 cargo test -p plonk-experiment --release performance -- --nocapture

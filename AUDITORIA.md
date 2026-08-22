@@ -26803,3 +26803,34 @@ con `ClaimAir`/`RefundAir` v1, el aviso aun no lleva la X, y el conformance
 sigue emitiendo 0.2 -- todo eso es E3, con su triple gate (0.3 IDENTICO, 0.2 y
 0.1 RECHAZADOS). Mientras tanto el 0.2 sigue IDENTICO en cada canon, como manda
 la nota fechada del RFC. El EMPUJE queda fuera del bloque: deuda declarada.
+
+## §348 -- La puerta de E2 del RFC-0003, saldada frase a frase
+
+**Que se sella.** Los dos tests que la puerta de E2 del RFC-0003 NOMBRA y que
+los sellos §346/§347 no habian escrito. La puerta dice (cita sin tildes):
+"Puerta: el guardian de layout sube en uno por circuito que estrene
+restricciones, y el ladron-con-aviso y el tercero-como-retorno en rojo". Lo
+primero quedo saldado (28 -> 30 circuitos); lo segundo estaba cubierto por la
+maquinaria pero NO probado bajo las formas v2 -- y una puerta escrita se salda
+como esta escrita, no por analogia. Lo cazo el volcado entero del tramo
+:150-235 del RFC (sesion 59), no un juez: las frases del gate no son pines.
+
+**Los dos tests, calcados de sus moldes.**
+- `un_ladron_con_el_aviso_no_cobra_un_pendiente_ajeno` (circuit_claim_v2):
+  Mallory con SU cuenta, SU clave y el aviso ENTERO (X, aleatorio, importe)
+  de un pendiente dirigido a otra identidad. El compromiso se reconstruye
+  con la identidad de quien cobra (S39, C_PEND_IN sobre COL_ACC_ID): su C2
+  es otro y la subida no llega a la raiz. El validador del par es el verde.
+- `un_tercero_como_retorno_no_abre_el_c2` (circuit_refund_v2): la prueba de
+  (f', delta) no abre el C2 de (f, delta). another_delta cubria el plazo;
+  este cubre el destino, que es la punta que da nombre al ataque.
+
+**Cifras.** stark 310 -> 312; totales 955 -> 957, 1092 -> 1094, 1106 -> 1108;
+el desglose de PRINCIPIOS pasa a "269 de la capa, 312 de circuitos". El
+"30 circuitos con impl Air" del README NO se mueve: son tests nuevos, no
+circuitos nuevos.
+
+**Lo que NO hace.** No toca codigo de produccion: los dos ficheros v2 solo
+ganan un test cada uno en su mod tests. E3 queda intacta por delante (la capa,
+el aviso con X, la emision 0.3 y el triple gate). El 0.2 sigue IDENTICO en
+cada canon. El EMPUJE queda fuera del bloque: deuda declarada.
