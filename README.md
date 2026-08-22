@@ -329,11 +329,11 @@ Requiere Rust estable. Sin instaladores externos ni toolchains aparte.
 
 ```bash
 cargo test -p zk-ssl --release              # la capa: 269 tests (3 ign.)
-cargo test -p stark-experiment --release    # los circuitos: 304 tests
+cargo test -p stark-experiment --release    # los circuitos: 310 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
 
-El crate de circuitos tiene **28 circuitos con `impl Air`** (los dos
+El crate de circuitos tiene **30 circuitos con `impl Air`** (los dos
 últimos: `circuit_send` y `circuit_claim`, el pago en dos fases, ambos
 con su ESPEC ejecutable y compuerta de mutantes — ver «Formalización»
 arriba). `python3 tools/check_constraint_layout.py` (guardián v7) barre

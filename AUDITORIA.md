@@ -26753,3 +26753,53 @@ emision de zkssl/0.3), y no toca el claim (E2b queda condicionado a medir que
 pina exactamente spec/vectors/zkssl-0.2.json antes de decidir su forma).
 Doble hilo: este asiento cita el RFC-0003 (etapa E2, primera mitad); el RFC
 queda con E2a sellada aqui. Deuda declarada: el EMPUJE queda fuera del bloque.
+
+## §347 -- E2b del RFC-0003: ClaimAirV2 EN PARALELO, el cuarto merge del pendiente
+
+**Que se sella.** La fase X del claim: `circuit_claim_v2.rs` (1.412 lineas,
+`ClaimAirV2` + `ClaimV2Prover` + 6 tests), fichero PARALELO a `circuit_claim.rs`,
+que no se toca. La medicion que fuerza la forma quedo hecha antes de cortar: el
+vector `spec/vectors/zkssl-0.2.json` pina `proof_digest` POR ENTRADA y la entrada
+Claim lleva el suyo, asi que tocar el v1 en el sitio movia los bytes de la prueba
+y ponia en rojo el "0.2 IDENTICO" de la conformidad. La convivencia es la del
+§346: Air en paralelo, el guardian lo barre solo, y el gate existente la prueba.
+
+**El diseno, sobre los bytes del v1.** La cadena del pendiente gana el CUARTO
+merge del RFC-0003: C2 = M(C1, X). Un ciclo nuevo (CYC_PEND_ENV) entre el valor
+y la subida -- ROW_PENDING_ROOT pasa de 815 a 823, quedan 200 filas de holgura --
+y cuatro columnas (COL_X, 55..59; TRACE_WIDTH 59). El bloque C_ENV son 8
+restricciones en el carril A (precedente C_PEND_VAL): digest arrastrado y rate :=
+el sobre. NUM_CONSTRAINTS pasa de 201 a 209 (el 201 del v1, verificado por doble
+cuenta: la cadena C_* y la suma de grados). Las 41 aserciones quedan intactas:
+`ClaimPublicInputs` se importa del v1 y el sobre jamas se publica.
+
+**D-1 (REVERSIBLE): el sobre se LEE, no se transporta.** X llega opaco en el
+aviso y se consume en un unico enlace: el patron del salt de hoja (S117). Un X'
+distinto desvia C2 y la raiz declarada rechaza -- misma solidez que transportarlo,
+con 8 restricciones en vez de 12. La asimetria con `circuit_refund_v2` (alli el
+transporte es ESTRUCTURAL: X se produce en un ciclo y se consume en otro) queda
+declarada en la cabecera del fichero. Si un dia el sobre necesita constancia,
+se anaden las 4 restricciones de transporte sin mover nada mas.
+
+**D-2 (REVERSIBLE): README 28 -> 30.** El "28 circuitos con impl Air" del README
+quedo rancio en el §346 (el arbol ya tenia 29); con este corte son 30 y el
+numero se corrige aqui, declarado. check_cifras no lo vigila (no es pin): lo
+cazo la medicion del corte, no el juez.
+
+**Los 6 tests.** Verde (an_authorized_claim_v2_verifies) - paridad traza<->nativo
+con C1 en el enlace, C2 en la entrada, el sobre en COL_X y derivadas==declaradas
+(trace_landmarks_match_native) - mutacion (a): un limbo del sobre alterado se
+rechaza - mutacion (b): el C1 desnudo no entra al camino - el importe distinto
+se rechaza tambien bajo v2 - y el DOMINIO del RFC (linea 157): un arbol con C1
+no se cobra con el circuito v2. El legado es inmune por dominio, no por marca.
+
+**Cifras.** stark 304 -> 310; totales 949 -> 955, 1086 -> 1092, 1100 -> 1106;
+el desglose de PRINCIPIOS pasa a "269 de la capa, 310 de circuitos". Medido
+antes del corte: PAPER_EN y ARQUITECTURA ya no llevan estas cifras y quedan
+FUERA del perimetro (sus huellas post-346 lo confirman, identicas a las post-345).
+
+**Lo que NO hace.** No cablea el v2 a la capa: `two_phase.rs` sigue verificando
+con `ClaimAir`/`RefundAir` v1, el aviso aun no lleva la X, y el conformance
+sigue emitiendo 0.2 -- todo eso es E3, con su triple gate (0.3 IDENTICO, 0.2 y
+0.1 RECHAZADOS). Mientras tanto el 0.2 sigue IDENTICO en cada canon, como manda
+la nota fechada del RFC. El EMPUJE queda fuera del bloque: deuda declarada.

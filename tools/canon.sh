@@ -87,7 +87,7 @@ SELLO_FILE=".canon/ultimo-completo"
 # EJECUTA, no los `#[test]` declarados.
 TABLA=$(cat <<'FIN_TABLA'
 zk-ssl             sello     269   3   0   600  alias=capa · la capa · §292: 262 -> 263, la cima en el digest · §304: 263 -> 264, el atado de la cifra publicada · §340: 264 -> 265, la altura entra en el digest · §345: 265 -> 269, el compositor v2 (RFC-0003, E1a)
-stark-experiment   sello     304  10   0   600  alias=circuitos · los circuitos · §345: 297 -> 299, el gemelo nativo v2 (RFC-0003, E1a) · §346: 299 -> 304, RefundAirV2 en paralelo (E2a del RFC-0003)
+stark-experiment   sello     310  10   0   600  alias=circuitos · los circuitos · §345: 297 -> 299, el gemelo nativo v2 (RFC-0003, E1a) · §346: 299 -> 304, RefundAirV2 en paralelo (E2a del RFC-0003) · §347: 304 -> 310, ClaimAirV2 en paralelo (E2b del RFC-0003)
 ceremony           sello      34   0  11   300  alias=ceremonia · DEUDA: 11 warnings, pinchados para que no crezcan
 settlement-layer   sello      17   0   0   300  alias=liquidación
 iso-bridge         sello       3   0   0   300
