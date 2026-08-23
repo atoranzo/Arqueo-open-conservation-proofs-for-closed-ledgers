@@ -27130,3 +27130,55 @@ declarada. Candidatas fichadas por el camino: README:82 y RESUMEN:128 dicen
 este corte) - los gemelos v2 sin guarda de ancho (refund :452/:465 y
 :680/:693, claim :1186/:1192; :706 y :1492 razonados como la misma clase) -
 la prosa de `validate_send`, por re-medir sobre las 3147.
+
+## §355 -- Gemelos v2: la guarda de ancho llega a toda la via de dos fases (D-7 del §353)
+
+Dos cortes SIN COMMIT sellados aqui juntos (339-B): las guardas con sus
+testigos (BLOQUE-GEM) y el pin con las cifras (BLOQUE-GEM-B, el juez dos
+veces), mas este asiento.
+
+**El corte.** El molde D-7 del §353 -- comparar el ANCHO de la traza
+contra la via del recibo ANTES de construir el Air y devolver un Err
+honesto -- se extiende de los 2 sitios del envio a los 8 restantes,
+sobre lineas FRESCAS re-medidas en esta sesion (two_phase en 3147):
+`apply_deissue` (:452/:465), `apply_refund` (:680/:693) y la ranura del
+credito (:706), `validate_claim` (:1186/:1192) y
+`apply_mint_pending_delegated` (:1492). El `assert_eq!` del ancho en
+`fn new` de los OCHO Airs implicados era un abort alcanzable desde la
+entrada (denegacion barata); ahora el rechazo nombra la via y los dos
+anchos. Cero imports nuevos (rutas cualificadas, como el molde), cero
+variantes de error nuevas. `two_phase.rs`: 3147 -> 3426.
+
+**Decisiones (las tres REVERSIBLES).** D-A: calco exacto del molde D-7,
+sin variante nueva. D-B: los OCHO sitios -- los dos pares con despacho Y
+el credito Y la subida delegada: la clase es "abort alcanzable delante
+de un Air" y esta medida en los ocho `fn new`. D-C: CINCO testigos, uno
+por RANURA de prueba guardada, cada uno con su PREMISA autoportante
+(`assert_ne!` de los dos `TRACE_WIDTH`): si un dia dos circuitos
+compartieran ancho, el testigo lo nombraria en vez de pasar en vano.
+
+**Testigos.** `un_reembolso_v2_sin_su_apertura_no_valida` (ttl 0 y la
+apertura arrancada: la via v1 rechaza la traza v2) -
+`un_credito_de_ancho_ajeno_no_valida` (la apertura VERIFICA y aun asi
+nada muta: el orden del doble cerrojo, demostrado) -
+`una_desemision_de_ancho_ajeno_no_valida` (recibo construido a mano
+sobre el pendiente re-plantado con el centinela de emision) -
+`un_cobro_v2_sin_su_sobre_no_valida` (el aviso llega sin su sobre) -
+`una_subida_de_ancho_ajeno_no_valida` (una autorizacion de 34 columnas
+en la ranura de la subida de 39).
+
+**Cifras.** Capa 279 -> 284 con cero warnings (BASE 279/0/3 y VIVA
+284/0/3 en release, dos corridas); compuerta de sello 973 -> 978; con
+pines 1110 -> 1115; declarados 1124 -> 1129. El juez de cifras en verde
+antes y despues del perimetro (19 renglones en 9 docs + canon:89). El
+censo separo lo INTOCABLE: de 27 vivos de "279", 16 son filas de
+geometria (ROW_PK_DONE) y asientos del BACKLOG; y "284" ya vivia en el
+propio canon y "978" en otro doc -- los deltas por fichero los dejaron
+quietos.
+
+**Lo que NO hace.** No corre el canon completo (el corte solo anade
+tests de la capa; ningun pin ajeno se mueve). No toca productores,
+escenario ni vectores. La rama `Some` de `apply_deissue` sigue sin
+testigo funcional propio (deuda del §351, viva); y la prosa de
+two_phase (hoy :2131-2140, "la unica llamada a verify") era FALSA ya y
+este corte la deja mas falsa: candidata re-fichada, ajena al corte.

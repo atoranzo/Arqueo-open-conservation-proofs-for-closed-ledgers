@@ -86,7 +86,7 @@ SELLO_FILE=".canon/ultimo-completo"
 # el sello 06106c9, en release. `pasan` e `ignorados` son lo que el arnes
 # EJECUTA, no los `#[test]` declarados.
 TABLA=$(cat <<'FIN_TABLA'
-zk-ssl             sello     279   3   0   600  alias=capa · la capa · §292: 262 -> 263, la cima en el digest · §304: 263 -> 264, el atado de la cifra publicada · §340: 264 -> 265, la altura entra en el digest · §345: 265 -> 269, el compositor v2 (RFC-0003, E1a) · §350: 269 -> 272, el cobro aprende el sobre (E3b-1 del RFC-0003) · §351: 272 -> 276, la apertura en el recibo (E3b-2 del RFC-0003) · §353: 276 -> 279, la via viva aprende el sobre (E3c-1b del RFC-0003)
+zk-ssl             sello     284   3   0   600  alias=capa · la capa · §292: 262 -> 263, la cima en el digest · §304: 263 -> 264, el atado de la cifra publicada · §340: 264 -> 265, la altura entra en el digest · §345: 265 -> 269, el compositor v2 (RFC-0003, E1a) · §350: 269 -> 272, el cobro aprende el sobre (E3b-1 del RFC-0003) · §351: 272 -> 276, la apertura en el recibo (E3b-2 del RFC-0003) · §353: 276 -> 279, la via viva aprende el sobre (E3c-1b del RFC-0003) · §355: 279 -> 284, la guarda de ancho llega a los gemelos
 stark-experiment   sello     318  10   0   600  alias=circuitos · los circuitos · §345: 297 -> 299, el gemelo nativo v2 (RFC-0003, E1a) · §346: 299 -> 304, RefundAirV2 en paralelo (E2a del RFC-0003) · §347: 304 -> 310, ClaimAirV2 en paralelo (E2b del RFC-0003) · §348: 310 -> 312, la puerta de E2 saldada (ladron-con-aviso y tercero-como-retorno) · §352: 312 -> 318, el envio aprende el sobre (E3c-1a del RFC-0003)
 ceremony           sello      34   0  11   300  alias=ceremonia · DEUDA: 11 warnings, pinchados para que no crezcan
 settlement-layer   sello      17   0   0   300  alias=liquidación

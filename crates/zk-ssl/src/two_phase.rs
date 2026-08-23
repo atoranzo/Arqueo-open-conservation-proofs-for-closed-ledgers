@@ -448,20 +448,38 @@ impl SovereignLayer {
         let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
         let p_ref = winterfell::Proof::from_bytes(&receipt.refund_proof)
             .map_err(|e| LayerError::VerificationFailed(format!("apertura mal formada: {e:?}")))?;
+        // D-7 a los gemelos: el ancho de la traza se compara ANTES de
+        // construir el Air (su fn new lo exige con assert_eq!) -- el
+        // rechazo es un Err, no un panico alcanzable desde la entrada.
+        let ancho = p_ref.trace_info().width();
         match receipt.apertura {
-            None => verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
-                p_ref,
-                RefundPublicInputs {
-                    commitment: receipt.commitment,
-                    amount: BaseElement::new(receipt.amount),
-                },
-                &accepted,
-            ),
+            None => {
+                if ancho != stark_experiment::circuit_refund::TRACE_WIDTH {
+                    return Err(LayerError::VerificationFailed(format!(
+                        "desemision: traza de {ancho} columnas y recibo sin apertura, via v1 (la via exige {})",
+                        stark_experiment::circuit_refund::TRACE_WIDTH
+                    )));
+                }
+                verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                    p_ref,
+                    RefundPublicInputs {
+                        commitment: receipt.commitment,
+                        amount: BaseElement::new(receipt.amount),
+                    },
+                    &accepted,
+                )
+            }
             Some(_) => {
                 // Los publics del v2 SON los del v1 (la X jamas se publica,
                 // medido en el PASTE-E3a-M): RefundAirV2 reutiliza
                 // RefundPublicInputs, ya importado arriba.
                 use stark_experiment::circuit_refund_v2::RefundAirV2;
+                if ancho != stark_experiment::circuit_refund_v2::TRACE_WIDTH {
+                    return Err(LayerError::VerificationFailed(format!(
+                        "desemision v2: traza de {ancho} columnas y recibo con apertura, via v2 (la via exige {})",
+                        stark_experiment::circuit_refund_v2::TRACE_WIDTH
+                    )));
+                }
                 verify::<RefundAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
                     p_ref,
                     RefundPublicInputs {
@@ -676,20 +694,38 @@ impl SovereignLayer {
         let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
         let p_ref = winterfell::Proof::from_bytes(&receipt.refund_proof)
             .map_err(|e| LayerError::VerificationFailed(format!("apertura mal formada: {e:?}")))?;
+        // D-7 a los gemelos: el ancho de la traza se compara ANTES de
+        // construir el Air (su fn new lo exige con assert_eq!) -- el
+        // rechazo es un Err, no un panico alcanzable desde la entrada.
+        let ancho = p_ref.trace_info().width();
         match receipt.apertura {
-            None => verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
-                p_ref,
-                RefundPublicInputs {
-                    commitment: receipt.commitment,
-                    amount: BaseElement::new(receipt.amount),
-                },
-                &accepted,
-            ),
+            None => {
+                if ancho != stark_experiment::circuit_refund::TRACE_WIDTH {
+                    return Err(LayerError::VerificationFailed(format!(
+                        "reembolso: traza de {ancho} columnas y recibo sin apertura, via v1 (la via exige {})",
+                        stark_experiment::circuit_refund::TRACE_WIDTH
+                    )));
+                }
+                verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                    p_ref,
+                    RefundPublicInputs {
+                        commitment: receipt.commitment,
+                        amount: BaseElement::new(receipt.amount),
+                    },
+                    &accepted,
+                )
+            }
             Some(_) => {
                 // Los publics del v2 SON los del v1 (la X jamas se publica,
                 // medido en el PASTE-E3a-M): RefundAirV2 reutiliza
                 // RefundPublicInputs, ya importado arriba.
                 use stark_experiment::circuit_refund_v2::RefundAirV2;
+                if ancho != stark_experiment::circuit_refund_v2::TRACE_WIDTH {
+                    return Err(LayerError::VerificationFailed(format!(
+                        "reembolso v2: traza de {ancho} columnas y recibo con apertura, via v2 (la via exige {})",
+                        stark_experiment::circuit_refund_v2::TRACE_WIDTH
+                    )));
+                }
                 verify::<RefundAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
                     p_ref,
                     RefundPublicInputs {
@@ -703,6 +739,14 @@ impl SovereignLayer {
         .map_err(|e| LayerError::VerificationFailed(format!("apertura: {e:?}")))?;
         let p_cred = winterfell::Proof::from_bytes(&receipt.credit_proof)
             .map_err(|e| LayerError::VerificationFailed(format!("credito mal formado: {e:?}")))?;
+        // La ranura del credito tiene su propio juez de geometria.
+        let ancho_credito = p_cred.trace_info().width();
+        if ancho_credito != stark_experiment::circuit_credit_climb::TRACE_WIDTH {
+            return Err(LayerError::VerificationFailed(format!(
+                "credito: traza de {ancho_credito} columnas (la subida de credito exige {})",
+                stark_experiment::circuit_credit_climb::TRACE_WIDTH
+            )));
+        }
         verify::<CreditClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
             p_cred,
             CreditClimbPublicInputs {
@@ -1182,13 +1226,31 @@ impl SovereignLayer {
         let proof = winterfell::Proof::from_bytes(&receipt.proof)
             .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
         let min_opts = AcceptableOptions::OptionSet(vec![self.options.clone()]);
+        // D-7 a los gemelos: el ancho de la traza se compara ANTES de
+        // construir el Air (su fn new lo exige con assert_eq!) -- el
+        // rechazo es un Err, no un panico alcanzable desde la entrada.
+        let ancho = proof.trace_info().width();
         match notice.x {
-            None => verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
-                proof,
-                pi.clone(),
-                &min_opts,
-            ),
+            None => {
+                if ancho != stark_experiment::circuit_claim::TRACE_WIDTH {
+                    return Err(LayerError::VerificationFailed(format!(
+                        "cobro: traza de {ancho} columnas y aviso sin sobre, via v1 (la via exige {})",
+                        stark_experiment::circuit_claim::TRACE_WIDTH
+                    )));
+                }
+                verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                    proof,
+                    pi.clone(),
+                    &min_opts,
+                )
+            }
             Some(_) => {
+                if ancho != stark_experiment::circuit_claim_v2::TRACE_WIDTH {
+                    return Err(LayerError::VerificationFailed(format!(
+                        "cobro v2: traza de {ancho} columnas y aviso con sobre, via v2 (la via exige {})",
+                        stark_experiment::circuit_claim_v2::TRACE_WIDTH
+                    )));
+                }
                 verify::<ClaimAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
                     proof,
                     pi.clone(),
@@ -1488,6 +1550,16 @@ impl SovereignLayer {
         let root_new = tentativo.root();
 
         let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
+        // D-7 a los gemelos: el ancho de la traza se compara ANTES de
+        // construir el Air (su fn new lo exige con assert_eq!) -- el
+        // rechazo es un Err, no un panico alcanzable desde la entrada.
+        let ancho = climb_proof.trace_info().width();
+        if ancho != stark_experiment::circuit_mint_pending_climb::TRACE_WIDTH {
+            return Err(LayerError::VerificationFailed(format!(
+                "subida del pendiente: traza de {ancho} columnas (la emision delegada exige {})",
+                stark_experiment::circuit_mint_pending_climb::TRACE_WIDTH
+            )));
+        }
 
         verify::<MintPendingClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
             climb_proof,
@@ -2125,6 +2197,32 @@ mod tests_delegada {
             "la capa debe rechazar antes de generar nada, fue {r:?}"
         );
         assert_eq!(layer.total_supply(), 0);
+    }
+
+    /// GEMELOS D-7 (5/5): una prueba de AUTORIZACION en la ranura de la
+    /// SUBIDA rebota con Err antes del Air -- sin la guarda, el assert_eq!
+    /// del ancho en fn new del MintPendingClimbAir abortaria el hilo.
+    #[test]
+    fn una_subida_de_ancho_ajeno_no_valida() {
+        assert_ne!(
+            stark_experiment::circuit_threshold::TRACE_WIDTH,
+            stark_experiment::circuit_mint_pending_climb::TRACE_WIDTH,
+            "premisa del testigo: anchos distintos"
+        );
+        let mut layer = new_layer();
+        let ck = custodian_keys();
+        let (_, cp) = build_custodian_set(&ck);
+        let antes = layer.total_supply();
+        let op = compromiso(&layer, AMOUNT);
+        let (mala, _) = autorizar(ck[1], &cp[1], op);
+        let (pa, ia) = autorizar(ck[1], &cp[1], op);
+        let (pb, ib) = autorizar(ck[3], &cp[3], op);
+        let r = layer.apply_mint_pending_delegated(
+            mala, pa, ia, pb, ib, receptor(), salt_de(0x5EED), AMOUNT,
+        );
+        assert!(r.is_err(), "la subida de ancho ajeno rebota con Err");
+        assert_eq!(layer.total_supply(), antes, "nada emitido");
+        assert_eq!(layer.total_pending(), 0, "nada en transito");
     }
 }
 
@@ -3143,5 +3241,186 @@ mod tests_verificacion {
             "el credito solo vuelve a quien el sobre nombra"
         );
         assert_eq!(state_of(&layer, alice).balance, 700_000);
+    }
+
+    /// GEMELOS D-7 (1/5): al reembolso v2 se le arranca la apertura y la
+    /// via v1 lo rechaza ANTES del Air -- la traza ancha del RefundAirV2
+    /// no corresponde a RefundAir. Sin la guarda, el assert_eq! del ancho
+    /// en fn new abortaria el hilo. El estado no se toca.
+    #[test]
+    fn un_reembolso_v2_sin_su_apertura_no_valida() {
+        use crate::pending::pending_commitment_v2;
+        assert_ne!(
+            stark_experiment::circuit_refund_v2::TRACE_WIDTH,
+            stark_experiment::circuit_refund::TRACE_WIDTH,
+            "premisa del testigo: anchos distintos"
+        );
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let receptor = layer.public_id_of(bob).expect("bob");
+        let f = layer.public_id_of(alice).expect("alice");
+        let ea = state_of(&layer, alice);
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, receptor, salt_de(0xD7A1), 300_000)
+            .expect("send");
+        layer.apply_send(&recibo, alice, &ea, 300_000).expect("apply");
+        let pos = recibo.notice.position;
+        layer
+            .pending
+            .set_leaf(pos, pending_commitment_v2(receptor, salt_de(0xD7A1), 300_000, f, 1));
+        layer.pending_meta.insert(pos, (alice, 0));
+        let ea2 = state_of(&layer, alice);
+        let mut materiales = layer
+            .refund_v2(
+                BaseElement::new(SK_ALICE), alice, &ea2, pos,
+                receptor, salt_de(0xD7A1), 300_000, f, 1,
+            )
+            .expect("materiales v2");
+        layer.set_refund_ttl(0);
+        materiales.apertura = None;
+        let r = layer.apply_refund(&materiales);
+        assert!(r.is_err(), "sin apertura, la via v1 no acepta una traza v2");
+        assert_eq!(state_of(&layer, alice).balance, 700_000, "nada acreditado");
+    }
+
+    /// GEMELOS D-7 (2/5): la apertura VERIFICA y aun asi nada muta -- la
+    /// ranura del credito tiene su propio juez de geometria y habla antes
+    /// de tocar el estado (el orden del doble cerrojo, demostrado).
+    #[test]
+    fn un_credito_de_ancho_ajeno_no_valida() {
+        use crate::pending::pending_commitment_v2;
+        assert_ne!(
+            stark_experiment::circuit_refund_v2::TRACE_WIDTH,
+            stark_experiment::circuit_credit_climb::TRACE_WIDTH,
+            "premisa del testigo: anchos distintos"
+        );
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let receptor = layer.public_id_of(bob).expect("bob");
+        let f = layer.public_id_of(alice).expect("alice");
+        let ea = state_of(&layer, alice);
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, receptor, salt_de(0xD7A2), 300_000)
+            .expect("send");
+        layer.apply_send(&recibo, alice, &ea, 300_000).expect("apply");
+        let pos = recibo.notice.position;
+        layer
+            .pending
+            .set_leaf(pos, pending_commitment_v2(receptor, salt_de(0xD7A2), 300_000, f, 1));
+        layer.pending_meta.insert(pos, (alice, 0));
+        let ea2 = state_of(&layer, alice);
+        let mut materiales = layer
+            .refund_v2(
+                BaseElement::new(SK_ALICE), alice, &ea2, pos,
+                receptor, salt_de(0xD7A2), 300_000, f, 1,
+            )
+            .expect("materiales v2");
+        materiales.credit_proof = materiales.refund_proof.clone();
+        let r = layer.apply_refund(&materiales);
+        assert!(r.is_err(), "el credito de ancho ajeno rebota con Err");
+        assert_eq!(
+            state_of(&layer, alice).balance,
+            700_000,
+            "la apertura verifico y aun asi nada muta"
+        );
+    }
+
+    /// GEMELOS D-7 (3/5): una desemision cuyo recibo no lleva apertura
+    /// pero cuya prueba es de traza v2 rebota en la guarda (via v1 =
+    /// RefundAir). El recibo se construye a mano sobre el pendiente
+    /// re-plantado con el centinela de emision. Nada se destruye.
+    #[test]
+    fn una_desemision_de_ancho_ajeno_no_valida() {
+        use crate::pending::pending_commitment_v2;
+        assert_ne!(
+            stark_experiment::circuit_refund_v2::TRACE_WIDTH,
+            stark_experiment::circuit_refund::TRACE_WIDTH,
+            "premisa del testigo: anchos distintos"
+        );
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let receptor = layer.public_id_of(bob).expect("bob");
+        let f = layer.public_id_of(alice).expect("alice");
+        let ea = state_of(&layer, alice);
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, receptor, salt_de(0xD7A3), 300_000)
+            .expect("send");
+        layer.apply_send(&recibo, alice, &ea, 300_000).expect("apply");
+        let pos = recibo.notice.position;
+        let c2 = pending_commitment_v2(receptor, salt_de(0xD7A3), 300_000, f, 1);
+        layer.pending.set_leaf(pos, c2);
+        layer.pending_meta.insert(pos, (alice, 0));
+        let ea2 = state_of(&layer, alice);
+        let materiales = layer
+            .refund_v2(
+                BaseElement::new(SK_ALICE), alice, &ea2, pos,
+                receptor, salt_de(0xD7A3), 300_000, f, 1,
+            )
+            .expect("materiales v2");
+        // El mismo pendiente pasa a EMISION: solo el centinela cambia.
+        layer.pending_meta.insert(pos, (crate::REFUND_SENDER_NONE, 0));
+        layer.set_refund_ttl(0);
+        let d = DeissueReceipt {
+            refund_proof: materiales.refund_proof.clone(),
+            position: pos,
+            amount: 300_000,
+            commitment: c2,
+            apertura: None,
+        };
+        let supply = layer.total_supply();
+        let r = layer.apply_deissue(&d);
+        assert!(r.is_err(), "sin apertura, la via v1 no acepta una traza v2");
+        assert_eq!(layer.total_supply(), supply, "nada destruido");
+        assert_eq!(layer.pending.leaf(pos), c2, "la hoja sigue");
+    }
+
+    /// GEMELOS D-7 (4/5): a un cobro v2 se le presenta el aviso sin sobre
+    /// y la via v1 lo rechaza ANTES del Air -- la traza del ClaimAirV2 no
+    /// corresponde a ClaimAir. El pendiente sigue en el arbol.
+    #[test]
+    fn un_cobro_v2_sin_su_sobre_no_valida() {
+        use crate::pending::{pending_commitment_v2, refund_envelope};
+        assert_ne!(
+            stark_experiment::circuit_claim_v2::TRACE_WIDTH,
+            stark_experiment::circuit_claim::TRACE_WIDTH,
+            "premisa del testigo: anchos distintos"
+        );
+        let mut layer = new_layer();
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let id_bob = layer.public_id_of(bob).expect("cuenta");
+        let (salt, fk, delta) = (salt_de(0xD7A4), salt_de(0xF00D), 40u64);
+
+        let pos = layer.next_pending;
+        let c2 = pending_commitment_v2(id_bob, salt, IMPORTE, fk, delta);
+        layer.pending.set_leaf(pos, c2);
+        layer.next_pending += 1;
+        layer.pending_amounts.insert(pos, IMPORTE);
+        layer
+            .pending_meta
+            .insert(pos, (crate::REFUND_SENDER_NONE, layer.log.len() as u64));
+
+        let aviso = PendingNotice {
+            position: pos,
+            salt,
+            amount: IMPORTE,
+            x: Some(refund_envelope(fk, delta)),
+        };
+        let estado = state_of(&layer, bob);
+        let cobro = layer
+            .claim(BaseElement::new(SK_BOB), bob, &estado, &aviso)
+            .expect("el productor v2 debe probar");
+        let aviso_sin = PendingNotice {
+            position: pos,
+            salt,
+            amount: IMPORTE,
+            x: None,
+        };
+        let r = layer.apply_claim(&cobro, bob, &estado, &aviso_sin);
+        assert!(r.is_err(), "sin el sobre, la via v1 no acepta una traza v2");
+        assert_eq!(layer.balance_of(bob), Some(0), "nada cobrado");
+        assert_eq!(layer.pending.leaf(pos), c2, "el pendiente sigue");
     }
 }
