@@ -27182,3 +27182,45 @@ escenario ni vectores. La rama `Some` de `apply_deissue` sigue sin
 testigo funcional propio (deuda del §351, viva); y la prosa de
 two_phase (hoy :2131-2140, "la unica llamada a verify") era FALSA ya y
 este corte la deja mas falsa: candidata re-fichada, ajena al corte.
+
+## §356 -- RFC-0003 (compromiso v2): de PROPUESTO a ACEPTADO, la regla 4 saldada
+
+**Que se sella.** El giro de estado del RFC-0003. La linea Estado pasa de
+PROPUESTO a ACEPTADO con el molde del 0002 -- el precedente vivo: su :3
+lleva la justificacion en negrita, los asientos y la frase de conservacion
+--, la linea de Asientos gana el §356 y la cola del RFC gana la nota
+fechada del giro. El perimetro del estado, medido antes de tocar
+(PASTE-RFC-ACEPT-M, sesion 66): PROPUESTO vivia en UNA linea de UN fichero
+-- el propio RFC --, en la enumeracion de estados de PROCESO.md (que no se
+toca) y en asientos historicos de este registro, que son actas fechadas y
+tampoco se tocan (el "sigue PROPUESTO" de :27126 vive dentro del §354 y
+alli se queda).
+
+**La regla 4, punto por punto y con fuente.** PROCESO.md:21-22 exige
+cuatro cosas y las cuatro estaban en verde en el arbol ANTES de este
+corte, medidas: la spec actualizada -- RPC.md es v0.3 en el titulo y en la
+normativa de :864 (§354); el OpenRPC regenerado -- openrpc.json declara
+zkssl/0.3 (:14 y :27), regenerado por el rito en el §354, con tres tests
+de atado en openrpc.rs; los vectores re-emitidos -- zkssl-0.3.json emitido
+(§354) y los 0.2/0.1 CONSERVADOS bajo su version (regla 2), que el
+triple gate del canon rechaza como de OTRA version (canon.sh:281-286); y
+las suites verdes -- la puerta de E3 pagada delante del §354:
+tests_verificacion 25/0/0 y canon --completo VERDE. Este corte no anhade
+evidencia: la reconoce y gira el estado.
+
+**La E4 sigue opcional, como quedo escrita** (RFC :212: exponer Delta por
+RPC, con su version de cable). Aceptar el RFC no la promete: si algun dia
+se paga, subira version por su propio cauce y con su propia puerta.
+
+**Decisiones del corte, las tres REVERSIBLES.** D-1: el molde del giro es
+el del 0002 (calco, no invencion). D-2: el texto nuevo va en ASCII sin
+tildes, el regimen de las tres notas que los sellos ya colgaron en el RFC.
+D-3: los PROPUESTO historicos no se tocan.
+
+**Doble hilo (PROCESO regla 5).** Este asiento referencia el RFC-0003 por
+numero; el RFC referencia el §356 en su linea de Estado, en su linea de
+Asientos y en la nota fechada.
+
+**Contadores.** Ningun pin se mueve, ninguna cifra publicada cambia,
+ningun Cargo tocado. Dos ficheros: el RFC (264 -> 276 lineas) y este
+registro. Deuda declarada: el EMPUJE queda fuera del bloque.
