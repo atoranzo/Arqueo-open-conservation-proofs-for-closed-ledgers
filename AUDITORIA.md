@@ -26930,3 +26930,54 @@ hilo inverso queda para el pase a ACEPTADO, precedente de E2.
 **Lo que NO hace.** El envio sigue sin producir `Some(X)` y refund/deissue
 siguen en v1: eso es E3b-2 (la apertura en el recibo, D-2 y D-4). El EMPUJE
 queda fuera: CUATRO commits en deuda (20e96a8, 79ff693, 045d09d y este).
+
+## §351 -- E3b-2: la apertura en el recibo (refund/deissue v2)
+
+**Que se sella.** El reembolso y la des-emision aprenden el v2 del
+RFC-0003. Los dos recibos ganan `apertura: Option<(Digest, Digest, u64)>`
+= (c1, f, delta) -- molde de la x del aviso: None es v1, Some es v2 y el
+propio Option es la senal de dispatch; el compilador censo los
+constructores y no nombro ninguno fuera de los dos productores.
+`apply_refund` y `apply_deissue` despachan: por None la via v1 queda
+INTACTA con su `refund_ttl` (D-4 aplicada: el knob global es SOLO de v1);
+por Some la capa recompone `M(c1, M(f, d(delta)))` contra el compromiso
+-- el compromiso es el juez, cero persistencia (D-2 refinada) -- exige el
+plazo del sobre con resta saturante (`u64::MAX` = nunca), verifica con
+`RefundAirV2` sobre los publics del v1, y en el reembolso ademas exige
+`public_id == f` en la cuenta acreditada: el sobre NOMBRA a quien vuelve
+el dinero. Nacen `refund_v2` y `deissue_v2` (compositor
+`pending_commitment_v2` + `RefundV2Prover`); las firmas v1 no se mueven.
+
+**Los testigos.** Cuatro nuevos en `tests_verificacion`, con el C2
+plantado del molde §350: el feliz tras delta; el rebote pre-delta con
+`u64::MAX` dentro (el "nadie nunca"); el delta mentiroso que muere en la
+recomposicion ANTES de mirar prueba alguna -- el testigo que la
+identidad `M(c1, sobre) == c2` estrena como juez--; y el sobre que no
+devuelve a un tercero. La capa pasa de 272 a 276 con cero warnings.
+
+**Los dos rojos buenos.** El bloque murio dos veces en su gate de bocas,
+las dos ANTES de tocar un byte: `native_merge` no vive en
+`stark_experiment::native` (se define en `zk-ssl-hash` y el arbol lo
+importa via `stark_experiment::merkle`), y `RefundPublicInputs` no se
+define en el circuito v2 (el v2 REUTILIZA los publics del v1, como este
+mismo registro midio en la sesion 60 y el diseno habia pisado). Leccion:
+las dos bocas que fallaron eran las dos escritas de memoria; las ocho
+medidas pasaron a la primera. Una boca sin medir se asierta como gate.
+
+**Cifras.** Capa 272 -> 276; compuerta de sello 960 -> 964, con todos
+los pines 1097 -> 1101, declarados 1111 -> 1115. El perimetro lo censo
+la medicion y lo confirmo el juez corrido DOS veces (antes de tocar,
+como prueba de vida de la invocacion; despues, como prueba de que el
+movimiento es completo): 10 renglones vivos en 9 documentos --
+README:331 incluido, que un find de tres candidatos habia escondido.
+
+**Lo que NO hace.** `apply_deissue` gana el dispatch sin testigo propio
+(declarado; para E3c o un corte corto). El escenario del conformance
+sigue emitiendo v1 y la puerta del canon no gira (E3c). El cable no
+transporta la apertura (E4, declarado desde D-1). El empuje queda fuera:
+deuda declarada de UN commit.
+
+**Doble hilo.** RFC-0003 (`spec/rfc/0003-compromiso-v2.md`): E3b queda
+cerrado por sus dos mitades -- E3b-1 en el §350, E3b-2 aqui. El hilo
+inverso (el pase a ACEPTADO) se paga al cerrar E3/E4, como manda el
+proceso.
