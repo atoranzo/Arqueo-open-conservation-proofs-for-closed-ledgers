@@ -52,6 +52,7 @@ use stark_experiment::circuit_send::{
 use stark_experiment::circuit_claim_v2::{
     build_trace as build_claim_trace_v2, ClaimAirV2, ClaimV2Prover,
 };
+use stark_experiment::circuit_send_v2::SendV2Air;
 
 /// Lo que el pagador envía al receptor **por otro canal**.
 ///
@@ -899,12 +900,46 @@ impl SovereignLayer {
         let proof = winterfell::Proof::from_bytes(&receipt.proof)
             .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
         let min_opts = AcceptableOptions::OptionSet(vec![self.options.clone()]);
-        verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
-            proof,
-            pi.clone(),
-            &min_opts,
-        )
-        .map_err(|e| LayerError::VerificationFailed(format!("envio: {e:?}")))?;
+        // E3c-1b (RFC-0003): el aviso del recibo decide el Air, como en
+        // el cobro. Un recibo v1 con X colada, o un v2 sin ella, cae
+        // aqui: el Air no corresponde a la prueba.
+        // D-7: el ancho de la traza se compara ANTES de construir el Air.
+        // El constructor de ambos Airs exige su ancho con assert_eq! (fn
+        // new de circuit_send y circuit_send_v2): sin esta guarda, un
+        // recibo con la X mal puesta ABORTARIA el hilo en vez de
+        // rechazarse. El rechazo es un Err, no un panico alcanzable
+        // desde la entrada (medido en la sesion 63).
+        let ancho = proof.trace_info().width();
+        match receipt.notice.x {
+            None => {
+                if ancho != stark_experiment::circuit_send::TRACE_WIDTH {
+                    return Err(LayerError::VerificationFailed(format!(
+                        "envio: traza de {ancho} columnas y aviso sin sobre (la via v1 exige {})",
+                        stark_experiment::circuit_send::TRACE_WIDTH
+                    )));
+                }
+                verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                    proof,
+                    pi.clone(),
+                    &min_opts,
+                )
+                .map_err(|e| LayerError::VerificationFailed(format!("envio: {e:?}")))?
+            }
+            Some(_) => {
+                if ancho != stark_experiment::circuit_send_v2::TRACE_WIDTH {
+                    return Err(LayerError::VerificationFailed(format!(
+                        "envio v2: traza de {ancho} columnas y aviso con sobre (la via v2 exige {})",
+                        stark_experiment::circuit_send_v2::TRACE_WIDTH
+                    )));
+                }
+                verify::<SendV2Air, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                    proof,
+                    pi.clone(),
+                    &min_opts,
+                )
+                .map_err(|e| LayerError::VerificationFailed(format!("envio v2: {e:?}")))?
+            }
+        }
 
         // ⚠️ **El nonce NO se incrementa.** `circuit_send` lo heredo de
         // `circuit_burn`. Si la capa lo hiciera, la hoja resultante seria
@@ -2833,6 +2868,107 @@ mod tests_verificacion {
             [BaseElement::ZERO; 4],
             "el pendiente v2 queda consumido"
         );
+    }
+
+    /// E3c-1b: EL PRIMER ENVIO v2 DE PUNTA A PUNTA, SIN PLANTAR. La via
+    /// viva produce C2 (SendV2Air prueba el cuarto merge), el aviso viaja
+    /// con Some(sobre), y el cobro de E3b-1 lo cobra. Nadie toca el arbol
+    /// a mano.
+    #[test]
+    fn un_envio_v2_de_punta_a_punta_se_cobra() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, FONDO);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let id_bob = layer.public_id_of(bob).expect("bob");
+        let f = layer.public_id_of(alice).expect("alice: el retorno");
+        let (salt, delta) = (salt_de(0xE3C1), 40u64);
+
+        let m = layer
+            .send_materials_v2(alice, id_bob, IMPORTE, salt, f, delta)
+            .expect("materiales v2");
+        let key_a = [
+            BaseElement::new(SK_ALICE),
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+        ];
+        let recibo = crate::client::prove_send(&m, key_a, proof_options())
+            .expect("el productor v2 debe probar (SendV2Air)");
+        assert!(recibo.notice.x.is_some(), "el aviso viaja con el sobre");
+
+        let ea = state_of(&layer, alice);
+        layer
+            .apply_send(&recibo, alice, &ea, IMPORTE)
+            .expect("el envio v2 debe verificar y aplicarse");
+        assert_eq!(layer.balance_of(alice), Some(FONDO - IMPORTE));
+        assert_eq!(layer.total_pending(), IMPORTE, "C2 en transito");
+
+        let eb = state_of(&layer, bob);
+        let cobro = layer
+            .claim(BaseElement::new(SK_BOB), bob, &eb, &recibo.notice)
+            .expect("el cobro v2 debe probar");
+        layer
+            .apply_claim(&cobro, bob, &eb, &recibo.notice)
+            .expect("el cobro v2 debe aplicarse");
+        assert_eq!(layer.balance_of(bob), Some(IMPORTE), "Bob cobra el v2");
+        assert_eq!(layer.total_pending(), 0, "nada queda en transito");
+    }
+
+    /// E3c-1b, dominio EN LA CAPA (ida): al recibo v2 se le arranca la X
+    /// del aviso y validate_send lo rechaza ANTES del Air (D-7): la
+    /// traza de 60 columnas no corresponde a la via v1. El estado no se
+    /// toca.
+    #[test]
+    fn un_recibo_v2_sin_su_x_no_valida() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, FONDO);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let id_bob = layer.public_id_of(bob).expect("bob");
+        let f = layer.public_id_of(alice).expect("alice");
+        let m = layer
+            .send_materials_v2(alice, id_bob, IMPORTE, salt_de(0xE3C2), f, 40)
+            .expect("materiales v2");
+        let key_a = [
+            BaseElement::new(SK_ALICE),
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+        ];
+        let mut recibo = crate::client::prove_send(&m, key_a, proof_options())
+            .expect("prueba v2");
+        recibo.notice.x = None;
+        let ea = state_of(&layer, alice);
+        let r = layer.apply_send(&recibo, alice, &ea, IMPORTE);
+        assert!(r.is_err(), "sin la X, la via v1 no acepta una traza v2");
+        assert_eq!(layer.balance_of(alice), Some(FONDO), "nada debitado");
+    }
+
+    /// E3c-1b, dominio EN LA CAPA (vuelta): a un recibo v1 se le cuela
+    /// una X y validate_send lo rechaza ANTES del Air (D-7): la traza
+    /// de 56 columnas no corresponde a la via v2. Inmune en ambos
+    /// sentidos.
+    #[test]
+    fn un_recibo_v1_con_x_colada_no_valida() {
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, FONDO);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let id_bob = layer.public_id_of(bob).expect("bob");
+        let m = layer
+            .send_materials(alice, id_bob, IMPORTE, salt_de(0xE3C3))
+            .expect("materiales v1");
+        let key_a = [
+            BaseElement::new(SK_ALICE),
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+        ];
+        let mut recibo = crate::client::prove_send(&m, key_a, proof_options())
+            .expect("prueba v1");
+        recibo.notice.x = Some(salt_de(0xFA15E));
+        let ea = state_of(&layer, alice);
+        let r = layer.apply_send(&recibo, alice, &ea, IMPORTE);
+        assert!(r.is_err(), "con X colada, la via v2 no acepta una traza v1");
+        assert_eq!(layer.balance_of(alice), Some(FONDO), "nada debitado");
     }
 
     /// E3b-1, dominio y no marca EN LA CAPA: el mismo C2 no se cobra por

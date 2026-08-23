@@ -82,7 +82,7 @@ Merkle. Invisible para testigos honestos.
 
 ### Estado
 
-**970 tests en la compuerta de sello** —1107 con todos los pines, 1121
+**973 tests en la compuerta de sello** —1110 con todos los pines, 1124
 declarados—, 0 fallos y 24 warnings **pinchados**, ejecutados por
 `tools/canon.sh`. Reproducibles con Rust estable, sin instaladores
 externos. Los errores propios están documentados, no borrados.
@@ -159,7 +159,7 @@ honest witnesses.
 
 ### Status
 
-**970 tests in the sealing gate** —1107 across all pinned levels, 1121
+**973 tests in the sealing gate** —1110 across all pinned levels, 1124
 declared—, 0 failures and 24 **pinned** warnings, run by
 `tools/canon.sh`. Reproducible with stable Rust, no external
 toolchains. Our own errors are documented, not erased.

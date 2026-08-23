@@ -49,10 +49,13 @@ use super::*;
 // `derive_public_id_wide` (§90) no llega por `use super::*`: lib.rs
 // solo reexporta la estrecha.
 use stark_experiment::native::{derive_public_id_wide, view_id_from_view_key};
-use crate::pending::pending_commitment;
+use crate::pending::{pending_commitment, pending_commitment_v2, refund_envelope};
 use crate::two_phase::{ClaimReceipt, PendingNotice, SendReceipt};
 use stark_experiment::circuit_claim_v2::{
     build_trace as build_claim_trace_v2, ClaimV2Prover,
+};
+use stark_experiment::circuit_send_v2::{
+    build_trace as build_send_trace_v2, SendV2Prover,
 };
 
 /// Vista pública de una cuenta. **No incluye ninguna clave.**
@@ -179,7 +182,7 @@ impl SovereignLayer {
         salt: Digest,
         pending_position: u64,
     ) -> Result<SendMaterials, LayerError> {
-        self.send_materials_inner(sender_index, receiver_id, amount, salt, Some(pending_position))
+        self.send_materials_inner(sender_index, receiver_id, amount, salt, Some(pending_position), None)
     }
 
     pub fn send_materials(
@@ -189,7 +192,29 @@ impl SovereignLayer {
         amount: u64,
         salt: Digest,
     ) -> Result<SendMaterials, LayerError> {
-        self.send_materials_inner(sender_index, receiver_id, amount, salt, None)
+        self.send_materials_inner(sender_index, receiver_id, amount, salt, None, None)
+    }
+
+    /// Materiales de un envio v2 (RFC-0003, E3c-1b): el sobre entra por
+    /// aqui. La pareja (refund_id, delta) la fija el EMISOR; el aviso
+    /// viajara con `X = refund_envelope(f, delta)`, opaco.
+    pub fn send_materials_v2(
+        &self,
+        sender_index: AccountIndex,
+        receiver_id: Digest,
+        amount: u64,
+        salt: Digest,
+        refund_id: Digest,
+        delta: u64,
+    ) -> Result<SendMaterials, LayerError> {
+        self.send_materials_inner(
+            sender_index,
+            receiver_id,
+            amount,
+            salt,
+            None,
+            Some((refund_id, delta)),
+        )
     }
 
     fn send_materials_inner(
@@ -199,6 +224,7 @@ impl SovereignLayer {
         amount: u64,
         salt: Digest,
         posicion: Option<u64>,
+        sobre: Option<(Digest, u64)>,
     ) -> Result<SendMaterials, LayerError> {
         let sender = self
             .account_view(sender_index)
@@ -239,6 +265,7 @@ impl SovereignLayer {
             total_supply: self.total_supply,
             amount,
             salt,
+            sobre,
         })
     }
 
@@ -271,6 +298,10 @@ pub struct SendMaterials {
     pub total_supply: u64,
     pub amount: u64,
     pub salt: Digest,
+    /// **El sobre del RFC-0003**: (refund_id, delta). `None` = envio v1.
+    /// El cliente compone `X = refund_envelope(f, delta)` al probar; la
+    /// pareja jamas viaja en el aviso, solo el digest opaco.
+    pub sobre: Option<(Digest, u64)>,
 }
 
 impl SendMaterials {
@@ -322,41 +353,91 @@ pub fn prove_send(
         return Err(LayerError::NotTheAccountHolder);
     }
 
-    let trace = build_send_trace(
-        spend_key,
-        materials.sender.public_id,
-        materials.sender.balance,
-        materials.sender.nonce,
-        materials.sender.leaf_salt,
-        &materials.sender_path,
-        &materials.frozen_path,
-        materials.amount,
-        materials.regulatory_limit,
-        materials.total_supply,
-        0, // un envio no cambia el suministro
-        materials.receiver_id,
-        materials.salt,
-        &materials.pending_path,
-    );
-    let prover = SendProver::new(options);
-    let public_inputs = prover.get_pub_inputs(&trace);
-    let proof = prover
-        .prove(trace)
-        .map_err(|e| LayerError::ProofFailed(format!("{e:?}")))?;
+    // E3c-1b (RFC-0003): los MATERIALES deciden la via, como el aviso
+    // decide la del cobro (prove_claim). El sobre X se compone AQUI y
+    // la pareja jamas viaja: el aviso lleva el digest opaco.
+    let (public_inputs, proof, commitment, x) = match materials.sobre {
+        None => {
+            let trace = build_send_trace(
+                spend_key,
+                materials.sender.public_id,
+                materials.sender.balance,
+                materials.sender.nonce,
+                materials.sender.leaf_salt,
+                &materials.sender_path,
+                &materials.frozen_path,
+                materials.amount,
+                materials.regulatory_limit,
+                materials.total_supply,
+                0, // un envio no cambia el suministro
+                materials.receiver_id,
+                materials.salt,
+                &materials.pending_path,
+            );
+            let prover = SendProver::new(options);
+            let public_inputs = prover.get_pub_inputs(&trace);
+            let proof = prover
+                .prove(trace)
+                .map_err(|e| LayerError::ProofFailed(format!("{e:?}")))?;
+            (
+                public_inputs,
+                proof,
+                pending_commitment(
+                    materials.receiver_id,
+                    materials.salt,
+                    materials.amount,
+                ),
+                None,
+            )
+        }
+        Some((refund_id, delta)) => {
+            let x = refund_envelope(refund_id, delta);
+            let trace = build_send_trace_v2(
+                spend_key,
+                materials.sender.public_id,
+                materials.sender.balance,
+                materials.sender.nonce,
+                materials.sender.leaf_salt,
+                &materials.sender_path,
+                &materials.frozen_path,
+                materials.amount,
+                materials.regulatory_limit,
+                materials.total_supply,
+                0, // un envio no cambia el suministro
+                materials.receiver_id,
+                materials.salt,
+                x,
+                &materials.pending_path,
+            );
+            let prover = SendV2Prover::new(options);
+            let public_inputs = prover.get_pub_inputs(&trace);
+            let proof = prover
+                .prove(trace)
+                .map_err(|e| LayerError::ProofFailed(format!("{e:?}")))?;
+            (
+                public_inputs,
+                proof,
+                pending_commitment_v2(
+                    materials.receiver_id,
+                    materials.salt,
+                    materials.amount,
+                    refund_id,
+                    delta,
+                ),
+                Some(x),
+            )
+        }
+    };
 
     Ok(SendReceipt {
         proof: proof.to_bytes(),
         public_inputs,
-        commitment: pending_commitment(
-            materials.receiver_id,
-            materials.salt,
-            materials.amount,
-        ),
+        commitment,
         notice: PendingNotice {
             position: materials.pending_position,
             salt: materials.salt,
             amount: materials.amount,
-            x: None,
+            x,
         },
     })
 }

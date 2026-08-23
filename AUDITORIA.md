@@ -27025,3 +27025,43 @@ y la fase X del claim, y ninguna etapa contemplaba el v2 del ENVIO,
 que el escenario del conformance produce. Nota fechada anadida al
 RFC tras la del §345. El pase a ACEPTADO se paga al cerrar E3/E4,
 como manda el proceso.
+
+## §353 -- E3c-1b del RFC-0003: la via viva aprende el sobre
+
+**Que es este sello.** El primer envio v2 de punta a punta. `SendMaterials`
+gana `sobre: Option<(Digest, u64)>` = (refund_id, delta) -- D-6: el sobre
+entra por los MATERIALES; `None` en los tres constructores y en el `TryFrom`
+del cable (el tipo dice la verdad; el DTO no se mueve, eso es otro corte).
+`prove_send` gana el dispatch con la forma exacta de `prove_claim`
+(`Some` -> traza v2 + `SendV2Prover` + `pending_commitment_v2` +
+`x: Some(refund_envelope(refund_id, delta))`); `validate_send` despacha por
+`receipt.notice.x` y `root_with` cierra el lazo sobre el compromiso que la
+via declara. El ciclo v2 entero -- envio, cobro, reversion, apertura -- corre
+ya por las vias vivas, sin plantar nada a mano.
+
+**D-7, decidida en el corte (reversible, con la vara).** Los dos testigos
+negativos murieron con un PANICO: el `assert_eq!` del ancho en la primera
+linea del `fn new` de ambos Airs (56 != 60 / 60 != 56), que winterfell
+construye ANTES de verificar. Un recibo con la X mal puesta abortaba el
+hilo: panico alcanzable desde la entrada, vector de denegacion en una capa
+de liquidacion. La reparacion fue a la CAPA, no al test: `validate_send`
+compara `proof.trace_info().width()` contra el `TRACE_WIDTH` de la via que
+el aviso declara y devuelve `Err` honesto antes de construir el Air
+(constantes cualificadas, API leida de winter-air-0.13.1 en el registry).
+`should_panic`/`catch_unwind` se descarto por imagen fiel: habria puesto el
+test en verde dejando el abort vivo.
+
+**Candidata fichada, no tocada.** El mismo panico late en los gemelos del
+dispatch sin guarda, censados por el PASTE-E3c1b-ANCHO sobre 869f4e8
+(two_phase.rs a 3011 lineas): claim :1151/:1157, refund :451/:464 y
+:679/:692. Se censa aqui; se decide en corte propio.
+
+**Testigos.** `un_envio_v2_de_punta_a_punta_se_cobra` (positivo, la via
+viva entera con clave ancha) - `un_recibo_v2_sin_su_x_no_valida` y
+`un_recibo_v1_con_x_colada_no_valida` (negativos: ahora rechazos honestos
+de la capa, no aborts del Air).
+
+**Cifras.** Capa 276 -> 279 con cero warnings; compuerta de sello
+970 -> 973; con pines 1107 -> 1110; declarados 1121 -> 1124. Wire intacto
+(su `TryFrom` gana `sobre: None`; 15 tests). El juez de cifras en verde
+antes y despues del perimetro (19 renglones en 9 docs + canon:89).

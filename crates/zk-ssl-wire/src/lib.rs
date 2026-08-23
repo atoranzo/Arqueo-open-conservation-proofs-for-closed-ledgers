@@ -332,6 +332,9 @@ impl TryFrom<&SendMaterialsDto> for SendMaterials {
             total_supply: d.total_supply.0,
             amount: d.amount.0,
             salt: digest_from_wire(&d.salt)?,
+            // RFC-0003 (E3c-1b): el DTO 0.x no transporta el sobre; el
+            // cable v2 es de otro corte (regla de version del RFC).
+            sobre: None,
         })
     }
 }

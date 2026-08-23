@@ -232,6 +232,11 @@ las aperturas se generan y se quedan en el cliente.
 > las entradas publicas del v1, y el sobre jamas publicado. La capa
 > lo adopta en E3c-1b (los materiales ganan el sobre, dispatch en
 > `prove_send`); la emision 0.3 y el giro del canon quedan en E3c-2.
+>
+> **Nota (2026-08-23, §353).** E3c-1b PAGADA: la via viva aprende el sobre
+> (D-6) y la capa gana la guarda del ancho (D-7) -- el rechazo de una traza
+> ajena es un `Err` de la capa, no un panico del Air. Queda E3c-2 (el
+> escenario, la emision 0.3 y el giro del canon).
 
 **El primer paso medible ya está dado** (sesión 57, `PASTE-E1-M`, salida
 `b44b24915a67c268`/1175): `circuit_claim` abierto y medido. La reconstrucción
