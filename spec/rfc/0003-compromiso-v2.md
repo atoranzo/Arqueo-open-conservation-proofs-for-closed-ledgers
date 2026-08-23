@@ -222,6 +222,17 @@ las aperturas se generan y se quedan en el cliente.
 > a E3**. Mientras tanto `zkssl-0.2` sigue IDENTICO en cada canon: la
 > convivencia, probada por el gate existente en vez de prometida.
 
+> ⚠️ **La E2 tenia un hueco, medido y pagado (§352, 2026-08-23).**
+> Las etapas nombraron `RefundAirV2` y la fase X del claim, pero el
+> escenario del conformance tambien PRODUCE envios: el compromiso que
+> el claim cobra lo deposita `circuit_send`, y ninguna etapa
+> contemplaba el v2 del ENVIO. El §352 lo estrena como **E3c-1a** --
+> `SendV2Air` (`circuit_send_v2.rs`): el cuarto merge `C2 = M(C1, X)`
+> con el sobre LEIDO en `COL_X` (el patron del salt de hoja, §117),
+> las entradas publicas del v1, y el sobre jamas publicado. La capa
+> lo adopta en E3c-1b (los materiales ganan el sobre, dispatch en
+> `prove_send`); la emision 0.3 y el giro del canon quedan en E3c-2.
+
 **El primer paso medible ya está dado** (sesión 57, `PASTE-E1-M`, salida
 `b44b24915a67c268`/1175): `circuit_claim` abierto y medido. La reconstrucción
 NO admite X tal cual; el claim v2 gana una fase de merge con coste DERIVADO

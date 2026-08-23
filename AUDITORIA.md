@@ -26981,3 +26981,47 @@ deuda declarada de UN commit.
 cerrado por sus dos mitades -- E3b-1 en el §350, E3b-2 aqui. El hilo
 inverso (el pase a ACEPTADO) se paga al cerrar E3/E4, como manda el
 proceso.
+
+## §352 -- E3c-1a del RFC-0003: el envio aprende el sobre (SendV2Air)
+
+**Que se hizo.** Nace `crates/stark-experiment/src/circuit_send_v2.rs`
+(1542 lineas, 6 tests): `SendV2Air`/`SendV2Prover`, el calco del envio
+con un CUARTO merge en la cadena del pendiente -- `C2 = M(C1, X)`, el
+molde exacto del claim v2 (§347). El sobre `X` entra OPACO como
+testigo por `COL_X` (56..60; el patron del salt de hoja, §117: un
+testigo de un solo enlace no se transporta), `TRACE_WIDTH` 56 -> 60,
+`ROW_PENDING_ROOT` 815 -> 823, `NUM_CONSTRAINTS` 203 -> 211
+(`C_ENV_DIG`/`C_ENV_IN` al final), las 42 aserciones del v1 intactas
+y las entradas publicas DEL V1 (`SendPublicInputs` importada): el
+sobre jamas se publica. `lib.rs` gana el mod (291 -> 292).
+
+**Decisiones.** D-5: fichero PARALELO -- descartado que la capa
+plante C2 sobre un circuito que prueba C1, por imagen fiel: lo que la
+capa declara es lo que el circuito prueba. D-6 (queda para E3c-1b):
+el sobre entra por los MATERIALES (`SendMaterials` gana el sobre),
+con dispatch en `prove_send` y `validate_send` por `receipt.notice.x`
+-- la forma de `prove_claim`. Escalonamiento declarado: E3c-1a el
+circuito (esto), E3c-1b capa+cliente de punta a punta, E3c-2 el
+escenario, la emision 0.3 y el giro del canon.
+
+**Verde.** cargo v2 6/0 (el honesto verifica; los hitos de la traza
+espejan `native_merge`; la mutacion del sobre y el C1 desnudo se
+rechazan; un importe distinto no verifica; un arbol con C1 -- la
+forma v1 -- no se prueba con el v2: el legado inmune por dominio).
+El v1 INTACTO: 24/0/1-ign con el filtro `circuit_send::`. El
+guardian de layout barre 31 circuitos y censa el send v2 sin ranuras
+muertas. El pin del canon 312 -> 318 con el juez de cifras VERDE
+antes y despues (26 cifras, 17 pines); 15 renglones en 6 docs:
+totales 964/1101/1115 -> 970/1107/1121, README 30 -> 31 circuitos.
+
+**Lo que NO hace.** La capa no produce ni valida envios v2 (E3c-1b,
+D-6). El escenario del conformance sigue emitiendo v1 y la puerta
+del canon no gira (E3c-2). El testigo de `apply_deissue` sigue
+pendiente (declarado en §351). El empuje queda fuera: deuda
+declarada de UN commit.
+
+**Doble hilo.** RFC-0003: la E2 tenia un hueco -- nombro RefundAirV2
+y la fase X del claim, y ninguna etapa contemplaba el v2 del ENVIO,
+que el escenario del conformance produce. Nota fechada anadida al
+RFC tras la del §345. El pase a ACEPTADO se paga al cerrar E3/E4,
+como manda el proceso.

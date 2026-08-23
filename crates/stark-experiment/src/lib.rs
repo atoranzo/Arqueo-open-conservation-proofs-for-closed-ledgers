@@ -79,6 +79,7 @@ pub mod circuit_recovery_climb;
 pub mod circuit_claim;
 pub mod circuit_claim_v2;
 pub mod circuit_send;
+pub mod circuit_send_v2;
 pub mod circuit_credit_climb;
 pub mod circuit_refund;
 pub mod circuit_refund_v2;
