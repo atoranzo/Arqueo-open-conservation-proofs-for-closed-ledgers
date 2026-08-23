@@ -96,7 +96,7 @@ pub const STATE_WIDTH: usize = Rp64_256::STATE_WIDTH;
 ///
 /// ⚠️ Es **la primitiva del árbol disperso y de `chain_digest`**: si esto
 /// cambiara, cambiarían todas las raíces del proyecto y la conformidad
-/// `zkssl/0.2` lo diría en el acto.
+/// `zkssl/0.3` lo diría en el acto.
 pub fn native_merge(left: Digest, right: Digest) -> Digest {
     let mut state = [BaseElement::ZERO; STATE_WIDTH];
     state[4..8].copy_from_slice(&left);

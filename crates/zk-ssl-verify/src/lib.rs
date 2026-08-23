@@ -127,7 +127,7 @@ pub const DOMINIO_COFIRMA: &[u8] = b"ZK-SSL-witness-cosign";
 /// Versión del formato de cabeza que entra en la firma.
 ///
 /// ⚠️ Sube cuando cambian **los campos de `EpochHead`**, no cuando cambia el
-/// cable. Son ejes distintos: `zkssl/0.2` gobierna qué viaja; esto, qué
+/// cable. Son ejes distintos: `zkssl/0.3` gobierna qué viaja; esto, qué
 /// entra en la firma.
 pub const VERSION_FORMATO: u8 = 3;
 

@@ -11,7 +11,7 @@
         "type": "string"
       },
       "ProtocolVersion": {
-        "const": "zkssl/0.2",
+        "const": "zkssl/0.3",
         "type": "string"
       },
       "Q": {
@@ -24,7 +24,7 @@
   "info": {
     "description": "Especificacion normativa: spec/RPC.md. Principio que el API preserva: la clave de gasto no viaja jamas.",
     "title": "ZK-SSL JSON-RPC",
-    "version": "zkssl/0.2"
+    "version": "zkssl/0.3"
   },
   "methods": [
     {

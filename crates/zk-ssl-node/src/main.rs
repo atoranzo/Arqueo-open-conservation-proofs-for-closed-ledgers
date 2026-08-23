@@ -80,7 +80,7 @@ struct Args {
     ///
     /// ⚠️ **Sin esto el nodo NO FIRMA.** El latido sigue corriendo y la
     /// cabeza de época se calcula igual —su digest está en los vectores
-    /// de conformidad de `zkssl/0.2`—; lo que falta es la firma.
+    /// de conformidad de `zkssl/0.3`—; lo que falta es la firma.
     ///
     /// ⚠️ Y **una firma sin custodia declarada de la clave no tiene valor
     /// probatorio** (§236, §238). De dónde sale esta semilla y quién la
@@ -910,7 +910,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
 
     match method {
         // ── lectura ────────────────────────────────────────────────
-        "zkssl_protocolVersion" => Ok(json!("zkssl/0.2")),
+        "zkssl_protocolVersion" => Ok(json!("zkssl/0.3")),
 
         "zkssl_params" => Ok(serde_json::to_value(wire::ParamsDto {
             regulatory_limit: Q(l.regulatory_limit()),
@@ -2106,7 +2106,7 @@ mod tests {
         let app = nodo(30);
         assert_eq!(
             dispatch(&app, "zkssl_protocolVersion", json!([])).expect("version"),
-            json!("zkssl/0.2")
+            json!("zkssl/0.3")
         );
         let h = dispatch(&app, "zkssl_epochHead", json!({})).expect("epochHead");
         assert!(h["signature"].is_null(), "epochHead NO debe llevar firma");
@@ -2119,7 +2119,7 @@ mod tests {
         let v = dispatch(&app, "zkssl_protocolVersion", json!([])).expect("version");
         // ⚠️ Si esto cambia, cambia el CABLE. spec/RPC.md §versionado: lo
         // que sube version es que cambien los VALORES que viajan.
-        assert_eq!(v, json!("zkssl/0.2"));
+        assert_eq!(v, json!("zkssl/0.3"));
     }
 
     #[test]

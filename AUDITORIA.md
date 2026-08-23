@@ -27065,3 +27065,68 @@ de la capa, no aborts del Air).
 970 -> 973; con pines 1107 -> 1110; declarados 1121 -> 1124. Wire intacto
 (su `TryFrom` gana `sobre: None`; 15 tests). El juez de cifras en verde
 antes y despues del perimetro (19 renglones en 9 docs + canon:89).
+
+## §354 -- E3c-2 del RFC-0003: el escenario cobra por la via v2, zkssl/0.3 emitido y la vigente girada
+
+Tres cortes SIN COMMIT sellados aqui juntos (339-B): el codigo y el vector
+(BLOQUE-E3c2, 3 corridas), los productores vivos (BLOQUE-E3c2-B) y este
+asiento con la PUERTA DE E3 pagada delante.
+
+**El corte.** `run_send_v2` nace en el sandbox (D-8: calco de `run_send`,
+que queda INTACTO con sus 2 llamantes de commands.rs) y el escenario
+canonico envia por la via v2: `f = public_id` del emisor y `delta = 96`,
+A PROPOSITO distinto de 64 (`DEFAULT_REFUND_TTL` global v1) -- son ejes
+distintos y que se lea. `zkssl-0.3.json` emitido (sellado "§354",
+derivado en corrida) y el giro del canon POR TEXTO uniforme (D-9): 0.3
+exige "todo IDENTICO"; 0.2 y 0.1 caen por "OTRA version" -- la candidata
+menor del `$?` del 0.1, pagada de paso. Gates del vector: el prefijo
+0x0-0x3 IDENTICO al 0.2; proof_digest y cadena del Send, cadena del Claim
+y la cabeza DISTINTOS; supply y pending iguales.
+
+**HALLAZGO (la 2.a corrida lo forzo).** Mi gate esperaba `root_new` del
+Send DISTINTO y el arbol lo nego: **NINGUNA de las 12 raices se mueve al
+cambiar el formato del compromiso de la hoja pendiente**. El conjunto
+pendiente vive en su propio SparseTree cuya raiz NO entra en el
+`state_root` del registro -- lo que la sesion 61 midio en `snapshot.rs`
+(la instantanea restaura sin pendientes y su verificacion pasa; candidata
+viva), visto ahora desde el vector: las raices son CIEGAS al pendiente
+tambien en la via viva. La v2 se ve donde vive -- prueba, cadena, cabeza --
+y el gate del vector lo deja PINADO (una raiz movida seria lo inesperado).
+
+**D-10: la foto estrena semantica DECLARADA.** El `canon` del vector pasa
+a [tests de circuitos, tests de la capa, suma de la compuerta de sello,
+circuitos con impl Air] = [318, 279, 973, 31], las cuatro DERIVADAS en la
+corrida (tabla del canon, censo de `impl Air for`, cruce con README) y
+documentadas sobre el literal -- lo que el formato nunca tuvo. Porque lo
+nunca tuvo: **el 40 del formato viejo queda SIN FUENTE NOMBRADA en todo el
+registro** (el pie ritual "Canon sin cambio (297 · 242 · 40 · 28)" nace en
+§184 sin definirse, y siguio diciendo 242 despues de que §207/§209
+movieran la cifra: pie rancio ademas de mudo). El 28 si casa con los "28
+circuitos" de la era (§200). Defecto heredado, fichado; D-8/D-9/D-10
+REVERSIBLES.
+
+**Los productores, girados; la historia, quieta.** RPC.md (titulo, tabla,
+la vigente "desde §354; la 0.2 rigio desde §209", y la frase de :355 --
+"sigue dando identico", FALSA desde el giro -- reescrita al regimen del
+0.1); el metodo vivo del nodo con su test; las compuertas nombradas en
+latido/recepcion/hash/verify; README, RESUMEN y ROADMAP. `spec/openrpc.json`
+REGENERADO por el rito del arbol y comparado campo a campo: identico salvo
+los dos valores de version. Los "aditivo: 0.2 no sube" de cada era, la
+cabecera historica de hash:75 y el RFC-0002 quedan tal cual: son historia.
+
+**Puerta de E3, pagada delante del asiento.** `tests_verificacion` (la
+bateria del §178, NOMBRADA en esta sesion tras vivir sin invocacion
+escrita): 25 passed / 0 failed / 0 ignored = 25 censados. Canon
+--completo VERDE en ~55 min (presupuesto 53,6). **Ningun pin se mueve**:
+el corte no anade ni un test (cli 91, wire 15, node 91, hash 24, verify 69
+comprobados uno a uno) -- el testigo del corte es el TRIPLE GATE del canon,
+que ahora corre en vivo en cada sello.
+
+**Con esto la E3 queda PAGADA ENTERA** (E3a capa+aviso+persistencia, E3b
+apertura en el recibo, E3c escenario+0.3) y el RFC-0003 sigue PROPUESTO:
+pasarlo a ACEPTADO (regla 4) es corte propio, con la E4 del cable opcional
+declarada. Candidatas fichadas por el camino: README:82 y RESUMEN:128 dicen
+"17 metodos" y el test de la tabla exige 24 desde §315 (rancidez ajena a
+este corte) - los gemelos v2 sin guarda de ancho (refund :452/:465 y
+:680/:693, claim :1186/:1192; :706 y :1492 razonados como la misma clase) -
+la prosa de `validate_send`, por re-medir sobre las 3147.

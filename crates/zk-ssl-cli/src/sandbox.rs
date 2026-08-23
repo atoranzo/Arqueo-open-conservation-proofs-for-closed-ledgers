@@ -217,6 +217,65 @@ pub fn run_send(
     Ok(envio)
 }
 
+/// Envio v2 (RFC-0003, E3c-2): como `run_send`, pero el emisor fija la
+/// pareja (refund_id, delta) y los materiales viajan con el sobre; el
+/// aviso del recibo lleva `x = refund_envelope(refund_id, delta)`, opaco.
+pub fn run_send_v2(
+    layer: &mut SovereignLayer,
+    from: AccountIndex,
+    from_key: Digest,
+    to: AccountIndex,
+    amount: u64,
+    salt_seed: u64,
+    refund_id: Digest,
+    delta: u64,
+    tr: &mut dyn Tracer,
+) -> anyhow::Result<SendReceipt> {
+    let span = tracing::info_span!("send_v2", from, to, amount).entered();
+
+    tr.emit(&TraceEvent::PhaseStarted {
+        phase: Phase::Send,
+        detail: format!(
+            "#{from} -> #{to}, importe {amount} (v2, con sobre): materiales -> prueba LOCAL -> apply_send"
+        ),
+    });
+
+    let estado = client_state(layer, from)?;
+    let receptor = layer
+        .public_id_of(to)
+        .ok_or_else(|| anyhow::anyhow!("la cuenta receptora #{to} no existe"))?;
+
+    let t0 = Instant::now();
+    let m = layer
+        .send_materials_v2(from, receptor, amount, ts::salt_de(salt_seed), refund_id, delta)
+        .map_err(|e| fail(tr, Phase::Send, e))?;
+    tr.emit(&TraceEvent::MaterialsBuilt {
+        phase: Phase::Send,
+        pending_position: Some(m.pending_position),
+        ms: t0.elapsed().as_millis(),
+    });
+
+    let t1 = Instant::now();
+    let envio = client::prove_send(&m, from_key, proof_options())
+        .map_err(|e| fail(tr, Phase::Send, e))?;
+    tr.emit(&TraceEvent::ProofGenerated {
+        phase: Phase::Send,
+        bytes: envio.proof.len(),
+        proof_digest: hex_short(&digest_of_proof(&envio.proof)),
+        ms: t1.elapsed().as_millis(),
+    });
+
+    let root_old = layer.state_root();
+    let t2 = Instant::now();
+    layer
+        .apply_send(&envio, from, &estado, amount)
+        .map_err(|e| fail(tr, Phase::Send, e))?;
+    emit_applied(layer, &root_old, t2, tr);
+
+    drop(span);
+    Ok(envio)
+}
+
 /// FASE 2 — el receptor cobra el pendiente con SU clave, también en local.
 pub fn run_claim(
     layer: &mut SovereignLayer,

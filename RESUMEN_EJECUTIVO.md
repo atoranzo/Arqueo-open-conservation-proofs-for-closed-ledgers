@@ -125,7 +125,7 @@ magnitud, no como benchmark.
 
 La capa ya no está sola: tiene **contrato público** para que exista una
 segunda implementación sin leer el código del nodo. `spec/RPC.md`
-(**`zkssl/0.2`** desde §209, 17 métodos) · `spec/openrpc.json` **generado** desde el
+(**`zkssl/0.3`** desde §354; la `0.2` rigió desde §209, 17 métodos) · `spec/openrpc.json` **generado** desde el
 código (regenerarlo debe reproducirlo byte a byte) · **vectores de
 conformidad** versionados (`conformance --check` los re-ejecuta campo a
 campo: es compuerta permanente) · proceso RFC · nodo de referencia

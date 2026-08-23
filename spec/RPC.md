@@ -1,4 +1,4 @@
-# ZK-SSL JSON-RPC — especificación v0.2 (`zkssl/0.2`)
+# ZK-SSL JSON-RPC — especificación v0.3 (`zkssl/0.3`)
 
 > **Qué cambió de `0.1` a `0.2` (§209, etapa 1 del RFC-0002).** Un solo
 > cambio, y no está en los métodos: **`proof_digest` deja de calcularse
@@ -64,7 +64,7 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 
 | método | params | result |
 |---|---|---|
-| `zkssl_protocolVersion` | — | `"zkssl/0.2"` |
+| `zkssl_protocolVersion` | — | `"zkssl/0.3"` |
 | `zkssl_params` | — | `{regulatoryLimit, maxSupply, maxAccounts: Q, custodianRoot: Digest}` |
 | `zkssl_epochHead` | — | `{seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, acusesRoot, n, mmrRoot, mmrSize, epochDigest}` |
 | `zkssl_supply` | — | `{total, pending: Q}` |
@@ -352,7 +352,7 @@ lo dirán explícitamente.
 siguen siendo de N=1.** Eso es deliberado y no es una omisión: la
 superficie del protocolo es aditiva y los valores de cable no se
 movieron, así que los vectores existentes **siguen siendo válidos tal
-cual** —`conformance --check` de `zkssl/0.2` sigue dando idéntico—. Una
+cual** hasta §354 —hoy `conformance --check` de `zkssl/0.2` los rechaza como «de OTRA versión» y se conservan bajo su versión, el régimen del `0.1`—. Una
 implementación que quiera acreditar el lote necesitará vectores propios;
 no los hay todavía.
 
@@ -861,7 +861,7 @@ se demuestra muriendo**, no prometiendo.
 - Parámetros de un ledger persistido: inmutables
   (`ParameterMismatch` al reabrir con otros valores).
 - Versionado: `zkssl_protocolVersion` gobierna compatibilidad. **La
-  versión vigente es `zkssl/0.2`** desde §209, y lo que la sube es que
+  versión vigente es `zkssl/0.3`** desde §354 (la `0.2` rigió desde §209), y lo que la sube es que
   cambien los **valores que viajan**, no el tamaño de la superficie:
   añadir un método de forma aditiva —como `zkssl_applyMany` en §222— no
   la sube, porque los vectores de conformidad no se mueven.

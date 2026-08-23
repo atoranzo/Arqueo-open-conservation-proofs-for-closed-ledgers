@@ -40,7 +40,7 @@
 //! El contador es **un número que el nodo dice y que nada ata**.
 //! `chain_digest` autentica `seq`, `kind`, las dos raíces, el digest de
 //! prueba y el anterior — **y nada más**. Meterlo ahí rompería la
-//! conformidad de `zkssl/0.2` y la propiedad retroactiva de §115.
+//! conformidad de `zkssl/0.3` y la propiedad retroactiva de §115.
 //!
 //! Así que:
 //!

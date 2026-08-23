@@ -18,7 +18,7 @@ use crate::trace::{TraceEvent, Tracer};
 
 /// El escenario canonico, en una linea (queda dentro del fichero).
 pub const ESCENARIO: &str =
-    "open+fund(seed 0xA11CE, +1000000) x2 · send 250000 (salt 7) · claim";
+    "open+fund(seed 0xA11CE, +1000000) x2 · send v2 250000 (salt 7, delta 96) · claim";
 
 #[derive(Args)]
 pub struct ConformanceArgs {
@@ -71,8 +71,14 @@ fn escenario(tr: &mut dyn Tracer) -> anyhow::Result<SovereignLayer> {
     let seed = 0xA11CE;
     let a0 = sandbox::open_funded(&mut layer, sandbox::key_of(seed, 0), 1_000_000, tr)?;
     let a1 = sandbox::open_funded(&mut layer, sandbox::key_of(seed, 1), 1_000_000, tr)?;
-    let envio =
-        sandbox::run_send(&mut layer, a0, sandbox::key_of(seed, 0), a1, 250_000, 7, tr)?;
+    // v2 (RFC-0003, E3c-2): el emisor fija la pareja (f, delta). f = el
+    // public_id del emisor (determinista via key_of); delta = 96, A
+    // PROPOSITO distinto de 64 (DEFAULT_REFUND_TTL global v1): son ejes
+    // distintos y que se lea.
+    let f = layer.public_id_of(a0).expect("a0 acaba de abrirse");
+    let envio = sandbox::run_send_v2(
+        &mut layer, a0, sandbox::key_of(seed, 0), a1, 250_000, 7, f, 96, tr,
+    )?;
     sandbox::run_claim(&mut layer, a1, sandbox::key_of(seed, 1), &envio.notice, tr)?;
     Ok(layer)
 }
@@ -93,7 +99,7 @@ fn recolectar(layer: &SovereignLayer) -> Vectores {
         })
         .collect();
     Vectores {
-        spec: "zkssl/0.2".into(),
+        spec: "zkssl/0.3".into(),
         // Re-emitido en §278: las cuatro entradas delegadas del escenario
         // —dos OpenAccount y dos Mint— dejan de asentar la prueba vacia,
         // asi que cambian sus digests, TODA la cadena y la cabeza.
@@ -101,10 +107,18 @@ fn recolectar(layer: &SovereignLayer) -> Vectores {
         // campo y en la cadena (v2) — cambian las seis cadenas, la
         // cabeza, y cada entrada publica su compromiso (las Mint el
         // real; el resto el centinela declarado).
-        sellado: "§281".into(),
+        // Re-emitido como zkssl/0.3 (RFC-0003, E3c-2, §354): el envio del
+        // escenario pasa a la VIA v2 -- el sobre entra por los materiales
+        // y el aviso viaja con la X opaca; cambian el compromiso de la
+        // hoja pendiente, la prueba del Send, la cadena desde ahi y la
+        // cabeza. El campo `canon` estrena semantica DECLARADA (foto al
+        // emitir): [tests de circuitos, tests de la capa, suma de la
+        // compuerta de sello, circuitos con impl Air]. Los antiguos 40
+        // (sin fuente nombrada en el registro) y 28: ver el asiento.
+        sellado: "§354".into(),
         escenario: ESCENARIO.into(),
         // §207 sumo tres tests al arbol disperso: 242 -> 245.
-        canon: [297, 245, 40, 28],
+        canon: [318, 279, 973, 31],
         entradas,
         // ⚠️ §292: el vector SELLADO pina LA COMPOSICION V2 — es un artefacto
         // congelado y su significado no se mueve con el formato vivo. Por eso

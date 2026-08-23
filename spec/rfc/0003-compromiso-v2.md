@@ -4,7 +4,7 @@
 - **Autores:** Che (con Claude, sesiones 56-57)
 - **Fecha:** 2026-08-22 (r2; la r1 del 2026-08-21, `9bc8f30d3a14e0de`/182, se conserva para diff)
 - **Versión del protocolo afectada:** zkssl/0.2 → zkssl/0.3 (rotura de formato)
-- **Asiento(s) de AUDITORIA:** §178 (diseño de la caducidad), §180 (ejecución), §340 (el reloj atado), §342 (quién/cuándo son metadatos, medido) — y el **§343** (la adopción de este RFC)
+- **Asiento(s) de AUDITORIA:** §178 (diseño de la caducidad), §180 (ejecución), §340 (el reloj atado), §342 (quién/cuándo son metadatos, medido) — y el **§343** (la adopción de este RFC), y §352–§354 (la E3c entera: SendV2Air, la via viva, la emision 0.3)
 - **Número: 0003, FIRME.** La regla 1 de `PROCESO.md` es numeración correlativa
   desde 0001, y el `0001` no falta: está **reservado** al endurecimiento del KDF
   del keystore (SHA-256 → Argon2id), «no está redactado» — nota de numeración del
@@ -237,6 +237,14 @@ las aperturas se generan y se quedan en el cliente.
 > (D-6) y la capa gana la guarda del ancho (D-7) -- el rechazo de una traza
 > ajena es un `Err` de la capa, no un panico del Air. Queda E3c-2 (el
 > escenario, la emision 0.3 y el giro del canon).
+>
+> **Nota (2026-08-23, §354).** E3c-2 PAGADA y con ella **la E3
+> entera**: el escenario cobra por la via v2 (f = id del emisor, delta 96
+> a proposito distinto del TTL global), `zkssl-0.3.json` emitido con la
+> foto de semantica DECLARADA, el triple gate corre EN VIVO en el canon y
+> los productores vivos dicen 0.3 (openrpc REGENERADO por el rito).
+> Hallazgo de la corrida: ninguna raiz se mueve -- el pendiente vive fuera
+> del `state_root` (ver §354). La 0.2 rigio §209-§354.
 
 **El primer paso medible ya está dado** (sesión 57, `PASTE-E1-M`, salida
 `b44b24915a67c268`/1175): `circuit_claim` abierto y medido. La reconstrucción
