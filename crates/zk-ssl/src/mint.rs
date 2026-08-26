@@ -236,15 +236,31 @@ mod tests_delegada {
             .expect("hasta casi el tope");
 
         // Pequena por si sola; el acumulado la rechaza ANTES de verificar.
+        //
+        // QUIEN LA RECHAZA DEPENDE DEL MODO, Y LOS DOS ESTAN BIEN (§77.1).
+        // El testigo afirma una subida por encima del tope: un enunciado
+        // FALSO. En depuracion winterfell valida la traza al generar y se
+        // niega; en release genera y rechaza la capa al aplicar. Lo que no
+        // puede pasar en ningun modo es que se emita, y eso lo exige el
+        // total de abajo. Sin gancho de panico: el §45 midio su carrera.
         let op = compromiso(&layer, idx, 2000);
-        let subida = prueba_subida(&layer, idx, 2000);
+        let subida = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            prueba_subida(&layer, idx, 2000)
+        }));
         let (pa, ia) = autorizar(ck[1], &cp[1], op);
         let (pb, ib) = autorizar(ck[3], &cp[3], op);
-        let r = layer.apply_mint_delegated(subida, pa, ia, pb, ib, idx, 2000);
-        assert!(
-            matches!(r, Err(LayerError::SupplyCapExceeded { .. })),
-            "CRITICO: el tope debe aplicarse al acumulado tambien en la delegada: {r:?}"
-        );
+        match subida {
+            // El probador se nego: el enunciado es inprobable, que es la
+            // propiedad. No hay nada que aplicar.
+            Err(_) => {}
+            Ok(subida) => {
+                let r = layer.apply_mint_delegated(subida, pa, ia, pb, ib, idx, 2000);
+                assert!(
+                    matches!(r, Err(LayerError::SupplyCapExceeded { .. })),
+                    "CRITICO: el tope debe aplicarse al acumulado tambien en la delegada: {r:?}"
+                );
+            }
+        }
         assert_eq!(layer.total_supply(), casi, "y nada se emitio de mas");
     }
 

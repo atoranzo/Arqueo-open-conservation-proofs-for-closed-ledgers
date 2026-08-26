@@ -259,12 +259,21 @@ use super::*;
 
         fund_delegated(&mut layer, alice, MAX_SUPPLY);
         let op = mint_commitment(&layer, alice, 1);
-        let subida = mint_climb_proof(&layer, alice, 1);
+        // El tope esta lleno, asi que este testigo afirma un enunciado
+        // FALSO, y quien lo rechaza depende del modo: en depuracion el
+        // probador al generar, en release la capa al aplicar. Los dos estan
+        // bien (§77.1). Sin gancho de panico: el §45 midio su carrera.
+        let subida = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            mint_climb_proof(&layer, alice, 1)
+        }));
         let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
-        assert!(matches!(
-            layer.apply_mint_delegated(subida, pa, ia, pb, ib, alice, 1),
-            Err(LayerError::SupplyCapExceeded { .. })
-        ));
+        match subida {
+            Err(_) => {}
+            Ok(subida) => assert!(matches!(
+                layer.apply_mint_delegated(subida, pa, ia, pb, ib, alice, 1),
+                Err(LayerError::SupplyCapExceeded { .. })
+            )),
+        }
 
         let b = layer
             .burn(BaseElement::new(SK_ALICE), alice, &state_of(&layer, alice), 1_000_000)
@@ -1045,14 +1054,26 @@ use super::*;
         // usarse en la comprobacion del tope. Ver `AUDITORIA.md` §27. Índice REAL capturado arriba (post-F3).
         let exceso = MAX_SUPPLY - emitido + 1;
         let op = mint_commitment(&layer, alice, exceso);
-        let subida = mint_climb_proof(&layer, alice, exceso);
+        // El exceso es un enunciado FALSO, y quien lo rechaza depende del
+        // modo: el probador al generar en depuracion, la capa al aplicar en
+        // release. Los dos estan bien (§77.1), y lo que no puede pasar en
+        // ningun modo es que se emita: lo exige el tope de abajo. Sin gancho
+        // de panico: el §45 midio su carrera.
+        let subida = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            mint_climb_proof(&layer, alice, exceso)
+        }));
         let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
-        let r = layer.apply_mint_delegated(subida, pa, ia, pb, ib, alice, exceso);
-        assert!(
-            matches!(r, Err(LayerError::SupplyCapExceeded { .. })),
-            "CRITICO: tras reiniciar, el tope debe seguir imponiendose sobre \
-             el suministro YA emitido. Salio: {r:?}"
-        );
+        match subida {
+            Err(_) => {}
+            Ok(subida) => {
+                let r = layer.apply_mint_delegated(subida, pa, ia, pb, ib, alice, exceso);
+                assert!(
+                    matches!(r, Err(LayerError::SupplyCapExceeded { .. })),
+                    "CRITICO: tras reiniciar, el tope debe seguir imponiendose sobre \
+                     el suministro YA emitido. Salio: {r:?}"
+                );
+            }
+        }
 
         // Y hasta el tope, si — por la via real.
         fund_delegated(&mut layer, alice, MAX_SUPPLY - emitido);

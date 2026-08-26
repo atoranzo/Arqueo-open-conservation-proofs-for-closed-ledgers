@@ -27669,3 +27669,70 @@ fechada, no falsedad viva. Queda escrito como falso.
 Ningun Cargo tocado. `two_phase.rs` 3467 -> 3472 y `PRINCIPIOS.md` 441 -> 446.
 `recovery.rs` NO cambia de lineas: se sustituye el parrafo entero por otro del
 mismo alto, para no dejar un renglon huerfano.
+
+## §364 — los tres que winterfell caza al generar vuelven a depuracion
+**Que.** Tres tests de la capa dejaban de correr en depuracion con
+`main transition constraint 88 did not evaluate to ZERO at step 256`:
+`the_delegated_cap_is_enforced_at_apply` en `mint.rs`,
+`burning_frees_up_minting_capacity` y `the_total_supply_survives_restart` en
+`tests.rs`. NO se marcan con `cfg_attr`: se adaptan al MODO, con el molde del
+§77.1. Ningun test nuevo, ningun pin, ninguna cifra del canon.
+
+**La clase estaba mal contada, y el instrumento era la tabla.** El §78.1
+clasifico los ochenta por FICHERO de winterfell, y bajo `trace/mod.rs` caben
+DOS mensajes que no son lo mismo: `trace does not satisfy assertion` -una
+asercion de frontera que la traza no cumple- y `main transition constraint N
+did not evaluate to ZERO at step S` -una restriccion de TRANSICION-. Los dos
+del §78.2 eran del primero; estos tres son del segundo. Es el error que el
+propio §78 desmintio -"contarlos como ochenta del limite de grados habria
+enterrado los dos"- un nivel mas abajo. La tabla del §78.1 gana su tercera
+fila en el corte de la prosa, que va detras de este.
+
+**Donde panica cada uno, MEDIDO por linea del backtrace.** `mint.rs:240` -la
+subida de 2.000 que el acumulado debe rechazar-, `tests.rs:262` -la emision de
+1 con el tope lleno, que es el MONTAJE del test- y `tests.rs:1048` -el exceso
+del ataque, bajo su propio comentario-. Los tres mueren GENERANDO la subida
+(`MintClimbProver::prove`), y ninguno en su mitad legitima.
+
+**Y la violacion es real, medido en la fuente.** `winter-prover-0.13.1`
+`src/trace/mod.rs:155` itera `0..length - num_transition_exemptions()` y `:166`
+llama a `evaluate_transition` con las columnas periodicas construidas dos
+lineas antes: el validador de depuracion aplica exenciones Y periodicas igual
+que el protocolo. La traza no cumple la restriccion porque el ENUNCIADO ES
+FALSO por construccion: se pide probar una subida por encima del tope.
+
+**Por que NO se marcan, y por que eso no contradice al §78.4.** El §78.3
+marco los dos suyos con una razon nombrada: alli el panico ocurre DENTRO de la
+capa, en `update_custodians`, y una capa no puede capturar un panico para
+devolver un `Err`. Esa premisa NO alcanza a estos tres: panican en AYUDANTES DE
+TEST -`prueba_subida` y `mint_climb_proof`-, asi que vale el remedio del
+§77.1, que ademas gana cobertura. Y el §78.4 exige decidir test a test: eso
+es exactamente lo que se ha hecho, con la llamada y el importe medidos uno a
+uno.
+
+**El molde, y viene del arbol.** `tests.rs` ya ramificaba un `prove` que puede
+panicar con `match r { Err(_) | Ok(Err(_)) => rechazado al generar, Ok(Ok(..))
+=> entonces el verificador tiene que rechazarlo }`. Esa forma cubre los dos
+modos sin `cfg!(debug_assertions)` y afirmando la misma propiedad, que es mejor
+que ramificar por perfil.
+
+**Sin gancho de panico, y es deliberado.** El §45 midio que el patron
+`take_hook` / silenciador / `set_hook` mete una carrera real -reproducida 1 de
+~40 con 16 hilos- y que el silenciador no protegia nada, porque el mensaje
+viaja en el payload del `Err`. Las tres cirugias usan `catch_unwind` A SECAS, y
+el motor exige que el numero de `take_hook` de cada fichero NO se mueva. Nota
+para el registro: el §78.3 atribuye a `catch_unwind` lo que el §45
+atribuye al GANCHO; se cita aqui y no se edita alli.
+
+**Lo que este corte NO hace.** No toca `tests_support.rs`: la envoltura va en
+el SITIO de la llamada, asi que los demas llamantes de `mint_climb_proof`
+-`fund_delegated` entre ellos- quedan intactos. No re-clasifica la nota 41 ni
+la entrada 20: esas cifras se miden DESPUES de este corte y van en el suyo,
+porque restarlas seria teclear un numero.
+
+**Contadores.** Pin de la capa 287, sin mover; sumas 981/1118/1132, sin mover;
+el canon declara 1133 y el desfase de +1 sigue intacto. `check_tests.py` cuenta
+`#[test]` y no cambia ninguno. En RELEASE el camino es identico y los tres
+siguen pasando: BASE y VIVA dan 287/0/3. Lo que cambia es el perfil de
+DEPURACION, donde los tres pasan de fallar a pasar, medido uno a uno antes y
+despues. Ningun Cargo tocado.
