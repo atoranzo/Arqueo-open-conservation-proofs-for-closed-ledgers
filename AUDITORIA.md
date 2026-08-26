@@ -27273,3 +27273,43 @@ se mide en el primer canon que corra.
 **El hilo.** La deuda nacio en el §351, se re-nombro en el §355 y este
 asiento la cierra; el comentario del testigo la nombra (S351/S357). Commit
 unico de LOS ONCE (two_phase + canon + los 9 docs del pin) y empuje dentro.
+
+## §358 -- Dos candidatas saldadas (17 -> 24 y la prosa de two_phase) y el reparto del lote
+
+**Que se sella.** Dos de las candidatas menores del TRASPASO-66, medidas en
+el PASTE-CAND-M antes de tocar. C1: README:82 y RESUMEN_EJECUTIVO:128
+decian "17 metodos" describiendo spec/RPC.md de HOY; la verdad tiene fuente
+(el test veinticuatro_metodos_unicos_y_en_orden de openrpc.rs y la tabla
+que el json regenera). Giradas a 24; el "17 metodos" de BACKLOG:3209 NO se
+toca: es acta de la Fase 1a (§198) y era verdad entonces. C2: el doc del
+mod tests_verificacion (two_phase :2231-2235) afirmaba que la unica llamada
+a verify era la del delegado -- contra ONCE `verify::<` reales en cinco
+funciones desde la E3b/E3c; reescrito a la verdad medida (5 -> 7 lineas,
+nombrando las cinco y la guarda D-7 del §355) conservando el resto del
+doc, que sigue siendo verdad. Y el doc de validate_send arrancaba con una
+linea huerfana del apply ("Aplica un envio: debita y deposita") que
+contradecia a su propio titulo ("Valida SIN tocar nada. Ninguna muta"):
+fuera. two_phase 3466 -> 3467; el conteo de verify::< queda estable y la
+VIVA se exigio en 285/0/3 con 0 warnings.
+
+**El reparto del resto del lote, con fuente.** C5, la vigilancia de la foto
+del canon: RESUELTA EN FRIO, sin correr canon. conformance.rs:121 lleva
+[318, 279, 973, 31] como LITERAL con semantica DECLARADA ("foto al
+sellar", :114), y el --check (:163) compara ese literal contra el del
+vector -- no contra los pines vivos. Literal contra literal: el "todo
+IDENTICO" del 0.3 aguanta con el pin en 285. C3, el agujero del snapshot:
+sigue tal cual (snapshot.rs 1023 lineas, tres publicas, CERO llamantes
+fuera); los tres desenlaces -- formato ZKSSL5 / fallar si habia pendientes
+/ retirar la API, familia de la nota 106 -- quedan SIN elegir, con ficha.
+C4, el offset +1 de declarados: 979/1116/1130 no viven en NINGUN juez ni
+en el canon; es contabilidad de traspasos, no del arbol. Resolverlo =
+censar los #[test] del workspace contra 1130; a la cola.
+
+**Decisiones, las tres REVERSIBLES.** D-1: reescritura MINIMA del bloque
+(las lineas falsas), no del doc entero. D-2: la huerfana fuera, el titulo
+verdadero queda. D-3: los historicos (BACKLOG:3209) son actas y no se
+tocan.
+
+**Contadores.** Ningun pin se mueve (prosa y comentarios). Cuatro ficheros:
+two_phase (3467), README, RESUMEN_EJECUTIVO y este registro. Jueces 10/10
+PRE y POST. Commit unico y empuje dentro.

@@ -888,7 +888,6 @@ impl SovereignLayer {
         })
     }
 
-    /// Aplica un envío: debita y deposita el compromiso.
     /// **Valida un envio SIN tocar nada** (§214).
     ///
     /// Toma los arboles por referencia en vez de leerlos de `self`: eso es
@@ -2228,11 +2227,13 @@ mod tests_delegada {
 
 /// **¿VERIFICA LA CAPA LAS PRUEBAS DE LA VIA DE DOS FASES?**
 ///
-/// En este fichero la unica llamada a `verify::<...>` es la de
-/// `apply_mint_pending_delegated`. `apply_send`, `apply_claim` y
-/// `apply_mint_to_pending` no aparecen. Todos los demas modulos de la capa
-/// -`burn`, `freeze`, `governance`, `audit`, `mint`, `recovery`- si
-/// verifican, y `log::verify` declara que **no** valida pruebas.
+/// En este fichero `verify::<...>` vive hoy en CINCO funciones -- diez
+/// sitios: `apply_deissue`, `apply_refund` (la apertura y el credito),
+/// `validate_send`, `validate_claim` y `apply_mint_pending_delegated`,
+/// cada uno con la guarda de ancho D-7 delante (§355). Los demas
+/// modulos de la capa -`burn`, `freeze`, `governance`, `audit`, `mint`,
+/// `recovery`- si verifican, y `log::verify` declara que **no** valida
+/// pruebas.
 ///
 /// Eso es lectura. Estos testigos lo miden, porque la via de dos fases es
 /// **la via de pago del sistema** desde que §36 retiro la de un paso.
