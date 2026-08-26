@@ -27885,3 +27885,42 @@ cargo**: la puerta son las siete herramientas, medidas en verde antes y despues.
 Pin de la capa 287 y sumas 981/1118/1132 se arrastran del §365, medido hoy;
 el canon declara 1133 y el desfase de +1 sigue intacto. Ningun `#[test]`
 cambia. Ningun Cargo tocado.
+
+## §367 — el aviso de perfil, pegado a las dos ordenes que mandan a depuracion
+**Que.** Las dos ordenes publicadas que mandan al que clona a correr la suite
+en DEPURACION ganan su aviso, pegado a la orden y con la cifra de hoy. Dos
+cirugias de prosa en dos ficheros mas este asiento. Ningun test, ningun pin,
+ninguna cifra del canon, y ninguna ORDEN se toca.
+
+**El objeto, y por que es MAS ESTRECHO que el censo.** El censo del
+`PASTE-41-M` conto 33 renglones `.md` con `cargo test` sin `--release`. La
+mayoria no estan mal: `-p halo2-experiment` y `-p stark-experiment` en
+depuracion **pasan** -la tabla de la entrada 20 mide 199 de 201 en
+stark-experiment-, y el resto son renglones del registro, que se citan. Lo que
+muerde es `cargo test --workspace` **sin aviso**, y son DOS sitios:
+`CONTRIBUTING.md`, bajo "Pruebas y validacion", que es lo que lee quien va a
+contribuir, y `ARQUITECTURA.md`, bajo "Como compilar y verificar".
+
+**Por que un aviso y NO un `--release`.** Anadir `--release` a un
+`--workspace` arrastraria los tres crates caros, medidos en 438 + 749 + 2.075 s
+por el §320-B, y cambiaria un problema por otro. El aviso dice la verdad y
+apunta a donde vive: `tools/canon.sh`, que corre la capa con `--release`.
+
+**La cifra que el aviso publica esta medida hoy.** 188 pasan / 93 fallan / 9
+ignorados en depuracion, en 383,87 s, y 287 / 0 / 3 en release. Es la corrida
+del §366, no una resta.
+
+**Lo que se FICHA y NO entra, con su medicion pendiente.**
+`ARQUITECTURA.md:1484` dice que **"un test"** del backend STARK esta marcado
+`#[ignore]` por "un falso positivo" de winterfell. Hoy el arbol tiene **cuatro**
+`cfg_attr(debug_assertions, ignore)` en `stark-experiment`
+-`circuit_mint_pending.rs`, `circuit_mint_pending_climb.rs` dos veces y
+`range_check.rs`-, y el §78.1 ya no llama a esto "falso positivo" sino limite
+de la herramienta. **Pero cuantos ignorados reporta hoy `cargo test -p
+stark-experiment` NO esta medido**, y sin eso no se escribe: es corte propio,
+con la misma forma que el de la 41.
+
+**Contadores.** Este corte no toca un byte de codigo ni una orden, y por eso no
+corre cargo: la puerta son las siete herramientas, medidas en verde antes y
+despues. Pin 287 y sumas 981/1118/1132 se arrastran del §365, medido hoy.
+Ningun Cargo tocado.

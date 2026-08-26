@@ -82,6 +82,16 @@ tan documento del proyecto como el README.
 cargo test --workspace --all-features
 ```
 
+⚠️ **Esa orden corre en DEPURACION, y la capa NO se mide ahí.**
+Medido el 26-08-2026: `cargo test -p zk-ssl` en depuración da 188 pasan,
+93 fallan y 9 ignorados; en release, 287 pasan, 0 fallan y 3 ignorados. Esos
+fallos **no son un defecto de solidez**: son el límite de grados de la
+entrada 41 y del §78, declarado y decidido -winterfell comprueba en
+depuración que el grado declarado se realice, y hay restricciones cuyo
+grado depende del testigo-. Pero verás rojo si corres la orden de arriba
+tal cual. **La capa se mide con `cargo test -p zk-ssl --release`**, que es lo
+que corre `tools/canon.sh`.
+
 Y para los circuitos:
 
 ```bash

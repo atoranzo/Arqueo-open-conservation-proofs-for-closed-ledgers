@@ -1493,6 +1493,14 @@ segundos a varios minutos, según la pieza y la contención de CPU del
 entorno. Esto es esperado, documentado, y no indica ningún problema. Ver
 `PERFORMANCE.md` y `GROTH16_VS_HALO2.md` para tiempos concretos medidos.
 
+**Aviso de perfil**: la primera orden de arriba corre en **depuración**, y
+la capa no se mide ahí. Medido el 26-08-2026: `cargo test -p zk-ssl` en
+depuración da 188 pasan, 93 fallan y 9 ignorados; en release, 287 pasan, 0
+fallan y 3 ignorados. Los fallos son el límite de grados de la entrada 41
+y del §78 -declarado y decidido, no un defecto de solidez-, pero verás
+rojo si corres esa orden tal cual. **La capa se mide con
+`cargo test -p zk-ssl --release`**, que es lo que corre `tools/canon.sh`.
+
 ## Limitaciones honestas — léase antes de considerar esto para producción
 
 - **Ceremonia MPC: mecanismo resuelto, ceremonia no celebrada.** El
