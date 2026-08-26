@@ -1421,6 +1421,20 @@ fila exactos del fallo.
 > exactamente el error que esta auditoría documenta en otros sitios. Se deja
 > escrito porque el fallo es más instructivo que la cifra.
 
+> **§247 - Y HOY SON OTRAS TRES CIFRAS. Remedidas el 26-08-2026.** La tabla
+> de abajo publica `107 pasan, 65 fallan` en depuracion y `174 pasan` en
+> release. Medido tras los §364 y §365: **188 pasan, 93 fallan, 9
+> ignorados** en depuracion, y **287 pasan, 0 fallan, 3 ignorados** en release.
+> La suite ha vuelto a crecer, exactamente como dice la correccion de arriba.
+>
+> Y hay algo que no es la cifra. La frase de abajo -"estos fallos no son un
+> defecto de solidez"- es ANTERIOR a la clasificacion por clase de panico del
+> §78, y el reparto que la acompana es por MODULO, no por clase. El propio
+> §78 escribio que contarlos todos como limite de grados habria enterrado
+> los dos de la otra clase. Hoy los noventa y tres restantes SI son todos de
+> grados, y esta comprobado; pero la frase cubria en bloque hasta que alguien
+> lo midio.
+
 ### El estado, por crate
 
 | Crate y modo | Resultado |
@@ -6390,6 +6404,22 @@ No se diagnostican contando: se clasifican por **clase de panico**. Medido
 el 31-07-2026 sobre la salida completa.
 
 ### 78.1 Dos clases, y una no era la conocida
+
+> §247 - SON TRES, Y LA TABLA CLASIFICA POR FICHERO. Anadido en el §366.
+> Bajo `trace/mod.rs` caben DOS mensajes distintos: `trace does not satisfy
+> assertion`, que es la asercion de frontera de la fila de abajo, y `main
+> transition constraint N did not evaluate to ZERO at step S`, que es una
+> restriccion de TRANSICION que la traza no cumple. La fila de abajo cuenta
+> los DOS juntos.
+>
+> Cuantos habia de cada uno el 31-07-2026 no se puede saber desde aqui y NO se
+> inventa. Lo medido el 26-08-2026: de noventa y seis fallos, **93 de grados y
+> 3 de la clase de transicion**, y esos tres los cerro el §364. Hoy las dos
+> filas de esta tabla estan en CERO y solo queda la de grados.
+>
+> Es la advertencia de esta misma seccion aplicada un nivel mas abajo:
+> contarlos por FICHERO enterro una clase, igual que contarlos todos como
+> limite de grados habria enterrado los dos.
 
 | | ruta en winterfell | mensaje | que es |
 |---|---|---|---|
@@ -27805,3 +27835,53 @@ bloque imprime tienen que ser LA MISMA linea. Este bloque ya lo hace.
 981/1118/1132, sin mover; el canon declara 1133 y el desfase de +1 sigue
 intacto. Ningun `#[test]` cambia. BASE y VIVA en RELEASE dan 287/0/3, y el
 renglon impreso es el mismo que el gate compara. Ningun Cargo tocado.
+
+## §366 — la cifra de la 41, remedida, y la tercera clase que la tabla enterraba
+**Que.** La cifra de la nota 41 se remide y se publica con la clase, y la tabla
+del §78.1 gana la correccion que le faltaba: clasificaba por FICHERO y bajo
+`trace/mod.rs` habia DOS mensajes. Tres cirugias de prosa en dos ficheros mas
+este asiento. Ningun test, ningun pin, ninguna cifra del canon, y el contador
+del BACKLOG NO se mueve.
+
+**La cifra, medida y no restada.** Tras los §364 y §365, una corrida de la
+suite de la capa en depuracion da **188 pasan / 93 fallan / 9 ignorados en
+383,87 s**, con el total clavado en 290. La anterior era 185/96/9 en 407,70 s.
+Restar 96-3 habria sido teclear un numero, que es la clase que mas rojos ha
+costado en esta casa; se pagaron los seis minutos.
+
+**El reparto por clase, y la noticia.** Los 93 son **todos** de
+`evaluation_table.rs:214` -el limite de grados que el §78.4 decidio no marcar
+test a test-, y la clase de `trace/mod.rs` queda en **CERO**. Los tres que la
+ocupaban salieron por el §364, no por marcarlos.
+
+**La tercera clase, y por que estaba enterrada.** El §78.1 clasifico los
+ochenta por la RUTA del panico dentro de winterfell, y `trace/mod.rs:168`
+emite dos mensajes distintos: uno de asercion de frontera y otro de restriccion
+de TRANSICION que la traza no cumple. Los dos que el §78.2 corrigio eran del
+primero; los tres de hoy eran del segundo. Es la advertencia de esa misma
+seccion -contarlos todos como limite de grados habria enterrado los dos- un
+nivel mas abajo. **Cuantos habia de cada clase el 31-07-2026 no se puede saber
+desde aqui y no se inventa.**
+
+**El precio declarado vencio, y estaba escrito.** El cuerpo de la 41 dice que
+mientras los rojos sigan ahi, un fallo nuevo en depuracion se esconde entre
+ellos. De ochenta a noventa y seis se escondieron dieciseis, y tres de ellos
+eran de la clase que el propio cuerpo daba por cerrada. Se cita, no se borra.
+
+**La entrada 20 gana su segunda correccion.** Sus tres cifras -107 pasan y 65
+fallan en depuracion, 174 en release- son de otra epoca; hoy son 188/93/9 y
+287. Y su frase "estos fallos no son un defecto de solidez" es ANTERIOR a la
+clasificacion por clase del §78 y su reparto es por MODULO: cubria en bloque
+hasta que se midio. Hoy es cierta de los noventa y tres, comprobado.
+
+**La entrada 41 NO se cierra ni cambia de estado.** Sigue abierta: los noventa
+y tres siguen ahi y el §78.4 mantiene su decision de no marcarlos en bloque.
+Lo que cambia es que su cifra y su clasificacion vuelven a describir el arbol.
+El motor exige que el contador de abiertas y resueltas del BACKLOG **no se
+mueva**.
+
+**Contadores.** Este corte **no toca un byte de codigo** y por eso **no corre
+cargo**: la puerta son las siete herramientas, medidas en verde antes y despues.
+Pin de la capa 287 y sumas 981/1118/1132 se arrastran del §365, medido hoy;
+el canon declara 1133 y el desfase de +1 sigue intacto. Ningun `#[test]`
+cambia. Ningun Cargo tocado.

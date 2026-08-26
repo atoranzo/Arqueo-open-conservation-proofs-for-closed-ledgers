@@ -2182,7 +2182,22 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   degradar a «cosmetico» antes de que un test lo mire**: eso se hizo tres
   veces con la 36.
 
-- [ ] **41. Ochenta fallos de depuracion: CLASIFICADOS, dos corregidos.**
+- [ ] **41. Noventa y tres fallos de depuracion: TRES clases, dos vacias.**
+  **Remedido el 26-08-2026**, tras los §364 y §365: son **noventa y tres**,
+  y **todos** de la clase de grados; las otras dos clases quedan **vacias**.
+  ⚠️ **La tabla del §78.1 clasificaba por FICHERO**, y bajo
+  `trace/mod.rs` caben DOS mensajes que no son lo mismo: uno de asercion de
+  frontera y otro de restriccion de TRANSICION que la traza no cumple. Los tres
+  de esa tercera clase eran `the_delegated_cap_is_enforced_at_apply`,
+  `burning_frees_up_minting_capacity` y `the_total_supply_survives_restart`:
+  los tres panicaban GENERANDO la subida de un enunciado falso a proposito, en
+  su mitad de rechazo, y el §364 los devolvio a depuracion con el remedio del
+  §77.1 -esperar lo que corresponde a cada modo, que gana cobertura- en vez
+  de marcarlos. ⚠️ **El precio declarado abajo vencio**: de ochenta a
+  noventa y seis se escondieron dieciseis fallos nuevos, y tres de ellos eran
+  de una clase que este mismo cuerpo daba por cerrada.
+
+  ~~Ochenta fallos: CLASIFICADOS, dos corregidos.~~
   ~~Doce fallos sin diagnosticar.~~ ⚠️ **Eran ochenta, no doce** -los doce
   eran los de `tests_delegada`; el conteo original miro un subconjunto-.
   **Clasificados** el 31-07-2026 por clase de panico (§78): **78** son
