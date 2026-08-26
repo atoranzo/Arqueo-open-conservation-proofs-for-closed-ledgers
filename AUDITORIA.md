@@ -27224,3 +27224,52 @@ Asientos y en la nota fechada.
 **Contadores.** Ningun pin se mueve, ninguna cifra publicada cambia,
 ningun Cargo tocado. Dos ficheros: el RFC (264 -> 276 lineas) y este
 registro. Deuda declarada: el EMPUJE queda fuera del bloque.
+
+## §357 -- El testigo funcional del deissue-v2: la deuda del §351, saldada -- capa 284 -> 285
+
+**Que se sella.** El testigo FUNCIONAL de la rama Some de `apply_deissue`
+-- la deuda que el §351 declaro al meter el dispatch sin testigo propio y
+que el §355 re-declaro al ponerle solo el negativo de ancho. Un unico test
+(+40 lineas, two_phase 3426 -> 3466):
+`una_desemision_v2_tras_delta_destruye_el_pendiente` (tests_verificacion,
+salt 0xDE15), insertado POR EXTRACTOR tras su hermano de ancho -- la region
+del hermano re-derivada en la corrida y exigida igual a la medida
+(ac33912498c809df); las lineas historicas no se usaron. Hallazgo del censo:
+no existia NINGUN test verde de la des-emision, ni v1 ni v2 -- este es el
+primero del arbol.
+
+**El testigo.** Setup calcado de los dos moldes medidos: send ->
+apply_send -> C2 PLANTADO (set_leaf + meta, molde del §350) con el meta
+directo al centinela de emision (molde del §355); el productor
+`deissue_v2` honesto (es &self y sin clave: la des-emision solo lleva la
+apertura #27) y `apply_deissue` por la via v2. CINCO aserciones de lo
+que el Ok hace al estado, medidas ANTES en el PASTE-DEISSUE-M sobre la
+region 403-508: la hoja queda vacia -- el suministro BAJA exactamente lo
+comprometido -- el saldo del emisor queda INTACTO (nadie cobra: destruir no
+es devolver, el contraste exacto con el reembolso, que devuelve) -- la raiz
+de cuentas no se mueve (el log la repite a ambos lados) -- el meta se va
+con la hoja.
+
+**Decisiones del corte, las tres REVERSIBLES.** D-1: setup C2-plantado con
+centinela directo; la alternativa (emision real) queda descartada porque el
+plantado ES el regimen de los testigos v2 desde el §350. D-2: las cinco
+aserciones del estado, dictadas por la region medida. D-3: nombre espejo del
+molde funcional del refund, salt 0xDE15, y la familia de la des-emision
+junta en tests_verificacion.
+
+**Cifras.** BASE exigida y clavada ANTES de tocar: 284/0/3, 0 warnings.
+VIVA: 285/0/3, 0 warnings, con el testigo en verde. Pin capa 284 -> 285
+(canon :89 + su historia, conservando la del 355); totales 978 -> 979,
+1115 -> 1116, 1129 -> 1130. El -B: 19 renglones / 26 swaps en 10 ficheros
+con deltas POR FICHERO; los strays quedaron quietos y verificados: el
+§284 del comentario de canon:109, las "978 lineas" de BACKLOG:2017, y
+los 285/1116 que ya vivian fuera. Jueces 10/10 PRE y POST en cada bloque.
+
+**Lo que NO hace.** El canon (--sello/--completo) no corre esta sesion: el
+movimiento del pin lo juzgan los diez de tools/ (doctrina 1 de la 60). La
+VIGILANCIA de la foto del canon del vector 0.3 (traspaso-66) sigue VIVA y
+se mide en el primer canon que corra.
+
+**El hilo.** La deuda nacio en el §351, se re-nombro en el §355 y este
+asiento la cierra; el comentario del testigo la nombra (S351/S357). Commit
+unico de LOS ONCE (two_phase + canon + los 9 docs del pin) y empuje dentro.

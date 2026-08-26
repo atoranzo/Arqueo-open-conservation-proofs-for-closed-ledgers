@@ -3377,6 +3377,46 @@ mod tests_verificacion {
         assert_eq!(layer.pending.leaf(pos), c2, "la hoja sigue");
     }
 
+    /// DEUDA DEL S351, SALDADA (S357): el testigo FUNCIONAL de la rama
+    /// `Some` de `apply_deissue`. Un pendiente de EMISION (centinela) con
+    /// compromiso v2 (C2 PLANTADO, molde del S350) se des-emite tras
+    /// `delta` por la via de la APERTURA: la hoja queda vacia, el
+    /// suministro BAJA exactamente lo comprometido y NADIE cobra -- la
+    /// raiz de cuentas y el saldo del emisor no se mueven (destruir no
+    /// es devolver: el contraste exacto con el reembolso).
+    #[test]
+    fn una_desemision_v2_tras_delta_destruye_el_pendiente() {
+        use crate::pending::pending_commitment_v2;
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let receptor = layer.public_id_of(bob).expect("bob");
+        let f = layer.public_id_of(alice).expect("alice");
+        let ea = state_of(&layer, alice);
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, receptor, salt_de(0xDE15), 300_000)
+            .expect("send");
+        layer.apply_send(&recibo, alice, &ea, 300_000).expect("apply");
+        let pos = recibo.notice.position;
+        let delta = 1u64;
+        let c2 = pending_commitment_v2(receptor, salt_de(0xDE15), 300_000, f, delta);
+        layer.pending.set_leaf(pos, c2);
+        // El pendiente pasa a EMISION: el centinela es la llave del deissue.
+        layer.pending_meta.insert(pos, (crate::REFUND_SENDER_NONE, 0));
+        let saldo_emisor = state_of(&layer, alice).balance;
+        let supply = layer.total_supply();
+        let raiz = layer.accounts.root();
+        let materiales = layer
+            .deissue_v2(pos, receptor, salt_de(0xDE15), 300_000, f, delta)
+            .expect("materiales deissue v2");
+        layer.apply_deissue(&materiales).expect("desemision v2 tras delta");
+        assert_eq!(layer.pending.leaf(pos), [BaseElement::ZERO; 4], "la hoja queda vacia");
+        assert_eq!(layer.total_supply(), supply - 300_000, "el suministro baja lo comprometido");
+        assert_eq!(state_of(&layer, alice).balance, saldo_emisor, "nadie cobra");
+        assert_eq!(layer.accounts.root(), raiz, "la raiz de cuentas no se mueve");
+        assert!(layer.pending_meta.get(&pos).is_none(), "el meta se va con la hoja");
+    }
+
     /// GEMELOS D-7 (4/5): a un cobro v2 se le presenta el aviso sin sobre
     /// y la via v1 lo rechaza ANTES del Air -- la traza del ClaimAirV2 no
     /// corresponde a ClaimAir. El pendiente sigue en el arbol.
