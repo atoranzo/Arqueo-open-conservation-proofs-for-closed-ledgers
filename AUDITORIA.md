@@ -27313,3 +27313,48 @@ tocan.
 **Contadores.** Ningun pin se mueve (prosa y comentarios). Cuatro ficheros:
 two_phase (3467), README, RESUMEN_EJECUTIVO y este registro. Jueces 10/10
 PRE y POST. Commit unico y empuje dentro.
+
+## §359 -- El snapshot no miente: el export falla cerrado con pagos en vuelo (b-prima) -- capa 285 -> 286
+
+**Que se sella.** La mitad honesta del agujero de la instantanea, medida
+en la sesion 61 y re-medida en la 66: el formato (hoy v7; historia V3->V7
+en snapshot.rs:68-90) NO lleva el pendiente -- ni arbol, ni raiz, ni meta
+-- y export_snapshot escribia el fichero sin mirarlo: una copia de un
+ledger con pagos en vuelo los perdia CALLANDO, y la verificacion de la
+importacion pasaba igual (las raices que compara no cubren al pendiente).
+Desde este corte el export REHUSA: un gate delante del PRIMER byte
+(total_pending() > 0 o cualquiera de los dos mapas vivos ->
+VerificationFailed con el mensaje entero, cero variantes nuevas), la
+cuarta vineta en "Lo que NO es" de la cabecera, y el testigo
+`un_export_con_pagos_en_vuelo_rebota` -- exige el Err, exige que NO
+quede fichero a medias, y prueba que sin transito el export vuelve.
+snapshot.rs 1023 -> 1062.
+
+**La decision (b-prima), REVERSIBLE, y el reparto.** El usuario delego con
+los criterios de siempre. La (b) literal ("que import falle si el origen
+tenia pendientes") es IMPOSIBLE por formato: el fichero no lleva hueco
+para decirlo. La forma honesta es el gate en la UNICA boca que sabe: el
+export. La (a) -- una version del formato que lleve el pendiente con su
+raiz, para que la verificacion lo cubra -- queda DECLARADA como la via
+real futura, en la propia vineta. La (c) -- retirar la API muerta (CERO
+llamantes fuera de snapshot.rs, medido dos veces) -- se difiere a la fila
+de la nota 106, su familia exacta.
+
+**Cifras.** BASE 285/0/3 exigida antes de tocar; VIVA 286/0/3 con 0
+warnings y el testigo en verde. Pin capa 285 -> 286 (canon :89 + historia,
+conservando la del 357); totales 979 -> 980, 1116 -> 1117, 1130 -> 1131.
+Los mismos 19 renglones / 26 swaps del arco del 357 (los sellos 357/358
+fueron in-place), deltas POR FICHERO; strays quietos y verificados: los
+285 de BACKLOG y spec/RPC.md, el §284 de canon:109, el 1116 de
+doc/mapa-geometria. Jueces 10/10 PRE y POST en cada bloque.
+
+**Lo que NO hace, y el hallazgo que ficha.** El canon no corre esta
+sesion. Y el corte cazo prosa rancia NUEVA sin tocarla: el diagrama del
+formato (snapshot.rs:26) sigue diciendo ZKSSL4 con registros de 48 B
+cuando el codigo va por V7 con 112 B y hoja envuelta -- candidata
+declarada para su propio corte.
+
+**El hilo.** El agujero se midio en la 61, se vio desde el vector en la 64
+(§354) y este asiento cierra su mitad honesta; la otra mitad -- llevar
+el pendiente en el formato -- queda nombrada, no prometida. Commit unico
+de LOS ONCE (snapshot + canon + los 9 docs) y empuje dentro.

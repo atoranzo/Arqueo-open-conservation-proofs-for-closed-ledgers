@@ -54,6 +54,12 @@
 //!   autenticado que el ledger. Sin clave va en claro, y entonces quien
 //!   tenga el fichero **ve todos los saldos**.
 //! - **No hay copias incrementales.** Cada instantánea es completa.
+//! - **No lleva los pagos en vuelo.** El formato (v7) no tiene hueco
+//!   para el árbol de pendientes ni su raíz: una copia de un ledger
+//!   con dinero en tránsito lo perdería callando, y la verificación
+//!   pasaría igual. Por eso `export_snapshot` **rehúsa** exportar
+//!   mientras haya alguno (§359); llevar el pendiente con su raíz
+//!   es la vía futura declarada.
 
 use std::collections::HashMap;
 use std::io::{Read, Write};
@@ -166,6 +172,18 @@ impl SovereignLayer {
     /// protección distintos para el mismo dato**, y la instantánea es
     /// justo la que se copia fuera del nodo.
     pub fn export_snapshot(&self, path: &str) -> Result<SnapshotInfo, LayerError> {
+        // (b') del §359: el formato (v7) NO lleva el pendiente -- ni
+        // arbol, ni raiz, ni meta. Exportar con pagos en vuelo fabricaria
+        // una copia que MIENTE: restaura sin ellos y la verificacion pasa
+        // igual. Se rehusa ANTES de escribir un solo byte; la via real es
+        // una version futura que lleve el pendiente con su raiz.
+        let en_vuelo = self.total_pending();
+        if en_vuelo > 0 || !self.pending_amounts.is_empty() || !self.reserved_pending.is_empty() {
+            return Err(LayerError::VerificationFailed(format!(
+                "instantanea: {en_vuelo} en transito en {} posiciones; el formato v7 no lleva el pendiente y exportarlo lo perderia callando",
+                self.pending_amounts.len() + self.reserved_pending.len()
+            )));
+        }
         let mut out: Vec<u8> = Vec::new();
         out.extend_from_slice(MAGIC_V7);
         out.extend_from_slice(&digest_to_bytes(&self.custodian_set_root));
@@ -526,6 +544,27 @@ mod tests {
         // y el view_id tambien sigue (v6 lleva ambos).
         assert_eq!(l2.stored_view_id(idx), l1.stored_view_id(idx),
                    "v6 debe preservar view_id ademas de leaf_salt");
+    }
+
+    /// (b') del §359: el export FALLA CERRADO con pagos en vuelo --
+    /// el formato (v7) no lleva el pendiente y una copia lo perderia
+    /// callando, con la verificacion pasando igual. Sin transito, exporta.
+    #[test]
+    fn un_export_con_pagos_en_vuelo_rebota() {
+        let mut l = new_layer();
+        let _ = open_and_fund(&mut l, 0xE59A, 1_000_000);
+        // Un pago en vuelo, plantado en la boca exacta que el gate mira.
+        l.pending_amounts.insert(0, 300_000);
+        assert!(!l.pending_amounts.is_empty(), "premisa: hay transito");
+        let path = temp_file("export_con_vuelo");
+        let r = l.export_snapshot(&path);
+        assert!(r.is_err(), "con pagos en vuelo el export rehusa");
+        assert!(!std::path::Path::new(&path).exists(),
+                "y no deja fichero a medias");
+        // El transito termina: el export vuelve.
+        l.pending_amounts.clear();
+        l.export_snapshot(&path).expect("sin transito, exporta");
+        let _ = std::fs::remove_file(&path);
     }
 
     #[test]
