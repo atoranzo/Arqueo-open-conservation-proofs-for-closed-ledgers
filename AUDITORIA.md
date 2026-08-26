@@ -27972,6 +27972,15 @@ que depende de que alguien recuerde ejecutarlo no protege nada. Ahora se salta
 solo en depuracion, y `--release` lo corre con el resto". El corte no inventa
 prosa: recoge en `ARQUITECTURA` lo que el codigo ya dice.
 
+> §247 - LA ATRIBUCION DE ESTE PARRAFO ES FALSA. Anadido en el §369.
+> El §78.1 NO fija ninguna redaccion ni retira ningun termino. Leido entero
+> -`:6406-6435`, SHA-REGION `e936d7ee254c1a1a`- dice **"un limite de la
+> herramienta"**, SIN la palabra "conocido", y **no nombra "falso positivo"
+> ni una vez**. El "conocido" viene de `circuit_mint_pending_climb.rs:1189`,
+> que este mismo parrafo cita en el renglon siguiente: se conflaron DOS
+> fuentes y se le atribuyeron a una las palabras de la otra. Lo que sigue en
+> pie es la atribucion del §367, que solo afirma lo que la seccion dice.
+
 **El vocabulario, alineado con el §78.1.** El comentario nuevo dice "limite
 conocido de la herramienta", que es la redaccion que el §78.1 fijo y que
 `circuit_mint_pending_climb.rs:1188-1191` ya usa, en vez de "falso positivo".
@@ -28007,3 +28016,60 @@ mover, sumas 981 / 1118 / 1132, el canon declara 1133 con el offset +1
 intacto. **El canon no corre**: el corte no toca un `.rs` ni un Cargo, y la
 puerta son las siete herramientas medidas antes y despues. BACKLOG sin mover
 en 50 abiertas / 56 resueltas. Ningun Cargo tocado.
+
+## §369 — una atribucion que no se abrio, y la orden que la cabecera publica
+
+**Que.** Tres cirugias bajo una tesis: *una referencia que se cita sin abrirla
+acaba diciendo lo que uno recuerda, no lo que la fuente dice*. Se corrige la
+atribucion falsa que el §368 escribio sobre el §78.1, y se remedia la cabecera
+de `range_check.rs`, que publica una afirmacion que dejo de ser cierta. **La
+orden que la cabecera publica se conserva VERBATIM.**
+
+**La atribucion, medida.** El §368 escribio que "limite **conocido** de la
+herramienta" es "la redaccion que el §78.1 fijo". Leida la seccion entera
+-`### 78.1`, `:6406-6435`, SHA-REGION `e936d7ee254c1a1a`- resulta que dice
+**"un limite de la herramienta"**, sin "conocido", y que **no nombra "falso
+positivo" ni una vez**: no retiro el termino, nunca lo uso. El "conocido" viene
+de `circuit_mint_pending_climb.rs:1189`, que el propio parrafo cita en el
+renglon siguiente. **Se conflaron dos fuentes.** La correccion va ENCIMA y la
+frase se cita, no se borra (§247).
+
+**Lo que SI se sostiene, y se dice.** La atribucion del §367 -"el §78.1 ya no
+llama a esto falso positivo sino limite de la herramienta"- casa con la fuente
+por sus dos mitades: el termino sale cero veces y esa expresion sale literal.
+El defecto es de UN asiento, no de la cadena entera.
+
+**La cabecera de `range_check.rs`, y por que es la pieza sustantiva.** Decia
+que "los tests de este modulo deben ejecutarse en release". Eso dejo de ser
+cierto cuando el test degenerado paso a `cfg_attr(debug_assertions, ignore)`:
+hoy se salta solo en depuracion y `--release` lo corre con el resto. **Medido
+el 26-08-2026: `cargo test -p stark-experiment` en depuracion da 314 pasan, 0
+fallan y 14 ignorados** -cero fallos en el crate entero-. Es la misma figura
+que el §368 reparo en `ARQUITECTURA`, un nivel mas abajo y dentro del codigo.
+
+**El vocabulario, y con la fuente delante esta vez.** La cabecera y el
+docstring dejan de decir "falso positivo" y pasan a "limite de la herramienta,
+no un fallo de solidez", que es lo que el §78.1 dice literalmente. **No es
+corregir una falsedad: es coherencia**, y asi queda escrito. El termino sigue
+vivo en `CONTRIBUTING.md:52`, `doc/VERIFICACION_FORMAL.md:178` y `:311` y
+`witness.rs:689`, y son OTROS asuntos: no se tocan.
+
+**El docstring se contradecia a si mismo.** Decia "falso positivo" en `:350` y
+cuatro lineas mas abajo, en `:354-360`, ya narraba la correccion entera. Se
+arregla el renglon de arriba y no se toca el de abajo.
+
+**Fichado y NO concluido.** La correccion del §366 dentro del §78.1 dice "hoy
+las dos filas de esta tabla estan en CERO y solo queda la de grados", y la
+tabla tiene exactamente dos filas, una de las cuales -78, la de grados- no
+esta en cero. O "las dos filas" nombra las dos clases bajo `trace/mod.rs` -y
+entonces es ambiguedad-, o el renglon se contradice. **No se llama falsa a una
+referencia con media medicion**: se mide aparte.
+
+**Contadores.** Ningun test tocado: el corte solo cambia comentarios de
+documentacion. Pin de la capa 287 y de stark 318 sin mover, sumas 981 / 1118 /
+1132, el canon declara 1133 con el offset +1 intacto. **El canon no corre**,
+pero la puerta NO son solo las siete herramientas: como el conjunto incluye un
+`.rs`, se compila el crate y se exige que `-- --list` de exactamente lo mismo
+que antes, que es el invariante "no se anadio ni se perdio ningun test" -y el
+que cazaria un bloque cercado colado en un `//!`, que se volveria doc-test.
+BACKLOG sin mover en 50 abiertas / 56 resueltas. Ningun Cargo tocado.

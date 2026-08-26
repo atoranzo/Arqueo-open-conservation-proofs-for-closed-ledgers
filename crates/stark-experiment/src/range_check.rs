@@ -32,9 +32,15 @@
 //! ## Nota sobre trazas degeneradas (heredada de la versión f128)
 //!
 //! Con `value = 0` la traza es degenerada (polinomio de restricción
-//! idénticamente nulo) y una comprobación de depuración de Winterfell da
-//! un falso positivo. Los tests de este módulo deben ejecutarse en
-//! release: `cargo test -p stark-experiment range_check --release`.
+//! idénticamente nulo) y la comprobación de grados de Winterfell no la
+//! acepta en depuración: es un límite de la herramienta —la restricción
+//! impone lo que debe, y en release genera y verifica bien—, no un fallo
+//! de solidez. Ese test se salta solo en depuración con
+//! `cfg_attr(debug_assertions, ignore)` y `--release` lo corre con el
+//! resto, así que el módulo entero pasa en los dos perfiles: medido el
+//! 26-08-2026, `cargo test -p stark-experiment` en depuración da cero
+//! fallos. Para correrlo aparte en release:
+//! `cargo test -p stark-experiment range_check --release`.
 //!
 //! ## Limitación pendiente para el circuito integrado
 //!
@@ -347,7 +353,8 @@ mod tests {
     /// cero → polinomio de restricción idénticamente nulo, grado 0 en vez
     /// de 63). La prueba en sí es correcta y verifica bien, pero una
     /// comprobación de depuración de winterfell
-    /// (`evaluation_table.rs:214`) da un falso positivo en debug:
+    /// (`evaluation_table.rs:214`) no la acepta en depuración. Es un
+    /// límite de la herramienta, no un fallo de solidez, y el mensaje es:
     /// "transition constraint degrees didn't match: expected [63,0,63],
     /// actual [0,0,0]".
     ///
