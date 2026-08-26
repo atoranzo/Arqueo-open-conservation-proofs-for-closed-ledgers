@@ -34,6 +34,19 @@ eso "1.126,2 MiB" casaria como "126,2" -el separador de miles, el mismo
 caso que ya mordio con un patron de 994 sobre 41.994-, y ese agujero lo
 tenia la version anterior sin saberlo.
 
+LA VIA (S362). La cifra se mide sobre `send`/`claim` de la capa, que es
+la via que las cifras publicadas DESCRIBEN, y no sobre la del cliente.
+Es deliberado y su permiso vive en `mod tests` de metrics.rs: cuando
+llegue la migracion -- ENTRADA 32 del BACKLOG -- las mediciones cambian
+con ella, y eso se DECLARA, no se absorbe.
+
+MEDIDO el 2026-08-26: la via DOCUMENTADA -- send_materials ->
+client::prove_send -> apply_send -- da los MISMOS bytes, 66_998 y
+65_313, en cinco repeticiones y sin una sola diferencia. La cifra
+publicada NO depende de la via. Desde el S362 lo PINA un segundo
+gemelo, la_mitad_cara_la_soporta_el_pagador, que asierta esos dos
+bytes ademas de la relacion temporal.
+
 Ceguera declarada:
   - no ve una cifra escrita con palabras;
   - no entra en AUDITORIA.md: los asientos son REGISTRO HISTORICO y una

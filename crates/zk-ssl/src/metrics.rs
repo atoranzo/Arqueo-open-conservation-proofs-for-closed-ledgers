@@ -62,6 +62,16 @@
 // son PUBLICADA_PAGO_B * 1000 / 2^20 MiB. Medida el 2026-08-14 y remedida
 // el 2026-08-17 sin variacion. Quien la mueva mueve tambien los
 // documentos: `tools/check_publicadas.py` los ata y dice cuales faltan.
+// VIA: medida sobre `send`/`claim` de la capa, que es la que las cifras
+// publicadas describen; el permiso y su razon estan en `mod tests`. La
+// migracion es la ENTRADA 32 del BACKLOG, y cuando ocurra las mediciones
+// cambian con ella: se declara, no se absorbe.
+//
+// MEDIDO el 2026-08-26: la via DOCUMENTADA -- send_materials ->
+// client::prove_send -> apply_send -- da los MISMOS bytes, 66_998 y 65_313,
+// en cinco repeticiones y sin una sola diferencia. La cifra publicada NO
+// depende de la via. Lo que si dependia de ella era la RELACION temporal, y
+// por eso esa se fue a `la_mitad_cara_la_soporta_el_pagador`.
 pub const PUBLICADA_PAGO_B: usize = 132_311;
 
 #[cfg(test)]
@@ -111,7 +121,12 @@ mod tests {
     // construyen sobre ello un argumento normativo. Hoy es al reves. Los
     // preprints los suspende la entrada 28; este gate impide que la
     // inversion vuelva a pasar inadvertida.
-    const PUBLICADA_ENVIO_SOBRE_COBRO_MIN: f64 = 1.20;
+    // => RETIRADA en el S362, y no por la banda sino por el OBJETO:
+    // `layer.send` y `layer.claim` empaquetan el trabajo del cliente y el de
+    // la capa en UNA llamada, luego el cronometro sumaba los dos lados de
+    // justo la frontera que esta afirmacion separa. El contrato vive ahora en
+    // `la_mitad_cara_la_soporta_el_pagador`, sobre los dos lados de verdad y
+    // SIN banda: se afirma el SENTIDO.
 
     /// El montaje que produce la cifra publicada.
     ///
@@ -532,7 +547,8 @@ mod tests {
     /// de medida. Un gate ignorado es un gate que no puede hablar.
     #[test]
     fn la_cifra_publicada_sigue_siendo_la_medida() {
-        let (envio_b, cobro_b, envio_ms, cobro_ms) = medir_el_pago_publicado();
+        // El reloj se fue al S362: aqui solo quedan los contratos EXACTOS.
+        let (envio_b, cobro_b, _, _) = medir_el_pago_publicado();
 
         assert_eq!(
             envio_b, PUBLICADA_ENVIO_B,
@@ -568,14 +584,144 @@ mod tests {
             escrito, PUBLICADA_MIL_MIB
         );
 
-        // La RELACION, con banda. Afirma el sentido, no el valor.
+        // AQUI VIVIA LA RELACION `envio_ms > cobro_ms x 1,20`, y se cita en
+        // vez de borrarse (molde S247). Salio en el S362 porque el estimador
+        // no era ruidoso: media el OBJETO equivocado. Ver
+        // `la_mitad_cara_la_soporta_el_pagador`, justo debajo de este.
+    }
+
+    /// **La mitad cara la soporta el PAGADOR.**
+    ///
+    /// Contrato traido del atado A en el S362, y no por ruido: por OBJETO. La
+    /// afirmacion normativa de los preprints (entrada 28) es sobre QUIEN
+    /// soporta el coste mayor -- el pagador frente al receptor -- y
+    /// `layer.send`/`layer.claim` empaquetan el trabajo del cliente y el de la
+    /// capa en una sola llamada. `client::prove_send` y `client::prove_claim`
+    /// SON esos dos lados: lo que corre el pagador en su maquina frente a lo
+    /// que corre el receptor en la suya.
+    ///
+    /// **EL ESTIMADOR, con su enunciado exacto.** Las dos funciones son PURAS
+    /// de (materiales, clave, opciones) y no tocan la capa, asi que N
+    /// repeticiones sobre los MISMOS materiales dan la MISMA prueba byte a
+    /// byte y solo varia el reloj. La contencion es una perturbacion NO
+    /// NEGATIVA, luego cada minimo es una COTA SUPERIOR del tiempo sin
+    /// contencion: lo que compra el minimo no es una direccion garantizada del
+    /// sesgo, es la MENOR CONTAMINACION. Las repeticiones van ENTRELAZADAS
+    /// para que una rafaga caiga sobre los dos, y la primera se descarta
+    /// por precaucion frente al calentamiento. DOS corridas del 2026-08-26,
+    /// y la segunda NO reproduce la primera: en una, la primera del cobro
+    /// quedo a 33,6 % de su minimo y la del envio a 1,3 %; en la otra no
+    /// hubo penalizacion inicial en ninguno de los dos lados y el atipico
+    /// salio al FINAL. La asimetria queda escrita como lo que es: medida
+    /// una vez y no reproducida. Lo que sostiene el descarte no es ese
+    /// fenomeno sino que es casi gratis -- quitar una muestra solo puede
+    /// SUBIR un minimo, y el efecto medido fue de 0,3 %.
+    ///
+    /// **SIN BANDA.** Se afirma el SENTIDO, que es lo que dice la afirmacion.
+    /// Un margen numerico seria un numero que nadie puede justificar.
+    ///
+    /// Las dos aserciones de BYTES no son adorno: ATAN este montaje al que
+    /// produce la cifra publicada. Si alguien separa uno del otro, los bytes
+    /// dejan de cuadrar y este test lo dice antes de que la relacion pase a
+    /// significar otra cosa.
+    #[test]
+    fn la_mitad_cara_la_soporta_el_pagador() {
+        const N: usize = 5;
+        let mut layer = new_layer();
+        #[allow(deprecated)]
+        let alice = layer.open_account(BaseElement::new(SK_ALICE));
+        #[allow(deprecated)]
+        let bob = layer.open_account(BaseElement::new(SK_BOB));
+        let op = mint_commitment(&layer, alice, 1_000_000);
+        let subida = mint_climb_proof(&layer, alice, 1_000_000);
+        let (pa, ia, pb, ib) = delegated_pair(op, 1, 3);
+        layer
+            .apply_mint_delegated(subida, pa, ia, pb, ib, alice, 1_000_000)
+            .expect("aplicar emision");
+        fund_delegated(&mut layer, bob, 50_000);
+        let estado_a = state_of(&layer, alice);
+        let receptor = layer.public_id_of(bob).expect("cuenta");
+        let clave_a = [
+            BaseElement::new(SK_ALICE),
+            BaseElement::new(0),
+            BaseElement::new(0),
+            BaseElement::new(0),
+        ];
+        let clave_b = [
+            BaseElement::new(SK_BOB),
+            BaseElement::new(0),
+            BaseElement::new(0),
+            BaseElement::new(0),
+        ];
+
+        let materiales_envio = layer
+            .send_materials(alice, receptor, 250_000, salt_de(0x11E7))
+            .expect("materiales de envio");
+        let primero = crate::client::prove_send(&materiales_envio, clave_a, crate::proof_options())
+            .expect("prueba local del envio");
+        layer
+            .apply_send(&primero, alice, &estado_a, 250_000)
+            .expect("aplicar envio");
+        let materiales_cobro = layer
+            .claim_materials(bob, &primero.notice)
+            .expect("materiales de cobro");
+
+        let mut ms_envio: Vec<f64> = Vec::with_capacity(N);
+        let mut ms_cobro: Vec<f64> = Vec::with_capacity(N);
+        let mut by_envio: Vec<usize> = Vec::with_capacity(N);
+        let mut by_cobro: Vec<usize> = Vec::with_capacity(N);
+        for _ in 0..N {
+            let t = Instant::now();
+            let e = crate::client::prove_send(&materiales_envio, clave_a, crate::proof_options())
+                .expect("prueba local del envio");
+            ms_envio.push(t.elapsed().as_secs_f64() * 1000.0);
+            by_envio.push(e.proof.len());
+
+            let t = Instant::now();
+            let c = crate::client::prove_claim(&materiales_cobro, clave_b, crate::proof_options())
+                .expect("prueba local del cobro");
+            ms_cobro.push(t.elapsed().as_secs_f64() * 1000.0);
+            by_cobro.push(c.proof.len());
+        }
+
+        let minimo = |v: &[f64]| v.iter().skip(1).fold(f64::INFINITY, |a, b| a.min(*b));
+        let me = minimo(&ms_envio);
+        let mc = minimo(&ms_cobro);
+        let mut pares = 0usize;
+        for i in 1..N {
+            if ms_envio[i] > ms_cobro[i] {
+                pares += 1;
+            }
+        }
+
+        println!("\n=== La mitad cara: los DOS LADOS de la frontera ===\n");
+        println!("  N = {N}, primera descartada, repeticiones ENTRELAZADAS");
+        println!("  envio ms  {ms_envio:?}");
+        println!("  cobro ms  {ms_cobro:?}");
+        println!("  min envio {me:.1} ms   min cobro {mc:.1} ms   razon {:.3}", me / mc);
+        println!("  pares con envio > cobro: {pares} de {}", N - 1);
+        println!("  bytes  envio {}  cobro {}", by_envio[0], by_cobro[0]);
+
+        assert_eq!(
+            by_envio[0], PUBLICADA_ENVIO_B,
+            "el ENVIO por la via del cliente mide {} B y la constante dice {}: \
+             o este montaje se separo del de la cifra publicada, o la via dejo \
+             de dar la misma prueba. Las dos cosas hay que declararlas",
+            by_envio[0], PUBLICADA_ENVIO_B
+        );
+        assert_eq!(
+            by_cobro[0], PUBLICADA_COBRO_B,
+            "el COBRO por la via del cliente mide {} B y la constante dice {}",
+            by_cobro[0], PUBLICADA_COBRO_B
+        );
+
         assert!(
-            envio_ms > cobro_ms * PUBLICADA_ENVIO_SOBRE_COBRO_MIN,
-            "generar el ENVIO tardo {:.1} ms y el COBRO {:.1} ms. Se exige \
-             envio > cobro x {:.2}. Si esto se invierte, la mitad cara pasa \
-             al receptor y el argumento normativo de los preprints (entrada \
-             28) cambia de sentido: no se absorbe, se declara",
-            envio_ms, cobro_ms, PUBLICADA_ENVIO_SOBRE_COBRO_MIN
+            me > mc,
+            "probar el ENVIO costo {:.1} ms como minimo y el COBRO {:.1}: la \
+             mitad cara habria pasado al RECEPTOR y el argumento normativo de \
+             los preprints (entrada 28) cambiaria de sentido. No se absorbe, \
+             se declara. Muestras envio {:?}, cobro {:?}",
+            me, mc, ms_envio, ms_cobro
         );
     }
 

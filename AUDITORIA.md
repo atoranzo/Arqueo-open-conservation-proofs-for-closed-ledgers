@@ -27494,3 +27494,101 @@ nace declarada) -> §360 (el diagrama del snapshot deja de mentir) -> §361.
 
 **Contadores.** Ningun pin movido. Ninguna suma movida. Ningun Cargo tocado.
 ARQUITECTURA.md 1531 -> 1553. accounts.rs 389 -> 390. BACKLOG quieto.
+
+## §362 — el reloj sale del atado a su contrato propio
+
+**Que.** El atado A del §304 llevaba CUATRO contratos en un solo `#[test]`:
+tres de BYTES, exactos y deterministas, y uno de RELOJ con banda
+(`envio_ms > cobro_ms x 1,20`). El de reloj cayo TRES veces — en el §361 y
+dos mas en esta sesion — y la 68 midio por que. Se parte: los bytes y la
+jornada en MiB se quedan donde estaban, y la relacion se va a
+`la_mitad_cara_la_soporta_el_pagador`, sobre `client::prove_send` frente a
+`client::prove_claim`. **NINGUNA cifra publicada se mueve.**
+
+**El objeto, no el ruido.** La afirmacion normativa de los preprints (entrada
+28) es sobre QUIEN soporta el coste mayor: el pagador frente al receptor. Y
+`layer.send`/`layer.claim` empaquetan el trabajo del cliente y el de la capa
+en UNA llamada, luego el cronometro sumaba los dos lados de justo la frontera
+que la afirmacion separa. Medido en la 68: los dos circuitos tienen la MISMA
+longitud de traza (1024) y anchos 56 frente a 55, asi que la geometria da
+1,018 y los bytes 1,026 — pero el tiempo daba 1,58, y la geometria no lo
+explicaba. No era un estimador ruidoso: **media el objeto equivocado.**
+
+**La via, DECLARADA donde vive el numero.** `metrics.rs:69` ya decia que el
+arnes mide la via antigua A PROPOSITO, «es la que las cifras publicadas
+describen», y que cuando llegue la migracion (entrada 32) las mediciones
+cambian con ella y **eso se declara, no se absorbe**. Mover la medicion antes
+de la migracion habria sido absorberlo. Esa razon vivia solo en un comentario
+dentro de `mod tests`: ahora esta tambien en el bloque de doc de
+`PUBLICADA_PAGO_B` y en el docstring de `tools/check_publicadas.py`.
+
+**Y se midio que la cifra no depende de la via.** Un instrumento temporal que
+no dejo nada en el arbol corrio la via documentada — `send_materials` ->
+`client::prove_send` -> `apply_send` — sobre el ESCENARIO PUBLICADO: cinco
+repeticiones, **66.998 y 65.313 sin una sola diferencia**, identicos a las
+constantes. Lo que dependia de la via no eran los bytes: era la RELACION. El
+test nuevo lo PINA con dos aserciones de byte, que ademas atan su montaje al
+que produce la cifra publicada.
+
+**TRES generaciones, no dos.** `metrics.rs:358` llama «via retirada» a
+`transfer` y «via de produccion» a `send`+`claim`; `PRINCIPIOS:204`
+llama retirada a `layer.send`. No se contradicen: `send`/`claim` es la
+generacion de EN MEDIO. `transfer` ya no existe como metodo de la capa. Decir
+«send esta retirada» a secas seria tan impreciso como lo que se repara.
+
+**EL ENUNCIADO DEL MINIMO, CORREGIDO.** Durante el arco se escribio que el
+minimo de N «converge por arriba y nunca por abajo, luego se comparan dos
+COTAS INFERIORES». **Es falso y queda escrito como falso.** La contencion
+es una perturbacion NO NEGATIVA, luego cada minimo es una **COTA SUPERIOR**
+del tiempo sin contencion, y el cociente de dos cotas superiores no es
+unilateral. Lo que compra el minimo no es una direccion garantizada del
+sesgo: es la **MENOR CONTAMINACION**. Con ese enunciado sigue siendo el
+estimador correcto, pero por la razon buena.
+
+**EL DESCARTE DE LA PRIMERA, tambien corregido.** Se justifico con un
+calentamiento asimetrico medido una vez (primera del cobro a 33,6 % de su
+minimo, la del envio a 1,3 %). **La segunda corrida NO lo reprodujo**: sin
+penalizacion inicial en ninguno de los dos lados, y el atipico al FINAL. La
+asimetria queda como lo que es, medida una vez y no reproducida. El descarte
+se mantiene porque es casi gratis — quitar una muestra solo puede SUBIR un
+minimo, y el efecto medido fue de 0,3 % — no porque el fenomeno sea estable.
+
+**SIN BANDA, y por que.** Se afirma el SENTIDO, que es lo que dice la
+afirmacion normativa; un margen numerico seria un numero que nadie puede
+justificar. El 1,20 era artefacto del ruido. Serie de ratios medidos:
+**1,595 · 1,568 · 1,541 · 1,553** en canal limpio, y **0,96 · 1,174**
+en paralelo bajo carga. Lo que se rompe bajo contencion es el MARGEN, no la
+direccion: en la corrida de 1,174 el sentido aguanto y la banda no.
+
+**EVIDENCIA de esta corrida, FECHADA y NO gate.** El 2026-08-26, con la suite
+entera en release: min(envio) **232,0 ms** frente a max(cobro) **174,7 ms**,
+y 4 de 4 pares entrelazados con envio > cobro. Que el MINIMO del envio supere
+al MAXIMO del cobro es mas fuerte que lo que el test asierta, y por eso va
+aqui como evidencia y **no** como compuerta: una corrida no fija un
+invariante.
+
+**Lo que NO se toca, y se declara.** `BACKLOG.md:2880` dice «arbol 286/0
+intacto» dentro del cuerpo de una nota que NARRA una observacion pasada: una
+frase que deja de ser cierta se CITA, no se cambia. Y
+`tools/check_dominios.py:2` dice `(§286)`, que es un NUMERO DE SELLO y no
+una cifra — el caso conocido de que un patron numerico no los distingue.
+
+**Fuera de este arco, y fichado.** `two_phase.rs:839` afirma que la via
+antigua esta «marcada `#[deprecated]`» y **no hay ni un atributo en el
+fichero**; los `#[allow(deprecated)]` de `metrics.rs` sobre `open_account`
+prueban que el aviso si se emite dentro del crate, y el canon pina warnings 0.
+Y `PRINCIPIOS:194` escribe `layer.audit` con CUATRO argumentos cuando toma
+CINCO (`audit.rs:29`), dentro del bloque que el §203 corrigio. Misma familia,
+corte propio.
+
+**Rojos propios de la sesion.** Un censo de `fn prove_*` con alternancia
+CERRADA; un `#[allow` ciego al atributo interno `#![allow(deprecated)]`; un
+gate que prohibia un token y con el la CITA que el propio corte escribe
+(doctrina bb, reincidencia); un nombre de test TECLEADO (`tests::`) donde la
+maquina dice `metrics::tests::`; un `set -e` encendido a mitad de bloque que
+podia matarlo antes de restaurar; y una FASE que escribia sobre la marcha en
+vez de ser atomica. Los dos ultimos los cazo el ensayo antes de emitir.
+
+**Contadores.** Pin de la capa **286 -> 287** (un test pasa a ser dos).
+Totales **980 -> 981**, **1117 -> 1118**, **1131 -> 1132**, en 25 cifras
+repartidas por nueve documentos raiz. Ningun Cargo tocado. BACKLOG quieto.
