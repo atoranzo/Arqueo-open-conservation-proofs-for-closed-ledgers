@@ -27427,3 +27427,70 @@ el export escribe).
 
 **Contadores.** Ningun pin movido. Ninguna suma movida. Ningun Cargo tocado.
 snapshot.rs 1062 -> 1084 (diagrama 21 -> 43, lector 3 -> 3). BACKLOG quieto.
+
+## §361 — La portada deja de enseñar la API retirada
+
+**Que se sella.** La primera pantalla de `ARQUITECTURA.md` -- el documento de
+entrada del proyecto -- enseñaba un flujo que la capa de hoy no tiene, y en el
+que la CLAVE DE GASTO viajaba a la capa: exactamente el defecto que el §203
+corrigio en `PRINCIPIOS.md` y que nadie miro aqui. Se sustituye por el flujo
+vigente y se corrige el segundo ejemplo, 740 lineas mas abajo, que estaba igual
+de rancio. De paso, `accounts.rs` recupera un doc que estaba TRASPUESTO.
+
+**Lo medido, y todo sobre `1a4b4d8`.** Tres lecturas puras encadenadas:
+PASTE-106-M (salida ce41c528c0f0febc/278), el comando suelto de la firma, y
+PASTE-106-M2 (0630994618bd04fc/190).
+
+1. El constructor vigente vive en `persistence.rs:20`, anclado a su `impl`, y
+   toma SEIS parametros: path, custodian_set_root, governance_set_root,
+   regulatory_limit, max_supply, max_accounts. La portada mostraba TRES firmas
+   distintas (4, 3 y 4 argumentos) y las tres falsas.
+2. `fn mint` y `fn apply_mint` salen UNA sola vez en todo el arbol, en
+   `crates/settlement-layer`, la capa ANTERIOR. En la capa de hoy no existen:
+   emitir es `apply_mint_delegated`, que exige dos custodios distintos.
+3. `send` y `claim` SI existen en `two_phase.rs` (775 y 1100) y SI toman
+   `spend_key`. No son API retirada: son un RESIDUO que convive con el flujo
+   por materiales que `PRINCIPIOS.md` 4.2 documenta como el principio. Esa
+   superficie NO se toca en este corte y queda declarada como hallazgo propio.
+4. Las cifras de la portada (286 tests, 18 circuitos) TIENEN JUEZ -- la
+   compuerta del §237 -- y `check_cifras` da verde: no envejecen solas y se
+   conservan byte a byte.
+
+**El molde no se invento: se copio del arbol.** El ejemplo nuevo es el de
+`PRINCIPIOS.md` 4.2 (174-209), corregido en el §203; la forma de la nota que
+CITA el error en vez de borrarlo es la de sus lineas 203-206; y la llamada
+elidida `apply_mint_delegated(...)` es la que ya usa la cabecera de
+`lib.rs` (54-63). Ni un identificador se escribio sin abrir su fuente: el
+bloque GATEA contra el arbol cada nombre nuevo que la portada pasa a usar,
+incluido el testigo que cita.
+
+**El doc TRASPUESTO de `accounts.rs`.** Las lineas 69-72 describian
+`open_account` y estaban pegadas ENCIMA del doc propio de `stored_view_id`;
+como `///` se adhiere al item siguiente, rustdoc las publicaba como doc de
+esa otra funcion. Y `open_account` (:112) se quedaba SIN doc. Una nota de la
+sesion 57 decia que si lo tenia, de trece lineas: era falsa, y el fichero no
+se habia movido desde entonces. El doc se MUEVE a su sitio -- no se borra -- y
+de paso pierde la frase de la clave del emisor, igual que la cabecera del
+modulo.
+
+**Decisiones, REVERSIBLES.**
+
+- **D-1** la portada describe el flujo por MATERIALES y nada mas; el residuo
+  de `send`/`claim` se NOMBRA en la nota en vez de callarse.
+- **D-2** el doc traspuesto se mueve Y se corrige la frase falsa que llevaba
+  dentro: reubicar una falsedad no es repararla.
+- **D-3** la (c) del snapshot NO entra: los 18 de 18 tests de `snapshot.rs`
+  usan sus tres publicas, luego retirarlas moveria el pin. `snapshot.rs` no
+  se abre en este corte.
+
+**Lo que NO hace.** Ningun test se mueve: sin pin, sin cifras, sin canon. La
+puerta es la VIVA de la capa, exigida INTACTA. No se retira ni se esconde
+ninguna funcion. Quedan fichados y sin tocar: la superficie
+`two_phase::send/claim(spend_key)` frente al 4.2 (visibilidad SIN decidir),
+la (c) del snapshot, la via (a) del formato, y el censo C4.
+
+**El hilo.** §203 (el mismo defecto, cazado en el hermano) -> §342 (la nota 106
+nace declarada) -> §360 (el diagrama del snapshot deja de mentir) -> §361.
+
+**Contadores.** Ningun pin movido. Ninguna suma movida. Ningun Cargo tocado.
+ARQUITECTURA.md 1531 -> 1553. accounts.rs 389 -> 390. BACKLOG quieto.

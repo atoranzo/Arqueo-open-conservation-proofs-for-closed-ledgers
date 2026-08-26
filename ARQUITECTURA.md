@@ -4,24 +4,34 @@ Capa de liquidación con privacidad criptográfica y cumplimiento
 demostrable, **sin ninguna ceremonia de confianza**.
 
 ```rust
-let mut layer = SovereignLayer::open("./ledger", issuer_key, limite, tope)?;
+let mut layer = SovereignLayer::open(
+    "./ledger", custodios, gobernanza, limite, tope, max_cuentas)?;
 
-let alice = layer.open_account(sk_alice);          // saldo CERO
-let recibo = layer.mint(issuer_key, alice, 1_000_000)?;
-layer.apply_mint(&recibo, alice)?;                 // EXIGE clave del emisor
+let alice = layer.open_account(sk_alice);        // saldo CERO
+layer.apply_mint_delegated(...)?;                // DOS custodios DISTINTOS
 
-let envio = layer.send(sk_alice, alice, &estado, id_bob, aleatorio, 250_000)?;
-layer.apply_send(&envio, alice, &estado, 250_000)?;   // el dinero sale
-let cobro = layer.claim(sk_bob, bob, &estado_bob, &envio.notice)?;
-layer.apply_claim(&cobro, bob, &estado_bob, &envio.notice)?;  // el receptor cobra
+// Un pago son DOS fases, y en NINGUNA la clave de gasto llega a la
+// capa: la capa entrega MATERIALES (caminos y raíces, datos públicos)
+// y recibe pruebas que verifica.
+
+// FASE 1 - el pagador envía.
+let m = layer.send_materials(alice, id_de_bob, 250_000, aleatorio)?;
+let envio = client::prove_send(&m, clave_alice, proof_options())?;  // LOCAL
+layer.apply_send(&envio, alice, &estado_alice, 250_000)?;
+
+// FASE 2 - el receptor cobra.
+let m = layer.claim_materials(bob, &envio.notice)?;
+let cobro = client::prove_claim(&m, clave_bob, proof_options())?;   // LOCAL
+layer.apply_claim(&cobro, bob, &estado_bob, &envio.notice)?;
 ```
+
+Que generar la prueba y aplicarla estén separados es lo que hace que
+**ninguna clave de gasto llegue nunca a la capa**. Lo demuestra el
+testigo `a_whole_payment_without_giving_any_key_to_the_layer`.
 
 Con **persistencia**: el ledger sobrevive al reinicio, y un estado
-corrupto se detecta antes de operar sobre él.
-
-```rust
-let mut layer = SovereignLayer::open("./ledger", issuer_key, limite)?;
-```
+corrupto se detecta antes de operar sobre él — el mismo `open` de
+arriba abre o crea el ledger persistido.
 
 Con **revelación selectiva**: un supervisor puede auditar sin que la
 privacidad se rompa para nadie.
@@ -33,6 +43,17 @@ verify_audit(&d)?;                                      // el supervisor, SIN la
 
 Con el **ciclo monetario completo**: el dinero puede crearse, moverse y
 retirarse, y la invariante global se mantiene en cada paso.
+
+⚠️ **Una versión anterior de esta portada usaba la API RETIRADA**: el
+constructor con `issuer_key`, `layer.mint(issuer_key, …)` y
+`layer.apply_mint(…)` —que hoy sólo existen en
+`crates/settlement-layer`, la capa ANTERIOR—, y `layer.send(sk_alice, …)`
+/ `layer.claim(sk_bob, …)` como flujo del pago. Emitir exige **dos
+custodios distintos**, no una clave; y el flujo documentado es el de
+**materiales**. `send` y `claim` con clave siguen existiendo en
+`two_phase.rs` como **residuo**, y esa superficie queda declarada como
+hallazgo propio. Corregido en §361; el error se registra en vez de
+borrarse.
 
 `crates/zk-ssl` — **286 tests** (3 ignorados, declarados). Material para
 auditoría externa en [`AUDITORIA.md`](./AUDITORIA.md), todos en release.
@@ -783,8 +804,9 @@ comprometido en una raíz pública:
 
 ```rust
 let (raiz, caminos) = build_custodian_set(&claves);
-let mut layer = SovereignLayer::open("./ledger", raiz, limite, tope)?;
-layer.mint(&auth, cuenta, importe)?;   // auth = dos custodios
+let mut layer = SovereignLayer::open(
+    "./ledger", raiz, gobernanza, limite, tope, max_cuentas)?;
+layer.apply_mint_delegated(...)?;      // dos custodios DISTINTOS del conjunto
 ```
 
 **La capa ya no conoce ninguna clave de emisión**, solo la raíz del

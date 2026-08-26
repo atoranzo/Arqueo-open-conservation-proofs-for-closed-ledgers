@@ -2,7 +2,7 @@
 //!
 //! `open_account` crea siempre con **saldo cero**: no necesita prueba
 //! porque no crea dinero. Para que una cuenta tenga fondos hay que
-//! emitir, y eso exige la clave del emisor.
+//! emitir, y emitir exige **dos custodios distintos**, no una clave.
 use super::*;
 
 impl SovereignLayer {
@@ -66,10 +66,6 @@ impl SovereignLayer {
         self.records.get(&index).map(|r| r.nonce)
     }
 
-    /// Abre una cuenta **con saldo cero**.
-    ///
-    /// No necesita prueba porque **no crea dinero**. Para que tenga
-    /// fondos hay que emitir, y eso exige la clave del emisor.
     /// **view_id almacenado de una cuenta** (49-A). Lo usa la vista
     /// autenticada del paso 4 para comparar contra la clave de vista que
     /// presenta el titular. Devuelve `None` si la cuenta no existe;
@@ -109,6 +105,11 @@ impl SovereignLayer {
     /// salt-cero para las cuentas previas— está diseñado en §131 (numeración
     /// del árbol: §132) y es trabajo mayor, no inmediato.
 
+    /// Abre una cuenta **con saldo cero**.
+    ///
+    /// No necesita prueba porque **no crea dinero**. Para que tenga
+    /// fondos hay que emitir, y emitir exige **dos custodios
+    /// distintos**, no una clave.
     pub fn open_account(&mut self, spend_key: BaseElement) -> AccountIndex {
         self.open_account_checked(spend_key)
             .expect("abrir una cuenta no deberia fallar sin persistencia")
