@@ -891,6 +891,12 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **verificado con 260 pasadas a 16 hilos sin fallo** (§45.6). El registro
   se empujo una vez antes que el codigo (`bcb9f73` sin el parche, corregido
   en `97d7c7f`); queda anotado.
+  ⚠️ **El ámbito del censo, anotado en el §365.** Los 32 son los
+  que el censo vio: el `--stat` de `97d7c7f` son 22 ficheros, todos de
+  `stark-experiment`. `crates/zk-ssl/src/tests.rs` llevaba uno desde `9a1e2f1`,
+  anterior a la barrida, y se retira en el §365. La entrada **no se reabre**:
+  su tesis -la carrera identificada y eliminada- se cerró; esto es residuo
+  de ámbito en el cuerpo, como en la 32, la 33 y la 49-A.
 
 - [ ] **7. ⚠️ Encargar la auditoria externa —y ESPECIFICAR contra que.**
   ⚠️ **Lo que a esta entrada le faltaba**: decia que hace falta auditar y no

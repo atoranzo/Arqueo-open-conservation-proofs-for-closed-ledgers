@@ -2440,10 +2440,7 @@ use super::*;
         let prover = AuditProver::new(proof_options());
         let public_inputs = prover.get_pub_inputs(&trace);
 
-        let hook = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
         let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| prover.prove(trace)));
-        std::panic::set_hook(hook);
 
         match r {
             Err(_) | Ok(Err(_)) => { /* rechazado al generar */ }

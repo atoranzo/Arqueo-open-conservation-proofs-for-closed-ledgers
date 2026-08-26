@@ -3996,6 +3996,18 @@ del valor, y documentarlo como limite de la herramienta.
 
 ## 45. La carrera del gancho de panico: reproducida y eliminada
 
+> §247 - CORRECCION DE AMBITO, anadida en el §365. Esta seccion dice "se
+> elimina el patron entero en los 32 sitios", y los 32 son los que su CENSO
+> vio: el `--stat` de `97d7c7f` son **22 ficheros, todos bajo
+> `crates/stark-experiment/src/`**. El crate de la capa nunca entro en la
+> barrida, y `crates/zk-ssl/src/tests.rs` llevaba un bloque del patron desde
+> `9a1e2f1` (27-07-2026), TRES DIAS ANTES. Se retira en el §365.
+>
+> La cifra y las 260 pasadas siguen siendo ciertas de lo que midieron. Lo que
+> iba acotado a un crate era el censo, y la frase no lo estaba: es la doctrina
+> del §363 -el ambito del censo tiene que ser el ambito de la frase- pagada
+> aqui tres meses antes de escribirse.
+
 §39.2 anoto un fallo unico de la bateria —202/1 una vez, 203/0 las 46
 siguientes— y **descarto** la hipotesis del gancho de panico porque
 `--test-threads=1` no cambiaba nada. Ese descarte estaba mal hecho.
@@ -27736,3 +27748,60 @@ el canon declara 1133 y el desfase de +1 sigue intacto. `check_tests.py` cuenta
 siguen pasando: BASE y VIVA dan 287/0/3. Lo que cambia es el perfil de
 DEPURACION, donde los tres pasan de fallar a pasar, medido uno a uno antes y
 despues. Ningun Cargo tocado.
+
+## §365 — el ultimo gancho de panico, y el ambito del censo que lo dejo vivo
+**Que.** Se retira el ultimo bloque del gancho de panico que quedaba en el
+arbol, en `crates/zk-ssl/src/tests.rs`, y se anota el AMBITO del censo del
+§45 en las dos afirmaciones que lo dan por eliminado. Tres lineas fuera,
+ningun test, ningun pin, ninguna cifra del canon.
+
+**El objeto.** El §45 midio una carrera real: el patron `take_hook` /
+silenciador / `set_hook` toca estado GLOBAL del proceso, y entre el `take_hook`
+de un test y su restauracion otro test en paralelo puede llevarse el
+silenciador. Reproducida 1 de ~40 con 16 hilos, y el §45.4 midio ademas que
+el silenciador no protegia nada, porque el detalle del panico viaja en el
+payload del `Err` de `catch_unwind`.
+
+**Lo que estaba mal, y no es la cifra.** El §45.4 escribe "se elimina el
+patron entero en los 32 sitios" y la entrada 29 del BACKLOG lo da por hecho con
+sus 260 pasadas. Las dos son ciertas de lo que midieron: el `--stat` de
+`97d7c7f` son 22 ficheros, 96 borrados, TODOS bajo `crates/stark-experiment/`.
+**El crate de la capa nunca entro en la barrida**, y su bloque vive desde
+`9a1e2f1` (27-07-2026), tres dias antes de `97d7c7f` (30-07-2026). El censo iba
+acotado a un crate y la frase no lo estaba, que es la doctrina que el §363
+pago con un rojo, tres meses despues de que esto ocurriera.
+
+**Por que muerde y no es cosmetico.** El canon corre la capa en PARALELO
+(`canon.sh:216`), asi que este bloque es una fuente de flake VIVA con su tasa
+ya medida por el §45.2. Un rojo suyo caeria sobre un test cualquiera y sin
+patron.
+
+**La forma la da la propia barrida, no se inventa.** 96 borrados entre 32
+bloques son TRES lineas por bloque: salen `take_hook`, el silenciador y la
+restauracion, y **el `catch_unwind` se queda**. Aqui se hace igual, y el gate
+del motor exige que el numero de `catch_unwind` del fichero NO se mueva y que
+`take_hook` y `set_hook` queden en cero.
+
+**Lo que NO se re-demuestra.** La carrera no se vuelve a medir: el §45.6 ya
+la reprodujo y luego encadeno 260 pasadas a 16 hilos sin fallo, declarando de
+forma explicita que eso es evidencia fuerte y NO una demostracion. Este corte
+retira el ultimo ejemplar de un patron ya medido; no anade certeza nueva ni
+pretende tenerla.
+
+**La entrada 29 NO se reabre.** Su tesis -la carrera identificada y
+eliminada- se cerro de verdad. Lo que queda es residuo de ambito en el cuerpo,
+que es la convencion de la casa: la 32, la 33 y la 49-A estan las tres cerradas
+con trabajo pendiente escrito dentro. El contador del BACKLOG no se mueve.
+
+**Y una correccion sobre el sello anterior, del mismo dia.** El §364 imprimio
+como evidencia de su BASE y su VIVA el ultimo renglon `test result:`, y
+`cargo test -p X` imprime TRES bloques -lib, bin y doc-tests-, asi que lo
+impreso fue el de doc-tests mientras el gate, que es un `grep` sobre el fichero
+entero, veia el `287 passed; 0 failed; 3 ignored` real. El gate era correcto y
+la evidencia impresa no lo sostenia. Regla: lo que un gate comprueba y lo que el
+bloque imprime tienen que ser LA MISMA linea. Este bloque ya lo hace.
+
+**Contadores.** `tests.rs` 2939 -> 2936. Pin de la capa 287, sin mover; sumas
+981/1118/1132, sin mover; el canon declara 1133 y el desfase de +1 sigue
+intacto. Ningun `#[test]` cambia. BASE y VIVA en RELEASE dan 287/0/3, y el
+renglon impreso es el mismo que el gate compara. Ningun Cargo tocado.
