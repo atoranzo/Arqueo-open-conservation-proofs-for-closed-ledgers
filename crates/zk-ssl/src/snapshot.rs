@@ -23,26 +23,48 @@
 //! años sin depender de la versión de `sled` que la escribió.
 //!
 //! ```text
-//! MAGIC              8 B   "ZKSSL4\0\0"
-//! custodian_root    32 B
-//! governance_root   32 B
-//! state_root        32 B   ← para verificar
-//! frozen_root       32 B   ← para verificar
-//! regulatory_limit   8 B
-//! max_supply         8 B
-//! max_accounts       8 B
-//! total_supply       8 B
-//! recovery_count     8 B
-//! freeze_count       8 B
-//! gov_change_count   8 B
-//! next_index         8 B
-//! n_accounts         8 B
-//! n_frozen           8 B
-//! n_log              8 B
-//! ── cuentas ──      (8 + 48) B cada una
-//! ── congeladas ──   (8 + 32) B cada una
-//! ── registro ──     137 B cada entrada
+//! formato v7 -- lo que escribe export_snapshot
+//!
+//! fichero = marca (1 B) + cuerpo
+//!
+//!   marca 0x00   el cuerpo va EN CLARO
+//!   marca 0x01   el cuerpo va SELLADO, con el mismo cifrado autenticado
+//!                que el ledger. Con 0x01 nada de lo de abajo está en el
+//!                fichero a desplazamiento fijo: los desplazamientos son
+//!                DEL CUERPO, una vez abierto el sello.
+//!
+//! cuerpo (desplazamiento desde su byte 0):
+//!
+//!     0  MAGIC              8 B   "ZKSSL7\0\0"  (MAGIC_V7)
+//!     8  custodian_root    32 B
+//!    40  governance_root   32 B
+//!    72  state_root        32 B   ← para verificar
+//!   104  frozen_root       32 B   ← para verificar
+//!   136  regulatory_limit   8 B
+//!   144  max_supply         8 B
+//!   152  max_accounts       8 B
+//!   160  total_supply       8 B
+//!   168  recovery_count     8 B
+//!   176  freeze_count       8 B
+//!   184  gov_change_count   8 B
+//!   192  next_index         8 B
+//!   200  n_accounts         8 B
+//!   208  n_frozen           8 B
+//!   216  n_log              8 B   bit 63 = LOG_SECCION_V2 (§281):
+//!                                 la sección del registro es era 2.
+//!                                 bits 0..62 = número de entradas
+//!   224  ── cuentas ──      n_accounts x (8 + 112) B
+//!                           índice 8 | public_id 32 | saldo 8 |
+//!                           nonce 8 | view_id 32 | leaf_salt 32
+//!        ── congeladas ──   n_frozen x (8 + 32) B
+//!        ── registro ──     n_log x (2 B longitud u16, luego longitud B)
+//!                           longitud vale 137, o 169 si la entrada
+//!                           lleva compromiso
 //! ```
+//!
+//! Esto es lo que `export_snapshot` **escribe**: v7. Lo que se **lee**
+//! es v3..v7 — la tabla de mágicos, con lo que cambia en cada versión,
+//! vive pegada a las constantes `MAGIC`..`MAGIC_V7`, más abajo en este fichero.
 //!
 //! ## ⚠️ Lo que NO es
 //!
@@ -295,9 +317,9 @@ impl SovereignLayer {
         // Una copia v3 —anterior a la retirada del arbol de
         // nullificadores— sigue siendo importable: sus nullificadores se
         // verifican contra la raiz que declara y se descartan despues.
-        // Tres formatos vivos: v3 (con arbol de nullificadores), v4 (sin
-        // el), v5 (49-A: registros de 80 B con view_id). v3/v4 llevan
-        // registros de 48 B y se importan con view_id centinela.
+        // Se ESCRIBE v7; se LEEN v3..v7. El reparto no se enumera aqui:
+        // cada magico fija su terna (legacy_v3, rec_len, salted) justo
+        // debajo, y esa es la unica lista que manda.
         let (legacy_v3, rec_len, salted) = {
             let magic = take(8, "magic")?;
             if magic == MAGIC_V3 {

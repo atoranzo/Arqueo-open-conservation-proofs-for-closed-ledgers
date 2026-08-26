@@ -27358,3 +27358,72 @@ declarada para su propio corte.
 (§354) y este asiento cierra su mitad honesta; la otra mitad -- llevar
 el pendiente en el formato -- queda nombrada, no prometida. Commit unico
 de LOS ONCE (snapshot + canon + los 9 docs) y empuje dentro.
+
+## §360 — El diagrama del formato dice lo que el fichero escribe
+
+**Que se sella.** La cabecera de `crates/zk-ssl/src/snapshot.rs` describia el
+formato con un diagrama congelado en la version 4. No era prosa envejecida
+suelta: era una FOTO v4 completa y coherente, falsa en tres puntos
+independientes a la vez. Se reescribe a lo que `export_snapshot` escribe hoy, y
+se corrige el unico comentario del lector que repetia la misma mentira.
+
+**Lo que decia y lo que el arbol hace.** Medido con `PASTE-SNAPDIAG-M` (salida
+79391b533c978c64/409) y `PASTE-SNAPDIAG-M2` (732296a1146452ae/271), los dos de
+lectura pura sobre `bde6b57`:
+
+1. El fichero NO empieza por el MAGIC. El escritor antepone un byte de sobre
+   (`SNAPSHOT_PLAIN` 0x00 / `SNAPSHOT_ENCRYPTED` 0x01) y, con clave, sella el
+   cuerpo entero. Quien siguiera el diagrama fallaba en el byte 0.
+2. El magico dibujado era ZKSSL4; el escritor emite `MAGIC_V7`.
+3. `n_log` se dibujaba como contador liso. Es una PALABRA ETIQUETADA: el bit 63
+   es `LOG_SECCION_V2` (§281) y los bits 0..62 el numero de entradas.
+4. Las cuentas iban a (8 + 48). El ancho real es 112, DERIVADO de la firma de
+   `record_to_bytes_v3`: public_id 32 | saldo 8 | nonce 8 | view_id 32 |
+   leaf_salt 32.
+5. El registro iba a 137 B fijos por entrada. Con el bit 63 puesto -- que es lo
+   que este escritor pone siempre -- cada entrada lleva su longitud en u16
+   delante, y esa longitud vale 137, o 169 si la entrada lleva compromiso.
+
+**Por que el 137 era coherente y no un despiste.** El bit 63 no es una etiqueta:
+es un SELECTOR DE LAYOUT. Con la bandera limpia (era 1) las entradas son fijas
+de 137 B y el lector hace take(137); con la bandera puesta (era 2) van
+prefijadas. La era 1 no podia llevar los 169 del compromiso sin prefijo, y esa
+es la razon de ser del §281, que eligio un bit dentro de un contador en vez de un
+magico nuevo. Por eso `MAGIC` no se movio con aquel cambio, y por eso el diagrama
+v4 seguia siendo internamente consistente mientras mentia.
+
+**Las tres decisiones, REVERSIBLES.**
+
+- **D-1** el diagrama describe SOLO el v7 que se escribe, con un renglon que
+  remite a las constantes `MAGIC`..`MAGIC_V7` para la compatibilidad de lectura.
+  No se dibujan cinco layouts: la historia ya vive una vez, pegada a esas
+  constantes, y duplicarla crearia dos productores del mismo contrato. Ademas
+  esta medido que v3 lleva un campo extra en cabecera (`nullifier_root`), luego
+  dibujar las cinco habria exigido un campo condicional.
+- **D-2** el sobre entra como MARCO EXTERIOR, no como una fila mas. El fichero
+  es una composicion, no una concatenacion: con 0x01 los campos no estan a
+  desplazamiento fijo en el FICHERO, sino en el CUERPO. Y el cuerpo lleva
+  columna de desplazamiento acumulado, que cierra sola en 224 y coincide con la
+  constante CABECERA que el propio fichero declara.
+- **D-3** `n_log` se dibuja como palabra etiquetada, nombrando `LOG_SECCION_V2` y
+  no el bit alto: los identificadores sobreviven a las renumeraciones.
+
+**El comentario del lector.** `import_snapshot` decia Tres formatos vivos: v3, v4,
+v5 cinco lineas por encima de CINCO ramas de despacho. Se sustituye por la
+verdad del despacho -- se escribe v7, se leen v3..v7 -- remitiendo a la terna
+(legacy_v3, rec_len, salted) que decide justo debajo, sin re-enumerar.
+
+**Lo que NO hace.** Ningun test se mueve: sin pin, sin cifras, sin canon. La
+puerta es la VIVA de la capa, exigida INTACTA. Quedan fichados y SIN TOCAR: el
+const MAGIC sin sufijo (es codigo, y su propio doc ya lo llama Version 4 del
+formato), las dos lineas de resumen duplicadas de `export_snapshot`, el fixture
+que teclea el magico v3 a mano en vez de usar la constante, y el doc huerfano de
+record_to_bytes_v2 en `store.rs`. La via (a) --una version del formato que lleve
+el pendiente con su raiz-- sigue DECLARADA y sin adelantar.
+
+**El hilo.** 61 (el agujero fichado) -> §354 (las raices ciegas al pendiente) ->
+§359 (el export falla cerrado) -> §360 (el documento deja de mentir sobre lo que
+el export escribe).
+
+**Contadores.** Ningun pin movido. Ninguna suma movida. Ningun Cargo tocado.
+snapshot.rs 1062 -> 1084 (diagrama 21 -> 43, lector 3 -> 3). BACKLOG quieto.
