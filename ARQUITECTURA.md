@@ -1481,9 +1481,12 @@ cargo test -p stark-experiment -- --nocapture
 # Metricas STARK reales (requiere release para que los tiempos sean citables)
 cargo test -p stark-experiment real_proof --release -- --nocapture
 
-# Un test del backend STARK esta marcado #[ignore] por una traza
-# degenerada (valor cero) que dispara un falso positivo de una assertion
-# de depuracion de winterfell. Ejecutarlo asi:
+# Los tests que la comprobacion de grados de winterfell no puede validar en
+# depuracion -limite conocido de la herramienta, no fallo de solidez- se
+# saltan SOLO en depuracion y corren con --release junto al resto: no hace
+# falta ninguna orden aparte. Lo que la orden de abajo corre son los
+# instrumentos de MEDIDA, marcados #[ignore] sin condicion porque miden y no
+# comprueban; su razon vive en el docstring de cada uno.
 cargo test -p stark-experiment --release -- --ignored
 ```
 

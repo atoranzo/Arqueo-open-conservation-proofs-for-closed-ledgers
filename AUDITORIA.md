@@ -27924,3 +27924,86 @@ con la misma forma que el de la 41.
 corre cargo: la puerta son las siete herramientas, medidas en verde antes y
 despues. Pin 287 y sumas 981/1118/1132 se arrastran del §365, medido hoy.
 Ningun Cargo tocado.
+
+## §368 — la orden que dejo de servir a su comentario
+
+**Que.** La valla de ordenes de `ARQUITECTURA.md` (`## Como compilar y
+verificar`, lineas 1471-1488) publicaba un comentario que dejo de ser cierto:
+decia que UN test del backend STARK esta marcado `#[ignore]` por una traza
+degenerada que dispara "un falso positivo" de winterfell, y remataba
+"Ejecutarlo asi: `cargo test -p stark-experiment --release -- --ignored`".
+Se reescribe ese comentario. **Ninguna orden se toca.**
+
+**El defecto no es de conteo, es de mecanismo.** El §367 ficho que el arbol
+tiene CUATRO `cfg_attr(debug_assertions, ignore)` donde el documento dice "un
+test", y ese fichaje era correcto. Pero lo que la medicion de la sesion 71
+destapa es peor y mas concreto: **la orden publicada no corre el test que su
+propio comentario describe**. El test es
+`zero_value_only_works_in_release_mode` (`range_check.rs:369`) y hoy esta
+condicionado al perfil, asi que **en release NO esta ignorado** y `--ignored`
+lo filtra fuera. Lo que esa orden corre son los instrumentos de medida.
+
+**Medido, no razonado.** Dos corridas filtradas por nombre en release, la
+primera como PRUEBA DE VIDA: sin `--ignored` da `1 passed; 327 filtered out`;
+con `--ignored` da `0 passed; 328 filtered out`. Y el propio arnes lo
+documenta: `--ignored  Run only ignored tests`, frente a `--include-ignored
+Run ignored and not ignored tests`. Sin la primera corrida, un cero en la
+segunda podria ser el filtro de NOMBRE y no el de ignorados.
+
+**La aritmetica cierra en los dos perfiles.** `-- --list` declara 328 en total.
+En release, 328 menos los diez incondicionales da 318, que es exactamente el
+pin de `tools/canon.sh:90`. En depuracion, `cargo test -p stark-experiment` da
+314 pasan / 0 fallan / 14 ignorados en 68,26 s, y 14 son esos diez mas los
+cuatro condicionales al perfil. Compilar en depuracion: 15 s.
+
+**Los dos grupos, que son lo que el comentario nuevo dice.** Diez `#[ignore]`
+SIN condicion, todos `medicion_130_*`, declarados "instrumento de medida, no
+comprobacion: correr a mano": nunca corren en la suite y para ellos la orden
+con `--ignored` es la correcta. Cuatro `cfg_attr(debug_assertions, ignore)`
+-`circuit_mint_pending.rs:1767`, `circuit_mint_pending_climb.rs:1106` y
+`:1193-1196`, `range_check.rs:367-370`-: se saltan solo en depuracion y corren
+con `--release` junto al resto, sin orden aparte.
+
+**El arbol ya habia escrito la correccion; el documento no la recogio.** El
+docstring de `range_check.rs:354-361` dice que el test "estaba marcado
+`#[ignore]` sin condicion, asi que no se ejecutaba tampoco en release, donde
+funciona: habia que acordarse de lanzarlo a mano con `-- --ignored`. Un test
+que depende de que alguien recuerde ejecutarlo no protege nada. Ahora se salta
+solo en depuracion, y `--release` lo corre con el resto". El corte no inventa
+prosa: recoge en `ARQUITECTURA` lo que el codigo ya dice.
+
+**El vocabulario, alineado con el §78.1.** El comentario nuevo dice "limite
+conocido de la herramienta", que es la redaccion que el §78.1 fijo y que
+`circuit_mint_pending_climb.rs:1188-1191` ya usa, en vez de "falso positivo".
+
+**Sin numeros dentro del documento, y a proposito.** El comentario nuevo no
+enumera cuantos tests hay de cada grupo: una cifra escrita a mano en un `.md`
+envejece sin avisar, que es exactamente la enfermedad que este corte cura. Se
+nombran las FAMILIAS y se dice donde vive la verdad.
+
+**Fichado y NO tocado, por tesis propia.** `range_check.rs:36` y `:350` siguen
+diciendo "falso positivo" sobre este mismo caso. Eso es CODIGO y es alcance
+aparte: no se mezcla.
+
+**Cuatro defectos MIOS en el arco, y ninguno llego al arbol.** (1) el censo
+clasificaba por la forma de LA LINEA y dos de los cuatro `cfg_attr` estan
+PARTIDOS en cuatro lineas por rustfmt, asi que dio 2 en vez de 4 y dos
+predicciones salieron falsadas por mi instrumento, no por el arbol; (2) el
+derivador del encabezado mandante se senalo a si mismo, porque un `#` dentro
+de una valla no es un encabezado markdown; (3) el localizador de la frase era
+`grep 'backend STARK' | head -1`, sin discriminante y sin gate de unicidad, y
+cazo otra ocurrencia: toda esa fase midio el sitio equivocado y se declara
+NULA; (4) al medir por estructura se pierde la senal que daba la forma de la
+linea, asi que un `#[ignore]` CITADO en un comentario cuenta como atributo -el
+arbol tiene cuatro y habrian inflado el conteo de diez a catorce-.
+
+**El alcance, enumerado y no supuesto.** `ARQUITECTURA.md` nombra "backend
+STARK" en siete sitios; seis viven fuera de la valla y se leyeron uno a uno:
+circuitos, tamanos de prueba, el techo de 63 bits y el coste post-cuantico.
+Ninguno habla de tests ignorados. **El corte es un solo sitio.**
+
+**Contadores.** Ningun test tocado: pin de la capa 287 y de stark 318 sin
+mover, sumas 981 / 1118 / 1132, el canon declara 1133 con el offset +1
+intacto. **El canon no corre**: el corte no toca un `.rs` ni un Cargo, y la
+puerta son las siete herramientas medidas antes y despues. BACKLOG sin mover
+en 50 abiertas / 56 resueltas. Ningun Cargo tocado.
