@@ -835,10 +835,15 @@ impl SovereignLayer {
 
         // ⚠️ **La clave se RELLENA a cuatro elementos en el borde.**
         //
-        // `circuit_send` la absorbe ancha desde §90, y esta via —la
-        // **antigua**, marcada `#[deprecated]`— sigue manejandola estrecha.
-        // Cuadran porque §90 probo que rellenar con ceros da la MISMA
-        // identidad.
+        // `circuit_send` la absorbe ancha desde §90, y esta via —la de EN
+        // MEDIO: de produccion frente a `transfer`, que hoy solo vive en la
+        // capa ANTERIOR (`settlement-layer`), y anterior al flujo por
+        // MATERIALES que documenta PRINCIPIOS 4.2— sigue manejandola
+        // estrecha. Cuadran porque §90 probo que rellenar con ceros da la
+        // MISMA identidad.
+        //
+        // ⚠️ **Nada la marca.** No lleva `#[deprecated]` ni ningun otro
+        // atributo, y por eso el compilador no avisa de su uso.
         //
         // ⚠️ Aqui SI se rellena y en `client::prove_send` NO: alli es donde
         // el cliente tiene que poder usar una clave ancha de verdad.

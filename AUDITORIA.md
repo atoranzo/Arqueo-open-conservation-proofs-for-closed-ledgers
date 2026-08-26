@@ -27592,3 +27592,80 @@ vez de ser atomica. Los dos ultimos los cazo el ensayo antes de emitir.
 **Contadores.** Pin de la capa **286 -> 287** (un test pasa a ser dos).
 Totales **980 -> 981**, **1117 -> 1118**, **1131 -> 1132**, en 25 cifras
 repartidas por nueve documentos raiz. Ningun Cargo tocado. BACKLOG quieto.
+
+## §363 — la prosa que nombra lo que no existe
+
+**Que.** Tres afirmaciones de prosa que nombran un atributo o una API que el
+arbol no tiene. `two_phase.rs` decia que la via de dos fases esta «marcada
+`#[deprecated]`» y no hay ni un atributo en el fichero; `recovery.rs` decia
+que `recover` esta marcada, y `recover` no existe en ningun crate; y el
+ejemplo del §4.2 de `PRINCIPIOS.md` llamaba a `layer.audit` con CUATRO
+argumentos cuando la firma pide CINCO. Ningun test, ningun pin, ninguna cifra.
+
+**Como se encontro.** Cayo del arco del §362 como lo que aquel corte dejo
+FUERA a proposito, y se midio en dos pastes de lectura pura que no tocaron un
+byte. El primero clasifico las menciones del token por CLASE: atributo REAL
+(la linea EMPIEZA por el atributo), permiso, y CITA (el token vive dentro de
+un comentario). El arbol entero tiene DOS atributos, los dos en la capa:
+`accounts.rs` sobre `open_account` y el shim de `store.rs` del 49-A.
+
+**El ambito se midio antes de tocar, y estrecho el corte dos veces.** En
+`two_phase.rs` solo cae el INCISO: el resto del bloque —que la clave se
+rellena a cuatro en el borde, que cuadra por el §90, y que en
+`client::prove_send` NO se rellena— es cierto y se conserva byte a byte. Y
+de las NUEVE llamadas del §4.2, OCHO cuadran con su firma una a una
+(`send_materials` 4, `apply_send` 4, `claim_materials` 2, `apply_claim` 4,
+`prove_send` 3, `prove_claim` 3, `verify_audit` 1, `open` 6): la unica que
+fallaba era `audit`. La condicion se escribio ANTES de medir —si fallaban
+varias, el documento se llevaba sello propio— y la medicion la resolvio a un
+solo corte.
+
+**La tesis correcta son TRES generaciones, no dos.** `transfer` es la primera
+y hoy solo vive en `settlement-layer`, la capa ANTERIOR; `send`/`claim` es la
+de EN MEDIO, viva aqui y sin atributo ninguno; y el flujo por MATERIALES es el
+que el §4.2 documenta. Decir «send esta deprecada» a secas habria sido
+tan impreciso como lo que se repara.
+
+**Un rojo del propio bloque, y es el mejor de la sesion.** La primera emision
+escribia que `transfer` «ya no existe», y la FASE BOCAS la mato con
+rc=96 sin tocar un byte: existe, en `settlement-layer/src/lib.rs:415`. El
+censo que sostenia la frase estaba acotado a la capa y la frase no lo estaba.
+Iba a reparar una falsedad metiendo otra, y el gate lo impidio.
+
+**Dos defectos del instrumento, declarados.** El censo del primer paste
+contaba como ATRIBUTO el token escrito DENTRO del propio comentario mentiroso:
+habria declarado que la prosa era cierta y habria matado la premisa del corte
+con un rojo falso. Es la doctrina del §361 invertida: un gate que prohibe un
+token prohibe tambien la cita, y un censo que lo CUENTA cuenta tambien la
+cita. Se reparo anclando el atributo al PRINCIPIO DE LINEA y naciendo la clase
+CITA, con prueba de vida y de muerte. El segundo: un regex pasado como CADENA
+a `awk` pierde sus barras, asi que el comprobador de referentes no podia casar
+un corchete. Queda ABIERTO si las citas legitimas cumplen el invariante.
+
+**Lo que NO se toca, y por que.** `AUDITORIA.md` lleva una fila de tabla que
+atribuye el atributo a `two_phase::send`, y otra linea que dice que el permiso
+de modulo vive en TRES modulos de test cuando hay DOS. El registro se CITA, no
+se edita. Y `log.rs` dice que abre ancha porque `open_account` lleva el
+atributo y ese modulo no silencia el aviso: eso es CIERTO y vivo, y se queda.
+
+**Objeto NUEVO, fichado y NO mezclado: el NUMERO de la entrada.** El bloque
+tambien iba a escribir que retirar esta via es la entrada 32, y la 32 esta
+marcada con equis, titulada «Las claves de custodio ya NO llegan al
+operador» y cerrada en el §171; el propio `two_phase.rs` dice que ese
+fallo queda cerrado. De las DIEZ citas de la entrada en el codigo, NUEVE son
+las cinco operaciones privilegiadas y la decima es la que el §362 escribio
+para la via de PAGO. Un censo de titulos no encuentra ninguna entrada que
+cubra esa migracion —censo ciego a los titulos que no usen esas palabras, y
+se declara—. La frase se cae del texto: el parrafo dice solo lo que se puede
+comprobar en el arbol. Corregir lo que el §362 dejo escrito en `metrics.rs`
+y en `check_publicadas.py` es corte propio, encima de un sello cerrado.
+
+**Y una retractacion.** En la medicion previa apunte que el BACKLOG afirma
+cinco atributos donde el arbol tiene dos. Leida la entrada, esa frase vive
+dentro de un bloque encabezado «Estado al 31-07-2026»: es historia
+fechada, no falsedad viva. Queda escrito como falso.
+
+**Contadores.** Pin de la capa 287, sin mover. Sumas 981/1118/1132, sin mover.
+Ningun Cargo tocado. `two_phase.rs` 3467 -> 3472 y `PRINCIPIOS.md` 441 -> 446.
+`recovery.rs` NO cambia de lineas: se sustituye el parrafo entero por otro del
+mismo alto, para no dejar un renglon huerfano.

@@ -216,12 +216,12 @@ mod tests_delegada {
 
         // ⚠️ **Por la via DELEGADA**, no la antigua.
         //
-        // El primer intento uso `recover`, que esta marcada `#[deprecated]`
-        // desde §65: exige las claves de custodio EN EL OPERADOR, que es el
-        // fallo de la entrada 32. Habria demostrado que se puede rotar **por
-        // un camino que el proyecto quiere retirar**, y al retirarlo se
-        // habria perdido la evidencia de que las cuentas viejas tienen
-        // salida.
+        // El primer intento uso `recover`, que el §65 retiro y que hoy no
+        // existe en ningun crate: exigia las claves de custodio EN EL
+        // OPERADOR, que es el fallo de la entrada 32. Habria demostrado que
+        // se puede rotar **por un camino que el proyecto quiere retirar**, y
+        // al retirarlo se habria perdido la evidencia de que las cuentas
+        // viejas tienen salida.
         //
         // Las dos vias toman `new_public_id: Digest`, asi que la propiedad
         // es la misma — pero la que se demuestra debe ser la que se queda.

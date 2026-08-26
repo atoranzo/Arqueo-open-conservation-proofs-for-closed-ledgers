@@ -191,7 +191,7 @@ let m = layer.claim_materials(bob, &envio.notice)?;
 let cobro = client::prove_claim(&m, clave_bob, proof_options())?;   // LOCAL
 layer.apply_claim(&cobro, bob, &estado_bob, &envio.notice)?;
 
-let d = layer.audit(clave_alice, alice, 900_000, 1_100_000)?;
+let d = layer.audit(clave_alice, alice, &estado_alice, 900_000, 1_100_000)?;
 verify_audit(&d)?;                                       // el supervisor, sin la capa
 ```
 
@@ -204,6 +204,11 @@ demuestra `a_whole_payment_without_giving_any_key_to_the_layer`.
 (`layer.send(sk_alice, …)`, `layer.mint(issuer_key, …)`): la clave de
 gasto entrando a la capa, justo lo contrario de lo que este documento
 sostiene. Corregido en §203; el error se registra en vez de borrarse.
+
+⚠️ **Y este bloque enseñaba `layer.audit` con CUATRO argumentos** cuando la
+firma pide CINCO (`audit.rs`): faltaba el estado del titular, que es justo lo
+que la capa no guarda, y el ejemplo no compilaba. Corregido en §363; el
+error se registra en vez de borrarse.
 
 ---
 
