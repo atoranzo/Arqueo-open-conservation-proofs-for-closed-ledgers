@@ -28510,3 +28510,54 @@ sin mover. Sumas 981 + 137 = 1118 y 1118 + 14 = 1132; el canon declara 1133.
 Ningun Cargo tocado. El canon NO corrio: la puerta fue compilar la capa en
 release y exigir que la lista de tests diera los MISMOS 290, nombre a nombre.
 BACKLOG sin mover: 106 entradas, 50 abiertas y 56 resueltas.
+
+## §377 — el mensaje del arbol de pendientes deja de contradecir a su propio doc
+
+**Que.** El `Display` de `PendingTreeExhausted` decia al usuario «el contador
+nunca reutiliza las liberadas, asi que el limite es de transferencias totales,
+no simultaneas». Su propio doc declara esa frase FALSA desde el §211. Y el
+doc llevaba ademas un residuo: «cerrarlo exige rotar el arbol o reutilizar
+posiciones liberadas, y no esta hecho», cuando reutilizarlas es exactamente lo
+que hace `allocate_pending` tres lineas mas arriba de esa misma frase.
+
+**Por que pesa mas que una prosa cualquiera.** Ese texto sale por
+`err.to_string()` y viaja al `pacs.002` que recibe un banco. Es superficie
+operativa, no narrativa: quien lo lea decide si su limite son cincuenta dias o
+un techo de concurrencia.
+
+**La medicion que lo decide, y se leyo del cuerpo.** `allocate_pending`
+(`two_phase.rs:282-301`) BARRE desde cero: `for p in 0..self.next_pending`
+devuelve el primer hueco no ocupado y no reservado, y solo si no hay ninguno
+pasa al contador y falla al alcanzar la capacidad. El contador solo sube, pero
+el barrido de abajo recupera todo lo liberado (§211 con su comentario de
+§210 sobre las reservadas): el error se produce unicamente con las
+posiciones ocupadas A LA VEZ. **El limite es de SIMULTANEOS.**
+
+**Y es alcanzable, ahora medido.** UN productor real,
+`two_phase.rs:296`, dentro de `allocate_pending`. Ningun test compara el texto
+del mensaje, asi que corregirlo no mueve un solo test.
+
+**ARCO DECLARADO Y NO TOCADO AQUI, y es mas grave que esto.** Los dos
+documentos institucionales publican una lista de «cuatro limitaciones de
+escala, cuantificadas» cuyo PRIMER item es el limite del arbol de
+nulificadores —paradoja del cumpleanos, tabla 10.000/65.536/200.000 con sus
+probabilidades, «el afectado no puede reintentar», «su pago queda
+bloqueado de forma permanente»—, que el §374 mato en `ARQUITECTURA.md` y
+el §376 retiro del tipo de error. Sitios medidos: `INSTITUCIONAL.md:300-355`
+(item en `:305`, la falsedad del arbol en `:326-328`) e `INSTITUTIONAL.md:287-341`
+(item en `:292`, `:312-314`). El apartado entero se apoya en ese item: `:302`
+dice «son cuatro», `:321` dice «a diferencia de las otras tres» y
+`:346-348` corrige un error anterior diciendo que «el primero de esta lista»
+detiene pagos legitimos. **La correccion esta bien hecha y su premisa es falsa.**
+Mas `QUESTIONS.md:266` y `:247`. Los preprints SI se enteraron:
+`doc/preprints/ZK-SSL-preprint.md:303` titula la seccion
+«Nullifier position collisions — removed». **Repararlo exige rehacer el
+argumento de los dos documentos en dos idiomas: es un arco propio, y no cabe
+aqui.**
+
+**Contadores.** Brazos del `Display` sin mover, derivado por el propio bloque
+antes de escribir. Pin capa 287 y stark 318 sin mover. Sumas 981 + 137 = 1118 y
+1118 + 14 = 1132; el canon declara 1133. Ningun Cargo tocado. El canon NO
+corrio: la puerta fue compilar la capa en release y exigir que la lista de tests
+diera los MISMOS 290, nombre a nombre. `two_phase.rs` fue CENTINELA y quedo
+intacto. BACKLOG sin mover: 106 entradas, 50 abiertas y 56 resueltas.

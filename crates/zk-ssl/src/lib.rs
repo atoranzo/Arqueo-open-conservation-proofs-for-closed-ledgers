@@ -235,8 +235,9 @@ pub enum LayerError {
     /// ⚠️ Sin esta comprobacion, `path_for` produciria un camino que no
     /// llega a la raiz y la prueba fallaria **sin decir por que**.
     ///
-    /// Cerrarlo exige rotar el arbol o reutilizar posiciones liberadas, y
-    /// **no esta hecho**. Ver `AUDITORIA.md` §13.
+    /// Reutilizar posiciones liberadas **SI esta hecho**: es lo que hace el
+    /// barrido de `allocate_pending`. Lo que NO esta hecho es subir el techo
+    /// de simultaneos, y eso exige rotar el arbol. Ver `AUDITORIA.md` §13.
     PendingTreeExhausted { capacity: u64 },
     /// **Dos operaciones de la misma cuenta en un lote** (§215).
     ///
@@ -312,8 +313,8 @@ impl std::fmt::Display for LayerError {
             PendingTreeExhausted { capacity } => write!(
                 f,
                 "el arbol de pendientes agoto sus {capacity} posiciones: el \
-                 contador nunca reutiliza las liberadas, asi que el limite \
-                 es de transferencias totales, no simultaneas"
+                 limite es de pendientes SIMULTANEOS -las liberadas al \
+                 reclamar se reutilizan-, no de transferencias totales"
             ),
             CustodianSetExhausted { uses, max } => write!(
                 f,
