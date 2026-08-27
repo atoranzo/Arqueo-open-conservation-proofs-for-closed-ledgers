@@ -28561,3 +28561,79 @@ antes de escribir. Pin capa 287 y stark 318 sin mover. Sumas 981 + 137 = 1118 y
 corrio: la puerta fue compilar la capa en release y exigir que la lista de tests
 diera los MISMOS 290, nombre a nombre. `two_phase.rs` fue CENTINELA y quedo
 intacto. BACKLOG sin mover: 106 entradas, 50 abiertas y 56 resueltas.
+
+## §378 — LA SUMA DE SALDOS DEL INVARIANTE SE DERIVA DEL LEDGER, NO SE TECLEA
+
+**Que.** Siete sitios de tres ficheros comprobaban la conservacion del dinero
+sumando una lista escrita a mano, `[alice, bob]`. Ahora suman `records`, que es
+quien sabe que cuentas existen. Ni un test nace ni muere: los pines siguen en
+287 y 17, y las sumas del canon no se mueven.
+
+**El invariante sagrado, y por que su testigo no lo comprobaba entero.** La
+constitucion de diseno que el autor dicto en la 77 nombra
+`sum(balances) + sum(pendings vivos) == supply` como invariante SAGRADO y pide,
+en su rango 1, el testigo NEGATIVO antes que la funcion. Lo medido en la 78: el
+testigo existe y se llama `balances_plus_pending_always_equal_total_supply`
+(`tests.rs`), pero su `sum(balances)` no era `sum(balances)` sino
+`balance(alice) + balance(bob)`. Un tercer titular habria sido invisible al
+assert y el test habria seguido en verde. Es la clase que mas rojos ha costado
+en este proyecto --teclear en vez de derivar-- aplicada al invariante que la ley
+llama sagrado; y por su rango 2, un nombre que prometia mas de lo que
+comprobaba.
+
+**El molde ya estaba en el arbol, y llevaba escrito el porque.**
+`sending_to_yourself_conserves_value` es el unico sitio que ya derivaba la suma:
+`records.values().map(|r| r.balance).sum()`. Su propio comentario dice por que
+importa: post-F3 los indices no son un rango `0..censo`, y la verdad de quien
+existe y donde vive en los RECORDS. Este sello no inventa una forma: copia la
+que ya estaba tres pantallas mas arriba.
+
+**El perimetro se derivo DOS veces, y la segunda encontro mas.** La primera
+partio de "toda fn con un assert y `total_supply`" y dio SEIS. La segunda partio
+del otro lado, del array literal seguido de `.iter()`, y dio SIETE: el que
+faltaba es `full_transfer_cycle_updates_state`, que suma saldos a mano y compara
+contra un literal, sin nombrar `total_supply` en ningun sitio. Misma ceguera,
+otra frase. Una lista elegida por los nombres que a uno le suenan no es un
+perimetro derivado.
+
+**El sitio que mas lo pedia no llevaba el nombre del invariante.**
+`metrics_of_the_layer` cierra con el mensaje "la invariante global debe
+mantenerse tras la secuencia completa" sobre la suma mas estrecha del arbol.
+La frase mas fuerte apoyada en el calculo mas local.
+
+**Lo que este sello NO hace, y queda declarado.** No nace ninguna puerta en
+produccion ni ningun testigo NEGATIVO del agregado. Medido: cero funciones de
+produccion suman sobre `records` en todo el arbol, cero `debug_assert` en la
+capa, y ninguno de los siete testigos intenta romper la conservacion --todos
+construyen estado legal y afirman. Los nueve testigos negativos del suministro
+viven en el AIR y restringen el DELTA por operacion, no el AGREGADO. **El arbol
+sigue sin poder FALSAR el invariante sagrado en ningun perfil.** Eso es un corte
+propio, el escalon 2, y se declara aqui para que no se confunda con lo hecho:
+lo unico que este sello arregla es que la afirmacion, cuando se hace, se haga
+entera.
+
+**LO QUE EL COMPILADOR DELATO AL GIRAR, Y ES EL MEJOR HALLAZGO DEL CORTE.**
+En `invariant_holds_after_burning`, `bob` se abre con 500.000 y su UNICA
+aparicion en todo el test era `[alice, bob]`. Al derivar la suma, la ligadura se
+queda sin nombrar y el compilador la senala. Esa cuenta no estaba ahi porque el
+test hiciera nada con ella: estaba para que la lista tuviera dos elementos. Su
+medio millon SI es parte del suministro --por eso el test sigue pasando y por
+eso `records` lo suma--, asi que la llamada NO se borra: se marca con `_`, que
+deja escrito que la cuenta existe y que ya nadie la nombra. El bloque no teclea
+cuales son: cuenta los usos de cada identificador dentro de su propia fn despues
+de la cirugia y marca el que se queda con uno solo, el de su propio `let`.
+
+**Por que era neutro, y no por conjetura.** Ninguno de los dos `new_layer`
+abre cuentas: los dos solo construyen la capa. `open_and_fund` abre una. Y el
+argumento que no depende de esa lectura: el molde ya suma TODOS los `records`,
+abre una sola cuenta y esta en verde --si el constructor creara registros con
+saldo, ese test estaria rojo hoy--.
+
+**Contadores.** Pines sin mover: `zk-ssl` 287 -> 287, `settlement-layer`
+17 -> 17. Sumas sin mover. Ningun Cargo tocado. BACKLOG sin mover. Tres ficheros
+de codigo y el asiento. Lineas: `crates/zk-ssl/src/tests.rs` 2936 -> 2936
+(cuatro sustituciones de una linea por una), `crates/zk-ssl/src/metrics.rs`
+984 -> 981 y `crates/settlement-layer/src/lib.rs` 933 -> 930, las dos al plegar
+un constructo de cuatro lineas a la forma de una linea del molde. Estas cifras
+se declaran aqui a proposito: el editor del bloque las DERIVA por su cuenta y
+muere si no coinciden con estas.

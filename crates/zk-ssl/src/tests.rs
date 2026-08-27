@@ -127,7 +127,7 @@ use super::*;
         let bob = open_and_fund(&mut layer, SK_BOB, 50_000);
 
         let sum = |l: &SovereignLayer| -> u64 {
-            [alice, bob].iter().map(|i| l.balance_of(*i).unwrap()).sum()
+            l.records.values().map(|r| r.balance).sum()
         };
         assert_eq!(sum(&layer), layer.total_supply());
 
@@ -2194,10 +2194,10 @@ use super::*;
     fn invariant_holds_after_burning() {
         let mut layer = new_layer();
         let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-        let bob = open_and_fund(&mut layer, SK_BOB, 500_000);
+        let _bob = open_and_fund(&mut layer, SK_BOB, 500_000);
 
         let sum = |l: &SovereignLayer| -> u64 {
-            [alice, bob].iter().map(|i| l.balance_of(*i).unwrap()).sum()
+            l.records.values().map(|r| r.balance).sum()
         };
         assert_eq!(sum(&layer), layer.total_supply());
 
@@ -2267,7 +2267,7 @@ use super::*;
         let bob = open_and_fund(&mut layer, SK_BOB, 0);
 
         let sum = |l: &SovereignLayer| -> u64 {
-            [alice, bob].iter().map(|i| l.balance_of(*i).unwrap()).sum()
+            l.records.values().map(|r| r.balance).sum()
         };
         assert_eq!(sum(&layer), layer.total_supply());
 
@@ -2751,7 +2751,7 @@ fn balances_plus_pending_always_equal_total_supply() {
     let bob = open_and_fund(&mut layer, SK_BOB, 50_000);
 
     let suma_saldos = |l: &SovereignLayer| -> u64 {
-        [alice, bob].iter().map(|i| l.balance_of(*i).unwrap()).sum()
+        l.records.values().map(|r| r.balance).sum()
     };
     assert_eq!(
         suma_saldos(&layer),

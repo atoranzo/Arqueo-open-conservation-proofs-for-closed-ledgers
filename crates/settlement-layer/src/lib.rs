@@ -718,7 +718,7 @@ mod tests {
         let bob = open_and_fund(&mut layer, SK_BOB, 50_000);
 
         let sum = |l: &SettlementLayer| -> u64 {
-            [alice, bob].iter().map(|i| l.balance_of(*i).unwrap()).sum()
+            l.records.values().map(|r| r.balance).sum()
         };
 
         assert_eq!(sum(&layer), layer.total_supply(), "tras la emision");
@@ -830,10 +830,7 @@ mod tests {
         );
 
         // La conservacion se cumple tambien a nivel de capa.
-        let total: u64 = [alice, bob]
-            .iter()
-            .map(|i| layer.balance_of(*i).unwrap())
-            .sum();
+        let total: u64 = layer.records.values().map(|r| r.balance).sum();
         assert_eq!(total, 1_050_000, "el dinero total no debe cambiar");
     }
 

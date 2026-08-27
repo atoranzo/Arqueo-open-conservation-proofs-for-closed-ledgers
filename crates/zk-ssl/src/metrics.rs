@@ -518,10 +518,7 @@ mod tests {
         );
 
         assert_eq!(layer.total_supply(), 950_000);
-        let sum: u64 = [alice, bob]
-            .iter()
-            .map(|i| layer.balance_of(*i).unwrap())
-            .sum();
+        let sum: u64 = layer.records.values().map(|r| r.balance).sum();
         assert_eq!(
             sum,
             layer.total_supply(),
