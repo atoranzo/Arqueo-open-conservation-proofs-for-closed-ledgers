@@ -605,9 +605,9 @@ pub struct SovereignLayer {
     recovery_count: u64,
     /// **Intervenciones del conjunto de custodios vigente.**
     ///
-    /// Emitir, congelar y recuperar lo incrementan. Al alcanzar
-    /// `max_custodian_uses`, los custodios **dejan de poder actuar** hasta
-    /// que la gobernanza rote el conjunto.
+    /// Emitir, emitir a pendiente, congelar y recuperar lo incrementan. Al
+    /// alcanzar `max_custodian_uses`, los custodios
+    /// **dejan de poder actuar** hasta que la gobernanza rote el conjunto.
     ///
     /// Es la rotación de privilegios expresada por **uso**, no por tiempo:
     /// esta capa no tiene noción de tiempo. Sin rotación, una clave

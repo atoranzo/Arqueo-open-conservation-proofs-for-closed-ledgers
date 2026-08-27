@@ -28408,3 +28408,54 @@ EXACTAMENTE el mismo antes y despues.
 tocado. El BACKLOG no mueve su contador. La capa no cambia de numero de lineas;
 `ARQUITECTURA.md` gana seis por el reflujo de las correcciones. El canon no
 corrio.
+
+## §375 — la cuota de custodios la consumen cuatro operaciones, no tres
+
+**Que.** Dos lineas de prosa de la capa enumeraban TRES operaciones donde el
+censo de llamantes da CUATRO. `governance.rs` decia que la llaman emitir,
+congelar y recuperar, y `lib.rs` que emitir, congelar y recuperar lo
+incrementan. Falta emitir a pendiente: el mismo miembro que faltaba en la
+vineta del §373, misma familia y mismo hueco.
+
+**Como se midio, y por que hicieron falta tres pastes.** El primero conto los
+llamantes de `consume_custodian_use` clasificados por ESTRUCTURA, con un
+`#[test]` sobre la funcion contenedora y no con una mencion: CUATRO en
+produccion y CERO en test. El segundo cerro dos huecos: `custodian_uses` tiene
+UN SOLO incremento en todo el arbol, y la cita de `AUDITORIA:12311` que hablaba
+de las dos vias de las CUATRO resulto ser el asiento §164, prehistoria, con
+sus propias lineas ya caducadas. El tercero censo las 67 funciones de
+produccion de los siete ficheros de la capa SIN filtro de vocabulario, que era
+lo que faltaba: no existe `apply_mint`, ni `set_frozen`, ni `recover`, ni
+`mint_to_pending`. Las vias con claves en crudo se retiraron, y las cuatro
+operaciones vivas son las delegadas.
+
+**Lo que NO entra, y por que.** `lib.rs:84` y `RESUMEN_EJECUTIVO.md:286` ya
+enumeran las cuatro y remiten gobernanza a su propio umbral: estaban bien, y
+tocarlas habria sido el §342 al reves. `lib.rs:552` dice crear dinero,
+congelar y recuperar, que es menos preciso pero no falso, porque crear dinero
+cubre las dos vias de emision. No se llama falsa a una frase con media
+medicion.
+
+**La quinta operacion privilegiada, medida.** `apply_governance_delegated`
+verifica custodios y NO consume cupo, y es correcto: dentro de esa misma
+funcion, `governance.rs:158` pone el contador a cero. Gobernar no gasta,
+renueva, y lo ata `rotating_the_custodian_set_renews_the_quota`
+(`tests.rs:942`). Por eso la linea de `governance.rs` gana la clausula que lo
+dice: sin ella la enumeracion invita a la misma pregunta que abrio el corte.
+
+**Un rojo propio que salio a favor.** El instrumento del tercer paste marcaba
+como asimetria verificar custodios sin consumir cupo, cuando el invariante es
+que la operacion que GASTA cupo debe consumirlo. Un gate mas estricto que su
+invariante da rojo por algo legitimo; aqui ese rojo trajo la medicion de la
+renovacion, que faltaba.
+
+**Fichado y NO tocado.** `two_phase.rs` usa la via antigua de arriba tres veces
+con al menos dos sentidos: `:1140` es el formato de hoja v1, y `:1509` y
+`:1630` apuntan a otra cosa, con `send:825` como unico candidato que devuelve
+`OverRegulatoryLimit`. No se concluye y no entra.
+
+**Contadores.** Pin capa 287 y stark 318 sin mover. Sumas 981 + 137 = 1118 y
+1118 + 14 = 1132; el canon declara 1133. Ningun Cargo tocado. El canon NO
+corrio: el conjunto solo lleva comentarios, y la puerta fue compilar la capa en
+release y exigir que la lista de tests diera los MISMOS 290, nombre a nombre.
+BACKLOG sin mover: 106 entradas, 50 abiertas y 56 resueltas.

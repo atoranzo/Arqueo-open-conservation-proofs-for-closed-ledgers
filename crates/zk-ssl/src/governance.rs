@@ -62,9 +62,10 @@ impl SovereignLayer {
 
     /// Comprueba que quedan intervenciones y **consume una**.
     ///
-    /// La llaman emitir, congelar y recuperar. Va **después** de verificar
-    /// la autoridad: si fuera antes, agotar el cupo ajeno sería posible sin
-    /// ser custodio.
+    /// La llaman las CUATRO que consumen cupo: emitir, emitir a pendiente,
+    /// congelar y recuperar. Gobernar no: la rotación lo renueva. Va
+    /// **después** de verificar la autoridad: si fuera antes, agotar el
+    /// cupo ajeno sería posible sin ser custodio.
     pub(crate) fn consume_custodian_use(&mut self) -> Result<(), LayerError> {
         if self.custodian_uses >= self.max_custodian_uses {
             return Err(LayerError::CustodianSetExhausted {
