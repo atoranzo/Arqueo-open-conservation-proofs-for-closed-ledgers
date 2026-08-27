@@ -43,7 +43,7 @@
 //! |---|---|
 //! | Transferir más de lo debitado | Conservación (partida doble) |
 //! | Abrir cuenta con saldo | Apertura siempre a cero |
-//! | Emitir sin autorización | Clave del emisor demostrada en circuito |
+//! | Emitir sin autorización | Dos custodios demostrados en circuito |
 //! | Emisión encubierta | Suministro público atado en el circuito |
 //! | Gastar dos veces | No-pertenencia demostrable |
 //! | Gastar sin ser el titular | Autoridad de gasto |
@@ -81,9 +81,13 @@
 //!   existe —`burn.rs`, con su circuito y su medida en `metrics.rs`—;
 //!   lo que no hay es una regla que gobierne emisión y destrucción
 //!   más allá del tope inmutable del ledger.
-//! - **No hay umbral configurable.** Emitir, gobernar, congelar y recuperar
-//!   exigen DOS custodios distintos del conjunto autorizado, y ese dos es
-//!   fijo: no hay k-de-n.
+//! - **No hay umbral configurable.** Emitir, emitir a pendiente, congelar y
+//!   recuperar exigen DOS custodios distintos del conjunto autorizado, y ese
+//!   dos es fijo: no hay k-de-n. Cambiar ese conjunto es otro umbral de dos,
+//!   sobre el conjunto de GOBERNANZA y con dominio propio. La garantía es
+//!   "dos claves comprometidas en vez de una", **no**
+//!   "dos voluntades independientes": en un nodo único, quien genera la
+//!   prueba necesita las dos claves a la vez.
 //! - **Nada de esto ha sido auditado por terceros.**
 
 mod accounts;
@@ -544,8 +548,9 @@ pub struct SovereignLayer {
     refund_ttl: u64,
     records: HashMap<AccountIndex, AccountRecord>,
     next_index: AccountIndex,
-    /// **Raíz del conjunto de custodios autorizados.** Crear dinero y
-    /// recuperar cuentas exige dos custodios distintos del conjunto.
+    /// **Raíz del conjunto de custodios autorizados.** Crear dinero,
+    /// congelar y recuperar cuentas exige dos custodios distintos del
+    /// conjunto.
     ///
     /// **Mutable por gobernanza**: si un custodio se compromete, el
     /// conjunto puede cambiarse sin crear un ledger nuevo.

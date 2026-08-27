@@ -28256,3 +28256,87 @@ volcado — y un juez con DOS estados donde había TRES.
 respuestas del formulario — es PRIVADO y vive fuera del clon. No va a main, ni
 a rama, ni a `doc/nlnet/`. **La protección es la RUTA**, no una entrada de
 `.gitignore`, y este bloque lo gatea contra `git ls-files`.
+
+## §373 — la cabecera de la capa nombraba mal a quien autoriza crear dinero
+
+**Que.** La cabecera de `crates/zk-ssl/src/lib.rs` decia dos cosas falsas sobre
+la misma autoridad. Una fila de su tabla de vias de crear dinero cerraba
+«emitir sin autorizacion» con «la clave del emisor demostrada en
+circuito», y en esta capa no hay clave de emisor. Y su vineta del umbral
+enumeraba las operaciones que exigen dos custodios poniendo GOBERNAR entre
+ellas. La misma fila vivia en `ARQUITECTURA.md` y la misma vineta en
+`RESUMEN_EJECUTIVO.md`. Solo lineas de prosa: ningun test, ningun pin, ninguna
+cifra, ningun Cargo.
+
+**EL HALLAZGO: el numero era correcto por casualidad y el CONJUNTO no.** La
+vineta decia cuatro operaciones y son cuatro, pero con un miembro cambiado.
+Medidas las cinco llamadas a `verify_threshold_pair` en la capa con su dominio
+y su raiz: `mint.rs`, `two_phase.rs`, `freeze.rs` y `recovery.rs` pasan las
+cuatro `CUSTODIAN_DOMAIN` y `custodian_set_root`; **`governance.rs` pasa
+`governance_set_root`**. El conjunto de custodios gobierna emitir, emitir a
+pendiente, congelar y recuperar. Gobernar es otro umbral de dos sobre OTRO
+conjunto, y el propio `governance.rs` lo declara: el dominio dice que es una
+autorizacion de gobernanza y la raiz de que conjunto, de modo que un custodio
+no puede pasar por gobernador. Una lista con el cardinal correcto y un miembro
+falso es peor que una lista corta: su numero la disimula.
+
+**Como se llego, y el primer paso fue un rojo.** Una reemision anterior de este
+corte murio en un INERTE propio que exigia que cierta frase apareciera una sola
+vez. Al abrir donde ya aparecia salio un TERCER recuento del umbral, escrito en
+el doc de un campo del mismo fichero. Ese tercer recuento obligo a medir las
+raices, y ahi cayo la premisa. Ninguno de los tres pasos estaba planeado, y el
+corte que se iba a sellar habria publicado CINCO operaciones de custodios con
+gobernar dentro: mas apariencia de precision sobre un conjunto equivocado.
+
+**El §342 mato la afirmacion de la clave y esta fila sobrevivio, y esta medido
+por que.** Aquel sello corrigio la vineta que decia que la clave del emisor era
+unica. Su censo buscaba ESA frase, y la fila de la tabla dice el mismo hecho con
+otras palabras. Un censo anclado a la forma de una frase es ciego a la otra
+redaccion del mismo hecho: no fue descuido del sello, fue el alcance de su
+instrumento.
+
+**Seis productores de la misma tabla, y tres estaban rancios.** La tabla vive en
+la cabecera de la capa, dos veces en `ARQUITECTURA.md`, y una vez en `PAPER.md`,
+`README.md` y `RESUMEN_EJECUTIVO.md`. Los tres ultimos ya decian
+«Dos custodios demostrados en circuito». La redaccion nueva NO se compuso:
+se copio de `PAPER.md`, por la regla de que una cita se copia de su fuente. La
+vineta del umbral, en cambio, vive en DOS sitios y solo dos, censados.
+
+**El ambito lo decidio el CUERPO del encabezado, no su titulo.** Las dos copias
+de `ARQUITECTURA.md` cuelgan de encabezados que se llaman casi igual. La primera
+no tiene nada que la acote y ENTRO. La segunda cierra su seccion nombrando
+`settlement-layer`, `circuit_settlement` y `circuit_mint`, la capa ANTERIOR y su
+circuito, donde SI existe una clave de emisor unica: alli la frase es CIERTA y
+NO se toco. El titulo no habria bastado para separarlas.
+
+**Y la cabecera recupera una condicion que solo llegaba a quien lee el fuente.**
+El doc del campo `custodian_set_root` ya advierte que la garantia es «dos
+claves comprometidas en vez de una» y no «dos voluntades
+independientes», con su razon: en nodo unico quien genera la prueba necesita
+las dos claves a la vez. Ese campo va sin `pub`, asi que rustdoc no lo publica.
+La vineta de la cabecera, que si se publica, daba la garantia pelada. Un
+subconjunto que dice MENOS es seguro; uno que quita la condicion de una garantia
+dice lo MISMO mas fuerte. Queda DECLARADO que la frase vive ahora en dos sitios
+del mismo fichero: se copio verbatim a proposito, porque dos textos identicos se
+atan con un grep y dos resumenes distintos no.
+
+**Lo que queda DECLARADO y sin reparar, con su medicion.** Las seis tablas no
+estan atadas por ningun instrumento, y discrepan en mas que la fila de este
+corte: la cabecera enumera siete vias y los documentos publicos once, y gastar
+dos veces tiene dos mecanismos distintos segun donde se lea. Aparte,
+`governance.rs` y otro doc de `lib.rs` enumeran TRES operaciones al describir
+que consume la cuota de custodios; puede que se queden cortas, pero eso es OTRO
+hecho y no esta medido. Nada de esto se toca aqui: repararlo es abrir seis
+productores, y meterlo dentro es el patron que mato a tres sellos seguidos.
+
+**La puerta, y por que no es el canon.** El corte no mueve ni un contador, asi
+que la puerta son las nueve herramientas de `tools/`, con la lista DERIVADA de
+`canon.sh` y el bloque muriendo si no salen nueve, corridas antes de tocar un
+byte y otra vez despues. Y como el conjunto incluye un `.rs`, aunque solo toque
+lineas de documentacion, se compila la capa y se exige que el listado de tests
+sea EXACTAMENTE el mismo antes y despues.
+
+**Contadores.** Ningun pin se mueve y ninguna suma tampoco. Ningun Cargo tocado.
+El BACKLOG no mueve su contador. `ARQUITECTURA.md` no cambia de numero de
+lineas; la capa gana cinco y el resumen una, por el reflujo de las vinetas. El
+canon no corrio.
