@@ -134,7 +134,7 @@ duerme cifrado (keystore con dominio propio). Dos comandos para tocarlo:
 
 ```bash
 cargo run --release -p zk-ssl-cli -- simulate --amount 250000
-cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.1.json
+cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.3.json
 ```
 
 ---

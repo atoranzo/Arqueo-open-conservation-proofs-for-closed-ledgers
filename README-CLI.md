@@ -70,7 +70,7 @@ cargo run -p zk-ssl-cli -- inspect-state --ledger ./ledger --accounts
 
 # Conformidad del protocolo: re-ejecuta el escenario canónico y compara
 # campo a campo contra los vectores fijados — la 2ª implementación empieza aquí:
-cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.1.json
+cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.3.json
 
 # Eventos como JSON Lines (datos por stdout, diagnóstico por stderr):
 cargo run -p zk-ssl-cli -- --json simulate | jq .

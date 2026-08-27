@@ -59,7 +59,7 @@ kill %1
 
 # 3 · ¿Vas a escribir una SEGUNDA implementación? Este es tu contrato:
 #     re-ejecuta el escenario canónico y compara campo a campo:
-cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.1.json
+cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.3.json
 
 # 4 · El wallet en reposo, cifrado con la MISMA construcción que el
 #     ledger y dominio propio (guardar → cargar → que lo malo FALLE):

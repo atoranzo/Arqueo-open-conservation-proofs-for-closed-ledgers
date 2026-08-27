@@ -28073,3 +28073,53 @@ pero la puerta NO son solo las siete herramientas: como el conjunto incluye un
 que antes, que es el invariante "no se anadio ni se perdio ningun test" -y el
 que cazaria un bloque cercado colado en un `//!`, que se volveria doc-test.
 BACKLOG sin mover en 50 abiertas / 56 resueltas. Ningun Cargo tocado.
+
+## §370 — la orden de conformidad apuntaba al vector caducado
+
+**Que.** Tres documentos publicaban la orden de conformidad contra
+`spec/vectors/zkssl-0.1.json`. Se apuntan al `0.3`, que es el vigente desde el
+§354. **Una sola linea por fichero; ninguna otra cita se toca.**
+
+**Medido, no razonado.** La orden publicada sale **rc=1**: "los vectores son de
+OTRA version: zkssl/0.1 ... (aqui: zkssl/0.3 ...)". La misma orden contra el
+`0.3` sale **rc=0 en 1,344 s** y remata con "CONFORMIDAD: 6 entradas + cabeza +
+suministro, todo IDENTICO". Las dos corridas, sobre `4c30c10`.
+
+**Lo que esto significa en la puerta.** `README.md:45-46` presenta esa seccion
+como "cuatro comandos, cuatro propiedades", y `:60-61` presenta esta orden como
+"tu contrato" para una segunda implementacion. **Una de las cuatro propiedades
+fallaba al copiarla**, y es la que le importa a quien viene a reimplementar.
+
+**El alcance, DERIVADO y no supuesto.** De las citas vivas al `0.1` fuera del
+registro, **TRES son ordenes ejecutables** -las que se corrigen- y **CINCO son
+referencias legitimas**, todas bajo `spec/`: `RPC.md` dos veces y tres del
+proceso RFC. El arbol conserva el `0.1` y el `0.2` **a proposito** y
+`conformance --check` los rechaza **a proposito**: tocar esas cinco habria sido
+peor que la enfermedad. El clasificador separa las dos clases por ESTRUCTURA
+-una cita es orden si vive dentro de una valla Y la linea empieza por mando-.
+
+**El hallazgo que el censo destapo, y pesa mas que el fallo.** **NINGUN
+documento del arbol publicaba una orden contra el vector vigente**: el censo de
+ordenes con `0.3` daba **cero**. El `0.3` existe desde el §354 y nunca llego a
+la puerta de entrada. No habia molde que copiar, asi que el texto nuevo se
+escribe entero y por eso el corte se queda en la cifra de version: lo minimo que
+vuelve cierta la orden.
+
+**Lo que NO se toca, y por que.** La prosa que manda cada una de las tres
+ordenes es CIERTA -re-ejecutar el escenario canonico y comparar campo a campo es
+exactamente lo que hace- y se queda intacta. Tampoco se anade una explicacion
+sobre el `0.1` y el `0.2` junto a la orden: eso ya vive en `spec/RPC.md:9` y
+duplicarlo seria crear un segundo productor de la misma afirmacion.
+
+**De donde viene este corte.** Del frente de entrada del repo, midiendo que ve
+alguien que llega de fuera. Es la tercera vez en dos sesiones que una orden o
+una cita publicada dejo de ser cierta sin que ningun gate se enterara: el §368
+con el comentario de la valla de `ARQUITECTURA`, el §369 con una atribucion
+tomada de segunda mano, y este. **La prosa envejece sin que nada se ponga
+rojo**, y en la portada envejece delante de quien decide.
+
+**Contadores.** Ningun test tocado, ningun `.rs`, ningun Cargo. Pin de la capa
+287 y de stark 318 sin mover, sumas 981 / 1118 / 1132, el canon declara 1133 con
+el offset +1 intacto. **El canon no corre**: la puerta son las siete
+herramientas, medidas en verde antes y despues. Los tres documentos quedan con
+las MISMAS lineas que tenian. BACKLOG sin mover en 50 abiertas / 56 resueltas.
