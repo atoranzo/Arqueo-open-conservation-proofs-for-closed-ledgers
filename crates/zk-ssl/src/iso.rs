@@ -141,8 +141,6 @@ fn iso_reason(err: &LayerError) -> (&'static str, String) {
         LayerError::OverRegulatoryLimit { .. } => ("AM02", err.to_string()),
         // AC01 — IncorrectAccountNumber
         LayerError::AccountNotFound(_) => ("AC01", err.to_string()),
-        // AM05 — Duplication
-        LayerError::NullifierAlreadySpent => ("AM05", err.to_string()),
         // AG01 — TransactionForbidden
         LayerError::NotTheAccountHolder | LayerError::NotTheIssuer => {
             ("AG08", err.to_string())
@@ -194,7 +192,6 @@ fn iso_reason(err: &LayerError) -> (&'static str, String) {
         //
         // Estas SI son tecnicas, pero se mapean **explicitamente** para que
         // se vea que la decision se tomo.
-        LayerError::NullifierPositionCollision { .. } => ("FF10", err.to_string()),
         LayerError::PendingTreeExhausted { .. } => ("FF10", err.to_string()),
         // AM05 — Duplication: es literalmente lo que ocurre, la misma
         // cuenta o la misma posicion dos veces en un lote (§215).

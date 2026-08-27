@@ -28459,3 +28459,54 @@ con al menos dos sentidos: `:1140` es el formato de hoja v1, y `:1509` y
 corrio: el conjunto solo lleva comentarios, y la puerta fue compilar la capa en
 release y exigir que la lista de tests diera los MISMOS 290, nombre a nombre.
 BACKLOG sin mover: 106 entradas, 50 abiertas y 56 resueltas.
+
+## §376 — el tipo de error deja de declarar dos fallos que la capa no puede tener
+
+**Que.** `LayerError` conservaba `NullifierAlreadySpent` y
+`NullifierPositionCollision`, dos variantes que **nadie construye** en la capa:
+solo se declaraban, se imprimian en el `Display` y se mapeaban a codigo ISO. Se
+retiran las dos, con sus brazos, y en su sitio queda una nota que las CITA.
+
+**Es el §374 terminado, y eso cambia lo que se creia que era.** El punto 13 de
+la cola decia que el defecto estaba en el puente ISO. **Es falso**: `iso.rs`
+declara en su propio codigo que NO tiene comodin y que es deliberado -habia un
+`_ => ("TECH", ...)` que absorbia nueve de diecinueve variantes sin que nadie lo
+decidiera-, asi que mapear no afirma que la condicion pueda ocurrir: es la
+consecuencia mecanica de un invariante elegido. Mientras la variante exista, el
+match TIENE que mapearla o no compila. **El defecto estaba en el enum.**
+
+**Lo mas grave, y no era la fila ni el codigo ISO.** El doc de
+`NullifierPositionCollision` publicaba EN PRESENTE que «la posicion se deriva
+del propio nullificador -`nullificador[0] mod 2^32`- asi que dos pagos legitimos
+distintos pueden caer en la misma» y que «el pago queda bloqueado y no hay
+reintento posible». **Es el mismo limite operativo que el §374 mato en
+`ARQUITECTURA.md`**, vivo en el codigo. Aquel sello midio el documento y la
+tabla de `lib.rs`; no miro el doc de esta variante.
+
+**La historia no se borra.** La correccion del §13 -que la colision dejara de
+reportarse como doble gasto, acusando al usuario honesto- se registra en la nota
+que sustituye a las dos declaraciones. Se retira el mecanismo, no su registro.
+
+**Como se midio.** Cuatro pastes de lectura pura. El censo de PRODUCTORES da
+cero en la capa y el unico `return Err` real vive en `crates/settlement-layer`,
+que tiene **su propio** `enum LayerError` -medido: son DOS enums distintos, sin
+reexportacion cruzada-. Ningun test de la capa las nombra. Y ninguno de los dos
+brazos era el unico productor de su codigo: `AM05` sobrevive por
+`DuplicateAccountInBatch` y `DuplicatePendingInBatch`, y `FF10` por otras cinco
+variantes, asi que **no queda ningun codigo ISO huerfano**.
+
+**FICHADO Y NO TOCADO, y es peor que lo que se arregla aqui.**
+`PendingTreeExhausted` lleva en su doc una correccion del §211: decir que el
+contador «nunca reutiliza las posiciones» es FALSO, porque `allocate_pending`
+recorre desde cero y reutiliza los huecos, y el limite real es de pendientes
+**simultaneos**, no totales. Pero su brazo del `Display` **sigue diciendo
+exactamente lo que su propio doc declara falso**. Esa variante SI es alcanzable,
+y ese texto sale por `to_string()` al `pacs.002` que recibe un banco. El doc se
+corrigio y el mensaje al usuario se quedo atras. Corte propio.
+
+**Contadores.** Variantes del enum y brazos de `iso_reason` bajan de 25 a 23,
+**derivado por el propio bloque antes de escribir**. Pin capa 287 y stark 318
+sin mover. Sumas 981 + 137 = 1118 y 1118 + 14 = 1132; el canon declara 1133.
+Ningun Cargo tocado. El canon NO corrio: la puerta fue compilar la capa en
+release y exigir que la lista de tests diera los MISMOS 290, nombre a nombre.
+BACKLOG sin mover: 106 entradas, 50 abiertas y 56 resueltas.
