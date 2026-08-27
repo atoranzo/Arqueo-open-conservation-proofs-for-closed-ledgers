@@ -480,6 +480,41 @@ impl SovereignLayer {
             }
             .into());
         }
+
+        // --- CONSERVACION DEL DINERO ---
+        //
+        // El invariante sagrado: sum(saldos) + sum(pendientes vivos) ==
+        // suministro.
+        //
+        // `root:state` cubre los saldos -la hoja lleva el balance-, pero el
+        // SUMINISTRO es un escalar que NINGUNA raiz cubre: se lee de
+        // `meta:supply` y hasta aqui se creia. Esta puerta es el unico
+        // eslabon que ata ese escalar al arbol que si esta cubierto.
+        //
+        // El AIR ya guarda la conservacion POR TRANSICION (nueve testigos
+        // negativos). Lo que no guardaba nadie es que el AGREGADO cargado de
+        // disco siga cuadrando: el hueco es de REAPERTURA, no de transicion.
+        //
+        // Va ANTES del `match` de `root:nullifier` porque ese `match`
+        // ESCRIBE -aplica un lote de limpieza-: fail-closed es verificar
+        // antes de mutar.
+        //
+        // LIMITE DECLARADO: `pamt:` NO tiene raiz guardada, asi que la suma
+        // de pendientes esta tan sin cubrir como el suministro. Esta puerta
+        // caza cualquier mentira AISLADA, no una coordinada en las dos.
+        //
+        // Se suma en u128 y no con `total_pending()`: ese devuelve u64, y un
+        // `pamt:` corrupto podria DESBORDAR EN SILENCIO en release y colar
+        // la mentira. El operador se deriva del invariante.
+        let saldos: u128 = self.records.values().map(|r| r.balance as u128).sum();
+        let pendientes: u128 = self.pending_amounts.values().map(|v| *v as u128).sum();
+        if saldos + pendientes != self.total_supply as u128 {
+            return Err(StoreError::IntegrityFailure {
+                what: "conservacion del suministro",
+            }
+            .into());
+        }
+
         // La raiz legada se verifica ANTES de migrar: un arbol legado
         // corrupto se trata igual que uno vivo — el arranque se detiene.
         match get(b"root:nullifier")? {

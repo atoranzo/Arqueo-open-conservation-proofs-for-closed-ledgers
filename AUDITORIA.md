@@ -28637,3 +28637,96 @@ de codigo y el asiento. Lineas: `crates/zk-ssl/src/tests.rs` 2936 -> 2936
 un constructo de cuatro lineas a la forma de una linea del molde. Estas cifras
 se declaran aqui a proposito: el editor del bloque las DERIVA por su cuenta y
 muere si no coinciden con estas.
+## §379 — la conservacion del dinero se comprueba al abrir, y deja de creerse
+
+**Que.** El invariante sagrado — suma de saldos mas suma de pendientes vivos
+igual a suministro — tenia afirmacion y no tenia falsador. El §378 hizo que el
+test que lleva su nombre DERIVASE la suma del ledger en vez de teclear las
+cuentas; este sello pone la PUERTA en produccion y le escribe el testigo
+negativo que faltaba, en los DOS sitios donde la capa vuelve a abrir un estado
+que viene de disco.
+
+**El hueco, con su nombre.** `root:state` SI cubre los saldos: la hoja es
+`native_leaf(public_id, balance, nonce)`, asi que mentir sobre un saldo mueve
+la raiz y el arranque ya se detenia. `total_supply` es de otra clase: es un
+ESCALAR que se lee de `meta:supply` y que NINGUNA raiz cubre. El censo de
+integridad de `fn load` comprueba `root:state` y el `root:nullifier` legado, y
+nada mas. El AIR guarda la conservacion POR TRANSICION — nueve testigos
+negativos — y lo que no guardaba nadie es que el AGREGADO cargado de disco
+siguiera cuadrando. El hueco era de REAPERTURA, no de transicion, y esta
+puerta es el unico eslabon que ata el escalar sin cubrir al arbol que si lo
+esta.
+
+**Donde se cablea, y por que ahi.** Al ABRIR. Se descartaron las otras dos: no
+cablearla — existe y sus testigos la ejercitan, coste cero, pero un ledger
+roto no avisa — y hacerlo en cada `apply_*`, que es fail-closed maximo pero
+O(n) por operacion, o sea cuadratico en la jornada de mil pagos que
+`metrics.rs` publica. Dentro de `fn load` va ANTES del `match` de
+`root:nullifier`, porque ese `match` ESCRIBE: aplica un lote de limpieza de
+las claves legadas. Fail-closed es verificar antes de mutar.
+
+**El error, sin variante nueva.** `StoreError::IntegrityFailure { what }`, que
+ya existia y ya se usaba en los dos sitios. NO es `VerificationFailed`: una
+conservacion rota no es una prueba que falla, y reciclar ese nombre lo habria
+hecho significar dos cosas. Su `what` es `&'static str`, asi que el error
+NOMBRA la propiedad y NO lleva las cifras del descuadre; se dice aqui para que
+no se descubra depurando.
+
+**La suma va en u128, y no por gusto.** `total_pending()` devuelve `u64`. Un
+`pamt:` corrupto podria hacerla DESBORDAR EN SILENCIO en release y colar la
+mentira justo por la puerta que la busca. El operador de un gate se deriva de
+su invariante, no se copia del hermano.
+
+**El gemelo de la instantanea, con su ROTURA DECLARADA.** `import_snapshot`
+lleva la misma puerta. El formato v3..v7 NO transporta pendientes — la capa
+importada arranca con el mapa vacio — asi que alli la invariante se reduce a
+suma de saldos igual a suministro, y eso es cierto porque el §359 hizo que
+`export_snapshot` REHUSE con pagos en vuelo. CONSECUENCIA, y va escrita: una
+instantanea ANTERIOR al §359 tomada con dinero en transito tiene menos saldos
+que suministro y **a partir de este sello NO importa**. Es fail-closed: ante
+duda se para, no se sigue por compatibilidad.
+
+**Los dos testigos.** Cada puerta trae el suyo, y los dos mienten donde
+ninguna raiz mira. El del ledger sube `meta:supply` por sled sin tocar
+`root:state`, de modo que la puerta de cuentas pasa y solo puede cazarlo la de
+conservacion; antes de falsearlo LEE el valor y exige que valga lo emitido,
+porque sin clave el sellado guarda en claro y esa premisa merece su propio
+assert. El de la instantanea exporta, falsea el `total_supply` en su
+desplazamiento y lo importa. Ese desplazamiento se DERIVA de lo que el
+escritor emite y ademas se AUTOVERIFICA: el test lee el valor antes de tocarlo
+y falla con su propio nombre si el formato se movio — el test vecino declara
+que una constante asi ya se quedo rancia dos veces.
+
+**Los dos `matches!` exigen el `what` LITERAL**, no `{ .. }` como los dos
+moldes que copian. Con el comodin, cada testigo pasaria tambien si saltara la
+puerta equivocada, y un verde que no pide explicacion es peor que un rojo.
+
+**LIMITE DECLARADO: no existe `root:pending`.** El censo de claves `root:` da
+dos y solo dos: `root:state` y el `root:nullifier` legado. El arbol de
+pendientes y sus importes NO tienen raiz guardada, asi que nada los verifica
+al reabrir. Esta puerta ata una cantidad CUBIERTA contra DOS SIN CUBRIR: caza
+cualquier mentira aislada, no una coordinada en las dos. Queda fichado como
+candidato propio, de la misma clase que el punto 17 un escalon mas abajo.
+
+**Un defecto del instrumento, escrito como falso.** El INERTE 3 del
+`BLOQUE-379` imprime «section-sign nuevos: 45», y 45 es el TOTAL de los tres
+ficheros, no el delta: los nuevos son CINCO. Fue un print y no una puerta, y
+no movio un byte del arbol, pero una etiqueta que dice «nuevos» sobre un total
+es la misma clase que una cifra tecleada, y aqui queda dicha.
+
+**Dos instrumentos cuentan cosas distintas, y no se reconcilian a la fuerza.**
+El censo de este arco movio 27 cifras en 10 documentos vivos; `check_cifras`
+declara 26 cifras de tests, 7 de ellas de desglose. Su patron exige la palabra
+pegada al numero, y ni el total de todos los pines ni el de declarados la
+llevan: esas dos familias se han movido SIN compuerta que las vigile. No es
+nuevo — el §302-B ya lo midio — pero se repite aqui porque este sello las
+volvio a mover.
+
+**Contadores.** Pin de la capa **287 -> 289**: nacen dos tests y no muere
+ninguno; `-- --list` pasa de 290 a 292 nombres y los dos que aparecen son los
+dos testigos. Sumas **981 -> 983**, **1118 -> 1120**, **1132 -> 1134**; el
+canon declara **1135** y el desfase de +1 sigue intacto. Ningun Cargo tocado.
+Ficheros: `persistence.rs` 689 -> 724, `snapshot.rs` 1084 -> 1157, `tests.rs`
+2936 -> 2996, mas el pin y 27 cifras en diez documentos, sin que ninguna linea
+nazca ni muera porque las cuatro sustituciones son de igual ancho. **EL CANON
+CORRE.**

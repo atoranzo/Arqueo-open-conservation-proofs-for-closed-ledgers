@@ -515,6 +515,28 @@ impl SovereignLayer {
             }
         }
 
+        // --- CONSERVACION DEL DINERO (gemela de `persistence::load`) ---
+        //
+        // `state_root` cubre los saldos: la hoja lleva el balance. El
+        // SUMINISTRO no lo cubre ninguna raiz, y hasta aqui se creia.
+        //
+        // El formato v3..v7 NO transporta pendientes, asi que aqui la
+        // invariante se reduce a sum(saldos) == suministro. Es cierto porque
+        // el §359 hizo que `export_snapshot` REHUSE con pagos en vuelo.
+        //
+        // ROTURA DECLARADA: una instantanea ANTERIOR al §359, tomada con
+        // dinero en transito, tiene sum(saldos) < suministro y a partir de
+        // aqui NO importa. Es fail-closed: ante duda se para, no se sigue
+        // por compatibilidad.
+        let saldos: u128 = layer.records.values().map(|r| r.balance as u128).sum();
+        if saldos != layer.total_supply as u128 {
+            return Err(LayerError::Store(
+                crate::store::StoreError::IntegrityFailure {
+                    what: "conservacion del suministro de la instantanea",
+                },
+            ));
+        }
+
         Ok(layer)
     }
 }
@@ -773,6 +795,57 @@ mod tests {
         assert!(
             detected,
             "CRITICO: una instantanea manipulada debe detectarse ANTES de operar"
+        );
+        let _ = std::fs::remove_file(&file);
+    }
+
+    /// **UNA INSTANTANEA CUYO SUMINISTRO NO CUADRA SE RECHAZA.**
+    ///
+    /// Gemela de la de arriba, por el OTRO termino. Manipular un saldo mueve
+    /// `state_root` y lo caza la puerta de cuentas; manipular el SUMINISTRO
+    /// no mueve ninguna raiz, y hasta el §379 se importaba en silencio.
+    ///
+    /// El formato v7 NO transporta pendientes, asi que aqui la invariante se
+    /// reduce a sum(saldos) == suministro; es cierto porque el §359 hizo
+    /// que `export_snapshot` rehuse con pagos en vuelo.
+    #[test]
+    fn a_snapshot_with_a_lying_supply_is_rejected() {
+        let file = temp_file("supply_mentiroso");
+        let mut layer = new_layer();
+        open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let info = layer.export_snapshot(&file).expect("exportar");
+
+        // El desplazamiento del `total_supply` se DERIVA de lo que
+        // `export_snapshot` escribe: marca 1 + magico 8 + CUATRO raices de 32
+        // + limite 8 + max_supply 8 + max_accounts 8. La cabecera del modulo
+        // dice lo mismo (160 en el cuerpo): dos productores del mismo numero.
+        //
+        // El test vecino declara que una constante asi ya se quedo rancia DOS
+        // veces. Por eso esta se AUTOVERIFICA antes de usarse.
+        const OFF: usize = 1 + 8 + 32 * 4 + 8 * 3;
+        let mut bytes = std::fs::read(&file).expect("leer");
+        let mut ocho = [0u8; 8];
+        ocho.copy_from_slice(&bytes[OFF..OFF + 8]);
+        let leido = u64::from_le_bytes(ocho);
+        assert_eq!(
+            leido, info.total_supply,
+            "el desplazamiento del suministro en el v7 se ha movido: el formato cambio y esta constante no"
+        );
+
+        bytes[OFF..OFF + 8].copy_from_slice(&(info.total_supply + 1).to_le_bytes());
+        std::fs::write(&file, &bytes).expect("escribir");
+
+        // No se imprime el resultado: `SovereignLayer` NO implementa `Debug` a
+        // proposito, porque lleva los saldos de todas las cuentas.
+        let detectado = matches!(
+            SovereignLayer::import_snapshot(&file),
+            Err(LayerError::Store(StoreError::IntegrityFailure {
+                what: "conservacion del suministro de la instantanea"
+            }))
+        );
+        assert!(
+            detectado,
+            "CRITICO: una instantanea cuyo suministro no cuadra con sus saldos debe rechazarse ANTES de operar"
         );
         let _ = std::fs::remove_file(&file);
     }

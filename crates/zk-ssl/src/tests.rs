@@ -2639,6 +2639,66 @@ use super::*;
         let _ = std::fs::remove_dir_all(&path);
     }
 
+    /// **UN SUMINISTRO QUE NO CUADRA CON LOS SALDOS SE DETECTA AL ABRIR.**
+    ///
+    /// Gemelo del de arriba, y el que faltaba. `root:state` cubre los saldos
+    /// -la hoja lleva el balance-, pero `meta:supply` es un escalar que
+    /// NINGUNA raiz cubre: se lee de disco y, hasta el §379, se creia.
+    ///
+    /// Sin esta puerta un ledger cuyo suministro miente se abre EN SILENCIO,
+    /// y el nodo emite contra un tope calculado sobre una cifra falsa.
+    ///
+    /// La manipulacion NO toca `root:state`, asi que la puerta de cuentas
+    /// pasa y solo puede cazarlo la de conservacion. Por eso el `matches!`
+    /// exige el `what` LITERAL y no `{ .. }`: un verde que no pide
+    /// explicacion es peor que un rojo.
+    #[test]
+    fn a_supply_that_does_not_match_the_balances_is_detected_at_startup() {
+        let path = temp_path("supply_mentiroso");
+
+        {
+            let mut layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            )
+            .expect("abrir");
+            open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        }
+
+        // Sin clave, `seal` guarda el valor EN CLARO (`persistence.rs`), asi
+        // que el suministro son ocho bytes little-endian legibles. Se LEE
+        // antes de falsearlo: si esa premisa se cae, falla aqui y con su
+        // nombre, no mas abajo y por otra razon.
+        {
+            let db = sled_open_retry(&path);
+            let antes = db.get(b"meta:supply").expect("leer").expect("existe");
+            let mut ocho = [0u8; 8];
+            ocho.copy_from_slice(&antes[..8]);
+            assert_eq!(
+                u64::from_le_bytes(ocho),
+                1_000_000,
+                "un ledger sin cifrar guarda el suministro en claro"
+            );
+            db.insert(b"meta:supply", 1_000_001u64.to_le_bytes().to_vec())
+                .expect("insertar");
+            db.flush().expect("flush");
+        }
+
+        let r = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(StoreError::IntegrityFailure {
+                    what: "conservacion del suministro"
+                }))
+            ),
+            "CRITICO: un suministro que no cuadra con los saldos debe pararse ANTES de operar"
+        );
+
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
     /// Cambiar la identidad del emisor sobre un ledger existente falla.
     ///
     /// Silenciarlo permitiría sustituir al banco central sin dejar rastro.
