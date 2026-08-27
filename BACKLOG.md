@@ -2070,6 +2070,11 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   bits (entrada 15); (c) §83.3 — la cifra de acumulacion esta en MiB
   etiquetado «MB», un 7,2 % por debajo si se lee en SI (entrada 22).
   ⚠️ **No tocar Zenodo hasta tener las cuatro resueltas**, no solo la 27.
+  ⚠️ **§371 levanto esta suspension SOLO para los DOI** (27-08-2026): los
+  tres ficheros de `doc/preprints/` llevan ya los identificadores vigentes. Se
+  tocaron **solo identificadores** -ni una cifra, ni un parrafo- y desde ese
+  commit **ya no son byte a byte los PDF depositados**. Rehacer los papers
+  sigue suspendido: esto no lo adelanta.
 
 ## G. Otro proyecto, no una incidencia
 

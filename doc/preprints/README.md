@@ -10,11 +10,11 @@ publicado es una afirmación sin comprobar.
 
 ## Los tres
 
-| Fichero | Título | DOI de la tercera revisión |
+| Fichero | Título | DOI |
 |---|---|---|
-| `ZK-SSL-preprint.md` | Comparative Implementation of a Zero-Knowledge Settlement Layer across Five Proof Systems | [10.5281/zenodo.21693706](https://doi.org/10.5281/zenodo.21693706) |
-| `ZK-SSL-policy-note.md` | Provable Compliance without Full Ledger Disclosure | [10.5281/zenodo.21693709](https://doi.org/10.5281/zenodo.21693709) |
-| `ZK-SSL-residual-trust.md` | From Institutional Trust to Verifiable Properties | [10.5281/zenodo.21693718](https://doi.org/10.5281/zenodo.21693718) |
+| `ZK-SSL-preprint.md` | Comparative Implementation of a Zero-Knowledge Settlement Layer across Five Proof Systems | [10.5281/zenodo.21736125](https://doi.org/10.5281/zenodo.21736125) |
+| `ZK-SSL-policy-note.md` | Provable Compliance without Full Ledger Disclosure | [10.5281/zenodo.21736082](https://doi.org/10.5281/zenodo.21736082) |
+| `ZK-SSL-residual-trust.md` | From Institutional Trust to Verifiable Properties | [10.5281/zenodo.21905595](https://doi.org/10.5281/zenodo.21905595) |
 
 ## Cómo se regenera un PDF
 
@@ -55,7 +55,7 @@ apuntan ya a las terceras.
 ⚠️ La entrada 16 hablaba solo de las cruzadas; las dos autocitas se
 encontraron al hacerla.
 
-## Cuarta revisión: `ZK-SSL-residual-trust.md` DEPOSITADA; las otras dos, escritas sin depositar
+## Estado de los depósitos
 
 Los ficheros de este directorio llevan las correcciones de la cuarta
 revisión (entrada **28**): notas sobre las dos propiedades que el diseño
@@ -70,10 +70,28 @@ cierre de §4.7 (salt derivado de la clave, con la secuencia visible), la
 sección nueva §4.8 (la capa de evidencia, medida, con sus cuatro
 residuales), la fila de §4.1 que la entrada 1 de `ERRATA.md` reclamaba,
 cifras re-medidas sobre `7ad62a9`, y la retirada del apéndice de
-metadatos. Este fichero del árbol ES el fuente exacto de lo depositado.
+metadatos. ~~Este fichero del árbol ES el fuente exacto de lo depositado.~~
 
-⚠️ **`ZK-SSL-preprint.md` y `ZK-SSL-policy-note.md` siguen escritas y
+~~⚠️ **`ZK-SSL-preprint.md` y `ZK-SSL-policy-note.md` siguen escritas y
 sin depositar**: sus DOI de arriba apuntan a las terceras revisiones,
 que son las que un lector recibe hoy. Y sus citas a *residual-trust*
 apuntan aún a la tercera — misma clase que la entrada 16, para su
-propia revisión.
+propia revisión.~~
+
+✅ **Corregido el 2026-08-27.** Las dos SÍ estaban depositadas desde
+el 2026-08-01, comprobado abriendo los registros: `ZK-SSL-preprint.md` en
+[10.5281/zenodo.21736125](https://doi.org/10.5281/zenodo.21736125) y
+`ZK-SSL-policy-note.md` en
+[10.5281/zenodo.21736082](https://doi.org/10.5281/zenodo.21736082).
+
+⚠️ **El registro de `ZK-SSL-policy-note.md` tiene los ficheros
+RESTRINGIDOS**: la ficha es pública y el PDF no se descarga sin cuenta.
+
+⚠️ **Los DOI de los tres ficheros de este directorio se actualizaron en esa
+misma fecha, levantando para ese corte la suspensión de la entrada 28** y
+la regla de `tools/check_cifras.py` que los conservaba verbatim. **Sólo se
+tocaron identificadores**: ni una cifra, ni una afirmación, ni un párrafo
+de los textos. **Consecuencia declarada: desde ese commit los tres ficheros
+ya no son byte a byte los PDF depositados** — difieren en las líneas de
+DOI —, y por eso la frase tachada de arriba deja de valer. El siguiente
+depósito los vuelve a sincronizar.

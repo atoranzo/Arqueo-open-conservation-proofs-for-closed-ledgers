@@ -485,13 +485,13 @@ medido y con su acuse diseñado (`AUDITORIA.md` §121, §174).
 
 ## Publicación
 
-Tres preprints, en su **tercera revisión** (30 de julio de 2026). Las
+Los preprints del proyecto, con su DOI vigente en Zenodo. Las
 versiones anteriores siguen accesibles y se citan aquí: **una cifra
 publicada que se corrige no se borra, se marca**.
 
 **Comparative Implementation of a Zero-Knowledge Settlement Layer across Five
 Proof Systems: Design Findings and Measurements**
-DOI: [10.5281/zenodo.21693706](https://doi.org/10.5281/zenodo.21693706)
+DOI: [10.5281/zenodo.21736125](https://doi.org/10.5281/zenodo.21736125)
 
 *Versiones anteriores: [10.5281/zenodo.21683239](https://doi.org/10.5281/zenodo.21683239)
 y [10.5281/zenodo.21677737](https://doi.org/10.5281/zenodo.21677737). La primera
@@ -500,15 +500,24 @@ cifras miden la vía de un paso, **retirada desde entonces** (§31, §32).*
 
 **Provable Compliance without Full Ledger Disclosure — A Zero-Knowledge
 Settlement Architecture for Supervisory Audit**
-DOI: [10.5281/zenodo.21693709](https://doi.org/10.5281/zenodo.21693709)
+DOI: [10.5281/zenodo.21736082](https://doi.org/10.5281/zenodo.21736082)
 
 *Versión anterior: [10.5281/zenodo.21678396](https://doi.org/10.5281/zenodo.21678396).*
 
 **From Institutional Trust to Verifiable Properties — A Minimal ZK Settlement
 Layer and Its Residual Trust Surface**
-DOI: [10.5281/zenodo.21693718](https://doi.org/10.5281/zenodo.21693718)
+DOI: [10.5281/zenodo.21905595](https://doi.org/10.5281/zenodo.21905595)
 
 *Versión anterior: [10.5281/zenodo.21679208](https://doi.org/10.5281/zenodo.21679208).*
+
+**Reputation, Residual Power, and Verification Investment in Digital Settlement**
+DOI: [10.5281/zenodo.22078086](https://doi.org/10.5281/zenodo.22078086)
+
+**Residual Surfaces in Retail CBDC Incidents and the Verification–Residual Partition: A Coding Study with Contrast to an Explicit Residual-Trust Settlement Design**
+DOI: [10.5281/zenodo.22077991](https://doi.org/10.5281/zenodo.22077991)
+
+**Residual Trust After Verification: A Microeconomic Account of What Proofs Cannot Eliminate**
+DOI: [10.5281/zenodo.22076721](https://doi.org/10.5281/zenodo.22076721)
 
 ### Qué corrige la tercera revisión
 

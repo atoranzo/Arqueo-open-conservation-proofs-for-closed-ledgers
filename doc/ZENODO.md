@@ -318,8 +318,31 @@ has least confidence**.
 
 ## Cite
 
-If this is useful, cite the Zenodo record. If you find something wrong,
-**open an issue** — that is worth considerably more.
+If this is useful, cite the record for the paper you are using. If you find
+something wrong, **open an issue** — that is worth considerably more.
+
+**Comparative Implementation of a Zero-Knowledge Settlement Layer across Five
+Proof Systems: Design Findings and Measurements**
+[10.5281/zenodo.21736125](https://doi.org/10.5281/zenodo.21736125)
+
+**Provable Compliance without Full Ledger Disclosure**
+[10.5281/zenodo.21736082](https://doi.org/10.5281/zenodo.21736082)
+
+**From Institutional Trust to Verifiable Properties**
+[10.5281/zenodo.21905595](https://doi.org/10.5281/zenodo.21905595)
+
+**Reputation, Residual Power, and Verification Investment in Digital
+Settlement**
+[10.5281/zenodo.22078086](https://doi.org/10.5281/zenodo.22078086)
+
+**Residual Surfaces in Retail CBDC Incidents and the Verification–Residual
+Partition: A Coding Study with Contrast to an Explicit Residual-Trust
+Settlement Design**
+[10.5281/zenodo.22077991](https://doi.org/10.5281/zenodo.22077991)
+
+**Residual Trust After Verification: A Microeconomic Account of What Proofs
+Cannot Eliminate**
+[10.5281/zenodo.22076721](https://doi.org/10.5281/zenodo.22076721)
 
 ---
 

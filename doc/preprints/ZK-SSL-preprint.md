@@ -3,9 +3,9 @@
 <p class="sub">Design Findings and Measurements</p>
 
 <div class="meta">
-<p><strong>Author:</strong> Angel Jose Toranzo Portela &nbsp;·&nbsp; <strong>Affiliation:</strong> Independent &nbsp;·&nbsp; <strong>DOI:</strong> 10.5281/zenodo.21693706</p>
+<p><strong>Author:</strong> Angel Jose Toranzo Portela &nbsp;·&nbsp; <strong>Affiliation:</strong> Independent &nbsp;·&nbsp; <strong>DOI:</strong> 10.5281/zenodo.21736125</p>
 <p><strong>Repository:</strong> https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-</p>
-<p><strong>Companion preprints:</strong> <em>Provable Compliance without Full Ledger Disclosure</em>, 10.5281/zenodo.21693709; <em>From Institutional Trust to Verifiable Properties</em>, 10.5281/zenodo.21693718.</p>
+<p><strong>Companion preprints:</strong> <em>Provable Compliance without Full Ledger Disclosure</em>, 10.5281/zenodo.21736082; <em>From Institutional Trust to Verifiable Properties</em>, 10.5281/zenodo.21905595.</p>
 <p><strong>Code artifact:</strong> executable tests and measurement harnesses in-repo</p>
 <p><strong>Version:</strong> third revision, July 2026. The second revision added §3.6, §7.5, §7.6 and §8, recorded the retirement of the single-step settlement path, and re-measured the cost figures on the two-phase path. This revision corrects the mutation-coverage figure of §8.5 from twelve circuits to eleven, reports that the nullifier tree described in §7.5 as retained dead weight has since been removed with a verified migration, adds a fifth methodology error class in §8.6, and re-measures the test counts of §9. Changes that reverse an earlier claim are marked in place rather than removed.</p>
 </div>

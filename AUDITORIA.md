@@ -28123,3 +28123,61 @@ rojo**, y en la portada envejece delante de quien decide.
 el offset +1 intacto. **El canon no corre**: la puerta son las siete
 herramientas, medidas en verde antes y despues. Los tres documentos quedan con
 las MISMAS lineas que tenian. BACKLOG sin mover en 50 abiertas / 56 resueltas.
+
+## §371 — los seis documentos del DOI, y la puerta de quien llega desde Zenodo
+
+**Que.** Los identificadores de Zenodo que el arbol publica se ponen al dia, y
+los tres papers que faltaban entran en la lista del `README.md`. Se toca ademas
+`doc/ZENODO.md`, que es el documento al que `README.md:296` manda a quien llega
+desde Zenodo. Nueve ficheros; ni una linea de codigo.
+
+**Medido, no razonado.** El arbol publicaba **ocho** identificadores distintos y
+solo UNO estaba entre los registros vigentes. El `README.md` los presentaba como
+"tres preprints, en su tercera revision (30 de julio de 2026)" mientras los
+registros iban por delante: `21736125` en v4 y `21905595` en v6, los dos
+comprobados **abriendo su ficha**, no de memoria. La prosa que fechaba la
+publicacion habia dejado de ser cierta, y con un DOI colgando de ella.
+
+**La forma del arreglo.** La frase que contaba y fechaba se sustituye por una
+que **no lleva ni cuenta ni fecha**: un numero a mano en la portada envejece sin
+que ningun gate se entere, y esa es justo la enfermedad que este sello cura. Lo
+mismo en `doc/preprints/README.md`, donde la cabecera de columna y el encabezado
+pierden el numero de revision; y en `doc/ZENODO.md`, cuya seccion de cita pasa
+de "cite the Zenodo record" -que no nombraba ninguno- a la lista con titulo y
+DOI de cada uno.
+
+**La decision, y su precio, DECLARADOS.** La entrada 28 del BACKLOG suspende los
+preprints hasta el fin del proyecto, y `tools/check_cifras.py` los conserva
+verbatim por estar depositados. **Esa suspension se levanta SOLO para este
+corte.** Se tocan unicamente identificadores: ni una cifra, ni una afirmacion,
+ni un parrafo de los textos. **Consecuencia, escrita en el arbol y no solo en un
+asiento: desde este commit los tres fuentes ya no son byte a byte los PDF
+depositados**, y la frase que lo afirmaba queda TACHADA en
+`doc/preprints/README.md`, no borrada.
+
+**Una prosa que era falsa y que nadie habia medido.** `doc/preprints/README.md`
+declaraba que `ZK-SSL-preprint.md` y `ZK-SSL-policy-note.md` "siguen escritas y
+sin depositar". Las dos estaban depositadas desde el 01-08-2026. Se corrige con
+el molde del §247 que ese mismo fichero ya usaba unas lineas antes: se cita, no
+se borra.
+
+**Un aviso que va al registro y no a la puerta.** El registro de
+`ZK-SSL-policy-note.md` tiene los ficheros RESTRINGIDOS: la ficha es publica y
+el PDF no se descarga sin cuenta. Queda anotado en `doc/preprints/README.md`.
+**No se planta en `doc/ZENODO.md`**, que es la puerta del lector: eso se corrige
+con un permiso en Zenodo, y un aviso que nace para caducar es lo mismo que se
+esta curando aqui.
+
+**Lo que NO se toca, y por que.** Las lineas de "versiones anteriores" del
+`README.md` siguen intactas: el propio fichero declara dos renglones antes que
+una cifra publicada que se corrige no se borra, se marca. `ERRATA.md` no se
+toca. Y el `README.md` sigue diciendo que las referencias cruzadas apuntan a
+versiones anteriores mientras `doc/preprints/README.md` dice que se corrigieron
+el 01-08-2026: **esa contradiccion es ANTERIOR a este corte y queda FICHADA**,
+no reparada. El liston es el DELTA.
+
+**Contadores.** Ningun pin se mueve y el canon NO corre: el corte no toca un
+`.rs`, ni un Cargo, ni un solo test. Las nueve herramientas de `tools/`, en
+verde despues. Conjunto exacto de nueve, sin codigo, sin Cargo y sin `spec/`.
+BACKLOG sin mover en 50 abiertas / 56 resueltas.
+
