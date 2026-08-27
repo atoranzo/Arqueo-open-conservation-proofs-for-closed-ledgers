@@ -45,7 +45,7 @@
 //! | Abrir cuenta con saldo | Apertura siempre a cero |
 //! | Emitir sin autorización | Dos custodios demostrados en circuito |
 //! | Emisión encubierta | Suministro público atado en el circuito |
-//! | Gastar dos veces | No-pertenencia demostrable |
+//! | Gastar dos veces | Encadenamiento de raíces (orden total del nodo único) |
 //! | Gastar sin ser el titular | Autoridad de gasto |
 //! | Reenviar una operación válida | Encadenamiento de raíces en la capa |
 //!

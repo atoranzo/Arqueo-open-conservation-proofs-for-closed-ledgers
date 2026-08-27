@@ -321,9 +321,11 @@ deliberado: la capa **no puede** llamarla porque no tiene la clave. Si
 fuera un método, la API sugeriría lo contrario y alguien acabaría
 pasándosela.
 
-El nullifier sí viaja a la capa, pero **no revela nada nuevo**: es
-público y aparecería igualmente al aplicar la liquidación. Lo que no
-viaja es la clave que lo genera.
+⚠️ **Este párrafo describía el nullifier, y ya no aplica.** Decía que el
+nullifier sí viaja a la capa y no revela nada nuevo, porque es público y
+aparecería igualmente al aplicar la liquidación. Esa vía se retiró y el árbol
+de nulificadores **se eliminó de la capa**: hoy nada genera un nullifier. Lo
+que sigue siendo cierto es lo de arriba: la clave de gasto no viaja.
 
 ### La propiedad que lo hace seguro
 
@@ -450,8 +452,8 @@ comprueba, sin confiar en el operador.
 
 Añadir un indicador a la hoja de cuenta habría obligado a rehacer los seis
 circuitos. En su lugar hay un **árbol de congelados** y la liquidación
-demuestra **no-pertenencia** — la misma maquinaria que ya usa el doble
-gasto.
+demuestra **no-pertenencia** — la misma maquinaria que usa el árbol de
+pendientes.
 
 **Profundidad 24**, porque su subida cabe en las **192 filas libres** del
 circuito de liquidación. Con profundidad 32 habría hecho falta duplicar la
@@ -636,16 +638,19 @@ eso se ve en el propio constructor.
 **Mil transferencias: ~620 s de prueba y 126,2 MiB acumulados.** Ese es el
 argumento numérico a favor de las pruebas por lote — no una intuición.
 
-⚠️ **Pero no es el límite más restrictivo.** La posición del nullifier se
-deriva del propio nullifier, y por la paradoja del cumpleaños las
-colisiones son probables a los **~65.000 pagos**. Ese es una parada
-permanente para el afectado, no un coste acumulado. Ver `AUDITORIA.md`
-§13.
+⚠️ **El límite que este documento publicaba aquí ya no aplica.** Decía que la
+posición del nullifier se derivaba del propio nullifier y que las colisiones
+eran probables a los **~65.000 pagos**, una parada permanente para el
+afectado. Esa vía se retiró y el árbol de nulificadores
+**se eliminó de la capa**: hoy el doble gasto lo cierra el
+**encadenamiento de raíces**, con la dependencia del orden total que eso
+implica. Ver `PAPER.md` §4.2 y `AUDITORIA.md` §13.
 
 ### El coste por operación no crece
 
 Cinco transferencias encadenadas: la última costó 1,18 veces la primera.
-El árbol de nullifiers llenándose no degrada el rendimiento.
+⚠️ Este dato se justificaba con el árbol de nullifiers, que
+**se eliminó de la capa**; la medida sigue siendo válida por sí misma.
 
 ### ⚠️ El tamaño de prueba NO es constante, y eso mereció investigarse
 
@@ -686,7 +691,7 @@ entre 180 y 620 ms según el contexto de caché. Sirven para comparar
 | Abrir cuenta con saldo | Apertura siempre a cero |
 | Emitir sin autorización | Dos custodios demostrados en circuito |
 | Emisión encubierta | Suministro público atado en el circuito |
-| Gastar dos veces | No-pertenencia demostrable |
+| Gastar dos veces | Encadenamiento de raíces (orden total del nodo único) |
 | Gastar sin ser el titular | Autoridad de gasto |
 | Reenviar una operación válida | Encadenamiento de raíces en la capa |
 
@@ -712,10 +717,11 @@ cierre. Si no coinciden, **el arranque falla**.
 
 Verificado en `corrupted_ledger_is_detected_at_startup`.
 
-**Los nullifiers gastados también persisten.** Sin eso, reiniciar el nodo
-permitiría regastar todo lo anterior: el árbol volvería a estar vacío y
-la no-pertenencia se satisfaría de nuevo. Toda la protección contra doble
-gasto sería un espejismo entre reinicios.
+⚠️ **Aquí se decía que los nullifiers gastados también persisten**, y que sin
+eso reiniciar el nodo permitiría regastar todo lo anterior porque el árbol
+volvería a estar vacío. El árbol de nulificadores **se eliminó de la capa**:
+hoy el doble gasto y el reenvío los cierra el **encadenamiento de raíces**,
+con la dependencia del orden total que eso implica.
 
 **Los parámetros del sistema son inmutables.** Abrir un ledger existente
 con otra identidad de emisor u otro límite regulatorio falla. Silenciarlo

@@ -28340,3 +28340,71 @@ sea EXACTAMENTE el mismo antes y despues.
 El BACKLOG no mueve su contador. `ARQUITECTURA.md` no cambia de numero de
 lineas; la capa gana cinco y el resumen una, por el reflujo de las vinetas. El
 canon no corrio.
+
+## §374 — el documento de entrada explicaba el doble gasto con un mecanismo retirado
+
+**Que.** `ARQUITECTURA.md` describia el arbol de nulificadores EN PRESENTE en
+seis sitios de su primera mitad, y la cabecera de la capa cerraba
+«gastar dos veces» con «no-pertenencia demostrable». Ese arbol
+**se elimino de la capa**. Solo lineas de prosa: ningun test, ningun pin,
+ninguna cifra, ningun Cargo.
+
+**Lo mas grave no era la fila: era un LIMITE OPERATIVO FALSO.** El documento
+publicaba que las colisiones de posicion del nulificador eran probables a los
+~65.000 pagos y que eso era una parada permanente para el afectado. Con el
+arbol retirado ese limite no existe, y `PAPER.md` ya lo decia: se elimino de la
+capa, el limite ya no aplica. Un documento de entrada que publica una
+restriccion operativa inexistente no es prosa envejecida: es una cifra que un
+supervisor podria usar para decidir.
+
+**Y una propiedad de seguridad de algo que no esta.** El mismo documento
+afirmaba que los nullifiers gastados persisten y que sin eso toda la proteccion
+contra doble gasto seria un espejismo entre reinicios. Hoy esa proteccion es
+otra: el encadenamiento de raices, con la dependencia del orden total que eso
+implica.
+
+**Como se midio, y el veredicto se dio la vuelta a mitad.** Primero se conto
+`nullifier` en la capa y salieron trece ficheros, con una variante de error que
+dice literalmente que el nullifier ya se gasto. Con eso se concluyo que los
+documentos publicados nombraban el mecanismo equivocado. **Era FALSO y queda
+escrito como falso**: esos `nullifier` son el de CUSTODIO de
+`verify_threshold_pair` -otra cosa- y las dos variantes de error **no las
+produce nadie** en la capa; el unico productor real vive en `settlement-layer`.
+`nullifier_tree` da CERO bajo `crates/zk-ssl/src`. La medicion que lo cerro fue
+censar los productores, no las menciones.
+
+**El ambito, otra vez decidido por el CUERPO del encabezado.** `ARQUITECTURA.md`
+tiene TRES encabezados de nivel 1 y 41 sitios del nulificador: **nueve** cuelgan
+del primero y **treinta y dos** del segundo, que lleva una seccion titulada
+«La capa ANTERIOR». Alli el nulificador SI existe y SI se produce, asi que
+esos treinta y dos son CIERTOS y no se tocaron -incluida la fila gemela de la
+tabla, que sobrevive intacta a unas cuatrocientas lineas de la corregida.
+
+**De los nueve del primer bloque entran SEIS.** El que queda fuera esta en
+PASADO, describiendo un problema ya corregido, y puede ser cierto como
+historia: se ficha y no se toca. No se llama falsa a una frase con media
+medicion.
+
+**La redaccion no se compuso.** Las frases «se elimino de la capa» y
+«hoy lo cierra el encadenamiento de raices, con la dependencia del orden
+total que eso implica» estan copiadas de `PAPER.md`, que ya llevaba su
+correccion escrita con la forma de la casa. La fila nueva se copio de
+`README.md`. Y las correcciones CITAN lo que decia el documento en vez de
+borrarlo, por la regla del §247.
+
+**Lo que queda DECLARADO y sin reparar.** `iso.rs` mapea a codigos ISO dos
+errores que la capa ya no puede producir: retirarlos toca `.rs` de verdad y
+moveria el pin, asi que es otro corte. Las seis tablas de vias de crear dinero
+siguen sin atado y discrepan en el numero de vias -siete, ocho y once- y en
+otros mecanismos. Y dos docs de la capa enumeran tres operaciones donde el
+censo de llamantes da cuatro.
+
+**La puerta.** Las nueve herramientas de `tools/`, con la lista DERIVADA de
+`canon.sh`, antes de tocar un byte y otra vez despues. Y como el conjunto
+incluye un `.rs`, se compila la capa y se exige que el listado de tests sea
+EXACTAMENTE el mismo antes y despues.
+
+**Contadores.** Ningun pin se mueve y ninguna suma tampoco. Ningun Cargo
+tocado. El BACKLOG no mueve su contador. La capa no cambia de numero de lineas;
+`ARQUITECTURA.md` gana seis por el reflujo de las correcciones. El canon no
+corrio.
