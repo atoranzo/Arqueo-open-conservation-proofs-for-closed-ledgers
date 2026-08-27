@@ -287,6 +287,7 @@ descartó para la capa: usa curvas y exige ceremonia.
 
 | Si eres… | Empieza por |
 |---|---|
+| **Prefieres inglés / Reading in English** | [`README_EN.md`](./README_EN.md) |
 | Alguien con 5 minutos | [`RESUMEN_EJECUTIVO.md`](./RESUMEN_EJECUTIVO.md) |
 | **Un revisor de seguridad** | [`AUDITORIA.md`](./AUDITORIA.md) |
 | Interesado en la comparativa | [`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md) |

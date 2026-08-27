@@ -28181,3 +28181,78 @@ no reparada. El liston es el DELTA.
 verde despues. Conjunto exacto de nueve, sin codigo, sin Cargo y sin `spec/`.
 BACKLOG sin mover en 50 abiertas / 56 resueltas.
 
+## §372 — la portada en inglés, y la puerta que la enseña
+
+Tres ficheros y un commit: `README_EN.md` NUEVO (118 líneas), UNA fila en la
+tabla de "Orden de lectura" de `README.md` (568 -> 569) y este asiento. Cero
+`.rs`, cero Cargo, cero tests: **el canon NO corre y los pines siguen en
+287/318**, sumas 981/1118/1132.
+
+**EL HUECO.** El README ES no apuntaba a NINGUNA versión en inglés: siete
+patrones distintos, cada uno con su juez, dieron CERO sobre las 568 líneas.
+Un lector anglófono aterrizaba en una portada entera en español sin un solo
+puntero a lo que ya existía (`PAPER_EN.md`, `QUESTIONS.md`,
+`INSTITUTIONAL.md`). No era falso: es que no estaba.
+
+**EL NOMBRE NO SE DERIVA, Y SE DICE.** La raíz tiene DOS convenciones:
+sufijo (`PAPER_EN.md` junto a `PAPER.md`) y nombre traducido (`QUESTIONS.md` <-
+`PREGUNTAS.md`, `INSTITUTIONAL.md` <- `INSTITUCIONAL.md`). Los dos precedentes
+de nombre traducido traducen una palabra española, y "README" ya es inglés
+— esa regla no produce un nombre, produce un hueco. Lo eligió el autor.
+
+**Lo que el borrador traía mal, y es lo que estuvo a punto de convertir este
+sello en lo contrario del §371.** Publicaba TRES DOI y los TRES estaban
+RANCIOS — `21693706`, `21693709`, `21693718` —, que son exactamente tres de
+los ocho identificadores que el §371 retiró la víspera; la intersección
+con los vigentes estaba vacía y no citaba ninguno de los seis. Y repetía la
+frase que FECHA ("third revision, 30 Jul 2026"), la misma que el §371 acababa
+de matar en el README ES. Se sustituyen por los TRES preprints con su título
+REGISTRADO, DERIVADO de `doc/ZENODO.md`, y su DOI vigente: `21736125`,
+`21736082`, `21905595`. Los otros tres papers NO se listan: una línea apunta a
+`doc/ZENODO.md`, para que la portada no envejezca al séptimo depósito. Los
+DOI dejan además de ir como código en línea y pasan al molde de ENLACE del
+árbol, que es lo que los hace visibles a un censo de HREF.
+
+**La condición que el borrador perdía.** El README ES da la garantía de la
+clave firmada CON su condición escrita: la garantía la tiene quien mira, no
+quien lee, y sin un testigo corriendo no protege a nadie. El borrador la daba
+PELADA. Un subconjunto que dice MENOS es seguro; uno que quita la condición
+dice lo MISMO más fuerte. Se restaura.
+
+**LA SUPERFICIE DE TERCEROS.** El texto en inglés omitía entera la
+privacidad frente a terceros que el ES declara con las entradas 49 y 50
+ABIERTAS. Se añade UNA línea: ni tratado ni silencio.
+
+**EL ANDAMIO.** El borrador llevaba dentro una cita en español con la fecha y
+el commit `4c30c10` sobre el que se había medido. Fuera: un andamio no se
+sella.
+
+**LO MEDIDO EN HEAD ANTES DE ESCRIBIR.** `conformance --check
+spec/vectors/zkssl-0.3.json` rc=0 en 1,320 s; `simulate` rc=0 en 1,411 s; los
+vectores `0.1` y `0.2` rc=1 con el error NOMBRANDO las dos versiones. El binario
+era de la víspera y los dos sellos posteriores no tocaron un `.rs`, lo cual se
+DECLARA como inferencia y no como re-derivación. Las dos afirmaciones sobre el
+`#[deprecated]` se sostienen: los DOS únicos atributos del árbol viven en el
+shim de `record_to_bytes` y en `open_account`, ninguno en la vía `send`/`claim`,
+y la ausencia está documentada en `crates/zk-ssl/src/two_phase.rs`, prosa que
+escribió el §363. Se declara que este registro conserva una fila antigua que
+se lo atribuye a `two_phase::send`: se CITA y no se edita (§247).
+
+**Cómo se escribió.** El contenido NO se tecleó. El bloque COPIA los bytes
+de un candidato gateado por huella que vive FUERA del clon, y la fila del
+índice se ancla a una región cuya huella se reconstruyó desde un volcado y
+reprodujo exacta. Dos idas y vueltas, las dos clavadas.
+
+**MIS DEFECTOS, LOS SEIS, todos de familias ya escritas.** Una ORDEN contada
+como ruta muerta y un artefacto de compilación contado como destino muerto
+(*una cita no es una orden, y una orden no es una ruta*) — un DOI en acento
+grave juzgado como fichero — un censo de `#[deprecated]` que contó DOS citas
+como atributos, **reincidencia exacta de la doctrina que el §363 escribió**
+— un `grep` anclado a principio de línea contra una salida que el binario
+imprime SANGRADA, que dio un rojo falso con la línea delante en su propio
+volcado — y un juez con DOS estados donde había TRES.
+
+**LO QUE NO ENTRA.** El expediente NLnet — abstract, hitos, presupuesto,
+respuestas del formulario — es PRIVADO y vive fuera del clon. No va a main, ni
+a rama, ni a `doc/nlnet/`. **La protección es la RUTA**, no una entrada de
+`.gitignore`, y este bloque lo gatea contra `git ls-files`.
