@@ -279,8 +279,8 @@ dos emisores concurrentes se serializan. Medido: **1,5-1,9 TPS**
 (`AUDITORIA.md` §123, entrada 65 del backlog).
 
 Quedan dos límites más —el árbol de pendientes se agota a los 2³² pagos
-totales, y el conjunto de custodios tope en 128— y todos están en
-`AUDITORIA.md` §13.
+simultáneos en vuelo, y el conjunto de custodios tope en 128— y todos
+están en `AUDITORIA.md` §13.
 
 ### 22. ¿Cuánto falta para que sea usable?
 

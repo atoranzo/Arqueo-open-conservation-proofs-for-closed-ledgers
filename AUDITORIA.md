@@ -28730,3 +28730,107 @@ Ficheros: `persistence.rs` 689 -> 724, `snapshot.rs` 1084 -> 1157, `tests.rs`
 2936 -> 2996, mas el pin y 27 cifras en diez documentos, sin que ninguna linea
 nazca ni muera porque las cuatro sustituciones son de igual ancho. **EL CANON
 CORRE.**
+
+## §380 — la lista de limites de escala deja de contradecir al resto del arbol
+
+**Que.** Los dos documentos institucionales publicaban una lista de CUATRO
+limitaciones de escala cuyo PRIMER item no existe en la capa que ellos
+describen, con tabla de probabilidades y en dos idiomas, y el apartado entero
+se apoyaba en el. Al medirlo, el sujeto cambio DOS veces: la lista estaba mal
+en el 1, mal en el 2 e INCOMPLETA en lo que si muerde. Este sello retira el
+item 1, corrige el 2, ANADE el limite que muerde primero y rehace el cierre.
+Cuatro documentos vivos, dos idiomas, cero codigo.
+
+**El item que sale.** La colision de posiciones de nullifier describe un
+mecanismo RETIRADO: la via de un paso se elimino con su arbol de nullifiers
+(§32 y §36) y el §376 saco del enum las dos variantes porque nada podia
+producirlas. Medido sobre 159 ficheros: `NullifierPositionCollision` aparece
+UNA sola vez en todo el arbol, y es el comentario de
+`crates/zk-ssl/src/lib.rs:211` que declara su retirada. El ARBOL de nullifiers
+si sigue vivo — 29 apariciones en seis ficheros de `zk-core`,
+`stark-experiment` y la capa anterior —, y por eso la frase que se publica no
+es «no existe» sino «no existe en la capa que este documento describe».
+
+**El item que estaba mal.** El segundo decia que el contador «nunca reutiliza»
+y de ahi deducia un tope de transferencias TOTALES desde el inicio que se
+agotaba en unos cincuenta dias. `allocate_pending` reutiliza desde el §211:
+el 2^32 es correcto y lo falso era «totales». El limite es de pagos
+SIMULTANEOS en vuelo.
+
+**El item que faltaba.** La contencion del anclaje de raiz, que es lo que el
+resto del arbol ya declaraba como limite real de hoy. Se cita el §123 con su
+rango y con la razon del rango: dos corridas de la misma maquina dieron 1,53 y
+1,87 TPS efectivos, un 22 % de diferencia, y por eso la cifra se publica en
+banda y no como un numero (§123.2).
+
+**Lo que este sello NO invento: el proyecto ya sabia la verdad y no la habia
+propagado.** La pregunta 21 de `PREGUNTAS.md` y `QUESTIONS.md` llevaba las DOS
+correcciones escritas y el limite de hoy con su fuente. `RESUMEN_BILINGUE.md`
+publica el 1,5-1,9 TPS en su tabla, en los dos idiomas. Y el propio §13, al
+que los institucionales REMITEN, lleva una «Correccion de alcance: solo afecta
+a la via ANTIGUA». Tres familias de documentos lo sabian y los dos
+institucionales se quedaron atras.
+
+**La FAQ tambien arrastraba la falsedad, y partida por el salto de linea.**
+`PREGUNTAS.md:281-282` decia «2^32 pagos / totales» y `QUESTIONS.md:266-267`
+«2^32 total / payments». Un censo linea a linea no las ve; se cazaron
+buscando sobre el texto con los saltos COLAPSADOS. El perimetro de la falsedad
+quedo medido sobre un universo DERIVADO de 25 documentos vivos: SIETE hits en
+CUATRO ficheros y solo cuatro.
+
+**El §247, respetado y comprobado por una puerta.** `AUDITORIA.md:22687`
+declara que `INSTITUCIONAL.md:346` e `INSTITUTIONAL.md:332` citan lo que
+publicaba una version anterior y que cambiar esas CIFRAS seria falsificar el
+registro. El 120,4 MB se conserva integro en los dos documentos y la VIVA lo
+EXIGE: si el corte lo hubiera borrado, el bloque muere. Lo que cambia es la
+coletilla que se apoyaba en «el primero de esta lista», que quedaria colgando.
+
+**Tres correcciones, no dos.** El corte cambiaba el item 2 en silencio. La ley
+de la casa dice lo contrario — una frase que deja de ser cierta se CITA, no se
+borra —, y el molde del que se copia deja sus dos correcciones por escrito. El
+cierre pasa a declarar TRES. Coste declarado: citar la falsedad la reintroduce
+en el texto, y un censo futuro del vocabulario del «totales» encontrara hits
+ahi. Es el precio de citar en vez de borrar, y la FAQ ya lo paga.
+
+**Una remision que este sello habria roto.** El cierre decia «los cuatro estan
+documentados en §13». El item que ENTRA no vive en §13 sino en §123 — medido:
+§13 = 831..1039, doce encabezados interiores, ninguno del anclaje —. No era
+prosa rancia heredada: la falsedad la habria creado este corte. Se reparte: el
+primero en §123, los otros tres en §13.
+
+**Limites declarados, fichados y FUERA de este corte.** El tope de 128
+custodios NO tiene fuente localizable y sigue publicado tal cual: `7 bits`,
+`0x7f`, `1 << 7` y `127` dan ocho hits y todos homonimos, y `128` sobre los dos
+circuitos de umbral da CERO. Lo que existe es `DEFAULT_MAX_CUSTODIAN_USES =
+100`, que es cuota de USOS. Que el §13 documente de verdad los items 3 y 4 es
+afirmacion del propio documento y NO esta medida; se conserva sin ampliarla. Y
+`INSTITUCIONAL.md:448` e `INSTITUTIONAL.md:432` llevan un segundo 2^32 FUERA
+del apartado, sin contexto medido.
+
+**Dos afirmaciones heredadas que la medicion falso.** El traspaso decia que
+`NullifierPositionCollision` seguia vivo en
+`crates/settlement-layer/src/lib.rs:452,629`: hay CERO ocurrencias en ese
+fichero. Y decia que `README.md` remite a `LICENSE-MIT` y `LICENSE-APACHE`: hay
+CERO ocurrencias de los dos tokens; `README.md:548` dice «Licenciado bajo MIT o
+Apache-2.0» y remite a `NOTICE`. Los tres ficheros existen, medidos.
+
+**Higiene: el salto final que faltaba, repuesto.** El asiento del §379 dejo
+este fichero SIN salto de linea final, y por eso su `--stat` decia 93
+inserciones mientras `wc -l` subia 92. El escritor de este asiento lo repone
+antes de appendear y termina con salto: la cuenta vuelve a cuadrar.
+
+**Por que el canon NO corre.** El corte no toca un solo `.rs`, no nace ni muere
+ningun test y el pin no se mueve. La compuerta son las NUEVE herramientas con
+el liston puesto en el DELTA de rc, y las dos que este corte podia romper
+— `check_publicadas` y `verificar_citas` — se leyeron ENTERAS antes de
+escribir: la primera salta las citas historicas por PATRON y no por numero de
+linea, asi que la reescritura puede moverlas; la segunda solo comprueba la
+existencia de la seccion citada para ficheros `.rs`, y esto es prosa.
+
+**Contadores.** 4 ficheros. `INSTITUCIONAL.md` 524 -> 538 (+14) ·
+`INSTITUTIONAL.md` 505 -> 519 (+14) · `PREGUNTAS.md` 306 -> 306 ·
+`QUESTIONS.md` 291 -> 291. Ningun `.rs` tocado. Pin de la capa SIN MOVER en
+289; sumas 983/1120/1134 y canon 1135 SIN MOVER. Las nueve herramientas en
+rc=0 antes y despues, con 20 citas examinadas por `check_publicadas` y 0
+secciones muertas en `verificar_citas`, iguales en las dos corridas. Ningun
+Cargo tocado. El canon NO corre, y la razon va escrita arriba.

@@ -263,8 +263,8 @@ proof is tied to the exact root it saw when generated, so concurrent
 issuers serialise. Measured: **1.5-1.9 TPS** (`AUDITORIA.md` §123,
 backlog entry 65).
 
-Two further limits remain —the pending tree exhausts at 2³² total
-payments, and the custodian set caps at 128— and all are in
+Two further limits remain —the pending tree exhausts at 2³² payments
+in flight at once, and the custodian set caps at 128— and all are in
 `AUDITORIA.md` §13.
 
 ### 22. How far is it from being usable?

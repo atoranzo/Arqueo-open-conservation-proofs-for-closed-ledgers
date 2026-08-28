@@ -302,33 +302,30 @@ el operador**, que ve los saldos en memoria.
 Son **cuatro**, y no se compensan entre sí. La más restrictiva no es la de
 almacenamiento.
 
-#### 1. Colisión de posiciones de nullifier — **la primera en morder**
+#### 1. Contención del anclaje de raíz — **la primera en morder**
 
-La posición de un nullifier **se deriva del propio nullifier**, y el
-circuito exige que esté libre. Dos pagos distintos que caigan en la misma
-posición son un conflicto, y eso sigue la paradoja del cumpleaños:
+Cada prueba se ata a la raíz exacta que vio al generarse, así que dos emisores
+concurrentes se serializan: el segundo tiene que regenerar contra la raíz
+nueva. No es un fallo, es el precio del anti-replay por encadenamiento de
+raíces.
 
-| Pagos acumulados | Probabilidad de colisión |
-|---|---|
-| 10.000 | 1,2 % |
-| **65.536** | **39 %** |
-| 200.000 | **99 %** |
+Medido sobre dos corridas de la misma máquina: **1,53 y 1,87 TPS efectivos**,
+un **22 % de diferencia**. Por eso la cifra se publica **como rango —1,5-1,9
+TPS— y no como un número** (`AUDITORIA.md` §123).
 
-⚠️ **El afectado no puede reintentar.** Su nullifier es determinista a
-partir del estado de su cuenta: **su pago queda bloqueado de forma
-permanente**.
-
-**No es un coste, es una parada.** Y a diferencia de las otras tres, le
-ocurre a un usuario concreto sin que el sistema esté saturado.
+⚠️ **Y no se resolvió, se evitó.** El encadenamiento exige un **orden total**,
+que un nodo único da y un sistema distribuido no. Quien distribuya esto
+recupera el límite intacto.
 
 #### 2. Agotamiento del árbol de pendientes
 
-El contador de posiciones **nunca reutiliza** las liberadas al reclamar, así
-que el límite es de transferencias **totales desde el inicio**: 2³². A mil
-pagos por segundo, **unos cincuenta días**.
+El árbol de pendientes tiene **2³² posiciones** (`TREE_DEPTH = 32`), y
+`allocate_pending` **reutiliza** las que quedan libres al cobrarse. El límite
+es por tanto de pagos **simultáneos en vuelo**, no de transferencias
+acumuladas.
 
-Ahora falla declarando su causa —`PendingTreeExhausted`— en vez de producir
-una prueba que no verifica.
+Falla declarando su causa —`PendingTreeExhausted`— en vez de producir una
+prueba que no verifica.
 
 #### 3. Acumulación de pruebas
 
@@ -343,13 +340,30 @@ entre índices lejanos fallarían de forma intermitente.
 
 ---
 
-⚠️ **Una versión anterior de este documento decía que los 120,4 MB eran "el
-límite real del sistema".** Era falso: el primero de esta lista detiene
-pagos legítimos mucho antes, y de forma permanente.
+⚠️ **Este apartado ha tenido que corregirse TRES veces, y las tres
+correcciones se dejan escritas.**
 
-Resolver el tercero exige agregación recursiva o pruebas por lote. Los
-otros tres exigen decisiones de diseño distintas. **Ninguno está resuelto**;
-los cuatro están documentados en `AUDITORIA.md` §13.
+**Primera corrección.** ⚠️ **Una versión anterior de este documento decía que
+los 120,4 MB eran "el límite real del sistema".** Era falso: hay límites que
+detienen pagos legítimos mucho antes de que el almacenamiento moleste.
+
+**Segunda corrección.** ⚠️ **Este apartado publicaba como primer límite la
+colisión de posiciones de nullifier, y ese límite ya no existe en la capa que
+este documento describe.** La vía de un paso que lo producía se retiró junto
+con su árbol de nullifiers (`AUDITORIA.md` §32 y §36), y el tipo de error que
+lo declaraba salió del `enum` porque nada podía producirlo (§376). El árbol de
+nullifiers sigue existiendo en los crates de investigación —`zk-core`,
+`stark-experiment`— y en la capa anterior, que no son lo que aquí se describe.
+
+**Tercera corrección.** ⚠️ **El segundo ítem decía que el contador de
+posiciones nunca reutilizaba las liberadas al reclamar, y de ahí deducía un
+tope de transferencias totales desde el inicio —2³², unos cincuenta días—.**
+Era falso ya cuando se escribió: `allocate_pending` reutiliza desde
+`AUDITORIA.md` §211. El 2³² es correcto; lo falso era «totales».
+
+Resolver el tercero exige agregación recursiva o pruebas por lote. Los otros
+tres exigen decisiones de diseño distintas. **Ninguno está resuelto.** El
+primero está documentado en `AUDITORIA.md` §123; los otros tres, en §13.
 
 ---
 

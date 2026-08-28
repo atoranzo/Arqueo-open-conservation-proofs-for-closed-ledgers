@@ -289,32 +289,28 @@ XChaCha20-Poly1305. It protects against theft of the disk or of a backup;
 There are **four**, and they do not offset one another. The storage one is
 not the first to bite.
 
-#### 1. Nullifier position collision — **the one that bites first**
+#### 1. Root-anchoring contention — **the one that bites first**
 
-A nullifier's position **is derived from the nullifier itself**, and the
-circuit requires it to be free. Two distinct payments landing on the same
-position are a conflict, and that follows the birthday paradox:
+Every proof is tied to the exact root it saw when generated, so concurrent
+issuers serialise: the second one has to regenerate against the new root. It
+is not a fault, it is the price of root-chaining anti-replay.
 
-| Payments accumulated | Collision probability |
-|---|---|
-| 10,000 | 1.2 % |
-| **65,536** | **39 %** |
-| 200,000 | **99 %** |
+Measured over two runs on the same machine: **1.53 and 1.87 effective TPS**, a
+**22 % spread**. That is why the figure is published **as a range —1.5-1.9
+TPS— and not as a single number** (`AUDITORIA.md` §123).
 
-⚠️ **The affected user cannot retry.** Their nullifier is deterministic
-from their account state: **the payment is permanently blocked**.
-
-**It is not a cost, it is a stop.** And unlike the other three, it hits a
-specific user while the system is nowhere near saturation.
+⚠️ **And it was avoided, not solved.** Root chaining requires a **total
+order**, which a single node provides and a distributed system does not.
+Whoever distributes this recovers the limit intact.
 
 #### 2. Pending-tree exhaustion
 
-The position counter **never reuses** slots freed on claim, so the limit is
-on **total transfers since inception**: 2³². At one thousand payments per
-second, **about fifty days**.
+The pending tree has **2³² slots** (`TREE_DEPTH = 32`), and `allocate_pending`
+**reuses** the ones freed on claim. The limit is therefore on payments **in
+flight at once**, not on transfers accumulated since inception.
 
-It now fails stating its cause —`PendingTreeExhausted`— rather than
-producing a proof that will not verify.
+It fails stating its cause —`PendingTreeExhausted`— rather than producing a
+proof that will not verify.
 
 #### 3. Proof accumulation
 
@@ -329,13 +325,31 @@ indices would fail intermittently.
 
 ---
 
-⚠️ **An earlier version of this document called the 120.4 MB "the system's
-real limit".** That was false: the first item above stops legitimate
-payments far earlier, and permanently.
+⚠️ **This section has had to be corrected THREE times, and all three
+corrections are left on the record.**
+
+**First correction.** ⚠️ **An earlier version of this document called the
+120.4 MB "the system's real limit".** That was false: there are limits that
+stop legitimate payments long before storage becomes a nuisance.
+
+**Second correction.** ⚠️ **This section published nullifier position
+collision as its first limit, and that limit no longer exists in the layer
+this document describes.** The one-step path that produced it was retired
+along with its nullifier tree (`AUDITORIA.md` §32 and §36), and the error type
+that declared it left the `enum` because nothing could produce it (§376). The
+nullifier tree still exists in the research crates —`zk-core`,
+`stark-experiment`— and in the previous layer, which are not what is described
+here.
+
+**Third correction.** ⚠️ **The second item said the position counter never
+reused slots freed on claim, and from that inferred a cap on total transfers
+since inception —2³², about fifty days—.** That was already false when it was
+written: `allocate_pending` has reused since `AUDITORIA.md` §211. The 2³² is
+correct; what was false was "total".
 
 Resolving the third requires recursive aggregation or batched proofs. The
-other three require different design decisions. **None is resolved**; all
-four are documented in `AUDITORIA.md` §13.
+other three require different design decisions. **None is resolved.** The
+first is documented in `AUDITORIA.md` §123; the other three, in §13.
 
 ---
 
