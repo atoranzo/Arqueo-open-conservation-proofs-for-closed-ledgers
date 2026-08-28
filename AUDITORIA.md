@@ -6775,25 +6775,25 @@ mitad constante del estado en cada intento, y comparando el digest entero
 antes de descartar. Un atacante usaria GPU o ASIC y ninguna de las tres.
 **El margen real es menor que el medido, no mayor.**
 
-### 82.4 ⚠️ El paper ya tiene el argumento, y no lo aplica aqui
+### 82.4 El paper ya tiene el argumento, ~~y no lo aplica aqui~~ (⚠️ §382)
 
 `PAPER.md` §8.3, sobre el techo de solidez del STARK:
 
 > *«63 bits de solidez, **insuficiente y no comparable con los ~128 bits**
 > de los otros paradigmas.»*
 
-**Ese mismo criterio se aplica al espacio de claves, y el paper no lo
-hace.** Son dos consecuencias independientes de la misma estrechez de
+**Ese mismo criterio se aplica al espacio de claves, y ~~el paper no lo
+hace~~ HOY LO HACE (§382).** Son dos consecuencias de la misma estrechez de
 Goldilocks:
 
 | | consecuencia | estado |
 |---|---|---|
-| Solidez del STARK | techo de 63 bits | Documentado §16.7, **publicado** |
-| Espacio de claves | 64 bits | ⚠️ **En ninguna parte** |
+| Solidez del STARK | techo de 63 bits | `PAPER.md` §8.3, **publicado** |
+| Espacio de claves | 64 bits | ~~En ninguna parte~~ `PAPER.md` 540..553 |
 
-Arreglar una no arregla la otra. Y quien lea el paper concluira que la
-estrechez de Goldilocks tiene **una** consecuencia, porque es la unica que
-se nombra.
+Arreglar una no arregla la otra. ~~Y quien lea el paper concluira que la
+estrechez de Goldilocks tiene una consecuencia.~~ ⚠️ **§382: hoy el paper
+nombra las DOS, y la cita de §16.7 de esta tabla era ERRONEA.**
 
 ### 82.5 Que haria falta, y su tamaño
 
@@ -6802,12 +6802,12 @@ se nombra.
 circuitos que absorben la clave —`send`, `claim`, `burn`, `audit`,
 `threshold`—.
 
-**No se hace hoy** y no se propone a la ligera: es un cambio de formato de
-~~identidad que invalida cualquier cuenta existente.~~ **⚠️ Rectificado en
-§90 (31-07-2026): NO invalida ninguna cuenta.** Rellenar una clave estrecha
-con ceros da **la misma identidad** —hay test—, asi que la version ancha es
-una generalizacion, no un reemplazo. Lo que si se hace es **dejar de
-llamarlo «colision en 2^32»** y dejarlo medido.
+~~**No se hace hoy**~~ ⚠️ **HECHO en §90 y §97; ver §382.** Era un cambio de
+formato de ~~identidad que invalida cualquier cuenta existente~~ —rectificado
+en §90: NO invalida ninguna, rellenar con ceros da la misma identidad—. Lo que
+§82 si hizo fue **dejar de llamarlo «colision en 2^32»** y dejarlo medido; lo
+que hizo §97 fue **`open_account_wide` y un pago de 256 bits medido**. ⚠️ Pero
+§90.4: **conservar la identidad NO conserva la seguridad**; quien no rote, 64.
 
 ### 82.6 Lo que este caso enseña del backlog
 
@@ -28906,3 +28906,72 @@ identicos antes y despues. Pin de la capa SIN MOVER en 289; sumas
 983/1120/1134 y canon 1135 SIN MOVER. `cargo build` con 0 warnings. Las nueve
 herramientas en rc=0 antes y despues. Ningun Cargo tocado. El canon NO corre, y
 la razon va escrita arriba.
+
+## §382 — el asiento del espacio de claves inducia a error, y lo hizo conmigo
+
+**Que.** El §82 es la seccion que citan el `PAPER.md`, un programa de trabajo
+externo y esta misma sesion. Hoy afirma **cuatro cosas que el arbol
+desmiente**, y por dos de ellas este asistente dictamino, con los numeros
+delante, lo contrario de lo cierto. Se rectifica **sin mover una sola linea**.
+
+**Las cuatro, medidas.** (1) §82.4 dice que el espacio de claves esta
+publicado «en ninguna parte»: esta en `PAPER.md` 540..553 y `PAPER_EN.md`
+505..518, con la cifra, con los 2,38 millones de años-nucleo y con la salvedad
+de que es una cota superior floja. (2) Dice que «el paper ya tiene el
+argumento y no lo aplica aqui»: `PAPER.md` 548..550 lo aplica con estas
+palabras —«el criterio que §8.3 aplica al techo de solidez se aplica igual al
+espacio de claves»—. (3) Su tabla cita **§16.7** como el sitio donde esta
+documentado el techo de solidez del STARK, y el §16.7 es **otra cosa**: el
+techo del RANGO DE VALORES, y dice de si mismo «no es una fuga de solidez».
+Dos techos que comparten el numero 63. (4) §82.5 dice **«No se hace hoy»** de
+la clave de cuatro elementos, y §90 y §97 la hicieron: existe
+`open_account_wide` y hay un pago entero de 256 bits medido.
+
+**Lo que NO se rectifica, porque sigue siendo cierto.** El secreto de la via
+estrecha sigue siendo UN elemento, 2^64, y agotarlo cuesta 2^63. §90.4 lo dice
+mejor que nadie: **conservar la identidad NO conserva la seguridad**; rellenar
+con ceros cambia el coste de MIGRAR, no el de ATACAR. Y §97.4 declara la
+deuda: **la migracion es opt-in**, y son **115 llamadas y 158 usos de
+`open_and_fund`** los que siguen abriendo con 64 bits. Este sello no toca nada
+de eso.
+
+**Por que ni una linea se mueve, y esto es lo que mas conviene guardar.** Este
+mismo fichero **se cita a si mismo por NUMERO DE LINEA**: el asiento del §380,
+escrito hoy, dice `AUDITORIA.md:22687`. Insertar una sola linea por encima
+convierte esa cita en falsa. Asi que las dos regiones se sustituyen **con el
+mismo numero de lineas**, el §82 conserva su rango **6722..6823**, y todas las
+anclas y rangos derivados durante la sesion siguen valiendo.
+
+>  **Un fichero que se cita a si mismo por linea no admite ediciones que
+> desplacen. O se edita a lo ancho, o hay que re-derivar cada cita de abajo.**
+
+**El molde no es nuevo: es el del propio §82.5**, que ya llevaba un tachado
+con puntero a §90. Aqui se hace lo mismo cuatro veces mas. Nada se borra: lo
+que dejo de ser cierto **se tacha y se cita**, como manda el §247.
+
+**Mi propio fallo, declarado, porque es la parte util.** Medi las firmas de la
+via de pago buscando `fn NOMBRE` con el final del nombre anclado. La via ancha
+de este proyecto **no sustituye: coexiste con sufijo** —`open_account_wide`,
+`derive_public_id_wide`, `native_nullifier_wide`, `wide_key`— y ninguna casaba
+mi patron. Dictamine «produccion sigue en 64 bits y punto» cuando lo cierto es
+«hay dos puertas y la estrecha es la que usan las 115 llamadas».
+
+>  **Un patron que ancla el final de un nombre CIEGA las variantes
+> sufijadas.** La casa ya tenia la mitad contraria escrita —uno que no ancla
+> el final cuenta lo que empieza igual—. Faltaba esta. Y el ensayo no pudo
+> cazarla porque mi arbol de mentira monto las dos vias **con el mismo nombre
+> bajo `cfg`**, que era mi hipotesis: **un arbol de mentira construido sobre
+> la hipotesis propia confirma la hipotesis propia.**
+
+**Lo que queda abierto, y con su fuente.** Cerrar la entrada 15 exige lo que
+§97.4 escribe: **retirar o marcar la via estrecha** —familia de la entrada 32—
+**y que las cuentas existentes roten**. Y el §98 —«Adopcion: la rotacion ya
+existia, y quien no puede usarla»— **no se ha leido**; hace falta para ese
+corte y no para este.
+
+**Contadores.** 1 fichero. `AUDITORIA.md` **28908 -> 28908 + el asiento**: las
+dos regiones son de IGUAL NUMERO DE LINEAS y el §82 conserva 102. Ningun `.rs`
+tocado, ningun test nace ni muere, pin de la capa SIN MOVER en 289, sumas
+983/1120/1134 y canon 1135 SIN MOVER. `check_publicadas` **excluye AUDITORIA
+por registro historico**, asi que no mira nada de esto; las nueve herramientas
+entran con el liston en el DELTA de rc. El canon NO corre.
