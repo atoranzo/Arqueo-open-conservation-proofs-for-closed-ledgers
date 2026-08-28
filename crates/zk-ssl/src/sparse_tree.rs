@@ -54,9 +54,14 @@ use stark_experiment::merkle::{native_merge, Digest, MerklePath, TREE_DEPTH};
 
 /// Árbol disperso de profundidad configurable.
 ///
-/// El de cuentas y el de nullifiers usan `TREE_DEPTH` (32); el de
-/// **congelados** usa 24, porque su subida tiene que caber en las filas
-/// libres del circuito de liquidación.
+/// El de cuentas usa `TREE_DEPTH` (32); el de **congelados** usa 24, porque
+/// su subida tiene que caber en las filas libres del circuito de
+/// liquidación.
+///
+/// ⚠️ Esta línea nombraba también el árbol de nullifiers. Ese árbol se
+/// eliminó de la capa con la vía de un paso (`AUDITORIA.md` §32 y §36). El
+/// `TREE_DEPTH` que se importa de `stark_experiment::merkle` lo sigue
+/// usando allí, que no es lo que este crate describe.
 #[derive(Clone, Debug)]
 pub struct SparseTree {
     depth: usize,
@@ -376,7 +381,10 @@ mod tests {
     }
 
     /// También funciona para una posición VACÍA: es lo que permite
-    /// demostrar no-pertenencia de un nullifier.
+    /// demostrar no-pertenencia de una hoja.
+    ///
+    /// ⚠️ Antes esta justificación decía «de un nullifier». Ese árbol se
+    /// eliminó de la capa (`AUDITORIA.md` §32 y §36).
     #[test]
     fn path_works_for_empty_position() {
         let mut t = SparseTree::new();

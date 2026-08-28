@@ -28834,3 +28834,75 @@ existencia de la seccion citada para ficheros `.rs`, y esto es prosa.
 rc=0 antes y despues, con 20 citas examinadas por `check_publicadas` y 0
 secciones muertas en `verificar_citas`, iguales en las dos corridas. Ningun
 Cargo tocado. El canon NO corre, y la razon va escrita arriba.
+
+## §381 — la capa deja de nombrar en su propia prosa un arbol que no tiene
+
+**Que.** `crates/zk-ssl/src/sparse_tree.rs` seguía diciendo, en dos sitios de
+su documentacion, que esta capa tiene un arbol de nullifiers. No lo tiene desde
+que la via de un paso se retiro con el (§32 y §36), y el §376 saco del enum las
+dos variantes porque nada podia producirlas. Dos ediciones de COMENTARIO, cero
+codigo ejecutable, cero tests.
+
+**Los dos sitios.** La cabecera del `struct` decia «El de cuentas y el de
+nullifiers usan `TREE_DEPTH` (32)». Y la justificacion de
+`path_works_for_empty_position` decia que una posicion vacia permite
+«demostrar no-pertenencia de un nullifier»: un test cuya razon de ser se
+apoyaba en el arbol retirado. El segundo NO estaba fichado; lo encontro el
+censo de esta sesion.
+
+**Por que la frase no dice «no existe» a secas.** El `TREE_DEPTH` se importa de
+`stark_experiment::merkle`, y ALLI el arbol de nullifiers si existe
+-`stark-experiment/src/nullifier_tree.rs` tiene 105 apariciones-. Decir «no
+existe» seria falso. La frase honesta es la misma que el §380 fijo para los
+institucionales: **no existe en la capa que esto describe**. El sujeto se mide
+igual que el predicado.
+
+**EL PUNTO 14 SE CIERRA POR MEDICION, Y SIN TOCAR UN BYTE.** El §374 ficho que
+`ARQUITECTURA.md:157` «habla del nullifier en pasado». Leido: ese parrafo vive
+en «Escrituras atomicas» y narra un problema HISTORICO con su correccion —una
+transferencia **hacia** cuatro llamadas con nueve escrituras, dos cuentas, un
+nullifier y seis metadatos—. El pasado es CORRECTO y no afirma nada del
+presente. **La sospecha sale FALSA y queda escrita como falsa.**
+
+**Y ARQUITECTURA no era el defecto: es un MOLDE.** Ya lleva TRES parrafos de
+correccion en el estilo del §247 —`:324-328`, `:641-647` y `:720-724`— que
+dicen que el arbol «se elimino de la capa». El `:641-647` es literalmente la
+correccion que el §380 tuvo que escribir de cero en los dos institucionales,
+con los mismos ~65.000 pagos. Este documento ya la tenia.
+
+**LO QUE ESTE SELLO NO RESUELVE, Y VA FICHADO CON SU MEDICION.** El censo de la
+palabra da **131 apariciones en 25 documentos vivos** y **1.406 en 159 ficheros
+de codigo**, y en casi todas es LEGITIMA: los crates de investigacion, los
+circuitos, `spec/RPC.md`, los papers que describen el diseno y
+`crates/settlement-layer`, que es la capa anterior. **131 apariciones no son un
+perimetro.** La pregunta que queda viva —«queda prosa que afirme EN PRESENTE
+que ESTA capa tiene arbol de nullifiers?»— es de AFIRMACIONES y no de palabras:
+se responde censando PRODUCTORES o leyendo, y este sello no la responde.
+
+**Aviso para quien la abra: la palabra tiene TRES grafias vivas** en el mismo
+arbol y a veces en el mismo fichero — `nullifier`, `nullificador` con DOS eles
+y `nulificador` con UNA. Un censo con una sola grafia devuelve un cero que
+parece un hallazgo.
+
+**Defecto propio de la medicion, declarado.** El censo que trajo esto midio LA
+PALABRA y no LA AFIRMACION, que es el error que la doctrina de la 76 ya tenia
+escrito. Y su tope de volcado —sin ventanas por encima de doce ocurrencias—
+se trago justo la linea del punto 14: imprimio los 38 numeros de
+`ARQUITECTURA.md` y ningun texto. **La forma del instrumento decidio que linea
+se llegaba a ver.**
+
+**La puerta, y por que el canon no corre.** El conjunto incluye un `.rs`, asi
+que aunque solo toque comentarios la puerta es compilar el crate en release y
+exigir que `-- --list` de lo mismo NOMBRE A NOMBRE. No nace ni muere ningun
+test, el pin no se mueve y ningun documento cita cifras nuevas, asi que el
+canon completo no anade nada que estas dos compuertas no digan ya. Las nueve
+herramientas entran con el liston puesto en el DELTA de rc, y `verificar_citas`
+es la que vigila este corte: comprueba que la seccion citada exista **para
+ficheros `.rs`**, y aqui se cita `AUDITORIA.md` §32 y §36 desde un `.rs`.
+
+**Contadores.** 2 ficheros. `crates/zk-ssl/src/sparse_tree.rs` 566 -> 574 (+8),
+mas el asiento. Ningun test nace ni muere: `-- --list` da **292** nombres,
+identicos antes y despues. Pin de la capa SIN MOVER en 289; sumas
+983/1120/1134 y canon 1135 SIN MOVER. `cargo build` con 0 warnings. Las nueve
+herramientas en rc=0 antes y despues. Ningun Cargo tocado. El canon NO corre, y
+la razon va escrita arriba.
