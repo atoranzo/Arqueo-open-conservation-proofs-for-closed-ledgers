@@ -8378,23 +8378,23 @@ Reescrito con `apply_recovery_delegated`. **Lo destapo el aviso del
 compilador**, no la revision: sin `#[deprecated]` en `recover`, el testigo
 se habria quedado asi.
 
-### 98.4 ⚠️ Y la limitacion que sale de haber mirado
+### 98.4 ⚠️ Y la limitacion que sale de haber mirado (⚠️ §383)
 
 **`recover` exige DOS CUSTODIOS.** Rotar a clave ancha **no es una accion
 soberana del titular**: necesita autorizacion de terceros.
 
-| | |
-|---|---|
-| La clave de gasto | **nunca sale** de la maquina del titular |
-| Cambiarla | **depende de dos custodios** |
+| | | donde |
+|---|---|---|
+| La clave de gasto | **nunca sale** de la maquina del titular | — |
+| Cambiarla | **depende de dos custodios** | `SECURITY.md` 209..211 |
 
 > Un titular **no puede mejorar su propia seguridad por su cuenta**. Puede
 > gastar sin permiso de nadie y no puede protegerse sin permiso de dos.
 
 Es la **cuarta** condicion implicita de la familia de §95.2 —una propiedad
-del diseño enunciada sin la condicion que la limita— y va como entrada 52,
-no como nota: es una limitacion de **soberania**, que es la palabra del
-titulo del proyecto.
+del diseño enunciada sin la condicion que la limita— y ~~va como entrada 52,
+no como nota~~ ⚠️ **§383: la 52 es OTRA COSA y sigue abierta.** Es una
+limitacion de **soberania**, que es la palabra del titulo del proyecto.
 
 ## 99. ⚠️ RECTIFICACION de §93.5: el obstaculo del salt era otro
 
@@ -28975,3 +28975,63 @@ tocado, ningun test nace ni muere, pin de la capa SIN MOVER en 289, sumas
 983/1120/1134 y canon 1135 SIN MOVER. `check_publicadas` **excluye AUDITORIA
 por registro historico**, asi que no mira nada de esto; las nueve herramientas
 entran con el liston en el DELTA de rc. El canon NO corre.
+
+## §383 — el S98.4 mandaba su limitacion a un sitio donde no esta
+
+**Que.** El §98.4 cierra diciendo que su limitacion de soberania —rotar la
+clave exige dos custodios— **va como entrada 52, no como nota**. Medido hoy:
+la entrada 52 existe, esta ABIERTA y es **otra cosa** —«CLAVE DE BOVEDA: un
+solo diseño de rotacion, o se hara tres veces (§134.1)»—, no enuncia esta
+limitacion y no cita el §98.4. Donde SI esta publicada es en `SECURITY.md`
+209..211, en la lista de limitaciones y con su fuente. **Este sello corrige
+el destino y nada mas.**
+
+**La pregunta era otra, y se cierra por medicion.** El TRASPASO-81 llevaba
+el punto 27 abierto como «no esta medido si esa limitacion se publica en
+algun documento vivo». Se midio sobre los **33 documentos vivos** derivados
+de `git ls-files`, con `doc/` y los dos asientos contados aparte, y la
+respuesta es **SI**: `SECURITY.md` 209..211 dice «Rotar la clave exige dos
+custodios. Un titular puede gastar sin permiso de nadie y no puede mejorar
+su propia seguridad sin permiso de dos (§98.4)». **No es la familia del §380
+ni la del §382**: aqui el limite real esta publicado. Lo unico falso era el
+destino.
+
+**El DOS, re-medido en el arbol.** No sale de una constante:
+`MIN_CUSTODIANS` no existe. Sale de la **forma de la API**. La via viva es
+`apply_recovery_delegated` (`crates/zk-ssl/src/recovery.rs`), que toma
+`proof_a`/`inputs_a` y `proof_b`/`inputs_b` y los pasa por
+`verify_threshold_pair` contra `CUSTODIAN_DOMAIN` y la raiz del conjunto,
+con `PairRejection::SameCustodian` entre sus rechazos: **dos pruebas de dos
+custodios DISTINTOS, atadas a `commit_operation(OP_RECOVERY, ...)`**. La
+afirmacion del §98.4 es cierta, y mas fuerte de lo que su enunciado sugiere.
+
+**Por que LINEA-NEUTRAL.** Este fichero se cita a si mismo por numero de
+linea. Medido sobre **267 ficheros versionados**: hay **tres** citas
+`AUDITORIA.md:NNNN` y **las tres viven aqui dentro** —:19227 desde la 19897,
+y :22687 desde la 28781 y la 28940—. El invariante no es «el §98.4 mide 18
+lineas»: es **cero insercion neta por encima de la 19227**. Sustituir 18 por
+18 lo cumple, y este asiento, appendeado al final, no mueve nada citado.
+
+**Forma, calcada del §82.4 que escribio el §382.** Tachado DENTRO del
+encabezado con `(⚠️ §383)`, tachado inline del destino, y la tabla gana una
+columna **donde** que apunta a `SECURITY.md` 209..211. El texto nuevo viajo
+en **base64 y sin re-fluir**, con gate de sha en las DOS direcciones:
+`2aa61644d5c4285e` -> `6daf9755c47bf09e`, **18 lineas -> 18 lineas**, ocho
+lineas cambiadas, ancho maximo **76** caracteres. El rango 8381..8398 se
+re-derivo por encabezado, con juez de unicidad, antes y despues.
+
+**Lo que este sello NO toca, y queda en cola.** El §98.2 muestra en valla la
+firma `pub fn recover(&self, auth, account_index, new_public_id: Digest)` y
+en el arbol **no existe ningun `fn recover`** entre los **157** `.rs`
+versionados; la valla no es Rust compilable —dos parametros sin tipo—, asi
+que es una firma parafraseada. Tampoco se tocan el hueco del PAPER sobre
+«implementada y opt-in», el idioma de `SECURITY.md`, ni el punto 21. Y **no
+se toca `BACKLOG.md`**: la entrada 52 tiene sesion propia declarada, y
+meterle esta limitacion seria el ensanche que ella misma prohibe. Va de
+CENTINELA.
+
+**Contadores.** Pin capa **289** / stark 318, **sin mover**: ningun `.rs`
+tocado, ningun test nace ni muere. Sumas 983 + 137 = 1120 ; 1120 + 14 =
+1134, canon 1135. **Ningun Cargo tocado.** El canon **no corre**. BACKLOG
+**106 entradas, 50 abiertas / 56 resueltas**, sin mover. Un solo fichero:
+`AUDITORIA.md`.
