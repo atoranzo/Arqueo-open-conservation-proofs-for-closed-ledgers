@@ -29035,3 +29035,69 @@ tocado, ningun test nace ni muere. Sumas 983 + 137 = 1120 ; 1120 + 14 =
 1134, canon 1135. **Ningun Cargo tocado.** El canon **no corre**. BACKLOG
 **106 entradas, 50 abiertas / 56 resueltas**, sin mover. Un solo fichero:
 `AUDITORIA.md`.
+
+## §384 — el rotulo decia CINCO y el bucle corre SIETE
+
+**Que.** `tools/canon.sh` rotulaba su seccion de herramientas como «las
+cinco herramientas que nadie corria» mientras el bucle que vive trece lineas
+mas abajo corre SIETE. El rotulo habla del PRESENTE y el presente lo
+desmiente. Se sustituye por uno que no cuenta: «las herramientas del bucle».
+UNA linea, sustituida 1 por 1, y nada mas en el fichero.
+
+**Por que no decir SIETE.** Porque el defecto no es el numero: es que haya
+un numero. Un contador exacto sobre algo que puede crecer es un rojo
+esperando turno, y este ya se pudrio una vez —el §269 cableo CINCO y hoy el
+bucle lleva SIETE—. La regla de la casa es reparar la prosa diciendo DONDE
+se mide la verdad, nunca enumerando. El rotulo apunta al bucle, y el bucle
+se cuenta solo.
+
+**El pasado NO se toca.** Las dos lineas siguientes —«Hasta 269 el canon
+invocaba DOS de las siete de `tools/`. Las otras cinco las corria cada
+BLOQUE a mano»— estan en PASADO y describen el estado en el §269. Son
+CORRECTAS y se quedan intactas, con centinela textual dentro del bloque. Es
+el §247 por el otro lado: no se reescribe la historia para que cuadre con el
+presente. La palabra «cinco» sigue viva en el fichero, y ahi es cierta.
+
+**Lo que la medicion cerro, y es el punto 33 de la cola.** Se midio como
+invoca `canon.sh` sus herramientas, con cinco sondas ortogonales y sobre el
+fichero entero, no sobre un patron. El bucle corre SIETE por VARIABLE —`for
+H in check_cifras check_figures check_columns check_constraint_layout
+verificar_citas check_dominios check_publicadas`, con `python3
+"tools/$H.py"`—, y `check_tests.py` y `check_modulos.py` corren por RUTA
+LITERAL en dos secciones propias, justo encima. SIETE mas DOS son las NUEVE.
+La union estricta de las sondas coincide NOMBRE A NOMBRE con las nueve que
+la casa declara: ninguna declarada se quedo sin derivar.
+
+**El numero era CORRECTO y su derivacion FALSA, que no es lo mismo.** El
+§383 derivo la lista con un patron de ruta literal, saco DOS, y su juez de
+universo —que exigia «mas de cero»— paso. DOS es exactamente lo que se
+escribe asi. Un ambito sin universo muere, pero un ambito PARCIAL pasa, y su
+verde no se distingue del legitimo. La receta que queda, y que este sello
+estrena: los tallos de la linea del bucle MAS los `python3 tools/*.py`,
+cruzados contra los DIEZ `.py` de `tools/` menos la huerfana declarada.
+
+**El punto 19, cerrado por medicion.** `tools/verifica_geometria.py` es
+HUERFANA: ninguna de las cinco sondas la ve, ni siquiera dentro de un
+comentario. Es el unico `.py` de `tools/` que `canon.sh` no invoca, y por
+eso el diez menos uno da nueve.
+
+**Lo que queda FICHADO y expresamente FUERA de este corte.** `tools/` tiene
+SIETE bancos y el canon no invoca ninguno: es el mismo agujero por el que
+`banco_cofirma.sh` estuvo roto del §331 al §338 sin que nada se pusiera
+rojo. `verificar_citas.py` comprueba secciones vivas SOLO sobre `.rs` —asi
+lo declara su propia cabecera—, con lo que una cita a una seccion escrita en
+un documento no se comprueba jamas; ademas su brazo de seccion da por buena
+la cita si el numero aparece en cualquier sitio del documento, y su mapa de
+nombre a fichero indexa por nombre base habiendo tres ficheros llamados
+igual. Y la cabecera de `canon.sh` publica 151 s para `--sello` cuando la
+ultima medida, la del §379, es 341 s. Cada una de las tres es corte propio y
+ninguna se toca aqui.
+
+**Contadores.** Pin capa **289**, SIN MOVER; stark 318. Sumas 983 + 137 =
+1120 y 1120 + 14 = 1134, con el canon declarando 1135: el offset +1 sigue
+intacto y nada de esto se movio. Ningun `.rs` tocado, ningun `Cargo` tocado,
+ningun test nace ni muere, y EL CANON NO CORRE. Las nueve herramientas en
+rc=0 antes y despues, derivadas con la receta de arriba y no con un patron
+literal. BACKLOG sin mover. `tools/canon.sh` queda en **302** lineas y
+`f9cc44a1f872ba0d`, y su region 255..255 pasa de `21f31ebee38e9d0f` a
+`08b6ed962b7bd038`.

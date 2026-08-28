@@ -252,7 +252,7 @@ else
   falla "hay ficheros .rs que nadie declara"
 fi
 
-# ── 2 ter · las cinco herramientas que nadie corria ────────────
+# ── 2 ter · las herramientas del bucle ──────────────────────────
 # Hasta 269 el canon invocaba DOS de las siete de `tools/`. Las otras cinco
 # las corria cada BLOQUE a mano, y una herramienta que nadie recuerda meter
 # en un bloque es una herramienta que nadie corre: DOS llevaban rojas sin
