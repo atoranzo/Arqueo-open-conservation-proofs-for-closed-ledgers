@@ -517,6 +517,11 @@ elements in the secret too**; it is implemented and measured
 (`AUDITORIA.md` §82, §90, §97), and **migration is opt-in**: keys generated
 before rotating still have 64 bits.
 
+⚠️ **And that opt-in is a limitation, not a feature: rotating requires
+authorisation by two custodians** (§6.4; `SECURITY.md`, limitations, §98.4). A
+holder can spend without anyone's permission and cannot improve their own
+security without the permission of two. Earlier revisions did not say so.
+
 ### 8.3 Soundness ceiling for STARK over Goldilocks
 
 Without field extension, the configuration an implementer would choose by
@@ -857,8 +862,28 @@ Groth16, PLONK, halo2, and starky. Our work differs in the object measured
 — a complete application rather than reference circuits — and in the type
 of result: design findings rather than performance metrics.
 
-**Zero-knowledge authorization.** Recent work addresses nullifier-based
-authorization evaluated across multiple backends.
+**Auditing private ledgers.** Provisions [Dagher, Bünz, Bonneau, Clark, Boneh —
+CCS 2015] decomposed a custodian's solvency into proofs of assets and of
+liabilities. zkLedger [Narula, Vasquez, Virza — NSDI 2018] is an interactive
+protocol: the auditor queries and the entity answers with its proof, which
+requires an online, cooperating auditee; its columnar construction guarantees
+that a participant cannot hide transactions from the auditor, at a cost linear
+in the number of participants per transaction. MiniLedger [Chatzigiannis,
+Baldimtsi — ESORICS 2021] prunes the history while preserving auditing, in a
+permissioned model. The SoK on auditability [Chatzigiannis, Baldimtsi, Chalkias
+— ACNS 2021] leaves two gaps named: dispute resolution between regulator and
+auditee, and the incompatibility of pruning with regulatory requirements.
+
+This work proves less than that family in privacy — it hides neither amounts
+nor participants from the operator — and departs on two axes. First, auditing
+is an artifact rather than a protocol: each epoch publishes a signed head,
+carrying the state, pending and acknowledgement roots, chained through an
+accumulator of heads, which a verifier checks without the operator's
+participation and without storing transactions. Second, the conservation
+invariant covers the in-flight operations of the two-phase protocol (§5). The
+trade-off is declared: the completeness zkLedger guarantees by construction is
+not a present property here (§11.2); the accumulator covers equivocation, not
+omission.
 
 **Institutional initiatives.** Central bank digital currency programs —
 Drex, mBridge, the Eurosystem pilots — address similar requirements with
@@ -912,7 +937,7 @@ distributed consensus, which belongs to a different discipline.
 
 The complete implementation is available at:
 
-**`https://github.com/USER/REPOSITORY`**
+**`https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-`**
 
 It requires only the stable Rust compiler; no external toolchains or
 non-stable compilers are used.
@@ -922,8 +947,8 @@ non-stable compilers are used.
 bash tools/canon.sh --sello
 
 cargo test -p zk-ssl --release              # layer: 289 tests (3 ignored)
-cargo test -p stark-experiment --release    # circuits: 297 (10 ignored)
-cargo test -p zk-ssl-node --release         # node: 31
+cargo test -p stark-experiment --release    # circuits: 318 tests (10 ignored)
+cargo test -p zk-ssl-node --release         # node: 91
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
 
@@ -938,6 +963,18 @@ section listing the aspects in which the authors have least confidence.
 [To be completed]
 
 ## References
+
+- Dagher, G. G., Bünz, B., Bonneau, J., Clark, J., Boneh, D. (2015). Provisions:
+  Privacy-preserving proofs of solvency for Bitcoin exchanges. ACM CCS 2015,
+  pp. 720–731. doi:10.1145/2810103.2813674
+- Narula, N., Vasquez, W., Virza, M. (2018). zkLedger: Privacy-preserving
+  auditing for distributed ledgers. USENIX NSDI 2018, pp. 65–80.
+- Chatzigiannis, P., Baldimtsi, F. (2021). MiniLedger: Compact-sized anonymous
+  and auditable distributed payments. ESORICS 2021, LNCS 12972, pp. 407–429.
+  doi:10.1007/978-3-030-88418-5_20
+- Chatzigiannis, P., Baldimtsi, F., Chalkias, K. (2021). SoK: Auditability and
+  accountability in distributed payment systems. ACNS 2021, LNCS 12727,
+  pp. 311–337. doi:10.1007/978-3-030-78375-4_13
 
 [To be completed with citations for: Groth16, PLONK, Halo2, STARK/FRI,
 Nova, Rescue-Prime, zk-Bench, Certificate Transparency, Zcash, and the

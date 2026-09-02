@@ -29101,3 +29101,66 @@ rc=0 antes y despues, derivadas con la receta de arriba y no con un patron
 literal. BACKLOG sin mover. `tools/canon.sh` queda en **302** lineas y
 `f9cc44a1f872ba0d`, y su region 255..255 pasa de `21f31ebee38e9d0f` a
 `08b6ed962b7bd038`.
+
+## §385 — el paper deja de decir opt-in sin sus dos custodios; trabajo relacionado con auditoria de libros; la seccion 14 sin marcador
+
+**Que.** Cierra el punto 29 de la cola: `PAPER.md` 8.2 decia que la migracion
+a la clave ancha «esta implementada y medida» y «es opt-in» sin decir que rotar
+exige DOS custodios, que `SECURITY.md` 209..211 si publica desde el §383. Y de
+paso, lo que el volcado del paper (PASTE-29-M, M2 y M3, sesion 84, lectura
+pura, cero bytes) destapo: la seccion 12 no citaba nada de auditoria de libros
+y llevaba un parrafo sin cita; la seccion 14 publicaba un MARCADOR DE POSICION
+como URL del repositorio y dos cifras de tests rancias que `check_cifras` no
+veia porque no llevaban la palabra «tests» pegada; y Referencias era un
+corchete «a completar». Todo en `PAPER.md` y su gemelo `PAPER_EN.md`, por
+POSICION (64 encabezados = 64, cruce fila a fila).
+
+**8.2.** Una frase tras el «opt-in», con el molde de correccion que el propio
+paper usa en 8.2 («las revisiones anteriores ...»): el opt-in es una
+limitacion, rotar exige la autorizacion de dos custodios, remite a §6.4 (que ya
+listaba la recuperacion entre los tres poderes discrecionales de los custodios)
+y a `SECURITY.md` §98.4.
+
+**12.** Se RETIRA el parrafo «Autorizacion con conocimiento cero ... trabajo
+reciente sobre autorizacion con nullifiers»: sin cita no tiene falsador, y
+choca con 8.bis («Sin nullificador, y por que»). Entra «Auditoria de libros con
+privacidad» —Provisions, zkLedger, MiniLedger, SoK— y la posicion propia:
+artefacto frente a protocolo, el invariante con los pendientes en vuelo, y la
+contrapartida declarada: la completitud que zkLedger da por construccion no es
+aqui propiedad presente (§11.2); el acumulador cubre la equivocacion, no la
+omision. Las cuatro citas se abrieron en origen en la sesion 84 antes de
+escribirse (zkLedger: modelo interactivo confirmado en el paper y en el SoK).
+
+**14.** El marcador `USUARIO/REPOSITORIO` se sustituye por la URL DERIVADA de
+`CITATION.cff` (`repository-code`), cruzada con el remoto; sin tachado, porque
+un marcador nunca afirmo nada. Las cifras de circuitos y nodo se DERIVAN de las
+filas de `tools/canon.sh` en la corrida (pin y cuenta de ignorados, por
+contenido). La de circuitos pasa a la forma «N tests» que `check_cifras`
+reconoce; la del nodo NO lleva «tests», porque la primera corrida de este
+bloque (rc=97, arbol restaurado) midio que `check_cifras` casa `zk-ssl` dentro
+de `zk-ssl-node` y da por rancio un 91 correcto contra el pin 289 de la capa:
+un patron que no ancla su FINAL cuenta lo que empieza igual. Ese defecto del
+instrumento queda FICHADO para la cola; la cifra del nodo sigue sin gate, como
+antes, pero ya es la derivada. La linea de la capa (289, correcta) no se toca.
+
+**Referencias.** Las cuatro entradas verificadas entran encima del corchete; el
+corchete se queda, porque lo que lista sigue sin abrirse en origen y decirlo
+es mas honesto que rellenarlo.
+
+**Lo que NO se toca, y por que.** §11.2 y §11.3 ya dicen la verdad del nivel 1
+(completitud del historial NO demostrada; la censura no deja rastro) y se citan
+desde 12. No se anade a 11.3 la linea de los testigos: la politica k esta
+declarada y no medida, y un artefacto con DOI no lleva afirmaciones sin medir.
+Los tres preprints de `doc/preprints/` siguen bajo la entrada 28 y el ERRATA.
+El deposito de una nueva version es SESION PROPIA (nota 28, nota 16, punto 10).
+
+**Medido en el camino** (PASTE-29-M): el campo es `winter_math::fields::f64`
+en 22 sitios de la capa y 73 del arbol, `f128` solo en
+`stark-experiment/src/lib.rs:107`; modulo 2^64 - 2^32 + 1 leido en
+`winter-math-0.13.1/src/field/f64/mod.rs:45-46`. La palabra «Goldilocks» de
+8.2/8.3 queda anclada a ese modulo (el fuente de winterfell no la nombra).
+
+**Contadores.** Ningun `.rs`, ningun test, ningun Cargo: pines quietos
+(289 / 318 / 91), canon sin correr (precedente §371, §372). Las nueve
+herramientas de `tools/` en rc=0 despues del corte. Dos ficheros del paper y
+este asiento, un commit.
