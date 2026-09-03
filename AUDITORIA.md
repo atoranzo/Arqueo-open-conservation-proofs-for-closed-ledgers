@@ -29370,3 +29370,34 @@ siempre). `zk-ssl-hash/src/lib.rs` 878 -> 896, `lib.rs` 680 -> 687, `persistence
 750 -> 775, `snapshot.rs` 1157 -> 1158, `two_phase.rs` 3472 -> 3584; ningun documento
 cambia de lineas (27 cifras, 20 lineas, 10 documentos, mas la fila del pin). Dominios
 u64 23 -> 24. Ningun Cargo tocado. EL CANON CORRE.
+
+## §389 — el mapa de propiedades y casos de uso, publicado como doc/USE_CASES.md
+**Que.** Nace `doc/USE_CASES.md` (sesion 86, emitido tras el §388 de la 88):
+el mapa de las SIETE propiedades que el motor prueba o piensa probar, cada una
+con su ESTADO (medida / planeada) y su cita al arbol, los casos de uso
+agrupados por la propiedad que los resuelve, los cuatro tests para una camara
+de compensacion (con la banda 1,5-1,9 TPS del §123 y el 2^32 de pagos en
+vuelo), la moneda de banco central como ARGUMENTO y no como caso, y la lista
+de lo que NO se afirma. Es la version larga de la seccion «Where it applies»
+de la portada de arqueo.org publicada hoy (index.html `a8e008715e3be266`).
+**Lo que NO es.** No es prosa de dominios revisados: los seis revisados van
+marcados y todo lo demas se declara CANDIDATO sin medir, con la frase escrita.
+No es expediente de subvencion: cero menciones a la solicitud, al programa ni a
+fases; el expediente sigue fuera del repo (regla del 27-ago). Y no afirma las
+filas 6 y 7 como existentes: van como «planned» con remision a la portada.
+**Como se mantiene.** Igual que `spec/README.md`: HEAD en la cabecera, rangos
+de `RPC.md` que se retocan cuando el fichero cambie, y el gate de citas que
+exige que todo `.md` nombrado exista (`RPC.md`, `SECURITY.md` y
+`AUDITORIA.md`). Cuando una fila pase de planeada a medida, cambia la columna y
+se cita el sello.
+**Medido en el camino.** Las citas de `RPC.md` (50-59, 564-735, 781-808,
+856-867) son las del S386, comprobadas linea a linea; el fichero sigue en
+`3eaa7a433d53f579` tras el §387 y el §388 (puerta del paste). El 22 % del
+§123 y el `TREE_DEPTH = 32` vienen del S380. Un PASTE-387 anterior murio en
+su puerta de HEAD (rc=2) porque la 87 y la 88 sellaron en paralelo: el numero
+estaba tomado y las puertas se re-derivaron; nada se escribio.
+**Contadores.** Ningun `.rs`, ningun test, ningun Cargo: pines quietos
+(294 / 318 / 91), canon sin correr (precedente §385, §386; el §388 lo
+corrio verde en 169 s). `verificar_citas.py` en rc=0 despues del corte; las
+otras ocho herramientas no se han corrido en este corte. Un fichero nuevo y
+este asiento, un commit.
