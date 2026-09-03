@@ -481,6 +481,30 @@ impl SovereignLayer {
             .into());
         }
 
+        // --- ARBOL DE PENDIENTES ---
+        //
+        // La raiz del arbol de pendientes se guarda en `root:pending` desde
+        // el §387 y se comprueba aqui igual que `root:state`. Antes se
+        // reconstruia de `pend:` y se creia: era una afirmacion sin
+        // falsador dentro del invariante sagrado (BACKLOG 21, AUDITORIA
+        // §387). Un ledger anterior al §387 no lleva la clave y NO ABRE
+        // (`need` devuelve `Malformed`): fail-closed, sin era silenciosa.
+        // Migrar un libro asi es una operacion explicita y aparte.
+        //
+        // LIMITE DECLARADO: la hoja es el compromiso
+        // H(H(receptor, sal), importe) y la capa no guarda receptor ni sal,
+        // asi que esta raiz cubre `pend:` y NO `pamt:` ni `pmeta:`. Una
+        // mentira aislada en `pamt:` la caza la conservacion de abajo; una
+        // coordinada con `meta:supply` sigue sin falsador.
+        let stored_pending =
+            digest_from_bytes(&need("root:pending", get(b"root:pending")?)?)?;
+        if self.pending.root() != stored_pending {
+            return Err(StoreError::IntegrityFailure {
+                what: "arbol de pendientes",
+            }
+            .into());
+        }
+
         // --- CONSERVACION DEL DINERO ---
         //
         // El invariante sagrado: sum(saldos) + sum(pendientes vivos) ==
@@ -636,6 +660,8 @@ impl SovereignLayer {
         batch.insert(b"meta:refund_ttl".as_ref(), self.seal(self.refund_ttl.to_le_bytes().to_vec())?);
         batch.insert(b"meta:next_index".as_ref(), self.seal(self.next_index.to_le_bytes().to_vec())?);
         batch.insert(b"root:state".as_ref(), self.seal(digest_to_bytes(&self.accounts.root()).to_vec())?);
+        // La raiz del arbol de pendientes, al lado de la de cuentas (§387).
+        batch.insert(b"root:pending".as_ref(), self.seal(digest_to_bytes(&self.pending.root()).to_vec())?);
 
         // --- Cuentas afectadas ---
         for index in accounts {

@@ -29197,3 +29197,97 @@ de emitir; se cita lo que se leyo, no lo que se recordaba.
 `verificar_citas.py` en rc=0 despues del corte (57 nombres, 0 fantasmas, 0
 secciones muertas); las otras ocho herramientas no se han corrido en este
 corte. Un fichero nuevo y este asiento, un commit.
+
+## §387 — La raiz del arbol de pendientes se guarda y se comprueba al abrir
+
+**Que.** Hasta este sello el almacen guardaba al reposo UNA raiz, `root:state`,
+y al reabrir la comparaba contra el arbol de cuentas reconstruido de `acct:`.
+El arbol de pendientes se reconstruia de `pend:` y se creia: ninguna raiz lo
+respaldaba. Era una afirmacion sin falsador dentro del invariante sagrado
+(sum(saldos) + sum(pendientes vivos) == suministro), fichada como punto 21 de
+la cola desde la sesion 79 y medida entera en la 83 (`PASTE-21-M`, lectura
+pura). Este sello lo cierra: `commit` escribe `root:pending` al lado de
+`root:state`, `load` la exige y la compara, y tres testigos lo demuestran.
+
+**Decision (a), fail-closed, del asistente y REVERSIBLE.** Un libro en disco
+sin `root:pending` NO ABRE: `need("root:pending", ...)` devuelve
+`Malformed("falta la clave root:pending")`, exactamente como hoy con
+`root:state`. Se desecho la era declarada (ausencia => libro viejo, se
+recomputa y se escribe) por tres razones, en el orden de la constitucion:
+(1) pureza: la ley dice ante duda de ancla SE PARA, no se sigue por
+compatibilidad, y la era declarada es seguir por compatibilidad un arranque
+mas; (2) coherencia: el §379 ya tomo esta decision para la conservacion al
+abrir y declaro la rotura para las instantaneas anteriores al §359; (3)
+imagen fiel: un cambio que embellece el relato (nadie se rompe) y deja un
+arranque sin invariante probado se rechaza. El precedente de era del arbol,
+`meta:migrated` / `meta:geometry_v7`, NO es comparable: alli las raices
+arbitran (`load` lo dice: marcador falso o ausente => IntegrityFailure); una
+ausencia de `root:pending` no tendria arbitro. La migracion de un libro
+anterior a este sello es una operacion EXPLICITA y aparte, si algun dia hace
+falta; hoy no hay libros de terceros. Peaje medido en el `PASTE-21-PRE2`: los
+SIETE bancos de `tools/` crean su ledger con `mktemp -d` bajo `$HOME` y lo
+borran; ninguno reabre un ledger de otra corrida. Peaje sobre los bancos:
+cero.
+
+**Lo medido antes de tocar (dos lecturas puras, `PASTE-21-PRE` y `PRE2`,
+rc=0 las dos).** `fn load` (`persistence.rs` 121..549) reconstruye `pmeta:`
+(200..214), `pamt:` (223..241; importe cero = cobrado, se omite) y `pend:`
+(435..446, `self.pending.rebuild_from`), y nadie comparaba
+`self.pending.root()`. Claves `root:` en codigo: solo `root:state` y
+`root:nullifier` (legado). `fn commit` (583..723) escribe todo en UN
+`sled::Batch`; `root:state` en la 638; el pendiente en 679..713, hoja,
+importe y meta en el mismo lote. La hoja `pend:` es el COMPROMISO
+`pending_commitment(receiver_id, salt, amount)` = H(H(receptor, sal),
+importe) (`pending.rs` 70..81; la v2 lo envuelve con el sobre de retorno,
+108..119): ata el importe, pero la capa no guarda ni receptor ni sal (en el
+envio el compromiso viene del cliente, `two_phase.rs:1012`; en la emision a
+pendiente lo computa la capa, `:1544`, y no persiste las entradas). Luego
+`load` no puede cotejar `pamt:` con la hoja, y eso decide la forma: UNA raiz,
+no dos. Ningun `.md` vivo cita `root:state`, `pend:`, `pamt:` ni `pmeta:`:
+el sello no mueve prosa, solo cifras. Los tres `#[ignore]` de la capa son
+instrumentos de medida (`client.rs:668`, `metrics.rs:221`, `:944`) y ninguno
+toca el pendiente.
+
+**La forma.** E1, `load`: tras el bloque de `root:state` y ANTES de la
+conservacion del §379, `stored_pending` por `need` + comparacion con
+`self.pending.root()` => `IntegrityFailure { what: "arbol de pendientes" }`.
+E2, `commit`: `batch.insert(b"root:pending", seal(digest_to_bytes(
+&self.pending.root())))` en la linea siguiente a `root:state`. E3, tres
+testigos en `tests.rs` tras el del §379, con `what` LITERAL:
+`a_tampered_pending_leaf_is_detected_at_startup` (planta una hoja `pend:` que
+ninguna operacion creo => "arbol de pendientes"),
+`a_ledger_without_a_pending_root_does_not_open` (borra `root:pending` => el
+libro no abre, `Malformed` que nombra la clave) y
+`a_lying_pending_amount_is_detected_at_startup` (miente `pamt:` a solas =>
+"conservacion del suministro"). Molde: `corrupted_ledger_is_detected_at_startup`
+y el testigo del §379 (`sled_open_retry` + `db.insert`, sin clave `seal`
+guarda en claro). Los anclajes fueron BYTES REALES de las dos lecturas
+(load 476..484, commit 637..639, tests 2696..2700), cada uno exigido UNA vez;
+el POST se monto aparte, con ida y vuelta, y solo entonces se copio.
+
+**Limite declarado, y candidatas.** `root:pending` cubre las HOJAS. `pamt:`
+y `pmeta:` siguen sin raiz: una mentira AISLADA en `pamt:` la caza la
+conservacion del §379 (es lo que demuestra el tercer testigo); una mentira
+COORDINADA en `pamt:` y `meta:supply` sigue sin falsador. Es la misma clase
+que el punto 21 un escalon mas abajo, y queda como CANDIDATA nueva, con
+`pmeta:` (emisor y nacimiento, que gobiernan la caducidad) al lado. Fichado
+tambien, y no tocado: `ARQUITECTURA.md:1507` y `CONTRIBUTING.md:87` citan en
+depuracion "188 pasan, 93 fallan y 9 ignorados" (= 290, la cifra anterior al
+§379); esa familia va +2 desde el §379 y +5 desde este sello y no tiene
+compuerta (deuda de la nota 41).
+
+**Lo que corrigio la medicion.** La cola decia 291 `#[test]` en la capa y
+offset +2 sin concluir (material del C4). Medido: 292, y 292 = 289 que pasan
++ 3 ignorados; la fila de `canon.sh` ya lo lleva en columna (`289 3 0 600`).
+El offset de la capa se explica entero por los ignorados. Y la prediccion de
+que un `.md` vivo citara `root:state` salio FALSA por el lado bueno.
+
+**Contadores.** Pin de la capa 289 -> 292 (`cargo test -p zk-ssl --release`:
+BASE 289/0/3 con 292 nombres, VIVA 292/0/3 con 295; mueren 0, nacen
+exactamente los tres; `cargo build` sin warnings). Sumas 983 -> 986, 1120 ->
+1123, 1134 -> 1137; el canon declara 1138. `persistence.rs` 724 -> 750,
+`tests.rs` 2996 -> 3125. Cifras movidas en 10 documentos vivos, 20 lineas, 27
+cifras (perimetro DERIVADO en la corrida y clavado con la lectura previa),
+y la fila del pin en `tools/canon.sh` con su historia; `check_cifras` se puso
+ROJO con solo el pin movido y volvio a verde con las cifras; las nueve
+herramientas con delta 0 de rc. Ningun Cargo tocado. EL CANON CORRE.

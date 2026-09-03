@@ -2699,6 +2699,135 @@ use super::*;
         let _ = std::fs::remove_dir_all(&path);
     }
 
+    /// §387 — la raiz del arbol de pendientes se guarda y se comprueba.
+    ///
+    /// Se planta una hoja `pend:` que ninguna operacion creo. Antes del
+    /// §387 el arranque la reconstruia y la creia; ahora la raiz guardada
+    /// no cuadra y el arranque se detiene con su nombre.
+    #[test]
+    fn a_tampered_pending_leaf_is_detected_at_startup() {
+        let path = temp_path("pend_mentiroso");
+
+        {
+            let mut layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            )
+            .expect("abrir");
+            open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        }
+
+        {
+            let db = sled_open_retry(&path);
+            assert!(
+                db.get(b"root:pending").expect("leer").is_some(),
+                "un ledger del §387 guarda la raiz del pendiente"
+            );
+            let fake: Digest = [BaseElement::new(0xBADBAD); 4];
+            let mut key = b"pend:".to_vec();
+            key.extend_from_slice(&0u64.to_le_bytes());
+            db.insert(key, store::digest_to_bytes(&fake).to_vec())
+                .expect("insertar");
+            db.flush().expect("flush");
+        }
+
+        let r = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(StoreError::IntegrityFailure {
+                    what: "arbol de pendientes"
+                }))
+            ),
+            "CRITICO: una hoja de pendiente que nadie creo debe pararse ANTES de operar"
+        );
+
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// §387 — un libro sin `root:pending` no abre.
+    ///
+    /// Es el caso de un ledger anterior al §387: fail-closed, sin era
+    /// silenciosa. `need` lo dice con su nombre, igual que con `root:state`.
+    #[test]
+    fn a_ledger_without_a_pending_root_does_not_open() {
+        let path = temp_path("sin_raiz_pendiente");
+
+        {
+            let mut layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            )
+            .expect("abrir");
+            open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        }
+
+        {
+            let db = sled_open_retry(&path);
+            assert!(
+                db.remove(b"root:pending").expect("borrar").is_some(),
+                "habia una raiz del pendiente que borrar"
+            );
+            db.flush().expect("flush");
+        }
+
+        let r = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(StoreError::Malformed(ref m))) if m.contains("root:pending")
+            ),
+            "CRITICO: un libro sin raiz del pendiente no debe abrir"
+        );
+
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// §387 — un importe `pamt:` mentido A SOLAS lo caza la conservacion.
+    ///
+    /// La raiz del §387 cubre las hojas (`pend:`), no los importes: la hoja
+    /// es H(H(receptor, sal), importe) y la capa no guarda receptor ni sal.
+    /// Este test documenta el residuo: mentir `pamt:` a solas rompe la
+    /// conservacion del §379 y se para ahi; mentir `pamt:` y `meta:supply`
+    /// a la vez sigue sin falsador (candidata declarada en el asiento §387).
+    #[test]
+    fn a_lying_pending_amount_is_detected_at_startup() {
+        let path = temp_path("pamt_mentiroso");
+
+        {
+            let mut layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            )
+            .expect("abrir");
+            open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        }
+
+        {
+            let db = sled_open_retry(&path);
+            let mut key = b"pamt:".to_vec();
+            key.extend_from_slice(&0u64.to_le_bytes());
+            db.insert(key, 5u64.to_le_bytes().to_vec()).expect("insertar");
+            db.flush().expect("flush");
+        }
+
+        let r = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(StoreError::IntegrityFailure {
+                    what: "conservacion del suministro"
+                }))
+            ),
+            "CRITICO: un importe de pendiente mentido debe pararse ANTES de operar"
+        );
+
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
     /// Cambiar la identidad del emisor sobre un ledger existente falla.
     ///
     /// Silenciarlo permitiría sustituir al banco central sin dejar rastro.
