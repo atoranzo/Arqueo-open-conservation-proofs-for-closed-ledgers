@@ -29164,3 +29164,36 @@ en 22 sitios de la capa y 73 del arbol, `f128` solo en
 (289 / 318 / 91), canon sin correr (precedente §371, §372). Las nueve
 herramientas de `tools/` en rc=0 despues del corte. Dos ficheros del paper y
 este asiento, un commit.
+
+## §386 — spec/ gana su guia de lectura: spec/README.md, en ingles, con citas fichero:linea
+**Que.** Nace `spec/README.md`, la guia de LECTURA de la carpeta que enlaza la
+portada de arqueo.org (sesion 86, tras el envio a Restack). GitHub la pinta
+debajo del listado de `spec/`, asi que el enlace de la portada no cambia. Dice
+que es cada fichero y en que orden leerlo, las tres reglas que gobiernan el
+resto (la clave de gasto no viaja; la version sigue a los VALORES del cable,
+no al tamano de la superficie; ninguna afirmacion sin el testigo que la
+falsaria), `RPC.md` en orden de lectura con sus rangos de lineas, los tres
+vectores y el proceso RFC. Veinticinco citas `fichero:linea` a `0ea8775`, y
+el HEAD en el pie. En ingles: es para quien llega desde la portada y para el
+revisor; la spec sigue en castellano y el README lo declara.
+**Lo que NO es.** No es una segunda spec: no anade regla, no toca `RPC.md`,
+`openrpc.json` ni `spec/vectors/`, y la version no se mueve. No es un RFC,
+luego la regla 5 de `PROCESO.md` no aplica; este asiento es el hilo.
+**Como se mantiene.** Por las lineas citadas y el commit del pie: quien
+cambie un fichero de `spec/` retoca los rangos y el HEAD. El gate
+`tools/verificar_citas.py` (v1) vigila que todo `.md` nombrado exista; el
+README solo nombra `RPC.md`, `PROCESO.md`, los tres RFC, `AUDITORIA.md` y
+`SECURITY.md`, y evita el patron de nombre de RFC que el gate excluye.
+**Medido en el camino** (lectura pura, en la maquina del autor): `spec/` a
+`0ea8775` son nueve ficheros (`RPC.md` 867, `openrpc.json` con openrpc 1.2.6,
+`info.version` zkssl/0.3 y 24 metodos = 22 `zkssl_` + `dev_fund` y
+`dev_openSeeded`, cuatro `.md` en `rfc/`, tres vectores, cada uno un objeto
+de ocho claves: spec, sellado, escenario, canon, entradas, epoch_digest,
+supply, pending). `spec/README.md` NO existia. Dos rangos de `PROCESO.md`
+salieron desplazados en el borrador y se corrigieron contra el fichero antes
+de emitir; se cita lo que se leyo, no lo que se recordaba.
+**Contadores.** Ningun `.rs`, ningun test, ningun Cargo: pines quietos
+(289 / 318 / 91), canon sin correr (precedente §371, §372, §385).
+`verificar_citas.py` en rc=0 despues del corte (57 nombres, 0 fantasmas, 0
+secciones muertas); las otras ocho herramientas no se han corrido en este
+corte. Un fichero nuevo y este asiento, un commit.
