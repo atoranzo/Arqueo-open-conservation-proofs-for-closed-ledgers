@@ -29291,3 +29291,82 @@ cifras (perimetro DERIVADO en la corrida y clavado con la lectura previa),
 y la fila del pin en `tools/canon.sh` con su historia; `check_cifras` se puso
 ROJO con solo el pin movido y volvio a verde con las cifras; las nueve
 herramientas con delta 0 de rc. Ningun Cargo tocado. EL CANON CORRE.
+
+## §388 — La raiz de META del pendiente se guarda y se comprueba al abrir
+
+**Que.** `pmeta:` guarda, por posicion, QUIEN creo un pendiente (`sender`) y a QUE ALTURA
+nacio (`born`): los dos datos que deciden a quien y cuando vuelve el dinero
+(`apply_refund` / `apply_deissue`: `now - born < plazo`, credito a `sender`). Hasta este
+sello vivian solo en sled, sin raiz: el §387 lo declaro como residuo y lo ficho como
+punto 41. Ahora `SovereignLayer` lleva `pending_meta_tree: SparseTree` (misma posicion
+que `pending`, hoja `zk_ssl_hash::meta_pendiente_hoja(sender, born)` =
+`commit_operation(DOMINIO_META_PENDIENTE, [sender, born])`, dominio `PMETA_V1`
+registrado), `commit` escribe su raiz como `root:pmeta` junto a `root:state` y
+`root:pending`, y `load` la recompone de lo leido y la exige ANTES de la conservacion
+del §379: si no cuadra, `IntegrityFailure { what: "meta de pendientes" }`; si no
+existe, `Malformed` (fail-closed, como `root:pending`). El par mapa+arbol tiene un solo
+escritor (`meta_set` / `meta_clear`) en los cinco sitios que lo mutan.
+
+**Lo que decidio la medicion, y lo que corrigio.** La sesion 88 midio el punto 41 en
+cinco lecturas puras (PASTE-41-M, M6, M7, M8, M9) y un PRE, todas verdes a la
+primera. Lo medido: (1) `meta:supply` SI se sella como todo el lote, luego sellar no
+discrimina: el adversario del disco con la clave es el operador. (2) `pamt:` no
+necesita primitiva nueva: `apply_refund` y `apply_deissue` exigen
+`pending_amounts[pos] == receipt.amount` y abren el compromiso por circuito, asi que un
+importe mentido bloquea ese pendiente (`PendingMismatch`) y no se vuelve saldo; la
+mentira coordinada `pamt:` + `meta:supply` sobrevive al cobro y aflora al reabrir por la
+conservacion. (3) La cabeza firmada lleva `pending_root` (nueve campos en
+`epoch_digest_v3`) y NO lleva `total_supply` ni nada de `pmeta:`. (4) El sobre v2
+CIERRA el destino (`rec.public_id == f`, `two_phase.rs` 675..680) y NO cierra el reloj:
+`born` sale de `pmeta:` en las dos ramas. (5) Todos los mint-a-pendiente nacen v1
+(`pending_commitment`, meta `(REFUND_SENDER_NONE, born)`): mentir su `pmeta:` convertia
+una des-emision en un reembolso a un indice ajeno sin bajar el suministro. (6) El
+RFC-0003 afirma (:174) que el operador "ya no puede mover el plazo ni el destino":
+para `born`, y para el destino de todo v1, era una afirmacion sin falsador. Los dos
+testigos de este sello son ese falsador.
+
+**Decision (asistente, REVERSIBLE, delegada: "decide en base a los principios y al
+manifiesto").** La primera propuesta —hacer el plazo del sobre una ALTURA ABSOLUTA— se
+RETIRO al leer el RFC-0003: su D1 ("Delta relativo, no expiry absoluto") ya la habia
+descartado con una razon que no se habia pesado: con absoluto el operador retrasa la
+inclusion y se come la ventana del receptor. Delta relativo manda. La primitiva es
+entonces atar `born` y `sender` a una raiz, en reposo ahora y en la cabeza firmada
+despues. Se rechazo un `root:pmeta` como respuesta ENTERA —es coherencia recomputable
+por quien miente, el §387 otra vez— y se acepta como primer escalon porque el segundo
+(la cabeza v4) lo necesita y porque hoy cierra la mentira en reposo, que es la que
+existe. Orden elegido: T-B primero (el reloj pega a todo pendiente, v1 y v2), luego la
+raiz, luego la cabeza, y T-A (el mint nace v2 con centinela) despues.
+
+**La forma.** `zk-ssl-hash/src/lib.rs`: `DOMINIO_META_PENDIENTE` +
+`meta_pendiente_hoja` tras `DOMINIO_MMR_NODO`, y su linea REGISTRO (R5 de
+`check_dominios.py`: dominios u64 23 -> 24). `lib.rs`: el campo tras `pending_meta`;
+`new`, `open_encrypted` e `import_snapshot` lo crean vacio. `persistence.rs`: la
+recomposicion tras el bucle `pmeta:`, la puerta antes de la conservacion, la raiz en
+`commit`. `two_phase.rs`: `meta_set` / `meta_clear` tras `pending_meta_of`;
+`apply_deissue`, `apply_refund`, `commit_claim`, `commit_send` y
+`apply_mint_pending_delegated` pasan por ellos. Cada anclaje exigido UNA vez, POST
+montado aparte con ida y vuelta, y el arbol tocado solo cuando el reconstruido clavo su
+sha. Dos testigos en `tests_verificacion`: `un_born_mentido_en_reposo_no_abre` (se
+reescribe `pmeta:pos` con `born + 1_000_000` por sled) y
+`un_meta_borrado_en_reposo_no_abre` (se vacia `pmeta:pos`, que `load` saltaba como
+"sin meta"): los dos exigen `IntegrityFailure { what: "meta de pendientes" }` al
+reabrir. Hoy la ausencia tambien cuenta: la hoja de una posicion sin meta es cero.
+
+**Limite declarado y candidatas.** (a) `root:pmeta` es integridad en reposo, no
+atestacion: la coordinada `pamt:` + `meta:supply` sigue sin falsador mientras el
+pendiente vive, y un tercero sigue sin poder verificar ni el suministro ni el meta.
+Cierra los dos la CABEZA v4 = v3 + `supply` + `meta_root` (formato nuevo: hash,
+cable, verify, nodo, spec, vectores), fichada como arco propio. (b) Todo
+mint-a-pendiente es v1: nacer v2 con `f` = centinela cierra el destino por el
+compromiso (T-A, fichado). (c) El arbol de CONGELADOS tampoco tiene raiz en reposo:
+`froz:` se reconstruye y se cree; `frozen_root` solo vive en la cabeza. Hermano de
+este punto, fichado. (d) `refund_ttl` sigue siendo juez de la via v1; el RFC-0003 deja
+su retirada como decision de corte. (e) Los `188 pasan, 93 fallan y 9 ignorados` de
+`ARQUITECTURA.md:1507` y `CONTRIBUTING.md:87` siguen rancios (+7 desde el §379).
+
+**Contadores.** Pin de la capa 292 -> 294 (2 tests, los dos testigos); sumas
+986 -> 988, 1123 -> 1125, 1137 -> 1139; el canon declara 1140 (offset +1, el de
+siempre). `zk-ssl-hash/src/lib.rs` 878 -> 896, `lib.rs` 680 -> 687, `persistence.rs`
+750 -> 775, `snapshot.rs` 1157 -> 1158, `two_phase.rs` 3472 -> 3584; ningun documento
+cambia de lineas (27 cifras, 20 lineas, 10 documentos, mas la fila del pin). Dominios
+u64 23 -> 24. Ningun Cargo tocado. EL CANON CORRE.

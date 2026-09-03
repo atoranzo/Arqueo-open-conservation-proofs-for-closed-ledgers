@@ -64,6 +64,7 @@ impl SovereignLayer {
             reserved_pending: std::collections::BTreeSet::new(),
             pending_amounts: HashMap::new(),
             pending_meta: HashMap::new(),
+            pending_meta_tree: crate::sparse_tree::SparseTree::new(),
             refund_ttl: crate::DEFAULT_REFUND_TTL,
             records: HashMap::new(),
             next_index: 0,
@@ -212,6 +213,13 @@ impl SovereignLayer {
             let born = u64::from_le_bytes(v[8..].try_into().unwrap());
             self.pending_meta.insert(pos, (sender, born));
         }
+        // §388: el arbol de meta se recompone de lo leido y se comprueba mas
+        // abajo contra `root:pmeta`, igual que `pend:` contra `root:pending`.
+        self.pending_meta_tree.rebuild_from(
+            self.pending_meta
+                .iter()
+                .map(|(p, (s, b))| (*p, zk_ssl_hash::meta_pendiente_hoja(*s, *b))),
+        );
         if let Some(v) = db.get(b"meta:refund_ttl").map_err(|e| StoreError::Io(e.to_string()))? {
             let v = unseal_one(v)?;
             self.refund_ttl = u64::from_le_bytes(
@@ -505,6 +513,21 @@ impl SovereignLayer {
             .into());
         }
 
+        // --- META DE LOS PENDIENTES ---
+        //
+        // §388 (punto 41): `pmeta:` decide A QUIEN y CUANDO vuelve el dinero
+        // de un pendiente y hasta aqui se creia. Su arbol se recompuso arriba
+        // de lo leido; la raiz guardada tiene que cuadrar, y un ledger sin
+        // `root:pmeta` NO ABRE (fail-closed, como `root:pending` en el §387).
+        let stored_meta =
+            digest_from_bytes(&need("root:pmeta", get(b"root:pmeta")?)?)?;
+        if self.pending_meta_tree.root() != stored_meta {
+            return Err(StoreError::IntegrityFailure {
+                what: "meta de pendientes",
+            }
+            .into());
+        }
+
         // --- CONSERVACION DEL DINERO ---
         //
         // El invariante sagrado: sum(saldos) + sum(pendientes vivos) ==
@@ -662,6 +685,8 @@ impl SovereignLayer {
         batch.insert(b"root:state".as_ref(), self.seal(digest_to_bytes(&self.accounts.root()).to_vec())?);
         // La raiz del arbol de pendientes, al lado de la de cuentas (§387).
         batch.insert(b"root:pending".as_ref(), self.seal(digest_to_bytes(&self.pending.root()).to_vec())?);
+        // La raiz del arbol de meta, al lado de las otras dos (§388).
+        batch.insert(b"root:pmeta".as_ref(), self.seal(digest_to_bytes(&self.pending_meta_tree.root()).to_vec())?);
 
         // --- Cuentas afectadas ---
         for index in accounts {

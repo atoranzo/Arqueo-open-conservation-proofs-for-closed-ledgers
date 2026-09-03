@@ -347,6 +347,23 @@ pub const DOMINIO_MMR_HOJA: u64 = u64::from_be_bytes(*b"MMRHOJA1");
 /// El dominio de los nodos interiores del MMR. Ver [`DOMINIO_MMR_HOJA`].
 pub const DOMINIO_MMR_NODO: u64 = u64::from_be_bytes(*b"MMRNODO1");
 
+/// **La hoja del META de un pendiente** (§388, punto 41): `H(dominio, sender, born)`.
+/// El arbol de meta (`SovereignLayer::pending_meta_tree`) ata a cada posicion
+/// quien creo el pendiente y a que altura nacio -- los dos datos que deciden
+/// A QUIEN y CUANDO vuelve el dinero (`apply_refund` / `apply_deissue`) y que
+/// hasta el §387 vivian solo en `pmeta:`, sin raiz. Su raiz se guarda en
+/// `root:pmeta` y se comprueba al abrir, igual que `root:pending`.
+pub const DOMINIO_META_PENDIENTE: u64 = u64::from_be_bytes(*b"PMETA_V1");
+
+/// La hoja del arbol de meta: `commit_operation(DOMINIO_META_PENDIENTE, [sender, born])`.
+/// Una posicion sin meta lleva la hoja cero, igual que un pendiente cobrado.
+pub fn meta_pendiente_hoja(sender: u64, born: u64) -> Digest {
+    commit_operation(
+        DOMINIO_META_PENDIENTE,
+        &[BaseElement::new(sender), BaseElement::new(born)],
+    )
+}
+
 /// **La hoja del MMR de cabezas**: un digest de cabeza, etiquetado.
 ///
 /// ⚠️ **Esta es LA composicion**, por la misma razon que
@@ -737,6 +754,7 @@ mod tests_cabeza_v2 {
 // REGISTRO: u64 halo2 NULLIFIER_DOMAIN 0x4E554C4C
 // REGISTRO: u64 plonk LEAF_DOMAIN 0x4C454146
 // REGISTRO: u64 plonk NULLIFIER_DOMAIN 0x4E554C4C
+// REGISTRO: u64 produccion DOMINIO_META_PENDIENTE 0x504D4554415F5631
 // REGISTRO: bytes ZK-SSL-ledger-key-v1
 // REGISTRO: bytes ZK-SSL-epoch-head
 // REGISTRO: bytes ZK-SSL-keystore-v1

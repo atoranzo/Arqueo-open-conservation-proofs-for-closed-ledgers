@@ -534,6 +534,12 @@ pub struct SovereignLayer {
     /// de EMISIÓN (des-emisión al caducar, no reembolso). Misma clase de
     /// persistencia que `pending_amounts`: sled (`pmeta:`), no snapshot.
     pending_meta: HashMap<u64, (u64, u64)>,
+    /// §388 (punto 41): el arbol de META de los pendientes, misma posicion que
+    /// `pending`, hoja = `zk_ssl_hash::meta_pendiente_hoja(sender, born)`. Se
+    /// mueve JUNTO con `pending_meta` (`meta_set` / `meta_clear`), su raiz va a
+    /// sled como `root:pmeta` y `load` la exige: quien y cuando dejan de ser
+    /// fe del disco.
+    pending_meta_tree: SparseTree,
     /// `T` de la caducidad (§178): latidos de `log.seq` que deben pasar
     /// antes de que un pendiente sea reembolsable/des-emitible. Línea
     /// sistémica declarada, familia `N_max`/`M`.
@@ -654,6 +660,7 @@ impl SovereignLayer {
             reserved_pending: BTreeSet::new(),
             pending_amounts: HashMap::new(),
             pending_meta: HashMap::new(),
+            pending_meta_tree: SparseTree::new(),
             refund_ttl: DEFAULT_REFUND_TTL,
             records: HashMap::new(),
             next_index: 0,

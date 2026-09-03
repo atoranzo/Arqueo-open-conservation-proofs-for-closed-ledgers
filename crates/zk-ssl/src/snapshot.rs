@@ -378,6 +378,7 @@ impl SovereignLayer {
             reserved_pending: std::collections::BTreeSet::new(),
             pending_amounts: HashMap::new(),
             pending_meta: HashMap::new(),
+            pending_meta_tree: crate::sparse_tree::SparseTree::new(),
             refund_ttl: crate::DEFAULT_REFUND_TTL,
             records: HashMap::new(),
             next_index,

@@ -233,6 +233,20 @@ impl SovereignLayer {
         self.pending_meta.get(&pos).copied()
     }
 
+    /// §388: el meta y su arbol se mueven JUNTOS, o la raiz `root:pmeta`
+    /// dejaria de describir el mapa. Unico escritor del par.
+    pub(crate) fn meta_set(&mut self, pos: u64, sender: u64, born: u64) {
+        self.pending_meta.insert(pos, (sender, born));
+        self.pending_meta_tree
+            .set_leaf(pos, zk_ssl_hash::meta_pendiente_hoja(sender, born));
+    }
+
+    /// §388: quitar el meta vacia tambien su hoja (digest cero = libre).
+    pub(crate) fn meta_clear(&mut self, pos: u64) {
+        self.pending_meta.remove(&pos);
+        self.pending_meta_tree.set_leaf(pos, [BaseElement::ZERO; 4]);
+    }
+
     /// La `T` vigente de la caducidad (línea sistémica, §178).
     pub fn refund_ttl(&self) -> u64 {
         self.refund_ttl
@@ -496,7 +510,7 @@ impl SovereignLayer {
         let root = self.accounts.root();
         self.pending.set_leaf(pos, vacia);
         self.pending_amounts.remove(&pos);
-        self.pending_meta.remove(&pos);
+        self.meta_clear(pos);
         // Lo emitido-a-pendiente subió el suministro al nacer (two_phase,
         // mint_to_pending): al caducar sin cobro, BAJA exactamente eso.
         self.total_supply -= receipt.amount;
@@ -765,7 +779,7 @@ impl SovereignLayer {
         self.records.insert(sender_index, nuevo);
         self.pending.set_leaf(pos, vacia);
         self.pending_amounts.remove(&pos);
-        self.pending_meta.remove(&pos);
+        self.meta_clear(pos);
         self.log
             .append(OpKind::Refund, root_old, root_new, &receipt.refund_proof);
         self.commit(&[sender_index], Some((pos, vacia)))?;
@@ -1071,8 +1085,8 @@ impl SovereignLayer {
         }
         self.reserved_pending.remove(&plan.pos);
         self.pending_amounts.insert(plan.pos, plan.amount);
-        self.pending_meta
-            .insert(plan.pos, (plan.sender_index, self.log.len() as u64));
+        let nacido = self.log.len() as u64;
+        self.meta_set(plan.pos, plan.sender_index, nacido);
         // ⚠️ Deja constancia ANTES de persistir: el lote atomico incluye o
         // excluye las dos cosas.
         self.log
@@ -1308,7 +1322,7 @@ impl SovereignLayer {
         let vacia: Digest = [BaseElement::ZERO; 4];
         let root_antes = self.accounts.root();
         self.pending_amounts.remove(&plan.position);
-        self.pending_meta.remove(&plan.position);
+        self.meta_clear(plan.position);
         self.accounts.set_leaf(plan.receiver_index, plan.hoja_nueva);
         self.pending.set_leaf(plan.position, vacia);
         let root_despues = self.accounts.root();
@@ -1622,8 +1636,8 @@ impl SovereignLayer {
         // §211: aplicada deja de estar reservada.
         self.reserved_pending.remove(&position);
         self.pending_amounts.insert(position, amount);
-        self.pending_meta
-            .insert(position, (crate::REFUND_SENDER_NONE, self.log.len() as u64));
+        let nacido = self.log.len() as u64;
+        self.meta_set(position, crate::REFUND_SENDER_NONE, nacido);
 
         // La MISMA raiz de cuentas en los dos lados, y es correcto: una
         // emision a un pendiente no toca ninguna cuenta. Mismo criterio que
@@ -2509,6 +2523,104 @@ mod tests_verificacion {
         let materiales = refund_de(&layer, alice, SK_ALICE, &recibo, receptor, 300_000);
         layer.apply_refund(&materiales).expect("refund tras reinicio");
         assert_eq!(state_of(&layer, alice).balance, 1_000_000);
+    }
+
+    /// **TESTIGO §388 (punto 41, T-B): el reloj del reembolso no es fe del
+    /// disco.** `born` decide cuando un pendiente es reembolsable
+    /// (`apply_refund` / `apply_deissue`: `now - born < plazo`) y hasta el
+    /// §387 vivia SOLO en `pmeta:`, sin raiz. Se miente `born` en sled y el
+    /// libro NO ABRE: la raiz de meta (`root:pmeta`) no cuadra.
+    #[test]
+    fn un_born_mentido_en_reposo_no_abre() {
+        let path = ruta_temporal("meta_born_mentido");
+        let (alice, pos, born) = ledger_con_un_pendiente(&path);
+        {
+            let db = sled_open_retry(&path);
+            let mut key = b"pmeta:".to_vec();
+            key.extend_from_slice(&pos.to_le_bytes());
+            let mut v = alice.to_le_bytes().to_vec();
+            v.extend_from_slice(&born.wrapping_add(1_000_000).to_le_bytes());
+            db.insert(key, v).expect("insertar");
+            db.flush().expect("flush");
+        }
+        let r = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(crate::store::StoreError::IntegrityFailure {
+                    what: "meta de pendientes"
+                }))
+            ),
+            "CRITICO: un nacimiento mentido en pmeta: debe pararse ANTES de operar"
+        );
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// **TESTIGO §388 (T-B bis): la AUSENCIA de meta tambien es una mentira.**
+    /// `load` salta un `pmeta:` vacio ("vaciada o legado"); vaciarlo a mano
+    /// dejaria el pendiente sin reembolso posible (`RefundUnavailable`). La
+    /// hoja de esa posicion pasa a cero y la raiz ya no cuadra.
+    #[test]
+    fn un_meta_borrado_en_reposo_no_abre() {
+        let path = ruta_temporal("meta_borrado");
+        let (_alice, pos, _born) = ledger_con_un_pendiente(&path);
+        {
+            let db = sled_open_retry(&path);
+            let mut key = b"pmeta:".to_vec();
+            key.extend_from_slice(&pos.to_le_bytes());
+            db.insert(key, Vec::new()).expect("insertar");
+            db.flush().expect("flush");
+        }
+        let r = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(crate::store::StoreError::IntegrityFailure {
+                    what: "meta de pendientes"
+                }))
+            ),
+            "CRITICO: un meta borrado en pmeta: debe pararse ANTES de operar"
+        );
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// Ayudantes de los dos testigos: una ruta propia, y un ledger con UN
+    /// pendiente v1 de alice a bob ya cerrado (el lote esta en disco).
+    fn ruta_temporal(nombre: &str) -> String {
+        std::env::temp_dir()
+            .join(format!(
+                "zkssl_{}_{}_{}",
+                nombre,
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ))
+            .to_string_lossy()
+            .into_owned()
+    }
+
+    fn ledger_con_un_pendiente(path: &str) -> (AccountIndex, u64, u64) {
+        let mut layer = open_retry(
+            path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        )
+        .expect("abrir");
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        let receptor = layer.public_id_of(bob).expect("bob");
+        let ea = state_of(&layer, alice);
+        let recibo = layer
+            .send(BaseElement::new(SK_ALICE), alice, &ea, receptor, salt_de(0x388), 300_000)
+            .expect("send");
+        layer.apply_send(&recibo, alice, &ea, 300_000).expect("apply");
+        let pos = recibo.notice.position;
+        let born = layer.pending_meta_of(pos).expect("meta").1;
+        (alice, pos, born)
     }
 
     /// R-2d FELIZ: el mint-pendiente caducado se DES-EMITE — el
