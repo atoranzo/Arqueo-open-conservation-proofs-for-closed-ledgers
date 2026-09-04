@@ -29744,3 +29744,80 @@ historia. `log.rs` 1310 -> 1332, `persistence.rs` 864 -> 878, `snapshot.rs` 1158
 `two_phase.rs` 3850 -> 3889. Ningun Cargo tocado. BACKLOG sin tocar (50 abiertas / 56
 resueltas). EL CANON CORRE, cronometrado. **Con este sello, el punto 46 queda CERRADO
 ENTERO en tres escalones: §392 el registro, §393 los nonces, §394 la cuota.**
+
+## §395 — La autonomia del verificador deja de ser prosa
+
+**Que.** El `Cargo.toml` de `zk-ssl-verify` y la cabecera de su `lib.rs` afirman —entre los
+dos, CATORCE veces— que la dependencia va en UN SOLO SENTIDO: este crate no depende de la
+capa, ni del nodo, ni del cable (§243). Su cabecera llega a decir «si algun dia importa algo
+del proyecto, se habra vuelto a caer en el problema». **Y nada lo comprobaba.** La medicion
+de esta sesion dice que hoy es cierto —el cierre son DOS crates (`zk-ssl-verify` y
+`zk-ssl-hash`) y CUATRO externas directas (`serde_json`, `xmss`, `winter-math`,
+`winter-crypto`), sin `sled`, sin la capa, sin el nodo y sin el cable— pero nada mantenia
+eso cierto manana. Desde este sello lo mantiene un test que se pone rojo.
+
+**Que cambia.** Solo `crates/zk-ssl-verify/src/lib.rs`, en su zona de test:
+`deps_por_ruta_del_manifiesto` deriva del propio `Cargo.toml` —leido con `include_str!`, que
+bajo `cfg(test)` NO viaja al binario— el conjunto exacto de dependencias POR RUTA, normales
+y de desarrollo, y `el_cierre_del_verificador_es_el_declarado` lo compara contra la lista
+declarada con `difference` por los DOS lados, que es el molde del atado dispatch-cable del
+§302. Dos testigos mas son la prueba de vida del instrumento:
+`una_path_dep_a_la_capa_no_se_le_escapa_al_parser` y
+`el_parser_ve_tambien_las_dev_dependencies`. Sin primitiva nueva, sin tocar el `Cargo.toml`,
+sin cambio de cabeza ni de cable.
+
+**Las decisiones (asistente, REVERSIBLES).** (1) **El operador es el CONJUNTO EXACTO, no una
+lista de prohibidos.** Un censo de tres nombres es ciego al cuarto crate que nazca manana, y
+la propia cabecera habla de «algo del proyecto», no de tres. El precio, declarado: una
+dependencia por ruta legitima tambien se pondra roja, y quien la anada tendra que declararla.
+(2) **El gate NO se compara contra el pin.** El pin cuenta lo que el arnes EJECUTA —lib mas
+bin mas doc-tests— y este crate tiene un ejemplo `no_run` en su cabecera: 68
+declarados y 69 ejecutados. Un gate atado al pin seria un rojo esperando turno. (3) **La
+SUPERFICIE queda fuera y se declara.** Un gate de superficie necesita una segunda lista, y
+hoy no existe: la cabecera del crate se NIEGA por escrito a enumerar sus elementos, y con
+razon —su enumeracion ya caduco dos veces—. La clausula se muda al §396, donde la
+especificacion ES esa segunda lista. (4) **Red y reloj quedan fuera: son OTRA propiedad.**
+Se miden en el fuente, no en el manifiesto, y la ley dice una primitiva por propiedad.
+
+**Lo medido, y lo que cambio el corte.** La prediccion decia que el crate NO producia un
+binario autonomo y salio FALSA: `src/main.rs` son 582 lineas y un bin implicito que ya
+imprime «VERDE: el paquete se sostiene sin el nodo». Tambien salio falsa la sospecha de que
+`sled` estuviera en el cierre. Y el CRUCE entre el cierre estatico y `cargo tree` gano su
+sueldo: entre las transitivas aparecen `getrandom`, `libc`, `rand` y `blake3`, que llegan por
+`xmss` —lo que condiciona un futuro `wasm32` no es la base de datos, es la aleatoriedad—.
+Del lado del uso unico, medido de propina: la capa no persiste NINGUN nulificador (23
+escrituras vistas, cero sobre claves `null`), los 27 structs de public inputs no toman ni un
+identificador de origen externo, y `derive_nullifier` se deriva de la clave privada de gasto
+por diseno declarado. La unicidad ENTRE LIBROS no existe y no puede existir con esta forma.
+
+**La forma.** Dos lecturas puras (`PASTE-H2-M` y `PASTE-395-PRE`), el bloque del testigo, su
+`-B` y la reemision `-B-r2`. Los tres testigos se ensenaron ROJOS EN VIVO dentro del bloque:
+con el cable metido a mano en el `Cargo.toml`, el test fallo nombrando al intruso, y solo
+entonces se deshizo el sabotaje —29 s de compilacion, cronometrados—. **El `-B` murio en 13 y
+restauro limpio por un defecto MIO**: el desglose de `PRINCIPIOS.md` esta PARTIDO POR EL
+SALTO DE LINEA y mi editor censaba linea a linea, asi que no vio «69 del verificador
+independiente» en la linea siguiente a su total. El `-B-r2` lo arregla dejando de tener dos
+productores: importa `tools/check_cifras.py` y usa SUS regex y SU tabla de alias sobre el
+texto aplanado, con un mapa de indices que devuelve cada cifra a su offset exacto.
+
+**Limite y candidatas.** (1) **El desglose depende del ALIAS de `canon.sh`.** Si ese alias
+dejara de casar con la prosa, el editor y el juez se quedarian ciegos A LA VEZ y la cifra
+envejeceria en silencio: es lo que advierte el comentario de `alias_de_crates()`, y no lo
+introduce este corte. (2) **La especificacion del verificador no existe**: cinco documentos
+vivos lo NOMBRAN y ninguno lo especifica; es el §396. (3) **El artefacto distribuible
+tampoco**: hay binario, no hay entrega; es el §397. (4) **`wasm32` esta sin medir**: cero
+menciones en todo el arbol y `getrandom`/`libc` por medio. (5) **El «1138 mas 14 igual a
+1152» no cuadra con la columna**: la suma de ignorados derivada de la TABLA es 13, no 14, y
+pasan mas ignorados da 1151. Declarado, no tocado. (6) La cifra del 2,1 % de verificar
+NO habla de este crate: la produce `metrics.rs` midiendo una prueba STARK dentro de la capa.
+
+**Lo que corrigio la medicion.** H2 nacio en la propuesta como «construir un verificador
+autonomo». Al medirlo resulta que **cuatro de sus seis clausulas ya se cumplen**: corre sin
+el repositorio, sin el autor, sin red y sin telemetria —la unica atadura a disco es el
+paquete JSON que se le pasa por argumento—. Lo que falta es su especificacion y su entrega.
+Una afirmacion escrita catorce veces no es un invariante hasta que un testigo puede negarla.
+
+**Contadores.** Pin `zk-ssl-verify` 69 -> 72 (65 del lib, 6 del bin y 1 doc-test; 71 `#[test]`
+declarados). Sumas 1001 -> 1004, 1138 -> 1141, 1152 -> 1155; el canon declara 1156. Cifras en
+4 documentos vivos, 6 lineas, 12 cifras, y la fila 98 de `canon.sh` con su historia.
+`lib.rs` 897 -> 985. Ningun Cargo tocado. BACKLOG sin tocar. EL CANON CORRE, cronometrado.

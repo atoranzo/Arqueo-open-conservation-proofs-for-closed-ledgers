@@ -894,4 +894,92 @@ mod tests {
             otro => panic!("el ordinal reescrito tiene que verse: {otro:?}"),
         }
     }
+
+    // ---------- S395: la autonomia del verificador, como invariante ----------
+    //
+    // El Cargo.toml y la cabecera de este fichero afirman CATORCE veces que la
+    // dependencia va en UN SOLO SENTIDO -este crate no depende de la capa, ni
+    // del nodo, ni del cable (S243)- y hasta aqui NADA lo comprobaba.
+    //
+    // El operador es el CONJUNTO EXACTO y no una lista de prohibidos: un censo
+    // de tres nombres es ciego al cuarto crate que nazca manana, y la propia
+    // cabecera dice "si algun dia importa algo del proyecto". Dos listas, dos
+    // productores, con difference por los DOS lados, como el atado del cable.
+    //
+    // include_str! vive bajo cfg(test): NO viaja al binario, asi que este gate
+    // no ata el artefacto al arbol.
+    fn deps_por_ruta_del_manifiesto(
+        toml: &str,
+    ) -> std::collections::BTreeSet<(String, String)> {
+        let mut fuera = std::collections::BTreeSet::new();
+        let mut seccion = String::new();
+        for linea in toml.lines() {
+            let s = linea.trim();
+            if s.starts_with('#') {
+                continue;
+            }
+            if s.starts_with('[') && s.ends_with(']') {
+                seccion = s[1..s.len() - 1].to_string();
+                continue;
+            }
+            if !seccion.ends_with("dependencies") || !s.contains("path") {
+                continue;
+            }
+            let nombre = s.split('=').next().unwrap_or("").trim().to_string();
+            if !nombre.is_empty() {
+                fuera.insert((seccion.clone(), nombre));
+            }
+        }
+        fuera
+    }
+
+    #[test]
+    fn el_cierre_del_verificador_es_el_declarado() {
+        let derivadas = deps_por_ruta_del_manifiesto(include_str!("../Cargo.toml"));
+        let declaradas: std::collections::BTreeSet<(String, String)> = [
+            ("dependencies", "zk-ssl-hash"),
+            ("dev-dependencies", "zk-ssl-guardian"),
+        ]
+        .iter()
+        .map(|(s, n)| (s.to_string(), n.to_string()))
+        .collect();
+        let sobran: Vec<_> = derivadas.difference(&declaradas).collect();
+        let faltan: Vec<_> = declaradas.difference(&derivadas).collect();
+        assert!(
+            sobran.is_empty(),
+            "dependencias por ruta NUEVAS y sin declarar: {sobran:?}"
+        );
+        assert!(
+            faltan.is_empty(),
+            "dependencias declaradas que ya no estan: {faltan:?}"
+        );
+    }
+
+    #[test]
+    fn una_path_dep_a_la_capa_no_se_le_escapa_al_parser() {
+        let mentira = concat!(
+            "[dependencies]\n",
+            "zk-ssl-hash = { path = \"../zk-ssl-hash\" }\n",
+            "zk-ssl = { path = \"../zk-ssl\" }\n"
+        );
+        let d = deps_por_ruta_del_manifiesto(mentira);
+        assert!(
+            d.contains(&("dependencies".to_string(), "zk-ssl".to_string())),
+            "el parser no ve una path-dep a la capa: seria una puerta ciega"
+        );
+    }
+
+    #[test]
+    fn el_parser_ve_tambien_las_dev_dependencies() {
+        let mentira = concat!(
+            "[dev-dependencies]\n",
+            "zk-ssl-node = { path = \"../zk-ssl-node\" }\n"
+        );
+        let d = deps_por_ruta_del_manifiesto(mentira);
+        assert_eq!(
+            d.len(),
+            1,
+            "una dependencia por ruta en dev tiene que verse: el gate afirma las DOS secciones"
+        );
+    }
 }
