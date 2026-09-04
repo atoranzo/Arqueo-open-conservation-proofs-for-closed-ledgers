@@ -1848,6 +1848,56 @@ use super::*;
         let _ = std::fs::remove_dir_all(&path);
     }
 
+    /// §390: descongelar tambien tiene que sobrevivir al reinicio. Antes,
+    /// `commit` escribia las hojas ocupadas y nunca borraba la clave
+    /// `froz:` de una cuenta descongelada: al reabrir, la clave huerfana
+    /// volvia a congelarla.
+    #[test]
+    fn una_descongelacion_sobrevive_el_reinicio() {
+        let path = temp_path("descongelar");
+        let alice;
+        {
+            let mut layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            )
+            .expect("abrir");
+            alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+            set_frozen_delegated(&mut layer, alice, true);
+            set_frozen_delegated(&mut layer, alice, false);
+            assert!(!layer.is_frozen(alice));
+        }
+        {
+            let mut layer = open_retry(
+                &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+            )
+            .expect("recuperar");
+            assert!(
+                !layer.is_frozen(alice),
+                "CRITICO: una cuenta descongelada volvio a estar congelada al \
+                 reiniciar (clave froz: huerfana en disco)"
+            );
+            assert_eq!(layer.freeze_count(), 2);
+            let bob = open_and_fund(&mut layer, SK_BOB, 0);
+            let estado = state_of(&layer, alice);
+            let receptor = layer.public_id_of(bob).expect("cuenta");
+            let r = layer.send(
+                BaseElement::new(SK_ALICE),
+                alice,
+                &estado,
+                receptor,
+                salt_de(0xF00E),
+                1000,
+            );
+            assert!(
+                r.is_ok(),
+                "CRITICO: una cuenta descongelada debe poder gastar tras \
+                 reiniciar. Salio: {:?}",
+                r.err()
+            );
+        }
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
     // -----------------------------------------------------------------
     // Gobernanza
     // -----------------------------------------------------------------

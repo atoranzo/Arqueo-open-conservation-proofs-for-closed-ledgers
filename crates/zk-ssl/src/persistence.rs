@@ -720,6 +720,15 @@ impl SovereignLayer {
         // Sin esto, reiniciar el nodo levantaria todas las congelaciones:
         // el contador sobreviviria pero el arbol no, y una cuenta bajo
         // investigacion volveria a poder gastar.
+        //
+        // Y se BORRAN las que ya no lo estan (§390): descongelar quita la
+        // hoja del arbol, pero una clave `froz:` huerfana en disco volvia a
+        // congelar la cuenta al reiniciar. El lote es un mapa por clave: el
+        // `insert` de abajo gana sobre este `remove` en las que siguen.
+        for item in db.scan_prefix(b"froz:") {
+            let (k, _) = item.map_err(|e| StoreError::Io(e.to_string()))?;
+            batch.remove(k);
+        }
         for (index, leaf) in self.frozen.occupied() {
             let mut key = b"froz:".to_vec();
             key.extend_from_slice(&index.to_le_bytes());

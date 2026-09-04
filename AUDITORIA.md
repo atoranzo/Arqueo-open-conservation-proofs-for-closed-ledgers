@@ -29401,3 +29401,64 @@ estaba tomado y las puertas se re-derivaron; nada se escribio.
 corrio verde en 169 s). `verificar_citas.py` en rc=0 despues del corte; las
 otras ocho herramientas no se han corrido en este corte. Un fichero nuevo y
 este asiento, un commit.
+
+## §390 — Descongelar sobrevive al reinicio: commit borra las froz: huerfanas
+
+**Que.** La capa congela y descongela por la misma via, `apply_freeze_delegated` con
+`now_frozen: bool` (`freeze.rs:69..141`): descongelar es `set_leaf(idx, frozen_leaf(false))`,
+y `SparseTree::set_leaf` con el digest cero QUITA la hoja (`sparse_tree.rs:139..146`), de modo
+que `occupied()` deja de listarla. `commit` escribia en cada lote TODAS las hojas ocupadas de
+`frozen` bajo `froz:{idx}` y NUNCA borraba la clave de una posicion que dejaba de estarlo. La
+clave quedaba huerfana en sled; al reabrir, `load` la releia (`persistence.rs:423..436`) y
+`rebuild_from` la volvia a meter en el arbol: la cuenta descongelada amanecia congelada, con
+`is_frozen` (= `is_occupied`) diciendo que si y `meta:freezes` contando dos. Ningun test lo
+veia: `a_freeze_survives_restart` solo congela y `unfreezing_restores_the_ability_to_spend`
+no reinicia. El comentario de `commit` afirmaba que sin ese bucle "reiniciar levantaria
+todas las congelaciones"; la afirmacion era cierta para el olvido y ciega para el reves.
+
+**Decision (asistente, REVERSIBLE, delegada con "aplica los principios y el manifiesto").**
+El frente elegido en la 89 era el punto 45 (`root:froz` en reposo, molde del S387/S388). La
+lectura previa destapo este defecto y se decidio cerrarlo en un sello PROPIO, antes de la raiz,
+por tres razones: una primitiva por propiedad (un invariante por asiento); testigo negativo
+antes que feature; y una razon de instrumento: el rojo del testigo solo es el rojo verdadero
+en un arbol SIN `root:froz`; con la puerta puesta, una descongelacion legitima dejaria el libro
+sin abrir y el testigo fallaria por `IntegrityFailure`, falsando otra afirmacion. La raiz de
+congelados queda para el S391.
+
+**Lo medido.** PASTE-45-M (`b4c9c45b32c40f4e`, rc 0) y PASTE-45-PRE (`ea9b46d7cdb34686`,
+rc 0), lectura pura sobre `bece7b6`: `commit` = `persistence.rs:630..774`; `froz:` se escribe
+en UN sitio (`:723..727`) y `migration.rs:126..135` es el unico que la borra, en el remapa;
+fuera de `persistence.rs` nadie inserta `root:*` ni `froz:` en produccion; la rama del cero
+de `set_leaf`; `is_frozen` = `is_occupied`. Y el testigo, ROJO EN VIVO antes del arreglo:
+`test tests::una_descongelacion_sobrevive_el_reinicio ... FAILED`, panic en `tests.rs:1874`
+con su frase, 1,08 s, BASE 294/0/3 en verde.
+
+**La forma.** T0 `una_descongelacion_sobrevive_el_reinicio` en `tests.rs` tras
+`a_freeze_survives_restart` (1850..1899): congela y descongela a alice, reinicia, exige
+`!is_frozen`, `freeze_count() == 2` y un `send` que sale bien. E1 en `commit`, antes del bucle
+de ocupadas (`persistence.rs:720..732`): un `scan_prefix(b"froz:")` cuyo `remove` entra en el
+MISMO lote; `sled::Batch` es un mapa por clave y el `insert` posterior gana en las que siguen
+congeladas. Es el molde de la limpieza de `migration.rs`, ahora en cada lote. Coste: un scan
+de un prefijo raro por commit. Los anclajes salieron de los volcados de las lecturas, no
+retecleados; el POST se monto aparte, con ida y vuelta, y se copio.
+
+**Limite declarado y candidatas.** El arbol de congelados sigue SIN raiz en reposo:
+`froz:` se reconstruye y se cree (punto 45, S391: `root:froz` + tres testigos). `meta:freezes`
+es un contador sin raiz, hermano del suministro. `FROZEN_DEPTH` llega a la capa desde
+`stark_experiment::circuit_freeze` (`lib.rs:141`). Los "188 pasan, 93 fallan y 9 ignorados"
+de ARQUITECTURA:1507 y CONTRIBUTING:87 siguen rancios (punto 42, +8 desde el S379).
+
+**Lo que corrigio la medicion.** Tres predicciones cayeron por el instrumento y no por el
+arbol: un `insert` partido por el salto (la literal `froz:` en :724 y el `insert` en :726),
+un `\bzk-ssl\b` que casa `zk-ssl-cli` (punto 38, esta vez contra mi) y un recuento de
+`#[test]` por ventana de atributos (41) frente al recuento por lineas (46): el juez del pin es
+el canon. La P2 del PRE ("no existe descongelador") salio confirmada por el NOMBRE y falsa en
+el fondo: `now_frozen = false` lo es. Y la r1 del bloque murio en un gate mio que tomo la
+linea `error: test failed, to rerun pass ...` de cargo por un error de compilacion: un gate
+mas estricto que su invariante. La r2 fue verde a la primera.
+
+**Contadores.** `zk-ssl` 294 -> 295 (295 tests, 3 ignorados); sumas 988 -> 989, 1125 -> 1126,
+1139 -> 1140; el canon declara 1141. `persistence.rs` 775 -> 784, `tests.rs` 3125 -> 3175
+(+59). Pin y cifras en el mismo bloque: `tools/canon.sh` (fila de la capa con su historia)
+y diez documentos vivos, veinte lineas, veintisiete cifras, todas de igual ancho. Ningun
+Cargo tocado. BACKLOG 50 abiertas / 56 resueltas, sin tocar. EL CANON CORRE en este sello.

@@ -55,7 +55,7 @@ custodios distintos**, no una clave; y el flujo documentado es el de
 hallazgo propio. Corregido en §361; el error se registra en vez de
 borrarse.
 
-`crates/zk-ssl` — **294 tests** (3 ignorados, declarados). Material para
+`crates/zk-ssl` — **295 tests** (3 ignorados, declarados). Material para
 auditoría externa en [`AUDITORIA.md`](./AUDITORIA.md), todos en release.
 El backend STARK añade **18 circuitos** verificados por separado.
 
@@ -1113,7 +1113,7 @@ comprueba que transferir no altera el suministro.
 >
 > Se conserva porque documenta cómo se llegó al diseño actual —incluidos
 > **dos errores propios** que se cuentan más abajo— pero **no es la capa
-> del sistema**. La capa es `zk-ssl`: 22 módulos y **294 tests**, frente a
+> del sistema**. La capa es `zk-ssl`: 22 módulos y **295 tests**, frente a
 > los 2 módulos y 17 de este.
 >
 > Una versión anterior de este documento lo titulaba *"La capa"* sin más,
@@ -1504,7 +1504,7 @@ entorno. Esto es esperado, documentado, y no indica ningún problema. Ver
 
 **Aviso de perfil**: la primera orden de arriba corre en **depuración**, y
 la capa no se mide ahí. Medido el 26-08-2026: `cargo test -p zk-ssl` en
-depuración da 188 pasan, 93 fallan y 9 ignorados; en release, 294 pasan, 0
+depuración da 188 pasan, 93 fallan y 9 ignorados; en release, 295 pasan, 0
 fallan y 3 ignorados. Los fallos son el límite de grados de la entrada 41
 y del §78 -declarado y decidido, no un defecto de solidez-, pero verás
 rojo si corres esa orden tal cual. **La capa se mide con
