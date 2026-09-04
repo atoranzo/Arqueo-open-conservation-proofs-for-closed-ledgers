@@ -29526,3 +29526,73 @@ el adversario simetrico).
 y diez documentos vivos, veinte lineas, veintisiete cifras, todas de igual ancho. Ningun
 Cargo tocado. BACKLOG 50 abiertas / 56 resueltas, sin tocar (el punto 45 vive en la cola del
 traspaso, no en el BACKLOG). EL CANON CORRE en este sello, cronometrado.
+
+## §392 — La raiz del registro de transiciones se guarda y se comprueba al abrir
+
+**Que.** El registro de transiciones (`log:`) se releia de disco en `load` y se creia:
+`TransitionLog::from_entries` no recalcula nada y ninguna raiz lo cubria, mientras su
+`head()` va FIRMADO en la cabeza como `chain_digest`. Desde este sello `commit` escribe
+`root:log` (la cabeza encadenada del registro) al lado de las otras cuatro raices y
+`load` (a) recomputa la cadena entrada a entrada con `verify_chain` -el mismo juez que
+ya usaba `import_snapshot`- y (b) exige que la cabeza recomputada cuadre con `root:log`.
+Los cinco objetos con estado en reposo tienen ya raiz: cuentas (§128), pendientes
+(§387), meta de pendientes (§388), congelados (§391) y el registro (§392).
+
+**Que cambia.** `persistence.rs`: E1 en `commit`, `root:log = log.head()` tras `root:froz`;
+E2 en `load`, entre la puerta de `root:froz` y la conservacion del dinero: `verify_chain`
+que falla => `IntegrityFailure { what: "registro de transiciones" }`; `root:log` ausente =>
+`Malformed` (fail-closed, la decision (a) del §387 por cuarta vez); cabeza que no cuadra
+=> el mismo `IntegrityFailure`. `two_phase.rs` (`tests_verificacion`): ayudante
+`clave_log` y tres testigos: `una_entrada_del_registro_alterada_en_reposo_no_abre`
+(se altera el `seq` de la ultima entrada: byte 0 del formato de 137/169 del store, elegido
+porque no puede sacar un digest de rango), `una_entrada_del_registro_borrada_en_reposo_no_abre`
+(se borra la ultima: la cadena que queda VERIFICA -una copia atrasada no es una
+bifurcacion, `a_lagging_copy_is_not_a_fork`- y por eso hace falta la raiz) y
+`un_libro_sin_root_log_no_abre`. Sin primitiva nueva, sin cambio de cabeza ni de cable.
+
+**Por que este sello y no otro (decision reversible).** Nace del punto 46 (`meta:freezes`,
+un contador sin raiz). La lectura previa cambio el sujeto: ese contador es el NONCE
+anti-repeticion de la congelacion custodiada -entra en `commit_operation` con
+`count_old`/`count_new`, y los custodios autorizan ese compromiso-, hay TRES nonces de la
+misma forma (freezes, recoveries, gov_changes), una cuota (`cust_uses`) leida con
+`None => 0`, y todos son derivables del registro... que en reposo se creia. Por principios
+(una primitiva por propiedad; testigo negativo antes que feature; fail-closed; coherencia
+con las cuatro raices) el arco va en tres sellos y este es el primero: sin registro
+integro, un nonce atado al registro caza la mentira aislada y no la coordinada. Siguen:
+§393 los tres nonces derivados del registro, y §394 la cuota. La cabeza v4 (punto 43) NO
+entra: la cabeza ya firma `chain_digest`; lo que faltaba era el reposo.
+
+**Lo medido.** El verificador YA EXISTIA: `TransitionLog::verify_chain` (`log.rs`) con
+`OutOfSequence`/`BrokenChain`/`TamperedEntry` y sus propios tests; `import_snapshot` lo
+llamaba y `load` no (la asimetria load/gemelo del §379, otra vez). La entrada en disco
+lleva `chain` y `compromiso` (137/169 B); `chain_digest_v2` vive en `log.rs`; `load` no
+comprobaba nada del registro y ningun test tocaba `log:` a mano. La repeticion de una
+pareja de custodios vieja NO estaba cerrada por otro lado: la capa no persiste ningun
+nulificador y `verify_threshold_pair` solo exige que `operation` cuadre.
+
+**La forma.** Tres lecturas puras (46-M, 46-PRE, 392-PRE) y tres bloques (392, 392-B,
+392-C). Los tres testigos se ensenaron ROJOS EN VIVO sobre el arbol sin la puerta antes de
+copiar el arreglo: alterada y borrada abrian el libro; el de la raiz fallaba porque no
+habia raiz que borrar (el mismo defecto dicho al reves, como en el §391). El compilador
+acepto el E2 a la primera; VIVA 301/0/3, `--list` 304, nacen exactamente los tres.
+
+**Limite y candidatas.** (1) `import_snapshot` sigue devolviendo `Malformed` para la
+cadena y `load` `IntegrityFailure`: dos nombres para la misma clase de fallo; se declara
+y no se toca aqui. (2) Los tres nonces siguen leidos con `None => 0` y sin cruce contra el
+registro (§393). (3) `meta:cust_uses` se resetea si falta la clave y la instantanea no lo
+transporta (`custodian_uses: 0` al importar) (§394). (4) El `Malformed("contador de
+gobernanza")` esta copiado tres veces en `load` (sobre gov_changes, cust_uses y
+next_pending) y el comentario de `meta:freezes` dice "recuperaciones": prosa rancia por
+copia-pega. (5) Un libro anterior a este sello no tiene `root:log` y NO ABRE: migrar es
+operacion explicita y aparte, como con las otras raices.
+
+**Lo que corrigio la medicion.** La prediccion "no existe verificador de cadena" salio
+FALSA: existia y estaba cableado en el gemelo. Y dos rojos del instrumento, de la misma
+clase: una funcion conocida por un `use` se buscaba en el fichero que la usa
+(`commit_operation`, `digest_of_proof`) y no en el universo.
+
+**Contadores.** Pin de la capa 298 -> 301 (301 tests que pasan, 3 ignorados; la capa lista
+304). Sumas 992 -> 995, 1129 -> 1132, 1143 -> 1146; el canon declara 1147. Cifras en 10
+documentos vivos, 20 lineas, 27 cifras, y la fila 89 de `canon.sh` con su historia.
+`persistence.rs` 802 -> 828, `two_phase.rs` 3688 -> 3786. Ningun Cargo tocado. BACKLOG
+sin tocar (50 abiertas / 56 resueltas). EL CANON CORRE, cronometrado.

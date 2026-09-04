@@ -544,6 +544,29 @@ impl SovereignLayer {
             .into());
         }
 
+        // --- REGISTRO DE TRANSICIONES ---
+        //
+        // §392 (punto 46/48): el registro se reconstruyo arriba de `log:` y hasta
+        // aqui se creia, mientras su `head()` va FIRMADO en la cabeza. Se recomputa
+        // la cadena entrada a entrada (`verify_chain`, el mismo juez que ya usa la
+        // instantanea) y la raiz guardada tiene que cuadrar con la cabeza: una copia
+        // ATRASADA verifica la cadena y NO cuadra la raiz. Un ledger sin `root:log`
+        // NO ABRE (fail-closed, como las otras cuatro raices).
+        if self.log.verify_chain().is_err() {
+            return Err(StoreError::IntegrityFailure {
+                what: "registro de transiciones",
+            }
+            .into());
+        }
+        let stored_log =
+            digest_from_bytes(&need("root:log", get(b"root:log")?)?)?;
+        if self.log.head() != stored_log {
+            return Err(StoreError::IntegrityFailure {
+                what: "registro de transiciones",
+            }
+            .into());
+        }
+
         // --- CONSERVACION DEL DINERO ---
         //
         // El invariante sagrado: sum(saldos) + sum(pendientes vivos) ==
@@ -705,6 +728,9 @@ impl SovereignLayer {
         batch.insert(b"root:pmeta".as_ref(), self.seal(digest_to_bytes(&self.pending_meta_tree.root()).to_vec())?);
         // La raiz del arbol de congelados, al lado de las otras tres (§391).
         batch.insert(b"root:froz".as_ref(), self.seal(digest_to_bytes(&self.frozen.root()).to_vec())?);
+        // La raiz del registro de transiciones (su cabeza encadenada), al lado de las
+        // otras cuatro (§392, punto 46/48).
+        batch.insert(b"root:log".as_ref(), self.seal(digest_to_bytes(&self.log.head()).to_vec())?);
 
         // --- Cuentas afectadas ---
         for index in accounts {

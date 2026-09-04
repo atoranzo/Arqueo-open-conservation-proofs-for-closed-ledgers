@@ -946,7 +946,7 @@ non-stable compilers are used.
 # Or all at once, with the canon's pinned counts checked:
 bash tools/canon.sh --sello
 
-cargo test -p zk-ssl --release              # layer: 298 tests (3 ignored)
+cargo test -p zk-ssl --release              # layer: 301 tests (3 ignored)
 cargo test -p stark-experiment --release    # circuits: 318 tests (10 ignored)
 cargo test -p zk-ssl-node --release         # node: 91
 cargo test -p zk-ssl --release metrics -- --nocapture

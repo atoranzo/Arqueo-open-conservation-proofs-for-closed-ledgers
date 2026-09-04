@@ -2727,6 +2727,104 @@ mod tests_verificacion {
         let _ = std::fs::remove_dir_all(&path);
     }
 
+    fn clave_log(seq: u64) -> Vec<u8> {
+        let mut key = b"log:".to_vec();
+        key.extend_from_slice(&seq.to_le_bytes());
+        key
+    }
+
+    /// §392: una entrada del registro ALTERADA en reposo no abre. Se toca el
+    /// `seq` de la ultima entrada (byte 0 del formato 137/169 del store): la
+    /// cadena recomputada por `verify_chain` ya no cuadra y la capa se para.
+    #[test]
+    fn una_entrada_del_registro_alterada_en_reposo_no_abre() {
+        let path = ruta_temporal("log_alterada");
+        let _cuentas = ledger_con_una_congelada(&path);
+        {
+            let db = sled_open_retry(&path);
+            let n = db.scan_prefix(b"log:").count() as u64;
+            assert!(n > 0, "habia entradas del registro que alterar");
+            let key = clave_log(n - 1);
+            let mut v = db.get(&key).expect("leer").expect("existe la ultima entrada").to_vec();
+            v[0] ^= 1;
+            db.insert(key, v).expect("insertar");
+            db.flush().expect("flush");
+        }
+        let r = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(crate::store::StoreError::IntegrityFailure {
+                    what: "registro de transiciones"
+                }))
+            ),
+            "CRITICO: una entrada del registro alterada en reposo no debe abrir. Salio: {:?}",
+            r.err()
+        );
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// §392: una entrada del registro BORRADA en reposo no abre. Se borra la
+    /// ultima: la cadena que queda verifica (una copia atrasada no es una
+    /// bifurcacion), y por eso hace falta la raiz: la cabeza ya no cuadra.
+    #[test]
+    fn una_entrada_del_registro_borrada_en_reposo_no_abre() {
+        let path = ruta_temporal("log_borrada");
+        let _cuentas = ledger_con_una_congelada(&path);
+        {
+            let db = sled_open_retry(&path);
+            let n = db.scan_prefix(b"log:").count() as u64;
+            assert!(n > 0, "habia entradas del registro que borrar");
+            assert!(
+                db.remove(clave_log(n - 1)).expect("borrar").is_some(),
+                "la ultima entrada existia"
+            );
+            db.flush().expect("flush");
+        }
+        let r = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(crate::store::StoreError::IntegrityFailure {
+                    what: "registro de transiciones"
+                }))
+            ),
+            "CRITICO: un registro truncado en reposo no debe abrir. Salio: {:?}",
+            r.err()
+        );
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// §392: un libro sin `root:log` NO abre (fail-closed, como sin las otras raices).
+    #[test]
+    fn un_libro_sin_root_log_no_abre() {
+        let path = ruta_temporal("sin_root_log");
+        let _cuentas = ledger_con_una_congelada(&path);
+        {
+            let db = sled_open_retry(&path);
+            assert!(
+                db.remove(b"root:log").expect("borrar").is_some(),
+                "habia una raiz del registro que borrar"
+            );
+            db.flush().expect("flush");
+        }
+        let r = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(crate::store::StoreError::Malformed(ref m))) if m.contains("root:log")
+            ),
+            "CRITICO: un libro sin raiz del registro no debe abrir"
+        );
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
     /// R-2d FELIZ: el mint-pendiente caducado se DES-EMITE — el
     /// suministro baja exactamente lo que subió al emitir. Con cronómetro.
     #[test]
