@@ -29821,3 +29821,97 @@ Una afirmacion escrita catorce veces no es un invariante hasta que un testigo pu
 declarados). Sumas 1001 -> 1004, 1138 -> 1141, 1152 -> 1155; el canon declara 1156. Cifras en
 4 documentos vivos, 6 lineas, 12 cifras, y la fila 98 de `canon.sh` con su historia.
 `lib.rs` 897 -> 985. Ningun Cargo tocado. BACKLOG sin tocar. EL CANON CORRE, cronometrado.
+
+## §396 — El paquete de evidencia portable gana expediente: RFC-0004, PROPUESTO
+
+**Que.** Entra `spec/rfc/0004-paquete-de-evidencia.md`, el RFC-0004, en estado
+PROPUESTO, y este asiento cierra el otro lado del doble hilo (regla 5 del PROCESO).
+El corte es de DOCUMENTO: no toca una linea de codigo, no mueve un pin ni una cifra
+publicada, no regenera el OpenRPC y no corre el canon.
+
+**El defecto que abre el expediente.** El paquete de evidencia portable existe desde
+el §289 y es lo que sostiene la posicion del titular cuando el operador desaparece o
+miente. Su especificacion existe y es correcta, pero vive DENTRO DEL BINARIO: la
+cabecera de `crates/zk-ssl-verify/src/main.rs` 1..90 declara el formato v1, el v2 con
+`cofirmas` (§322) y el paquete de extension (§293). Y `spec/RPC.md` 810..855, que es
+normativo sobre el paquete, DELEGA ahi por escrito: "formato v1, declarado en la
+cabecera del binario de `zk-ssl-verify`". De ahi salen tres problemas, los tres
+medidos en la sesion 92: un tercero que recibe el binario y quiere su especificacion
+tiene que leer el fuente del operador -que es el problema del §243 otra vez, por el
+otro lado-; la cabecera YA CADUCO una vez y lo confiesa en su propia seccion "La
+tercera forma, que esta cabecera NO declaraba (§247)", donde saca la conclusion de
+que "el productor rancio era el que mas cerca queda del codigo"; y nada ata el
+documento al binario: el mando lee CATORCE claves distintas del JSON y tiene TREINTA
+Y NUEVE llamadas de rechazo con texto, y ninguna la comprueba compuerta alguna.
+
+**Por que entra por RFC si no rompe el cable.** Las dos lecturas son ciertas y el RFC
+escribe las dos. Por la LETRA, el ambito del proceso (`spec/rfc/PROCESO.md` 3..6)
+enumera FICHEROS -`spec/RPC.md`, `spec/openrpc.json` y los vectores de
+`spec/vectors/`- y el arco toca el primero y añade bajo el tercero. Por el ESPIRITU,
+el paquete no cruza el cable, asi que ningun valor que viaja cambia: eso exime de
+SUBIR LA VERSION, que es otra regla y otro criterio (`spec/RPC.md` 864), y no exime
+del proceso. La version vigente sigue siendo `zkssl/0.3` y los tres vectores del
+cable quedan intactos.
+
+**Lo medido, y donde.** Dos lecturas puras sobre este mismo arbol, sin escribir un
+byte: `PASTE-396-M` (`db7e5bec4a04dce0`/657, salida `1423200c6f57acce`/687) midio el
+terreno del hito -la superficie publica real del crate, el esquema sin tipar y el
+estado de `spec/`- y `PASTE-396-PRE` (`8f1509d1a95cb6bc`/440, salida
+`fc096dc5f441d600`/535) abrio la seccion de apagado entera, derivo el esquema campo a
+campo y volco la cabecera del binario. Las DIECINUEVE huellas que el RFC cita salen
+de esas dos salidas; las dos unicas citas arrastradas van declaradas dentro del
+propio documento.
+
+**Lo que la medicion FALSO, y queda escrito como falso.** Se sospechaba que los dos
+`.unwrap()` de `main.rs` 219 y 418 podian hacer PANICO ante un paquete sin
+`epochDigest`. El arbol dice que no: los dos estan detras de una guarda sobre la
+MISMA clave y en la MISMA funcion -219 con guarda en 181, 418 con guarda en 398, cuyo
+rechazo es "los campos NO recomponen su epochDigest - adulterada o inventada"-. Queda
+vivo, degradado de defecto a deuda de FORMA: son dos lecturas de la misma clave en la
+misma funcion y nada las ata.
+
+**Las decisiones del corte, REVERSIBLES.** D-1: el estado de entrada es PROPUESTO y
+no ACEPTADO, porque la regla 4 exige spec actualizada, vectores y suites verdes, y
+ninguna de las tres existe todavia; el giro sera su propio sello, como lo fue el §356
+para el RFC-0003. D-2: el asiento que el RFC declara en su cabecera se sustituye por
+este numero en el mismo acto de entrar, como hizo el §343. D-3: el documento CONSERVA
+los acentos del molde -la plantilla `0000` y los dos RFC del arbol los llevan- y por
+eso viaja en base64 sin re-fluir, mientras este asiento va en ASCII sin tildes como
+los demas. D-4: `spec/openrpc.json` queda FUERA DEL ALCANCE por no haber metodo
+nuevo, y esa exencion se declara en la seccion Compatibilidad para que el giro a
+ACEPTADO la absorba en vez de fingir un regenerado vacio.
+
+**La deuda que el corte DECLARA y no paga.** `spec/README.md` lista los RFC en su
+tabla y no gana la fila del 0004 en este sello: la fila entra con la mudanza, que es
+quien toca ese fichero. Ninguna compuerta se pone roja por ello -`verificar_citas`
+comprueba que exista lo citado, no que se cite lo que existe-, asi que la deuda queda
+aqui con dueño y sin gate. Y de paso: ese mismo `spec/README.md` se ancla en su linea
+11 al commit `0ea8775` mientras la cadena va DIEZ sellos por delante, incumpliendo la
+regla de mantenimiento que el propio documento publica en sus lineas 139..141.
+
+**Lo que este sello NO hace.** No crea el documento normativo de `spec/`, no toca la
+cabecera del binario, no mueve el puntero de `spec/RPC.md`, no escribe un solo vector
+y no cablea ninguna puerta. Todo eso son las etapas E1 y E2 que el propio RFC
+declara con sus puertas, y cada una sera su sello.
+
+**Lo que el primer intento de sello enseno.** El BLOQUE-396 se corrio y se paro en
+ROJO ANTES del commit: `tools/verificar_citas.py`, una de las nueve que corre el
+canon, pasa de rc=0 a rc=1 porque el RFC nombraba el fichero que la etapa E1 va a
+crear: un fantasma con seis citas, cinco en el RFC y una en este asiento. El bloque
+restauro por copia y dejo el arbol byte a byte como estaba, con porcelain 0 y sin
+commit. El arreglo NO toca la compuerta: el punto 35 de la cola es sesion de diseno y
+cerrarlo con un parche de regex esta prohibido; se arreglo el DOCUMENTO, que era quien
+citaba lo que no existe, y el descarte quedo escrito dentro del propio RFC. Queda
+ademas un hallazgo para ese punto 35: este es el PRIMER RFC del proyecto que propone
+crear un documento Markdown -el 0002 y el 0003 solo propusieron `.rs` y `.json`, que
+esa compuerta no indexa por nombre-, asi que el caso nunca se habia ejercido.
+
+**El doble hilo.** El RFC referencia este asiento en su cabecera; este asiento
+referencia el RFC por numero y por ruta. Regla 5 del PROCESO, cumplida por los dos
+extremos en el mismo commit.
+
+**Contadores.** Pines: ninguno movido. Cifras publicadas: ninguna movida. `AUDITORIA`
+suma este asiento. Nace un fichero versionado bajo `spec/rfc/`, de modo que los
+documentos vivos pasan de 33 a 34 y el universo `.md` de 63 a 64, ambos DERIVADOS y
+sin compuerta que los cite. Ningun `Cargo` tocado. Canon no corrido: el corte no toca
+codigo, y la foto la mide el primer canon que se ejecute.
