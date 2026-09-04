@@ -499,6 +499,13 @@ impl SovereignLayer {
             )))
         })?;
 
+        // §394: la cuota de custodios se REPONE del registro. Antes se importaba en
+        // cero, asi que exportar e importar le devolvia el cupo a un conjunto
+        // agotado; y con la puerta del §394 puesta, un libro importado legitimo no
+        // abriria. Mismo productor que `load`: las dos no pueden divergir. El TOPE
+        // sigue viniendo del defecto -es politica y no viaja-, y va declarado.
+        layer.custodian_uses = layer.log.usos_custodiados();
+
         if layer.frozen.root() != declared_frozen {
             return Err(LayerError::Store(
                 crate::store::StoreError::IntegrityFailure {
@@ -927,6 +934,33 @@ mod tests {
         assert!(!restored.is_frozen(bob));
         assert_eq!(restored.freeze_count(), 1);
         assert_eq!(restored.frozen_root(), layer.frozen_root());
+        let _ = std::fs::remove_file(&file);
+    }
+
+    /// §394: una instantanea NO RENUEVA la cuota de custodios. Antes de este sello
+    /// `import_snapshot` la ponia en cero, asi que exportar e importar le devolvia
+    /// el cupo a un conjunto agotado. Ahora se repone del registro, que si viaja.
+    ///
+    /// La cuota de partida se DERIVA, no se teclea: fundir tambien consume cupo
+    /// (`apply_mint_delegated` llama a `consume_custodian_use`), asi que cuantos
+    /// usos lleva este ledger lo dice el propio ledger. El `> 0` es la prueba de
+    /// vida: sin ella, un cero a los dos lados pasaria por verde.
+    #[test]
+    fn una_instantanea_no_renueva_la_cuota_de_custodios() {
+        let file = temp_file("cuota");
+        let mut layer = new_layer();
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        set_frozen_delegated(&mut layer, alice, true);
+        let antes = layer.custodian_uses();
+        assert!(antes > 0, "las operaciones custodiadas consumieron cupo");
+
+        layer.export_snapshot(&file).expect("exportar");
+        let restored = SovereignLayer::import_snapshot(&file).expect("importar");
+        assert_eq!(
+            restored.custodian_uses(),
+            antes,
+            "CRITICO: importar no debe devolver cupo a un conjunto de custodios"
+        );
         let _ = std::fs::remove_file(&file);
     }
 

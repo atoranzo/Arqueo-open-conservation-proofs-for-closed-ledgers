@@ -29670,3 +29670,77 @@ lista 307). Sumas 995 -> 998, 1132 -> 1135, 1146 -> 1149; el canon declara 1150.
 en 10 documentos vivos, 20 lineas, 27 cifras, y la fila 89 de `canon.sh` con su historia.
 `persistence.rs` 828 -> 864, `two_phase.rs` 3786 -> 3850. Ningun Cargo tocado. BACKLOG
 sin tocar (50 abiertas / 56 resueltas). EL CANON CORRE, cronometrado.
+
+## §394 — La cuota de custodios la deriva el registro, y una instantanea ya no la renueva
+
+**Que.** `meta:cust_uses` no es un nonce: es la CUOTA del conjunto de custodios. La
+consumen CUATRO operaciones —congelar, recuperar, emitir y emitir a pendiente, las cuatro
+llaman a `consume_custodian_use`— y un cambio de gobernanza la pone a cero. Cada una
+appendea su entrada al registro en la MISMA funcion que la consume, asi que el registro
+la DERIVA: usos = entradas `Freeze`+`Recovery`+`Mint`+`MintToPending` desde la ultima
+`Governance`. Hasta aqui se leia con `None => 0` y nadie la cruzaba: rebobinarla en
+reposo le devolvia cupo a un conjunto que ya lo habia gastado. Y habia mas: **importar
+una instantanea la ponia en CERO**, asi que exportar e importar renovaba el cupo sin
+tocar el disco. Desde este sello `load` la EXIGE y `import_snapshot` la REPONE.
+
+**Que cambia.** `log.rs`: `TransitionLog::usos_custodiados()`, el UNICO productor —un
+recorrido de `entries()` donde `Governance` pone el contador a cero y las cuatro
+custodiadas suman—. `persistence.rs`: en `load`, tras la puerta del §393 y antes de la
+conservacion del dinero, `custodian_uses != log.usos_custodiados()` =>
+`IntegrityFailure { what: "cuota de custodios" }`. `snapshot.rs`: en `import_snapshot`,
+tras `verify_chain`, `layer.custodian_uses = layer.log.usos_custodiados()`. Tres
+testigos: `una_cuota_de_custodios_rebobinada_no_abre`,
+`una_cuota_de_custodios_adelantada_no_abre` y
+`una_instantanea_no_renueva_la_cuota_de_custodios`. Sin primitiva criptografica nueva,
+sin cambio de cabeza ni de cable.
+
+**Las decisiones (asistente, REVERSIBLES).** (1) **UN solo productor.** La derivacion
+vive en `log.rs`, que es el dueno del registro, y la llaman los DOS sitios que la
+necesitan: si viviera duplicada en `load` y en `import_snapshot`, las dos copias podrian
+divergir —es la regla de la casa: dos listas son dos productores del mismo contrato—.
+(2) **El gemelo comprueba lo mismo que el original**: por coherencia, si `load` la exige,
+la instantanea tiene que traerla bien; y ademas sin (2) la puerta de (1) habria dejado de
+abrir un libro importado LEGITIMO. Es la asimetria `load`/instantanea del §379 y del
+§392, cerrada esta vez en el mismo sello. (3) **El TOPE (`meta:cust_max`) queda FUERA y
+declarado**: `set_max_custodian_uses` no se llama en produccion, asi que el tope es
+POLITICA y no historia; el registro no lo deriva. Subirlo en reposo amplia el cupo y nada
+lo caza: candidato propio, no se cierra aqui de tapadillo.
+
+**Lo medido, y lo que cambio el corte.** La prediccion decia DOS consumidores de cuota
+(congelar y recuperar) y salio FALSA: son CUATRO, porque emitir tambien consume. La
+formula se ensancho antes de escribir una linea. El cruce confirma la correspondencia
+1:1: los unicos `append` en produccion de esos cuatro tipos son esas cuatro funciones, y
+la gobernanza appendea sin consumir. El registro viaja siempre en la instantanea (el bit
+alto de `n_log` versiona la seccion, §281) y ya se verificaba al importar, asi que no
+hace falta era declarada.
+
+**La forma.** Tres lecturas puras (46-PRE, 394-PRE y un 394-PRE2 corto para las firmas de
+`export_snapshot`/`import_snapshot`, que no se habian abierto) y cuatro bloques (394,
+394-r2, 394-B, 394-C). Los tres testigos se ensenaron ROJOS EN VIVO antes de copiar el
+arreglo. El primer bloque murio en la VIVA con 306/1/3 por un defecto MIO: teclee
+`assert_eq!(layer.custodian_uses(), 1)` cuando el ayudante del molde tambien FUNDE, y
+fundir consume cupo —lo decia mi propia medicion—. El r2 lo DERIVA (`let antes =
+layer.custodian_uses()`, con `antes > 0` de prueba de vida) y compara contra `antes`.
+
+**Limite y candidatas.** (1) **El tope no es derivable** (arriba). (2) `max_custodian_uses`
+tampoco viaja en la instantanea: al importar vuelve al valor por defecto, asi que un tope
+personalizado se pierde. Declarado, no cerrado. (3) Los dos testigos de la cuota usan
+`ledger_con_una_congelada`, cuyo cupo lo gastan dos emisiones y una congelacion: el
+testigo con una recuperacion y una gobernanza REALES sigue pendiente, como en el §393.
+(4) Un libro anterior al §392 no abre por falta de `root:log`; este sello no cambia eso.
+
+**Lo que corrigio la medicion.** El punto 46 nacio como «un contador sin raiz, hermano del
+suministro». Al medirlo resulto ser TRES nonces criptograficos (§393) y UNA cuota con un
+hueco de privilegio (§394). Un NOMBRE no es un veredicto, y una prediccion sobre cuantos
+llaman a una funcion se falsa censando, no recordando.
+
+**Contadores.** Pin de la capa 304 -> 307 (307 tests que pasan, 3 ignorados; la capa lista
+310). Sumas 998 -> 1001, 1135 -> 1138, 1149 -> 1152; el canon declara 1153. **Por primera
+vez la sustitucion de cifras NO conserva el ancho** —998 cruza a 1001, de tres digitos a
+cuatro—: el corte sigue siendo LINEA-NEUTRAL (mismas lineas, huella nueva) y el gate paso
+de exigir «mismo ancho» a exigir que el delta de longitud sea el que dicta el mapa.
+Cifras en 10 documentos vivos, 20 lineas, 27 cifras, y la fila 89 de `canon.sh` con su
+historia. `log.rs` 1310 -> 1332, `persistence.rs` 864 -> 878, `snapshot.rs` 1158 -> 1192,
+`two_phase.rs` 3850 -> 3889. Ningun Cargo tocado. BACKLOG sin tocar (50 abiertas / 56
+resueltas). EL CANON CORRE, cronometrado. **Con este sello, el punto 46 queda CERRADO
+ENTERO en tres escalones: §392 el registro, §393 los nonces, §394 la cuota.**

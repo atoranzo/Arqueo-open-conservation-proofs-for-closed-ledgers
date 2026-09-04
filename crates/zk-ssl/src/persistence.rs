@@ -603,6 +603,20 @@ impl SovereignLayer {
             .into());
         }
 
+        // --- CUOTA DE CUSTODIOS ---
+        //
+        // §394 (punto 46, ultimo escalon): `meta:cust_uses` no es un nonce -no entra
+        // en ningun `commit_operation`-: es la CUOTA del conjunto de custodios, y
+        // rebobinarla en reposo le devuelve cupo agotado. La deriva el registro
+        // (`usos_custodiados`, el unico productor). El TOPE (`meta:cust_max`) NO es
+        // derivable: es politica, no historia, y queda declarado en el asiento.
+        if self.custodian_uses != self.log.usos_custodiados() {
+            return Err(StoreError::IntegrityFailure {
+                what: "cuota de custodios",
+            }
+            .into());
+        }
+
         // --- CONSERVACION DEL DINERO ---
         //
         // El invariante sagrado: sum(saldos) + sum(pendientes vivos) ==

@@ -2854,6 +2854,45 @@ mod tests_verificacion {
         );
     }
 
+    fn no_abre_por_cuota(path: &str) {
+        let r = open_retry(
+            path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(crate::store::StoreError::IntegrityFailure {
+                    what: "cuota de custodios"
+                }))
+            ),
+            "CRITICO: una cuota que no cuadra con el registro no debe abrir. Salio: {:?}",
+            r.err()
+        );
+    }
+
+    /// §394: REBOBINAR `meta:cust_uses` es el ataque de verdad: le devuelve cupo a
+    /// un conjunto de custodios que ya lo gasto. El registro tiene una entrada
+    /// `Freeze` y la cuota diria cero: no debe abrir.
+    #[test]
+    fn una_cuota_de_custodios_rebobinada_no_abre() {
+        let path = ruta_temporal("rebobinar_cuota");
+        let _cuentas = ledger_con_una_congelada(&path);
+        poner_contador(&path, b"meta:cust_uses", 0);
+        no_abre_por_cuota(&path);
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// §394: una cuota ADELANTADA tambien miente -gasta cupo que nadie uso- y la
+    /// misma puerta la caza.
+    #[test]
+    fn una_cuota_de_custodios_adelantada_no_abre() {
+        let path = ruta_temporal("adelantar_cuota");
+        let _cuentas = ledger_con_una_congelada(&path);
+        poner_contador(&path, b"meta:cust_uses", 7);
+        no_abre_por_cuota(&path);
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
     /// §393: REBOBINAR `meta:freezes` es el ataque de verdad — revive una
     /// autorizacion de custodios ya gastada, porque el compromiso que ellos
     /// firmaron lleva (count_old, count_new). El registro tiene una entrada

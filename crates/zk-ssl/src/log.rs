@@ -481,6 +481,28 @@ impl TransitionLog {
         }
         None
     }
+
+    /// Usos de custodio consumidos desde el ultimo cambio de gobernanza.
+    ///
+    /// §394: `meta:cust_uses` es la CUOTA del conjunto de custodios, no un nonce.
+    /// Cuatro operaciones la consumen -congelar, recuperar, emitir y emitir a
+    /// pendiente-, y cada una appendea su entrada en la MISMA funcion que llama a
+    /// `consume_custodian_use`; un cambio de gobernanza la pone a cero y appendea
+    /// `Governance`. El registro, por tanto, la DERIVA. Este es el UNICO productor:
+    /// lo usan `persistence::load` (para exigirla) y `snapshot::import_snapshot`
+    /// (para reponerla), asi que las dos no pueden divergir.
+    pub fn usos_custodiados(&self) -> u64 {
+        let mut usos = 0u64;
+        for e in &self.entries {
+            match e.kind {
+                OpKind::Governance => usos = 0,
+                OpKind::Freeze | OpKind::Recovery => usos += 1,
+                OpKind::Mint | OpKind::MintToPending => usos += 1,
+                _ => {}
+            }
+        }
+        usos
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
