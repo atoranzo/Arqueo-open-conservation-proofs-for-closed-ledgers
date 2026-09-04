@@ -2623,6 +2623,110 @@ mod tests_verificacion {
         (alice, pos, born)
     }
 
+    /// §391: un ledger con alice CONGELADA por dos custodios y bob libre; el lote
+    /// (froz: y root:froz) esta en disco.
+    fn ledger_con_una_congelada(path: &str) -> (AccountIndex, AccountIndex) {
+        let mut layer = open_retry(
+            path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        )
+        .expect("abrir");
+        let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let bob = open_and_fund(&mut layer, SK_BOB, 0);
+        set_frozen_delegated(&mut layer, alice, true);
+        assert!(layer.is_frozen(alice) && !layer.is_frozen(bob));
+        (alice, bob)
+    }
+
+    fn clave_froz(idx: AccountIndex) -> Vec<u8> {
+        let mut key = b"froz:".to_vec();
+        key.extend_from_slice(&idx.to_le_bytes());
+        key
+    }
+
+    /// §391 (punto 45): el adversario del disco DESCONGELA borrando la clave
+    /// `froz:` de la cuenta. Sin raiz en reposo, `load` reconstruia el arbol de
+    /// lo que quedaba y se lo creia.
+    #[test]
+    fn una_congelada_borrada_en_reposo_no_abre() {
+        let path = ruta_temporal("froz_borrada");
+        let (alice, _bob) = ledger_con_una_congelada(&path);
+        {
+            let db = sled_open_retry(&path);
+            assert!(
+                db.remove(clave_froz(alice)).expect("borrar").is_some(),
+                "habia una froz: de alice que borrar"
+            );
+            db.flush().expect("flush");
+        }
+        let r = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(crate::store::StoreError::IntegrityFailure {
+                    what: "arbol de congelados"
+                }))
+            ),
+            "CRITICO: una congelacion levantada desde el disco debe pararse ANTES de operar"
+        );
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// §391: el reves. El adversario del disco CONGELA a bob copiando la hoja
+    /// de alice a la posicion de bob, sin custodios.
+    #[test]
+    fn una_congelada_anadida_en_reposo_no_abre() {
+        let path = ruta_temporal("froz_anadida");
+        let (alice, bob) = ledger_con_una_congelada(&path);
+        {
+            let db = sled_open_retry(&path);
+            let hoja = db.get(clave_froz(alice)).expect("leer").expect("habia una froz: de alice");
+            db.insert(clave_froz(bob), hoja.to_vec()).expect("insertar");
+            db.flush().expect("flush");
+        }
+        let r = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(crate::store::StoreError::IntegrityFailure {
+                    what: "arbol de congelados"
+                }))
+            ),
+            "CRITICO: una congelacion impuesta desde el disco debe pararse ANTES de operar"
+        );
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// §391: un libro sin `root:froz` (anterior a este sello) NO ABRE: fail-closed,
+    /// sin era silenciosa, como `root:pending` (§387) y `root:pmeta` (§388).
+    #[test]
+    fn un_libro_sin_root_froz_no_abre() {
+        let path = ruta_temporal("sin_root_froz");
+        let _cuentas = ledger_con_una_congelada(&path);
+        {
+            let db = sled_open_retry(&path);
+            assert!(
+                db.remove(b"root:froz").expect("borrar").is_some(),
+                "habia una raiz de congelados que borrar"
+            );
+            db.flush().expect("flush");
+        }
+        let r = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(crate::store::StoreError::Malformed(ref m))) if m.contains("root:froz")
+            ),
+            "CRITICO: un libro sin raiz de congelados no debe abrir"
+        );
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
     /// R-2d FELIZ: el mint-pendiente caducado se DES-EMITE — el
     /// suministro baja exactamente lo que subió al emitir. Con cronómetro.
     #[test]

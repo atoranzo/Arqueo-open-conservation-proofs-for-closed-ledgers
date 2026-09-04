@@ -29462,3 +29462,67 @@ mas estricto que su invariante. La r2 fue verde a la primera.
 (+59). Pin y cifras en el mismo bloque: `tools/canon.sh` (fila de la capa con su historia)
 y diez documentos vivos, veinte lineas, veintisiete cifras, todas de igual ancho. Ningun
 Cargo tocado. BACKLOG 50 abiertas / 56 resueltas, sin tocar. EL CANON CORRE en este sello.
+
+## §391 — La raiz del arbol de congelados se guarda y se comprueba al abrir
+
+**Que.** El arbol de CONGELADOS era el ultimo de los cuatro sin raiz en reposo: `commit`
+escribia sus hojas bajo `froz:{idx}` y `load` las releia, reconstruia el arbol
+(`rebuild_from`) y se lo creia; `frozen_root` solo vivia en la cabeza firmada. Un adversario
+con el disco -el operador- podia DESCONGELAR borrando una clave `froz:` o CONGELAR anadiendo
+una, sin custodios y sin que nada se pusiera rojo al reabrir. Era una afirmacion sin
+falsador dentro de la propiedad que `apply_freeze_delegated` protege con dos custodios y un
+circuito de subida: la autoridad de congelar vivia en la prueba al vuelo y en la fe al reposo.
+
+**Que cambia.** `commit` escribe `root:froz` = sello(raiz del arbol de congelados) junto a
+`root:state`, `root:pending` y `root:pmeta`. `load` recompone el arbol de lo leido -con la
+geometria que ya decidia (24 o 32 por `meta:geometry_v7`)- y exige la raiz guardada ANTES de
+la conservacion del dinero: `IntegrityFailure { what: "arbol de congelados" }` si no cuadra;
+`Malformed` si falta, es decir, un ledger anterior a este sello NO ABRE (fail-closed, sin era
+silenciosa, la decision (a) del S387 por tercera vez). Ninguna primitiva nueva: la hoja ya era
+un compromiso del circuito de congelacion y el arbol ya era un `SparseTree`; solo faltaba
+guardar y comparar su raiz. Sin cambio de formato de cabeza ni de cable.
+
+**Decision (asistente, REVERSIBLE).** El punto 45 se cierra con el molde del S387/S388, en un
+sello propio y DESPUES del S390: sin el arreglo de las `froz:` huerfanas, una descongelacion
+legitima habria dejado el libro sin abrir en cuanto existiera la raiz. Tres testigos y no
+dos: la clave borrada (descongelar por el disco) y la clave anadida (congelar por el disco)
+son dos adversarios distintos sobre la misma raiz, y el libro sin raiz es la era declarada.
+
+**Lo medido.** PASTE-391-PRE (`e0546bc83ee0cd01`, rc 0) sobre `25527fe`: `commit` =
+`persistence.rs:630..783`; en `load` la puerta de `root:pmeta` cierra en :529 y la conservacion
+abre en :531; tras `ledger_con_un_pendiente` (`two_phase.rs:2608..2624`) viene el siguiente
+test en :2628; los testigos del S388 asertan `IntegrityFailure { what }` con el libro abierto
+por `sled_open_retry`; `set_frozen_delegated`, `open_retry` y las constantes son `pub` y el
+mod importa `super::*` y `tests_support::*`; "arbol de congelados" no existia como `what`.
+Y los tres testigos ROJOS EN VIVO antes de la raiz, en 0,81 s: FAILED los tres, con sus
+frases, BASE 295/0/3 en verde.
+
+**La forma.** E1 en `commit` tras `root:pmeta` (`persistence.rs:707`). E2 en `load` entre la
+puerta de meta y la conservacion (`:531..546`). E3 en `tests_verificacion` tras
+`ledger_con_un_pendiente` (`two_phase.rs:2625..2729`): `ledger_con_una_congelada` (alice
+congelada por dos custodios, bob libre, lote en disco), `clave_froz`, y
+`una_congelada_borrada_en_reposo_no_abre`, `una_congelada_anadida_en_reposo_no_abre` (copia
+la hoja de alice a la posicion de bob) y `un_libro_sin_root_froz_no_abre` (`Malformed` que
+nombra `root:froz`). Anclajes por bytes de los volcados; POST montado aparte con ida y
+vuelta; VIVA 298/0/3, lista 301, nacen exactamente los tres.
+
+**Limite declarado y candidatas.** La raiz en reposo es coherencia recomputable por quien
+miente: el operador que reescribe `froz:` puede reescribir `root:froz`. Lo que un tercero
+puede verificar sigue siendo la cabeza firmada (`frozen_root` en `epoch_digest_v3`), y ahi
+si esta desde el principio: para congelados el segundo escalon YA existia, al reves que
+para `meta` (punto 43). `meta:freezes` sigue siendo un contador sin raiz, hermano del
+suministro. `FROZEN_DEPTH` llega a la capa desde `stark_experiment::circuit_freeze`. Los
+"188 pasan, 93 fallan y 9 ignorados" (punto 42) van +11 desde el S379. Los cuatro arboles
+tienen ya raiz en reposo: cuentas (§128), pendientes (§387), meta (§388), congelados (§391).
+
+**Lo que corrigio la medicion.** Nada del arbol: las seis predicciones del PRE salieron
+confirmadas y los tres bloques fueron verdes a la primera. Lo que la lectura cambio fue el
+ORDEN del arco (S390 antes, por el defecto que destapo) y el numero de testigos (tres, por
+el adversario simetrico).
+
+**Contadores.** `zk-ssl` 295 -> 298 (298 tests, 3 ignorados); sumas 989 -> 992, 1126 -> 1129,
+1140 -> 1143; el canon declara 1144. `persistence.rs` 784 -> 802, `two_phase.rs` 3584 -> 3688
+(+122). Pin y cifras en el mismo bloque: `tools/canon.sh` (fila de la capa con su historia)
+y diez documentos vivos, veinte lineas, veintisiete cifras, todas de igual ancho. Ningun
+Cargo tocado. BACKLOG 50 abiertas / 56 resueltas, sin tocar (el punto 45 vive en la cola del
+traspaso, no en el BACKLOG). EL CANON CORRE en este sello, cronometrado.

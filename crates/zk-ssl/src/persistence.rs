@@ -528,6 +528,22 @@ impl SovereignLayer {
             .into());
         }
 
+        // --- ARBOL DE CONGELADOS ---
+        //
+        // §391 (punto 45): `froz:` decide QUIEN puede gastar y hasta aqui se
+        // creia: el arbol se recompuso arriba de lo leido. La raiz guardada
+        // tiene que cuadrar -borrar o anadir una clave `froz:` en disco es
+        // descongelar o congelar sin custodios-, y un ledger sin `root:froz`
+        // NO ABRE (fail-closed, como `root:pending` y `root:pmeta`).
+        let stored_froz =
+            digest_from_bytes(&need("root:froz", get(b"root:froz")?)?)?;
+        if self.frozen.root() != stored_froz {
+            return Err(StoreError::IntegrityFailure {
+                what: "arbol de congelados",
+            }
+            .into());
+        }
+
         // --- CONSERVACION DEL DINERO ---
         //
         // El invariante sagrado: sum(saldos) + sum(pendientes vivos) ==
@@ -687,6 +703,8 @@ impl SovereignLayer {
         batch.insert(b"root:pending".as_ref(), self.seal(digest_to_bytes(&self.pending.root()).to_vec())?);
         // La raiz del arbol de meta, al lado de las otras dos (§388).
         batch.insert(b"root:pmeta".as_ref(), self.seal(digest_to_bytes(&self.pending_meta_tree.root()).to_vec())?);
+        // La raiz del arbol de congelados, al lado de las otras tres (§391).
+        batch.insert(b"root:froz".as_ref(), self.seal(digest_to_bytes(&self.frozen.root()).to_vec())?);
 
         // --- Cuentas afectadas ---
         for index in accounts {
