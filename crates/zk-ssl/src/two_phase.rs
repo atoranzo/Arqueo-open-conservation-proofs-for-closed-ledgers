@@ -2825,6 +2825,70 @@ mod tests_verificacion {
         let _ = std::fs::remove_dir_all(&path);
     }
 
+    /// §393: pone un contador custodiado en `v` por el disco. El valor va sin
+    /// sellar, como en los testigos del §388, §391 y §392: con `key: None`,
+    /// `seal` es la identidad.
+    fn poner_contador(path: &str, clave: &[u8], v: u64) {
+        let db = sled_open_retry(path);
+        assert!(
+            db.get(clave).expect("leer").is_some(),
+            "la clave del contador existia antes de tocarla"
+        );
+        db.insert(clave, v.to_le_bytes().to_vec()).expect("insertar");
+        db.flush().expect("flush");
+    }
+
+    fn no_abre_por_contadores(path: &str) {
+        let r = open_retry(
+            path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(crate::store::StoreError::IntegrityFailure {
+                    what: "contadores custodiados"
+                }))
+            ),
+            "CRITICO: un contador que no cuadra con el registro no debe abrir. Salio: {:?}",
+            r.err()
+        );
+    }
+
+    /// §393: REBOBINAR `meta:freezes` es el ataque de verdad — revive una
+    /// autorizacion de custodios ya gastada, porque el compromiso que ellos
+    /// firmaron lleva (count_old, count_new). El registro tiene una entrada
+    /// `Freeze` y el contador diria cero: no debe abrir.
+    #[test]
+    fn un_contador_de_congelaciones_rebobinado_no_abre() {
+        let path = ruta_temporal("rebobinar_freezes");
+        let _cuentas = ledger_con_una_congelada(&path);
+        poner_contador(&path, b"meta:freezes", 0);
+        no_abre_por_contadores(&path);
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// §393: un contador ADELANTADO tambien miente. El registro no tiene
+    /// ninguna entrada `Recovery` y el contador diria una: no debe abrir.
+    #[test]
+    fn un_contador_de_recuperaciones_adelantado_no_abre() {
+        let path = ruta_temporal("adelantar_recoveries");
+        let _cuentas = ledger_con_una_congelada(&path);
+        poner_contador(&path, b"meta:recoveries", 1);
+        no_abre_por_contadores(&path);
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// §393: lo mismo con `meta:gov_changes`, que es el contador del conjunto
+    /// de custodios: adelantarlo revive una autorizacion de gobernanza.
+    #[test]
+    fn un_contador_de_gobernanza_adelantado_no_abre() {
+        let path = ruta_temporal("adelantar_gov");
+        let _cuentas = ledger_con_una_congelada(&path);
+        poner_contador(&path, b"meta:gov_changes", 1);
+        no_abre_por_contadores(&path);
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
     /// R-2d FELIZ: el mint-pendiente caducado se DES-EMITE — el
     /// suministro baja exactamente lo que subió al emitir. Con cronómetro.
     #[test]

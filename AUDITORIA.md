@@ -29596,3 +29596,77 @@ clase: una funcion conocida por un `use` se buscaba en el fichero que la usa
 documentos vivos, 20 lineas, 27 cifras, y la fila 89 de `canon.sh` con su historia.
 `persistence.rs` 802 -> 828, `two_phase.rs` 3688 -> 3786. Ningun Cargo tocado. BACKLOG
 sin tocar (50 abiertas / 56 resueltas). EL CANON CORRE, cronometrado.
+
+## §393 — Los contadores custodiados los deriva el registro
+
+**Que.** `meta:freezes`, `meta:recoveries` y `meta:gov_changes` no son estadistica: son
+el NONCE anti-repeticion de cada operacion de custodios. Entran en `commit_operation`
+como `(count_old, count_new)`, y ese compromiso es lo que la pareja de custodios firma;
+por eso **avanzar el contador es lo unico que hace inservible una autorizacion ya
+usada** — la capa no persiste ningun nulificador y `verify_threshold_pair` solo exige
+que `operation` cuadre. Hasta aqui `load` los leia con `None => 0` y nadie los cruzaba
+contra nada: rebobinar uno en reposo devolvia a la vida una autorizacion gastada. Desde
+este sello `load` los DERIVA del registro —integro desde el §392— contando entradas por
+`OpKind`, y un libro cuyos contadores no cuadren NO ABRE.
+
+**Que cambia.** `persistence.rs`: en `load`, entre la puerta de `root:log` y la
+conservacion del dinero, un solo recorrido de `self.log.entries()` que cuenta `Freeze`,
+`Recovery` y `Governance`, y una sola comparacion con los tres campos =>
+`IntegrityFailure { what: "contadores custodiados" }`. `two_phase.rs`
+(`tests_verificacion`): ayudante `poner_contador` (escribe un contador por el disco, sin
+sellar, como los testigos del §388, §391 y §392), juez `no_abre_por_contadores`, y TRES
+testigos: `un_contador_de_congelaciones_rebobinado_no_abre`,
+`un_contador_de_recuperaciones_adelantado_no_abre` y
+`un_contador_de_gobernanza_adelantado_no_abre`. No se toca `commit` —los tres contadores
+ya se escriben— ni la instantanea. Sin primitiva nueva, sin cambio de cabeza ni de cable.
+
+**Las decisiones (asistente, REVERSIBLES).** (1) **UN solo `what` para los tres.** La
+propiedad es UNA —un contador custodiado es lo que el registro dice— y tres nombres
+serian tres nombres para una sola cosa; ademas `what` es `&'static str` y no puede decir
+cual ni con que cifras. Cual fallo se lee del registro, que la puerta acaba de verificar.
+(2) **Un solo recorrido y una sola comparacion**: menos columnas, menos excepciones.
+(3) **No se toca lo que no gana invariante**: ni `commit` ni `export/import_snapshot`.
+(4) **Los testigos usan solo identificadores medidos**: se reutiliza
+`ledger_con_una_congelada`, el molde del §391 y el §392, en vez de fabricar una
+recuperacion y una gobernanza con ayudantes cuya firma no se habia abierto. El precio va
+declarado abajo.
+
+**Lo medido, y lo que decidio la forma.** Cada uno de los tres `OpKind` tiene UN solo
+`append` en produccion, y es la MISMA funcion que mueve su contador: `freeze.rs`
+(`apply_freeze_delegated`), `recovery.rs` (`apply_recovery_delegated`), `governance.rs`
+(`apply_governance_delegated`). Los otros usos del enum son inocuos y quedan declarados:
+`from_tag_byte`, `tag` y el mapa kind-a-circuito del cli. `OpKind` deriva `PartialEq`, y el
+molde de contar por kind ya vivia en el arbol (`migration.rs`). **El riesgo real era la
+instantanea**: si una exportacion vieja llegara sin registro y con contadores > 0, la
+puerta nueva rechazaria un libro LEGITIMO. Medido: `export_snapshot` escribe SIEMPRE la
+seccion (el bit alto de `n_log` la versiona, §281) e `import_snapshot` la repone en las
+DOS eras, y ademas ya llamaba a `verify_chain`. No hace falta era declarada.
+
+**La forma.** Dos lecturas puras (46-PRE y 393-PRE, las seis predicciones confirmadas) y
+tres bloques (393, 393-B, 393-C). Los tres testigos se ensenaron ROJOS EN VIVO sobre el
+arbol sin la puerta antes de copiar el arreglo: los tres abrieron el libro. El compilador
+acepto el recorrido a la primera; VIVA 304/0/3, `--list` 307, nacen exactamente los tres.
+
+**Limite y candidatas.** (1) El testigo de `freezes` es el REBOBINADO —el ataque de
+verdad—; los de `recoveries` y `gov_changes` son ADELANTADOS, porque el ledger del molde
+no hace esas dos operaciones. Cada uno falsa una comparacion, pero **queda pendiente un
+testigo con una recuperacion y una gobernanza REALES**, cuando se abran `recover_delegated`
+y el ayudante de gobernanza de `tests_support`. (2) **`meta:cust_uses` sigue fuera**: es
+CUOTA, no nonce —no entra en ningun `commit_operation`—, se lee con `None => 0` y la
+instantanea no la transporta (`custodian_uses: 0` al importar). Es el §394. (3) El
+`Malformed("contador de gobernanza")` esta copiado tres veces en `load` (sobre
+gov_changes, cust_uses y next_pending) y el comentario de `meta:freezes` habla de
+"recuperaciones": prosa rancia por copia-pega, declarada y sin tocar aqui. (4) Un libro
+anterior al §392 no abre por falta de `root:log`; este sello no cambia eso.
+
+**Lo que corrigio la medicion.** El punto 46 nacio como "un contador sin raiz, hermano
+del suministro" y al medirlo cambio de sujeto: es un nonce criptografico. Un NOMBRE no es
+un veredicto. Y de propina, dos rojos de instrumento de la misma clase —una funcion
+conocida por un `use` buscada en el fichero que la usa— y un reemplazo ciego que escribio
+una contradiccion que compilaba.
+
+**Contadores.** Pin de la capa 301 -> 304 (304 tests que pasan, 3 ignorados; la capa
+lista 307). Sumas 995 -> 998, 1132 -> 1135, 1146 -> 1149; el canon declara 1150. Cifras
+en 10 documentos vivos, 20 lineas, 27 cifras, y la fila 89 de `canon.sh` con su historia.
+`persistence.rs` 828 -> 864, `two_phase.rs` 3786 -> 3850. Ningun Cargo tocado. BACKLOG
+sin tocar (50 abiertas / 56 resueltas). EL CANON CORRE, cronometrado.

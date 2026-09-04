@@ -567,6 +567,42 @@ impl SovereignLayer {
             .into());
         }
 
+        // --- CONTADORES CUSTODIADOS ---
+        //
+        // §393 (punto 46): `meta:freezes`, `meta:recoveries` y `meta:gov_changes` no
+        // son estadistica: son el NONCE anti-repeticion de cada operacion de
+        // custodios. Entran en `commit_operation` como (count_old, count_new), y una
+        // pareja de pruebas vieja solo deja de servir porque el contador avanzo.
+        // Se leian con `None => 0` y nadie los cruzaba: rebobinar uno en reposo
+        // devolvia a la vida una autorizacion ya gastada. El registro -integro desde
+        // el §392- los deriva: cada una de las tres operaciones appendea su entrada
+        // en la MISMA funcion que mueve su contador.
+        //
+        // UN what para los tres: la propiedad es UNA (un contador custodiado es lo
+        // que el registro dice), y `what` es &'static str -no puede decir cual ni
+        // con que cifras-. Cual fue se lee del registro, que es justo lo que la
+        // puerta acaba de verificar.
+        let mut n_freeze = 0u64;
+        let mut n_recovery = 0u64;
+        let mut n_governance = 0u64;
+        for e in self.log.entries() {
+            match e.kind {
+                crate::log::OpKind::Freeze => n_freeze += 1,
+                crate::log::OpKind::Recovery => n_recovery += 1,
+                crate::log::OpKind::Governance => n_governance += 1,
+                _ => {}
+            }
+        }
+        if self.freeze_count != n_freeze
+            || self.recovery_count != n_recovery
+            || self.governance_change_count != n_governance
+        {
+            return Err(StoreError::IntegrityFailure {
+                what: "contadores custodiados",
+            }
+            .into());
+        }
+
         // --- CONSERVACION DEL DINERO ---
         //
         // El invariante sagrado: sum(saldos) + sum(pendientes vivos) ==
