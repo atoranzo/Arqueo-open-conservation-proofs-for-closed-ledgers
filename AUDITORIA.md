@@ -30472,3 +30472,81 @@ en 186 s. Ningun `Cargo` tocado. Ficheros: `witness.rs` (`1331b59ff297a16c/4674`
 (`56bf2733c1d632cd`, linea-neutral), `spec/rfc/0005-nucleo-congelado.md` (`49e1b1bff2df484d`,
 linea-neutral), PAPER.md, PRINCIPIOS.md, RESUMEN_BILINGUE.md, RESUMEN_EJECUTIVO.md
 (linea-neutrales), AUDITORIA.md.
+
+## §407 — El nucleo congelado, escrito y atado: spec/NUCLEO.md y check_nucleo.py (RFC-0005, E1)
+
+**Que.** Nace `spec/NUCLEO.md`, el unico productor normativo de QUE no cambia en el protocolo y
+POR QUE: enumera cada elemento publico que un tercero alcanza al verificar sin el nodo, sin la
+capa y sin el probador (los `pub` alcanzables de `zk-ssl-verify` y los `pub` de `zk-ssl-hash`) y
+le pone una de CUATRO clases: NUCLEO (se firma, se compone o se comprueba: una segunda
+implementacion lo reproduce byte a byte), REFERENCIA (de esta implementacion, no del formato),
+LIBRO (raices que el paquete trata como opacas) y REGISTRO (la reverificacion del registro y los
+sellos de operacion, que van por el cable). Y nace `tools/check_nucleo.py`, DECIMA herramienta
+del canon, que deriva el censo del fuente en cada corrida y exige que la tabla y el arbol digan
+lo mismo en las dos direcciones. Es la E1 del RFC-0005. Corre canon.
+
+**Por que la tabla no contradice la cabecera del crate.** `crates/zk-ssl-verify/src/lib.rs` 1..67
+dice que "las familias se nombran; los elementos NO se enumeran; la verdad se mide en los `pub`",
+porque una lista en prosa caduco una vez (§247). Aqui se enumeran PORQUE SE MIDEN: la tabla es
+un censo DERIVADO -no se teclea- y un gate la re-deriva en cada canon. Lo que la cabecera prohibe
+es la lista sin compuerta; lo que E1 entrega es la lista con la suya. Se cita por NOMBRE y
+FICHERO, nunca por linea, como hace `PAQUETE.md`: las lineas caducan con cada sello.
+
+**El censo, medido y derivado.** la tabla de spec/NUCLEO.md y el censo dicen lo mismo en las dos direcciones: 46 elementos de verify + 34 de hash = 80 filas (LIBRO 2, NUCLEO 56, REFERENCIA 7, REGISTRO 15). El PASTE-407-M (`a04b31f1faee3d2f`/232, salida
+`15520ea7dd05d4b5`/596) midio el terreno y VIO DE MENOS: su censo cortaba cada fichero en el
+PRIMER `#[cfg(test)]`, y `hash/lib.rs` lleva un mod de tests en la 274 con produccion detras
+(el REGISTRO vive en 737..764). El PASTE-407-M2 (`2fd727d008c4f8bd`/172, salida
+`223448819cb8eeba`/293) recorto las zonas de test por el ANIDAMIENTO REAL de sus llaves y dio el
+censo bueno; `check_nucleo.py` usa ese mismo instrumento, con la leccion escrita en su cabecera:
+un censo cortado en la primera marca ve de menos y parece hallazgo. Alcanzable en verify es lo
+que `lib.rs` exporta -sus `pub`, todo lo `pub` de `acuses` y `mmr` (modulos `pub`), y los NOMBRES
+que sus `pub use` sacan de `inclusion` y `reverificacion` (modulos privados)-; las
+reexportaciones de `zk-ssl-hash` no se cuentan dos veces: un elemento, una fila.
+
+**Donde vive el atado, y por que ahi.** El test del §395 usa `include_str!("../Cargo.toml")` bajo
+`cfg(test)` -no viaja al binario-, asi que un atado en tests seria legitimo; pero `spec/` esta
+FUERA del crate y el `.crate` empaqueta solo `src/` y los Cargo (punto 67 de la cola): un
+`include_str!` hacia `spec/` romperia `cargo test` del crate publicado. Luego el atado va fuera
+del crate, y su molde es la R5 de `check_dominios.py` ("la tabla REGISTRO de lib.rs y el censo
+coinciden EXACTAMENTE, en las dos direcciones"). Es una herramienta NUEVA en `tools/`: las nueve
+pasan a DIEZ. Medido antes: "nueve herramientas" solo vive en la puerta historica del RFC-0004
+(:104) y en AUDITORIA, que son actas; la receta de la sesion 82 deriva la lista del bucle de
+`canon.sh` y sale sola en diez.
+
+**Las cuatro reglas del gate, y su rojo en vivo.** R1 todo elemento derivado tiene EXACTAMENTE
+UNA fila con su fichero; R2 toda fila existe en el arbol; R3 la clase es una de las cuatro; R4
+los totales que el documento declara son los derivados (PRECISION 16: un contador declarado que
+no se cruza es un numero tecleado). Antes de tocar el arbol, el bloque corrio el gate contra dos
+copias saboteadas del documento -una fila quitada, una fila inventada- y las dos dieron ROJO
+nombrando el elemento; contra el documento bueno, VERDE. Un gate de conjunto se ensena vivo por
+los dos lados.
+
+**Las decisiones, REVERSIBLES, tomadas por el asistente por delegacion del autor con la ley.**
+D-1 cuatro clases y no dos: "nucleo / no nucleo" habria metido en el mismo cajon el apano del
+OID (de la referencia) y `meta_pendiente_hoja` (del libro), que no se congelan por la misma
+razon. Claridad: nombres que significan una sola cosa. D-2 la familia REGISTRO (reverificacion
+del registro, `commit_operation`, `digest_of_proof`, los sellos, los `OP_*`) queda FUERA del
+nucleo: la compone el nodo por el cable y el paquete no la recompone (D-A: el nucleo es lo que
+el sobre recompone). D-3 `native_leaf` y `native_leaf_salted` son NUCLEO, no LIBRO: el recibo de
+inclusion las recompone (§256). D-4 los tipos de error (`VerificaError`, `InclusionError`,
+`FormatoError`, `VersionCabezaDesconocida`) son REFERENCIA: lo que el contrato fija son los
+textos del catalogo de `PAQUETE.md` y del MANIFIESTO, no el enum de esta implementacion. D-5 el
+documento no cita lineas. D-6 `spec/README.md` gana DOS filas (la de `NUCLEO.md` junto a
+`PAQUETE.md`, y la del RFC-0005 que el §405 dejo como deuda) y una frase en "Where the rest
+lives"; su ancla de commit (`c43890a`, :12) NO se toca: las referencias de linea que publica
+son las de ese commit y no se han re-verificado aqui, como no lo hicieron el §397 ni el §400.
+
+**Lo que este sello NO hace.** No escribe un vector (E3) ni saca el arnes (E4). No mueve
+`spec/RPC.md`, `spec/PAQUETE.md` ni un `.rs`: ningun pin se mueve. No cierra H3: el criterio
+de exito (E5) esta fuera del arbol por definicion, y E4 es lo que lo hara comprobable.
+
+**El doble hilo.** El RFC-0005 gira su fila E1 a "sellada — §407" y nombra los dos ficheros;
+este asiento los nombra por ruta. Regla 5 del PROCESO por los dos extremos.
+
+**Contadores.** Pines: ninguno movido. Cifras publicadas: ninguna movida. Herramientas del
+canon: 9 -> 10 (`check_nucleo`), derivado del bucle de `canon.sh`. Documentos `.md` versionados
+66 -> 67 y vivos 36 -> 37 (`NUCLEO.md`). `tools/*.py` 10 -> 11. Canon `--sello` VERDE en
+174 s, con la decima dentro. Ningun `Cargo` tocado. Ficheros: `spec/NUCLEO.md`
+(nace, `c5602092ffdef7f2/184`), `tools/check_nucleo.py` (nace, `cad3344642070f1f/226`), `spec/README.md`
+(`7cbc2675bd02def2/158`, +4 lineas), `spec/rfc/0005-nucleo-congelado.md` (`03700aff243dd7e2`,
+linea-neutral), `tools/canon.sh` (`12fb8dde0059ae99`, linea-neutral), `AUDITORIA.md`.

@@ -265,7 +265,7 @@ fi
 # arreglo ANTES de cablearlas.
 msg ""
 msg "== CANON · las herramientas de tools/ =="
-for H in check_cifras check_figures check_columns check_constraint_layout verificar_citas check_dominios check_publicadas; do
+for H in check_cifras check_figures check_columns check_constraint_layout verificar_citas check_dominios check_publicadas check_nucleo; do
   python3 "tools/$H.py" > "$OUT/$H.txt" 2>&1
   if [ $? -eq 0 ]; then
     msg "  OK  $H"

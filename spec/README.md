@@ -20,12 +20,14 @@ commit; if a file has moved on, the reference tells you where to look.
 | `openrpc.json` | the same API as a machine-readable OpenRPC 1.2.6 document: `info.version` is `zkssl/0.3` and it lists 24 methods (22 `zkssl_*`, 2 `dev_*`) | you generate a client or check a node's surface |
 | `vectors/zkssl-0.1.json`, `vectors/zkssl-0.2.json`, `vectors/zkssl-0.3.json` | the conformance vectors, one file per wire version, never rewritten | you check that an implementation produces the same values on the wire |
 | `PAQUETE.md` | the portable evidence package: the three forms (v1, v2 with co-signatures inside, extension), the envelope keys the verifier reads, the order of checks, the rejection catalogue and the exit contract of `zk-ssl-verify` — it does not cross the wire | you build or verify an evidence package, or write a second verifier |
+| `NUCLEO.md` | the frozen core: every public element a verifier reaches in `zk-ssl-verify` and `zk-ssl-hash`, classified (core / reference / ledger / log) with the extension rule; the table is derived from the source and gated by `tools/check_nucleo.py` in every canon | you write a second verifier and need to know exactly what must be reproduced byte for byte |
 | `vectors/paquete/` | the vectors of the evidence package — positives per form, one negative per producible rejection rule, and `MANIFIESTO.txt` with the expected exit code and message of each | you check that a verifier accepts and refuses exactly what `PAQUETE.md` says |
 | `rfc/PROCESO.md` | the RFC process: states, five rules, and what an accepted change must ship with | you want to change anything above |
 | `rfc/0000-plantilla.md` | the RFC template | you write an RFC |
 | `rfc/0002-lotes-y-transicion-de-hoja.md` | RFC-0002: batches, and the leaf transition that took the wire from `0.1` to `0.2` | you read the log guarantees under batching |
 | `rfc/0003-compromiso-v2.md` | RFC-0003, ACCEPTED: the pending commitment v2 (per-payment expiry and refund identity committed), which took the wire from `0.2` to `0.3` | you read why the current commitment has the shape it has |
 | `rfc/0004-paquete-de-evidencia.md` | RFC-0004, ACCEPTED: the portable evidence package gets its own normative document (E1, `PAQUETE.md`), its vectors (E2) and the head-index binding (E3) | you read why the package is specified apart from `RPC.md` |
+| `rfc/0005-nucleo-congelado.md` | RFC-0005, PROPOSED: the frozen core and the extension rule — the core is the verifier side, not the wire (D-A); what is signed grows only by version and what is not signed does not exist for the core (D-B); nothing in the core identifies anything outside the ledger (D-C). E1 (`NUCLEO.md`) and E2 (`VersionCabeza`) sealed | you read what will never change, and why |
 
 RFC-0001 is not missing: the number is reserved for the keystore KDF
 hardening and is not yet drafted (`rfc/0003-compromiso-v2.md:11-15`).
@@ -148,6 +150,8 @@ The audit record (`AUDITORIA.md` at the repository root) holds the
 numbered entries cited above by `§`. The declared limits of the system are
 in `SECURITY.md`. The evidence package a holder keeps after shutdown — what
 `zk-ssl-verify` accepts and refuses — is specified in `PAQUETE.md`, above.
+What a second verifier must reproduce byte for byte — the frozen core and its
+extension rule — is enumerated, derived and gated in `NUCLEO.md`, above.
 This page is maintained by hand: when you change a file
 in this folder, update the line references here and the commit in the
 header, and run `tools/verificar_citas.py`, which fails if a cited
