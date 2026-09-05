@@ -304,6 +304,16 @@ NM=$(grep -c '\.json|' spec/vectors/paquete/MANIFIESTO.txt)
 for j in spec/vectors/paquete/*.json; do grep -qF -- "$(basename "$j")|" spec/vectors/paquete/MANIFIESTO.txt || falla "vector sin entrada en el manifiesto: $(basename "$j")"; done
 msg "  OK  paquete: $NVOK de $NV entradas del manifiesto dicen lo que deben ($NJ ficheros, $NM entradas con fichero)"
 
+# ── 3 ter · el ARTEFACTO (tools/artefacto.sh --check, §401): la PROPIEDAD, no un pin ──
+msg ""
+msg "== CANON · el artefacto =="
+T_ART0=$(date +%s)
+if bash tools/artefacto.sh --check > "$OUT/artefacto.txt" 2>&1; then
+  msg "  OK  $(tail -n 1 "$OUT/artefacto.txt" | sed 's/^ *OK *//') ($(( $(date +%s) - T_ART0 )) s)"
+else
+  tail -n 5 "$OUT/artefacto.txt" >&2; falla "el artefacto no es reproducible o no pasa el manifiesto"
+fi
+
 # ── veredicto ───────────────────────────────────────────────────
 msg ""
 if [ $rojo -eq 0 ]; then

@@ -255,7 +255,29 @@ La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.
   extensión; §322: el v2 con las cofirmas dentro.
 - §399 — el `index` declarado se ata al que va dentro de la firma (E3); el mando imprime el embebido; el testigo lee el `index` servido.
 - §400 — el RFC-0004 pasa a ACEPTADO: la regla 4 del PROCESO, saldada con medida.
+- §401 — el artefacto: `tools/artefacto.sh`, el tarball reproducible y el 3 ter del canon (sección 11).
 - Hasta §397 este contrato vivía en la cabecera de `crates/zk-ssl-verify/src/main.rs` (1..90,
   `293990fedc785833`), que ya confesó una vez (§247) haber declarado su superficie como completa
   sin serlo. §397 lo muda aquí y deja la cabecera remitiendo, sin enumerar.
 - Cambiar este documento es cambiar el contrato: entra por RFC (`spec/rfc/PROCESO.md`).
+
+## 11. El artefacto
+
+Lo que un tercero descarga es `arqueo-verify-<versión>-<host>.tar.gz` (§401), y dentro:
+`zk-ssl-verify` (el binario), `spec/PAQUETE.md` (este documento), `spec/vectors/paquete/` (el
+manifiesto y sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
+licencias de todo lo enlazado), `VERSION` (el commit, el toolchain y los flags con que se compiló)
+y `SHA256SUMS` (la huella de cada fichero de dentro). Se comprueba con `sha256sum -c SHA256SUMS`,
+y el binario contra su propio manifiesto: cada entrada dice el código de salida y el texto.
+
+La huella del binario **no depende de la máquina ni del usuario** —se compila con
+`--remap-path-prefix`—, pero sí del toolchain y de `Cargo.lock`: con el `rustc` que `VERSION`
+nombra, `bash tools/artefacto.sh` sobre el commit que `VERSION` nombra vuelve a producir el mismo
+binario y el mismo tarball, y `tools/canon.sh` comprueba esa propiedad en cada sello (dos
+compilaciones en dos rutas, misma huella; dos tarballs, misma huella; el manifiesto entero). Lo
+que el binario exige: x86_64 Linux y una glibc igual o mayor que la que `VERSION` declara
+(`glibc_max`); no es estático, y se dice.
+
+Lo que el artefacto NO es: no es una publicación en crates.io (el crate no lleva la spec ni los
+vectores) ni prueba nada sobre la clave del operador (sección 8). La release es un fichero con
+huella, y la huella vive en el asiento que lo selló.

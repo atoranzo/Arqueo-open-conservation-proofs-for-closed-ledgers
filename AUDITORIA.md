@@ -30140,3 +30140,57 @@ corren antes y despues con liston por delta.
 declara 1159. Documentos `.md` versionados 65 -> 65. Ficheros: `spec/rfc/0004-paquete-de-evidencia.md`
 (257 -> 270), `spec/README.md` (154 -> 154, linea-neutral), `spec/PAQUETE.md` (260 -> 261),
 y este asiento.
+
+## §401 — El artefacto: el verificador distribuible, reproducible y con sus huellas
+
+**Que.** Nace `tools/artefacto.sh`, que compila `zk-ssl-verify` en release con
+`--remap-path-prefix` y monta un tarball reproducible con todo lo que un tercero necesita y
+nada mas: el binario, `spec/PAQUETE.md`, el manifiesto y sus 66 vectores, las dos licencias,
+`NOTICE`, `THIRD-PARTY.txt` (las licencias de la clausura, derivadas por `cargo tree`), `VERSION`
+(commit, `git describe`, `rustc -vV`, flags, glibc exigida) y `SHA256SUMS`. El canon gana el
+«3 ter»: la PROPIEDAD del artefacto —dos compilaciones en dos rutas dan la misma huella, dos
+tarballs dan la misma huella, el binario pasa el manifiesto entero— se comprueba en cada sello.
+`spec/PAQUETE.md` gana la seccion 11, que dice que es el artefacto, como se comprueba, como se
+reproduce y que exige. Con esto H2 queda con sus seis clausulas: el verificador corre sin el
+repositorio, sin el autor, sin red, sin telemetria, en una CPU de consumo, con su especificacion
+al lado, y ademas con una huella que cualquiera puede rehacer.
+
+**Lo medido (PASTE-401-M2 `7cb3ac112b7e0af8`, PASTE-401-PRE `57d66e588fafdc82`, sobre
+`9062f2c`).** La propuesta no prescribe la forma de la entrega; la decide la ley: austero,
+verificable, sin relato. El binario sin remap lleva NUEVE rutas de `$HOME` y SEIS del registry, y
+cambia de huella con la ruta del `target`; con remap sobre la raiz, el registry, `.cargo` y
+`$HOME`, dos `target` distintos dan la misma huella y cero rutas de la maquina; lo que queda
+dentro (`/home/x/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/...`, la std del
+toolchain, 43 `/rustc/`) es determinista dado el toolchain y el `Cargo.lock`, y es exactamente lo
+que `VERSION` declara. El binario exige glibc 2.34 y no es estatico (sin `musl` instalado); se
+declara. El `.crate` de cargo empaqueta 13 entradas y NO lleva la spec ni los vectores: crates.io
+no es el artefacto. `cargo metadata --offline` no puede (una dependencia de otro target sin
+descargar); `cargo tree --format '{p} {l}'` si. Dos tarballs con `--sort=name --mtime=@0
+--owner=0 --group=0 --numeric-owner | gzip -n` salieron identicos. Los tags `v0.1.0` y `v1.0.0`
+son del repo entero, de julio: el del verificador lleva nombre propio.
+
+**Decisiones (REVERSIBLES).** D-1 el artefacto es el tarball de arriba, nada narrativo. D-2
+`--remap-path-prefix`; la huella depende del toolchain y del lock, y se dice. D-3 lo produce
+`tools/artefacto.sh` derivando commit, toolchain y host; el tarball es reproducible. D-4 sin
+`--version`: la seccion 6 del contrato no cambia y el RFC-0004 esta ACEPTADO; el commit va en
+`VERSION`. D-5 la release en GitHub la sube el autor a mano (los secretos no tocan el chat);
+Zenodo y crates.io quedan como futuros. D-6 tag `arqueo-verify-v0.1.0` sobre este commit. D-7
+el canon gatea la PROPIEDAD y no un pin de huella: un pin se pondria rojo con cada `rustup
+update` sin que el arbol cambiara. D-8 la release es deuda declarada hasta que este. D-9 la
+seccion 11; los README no se tocan en este sello. D-10 `THIRD-PARTY.txt` por `cargo tree`;
+`NOTICE` no se toca.
+
+**Lo que se produjo en esta corrida.** Binario con remap `5abe05b45da90a5f` (655992 B),
+reproducible entre `target/artefacto/tA` y `tB`; manifiesto 67 de 67; tarball
+`arqueo-verify-0.1.0-x86_64-unknown-linux-gnu.tar.gz` = `279947f25cd5b5ae` (1682799 B), 75 ficheros, reproducible;
+`rustc 1.97.1-8bab26f4f`; glibc exigida GLIBC_2.34. El tarball vive en `target/artefacto/` (ignorado):
+lo que entra al arbol es el productor y su puerta, no el producto.
+
+**Lo que NO hace.** No publica: la release en GitHub es la deuda que este asiento declara. No
+hace el binario estatico. No toca `CITATION.cff`, que sigue citando la URL vieja (punto 53).
+No cierra crates.io ni Zenodo.
+
+**Contadores.** Pin `zk-ssl-verify` 75 -> 75; sumas quietas 1007 / 1144 / 1158; el canon
+declara 1159. `tools/canon.sh` 321 -> 331 lineas (el 3 ter). Documentos `.md`
+versionados 65 -> 65. Canon `--sello` VERDE en 189 s, con el 3 ter dentro.
+Ficheros: `tools/artefacto.sh` (nace), `tools/canon.sh`, `spec/PAQUETE.md` y este asiento.
