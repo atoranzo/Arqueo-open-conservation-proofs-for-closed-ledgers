@@ -30314,3 +30314,97 @@ los diez de la mudanza, ERRATA, el README de preprints, la herramienta y este as
 **Lo que queda declarado.** (a) `verificar` sigue leyendo la version con `as u8`: el truncado no llega a `recomponer`, que lee el u64, pero la lectura doble es deuda de forma. (b) Los textos de rechazo del mando y del testigo se atan por copia, no por test. (c) Los vectores NEGATIVOS del cable no existen; este sello no los crea: hoy solo el paquete lleva catalogo de rechazos.
 
 **Contadores.** cli 91 -> 92 (1 test); sumas 1007 -> 1008 / 1144 -> 1145 / 1158 -> 1159; la cifra por-crate del testigo en PRINCIPIOS, en el mismo bloque que el pin; `check_cifras` ROJO con solo el pin movido (VIVA A) y verde con todo. Canon `--sello` VERDE en 180 s. Ningun Cargo tocado. Ficheros: witness.rs, canon.sh, PAPER.md, PRINCIPIOS.md, RESUMEN_BILINGUE.md, RESUMEN_EJECUTIVO.md, AUDITORIA.md.
+
+## §405 — El nucleo congelado y la regla de extension ganan expediente: RFC-0005, PROPUESTO
+
+**Que.** Entra `spec/rfc/0005-nucleo-congelado.md`, el RFC-0005, en estado PROPUESTO, y
+este asiento cierra el otro lado del doble hilo (regla 5 del PROCESO). Es el segundo sello
+del hito H3 de la propuesta a NLnet (el primero fue el §404) y el corte es de DOCUMENTO,
+calcado del §396: no toca una linea de codigo, no mueve un pin ni una cifra publicada, no
+regenera el OpenRPC y no corre el canon.
+
+**El defecto que abre el expediente.** H3 promete, literalmente, un nucleo congelado con
+su justificacion, una regla de extension, vectores positivos y negativos con su puerta, y
+como criterio de exito una segunda implementacion escrita desde la spec sin leer el codigo
+de referencia. El arbol tiene el molde entero para el paquete (§397-§399) y el gate de
+version del cable (§354), pero nadie dice QUE no cambiara jamas ni POR QUE; la regla de
+extension existe como practica y no como texto, y lleva una tension escrita en
+`spec/RPC.md` (aditivo no sube version, y a la vez 16 de 22 tipos del cable rechazan
+claves desconocidas); esa regla tenia un hueco medido y sellado en el §404; los vectores
+negativos existen solo para el paquete; y el "contrato de la segunda implementacion" que
+publica el README (`conformance --check`) exige reproducir el probador STARK, o sea el
+codigo de referencia. Cinco faltas, las cinco medidas.
+
+**Lo que el RFC decide, y por que entra por RFC.** D-A: el nucleo es el LADO DEL
+VERIFICADOR -el paquete de evidencia y todo lo que su verificacion recompone-, no el
+cable, porque un supervisor tiene que poder verificar sin el nodo, sin la capa y sin el
+probador, y porque la linea 95 de la propuesta promete un segundo implementador que solo
+necesita la especificacion. D-B, en dos mitades: lo que se firma crece SOLO por version
+(conjunto explicito, fail-closed, §404 primer caso) y lo que no se firma no existe para el
+nucleo (el verificador no cree nada que no recomponga; `deny_unknown_fields` queda como
+eleccion declarada de la implementacion de referencia). D-C: ninguna pieza congelada
+identifica nada fuera del libro; la unicidad entre libros es familia nueva con RFC propio.
+Entra por RFC por la letra -E1 toca `spec/` y E3 anade bajo `spec/vectors/`- y por el
+espiritu: es la primera vez que el proyecto escribe que no cambiara. La version vigente
+sigue siendo `zkssl/0.3` y ningun vector se toca.
+
+**Lo medido, y donde.** Cinco lecturas puras de la sesion 96 sobre `9ae055c` y `2080e5a`
+(`PASTE-H3-M`, `PASTE-H3-M2`, `PASTE-404-M`, `PASTE-404-PRE-r2`, `PASTE-RFC5-M`; las
+huellas viven en las Referencias del propio RFC) y una de la sesion 97 sobre `2080e5a`:
+`PASTE-405-PRE` (`ec97ccfc779ffe08`/211, salida `e697896e671bca36`/601), que volco el 0004
+entero como molde, los asientos §396 y §400, la lista de RFC de `spec/README.md`,
+`PROCESO.md`, las diez citas `.md` del RFC contra `git ls-files` (las diez existen) y las
+nueve herramientas en BASE (todas verdes; `verificar_citas` 61 nombres, 0 fantasmas, 0
+secciones muertas). El documento que entra es la r3 del borrador
+(`84981927abdad657`/300/22.633 B), leida entera por el autor y por el asistente antes de
+este sello.
+
+**Las decisiones del corte, REVERSIBLES.** D-1: el estado de entrada es PROPUESTO y no
+ACEPTADO, porque la regla 4 exige la spec actualizada, los vectores y las suites verdes,
+y E1-E4 estan por hacer; el giro sera su propio sello, como el §356 y el §400. D-2: el
+asiento que el RFC declara se sustituye por este numero en el mismo acto de entrar, en
+los TRES sitios donde el borrador decia "el que selle este RFC" (la linea de estado, la
+linea de asientos y el parrafo de decisiones delegadas), como hizo el §396. D-3: el
+documento CONSERVA los acentos del molde -los tres RFC del arbol los llevan- y viaja en
+base64 sin re-fluir; este asiento va en ASCII sin tildes como los demas. D-4:
+`spec/openrpc.json` queda FUERA DEL ALCANCE por no haber metodo nuevo, declarado en la
+Compatibilidad del RFC. D-5: `spec/README.md` no gana su fila en este sello; la fila
+entra con E1, que es quien toca ese fichero -calcado del §396-. D-6: las decisiones de
+alcance D-A, D-B y D-C y las tres precisiones de la r2/r3 (el conjunto aceptado gana UN
+solo productor en E2, porque hoy son dos atados por copia; la segunda mitad de D-B se
+declara como hecho medido del binario -cero atributos serde, catorce claves por `.get()`-;
+una familia que necesite entrar bajo la firma de la cabeza entra por la primera mitad,
+como version nueva del preambulo) las tomo el asistente por delegacion expresa del autor
+("aplicando los principios y el manifiesto del proyecto"); estan escritas como
+reversibles dentro del propio RFC.
+
+**Lo que la lectura enseno, y queda escrito.** (a) La regla de extension tiene ya un
+consumidor real antes de sellarse: al cerrar la sesion 96 el autor acepto como candidato
+para las horas que H1 libero el nulificador publicado -una raiz de nulificadores en la
+cabeza firmada-, que es un campo firmado nuevo y por tanto una version nueva del
+preambulo: la primera mitad de D-B, escrita en el RFC en "Familias nuevas". Ese sera el
+RFC-0006, y su coste (composicion nueva, cable aditivo, verificador lector hasta esa
+version, vectores) se mide antes de escribirlo. (b) La r2 del borrador, ya verificada por
+el autor, llevaba un segundo `RPC.md` citado sin ruta que el ojo no vio y el censo
+derivado del `PASTE-405-PRE` si: un grep sobre el sitio que uno recuerda no es un censo.
+Se corrigio en la r3 con nombre propio.
+
+**La deuda que el corte DECLARA y no paga.** La fila del 0005 en `spec/README.md` (D-5).
+El conjunto de versiones {2, 3} sigue con dos productores por copia hasta E2. Los vectores
+negativos del cable no existen hasta E3. El arnes para cualquier binario no existe hasta
+E4. Ninguna compuerta se pone roja por nada de esto.
+
+**Lo que este sello NO hace.** No escribe el documento del nucleo (E1), no unifica el
+conjunto de versiones (E2), no escribe un vector (E3), no saca el arnes de `canon.sh`
+(E4) y no cierra H3: el criterio de exito (E5) esta fuera del arbol por definicion.
+
+**El doble hilo.** El RFC referencia este asiento en su cabecera y en su ultimo parrafo;
+este asiento referencia el RFC por numero y por ruta. Regla 5 del PROCESO, cumplida por
+los dos extremos en el mismo commit.
+
+**Contadores.** Pines: ninguno movido. Cifras publicadas: ninguna movida. `AUDITORIA`
+suma este asiento. Nace un fichero versionado bajo `spec/rfc/` (`b8a43b3a13b19fd5`/300), de
+modo que los documentos `.md` versionados pasan de 65 a 66 y los vivos
+de 35 a 36, ambos DERIVADOS en la corrida. Ningun `Cargo` tocado.
+Canon no corrido: el corte no toca codigo, y la foto la mide el primer canon que se
+ejecute. Ficheros: `spec/rfc/0005-nucleo-congelado.md` (nace), `AUDITORIA.md`.
