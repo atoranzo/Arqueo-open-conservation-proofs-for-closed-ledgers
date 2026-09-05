@@ -823,10 +823,20 @@ fn verificar(v: &Value) -> Result<(), String> {
 /// ⚠️ **La version elige recompositor** (§292), como en el mando de §289:
 /// v3 con la pareja del MMR, v2 sin ella. Otra version no se recompone
 /// aqui — se verifica con la biblioteca, no con el testigo.
+///
+/// CORRECCION (S247, escrita por el S404). "Se verifica con la biblioteca" era
+/// verdad solo para la FIRMA: `verificar_cabeza` compara el preambulo con la
+/// version que el nodo DECLARA y no recompone nada, asi que una version fuera de
+/// {2, 3} pasaba con el digest CREIDO (el S294 abierto por detras). Desde el S404
+/// otra version se RECHAZA aqui, con el texto del mando; el u64 que se lee abajo
+/// no lo trunca el `as u8` de `verificar`.
 fn recomponer(v: &Value, firmado: &[u8; 32]) -> Result<(), String> {
     let version = leer_q(&v["formatVersion"])?;
     if version != 2 && version != 3 {
-        return Ok(());
+        return Err(format!(
+            "formatVersion {version}: el testigo recompone cabezas v2 o v3 \
+             (la pareja acusesRoot/n viaja firmada desde §275; la del MMR, desde §292)"
+        ));
     }
     let b32 = |k: &str| -> Result<[u8; 32], String> {
         let b = leer_hex(&v[k])?;
@@ -4619,5 +4629,19 @@ mod tests {
             verificar_cabeza(&pk, &d, &firmada).is_err(),
             "una cofirma no vale como cabeza: el dominio es otro"
         );
+    }
+
+    /// S404: el digest de una version que el testigo no conoce NO se cree: se
+    /// rechaza. Antes `recomponer` devolvia `Ok(())` para toda version fuera de
+    /// {2, 3}: v1, v4, y 0x103, que `as u8` trunca a 3 para la firma.
+    #[test]
+    fn una_cabeza_de_version_desconocida_no_se_cree() {
+        for v in ["0x1", "0x4", "0x103"] {
+            let mut c = cabeza_firmada_completa();
+            c["formatVersion"] = json!(v);
+            let e = recomponer(&c, &[0x11u8; 32]).expect_err(v);
+            assert!(e.contains("formatVersion"), "{v}: {e}");
+            assert!(e.contains("v2 o v3"), "{v}: {e}");
+        }
     }
 }
