@@ -125,7 +125,7 @@ use xmss::{KeyPair, SigningKey};
 use zk_ssl_guardian::{GuardianError, GuardianIndice, Reconciliacion};
 use zk_ssl_verify::{
     indice_de_firma, mmr, preambulo_cofirma, verificar_cabeza, verificar_cofirma,
-    CabezaFirmada,
+    CabezaFirmada, VersionCabeza,
     COFIRMA_V_MAX, COFIRMA_VERSION, Conjunto, VerificaError, VERSION_FORMATO,
 };
 use zk_ssl_wire::{CofirmaDto, SignedEpochHeadDto};
@@ -793,8 +793,13 @@ fn verificar(v: &Value) -> Result<(), String> {
     }
     let mut digest = [0u8; 32];
     digest.copy_from_slice(&d);
+    // §406 · RFC-0005 E2: la version se lee ENTERA y se rechaza fuera del conjunto
+    //        ANTES de la firma; el `as u8` truncaba 0x103 a 3 (punto 74).
+    let version = VersionCabeza::try_from(leer_q(&v["formatVersion"])?).map_err(|e| {
+        format!("formatVersion {}: el testigo recompone cabezas {}", e.0, VersionCabeza::texto())
+    })?;
     let c = CabezaFirmada {
-        version_formato: leer_q(&v["formatVersion"])? as u8,
+        version_formato: version.as_u8(),
         // §399 · no entra en el preámbulo, y por eso mismo se ata al que va
         // dentro de la firma en `verificar_cabeza`: el testigo lee el `index`
         // que el nodo sirve y falla cerrado si no viene.
@@ -830,14 +835,19 @@ fn verificar(v: &Value) -> Result<(), String> {
 /// {2, 3} pasaba con el digest CREIDO (el S294 abierto por detras). Desde el S404
 /// otra version se RECHAZA aqui, con el texto del mando; el u64 que se lee abajo
 /// no lo trunca el `as u8` de `verificar`.
+///
+/// CORRECCION (S247, escrita por el S406). Desde el S406 `verificar` tampoco trunca:
+/// lee la version por `VersionCabeza`, el UNICO productor del conjunto (RFC-0005,
+/// E2), y rechaza antes de la firma. Aqui el conjunto se CONSUME, no se repite.
 fn recomponer(v: &Value, firmado: &[u8; 32]) -> Result<(), String> {
-    let version = leer_q(&v["formatVersion"])?;
-    if version != 2 && version != 3 {
-        return Err(format!(
-            "formatVersion {version}: el testigo recompone cabezas v2 o v3 \
-             (la pareja acusesRoot/n viaja firmada desde §275; la del MMR, desde §292)"
-        ));
-    }
+    let version = VersionCabeza::try_from(leer_q(&v["formatVersion"])?).map_err(|e| {
+        format!(
+            "formatVersion {}: el testigo recompone cabezas {} \
+             (la pareja acusesRoot/n viaja firmada desde §275; la del MMR, desde §292)",
+            e.0,
+            VersionCabeza::texto()
+        )
+    })?;
     let b32 = |k: &str| -> Result<[u8; 32], String> {
         let b = leer_hex(&v[k])?;
         b.as_slice()
@@ -857,8 +867,8 @@ fn recomponer(v: &Value, firmado: &[u8; 32]) -> Result<(), String> {
     let (accounts, pending) = (dg!("accountsRoot"), dg!("pendingRoot"));
     let (frozen, chain) = (dg!("frozenRoot"), dg!("chainDigest"));
     let acuses = dg!("acusesRoot");
-    let compuesto = if version == 3 {
-        zk_ssl_verify::epoch_digest_v3(
+    let compuesto = match version {
+        VersionCabeza::V3 => zk_ssl_verify::epoch_digest_v3(
             seq,
             accounts,
             pending,
@@ -868,16 +878,18 @@ fn recomponer(v: &Value, firmado: &[u8; 32]) -> Result<(), String> {
             n,
             dg!("mmrRoot"),
             leer_q(&v["mmrSize"])?,
-        )
-    } else {
-        zk_ssl_verify::epoch_digest_v2(seq, accounts, pending, frozen, chain, acuses, n)
+        ),
+        VersionCabeza::V2 => {
+            zk_ssl_verify::epoch_digest_v2(seq, accounts, pending, frozen, chain, acuses, n)
+        }
     };
     let esperado = mmr::hoja_desde_bytes(firmado)
         .ok_or_else(|| "epochDigest: no es un digest del campo".to_string())?;
     if compuesto != esperado {
         return Err(format!(
-            "los campos NO recomponen el epochDigest firmado (v{version}): \
-             o el servido esta adulterado o la cabeza nunca fue esa"
+            "los campos NO recomponen el epochDigest firmado (v{}): \
+             o el servido esta adulterado o la cabeza nunca fue esa",
+            version.as_u8()
         ));
     }
     Ok(())
@@ -4643,5 +4655,20 @@ mod tests {
             assert!(e.contains("formatVersion"), "{v}: {e}");
             assert!(e.contains("v2 o v3"), "{v}: {e}");
         }
+    }
+
+    /// §406 · RFC-0005 E2: `verificar` rechaza por version ANTES de tocar la firma; el
+    /// `as u8` ya no convierte 0x103 en un 3 (punto 74 de la cola). Y con la version
+    /// buena lo que falla es la firma de mentira: la puerta esta en su orden.
+    #[test]
+    fn verificar_rechaza_por_version_antes_que_por_firma() {
+        for v in ["0x1", "0x4", "0x103"] {
+            let mut c = cabeza_firmada_completa();
+            c["formatVersion"] = json!(v);
+            let e = verificar(&c).expect_err(v);
+            assert!(e.contains("formatVersion") && e.contains("v2 o v3"), "{v}: {e}");
+        }
+        let e = verificar(&cabeza_firmada_completa()).expect_err("firma de mentira");
+        assert!(!e.contains("formatVersion"), "{e}");
     }
 }

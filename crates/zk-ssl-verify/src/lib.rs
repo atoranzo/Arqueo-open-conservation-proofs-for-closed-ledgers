@@ -131,6 +131,61 @@ pub const DOMINIO_COFIRMA: &[u8] = b"ZK-SSL-witness-cosign";
 /// entra en la firma.
 pub const VERSION_FORMATO: u8 = 3;
 
+/// Las versiones de cabeza que un verificador del nucleo ACEPTA (RFC-0005, E2).
+///
+/// ⚠️ Es la UNICA puerta por la que el conjunto crece: una composicion nueva es
+/// una variante nueva aqui, y el compilador marca cada `match` que la olvide.
+/// El mando y el testigo NO repiten el conjunto: lo consumen, y derivan de el el
+/// texto de sus rechazos. [`VERSION_FORMATO`] tiene que ser miembro (atado en
+/// los tests). Un `TryFrom<u64>` que falla NO trunca: `0x103` no es un 3.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VersionCabeza {
+    /// §275: la pareja `acusesRoot`/`n` viaja firmada.
+    V2 = 2,
+    /// §292: la cima y el tamano del MMR entran en el digest.
+    V3 = 3,
+}
+
+impl VersionCabeza {
+    /// Todas, en orden: el conjunto que se enumera y del que se deriva el texto.
+    pub const TODAS: [VersionCabeza; 2] = [VersionCabeza::V2, VersionCabeza::V3];
+    /// El byte que entra en el preambulo.
+    pub fn as_u8(self) -> u8 {
+        self as u8
+    }
+    /// `v2 o v3`, DERIVADO de [`Self::TODAS`]: el texto que los rechazos citan.
+    pub fn texto() -> String {
+        let vs: Vec<String> = Self::TODAS.iter().map(|v| format!("v{}", v.as_u8())).collect();
+        match vs.split_last() {
+            Some((ult, resto)) if !resto.is_empty() => format!("{} o {}", resto.join(", "), ult),
+            Some((ult, _)) => ult.clone(),
+            None => String::new(),
+        }
+    }
+}
+
+/// Una `formatVersion` fuera del conjunto. Lleva el valor tal como llego, en
+/// `u64` y sin truncar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VersionCabezaDesconocida(pub u64);
+
+impl core::fmt::Display for VersionCabezaDesconocida {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "formatVersion {}: se aceptan cabezas {}", self.0, VersionCabeza::texto())
+    }
+}
+
+impl TryFrom<u64> for VersionCabeza {
+    type Error = VersionCabezaDesconocida;
+    fn try_from(v: u64) -> Result<Self, Self::Error> {
+        Self::TODAS
+            .iter()
+            .copied()
+            .find(|x| u64::from(x.as_u8()) == v)
+            .ok_or(VersionCabezaDesconocida(v))
+    }
+}
+
 /// Bytes del RFC 8391 que ocupa la firma de este conjunto, sin el mensaje.
 pub const FIRMA_RFC_BYTES: usize = 18_469;
 
@@ -1064,5 +1119,41 @@ mod tests {
             1,
             "una dependencia por ruta en dev tiene que verse: el gate afirma las DOS secciones"
         );
+    }
+
+    // ── §406 · RFC-0005 E2: EL CONJUNTO DE VERSIONES TIENE UN SOLO PRODUCTOR ──
+
+    /// Subir `VERSION_FORMATO` sin anadir la variante se pone rojo aqui: la
+    /// puerta por la que el nucleo crece es una sola.
+    #[test]
+    fn la_version_vigente_es_miembro_del_conjunto() {
+        let vf = crate::VERSION_FORMATO;
+        assert!(
+            crate::VersionCabeza::TODAS.iter().any(|v| v.as_u8() == vf),
+            "VERSION_FORMATO {vf} no esta en {:?}",
+            crate::VersionCabeza::TODAS
+        );
+        assert_eq!(
+            crate::VersionCabeza::try_from(u64::from(vf)).map(|v| v.as_u8()),
+            Ok(vf)
+        );
+    }
+
+    #[test]
+    fn el_conjunto_es_exactamente_v2_y_v3_y_su_texto_se_deriva() {
+        assert_eq!(crate::VersionCabeza::TODAS.map(|v| v.as_u8()), [2, 3]);
+        assert_eq!(crate::VersionCabeza::texto(), "v2 o v3");
+    }
+
+    /// Cinco valores fuera del conjunto, el `0x103` entre ellos: el valor viaja
+    /// entero en el error y el texto nombra el conjunto.
+    #[test]
+    fn una_version_fuera_del_conjunto_se_rechaza_sin_truncar() {
+        for v in [0u64, 1, 4, 0x103, u64::MAX] {
+            let e = crate::VersionCabeza::try_from(v).expect_err("fuera del conjunto");
+            assert_eq!(e.0, v, "el valor tiene que viajar entero");
+            let t = e.to_string();
+            assert!(t.contains(&format!("formatVersion {v}")) && t.contains("v2 o v3"), "{t}");
+        }
     }
 }

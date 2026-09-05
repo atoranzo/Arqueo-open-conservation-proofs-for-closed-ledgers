@@ -30408,3 +30408,67 @@ modo que los documentos `.md` versionados pasan de 65 a 66 y los vivos
 de 35 a 36, ambos DERIVADOS en la corrida. Ningun `Cargo` tocado.
 Canon no corrido: el corte no toca codigo, y la foto la mide el primer canon que se
 ejecute. Ficheros: `spec/rfc/0005-nucleo-congelado.md` (nace), `AUDITORIA.md`.
+
+## §406 — El conjunto de versiones de cabeza tiene UN solo productor: VersionCabeza (RFC-0005, E2)
+
+**Que.** Nace `VersionCabeza { V2, V3 }` en `crates/zk-ssl-verify/src/lib.rs`, junto a
+`VERSION_FORMATO`, con `TryFrom<u64>` que rechaza sin truncar, `as_u8()` para el preambulo y
+`texto()` que DERIVA "v2 o v3" del conjunto. El mando (`verify/main.rs`) y el testigo
+(`witness.rs`) dejan de repetir `!= 2 && != 3` y `if == 3 else`: CONSUMEN el enum, y sus
+dos dispatch pasan a `match` exhaustivo sin comodin. Es la E2 del RFC-0005 -la regla de
+extension ejercida: un conjunto EXPLICITO, en un solo sitio, y el compilador marca cada
+`match` que olvide una variante- y cierra de paso el punto 74 (el `as u8` que convertia
+`0x103` en un 3) y el punto 75 (dos textos atados por copia). Corre canon.
+
+**El defecto que este sello paga.** El conjunto {2, 3} vivia en CUATRO sitios: dos
+comparaciones explicitas (`main.rs:128`, `witness.rs:835`) y dos dispatch con `else` como
+comodin (`main.rs:144`, `witness.rs:860`). Y la version de cabeza se leia como `u64` y se
+guardaba `as u8` en tres sitios (`witness.rs:797`, `main.rs:174`, `main.rs:375`): el §404
+cerro el recompositor pero `verificar` seguia truncando antes de la firma. Medido en la
+sesion 97 por el `PASTE-406-M` (`507a898464628eb2`/264, salida `632a8fe4150d8934`/1418) y
+el `PASTE-406-PRE` (`55c4a8555c0518ca`/279, salida `d17b8ada551130e1`/400).
+
+**Lo que la medicion CAMBIO.** (a) Los dos textos de rechazo NO eran copia, como decia el
+punto 75: el mando dice "el paquete v1 empaqueta cabezas v2 o v3" y el testigo "el
+testigo recompone cabezas v2 o v3"; solo la cola es igual. Lo que el MANIFIESTO del
+paquete fija bajo el RFC-0004 ACEPTADO es que la salida del mando CONTENGA su frase, y el
+test del §404 exige que el testigo contenga "v2 o v3". Luego el productor unico da el
+CONJUNTO y la enumeracion derivada; cada consumidor conserva su sujeto; los 67 vectores
+del paquete no se tocan. (b) El pin del verificador cuenta lib y bin (caso 21): tres tests
+en `lib.rs` y uno en `main.rs` son +4, no +3. (c) `PRINCIPIOS.md` 357-358 decia en
+presente "1138 contando los pines" y "1152 declarados" mientras el canon
+llevaba 1145 / 1159 desde el §399: es el punto 56 medido -la pareja vive en la
+linea siguiente a la cifra que `check_cifras` gatea y ningun -B la movio-. Este sello
+toca esa misma vineta y deja las dos cifras en 1150 / 1164: dejarlas al lado
+de las nuevas seria escribir la contradiccion.
+
+**Las decisiones, REVERSIBLES, tomadas por el asistente por delegacion del autor con la
+ley.** D-1 el productor es un `enum` exhaustivo y no una lista: pureza (menos excepciones;
+lo que el compilador no restringe no existe) y claridad (`VersionCabeza::V3` significa
+UNA cosa; un `3` a pelo significaba tres). D-2 `TryFrom<u64>` en vez de `as u8`:
+fail-closed; un `0x103` que se trunca a 3 es "seguir por compatibilidad". D-3 testigo
+negativo antes que feature: cinco valores fuera del conjunto rechazados sin truncar, el
+texto derivado atado a "v2 o v3", `VERSION_FORMATO` miembro del conjunto (subirla sin
+anadir la variante se pone rojo), el rechazo del mando consumiendo el conjunto con el texto
+del MANIFIESTO, y `verificar` rechazando por version ANTES que por firma. D-4 el ambito es
+el conjunto: `main.rs:343` (la extension exige v3) y `witness.rs:316` (`NoAplica` si no es
+v3) son OTRAS reglas y se dejan declaradas; `RPC.md`, `PAQUETE.md` y los vectores,
+intactos. D-5 la fila E2 del RFC-0005 gira a "sellada — §406", como el 0004 con cada etapa.
+
+**Lo que se enseno ROJO EN VIVO.** Con SOLO el test nuevo del testigo en el arbol,
+`verificar_rechaza_por_version_antes_que_por_firma` FALLA: un `0x103` pasaba la version
+(truncado a 3) y moria por la firma de mentira, sin nombrar `formatVersion`. Los tres
+tests del enum y el del mando nacen con el productor y no tienen rojo previo posible: se
+declaran como tests de CONSTRUCCION, no de regresion; su falsador es el `VERSION_FORMATO`
+miembro, que solo puede ponerse rojo el dia que alguien suba la version sin variante.
+
+**Contadores.** Pines: `zk-ssl-verify` 75 -> 79 (3 en lib, 1 en
+el mando), `zk-ssl-cli` 92 -> 93; sumas 1008 -> 1013 /
+1145 -> 1150 / 1159 -> 1164, las cifras por-crate en PRINCIPIOS en el
+mismo bloque que el pin; `check_cifras` ROJO con solo el pin movido (VIVA A) y verde con
+todo. `--list` en release PRE + los nombres nuevos, nombre a nombre. Canon `--sello` VERDE
+en 186 s. Ningun `Cargo` tocado. Ficheros: `witness.rs` (`1331b59ff297a16c/4674`),
+`verify/lib.rs` (`1e0d5c5227afcb24/1159`), `verify/main.rs` (`6dc17e15b8b2c97e/570`), `tools/canon.sh`
+(`56bf2733c1d632cd`, linea-neutral), `spec/rfc/0005-nucleo-congelado.md` (`49e1b1bff2df484d`,
+linea-neutral), PAPER.md, PRINCIPIOS.md, RESUMEN_BILINGUE.md, RESUMEN_EJECUTIVO.md
+(linea-neutrales), AUDITORIA.md.

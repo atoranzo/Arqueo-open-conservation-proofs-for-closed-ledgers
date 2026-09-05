@@ -11,7 +11,7 @@
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
 | E1 — el núcleo, escrito | un documento normativo bajo `spec/` que enumera QUÉ no cambia y POR QUÉ, con cada pieza atada por cita a la línea del código que la produce; el censo se re-deriva al sellar | NO | por hacer |
-| E2 — la regla de extensión, escrita y ejercida | la regla en el mismo documento, y el atado que la ejerce: un verificador acepta un conjunto EXPLÍCITO de versiones y rechaza lo demás (§404 es el primer caso) | NO | por hacer |
+| E2 — la regla de extensión, escrita y ejercida | la regla en el mismo documento, y el atado que la ejerce: un verificador acepta un conjunto EXPLÍCITO de versiones y rechaza lo demás (§404 es el primer caso) | NO | sellada — §406 |
 | E3 — los rechazos del cable, con vector | vectores negativos de lo que un consumidor del cable tiene que rechazar, bajo su propio directorio, con su puerta en `tools/canon.sh`; qué rechaza hoy el consumidor se MIDE antes de escribir un vector | NO | por hacer |
 | E4 — el arnés de conformidad | una herramienta que corre el catálogo de vectores contra CUALQUIER binario que se le pase y dice si pasa y falla igual que la referencia | NO | por hacer |
 | E5 — el criterio | una segunda implementación, escrita desde la spec sin leer el código de referencia, que pase y falle igual. No está en la mano del autor; E4 es lo que lo hace comprobable el día que exista | NO | fuera del árbol |

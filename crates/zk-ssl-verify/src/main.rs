@@ -52,7 +52,7 @@ use std::process::ExitCode;
 
 use zk_ssl_verify::{
     acuses, verificar_acuse, verificar_acuse_v3, indice_de_firma, verificar_cabeza, verificar_cofirma,
-    CabezaFirmada, COFIRMA_V_MAX, ReciboAcuse,
+    CabezaFirmada, COFIRMA_V_MAX, ReciboAcuse, VersionCabeza,
 };
 use zk_ssl_hash::{digest_from_bytes, epoch_digest_v2, epoch_digest_v3, Digest};
 
@@ -124,13 +124,16 @@ fn correr(ruta: &str) -> Result<(), String> {
     if c.get("available").and_then(|x| x.as_bool()) != Some(true) {
         return Err(err("la cabeza empaquetada no era available:true".into()));
     }
-    let version = u64_de(c, "formatVersion")?;
-    if version != 2 && version != 3 {
-        return Err(err(format!(
-            "formatVersion {version}: el paquete v1 empaqueta cabezas v2 o v3 \
-             (la pareja acusesRoot/n viaja firmada desde §275; la del MMR, desde §292)"
-        )));
-    }
+    // §406 · RFC-0005 E2: el conjunto lo produce `VersionCabeza` y aqui se CONSUME;
+    //        el texto de este rechazo lo fija el MANIFIESTO del paquete.
+    let version = VersionCabeza::try_from(u64_de(c, "formatVersion")?).map_err(|e| {
+        err(format!(
+            "formatVersion {}: el paquete v1 empaqueta cabezas {} \
+             (la pareja acusesRoot/n viaja firmada desde §275; la del MMR, desde §292)",
+            e.0,
+            VersionCabeza::texto()
+        ))
+    })?;
     let seq = u64_de(c, "seq")?;
     let n = u64_de(c, "n")?;
     let accounts = digest_de(c, "accountsRoot")?;
@@ -141,10 +144,9 @@ fn correr(ruta: &str) -> Result<(), String> {
     let epoch_digest = digest_de(c, "epochDigest")?;
 
     // 1 · el digest NO se cree: se recompone — y LA VERSION ELIGE RECOMPONEDOR
-    let mmr = if version == 3 {
-        Some((digest_de(c, "mmrRoot")?, u64_de(c, "mmrSize")?))
-    } else {
-        None
+    let mmr = match version {
+        VersionCabeza::V3 => Some((digest_de(c, "mmrRoot")?, u64_de(c, "mmrSize")?)),
+        VersionCabeza::V2 => None,
     };
     let compuesto = match mmr {
         None => epoch_digest_v2(seq, accounts, pending, frozen, chain, acuses_root, n),
@@ -159,7 +161,10 @@ fn correr(ruta: &str) -> Result<(), String> {
                 .into(),
         ));
     }
-    println!("1/3 los campos de la cabeza (v{version}) recomponen el epochDigest — el digest no se ha creido");
+    println!(
+        "1/3 los campos de la cabeza (v{}) recomponen el epochDigest — el digest no se ha creido",
+        version.as_u8()
+    );
 
     // 2 · la firma, contra la clave publicada, comparando el preambulo
     let clave = c
@@ -171,7 +176,7 @@ fn correr(ruta: &str) -> Result<(), String> {
         .and_then(|x| x.as_str())
         .ok_or_else(|| err("falta signature".into()))?;
     let cf = CabezaFirmada {
-        version_formato: version as u8,
+        version_formato: version.as_u8(),
         indice: u64_de(c, "index")?,
         firma: hex_a_bytes(firma)?,
     };
@@ -541,5 +546,25 @@ mod tests {
         let p = json!({ "v": 2, "cofirmas": [c] });
         let e = verificar_cofirmas_del_paquete(&p, &ed(), &[0xaa_u8]).unwrap_err();
         assert!(e.contains("falta firma"), "{e}");
+    }
+
+    /// §406 · RFC-0005 E2: el rechazo por version del mando CONSUME el conjunto de
+    /// `VersionCabeza` y conserva el texto que el MANIFIESTO del paquete fija.
+    #[test]
+    fn el_rechazo_por_version_consume_el_conjunto_y_conserva_su_texto() {
+        let dir = std::env::temp_dir();
+        for v in ["0x1", "0x4", "0x103"] {
+            let n = u64::from_str_radix(v.trim_start_matches("0x"), 16).unwrap();
+            let ruta = dir.join(format!("zk-ssl-verify-406-{n}.json"));
+            let p = json!({ "v": 1, "cabeza": { "available": true, "formatVersion": v } });
+            std::fs::write(&ruta, p.to_string()).unwrap();
+            let e = correr(ruta.to_str().unwrap()).unwrap_err();
+            let _ = std::fs::remove_file(&ruta);
+            let esperado = format!(
+                "formatVersion {n}: el paquete v1 empaqueta cabezas {}",
+                VersionCabeza::texto()
+            );
+            assert!(e.contains(&esperado), "{v}: {e}");
+        }
     }
 }
