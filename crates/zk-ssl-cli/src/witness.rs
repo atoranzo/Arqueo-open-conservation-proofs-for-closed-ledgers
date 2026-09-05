@@ -795,7 +795,10 @@ fn verificar(v: &Value) -> Result<(), String> {
     digest.copy_from_slice(&d);
     let c = CabezaFirmada {
         version_formato: leer_q(&v["formatVersion"])? as u8,
-        indice: 0, // no entra en el preámbulo
+        // §399 · no entra en el preámbulo, y por eso mismo se ata al que va
+        // dentro de la firma en `verificar_cabeza`: el testigo lee el `index`
+        // que el nodo sirve y falla cerrado si no viene.
+        indice: leer_q(&v["index"])?,
         firma,
     };
     verificar_cabeza(&clave, &digest, &c).map_err(|e| format!("{e}"))?;

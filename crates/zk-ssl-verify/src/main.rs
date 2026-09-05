@@ -51,7 +51,7 @@
 use std::process::ExitCode;
 
 use zk_ssl_verify::{
-    acuses, verificar_acuse, verificar_acuse_v3, verificar_cabeza, verificar_cofirma,
+    acuses, verificar_acuse, verificar_acuse_v3, indice_de_firma, verificar_cabeza, verificar_cofirma,
     CabezaFirmada, COFIRMA_V_MAX, ReciboAcuse,
 };
 use zk_ssl_hash::{digest_from_bytes, epoch_digest_v2, epoch_digest_v3, Digest};
@@ -181,7 +181,10 @@ fn correr(ruta: &str) -> Result<(), String> {
     //          necesitan, y recomputarlos seria un segundo productor.
     let clave_op = hex_a_bytes(clave)?;
     verificar_cabeza(&clave_op, &ed, &cf).map_err(|e| err(format!("cabeza: {e}")))?;
-    println!("2/3 la firma verifica y el preambulo ES el esperado (indice de firma {})", cf.indice);
+    // §399 · se imprime el indice EMBEBIDO, el unico que la firma acredita;
+    //        el declarado ya quedo atado a el dentro de verificar_cabeza.
+    let hoja = indice_de_firma(&cf.firma).map_err(|e| err(format!("cabeza: {e}")))?;
+    println!("2/3 la firma verifica y el preambulo ES el esperado (indice de firma {hoja})");
 
     // 3 · el acuse, si viaja
     match p.get("acuse") {

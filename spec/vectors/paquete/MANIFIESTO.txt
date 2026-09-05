@@ -34,6 +34,8 @@ rechazo-n-adulterado.json|1|los siete campos NO recomponen el epochDigest empaqu
 rechazo-sin-publicKey.json|1|falta publicKey
 rechazo-sin-signature.json|1|falta signature
 rechazo-index-ausente.json|1|falta index o no es cadena 0x
+rechazo-index-atrasado.json|1|cabeza: el indice declarado (3) no cuadra con el que va dentro de la firma (3)
+rechazo-index-cero.json|1|cabeza: el indice declarado (0) no cuadra con el que va dentro de la firma (3)
 rechazo-signature-nibble.json|1|cabeza: 
 rechazo-publicKey-nibble.json|1|cabeza: 
 rechazo-acuse-sin-camino.json|1|acuse sin camino

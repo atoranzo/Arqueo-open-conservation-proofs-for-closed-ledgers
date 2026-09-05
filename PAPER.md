@@ -33,7 +33,7 @@ obtenidas en condiciones idénticas, y documentamos un error metodológico
 propio —mezcla de compilaciones de depuración y optimizadas— detectado y
 corregido durante el trabajo.
 
-La implementación de referencia consta de **1004 pruebas ejecutables en la
+La implementación de referencia consta de **1007 pruebas ejecutables en la
 compuerta de sello** —1138 contando los pines de los niveles largo y
 completo, y 1152 declaradas—, con 13 ignoradas y declaradas, y
 está disponible públicamente. **No ha sido auditada por terceros y no

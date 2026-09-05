@@ -189,6 +189,8 @@ pub struct CabezaFirmada {
     ///
     /// ⚠️ **No entra en el preámbulo**: es metadato para detectar reúso, no
     /// algo que la firma acredite.
+    /// Desde §399 se ata al índice de hoja que la firma lleva dentro
+    /// (`embebido < indice`), en la cabeza igual que en la cofirma (§332).
     pub indice: u64,
     /// La firma, en bytes del formato RFC 8391, con el preámbulo adjunto.
     pub firma: Vec<u8>,
@@ -485,6 +487,10 @@ pub fn clave_desde_bytes(rfc: &[u8]) -> Result<VerifyingKey<Conjunto>, VerificaE
 /// longitud** —las firmas adjuntas son de longitud variable—, así que es
 /// casi un envoltorio. **Toda la validación real ocurre en `verify()` y en
 /// la comparación de abajo.**
+///
+/// ⚠️ Desde §399 ata además el `indice` declarado al que va dentro de la
+/// firma, con el invariante del §332 (`embebido < declarado`): el declarado
+/// queda acotado **por abajo**. Declarar más de lo firmado pasa, y se dice.
 pub fn verificar_cabeza(
     clave_publica: &[u8],
     epoch_digest: &[u8; 32],
@@ -503,6 +509,22 @@ pub fn verificar_cabeza(
             esperado: esperado.len(),
             recibido: recuperado.len(),
         });
+    }
+    // ⚠️⚠️ EL ATADO (§399), calcado del de la cofirma (§332). El `indice`
+    // declarado no entra en el preambulo, asi que la firma no lo acredita;
+    // aqui se compara con el que va DENTRO, que no se puede falsear sin
+    // romper la firma. Mismo invariante y por la misma razon:
+    // `embebido < declarado`, porque el productor (`firma_cabeza::firmar`)
+    // hace `reservar()` -> firmar, y un indice huerfano ensancha el desfase
+    // para siempre. Exigir el +1 daria rojo sobre material legitimo.
+    //
+    // ⚠️ Esto acota el declarado POR ABAJO. Un sobre puede declarar mas de
+    // lo que firmo y pasa: lo que la firma acredita es el embebido, y es el
+    // que el mando imprime. Va despues de comparar el preambulo, para que
+    // una cofirma presentada como cabeza siga cayendo por el DOMINIO.
+    let embebido = indice_de_firma(&c.firma)?;
+    if embebido >= c.indice {
+        return Err(VerificaError::IndiceDiscordante { declarado: c.indice, embebido });
     }
     Ok(())
 }
@@ -680,6 +702,67 @@ mod tests {
         for clave in [vec![], vec![0u8; 3], vec![0u8; 68], vec![0xFFu8; 200]] {
             assert!(verificar_cabeza(&clave, &d, &c0).is_err(), "una clave rota debe dar Err");
         }
+    }
+
+    /// Firma DOS veces con la misma clave y devuelve la segunda: la hoja
+    /// embebida es la 1, y el `indice` declarado que le corresponde es 2
+    /// (`reservar()` devuelve `actual + 1`: la convencion del productor).
+    fn firmado_en_la_hoja_1(digest: &[u8; 32]) -> (Vec<u8>, CabezaFirmada) {
+        let mut s = [0u8; 96];
+        for (i, b) in s.iter_mut().enumerate() {
+            *b = (i as u8).wrapping_mul(17).wrapping_add(4);
+        }
+        let mut kp = KeyPair::<Conjunto>::from_seed(&s).expect("keygen");
+        let pk = kp.verifying_key().as_ref().to_vec();
+        let pre = preambulo(VERSION_FORMATO, digest);
+        let _hoja_0 = kp.signing_key().sign(&pre).expect("firmar la hoja 0");
+        let sig = kp.signing_key().sign(&pre).expect("firmar la hoja 1");
+        assert_eq!(
+            indice_de_firma(sig.as_ref()).expect("la firma lleva indice"),
+            1,
+            "la segunda firma va en la hoja 1"
+        );
+        (
+            pk,
+            CabezaFirmada { version_formato: VERSION_FORMATO, indice: 2, firma: sig.as_ref().to_vec() },
+        )
+    }
+
+    /// §399 · el declarado IGUAL al embebido no cuadra: es lo que `atrasado` ensena.
+    #[test]
+    fn el_indice_declarado_igual_al_embebido_se_rechaza() {
+        let d = [0x63u8; 32];
+        let (pk, mut c) = firmado_en_la_hoja_1(&d);
+        c.indice = 1;
+        match verificar_cabeza(&pk, &d, &c) {
+            Err(VerificaError::IndiceDiscordante { declarado: 1, embebido: 1 }) => {}
+            otro => panic!("declarado 1 sobre la hoja 1 debe dar IndiceDiscordante, y dio: {otro:?}"),
+        }
+    }
+
+    /// §399 · el cero no cuadra nunca: el contador empieza a devolver en 1.
+    #[test]
+    fn el_indice_declarado_a_cero_se_rechaza() {
+        let d = [0x64u8; 32];
+        let (pk, mut c) = firmado_en_la_hoja_1(&d);
+        c.indice = 0;
+        match verificar_cabeza(&pk, &d, &c) {
+            Err(VerificaError::IndiceDiscordante { declarado: 0, embebido: 1 }) => {}
+            otro => panic!("declarado 0 debe dar IndiceDiscordante, y dio: {otro:?}"),
+        }
+    }
+
+    /// §399 · LA COTA, escrita como test: el declarado solo esta acotado por
+    /// abajo. Declarar mas de lo firmado PASA, y no es un descuido: exigir el
+    /// +1 daria rojo sobre el indice huerfano, que es legitimo (§332).
+    #[test]
+    fn el_indice_declarado_por_encima_pasa_y_es_la_cota_declarada() {
+        let d = [0x65u8; 32];
+        let (pk, mut c) = firmado_en_la_hoja_1(&d);
+        verificar_cabeza(&pk, &d, &c).expect("2 sobre la hoja 1: el productor honesto");
+        c.indice = 1_002;
+        verificar_cabeza(&pk, &d, &c)
+            .expect("1002 sobre la hoja 1 PASA: el declarado solo esta acotado por abajo");
     }
 
     // ── el apaño, y su centinela ──

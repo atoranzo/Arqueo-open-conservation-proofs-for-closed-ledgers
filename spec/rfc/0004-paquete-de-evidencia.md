@@ -4,7 +4,7 @@
 - **Autores:** Che, con Claude (sesión 92)
 - **Fecha:** 2026-09-04
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad)
-- **Asiento(s) de AUDITORIA:** §243, §289, §290, §293, §322, §395, el §396, que lo sella, el §397 (E1) y el §398 (E2)
+- **Asiento(s) de AUDITORIA:** §243, §289, §290, §293, §322, §395, el §396, que lo sella, el §397 (E1) y el §398 (E2), el §399 (E3)
 
 ## Estado de las etapas
 
@@ -12,6 +12,7 @@
 |---|---|---|---|
 | E1 — la mudanza | un documento normativo propio bajo `spec/` como único productor; la cabecera del binario remite; `spec/RPC.md` y `spec/README.md` apuntan | NO | sellada — §397 |
 | E2 — los vectores y la puerta | `spec/vectors/paquete/` y su bloque de conformidad en `tools/canon.sh` | NO | sellada — §398 |
+| E3 — el índice de la cabeza | `verificar_cabeza` ata el `index` declarado al índice de hoja que va dentro de la firma XMSS (como §332 hizo con la cofirma); el mando imprime el embebido; el testigo lee el `index` servido; dos vectores negativos | NO | sellada — §399 |
 
 Todas las medidas de este documento se tomaron sobre `bb5322f` (§395), en dos lecturas
 puras que no escribieron un byte en el árbol: `PASTE-396-M` y `PASTE-396-PRE` (ver
@@ -165,6 +166,7 @@ adulterado— trasladado a un gate que no necesita levantar un nodo.
 |---|---|---|
 | E1 — la mudanza | **NO.** Ningún valor que viaja cambia; `zkssl/0.3` sigue vigente | los tres del cable, **intactos**; `conformance --check` debe seguir dando `0.3` IDÉNTICO y rechazando `0.2` y `0.1` como de OTRA versión |
 | E2 — los vectores y la puerta | **NO.** Los vectores del paquete son un universo aparte, bajo `spec/vectors/paquete/` | ídem: los del cable no se tocan |
+| E3 — el índice de la cabeza | **NO.** Nada que viaja cambia; el verificador se hace más estricto sobre un sobre que ningún productor honesto emite | los del cable, intactos; el manifiesto del paquete gana dos entradas |
 
 **Regla 2 del PROCESO: los vectores viejos jamás se reescriben.** Los tres vectores del
 cable —`zkssl-0.1.json`, `zkssl-0.2.json` y `zkssl-0.3.json`— **se conservan** bajo su

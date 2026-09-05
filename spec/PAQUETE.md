@@ -120,7 +120,8 @@ recompone**. Cada paso que pasa imprime una línea en la salida estándar.
    elige recomponedor**: v2 con la pareja de acuses (§275), v3 además con la del MMR (§292); los
    campos de la cabeza recomponen su `epochDigest`;
 2. **`2/3`** — la firma XMSS verifica contra `publicKey` **y** el preámbulo recuperado es el
-   esperado (verificar sin comparar no prueba nada);
+   esperado (verificar sin comparar no prueba nada) **y** el `index` declarado queda por
+   encima del índice de hoja que va dentro de la firma (§399; la cota es por abajo, sección 8);
 3. **`3/3`** — si hay `acuse`: la hoja `hoja_de_acuse(hashPrueba, seq, n)` sube por `camino`
    hasta `acusesRoot`, y los campos vuelven a componer el digest firmado (v2) o el digest y la
    cima (v3). Si no hay acuse, la cabeza sola queda demostrada;
@@ -165,7 +166,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `formatVersion {version}: el paquete v1 empaqueta cabezas v2 o v3 (la pareja acusesRoot/n viaja firmada desde §275; la del MMR, desde §292)` — el texto dice «v1» aunque el sobre sea v2: regla vigente, prosa que la implementación de referencia debe corregir sin cambiar la regla.
 - `los siete campos NO recomponen el epochDigest empaquetado: o el paquete esta adulterado o la cabeza nunca fue esa`
 - `falta publicKey` · `falta signature`
-- `cabeza: {e}` — la firma no verifica o el preámbulo no es el esperado; `{e}` es el error de la biblioteca.
+- `cabeza: {e}` — la firma no verifica, el preámbulo no es el esperado, o el `index` declarado no queda por encima del que va dentro de la firma (§399); `{e}` es el error de la biblioteca.
 
 **El acuse** (paso 3)
 
@@ -225,13 +226,19 @@ es un frente propio y no cambia este documento: cambiaría quién escribe el sob
 - Que las cofirmas verifiquen no dice que basten: la política es del cliente (sección 1).
 - Nada sobre el contenido de la posición: el paquete demuestra **que** la entrada está acusada
   bajo esa cabeza firmada, no **qué** dice.
+- El `index` de la cabeza sólo está acotado **por abajo**. La firma acredita el índice de hoja
+  que lleva dentro y el binario exige que el declarado sea mayor (§399); un sobre que declare
+  más de lo que firmó no se rechaza, y lo que el mando imprime como «indice de firma» es el
+  embebido, no el declarado.
 
 ## 9. Vectores y puerta
 
-Los vectores del paquete viven en `spec/vectors/paquete/` (etapa E2 del RFC-0004, sellada en §398):
+Los vectores del paquete viven en `spec/vectors/paquete/` (etapa E2 del RFC-0004, sellada en §398; E3 en §399):
 un positivo por forma —v1, v2, v2 sin acuse, v2 con cero cofirmas, extensión— y **un negativo por
 cada regla de la sección 5 que se puede producir a partir de un paquete real**, derivados por
-mutación de dos capturas de los bancos. `MANIFIESTO.txt` dice, por cada fichero, el código de
+mutación de dos capturas de los bancos. Los dos negativos del índice (`rechazo-index-atrasado`,
+`rechazo-index-cero`) entraron con su regla en §399.
+`MANIFIESTO.txt` dice, por cada fichero, el código de
 salida y el texto que el binario tiene que emitir; `tools/canon.sh` corre `zk-ssl-verify` sobre
 cada uno en cada canon y se pone en rojo si un solo vector no dice lo que el manifiesto dice, o
 si aparece un vector sin entrada. Un nibble adulterado en cualquiera pone el canon en rojo.
@@ -245,6 +252,7 @@ La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.
 ## 10. Historia
 
 - §289: nace el paquete (formato v1) y su binario; §290: el apagado declarado; §293: el paquete de
+- §399 — el `index` declarado se ata al que va dentro de la firma (E3); el mando imprime el embebido; el testigo lee el `index` servido.
   extensión; §322: el v2 con las cofirmas dentro.
 - Hasta §397 este contrato vivía en la cabecera de `crates/zk-ssl-verify/src/main.rs` (1..90,
   `293990fedc785833`), que ya confesó una vez (§247) haber declarado su superficie como completa

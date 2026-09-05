@@ -30038,3 +30038,63 @@ para el vector de «claves DISTINTAS» es un frente propio, si algun dia hay dos
 1156. `tools/canon.sh` 302 -> 321 lineas. Documentos `.md` versionados 65 -> 65.
 `verificar_citas` 60 -> 60 nombres, 0 fantasmas. Canon `--sello` VERDE, con el 3 bis dentro,
 en 171 s. Seis entradas de porcelain: cinco tocados y un directorio que nace.
+
+## §399 — El indice declarado de la cabeza se ata al que va dentro de la firma (RFC-0004, E3)
+
+**Que.** `verificar_cabeza` comprueba ahora que el `indice` declarado de una cabeza
+firmada queda POR ENCIMA del indice de hoja que la firma XMSS lleva dentro
+(`embebido < declarado`), exactamente lo que el §332 hizo para la cofirma. El mando
+`zk-ssl-verify` imprime como «indice de firma» el EMBEBIDO, que es lo unico que la firma
+acredita, y el testigo lee el `index` que el nodo le sirve en vez de poner cero. Dos
+vectores negativos nuevos en `spec/vectors/paquete/` (`rechazo-index-atrasado`,
+`rechazo-index-cero`) y la fila E3 del RFC-0004.
+
+**De donde sale.** Del sondeo del §398: el unico candidato descartado,
+`rechazo-index-adelantado`, dio VERDE. En la 94 se midio (PASTE-63-M, -M2 y -PRE, tres
+lecturas puras sin tocar un byte): la captura real del §398 verifica con `index` 4 (el
+suyo), 5, 3, 1004 y 0, y el mando imprime cada uno como bueno. `epoch_digest_v3` compone
+nueve campos y ninguno es el indice; el preambulo es DOMINIO || version || digest. El
+indice embebido real de esa captura es 3 (los cinco primeros bytes de la firma) y el
+declarado 4: la misma convencion `reservar()` -> firmar del productor
+(`firma_cabeza.rs:181`) que el §332 midio para la cofirma.
+
+**Lo que la medicion cambio.** (1) El vector «adelantado» NO es producible: con el
+invariante de la casa, 3 < 5 pasa. Lo que el atado rechaza es el declarado igual o menor
+que el embebido. El adelantado queda DECLARADO como cota en `spec/PAQUETE.md` seccion 8,
+no congelado como vector positivo: un positivo que acepte una mentira embellece el relato
+y ensucia el invariante. (2) El testigo (`witness.rs:798`) construia la cabeza con
+`indice: 0` y el comentario «no entra en el preambulo», verdadero y por eso mismo
+peligroso: con el atado habria rechazado toda cabeza legitima. Es el §297 en su forma
+exacta y lo cazo el PASTE-63-PRE censando las 22 construcciones de `CabezaFirmada` del
+arbol; ninguna otra rompe. (3) El texto de rechazo no es nuevo: sale por `cabeza: {e}`,
+que ya estaba en el catalogo; lo que envejecia era la prosa de esa vineta.
+
+**Decisiones (REVERSIBLES, por la ley de diseno).** D-1 `embebido < declarado`, calcado
+del §332 (rango 3: el mismo patron; un gate mas estricto que el productor da rojo sobre
+material legitimo). D-2 el mando imprime el embebido (rangos 1 y 4: lo que la firma no
+restringe no existe). D-3 negativos `atrasado` y `cero`; el adelantado se declara. D-4
+sello propio como fila E3 del RFC-0004, antes del giro a ACEPTADO: `PROCESO.md` mete los
+vectores bajo RFC y la regla 4 exige los vectores para ACEPTADO. D-5 el testigo lee
+`v["index"]` y falla cerrado si falta; no se crea una `verificar_cabeza_atada` aparte,
+porque el firmante y el tercero usan el mismo verificador (`firma_cabeza.rs:199`).
+
+**Testigos.** Tres en `zk-ssl-verify`, ensenados ROJOS EN VIVO sobre el arbol sin el
+atado y verdes con el: declarado igual al embebido (1 sobre la hoja 1) da
+`IndiceDiscordante`; declarado 0 da `IndiceDiscordante`; declarado 2 y 1002 sobre la
+hoja 1 PASAN, y ese tercer test es la cota escrita como test. Los dos vectores nuevos,
+derivados de la captura del §398 por mutacion del `index`, tambien rojos en vivo antes
+del arreglo. Los 72 tests anteriores del crate, nombre a nombre, siguen.
+
+**Lo que NO hace.** No cambia el formato: el `index` sigue en el sobre y sigue sin entrar
+en el preambulo (D5 del §332). No acota el declarado por arriba, y lo dice. No caza el
+reinicio de la clave, que sigue siendo asunto de la repeticion del indice embebido
+(`indice-repetido`, §301/§332).
+
+**Contadores.** Pin `zk-ssl-verify` 72 -> 75 (3 tests). Sumas 1004 -> 1007, 1141 -> 1144,
+1155 -> 1158; el canon declara 1159. `MANIFIESTO.txt` 65 -> 67 entradas, 64 -> 66 `.json`.
+Documentos `.md` versionados 65 -> 65. Canon `--sello` VERDE en 178 s.
+Ficheros: `crates/zk-ssl-verify/src/lib.rs`, `crates/zk-ssl-verify/src/main.rs`,
+`crates/zk-ssl-cli/src/witness.rs`, `spec/PAQUETE.md`, `spec/vectors/paquete/` (manifiesto
+y dos vectores), `spec/rfc/0004-paquete-de-evidencia.md`, `tools/canon.sh`, los cinco
+documentos de cifras y este asiento. Lecturas de la 94: PASTE-63-M `8c3f88bf7ec93965`,
+PASTE-63-M2 `b397d9b9a67087d1`, PASTE-63-PRE `21a7f87f2b9b5d5b`.
