@@ -4,14 +4,14 @@
 - **Autores:** Che, con Claude (sesión 92)
 - **Fecha:** 2026-09-04
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad)
-- **Asiento(s) de AUDITORIA:** §243, §289, §290, §293, §322, §395, el §396, que lo sella, y el §397 (E1)
+- **Asiento(s) de AUDITORIA:** §243, §289, §290, §293, §322, §395, el §396, que lo sella, el §397 (E1) y el §398 (E2)
 
 ## Estado de las etapas
 
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
 | E1 — la mudanza | un documento normativo propio bajo `spec/` como único productor; la cabecera del binario remite; `spec/RPC.md` y `spec/README.md` apuntan | NO | sellada — §397 |
-| E2 — los vectores y la puerta | `spec/vectors/paquete/` y su bloque de conformidad en `tools/canon.sh` | NO | pendiente |
+| E2 — los vectores y la puerta | `spec/vectors/paquete/` y su bloque de conformidad en `tools/canon.sh` | NO | sellada — §398 |
 
 Todas las medidas de este documento se tomaron sobre `bb5322f` (§395), en dos lecturas
 puras que no escribieron un byte en el árbol: `PASTE-396-M` y `PASTE-396-PRE` (ver

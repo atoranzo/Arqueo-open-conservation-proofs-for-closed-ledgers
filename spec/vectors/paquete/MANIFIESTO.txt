@@ -1,0 +1,69 @@
+# Vectores del paquete de evidencia (spec/PAQUETE.md, RFC-0004 E2, sellado en el asiento 398).
+# fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
+# Los ficheros se derivaron por mutacion de dos capturas reales de los bancos; jamas se reescriben (regla 2 del PROCESO).
+# La ultima entrada no es un fichero: el binario tiene que decir que no puede leer una ruta que no existe.
+posicion-v2.json|0|VERDE: el paquete se sostiene sin el nodo
+posicion-v1.json|0|VERDE: el paquete se sostiene sin el nodo
+posicion-v2-sin-acuse.json|0|3/3 sin acuse en el paquete: la cabeza sola queda demostrada
+posicion-v2-cero-cofirmas.json|0|cofirmas: el paquete v2 no trae ninguna: la cabeza queda sola
+extension.json|0|VERDE: la extension se sostiene sin el nodo
+rechazo-json-ilegible.json|1|JSON ilegible
+rechazo-v-ausente.json|1|el paquete no declara su version en `v`
+rechazo-v-cadena.json|1|el paquete no declara su version en `v`
+rechazo-v-0.json|1|el paquete declara v:0
+rechazo-v-3.json|1|el paquete declara v:3
+rechazo-v1-con-cofirmas.json|1|un paquete v1 con `cofirmas`
+rechazo-sin-cabeza.json|1|falta cabeza
+rechazo-tipo-desconocido.json|1|falta cabeza
+rechazo-cabeza-no-available.json|1|la cabeza empaquetada no era available:true
+rechazo-cabeza-sin-available.json|1|la cabeza empaquetada no era available:true
+rechazo-formatVersion-ausente.json|1|falta formatVersion o no es cadena 0x
+rechazo-formatVersion-1.json|1|formatVersion 1: el paquete v1 empaqueta cabezas v2 o v3
+rechazo-formatVersion-4.json|1|formatVersion 4: el paquete v1 empaqueta cabezas v2 o v3
+rechazo-seq-ausente.json|1|falta seq o no es cadena 0x
+rechazo-seq-sin-0x.json|1|seq sin 0x
+rechazo-seq-no-hex.json|1|seq: 
+rechazo-accountsRoot-ausente.json|1|falta accountsRoot o no es cadena
+rechazo-accountsRoot-sin-0x.json|1|sin 0x: 
+rechazo-accountsRoot-impar.json|1|hex impar (63 chars)
+rechazo-accountsRoot-corto.json|1|accountsRoot: 31 bytes, se esperaban 32
+rechazo-accountsRoot-no-hex.json|1|hex: 
+rechazo-mmrRoot-ausente.json|1|falta mmrRoot o no es cadena
+rechazo-epochDigest-no-recompone.json|1|los siete campos NO recomponen el epochDigest empaquetado
+rechazo-n-adulterado.json|1|los siete campos NO recomponen el epochDigest empaquetado
+rechazo-sin-publicKey.json|1|falta publicKey
+rechazo-sin-signature.json|1|falta signature
+rechazo-index-ausente.json|1|falta index o no es cadena 0x
+rechazo-signature-nibble.json|1|cabeza: 
+rechazo-publicKey-nibble.json|1|cabeza: 
+rechazo-acuse-sin-camino.json|1|acuse sin camino
+rechazo-camino-sin-siblings.json|1|camino sin siblings
+rechazo-camino-sin-isRight.json|1|camino sin isRight
+rechazo-sibling-no-cadena.json|1|sibling 0 no es cadena
+rechazo-sibling-corto.json|1|sibling 0: 31 bytes
+rechazo-isRight-no-booleano.json|1|isRight no booleano
+rechazo-acuse-seq-ausente.json|1|falta seq o no es cadena 0x
+rechazo-acuse-hashPrueba-ausente.json|1|falta hashPrueba o no es cadena
+rechazo-hashPrueba-nibble.json|1|acuse: 
+rechazo-sibling-nibble.json|1|acuse: 
+rechazo-cofirmas-no-lista.json|1|cofirmas no es una lista
+rechazo-cofirma-sin-firma.json|1|cofirma 1: falta firma
+rechazo-cofirma-sin-v.json|1|falta v o no es cadena 0x
+rechazo-cofirma-v-9.json|1|cofirma 1: version 9 desconocida
+rechazo-cofirma-otra-cabeza.json|1|cofirma 1: acredita OTRA cabeza, no la empaquetada
+rechazo-cofirma-otro-operador.json|1|cofirma 1: acredita a OTRO operador, no al que firmo la cabeza
+rechazo-cofirma-firma-nibble.json|1|cofirma 1: 
+rechazo-cofirma-testigo-nibble.json|1|cofirma 1: 
+rechazo-ext-sin-vieja.json|1|falta vieja
+rechazo-ext-sin-nueva.json|1|falta nueva
+rechazo-ext-vieja-no-available.json|1|vieja: la cabeza no era available:true
+rechazo-ext-nueva-formatVersion-2.json|1|nueva: formatVersion 2
+rechazo-ext-vieja-no-recompone.json|1|vieja: los campos NO recomponen su epochDigest
+rechazo-ext-vieja-sin-publicKey.json|1|vieja: falta publicKey
+rechazo-ext-nueva-sin-signature.json|1|nueva: falta signature
+rechazo-ext-nueva-signature-nibble.json|1|nueva: cabeza: 
+rechazo-ext-sin-camino.json|1|falta camino (lista de digests)
+rechazo-ext-camino-no-cadena.json|1|camino[0] no es cadena
+rechazo-ext-camino-corto.json|1|camino[0]: 31 bytes
+rechazo-ext-camino-nibble.json|1|NO extiende a la vieja
+no-existe.json|1|no se puede leer

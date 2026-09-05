@@ -29983,3 +29983,58 @@ Sumas quietas: 1004 / 1141 / 1155, canon 1156. Ninguna cifra publicada se mueve;
 del canon lo falsa). `verificar_citas`: 59 -> 60 nombres, 0 fantasmas antes y despues.
 Documentos `.md` versionados 64 -> 65, vivos 34 -> 35, derivados. Canon `--sello` VERDE en
 171 s. Seis ficheros: cinco tocados y uno que nace.
+
+## §398 — Los vectores del paquete de evidencia y su puerta en el canon (RFC-0004, E2)
+
+**Que.** Nace `spec/vectors/paquete/`: 65 entradas en `MANIFIESTO.txt` — 5 positivos
+(v1, v2, v2 sin acuse, v2 con cero cofirmas, extension), 59 negativos y la ruta ausente —,
+2212 KB de JSON, y un bloque nuevo en `tools/canon.sh` («3 bis · conformidad del paquete»)
+que corre `zk-ssl-verify` en release sobre cada entrada y exige el codigo de salida y el texto
+que el manifiesto declara. Es la etapa E2 del RFC-0004: la puerta de E1 decia que el documento
+cubre todas las reglas que el binario implementa; la de E2 dice que cada regla publicada tiene
+un testigo que la enseña roja en cada canon.
+
+**De donde salen.** Los cuatro bancos arman el paquete en caliente y lo borran al salir: en
+disco no habia ni un paquete. El `PASTE-398-CAP` corrio copias de `banco_completo.sh` y
+`banco_extension.sh` bajo `target/` con la limpieza cambiada para copiar sus JSON antes del
+`rm -rf`, y dejo dos positivos reales: `paquete.json` (v2: cabeza v3 de 20 claves, acuse, una
+cofirma; sha `03682e10f57c4243`) y `extension.json` (`462affb334b5726d`). Todo lo demas se
+DERIVA de esos dos por MUTACION —quitar una clave, romper un hex, subir una version, cambiar un
+nibble— con el generador que viaja dentro del bloque, y cada candidato se SONDEA contra el
+binario antes de entrar: entra solo el que da el codigo y el texto del catalogo de
+`spec/PAQUETE.md`. Un candidato que no lo da se descarta y se cuenta: 1. Los negativos
+minimos son minimos —un `{"v":1}` basta para «falta cabeza»—; los que llegan a la firma llevan
+la cabeza real entera.
+
+**Lo que NO tiene vector, declarado en `spec/PAQUETE.md`.** Cuatro textos del catalogo: «las
+cabezas llevan claves DISTINTAS» (exige dos operadores) y los tres `{e:?}` de
+`digest_from_bytes` (no se conoce un valor de 32 bytes que rechace). El bloque exige que todo
+texto sin vector este en esa lista y que ninguno de la lista tenga vector: la cobertura se
+mide, no se declara.
+
+**La puerta, enseñada roja en vivo.** El bloque extrae el 3 bis del `canon.sh` ya en el arbol y
+lo corre solo: verde sobre los vectores; ROJO nombrando el fichero con un nibble del
+`epochDigest` de `posicion-v2.json` adulterado; y ROJO con un `.json` sin entrada en el
+manifiesto. Un vector sin entrada no gatea nada, y por eso es rojo. Despues, el canon entero.
+
+**Lo que se toca.** `tools/canon.sh` gana el 3 bis delante del veredicto (el centinela 255..262
+intacto). `spec/rfc/0004-paquete-de-evidencia.md`: la fila E2 pasa a «sellada — §398» y el §398
+entra en Asiento(s); el Estado sigue PROPUESTO: el giro a ACEPTADO es el S399, con la regla 4
+medida delante. `spec/PAQUETE.md` seccion 9: de «pendiente» a donde viven los vectores y lo
+que no lo tiene. `spec/README.md`: fila de `vectors/paquete/` y su parrafo en «The vectors».
+
+**Decisiones, REVERSIBLES.** D-1 los vectores son FICHEROS bajo `spec/vectors/paquete/`, jamas
+entre los `zkssl-0.N.json` del cable (descarte 5 del RFC), y no se regeneran: el generador
+queda citado por huella, no en `tools/` (descarte 4). D-2 el manifiesto es texto plano
+`fichero|rc|texto`, greppable desde bash como el resto del canon. D-3 el texto esperado es un
+prefijo o un trozo estable del mensaje, nunca la parte con huecos. D-4 la ruta ausente es una
+entrada del manifiesto y no un fichero. D-5 la prueba de vida de la puerta es doble: manifiesto
+no vacio y cada `.json` del directorio con entrada.
+
+**Lo que queda vivo.** El giro a ACEPTADO (S399). El artefacto (S400). Un segundo firmante
+para el vector de «claves DISTINTAS» es un frente propio, si algun dia hay dos operadores.
+
+**Contadores.** Ningun `.rs` tocado: pin `zk-ssl-verify` 72, sumas 1004 / 1141 / 1155, canon
+1156. `tools/canon.sh` 302 -> 321 lineas. Documentos `.md` versionados 65 -> 65.
+`verificar_citas` 60 -> 60 nombres, 0 fantasmas. Canon `--sello` VERDE, con el 3 bis dentro,
+en 171 s. Seis entradas de porcelain: cinco tocados y un directorio que nace.

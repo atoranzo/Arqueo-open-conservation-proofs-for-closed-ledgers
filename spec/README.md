@@ -20,6 +20,7 @@ commit; if a file has moved on, the reference tells you where to look.
 | `openrpc.json` | the same API as a machine-readable OpenRPC 1.2.6 document: `info.version` is `zkssl/0.3` and it lists 24 methods (22 `zkssl_*`, 2 `dev_*`) | you generate a client or check a node's surface |
 | `vectors/zkssl-0.1.json`, `vectors/zkssl-0.2.json`, `vectors/zkssl-0.3.json` | the conformance vectors, one file per wire version, never rewritten | you check that an implementation produces the same values on the wire |
 | `PAQUETE.md` | the portable evidence package: the three forms (v1, v2 with co-signatures inside, extension), the envelope keys the verifier reads, the order of checks, the rejection catalogue and the exit contract of `zk-ssl-verify` — it does not cross the wire | you build or verify an evidence package, or write a second verifier |
+| `vectors/paquete/` | the vectors of the evidence package — positives per form, one negative per producible rejection rule, and `MANIFIESTO.txt` with the expected exit code and message of each | you check that a verifier accepts and refuses exactly what `PAQUETE.md` says |
 | `rfc/PROCESO.md` | the RFC process: states, five rules, and what an accepted change must ship with | you want to change anything above |
 | `rfc/0000-plantilla.md` | the RFC template | you write an RFC |
 | `rfc/0002-lotes-y-transicion-de-hoja.md` | RFC-0002: batches, and the leaf transition that took the wire from `0.1` to `0.2` | you read the log guarantees under batching |
@@ -123,6 +124,12 @@ conformance check refuses to validate vectors of a different version, and
 that refusal is correct (`RPC.md:11-13`). The three files are kept side by
 side so that a `0.1` or `0.2` implementation can still be checked against
 what it claims to speak.
+
+`vectors/paquete/` holds the vectors of the evidence package (`PAQUETE.md`): positives
+per form and one negative per published rejection rule that a real package can produce,
+each listed in `vectors/paquete/MANIFIESTO.txt` with its expected exit code and message.
+`tools/canon.sh` runs `zk-ssl-verify` on every one of them; a single altered nibble turns
+the canon red.
 
 ## Changing any of this
 

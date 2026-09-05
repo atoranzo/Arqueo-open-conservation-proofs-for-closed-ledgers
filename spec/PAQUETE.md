@@ -228,10 +228,19 @@ es un frente propio y no cambia este documento: cambiaría quién escribe el sob
 
 ## 9. Vectores y puerta
 
-Los vectores del paquete —uno positivo por forma y uno negativo por regla de la sección 5— y su puerta en
-el bloque de conformidad de `tools/canon.sh` son la etapa E2 del RFC-0004, **pendiente**. Hasta
-que existan, la demostración en vivo es `tools/banco_apagado.sh`: verde con el paquete legítimo,
-rojo con un solo nibble adulterado.
+Los vectores del paquete viven en `spec/vectors/paquete/` (etapa E2 del RFC-0004, sellada en §398):
+un positivo por forma —v1, v2, v2 sin acuse, v2 con cero cofirmas, extensión— y **un negativo por
+cada regla de la sección 5 que se puede producir a partir de un paquete real**, derivados por
+mutación de dos capturas de los bancos. `MANIFIESTO.txt` dice, por cada fichero, el código de
+salida y el texto que el binario tiene que emitir; `tools/canon.sh` corre `zk-ssl-verify` sobre
+cada uno en cada canon y se pone en rojo si un solo vector no dice lo que el manifiesto dice, o
+si aparece un vector sin entrada. Un nibble adulterado en cualquiera pone el canon en rojo.
+
+Cuatro textos del catálogo **no tienen vector**, y se declaran: «las cabezas llevan claves
+DISTINTAS» exige dos cabezas firmadas por dos operadores distintos; y `{campo}: {e:?}`,
+`sibling {i}: {e:?}` y `camino[{i}]: {e:?}` exigen 32 bytes que `digest_from_bytes` rechace, y no
+se conoce un valor que lo haga. Siguen siendo reglas: lo que no tienen es testigo en el árbol.
+La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.
 
 ## 10. Historia
 
