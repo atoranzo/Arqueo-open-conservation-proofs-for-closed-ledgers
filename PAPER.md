@@ -980,7 +980,7 @@ otra disciplina.
 
 La implementación completa está disponible en:
 
-**`https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-`**
+**`https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers`**
 
 Requiere únicamente el compilador Rust estable; no emplea cadenas de
 herramientas externas ni compiladores no estables.

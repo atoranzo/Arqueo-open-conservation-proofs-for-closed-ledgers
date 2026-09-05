@@ -30247,3 +30247,56 @@ No corre el canon: como el §303 y el §400, repara el registro.
 **Contadores.** Pin `zk-ssl-verify` 75 -> 75; sumas quietas 1007 / 1144 / 1158; el canon declara
 1159. Documentos `.md` versionados 65 -> 65. Ficheros: este asiento y la correccion dentro del
 §401, los dos en `AUDITORIA.md`.
+
+## §403 — La mudanza de la URL del repositorio, y la puerta que la vigila (ATADO C)
+
+**Que.** El repositorio se renombro a
+`https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers` (el remoto
+local se cambio el 4-sep, fuera del arbol) y el arbol seguia citando la URL vieja, que solo
+resolvia por una redireccion de GitHub con caducidad ajena. Este sello muda las DIECISEIS lineas
+de DIEZ ficheros que la citaban, deja constancia donde toca, y hace nacer la puerta que faltaba:
+`tools/check_publicadas.py` gana el ATADO C, la URL del repositorio contra los documentos, con
+la misma forma que el ATADO B (una constante declarada UNA vez, un universo con sus exclusiones
+impresas, y prueba de vida).
+
+**Lo medido (PASTE-403-M `30c14cd1757af29d`, PASTE-403-PRE `546b3b3108e8ae91`, sobre
+`78a32be`).** Cuatro sondas independientes dan la misma union: 16 sitios en 10 ficheros
+(`CITATION.cff:8`; `DIVULGACION.md:331`; `PAPER.md:983`; `PAPER_EN.md:940`; `README_EN.md:54-55`,
+que son `git clone` y `cd` dentro de una valla; `RESUMEN_BILINGUE.md:177`; `doc/ZENODO.md:34,
+297-298`; y dos por preprint en `doc/preprints/`: la cabecera `Repository:` y la referencia
+final). Ningun fichero fuera de `.md`/`.cff`; ningun `.toml` con `repository`; ningun fichero
+citaba la URL nueva; ninguna herramienta miraba `CITATION.cff` ni el remoto. `README.md` no
+lleva URL de GitHub. `check_publicadas.py` recorria solo los `.md` de la raiz, y la URL vive
+tambien en `doc/`.
+
+**Decisiones (REVERSIBLES), tomadas con la ley delante.** D-1 los tres preprints mudan la URL
+en el arbol como el §371 mudo sus DOI: la URL es un identificador de la misma clase, y dos
+tratos para una clase de objeto son dos semanticas; se declara en `doc/preprints/README.md`
+con la forma del §371 y entra en `doc/preprints/ERRATA.md` como Entrada 4, que es la via que
+ese fichero manda para toda correccion a un preprint y que el §371 no uso. D-2 la puerta vive
+DENTRO de `check_publicadas.py` -una primitiva por propiedad: ese fichero ya es la constante
+contra los documentos- y no como herramienta nueva: el bucle del canon y las cuentas declaradas
+no se mueven. D-3 el universo del ATADO C es propio y recursivo (`documentos_url`), con
+`AUDITORIA.md` y `BACKLOG.md` fuera por registro y `doc/preprints/` fuera por la entrada 28,
+todos impresos; y `CITATION.cff` dentro, nombrado, porque no es `.md`. D-4 la prueba de vida
+es doble: `repository-code` de `CITATION.cff` tiene que ser exactamente `URL_REPO`, y la URL
+nueva tiene que citarse al menos una vez. D-5 el titulo de `CITATION.cff` («ZK-SSL — ZK
+Sovereign Settlement Layer») y el `zk-ssl-real` de `PERFORMANCE.md:1` son prosa de otra clase
+y quedan FICHADOS, no tocados.
+
+**El testigo, rojo en vivo.** El ATADO C nuevo se corrio sobre el arbol ANTES de mudar nada y
+dio rc 1 con exactamente DIEZ `URL VIEJA` -los seis sitios de los preprints quedan fuera de su
+universo por la entrada 28, y el sello los muda igual- mas `repository-code` distinto; tras la
+mudanza, rc 0 con la URL nueva citada y `CITATION.cff` cuadrando, y el bloque cuenta 16 -> 0 en
+los diez ficheros. Las nueve herramientas verdes antes y despues; `verificar_citas` 0 fantasmas /
+0 muertas; las diez mudanzas son LINEA-NEUTRALES y no tocan una valla.
+
+**Lo que NO hace.** No toca codigo Rust, cifras ni pin; el canon no corre (no hay `.rs` en el
+conjunto, y `check_publicadas.py` se ejercita en la misma corrida). No reescribe los PDF
+depositados: lo que el lector de fuera recibe lo dice la Entrada 4. No cierra el titulo rancio
+de `CITATION.cff` ni la propuesta enviada a NLnet, que cita la URL vieja fuera del arbol.
+
+**Contadores.** Pin `zk-ssl-verify` 75 -> 75; sumas quietas 1007 / 1144 / 1158; el canon declara
+1159. `tools/check_publicadas.py` 201 -> 295 lineas. `doc/preprints/ERRATA.md` 139 -> 168;
+`doc/preprints/README.md` 97 -> 104. Documentos `.md` versionados 65 -> 65. Catorce ficheros:
+los diez de la mudanza, ERRATA, el README de preprints, la herramienta y este asiento.

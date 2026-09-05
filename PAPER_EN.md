@@ -937,7 +937,7 @@ distributed consensus, which belongs to a different discipline.
 
 The complete implementation is available at:
 
-**`https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-`**
+**`https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers`**
 
 It requires only the stable Rust compiler; no external toolchains or
 non-stable compilers are used.

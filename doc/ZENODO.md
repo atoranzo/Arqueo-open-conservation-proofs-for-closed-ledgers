@@ -31,7 +31,7 @@ Everything is reproducible with stable Rust and a single command. The
 mistakes are documented alongside the results.
 
 **Repositories:**
-- [ZK-SSL — comparative study and sovereign settlement layer](https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-)
+- [ZK-SSL — comparative study and sovereign settlement layer](https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers)
 - [euro-digital-zk — digital euro privacy requirements](https://github.com/atoranzo/euro-digital-zk)
 
 ---
@@ -294,8 +294,8 @@ turned out not to work.
 ## Reproduce it
 
 ```bash
-git clone https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-
-cd ZK-SSL-ZK-Sovereign-Settlement-Layer-
+git clone https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers
+cd Arqueo-open-conservation-proofs-for-closed-ledgers
 cargo test -p zk-ssl --release
 cargo test -p stark-experiment --release
 ```

@@ -51,8 +51,8 @@ This is not a fifteen-minute path — **it is about a second.** The fifteen
 minutes are `git clone` and one release build.
 
 ```bash
-git clone https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-
-cd ZK-SSL-ZK-Sovereign-Settlement-Layer-
+git clone https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers
+cd Arqueo-open-conservation-proofs-for-closed-ledgers
 cargo build --release            # rustc stable; this is the slow part
 ```
 

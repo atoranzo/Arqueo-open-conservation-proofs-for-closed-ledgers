@@ -328,7 +328,7 @@ mientras lo intentas**.
 
 ## Para mirarlo por dentro
 
-**`https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-`**
+**`https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers`**
 
 Todo está publicado con licencia libre: el código, las mediciones, la
 documentación técnica, los errores y un documento pensado para quien

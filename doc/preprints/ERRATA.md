@@ -134,6 +134,35 @@ la cabecera-mapa de `doc/CONFIANZA_RESIDUAL.md` y
 
 ---
 
+## Entrada 4 — Los tres preprints: la URL del repositorio que citan ya no es la del repositorio
+
+**Detectada**: 2026-09-04 · **Corregida en el árbol**: 2026-09-05 (`AUDITORIA.md`
+§403).
+
+Los tres preprints depositados dan como repositorio
+`https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-` (en la
+cabecera de cada uno y en su lista de artefactos o referencias). El
+repositorio se renombró a
+`https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers`,
+y la URL vieja sólo resuelve mientras GitHub la redirija: **caduca por una
+decisión ajena** el día que alguien cree un repositorio con ese nombre.
+
+**Qué se hizo en el árbol, y qué no.** Las seis líneas se mudaron en los
+tres ficheros de este directorio, como el 27-08-2026 se mudaron sus DOI
+(`README.md` de este directorio, «sólo se tocaron identificadores»): la URL es
+un identificador de la misma clase, y dos clases de trato para una misma
+clase de objeto sería lo que este proyecto castiga. **No se tocó ni una
+cifra, ni una afirmación, ni un párrafo.** Desde ese commit los tres ficheros
+difieren de los PDF depositados en las líneas de DOI y en las de la URL, y
+nada más; nace además una puerta (`tools/check_publicadas.py`, ATADO C) que
+pone el canon en rojo si la URL vieja vuelve a un documento vivo.
+
+**Para el lector del PDF depositado**: el enlace funciona hoy por
+redirección, y esta entrada no se lo arregla. La URL vigente es la de arriba;
+el siguiente depósito la llevará dentro.
+
+---
+
 *Este fichero crece por adición. Las entradas no se editan ni se borran:
 si una errata se corrige en una revisión posterior, se anota debajo con su
 fecha y su versión.*

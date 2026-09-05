@@ -95,3 +95,10 @@ de los textos. **Consecuencia declarada: desde ese commit los tres ficheros
 ya no son byte a byte los PDF depositados** — difieren en las líneas de
 DOI —, y por eso la frase tachada de arriba deja de valer. El siguiente
 depósito los vuelve a sincronizar.
+
+⚠️ **El 2026-09-05 (`AUDITORIA.md` §403) se mudó también la URL del
+repositorio en los tres ficheros**, por la misma regla que los DOI: sólo
+identificadores, ni una cifra ni un párrafo. Desde ese commit difieren de los
+PDF depositados en las líneas de DOI **y en las de la URL**; el resto sigue
+igual. Lo que el lector del PDF recibe queda dicho en `ERRATA.md`, entrada 4.
+El siguiente depósito los vuelve a sincronizar.

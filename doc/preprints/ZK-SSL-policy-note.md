@@ -4,7 +4,7 @@
 
 <div class="meta">
 <p><strong>Author:</strong> Angel Jose Toranzo Portela &nbsp;·&nbsp; <strong>DOI:</strong> 10.5281/zenodo.21736082</p>
-<p><strong>Repository:</strong> https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-</p>
+<p><strong>Repository:</strong> https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers</p>
 <p><strong>Document type:</strong> Technical policy note / preprint &nbsp;·&nbsp; <strong>Affiliation:</strong> Independent</p>
 <p><strong>Audience:</strong> supervisors, central banks, fintech risk teams, CBDC researchers, payment architects</p>
 <p><strong>Version:</strong> third revision, July 2026. The second revision added §3.4, §3.5, §4.1 and §5.1, extended the residual-trust schedule of §5 with quantified capacity limits, and re-measured the cost figures on the two-phase path. This revision reports that the mechanism behind the collision bound of §5.1 has been removed from the layer with a verified migration, withdraws the conditional caveat in §8 that the two-phase path had not yet become the only path, and re-measures the test count in the artifact list.</p>
@@ -334,7 +334,7 @@ One caution earned in this revision belongs here. Two of the changes above are n
 
 ## Artifacts
 
-Reference implementation and documentation: https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-
+Reference implementation and documentation: https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers
 
 - Architecture, principles, and **375 executable tests** across the two production crates
 - A standing audit document that records open defects, their cost, and the methodology errors found while looking for them

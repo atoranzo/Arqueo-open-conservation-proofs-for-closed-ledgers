@@ -174,7 +174,7 @@ conformance vectors that a second implementation must reproduce.
 
 | | |
 |---|---|
-| Repositorio · Repository | `https://github.com/atoranzo/ZK-SSL-ZK-Sovereign-Settlement-Layer-` |
+| Repositorio · Repository | `https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers` |
 | Revisión de seguridad · Security review | [`AUDITORIA.md`](./AUDITORIA.md) |
 | Comparativa · Comparison | [`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md) |
 | Artículo · Paper | [`PAPER_EN.md`](./PAPER_EN.md) |

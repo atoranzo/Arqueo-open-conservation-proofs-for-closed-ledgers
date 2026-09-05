@@ -64,6 +64,17 @@ Ceguera declarada:
   - no entra en el CODIGO: solo recorre los .md de la raiz. log.rs:191
     publicaba la aritmetica de un paso y ningun gate la veia; se reparo a
     mano en §308, y extender el atado a los .rs queda por censar.
+
+ATADO C (S403) - la URL DEL REPOSITORIO contra los documentos. Mismo
+principio, otra constante: el repositorio se renombro y la URL vieja solo
+vivia por una redireccion ajena; dieciseis lineas de diez ficheros la citaban
+y ningun gate lo veia. URL_REPO se declara UNA vez aqui; el gate exige que
+el token viejo no aparezca en ningun documento vivo ni en CITATION.cff, que
+CITATION.cff declare exactamente URL_REPO en repository-code, y -prueba de
+vida- que la URL nueva se cite al menos una vez: un universo vacio no pasa.
+Universo PROPIO (documentos_url): recursivo bajo la raiz, porque la URL vive
+tambien en doc/; fuera AUDITORIA.md y BACKLOG.md (registro) y doc/preprints/
+(entrada 28), que se imprimen como exclusion.
 """
 import os
 import re
@@ -92,6 +103,16 @@ HISTORICA = re.compile(
 )
 CIFRA = re.compile(r"(?<![\d.,])(\d{2,3})(?:[.,](\d))?\s*(MiB|MB)\b")
 
+# ATADO C (S403)
+URL_REPO = "https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers"
+TOKEN_VIEJO = "ZK-SSL-ZK-Sovereign-Settlement-Layer"
+CFF = os.path.join(RAIZ, "CITATION.cff")
+EXCLUIDOS_URL = {
+    "AUDITORIA.md": "registro historico: un asiento cita la URL de su fecha",
+    "BACKLOG.md": "registro: las entradas no se reescriben",
+}
+PREFIJOS_EXCLUIDOS_URL = ("doc/preprints/",)
+
 
 def constante():
     """Lee la fuente unica. Por ESTRUCTURA, no por posicion."""
@@ -117,6 +138,56 @@ def documentos():
     for nombre in sorted(os.listdir(RAIZ)):
         if nombre.endswith(".md") and nombre not in EXCLUIDOS:
             yield nombre
+
+
+
+def documentos_url():
+    """Universo del ATADO C: todo .md bajo la raiz, recursivo, menos los registros
+    y doc/preprints/; mas CITATION.cff, que no es .md y es lo primero que lee
+    quien llega de fuera."""
+    for base, dirs, fs in os.walk(RAIZ):
+        dirs[:] = [d for d in dirs if d not in {".git", "target", ".canon"}]
+        for f in sorted(fs):
+            if not f.endswith(".md"):
+                continue
+            rel = os.path.relpath(os.path.join(base, f), RAIZ)
+            if rel in EXCLUIDOS_URL or rel.startswith(PREFIJOS_EXCLUIDOS_URL):
+                continue
+            yield rel
+    yield "CITATION.cff"
+
+
+def atado_c():
+    """Devuelve (fallos, citas de la URL nueva, documentos recorridos)."""
+    fallos = []
+    nuevas = 0
+    recorridos = 0
+    for rel in documentos_url():
+        ruta = os.path.join(RAIZ, rel)
+        try:
+            with open(ruta, encoding="utf-8") as fh:
+                lineas = fh.readlines()
+        except OSError as exc:
+            fallos.append((rel, 0, "ILEGIBLE", str(exc)))
+            continue
+        recorridos += 1
+        for i, linea in enumerate(lineas, 1):
+            if TOKEN_VIEJO in linea:
+                fallos.append((rel, i, "URL VIEJA", linea.strip()[:70]))
+            if URL_REPO in linea:
+                nuevas += 1
+    try:
+        with open(CFF, encoding="utf-8") as fh:
+            cff = fh.read()
+    except OSError as exc:
+        fallos.append(("CITATION.cff", 0, "ILEGIBLE", str(exc)))
+        return fallos, nuevas, recorridos
+    m = re.search(r'^repository-code:\s*"([^"]+)"', cff, re.M)
+    if not m:
+        fallos.append(("CITATION.cff", 0, "SIN repository-code", ""))
+    elif m.group(1) != URL_REPO:
+        fallos.append(("CITATION.cff", 0, "repository-code", m.group(1)))
+    return fallos, nuevas, recorridos
 
 
 def main():
@@ -176,6 +247,14 @@ def main():
     for nombre, n, detalle in saltadas:
         print("  SALTADA  %-18s :%-5d %s" % (nombre, n, detalle))
 
+    fallos_c, nuevas, recorridos = atado_c()
+    print("  ATADO C: %d documentos recorridos; la URL del repositorio citada %d vez/veces"
+          % (recorridos, nuevas))
+    for nombre, razon in sorted(EXCLUIDOS_URL.items()):
+        print("  excluido (URL) %s - %s" % (nombre, razon))
+    print("  excluido (URL) doc/preprints/ - entrada 28; lo que alli quede se DECLARA")
+
+
     if vistos == 0:
         print("ROJO: CERO citas encontradas.")
         print("      Un censo vacio no es un hallazgo: es un instrumento que")
@@ -193,7 +272,22 @@ def main():
         print("  el otro eslabon: la_cifra_publicada_sigue_siendo_la_medida.")
         return 1
 
-    print("OK: todas las citas cuadran en valor y en unidad")
+    if fallos_c:
+        print("")
+        print("ROJO: %d sitio(s) no cuadran con la URL del repositorio" % len(fallos_c))
+        for nombre, n, clase, detalle in fallos_c:
+            print("  %-40s :%-5d %-19s %s" % (nombre, n, clase, detalle))
+        print("")
+        print("  La URL vive en URL_REPO, aqui arriba, y en CITATION.cff.")
+        return 1
+
+    if nuevas == 0:
+        print("ROJO: la URL del repositorio no se cita ni una vez.")
+        print("      Un censo vacio no es un hallazgo: revisa URL_REPO y el universo.")
+        return 1
+
+
+    print("OK: todas las citas cuadran en valor y en unidad, y la URL del repositorio es una")
     return 0
 
 
