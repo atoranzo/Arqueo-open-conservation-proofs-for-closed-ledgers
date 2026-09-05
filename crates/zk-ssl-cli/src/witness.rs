@@ -1386,6 +1386,18 @@ pub struct WitnessArgs {
     #[arg(long, value_name = "COFIRMAS")]
     recolectar_cofirmas: Option<PathBuf>,
 
+    /// **Una RESPUESTA del cable, desde fichero y SIN nodo** (§409, RFC-0005 E3):
+    /// el cuerpo JSON-RPC tal como lo sirve `zkssl_signedEpochHead`, juzgado por el
+    /// MISMO camino que la vuelta viva. Es lo que corre `tools/conformidad.sh` sobre
+    /// `spec/vectors/cable/` a traves de `tools/cable_respuesta.sh`.
+    ///
+    /// Exit 0 solo si la clase es `nueva`; cualquier otra, `ROJO: <clase> · <texto>`
+    /// y exit 1. No juzga la consistencia: con memoria fresca no hay pareja.
+    #[arg(long, value_name = "RESPUESTA",
+          conflicts_with_all = ["auditar", "comparar", "ausentes", "cofirmar",
+                                "verificar_cofirmas", "recolectar_cofirmas"])]
+    respuesta: Option<PathBuf>,
+
 }
 
 /// La linea del fichero de cofirmas. **AUTOSUFICIENTE**: lleva todo lo que
@@ -2007,6 +2019,18 @@ fn leer(p: &std::path::Path) -> anyhow::Result<Vec<String>> {
     Ok(std::fs::read_to_string(p)?.lines().map(str::to_string).collect())
 }
 
+/// El texto que acompana a la clase en el mando de `--respuesta` (§409): el mensaje
+/// que la variante lleva y, si no lleva ninguno, su `Debug` entero. Un solo productor:
+/// el manifiesto de `spec/vectors/cable/` pina lo que esta funcion imprime.
+fn texto_del_veredicto(v: &Veredicto) -> String {
+    match v {
+        Veredicto::NoVerifica { error, .. } => error.clone(),
+        Veredicto::SinFirma { motivo } | Veredicto::SinRespuesta { motivo } => motivo.clone(),
+        Veredicto::Nueva { indice, digest } => format!("indice {indice:#x} · {digest}"),
+        otro => format!("{otro:?}"),
+    }
+}
+
 pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
     // ── §249/§283 · los tres modos que LEEN, antes del que observa ──
     if let Some(p) = &a.auditar {
@@ -2113,6 +2137,32 @@ pub fn run(a: WitnessArgs) -> anyhow::Result<()> {
         eprintln!("   O el nodo firmo algo que no recuerda, o alguien sirvio una");
         eprintln!("   firma que el nodo no emitio. En ambos casos responde el operador.");
         anyhow::bail!("{} indice(s) del testigo ausentes en el diario del nodo", faltan.len());
+    }
+
+    // ── §409 · RFC-0005 E3 · UNA RESPUESTA DEL CABLE, desde fichero y SIN nodo ──
+    //
+    // El cuarto modo que LEE. El fichero es el CUERPO JSON-RPC tal como cruza el
+    // cable: pasa por `del_cuerpo` (§314) y por `una_vuelta` con memoria fresca,
+    // exactamente el camino vivo -el DTO tipa, el ancla se fija, se verifica, se
+    // recompone-. Contrato del mando (spec/RPC.md, «Los rechazos del cable»): exit 0
+    // solo si la clase es `nueva`; si no, `ROJO: <clase> · <texto>` y exit 1. El
+    // segundo canal (consistencia) NO se juzga: con memoria fresca no hay pareja.
+    if let Some(p) = &a.respuesta {
+        let cuerpo: Value = serde_json::from_str(&std::fs::read_to_string(p)?)
+            .map_err(|e| anyhow::anyhow!("ROJO: respuesta ilegible · {e}"))?;
+        let ver = match del_cuerpo(cuerpo) {
+            Servido::SinRespuesta { motivo } => Veredicto::SinRespuesta { motivo },
+            Servido::Respuesta(v) => {
+                let mut m = Memoria::nueva();
+                una_vuelta(&v, &mut m)
+            }
+        };
+        let (clase, texto) = (ver.clase(), texto_del_veredicto(&ver));
+        if matches!(ver, Veredicto::Nueva { .. }) {
+            println!("VERDE: {clase} · {texto}");
+            return Ok(());
+        }
+        anyhow::bail!("ROJO: {clase} · {texto}");
     }
 
     // ── §320 · la RECOLECCIÓN: pedir al nodo lo que OTROS firmaron ──
@@ -4670,5 +4720,19 @@ mod tests {
         }
         let e = verificar(&cabeza_firmada_completa()).expect_err("firma de mentira");
         assert!(!e.contains("formatVersion"), "{e}");
+    }
+
+    // ── §409 · RFC-0005 E3 · el texto que acompana a la clase en --respuesta ──
+    #[test]
+    fn el_texto_del_veredicto_lleva_el_mensaje_de_la_variante() {
+        let e = Veredicto::NoVerifica { indice: 4, error: "formatVersion 4: x".into() };
+        assert_eq!(texto_del_veredicto(&e), "formatVersion 4: x");
+        let s = Veredicto::SinFirma { motivo: "arrancando".into() };
+        assert_eq!(texto_del_veredicto(&s), "arrancando");
+        let r = Veredicto::SinRespuesta { motivo: "sin result".into() };
+        assert_eq!(texto_del_veredicto(&r), "sin result");
+        let n = Veredicto::Nueva { indice: 4, digest: "0xab".into() };
+        let t = texto_del_veredicto(&n);
+        assert!(t.contains("0x4") && t.contains("0xab"), "{t}");
     }
 }

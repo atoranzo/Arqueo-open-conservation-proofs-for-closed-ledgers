@@ -30611,3 +30611,73 @@ consumiendo el arnes. Ningun `Cargo` tocado. Ficheros: `tools/conformidad.sh` (n
 `tools/artefacto.sh` (`133662481ff2b660/97`), `spec/PAQUETE.md` (`2d5980fd0cbc9760/291`, +8), `spec/README.md`
 (`ff3338f83baf1a93`, linea-neutral), `spec/rfc/0005-nucleo-congelado.md` (`253a98ed9a3d2da8`,
 linea-neutral), `AUDITORIA.md`.
+
+## §409 — Los rechazos del cable, con vector: witness --respuesta y spec/vectors/cable/ (RFC-0005, E3)
+
+**Que.** El testigo gana un cuarto modo que LEE: `zk-ssl-cli witness --respuesta <cuerpo.json>`
+juzga una respuesta de `zkssl_signedEpochHead` desde fichero y SIN nodo, por el MISMO camino que
+una vuelta viva (`del_cuerpo`, el DTO del cable, el ancla de clave, `verificar`, `recomponer`), y
+sale con la clase que el testigo anotaria: exit 0 solo si es `nueva`, y `ROJO: <clase> · <texto>`
+con exit 1 para cualquier otra. Nace `spec/vectors/cable/` con un positivo y OCHO negativos
+derivados por mutacion de la cabeza real de `spec/vectors/paquete/posicion-v2.json`
+(`191176bbe7146627`), su `MANIFIESTO.txt` (fichero, codigo de salida, texto), y
+`tools/cable_respuesta.sh`, el adaptador de una linea que cumple el contrato del mando para que
+`tools/conformidad.sh` los corra SIN tocarle una linea. `tools/canon.sh` gana el bloque «3 bis
+cable» junto al del paquete. Es la E3 del RFC-0005: la ultima etapa de H3 que vive en el arbol.
+Corre canon: 192 s.
+
+**Lo que se midio antes de escribir un byte** (PASTE-409-M, -M2, -S y -PRE; el 409-S es el
+sondeo de la PRECISION 54). El catalogo del rechazo del testigo son CINCO familias de clases
+(`Veredicto` 8, `Consistencia` 8, `Hallazgo` 6, `HallazgoCofirma` 6, `RecogidaRechazada` 2 = 30),
+congeladas por `DIARIO_VERSION`. La entrada sin nodo existia por el lado FRIO (`--auditar`) y no
+por el vivo. `conformidad.sh` es generico pero su contrato es el del MANDO: un argumento, exit
+0/1/2. Y la cabeza real reverifica tal cual (control), mientras `formatVersion` 0x4, 0x1 y 0x103
+dan rc 1 con «formatVersion N: el testigo recompone cabezas v2 o v3» (N en decimal: 259).
+
+**Las cuatro decisiones, delegadas y REVERSIBLES** (el usuario pego la constitucion y delego).
+D-1 el consumidor es el TESTIGO, no `conformance --check`: este exige el PROVER y su vector pina
+`canon: [318, 279, 973, 31]`, cifras de tests dentro del protocolo (punto 76). D-2 la boca es
+NUEVA y corre el camino VIVO: el frio clasificaria un rechazo por version como
+`firma-no-verifica` (un nombre que miente) y no ejercita el DTO ni el ancla. D-3 la boca cumple
+el CONTRATO DEL MANDO y el arnes se reusa tal cual, UN productor del bucle (la leccion del §408);
+la forma cambio al medir: el cli es un crate SOLO-BIN y un `src/bin/` no ve `witness::`, asi
+que es un modo mas de `WitnessArgs` y un adaptador de tres lineas, ni lib nueva ni bin nuevo.
+D-4 NO se abre clase y `DIARIO_VERSION` no se toca: el texto lo pone `VersionCabeza::texto()`.
+
+**El vector es el CUERPO JSON-RPC**, lo que cruza el cable, y pasa por `del_cuerpo` (§314): asi
+«respuesta sin `result`» es tambien un vector (`sin-respuesta`). Con memoria fresca la primera
+cabeza es `nueva` o rechazo; el segundo canal (consistencia) queda FUERA y declarado.
+
+**Fase ROJO en vivo**: los nueve vectores contra el binario de HEAD sin el modo, a traves del
+adaptador: nueve ROJO (exit 2, el manifiesto espera 0/1). Con el modo: 9 de 9.
+
+**Los dos vectores que NO entran, y por que.** `epochDigest` corto y `index` ausente dieron rc 1
+en el sondeo por `--auditar`, pero el camino vivo tipa el cable ANTES de `verificar` y su texto
+no se pudo derivar del fuente sin abrir el DTO: un candidato entra solo si da el rc Y el texto
+(PRECISION 54). Se fichan para el corte siguiente con su sondeo en vivo.
+
+**Lo que la medicion destapo, FICHADO y no tocado (cola 5.A).** (a) El 0x2 —dentro del conjunto,
+distinto del firmado— cae por firma con «la firma es VALIDA pero de otro mensaje (preambulo
+esperado 50 bytes, recibido 50)»: compara dos longitudes IGUALES cuando lo que difiere es el
+byte de version; vive en el verificador (hermano del punto 64). (b) Sin `index`, `--auditar`
+dice `linea-ilegible` con «QUANTITY no es cadena» SIN nombrar el campo (`leer_q`, y `auditar_lineas`
+:1050 lo empuja a pelo). (c) `tools/cable_respuesta.sh` referencia `target/release/zk-ssl-cli`:
+el crate del cli arrastra el prover (`zk-ssl` con `sandbox`; su Cargo.toml lo declara desde el
+§312); sacar `verificar`/`recomponer` del cli seria el arreglo y duplicarlos serian dos
+productores de la misma regla. Se ficha.
+
+**Confianza residual, dicha con una frase.** La clase no distingue la causa: un `formatVersion`
+fuera de {2, 3} sale `no-verifica` en vivo y `firma-no-verifica` en frio, y `version-desconocida`
+es la version del DIARIO (`v`), no la de la cabeza. El texto si la distingue, y por eso el
+manifiesto pina clase Y texto. Abrir una clase subiria `DIARIO_VERSION`: corte propio.
+
+**Contadores.** Pin cli 93 -> 94 (`el_texto_del_veredicto_lleva_el_mensaje_de_la_variante`, la
+`--list` release PRE + un nombre); sumas 1013/1150/1164 -> 1014/1151/1165; el canon declara 1166.
+`witness.rs` `1331b59ff297a16c`/4674 -> `819df9e2d790dde8`/4738. `tools/canon.sh`
+`a2c3584da8bd3c2a`/326 -> `05e74bf51ca08025`/339 (el bloque cable, 288..301 intacto). `spec/RPC.md`
+`cb40263b3b91237c`/867 -> `272ff83140600046`/889 (la seccion nueva delante de «Notas
+operativas»; 455..466 y 856..867 se mueven de sitio, no de contenido). `spec/README.md` +1 fila.
+`spec/rfc/0005-nucleo-congelado.md` 300 -> 304 (fila E3 «por hacer» -> sellada; la
+seccion E3 gana su parrafo). `spec/vectors/cable/`: 9 .json (266408 B) + MANIFIESTO.
+`tools/*.sh` 10 -> 11; las herramientas del canon siguen siendo DIEZ (la receta deriva .py).
+Documentos `.md` versionados: 67. Ningun Cargo tocado. Del RFC-0005 queda E5, fuera del arbol.

@@ -12,7 +12,7 @@
 |---|---|---|---|
 | E1 — el núcleo, escrito | un documento normativo bajo `spec/` que enumera QUÉ no cambia y POR QUÉ, con cada pieza atada por cita a la línea del código que la produce; el censo se re-deriva al sellar | NO | sellada — §407 (`spec/NUCLEO.md`, `tools/check_nucleo.py`) |
 | E2 — la regla de extensión, escrita y ejercida | la regla en el mismo documento, y el atado que la ejerce: un verificador acepta un conjunto EXPLÍCITO de versiones y rechaza lo demás (§404 es el primer caso) | NO | sellada — §406 |
-| E3 — los rechazos del cable, con vector | vectores negativos de lo que un consumidor del cable tiene que rechazar, bajo su propio directorio, con su puerta en `tools/canon.sh`; qué rechaza hoy el consumidor se MIDE antes de escribir un vector | NO | por hacer |
+| E3 — los rechazos del cable, con vector | vectores negativos de lo que un consumidor del cable tiene que rechazar, bajo su propio directorio, con su puerta en `tools/canon.sh`; qué rechaza hoy el consumidor se MIDE antes de escribir un vector | NO | sellada — §409 (`spec/vectors/cable/`, `witness --respuesta`, `tools/cable_respuesta.sh`) |
 | E4 — el arnés de conformidad | una herramienta que corre el catálogo de vectores contra CUALQUIER binario que se le pase y dice si pasa y falla igual que la referencia | NO | sellada — §408 (`tools/conformidad.sh`, dentro del tarball) |
 | E5 — el criterio | una segunda implementación, escrita desde la spec sin leer el código de referencia, que pase y falle igual. No está en la mano del autor; E4 es lo que lo hace comprobable el día que exista | NO | fuera del árbol |
 
@@ -175,6 +175,10 @@ respuestas del cable rechaza hoy y con qué clase, y sólo entonces escribe un v
 bajo un directorio propio de `spec/vectors/` —jamás entre los `zkssl-0.N.json`— y su bloque en
 `tools/canon.sh` calcado del «3 bis» del paquete. La primera candidata es la que el §404 acaba
 de cerrar: una cabeza servida con `formatVersion` fuera de {2, 3}.
+
+§409 la sello tal como estaba escrita: se midio primero (`PASTE-409-S`: la cabeza real reverifica y
+cada mutacion da rc y texto), la boca es `witness --respuesta` y el arnes es el de E4 sin tocarle una
+linea, con `tools/cable_respuesta.sh` como adaptador al contrato del mando.
 
 ### E4 — El arnés de conformidad para cualquier binario
 

@@ -853,6 +853,28 @@ el proceso con `kill -9` y verifica en VERDE — y en ROJO el mismo
 paquete con un solo nibble adulterado. **Un sistema que dice como muere
 se demuestra muriendo**, no prometiendo.
 
+## Los rechazos del cable, con vector (§409, RFC-0005 E3)
+
+El consumidor del cable de la referencia es el testigo (`zk-ssl-cli witness`), y desde §409 juzga
+una respuesta de `zkssl_signedEpochHead` **desde fichero y sin nodo** con `--respuesta <cuerpo.json>`:
+el cuerpo JSON-RPC tal como cruza el cable pasa por el mismo camino que una vuelta viva (`result`,
+tipado del cable, ancla de clave, firma, recomposicion) y sale con la clase que el testigo
+anotaria. Contrato: exit `0` solo si la clase es `nueva`; cualquier otra, `ROJO: <clase> · <texto>`
+y exit `1`; uso, `2`. No juzga el segundo canal (consistencia): con memoria fresca no hay pareja.
+
+Los vectores viven en `spec/vectors/cable/` —jamas entre los `zkssl-0.N.json`, que son del
+escenario—: un positivo (`nueva`) y un negativo por cada rechazo MEDIDO antes de escribirlo
+(`PASTE-409-S`), derivados por mutacion de la cabeza real de `spec/vectors/paquete/posicion-v2.json`.
+`MANIFIESTO.txt` fija, por fichero, el codigo de salida y el texto que la salida tiene que contener;
+`tools/conformidad.sh tools/cable_respuesta.sh spec/vectors/cable/MANIFIESTO.txt` los corre —el
+mismo arnes que el paquete, sin doblar su contrato— y `tools/canon.sh` lo hace en cada canon.
+Una segunda implementacion del consumidor pone su ejecutable en lugar del adaptador.
+
+**Confianza residual, medida:** la clase no distingue la causa. Un `formatVersion` fuera de {2, 3}
+sale `no-verifica` en vivo y `firma-no-verifica` en `--auditar`, y `version-desconocida` es la
+version del DIARIO (`v`), no la de la cabeza. El texto si la distingue, y por eso el manifiesto pina
+clase y texto. Abrir una clase subiria `DIARIO_VERSION`: corte propio, no de E3.
+
 ## Notas operativas
 
 - Un nodo, un escritor: las escrituras serializan en el nodo (el orden
