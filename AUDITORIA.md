@@ -30186,6 +30186,16 @@ reproducible entre `target/artefacto/tA` y `tB`; manifiesto 67 de 67; tarball
 `rustc 1.97.1-8bab26f4f`; glibc exigida GLIBC_2.34. El tarball vive en `target/artefacto/` (ignorado):
 lo que entra al arbol es el productor y su puerta, no el producto.
 
+⚠️ **CORRECCION (§247, escrita por el §402).** El tarball de arriba, `279947f25cd5b5ae`
+(1682799 B), es el de la corrida PRE-commit: el bloque corrio `tools/artefacto.sh` ANTES de
+editar, y dentro iban `spec/PAQUETE.md` sin la seccion 11 y `VERSION` con `commit=9062f2c`. El
+tarball lleva el commit dentro, luego cambia con el propio sello. El artefacto del commit sellado
+`75cbe31` es `fe50283275f092d2` (1683512 B, 75 ficheros), y ese es el que la release publica; el
+binario con remap es el mismo en las dos corridas (`5abe05b45da90a5f`). Regla que nace: el
+artefacto se produce SOBRE el commit sellado, el asiento registra la huella ESTABLE (la del
+binario) y la del tarball se registra con la release. La release existe y esta medida desde
+fuera en el §402.
+
 **Lo que NO hace.** No publica: la release en GitHub es la deuda que este asiento declara. No
 hace el binario estatico. No toca `CITATION.cff`, que sigue citando la URL vieja (punto 53).
 No cierra crates.io ni Zenodo.
@@ -30194,3 +30204,46 @@ No cierra crates.io ni Zenodo.
 declara 1159. `tools/canon.sh` 321 -> 331 lineas (el 3 ter). Documentos `.md`
 versionados 65 -> 65. Canon `--sello` VERDE en 189 s, con el 3 ter dentro.
 Ficheros: `tools/artefacto.sh` (nace), `tools/canon.sh`, `spec/PAQUETE.md` y este asiento.
+
+## §402 — La correccion del asiento del §401, y la release medida desde fuera
+
+**Que.** Dos cosas, las dos sobre el registro y ninguna sobre el codigo. (1) El asiento del §401
+registro como huella del tarball la de la corrida PRE-commit (`279947f25cd5b5ae`, 1682799 B); el
+del commit sellado es `fe50283275f092d2` (1683512 B). La frase se CITA arriba, en el parrafo que
+se contradice, y no se borra (§247); la correccion va debajo de ese parrafo, escrita por este
+sello. (2) La release `arqueo-verify-v0.1.0` esta PUBLICADA y MEDIDA DESDE FUERA: la deuda D-8
+del §401 queda pagada.
+
+**Lo medido (sesion 95).** `PASTE-402-REL` `46d00802cef49494` sobre la release, por la API de
+GitHub (la URL del asset se deriva, no se teclea): dos assets,
+`arqueo-verify-0.1.0-x86_64-unknown-linux-gnu.tar.gz` (1683512 B) y `arqueo-verify-0.1.0.sha256`
+(118 B); `content-length` 1683512; la descarga da `fe50283275f092d2`; `sha256sum -c` del
+`.sha256` publicado OK; 75 ficheros dentro; el binario de dentro `5abe05b45da90a5f`. Antes de eso
+la misma lectura dio `assets: 0` (rc 4) y `PASTE-402-REL-r2` `31b15c24423154b0` lo confirmo (rc
+20): la release estaba publicada con sus notas y SIN NINGUN asset. Los «Assets 2» que la sesion 94
+vio en la pagina eran los `Source code (zip/tar.gz)` que GitHub genera solo, que no viajan en el
+array `assets` de la API; con los dos ficheros subidos la pagina dice 4. El tarball local de
+`target/artefacto/` clavaba ya la huella sellada; el `.sha256` se genero desde su carpeta para que
+lleve el nombre a secas. `PASTE-402-M` `6163694903a5ec55` midio el terreno de este corte: el
+§401 en 30144..30196 (`1521f1f63a1c4f8d`), las dos formas del §247 en la casa (dentro del asiento
+viejo tras el parrafo, y en el asiento nuevo; el §303 sobre el §302 hizo las dos) y el punto 53.
+
+**Lo que la medicion cambio.** El punto 53 no era `CITATION.cff:8`: la URL VIEJA del repositorio
+vive en DIEZ ficheros y DIECISEIS lineas (`CITATION.cff`, `DIVULGACION.md`, `PAPER.md`,
+`PAPER_EN.md`, `README_EN.md` con `git clone` y `cd`, `RESUMEN_BILINGUE.md`, `doc/ZENODO.md` con
+`git clone` y `cd`, y los tres preprints bajo DOI), NINGUN fichero del arbol cita la URL nueva, y
+ninguna herramienta de `tools/` mira `CITATION.cff` ni el remoto. Es arco propio (§403), no una
+linea de este corte.
+
+**Lecciones.** Un contador leido sin abrir QUE cuenta no es una medida (los «Assets 2»). Un gate
+de AUSENCIA cuya prueba de vida sale CERO no confirma: calla (la sonda del HTML no veia ni los
+automaticos, y se tomo por corroboracion). El artefacto se produce SOBRE el commit sellado: el
+tarball lleva `PAQUETE.md` y `VERSION` dentro y cambia con el sello; la huella estable es la del
+binario con remap, y la del tarball se registra con la release.
+
+**Lo que NO hace.** No toca codigo, cifras ni pin. No toca `CITATION.cff` ni la URL vieja (§403).
+No corre el canon: como el §303 y el §400, repara el registro.
+
+**Contadores.** Pin `zk-ssl-verify` 75 -> 75; sumas quietas 1007 / 1144 / 1158; el canon declara
+1159. Documentos `.md` versionados 65 -> 65. Ficheros: este asiento y la correccion dentro del
+§401, los dos en `AUDITORIA.md`.
