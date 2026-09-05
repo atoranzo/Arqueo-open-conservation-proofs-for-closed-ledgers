@@ -30550,3 +30550,64 @@ canon: 9 -> 10 (`check_nucleo`), derivado del bucle de `canon.sh`. Documentos `.
 (nace, `c5602092ffdef7f2/184`), `tools/check_nucleo.py` (nace, `cad3344642070f1f/226`), `spec/README.md`
 (`7cbc2675bd02def2/158`, +4 lineas), `spec/rfc/0005-nucleo-congelado.md` (`03700aff243dd7e2`,
 linea-neutral), `tools/canon.sh` (`12fb8dde0059ae99`, linea-neutral), `AUDITORIA.md`.
+
+## §408 — El arnes de conformidad para cualquier binario: tools/conformidad.sh (RFC-0005, E4)
+
+**Que.** Nace `tools/conformidad.sh <binario> [manifiesto]`: corre el manifiesto de vectores
+del paquete de evidencia contra CUALQUIER binario que cumpla el contrato del mando
+(`spec/PAQUETE.md` seccion 6) y dice, entrada a entrada, si el codigo de salida y el texto son
+los que el manifiesto exige; al final, la linea de resumen con la huella del binario; exit 0
+solo si todo pasa. Es el UNICO productor del bucle del manifiesto: el 3 bis del canon y
+`manifiesto()` de `tools/artefacto.sh` pasan a consumirlo, y el propio arnes viaja DENTRO del
+tarball del artefacto, de modo que un tercero corre `bash conformidad.sh ./zk-ssl-verify` sin el
+repositorio. Es la E4 del RFC-0005 -el resultado publicable de H3 que no depende del tercero- y
+lo que convierte su criterio de exito (E5) en comprobable: el dia que exista una segunda
+implementacion, el resultado es la salida de este arnes sobre su binario, no una afirmacion.
+Corre canon.
+
+**El defecto que este sello paga.** El bucle del manifiesto vivia DOS veces: en `tools/canon.sh`
+293..299 (con fallos nombrados y la prueba de vida "vector sin entrada") y en
+`tools/artefacto.sh` 66..71 (`manifiesto()`, que solo contaba `ok/n`). Dos productores del
+mismo contrato con semanticas ya distintas: la lista de fallos de uno no la veia el otro.
+Medido en la sesion 97 por el `PASTE-408-M` (`4202034f07441e1f`/150, salida
+`292f5d8eb9998655`/443): el censo por contenido de quien lee `MANIFIESTO.txt` y quien corre el
+binario sobre un vector dio exactamente esos dos sitios.
+
+**Como se enseno vivo, ANTES de tocar el arbol.** Desde el respaldo, contra el arbol intacto y
+el binario recien compilado en release: (1) el arnes contra `/bin/true` -un binario que no
+cumple el contrato- da ROJO con las entradas nombradas; (2) contra el binario real y un
+manifiesto SABOTEADO (una copia con el texto esperado de una entrada cambiado) da ROJO nombrando
+esa entrada y ninguna otra; (3) contra el binario real y el manifiesto real: 67 de 67 entradas dicen lo que deben (66 .json, 67 con entrada) - binario 69fb036cd84471a7. Un gate
+de conjunto se ensena vivo por los dos lados. Y despues, dentro del canon, el 3 ter corrio
+`artefacto.sh --check` consumiendo el arnes: artefacto: binario cb6a274632fd7c04 reproducible entre rutas y sin rutas de la maquina, manifiesto 67/67, tarball 2a375d149b5878e1 reproducible (1 s).
+
+**Las decisiones, REVERSIBLES, tomadas por el asistente por delegacion del autor con la ley.**
+D-1 un `.sh` en `tools/` y no un `.py`: bash sobre lo que ya existe, y las DIEZ herramientas del
+canon no se mueven (la receta de la sesion 82 deriva `.py`; los `.sh` van fuera del bucle, como
+`artefacto.sh`). D-2 un solo productor: el canon conserva los fallos NOMBRADOS haciendo entrar
+cada `ROJO` del arnes por `falla`, y `artefacto.sh` conserva su interfaz `ok/n` leyendola de la
+linea de resumen. D-3 el arnes viaja en el tarball: la propiedad que el canon gatea es la
+reproducibilidad (dos compilaciones, dos tarballs), no una huella pinada, asi que anadir un
+fichero al tarball no rompe ningun gate; la release `arqueo-verify-v0.1.0` sellada en §401/§402
+queda como historia con su huella, y el siguiente tarball llevara el arnes. D-4 el manifiesto se
+busca por defecto en `spec/vectors/paquete/MANIFIESTO.txt` relativo al directorio actual, que
+es donde vive en el arbol Y en el tarball: un solo camino para los dos usos. D-5 `PAQUETE.md`
+(normativo bajo el RFC-0004 ACEPTADO) cambia en las secciones 9, 10 y 11 por esta E4 del
+RFC-0005, que es el proceso que lo gobierna; el catalogo de rechazos y los vectores no se tocan.
+
+**Lo que este sello NO hace.** No escribe un vector negativo del cable (E3). No cierra H3: E5
+sigue fuera del arbol por definicion; lo que E4 deja es el instrumento con el que E5 se
+comprobara y un resultado publicable ya: el manifiesto entero, corrido fuera del canon, por
+cualquiera. No mueve ningun `.rs` ni pin.
+
+**El doble hilo.** El RFC-0005 gira su fila E4 a "sellada — §408" y nombra el arnes; este
+asiento lo nombra por ruta. Regla 5 del PROCESO por los dos extremos.
+
+**Contadores.** Pines: ninguno movido. Cifras publicadas: ninguna movida. Herramientas del
+canon: 10 -> 10 (un `.sh` no entra en el bucle). `tools/*.sh` 9 -> 10. Documentos `.md`
+versionados 67 -> 67. Canon `--sello` VERDE en 173 s, con el 3 bis y el 3 ter
+consumiendo el arnes. Ningun `Cargo` tocado. Ficheros: `tools/conformidad.sh` (nace,
+`80ac954765eeb69f/53`), `tools/canon.sh` (`a2c3584da8bd3c2a/326`: el 3 bis pasa de 18 a 12 lineas),
+`tools/artefacto.sh` (`133662481ff2b660/97`), `spec/PAQUETE.md` (`2d5980fd0cbc9760/291`, +8), `spec/README.md`
+(`ff3338f83baf1a93`, linea-neutral), `spec/rfc/0005-nucleo-congelado.md` (`253a98ed9a3d2da8`,
+linea-neutral), `AUDITORIA.md`.

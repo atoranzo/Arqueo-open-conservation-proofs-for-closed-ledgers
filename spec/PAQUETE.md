@@ -239,9 +239,13 @@ cada regla de la sección 5 que se puede producir a partir de un paquete real**,
 mutación de dos capturas de los bancos. Los dos negativos del índice (`rechazo-index-atrasado`,
 `rechazo-index-cero`) entraron con su regla en §399.
 `MANIFIESTO.txt` dice, por cada fichero, el código de
-salida y el texto que el binario tiene que emitir; `tools/canon.sh` corre `zk-ssl-verify` sobre
-cada uno en cada canon y se pone en rojo si un solo vector no dice lo que el manifiesto dice, o
-si aparece un vector sin entrada. Un nibble adulterado en cualquiera pone el canon en rojo.
+salida y el texto que el binario tiene que emitir. **El arnés `tools/conformidad.sh <binario>`**
+(RFC-0005, E4, §408) corre el manifiesto entero contra cualquier binario que cumpla el contrato
+de la sección 6 —el de la referencia o el de una segunda implementación— y dice, entrada a
+entrada, si el código de salida y el texto son los del manifiesto; es el único productor de ese
+bucle. `tools/canon.sh` lo corre en cada canon sobre el binario de referencia y se pone en rojo
+si un solo vector no dice lo que el manifiesto dice, o si aparece un vector sin entrada. Un
+nibble adulterado en cualquiera pone el canon en rojo.
 
 Cuatro textos del catálogo **no tienen vector**, y se declaran: «las cabezas llevan claves
 DISTINTAS» exige dos cabezas firmadas por dos operadores distintos; y `{campo}: {e:?}`,
@@ -256,6 +260,8 @@ La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.
 - §399 — el `index` declarado se ata al que va dentro de la firma (E3); el mando imprime el embebido; el testigo lee el `index` servido.
 - §400 — el RFC-0004 pasa a ACEPTADO: la regla 4 del PROCESO, saldada con medida.
 - §401 — el artefacto: `tools/artefacto.sh`, el tarball reproducible y el 3 ter del canon (sección 11).
+- §408 — el arnés de conformidad (RFC-0005, E4): `tools/conformidad.sh`, el único productor del bucle
+  del manifiesto, consumido por el canon y por `artefacto.sh`, y dentro del tarball (sección 9).
 - Hasta §397 este contrato vivía en la cabecera de `crates/zk-ssl-verify/src/main.rs` (1..90,
   `293990fedc785833`), que ya confesó una vez (§247) haber declarado su superficie como completa
   sin serlo. §397 lo muda aquí y deja la cabecera remitiendo, sin enumerar.
@@ -264,11 +270,13 @@ La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.
 ## 11. El artefacto
 
 Lo que un tercero descarga es `arqueo-verify-<versión>-<host>.tar.gz` (§401), y dentro:
-`zk-ssl-verify` (el binario), `spec/PAQUETE.md` (este documento), `spec/vectors/paquete/` (el
-manifiesto y sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
+`zk-ssl-verify` (el binario), `conformidad.sh` (el arnés de la sección 9, §408), `spec/PAQUETE.md`
+(este documento), `spec/vectors/paquete/` (el manifiesto y sus vectores), `LICENSE-APACHE`,
+`LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
 licencias de todo lo enlazado), `VERSION` (el commit, el toolchain y los flags con que se compiló)
 y `SHA256SUMS` (la huella de cada fichero de dentro). Se comprueba con `sha256sum -c SHA256SUMS`,
-y el binario contra su propio manifiesto: cada entrada dice el código de salida y el texto.
+y el binario contra su propio manifiesto con `bash conformidad.sh ./zk-ssl-verify`: cada entrada
+dice el código de salida y el texto.
 
 La huella del binario **no depende de la máquina ni del usuario** —se compila con
 `--remap-path-prefix`—, pero sí del toolchain y de `Cargo.lock`: con el `rustc` que `VERSION`

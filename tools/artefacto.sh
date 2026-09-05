@@ -3,8 +3,9 @@
 #
 # Compila `zk-ssl-verify` en release con `--remap-path-prefix` (la huella del binario no
 # depende de la ruta del arbol ni del usuario: depende del toolchain y de `Cargo.lock`),
-# monta el juego que un tercero necesita —binario, `spec/PAQUETE.md`, el manifiesto y sus
-# vectores, las licencias, `NOTICE`, `THIRD-PARTY.txt`, `VERSION`, `SHA256SUMS`— y lo
+# monta el juego que un tercero necesita —binario, el arnes `conformidad.sh` (§408),
+# `spec/PAQUETE.md`, el manifiesto y sus vectores, las licencias, `NOTICE`, `THIRD-PARTY.txt`,
+# `VERSION`, `SHA256SUMS`— y lo
 # empaqueta en un tarball REPRODUCIBLE bajo `target/artefacto/` (ignorado por git).
 #
 #     bash tools/artefacto.sh            # construye y deja target/artefacto/<nombre>.tar.gz
@@ -41,6 +42,8 @@ montar(){ # $1 = binario, $2 = directorio destino
   cp "$1" "$2/zk-ssl-verify"; chmod 755 "$2/zk-ssl-verify"
   cp spec/PAQUETE.md "$2/spec/"
   cp spec/vectors/paquete/MANIFIESTO.txt spec/vectors/paquete/*.json "$2/spec/vectors/paquete/"
+  # §408 · el arnes viaja dentro: `bash conformidad.sh ./zk-ssl-verify` desde la raiz del tarball
+  cp tools/conformidad.sh "$2/conformidad.sh"; chmod 755 "$2/conformidad.sh"
   cp LICENSE-APACHE LICENSE-MIT NOTICE "$2/"
   cargo tree -p zk-ssl-verify -e normal --prefix none --format '{p} {l}' --locked | sed 's/ (\/[^)]*)//; s/ (\*)//' | sort -u > "$2/THIRD-PARTY.txt"
   {
@@ -61,16 +64,12 @@ empaquetar(){ # $1 = directorio montado, $2 = tarball de salida
   ( cd "$(dirname "$1")" && tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner -cf - "$(basename "$1")" | gzip -n -9 > "$2" )
 }
 
-manifiesto(){ # $1 = binario -> imprime ok/n; exit 1 si alguno falla
-  local ok=0 n=0 VF VRC VTX VR
-  while IFS='|' read -r VF VRC VTX; do
-    case "$VF" in ''|'#'*) continue;; esac
-    n=$((n + 1))
-    if "$1" "spec/vectors/paquete/$VF" > "$OUT/.v.txt" 2>&1; then VR=0; else VR=$?; fi
-    if [ "$VR" = "$VRC" ] && grep -qF -- "$VTX" "$OUT/.v.txt"; then ok=$((ok + 1)); fi
-  done < spec/vectors/paquete/MANIFIESTO.txt
-  echo "$ok/$n"
-  [ "$ok" = "$n" ]
+manifiesto(){ # $1 = binario -> imprime ok/n; exit 1 si alguno falla.
+  # §408 · UN solo productor del bucle: tools/conformidad.sh (RFC-0005 E4). Aqui solo se consume.
+  local SAL RC=0
+  SAL=$(bash tools/conformidad.sh "$1" 2>&1) || RC=$?
+  echo "$SAL" | tail -n 1 | sed -n 's/^conformidad: \([0-9]*\) de \([0-9]*\) .*/\1\/\2/p'
+  [ "$RC" = "0" ]
 }
 
 mkdir -p "$OUT"

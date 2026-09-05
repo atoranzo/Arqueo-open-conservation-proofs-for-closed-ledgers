@@ -285,24 +285,19 @@ if grep -q "OTRA version" "$OUT/c02.txt"; then msg "  OK  0.2 RECHAZADO (otra ve
 cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.1.json > "$OUT/c01.txt" 2>&1
 if grep -q "OTRA version" "$OUT/c01.txt"; then msg "  OK  0.1 RECHAZADO (otra version)"; else falla "0.1 deberia rechazarse por version"; fi
 
-# ── 3 bis · conformidad del PAQUETE (spec/PAQUETE.md, RFC-0004 E2, §398) ─────
+# ── 3 bis · conformidad del PAQUETE (spec/PAQUETE.md, RFC-0004 E2, §398; el arnes: RFC-0005 E4, §408) ──
 msg ""
 msg "== CANON · conformidad del paquete =="
 cargo build --release -q -p zk-ssl-verify > "$OUT/paquete_build.txt" 2>&1 || falla "zk-ssl-verify no compila en release"
-NV=0; NVOK=0
-while IFS='|' read -r VF VRC VTX; do
-  case "$VF" in ''|'#'*) continue;; esac
-  NV=$((NV + 1))
-  target/release/zk-ssl-verify "spec/vectors/paquete/$VF" > "$OUT/paquete_$VF.txt" 2>&1; VR=$?
-  if [ "$VR" != "$VRC" ]; then falla "paquete $VF: exit $VR, el manifiesto espera $VRC"; continue; fi
-  if grep -qF -- "$VTX" "$OUT/paquete_$VF.txt"; then NVOK=$((NVOK + 1)); else falla "paquete $VF: no dice '$VTX'"; fi
-done < spec/vectors/paquete/MANIFIESTO.txt
-NJ=$(ls spec/vectors/paquete/*.json 2>/dev/null | wc -l)
-NM=$(grep -c '\.json|' spec/vectors/paquete/MANIFIESTO.txt)
-# prueba de vida: hay vectores, y cada .json del directorio tiene su entrada (uno sin entrada no gatea nada)
-[ "$NV" -gt 0 ] || falla "manifiesto del paquete vacio"
-for j in spec/vectors/paquete/*.json; do grep -qF -- "$(basename "$j")|" spec/vectors/paquete/MANIFIESTO.txt || falla "vector sin entrada en el manifiesto: $(basename "$j")"; done
-msg "  OK  paquete: $NVOK de $NV entradas del manifiesto dicen lo que deben ($NJ ficheros, $NM entradas con fichero)"
+# UN solo productor del bucle del manifiesto: tools/conformidad.sh, el mismo que un tercero corre
+# sobre cualquier binario y el que artefacto.sh corre sobre el binario con remap. Cada ROJO del
+# arnes entra aqui con su nombre; la prueba de vida (manifiesto vacio, vector sin entrada) es suya.
+if bash tools/conformidad.sh target/release/zk-ssl-verify > "$OUT/paquete.txt" 2>&1; then
+  msg "  OK  paquete: $(tail -n 1 "$OUT/paquete.txt" | sed 's/^conformidad: //')"
+else
+  while IFS= read -r L; do falla "paquete $L"; done < <(grep '^ROJO' "$OUT/paquete.txt" | sed 's/^ROJO //')
+  grep -q '^ROJO' "$OUT/paquete.txt" || falla "paquete: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/paquete.txt"))"
+fi
 
 # ── 3 ter · el ARTEFACTO (tools/artefacto.sh --check, §401): la PROPIEDAD, no un pin ──
 msg ""
