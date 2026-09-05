@@ -30715,3 +30715,64 @@ the specification») es falsa a fecha de hoy y se corrige en el reenvio (5.B-22)
 **Contadores.** Ningun pin se mueve; sumas 1014/1151/1165 y canon 1166 intactos.
 `spec/vectors/cable/MANIFIESTO.txt` `b859c76ededd1c6f`/13 -> 1b8f22996098c284/15; 11 .json
 (342458 B). `AUDITORIA.md`. Ningun Cargo tocado. Documentos `.md` versionados: 67.
+
+## §411 — Los bytes del nucleo: los KAT de spec/vectors/nucleo/ y NUCLEO.md seccion 6 (RFC-0005, E5)
+
+**Que.** El PASTE-410-M midio que la frase enviada a NLnet —«a second implementer needs only the
+specification»— era falsa: los bytes del nucleo vivian en doc-comments de `zk-ssl-verify` que se
+llamaban a si mismos «superficie de conformidad» y en una dependencia (`winter-crypto`) que
+`spec/` no nombraba; `NUCLEO.md` enumeraba QUE, no COMO. Este sello lo cierra por donde la ley
+manda: la autoridad es la prueba, no la prosa. Nace `spec/vectors/nucleo/`, 18 vectores de
+respuesta conocida (entrada -> salida, en hex del cable) —uno por `fn` NUCLEO de `zk-ssl-hash` y
+`zk-ssl-verify`: as_digest, embeber, los dos de bytes, native_merge, las dos hojas, path_root, las
+tres composiciones de cabeza, acuse_digest, hoja_de_acuse, mmr_hoja, mmr_nodo, cima y los dos
+preambulos—, EMITIDOS por la referencia y REPRODUCIDOS en cada canon por `nucleo_kat.rs`, un
+modulo `#[cfg(test)]` de `zk-ssl-cli` con el molde de `conformance` (`ZKSSL_KAT_EMITIR` fija,
+sin ella compara; `ZKSSL_KAT_DIR` para ensayar). `NUCLEO.md` gana la seccion 6, «Los bytes: lo
+que un KAT fija»: NOMBRA la permutacion (Rescue-Prime `Rp64_256` tal como la implementa
+`winter-crypto =0.13.1`, sobre Goldilocks `winter-math =0.13.1`; `native_merge` = estado de doce
+a cero, `l` en 4..8, `r` en 8..12, permutar, salida 4..8), la serializacion (ocho bytes LE por
+elemento, en orden), los dominios (`u64` BE de ocho ASCII; las dos cadenas de la firma), los dos
+preambulos (MUDADOS aqui desde los doc-comments, que ahora remiten) y el orden exacto de los
+merges de cada composicion; y remite a los KAT para los bytes. El RFC-0005 gana `### E5` con el
+hueco medido y su cierre. Corre canon: 194 s.
+
+**Lo que se midio antes de escribir un byte** (PASTE-411-M y -PRE). `native_merge` pone la
+capacidad a cero y toma la salida de 4..8; `epoch_digest = merge(merge(merge(as_digest(seq),
+accounts), merge(pending, frozen)), chain)`, v2 = merge(v1, merge(acuses, as_digest(n))), v3 =
+merge(v2, merge(cima, as_digest(t))); `acuse_digest = merge(as_digest(ACUSE_V1),
+merge(hash_prueba, merge(as_digest(epoca), as_digest(n))))`; `mmr_hoja`/`mmr_nodo` con su dominio
+por delante y `cima` con el corte en la mayor potencia de dos menor que n. **KAT existentes en
+los tests: CERO** (89 tests, ni un literal hex largo). El cli no declaraba `zk-ssl-hash`:
+declararla suma CERO nodos al grafo (`zk-ssl` ya la trae; el argumento del §312). Y una ceguera
+mia: mi recorte de zonas de test tomo `hash/lib.rs` 318..336 por test —un `#[cfg(test)]` corto
+justo antes— y tapo `acuse_digest`; el PRE la localizo por CONTENIDO (PRECISION 75 al reves).
+
+**Las decisiones (§410, REVERSIBLES) y como quedaron.** D-2: los KAT son la norma y `NUCLEO.md`
+solo nombra: los esquemas `text` de los preambulos SALEN de `zk-ssl-verify/src/lib.rs` y el
+comentario remite (un solo productor; mudar y atar, §296). D-3: el atado vive en `zk-ssl-cli`,
+que no se publica (PRECISION 77), como modulo propio y no dentro de `witness.rs`: son bytes del
+nucleo, no del testigo. Las entradas de los KAT son bytes (`element_from_bytes`,
+`digest_from_bytes`), nunca tipos del arbol: el cli no nombra `BaseElement` y no necesita
+`winter-math`. Los vectores son una FOTO de la referencia, y se dice: lo que fijan es la
+propiedad «dos implementaciones dan estos bytes», no que los bytes sean correctos por si mismos.
+
+**Fase ROJO en vivo.** Con una copia de los vectores y un nibble cambiado en la salida de
+`native_merge`, el test cae nombrando `KAT native_merge`; con un fichero huerfano en la copia,
+cae por «los ficheros y los casos NO coinciden». Verde solo despues, sobre el arbol.
+
+**Lo que NO afirma.** No sella E5: la segunda implementacion no esta en la mano del autor. Afirma
+que ya puede EMPEZAR sin leer la referencia: hash contra los KAT, luego el arnes de E4. Lo que
+ningun KAT da es la firma: `XmssMtSha2_40_8_256` es RFC 8391 y la clave publicada lleva su OID
+correcto. Y el recado de fuera sigue en pie (§410): la linea 95 del v3 se corrige en el reenvio.
+
+**Contadores.** Pin cli 94 -> 95 (`los_kat_del_nucleo_se_reproducen_byte_a_byte`); sumas
+1014/1151/1165 -> 1015/1152/1166; el canon declara 1167. Los pines de verify (79) y hash (24) no se
+mueven: sus `--list` son identicas PRE y POST (verify solo pierde cinco lineas de comentario).
+`crates/zk-ssl-verify/src/lib.rs` `1e0d5c5227afcb24`/1159 -> `b4a2cefe564aae03`/1154.
+`spec/NUCLEO.md` `c5602092ffdef7f2`/184 -> `d1c387a2edb802c0`/223 (6 -> 7, 7 -> 8;
+`check_nucleo` no lee secciones, solo la tabla y el censo). `spec/rfc/0005-nucleo-congelado.md`
+304 -> 315. `spec/README.md` +1 fila. `crates/zk-ssl-cli/Cargo.toml` gana `zk-ssl-hash`
+(el primer Cargo tocado desde el §395) y `Cargo.lock` gana UNA linea por ello. Nace
+`crates/zk-ssl-cli/src/nucleo_kat.rs` (`check_modulos` lo ve declarado: 118 -> 119 .rs).
+`tools/*.sh` 11; herramientas del canon DIEZ. Documentos `.md` versionados: 67.

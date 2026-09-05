@@ -44,6 +44,9 @@ anyhow = "1"
 # compilar el probador STARK para comprobar una firma**. Es la leccion de
 # §243 a menor escala.
 zk-ssl-verify = { path = "../zk-ssl-verify" }
+# ⚠️ **§411 (RFC-0005, E5).** Los KAT del nucleo: `nucleo_kat` recompone cada fn NUCLEO de
+#    `zk-ssl-hash` contra `spec/vectors/nucleo/`. Suma CERO nodos al grafo: `zk-ssl` ya lo trae.
+zk-ssl-hash = { path = "../zk-ssl-hash" }
 ureq = { version = "2.10", features = ["json"] }
 
 # ⚠️ **El CABLE** (§312). El testigo deja de leer la cabeza firmada a pelo

@@ -3403,6 +3403,7 @@ dependencies = [
  "zeroize",
  "zk-ssl",
  "zk-ssl-guardian",
+ "zk-ssl-hash",
  "zk-ssl-verify",
  "zk-ssl-wire",
 ]

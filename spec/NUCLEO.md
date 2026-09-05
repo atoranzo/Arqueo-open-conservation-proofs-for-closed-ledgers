@@ -166,7 +166,45 @@ real de sus llaves, no por la primera marca.
 - **MMR** — el MMR de cabezas: la hoja, el nodo, la cima, la inclusión y la consistencia (§291).
 - **INCLUSIÓN** — la hoja de cuenta (las dos formas) y los recibos de inclusión.
 
-## 6. Lo que este documento NO afirma
+## 6. Los bytes: lo que un KAT fija
+
+Este documento **nombra**; los bytes los fijan los vectores de `spec/vectors/nucleo/` (§411,
+RFC-0005 E5): un fichero por `fn` NÚCLEO, `{fn, entradas, salida}` en hex `0x…`, emitidos por la
+referencia y reproducidos en cada canon (`zk-ssl-cli`, `nucleo_kat`). Una segunda implementación
+que dé estos bytes en cada uno da los mismos bytes en todo lo que se firma. Son una foto de la
+referencia, y se declara: fijan la propiedad «dos implementaciones dan estos bytes».
+
+- **La permutación**: Rescue-Prime `Rp64_256`, tal como la implementa `winter-crypto =0.13.1`,
+  sobre el campo de Goldilocks (`winter-math =0.13.1`, `f64::BaseElement`). Un `Digest` son cuatro
+  elementos. `native_merge(l, r)`: estado de doce elementos a cero, `l` en `[4..8]`, `r` en
+  `[8..12]`, una permutación, salida `[4..8]`; la capacidad `[0..4]` queda a cero. `embeber(x) =
+  [x, 0, 0, 0]`; `as_digest(u)` embebe el `u64`.
+- **Serialización**: cada elemento en 8 bytes *little-endian* (`as_int`), los cuatro en orden;
+  `digest_from_bytes` exige 32 bytes. En el cable van como `DATA`/`Digest` (`RPC.md`).
+- **Los dominios**: `u64` leídos *big-endian* de ocho bytes ASCII (`ACUSE_V1`, `MMRHOJA1`,
+  `MMRNODO1`), embebidos con `as_digest` y mezclados por delante. Los de la firma son cadenas de
+  bytes: `b"ZK-SSL-epoch-head"` (17) y `b"ZK-SSL-witness-cosign"` (21).
+- **Los preámbulos** (mudados aquí desde `zk-ssl-verify/src/lib.rs`, que remite a esta sección):
+
+  ```text
+  b"ZK-SSL-epoch-head" ‖ version ‖ epoch_digest                            (17 + 1 + 32 = 50)
+  b"ZK-SSL-witness-cosign" ‖ version ‖ epoch_digest ‖ len(u16 BE) ‖ clave_op     (21 + 1 + 32 + 2 + N)
+  ```
+
+- **Las composiciones**, en el orden exacto de los merges: `native_leaf = merge(merge(pk,
+  embeber(saldo)), embeber(nonce))` y la salteada `merge(hoja, salt)`; `path_root` sube desde la
+  hoja con el hermano a la izquierda si `is_right`; `epoch_digest = merge(merge(merge(as_digest(seq),
+  accounts), merge(pending, frozen)), chain)`; `v2 = merge(v1, merge(acuses_root, as_digest(n)))`;
+  `v3 = merge(v2, merge(cima, as_digest(t)))`, génesis `as_digest(0)` y `t = 0`;
+  `acuse_digest = merge(as_digest(ACUSE_V1), merge(hash_prueba, merge(as_digest(epoca),
+  as_digest(n))))`; `mmr_hoja = merge(as_digest(MMRHOJA1), cabeza)`; `mmr_nodo =
+  merge(as_digest(MMRNODO1), merge(izq, der))`; la cima es el árbol de Merkle con el corte en
+  la mayor potencia de dos menor que `n`.
+- **Lo que un KAT no puede dar**: la firma. `XmssMtSha2_40_8_256` es RFC 8391 y la clave
+  publicada lleva su OID correcto; el apaño del OID es de lectura de `xmss 0.1.0-pre.0`
+  (REFERENCIA) y una biblioteca correcta no lo necesita.
+
+## 7. Lo que este documento NO afirma
 
 - No congela el cable ni el libro: `spec/RPC.md` y la capa tienen sus propias reglas y sus propios RFC.
 - No afirma que una segunda implementación exista (E5 del RFC-0005): afirma qué tendría que reproducir.
@@ -175,8 +213,9 @@ real de sus llaves, no por la primera marca.
 - Nada del núcleo identifica nada fuera del libro (RFC-0005, D-C): ni una factura, ni una etiqueta
   compartida entre operadores. La unicidad entre libros es familia nueva con RFC propio.
 
-## 7. Historia
+## 8. Historia
 
+- §411 — la sección 6 y los KAT de `spec/vectors/nucleo/`: los bytes, fijados (RFC-0005, E5).
 - §407 — nace este documento (RFC-0005, E1) con su atado `tools/check_nucleo.py` en el canon.
 - §406 — `VersionCabeza`, el único productor del conjunto de versiones (E2).
 - §404 — el recompositor del testigo deja de creer versiones desconocidas.

@@ -1,0 +1,9 @@
+{
+  "entradas": {
+    "hash_prueba": "0x0100000000000000000000000000000000000000000000000000000000000000",
+    "n": "0x3",
+    "seq": "0x2b"
+  },
+  "fn": "hoja_de_acuse",
+  "salida": "0x82a74037949ac67efaf467c10fe960c7ec0e87fcbad4c949afeec481b33946b2"
+}

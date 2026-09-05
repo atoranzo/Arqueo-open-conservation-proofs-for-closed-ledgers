@@ -14,6 +14,8 @@
 mod commands;
 mod conformance;
 mod fmt;
+#[cfg(test)]
+mod nucleo_kat;
 mod sandbox;
 mod trace;
 mod witness;

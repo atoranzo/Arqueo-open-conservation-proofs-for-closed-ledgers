@@ -14,7 +14,7 @@
 | E2 — la regla de extensión, escrita y ejercida | la regla en el mismo documento, y el atado que la ejerce: un verificador acepta un conjunto EXPLÍCITO de versiones y rechaza lo demás (§404 es el primer caso) | NO | sellada — §406 |
 | E3 — los rechazos del cable, con vector | vectores negativos de lo que un consumidor del cable tiene que rechazar, bajo su propio directorio, con su puerta en `tools/canon.sh`; qué rechaza hoy el consumidor se MIDE antes de escribir un vector | NO | sellada — §409 (`spec/vectors/cable/`, `witness --respuesta`, `tools/cable_respuesta.sh`) |
 | E4 — el arnés de conformidad | una herramienta que corre el catálogo de vectores contra CUALQUIER binario que se le pase y dice si pasa y falla igual que la referencia | NO | sellada — §408 (`tools/conformidad.sh`, dentro del tarball) |
-| E5 — el criterio | una segunda implementación, escrita desde la spec sin leer el código de referencia, que pase y falle igual. No está en la mano del autor; E4 es lo que lo hace comprobable el día que exista | NO | fuera del árbol |
+| E5 — el criterio | una segunda implementación, escrita desde la spec sin leer el código de referencia, que pase y falle igual. No está en la mano del autor; E4 es lo que lo hace comprobable el día que exista | NO | fuera del árbol; lo que estaba en la mano del autor, sellado — §411 (`spec/vectors/nucleo/`, `NUCLEO.md` sección 6) |
 
 Todas las medidas de este documento se tomaron sobre `9ae055c` y `2080e5a` (§404), en
 lecturas puras que no escribieron un byte en el árbol: `PASTE-H3-M`, `PASTE-H3-M2`,
@@ -189,6 +189,17 @@ convierte E5 en comprobable: el día que exista una segunda implementación, el 
 publicable es la salida de ese arnés sobre su binario, no una afirmación. Hasta entonces, el
 arnés sobre el binario de referencia es un resultado publicable por sí mismo: el catálogo
 completo, corrido fuera del canon, por cualquiera.
+
+### E5 — El criterio, y lo que le faltaba
+
+E5 no está en la mano del autor y este RFC no la sella. Lo que sí estaba en su mano se midió y
+se cerró en §411: la frase enviada a NLnet —«a second implementer needs only the
+specification»— era falsa a fecha de §410, porque los bytes del núcleo vivían en doc-comments
+del código y en una dependencia (`winter-crypto`) que `spec/` no nombraba. Desde §411 los KAT de
+`spec/vectors/nucleo/` son la norma de los bytes, `NUCLEO.md` sección 6 nombra la permutación, la
+serialización, los dominios y los preámbulos, y un test de `zk-ssl-cli` los reproduce en cada canon.
+Un segundo implementador comprueba su hash contra los KAT sin leer la referencia; E4 dice después
+si pasa y falla igual. Lo que ningún KAT da es la firma: RFC 8391.
 
 ## Lo que se DESCARTÓ al medir
 

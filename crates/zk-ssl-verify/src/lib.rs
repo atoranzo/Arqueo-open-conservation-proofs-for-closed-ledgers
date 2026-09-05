@@ -325,9 +325,7 @@ impl std::error::Error for VerificaError {}
 /// El preámbulo exacto que se firma. **Es superficie de conformidad**: una
 /// segunda implementación tiene que producir estos bytes.
 ///
-/// ```text
-/// b"ZK-SSL-epoch-head" ‖ version ‖ epoch_digest     (17 + 1 + 32 = 50)
-/// ```
+/// Los bytes exactos: `spec/NUCLEO.md`, sección 6, y su KAT en `spec/vectors/nucleo/` (§411).
 pub fn preambulo(version: u8, epoch_digest: &[u8; 32]) -> Vec<u8> {
     let mut v = Vec::with_capacity(DOMINIO.len() + 1 + 32);
     v.extend_from_slice(DOMINIO);
@@ -340,10 +338,7 @@ pub fn preambulo(version: u8, epoch_digest: &[u8; 32]) -> Vec<u8> {
 /// **es superficie de conformidad**: una segunda implementación tiene que
 /// producir estos bytes.
 ///
-/// ```text
-/// b"ZK-SSL-witness-cosign" ‖ version ‖ epoch_digest ‖ len(u16 BE) ‖ clave_op
-///          21                    1          32            2            N
-/// ```
+/// Los bytes exactos: `spec/NUCLEO.md`, sección 6, y su KAT en `spec/vectors/nucleo/` (§411).
 ///
 /// ⚠️ **La clave del operador va DENTRO, y esa es la razón de ser de esta
 /// función.** Sin ella, una cofirma sería **transferible**: valdría para
