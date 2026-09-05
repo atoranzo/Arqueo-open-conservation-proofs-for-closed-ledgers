@@ -25,7 +25,7 @@ commit; if a file has moved on, the reference tells you where to look.
 | `rfc/0000-plantilla.md` | the RFC template | you write an RFC |
 | `rfc/0002-lotes-y-transicion-de-hoja.md` | RFC-0002: batches, and the leaf transition that took the wire from `0.1` to `0.2` | you read the log guarantees under batching |
 | `rfc/0003-compromiso-v2.md` | RFC-0003, ACCEPTED: the pending commitment v2 (per-payment expiry and refund identity committed), which took the wire from `0.2` to `0.3` | you read why the current commitment has the shape it has |
-| `rfc/0004-paquete-de-evidencia.md` | RFC-0004, PROPOSED: the portable evidence package gets its own normative document (E1, `PAQUETE.md`) and its vectors (E2) | you read why the package is specified apart from `RPC.md` |
+| `rfc/0004-paquete-de-evidencia.md` | RFC-0004, ACCEPTED: the portable evidence package gets its own normative document (E1, `PAQUETE.md`), its vectors (E2) and the head-index binding (E3) | you read why the package is specified apart from `RPC.md` |
 
 RFC-0001 is not missing: the number is reserved for the keystore KDF
 hardening and is not yet drafted (`rfc/0003-compromiso-v2.md:11-15`).

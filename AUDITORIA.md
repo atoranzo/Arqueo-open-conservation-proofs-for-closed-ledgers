@@ -30098,3 +30098,45 @@ Ficheros: `crates/zk-ssl-verify/src/lib.rs`, `crates/zk-ssl-verify/src/main.rs`,
 y dos vectores), `spec/rfc/0004-paquete-de-evidencia.md`, `tools/canon.sh`, los cinco
 documentos de cifras y este asiento. Lecturas de la 94: PASTE-63-M `8c3f88bf7ec93965`,
 PASTE-63-M2 `b397d9b9a67087d1`, PASTE-63-PRE `21a7f87f2b9b5d5b`.
+
+## §400 — El RFC-0004 pasa a ACEPTADO: la regla 4 del PROCESO, saldada con medida
+
+**Que.** `spec/rfc/0004-paquete-de-evidencia.md` gira de PROPUESTO a ACEPTADO, con el
+molde del §356: la linea de estado dice por que, la nota fechada dice con que medida, y el
+doble hilo de la regla 5 queda cerrado por los dos extremos. `spec/README.md`, que es el
+segundo productor del estado (en ingles, `:28`), gira con el. Ni codigo, ni pin, ni cifra:
+como el §356, este sello no corre el canon.
+
+**La regla 4, punto por punto, medida (PASTE-400-M `8c39d8f95e7af349`, salida
+`2c070dfb047359cc`, sobre `83ce673`).** (a) La spec: `spec/PAQUETE.md` es el unico productor
+del formato desde §397 y gano la cota del indice en §399; `spec/RPC.md:828` remite a el.
+(b) El OpenRPC: **no se regenera, por declaracion del propio RFC** (`:188-192`): no hay
+metodo nuevo; `spec/openrpc.json` no se ha tocado desde `875464b` (§354), sigue en
+`zkssl/0.3` (`:14`, `:27`) con 24 metodos y sus tres tests de atado en `openrpc.rs`.
+(c) Los vectores: nuevos bajo `spec/vectors/paquete/` (E2, §398), 67 entradas y 66 ficheros
+desde §399, con el 3 bis del canon; los tres del cable siguen intactos (`875464b`) bajo el
+triple gate. (d) Las suites: el asiento §399 declara canon `--sello` VERDE en 178 s con la
+fila del verificador en 75. Precedente del giro: el 0002 (§3-5) y el 0003 (§356).
+
+**Correccion al §399, forma §247.** El §399 escribio la linea de historia de
+`spec/PAQUETE.md` (seccion 10) DENTRO de una vineta envuelta: entre «§293: el paquete de» y
+su continuacion «extension; §322: ...». El editor tomo la ultima vineta que empezaba por
+`- §` sin mirar que seguia en la linea siguiente (la PRECISION 43 al reves: un censo linea
+a linea no ve una frase partida por el salto). Este sello recoloca la linea detras de la
+continuacion; no cambia una letra de las tres.
+
+**Decisiones (REVERSIBLES).** D-1 la linea de estado calca la del 0003 (justificacion en
+negrita, los asientos entre parentesis, la frase de conservacion). D-2 la nota fechada va
+tras el parrafo `:188-192` del RFC, que es donde el propio documento prometio justificar el
+giro; con tildes, que es el regimen de la unica nota que el 0004 ya tenia (`:56`). D-3 el
+README ingles dice ACCEPTED y nombra las tres etapas, como la fila del 0003 justo encima.
+D-4 sin canon: ni un `.rs`, ni un pin, ni una cifra se mueven; las nueve herramientas se
+corren antes y despues con liston por delta.
+
+**Lo que NO hace.** No cierra el hito H2: falta el artefacto distribuible (§401). No toca
+`PROCESO.md`, ni los asientos historicos que dicen PROPUESTO (son actas), ni `RPC.md`.
+
+**Contadores.** Pin `zk-ssl-verify` 75 -> 75. Sumas quietas 1007 / 1144 / 1158; el canon
+declara 1159. Documentos `.md` versionados 65 -> 65. Ficheros: `spec/rfc/0004-paquete-de-evidencia.md`
+(257 -> 270), `spec/README.md` (154 -> 154, linea-neutral), `spec/PAQUETE.md` (260 -> 261),
+y este asiento.

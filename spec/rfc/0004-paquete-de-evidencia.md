@@ -1,10 +1,13 @@
 # RFC-0004 — El paquete de evidencia portable y su especificación
 
-- **Estado:** PROPUESTO
+- **Estado:** ACEPTADO — **la regla 4 del PROCESO, saldada con medida**
+  (§396 la adopción; §397–§399 las etapas E1–E3 con sus puertas;
+  §400 este giro). Se conserva como registro de lo decidido, lo medido
+  y lo descartado.
 - **Autores:** Che, con Claude (sesión 92)
 - **Fecha:** 2026-09-04
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad)
-- **Asiento(s) de AUDITORIA:** §243, §289, §290, §293, §322, §395, el §396, que lo sella, el §397 (E1) y el §398 (E2), el §399 (E3)
+- **Asiento(s) de AUDITORIA:** §243, §289, §290, §293, §322, §395, el §396, que lo sella, el §397 (E1) y el §398 (E2), el §399 (E3), y el §400 (este giro a ACEPTADO)
 
 ## Estado de las etapas
 
@@ -190,6 +193,16 @@ método. La regla 4 exige, para ACEPTADO, «la spec actualizada + OpenRPC regene
 vectores re-emitidos (o nuevos bajo la versión nueva) + suites verdes»: el giro a
 ACEPTADO se justificará con la spec, los vectores nuevos y las suites verdes, **y con
 esta declaración de que el OpenRPC queda fuera del alcance por no haber método nuevo**.
+
+> **Nota (2026-09-05, §400).** ACEPTADO. La regla 4 del PROCESO queda saldada con
+> medida: la spec es `spec/PAQUETE.md` (E1, §397; la cota del índice, §399) y
+> `RPC.md:828` remite a ella — el OpenRPC **no se regenera**, por la declaración de
+> arriba: no hay método nuevo, y `spec/openrpc.json` sigue en el `zkssl/0.3` del §354
+> con sus tres tests de atado — los vectores son nuevos bajo `spec/vectors/paquete/`
+> (E2, §398; 67 entradas desde §399) y los tres del cable siguen intactos bajo el
+> triple gate del canon — y las suites verdes: canon `--sello` VERDE en 178 s (§399).
+> Medido en el PASTE-400-M (`8c39d8f95e7af349`, salida `2c070dfb047359cc`). Doble hilo:
+> el asiento §400.
 
 ## Seguridad
 
