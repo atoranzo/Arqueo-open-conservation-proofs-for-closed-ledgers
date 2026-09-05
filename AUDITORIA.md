@@ -30681,3 +30681,37 @@ operativas»; 455..466 y 856..867 se mueven de sitio, no de contenido). `spec/RE
 seccion E3 gana su parrafo). `spec/vectors/cable/`: 9 .json (266408 B) + MANIFIESTO.
 `tools/*.sh` 10 -> 11; las herramientas del canon siguen siendo DIEZ (la receta deriva .py).
 Documentos `.md` versionados: 67. Ningun Cargo tocado. Del RFC-0005 queda E5, fuera del arbol.
+
+## §410 — Dos rechazos mas del cable, con el texto medido en vivo: epochDigest corto y sin index
+
+**Que.** Entran en `spec/vectors/cable/` los dos candidatos que el §409 dejo fuera por no poder
+derivar su texto del fuente sin abrir el DTO: `rechazo-epochDigest-corto.json` (31 bytes) y
+`rechazo-sin-index.json` (la clave `index` ausente). El propio BLOQUE-409 los corrio como
+INFORMATIVOS contra el binario con el modo y el camino vivo los nombro: el DTO del cable los caza
+ANTES de `verificar`, con «forma del cable: longitud 31, se esperaban 32 bytes» y «cabeza firmada
+sin index: el productor la sirvio incompleta», clase `no-verifica` y exit 1. Un candidato entra
+solo si da el rc Y el texto (PRECISION 54): ahora los dan. MANIFIESTO 9 -> 11 entradas. Sin
+codigo: no corre canon (ni `.rs` ni cifras); la puerta es el arnes, corrido dentro del bloque
+sobre el manifiesto nuevo y ensenado vivo por los dos lados (11 de 11; y con una entrada
+saboteada, ROJO nombrandola). Derivados por mutacion de la misma cabeza real de
+`spec/vectors/paquete/posicion-v2.json` (`191176bbe7146627`); jamas se reescriben.
+
+**Lo que ensena.** En frio (`--auditar`) los mismos dos daban `firma-no-verifica` «epochDigest de
+31 bytes» y `linea-ilegible` «QUANTITY no es cadena» (PASTE-409-S): dos caminos, dos clases y dos
+textos para la misma mutacion. El vivo nombra el campo; el frio no siempre. Queda fichado en la
+cola 5.A como esta en el §409 (el «QUANTITY no es cadena» sin nombre de campo).
+
+**Las decisiones del arco que sigue (E5), tomadas con la constitucion, REVERSIBLES.** D-1 primero
+estos dos vectores, luego «los bytes del nucleo» inmediatamente detras: NUCLEO §1 y el RFC-0005
+presuponen que `spec/` basta y el PASTE-410-M midio que no. D-2 los KAT son la norma
+(`spec/vectors/nucleo/`, entrada -> digest, uno por `fn` NUCLEO) y `NUCLEO.md` solo NOMBRA (el
+hash: Rescue-Prime `Rp64_256` tal como lo implementa `winter-crypto =0.13.1` sobre Goldilocks; la
+serializacion: 8 bytes LE por elemento, en orden); los esquemas de los preambulos se MUDAN de los
+doc-comments a NUCLEO y el comentario remite: un solo productor. D-3 el atado vive en
+`zk-ssl-cli`, fuera del crate publicable (PRECISION 77). D-4 el RFC-0005 gana `### E5` con el
+hueco medido, y el recado de fuera: la linea 95 del v3 enviado («a second implementer needs only
+the specification») es falsa a fecha de hoy y se corrige en el reenvio (5.B-22).
+
+**Contadores.** Ningun pin se mueve; sumas 1014/1151/1165 y canon 1166 intactos.
+`spec/vectors/cable/MANIFIESTO.txt` `b859c76ededd1c6f`/13 -> 1b8f22996098c284/15; 11 .json
+(342458 B). `AUDITORIA.md`. Ningun Cargo tocado. Documentos `.md` versionados: 67.

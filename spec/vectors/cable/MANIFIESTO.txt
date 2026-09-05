@@ -11,3 +11,5 @@ rechazo-firma.json|1|no-verifica · la firma no verifica
 rechazo-forma-del-cable.json|1|no-verifica · forma del cable
 rechazo-available-false.json|1|sin-firma · sin cabeza firmada todavia
 rechazo-sin-result.json|1|sin-respuesta · respuesta sin `result`
+rechazo-epochDigest-corto.json|1|no-verifica · forma del cable: longitud 31, se esperaban 32 bytes
+rechazo-sin-index.json|1|no-verifica · cabeza firmada sin index: el productor la sirvio incompleta
