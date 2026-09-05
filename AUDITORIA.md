@@ -29915,3 +29915,71 @@ suma este asiento. Nace un fichero versionado bajo `spec/rfc/`, de modo que los
 documentos vivos pasan de 33 a 34 y el universo `.md` de 63 a 64, ambos DERIVADOS y
 sin compuerta que los cite. Ningun `Cargo` tocado. Canon no corrido: el corte no toca
 codigo, y la foto la mide el primer canon que se ejecute.
+
+## §397 — La especificacion del paquete de evidencia se muda a spec/: un solo productor (RFC-0004, E1)
+
+**Que.** Nace `spec/PAQUETE.md`, el UNICO productor normativo del formato del paquete de
+evidencia portable y del contrato del mando `zk-ssl-verify`. Hasta hoy ese contrato vivia
+en la cabecera del binario (`crates/zk-ssl-verify/src/main.rs` 1..90, sha de region
+`293990fedc785833`) y `spec/RPC.md:828` delegaba en ella por escrito: dos productores, y el
+que caduco fue el de dentro (§247 de la propia cabecera). Es la etapa E1 del RFC-0004
+(PROPUESTO desde el §396), patron §296: se MUDA lo que ya estaba escrito, no se redacta.
+
+**Lo que el documento lleva, y de donde sale.** Las tres formas (v1, v2 con las cofirmas
+dentro, extension) con sus esqueletos, mudados de la cabecera. El sobre: los **31 nombres**
+que el binario lee, en tabla por objeto y con la semantica remitida a `spec/RPC.md` por
+linea (433-478, 564-735, 737-779, 781-808, 39-48), medidas en la 93 y vigentes porque
+`RPC.md` conserva su huella. El orden de comprobacion. El **catalogo de rechazos con los 49
+textos distintos** que el binario puede emitir, verbatim. El contrato del mando: un
+argumento, `ROJO: {motivo}`, y TRES salidas (0, 1, 2 uso) — la cabecera decia dos. Quien
+arma el paquete (hoy nadie en Rust: los cuatro bancos, reuniendo sin recomponer). Lo que NO
+afirma. Los vectores, que son E2 y quedan pendientes. Y su historia.
+
+**La puerta de contenido, DERIVADA en la corrida.** El RFC exige que el documento cubra
+todas las claves y todas las reglas de rechazo que el binario implementa, censo re-derivado
+al sellar. El bloque aplana las continuaciones de linea de `main.rs` 91..492, extrae cada
+llamada `err("...")` / `err(format!("..."))` y cada nombre leido por `.get`, `digest_de`,
+`u64_de` y `hex_de_cofirma`, y exige que cada texto y cada nombre esten en `spec/PAQUETE.md`.
+Son **50 llamadas (49 textos) y 31 nombres**.
+
+**Correccion §247 al RFC-0004.** Su Motivacion decia «39 llamadas de rechazo con texto».
+Ese 39 es un censo POR LINEA y es ciego a las once llamadas cuyo literal empieza en la
+linea siguiente (seis literales van partidos con `\`): por LLAMADA son 50. La cifra se
+corrige en el propio parrafo, citando el 39 con su metodo, porque un documento vivo no
+puede llevar una cuenta que su propio catalogo desmiente. Es la PRECISION 43 otra vez, y
+esta vez me mordio a mi: el `PASTE-397-PRE` confirmo el 39 con el mismo instrumento ciego.
+
+**Lo que se toca, fichero a fichero.** `spec/PAQUETE.md` NACE. `main.rs`: la cabecera 1..90
+pasa a REMITIR sin enumerar (patron `Cargo.toml:22-27` y `lib.rs:41-49`), conserva su
+identidad (1..6), su confesion §247 como historia citada y la nota del apagado; y **una
+linea de codigo**, el uso de `main()`, que decia «formatos v1 y v2 en la cabecera de este
+binario» y hoy apuntaria a nada. Ningun test ni banco asierta ese texto (censado en la
+corrida). `spec/RPC.md:828`: el puntero pasa de la cabecera del binario al documento,
+linea-neutral; el resto de la seccion 810..855 no se toca. `spec/README.md`: fila de
+`PAQUETE.md` y fila del RFC-0004 en la tabla, mencion en «Where the rest lives», la
+definicion de la carpeta gana el paquete que un verificador acepta sin cable, y el commit de
+la cabecera pasa de `0ea8775` a `c43890a` (punto 59: once commits por detras, la base contra
+la que se midio todo esto). `spec/rfc/0004-paquete-de-evidencia.md`: la fila E1 pasa de
+«pendiente» a «sellada — §397» y la correccion del 39.
+
+**Decisiones, REVERSIBLES.** D-1 el nombre es `spec/PAQUETE.md`: una palabra, y en este
+arbol «paquete» significa una sola cosa (rango 2). D-2 el documento lleva tildes, como todo
+`spec/` salvo la seccion de apagado (rango 3; 1859 bytes >127 en `RPC.md`). D-3 S397 y S398
+NO se funden: E1 es mudar prosa y cuatro punteros; E2 exige capturar un paquete FIRMADO de
+un nodo real y censar los rechazos — dos propiedades. D-4 la prosa rancia de `main.rs:170`
+(«el paquete v1 empaqueta cabezas v2 o v3» aunque el sobre sea v2) se DECLARA en el
+documento y no se toca aqui: cambiar un texto de rechazo es otra propiedad. D-5 el `#VOL`
+de la seccion §247 de la cabecera conserva su prosa byte a byte y muda solo el esqueleto
+JSON de la extension, que es enumerar.
+
+**Lo que queda vivo, con dueno.** E2 (S398): `spec/vectors/paquete/` y la puerta en el
+bloque de conformidad de `canon.sh`; el giro a ACEPTADO (S399) con PASTE de la regla 4; el
+artefacto (S400). La prosa de `main.rs:170`. Un mando que arme el paquete: frente propio.
+
+**Contadores.** Pin `zk-ssl-verify` 72 -> 72 (72 tests): la cabecera y el uso no son
+tests, y `cargo test --release -- --list` da la misma lista NOMBRE A NOMBRE antes y despues.
+Sumas quietas: 1004 / 1141 / 1155, canon 1156. Ninguna cifra publicada se mueve; ningun
+`Cargo` tocado; `spec/openrpc.json` y los tres vectores del cable, intactos (el triple gate
+del canon lo falsa). `verificar_citas`: 59 -> 60 nombres, 0 fantasmas antes y despues.
+Documentos `.md` versionados 64 -> 65, vivos 34 -> 35, derivados. Canon `--sello` VERDE en
+171 s. Seis ficheros: cinco tocados y uno que nace.

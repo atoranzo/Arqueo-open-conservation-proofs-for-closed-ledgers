@@ -1,14 +1,15 @@
 # The Arqueo protocol specification — a reader's guide
 
 This folder is the **normative surface** of the protocol: everything that
-crosses the wire between a node, a client, a witness and a verifier. The
+crosses the wire between a node, a client, a witness and a verifier, plus
+the evidence package a verifier accepts with no wire at all. The
 files here are the source of truth; this page only tells you what each one
 is, in what order to read them, and where the claims that matter live. It
 adds no rule of its own. The specification files are written in Spanish;
 the line references below point into them so that a reader of either
 language lands on the same text.
 
-Verified against `main` at commit `0ea8775`. Line numbers are those of that
+Verified against `main` at commit `c43890a`. Line numbers are those of that
 commit; if a file has moved on, the reference tells you where to look.
 
 ## What is in this folder
@@ -18,10 +19,12 @@ commit; if a file has moved on, the reference tells you where to look.
 | `RPC.md` | the JSON-RPC specification of the node API, version `zkssl/0.3` — transport, encoding, every method, every error, and what the transition log guarantees | you implement a node, a client or a verifier |
 | `openrpc.json` | the same API as a machine-readable OpenRPC 1.2.6 document: `info.version` is `zkssl/0.3` and it lists 24 methods (22 `zkssl_*`, 2 `dev_*`) | you generate a client or check a node's surface |
 | `vectors/zkssl-0.1.json`, `vectors/zkssl-0.2.json`, `vectors/zkssl-0.3.json` | the conformance vectors, one file per wire version, never rewritten | you check that an implementation produces the same values on the wire |
+| `PAQUETE.md` | the portable evidence package: the three forms (v1, v2 with co-signatures inside, extension), the envelope keys the verifier reads, the order of checks, the rejection catalogue and the exit contract of `zk-ssl-verify` — it does not cross the wire | you build or verify an evidence package, or write a second verifier |
 | `rfc/PROCESO.md` | the RFC process: states, five rules, and what an accepted change must ship with | you want to change anything above |
 | `rfc/0000-plantilla.md` | the RFC template | you write an RFC |
 | `rfc/0002-lotes-y-transicion-de-hoja.md` | RFC-0002: batches, and the leaf transition that took the wire from `0.1` to `0.2` | you read the log guarantees under batching |
 | `rfc/0003-compromiso-v2.md` | RFC-0003, ACCEPTED: the pending commitment v2 (per-payment expiry and refund identity committed), which took the wire from `0.2` to `0.3` | you read why the current commitment has the shape it has |
+| `rfc/0004-paquete-de-evidencia.md` | RFC-0004, PROPOSED: the portable evidence package gets its own normative document (E1, `PAQUETE.md`) and its vectors (E2) | you read why the package is specified apart from `RPC.md` |
 
 RFC-0001 is not missing: the number is reserved for the keystore KDF
 hardening and is not yet drafted (`rfc/0003-compromiso-v2.md:11-15`).
@@ -136,7 +139,9 @@ RFC by number, and the RFC cites the entry (`rfc/PROCESO.md:23-24`).
 
 The audit record (`AUDITORIA.md` at the repository root) holds the
 numbered entries cited above by `§`. The declared limits of the system are
-in `SECURITY.md`. This page is maintained by hand: when you change a file
+in `SECURITY.md`. The evidence package a holder keeps after shutdown — what
+`zk-ssl-verify` accepts and refuses — is specified in `PAQUETE.md`, above.
+This page is maintained by hand: when you change a file
 in this folder, update the line references here and the commit in the
 header, and run `tools/verificar_citas.py`, which fails if a cited
 document does not exist.

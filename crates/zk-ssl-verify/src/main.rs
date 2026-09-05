@@ -5,43 +5,22 @@
 //! custodia, reunidas en UN fichero, verificadas **sin el nodo, sin la
 //! capa y sin el probador** (§243) — solo este binario y lo publicado.
 //!
-//! ## El formato, v1 — superficie declarada
+//! ## Donde esta el contrato (§397)
 //!
-//! Un JSON con las respuestas del cable TAL CUAL el nodo las sirve, sin
-//! reescribir (quien reescribe, adultera):
+//! **El formato del paquete y el contrato de este mando se especifican en
+//! `spec/PAQUETE.md`, y SOLO ahi**: las tres formas (v1, v2 con las
+//! cofirmas dentro, extension), el sobre y cada clave que este binario lee,
+//! el orden de comprobacion, el catalogo de rechazos y los codigos de
+//! salida. Hasta §397 todo eso vivia AQUI (lineas 1..90, sha de region
+//! `293990fedc785833`) y `spec/RPC.md` delegaba en esta cabecera: dos
+//! productores del mismo contrato, y el que caduco fue el de dentro (abajo).
 //!
-//! ```text
-//! {
-//!   "v": 1,
-//!   "cabeza": { …payload de zkssl_signedEpochHead con available:true… },
-//!   "acuse": {                                  // OPCIONAL
-//!     "seq": "0x…",                             // la entrada del titular
-//!     "hashPrueba": "0x…64hex",                 // digest de SU prueba
-//!     "s": "0x…",                               // de zkssl_ackPath
-//!     "camino": { "siblings": […], "isRight": […] }
-//!   }
-//! }
-//! ```
-//!
-//! ## El formato, v2 — las cofirmas dentro (§322)
-//!
-//! El MISMO objeto, con una clave mas y la version subida:
-//!
-//! ```text
-//! {
-//!   "v": 2,
-//!   "cabeza":   { …igual que en v1… },
-//!   "acuse":    { …igual que en v1, OPCIONAL… },
-//!   "cofirmas": [ …la respuesta de zkssl_cosigs TAL CUAL, OPCIONAL… ]
-//! }
-//! ```
-//!
-//! ⚠️ **Este binario lee v1 Y v2**: lo custodiado no caduca (§290), igual
-//! que el mando acepta cabezas v2 y v3. Lo que la subida compra es que un
-//! binario VIEJO se niegue en voz alta ante un v2 en vez de ignorar las
-//! cofirmas e imprimir VERDE: **un campo que nadie mira es peor que un campo
-//! que falta**. Por eso un v1 que traiga `cofirmas` se RECHAZA — subir la
-//! version es exactamente lo que las hace parte del contrato.
+//! ⚠️ Esta cabecera **ya no enumera**, por la misma razon que `Cargo.toml`
+//! no enumera la superficie: una lista en prosa vuelve a caducar a la
+//! primera forma nueva, y ya caduco una vez. La verdad del sobre se lee en
+//! el documento; la del codigo, en el codigo. Al sellar se comprueba que
+//! el catalogo del documento cubre CADA llamada de rechazo y CADA clave
+//! que este fichero lee — censo por llamada, no por linea.
 //!
 //! ⚠️ **El paquete REPORTA, no juzga.** Dice cuantas cofirmas verifican
 //! contra ESTA cabeza y ESTE operador. **Que testigos valen y cuantos hacen
@@ -49,45 +28,26 @@
 //! paquete puede ser el operador, y dejarle elegir su propia k le devolveria
 //! justo lo que la cofirma le quita.
 //!
-//! ⚠️ Dos convenciones de version en el mismo fichero, y conviene saberlo:
-//! la del PAQUETE (`v`) es un numero JSON desnudo; la de cada COFIRMA (`v`)
-//! viaja como `Q`, o sea cadena hex con `0x`, porque llega del cable TAL
-//! CUAL. No se unifican: reescribir es adulterar.
-//!
 //! ## La tercera forma, que esta cabecera NO declaraba (§247)
+//!
+//! §397: lo que sigue es HISTORIA y se conserva citada, no borrada. «El
+//! bloque de arriba» era la superficie declarada aqui hasta §397; hoy vive
+//! en `spec/PAQUETE.md`, con el esqueleto de la extension incluido.
 //!
 //! Ademas del paquete de posicion, este binario verifica desde el
 //! §293 el **paquete de EXTENSION**, y el bloque de arriba nunca lo dijo:
-//!
-//! ```text
-//! { "v": 1, "tipo": "extension", "vieja": {…}, "nueva": {…}, "camino": […] }
-//! ```
 //!
 //! No es una contradiccion: es una superficie declarada **como si fuera
 //! completa**, que se lee peor que una incompleta que se sabe incompleta.
 //! Estaba publicada en `spec/RPC.md` y ausente aqui: **el productor rancio
 //! era el que mas cerca queda del codigo**.
 //!
-//! ## Lo que se comprueba, en orden
-//!
-//! 1. los campos de la cabeza recomponen el digest DE SU VERSION == el
-//!    `epochDigest` empaquetado — el digest no se cree: se recomputa;
-//! 2. la firma XMSS verifica contra `publicKey` Y el preambulo recuperado
-//!    es el esperado (verificar sin comparar no prueba nada, ver lib.rs);
-//! 3. si hay acuse: `hoja_de_acuse(hashPrueba, seq, n)` sube por el
-//!    camino hasta `acusesRoot`, y los siete vuelven a componer el digest
-//!    firmado (`verificar_acuse`).
-//!
-//! ⚠️ Cabezas **v2 y v3** (`formatVersion`): la version que la firma
-//! declara ELIGE RECOMPONEDOR — v2 con la pareja de acuses (§275), v3
-//! ademas con la del MMR (`mmrRoot`/`mmrSize`, §292). Una cabeza v2
-//! custodiada SIGUE verificando: el apagado de §290 no caduca. Una v1
-//! se verifica con la biblioteca, no con este mando.
-//!
 //! ⚠️ Este binario tambien es **el procedimiento de apagado** (nota 91):
 //! apaga el nodo, y una posicion sigue siendo demostrable sin el.
 //!
-//! Salida: VERDE y exit 0, o el primer fallo con nombre y exit 1.
+//! Salida: VERDE y exit 0; el primer fallo con nombre (`ROJO: …`) y exit 1;
+//! uso —ningun argumento, o mas de uno— y exit 2. Los textos, en el
+//! catalogo de `spec/PAQUETE.md`.
 use std::process::ExitCode;
 
 use zk_ssl_verify::{
@@ -477,7 +437,7 @@ fn main() -> ExitCode {
         _ => {
             eprintln!("uso: zk-ssl-verify <paquete.json>");
             eprintln!("     (o de extension: {{v:1, tipo: extension, vieja, nueva, camino}})");
-            eprintln!("     (formatos v1 y v2 en la cabecera de este binario)");
+            eprintln!("     (el formato y el catalogo de rechazos: spec/PAQUETE.md)");
             return ExitCode::from(2);
         }
     };

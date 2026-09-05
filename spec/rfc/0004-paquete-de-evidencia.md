@@ -4,13 +4,13 @@
 - **Autores:** Che, con Claude (sesión 92)
 - **Fecha:** 2026-09-04
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad)
-- **Asiento(s) de AUDITORIA:** §243, §289, §290, §293, §322, §395, y el §396, que lo sella
+- **Asiento(s) de AUDITORIA:** §243, §289, §290, §293, §322, §395, el §396, que lo sella, y el §397 (E1)
 
 ## Estado de las etapas
 
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
-| E1 — la mudanza | un documento normativo propio bajo `spec/` como único productor; la cabecera del binario remite; `spec/RPC.md` y `spec/README.md` apuntan | NO | pendiente |
+| E1 — la mudanza | un documento normativo propio bajo `spec/` como único productor; la cabecera del binario remite; `spec/RPC.md` y `spec/README.md` apuntan | NO | sellada — §397 |
 | E2 — los vectores y la puerta | `spec/vectors/paquete/` y su bloque de conformidad en `tools/canon.sh` | NO | pendiente |
 
 Todas las medidas de este documento se tomaron sobre `bb5322f` (§395), en dos lecturas
@@ -51,6 +51,11 @@ y tiene **39 llamadas de rechazo con texto**; ninguna la comprueba ningún gate.
 `spec/vectors/` contiene sólo los tres vectores del **cable**, y el bloque de conformidad
 de `tools/canon.sh` (`:278-286`) corre `conformance --check` únicamente sobre ellos. No
 hay ni un vector de paquete en el árbol, ni un fixture JSON dentro del crate.
+
+> **Corrección (§397).** El «39» de arriba es un censo POR LÍNEA, ciego a las once llamadas
+> cuyo literal empieza en la línea siguiente. Por LLAMADA, aplanando las continuaciones, son
+> **50** (49 textos distintos); y las 14 claves son las del sobre: en total el binario lee 31
+> nombres. La frase se conserva; la cifra que vale es la de `spec/PAQUETE.md`, re-derivada al sellar.
 
 ## Diseño
 

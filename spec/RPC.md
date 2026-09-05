@@ -825,7 +825,7 @@ acuse de la respuesta y en `zkssl_logEntry`), y el camino de acuse
 (`s`, `siblings`, `isRight`).
 
 **Con que sostiene su posicion despues**: el paquete de evidencia
-portable — formato v1, declarado en la cabecera del binario de
+portable — formato declarado en `spec/PAQUETE.md`, verificado por el binario
 `zk-ssl-verify` — las respuestas del cable TAL CUAL, reunidas en un
 fichero y verificadas sin el nodo, sin la capa y sin el probador.
 
