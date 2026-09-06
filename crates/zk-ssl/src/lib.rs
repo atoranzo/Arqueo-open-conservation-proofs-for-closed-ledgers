@@ -503,6 +503,8 @@ impl SovereignLayer {
             n,
             mmr_cima,
             mmr_t,
+            cons_root: self.cons_root(),
+            cons_count: self.cons_count(),
             seq: self.log.len() as u64,
             accounts_root: self.accounts.root(),
             pending_root: self.pending.root(),

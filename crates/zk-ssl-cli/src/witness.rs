@@ -504,7 +504,7 @@ pub fn linea_de_diario(v: &Veredicto, servido: &Value, visto_unix: u64) -> Value
         // ~37 KB que ya ocupa la firma (§248). Despreciable.
         for k in ["index", "epochDigest", "domain", "formatVersion", "signature",
                   "publicKey", "emittedAtUnix", "beatSeconds", "custody",
-                  "custodyChecked", "mmrRoot", "mmrSize",
+                  "custodyChecked", "mmrRoot", "mmrSize", "consRoot", "consCount",
                   "seq", "n", "accountsRoot", "pendingRoot", "frozenRoot",
                   "chainDigest", "acusesRoot"] {
             if !servido[k].is_null() {
@@ -3074,6 +3074,21 @@ mod tests {
         assert_eq!(m.pareja(), Some((c1.as_str(), 4)));
     }
 
+    /// RFC-0006 E2b (§415): el diario custodia la pareja de consumos de una
+    /// cabeza v4 — sin ella, `auditar_lineas` no podria recomponer meses despues
+    /// (el criterio de §248, por cuarta vez). La lista de `linea_de_diario` y
+    /// `VistaFirmada` siguen siendo dos productores: aqui se mide el primero.
+    #[test]
+    fn el_diario_custodia_la_pareja_de_consumos_de_una_cabeza_v4() {
+        let mut s = cabeza_firmada_completa();
+        s["formatVersion"] = json!("0x4");
+        s["consRoot"] = json!("0x8888888888888888888888888888888888888888888888888888888888888888");
+        s["consCount"] = json!("0x2");
+        let l = linea_de_diario(&Veredicto::Nueva { indice: 7, digest: "0xaa".into() }, &s, 7);
+        assert_eq!(l["consRoot"], s["consRoot"], "consRoot no se custodio");
+        assert_eq!(l["consCount"], json!("0x2"), "consCount no se custodio");
+    }
+
     #[test]
     fn con_pareja_y_sin_pendiente_el_canal_calla_y_el_bucle_pide_camino() {
         let mut m = Memoria::nueva();
@@ -3771,9 +3786,11 @@ mod tests {
             "epochDigest": "0x1111111111111111111111111111111111111111111111111111111111111111",
             "emittedAtUnix": "0x64",
             "domain": "ZK-SSL-EPOCH-HEAD",
-            "formatVersion": "0x3",
+            "formatVersion": "0x4",
             "mmrRoot": "0x2222222222222222222222222222222222222222222222222222222222222222",
             "mmrSize": "0x9",
+            "consRoot": "0x8888888888888888888888888888888888888888888888888888888888888888",
+            "consCount": "0x2",
             "index": "0x7",
             "accountsRoot": "0x3333333333333333333333333333333333333333333333333333333333333333",
             "pendingRoot": "0x4444444444444444444444444444444444444444444444444444444444444444",

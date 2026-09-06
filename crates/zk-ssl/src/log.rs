@@ -612,6 +612,15 @@ pub struct EpochHead {
     /// Cuantas hojas —cabezas anteriores— acumula la cima. Genesis: 0,
     /// con `mmr_cima = as_digest(0)`, DECLARADO en la composicion v3.
     pub mmr_t: u64,
+    /// **La raiz del arbol de consumos publicados** (RFC-0006 E1, §413; E2b,
+    /// §415). Junto con `cons_count` viaja **firmada** desde el formato v4: la
+    /// cabeza acredita el conjunto de consumos, y un lector con dos cabezas puede
+    /// probar que un consumo esta bajo una y no bajo la otra (E3). La rellena
+    /// la capa (`cons_root()`), que es quien tiene el arbol.
+    pub cons_root: Digest,
+    /// Cuantos consumos hay bajo la raiz. Genesis: 0, con la raiz del arbol
+    /// vacio, DECLARADO en la composicion v4.
+    pub cons_count: u64,
     // ⚠️ **FALTA `verifier_hash`, y no por olvido.**
     //
     // `CONFIANZA_RESIDUAL.md` §2.2 lo propone con el mejor argumento de esa
@@ -666,7 +675,8 @@ impl EpochHead {
     /// igual**, y la única forma segura de garantizarlo es que **sea la
     /// misma función**. Dos composiciones divergirían **en silencio**.
     pub fn digest(&self) -> Digest {
-        zk_ssl_hash::epoch_digest_v3(
+        // RFC-0006 E2b (§415): v4, la envoltura de v3 con la pareja de consumos.
+        zk_ssl_hash::epoch_digest_v4(
             self.seq,
             self.accounts_root,
             self.pending_root,
@@ -676,6 +686,8 @@ impl EpochHead {
             self.n,
             self.mmr_cima,
             self.mmr_t,
+            self.cons_root,
+            self.cons_count,
         )
     }
 }
@@ -726,6 +738,8 @@ mod tests_mmr_en_cabeza {
             n: 0,
             mmr_cima: d,
             mmr_t: 0,
+            cons_root: zk_ssl_hash::as_digest(0),
+            cons_count: 0,
         };
         let mut otra = base;
         otra.seq = base.seq + 1;
@@ -735,6 +749,35 @@ mod tests_mmr_en_cabeza {
             "SOLO cambia la altura: si el digest no se mueve, seq no entra y \
              el reloj de la caducidad no esta atestiguado"
         );
+    }
+
+    /// **La pareja de consumos entra en el digest** (RFC-0006 E2b, §415): dos
+    /// cabezas identicas en todo salvo la raiz o la cuenta de consumos componen
+    /// digests distintos — sin esto, «este consumo esta bajo esta cabeza» seria
+    /// una frase, no un valor firmado. Fabricada a mano, como la de la altura:
+    /// `epoch_head` la rellenaria de la capa y no se podria variar sola.
+    #[test]
+    fn la_pareja_de_consumos_entra_en_el_digest() {
+        let d = zk_ssl_hash::as_digest(0);
+        let base = crate::log::EpochHead {
+            seq: 7,
+            accounts_root: d,
+            pending_root: d,
+            frozen_root: d,
+            chain_digest: d,
+            acuses_root: d,
+            n: 0,
+            mmr_cima: d,
+            mmr_t: 0,
+            cons_root: d,
+            cons_count: 0,
+        };
+        let mut otra_raiz = base;
+        otra_raiz.cons_root = zk_ssl_hash::as_digest(9);
+        let mut otra_cuenta = base;
+        otra_cuenta.cons_count = 1;
+        assert_ne!(base.digest(), otra_raiz.digest(), "la raiz de consumos debe mover el digest");
+        assert_ne!(base.digest(), otra_cuenta.digest(), "la cuenta de consumos debe mover el digest");
     }
 }
 
@@ -807,6 +850,8 @@ mod tests_cabeza {
             n: 0,
             mmr_cima: zk_ssl_hash::as_digest(0),
             mmr_t: 0,
+            cons_root: zk_ssl_hash::as_digest(0),
+            cons_count: 0,
             seq: legitima.seq,
             accounts_root: [BaseElement::new(0xFA15A); 4],
             pending_root: legitima.pending_root,

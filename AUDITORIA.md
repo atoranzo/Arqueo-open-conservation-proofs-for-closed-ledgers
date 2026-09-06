@@ -30986,3 +30986,69 @@ DTO +2 (`wire:658` dice «13» campos), `VERSION_FORMATO` 4, `protocolVersion` 0
 en `RPC.md:445`, las 13 líneas de prosa que dicen 0.3 vigente, `PAQUETE.md:103` (las claves de
 la cabeza) y el KAT del preámbulo v4. `PAPER.md:37-38` sigue diciendo 1138/1152 (punto 56, sin
 compuerta). `witness.rs:4698` narra en pasado el {2, 3}: historia, no se toca.
+
+## §415 — RFC-0006 E2b: el nodo emite la cabeza v4 (`consRoot`, `consCount` bajo la firma) y el cable NO sube
+
+**Qué.** La segunda mitad de E2. `EpochHead` gana `cons_root` y `cons_count`, `digest()` compone
+v4, y `epoch_head()` los rellena de la capa sin cambiar de firma (nueve llamadores intactos).
+`EpochHeadDto` y `SignedEpochHeadDto` ganan `consRoot`/`consCount` por el molde de `mmrRoot`/
+`mmrSize`: el `From`, `con_firma`, `VistaFirmada` y `firmada()`, que **exige la pareja sólo desde
+`formatVersion` 4** —la versión elige, como en el recomponedor— y la lleva como `Option`; la forma
+firmada v4 son 22 claves. `VERSION_FORMATO` pasa de 3 a 4 —su doc lo prevé: «sube cuando cambian los campos de
+`EpochHead`, no cuando cambia el cable»—, así que el nodo firma el preámbulo con el byte 4 y sirve
+la cabeza v4; el testigo la custodia entera (la lista de `linea_de_diario`, +2). `RPC.md` gana la
+hermana «Formato v4» de la sección de v3, `zkssl_epochHead` lista las dos claves y
+`zkssl_signedEpochHead` dice once campos; `PAQUETE.md` nombra las dos claves en v4.
+
+**D-8 (delegada, tomada con la ley, REVERSIBLE aquí): el cable NO sube.** El RFC decía tres veces
+`zkssl/0.3 → 0.4`. Medido: el vector que el canon sella compone su `epoch_digest` **v2 explícito**
+(§292) y no lleva la cabeza firmada; E2b no mueve entradas, digest, suministro ni pendiente, así
+que un `zkssl-0.4.json` sería el 0.3 con otra etiqueta y otra foto, y «0.4 es otra versión» no
+tendría testigo que lo falsara —el triple gate del canon lo dice en cada sello: 0.3 sigue en «todo
+IDENTICO»—. Por rangos: pureza (menos excepciones; un vector sin falsador no se construye),
+claridad (dos marcadores para lo mismo, §236), coherencia (`RPC.md` Notas operativas y sus dos
+precedentes, §275 y §292, no subieron por esta clase de cambio), imagen fiel (subir embellecería el
+relato sin mover un invariante). La confianza residual, en una frase: **un consumidor tipado viejo
+rompe en voz alta por `deny_unknown_fields`, y se declara**, como en §292. **D-9**: no nace un KAT
+del preámbulo v4 (un fichero por `fn`, NUCLEO sección 6; la versión es una entrada del KAT que
+existe). El RFC gana el párrafo marcado (§247); la fila E2 pasa a sellada.
+
+**Lo que la medición cambió.** El r2 murió en el árbol: el fixture «fuente única» del testigo era
+v3 y la vista exigía la pareja sin mirar la versión; lo resolví pasando el fixture a v4 y declarando
+la vista «de la era vigente». **El r4 lo falsó con la autoridad que manda**: los once vectores del
+cable son cabezas v3, no se reescriben (regla 2) y el testigo los lee por la vista ANTES de
+recomponer; el positivo cayó y los rechazos cambiaron de texto. La vista exige la pareja sólo desde
+el formato 4 y la lleva como `Option` (`una_cabeza_v3_firmada_sigue_dando_vista_y_una_v4_sin_la_pareja_no`);
+los tres fixtures del cable pasan a v4 coherentes (`Q(4)` en `con_firma`). El r5 afinó el
+literal: con «≥ 4» la vista exigía la pareja a las versiones FUERA del conjunto, que tienen que caer
+por versión antes que por forma (§404); la vista exige la pareja para la 4 exactamente, la única con
+pareja que el cable conoce, y una versión desconocida pasa con `None` a `VersionCabeza`. Y el `-4` del cable
+cambia de causa por segunda vez: desde E2b cae por forma —falta `consRoot`, con nombre— antes de
+la firma; su texto lo mide el bloque y lo escribe el manifiesto. El r3 murió en el nodo: sus dos tests del recibo de inclusión (§256-§259, §275) recomponían la
+cabeza servida —ya v4— con `verificar_inclusion_v3` y la pareja del MMR en génesis; el PRE los había
+censado y el corte los dejó fuera. Pasan a `verificar_inclusion_v4` con la pareja de consumos leída
+del MISMO `head` (`consumos_desde_cable`, calco de `pareja_desde_cable`). El r1 murió en el montaje sin tocar nada: el token de idempotencia `"consRoot"` ya
+existía en el testigo desde E2a (`dg!`), y el de este corte es la pareja en la lista.
+
+**Testigos, enseñados ROJOS en vivo.** `una_cabeza_sin_la_pareja_de_consumos_ya_no_deserializa`
+sobre el `wire/lib.rs` PRE da EXACTAMENTE 1 FAILED (la era v3 deserializaba); con los campos,
+verde. `la_pareja_de_consumos_entra_en_el_digest` (capa, fabricada a mano como la de la altura),
+`el_diario_custodia_la_pareja_de_consumos_de_una_cabeza_v4` (testigo). El nodo: la cabeza servida
+se verifica sin el nodo con `formatVersion` 4 (el test del §268, intacto, ahora con el byte 4), y
+`el_metodo_nuevo_no_toca_la_version` sigue diciendo `zkssl/0.3`. `check_cifras` fase A roja con
+las dieciséis cifras (nueve de la capa, cinco TOTAL, el desglose partido) y B verde.
+
+**Medido.** Pines capa 317 → 318, wire 15 → 17, testigo 96 → 97 (`--list` nombre a nombre: +1,
++4−2, +1); sumas 1031/1168/1182 → 1035/1172/1186; `check_tests` 1183 → 1187; `check_modulos` 120;
+`check_nucleo` 85 filas sin cambio (`VERSION_FORMATO` ya tenía fila; la versión de la constante
+no es censo); `verificar_citas` 0/0; los dos arneses y el triple gate del canon en verde con la
+misma versión; canon `--sello` rc 0 (los segundos, en la salida del bloque). Los vectores del
+paquete y del cable son cabezas v3 y siguen verificando: el conjunto es {2, 3, 4}. `PAPER.md:37-38`
+decía 1138/1152 en presente desde el S395 (punto 56): pasa a las sumas derivadas.
+
+**Lo que queda vivo.** E3 (la prueba portable: forma nueva del paquete con un consumo bajo una
+cabeza y no bajo otra) y E4 (el banco de dos libros). La lista custodiada del testigo y
+`VistaFirmada` siguen siendo dos productores sin test que los ate (etapa 2 del §309). El texto del
+punto 82 tiene vector vivo desde el §414. `wire/lib.rs:685-692` declara la rotura para «el día que
+las cofirmas entren como campo aditivo»: la pareja de consumos la ha cobrado antes, y se declara
+aquí.

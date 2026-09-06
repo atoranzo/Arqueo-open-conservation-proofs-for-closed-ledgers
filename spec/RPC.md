@@ -66,7 +66,7 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 |---|---|---|
 | `zkssl_protocolVersion` | — | `"zkssl/0.3"` |
 | `zkssl_params` | — | `{regulatoryLimit, maxSupply, maxAccounts: Q, custodianRoot: Digest}` |
-| `zkssl_epochHead` | — | `{seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, acusesRoot, n, mmrRoot, mmrSize, epochDigest}` |
+| `zkssl_epochHead` | — | `{seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, acusesRoot, n, mmrRoot, mmrSize, consRoot, consCount, epochDigest}` |
 | `zkssl_supply` | — | `{total, pending: Q}` |
 | `zkssl_accountCount` | — | `Q` |
 | `zkssl_publicId` | `{index: Q}` | `Digest` |
@@ -433,8 +433,8 @@ honesto. Ver los asientos §274 y §275.
 ### `zkssl_signedEpochHead` — la última cabeza firmada, para un TESTIGO
 
 Devuelve la cabeza de época **más reciente que el nodo firmó**, con todo lo
-que hace falta para verificarla sin él: los **nueve campos** de la
-cabeza (§275, §292), `publicKey`, `epochDigest`, `formatVersion`, `index` y
+que hace falta para verificarla sin él: los **once campos** de la
+cabeza (§275, §292, §415), `publicKey`, `epochDigest`, `formatVersion`, `index` y
 `signature` — campos+digest+firma **juntos**, del mismo latido: un solo
 artefacto de custodia, sin carrera entre llamadas.
 
@@ -464,6 +464,26 @@ la firma declara elige recomponedor, en la biblioteca y en el mando.
 Un nodo **sin diario** rearranca con el acumulador vacío y su
 `mmrSize` se resetea de forma VISIBLE; quien firma lleva diario
 obligado (§285), así que toda cabeza firmada lleva continuidad.
+
+### ⚠️ Formato **v4** (§415, RFC-0006 E2): la cabeza acredita el conjunto de consumos
+
+La cabeza gana `consRoot` y `consCount`: la **raíz del árbol de consumos
+publicados** (RFC-0006 E1, §413) y cuántos consumos hay bajo ella. Viajan
+**firmados** — `formatVersion: 4` — y con ellos un lector con dos cabezas
+firmadas puede probar que un consumo está bajo una y no bajo la otra (E3).
+
+La composición, por envoltura como v2→v3:
+```text
+v4 = merge( epoch_digest_v3(los nueve), merge(consRoot, consCount) )
+```
+**Génesis declarado**: la primera cabeza compone con la raíz del árbol de
+consumos vacío y `consCount: 0`. ⚠️ **Aditivo en el cable, rotura en el
+parser**: `zkssl/0.3` no sube (los precedentes de §275 y §292: lo que la
+sube es que cambien los valores que los vectores sellan, y
+`conformance --check` sigue dando «todo IDENTICO»), y un consumidor con
+`deny_unknown_fields` **rompe en voz alta**. Una cabeza **v2 o v3
+custodiada sigue verificando**: la versión que la firma declara elige
+recomponedor, en la biblioteca, en el mando y en el testigo (§414).
 
 ⚠️ **Tres respuestas, y ninguna es un error genérico**:
 

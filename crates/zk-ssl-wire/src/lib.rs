@@ -586,6 +586,12 @@ pub struct EpochHeadDto {
     pub mmr_root: B32,
     /// Cuantas cabezas acumula la cima. Genesis: 0.
     pub mmr_size: Q,
+    /// La raiz del arbol de consumos publicados (RFC-0006 E2b, §415). Clave
+    /// nueva, aditiva como `acusesRoot` y `mmrRoot` en su dia: `zkssl/0.3` no
+    /// sube; la version de FORMATO viaja en la firma y es la que separa v3 de v4.
+    pub cons_root: B32,
+    /// Cuantos consumos hay bajo la raiz. Genesis: 0.
+    pub cons_count: Q,
     /// `EpochHead::digest()`: la cabeza entera en un solo digest.
     pub epoch_digest: B32,
 }
@@ -602,6 +608,8 @@ impl From<&EpochHead> for EpochHeadDto {
             n: Q(h.n),
             mmr_root: digest_to_wire(&h.mmr_cima),
             mmr_size: Q(h.mmr_t),
+            cons_root: digest_to_wire(&h.cons_root),
+            cons_count: Q(h.cons_count),
             epoch_digest: digest_to_wire(&h.digest()),
         }
     }
@@ -655,12 +663,13 @@ pub struct ParamsDto {
 /// cara minima, en las TRES (4)  available · beatSeconds · custody · custodyChecked
 /// no hay firma, en 1 y 2  (1)   reason
 /// hay cabeza, en 2 y 3    (3)   seq · epochDigest · emittedAtUnix
-/// hay firma, solo en 3   (13)   domain · formatVersion · mmrRoot · mmrSize ·
+/// hay firma, solo en 3   (15)   domain · formatVersion · mmrRoot · mmrSize ·
+///                               consRoot · consCount (v4, §415) ·
 ///                               index · accountsRoot · pendingRoot ·
 ///                               frozenRoot · chainDigest · acusesRoot · n ·
 ///                               signature · publicKey
 ///
-/// 4+1 = 5     4+3+1 = 8     4+3+13 = 20
+/// 4+1 = 5     4+3+1 = 8     4+3+15 = 22
 /// ```
 ///
 /// De ahi que **`reason` equivalga a la negacion de `available`**, y que la
@@ -729,6 +738,11 @@ pub struct SignedEpochHeadDto {
     pub mmr_root: Option<B32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mmr_size: Option<Q>,
+    /// RFC-0006 E2b (§415): la pareja de consumos, firmada desde v4.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cons_root: Option<B32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cons_count: Option<Q>,
     /// ⚠️ Cuantas firmas lleva la clave, contando esta. **No entra en el
     /// preambulo**: es metadato para detectar reuso, no algo que la firma
     /// acredite (ver `zk_ssl_verify::CabezaFirmada`).
@@ -759,7 +773,8 @@ pub struct SignedEpochHeadDto {
 // ───────────── el accesor falible de la cabeza firmada (§312) ─────────────
 
 /// Lo que el struct plano **no puede impedir** y aquí se detecta: con
-/// `available: true`, los diecinueve campos restantes tienen que estar.
+/// `available: true`, los diecinueve campos restantes tienen que estar, y desde el
+/// formato 4 tambien la pareja de consumos (RFC-0006 E2b, §415).
 ///
 /// ⚠️ Es la mitad del precio de D1 (§311). El struct plano hace los estados
 /// ilegales DETECTABLES, no inconstruibles; esto es la detección — y **dice
@@ -782,14 +797,14 @@ impl std::fmt::Display for CabezaMalformada {
 
 impl std::error::Error for CabezaMalformada {}
 
-/// Vista **sin `Option`** de una cabeza firmada bien formada: los diecinueve
+/// Vista **sin `Option`** (salvo la pareja de consumos, que la version elige) de una cabeza firmada bien formada: los diecinueve
 /// campos que acompañan a `available`, ya comprobados.
 ///
 /// ⚠️ El nombre **no** es `CabezaFirmada` a propósito: ese lo ocupa
 /// `zk_ssl_verify::CabezaFirmada`, que es el preámbulo de la firma y no esto.
 /// El testigo importa los dos en el mismo fichero.
 ///
-/// 💡 Son **exactamente** los diecinueve que el diario del testigo captura
+/// 💡 Son **exactamente** los veintiun que el diario del testigo captura
 /// por su lista escrita a mano. Cuando esa lista se derive de aquí (etapa 2
 /// del §309), dejarán de ser dos productores del mismo conjunto.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -804,6 +819,10 @@ pub struct VistaFirmada<'a> {
     pub format_version: Q,
     pub mmr_root: B32,
     pub mmr_size: Q,
+    /// RFC-0006 E2b (§415): la pareja de consumos, `Some` desde el formato 4 y `None`
+    /// en una cabeza de la era v3 (los vectores del cable lo son): la version elige.
+    pub cons_root: Option<B32>,
+    pub cons_count: Option<Q>,
     pub index: Q,
     pub accounts_root: B32,
     pub pending_root: B32,
@@ -845,6 +864,8 @@ impl SignedEpochHeadDto {
             format_version: None,
             mmr_root: None,
             mmr_size: None,
+            cons_root: None,
+            cons_count: None,
             index: None,
             accounts_root: None,
             pending_root: None,
@@ -911,6 +932,8 @@ impl SignedEpochHeadDto {
             format_version: Some(format_version),
             mmr_root: Some(cabeza.mmr_root),
             mmr_size: Some(cabeza.mmr_size),
+            cons_root: Some(cabeza.cons_root),
+            cons_count: Some(cabeza.cons_count),
             index: Some(index),
             accounts_root: Some(cabeza.accounts_root),
             pending_root: Some(cabeza.pending_root),
@@ -951,6 +974,19 @@ impl SignedEpochHeadDto {
                 }
             };
         }
+        // RFC-0006 E2b (§415): la pareja de consumos se exige SOLO para la version 4,
+        // la unica con pareja que este cable conoce -los once vectores del cable son
+        // cabezas v3 y no se reescriben (regla 2)-. Una version desconocida pasa con
+        // `None` y la juzga `VersionCabeza` (zk-ssl-verify, que este crate no importa)
+        // justo despues, con su texto: la version se rechaza ANTES que la forma (§404).
+        // El 4 es un literal DECLARADO, como `VERSION_FORMATO`.
+        let (cons_root, cons_count) = match &self.format_version {
+            Some(v) if v.0 == 4 => (
+                Some(*exige!(cons_root, "consRoot")),
+                Some(*exige!(cons_count, "consCount")),
+            ),
+            _ => (self.cons_root, self.cons_count),
+        };
         Ok(Some(VistaFirmada {
             beat_seconds: self.beat_seconds,
             custody: self.custody.as_str(),
@@ -962,6 +998,8 @@ impl SignedEpochHeadDto {
             format_version: *exige!(format_version, "formatVersion"),
             mmr_root: *exige!(mmr_root, "mmrRoot"),
             mmr_size: *exige!(mmr_size, "mmrSize"),
+            cons_root,
+            cons_count,
             index: *exige!(index, "index"),
             accounts_root: *exige!(accounts_root, "accountsRoot"),
             pending_root: *exige!(pending_root, "pendingRoot"),
@@ -1152,12 +1190,14 @@ mod tests {
             n: Q(100),
             mmr_root: B32([0x22; 32]),
             mmr_size: Q(5),
+            cons_root: B32([0x88; 32]),
+            cons_count: Q(2),
             epoch_digest: B32([0x11; 32]),
         };
         let d = SignedEpochHeadDto::con_firma(
             &cabeza,
             "ZK-SSL-epoch-head".into(),
-            Q(3),
+            Q(4),
             Q(2),
             Blob(vec![0xde, 0xad, 0xbe, 0xef]),
             Blob(vec![0xab, 0xcd]),
@@ -1173,7 +1213,7 @@ mod tests {
             serde_json::to_value(&del_fixture).expect("serializa"),
             "el constructor y el cuerpo que sirve el nodo han divergido"
         );
-        // Y lo construido pasa el accesor: los diecinueve estan.
+        // Y lo construido pasa el accesor: los veintiun estan.
         let vista = d.firmada().expect("bien formada").expect("hay cabeza firmada");
         assert_eq!(vista.index, Q(2));
         assert_eq!(vista.signature, &Blob(vec![0xde, 0xad, 0xbe, 0xef]));
@@ -1181,11 +1221,11 @@ mod tests {
 
     // ─────────────── §312 · el accesor falible de la cabeza ───────────────
 
-    /// La forma firmada COMPLETA, con las veinte claves del dispatch.
+    /// La forma firmada COMPLETA, con las veintidos claves del dispatch.
     ///
     /// ⚠️ **Fuente única de las tres pruebas del accesor**: la que necesita
     /// un campo de menos se lo quita a ESTA, no escribe una segunda copia.
-    const FIRMADA_JSON: &str = r#"{"available":true,"beatSeconds":"0x1e","custody":"fichero","custodyChecked":true,"seq":"0x5","epochDigest":"0x1111111111111111111111111111111111111111111111111111111111111111","emittedAtUnix":"0x64","domain":"ZK-SSL-EPOCH-HEAD","formatVersion":"0x3","mmrRoot":"0x2222222222222222222222222222222222222222222222222222222222222222","mmrSize":"0x9","index":"0x7","accountsRoot":"0x3333333333333333333333333333333333333333333333333333333333333333","pendingRoot":"0x4444444444444444444444444444444444444444444444444444444444444444","frozenRoot":"0x5555555555555555555555555555555555555555555555555555555555555555","chainDigest":"0x6666666666666666666666666666666666666666666666666666666666666666","acusesRoot":"0x7777777777777777777777777777777777777777777777777777777777777777","n":"0x3","signature":"0xaabb","publicKey":"0xccdd"}"#;
+    const FIRMADA_JSON: &str = r#"{"available":true,"beatSeconds":"0x1e","custody":"fichero","custodyChecked":true,"seq":"0x5","epochDigest":"0x1111111111111111111111111111111111111111111111111111111111111111","emittedAtUnix":"0x64","domain":"ZK-SSL-EPOCH-HEAD","formatVersion":"0x4","mmrRoot":"0x2222222222222222222222222222222222222222222222222222222222222222","mmrSize":"0x9","consRoot":"0x8888888888888888888888888888888888888888888888888888888888888888","consCount":"0x2","index":"0x7","accountsRoot":"0x3333333333333333333333333333333333333333333333333333333333333333","pendingRoot":"0x4444444444444444444444444444444444444444444444444444444444444444","frozenRoot":"0x5555555555555555555555555555555555555555555555555555555555555555","chainDigest":"0x6666666666666666666666666666666666666666666666666666666666666666","acusesRoot":"0x7777777777777777777777777777777777777777777777777777777777777777","n":"0x3","signature":"0xaabb","publicKey":"0xccdd"}"#;
 
     #[test]
     fn sin_cabeza_firmada_el_accesor_dice_que_no_hay_y_eso_no_es_un_error() {
@@ -1201,18 +1241,18 @@ mod tests {
     }
 
     #[test]
-    fn la_forma_firmada_completa_da_la_vista_con_los_diecinueve() {
+    fn la_forma_firmada_completa_da_la_vista_con_los_veintiuno() {
         let d: SignedEpochHeadDto = serde_json::from_str(FIRMADA_JSON).expect("la forma 3 deserializa");
         // ⚠️ El conjunto de claves NO se compara contra una lista escrita a
         // mano: se DERIVA serializando el propio DTO.
         let servido: Value = serde_json::to_value(&d).expect("serializa");
         assert_eq!(
             servido.as_object().expect("objeto").len(),
-            20,
-            "la forma firmada son veinte claves"
+            22,
+            "la forma firmada son veintidos claves"
         );
         let vista = d.firmada().expect("bien formada").expect("hay cabeza firmada");
-        // Que la vista EXISTA ya prueba que los diecinueve estaban: si alguno
+        // Que la vista EXISTA ya prueba que los veintiun estaban: si alguno
         // fuera `None`, el accesor habria devuelto `Err` con su nombre.
         assert_eq!(vista.index, Q(7));
         assert_eq!(vista.n, Q(3));
@@ -1252,9 +1292,9 @@ mod tests {
     const FIRMADA: &str = r#"{"available":true,
         "seq":"0x7",
         "epochDigest":"0x1111111111111111111111111111111111111111111111111111111111111111",
-        "domain":"ZK-SSL-epoch-head","formatVersion":"0x3",
+        "domain":"ZK-SSL-epoch-head","formatVersion":"0x4",
         "mmrRoot":"0x2222222222222222222222222222222222222222222222222222222222222222",
-        "mmrSize":"0x5","index":"0x2",
+        "mmrSize":"0x5","consRoot":"0x8888888888888888888888888888888888888888888888888888888888888888","consCount":"0x2","index":"0x2",
         "accountsRoot":"0x3333333333333333333333333333333333333333333333333333333333333333",
         "pendingRoot":"0x4444444444444444444444444444444444444444444444444444444444444444",
         "frozenRoot":"0x5555555555555555555555555555555555555555555555555555555555555555",
@@ -1276,10 +1316,10 @@ mod tests {
     /// figura que este tipo viene a quitar — cuatro listas parciales sin
     /// atar, repartidas por dos crates.
     #[test]
-    fn las_tres_formas_dan_cinco_ocho_y_veinte_claves() {
+    fn las_tres_formas_dan_cinco_ocho_y_veintidos_claves() {
         assert_eq!(claves(SIN_LATIDO).len(), 5, "la forma sin latido son cinco");
         assert_eq!(claves(SIN_CLAVE).len(), 8, "la forma sin clave son ocho");
-        assert_eq!(claves(FIRMADA).len(), 20, "la forma firmada son veinte");
+        assert_eq!(claves(FIRMADA).len(), 22, "la forma firmada son veintidos");
         for j in &[SIN_LATIDO, SIN_CLAVE, FIRMADA] {
             let d: SignedEpochHeadDto = serde_json::from_str(j).expect("deserializa");
             assert_eq!(
@@ -1323,7 +1363,7 @@ mod tests {
     }
 
     /// ⚠️ **MEDIDO, no supuesto: la forma firmada CONTIENE entera la cabeza
-    /// sin firmar.** Los diez campos de `EpochHeadDto` estan los diez en la
+    /// sin firmar.** Los doce campos de `EpochHeadDto` estan los doce en la
     /// respuesta firmada, con el mismo nombre de cable. Los dos conjuntos se
     /// derivan serializando; ninguno se escribe a mano.
     #[test]
@@ -1338,17 +1378,54 @@ mod tests {
             n: Q(100),
             mmr_root: B32([0x22; 32]),
             mmr_size: Q(5),
+            cons_root: B32([0x88; 32]),
+            cons_count: Q(2),
             epoch_digest: B32([0x11; 32]),
         };
         let v = serde_json::to_value(&cabeza).expect("serializa");
         let suyas: BTreeSet<String> =
             v.as_object().expect("objeto").keys().cloned().collect();
         let firmadas = claves(FIRMADA);
-        assert_eq!(suyas.len(), 10, "la cabeza sin firmar son diez campos");
+        assert_eq!(suyas.len(), 12, "la cabeza sin firmar son doce campos");
         let fuera: Vec<&String> = suyas.difference(&firmadas).collect();
         assert!(
             fuera.is_empty(),
             "estos campos de la cabeza NO estan en la firmada: {fuera:?}"
         );
+    }
+
+    /// RFC-0006 E2b (§415): la cabeza sin firmar lleva la pareja de consumos, y
+    /// **el precio de `deny_unknown_fields` va en las dos direcciones**: un cuerpo
+    /// de la era anterior —sin `consRoot`/`consCount`— YA NO deserializa en este
+    /// consumidor. `zkssl/0.3` no sube (los precedentes de §275 y §292): la
+    /// version de FORMATO viaja en la firma y es la que separa v3 de v4.
+    #[test]
+    fn una_cabeza_sin_la_pareja_de_consumos_ya_no_deserializa_y_asi_esta_declarado() {
+        let sin: Result<EpochHeadDto, _> = serde_json::from_str(
+            r#"{"seq":"0x7","accountsRoot":"0x3333333333333333333333333333333333333333333333333333333333333333","pendingRoot":"0x4444444444444444444444444444444444444444444444444444444444444444","frozenRoot":"0x5555555555555555555555555555555555555555555555555555555555555555","chainDigest":"0x6666666666666666666666666666666666666666666666666666666666666666","acusesRoot":"0x7777777777777777777777777777777777777777777777777777777777777777","n":"0x64","mmrRoot":"0x2222222222222222222222222222222222222222222222222222222222222222","mmrSize":"0x5","epochDigest":"0x1111111111111111111111111111111111111111111111111111111111111111"}"#,
+        );
+        assert!(sin.is_err(), "una cabeza de la era v3, sin la pareja de consumos, tiene que romper: {sin:?}");
+    }
+
+    /// RFC-0006 E2b (§415), medido por los vectores del cable (r4): la vista tipada
+    /// sigue leyendo una cabeza firmada de la era v3 —sin la pareja de consumos—
+    /// porque los once vectores del cable son v3 y no se reescriben (regla 2). La
+    /// pareja se exige SOLO desde `formatVersion` 4: la version elige, como en el
+    /// recomponedor. Una v4 sin la pareja es malformada, y el error nombra el campo.
+    #[test]
+    fn una_cabeza_v3_firmada_sigue_dando_vista_y_una_v4_sin_la_pareja_no() {
+        const PAREJA: &str = "\"consRoot\":\"0x8888888888888888888888888888888888888888888888888888888888888888\",\"consCount\":\"0x2\",";
+        let v3 = FIRMADA_JSON
+            .replace("\"formatVersion\":\"0x4\"", "\"formatVersion\":\"0x3\"")
+            .replace(PAREJA, "");
+        assert!(!v3.contains("consRoot") && v3.contains("\"0x3\""), "el cuerpo v3 se deriva del fixture");
+        let d: SignedEpochHeadDto = serde_json::from_str(&v3).expect("la era v3 deserializa");
+        let vista = d.firmada().expect("bien formada").expect("hay cabeza firmada");
+        assert_eq!(vista.cons_root, None, "una v3 no lleva la pareja, y la vista lo dice");
+        assert_eq!(vista.cons_count, None);
+        let v4_sin = FIRMADA_JSON.replace(PAREJA, "");
+        assert!(!v4_sin.contains("consRoot"));
+        let d: SignedEpochHeadDto = serde_json::from_str(&v4_sin).expect("deserializa");
+        assert_eq!(d.firmada(), Err(CabezaMalformada::FaltaCampo("consRoot")));
     }
 }

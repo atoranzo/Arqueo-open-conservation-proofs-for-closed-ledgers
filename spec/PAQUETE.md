@@ -100,7 +100,7 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 | objeto | claves que el binario lee | dónde está su semántica |
 |---|---|---|
 | sobre | `v`, `tipo`, `cabeza`, `acuse`, `cofirmas`, `vieja`, `nueva`, `camino` | este documento, sección 2 |
-| `cabeza` (y `vieja`/`nueva`) | `available`, `formatVersion`, `seq`, `n`, `accountsRoot`, `pendingRoot`, `frozenRoot`, `chainDigest`, `acusesRoot`, `epochDigest`, `publicKey`, `signature`, `index`; y en v3 `mmrRoot`, `mmrSize` | `zkssl_signedEpochHead`, `RPC.md:433-478` |
+| `cabeza` (y `vieja`/`nueva`) | `available`, `formatVersion`, `seq`, `n`, `accountsRoot`, `pendingRoot`, `frozenRoot`, `chainDigest`, `acusesRoot`, `epochDigest`, `publicKey`, `signature`, `index`; en v3 y v4 `mmrRoot`, `mmrSize`; y en v4 `consRoot`, `consCount` | `zkssl_signedEpochHead`, `RPC.md:433-478` |
 | `acuse` | `hashPrueba`, `seq`, `camino` → `siblings`, `isRight` | `zkssl_ackPath`, `RPC.md:564-735` |
 | cada cofirma | `v`, `epochDigest`, `clavePublicaOperador`, `clavePublicaTestigo`, `firma`, `versionFormato`, `indice` | `zkssl_cosigs`, `RPC.md:737-779` |
 | extensión | `camino` (lista de digests) | `RPC.md:781-808` |

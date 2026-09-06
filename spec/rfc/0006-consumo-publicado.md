@@ -11,7 +11,7 @@
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
 | E1 — el árbol y la raíz en reposo | el conjunto de consumos como árbol disperso de la capa, su raíz `root:cons` guardada y comprobada al abrir (la sexta raíz en reposo), el rechazo de un consumo repetido, la instantánea que lo transporta, y los testigos negativos que lo falsan | NO | sellada — §413 |
-| E2 — la cabeza v4 | la composición `epoch_digest_v4` que mete la raíz y la cuenta de consumos bajo la firma; el conjunto aceptado pasa a {2, 3, 4}; el cable sirve los dos campos; vectores nuevos bajo su versión | **SÍ** (`zkssl/0.3` → `0.4`) | E2a sellada — §414 (el núcleo y el mando aceptan v4); E2b propuesta (el nodo la emite y el cable sube) |
+| E2 — la cabeza v4 | la composición `epoch_digest_v4` que mete la raíz y la cuenta de consumos bajo la firma; el conjunto aceptado pasa a {2, 3, 4}; el cable sirve los dos campos; vectores nuevos bajo su versión | **SÍ** (`zkssl/0.3` → `0.4`) | sellada — §414 (E2a) y §415 (E2b; el cable NO sube: ver la corrección) |
 | E3 — la prueba portable | una forma nueva del paquete de evidencia que prueba que un consumo está bajo la raíz de una cabeza firmada y no lo estaba bajo la de una cabeza anterior; el mando la verifica sin nodo | NO | propuesta |
 | E4 — el banco de dos libros | dos nodos, dos operadores, el mismo consumo publicado en los dos, y un lector que con las dos cabezas firmadas lo detecta; y el negativo: con una sola cabeza no hay nada que detectar | NO | propuesta |
 | E5 — el atado en circuito | que el consumo quede restringido en el AIR a la operación que lo consume, con `nullifier_tree.rs` como pieza de partida. Fuera de este RFC: hoy no se puede escribir el testigo que lo falsaría sin E1 | NO | fuera del alcance |
@@ -201,6 +201,19 @@ escriba su testigo, es v5. Reversible en el §412.
 > testigo, por la firma, cuyo preámbulo lleva el byte 3 y no el 4 que la cabeza declara—; el
 > fuera-del-conjunto vive en `rechazo-formatVersion-5.json`, derivado como `TODAS.max + 1`. E2a es
 > aditivo: `VERSION_FORMATO` sigue en 3, el nodo no emite v4 y `zkssl/0.3` no se mueve; eso es E2b.
+
+> **Corrección (§415, E2b).** Este documento dijo tres veces que E2 subiría el cable a
+> `zkssl/0.4` (la cabecera, la fila de etapas y Compatibilidad). Se midió antes de sellar E2b y
+> es falso: el vector que el canon sella (`zkssl-0.N.json`) lleva las entradas del registro, un
+> `epoch_digest` compuesto **v2 explícito** (§292: un artefacto congelado), el suministro y el
+> pendiente, y E2b no mueve ninguno —`conformance --check` sigue dando «todo IDENTICO»—. La regla
+> del versionado (`spec/RPC.md`, Notas operativas) sube la versión cuando cambian los **valores que
+> viajan** en los vectores, y sus dos precedentes de esta misma clase (§275, la pareja de acuses;
+> §292, la pareja del MMR) no la subieron. E2b sigue el precedente: **`zkssl/0.3` no sube**, la
+> versión de FORMATO viaja en la firma (`formatVersion: 4`) y un parser tipado viejo rompe en voz
+> alta por `deny_unknown_fields`, declarado. No nace `zkssl-0.4.json`. Tampoco nace un «KAT del
+> preámbulo v4»: `spec/NUCLEO.md` fija un fichero por `fn` del núcleo, y el byte de versión es una
+> ENTRADA del KAT de `preambulo`, no una función nueva. Reversibles en el §415.
 
 ### Por qué entra por RFC
 

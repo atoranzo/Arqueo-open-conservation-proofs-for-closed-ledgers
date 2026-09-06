@@ -2075,7 +2075,8 @@ mod tests {
         let v = dispatch(&app, "zkssl_signedEpochHead", json!({})).expect("no debe fallar");
         assert_eq!(v["available"], json!(true));
         for k in ["seq", "epochDigest", "domain", "formatVersion", "index",
-                  "signature", "publicKey", "emittedAtUnix", "beatSeconds"] {
+                  "signature", "publicKey", "emittedAtUnix", "beatSeconds",
+                  "consRoot", "consCount"] {
             assert!(!v[k].is_null(), "falta el campo {k}");
         }
         assert_eq!(v["domain"], json!("ZK-SSL-epoch-head"));
@@ -2610,6 +2611,19 @@ mod tests {
         (raiz, n)
     }
 
+    /// La pareja de consumos (RFC-0006 E2b, §415), leida del MISMO `head` que el
+    /// recibo, como la de §275: lo que crecio es LA CABEZA, no el camino.
+    fn consumos_desde_cable(v: &Value) -> (zk_ssl_verify::acuses::Digest, u64) {
+        let h = &v["head"];
+        let raiz = digest_from_wire(
+            &serde_json::from_value::<wire::B32>(h["consRoot"].clone()).expect("B32"),
+        )
+        .expect("digest");
+        let k = u64::from_str_radix(h["consCount"].as_str().expect("Q").trim_start_matches("0x"), 16)
+            .expect("hex");
+        (raiz, k)
+    }
+
     #[test]
     fn el_recibo_de_inclusion_verifica_contra_la_cabeza() {
         // ⚠️⚠️ EL TEST QUE JUSTIFICA TODA LA CADENA §256-§259: un camino
@@ -2629,8 +2643,9 @@ mod tests {
         // CabezaDistinta aunque el camino fuese perfecto — que es
         // exactamente lo que la corrida 2 puso en rojo.
         let (acuses_root, n) = pareja_desde_cable(&r);
+        let (cons_root, cons_count) = consumos_desde_cable(&r);
         assert_eq!(
-            zk_ssl_verify::verificar_inclusion_v3(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, firmado),
+            zk_ssl_verify::verificar_inclusion_v4(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, cons_root, cons_count, firmado),
             Ok(())
         );
     }
@@ -2693,17 +2708,18 @@ mod tests {
         // sentido: si el recibo no vale contra su propia cabeza, el
         // negativo no prueba nada.
         let (acuses_root, n) = pareja_desde_cable(&r);
+        let (cons_root, cons_count) = consumos_desde_cable(&r);
         let suya = digest_from_wire(
             &serde_json::from_value::<wire::B32>(r["head"]["epochDigest"].clone()).expect("B32"),
         )
         .expect("digest");
         assert_eq!(
-            zk_ssl_verify::verificar_inclusion_v3(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, suya),
+            zk_ssl_verify::verificar_inclusion_v4(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, cons_root, cons_count, suya),
             Ok(()),
             "el recibo debe valer contra la cabeza de SU epoca"
         );
         assert_eq!(
-            zk_ssl_verify::verificar_inclusion_v3(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, firmado),
+            zk_ssl_verify::verificar_inclusion_v4(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, cons_root, cons_count, firmado),
             Err(zk_ssl_verify::InclusionError::CabezaDistinta)
         );
     }
