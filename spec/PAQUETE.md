@@ -32,7 +32,7 @@ cuántos hacen falta lo decide el CLIENTE** con su política (§319, los mandos 
 del testigo), no el paquete: quien lo arma puede ser el operador, y dejarle elegir su propia `k`
 le devolvería justo lo que la cofirma le quita.
 
-## 2. Las tres formas
+## 2. Las cuatro formas
 
 El binario acepta tres objetos. Los tres son JSON; los esqueletos van con puntos suspensivos
 donde el valor es una respuesta del cable sin reescribir.
@@ -91,6 +91,25 @@ donde el valor es una respuesta del cable sin reescribir.
 - La forma se elige por `tipo`: si vale `"extension"`, el sobre es este; si no, es el de posición.
   `v` se comprueba antes en los dos casos.
 
+### 2.4 El paquete de consumo (§419)
+
+```text
+{ "v": 1, "tipo": "consumo", "vieja": {…}, "nueva": {…}, "camino": […],
+  "consumo": "0x…", "ausencia": {siblings, isRight}, "presencia": {siblings, isRight} }
+```
+
+- Superconjunto estricto del de extensión: **mismas dos cabezas y misma prueba de
+  consistencia**, y por eso el «antes» es de ESTA historia y no de una bifurcación firmada.
+  Lo que añade son los dos caminos del árbol de consumos: `presencia` sube el digest del
+  consumo hasta el `consRoot` de la **nueva**, `ausencia` sube la **hoja vacía** hasta el de
+  la **vieja**. Las dos cabezas tienen que ser **v4**: una v2 o v3 no lleva `consRoot`.
+- ⚠️ **La posición no viaja: se DERIVA.** El mando calcula `posicion_de_consumo(consumo)` y
+  **cruza** sus bits contra el `isRight` recibido en los dos caminos. Sin ese cruce,
+  `ausencia` sólo probaría que *alguna* posición está vacía bajo esa raíz, y quien empaqueta
+  elegiría cualquiera de las 2^63 libres para «probar» la ausencia de cualquier cosa. La
+  mitad de presencia sí es sólida sin el cruce: no se fabrican hermanos que suban a una
+  raíz real. Las reglas viven en `crates/zk-ssl-verify/src/consumos.rs` (`spec/NUCLEO.md`).
+
 ## 3. El sobre — lo que el binario lee
 
 El binario lee **31 nombres** distintos del JSON. Los 14 primeros son el sobre propiamente dicho;
@@ -104,6 +123,13 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 | `acuse` | `hashPrueba`, `seq`, `camino` → `siblings`, `isRight` | `zkssl_ackPath`, `RPC.md:564-735` |
 | cada cofirma | `v`, `epochDigest`, `clavePublicaOperador`, `clavePublicaTestigo`, `firma`, `versionFormato`, `indice` | `zkssl_cosigs`, `RPC.md:737-779` |
 | extensión | `camino` (lista de digests) | `RPC.md:781-808` |
+| consumo | `consumo`, y `presencia`/`ausencia` → `siblings`, `isRight` | `zkssl_consumoPath`, `RPC.md` |
+
+⚠️ **§419 — el «31» de arriba ya no es la cuenta**: el sobre de consumo añade `consumo`,
+`presencia` y `ausencia`. **No se sustituye por otro número**, porque el 31 no tiene
+productor localizable: un censo de literales del fuente da 30 —es ciego a las claves que se
+leen por variable— y la tabla de esta misma sección da 33. Una cifra sin universo se
+declara, no se inventa; queda para el corte que le encuentre uno.
 
 Cantidades en convención `Q` (`0x` + hex, u64); digests como `0x` + 64 hex; firmas y claves como
 `0x` + hex. Un valor que no tenga esa forma se rechaza **antes** de tocar la criptografía (sección 5).
@@ -116,7 +142,8 @@ recompone**. Cada paso que pasa imprime una línea en la salida estándar.
 **Paquete de posición (v1 y v2):**
 
 0. el fichero se lee y es JSON; `v` es 1 o 2; un v1 no trae `cofirmas`; el sobre **no lleva
-   `tipo`** —un `tipo` presente y distinto de `extension` se **rechaza con su nombre**, nunca
+   `tipo`** —un `tipo` presente y distinto de `extension` o `consumo` se **rechaza con su
+   nombre**, nunca
    se lee como paquete de posición (§418)—;
 1. **`1/3`** — `cabeza` existe y es `available:true`; `formatVersion` es 2, 3 o 4; **la versión
    elige recomponedor**: v2 con la pareja de acuses (§275), v3 además con la del MMR (§292), v4
@@ -137,6 +164,12 @@ recompone**. Cada paso que pasa imprime una línea en la salida estándar.
 `2/3` misma `publicKey` en las dos: la continuidad es de **un** firmante · `3/3` la cima nueva
 extiende a la vieja por `camino`.
 
+**Paquete de consumo:** `1/5` las dos cabezas recomponen su digest y sus firmas verifican ·
+`2/5` misma `publicKey` y las dos son **v4**, así que hay `consRoot` a los dos lados · `3/5`
+la cima nueva extiende a la vieja · `4/5` los dos caminos son los de la posición **derivada**
+del consumo, no de la que el sobre diga · `5/5` el consumo está bajo el `consRoot` de la
+nueva y **no estaba** bajo el de la vieja.
+
 Cabezas **v2, v3 y v4** (`formatVersion`): una cabeza v2 custodiada **sigue verificando** — el
 apagado de §290 no caduca. Una cabeza v1 se verifica con la biblioteca, no con este mando.
 
@@ -156,7 +189,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `el paquete no declara su version en `v``
 - `el paquete declara v:{v_paquete} — este binario lee v1 y v2`
 - `un paquete v1 con `cofirmas`: subir la version es lo que las hace parte del contrato — declaralo v2, o quitalas`
-- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`) o `tipo: "extension"``
+- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"` o `tipo: "consumo"``
 
 **Forma de los valores** (`hex_a_bytes`, `digest_de`, `u64_de`; `{campo}` es la clave que se leía)
 
@@ -203,6 +236,17 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `camino[{i}] no es cadena` · `camino[{i}]: {} bytes` · `camino[{i}]: {e:?}`
 - `la nueva (t={t_n}) NO extiende a la vieja (t={t_v}): historia bifurcada, recortada, o camino que no es el suyo`
 
+**El consumo** (`{cual}` es `presencia` o `ausencia`)
+
+- `el sobre de consumo exige cabezas v4: una v2 o v3 no lleva consRoot contra el que comprobar`
+- `falta {cual} (camino del consumo)` · `{cual}: falta siblings` · `{cual}: falta isRight`
+- `{cual}: siblings[{i}] no es cadena` · `{cual}: siblings[{i}]: {} bytes` · `{cual}: siblings[{i}]: {e:?}`
+- `{cual}: isRight[{i}] no es booleano`
+- `{cual}: el isRight recibido NO es el de la posicion {pos} que el consumo DERIVA - un camino de otra posicion no prueba nada de este consumo`
+- `{cual}: el camino no tiene los 63 niveles del arbol de consumos`
+- `presencia: el camino NO sube al consRoot de la nueva`
+- `ausencia: la hoja vacia NO sube al consRoot de la vieja - el consumo YA estaba`
+
 ## 6. El contrato del mando
 
 - **Invocación:** `zk-ssl-verify <paquete.json>` — **un** argumento, la ruta del fichero. Es la
@@ -236,6 +280,11 @@ es un frente propio y no cambia este documento: cambiaría quién escribe el sob
   más de lo que firmó no se rechaza, y lo que el mando imprime como «indice de firma» es el
   embebido, no el declarado.
 
+- La ventana en la que el consumo queda demostrado es la que **el propio operador ordenó con
+  su MMR**: no es tiempo de reloj, y él elige qué cabezas firma y cuándo. Dentro de un libro
+  el uso único es un invariante comprobable; **entre libros este paquete no dice nada** —eso
+  es detección, no prevención, y vive en el RFC-0006 E4—.
+
 ## 9. Vectores y puerta
 
 Los vectores del paquete viven en `spec/vectors/paquete/` (etapa E2 del RFC-0004, sellada en §398; E3 en §399):
@@ -256,6 +305,10 @@ Cuatro textos del catálogo **no tienen vector**, y se declaran: «las cabezas l
 DISTINTAS» exige dos cabezas firmadas por dos operadores distintos; y `{campo}: {e:?}`,
 `sibling {i}: {e:?}` y `camino[{i}]: {e:?}` exigen 32 bytes que `digest_from_bytes` rechace, y no
 se conoce un valor que lo haga. Siguen siendo reglas: lo que no tienen es testigo en el árbol.
+**Y desde §419, los rechazos del sobre de consumo tampoco lo tienen**: exigen un sobre de
+consumo real, que produce el banco de la etapa E3c del RFC-0006. Hasta entonces su testigo
+vive en los `#[test]` de `crates/zk-ssl-verify/src/consumos.rs`, que falsan las reglas
+puras —la hoja vacía, la convención y el cruce— sin necesitar firmas.
 La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.
 
 ## 10. Historia
@@ -267,6 +320,8 @@ La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.
 - §401 — el artefacto: `tools/artefacto.sh`, el tarball reproducible y el 3 ter del canon (sección 11).
 - §408 — el arnés de conformidad (RFC-0005, E4): `tools/conformidad.sh`, el único productor del bucle
   del manifiesto, consumido por el canon y por `artefacto.sh`, y dentro del tarball (sección 9).
+- §419 — el paquete de consumo (RFC-0006, E3b-2, D-15/D-17): dos cabezas v4 con la
+  consistencia dentro, y la posición **derivada y cruzada** contra el `isRight` recibido.
 - §418 — el `tipo` desconocido se rechaza con su nombre (RFC-0006, E3b, D-12):
   `rechazo-tipo-desconocido.json` deja de caer por `falta cabeza`, que era la regla de otro.
 - Hasta §397 este contrato vivía en la cabecera de `crates/zk-ssl-verify/src/main.rs` (1..90,

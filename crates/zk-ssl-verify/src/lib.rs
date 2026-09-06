@@ -96,6 +96,12 @@ pub mod mmr;
 
 // §292: las composiciones del digest, reexportadas para que quien ya
 // depende de verify (cli, bin) no gane una dependencia solo por ellas.
+/// RFC-0006 E3b (§419): las reglas del arbol de CONSUMOS publicados —
+/// que hoja se sube, que posicion le toca y el cruce que ata el camino a
+/// ESE consumo. Puras, sin firmas, y sin la capa: el mando las usa para
+/// sostener presencia y ausencia dentro de un sobre de evidencia.
+pub mod consumos;
+
 pub use zk_ssl_hash::{epoch_digest_v2, epoch_digest_v3, epoch_digest_v4};
 
 // ⚠️ §279 · **La superficie CRECE otra vez**, y por la misma razon que en

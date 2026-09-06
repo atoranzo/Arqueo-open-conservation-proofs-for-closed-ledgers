@@ -60,9 +60,9 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 50 elementos alcanzables en `zk-ssl-verify` y 37 `pub` en `zk-ssl-hash`
-(LIBRO 2, NÚCLEO 63, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
-`lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`) y los
+**Censo derivado:** 55 elementos alcanzables en `zk-ssl-verify` y 37 `pub` en `zk-ssl-hash`
+(LIBRO 2, NÚCLEO 68, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+`lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
 reexportaciones de `zk-ssl-hash` no se cuentan dos veces: un elemento, una fila. En `zk-ssl-hash`,
 todo `pub` de `lib.rs` fuera de las zonas de test. Las zonas de test se recortan por el anidamiento
@@ -132,6 +132,11 @@ real de sus llaves, no por la primera marca.
 | `prueba_de_inclusion` | `verify/mmr.rs` | NÚCLEO | MMR | `fn` |
 | `verificar_consistencia` | `verify/mmr.rs` | NÚCLEO | MMR | `fn` |
 | `verificar_inclusion` | `verify/mmr.rs` | NÚCLEO | MMR | `fn` |
+| `cruza_posicion` | `verify/consumos.rs` | NÚCLEO | CONSUMO | `fn` |
+| `hoja_vacia` | `verify/consumos.rs` | NÚCLEO | CONSUMO | `fn` |
+| `is_right_de_posicion` | `verify/consumos.rs` | NÚCLEO | CONSUMO | `fn` |
+| `raiz_de_ausencia` | `verify/consumos.rs` | NÚCLEO | CONSUMO | `fn` |
+| `raiz_de_presencia` | `verify/consumos.rs` | NÚCLEO | CONSUMO | `fn` |
 | `native_leaf` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `native_leaf_salted` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `InclusionError` | `verify/inclusion.rs` | REFERENCIA | INCLUSIÓN | `enum` |
@@ -224,6 +229,9 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §419 — las reglas del árbol de consumos en el verificador (RFC-0006, E3b-2): la hoja
+  vacía, la convención del camino y el cruce que ata la prueba a la posición del consumo.
+  Cinco filas nuevas.
 - S416 - `CONS_DEPTH` y `posicion_de_consumo`: la posicion del consumo se recompone sin la
   capa (RFC-0006, E3a). Dos filas nuevas.
 - §414 — `epoch_digest_v4`, la variante `V4` y `lleva_mmr`: el núcleo y el mando aceptan la cabeza

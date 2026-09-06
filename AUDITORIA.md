@@ -31269,3 +31269,68 @@ IDENTICO NOMBRE A NOMBRE, 82 antes y 82 despues. `check_tests` 1197 · `check_mo
 **POST.** `crates/zk-ssl-verify/src/main.rs` `2095fd3276c7635a` / 619 ·
 `spec/vectors/paquete/MANIFIESTO.txt` `774c7bc6d1e0ce79` / 72 (LINEA-NEUTRAL: mismas lineas,
 huella nueva) · `spec/PAQUETE.md` `03eeb4e19f82b682` / 298.
+
+## §419 — el paquete de consumo: dos cabezas v4, y la posicion se DERIVA y se CRUZA
+
+**Que.** El mando del paquete de evidencia aprende una cuarta forma de sobre,
+`tipo: "consumo"`. Es un superconjunto estricto del de extension: las mismas dos
+cabezas firmadas, la misma `publicKey` en los dos extremos y el mismo juez de
+consistencia del MMR, mas los dos caminos del arbol de consumos. Con el, un
+tercero demuestra sin el nodo que un consumo ESTA bajo el `consRoot` de la cabeza
+nueva y NO estaba bajo el de la vieja: la prueba portable que el RFC-0006 llamaba
+E3b-2, con las decisiones D-15 y D-17 pagadas.
+
+**El cruce, y por que sin el la mitad de la prueba no vale.** La ausencia se
+prueba subiendo la hoja VACIA por el camino recibido hasta la raiz de la cabeza
+vieja. Eso, por si solo, demuestra que ALGUNA posicion esta vacia bajo esa raiz,
+no que lo este la del consumo: el arbol tiene 2^63 posiciones y quien empaqueta
+elige la que quiera. El unico enlace entre un consumo y su posicion es la
+derivacion, asi que el mando calcula `posicion_de_consumo(consumo)` y CRUZA sus
+bits contra el `isRight` recibido, en los dos caminos, con rechazo nombrado. La
+mitad de PRESENCIA si es solida sin el cruce: no se fabrican hermanos que suban a
+una raiz real. El testigo que lo falsa esta escrito y se enseno ROJO EN VIVO.
+
+**La hoja vacia, y el tipo que no se supuso.** La capa la teclea
+`[BaseElement::ZERO; 4]`, un tipo de `stark-experiment` que el verificador no
+tiene. En vez de suponer que los dos `Digest` son el mismo, se abrio la fuente:
+`zk_ssl_hash::Digest` es `[BaseElement; 4]` con el `BaseElement` de `winter-math`
+importado en privado, y `as_digest(0)` es `embeber(BaseElement::new(0))`. La
+produccion usa `as_digest(0)` y el testigo lo cruza contra `[BaseElement::ZERO;
+4]` Y contra `digest_from_bytes(&[0u8; 32])`: dos productores independientes del
+nucleo, y el comentario del Cargo —que declara `winter-math` solo para los
+tests— sigue siendo cierto.
+
+**Donde vive.** Nace `crates/zk-ssl-verify/src/consumos.rs`, modulo de reglas
+PURAS calcado de `acuses`: cinco `pub fn` y seis testigos sin firmas. En cuanto
+`lib.rs` gana su `pub mod`, `check_nucleo.py` deriva la superficie y exige una
+fila por cada `pub` en `spec/NUCLEO.md`, en las dos direcciones: el gate dispara
+por construccion. `cabeza_v3_verificada` amplia su firma para devolver tambien el
+`consRoot` —tres sitios exactos, medidos— y `camino_mmr` pasa a ser el UNICO
+productor del parseo del camino, que la extension tenia copiado.
+
+**Lo que este sello NO hace, y se declara.** No toca el cable: el sobre se arma
+de respuestas que ya existen y `zkssl/0.3` no sube. No tipa el sobre (D-18, punto
+60): sigue siendo deuda de forma. Y no trae vectores: los rechazos nuevos del
+mando exigen un sobre de consumo real, que produce el banco de la etapa E3c, asi
+que su texto queda DECLARADO en la seccion 9 de `spec/PAQUETE.md` y su testigo
+vive mientras tanto en los `#[test]` del modulo. Decision REVERSIBLE.
+
+**Una cifra que no se sustituyo.** La seccion 3 de `spec/PAQUETE.md` declara que
+el binario lee 31 nombres. El sobre de consumo anade tres, pero el 31 no tiene
+productor localizable: un censo de literales del fuente da 30 —es ciego a las
+claves que se leen por variable— y la tabla de esa misma seccion da 33. Una cifra
+sin universo se declara, no se inventa: va un parrafo de correccion en su sitio y
+queda fichada.
+
+**Las companeras que ninguna compuerta mira.** Al mover el pin, `check_cifras`
+delato las cifras pegadas a la palabra «tests», que es lo unico que gatea; en la
+MISMA frase viven la suma de todos los pines y la de «declaradas», que nadie
+mira. Se movieron por el MISMO delta, derivado, en un corte propio: la primera es
+derivable como suma; la segunda se leyo del fichero como esa suma mas catorce, y
+ese catorce SIGUE SIN FUENTE y se arrastra declarado.
+
+**Contadores.** Pin `zk-ssl-verify` 82 -> 88 (6 tests nuevos, todos del modulo
+nuevo). Sumas 1045/1182/1196 -> 1051/1188/1202; `check_tests` 1197 -> 1203;
+`check_nucleo` 87 -> 92 filas (NUCLEO 63 -> 68, 50 -> 55 elementos de verify);
+`check_modulos` 120 -> 121. Ningun Cargo tocado. El cable no se movio
+(`zkssl/0.3` identico) y el paquete sigue en 68 de 68. BACKLOG sin cambios.

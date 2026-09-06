@@ -127,9 +127,11 @@ fn correr(ruta: &str) -> Result<(), String> {
     match p.get("tipo").map(|t| t.as_str().unwrap_or("(no es una cadena)")) {
         None => {}
         Some("extension") => return verificar_extension(&p),
+        Some("consumo") => return verificar_consumo(&p),
         Some(otro) => {
             return Err(err(format!(
-                "tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`) o `tipo: \"extension\"`"
+                "tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), \
+                 `tipo: \"extension\"` o `tipo: \"consumo\"`"
             )))
         }
     }
@@ -369,7 +371,10 @@ fn verificar_cofirmas_del_paquete(
 /// digest se recompone (nunca se cree) y la firma se comprueba — y
 /// devuelve lo que la consistencia necesita: su pareja del MMR y la
 /// clave que la firmo.
-fn cabeza_v3_verificada(c: &serde_json::Value, cual: &str) -> Result<(Digest, u64, String), String> {
+fn cabeza_v3_verificada(
+    c: &serde_json::Value,
+    cual: &str,
+) -> Result<(Digest, u64, String, Option<Digest>), String> {
     if c.get("available").and_then(|x| x.as_bool()) != Some(true) {
         return Err(err(format!("{cual}: la cabeza no era available:true")));
     }
@@ -435,7 +440,19 @@ fn cabeza_v3_verificada(c: &serde_json::Value, cual: &str) -> Result<(Digest, u6
     )?);
     verificar_cabeza(&hex_a_bytes(clave)?, &ed, &cf)
         .map_err(|e| err(format!("{cual}: cabeza: {e}")))?;
-    Ok((digest_de(c, "mmrRoot")?, u64_de(c, "mmrSize")?, clave.to_string()))
+    // El `consRoot` solo existe en la v4: una v3 no lo lleva y el sobre de
+    // consumo la rechaza por su cuenta, con su propio texto.
+    let cons = if matches!(VersionCabeza::try_from(version), Ok(VersionCabeza::V4)) {
+        Some(digest_de(c, "consRoot")?)
+    } else {
+        None
+    };
+    Ok((
+        digest_de(c, "mmrRoot")?,
+        u64_de(c, "mmrSize")?,
+        clave.to_string(),
+        cons,
+    ))
 }
 
 /// El paquete de EXTENSION (§293): dos cabezas v3 firmadas y el camino
@@ -443,11 +460,11 @@ fn cabeza_v3_verificada(c: &serde_json::Value, cual: &str) -> Result<(Digest, u6
 /// **sin el nodo**: quien custodia la vieja comprueba que la nueva la
 /// EXTIENDE, con el objeto de §291 como juez.
 fn verificar_extension(p: &serde_json::Value) -> Result<(), String> {
-    let (cima_v, t_v, clave_v) = cabeza_v3_verificada(
+    let (cima_v, t_v, clave_v, _) = cabeza_v3_verificada(
         p.get("vieja").ok_or_else(|| err("falta vieja".into()))?,
         "vieja",
     )?;
-    let (cima_n, t_n, clave_n) = cabeza_v3_verificada(
+    let (cima_n, t_n, clave_n, _) = cabeza_v3_verificada(
         p.get("nueva").ok_or_else(|| err("falta nueva".into()))?,
         "nueva",
     )?;
@@ -458,12 +475,109 @@ fn verificar_extension(p: &serde_json::Value) -> Result<(), String> {
         ));
     }
     println!("2/3 misma publicKey: el mismo firmante en los dos extremos");
+    let camino = camino_mmr(p)?;
+    if !zk_ssl_verify::mmr::verificar_consistencia(cima_v, t_v, cima_n, t_n, &camino) {
+        return Err(err(format!(
+            "la nueva (t={t_n}) NO extiende a la vieja (t={t_v}): historia \
+             bifurcada, recortada, o camino que no es el suyo"
+        )));
+    }
+    println!("3/3 la cima nueva EXTIENDE a la vieja: consistencia O(log N), sin el registro");
+    println!("VERDE: la extension se sostiene sin el nodo");
+    Ok(())
+}
+
+/// El paquete de CONSUMO (§419, RFC-0006 E3b): dos cabezas **v4**
+/// firmadas, la consistencia entre sus cimas y los dos caminos del
+/// consumo — que ESTA bajo la nueva y que NO estaba bajo la vieja.
+///
+/// El sobre es un superconjunto estricto del de extension: mismas dos
+/// cabezas, misma `publicKey`, mismo juez de consistencia. Lo que anade
+/// son los caminos, y **la posicion se DERIVA aqui y se CRUZA** contra el
+/// `isRight` recibido: sin ese cruce la mitad de AUSENCIA es falsificable.
+fn verificar_consumo(p: &serde_json::Value) -> Result<(), String> {
+    let (cima_v, t_v, clave_v, cons_v) = cabeza_v3_verificada(
+        p.get("vieja").ok_or_else(|| err("falta vieja".into()))?,
+        "vieja",
+    )?;
+    let (cima_n, t_n, clave_n, cons_n) = cabeza_v3_verificada(
+        p.get("nueva").ok_or_else(|| err("falta nueva".into()))?,
+        "nueva",
+    )?;
+    println!("1/5 las DOS cabezas recomponen su digest y sus firmas verifican");
+    if clave_v != clave_n {
+        return Err(err(
+            "las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante".into(),
+        ));
+    }
+    let (raiz_v, raiz_n) = match (cons_v, cons_n) {
+        (Some(v), Some(n)) => (v, n),
+        _ => {
+            return Err(err(
+                "el sobre de consumo exige cabezas v4: una v2 o v3 no lleva consRoot contra el \
+                 que comprobar"
+                    .into(),
+            ))
+        }
+    };
+    println!("2/5 misma publicKey y las dos cabezas son v4: hay consRoot a los dos lados");
+    if !zk_ssl_verify::mmr::verificar_consistencia(cima_v, t_v, cima_n, t_n, &camino_mmr(p)?) {
+        return Err(err(format!(
+            "la nueva (t={t_n}) NO extiende a la vieja (t={t_v}): historia \
+             bifurcada, recortada, o camino que no es el suyo"
+        )));
+    }
+    println!("3/5 la cima nueva EXTIENDE a la vieja: el «antes» es de esta historia");
+
+    let consumo = digest_de(p, "consumo")?;
+    let pos = zk_ssl_verify::consumos::posicion_de_consumo(&consumo);
+    let (herm_n, der_n) = camino_de(p, "presencia")?;
+    let (herm_v, der_v) = camino_de(p, "ausencia")?;
+    for (cual, der) in [("presencia", &der_n), ("ausencia", &der_v)] {
+        if !zk_ssl_verify::consumos::cruza_posicion(pos, der) {
+            return Err(err(format!(
+                "{cual}: el isRight recibido NO es el de la posicion {pos} que el consumo \
+                 DERIVA - un camino de otra posicion no prueba nada de este consumo"
+            )));
+        }
+    }
+    println!("4/5 los dos caminos son los de la posicion {pos}, DERIVADA del consumo");
+
+    match zk_ssl_verify::consumos::raiz_de_presencia(consumo, &herm_n, &der_n) {
+        Some(r) if r == raiz_n => {}
+        Some(_) => return Err(err("presencia: el camino NO sube al consRoot de la nueva".into())),
+        None => return Err(err(camino_descuadrado("presencia"))),
+    }
+    match zk_ssl_verify::consumos::raiz_de_ausencia(&herm_v, &der_v) {
+        Some(r) if r == raiz_v => {}
+        Some(_) => {
+            return Err(err(
+                "ausencia: la hoja vacia NO sube al consRoot de la vieja - el consumo YA estaba"
+                    .into(),
+            ))
+        }
+        None => return Err(err(camino_descuadrado("ausencia"))),
+    }
+    println!("5/5 el consumo ESTA bajo la nueva y NO estaba bajo la vieja");
+    println!("VERDE: el consumo se publico entre las dos cabezas, sin el nodo");
+    Ok(())
+}
+
+fn camino_descuadrado(cual: &str) -> String {
+    err(format!(
+        "{cual}: el camino no tiene los {} niveles del arbol de consumos",
+        zk_ssl_verify::consumos::CONS_DEPTH
+    ))
+}
+
+/// El camino de consistencia del MMR: lista PLANA de digests, como en el
+/// sobre de extension.
+fn camino_mmr(p: &serde_json::Value) -> Result<Vec<Digest>, String> {
     let cam = p
         .get("camino")
         .and_then(|x| x.as_array())
         .ok_or_else(|| err("falta camino (lista de digests)".into()))?;
-    let camino = cam
-        .iter()
+    cam.iter()
         .enumerate()
         .map(|(i, s)| {
             let s = s.as_str().ok_or_else(|| err(format!("camino[{i}] no es cadena")))?;
@@ -474,16 +588,47 @@ fn verificar_extension(p: &serde_json::Value) -> Result<(), String> {
                 .map_err(|_| err(format!("camino[{i}]: {} bytes", bts.len())))?;
             digest_from_bytes(&arr).map_err(|e| err(format!("camino[{i}]: {e:?}")))
         })
+        .collect()
+}
+
+/// Un camino del arbol de consumos: `{siblings, isRight}`, la respuesta de
+/// `zkssl_consumoPath` TAL CUAL.
+fn camino_de(p: &serde_json::Value, cual: &str) -> Result<(Vec<Digest>, Vec<bool>), String> {
+    let c = p
+        .get(cual)
+        .ok_or_else(|| err(format!("falta {cual} (camino del consumo)")))?;
+    let sib = c
+        .get("siblings")
+        .and_then(|x| x.as_array())
+        .ok_or_else(|| err(format!("{cual}: falta siblings")))?;
+    let der = c
+        .get("isRight")
+        .and_then(|x| x.as_array())
+        .ok_or_else(|| err(format!("{cual}: falta isRight")))?;
+    let hermanos = sib
+        .iter()
+        .enumerate()
+        .map(|(i, s)| {
+            let s = s
+                .as_str()
+                .ok_or_else(|| err(format!("{cual}: siblings[{i}] no es cadena")))?;
+            let bts = hex_a_bytes(s)?;
+            let arr: [u8; 32] = bts
+                .as_slice()
+                .try_into()
+                .map_err(|_| err(format!("{cual}: siblings[{i}]: {} bytes", bts.len())))?;
+            digest_from_bytes(&arr).map_err(|e| err(format!("{cual}: siblings[{i}]: {e:?}")))
+        })
         .collect::<Result<Vec<_>, _>>()?;
-    if !zk_ssl_verify::mmr::verificar_consistencia(cima_v, t_v, cima_n, t_n, &camino) {
-        return Err(err(format!(
-            "la nueva (t={t_n}) NO extiende a la vieja (t={t_v}): historia \
-             bifurcada, recortada, o camino que no es el suyo"
-        )));
-    }
-    println!("3/3 la cima nueva EXTIENDE a la vieja: consistencia O(log N), sin el registro");
-    println!("VERDE: la extension se sostiene sin el nodo");
-    Ok(())
+    let derecha = der
+        .iter()
+        .enumerate()
+        .map(|(i, b)| {
+            b.as_bool()
+                .ok_or_else(|| err(format!("{cual}: isRight[{i}] no es booleano")))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok((hermanos, derecha))
 }
 
 fn main() -> ExitCode {
