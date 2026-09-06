@@ -1114,6 +1114,93 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 "cosigs": lista,
             }))
         }
+        // ⚠️ §417 · EL CONSUMO SE PUBLICA (RFC-0006, E3a). **Sin prueba y sin
+        // autorizacion**, y eso esta DECLARADO (D-4): quien tiene acceso al
+        // nodo publica, y quien publica primero bloquea. Es denegacion de
+        // servicio, no doble uso. El nodo no juzga: la capa rechaza el
+        // repetido y la colision de posicion, cada uno con su nombre (§413).
+        //
+        // ⚠️ **Aditivo**: la superficie sube y `zkssl/0.3` no. La version la
+        // mueve que cambien los VALORES que viajan (Notas operativas de
+        // `spec/RPC.md`), como en §222, §242 y §275.
+        "zkssl_publishConsumo" => {
+            #[derive(Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct P { consumo: wire::B32 }
+            let p: P = parse(params)?;
+            // `digest_from_wire` es FALIBLE (`wire/lib.rs:150`): un valor que
+            // no sea un digest de 32 bytes se rechaza con nombre ANTES de
+            // tocar la capa. El texto NOMBRA el campo y no formatea el error
+            // del cable: lo estructural va delante (molde de PAQUETE.md 4).
+            let consumo = digest_from_wire(&p.consumo).map_err(|_| RpcError {
+                code: -32602,
+                message: "consumo: no es un digest de 32 bytes".into(),
+            })?;
+            match l.apply_consumo(consumo) {
+                Ok(()) => Ok(json!({
+                    "accepted": true,
+                    "logSeq": Q(l.transition_log().len() as u64),
+                })),
+                // El texto es el de la CAPA, sin reescribir: `ConsumoRepetido`
+                // y `ConsumoColision` ya dicen cual de las dos cosas paso.
+                Err(e) => Ok(json!({ "accepted": false, "reason": format!("{e}") })),
+            }
+        }
+
+        // ⚠️ §417 · EL CAMINO DEL CONSUMO bajo una cabeza que el titular YA
+        // custodia. Molde de `zkssl_ackPath`.
+        //
+        // ⚠️ **La cabeza NO viaja** (§248) **y la raiz TAMPOCO**: servirlas
+        // seria dejar que el operador fabrique la vara con la que se le mide.
+        // Quien verifica saca la raiz de la cabeza FIRMADA que custodia y
+        // sube el camino el mismo. Lo unico que el nodo sirve es lo que no
+        // puede fabricar: los hermanos, que o cuadran con esa raiz o no.
+        //
+        // ⚠️ **Quien verifica elige la HOJA**: el digest del consumo prueba
+        // que esta bajo la raiz; el digest CERO, que no estaba. Por eso el
+        // metodo es UNO, y por eso la respuesta no dice cual de las dos
+        // prueba: no es asunto del nodo.
+        "zkssl_consumoPath" => {
+            #[derive(Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct P { consumo: wire::B32, seq: Q }
+            let p: P = parse(params)?;
+            let consumo = digest_from_wire(&p.consumo).map_err(|_| RpcError {
+                code: -32602,
+                message: "consumo: no es un digest de 32 bytes".into(),
+            })?;
+            let n = l.transition_log().len() as u64;
+            if p.seq.0 > n {
+                return Ok(json!({
+                    "available": false,
+                    "reason": format!(
+                        "el registro de este nodo lleva {n} entradas y se piden {}: \
+                         o la cabeza es de otra cadena, o aun no ha llegado",
+                        p.seq.0
+                    ),
+                }));
+            }
+            match l.cons_path(p.seq.0, &consumo) {
+                // El fail-closed del §416, dicho por el cable: si una entrada
+                // `Consumo` del tramo no lleva su compromiso, el tramo no se
+                // reconstruye, y eso se DICE en vez de servir un camino que
+                // no verificaria y no diria por que.
+                None => Ok(json!({
+                    "available": false,
+                    "reason": "una entrada de consumo del tramo no lleva su compromiso: \
+                               el registro no permite reconstruirlo",
+                })),
+                Some((_raiz_reconstruida, camino)) => Ok(json!({
+                    "available": true,
+                    "s": Q(p.seq.0),
+                    "camino": {
+                        "siblings": camino.siblings.iter().map(digest_to_wire).collect::<Vec<_>>(),
+                        "isRight": camino.is_right,
+                    },
+                })),
+            }
+        }
+
         // ⚠️ **§259 · EL RECIBO DE INCLUSION.** Del arbol `accounts`, que es
         // el que firma la cabeza. `leafFormat` va OBSERVADO: la capa
         // compone la hoja de las dos formas y declara la que caso.
@@ -2906,5 +2993,118 @@ mod tests_ack_path {
         assert_eq!(v["available"], false, "sin epoca cerrada no puede haber camino");
         assert!(v["reason"].as_str().map(|s| !s.is_empty()).unwrap_or(false),
             "la respuesta debe DECIR por que: {v}");
+    }
+}
+
+#[cfg(test)]
+mod tests_consumo_cable {
+    use super::*;
+
+    fn consumo_hex(n: u8) -> String {
+        // Un digest del cable: 32 bytes en hex. El primer byte manda la
+        // posicion, asi que basta variarlo para tener consumos distintos.
+        format!("0x{:02x}{}", n, "11".repeat(31))
+    }
+
+    fn b32(v: serde_json::Value) -> wire::B32 {
+        serde_json::from_value::<wire::B32>(v).expect("B32")
+    }
+
+    // `digest_from_wire` devuelve Result (`wire/lib.rs:150`): en un testigo se
+    // abre con `expect`, que es lo que hacen sus hermanos de este fichero.
+    fn dg(v: serde_json::Value) -> zk_ssl_verify::acuses::Digest {
+        digest_from_wire(&b32(v)).expect("digest de 32 bytes")
+    }
+
+    // `zkssl_epochHead` sirve `consRoot` y `consCount` desde el S415, y NO
+    // exige latido ni clave: su `seq` es `log.len()`, que es EXACTAMENTE el
+    // que `cons_path` espera. Que esa cabeza este FIRMADA es otra propiedad,
+    // con su propio testigo (S415): un testigo que probara las dos fallaria
+    // por la que no le toca -- y de hecho fallo, porque el nodo de prueba se
+    // construye SIN clave y la respuesta firmada llega sin la pareja.
+    fn cabeza(app: &App) -> (u64, zk_ssl_verify::acuses::Digest) {
+        let cab = crate::dispatch(app, "zkssl_epochHead", serde_json::json!({}))
+            .expect("cabeza");
+        let seq = u64::from_str_radix(
+            cab["seq"].as_str().expect("seq").trim_start_matches("0x"), 16).expect("hex");
+        (seq, dg(cab["consRoot"].clone()))
+    }
+
+    fn sube(r: &serde_json::Value, hoja: zk_ssl_verify::acuses::Digest)
+        -> zk_ssl_verify::acuses::Digest {
+        let hermanos: Vec<zk_ssl_verify::acuses::Digest> = r["camino"]["siblings"]
+            .as_array().expect("siblings").iter()
+            .map(|x| dg(x.clone())).collect();
+        let derecha: Vec<bool> = r["camino"]["isRight"].as_array().expect("isRight")
+            .iter().map(|b| b.as_bool().expect("bool")).collect();
+        zk_ssl_verify::acuses::path_root(hoja, &hermanos, &derecha)
+    }
+
+    /// §417: se publica por el cable, y el repetido se rechaza CON NOMBRE.
+    #[test]
+    fn un_consumo_se_publica_por_el_cable_y_el_repetido_se_rechaza() {
+        let app = crate::tests::nodo(30);
+        let c = consumo_hex(7);
+        let v = crate::dispatch(&app, "zkssl_publishConsumo",
+            serde_json::json!({ "consumo": c })).expect("publicar");
+        assert_eq!(v["accepted"], true, "la primera vez entra: {v}");
+        let v2 = crate::dispatch(&app, "zkssl_publishConsumo",
+            serde_json::json!({ "consumo": c }))
+            .expect("no debe fallar: un repetido NO es error del que llama");
+        assert_eq!(v2["accepted"], false, "CRITICO: el repetido tiene que rechazarse: {v2}");
+        assert!(
+            v2["reason"].as_str().map(|s| s.contains("ya esta publicado")).unwrap_or(false),
+            "el rechazo tiene que decir QUE paso: {}", v2["reason"]
+        );
+    }
+
+    /// §417, **el testigo que ata el cable con el nucleo**: el camino que el
+    /// nodo SIRVE sube hasta la `consRoot` que la cabeza ACREDITA (S415).
+    #[test]
+    fn el_camino_servido_sube_hasta_la_cons_root_que_la_cabeza_acredita() {
+        let app = crate::tests::nodo(30);
+        let c = consumo_hex(9);
+        crate::dispatch(&app, "zkssl_publishConsumo", serde_json::json!({ "consumo": c }))
+            .expect("publicar");
+        let (seq, raiz_publicada) = cabeza(&app);
+        let r = crate::dispatch(&app, "zkssl_consumoPath",
+            serde_json::json!({ "consumo": c, "seq": Q(seq) })).expect("camino");
+        assert_eq!(r["available"], true, "{r}");
+        let hoja = dg(serde_json::Value::String(c.clone()));
+        assert_eq!(
+            sube(&r, hoja), raiz_publicada,
+            "CRITICO: el camino servido tiene que subir a la raiz que la cabeza ACREDITA"
+        );
+    }
+
+    /// §417: y con la hoja CERO, el MISMO camino prueba que NO estaba.
+    #[test]
+    fn la_ausencia_sube_a_la_misma_raiz_con_la_hoja_cero() {
+        let app = crate::tests::nodo(30);
+        crate::dispatch(&app, "zkssl_publishConsumo",
+            serde_json::json!({ "consumo": consumo_hex(11) })).expect("publicar");
+        let (seq, raiz_publicada) = cabeza(&app);
+        let ausente = consumo_hex(12);
+        let r = crate::dispatch(&app, "zkssl_consumoPath",
+            serde_json::json!({ "consumo": ausente, "seq": Q(seq) })).expect("camino");
+        assert_eq!(r["available"], true);
+        assert_eq!(
+            sube(&r, zk_ssl_verify::acuses::as_digest(0)), raiz_publicada,
+            "CRITICO: la hoja CERO sube a la misma raiz: es la NO-pertenencia"
+        );
+    }
+
+    /// §417: una `seq` por delante del registro lo DICE, y no es un error.
+    #[test]
+    fn una_seq_por_delante_del_registro_lo_dice_y_no_falla() {
+        let app = crate::tests::nodo(30);
+        let r = crate::dispatch(&app, "zkssl_consumoPath",
+            serde_json::json!({ "consumo": consumo_hex(13), "seq": "0xffff" }))
+            .expect("no debe fallar: pedir de mas NO es error del que llama");
+        assert_eq!(r["available"], false);
+        assert!(
+            r["reason"].as_str().map(|s| s.contains("entradas y se piden")).unwrap_or(false),
+            "la respuesta tiene que DECIR por que: {}", r["reason"]
+        );
     }
 }

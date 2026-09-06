@@ -31133,3 +31133,83 @@ ya dependia de `zk-ssl-hash`.
 `9707b4a918ee1c5c` · `PAPER.md` `3dbee8550b8c3d84` · `PAPER_EN.md` `9113e528f7c4db0e` ·
 `README.md` `63b362f386c51d07` · `RESUMEN_EJECUTIVO.md` `e4b1d9cba4eafda9` · `RESUMEN_BILINGUE.md`
 `3b523cd28d5505f8` · `INSTITUCIONAL.md` `3be687bc1afa5a31` · `INSTITUTIONAL.md` `1936ecf2fd75f304`.
+
+## §417 — El consumo por el cable: el nodo lo publica y sirve su camino
+
+**Que.** RFC-0006, E3a (2 de 2), y con el la etapa queda ENTERA. Dos metodos nuevos:
+
+- `zkssl_publishConsumo {consumo: Digest}` -> `{accepted, logSeq?, reason?}`. **Sin prueba y sin
+  autorizacion**, que es lo que D-4 declara: quien tiene acceso al nodo publica, y quien publica
+  primero bloquea. Eso es denegacion de servicio, no doble uso. El nodo no juzga nada: la capa
+  rechaza el repetido y la colision de posicion, cada uno con su nombre (§413), y el texto de la
+  capa llega al cable SIN REESCRIBIR.
+- `zkssl_consumoPath {consumo: Digest, seq: Q}` -> `{available, s, camino, reason?}`. El camino de
+  autenticacion del consumo bajo el arbol **tal como lo firmo la cabeza de ese `seq`** (§416).
+
+**La cabeza NO viaja, y la raiz TAMPOCO.** Es la doctrina del §248 un paso mas lejos: `ackPath` ya
+se negaba a servir la cabeza —servirla seria dejar que el operador fabrique la vara con la que se
+le mide—, y aqui se anade que **tampoco viaja la raiz reconstruida**, aunque la capa se la de al
+brazo. Quien verifica la saca de la cabeza que ya custodia. Lo unico que el nodo sirve es lo que no
+puede fabricar: los hermanos del camino, que o cuadran con esa raiz o no.
+
+**Y quien verifica elige la HOJA.** El mismo camino prueba las dos cosas: con el digest del
+consumo, que esta bajo la raiz; con el digest CERO, que no estaba. Por eso el metodo es UNO y no
+dos, y por eso la respuesta no dice cual de las dos prueba: no es asunto del nodo.
+
+**Dos razones de `available: false`, y ninguna es un error generico** (la forma del §241): la `seq`
+va POR DELANTE del registro de este nodo —otra cadena, o una cabeza que aun no ha llegado—, o una
+entrada de consumo del tramo no lleva su compromiso, que es el fail-closed del §416 dicho por el
+cable. Y un `consumo` que no es un digest de 32 bytes se rechaza ANTES de tocar la capa, con el
+campo NOMBRADO: lo estructural va delante (molde de `spec/PAQUETE.md` seccion 4).
+
+**La superficie sube y la version NO.** De 24 metodos a 26. Lo dice la regla de `spec/RPC.md`
+(Notas operativas): la version del cable la mueve que cambien los VALORES que viajan, no el tamano
+de la superficie; los precedentes son §222, §242 y §275. Los tres vectores de conformidad no se
+tocan y el triple gate del canon lo comprueba en cada corrida. El atado del despacho contra el
+documento publicado pasa de 24 a 26 nombre a nombre, y el test del numero se renombra: **tener el
+numero en el nombre es a proposito, obliga a mirar**.
+
+**`spec/openrpc.json` se REGENERA, jamas se edita** (`gen_openrpc`). El delta va gateado y
+DERIVADO: una entrada de metodo ocupa 19 lineas con un parametro y 7 mas por cada parametro de
+mas, luego 19 + 26 = 45, y 558 + 45 = 603, con `git diff --numstat` en 45/0 —adicion pura—. El
+§302 sello este fichero despues de descubrir que estaba tocado a mano; ese gate es lo que impide
+que vuelva a pasar.
+
+**Testigos (cuatro, ensenados ROJOS EN VIVO con DOS sabotajes que DISCRIMINAN).** Con el `isRight`
+del camino invertido —un defecto de ORDEN, de los que compilan y mienten— caen **dos**, los que
+cruzan contra la raiz. Con `publishConsumo` tragandose el error de la capa cae **uno**, el del
+repetido: que el rechazo de la capa LLEGUE al cable es lo que ese testigo defiende. Los cuatro: se
+publica y el repetido se rechaza con nombre; **el camino servido sube hasta la `consRoot` que la
+cabeza acredita** —el que ata el cable con el nucleo—; la ausencia sube a esa misma raiz con la
+hoja CERO; y una `seq` por delante del registro lo dice y no falla.
+
+**Lo que el arbol falso al sellar, y queda escrito.** (1) `digest_from_wire` es FALIBLE —
+`Result<Digest, WireError>`, `wire/lib.rs:150`—. Se habia deducido infalible de tres usos cuyo
+`expect` caia en la LINEA SIGUIENTE: **una llamada no se concluye sin su linea entera**, como un
+`if` no se concluye sin su cuerpo (§404). La puerta que lo caza estaba puesta a proposito y murio
+sin tocar un byte. (2) El primer testigo pedia la cabeza FIRMADA, y el nodo de prueba se construye
+SIN clave: la respuesta llegaba sin la pareja de consumos. **Un testigo que prueba dos cosas falla
+por la que no le toca** — que la cabeza este firmada es propiedad del §415 y ya tiene el suyo; este
+cruza contra `zkssl_epochHead`, que sirve la pareja con el mismo `seq` y sin latido.
+
+**Lo que NO hace.** No toca el mando ni `spec/PAQUETE.md` ni los vectores: la forma nueva del sobre
+es E3b y su catalogo E3c. No autentica a quien publica. No dice si el consumo corresponde a un pago
+(E5). Y no acredita que la cabeza contra la que el camino sube este firmada: eso lo comprueba quien
+verifica, con la firma XMSS y el preambulo.
+
+**Contadores.** Pin `zk-ssl-node` 91 -> 95; `zk-ssl-wire` SIN MOVER: el test del numero se
+renombra, no nace ninguno. Sumas 1041 -> **1045**, 1178 -> **1182**, 1192 -> **1196**;
+`check_tests` 1193 -> **1197**; `check_modulos` 120; `check_nucleo` 87 sin cambio; `verificar_citas`
+64 nombres, 0 fantasmas, 0 secciones muertas. Las SEIS cifras publicadas que el pin gobierna las
+nombro `check_cifras` corriendo con el pin movido y las cifras sin mover: los cinco TOTAL y el
+desglose del nodo en `PRINCIPIOS`. **El cable no tiene cifra publicada**: el «17 de liquidacion» de
+esa misma linea es `settlement-layer`, no `wire`. Los cuatro documentos son LINEA-NEUTRALES y las
+cifras vecinas quedan intactas —la capa en 323 y los circuitos en 318, que conviven en la misma
+linea—. Ningun Cargo tocado.
+
+**POST.** `crates/zk-ssl-node/src/main.rs` `65d1395c05887da2`/3110 ·
+`crates/zk-ssl-wire/src/openrpc.rs` `f5fc34ae6c7c3d98`/212 · `spec/openrpc.json`
+`8e66f1fd5b31eee9`/603 · `spec/RPC.md` `d760bb8fa044503e`/938 ·
+`spec/rfc/0006-consumo-publicado.md` `2a50177798dcca7f`/286 · `tools/canon.sh`
+`edbafa637a673bac`/339 · `PRINCIPIOS.md` `73caf661dbcd1bb9` · `PAPER.md` `001c42355948bf7e` ·
+`RESUMEN_EJECUTIVO.md` `e2acee723b5605cf` · `RESUMEN_BILINGUE.md` `1a492ca4cb412f23`.

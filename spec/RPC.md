@@ -79,6 +79,8 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 | `zkssl_consistencyProof` | `{oldSize: Q}` | `{available, mmrSize: Q, camino?: Digest[], reason?}` |
 | `zkssl_submitCosig` | `{cosig: Cosig}` | `{accepted: bool, stored: Q, reason?}` |
 | `zkssl_cosigs` | `{epochDigest?: Digest}` | `{epochDigest, n: Q, cosigs: Cosig[]}` |
+| `zkssl_publishConsumo` | `{consumo: Digest}` | `{accepted: bool, logSeq?: Q, reason?}` |
+| `zkssl_consumoPath` | `{consumo: Digest, seq: Q}` | `{available, s?: Q, camino?: {siblings: Digest[], isRight: bool[]}, reason?}` |
 
 `LogEntry = {seq: Q, kind: string, rootOld, rootNew, proofDigest, chain: Digest}`
 con `kind` ∈ {`OpenAccount`,`Mint`,`Transfer`,`Burn`,`Recovery`,
@@ -826,6 +828,33 @@ MISMA `publicKey`: la continuidad es de un firmante. La
 demostracion: `tools/banco_extension.sh` — nodo vivo, paquete
 capturado, verificacion sin el nodo, el camino adulterado en rojo, y el
 rearranque sin diario respondiendo por detras.
+
+## El consumo publicado (§417, RFC-0006 E3a)
+
+`zkssl_publishConsumo` y `zkssl_consumoPath` ponen en el cable el objeto que el RFC-0006
+introdujo: una etiqueta **pública y precomputable** que el libro acumula en un árbol propio, cuya
+raíz viaja firmada en la cabeza v4 desde §415.
+
+⚠️ **Publicar no exige prueba ni autorización**, y está declarado: quien tiene acceso al nodo
+publica, y quien publica primero bloquea. Es denegación de servicio, no doble uso (D-4 del
+RFC-0006). Lo que el nodo garantiza es lo otro: **un consumo ya publicado se rechaza con nombre**,
+y una colisión de posición también, con el suyo.
+
+⚠️ **La cabeza NO viaja, y la raíz TAMPOCO** (§248, un paso más lejos que en `zkssl_ackPath`):
+quien verifica saca la raíz de la cabeza FIRMADA que ya custodia y sube el camino él mismo.
+Servirlas sería dejar que el operador fabrique la vara con la que se le mide.
+
+⚠️ **Quien verifica elige la HOJA.** El mismo camino prueba las dos cosas: con el digest del
+consumo, que está bajo la raíz de esa cabeza; con el digest CERO, que no estaba. Por eso hay un
+método y no dos, y por eso la respuesta no dice cuál de las dos prueba.
+
+Dos razones de `available: false`, cada una con su texto: la `seq` va por delante del registro de
+este nodo —otra cadena, o una cabeza que aún no ha llegado—, o una entrada de consumo del tramo
+no lleva su compromiso, y entonces el tramo no se reconstruye y se DICE.
+
+⚠️ **Aditivo**: la superficie pasa de 24 a 26 métodos y `zkssl/0.3` NO sube — la versión la
+mueve que cambien los valores que viajan, no el tamaño de la superficie (Notas operativas;
+§222, §242, §275). Los tres vectores de conformidad quedan intactos.
 
 ## Apagado — el fin de vida, declarado (nota 91)
 

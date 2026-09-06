@@ -509,6 +509,51 @@
       "summary": "Las cofirmas que el nodo tiene de una epoca. Sin parametro, la epoca en curso. El nodo NO guarda historico: otra epoca da cero."
     },
     {
+      "name": "zkssl_publishConsumo",
+      "params": [
+        {
+          "name": "consumo",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ConsumoPublicado"
+        }
+      },
+      "summary": "Publica un consumo (RFC-0006). SIN prueba y SIN autorizacion: quien publica primero bloquea, y eso es denegacion de servicio, no doble uso. El repetido y la colision se rechazan con nombre."
+    },
+    {
+      "name": "zkssl_consumoPath",
+      "params": [
+        {
+          "name": "consumo",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        },
+        {
+          "name": "seq",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ConsumoPath"
+        }
+      },
+      "summary": "Camino de autenticacion de un consumo bajo la cabeza de ese seq. La cabeza NO viaja y la raiz tampoco: quien verifica elige la hoja (el consumo prueba presencia; el digest cero, ausencia)."
+    },
+    {
       "name": "dev_fund",
       "params": [
         {

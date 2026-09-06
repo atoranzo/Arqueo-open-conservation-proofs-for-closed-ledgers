@@ -45,6 +45,8 @@ pub fn method_names() -> Vec<&'static str> {
         "zkssl_consistencyProof",
         "zkssl_submitCosig",
         "zkssl_cosigs",
+        "zkssl_publishConsumo",
+        "zkssl_consumoPath",
         "dev_fund",
         "dev_openSeeded",
     ]
@@ -118,6 +120,12 @@ pub fn document() -> Value {
         m("zkssl_cosigs",
           "Las cofirmas que el nodo tiene de una epoca. Sin parametro, la epoca en curso. El nodo NO guarda historico: otra epoca da cero.",
           json!([p_opt("epochDigest", "Digest")]), "Cosigs"),
+        m("zkssl_publishConsumo",
+          "Publica un consumo (RFC-0006). SIN prueba y SIN autorizacion: quien publica primero bloquea, y eso es denegacion de servicio, no doble uso. El repetido y la colision se rechazan con nombre.",
+          json!([p("consumo", "Digest")]), "ConsumoPublicado"),
+        m("zkssl_consumoPath",
+          "Camino de autenticacion de un consumo bajo la cabeza de ese seq. La cabeza NO viaja y la raiz tampoco: quien verifica elige la hoja (el consumo prueba presencia; el digest cero, ausencia).",
+          json!([p("consumo", "Digest"), p("seq", "Q")]), "ConsumoPath"),
         m("dev_fund", "SOLO --dev: emision delegada con custodios de PRUEBA.",
           json!([p("index", "Q"), p("amount", "Q")]), "Applied"),
         m("dev_openSeeded", "SOLO --dev: abre desde una clave determinista de la suite.",
@@ -147,7 +155,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn veinticuatro_metodos_unicos_y_en_orden() {
+    fn veintiseis_metodos_unicos_y_en_orden() {
         // §223: subio a 18 con `zkssl_applyMany`. §242: a 19 con
         // `zkssl_signedEpochHead`. §259: a 20 con
         // `zkssl_inclusionReceipt`. Que este test tenga el numero en el
@@ -157,15 +165,17 @@ mod tests {
         // §315: a 24 con `zkssl_submitCosig` y `zkssl_cosigs` — el TRANSPORTE
         // de la cofirma, que hasta hoy no existia: el testigo la escribia en
         // un fichero suyo y nadie mas la veia.
+        // §417: a 26 con `zkssl_publishConsumo` y `zkssl_consumoPath` — el
+        // consumo por el cable (RFC-0006, E3a).
         let nombres = method_names();
-        assert_eq!(nombres.len(), 24);
+        assert_eq!(nombres.len(), 26);
         let mut u = nombres.clone();
         u.sort();
         u.dedup();
-        assert_eq!(u.len(), 24, "nombres repetidos");
+        assert_eq!(u.len(), 26, "nombres repetidos");
         let doc = document();
         let met = doc["methods"].as_array().expect("methods");
-        assert_eq!(met.len(), 24);
+        assert_eq!(met.len(), 26);
         for (i, mm) in met.iter().enumerate() {
             assert_eq!(mm["name"].as_str().unwrap(), nombres[i]);
         }

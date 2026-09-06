@@ -215,6 +215,15 @@ escriba su testigo, es v5. Reversible en el §412.
 > preámbulo v4»: `spec/NUCLEO.md` fija un fichero por `fn` del núcleo, y el byte de versión es una
 > ENTRADA del KAT de `preambulo`, no una función nueva. Reversibles en el §415.
 
+> **Corrección (§417, E3a).** La fila de E3 dice «NO [rompe el cable]. Forma nueva del paquete,
+> con su `tipo` y sus vectores bajo su directorio». Lo primero sigue siendo cierto y lo segundo se
+> queda corto: **E3 SÍ toca el cable**. El paquete se especifica como «respuestas del cable TAL
+> CUAL, reunidas» (`spec/PAQUETE.md`, secciones 1 y 7), y el camino de un consumo no lo servía
+> ningún método, así que o nacía en el cable o el sobre dejaba de ser lo que dice que es. Nacen
+> `zkssl_publishConsumo` y `zkssl_consumoPath` (§417): **aditivos, la superficie pasa de 24 a 26 y
+> `zkssl/0.3` no sube**, por la regla de las Notas operativas y sus precedentes §222, §242 y
+> §275. Los tres vectores del cable siguen intactos y el triple gate lo falsa en cada corrida.
+
 ### Por qué entra por RFC
 
 Por la letra: E2 cambia valores que viajan (`spec/RPC.md`, `spec/openrpc.json`, los vectores) y
