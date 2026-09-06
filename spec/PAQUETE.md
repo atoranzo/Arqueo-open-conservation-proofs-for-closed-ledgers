@@ -116,24 +116,26 @@ recompone**. Cada paso que pasa imprime una línea en la salida estándar.
 **Paquete de posición (v1 y v2):**
 
 0. el fichero se lee y es JSON; `v` es 1 o 2; un v1 no trae `cofirmas`; `tipo` no es `extension`;
-1. **`1/3`** — `cabeza` existe y es `available:true`; `formatVersion` es 2 o 3; **la versión
-   elige recomponedor**: v2 con la pareja de acuses (§275), v3 además con la del MMR (§292); los
+1. **`1/3`** — `cabeza` existe y es `available:true`; `formatVersion` es 2, 3 o 4; **la versión
+   elige recomponedor**: v2 con la pareja de acuses (§275), v3 además con la del MMR (§292), v4
+   además con la raíz y la cuenta de consumos (RFC-0006 E2a, §414); los
    campos de la cabeza recomponen su `epochDigest`;
 2. **`2/3`** — la firma XMSS verifica contra `publicKey` **y** el preámbulo recuperado es el
    esperado (verificar sin comparar no prueba nada) **y** el `index` declarado queda por
    encima del índice de hoja que va dentro de la firma (§399; la cota es por abajo, sección 8);
 3. **`3/3`** — si hay `acuse`: la hoja `hoja_de_acuse(hashPrueba, seq, n)` sube por `camino`
-   hasta `acusesRoot`, y los campos vuelven a componer el digest firmado (v2) o el digest y la
-   cima (v3). Si no hay acuse, la cabeza sola queda demostrada;
+   hasta `acusesRoot`, y los campos vuelven a componer el digest firmado (v2), el digest y la
+   cima (v3), o además la raíz y la cuenta de consumos (v4). Si no hay acuse, la cabeza sola
+   queda demostrada;
 4. **cofirmas** (sólo v2) — cada una, antes de tocar la criptografía, nombra **esta** cabeza y
    **este** operador; después su firma verifica. Se imprime cuántas verifican; cuántas hacen
    falta no es asunto del paquete.
 
-**Paquete de extensión:** `1/3` las dos cabezas v3 recomponen su digest y sus firmas verifican ·
+**Paquete de extensión:** `1/3` las dos cabezas (v3 o v4) recomponen su digest y sus firmas verifican ·
 `2/3` misma `publicKey` en las dos: la continuidad es de **un** firmante · `3/3` la cima nueva
 extiende a la vieja por `camino`.
 
-Cabezas **v2 y v3** (`formatVersion`): una cabeza v2 custodiada **sigue verificando** — el
+Cabezas **v2, v3 y v4** (`formatVersion`): una cabeza v2 custodiada **sigue verificando** — el
 apagado de §290 no caduca. Una cabeza v1 se verifica con la biblioteca, no con este mando.
 
 ## 5. Catálogo de rechazos
@@ -163,7 +165,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 
 - `falta cabeza`
 - `la cabeza empaquetada no era available:true`
-- `formatVersion {version}: el paquete v1 empaqueta cabezas v2 o v3 (la pareja acusesRoot/n viaja firmada desde §275; la del MMR, desde §292)` — el texto dice «v1» aunque el sobre sea v2: regla vigente, prosa que la implementación de referencia debe corregir sin cambiar la regla.
+- `formatVersion {version}: el paquete v1 empaqueta cabezas v2, v3 o v4 (la pareja acusesRoot/n viaja firmada desde §275; la del MMR, desde §292)` — el texto dice «v1» aunque el sobre sea v2: regla vigente, prosa que la implementación de referencia debe corregir sin cambiar la regla.
 - `los siete campos NO recomponen el epochDigest empaquetado: o el paquete esta adulterado o la cabeza nunca fue esa`
 - `falta publicKey` · `falta signature`
 - `cabeza: {e}` — la firma no verifica, el preámbulo no es el esperado, o el `index` declarado no queda por encima del que va dentro de la firma (§399); `{e}` es el error de la biblioteca.
@@ -189,7 +191,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 
 - `falta vieja` · `falta nueva`
 - `{cual}: la cabeza no era available:true`
-- `{cual}: formatVersion {version} — la extension exige cabezas v3: una v2 no lleva la pareja del MMR que extender`
+- `{cual}: formatVersion {version} — la extension exige cabezas v3 o v4: una v2 no lleva la pareja del MMR que extender`
 - `{cual}: los campos NO recomponen su epochDigest — adulterada o inventada`
 - `{cual}: falta publicKey` · `{cual}: falta signature`
 - `{cual}: cabeza: {e}`

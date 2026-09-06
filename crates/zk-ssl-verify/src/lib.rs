@@ -79,6 +79,7 @@ mod inclusion;
 // de nada. `verificar_inclusion` NO se sustituye: v1 es el recompositor
 // de las cabezas ya custodiadas, y esas no cambian de forma.
 pub use inclusion::{
+    verificar_acuse_v4, verificar_inclusion_v4,
     verificar_acuse, verificar_acuse_v3, verificar_inclusion, verificar_inclusion_v2,
     verificar_inclusion_v3, InclusionError, ReciboAcuse, ReciboInclusion,
 };
@@ -95,7 +96,7 @@ pub mod mmr;
 
 // §292: las composiciones del digest, reexportadas para que quien ya
 // depende de verify (cli, bin) no gane una dependencia solo por ellas.
-pub use zk_ssl_hash::{epoch_digest_v2, epoch_digest_v3};
+pub use zk_ssl_hash::{epoch_digest_v2, epoch_digest_v3, epoch_digest_v4};
 
 // ⚠️ §279 · **La superficie CRECE otra vez**, y por la misma razon que en
 // §275: el modulo es PRIVADO, asi que un `pub` que no aparezca aqui no
@@ -144,18 +145,33 @@ pub enum VersionCabeza {
     V2 = 2,
     /// §292: la cima y el tamano del MMR entran en el digest.
     V3 = 3,
+    /// RFC-0006 E2 (§414): la raiz y la cuenta de consumos entran en el digest.
+    V4 = 4,
 }
 
 impl VersionCabeza {
     /// Todas, en orden: el conjunto que se enumera y del que se deriva el texto.
-    pub const TODAS: [VersionCabeza; 2] = [VersionCabeza::V2, VersionCabeza::V3];
+    pub const TODAS: [VersionCabeza; 3] = [VersionCabeza::V2, VersionCabeza::V3, VersionCabeza::V4];
     /// El byte que entra en el preambulo.
     pub fn as_u8(self) -> u8 {
         self as u8
     }
-    /// `v2 o v3`, DERIVADO de [`Self::TODAS`]: el texto que los rechazos citan.
+    /// `v2, v3 o v4`, DERIVADO de [`Self::TODAS`]: el texto que los rechazos citan.
     pub fn texto() -> String {
-        let vs: Vec<String> = Self::TODAS.iter().map(|v| format!("v{}", v.as_u8())).collect();
+        Self::texto_de(Self::TODAS.iter().copied())
+    }
+    /// RFC-0006 E2a (§414): si la composicion lleva la pareja del MMR (`mmrRoot`,
+    /// `mmrSize`). Es lo que la extension y el canal de la historia preguntan;
+    /// antes preguntaban «¿es 3?», y una v4 los dejaba ciegos en silencio.
+    pub fn lleva_mmr(self) -> bool {
+        !matches!(self, VersionCabeza::V2)
+    }
+    /// `v3 o v4`: las versiones con pareja del MMR, DERIVADO de [`Self::TODAS`].
+    pub fn texto_con_mmr() -> String {
+        Self::texto_de(Self::TODAS.iter().copied().filter(|v| v.lleva_mmr()))
+    }
+    fn texto_de(vs: impl Iterator<Item = VersionCabeza>) -> String {
+        let vs: Vec<String> = vs.map(|v| format!("v{}", v.as_u8())).collect();
         match vs.split_last() {
             Some((ult, resto)) if !resto.is_empty() => format!("{} o {}", resto.join(", "), ult),
             Some((ult, _)) => ult.clone(),
@@ -1135,20 +1151,31 @@ mod tests {
     }
 
     #[test]
-    fn el_conjunto_es_exactamente_v2_y_v3_y_su_texto_se_deriva() {
-        assert_eq!(crate::VersionCabeza::TODAS.map(|v| v.as_u8()), [2, 3]);
-        assert_eq!(crate::VersionCabeza::texto(), "v2 o v3");
+    fn el_conjunto_es_exactamente_v2_v3_y_v4_y_su_texto_se_deriva() {
+        assert_eq!(crate::VersionCabeza::TODAS.map(|v| v.as_u8()), [2, 3, 4]);
+        assert_eq!(crate::VersionCabeza::texto(), "v2, v3 o v4");
+    }
+
+    /// RFC-0006 E2a (§414): la pareja del MMR la llevan v3 y v4, y el texto
+    /// que la extension y el canal de la historia citan se DERIVA de aqui.
+    #[test]
+    fn la_pareja_del_mmr_la_llevan_v3_y_v4() {
+        assert!(!crate::VersionCabeza::V2.lleva_mmr());
+        assert!(crate::VersionCabeza::V3.lleva_mmr());
+        assert!(crate::VersionCabeza::V4.lleva_mmr());
+        assert_eq!(crate::VersionCabeza::texto_con_mmr(), "v3 o v4");
     }
 
     /// Cinco valores fuera del conjunto, el `0x103` entre ellos: el valor viaja
     /// entero en el error y el texto nombra el conjunto.
     #[test]
     fn una_version_fuera_del_conjunto_se_rechaza_sin_truncar() {
-        for v in [0u64, 1, 4, 0x103, u64::MAX] {
+        let fuera = u64::from(crate::VersionCabeza::TODAS.last().expect("no vacio").as_u8()) + 1;
+        for v in [0u64, 1, fuera, 0x103, u64::MAX] {
             let e = crate::VersionCabeza::try_from(v).expect_err("fuera del conjunto");
             assert_eq!(e.0, v, "el valor tiene que viajar entero");
             let t = e.to_string();
-            assert!(t.contains(&format!("formatVersion {v}")) && t.contains("v2 o v3"), "{t}");
+            assert!(t.contains(&format!("formatVersion {v}")) && t.contains("v2, v3 o v4"), "{t}");
         }
     }
 }

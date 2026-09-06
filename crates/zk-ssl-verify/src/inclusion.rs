@@ -532,6 +532,88 @@ pub fn verificar_inclusion_v3(
     Ok(())
 }
 
+/// El acuse contra una cabeza **v4** (RFC-0006 E2, §414): mismos pasos que
+/// [`verificar_acuse_v3`], pero el digest firmado se recompone ademas con la
+/// raiz y la cuenta de consumos. **La version que la firma declara elige
+/// recomponedor**: el mismo patron que separa v2 de v3 aqui arriba.
+pub fn verificar_acuse_v4(
+    recibo: &ReciboAcuse,
+    mmr_cima: Digest,
+    mmr_t: u64,
+    cons_root: Digest,
+    cons_count: u64,
+    epoch_digest_firmado: Digest,
+) -> Result<(), InclusionError> {
+    if recibo.hermanos.len() != recibo.derecha.len() {
+        return Err(InclusionError::CaminoDescuadrado {
+            hermanos: recibo.hermanos.len(),
+            derecha: recibo.derecha.len(),
+        });
+    }
+    let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
+    if raiz != recibo.acuses_root {
+        return Err(InclusionError::RaizDistinta);
+    }
+    let compuesto = zk_ssl_hash::epoch_digest_v4(
+        recibo.seq,
+        recibo.accounts_root,
+        recibo.pending_root,
+        recibo.frozen_root,
+        recibo.chain_digest,
+        recibo.acuses_root,
+        recibo.n,
+        mmr_cima,
+        mmr_t,
+        cons_root,
+        cons_count,
+    );
+    if compuesto != epoch_digest_firmado {
+        return Err(InclusionError::CabezaDistinta);
+    }
+    Ok(())
+}
+
+/// La inclusion contra una cabeza **v4** (RFC-0006 E2, §414). Ver
+/// [`verificar_inclusion_v3`]: mismos pasos, recomponedor v4.
+pub fn verificar_inclusion_v4(
+    recibo: &ReciboInclusion,
+    acuses_root: Digest,
+    n: u64,
+    mmr_cima: Digest,
+    mmr_t: u64,
+    cons_root: Digest,
+    cons_count: u64,
+    epoch_digest_firmado: Digest,
+) -> Result<(), InclusionError> {
+    if recibo.hermanos.len() != recibo.derecha.len() {
+        return Err(InclusionError::CaminoDescuadrado {
+            hermanos: recibo.hermanos.len(),
+            derecha: recibo.derecha.len(),
+        });
+    }
+    let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
+    if raiz != recibo.accounts_root {
+        return Err(InclusionError::RaizDistinta);
+    }
+    let compuesto = zk_ssl_hash::epoch_digest_v4(
+        recibo.seq,
+        recibo.accounts_root,
+        recibo.pending_root,
+        recibo.frozen_root,
+        recibo.chain_digest,
+        acuses_root,
+        n,
+        mmr_cima,
+        mmr_t,
+        cons_root,
+        cons_count,
+    );
+    if compuesto != epoch_digest_firmado {
+        return Err(InclusionError::CabezaDistinta);
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests_v3 {
     use super::*;
@@ -604,6 +686,88 @@ mod tests_v3 {
                 Err(InclusionError::CabezaDistinta)
             ),
             "un t distinto debe romper la recomposicion"
+        );
+    }
+}
+
+#[cfg(test)]
+mod tests_v4 {
+    use super::*;
+    use winter_math::fields::f64::BaseElement;
+
+    fn d(n: u64) -> Digest {
+        [
+            BaseElement::new(n),
+            BaseElement::new(n + 1),
+            BaseElement::new(n + 2),
+            BaseElement::new(n + 3),
+        ]
+    }
+
+    /// Un acuse contra el digest v4: verifica con el recomponedor v4 y CAE con
+    /// el v3 — elegir mal es CabezaDistinta, como entre v2 y v3.
+    #[test]
+    fn el_acuse_v4_verifica_y_el_recomponedor_v3_lo_rechaza() {
+        let hoja = d(40);
+        let recibo = ReciboAcuse {
+            hoja,
+            hermanos: Vec::new(),
+            derecha: Vec::new(),
+            seq: 9,
+            accounts_root: d(1),
+            pending_root: d(2),
+            frozen_root: d(3),
+            chain_digest: d(4),
+            acuses_root: hoja,
+            n: 5,
+        };
+        let (cima, cons) = (d(60), d(90));
+        let firmado_v4 = zk_ssl_hash::epoch_digest_v4(
+            9, d(1), d(2), d(3), d(4), hoja, 5, cima, 2, cons, 1,
+        );
+        verificar_acuse_v4(&recibo, cima, 2, cons, 1, firmado_v4).expect("v4 debe verificar");
+        assert!(
+            matches!(
+                verificar_acuse_v3(&recibo, cima, 2, firmado_v4),
+                Err(InclusionError::CabezaDistinta)
+            ),
+            "el recomponedor v3 no puede aceptar un digest v4"
+        );
+    }
+
+    #[test]
+    fn la_raiz_y_la_cuenta_de_consumos_no_son_decorativas_en_la_inclusion_v4() {
+        let hoja = d(70);
+        let recibo = ReciboInclusion {
+            indice: 0,
+            hoja,
+            hermanos: Vec::new(),
+            derecha: Vec::new(),
+            seq: 3,
+            accounts_root: hoja,
+            pending_root: d(2),
+            frozen_root: d(3),
+            chain_digest: d(4),
+        };
+        let (cima, cons) = (d(80), d(90));
+        let firmado = zk_ssl_hash::epoch_digest_v4(
+            3, hoja, d(2), d(3), d(4), d(5), 7, cima, 4, cons, 2,
+        );
+        verificar_inclusion_v4(&recibo, d(5), 7, cima, 4, cons, 2, firmado)
+            .expect("v4 debe verificar");
+        assert!(
+            matches!(
+                verificar_inclusion_v4(&recibo, d(5), 7, cima, 4, d(91), 2, firmado),
+                Err(InclusionError::CabezaDistinta)
+            ),
+            "otra raiz de consumos debe romper la recomposicion"
+        );
+        assert!(
+            matches!(
+                verificar_inclusion_v4(&recibo, d(5), 7, cima, 4, cons, 3, firmado),
+                Err(InclusionError::CabezaDistinta)
+            ),
+            "otra cuenta de consumos debe romper la recomposicion"
         );
     }
 }

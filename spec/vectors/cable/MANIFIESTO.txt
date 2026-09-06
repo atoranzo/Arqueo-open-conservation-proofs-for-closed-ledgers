@@ -3,9 +3,10 @@
 # Derivados por mutacion de la cabeza real de spec/vectors/paquete/posicion-v2.json (191176bbe7146627); jamas se reescriben (regla 2 del PROCESO).
 # El consumidor es tools/cable_respuesta.sh -> zk-ssl-cli witness --respuesta: clase y texto son los que el testigo anota en vivo.
 positivo-cabeza.json|0|VERDE: nueva
-rechazo-formatVersion-4.json|1|no-verifica · formatVersion 4: el testigo recompone cabezas v2 o v3
-rechazo-formatVersion-1.json|1|no-verifica · formatVersion 1: el testigo recompone cabezas v2 o v3
-rechazo-formatVersion-0x103.json|1|no-verifica · formatVersion 259: el testigo recompone cabezas v2 o v3
+rechazo-formatVersion-4.json|1|no-verifica · la firma es VALIDA pero de otro mensaje (preambulo esperado 50 bytes, recibido 50). Verificar sin comparar no prueba nada.
+rechazo-formatVersion-1.json|1|no-verifica · formatVersion 1: el testigo recompone cabezas v2, v3 o v4
+rechazo-formatVersion-0x103.json|1|no-verifica · formatVersion 259: el testigo recompone cabezas v2, v3 o v4
+rechazo-formatVersion-5.json|1|no-verifica · formatVersion 5: el testigo recompone cabezas v2, v3 o v4
 rechazo-recomposicion.json|1|no-verifica · los campos NO recomponen el epochDigest firmado (v3)
 rechazo-firma.json|1|no-verifica · la firma no verifica
 rechazo-forma-del-cable.json|1|no-verifica · forma del cable

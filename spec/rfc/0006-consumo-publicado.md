@@ -11,7 +11,7 @@
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
 | E1 — el árbol y la raíz en reposo | el conjunto de consumos como árbol disperso de la capa, su raíz `root:cons` guardada y comprobada al abrir (la sexta raíz en reposo), el rechazo de un consumo repetido, la instantánea que lo transporta, y los testigos negativos que lo falsan | NO | sellada — §413 |
-| E2 — la cabeza v4 | la composición `epoch_digest_v4` que mete la raíz y la cuenta de consumos bajo la firma; el conjunto aceptado pasa a {2, 3, 4}; el cable sirve los dos campos; vectores nuevos bajo su versión | **SÍ** (`zkssl/0.3` → `0.4`) | propuesta |
+| E2 — la cabeza v4 | la composición `epoch_digest_v4` que mete la raíz y la cuenta de consumos bajo la firma; el conjunto aceptado pasa a {2, 3, 4}; el cable sirve los dos campos; vectores nuevos bajo su versión | **SÍ** (`zkssl/0.3` → `0.4`) | E2a sellada — §414 (el núcleo y el mando aceptan v4); E2b propuesta (el nodo la emite y el cable sube) |
 | E3 — la prueba portable | una forma nueva del paquete de evidencia que prueba que un consumo está bajo la raíz de una cabeza firmada y no lo estaba bajo la de una cabeza anterior; el mando la verifica sin nodo | NO | propuesta |
 | E4 — el banco de dos libros | dos nodos, dos operadores, el mismo consumo publicado en los dos, y un lector que con las dos cabezas firmadas lo detecta; y el negativo: con una sola cabeza no hay nada que detectar | NO | propuesta |
 | E5 — el atado en circuito | que el consumo quede restringido en el AIR a la operación que lo consume, con `nullifier_tree.rs` como pieza de partida. Fuera de este RFC: hoy no se puede escribir el testigo que lo falsaría sin E1 | NO | fuera del alcance |
@@ -188,6 +188,19 @@ escriba su testigo, es v5. Reversible en el §412.
 **Regla 2 del PROCESO: los vectores viejos jamás se reescriben.** `zkssl-0.1.json`,
 `zkssl-0.2.json`, `zkssl-0.3.json`, los 66 ficheros de `spec/vectors/paquete/`, los 11 de
 `spec/vectors/cable/` y los 18 de `spec/vectors/nucleo/` se conservan sin una modificación.
+
+> **Corrección (§414, E2a).** Dos frases de este documento se midieron antes de sellar E2a y
+> salieron cortas; se corrigen aquí, sin reescribirlas (regla del §247). **(1)** La `k` de D-3 se
+> llama en el árbol `cons_count` (`consumo.rs`, junto a `cons_root`), y en el cable `consCount` junto
+> a `consRoot`, por el molde de `acusesRoot`/`n` (v2) y `mmrRoot`/`mmrSize` (v3): `k` ya nombra la
+> política de cofirmas del testigo, y un nombre significa una sola cosa. **(2)** «Un consumidor `0.3`
+> sigue rechazando `formatVersion: 4`» no lo falsa nadie: el arnés corre los rechazos del cable contra
+> el binario de HEAD, y un `.json` sin entrada en el manifiesto es rojo (`tools/conformidad.sh`). Los
+> dos `rechazo-formatVersion-4.json` no se reescriben y siguen listados: desde E2a se rechazan **por
+> otra causa**, con el texto medido en vivo —el mando, por los campos que faltan (`falta seq`); el
+> testigo, por la firma, cuyo preámbulo lleva el byte 3 y no el 4 que la cabeza declara—; el
+> fuera-del-conjunto vive en `rechazo-formatVersion-5.json`, derivado como `TODAS.max + 1`. E2a es
+> aditivo: `VERSION_FORMATO` sigue en 3, el nodo no emite v4 y `zkssl/0.3` no se mueve; eso es E2b.
 
 ### Por qué entra por RFC
 

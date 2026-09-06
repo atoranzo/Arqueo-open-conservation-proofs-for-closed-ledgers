@@ -26,7 +26,8 @@ use std::path::PathBuf;
 use serde_json::{json, Value};
 use zk_ssl_hash::{
     acuse_digest, as_digest, digest_from_bytes, digest_to_bytes, element_from_bytes, embeber,
-    epoch_digest, epoch_digest_v2, epoch_digest_v3, mmr_hoja, mmr_nodo, native_leaf,
+    epoch_digest, epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, mmr_hoja, mmr_nodo,
+    native_leaf,
     native_leaf_salted, native_merge, path_root, Digest,
 };
 use zk_ssl_verify::{acuses::hoja_de_acuse, mmr::cima, preambulo, preambulo_cofirma};
@@ -110,6 +111,12 @@ fn casos() -> Vec<(&'static str, Value)> {
                          "frozen_root": dg(&c), "chain_digest": dg(&d), "acuses_root": dg(&e),
                          "n": q(0x11), "cima_mmr": dg(&f), "t": q(0x12)},
             "salida": dg(&epoch_digest_v3(0x10, a, b, c, d, e, 0x11, f, 0x12))})),
+        ("epoch_digest_v4", json!({"fn": "epoch_digest_v4",
+            "entradas": {"seq": q(0x10), "accounts_root": dg(&a), "pending_root": dg(&b),
+                         "frozen_root": dg(&c), "chain_digest": dg(&d), "acuses_root": dg(&e),
+                         "n": q(0x11), "cima_mmr": dg(&f), "t": q(0x12), "cons_root": dg(&b),
+                         "cons_count": q(0x13)},
+            "salida": dg(&epoch_digest_v4(0x10, a, b, c, d, e, 0x11, f, 0x12, b, 0x13))})),
         ("acuse_digest", json!({"fn": "acuse_digest",
             "entradas": {"hash_prueba": dg(&a), "epoca": q(2), "n": q(3)},
             "salida": dg(&acuse_digest(a, 2, 3))})),

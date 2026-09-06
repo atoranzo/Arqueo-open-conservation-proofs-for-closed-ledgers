@@ -30920,3 +30920,69 @@ pin y su historia). Los `.md` LINEA-NEUTRALES: `PRINCIPIOS.md` :136 y :354-358, 
 correccion bajo D-2) y la fila E1 pasa a sellada. Nace `consumo.rs`; `lib.rs`, `log.rs`, `iso.rs`,
 `persistence.rs`, `snapshot.rs` y `two_phase.rs` crecen; `zk-ssl-cli/src/commands.rs` +1 (el pin del
 testigo, 95, no se mueve: es un brazo de texto). Documentos `.md` versionados: 68.
+
+## §414 — RFC-0006 E2a: el núcleo y el mando aceptan la cabeza v4 (`epoch_digest_v4`, `V4`, `lleva_mmr`)
+
+**Qué.** La primera mitad de E2, ADITIVA y sin mover el cable. Nace `epoch_digest_v4` en
+`zk-ssl-hash` —`v4 = merge(v3, merge(cons_root, as_digest(cons_count)))`, el molde de §275 y
+§292 otra vez, génesis la raíz del árbol de consumos vacío y `cons_count = 0`—, con su KAT
+(`spec/vectors/nucleo/epoch_digest_v4.json`, el 19). `VersionCabeza` gana `V4` y el conjunto
+pasa a {2, 3, 4}; `texto()` deriva «v2, v3 o v4». Nace `lleva_mmr()` —verdadero para v3 y v4— y
+`texto_con_mmr()` («v3 o v4»): la extensión del mando y `al_llegar_cabeza` del testigo dejan de
+preguntar «¿es 3?». Nacen `verificar_acuse_v4` y `verificar_inclusion_v4`, alcanzables por el
+`pub use`. El mando recompone y verifica una cabeza v4 (1/3 y 3/3) por `match` exhaustivo sobre
+`VersionCabeza`; el testigo recompone la v4 en `recomponer`. `VERSION_FORMATO` sigue en 3: el
+nodo no emite v4, `zkssl/0.3` no se mueve y el triple gate del canon sigue en 0.3 (E2b).
+
+**Por qué así.** Tres decisiones delegadas, tomadas con la constitución y REVERSIBLES aquí.
+**D-5**, los vectores `-4`: `tools/conformidad.sh` pone rojo un `.json` sin entrada, así que no
+pueden quedar sin listar; no se reescriben (regla 2 del PROCESO) y desde hoy son rechazos por
+OTRA causa, con el texto medido en vivo por el propio bloque: el mando por los campos que faltan
+(`falta seq`), el testigo por la firma —`verificar` va antes que `recomponer` desde el §406, y el
+preámbulo firmado lleva el byte 3, no el 4 que la cabeza declara (el texto es el del punto 82)—;
+el fuera-del-conjunto vive en `rechazo-formatVersion-5.json`, derivado como
+`TODAS.max + 1` por mutación de la cabeza real, y el RFC lo dice con párrafo marcado (§247).
+**D-6**, `lleva_mmr()`: un solo productor de «lleva la pareja del MMR», porque «¿es 3?» en
+`witness.rs:316` y en `verify/main.rs:348` habría dejado al testigo ciego a la consistencia y a
+la extensión rechazando v4, y ninguno de los dos lo habría dicho el compilador. **D-7**, dos
+sellos: este, aditivo, y E2b con el nodo, el cable, `zkssl-0.4.json` y la prosa de la versión.
+
+**Lo que la medición cambió.** El primer BLOQUE-E2a-r2 murió en el sondeo y restauró limpio:
+predije que el testigo rechazaría el `-4` por `consRoot`, y lo rechaza por la firma, porque el
+orden es firma y luego recomposición; el rechazo se lee del test que lo documenta, no se
+predice. El r3 murió con todo verde hasta el canon por un gate ABSOLUTO sobre
+`tools/__pycache__`, que ya vive ignorado en el árbol, y el r4 con el canon ya VERDE (392 s) por
+contar los ignorados en vez de listarlos —el canon deja artefactos ignorados propios—: la
+PRECISION 47, reincidida dos veces; la pureza se gatea por lista, y sólo un `__pycache__` nuevo
+es rojo. El 3/3 del mando elegía recomponedor por un `match` sobre un
+`Option` (`main.rs:240-245`): una v4 habría verificado el acuse con el recomponedor v3 en
+silencio. Ahora las dos parejas las decide un `match` exhaustivo sobre `VersionCabeza`. El
+censo de NUCLEO cuenta los métodos: cinco filas nuevas (`epoch_digest_v4`, `lleva_mmr`,
+`texto_con_mmr`, `verificar_acuse_v4`, `verificar_inclusion_v4`); verify 46 → 50, hash 34 → 35.
+La `k` del RFC ya nombraba la política de cofirmas: en el árbol es `cons_count`.
+
+**Testigos, enseñados ROJOS en vivo antes del arreglo.** `una_cabeza_v4_lleva_historia_y_ancla_la_pareja`
+sobre el `witness.rs` PRE da EXACTAMENTE 1 FAILED (la v4 era `NoAplica`); con el arreglo, verde.
+`v4_no_es_v3_ni_con_la_pareja_de_genesis` y `la_raiz_y_la_cuenta_de_consumos_mueven_el_digest_cada_una_por_su_lado`
+(hash); `el_acuse_v4_verifica_y_el_recomponedor_v3_lo_rechaza` y
+`la_raiz_y_la_cuenta_de_consumos_no_son_decorativas_en_la_inclusion_v4` (inclusion);
+`la_pareja_del_mmr_la_llevan_v3_y_v4` (verify). Los tres tests que tecleaban `4` como
+fuera-del-conjunto lo derivan ahora de `TODAS`. `check_nucleo` sobre una copia con el código y
+sin las filas: R1 por cada una de las cinco y R4 (46/34 → 50/35); con las filas, verde. Los dos
+manifiestos con el binario PRE: exactamente los `-4` y los `-5` rojos; con el POST, verdes.
+
+**Medido.** Pines hash 24 → 26, verificador 79 → 82, testigo 95 → 96 (`--list` PRE y POST
+nombre a nombre: +2, +3 con un renombrado, +1); sumas 1025/1162/1176 → 1031/1168/1182;
+`check_tests` 1177 → 1183; `check_modulos` 120; `check_cifras` fase A roja nombrando las siete
+cifras (los cinco TOTAL y el desglose partido de PRINCIPIOS) y fase B verde; `check_nucleo` 50 +
+35 = 85 filas; el KAT 19 se emite a un directorio aparte y los 18 anteriores salen byte a byte
+iguales antes de copiar el nuevo; canon `--sello` rc 0 (los segundos, en la salida del bloque).
+Sondeo del 5 con el POST: el mando «formatVersion 5: el paquete v1 empaqueta cabezas v2, v3 o
+v4», el testigo «no-verifica · formatVersion 5: el testigo recompone cabezas v2, v3 o v4».
+
+**Lo que queda vivo.** E2b: `EpochHead` +2 campos y `digest()` a v4 (`log.rs:668`), los dos
+DTO +2 (`wire:658` dice «13» campos), `VERSION_FORMATO` 4, `protocolVersion` 0.4,
+`zkssl-0.4.json` con su foto derivada y el giro del triple gate (§354), la hermana «Formato v4»
+en `RPC.md:445`, las 13 líneas de prosa que dicen 0.3 vigente, `PAQUETE.md:103` (las claves de
+la cabeza) y el KAT del preámbulo v4. `PAPER.md:37-38` sigue diciendo 1138/1152 (punto 56, sin
+compuerta). `witness.rs:4698` narra en pasado el {2, 3}: historia, no se toca.

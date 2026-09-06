@@ -60,8 +60,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 46 elementos alcanzables en `zk-ssl-verify` y 34 `pub` en `zk-ssl-hash`
-(LIBRO 2, NÚCLEO 56, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 50 elementos alcanzables en `zk-ssl-verify` y 35 `pub` en `zk-ssl-hash`
+(LIBRO 2, NÚCLEO 61, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
 reexportaciones de `zk-ssl-hash` no se cuentan dos veces: un elemento, una fila. En `zk-ssl-hash`,
@@ -84,6 +84,7 @@ real de sus llaves, no por la primera marca.
 | `epoch_digest` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
 | `epoch_digest_v2` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
 | `epoch_digest_v3` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
+| `epoch_digest_v4` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
 | `ANCHO_INDICE` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
 | `COFIRMA_VERSION` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
 | `COFIRMA_V_MAX` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
@@ -102,9 +103,11 @@ real de sus llaves, no por la primera marca.
 | `as_u8` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `clave_desde_bytes` | `verify/lib.rs` | REFERENCIA | FIRMA | `fn` |
 | `indice_de_firma` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
+| `lleva_mmr` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `preambulo` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `preambulo_cofirma` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `texto` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
+| `texto_con_mmr` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `verificar_cabeza` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `verificar_cofirma` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `DOMINIO_ACUSE` | `hash/lib.rs` | NÚCLEO | ACUSES | `const` |
@@ -116,6 +119,7 @@ real de sus llaves, no por la primera marca.
 | `ReciboAcuse` | `verify/inclusion.rs` | NÚCLEO | ACUSES | `struct` |
 | `verificar_acuse` | `verify/inclusion.rs` | NÚCLEO | ACUSES | `fn` |
 | `verificar_acuse_v3` | `verify/inclusion.rs` | NÚCLEO | ACUSES | `fn` |
+| `verificar_acuse_v4` | `verify/inclusion.rs` | NÚCLEO | ACUSES | `fn` |
 | `DOMINIO_MMR_HOJA` | `hash/lib.rs` | NÚCLEO | MMR | `const` |
 | `DOMINIO_MMR_NODO` | `hash/lib.rs` | NÚCLEO | MMR | `const` |
 | `mmr_hoja` | `hash/lib.rs` | NÚCLEO | MMR | `fn` |
@@ -133,6 +137,7 @@ real de sus llaves, no por la primera marca.
 | `verificar_inclusion` | `verify/inclusion.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `verificar_inclusion_v2` | `verify/inclusion.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `verificar_inclusion_v3` | `verify/inclusion.rs` | NÚCLEO | INCLUSIÓN | `fn` |
+| `verificar_inclusion_v4` | `verify/inclusion.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `DOMINIO_META_PENDIENTE` | `hash/lib.rs` | LIBRO | LIBRO | `const` |
 | `meta_pendiente_hoja` | `hash/lib.rs` | LIBRO | LIBRO | `fn` |
 | `COMPROMISO_AUSENTE` | `hash/lib.rs` | REGISTRO | REGISTRO | `const` |
@@ -156,7 +161,7 @@ real de sus llaves, no por la primera marca.
 - **HASH** — la permutación y el merge 2-a-1, cómo se embebe un `u64`, cómo se sube un camino y cómo
   un digest se escribe en bytes: es la frontera entre el JSON y los bytes. Dos implementaciones que
   difieran aquí no coinciden en nada.
-- **CABEZA** — las tres composiciones del digest de la cabeza (v1, v2, v3). Lo custodiado no caduca
+- **CABEZA** — las cuatro composiciones del digest de la cabeza (v1, v2, v3, v4). Lo custodiado no caduca
   (§290): una composición vieja tiene que poder recomponerse siempre.
 - **FIRMA** — el esquema (`XmssMtSha2_40_8_256`), los dos dominios, el byte de versión y su conjunto,
   los dos preámbulos y el índice embebido en la firma. Son los bytes exactos bajo la firma; cambiar
@@ -196,6 +201,8 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
   hoja con el hermano a la izquierda si `is_right`; `epoch_digest = merge(merge(merge(as_digest(seq),
   accounts), merge(pending, frozen)), chain)`; `v2 = merge(v1, merge(acuses_root, as_digest(n)))`;
   `v3 = merge(v2, merge(cima, as_digest(t)))`, génesis `as_digest(0)` y `t = 0`;
+  `v4 = merge(v3, merge(cons_root, as_digest(cons_count)))` (RFC-0006 E2a, §414), génesis la raíz
+  del árbol de consumos vacío y `cons_count = 0`;
   `acuse_digest = merge(as_digest(ACUSE_V1), merge(hash_prueba, merge(as_digest(epoca),
   as_digest(n))))`; `mmr_hoja = merge(as_digest(MMRHOJA1), cabeza)`; `mmr_nodo =
   merge(as_digest(MMRNODO1), merge(izq, der))`; la cima es el árbol de Merkle con el corte en
@@ -215,6 +222,8 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §414 — `epoch_digest_v4`, la variante `V4` y `lleva_mmr`: el núcleo y el mando aceptan la cabeza
+  v4 (RFC-0006, E2a); el KAT de `epoch_digest_v4`. Cinco filas nuevas.
 - §411 — la sección 6 y los KAT de `spec/vectors/nucleo/`: los bytes, fijados (RFC-0005, E5).
 - §407 — nace este documento (RFC-0005, E1) con su atado `tools/check_nucleo.py` en el canon.
 - §406 — `VersionCabeza`, el único productor del conjunto de versiones (E2).

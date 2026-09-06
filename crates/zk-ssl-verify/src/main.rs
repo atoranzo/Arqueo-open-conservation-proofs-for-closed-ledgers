@@ -54,7 +54,7 @@ use zk_ssl_verify::{
     acuses, verificar_acuse, verificar_acuse_v3, indice_de_firma, verificar_cabeza, verificar_cofirma,
     CabezaFirmada, COFIRMA_V_MAX, ReciboAcuse, VersionCabeza,
 };
-use zk_ssl_hash::{digest_from_bytes, epoch_digest_v2, epoch_digest_v3, Digest};
+use zk_ssl_hash::{digest_from_bytes, epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, Digest};
 
 /// Punto unico de forma de error del binario (hoy identidad; el dia que
 /// haga falta contexto comun, se anade AQUI y no en veinte sitios).
@@ -144,15 +144,27 @@ fn correr(ruta: &str) -> Result<(), String> {
     let epoch_digest = digest_de(c, "epochDigest")?;
 
     // 1 · el digest NO se cree: se recompone — y LA VERSION ELIGE RECOMPONEDOR
+    //     (RFC-0006 E2a, §414: cada pareja la decide un `match` EXHAUSTIVO sobre
+    //     `VersionCabeza`, y el compilador marca el brazo que falte; el 3/3 de
+    //     abajo elegia por un `Option`, y una v4 habria pasado por v3 en silencio).
     let mmr = match version {
-        VersionCabeza::V3 => Some((digest_de(c, "mmrRoot")?, u64_de(c, "mmrSize")?)),
         VersionCabeza::V2 => None,
+        VersionCabeza::V3 | VersionCabeza::V4 => {
+            Some((digest_de(c, "mmrRoot")?, u64_de(c, "mmrSize")?))
+        }
     };
-    let compuesto = match mmr {
-        None => epoch_digest_v2(seq, accounts, pending, frozen, chain, acuses_root, n),
-        Some((cima, t)) => {
+    let cons = match version {
+        VersionCabeza::V2 | VersionCabeza::V3 => None,
+        VersionCabeza::V4 => Some((digest_de(c, "consRoot")?, u64_de(c, "consCount")?)),
+    };
+    let compuesto = match (mmr, cons) {
+        (None, _) => epoch_digest_v2(seq, accounts, pending, frozen, chain, acuses_root, n),
+        (Some((cima, t)), None) => {
             epoch_digest_v3(seq, accounts, pending, frozen, chain, acuses_root, n, cima, t)
         }
+        (Some((cima, t)), Some((raiz, k))) => epoch_digest_v4(
+            seq, accounts, pending, frozen, chain, acuses_root, n, cima, t, raiz, k,
+        ),
     };
     if compuesto != epoch_digest {
         return Err(err(
@@ -237,11 +249,15 @@ fn correr(ruta: &str) -> Result<(), String> {
                 acuses_root,
                 n,
             };
-            match mmr {
-                None => verificar_acuse(&recibo, epoch_digest)
+            match (mmr, cons) {
+                (None, _) => verificar_acuse(&recibo, epoch_digest)
                     .map_err(|e| err(format!("acuse: {e:?}")))?,
-                Some((cima, t)) => verificar_acuse_v3(&recibo, cima, t, epoch_digest)
+                (Some((cima, t)), None) => verificar_acuse_v3(&recibo, cima, t, epoch_digest)
                     .map_err(|e| err(format!("acuse: {e:?}")))?,
+                (Some((cima, t)), Some((raiz, k))) => {
+                    zk_ssl_verify::verificar_acuse_v4(&recibo, cima, t, raiz, k, epoch_digest)
+                        .map_err(|e| err(format!("acuse: {e:?}")))?
+                }
             }
             println!("3/3 el acuse sube hasta la raiz firmada: la entrada {seq_a} queda demostrada");
         }
@@ -344,25 +360,44 @@ fn cabeza_v3_verificada(c: &serde_json::Value, cual: &str) -> Result<(Digest, u6
     if c.get("available").and_then(|x| x.as_bool()) != Some(true) {
         return Err(err(format!("{cual}: la cabeza no era available:true")));
     }
+    // RFC-0006 E2a (§414): la extension exige la pareja del MMR, que llevan v3 y
+    // v4; el conjunto lo produce `VersionCabeza`, el texto se DERIVA de el y el
+    // compilador marca el brazo que falte. Antes preguntaba «¿es 3?».
     let version = u64_de(c, "formatVersion")?;
-    if version != 3 {
-        return Err(err(format!(
-            "{cual}: formatVersion {version} — la extension exige cabezas v3: \
-             una v2 no lleva la pareja del MMR que extender"
-        )));
-    }
     let seq = u64_de(c, "seq")?;
-    let compuesto = epoch_digest_v3(
-        seq,
-        digest_de(c, "accountsRoot")?,
-        digest_de(c, "pendingRoot")?,
-        digest_de(c, "frozenRoot")?,
-        digest_de(c, "chainDigest")?,
-        digest_de(c, "acusesRoot")?,
-        u64_de(c, "n")?,
-        digest_de(c, "mmrRoot")?,
-        u64_de(c, "mmrSize")?,
-    );
+    let compuesto = match VersionCabeza::try_from(version) {
+        Ok(VersionCabeza::V3) => epoch_digest_v3(
+            seq,
+            digest_de(c, "accountsRoot")?,
+            digest_de(c, "pendingRoot")?,
+            digest_de(c, "frozenRoot")?,
+            digest_de(c, "chainDigest")?,
+            digest_de(c, "acusesRoot")?,
+            u64_de(c, "n")?,
+            digest_de(c, "mmrRoot")?,
+            u64_de(c, "mmrSize")?,
+        ),
+        Ok(VersionCabeza::V4) => epoch_digest_v4(
+            seq,
+            digest_de(c, "accountsRoot")?,
+            digest_de(c, "pendingRoot")?,
+            digest_de(c, "frozenRoot")?,
+            digest_de(c, "chainDigest")?,
+            digest_de(c, "acusesRoot")?,
+            u64_de(c, "n")?,
+            digest_de(c, "mmrRoot")?,
+            u64_de(c, "mmrSize")?,
+            digest_de(c, "consRoot")?,
+            u64_de(c, "consCount")?,
+        ),
+        Ok(VersionCabeza::V2) | Err(_) => {
+            return Err(err(format!(
+                "{cual}: formatVersion {version} — la extension exige cabezas {}: \
+                 una v2 no lleva la pareja del MMR que extender",
+                VersionCabeza::texto_con_mmr()
+            )))
+        }
+    };
     if compuesto != digest_de(c, "epochDigest")? {
         return Err(err(format!(
             "{cual}: los campos NO recomponen su epochDigest — adulterada o inventada"
@@ -553,7 +588,8 @@ mod tests {
     #[test]
     fn el_rechazo_por_version_consume_el_conjunto_y_conserva_su_texto() {
         let dir = std::env::temp_dir();
-        for v in ["0x1", "0x4", "0x103"] {
+        let fuera = format!("{:#x}", u64::from(VersionCabeza::TODAS.last().expect("no vacio").as_u8()) + 1);
+        for v in ["0x1", fuera.as_str(), "0x103"] {
             let n = u64::from_str_radix(v.trim_start_matches("0x"), 16).unwrap();
             let ruta = dir.join(format!("zk-ssl-verify-406-{n}.json"));
             let p = json!({ "v": 1, "cabeza": { "available": true, "formatVersion": v } });

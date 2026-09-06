@@ -313,7 +313,14 @@ fn juzgar(p: &Pendiente, cima_nueva: &str, t_nueva: u64) -> bool {
 ///
 /// `None` = nada que decir del canal de la historia esta vuelta.
 pub fn al_llegar_cabeza(m: &mut Memoria, v: &Value) -> Option<Consistencia> {
-    if leer_q(&v["formatVersion"]).unwrap_or(0) != 3 {
+    // RFC-0006 E2a (§414): la historia la llevan las versiones con pareja del
+    // MMR (v3, v4), y lo dice el productor unico; «¿es 3?» dejaba a una v4
+    // ciega en silencio, anotando `no-aplica` vuelta tras vuelta.
+    let lleva_mmr = leer_q(&v["formatVersion"])
+        .ok()
+        .and_then(|q| VersionCabeza::try_from(q).ok())
+        .map_or(false, VersionCabeza::lleva_mmr);
+    if !lleva_mmr {
         return Some(Consistencia::NoAplica);
     }
     let cima = v["mmrRoot"].as_str()?.to_string();
@@ -878,6 +885,19 @@ fn recomponer(v: &Value, firmado: &[u8; 32]) -> Result<(), String> {
             n,
             dg!("mmrRoot"),
             leer_q(&v["mmrSize"])?,
+        ),
+        VersionCabeza::V4 => zk_ssl_verify::epoch_digest_v4(
+            seq,
+            accounts,
+            pending,
+            frozen,
+            chain,
+            acuses,
+            n,
+            dg!("mmrRoot"),
+            leer_q(&v["mmrSize"])?,
+            dg!("consRoot"),
+            leer_q(&v["consCount"])?,
         ),
         VersionCabeza::V2 => {
             zk_ssl_verify::epoch_digest_v2(seq, accounts, pending, frozen, chain, acuses, n)
@@ -3041,6 +3061,19 @@ mod tests {
         assert!(m.pareja().is_none(), "una v2 NO puede anclar pareja");
     }
 
+    /// RFC-0006 E2a (§414): una v4 lleva la pareja del MMR y ancla igual que
+    /// una v3. Antes `al_llegar_cabeza` preguntaba «¿es 3?», y una v4 era
+    /// `NoAplica` en silencio: el testigo se quedaba ciego a la consistencia.
+    #[test]
+    fn una_cabeza_v4_lleva_historia_y_ancla_la_pareja() {
+        let mut m = Memoria::nueva();
+        let mut c = cabeza_v3(&cima(1), 4);
+        c["formatVersion"] = json!("0x4");
+        assert_eq!(al_llegar_cabeza(&mut m, &c), Some(Consistencia::Anclando { t: 4 }));
+        let c1 = cima(1);
+        assert_eq!(m.pareja(), Some((c1.as_str(), 4)));
+    }
+
     #[test]
     fn con_pareja_y_sin_pendiente_el_canal_calla_y_el_bucle_pide_camino() {
         let mut m = Memoria::nueva();
@@ -4698,12 +4731,13 @@ mod tests {
     /// {2, 3}: v1, v4, y 0x103, que `as u8` trunca a 3 para la firma.
     #[test]
     fn una_cabeza_de_version_desconocida_no_se_cree() {
-        for v in ["0x1", "0x4", "0x103"] {
+        let fuera = format!("{:#x}", u64::from(VersionCabeza::TODAS.last().expect("no vacio").as_u8()) + 1);
+        for v in ["0x1", fuera.as_str(), "0x103"] {
             let mut c = cabeza_firmada_completa();
             c["formatVersion"] = json!(v);
             let e = recomponer(&c, &[0x11u8; 32]).expect_err(v);
             assert!(e.contains("formatVersion"), "{v}: {e}");
-            assert!(e.contains("v2 o v3"), "{v}: {e}");
+            assert!(e.contains("v2, v3 o v4"), "{v}: {e}");
         }
     }
 
@@ -4712,11 +4746,12 @@ mod tests {
     /// buena lo que falla es la firma de mentira: la puerta esta en su orden.
     #[test]
     fn verificar_rechaza_por_version_antes_que_por_firma() {
-        for v in ["0x1", "0x4", "0x103"] {
+        let fuera = format!("{:#x}", u64::from(VersionCabeza::TODAS.last().expect("no vacio").as_u8()) + 1);
+        for v in ["0x1", fuera.as_str(), "0x103"] {
             let mut c = cabeza_firmada_completa();
             c["formatVersion"] = json!(v);
             let e = verificar(&c).expect_err(v);
-            assert!(e.contains("formatVersion") && e.contains("v2 o v3"), "{v}: {e}");
+            assert!(e.contains("formatVersion") && e.contains("v2, v3 o v4"), "{v}: {e}");
         }
         let e = verificar(&cabeza_firmada_completa()).expect_err("firma de mentira");
         assert!(!e.contains("formatVersion"), "{e}");

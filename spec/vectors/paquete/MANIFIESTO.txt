@@ -18,8 +18,9 @@ rechazo-tipo-desconocido.json|1|falta cabeza
 rechazo-cabeza-no-available.json|1|la cabeza empaquetada no era available:true
 rechazo-cabeza-sin-available.json|1|la cabeza empaquetada no era available:true
 rechazo-formatVersion-ausente.json|1|falta formatVersion o no es cadena 0x
-rechazo-formatVersion-1.json|1|formatVersion 1: el paquete v1 empaqueta cabezas v2 o v3
-rechazo-formatVersion-4.json|1|formatVersion 4: el paquete v1 empaqueta cabezas v2 o v3
+rechazo-formatVersion-1.json|1|formatVersion 1: el paquete v1 empaqueta cabezas v2, v3 o v4
+rechazo-formatVersion-4.json|1|falta seq o no es cadena 0x
+rechazo-formatVersion-5.json|1|formatVersion 5: el paquete v1 empaqueta cabezas v2, v3 o v4
 rechazo-seq-ausente.json|1|falta seq o no es cadena 0x
 rechazo-seq-sin-0x.json|1|seq sin 0x
 rechazo-seq-no-hex.json|1|seq: 

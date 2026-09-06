@@ -271,6 +271,53 @@ pub fn epoch_digest_v3(
     )
 }
 
+/// **v4 (RFC-0006, E2; §414): la envoltura de v3, otra vez** — el molde de
+/// §275 y §292:
+///
+/// ```text
+///   v4 = merge( epoch_digest_v3(los nueve), merge(cons_root, as_digest(cons_count)) )
+/// ```
+///
+/// `cons_root` es la raiz del arbol de consumos publicados (RFC-0006 E1,
+/// §413) y `cons_count` cuantos consumos hay bajo ella. Con esto **la cabeza
+/// firmada acredita el conjunto de consumos**: un lector con dos cabezas
+/// firmadas puede probar que un consumo esta bajo una y no bajo la otra (E3).
+///
+/// ⚠️ **Genesis, DECLARADO**: la PRIMERA cabeza compone con la raiz del arbol
+/// de consumos VACIO (la que E1 da a un libro sin consumos) y `cons_count = 0`.
+///
+/// ⚠️ Sin tag de dominio, por la razon de `epoch_digest`: el **byte de
+/// version** del preambulo (3 → 4) es lo que separa las composiciones (§236).
+/// En E2a el nucleo y el mando la ACEPTAN; el nodo la emite en E2b.
+pub fn epoch_digest_v4(
+    seq: u64,
+    accounts_root: Digest,
+    pending_root: Digest,
+    frozen_root: Digest,
+    chain_digest: Digest,
+    acuses_root: Digest,
+    n: u64,
+    cima_mmr: Digest,
+    t: u64,
+    cons_root: Digest,
+    cons_count: u64,
+) -> Digest {
+    native_merge(
+        epoch_digest_v3(
+            seq,
+            accounts_root,
+            pending_root,
+            frozen_root,
+            chain_digest,
+            acuses_root,
+            n,
+            cima_mmr,
+            t,
+        ),
+        native_merge(cons_root, as_digest(cons_count)),
+    )
+}
+
 #[cfg(test)]
 mod tests_digest_v3 {
     use super::*;
@@ -292,6 +339,30 @@ mod tests_digest_v3 {
         let base = epoch_digest_v3(1, d, d, d, d, d, 5, as_digest(0), 0);
         assert_ne!(base, epoch_digest_v3(1, d, d, d, d, d, 5, as_digest(9), 0));
         assert_ne!(base, epoch_digest_v3(1, d, d, d, d, d, 5, as_digest(0), 1));
+    }
+}
+
+#[cfg(test)]
+mod tests_digest_v4 {
+    use super::*;
+
+    #[test]
+    fn v4_no_es_v3_ni_con_la_pareja_de_genesis() {
+        // La envoltura SIEMPRE separa: hasta el genesis (raiz vacia, 0)
+        // compone distinto de v3 — si no, una cabeza v4 recien nacida seria
+        // confundible con una v3.
+        let d = as_digest(7);
+        let v3 = epoch_digest_v3(1, d, d, d, d, d, 5, as_digest(0), 0);
+        let v4 = epoch_digest_v4(1, d, d, d, d, d, 5, as_digest(0), 0, as_digest(0), 0);
+        assert_ne!(v3, v4);
+    }
+
+    #[test]
+    fn la_raiz_y_la_cuenta_de_consumos_mueven_el_digest_cada_una_por_su_lado() {
+        let d = as_digest(7);
+        let base = epoch_digest_v4(1, d, d, d, d, d, 5, as_digest(0), 0, as_digest(0), 0);
+        assert_ne!(base, epoch_digest_v4(1, d, d, d, d, d, 5, as_digest(0), 0, as_digest(9), 0));
+        assert_ne!(base, epoch_digest_v4(1, d, d, d, d, d, 5, as_digest(0), 0, as_digest(0), 1));
     }
 }
 
