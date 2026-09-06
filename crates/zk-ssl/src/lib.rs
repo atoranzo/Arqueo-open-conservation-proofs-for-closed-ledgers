@@ -104,6 +104,7 @@ use crate::log::{OpKind, TransitionLog};
 mod burn;
 mod mint;
 mod freeze;
+mod consumo;
 mod governance;
 mod persistence;
 mod recovery;
@@ -276,6 +277,11 @@ pub enum LayerError {
     AccountFrozen(AccountIndex),
     /// La congelación no cambiaría nada.
     AlreadyInThatFreezeState,
+    /// RFC-0006 (E1, §413): el consumo ya esta publicado.
+    ConsumoRepetido { consumo: Digest },
+    /// RFC-0006 (E1, §413): la posicion del consumo la ocupa OTRO consumo
+    /// (colision de los 63 bits de posicion, 2^-63 por pareja, declarada).
+    ConsumoColision { consumo: Digest, ocupante: Digest },
 }
 
 impl From<StoreError> for LayerError {
@@ -369,6 +375,18 @@ impl std::fmt::Display for LayerError {
                 f,
                 "el lote lleva dos operaciones sobre la posicion pendiente \
                  {position}: hay que reservar antes de repartir materiales"
+            ),
+            ConsumoRepetido { consumo } => write!(
+                f,
+                "el consumo en la posicion {:016x} ya esta publicado: una unidad se \
+                 consume una vez",
+                crate::consumo::posicion_de_consumo(consumo)
+            ),
+            ConsumoColision { consumo, .. } => write!(
+                f,
+                "la posicion {:016x} la ocupa OTRO consumo: colision de posicion, \
+                 no repeticion",
+                crate::consumo::posicion_de_consumo(consumo)
             ),
         }
     }
@@ -600,6 +618,13 @@ pub struct SovereignLayer {
     /// `load()`, donde lo leido ES el disco. Si se quedara corta se
     /// reescribe de mas: lento, correcto. Nunca al reves.
     log_persisted: usize,
+    /// RFC-0006 (E1, §413): el arbol de consumos publicados, su orden de
+    /// llegada `(posicion, consumo)` y cuantos estan ya en disco. Misma
+    /// disciplina que `log_persisted`: la raiz `root:cons` es la SEXTA en
+    /// reposo y `load` la exige.
+    consumos: SparseTree,
+    consumos_orden: Vec<(u64, Digest)>,
+    cons_persisted: usize,
     recovery_count: u64,
     /// **Intervenciones del conjunto de custodios vigente.**
     ///
@@ -674,6 +699,9 @@ impl SovereignLayer {
             freeze_count: 0,
             log: TransitionLog::new(),
             log_persisted: 0,
+            consumos: SparseTree::with_depth(crate::consumo::CONS_DEPTH),
+            consumos_orden: Vec::new(),
+            cons_persisted: 0,
             recovery_count: 0,
             regulatory_limit,
             max_supply,

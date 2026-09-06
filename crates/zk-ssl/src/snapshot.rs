@@ -35,36 +35,39 @@
 //!
 //! cuerpo (desplazamiento desde su byte 0):
 //!
-//!     0  MAGIC              8 B   "ZKSSL7\0\0"  (MAGIC_V7)
+//!     0  MAGIC              8 B   "ZKSSL8\0\0"  (MAGIC_V8)
 //!     8  custodian_root    32 B
 //!    40  governance_root   32 B
 //!    72  state_root        32 B   ← para verificar
 //!   104  frozen_root       32 B   ← para verificar
-//!   136  regulatory_limit   8 B
-//!   144  max_supply         8 B
-//!   152  max_accounts       8 B
-//!   160  total_supply       8 B
-//!   168  recovery_count     8 B
-//!   176  freeze_count       8 B
-//!   184  gov_change_count   8 B
-//!   192  next_index         8 B
-//!   200  n_accounts         8 B
-//!   208  n_frozen           8 B
-//!   216  n_log              8 B   bit 63 = LOG_SECCION_V2 (§281):
+//!   136  cons_root         32 B   ← para verificar (v8, RFC-0006 E1, §413)
+//!   168  regulatory_limit   8 B
+//!   176  max_supply         8 B
+//!   184  max_accounts       8 B
+//!   192  total_supply       8 B
+//!   200  recovery_count     8 B
+//!   208  freeze_count       8 B
+//!   216  gov_change_count   8 B
+//!   224  next_index         8 B
+//!   232  n_accounts         8 B
+//!   240  n_frozen           8 B
+//!   248  n_cons             8 B   (v8)
+//!   256  n_log              8 B   bit 63 = LOG_SECCION_V2 (§281):
 //!                                 la sección del registro es era 2.
 //!                                 bits 0..62 = número de entradas
-//!   224  ── cuentas ──      n_accounts x (8 + 112) B
+//!   264  ── cuentas ──      n_accounts x (8 + 112) B
 //!                           índice 8 | public_id 32 | saldo 8 |
 //!                           nonce 8 | view_id 32 | leaf_salt 32
 //!        ── congeladas ──   n_frozen x (8 + 32) B
+//!        ── consumos ──     n_cons x (8 + 32) B   posicion | consumo (v8)
 //!        ── registro ──     n_log x (2 B longitud u16, luego longitud B)
 //!                           longitud vale 137, o 169 si la entrada
 //!                           lleva compromiso
 //! ```
 //!
-//! Esto es lo que `export_snapshot` **escribe**: v7. Lo que se **lee**
-//! es v3..v7 — la tabla de mágicos, con lo que cambia en cada versión,
-//! vive pegada a las constantes `MAGIC`..`MAGIC_V7`, más abajo en este fichero.
+//! Esto es lo que `export_snapshot` **escribe**: v8. Lo que se **lee**
+//! es v3..v8 — la tabla de mágicos, con lo que cambia en cada versión,
+//! vive pegada a las constantes `MAGIC`..`MAGIC_V8`, más abajo en este fichero.
 //!
 //! ## ⚠️ Lo que NO es
 //!
@@ -76,7 +79,7 @@
 //!   autenticado que el ledger. Sin clave va en claro, y entonces quien
 //!   tenga el fichero **ve todos los saldos**.
 //! - **No hay copias incrementales.** Cada instantánea es completa.
-//! - **No lleva los pagos en vuelo.** El formato (v7) no tiene hueco
+//! - **No lleva los pagos en vuelo.** El formato (v8) no tiene hueco
 //!   para el árbol de pendientes ni su raíz: una copia de un ledger
 //!   con dinero en tránsito lo perdería callando, y la verificación
 //!   pasaría igual. Por eso `export_snapshot` **rehúsa** exportar
@@ -116,6 +119,10 @@ const MAGIC_V6: &[u8; 8] = b"ZKSSL6\0\0";
 /// anteriores se importan como mundo viejo (sin salt, frozen a 24) y se
 /// migran después.
 const MAGIC_V7: &[u8; 8] = b"ZKSSL7\0\0";
+/// v8 (RFC-0006 E1, §413): el arbol de consumos publicados —`cons_root`
+/// tras `frozen_root`, `n_cons` tras `n_frozen`, la seccion tras las
+/// congeladas—. v7 y anteriores se importan con el conjunto vacio.
+const MAGIC_V8: &[u8; 8] = b"ZKSSL8\0\0";
 
 /// Resumen de una instantánea, para registro y verificación externa.
 #[derive(Clone, Debug)]
@@ -194,7 +201,7 @@ impl SovereignLayer {
     /// protección distintos para el mismo dato**, y la instantánea es
     /// justo la que se copia fuera del nodo.
     pub fn export_snapshot(&self, path: &str) -> Result<SnapshotInfo, LayerError> {
-        // (b') del §359: el formato (v7) NO lleva el pendiente -- ni
+        // (b') del §359: el formato (v8) NO lleva el pendiente -- ni
         // arbol, ni raiz, ni meta. Exportar con pagos en vuelo fabricaria
         // una copia que MIENTE: restaura sin ellos y la verificacion pasa
         // igual. Se rehusa ANTES de escribir un solo byte; la via real es
@@ -202,16 +209,17 @@ impl SovereignLayer {
         let en_vuelo = self.total_pending();
         if en_vuelo > 0 || !self.pending_amounts.is_empty() || !self.reserved_pending.is_empty() {
             return Err(LayerError::VerificationFailed(format!(
-                "instantanea: {en_vuelo} en transito en {} posiciones; el formato v7 no lleva el pendiente y exportarlo lo perderia callando",
+                "instantanea: {en_vuelo} en transito en {} posiciones; el formato v8 no lleva el pendiente y exportarlo lo perderia callando",
                 self.pending_amounts.len() + self.reserved_pending.len()
             )));
         }
         let mut out: Vec<u8> = Vec::new();
-        out.extend_from_slice(MAGIC_V7);
+        out.extend_from_slice(MAGIC_V8);
         out.extend_from_slice(&digest_to_bytes(&self.custodian_set_root));
         out.extend_from_slice(&digest_to_bytes(&self.governance_set_root));
         out.extend_from_slice(&digest_to_bytes(&self.accounts.root()));
         out.extend_from_slice(&digest_to_bytes(&self.frozen.root()));
+        out.extend_from_slice(&digest_to_bytes(&self.consumos.root()));
         out.extend_from_slice(&self.regulatory_limit.to_le_bytes());
         out.extend_from_slice(&self.max_supply.to_le_bytes());
         out.extend_from_slice(&self.max_accounts.to_le_bytes());
@@ -227,9 +235,12 @@ impl SovereignLayer {
         accounts.sort_by_key(|(i, _)| **i);
         let mut frozen: Vec<(u64, Digest)> = self.frozen.occupied();
         frozen.sort_by_key(|(p, _)| *p);
+        let mut cons: Vec<(u64, Digest)> = self.consumos_orden.clone();
+        cons.sort_by_key(|(p, _)| *p);
 
         out.extend_from_slice(&(accounts.len() as u64).to_le_bytes());
         out.extend_from_slice(&(frozen.len() as u64).to_le_bytes());
+        out.extend_from_slice(&(cons.len() as u64).to_le_bytes());
         out.extend_from_slice(&((self.log.len() as u64) | LOG_SECCION_V2).to_le_bytes());
 
         for (index, r) in &accounts {
@@ -239,6 +250,10 @@ impl SovereignLayer {
         for (index, leaf) in &frozen {
             out.extend_from_slice(&index.to_le_bytes());
             out.extend_from_slice(&digest_to_bytes(leaf));
+        }
+        for (pos, c) in &cons {
+            out.extend_from_slice(&pos.to_le_bytes());
+            out.extend_from_slice(&digest_to_bytes(c));
         }
         // El registro entero. Sin el, restaurar perderia el historial y
         // la capa restaurada encadenaria desde la nada.
@@ -317,22 +332,25 @@ impl SovereignLayer {
         // Una copia v3 —anterior a la retirada del arbol de
         // nullificadores— sigue siendo importable: sus nullificadores se
         // verifican contra la raiz que declara y se descartan despues.
-        // Se ESCRIBE v7; se LEEN v3..v7. El reparto no se enumera aqui:
-        // cada magico fija su terna (legacy_v3, rec_len, salted) justo
+        // Se ESCRIBE v8; se LEEN v3..v8. El reparto no se enumera aqui:
+        // cada magico fija su cuaterna (legacy_v3, rec_len, salted, con_cons) justo
         // debajo, y esa es la unica lista que manda.
-        let (legacy_v3, rec_len, salted) = {
+        let (legacy_v3, rec_len, salted, con_cons) = {
             let magic = take(8, "magic")?;
             if magic == MAGIC_V3 {
-                (true, 48usize, false)
+                (true, 48usize, false, false)
             } else if magic == MAGIC {
-                (false, 48usize, false)
+                (false, 48usize, false, false)
             } else if magic == MAGIC_V5 {
-                (false, 80usize, false)
+                (false, 80usize, false, false)
             } else if magic == MAGIC_V6 {
-                (false, 112usize, false)
+                (false, 112usize, false, false)
             } else if magic == MAGIC_V7 {
                 // Mundo nuevo (flip D4): hoja envuelta y frozen a 32.
-                (false, 112usize, true)
+                (false, 112usize, true, false)
+            } else if magic == MAGIC_V8 {
+                // v8 (RFC-0006 E1): como v7, mas el arbol de consumos.
+                (false, 112usize, true, true)
             } else {
                 return Err(malformed(
                     "cabecera desconocida: no es una instantanea ZK-SSL",
@@ -348,6 +366,11 @@ impl SovereignLayer {
             None
         };
         let declared_frozen = digest_from_bytes(take(32, "frozen_root")?)?;
+        let declared_cons = if con_cons {
+            Some(digest_from_bytes(take(32, "cons_root")?)?)
+        } else {
+            None
+        };
 
         let mut u64_at = |what: &str| -> Result<u64, LayerError> {
             Ok(u64::from_le_bytes(
@@ -367,6 +390,7 @@ impl SovereignLayer {
         let n_accounts = u64_at("n_accounts")?;
         let n_nullifiers = if legacy_v3 { u64_at("n_nullifiers")? } else { 0 };
         let n_frozen = u64_at("n_frozen")?;
+        let n_cons = if con_cons { u64_at("n_cons")? } else { 0 };
         let n_log = u64_at("n_log")?;
 
         let mut layer = Self {
@@ -393,6 +417,9 @@ impl SovereignLayer {
             freeze_count,
             log: TransitionLog::new(),
             log_persisted: 0,
+            consumos: SparseTree::with_depth(crate::consumo::CONS_DEPTH),
+            consumos_orden: Vec::new(),
+            cons_persisted: 0,
             total_supply,
             recovery_count,
             regulatory_limit,
@@ -458,6 +485,17 @@ impl SovereignLayer {
             layer.frozen.set_leaf(index, leaf);
         }
 
+        for _ in 0..n_cons {
+            let pos = u64::from_le_bytes(
+                take(8, "posicion de consumo")?
+                    .try_into()
+                    .map_err(|_| malformed("posicion de consumo"))?,
+            );
+            let c = digest_from_bytes(take(32, "consumo")?)?;
+            layer.consumos.set_leaf(pos, c);
+            layer.consumos_orden.push((pos, c));
+        }
+
         // §281: el bit alto de n_log dice la era de la SECCION. Se
         // separa ANTES de reservar: un contador con el bit puesto no es
         // una cuenta.
@@ -512,6 +550,15 @@ impl SovereignLayer {
                     what: "arbol de congelados de la instantanea",
                 },
             ));
+        }
+        if let Some(declared) = declared_cons {
+            if layer.consumos.root() != declared {
+                return Err(LayerError::Store(
+                    crate::store::StoreError::IntegrityFailure {
+                        what: "arbol de consumos de la instantanea",
+                    },
+                ));
+            }
         }
         if let Some(declared) = declared_null {
             if legacy_null.root() != declared {
@@ -780,14 +827,16 @@ mod tests {
         // transiciones, y manipularlo prueba otra cosa (ver el test
         // siguiente).
         //
-        // ⚠️ La constante codifica la GEOMETRIA del formato —v4: cuatro
-        // raices, tres contadores— y ya se ha quedado rancia dos veces:
+        // ⚠️ La constante codifica la GEOMETRIA del formato —v8: cinco
+        // raices, cuatro contadores— y ya se ha quedado rancia TRES veces:
         // cuando el formato crecio (el registro, lo cuenta el test
-        // siguiente) y cuando encogio (la retirada del arbol de
-        // nullificadores, `AUDITORIA.md` §36). Un cambio de formato hay
-        // que contrastarlo con todo test que codifique desplazamientos,
-        // no solo con los que nombran lo cambiado.
-        const CABECERA: usize = 8 + 32 * 4 + 8 * 8 + 8 * 3; // 224
+        // siguiente), cuando encogio (la retirada del arbol de
+        // nullificadores, `AUDITORIA.md` §36) y cuando volvio a crecer (la
+        // raiz de consumos, RFC-0006 E1, §413: este test cayo en el canon
+        // antes de moverla). Un cambio de formato hay que contrastarlo con
+        // todo test que codifique desplazamientos, no solo con los que
+        // nombran lo cambiado.
+        const CABECERA: usize = 8 + 32 * 5 + 8 * 8 + 8 * 4; // 264
         let mut bytes = std::fs::read(&file).expect("leer");
         bytes[CABECERA + 20] ^= 0xFF;
         std::fs::write(&file, &bytes).expect("escribir");
@@ -813,7 +862,7 @@ mod tests {
     /// `state_root` y lo caza la puerta de cuentas; manipular el SUMINISTRO
     /// no mueve ninguna raiz, y hasta el §379 se importaba en silencio.
     ///
-    /// El formato v7 NO transporta pendientes, asi que aqui la invariante se
+    /// El formato v8 NO transporta pendientes, asi que aqui la invariante se
     /// reduce a sum(saldos) == suministro; es cierto porque el §359 hizo
     /// que `export_snapshot` rehuse con pagos en vuelo.
     #[test]
@@ -824,20 +873,21 @@ mod tests {
         let info = layer.export_snapshot(&file).expect("exportar");
 
         // El desplazamiento del `total_supply` se DERIVA de lo que
-        // `export_snapshot` escribe: marca 1 + magico 8 + CUATRO raices de 32
-        // + limite 8 + max_supply 8 + max_accounts 8. La cabecera del modulo
-        // dice lo mismo (160 en el cuerpo): dos productores del mismo numero.
+        // `export_snapshot` escribe: marca 1 + magico 8 + CINCO raices de 32
+        // (v8: `cons_root` tras `frozen_root`, §413) + limite 8 + max_supply 8
+        // + max_accounts 8. La cabecera del modulo dice lo mismo (192 en el
+        // cuerpo): dos productores del mismo numero.
         //
         // El test vecino declara que una constante asi ya se quedo rancia DOS
         // veces. Por eso esta se AUTOVERIFICA antes de usarse.
-        const OFF: usize = 1 + 8 + 32 * 4 + 8 * 3;
+        const OFF: usize = 1 + 8 + 32 * 5 + 8 * 3;
         let mut bytes = std::fs::read(&file).expect("leer");
         let mut ocho = [0u8; 8];
         ocho.copy_from_slice(&bytes[OFF..OFF + 8]);
         let leido = u64::from_le_bytes(ocho);
         assert_eq!(
             leido, info.total_supply,
-            "el desplazamiento del suministro en el v7 se ha movido: el formato cambio y esta constante no"
+            "el desplazamiento del suministro en el v8 se ha movido: el formato cambio y esta constante no"
         );
 
         bytes[OFF..OFF + 8].copy_from_slice(&(info.total_supply + 1).to_le_bytes());

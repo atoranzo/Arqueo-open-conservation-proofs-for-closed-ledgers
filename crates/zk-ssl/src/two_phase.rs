@@ -3886,4 +3886,147 @@ mod tests_verificacion {
         assert_eq!(layer.balance_of(bob), Some(0), "nada cobrado");
         assert_eq!(layer.pending.leaf(pos), c2, "el pendiente sigue");
     }
+    // ------------------------------------------------------------------
+    // RFC-0006, E1 (§413): la SEXTA raiz en reposo, `root:cons`, calcada de
+    // la quinta (§391). Tres testigos negativos, dos positivos.
+    // ------------------------------------------------------------------
+
+    fn consumo_de(n: u64) -> Digest {
+        [
+            BaseElement::new(n),
+            BaseElement::new(7),
+            BaseElement::new(11),
+            BaseElement::new(13),
+        ]
+    }
+
+    /// Abre un libro en `path`, publica un consumo y lo devuelve.
+    fn ledger_con_un_consumo(path: &str) -> Digest {
+        let mut layer = open_retry(
+            path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        )
+        .expect("abrir");
+        let c = consumo_de(41);
+        layer.apply_consumo(c).expect("publicar");
+        assert!(layer.is_consumido(&c));
+        c
+    }
+
+    /// §413: un consumo sobrevive al reinicio y sigue rechazandose repetido.
+    #[test]
+    fn rfc0006_un_consumo_sobrevive_el_reinicio() {
+        let path = ruta_temporal("consumo_reinicio");
+        let c = ledger_con_un_consumo(&path);
+        let mut layer = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        )
+        .expect("reabrir");
+        assert!(layer.is_consumido(&c), "CRITICO: el consumo debe sobrevivir al reinicio");
+        assert_eq!(layer.cons_count(), 1);
+        assert!(
+            matches!(layer.apply_consumo(c), Err(LayerError::ConsumoRepetido { .. })),
+            "tras reiniciar, el repetido se sigue rechazando"
+        );
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// §413: un libro sin `root:cons` (anterior a este sello) NO ABRE: fail-closed,
+    /// sin era silenciosa, como `root:froz` (§391) y `root:log` (§392).
+    #[test]
+    fn rfc0006_un_libro_sin_root_cons_no_abre() {
+        let path = ruta_temporal("sin_root_cons");
+        let _c = ledger_con_un_consumo(&path);
+        {
+            let db = sled_open_retry(&path);
+            assert!(
+                db.remove(b"root:cons").expect("borrar").is_some(),
+                "habia una raiz de consumos que borrar"
+            );
+            db.flush().expect("flush");
+        }
+        let r = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(crate::store::StoreError::Malformed(ref m))) if m.contains("root:cons")
+            ),
+            "CRITICO: un libro sin raiz de consumos no debe abrir"
+        );
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// §413: un consumo BORRADO en reposo no abre: la raiz guardada no cuadra.
+    #[test]
+    fn rfc0006_un_consumo_borrado_en_reposo_no_abre() {
+        let path = ruta_temporal("consumo_borrado");
+        let c = ledger_con_un_consumo(&path);
+        {
+            let db = sled_open_retry(&path);
+            let mut key = b"cons:".to_vec();
+            key.extend_from_slice(&crate::consumo::posicion_de_consumo(&c).to_le_bytes());
+            assert!(db.remove(key).expect("borrar").is_some(), "habia un consumo que borrar");
+            db.flush().expect("flush");
+        }
+        let r = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(crate::store::StoreError::IntegrityFailure { what })) if what == "arbol de consumos"
+            ),
+            "CRITICO: borrar un consumo en disco debe impedir abrir"
+        );
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// §413: un consumo ANADIDO en reposo, sin pasar por `apply_consumo`, no abre.
+    #[test]
+    fn rfc0006_un_consumo_anadido_en_reposo_no_abre() {
+        let path = ruta_temporal("consumo_anadido");
+        let _c = ledger_con_un_consumo(&path);
+        let intruso = consumo_de(42);
+        {
+            let db = sled_open_retry(&path);
+            let mut key = b"cons:".to_vec();
+            key.extend_from_slice(&crate::consumo::posicion_de_consumo(&intruso).to_le_bytes());
+            assert!(
+                db.insert(key, crate::store::digest_to_bytes(&intruso).to_vec()).expect("anadir").is_none(),
+                "la posicion del intruso estaba libre"
+            );
+            db.flush().expect("flush");
+        }
+        let r = open_retry(
+            &path, custodian_root(), governance_root(), LIMIT, MAX_SUPPLY, MAX_ACCOUNTS,
+        );
+        assert!(
+            matches!(
+                r,
+                Err(LayerError::Store(crate::store::StoreError::IntegrityFailure { what })) if what == "arbol de consumos"
+            ),
+            "CRITICO: anadir un consumo en disco debe impedir abrir"
+        );
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    /// §413: la instantanea (v8) conserva los consumos: restaurar una copia
+    /// no los pierde y la raiz coincide.
+    #[test]
+    fn rfc0006_una_instantanea_conserva_los_consumos() {
+        let mut layer = new_layer();
+        let c = consumo_de(43);
+        layer.apply_consumo(c).expect("publicar");
+        let file = format!("{}.snap", ruta_temporal("instantanea_consumos"));
+        layer.export_snapshot(&file).expect("exportar");
+        let restaurada = SovereignLayer::import_snapshot(&file).expect("importar");
+        assert!(
+            restaurada.is_consumido(&c),
+            "CRITICO: restaurar una copia no debe perder los consumos"
+        );
+        assert_eq!(restaurada.cons_root(), layer.cons_root());
+        assert_eq!(restaurada.cons_count(), 1);
+        let _ = std::fs::remove_file(&file);
+    }
 }

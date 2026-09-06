@@ -229,6 +229,7 @@ fn circuit_hint(k: OpKind) -> &'static str {
         OpKind::MintToPending => "mint_pending_climb",
         OpKind::Migration => "sin prueba: compromiso replicable",
         OpKind::Refund => "reembolso de pendiente caducado",
+        OpKind::Consumo => "sin prueba: consumo publicado (RFC-0006 E1)",
     }
 }
 

@@ -95,6 +95,9 @@ pub enum OpKind {
     /// Reembolso de un pendiente caducado al emisor (§178, R-2c) — o su
     /// des-emisión si nació por emisión (centinela).
     Refund,
+    /// RFC-0006 (E1, §413): un consumo publicado. El consumo viaja como
+    /// compromiso de la entrada. Tag 13.
+    Consumo,
 }
 
 impl OpKind {
@@ -119,6 +122,7 @@ impl OpKind {
             10 => OpKind::MintToPending,
             11 => OpKind::Migration,
             12 => OpKind::Refund,
+            13 => OpKind::Consumo,
             _ => return None,
         })
     }
@@ -137,6 +141,7 @@ impl OpKind {
             OpKind::MintToPending => 10,
             OpKind::Migration => 11,
             OpKind::Refund => 12,
+            OpKind::Consumo => 13,
         }
     }
 }

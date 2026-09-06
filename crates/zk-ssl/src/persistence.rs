@@ -78,6 +78,9 @@ impl SovereignLayer {
             freeze_count: 0,
             log: TransitionLog::new(),
             log_persisted: 0,
+            consumos: SparseTree::with_depth(crate::consumo::CONS_DEPTH),
+            consumos_orden: Vec::new(),
+            cons_persisted: 0,
             recovery_count: 0,
             regulatory_limit,
             max_supply,
@@ -544,6 +547,38 @@ impl SovereignLayer {
             .into());
         }
 
+        // --- ARBOL DE CONSUMOS (RFC-0006, E1) ---
+        //
+        // §413: `cons:` se reconstruye de disco y su raiz guardada tiene que
+        // cuadrar; un libro sin `root:cons` NO ABRE (fail-closed, como las
+        // cinco anteriores). Migrar un libro anterior es operacion aparte.
+        let mut consumos = SparseTree::with_depth(crate::consumo::CONS_DEPTH);
+        let mut orden: Vec<(u64, Digest)> = Vec::new();
+        for item in db.scan_prefix(b"cons:") {
+            let (k, v) = item.map_err(|e| StoreError::Io(e.to_string()))?;
+            let v = unseal_one(v)?;
+            let pos = u64::from_le_bytes(
+                k[5..]
+                    .try_into()
+                    .map_err(|_| StoreError::Malformed("posicion de consumo".into()))?,
+            );
+            let c = digest_from_bytes(&v)?;
+            consumos.set_leaf(pos, c);
+            orden.push((pos, c));
+        }
+        orden.sort_by_key(|(p, _)| *p);
+        let stored_cons =
+            digest_from_bytes(&need("root:cons", get(b"root:cons")?)?)?;
+        if consumos.root() != stored_cons {
+            return Err(StoreError::IntegrityFailure {
+                what: "arbol de consumos",
+            }
+            .into());
+        }
+        self.cons_persisted = orden.len();
+        self.consumos = consumos;
+        self.consumos_orden = orden;
+
         // --- REGISTRO DE TRANSICIONES ---
         //
         // §392 (punto 46/48): el registro se reconstruyo arriba de `log:` y hasta
@@ -781,6 +816,7 @@ impl SovereignLayer {
         // La raiz del registro de transiciones (su cabeza encadenada), al lado de las
         // otras cuatro (§392, punto 46/48).
         batch.insert(b"root:log".as_ref(), self.seal(digest_to_bytes(&self.log.head()).to_vec())?);
+        batch.insert(b"root:cons".as_ref(), self.seal(digest_to_bytes(&self.consumos.root()).to_vec())?);
 
         // --- Cuentas afectadas ---
         for index in accounts {
@@ -803,6 +839,14 @@ impl SovereignLayer {
             let mut key = b"log:".to_vec();
             key.extend_from_slice(&e.seq.to_le_bytes());
             batch.insert(key, self.seal(crate::store::log_entry_to_bytes(e))?);
+        }
+        // RFC-0006 (E1, §413): los consumos nuevos, por contador; un conjunto
+        // que solo crece no tiene huerfanas que barrer, y `load` caza igual
+        // un `cons:` de mas: la raiz no cuadra.
+        for (pos, c) in self.consumos_orden.iter().skip(self.cons_persisted) {
+            let mut key = b"cons:".to_vec();
+            key.extend_from_slice(&pos.to_le_bytes());
+            batch.insert(key, self.seal(digest_to_bytes(c).to_vec())?);
         }
 
         // --- Cuentas congeladas ---
@@ -873,6 +917,7 @@ impl SovereignLayer {
         // mueve y la proxima pasada reescribe. Fallo hacia el lado
         // seguro.
         self.log_persisted = self.log.len();
+        self.cons_persisted = self.consumos_orden.len();
         Ok(())
     }
 }

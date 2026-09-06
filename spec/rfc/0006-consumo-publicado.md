@@ -10,7 +10,7 @@
 
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
-| E1 — el árbol y la raíz en reposo | el conjunto de consumos como árbol disperso de la capa, su raíz `root:cons` guardada y comprobada al abrir (la sexta raíz en reposo), el rechazo de un consumo repetido, la instantánea que lo transporta, y los testigos negativos que lo falsan | NO | propuesta |
+| E1 — el árbol y la raíz en reposo | el conjunto de consumos como árbol disperso de la capa, su raíz `root:cons` guardada y comprobada al abrir (la sexta raíz en reposo), el rechazo de un consumo repetido, la instantánea que lo transporta, y los testigos negativos que lo falsan | NO | sellada — §413 |
 | E2 — la cabeza v4 | la composición `epoch_digest_v4` que mete la raíz y la cuenta de consumos bajo la firma; el conjunto aceptado pasa a {2, 3, 4}; el cable sirve los dos campos; vectores nuevos bajo su versión | **SÍ** (`zkssl/0.3` → `0.4`) | propuesta |
 | E3 — la prueba portable | una forma nueva del paquete de evidencia que prueba que un consumo está bajo la raíz de una cabeza firmada y no lo estaba bajo la de una cabeza anterior; el mando la verifica sin nodo | NO | propuesta |
 | E4 — el banco de dos libros | dos nodos, dos operadores, el mismo consumo publicado en los dos, y un lector que con las dos cabezas firmadas lo detecta; y el negativo: con una sola cabeza no hay nada que detectar | NO | propuesta |
@@ -100,6 +100,19 @@ consumo es una operación de la capa que entra por el registro de transiciones c
 propia, y **un consumo ya presente se rechaza** con nombre. Tres testigos negativos, enseñados
 rojos antes del arreglo: el repetido se rechaza; sin `root:cons` no abre; con `root:cons` falsa no
 abre.
+
+> ⚠️ **Corrección (§413, al sellar E1).** Dos frases de este párrafo y el descarte 8 se
+> escribieron sobre una lectura rozada y se falsaron al medir la quinta raíz entera
+> (`PASTE-E1-M`, `PASTE-E1-M2`, `PASTE-E1-M3`): (1) **la instantánea no estaba en la versión 4
+> sino en la 7** (`MAGIC_V7`, `snapshot.rs`; el «Versión 4 del formato» de su doc-comment era
+> historia, la v4 fue la que retiró el nulificador): E1 la sube de **v7 a v8** (`ZKSSL8`), y v3..v7
+> siguen importándose con el conjunto vacío; (2) **la posición no puede ser el digest completo**:
+> `SparseTree` se indexa por `u64`, luego la posición son los **63 bits bajos de los primeros ocho
+> bytes** del consumo (`CONS_DEPTH = 63`), y la hoja es el digest entero, de modo que una colisión
+> de prefijo (2⁻⁶³ por pareja) se detecta y se rechaza con su propio nombre (`ConsumoColision`),
+> no como repetido. El descarte 8 queda así corregido: lo descartado es la posición de ~32 bits
+> de un digest de circuito; los 63 bits son lo que el árbol de la capa admite, y se declaran.
+> El texto de arriba se conserva como se escribió.
 
 Lo que el mínimo **prueba** es exactamente eso y nada más: que un consumo está bajo la raíz y no
 estaba antes. **No prueba que el consumo corresponda a un pago** ni que el pago sea el que dice: lo

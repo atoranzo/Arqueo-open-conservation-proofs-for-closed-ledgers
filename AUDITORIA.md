@@ -30832,3 +30832,91 @@ RFC nuevo, citado desde `spec/README.md`), y en fase ROJO sobre una copia del un
 cita a un documento inexistente, 1 fantasma con rc 1. `spec/rfc/0006-consumo-publicado.md` nace;
 `spec/README.md` 160 -> 161 (+1 fila tras la del 0005; el ancla `c43890a` de la cabecera sigue
 rancia, punto 80). Documentos `.md` versionados: 67 -> 68. Vallas de este fichero: 132, invariante.
+
+## §413 — El consumo publicado, E1: la SEXTA raiz en reposo (root:cons), calcada de la quinta (RFC-0006)
+
+**Que.** Nace `crates/zk-ssl/src/consumo.rs` (calcado de `freeze.rs`): `apply_consumo(consumo)`
+publica una etiqueta PUBLICA y precomputable en un arbol disperso propio (`CONS_DEPTH = 63`, posicion
+= los 63 bits bajos de los primeros ocho bytes, hoja = el digest entero), rechaza el repetido con
+nombre (`ConsumoRepetido`) y la colision de prefijo con el suyo (`ConsumoColision`, con el ocupante),
+appendea `OpKind::Consumo` (tag 13) con el consumo como compromiso de la entrada, y hace commit. La
+raiz `root:cons` se escribe en `commit` tras `root:log` y se EXIGE en `load` con `need()` y cuadre de
+raiz: un libro sin ella o con un `cons:` de mas o de menos NO ABRE (fail-closed, sexta vez). Las
+claves `cons:<pos u64 LE>` se escriben por contador (`cons_persisted`, la disciplina de
+`log_persisted`), sin barrido. La instantanea pasa de v7 a v8 (`ZKSSL8`): `cons_root` tras
+`frozen_root`, `n_cons` tras `n_frozen`, la seccion tras las congeladas; v3..v7 siguen importandose con
+el conjunto vacio; la tabla de la cabecera se reescribe. `iso_reason` gana los dos brazos (`AM05`,
+Duplication) y `circuit_hint` del cli (`commands.rs`) gana el suyo; el compilador los exigio: los dos
+matches son exhaustivos (el de `iso_reason` desde que se retiro el comodin, punto 13). Diez tests nuevos: cinco en `consumo.rs` (publica y mueve la raiz; repetido; dos distintos;
+colision con su nombre; el tag hace la ida y vuelta) y cinco en `two_phase.rs` (sobrevive al reinicio;
+sin `root:cons` no abre; borrado en reposo no abre; anadido en reposo no abre; la instantanea v8 los
+conserva). Pin de la capa 307 -> 317; sumas 1015/1152/1166 -> 1025/1162/1176; los cuatro `.md` de
+cifras, README, ARQUITECTURA (que ademas dice ya 23 modulos), PAPER_EN, INSTITUCIONAL e INSTITUTIONAL
+LINEA-NEUTRALES. Corre canon.
+
+**Lo que se midio antes de escribir un byte** (PASTE-E1-M `5f5dbe13c10fcb6c`, salida
+`f3b32f44d6d18849`/1251; E1-M2 `ab1b475efadf46eb`, `554f2c2db108b39d`/2284; E1-M3
+`8b79680e5a94bd73`, `14ff4c8bf531a3b3`/1239). El molde entero de la quinta raiz: `froz:` se
+reconstruye en `load` y se comprueba con `need("root:froz")` (`IntegrityFailure{what:"arbol de
+congelados"}`), `commit` escribe la raiz y barre las huerfanas, `freeze.rs` appendea con
+`append_con_compromiso` y llama a `commit(&[], None)`. Tres constructores literales del struct (`new`,
+`open_encrypted`, `import_snapshot`). `SparseTree` indexado por `u64` (`capacity = 1 << depth`). La
+instantanea en v7 (`MAGIC_V7`), no en v4: el RFC lo decia mal y este asiento lo corrige (abajo).
+`OpKind::tag()` es un match exhaustivo con 12 brazos; `log_entry_to_bytes` lleva `tag_byte()`.
+`iso_reason` exhaustivo. 310 `#[test]` en la capa = 307 + 3. El 307 vive en diez sitios y el 1015 en
+cinco; `check_cifras` excluye `spec/rfc/` y AUDITORIA. `audit.rs` no toca raices en reposo: la sexta
+no entra ahi.
+
+**Las decisiones (E1, REVERSIBLES) y como quedaron.** Modulo propio `consumo.rs` como `freeze.rs`
+(no dentro de `two_phase.rs`: es una raiz, no un pago). Posicion de 63 bits y hoja entera: la
+colision se DETECTA en vez de confundirse con un repetido, y tiene variante y codigo propios. Escritura
+por contador y no por barrido: un conjunto que solo crece no tiene huerfanas que barrer, y `load`
+caza igual un `cons:` de mas (la raiz no cuadra). `OpKind::Consumo` con tag 13 y el consumo como
+compromiso: la cadena del registro lo ata sin prueba. Sin prueba ni autorizacion al publicar (D-4 del
+RFC): quien publica primero bloquea, declarado, no escondido. `SnapshotInfo` se deja como esta (no
+cuenta consumos): forma, no defecto, declarada. Las dos correcciones al RFC-0006 (v7 -> v8; los 63
+bits) van como parrafo marcado bajo D-2, sin reescribir el texto que se sello en el §412: el pasado en
+prosa es correcto y no se reescribe.
+
+**El r1 murio en el montaje sin tocar nada**, y enseno dos cosas: `PAPER.md` tiene TRES lineas con
+`cargo test -p zk-ssl --release` (un localizador por prefijo ve de mas: se exige el prefijo Y la cifra
+vieja en la misma linea), y el `match` exhaustivo de `commands.rs:218` (`circuit_hint`) que la puerta
+cero destapo antes de que el canon lo hiciera con todo copiado. Se midio (PASTE-413-PRE
+`3ce3f8a1c2f2c349`, salida `040f6652efc6bca5`/146) y el r2 lo llevo. **El r2 llego mas lejos y murio
+en la fase B de las cifras**, con el Rust ya compilado, la fase ROJO exacta y el VERDE hecho: tres
+`307 tests` mas en `PAPER_EN.md:949`, `INSTITUCIONAL.md:514` e `INSTITUTIONAL.md:496`, fuera de los ocho
+ficheros que mi censo miro. El rojo esperado de un gate se deriva de SU universo (PRECISION 64), no
+del censo del frente: el PASTE-413-PRE2 (`034517a8803ebbb5`, `1959bfc4a56bf510`/119) corrio
+`check_cifras` en una copia con el pin a 317 y las dijo; el r3 las llevo. **El r3 murio en un gate
+MIO con todo lo demas verde** (la fase B ya en rc 0, 28 cifras y ninguna contradice): lei
+`check_modulos` de la salida del bucle de `canon.sh`, y `check_modulos` y `check_tests` no van en el
+bucle: van por RUTA LITERAL (PRECISION 19, medido en la 82). El r4 las corre como las corre el canon
+y gatea PRE+1 y PRE+10 derivados. **El r4 llego al canon entero (277 s) y la capa dio 315(317)**: dos
+tests que YA EXISTIAN cayeron, `a_tampered_snapshot_is_rejected` y
+`a_snapshot_with_a_lying_supply_is_rejected`, los dos porque CODIFICAN la geometria de la instantanea
+por desplazamiento (cuatro raices y tres contadores) y `cons_root` corre 32 bytes lo que va detras.
+Sus propios comentarios lo avisan: <<un cambio de formato hay que contrastarlo con todo test que
+codifique desplazamientos>>, y la constante del suministro se AUTOVERIFICA para caer justo asi. El
+r5 los lleva a v8 (cinco raices, cuatro contadores; `CABECERA` 224 -> 264, `OFF` 137 -> 169) y corre
+la capa ENTERA antes del canon (`317 passed; 0 failed; 3 ignored`).
+
+**Fase ROJO en vivo.** Con todo el corte en el arbol MENOS la puerta de `load` (el bloque monta un
+`persistence.rs` sin el `need("root:cons")`), los diez tests corren y EXACTAMENTE tres caen: sin
+`root:cons` abre, borrado abre, anadido abre. Con la puerta, diez de diez verdes; luego el canon
+entero. Y la fase A de las cifras: con solo el pin de `canon.sh` movido, `check_cifras` se pone rojo
+nombrando el 307; con los `.md` movidos vuelve a rc 0.
+
+**Lo que NO afirma.** No afirma que un consumo corresponda a un pago (E5), ni que el identificador sea
+correcto, ni que la unidad exista, ni que dos libros no puedan aceptar el mismo consumo. No sube el
+cable (`zkssl/0.3` intacto: ningun metodo ni tipo nuevo; E2 es aparte). No mete la raiz en la cabeza:
+`epoch_head` sigue sirviendo nueve campos (E2). Un libro anterior a este sello NO ABRE y migrar es
+operacion aparte, como en el §392: la herramienta sigue sin existir (punto 52).
+
+**Contadores.** Pin capa 307 -> 317 (`rfc0006_*`, diez); sumas 1015/1152/1166 -> 1025/1162/1176;
+`check_tests` +10 declarados; `check_modulos` 119 -> 120 .rs. `tools/canon.sh` LINEA-NEUTRAL (fila 89:
+pin y su historia). Los `.md` LINEA-NEUTRALES: `PRINCIPIOS.md` :136 y :354-358, `RESUMEN_EJECUTIVO.md`
+:58 y :316, `RESUMEN_BILINGUE.md` :85 y :162, `PAPER.md` :36 y :992, `README.md` :332,
+`ARQUITECTURA.md` :58 y :1116, `PAPER_EN.md` :949, `INSTITUCIONAL.md` :514, `INSTITUTIONAL.md` :496. `spec/rfc/0006-consumo-publicado.md` 238 -> +13 (el parrafo de
+correccion bajo D-2) y la fila E1 pasa a sellada. Nace `consumo.rs`; `lib.rs`, `log.rs`, `iso.rs`,
+`persistence.rs`, `snapshot.rs` y `two_phase.rs` crecen; `zk-ssl-cli/src/commands.rs` +1 (el pin del
+testigo, 95, no se mueve: es un brazo de texto). Documentos `.md` versionados: 68.
