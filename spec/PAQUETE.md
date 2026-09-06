@@ -306,7 +306,7 @@ DISTINTAS» exige dos cabezas firmadas por dos operadores distintos; y `{campo}:
 `sibling {i}: {e:?}` y `camino[{i}]: {e:?}` exigen 32 bytes que `digest_from_bytes` rechace, y no
 se conoce un valor que lo haga. Siguen siendo reglas: lo que no tienen es testigo en el árbol.
 **Y desde §419, los rechazos del sobre de consumo tampoco lo tienen**: exigen un sobre de
-consumo real, que produce el banco de la etapa E3c del RFC-0006. Hasta entonces su testigo
+consumo real, que produce el banco del sobre de consumo (RFC-0006, E3). Hasta entonces su testigo
 vive en los `#[test]` de `crates/zk-ssl-verify/src/consumos.rs`, que falsan las reglas
 puras —la hoja vacía, la convención y el cruce— sin necesitar firmas.
 La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.

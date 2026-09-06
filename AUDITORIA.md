@@ -31334,3 +31334,54 @@ nuevo). Sumas 1045/1182/1196 -> 1051/1188/1202; `check_tests` 1197 -> 1203;
 `check_nucleo` 87 -> 92 filas (NUCLEO 63 -> 68, 50 -> 55 elementos de verify);
 `check_modulos` 120 -> 121. Ningun Cargo tocado. El cable no se movio
 (`zkssl/0.3` identico) y el paquete sigue en 68 de 68. BACKLOG sin cambios.
+
+## §420 — la etiqueta que apuntaba a otro documento, y la fila que decia propuesta
+
+**Que.** Dos correcciones de IDENTIFICADOR en `spec/`, sin una linea de codigo y sin mover una
+cifra. (1) `spec/rfc/0006-consumo-publicado.md`, tabla de etapas, fila E3: el estado decia
+`propuesta` cuando E3 lleva ya cuatro sellos. (2) `spec/PAQUETE.md`, seccion 9: la declaracion de
+los rechazos sin vector citaba <<el banco de la etapa E3c del RFC-0006>>, y ese RFC no tiene
+ninguna etapa E3c.
+
+**La etiqueta no estaba libre, y eso es lo grave.** Medido al abrir la 104: `E3c` es una etapa
+SELLADA del **RFC-0003** -el escenario de conformidad v2, §352 a §354- y vive en NUEVE ficheros
+del arbol: `AUDITORIA.md`, `spec/rfc/0003-compromiso-v2.md`, `two_phase.rs`, `tools/canon.sh`,
+`conformance.rs`, `client.rs`, `sandbox.rs` y `wire/lib.rs`. Un lector que siguiera la cita del
+§419 no encontraba nada en el RFC-0006 y encontraba OTRA COSA en el 0003. No es una cita
+fantasma: es una cita DESVIADA, que es peor, porque resuelve.
+
+**Un identificador se corrige en su sitio.** El precedente es el §403: una URL que cambia se muda
+como identificador, no como texto. Aqui se muda la etiqueta y se deja intacto el hecho que la
+frase afirma -que los rechazos del sobre de consumo esperan un banco que los capture-. El pasado
+en prosa no se reescribe; lo que se corrige es lo que habla del presente.
+
+**La fila E3 hablaba del presente y era falsa.** Decia `propuesta`. Pasa a `sellada en parte` con
+sus cuatro sellos nombrados -§416 y §417 el camino por el cable, §418 y §419 el sobre y su
+verificacion sin nodo- y con lo que queda dicho: los vectores, el catalogo aparte y el banco que
+los captura. El molde es el de las filas E1 y E2 de esa misma tabla, que ya llevan su sellada con
+su numero de sello. La columna de si rompe el cable NO se toca: sigue diciendo NO, y la
+correccion del §417 ya explica que E3 SI toca el cable de forma aditiva sin subir la version.
+
+**Lo que este sello NO hace.** No crea el directorio de vectores, ni su manifiesto, ni la estrofa
+del canon, ni el banco: eso es el corte siguiente. No toca codigo, no mueve ningun pin y no mueve
+ninguna cifra, asi que el canon NO corre. Precedente de la casa para un sello de solo documento:
+§400 y §412. La puerta es `verificar_citas` y las nueve herramientas con liston de DELTA.
+
+**Lo que la medicion dejo escrito, y va contra quien lo escribe.** Al abrir el frente se concluyo,
+leyendo la seccion 9 de `PAQUETE.md`, que los vectores del sobre de consumo debian ir al
+directorio del paquete y que no hacia falta una estrofa nueva de canon. **Es falso**, y lo falsa
+el propio RFC-0006 en su Compatibilidad, fila E3: <<sus vectores bajo su directorio [...] nace un
+catalogo aparte>>. `PAQUETE.md` describe el mecanismo; el RFC decide el destino. Queda escrito
+como falso: concluir de un documento sin abrir el que lo gobierna es la clase que mas rojos ha
+costado en esta casa.
+
+**El coste del directorio propio, medido y no supuesto.** `tools/conformidad.sh` acepta
+`<binario> [manifiesto]`, con defecto el del paquete, y busca los vectores en el directorio del
+manifiesto; su puerta de <<vector sin entrada>> recorre ese directorio y solo ese. Un directorio
+propio cuesta su manifiesto y una estrofa de canon calcada del 3 bis del cable. Los 67 vectores
+del paquete quedan intactos, que es justo lo que el RFC promete.
+
+**Contadores.** Ningun pin se mueve. Ninguna suma se mueve. Ningun Cargo tocado. Los dos ficheros
+de `spec/` quedan LINEA-NEUTRALES: `spec/rfc/0006-consumo-publicado.md` 286 lineas y
+`spec/PAQUETE.md` 353, las dos con huella nueva. El canon no corrio: este sello no toca codigo ni
+cifras.

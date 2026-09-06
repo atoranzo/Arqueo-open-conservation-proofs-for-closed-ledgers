@@ -12,7 +12,7 @@
 |---|---|---|---|
 | E1 — el árbol y la raíz en reposo | el conjunto de consumos como árbol disperso de la capa, su raíz `root:cons` guardada y comprobada al abrir (la sexta raíz en reposo), el rechazo de un consumo repetido, la instantánea que lo transporta, y los testigos negativos que lo falsan | NO | sellada — §413 |
 | E2 — la cabeza v4 | la composición `epoch_digest_v4` que mete la raíz y la cuenta de consumos bajo la firma; el conjunto aceptado pasa a {2, 3, 4}; el cable sirve los dos campos; vectores nuevos bajo su versión | **SÍ** (`zkssl/0.3` → `0.4`) | sellada — §414 (E2a) y §415 (E2b; el cable NO sube: ver la corrección) |
-| E3 — la prueba portable | una forma nueva del paquete de evidencia que prueba que un consumo está bajo la raíz de una cabeza firmada y no lo estaba bajo la de una cabeza anterior; el mando la verifica sin nodo | NO | propuesta |
+| E3 — la prueba portable | una forma nueva del paquete de evidencia que prueba que un consumo está bajo la raíz de una cabeza firmada y no lo estaba bajo la de una cabeza anterior; el mando la verifica sin nodo | NO | sellada en parte — §416 y §417 (el camino, por el cable), §418 y §419 (el sobre y su verificación sin nodo); quedan sus vectores, su catálogo aparte y el banco que los captura |
 | E4 — el banco de dos libros | dos nodos, dos operadores, el mismo consumo publicado en los dos, y un lector que con las dos cabezas firmadas lo detecta; y el negativo: con una sola cabeza no hay nada que detectar | NO | propuesta |
 | E5 — el atado en circuito | que el consumo quede restringido en el AIR a la operación que lo consume, con `nullifier_tree.rs` como pieza de partida. Fuera de este RFC: hoy no se puede escribir el testigo que lo falsaría sin E1 | NO | fuera del alcance |
 
