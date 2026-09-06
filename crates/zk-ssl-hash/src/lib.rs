@@ -191,6 +191,31 @@ pub fn path_root(leaf: Digest, siblings: &[Digest], is_right: &[bool]) -> Digest
     current
 }
 
+/// **Profundidad del arbol de consumos publicados**: 63 bits de posicion.
+/// `1u64 << 63` es la ultima capacidad representable en `u64`.
+///
+/// Vive AQUI y no en la capa desde el S416: un verificador independiente
+/// **no compila la capa** (S243) y necesita recomponer la posicion de un
+/// consumo para subir su camino con [`path_root`]. La capa la re-exporta
+/// desde `consumo.rs`: un solo productor, como `native_merge` (S254).
+pub const CONS_DEPTH: usize = 63;
+
+/// **Posicion de un consumo en su arbol**: los 63 bits bajos de sus primeros
+/// ocho bytes, leidos en little-endian - la misma serializacion que persiste
+/// la capa ([`digest_to_bytes`]).
+///
+/// La posicion NO es el digest entero: el arbol disperso se indexa por `u64`.
+/// La HOJA si es el digest entero, de modo que dos consumos distintos con la
+/// misma posicion se DETECTAN en vez de confundirse (S413). Y el enmascarado
+/// a 63 bits es lo que garantiza `pos < 1u64 << CONS_DEPTH`: un camino pedido
+/// fuera de capacidad no llegaria a la raiz, y no lo diria.
+pub fn posicion_de_consumo(consumo: &Digest) -> u64 {
+    let b = digest_to_bytes(consumo);
+    let mut ocho = [0u8; 8];
+    ocho.copy_from_slice(&b[0..8]);
+    u64::from_le_bytes(ocho) & (u64::MAX >> 1)
+}
+
 /// Compone el digest de una cabeza de época.
 ///
 /// ⚠️ **Esta es LA composición**, y `EpochHead::digest()` la llama. Un
@@ -965,3 +990,37 @@ mod tests_sello_movido {
 /// regla: misma razon que `native_merge` (§254), `as_digest` (§255),
 /// `native_leaf` (§258) y la composicion del sello (§279).
 pub const COMPROMISO_AUSENTE: Digest = [BaseElement::new(0xC0_A9_2281); 4];
+
+#[cfg(test)]
+mod tests_consumo {
+    use super::*;
+
+    /// S416: la posicion son los 63 bits bajos del prefijo, y la mascara
+    /// quita el bit 63 y nada mas.
+    ///
+    /// El testigo NO teclea un valor grande: el campo REDUCE
+    /// (`BaseElement::new(u64::MAX)` sale `2^32 - 2`, medido al sellar), asi
+    /// que se usa uno que el campo admite y cuyo bit 63 esta puesto - que es
+    /// lo unico que la mascara tiene que tocar.
+    #[test]
+    fn la_posicion_de_un_consumo_cabe_siempre_en_el_arbol() {
+        let alto: Digest = [
+            BaseElement::new((1u64 << 63) | 5),
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+            BaseElement::ZERO,
+        ];
+        let p = posicion_de_consumo(&alto);
+        assert!(p < (1u64 << CONS_DEPTH), "la posicion tiene que caber: {p}");
+        assert_eq!(p, 5, "la mascara quita el bit 63 y nada mas");
+        let cero: Digest = [BaseElement::ZERO; 4];
+        assert_eq!(posicion_de_consumo(&cero), 0, "el digest cero va a la posicion cero");
+
+        // Y la cota DECLARADA: dos digests que solo difieren en el bit 63
+        // comparten posicion. Es la colision que `apply_consumo` detecta por
+        // la HOJA, con su propio nombre (S413).
+        let bajo: Digest = [BaseElement::new(5), BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO];
+        assert_eq!(posicion_de_consumo(&bajo), posicion_de_consumo(&alto));
+        assert_ne!(bajo, alto, "y son digests DISTINTOS: la hoja los separa");
+    }
+}

@@ -31052,3 +31052,84 @@ cabeza y no bajo otra) y E4 (el banco de dos libros). La lista custodiada del te
 punto 82 tiene vector vivo desde el §414. `wire/lib.rs:685-692` declara la rotura para «el día que
 las cofirmas entren como campo aditivo»: la pareja de consumos la ha cobrado antes, y se declara
 aquí.
+
+## §416 — El camino del consumo: la capa lo da, el nucleo recompone la posicion
+
+**Que.** RFC-0006, E3a (1 de 2). La capa gana `cons_path(seq_cabeza, consumo)`: la raiz de
+consumos **tal como la firmo la cabeza de ese `seq`** y el camino de autenticacion del consumo
+bajo ella. Y `CONS_DEPTH` y `posicion_de_consumo` se MUDAN de la capa al nucleo
+(`zk-ssl-hash`), que es donde tienen que estar: un verificador independiente no compila la capa
+(§243) y necesita recomponer la posicion para subir el camino. La capa las re-exporta desde
+`consumo.rs`: un solo productor, ocho llamadores intactos (§296, mudar y atar).
+
+**Por que aqui y no en el verificador.** El subidor ya existe y ya es del nucleo: `path_root`
+(`hash/lib.rs`) itera sobre la LONGITUD del camino y no sobre una constante, y su doc lo dice
+desde que nacio. Lo que faltaba no era una primitiva: era **la posicion** —que se deriva del
+digest— y **el camino**, que solo la capa puede dar porque solo ella tiene el arbol.
+
+**Las dos direcciones, con la MISMA llamada.** `path_for` funciona igual para una posicion
+ocupada y para una libre, asi que el mismo camino prueba las dos cosas segun la hoja con la que
+se suba: **el digest del consumo** prueba que esta bajo la raiz; **el digest CERO** prueba que no
+estaba. Esa es la pareja que E3 empaqueta —presencia bajo la cabeza nueva, ausencia bajo la
+anterior— y por eso la capa no expone dos funciones: expone una y **quien verifica elige la
+hoja**.
+
+**El arbol de una cabeza pasada se RECONSTRUYE, no se guarda.** El consumo viaja como COMPROMISO
+de su entrada del registro desde el §413, asi que las entradas `OpKind::Consumo` con
+`seq < seq_cabeza` son el conjunto exacto que esa cabeza firmo: `rebuild_from` lo levanta sin
+historico aparte. Es el molde de `vista_acuses::camino_de_epoca` del nodo (§275), con dos
+diferencias: aqui **no hace falta el diario** —el limite es el `seq` de la propia cabeza, no un
+limite de epoca— y el arbol es el de profundidad `CONS_DEPTH`, no el de 32 por defecto.
+
+**Y se DEVUELVE la raiz reconstruida, por la misma razon que la devuelve el hermano.**
+Reconstruir del registro y mantener el arbol vivo son **dos productores del mismo objeto**; sin
+devolver la raiz, quien llama no tiene contra que cruzar. Con ella, el llamador compara contra la
+que la cabeza firmo y un tramo mal reconstruido se cae en el acto en vez de producir un camino
+que no verifica y no dice por que.
+
+**Fail-closed, y no en silencio.** Si una entrada `Consumo` del tramo no lleva su compromiso,
+`cons_path` devuelve `None`: el registro seria el que miente, y un arbol reconstruido a medias
+daria una raiz distinta SIN NOMBRE. Es la misma clase que la cota que `sparse_tree.rs` declara
+para un indice fuera de capacidad —cota que aqui NO puede darse: `posicion_de_consumo` enmascara
+a 63 bits y el arbol tiene `CONS_DEPTH = 63`, luego `pos < capacity()` por construccion—. Se
+declara porque es la clase de invariante que se rompe al cambiar una constante.
+
+**Lo que NO hace.** No publica nada por el cable: los dos metodos son el §417. No cambia
+`epoch_head`, ni el digest, ni una raiz. **No prueba que la cabeza este firmada** —eso es del
+mando, con la firma XMSS y el preambulo— ni que el consumo corresponda a un pago (E5: el circuito
+no restringe nada). Y lo que se reconstruye vale lo que valga el registro, cuya integridad en
+reposo es `root:log` (§392).
+
+**Testigos (cinco de la capa y uno del nucleo, ensenados ROJOS EN VIVO con DOS sabotajes que
+DISCRIMINAN).** Con el limite de `seq` en off-by-one (`>` en vez de `>=`) cae **uno solo**, y es
+el falsador de E3: `rfc0006_bajo_la_cabeza_anterior_el_consumo_nuevo_no_estaba`. Con el arbol
+montado a la profundidad por defecto caen **cuatro**, los que cruzan contra la raiz, y el de la
+`seq` del futuro aguanta porque no compara raices. Los cinco: el camino de un consumo publicado
+sube hasta `cons_root`; el de uno ausente sube con la hoja CERO y NO con el consumo; bajo la
+cabeza anterior el consumo nuevo no estaba; una `seq` mayor que el registro no tiene camino; y la
+raiz reconstruida es la raiz viva.
+
+**Lo que el arbol falso al sellar, y queda escrito.** El testigo del nucleo tecleaba
+`BaseElement::new(u64::MAX)` esperando `u64::MAX`. **El campo REDUCE**: Goldilocks es
+`p = 2^64 - 2^32 + 1` y sale `2^32 - 2`. Un test que teclea un valor en un CAMPO supone que el
+campo lo admite. Reescrito contra la PROPIEDAD: un digest cuyo primer elemento es `(1<<63)|5` da
+posicion 5 —la mascara quita el bit 63 y nada mas—, el digest cero da 0, y dos digests que solo
+difieren en ese bit COMPARTEN posicion, que es la colision declarada que `apply_consumo` caza por
+la hoja (§413).
+
+**Contadores.** Pin `zk-ssl-hash` 26 -> 27, `zk-ssl` 318 -> 323; sumas 1035 + 137 = 1172 pasan a
+**1041 + 137 = 1178**, y 1186 a **1192**; `check_tests` 1187 -> **1193**; `check_nucleo` 85 -> **87
+filas** (verify 50, hash 35 -> 37; NUCLEO 61 -> 63); `check_modulos` **120**, sin `.rs` nuevo;
+`verificar_citas` 64 nombres, 0 fantasmas, 0 secciones muertas. Las quince cifras rancias que el
+pin destapo las nombro `check_cifras` corriendo con el pin movido y las cifras sin mover, y las
+dieciocho sustituciones se anclaron a la LINEA ENTERA: en `PRINCIPIOS.md` conviven el total, el
+318 de la CAPA y el 318 de CIRCUITOS —con su sustantivo partido por el salto—, y `stark-experiment`
+sigue en 318 en los nueve documentos. Los nueve son LINEA-NEUTRALES. Ningun Cargo tocado: la capa
+ya dependia de `zk-ssl-hash`.
+
+**POST.** `crates/zk-ssl-hash/src/lib.rs` `8f28b73345da4388`/1026 · `crates/zk-ssl/src/consumo.rs`
+`8b1678030c2192a0`/326 · `spec/NUCLEO.md` `fec49bfc1a71ebeb`/236 · `tools/canon.sh`
+`5ac0e73e96b42c86`/339 · `ARQUITECTURA.md` `f28e1a3899a0a9ff` · `PRINCIPIOS.md`
+`9707b4a918ee1c5c` · `PAPER.md` `3dbee8550b8c3d84` · `PAPER_EN.md` `9113e528f7c4db0e` ·
+`README.md` `63b362f386c51d07` · `RESUMEN_EJECUTIVO.md` `e4b1d9cba4eafda9` · `RESUMEN_BILINGUE.md`
+`3b523cd28d5505f8` · `INSTITUCIONAL.md` `3be687bc1afa5a31` · `INSTITUTIONAL.md` `1936ecf2fd75f304`.

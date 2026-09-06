@@ -60,8 +60,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 50 elementos alcanzables en `zk-ssl-verify` y 35 `pub` en `zk-ssl-hash`
-(LIBRO 2, NÚCLEO 61, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 50 elementos alcanzables en `zk-ssl-verify` y 37 `pub` en `zk-ssl-hash`
+(LIBRO 2, NÚCLEO 63, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
 reexportaciones de `zk-ssl-hash` no se cuentan dos veces: un elemento, una fila. En `zk-ssl-hash`,
@@ -72,6 +72,7 @@ real de sus llaves, no por la primera marca.
 |---|---|---|---|---|
 | `Digest` | `hash/lib.rs` | NÚCLEO | HASH | `type` |
 | `FormatoError` | `hash/lib.rs` | REFERENCIA | HASH | `enum` |
+| `CONS_DEPTH` | `hash/lib.rs` | NÚCLEO | HASH | `const` |
 | `STATE_WIDTH` | `hash/lib.rs` | NÚCLEO | HASH | `const` |
 | `as_digest` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
 | `digest_from_bytes` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
@@ -81,6 +82,7 @@ real de sus llaves, no por la primera marca.
 | `embeber` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
 | `native_merge` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
 | `path_root` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
+| `posicion_de_consumo` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
 | `epoch_digest` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
 | `epoch_digest_v2` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
 | `epoch_digest_v3` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
@@ -222,6 +224,8 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- S416 - `CONS_DEPTH` y `posicion_de_consumo`: la posicion del consumo se recompone sin la
+  capa (RFC-0006, E3a). Dos filas nuevas.
 - §414 — `epoch_digest_v4`, la variante `V4` y `lleva_mmr`: el núcleo y el mando aceptan la cabeza
   v4 (RFC-0006, E2a); el KAT de `epoch_digest_v4`. Cinco filas nuevas.
 - §411 — la sección 6 y los KAT de `spec/vectors/nucleo/`: los bytes, fijados (RFC-0005, E5).
