@@ -30776,3 +30776,59 @@ mueven: sus `--list` son identicas PRE y POST (verify solo pierde cinco lineas d
 (el primer Cargo tocado desde el §395) y `Cargo.lock` gana UNA linea por ello. Nace
 `crates/zk-ssl-cli/src/nucleo_kat.rs` (`check_modulos` lo ve declarado: 118 -> 119 .rs).
 `tools/*.sh` 11; herramientas del canon DIEZ. Documentos `.md` versionados: 67.
+
+## §412 — El consumo publicado: RFC-0006 PROPUESTO (unicidad de uso dentro de un libro, deteccion entre libros)
+
+**Que.** Nace `spec/rfc/0006-consumo-publicado.md`, PROPUESTO, calcado del 0005: cinco etapas
+(E1 el arbol y la raiz `root:cons` en reposo; E2 la cabeza v4; E3 la prueba portable; E4 el banco
+de dos libros; E5 el atado en circuito, fuera del alcance), Motivacion medida, cuatro decisiones
+D-1..D-4, ocho descartes, Compatibilidad (E2 sube el cable a `zkssl/0.4`; ningun vector viejo se
+reescribe), Seguridad y Referencias con huella. `spec/README.md` gana su fila. Es el candidato
+decidido en la sesion 96 para las 120 h que H1 libero, abierto por reloj (reenvio antes del
+3-nov-2026 12:00 CET), y el primer RFC que entra por la puerta que el 0005 escribio: una familia
+bajo la firma de la cabeza, por version nueva del preambulo. No toca un byte de codigo.
+
+**Lo que se midio antes de escribir un byte** (PASTE-NULL-M `de16e15a4efa9bed`, salida
+`af3599b28a30b0d5`/2228; PASTE-412-PRE `fb58926ddaf09346`, salida `9fe4664b793ad743`/835). Hay DOS
+nulificadores vivos y uno retirado, y ninguno sirve: el de gasto (§32, `derive_nullifier(sk, nonce)`,
+portado a `nullifier_tree.rs`, 793 lineas, sin un consumidor bajo `crates/zk-ssl/src`) y el de
+umbral de custodios (`circuit_threshold_single_nullifier.rs:243`), los dos derivados de una clave
+privada para que nadie los precompute (§117): lo contrario de una etiqueta que dos organismos
+calculan por separado. `root:nullifier` y `null:` estan OCUPADOS: `load` los lee, los verifica y los
+BORRA (§36, `persistence.rs:456-680`). Cinco raices en reposo, todas `need()` fail-closed
+(`:484-562`) y escritas en `commit` (`:774-783`): el molde de la sexta esta escrito cinco veces. El
+coste de un campo firmado: v4 = merge(v3, merge(X, as_digest(Y))) sin dominio, separado por el byte
+de version del preambulo (§236); `VersionCabeza` es el unico productor del conjunto y su test pina
+`[2, 3]`: el falsador de E2 ya existe. La palabra: `nullifier` 200 / `nullificador` 39 /
+`nulificador` 43 en 67 documentos, tres grafias y tres significados; el patron «tiene un arbol de
+nulificadores» da cero fuera de AUDITORIA; quedan filas en presente de cara al publico
+(`INSTITUCIONAL.md:271`, `INSTITUTIONAL.md:279`, `VISION.md:127`, `doc/USE_CASES.md:28`, que dice
+«(nullifiers) measured» de una capa que no persiste ninguno). El juez del nombre: `cons:`,
+`root:cons` y `consumo` dan CERO en los 158 `.rs`; en los `.md`, cinco hits, cuatro por «CPU de
+consumo» y uno en `VISION.md:574` (el consumo de un pendiente), declarado como vecindad. Los 39
+asientos que el RFC cita existen todos. RFC siguiente 0006 (ocupados 0, 2, 3, 4, 5), asiento
+siguiente 412, vallas 132.
+
+**Las decisiones (DELEGADAS por el autor, tomadas con la constitucion, REVERSIBLES).** D-1 el
+nombre: «consumo publicado», `cons:`/`root:cons`; descartados «nulificador» (tres significados),
+«marca» (nota 99) y «uso» (`meta:cust_uses`). D-2 donde vive: el MINIMO, un arbol disperso calcado
+de `froz:` indexado por el digest completo, sexta raiz fail-closed, rechazo del repetido, instantanea
+4 -> 5, tres testigos negativos; el circuito (`nullifier_tree.rs`) es E5, fuera del RFC, porque sin
+E1 no hay libro con consumos y no se puede escribir hoy el testigo que falsaria el atado. D-3 la
+cabeza: v4 lleva UNA familia (`root_cons`, `k`); el punto 43 (`supply` + `meta_root`) no monta —sin
+RFC ni falsador— y seria v5. D-4 el limite, escrito en el RFC: identificador acordado = gobernanza;
+oraculo heredado; dentro de un libro invariante, ENTRE libros deteccion y no prevencion; quien
+publica primero bloquea (DoS declarada); inobservabilidad ninguna, por diseno.
+
+**Lo que NO afirma.** No sella ninguna etapa: E1-E4 son propuestas y E5 queda fuera. No afirma que
+un consumo corresponda a un pago, ni que el identificador sea correcto, ni que la unidad exista, ni
+que dos libros no puedan aceptar el mismo consumo. La fila 28 de `doc/USE_CASES.md` sigue diciendo
+«(nullifiers) measured»: se corrige cuando E1 la haga verdadera, no antes. Y el recado de fuera
+sigue en pie: el reenvio a Restack se redacta con E1 medida, no con este RFC.
+
+**Contadores.** Cero codigo, cero cifras, sin canon (como el §400 y el §410). La puerta fue
+`tools/verificar_citas.py`: rc 0 antes y despues, 0 fantasmas, 0 secciones muertas, nombres +1 (el
+RFC nuevo, citado desde `spec/README.md`), y en fase ROJO sobre una copia del universo `.md` con una
+cita a un documento inexistente, 1 fantasma con rc 1. `spec/rfc/0006-consumo-publicado.md` nace;
+`spec/README.md` 160 -> 161 (+1 fila tras la del 0005; el ancla `c43890a` de la cabecera sigue
+rancia, punto 80). Documentos `.md` versionados: 67 -> 68. Vallas de este fichero: 132, invariante.
