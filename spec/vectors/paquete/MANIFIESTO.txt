@@ -14,7 +14,7 @@ rechazo-v-0.json|1|el paquete declara v:0
 rechazo-v-3.json|1|el paquete declara v:3
 rechazo-v1-con-cofirmas.json|1|un paquete v1 con `cofirmas`
 rechazo-sin-cabeza.json|1|falta cabeza
-rechazo-tipo-desconocido.json|1|falta cabeza
+rechazo-tipo-desconocido.json|1|tipo desconocido: otra
 rechazo-cabeza-no-available.json|1|la cabeza empaquetada no era available:true
 rechazo-cabeza-sin-available.json|1|la cabeza empaquetada no era available:true
 rechazo-formatVersion-ausente.json|1|falta formatVersion o no es cadena 0x

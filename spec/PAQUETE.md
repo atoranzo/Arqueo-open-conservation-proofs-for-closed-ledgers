@@ -115,7 +115,9 @@ recompone**. Cada paso que pasa imprime una línea en la salida estándar.
 
 **Paquete de posición (v1 y v2):**
 
-0. el fichero se lee y es JSON; `v` es 1 o 2; un v1 no trae `cofirmas`; `tipo` no es `extension`;
+0. el fichero se lee y es JSON; `v` es 1 o 2; un v1 no trae `cofirmas`; el sobre **no lleva
+   `tipo`** —un `tipo` presente y distinto de `extension` se **rechaza con su nombre**, nunca
+   se lee como paquete de posición (§418)—;
 1. **`1/3`** — `cabeza` existe y es `available:true`; `formatVersion` es 2, 3 o 4; **la versión
    elige recomponedor**: v2 con la pareja de acuses (§275), v3 además con la del MMR (§292), v4
    además con la raíz y la cuenta de consumos (RFC-0006 E2a, §414); los
@@ -154,6 +156,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `el paquete no declara su version en `v``
 - `el paquete declara v:{v_paquete} — este binario lee v1 y v2`
 - `un paquete v1 con `cofirmas`: subir la version es lo que las hace parte del contrato — declaralo v2, o quitalas`
+- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`) o `tipo: "extension"``
 
 **Forma de los valores** (`hex_a_bytes`, `digest_de`, `u64_de`; `{campo}` es la clave que se leía)
 
@@ -264,6 +267,8 @@ La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.
 - §401 — el artefacto: `tools/artefacto.sh`, el tarball reproducible y el 3 ter del canon (sección 11).
 - §408 — el arnés de conformidad (RFC-0005, E4): `tools/conformidad.sh`, el único productor del bucle
   del manifiesto, consumido por el canon y por `artefacto.sh`, y dentro del tarball (sección 9).
+- §418 — el `tipo` desconocido se rechaza con su nombre (RFC-0006, E3b, D-12):
+  `rechazo-tipo-desconocido.json` deja de caer por `falta cabeza`, que era la regla de otro.
 - Hasta §397 este contrato vivía en la cabecera de `crates/zk-ssl-verify/src/main.rs` (1..90,
   `293990fedc785833`), que ya confesó una vez (§247) haber declarado su superficie como completa
   sin serlo. §397 lo muda aquí y deja la cabecera remitiendo, sin enumerar.

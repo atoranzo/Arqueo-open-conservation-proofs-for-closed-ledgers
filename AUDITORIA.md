@@ -31213,3 +31213,59 @@ linea—. Ningun Cargo tocado.
 `spec/rfc/0006-consumo-publicado.md` `2a50177798dcca7f`/286 · `tools/canon.sh`
 `edbafa637a673bac`/339 · `PRINCIPIOS.md` `73caf661dbcd1bb9` · `PAPER.md` `001c42355948bf7e` ·
 `RESUMEN_EJECUTIVO.md` `e2acee723b5605cf` · `RESUMEN_BILINGUE.md` `1a492ca4cb412f23`.
+
+## §418 — el tipo desconocido gana rechazo con nombre
+
+**Que.** El mando del paquete (`crates/zk-ssl-verify/src/main.rs`) preguntaba con un `if` si
+`tipo` era `"extension"`. Cualquier OTRO valor caia por el brazo de POSICION y moria mas abajo en
+`falta cabeza`, que es la regla de OTRA cosa. Ahora es un `match` de tres brazos: un `tipo`
+AUSENTE sigue siendo el paquete de posicion (v1 y v2, el contrato de §289 y §322, declarado y no
+silencioso); `"extension"` va al verificador de extension; y **cualquier otro gana un rechazo que
+se nombra a si mismo**. Es el primer sello de la etapa E3b del RFC-0006 y ejecuta la decision
+D-12, delegada por el autor con la constitucion y REVERSIBLE en este asiento.
+
+**Por que es de rango 1 y no cosmetico.** La ley dice fail-closed: ante duda se para, no se
+"sigue por compatibilidad". Un `tipo` desconocido leido como paquete de posicion es seguir por
+compatibilidad. Y un rechazo que nombra otra regla es peor que ninguno: el lector que sigue el
+catalogo de `spec/PAQUETE.md` seccion 5 concluye lo que no es, que es justo lo que ese catalogo
+promete que no pasa ("el primer fallo, con nombre").
+
+**Lo que la medicion ahorro.** El vector `rechazo-tipo-desconocido.json` ya existia desde §398,
+con `{"v":1,"tipo":"otra"}`, y el MANIFIESTO lo pinaba a "falta cabeza". Antes de mover esa linea
+se midio si ese texto se quedaba huerfano: NO. `rechazo-sin-cabeza.json` ya lo pina en la linea
+de encima. Eran DOS vectores para el MISMO texto y pasan a ser uno cada uno. Sin esa lectura este
+sello habria nacido con un vector de mas o con un texto sin testigo.
+
+**El testigo, en vivo y en este orden.** Fase ROJO con el MANIFIESTO nuevo y el codigo VIEJO: el
+arnes `tools/conformidad.sh` dio rc 1 y EXACTAMENTE UN rojo, el del vector del tipo
+("no dice 'tipo desconocido: otra'"), con `conformidad: 67 de 68` — y el 68 se DERIVO del propio
+manifiesto en la corrida, no se tecleo. Fase VERDE con el codigo nuevo: `68 de 68`, rc 0.
+
+**No nace ningun `#[test]`, y es a proposito.** El VECTOR es el testigo y el canon lo corre en
+cada sello (bloque 3 bis). Un unitario en `main.rs` seria un segundo productor del mismo hecho.
+Por eso este sello no lleva bloque -B: ningun pin ni ninguna cifra se mueven.
+
+**El binario del mando SI se mueve, y se dice.** El arnes lo imprime en cada corrida:
+`78a554f1b47f76ac` antes de este sello, `d1b8555abd826af8` despues. La release
+`arqueo-verify-v0.1.0` sigue siendo HISTORIA, como ya quedo declarado en el §406 y en el §408.
+
+**El documento.** `spec/PAQUETE.md` cambia en tres sitios: el paso 0 de la seccion 4 (el sobre no
+lleva `tipo`, y un `tipo` presente y distinto de `extension` se rechaza con su nombre), el
+catalogo de la seccion 5 (el texto nuevo, citado como se EMITE y con su hueco `{otro}`) y la
+Historia de la seccion 10. La seccion 9 NO se toca: los cuatro textos sin vector siguen siendo
+cuatro, porque el que nace trae el suyo.
+
+**Lo que este sello NO hace.** No toca el cable: ni un metodo, ni un tipo, ni un vector de
+`spec/vectors/` fuera del manifiesto del paquete; `zkssl/0.3` no sube y el triple gate lo falsa en
+esta misma corrida. No abre la forma nueva del sobre: `tipo: "consumo"` es el sello siguiente
+(E3b-2, decisiones D-15 y D-17). Y no hace obligatorio el `tipo`: exigirlo romperia 52 vectores
+por pulcritud sin ganar un invariante.
+
+**Contadores.** Ningun pin se mueve: `zk-ssl-verify` sigue en 82, y el `--list` del crate salio
+IDENTICO NOMBRE A NOMBRE, 82 antes y 82 despues. `check_tests` 1197 · `check_modulos` 120 ·
+`check_nucleo` 50 + 37 = 87 · `check_cifras` rc 0. Ningun Cargo tocado. Sumas sin mover:
+1045 + 137 = 1182. Vectores del paquete: 67 `.json` y 68 entradas del manifiesto, sin cambio.
+
+**POST.** `crates/zk-ssl-verify/src/main.rs` `2095fd3276c7635a` / 619 ·
+`spec/vectors/paquete/MANIFIESTO.txt` `774c7bc6d1e0ce79` / 72 (LINEA-NEUTRAL: mismas lineas,
+huella nueva) · `spec/PAQUETE.md` `03eeb4e19f82b682` / 298.

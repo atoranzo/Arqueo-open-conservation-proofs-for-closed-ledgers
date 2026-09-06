@@ -117,8 +117,21 @@ fn correr(ruta: &str) -> Result<(), String> {
                 .into(),
         ));
     }
-    if p.get("tipo").and_then(|x| x.as_str()) == Some("extension") {
-        return verificar_extension(&p);
+    // §418 · RFC-0006 E3b (D-12) · EL `tipo` DESCONOCIDO GANA RECHAZO CON NOMBRE.
+    //   Esto era un `if` contra "extension": cualquier otro `tipo` caia por el
+    //   brazo de POSICION y moria abajo en `falta cabeza`, que nombra OTRA
+    //   regla. Un rechazo que nombra otra cosa es peor que ninguno, y "seguir
+    //   por compatibilidad" es justo lo que la ley prohibe (fail-closed).
+    //   El `tipo` AUSENTE sigue siendo el paquete de posicion (v1 y v2): ese es
+    //   el contrato de §289 y §322 y NO se toca.
+    match p.get("tipo").map(|t| t.as_str().unwrap_or("(no es una cadena)")) {
+        None => {}
+        Some("extension") => return verificar_extension(&p),
+        Some(otro) => {
+            return Err(err(format!(
+                "tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`) o `tipo: \"extension\"`"
+            )))
+        }
     }
     let c = p.get("cabeza").ok_or_else(|| err("falta cabeza".into()))?;
     if c.get("available").and_then(|x| x.as_bool()) != Some(true) {
