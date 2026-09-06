@@ -31385,3 +31385,54 @@ del paquete quedan intactos, que es justo lo que el RFC promete.
 de `spec/` quedan LINEA-NEUTRALES: `spec/rfc/0006-consumo-publicado.md` 286 lineas y
 `spec/PAQUETE.md` 353, las dos con huella nueva. El canon no corrio: este sello no toca codigo ni
 cifras.
+
+## §421 — el banco de la prueba portable entra en el arbol
+
+**Que.** Nace `tools/banco_consumo.sh`, el banco de E3 del RFC-0006, y su asiento. No se toca una
+linea de codigo ni se mueve una cifra: el canon NO corre (precedente §400, §412 y §420). Los
+bancos de `tools/` pasan a ser OCHO.
+
+**Que demuestra, y ya esta demostrado.** Nodo real firmando latidos, cabeza VIEJA v4 custodiada, un
+consumo PUBLICADO por el cable, un segundo consumo para que el arbol no sea trivial, la prueba de
+consistencia, la cabeza NUEVA v4 que firma ese tamano, y los DOS caminos del arbol de consumos
+pedidos con el `seq` de cada cabeza. Con eso se arma el sobre y el mando lo verifica **con el nodo
+MUERTO**: cinco pasos, la posicion DERIVADA del consumo y CRUZADA contra el `isRight` de los dos
+caminos. Es la primera vez que la prueba portable se sostiene de extremo a extremo fuera de los
+`#[test]`.
+
+**Y SIETE negativos, cada uno por SU regla.** Uno del CABLE, con el nodo vivo: el mismo consumo
+publicado dos veces se rechaza con nombre. Seis sobre el sobre, derivados por MUTACION del
+positivo: la ausencia con un hermano sustituido -que dice <<el consumo YA estaba>>-, la presencia
+igual, UN BIT del `isRight` -que dispara el cruce de la posicion, la mitad falsificable de D-17, y
+ahora de extremo a extremo y no solo en un `#[test]`-, el camino del MMR adulterado, el camino
+recortado a tres niveles, y el sobre sin `presencia`. Cada negativo exige el codigo de salida Y su
+texto: si cae por otra regla, el banco se pone rojo.
+
+**FUERA del canon, y se dice.** Levanta procesos y espera latidos, como su hermano
+`tools/banco_extension.sh`, del que copia su forma. Se desvia de el en UNA cosa, declarada:
+compila en RELEASE, porque aqui se firma de verdad y en depuracion XMSS tarda minutos. El canon
+sigue sin invocar NINGUN banco -son CERO- y esa es la deuda vieja del punto 34, que este sello no
+paga ni pretende pagar.
+
+**No escribe en el arbol.** Todo lo suyo vive en un temporal bajo `$HOME`, que borra al salir, y la
+ultima puerta del propio banco re-mide `git status --porcelain`. Su `--guardar` copia el positivo y
+los seis cuerpos negativos, con su huella, al directorio que se le diga: de esas capturas se
+derivan por MUTACION los vectores del corte siguiente, que es lo que la regla 2 del PROCESO exige.
+
+**Lo que este sello NO hace.** No crea `spec/vectors/consumo/`, ni su manifiesto, ni la estrofa del
+canon que lo correria, ni retira de `spec/PAQUETE.md` seccion 9 la declaracion de los rechazos sin
+vector: eso es el corte siguiente, y se hace con las capturas que este banco produce.
+
+**Las tres lecciones que costo, y valen para cualquier banco.** (1) **Un sabotaje que no cambia un
+byte no prueba nada**: con un arbol de UN SOLO consumo, el camino de la ausencia bajo la vieja y el
+de la presencia bajo la nueva son IDENTICOS -lo que separa las dos afirmaciones es la HOJA, no el
+camino- y mi primer negativo, que los intercambiaba, dio exit 0. Ahora toda mutacion se comprueba
+contra el positivo ANTES de gastar una corrida del verificador. (2) **El ORDEN de las
+comprobaciones decide QUE regla habla**: recorte `siblings` e `isRight` a la vez y el sobre cayo
+por el cruce de posicion en vez de por la longitud, dejando esa regla sin testigo. (3) **Una linea
+copiada del molde arrastra la PREMISA del molde**: el `cd` del hermano supone vivir en `tools/`, y
+el fichero corria todavia suelto. La raiz se DERIVA, con prueba de vida.
+
+**Contadores.** Ningun pin se mueve. Ninguna suma se mueve. Ningun Cargo tocado. Ningun `.rs`
+tocado. `tools/banco_consumo.sh` nace con 351 lineas y huella 736ea247a69641d2. El canon no
+corrio: este sello no toca codigo ni cifras.
