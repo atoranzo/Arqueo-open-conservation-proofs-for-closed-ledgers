@@ -31608,3 +31608,57 @@ del parrafo que se contradice. Este bloque imprime ademas, INFORMATIVO, las corr
 ya viven en el fichero, para que la proxima que se escriba pueda alinearse con la forma medida.
 
 **Contadores.** `AUDITORIA.md` 31571 -> 31610. Vallas 132. Ningun Cargo tocado, canon sin correr.
+
+## §425 — los dos catalogos, corridos desde DENTRO del tarball y sin repo
+
+**Que.** El punto 110 de la cola 5.A. Hasta hoy lo demostrado era que el arnes de conformidad corre
+los dos manifiestos DESDE EL ARBOL; nadie los habia corrido nunca desde dentro del tarball que un
+tercero descarga, que es literalmente el criterio de H3 y lo que hara un tercero. Este sello lo
+cierra por el lado que vale: no como una medida de una vez, sino como una PROPIEDAD que el canon
+gatea en cada sello.
+
+**La clausula.** `tools/artefacto.sh --check` desempaqueta el tarball que acaba de comprobar
+reproducible, entra en su directorio raiz y corre alli los dos manifiestos CON EL BINARIO DE DENTRO
+y CON EL ARNES DE DENTRO. Y exige el MISMO veredicto que desde el arbol: un resultado que solo se
+mira a si mismo no prueba nada. `manifiesto()` gana el arnes como segundo argumento en vez de
+duplicar el bucle, porque dos copias serian dos productores del mismo contrato. `conformidad.sh` no
+se toca ni una linea: su manifiesto ya es relativo al directorio actual y su propia cabecera ya
+decia que esa ruta es la misma en el arbol y dentro del tarball.
+
+**Por que este gate no puede pasar en vacio.** Si el desempaquetado no produce nada, el `cd` falla;
+si falta un manifiesto, el arnes sale 3; si el manifiesto esta vacio o un `.json` no tiene entrada,
+el arnes se pone rojo por su cuenta; y el cruce contra el veredicto del arbol pina las cuentas. La
+prueba de vida es permanente y estructural, y por eso el falsador no se compra en cada sello.
+
+**El falsador, ensenado en vivo.** Sobre una COPIA de lo desempaquetado se quito el primer vector
+que el manifiesto nombra y el arnes cayo NOMBRANDOLO, con su codigo de salida y el que el
+manifiesto esperaba. Un gate sin su rojo es un adorno.
+
+**La autorreferencia, medida y dicha.** El tarball lleva dentro `commit` y `describe`, asi que su
+huella no puede vivir en el commit que la produce, y poner un tag la mueve otra vez. Lo midio la
+lectura del artefacto que dormia en `target/`: decia `commit=05dee36a90b22cbbec80dd11c...` con
+HEAD en `c3bbcbc`, y `describe=arqueo-verify-v0.1.0-21-g05dee36`. Por eso este asiento registra
+la huella ESTABLE -la del binario con remap- y la del tarball CON SU COMMIT AL LADO, como historia
+fechada; ninguna huella de tarball entra en un documento vivo, y la seccion 11 lo dice ahora con su
+porque y con el orden de una release: `tag`, producir, subir.
+
+**Decisiones, todas REVERSIBLES.** D-1 la huella estable al asiento, la del tarball con su commit .
+D-2 ninguna huella de tarball en documento vivo: el canon gatea la PROPIEDAD (PRECISION 60) . D-3
+la autorreferencia dicha en una frase, con el orden de la release . D-4 el invariante del corte es
+el veredicto desde dentro, no una huella . D-5 se GATEA en el `--check` en vez de medirse una vez:
+si el canon no lo corre, `PAQUETE.md` no puede afirmarlo, y el punto 109 es lo que le pasa a un
+"observado y sin gatear" . D-6 el arnes se pasa como argumento, un solo productor del bucle . D-7
+el falsador va en vivo aqui y no en el canon, porque la prueba de vida del gate ya es permanente y
+un autosabotaje perpetuo seria pagar para siempre una demostracion que basta hacer una vez.
+
+**Lo que queda fuera y se declara.** El punto 109: el `--check` sigue montando UNA vez y
+empaquetando DOS, asi que gatea que `empaquetar` es determinista y no que `montar` lo sea . la
+firma incompleta del arnes en la seccion 9 y su cita del banco (punto 104), fuera por perimetro con
+el precedente del §423 . la colision del token `--check`, que en este arbol nombra tambien al
+`conformance --check` del cli, preexistente y declarada . y el punto 81: el tarball se mueve otra
+vez, asi que la release publicada sigue siendo HISTORIA.
+
+**Contadores.** `tools/artefacto.sh` 108 -> 117 lineas. `spec/PAQUETE.md` 363 -> 369.
+`AUDITORIA.md` 31610 -> 31664. Vallas 132. Binario con remap 887f130e41a17f0d; manifiestos desde el arbol
+paquete 68/68 consumo 13/13 y desde dentro del tarball paquete 68/68 consumo 13/13; tarball bb0942be2ec8979b, 2300537 B, 91 ficheros dentro. Ningun
+Cargo tocado, ningun pin movido, canon `--sello` corrido.

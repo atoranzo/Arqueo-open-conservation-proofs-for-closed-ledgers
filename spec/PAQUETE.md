@@ -329,6 +329,8 @@ La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.
   `rechazo-tipo-desconocido.json` deja de caer por `falta cabeza`, que era la regla de otro.
 - §423 — el catálogo del consumo viaja DENTRO del artefacto: `montar()` copia `spec/vectors/consumo/`
   y el `--check` corre los DOS manifiestos con el mismo binario (RFC-0006, E3c; §422).
+- §425 — los dos catálogos se corren DESDE DENTRO del tarball desempaquetado y sin repo: el `--check`
+  lo abre en `target/artefacto/desde-dentro/` y exige el MISMO veredicto que desde el árbol (punto 110).
 - Hasta §397 este contrato vivía en la cabecera de `crates/zk-ssl-verify/src/main.rs` (1..90,
   `293990fedc785833`), que ya confesó una vez (§247) haber declarado su superficie como completa
   sin serlo. §397 lo muda aquí y deja la cabecera remitiendo, sin enumerar.
@@ -350,9 +352,10 @@ La huella del binario **no depende de la máquina ni del usuario** —se compila
 `--remap-path-prefix`—, pero sí del toolchain y de `Cargo.lock`: con el `rustc` que `VERSION`
 nombra, `bash tools/artefacto.sh` sobre el commit que `VERSION` nombra vuelve a producir el mismo
 binario y el mismo tarball, y `tools/canon.sh` comprueba esa propiedad en cada sello (dos
-compilaciones en dos rutas, misma huella; dos tarballs, misma huella; el manifiesto entero). Lo
-que el binario exige: x86_64 Linux y una glibc igual o mayor que la que `VERSION` declara
-(`glibc_max`); no es estático, y se dice.
+compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los dos manifiestos desde el
+árbol y, desde §425, otra vez **desde dentro del tarball desempaquetado y sin repo**, con el mismo
+veredicto). Lo que el binario exige: x86_64 Linux y una glibc igual o mayor que la que `VERSION`
+declara (`glibc_max`); no es estático, y se dice.
 
 Lo que el artefacto NO es: no es una publicación en crates.io (el crate no lleva la spec ni los
 vectores) ni prueba nada sobre la clave del operador (sección 8). No lleva los vectores del cable
@@ -360,4 +363,7 @@ vectores) ni prueba nada sobre la clave del operador (sección 8). No lleva los 
 una segunda implementación ponga ahí el suyo— ni los KAT de `spec/vectors/nucleo/`, que no tienen
 manifiesto y los ejercita `nucleo_kat.rs`: entregar vectores que el binario entregado no puede
 correr sería afirmar más de lo que se demuestra. La release es un fichero con huella, y la huella
-vive en el asiento que lo selló.
+vive en el asiento que lo selló, nunca aquí: **el tarball no puede publicar su propia huella**,
+porque lleva dentro `commit` y `describe` y sellar los mueve —y poner un tag mueve el `describe`
+otra vez—. Por eso una release se hace en este orden: `tag`, producir, subir; y lo que este
+documento gatea es la PROPIEDAD, no un número.

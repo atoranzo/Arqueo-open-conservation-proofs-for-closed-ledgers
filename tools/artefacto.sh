@@ -12,7 +12,8 @@
 #     bash tools/artefacto.sh --check    # la PROPIEDAD, para el canon (§401, 3 ter): dos
 #                                        # compilaciones en dos target dan la misma huella y
 #                                        # cero rutas de la maquina; dos tarballs, la misma
-#                                        # huella; el binario pasa los DOS manifiestos.
+#                                        # huella; el binario pasa los DOS manifiestos, y los
+#                                        # pasa igual DESDE DENTRO del tarball, sin repo (§425).
 #
 # Lo que el binario exige: x86_64 Linux y la glibc que `VERSION` nombra (no es estatico).
 # Lo que este fichero NO hace: publicar. La release en GitHub se sube a mano, con las huellas
@@ -68,13 +69,15 @@ empaquetar(){ # $1 = directorio montado, $2 = tarball de salida
   ( cd "$(dirname "$1")" && tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner -cf - "$(basename "$1")" | gzip -n -9 > "$2" )
 }
 
-manifiesto(){ # $1 = binario -> imprime "<familia> ok/n" por cada una; exit 1 si alguna falla.
+manifiesto(){ # $1 = binario, $2 = arnes -> imprime "<familia> ok/n"; exit 1 si alguna falla.
   # §408 · UN solo productor del bucle: tools/conformidad.sh (RFC-0005 E4). Aqui solo se consume.
   # §423 · una corrida por familia, MISMO binario y otro manifiesto (molde del 3 bis del canon).
+  # §425 · el arnes se PASA porque desde DENTRO del tarball vive en ./conformidad.sh, no en tools/.
+  #        El manifiesto sigue siendo relativo al CWD, que es lo mismo en el arbol y dentro.
   # OJO: la acumuladora NO puede llamarse OUT, que es global en este fichero.
-  local SAL RC=0 R F RES=""
+  local SAL RC=0 R F RES="" ARN="${2:-tools/conformidad.sh}"
   for F in $FAMILIAS; do
-    R=0; SAL=$(bash tools/conformidad.sh "$1" "spec/vectors/$F/MANIFIESTO.txt" 2>&1) || R=$?
+    R=0; SAL=$(bash "$ARN" "$1" "spec/vectors/$F/MANIFIESTO.txt" 2>&1) || R=$?
     [ "$R" = "0" ] || RC=$R
     RES="$RES$F $(echo "$SAL" | tail -n 1 |
       sed -n 's/^conformidad: \([0-9]*\) de \([0-9]*\) .*/\1\/\2/p') "
@@ -93,7 +96,13 @@ if [ "${1:-}" = "--check" ]; then
   montar "$A" "$OUT/$NOMBRE"
   empaquetar "$OUT/$NOMBRE" "$OUT/check-1.tar.gz"; empaquetar "$OUT/$NOMBRE" "$OUT/check-2.tar.gz"
   [ "$(h16 "$OUT/check-1.tar.gz")" = "$(h16 "$OUT/check-2.tar.gz")" ] || rojo "el tarball no es reproducible"
-  echo "  OK  artefacto: binario $HA reproducible entre rutas y sin rutas de la maquina, manifiestos $M, tarball $(h16 "$OUT/check-1.tar.gz") reproducible"
+  # §425 · el punto 110: los DOS catalogos, DESDE DENTRO del tarball y sin repo.
+  DES="$OUT/desde-dentro"; rm -rf "$DES"; mkdir -p "$DES"
+  tar -xzf "$OUT/check-1.tar.gz" -C "$DES" || rojo "no se puede desempaquetar el tarball"
+  MD=$( cd "$DES/$NOMBRE" && manifiesto ./zk-ssl-verify ./conformidad.sh ) \
+    || rojo "desde DENTRO del tarball los catalogos no pasan ($MD)"
+  [ "$MD" = "$M" ] || rojo "desde dentro dice '$MD' y desde el arbol '$M'"
+  echo "  OK  artefacto: binario $HA reproducible entre rutas y sin rutas de la maquina, manifiestos $M, desde dentro del tarball $MD, tarball $(h16 "$OUT/check-1.tar.gz") reproducible"
   exit 0
 fi
 
