@@ -31944,3 +31944,107 @@ vector puede pinarlo.
 Cargo tocado. NUEVE ficheros en dos commits: `6953e25` el codigo y la prosa,
 `a33430b` las cifras y el pin. El banco corrio en su fase VIVA; el canon, en este
 cierre: VERDE en 177 s.
+
+## §431 — El catalogo del sobre de conflicto: la deteccion, entregable
+
+**Que.** Nace `spec/vectors/conflicto/` con DIECISEIS vectores y su `MANIFIESTO.txt`
+(21 lineas: 5 de cabecera y 16 entradas), y `tools/canon.sh` 351 -> 363 gana la
+cuarta estrofa de conformidad, calcada de las tres que ya tenia. `tools/artefacto.sh`
+gana la familia en su linea 31, asi que el catalogo VIAJA en el tarball y el
+<<desde dentro>> del §425 lo corre. `spec/PAQUETE.md` 405 -> 415, `spec/README.md`
+162 -> 163 y el RFC-0006 lo declaran. Con esto E4a queda CERRADA ENTERA y la fila E4
+del RFC pasa a sellada. Es E4a-3, el ultimo corte de E4a.
+
+**De donde sale el material, y no es negociable.** Los dieciseis salen POR MUTACION
+de las capturas del banco de dos libros y jamas se reescriben (regla 2 del PROCESO):
+el positivo y el de los caminos intercambiados son capturas TAL CUAL -conservan su
+huella byte a byte-, y los otros catorce se derivan del positivo. Sus textos se
+tomaron del BINARIO en una corrida, no del catalogo: cada candidato se sondeo contra
+el mando real y entro solo si dio el codigo de salida Y el texto. Es el molde del
+§422, medido en su asiento antes de repetirlo.
+
+**Por que dieciseis y no veinte.** La cobertura es la de la decision E4-5 -un
+negativo por cada regla PRODUCIBLE-, pero el criterio de que es <<de su familia>> lo
+fija el precedente, no el gusto: cruzado el MANIFIESTO del consumo contra el fuente,
+el catalogo del consumo NO lleva NI UNO de los textos de `cabeza_v3_verificada`
+-available, no recompone, falta publicKey, falta signature- sino solo el de la
+VERSION. Esos textos nacieron en la familia del paquete y alli tienen su vector. La
+familia se acota a las reglas que el sobre ANADE o RE-SUJETA en su propio flujo. Mi
+primera cuenta llevaba seis de mas: habrian pesado 225 KB afirmando lo que otra
+familia ya falsa.
+
+**El material minimo, y es rango 2.** Cada negativo lleva lo que su regla necesita
+para ser alcanzada y nada mas. Los cuatro que caen antes de leer una cabeza -falta
+`libros`, `libros` que no es lista, la cuenta distinta de dos, y `libro[0]: falta
+cabeza`- pesan 110, 123, 126 y 130 bytes. El de la cabeza v3 lleva UNA cabeza y el
+segundo libro VACIO; el de la misma clave, la misma cabeza duplicada y ningun
+camino. Resultado medido: **16 ficheros y 952.568 bytes, MENOS que la familia del
+consumo (13 y 1.106.119) con tres vectores mas**. Un vector que carga dos cabezas
+firmadas cuando su regla dispara antes de leer ninguna prueba de mas y dice menos, y
+ata sus bytes a una corrida de firmas que nada tiene que ver con su regla.
+
+**El juez que este corte estrena, y el defecto que caza.** Un fragmento del
+manifiesto no vale por llevar el sujeto: vale si es el MAS ESPECIFICO de los que
+casan la linea roja que el binario emite. Medido: TRES de los fragmentos con hueco
+colisionaban EXACTAMENTE con los del catalogo del consumo -<<exige cabezas v4>>, <<el
+isRight recibido NO es el de la posicion>> y <<no tiene los 63 niveles del arbol de
+consumos>>-, porque el texto lo produce el mismo sitio con otro sujeto. Con el
+fragmento corto, un dia en que el sujeto se nombrara mal el vector seguiria pasando,
+que es justo lo que E4-5 vino a falsar y el motivo entero del §429. Y un CUARTO lo
+caza el propio juez en el ensayo: el de los 63 niveles llevaba 43 caracteres y el del
+consumo, que casa la misma linea, mide 45 -mas largo por la cola-. **La
+especificidad se mide en LONGITUD del que casa, no en llevar el sujeto delante.** El
+juez corre las TREINTA entradas de las dos familias en cada bloque y exige que gane
+el suyo, sin empate.
+
+**El punto 107, pagado, y con el la seccion 9.** `spec/vectors/consumo/` gana un
+decimocuarto vector: el sobre que el banco de dos libros produce con <<las cabezas
+llevan claves DISTINTAS>> AISLADO -las dos cabezas son v4, las dos recomponen su
+digest y las dos firmas verifican, asi que el UNICO defecto es la clave-. El §422 lo
+dejo fuera y lo declaro en su D-25: entonces la unica cabeza ajena disponible era v3
+y el sobre llevaba DOS defectos. Con el segundo operador ya no. La seccion 9 baja de
+CINCO textos sin vector a CUATRO, y los cuatro que quedan son de la misma clase: los
+`{e:?}` que exigen 32 bytes que `digest_from_bytes` rechace, y no se conoce ninguno.
+
+**Dos defectos que la lectura destapo, y que este corte paga porque los vuelve
+falsos.** El primero: la fila E4 del RFC-0006 llevaba **`§NNN`**, un token de
+plantilla SIN SUSTITUIR, escrito por el §430 y sellado. No es un rotulo que no es el
+de su dato: es un dato que no dice nada, y ningun gate lo mira. Se corrige EN SU
+SITIO, como el §403 hizo con los identificadores. El segundo: `spec/README.md`
+publicaba <<one positive and twelve negatives>> de la familia del consumo, que es
+exactamente la cifra sin atado que el §422 declaro en su propia deuda y corrigio solo
+en `PAQUETE.md`. Este corte mete un vector en esa familia, asi que la vuelve falsa
+hoy: pasa a la REGLA -un negativo por regla producible-, no a otra cuenta. Y de
+propina, la fila E3 del RFC decia en PRESENTE que quedaban sus vectores, su catalogo
+y su banco, sellados los tres desde el §420, el §421 y el §422.
+
+**Lo que este sello NO cambia.** Ni una linea de Rust. Ningun pin se mueve,
+`check_tests` sigue en 1207, `check_modulos` en 121 y `check_nucleo` en 55 + 37 = 92
+filas. Lo unico que crece es lo que el tercero descarga: los TRES catalogos suman
+4.564.662 bytes crudos frente a 3.533.948, un 29 por ciento mas, y el `3 ter` del
+canon lo paga en algo mas de un segundo.
+
+**Reversible.** La decision E4-4 -directorio propio en vez de entradas dentro del
+manifiesto del consumo- y la E4-5 -un negativo por regla producible, con material
+minimo- siguen siendo reversibles. La clausula de la E4-4 era que el crecimiento
+medido cambiara el coste del canon de forma discutible: MEDIDO que no, y ahora con la
+cifra real y no con la estimada.
+
+**Lo que fallo, y va escrito.** Dos predicciones de lineas del render eran numeros
+tecleados y no derivados: `spec/PAQUETE.md` iba a 409 y salio 415 -el delta real es
++10, que se obtiene sumando las seis piezas una a una-, y `tools/canon.sh` iba a 362
+y salio 363, porque conte las once lineas de la estrofa y me deje el blanco
+separador. Ninguna de las dos era una puerta, y por eso pasaron: **el delta de lineas
+de un render se DERIVA de sus piezas o se declara como expresion**. Ademas, el
+RFC-0006 se ENSANCHO de 408 a 541 columnas con la fila E4; la puerta de ancho solo
+gateaba `PAQUETE.md` -decision declarada: lo que no es el invariante se declara como
+dato-, asi que el dato salio y aqui queda. Y el `RENDER-E4a-3-r2` que se leyo antes
+de montar lleva en su pieza 1 el fragmento CORTO de los 63 niveles: el bloque escribio
+el largo, que es el que el juez exige, y esa es la unica linea en que el render y el
+arbol difieren.
+
+**Contadores.** VEINTICUATRO ficheros: 18 nuevos -16 vectores, su MANIFIESTO y el
+vector del consumo- y 6 modificados. Ningun Cargo tocado, ningun `.rs`. Conformidad
+con el MISMO binario: paquete 68 de 68, consumo 14 de 14, conflicto 16 de 16. Las
+cinco herramientas sin movimiento. Vallas 132 -> 132. El canon `--sello` corrio en
+183 s.
