@@ -327,6 +327,8 @@ La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.
   consistencia dentro, y la posición **derivada y cruzada** contra el `isRight` recibido.
 - §418 — el `tipo` desconocido se rechaza con su nombre (RFC-0006, E3b, D-12):
   `rechazo-tipo-desconocido.json` deja de caer por `falta cabeza`, que era la regla de otro.
+- §423 — el catálogo del consumo viaja DENTRO del artefacto: `montar()` copia `spec/vectors/consumo/`
+  y el `--check` corre los DOS manifiestos con el mismo binario (RFC-0006, E3c; §422).
 - Hasta §397 este contrato vivía en la cabecera de `crates/zk-ssl-verify/src/main.rs` (1..90,
   `293990fedc785833`), que ya confesó una vez (§247) haber declarado su superficie como completa
   sin serlo. §397 lo muda aquí y deja la cabecera remitiendo, sin enumerar.
@@ -336,12 +338,13 @@ La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.
 
 Lo que un tercero descarga es `arqueo-verify-<versión>-<host>.tar.gz` (§401), y dentro:
 `zk-ssl-verify` (el binario), `conformidad.sh` (el arnés de la sección 9, §408), `spec/PAQUETE.md`
-(este documento), `spec/vectors/paquete/` (el manifiesto y sus vectores), `LICENSE-APACHE`,
-`LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
+(este documento), `spec/vectors/paquete/` y `spec/vectors/consumo/` (los dos manifiestos y sus
+vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
 licencias de todo lo enlazado), `VERSION` (el commit, el toolchain y los flags con que se compiló)
 y `SHA256SUMS` (la huella de cada fichero de dentro). Se comprueba con `sha256sum -c SHA256SUMS`,
-y el binario contra su propio manifiesto con `bash conformidad.sh ./zk-ssl-verify`: cada entrada
-dice el código de salida y el texto.
+y el binario contra los dos catálogos con `bash conformidad.sh ./zk-ssl-verify` y
+`bash conformidad.sh ./zk-ssl-verify spec/vectors/consumo/MANIFIESTO.txt`: cada entrada dice el
+código de salida y el texto.
 
 La huella del binario **no depende de la máquina ni del usuario** —se compila con
 `--remap-path-prefix`—, pero sí del toolchain y de `Cargo.lock`: con el `rustc` que `VERSION`
@@ -352,5 +355,9 @@ que el binario exige: x86_64 Linux y una glibc igual o mayor que la que `VERSION
 (`glibc_max`); no es estático, y se dice.
 
 Lo que el artefacto NO es: no es una publicación en crates.io (el crate no lleva la spec ni los
-vectores) ni prueba nada sobre la clave del operador (sección 8). La release es un fichero con
-huella, y la huella vive en el asiento que lo selló.
+vectores) ni prueba nada sobre la clave del operador (sección 8). No lleva los vectores del cable
+—su consumidor es el testigo del cli, no este binario, y su propio adaptador está escrito para que
+una segunda implementación ponga ahí el suyo— ni los KAT de `spec/vectors/nucleo/`, que no tienen
+manifiesto y los ejercita `nucleo_kat.rs`: entregar vectores que el binario entregado no puede
+correr sería afirmar más de lo que se demuestra. La release es un fichero con huella, y la huella
+vive en el asiento que lo selló.

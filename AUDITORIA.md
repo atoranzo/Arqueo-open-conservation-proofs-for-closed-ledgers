@@ -31518,3 +31518,54 @@ Canon `--completo` VERDE en 3.232 s, el primero desde `9dd6aa9` del 23-ago: 68 s
 quietos (323/318/95/88/97/17/27), 1203 tests declarados, 121 ficheros `.rs`: este corte no toco
 una linea de codigo. `spec/vectors/consumo/` lleva 13 `.json` y 1.107.430 B. El binario del mando
 da `16d5b0d9bfc7ff2d`, que es el que §419 declaro: `cargo build --release` lo reproduce.
+
+## §423 — el catalogo del consumo viaja dentro del artefacto
+
+**Que.** `tools/artefacto.sh` monta el tarball con DOS familias de vectores en vez de una:
+`spec/vectors/paquete/` y `spec/vectors/consumo/`. El `--check` que el canon corre en su `3 ter`
+pasa a exigir los DOS manifiestos con el MISMO binario, calcado del `3 bis consumo` del §422.
+`spec/PAQUETE.md` seccion 11 dice lo que el tarball lleva y lo que NO lleva, con la razon medida de
+cada exclusion. Ni una linea de Rust: ningun pin se mueve.
+
+**Por que.** El criterio de H3 es que una segunda implementacion pase y falle igual. Desde el §422
+el catalogo del consumo son trece vectores que el MISMO binario del paquete corre; dejarlos fuera
+del artefacto era entregar una spec cuyo conformance solo cubre una de sus dos familias. El arnes
+ya viajaba dentro (§408) y ya aceptaba un segundo manifiesto: el coste eran tres lineas.
+
+**Un solo productor.** Nace `FAMILIAS="paquete consumo"`, y `montar()` y `manifiesto()` la
+comparten. Dos listas habrian sido dos productores del mismo contrato, que es lo que el §292 y el
+§293 dejaron escrito. Con una, no se puede copiar una familia que el arnes no corra, ni al reves.
+
+**Lo que NO viaja, y por que.** Los KAT de `spec/vectors/nucleo/` no tienen MANIFIESTO -medido: 19
+`.json` y 19 ficheros, con los otros tres directorios diciendo que SI como prueba de vida- y los
+ejercita `nucleo_kat.rs` dentro del cli. Los vectores del cable SI tienen manifiesto, pero su
+conformidad la corre `tools/cable_respuesta.sh`, que hace `exec zk-ssl-cli witness --respuesta`: un
+binario que este tarball no lleva, y cuyo propio adaptador esta escrito para que una segunda
+implementacion ponga ahi el suyo. Entregar vectores que el binario entregado no puede correr seria
+afirmar mas de lo que se demuestra.
+
+**El punto 105, cerrado por medicion y sin tocar una linea de prosa.** El tarball SI es funcion
+pura de su contenido; lo que no era puro era la frase: su contenido lleva el commit dentro.
+`montar()` escribe `VERSION` con `commit=` y `describe=`, y `SHA256SUMS` los arrastra otra vez. De
+los tres candidatos que el traspaso declaraba -el commit, una marca de sucio, una fecha- el commit
+queda CONFIRMADO y los otros dos FALSADOS: cero `git status` y cero `git diff` en las 97 lineas,
+cero `date`, y el empaquetado normalizado con `--sort=name --mtime=@0 --owner=0 --group=0
+--numeric-owner` y `gzip -n`. La seccion 11 ya lo decia bien desde el §401 -<<sobre el commit que
+`VERSION` nombra>>- y por eso no se toca: el defecto estaba en el traspaso, no en el arbol.
+
+**Lo que se declara y no se hace.** El `--check` monta UNA vez y empaqueta DOS: gatea que
+`empaquetar` es determinista, no que `montar` lo sea, porque dos montajes independientes no se
+comparan. El hueco es estrecho -el binario SI se compara entre dos rutas- pero la frase <<dos
+tarballs iguales>> es mas fuerte que lo que se ejercita. Es arco propio: cambia el coste del canon.
+La seccion 9 no se toca, ni su linea sobre el banco en vivo (punto 104): mismo perimetro que el
+§422, que ya paso por ahi y no la arreglo. Y las tres huellas del artefacto se mueven, asi que la
+release `arqueo-verify-v0.1.0` queda un sello mas atras (punto 81).
+
+**Decisiones, todas REVERSIBLES.** D-1 viaja el consumo y solo el consumo, con la razon medida de
+cada exclusion escrita en la seccion 11. D-2 una lista de familias, un productor. D-3 la seccion 9
+intacta. D-4 el `--check` sigue montando una vez y el hueco se ficha.
+
+**Contadores.** Ningun pin se mueve y ningun Cargo se toca. Manifiestos: paquete 68/68 consumo 13/13. Binario con
+remap 887f130e41a17f0d; tarball 9ba91db8e8a7b85a, 2300401 B, 91 ficheros dentro. `spec/PAQUETE.md` 356 -> 363
+(+2 en la seccion 10, +5 en la 11). `tools/artefacto.sh` 97 -> 108. Canon `--sello` VERDE en
+182 s.
