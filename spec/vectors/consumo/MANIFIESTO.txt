@@ -1,0 +1,17 @@
+# Vectores del sobre de CONSUMO (spec/PAQUETE.md, RFC-0006 E3, sellado en el asiento 422).
+# fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
+# Derivados por mutacion de las capturas del banco del sobre de consumo; jamas se reescriben (regla 2 del PROCESO).
+# La cabeza no-v4 sale de la cabeza real de spec/vectors/paquete/posicion-v2.json (191176bbe7146627), que es v3.
+consumo.json|0|VERDE: el consumo se publico entre las dos cabezas
+rechazo-cons-cabeza-v3.json|1|exige cabezas v4
+rechazo-cons-falta-presencia.json|1|falta presencia (camino del consumo)
+rechazo-cons-falta-siblings.json|1|presencia: falta siblings
+rechazo-cons-falta-isright.json|1|presencia: falta isRight
+rechazo-cons-sibling-no-cadena.json|1|presencia: siblings[0] no es cadena
+rechazo-cons-sibling-corto.json|1|presencia: siblings[0]: 31 bytes
+rechazo-cons-isright-no-booleano.json|1|presencia: isRight[0] no es booleano
+rechazo-cons-isright-otra-posicion.json|1|el isRight recibido NO es el de la posicion
+rechazo-cons-camino-63-niveles.json|1|no tiene los 63 niveles del arbol de consumos
+rechazo-cons-presencia-no-sube.json|1|presencia: el camino NO sube al consRoot de la nueva
+rechazo-cons-ausencia-ya-estaba.json|1|el consumo YA estaba
+rechazo-cons-no-extiende.json|1|NO extiende a la vieja

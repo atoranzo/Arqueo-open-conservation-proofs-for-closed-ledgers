@@ -301,14 +301,17 @@ bucle. `tools/canon.sh` lo corre en cada canon sobre el binario de referencia y 
 si un solo vector no dice lo que el manifiesto dice, o si aparece un vector sin entrada. Un
 nibble adulterado en cualquiera pone el canon en rojo.
 
-Cuatro textos del catálogo **no tienen vector**, y se declaran: «las cabezas llevan claves
+Cinco textos del catálogo **no tienen vector**, y se declaran: «las cabezas llevan claves
 DISTINTAS» exige dos cabezas firmadas por dos operadores distintos; y `{campo}: {e:?}`,
-`sibling {i}: {e:?}` y `camino[{i}]: {e:?}` exigen 32 bytes que `digest_from_bytes` rechace, y no
-se conoce un valor que lo haga. Siguen siendo reglas: lo que no tienen es testigo en el árbol.
-**Y desde §419, los rechazos del sobre de consumo tampoco lo tienen**: exigen un sobre de
-consumo real, que produce el banco del sobre de consumo (RFC-0006, E3). Hasta entonces su testigo
-vive en los `#[test]` de `crates/zk-ssl-verify/src/consumos.rs`, que falsan las reglas
-puras —la hoja vacía, la convención y el cruce— sin necesitar firmas.
+`sibling {i}: {e:?}`, `camino[{i}]: {e:?}` y `{cual}: siblings[{i}]: {e:?}` exigen 32 bytes que
+`digest_from_bytes` rechace, y no se conoce un valor que lo haga. Siguen siendo reglas: lo que
+no tienen es testigo en el árbol.
+**Y desde §422 los rechazos del sobre de consumo SÍ lo tienen**: `spec/vectors/consumo/` trae el
+positivo y un negativo por cada regla producible de su familia, derivados por mutación de las
+capturas del banco del sobre de consumo (RFC-0006, E3), cada uno con su entrada en
+`MANIFIESTO.txt`; el mismo arnés los corre en cada canon con otro manifiesto. Los `#[test]` de
+`crates/zk-ssl-verify/src/consumos.rs` siguen falsando las reglas puras —la hoja vacía, la
+convención y el cruce— sin necesitar firmas.
 La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.
 
 ## 10. Historia

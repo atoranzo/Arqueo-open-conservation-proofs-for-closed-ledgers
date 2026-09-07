@@ -312,6 +312,18 @@ else
   grep -q '^ROJO' "$OUT/cable.txt" || falla "cable: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/cable.txt"))"
 fi
 
+# ── 3 bis consumo · el sobre de CONSUMO (RFC-0006 E3, §422): el MISMO arnes, otro manifiesto ──
+msg ""
+msg "== CANON · los rechazos del sobre de consumo =="
+# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
+# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
+if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/consumo/MANIFIESTO.txt > "$OUT/consumo.txt" 2>&1; then
+  msg "  OK  consumo: $(tail -n 1 "$OUT/consumo.txt" | sed 's/^conformidad: //')"
+else
+  while IFS= read -r L; do falla "consumo $L"; done < <(grep '^ROJO' "$OUT/consumo.txt" | sed 's/^ROJO //')
+  grep -q '^ROJO' "$OUT/consumo.txt" || falla "consumo: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/consumo.txt"))"
+fi
+
 # ── 3 ter · el ARTEFACTO (tools/artefacto.sh --check, §401): la PROPIEDAD, no un pin ──
 msg ""
 msg "== CANON · el artefacto =="

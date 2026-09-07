@@ -31436,3 +31436,85 @@ el fichero corria todavia suelto. La raiz se DERIVA, con prueba de vida.
 **Contadores.** Ningun pin se mueve. Ninguna suma se mueve. Ningun Cargo tocado. Ningun `.rs`
 tocado. `tools/banco_consumo.sh` nace con 351 lineas y huella 736ea247a69641d2. El canon no
 corrio: este sello no toca codigo ni cifras.
+
+## §422 — el catalogo de vectores del sobre de consumo (RFC-0006, E3)
+
+Sesion 105, 7-sep-2026. Padre `dd495fa` (§421). Cierra E3c, el ultimo corte que le quedaba a la
+etapa E3 del RFC-0006.
+
+QUE ENTRA
+
+Nace `spec/vectors/consumo/` con TRECE vectores y su `MANIFIESTO.txt` (17 lineas: 4 de cabecera y
+13 entradas). `tools/canon.sh` gana la estrofa «3 bis consumo», que corre `tools/conformidad.sh`
+con el MISMO binario del paquete y otro manifiesto. `spec/README.md` gana su fila. La seccion 9 de
+`spec/PAQUETE.md` deja de declarar sin vector a los rechazos del sobre de consumo.
+
+Los trece salen POR MUTACION de capturas reales del banco del sobre de consumo (§421) y jamas se
+reescriben (regla 2 del PROCESO): siete son capturas del banco tal cual y seis se derivaron del
+positivo. Sus textos se tomaron del BINARIO en una corrida, no del catalogo.
+
+LAS DECISIONES (delegadas por el usuario con la constitucion, REVERSIBLES aqui)
+
+D-20  La estrofa se llama «3 bis consumo», no «3 quater». Medido: `3 bis` aparece dos veces —el
+      paquete y el cable— y `3 ter` una sola, que es el ARTEFACTO. Un «3 quater» detras del 3 ter
+      afirmaria ser el cuarto de la serie del artefacto, y es falso: es hermano del 3 bis. El
+      nombre «3 quater» venia arrastrado como suposicion desde la sesion 104; la medida lo falsa.
+
+D-21  Se cierra la familia entera. La familia CONSUMO del catalogo tiene DOCE textos: cinco ya
+      tenian testigo entre las capturas y seis se produjeron por mutacion. El duodecimo,
+      `{cual}: siblings[{i}]: {e:?}`, NO es producible y se declara en la seccion 9 con sus
+      hermanos, que pasan de cuatro a cinco. Un catalogo a medias dejaria siete reglas afirmadas
+      sin nada que las falsara, que es lo que el manifiesto desea y no lo que los tests demuestran.
+
+D-22  El negativo del camino del MMR entra RENOMBRADO a lo que prueba: `rechazo-cons-no-extiende`.
+      Cae por un texto de la familia EXTENSION que ya tiene vector, pero el vector que existe es un
+      sobre de extension; que el sobre de CONSUMO herede esa regla es composicion sin testigo.
+
+D-23  `tools/conformidad.sh` no se re-leyo. Su contrato lo midio la sesion 104, su ancla sigue viva
+      y no aparece en ningun bloque de bajas; el bloque le puso puerta en el cerrojo en vez de
+      gastar una corrida en releerlo.
+
+D-24  El vector de la cabeza no-v4 se llama `rechazo-cons-cabeza-v3`, no `-v2`: el instrumento
+      midio que `spec/vectors/paquete/posicion-v2.json` lleva una cabeza `formatVersion 0x3`. El
+      «v2» de su nombre es la version del SOBRE, no la de la cabeza.
+
+D-25  REVISADA A LA BAJA EN LA MISMA SESION: el catalogo entra con TRECE, no con catorce. Una
+      sonda midio que «las cabezas llevan claves DISTINTAS» —uno de los que la seccion 9 declara
+      sin vector— SI es producible con material que ya vive en el arbol. Pero el sobre que lo
+      produce lleva DOS defectos, porque la unica cabeza ajena disponible es v3: cae por su regla
+      de forma determinista, pero no la AISLA, y todos sus hermanos aislan la suya. No hay ruta
+      limpia: cambiar solo la publicKey rompe la recomposicion en el primer paso. Un testigo
+      limpio pide una cabeza v4 de un segundo operador, o sea otra corrida del banco. Queda en la
+      cola, con el dato ya medido.
+
+LECCIONES
+
+- Un arnes verde contra un verificador de mentira NO prueba el orden de los rechazos del binario
+  real. El orden se midio: dentro del paso 2 de 5, «claves DISTINTAS» va ANTES del gate de v4, y
+  las faltas de forma del camino caen despues del paso 3.
+- `printf` con escapes `\u` NO expande cuando el locale no es UTF-8: escupe el literal, y un ancla
+  con glifos dio cero. Los glifos de un `.sh` van por OCTAL, y el bloque lleva prueba de vida de
+  los suyos antes de usarlos.
+- Una sustitucion de prosa se hace por PARRAFO ENTERO, nunca por trozo de frase: partirla dejo una
+  linea corta con la continuacion original pegada detras. Se le puso puerta de ancho DERIVADA del
+  propio fichero, y esa puerta lo caso.
+- La puerta que mas valio fue el CONTROL de ida y vuelta: re-serializar el positivo SIN mutar y
+  exigirle VERDE. Sin el, un instrumento que estropeara el JSON habria contaminado las seis
+  medidas sin que nada chirriara.
+
+DEUDA DECLARADA
+
+- La seccion 9 dice «el positivo y un negativo por cada regla producible». La primera redaccion
+  decia «un positivo y doce negativos»: una cifra publicada sin atado, de la clase del punto 101.
+  Se corrigio antes de sellar. Una cuenta caduca en cuanto entre un vector; una regla no.
+- `tools/artefacto.sh` empaqueta SOLO el manifiesto del paquete. Si el catalogo del consumo es
+  conformidad negativa del estandar, falta decidir si los trece viajan en el tarball. Sin medir.
+- El testigo limpio de «las cabezas llevan claves DISTINTAS» sigue sin existir (ver D-25).
+
+CONTADORES
+
+Canon `--completo` VERDE en 3.232 s, el primero desde `9dd6aa9` del 23-ago: 68 sellos por detras.
+`--sello` VERDE. Conformidad: paquete 68 de 68, cable 12 de 12, consumo 13 de 13. Los SIETE pines
+quietos (323/318/95/88/97/17/27), 1203 tests declarados, 121 ficheros `.rs`: este corte no toco
+una linea de codigo. `spec/vectors/consumo/` lleva 13 `.json` y 1.107.430 B. El binario del mando
+da `16d5b0d9bfc7ff2d`, que es el que §419 declaro: `cargo build --release` lo reproduce.
