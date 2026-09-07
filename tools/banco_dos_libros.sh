@@ -3,7 +3,9 @@
 #
 # Demuestra el HECHO que E4 existe para detectar: DOS nodos con DOS claves distintas -dos libros-
 # aceptan EL MISMO consumo, cada uno bajo su propia raiz firmada, y ninguno de los dos puede
-# saberlo. Dentro de un libro el uso unico es un invariante; entre libros no hay quien ordene, y
+# saberlo. Y desde el S428 los dos arboles DIVERGEN, que es lo que hace que la afirmacion tenga
+# contenido: cada libro publica ademas un consumo PROPIO, asi que los dos `consRoot` y los dos
+# caminos de presencia son DISTINTOS y se gatean como distintos. Dentro de un libro el uso unico es un invariante; entre libros no hay quien ordene, y
 # por eso lo que queda es DETECCION, nunca prevencion (RFC-0006, D-4).
 #
 # Y demuestra EN VIVO el limite del mando de HOY: con una cabeza de cada libro, el binario sale 1
@@ -197,6 +199,42 @@ for PAR in "A:$PORT_A" "B:$PORT_B"; do
   esac
 done
 
+# ------------------------------------------------- Y UN CONSUMO PROPIO EN CADA LIBRO (S428)
+# ⚠️ CON UN SOLO CONSUMO LOS DOS ARBOLES SON IDENTICOS. Medido EN VIVO en la corrida del S427:
+# los dos `consRoot` salieron iguales -`0xb89ff617321e7043` los dos- y los dos caminos de
+# presencia byte a byte iguales. Entonces <<esta bajo la raiz de A>> y <<esta bajo la raiz de B>>
+# son LA MISMA comprobacion, y un sabotaje que intercambie los dos libros no discrimina. Es la
+# leccion del S421 un piso mas arriba, donde la ausencia y la presencia salian identicas con un
+# arbol trivial. Cada libro publica ademas un consumo PROPIO y los dos arboles DIVERGEN.
+PROPIO_A=$(python3 - <<'PY'
+b = bytearray(32)
+for i, v in ((3, 0x4E), (11, 0xB2), (19, 0x08), (27, 0xD5)):
+    b[i] = v
+print("0x" + b.hex())
+PY
+)
+PROPIO_B=$(python3 - <<'PY'
+b = bytearray(32)
+for i, v in ((3, 0x71), (11, 0x2F), (19, 0xC6), (27, 0x1A)):
+    b[i] = v
+print("0x" + b.hex())
+PY
+)
+[ "$PROPIO_A" != "$PROPIO_B" ] || fallo "los dos consumos propios son IGUALES: los arboles no divergirian"
+{ [ "$PROPIO_A" != "$CONSUMO" ] && [ "$PROPIO_B" != "$CONSUMO" ]; } \
+  || fallo "un consumo propio coincide con el compartido: el libro lo rechazaria por repetido"
+propio(){ # $1 puerto  $2 rotulo  $3 consumo
+  local R
+  R=$(rpc "$1" zkssl_publishConsumo "{\"consumo\":\"$3\"}")
+  case "$R" in
+    *'"accepted":true'*) campo "$R" result.logSeq ;;
+    *) fallo "el libro $2 no acepto su consumo propio: $R" ;;
+  esac
+}
+META_A=$(propio "$PORT_A" A "$PROPIO_A")
+META_B=$(propio "$PORT_B" B "$PROPIO_B")
+msg "cada libro publica ademas SU consumo: los dos arboles dejan de ser el mismo"
+
 # ---------------------------------------------------------------- LAS CABEZAS QUE LO ACREDITAN
 # La pareja firmada es el acumulador ANTES de la cabeza, asi que se espera a una cabeza cuyo `seq`
 # alcance el `logSeq` del consumo: solo esa puede llevar el consumo bajo su consRoot.
@@ -215,18 +253,24 @@ nueva_tras(){ # $1 puerto  $2 rotulo  $3 logSeq
   done
   fallo "el libro $L no emitio una cabeza con seq >= $(qnum "$META")"
 }
-N_A=$(nueva_tras "$PORT_A" A "$SEQ_LOG_A")
-N_B=$(nueva_tras "$PORT_B" B "$SEQ_LOG_B")
+# el meta es el logSeq del PROPIO, que va detras del compartido: una cabeza que lo alcanza
+# acredita los DOS consumos de su libro.
+N_A=$(nueva_tras "$PORT_A" A "$META_A")
+N_B=$(nueva_tras "$PORT_B" B "$META_B")
 for PAR in "A:$N_A" "B:$N_B"; do
   L="${PAR%%:*}"; V="${PAR#*:}"
   [ "$(qnum "$(campo "$V" result.formatVersion)")" = "4" ] || fallo "la cabeza nueva de $L no es v4"
-  [ "$(qnum "$(campo "$V" result.consCount)")" -ge 1 ] \
-    || fallo "la cabeza nueva de $L dice consCount 0: no acredita ningun consumo"
+  [ "$(qnum "$(campo "$V" result.consCount)")" -ge 2 ] \
+    || fallo "la cabeza nueva de $L dice consCount menor que 2: no acredita los DOS consumos de su libro"
 done
 CR_A=$(crudo "$(campo "$N_A" result.consRoot)")
 CR_B=$(crudo "$(campo "$N_B" result.consRoot)")
 msg "las DOS cabezas acreditan su conjunto: consRoot ${CR_A:0:18}... y ${CR_B:0:18}..."
-[ "$CR_A" != "$CR_B" ] || msg "  OJO: los dos consRoot COINCIDEN (mismo consumo, mismo arbol vacio detras)"
+# LA SONDA DEL S427 PASA A SER PUERTA: si los dos consRoot coinciden, los dos arboles son el
+# mismo y el sobre de conflicto no discriminaria nada.
+[ "$CR_A" != "$CR_B" ] \
+  || fallo "los dos consRoot COINCIDEN ($CR_A): los dos arboles son el MISMO y <<bajo la raiz de A>> y <<bajo la raiz de B>> serian la misma comprobacion"
+msg "las dos raices DIVERGEN: la afirmacion del sobre tiene contenido"
 
 # ---------------------------------------------------------------- LOS DOS CAMINOS DE PRESENCIA
 camino(){ # $1 puerto  $2 seq  $3 rotulo
@@ -239,7 +283,16 @@ camino(){ # $1 puerto  $2 seq  $3 rotulo
 }
 P_A=$(camino "$PORT_A" "$(campo "$N_A" result.seq)" A)
 P_B=$(camino "$PORT_B" "$(campo "$N_B" result.seq)" B)
-msg "los dos caminos de PRESENCIA servidos, uno por libro"
+DIF=$(python3 - "$P_A" "$P_B" <<'PY'
+import json, sys
+a = json.loads(sys.argv[1])["result"]["camino"]["siblings"]
+b = json.loads(sys.argv[2])["result"]["camino"]["siblings"]
+print(sum(1 for x, y in zip(a, b) if x != y))
+PY
+)
+msg "los dos caminos de PRESENCIA servidos, uno por libro; DIFIEREN en $DIF niveles"
+[ "$DIF" -ge 1 ] \
+  || fallo "los dos caminos son IDENTICOS: un sabotaje que los intercambie no discriminaria"
 
 kill -9 "$PID_A" 2>/dev/null || true
 kill -9 "$PID_B" 2>/dev/null || true
@@ -293,6 +346,23 @@ json.dump(p, open(d + "/conflicto.json", "w"))
 print("sobre de CONFLICTO armado (captura para E4a-2; hoy ningun binario lo lee)")
 PY
 
+# EL SABOTAJE QUE ANTES NO DISCRIMINABA (S428): intercambiar los dos caminos de presencia. Con
+# los arboles divergentes SI cambia bytes, y aqui se comprueba que los cambia -un sabotaje que no
+# cambia un byte no prueba nada-. Su ROJO lo ensena E4a-2, cuando el mando lea la forma.
+python3 - "$DIR" <<'PY'
+import json, sys
+d = sys.argv[1]
+p = json.load(open(d + "/conflicto.json"))
+q = json.loads(json.dumps(p))
+q["libros"][0]["presencia"] = p["libros"][1]["presencia"]
+q["libros"][1]["presencia"] = p["libros"][0]["presencia"]
+json.dump(q, open(d + "/neg-conflicto-caminos-intercambiados.json", "w"))
+if open(d + "/conflicto.json").read() == open(d + "/neg-conflicto-caminos-intercambiados.json").read():
+    print("ROJO: el intercambio no cambia un byte: no discriminaria")
+    raise SystemExit(3)
+print("sabotaje de INTERCAMBIO armado, y CAMBIA bytes: discrimina")
+PY
+
 # Y se DEMUESTRA que hoy no lo lee, con su nombre: fail-closed, no <<sigue por compatibilidad>>.
 niega "$DIR/conflicto.json" "tipo desconocido" "el mando de HOY ante el sobre de conflicto"
 
@@ -317,6 +387,7 @@ fi
 PORC=$(git status --porcelain | wc -l)
 [ "$PORC" -eq 0 ] || fallo "el banco dejo el arbol sucio ($PORC): no debe tocarlo"
 
-msg "BANCO-DOS-LIBROS VERDE: el MISMO consumo vive en DOS libros con DOS claves, cada uno bajo su"
-msg "  raiz firmada; el invariante INTRA-libro sigue en pie; y el mando de hoy no puede juntarlos."
-msg "  Eso es la deteccion que E4a-2 hara portable. Prevencion, ninguna: nadie ordena entre libros."
+msg "BANCO-DOS-LIBROS VERDE: el MISMO consumo vive en DOS libros con DOS claves y DOS raices"
+msg "  DISTINTAS, cada uno bajo su cabeza firmada; el invariante INTRA-libro sigue en pie; y el"
+msg "  mando de hoy no puede juntarlos. Eso es la deteccion que E4a-2 hara portable, y ahora sus"
+msg "  capturas DISCRIMINAN. Prevencion, ninguna: nadie ordena entre libros."

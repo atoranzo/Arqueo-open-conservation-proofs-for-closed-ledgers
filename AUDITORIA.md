@@ -31764,3 +31764,48 @@ herramientas del canon: la receta deriva los `.py` del bucle y los literales
 (PRECISION 78). Lo que SI se mueve y se declara: `tools/*.sh` pasa de 12 a 13 y los
 BANCOS de `tools/` de 8 a 9, dos cifras que publica el traspaso y que no gatea nadie
 (punto 34). El banco corrio en 13 s.
+
+## §428 — Que los dos libros DIVERJAN: sin eso, las dos raices son la misma comprobacion
+
+**Que.** `tools/banco_dos_libros.sh` pasa de 322 a 322 lineas (`40847c2cae809a25`): cada
+libro publica ademas un consumo PROPIO, y con eso los dos arboles dispersos
+DIVERGEN. La sonda informativa que el S427 imprimio pasa a ser PUERTA.
+
+**Por que, y es lo que la corrida del S427 destapo.** Con UN SOLO consumo en cada
+libro los dos arboles son IDENTICOS: mismo digest, misma posicion, mismos hermanos
+vacios. Medido en vivo: los dos `consRoot` salieron iguales -`0xb89ff617321e7043`
+los dos- y los dos caminos de presencia byte a byte iguales -`eeb6a2ea1fc8c38d` los
+dos-. Entonces <<el consumo esta bajo la raiz de A>> y <<esta bajo la raiz de B>>
+son LA MISMA comprobacion, y un sabotaje que intercambie los dos libros pasaria en
+VERDE. Lo unico que separaba a los dos libros era la clave, el `epochDigest` y la
+firma; las raices no.
+
+**Es la leccion del S421 un piso mas arriba.** Alli, con un arbol trivial, el camino
+de la AUSENCIA bajo la vieja y el de la PRESENCIA bajo la nueva salian identicos, y
+se arreglo publicando un SEGUNDO consumo. Aqui hace falta lo mismo pero ENTRE
+libros.
+
+**Lo que se anade, y lo que se GATEA.** Dos consumos propios, distintos entre si y
+distintos del compartido -las dos cosas comprobadas antes de publicar-. La cabeza
+nueva de cada libro tiene que acreditar `consCount` mayor o igual que DOS, no que
+uno. Los dos `consRoot` tienen que ser DISTINTOS o el banco cae con su nombre: la
+sonda del S427 era informativa y ahora es puerta. Y los dos caminos de presencia se
+cruzan nivel a nivel: si difieren en CERO, el banco cae, porque entonces no hay nada
+que un intercambio pueda romper.
+
+**El sabotaje que antes no discriminaba.** Se arma tambien
+`neg-conflicto-caminos-intercambiados.json`, que intercambia los dos caminos de
+presencia del sobre de conflicto, y se comprueba EN LA CORRIDA que cambia bytes: un
+sabotaje que no cambia un byte no prueba nada. Su ROJO no se puede ensenar todavia
+-el mando no lee la forma del conflicto- y por eso viaja como CAPTURA: lo cobra
+E4a-2.
+
+**Por que esto va ANTES de E4a-2 y no despues.** De las capturas de este banco nacen
+por mutacion los vectores de E4a-2. Unos vectores que no discriminan nacen muertos,
+y un catalogo que los acepta da un verde que no pide explicacion, que es peor que un
+rojo.
+
+**Contadores.** Ningun `.rs` tocado: ningun pin se mueve y ninguna cifra de tests
+cambia. Ningun Cargo tocado. El canon NO corrio -ni codigo ni cifras-. Ni el numero
+de `.sh` de `tools/` ni el de bancos se mueven: el fichero ya existia desde el S427.
+El banco corrio en 14 s.
