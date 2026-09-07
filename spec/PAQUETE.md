@@ -32,9 +32,9 @@ cuántos hacen falta lo decide el CLIENTE** con su política (§319, los mandos 
 del testigo), no el paquete: quien lo arma puede ser el operador, y dejarle elegir su propia `k`
 le devolvería justo lo que la cofirma le quita.
 
-## 2. Las cuatro formas
+## 2. Las cinco formas
 
-El binario acepta tres objetos. Los tres son JSON; los esqueletos van con puntos suspensivos
+El binario acepta cuatro objetos. Los cuatro son JSON; los esqueletos van con puntos suspensivos
 donde el valor es una respuesta del cable sin reescribir.
 
 ### 2.1 El paquete v1 — la posición
@@ -109,6 +109,30 @@ donde el valor es una respuesta del cable sin reescribir.
   elegiría cualquiera de las 2^63 libres para «probar» la ausencia de cualquier cosa. La
   mitad de presencia sí es sólida sin el cruce: no se fabrican hermanos que suban a una
   raíz real. Las reglas viven en `crates/zk-ssl-verify/src/consumos.rs` (`spec/NUCLEO.md`).
+### 2.5 El paquete de conflicto (§NNN)
+
+```text
+{ "v": 1, "tipo": "conflicto", "consumo": "0x…",
+  "libros": [ { "cabeza": {…}, "presencia": {siblings, isRight} },
+              { "cabeza": {…}, "presencia": {siblings, isRight} } ] }
+```
+
+- **No es superconjunto del de consumo: es otra afirmación.** Aquel prueba que un consumo se
+  publicó ENTRE dos cabezas de UN firmante, y para eso necesita la consistencia del MMR y la
+  `ausencia`. Éste prueba que el MISMO consumo está bajo el `consRoot` de **dos cabezas de dos
+  firmantes DISTINTOS**, y entre dos operadores no hay historia común que extender: no lleva
+  `camino` ni `ausencia`, y las dos cabezas van en una **lista `libros` de exactamente dos**.
+- ⚠️ **La lista no las ordena, porque la prueba no las ordena.** `vieja`/`nueva` o `a`/`b`
+  inventarían una precedencia que aquí no existe: los dos libros son simétricos y ninguno de
+  los dos es «el primero». Un tamaño distinto de dos se rechaza con nombre.
+- **La regla de las claves va al revés que en las otras formas.** Donde la extensión y el
+  consumo exigen la MISMA `publicKey` —la continuidad es de un firmante—, aquí se exige que
+  sean DISTINTAS: dos cabezas del mismo operador no son un conflicto entre libros, y aceptarlas
+  haría pasar por conflicto lo que es historia de uno solo.
+- ⚠️ **Lo que esto demuestra y lo que no.** Demuestra que dos libros aceptaron el mismo
+  consumo: eso es **detección**, y llega después. **No previene nada**, y no dice que la unidad
+  consumida sea la misma en los dos: que el identificador signifique lo mismo a los dos lados
+  es gobernanza (RFC-0006, D-4), no criptografía. Por eso el `tipo` no se llama «doble-uso».
 
 ## 3. El sobre — lo que el binario lee
 
@@ -124,6 +148,7 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 | cada cofirma | `v`, `epochDigest`, `clavePublicaOperador`, `clavePublicaTestigo`, `firma`, `versionFormato`, `indice` | `zkssl_cosigs`, `RPC.md:737-779` |
 | extensión | `camino` (lista de digests) | `RPC.md:781-808` |
 | consumo | `consumo`, y `presencia`/`ausencia` → `siblings`, `isRight` | `zkssl_consumoPath`, `RPC.md` |
+| conflicto | `consumo`, y `libros[]` → `cabeza`, `presencia` → `siblings`, `isRight` | este documento, sección 2.5 |
 
 ⚠️ **§419 — el «31» de arriba ya no es la cuenta**: el sobre de consumo añade `consumo`,
 `presencia` y `ausencia`. **No se sustituye por otro número**, porque el 31 no tiene
@@ -189,7 +214,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `el paquete no declara su version en `v``
 - `el paquete declara v:{v_paquete} — este binario lee v1 y v2`
 - `un paquete v1 con `cofirmas`: subir la version es lo que las hace parte del contrato — declaralo v2, o quitalas`
-- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"` o `tipo: "consumo"``
+- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"` o `tipo: "conflicto"``
 
 **Forma de los valores** (`hex_a_bytes`, `digest_de`, `u64_de`; `{campo}` es la clave que se leía)
 
@@ -246,6 +271,17 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `{cual}: el camino no tiene los 63 niveles del arbol de consumos`
 - `presencia: el camino NO sube al consRoot de la nueva`
 - `ausencia: la hoja vacia NO sube al consRoot de la vieja - el consumo YA estaba`
+**El conflicto** (`{i}` es la posición en `libros`; `{cual}` sale `libro[0]` o `libro[1]`)
+
+Estos textos NACEN con esta forma. Todo lo demás que un sobre de conflicto puede emitir sale de
+los **mismos productores** que ya están arriba, con su hueco relleno distinto —la cabeza, la
+versión v4, los campos del camino y su descuadre—: **un hueco relleno de otra manera no es una
+entrada nueva del catálogo**, es el mismo texto y el mismo productor.
+
+- `falta libros` · `libros no es una lista`
+- `el sobre de conflicto exige DOS libros: se recibieron {n}`
+- `las cabezas llevan la MISMA clave: un conflicto es entre DOS firmantes`
+- `libro[{i}]: el camino NO sube al consRoot de su cabeza`
 
 ## 6. El contrato del mando
 

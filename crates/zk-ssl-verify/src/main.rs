@@ -128,10 +128,11 @@ fn correr(ruta: &str) -> Result<(), String> {
         None => {}
         Some("extension") => return verificar_extension(&p),
         Some("consumo") => return verificar_consumo(&p),
+        Some("conflicto") => return verificar_conflicto(&p),
         Some(otro) => {
             return Err(err(format!(
                 "tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), \
-                 `tipo: \"extension\"` o `tipo: \"consumo\"`"
+                 `tipo: \"extension\"`, `tipo: \"consumo\"` o `tipo: \"conflicto\"`"
             )))
         }
     }
@@ -525,10 +526,7 @@ fn verificar_consumo(p: &serde_json::Value) -> Result<(), String> {
     let (herm_v, der_v) = camino_de(p, "ausencia", "ausencia")?;
     for (cual, der) in [("presencia", &der_n), ("ausencia", &der_v)] {
         if !zk_ssl_verify::consumos::cruza_posicion(pos, der) {
-            return Err(err(format!(
-                "{cual}: el isRight recibido NO es el de la posicion {pos} que el consumo \
-                 DERIVA - un camino de otra posicion no prueba nada de este consumo"
-            )));
+            return Err(cruce_fallado(cual, pos));
         }
     }
     println!("4/5 los dos caminos son los de la posicion {pos}, DERIVADA del consumo");
@@ -642,6 +640,89 @@ fn camino_de(
         })
         .collect::<Result<Vec<_>, _>>()?;
     Ok((hermanos, derecha))
+}
+
+/// UN productor del texto del cruce de posicion, con su SUJETO como hueco. Con
+/// `cual` = "presencia" o "ausencia" emite la MISMA cadena que hasta hoy, byte a
+/// byte, asi que ningun vector del catalogo se mueve; lo gatea el arnes en cada
+/// canon. Vivia INLINE en `verificar_consumo`, y el conflicto necesita nombrar
+/// un sujeto distinto: dos sitios con el mismo texto serian dos productores.
+fn cruce_fallado(cual: &str, pos: u64) -> String {
+    err(format!(
+        "{cual}: el isRight recibido NO es el de la posicion {pos} que el consumo \
+         DERIVA - un camino de otra posicion no prueba nada de este consumo"
+    ))
+}
+
+/// **El sobre de CONFLICTO** (RFC-0006, E4a): el MISMO consumo bajo el `consRoot`
+/// de DOS cabezas firmadas por operadores DISTINTOS.
+///
+/// NO es una variante del sobre de consumo. Aquel prueba que un consumo se
+/// publico ENTRE dos cabezas de UN firmante, y para eso necesita la consistencia
+/// del MMR y la `ausencia`. Entre DOS libros no hay historia comun que extender,
+/// asi que aqui no hay `camino` ni `ausencia`: hay una lista `libros` de
+/// exactamente dos, SIN orden, porque la prueba no lo tiene.
+///
+/// Y la regla de las claves va AL REVES que en las otras dos formas: alli se
+/// exige la MISMA `publicKey` -la continuidad es de un firmante-; aqui se exige
+/// que sean DISTINTAS, o dos cabezas del mismo operador pasarian por conflicto.
+///
+/// Lo que demuestra es DETECCION y llega despues. No previene nada -prevenir
+/// seria ORDENAR entre libros, y nadie ordena- ni dice que la unidad consumida
+/// sea la misma a los dos lados: eso es gobernanza (RFC-0006, D-4).
+fn verificar_conflicto(p: &serde_json::Value) -> Result<(), String> {
+    let libros = p
+        .get("libros")
+        .ok_or_else(|| err("falta libros".into()))?
+        .as_array()
+        .ok_or_else(|| err("libros no es una lista".into()))?;
+    if libros.len() != 2 {
+        return Err(err(format!(
+            "el sobre de conflicto exige DOS libros: se recibieron {}",
+            libros.len()
+        )));
+    }
+    let consumo = digest_de(p, "consumo")?;
+    let pos = zk_ssl_verify::consumos::posicion_de_consumo(&consumo);
+    let mut claves: Vec<String> = Vec::new();
+    let mut raices: Vec<Digest> = Vec::new();
+    for (i, libro) in libros.iter().enumerate() {
+        let cual = format!("libro[{i}]");
+        let c = libro
+            .get("cabeza")
+            .ok_or_else(|| err(format!("{cual}: falta cabeza")))?;
+        let (_, _, clave, cons) = cabeza_v3_verificada(c, &cual)?;
+        claves.push(clave);
+        raices.push(cons.ok_or_else(|| exige_v4("conflicto"))?);
+    }
+    println!("1/4 las DOS cabezas recomponen su digest y sus firmas verifican");
+    if claves[0] == claves[1] {
+        return Err(err(
+            "las cabezas llevan la MISMA clave: un conflicto es entre DOS firmantes".into(),
+        ));
+    }
+    println!("2/4 las dos cabezas son de operadores DISTINTOS, y las dos son v4");
+    for (i, libro) in libros.iter().enumerate() {
+        let cual = format!("libro[{i}]");
+        let (herm, der) = camino_de(libro, "presencia", &cual)?;
+        if !zk_ssl_verify::consumos::cruza_posicion(pos, &der) {
+            return Err(cruce_fallado(&cual, pos));
+        }
+        match zk_ssl_verify::consumos::raiz_de_presencia(consumo, &herm, &der) {
+            Some(r) if r == raices[i] => {}
+            Some(_) => {
+                return Err(err(format!(
+                    "{cual}: el camino NO sube al consRoot de su cabeza"
+                )))
+            }
+            None => return Err(err(camino_descuadrado(&cual))),
+        }
+    }
+    println!("3/4 los dos caminos son los de la posicion {pos}, DERIVADA del consumo");
+    println!("4/4 el MISMO consumo esta bajo el consRoot de los DOS libros");
+    println!("VERDE: dos libros aceptaron el mismo consumo. Es DETECCION, no prevencion:");
+    println!("       nadie ordena entre libros, y que la unidad sea la misma es gobernanza");
+    Ok(())
 }
 
 fn main() -> ExitCode {
@@ -773,5 +854,43 @@ mod tests {
             );
             assert!(e.contains(&esperado), "{v}: {e}");
         }
+    }
+
+    // RFC-0006 E4a. Estos cuatro falsan la FORMA de `libros`, que es lo unico
+    // del conflicto alcanzable sin firmas validas: la regla de las claves y la
+    // de los caminos exigen dos cabezas reales de dos operadores, y aqui la
+    // firma es de mentira a proposito (ver la cabecera de este modulo). Su
+    // testigo vive en `tools/banco_dos_libros.sh`, que las produce de verdad.
+
+    /// Sin `libros` no hay conflicto que juzgar, y se dice con su nombre.
+    #[test]
+    fn un_conflicto_sin_libros_se_nombra() {
+        let p = json!({ "v": 1, "tipo": "conflicto" });
+        assert_eq!(verificar_conflicto(&p), Err("falta libros".into()));
+    }
+
+    /// Y si esta pero no es una lista, tampoco: el fallo nombra la clave.
+    #[test]
+    fn unos_libros_que_no_son_lista_se_nombran() {
+        let p = json!({ "v": 1, "tipo": "conflicto", "libros": 3 });
+        assert_eq!(verificar_conflicto(&p), Err("libros no es una lista".into()));
+    }
+
+    /// Con UNO no hay conflicto: un consumo bajo una sola cabeza es el caso
+    /// normal, y confundirlo con un conflicto seria acusar sin prueba.
+    #[test]
+    fn un_solo_libro_se_rechaza_con_su_cuenta() {
+        let p = json!({ "v": 1, "tipo": "conflicto", "libros": [{}] });
+        let e = verificar_conflicto(&p).unwrap_err();
+        assert!(e.contains("exige DOS libros: se recibieron 1"), "{e}");
+    }
+
+    /// Y con TRES tampoco: el sobre dice DOS, y la puerta cierra por los dos
+    /// lados. Un `>= 2` dejaria entrar un sobre cuya afirmacion nadie escribio.
+    #[test]
+    fn tres_libros_tambien_se_rechazan() {
+        let p = json!({ "v": 1, "tipo": "conflicto", "libros": [{}, {}, {}] });
+        let e = verificar_conflicto(&p).unwrap_err();
+        assert!(e.contains("exige DOS libros: se recibieron 3"), "{e}");
     }
 }

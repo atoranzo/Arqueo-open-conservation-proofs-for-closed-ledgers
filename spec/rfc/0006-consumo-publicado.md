@@ -13,7 +13,7 @@
 | E1 — el árbol y la raíz en reposo | el conjunto de consumos como árbol disperso de la capa, su raíz `root:cons` guardada y comprobada al abrir (la sexta raíz en reposo), el rechazo de un consumo repetido, la instantánea que lo transporta, y los testigos negativos que lo falsan | NO | sellada — §413 |
 | E2 — la cabeza v4 | la composición `epoch_digest_v4` que mete la raíz y la cuenta de consumos bajo la firma; el conjunto aceptado pasa a {2, 3, 4}; el cable sirve los dos campos; vectores nuevos bajo su versión | **SÍ** (`zkssl/0.3` → `0.4`) | sellada — §414 (E2a) y §415 (E2b; el cable NO sube: ver la corrección) |
 | E3 — la prueba portable | una forma nueva del paquete de evidencia que prueba que un consumo está bajo la raíz de una cabeza firmada y no lo estaba bajo la de una cabeza anterior; el mando la verifica sin nodo | NO | sellada en parte — §416 y §417 (el camino, por el cable), §418 y §419 (el sobre y su verificación sin nodo); quedan sus vectores, su catálogo aparte y el banco que los captura |
-| E4 — el banco de dos libros | dos nodos, dos operadores, el mismo consumo publicado en los dos, y un lector que con las dos cabezas firmadas lo detecta; y el negativo: con una sola cabeza no hay nada que detectar | NO | propuesta |
+| E4 — el banco de dos libros | dos nodos, dos operadores, el mismo consumo publicado en los dos, y un lector que con las dos cabezas firmadas lo detecta; y el negativo: con una sola cabeza no hay nada que detectar | NO | sellada en parte — §427, §428 y §429 (el banco que produce el material, y un texto un productor), §NNN (el lector y su forma); quedan sus vectores y su catálogo aparte |
 | E5 — el atado en circuito | que el consumo quede restringido en el AIR a la operación que lo consume, con `nullifier_tree.rs` como pieza de partida. Fuera de este RFC: hoy no se puede escribir el testigo que lo falsaría sin E1 | NO | fuera del alcance |
 
 Todas las medidas de este documento se tomaron sobre `2298e61` (§411), en dos lecturas puras que no
@@ -154,6 +154,17 @@ escriba su testigo, es v5. Reversible en el §412.
 - **El operador sigue siendo otro adversario.** Puede omitir un consumo o retrasarlo; no puede
   falsificar la raíz que firmó ni retirar uno ya publicado sin que la cabeza deje de extender a la
   anterior (§292).
+- **La ventana, y el registro autoritativo.** Las viñetas de arriba dicen qué NO promete este
+  RFC. Ésta dice qué se podría prometer y a qué precio, y se escribe al sellar E4a porque es la
+  etapa que vuelve concreto el límite. **Dentro de un libro, el uso único es un invariante
+  comprobable. Entre libros, sin un registro autoritativo, lo que se puede prevenir es el doble
+  uso FUERA de una ventana de tiempo declarada y medida; dentro de esa ventana sólo hay
+  detección. Con un registro autoritativo se previene siempre, y entonces el sistema tiene un
+  operador más, con su punto único de fallo y de censura, nombrado.** Este RFC especifica la
+  detección y no promete más. Las otras dos quedan fuera y se dice por qué: bloquear en
+  tramitación exige la ventana como **cifra medida** en el banco de dos nodos —no como prosa—, y
+  el registro autoritativo no es una decisión de ingeniería: si un organismo lo asume, es SU
+  operador, no el nuestro.
 
 ## Lo que se DESCARTÓ al medir
 
@@ -223,6 +234,14 @@ escriba su testigo, es v5. Reversible en el §412.
 > `zkssl_publishConsumo` y `zkssl_consumoPath` (§417): **aditivos, la superficie pasa de 24 a 26 y
 > `zkssl/0.3` no sube**, por la regla de las Notas operativas y sus precedentes §222, §242 y
 > §275. Los tres vectores del cable siguen intactos y el triple gate lo falsa en cada corrida.
+> **Corrección (§NNN, E4a).** La fila de E4 dice «**NO.** Herramienta, no formato». Lo primero
+> sigue siendo cierto —ni un método ni un tipo del cable cambian, y `zkssl/0.3` no se mueve— y lo
+> segundo ya no lo es. **El lector del conflicto es el MANDO, no un script del banco**: una
+> detección que sólo corre dentro de un banco de la casa no la puede ejercer el tercero que
+> descarga el tarball, y el criterio de H3 —«pasa y falla igual»— se mide con material
+> entregable detrás. ⇒ E4a añade la **quinta forma del sobre** (`tipo: "conflicto"`), con su
+> grupo en el catálogo y su directorio de vectores, exactamente como E3 añadió la cuarta. Sigue
+> siendo cierto que el formato del CABLE no se toca; lo que se toca es el del PAQUETE.
 
 ### Por qué entra por RFC
 

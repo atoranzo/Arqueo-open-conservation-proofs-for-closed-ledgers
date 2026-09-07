@@ -321,6 +321,15 @@ json.dump({"v": 1, "tipo": "consumo", "vieja": a, "nueva": b, "camino": []},
 print("dos sobres armados con una cabeza de CADA libro")
 PY
 
+acepta(){ # $1 fichero  $2 fragmento  $3 rotulo
+  local s r
+  set +e; s=$("$VER" "$1" 2>&1); r=$?; set -e
+  [ "$r" = "0" ] || fallo "$3 dio exit $r (se esperaba 0): $s"
+  case "$s" in
+    *"$2"*) msg "VERDE EN VIVO $3: exit 0 -- $(echo "$s" | tail -n 1)" ;;
+    *) fallo "$3 paso, pero NO dijo lo suyo: se esperaba <<$2>> y dijo: $s" ;;
+  esac
+}
 niega(){ # $1 fichero  $2 fragmento  $3 rotulo
   local s r
   set +e; s=$("$VER" "$1" 2>&1); r=$?; set -e
@@ -334,7 +343,7 @@ niega "$DIR/rechazo-claves-distintas-ext.json"  "claves DISTINTAS" "por la via d
 niega "$DIR/rechazo-claves-distintas-cons.json" "claves DISTINTAS" "por la via de CONSUMO"
 msg "el mismo texto por las DOS vias: dos productores, uno solo declarado en el catalogo"
 
-# El sobre de CONFLICTO, armado y GUARDADO, que ningun binario lee todavia: es E4a-2.
+# El sobre de CONFLICTO, armado, GUARDADO y -desde E4a-2b- LEIDO por el mando.
 python3 - "$N_A" "$N_B" "$P_A" "$P_B" "$CONSUMO" "$DIR" <<'PY'
 import json, sys
 na = json.loads(sys.argv[1])["result"]
@@ -346,12 +355,12 @@ p = {"v": 1, "tipo": "conflicto", "consumo": consumo,
      "libros": [{"cabeza": na, "presencia": pa["camino"]},
                 {"cabeza": nb, "presencia": pb["camino"]}]}
 json.dump(p, open(d + "/conflicto.json", "w"))
-print("sobre de CONFLICTO armado (captura para E4a-2; hoy ningun binario lo lee)")
+print("sobre de CONFLICTO armado: dos libros, dos claves, el MISMO consumo")
 PY
 
 # EL SABOTAJE QUE ANTES NO DISCRIMINABA (S428): intercambiar los dos caminos de presencia. Con
 # los arboles divergentes SI cambia bytes, y aqui se comprueba que los cambia -un sabotaje que no
-# cambia un byte no prueba nada-. Su ROJO lo ensena E4a-2, cuando el mando lea la forma.
+# cambia un byte no prueba nada-. Desde E4a-2b su ROJO se ensena AQUI, unas lineas mas abajo.
 python3 - "$DIR" <<'PY'
 import json, sys
 d = sys.argv[1]
@@ -366,8 +375,19 @@ if open(d + "/conflicto.json").read() == open(d + "/neg-conflicto-caminos-interc
 print("sabotaje de INTERCAMBIO armado, y CAMBIA bytes: discrimina")
 PY
 
-# Y se DEMUESTRA que hoy no lo lee, con su nombre: fail-closed, no <<sigue por compatibilidad>>.
-niega "$DIR/conflicto.json" "tipo desconocido" "el mando de HOY ante el sobre de conflicto"
+# EL HECHO, LEIDO POR EL MANDO Y CON LOS DOS NODOS MUERTOS. Hasta E4a-2b esta linea exigia
+# <<tipo desconocido>>: el mando no conocia la forma y caia fail-closed, que era lo correcto
+# entonces. Ahora la conoce, y lo que se exige es el VERDE. El giro de esta linea es la razon por
+# la que E4a-2b tiene que tocar este fichero: un corte que ensena una forma nueva y deja su banco
+# esperando el rechazo viejo rompe una puerta que estaba verde.
+acepta "$DIR/conflicto.json" "los DOS libros" "EL CONFLICTO, leido por el mando sin los nodos"
+
+# Y el sabotaje del S428 cobra por fin su rojo: con los caminos intercambiados la POSICION sigue
+# cuadrando -es el mismo consumo, luego el mismo isRight- y lo que ya no cuadra es la RAIZ. Por eso
+# discrimina solo desde que los dos arboles divergen (S428): con arboles triviales daba verde.
+niega "$DIR/neg-conflicto-caminos-intercambiados.json" \
+      "el camino NO sube al consRoot de su cabeza" \
+      "los dos caminos INTERCAMBIADOS"
 
 # ---------------------------------------------------------------- GUARDAR Y PUREZA
 if [ -n "$GUARDAR" ]; then
@@ -401,5 +421,5 @@ fi
 
 msg "BANCO-DOS-LIBROS VERDE: el MISMO consumo vive en DOS libros con DOS claves y DOS raices"
 msg "  DISTINTAS, cada uno bajo su cabeza firmada; el invariante INTRA-libro sigue en pie; y el"
-msg "  mando de hoy no puede juntarlos. Eso es la deteccion que E4a-2 hara portable, y ahora sus"
-msg "  capturas DISCRIMINAN. Prevencion, ninguna: nadie ordena entre libros."
+msg "  mando los JUNTA, sin los nodos y sin el repositorio, y el sobre intercambiado no cuela."
+msg "  Eso es la DETECCION, ya portable. Prevencion, ninguna: nadie ordena entre libros."
