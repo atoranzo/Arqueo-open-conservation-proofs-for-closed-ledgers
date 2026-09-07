@@ -31771,6 +31771,12 @@ BANCOS de `tools/` de 8 a 9, dos cifras que publica el traspaso y que no gatea n
 libro publica ademas un consumo PROPIO, y con eso los dos arboles dispersos
 DIVERGEN. La sonda informativa que el S427 imprimio pasa a ser PUERTA.
 
+§430 **Correccion.** La primera cifra de este parrafo es FALSA, y se CITA en vez
+de borrarse: el banco no pasa <<de 322 a 322>> lineas, pasa de 322 a **393**. Lo dicen el
+§427, que lo hace nacer con 322, y el §429, que lo lleva de 393 a 405. Es un
+numero TECLEADO dentro de un asiento, y no lo caza nadie: `check_cifras` solo mira cifras de
+TESTS, y las lineas de un `.sh` no lo son. El resto del parrafo es correcto.
+
 **Por que, y es lo que la corrida del S427 destapo.** Con UN SOLO consumo en cada
 libro los dos arboles son IDENTICOS: mismo digest, misma posicion, mismos hermanos
 vacios. Medido en vivo: los dos `consRoot` salieron iguales -`0xb89ff617321e7043`
@@ -31860,3 +31866,81 @@ y se construye despues: son invariantes distintos y rompen por sitios distintos.
 **Contadores.** DOS ficheros: uno de codigo y el banco. Ningun Cargo tocado. Pin del verificador
 88 -> 88, sin movimiento; sumas sin movimiento; `--list` con la misma sha. El canon
 corrio en 179 s.
+
+## §430 — El lector del conflicto entre libros: la deteccion se vuelve portable
+
+**Que.** `crates/zk-ssl-verify/src/main.rs` pasa de 777 a 896 lineas
+(`297ecfb34ec27c07`): nace `verificar_conflicto`, la QUINTA forma del sobre de
+evidencia. Demuestra que el MISMO consumo esta bajo el `consRoot` de DOS cabezas
+firmadas por operadores DISTINTOS, y lo demuestra SIN los nodos y SIN el
+repositorio. `spec/PAQUETE.md` 369 -> 405 y `spec/rfc/0006-consumo-publicado.md`
+286 -> 305 la especifican, y `tools/banco_dos_libros.sh` 405 -> 425 la ejerce en
+vivo. Es E4a-2b del RFC-0006, y con ella E4a queda cerrada salvo su catalogo.
+
+**No es una variante del sobre de consumo, y por eso tiene tipo propio.** Aquel
+prueba que un consumo se publico ENTRE dos cabezas de UN firmante, y para eso
+necesita la consistencia del MMR y la `ausencia`. Entre DOS libros no hay historia
+comun que extender: este sobre no lleva `camino` ni `ausencia`, y las dos cabezas
+van en una lista `libros` de exactamente DOS y SIN orden, porque la prueba no
+ordena los dos libros y no puede. La regla de las claves va AL REVES que en las
+otras formas: alli se exige la MISMA `publicKey` -la continuidad es de un
+firmante-, aqui que sean DISTINTAS, o dos cabezas del mismo operador pasarian por
+conflicto.
+
+**El falsador, en vivo y con los dos nodos MUERTOS.** El banco de dos libros gira:
+donde exigia <<tipo desconocido>> ahora exige VERDE, y el sabotaje que el §428 dejo
+armado -los dos caminos de presencia INTERCAMBIADOS- cobra por fin su rojo con
+<<libro[0]: el camino NO sube al consRoot de su cabeza>>. Discrimina por la RAIZ y
+no por la posicion: es el mismo consumo, luego el mismo `isRight`, y lo que ya no
+cuadra es la raiz. Por eso solo discrimina desde que el §428 hizo divergir los dos
+arboles. Mas cuatro testigos de FORMA en el `mod tests` -sin `libros`, `libros` que
+no es lista, UNO y TRES-, que es lo unico del conflicto alcanzable sin firmas
+validas.
+
+**Un texto, un productor, otra vez.** Nace `cruce_fallado(cual, pos)`, factorizado
+del `format!` que vivia INLINE en `verificar_consumo`. Con `cual` igual a
+<<presencia>> o <<ausencia>> emite la MISMA cadena byte a byte, asi que ningun
+vector del catalogo se mueve; el conflicto necesitaba nombrar un sujeto distinto, y
+copiarlo habria dado dos productores del mismo texto. Es el §429 continuado.
+
+**Lo que NO demuestra, y va escrito donde se lee.** Que dos libros aceptaran el
+mismo consumo es DETECCION, y llega DESPUES. No previene nada: prevenir seria
+ORDENAR entre libros, y nadie ordena. Tampoco dice que la unidad consumida sea la
+misma a los dos lados, porque que el identificador signifique lo mismo es
+gobernanza y no criptografia (D-4). Por eso el `tipo` NO se llama <<doble-uso>>. La
+fila E4 de Compatibilidad decia <<el banco. NO. Herramienta, no formato>>, y la
+segunda mitad ha dejado de ser cierta: se corrige con un cuarto parrafo §247 dentro
+del propio RFC, sin reescribirla. Y D-4 gana la vineta que faltaba: la ventana y el
+registro autoritativo, con su precio dicho.
+
+**Las cifras, y por que van en su propio commit.** El pin del verificador pasa de
+88 a 92 -cuatro testigos, los cuatro en el binario: lib 80, bin 7 -> 11, doc 1- y
+las sumas de 1051/1188/1202 a 1055/1192/1206 en los cuatro documentos que el censo
+derivo. La VIVA fue en DOS: con SOLO el pin movido `check_cifras` se puso ROJO
+nombrando SEIS cifras rancias, y volvio a rc 0 con todas movidas. De propina, el
+instrumento DERIVO por su cuenta el 1055 y el 1192 de la tabla del canon: dos
+productores de la misma aritmetica, de acuerdo. Las diez sustituciones son de la
+MISMA longitud en bytes, asi que los cuatro documentos quedan linea-neutrales y
+byte-neutrales. `check_tests` ya decia 1207 antes de tocarlos: la cuenta de
+`#[test]` se movio sola con el codigo.
+
+**Reversible.** Las decisiones E4-1 -el lector es el MANDO, no un script de banco-,
+E4-2 -las dos cabezas en una LISTA sin orden- y E4-3 -`tipo` propio, no una
+variante del de consumo- siguen siendo reversibles. La E4-3 tenia una clausula: se
+revierte si el sobre resulta ser superconjunto estricto del de consumo. MEDIDO que
+no lo es: quita `camino`, quita `ausencia` y cambia `vieja`/`nueva` por `libros`.
+
+**Lo que queda de E4a, y se dice.** El catalogo: los vectores por mutacion de las
+capturas de este banco, su estrofa en el canon y la decision de si viajan en el
+tarball -`FAMILIAS` de `tools/artefacto.sh`, punto 114-. Con ellos, la cifra de
+<<cinco textos sin vector>> de la seccion 9 bajara a CUATRO. Y una cota declarada:
+los dos caminos difieren en UN nivel de 63 en las dos corridas medidas, pero eso NO
+esta derivado -el consumo del banco es estructurado, no uniforme-, asi que ningun
+vector puede pinarlo.
+
+**Contadores.** Pin `zk-ssl-verify` 88 -> 92; sumas 1051/1188/1202 ->
+1055/1192/1206; `check_tests` 1203 -> 1207; `check_modulos` 121, `check_nucleo`
+55 + 37 = 92 filas y `verificar_citas` 64/0/0, los tres sin movimiento. Ningun
+Cargo tocado. NUEVE ficheros en dos commits: `6953e25` el codigo y la prosa,
+`a33430b` las cifras y el pin. El banco corrio en su fase VIVA; el canon, en este
+cierre: VERDE en 177 s.
