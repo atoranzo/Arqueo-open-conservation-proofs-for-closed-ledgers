@@ -470,9 +470,7 @@ fn verificar_extension(p: &serde_json::Value) -> Result<(), String> {
     )?;
     println!("1/3 las DOS cabezas v3 recomponen su digest y sus firmas verifican");
     if clave_v != clave_n {
-        return Err(err(
-            "las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante".into(),
-        ));
+        return Err(claves_distintas());
     }
     println!("2/3 misma publicKey: el mismo firmante en los dos extremos");
     let camino = camino_mmr(p)?;
@@ -506,19 +504,11 @@ fn verificar_consumo(p: &serde_json::Value) -> Result<(), String> {
     )?;
     println!("1/5 las DOS cabezas recomponen su digest y sus firmas verifican");
     if clave_v != clave_n {
-        return Err(err(
-            "las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante".into(),
-        ));
+        return Err(claves_distintas());
     }
     let (raiz_v, raiz_n) = match (cons_v, cons_n) {
         (Some(v), Some(n)) => (v, n),
-        _ => {
-            return Err(err(
-                "el sobre de consumo exige cabezas v4: una v2 o v3 no lleva consRoot contra el \
-                 que comprobar"
-                    .into(),
-            ))
-        }
+        _ => return Err(exige_v4("consumo")),
     };
     println!("2/5 misma publicKey y las dos cabezas son v4: hay consRoot a los dos lados");
     if !zk_ssl_verify::mmr::verificar_consistencia(cima_v, t_v, cima_n, t_n, &camino_mmr(p)?) {
@@ -531,8 +521,8 @@ fn verificar_consumo(p: &serde_json::Value) -> Result<(), String> {
 
     let consumo = digest_de(p, "consumo")?;
     let pos = zk_ssl_verify::consumos::posicion_de_consumo(&consumo);
-    let (herm_n, der_n) = camino_de(p, "presencia")?;
-    let (herm_v, der_v) = camino_de(p, "ausencia")?;
+    let (herm_n, der_n) = camino_de(p, "presencia", "presencia")?;
+    let (herm_v, der_v) = camino_de(p, "ausencia", "ausencia")?;
     for (cual, der) in [("presencia", &der_n), ("ausencia", &der_v)] {
         if !zk_ssl_verify::consumos::cruza_posicion(pos, der) {
             return Err(err(format!(
@@ -570,6 +560,25 @@ fn camino_descuadrado(cual: &str) -> String {
     ))
 }
 
+/// UN productor del texto de las claves distintas. Vivia DUPLICADO byte a byte
+/// en `verificar_extension` y en `verificar_consumo` -medido en la sesion 108-,
+/// y el catalogo de `spec/PAQUETE.md` seccion 5 lo declara UNA sola vez: dos
+/// productores del mismo contrato, y el documento contando uno. Aqui queda uno.
+fn claves_distintas() -> String {
+    err("las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante".into())
+}
+
+/// UN productor del texto de la version del sobre, con su SUJETO como hueco.
+/// Con `cual` = "consumo" emite la MISMA cadena que hasta hoy, byte a byte, asi
+/// que ningun vector del catalogo se mueve: lo gatea el arnes en cada canon.
+fn exige_v4(cual: &str) -> String {
+    err(format!(
+        "el sobre de {cual} exige cabezas v4: una v2 o v3 no lleva consRoot contra el \
+         que comprobar"
+    ))
+}
+
+
 /// El camino de consistencia del MMR: lista PLANA de digests, como en el
 /// sobre de extension.
 fn camino_mmr(p: &serde_json::Value) -> Result<Vec<Digest>, String> {
@@ -593,31 +602,35 @@ fn camino_mmr(p: &serde_json::Value) -> Result<Vec<Digest>, String> {
 
 /// Un camino del arbol de consumos: `{siblings, isRight}`, la respuesta de
 /// `zkssl_consumoPath` TAL CUAL.
-fn camino_de(p: &serde_json::Value, cual: &str) -> Result<(Vec<Digest>, Vec<bool>), String> {
+fn camino_de(
+    p: &serde_json::Value,
+    clave: &str,
+    mote: &str,
+) -> Result<(Vec<Digest>, Vec<bool>), String> {
     let c = p
-        .get(cual)
-        .ok_or_else(|| err(format!("falta {cual} (camino del consumo)")))?;
+        .get(clave)
+        .ok_or_else(|| err(format!("falta {mote} (camino del consumo)")))?;
     let sib = c
         .get("siblings")
         .and_then(|x| x.as_array())
-        .ok_or_else(|| err(format!("{cual}: falta siblings")))?;
+        .ok_or_else(|| err(format!("{mote}: falta siblings")))?;
     let der = c
         .get("isRight")
         .and_then(|x| x.as_array())
-        .ok_or_else(|| err(format!("{cual}: falta isRight")))?;
+        .ok_or_else(|| err(format!("{mote}: falta isRight")))?;
     let hermanos = sib
         .iter()
         .enumerate()
         .map(|(i, s)| {
             let s = s
                 .as_str()
-                .ok_or_else(|| err(format!("{cual}: siblings[{i}] no es cadena")))?;
+                .ok_or_else(|| err(format!("{mote}: siblings[{i}] no es cadena")))?;
             let bts = hex_a_bytes(s)?;
             let arr: [u8; 32] = bts
                 .as_slice()
                 .try_into()
-                .map_err(|_| err(format!("{cual}: siblings[{i}]: {} bytes", bts.len())))?;
-            digest_from_bytes(&arr).map_err(|e| err(format!("{cual}: siblings[{i}]: {e:?}")))
+                .map_err(|_| err(format!("{mote}: siblings[{i}]: {} bytes", bts.len())))?;
+            digest_from_bytes(&arr).map_err(|e| err(format!("{mote}: siblings[{i}]: {e:?}")))
         })
         .collect::<Result<Vec<_>, _>>()?;
     let derecha = der
@@ -625,7 +638,7 @@ fn camino_de(p: &serde_json::Value, cual: &str) -> Result<(Vec<Digest>, Vec<bool
         .enumerate()
         .map(|(i, b)| {
             b.as_bool()
-                .ok_or_else(|| err(format!("{cual}: isRight[{i}] no es booleano")))
+                .ok_or_else(|| err(format!("{mote}: isRight[{i}] no es booleano")))
         })
         .collect::<Result<Vec<_>, _>>()?;
     Ok((hermanos, derecha))

@@ -75,6 +75,9 @@ limpiar(){
 }
 trap limpiar EXIT INT TERM HUP QUIT
 
+# La lista de porcelain de PARTIDA. La puerta del final va por DELTA (ver alli).
+git status --porcelain | sort > "$DIR/porcelain_pre.txt"
+
 msg "compilando nodo y verificador en RELEASE (aqui se firma de verdad)"
 cargo build --release -q -p zk-ssl-node -p zk-ssl-verify 2>/dev/null \
   || cargo build --release -p zk-ssl-node -p zk-ssl-verify || fallo "no compila"
@@ -384,8 +387,17 @@ PY
   msg "capturas guardadas en $GUARDAR (de aqui salen los vectores de E4a-2, por MUTACION)"
 fi
 
-PORC=$(git status --porcelain | wc -l)
-[ "$PORC" -eq 0 ] || fallo "el banco dejo el arbol sucio ($PORC): no debe tocarlo"
+# ⚠️ LA PUERTA VA POR DELTA, NO EN ABSOLUTO (S429). Este banco se usa como GATE dentro de un corte
+# que YA ha tocado el arbol -es lo que prueba que un cambio de codigo no movio el texto que este
+# banco saca por sus dos vias-. Exigir `porcelain 0` cobraria deuda AJENA y pondria rojo al banco
+# por lo que hizo OTRO. Lo que este banco tiene que probar es que EL no ensucio nada, y eso es un
+# delta: la lista de antes y la de despues, iguales. Es la clase de las PRECISIONES 47, 101 y 119.
+git status --porcelain | sort > "$DIR/porcelain_post.txt"
+if ! diff -q "$DIR/porcelain_pre.txt" "$DIR/porcelain_post.txt" > /dev/null; then
+  msg "ROJO: el banco ensucio el arbol. Lo que aparecio o desaparecio:"
+  diff "$DIR/porcelain_pre.txt" "$DIR/porcelain_post.txt" | sed 's/^/BANCO-2LIB|   /' >&2
+  exit 1
+fi
 
 msg "BANCO-DOS-LIBROS VERDE: el MISMO consumo vive en DOS libros con DOS claves y DOS raices"
 msg "  DISTINTAS, cada uno bajo su cabeza firmada; el invariante INTRA-libro sigue en pie; y el"

@@ -31809,3 +31809,54 @@ rojo.
 cambia. Ningun Cargo tocado. El canon NO corrio -ni codigo ni cifras-. Ni el numero
 de `.sh` de `tools/` ni el de bancos se mueven: el fichero ya existia desde el S427.
 El banco corrio en 14 s.
+
+## §429 — Un texto, un productor: las claves distintas y la version del sobre
+
+**Que.** `crates/zk-ssl-verify/src/main.rs` pasa de 764 a 777 lineas
+(`62ebb40f7f798ba7`). Tres reparaciones estructurales, ni una linea de comportamiento: nace
+`claves_distintas()`, nace `exige_v4(cual)` con su sujeto como hueco, y `camino_de`
+separa sus DOS papeles -la CLAVE que lee y el MOTE con que nombra en el mensaje-,
+que hasta hoy eran el mismo argumento.
+
+**Por que, y estaba medido.** El literal <<las cabezas llevan claves DISTINTAS: la
+continuidad es de UN firmante>> vivia DUPLICADO byte a byte en `verificar_extension`
+y en `verificar_consumo`, y el catalogo de `spec/PAQUETE.md` seccion 5 lo declara
+UNA sola vez. Dos productores del mismo contrato, y el documento contando uno: quien
+tocara un sitio no tenia nada que le dijera que el otro existe. El banco del S427 lo
+enseno en vivo saliendo por las DOS vias en la misma corrida.
+
+**Lo que este sello NO cambia, y es su invariante.** Ni un texto, ni un codigo de
+salida, ni un test. `exige_v4("consumo")` emite la MISMA cadena que hasta hoy, byte
+a byte -la continuacion de linea del literal se conserva-, asi que ningun vector del
+catalogo se mueve. `camino_de` con `clave` igual a `mote` emite los mismos mensajes
+que antes. El pin del verificador se queda en 88 y ninguna cifra de tests se mueve.
+
+**Como se prueba que no se movio.** Este corte no tiene testigo NEGATIVO propio,
+porque su invariante es <<nada observable cambia>>, y eso se declara en vez de
+fingir un rojo. Lo que tiene es un CRUCE sobre tres observables, medidos ANTES y
+DESPUES en la misma corrida: la lista de `cargo test -- --list` tiene que salir
+IDENTICA nombre a nombre y con la misma sha; el mando corrido sobre
+`rechazo-cons-cabeza-v3.json` tiene que imprimir la MISMA salida byte a byte -y eso
+compara el literal ENTERO, no el fragmento que el manifiesto pina-; y el banco de
+dos libros tiene que volver a sacar el texto de las claves por sus DOS vias, con su
+rojo en vivo. Mas los tres catalogos del arnes y el canon.
+
+**Y una reparacion de instrumento que este mismo corte destapo.**
+`tools/banco_dos_libros.sh` pasa de 393 a 405 lineas: su puerta de pureza
+deja de ser ABSOLUTA y pasa a ser un DELTA. Exigia `porcelain 0` al acabar, y eso
+vale mientras el banco se corra solo sobre un arbol limpio; usado como GATE dentro
+de un corte que YA ha tocado el arbol -que es exactamente para lo que sirve aqui-
+cobraba deuda AJENA y se ponia rojo por lo que hizo otro. Su invariante no es <<el
+arbol esta limpio>>, es <<yo no lo ensucie>>, y eso se mide con la lista de antes y
+la de despues. Es la clase de las PRECISIONES 47, 101 y 119, y me costo un rojo
+entero en la corrida.
+
+**Por que va antes de la forma nueva.** El sobre de conflicto necesita el inverso de
+la regla de las claves y necesita nombrar `libros[i]` en los mensajes del camino.
+Con dos productores habria que escribir el inverso dos veces, y con `camino_de`
+acoplado no se puede nombrar un sujeto que no sea la clave leida. Se repara primero
+y se construye despues: son invariantes distintos y rompen por sitios distintos.
+
+**Contadores.** DOS ficheros: uno de codigo y el banco. Ningun Cargo tocado. Pin del verificador
+88 -> 88, sin movimiento; sumas sin movimiento; `--list` con la misma sha. El canon
+corrio en 179 s.
