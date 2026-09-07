@@ -31709,3 +31709,58 @@ Binario con remap 887f130e41a17f0d. Manifiestos paquete 68/68 consumo 13/13.
 **Contadores.** `AUDITORIA.md` 31664 -> 31711. Vallas 132. Ningun Cargo tocado, ningun pin
 movido, canon sin correr -ni codigo ni cifras-, con el precedente del §303, el §400,
 el §402, el §420 y el §424.
+
+## §427 — El banco de dos libros: el mismo consumo, dos claves, y nadie que ordene
+
+**Que.** Nace `tools/banco_dos_libros.sh` (322 lineas, `02e0c16c4b4457b6`), el banco de E4a
+del RFC-0006. Levanta DOS nodos con DOS claves distintas -dos libros-, publica EL
+MISMO consumo en los dos, y los dos lo aceptan. Ese es el hecho que E4 existe para
+detectar: dentro de un libro el uso unico es un invariante comprobable; entre libros
+no hay quien ordene, y lo que queda es DETECCION, nunca prevencion (RFC-0006, D-4).
+
+**El orden lo fijo el falsador, y por eso este sello va ANTES que el lector.** La
+regla central de E4a -dos cabezas de dos firmantes- no se puede ensenar ROJA con
+fixtures: para llegar a ella el mando verifica las DOS firmas antes, y el `mod
+tests` del binario dice por escrito que alli la firma es de mentira a proposito. Sin
+material real, el sello del lector se habria sellado con su propia regla sin testigo
+en vivo. Este banco produce ese material.
+
+**Lo que demuestra, y se enseno en la corrida.** Dos semillas distintas y del mismo
+ancho; dos nodos con su propio puerto, su propio estado y **su propio
+`--indice-firma`** -compartirlo quemaria el mismo indice XMSS, que es la clase de la
+nota 100 y de los S331-S333-; dos cabezas v4 con claves publicas DISTINTAS,
+comprobado antes de nada; el mismo consumo aceptado por los dos con su `logSeq`; el
+repetido cayendo DENTRO de cada libro, que es el invariante intra-libro intacto; dos
+cabezas nuevas con `consCount` mayor que cero; y los dos caminos de presencia
+servidos.
+
+**Y el limite del mando de HOY, ROJO EN VIVO tres veces.** Con una cabeza de cada
+libro el binario sale 1 con <<las cabezas llevan claves DISTINTAS: la continuidad es
+de UN firmante>>, **por las DOS vias** -la de extension y la de consumo-, que son
+dos productores del mismo texto medidos en esta sesion y de los que el catalogo
+declara UNO. Ese texto es uno de los CINCO que `spec/PAQUETE.md` seccion 9 declara
+SIN VECTOR, y aqui se produce por fin AISLADO: las dos cabezas son v4, las dos
+recomponen su digest y las dos firmas verifican, asi que el UNICO defecto del sobre
+es la clave. El punto 107 de la cola 5.A queda pagado por medicion. Y el sobre de
+CONFLICTO, ya armado, cae con <<tipo desconocido>>: fail-closed, no <<sigue por
+compatibilidad>>.
+
+**Lo que este banco NO hace, y va escrito.** No comprueba que el consumo este bajo
+las DOS raices: eso es aritmetica de Merkle, la hace el mando, y el mando todavia no
+lee la forma del conflicto. Es E4a-2. Aqui se PRODUCE el material -con `--guardar`-
+y se demuestra el hecho; alli se verifica sin los nodos. Tampoco dice quien publico
+primero: el sobre no ordena los dos libros y no puede.
+
+**Reversible.** La DECISION E4-1 de esta sesion -que el lector del conflicto es el
+MANDO y no un script de banco- se revierte si el sobre de conflicto no se puede
+falsar sin firmas o si obliga a subir `zkssl/0.3`; hoy medido que no. El orden
+invertido de este arco se revierte si dos nodos no pueden coexistir por algo que no
+sean puerto, estado, semilla e indice de firma.
+
+**Contadores.** Ningun `.rs` tocado: ningun pin se mueve y ninguna cifra de tests
+cambia. Ningun Cargo tocado. El canon NO corrio -ni codigo ni cifras, precedente
+S303, S400, S402, S420, S421 y S424-. Un `.sh` nuevo en `tools/` no mueve las
+herramientas del canon: la receta deriva los `.py` del bucle y los literales
+(PRECISION 78). Lo que SI se mueve y se declara: `tools/*.sh` pasa de 12 a 13 y los
+BANCOS de `tools/` de 8 a 9, dos cifras que publica el traspaso y que no gatea nadie
+(punto 34). El banco corrio en 13 s.
