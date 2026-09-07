@@ -2,7 +2,9 @@
 # fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
 # Derivados por mutacion de las capturas del banco del sobre de consumo; jamas se reescriben (regla 2 del PROCESO).
 # La cabeza no-v4 sale de la cabeza real de spec/vectors/paquete/posicion-v2.json (191176bbe7146627), que es v3.
+# El de claves distintas sale del banco de DOS LIBROS (RFC-0006 E4a, S431): dos cabezas v4 de dos operadores.
 consumo.json|0|VERDE: el consumo se publico entre las dos cabezas
+rechazo-cons-claves-distintas.json|1|las cabezas llevan claves DISTINTAS
 rechazo-cons-cabeza-v3.json|1|exige cabezas v4
 rechazo-cons-falta-presencia.json|1|falta presencia (camino del consumo)
 rechazo-cons-falta-siblings.json|1|presencia: falta siblings

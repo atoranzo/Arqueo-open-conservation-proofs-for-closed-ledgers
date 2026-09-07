@@ -1,0 +1,21 @@
+# Vectores del sobre de CONFLICTO (spec/PAQUETE.md, RFC-0006 E4a, sellado en el asiento 431).
+# fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
+# Derivados por mutacion de las capturas del banco de dos libros; jamas se reescriben (regla 2 del PROCESO).
+# El positivo y el de los caminos intercambiados son capturas TAL CUAL; los otros catorce se derivan del positivo.
+# La cabeza no-v4 sale de la cabeza real de spec/vectors/paquete/posicion-v2.json, que es v3.
+conflicto.json|0|VERDE: dos libros aceptaron el mismo consumo
+rechazo-conf-falta-libros.json|1|falta libros
+rechazo-conf-libros-no-lista.json|1|libros no es una lista
+rechazo-conf-un-solo-libro.json|1|exige DOS libros: se recibieron 1
+rechazo-conf-falta-cabeza.json|1|libro[0]: falta cabeza
+rechazo-conf-cabeza-v3.json|1|el sobre de conflicto exige cabezas v4
+rechazo-conf-misma-clave.json|1|las cabezas llevan la MISMA clave
+rechazo-conf-falta-presencia.json|1|falta libro[0] (camino del consumo)
+rechazo-conf-falta-siblings.json|1|libro[0]: falta siblings
+rechazo-conf-falta-isright.json|1|libro[0]: falta isRight
+rechazo-conf-sibling-no-cadena.json|1|libro[0]: siblings[0] no es cadena
+rechazo-conf-sibling-corto.json|1|libro[0]: siblings[0]: 31 bytes
+rechazo-conf-isright-no-booleano.json|1|libro[0]: isRight[0] no es booleano
+rechazo-conf-isright-otra-posicion.json|1|libro[0]: el isRight recibido NO es el de la posicion
+rechazo-conf-camino-63-niveles.json|1|libro[0]: el camino no tiene los 63 niveles del arbol de consumos
+rechazo-conf-camino-no-sube.json|1|libro[0]: el camino NO sube al consRoot de su cabeza

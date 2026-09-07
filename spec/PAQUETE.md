@@ -337,18 +337,25 @@ bucle. `tools/canon.sh` lo corre en cada canon sobre el binario de referencia y 
 si un solo vector no dice lo que el manifiesto dice, o si aparece un vector sin entrada. Un
 nibble adulterado en cualquiera pone el canon en rojo.
 
-Cinco textos del catálogo **no tienen vector**, y se declaran: «las cabezas llevan claves
-DISTINTAS» exige dos cabezas firmadas por dos operadores distintos; y `{campo}: {e:?}`,
+Cuatro textos del catálogo **no tienen vector**, y se declaran: `{campo}: {e:?}`,
 `sibling {i}: {e:?}`, `camino[{i}]: {e:?}` y `{cual}: siblings[{i}]: {e:?}` exigen 32 bytes que
 `digest_from_bytes` rechace, y no se conoce un valor que lo haga. Siguen siendo reglas: lo que
-no tienen es testigo en el árbol.
-**Y desde §422 los rechazos del sobre de consumo SÍ lo tienen**: `spec/vectors/consumo/` trae el
+no tienen es testigo en el árbol. **Desde §431 «las cabezas llevan claves DISTINTAS» sí lo
+tiene**: el banco de dos libros produce ese sobre con su defecto AISLADO —las dos cabezas son v4,
+las dos recomponen su digest y las dos firmas verifican—, y su vector vive en la familia del
+consumo, que es la del sobre que lo lleva.
+**Y desde §422 los rechazos del sobre de consumo SÍ lo tienen, y desde §431 los del sobre de
+conflicto**: `spec/vectors/conflicto/` trae el positivo y un negativo por cada regla producible
+de su familia, derivados por mutación de las capturas del banco de dos libros; y
+`spec/vectors/consumo/` trae el
 positivo y un negativo por cada regla producible de su familia, derivados por mutación de las
 capturas del banco del sobre de consumo (RFC-0006, E3), cada uno con su entrada en
 `MANIFIESTO.txt`; el mismo arnés los corre en cada canon con otro manifiesto. Los `#[test]` de
 `crates/zk-ssl-verify/src/consumos.rs` siguen falsando las reglas puras —la hoja vacía, la
 convención y el cruce— sin necesitar firmas.
-La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.
+Las demostraciones en vivo con nodo son `tools/banco_apagado.sh`, `tools/banco_consumo.sh`
+(RFC-0006, E3) y `tools/banco_dos_libros.sh` (E4a): el último levanta DOS nodos con DOS claves
+y produce el hecho que E4 existe para detectar.
 
 ## 10. Historia
 
@@ -367,6 +374,8 @@ La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.
   y el `--check` corre los DOS manifiestos con el mismo binario (RFC-0006, E3c; §422).
 - §425 — los dos catálogos se corren DESDE DENTRO del tarball desempaquetado y sin repo: el `--check`
   lo abre en `target/artefacto/desde-dentro/` y exige el MISMO veredicto que desde el árbol (punto 110).
+- §431 — el catálogo del sobre de conflicto (RFC-0006, E4a): `spec/vectors/conflicto/` con el positivo
+  y quince negativos, uno por regla producible, y la cuarta estrofa del canon. Los catálogos son TRES.
 - Hasta §397 este contrato vivía en la cabecera de `crates/zk-ssl-verify/src/main.rs` (1..90,
   `293990fedc785833`), que ya confesó una vez (§247) haber declarado su superficie como completa
   sin serlo. §397 lo muda aquí y deja la cabecera remitiendo, sin enumerar.
@@ -376,12 +385,13 @@ La demostración en vivo con nodo sigue siendo `tools/banco_apagado.sh`.
 
 Lo que un tercero descarga es `arqueo-verify-<versión>-<host>.tar.gz` (§401), y dentro:
 `zk-ssl-verify` (el binario), `conformidad.sh` (el arnés de la sección 9, §408), `spec/PAQUETE.md`
-(este documento), `spec/vectors/paquete/` y `spec/vectors/consumo/` (los dos manifiestos y sus
-vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
+(este documento), `spec/vectors/paquete/`, `spec/vectors/consumo/` y `spec/vectors/conflicto/` (los
+tres manifiestos y sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
 licencias de todo lo enlazado), `VERSION` (el commit, el toolchain y los flags con que se compiló)
 y `SHA256SUMS` (la huella de cada fichero de dentro). Se comprueba con `sha256sum -c SHA256SUMS`,
-y el binario contra los dos catálogos con `bash conformidad.sh ./zk-ssl-verify` y
-`bash conformidad.sh ./zk-ssl-verify spec/vectors/consumo/MANIFIESTO.txt`: cada entrada dice el
+y el binario contra los tres catálogos con `bash conformidad.sh ./zk-ssl-verify`,
+`bash conformidad.sh ./zk-ssl-verify spec/vectors/consumo/MANIFIESTO.txt` y
+`bash conformidad.sh ./zk-ssl-verify spec/vectors/conflicto/MANIFIESTO.txt`: cada entrada dice el
 código de salida y el texto.
 
 La huella del binario **no depende de la máquina ni del usuario** —se compila con
