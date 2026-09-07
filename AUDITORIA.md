@@ -31662,3 +31662,50 @@ vez, asi que la release publicada sigue siendo HISTORIA.
 `AUDITORIA.md` 31610 -> 31664. Vallas 132. Binario con remap 887f130e41a17f0d; manifiestos desde el arbol
 paquete 68/68 consumo 13/13 y desde dentro del tarball paquete 68/68 consumo 13/13; tarball bb0942be2ec8979b, 2300537 B, 91 ficheros dentro. Ningun
 Cargo tocado, ningun pin movido, canon `--sello` corrido.
+
+⚠️ **CORRECCION (§247, escrita por el §426).** El asiento de arriba dice que registra la
+huella del tarball CON SU COMMIT AL LADO y sus Contadores la escriben desnuda. Y hay algo peor: ese
+`bb0942be2ec8979b` se produjo con el ARBOL SUCIO. El bloque copio `spec/PAQUETE.md` en 369 lineas y
+DESPUES corrio el `--check` con HEAD todavia en `c3bbcbc`, cuyo `spec/PAQUETE.md` tiene 363. El
+`VERSION` de dentro dice `commit=c3bbcbc` y su contenido no es el de `c3bbcbc`: **el tarball se
+atribuye un commit que no es el de su contenido**. Es el punto 105 por su lado consecuente -la marca
+de sucio es INVISIBLE para el script- y alcanza igual al `9ba91db8e8a7b85a` del §423. La huella
+buena, medida sobre el arbol LIMPIO, va en el asiento del §426.
+
+## §426 — la huella del tarball del commit sellado, medida sobre el arbol limpio
+
+**Que.** El punto 110(a). El §425 cerro el (b) -los catalogos corridos desde dentro del tarball,
+gateado en el `--check`- y dejo el (a) sin cerrar: la unica huella de tarball que existia se habia
+producido con el arbol sucio, asi que su `VERSION` nombraba un commit que no era el de su contenido.
+Este sello la mide donde es cierta: sobre el HEAD sellado, con porcelain 0, antes de escribir una
+linea. Y lo gatea por dentro: el `commit=` que el tarball lleva TIENE que ser el HEAD de la corrida.
+
+**El precedente es exacto.** El §402 hizo esto mismo sobre el §401: produjo el artefacto tras el
+commit y registro `fe50283275f092d2` para `75cbe31`. Lo que el §401, el §423 y el §425 tienen en
+comun es que el artefacto se produce a mitad del bloque, cuando el arbol ya lleva el corte y el
+commit todavia no esta. La regla que sale de aqui: **el artefacto se produce sobre un arbol LIMPIO
+en el commit que `VERSION` nombra**; producirlo sucio no cambia solo la huella, hace que el
+`VERSION` MIENTA sobre a que arbol corresponde.
+
+**Por que no hay regreso.** El tarball de este mismo sello tampoco existira, y no hace falta: lo que
+un asiento registra es <<el tarball de tal commit es tal huella>>, y eso lleva su ancla dentro y es
+cierto para siempre. Lo que no puede existir es la huella del tarball de un commit DENTRO de ese
+commit.
+
+**Forma, y el punto 108 saldado.** La correccion de arriba lleva el simbolo de aviso delante,
+DERIVADO del arbol -del que el §402 escribio- y no tecleado. Las dos formas (a) que ya vivian en el
+fichero lo llevaban y la del §424 no: queda alineada.
+
+**Fleco declarado, y es de instrumento.** El asiento del §425 se monto de una plantilla con tokens
+y la sustitucion ENSANCHO tres de sus lineas por encima de las 100 columnas. **Una plantilla no
+controla el ancho de su resultado: el ancho se mide DESPUES de sustituir.** Se declara y no se
+reescribe -es la regla del pasado en prosa-, y el bloque que escribe esto ya lo gatea: el propio
+generador lo comprueba con los valores mas anchos posibles, y el bloque otra vez en la corrida.
+
+**El tarball del COMMIT SELLADO**, medido sobre el arbol LIMPIO y con su `VERSION` gateado
+contra el HEAD de la corrida: 84ab44bf8b195e40, 2300534 B, 91 ficheros dentro.
+Binario con remap 887f130e41a17f0d. Manifiestos paquete 68/68 consumo 13/13.
+
+**Contadores.** `AUDITORIA.md` 31664 -> 31711. Vallas 132. Ningun Cargo tocado, ningun pin
+movido, canon sin correr -ni codigo ni cifras-, con el precedente del §303, el §400,
+el §402, el §420 y el §424.
