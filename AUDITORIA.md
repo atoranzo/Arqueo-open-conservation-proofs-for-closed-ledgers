@@ -31569,3 +31569,42 @@ intacta. D-4 el `--check` sigue montando una vez y el hueco se ficha.
 remap 887f130e41a17f0d; tarball 9ba91db8e8a7b85a, 2300401 B, 91 ficheros dentro. `spec/PAQUETE.md` 356 -> 363
 (+2 en la seccion 10, +5 en la 11). `tools/artefacto.sh` 97 -> 108. Canon `--sello` VERDE en
 182 s.
+
+**CORRECCION (§247, escrita por el §424).** El tarball `9ba91db8e8a7b85a` y sus 2.300.401 B se
+midieron en los DOS `--check` de la corrida de este sello, los dos con HEAD `05dee36`: el `VERSION`
+empaquetado dice `commit=05dee36`, **no el sello**. Como este mismo asiento explica cuatro parrafos
+mas arriba, el tarball lleva el commit dentro, asi que re-correr `tools/artefacto.sh` sobre
+`790b47f` da otro. Lo que SI vale para el sello es la huella ESTABLE -el binario con remap
+`887f130e41a17f0d`- y los 91 ficheros, que no dependen del commit. La del tarball queda para la
+release, exactamente como el §402 dejo escrito sobre el §401.
+
+## §424 — la huella que el §423 publico sin decir de que corrida era
+
+**Que.** Una correccion §247 dentro del asiento del §423 y este asiento. Solo `AUDITORIA.md`: ni
+codigo, ni cifras, ni canon (precedente §303, §400, §402 y §420). Ningun pin se mueve.
+
+**El defecto.** El §423 publica en sus Contadores el tarball `9ba91db8e8a7b85a` (2.300.401 B) sin
+decir sobre que commit se produjo. Sus dos `--check` -el de la fase 3 del bloque y el del `3 ter`
+del canon- corrieron con HEAD `05dee36`, asi que el `VERSION` empaquetado dice `commit=05dee36` y
+no `790b47f`. El mismo asiento explica cuatro parrafos mas arriba que el tarball lleva el commit
+dentro: la contradiccion es INTERNA, y por eso no la caza ningun gate.
+
+**Por que no se borra.** La cifra es correcta DE SU CORRIDA. Lo que le falta es el ambito, asi que
+se CALIFICA y se cita, que es la forma §247: una frase que deja de ser cierta se cita, no se borra.
+
+**Por que importa.** Es el MISMO defecto que el §402 corrigio en el §401, y la regla que lo evita
+esta escrita desde entonces: el artefacto se produce SOBRE el commit sellado, y el asiento registra
+la huella ESTABLE del binario, dejando la del tarball para la release. **Saberla no basto: hay que
+aplicarla al REDACTAR.** Una regla que solo vive en una lista de precisiones se vuelve a pagar.
+
+**De propina, OBSERVADO y sin gatear.** En la corrida del §423 el `--check` se ejecuto DOS veces
+independientes -la del bloque y la del `3 ter`-, cada una con su `rm -rf` y su propio `montar()`, y
+las dos dieron el MISMO tarball. Es justo el testigo que al `--check` le falta, porque monta UNA
+vez y empaqueta DOS: gatea que `empaquetar` es determinista, no que `montar` lo sea. No es prueba
+-mismo entorno, mismo commit, misma sesion- y se declara sin subirlo de categoria.
+
+**Forma.** La correccion va en ASCII, sin simbolo de aviso, dentro del asiento del §423 y detras
+del parrafo que se contradice. Este bloque imprime ademas, INFORMATIVO, las correcciones §247 que
+ya viven en el fichero, para que la proxima que se escriba pueda alinearse con la forma medida.
+
+**Contadores.** `AUDITORIA.md` 31571 -> 31610. Vallas 132. Ningun Cargo tocado, canon sin correr.
