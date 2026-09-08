@@ -12,12 +12,38 @@
 |---|---|---|---|
 | E1 — el árbol y la raíz en reposo | el conjunto de consumos como árbol disperso de la capa, su raíz `root:cons` guardada y comprobada al abrir (la sexta raíz en reposo), el rechazo de un consumo repetido, la instantánea que lo transporta, y los testigos negativos que lo falsan | NO | sellada — §413 |
 | E2 — la cabeza v4 | la composición `epoch_digest_v4` que mete la raíz y la cuenta de consumos bajo la firma; el conjunto aceptado pasa a {2, 3, 4}; el cable sirve los dos campos; vectores nuevos bajo su versión | **SÍ** (`zkssl/0.3` → `0.4`) | sellada — §414 (E2a) y §415 (E2b; el cable NO sube: ver la corrección) |
-| E3 — la prueba portable | una forma nueva del paquete de evidencia que prueba que un consumo está bajo la raíz de una cabeza firmada y no lo estaba bajo la de una cabeza anterior; el mando la verifica sin nodo | NO | sellada en parte — §416 y §417 (el camino, por el cable), §418 y §419 (el sobre y su verificación sin nodo), §420 y §421 (el banco que los captura) y §422 (su catálogo aparte) |
-| E4 — el banco de dos libros | dos nodos, dos operadores, el mismo consumo publicado en los dos, y un lector que con las dos cabezas firmadas lo detecta; y el negativo: con una sola cabeza no hay nada que detectar | NO | sellada en parte — §427, §428 y §429 (el banco que produce el material, y un texto un productor), §430 (el lector y su forma) y §431 (su catálogo, corrido por el mismo arnés en cada canon). Detección, nunca prevención: el bloqueo en tramitación y el registro autoritativo son D-4 y no están construidos |
+| E3 — la prueba portable | una forma nueva del paquete de evidencia que prueba que un consumo está bajo la raíz de una cabeza firmada y no lo estaba bajo la de una cabeza anterior; el mando la verifica sin nodo | NO | **sellada** — §416 y §417 (el camino, por el cable), §418 y §419 (el sobre y su verificación sin nodo), §420 y §421 (el banco que los captura) y §422 (su catálogo aparte). ENTERA desde el §422 |
+| E4 — el banco de dos libros | dos nodos, dos operadores, el mismo consumo publicado en los dos, y un lector que con las dos cabezas firmadas lo detecta; y el negativo: con una sola cabeza no hay nada que detectar | NO | **sellada** — E4a (detección) en §427-§431; E4b-1 (bloqueo en tramitación) en §433-§436; E4c (registro autoritativo) DESCARTADO. La partición y lo que queda, bajo la tabla |
 | E5 — el atado en circuito | que el consumo quede restringido en el AIR a la operación que lo consume, con `nullifier_tree.rs` como pieza de partida. Fuera de este RFC: hoy no se puede escribir el testigo que lo falsaría sin E1 | NO | fuera del alcance |
 
 Todas las medidas de este documento se tomaron sobre `2298e61` (§411), en dos lecturas puras que no
 escribieron un byte en el árbol: `PASTE-NULL-M` y `PASTE-412-PRE` (ver Referencias).
+
+### La partición de E4, y qué se construye de cada parte
+
+El dictamen de la sesión 100 partió E4 en tres, y hasta el §437 esa partición no vivía en este
+documento: se citaba por su frase y no por su nombre. Queda escrita aquí.
+
+- **E4a — la DETECCIÓN. SELLADA.** Un tercero descarga el tarball y, sin repositorio y sin nodos,
+  verifica que el mismo consumo está bajo el `consRoot` de dos cabezas firmadas por operadores
+  distintos. §427-§429 (el banco que produce el material), §430 (el lector, que es el MANDO) y
+  §431 (su catálogo, corrido por el mismo arnés en cada canon).
+- **E4b — el BLOQUEO EN TRAMITACIÓN. E4b-1 sellada; E4b-2 abierta.** Un nodo que custodia las
+  cabezas firmadas de otros libros REHÚSA TRAMITAR un consumo que otro de ellos firmó tener.
+  §433 (el productor único de la raíz de consumos), §434 y §434-B (del cable a la cabeza), §435
+  (`arbol_de_consumos` publicada) y §436 y §436-B (la puerta en el nodo). **La lista de consumos
+  de un libro ajeno no se cree**: se reconstruye y su raíz se exige igual al `consRoot` que la
+  firma de ese libro acredita, así que quien emite el fichero no tiene que ser de fiar. Queda
+  **E4b-2**: medir la ventana, que hoy es parámetro operativo declarado y jamás garantía.
+- **E4c — el REGISTRO AUTORITATIVO. NO se construye, y es una decisión, no una deuda** (D-4).
+  Preveniría siempre, y a cambio el sistema tendría un operador más, con su punto único de fallo
+  y de censura. Si un organismo lo asume, es SU operador y no el nuestro.
+
+⚠️ **Entre libros sigue siendo DETECCIÓN, nunca prevención, también con E4b construida.** La
+puerta del §436 bloquea la TRAMITACIÓN aquí con la evidencia que este nodo tiene: no impide que
+el consumo se publique en el otro libro y **no prueba doble uso** —prueba que otro libro firmó
+tenerlo—. Lo que E4b añade no es una garantía nueva: es que la detección pueda ACTUAR donde el
+operador ya manda.
 
 ## Motivación
 
@@ -234,7 +260,7 @@ escriba su testigo, es v5. Reversible en el §412.
 > `zkssl_publishConsumo` y `zkssl_consumoPath` (§417): **aditivos, la superficie pasa de 24 a 26 y
 > `zkssl/0.3` no sube**, por la regla de las Notas operativas y sus precedentes §222, §242 y
 > §275. Los tres vectores del cable siguen intactos y el triple gate lo falsa en cada corrida.
-> **Corrección (§NNN, E4a).** La fila de E4 dice «**NO.** Herramienta, no formato». Lo primero
+> **Corrección (§430, E4a).** La fila de E4 dice «**NO.** Herramienta, no formato». Lo primero
 > sigue siendo cierto —ni un método ni un tipo del cable cambian, y `zkssl/0.3` no se mueve— y lo
 > segundo ya no lo es. **El lector del conflicto es el MANDO, no un script del banco**: una
 > detección que sólo corre dentro de un banco de la casa no la puede ejercer el tercero que
@@ -242,6 +268,16 @@ escriba su testigo, es v5. Reversible en el §412.
 > entregable detrás. ⇒ E4a añade la **quinta forma del sobre** (`tipo: "conflicto"`), con su
 > grupo en el catálogo y su directorio de vectores, exactamente como E3 añadió la cuarta. Sigue
 > siendo cierto que el formato del CABLE no se toca; lo que se toca es el del PAQUETE.
+> **Corrección (§436, E4b).** La viñeta «La ventana, y el registro autoritativo» dice que
+> bloquear en tramitación «exige la ventana como **cifra medida** en el banco de dos nodos —no como
+> prosa—». Se escribió antes de construirlo y salió **más estricta de lo que el árbol necesitaba**:
+> el §436 bloquea con la **sola evidencia FIRMADA** —la cabeza ajena y la lista de consumos que su
+> propia firma acredita— y **sin ninguna ventana**. Lo que la medición cambió es el sujeto: la
+> ventana **no puede ser una cifra medida en absoluto**, porque no hay reloj firmado que cruce
+> libros. `emitida_unix` se calcula DESPUÉS de la firma y su `unwrap_or(0)` convierte un reloj roto
+> en 1970; `seq` y el índice XMSS son POR LIBRO. ⇒ la ventana es **parámetro operativo DECLARADO y
+> jamás garantía** (D-D, §433-B), medirla es E4b-2, y el bloqueo no dependía de ella. La viñeta no
+> se reescribe: dijo la verdad de su fecha.
 
 ### Por qué entra por RFC
 
