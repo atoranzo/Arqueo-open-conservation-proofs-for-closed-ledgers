@@ -44,7 +44,7 @@ mod diario;
 mod recepcion;
 mod vista_acuses;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::net::SocketAddr;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -209,6 +209,31 @@ struct Args {
     #[arg(long, default_value_t = 32)]
     max_cofirmas: usize,
 
+    /// **Los libros AJENOS que este nodo custodia** (RFC-0006, E4b).
+    ///
+    /// Fichero JSON con, por cada libro, la cabeza FIRMADA verbatim como la
+    /// sirve `zkssl_signedEpochHead` y la lista de sus consumos:
+    /// `{"libros":[{"cabeza":<SignedEpochHeadDto>,"consumos":["0x.."]}]}`.
+    ///
+    /// ⚠️ **Es DETECCIÓN, nunca prevención.** Bloquea la TRAMITACIÓN aquí con
+    /// la evidencia que este nodo tiene. No impide que el consumo se publique
+    /// en el otro libro, y **no prueba doble uso**: prueba que OTRO libro
+    /// firmó tenerlo.
+    ///
+    /// ⚠️ **La lista de consumos NO se cree.** Se reconstruye con
+    /// `arbol_de_consumos` —el productor único del §433— y su raíz se exige
+    /// igual al `consRoot` que la firma de ese libro acredita. Quien emite el
+    /// fichero no tiene que ser de fiar: si miente, su propia firma lo falsa.
+    ///
+    /// ⚠️ **Sin ventana de tiempo, y va declarado** (D-D, §433-B): no hay
+    /// reloj firmado que cruce libros, así que una cabeza ajena vieja bloquea
+    /// igual que una reciente. Medir la ventana es E4b-2.
+    ///
+    /// Corta: sin este fichero el nodo tramita consumos que otro libro ya
+    /// publicó. Larga: cargar libros que nadie mantiene bloquea consumos
+    /// legítimos.
+    #[arg(long)]
+    libros_ajenos: Option<String>,
     /// Filtro de tracing (stderr).
     #[arg(long, default_value = "info")]
     log: String,
@@ -323,8 +348,107 @@ struct App {
     /// `fsync` —**0,907 ms medidos en ext4** (K.1)— y retenerlo mientras
     /// se aplica una operación pararía el nodo entero.
     recepcion: Mutex<recepcion::ContadorRecepcion>,
+    /// **Los consumos que OTROS libros firmaron tener** (RFC-0006, E4b, §436).
+    ///
+    /// ⚠️ **Sin `Mutex`, al revés que sus vecinas**: es inmutable tras
+    /// arrancar. Lo único mutable bajo candado sigue siendo `Estado`.
+    ///
+    /// ⚠️ **La clave son los BYTES CANÓNICOS, no el `Digest`.** `Digest` es
+    /// `[BaseElement; 4]` y `BaseElement` **no implementa `Ord` ni `Hash`**
+    /// —su igualdad está escrita a mano porque la representación es
+    /// Montgomery—, así que no puede ser clave de un conjunto. Por eso el
+    /// árbol disperso lo usa de VALOR y nunca de clave.
+    /// `digest_to_wire(&d).0` es la serialización canónica y es el **ÚNICO
+    /// productor de esta clave**: la carga y la puerta la derivan igual, o los
+    /// dos conjuntos discreparían sin que nada lo dijera.
+    consumos_ajenos: BTreeSet<[u8; 32]>,
 }
 
+
+/// **Los libros AJENOS, cargados FAIL-CLOSED** (RFC-0006, E4b, §436).
+///
+/// Calca el molde de los dos `anyhow::bail!` de arranque: **el nodo NO afirma
+/// lo que no puede comprobar**. Seis puertas, y ninguna se puede saltar.
+///
+/// ⚠️ **El `epochDigest` declarado NO se cree: se RECOMPUTA y se compara**
+/// (§434). Creérselo sería dejar que el operador ajeno elija contra qué se
+/// verifica su propia firma.
+///
+/// ⚠️ **La lista de consumos tampoco se cree**: se reconstruye con
+/// `arbol_de_consumos` y su raíz se exige igual al `consRoot` FIRMADO. Ahí es
+/// donde la lista deja de ser una afirmación.
+fn cargar_libros_ajenos(ruta: &str) -> anyhow::Result<BTreeSet<[u8; 32]>> {
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct LibroAjeno {
+        cabeza: wire::SignedEpochHeadDto,
+        consumos: Vec<wire::B32>,
+    }
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct LibrosAjenos {
+        libros: Vec<LibroAjeno>,
+    }
+
+    let crudo = std::fs::read_to_string(ruta)
+        .map_err(|e| anyhow::anyhow!("--libros-ajenos {ruta}: no se puede leer: {e}"))?;
+    let doc: LibrosAjenos = serde_json::from_str(&crudo)
+        .map_err(|e| anyhow::anyhow!("--libros-ajenos {ruta}: no casa el formato: {e}"))?;
+
+    let mut acreditados = BTreeSet::new();
+    for (i, libro) in doc.libros.iter().enumerate() {
+        // ── 1 · la cabeza tiene que venir FIRMADA ──
+        let vista = libro
+            .cabeza
+            .firmada()
+            .map_err(|e| anyhow::anyhow!("libro {i}: cabeza malformada: {e}"))?
+            .ok_or_else(|| {
+                anyhow::anyhow!("libro {i}: la cabeza no viene FIRMADA: no acredita nada")
+            })?;
+        // ── 2 · de la vista a la cabeza. Una v3 falla NOMBRANDO el campo ──
+        let dto = vista.cabeza().map_err(|e| anyhow::anyhow!("libro {i}: {e}"))?;
+        // ── 3 · recomposición ──
+        let cabeza = zk_ssl::log::EpochHead::try_from(&dto)
+            .map_err(|e| anyhow::anyhow!("libro {i}: la cabeza no se recompone: {e:?}"))?;
+        // ── 4 · EL DIGEST SE RECOMPUTA Y SE COMPARA ──
+        let digest = digest_to_wire(&cabeza.digest());
+        if digest != dto.epoch_digest {
+            anyhow::bail!("libro {i}: el epochDigest declarado no es el de su propia cabeza");
+        }
+        // ── 5 · y la firma se verifica contra el COMPUTADO, no contra el declarado ──
+        let c = zk_ssl_verify::CabezaFirmada {
+            version_formato: vista.format_version.0 as u8,
+            indice: vista.index.0,
+            firma: vista.signature.0.clone(),
+        };
+        zk_ssl_verify::verificar_cabeza(&vista.public_key.0, &digest.0, &c)
+            .map_err(|e| anyhow::anyhow!("libro {i}: la firma de la cabeza no verifica: {e}"))?;
+        // ── 6 · AQUÍ la lista deja de ser una afirmación ──
+        let mut consumos = Vec::with_capacity(libro.consumos.len());
+        for (j, b) in libro.consumos.iter().enumerate() {
+            consumos.push(digest_from_wire(b).map_err(|_| {
+                anyhow::anyhow!("libro {i}: consumo {j}: no es un digest de 32 bytes")
+            })?);
+        }
+        let raiz = digest_to_wire(&zk_ssl::arbol_de_consumos(consumos.iter().copied()).root());
+        if raiz != dto.cons_root {
+            anyhow::bail!(
+                "libro {i}: la lista no reconstruye el consRoot que su propia firma acredita"
+            );
+        }
+        if consumos.len() as u64 != dto.cons_count.0 {
+            anyhow::bail!(
+                "libro {i}: la lista trae {} consumos y su firma acredita {}",
+                consumos.len(),
+                dto.cons_count.0
+            );
+        }
+        for d in &consumos {
+            acreditados.insert(digest_to_wire(d).0);
+        }
+    }
+    Ok(acreditados)
+}
 /// «Quien firma, anota» (nota 80, segunda mitad; §285): la decision de
 /// arranque, PURA para poder probarse en frio — los tests de este binario
 /// no ejercitan `Args`, asi que el predicado se prueba solo y el cableado
@@ -653,6 +777,22 @@ async fn main() -> anyhow::Result<()> {
         .as_ref()
         .map(crate::diario::digests)
         .unwrap_or_default();
+
+    // §436 · E4b — LOS LIBROS AJENOS, FAIL-CLOSED. El `?` ES la puerta: si un
+    // solo libro no acredita lo que dice, **el nodo NO ARRANCA**. Sin
+    // `--libros-ajenos` el conjunto va vacio y nada cambia.
+    let consumos_ajenos = match &args.libros_ajenos {
+        Some(ruta) => {
+            let s = cargar_libros_ajenos(ruta)?;
+            tracing::info!(
+                fichero = %ruta,
+                consumos = s.len(),
+                "libros ajenos cargados: un consumo que otro libro firmo tener NO se tramita aqui"
+            );
+            s
+        }
+        None => BTreeSet::new(),
+    };
     let app = std::sync::Arc::new(App {
         estado: Mutex::new(Estado { layer, reservas: BTreeMap::new() }),
         dev: args.dev,
@@ -671,6 +811,7 @@ async fn main() -> anyhow::Result<()> {
             recepcion::ContadorRecepcion::abrir(&args.contador_recepcion)
                 .map_err(|e| anyhow::anyhow!("{e}"))?,
         ),
+        consumos_ajenos,
     });
 
     if args.latido > 0 {
@@ -1136,6 +1277,15 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 code: -32602,
                 message: "consumo: no es un digest de 32 bytes".into(),
             })?;
+            // ⚠️ §436 · E4b — OTRO libro firmó tener este consumo. Sigue
+            // siendo DETECCIÓN, nunca prevención: no impide que se publique
+            // allí y no prueba doble uso. La clave se deriva con el MISMO
+            // productor que usó la carga.
+            if app.consumos_ajenos.contains(&digest_to_wire(&consumo).0) {
+                return Ok(json!({ "accepted": false, "reason":
+                    "otro libro firmo tener este consumo: no es doble uso probado, es motivo \
+                     para no tramitarlo aqui" }));
+            }
             match l.apply_consumo(consumo) {
                 Ok(()) => Ok(json!({
                     "accepted": true,
@@ -1913,6 +2063,7 @@ mod tests {
                 )
                 .expect("contador de recepcion"),
             ),
+            consumos_ajenos: BTreeSet::new(),
         }
     }
 
@@ -3105,6 +3256,136 @@ mod tests_consumo_cable {
         assert!(
             r["reason"].as_str().map(|s| s.contains("entradas y se piden")).unwrap_or(false),
             "la respuesta tiene que DECIR por que: {}", r["reason"]
+        );
+    }
+}
+
+/// §436 · E4b-1b-ii — la puerta de libros ajenos.
+///
+/// TRES testigos, uno por propiedad, más el POSITIVO que los hace discriminar:
+/// sin él, T2 y T3 caerían igual con la carga rota por cualquier motivo.
+#[cfg(test)]
+mod tests_libros_ajenos {
+    use super::*;
+
+    /// Un libro ajeno REAL, firmado por este mismo nodo: la única forma de
+    /// tener una cabeza v4 cuya firma verifique sin inventarse bytes.
+    fn libro_real(consumos: &[u8]) -> (App, serde_json::Value, Vec<String>) {
+        let mut app = crate::tests::nodo(30);
+        let d = crate::tests_dir("libros_ajenos");
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("crear");
+        let mut s = [0u8; 96];
+        for (i, b) in s.iter_mut().enumerate() {
+            *b = (i as u8).wrapping_mul(7).wrapping_add(3);
+        }
+        let mut f = crate::firma_cabeza::FirmanteCabeza::desde_semilla(&s, d.join("indice.bin"))
+            .expect("abrir");
+        // ⚠️ `nodo()` no lleva clave pública: sin esto la puerta 5 caería
+        // SIEMPRE y los testigos no discriminarían.
+        app.clave_publica_firma = f.clave_publica();
+        let hex: Vec<String> = consumos
+            .iter()
+            .map(|n| format!("0x{:02x}{}", n, "11".repeat(31)))
+            .collect();
+        for h in &hex {
+            let v = crate::dispatch(&app, "zkssl_publishConsumo", json!({ "consumo": h }))
+                .expect("publicar");
+            assert_eq!(v["accepted"], true, "el consumo tiene que entrar: {v}");
+        }
+        let l = crate::latido::latir(&app, Some(&mut f)).expect("latir");
+        crate::latido::conservar(&app, l);
+        let cabeza = crate::dispatch(&app, "zkssl_signedEpochHead", json!({})).expect("cabeza");
+        assert_eq!(cabeza["available"], json!(true));
+        (app, cabeza, hex)
+    }
+
+    fn escribir(nombre: &str, doc: serde_json::Value) -> String {
+        let p = crate::tests_dir("libros_ajenos").join(nombre);
+        std::fs::write(&p, serde_json::to_vec(&doc).expect("json")).expect("escribir");
+        p.to_string_lossy().into_owned()
+    }
+
+    /// T1 — la puerta BLOQUEA lo que un libro ajeno firmó tener, y el rechazo
+    /// NOMBRA el motivo. Empieza por «otro libro» y no por «ya», que es de
+    /// `ConsumoRepetido` y tiene su propio test.
+    ///
+    /// ⚠️ **Discrimina por construcción**: EL MISMO consumo, dos nodos, dos
+    /// respuestas. Sin el control de abajo, un rechazo por cualquier otra
+    /// causa pasaría por bueno.
+    #[test]
+    fn un_consumo_de_otro_libro_no_se_tramita_aqui_y_el_rechazo_lo_dice() {
+        let h = format!("0x{:02x}{}", 0x31, "11".repeat(31));
+        let d = digest_from_wire(&wire::B32({
+            let mut b = [0x11u8; 32];
+            b[0] = 0x31;
+            b
+        }))
+        .expect("canonico");
+
+        // CONTROL: sin el conjunto, ese mismo consumo ENTRA.
+        let limpio = crate::tests::nodo(30);
+        let ok = crate::dispatch(&limpio, "zkssl_publishConsumo", json!({ "consumo": h }))
+            .expect("publicar");
+        assert_eq!(ok["accepted"], true, "el control tiene que ACEPTARLO: {ok}");
+
+        // Y con el conjunto cargado, el MISMO consumo se rechaza.
+        let mut app = crate::tests::nodo(30);
+        app.consumos_ajenos.insert(digest_to_wire(&d).0);
+        let v = crate::dispatch(&app, "zkssl_publishConsumo", json!({ "consumo": h }))
+            .expect("no debe fallar: es un rechazo, no un error");
+        assert_eq!(v["accepted"], false);
+        let r = v["reason"].as_str().expect("reason");
+        assert!(r.starts_with("otro libro"), "el rechazo tiene que NOMBRAR el motivo: {r}");
+        assert!(r.contains("no es doble uso probado"), "y decir lo que NO prueba: {r}");
+    }
+
+    /// T2 — una cabeza ajena cuya FIRMA no verifica hace que el nodo NO
+    /// ARRANQUE. Es una de las dos puertas que hacen que el fichero no exija
+    /// confianza en quien lo emite.
+    #[test]
+    fn una_firma_que_no_verifica_impide_arrancar() {
+        let (_app, cabeza, hex) = libro_real(&[0x41]);
+        // CONTROL: el MISMO libro, sin tocar, TIENE que cargar. Sin esto un
+        // rojo por cualquier otra causa pasaria por bueno.
+        let bueno = escribir("firma_ok.json",
+            json!({ "libros": [{ "cabeza": cabeza, "consumos": hex }] }));
+        let set = cargar_libros_ajenos(&bueno).expect("el control tiene que cargar");
+        assert_eq!(set.len(), 1, "el control acredita su consumo");
+
+        let mut cabeza = cabeza;
+        let firma = cabeza["signature"].as_str().expect("signature").to_string();
+        let roto = format!("{}{}", &firma[..firma.len() - 2], "00");
+        assert_ne!(firma, roto, "el sabotaje TIENE que cambiar la firma");
+        cabeza["signature"] = json!(roto);
+        let r = escribir("firma.json", json!({ "libros": [{ "cabeza": cabeza, "consumos": hex }] }));
+        let e = cargar_libros_ajenos(&r).expect_err("una firma rota NO puede cargar");
+        assert!(
+            e.to_string().contains("la firma de la cabeza no verifica"),
+            "el fallo tiene que decir CUÁL es: {e}"
+        );
+    }
+
+    /// T3 — una lista cuya raíz reconstruida NO casa con la firmada tampoco
+    /// arranca. Es la puerta que convierte la lista en evidencia.
+    #[test]
+    fn una_lista_que_no_reconstruye_el_consroot_impide_arrancar() {
+        let (_app, cabeza, hex) = libro_real(&[0x51, 0x52]);
+        // CONTROL: la lista VERDADERA reconstruye el consRoot firmado.
+        let bueno = escribir("raiz_ok.json",
+            json!({ "libros": [{ "cabeza": cabeza, "consumos": hex }] }));
+        let set = cargar_libros_ajenos(&bueno).expect("el control tiene que cargar");
+        assert_eq!(set.len(), 2, "el control acredita sus dos consumos");
+
+        let mut hex = hex;
+        let viejo = hex[1].clone();
+        hex[1] = format!("0x{:02x}{}", 0x53, "11".repeat(31));
+        assert_ne!(viejo, hex[1], "el sabotaje TIENE que cambiar la lista");
+        let r = escribir("raiz.json", json!({ "libros": [{ "cabeza": cabeza, "consumos": hex }] }));
+        let e = cargar_libros_ajenos(&r).expect_err("una lista mentida NO puede cargar");
+        assert!(
+            e.to_string().contains("no reconstruye el consRoot"),
+            "el fallo tiene que decir CUÁL es: {e}"
         );
     }
 }
