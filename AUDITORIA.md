@@ -32373,3 +32373,63 @@ VERDE en **180 s**. Piezas: PASTE-S436-PRE `4bd81bb48d6656c2`/359 . PASTE-S436-P
 `bb9d4673e80da809`/320 . PASTE-S436-PRE3 `f90a81a6c37b850c`/320 . RENDER-S436-r2
 `9a2d2c320f051ef4`/180 . PAYLOAD-S436 `020caa41c71b55c1`/329 . BLOQUE-S436-r2
 `6c5a213fbca72ac1`/725 . PASTE-436B-PRE `3fae47e504c1a559`/244.
+
+## §437 — La particion de E4, escrita: deteccion, bloqueo en tramitacion, registro
+
+**Que.** `spec/rfc/0006-consumo-publicado.md` gana la seccion <<La particion de E4>> y cuatro
+cambios mas. Es E4b-3, y **paga de una vez cuatro cosas fichadas** que llevaban de dos a cuatro
+sesiones esperando: el punto 123 (las etiquetas E4a/E4b/E4c y la particion, que se citaban por
+su FRASE y no por su nombre), el 126 (un token de plantilla sin sustituir en un documento
+PUBLICADO), el 127 (la fila E3 decia <<sellada en parte>> estandolo entera desde el §422) y la
+mitad de la **regla 5** de `PROCESO.md` que el §436-B declaro como deuda: el doble hilo pedia
+que el asiento referenciara el RFC y que el RFC referenciara al asiento, y solo lo primero
+estaba hecho. Ni una linea de Rust, ninguna cifra, ningun pin.
+
+**El token, resuelto MIDIENDO y no conjeturando.** El `§NNN` del :237 no se dedujo del
+contexto: lo dice el asiento del §431 en `AUDITORIA:32011` —<<escrito por el §430 y
+sellado>>— y lo confirma por el otro lado el punto 115, que registra que la quinta forma del
+sobre entro en el §430. Dos fuentes independientes para un numero de tres cifras que habria
+sido comodo suponer.
+
+**LO QUE LA LECTURA DESTAPO, y no estaba en ninguna lista.** La vinieta <<La ventana, y el
+registro autoritativo>> dice que bloquear en tramitacion **exige la ventana como cifra medida
+en el banco de dos nodos**. El §436 acaba de bloquear **sin ninguna ventana**, con la sola
+evidencia FIRMADA. La vinieta se escribio antes de construirlo y salio **mas estricta de lo que
+el arbol necesitaba**; y lo que la medicion cambio no es el grado sino el SUJETO: la ventana
+**no puede ser una cifra medida en absoluto**, porque no hay reloj firmado que cruce libros
+—`emitida_unix` se calcula DESPUES de la firma, `seq` y el indice XMSS son POR LIBRO—. Va
+como correccion en el bloque de correcciones del propio RFC, con la forma del §247: **se
+CITA, no se reescribe**, porque dijo la verdad de su fecha.
+
+**La particion NO cabe en una celda de tabla, y eso decidio donde vive.** Escrita dentro del
+estado de la fila E4, esa linea se iba a **1.103 columnas**: es el punto 120 cobrandose, el
+mismo que ya midio este fichero pasando de 408 a 541 al ganar la fila E4 su frase. Puesta en su
+propia seccion bajo la tabla, el estado de la fila se acorta y **el ancho maximo del fichero
+BAJA de 526 a 413**. El corte no ensancha: ESTRECHA, y con eso paga parte del 120 sin abrirlo.
+
+**Lo que la particion dice, y conviene que conste aqui tambien.** E4a, la DETECCION, esta
+SELLADA. E4b, el BLOQUEO EN TRAMITACION, tiene su primera mitad sellada —§433 a §436— y
+deja **E4b-2**, medir la ventana, que hoy es parametro operativo declarado y jamas garantia.
+E4c, el REGISTRO AUTORITATIVO, **no se construye, y es una DECISION y no una deuda** (D-4):
+preveniria siempre, y a cambio el sistema tendria un operador mas, con su punto unico de fallo
+y de censura nombrado. Y una frase que el corte repite a proposito: **entre libros sigue siendo
+deteccion, nunca prevencion, tambien con E4b construida**. Lo que E4b anade no es una garantia
+nueva; es que la deteccion pueda ACTUAR donde el operador ya manda.
+
+**Un numero que se midio en vez de deducirse, y no cuadraba.** El bloque exige el `numstat` de
+git, y mi propio diff daba **38 insertadas y 2 borradas** mientras git da **39 y 3**: agrupa las
+dos filas contiguas de la tabla de otra manera. Se midio en un repositorio de mentira con git de
+verdad antes de emitir. Un numero sacado de un diff propio no es el numero de git.
+
+**Contadores.** UN fichero, `spec/rfc/0006-consumo-publicado.md` 305 -> 341, **39 insertadas y
+3 borradas**. Ancho maximo 526 -> **413**. Vallas de codigo 0 -> 0. Tokens de plantilla 1 -> 0.
+<<sellada en parte>> 2 -> 0. Doce lineas nombran ya E4a, E4b o E4c, donde antes no habia
+ninguna. Ningun pin se mueve y **no hay bloque de cifras**: este corte no toca ningun numero de
+tests. Ningun Cargo tocado. `verificar_citas` por su INVARIANTE —64 nombres, 0 fantasmas, 0
+secciones muertas— y no por su cuenta de nombres, que es la cardinalidad de un conjunto. El
+canon `--sello` corrio VERDE en **177 s**. Piezas: PAYLOAD-E4b-3 `3a808198a8dd85fb`/81 .
+BLOQUE-S437 `ecfee01838241700`/368.
+
+**Lo que este corte NO cierra, y se dice.** Queda **E4b-2**, que es medir la ventana, y queda el
+punto 120 entero: sigue sin decidirse si un RFC lleva su propia puerta de ancho o si el ancho de
+una tabla de markdown no es invariante de nada. Este sello lo estrecha, no lo resuelve.
