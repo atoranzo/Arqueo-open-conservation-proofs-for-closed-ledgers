@@ -35,6 +35,28 @@ use super::*;
 /// PRODUCTOR es uno solo, y esta en el nucleo.
 pub use zk_ssl_hash::{posicion_de_consumo, CONS_DEPTH};
 
+/// **El arbol de consumos de un CONJUNTO**: el UNICO sitio donde vive esa
+/// aritmetica —posicion, hoja, raiz— y el productor que la puerta de E4b
+/// comparte con la capa.
+///
+/// Nace en el S433 porque la re-derivacion estaba escrita ya DOS veces —aqui,
+/// bajo [`SovereignLayer::consumos_hasta`], y en `load` (`persistence.rs`)— y
+/// la puerta del nodo habria sido la TERCERA. Dos productores de la misma
+/// aritmetica pueden discrepar; uno no.
+///
+/// **`load` NO se funde en este corte, y queda DECLARADO.** Vive dentro de la
+/// puerta fail-closed de las seis raices: abrirla es su propio arco, y el
+/// ambito del censo tiene que ser el ambito del cambio.
+///
+/// **El digest CERO no es hoja**: `rebuild_from` lo trata como posicion libre.
+/// Esa convencion es lo que hace verificable la NO-pertenencia, y por eso se
+/// nombra aqui en vez de suponerse.
+pub fn arbol_de_consumos(consumos: impl IntoIterator<Item = Digest>) -> SparseTree {
+    let mut t = SparseTree::with_depth(CONS_DEPTH);
+    t.rebuild_from(consumos.into_iter().map(|c| (posicion_de_consumo(&c), c)));
+    t
+}
+
 impl SovereignLayer {
     /// Raiz del arbol de consumos. Publica: es la sexta raiz en reposo y, con
     /// E2 del RFC-0006, entrara firmada en la cabeza v4.
@@ -64,17 +86,14 @@ impl SovereignLayer {
     /// **`None` si una entrada `Consumo` no lleva su compromiso.** Saltarla
     /// daria un arbol a medias y una raiz distinta SIN DECIR POR QUE: se para.
     fn consumos_hasta(&self, seq_cabeza: u64) -> Option<SparseTree> {
-        let mut hojas: Vec<(u64, Digest)> = Vec::new();
+        let mut hojas: Vec<Digest> = Vec::new();
         for e in self.log.entries() {
             if e.seq >= seq_cabeza || e.kind != OpKind::Consumo {
                 continue;
             }
-            let c = e.compromiso?;
-            hojas.push((posicion_de_consumo(&c), c));
+            hojas.push(e.compromiso?);
         }
-        let mut t = SparseTree::with_depth(CONS_DEPTH);
-        t.rebuild_from(hojas);
-        Some(t)
+        Some(arbol_de_consumos(hojas))
     }
 
     /// **La raiz de consumos que firmo la cabeza de `seq_cabeza`, y el camino
