@@ -148,6 +148,10 @@ pub use stark_experiment::circuit_threshold::build_custodian_set;
 // §318: la cifra por pago se hace API porque el nodo la consume.
 // `mod metrics` sigue privado; lo que se publica es solo esta const.
 pub use crate::metrics::PUBLICADA_PAGO_B;
+// §435: el productor unico de la raiz de consumos se hace API porque el nodo
+// lo consume para acreditar libros ajenos (RFC-0006, E4b).
+// `mod consumo` sigue privado; lo que se publica es solo esta fn.
+pub use crate::consumo::arbol_de_consumos;
 use stark_experiment::native::{
     derive_public_id, native_leaf, native_leaf_salted,
 };
