@@ -32102,3 +32102,64 @@ dos piezas cuyas huellas van abajo.
 corte no toca `.rs` ni cifras, y su juez es `verificar_citas` -0 fantasmas, 0 secciones muertas,
 rc 0-, como el S412. Piezas: PASTE-119-M `3c67ecfe9a842f2d`/323 . PASTE-119-M2
 `48ae6271f96d1efa`/269 . BLOQUE-432 `5b21a079bfdbadd0`/410.
+
+## §433 — Un solo productor de la raiz de consumos, y una ventana que no se puede prometer
+
+**Que.** Nace `arbol_de_consumos` en `crates/zk-ssl/src/consumo.rs` y `consumos_hasta` pasa a
+llamarla. UN fichero, UN `.rs`, cero ficheros nuevos, ningun `#[test]`. Es la primera pieza de
+E4b -el bloqueo en tramitacion- y es la que la puerta del nodo compartira con la capa.
+
+**Por que, con el dato delante.** La aritmetica <<posicion, hoja, raiz>> estaba escrita YA DOS
+VECES: `consumo.rs:75` y `persistence.rs:555`. Un censo de `rebuild_from` da nueve apariciones
+y cinco llamantes de produccion. La puerta de E4b habria sido la TERCERA. Dos productores del
+mismo contrato pueden discrepar; uno no.
+
+**Lo que NO se funde, y queda DECLARADO.** `persistence.rs:555` no se toca. Vive dentro de
+`load`, la puerta fail-closed de las seis raices, y abrirla es su propio arco. El ambito del
+censo tiene que ser el ambito del cambio.
+
+**Sin testigo negativo, y se declara.** El invariante de este sello es <<nada observable
+cambia>>: la raiz reconstruida sigue siendo la misma. Lo prueba un cruce PRE-POST medido en la
+MISMA corrida -la lista de tests en RELEASE, identica NOMBRE A NOMBRE, y la capa entera en
+verde- mas los nueve testigos que ya existen, con
+`rfc0006_la_raiz_reconstruida_es_la_raiz_viva` cruzando este productor contra el arbol vivo,
+que es OTRO. Fingir un rojo para tener uno seria peor que declarar que no lo hay.
+
+**El punto 125, CERRADO POR MEDICION y sin tocar un byte.** La pregunta era si el nodo
+construye un `SparseTree` o solo lo nombra. Construye, y en produccion: `vista_acuses.rs:12` lo
+importa, y `:43` y `:106` lo construyen -los dos sitios que el tope de una lectura anterior
+corto sin decirlo-. Es alcanzable porque `lib.rs:112` declara `pub mod sparse_tree;`, en
+MINUSCULA; no hay `pub use` del tipo, y ese cero es una respuesta, no una ceguera. E4b no
+estrena dependencia ni superficie publica por ese lado.
+
+**La regla que nace de ese punto.** Un nombre se busca en las DOS grafias: la sonda que abrio
+el 125 y la que lo cerro fallaron las dos por PascalCase, ciegas al `mod` en minuscula. Y un
+tope de impresion que corta justo lo que se pregunta deja la pregunta abierta con aspecto de
+respondida.
+
+**D-D PRECISADA, no revertida: `emitida_unix` NO viaja bajo la firma.** `latido.rs:186` firma y
+`:191` calcula el sello de tiempo DESPUES; la firma cubre
+`preambulo(VERSION_FORMATO, epoch_digest)` y ningun campo de la cabeza es una hora. El campo
+viaja por el cable -`main.rs:965` y `:986`- y por el diario -`diario.rs:89`, `emittedAtUnix`-
+sin nada que lo acredite, y el `unwrap_or(0)` de `:194` convierte un reloj roto en 1970. No hay
+rodeo: lo firmado y monotono -`seq`, el indice XMSS- es POR LIBRO, y dos contadores de dos
+libros no se comparan. **La ventana de E4b es un parametro operativo DECLARADO, no una
+garantia**, y ninguna prosa se apoyara en ella. E4b-1b bloqueara por la sola evidencia firmada;
+medir la ventana es E4b-2.
+
+**Reversible.** Las tres decisiones del arco lo son: el productor unico -frente a calcar y atar
+con un test-, el bloqueo por evidencia firmada sin ventana, y el texto del rechazo. Ninguna
+cambia un formato, una raiz en reposo ni una version del cable.
+
+**Lo que queda fichado, y donde se paga.** `spec/rfc/0006-consumo-publicado.md:237` lleva
+`§NNN`, un token de plantilla SIN SUSTITUIR: es el MISMO defecto que el §431 corrigio en la fila
+E4 de ese fichero, en un SEGUNDO sitio al que no se retro-aplico. Y la fila E3 del mismo RFC
+dice <<sellada en parte>> con E3 cerrada entera desde el §422. Los dos se pagan en E4b-3, que
+es el corte que abre ese fichero.
+
+**Contadores.** UN fichero modificado, ninguno nuevo. Ningun pin movido: `check_tests` sigue en
+1207. Ninguna cifra de ningun `.md` cambia, y por eso este arco no lleva bloque de cifras. El
+canon `--sello` corrio VERDE en 267 s en el bloque del codigo, y vuelve a correr aqui. Piezas:
+PASTE-E4b-1-R `b5d9deadefaa1768`/240 . PASTE-E4b-1-R2 `50d1d75ff4c63bdd`/139 . RENDER-E4b-1
+`128e7f1b4735ad06`/243 . BLOQUE-E4b-1a `b33c2bc3e3c47eb5`/481 . PASTE-433B-PRE
+`4d1c2316ed45be8f`/130.
