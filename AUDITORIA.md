@@ -32163,3 +32163,80 @@ canon `--sello` corrio VERDE en 267 s en el bloque del codigo, y vuelve a correr
 PASTE-E4b-1-R `b5d9deadefaa1768`/240 . PASTE-E4b-1-R2 `50d1d75ff4c63bdd`/139 . RENDER-E4b-1
 `128e7f1b4735ad06`/243 . BLOQUE-E4b-1a `b33c2bc3e3c47eb5`/481 . PASTE-433B-PRE
 `4d1c2316ed45be8f`/130.
+
+## §434 — Del cable a la cabeza: la ida y la vuelta, atadas por un testigo
+
+**Que.** Nacen en `crates/zk-ssl-wire/src/lib.rs` DOS piezas y sus DOS testigos:
+`VistaFirmada::cabeza() -> Result<EpochHeadDto, CabezaMalformada>` y
+`impl TryFrom<&EpochHeadDto> for EpochHead`, esta ultima pegada al `From<&EpochHead>` del
+que es inversa. Con ellas existe por primera vez el camino DE LA FORMA DE CABLE A LA
+CABEZA: quien recibe una cabeza firmada por el cable puede recomponerla y verificar su
+firma. Es la pieza que E4b-1b -la puerta en el nodo- necesitaba y no habia.
+
+**Por que DOS piezas y no una, con el dato delante.** El render proponia UNA,
+`TryFrom<&VistaFirmada>`, y abrir el fichero la partio. La recomposicion puede fallar de
+dos maneras que no son la misma: la pareja de consumos AUSENTE -`VistaFirmada.cons_root`
+es `Option`, y una cabeza de la era v3 la trae `None`- y un `B32` ILEGIBLE, que es lo que
+`digest_from_wire` devuelve como `WireError`. Una sola pieza tendria que mezclarlas, y
+`CabezaMalformada` -que tiene UNA variante, `FaltaCampo`- ganaria una segunda. Una
+variante nueva en un enum publico rompe cualquier `match` exhaustivo de fuera, y
+`witness.rs:768` hace exactamente ese `match`. Partido en dos, **ningun enum gana
+variante**: `cabeza()` solo puede fallar por campo ausente y usa el idioma que `firmada()`
+ya usa; `TryFrom` solo puede fallar por legibilidad y devuelve `WireError`.
+
+**D-I, y va REVERSIBLE.** El recompositor vive en el CABLE y no en el nodo. Tres razones,
+por el orden de la ley: el testigo de ida y vuelta ata los dos sentidos donde el
+compilador los ve juntos (rango 1); este mismo fichero ya declara por escrito que el
+`impl From<&EpochHead>` es el UNICO PRODUCTOR de la forma de cable de la cabeza, y un
+inverso escrito en otro crate convierte esa frase en media verdad (rango 3); y el error
+que nombra el campo ausente ya existe aqui, mientras que en el nodo habria que inventarlo
+o degradarlo a cadena. **Revertirla es mover la funcion al nodo** y declarar el punto 128
+con deuda nombrada; no cambia un formato, ni una raiz en reposo, ni la version del cable.
+
+**El invariante que sostiene el corte: `epochDigest` NO se copia, se RECOMPUTA.** El campo
+del DTO es lo que el productor AFIRMA; `EpochHead::digest()` es lo que se comprueba. Un
+consumidor que se creyera el declarado dejaria que el emisor eligiera contra que se
+verifica su propia firma. Por eso el `TryFrom` no lo lleva a la cabeza y el testigo cruza
+el declarado contra el computado.
+
+**Los testigos, uno por propiedad, y su falsador EN VIVO.** El primero prueba que la ida y
+la vuelta conservan los ONCE campos, con los once valores DISTINTOS entre si a proposito:
+con dos iguales, intercambiarlos seria invisible. El segundo prueba que una vista de la
+era v3 no recompone y NOMBRA el campo. No hay <<arbol sin la puerta>> que compile, asi que
+el rojo se mostro por MUTACION: aplicado el `TryFrom` con `mmr_cima` leyendo
+`accountsRoot`, el testigo cae con EXACTAMENTE un FAILED y su `assertion left == right`;
+con el bueno, verde. Los nombres `mmrRoot`/`mmrSize` son `mmr_cima`/`mmr_t` en la cabeza,
+que es justo donde un renombre se equivoca.
+
+**Lo que este corte NO cierra, y se dice.** El punto 128 sigue VIVO. Lo que faltaba en el
+arbol ya esta, pero ese punto es de la ESPECIFICACION: una segunda implementacion lee
+`spec/NUCLEO.md`, no `wire/lib.rs`. Lo que aqui se gana es que la implementacion de
+referencia deje de carecer de la pieza.
+
+**El terreno corrigio el render CINCO veces en este arco, y conviene que conste.** Los
+libros ajenos van en `App` y no en `Estado`; `zk-ssl-hash` no es dependencia directa del
+nodo; el fichero de cabezas ajenas no necesita forma propia porque `SignedEpochHeadDto` ya
+existe; el nodo no define `verificar_cabeza` sino que la REEXPORTA del verificador; y esta
+quinta, la particion en dos piezas. Ninguna se dedujo: todas salieron de abrir el fichero.
+
+**Dos defectos MIOS, los dos de gate y los dos reparados en la FUENTE.** El primero costo
+caro: puse un gate ABSOLUTO sobre `tools/__pycache__` -que lo deja el CANON, porque invoca
+sus herramientas sin `-B`- delante de `restaurar()`, y tiro un canon VERDE de tres minutos
+por un directorio de cache. Un gate de ausencia sobre ruta ignorada va por LISTA y por
+DELTA, y **una puerta cuyo rojo no invalida el sello no se pone delante de restaurar()**.
+El segundo no llego a disparar y lo destapo el ensayo: `git add -A` mete lo que este
+untracked, y lo que el canon deja no esta ignorado en todos los arboles; se commitean los
+SEIS por NOMBRE, con el conjunto re-medido justo antes y el indice cruzado.
+
+**Contadores.** SEIS ficheros modificados, ninguno nuevo. Pin `zk-ssl-wire` **17 -> 19**,
+derivado contando los `#[test]` de TODOS los `.rs` del crate -no de su `lib.rs`- y cruzado
+contra la fila del canon antes de tocar nada. Las tres cifras de cada parrafo cuentan el
+MISMO conjunto y se movieron por el MISMO delta derivado, +2: 1055 -> 1057 en la compuerta
+de sello, 1192 -> 1194 con todos los pines, 1206 -> 1208 declaradas, en CINCO parrafos de
+CUATRO documentos. El `+14` del segundo al tercero sigue sin fuente y este corte no lo usa
+ni lo explica. `--list` PRE 17 y POST 19, comparados NOMBRE A NOMBRE: cero perdidos, dos
+nuevos. Ningun Cargo tocado. Vallas invariantes. El canon `--sello` corrio VERDE en
+**192 s**. Piezas: PASTE-E4b-1b-PRE3 `44eed4b3f1a35b27`/187 . PASTE-E4b-1b-PRE4
+`b589b866c960b728`/183 . PASTE-E4b-1b-i-PRE-r2 `f713284b115e248b`/279 . RENDER-E4b-1b-i
+`eea5664ef533f71c`/210 . BLOQUE-E4b-1b-i-r2 `6949e5edbddc666e`/509 . PASTE-434B-PRE
+`0a935fd7eee5d50a`/133.
