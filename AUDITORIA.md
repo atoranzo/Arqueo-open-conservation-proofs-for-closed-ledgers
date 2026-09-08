@@ -32433,3 +32433,63 @@ BLOQUE-S437 `ecfee01838241700`/368.
 **Lo que este corte NO cierra, y se dice.** Queda **E4b-2**, que es medir la ventana, y queda el
 punto 120 entero: sigue sin decidirse si un RFC lleva su propia puerta de ancho o si el ancho de
 una tabla de markdown no es invariante de nada. Este sello lo estrecha, no lo resuelve.
+
+## §438 — el punto 120: el ancho de un documento no es un invariante
+
+**Que.** El punto 120 preguntaba si un RFC lleva su propia puerta de ancho. Se cierra
+por MEDICION y por DECISION, sin construir puerta. No se toca una linea de codigo ni
+se mueve una cifra: este asiento es el corte entero.
+
+**Lo que la medicion destapo, y no era lo que el punto suponia.** NO EXISTE ninguna
+puerta de ancho de documentos en el arbol. `tools/check_columns.py` -que el nombre
+invita a leer como tal, en una caja donde viven `check_cifras`, `check_figures`,
+`check_modulos` y `check_tests`- comprueba que cada columna declarada de un circuito
+AIR (`const COL_*: usize`) la RELLENE de verdad la traza, sobre
+`crates/stark-experiment/src`. Columna de CIRCUITO, no de texto; su propio
+doc-comment lo dice entero. Esta en el bucle de `tools/canon.sh:268` y hace su
+trabajo. Lo que no hace es medir anchos, y darlo por hecho costo una afirmacion falsa
+antes de abrirlo.
+
+**Las cifras heredadas del punto 120 no estaban rancias: eran UNIDADES sin declarar.**
+`spec/rfc/0006-consumo-publicado.md` mide hoy **413 CARACTERES y 429 BYTES**, y los 16
+de diferencia los explican EXACTAMENTE sus no-ASCII: dos guiones largos a +2, y cuatro
+vocales acentuadas y ocho simbolos de seccion a +1. El 408, el 541, el 526 y el 413
+que este proyecto ha ido publicando son todos en CARACTERES, y ninguno lo decia.
+**Desde aqui, toda cifra de ancho se escribe con su UNIDAD al lado.**
+
+**El universo, medido: 38 documentos** (`spec/**.md` mas los `.md` de raiz). Por ancho
+en bytes: `AUDITORIA.md` 971, `BACKLOG.md` 547, `spec/README.md` 543, el 0006 429, el
+0002 410, el 0005 349, el 0003 327, `README.md` 325, `SECURITY.md` 310,
+`spec/PAQUETE.md` 309, el 0004 277. Son SIETE RFC; el 0006 es el mas ancho de ellos y
+el CUARTO del universo.
+
+**Por que NO se construye la puerta, y lo decide la ley.** Rango 1, pureza: lo que el
+circuito no restringe no existe, y el ancho de un documento no es objeto del
+protocolo. Menos excepciones: cualquier limite que dejara pasar el 0006 de hoy
+dejaria pasar casi todo, y cualquiera mas estrecho cazaria a documentos legitimos
+empezando por `AUDITORIA.md`, que crece por apendice -gatear su ancho seria gatear la
+historia-. Y la regla corta lo cierra: **no hay ninguna afirmacion del sistema que un
+ancho falsaria**, luego no se construye todavia. Ademas, la linea mas ancha del 0006
+es una FILA DE TABLA markdown, y una fila no se puede envolver sin romper la tabla: su
+ancho no es reducible por redaccion, asi que una puerta sobre ella no pediria una
+correccion, pediria mutilar el documento.
+
+**Lo que SI seria invariante, si algun dia se quiere.** El ancho de la PROSA, fuera de
+tablas y fuera de vallas de codigo. Queda fichado; no se construye.
+
+**Dos deudas que la medicion abre, DECLARADAS y NO pagadas aqui.**
+(1) Rango 2 de la ley -nombres que significan UNA SOLA COSA- pide renombrar
+`check_columns`. Su coste NO esta medido: toca la fila del bucle del canon y las citas
+que `verificar_citas.py` gatea, y mezclarlo con esta declaracion serian dos frentes.
+(2) Rango 3 -la misma regla en todas partes- destapa que el generador del traspaso
+asierta el ancho en CARACTERES y su juez de coherencia en BYTES: dos productores del
+mismo contrato en unidades distintas, que hoy coinciden SOLO porque una tercera puerta
+exige ASCII puro. Es una puerta que un discriminante anterior ya cubre, asi que se
+DECLARA y no se repara; se vuelve real el dia que se relaje el ASCII puro.
+
+**Lo que no se abrio, y por eso no se concluye.** Si esta convencion debe vivir ademas
+en `spec/rfc/PROCESO.md` no se decide sin abrirlo: su ambito es lo que CRUZA EL CABLE,
+y un criterio de redaccion puede no caer dentro. Fichado.
+
+**Contadores.** Ningun pin se mueve. Ninguna suma se mueve. Ningun `Cargo` tocado.
+Ningun `.rs` tocado. Ningun test nuevo. Un solo fichero versionado: este.
