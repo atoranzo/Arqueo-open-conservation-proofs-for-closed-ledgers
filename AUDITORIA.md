@@ -32048,3 +32048,57 @@ vector del consumo- y 6 modificados. Ningun Cargo tocado, ningun `.rs`. Conformi
 con el MISMO binario: paquete 68 de 68, consumo 14 de 14, conflicto 16 de 16. Las
 cinco herramientas sin movimiento. Vallas 132 -> 132. El canon `--sello` corrio en
 183 s.
+
+## §432 — El punto 119, cerrado por medicion: la ruta compartida y el tarball atribuible
+
+**Que.** El punto 119 -el binario del mando paso de 9aed7f076fc02397 a 88dc47bcedcfd51f, y el del
+artefacto con remap a a5abe28edc3b8d24, sin que el arco S431/S431-B toque UNA linea de Rust- queda
+CERRADO POR MEDICION. No era defecto del arbol: era defecto de la MEDIDA.
+
+**El candidato, FALSADO.** Una lectura pura censo los 160 `.rs` versionados y dio SEIS hits de
+`include_str!`/`include_bytes!`/`include!`/`env!`/`option_env!`, y CERO de ellos apunta a `spec/`
+desde el mando. El unico `include_str!` del verificador es `../Cargo.toml` y vive bajo `cfg(test)`:
+es el atado del S395. Su propio comentario ya lo declaraba por escrito -"include_str! vive bajo
+cfg(test): NO viaja al binario, asi que este gate no ata el artefacto al arbol"-. Y ninguno de los
+destinos incluidos esta en el conjunto de 25 ficheros que el arco movio.
+
+**Lo que cierra, medido sobre el arbol LIMPIO en este commit.** El binario tal como lo dejo el
+canon, el de un `cargo build --release -p zk-ssl-verify` en vacio, y el de un
+`cargo clean --release -p` mas recompilar dan LOS TRES `88dc47bcedcfd51f`, en 2 s. El artefacto con
+remap da `a5abe28edc3b8d24`. Y el toolchain NO se movio: el `VERSION` que la corrida del S431-B
+dejo declara `rustc 1.97.1 (8bab26f4f 2026-07-14)`, el MISMO commit-hash que `rustc -vV` imprime
+hoy, y el toolchain instalado data del 25-jul, seis semanas antes de aquella sesion.
+
+**La causa, NOMBRADA y no concluida.** Si el binario es reproducible y el toolchain esta quieto,
+`9aed7f076fc02397` no es producible con este arbol: el PRE midio el residuo de OTRA invocacion en
+la MISMA ruta. `target/release/<bin>` es una ruta COMPARTIDA -`cargo build -p X` y `cargo test`
+escriben las dos ahi, y su unificacion de features no tiene por que coincidir-. El candidato
+concreto se DECLARA; falsarlo exige medir las dos invocaciones, y eso es corte propio.
+
+**La regla que nace.** La huella de un binario NO identifica a su productor cuando la ruta es
+compartida. Una medida de artefacto se toma NOMBRANDO la orden que lo produjo, o no mide nada.
+
+**El mismo defecto un piso mas arriba, medido de propina.** Antes de esta medicion convivian en
+`target/artefacto/` un montaje en 1cd5f99 -su `VERSION` lo decia- y, con el MISMO nombre y al lado,
+el tarball del S426, `84ab44bf8b195e40` de 2.300.534 B, que es de c07eedb. Nadie los cruza. Quien
+hubiera hasheado "el tarball del artefacto" de ese directorio lo habria atribuido a HEAD. Es el 119
+con otro sujeto: un directorio que sobrevive entre corridas.
+
+**Lo que ademas PAGA: el punto 116.** El `--check` corrido DESPUES del commit y sobre el arbol
+LIMPIO da un tarball ATRIBUIBLE, y es el PRIMERO desde el S426.
+Huella `07e0495c166ff5d2`, 2891958 B y 109 ficheros.
+El directorio de dentro es `arqueo-verify-0.1.0-x86_64-unknown-linux-gnu`.
+Su `VERSION` dice `commit=bcd947f26113007293bd46019a42abbed3f0f1f5`
+y `describe=arqueo-verify-v0.1.0-33-gbcd947f`.
+Conformidad en la misma corrida: paquete 68/68, consumo 14/14, conflicto 16/16, y desde dentro del
+tarball igual. La receta queda MEDIDA y cuesta 2 s: **el tarball atribuible se produce DESPUES del
+commit, nunca dentro del canon, que corre antes.**
+
+**Reversible, y por que lo es.** Este corte no cambia una linea de codigo ni una cifra: es un
+asiento. Lo que declara es el resultado de una medicion, y la medicion se re-corre entera con las
+dos piezas cuyas huellas van abajo.
+
+**Contadores.** Ningun pin movido. Ninguna cifra movida. Ningun Cargo tocado. El canon NO corre: el
+corte no toca `.rs` ni cifras, y su juez es `verificar_citas` -0 fantasmas, 0 secciones muertas,
+rc 0-, como el S412. Piezas: PASTE-119-M `3c67ecfe9a842f2d`/323 . PASTE-119-M2
+`48ae6271f96d1efa`/269 . BLOQUE-432 `5b21a079bfdbadd0`/410.
