@@ -615,6 +615,39 @@ impl From<&EpochHead> for EpochHeadDto {
     }
 }
 
+/// **De la forma de cable a la cabeza.** Inversa exacta del `From` de arriba, y
+/// escrita pegada a él a propósito: son DOS PRODUCTORES de la misma
+/// correspondencia y así el compilador los ve juntos. Sin esto, quien recibe una
+/// cabeza por el cable no puede recomponerla para verificar su firma, y una
+/// segunda implementación escrita desde la spec tampoco (RFC-0006, punto 128).
+///
+/// ⚠️ **`epochDigest` NO viaja a la cabeza: se RECOMPUTA.** El campo del DTO es lo
+/// que el productor AFIRMA; `EpochHead::digest()` es lo que se comprueba. Un
+/// consumidor que se creyera el declarado dejaría que el emisor eligiera contra
+/// qué se verifica su propia firma.
+///
+/// ⚠️ La única falla posible es de LEGIBILIDAD —ningún campo del DTO es `Option`—,
+/// y por eso el error es `WireError` y no `CabezaMalformada`: aquí no falta nada.
+impl TryFrom<&EpochHeadDto> for EpochHead {
+    type Error = WireError;
+
+    fn try_from(d: &EpochHeadDto) -> Result<Self, Self::Error> {
+        Ok(EpochHead {
+            seq: d.seq.0,
+            accounts_root: digest_from_wire(&d.accounts_root)?,
+            pending_root: digest_from_wire(&d.pending_root)?,
+            frozen_root: digest_from_wire(&d.frozen_root)?,
+            chain_digest: digest_from_wire(&d.chain_digest)?,
+            acuses_root: digest_from_wire(&d.acuses_root)?,
+            n: d.n.0,
+            mmr_cima: digest_from_wire(&d.mmr_root)?,
+            mmr_t: d.mmr_size.0,
+            cons_root: digest_from_wire(&d.cons_root)?,
+            cons_count: d.cons_count.0,
+        })
+    }
+}
+
 /// **Recibo de inclusión** (§259): lo que un tercero necesita para
 /// comprobar, **sin el nodo**, que una hoja estaba en una cabeza firmada.
 ///
@@ -832,6 +865,32 @@ pub struct VistaFirmada<'a> {
     pub n: Q,
     pub signature: &'a Blob,
     pub public_key: &'a Blob,
+}
+
+impl VistaFirmada<'_> {
+    /// **La cabeza sin firmar que la firmada contiene.** Inversa de `con_firma`,
+    /// que toma un `EpochHeadDto` entero: el §311 midió que la forma firmada
+    /// **contiene entera** a la cabeza, y esto es esa contención por el otro lado.
+    ///
+    /// ⚠️ Lo único que puede faltar es la pareja de consumos, que sólo el formato 4
+    /// obliga —una vista de la era v3 la trae `None`—, y entonces se NOMBRA el
+    /// campo, con el mismo idioma que `firmada()` (§254).
+    pub fn cabeza(&self) -> Result<EpochHeadDto, CabezaMalformada> {
+        Ok(EpochHeadDto {
+            seq: self.seq,
+            accounts_root: self.accounts_root,
+            pending_root: self.pending_root,
+            frozen_root: self.frozen_root,
+            chain_digest: self.chain_digest,
+            acuses_root: self.acuses_root,
+            n: self.n,
+            mmr_root: self.mmr_root,
+            mmr_size: self.mmr_size,
+            cons_root: self.cons_root.ok_or(CabezaMalformada::FaltaCampo("consRoot"))?,
+            cons_count: self.cons_count.ok_or(CabezaMalformada::FaltaCampo("consCount"))?,
+            epoch_digest: self.epoch_digest,
+        })
+    }
 }
 
 impl SignedEpochHeadDto {
@@ -1427,5 +1486,51 @@ mod tests {
         assert!(!v4_sin.contains("consRoot"));
         let d: SignedEpochHeadDto = serde_json::from_str(&v4_sin).expect("deserializa");
         assert_eq!(d.firmada(), Err(CabezaMalformada::FaltaCampo("consRoot")));
+    }
+
+    /// **La ida y la vuelta son la misma correspondencia.** Falsa que los dos
+    /// productores puedan divergir EN SILENCIO: `mmrRoot`/`mmrSize` se llaman
+    /// `mmr_cima`/`mmr_t` en la cabeza, que es justo donde un renombre se
+    /// equivoca. Los once valores van DISTINTOS entre sí a propósito: con dos
+    /// iguales, intercambiarlos sería invisible y el testigo no discriminaría.
+    #[test]
+    fn la_ida_y_la_vuelta_de_la_cabeza_conservan_los_once_campos() {
+        let d = |b: u8| digest_from_bytes(&[b; 32]).expect("digest canónico");
+        let h = EpochHead {
+            seq: 5,
+            accounts_root: d(0x11),
+            pending_root: d(0x22),
+            frozen_root: d(0x33),
+            chain_digest: d(0x44),
+            acuses_root: d(0x55),
+            n: 3,
+            mmr_cima: d(0x66),
+            mmr_t: 9,
+            cons_root: d(0x77),
+            cons_count: 2,
+        };
+        let dto = EpochHeadDto::from(&h);
+        let vuelta = EpochHead::try_from(&dto).expect("lo que salió de la ida vuelve");
+        assert_eq!(h, vuelta, "la ida y la vuelta no conservan los once campos");
+        // ⚠️ El digest NO viaja: que coincida es consecuencia de que los once
+        // campos coinciden, no de haberlo copiado.
+        assert_eq!(dto.epoch_digest, digest_to_wire(&vuelta.digest()));
+    }
+
+    /// **Una vista de la era v3 no da cabeza: dice QUÉ le falta.** Fail-closed y
+    /// con el campo nombrado (§254). Es la única falla que `cabeza()` puede tener:
+    /// ningún otro campo de `VistaFirmada` es `Option`.
+    #[test]
+    fn una_vista_v3_no_recompone_la_cabeza_y_nombra_el_campo() {
+        const PAREJA: &str = "\"consRoot\":\"0x8888888888888888888888888888888888888888888888888888888888888888\",\"consCount\":\"0x2\",";
+        let v3 = FIRMADA_JSON
+            .replace("\"formatVersion\":\"0x4\"", "\"formatVersion\":\"0x3\"")
+            .replace(PAREJA, "");
+        let d: SignedEpochHeadDto = serde_json::from_str(&v3).expect("la era v3 deserializa");
+        let vista = d.firmada().expect("bien formada").expect("hay cabeza firmada");
+        match vista.cabeza() {
+            Err(CabezaMalformada::FaltaCampo(k)) => assert_eq!(k, "consRoot"),
+            otro => panic!("una v3 no puede recomponer cabeza: {otro:?}"),
+        }
     }
 }
