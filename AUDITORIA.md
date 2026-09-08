@@ -32240,3 +32240,136 @@ nuevos. Ningun Cargo tocado. Vallas invariantes. El canon `--sello` corrio VERDE
 `b589b866c960b728`/183 . PASTE-E4b-1b-i-PRE-r2 `f713284b115e248b`/279 . RENDER-E4b-1b-i
 `eea5664ef533f71c`/210 . BLOQUE-E4b-1b-i-r2 `6949e5edbddc666e`/509 . PASTE-434B-PRE
 `0a935fd7eee5d50a`/133.
+
+## §435 — La puerta de E4b, publicada: `arbol_de_consumos` sale del modulo privado
+
+**Que.** `crates/zk-ssl/src/lib.rs` gana `pub use crate::consumo::arbol_de_consumos;` con
+`mod consumo;` INTACTO en su :107. La capa publica UNA funcion y nada mas; el modulo sigue
+privado. Es la D-H de E4b, y calca el unico precedente de esa forma en el crate: el §318,
+que publico `PUBLICADA_PAGO_B` dejando `mod metrics` privado, con su comentario encima.
+
+**Por que hace falta.** La puerta de E4b tiene que RE-DERIVAR la raiz del arbol de consumos
+de un libro ajeno, y esa aritmetica —posicion, hoja, raiz— ya estaba escrita DOS veces
+cuando el §433 la unifico en un productor unico. Que el nodo la calcara una tercera vez
+seria un tercer productor de la misma regla, y dos productores de una regla pueden
+discrepar. Publicando la funcion, el contrato lo sostiene el compilador y no la disciplina.
+
+**Sin testigo negativo, y se DECLARA.** El invariante de este corte es <<nada observable
+cambia>>, y eso no se falsa: se CRUZA. Lo prueba `cargo test -- --list` con **326 nombres
+antes y 326 despues, identicos uno a uno**, mas la capa entera en release: 323 pasan, 3
+ignorados, 51,6 s. Fingir un rojo para tener uno seria peor que declarar que no lo hay.
+
+**Contadores.** UN fichero, `crates/zk-ssl/src/lib.rs` 717 -> 721, `numstat 4 0`: adicion
+pura. CERO `#[test]` nuevos, asi que **ningun pin se mueve y no hay bloque de cifras**.
+Ningun Cargo tocado. Vallas invariantes. El canon `--sello` corrio VERDE en **264 s**.
+Piezas: BLOQUE-E4b-1b-ii-a `0ff4cd4a020d7f72`/161.
+
+**Este asiento llega TARDE, y se dice.** El §435 se sello en la sesion 113 (`d74246f`) sin
+pasar por este fichero: el arco de aquella sesion lo cerro en el asiento del §434. Se
+recoge aqui, en el sello siguiente, en vez de dejar un hueco permanente en el unico registro
+que el proyecto tiene. Lo destapo el PRE de este asiento al preguntarse, midiendo y no
+suponiendo, cual era la ultima cabecera del fichero.
+
+## §436 — La puerta de libros ajenos: un consumo que otro libro firmo no se tramita aqui
+
+**Que.** El nodo gana `--libros-ajenos`: un fichero JSON con la cabeza FIRMADA de cada libro
+ajeno —verbatim, tal como la sirve `zkssl_signedEpochHead`— y la lista de sus consumos. Con
+el cargado, `zkssl_publishConsumo` REHUSA TRAMITAR un consumo que otro libro firmo tener y lo
+dice con su nombre. Es E4b-1b-ii del RFC-0006, y con el §434, el §434-B y el §435 cierra
+**E4b-1b entera**.
+
+**Es DETECCION, nunca prevencion, y el texto del rechazo lo lleva dentro.** No impide que el
+consumo se publique en el otro libro y **no prueba doble uso**: prueba que OTRO libro firmo
+tenerlo. El rechazo dice <<otro libro firmo tener este consumo: no es doble uso probado, es
+motivo para no tramitarlo aqui>>, derivado de los DOCE `reason` productivos del nodo y
+empezando por <<otro libro>> a proposito: el <<ya esta publicado>> es de `ConsumoRepetido`,
+que la capa emite en ese mismo brazo y tiene test que lo pina.
+
+**LA LISTA DE CONSUMOS NO SE CREE, y eso es lo que da sentido al §433.** Con una raiz no se
+decide pertenencia, asi que el fichero trae la lista entera; y la lista se RECONSTRUYE con
+`arbol_de_consumos` y se exige que su raiz sea la que la firma de ese libro acredita, y que
+su cuenta sea la firmada. Quien emite el fichero **no tiene que ser de fiar**: si miente, su
+propia firma lo falsa. Esta es la tercera re-derivacion de esa raiz en el arbol, y por eso el
+§433 hizo el productor unico antes de que hiciera falta.
+
+**Seis puertas fail-closed, calcadas del molde de arranque del nodo.** `firmada()` da la
+vista o dice que no hay cabeza firmada; `cabeza()` baja al DTO y una cabeza de la era v3
+falla NOMBRANDO `consRoot`; `TryFrom` la recompone; **el `epochDigest` declarado se RECOMPUTA
+y se compara**; la firma se verifica **contra el computado, jamas contra el declarado**; y la
+raiz reconstruida se cruza con la firmada. Si un solo libro no acredita lo que dice, **el
+nodo NO ARRANCA**: el molde son los dos `anyhow::bail!` de `main.rs`, <<el nodo no afirma lo
+que no puede comprobar>>.
+
+**DECLARADO 1 — la D-D: NO hay ventana de tiempo, y no es un olvido.** Una cabeza ajena vieja
+bloquea igual que una recien firmada. Medido en la 112 y confirmado con los bytes de la 114:
+`emitida_unix` se calcula DESPUES de la firma y su `unwrap_or(0)` convierte un reloj roto en
+1970, asi que **no viaja bajo la firma**; y ni `seq` ni el indice XMSS cruzan libros, porque
+son POR LIBRO. No hay reloj firmado que dos libros compartan. **La ventana es, por tanto, un
+parametro operativo DECLARADO y jamas una garantia**, y medirla es E4b-2. Lo que no se firma
+no sostiene una promesa.
+
+**DECLARADO 2 — el precio del `deny_unknown_fields`, heredado del cable.** El fichero de
+libros ajenos lee `SignedEpochHeadDto` VERBATIM, y ese tipo —como sus veintidos hermanos—
+lleva `deny_unknown_fields`. Su propio doc-comment ya declara el precio: el dia que un campo
+aditivo entre, **todo consumidor tipado viejo deja de deserializar**. Esta puerta lo HEREDA:
+una cabeza servida por un nodo mas nuevo no cargaria aqui. No es un defecto de este corte,
+es el precio del cable, y la rotura ocurriria dentro del mismo commit que la causa.
+
+**DECLARADO 3 — `Digest` no es `Ord` ni `Hash`, y eso decidio la forma del conjunto.** El
+render proponia `BTreeSet<Digest>`. Medido en la FUENTE de winter-math: `BaseElement` lleva
+`derive(Copy, Clone, Default)` y sus `PartialEq` y `Eq` estan ESCRITOS A MANO, porque la
+representacion es Montgomery y la igualdad exige forma canonica. **No hay `Ord`, ni
+`PartialOrd`, ni `Hash`**, luego `[BaseElement; 4]` no es ninguna de las tres y no puede ser
+clave de un conjunto. Los CERO precedentes de `Digest` como clave en los 160 `.rs` del arbol
+no eran una omision: eran imposibilidad, y por eso el arbol disperso lo usa de VALOR. La
+clave son los BYTES CANONICOS, `digest_to_wire(&d).0`, con **un solo productor en los dos
+lados** —la carga y la puerta—: derivarla de dos maneras dejaria dos conjuntos que podrian
+discrepar sin que nada lo dijera.
+
+**DECLARADO 4 — la regla 5 de `spec/rfc/PROCESO.md`, cumplida a MEDIAS y con nombre.** El
+proceso pide DOBLE HILO: que el asiento referencie el RFC por numero y que el RFC referencie
+al asiento. La primera mitad queda hecha aqui: este corte es **E4b-1b-ii del RFC-0006**. La
+segunda **NO**, y no por descuido: medido sobre el fichero, `spec/rfc/0006-consumo-publicado.md`
+**no tiene fila para E4b**; su tabla llega a <<E4 — el banco de dos libros>>, y la particion
+E4a/E4b/E4c del dictamen de la sesion 100 no vive en el RFC. Escribirla aqui arrastraria dos
+defectos que ese documento ya tiene fichados —un `§NNN` de plantilla sin sustituir en su
+:237 y una fila E3 que dice <<sellada en parte>> estandolo entera— y el ambito de un censo
+tiene que ser el ambito de su cambio. **Queda como deuda NOMBRADA de E4b-3**, que es el corte
+que abre ese fichero. `PROCESO.md` tampoco exige RFC para este corte, y lo dice el: su ambito
+es lo que CRUZA EL CABLE, y un fichero local del operador no lo cruza.
+
+**Los TRES testigos, uno por propiedad, y su falsador EN VIVO.** El primero prueba que la
+puerta bloquea y que el rechazo NOMBRA: el MISMO consumo, dos nodos, dos respuestas. El
+segundo, que una firma que no verifica impide arrancar. El tercero, que una lista cuya raiz
+reconstruida no casa con la firmada tampoco. Los dos ultimos son los que hacen que el fichero
+no exija confianza, y los dos CARGAN PRIMERO el libro intacto: sin ese control, un rojo por
+cualquier otra causa pasaria por bueno. No hay <<arbol sin la puerta>> que compile, asi que el
+rojo se mostro por MUTACION —saltarse la sexta puerta, que es la que convierte la lista en
+evidencia—: cayo EXACTAMENTE UNO, y comprobado POR NOMBRE que era el de la raiz.
+
+**Cuatro defectos MIOS, y el ultimo dice algo del metodo.** El primero lo cazo la IDA Y
+VUELTA: mi lista de ediciones no estaba ordenada y la insercion de `nodo()` caia ocho lineas
+antes de su sitio, dentro de otra cosa; ningun contador lo veia. El segundo, un `set +e`
+emparejado con `set -e` en seis sitios, con `-e` que nunca estuvo puesto: emparejarlos
+ENCIENDE errexit para el resto del bloque —tercera reincidencia de esa precision—. El
+tercero, un `exit` que salia sin restaurar con el arbol ya copiado. **El cuarto solo pudo
+cazarlo el compilador**: escribi la funcion de carga y el atajo `consumos_ajenos,` del `App`
+de produccion y nunca la linea que la LLAMA. El ensayo no puede compilar Rust, luego esa es
+la clase que el arnes nunca alcanzara; lo que se repara no es el ensayo, es que el bloque
+VUELQUE el error del compilador en vez de contar cuantos testigos cayeron. Un instrumento que
+falla dice QUE fallo, no cuantos.
+
+**Contadores.** SEIS ficheros modificados, ninguno nuevo; 293 inserciones y 12 borrados. Pin
+`zk-ssl-node` **95 -> 98**, derivado contando los `#[test]` de TODOS los `.rs` del crate
+—seis ficheros— y cruzado contra la fila del canon antes de tocar nada. Las tres cifras de
+cada parrafo cuentan el MISMO conjunto y se movieron por el MISMO delta derivado, +3: 1057 ->
+1060 en la compuerta de sello, 1194 -> 1197 con todos los pines, 1208 -> 1211 declaradas, en
+CINCO parrafos de CUATRO documentos, mas la POR-CRATE del nodo dentro del parrafo de
+PRINCIPIOS: DIECISEIS sustituciones, y las dieciseis conservan el ancho, asi que los cinco
+parrafos son LINEA- y BYTE-NEUTRALES. El `+14` del segundo al tercero sigue sin fuente y este
+corte no lo usa ni lo explica. `--list` PRE 95 y POST 98, comparados NOMBRE A NOMBRE: cero
+perdidos, tres nuevos. Ningun Cargo tocado. Vallas invariantes. El canon `--sello` corrio
+VERDE en **180 s**. Piezas: PASTE-S436-PRE `4bd81bb48d6656c2`/359 . PASTE-S436-PRE2
+`bb9d4673e80da809`/320 . PASTE-S436-PRE3 `f90a81a6c37b850c`/320 . RENDER-S436-r2
+`9a2d2c320f051ef4`/180 . PAYLOAD-S436 `020caa41c71b55c1`/329 . BLOQUE-S436-r2
+`6c5a213fbca72ac1`/725 . PASTE-436B-PRE `3fae47e504c1a559`/244.
