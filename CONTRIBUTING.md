@@ -1,4 +1,4 @@
-# Guía de contribución — ZK-SSL
+# Guía de contribución — Arqueo (antes ZK-SSL)
 
 Lee antes [`SECURITY.md`](SECURITY.md): el estado del proyecto y sus límites
 conocidos condicionan qué tipo de contribución tiene sentido aquí.

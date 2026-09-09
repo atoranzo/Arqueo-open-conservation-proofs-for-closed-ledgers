@@ -1,4 +1,4 @@
-# Consecuencias de implantar un sistema tipo ZK-SSL
+# Consecuencias de implantar un sistema tipo Arqueo
 
 *Liquidación con privacidad ZK, cumplimiento demostrable, sin ceremonia de
 setup, límites explícitos.*

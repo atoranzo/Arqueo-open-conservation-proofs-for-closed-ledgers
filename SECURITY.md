@@ -1,4 +1,4 @@
-# Política de seguridad — ZK-SSL
+# Política de seguridad — Arqueo (antes ZK-SSL)
 
 ## Léelo antes que el resto
 
@@ -26,7 +26,7 @@ verificar tú leyendo el repositorio, trátalo como afirmación pendiente.
 
 - **Prototipo de investigación**, no un producto. No maneja dinero real y no
   debe manejarlo en su estado actual.
-- **Nodo único operado por una sola parte.** Pese a la palabra «Sovereign»,
+- **Nodo único operado por una sola parte.** Pese a la palabra «Sovereign» del nombre anterior,
   **no es descentralizado**: el operador ve el estado, ordena las operaciones y
   puede censurar. Es una característica declarada, no un descuido.
 - **Su tesis no es la evasión**: privacidad frente a terceros con supervisión
@@ -451,7 +451,7 @@ y también trae dos defensas que antes no existían.
 | Ethereum | ECDSA en cuentas, BLS en validadores | vulnerable. La Fundación creó un equipo PQ en enero de 2026; `leanXMSS` (firmas hash) + `leanVM` en desarrollo, con horizonte declarado hacia 2029 |
 | Zcash | firmas sobre curvas (Pallas/Vesta) | vulnerable |
 | Solana | Ed25519 | vulnerable |
-| **ZK-SSL** | **conocimiento de preimagen**: identidad, salt de hoja y autoridad derivan de la clave **por hash** (§117) | **no hay firma clásica en la vía de pago**, y STARK/FRI solo usa hashes: no hay curva que romper |
+| **Arqueo** | **conocimiento de preimagen**: identidad, salt de hoja y autoridad derivan de la clave **por hash** (§117) | **no hay firma clásica en la vía de pago**, y STARK/FRI solo usa hashes: no hay curva que romper |
 
 ⚠️ **La reserva que toca hacerse**: «post-cuántico» aquí significa *sin
 supuestos de curva*, no *invulnerable*. Grover degrada los hashes; y este
@@ -480,7 +480,7 @@ este eje solo aplica contra Zcash.
 
 ### Donde los otros aplastan a este proyecto
 
-| eje | ellos | ZK-SSL |
+| eje | ellos | Arqueo |
 |---|---|---|
 | **Descentralización** | miles de validadores/mineros independientes | **UN nodo, un operador**. Ve el estado, ordena, puede censurar |
 | **Rendimiento** | Solana en miles de TPS; Bitcoin y Ethereum en un orden muy superior a este | **1,5-1,9 TPS** medidos (§123) |

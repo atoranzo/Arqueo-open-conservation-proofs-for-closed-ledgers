@@ -1,4 +1,4 @@
-# zk-ssl-cli — sandbox y trazador de ZK-SSL
+# zk-ssl-cli — sandbox y trazador de Arqueo
 
 CLI en Rust para probar la lógica de la capa, simular operaciones,
 inspeccionar el estado e imprimir trazas detalladas **sin levantar nada**:

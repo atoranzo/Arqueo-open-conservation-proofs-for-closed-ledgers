@@ -1,4 +1,4 @@
-# ZK-SSL — ¿Puede interesar a bancos centrales e instituciones financieras?
+# Arqueo (antes ZK-SSL) — ¿Puede interesar a bancos centrales e instituciones financieras?
 
 **Evaluación honesta, no material comercial.**
 

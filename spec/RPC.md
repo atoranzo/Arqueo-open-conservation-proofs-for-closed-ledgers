@@ -1,4 +1,4 @@
-# ZK-SSL JSON-RPC — especificación v0.3 (`zkssl/0.3`)
+# Arqueo JSON-RPC — especificación v0.3 (`zkssl/0.3`)
 
 > **Qué cambió de `0.1` a `0.2` (§209, etapa 1 del RFC-0002).** Un solo
 > cambio, y no está en los métodos: **`proof_digest` deja de calcularse
@@ -17,7 +17,7 @@
 
 Especificación normativa del API de nodo. `zk-ssl-node` es la
 implementación de referencia; `zk-ssl-wire` define los tipos de cable.
-Cualquier implementación que hable esto es un nodo ZK-SSL válido de cara
+Cualquier implementación que hable esto es un nodo Arqueo válido de cara
 a las herramientas del ecosistema. (Análogo a `execution-apis` de
 Ethereum; una versión OpenRPC generada desde `zk-ssl-wire` está en el
 roadmap.)

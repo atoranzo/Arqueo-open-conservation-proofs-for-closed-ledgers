@@ -1,4 +1,4 @@
-# Proceso RFC del protocolo ZK-SSL
+# Proceso RFC del protocolo de Arqueo (`zkssl/0.N`)
 
 Un cambio al PROTOCOLO (lo que cruza el cable: `spec/RPC.md`,
 `spec/openrpc.json`, los vectores de `spec/vectors/`) no entra por

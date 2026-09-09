@@ -1,4 +1,4 @@
-# Qué aporta ZK-SSL
+# Qué aporta Arqueo
 
 Comparado con el sistema bancario público/soberano actual y con las
 blockchains privadas, su aportación no es *sustituir todo*, sino cambiar la
@@ -13,7 +13,7 @@ y cumplimiento demostrable**.
 
 ## 1. Respecto al sistema bancario público / soberano actual
 
-| Dimensión | Banca actual | ZK-SSL |
+| Dimensión | Banca actual | Arqueo |
 |---|---|---|
 | **Base de confianza** | Instituciones, reguladores, auditorías y procesos legales | Pruebas criptográficas verificables + confianza residual **declarada** en el operador |
 | **Privacidad** | Opaca para el público; visible para el banco y, bajo requerimiento, para el Estado | Frente a terceros que solo ven pruebas. ⚠️ El operador ve el estado, y **una contraparte ve tu saldo** (§5) |
@@ -37,7 +37,7 @@ pueden exigir y verificar.
 
 ## 2. Respecto a las blockchains privadas
 
-| Dimensión | Blockchain privada típica | ZK-SSL |
+| Dimensión | Blockchain privada típica | Arqueo |
 |---|---|---|
 | **Quién valida** | Consorcio de nodos conocidos | Hoy: **nodo único**, declarado |
 | **Privacidad** | Parcial (canales, acceso restringido) o inexistente entre miembros | Conocimiento cero: terceros ven pruebas, no importes ni identidades |

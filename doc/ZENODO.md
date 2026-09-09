@@ -31,7 +31,7 @@ Everything is reproducible with stable Rust and a single command. The
 mistakes are documented alongside the results.
 
 **Repositories:**
-- [ZK-SSL — comparative study and sovereign settlement layer](https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers)
+- [Arqueo (formerly ZK-SSL) — comparative study and settlement layer](https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers)
 - [euro-digital-zk — digital euro privacy requirements](https://github.com/atoranzo/euro-digital-zk)
 
 ---

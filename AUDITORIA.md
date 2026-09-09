@@ -33059,3 +33059,53 @@ retira de la FAQ, y en USE_CASES sigue.
 **Contadores.** Pines quietos: 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213.
 Ficheros: PREGUNTAS.md (306 -> 291), QUESTIONS.md (291 -> 288) y este asiento. Documentos .md
 versionados 70 -> 70.
+
+## §447 — el nombre en los documentos vivos: 23 lineas en 14 ficheros dicen Arqueo
+
+**Que.** Tras el §445 y el §446, catorce documentos vivos seguian llamandose ZK-SSL en su titulo o
+en prosa de presente: SECURITY (4 lineas), CONTRIBUTING, PROCESO, RPC (2), ARQUITECTURA (3, con dos
+H1 iguales, :1 y :770), PRINCIPIOS (2), README-CLI, NOTICE, doc/ZENODO, doc/DIAGNOSTICO_ESCALADO,
+INSTITUCIONAL, INSTITUTIONAL, doc/APORTACION (3) y doc/CONSECUENCIAS. Este sello cambia SOLO esas
+23 lineas: el nombre del proyecto pasa a Arqueo, con <<antes ZK-SSL>> donde el titulo lo admite, y
+no toca ningun identificador (crates, `zkssl/0.3`, los dominios `ZK-SSL-*` de spec/NUCLEO.md y del
+RFC-0005, `SovereignLayer`, <<Sovereign SDK>>). Prosa: sin canon (§402/§424/§446); ocho
+herramientas y el juez.
+
+**Lo medido (PASTE-447-M `3f286edf3aeb4565`/86, salida `3e37de491922feae`/3054, sobre `8e9cfaa`).**
+21 .md vivos llevan el nombre en prosa (sin AUDITORIA, BACKLOG, preprints ni los cuatro reescritos),
+mas NOTICE. De ellos, siete NO se tocan aqui: spec/NUCLEO.md y spec/rfc/0005 (solo dominios, que
+son bytes del formato); VISION.md, ROADMAP-ECOSISTEMA.md, doc/POSICIONAMIENTO.md,
+RESUMEN_EJECUTIVO.md y RESUMEN_BILINGUE.md (narrativa de la etapa ZK-SSL: retitularlos seria
+mentir; van al S448/S449); y PERFORMANCE.md (se declara SUPERADO). Los 14 restantes tienen su H1 y
+sus lineas con el nombre medidas una a una; siete estan volcados enteros (CONTRIBUTING, PROCESO,
+README-CLI, NOTICE, ZENODO, APORTACION, CONSECUENCIAS) y su POST se predice; los otros siete son
+largos y se gatean por region: PRE completa contra su ancla, la linea vieja UNICA en el fichero, y
+todo lo demas byte a byte igual.
+
+**Los cambios.** Titulos: SECURITY:1, CONTRIBUTING:1, PROCESO:1, RPC:1, ARQUITECTURA:1 y :770,
+PRINCIPIOS:1, README-CLI:1, NOTICE:1, INSTITUCIONAL:1, INSTITUTIONAL:1, APORTACION:1,
+CONSECUENCIAS:1. Prosa: SECURITY:29 (<<Pese a la palabra Sovereign>> pasa a <<del nombre
+anterior>>), :454 y :483 (las filas de dos tablas comparativas), RPC:20 (<<un nodo Arqueo
+valido>>), ARQUITECTURA:142, APORTACION:16 y :40 (cabeceras de tabla), PRINCIPIOS:274 (<<Arqueo es
+el intento clasico>>), ZENODO:34 (el rotulo del enlace al repo), DIAGNOSTICO_ESCALADO:381 (rotulo
+de fila). POST predichos: CONTRIBUTING `4ec3ef3898271a81`, PROCESO `b0939cb92ff6cbe3`, README-CLI
+`c03459fb6b2cc04d`, NOTICE `517992997e9ee18d`, ZENODO `934cc3c921983eed`, APORTACION
+`a39499217c057a23`, CONSECUENCIAS `9c8e3443debe1915`; las lineas no cambian en ninguno.
+
+**Decisiones (REVERSIBLES).** D-N1 spec/RPC.md:1 y :20 se retitulan por sello y no por RFC:
+PROCESO.md define protocolo como <<lo que cruza el cable>>, y un titulo no lo cruza; si el autor
+prefiere un RFC editorial, es un revert de dos lineas. D-N2 los dos H1 de ARQUITECTURA reciben el
+mismo nombre nuevo: son el mismo titulo repetido y este sello no decide si el segundo debe ser H1.
+D-N3 NOTICE lleva el nombre nuevo con el viejo entre parentesis: la atribucion de copyright no
+cambia. D-N4 <<Pese a la palabra Sovereign>> se conserva como historia del nombre, no se borra.
+D-N5 el juez es el del §445 (cinco anchuras), verbatim.
+
+**Lo que NO hace.** No mueve ni retira ningun fichero (S448: raiz, VISION, ROADMAP,
+POSICIONAMIENTO, PERFORMANCE + test_output.txt). No reescribe RESUMEN_EJECUTIVO ni
+RESUMEN_BILINGUE (S449). No toca identificadores. Fichado: doc/DIAGNOSTICO_ESCALADO.md:381 y
+doc/USE_CASES.md:109 siguen dando <<1,5-1,9 TPS>> sin la correccion del §229/§238;
+INSTITUCIONAL/INSTITUTIONAL/VISION siguen contando la via del nullifier en presente (puntos 86/87).
+
+**Contadores.** Pines quietos: 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213.
+Ficheros: 14 con 23 lineas cambiadas y ninguna linea mas o menos, y este asiento. Documentos .md
+versionados 70 -> 70.

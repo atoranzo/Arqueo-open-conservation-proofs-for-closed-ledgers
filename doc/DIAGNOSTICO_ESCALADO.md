@@ -378,7 +378,7 @@ es que el operador **no pueda mentir sin dejar evidencia**.
 | Horario | 22 h por día hábil |
 | **Media implícita** | **~10,6 TPS** |
 | Pico estimado (concentración de fin de día, 3-5× la media) | **~30-50 TPS** |
-| ZK-SSL hoy, bajo concurrencia | **1,5-1,9 TPS** (§1) |
+| Arqueo hoy, bajo concurrencia | **1,5-1,9 TPS** (§1) |
 
 ⚠️ **Corrección: un pago son DOS operaciones de capa** (§1.1.b). El
 objetivo real no es 10,6 TPS sino **~21 TPS de media** (~1,67 M

@@ -1,4 +1,4 @@
-# ZK-Sovereign Settlement Layer (ZK-SSL)
+# Arqueo — arquitectura (antes ZK-Sovereign Settlement Layer, ZK-SSL)
 
 Capa de liquidación con privacidad criptográfica y cumplimiento
 demostrable, **sin ninguna ceremonia de confianza**.
@@ -139,7 +139,7 @@ más que el rendimiento.
 
 ### La diferencia, medida
 
-| | Groth16 | **ZK-SSL (STARK)** |
+| | Groth16 | **Arqueo (STARK)** |
 |---|---|---|
 | Arranque de la capa | 2,6 s generando claves | **1,12 ms** |
 | Ceremonias necesarias | Una **por circuito** | **Ninguna** |
@@ -767,7 +767,7 @@ implementado.
 
 # El trabajo comparativo que fundamentó la elección
 
-# ZK-Sovereign Settlement Layer
+# Arqueo (antes ZK-Sovereign Settlement Layer)
 
 Prueba de concepto real, verificada de extremo a extremo, de liquidación
 de pagos bancarios con cumplimiento normativo demostrado mediante pruebas

@@ -1,4 +1,4 @@
-# ZK-SSL — Could this be of interest to central banks and financial institutions?
+# Arqueo (formerly ZK-SSL) — Could this be of interest to central banks and financial institutions?
 
 **Honest assessment, not marketing material.**
 

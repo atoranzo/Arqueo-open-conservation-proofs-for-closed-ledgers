@@ -1,4 +1,4 @@
-# ZK-Sovereign Settlement Layer (ZK-SSL)
+# Arqueo — principios (antes ZK-Sovereign Settlement Layer, ZK-SSL)
 
 **Documento de principios y arquitectura — versión contrastada con la
 implementación**
@@ -271,7 +271,7 @@ que es el último intermediario*. El dinero cuántico (teorema de
 no-clonación) promete eliminarlo por física; su memoria aún no existe a
 escala.
 
-ZK-SSL es el intento clásico de la misma dirección, con herramientas de
+Arqueo es el intento clásico de la misma dirección, con herramientas de
 hoy, y conviene decir con precisión qué elimina y qué no:
 
 **Eliminado**: la ceremonia de setup (STARK/FRI — no hay secreto
