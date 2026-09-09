@@ -227,7 +227,11 @@ struct Args {
     ///
     /// ⚠️ **Sin ventana de tiempo, y va declarado** (D-D, §433-B): no hay
     /// reloj firmado que cruce libros, así que una cabeza ajena vieja bloquea
-    /// igual que una reciente. Medir la ventana es E4b-2.
+    /// igual que una reciente. **Y la otra cara de lo mismo: no bloquea nada
+    /// de lo que ese libro haya firmado DESPUÉS de la cabeza que se le dio.**
+    /// Lo que este nodo impone es una FRONTERA en la secuencia firmada del
+    /// libro ajeno —el `seq` de su cabeza, que es la altura de su registro y
+    /// viaja bajo su firma—, no una ventana de tiempo (§439, E4b-2).
     ///
     /// Corta: sin este fichero el nodo tramita consumos que otro libro ya
     /// publicó. Larga: cargar libros que nadie mantiene bloquea consumos
@@ -3387,5 +3391,129 @@ mod tests_libros_ajenos {
             e.to_string().contains("no reconstruye el consRoot"),
             "el fallo tiene que decir CUÁL es: {e}"
         );
+    }
+
+    /// El libro ajeno REAL de `libro_real`, con DOS cabezas firmadas por la MISMA clave:
+    /// la primera tras publicar `primeros` (seq = N) y la segunda tras publicar ademas
+    /// `luego` (seq > N). Es el material del PAR de E4b-2 (§439). Los dos latidos van
+    /// ANTES de escribir nada: `tests_dir` arrasa el directorio y con el el `indice.bin`
+    /// del firmante. Directorio PROPIO, para no ensanchar la carrera de T1-T3.
+    fn libro_real_dos_cabezas(
+        dir: &str,
+        primeros: &[u8],
+        luego: &[u8],
+    ) -> (serde_json::Value, Vec<String>, serde_json::Value, Vec<String>) {
+        let mut app = crate::tests::nodo(30);
+        let d = crate::tests_dir(dir);
+        let mut s = [0u8; 96];
+        for (i, b) in s.iter_mut().enumerate() {
+            *b = (i as u8).wrapping_mul(7).wrapping_add(3);
+        }
+        let mut f = crate::firma_cabeza::FirmanteCabeza::desde_semilla(&s, d.join("indice.bin"))
+            .expect("abrir");
+        app.clave_publica_firma = f.clave_publica();
+        let a_hex = |ns: &[u8]| -> Vec<String> {
+            ns.iter().map(|n| format!("0x{:02x}{}", n, "11".repeat(31))).collect()
+        };
+        let publicar = |hex: &[String]| {
+            for h in hex {
+                let v = crate::dispatch(&app, "zkssl_publishConsumo", json!({ "consumo": h }))
+                    .expect("publicar");
+                assert_eq!(v["accepted"], true, "el consumo tiene que entrar: {v}");
+            }
+        };
+        let hex_n = a_hex(primeros);
+        publicar(&hex_n[..]);
+        let l = crate::latido::latir(&app, Some(&mut f)).expect("latir N");
+        crate::latido::conservar(&app, l);
+        let cabeza_n = crate::dispatch(&app, "zkssl_signedEpochHead", json!({})).expect("cabeza N");
+        assert_eq!(cabeza_n["available"], json!(true));
+        let mas = a_hex(luego);
+        publicar(&mas[..]);
+        let l = crate::latido::latir(&app, Some(&mut f)).expect("latir N+1");
+        crate::latido::conservar(&app, l);
+        let cabeza_n1 =
+            crate::dispatch(&app, "zkssl_signedEpochHead", json!({})).expect("cabeza N+1");
+        assert_eq!(cabeza_n1["available"], json!(true));
+        let mut hex_n1 = hex_n.clone();
+        hex_n1.extend(mas);
+        (cabeza_n, hex_n, cabeza_n1, hex_n1)
+    }
+
+    fn escribir_en(dir: &str, nombre: &str, doc: serde_json::Value) -> String {
+        let p = crate::tests_dir(dir).join(nombre);
+        std::fs::write(&p, serde_json::to_vec(&doc).expect("json")).expect("escribir");
+        p.to_string_lossy().into_owned()
+    }
+
+    /// T4 — LA CARA DE DELANTE de la frontera (E4b-2, §439): un consumo que el libro ajeno
+    /// NO acredita se tramita. Falsa el SOBRE-BLOQUEO. El control es el propio fichero: lo
+    /// que SI acredita se rechaza, y el fichero carga.
+    #[test]
+    fn un_consumo_que_el_libro_ajeno_no_acredita_se_tramita() {
+        let (cabeza, hex, _c1, _h1) = libro_real_dos_cabezas("libros_ajenos_t4", &[0x71], &[0x72]);
+        let fichero = escribir_en(
+            "libros_ajenos_t4",
+            "frontera_ok.json",
+            json!({ "libros": [{ "cabeza": cabeza, "consumos": hex }] }),
+        );
+        let set = cargar_libros_ajenos(&fichero).expect("el fichero bueno tiene que cargar");
+        assert_eq!(set.len(), 1, "acredita exactamente su consumo");
+        let mut app = crate::tests::nodo(30);
+        app.consumos_ajenos = set;
+        // CONTROL: lo que SI acredita se rechaza (la puerta esta puesta).
+        let v = crate::dispatch(&app, "zkssl_publishConsumo", json!({ "consumo": hex[0] }))
+            .expect("rechazo, no error");
+        assert_eq!(v["accepted"], false, "el control tiene que RECHAZARLO: {v}");
+        // Y lo que NADIE acredita se tramita: la puerta no bloquea de mas.
+        let otro = format!("0x{:02x}{}", 0x79, "11".repeat(31));
+        let v = crate::dispatch(&app, "zkssl_publishConsumo", json!({ "consumo": otro }))
+            .expect("tramitar");
+        assert_eq!(v["accepted"], true, "un consumo que nadie acredita TIENE que tramitarse: {v}");
+    }
+
+    /// T5 — EL PAR, el testigo de la FRONTERA (E4b-2, §439): el MISMO consumo, dos ficheros
+    /// que difieren solo en cual cabeza de B llevan dentro, dos veredictos OPUESTOS. Bajo
+    /// B@N el consumo que B firmo DESPUES se tramita; bajo B@N+1 se rechaza. Hermano del
+    /// §427: las dos cabezas tienen que DIVERGIR o el par no prueba nada, y se asierta.
+    #[test]
+    fn el_mismo_consumo_cambia_de_veredicto_segun_la_cabeza_ajena_cargada() {
+        let (cabeza_n, hex_n, cabeza_n1, hex_n1) =
+            libro_real_dos_cabezas("libros_ajenos_t5", &[0x81], &[0x82]);
+        assert_eq!(hex_n.len(), 1);
+        assert_eq!(hex_n1.len(), 2);
+        let despues = hex_n1[1].clone();
+        assert!(!hex_n.contains(&despues), "el consumo posterior no esta bajo B@N");
+        // Las dos cabezas DIVERGEN: otro consRoot y mas altura (seq es entries.len()).
+        assert_ne!(cabeza_n["consRoot"], cabeza_n1["consRoot"], "el material tiene que divergir");
+        let seq = |c: &serde_json::Value| -> u64 {
+            u64::from_str_radix(c["seq"].as_str().expect("seq").trim_start_matches("0x"), 16)
+                .expect("seq hex")
+        };
+        assert!(seq(&cabeza_n1) > seq(&cabeza_n), "la cabeza posterior tiene mas altura");
+        // Fichero 1: B@N. El consumo posterior NO esta acreditado: se tramita.
+        let f1 = escribir_en(
+            "libros_ajenos_t5",
+            "frontera_n.json",
+            json!({ "libros": [{ "cabeza": cabeza_n, "consumos": hex_n }] }),
+        );
+        let mut a1 = crate::tests::nodo(30);
+        a1.consumos_ajenos = cargar_libros_ajenos(&f1).expect("B@N tiene que cargar");
+        let v1 = crate::dispatch(&a1, "zkssl_publishConsumo", json!({ "consumo": despues }))
+            .expect("tramitar");
+        assert_eq!(v1["accepted"], true, "bajo B@N no esta acreditado: {v1}");
+        // Fichero 2: B@N+1. El MISMO consumo SI esta acreditado: se rechaza, y el rechazo nombra.
+        let f2 = escribir_en(
+            "libros_ajenos_t5",
+            "frontera_n1.json",
+            json!({ "libros": [{ "cabeza": cabeza_n1, "consumos": hex_n1 }] }),
+        );
+        let mut a2 = crate::tests::nodo(30);
+        a2.consumos_ajenos = cargar_libros_ajenos(&f2).expect("B@N+1 tiene que cargar");
+        let v2 = crate::dispatch(&a2, "zkssl_publishConsumo", json!({ "consumo": despues }))
+            .expect("rechazo, no error");
+        assert_eq!(v2["accepted"], false, "bajo B@N+1 esta acreditado: {v2}");
+        let r = v2["reason"].as_str().expect("reason");
+        assert!(r.starts_with("otro libro"), "el rechazo tiene que NOMBRAR el motivo: {r}");
     }
 }
