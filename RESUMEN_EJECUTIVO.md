@@ -1,322 +1,92 @@
-# ZK-SSL — Resumen ejecutivo
+# Arqueo — Resumen ejecutivo
 
-## Qué es
+Para quien tiene cinco minutos y no es técnico. En dos lenguas y más corto:
+[`RESUMEN_BILINGUE.md`](./RESUMEN_BILINGUE.md). El proyecto se llamaba antes ZK-SSL; cambió el
+nombre, no los identificadores publicados (`zkssl/0.3`, `zk-ssl-*`). Lo que dice esta página está
+verificado contra `main` en el commit `3294986`.
 
-Una capa de liquidación con privacidad criptográfica y cumplimiento
-demostrable, **sin ninguna ceremonia de confianza**, más el trabajo
-comparativo que fundamentó su diseño: **el mismo sistema implementado en
-cinco paradigmas de prueba distintos y medido en condiciones idénticas**.
+## Qué es, en tres frases
 
-Todo verificado con tests ejecutables. Ninguna cifra de este documento
-procede de la literatura: todas se midieron en la misma máquina, en modo
-release.
+Un operador lleva un libro cerrado —cuentas, pagos, emisiones, retiradas— y quienes dependen de él
+no pueden verlo: socios, titulares, beneficiarios, contrapartes. Hoy ese conflicto lo resuelve un
+tercero que abre el libro: un auditor, un supervisor, un juzgado; una vez al año; por muestreo.
+Arqueo sustituye la apertura del libro por una **prueba de que el libro hizo lo que sus reglas
+dicen**, que cualquiera comprueba **sin el libro, sin red y sin fiarse del autor**.
 
----
+## Qué puede comprobar hoy un tercero, medido
 
-## ⚠️ Antes que nada: el operador del nodo es un intermediario de confianza
+- **Que el dinero se conserva**: lo emitido es igual a lo que hay en las cuentas más lo que está en
+  vuelo; nada se crea ni se pierde entre una época y la siguiente, tampoco al reabrir el libro.
+- **Que una unidad se usó una sola vez** dentro del libro, y que si dos libros distintos aceptaron
+  la misma unidad, se **detecta** con las dos cabezas firmadas, sin que ningún nodo participe.
+- **Que la historia no se reescribió**: la cabeza de hoy extiende la de ayer sin borrar ni reordenar.
+- **Que una entrada está dentro**, con un recibo que no depende del operador.
+- **Que sólo el titular movió su cuenta**: el operador no puede, y la clave nunca viaja.
 
-El proyecto parte del principio de eliminar intermediarios de confianza
-centralizados. Se eliminó uno —los participantes de una ceremonia de
-setup, que podrían coludir y crear dinero sin dejar rastro— y esa
-propiedad es real.
+Dos cosas más que el motor quiere responder y todavía no responde: el corte y la completitud de
+un periodo, y el rechazo con causa. Están listadas como planeadas, no como hechas.
 
-**Pero esta capa es un nodo único.** Quien lo opera ve todos los saldos,
-ordena las operaciones, puede censurar y es un punto único de fallo. Es
-el intermediario que el principio señala, y sigue ahí.
+## Qué NO es
 
-**Las transiciones de estado están demostradas matemáticamente. El estado
-y la completitud del historial, no.** Cerrar esa brecha requiere consenso
-distribuido, que es trabajo pendiente y de otra disciplina.
+No es una cadena: un nodo, un escritor, sin consenso distribuido ni token. **El operador ve todos
+los saldos** y puede omitir una operación sin dejar rastro. Entre libros detecta, no previene. No
+está auditado por terceros. Nadie lo usa con dinero real. Y no prueba solvencia: prueba que el
+libro es coherente consigo mismo, no que sus unidades existan fuera de él.
 
-**Lo que esto es**: una demostración de que las propiedades
-criptográficas de una liquidación soberana son construibles y medibles.
-**Lo que no es**: una capa descentralizada.
+## Cómo se comprueba, sin saber programar
 
----
+Con **el kit del verificador**: una descarga, un programa de una sola línea y cuatro
+comprobaciones en la máquina del que comprueba, sin red. Un expediente que cuadra. Uno manipulado
+que no cuadra, y el programa dice qué regla se rompió. La misma unidad publicada en dos libros,
+detectada con los dos nodos apagados. Y un intercambio de libros, rechazado con su nombre. Las
+huellas del programa se publican junto al commit del que sale, y el programa se reproduce desde
+ese commit: no hay que fiarse de la descarga. Guion paso a paso: [`doc/KIT.md`](./doc/KIT.md).
 
-## 1. El artefacto: `crates/zk-ssl`
+## Dónde encaja
 
-```rust
-let layer = SovereignLayer::open("./ledger", custodios, gobernanza, limite, tope, max_cuentas)?;
+Donde la unidad de cuenta **nace y muere dentro del libro** y hay un tercero que no puede verlo:
+sistemas de depósito y retorno, garantías de origen y derechos de emisión, monedas comunitarias,
+custodia de fondos de clientes, ayudas públicas donde el fraude es la doble financiación,
+registros de derechos y cupos, compensación entre operadores o entre administraciones. No sirve a
+una cámara de contrapartida central, cuyo problema es el riesgo de contraparte, ni es un componente
+de una moneda digital de banco central. Los casos, con qué propiedad resuelve cada uno y cuáles
+están revisados: [`doc/USE_CASES.md`](./doc/USE_CASES.md).
 
-// FASE 1 — el pagador envía. La capa no ve su clave.
-let m = layer.send_materials(alice, id_de_bob, 250_000, aleatorio)?;
-let envio = client::prove_send(&m, clave_alice, proof_options())?;  // LOCAL
-layer.apply_send(&envio, alice, &estado_alice, 250_000)?;
+## Qué existe, medido
 
-// FASE 2 — el receptor cobra. Tampoco ve la suya.
-let m = layer.claim_materials(bob, &envio.notice)?;
-let cobro = client::prove_claim(&m, clave_bob, proof_options())?;   // LOCAL
-layer.apply_claim(&cobro, bob, &estado_bob, &envio.notice)?;
-```
-
-**Ninguna clave llega a la capa**: entrega caminos y raíces —datos
-públicos— y recibe pruebas que verifica. La revelación selectiva
-(`audit`: "estoy entre X e Y") la produce el titular y la verifica el
-supervisor **sin acceso al ledger**.
-
-**1062 tests en la compuerta de sello** —1199 con todos los pines, 1213
-declarados—, todos en release, 0 fallos y 24 warnings **pinchados**.
-No se recuerdan: los ejecuta `bash tools/canon.sh --sello`.
-
-### Qué garantiza, sin revelar identidades, saldos ni importes
-
-| Vía de ataque | Cerrada por |
+| pieza | estado |
 |---|---|
-| Transferir más de lo debitado | Conservación (partida doble) |
-| Abrir cuenta con saldo | Apertura siempre a cero |
-| Emitir sin autorización | **Dos custodios** demostrados en circuito |
-| Emisión encubierta | Suministro público atado en el circuito |
-| Superar el tope de emisión | Tope inmutable del ledger |
-| Gastar dos veces | Encadenamiento de raíces (orden total del nodo único) |
-| Gastar sin ser el titular | Autoridad de gasto |
-| **Gastar estando congelada** | No-pertenencia al árbol de congelados |
-| Reenviar una operación válida | Encadenamiento de raíces |
-| Operar sobre estado corrupto | Verificación de integridad al arrancar |
-| **Reescribir el historial** | Registro encadenado de transiciones |
+| El motor | 17 crates en Rust; cada cambio pasa por el canon (los tests de todos los crates y ocho herramientas que vigilan cifras, citas, dominios y geometría) |
+| El protocolo | `zkssl/0.3`: 26 métodos JSON-RPC, vectores de conformidad por versión que jamás se reescriben; RFC 0002, 0003, 0004 y 0006 aceptados, 0005 propuesto |
+| El verificador | `zk-ssl-verify` 0.2.0, release `arqueo-verify-v0.2.0`, reproducible desde el commit que su `VERSION` nombra |
+| El registro | [`AUDITORIA.md`](./AUDITORIA.md): un asiento por cambio verificado, con su commit; lo que se corrige se marca, no se borra |
 
-### Ciclo monetario completo
+## La decisión de fondo
 
-| Operación | Autoridad | Suministro |
-|---|---|---|
-| `mint` | Emisor, dentro del tope | Sube |
-| `transfer` (dos fases: `send` → `claim`) | Titular | No cambia |
-| `burn` | Titular | Baja |
-| `audit` | Titular | — |
+El diseño se eligió midiendo el mismo circuito en cinco sistemas de prueba de conocimiento cero
+([`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md)). Se descartó el más rápido y el que produce las pruebas
+más pequeñas, Groth16, porque exige una ceremonia de confianza cuyos participantes, si coluden,
+pueden **crear dinero sin dejar rastro**. STARK sin ceremonia —sólo hashes, sin curvas, resistente a
+un adversario cuántico en su solidez— fue la única decisión del proyecto tomada contra los números.
+De ese trabajo salieron ocho hallazgos que no estaban en la literatura comparativa y seis depósitos
+con DOI; lo que se corrigió después está marcado en su fe de erratas.
 
-### Cifras medidas
+## Qué falta para que un tercero real se apoye en esto
 
-| Operación | Generar | Verificar | Prueba |
-|---|---|---|---|
-| **Arranque** | **0,67 ms** | — | — |
-| Emisión (2-de-N custodios) | ~105 ms | ~2 ms | 57.342 B |
-| Transferencia | ~620 ms | ~4 ms | 61.966 B |
-| Destrucción | ~110 ms | ~2 ms | 54.924 B |
-| Auditoría (banda) | ~250 ms | ~1,5 ms | 48.782 B |
+Una auditoría externa, que no depende de más código. Una custodia de la clave de firma
+**comprobada**, no sólo declarada. Un ancla anterior al primer encuentro entre el testigo y el
+nodo. Las dos propiedades planeadas. El consenso distribuido es otra disciplina y no es el camino
+de este proyecto: el camino es la responsabilidad demostrable, al modo de *Certificate
+Transparency*, y sus piezas están construidas.
 
-**Verificar cuesta el 0,5-0,8% de generar.** El arranque no genera
-claves: no hay ceremonia ni secreto que destruir.
+## Para seguir
 
-**Límites cuantificados**: mil transferencias son **~590 s** de prueba
-(un pago son dos: send 353,2 ms + claim 237 ms, protocolo §89.1) y
-**126,2 MiB** acumulados.
-
-⚠️ **Aquí decía que el techo era «1,5–1,9 TPS». Era falso** (§229): esa
-cifra medía el ciclo entero en una sola máquina y se atribuía al nodo. El
-nodo trabajaba el **4 %** del tiempo. Medido aparte, **aplica 248 op/s por
-RPC** (§229, banco H.1), y el objetivo de un RTGS —21 op/s— es el **8,5 %**
-de ese techo.
-
-Lo que sí serializa es **la raíz**, no el candado (§230): dos emisores que
-salen a la vez aplican uno, y el otro tira sus pruebas. El nodo rechaza
-barato; el precio lo paga quien pierde.
-
-⚠️ **Un límite que existió, y cómo se fue**: la vía de un paso tenía
-colisiones probables a los ~65.000 pagos. Esa vía está **retirada** y su
-árbol con ella (`AUDITORIA.md` §32 y §36): hoy nada los genera. El
-límite no se resolvió, se evitó — quien la recupere, lo recupera.
-
-⚠️ Una sola ejecución en una máquina. Sirven para comparar órdenes de
-magnitud, no como benchmark.
-
----
-
-## 1.bis — De implementación a protocolo (§197–§199, agosto 2026)
-
-La capa ya no está sola: tiene **contrato público** para que exista una
-segunda implementación sin leer el código del nodo. `spec/RPC.md`
-(**`zkssl/0.3`** desde §354; la `0.2` rigió desde §209, 24 métodos) · `spec/openrpc.json` **generado** desde el
-código (regenerarlo debe reproducirlo byte a byte) · **vectores de
-conformidad** versionados (`conformance --check` los re-ejecuta campo a
-campo: es compuerta permanente) · proceso RFC · nodo de referencia
-(`zk-ssl-node`) · SDK donde la prueba se hace **en local** y el wallet
-duerme cifrado (keystore con dominio propio). Dos comandos para tocarlo:
-
-```bash
-cargo run --release -p zk-ssl-cli -- simulate --amount 250000
-cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.3.json
-```
-
----
-
-## 2. El trabajo comparativo: cinco paradigmas
-
-El mismo circuito de cumplimiento, misma máquina, todo en release.
-
-| | Groth16 | Halo2/IPA | STARK/FRI | PLONK/KZG |
-|---|---|---|---|---|
-| Paradigma | R1CS | Plonkish | AIR | Plonkish |
-| Ceremonia | **Por circuito** | Ninguna | **Ninguna** | Universal |
-| Setup | 438 ms | 16,3 s | **ninguno** | 26,3 s + 12,8 s |
-| Generación | 422 ms | 4,86 s | **39 ms** | 6,85 s |
-| Verificación | 5 ms | 91 ms | **1 ms** | 8 ms |
-| Tamaño | **192 B** | 4.096 B | 36,7 KB | 1.008 B |
-| Post-cuántico | No | No | **Sí** | No |
-
-**Nova/folding**, quinto paradigma, medido aparte por ser de naturaleza
-distinta: **~250 ms por transacción, constante** (el paso 9 costó 0,77
-veces el paso 1), con 1,84 s de cierre amortizables entre todas.
-
----
-
-## 3. Los hallazgos
-
-Ninguno aparece en los materiales que comparan paradigmas. Todos surgieron
-al construir.
-
-**1. AIR carece de restricciones de copia.** Al portar la actualización de
-estado a STARK apareció un agujero que no existe en los otros
-paradigmas: nada obliga a que las dos subidas del árbol (hoja antigua y
-nueva) usen los mismos hermanos. Un probador podría usar caminos
-distintos y fabricar una raíz que no corresponde a la misma posición.
-**Silencioso**: los testigos honestos nunca lo revelarían. Obligó a
-diseñar un patrón en lockstep. *Portar de Plonkish a AIR no es mecánico
-ni cuando la lógica es idéntica.*
-
-**2. El campo Goldilocks es demasiado estrecho para identidades.** Un
-elemento son 64 bits: encontrar otra clave con la misma identidad costaría
-2³² operaciones. En BLS12-381 (255 bits) el problema no existe. Corregido
-usando digests completos de 256 bits.
-
-**3. Sin extensión de campo, un STARK sobre Goldilocks tiene un techo de
-63 bits de solidez.** La configuración "rápida y compacta" que uno
-elegiría por defecto **no es comparable** con los ~128 bits de los otros
-paradigmas.
-
-**4. La brecha entre seguridad conjeturada y demostrable es enorme.** 127
-bits conjeturados conviven con 29-63 demostrables. Cerrarla cuesta 125,6
-KB en vez de 36,7.
-
-**5. PLONK-KZG resultó el generador más lento de los cuatro** — 16 a 22
-veces más lento que Groth16. Contraintuitivo para lo que suele
-presentarse como el estándar de la industria. *Matiz honesto: parte de la
-diferencia puede deberse a la implementación (`dusk-plonk` frente a
-arkworks) y estos datos no permiten separar ambos efectos.*
-
-**6. Solo dos de seis librerías se defienden del uso inseguro.**
-`nova-snark` desactiva `HyperKZG::setup` en compilaciones de producción y
-exige ficheros de una ceremonia real. `risc0-zkvm` permite recibos falsos
-pero ofrece `disable-dev-mode`, descrita como *"para evitar que un
-`RISC0_DEV_MODE` mal puesto rompa la seguridad en sistemas de
-producción"* — nombrando el escenario concreto por el que ocurren estos
-fallos. Las otras cuatro lo permiten en silencio.
-
-**7. El ecosistema PLONK-KZG en Rust está construido como stacks
-verticales cerrados.** Seis vías investigadas, cinco rotas: `plonk-core`
-sin publicar, el Poseidon de PSE sin especificación para su curva,
-`halo2-lib` con dependencias git sin fijar, y `dusk-plonk 0.21`
-arrastrando un `msgpacker` que exige Rust nightly.
-
-**8. Un zkVM no es comparable en igualdad de condiciones.** Se evaluó
-RISC Zero como sexto paradigma. Usa STARK sobre Goldilocks —el mismo
-sistema y campo que el backend elegido— y su recibo `Succinct` permite
-operar **sin ceremonia**: el envoltorio Groth16, que sí la exige, solo
-hace falta para verificar en cadena.
-
-Pero necesita una **toolchain externa** para compilar el programa
-invitado a RISC-V, y eso incumple el criterio que descartó a
-`dusk-plonk 0.21`, `halo2-lib` y `plonk-core`: instalarse solo con
-`cargo add`. No es un defecto suyo —es el precio de compilar programas
-arbitrarios— pero medirlo junto a los otros cinco falsearía la
-comparación, así que **se documenta en vez de implementarse**.
-
-| | Backend STARK propio | RISC Zero |
-|---|---|---|
-| Dependencias | **3** | **349** |
-| Seguridad declarada | 127 bits conjeturados | 98 bits conjeturados |
-
-Tres dependencias frente a trescientas cuarenta y nueve es la medida
-concreta de lo que cuesta la generalidad, y la razón por la que un zkVM
-contradice el principio de minimalismo.
-
----
-
-## 4. Método
-
-Lo que distingue este trabajo no es el código, sino cómo se verificó.
-
-**Cada propiedad de seguridad tiene un test discriminante**: un testigo
-**internamente coherente** que solo viola la restricción concreta. Un
-testigo corrupto a lo bruto rompe varias restricciones a la vez y el test
-pasa aunque la que interesa no haga nada.
-
-**Tres veces durante el proyecto un test negativo resultó no
-discriminar** y hubo que rehacerlo. En los tres casos el código era
-correcto, pero el test no probaba lo que decía probar.
-
-**Un error metodológico propio, detectado y corregido públicamente**: la
-comparativa mezclaba cifras de debug con cifras de release, haciendo
-parecer a STARK 130 veces más rápido que Groth16 cuando la cifra real es
-~11. Está documentado como error corregido, no borrado.
-
-**Dos errores de diseño propios, corregidos:** hacer el nullifier privado
-(rompía la capacidad de la capa de mantener su árbol) y olvidar
-insertarlo en `apply` (habría hecho vacua la garantía más cara del
-sistema, 15.522 restricciones). Los dos los destapó un test.
-
----
-
-## 5. La decisión de fondo
-
-**Se descartó Groth16 pese a ser el más rápido y tener pruebas 320 veces
-más pequeñas** (192 bytes frente a 62 KB).
-
-El motivo no fue técnico sino de coherencia: Groth16 y PLONK-KZG exigen
-una ceremonia de confianza, y si sus participantes coluden pueden
-falsificar pruebas y crear dinero sin que nadie lo detecte jamás. Para
-una infraestructura soberana eso es una dependencia externa permanente e
-inauditable.
-
-Es la única decisión del proyecto tomada **contra** los números de
-rendimiento.
-
----
-
-## 6. Lo que NO es
-
-- **No hay red ni consenso.** Nodo único.
-- **No hay delegación de la prueba.** Quien la genera necesita la clave;
-  en un banco, la clave estaría en un HSM y el cómputo en otro servicio.
-- **No hay atomicidad entre operaciones.** Si el proceso muere a mitad,
-  el arranque detecta la inconsistencia y se detiene — correcto, pero
-  requiere intervención manual.
-- **No hay copias ni replicación.** El cifrado en reposo **sí** existe
-  —ledger y keystore del wallet (`zk-ssl::crypto`, XChaCha20-Poly1305)—
-  con su alcance declarado: protege el disco robado, no al operador.
-- **No hay umbral configurable.** Emitir, emitir a pendiente, congelar y
-  recuperar exigen dos custodios distintos de un conjunto con raíz pública,
-  y ese dos es fijo: no hay k-de-n. Cambiar ese conjunto es otro umbral de
-  dos, sobre el conjunto de gobernanza. Y en nodo único la garantía es "dos
-  claves comprometidas en vez de una", no "dos voluntades independientes".
-- **Las mediciones son una sola ejecución en una máquina.** Sirven para
-  comparar órdenes de magnitud, no como benchmark riguroso.
-- **Nada de esto ha sido auditado por terceros.** Ninguna cantidad de
-  tests propios sustituye a que otro lo mire con intención de romperlo.
-
----
-
-## 7. Contexto
-
-Trabajo relacionado que sí existe: **zk-Bench** (UCL) cubre la evaluación
-comparativa de Groth16, PLONK, halo2 y starky con rigor académico;
-**ZK-ACE** trabaja con nullifiers sobre dos backends.
-
-Lo menos común aquí es la **combinación**: cinco paradigmas —no dos ni
-tres— aplicados a una **aplicación completa** en vez de a circuitos de
-referencia como SHA-256. Y eso importa porque los hallazgos de diseño
-solo emergen así: que AIR carezca de restricciones de copia no se
-descubre implementando SHA-256, sino portando una actualización de
-estado.
-
----
-
-## Reproducir
-
-```bash
-cargo test -p zk-ssl --release              # la capa, 323 tests (3 ign.)
-cargo test -p stark-experiment --release    # los circuitos, 318 tests
-cargo test -p zk-core --release performance -- --nocapture
-cargo test -p halo2-experiment --release real_proof -- --nocapture
-cargo test -p plonk-experiment --release performance -- --nocapture
-cargo test -p nova-experiment --release --features test-setup -- --nocapture
-```
+| | |
+|---|---|
+| Empezar | [`README.md`](./README.md) |
+| Comprobarlo sin fiarte de nadie | [`doc/KIT.md`](./doc/KIT.md) |
+| Dónde encaja y dónde no | [`doc/USE_CASES.md`](./doc/USE_CASES.md) |
+| Veintidós preguntas | [`PREGUNTAS.md`](./PREGUNTAS.md) |
+| Lo que sigue abierto | [`SECURITY.md`](./SECURITY.md) |
+| Romperlo | [`AUDITORIA.md`](./AUDITORIA.md) |
+| El artículo | [`PAPER.md`](./PAPER.md) |

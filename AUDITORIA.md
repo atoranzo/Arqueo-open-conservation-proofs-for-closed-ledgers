@@ -33171,3 +33171,46 @@ referencias VISION.md:127/:574 del RFC-0006.
 **Contadores.** Pines quietos: 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213.
 Ficheros: 14 movidos (10 con cabecera), ARQUITECTURA (2 lineas), README y README_EN (2 y 3 lineas)
 y este asiento. Documentos .md versionados 70 -> 70. Raiz: 27 .md -> 15.
+
+## §449 — los dos resumenes de Arqueo: RESUMEN_EJECUTIVO y RESUMEN_BILINGUE reescritos enteros
+
+**Que.** La portada del §445 manda al lector no tecnico a RESUMEN_EJECUTIVO.md y a
+RESUMEN_BILINGUE.md, y los dos seguian siendo el resumen de ZK-SSL: <<una capa de liquidacion
+financiera donde las transferencias son privadas>>, garantias <<sin revelar identidades, saldos ni
+importes>>, la tabla de tiempos y tamanos, los pines de tests copiados a mano (<<1062 tests en la
+compuerta de sello>>, dos veces en el bilingue), y <<24 metodos>> (el tercer sitio de esa cuenta
+rancia, tras README:88 y spec/README:20). Este sello los reescribe ENTEROS y cortos para Arqueo,
+para quien tiene cinco minutos y no es tecnico: que es en tres frases, que comprueba un tercero,
+que no es, como se comprueba sin saber programar, donde encaja, que existe medido, la decision de
+fondo, que falta, y los enlaces. Ninguna cifra de tests ni de tiempos; las cifras en presente son
+las que el bloque re-deriva del arbol (26 metodos, 17 crates, RFC 4+1, zk-ssl-verify 0.2.0).
+Prosa: sin canon (§402/§424/§448); ocho herramientas y el juez del §448.
+
+**Lo medido (PASTE-447-M `3f286edf3aeb4565`, salida `3e37de491922feae`/3054, volcados enteros; el
+arbol en `3294986` tras el §448, que no los toco).** RESUMEN_EJECUTIVO.md `1d5c8f712bda140e`/322 y
+RESUMEN_BILINGUE.md `f2645975beec8e8c`/180. Sus cifras: la tabla de <<Cifras medidas>> (0,67 ms,
+~620 ms, 61.966 B...), <<126,2 MiB>>, la correccion del <<1,5-1,9 TPS>> (§229), <<1062 / 1199 /
+1213>> como pines, <<24 metodos>>, la tabla de los cinco paradigmas y <<323 tests (3 ign.) / 318
+tests>> en el bloque de reproducir. check_figures listaba RESUMEN_BILINGUE:85 y :162 (<<1062
+tests>>) entre las cifras sin atribuir. Fuentes de la reescritura: la portada (§445), la FAQ
+(§446), doc/USE_CASES.md (§444) y doc/KIT.md (§442).
+
+**Los tres cambios.** (1) RESUMEN_EJECUTIVO.md reescrito entero (322 -> 92, `1d5c8f712bda140e` ->
+`e8937098124b4a49`), <<verificado contra main en 3294986>> (D-U3). (2) RESUMEN_BILINGUE.md
+reescrito entero (180 -> 120, `f2645975beec8e8c` -> `ef88246a24b8ec66`): espanol primero, ingles
+debajo, las mismas secciones. (3) Este asiento.
+
+**Decisiones (REVERSIBLES).** D-S1 los resumenes no llevan ninguna cifra que el canon o el registro
+vigilen: tests, tiempos, tamanos y pines viven en AUDITORIA y en la tabla de canon.sh; un resumen
+que copia pines a mano envejece en el primer sello. D-S2 el trabajo comparativo y los ocho
+hallazgos se citan como la decision de fondo, no como el contenido del resumen: el contenido es
+Arqueo. D-S3 los dos declaran <<verificado contra 3294986>> y el bloque exige que ese sea el HEAD.
+D-S4 el juez es el del §448 (siete anchuras), verbatim.
+
+**Lo que NO hace.** No toca la portada, la FAQ ni USE_CASES. No mueve nada. Fichado: con este
+sello la cuenta <<24 metodos>> deja de estar publicada en ningun documento vivo (README:88,
+spec/README:20 y RESUMEN_EJECUTIVO:128 la llevaban).
+
+**Contadores.** Pines quietos: 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213.
+Ficheros: RESUMEN_EJECUTIVO.md (322 -> 92), RESUMEN_BILINGUE.md (180 -> 120) y este asiento.
+Documentos .md versionados 70 -> 70.

@@ -1,172 +1,109 @@
-# ZK-SSL — Resumen ejecutivo · Executive Summary
+# Arqueo — Resumen ejecutivo · Executive Summary
 
-*Español primero, English below.*
+*Español primero, English below.* Antes ZK-SSL; cambió el nombre, no los identificadores
+publicados. Verificado contra `main` en `3294986`. · *Formerly ZK-SSL; the name changed, the
+published identifiers did not. Verified against `main` at `3294986`.*
 
 ---
 
 ## 🇪🇸 Qué es
 
-Una **capa de liquidación financiera** donde las transferencias son
-privadas, el cumplimiento normativo es **demostrable criptográficamente**,
-y **no hace falta confiar en ninguna ceremonia de setup**.
+Un operador lleva un libro cerrado y quienes dependen de él no pueden verlo. Hoy ese conflicto lo
+resuelve un tercero que abre el libro, una vez al año y por muestreo. Arqueo sustituye la apertura
+del libro por una **prueba de que el libro hizo lo que sus reglas dicen**, que cualquiera comprueba
+**sin el libro, sin red y sin fiarse del autor**. Prueba conservación, no solvencia.
 
-Y el trabajo comparativo que fundamentó su diseño: **el mismo circuito
-implementado en cinco sistemas de prueba de conocimiento cero**, medido en
-condiciones idénticas.
+### Qué comprueba un tercero, medido
+
+Que el dinero se conserva (lo emitido = cuentas + en vuelo, también al reabrir). Que una unidad se
+usó una sola vez en el libro, y que la misma unidad en dos libros se detecta con las dos cabezas
+firmadas. Que la historia no se reescribió. Que una entrada está dentro, con recibo. Que sólo el
+titular movió su cuenta. Dos propiedades más —corte y completitud, rechazo con causa— están
+planeadas, no hechas.
 
 ### Qué NO es
 
-Un **nodo único**. Quien lo opera **ve todos los saldos** y **puede
-censurar operaciones**. Eso exige consenso distribuido, que no está
-implementado.
+No es una cadena: un nodo, sin consenso ni token. El operador ve todos los saldos y puede omitir
+una operación sin dejar rastro. Entre libros detecta, no previene. No está auditado por terceros
+ni lo usa nadie con dinero real.
 
-**No lo ha auditado nadie.**
+### Cómo se comprueba
 
-### Lo que garantiza, sin revelar identidades, saldos ni importes
+Con el kit del verificador: una descarga, cuatro comprobaciones en tu máquina y sin red; el
+programa dice `VERDE` o nombra la regla rota, y se reproduce desde el commit que su `VERSION`
+declara ([`doc/KIT.md`](./doc/KIT.md)).
 
-Nadie puede crear dinero, gastar de una cuenta ajena, gastar dos veces,
-gastar estando congelado, reenviar una operación válida, ni operar sobre
-un estado corrupto. Cada garantía tiene su test que intenta romperla.
+### Dónde encaja
 
-Y para supervisión: **revelación selectiva** con tres modos —saldo exacto,
-mínimo de reservas, o banda ("estoy entre X e Y")—. El titular produce la
-prueba; el supervisor la verifica **sin acceso al ledger**. No hay ninguna
-clave maestra que robar.
-
-### Los números
-
-| | |
-|---|---|
-| Arranque de la capa | **0,67 ms** (sin ceremonia, sin claves que generar) |
-| Verificar una transferencia | ~4 ms |
-| Generarla | ~620 ms |
-| **Verificar / generar** | **0,5 %** |
-| Prueba de liquidación | 62 KB |
-| **Mil transferencias** | **~590 s** y **126,2 MiB** acumulados |
-| ⚠️ **Techo real bajo concurrencia** | **1,5-1,9 TPS** ← el que muerde antes (anclaje de raíz, §123) |
-
-> ⚠️ **Esa razón es la de la AUDITORÍA, no la de la transferencia.**
->
-> `verify_audit` **solo verifica**: 1,6 ms frente a 274 de generación, un
-> **0,58 %**. Es la cifra correcta para el argumento que sostiene —un
-> supervisor comprueba sin tocar el estado— pero **estaba atribuida a la
-> transferencia**.
->
-> Aplicar una transferencia cuesta **28,5 %** de generarla, porque `apply`
-> **verifica, muta el árbol y escribe a disco**. No es comparable.
->
-> Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
-> --nocapture` y comparando con lo publicado. Ver `AUDITORIA.md` §22.
-
-### La decisión que define el diseño
-
-**Se descartó Groth16 siendo más rápido y con pruebas 320 veces menores.**
-
-El motivo: exige una ceremonia de confianza cuyos participantes, si
-coluden, pueden **crear dinero sin dejar rastro**. Las pruebas falsas
-verifican. No hay detección posterior.
-
-Es la única decisión del proyecto tomada **contra** los números de
-rendimiento.
-
-### Lo diferenciado
-
-No la capa —Zcash y Aztec llevan años de ventaja— sino **haber implementado
-lo mismo cinco veces y medirlo**. De ahí salieron ocho hallazgos que no
-están en la literatura comparativa, porque solo aparecen al portar una
-**aplicación completa**, no un SHA-256 de referencia.
-
-El principal: **la aritmetización AIR carece de restricciones de copia**,
-lo que abre un agujero de solidez silencioso al actualizar árboles de
-Merkle. Invisible para testigos honestos.
+Donde la unidad nace y muere dentro del libro y hay un tercero que no puede verlo: depósito y
+retorno, garantías de origen, monedas comunitarias, custodia de fondos de clientes, ayudas públicas
+con doble financiación, registros de derechos, compensación entre operadores. No: cámaras de
+contrapartida ni una moneda de banco central ([`doc/USE_CASES.md`](./doc/USE_CASES.md)).
 
 ### Estado
 
-**1062 tests en la compuerta de sello** —1199 con todos los pines, 1213
-declarados—, 0 fallos y 24 warnings **pinchados**, ejecutados por
-`tools/canon.sh`. Reproducibles con Rust estable, sin instaladores
-externos. Los errores propios están documentados, no borrados.
+17 crates en Rust con canon en cada cambio; protocolo `zkssl/0.3` con 26 métodos y vectores que no
+se reescriben; RFC 0002, 0003, 0004 y 0006 aceptados, 0005 propuesto; verificador `zk-ssl-verify`
+0.2.0 (release `arqueo-verify-v0.2.0`, reproducible); registro con un asiento por cambio. Falta:
+auditoría externa, custodia de clave comprobada, un ancla anterior al primer encuentro del testigo,
+y las dos propiedades planeadas.
 
-Desde agosto de 2026 hay además **contrato público de protocolo**:
-especificación, OpenRPC generado desde el código y vectores de
-conformidad que una segunda implementación debe reproducir.
+### La decisión que define el diseño
+
+El mismo circuito medido en cinco sistemas de prueba ([`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md)).
+Se descartó Groth16, el más rápido, porque su ceremonia de confianza permite crear dinero sin dejar
+rastro; STARK sin ceremonia fue la única decisión tomada contra los números.
 
 ---
 
 ## 🇬🇧 What it is
 
-A **financial settlement layer** where transfers are private, regulatory
-compliance is **cryptographically provable**, and **no trusted setup
-ceremony is required**.
+An operator keeps a closed ledger and the people who depend on it cannot see it. Today that
+conflict is settled by a third party who opens the ledger, once a year and by sample. Arqueo
+replaces the opening of the ledger with a **proof that the ledger did what its rules say**, which
+anyone checks **without the ledger, offline and without trusting the author**. It proves
+conservation, not solvency.
 
-Plus the comparative work that informed its design: **the same circuit
-implemented across five zero-knowledge proof systems**, measured under
-identical conditions.
+### What a third party checks, measured
+
+That money is conserved (issued = balances + in flight, also on reopening). That a unit was used
+once inside the ledger, and that the same unit in two ledgers is detected from their two signed
+heads. That history was not rewritten. That an entry is inside, with a receipt. That only the
+holder moved their account. Two more properties — cut-off and completeness, rejection with cause —
+are planned, not built.
 
 ### What it is NOT
 
-A **single node**. Whoever operates it **sees every balance** and **can
-censor operations**. Fixing that requires distributed consensus, which is
-not implemented.
+Not a chain: one node, no consensus, no token. The operator sees every balance and can omit an
+operation without leaving a trace. Across ledgers it detects, it does not prevent. Not audited by
+third parties, and nobody uses it with real money.
 
-**It has not been audited by anyone.**
+### How it is checked
 
-### What it guarantees, without revealing identities, balances or amounts
+With the verifier kit: one download, four checks on your own machine, offline; the program prints
+`VERDE` or names the broken rule, and it is reproduced from the commit its `VERSION` declares
+([`doc/KIT_EN.md`](./doc/KIT_EN.md)).
 
-No one can create money, spend from someone else's account, double-spend,
-spend while frozen, replay a valid operation, or operate on corrupted
-state. Each guarantee has a test that tries to break it.
+### Where it fits
 
-And for supervision: **selective disclosure** in three modes — exact
-balance, minimum reserves, or band ("I am between X and Y"). The holder
-produces the proof; the supervisor verifies it **without ledger access**.
-There is no master key to steal.
-
-### The numbers
-
-| | |
-|---|---|
-| Layer startup | **0.67 ms** (no ceremony, no keys to generate) |
-| Verifying a transfer | ~4 ms |
-| Proving it | ~620 ms |
-| **Verify / prove** | **0.5 %** |
-| Settlement proof | 62 KB |
-| **One thousand transfers** | **~590 s**, **126.2 MiB** accumulated |
-| ⚠️ **Real ceiling under concurrency** | **1.5-1.9 TPS** ← the limit that bites first (root anchoring) |
-
-### The decision that defines the design
-
-**Groth16 was rejected despite being faster and producing proofs 320×
-smaller.**
-
-The reason: it requires a trusted ceremony whose participants, if they
-collude, can **create money leaving no trace**. Forged proofs verify. There
-is no subsequent detection.
-
-It is the only decision in the project taken **against** the performance
-figures.
-
-### What is distinctive
-
-Not the layer — Zcash and Aztec have years of head start — but **having
-implemented the same thing five times and measured it**. That produced
-eight findings absent from the comparative literature, because they only
-surface when porting a **complete application**, not a reference SHA-256.
-
-The principal one: **AIR arithmetization lacks copy constraints**, which
-opens a silent soundness gap when updating Merkle trees. Invisible to
-honest witnesses.
+Where the unit is born and dies inside the ledger and a third party cannot see it: deposit-return
+schemes, guarantees of origin, community currencies, safeguarding of client funds, public aid
+with double funding, registers of entitlements, netting between operators. Not central
+counterparties, nor a central-bank digital currency ([`doc/USE_CASES.md`](./doc/USE_CASES.md)).
 
 ### Status
 
-**1062 tests in the sealing gate** —1199 across all pinned levels, 1213
-declared—, 0 failures and 24 **pinned** warnings, run by
-`tools/canon.sh`. Reproducible with stable Rust, no external
-toolchains. Our own errors are documented, not erased.
+17 crates in Rust with the canon on every change; protocol `zkssl/0.3` with 26 methods and vectors
+that are never rewritten; RFCs 0002, 0003, 0004 and 0006 accepted, 0005 proposed; verifier
+`zk-ssl-verify` 0.2.0 (release `arqueo-verify-v0.2.0`, reproducible); a record with one entry per
+change. Missing: an external audit, a verified key custody, an anchor prior to the witness's first
+encounter, and the two planned properties.
 
-Since August 2026 there is also a **public protocol contract**: a
-normative spec, an OpenRPC document generated from the code, and
-conformance vectors that a second implementation must reproduce.
+### The decision that defines the design
+
+The same circuit measured in five proof systems ([`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md)).
+Groth16, the fastest, was rejected because its trusted ceremony allows creating money without a
+trace; STARK without a ceremony was the only decision taken against the numbers.
 
 ---
 
@@ -174,7 +111,10 @@ conformance vectors that a second implementation must reproduce.
 
 | | |
 |---|---|
-| Repositorio · Repository | `https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers` |
-| Revisión de seguridad · Security review | [`AUDITORIA.md`](./AUDITORIA.md) |
-| Comparativa · Comparison | [`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md) |
-| Artículo · Paper | [`PAPER_EN.md`](./PAPER_EN.md) |
+| Empezar · Start | [`README.md`](./README.md) · [`README_EN.md`](./README_EN.md) |
+| El kit · The kit | [`doc/KIT.md`](./doc/KIT.md) · [`doc/KIT_EN.md`](./doc/KIT_EN.md) |
+| Dónde encaja · Where it fits | [`doc/USE_CASES.md`](./doc/USE_CASES.md) |
+| Preguntas · Questions | [`PREGUNTAS.md`](./PREGUNTAS.md) · [`QUESTIONS.md`](./QUESTIONS.md) |
+| Lo abierto · What is open | [`SECURITY.md`](./SECURITY.md) |
+| El registro · The record | [`AUDITORIA.md`](./AUDITORIA.md) |
+| El artículo · The paper | [`PAPER.md`](./PAPER.md) · [`PAPER_EN.md`](./PAPER_EN.md) |
