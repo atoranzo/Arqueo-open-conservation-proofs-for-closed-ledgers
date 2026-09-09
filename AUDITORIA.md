@@ -32603,3 +32603,110 @@ cuyo perimetro dio `check_cifras` sobre una copia con el pin movido. Se producen
 test con un ayudante calcado de `libro_real`, su propio directorio y un latido mas: ningun
 fixture, ninguna corrida del banco. La linea de estado del RFC dice abierta hasta que existan,
 por la D-L.
+
+## §440 — Los dos testigos de la frontera: la cara de delante y el par, y el pin 98 -> 100
+
+**Que.** `crates/zk-ssl-node/src/main.rs` gana los DOS testigos que falsan la afirmacion del §439
+—la frontera de E4b-2 del RFC-0006—: T4, LA CARA DE DELANTE, y T5, EL PAR. El doc-comment de
+`--libros-ajenos` queda COMPLETADO (D-K), el pin del nodo pasa de 98 a 100 y las seis cifras de
+los cuatro documentos se mueven por el mismo delta. Seis ficheros, ningun Cargo, y en el modulo de
+tests SOLO INSERCION: ninguna linea de T1-T3 cambia un byte. Con el §440-B —este asiento, la
+linea de estado del RFC y la fila del canon— E4b-2 queda CERRADA y, con E4b-1 y E4b-3 ya
+selladas, E4b ENTERA.
+
+**El material se produce en el propio test, y por eso no hay sello de material.**
+`libro_real_dos_cabezas(dir, primeros, luego)`, calcado de `libro_real`: un nodo real en proceso
+con un `FirmanteCabeza` de semilla publica `primeros`, late y conserva —cabeza firmada con `seq
+= N`—, publica ademas `luego`, late otra vez —cabeza con `seq > N`—, y devuelve las dos
+cabezas firmadas por la MISMA clave con sus dos listas. Los dos latidos van ANTES de escribir
+nada: `tests_dir` borra y crea `target/t_<nombre>` en cada llamada, y con el directorio se va el
+`indice.bin` del firmante. Cada testigo tiene directorio PROPIO para no ensanchar esa carrera, que
+T2 y T3 comparten desde el §436 y queda FICHADA sin testigo (punto 135 de la cola).
+
+**T4, la cara de delante: falsa el SOBRE-BLOQUEO.** Carga B@N con su unico consumo, y el control
+va DENTRO: ese consumo se RECHAZA, luego la puerta esta puesta; y un consumo que NADIE acredita se
+TRAMITA, luego la puerta no bloquea de mas. Sin el control, un verde por cualquier otra causa
+pasaria por bueno (leccion del §436).
+
+**T5, el par: el veredicto cambia con la cabeza ajena cargada, y solo con ella.** El MISMO
+consumo, dos ficheros que difieren solo en que cabeza de B llevan dentro. Antes de juzgar nada se
+asierta que las dos cabezas DIVERGEN —otro `consRoot` y mas altura, porque `seq` es
+`entries.len()`—, o el par no probaria nada (hermano del §427). Bajo B@N el consumo que B firmo
+DESPUES se tramita (`accepted: true`); bajo B@N+1 el mismo consumo se rechaza y el rechazo empieza
+por <<otro libro>>. Es, letra por letra, lo que el §439 dejo escrito: este nodo rechaza lo que
+ese libro tuviera bajo el `consRoot` de la cabeza `seq = N` que se le dio, y no afirma nada sobre
+lo que haya firmado despues de N.
+
+**El falsador EN VIVO, y su eleccion se LEYO en los ayudantes antes de elegirla.** Invertir la
+puerta de `zkssl_publishConsumo` habria tumbado los CINCO testigos del modulo: `libro_real`
+publica por `dispatch` sobre un nodo con el conjunto vacio, y su `accepted: true` se habria vuelto
+rechazo dentro del ayudante. Un falsador que tumba de mas no discrimina (§427, otra vez).
+SALTARSE la puerta —`if false && ...`— tumba EXACTAMENTE T1, T4 y T5, los tres que la prueban,
+y T2 y T3 siguen verdes: caen 3, comprobados POR NOMBRE. `main.rs` vuelve al POST por sha y los
+cinco pasan de nuevo.
+
+**El doc-comment se COMPLETA, no se corrige (D-K).** El parrafo de `--libros-ajenos` decia que una
+cabeza ajena vieja bloquea igual que una reciente, y es verdad medida (D-D, §433-B). Gana la otra
+cara de lo mismo —no bloquea nada de lo que ese libro haya firmado DESPUES de la cabeza que se
+le dio— y el nombre de lo que impone: una FRONTERA en la secuencia firmada del libro ajeno, el
+`seq` de su cabeza, que es la altura de su registro y viaja bajo su firma, no una ventana de
+tiempo (§439, E4b-2). Tres lineas pasan a siete.
+
+**Los gates que sostuvieron el sello.** Idempotencia por ESTADO y DELANTE del cerrojo (los dos
+nombres en `main.rs` y el pin 100 en la fila). Cerrojo `0b17905`/`b63ce9f`, porcelain 0, adelanto
+0. Nueve anclas, con el RFC y `AUDITORIA.md` de CENTINELAS. Las ocho herramientas de `tools/` PRE,
+rc 0. `--list` PRE 98. FASE 0 con las cinco lineas de cifras ENTERAS y la fila 97 entera —el H4b
+del PRE las habia dado truncadas— y las dos regiones de `main.rs` por sha (228..230
+`84117e5460bd5a62`; 3268..3391 `d86c379616cf7647`). INERTE: la pieza 3' y el modulo POST
+decodificados enteros y gateados por sha (`4cfcd02ae2052b7e`, `49ab101da1ffd1c5`). Reconstruccion
+APARTE de los seis: `main.rs` 3391 -> 3519 con `#[test]` 61 -> 63 y sha POST DETERMINADA; la fila
+97 UNICA y una sola sustitucion; DIECISEIS sustituciones por VALOR con unicidad en su linea; IDA Y
+VUELTA en los seis. La <<A>> de la PRECISION 33 se ejercito: con SOLO `canon.sh` movido,
+`check_cifras` rc 1 y RANCIA x6 —PAPER:36, RESUMEN_EJECUTIVO:58, RESUMEN_BILINGUE:85 y :162,
+PRINCIPIOS:354 y PRINCIPIOS:0, que es la :355 (punto 130)—; con los seis, rc 0 y la MISMA linea
+que en el PRE. `--list` POST 100 nombre a nombre: cero perdidos, exactamente los dos nuevos. Los
+cinco del modulo en verde en 0,61 s. Canon `--sello` VERDE. Las ocho herramientas POST sin delta.
+Centinelas intactos. Porcelain 6 exacto. Commit POR NOMBRE con el `numstat` impreso, empuje y
+adelanto 0.
+
+**La pieza R compilo a la primera, y se dice porque es la clase que el ensayo no alcanza.** El
+Rust no se puede compilar en el contenedor: la pieza se leyo contra el modulo real antes de
+emitirla, y el bloque VOLCABA el error del compilador —rc distinto de 0 con cero FAILED es <<no
+compila>>, no <<el testigo no cae>>— en vez de contar caidos. No hizo falta. Lo que el ensayo
+contra un repo de mentira SI cazo fueron tres rojos de MAQUETA, ninguno del bloque: un `canon.sh`
+de mentira que EJECUTABA la fila del nodo y creo un fichero llamado `56,`; un `check_cifras` de
+mentira que sumaba dos por test, con lo que la <<B>> no volvia a verde; y un `kill -INT` a un
+proceso en segundo plano, donde SIGINT se ignora. Se reparo la maqueta, nunca el bloque, y el
+bloque restauro como debia las tres veces.
+
+**Lo que este sello OMITIO, y se paga en el §440-B.** La fila 97 de `canon.sh` lleva la HISTORIA
+de cada movimiento del pin —`... §436: 95 -> 98, la puerta de libros ajenos`— y el bloque
+movio el `98` a `100` sin anadir su entrada. Es un fichero de datos y `check_cifras` no la lee:
+`pines()` y `pines_sello()` leen los numeros que siguen al nivel, y `alias_de_crates()` el alias
+hasta el primer separador; pero una fila que lleva historia se anota cuando se mueve (punto 136),
+y nadie lo gatea. Candidata a puerta: que el ultimo `N -> M` de cada fila coincida con su pin.
+
+**Contadores.** SEIS ficheros modificados, ninguno nuevo; **140 inserciones y 12 borrados** (git:
+`main.rs` 129/1, PAPER 3/3, PRINCIPIOS 4/4, RESUMEN_BILINGUE 2/2, RESUMEN_EJECUTIVO 1/1,
+`canon.sh` 1/1). Pin `zk-ssl-node` **98 -> 100**, derivado contando los `#[test]` de TODOS los
+`.rs` del crate —diario 11, firma_cabeza 4, latido 7, main 61 -> 63, recepcion 4, vista_acuses
+11— y cruzado contra la fila del canon antes de tocar nada. Las tres cifras de cada parrafo se
+movieron por el MISMO delta derivado, +2: 1060 -> 1062 en la compuerta de sello, 1197 -> 1199 con
+todos los pines, 1211 -> 1213 declaradas, en CINCO parrafos de CUATRO documentos, mas la POR-CRATE
+del nodo dentro del parrafo de PRINCIPIOS: DIECISEIS sustituciones, quince conservan el ancho y la
+de PRINCIPIOS:355 (`98` -> `100`) crece UN byte. El `+14` del segundo al tercero sigue sin fuente
+y este corte no lo usa ni lo explica. `--list` PRE 98 y POST 100, nombre a nombre. `main.rs` 3391
+-> 3519 lineas. Ningun Cargo tocado. Vallas invariantes. El canon `--sello` corrio VERDE en
+**178 s**: mando `88dc47bcedcfd51f` y artefacto `a5abe28edc3b8d24` re-medidos e iguales; el
+tarball que imprimio, `38f3dd49048e57fb`, NO es atribuible —salio dentro del canon, antes del
+commit (punto 116)—. Piezas: PASTE-E4b2-PRE `7d5a3f0ef754a552`/399 . RENDER-440
+`4f9d331da809c53b`/244 . BLOQUE-440 `8692f29906ea4fbd`/621 . SALIDA-440 `09db4b0e4ee06038`/270 .
+PASTE-440B-PRE `9be79fc14681bb75`/204.
+
+**Lo que este corte NO cierra, y se dice.** Las dos continuaciones del §439 siguen nombradas y no
+construidas: que la cabeza de este nodo declare que frontera aplicaba —campo nuevo, version de
+formato, RFC propio— y que el nodo rehuse una frontera mas vieja que otra que ya tuvo —hoy
+carga una vez al arrancar y no persiste nada de ella—. La carrera de `tests_dir` entre T2 y T3
+queda fichada sin testigo (punto 135). La puerta de la historia de la fila (punto 136) no se
+construye aqui. Y el RFC-0006 sigue en estado PROPUESTO con E1-E4 selladas: el giro a ACEPTADO es
+decision del autor, no de este -B.

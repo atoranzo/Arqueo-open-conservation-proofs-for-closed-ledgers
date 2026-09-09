@@ -13,7 +13,7 @@
 | E1 — el árbol y la raíz en reposo | el conjunto de consumos como árbol disperso de la capa, su raíz `root:cons` guardada y comprobada al abrir (la sexta raíz en reposo), el rechazo de un consumo repetido, la instantánea que lo transporta, y los testigos negativos que lo falsan | NO | sellada — §413 |
 | E2 — la cabeza v4 | la composición `epoch_digest_v4` que mete la raíz y la cuenta de consumos bajo la firma; el conjunto aceptado pasa a {2, 3, 4}; el cable sirve los dos campos; vectores nuevos bajo su versión | **SÍ** (`zkssl/0.3` → `0.4`) | sellada — §414 (E2a) y §415 (E2b; el cable NO sube: ver la corrección) |
 | E3 — la prueba portable | una forma nueva del paquete de evidencia que prueba que un consumo está bajo la raíz de una cabeza firmada y no lo estaba bajo la de una cabeza anterior; el mando la verifica sin nodo | NO | **sellada** — §416 y §417 (el camino, por el cable), §418 y §419 (el sobre y su verificación sin nodo), §420 y §421 (el banco que los captura) y §422 (su catálogo aparte). ENTERA desde el §422 |
-| E4 — el banco de dos libros | dos nodos, dos operadores, el mismo consumo publicado en los dos, y un lector que con las dos cabezas firmadas lo detecta; y el negativo: con una sola cabeza no hay nada que detectar | NO | **sellada** — E4a (detección) en §427-§431; E4b-1 (bloqueo en tramitación) en §433-§436; E4c (registro autoritativo) DESCARTADO. La partición y lo que queda, bajo la tabla |
+| E4 — el banco de dos libros | dos nodos, dos operadores, el mismo consumo publicado en los dos, y un lector que con las dos cabezas firmadas lo detecta; y el negativo: con una sola cabeza no hay nada que detectar | NO | **sellada** — E4a (detección) en §427-§431; E4b (bloqueo en tramitación) en §433-§437 y §439-§440; E4c (registro autoritativo) DESCARTADO. La partición y lo que queda, bajo la tabla |
 | E5 — el atado en circuito | que el consumo quede restringido en el AIR a la operación que lo consume, con `nullifier_tree.rs` como pieza de partida. Fuera de este RFC: hoy no se puede escribir el testigo que lo falsaría sin E1 | NO | fuera del alcance |
 
 Todas las medidas de este documento se tomaron sobre `2298e61` (§411), en dos lecturas puras que no
@@ -28,14 +28,14 @@ documento: se citaba por su frase y no por su nombre. Queda escrita aquí.
   verifica que el mismo consumo está bajo el `consRoot` de dos cabezas firmadas por operadores
   distintos. §427-§429 (el banco que produce el material), §430 (el lector, que es el MANDO) y
   §431 (su catálogo, corrido por el mismo arnés en cada canon).
-- **E4b — el BLOQUEO EN TRAMITACIÓN. E4b-1 sellada; E4b-2 abierta.** Un nodo que custodia las
+- **E4b — el BLOQUEO EN TRAMITACIÓN. E4b-1 y E4b-2 selladas.** Un nodo que custodia las
   cabezas firmadas de otros libros REHÚSA TRAMITAR un consumo que otro de ellos firmó tener.
   §433 (el productor único de la raíz de consumos), §434 y §434-B (del cable a la cabeza), §435
   (`arbol_de_consumos` publicada) y §436 y §436-B (la puerta en el nodo). **La lista de consumos
   de un libro ajeno no se cree**: se reconstruye y su raíz se exige igual al `consRoot` que la
-  firma de ese libro acredita, así que quien emite el fichero no tiene que ser de fiar. Queda
-  **E4b-2**: la FRONTERA que esa puerta ya impone está escrita (corrección §439); sus dos
-  testigos, en §440.
+  firma de ese libro acredita, así que quien emite el fichero no tiene que ser de fiar. Y
+  **E4b-2**, sellada: la FRONTERA que esa puerta ya impone está escrita (corrección §439) y sus
+  dos testigos —la cara de delante y el par— viven en `main.rs` desde el §440.
 - **E4c — el REGISTRO AUTORITATIVO. NO se construye, y es una decisión, no una deuda** (D-4).
   Preveniría siempre, y a cambio el sistema tendría un operador más, con su punto único de fallo
   y de censura. Si un organismo lo asume, es SU operador y no el nuestro.
