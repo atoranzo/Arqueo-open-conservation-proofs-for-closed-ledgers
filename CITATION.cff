@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software or its measurements, please cite the preprint."
-title: "ZK-SSL — ZK Sovereign Settlement Layer"
+title: "Arqueo — open conservation proofs for closed ledgers (formerly ZK-SSL)"
 authors:
   - family-names: "Toranzo Portela"
     given-names: "Angel Jose"

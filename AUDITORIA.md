@@ -32932,3 +32932,78 @@ pasada 2.
 
 **Contadores.** Pines quietos: 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213.
 Ficheros: `doc/USE_CASES.md` (137 -> 145) y este asiento. Documentos `.md` versionados 70 -> 70.
+
+## §445 — la portada de Arqueo: README y README_EN reescritos enteros, CITATION.cff y spec/README
+
+**Que.** El repo se llama Arqueo desde la sesion 83 y la portada seguia diciendo ZK-SSL: el H1 de
+README.md y de README_EN.md, el titulo de CITATION.cff (lo que GitHub ensena en <<Cite this
+repository>>), y ni una linea de README.md nombraba Arqueo (medido: 0 lineas con <<arqueo>> en el
+fichero que GitHub renderiza; el nombre nuevo vivia en 20 ficheros de 435). Ademas la portada
+publicaba cuentas que el arbol desmiente: <<24 metodos JSON-RPC>> (README.md:88 y
+spec/README.md:20, cuando openrpc.json lista 26: 24 zkssl_ + 2 dev_) y una tabla rotulada
+<<Cifras vigentes, medidas el 06-08-2026>> con 297/242 tests a diez lineas de los 323/318 que dice
+el canon (README.md:322-333); README no esta en la lista de ningun check_*, asi que nadie las
+vigilaba. Este sello reescribe las dos portadas ENTERAS para Arqueo, con las secciones que el autor
+pidio (leer antes de nada, pruebalo en cinco minutos, que garantiza, orden de lectura, estado,
+publicacion), pone el titulo nuevo en CITATION.cff y corrige la cuenta de metodos en los DOS
+sitios donde estaba (una cuenta publicada en dos sitios se corrige en los dos). Prosa y un .cff:
+ni codigo, ni pin, ni vector: sin canon (§402/§424/§444), con las ocho herramientas y el juez.
+
+**Lo medido (PASTE-ORDEN-M `24385176c8c02285`/191, salida `0dda6a37b89670e2`/830; PASTE-445-PRE
+`0f6eb84f575956a1`/156, salida `94f0de189021632f`/3264; los dos sobre `343d3b6`).** HEAD =
+origin/main = `343d3b6`, porcelain 0. 435 ficheros, 70 .md (27 en la raiz), 24 titulos `^#` con
+ZK-SSL o Sovereign Settlement (19 son el H1 de un documento vivo). El nombre viejo por grafias:
+`ZK-SSL` 209 lineas en 121 ficheros, `zk-ssl` 879 en 118, `zkssl` 640 en 67. Donde el nombre es
+estructura y no prosa: 8 dominios de hash `ZK-SSL-*` en 8 .rs, `zkssl/0.1..0.3` 14/47/82
+apariciones, 26 metodos, `ZKSSL3..8`; nada de eso se toca (decidido en la 83 y en 5.B-37: cambia
+el nombre del proyecto, no los identificadores publicados). Las 17 anclas del corte CLAVAN contra
+el TRASPASO-118 y los 13 volcados `#VOL` reproducen su sha. doc/USE_CASES.md (`7696f102f7f3d75b`,
+§444) es la fuente de la tabla de propiedades; doc/KIT.md (`505278a996506b1c`, §442) la de los
+cuatro pasos y de las huellas de la release; PERFORMANCE.md se declara a si mismo SUPERADO (cifras
+en debug, 11-14 veces peores) y cita test_output.txt: la portada nueva no lo enlaza. Las dos
+portadas nuevas: 62 enlaces internos cada una, 0 rotos; 30 nombres .md citados, todos existen.
+
+**Los cinco cambios.** (1) README.md reescrito entero (575 -> 275 lineas, `b9c4a16c200bba49` ->
+`61936bc2aefcf0ef`): H1 <<Arqueo — pruebas abiertas de conservacion para libros cerrados>>, la
+primera linea al ingles, la frase de que cambio el nombre y no los identificadores, <<verificado
+contra main en 343d3b6>> (D-U3), y las secciones pedidas; las cifras en presente son las que el
+bloque re-deriva del arbol en la corrida (26 metodos, 17 crates, 135 vectores, 4 RFC aceptados y 1
+propuesto, zk-ssl-verify 0.2.0); los tiempos y tamanos no se repiten (AUDITORIA §130/§131/§229).
+La seccion Publicacion con los diez DOI y la tabla HISTORICA de la tercera revision van tal cual
+(§247), con un solo cambio: su nota apuntaba a <<la tabla de arriba>>, que ya no existe, y apunta a
+AUDITORIA.md. (2) README_EN.md reescrito entero y a la par, seccion por seccion (124 -> 242,
+`15bfbe41e847597f` -> `bed660ed66f88910`): deja de ser un resumen. (3) CITATION.cff:3 `title:
+"Arqueo — open conservation proofs for closed ledgers (formerly ZK-SSL)"` (`1701473350e915a0` ->
+`8ace540dc3888b3c`, 16 -> 16 lineas); el `preferred-citation` no se toca: es el titulo depositado.
+(4) spec/README.md:20 <<24 methods (22 zkssl_*, 2 dev_*)>> -> <<26 methods (24 zkssl_*, 2 dev_*)>>
+(`c30628c7810d0294` -> `66ae3c9a828da26a`, 163 -> 163); su cabecera <<verified against c43890a>>
+se deja: dice que si un fichero se movio la referencia orienta, y este sello no re-verifico sus
+numeros de linea. (5) Este asiento.
+
+**Decisiones (REVERSIBLES).** D-P1 README.md sigue en espanol y GitHub lo renderiza; el ingles va
+en la primera linea y README_EN.md es la misma pagina entera, no un resumen: el autor no eligio
+idioma y esto se deshace con un git mv. D-P2 la portada no lleva cifras de tests por crate ni
+tiempos: solo cifras que el bloque re-deriva del arbol en la corrida, o punteros. D-P3 la tabla de
+propiedades copia doc/USE_CASES.md (siete filas, cinco medidas y dos planeadas) para que la web,
+USE_CASES y la portada digan lo mismo. D-P4 el juez de deltas es el del §442 con CINCO anchuras
+declaradas, todas conteos con rc 0 a los dos lados y las palabras del invariante intactas: el
+ATADO C cuenta <<la URL del repositorio citada N vez/veces>> con N libre (la portada nueva la cita
+una vez mas: el clone); la linea SALTADA de README.md por <<59,1 MB>> conserva su numero de linea
+libre; check_cifras cuenta <<N cifra(s) de tests en documentos vivos: ninguna contradice el
+canon>> (28 -> 26: la portada ya no dice cuantos tests pasan); check_figures cuenta las cifras de
+tests sin atribuir a un crate y su cola <<... y N mas>> (23 -> 21, 11 -> 9); check_publicadas
+cuenta <<N citas examinadas>> (20 -> 19). La r1 del bloque (`3a34a2d5c63b6bf4`) murio en rc 64 por
+las tres ultimas, que el juez del 442 no conocia; restauro y dejo porcelain 0: nada se toco. Todo
+lo demas del juez, verbatim. D-P5 el bloque exige que el `343d3b6` que la portada declara sea el
+HEAD de la corrida: si el arbol se movio, no nace una portada rancia.
+
+**Lo que NO hace.** No renombra crates, binario, cable, dominios ni metodos (post-ventana, sesion
+83). No toca los otros 17 H1 con ZK-SSL ni PREGUNTAS/QUESTIONS (S446), ni la raiz de 27 .md (S447),
+ni SECURITY.md ni CONTRIBUTING.md. No borra test_output.txt ni PERFORMANCE.md. No toca la web.
+Fichado: spec/README.md:12 sigue verificado contra `c43890a`; doc/preprints/ERRATA.md y
+tools/check_publicadas.py son los dos ficheros que aun llevan la URL vieja del repo (el ATADO C no
+ve el primero); los tags `v1.0.0`, `v0.1.0` y `entrada-50` siguen publicados.
+
+**Contadores.** Pines quietos: 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213.
+Ficheros: README.md (575 -> 275), README_EN.md (124 -> 242), CITATION.cff (16 -> 16),
+spec/README.md (163 -> 163) y este asiento. Documentos .md versionados 70 -> 70.

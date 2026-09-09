@@ -17,7 +17,7 @@ commit; if a file has moved on, the reference tells you where to look.
 | file | what it is | read it when |
 |---|---|---|
 | `RPC.md` | the JSON-RPC specification of the node API, version `zkssl/0.3` — transport, encoding, every method, every error, and what the transition log guarantees | you implement a node, a client or a verifier |
-| `openrpc.json` | the same API as a machine-readable OpenRPC 1.2.6 document: `info.version` is `zkssl/0.3` and it lists 24 methods (22 `zkssl_*`, 2 `dev_*`) | you generate a client or check a node's surface |
+| `openrpc.json` | the same API as a machine-readable OpenRPC 1.2.6 document: `info.version` is `zkssl/0.3` and it lists 26 methods (24 `zkssl_*`, 2 `dev_*`) | you generate a client or check a node's surface |
 | `vectors/zkssl-0.1.json`, `vectors/zkssl-0.2.json`, `vectors/zkssl-0.3.json` | the conformance vectors, one file per wire version, never rewritten | you check that an implementation produces the same values on the wire |
 | `PAQUETE.md` | the portable evidence package: the three forms (v1, v2 with co-signatures inside, extension), the envelope keys the verifier reads, the order of checks, the rejection catalogue and the exit contract of `zk-ssl-verify` — it does not cross the wire | you build or verify an evidence package, or write a second verifier |
 | `NUCLEO.md` | the frozen core: every public element a verifier reaches in `zk-ssl-verify` and `zk-ssl-hash`, classified (core / reference / ledger / log) with the extension rule; the table is derived from the source and gated by `tools/check_nucleo.py` in every canon | you write a second verifier and need to know exactly what must be reproduced byte for byte |
