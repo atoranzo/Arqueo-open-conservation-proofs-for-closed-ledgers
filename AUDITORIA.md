@@ -32880,3 +32880,55 @@ su propia pasada, con esta huella y este commit.
 Ficheros: `doc/KIT.md` (125 -> 134), `doc/KIT_EN.md` (129 -> 138) y este asiento. Documentos `.md`
 versionados 70 -> 70. Piezas: SALIDA-KIT `67e57ad0b5af2d97`/480 (el §442), y la salida de
 `artefacto.sh` y las tres mediciones desde fuera, pegadas en la sesion 117.
+
+## §444 — USE_CASES.md al dia: la reapertura medida, el consumo publicado, los fondos publicos
+
+**Que.** `doc/USE_CASES.md` es el documento que mapea lo que el motor prueba a los casos donde esa
+prueba vale, con su disciplina de <<measured>> con fichero y <<candidate>> sin el; la web lo cita
+como fuente. Decia tres cosas rancias: la fila 1 daba la reapertura por no medida (la cerraron los
+§387-§394); la fila 2 decia <<a unit is consumed once (nullifiers) -- measured>>, y el propio
+RFC-0006 (`:55-56`) la nombra como falsa: lo medido desde el §413 es el consumo publicado, no un
+nulificador; y su ancla era `b91896b` (§388). Este sello las pone al dia y escribe el caso de
+fondos publicos con lo que E3 y E4 midieron, calcado de lo que la web ya dice desde la pasada 2 de
+`arqueo.org`, para que la fuente bajo gates diga lo mismo que la portada. Un fichero `.md` y este
+asiento; ni codigo, ni pin, ni cifra: sin canon (§402/§424).
+
+**Lo medido (PASTE-USE-PRE `e7b3c553f873187a`, salida `5dc041815aeb9022`/380, sobre `2401008`).**
+El fichero entero (137 lineas, ancho maximo 186, 10 caracteres fuera de ASCII); el censo de
+`nullifier` en los `.md` vivos: 156 lineas en 31 documentos, de las que solo las dos de
+`USE_CASES.md` (`:28`, `:66`) hablan del mecanismo de hoy en presente; el resto es historia
+marcada (§247), legado documentado o los crates de investigacion. INSTITUCIONAL/INSTITUTIONAL
+(`:213`, `:378`; `:212`, `:364`) y VISION (`:127`) siguen contando la via retirada en presente:
+puntos 86 y 87, que este sello NO toca. El RFC-0006 define la etiqueta `H(DOMINIO_CONSUMO,
+identificador)` sobre un identificador acordado y publico (`:109`), dice que <<el identificador
+acordado es gobernanza, no criptografia. Ya lo dice doc/USE_CASES.md:66-69>> (`:170`), y que entre
+libros es deteccion, nunca prevencion (`:46`, `:174`, `:211`); `spec/README.md:35` lleva la frase
+inglesa sellada en el §441.
+
+**Los cuatro cambios.** (1) La cabecera pasa de `b91896b` a `2401008`, el commit contra el que se
+verifico esta version. (2) Fila 1: <<measured, in flight and on reopening (AUDITORIA
+§387-§394)>>. (3) Fila 2: <<a label is consumed once in a ledger and published in its signed
+head; the same label in two ledgers is detected from both -- measured (RFC-0006; doc/KIT.md)>>.
+(4) El parrafo de fondos publicos (5 lineas -> 11): la etiqueta consumida una vez en el libro del
+organismo que certifica y publicada en su cabeza firmada; el identificador acordado como
+gobernanza, con la forma del RFC; dos organismos que lo calculan igual detectan la misma etiqueta
+desde sus dos cabezas con los nodos apagados, a posteriori y sin prevencion (E4; pasos 3 y 4 del
+kit); lo no probado: la factura real, el gasto elegible, y entre paises ni deteccion sin etiqueta
+comun. La frase de gobernanza queda dentro de las lineas 66-69 que el RFC cita. Y una vinieta
+nueva en <<What none of this claims>>: la prevencion entre libros. El ancho maximo no crece (186
+-> 186); 8 lineas mas.
+
+**Decisiones (REVERSIBLES).** D-U1 la fila 2 nombra el consumo publicado y el kit, no el
+nulificador: es lo que el RFC-0006 `:55` pedia. D-U2 el parrafo de fondos publicos dice
+exactamente lo que la web dice, y no mas: nada de <<STARK>> en el consumo, nada de <<tiempo
+real>>, nada de costes. D-U3 el ancla de la cabecera es el ultimo commit sellado, no el de este
+sello (que no existe al escribir): es lo que <<verified against>> significa. D-U4 sin canon; las
+ocho herramientas con el juez de deltas.
+
+**Lo que NO hace.** No toca INSTITUCIONAL/INSTITUTIONAL/VISION (puntos 86/87). No cierra la cita
+`SECURITY.md, the oracle limit` de `USE_CASES.md:21`, que apunta a un documento donde la palabra
+<<oraculo>> no aparece (0 hits en el PRE): se ficha. No toca la web, que ya lo dice desde la
+pasada 2.
+
+**Contadores.** Pines quietos: 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213.
+Ficheros: `doc/USE_CASES.md` (137 -> 145) y este asiento. Documentos `.md` versionados 70 -> 70.

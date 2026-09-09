@@ -4,7 +4,7 @@ This page maps what the engine proves to the situations where that proof is
 worth having. It adds no claim that the tree does not already make: every
 "measured" row below points to the file that carries it, and every domain not
 reviewed in the project's documents is marked as a candidate. Verified against
-`main` at commit `b91896b`.
+`main` at commit `2401008`.
 
 ## The shape of the problem
 
@@ -24,8 +24,8 @@ of the world (`SECURITY.md`, the oracle limit).
 
 | # | property | what a third party learns | status |
 |---|---|---|---|
-| 1 | Conservation | supply = balances + in flight; nothing created or lost between epochs | measured in flight; on reopening, not yet (front page, "What it does not do") |
-| 2 | No double use | a unit is consumed once (nullifiers) | measured |
+| 1 | Conservation | supply = balances + in flight; nothing created or lost between epochs | measured, in flight and on reopening (`AUDITORIA.md` §387–§394) |
+| 2 | No double use | a label is consumed once in a ledger and published in its signed head; the same label in two ledgers is detected from both | measured (RFC-0006; `doc/KIT.md`) |
 | 3 | Unrewritable history, with an extension proof | today's signed head extends yesterday's without removal or reordering | measured (`spec/RPC.md:781-808`, `zkssl_consistencyProof`) |
 | 4 | Inclusion with a receipt | an entry is in the ledger, provable without the operator | measured (`spec/RPC.md:564-735`, `zkssl_inclusionReceipt`, `zkssl_ackPath`) |
 | 5 | Authorship without the key travelling | only the holder of a key moves its account; the operator cannot | measured (`spec/RPC.md:50-59`, the API principle) |
@@ -63,10 +63,16 @@ not been measured.
 - Tickets and passes; quotas (fishing, water, municipal emissions); software
   licences and API credits.
 - Publicly funded programmes, where the characteristic fraud is double funding:
-  the same expense certified under two programmes. That is a nullifier — each
-  expense consumed once. Within one managing body this is direct; across bodies
-  it requires an agreed expense identifier, which is governance, not
-  cryptography. Not proved: that the invoice is real or the expense eligible.
+  the same expense certified under two programmes. Each expense is a label
+  consumed once inside the certifying body's ledger, and the consumption is
+  published in its signed head. Across bodies it requires an agreed expense
+  identifier, which is governance, not cryptography (RFC-0006: `H(domain,
+  agreed identifier)`, public and precomputable by whoever knows it). Two bodies
+  that compute it the same way detect the same label from their two signed
+  heads, with both nodes off — detection, not prevention, after the fact
+  (`spec/rfc/0006-consumo-publicado.md`, E4; `doc/KIT_EN.md`, steps 3 and 4).
+  Not proved: that the invoice is real or the expense eligible (the oracle
+  limit). Between countries, not even detection until a shared label exists.
 
 **3. Unrewritable history.**
 - Membership rolls, internal electoral censuses, minute books.
@@ -132,6 +138,8 @@ surfaces in retail CBDC incidents (doi:10.5281/zenodo.22077991).
 - Privacy against the operator: the operator sees everything (`SECURITY.md`).
 - That the ledger's units exist outside the ledger.
 - That an omitted operation would be detected: censorship leaves no trace.
+- Prevention across ledgers: two ledgers can accept the same label; a third
+  party holding both signed heads sees it afterwards, never before.
 - Who is behind a key, or that one person holds one account.
 - Rows 6–7 as existing.
 - Any domain beyond the six reviewed as measured.
