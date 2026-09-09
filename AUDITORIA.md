@@ -33214,3 +33214,68 @@ spec/README:20 y RESUMEN_EJECUTIVO:128 la llevaban).
 **Contadores.** Pines quietos: 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213.
 Ficheros: RESUMEN_EJECUTIVO.md (322 -> 92), RESUMEN_BILINGUE.md (180 -> 120) y este asiento.
 Documentos .md versionados 70 -> 70.
+
+## §450 — Las pruebas sobre el estado comprometido: RFC-0007 PROPUESTO (H4: el rechazo, la edad y los parametros)
+
+**Que.** Nace `spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md`, PROPUESTO, calcado del
+0005 y del 0006: cinco etapas (E1 la cabeza v5 con UNA familia nueva bajo la firma
+-`params_digest`, `pmeta_root`, `next_pending`, `next_index`, `total_supply`-; E2 la causa del
+rechazo como `data` en el cable; E3 el sobre de rechazo por caminos, verificado sin nodo; E4 la
+prueba de edad sobre el rango `0..next_pending`, MEDIDA antes de construirse; E5 las causas por
+circuito y el kit verificando STARK), Motivacion medida, seis decisiones D-A..D-F, siete
+descartes, Compatibilidad (`zkssl/0.3` no sube; formato de firma 4 -> 5; `data` aditivo),
+Seguridad y Referencias con huella. `spec/README.md` gana su fila. La cuenta de RFC que la portada
+publicaba (0002, 0003, 0004 y 0006 aceptados; 0005 propuesto) se paga en los CUATRO vivos que la
+llevaban. Es el hito H4 de la propuesta a NLnet, elegido en la sesion 119, y el segundo RFC que
+entra por la puerta del 0005: una familia bajo la firma, por version nueva del preambulo. No toca
+un byte de codigo.
+
+**Lo que se midio antes de escribir un byte** (PASTE-H4-M `b97fa3671a204fd8`, salida
+`874081d54f78eab9`/2191; PASTE-H4-M2 `ab3c84deb15111db`, salida `3609f88610ec6480`/1444;
+PASTE-450-PRE `f26c3fd54d135ea5`, salida `f939826bc24b5f82`/875; PASTE-450-PRE2
+`0224652c5e08ccd4`, salida `72af076241995364`/290; todo sobre `bb02c71`). El hito, verbatim, en
+la linea 44 del formulario enviado (`26dcde32091e857d`/160). La cabeza v4 firma once campos y
+NINGUN parametro, ni `root:pmeta`, ni `next_pending`, ni `supply`: las tres piezas del hito
+comparten esa precondicion, y por eso el RFC empieza por el formato. `LayerError` son 25
+variantes, con sus productores contados; el nodo escribe el error a mano (`{code, message}`, sin
+`data`) y ningun vector del cable ni el OpenRPC pina el objeto de error. `allocate_pending`
+recorre `0..next_pending` y solo sube la marca cuando no hay hueco (§211): toda posicion viva es
+menor que la marca, que es el universo de la prueba de edad. Siete parametros en reposo
+(`meta:limit`, `max_supply`, `max_accounts`, `custodians`, `governance`, `refund_ttl`,
+`cust_max`) y `zkssl_params` sirve cuatro sin firma. `circuit_audit` es el molde (31 columnas, 512
+filas, 8 filas por hash) y el kit no verifica ningun STARK (`verify/Cargo.toml`: sin `winter-air`
+ni `winter-verifier`). F4 re-medido: `verifier_hash` sigue en 3 hits `.rs` (el comentario FALTA de
+`log.rs`) y 33 en `.md`; la mitad AIR queda bloqueada con su razon (§246, §321). RFC siguiente
+0007 (ocupados 0, 2, 3, 4, 5, 6), asiento siguiente 450, vallas 132, cabeceras 175.
+
+**Las decisiones (del autor, sesion 119; tomadas con la constitucion; REVERSIBLES en el RFC).**
+La familia ENTERA en v5 (D-B): cinco piezas, cada una con la causa que sin ella no tiene prueba,
+y el escalon 2 del punto 43 con ellas; una version, una familia, como el D-3 del 0006 en su
+sentido. El kit verifica STARK (D-F): un crate de AIR solo-verificador, `winter-verifier` en la
+clausura y el probador fuera (el spike `air-solo` lo midio viable), y la frase del `Cargo.toml`
+del verificador gana su correccion §247 en E5. La frontera con H5b: la caja vacia como propiedad
+de la distribucion es H4; <<todo acuse resuelve>> es H5b. Las causas se reparten por caminos
+(froz, cons, pmeta, la cabeza, la aritmetica publica con los parametros firmados), por circuito
+(`InsufficientBalance` con banda; la re-verificacion del STARK del solicitante) y declaradas sin
+prueba portable (`CustodianSetExhausted`, `NotTheIssuer`, `NotTheAccountHolder`); `Store` es
+fallo del operador, nunca rechazo.
+
+**Lo que NO afirma.** No sella ninguna etapa: E1-E5 son propuestas, y E4 lleva su puerta de
+coste antes de existir. No afirma que un rechazo con prueba sea justo, solo que la regla se aplico
+al estado comprometido; no afirma que los parametros firmados impidan un cambio, solo que lo hacen
+visible; no afirma nada sobre lo que nunca entro en el arbol (eso es H5b). Las filas 6 y 7 de la
+tabla de propiedades siguen diciendo <<planeada>>: se corrigen cuando E3 y E4 las hagan
+verdaderas, no antes. El ancla `c43890a` de la cabecera de `spec/README.md` sigue rancia (punto
+80), como la dejaron el §412 y el §441.
+
+**Contadores.** Cero codigo, cero cifras de tests, sin canon (como el §412 y el §441). La puerta:
+las diez herramientas de `tools/canon.sh` (ocho del bucle y dos por ruta), rc 0 antes y despues,
+con juez por invariante: solo cambian `verificar_citas` (nombres 66 -> 67, con
+0 fantasmas y 0 secciones muertas) y `check_publicadas` (ATADO C: 64 -> 65 documentos;
+la URL del repositorio citada 10 veces, quieta). Ficheros:
+`spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md` nace (353 lineas, `7e4803b07eeb87ba`);
+`spec/README.md` 163 -> 164 (+1 fila tras la del 0006); `README.md` (:181), `README_EN.md` (:188)
+y `RESUMEN_EJECUTIVO.md` (:60) una fila cada uno, linea-neutrales; `RESUMEN_BILINGUE.md` dos
+parrafos re-fluidos (:45-49 y :96-100, 120 -> 120, `ef88246a24b8ec66` -> `acb3d6c2e5b957a3`) sin
+ensanchar; y este asiento. Documentos `.md` versionados: 70 -> 71. Pines quietos:
+323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213. Vallas 132, invariante.

@@ -43,10 +43,10 @@ contrapartida ni una moneda de banco central ([`doc/USE_CASES.md`](./doc/USE_CAS
 ### Estado
 
 17 crates en Rust con canon en cada cambio; protocolo `zkssl/0.3` con 26 métodos y vectores que no
-se reescriben; RFC 0002, 0003, 0004 y 0006 aceptados, 0005 propuesto; verificador `zk-ssl-verify`
-0.2.0 (release `arqueo-verify-v0.2.0`, reproducible); registro con un asiento por cambio. Falta:
-auditoría externa, custodia de clave comprobada, un ancla anterior al primer encuentro del testigo,
-y las dos propiedades planeadas.
+se reescriben; RFC 0002, 0003, 0004 y 0006 aceptados, 0005 y 0007 propuestos; verificador
+`zk-ssl-verify` 0.2.0 (release `arqueo-verify-v0.2.0`, reproducible); registro con un asiento por
+cambio. Falta: auditoría externa, custodia de clave comprobada, un ancla anterior al primer
+encuentro del testigo, y las dos propiedades planeadas.
 
 ### La decisión que define el diseño
 
@@ -94,7 +94,7 @@ counterparties, nor a central-bank digital currency ([`doc/USE_CASES.md`](./doc/
 ### Status
 
 17 crates in Rust with the canon on every change; protocol `zkssl/0.3` with 26 methods and vectors
-that are never rewritten; RFCs 0002, 0003, 0004 and 0006 accepted, 0005 proposed; verifier
+that are never rewritten; RFCs 0002, 0003, 0004 and 0006 accepted, 0005 and 0007 proposed; verifier
 `zk-ssl-verify` 0.2.0 (release `arqueo-verify-v0.2.0`, reproducible); a record with one entry per
 change. Missing: an external audit, a verified key custody, an anchor prior to the witness's first
 encounter, and the two planned properties.
