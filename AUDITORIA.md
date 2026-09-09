@@ -33007,3 +33007,55 @@ ve el primero); los tags `v1.0.0`, `v0.1.0` y `entrada-50` siguen publicados.
 **Contadores.** Pines quietos: 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213.
 Ficheros: README.md (575 -> 275), README_EN.md (124 -> 242), CITATION.cff (16 -> 16),
 spec/README.md (163 -> 163) y este asiento. Documentos .md versionados 70 -> 70.
+
+## §446 — la FAQ de Arqueo: PREGUNTAS.md y QUESTIONS.md reescritas enteras, 22 preguntas
+
+**Que.** Las dos FAQ (306 y 291 lineas) eran la de ZK-SSL y decian en presente cuatro cosas que el
+arbol desmiente: que la privacidad es <<frente a terceros que solo ven pruebas>> (falso y medido
+en §93, corregido en §156/§157: la propia portada vieja lo decia); que el doble gasto lo impide
+un nullifier cuya posicion se deriva de el (via retirada con su arbol en §32/§36: hoy nada los
+genera; puntos 86/87 de la cola); que el nodo mide <<1,5-1,9 TPS>> (§229/§238: era el ciclo en un
+portatil, el nodo trabaja el 4 %); y que <<el objetivo nunca fue llegar a produccion>> y que esto
+<<no sirve a quien busque infraestructura desplegable>>, lo que contradice USE_CASES.md y la
+portada del §445. Este sello las reescribe ENTERAS para Arqueo, a la par y con las mismas 22
+preguntas (QUE / POR QUE / COMO / QUIEN / CUANTO), cada afirmacion de presente con su fichero o su
+asiento. Prosa: ni codigo, ni pin, ni vector: sin canon (§402/§424/§445), ocho herramientas y el
+juez.
+
+**Lo medido (PASTE-445-PRE `0f6eb84f575956a1`, salida `94f0de189021632f`/3264, sobre `343d3b6`;
+las dos FAQ no cambiaron en el §445).** PREGUNTAS.md `1d88c627ae26b9d6`/306 y QUESTIONS.md
+`a5a26bfc5cee6e16`/291, volcadas enteras e identicas en estructura (22 `###`, cinco bloques, tabla
+final). Nadie las citaba fuera de AUDITORIA/BACKLOG hasta el §445, que las puso en el orden de
+lectura de las dos portadas. Las fuentes de la reescritura: la portada del §445, doc/USE_CASES.md
+(§444), doc/KIT.md (§442), la cabeza de SECURITY.md, y las cifras con asiento que la portada vieja
+publicaba (§22, §123, §130, §131, §229, §230, §238, §13, §32, §36), que siguen siendo las
+publicadas.
+
+**Los tres cambios.** (1) PREGUNTAS.md reescrito entero (306 -> 291, `1d88c627ae26b9d6` ->
+`e5353cc4888b4e86`): titulo <<Arqueo — 22 preguntas>>, <<verificado contra main en 9c64fd1>>
+(D-U3), y las 22 preguntas: la 1 dice que es un motor de libro cerrado que publica pruebas
+abiertas; la 3 y la 4 copian las siete propiedades y lo que nada afirma de USE_CASES; la 9 lleva
+la correccion del §93 escrita; la 13 explica el encadenamiento de raices y el consumo publicado
+(§413) y da la via del nullifier por retirada; la 17 es nueva y es el kit; la 20 es a quien sirve,
+segun USE_CASES; la 21 funde coste, tamano y escala con sus asientos y la correccion del §229; la
+22 dice lo que falta sin la frase de <<nunca fue el objetivo>>. Sin cifras de tests. (2)
+QUESTIONS.md reescrito entero y a la par (291 -> 288, `a5a26bfc5cee6e16` -> `92895529424a26e2`).
+(3) Este asiento.
+
+**Decisiones (REVERSIBLES).** D-F1 la FAQ sigue siendo <<22 preguntas>> en las dos lenguas: las
+viejas 20 y 21 se funden en la 21 y entra la 17, el kit; los cinco bloques se conservan. D-F2 las
+cifras de rendimiento entran solo con su asiento y con la correccion escrita al lado (§229/§238),
+nunca sueltas. D-F3 las secciones citadas son las que la portada vieja y la FAQ vieja ya citaban,
+mas §379, §387-§394, §391, §393 y §413, cabeceras del registro; verificar_citas las gatea.
+D-F4 el juez es el del §445 (cinco anchuras), verbatim. D-F5 las dos FAQ declaran <<verificado
+contra 9c64fd1>> y el bloque exige que ese sea el HEAD de la corrida.
+
+**Lo que NO hace.** No toca los 17 H1 restantes con ZK-SSL (S447), ni la raiz (S448), ni
+SECURITY.md ni CONTRIBUTING.md, ni INSTITUCIONAL/INSTITUTIONAL/VISION (puntos 86/87 siguen).
+Fichado: doc/USE_CASES.md:109 da <<1.5-1.9 transactions per second>> como caudal medido sin decir
+que es el ciclo entero en un portatil y no el nodo (§229/§238): es la misma frase que este sello
+retira de la FAQ, y en USE_CASES sigue.
+
+**Contadores.** Pines quietos: 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213.
+Ficheros: PREGUNTAS.md (306 -> 291), QUESTIONS.md (291 -> 288) y este asiento. Documentos .md
+versionados 70 -> 70.
