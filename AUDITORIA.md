@@ -32710,3 +32710,55 @@ carga una vez al arrancar y no persiste nada de ella—. La carrera de `tests_di
 queda fichada sin testigo (punto 135). La puerta de la historia de la fila (punto 136) no se
 construye aqui. Y el RFC-0006 sigue en estado PROPUESTO con E1-E4 selladas: el giro a ACEPTADO es
 decision del autor, no de este -B.
+
+## §441 — El RFC-0006 pasa a ACEPTADO: la regla 4 del PROCESO, saldada con medida
+
+**Que.** `spec/rfc/0006-consumo-publicado.md` gira de PROPUESTO a ACEPTADO, con el molde del §356
+y del §400: la linea de estado dice por que, la nota fechada dice con que medida, y el doble hilo
+de la regla 5 queda cerrado por los dos extremos. `spec/README.md`, que es el segundo productor
+del estado (en ingles, `:35`), gira con el. Ni codigo, ni pin, ni cifra: como el §400, este sello
+no corre el canon. E5 sigue fuera del alcance, como la tabla del RFC declara desde el §412.
+
+**La regla 4, punto por punto, medida (PASTE-441-PRE `a96adc502d1b4ae5`, salida
+`ae18164b6963eb9a`/1281, sobre `1e33963`; el resto, en los asientos que se citan).** (a) La spec:
+`spec/RPC.md` lleva los dos metodos del consumo y su seccion desde el §417; `spec/NUCLEO.md`, la
+posicion del consumo y la familia CONSUMO (§416, §419), gateadas por `check_nucleo.py` en las
+dos direcciones; `spec/PAQUETE.md`, la cuarta forma del sobre (consumo, §419) y la quinta
+(conflicto, §430). (b) El OpenRPC: REGENERADO con `gen_openrpc` en el §417 (+45 lineas, 24 -> 26
+metodos, con sus tests de atado en `openrpc.rs`); `zkssl/0.3` no subio, y el propio RFC lo corrige
+en su §415. (c) Los vectores: NUEVOS bajo su catalogo —`spec/vectors/consumo/` 14 (§422,
+§431), `spec/vectors/conflicto/` 16 (§431), el KAT `epoch_digest_v4` y los negativos
+`rechazo-formatVersion-5` del cable y del paquete (§414-§415)— y ninguno reescrito: los tres
+del cable siguen intactos bajo el triple gate. (d) Las suites: el asiento §440 declara canon
+`--sello` VERDE en 178 s, con los tres catalogos corridos tambien desde dentro del tarball
+(paquete 68/68, consumo 14/14, conflicto 16/16). Precedente del giro: el 0002 (§3-5), el 0003
+(§356) y el 0004 (§400).
+
+**Una cuarta aparicion, y se corrige donde vive.** La correccion del §415 dijo que el documento
+habia afirmado TRES veces que E2 subiria el cable (la cabecera, la fila de etapas y
+Compatibilidad). Hay una cuarta, en <<Por que entra por RFC>>: <<E2 cambia valores que viajan ...
+y sube la version del cable>>. La nota fechada entra justo debajo y lo dice; el parrafo no se
+reescribe.
+
+**Decisiones (REVERSIBLES).** D-1 la linea de estado calca la del 0004, con las etapas por rango
+de asientos (E1 §413; E2 §414-§415; E3 §416-§422; E4 §427-§431, §433-§437 y
+§439-§440-B), sin meter el §432 ni el §438, que no son del RFC. D-2 la nota fechada va al
+final de <<Por que entra por RFC>>, la seccion del proceso, porque el 0006 no tiene un parrafo que
+prometiera justificar el giro; con tildes, que es el regimen del documento. D-3 la linea 6 de la
+cabecera (<<sube a zkssl/0.4 en E2>>) NO se reescribe: la correccion del §415 decidio conservarla
+y corregir debajo, y esta nota remite a ella. D-4 el README ingles dice ACCEPTED, corrige en la
+misma fila la frase <<0.3 -> 0.4 in E2>>, falsa desde el §415, y nombra las cuatro etapas
+selladas sin ensanchar la fila, que es la mas ancha del fichero. D-5 sin canon: ni un `.rs`, ni un
+pin, ni una cifra se mueven; las ocho herramientas se corren antes y despues con liston por delta.
+
+**Lo que NO hace.** No cierra el punto 80: el ancla `c43890a` de la cabecera del README sigue
+rancia, como la dejaron el §400 y el §412. No toca `PROCESO.md`, ni `RPC.md`, ni los asientos
+que dicen PROPUESTO (son actas). No corrige la fila 20 del README, que desde el §417 dice 24
+metodos donde el OpenRPC publica 26: es otra fila y otro hecho, y queda fichado en la cola (punto
+137). No decide FINAL: el proceso lo reserva y ningun RFC de la casa lo ha alcanzado (los seis
+estados, leidos en el PRE).
+
+**Contadores.** Pines quietos: 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213.
+Documentos `.md` versionados 68 -> 68. Ficheros: `spec/rfc/0006-consumo-publicado.md` (369 ->
+387), `spec/README.md` (163 -> 163, linea-neutral) y este asiento. Piezas: PASTE-441-PRE
+`a96adc502d1b4ae5`/179 (salida `ae18164b6963eb9a`/1281).

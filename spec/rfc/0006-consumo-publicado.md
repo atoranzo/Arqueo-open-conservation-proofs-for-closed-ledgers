@@ -1,10 +1,13 @@
 # RFC-0006 — El consumo publicado: unicidad de uso dentro de un libro, detección entre libros
 
-- **Estado:** PROPUESTO
+- **Estado:** ACEPTADO — **la regla 4 del PROCESO, saldada con medida**
+  (§412 la adopción; E1 §413, E2 §414–§415, E3 §416–§422, E4 §427–§431, §433–§437 y
+  §439–§440-B, las etapas con sus puertas; §441 este giro). Se conserva como registro de lo
+  decidido, lo medido y lo descartado.
 - **Autores:** Che, con Claude (sesión 99)
 - **Fecha:** 2026-09-06
 - **Versión del protocolo afectada:** `zkssl/0.3` — **sube a `zkssl/0.4` en E2** (ver Compatibilidad)
-- **Asiento(s) de AUDITORIA:** §32, §36, §55, §117, §236, §275, §292, §387, §391, §392, §405, y el §412, que lo sella
+- **Asiento(s) de AUDITORIA:** §32, §36, §55, §117, §236, §275, §292, §387, §391, §392, §405, el §412, que lo sella, el §413 (E1), §414–§415 (E2), §416–§422 (E3), §427–§431, §433–§437 y §439–§440-B (E4), y el §441 (este giro a ACEPTADO)
 
 ## Estado de las etapas
 
@@ -313,6 +316,21 @@ Por la letra: E2 cambia valores que viajan (`spec/RPC.md`, `spec/openrpc.json`, 
 sube la versión del cable; E3 añade bajo `spec/vectors/`. Por el espíritu: es la primera familia
 que entra **bajo la firma de la cabeza** desde que el RFC-0005 escribió por dónde entra una; si
 no entra por RFC, la regla de extensión se estrena incumplida.
+
+> **Nota (2026-09-09, §441).** ACEPTADO. La regla 4 del PROCESO queda saldada con medida, y se
+> dice con qué. (a) La spec, actualizada: `spec/RPC.md` gana los dos métodos del consumo y su
+> sección (§417); `spec/NUCLEO.md`, la posición del consumo y la familia CONSUMO (§416, §419);
+> `spec/PAQUETE.md`, la cuarta y la quinta forma del sobre (§419, §430). (b) El OpenRPC,
+> regenerado con `gen_openrpc` en el §417: 24 → 26 métodos, y `zkssl/0.3` no sube. El párrafo de
+> arriba es la cuarta vez que este documento dio por hecho que E2 subía el cable: la corrección
+> §415 desmintió las otras tres y esta nota desmiente ésta. (c) Los vectores, nuevos y ninguno
+> reescrito: `spec/vectors/consumo/` (14, §422 y §431), `spec/vectors/conflicto/` (16, §431), el
+> KAT de `epoch_digest_v4` y los negativos `rechazo-formatVersion-5` del cable y del paquete
+> (§414–§415); los tres del cable, intactos bajo el triple gate. (d) Las suites, verdes: el canon
+> `--sello` del §440 (178 s) corre los tres catálogos también desde dentro del tarball —paquete
+> 68/68, consumo 14/14, conflicto 16/16—. E5 sigue fuera del alcance, como la tabla declara.
+> Doble hilo de la regla 5: este documento cita el §441 y el §441 cita este RFC. Precedentes del
+> giro: el 0003 (§356) y el 0004 (§400).
 
 ## Seguridad
 
