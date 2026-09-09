@@ -14,6 +14,15 @@ reproduced.
 
 ## 0. Download, and check the download before believing it
 
+The current release is `arqueo-verify-v0.2.0`, published at
+<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.2.0>,
+produced on commit `1528943fdfb9399f56fd836f75ffbe655d004d78`:
+tarball `arqueo-verify-0.2.0-x86_64-unknown-linux-gnu.tar.gz`, sha256
+`2fe9030a310a1e0b02768eaac19ac079114e8e4dae3bec04bb2bf2a3da79f5ce` (2,891,949 bytes, 109 files);
+binary `6356debde7f117b15d16cc755a798fdd29ba55ef98707a7a9d05124406dc478b`. Both hashes are
+measured from the outside — `curl` download, asset in the API, the downloaded kit running the four
+steps — in the `AUDITORIA.md` entry that registers this release.
+
 Every release carries a tag and is produced on the commit its `VERSION` file names; the tarball's
 hash is published **next to its commit**, on the release page and in the `AUDITORIA.md` entry that
 sealed it, never as a bare number. With the tarball in hand:

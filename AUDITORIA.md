@@ -32819,3 +32819,64 @@ imprime y el asiento del registro fija). No toca `PAQUETE.md` ni `artefacto.sh`.
 Ficheros: `doc/KIT.md` y `doc/KIT_EN.md` NUEVOS; `crates/zk-ssl-verify/Cargo.toml` (`:3`) y
 `Cargo.lock` (la linea `version` de su bloque), una linea cada uno; `README.md` (+6 tras la 70) y
 `README_EN.md` (+6 antes de Papers); y este asiento. Documentos `.md` versionados 68 -> 70.
+
+## §443 — El registro de la release arqueo-verify-v0.2.0, medida desde fuera
+
+**Que.** El §442 sello el kit y su version; este asiento REGISTRA la release que se produjo
+despues, en el orden que la seccion 11 de `PAQUETE.md` exige (tag, producir, subir), y la deja
+medida DESDE FUERA, que es lo unico que un tercero puede repetir: tag `arqueo-verify-v0.2.0` sobre
+`1528943` (`describe arqueo-verify-v0.2.0-0-g1528943`), tarball producido sobre
+`target/artefacto/` VACIO (el punto 121, limpiado de paso), release creada con `gh release create
+--verify-tag`, y los dos manuales ganan el parrafo de la release vigente con su huella AL LADO DEL
+COMMIT. Precedente §401/§402.
+
+**Lo producido (`bash tools/artefacto.sh` sobre `1528943`).** Tarball
+`arqueo-verify-0.2.0-x86_64-unknown-linux-gnu.tar.gz` sha256
+`2fe9030a310a1e0b02768eaac19ac079114e8e4dae3bec04bb2bf2a3da79f5ce`, **2.891.949 B, 109 ficheros**
+(los 115 del `tar tzf` son 109 mas 6 directorios); binario con remap
+`6356debde7f117b15d16cc755a798fdd29ba55ef98707a7a9d05124406dc478b`, 689.280 B, que es el
+`6356debde7f117b1` que el canon del §442 ya habia medido: **la version viaja dentro del binario y
+subirla lo mueve**; la huella estable de la 0.1.0 (`a5abe28edc3b8d24`) es historia. `VERSION`:
+commit `1528943fdfb9399f56fd836f75ffbe655d004d78`, rustc 1.97.1 (`8bab26f4f`), cargo 1.97.1,
+`glibc_max` 2.34, dinamico. Manifiestos desde el arbol: paquete 68/68, consumo 14/14, conflicto
+16/16.
+
+**Lo medido desde fuera (9-sep, 13:39 UTC).** (a) La descarga por `curl -sL` de la URL del asset
+da EXACTAMENTE `2fe9030a310a1e0b02768eaac19ac079114e8e4dae3bec04bb2bf2a3da79f5ce` y 2.891.949 B.
+(b) La API de la release (`releases/tags/arqueo-verify-v0.2.0`): `draft: false`, `prerelease:
+false`, `published_at 2026-09-09T11:39:34Z`, y el asset EN EL ARRAY con `size 2891949` y su
+`browser_download_url` (la leccion de la 95: cuenta el array, no el contador de la pagina;
+`download_count 0` en el momento de medir). (c) El kit DESCARGADO, no el de `target/`: `sha256sum
+-c SHA256SUMS` 108 OK (los 109 menos el propio `SHA256SUMS`); `VERSION` con el commit y el
+`describe` de arriba; y los cuatro pasos del manual: `posicion-v2.json` VERDE con salida 0;
+`rechazo-n-adulterado.json` salida 1 con <<los siete campos NO recomponen el epochDigest
+empaquetado>>; `rechazo-conf-camino-no-sube.json` salida 1 con <<libro[0]: el camino NO sube al
+consRoot de su cabeza>>; y los tres catalogos con el arnes que viaja dentro: **68 de 68, 14 de 14
+y 16 de 16, con el binario `6356debde7f117b1`** —el paso 3, `conflicto.json` en VERDE, queda
+cubierto por la entrada del manifiesto del conflicto que el arnes corrio—. Antes de existir la
+release, la misma sonda dio 9 bytes con huella `0019dfc4b32d63c1`: es la de <<Not Found>>, y una
+sonda que dice <<no hay>> antes de decir <<esta>> es la que vale.
+
+**Un defecto de la medicion, MIO y declarado.** La orden con la que se midio el paso 3 encadeno la
+salida del binario a `head -1`, y el binario murio en <<failed printing to stdout: Broken pipe>>
+con el 0 de `head` como codigo: SIGPIPE por el tubo, no un fallo del kit. El paso queda medido por
+el arnes (entrada `conflicto.json|0|VERDE: dos libros aceptaron el mismo consumo`, 16 de 16) y no
+por esa orden. Regla: la salida de un mando que se mide no se recorta con `head`; se guarda entera
+y se lee.
+
+**Decisiones (REVERSIBLES).** D-R1 las notas de la release llevan tarball, bytes, ficheros, commit
+y binario, y las tres frases que no van en letra pequena; NO llevan cifras de rendimiento ni
+<<apoyado por>>. D-R2 el parrafo de la release vigente entra en los dos manuales, en la seccion 0,
+con la huella al lado del commit, y remite a este asiento sin nombrarlo por numero: la proxima
+release lo reescribe. D-R3 sin canon: ni codigo, ni pin, ni cifra (precedente §402/§424); las
+ocho herramientas con el juez de deltas informativos. D-R4 la release publicada con `gh` desde
+WSL, no con el raton: lo que el `artefacto.sh` deja fuera es el PUBLICAR, no la forma de publicar.
+
+**Lo que NO hace.** No toca `PAQUETE.md`, `artefacto.sh` ni `README`. No cierra el punto 36 (los
+151 s de la cabecera del canon). No mueve la web: el enlace de descarga entra en `arqueo.org` en
+su propia pasada, con esta huella y este commit.
+
+**Contadores.** Pines quietos: 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213.
+Ficheros: `doc/KIT.md` (125 -> 134), `doc/KIT_EN.md` (129 -> 138) y este asiento. Documentos `.md`
+versionados 70 -> 70. Piezas: SALIDA-KIT `67e57ad0b5af2d97`/480 (el §442), y la salida de
+`artefacto.sh` y las tres mediciones desde fuera, pegadas en la sesion 117.

@@ -14,6 +14,15 @@ dice?» es «descárguelo y córralo usted», y sólo vale si la descarga existe
 
 ## 0. Descargar, y comprobar la descarga antes de creerla
 
+La release vigente es `arqueo-verify-v0.2.0`, publicada en
+<https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers/releases/tag/arqueo-verify-v0.2.0>,
+producida sobre el commit `1528943fdfb9399f56fd836f75ffbe655d004d78`:
+tarball `arqueo-verify-0.2.0-x86_64-unknown-linux-gnu.tar.gz`, sha256
+`2fe9030a310a1e0b02768eaac19ac079114e8e4dae3bec04bb2bf2a3da79f5ce` (2.891.949 B, 109 ficheros);
+binario `6356debde7f117b15d16cc755a798fdd29ba55ef98707a7a9d05124406dc478b`. Las dos huellas están
+medidas desde fuera —descarga por `curl`, asset en la API, el kit descargado corriendo los cuatro
+pasos— en el asiento de `AUDITORIA.md` que registra esta release.
+
 Cada release lleva un tag y se produce sobre el commit que su fichero `VERSION` nombra; la huella
 del tarball se publica **con su commit al lado**, en la página de la release y en el asiento de
 `AUDITORIA.md` que la selló, nunca como número suelto. Con el tarball en la mano:
