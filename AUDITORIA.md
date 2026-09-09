@@ -32493,3 +32493,113 @@ y un criterio de redaccion puede no caer dentro. Fichado.
 
 **Contadores.** Ningun pin se mueve. Ninguna suma se mueve. Ningun `Cargo` tocado.
 Ningun `.rs` tocado. Ningun test nuevo. Un solo fichero versionado: este.
+
+## §439 — La frontera, escrita: E4b-2 no era una ventana de tiempo sino una altura firmada
+
+**Que.** `spec/rfc/0006-consumo-publicado.md` gana la SEPTIMA correccion S247 y la vinieta E4b de
+la particion cambia su ultima frase. Es E4b-2 del RFC-0006, la mitad de PROSA: la afirmacion
+que los testigos del §440 van a falsar, escrita ANTES que ellos y a proposito. Un fichero,
+ninguna linea de Rust, ninguna cifra, ningun pin.
+
+**La etiqueta estaba mal puesta, y lo dijo el autor.** El §436 declaro (D-D) que no hay ventana
+de tiempo y el §437 dejo E4b-2 como <<medir la ventana>>. Medir no era posible —no hay reloj
+firmado que cruce libros— y la salida honesta parecia declararla como limite conocido. El autor
+lo rechazo: debajo hay algo firmado que si se puede afirmar y falsar. **La ventana era tiempo;
+lo firmado es una FRONTERA**, la posicion en la secuencia firmada del libro ajeno. Lo que el nodo
+hace hoy tiene descripcion exacta sin ningun reloj —rechaza todo consumo que ese libro tuviera
+bajo el `consRoot` de la cabeza `seq = N` que se le entrego, y no afirma nada sobre lo que haya
+firmado despues—, y la regla corta de la ley se CUMPLE en vez de invocarse: el falsador se
+puede escribir, y son dos.
+
+**Tres deducciones declaradas, las tres sostenidas, y una salio mas fuerte.** Se midieron con
+puerta antes de redactar (PASTE-E4b2-M-r2 sobre `66fe636`, nueve anclas). D1, `seq` es campo de
+la cabeza y va bajo la firma: es el PRIMER campo de `EpochHead`, su doc dice <<altura del
+registro, monotona por construccion>>, y **no es un contador que nadie incremente: `let seq =
+self.entries.len() as u64`**, saltarlo o retrocederlo exige perder entradas; viaja al fondo de
+la envoltura firmada como primer argumento de `epoch_digest_v4` -> `v3` -> `v2`, y en el cable
+`firmada()` lo EXIGE (`FaltaCampo("seq")` si falta). D2, la carga de libros ajenos NO lo lee:
+`cargar_libros_ajenos` volcada entera no menciona `seq`, y aun asi queda ACREDITADO, porque
+`firmada()` lo exige, `TryFrom` lo mete en la cabeza, `digest()` lo hashea, la puerta 4 compara
+el digest recomputado con el declarado y la 5 verifica la firma contra el computado: un `seq`
+mentido rompe el digest antes de que nadie lo mire. D3, ningun banco viaja en el tarball:
+`artefacto.sh` entero copia binario, `spec/PAQUETE.md`, los tres manifiestos con sus vectores,
+`tools/conformidad.sh` y nada mas de `tools/`.
+
+**Lo que eso deja escrito, y por que las dos piezas dicen lo que dicen.** La frontera YA esta
+impuesta por la sexta puerta del §436 —raiz reconstruida igual a `consRoot`, cuenta igual a
+`consCount`—: el conjunto que el nodo carga ES el de esa cabeza. La pareja fija el CONJUNTO, el
+`epochDigest` lo IDENTIFICA y el `seq` firmado lo ORDENA, y es el orden lo que hace redactables
+las dos caras: hacia adelante, no bloquea lo posterior a `N`; hacia atras, no sabe si `N` ya fue
+superado. **Un limite con dos caras, no dos limites sueltos**, reencuadre del autor: la
+regresion que yo habia nombrado como segundo limite es la otra cara del primero. Las dos
+continuaciones se NOMBRAN y no se construyen, y atacan la misma raiz: que la cabeza de este
+nodo declare que frontera aplicaba (campo nuevo, version de formato y su propio RFC), y que el
+nodo rehuse una frontera mas vieja que otra que ya tuvo (hoy carga una vez al arrancar y no
+persiste nada de ella).
+
+**Tres decisiones, delegadas y reversibles.** D-J, **el RFC va DELANTE de los testigos**: los
+testigos prueban una afirmacion que no vivia en el arbol, y el RFC es un fichero sin canon y
+barato de deshacer; invierte el orden de E4a (§430 lector, §431 catalogo) y por eso se declara.
+D-K, **el doc-comment del nodo se COMPLETA, no se corrige** (va en el §440): la frase <<una
+cabeza ajena vieja bloquea igual que una reciente>> es verdad medida y lo unico que caduco es
+la coletilla. D-L, **la linea de estado del RFC se toca dos veces**, cada una diciendo lo cierto
+en su commit: aqui la vinieta sigue diciendo E4b-2 abierta, con la frontera escrita y sus dos
+testigos remitidos al §440, y pasa a sellada con ellos. Rango 4: ningun commit intermedio afirma
+mas de lo que demuestra.
+
+**El molde de las correcciones no era el que suponia, y lo dijeron los bytes.** El fichero lleva
+dos separadores: §414/§415 van con linea en blanco entre ellas, y §417, §430 y §436 van
+CONTIGUAS —255..280 era un solo bloque `>`—, sin una sola linea `>` vacia en todo el fichero.
+La septima entra con linea en blanco delante (precedente de la 241), porque contigua se fundiria
+con el parrafo del §436 al renderizar; sus tres `>` vacios internos son forma nueva en el
+fichero, vista y aceptada en el render.
+
+**El r1 cayo, y fue lo mejor que le pudo pasar al corte.** BLOQUE-439 gateaba que la
+correccion del §436 acaba en la 279, y acaba en la **280** (<<se reescribe: dijo la verdad de
+su fecha>>). El 279 era un numero de memoria de otra sesion: un numero medido ayer es un numero
+tecleado hoy. El bloque paro en rc 63, restauro y no toco nada, porcelain 0 y HEAD quieto. Y su
+FASE 0 habia volcado el RFC ENTERO: reconstruido de la salida, clavo su ancla
+(`5d19275a1cb1d718`, 27.370 B, 513 bytes fuera de ASCII), y el r2 paso de DETERMINAR el POST
+a PREDECIRLO —`62b9b87a9b2c0946`, 369 lineas, 29.375 B, 543 fuera de ASCII— y a gatearlo. Un
+rojo con volcado entero es una medicion gratis.
+
+**Los gates que sostuvieron el sello.** Puerta de idempotencia por ESTADO y DELANTE del cerrojo
+(dos discriminantes: los dos, rc 7; uno solo, rc 6 sin restaurar). Vinieta 31..37 byte a byte
+(`4f535b0724b4bc9e`) y su prefijo UNICO; las seis primeras lineas de la pieza 1 identicas al
+original. Correccion del §436 UNICA en la 271, todas `>` hasta la 280, la 281 en blanco, la 282
+la cabecera. Tokens `§NNN`/`§MMM` sustituidos por el numero DERIVADO del ultimo asiento (438) y
+gateados a cero. Ancho POST <= PRE. Fuera de ASCII POST == 543 exacto. IDA Y VUELTA: quitar lo
+insertado y reponer la vinieta devuelve el PRE byte a byte. POST == predicho. Copia SOLO despues
+de que la reconstruccion aparte clavara. Las OCHO herramientas de `tools/` corrieron PRE y POST
+con liston DELTA. Cuatro centinelas por huella. Commit POR NOMBRE con el indice cruzado.
+
+**Tres defectos MIOS, cazados por el ensayo y no por el arbol.** El primero es de la peor clase:
+**la puerta de idempotencia NO disparaba** —con las dos piezas puestas decia 0 y 0—, porque
+`grep` con `.` para una vocal acentuada casa UN byte donde la tilde mide DOS; paso a `grep -F`
+con los bytes por octal, y se probo tambien bajo `LC_ALL=C`. Una puerta cuyo rojo no para nada es
+la clase del `#REG-CERO`. El segundo, un falsador que salio VERDE porque el sabotaje no se habia
+aplicado, la linea no tenia el token que queria romper: desde entonces cada sabotaje lleva
+aserto de que cambio bytes. El tercero, dos conteos tecleados en vez de derivados (<<2
+apariciones>> que eran 3; <<271..279>>). Los rojos del ARNES —una cadena `&&` que dejo
+`origin/main` atras, un `reset --hard` que borraba la herramienta recien escrita, un
+`kill -INT` a un proceso en segundo plano donde SIGINT se ignora— no tocaron el bloque, y la
+senal se ensayo con TERM.
+
+**Contadores.** UN fichero, `spec/rfc/0006-consumo-publicado.md` 341 -> 369, **29 insertadas y
+1 borrada** (git). Ancho maximo 413 -> 413 caracteres y 429 -> 429 bytes. Fuera de ASCII 513 ->
+543. Correcciones S247 6 -> 7. Lineas que nombran E4b-2 3 -> 4. Vallas de codigo 0 -> 0. Tokens
+de plantilla 0 -> 0. Ningun pin se mueve, ninguna cifra, ningun `Cargo`, ningun `.rs`, ningun
+test. Las OCHO herramientas de `tools/` rc 0 PRE y POST con salida identica. **El canon no
+corrio, y se dice**: el corte no toca codigo ni cifra; el §437, de este mismo perfil, si lo
+corrio (177 s), y aqui se decidio no hacerlo. Piezas: PASTE-E4b2-M-r2
+`036caa9c4ef51866`/411 . RENDER-E4b2-r2 `1fa5a4bed84958a6`/207 . PASTE-E4b2-PRE
+`7d5a3f0ef754a552`/399 . BLOQUE-439 `f439b0ed16ea6451`/347 (rc 63, restaurado) . BLOQUE-439-r2
+`99aa9c831e720b6b`/351 . PASTE-439B-M `6029fb74cfcae977`/145.
+
+**Lo que este corte NO cierra, y se dice.** Los dos testigos —la cara de delante, y EL PAR: el
+mismo consumo, dos ficheros que difieren solo en que cabeza de B llevan, veredictos opuestos—
+van en `main.rs` en el §440, con el doc-comment completado, el pin 98 -> 100 y las seis cifras
+cuyo perimetro dio `check_cifras` sobre una copia con el pin movido. Se producen en el propio
+test con un ayudante calcado de `libro_real`, su propio directorio y un latido mas: ningun
+fixture, ninguna corrida del banco. La linea de estado del RFC dice abierta hasta que existan,
+por la D-L.
