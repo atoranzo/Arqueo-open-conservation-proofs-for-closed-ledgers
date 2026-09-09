@@ -69,6 +69,12 @@ cargo run --release -p zk-ssl-sdk --example keystore
 Las tres líneas que deben salir: `cadena de transiciones íntegra`,
 `E2E OK: … la clave de gasto no viajo`, `CONFORMIDAD: … todo IDENTICO`.
 
+**Sin Rust y sin repositorio**: el kit del verificador —[`doc/KIT.md`](./doc/KIT.md)— es la
+descarga con la que un tercero comprueba en su máquina, sin red, los cuatro pasos: un expediente
+que cuadra; uno manipulado que no cuadra, con la regla rota nombrada; la misma etiqueta publicada
+en dos libros, detectada con sus dos cabezas firmadas y los dos nodos apagados; y el intercambio de
+libros, rechazado con su nombre.
+
 ---
 
 ## De implementación a protocolo (§197–§199)

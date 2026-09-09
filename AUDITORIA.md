@@ -32762,3 +32762,60 @@ estados, leidos en el PRE).
 Documentos `.md` versionados 68 -> 68. Ficheros: `spec/rfc/0006-consumo-publicado.md` (369 ->
 387), `spec/README.md` (163 -> 163, linea-neutral) y este asiento. Piezas: PASTE-441-PRE
 `a96adc502d1b4ae5`/179 (salida `ae18164b6963eb9a`/1281).
+
+## §442 — El kit del verificador en CLI: el guion de los cuatro pasos, y la release 0.2.0
+
+**Que.** Nace `doc/KIT.md` (y su gemelo `doc/KIT_EN.md`): el guion con el que un tercero, sin red
+y sin repositorio, comprueba en su maquina los CUATRO pasos con vectores que YA viajan en el
+tarball: (1) un expediente que cuadra, `posicion-v2.json` y `consumo.json`; (2) uno manipulado que
+no cuadra con la regla nombrada, `rechazo-n-adulterado.json` y
+`rechazo-cons-ausencia-ya-estaba.json`; (3) la misma etiqueta en DOS libros con los dos nodos
+apagados, `conflicto.json`; (4) el intercambio de libros rechazado con su nombre,
+`rechazo-conf-camino-no-sube.json` (captura TAL CUAL de los caminos intercambiados) y
+`rechazo-conf-misma-clave.json`. `zk-ssl-verify` sube de 0.1.0 a 0.2.0 (D-K1): desde la release
+`arqueo-verify-v0.1.0` gano las formas del consumo (§417-§422) y del conflicto (§427-§431), y
+el nombre del tarball lleva la version. Los dos README ganan el puntero al kit. Ningun `.rs`,
+ningun pin.
+
+**Lo medido antes de escribir (PASTE-KIT-M `b2233a48d25048aa`, salida `262d17114609c41b`/1274;
+PASTE-KIT-PRE `97bbec06f0afc56b`, salida `f75d2a0785359d0c`/516).** `artefacto.sh` monta binario,
+arnes, `PAQUETE.md`, los TRES catalogos con sus manifiestos (paquete 68, consumo 14, conflicto 16:
+cruce ficheros-entradas exacto), licencias, `THIRD-PARTY`, `VERSION` y `SHA256SUMS`; cable y
+nucleo quedan fuera con razon escrita. Los cuatro pasos se buscaron POR CONTENIDO en los tres
+manifiestos y salen todos; el manifiesto del conflicto declara que su positivo y el de los caminos
+intercambiados son capturas TAL CUAL del banco de dos libros, el del consumo que sus negativos se
+derivan de las capturas del banco del consumo, y no hay ninguna captura versionada aparte: **las
+capturas del banco SON los vectores** (D-K3, y con eso la pregunta abierta del encargo se contesta
+sola: la demo de dos libros entra, y ya estaba dentro). `PAQUETE.md` seccion 9 (`:356`) ya nombra
+los tres bancos vivos, asi que el punto que el encargo traia era rancio desde el §431; la seccion
+11 ya describe el kit entero y el orden de release (tag, producir, subir). `target/artefacto/`
+mezclaba tres epocas (5-sep, 7-sep con `c07eedb`, 9-sep con `0b17905`): el punto 121, confirmado.
+La release publicada (`arqueo-verify-v0.1.0` -> `75cbe31`) iba 49 commits por detras y sin el
+catalogo del conflicto. En el bloque de `Cargo.lock` de `zk-ssl-verify` (UNICO) solo cambia
+`version`: quien depende de el lo nombra sin version, y `--locked` lo acepta.
+
+**Decisiones (REVERSIBLES).** D-K1 0.2.0 y tag `arqueo-verify-v0.2.0`, sobre el commit de este
+asiento y DESPUES de el (la regla de la seccion 11: el tarball no puede publicar su propia
+huella). D-K2 el manual vive en `doc/` y cita lo que el binario imprime de verdad
+(`main.rs:294,485,550,723`), sin cifras que envejezcan: el arnes dice <<N de N>> y el manual lo
+deja en N. D-K3 nada entra en el tarball. D-K4 el caso de fondos publicos va a `doc/USE_CASES.md`
+en el sello de la web, no aqui. D-K5 dos sellos: este, y el del REGISTRO con la huella del
+tarball, su commit y su tag, y el binario estable (precedente §401/§402). El canon corre porque
+`Cargo.toml` y `Cargo.lock` cambian y la estrofa `3 ter` compila con `--locked`.
+
+**Lo que el guion dice en cuerpo de texto, y no en letra pequena.** Detecta, no impide. La ventana
+no es tiempo de reloj: es una frontera en el `seq` firmado de la cabeza ajena, con dos caras. La
+etiqueta es gobernanza: para que dos organismos detecten la misma factura, los dos tienen que
+calcularla igual. Y el limite oraculo: la factura nace fuera. Lo que NO sube: prevencion entre
+fondos o paises, cifras de rendimiento, <<apoyado por>> ninguna iniciativa presentada, ni nada
+marcado como planificado.
+
+**Lo que NO hace.** No publica la release (se sube a mano, con las huellas que `artefacto.sh`
+imprime y el asiento del registro fija). No toca `PAQUETE.md` ni `artefacto.sh`. No toca
+`USE_CASES.md` (D-K4). No abre WASM. No limpia `target/` (ignorado): el registro lo hara sobre un
+`target/artefacto/` vacio.
+
+**Contadores.** Pines quietos: 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213.
+Ficheros: `doc/KIT.md` y `doc/KIT_EN.md` NUEVOS; `crates/zk-ssl-verify/Cargo.toml` (`:3`) y
+`Cargo.lock` (la linea `version` de su bloque), una linea cada uno; `README.md` (+6 tras la 70) y
+`README_EN.md` (+6 antes de Papers); y este asiento. Documentos `.md` versionados 68 -> 70.

@@ -91,6 +91,12 @@ the tree under their own version and are **rejected on purpose** by
 
 ---
 
+**Without Rust and without the repository**: the verifier kit —[`doc/KIT_EN.md`](./doc/KIT_EN.md)— is
+the download with which a third party checks, on their own machine and offline, the four steps: a
+file that adds up; a tampered one that does not, with the broken rule named; the same label
+published in two ledgers, detected from their two signed heads with both nodes off; and a swap of
+ledgers, rejected by name.
+
 ## Papers
 
 Preprints, with their current DOI on Zenodo:
