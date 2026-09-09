@@ -34,7 +34,8 @@ documento: se citaba por su frase y no por su nombre. Queda escrita aquí.
   (`arbol_de_consumos` publicada) y §436 y §436-B (la puerta en el nodo). **La lista de consumos
   de un libro ajeno no se cree**: se reconstruye y su raíz se exige igual al `consRoot` que la
   firma de ese libro acredita, así que quien emite el fichero no tiene que ser de fiar. Queda
-  **E4b-2**: medir la ventana, que hoy es parámetro operativo declarado y jamás garantía.
+  **E4b-2**: la FRONTERA que esa puerta ya impone está escrita (corrección §439); sus dos
+  testigos, en §440.
 - **E4c — el REGISTRO AUTORITATIVO. NO se construye, y es una decisión, no una deuda** (D-4).
   Preveniría siempre, y a cambio el sistema tendría un operador más, con su punto único de fallo
   y de censura. Si un organismo lo asume, es SU operador y no el nuestro.
@@ -278,6 +279,33 @@ escriba su testigo, es v5. Reversible en el §412.
 > en 1970; `seq` y el índice XMSS son POR LIBRO. ⇒ la ventana es **parámetro operativo DECLARADO y
 > jamás garantía** (D-D, §433-B), medirla es E4b-2, y el bloqueo no dependía de ella. La viñeta no
 > se reescribe: dijo la verdad de su fecha.
+
+> **Corrección (§439, E4b-2).** La corrección de arriba dejó dicho lo que la ventana **no
+> puede ser**. Esta dice lo que **sí se afirma**, porque al medir apareció debajo algo firmado
+> que sí se puede falsar. **No es una ventana de tiempo: es una FRONTERA en la secuencia firmada
+> del libro ajeno.** Este nodo rechaza todo consumo que ese libro tuviera bajo el `consRoot` de
+> la cabeza `seq = N` que se le entregó, y **no afirma nada sobre lo que ese libro haya firmado
+> después de N**.
+>
+> **Es UN límite con DOS caras, no dos límites sueltos.** Nada en el material firmado le dice a
+> este nodo si lo que tiene en la mano es lo último del otro libro. Hacia adelante, no bloquea lo
+> posterior a `N`; hacia atrás, no sabe si `N` ya fue superado. Una sola propiedad, dos
+> consecuencias.
+>
+> **Por qué `N` no se puede falsificar, y está medido.** `seq` no es un contador que alguien
+> incremente: es la **altura del registro** (`entries.len()`), así que saltarlo o retrocederlo
+> exige perder entradas. Y **nadie lo lee al cargar y aun así queda acreditado**: viaja bajo la
+> firma como primer campo de `epoch_digest_v4`, el digest se **recomputa** de la cabeza
+> recompuesta, y la firma se verifica contra el computado — un `seq` mentido rompe el digest
+> antes de que nadie lo mire. La pareja `consRoot`/`consCount` fija el **conjunto**; el
+> `epochDigest` lo **identifica**; el `seq` firmado lo **ordena**, y es el orden lo que hace
+> redactables las dos caras de arriba.
+>
+> **Las dos continuaciones se nombran y no se construyen, y atacan la misma raíz.** Que la cabeza
+> de este nodo declare qué frontera aplicaba —lo haría auditable por un tercero, y cuesta un
+> campo nuevo en la cabeza, con su subida de versión de formato y su propio RFC—; y que el nodo
+> rehúse una frontera más vieja que otra que ya tuvo —lo que exige que el nodo persista la
+> frontera que ya aplicó, y hoy la carga una vez al arrancar y no guarda nada de ella—.
 
 ### Por qué entra por RFC
 
