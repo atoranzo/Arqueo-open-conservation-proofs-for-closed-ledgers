@@ -1,3 +1,6 @@
+> **Comparativa superada** por [`FIVE_BACKENDS.md`](../../FIVE_BACKENDS.md), que la reemplaza con la
+> misma metodología. Se conserva tal cual, como historia (§448).
+
 # Groth16 vs. Halo2 — comparativa final, con datos reales
 
 Este documento compara los dos motores criptográficos completos y

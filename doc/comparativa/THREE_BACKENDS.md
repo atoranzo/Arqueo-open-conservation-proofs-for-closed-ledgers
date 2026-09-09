@@ -1,3 +1,6 @@
+> **Comparativa superada** por [`FIVE_BACKENDS.md`](../../FIVE_BACKENDS.md), que la reemplaza con la
+> misma metodología. Se conserva tal cual, como historia (§448).
+
 # Groth16 vs Halo2 vs STARK: comparativa con métricas reales
 
 Todos los números de este documento se midieron ejecutando el **mismo

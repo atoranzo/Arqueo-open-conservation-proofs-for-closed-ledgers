@@ -1,9 +1,14 @@
+> **Documento de la etapa ZK-SSL (hasta septiembre de 2026).** Se conserva tal cual, como historia:
+> sus afirmaciones en presente describen el proyecto de entonces, no el de hoy. La posición vigente
+> está en [`README.md`](../../README.md) y [`doc/USE_CASES.md`](../USE_CASES.md); lo que cambió
+> desde entonces está en [`AUDITORIA.md`](../../AUDITORIA.md) (§448).
+
 # Métricas de rendimiento — zk-ssl-real
 
 > ⚠️ **DOCUMENTO SUPERADO.** Las cifras de este archivo se midieron en
 > modo **debug** y son entre 11 y 14 veces peores que las reales. Las
 > mediciones correctas, todas en release y con la misma metodología para
-> los tres backends, están en [`FIVE_BACKENDS.md`](./FOUR_BACKENDS.md).
+> los tres backends, están en [`FIVE_BACKENDS.md`](../../FIVE_BACKENDS.md).
 >
 > Se conserva el documento en vez de borrarlo para dejar constancia del
 > error metodológico y de su corrección.

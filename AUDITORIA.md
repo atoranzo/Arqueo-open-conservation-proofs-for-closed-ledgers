@@ -33109,3 +33109,65 @@ INSTITUCIONAL/INSTITUTIONAL/VISION siguen contando la via del nullifier en prese
 **Contadores.** Pines quietos: 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213.
 Ficheros: 14 con 23 lineas cambiadas y ninguna linea mas o menos, y este asiento. Documentos .md
 versionados 70 -> 70.
+
+## §448 — la raiz para el revisor: 14 ficheros salen de la raiz, 10 marcados como historia
+
+**Que.** La raiz tenia 27 .md y un test_output.txt (una salida de cargo de julio con un error de
+resolucion de ark-marlin, citada solo por PERFORMANCE.md, que se declara SUPERADO). Un evaluador que
+abre el repo veia tres generaciones superadas de la comparativa (THREE, FOUR, GROTH16_VS_HALO2), la
+vision y el roadmap de la etapa ZK-SSL, textos de publicacion y divulgacion, parches de una fase
+cerrada, y un posicionamiento que manda a PERFORMANCE.md. Este sello mueve 14 ficheros sin borrar
+ninguno, pone una cabecera a los 10 que son historia, y re-deriva los enlaces por ruta que
+apuntaban a ellos. No cambia una cifra ni una linea de prosa fuera de esas cabeceras y enlaces.
+Sin canon (§402/§424/§447); ocho herramientas y el juez, con una anchura nueva (D-R2).
+
+**Lo medido (PASTE-448-M `8569cf456d8b805b`/84, salida `686eeac3b61bce0c`/2183, sobre `9e1eb58`).**
+Quien cita a cada candidato, linea a linea, en .md, tools/, crates/ y spec/: los enlaces por ruta
+son seis (ARQUITECTURA:1414 y :1415, README:100 y :166, README_EN:102 y :170), mas PERFORMANCE:6 y
+README_EN:175 como menciones a corregir; todo lo demas son menciones por nombre base, que
+verificar_citas resuelve por nombre y sobreviven al git mv, o comentarios en crates/. Las dos
+herramientas que nombran VISION.md lo hacen en una tabla de cabecera (check_figures) y en una
+exclusion del barrido de la raiz (check_publicadas); ninguna abre el fichero por esa ruta.
+check_figures barre raiz + doc/ sin recursion y check_publicadas barre la raiz: los ficheros que
+salen dejan de estar en su universo, que es lo que un documento historico debe hacer. 11 de los 14
+estan volcados enteros y su POST se predice; VISION (887) recibe la cabecera por region (POST =
+cabecera + PRE, byte a byte); INSTITUCIONAL, INSTITUTIONAL y test_output.txt no cambian de bytes.
+
+**Los cambios.** (1) A doc/historia/ con cabecera: VISION, ROADMAP-ECOSISTEMA, DIVULGACION,
+PUBLICACION, PARCHES, PERFORMANCE y doc/POSICIONAMIENTO; y test_output.txt sin cabecera, junto a
+PERFORMANCE, que lo cita. (2) A doc/comparativa/ con cabecera de <<superada por FIVE_BACKENDS>>:
+THREE_BACKENDS, FOUR_BACKENDS, GROTH16_VS_HALO2. (3) A doc/, sin tocar un byte: README-CLI,
+INSTITUCIONAL, INSTITUTIONAL. (4) Enlaces re-derivados: ARQUITECTURA:1414 y :1415, README:100 y
+:166, README_EN:102, :170 y :175; y PERFORMANCE:6, cuyo enlace decia FIVE_BACKENDS y apuntaba a
+FOUR_BACKENDS: apunta a FIVE_BACKENDS, que es lo que su texto dice. (5) Este asiento. La raiz queda
+en 15 .md: README y README_EN, SECURITY, CONTRIBUTING, AUDITORIA, BACKLOG, ARQUITECTURA,
+PRINCIPIOS, PAPER y PAPER_EN, FIVE_BACKENDS, PREGUNTAS y QUESTIONS, RESUMEN_EJECUTIVO y
+RESUMEN_BILINGUE. POST predichos: README `b99d99e288e901b8`, README_EN `cd261d49c927807d`, y los
+once volcados, uno a uno en la salida del bloque.
+
+**Decisiones (REVERSIBLES).** D-R1 nada se borra: mover con git mv conserva la historia y el nombre
+base; retirar de verdad es una decision aparte del autor. D-R2 el juez del §445 gana dos anchuras:
+check_figures puede PERDER lineas cuando documentos salen de su universo (raiz + doc/), y su
+ventana de cifras sin atribuir (las lineas RUTA:N <<X tests>>, trece como mucho) puede recomponerse
+cuando un documento cambia de ruta y de orden, con la condicion de que sus dos cuentas (<<N cifras
+NO se han podido atribuir>> y <<y N mas>>) no suban; ninguna otra linea nueva. La r1 del bloque
+(`62c182ab074f6bb8`) murio en rc 64 por esa ventana: INSTITUCIONAL/INSTITUTIONAL salen de ella al
+pasar a doc/ y entran PRINCIPIOS:136/:354 y RESUMEN_BILINGUE:85/:162, que ya estaban en la cola
+<<y 9 mas>>; restauro y dejo porcelain 0, nada se toco. El resto del juez, verbatim. D-R3 la
+cabecera historica cita README, USE_CASES y AUDITORIA
+con rutas relativas desde doc/historia/ y doc/comparativa/, y nombra este asiento por su numero:
+el bloque muere si el numero derivado no es 448. D-R4 las menciones de VISION.md en check_figures
+(tabla de cabecera) y en check_publicadas (exclusion del barrido de la raiz) se dejan: ninguna abre
+el fichero, y tocar una herramienta es otro sello. D-R5 las referencias con numero de linea a
+VISION.md (RFC-0006:95 `VISION.md:127`, :117 `VISION.md:574`) quedan cinco lineas cortas por la
+cabecera: se fichan, no se reescriben (la regla de spec/README: la referencia orienta).
+
+**Lo que NO hace.** No reescribe RESUMEN_EJECUTIVO ni RESUMEN_BILINGUE (S449). No toca tools/. No
+mueve FIVE_BACKENDS (vigente y enlazado por la portada), ni PAPER/PAPER_EN (bajo DOI), ni los que
+las herramientas nombran por ruta (ARQUITECTURA, PRINCIPIOS, AUDITORIA, BACKLOG). Fichado: la
+exclusion muerta de VISION.md en check_publicadas y su fila en la tabla de check_figures; las
+referencias VISION.md:127/:574 del RFC-0006.
+
+**Contadores.** Pines quietos: 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213.
+Ficheros: 14 movidos (10 con cabecera), ARQUITECTURA (2 lineas), README y README_EN (2 y 3 lineas)
+y este asiento. Documentos .md versionados 70 -> 70. Raiz: 27 .md -> 15.

@@ -99,7 +99,7 @@ bash tools/canon.sh --lista
 
 You should see `cadena de transiciones íntegra` and `CONFORMIDAD: … todo IDENTICO`. The whole
 CLI — `simulate`, `trace-tx`, `inspect-state`, `conformance` — is in
-[`README-CLI.md`](./README-CLI.md) (Spanish).
+[`doc/README-CLI.md`](./doc/README-CLI.md) (Spanish).
 
 ---
 
@@ -167,12 +167,12 @@ section 4.
 | After the reasoning behind it | [`PRINCIPIOS.md`](./PRINCIPIOS.md) · [`doc/IDEA_CENTRAL.md`](./doc/IDEA_CENTRAL.md) · [`doc/APORTACION.md`](./doc/APORTACION.md) · [`doc/CONSECUENCIAS.md`](./doc/CONSECUENCIAS.md) |
 | With questions | [`QUESTIONS.md`](./QUESTIONS.md) · [`PREGUNTAS.md`](./PREGUNTAS.md) |
 | Five minutes and not technical | [`RESUMEN_BILINGUE.md`](./RESUMEN_BILINGUE.md) · [`RESUMEN_EJECUTIVO.md`](./RESUMEN_EJECUTIVO.md) |
-| Institutions, and the limits of scale | [`INSTITUTIONAL.md`](./INSTITUTIONAL.md) · [`INSTITUCIONAL.md`](./INSTITUCIONAL.md) |
+| Institutions, and the limits of scale | [`doc/INSTITUTIONAL.md`](./doc/INSTITUTIONAL.md) · [`doc/INSTITUCIONAL.md`](./doc/INSTITUCIONAL.md) |
 | Coming from Zenodo | [`doc/ZENODO.md`](./doc/ZENODO.md) |
 | Contributing, or reporting a vulnerability | [`CONTRIBUTING.md`](./CONTRIBUTING.md) · [`SECURITY.md`](./SECURITY.md) |
 
 Most of the repository is written in Spanish. The pages in English are this one,
-`spec/README.md`, `doc/KIT_EN.md`, `doc/USE_CASES.md`, `QUESTIONS.md`, `INSTITUTIONAL.md`,
+`spec/README.md`, `doc/KIT_EN.md`, `doc/USE_CASES.md`, `QUESTIONS.md`, `doc/INSTITUTIONAL.md`,
 `PAPER_EN.md` and the preprints under `doc/preprints/`. `AUDITORIA.md` includes a section with
 **the points where the author has the least confidence**; if you intend to break the code, start
 there.

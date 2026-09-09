@@ -1,3 +1,8 @@
+> **Documento de la etapa ZK-SSL (hasta septiembre de 2026).** Se conserva tal cual, como historia:
+> sus afirmaciones en presente describen el proyecto de entonces, no el de hoy. La posición vigente
+> está en [`README.md`](../../README.md) y [`doc/USE_CASES.md`](../USE_CASES.md); lo que cambió
+> desde entonces está en [`AUDITORIA.md`](../../AUDITORIA.md) (§448).
+
 # Roadmap de ecosistema — qué convierte una implementación en un estándar
 
 Ni SAP ni Ethereum ganaron por la calidad del núcleo solamente: ganaron

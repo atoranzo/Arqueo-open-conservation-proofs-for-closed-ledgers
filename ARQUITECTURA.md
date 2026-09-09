@@ -1411,8 +1411,8 @@ defecto.
 medidos, está en [`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md).** La
 comparación previa de dos vías, con el análisis de gobernanza
 institucional, sigue disponible en
-[`GROTH16_VS_HALO2.md`](./GROTH16_VS_HALO2.md). Las métricas detalladas
-del motor Groth16 están en [`PERFORMANCE.md`](./PERFORMANCE.md).
+[`GROTH16_VS_HALO2.md`](./doc/comparativa/GROTH16_VS_HALO2.md). Las métricas detalladas
+del motor Groth16 están en [`PERFORMANCE.md`](./doc/historia/PERFORMANCE.md).
 
 ### El quinto backend: Nova, un paradigma distinto
 

@@ -97,7 +97,7 @@ bash tools/canon.sh --lista
 ```
 
 Deben salir `cadena de transiciones íntegra` y `CONFORMIDAD: … todo IDENTICO`. La CLI entera
-—`simulate`, `trace-tx`, `inspect-state`, `conformance`— está en [`README-CLI.md`](./README-CLI.md).
+—`simulate`, `trace-tx`, `inspect-state`, `conformance`— está en [`doc/README-CLI.md`](./doc/README-CLI.md).
 
 ---
 
@@ -163,7 +163,7 @@ para las congelaciones. Todo lo demás está enumerado en [`AUDITORIA.md`](./AUD
 | Quieres el planteamiento | [`PRINCIPIOS.md`](./PRINCIPIOS.md) · [`doc/IDEA_CENTRAL.md`](./doc/IDEA_CENTRAL.md) · [`doc/APORTACION.md`](./doc/APORTACION.md) · [`doc/CONSECUENCIAS.md`](./doc/CONSECUENCIAS.md) |
 | Tienes preguntas | [`PREGUNTAS.md`](./PREGUNTAS.md) · [`QUESTIONS.md`](./QUESTIONS.md) |
 | Tienes cinco minutos y no eres técnico | [`RESUMEN_EJECUTIVO.md`](./RESUMEN_EJECUTIVO.md) · [`RESUMEN_BILINGUE.md`](./RESUMEN_BILINGUE.md) |
-| Instituciones, y los límites de escala | [`INSTITUCIONAL.md`](./INSTITUCIONAL.md) · [`INSTITUTIONAL.md`](./INSTITUTIONAL.md) |
+| Instituciones, y los límites de escala | [`doc/INSTITUCIONAL.md`](./doc/INSTITUCIONAL.md) · [`doc/INSTITUTIONAL.md`](./doc/INSTITUTIONAL.md) |
 | Llegas desde Zenodo | [`doc/ZENODO.md`](./doc/ZENODO.md) |
 | Vas a contribuir o a reportar una vulnerabilidad | [`CONTRIBUTING.md`](./CONTRIBUTING.md) · [`SECURITY.md`](./SECURITY.md) |
 
