@@ -28,7 +28,7 @@ NOMBRE="arqueo-verify-${VER}-${HOST}"
 REG="$HOME/.cargo/registry/src"
 FLAGS="--remap-path-prefix=$RAIZ=/arqueo --remap-path-prefix=$REG=/registry --remap-path-prefix=$HOME/.cargo=/cargo --remap-path-prefix=$HOME=/home/x"
 FLAGS_GENERICOS="--remap-path-prefix=<raiz>=/arqueo --remap-path-prefix=<home>/.cargo/registry/src=/registry --remap-path-prefix=<home>/.cargo=/cargo --remap-path-prefix=<home>=/home/x"
-FAMILIAS="paquete consumo conflicto"   # S423 - UN productor: montar() y manifiesto() la comparten
+FAMILIAS="paquete consumo conflicto rechazo"   # S423 - UN productor: montar() y manifiesto() la comparten
 h16(){ sha256sum "$1" | cut -c1-16; }
 rojo(){ echo "ROJO: $*" >&2; exit 1; }
 

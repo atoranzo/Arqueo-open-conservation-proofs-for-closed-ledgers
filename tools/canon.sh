@@ -336,6 +336,18 @@ else
   grep -q '^ROJO' "$OUT/conflicto.txt" || falla "conflicto: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/conflicto.txt"))"
 fi
 
+# ── 3 bis rechazo · el sobre de RECHAZO (RFC-0007 E3a-1, §455): el MISMO arnes ──
+msg ""
+msg "== CANON · las causas del sobre de rechazo =="
+# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
+# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
+if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/rechazo/MANIFIESTO.txt > "$OUT/rechazo.txt" 2>&1; then
+  msg "  OK  rechazo: $(tail -n 1 "$OUT/rechazo.txt" | sed 's/^conformidad: //')"
+else
+  while IFS= read -r L; do falla "rechazo $L"; done < <(grep '^ROJO' "$OUT/rechazo.txt" | sed 's/^ROJO //')
+  grep -q '^ROJO' "$OUT/rechazo.txt" || falla "rechazo: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/rechazo.txt"))"
+fi
+
 # ── 3 ter · el ARTEFACTO (tools/artefacto.sh --check, §401): la PROPIEDAD, no un pin ──
 msg ""
 msg "== CANON · el artefacto =="

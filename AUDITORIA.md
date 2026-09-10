@@ -33599,3 +33599,78 @@ lineas de siete documentos, que ya describe lo que el cable hace con los rechazo
 sin prueba; y el punto 160 (<<un positivo por era de cabeza>>). `check_cifras` solo gatea la cifra
 pegada a <<tests>> o <<pruebas>>: el hueco declarado desde el §239 deja fuera las sumas y el
 `# nodo: 101` de los dos PAPER, que este sello corrigio por grep.
+
+## §455 — RFC-0007 E3a-1: el sobre de rechazo, la causa probada sobre el estado comprometido
+
+**Que.** El mando aprende una sexta forma, `tipo: "rechazo"`: la causa que el nodo dio al rechazar
+-el objeto `data` del §454, tal cual-, una cabeza firmada y el material que la prueba sobre lo
+que esa cabeza compromete, sin el nodo. Prueba cuatro causas, las que un cliente recibe hoy y se
+provocan sin recibo: `OverRegulatoryLimit` y `AccountLimitReached` con los siete parametros de
+`zkssl_params`, que tienen que recomponer el `paramsDigest` de una cabeza v5, y `ConsumoRepetido`
+y `ConsumoColision` con el camino de `zkssl_consumoPath` en la posicion DERIVADA del consumo. El
+veredicto es de la CAUSA: VERDE si se sostiene sobre lo comprometido; si no, ROJO nombrando por
+que, y el sobre prueba entonces que la regla fue un disfraz. Nace `spec/vectors/rechazo/` (cuatro
+positivos y veinte negativos, con su manifiesto), la estrofa del canon que lo corre y su entrada en
+el artefacto; `spec/PAQUETE.md` gana la seccion 2.6, su fila, sus pasos y su catalogo de textos, y
+de paso el titulo de la 2.5 cambia el marcador sin sustituir (`§NNN`) por su sello, el §430,
+y la seccion 11 su cuenta rancia de «dos manifiestos». `spec/README.md` gana la fila del catalogo
+y los dos README la cuenta de vectores, que ya estaba rancia: decian 135 y habia 143. La fila E3 del
+RFC-0007 pasa a en curso y D-D gana su CORRECCION (§247).
+
+**Por que asi.** Ocho decisiones DELEGADAS por el autor con la ley, REVERSIBLES aqui. **D-1**, que
+cabeza prueba cada causa sale de la mutabilidad MEDIDA, y el mando lo exige con el `seq`: una
+ANTERIOR al rechazo, o la misma, para lo que solo crece; cualquiera del libro para lo que no tiene
+setter. **D-2**, solo las causas que el cable sirve: las cinco que no sirve salen de la tabla.
+**D-3**, la particion: E3a-1 (estas cuatro), E3a-2 (las que exigen un recibo probado) y E3b (los
+dos metodos nuevos del cable). **D-4**, el sobre reune respuestas del cable TAL CUAL; la clave del
+objeto del rechazo es `data`, como en el cable -la decision decia `causa`, y se cambio para que el
+mismo objeto lleve el mismo nombre en los dos sitios-. **D-5**, el veredicto es de la causa.
+**D-6**, la cabeza exacta se declara, no se firma en cada rechazo: un indice XMSS y 144 ms por
+rechazo serian una denegacion de servicio. **D-7**, los vectores salen de un nodo real, con
+manifiesto, puerta en el canon y entrada en el artefacto. **D-8**, el mando lee los campos de la
+cabeza DESPUES de recomponerla y verificar su firma, y llama a `params_digest`, que ya podia: sin
+API publica nueva, `spec/NUCLEO.md` no se mueve.
+
+**Lo medido antes de escribir un byte.** El arbol de `f86eab5` reconstruido: el zip de `06dfd82`
+mas los doce POST que las SALIDAS del §454 y del §454-B confirmaron. El latido firma cada
+intervalo aunque no cambie nada, y el «a demanda» del §121 no existe en el codigo. Ningun metodo
+sirve un camino de congelados ni de ausencia en cuentas: `inclusionReceipt` exige la `viewKey`
+(§261). Mutabilidad: ninguna funcion vacia una hoja de cuentas, los consumos solo se anaden,
+`next_index` solo sube, y el limite, el tope de cuentas y el de suministro no tienen setter; si lo
+tienen `refund_ttl` y `max_custodian_uses`, y los custodios cambian por gobernanza.
+`sendMaterials` comprueba el saldo antes que el limite; `dev_openSeeded` no comprueba el tope de
+cuentas y `zkssl_openAccount` si; la posicion de un consumo son sus primeros ocho bytes.
+
+**La captura.** El PASTE-455-M levanto un nodo REAL de `f86eab5` con `--latido 2 --limit 1000
+--max-accounts 2 --dev` y le provoco los cuatro rechazos, guardando cada respuesta tal cual. Su
+primera corrida se paro en 51: el guardian del indice XMSS mide que `fsync` persista (razon minima
+10x) y el `/tmp` del autor es tmpfs; el PASTE habia puesto el estado del nodo en `$TMPDIR`,
+apartandose del molde de `banco_consumo.sh`, que lo pone bajo `$HOME`. El guardian hizo su trabajo
+y nada se toco, y el nodo de mentira del ensayo es ahora fiel a esa regla. La segunda corrida dejo
+`CAPTURAS-455` (`a977da87413b2dc7`): dos cabezas v5 firmadas distintas (seq 3 y 4), los parametros,
+los cuatro rechazos con su `data` juzgados en el `seq` de su cabeza, y el camino del consumo.
+
+**Testigos.** El catalogo: cuatro positivos REUNIDOS de las capturas y veinte negativos, cada uno
+UNA mutacion de un positivo -sin data, sin causa, sin campos, una causa que este mando no prueba,
+sin cabeza, cabeza adulterada, un importe que no supera el limite, un limite que no es el
+comprometido, parametros ajenos, sin parametros, una cabeza v3 para una causa de parametros, un
+tope que no es el comprometido, una cabeza posterior para el tope, una cabeza sin el consumo, un
+rechazo anterior a su cabeza, un camino de otra posicion, sin camino, una cabeza v3 para el
+consumo, un ocupante que es el mismo consumo y uno en otra posicion-. Un texto de la familia no
+tiene vector y se declara: «nextIndex no alcanza el tope» exige parametros que recompongan con un
+tope por encima de `nextIndex`, y una sola mutacion de lo real no llega. El canon corre el catalogo
+en su quinta estrofa y el artefacto lo lleva dentro y lo corre desde dentro.
+
+**Medido.** El mando, `spec/PAQUETE.md`, `tools/canon.sh`, `tools/artefacto.sh`, `spec/README.md`,
+los dos README, el RFC-0007 y este asiento, mas los veinticinco ficheros de
+`spec/vectors/rechazo/`; el catalogo entero, verde con el binario de referencia; canon `--sello`
+rc 0 (sus segundos y su linea del catalogo, en la salida de este bloque).
+
+**Lo que NO afirma, y lo que queda vivo.** No afirma que el nodo rechazara, ni cuando: eso es la
+completitud (H5b). No afirma que la regla sea justa: dice que se aplico. No prueba `StaleState`,
+`WrongRegulatoryLimit` ni los duplicados de lote (E3a-2: exigen un recibo probado), ni
+`AccountFrozen` ni `AccountNotFound` (E3b: dos metodos nuevos del cable, con su coste de
+privacidad declarado). Quedan vivos: el banco de la captura no vive en el arbol -su productor fue
+el PASTE-455-M, con `banco455.py` `9955267b1970086f`-; la seccion 4 de `spec/PAQUETE.md` sigue sin
+los pasos del conflicto; y el orden de las defensas deja sin testigo el texto de «nextIndex no
+alcanza».

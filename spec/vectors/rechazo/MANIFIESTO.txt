@@ -1,0 +1,30 @@
+# Vectores del sobre de RECHAZO (spec/PAQUETE.md seccion 2.6, RFC-0007 E3a-1, sellado en el asiento 455).
+# fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
+# Los cuatro positivos se REUNEN de las CAPTURAS-455 de un nodo real (PASTE-455-M, a977da87413b2dc7):
+# cada pieza es una respuesta del cable sin reescribir. Los negativos se derivan de ellos por UNA
+# mutacion cada uno; jamas se reescriben (regla 2 del PROCESO). La cabeza v3 sale de la cabeza real
+# de spec/vectors/paquete/posicion-v2.json. El banco que capturo no vive en el arbol: se declara.
+limite-regulatorio.json|0|VERDE: OverRegulatoryLimit se sostiene sobre el estado comprometido
+tope-de-cuentas.json|0|VERDE: AccountLimitReached se sostiene sobre el estado comprometido
+consumo-repetido.json|0|VERDE: ConsumoRepetido se sostiene sobre el estado comprometido
+consumo-colision.json|0|VERDE: ConsumoColision se sostiene sobre el estado comprometido
+rechazo-rech-falta-data.json|1|falta data (el objeto del rechazo)
+rechazo-rech-falta-causa.json|1|data: falta causa
+rechazo-rech-falta-campos.json|1|data: falta campos
+rechazo-rech-causa-no-probada.json|1|data: la causa StaleState no la prueba este mando
+rechazo-rech-falta-cabeza.json|1|falta cabeza
+rechazo-rech-cabeza-adulterada.json|1|cabeza: los campos NO recomponen su epochDigest
+rechazo-rech-limite-no-superado.json|1|la causa NO se sostiene: el importe pedido (1000) no supera el limite (1000)
+rechazo-rech-limite-otro.json|1|data: el limite que el nodo dice (1001) no es el comprometido (1000)
+rechazo-rech-parametros-ajenos.json|1|parametros: NO recomponen el paramsDigest de la cabeza
+rechazo-rech-falta-parametros.json|1|falta parametros (zkssl_params)
+rechazo-rech-limite-cabeza-v3.json|1|la causa OverRegulatoryLimit exige una cabeza v5
+rechazo-rech-tope-otro.json|1|data: el tope que el nodo dice (3) no es el comprometido (2)
+rechazo-rech-tope-cabeza-posterior.json|1|la cabeza (seq 4) es POSTERIOR al rechazo (seq 3): nextIndex solo sube
+rechazo-rech-repetido-cabeza-sin-el.json|1|presencia: el camino NO sube al consRoot de la cabeza
+rechazo-rech-repetido-cabeza-posterior.json|1|la cabeza (seq 4) es POSTERIOR al rechazo (seq 3): un consumo publicado no se quita
+rechazo-rech-repetido-otra-posicion.json|1|presencia: el isRight recibido NO es el de la posicion 117440512
+rechazo-rech-repetido-falta-presencia.json|1|falta presencia (camino del consumo)
+rechazo-rech-repetido-cabeza-v3.json|1|el sobre de rechazo exige cabezas v4 o v5
+rechazo-rech-colision-mismo.json|1|la causa NO se sostiene: ocupante y consumo son el MISMO
+rechazo-rech-colision-otra-posicion.json|1|el ocupante vive en la posicion 117440512, no en la 134217728 del consumo

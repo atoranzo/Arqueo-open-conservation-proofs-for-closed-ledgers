@@ -32,9 +32,9 @@ cuántos hacen falta lo decide el CLIENTE** con su política (§319, los mandos 
 del testigo), no el paquete: quien lo arma puede ser el operador, y dejarle elegir su propia `k`
 le devolvería justo lo que la cofirma le quita.
 
-## 2. Las cinco formas
+## 2. Las seis formas
 
-El binario acepta cuatro objetos. Los cuatro son JSON; los esqueletos van con puntos suspensivos
+El binario acepta cinco objetos. Los cinco son JSON; los esqueletos van con puntos suspensivos
 donde el valor es una respuesta del cable sin reescribir.
 
 ### 2.1 El paquete v1 — la posición
@@ -109,7 +109,7 @@ donde el valor es una respuesta del cable sin reescribir.
   elegiría cualquiera de las 2^63 libres para «probar» la ausencia de cualquier cosa. La
   mitad de presencia sí es sólida sin el cruce: no se fabrican hermanos que suban a una
   raíz real. Las reglas viven en `crates/zk-ssl-verify/src/consumos.rs` (`spec/NUCLEO.md`).
-### 2.5 El paquete de conflicto (§NNN)
+### 2.5 El paquete de conflicto (§430)
 
 ```text
 { "v": 1, "tipo": "conflicto", "consumo": "0x…",
@@ -134,6 +134,39 @@ donde el valor es una respuesta del cable sin reescribir.
   consumida sea la misma en los dos: que el identificador signifique lo mismo a los dos lados
   es gobernanza (RFC-0006, D-4), no criptografía. Por eso el `tipo` no se llama «doble-uso».
 
+### 2.6 El paquete de rechazo (§455)
+
+```text
+{ "v": 1, "tipo": "rechazo", "data": {"causa": "…", "campos": {…}, "seq": "0x…"},
+  "cabeza": {…}, "parametros": {…} }                         (una causa de los parámetros)
+{ "v": 1, "tipo": "rechazo", "data": {…}, "cabeza": {…},
+  "presencia": {siblings, isRight} }                          (una causa del consumo)
+```
+
+- **Prueba la CAUSA de un rechazo, no el rechazo.** `data` es el objeto `data` que el nodo puso
+  en su negativa (`spec/RPC.md`, §454), tal cual; `cabeza`, una respuesta de
+  `zkssl_signedEpochHead`; `parametros`, la de `zkssl_params`; `presencia`, el `camino` de
+  `zkssl_consumoPath`. Que el nodo rechazó —y cuándo— no lo prueba este sobre. Lo que prueba es
+  que la regla que el nodo nombró **se sostiene sobre el estado que una cabeza firmada
+  compromete**; si no se sostiene, el ROJO nombra por qué, y el sobre es entonces la prueba de que
+  la regla era un disfraz.
+- **Qué cabeza sirve depende de la causa, y se exige con el `seq`.** Para lo que sólo crece
+  —`nextIndex`, los consumos publicados— sirve una cabeza **anterior** al rechazo, o la misma: lo
+  que ya estaba en ella seguía estando al juzgar. Para lo que no tiene setter —el límite
+  regulatorio— sirve cualquiera del libro. La mutabilidad está medida en el código (§455).
+- Las cuatro causas que este mando prueba (RFC-0007 E3a-1):
+
+| causa | material | qué comprueba | cabeza |
+|---|---|---|---|
+| `OverRegulatoryLimit` | `parametros` | los siete recomponen el `paramsDigest`; `limit` es el comprometido y `requested` lo supera | v5, cualquiera del libro |
+| `AccountLimitReached` | `parametros` | recomponen; `limit` es `maxAccounts` y `nextIndex` lo alcanza | v5, anterior o la misma |
+| `ConsumoRepetido` | `presencia` | la posición se DERIVA del consumo, y el consumo está bajo `consRoot` | v4 o v5, anterior o la misma |
+| `ConsumoColision` | `presencia` | el ocupante está en la posición DERIVADA del consumo, y no es él | v4 o v5, anterior o la misma |
+
+- Cualquier otra causa se rechaza con su nombre. El resto de la tabla D-D del RFC-0007 es E3a-2
+  (las que exigen un recibo probado), E3b (congelación y ausencia, con dos métodos nuevos del
+  cable), E4 y E5.
+
 ## 3. El sobre — lo que el binario lee
 
 El binario lee **31 nombres** distintos del JSON. Los 14 primeros son el sobre propiamente dicho;
@@ -149,6 +182,7 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 | extensión | `camino` (lista de digests) | `RPC.md:781-808` |
 | consumo | `consumo`, y `presencia`/`ausencia` → `siblings`, `isRight` | `zkssl_consumoPath`, `RPC.md` |
 | conflicto | `consumo`, y `libros[]` → `cabeza`, `presencia` → `siblings`, `isRight` | este documento, sección 2.5 |
+| rechazo | `data` → `causa`, `campos`, `seq`; `parametros` → los siete de `zkssl_params`; `presencia` → `siblings`, `isRight` | este documento, sección 2.6 |
 
 ⚠️ **§419 — el «31» de arriba ya no es la cuenta**: el sobre de consumo añade `consumo`,
 `presencia` y `ausencia`. **No se sustituye por otro número**, porque el 31 no tiene
@@ -200,6 +234,12 @@ la cima nueva extiende a la vieja · `4/5` los dos caminos son los de la posici�
 del consumo, no de la que el sobre diga · `5/5` el consumo está bajo el `consRoot` de la
 nueva y **no estaba** bajo el de la vieja.
 
+**Paquete de rechazo:** `1/3` la cabeza recompone su digest y su firma verifica · `2/3` el
+material de la causa: los `parametros` recomponen el `paramsDigest` de una cabeza **v5**, o el
+camino es el de la posición **derivada** del consumo bajo una **v4 o v5** · `3/3` la causa se
+sostiene sobre lo comprometido, con la cabeza **anterior** al rechazo —o la misma— cuando cita
+algo que sólo crece.
+
 Cabezas **v2, v3, v4 y v5** (`formatVersion`): una cabeza v2 custodiada **sigue verificando** — el
 apagado de §290 no caduca. Una cabeza v1 se verifica con la biblioteca, no con este mando.
 
@@ -219,7 +259,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `el paquete no declara su version en `v``
 - `el paquete declara v:{v_paquete} — este binario lee v1 y v2`
 - `un paquete v1 con `cofirmas`: subir la version es lo que las hace parte del contrato — declaralo v2, o quitalas`
-- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"` o `tipo: "conflicto"``
+- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"`, `tipo: "conflicto"` o `tipo: "rechazo"``
 
 **Forma de los valores** (`hex_a_bytes`, `digest_de`, `u64_de`; `{campo}` es la clave que se leía)
 
@@ -287,6 +327,25 @@ entrada nueva del catálogo**, es el mismo texto y el mismo productor.
 - `el sobre de conflicto exige DOS libros: se recibieron {n}`
 - `las cabezas llevan la MISMA clave: un conflicto es entre DOS firmantes`
 - `libro[{i}]: el camino NO sube al consRoot de su cabeza`
+
+**El rechazo** (`{causa}` es la de `data`; `{que}` sale `limite` o `tope`)
+
+Estos textos NACEN con esta forma. La cabeza, la versión de los consumos (`el sobre de rechazo
+exige cabezas v4 o v5: …`), los campos del camino, su descuadre y el cruce de posición salen de
+los **mismos productores** de arriba, con su hueco relleno distinto.
+
+- `falta data (el objeto del rechazo)` · `data: falta causa` · `data: falta campos`
+- `data: la causa {otra} no la prueba este mando (spec/PAQUETE.md, seccion 2.6)`
+- `la causa {causa} exige una cabeza v5: sus parametros viajan en paramsDigest`
+- `falta parametros (zkssl_params)`
+- `parametros: NO recomponen el paramsDigest de la cabeza - no son los de este libro`
+- `data: el {que} que el nodo dice ({dicho}) no es el comprometido ({comprometido})`
+- `la causa NO se sostiene: el importe pedido ({pedido}) no supera el limite ({limite})`
+- `la causa NO se sostiene: nextIndex ({n}) no alcanza el tope de cuentas ({tope})`
+- `la causa NO se sostiene: ocupante y consumo son el MISMO - eso seria ConsumoRepetido`
+- `la causa NO se sostiene: el ocupante vive en la posicion {po}, no en la {pos} del consumo`
+- `presencia: el camino NO sube al consRoot de la cabeza`
+- `la cabeza (seq {s_cabeza}) es POSTERIOR al rechazo (seq {s_rechazo}): {porque}, y solo una cabeza anterior lo prueba`
 
 ## 6. El contrato del mando
 
@@ -361,6 +420,12 @@ capturas del banco del sobre de consumo (RFC-0006, E3), cada uno con su entrada 
 `MANIFIESTO.txt`; el mismo arnés los corre en cada canon con otro manifiesto. Los `#[test]` de
 `crates/zk-ssl-verify/src/consumos.rs` siguen falsando las reglas puras —la hoja vacía, la
 convención y el cruce— sin necesitar firmas.
+**Y desde §455 los del sobre de rechazo** (RFC-0007, E3a-1): `spec/vectors/rechazo/` trae un
+positivo por causa probada —cuatro— y un negativo por cada regla producible de su familia,
+derivados por UNA mutación de las capturas de un nodo real (el PASTE-455-M; su banco no vive
+todavía en el árbol, y se declara). Un texto de la familia no tiene vector: «nextIndex no alcanza
+el tope» exige unos parámetros que recompongan con un tope por encima de `nextIndex`, y una sola
+mutación de lo real no llega a él.
 Las demostraciones en vivo con nodo son `tools/banco_apagado.sh`, `tools/banco_consumo.sh`
 (RFC-0006, E3) y `tools/banco_dos_libros.sh` (E4a): el último levanta DOS nodos con DOS claves
 y produce el hecho que E4 existe para detectar.
@@ -387,6 +452,9 @@ y produce el hecho que E4 existe para detectar.
 - §451 — la cabeza v5 en el mando (RFC-0007, E1a): la versión elige el recomponedor v5 con su
   familia; los rechazos por versión citan «v2, v3, v4 o v5»; el fuera-del-conjunto es
   `rechazo-formatVersion-6`; el `-5` sigue listado y cae por otra causa.
+- §455 — el sobre de rechazo (RFC-0007, E3a-1): el mando prueba la CAUSA de cuatro rechazos sobre
+  el estado comprometido, con una cabeza anterior al rechazo cuando la causa cita algo que sólo
+  crece; `spec/vectors/rechazo/` y la quinta estrofa del canon. Los catálogos son CUATRO.
 - Hasta §397 este contrato vivía en la cabecera de `crates/zk-ssl-verify/src/main.rs` (1..90,
   `293990fedc785833`), que ya confesó una vez (§247) haber declarado su superficie como completa
   sin serlo. §397 lo muda aquí y deja la cabecera remitiendo, sin enumerar.
@@ -396,20 +464,21 @@ y produce el hecho que E4 existe para detectar.
 
 Lo que un tercero descarga es `arqueo-verify-<versión>-<host>.tar.gz` (§401), y dentro:
 `zk-ssl-verify` (el binario), `conformidad.sh` (el arnés de la sección 9, §408), `spec/PAQUETE.md`
-(este documento), `spec/vectors/paquete/`, `spec/vectors/consumo/` y `spec/vectors/conflicto/` (los
-tres manifiestos y sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
+(este documento), `spec/vectors/paquete/`, `spec/vectors/consumo/`, `spec/vectors/conflicto/`
+y `spec/vectors/rechazo/` (los cuatro manifiestos y sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
 licencias de todo lo enlazado), `VERSION` (el commit, el toolchain y los flags con que se compiló)
 y `SHA256SUMS` (la huella de cada fichero de dentro). Se comprueba con `sha256sum -c SHA256SUMS`,
-y el binario contra los tres catálogos con `bash conformidad.sh ./zk-ssl-verify`,
-`bash conformidad.sh ./zk-ssl-verify spec/vectors/consumo/MANIFIESTO.txt` y
-`bash conformidad.sh ./zk-ssl-verify spec/vectors/conflicto/MANIFIESTO.txt`: cada entrada dice el
+y el binario contra los cuatro catálogos con `bash conformidad.sh ./zk-ssl-verify`,
+`bash conformidad.sh ./zk-ssl-verify spec/vectors/consumo/MANIFIESTO.txt`,
+`bash conformidad.sh ./zk-ssl-verify spec/vectors/conflicto/MANIFIESTO.txt` y
+`bash conformidad.sh ./zk-ssl-verify spec/vectors/rechazo/MANIFIESTO.txt`: cada entrada dice el
 código de salida y el texto.
 
 La huella del binario **no depende de la máquina ni del usuario** —se compila con
 `--remap-path-prefix`—, pero sí del toolchain y de `Cargo.lock`: con el `rustc` que `VERSION`
 nombra, `bash tools/artefacto.sh` sobre el commit que `VERSION` nombra vuelve a producir el mismo
 binario y el mismo tarball, y `tools/canon.sh` comprueba esa propiedad en cada sello (dos
-compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los dos manifiestos desde el
+compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los cuatro manifiestos desde el
 árbol y, desde §425, otra vez **desde dentro del tarball desempaquetado y sin repo**, con el mismo
 veredicto). Lo que el binario exige: x86_64 Linux y una glibc igual o mayor que la que `VERSION`
 declara (`glibc_max`); no es estático, y se dice.

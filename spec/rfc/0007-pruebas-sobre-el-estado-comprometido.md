@@ -20,7 +20,7 @@
 |---|---|---|---|
 | E1 — la cabeza v5 | `epoch_digest_v5`: UNA familia nueva bajo la firma —`params_digest` (los siete parámetros), `pmeta_root`, `next_pending`, `next_index`, `total_supply`—; `VersionCabeza` gana V5; el cable sirve los cinco campos y `zkssl_params` los tres parámetros que hoy no sirve; el testigo recompone y custodia; el mando acepta; KAT y fila en `NUCLEO.md`; vectores bajo su versión; testigos: recomponer rechaza una v5 sin uno de los cinco, y un parámetro cambiado en reposo cambia la cabeza | NO en el cable (claves aditivas); SÍ en la firma (formato 4 → 5) | **sellada** — §451 y §451-B (E1a: el núcleo y el mando aceptan v5), §452 y §452-B (E1b: `VERSION_FORMATO` 5, el nodo firma y sirve v5, el cable la exige por versión y el testigo la custodia) y §453 (el positivo v5 del catálogo del cable: una cabeza real) |
 | E2 — el rechazo con causa, en el cable | el objeto de error gana `data`: la causa por su NOMBRE (la variante de `LayerError`), sus campos, y el `seq` de la cabeza en cuyo estado se juzgó; `message` no cambia; el catálogo de las veinticinco causas se publica en `RPC.md` y un test lo ata al enum (dos listas son dos productores) | NO (aditivo: ningún vector ni el OpenRPC pina el objeto de error) | **sellada** — §454 (`LayerError::causa` en la capa, `data` en el `-32000` y en la negativa de `zkssl_publishConsumo`, el catálogo en `spec/RPC.md` atado por test) |
-| E3 — el rechazo con prueba, por caminos | una forma nueva del paquete de evidencia, `tipo: "rechazo"`, que el mando verifica sin nodo: la cabeza v5 firmada, la causa, y el material que la demuestra con caminos y aritmética pública sobre lo que la cabeza compromete; una tabla causa → material → qué revela; un positivo y un negativo por regla, derivados por mutación; su manifiesto y su puerta en el canon | NO (el paquete no cruza el cable) | abierta |
+| E3 — el rechazo con prueba, por caminos | una forma nueva del paquete de evidencia, `tipo: "rechazo"`, que el mando verifica sin nodo: la cabeza v5 firmada, la causa, y el material que la demuestra con caminos y aritmética pública sobre lo que la cabeza compromete; una tabla causa → material → qué revela; un positivo y un negativo por regla, derivados por mutación; su manifiesto y su puerta en el canon | NO (el paquete no cruza el cable) | **en curso** — §455 (E3a-1: el sobre de rechazo prueba `OverRegulatoryLimit`, `AccountLimitReached`, `ConsumoRepetido` y `ConsumoColision`, con su catálogo desde un nodo real) |
 | E4 — la prueba de edad, medida primero | E4a: el coste en función de `next_pending`, con el instrumento antes que el circuito, y una puerta que decide si se construye o se declara un techo. E4b: el circuito sobre el RANGO `0..next_pending` de los árboles de pendientes y de meta, con la caja vacía, el tope y la concentración por emisor nombrado como formas de un mismo enunciado; su sobre, su manifiesto y sus vectores | NO | abierta — se mide antes de construir |
 | E5 — las causas por circuito, y el kit verifica | `InsufficientBalance` con prueba de banda sobre la hoja comprometida (molde `circuit_audit`, sin el ciclo de titularidad); la re-verificación del STARK del solicitante para `ProofFailed` y `VerificationFailed`; un crate de AIR sólo-verificador que el mando consume, con `winter-verifier` en su clausura y el probador fuera | NO | abierta — depende de D-F |
 
@@ -216,6 +216,19 @@ Cada causa de E3 lleva un vector positivo producido por un banco con nodo real y
 por mutación del material, con el texto de rechazo tomado del binario en la corrida (regla de
 `spec/PAQUETE.md`, sección 9); el manifiesto pina código de salida y texto; el canon lo corre
 como corre los otros catálogos. La cabeza que va dentro es v5: por eso E3 viene después de E1.
+
+**CORRECCIÓN (§247, escrita por el §455).** La medición del árbol, al abrir E3, precisa cuatro
+cosas de esta tabla. Cinco de sus causas no las sirve el cable —`RefundTooEarly`,
+`RefundUnavailable`, `PendingMismatch`, `RecoveryToSameIdentity` y `AlreadyInThatFreezeState`— y
+probarlas no le sirve a ningún cliente: salen de E3. La cabeza no es siempre la del `seq` exacto:
+lo que sólo crece —`nextIndex`, los consumos, las cuentas— se prueba con una cabeza anterior o
+posterior según la mutabilidad medida, y sólo `StaleState`, `AccountFrozen` y
+`SupplyCapExceeded` exigen la exacta, que existe si nadie escribió hasta el siguiente latido. Los
+caminos de congelados y de ausencia en cuentas NO los sirve hoy ningún método: E3b añade dos, y
+eso toca el cable (aditivo: `zkssl/0.3` no se mueve). Y un camino revela a sus vecinos: el de
+ausencia de `i` deja enumerar sus saldos y el de congelados su estado, así que «qué revela: nada»
+no vale para `AccountNotFound`. E3 queda partida en E3a-1 (§455: las cuatro que se provocan sin
+recibo), E3a-2 (las que exigen un recibo probado) y E3b.
 
 ### D-E — La prueba de edad es sobre un RANGO, no sobre n caminos
 

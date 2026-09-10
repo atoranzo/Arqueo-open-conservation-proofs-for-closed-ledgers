@@ -55,7 +55,8 @@ use zk_ssl_verify::{
     CabezaFirmada, COFIRMA_V_MAX, ReciboAcuse, VersionCabeza,
 };
 use zk_ssl_hash::{
-    digest_from_bytes, epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5, Digest,
+    digest_from_bytes, epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5,
+    params_digest, Digest,
 };
 
 /// Punto unico de forma de error del binario (hoy identidad; el dia que
@@ -154,10 +155,13 @@ fn correr(ruta: &str) -> Result<(), String> {
         Some("extension") => return verificar_extension(&p),
         Some("consumo") => return verificar_consumo(&p),
         Some("conflicto") => return verificar_conflicto(&p),
+        // RFC-0007 E3a (§455): la causa de un rechazo, probada sobre el estado comprometido.
+        Some("rechazo") => return verificar_rechazo(&p),
         Some(otro) => {
             return Err(err(format!(
                 "tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), \
-                 `tipo: \"extension\"`, `tipo: \"consumo\"` o `tipo: \"conflicto\"`"
+                 `tipo: \"extension\"`, `tipo: \"consumo\"`, `tipo: \"conflicto\"` o \
+                 `tipo: \"rechazo\"`"
             )))
         }
     }
@@ -790,6 +794,174 @@ fn verificar_conflicto(p: &serde_json::Value) -> Result<(), String> {
     println!("4/4 el MISMO consumo esta bajo el consRoot de los DOS libros");
     println!("VERDE: dos libros aceptaron el mismo consumo. Es DETECCION, no prevencion:");
     println!("       nadie ordena entre libros, y que la unidad sea la misma es gobernanza");
+    Ok(())
+}
+
+/// **El sobre de RECHAZO** (RFC-0007 E3a, §455): la causa que el nodo dio al rechazar, y el
+/// material que la PRUEBA sobre el estado que una cabeza firmada compromete, sin el nodo.
+///
+/// Todo viaja TAL CUAL lo sirvio el cable -reunir, no recomponer-: `data` es el objeto `data` del
+/// rechazo (`spec/RPC.md`, §454), `{causa, campos, seq}`; `cabeza`, una respuesta de
+/// `zkssl_signedEpochHead`; `parametros`, la de `zkssl_params`; `presencia`, el camino de
+/// `zkssl_consumoPath`. QUE cabeza sirve depende de la causa y se exige con el `seq`: una
+/// ANTERIOR al rechazo, o la misma, para lo que solo crece -`nextIndex`, los consumos-; cualquiera
+/// del libro para lo que no tiene setter -el limite regulatorio-. El veredicto es de la CAUSA:
+/// VERDE si se sostiene sobre el estado comprometido; si no, ROJO nombrando por que, y entonces el
+/// sobre es la prueba de que la regla fue un disfraz.
+fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
+    let d = p
+        .get("data")
+        .ok_or_else(|| err("falta data (el objeto del rechazo)".into()))?;
+    let causa = d
+        .get("causa")
+        .and_then(|x| x.as_str())
+        .ok_or_else(|| err("data: falta causa".into()))?;
+    let campos = d
+        .get("campos")
+        .ok_or_else(|| err("data: falta campos".into()))?;
+    let s_rechazo = u64_de(d, "seq")?;
+    let c = p.get("cabeza").ok_or_else(|| err("falta cabeza".into()))?;
+    let (_, _, _, cons) = cabeza_v3_verificada(c, "cabeza")?;
+    let s_cabeza = u64_de(c, "seq")?;
+    println!("1/3 la cabeza recompone su digest y su firma verifica (seq {s_cabeza})");
+    match causa {
+        "OverRegulatoryLimit" => {
+            let (limite, _) = parametros_comprometidos(p, c, causa)?;
+            println!("2/3 los parametros recomponen el paramsDigest: el limite es {limite}");
+            let dicho = u64_de(campos, "limit")?;
+            let pedido = u64_de(campos, "requested")?;
+            if dicho != limite {
+                return Err(no_es_el_comprometido("limite", dicho, limite));
+            }
+            if pedido <= limite {
+                return Err(err(format!(
+                    "la causa NO se sostiene: el importe pedido ({pedido}) no supera el \
+                     limite ({limite})"
+                )));
+            }
+            println!("3/3 el importe pedido ({pedido}) supera el limite comprometido ({limite})");
+        }
+        "AccountLimitReached" => {
+            let (_, tope) = parametros_comprometidos(p, c, causa)?;
+            let n = familia_v5(c)?.next_index;
+            println!("2/3 los parametros recomponen el paramsDigest: el tope de cuentas es {tope}");
+            let dicho = u64_de(campos, "limit")?;
+            if dicho != tope {
+                return Err(no_es_el_comprometido("tope", dicho, tope));
+            }
+            exige_anterior(s_cabeza, s_rechazo, "nextIndex solo sube")?;
+            if n < tope {
+                return Err(err(format!(
+                    "la causa NO se sostiene: nextIndex ({n}) no alcanza el tope de cuentas \
+                     ({tope})"
+                )));
+            }
+            println!("3/3 una cabeza anterior al rechazo ya tenia nextIndex {n}, el tope");
+        }
+        "ConsumoRepetido" | "ConsumoColision" => {
+            let raiz = cons.ok_or_else(|| exige_consumos("rechazo"))?;
+            let consumo = digest_de(campos, "consumo")?;
+            let pos = zk_ssl_verify::consumos::posicion_de_consumo(&consumo);
+            // lo que tiene que estar YA en la posicion: el mismo consumo, o su ocupante
+            let presente = if causa == "ConsumoRepetido" {
+                consumo
+            } else {
+                let o = digest_de(campos, "ocupante")?;
+                if o == consumo {
+                    return Err(err("la causa NO se sostiene: ocupante y consumo son el MISMO \
+                                    - eso seria ConsumoRepetido"
+                        .into()));
+                }
+                let po = zk_ssl_verify::consumos::posicion_de_consumo(&o);
+                if po != pos {
+                    return Err(err(format!(
+                        "la causa NO se sostiene: el ocupante vive en la posicion {po}, no en \
+                         la {pos} del consumo"
+                    )));
+                }
+                o
+            };
+            let (herm, der) = camino_de(p, "presencia", "presencia")?;
+            if !zk_ssl_verify::consumos::cruza_posicion(pos, &der) {
+                return Err(cruce_fallado("presencia", pos));
+            }
+            println!("2/3 el camino es el de la posicion {pos}, DERIVADA del consumo");
+            match zk_ssl_verify::consumos::raiz_de_presencia(presente, &herm, &der) {
+                Some(r) if r == raiz => {}
+                Some(_) => {
+                    return Err(err(
+                        "presencia: el camino NO sube al consRoot de la cabeza".into()
+                    ))
+                }
+                None => return Err(err(camino_descuadrado("presencia"))),
+            }
+            exige_anterior(s_cabeza, s_rechazo, "un consumo publicado no se quita")?;
+            println!("3/3 la posicion ya estaba ocupada bajo una cabeza anterior al rechazo");
+        }
+        otra => {
+            return Err(err(format!(
+                "data: la causa {otra} no la prueba este mando (spec/PAQUETE.md, seccion 2.6)"
+            )))
+        }
+    }
+    println!("VERDE: {causa} se sostiene sobre el estado comprometido. Dice que la regla se");
+    println!("       aplico, no que sea justa (RFC-0007)");
+    Ok(())
+}
+
+/// Los siete parametros de `zkssl_params` contra el `paramsDigest` de una cabeza **v5** (RFC-0007
+/// D-B): si recomponen, lo que dicen es lo comprometido. Devuelve los dos que las causas citan: el
+/// limite regulatorio y el tope de cuentas.
+fn parametros_comprometidos(
+    p: &serde_json::Value,
+    c: &serde_json::Value,
+    causa: &str,
+) -> Result<(u64, u64), String> {
+    if VersionCabeza::try_from(u64_de(c, "formatVersion")?) != Ok(VersionCabeza::V5) {
+        return Err(err(format!(
+            "la causa {causa} exige una cabeza v5: sus parametros viajan en paramsDigest"
+        )));
+    }
+    let f = familia_v5(c)?;
+    let pr = p
+        .get("parametros")
+        .ok_or_else(|| err("falta parametros (zkssl_params)".into()))?;
+    let limite = u64_de(pr, "regulatoryLimit")?;
+    let tope = u64_de(pr, "maxAccounts")?;
+    let compuesto = params_digest(
+        limite,
+        u64_de(pr, "maxSupply")?,
+        tope,
+        digest_de(pr, "custodianRoot")?,
+        digest_de(pr, "governanceRoot")?,
+        u64_de(pr, "refundTtl")?,
+        u64_de(pr, "maxCustodianUses")?,
+    );
+    if compuesto != f.params_digest {
+        return Err(err(
+            "parametros: NO recomponen el paramsDigest de la cabeza - no son los de este libro"
+                .into(),
+        ));
+    }
+    Ok((limite, tope))
+}
+
+/// UN productor del texto de un campo de la causa que no es el comprometido.
+fn no_es_el_comprometido(que: &str, dicho: u64, comprometido: u64) -> String {
+    err(format!(
+        "data: el {que} que el nodo dice ({dicho}) no es el comprometido ({comprometido})"
+    ))
+}
+
+/// UN productor de la regla del `seq` para lo que solo crece: la cabeza tiene que ser ANTERIOR al
+/// rechazo, o la misma -lo que ya estaba en ella seguia estando al juzgar-.
+fn exige_anterior(s_cabeza: u64, s_rechazo: u64, porque: &str) -> Result<(), String> {
+    if s_cabeza > s_rechazo {
+        return Err(err(format!(
+            "la cabeza (seq {s_cabeza}) es POSTERIOR al rechazo (seq {s_rechazo}): {porque}, y \
+             solo una cabeza anterior lo prueba"
+        )));
+    }
     Ok(())
 }
 
