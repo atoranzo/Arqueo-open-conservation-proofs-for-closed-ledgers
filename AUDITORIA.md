@@ -33362,3 +33362,83 @@ y `1213 -> 1222` se mueven por el MISMO delta que los pines y **no tienen compue
 `check_cifras` solo gatea la cifra pegada a <<tests>> o <<pruebas>> -los dos `1062`- y el
 desglose; el hueco esta declarado en su cabecera desde el §239, y el offset con `check_tests`
 (1222 en prosa frente a 1223 derivados) es el de siempre, invariante.
+
+## §452 — RFC-0007 E1b: el nodo firma y sirve la cabeza v5 (`VERSION_FORMATO` 4 -> 5)
+
+**Que.** La segunda mitad de E1: la cabeza v5 sale del nodo, firmada. `EpochHead` gana la familia
+del estado comprometido -`params_digest`, `pmeta_root`, `next_pending`, `next_index` y
+`total_supply`- y `digest()` compone `epoch_digest_v5`; `epoch_head()` la rellena con lo que la
+capa ya tiene en reposo, sin clave nueva en el almacen, asi que un libro anterior abre y compone
+v5, y su firma no cambia. `VERSION_FORMATO` pasa de 4 a 5: el nodo firma v5 sin tocar
+`firma_cabeza.rs`, y el testigo cofirma con 5. El cable importa `zk-ssl-verify` (una dependencia,
+UNA linea en `Cargo.lock`) y `firmada()` deriva de `VersionCabeza`, el unico productor del
+conjunto: el literal `== 4` del punto 91 muere, la pareja la exigen las versiones que
+`lleva_consumos()` dice y la familia la exige la V5, en un `match` EXHAUSTIVO. Los DTO ganan las
+cinco -sin `Option` en `EpochHeadDto`, con `Option` en la firmada y en `VistaFirmada`- y
+`ParamsDto` los tres parametros que no servia: `zkssl_params` sirve ya los siete que `paramsDigest`
+compone. El testigo custodia las cinco en su diario, y un test ata esa lista a la forma firmada del
+cable (punto 89). En `spec/`: la seccion v5 de `RPC.md`, `NUCLEO.md` (la :47, punto 148) y la fila
+E1 del RFC-0007, con una correccion §247 dentro: `next_index` es CENSO -la cuota de altas contra
+`max_accounts`- y no la marca de agua que el D-D decia (punto 153). En el catalogo del cable el
+`-5` cae ahora por la pareja, como el `-4`, y nacen dos vectores por mutacion de la cabeza v4 REAL
+`nueva` de `spec/vectors/consumo/consumo.json`. Los dos bancos aceptan v4 o v5. `zkssl/0.3` no
+sube.
+
+**Por que asi.** Las decisiones las DELEGO el autor en la 121 con la ley, y son REVERSIBLES aqui:
+la particion -el §452, el codigo y sus falsadores; este `-B`, pines, cifras y canon; el S453, el
+positivo v5 del catalogo del cable, capturado por un banco con nodo real-; `firmada()` por `match`
+exhaustivo con el cable importando el verificador, para que el conjunto tenga UN productor; los DTO
+como arriba; el test que ata el diario al cable; los bancos a v4 o v5; los vectores por mutacion de
+una cabeza real, nunca retecleados. Una desviacion, declarada: el fixture del testigo se queda en
+v4 -es la fuente de veinte tests de esa era- y los tests de v5 lo DERIVAN; el del cable, que pina
+lo que el nodo sirve, pasa a v5.
+
+**Lo que la medicion cambio.** La 121 dejo el bloque montado y sin ensayar, y la 122 lo midio
+contra el arbol REAL -el zip de `main` en `5fc7d5b`, gateado por sus anclas- antes de correrlo.
+Catorce defectos, corregidos en la plantilla y no en la copia; el caro: el bloque exigia rc 0 a los
+tres vectores del triple gate, y `canon.sh` los juzga por TEXTO -0.2 y 0.1 se rechazan por version
+con rc 1-, asi que habria muerto en falso despues de las pruebas. Los demas: el ancho, la huella
+del bloque en su salida, un rc 6 con dos sentidos, la puerta cero por estado, `restaurar()` sin el
+indice, `git add -A`, las senales, la pureza, los glifos por octal, el padre, el modo de los
+vectores que nacen, y el sondeo y los conteos de los arneses, que iban tecleados y pasan a
+derivarse de los manifiestos. La pureza se mide por fichero: `git status --ignored` colapsa un
+`__pycache__` ya ignorado, y un `.pyc` nuevo dentro seria invisible. Ensayado 28/28 sobre una
+maqueta con los bytes REALES y las diez herramientas reales, y verde a la primera en la maquina del
+autor: `2981afd`, 17 ficheros, 585 inserciones y 56 borrados.
+
+**Testigos, ensenados ROJOS en vivo.** Tres falsadores por mutacion dentro del bloque, con el arbol
+ya en su POST, y cada uno da EXACTAMENTE 1 FAILED, nombrado: la V5 fuera de la familia en
+`firmada()` (`una_cabeza_v5_sin_una_de_las_cinco_no_da_vista_y_la_nombra`), `next_index` a 0 en
+`epoch_head()` (`la_cabeza_v5_lleva_lo_que_el_libro_tiene_en_reposo`) y `totalSupply` fuera de la
+lista del diario (`la_lista_del_diario_es_la_forma_firmada_del_cable`); los tres ficheros vuelven a
+su POST por sha. Los nueve tests nuevos: tres en la capa, tres en el cable (y dos renombrados), uno
+en el nodo -lo servido recompone su `epochDigest` v5 con el recomponedor del verificador, sin la
+capa- y dos en el testigo. Y en este `-B`, `check_cifras`: con los pines subidos y la prosa vieja
+da ROJO nombrando las DOCE cifras rancias de seis documentos; con la prosa corregida, la misma
+linea que antes.
+
+**Medido.** Pines capa 323 -> 326, cable 19 -> 22, nodo 100 -> 101 y testigo 98 -> 100 (el
+verificador sigue en 96), cada uno con su entrada en la historia de su fila; sumas 1071/1208/1222
+-> 1080/1217/1231; `check_tests` 1223 -> 1232. Cuentas en release, con el arbol POST: capa 326 + 3
+ignorados, cable 22, nodo 101, testigo 100 y verificador 96, sin fallos ni warnings; las listas
+POST, exactas contra PRE + altas - bajas. El testigo real dice lo que el MANIFIESTO pide: el `-5`
+<<cabeza firmada sin consRoot>>, el `-sin-paramsDigest` <<cabeza firmada sin paramsDigest>> y el
+`-con-firma-de-v4` <<la firma es VALIDA pero de otro mensaje>>. Los cuatro arneses, 69, 14, 16 y 15
+entradas; el triple gate, 0.3 IDENTICO y 0.2 y 0.1 rechazados por version. Binario del mando
+`6a8e08025ab4e8bd`. `Cargo.lock` `d94f235a58ff8399`, 3488 -> 3489. Vectores del cable 13 -> 15.
+Canon `--sello` rc 0 (los segundos, en la salida de este bloque). Ficheros: los diecisiete del
+§452 y, aqui, `tools/canon.sh` (cuatro filas), `PRINCIPIOS.md`, `PAPER.md`, `PAPER_EN.md`,
+`ARQUITECTURA.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y este asiento. La fila de la
+capa, la mas ancha de `canon.sh`, crece con su historia: se declara. Vallas 132, invariante.
+
+**Lo que NO afirma, y lo que queda vivo.** No afirma que el catalogo del cable tenga un positivo
+v5: el unico positivo sigue siendo la cabeza v3 de `positivo-cabeza.json`, y el v5 lo captura el
+S453 con un nodo real. Fuera del nucleo nadie compone todavia `params_digest` (punto 152): el test
+del nodo recompone el digest ENTERO. En `spec/RPC.md`, la confianza residual de <<Los rechazos del
+cable>> sigue diciendo <<fuera de {2, 3}>> (punto 150). La seccion v5 de `RPC.md` dice del genesis
+<<la raiz del arbol de meta vacio, `nextPending: 0`>>, que es cierto de un libro nuevo y no de uno
+con pagos en vuelo: se precisa cuando un sello toque esa seccion. No tienen compuerta, y se
+movieron a mano por el MISMO delta, las dos sumas y el `# nodo: 91` del bloque de ordenes de
+`PAPER.md` y de `PAPER_EN.md`, rancio desde el §440, que pasa a 101 (cierra el punto 147 y su
+gemela inglesa, que el punto no nombraba). La huella que el arnes del cable imprime,
+`04b8b621ac40a073`, es la del adaptador `tools/cable_respuesta.sh` y no la del testigo.
