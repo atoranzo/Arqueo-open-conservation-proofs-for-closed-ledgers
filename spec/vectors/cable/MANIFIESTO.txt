@@ -4,7 +4,11 @@
 # El consumidor es tools/cable_respuesta.sh -> zk-ssl-cli witness --respuesta: clase y texto son los que el testigo anota en vivo.
 # Desde el asiento 452 (RFC-0007 E1b): los dos rechazo-v5-* se derivan por mutacion de la cabeza v4 REAL `nueva` de
 # spec/vectors/consumo/consumo.json; tampoco se reescriben. El -5 cae ahora por la pareja, como el -4: la v5 tambien la exige.
+# Desde el asiento 453 (RFC-0007 E1): positivo-cabeza-v5.json es una cabeza v5 REAL, capturada por tools/banco_consumo.sh --guardar con la
+# semilla de consumo.json, y rechazo-v5-recomposicion.json su mutacion (totalSupply + 1). Su familia es la de un libro sin cuentas: el
+# orden de sus tres contadores lo fija el KAT epoch_digest_v5.
 positivo-cabeza.json|0|VERDE: nueva
+positivo-cabeza-v5.json|0|VERDE: nueva
 rechazo-formatVersion-4.json|1|no-verifica · cabeza firmada sin consRoot: el productor la sirvio incompleta
 rechazo-formatVersion-1.json|1|no-verifica · formatVersion 1: el testigo recompone cabezas v2, v3, v4 o v5
 rechazo-formatVersion-0x103.json|1|no-verifica · formatVersion 259: el testigo recompone cabezas v2, v3, v4 o v5
@@ -19,3 +23,4 @@ rechazo-epochDigest-corto.json|1|no-verifica · forma del cable: longitud 31, se
 rechazo-sin-index.json|1|no-verifica · cabeza firmada sin index: el productor la sirvio incompleta
 rechazo-v5-sin-paramsDigest.json|1|no-verifica · cabeza firmada sin paramsDigest: el productor la sirvio incompleta
 rechazo-v5-con-firma-de-v4.json|1|no-verifica · la firma es VALIDA pero de otro mensaje
+rechazo-v5-recomposicion.json|1|no-verifica · los campos NO recomponen el epochDigest firmado (v5)

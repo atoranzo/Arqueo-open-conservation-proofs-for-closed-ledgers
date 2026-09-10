@@ -941,17 +941,22 @@ anotaria. Contrato: exit `0` solo si la clase es `nueva`; cualquier otra, `ROJO:
 y exit `1`; uso, `2`. No juzga el segundo canal (consistencia): con memoria fresca no hay pareja.
 
 Los vectores viven en `spec/vectors/cable/` —jamas entre los `zkssl-0.N.json`, que son del
-escenario—: un positivo (`nueva`) y un negativo por cada rechazo MEDIDO antes de escribirlo
-(`PASTE-409-S`), derivados por mutacion de la cabeza real de `spec/vectors/paquete/posicion-v2.json`.
+escenario—: un positivo (`nueva`) por era de cabeza y un negativo por cada rechazo MEDIDO antes de
+escribirlo (`PASTE-409-S`, `PASTE-453-M`). Los de la era v3 derivan por mutacion de la cabeza real
+de `spec/vectors/paquete/posicion-v2.json`; los dos `rechazo-v5-*` del §452, de la cabeza v4 real
+`nueva` de `spec/vectors/consumo/consumo.json`; y el positivo v5 es una cabeza v5 REAL que capturo
+`tools/banco_consumo.sh --guardar` (§453), de la que deriva por mutacion su negativo de
+recomposicion.
 `MANIFIESTO.txt` fija, por fichero, el codigo de salida y el texto que la salida tiene que contener;
 `tools/conformidad.sh tools/cable_respuesta.sh spec/vectors/cable/MANIFIESTO.txt` los corre —el
 mismo arnes que el paquete, sin doblar su contrato— y `tools/canon.sh` lo hace en cada canon.
 Una segunda implementacion del consumidor pone su ejecutable en lugar del adaptador.
 
-**Confianza residual, medida:** la clase no distingue la causa. Un `formatVersion` fuera de {2, 3}
-sale `no-verifica` en vivo y `firma-no-verifica` en `--auditar`, y `version-desconocida` es la
-version del DIARIO (`v`), no la de la cabeza. El texto si la distingue, y por eso el manifiesto pina
-clase y texto. Abrir una clase subiria `DIARIO_VERSION`: corte propio, no de E3.
+**Confianza residual, medida:** la clase no distingue la causa. Un `formatVersion` fuera del
+conjunto que acepta `VersionCabeza` sale `no-verifica` en vivo y `firma-no-verifica` en
+`--auditar`, y `version-desconocida` es la version del DIARIO (`v`), no la de la cabeza. El texto
+si la distingue, y por eso el manifiesto pina clase y texto. Abrir una clase subiria
+`DIARIO_VERSION`: corte propio, no de E3.
 
 ## Notas operativas
 

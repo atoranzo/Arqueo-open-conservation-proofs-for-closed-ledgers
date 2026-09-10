@@ -33442,3 +33442,56 @@ movieron a mano por el MISMO delta, las dos sumas y el `# nodo: 91` del bloque d
 `PAPER.md` y de `PAPER_EN.md`, rancio desde el §440, que pasa a 101 (cierra el punto 147 y su
 gemela inglesa, que el punto no nombraba). La huella que el arnes del cable imprime,
 `04b8b621ac40a073`, es la del adaptador `tools/cable_respuesta.sh` y no la del testigo.
+
+## §453 — RFC-0007 E1: el positivo v5 del catalogo del cable, una cabeza REAL (E1 sellada)
+
+**Que.** El catalogo del cable gana su positivo de la era v5 y el negativo que de el deriva.
+`positivo-cabeza-v5.json` es una cabeza v5 FIRMADA por un nodo real: la `nueva` del sobre que
+`tools/banco_consumo.sh --guardar` capturo el 10-sep (`PASTE-453-M`), envuelta en el cuerpo
+JSON-RPC con la forma de bytes de `positivo-cabeza.json`; el testigo dice de ella `VERDE: nueva`.
+`rechazo-v5-recomposicion.json` es la misma cabeza con `totalSupply` + 1, y el testigo la rechaza
+con <<los campos NO recomponen el epochDigest firmado (v5)>>: la familia de v5 va bajo la firma
+tambien cuando vale cero. El `MANIFIESTO.txt` pasa de 15 a 17 entradas. La prosa que describe el
+catalogo se pone al dia: `spec/RPC.md` decia que todos sus vectores derivan de `posicion-v2.json`
+-falso desde el §452- y que el rechazo por version era para <<fuera de {2, 3}>> (punto 150);
+`spec/README.md` decia <<plus one positive>>. La fila E1 del RFC-0007 pasa a **sellada**: E1
+entera, en cinco sellos.
+
+**Por que asi.** Siete decisiones DELEGADAS por el autor con la ley, REVERSIBLES aqui. **D-1**, la
+captura se embebe y no se vuelve a capturar: el bloque no levanta nodo y su POST se predice entero;
+la captura es la fuente, como `consumo.json` lo fue de los dos vectores del §452. **D-2**, un
+negativo mas y solo uno: de las tres sondas del `PASTE-453-M`, solo la de `totalSupply` da un texto
+que el catalogo no pinaba; <<la firma es VALIDA pero de otro mensaje>> y <<cabeza firmada sin ...>>
+ya tienen vector. Un vector por rechazo MEDIDO, no por mutacion. **D-3**, el manifiesto dice de
+donde sale la captura y que su familia es la de un libro sin cuentas. **D-4**, la prosa del
+catalogo en los dos sitios que publican su composicion, y la frase del conjunto deja de llevar un
+conjunto literal: lo nombra por su productor, `VersionCabeza`, y asi no caduca con la proxima
+version. **D-5**, la fila E1. **D-6**, los vectores nuevos llevan el orden de sobre de los del
+§409 (`jsonrpc`, `id`, `result`); los dos del §452 lo llevan alfabetico y no se reescriben (regla
+2 del PROCESO): la diferencia se declara. **D-7**, sin codigo ni pines: la puerta es el testigo
+real sobre los dos vectores, el arnes del cable entero, las diez herramientas y el canon.
+
+**Lo medido antes de escribir un byte.** El `PASTE-453-M` (`995a21023d919cbe`, SALIDA
+`343351bd90b8ab49`) corrio `banco_consumo.sh --guardar` en 20 s y salio VERDE con el nodo emitiendo
+v5: el cambio que el §452 hizo al banco -aceptar v4 o v5- queda probado en vivo. Sus dos cabezas
+son v5, con las 27 claves de la forma firmada y la MISMA clave publica que las v4 de `consumo.json`
+(la misma semilla). El nodo sirve las claves de la cabeza ordenadas, asi que las dos formas del
+catalogo solo difieren en el orden del sobre. La familia de la cabeza capturada es la de un libro
+sin cuentas -`nextPending`, `nextIndex` y `totalSupply` en 0, `pmetaRoot` la raiz del arbol vacio-:
+el positivo no discrimina el orden de esos tres contadores, y eso lo fija el KAT `epoch_digest_v5`
+(§451), que los lleva distintos. Las capturas viajan en `CAPTURAS-453-20260910-150841.tar.gz`
+(`309ab768ab95eccb`); con ellas, un sobre de consumo v5 real que no entra en ningun catalogo.
+
+**Medido.** Los dos vectores: `positivo-cabeza-v5.json` `2461908676a3db4e` y
+`rechazo-v5-recomposicion.json` `b2391a132a7d7ccd`, 38354 B cada uno, y el testigo real dice de
+cada uno lo que su linea del manifiesto pide. Arnes del cable: 17 de 17. Pines, sumas,
+`check_tests` y los otros tres catalogos, quietos. Canon `--sello` rc 0 (los segundos, en la salida
+de este bloque). Ficheros: los dos vectores, `spec/vectors/cable/MANIFIESTO.txt`, `spec/RPC.md`,
+`spec/README.md`, `spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md` y este asiento. La fila
+E1 del RFC ensancha (tabla): se declara. Vallas 132, invariante.
+
+**Lo que NO afirma, y lo que queda vivo.** No afirma nada de una segunda implementacion: el
+catalogo sigue siendo el de la referencia. Las sondas de `formatVersion` 4 y de la clave ausente no
+entran porque su texto ya esta pinado. El sobre de consumo v5 capturado no entra en el catalogo del
+consumo, que sigue con cabezas v4. Siguen vivos el punto 152 (nadie fuera del nucleo compone
+`params_digest`) y la frase del genesis de la seccion v5 de `RPC.md`, que describe un libro nuevo.
