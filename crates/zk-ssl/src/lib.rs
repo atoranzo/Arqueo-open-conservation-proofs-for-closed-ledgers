@@ -397,6 +397,276 @@ impl std::fmt::Display for LayerError {
 }
 impl std::error::Error for LayerError {}
 
+/// **La causa de un rechazo, como DATO** (RFC-0007 E2, §454).
+///
+/// `nombre` es el de la variante, tal cual. `campos` son los suyos, con el nombre con que
+/// viajan: el de Rust en camelCase, la convencion del cable (`would_be` -> `wouldBe`). Las
+/// cinco variantes TUPLA no tienen nombre de campo en el codigo y lo pone este catalogo:
+/// `index` para una cuenta, `detalle` para un texto. El valor va tipado; codificarlo
+/// (QUANTITY, `Digest`, texto) es del nodo, que es quien lo pone en el cable.
+///
+/// El `match` de `causa` es EXHAUSTIVO a proposito, como el de `Display` y el de
+/// `iso_reason`: una variante nueva no compila hasta que alguien escribe su causa, y
+/// `spec/RPC.md` la publica. Dos listas son dos productores del mismo contrato: las ata
+/// `tests_causa`, contra el propio fuente de este enum y contra la tabla publicada.
+pub struct Causa {
+    pub nombre: &'static str,
+    pub campos: Vec<(&'static str, Campo)>,
+}
+
+/// El valor de un campo de una [`Causa`], tipado (RFC-0007 E2, §454).
+pub enum Campo {
+    /// Un numero: cantidades, alturas, indices, topes.
+    Cantidad(u64),
+    /// Un digest: los consumos del RFC-0006.
+    Digest(Digest),
+    /// Un texto: el de las dos variantes que lo llevan y el fallo del almacen.
+    Texto(String),
+}
+
+impl LayerError {
+    /// La causa de este error, como dato: ver [`Causa`].
+    pub fn causa(&self) -> Causa {
+        use LayerError::*;
+        let n = |v: u64| Campo::Cantidad(v);
+        let (nombre, campos): (&'static str, Vec<(&'static str, Campo)>) = match self {
+            RefundTooEarly { born, now, ttl } => (
+                "RefundTooEarly",
+                vec![("born", n(*born)), ("now", n(*now)), ("ttl", n(*ttl))],
+            ),
+            RefundUnavailable => ("RefundUnavailable", vec![]),
+            PendingMismatch => ("PendingMismatch", vec![]),
+            AccountNotFound(i) => ("AccountNotFound", vec![("index", n(*i))]),
+            InsufficientBalance { available, requested } => (
+                "InsufficientBalance",
+                vec![("available", n(*available)), ("requested", n(*requested))],
+            ),
+            OverRegulatoryLimit { limit, requested } => (
+                "OverRegulatoryLimit",
+                vec![("limit", n(*limit)), ("requested", n(*requested))],
+            ),
+            PendingTreeExhausted { capacity } => {
+                ("PendingTreeExhausted", vec![("capacity", n(*capacity))])
+            }
+            DuplicateAccountInBatch { index } => {
+                ("DuplicateAccountInBatch", vec![("index", n(*index))])
+            }
+            DuplicatePendingInBatch { position } => {
+                ("DuplicatePendingInBatch", vec![("position", n(*position))])
+            }
+            NotTheIssuer => ("NotTheIssuer", vec![]),
+            CustodianSetExhausted { uses, max } => (
+                "CustodianSetExhausted",
+                vec![("uses", n(*uses)), ("max", n(*max))],
+            ),
+            ProofFailed(t) => ("ProofFailed", vec![("detalle", Campo::Texto(t.clone()))]),
+            VerificationFailed(t) => {
+                ("VerificationFailed", vec![("detalle", Campo::Texto(t.clone()))])
+            }
+            StaleState => ("StaleState", vec![]),
+            WrongRegulatoryLimit { expected, declared } => (
+                "WrongRegulatoryLimit",
+                vec![("expected", n(*expected)), ("declared", n(*declared))],
+            ),
+            // El fallo del almacen no es una regla: es del operador. Viaja con el `Display`
+            // de `StoreError`, y el catalogo lo declara.
+            Store(e) => ("Store", vec![("detalle", Campo::Texto(e.to_string()))]),
+            NotTheAccountHolder => ("NotTheAccountHolder", vec![]),
+            BalanceOutsideBand { lower, upper } => (
+                "BalanceOutsideBand",
+                vec![("lower", n(*lower)), ("upper", n(*upper))],
+            ),
+            SupplyCapExceeded { cap, would_be } => (
+                "SupplyCapExceeded",
+                vec![("cap", n(*cap)), ("wouldBe", n(*would_be))],
+            ),
+            RecoveryToSameIdentity => ("RecoveryToSameIdentity", vec![]),
+            AccountLimitReached { limit } => ("AccountLimitReached", vec![("limit", n(*limit))]),
+            AccountFrozen(i) => ("AccountFrozen", vec![("index", n(*i))]),
+            AlreadyInThatFreezeState => ("AlreadyInThatFreezeState", vec![]),
+            ConsumoRepetido { consumo } => {
+                ("ConsumoRepetido", vec![("consumo", Campo::Digest(*consumo))])
+            }
+            ConsumoColision { consumo, ocupante } => (
+                "ConsumoColision",
+                vec![("consumo", Campo::Digest(*consumo)), ("ocupante", Campo::Digest(*ocupante))],
+            ),
+        };
+        Causa { nombre, campos }
+    }
+}
+
+/// RFC-0007 E2 (§454): el catalogo de las causas, atado por los dos lados.
+#[cfg(test)]
+mod tests_causa {
+    use super::*;
+
+    /// Una instancia de CADA variante, en el orden del enum. Que no falte ninguna lo
+    /// exige el primer test, contra el propio fuente de este fichero.
+    fn una_de_cada() -> Vec<LayerError> {
+        let d = |v: u64| {
+            [BaseElement::new(v), BaseElement::new(0), BaseElement::new(0), BaseElement::new(0)]
+        };
+        vec![
+            LayerError::RefundTooEarly { born: 1, now: 2, ttl: 3 },
+            LayerError::RefundUnavailable,
+            LayerError::PendingMismatch,
+            LayerError::AccountNotFound(4),
+            LayerError::InsufficientBalance { available: 5, requested: 6 },
+            LayerError::OverRegulatoryLimit { limit: 7, requested: 8 },
+            LayerError::PendingTreeExhausted { capacity: 9 },
+            LayerError::DuplicateAccountInBatch { index: 10 },
+            LayerError::DuplicatePendingInBatch { position: 11 },
+            LayerError::NotTheIssuer,
+            LayerError::CustodianSetExhausted { uses: 12, max: 13 },
+            LayerError::ProofFailed("p".into()),
+            LayerError::VerificationFailed("v".into()),
+            LayerError::StaleState,
+            LayerError::WrongRegulatoryLimit { expected: 14, declared: 15 },
+            LayerError::Store(StoreError::Malformed("m".into())),
+            LayerError::NotTheAccountHolder,
+            LayerError::BalanceOutsideBand { lower: 16, upper: 17 },
+            LayerError::SupplyCapExceeded { cap: 18, would_be: 19 },
+            LayerError::RecoveryToSameIdentity,
+            LayerError::AccountLimitReached { limit: 20 },
+            LayerError::AccountFrozen(21),
+            LayerError::AlreadyInThatFreezeState,
+            LayerError::ConsumoRepetido { consumo: d(22) },
+            LayerError::ConsumoColision { consumo: d(23), ocupante: d(24) },
+        ]
+    }
+
+    /// El identificador que el `Debug` DERIVADO escribe delante: el nombre de la variante.
+    fn nombre_del_debug(e: &LayerError) -> String {
+        format!("{e:?}").chars().take_while(|c| c.is_ascii_alphanumeric()).collect()
+    }
+
+    /// Las variantes, leidas del propio fuente de este enum: una linea por variante, con
+    /// cuatro espacios delante y una mayuscula (los comentarios empiezan por `/`).
+    fn variantes_del_fuente() -> Vec<String> {
+        let fuente = include_str!("lib.rs");
+        let ini = fuente.find("pub enum LayerError {").expect("el enum");
+        let cuerpo = &fuente[ini..];
+        let fin = cuerpo.find("\n}\n").expect("el cierre del enum");
+        cuerpo[..fin]
+            .lines()
+            .skip(1)
+            .filter(|l| {
+                l.len() > 4 && l.starts_with("    ") && l.as_bytes()[4].is_ascii_uppercase()
+            })
+            .map(|l| l[4..].chars().take_while(|c| c.is_ascii_alphanumeric()).collect())
+            .collect()
+    }
+
+    /// Los nombres de campo que el `Debug` derivado escribe, a profundidad 1.
+    fn campos_del_debug(e: &LayerError) -> Vec<String> {
+        let b: Vec<char> = format!("{e:?}").chars().collect();
+        let (mut prof, mut ident, mut out) = (0i32, String::new(), Vec::new());
+        for (i, &c) in b.iter().enumerate() {
+            match c {
+                '{' | '[' | '(' => {
+                    prof += 1;
+                    ident.clear();
+                }
+                '}' | ']' | ')' => {
+                    prof -= 1;
+                    ident.clear();
+                }
+                ':' if prof == 1 && b.get(i + 1) == Some(&' ') && !ident.is_empty() => {
+                    out.push(std::mem::take(&mut ident));
+                }
+                c if c.is_ascii_alphanumeric() || c == '_' => ident.push(c),
+                _ => ident.clear(),
+            }
+        }
+        out
+    }
+
+    /// `would_be` -> `wouldBe`: la convencion del cable.
+    fn camel(s: &str) -> String {
+        let (mut out, mut sube) = (String::new(), false);
+        for c in s.chars() {
+            if c == '_' {
+                sube = true;
+            } else if sube {
+                out.extend(c.to_uppercase());
+                sube = false;
+            } else {
+                out.push(c);
+            }
+        }
+        out
+    }
+
+    /// La tabla PUBLICADA en `spec/RPC.md`: causa y campos, en su orden.
+    fn tabla_publicada() -> Vec<(String, Vec<String>)> {
+        let ruta = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../spec/RPC.md");
+        let rpc = std::fs::read_to_string(&ruta).expect("spec/RPC.md");
+        let ini = rpc.find("\n| causa | campos |\n").expect("la tabla del catalogo en spec/RPC.md");
+        let entre = |s: &str| -> Vec<String> {
+            s.split('`').skip(1).step_by(2).map(|x| x.to_string()).collect()
+        };
+        rpc[ini + 1..]
+            .lines()
+            .skip(2)
+            .take_while(|l| l.starts_with("| `"))
+            .map(|l| {
+                let celdas: Vec<&str> = l.split('|').collect();
+                let nombre = entre(celdas[1]).into_iter().next().expect("la causa de la fila");
+                (nombre, entre(celdas[2]))
+            })
+            .collect()
+    }
+
+    #[test]
+    fn cada_variante_tiene_su_causa_con_el_nombre_de_la_variante() {
+        let todas = una_de_cada();
+        for e in &todas {
+            assert_eq!(e.causa().nombre, nombre_del_debug(e), "{e:?}");
+        }
+        let mut de_la_lista: Vec<String> = todas.iter().map(nombre_del_debug).collect();
+        let mut del_fuente = variantes_del_fuente();
+        de_la_lista.sort();
+        del_fuente.sort();
+        assert_eq!(de_la_lista, del_fuente, "una_de_cada() no cubre el enum entero");
+    }
+
+    #[test]
+    fn los_campos_de_cada_causa_son_los_de_su_variante() {
+        for e in una_de_cada() {
+            let d = format!("{e:?}");
+            let nombres: Vec<&str> = e.causa().campos.iter().map(|(n, _)| *n).collect();
+            if d[nombre_del_debug(&e).len()..].starts_with('(') {
+                // TUPLA: Rust no le da nombre al campo; lo pone el catalogo, y es uno.
+                assert_eq!(nombres.len(), 1, "{d}");
+                assert!(["index", "detalle"].contains(&nombres[0]), "{d}");
+            } else {
+                let esperados: Vec<String> =
+                    campos_del_debug(&e).iter().map(|n| camel(n)).collect();
+                assert_eq!(nombres, esperados, "{d}");
+            }
+        }
+    }
+
+    /// El catalogo PUBLICADO es el que produce la capa: mismas causas, mismos campos y en
+    /// el mismo orden. Dos listas son dos productores del mismo contrato (RFC-0007 D-C).
+    #[test]
+    fn el_catalogo_publicado_es_el_de_la_capa() {
+        let producido: Vec<(String, Vec<String>)> = una_de_cada()
+            .iter()
+            .map(|e| {
+                let c = e.causa();
+                (c.nombre.to_string(), c.campos.iter().map(|(n, _)| n.to_string()).collect())
+            })
+            .collect();
+        assert_eq!(
+            tabla_publicada(),
+            producido,
+            "spec/RPC.md y LayerError::causa publican catalogos distintos"
+        );
+    }
+}
+
 /// Datos que el nodo guarda de cada cuenta.
 ///
 /// **El operador del nodo ve estos valores.** La privacidad es frente a

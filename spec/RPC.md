@@ -34,7 +34,8 @@ roadmap.)
   **2.097.152 bytes** (§218, medido). Una operación con prueba ronda los
   132.728 en hex, así que en un `zkssl_applyMany` entran **15**.
 - Respuesta: `{"jsonrpc":"2.0","id":…,"result":…}` o
-  `{"jsonrpc":"2.0","id":…,"error":{"code":…,"message":…}}`.
+  `{"jsonrpc":"2.0","id":…,"error":{"code":…,"message":…}}`; un rechazo de la capa (`-32000`)
+  lleva además `data`, su causa como dato (sección «Errores», §454).
 
 ## Codificación (la convención más aceptada, adaptada)
 
@@ -136,10 +137,72 @@ compila sin la feature `dev` y no contiene este espacio.
 |---|---|
 | `-32601` | método desconocido (o `dev_*` deshabilitado) |
 | `-32602` | parámetros inválidos / codificación no canónica |
-| `-32000` | rechazo de la capa: `message` = `LayerError` (p. ej. `InsufficientBalance{…}`, `StaleState`, `OverRegulatoryLimit{…}`, `AccountFrozen(…)`) |
+| `-32000` | rechazo de la capa: `message` = `LayerError` (p. ej. `InsufficientBalance{…}`, `StaleState`, `OverRegulatoryLimit{…}`, `AccountFrozen(…)`); desde el §454, `data` = su causa (abajo) |
+| `-32004` | credencial inválida para la cuenta pedida (§261, «La credencial») |
+| `-32603` | fallo interno del nodo: un candado envenenado, una serialización, el contador de recepción |
 
 `StaleState` es esperable bajo concurrencia: el estado declarado quedó
 atrás. El cliente refresca su vista y reintenta.
+
+### La causa de un rechazo, como dato (§454, RFC-0007 E2)
+
+Desde el §454 un rechazo de la capa (`-32000`) lleva, además de `message`, un `data` con su
+causa. El ejemplo es el de un pago sin saldo:
+
+```text
+"error": { "code": -32000,
+           "message": "InsufficientBalance { available: 10, requested: 999999 }",
+           "data": { "causa": "InsufficientBalance",
+                     "campos": { "available": "0xa", "requested": "0xf423f" },
+                     "seq": "0x…" } }
+```
+
+- **`causa`** es el nombre de la variante de `LayerError`, tal cual. **`campos`** son los suyos,
+  con la codificación de este documento: QUANTITY para un número, `Digest` para un digest y
+  texto tal cual para `detalle`. Las cinco variantes TUPLA no tienen nombre de campo en el
+  código: lo pone este catálogo (`index` para una cuenta, `detalle` para un texto).
+- **`seq`** es la altura del registro contra la que se juzgó: la misma que publica la cabeza
+  (`seq = log.len()`), leída bajo el mismo candado que el rechazo. Que exista una cabeza FIRMADA
+  en esa altura depende del latido; eso es asunto del rechazo con prueba (E3), no de este dato.
+- **`message` no cambia**: sigue siendo el `Debug` de `LayerError`, con `[receptionSeq=…]` si lo
+  hay. Los demás códigos no llevan `data` y salen con las dos claves de siempre.
+- **`zkssl_publishConsumo` rechaza DENTRO de `result`** (`accepted: false`, `reason`): desde el
+  §454 su negativa lleva el mismo `data`, con `ConsumoRepetido` o `ConsumoColision`.
+- **No es evidencia oponible**: es lo que el nodo dice, como `receptionSeq` (§253). La prueba de
+  la causa es E3 del RFC-0007.
+
+El catálogo lo produce la capa —`LayerError::causa`, un `match` exhaustivo— y un test lo ata a
+esta tabla (`tests_causa`, en `crates/zk-ssl/src/lib.rs`): una variante nueva no compila sin su
+causa ni pasa sin su fila. `Store` es un fallo del operador, no una regla. Qué causas emite hoy el
+cable, y por qué métodos, está medido en el asiento §454 de `AUDITORIA.md`, sin puerta.
+
+| causa | campos |
+|---|---|
+| `RefundTooEarly` | `born`, `now`, `ttl` |
+| `RefundUnavailable` | — |
+| `PendingMismatch` | — |
+| `AccountNotFound` | `index` |
+| `InsufficientBalance` | `available`, `requested` |
+| `OverRegulatoryLimit` | `limit`, `requested` |
+| `PendingTreeExhausted` | `capacity` |
+| `DuplicateAccountInBatch` | `index` |
+| `DuplicatePendingInBatch` | `position` |
+| `NotTheIssuer` | — |
+| `CustodianSetExhausted` | `uses`, `max` |
+| `ProofFailed` | `detalle` |
+| `VerificationFailed` | `detalle` |
+| `StaleState` | — |
+| `WrongRegulatoryLimit` | `expected`, `declared` |
+| `Store` | `detalle` |
+| `NotTheAccountHolder` | — |
+| `BalanceOutsideBand` | `lower`, `upper` |
+| `SupplyCapExceeded` | `cap`, `wouldBe` |
+| `RecoveryToSameIdentity` | — |
+| `AccountLimitReached` | `limit` |
+| `AccountFrozen` | `index` |
+| `AlreadyInThatFreezeState` | — |
+| `ConsumoRepetido` | `consumo` |
+| `ConsumoColision` | `consumo`, `ocupante` |
 
 ## Qué afirma el registro de transiciones
 
@@ -867,7 +930,8 @@ raíz viaja firmada en la cabeza v4 desde §415.
 ⚠️ **Publicar no exige prueba ni autorización**, y está declarado: quien tiene acceso al nodo
 publica, y quien publica primero bloquea. Es denegación de servicio, no doble uso (D-4 del
 RFC-0006). Lo que el nodo garantiza es lo otro: **un consumo ya publicado se rechaza con nombre**,
-y una colisión de posición también, con el suyo.
+y una colisión de posición también, con el suyo. Desde el §454 esa negativa (`accepted: false`)
+lleva además, junto a `reason`, el mismo `data` que un `-32000` (sección «Errores»).
 
 ⚠️ **La cabeza NO viaja, y la raíz TAMPOCO** (§248, un paso más lejos que en `zkssl_ackPath`):
 quien verifica saca la raíz de la cabeza FIRMADA que ya custodia y sube el camino él mismo.

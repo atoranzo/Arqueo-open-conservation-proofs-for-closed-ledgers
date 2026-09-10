@@ -881,8 +881,7 @@ async fn handle(
         }
         Err(e) => {
             tracing::warn!(method = %req.method, ms, code = e.code, msg = %e.message, "error");
-            json!({ "jsonrpc": "2.0", "id": id,
-                    "error": { "code": e.code, "message": e.message } })
+            json!({ "jsonrpc": "2.0", "id": id, "error": objeto_de_error(e) })
         }
     })
 }
@@ -955,6 +954,10 @@ fn descodificar_semilla(hex: &str) -> anyhow::Result<Vec<u8>> {
 struct RpcError {
     code: i64,
     message: String,
+    /// RFC-0007 E2 (§454): la causa de un rechazo de la capa, como DATO -`causa`,
+    /// `campos`, `seq`-. Solo la llevan los `-32000`: los demas codigos salen con sus
+    /// dos claves de siempre.
+    data: Option<Value>,
 }
 
 /// **Exige la credencial de la cuenta ANTES de entregar un camino** (§261).
@@ -977,15 +980,20 @@ fn exige_credencial(l: &SovereignLayer, indice: u64, vk: &wire::B32) -> Result<(
 
 impl RpcError {
     fn invalid_params(e: impl std::fmt::Display) -> Self {
-        Self { code: -32602, message: format!("parámetros inválidos: {e}") }
+        Self { code: -32602, message: format!("parámetros inválidos: {e}"), data: None }
     }
     fn method_not_found(m: &str) -> Self {
-        Self { code: -32601, message: format!("método desconocido: {m}") }
+        Self { code: -32601, message: format!("método desconocido: {m}"), data: None }
     }
-    fn layer(e: LayerError) -> Self {
+    fn layer(e: LayerError, seq: u64) -> Self {
         // -32000: rechazo de la capa. El mensaje es el Debug del error,
         // que en este proyecto es autoexplicativo.
-        Self { code: -32000, message: format!("{e:?}") }
+        //
+        // RFC-0007 E2 (§454): y la causa viaja ademas como DATO, con el `seq`
+        // del estado en que se juzgo. `message` NO cambia: lo leen el testigo
+        // y los clientes, y la causa entra al lado, aditiva.
+        let data = Some(data_de(&e, seq));
+        Self { code: -32000, message: format!("{e:?}"), data }
     }
     /// ⚠️ §261: la credencial **no cuadra con ESA cuenta**.
     ///
@@ -993,7 +1001,11 @@ impl RpcError {
     /// distinguir «no autorizado» de «la capa rechazo la operacion». Un
     /// instrumento que falla dice QUE fallo (§254).
     fn credencial(indice: u64) -> Self {
-        Self { code: -32004, message: format!("credencial invalida para la cuenta {indice}") }
+        Self {
+            code: -32004,
+            message: format!("credencial invalida para la cuenta {indice}"),
+            data: None,
+        }
     }
     /// ⚠️ El número de recepción **también en el error**: el caso que
     /// importa es el rechazo, y ahí es donde un censor se escondería.
@@ -1004,6 +1016,38 @@ impl RpcError {
     fn wire(e: wire::WireError) -> Self {
         Self::invalid_params(e)
     }
+}
+
+/// **La causa de un rechazo, en la forma del cable** (RFC-0007 E2, §454).
+///
+/// El catalogo lo produce la CAPA (`LayerError::causa`, un `match` exhaustivo)
+/// y `spec/RPC.md` lo publica; aqui solo se codifica: QUANTITY para un numero,
+/// `Digest` para un digest, texto tal cual. `seq` es la altura del registro en
+/// que se juzgo, leida bajo el mismo candado que el rechazo.
+fn data_de(e: &LayerError, seq: u64) -> Value {
+    let c = e.causa();
+    let mut campos = serde_json::Map::new();
+    for (nombre, campo) in c.campos {
+        let v = match campo {
+            zk_ssl::Campo::Cantidad(n) => json!(Q(n)),
+            zk_ssl::Campo::Digest(d) => json!(digest_to_wire(&d)),
+            zk_ssl::Campo::Texto(t) => json!(t),
+        };
+        campos.insert(nombre.to_string(), v);
+    }
+    json!({ "causa": c.nombre, "campos": Value::Object(campos), "seq": Q(seq) })
+}
+
+/// El objeto `error` de JSON-RPC, escrito a mano (§228).
+///
+/// RFC-0007 E2 (§454): `data` va SOLO si el error la lleva -los rechazos de la
+/// capa-; los demas codigos salen con las dos claves de siempre, byte a byte.
+fn objeto_de_error(e: RpcError) -> Value {
+    let mut o = json!({ "code": e.code, "message": e.message });
+    if let Some(d) = e.data {
+        o["data"] = d;
+    }
+    o
 }
 
 fn parse<T: serde::de::DeserializeOwned>(params: Value) -> Result<T, RpcError> {
@@ -1053,6 +1097,12 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
         tracing::warn!(posicion = p, "reserva caducada y liberada");
     }
 
+    // RFC-0007 E2 (§454) - EL ESTADO EN QUE SE JUZGA. El candado se tomo arriba
+    // y no se suelta hasta salir: todo lo que este despacho rechace, lo rechaza
+    // contra este registro. Es la altura que publica la cabeza (`seq =
+    // log.len()`), y viaja en el `data` de cada rechazo de la capa.
+    let seq_juicio = l.transition_log().len() as u64;
+
     match method {
         // ── lectura ────────────────────────────────────────────────
         "zkssl_protocolVersion" => Ok(json!("zkssl/0.3")),
@@ -1093,6 +1143,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             let u = app.ultima_cabeza.lock().map_err(|_| RpcError {
                 code: -32603,
                 message: "candado de la ultima cabeza envenenado".into(),
+                data: None,
             })?;
             // ⚠️ §313 · las tres formas las monta el TIPO, no un `json!`.
             // El invariante «si `available`, esos trece son todos `Some`»
@@ -1144,6 +1195,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             serde_json::to_value(dto).map_err(|e| RpcError {
                 code: -32603,
                 message: format!("la cabeza firmada no serializa: {e}"),
+                data: None,
             })
         }
         // ── §315 · EL TRANSPORTE DE LA COFIRMA: el testigo la deja aqui ──
@@ -1166,6 +1218,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 let u = app.ultima_cabeza.lock().map_err(|_| RpcError {
                     code: -32603,
                     message: "candado de la ultima cabeza envenenado".into(),
+                    data: None,
                 })?;
                 u.as_ref().map(|l| l.epoch_digest)
             };
@@ -1212,6 +1265,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             let mut g = app.cofirmas.lock().map_err(|_| RpcError {
                 code: -32603,
                 message: "candado de las cofirmas envenenado".into(),
+                data: None,
             })?;
             g.retain(|_, v| v.epoch_digest.0 == actual);
             let nueva = !g.contains_key(&p.cosig.clave_publica_testigo.0);
@@ -1236,6 +1290,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 let u = app.ultima_cabeza.lock().map_err(|_| RpcError {
                     code: -32603,
                     message: "candado de la ultima cabeza envenenado".into(),
+                    data: None,
                 })?;
                 u.as_ref().map(|l| l.epoch_digest)
             };
@@ -1243,6 +1298,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             let g = app.cofirmas.lock().map_err(|_| RpcError {
                 code: -32603,
                 message: "candado de las cofirmas envenenado".into(),
+                data: None,
             })?;
             // ⚠️⚠️ §317 · EL NODO CONSERVA LAS COFIRMAS DE LA ULTIMA
             // EPOCA CON SUBMISIONES, hasta que llegue una de otra epoca;
@@ -1284,6 +1340,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             let consumo = digest_from_wire(&p.consumo).map_err(|_| RpcError {
                 code: -32602,
                 message: "consumo: no es un digest de 32 bytes".into(),
+                data: None,
             })?;
             // ⚠️ §436 · E4b — OTRO libro firmó tener este consumo. Sigue
             // siendo DETECCIÓN, nunca prevención: no impide que se publique
@@ -1301,7 +1358,10 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 })),
                 // El texto es el de la CAPA, sin reescribir: `ConsumoRepetido`
                 // y `ConsumoColision` ya dicen cual de las dos cosas paso.
-                Err(e) => Ok(json!({ "accepted": false, "reason": format!("{e}") })),
+                // RFC-0007 E2 (§454): y la causa viaja como DATO, la misma forma
+                // que la de un `-32000`, junto a `reason`.
+                Err(e) => Ok(json!({ "accepted": false, "reason": format!("{e}"),
+                                     "data": data_de(&e, seq_juicio) })),
             }
         }
 
@@ -1326,6 +1386,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             let consumo = digest_from_wire(&p.consumo).map_err(|_| RpcError {
                 code: -32602,
                 message: "consumo: no es un digest de 32 bytes".into(),
+                data: None,
             })?;
             let n = l.transition_log().len() as u64;
             if p.seq.0 > n {
@@ -1375,7 +1436,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             //    necesitar al nodo; OBTENERLO pasa a ser del titular, que
             //    puede reenviarlo a quien quiera. Ver spec/RPC.md.
             exige_credencial(l, p.index.0, &p.view_key)?;
-            let m = l.inclusion_materials(p.index.0).map_err(RpcError::layer)?;
+            let m = l.inclusion_materials(p.index.0).map_err(|e| RpcError::layer(e, seq_juicio))?;
             Ok(serde_json::to_value(wire::InclusionReceiptDto {
                 index: Q(m.index),
                 leaf: digest_to_wire(&m.leaf),
@@ -1451,11 +1512,13 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 .ok_or_else(|| RpcError {
                     code: -32602,
                     message: "falta oldSize (Q): el mmrSize de la cabeza custodiada".into(),
+                    data: None,
                 })?
                 .0;
             let h = app.hojas_mmr.lock().map_err(|_| RpcError {
                 code: -32603,
                 message: "candado de las hojas del MMR envenenado".into(),
+                data: None,
             })?;
             let t = h.len() as u64;
             if viejo == 0 {
@@ -1498,7 +1561,9 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             let p: P = parse(params)?;
             let id = l
                 .public_id_of(p.index.0)
-                .ok_or_else(|| RpcError::layer(LayerError::AccountNotFound(p.index.0)))?;
+                .ok_or_else(|| {
+                    RpcError::layer(LayerError::AccountNotFound(p.index.0), seq_juicio)
+                })?;
             Ok(serde_json::to_value(digest_to_wire(&id)).unwrap())
         }
 
@@ -1511,7 +1576,9 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             let vk = digest_from_wire(&p.view_key).map_err(RpcError::wire)?;
             let v = l
                 .account_view_authenticated(p.index.0, vk)
-                .ok_or_else(|| RpcError::layer(LayerError::AccountNotFound(p.index.0)))?;
+                .ok_or_else(|| {
+                    RpcError::layer(LayerError::AccountNotFound(p.index.0), seq_juicio)
+                })?;
             Ok(serde_json::to_value(wire::AccountViewDto::from(&v)).unwrap())
         }
 
@@ -1563,7 +1630,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                     digest_from_wire(&p.view_id).map_err(RpcError::wire)?,
                     digest_from_wire(&p.leaf_salt).map_err(RpcError::wire)?,
                 )
-                .map_err(RpcError::layer)?;
+                .map_err(|e| RpcError::layer(e, seq_juicio))?;
             Ok(json!({ "index": Q(index) }))
         }
 
@@ -1588,7 +1655,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             //
             // Y es condición necesaria del lote: `apply_many` rechaza el lote
             // entero con `DuplicatePendingInBatch` si dos comparten posición.
-            let pos = l.reserve_pending().map_err(RpcError::layer)?;
+            let pos = l.reserve_pending().map_err(|e| RpcError::layer(e, seq_juicio))?;
             let m = match l.send_materials_at(p.sender.0, receptor, p.amount.0, salt, pos) {
                 Ok(m) => m,
                 Err(e) => {
@@ -1597,7 +1664,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                     // sin esto cada rechazo dejaría una reserva muerta. Un
                     // atacante ni siquiera necesitaría saldo para provocarlas.
                     l.release_pending(pos);
-                    return Err(RpcError::layer(e));
+                    return Err(RpcError::layer(e, seq_juicio));
                 }
             };
             reservas.insert(pos, Instant::now());
@@ -1644,7 +1711,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 l.release_pending(pos);
                 // ⚠️ El numero viaja TAMBIEN en el error: el caso que
                 // importa es justo el rechazo.
-                return Err(RpcError::layer(e).con_recepcion(rx));
+                return Err(RpcError::layer(e, seq_juicio).con_recepcion(rx));
             }
             Ok(con_rx(con_acuse(applied(l), l), rx))
         }
@@ -1660,7 +1727,9 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             //    contrario y estaba equivocado.
             exige_credencial(l, p.receiver.0, &p.view_key)?;
             let notice = (&p.notice).try_into().map_err(RpcError::wire)?;
-            let m = l.claim_materials(p.receiver.0, &notice).map_err(RpcError::layer)?;
+            let m = l
+                .claim_materials(p.receiver.0, &notice)
+                .map_err(|e| RpcError::layer(e, seq_juicio))?;
             Ok(serde_json::to_value(wire::ClaimMaterialsDto::from(&m)).unwrap())
         }
 
@@ -1679,7 +1748,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             let notice = (&p.notice).try_into().map_err(RpcError::wire)?;
             let rx = recibir(app)?;
             l.apply_claim(&receipt, p.receiver.0, &state, &notice)
-                .map_err(|e| RpcError::layer(e).con_recepcion(rx))?;
+                .map_err(|e| RpcError::layer(e, seq_juicio).con_recepcion(rx))?;
             Ok(con_rx(con_acuse(applied(l), l), rx))
         }
 
@@ -1825,7 +1894,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 for pos in &posiciones {
                     l.release_pending(*pos);
                 }
-                return Err(RpcError::layer(e));
+                return Err(RpcError::layer(e, seq_juicio));
             }
 
             // El sobre: `applied` en ORDEN DE ENTRADA, que es el mismo en
@@ -1879,9 +1948,10 @@ fn recibir(app: &App) -> Result<u64, RpcError> {
         .map_err(|_| RpcError {
             code: -32603,
             message: "candado del contador de recepcion envenenado".into(),
+            data: None,
         })?
         .recibir()
-        .map_err(|e| RpcError { code: -32603, message: format!("{e}") })
+        .map_err(|e| RpcError { code: -32603, message: format!("{e}"), data: None })
 }
 
 /// Añade el número de recepción a una respuesta.
@@ -1944,8 +2014,12 @@ fn dispatch_dev(
         return Err(RpcError {
             code: -32601,
             message: "dev_* deshabilitado: arrancar con --dev".into(),
+            data: None,
         });
     }
+
+    // RFC-0007 E2 (§454): el mismo estado en que se juzga, como en `dispatch`.
+    let seq_juicio = l.transition_log().len() as u64;
 
     match method {
         // Grifo de anvil, versión ZK-SSL: emisión delegada real con los
@@ -1959,7 +2033,7 @@ fn dispatch_dev(
             let (pa, ia, pb, ib) = ts::delegated_pair(op, 1, 3);
             let nullifiers = [digest_to_wire(&ia.nullifier), digest_to_wire(&ib.nullifier)];
             l.apply_mint_delegated(subida, pa, ia, pb, ib, p.index.0, p.amount.0)
-                .map_err(RpcError::layer)?;
+                .map_err(|e| RpcError::layer(e, seq_juicio))?;
             let mut out = applied(l);
             out["custodianNullifiers"] = serde_json::to_value(nullifiers).unwrap();
             Ok(out)
@@ -2217,10 +2291,25 @@ mod tests {
     fn el_numero_de_recepcion_viaja_tambien_en_el_error() {
         // ⚠️⚠️ EL CASO QUE IMPORTA: un censor se esconderia RECHAZANDO, asi
         // que el titular necesita su numero JUSTO cuando le dicen que no.
-        let e = RpcError { code: -32000, message: "prueba invalida".into() }
+        let e = RpcError { code: -32000, message: "prueba invalida".into(), data: None }
             .con_recepcion(9);
         assert!(e.message.contains("receptionSeq=0x9"), "{}", e.message);
         assert!(e.message.contains("prueba invalida"), "sin perder el motivo");
+    }
+
+    /// RFC-0007 E2 (§454): el objeto `error` lleva `data` SOLO si hay causa. Los demas
+    /// codigos salen con sus dos claves, como antes; un rechazo de la capa, con las tres.
+    #[test]
+    fn el_objeto_de_error_lleva_data_solo_si_hay_causa() {
+        let sin = objeto_de_error(RpcError::method_not_found("zkssl_loQueSea"));
+        assert_eq!(sin.as_object().expect("objeto").len(), 2, "{sin}");
+        assert_eq!(sin["code"], -32601);
+        let con = objeto_de_error(RpcError::layer(LayerError::StaleState, 7));
+        assert_eq!(con["code"], -32000);
+        assert_eq!(con["message"], "StaleState", "el Debug de siempre");
+        assert_eq!(con["data"]["causa"], "StaleState");
+        assert_eq!(con["data"]["campos"], json!({}), "una causa sin campos");
+        assert_eq!(con["data"]["seq"], json!(Q(7)));
     }
 
     // ── §244: la custodia, afirmada frente a comprobada ──
@@ -2483,6 +2572,37 @@ mod tests {
             0,
             "CRITICO: la peticion fue rechazada y la reserva se quedo colgada"
         );
+    }
+
+    /// RFC-0007 E2 (§454): un rechazo de la capa lleva su CAUSA como dato -el nombre de
+    /// la variante, sus campos en la forma del cable y el `seq` del estado en que se
+    /// juzgo-, y el `message` sigue siendo el `Debug` de siempre.
+    #[test]
+    fn un_rechazo_de_la_capa_lleva_su_causa_como_dato() {
+        let app = nodo(30);
+        let (pobre, _, vk_pobre) = cuenta(&app, 22, 10);
+        let (_, id, _) = cuenta(&app, 23, 0);
+        let seq = app.estado.lock().expect("mutex").layer.transition_log().len() as u64;
+        let e = dispatch(
+            &app,
+            "zkssl_sendMaterials",
+            json!({
+                "sender": Q(pobre),
+                "viewKey": vk_pobre,
+                "receiverId": id,
+                "amount": Q(999_999u64),
+                "salt": digest_to_wire(&sal(2)),
+            }),
+        )
+        .expect_err("saldo insuficiente debe rechazarse");
+        assert_eq!(e.code, -32000);
+        let esperado = LayerError::InsufficientBalance { available: 10, requested: 999_999 };
+        assert_eq!(e.message, format!("{esperado:?}"), "message NO cambia");
+        let d = e.data.expect("un rechazo de la capa lleva data");
+        assert_eq!(d["causa"], "InsufficientBalance");
+        assert_eq!(d["campos"]["available"], json!(Q(10)));
+        assert_eq!(d["campos"]["requested"], json!(Q(999_999)));
+        assert_eq!(d["seq"], json!(Q(seq)), "el seq del estado en que se juzgo");
     }
 
     // ── EL BARRIDO PEREZOSO ───────────────────────────────────────
@@ -3268,6 +3388,23 @@ mod tests_consumo_cable {
             v2["reason"].as_str().map(|s| s.contains("ya esta publicado")).unwrap_or(false),
             "el rechazo tiene que decir QUE paso: {}", v2["reason"]
         );
+    }
+
+    /// RFC-0007 E2 (§454): el repetido lleva su CAUSA como dato, la misma forma que la
+    /// de un `-32000`, con el `seq` del estado en que se juzgo.
+    #[test]
+    fn un_consumo_repetido_lleva_su_causa_como_dato() {
+        let app = crate::tests::nodo(30);
+        let c = consumo_hex(5);
+        crate::dispatch(&app, "zkssl_publishConsumo", serde_json::json!({ "consumo": c }))
+            .expect("publicar");
+        let (seq, _) = cabeza(&app);
+        let v2 = crate::dispatch(&app, "zkssl_publishConsumo", serde_json::json!({ "consumo": c }))
+            .expect("un repetido NO es error del que llama");
+        assert_eq!(v2["accepted"], false, "{v2}");
+        assert_eq!(v2["data"]["causa"], "ConsumoRepetido", "{v2}");
+        assert_eq!(v2["data"]["campos"]["consumo"], serde_json::json!(c), "en el hex del cable");
+        assert_eq!(v2["data"]["seq"], serde_json::json!(Q(seq)), "el seq en que se juzgo");
     }
 
     /// §417, **el testigo que ata el cable con el nucleo**: el camino que el
