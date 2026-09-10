@@ -614,6 +614,109 @@ pub fn verificar_inclusion_v4(
     Ok(())
 }
 
+/// El acuse contra una cabeza **v5** (RFC-0007 E1, §451): mismos pasos que
+/// [`verificar_acuse_v4`], pero el digest firmado se recompone ademas con la
+/// familia de v5 -los siete parametros en un digest, la raiz de meta, las dos
+/// marcas de agua y el suministro-. **La version que la firma declara elige
+/// recomponedor**: el mismo patron que separa v3 de v4 aqui arriba.
+pub fn verificar_acuse_v5(
+    recibo: &ReciboAcuse,
+    mmr_cima: Digest,
+    mmr_t: u64,
+    cons_root: Digest,
+    cons_count: u64,
+    params_digest: Digest,
+    pmeta_root: Digest,
+    next_pending: u64,
+    next_index: u64,
+    total_supply: u64,
+    epoch_digest_firmado: Digest,
+) -> Result<(), InclusionError> {
+    if recibo.hermanos.len() != recibo.derecha.len() {
+        return Err(InclusionError::CaminoDescuadrado {
+            hermanos: recibo.hermanos.len(),
+            derecha: recibo.derecha.len(),
+        });
+    }
+    let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
+    if raiz != recibo.acuses_root {
+        return Err(InclusionError::RaizDistinta);
+    }
+    let compuesto = zk_ssl_hash::epoch_digest_v5(
+        recibo.seq,
+        recibo.accounts_root,
+        recibo.pending_root,
+        recibo.frozen_root,
+        recibo.chain_digest,
+        recibo.acuses_root,
+        recibo.n,
+        mmr_cima,
+        mmr_t,
+        cons_root,
+        cons_count,
+        params_digest,
+        pmeta_root,
+        next_pending,
+        next_index,
+        total_supply,
+    );
+    if compuesto != epoch_digest_firmado {
+        return Err(InclusionError::CabezaDistinta);
+    }
+    Ok(())
+}
+
+/// La inclusion contra una cabeza **v5** (RFC-0007 E1, §451). Ver
+/// [`verificar_inclusion_v4`]: mismos pasos, recomponedor v5.
+pub fn verificar_inclusion_v5(
+    recibo: &ReciboInclusion,
+    acuses_root: Digest,
+    n: u64,
+    mmr_cima: Digest,
+    mmr_t: u64,
+    cons_root: Digest,
+    cons_count: u64,
+    params_digest: Digest,
+    pmeta_root: Digest,
+    next_pending: u64,
+    next_index: u64,
+    total_supply: u64,
+    epoch_digest_firmado: Digest,
+) -> Result<(), InclusionError> {
+    if recibo.hermanos.len() != recibo.derecha.len() {
+        return Err(InclusionError::CaminoDescuadrado {
+            hermanos: recibo.hermanos.len(),
+            derecha: recibo.derecha.len(),
+        });
+    }
+    let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
+    if raiz != recibo.accounts_root {
+        return Err(InclusionError::RaizDistinta);
+    }
+    let compuesto = zk_ssl_hash::epoch_digest_v5(
+        recibo.seq,
+        recibo.accounts_root,
+        recibo.pending_root,
+        recibo.frozen_root,
+        recibo.chain_digest,
+        acuses_root,
+        n,
+        mmr_cima,
+        mmr_t,
+        cons_root,
+        cons_count,
+        params_digest,
+        pmeta_root,
+        next_pending,
+        next_index,
+        total_supply,
+    );
+    if compuesto != epoch_digest_firmado {
+        return Err(InclusionError::CabezaDistinta);
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests_v3 {
     use super::*;
@@ -769,6 +872,91 @@ mod tests_v4 {
             ),
             "otra cuenta de consumos debe romper la recomposicion"
         );
+    }
+}
+
+#[cfg(test)]
+mod tests_v5 {
+    use super::*;
+    use winter_math::fields::f64::BaseElement;
+
+    fn d(n: u64) -> Digest {
+        [
+            BaseElement::new(n),
+            BaseElement::new(n + 1),
+            BaseElement::new(n + 2),
+            BaseElement::new(n + 3),
+        ]
+    }
+
+    /// Un acuse contra el digest v5: verifica con el recomponedor v5 y CAE con
+    /// el v4 -- elegir mal es CabezaDistinta, como entre v3 y v4.
+    #[test]
+    fn el_acuse_v5_verifica_y_el_recomponedor_v4_lo_rechaza() {
+        let hoja = d(40);
+        let recibo = ReciboAcuse {
+            hoja,
+            hermanos: Vec::new(),
+            derecha: Vec::new(),
+            seq: 9,
+            accounts_root: d(1),
+            pending_root: d(2),
+            frozen_root: d(3),
+            chain_digest: d(4),
+            acuses_root: hoja,
+            n: 5,
+        };
+        let (cima, cons, params, meta) = (d(60), d(90), d(110), d(120));
+        let firmado_v5 = zk_ssl_hash::epoch_digest_v5(
+            9, d(1), d(2), d(3), d(4), hoja, 5, cima, 2, cons, 1, params, meta, 7, 8, 9,
+        );
+        verificar_acuse_v5(&recibo, cima, 2, cons, 1, params, meta, 7, 8, 9, firmado_v5)
+            .expect("v5 debe verificar");
+        assert!(
+            matches!(
+                verificar_acuse_v4(&recibo, cima, 2, cons, 1, firmado_v5),
+                Err(InclusionError::CabezaDistinta)
+            ),
+            "el recomponedor v4 no puede aceptar un digest v5"
+        );
+    }
+
+    #[test]
+    fn la_familia_de_v5_no_es_decorativa_en_la_inclusion_v5() {
+        let hoja = d(70);
+        let recibo = ReciboInclusion {
+            indice: 0,
+            hoja,
+            hermanos: Vec::new(),
+            derecha: Vec::new(),
+            seq: 3,
+            accounts_root: hoja,
+            pending_root: d(2),
+            frozen_root: d(3),
+            chain_digest: d(4),
+        };
+        let (cima, cons, params, meta) = (d(80), d(90), d(110), d(120));
+        let firmado = zk_ssl_hash::epoch_digest_v5(
+            3, hoja, d(2), d(3), d(4), d(5), 7, cima, 4, cons, 2, params, meta, 7, 8, 9,
+        );
+        // La familia entera, con la cabeza de siempre delante: solo cambia la familia.
+        let con = |p: Digest, m: Digest, np: u64, ni: u64, s: u64| {
+            verificar_inclusion_v5(&recibo, d(5), 7, cima, 4, cons, 2, p, m, np, ni, s, firmado)
+        };
+        con(params, meta, 7, 8, 9).expect("v5 debe verificar");
+        let rotos = [
+            ("otro params_digest", con(d(111), meta, 7, 8, 9)),
+            ("otra raiz de meta", con(params, d(121), 7, 8, 9)),
+            ("otro next_pending", con(params, meta, 6, 8, 9)),
+            ("otro next_index", con(params, meta, 7, 5, 9)),
+            ("otro total_supply", con(params, meta, 7, 8, 1)),
+        ];
+        for (rotulo, roto) in rotos {
+            assert!(
+                matches!(roto, Err(InclusionError::CabezaDistinta)),
+                "{rotulo} debe romper la recomposicion"
+            );
+        }
     }
 }
 

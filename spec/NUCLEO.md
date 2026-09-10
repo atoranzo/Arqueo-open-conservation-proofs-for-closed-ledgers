@@ -60,8 +60,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 55 elementos alcanzables en `zk-ssl-verify` y 37 `pub` en `zk-ssl-hash`
-(LIBRO 2, NÚCLEO 68, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 59 elementos alcanzables en `zk-ssl-verify` y 40 `pub` en `zk-ssl-hash`
+(LIBRO 2, NÚCLEO 75, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
 reexportaciones de `zk-ssl-hash` no se cuentan dos veces: un elemento, una fila. En `zk-ssl-hash`,
@@ -87,6 +87,9 @@ real de sus llaves, no por la primera marca.
 | `epoch_digest_v2` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
 | `epoch_digest_v3` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
 | `epoch_digest_v4` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
+| `epoch_digest_v5` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
+| `params_digest` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
+| `DOMINIO_PARAMS` | `hash/lib.rs` | NÚCLEO | CABEZA | `const` |
 | `ANCHO_INDICE` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
 | `COFIRMA_VERSION` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
 | `COFIRMA_V_MAX` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
@@ -106,10 +109,12 @@ real de sus llaves, no por la primera marca.
 | `clave_desde_bytes` | `verify/lib.rs` | REFERENCIA | FIRMA | `fn` |
 | `indice_de_firma` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `lleva_mmr` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
+| `lleva_consumos` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `preambulo` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `preambulo_cofirma` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `texto` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `texto_con_mmr` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
+| `texto_con_consumos` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `verificar_cabeza` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `verificar_cofirma` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `DOMINIO_ACUSE` | `hash/lib.rs` | NÚCLEO | ACUSES | `const` |
@@ -122,6 +127,7 @@ real de sus llaves, no por la primera marca.
 | `verificar_acuse` | `verify/inclusion.rs` | NÚCLEO | ACUSES | `fn` |
 | `verificar_acuse_v3` | `verify/inclusion.rs` | NÚCLEO | ACUSES | `fn` |
 | `verificar_acuse_v4` | `verify/inclusion.rs` | NÚCLEO | ACUSES | `fn` |
+| `verificar_acuse_v5` | `verify/inclusion.rs` | NÚCLEO | ACUSES | `fn` |
 | `DOMINIO_MMR_HOJA` | `hash/lib.rs` | NÚCLEO | MMR | `const` |
 | `DOMINIO_MMR_NODO` | `hash/lib.rs` | NÚCLEO | MMR | `const` |
 | `mmr_hoja` | `hash/lib.rs` | NÚCLEO | MMR | `fn` |
@@ -145,6 +151,7 @@ real de sus llaves, no por la primera marca.
 | `verificar_inclusion_v2` | `verify/inclusion.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `verificar_inclusion_v3` | `verify/inclusion.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `verificar_inclusion_v4` | `verify/inclusion.rs` | NÚCLEO | INCLUSIÓN | `fn` |
+| `verificar_inclusion_v5` | `verify/inclusion.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `DOMINIO_META_PENDIENTE` | `hash/lib.rs` | LIBRO | LIBRO | `const` |
 | `meta_pendiente_hoja` | `hash/lib.rs` | LIBRO | LIBRO | `fn` |
 | `COMPROMISO_AUSENTE` | `hash/lib.rs` | REGISTRO | REGISTRO | `const` |
@@ -168,8 +175,9 @@ real de sus llaves, no por la primera marca.
 - **HASH** — la permutación y el merge 2-a-1, cómo se embebe un `u64`, cómo se sube un camino y cómo
   un digest se escribe en bytes: es la frontera entre el JSON y los bytes. Dos implementaciones que
   difieran aquí no coinciden en nada.
-- **CABEZA** — las cuatro composiciones del digest de la cabeza (v1, v2, v3, v4). Lo custodiado no caduca
-  (§290): una composición vieja tiene que poder recomponerse siempre.
+- **CABEZA** — las cinco composiciones del digest de la cabeza (v1, v2, v3, v4, v5) y el digest de
+  los parámetros que v5 firma. Lo custodiado no caduca (§290): una composición vieja tiene que
+  poder recomponerse siempre.
 - **FIRMA** — el esquema (`XmssMtSha2_40_8_256`), los dos dominios, el byte de versión y su conjunto,
   los dos preámbulos y el índice embebido en la firma. Son los bytes exactos bajo la firma; cambiar
   uno haría colisionar o dejaría de verificar lo custodiado.
@@ -194,8 +202,8 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 - **Serialización**: cada elemento en 8 bytes *little-endian* (`as_int`), los cuatro en orden;
   `digest_from_bytes` exige 32 bytes. En el cable van como `DATA`/`Digest` (`RPC.md`).
 - **Los dominios**: `u64` leídos *big-endian* de ocho bytes ASCII (`ACUSE_V1`, `MMRHOJA1`,
-  `MMRNODO1`), embebidos con `as_digest` y mezclados por delante. Los de la firma son cadenas de
-  bytes: `b"ZK-SSL-epoch-head"` (17) y `b"ZK-SSL-witness-cosign"` (21).
+  `MMRNODO1`, `PARAM_V1`), embebidos con `as_digest` y mezclados por delante. Los de la firma
+  son cadenas de bytes: `b"ZK-SSL-epoch-head"` (17) y `b"ZK-SSL-witness-cosign"` (21).
 - **Los preámbulos** (mudados aquí desde `zk-ssl-verify/src/lib.rs`, que remite a esta sección):
 
   ```text
@@ -210,6 +218,13 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
   `v3 = merge(v2, merge(cima, as_digest(t)))`, génesis `as_digest(0)` y `t = 0`;
   `v4 = merge(v3, merge(cons_root, as_digest(cons_count)))` (RFC-0006 E2a, §414), génesis la raíz
   del árbol de consumos vacío y `cons_count = 0`;
+  `v5 = merge(v4, merge(merge(params_digest, pmeta_root), merge(as_digest(next_pending),
+  merge(as_digest(next_index), as_digest(total_supply)))))` (RFC-0007 E1a, §451), génesis los
+  parámetros de apertura, la raíz del árbol de meta vacío, `next_pending = 0` y las cuentas y el
+  suministro de esa cabeza; `params_digest = merge(as_digest(PARAM_V1),
+  merge(merge(as_digest(regulatory_limit), as_digest(max_supply)),
+  merge(merge(as_digest(max_accounts), custodian_set_root), merge(governance_set_root,
+  merge(as_digest(refund_ttl), as_digest(max_custodian_uses))))))`, los siete en ese orden;
   `acuse_digest = merge(as_digest(ACUSE_V1), merge(hash_prueba, merge(as_digest(epoca),
   as_digest(n))))`; `mmr_hoja = merge(as_digest(MMRHOJA1), cabeza)`; `mmr_nodo =
   merge(as_digest(MMRNODO1), merge(izq, der))`; la cima es el árbol de Merkle con el corte en
@@ -229,6 +244,10 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §451 — `epoch_digest_v5`, `params_digest` y `DOMINIO_PARAMS`, la variante `V5`, `lleva_consumos`
+  y `texto_con_consumos`, `verificar_acuse_v5` y `verificar_inclusion_v5`: el núcleo y el mando
+  aceptan la cabeza v5 (RFC-0007, E1a); los KAT de `epoch_digest_v5` y `params_digest`. Siete
+  filas nuevas.
 - §419 — las reglas del árbol de consumos en el verificador (RFC-0006, E3b-2): la hoja
   vacía, la convención del camino y el cruce que ata la prueba a la posición del consumo.
   Cinco filas nuevas.

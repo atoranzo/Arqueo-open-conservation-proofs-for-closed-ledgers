@@ -26,9 +26,8 @@ use std::path::PathBuf;
 use serde_json::{json, Value};
 use zk_ssl_hash::{
     acuse_digest, as_digest, digest_from_bytes, digest_to_bytes, element_from_bytes, embeber,
-    epoch_digest, epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, mmr_hoja, mmr_nodo,
-    native_leaf,
-    native_leaf_salted, native_merge, path_root, Digest,
+    epoch_digest, epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5, mmr_hoja,
+    mmr_nodo, native_leaf, native_leaf_salted, native_merge, params_digest, path_root, Digest,
 };
 use zk_ssl_verify::{acuses::hoja_de_acuse, mmr::cima, preambulo, preambulo_cofirma};
 
@@ -117,6 +116,20 @@ fn casos() -> Vec<(&'static str, Value)> {
                          "n": q(0x11), "cima_mmr": dg(&f), "t": q(0x12), "cons_root": dg(&b),
                          "cons_count": q(0x13)},
             "salida": dg(&epoch_digest_v4(0x10, a, b, c, d, e, 0x11, f, 0x12, b, 0x13))})),
+        ("epoch_digest_v5", json!({"fn": "epoch_digest_v5",
+            "entradas": {"seq": q(0x10), "accounts_root": dg(&a), "pending_root": dg(&b),
+                         "frozen_root": dg(&c), "chain_digest": dg(&d), "acuses_root": dg(&e),
+                         "n": q(0x11), "cima_mmr": dg(&f), "t": q(0x12), "cons_root": dg(&b),
+                         "cons_count": q(0x13), "params_digest": dg(&c), "pmeta_root": dg(&d),
+                         "next_pending": q(0x14), "next_index": q(0x15), "total_supply": q(0x16)},
+            "salida": dg(&epoch_digest_v5(0x10, a, b, c, d, e, 0x11, f, 0x12, b, 0x13, c, d,
+                                          0x14, 0x15, 0x16))})),
+        ("params_digest", json!({"fn": "params_digest",
+            "entradas": {"regulatory_limit": q(0x20), "max_supply": q(0x21),
+                         "max_accounts": q(0x22), "custodian_set_root": dg(&a),
+                         "governance_set_root": dg(&b), "refund_ttl": q(0x23),
+                         "max_custodian_uses": q(0x24)},
+            "salida": dg(&params_digest(0x20, 0x21, 0x22, a, b, 0x23, 0x24))})),
         ("acuse_digest", json!({"fn": "acuse_digest",
             "entradas": {"hash_prueba": dg(&a), "epoca": q(2), "n": q(3)},
             "salida": dg(&acuse_digest(a, 2, 3))})),

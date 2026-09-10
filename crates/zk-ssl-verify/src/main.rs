@@ -54,7 +54,9 @@ use zk_ssl_verify::{
     acuses, verificar_acuse, verificar_acuse_v3, indice_de_firma, verificar_cabeza, verificar_cofirma,
     CabezaFirmada, COFIRMA_V_MAX, ReciboAcuse, VersionCabeza,
 };
-use zk_ssl_hash::{digest_from_bytes, epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, Digest};
+use zk_ssl_hash::{
+    digest_from_bytes, epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5, Digest,
+};
 
 /// Punto unico de forma de error del binario (hoy identidad; el dia que
 /// haga falta contexto comun, se anade AQUI y no en veinte sitios).
@@ -93,6 +95,29 @@ fn u64_de(v: &serde_json::Value, campo: &str) -> Result<u64, String> {
         .ok_or_else(|| err(format!("falta {campo} o no es cadena 0x")))?;
     let h = s.strip_prefix("0x").ok_or_else(|| err(format!("{campo} sin 0x")))?;
     u64::from_str_radix(h, 16).map_err(|e| err(format!("{campo}: {e}")))
+}
+
+/// La familia de la cabeza v5 (RFC-0007 D-B; §451): los siete parametros en un digest, la
+/// raiz del arbol de meta, las dos marcas de agua y el suministro. Se lee con los mismos
+/// lectores que el resto de la cabeza: las cinco claves son obligatorias en una v5 y se
+/// nombran al faltar, antes de tocar la firma.
+#[derive(Clone, Copy)]
+struct FamiliaV5 {
+    params_digest: Digest,
+    pmeta_root: Digest,
+    next_pending: u64,
+    next_index: u64,
+    total_supply: u64,
+}
+
+fn familia_v5(c: &serde_json::Value) -> Result<FamiliaV5, String> {
+    Ok(FamiliaV5 {
+        params_digest: digest_de(c, "paramsDigest")?,
+        pmeta_root: digest_de(c, "pmetaRoot")?,
+        next_pending: u64_de(c, "nextPending")?,
+        next_index: u64_de(c, "nextIndex")?,
+        total_supply: u64_de(c, "totalSupply")?,
+    })
 }
 
 fn correr(ruta: &str) -> Result<(), String> {
@@ -165,21 +190,33 @@ fn correr(ruta: &str) -> Result<(), String> {
     //     abajo elegia por un `Option`, y una v4 habria pasado por v3 en silencio).
     let mmr = match version {
         VersionCabeza::V2 => None,
-        VersionCabeza::V3 | VersionCabeza::V4 => {
+        VersionCabeza::V3 | VersionCabeza::V4 | VersionCabeza::V5 => {
             Some((digest_de(c, "mmrRoot")?, u64_de(c, "mmrSize")?))
         }
     };
     let cons = match version {
         VersionCabeza::V2 | VersionCabeza::V3 => None,
-        VersionCabeza::V4 => Some((digest_de(c, "consRoot")?, u64_de(c, "consCount")?)),
+        VersionCabeza::V4 | VersionCabeza::V5 => {
+            Some((digest_de(c, "consRoot")?, u64_de(c, "consCount")?))
+        }
     };
-    let compuesto = match (mmr, cons) {
-        (None, _) => epoch_digest_v2(seq, accounts, pending, frozen, chain, acuses_root, n),
-        (Some((cima, t)), None) => {
+    // RFC-0007 E1a (§451): la familia de v5, que el compilador exige en cada `match`
+    // igual que exigio la pareja de consumos en el §414.
+    let estado = match version {
+        VersionCabeza::V2 | VersionCabeza::V3 | VersionCabeza::V4 => None,
+        VersionCabeza::V5 => Some(familia_v5(c)?),
+    };
+    let compuesto = match (mmr, cons, estado) {
+        (None, _, _) => epoch_digest_v2(seq, accounts, pending, frozen, chain, acuses_root, n),
+        (Some((cima, t)), None, _) => {
             epoch_digest_v3(seq, accounts, pending, frozen, chain, acuses_root, n, cima, t)
         }
-        (Some((cima, t)), Some((raiz, k))) => epoch_digest_v4(
+        (Some((cima, t)), Some((raiz, k)), None) => epoch_digest_v4(
             seq, accounts, pending, frozen, chain, acuses_root, n, cima, t, raiz, k,
+        ),
+        (Some((cima, t)), Some((raiz, k)), Some(f)) => epoch_digest_v5(
+            seq, accounts, pending, frozen, chain, acuses_root, n, cima, t, raiz, k,
+            f.params_digest, f.pmeta_root, f.next_pending, f.next_index, f.total_supply,
         ),
     };
     if compuesto != epoch_digest {
@@ -265,14 +302,21 @@ fn correr(ruta: &str) -> Result<(), String> {
                 acuses_root,
                 n,
             };
-            match (mmr, cons) {
-                (None, _) => verificar_acuse(&recibo, epoch_digest)
+            match (mmr, cons, estado) {
+                (None, _, _) => verificar_acuse(&recibo, epoch_digest)
                     .map_err(|e| err(format!("acuse: {e:?}")))?,
-                (Some((cima, t)), None) => verificar_acuse_v3(&recibo, cima, t, epoch_digest)
+                (Some((cima, t)), None, _) => verificar_acuse_v3(&recibo, cima, t, epoch_digest)
                     .map_err(|e| err(format!("acuse: {e:?}")))?,
-                (Some((cima, t)), Some((raiz, k))) => {
+                (Some((cima, t)), Some((raiz, k)), None) => {
                     zk_ssl_verify::verificar_acuse_v4(&recibo, cima, t, raiz, k, epoch_digest)
                         .map_err(|e| err(format!("acuse: {e:?}")))?
+                }
+                (Some((cima, t)), Some((raiz, k)), Some(f)) => {
+                    zk_ssl_verify::verificar_acuse_v5(
+                        &recibo, cima, t, raiz, k, f.params_digest, f.pmeta_root,
+                        f.next_pending, f.next_index, f.total_supply, epoch_digest,
+                    )
+                    .map_err(|e| err(format!("acuse: {e:?}")))?
                 }
             }
             println!("3/3 el acuse sube hasta la raiz firmada: la entrada {seq_a} queda demostrada");
@@ -409,6 +453,27 @@ fn cabeza_v3_verificada(
             digest_de(c, "consRoot")?,
             u64_de(c, "consCount")?,
         ),
+        Ok(VersionCabeza::V5) => {
+            let f = familia_v5(c)?;
+            epoch_digest_v5(
+                seq,
+                digest_de(c, "accountsRoot")?,
+                digest_de(c, "pendingRoot")?,
+                digest_de(c, "frozenRoot")?,
+                digest_de(c, "chainDigest")?,
+                digest_de(c, "acusesRoot")?,
+                u64_de(c, "n")?,
+                digest_de(c, "mmrRoot")?,
+                u64_de(c, "mmrSize")?,
+                digest_de(c, "consRoot")?,
+                u64_de(c, "consCount")?,
+                f.params_digest,
+                f.pmeta_root,
+                f.next_pending,
+                f.next_index,
+                f.total_supply,
+            )
+        }
         Ok(VersionCabeza::V2) | Err(_) => {
             return Err(err(format!(
                 "{cual}: formatVersion {version} — la extension exige cabezas {}: \
@@ -441,9 +506,9 @@ fn cabeza_v3_verificada(
     )?);
     verificar_cabeza(&hex_a_bytes(clave)?, &ed, &cf)
         .map_err(|e| err(format!("{cual}: cabeza: {e}")))?;
-    // El `consRoot` solo existe en la v4: una v3 no lo lleva y el sobre de
-    // consumo la rechaza por su cuenta, con su propio texto.
-    let cons = if matches!(VersionCabeza::try_from(version), Ok(VersionCabeza::V4)) {
+    // El `consRoot` existe desde la v4 (`lleva_consumos`, el productor unico; RFC-0007 E1a,
+    // §451): una v3 no lo lleva y el sobre de consumo la rechaza por su cuenta, con su texto.
+    let cons = if VersionCabeza::try_from(version).map_or(false, VersionCabeza::lleva_consumos) {
         Some(digest_de(c, "consRoot")?)
     } else {
         None
@@ -509,9 +574,9 @@ fn verificar_consumo(p: &serde_json::Value) -> Result<(), String> {
     }
     let (raiz_v, raiz_n) = match (cons_v, cons_n) {
         (Some(v), Some(n)) => (v, n),
-        _ => return Err(exige_v4("consumo")),
+        _ => return Err(exige_consumos("consumo")),
     };
-    println!("2/5 misma publicKey y las dos cabezas son v4: hay consRoot a los dos lados");
+    println!("2/5 misma publicKey y las dos cabezas llevan consRoot (v4 o v5) a los dos lados");
     if !zk_ssl_verify::mmr::verificar_consistencia(cima_v, t_v, cima_n, t_n, &camino_mmr(p)?) {
         return Err(err(format!(
             "la nueva (t={t_n}) NO extiende a la vieja (t={t_v}): historia \
@@ -566,13 +631,16 @@ fn claves_distintas() -> String {
     err("las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante".into())
 }
 
-/// UN productor del texto de la version del sobre, con su SUJETO como hueco.
-/// Con `cual` = "consumo" emite la MISMA cadena que hasta hoy, byte a byte, asi
-/// que ningun vector del catalogo se mueve: lo gatea el arnes en cada canon.
-fn exige_v4(cual: &str) -> String {
+/// UN productor del texto de la version del sobre, con su SUJETO como hueco y el
+/// conjunto DERIVADO de `VersionCabeza::texto_con_consumos()` (RFC-0007 E1a, §451):
+/// <<v4 o v5>>. Los fragmentos que los manifiestos pinan (`exige cabezas v4`) siguen
+/// dentro del texto, byte a byte, asi que ningun vector del catalogo se mueve: lo
+/// gatea el arnes en cada canon.
+fn exige_consumos(cual: &str) -> String {
     err(format!(
-        "el sobre de {cual} exige cabezas v4: una v2 o v3 no lleva consRoot contra el \
-         que comprobar"
+        "el sobre de {cual} exige cabezas {}: una v2 o v3 no lleva consRoot contra el \
+         que comprobar",
+        VersionCabeza::texto_con_consumos()
     ))
 }
 
@@ -693,7 +761,7 @@ fn verificar_conflicto(p: &serde_json::Value) -> Result<(), String> {
             .ok_or_else(|| err(format!("{cual}: falta cabeza")))?;
         let (_, _, clave, cons) = cabeza_v3_verificada(c, &cual)?;
         claves.push(clave);
-        raices.push(cons.ok_or_else(|| exige_v4("conflicto"))?);
+        raices.push(cons.ok_or_else(|| exige_consumos("conflicto"))?);
     }
     println!("1/4 las DOS cabezas recomponen su digest y sus firmas verifican");
     if claves[0] == claves[1] {
@@ -701,7 +769,7 @@ fn verificar_conflicto(p: &serde_json::Value) -> Result<(), String> {
             "las cabezas llevan la MISMA clave: un conflicto es entre DOS firmantes".into(),
         ));
     }
-    println!("2/4 las dos cabezas son de operadores DISTINTOS, y las dos son v4");
+    println!("2/4 las dos cabezas son de operadores DISTINTOS, y las dos llevan consRoot (v4 o v5)");
     for (i, libro) in libros.iter().enumerate() {
         let cual = format!("libro[{i}]");
         let (herm, der) = camino_de(libro, "presencia", &cual)?;
@@ -892,5 +960,38 @@ mod tests {
         let p = json!({ "v": 1, "tipo": "conflicto", "libros": [{}, {}, {}] });
         let e = verificar_conflicto(&p).unwrap_err();
         assert!(e.contains("exige DOS libros: se recibieron 3"), "{e}");
+    }
+    /// RFC-0007 E1a (§451): una cabeza v5 sin una de las cinco piezas se rechaza NOMBRANDO
+    /// la clave que falta, antes de tocar la firma; y con las cinco, la version elige el
+    /// recomponedor v5: lo que falla entonces es la firma de mentira, no la recomposicion.
+    #[test]
+    fn una_cabeza_v5_sin_una_de_las_cinco_piezas_se_nombra_y_con_ellas_recompone() {
+        use zk_ssl_hash::{as_digest, digest_to_bytes};
+        fn hx(d: zk_ssl_hash::Digest) -> String {
+            let cuerpo: String = digest_to_bytes(&d).iter().map(|b| format!("{b:02x}")).collect();
+            format!("0x{cuerpo}")
+        }
+        let d = as_digest(7);
+        let ed = zk_ssl_hash::epoch_digest_v5(1, d, d, d, d, d, 5, d, 2, d, 3, d, d, 4, 6, 8);
+        let c = json!({
+            "available": true, "formatVersion": "0x5", "seq": "0x1", "n": "0x5",
+            "accountsRoot": hx(d), "pendingRoot": hx(d), "frozenRoot": hx(d),
+            "chainDigest": hx(d), "acusesRoot": hx(d), "mmrRoot": hx(d), "mmrSize": "0x2",
+            "consRoot": hx(d), "consCount": "0x3", "paramsDigest": hx(d), "pmetaRoot": hx(d),
+            "nextPending": "0x4", "nextIndex": "0x6", "totalSupply": "0x8",
+            "epochDigest": hx(ed), "index": "0x1", "publicKey": "0xaa", "signature": "0xbb"
+        });
+        let ruta = std::env::temp_dir().join("zk-ssl-verify-e1a-v5.json");
+        std::fs::write(&ruta, json!({ "v": 1, "cabeza": c.clone() }).to_string()).unwrap();
+        let e = correr(ruta.to_str().unwrap()).unwrap_err();
+        assert!(e.starts_with("cabeza: "), "con las cinco piezas recompone y cae en la firma: {e}");
+        for k in ["paramsDigest", "pmetaRoot", "nextPending", "nextIndex", "totalSupply"] {
+            let mut sin = c.clone();
+            let _ = sin.as_object_mut().expect("objeto").remove(k);
+            std::fs::write(&ruta, json!({ "v": 1, "cabeza": sin }).to_string()).unwrap();
+            let e = correr(ruta.to_str().unwrap()).unwrap_err();
+            assert!(e.contains(&format!("falta {k}")), "{k}: {e}");
+        }
+        let _ = std::fs::remove_file(&ruta);
     }
 }

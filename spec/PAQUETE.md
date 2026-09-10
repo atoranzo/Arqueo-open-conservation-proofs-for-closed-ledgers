@@ -102,7 +102,7 @@ donde el valor es una respuesta del cable sin reescribir.
   consistencia**, y por eso el «antes» es de ESTA historia y no de una bifurcación firmada.
   Lo que añade son los dos caminos del árbol de consumos: `presencia` sube el digest del
   consumo hasta el `consRoot` de la **nueva**, `ausencia` sube la **hoja vacía** hasta el de
-  la **vieja**. Las dos cabezas tienen que ser **v4**: una v2 o v3 no lleva `consRoot`.
+  la **vieja**. Las dos llevan `consRoot` (**v4 o v5**): una v2 o v3 no lo lleva.
 - ⚠️ **La posición no viaja: se DERIVA.** El mando calcula `posicion_de_consumo(consumo)` y
   **cruza** sus bits contra el `isRight` recibido en los dos caminos. Sin ese cruce,
   `ausencia` sólo probaría que *alguna* posición está vacía bajo esa raíz, y quien empaqueta
@@ -156,6 +156,10 @@ productor localizable: un censo de literales del fuente da 30 —es ciego a las 
 leen por variable— y la tabla de esta misma sección da 33. Una cifra sin universo se
 declara, no se inventa; queda para el corte que le encuentre uno.
 
+**§451 — la cabeza v5.** Una `cabeza` con `formatVersion` 5 lleva además `paramsDigest`,
+`pmetaRoot`, `nextPending`, `nextIndex` y `totalSupply` (RFC-0007 E1, D-B), que el binario lee
+con los mismos lectores y exige los cinco; la fila de `cabeza` de arriba se lee con ese añadido.
+
 Cantidades en convención `Q` (`0x` + hex, u64); digests como `0x` + 64 hex; firmas y claves como
 `0x` + hex. Un valor que no tenga esa forma se rechaza **antes** de tocar la criptografía (sección 5).
 
@@ -170,32 +174,33 @@ recompone**. Cada paso que pasa imprime una línea en la salida estándar.
    `tipo`** —un `tipo` presente y distinto de `extension` o `consumo` se **rechaza con su
    nombre**, nunca
    se lee como paquete de posición (§418)—;
-1. **`1/3`** — `cabeza` existe y es `available:true`; `formatVersion` es 2, 3 o 4; **la versión
-   elige recomponedor**: v2 con la pareja de acuses (§275), v3 además con la del MMR (§292), v4
-   además con la raíz y la cuenta de consumos (RFC-0006 E2a, §414); los
-   campos de la cabeza recomponen su `epochDigest`;
+1. **`1/3`** — `cabeza` existe y es `available:true`; `formatVersion` es 2, 3, 4 o 5; **la
+   versión elige recomponedor**: v2 con la pareja de acuses (§275), v3 además con la del MMR
+   (§292), v4 además con la raíz y la cuenta de consumos (RFC-0006 E2a, §414), v5 además con la
+   familia del estado comprometido (RFC-0007 E1a, §451); los campos de la cabeza recomponen su
+   `epochDigest`;
 2. **`2/3`** — la firma XMSS verifica contra `publicKey` **y** el preámbulo recuperado es el
    esperado (verificar sin comparar no prueba nada) **y** el `index` declarado queda por
    encima del índice de hoja que va dentro de la firma (§399; la cota es por abajo, sección 8);
 3. **`3/3`** — si hay `acuse`: la hoja `hoja_de_acuse(hashPrueba, seq, n)` sube por `camino`
    hasta `acusesRoot`, y los campos vuelven a componer el digest firmado (v2), el digest y la
-   cima (v3), o además la raíz y la cuenta de consumos (v4). Si no hay acuse, la cabeza sola
-   queda demostrada;
+   cima (v3), además la raíz y la cuenta de consumos (v4), o además la familia de v5 (v5). Si no
+   hay acuse, la cabeza sola queda demostrada;
 4. **cofirmas** (sólo v2) — cada una, antes de tocar la criptografía, nombra **esta** cabeza y
    **este** operador; después su firma verifica. Se imprime cuántas verifican; cuántas hacen
    falta no es asunto del paquete.
 
-**Paquete de extensión:** `1/3` las dos cabezas (v3 o v4) recomponen su digest y sus firmas verifican ·
+**Paquete de extensión:** `1/3` las dos cabezas (v3, v4 o v5) recomponen su digest y sus firmas verifican ·
 `2/3` misma `publicKey` en las dos: la continuidad es de **un** firmante · `3/3` la cima nueva
 extiende a la vieja por `camino`.
 
 **Paquete de consumo:** `1/5` las dos cabezas recomponen su digest y sus firmas verifican ·
-`2/5` misma `publicKey` y las dos son **v4**, así que hay `consRoot` a los dos lados · `3/5`
+`2/5` misma `publicKey` y las dos llevan `consRoot` (**v4 o v5**) a los dos lados · `3/5`
 la cima nueva extiende a la vieja · `4/5` los dos caminos son los de la posición **derivada**
 del consumo, no de la que el sobre diga · `5/5` el consumo está bajo el `consRoot` de la
 nueva y **no estaba** bajo el de la vieja.
 
-Cabezas **v2, v3 y v4** (`formatVersion`): una cabeza v2 custodiada **sigue verificando** — el
+Cabezas **v2, v3, v4 y v5** (`formatVersion`): una cabeza v2 custodiada **sigue verificando** — el
 apagado de §290 no caduca. Una cabeza v1 se verifica con la biblioteca, no con este mando.
 
 ## 5. Catálogo de rechazos
@@ -226,7 +231,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 
 - `falta cabeza`
 - `la cabeza empaquetada no era available:true`
-- `formatVersion {version}: el paquete v1 empaqueta cabezas v2, v3 o v4 (la pareja acusesRoot/n viaja firmada desde §275; la del MMR, desde §292)` — el texto dice «v1» aunque el sobre sea v2: regla vigente, prosa que la implementación de referencia debe corregir sin cambiar la regla.
+- `formatVersion {version}: el paquete v1 empaqueta cabezas v2, v3, v4 o v5 (la pareja acusesRoot/n viaja firmada desde §275; la del MMR, desde §292)` — el texto dice «v1» aunque el sobre sea v2: regla vigente, prosa que la implementación de referencia debe corregir sin cambiar la regla.
 - `los siete campos NO recomponen el epochDigest empaquetado: o el paquete esta adulterado o la cabeza nunca fue esa`
 - `falta publicKey` · `falta signature`
 - `cabeza: {e}` — la firma no verifica, el preámbulo no es el esperado, o el `index` declarado no queda por encima del que va dentro de la firma (§399); `{e}` es el error de la biblioteca.
@@ -252,7 +257,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 
 - `falta vieja` · `falta nueva`
 - `{cual}: la cabeza no era available:true`
-- `{cual}: formatVersion {version} — la extension exige cabezas v3 o v4: una v2 no lleva la pareja del MMR que extender`
+- `{cual}: formatVersion {version} — la extension exige cabezas v3, v4 o v5: una v2 no lleva la pareja del MMR que extender`
 - `{cual}: los campos NO recomponen su epochDigest — adulterada o inventada`
 - `{cual}: falta publicKey` · `{cual}: falta signature`
 - `{cual}: cabeza: {e}`
@@ -263,7 +268,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 
 **El consumo** (`{cual}` es `presencia` o `ausencia`)
 
-- `el sobre de consumo exige cabezas v4: una v2 o v3 no lleva consRoot contra el que comprobar`
+- `el sobre de consumo exige cabezas v4 o v5: una v2 o v3 no lleva consRoot contra el que comprobar`
 - `falta {cual} (camino del consumo)` · `{cual}: falta siblings` · `{cual}: falta isRight`
 - `{cual}: siblings[{i}] no es cadena` · `{cual}: siblings[{i}]: {} bytes` · `{cual}: siblings[{i}]: {e:?}`
 - `{cual}: isRight[{i}] no es booleano`
@@ -328,6 +333,9 @@ un positivo por forma —v1, v2, v2 sin acuse, v2 con cero cofirmas, extensión�
 cada regla de la sección 5 que se puede producir a partir de un paquete real**, derivados por
 mutación de dos capturas de los bancos. Los dos negativos del índice (`rechazo-index-atrasado`,
 `rechazo-index-cero`) entraron con su regla en §399.
+El fuera-del-conjunto pasó de `rechazo-formatVersion-5` a `rechazo-formatVersion-6` en §451
+(RFC-0007 E1a, con la v5 dentro del conjunto): el `-5` sigue listado y cae por otra causa, con el
+texto medido.
 `MANIFIESTO.txt` dice, por cada fichero, el código de
 salida y el texto que el binario tiene que emitir. **El arnés `tools/conformidad.sh <binario>`**
 (RFC-0005, E4, §408) corre el manifiesto entero contra cualquier binario que cumpla el contrato
@@ -376,6 +384,9 @@ y produce el hecho que E4 existe para detectar.
   lo abre en `target/artefacto/desde-dentro/` y exige el MISMO veredicto que desde el árbol (punto 110).
 - §431 — el catálogo del sobre de conflicto (RFC-0006, E4a): `spec/vectors/conflicto/` con el positivo
   y quince negativos, uno por regla producible, y la cuarta estrofa del canon. Los catálogos son TRES.
+- §451 — la cabeza v5 en el mando (RFC-0007, E1a): la versión elige el recomponedor v5 con su
+  familia; los rechazos por versión citan «v2, v3, v4 o v5»; el fuera-del-conjunto es
+  `rechazo-formatVersion-6`; el `-5` sigue listado y cae por otra causa.
 - Hasta §397 este contrato vivía en la cabecera de `crates/zk-ssl-verify/src/main.rs` (1..90,
   `293990fedc785833`), que ya confesó una vez (§247) haber declarado su superficie como completa
   sin serlo. §397 lo muda aquí y deja la cabecera remitiendo, sin enumerar.

@@ -1,0 +1,13 @@
+{
+  "entradas": {
+    "custodian_set_root": "0x0100000000000000000000000000000000000000000000000000000000000000",
+    "governance_set_root": "0x0200000000000000000000000000000000000000000000000000000000000000",
+    "max_accounts": "0x22",
+    "max_custodian_uses": "0x24",
+    "max_supply": "0x21",
+    "refund_ttl": "0x23",
+    "regulatory_limit": "0x20"
+  },
+  "fn": "params_digest",
+  "salida": "0x880efe6ad1cdf87d8be99c1dc02ad95ed0974e43b19fae6b50ef6c51173f8503"
+}

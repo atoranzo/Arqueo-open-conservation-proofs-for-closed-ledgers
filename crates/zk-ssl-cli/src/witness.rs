@@ -899,6 +899,26 @@ fn recomponer(v: &Value, firmado: &[u8; 32]) -> Result<(), String> {
             dg!("consRoot"),
             leer_q(&v["consCount"])?,
         ),
+        // RFC-0007 E1a (§451): la familia de v5. El nodo sigue emitiendo v4 hasta E1b;
+        // el brazo lo exige el compilador, y el testigo ya la acepta.
+        VersionCabeza::V5 => zk_ssl_verify::epoch_digest_v5(
+            seq,
+            accounts,
+            pending,
+            frozen,
+            chain,
+            acuses,
+            n,
+            dg!("mmrRoot"),
+            leer_q(&v["mmrSize"])?,
+            dg!("consRoot"),
+            leer_q(&v["consCount"])?,
+            dg!("paramsDigest"),
+            dg!("pmetaRoot"),
+            leer_q(&v["nextPending"])?,
+            leer_q(&v["nextIndex"])?,
+            leer_q(&v["totalSupply"])?,
+        ),
         VersionCabeza::V2 => {
             zk_ssl_verify::epoch_digest_v2(seq, accounts, pending, frozen, chain, acuses, n)
         }
@@ -4754,7 +4774,7 @@ mod tests {
             c["formatVersion"] = json!(v);
             let e = recomponer(&c, &[0x11u8; 32]).expect_err(v);
             assert!(e.contains("formatVersion"), "{v}: {e}");
-            assert!(e.contains("v2, v3 o v4"), "{v}: {e}");
+            assert!(e.contains("v2, v3, v4 o v5"), "{v}: {e}");
         }
     }
 
@@ -4768,7 +4788,7 @@ mod tests {
             let mut c = cabeza_firmada_completa();
             c["formatVersion"] = json!(v);
             let e = verificar(&c).expect_err(v);
-            assert!(e.contains("formatVersion") && e.contains("v2, v3 o v4"), "{v}: {e}");
+            assert!(e.contains("formatVersion") && e.contains("v2, v3, v4 o v5"), "{v}: {e}");
         }
         let e = verificar(&cabeza_firmada_completa()).expect_err("firma de mentira");
         assert!(!e.contains("formatVersion"), "{e}");
@@ -4786,5 +4806,36 @@ mod tests {
         let n = Veredicto::Nueva { indice: 4, digest: "0xab".into() };
         let t = texto_del_veredicto(&n);
         assert!(t.contains("0x4") && t.contains("0xab"), "{t}");
+    }
+    /// RFC-0007 E1a (§451): una cabeza v5 se recompone con su familia, y sin una de sus cinco
+    /// piezas se rechaza. `VERSION_FORMATO` sigue en 4: el nodo no la emite todavia (E1b); el
+    /// testigo ya la acepta. El rechazo por pieza ausente no la nombra: `leer_q`/`leer_hex`
+    /// empujan su error a pelo (punto 83 de la cola, preexistente y declarado).
+    #[test]
+    fn una_cabeza_v5_se_recompone_y_sin_una_pieza_se_rechaza() {
+        use zk_ssl_hash::{as_digest, digest_to_bytes};
+        fn hx(d: zk_ssl_hash::Digest) -> String {
+            let cuerpo: String = digest_to_bytes(&d).iter().map(|b| format!("{b:02x}")).collect();
+            format!("0x{cuerpo}")
+        }
+        let d = as_digest(7);
+        let ed = zk_ssl_verify::epoch_digest_v5(5, d, d, d, d, d, 3, d, 9, d, 2, d, d, 4, 6, 8);
+        let mut c = cabeza_firmada_completa();
+        for k in ["accountsRoot", "pendingRoot", "frozenRoot", "chainDigest", "acusesRoot",
+                  "mmrRoot", "consRoot", "paramsDigest", "pmetaRoot"] {
+            c[k] = json!(hx(d));
+        }
+        c["formatVersion"] = json!("0x5");
+        c["nextPending"] = json!("0x4");
+        c["nextIndex"] = json!("0x6");
+        c["totalSupply"] = json!("0x8");
+        let mut ed32 = [0u8; 32];
+        ed32.copy_from_slice(&digest_to_bytes(&ed));
+        recomponer(&c, &ed32).expect("la v5 recompone con su familia");
+        for k in ["paramsDigest", "pmetaRoot", "nextPending", "nextIndex", "totalSupply"] {
+            let mut sin = c.clone();
+            let _ = sin.as_object_mut().expect("objeto").remove(k);
+            recomponer(&sin, &ed32).expect_err(k);
+        }
     }
 }

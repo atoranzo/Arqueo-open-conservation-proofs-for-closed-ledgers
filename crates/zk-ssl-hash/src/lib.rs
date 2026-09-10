@@ -343,6 +343,74 @@ pub fn epoch_digest_v4(
     )
 }
 
+/// **v5 (RFC-0007, E1; §451): la envoltura de v4, otra vez** -- el molde de
+/// §275, §292 y §414:
+///
+/// ```text
+///   v5 = merge( epoch_digest_v4(los once),
+///               merge( merge(params_digest, pmeta_root),
+///                      merge( as_digest(next_pending),
+///                             merge(as_digest(next_index), as_digest(total_supply)) ) ) )
+/// ```
+///
+/// UNA familia: el estado que las pruebas sobre el estado comprometido
+/// necesitan y hasta aqui no iba bajo la firma -- los siete parametros en un
+/// solo digest ([`params_digest`]), la raiz del arbol de meta de pendientes
+/// (`root:pmeta`, §388), la marca de agua de los pendientes, la de las cuentas
+/// y el suministro. Con esto un rechazo puede citar una regla firmada, y la
+/// edad de lo en vuelo tiene universo (`0..next_pending`) y raiz.
+///
+/// ⚠️ **Genesis, DECLARADO**: la PRIMERA cabeza compone con los parametros
+/// con que se abrio el libro, la raiz del arbol de meta VACIO,
+/// `next_pending = 0`, `next_index` igual al numero de cuentas abiertas al
+/// emitirla y `total_supply` igual al suministro en ese momento. No hay valor
+/// especial: v5 compone lo que el libro tiene en esa cabeza.
+///
+/// ⚠️ Sin tag de dominio, por la razon de `epoch_digest`: el **byte de
+/// version** del preambulo (4 -> 5) es lo que separa las composiciones (§236).
+/// En E1a el nucleo y el mando la ACEPTAN; el nodo la emite en E1b.
+pub fn epoch_digest_v5(
+    seq: u64,
+    accounts_root: Digest,
+    pending_root: Digest,
+    frozen_root: Digest,
+    chain_digest: Digest,
+    acuses_root: Digest,
+    n: u64,
+    cima_mmr: Digest,
+    t: u64,
+    cons_root: Digest,
+    cons_count: u64,
+    params_digest: Digest,
+    pmeta_root: Digest,
+    next_pending: u64,
+    next_index: u64,
+    total_supply: u64,
+) -> Digest {
+    native_merge(
+        epoch_digest_v4(
+            seq,
+            accounts_root,
+            pending_root,
+            frozen_root,
+            chain_digest,
+            acuses_root,
+            n,
+            cima_mmr,
+            t,
+            cons_root,
+            cons_count,
+        ),
+        native_merge(
+            native_merge(params_digest, pmeta_root),
+            native_merge(
+                as_digest(next_pending),
+                native_merge(as_digest(next_index), as_digest(total_supply)),
+            ),
+        ),
+    )
+}
+
 #[cfg(test)]
 mod tests_digest_v3 {
     use super::*;
@@ -388,6 +456,72 @@ mod tests_digest_v4 {
         let base = epoch_digest_v4(1, d, d, d, d, d, 5, as_digest(0), 0, as_digest(0), 0);
         assert_ne!(base, epoch_digest_v4(1, d, d, d, d, d, 5, as_digest(0), 0, as_digest(9), 0));
         assert_ne!(base, epoch_digest_v4(1, d, d, d, d, d, 5, as_digest(0), 0, as_digest(0), 1));
+    }
+}
+
+#[cfg(test)]
+mod tests_digest_v5 {
+    use super::*;
+
+    /// Los once de v4 con los que componen todos los testigos de aqui.
+    fn v4_base() -> Digest {
+        let d = as_digest(7);
+        epoch_digest_v4(1, d, d, d, d, d, 5, as_digest(0), 0, as_digest(0), 0)
+    }
+
+    fn v5(p: Digest, m: Digest, np: u64, ni: u64, s: u64) -> Digest {
+        let d = as_digest(7);
+        epoch_digest_v5(1, d, d, d, d, d, 5, as_digest(0), 0, as_digest(0), 0, p, m, np, ni, s)
+    }
+
+    #[test]
+    fn v5_no_es_v4_ni_con_la_familia_de_genesis() {
+        // La envoltura SIEMPRE separa: hasta el genesis (parametros, meta
+        // vacia, marcas a cero, suministro cero) compone distinto de v4 --
+        // si no, una cabeza v5 recien nacida seria confundible con una v4.
+        let g = params_digest(0, 0, 0, as_digest(0), as_digest(0), 0, 0);
+        assert_ne!(v4_base(), v5(g, as_digest(0), 0, 0, 0));
+    }
+
+    #[test]
+    fn cada_una_de_las_cinco_piezas_mueve_el_digest_por_su_lado() {
+        let (p, m) = (as_digest(11), as_digest(22));
+        let base = v5(p, m, 3, 4, 5);
+        assert_ne!(base, v5(as_digest(12), m, 3, 4, 5), "params_digest");
+        assert_ne!(base, v5(p, as_digest(23), 3, 4, 5), "pmeta_root");
+        assert_ne!(base, v5(p, m, 9, 4, 5), "next_pending");
+        assert_ne!(base, v5(p, m, 3, 9, 5), "next_index");
+        assert_ne!(base, v5(p, m, 3, 4, 9), "total_supply");
+    }
+
+    #[test]
+    fn el_tag_separa_los_parametros_del_merge_pelado() {
+        // Sin tag, params_digest seria indistinguible de un nodo interno
+        // compuesto con los mismos operandos: lo UNICO que el dominio existe
+        // para garantizar, y por eso se comprueba (el molde del acuse).
+        let (c, g) = (as_digest(3), as_digest(4));
+        let pelado = native_merge(
+            native_merge(as_digest(1), as_digest(2)),
+            native_merge(
+                native_merge(as_digest(5), c),
+                native_merge(g, native_merge(as_digest(6), as_digest(7))),
+            ),
+        );
+        assert_ne!(params_digest(1, 2, 5, c, g, 6, 7), pelado);
+        assert_eq!(DOMINIO_PARAMS, u64::from_be_bytes(*b"PARAM_V1"), "el dominio, con version");
+    }
+
+    #[test]
+    fn cada_parametro_mueve_params_digest_por_su_lado() {
+        let (c, g) = (as_digest(3), as_digest(4));
+        let base = params_digest(1, 2, 5, c, g, 6, 7);
+        assert_ne!(base, params_digest(9, 2, 5, c, g, 6, 7), "regulatory_limit");
+        assert_ne!(base, params_digest(1, 9, 5, c, g, 6, 7), "max_supply");
+        assert_ne!(base, params_digest(1, 2, 9, c, g, 6, 7), "max_accounts");
+        assert_ne!(base, params_digest(1, 2, 5, as_digest(9), g, 6, 7), "custodian_set_root");
+        assert_ne!(base, params_digest(1, 2, 5, c, as_digest(9), 6, 7), "governance_set_root");
+        assert_ne!(base, params_digest(1, 2, 5, c, g, 9, 7), "refund_ttl");
+        assert_ne!(base, params_digest(1, 2, 5, c, g, 6, 9), "max_custodian_uses");
     }
 }
 
@@ -457,6 +591,55 @@ pub fn meta_pendiente_hoja(sender: u64, born: u64) -> Digest {
     commit_operation(
         DOMINIO_META_PENDIENTE,
         &[BaseElement::new(sender), BaseElement::new(born)],
+    )
+}
+
+/// **Dominio de los parametros comprometidos** (RFC-0007 E1, §451), con version
+/// en el propio valor como `PMETA_V1` y sus hermanos: los ocho bytes ASCII de
+/// `PARAM_V1` leidos como `u64`. Registrado en la tabla de abajo, que
+/// `tools/check_dominios.py` cruza con el censo del arbol en cada sello.
+pub const DOMINIO_PARAMS: u64 = u64::from_be_bytes(*b"PARAM_V1");
+
+/// **El digest de los siete parametros del libro** (RFC-0007 D-B): la regla que
+/// un rechazo cita, en un solo digest bajo la firma de la cabeza v5.
+///
+/// ```text
+///   params_digest = merge( as_digest(DOMINIO_PARAMS),
+///                          merge( merge(as_digest(regulatory_limit), as_digest(max_supply)),
+///                                 merge( merge(as_digest(max_accounts), custodian_set_root),
+///                                        merge( governance_set_root,
+///                                               merge(as_digest(refund_ttl),
+///                                                     as_digest(max_custodian_uses)) ) ) ) )
+/// ```
+///
+/// Son los siete de reposo (`meta:limit`, `meta:max_supply`, `meta:max_accounts`,
+/// `meta:custodians`, `meta:governance`, `meta:refund_ttl`, `meta:cust_max`), en
+/// ese orden. Lleva tag de dominio por la razon de [`acuse_digest`]: no se
+/// consume dentro de un preambulo propio, y sin el tag seria un nodo interno
+/// mas. Dos cabezas del mismo operador con `params_digest` distintos dicen que
+/// las reglas se movieron; el unico cambio legitimo deja un asiento de
+/// gobernanza en el registro (RFC-0007, D-B).
+pub fn params_digest(
+    regulatory_limit: u64,
+    max_supply: u64,
+    max_accounts: u64,
+    custodian_set_root: Digest,
+    governance_set_root: Digest,
+    refund_ttl: u64,
+    max_custodian_uses: u64,
+) -> Digest {
+    native_merge(
+        as_digest(DOMINIO_PARAMS),
+        native_merge(
+            native_merge(as_digest(regulatory_limit), as_digest(max_supply)),
+            native_merge(
+                native_merge(as_digest(max_accounts), custodian_set_root),
+                native_merge(
+                    governance_set_root,
+                    native_merge(as_digest(refund_ttl), as_digest(max_custodian_uses)),
+                ),
+            ),
+        ),
     )
 }
 
@@ -851,6 +1034,7 @@ mod tests_cabeza_v2 {
 // REGISTRO: u64 plonk LEAF_DOMAIN 0x4C454146
 // REGISTRO: u64 plonk NULLIFIER_DOMAIN 0x4E554C4C
 // REGISTRO: u64 produccion DOMINIO_META_PENDIENTE 0x504D4554415F5631
+// REGISTRO: u64 produccion DOMINIO_PARAMS 0x504152414D5F5631
 // REGISTRO: bytes ZK-SSL-ledger-key-v1
 // REGISTRO: bytes ZK-SSL-epoch-head
 // REGISTRO: bytes ZK-SSL-keystore-v1
