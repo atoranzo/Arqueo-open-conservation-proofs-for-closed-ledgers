@@ -124,8 +124,9 @@ done
 OLDSIZE=$(campo "$VIEJA" result.mmrSize)
 SEQ_V=$(campo "$VIEJA" result.seq)
 FV_V=$(campo "$VIEJA" result.formatVersion)
-[ "$(qnum "$FV_V")" = "4" ] || fallo "la cabeza vieja dice formatVersion $(qnum "$FV_V"): el sobre de consumo EXIGE v4 (una v2 o v3 no lleva consRoot)"
-msg "cabeza VIEJA custodiada: seq $(qnum "$SEQ_V") - mmrSize $(qnum "$OLDSIZE") - v4"
+# RFC-0007 E1b (§452): el nodo emite v5, y el sobre de consumo acepta v4 o v5 (el mando lo deriva).
+case "$(qnum "$FV_V")" in 4|5) : ;; *) fallo "la cabeza vieja dice formatVersion $(qnum "$FV_V"): el sobre de consumo exige cabezas v4 o v5 (una v2 o v3 no lleva consRoot)";; esac
+msg "cabeza VIEJA custodiada: seq $(qnum "$SEQ_V") - mmrSize $(qnum "$OLDSIZE") - v$(qnum "$FV_V")"
 
 # ---------------------------------------------------------------- SE PUBLICA EL CONSUMO
 PUB=$(rpc zkssl_publishConsumo "{\"consumo\":\"$CONSUMO\"}")
@@ -204,10 +205,10 @@ done
 [ -n "$NUEVA" ] || fallo "ninguna cabeza firmo mmrSize $(qnum "$MA") (se esperaba en un latido)"
 SEQ_N=$(campo "$NUEVA" result.seq)
 FV_N=$(campo "$NUEVA" result.formatVersion)
-[ "$(qnum "$FV_N")" = "4" ] || fallo "la cabeza nueva dice formatVersion $(qnum "$FV_N"): el sobre EXIGE v4"
+case "$(qnum "$FV_N")" in 4|5) : ;; *) fallo "la cabeza nueva dice formatVersion $(qnum "$FV_N"): el sobre exige cabezas v4 o v5";; esac
 [ "$(qnum "$SEQ_N")" -ge "$(qnum "$LOGSEQ")" ] \
   || fallo "el seq de la cabeza nueva ($(qnum "$SEQ_N")) NO alcanza el logSeq del consumo ($(qnum "$LOGSEQ")): esa cabeza no puede acreditar el consumo"
-msg "cabeza NUEVA emparejada: seq $(qnum "$SEQ_N") - mmrSize $(qnum "$MA") - v4"
+msg "cabeza NUEVA emparejada: seq $(qnum "$SEQ_N") - mmrSize $(qnum "$MA") - v$(qnum "$FV_N")"
 
 # ---------------------------------------------------------------- LOS DOS CAMINOS
 # La MISMA llamada sirve las dos direcciones: quien verifica elige la HOJA (D-11). La AUSENCIA se

@@ -135,8 +135,9 @@ pub const DOMINIO_COFIRMA: &[u8] = b"ZK-SSL-witness-cosign";
 ///
 /// ⚠️ Sube cuando cambian **los campos de `EpochHead`**, no cuando cambia el
 /// cable. Son ejes distintos: `zkssl/0.3` gobierna qué viaja; esto, qué
-/// entra en la firma.
-pub const VERSION_FORMATO: u8 = 4;
+/// entra en la firma. 4 -> 5 en el §452 (RFC-0007 E1b): la familia del estado comprometido
+/// entra en `EpochHead` y el nodo firma v5; el cable sigue en `zkssl/0.3`.
+pub const VERSION_FORMATO: u8 = 5;
 
 /// Las versiones de cabeza que un verificador del nucleo ACEPTA (RFC-0005, E2).
 ///

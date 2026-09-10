@@ -159,8 +159,9 @@ V_A=$(cabeza_v4 "$PORT_A" A)
 V_B=$(cabeza_v4 "$PORT_B" B)
 for PAR in "A:$V_A" "B:$V_B"; do
   L="${PAR%%:*}"; V="${PAR#*:}"
-  [ "$(qnum "$(campo "$V" result.formatVersion)")" = "4" ] \
-    || fallo "la cabeza del libro $L no es v4: sin consRoot no hay nada que comparar"
+  # RFC-0007 E1b (§452): el nodo emite v5; el sobre de conflicto acepta v4 o v5 (el mando lo deriva).
+  case "$(qnum "$(campo "$V" result.formatVersion)")" in 4|5) : ;;
+    *) fallo "la cabeza del libro $L no es v4 ni v5: sin consRoot no hay nada que comparar";; esac
 done
 
 # ⚠️ LA PROPIEDAD QUE HACE QUE SEAN DOS LIBROS, y se comprueba ANTES de nada: las claves publicas
@@ -262,7 +263,7 @@ N_A=$(nueva_tras "$PORT_A" A "$META_A")
 N_B=$(nueva_tras "$PORT_B" B "$META_B")
 for PAR in "A:$N_A" "B:$N_B"; do
   L="${PAR%%:*}"; V="${PAR#*:}"
-  [ "$(qnum "$(campo "$V" result.formatVersion)")" = "4" ] || fallo "la cabeza nueva de $L no es v4"
+  case "$(qnum "$(campo "$V" result.formatVersion)")" in 4|5) : ;; *) fallo "la cabeza nueva de $L no es v4 ni v5";; esac
   [ "$(qnum "$(campo "$V" result.consCount)")" -ge 2 ] \
     || fallo "la cabeza nueva de $L dice consCount menor que 2: no acredita los DOS consumos de su libro"
 done

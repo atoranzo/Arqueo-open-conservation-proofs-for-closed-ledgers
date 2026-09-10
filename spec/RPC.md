@@ -65,8 +65,8 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 | método | params | result |
 |---|---|---|
 | `zkssl_protocolVersion` | — | `"zkssl/0.3"` |
-| `zkssl_params` | — | `{regulatoryLimit, maxSupply, maxAccounts: Q, custodianRoot: Digest}` |
-| `zkssl_epochHead` | — | `{seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, acusesRoot, n, mmrRoot, mmrSize, consRoot, consCount, epochDigest}` |
+| `zkssl_params` | — | `{regulatoryLimit, maxSupply, maxAccounts: Q, custodianRoot, governanceRoot: Digest, refundTtl, maxCustodianUses: Q}` |
+| `zkssl_epochHead` | — | `{seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, acusesRoot, n, mmrRoot, mmrSize, consRoot, consCount, paramsDigest, pmetaRoot, nextPending, nextIndex, totalSupply, epochDigest}` |
 | `zkssl_supply` | — | `{total, pending: Q}` |
 | `zkssl_accountCount` | — | `Q` |
 | `zkssl_publicId` | `{index: Q}` | `Digest` |
@@ -435,8 +435,8 @@ honesto. Ver los asientos §274 y §275.
 ### `zkssl_signedEpochHead` — la última cabeza firmada, para un TESTIGO
 
 Devuelve la cabeza de época **más reciente que el nodo firmó**, con todo lo
-que hace falta para verificarla sin él: los **once campos** de la
-cabeza (§275, §292, §415), `publicKey`, `epochDigest`, `formatVersion`, `index` y
+que hace falta para verificarla sin él: los **dieciséis campos** de la
+cabeza (§275, §292, §415, §452), `publicKey`, `epochDigest`, `formatVersion`, `index` y
 `signature` — campos+digest+firma **juntos**, del mismo latido: un solo
 artefacto de custodia, sin carrera entre llamadas.
 
@@ -486,6 +486,35 @@ sube es que cambien los valores que los vectores sellan, y
 `deny_unknown_fields` **rompe en voz alta**. Una cabeza **v2 o v3
 custodiada sigue verificando**: la versión que la firma declara elige
 recomponedor, en la biblioteca, en el mando y en el testigo (§414).
+
+### ⚠️ Formato **v5** (§452, RFC-0007 E1): la cabeza compromete lo que las pruebas citan
+
+La cabeza gana cinco claves, **una familia** (RFC-0006 D-3: una por versión):
+`paramsDigest` —los siete parámetros del libro en un digest con dominio propio—,
+`pmetaRoot` —la raíz del árbol de meta de pendientes, donde vive el nacimiento
+de cada pendiente (§388)—, `nextPending` —la marca de agua de los pendientes:
+toda posición viva es menor (§211)—, `nextIndex` —la cuenta de altas, que es la
+**cuota** contra `maxAccounts` y no una posición: desde F3 una cuenta se coloca
+por su identidad— y `totalSupply`. Viajan **firmadas** — `formatVersion: 5` —;
+con ellas un rechazo puede citar una regla que está bajo la firma, y la edad de
+lo que está en vuelo tiene universo y raíz (RFC-0007, D-B).
+
+La composición, por envoltura como v3→v4 (la forma exacta, con los contadores
+dentro de `as_digest`, en `spec/NUCLEO.md`, sección 6):
+```text
+v5 = merge( epoch_digest_v4(los once),
+            merge( merge(paramsDigest, pmetaRoot),
+                   merge(nextPending, merge(nextIndex, totalSupply)) ) )
+```
+`paramsDigest` compone `regulatoryLimit`, `maxSupply`, `maxAccounts`,
+`custodianRoot`, `governanceRoot`, `refundTtl` y `maxCustodianUses`, en ese
+orden, y `zkssl_params` sirve los siete desde el §452. **Génesis declarado**: la
+primera cabeza v5 compone con lo que el libro tiene en reposo al emitirla —los
+parámetros de apertura, la raíz del árbol de meta vacío, `nextPending: 0`—; no
+hay clave nueva en el almacén, así que un libro anterior abre y compone v5.
+Como en v4: aditivo en el cable (`zkssl/0.3` no sube), rotura en voz alta para
+un consumidor con `deny_unknown_fields`, y una cabeza v2, v3 o v4 custodiada
+**sigue verificando** con su recomponedor.
 
 ⚠️ **Tres respuestas, y ninguna es un error genérico**:
 
@@ -613,8 +642,8 @@ el fallo honesto ya diseñado, no una lectura a medias.
 
 Devuelve lo que un tercero necesita para comprobar que **una hoja estaba en
 la cabeza firmada**: `index`, `leaf`, `path` y los campos de `head` —
-**siete desde §275**; la `formatVersion` de la firma dice cuáles
-componen.
+**dieciséis desde el §452** (siete en §275, nueve en §292, once en §415); la
+`formatVersion` de la firma dice cuáles componen.
 La verificación es la de §256: subir el camino hasta `accountsRoot` y
 comprobar que esos campos componen —según la versión declarada— el
 `epochDigest` **de una cabeza firmada**. Una raíz suelta no prueba nada.
@@ -867,7 +896,7 @@ y `zkssl_ackPath` — viajaron en cada latido; un cierre ordenado solo
 exige servirlas hasta el ultimo.
 
 **Que se lleva el titular**: lo que ya custodia. La ultima cabeza
-firmada (los siete campos con `publicKey`, `epochDigest`,
+firmada (los dieciséis campos con `publicKey`, `epochDigest`,
 `formatVersion`, `index` y `signature`, juntos, del mismo latido), el
 `hashPrueba` de su entrada (el `proofDigest` asentado, servido en el
 acuse de la respuesta y en `zkssl_logEntry`), y el camino de acuse

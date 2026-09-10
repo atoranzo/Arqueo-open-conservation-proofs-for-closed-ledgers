@@ -1062,6 +1062,10 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             max_supply: Q(l.max_supply()),
             max_accounts: Q(l.max_accounts()),
             custodian_root: digest_to_wire(&l.custodian_set_root()),
+            // RFC-0007 E1b (§452): los tres que faltaban -los siete que `paramsDigest` compone-.
+            governance_root: digest_to_wire(&l.governance_set_root()),
+            refund_ttl: Q(l.refund_ttl()),
+            max_custodian_uses: Q(l.max_custodian_uses()),
         })
         .unwrap()),
 
@@ -2318,10 +2322,12 @@ mod tests {
         assert_eq!(v["available"], json!(true));
         for k in ["seq", "epochDigest", "domain", "formatVersion", "index",
                   "signature", "publicKey", "emittedAtUnix", "beatSeconds",
-                  "consRoot", "consCount"] {
+                  "consRoot", "consCount",
+                  "paramsDigest", "pmetaRoot", "nextPending", "nextIndex", "totalSupply"] {
             assert!(!v[k].is_null(), "falta el campo {k}");
         }
         assert_eq!(v["domain"], json!("ZK-SSL-epoch-head"));
+        assert_eq!(v["formatVersion"], json!("0x5"), "RFC-0007 E1b (§452): el nodo firma v5");
         assert_eq!(v["index"], json!("0x1"), "Q es una cantidad HEX del cable");
 
         // ⚠️ LO QUE IMPORTA: lo servido se VERIFICA, sin el nodo.
@@ -2340,6 +2346,38 @@ mod tests {
             firma,
         };
         verificar_cabeza(&pk, &digest, &c).expect("lo que sirve el RPC debe verificar");
+    }
+
+    /// RFC-0007 E1b (§452): **la cabeza que el nodo sirve lleva la familia de v5, y lo servido
+    /// RECOMPONE su `epochDigest`** con el recomponedor v5 del verificador, sin la capa. Si el
+    /// `From` del cable olvidara una pieza o la cambiara, esto se pondria rojo.
+    #[test]
+    fn la_cabeza_servida_lleva_la_familia_de_v5_y_recompone_su_digest() {
+        let app = nodo(30);
+        let h = dispatch(&app, "zkssl_epochHead", json!({})).expect("epochHead");
+        let dg = |k: &str| {
+            digest_from_wire(&serde_json::from_value::<wire::B32>(h[k].clone()).expect("B32"))
+                .expect("digest")
+        };
+        let recompuesto = zk_ssl_verify::epoch_digest_v5(
+            q_de(&h["seq"]),
+            dg("accountsRoot"),
+            dg("pendingRoot"),
+            dg("frozenRoot"),
+            dg("chainDigest"),
+            dg("acusesRoot"),
+            q_de(&h["n"]),
+            dg("mmrRoot"),
+            q_de(&h["mmrSize"]),
+            dg("consRoot"),
+            q_de(&h["consCount"]),
+            dg("paramsDigest"),
+            dg("pmetaRoot"),
+            q_de(&h["nextPending"]),
+            q_de(&h["nextIndex"]),
+            q_de(&h["totalSupply"]),
+        );
+        assert_eq!(recompuesto, dg("epochDigest"), "lo servido tiene que recomponer el digest v5");
     }
 
     #[test]
@@ -2866,6 +2904,23 @@ mod tests {
         (raiz, k)
     }
 
+    /// La familia de v5 (RFC-0007 E1b, §452), leida del MISMO `head` que el recibo, como la
+    /// pareja de consumos: lo que crecio otra vez es LA CABEZA, no el camino.
+    fn familia_v5_desde_cable(
+        v: &Value,
+    ) -> (zk_ssl_verify::acuses::Digest, zk_ssl_verify::acuses::Digest, u64, u64, u64) {
+        let h = &v["head"];
+        let dg = |k: &str| {
+            digest_from_wire(&serde_json::from_value::<wire::B32>(h[k].clone()).expect("B32"))
+                .expect("digest")
+        };
+        let q = |k: &str| {
+            u64::from_str_radix(h[k].as_str().expect("Q").trim_start_matches("0x"), 16)
+                .expect("hex")
+        };
+        (dg("paramsDigest"), dg("pmetaRoot"), q("nextPending"), q("nextIndex"), q("totalSupply"))
+    }
+
     #[test]
     fn el_recibo_de_inclusion_verifica_contra_la_cabeza() {
         // ⚠️⚠️ EL TEST QUE JUSTIFICA TODA LA CADENA §256-§259: un camino
@@ -2886,8 +2941,9 @@ mod tests {
         // exactamente lo que la corrida 2 puso en rojo.
         let (acuses_root, n) = pareja_desde_cable(&r);
         let (cons_root, cons_count) = consumos_desde_cable(&r);
+        let (params, meta, np, ni, s) = familia_v5_desde_cable(&r);
         assert_eq!(
-            zk_ssl_verify::verificar_inclusion_v4(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, cons_root, cons_count, firmado),
+            zk_ssl_verify::verificar_inclusion_v5(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, cons_root, cons_count, params, meta, np, ni, s, firmado),
             Ok(())
         );
     }
@@ -2951,17 +3007,18 @@ mod tests {
         // negativo no prueba nada.
         let (acuses_root, n) = pareja_desde_cable(&r);
         let (cons_root, cons_count) = consumos_desde_cable(&r);
+        let (params, meta, np, ni, s) = familia_v5_desde_cable(&r);
         let suya = digest_from_wire(
             &serde_json::from_value::<wire::B32>(r["head"]["epochDigest"].clone()).expect("B32"),
         )
         .expect("digest");
         assert_eq!(
-            zk_ssl_verify::verificar_inclusion_v4(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, cons_root, cons_count, suya),
+            zk_ssl_verify::verificar_inclusion_v5(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, cons_root, cons_count, params, meta, np, ni, s, suya),
             Ok(()),
             "el recibo debe valer contra la cabeza de SU epoca"
         );
         assert_eq!(
-            zk_ssl_verify::verificar_inclusion_v4(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, cons_root, cons_count, firmado),
+            zk_ssl_verify::verificar_inclusion_v5(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, cons_root, cons_count, params, meta, np, ni, s, firmado),
             Err(zk_ssl_verify::InclusionError::CabezaDistinta)
         );
     }

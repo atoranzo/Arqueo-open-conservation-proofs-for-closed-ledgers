@@ -18,7 +18,7 @@
 
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
-| E1 — la cabeza v5 | `epoch_digest_v5`: UNA familia nueva bajo la firma —`params_digest` (los siete parámetros), `pmeta_root`, `next_pending`, `next_index`, `total_supply`—; `VersionCabeza` gana V5; el cable sirve los cinco campos y `zkssl_params` los tres parámetros que hoy no sirve; el testigo recompone y custodia; el mando acepta; KAT y fila en `NUCLEO.md`; vectores bajo su versión; testigos: recomponer rechaza una v5 sin uno de los cinco, y un parámetro cambiado en reposo cambia la cabeza | NO en el cable (claves aditivas); SÍ en la firma (formato 4 → 5) | **sellada en parte** — §451 (E1a: el núcleo y el mando aceptan v5; `VERSION_FORMATO` sigue en 4 y el nodo emite v4) |
+| E1 — la cabeza v5 | `epoch_digest_v5`: UNA familia nueva bajo la firma —`params_digest` (los siete parámetros), `pmeta_root`, `next_pending`, `next_index`, `total_supply`—; `VersionCabeza` gana V5; el cable sirve los cinco campos y `zkssl_params` los tres parámetros que hoy no sirve; el testigo recompone y custodia; el mando acepta; KAT y fila en `NUCLEO.md`; vectores bajo su versión; testigos: recomponer rechaza una v5 sin uno de los cinco, y un parámetro cambiado en reposo cambia la cabeza | NO en el cable (claves aditivas); SÍ en la firma (formato 4 → 5) | **sellada en parte** — §451 (E1a: el núcleo y el mando aceptan v5) y §452 (E1b: `VERSION_FORMATO` 5, el nodo firma y sirve v5, el cable la exige por versión y el testigo la custodia); queda el positivo v5 del catálogo del cable (§453) |
 | E2 — el rechazo con causa, en el cable | el objeto de error gana `data`: la causa por su NOMBRE (la variante de `LayerError`), sus campos, y el `seq` de la cabeza en cuyo estado se juzgó; `message` no cambia; el catálogo de las veinticinco causas se publica en `RPC.md` y un test lo ata al enum (dos listas son dos productores) | NO (aditivo: ningún vector ni el OpenRPC pina el objeto de error) | abierta |
 | E3 — el rechazo con prueba, por caminos | una forma nueva del paquete de evidencia, `tipo: "rechazo"`, que el mando verifica sin nodo: la cabeza v5 firmada, la causa, y el material que la demuestra con caminos y aritmética pública sobre lo que la cabeza compromete; una tabla causa → material → qué revela; un positivo y un negativo por regla, derivados por mutación; su manifiesto y su puerta en el canon | NO (el paquete no cruza el cable) | abierta |
 | E4 — la prueba de edad, medida primero | E4a: el coste en función de `next_pending`, con el instrumento antes que el circuito, y una puerta que decide si se construye o se declara un techo. E4b: el circuito sobre el RANGO `0..next_pending` de los árboles de pendientes y de meta, con la caja vacía, el tope y la concentración por emisor nombrado como formas de un mismo enunciado; su sobre, su manifiesto y sus vectores | NO | abierta — se mide antes de construir |
@@ -96,6 +96,14 @@ una con la causa que sin ella no tiene prueba:
 | `next_pending` | la marca de agua del árbol de pendientes | el universo de la prueba de edad y `PendingTreeExhausted` |
 | `next_index` | la marca de agua del árbol de cuentas | `AccountNotFound` (por índice) y `AccountLimitReached` |
 | `total_supply` | el suministro (`meta:supply`) | `SupplyCapExceeded`, y la conservación del dinero vista desde fuera (el escalón que el punto 43 dejó abierto) |
+
+**CORRECCIÓN (§247, escrita por el §452).** La fila de `next_index` lo llama «la marca de agua
+del árbol de cuentas», y no lo es: desde F3 una cuenta se coloca por su identidad con sondeo
+lineal (`crates/zk-ssl/src/accounts.rs`, `open_with_id`), y `next_index` queda como CENSO —la
+cuota de altas contra `max_accounts`—, no como posición. Firmarlo sigue pagando
+`AccountLimitReached`; lo que NO paga es `AccountNotFound(i)` por `i >= next_index`: la fila de
+D-D que lo propone no demuestra nada, y E3 necesitará la AUSENCIA de `i` bajo `accountsRoot`.
+El nombre no cambia: es el de la capa, el de `meta:next_index` y el del KAT del §451.
 
 La composición sigue el molde de v3 y v4 —la envoltura de la anterior, sin tag de dominio,
 porque el byte de versión del preámbulo es lo que separa las composiciones (§236)—:

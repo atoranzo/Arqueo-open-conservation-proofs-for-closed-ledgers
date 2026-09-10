@@ -502,11 +502,16 @@ pub fn linea_de_diario(v: &Veredicto, servido: &Value, visto_unix: u64) -> Value
         //
         // ⚠️ Coste: siete campos mas por linea — medio KB frente a los
         // ~37 KB que ya ocupa la firma (§248). Despreciable.
+        //
+        // RFC-0007 E1b (§452): la familia de v5, por el mismo criterio. Y desde aqui un test
+        // ata esta lista a la forma firmada del cable (punto 89 de la cola): ya no son dos
+        // productores sueltos (`la_lista_del_diario_es_la_forma_firmada_del_cable`).
         for k in ["index", "epochDigest", "domain", "formatVersion", "signature",
                   "publicKey", "emittedAtUnix", "beatSeconds", "custody",
                   "custodyChecked", "mmrRoot", "mmrSize", "consRoot", "consCount",
                   "seq", "n", "accountsRoot", "pendingRoot", "frozenRoot",
-                  "chainDigest", "acusesRoot"] {
+                  "chainDigest", "acusesRoot", "paramsDigest", "pmetaRoot",
+                  "nextPending", "nextIndex", "totalSupply"] {
             if !servido[k].is_null() {
                 l[k] = servido[k].clone();
             }
@@ -901,6 +906,7 @@ fn recomponer(v: &Value, firmado: &[u8; 32]) -> Result<(), String> {
         ),
         // RFC-0007 E1a (§451): la familia de v5. El nodo sigue emitiendo v4 hasta E1b;
         // el brazo lo exige el compilador, y el testigo ya la acepta.
+        // CORRECCION (S247, escrita por el §452): desde el §452 el nodo EMITE v5.
         VersionCabeza::V5 => zk_ssl_verify::epoch_digest_v5(
             seq,
             accounts,
@@ -3109,6 +3115,90 @@ mod tests {
         assert_eq!(l["consCount"], json!("0x2"), "consCount no se custodio");
     }
 
+    /// RFC-0007 E1b (§452): el diario custodia la familia de v5 de una cabeza v5 -sin ella,
+    /// `auditar_lineas` no podria recomponer meses despues (el criterio de §248, por quinta
+    /// vez)-. La cabeza v5 se DERIVA del fixture v4, como en el test del §451.
+    #[test]
+    fn el_diario_custodia_la_familia_de_v5_de_una_cabeza_v5() {
+        let hx = |b: &str| json!(format!("0x{}", b.repeat(32)));
+        let familia = [
+            ("paramsDigest", hx("99")),
+            ("pmetaRoot", hx("aa")),
+            ("nextPending", json!("0x3")),
+            ("nextIndex", json!("0x4")),
+            ("totalSupply", json!("0x1f4")),
+        ];
+        let mut s = cabeza_firmada_completa();
+        s["formatVersion"] = json!("0x5");
+        for (k, x) in &familia {
+            s[*k] = x.clone();
+        }
+        let l = linea_de_diario(&Veredicto::Nueva { indice: 7, digest: "0xaa".into() }, &s, 7);
+        for (k, x) in &familia {
+            assert_eq!(&l[*k], x, "{k} no se custodio");
+        }
+    }
+
+    /// RFC-0007 E1b (§452), punto 89 de la cola: **la lista que el diario custodia ES la forma
+    /// firmada del cable**. Eran dos productores del mismo conjunto -la lista escrita a mano
+    /// de `linea_de_diario` y los campos de `VistaFirmada`- sin test que los atara. Aqui el
+    /// conjunto del cable se DERIVA serializando la forma v5 que `con_firma` produce, y el del
+    /// diario, de la linea: una clave nueva en uno solo se pone roja.
+    #[test]
+    fn la_lista_del_diario_es_la_forma_firmada_del_cable() {
+        use std::collections::BTreeSet;
+        use zk_ssl_wire::{Blob, EpochHeadDto, Q, B32};
+        let cabeza = EpochHeadDto {
+            seq: Q(7),
+            accounts_root: B32([0x33; 32]),
+            pending_root: B32([0x44; 32]),
+            frozen_root: B32([0x55; 32]),
+            chain_digest: B32([0x66; 32]),
+            acuses_root: B32([0x77; 32]),
+            n: Q(100),
+            mmr_root: B32([0x22; 32]),
+            mmr_size: Q(5),
+            cons_root: B32([0x88; 32]),
+            cons_count: Q(2),
+            params_digest: B32([0x99; 32]),
+            pmeta_root: B32([0xaa; 32]),
+            next_pending: Q(3),
+            next_index: Q(4),
+            total_supply: Q(0x1f4),
+            epoch_digest: B32([0x11; 32]),
+        };
+        let dto = SignedEpochHeadDto::con_firma(
+            &cabeza,
+            "ZK-SSL-epoch-head".into(),
+            Q(5),
+            Q(2),
+            Blob(vec![0xde, 0xad]),
+            Blob(vec![0xab, 0xcd]),
+            Q(0x66c0),
+            Q(30),
+            "fichero".into(),
+            true,
+        );
+        let servido = serde_json::to_value(&dto).expect("serializa");
+        let del_cable: BTreeSet<String> = servido
+            .as_object()
+            .expect("objeto")
+            .keys()
+            .filter(|k| k.as_str() != "available")
+            .cloned()
+            .collect();
+        let l = linea_de_diario(&Veredicto::Nueva { indice: 2, digest: "0x11".into() }, &servido, 7);
+        let del_diario: BTreeSet<String> = l
+            .as_object()
+            .expect("objeto")
+            .keys()
+            .filter(|k| !["v", "clase", "vistoUnix"].contains(&k.as_str()))
+            .cloned()
+            .collect();
+        assert_eq!(del_diario, del_cable, "la lista del diario y la forma firmada del cable divergen");
+        assert_eq!(del_cable.len(), 26, "la forma firmada v5 son veintisiete claves con available");
+    }
+
     #[test]
     fn con_pareja_y_sin_pendiente_el_canal_calla_y_el_bucle_pide_camino() {
         let mut m = Memoria::nueva();
@@ -3791,8 +3881,10 @@ mod tests {
         assert_eq!(m.clave_fijada(), None, "sin firma no hay clave que fijar");
     }
 
-    /// La forma firmada COMPLETA, con las veinte claves que sirve el dispatch
-    /// del nodo (`main.rs:663-717`).
+    /// Una forma firmada v4 COMPLETA -las veintidos claves que el dispatch servia ANTES
+    /// del §452-. Se queda en v4: es la fuente de los tests de esa era, y los de v5 la
+    /// derivan anadiendo la familia (desde el §452 el nodo sirve veintisiete). Decia «veinte
+    /// claves» y citaba `main.rs:663-717`: las dos cosas habian caducado.
     ///
     /// ⚠️ **Fuente única de los dos tests de abajo**: el que necesita una
     /// respuesta rota se la quita a ESTA, no escribe una segunda copia.
@@ -4811,6 +4903,7 @@ mod tests {
     /// piezas se rechaza. `VERSION_FORMATO` sigue en 4: el nodo no la emite todavia (E1b); el
     /// testigo ya la acepta. El rechazo por pieza ausente no la nombra: `leer_q`/`leer_hex`
     /// empujan su error a pelo (punto 83 de la cola, preexistente y declarado).
+    /// CORRECCION (S247, escrita por el §452): `VERSION_FORMATO` es 5 y el nodo la emite.
     #[test]
     fn una_cabeza_v5_se_recompone_y_sin_una_pieza_se_rechaza() {
         use zk_ssl_hash::{as_digest, digest_to_bytes};

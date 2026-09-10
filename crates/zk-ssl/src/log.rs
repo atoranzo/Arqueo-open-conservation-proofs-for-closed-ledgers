@@ -621,6 +621,21 @@ pub struct EpochHead {
     /// Cuantos consumos hay bajo la raiz. Genesis: 0, con la raiz del arbol
     /// vacio, DECLARADO en la composicion v4.
     pub cons_count: u64,
+    /// **El digest de los siete parametros del libro** (RFC-0007 E1, §451; E1b, §452). Con
+    /// las otras cuatro piezas de su familia viaja **firmado** desde el formato v5: una regla
+    /// que un rechazo cita tiene que estar bajo la firma. Lo compone
+    /// `zk_ssl_hash::params_digest` con lo que la capa tiene en reposo.
+    pub params_digest: Digest,
+    /// La raiz del arbol de meta de pendientes (`root:pmeta`, §388): donde vive `born`.
+    pub pmeta_root: Digest,
+    /// La marca de agua del arbol de pendientes: toda posicion viva es menor (§211).
+    pub next_pending: u64,
+    /// Cuantas cuentas se han abierto: la CUOTA contra `max_accounts`. ⚠️ Es un CENSO, no
+    /// una posicion: desde F3 el indice sale de la identidad, con sondeo lineal.
+    pub next_index: u64,
+    /// El suministro (`meta:supply`). Genesis de la familia: lo que el libro tenga al
+    /// emitir la primera cabeza v5, sin valor especial (RFC-0007, D-B).
+    pub total_supply: u64,
     // ⚠️ **FALTA `verifier_hash`, y no por olvido.**
     //
     // `CONFIANZA_RESIDUAL.md` §2.2 lo propone con el mejor argumento de esa
@@ -676,7 +691,8 @@ impl EpochHead {
     /// misma función**. Dos composiciones divergirían **en silencio**.
     pub fn digest(&self) -> Digest {
         // RFC-0006 E2b (§415): v4, la envoltura de v3 con la pareja de consumos.
-        zk_ssl_hash::epoch_digest_v4(
+        // RFC-0007 E1b (§452): v5, la envoltura de v4 con la familia del estado comprometido.
+        zk_ssl_hash::epoch_digest_v5(
             self.seq,
             self.accounts_root,
             self.pending_root,
@@ -688,6 +704,11 @@ impl EpochHead {
             self.mmr_t,
             self.cons_root,
             self.cons_count,
+            self.params_digest,
+            self.pmeta_root,
+            self.next_pending,
+            self.next_index,
+            self.total_supply,
         )
     }
 }
@@ -740,6 +761,11 @@ mod tests_mmr_en_cabeza {
             mmr_t: 0,
             cons_root: zk_ssl_hash::as_digest(0),
             cons_count: 0,
+            params_digest: d,
+            pmeta_root: d,
+            next_pending: 0,
+            next_index: 0,
+            total_supply: 0,
         };
         let mut otra = base;
         otra.seq = base.seq + 1;
@@ -771,6 +797,11 @@ mod tests_mmr_en_cabeza {
             mmr_t: 0,
             cons_root: d,
             cons_count: 0,
+            params_digest: d,
+            pmeta_root: d,
+            next_pending: 0,
+            next_index: 0,
+            total_supply: 0,
         };
         let mut otra_raiz = base;
         otra_raiz.cons_root = zk_ssl_hash::as_digest(9);
@@ -778,6 +809,87 @@ mod tests_mmr_en_cabeza {
         otra_cuenta.cons_count = 1;
         assert_ne!(base.digest(), otra_raiz.digest(), "la raiz de consumos debe mover el digest");
         assert_ne!(base.digest(), otra_cuenta.digest(), "la cuenta de consumos debe mover el digest");
+    }
+
+    /// RFC-0007 E1b (§452): **la familia de v5 entra en el digest** -cada una de sus cinco
+    /// piezas lo mueve sola-. Fabricada a mano, como la de la altura: `epoch_head` la
+    /// rellenaria de la capa y no se podria variar una sola.
+    #[test]
+    fn la_familia_de_v5_entra_en_el_digest() {
+        let d = zk_ssl_hash::as_digest(0);
+        let base = crate::log::EpochHead {
+            seq: 7,
+            accounts_root: d,
+            pending_root: d,
+            frozen_root: d,
+            chain_digest: d,
+            acuses_root: d,
+            n: 0,
+            mmr_cima: d,
+            mmr_t: 0,
+            cons_root: d,
+            cons_count: 0,
+            params_digest: d,
+            pmeta_root: d,
+            next_pending: 0,
+            next_index: 0,
+            total_supply: 0,
+        };
+        let otra = zk_ssl_hash::as_digest(9);
+        let variantes = [
+            ("params_digest", crate::log::EpochHead { params_digest: otra, ..base }),
+            ("pmeta_root", crate::log::EpochHead { pmeta_root: otra, ..base }),
+            ("next_pending", crate::log::EpochHead { next_pending: 1, ..base }),
+            ("next_index", crate::log::EpochHead { next_index: 1, ..base }),
+            ("total_supply", crate::log::EpochHead { total_supply: 1, ..base }),
+        ];
+        for (nombre, v) in variantes {
+            assert_ne!(base.digest(), v.digest(), "{nombre} debe mover el digest");
+        }
+    }
+
+    /// RFC-0007 E1b (§452): **la cabeza v5 lleva lo que el libro tiene en reposo** -los siete
+    /// parametros compuestos, la raiz de meta, las dos marcas y el suministro-, leido de la
+    /// capa y no fabricado. `next_index` es la CUOTA de altas, no una posicion (F3).
+    #[test]
+    fn la_cabeza_v5_lleva_lo_que_el_libro_tiene_en_reposo() {
+        let mut layer = new_layer();
+        let cero = zk_ssl_hash::as_digest(0);
+        let antes = layer.epoch_head(cero, 0, cero, 0);
+        open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let h = layer.epoch_head(cero, 0, cero, 0);
+        assert!(h.next_index > antes.next_index, "una alta mueve la cuota");
+        assert_eq!(h.next_index, layer.next_index, "la cuota que firma es la de la capa");
+        assert_eq!(h.next_pending, layer.next_pending);
+        assert_eq!(h.total_supply, layer.total_supply());
+        assert_eq!(h.pmeta_root, layer.pending_meta_tree.root());
+        assert_eq!(
+            h.params_digest,
+            zk_ssl_hash::params_digest(
+                layer.regulatory_limit(),
+                layer.max_supply(),
+                layer.max_accounts(),
+                layer.custodian_set_root(),
+                layer.governance_set_root(),
+                layer.refund_ttl(),
+                layer.max_custodian_uses(),
+            ),
+            "los siete, en el orden de la composicion"
+        );
+    }
+
+    /// RFC-0007 E1b (§452), el testigo de la fila E1: **un parametro cambiado en reposo
+    /// cambia la cabeza**. Sin los siete bajo la firma, mover la `T` de la caducidad no
+    /// dejaria rastro en ninguna cabeza firmada.
+    #[test]
+    fn un_parametro_cambiado_en_reposo_cambia_la_cabeza() {
+        let mut layer = new_layer();
+        let cero = zk_ssl_hash::as_digest(0);
+        let antes = layer.epoch_head(cero, 0, cero, 0);
+        layer.set_refund_ttl(layer.refund_ttl() + 1);
+        let despues = layer.epoch_head(cero, 0, cero, 0);
+        assert_ne!(antes.params_digest, despues.params_digest, "la T entra en params_digest");
+        assert_ne!(antes.digest(), despues.digest(), "y params_digest, en la cabeza");
     }
 }
 
@@ -852,6 +964,11 @@ mod tests_cabeza {
             mmr_t: 0,
             cons_root: zk_ssl_hash::as_digest(0),
             cons_count: 0,
+            params_digest: zk_ssl_hash::as_digest(0),
+            pmeta_root: zk_ssl_hash::as_digest(0),
+            next_pending: 0,
+            next_index: 0,
+            total_supply: 0,
             seq: legitima.seq,
             accounts_root: [BaseElement::new(0xFA15A); 4],
             pending_root: legitima.pending_root,

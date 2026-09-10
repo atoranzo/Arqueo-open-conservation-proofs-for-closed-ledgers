@@ -19,6 +19,9 @@ license.workspace = true
 
 [dependencies]
 zk-ssl = { path = "../zk-ssl" }
+# RFC-0007 E1b (§452): `VersionCabeza`, el unico productor del conjunto
+# de versiones (RFC-0005 E2); `firmada()` lo consume en vez de un literal.
+zk-ssl-verify = { path = "../zk-ssl-verify" }
 winterfell = "0.13"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

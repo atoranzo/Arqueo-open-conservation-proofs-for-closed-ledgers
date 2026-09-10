@@ -495,6 +495,9 @@ impl SovereignLayer {
     /// acuses y `n` son del nodo (diario + `vista_acuses`), y la capa no
     /// va a adivinarlos. Una pareja neutra (`as_digest(0)`, `0`) sirve
     /// donde el árbol de acuses no pinta nada, y se ve que es neutra.
+    ///
+    /// RFC-0007 E1b (§452): la familia de v5 la rellena la capa, que es quien la tiene
+    /// en reposo; la firma de esta funcion no cambia y ningun llamador se entera.
     pub fn epoch_head(
         &self,
         acuses_root: zk_ssl_hash::Digest,
@@ -509,6 +512,21 @@ impl SovereignLayer {
             mmr_t,
             cons_root: self.cons_root(),
             cons_count: self.cons_count(),
+            // Los siete de `meta:`, `root:pmeta`, `meta:next_pending`, `meta:next_index` y
+            // `meta:supply`: nada nuevo en el almacen, asi que un libro anterior compone v5.
+            params_digest: zk_ssl_hash::params_digest(
+                self.regulatory_limit,
+                self.max_supply,
+                self.max_accounts,
+                self.custodian_set_root,
+                self.governance_set_root,
+                self.refund_ttl,
+                self.max_custodian_uses,
+            ),
+            pmeta_root: self.pending_meta_tree.root(),
+            next_pending: self.next_pending,
+            next_index: self.next_index,
+            total_supply: self.total_supply,
             seq: self.log.len() as u64,
             accounts_root: self.accounts.root(),
             pending_root: self.pending.root(),

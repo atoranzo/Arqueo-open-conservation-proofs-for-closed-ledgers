@@ -44,7 +44,7 @@ pendientes y congelados) queda fuera: el paquete lo trata como raíces opacas ba
 
 **Primera mitad — lo que se firma crece sólo por versión.** El conjunto de versiones de cabeza que
 el núcleo acepta tiene **un solo productor**: `VersionCabeza` en `zk-ssl-verify` (§406), un `enum`
-exhaustivo cuyo texto («v2 o v3») se deriva de sus variantes y del que el mando y el testigo
+exhaustivo cuyo texto («v2, v3, v4 o v5» desde el §451) se deriva de sus variantes y del que el mando y el testigo
 **consumen**, sin repetirlo. Una composición nueva es una variante nueva: el compilador marca cada
 `match` que la olvide, y `VERSION_FORMATO` tiene que ser miembro (atado en los tests del crate).
 Una `formatVersion` fuera del conjunto se rechaza con texto y **sin truncar**: `0x103` no es un 3.
@@ -244,6 +244,8 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §452 — `VERSION_FORMATO` pasa de 4 a 5: el nodo firma y sirve la cabeza v5 (RFC-0007, E1b).
+  Ninguna fila nueva: la constante ya la tenía y su valor no es censo.
 - §451 — `epoch_digest_v5`, `params_digest` y `DOMINIO_PARAMS`, la variante `V5`, `lleva_consumos`
   y `texto_con_consumos`, `verificar_acuse_v5` y `verificar_inclusion_v5`: el núcleo y el mando
   aceptan la cabeza v5 (RFC-0007, E1a); los KAT de `epoch_digest_v5` y `params_digest`. Siete
