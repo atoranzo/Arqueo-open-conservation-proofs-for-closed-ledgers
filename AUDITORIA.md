@@ -33495,3 +33495,107 @@ catalogo sigue siendo el de la referencia. Las sondas de `formatVersion` 4 y de 
 entran porque su texto ya esta pinado. El sobre de consumo v5 capturado no entra en el catalogo del
 consumo, que sigue con cabezas v4. Siguen vivos el punto 152 (nadie fuera del nucleo compone
 `params_digest`) y la frase del genesis de la seccion v5 de `RPC.md`, que describe un libro nuevo.
+
+## §454 — RFC-0007 E2: la causa de un rechazo, como dato, en el cable (`LayerError::causa`, `data`)
+
+**Que.** Un rechazo de la capa deja de ser solo prosa. La capa gana `LayerError::causa()`: el
+catalogo de las veinticinco causas, un `match` EXHAUSTIVO que devuelve el nombre de la variante y
+sus campos TIPADOS (`Causa`, `Campo::Cantidad`, `Campo::Digest`, `Campo::Texto`), junto a `Display`
+e `iso_reason`. El nodo lo pone en el cable: el `-32000` lleva `data` = `{causa, campos, seq}`
+-`seq`, la altura del registro en que se juzgo, leida una vez bajo el candado que la llamada ya
+toma- y la negativa de `zkssl_publishConsumo` (`accepted: false`) lleva el mismo `data` junto a
+`reason`. `message` no cambia y los demas codigos no llevan `data`: salen byte a byte como antes.
+`spec/RPC.md` publica la forma y el catalogo (25 filas, atado por test a la capa), nombra `data` en
+el sobre de la respuesta y completa su tabla de errores con los dos codigos que el nodo emitia sin
+publicar (`-32004` y `-32603`). La fila E2 del RFC-0007 pasa a **sellada** y D-C gana su CORRECCION
+(§247). `zkssl/0.3` no se mueve: ningun vector, ni el OpenRPC, ni un consumidor tipado miraban el
+objeto de error.
+
+**Por que asi.** Doce decisiones DELEGADAS por el autor con la ley, REVERSIBLES aqui. **D-1**, el
+productor en la capa, que es la duena del enum; el nodo solo codifica. **D-2**, las cinco
+variantes TUPLA toman nombre en el catalogo (`index` para una cuenta, `detalle` para un texto) y
+los demas campos llevan su nombre de Rust en camelCase: solo cambia `would_be` -> `wouldBe`.
+**D-3**, QUANTITY, `Digest` o texto; `Store` sigue en `-32000` -cambiarle el codigo no seria
+aditivo- y el catalogo lo declara fallo del operador, no regla. **D-4**, `AlreadyInThatFreezeState`
+se queda en el enum y en el catalogo, ni retirada ni cableada: la propuesta era retirarla, y la
+cambio una medicion (abajo). **D-5**, la negativa del consumo gana el mismo `data`: mismo productor,
+aditivo. **D-6**, `seq` se lee una vez en `dispatch` y en `dispatch_dev`, y `layer(e, seq)`: la
+firma nueva hace que el compilador senale los once sitios. **D-7**, `RpcError` gana `data` y
+`objeto_de_error` la escribe solo si existe. **D-8**, forma, reglas y catalogo en `spec/RPC.md`;
+que causas emite hoy el cable NO va a la spec, porque seria prosa sin puerta: va a este asiento.
+**D-9**, el atado vive en la capa (`tests_causa`), contra el propio fuente del enum y contra la
+tabla publicada. **D-10**, el OpenRPC no cambia: ningun metodo declara errores. **D-11**, sin
+vectores, porque nada de la conformidad consume objetos de error. **D-12**, la fila 7 de la
+portada queda fuera de este sello.
+
+**Lo medido antes de escribir un byte.** Sin PASTE: el zip de `main` en `06dfd82`
+(`90a9f1357138d123`, 444 ficheros), gateado por las 159 anclas versionadas del traspaso, todas
+clavadas. `LayerError` tiene 25 variantes: 13 con campos con nombre, 5 tupla y 7 unidad. El nodo
+emitia cinco codigos y `spec/RPC.md` publicaba tres: `-32004` vivia solo en la seccion del §261 y
+`-32603` (diez sitios: candados envenenados, la serializacion de la cabeza firmada, el contador de
+recepcion) en ninguna parte. Ningun cliente tipa el objeto de error ni usa `deny_unknown_fields`:
+el SDK y el testigo lo imprimen entero, y tres bancos solo miran el prefijo `ERROR-RPC:`. Y lo que
+decidio D-4: `apply_freeze_delegated` no comprueba que la congelacion cambie algo, asi que la regla
+que `AlreadyInThatFreezeState` nombra no esta obsoleta, como las dos que retiro el §376, sino SIN
+CABLEAR; su hermana `RecoveryToSameIdentity` si rechaza el caso analogo de la recuperacion.
+Retirarla habria borrado el nombre de una regla que falta.
+
+**Que causas emite hoy el cable** (medido POR NOMBRE sobre el arbol de `06dfd82`, sobre-aproximado
+y SIN puerta; `spec/RPC.md` y el RFC remiten aqui). Como `-32000`, por los metodos que el nodo
+despacha: `AccountNotFound`, `InsufficientBalance`, `OverRegulatoryLimit`, `PendingTreeExhausted`,
+`DuplicateAccountInBatch`, `DuplicatePendingInBatch`, `VerificationFailed`, `StaleState`,
+`WrongRegulatoryLimit`, `AccountLimitReached`, `AccountFrozen` y `Store` (este por el `?` de
+`From<StoreError>`); solo con `--dev` (`dev_fund`), ademas `NotTheIssuer`, `CustodianSetExhausted`
+y `SupplyCapExceeded`. Dentro del `result` de `zkssl_publishConsumo`: `ConsumoRepetido` y
+`ConsumoColision`. Ninguna otra: `RefundTooEarly`, `RefundUnavailable` y `PendingMismatch` solo las
+producen `apply_refund` y `apply_deissue`, que el nodo no despacha; `ProofFailed` y
+`NotTheAccountHolder` son del lado del que prueba; `BalanceOutsideBand` es de la auditoria;
+`RecoveryToSameIdentity`, de la recuperacion; y `AlreadyInThatFreezeState` no la produce ningun
+camino del arbol.
+
+**Testigos, ensenados ROJOS en vivo.** Seis nuevos. Tres en la capa: el nombre de cada causa es el
+identificador que escribe el `Debug` derivado, y la lista de instancias cubre el enum leido de su
+propio fuente; los campos son los del `Debug` en camelCase, y uno solo en las tuplas; y la tabla
+de `spec/RPC.md` es la que produce la capa, en su orden. Tres en el nodo: el objeto lleva `data`
+solo si hay causa; un `InsufficientBalance` real por `sendMaterials` lleva causa, campos y `seq`,
+con `message` intacto; y el consumo repetido lleva su causa en el `result`. Cuatro falsadores por
+mutacion, dentro del bloque y con el arbol en su POST, cada uno con EXACTAMENTE 1 FAILED nombrado:
+la tabla sin la fila de `StaleState`, `objeto_de_error` sin `data`, `Campo::Cantidad` sin `Q`, y la
+negativa del consumo sin `data`. Cada fichero volvio a su POST por sha antes de seguir. Y en este
+-B, `check_cifras`: con los pines ya subidos y la prosa aun vieja da ROJO nombrando las once cifras
+rancias, y el grep de restos ve dieciseis lineas -entre ellas las dos `# nodo: 101` de los PAPER,
+que la herramienta no ve-; con la prosa corregida, los dos en verde.
+
+**Lo que la medicion cambio, y lo que costo.** El bloque clavo los cuatro POST predichos a la
+primera y compilo sin un error. El ensayo sobre la maqueta del arbol real -treinta caminos, sobre
+un unico bloque- cazo un defecto del propio bloque antes de salir: `cargo test -q` pasa `--quiet`
+al arnes y los nombres de los tests salen como PUNTOS, asi que los falsadores habrian dado un rojo
+falso en la maquina del autor. Se quito `-q` de toda orden cuya salida se analiza por nombre, y el
+cargo de mentira imprime ahora puntos con `-q`: el bloque viejo sale rojo en su propio verde. Y
+dos cifras de la preparacion estaban tecleadas y eran falsas -la fila 7 de la portada no esta en
+nueve lineas sino en diez, y los sitios de `layer` son once y no doce-; las dos se derivan ya del
+arbol.
+
+**Medido.** El §454 (`eded56d`, empujado): los cuatro ficheros con su POST predicho
+(`crates/zk-ssl/src/lib.rs` `2661a9c1ffceeecf`, `crates/zk-ssl-node/src/main.rs`
+`38bf83288160ba7b`, `spec/RPC.md` `0afa743fad5d11e8`, el RFC-0007 `adaedbadb46cacae`; 504 + y
+25 -); compila en release en 51 s; la capa pasa de 329 a 332 declarados, con 329 que pasan y 3
+ignorados (59 s); el nodo, de 101 a 104 (7 s); el OpenRPC regenerado, identico byte a byte;
+`check_tests` 1232 -> 1238. Aqui: pines capa 326 -> 329 y nodo 101 -> 104; sumas 1080/1217/1231
+-> 1086/1223/1237; la cifra de la capa en ocho sitios y la del nodo en tres. Canon `--sello` rc 0
+(los segundos, en la salida de este bloque). Ficheros: `tools/canon.sh` (ensancha: las filas de
+pines llevan su historia, se declara), `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`,
+`ARQUITECTURA.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` -los seis linea-neutrales y sin
+ensanchar- y este asiento. Vallas 132, invariante.
+
+**Lo que NO afirma, y lo que queda vivo.** No afirma que la causa sea VERDAD: es lo que el nodo
+dice, como `receptionSeq` (§253), y probarla es E3. No afirma que exista una cabeza FIRMADA en
+el `seq` de un rechazo: eso depende del latido, y es de E3. Quedan vivos: `AlreadyInThatFreezeState`
+sin cablear -si el AIR de subida acepta `root_a == root_b`, una congelacion que no cambia nada
+gasta un uso del cupo y un nonce; sin medir-; catorce negativas dentro de `result`, en seis
+metodos, cuyo `reason` no es una causa; el orden de claves de `serde_json`, que pone `data` antes
+que `message` y recorta el diagnostico de tres bancos; la fila 7 de la portada, <<planeada>> en diez
+lineas de siete documentos, que ya describe lo que el cable hace con los rechazos de la capa y sigue
+sin prueba; y el punto 160 (<<un positivo por era de cabeza>>). `check_cifras` solo gatea la cifra
+pegada a <<tests>> o <<pruebas>>: el hueco declarado desde el §239 deja fuera las sumas y el
+`# nodo: 101` de los dos PAPER, que este sello corrigio por grep.
