@@ -33279,3 +33279,86 @@ y `RESUMEN_EJECUTIVO.md` (:60) una fila cada uno, linea-neutrales; `RESUMEN_BILI
 parrafos re-fluidos (:45-49 y :96-100, 120 -> 120, `ef88246a24b8ec66` -> `acb3d6c2e5b957a3`) sin
 ensanchar; y este asiento. Documentos `.md` versionados: 70 -> 71. Pines quietos:
 323 / 318 / 100 / 92 / 97 / 19 / 27; sumas 1062 / 1199 / 1213. Vallas 132, invariante.
+
+## §451 — RFC-0007 E1a: la cabeza v5 en el nucleo y el mando (`epoch_digest_v5`, `params_digest`, `V5`)
+
+**Que.** La primera mitad de E1, ADITIVA y sin tocar el cable, la capa ni el nodo. Nace
+`epoch_digest_v5` en `zk-ssl-hash` -`v5 = merge(v4, merge(merge(params_digest, pmeta_root),
+merge(as_digest(next_pending), merge(as_digest(next_index), as_digest(total_supply)))))`, el molde
+de §275, §292 y §414 otra vez- y con el nace `params_digest`: los SIETE parametros del libro
+en un solo digest, con dominio propio (`DOMINIO_PARAMS`, los ocho bytes de `PARAM_V1`, registrado
+en la tabla de dominios). Los dos llevan KAT (`spec/vectors/nucleo/epoch_digest_v5.json` y
+`params_digest.json`, el 20 y el 21). `VersionCabeza` gana `V5` y el conjunto pasa a {2, 3, 4, 5};
+`texto()` deriva <<v2, v3, v4 o v5>>. Nace `lleva_consumos()` -verdadero para v4 y v5- y
+`texto_con_consumos()` (<<v4 o v5>>): el sobre de consumo y el de conflicto dejan de preguntar
+<<es 4?>>. Nacen `verificar_acuse_v5` y `verificar_inclusion_v5`, alcanzables por el `pub use`. El
+mando lee la familia de v5 (`FamiliaV5`) y recompone por `match` exhaustivo; el testigo recompone
+la v5 en `recomponer`. `VERSION_FORMATO` sigue en 4: el nodo no emite v5 y `zkssl/0.3` no se mueve.
+
+**Por que asi.** Once decisiones DELEGADAS por el autor con la constitucion, REVERSIBLES aqui.
+**D-1**, `DOMINIO_PARAMS` = `PARAM_V1`, hermano de `PMETA_V1`, con su fila en el REGISTRO (R5 de
+`check_dominios`). **D-2**, la composicion EXACTA del D-B del RFC, que el KAT fija. **D-3**,
+`lleva_consumos()`: UN productor de <<lleva la pareja de consumos>>, por la razon del D-6 del
+§414 -preguntar <<es 4?>> habria dejado a la v5 fuera en silencio-, y `exige_v4` pasa a
+`exige_consumos` con el texto DERIVADO; los fragmentos que los manifiestos pinan siguen dentro,
+byte a byte, asi que ningun vector del consumo ni del conflicto se mueve. **D-4**, el mando lee
+las cinco claves con los lectores de siempre y las NOMBRA al faltar, antes de tocar la firma.
+**D-5**, los vectores `-5`: `tools/conformidad.sh` pone rojo un `.json` sin entrada, asi que no
+pueden quedar sin listar; no se reescriben (regla 2 del PROCESO) y desde hoy son rechazos por OTRA
+causa, con el texto medido en vivo; el fuera-del-conjunto vive en `rechazo-formatVersion-6.json`,
+derivado como `TODAS.max + 1` por mutacion de UN byte del `-5`. **D-6**, los dos recomponedores
+v5, molde de los v4. **D-7**, los dos KAT los emite la REFERENCIA en la corrida, y los 19 viejos
+se exigen byte a byte antes de copiarlos. **D-8**, la prosa normativa en el mismo sello:
+`NUCLEO.md` (siete filas), `PAQUETE.md` y la fila E1 del RFC, <<sellada en parte>>. **D-9**, el
+brazo V5 del testigo, que el compilador exige. **D-10** y **D-11**, pines, cifras y canon en este
+`-B`, para que el sello anterior sea legible sin el ruido de los contadores.
+
+**Lo que la medicion cambio.** El bloque clavo los once POST predichos a la primera y los dos
+medidos cayeron donde debian (`witness.rs` PRE + 51 lineas; el `-6` del cable, los mismos 38.033
+bytes del `-5` con UN byte distinto). La prediccion del texto de los `-5` se sostuvo entera -el
+mando por los campos que faltan (`falta seq o no es cadena 0x`), el testigo por la firma, cuyo
+preambulo lleva el byte 3 y no el 5 que la cabeza declara (el texto del punto 82)-, asi que no hay
+correccion §247 que escribir por ese lado; es la primera vez que esta prediccion no se paga con
+un bloque muerto (§414 murio en ese mismo sondeo). Lo que si cambio, y antes del bloque: el
+`--list` de `zk-ssl-verify` trae doctests, asi que las listas se comparan por LINEA y no por
+palabra -lo cazo el PASTE-E1aB-PRE contra la maqueta, no el arbol-. Y el ancho de la fila E1 del
+RFC pasa de 577 a 685 columnas: se DECLARA y no se gatea, porque el punto 120 dejo escrito que un
+RFC no lleva puerta de ancho.
+
+**Testigos, ensenados ROJOS en vivo.** Dos falsadores por mutacion, dentro del propio bloque y con
+el arbol ya en su POST: `lleva_consumos` excluyendo `V5` da EXACTAMENTE 1 FAILED, nombrado
+(`la_pareja_de_consumos_la_llevan_v4_y_v5`); y `epoch_digest_v5` con `next_index` y `total_supply`
+cambiados de sitio pone rojo el KAT `epoch_digest_v5` -emitido minutos antes con la composicion
+buena-, que se nombra al caer. Los dos ficheros vuelven a su POST por sha antes de seguir. Los
+nueve tests nuevos: cuatro en `hash` (la envoltura separa hasta en genesis, las cinco piezas
+mueven el digest cada una por su lado, el tag separa `params_digest` del merge pelado, y cada uno
+de los siete parametros lo mueve), tres en `verify` (`la_pareja_de_consumos_la_llevan_v4_y_v5` y
+los dos de `tests_v5` en `inclusion`), uno en el mando (una v5 sin una de las cinco piezas se
+nombra, y con las cinco recompone) y uno en el testigo; dos renombrados. Y en este `-B`,
+`check_cifras`: con los pines ya subidos y la prosa aun vieja da ROJO nombrando las CUATRO cifras
+rancias -los dos `1062` de las portadas y el desglose del verificador y del testigo-; con la prosa
+corregida, verde otra vez.
+
+**Medido.** Pines hash 27 -> 31, verificador 92 -> 96, testigo 97 -> 98 (`--list` PRE y POST
+nombre a nombre: +4, +6 con dos renombrados, +1); sumas 1062/1199/1213 -> 1071/1208/1222;
+`check_tests` 1214 -> 1223; `check_dominios` 24/21 -> 25/22 declaraciones/distintos; `check_nucleo`
+59 + 40 = 99 filas (NUCLEO 68 -> 75, siete filas nuevas); `check_modulos` 121 y `verificar_citas`
+67, quietos. El catalogo del nucleo pasa de 19 a 21 vectores. Sondeo con el POST: el mando dice
+<<formatVersion 6: el paquete v1 empaqueta cabezas v2, v3, v4 o v5>> y rechaza el `-5` por
+<<falta seq o no es cadena 0x>>; el testigo dice <<formatVersion 6: el testigo recompone cabezas
+v2, v3, v4 o v5>> y rechaza el `-5` por <<la firma es VALIDA pero de otro mensaje>>. Los cuatro
+arneses: 69, 14, 16 y 13 entradas, todas dicen lo que deben. Canon `--sello` rc 0 (los segundos,
+en la salida de este bloque). Ficheros: los once del §451 mas cuatro nuevos (los dos `-6` y los
+dos KAT), y aqui `tools/canon.sh`, `PRINCIPIOS.md` (:354-358) y `PAPER.md` (:36-38), los dos
+linea-neutrales y sin ensanchar, y este asiento. Vallas 132, invariante.
+
+**Lo que NO afirma, y lo que queda vivo.** No afirma que el nodo emita una v5: `VERSION_FORMATO`
+sigue en 4 y ninguna cabeza v5 existe fuera de los tests y del KAT. No afirma nada del cable: ni
+`spec/RPC.md` ni el OpenRPC se han tocado, porque todavia no viaja ninguna de las cinco claves.
+E1b: `EpochHead` +5 campos y `digest()` a v5, los dos DTO y `VistaFirmada`, `firmada()` con su
+literal `== 4` (punto 91), los veintiun nombres de `linea_de_diario` (punto 89), `ParamsDto` +3 y
+`zkssl_params` sirviendo los siete, y `VERSION_FORMATO` a 5 con su prosa. Las sumas `1199 -> 1208`
+y `1213 -> 1222` se mueven por el MISMO delta que los pines y **no tienen compuerta**:
+`check_cifras` solo gatea la cifra pegada a <<tests>> o <<pruebas>> -los dos `1062`- y el
+desglose; el hueco esta declarado en su cabecera desde el §239, y el offset con `check_tests`
+(1222 en prosa frente a 1223 derivados) es el de siempre, invariante.
