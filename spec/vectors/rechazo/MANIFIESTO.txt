@@ -1,4 +1,4 @@
-# Vectores del sobre de RECHAZO (spec/PAQUETE.md seccion 2.6, RFC-0007 E3a-1, sellado en el asiento 455).
+# Vectores del sobre de RECHAZO (spec/PAQUETE.md seccion 2.6, RFC-0007 E3; nace en el asiento 455).
 # fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
 # Los cuatro positivos se REUNEN de las CAPTURAS-455 de un nodo real (PASTE-455-M, a977da87413b2dc7):
 # cada pieza es una respuesta del cable sin reescribir. Los negativos se derivan de ellos por UNA
@@ -11,7 +11,7 @@ consumo-colision.json|0|VERDE: ConsumoColision se sostiene sobre el estado compr
 rechazo-rech-falta-data.json|1|falta data (el objeto del rechazo)
 rechazo-rech-falta-causa.json|1|data: falta causa
 rechazo-rech-falta-campos.json|1|data: falta campos
-rechazo-rech-causa-no-probada.json|1|data: la causa AccountFrozen no la prueba este mando
+rechazo-rech-causa-no-probada.json|1|data: la causa InsufficientBalance no la prueba este mando
 rechazo-rech-falta-cabeza.json|1|falta cabeza
 rechazo-rech-cabeza-adulterada.json|1|cabeza: los campos NO recomponen su epochDigest
 rechazo-rech-limite-no-superado.json|1|la causa NO se sostiene: el importe pedido (1000) no supera el limite (1000)
@@ -54,3 +54,16 @@ rechazo-rech-cuenta-sin-kind.json|1|lote[0]: falta kind
 rechazo-rech-cuenta-kind-otro.json|1|lote[0]: kind desconocido: otro
 rechazo-rech-cuenta-sin-receipt-notice.json|1|lote[0]: falta receipt.notice
 rechazo-rech-posicion-sin-notice.json|1|lote[1]: falta notice
+# E3b (asiento 459): el positivo REUNIDO de las CAPTURAS-R7E3b de un nodo real (PASTE-R7E3b-M,
+# 42132df11f7a5a1b, con dev_freeze) y nueve negativos. El disfraz lleva el camino REAL de la cuenta
+# libre: no es una mutacion, es la escena. El negativo causa-no-probada pasa a InsufficientBalance.
+cuenta-congelada.json|0|VERDE: AccountFrozen se sostiene sobre el estado comprometido
+rechazo-rech-congelada-falta-camino.json|1|falta congelados (el camino de zkssl_frozenPath)
+rechazo-rech-congelada-sin-camino.json|1|congelados: falta camino
+rechazo-rech-congelada-index-otro.json|1|data: el index que el nodo dice (3468388789) no es el del camino (3156592842)
+rechazo-rech-congelada-cruce.json|1|congelados: el isRight recibido NO es el de la cuenta 3156592842
+rechazo-rech-congelada-truncado.json|1|congelados: el camino no tiene los 32 niveles del arbol de congelados
+rechazo-rech-congelada-hoja-otra.json|1|congelados: el camino NO sube al frozenRoot de la cabeza
+rechazo-rech-congelada-cabeza-distinta.json|1|la cabeza (seq 5) no es la del rechazo (seq 4)
+rechazo-rech-congelada-cabeza-adulterada.json|1|cabeza: los campos NO recomponen su epochDigest
+rechazo-rech-congelada-disfraz.json|1|la causa NO se sostiene: la hoja de la cuenta 3468388789 bajo el frozenRoot es la vacia

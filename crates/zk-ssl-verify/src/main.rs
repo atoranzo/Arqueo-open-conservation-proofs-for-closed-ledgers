@@ -803,7 +803,8 @@ fn verificar_conflicto(p: &serde_json::Value) -> Result<(), String> {
 /// Todo viaja TAL CUAL lo sirvio el cable -reunir, no recomponer-: `data` es el objeto `data` del
 /// rechazo (`spec/RPC.md`, §454), `{causa, campos, seq}`; `cabeza`, una respuesta de
 /// `zkssl_signedEpochHead`; `parametros`, la de `zkssl_params`; `presencia`, el camino de
-/// `zkssl_consumoPath`. QUE cabeza sirve depende de la causa y se exige con el `seq`: una
+/// `zkssl_consumoPath`; `congelados`, la respuesta de `zkssl_frozenPath` (§459). QUE cabeza
+/// sirve depende de la causa y se exige con el `seq`: una
 /// ANTERIOR al rechazo, o la misma, para lo que solo crece -`nextIndex`, los consumos-; cualquiera
 /// del libro para lo que no tiene setter -el limite regulatorio-. El veredicto es de la CAUSA:
 /// VERDE si se sostiene sobre el estado comprometido; si no, ROJO nombrando por que, y entonces el
@@ -1002,6 +1003,58 @@ fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
                     ))
                 }
             }
+        }
+        "AccountFrozen" => {
+            // RFC-0007 E3b (§459): la hoja de la cuenta bajo el `frozenRoot` de la cabeza del
+            // `seq` EXACTO -las congelaciones van y vuelven-, con las reglas del modulo
+            // `congelados` del nucleo (§458): profundidad FIJA, cruce con el indice y hoja no
+            // vacia. El material es la respuesta de `zkssl_frozenPath` TAL CUAL (`index`,
+            // `leaf`, `camino`); su `s` no va bajo firma y no se mira: se juzga contra la raiz.
+            let g = p
+                .get("congelados")
+                .ok_or_else(|| err("falta congelados (el camino de zkssl_frozenPath)".into()))?;
+            exige_misma(s_cabeza, s_rechazo)?;
+            let dicho = u64_de(campos, "index")?;
+            let del_camino = u64_de(g, "index")?;
+            if dicho != del_camino {
+                return Err(err(format!(
+                    "data: el index que el nodo dice ({dicho}) no es el del camino ({del_camino})"
+                )));
+            }
+            let hoja = digest_de(g, "leaf")?;
+            if g.get("camino").is_none() {
+                return Err(err("congelados: falta camino".into()));
+            }
+            let (herm, der) = camino_de(g, "camino", "congelados")?;
+            if !zk_ssl_verify::congelados::cruza_indice(dicho, &der) {
+                return Err(err(format!(
+                    "congelados: el isRight recibido NO es el de la cuenta {dicho} - un camino \
+                     de otra cuenta no prueba nada de esta"
+                )));
+            }
+            println!("2/3 el camino es el de la cuenta {dicho}, la que el nodo nombro");
+            let raiz = digest_de(c, "frozenRoot")?;
+            match zk_ssl_verify::congelados::raiz_de_hoja(hoja, &herm, &der) {
+                Some(r) if r == raiz => {}
+                Some(_) => {
+                    return Err(err(
+                        "congelados: el camino NO sube al frozenRoot de la cabeza".into()
+                    ))
+                }
+                None => {
+                    return Err(err(format!(
+                        "congelados: el camino no tiene los {} niveles del arbol de congelados",
+                        zk_ssl_verify::congelados::FROZEN_DEPTH
+                    )))
+                }
+            }
+            if !zk_ssl_verify::congelados::esta_congelada(hoja) {
+                return Err(err(format!(
+                    "la causa NO se sostiene: la hoja de la cuenta {dicho} bajo el frozenRoot es \
+                     la vacia - no estaba congelada"
+                )));
+            }
+            println!("3/3 la hoja de la cuenta {dicho} bajo el frozenRoot de la cabeza no es la vacia");
         }
         otra => {
             return Err(err(format!(

@@ -144,13 +144,16 @@ donde el valor es una respuesta del cable sin reescribir.
 { "v": 1, "tipo": "rechazo", "data": {…}, "cabeza": {…}, "recibo": {…} }   (StaleState)
 { "v": 1, "tipo": "rechazo", "data": {…}, "cabeza": {…},
   "lote": [ {…}, {…} ] }                                      (un duplicado de lote)
+{ "v": 1, "tipo": "rechazo", "data": {…}, "cabeza": {…},
+  "congelados": {index, leaf, camino} }                       (AccountFrozen)
 ```
 
 - **Prueba la CAUSA de un rechazo, no el rechazo.** `data` es el objeto `data` que el nodo puso
   en su negativa (`spec/RPC.md`, §454), tal cual; `cabeza`, una respuesta de
   `zkssl_signedEpochHead`; `parametros`, la de `zkssl_params`; `presencia`, el `camino` de
   `zkssl_consumoPath`; `recibo`, los `publicInputs` que el titular envió; `lote`, las `ops` de
-  `zkssl_applyMany`. Que el nodo rechazó —y cuándo— no lo prueba este sobre. Lo que prueba es
+  `zkssl_applyMany`; `congelados`, la respuesta de `zkssl_frozenPath` (§458). Que el nodo
+  rechazó —y cuándo— no lo prueba este sobre. Lo que prueba es
   que la regla que el nodo nombró **se sostiene sobre el estado que una cabeza firmada
   compromete**; si no se sostiene, el ROJO nombra por qué, y el sobre es entonces la prueba de que
   la regla era un disfraz.
@@ -158,9 +161,10 @@ donde el valor es una respuesta del cable sin reescribir.
   —`nextIndex`, los consumos publicados— sirve una cabeza **anterior** al rechazo, o la misma: lo
   que ya estaba en ella seguía estando al juzgar. Para lo que no tiene setter —el límite
   regulatorio— sirve cualquiera del libro. Y para lo que se juzga sobre un estado **instantáneo**
-  —las raíces de un `seq` (`StaleState`), el lote contra ese registro (los duplicados)— la cabeza
-  tiene que ser **la misma** del rechazo. La mutabilidad está medida en el código (§455, §456).
-- Las causas que este mando prueba (RFC-0007 E3a):
+  —las raíces de un `seq` (`StaleState`), el lote contra ese registro (los duplicados), el árbol
+  de congelados, que va y vuelve (`AccountFrozen`)— la cabeza tiene que ser **la misma** del
+  rechazo. La mutabilidad está medida en el código (§455, §456, §459).
+- Las causas que este mando prueba (RFC-0007 E3a y E3b):
 
 | causa | material | qué comprueba | cabeza |
 |---|---|---|---|
@@ -172,11 +176,13 @@ donde el valor es una respuesta del cable sin reescribir.
 | `WrongRegulatoryLimit` | `parametros` | los siete recomponen; `expected` es el comprometido y `declared` no lo es | v5, cualquiera del libro (§456) |
 | `DuplicateAccountInBatch` | `lote` | el primer choque del lote, con la regla de `apply_many`, es una cuenta repetida | v5, la misma (§456) |
 | `DuplicatePendingInBatch` | `lote` | el primer choque del lote es una posición repetida | v5, la misma (§456) |
+| `AccountFrozen` | `congelados` | el camino es el de la cuenta que `data` nombra (cruce con sus bits), mide los 32 niveles que fija el núcleo y sube al `frozenRoot`; la hoja no es la vacía | v3, v4 o v5, la misma (§459) |
 
-- Cualquier otra causa se rechaza con su nombre. El resto de la tabla D-D del RFC-0007 es E3b
-  (`AccountFrozen`, `AccountNotFound`: congelación y ausencia, con dos métodos nuevos del cable),
-  E4 y E5. `StaleState`, `WrongRegulatoryLimit` y los duplicados de lote los añadió el §456,
-  reuniendo un recibo real por el proxy de un banco (su banco no vive en el árbol, y se declara).
+- Cualquier otra causa se rechaza con su nombre. `AccountFrozen` la añadió el §459, con el camino
+  que el cable sirve al titular (§458); `AccountNotFound` pasó a E5 (RFC-0007, corrección del
+  §459), y el resto de la tabla D-D es E4 y E5. `StaleState`, `WrongRegulatoryLimit` y los
+  duplicados de lote los añadió el §456, reuniendo un recibo real por el proxy de un banco (su
+  banco no vive en el árbol, y se declara).
 
 ## 3. El sobre — lo que el binario lee
 
@@ -193,7 +199,7 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 | extensión | `camino` (lista de digests) | `RPC.md:781-808` |
 | consumo | `consumo`, y `presencia`/`ausencia` → `siblings`, `isRight` | `zkssl_consumoPath`, `RPC.md` |
 | conflicto | `consumo`, y `libros[]` → `cabeza`, `presencia` → `siblings`, `isRight` | este documento, sección 2.5 |
-| rechazo | `data` → `causa`, `campos`, `seq`; `parametros` → los siete de `zkssl_params`; `presencia` → `siblings`, `isRight` | este documento, sección 2.6 |
+| rechazo | `data` → `causa`, `campos`, `seq`; `parametros` → los siete de `zkssl_params`; `presencia` → `siblings`, `isRight`; `congelados` → `index`, `leaf`, `camino` → `siblings`, `isRight` | este documento, sección 2.6 |
 
 ⚠️ **§419 — el «31» de arriba ya no es la cuenta**: el sobre de consumo añade `consumo`,
 `presencia` y `ausencia`. **No se sustituye por otro número**, porque el 31 no tiene
@@ -367,6 +373,12 @@ los **mismos productores** de arriba, con su hueco relleno distinto.
 - `la causa NO se sostiene: el primer choque del lote es {n}, no {causa}`
 - `data: el {clave} que el nodo dice ({dicho}) no es el del primer choque del lote ({v})`
 - `la cabeza (seq {s_cabeza}) no es la del rechazo (seq {s_rechazo}): esta causa se juzga sobre un estado instantaneo, no sobre lo que crece`
+- `falta congelados (el camino de zkssl_frozenPath)` · `congelados: falta camino`
+- `data: el index que el nodo dice ({dicho}) no es el del camino ({del_camino})`
+- `congelados: el isRight recibido NO es el de la cuenta {i} - un camino de otra cuenta no prueba nada de esta`
+- `congelados: el camino no tiene los 32 niveles del arbol de congelados`
+- `congelados: el camino NO sube al frozenRoot de la cabeza`
+- `la causa NO se sostiene: la hoja de la cuenta {i} bajo el frozenRoot es la vacia - no estaba congelada`
 
 ## 6. El contrato del mando
 
@@ -450,6 +462,11 @@ mutación de lo real no llega a él. **Desde §456 el catálogo cubre también `
 `WrongRegulatoryLimit` y los dos duplicados de lote**, con un recibo real capturado por el proxy de
 un banco (el ejemplo `e2e` del SDK), un positivo por causa y un negativo por regla producible por
 una sola mutación.
+**Desde §459 cubre `AccountFrozen`** (RFC-0007, E3b): un positivo reunido de las capturas de un
+nodo real que congela por la vía delegada (`dev_freeze`, el PASTE-R7E3b-M) y nueve negativos. El
+disfraz no es una mutación: lleva el camino REAL de una cuenta libre, con la hoja vacía bajo la
+misma raíz. El ataque del camino truncado con raíz coincidente no se fabrica en JSON: lo falsa el
+testigo de `crates/zk-ssl-verify/src/congelados.rs`.
 Las demostraciones en vivo con nodo son `tools/banco_apagado.sh`, `tools/banco_consumo.sh`
 (RFC-0006, E3) y `tools/banco_dos_libros.sh` (E4a): el último levanta DOS nodos con DOS claves
 y produce el hecho que E4 existe para detectar.
@@ -483,6 +500,9 @@ y produce el hecho que E4 existe para detectar.
   `StaleState` (una raíz declarada que no es la comprometida), `WrongRegulatoryLimit` (como
   `OverRegulatoryLimit`) y los dos duplicados de lote (la regla de `apply_many`, el primer choque),
   con la cabeza del `seq` exacto donde el estado es instantáneo; el catálogo, desde un recibo real.
+- §459 — el sobre de rechazo prueba `AccountFrozen` (RFC-0007 E3b): la hoja de la cuenta bajo el
+  `frozenRoot` de la cabeza del `seq` exacto, con el camino de `zkssl_frozenPath` tal cual, la
+  profundidad que fija el núcleo, el cruce con el índice y la hoja no vacía.
 - Hasta §397 este contrato vivía en la cabecera de `crates/zk-ssl-verify/src/main.rs` (1..90,
   `293990fedc785833`), que ya confesó una vez (§247) haber declarado su superficie como completa
   sin serlo. §397 lo muda aquí y deja la cabecera remitiendo, sin enumerar.

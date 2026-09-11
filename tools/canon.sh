@@ -336,7 +336,7 @@ else
   grep -q '^ROJO' "$OUT/conflicto.txt" || falla "conflicto: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/conflicto.txt"))"
 fi
 
-# ── 3 bis rechazo · el sobre de RECHAZO (RFC-0007 E3a-1, §455): el MISMO arnes ──
+# ── 3 bis rechazo · el sobre de RECHAZO (RFC-0007 E3, desde el §455): el MISMO arnes ──
 msg ""
 msg "== CANON · las causas del sobre de rechazo =="
 # El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.

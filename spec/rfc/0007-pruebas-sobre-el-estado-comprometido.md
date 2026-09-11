@@ -20,7 +20,7 @@
 |---|---|---|---|
 | E1 — la cabeza v5 | `epoch_digest_v5`: UNA familia nueva bajo la firma —`params_digest` (los siete parámetros), `pmeta_root`, `next_pending`, `next_index`, `total_supply`—; `VersionCabeza` gana V5; el cable sirve los cinco campos y `zkssl_params` los tres parámetros que hoy no sirve; el testigo recompone y custodia; el mando acepta; KAT y fila en `NUCLEO.md`; vectores bajo su versión; testigos: recomponer rechaza una v5 sin uno de los cinco, y un parámetro cambiado en reposo cambia la cabeza | NO en el cable (claves aditivas); SÍ en la firma (formato 4 → 5) | **sellada** — §451 y §451-B (E1a: el núcleo y el mando aceptan v5), §452 y §452-B (E1b: `VERSION_FORMATO` 5, el nodo firma y sirve v5, el cable la exige por versión y el testigo la custodia) y §453 (el positivo v5 del catálogo del cable: una cabeza real) |
 | E2 — el rechazo con causa, en el cable | el objeto de error gana `data`: la causa por su NOMBRE (la variante de `LayerError`), sus campos, y el `seq` de la cabeza en cuyo estado se juzgó; `message` no cambia; el catálogo de las veinticinco causas se publica en `RPC.md` y un test lo ata al enum (dos listas son dos productores) | NO (aditivo: ningún vector ni el OpenRPC pina el objeto de error) | **sellada** — §454 (`LayerError::causa` en la capa, `data` en el `-32000` y en la negativa de `zkssl_publishConsumo`, el catálogo en `spec/RPC.md` atado por test) |
-| E3 — el rechazo con prueba, por caminos | una forma nueva del paquete de evidencia, `tipo: "rechazo"`, que el mando verifica sin nodo: la cabeza v5 firmada, la causa, y el material que la demuestra con caminos y aritmética pública sobre lo que la cabeza compromete; una tabla causa → material → qué revela; un positivo y un negativo por regla, derivados por mutación; su manifiesto y su puerta en el canon | NO (el paquete no cruza el cable) | **en curso** — §455 (E3a-1: `OverRegulatoryLimit`, `AccountLimitReached`, `ConsumoRepetido`, `ConsumoColision`) y §456 (E3a-2: `StaleState`, `WrongRegulatoryLimit`, `DuplicateAccountInBatch`, `DuplicatePendingInBatch`, con un recibo real capturado por el proxy de un banco). Queda E3b (`AccountFrozen`, `AccountNotFound`) |
+| E3 — el rechazo con prueba, por caminos | una forma nueva del paquete de evidencia, `tipo: "rechazo"`, que el mando verifica sin nodo: la cabeza v5 firmada, la causa, y el material que la demuestra con caminos y aritmética pública sobre lo que la cabeza compromete; una tabla causa → material → qué revela; un positivo y un negativo por regla, derivados por mutación; su manifiesto y su puerta en el canon | NO (el paquete no cruza el cable) | **en curso** — §455 (E3a-1: `OverRegulatoryLimit`, `AccountLimitReached`, `ConsumoRepetido`, `ConsumoColision`), §456 (E3a-2: `StaleState`, `WrongRegulatoryLimit`, `DuplicateAccountInBatch`, `DuplicatePendingInBatch`, con un recibo real capturado por el proxy de un banco) y §458-§459 (E3b: `AccountFrozen`, con el camino de congelados que el cable sirve al titular). `AccountNotFound` pasa a E5 (CORRECCIÓN del §459); `SupplyCapExceeded` y la marca de `PendingTreeExhausted` siguen sin sello |
 | E4 — la prueba de edad, medida primero | E4a: el coste en función de `next_pending`, con el instrumento antes que el circuito, y una puerta que decide si se construye o se declara un techo. E4b: el circuito sobre el RANGO `0..next_pending` de los árboles de pendientes y de meta, con la caja vacía, el tope y la concentración por emisor nombrado como formas de un mismo enunciado; su sobre, su manifiesto y sus vectores | NO | abierta — se mide antes de construir |
 | E5 — las causas por circuito, y el kit verifica | `InsufficientBalance` con prueba de banda sobre la hoja comprometida (molde `circuit_audit`, sin el ciclo de titularidad); la re-verificación del STARK del solicitante para `ProofFailed` y `VerificationFailed`; un crate de AIR sólo-verificador que el mando consume, con `winter-verifier` en su clausura y el probador fuera | NO | abierta — depende de D-F |
 
@@ -229,6 +229,19 @@ eso toca el cable (aditivo: `zkssl/0.3` no se mueve). Y un camino revela a sus v
 ausencia de `i` deja enumerar sus saldos y el de congelados su estado, así que «qué revela: nada»
 no vale para `AccountNotFound`. E3 queda partida en E3a-1 (§455: las cuatro que se provocan sin
 recibo), E3a-2 (las que exigen un recibo probado) y E3b.
+
+**CORRECCIÓN (§247, escrita por el §459).** La del §455 dice dos cosas que la medición de la
+sesión 125 corrige. Los caminos de congelados y de ausencia NO se sirven con dos métodos: el §458
+sirve uno, `zkssl_frozenPath`, con la credencial del titular (§261) —el estado de congelación es
+suyo: `two_phase.rs` lo comprueba después de la autoridad para no filtrarlo—, y un grifo del
+sandbox, `dev_freeze`; la superficie pasa de 26 a 28 métodos y `zkssl/0.3` no se mueve. Y un
+camino de ausencia de `i` NO deja enumerar saldos: las hojas de cuenta v7 llevan sal (§117). Lo
+que revela es OCUPACIÓN —cada hermano igual al vacío de su nivel dice que ese subárbol no tiene
+cuentas—, y con `zkssl_publicId`, que no pide credencial, eso reabriría la enumeración de
+identidades que F3 cerró. Por eso `AccountNotFound` sale de E3 y va a E5, como prueba de
+conocimiento cero de hoja vacía (decisión del autor, sesión 125). `AccountFrozen` se prueba desde
+el §459 con la hoja bajo el `frozenRoot` de la cabeza del `seq` exacto; la profundidad la fija el
+núcleo (`FROZEN_DEPTH`, `spec/NUCLEO.md`), porque `native_merge` no separa hoja de nodo.
 
 ### D-E — La prueba de edad es sobre un RANGO, no sobre n caminos
 

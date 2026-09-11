@@ -33843,3 +33843,54 @@ ocupacion) y `AccountNotFound` en E5 son del §459. `FrozenPath` es un `$ref` co
 congelados vale mientras no haya otra congelacion. `AlreadyInThatFreezeState` sigue sin cablear, y
 que hace `dev_freeze` sobre una cuenta ya congelada no se ha medido. `check_cifras` sigue sin ver
 las sumas de las portadas (5.A-149) ni el «# nodo:» de los PAPER.
+
+## §459 — RFC-0007 E3b: el mando prueba `AccountFrozen` sobre el estado comprometido
+
+**Que.** El sobre de rechazo gana su novena causa. Su material, `congelados`, es la respuesta de
+`zkssl_frozenPath` TAL CUAL (`index`, `leaf`, `camino`), el camino que el §458 sirve al titular
+con su credencial. El mando exige la cabeza del `seq` EXACTO -las congelaciones van y vuelven-,
+que el `index` de `data` sea el del camino, que el camino cruce con los bits de ese indice, que
+mida los 32 niveles que fija el nucleo y suba al `frozenRoot` de la cabeza, y que la hoja NO sea
+la vacia; si lo es, ROJO: la causa no se sostiene, y el sobre prueba que la regla fue un disfraz.
+`s` no va bajo firma y no se mira. `spec/vectors/rechazo/` gana diez vectores, el catalogo pasa
+de 48 a 58 y el negativo `causa-no-probada` pasa de `AccountFrozen` a `InsufficientBalance`, que
+sigue sin prueba hasta E5. `spec/PAQUETE.md` (la forma, la tabla de causas, la fila de claves,
+siete textos del catalogo, la puerta y la historia), el RFC-0007 (la fila E3 y una CORRECCION de
+la del §455) y la cuenta de vectores de las dos portadas, de 192 a 202.
+
+**Por que asi.** Cuatro decisiones delegadas, REVERSIBLES aqui. **D-14**, el material es la
+respuesta del cable sin tocar: reunir, no recomponer. **D-15**, el orden de las comprobaciones
+es el de sus causas: el material existe, la cabeza es la del rechazo, el indice es el del camino,
+el camino es el de ese indice, el camino es completo y sube, y solo entonces se mira la hoja: una
+hoja que no esta bajo la raiz no dice nada. **D-16**, la cabeza vale en v3, v4 o v5: el
+`frozenRoot` lo llevan las tres. **D-17**, sin tests nuevos en Rust: las reglas puras las falsan
+los testigos de `congelados.rs` (§458) y el brazo lo falsa su catalogo, que el canon corre.
+
+**Lo medido.** Las CAPTURAS-R7E3b (`66743c26e4c4144a`, el PASTE-R7E3b-M `42132df11f7a5a1b` sobre
+un nodo real compilado de `35ae9f6`, `--latido 2 --dev`): la cuenta A (3156592842) congelada con
+`dev_freeze`; su `sendMaterials` rechazado con `-32000` `AccountFrozen` e `index` A en el `seq`
+5; los caminos de congelados de A, con la marca `FROZ` en el primer limbo, y de B (3468388789),
+libre, con la hoja cero; y la cabeza del cable y la FIRMADA v5 del mismo `seq`, con el mismo
+`frozenRoot`. Nadie escribio entre medias.
+
+**Testigos.** Un positivo, `cuenta-congelada.json`, reunido de las capturas sin reescribir una
+pieza. Nueve negativos: sin `congelados`, sin `camino`, el `index` de otra cuenta, un `isRight`
+volteado, un camino de 31 niveles, otra hoja no vacia, la cabeza de otro `seq`, la cabeza
+adulterada, y el DISFRAZ: el nodo nombra a B y el material es el camino REAL de B, con la hoja
+vacia bajo la misma raiz; no es una mutacion, es la escena. El ataque de la hoja-nodo con raiz
+coincidente no se fabrica en JSON sin Rescue: lo cubre el testigo del truncado en `congelados.rs`.
+Un falsador en el bloque: el positivo con su hoja cambiada tiene que caer, y solo el.
+
+**Medido.** `crates/zk-ssl-verify/src/main.rs`, los diez vectores y el negativo reescrito con su
+PRE asertado, el MANIFIESTO (su cabecera deja de decir E3a-1, 5.A-170), `spec/PAQUETE.md`, el
+RFC-0007, `README.md`, `README_EN.md`, el comentario de la estrofa en `tools/canon.sh` y este
+asiento. Ninguna cifra de tests se mueve. Canon `--sello` rc 0, con el rechazo en 58 de 58 (sus
+segundos, en la salida de este bloque).
+
+**Lo que NO afirma, y lo que queda vivo.** Que el nodo rechazo, y cuando, no lo prueba el sobre:
+prueba que la causa se sostiene. Un libro no migrado -congelados a 24 niveles- falla cerrado. La
+cabeza del `seq` exacto solo existe si nadie escribe hasta el siguiente latido. `AccountNotFound`
+es de E5 (B2). Del resto de la tabla D-D que el RFC-0007 pone en E3, `SupplyCapExceeded` y la
+marca de `PendingTreeExhausted` no los prueba ningun sello: E3 sigue en curso. La fila de claves
+del sobre de rechazo en `spec/PAQUETE.md` no nombraba `recibo` ni `lote` desde el §456, y sigue
+sin nombrarlos. La seccion 4 de `spec/PAQUETE.md` sigue sin los pasos del rechazo (5.A-166).
