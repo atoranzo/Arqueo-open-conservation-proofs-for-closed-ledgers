@@ -34201,3 +34201,70 @@ cifra. La proyeccion a 32768 no es techo; la concentracion global sigue sin cons
 La D-F del RFC habla en futuro y sigue cierta: el crate existe desde el §463 y el kit aun no lo
 consume. La cabecera del RFC (<<Asiento(s) de AUDITORIA>>) sigue sin los asientos de sus etapas,
 como tras cada sello desde el §451.
+
+## §465 — RFC-0007 E4b-2: el kit verifica la prueba de edad, sin el probador
+
+**Que.** Cierra la E4b-2 del RFC-0007: el kit juzga la prueba de edad contra una cabeza v5
+firmada. La regla que ENLAZA la prueba a la cabeza nace en `zk-ssl-air` (`verificar_contra_cabeza`,
+con `CabezaEdad`, `Afirmacion` y `m_canonico`): compone el enunciado con lo que la cabeza firma
+(`seq`, `nextPending` y la `m` que deriva de la marca) y lo que el sobre afirma, sube las dos
+subraices a 32 niveles contra `pendingRoot` y `pmetaRoot`, y solo entonces llama al juez. El mando
+de `zk-ssl-verify` gana el sobre `tipo: "edad"`, y `zk-ssl-air` entra en su clausura sin el
+probador. El sello: `738f736`, empujado. Este -B mueve cuatro pines y sus cifras y escribe este
+asiento.
+
+**Por que asi.** El autor ACEPTO las cinco decisiones <<segun la constitucion, en base a los
+principios y manifiesto>> (sesion 128); REVERSIBLES aqui. **D-1**, la regla de enlace vive en
+`zk-ssl-air`, junto a la subida: un solo productor en el crate que el tercero compila; el mando
+solo lee el JSON, exige la v5 antes de tocar la firma y la verifica. **D-2**, `m` se DERIVA de
+`nextPending` (`m_canonico`, la regla del probador): un enunciado tiene una sola forma, y una
+prueba con un subarbol de mas no se enlaza aunque verifique sola. **D-3**, el sobre `{v, tipo:
+"edad", cabeza, enunciado: {t, k, emisor}, subraices: {pendientes, meta}, prueba}`; sin `emisor`
+cuentan todos, porque el indice 0 es una cuenta y no puede ser el centinela; `seq` y
+`nextPending` salen solo de la cabeza. **D-4**, la clausura como puerta permanente: el test del
+S395 declara `zk-ssl-air`, y nace `la_clausura_del_kit_no_lleva_el_probador`, que recorre el
+`Cargo.lock` con las dev-dependencias (una puerta mas estricta, no mas laxa) y exige
+`zk-ssl-air` y `winter-verifier` y ni `winter-prover` ni `winterfell`. **D-5**, el positivo de
+punta a punta por el mando, con una cabeza real de un nodo, es de E4b-3.
+
+**Lo medido antes de escribir un byte.** El arbol de `96774eb` reconstruido: el zip de `b91109c`
+(`54c82f4e51491c4b`, sus 160 anclas del TRASPASO-128) mas los dos POST del §464. El juez de
+`zk-ssl-air` recibia subraices sin enlace a la cabeza: el cruce con las raices vivia solo en un
+test de la capa. El probador elige la `m` minima (`next_power_of_two`, al menos 2); el mando
+reusa `cabeza_v3_verificada` y `familia_v5`; el lock ya llevaba winter 0.13.1 entero, asi que el
+kit gana UNA linea (`"zk-ssl-air"`) y ningun paquete. `spec/PAQUETE.md` decia <<cinco objetos>>
+desde el §455, que hizo seis: pasa a siete. Y la cita <<RFC-0003 D-2>> de la cabecera de
+`zk-ssl-air` pasa a la de Seguridad, como el §464 hizo en el RFC.
+
+**Testigos.** Diez. En la capa, tres, con las raices de los `SparseTree` reales: la prueba se
+enlaza a la cabeza del libro, y una raiz de pendientes o de meta ajena no se enlaza. En
+`stark-experiment`, dos: la cabeza fija la marca y el `seq`, y una `m` de mas no se enlaza. En
+`zk-ssl-air`, uno: la `m` de una marca es la minima. En el kit, cuatro: la clausura leida del
+lock, y tres negativos del mando que caen antes de la firma (sin enunciado, un emisor que no es
+una cantidad, una cabeza que no es v5). Siete falsadores por mutacion, uno por guarda, cada uno
+con UN FAILED por nombre. Y en este -B, `check_cifras`: con los pines subidos y la prosa vieja
+da ROJO con las dieciseis rancias predichas; con la prosa corregida, verde.
+
+**Medido.** El §465 (`738f736`, SALIDA-465-20260911-222141 `0260e1756df67d12`, rc 0 a la
+primera): el Rust se escribio sin compilador y compilo a la primera, sin un warning en los cuatro
+crates (la puerta de warnings por crate, la leccion del §463-B, se estreno); el `Cargo.lock`
+predicho es el que cargo resuelve, y la clausura del kit son 45 paquetes con `zk-ssl-air` y
+`winter-verifier` y sin el probador; la capa 342 -> 345 declarados (340 pasan y 5 ignorados,
+102 s), los circuitos 338 -> 340 (330 y 10, 76 s), `zk-ssl-air` 4 -> 5 (4 s) y el kit 100 -> 104
+(9 s); los siete falsadores, exactos; el censo por llamada del catalogo, seis textos nacen y
+ninguno queda fuera; `check_tests` 1270 -> 1280. Aqui: los pines de la capa 337 -> 340, de los
+circuitos 328 -> 330, de `zk-ssl-air` 4 -> 5 y del verificador 100 -> 104, con los ignorados
+quietos; las sumas 1116/1253 -> 1126/1263 por el delta de los pines (+10), y la de declarados
+1269 -> 1279 por el de los declarados (+10, el que mide `check_tests`). Ficheros:
+`tools/canon.sh` (ensancha: las filas llevan su historia, se declara), `PAPER.md`,
+`PAPER_EN.md`, `PRINCIPIOS.md`, `ARQUITECTURA.md`, `doc/INSTITUCIONAL.md`,
+`doc/INSTITUTIONAL.md` y este asiento. Canon `--sello` rc 0 (sus segundos, en la salida).
+
+**Lo que NO afirma, y lo que queda vivo.** No afirma que el mando haya verificado un sobre de
+edad real de punta a punta: su positivo, con una cabeza firmada por un nodo, y su catalogo son de
+E4b-3, que ademas hace que la capa produzca la prueba sobre un nodo real. Las formas por importe
+siguen declaradas (§464). El artefacto empaqueta el binario que ahora verifica STARK, y su
+`THIRD-PARTY.txt` crece con la clausura: lo mide el canon, no este asiento. Prosa rancia de antes
+de este sello, fichada y sin tocar: la seccion 6 de `spec/PAQUETE.md` enumera dos lineas de VERDE
+para siete formas, y el paso 0 de su seccion 4 nombra solo `extension` y `consumo` entre los
+`tipo`. El +16 de la suma de declarados sigue siendo deduccion (asiento §461, punto 57).
