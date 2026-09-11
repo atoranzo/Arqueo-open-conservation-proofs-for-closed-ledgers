@@ -3478,6 +3478,7 @@ dependencies = [
  "serde_json",
  "winter-math",
  "xmss",
+ "zk-ssl-air",
  "zk-ssl-guardian",
  "zk-ssl-hash",
 ]

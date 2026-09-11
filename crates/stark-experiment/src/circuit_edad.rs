@@ -23,8 +23,9 @@ use winterfell::{
 use zk_ssl_hash::{meta_pendiente_hoja, native_merge, DOMINIO_META_PENDIENTE};
 
 pub use zk_ssl_air::{
-    carril, codificar, opciones, potencias, raiz_desde_subraiz, subraiz, verificar, Digest,
-    EdadAir, EdadPublicInputs, ALEATORIOS, ANCHO, ANCHO_AUX, BITS, CICLO, ESTADO, PROFUNDIDAD,
+    carril, codificar, m_canonico, opciones, potencias, raiz_desde_subraiz, subraiz, verificar,
+    verificar_contra_cabeza, Afirmacion, CabezaEdad, Digest, EdadAir, EdadPublicInputs, ALEATORIOS,
+    ANCHO, ANCHO_AUX, BITS, CICLO, ESTADO, PROFUNDIDAD,
 };
 use zk_ssl_air::{
     C_A, C_ACT, C_B, C_BITS, C_CICLO, C_CUENTA, C_EMISOR, C_FUERA, C_M, C_NACIDO, C_P, C_QA, C_QS,
@@ -455,6 +456,42 @@ mod tests {
         }
     }
 
+    /// La cabeza que firmaria el libro con la marca `n`: sus dos raices, a 32 niveles, compuestas
+    /// en nativo desde las hojas (no desde la traza) con la `m` minima de la marca.
+    fn cabeza_del_libro(
+        hojas: &[Digest],
+        meta: &[Option<(u64, u64)>],
+        n: u64,
+        seq: u64,
+    ) -> CabezaEdad {
+        let m = m_canonico(n);
+        let tam = 1usize << m;
+        let mut pend = hojas.to_vec();
+        pend.resize(tam, CERO);
+        let metas: Vec<Digest> = (0..tam)
+            .map(|p| match meta.get(p).copied().flatten() {
+                Some((e, b)) => meta_pendiente_hoja(e, b),
+                None => CERO,
+            })
+            .collect();
+        CabezaEdad {
+            seq,
+            pending_root: raiz_desde_subraiz(subraiz(&pend), m, PROFUNDIDAD),
+            pmeta_root: raiz_desde_subraiz(subraiz(&metas), m, PROFUNDIDAD),
+            next_pending: n,
+        }
+    }
+
+    fn afirmacion(pi: &EdadPublicInputs) -> Afirmacion {
+        Afirmacion {
+            t: pi.t,
+            k: pi.k,
+            emisor: None,
+            subraiz_pend: pi.subraiz_pend,
+            subraiz_meta: pi.subraiz_meta,
+        }
+    }
+
     fn honestas(e: &Enunciado) -> Vec<Celda> {
         let (hojas, meta) = libro();
         celdas_del_libro(&hojas, &meta, e).expect("celdas honestas")
@@ -615,5 +652,43 @@ mod tests {
         ] {
             assert!(verificar(&bytes, &otro).is_err(), "verifico con {otro:?}");
         }
+    }
+
+    /// **E4b-2 (S465): la cabeza fija la marca y el `seq`.** Con las raices del libro la prueba
+    /// se enlaza y el juez devuelve SU enunciado; con otra `nextPending` o con otro `seq` en la
+    /// cabeza, no: el juez compone el enunciado con lo que la cabeza firma.
+    #[test]
+    #[cfg_attr(debug_assertions, ignore = "winterfell valida grados en depuracion: juez release")]
+    fn la_cabeza_fija_la_marca_y_el_seq() {
+        let (hojas, meta) = libro();
+        let (bytes, pi) =
+            probar(construir(&hojas, &meta, &en(70, 0, true)).expect("construir")).expect("probar");
+        let cabeza = cabeza_del_libro(&hojas, &meta, 13, 130);
+        let af = afirmacion(&pi);
+        assert_eq!(verificar_contra_cabeza(&bytes, &af, &cabeza), Ok(pi.clone()));
+        for otra in [CabezaEdad { next_pending: 12, ..cabeza }, CabezaEdad { seq: 131, ..cabeza }] {
+            assert!(verificar_contra_cabeza(&bytes, &af, &otra).is_err(), "enlazo con {otra:?}");
+        }
+    }
+
+    /// **D-2 de E4b-2 (S465): `m` se deriva de la marca.** Una prueba honesta del mismo libro con
+    /// un subarbol de mas (`m` = 5 para `n` = 13) verifica sola, y sus subraices suben a las MISMAS
+    /// raices; pero no se enlaza: el juez sube con la `m` minima y la subida ya no llega.
+    #[test]
+    #[cfg_attr(debug_assertions, ignore = "winterfell valida grados en depuracion: juez release")]
+    fn una_m_de_mas_no_se_enlaza() {
+        let (mut hojas, mut meta) = libro();
+        hojas.resize(32, CERO);
+        meta.resize(32, None);
+        let e = en(70, 0, true);
+        let celdas = celdas_del_libro(&hojas, &meta, &e).expect("celdas");
+        let (bytes, pi) = probar(trazar(&celdas, 13, &e)).expect("probar");
+        assert_eq!(pi.m, 5);
+        assert!(verificar(&bytes, &pi).is_ok(), "la de m = 5 tenia que verificar sola");
+        let (h13, m13) = libro();
+        let cabeza = cabeza_del_libro(&h13, &m13, 13, 130);
+        assert_eq!(raiz_desde_subraiz(pi.subraiz_pend, 5, PROFUNDIDAD), cabeza.pending_root);
+        let af = afirmacion(&pi);
+        assert!(verificar_contra_cabeza(&bytes, &af, &cabeza).is_err(), "una m de mas se enlazo");
     }
 }

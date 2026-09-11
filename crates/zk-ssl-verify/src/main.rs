@@ -54,6 +54,7 @@ use zk_ssl_verify::{
     acuses, verificar_acuse, verificar_acuse_v3, indice_de_firma, verificar_cabeza, verificar_cofirma,
     CabezaFirmada, COFIRMA_V_MAX, ReciboAcuse, VersionCabeza,
 };
+use zk_ssl_air::{verificar_contra_cabeza, Afirmacion, CabezaEdad};
 use zk_ssl_hash::{
     digest_from_bytes, epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5,
     params_digest, Digest,
@@ -157,11 +158,13 @@ fn correr(ruta: &str) -> Result<(), String> {
         Some("conflicto") => return verificar_conflicto(&p),
         // RFC-0007 E3a (§455): la causa de un rechazo, probada sobre el estado comprometido.
         Some("rechazo") => return verificar_rechazo(&p),
+        // RFC-0007 E4b-2 (S465): la prueba de edad contra una cabeza v5.
+        Some("edad") => return verificar_edad(&p),
         Some(otro) => {
             return Err(err(format!(
                 "tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), \
-                 `tipo: \"extension\"`, `tipo: \"consumo\"`, `tipo: \"conflicto\"` o \
-                 `tipo: \"rechazo\"`"
+                 `tipo: \"extension\"`, `tipo: \"consumo\"`, `tipo: \"conflicto\"`, \
+                 `tipo: \"rechazo\"` o `tipo: \"edad\"`"
             )))
         }
     }
@@ -1108,6 +1111,60 @@ fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
     Ok(())
 }
 
+/// **El paquete de EDAD** (RFC-0007 E4b-2, S465): la prueba de edad de `zk-ssl-air` contra una
+/// cabeza v5 firmada. Este mando lee el sobre, exige la v5 antes de tocar la firma, verifica la
+/// cabeza y le pasa al juez lo que ella firma; la regla que ENLAZA la prueba a la cabeza vive en
+/// `zk_ssl_air::verificar_contra_cabeza`, un solo productor en el crate que el tercero compila.
+fn verificar_edad(p: &serde_json::Value) -> Result<(), String> {
+    let e = p.get("enunciado").ok_or_else(|| err("falta enunciado".into()))?;
+    let t = u64_de(e, "t")?;
+    let k = u64_de(e, "k")?;
+    let emisor = match e.get("emisor") {
+        None => None,
+        Some(_) => Some(u64_de(e, "emisor")?),
+    };
+    let sub = p.get("subraices").ok_or_else(|| err("falta subraices".into()))?;
+    let subraiz_pend = digest_de(sub, "pendientes")?;
+    let subraiz_meta = digest_de(sub, "meta")?;
+    let prueba = hex_a_bytes(
+        p.get("prueba")
+            .and_then(|x| x.as_str())
+            .ok_or_else(|| err("falta prueba o no es cadena 0x".into()))?,
+    )?;
+    let c = p.get("cabeza").ok_or_else(|| err("falta cabeza".into()))?;
+    let version = u64_de(c, "formatVersion")?;
+    if !matches!(VersionCabeza::try_from(version), Ok(VersionCabeza::V5)) {
+        return Err(err(format!(
+            "formatVersion {version}: la prueba de edad exige una cabeza v5, la unica que firma \
+             pmetaRoot y nextPending"
+        )));
+    }
+    let _ = cabeza_v3_verificada(c, "cabeza")?;
+    let seq = u64_de(c, "seq")?;
+    let f = familia_v5(c)?;
+    println!("1/3 la cabeza v5 recompone su digest y su firma verifica (seq {seq})");
+    let cabeza = CabezaEdad {
+        seq,
+        pending_root: digest_de(c, "pendingRoot")?,
+        pmeta_root: f.pmeta_root,
+        next_pending: f.next_pending,
+    };
+    let af = Afirmacion { t, k, emisor, subraiz_pend, subraiz_meta };
+    let pi = verificar_contra_cabeza(&prueba, &af, &cabeza).map_err(|e| err(format!("edad: {e}")))?;
+    println!(
+        "2/3 las dos subraices suben a pendingRoot y pmetaRoot (m {}, nextPending {})",
+        pi.m, pi.n
+    );
+    println!("3/3 la prueba verifica contra ese enunciado con las opciones de la casa");
+    let quien = match emisor {
+        None => "de cualquier emisor".to_string(),
+        Some(s) => format!("del emisor {s}"),
+    };
+    println!("VERDE: bajo la cabeza de seq {seq}, a lo sumo {k} posiciones vivas {quien}");
+    println!("       tienen edad >= {t}. Nada sobre importes ni sobre lo que nunca entro");
+    Ok(())
+}
+
 /// Los siete parametros de `zkssl_params` contra el `paramsDigest` de una cabeza **v5** (RFC-0007
 /// D-B): si recomponen, lo que dicen es lo comprometido. Devuelve los tres que las causas citan:
 /// el limite regulatorio, el tope de cuentas y el tope de suministro (§460).
@@ -1406,5 +1463,41 @@ mod tests {
             assert!(e.contains(&format!("falta {k}")), "{k}: {e}");
         }
         let _ = std::fs::remove_file(&ruta);
+    }
+
+    // RFC-0007 E4b-2 (S465). Como en el conflicto, lo alcanzable sin una cabeza firmada es la
+    // FORMA del sobre y la VERSION de la cabeza, que se juzga antes de la firma. La regla que
+    // enlaza la prueba a la cabeza tiene sus testigos con pruebas reales en `stark-experiment` y
+    // en la capa; el positivo de punta a punta por este mando, con una cabeza de un nodo, es E4b-3.
+
+    /// Sin `enunciado` no hay afirmacion que juzgar, y se dice con su nombre.
+    #[test]
+    fn un_sobre_de_edad_sin_enunciado_se_nombra() {
+        let p = json!({ "v": 1, "tipo": "edad" });
+        assert_eq!(verificar_edad(&p), Err("falta enunciado".into()));
+    }
+
+    /// Un `emisor` presente tiene que ser una cantidad: su AUSENCIA es la que dice «todos».
+    #[test]
+    fn un_emisor_que_no_es_una_cantidad_se_nombra() {
+        let en = json!({ "t": "0x1", "k": "0x0", "emisor": 7 });
+        let p = json!({ "v": 1, "tipo": "edad", "enunciado": en });
+        let e = verificar_edad(&p).unwrap_err();
+        assert!(e.contains("falta emisor o no es cadena 0x"), "{e}");
+    }
+
+    /// Una cabeza que no es v5 se rechaza por su VERSION, antes de tocar la firma: solo la v5
+    /// firma `pmetaRoot` y `nextPending`.
+    #[test]
+    fn una_cabeza_que_no_es_v5_se_rechaza_antes_de_la_firma() {
+        let p = json!({
+            "v": 1, "tipo": "edad",
+            "enunciado": { "t": "0x1", "k": "0x0" },
+            "subraices": { "pendientes": DIG, "meta": DIG },
+            "prueba": "0x00",
+            "cabeza": { "available": true, "formatVersion": "0x4" }
+        });
+        let e = verificar_edad(&p).unwrap_err();
+        assert!(e.contains("formatVersion 4: la prueba de edad exige una cabeza v5"), "{e}");
     }
 }

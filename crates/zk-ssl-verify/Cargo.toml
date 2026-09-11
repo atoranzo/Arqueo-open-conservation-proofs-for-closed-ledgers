@@ -25,6 +25,16 @@ license.workspace = true
 # `ANCHO_INDICE`, y mueve el pin de 62 a 66. La frase de fondo sigue en pie
 # -este crate deberia cambiar poco- pero **la lista no es su superficie**: la
 # superficie se lee de los `pub` de `src/lib.rs`, no de aqui.
+#
+# ⚠️ §247 (§465, RFC-0007 E4b-2; la 5.A-186): lo de arriba, «ninguno con
+# prover ni verifier de winterfell», y lo de abajo, «NO arrastra
+# `winter-prover`, `winter-air` ni `winter-verifier`», dejan de ser ciertos
+# desde este sello: el kit VERIFICA pruebas STARK porque `zk-ssl-air` entra
+# en su clausura, con `winter-air` y `winter-verifier` sueltos y clavados.
+# Sigue en pie la propiedad de §243 en su forma exacta: el kit no compila
+# al PROBADOR (`winter-prover`, `winterfell`), ni la capa, ni el nodo, ni
+# el cable. La guardan dos tests del lib: las dependencias por ruta, y la
+# clausura leida del `Cargo.lock`.
 
 [dependencies]
 serde_json = "1"
@@ -38,6 +48,10 @@ xmss = "=0.1.0-pre.0"
 #    sueltos: NO arrastra `winter-prover`, `winter-air` ni
 #    `winter-verifier`. La propiedad de §243 sigue en pie.
 zk-ssl-hash = { path = "../zk-ssl-hash" }
+# ⚠️ §465: el juez de la prueba de edad, sin el probador (RFC-0007 D-F).
+#    Trae `winter-air`, `winter-crypto`, `winter-math` y `winter-verifier`
+#    clavados a 0.13.1, la version de `zk-ssl-hash`; NO `winter-prover`.
+zk-ssl-air = { path = "../zk-ssl-air" }
 # ⚠️ Solo para nombrar `BaseElement` en los tests. Clavada a la MISMA
 #    version que `zk-ssl-hash`: dos `BaseElement` de versiones distintas
 #    NO son el mismo tipo.

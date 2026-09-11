@@ -517,6 +517,87 @@ fn las_opciones_del_juez_son_las_de_la_casa() {
     assert_eq!(edad::opciones(), crate::proof_options());
 }
 
+// -------------------------------------------------------------- E4b-2 (S465): contra la cabeza
+
+/// Un libro de la capa y su prueba (E4b-2): 37 posiciones con huecos, su arbol de meta y el
+/// enunciado de todos los emisores con `T = 70` sobre la cabeza de `seq` 100.
+fn libro_con_su_prueba() -> (SparseTree, SparseTree, u64, Vec<u8>, edad::EdadPublicInputs) {
+    let n = 37u64;
+    let vive = |i: u64| i % 5 != 2;
+    let (pend, hojas) = rango_de_pendientes(n, vive);
+    let mut arbol_meta = SparseTree::new();
+    let mut meta = Vec::with_capacity(n as usize);
+    for i in 0..n {
+        if vive(i) {
+            arbol_meta.set_leaf(i, zk_ssl_hash::meta_pendiente_hoja(i % 4, i));
+            meta.push(Some((i % 4, i)));
+        } else {
+            meta.push(None);
+        }
+    }
+    let e = Enunciado { seq: 100, t: 70, emisor: 0, todos: true };
+    let traza = edad::construir(&hojas, &meta, &e).expect("construir");
+    let (bytes, pi) = edad::probar(traza).expect("probar");
+    (pend, arbol_meta, n, bytes, pi)
+}
+
+fn cabeza_y_afirmacion(
+    pend: &SparseTree,
+    meta: &SparseTree,
+    n: u64,
+    pi: &edad::EdadPublicInputs,
+) -> (edad::CabezaEdad, edad::Afirmacion) {
+    let cabeza = edad::CabezaEdad {
+        seq: 100,
+        pending_root: pend.root(),
+        pmeta_root: meta.root(),
+        next_pending: n,
+    };
+    let af = edad::Afirmacion {
+        t: 70,
+        k: pi.k,
+        emisor: None,
+        subraiz_pend: pi.subraiz_pend,
+        subraiz_meta: pi.subraiz_meta,
+    };
+    (cabeza, af)
+}
+
+/// **E4b-2 (S465): la prueba se enlaza a la cabeza del libro.** Con las raices de los dos
+/// `SparseTree` de la capa, su marca y el `seq`, el juez de `zk-ssl-air` la acepta derivando el
+/// solo `m`, y el enunciado que devuelve es el de la prueba.
+#[test]
+#[cfg_attr(debug_assertions, ignore = "winterfell valida grados en depuracion: juez release")]
+fn la_prueba_de_edad_se_enlaza_a_la_cabeza_del_libro() {
+    let (pend, meta, n, bytes, pi) = libro_con_su_prueba();
+    let (cabeza, af) = cabeza_y_afirmacion(&pend, &meta, n, &pi);
+    let dicho = edad::verificar_contra_cabeza(&bytes, &af, &cabeza).expect("no se enlazo");
+    assert_eq!(dicho, pi, "el enunciado que compone el juez no es el de la prueba");
+}
+
+/// **La guarda de PENDIENTES:** una cabeza cuyo `pendingRoot` no es el del libro de la prueba
+/// (una hoja mas en un hueco) no se enlaza, aunque la prueba sea buena para sus subraices.
+#[test]
+#[cfg_attr(debug_assertions, ignore = "winterfell valida grados en depuracion: juez release")]
+fn una_raiz_de_pendientes_ajena_no_se_enlaza() {
+    let (mut pend, meta, n, bytes, pi) = libro_con_su_prueba();
+    pend.set_leaf(2, pending_commitment(d(9), d(10), 11));
+    let (cabeza, af) = cabeza_y_afirmacion(&pend, &meta, n, &pi);
+    let e = edad::verificar_contra_cabeza(&bytes, &af, &cabeza).expect_err("se enlazo");
+    assert!(e.contains("pendingRoot"), "{e}");
+}
+
+/// **La guarda de META:** lo mismo con el `pmetaRoot` (otro emisor en el hueco).
+#[test]
+#[cfg_attr(debug_assertions, ignore = "winterfell valida grados en depuracion: juez release")]
+fn una_raiz_de_meta_ajena_no_se_enlaza() {
+    let (pend, mut meta, n, bytes, pi) = libro_con_su_prueba();
+    meta.set_leaf(2, zk_ssl_hash::meta_pendiente_hoja(1, 1));
+    let (cabeza, af) = cabeza_y_afirmacion(&pend, &meta, n, &pi);
+    let e = edad::verificar_contra_cabeza(&bytes, &af, &cabeza).expect_err("se enlazo");
+    assert!(e.contains("pmetaRoot"), "{e}");
+}
+
 /// **INSTRUMENTO, no comprobacion** (RFC-0007 E4b-1, §463): la puerta de E4a re-aplicada con el
 /// AIR REAL. Correr en release, a mano:
 ///

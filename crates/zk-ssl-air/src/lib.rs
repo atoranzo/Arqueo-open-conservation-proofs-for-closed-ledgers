@@ -13,8 +13,8 @@
 //! la cabeza v5: el numero de posiciones VIVAS con `seq - nacido >= T` (y, si se nombra, con ese
 //! emisor) es a lo sumo `K`. La caja vacia es `K = 0`; el tope por cuenta, `T = 0`; la
 //! concentracion por cuenta, un emisor nombrado. Las formas por IMPORTE no se prueban: el operador
-//! no guarda la apertura del compromiso (RFC-0003 D-2) y lo que el circuito no restringe no se
-//! afirma (decision D-1 de E4b-1, por la constitucion).
+//! no guarda la apertura del compromiso (RFC-0003, Seguridad; RFC-0007, correccion del S464) y lo
+//! que el circuito no restringe no se afirma (decision D-1 de E4b-1, por la constitucion).
 //!
 //! ## Como se cablea el arbol: un argumento de multiconjunto (decision D-5)
 //!
@@ -33,6 +33,14 @@
 //! JUEZ, en nativo ([`raiz_desde_subraiz`]), con las constantes de subarbol vacio: el AIR no
 //! depende de la profundidad. Y un pendiente vivo cuya meta sea la hoja cero (legado anterior a
 //! R-2a) no se puede probar: la prueba falla cerrada (decision D-2).
+//!
+//! ## Contra que cabeza (E4b-2, S465)
+//!
+//! [`verificar_contra_cabeza`] es la regla que ENLAZA la prueba a una cabeza v5 firmada, y vive
+//! aqui -no en el mando del kit- para que tenga un solo productor en el crate que el tercero
+//! compila. De la cabeza toma `seq`, `nextPending`, `pendingRoot` y `pmetaRoot`; `m` lo DERIVA
+//! de la marca ([`m_canonico`], la misma regla que el probador), y del sobre solo toma lo que el
+//! sobre afirma: la edad, la cota, el emisor o todos, y las dos subraices.
 
 use winter_air::proof::Proof;
 use winter_air::{
@@ -622,6 +630,76 @@ pub fn raiz_desde_subraiz(sub: Digest, m: u32, profundidad: usize) -> Digest {
     acc
 }
 
+// ------------------------------------------------------------------ contra la cabeza (E4b-2)
+
+/// **Lo que una cabeza v5 firma y la prueba de edad necesita** (RFC-0007 E4b-2, S465). Se lee de
+/// una cabeza ya verificada: este crate no verifica firmas, las verifica el kit.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CabezaEdad {
+    pub seq: u64,
+    pub pending_root: Digest,
+    pub pmeta_root: Digest,
+    pub next_pending: u64,
+}
+
+/// **Lo que el sobre afirma**: la edad `t`, la cota `k`, el emisor nombrado (`None` = todos: el
+/// indice 0 es una cuenta, asi que no puede ser el centinela) y las dos subraices que la prueba
+/// declara. Todos se codifica en el enunciado con `emisor = 0`, como lo hace el probador.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Afirmacion {
+    pub t: u64,
+    pub k: u64,
+    pub emisor: Option<u64>,
+    pub subraiz_pend: Digest,
+    pub subraiz_meta: Digest,
+}
+
+/// **La `m` de una marca**: el menor `m >= 1` con `n <= 2^m`, la que usa el probador
+/// (`next_power_of_two`, al menos 2). Una marca, un subarbol: un enunciado tiene una sola forma
+/// (decision D-2 de E4b-2). No desborda: para `n > 2^63` da 64, que el enunciado rechaza.
+pub fn m_canonico(n: u64) -> u32 {
+    if n <= 2 {
+        1
+    } else {
+        64 - (n - 1).leading_zeros()
+    }
+}
+
+/// **La prueba de edad contra una cabeza v5** (RFC-0007 E4b-2, decision D-1). Compone el enunciado
+/// con lo que la cabeza firma (`seq`, `n` = `nextPending`, `m` derivado) y lo que el sobre afirma;
+/// sube las dos subraices a 32 niveles y exige que sean `pendingRoot` y `pmetaRoot`; y solo
+/// entonces llama al juez. Devuelve el enunciado verificado. Una prueba de OTRA marca, de otro
+/// `seq` o con un subarbol de mas no se enlaza: la prueba es la de SU enunciado.
+pub fn verificar_contra_cabeza(
+    prueba: &[u8],
+    af: &Afirmacion,
+    cabeza: &CabezaEdad,
+) -> Result<EdadPublicInputs, String> {
+    let m = m_canonico(cabeza.next_pending);
+    let pi = EdadPublicInputs {
+        subraiz_pend: af.subraiz_pend,
+        subraiz_meta: af.subraiz_meta,
+        m,
+        n: cabeza.next_pending,
+        seq: cabeza.seq,
+        t: af.t,
+        emisor: af.emisor.unwrap_or(0),
+        todos: af.emisor.is_none(),
+        k: af.k,
+    };
+    comprobar_enunciado(&pi)?;
+    if raiz_desde_subraiz(af.subraiz_pend, m, PROFUNDIDAD) != cabeza.pending_root {
+        let q = "la subraiz de pendientes, subida a 32 niveles, no es el pendingRoot de la cabeza";
+        return Err(q.into());
+    }
+    if raiz_desde_subraiz(af.subraiz_meta, m, PROFUNDIDAD) != cabeza.pmeta_root {
+        let q = "la subraiz de meta, subida a 32 niveles, no es el pmetaRoot de la cabeza";
+        return Err(q.into());
+    }
+    verificar(prueba, &pi)?;
+    Ok(pi)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -712,6 +790,33 @@ mod tests {
         }
         assert!(comprobar_enunciado(&bien).is_ok());
         assert!(verificar(&[1, 2, 3], &bien).is_err(), "tres bytes verificaron");
+    }
+
+    /// **D-2 de E4b-2 (S465):** la `m` de una marca es la minima, la del probador
+    /// (`next_power_of_two`, al menos 2), y no desborda en los extremos.
+    #[test]
+    fn la_m_de_una_marca_es_la_minima() {
+        let tabla = [
+            (0, 1),
+            (1, 1),
+            (2, 1),
+            (3, 2),
+            (4, 2),
+            (5, 3),
+            (13, 4),
+            (16, 4),
+            (17, 5),
+            (1 << 24, 24),
+            ((1 << 24) + 1, 25),
+            (u64::MAX, 64),
+        ];
+        for (n, m) in tabla {
+            assert_eq!(m_canonico(n), m, "n = {n}");
+        }
+        for n in 0..300u64 {
+            let del_probador = (n as usize).next_power_of_two().max(2) as u64;
+            assert_eq!(1u64 << m_canonico(n), del_probador, "n = {n}");
+        }
     }
 
     /// Las quince entradas publicas van al transcripto, cada una en su sitio.

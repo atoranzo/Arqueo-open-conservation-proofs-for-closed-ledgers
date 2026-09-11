@@ -1114,6 +1114,8 @@ mod tests {
         let derivadas = deps_por_ruta_del_manifiesto(include_str!("../Cargo.toml"));
         let declaradas: std::collections::BTreeSet<(String, String)> = [
             ("dependencies", "zk-ssl-hash"),
+            // S465 (RFC-0007 E4b-2): el juez de la prueba de edad, sin el probador.
+            ("dependencies", "zk-ssl-air"),
             ("dev-dependencies", "zk-ssl-guardian"),
         ]
         .iter()
@@ -1129,6 +1131,48 @@ mod tests {
             faltan.is_empty(),
             "dependencias declaradas que ya no estan: {faltan:?}"
         );
+    }
+
+    /// **S465 (RFC-0007 E4b-2): el kit verifica STARK y NO compila al probador.** Desde que
+    /// `zk-ssl-air` entra, la propiedad de S243 es esa, y se lee del `Cargo.lock` que el
+    /// repositorio versiona: la clausura de este crate CON sus dev-dependencias (el lock no las
+    /// separa: la puerta es mas estricta, no mas laxa) no lleva `winter-prover` ni el paraguas
+    /// `winterfell`, y SI lleva `zk-ssl-air` y `winter-verifier`: una puerta de ausencia que no
+    /// ve lo presente no mide nada.
+    #[test]
+    fn la_clausura_del_kit_no_lleva_el_probador() {
+        let lock = include_str!("../../../Cargo.lock");
+        let mut deps: std::collections::BTreeMap<String, Vec<String>> = Default::default();
+        for bloque in lock.split("[[package]]").skip(1) {
+            let (mut nombre, mut lista, mut dentro) = (String::new(), Vec::new(), false);
+            for linea in bloque.lines() {
+                let s = linea.trim();
+                if let Some(v) = s.strip_prefix("name = ") {
+                    nombre = v.trim_matches('"').to_string();
+                } else if s == "dependencies = [" {
+                    dentro = true;
+                } else if dentro && s == "]" {
+                    dentro = false;
+                } else if dentro {
+                    let d = s.trim_end_matches(',').trim_matches('"');
+                    lista.push(d.split(' ').next().unwrap_or("").to_string());
+                }
+            }
+            deps.entry(nombre).or_default().extend(lista);
+        }
+        let mut vistos = std::collections::BTreeSet::new();
+        let mut cola = vec!["zk-ssl-verify".to_string()];
+        while let Some(n) = cola.pop() {
+            if vistos.insert(n.clone()) {
+                cola.extend(deps.get(&n).cloned().unwrap_or_default());
+            }
+        }
+        for vivo in ["zk-ssl-air", "winter-verifier"] {
+            assert!(vistos.contains(vivo), "prueba de vida: la clausura no ve {vivo}");
+        }
+        for prohibido in ["winter-prover", "winterfell"] {
+            assert!(!vistos.contains(prohibido), "el kit arrastra {prohibido}: {vistos:?}");
+        }
     }
 
     #[test]

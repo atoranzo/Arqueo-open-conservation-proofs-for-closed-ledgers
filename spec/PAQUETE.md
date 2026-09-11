@@ -32,9 +32,9 @@ cuántos hacen falta lo decide el CLIENTE** con su política (§319, los mandos 
 del testigo), no el paquete: quien lo arma puede ser el operador, y dejarle elegir su propia `k`
 le devolvería justo lo que la cofirma le quita.
 
-## 2. Las seis formas
+## 2. Las siete formas
 
-El binario acepta cinco objetos. Los cinco son JSON; los esqueletos van con puntos suspensivos
+El binario acepta siete objetos. Los siete son JSON; los esqueletos van con puntos suspensivos
 donde el valor es una respuesta del cable sin reescribir.
 
 ### 2.1 El paquete v1 — la posición
@@ -193,6 +193,33 @@ donde el valor es una respuesta del cable sin reescribir.
   duplicados de lote los añadió el §456, reuniendo un recibo real por el proxy de un banco (su
   banco no vive en el árbol, y se declara).
 
+### 2.7 El paquete de edad (§465)
+
+```text
+{ "v": 1, "tipo": "edad", "cabeza": {…},
+  "enunciado": {"t": "0x…", "k": "0x…", "emisor": "0x…"},
+  "subraices": {"pendientes": "0x…", "meta": "0x…"}, "prueba": "0x…" }
+```
+
+- **Prueba la DISTRIBUCIÓN de edades de lo que está en vuelo** (RFC-0007 D-E): sobre las
+  posiciones `0..nextPending` de una cabeza **v5**, las vivas con edad `seq - nacido >= t` —y, si
+  el sobre nombra `emisor`, sólo las suyas— son **a lo sumo `k`**. La caja vacía es `k = 0`; el
+  tope por cuenta, `t = 0`; la concentración, un `emisor` nombrado. Sin `emisor` cuentan todos:
+  lo dice su ausencia, porque el índice 0 es una cuenta y no puede ser el centinela.
+- `cabeza` es una respuesta de `zkssl_signedEpochHead` tal cual; `subraices` y `prueba` las
+  produce quien prueba, y `prueba` son los bytes de la prueba STARK en `0x` + hex. `seq`,
+  `nextPending`, `pendingRoot` y `pmetaRoot` salen **sólo de la cabeza**: el sobre no los
+  repite. Y `m` —el subárbol `[0, 2^m)` que la prueba cubre— lo **deriva** el mando de
+  `nextPending`, el menor que la cubre y al menos 1: un enunciado tiene una sola forma.
+- El juez es `zk_ssl_air::verificar_contra_cabeza` (`crates/zk-ssl-air`), que el kit compila
+  **sin el probador**: sube las dos subraíces a 32 niveles, las compara con las raíces firmadas
+  y verifica la prueba con las `proof_options()` de la casa y sólo con ellas.
+- **Lo que NO prueba:** nada sobre importes —el operador no guarda la apertura del compromiso
+  (RFC-0007, corrección del §464)—, nada sobre lo que nunca entró en el árbol (H5b) y nada
+  sobre otra cabeza que la que firma las raíces. Su positivo de punta a punta, con una cabeza
+  real de un nodo, y su catálogo de vectores son de E4b-3: hoy el mando lleva los negativos que
+  caen antes de la firma, y el juez sus testigos con pruebas reales (§465).
+
 ## 3. El sobre — lo que el binario lee
 
 El binario lee **31 nombres** distintos del JSON. Los 14 primeros son el sobre propiamente dicho;
@@ -209,6 +236,7 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 | consumo | `consumo`, y `presencia`/`ausencia` → `siblings`, `isRight` | `zkssl_consumoPath`, `RPC.md` |
 | conflicto | `consumo`, y `libros[]` → `cabeza`, `presencia` → `siblings`, `isRight` | este documento, sección 2.5 |
 | rechazo | `data` → `causa`, `campos`, `seq`; `parametros` → los siete de `zkssl_params`; `presencia` → `siblings`, `isRight`; `recibo` → `rootOld`, `pendingRootOld`, `frozenRoot`; `lote[]` → `kind`, `sender` o `receiver`, `receipt` → `notice` → `position` o `notice` → `position`; `congelados` → `index`, `leaf`, `camino` → `siblings`, `isRight`; `peticion` → `amount` | este documento, sección 2.6 |
+| edad | `enunciado` → `t`, `k`, `emisor`; `subraices` → `pendientes`, `meta`; `prueba` | este documento, sección 2.7 |
 
 ⚠️ **§419 — el «31» de arriba ya no es la cuenta**: el sobre de consumo añade `consumo`,
 `presencia` y `ausencia`. **No se sustituye por otro número**, porque el 31 no tiene
@@ -266,6 +294,13 @@ camino es el de la posición **derivada** del consumo bajo una **v4 o v5** · `3
 sostiene sobre lo comprometido, con la cabeza **anterior** al rechazo —o la misma— cuando cita
 algo que sólo crece.
 
+**Paquete de edad:** antes de tocar la criptografía, el sobre tiene su forma (`enunciado`,
+`subraices`, `prueba`) y la cabeza es **v5** · `1/3` la cabeza recompone su digest y su firma
+verifica · `2/3` las dos subraíces, subidas a 32 niveles con la `m` que el mando deriva de
+`nextPending`, son `pendingRoot` y `pmetaRoot` · `3/3` la prueba verifica contra el enunciado
+que la cabeza fija (`seq`, `nextPending`, `m`) y el sobre afirma (`t`, `k`, `emisor`), con las
+opciones de la casa.
+
 Cabezas **v2, v3, v4 y v5** (`formatVersion`): una cabeza v2 custodiada **sigue verificando** — el
 apagado de §290 no caduca. Una cabeza v1 se verifica con la biblioteca, no con este mando.
 
@@ -285,7 +320,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `el paquete no declara su version en `v``
 - `el paquete declara v:{v_paquete} — este binario lee v1 y v2`
 - `un paquete v1 con `cofirmas`: subir la version es lo que las hace parte del contrato — declaralo v2, o quitalas`
-- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"`, `tipo: "conflicto"` o `tipo: "rechazo"``
+- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"`, `tipo: "conflicto"`, `tipo: "rechazo"` o `tipo: "edad"``
 
 **Forma de los valores** (`hex_a_bytes`, `digest_de`, `u64_de`; `{campo}` es la clave que se leía)
 
@@ -392,6 +427,19 @@ los **mismos productores** de arriba, con su hueco relleno distinto.
 - `falta peticion (los params de la emision rechazada)`
 - `data: el wouldBe que el nodo dice ({dice}) no es el suministro de la cabeza mas el importe pedido ({suministro} + {importe} = {seria})`
 - `la causa NO se sostiene: el suministro resultante ({seria}) no supera el tope ({tope})`
+
+**La edad** (§465; `{e}` sale de `zk_ssl_air::verificar_contra_cabeza`)
+
+Estos textos NACEN con esta forma. La forma de los valores y la cabeza —su recomposición, su
+firma y la familia de v5— salen de los **mismos productores** de arriba.
+
+- `falta enunciado` · `falta subraices` · `falta prueba o no es cadena 0x`
+- `formatVersion {version}: la prueba de edad exige una cabeza v5, la unica que firma pmetaRoot y nextPending`
+- `edad: {e}`, con `{e}` uno de estos:
+  - `la subraiz de pendientes, subida a 32 niveles, no es el pendingRoot de la cabeza`
+  - `la subraiz de meta, subida a 32 niveles, no es el pmetaRoot de la cabeza`
+  - los del enunciado: `m = {} fuera de 1..=24` · `n = {} no cabe en 2^{}` · `T = {} o seq = {} no caben en {BITS} bits` · `k = {} mayor que n = {}`
+  - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` · `{e:?}`, el error de `winter-verifier`
 
 ## 6. El contrato del mando
 
