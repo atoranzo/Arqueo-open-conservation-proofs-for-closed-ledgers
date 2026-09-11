@@ -11,7 +11,7 @@ consumo-colision.json|0|VERDE: ConsumoColision se sostiene sobre el estado compr
 rechazo-rech-falta-data.json|1|falta data (el objeto del rechazo)
 rechazo-rech-falta-causa.json|1|data: falta causa
 rechazo-rech-falta-campos.json|1|data: falta campos
-rechazo-rech-causa-no-probada.json|1|data: la causa StaleState no la prueba este mando
+rechazo-rech-causa-no-probada.json|1|data: la causa AccountFrozen no la prueba este mando
 rechazo-rech-falta-cabeza.json|1|falta cabeza
 rechazo-rech-cabeza-adulterada.json|1|cabeza: los campos NO recomponen su epochDigest
 rechazo-rech-limite-no-superado.json|1|la causa NO se sostiene: el importe pedido (1000) no supera el limite (1000)
@@ -28,3 +28,29 @@ rechazo-rech-repetido-falta-presencia.json|1|falta presencia (camino del consumo
 rechazo-rech-repetido-cabeza-v3.json|1|el sobre de rechazo exige cabezas v4 o v5
 rechazo-rech-colision-mismo.json|1|la causa NO se sostiene: ocupante y consumo son el MISMO
 rechazo-rech-colision-otra-posicion.json|1|el ocupante vive en la posicion 117440512, no en la 134217728 del consumo
+# E3a-2 (asiento 456): cuatro positivos REUNIDOS de las CAPTURAS-456 de un nodo real (PASTE-456-M,
+# efd847a31dfcefef, el proxy sobre el e2e del SDK) y veinte negativos, UNA mutacion cada uno.
+estado-viejo.json|0|VERDE: StaleState se sostiene sobre el estado comprometido
+limite-declarado.json|0|VERDE: WrongRegulatoryLimit se sostiene sobre el estado comprometido
+lote-cuenta.json|0|VERDE: DuplicateAccountInBatch se sostiene sobre el estado comprometido
+lote-posicion.json|0|VERDE: DuplicatePendingInBatch se sostiene sobre el estado comprometido
+rechazo-rech-estado-recibo-al-dia.json|1|la causa NO se sostiene: las tres raices del recibo son las de la cabeza
+rechazo-rech-estado-falta-recibo.json|1|falta recibo (los publicInputs del rechazado)
+rechazo-rech-estado-con-campos.json|1|StaleState no lleva campos: su material es el recibo
+rechazo-rech-estado-cabeza-distinta.json|1|la cabeza (seq 5) no es la del rechazo (seq 4): esta causa se juzga sobre un estado instantaneo
+rechazo-rech-estado-cabeza-adulterada.json|1|cabeza: los campos NO recomponen su epochDigest
+rechazo-rech-limite-esperado-otro.json|1|data: el limite esperado que el nodo dice (500002) no es el comprometido (500000)
+rechazo-rech-limite-declarado-igual.json|1|la causa NO se sostiene: el limite declarado (500000) ES el comprometido (500000)
+rechazo-rech-limite-parametros-ajenos.json|1|parametros: NO recomponen el paramsDigest de la cabeza
+rechazo-rech-wrong-cabeza-v3.json|1|la causa WrongRegulatoryLimit exige una cabeza v5
+rechazo-rech-cuenta-falta-lote.json|1|falta lote (las ops de applyMany)
+rechazo-rech-cuenta-sin-repes.json|1|la causa NO se sostiene: el lote no tiene cuentas ni posiciones repetidas
+rechazo-rech-cuenta-primer-choque-posicion.json|1|la causa NO se sostiene: el primer choque del lote es DuplicatePendingInBatch, no DuplicateAccountInBatch
+rechazo-rech-cuenta-index-otro.json|1|data: el index que el nodo dice (327496487) no es el del primer choque del lote (327496486)
+rechazo-rech-cuenta-cabeza-posterior.json|1|la cabeza (seq 5) no es la del rechazo (seq 4)
+rechazo-rech-posicion-primer-choque-cuenta.json|1|la causa NO se sostiene: el primer choque del lote es DuplicateAccountInBatch, no DuplicatePendingInBatch
+rechazo-rech-posicion-otra.json|1|data: el position que el nodo dice (7) no es el del primer choque del lote (0)
+rechazo-rech-cuenta-sin-kind.json|1|lote[0]: falta kind
+rechazo-rech-cuenta-kind-otro.json|1|lote[0]: kind desconocido: otro
+rechazo-rech-cuenta-sin-receipt-notice.json|1|lote[0]: falta receipt.notice
+rechazo-rech-posicion-sin-notice.json|1|lote[1]: falta notice

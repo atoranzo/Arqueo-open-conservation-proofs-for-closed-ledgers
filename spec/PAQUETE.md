@@ -141,20 +141,26 @@ donde el valor es una respuesta del cable sin reescribir.
   "cabeza": {…}, "parametros": {…} }                         (una causa de los parámetros)
 { "v": 1, "tipo": "rechazo", "data": {…}, "cabeza": {…},
   "presencia": {siblings, isRight} }                          (una causa del consumo)
+{ "v": 1, "tipo": "rechazo", "data": {…}, "cabeza": {…}, "recibo": {…} }   (StaleState)
+{ "v": 1, "tipo": "rechazo", "data": {…}, "cabeza": {…},
+  "lote": [ {…}, {…} ] }                                      (un duplicado de lote)
 ```
 
 - **Prueba la CAUSA de un rechazo, no el rechazo.** `data` es el objeto `data` que el nodo puso
   en su negativa (`spec/RPC.md`, §454), tal cual; `cabeza`, una respuesta de
   `zkssl_signedEpochHead`; `parametros`, la de `zkssl_params`; `presencia`, el `camino` de
-  `zkssl_consumoPath`. Que el nodo rechazó —y cuándo— no lo prueba este sobre. Lo que prueba es
+  `zkssl_consumoPath`; `recibo`, los `publicInputs` que el titular envió; `lote`, las `ops` de
+  `zkssl_applyMany`. Que el nodo rechazó —y cuándo— no lo prueba este sobre. Lo que prueba es
   que la regla que el nodo nombró **se sostiene sobre el estado que una cabeza firmada
   compromete**; si no se sostiene, el ROJO nombra por qué, y el sobre es entonces la prueba de que
   la regla era un disfraz.
 - **Qué cabeza sirve depende de la causa, y se exige con el `seq`.** Para lo que sólo crece
   —`nextIndex`, los consumos publicados— sirve una cabeza **anterior** al rechazo, o la misma: lo
   que ya estaba en ella seguía estando al juzgar. Para lo que no tiene setter —el límite
-  regulatorio— sirve cualquiera del libro. La mutabilidad está medida en el código (§455).
-- Las cuatro causas que este mando prueba (RFC-0007 E3a-1):
+  regulatorio— sirve cualquiera del libro. Y para lo que se juzga sobre un estado **instantáneo**
+  —las raíces de un `seq` (`StaleState`), el lote contra ese registro (los duplicados)— la cabeza
+  tiene que ser **la misma** del rechazo. La mutabilidad está medida en el código (§455, §456).
+- Las causas que este mando prueba (RFC-0007 E3a):
 
 | causa | material | qué comprueba | cabeza |
 |---|---|---|---|
@@ -162,10 +168,15 @@ donde el valor es una respuesta del cable sin reescribir.
 | `AccountLimitReached` | `parametros` | recomponen; `limit` es `maxAccounts` y `nextIndex` lo alcanza | v5, anterior o la misma |
 | `ConsumoRepetido` | `presencia` | la posición se DERIVA del consumo, y el consumo está bajo `consRoot` | v4 o v5, anterior o la misma |
 | `ConsumoColision` | `presencia` | el ocupante está en la posición DERIVADA del consumo, y no es él | v4 o v5, anterior o la misma |
+| `StaleState` | `recibo` | una de las tres raíces que el recibo declaró (`rootOld`, `pendingRootOld`, `frozenRoot`) no es la de la cabeza | v5, la misma (§456) |
+| `WrongRegulatoryLimit` | `parametros` | los siete recomponen; `expected` es el comprometido y `declared` no lo es | v5, cualquiera del libro (§456) |
+| `DuplicateAccountInBatch` | `lote` | el primer choque del lote, con la regla de `apply_many`, es una cuenta repetida | v5, la misma (§456) |
+| `DuplicatePendingInBatch` | `lote` | el primer choque del lote es una posición repetida | v5, la misma (§456) |
 
-- Cualquier otra causa se rechaza con su nombre. El resto de la tabla D-D del RFC-0007 es E3a-2
-  (las que exigen un recibo probado), E3b (congelación y ausencia, con dos métodos nuevos del
-  cable), E4 y E5.
+- Cualquier otra causa se rechaza con su nombre. El resto de la tabla D-D del RFC-0007 es E3b
+  (`AccountFrozen`, `AccountNotFound`: congelación y ausencia, con dos métodos nuevos del cable),
+  E4 y E5. `StaleState`, `WrongRegulatoryLimit` y los duplicados de lote los añadió el §456,
+  reuniendo un recibo real por el proxy de un banco (su banco no vive en el árbol, y se declara).
 
 ## 3. El sobre — lo que el binario lee
 
@@ -346,6 +357,16 @@ los **mismos productores** de arriba, con su hueco relleno distinto.
 - `la causa NO se sostiene: el ocupante vive en la posicion {po}, no en la {pos} del consumo`
 - `presencia: el camino NO sube al consRoot de la cabeza`
 - `la cabeza (seq {s_cabeza}) es POSTERIOR al rechazo (seq {s_rechazo}): {porque}, y solo una cabeza anterior lo prueba`
+- `falta recibo (los publicInputs del rechazado)` · `StaleState no lleva campos: su material es el recibo`
+- `la causa NO se sostiene: las tres raices del recibo son las de la cabeza - ese estado NO estaba atras`
+- `la causa {causa} exige una cabeza v5: sus parametros viajan en paramsDigest` (también `WrongRegulatoryLimit`)
+- `la causa NO se sostiene: el limite declarado ({declarado}) ES el comprometido ({limite})`
+- `falta lote (las ops de applyMany)` · `lote[{i}]: falta kind` · `lote[{i}]: kind desconocido: {otro}`
+- `lote[{i}]: falta receipt.notice` · `lote[{i}]: falta notice`
+- `la causa NO se sostiene: el lote no tiene cuentas ni posiciones repetidas`
+- `la causa NO se sostiene: el primer choque del lote es {n}, no {causa}`
+- `data: el {clave} que el nodo dice ({dicho}) no es el del primer choque del lote ({v})`
+- `la cabeza (seq {s_cabeza}) no es la del rechazo (seq {s_rechazo}): esta causa se juzga sobre un estado instantaneo, no sobre lo que crece`
 
 ## 6. El contrato del mando
 
@@ -425,7 +446,10 @@ positivo por causa probada —cuatro— y un negativo por cada regla producible 
 derivados por UNA mutación de las capturas de un nodo real (el PASTE-455-M; su banco no vive
 todavía en el árbol, y se declara). Un texto de la familia no tiene vector: «nextIndex no alcanza
 el tope» exige unos parámetros que recompongan con un tope por encima de `nextIndex`, y una sola
-mutación de lo real no llega a él.
+mutación de lo real no llega a él. **Desde §456 el catálogo cubre también `StaleState`,
+`WrongRegulatoryLimit` y los dos duplicados de lote**, con un recibo real capturado por el proxy de
+un banco (el ejemplo `e2e` del SDK), un positivo por causa y un negativo por regla producible por
+una sola mutación.
 Las demostraciones en vivo con nodo son `tools/banco_apagado.sh`, `tools/banco_consumo.sh`
 (RFC-0006, E3) y `tools/banco_dos_libros.sh` (E4a): el último levanta DOS nodos con DOS claves
 y produce el hecho que E4 existe para detectar.
@@ -455,6 +479,10 @@ y produce el hecho que E4 existe para detectar.
 - §455 — el sobre de rechazo (RFC-0007, E3a-1): el mando prueba la CAUSA de cuatro rechazos sobre
   el estado comprometido, con una cabeza anterior al rechazo cuando la causa cita algo que sólo
   crece; `spec/vectors/rechazo/` y la quinta estrofa del canon. Los catálogos son CUATRO.
+- §456 — el sobre de rechazo prueba también las cuatro causas que exigen un recibo (RFC-0007 E3a-2):
+  `StaleState` (una raíz declarada que no es la comprometida), `WrongRegulatoryLimit` (como
+  `OverRegulatoryLimit`) y los dos duplicados de lote (la regla de `apply_many`, el primer choque),
+  con la cabeza del `seq` exacto donde el estado es instantáneo; el catálogo, desde un recibo real.
 - Hasta §397 este contrato vivía en la cabecera de `crates/zk-ssl-verify/src/main.rs` (1..90,
   `293990fedc785833`), que ya confesó una vez (§247) haber declarado su superficie como completa
   sin serlo. §397 lo muda aquí y deja la cabecera remitiendo, sin enumerar.

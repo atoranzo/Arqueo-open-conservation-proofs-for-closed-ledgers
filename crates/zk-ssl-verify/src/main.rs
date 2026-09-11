@@ -898,6 +898,111 @@ fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
             exige_anterior(s_cabeza, s_rechazo, "un consumo publicado no se quita")?;
             println!("3/3 la posicion ya estaba ocupada bajo una cabeza anterior al rechazo");
         }
+        "StaleState" => {
+            // §454: el mensaje de una StaleState puede llevar `[receptionSeq=..]`, pero
+            // la CAUSA no tiene campos: su prueba son las tres raices que el recibo declaro,
+            // contra las de la cabeza. Basta con que UNA no sea la comprometida.
+            let recibo = p
+                .get("recibo")
+                .ok_or_else(|| err("falta recibo (los publicInputs del rechazado)".into()))?;
+            if !campos.as_object().map_or(false, |o| o.is_empty()) {
+                return Err(err("StaleState no lleva campos: su material es el recibo".into()));
+            }
+            exige_misma(s_cabeza, s_rechazo)?;
+            let root_new = digest_de(c, "accountsRoot")?;
+            let pend_new = digest_de(c, "pendingRoot")?;
+            let froz = digest_de(c, "frozenRoot")?;
+            let r_rec = digest_de(recibo, "rootOld")?;
+            let p_rec = digest_de(recibo, "pendingRootOld")?;
+            let f_rec = digest_de(recibo, "frozenRoot")?;
+            println!("2/3 el recibo declaro rootOld, pendingRootOld y frozenRoot");
+            let cual = if r_rec != root_new {
+                "accountsRoot"
+            } else if p_rec != pend_new {
+                "pendingRoot"
+            } else if f_rec != froz {
+                "frozenRoot"
+            } else {
+                return Err(err(
+                    "la causa NO se sostiene: las tres raices del recibo son las de la cabeza \
+                     - ese estado NO estaba atras"
+                        .into(),
+                ));
+            };
+            println!("3/3 el recibo se probo contra otro {cual}: su estado quedo atras");
+        }
+        "WrongRegulatoryLimit" => {
+            // El mismo modelo que OverRegulatoryLimit: los parametros recomponen, y lo que
+            // el nodo dice haber recibido (`declared`) NO es el comprometido (`expected`). Lo
+            // que el cliente puso en su recibo es palabra del nodo, como el `requested`; su
+            // refutacion es el recibo que el propio cliente guarda (spec/PAQUETE.md 2.6).
+            let (limite, _) = parametros_comprometidos(p, c, causa)?;
+            println!("2/3 los parametros recomponen el paramsDigest: el limite es {limite}");
+            let esperado = u64_de(campos, "expected")?;
+            let declarado = u64_de(campos, "declared")?;
+            if esperado != limite {
+                return Err(no_es_el_comprometido("limite esperado", esperado, limite));
+            }
+            if declarado == limite {
+                return Err(err(format!(
+                    "la causa NO se sostiene: el limite declarado ({declarado}) ES el \
+                     comprometido ({limite})"
+                )));
+            }
+            println!("3/3 el limite declarado ({declarado}) no es el comprometido ({limite})");
+        }
+        "DuplicateAccountInBatch" | "DuplicatePendingInBatch" => {
+            // El lote viaja TAL CUAL (`ops`, como en zkssl_applyMany); el mando aplica la
+            // MISMA regla y en el MISMO orden que `apply_many`: una cuenta por operacion y
+            // posiciones distintas, y el PRIMER choque tiene que ser el que el nodo nombro.
+            let ops = p
+                .get("lote")
+                .and_then(|x| x.as_array())
+                .ok_or_else(|| err("falta lote (las ops de applyMany)".into()))?;
+            exige_misma(s_cabeza, s_rechazo)?;
+            let (mut cuentas, mut posiciones) = (Vec::new(), Vec::new());
+            let mut choque: Option<(&str, u64)> = None;
+            for (i, op) in ops.iter().enumerate() {
+                let (cuenta, pos) = op_cuenta_y_posicion(op, i)?;
+                if cuentas.contains(&cuenta) {
+                    choque = Some(("DuplicateAccountInBatch", cuenta));
+                    break;
+                }
+                cuentas.push(cuenta);
+                if posiciones.contains(&pos) {
+                    choque = Some(("DuplicatePendingInBatch", pos));
+                    break;
+                }
+                posiciones.push(pos);
+            }
+            println!("2/3 el lote lleva {} operaciones, leidas en orden", ops.len());
+            match choque {
+                Some((n, v)) if n == causa => {
+                    let clave =
+                        if causa == "DuplicateAccountInBatch" { "index" } else { "position" };
+                    let dicho = u64_de(campos, clave)?;
+                    if dicho != v {
+                        return Err(err(format!(
+                            "data: el {clave} que el nodo dice ({dicho}) no es el del primer \
+                             choque del lote ({v})"
+                        )));
+                    }
+                    println!("3/3 el primer choque del lote es {causa} en {clave} {v}");
+                }
+                Some((n, _)) => {
+                    return Err(err(format!(
+                        "la causa NO se sostiene: el primer choque del lote es {n}, no {causa}"
+                    )))
+                }
+                None => {
+                    return Err(err(
+                        "la causa NO se sostiene: el lote no tiene cuentas ni posiciones \
+                         repetidas"
+                            .into(),
+                    ))
+                }
+            }
+        }
         otra => {
             return Err(err(format!(
                 "data: la causa {otra} no la prueba este mando (spec/PAQUETE.md, seccion 2.6)"
@@ -963,6 +1068,47 @@ fn exige_anterior(s_cabeza: u64, s_rechazo: u64, porque: &str) -> Result<(), Str
         )));
     }
     Ok(())
+}
+
+/// La cabeza tiene que ser la MISMA en que se juzgo (`StaleState`, los duplicados de lote): lo que
+/// se prueba es un estado instantaneo -las raices de ese `seq`, el lote contra ese registro-, no
+/// algo que solo crezca. Una anterior o posterior probaria otro estado.
+fn exige_misma(s_cabeza: u64, s_rechazo: u64) -> Result<(), String> {
+    if s_cabeza != s_rechazo {
+        return Err(err(format!(
+            "la cabeza (seq {s_cabeza}) no es la del rechazo (seq {s_rechazo}): esta causa se \
+             juzga sobre un estado instantaneo, no sobre lo que crece"
+        )));
+    }
+    Ok(())
+}
+
+/// La cuenta y la posicion de una operacion de un lote, con la MISMA regla que `BatchOp` en la
+/// capa: la cuenta es `sender` (envio) o `receiver` (cobro); la posicion, `receipt.notice.position`
+/// en el envio o `notice.position` en el cobro (`crates/zk-ssl/src/two_phase.rs`).
+fn op_cuenta_y_posicion(op: &serde_json::Value, i: usize) -> Result<(u64, u64), String> {
+    let kind = op
+        .get("kind")
+        .and_then(|x| x.as_str())
+        .ok_or_else(|| err(format!("lote[{i}]: falta kind")))?;
+    match kind {
+        "send" => {
+            let cuenta = u64_de(op, "sender")?;
+            let notice = op
+                .get("receipt")
+                .and_then(|r| r.get("notice"))
+                .ok_or_else(|| err(format!("lote[{i}]: falta receipt.notice")))?;
+            Ok((cuenta, u64_de(notice, "position")?))
+        }
+        "claim" => {
+            let cuenta = u64_de(op, "receiver")?;
+            let notice = op
+                .get("notice")
+                .ok_or_else(|| err(format!("lote[{i}]: falta notice")))?;
+            Ok((cuenta, u64_de(notice, "position")?))
+        }
+        otro => Err(err(format!("lote[{i}]: kind desconocido: {otro}"))),
+    }
 }
 
 fn main() -> ExitCode {

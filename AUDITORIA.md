@@ -33674,3 +33674,64 @@ privacidad declarado). Quedan vivos: el banco de la captura no vive en el arbol 
 el PASTE-455-M, con `banco455.py` `9955267b1970086f`-; la seccion 4 de `spec/PAQUETE.md` sigue sin
 los pasos del conflicto; y el orden de las defensas deja sin testigo el texto de «nextIndex no
 alcanza».
+
+## §456 — RFC-0007 E3a-2: el rechazo con recibo (StaleState, WrongRegulatoryLimit, los duplicados de lote)
+
+**Que.** El sobre de rechazo (§455) gana las cuatro causas que un cliente recibe con un recibo ya
+probado en la mano. `StaleState`: la causa no tiene campos, asi que su material es `recibo` -los
+`publicInputs` que el titular envio-, y VERDE si una de las tres raices que declaro (`rootOld`,
+`pendingRootOld`, `frozenRoot`) no es la de la cabeza. `WrongRegulatoryLimit`: el mismo modelo que
+`OverRegulatoryLimit` -los siete parametros recomponen el `paramsDigest`, `expected` es el
+comprometido y `declared` no lo es-. `DuplicateAccountInBatch` y `DuplicatePendingInBatch`: el
+`lote` viaja tal cual -las `ops` de `zkssl_applyMany`- y el mando aplica la MISMA regla y en el
+MISMO orden que `apply_many`, exigiendo que el PRIMER choque sea el que el nodo nombro. Las tres
+ultimas se juzgan sobre un estado INSTANTANEO -las raices de un `seq`, el lote contra ese
+registro-, asi que la cabeza tiene que ser la MISMA del rechazo, no una anterior. `spec/vectors/rechazo/`
+crece con cuatro positivos reunidos de un recibo real y veinte negativos por una mutacion;
+`spec/PAQUETE.md` gana los dos esqueletos, las cuatro filas de la tabla, los textos del catalogo y
+la 2.6 pasa a decir <<las causas que este mando prueba>>; los dos README suben la cuenta de vectores;
+la fila E3 del RFC-0007 recoge el §456. El mando no gana API publica: `spec/NUCLEO.md` no se
+mueve, y no hay tests de Rust nuevos -el testigo es el CATALOGO-.
+
+**Por que asi.** Bajo la delegacion de E3 (D-1..D-8). El orden lo fijo la medicion: `validate_send`
+comprueba las tres raices (StaleState) y DESPUES el limite declarado (WrongRegulatoryLimit), antes
+del STARK, asi que las dos causas se alcanzan sin una prueba valida; `apply_many` mira los
+duplicados ANTES de validar nada. La refutacion de un `declared` -como la de un `requested` en
+E3a-1- es el recibo que el propio cliente guarda: se declara. La cabeza EXACTA vuelve a no firmarse
+por rechazo (seria denegacion de servicio): se toma la del latido, que existe si nadie escribio
+entre medias.
+
+**La captura.** El PASTE-456-M levanto un nodo REAL de `4e3d8ae` con `--latido 2 --dev`, puso
+DELANTE un proxy que graba y corrio por el el ejemplo `e2e` del SDK (dos cuentas, fondos, un pago,
+un cobro): asi quedaron en disco un `applySend` y un `applyClaim` con recibos REALES -~132 KB cada
+uno, la prueba dentro- sin tocar el SDK. Con ellos el banco provoco los cuatro rechazos -el envio
+otra vez para StaleState, el mismo recibo con las tres raices al dia y el limite + 1 para
+WrongRegulatoryLimit, y dos `applyMany` para los duplicados- y guardo la cabeza firmada del `seq` en
+que se juzgaron. `CAPTURAS-456` (`efd847a31dfcefef`): salio VERDE a la primera. Los sobres de lote
+pesan ~264 KB porque llevan dos recibos con prueba; se declara.
+
+**Testigos.** El catalogo: cuatro positivos reunidos de las capturas y veinte negativos, cada uno
+UNA mutacion -recibo con las tres raices al dia, sin recibo, con campos, cabeza distinta del seq,
+cabeza adulterada, limite esperado que no es el comprometido, limite declarado que si lo es,
+parametros ajenos, cabeza v3 para una causa de parametros, sin lote, lote sin repes, primer choque
+de la otra clase (en las dos direcciones), index o position que no es el del primer choque, cabeza
+distinta del seq para un lote, y una operacion del lote sin `kind`, con un `kind` desconocido o sin
+su `notice` (en el envio y en el cobro)-. El negativo del §455 que usaba `StaleState` como causa no
+probada pasa a `AccountFrozen`, porque este sello empieza a probarla. El canon corre el catalogo en
+su quinta estrofa y el artefacto lo lleva dentro y lo corre desde dentro. Un falsador vive en el
+bloque: el positivo de `StaleState` con las tres raices del recibo puestas en las de la cabeza tiene
+que caer, solo el, y por la regla nueva.
+
+**Medido.** El mando, `spec/PAQUETE.md`, `spec/vectors/rechazo/MANIFIESTO.txt`, los dos README, el
+RFC-0007 y este asiento, mas los veinticuatro ficheros nuevos de `spec/vectors/rechazo/` y el
+negativo del §455 que se reescribe; el catalogo entero (48 vectores) verde con el binario de
+referencia; canon `--sello` rc 0 (sus segundos y su linea del catalogo, en la salida de este
+bloque).
+
+**Lo que NO afirma, y lo que queda vivo.** No afirma que el nodo rechazara, ni cuando (eso es H5b),
+ni que la regla sea justa. No prueba `AccountFrozen` ni `AccountNotFound` (E3b: dos metodos nuevos
+del cable, con su coste de privacidad declarado). Quedan vivos: el banco de la captura no vive en
+el arbol -su productor fue el PASTE-456-M, con `banco456.py` `c6d9f4c479562838` y `proxy456.py`
+`8e74b40fcf2fe746`-; la seccion 4 de `spec/PAQUETE.md` sigue sin los pasos del conflicto ni los del
+rechazo; y de la familia solo <<nextIndex no alcanza el tope>> (§455) sigue sin vector, declarado
+en la seccion 9 de `spec/PAQUETE.md`.
