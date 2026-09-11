@@ -33735,3 +33735,38 @@ el arbol -su productor fue el PASTE-456-M, con `banco456.py` `c6d9f4c479562838` 
 `8e74b40fcf2fe746`-; la seccion 4 de `spec/PAQUETE.md` sigue sin los pasos del conflicto ni los del
 rechazo; y de la familia solo <<nextIndex no alcanza el tope>> (§455) sigue sin vector, declarado
 en la seccion 9 de `spec/PAQUETE.md`.
+
+## §457 — la carrera de `tests_libros_ajenos`: un directorio de trabajo por instancia (5.A-135)
+
+**Que.** Dos tests del nodo -`una_firma_que_no_verifica_impide_arrancar` y
+`una_lista_que_no_reconstruye_el_consroot_impide_arrancar`, T2 y T3 de `tests_libros_ajenos`-
+compartian `target/t_libros_ajenos`, y `tests_dir` BORRA lo que encuentra: en paralelo, uno
+arrasaba el `indice.bin` del firmante del otro entre su creacion y su apertura. `libro_real` y
+`escribir` piden ahora un nombre POR INSTANCIA (`libros_ajenos_<n>`, con `proximo_nodo`), el mismo
+remedio que `nodo()` recibio cuando le paso lo mismo -la advertencia de `tests_dir` lo cuenta-, y el
+comentario de `libro_real_dos_cabezas` deja de hablar de la carrera en presente. Ningun test cambia
+de nombre ni de aserto, y la cifra del nodo no se mueve.
+
+**El testigo que la cazo.** El canon del BLOQUE-456 en su primera corrida (11-sep, la
+SALIDA-456-20260911-082855): `zk-ssl-node` 103 de 104, T2 caido en `main.rs:3481` con
+`abrir: Guardian(Io("No such file or directory (os error 2)"))`. Diez corridas seguidas del nodo
+dieron 104 de 104, y la segunda corrida del bloque sello el §456: un test intermitente pasa casi
+siempre, y una compuerta que lo corre una vez lo deja pasar.
+
+**Testigos.** Dos, en el bloque, y ninguno depende de ganar o perder la carrera. Un censo del
+fuente: por cada llamada que borra un directorio de trabajo de tests -`tests_dir` y los `en_disco`
+de los crates- con un nombre LITERAL, que tests la alcanzan, directamente o por un ayudante; un
+nombre alcanzado por dos tests es una carrera. Sobre el PRE da exactamente una, `libros_ajenos` (T2
+y T3, por `libro_real` y `escribir`): el censo se ve ROJO sobre el defecto real. Sobre el POST, cero.
+Y la suite del nodo, corrida VEINTE veces seguidas, verde las veinte.
+
+**Medido.** `crates/zk-ssl-node/src/main.rs` y este asiento; la lista de tests del nodo, la misma
+por NOMBRE; las diez herramientas, identicas; canon `--sello` rc 0 (sus segundos y las veinte
+corridas, en la salida de este bloque).
+
+**Lo que NO afirma, y lo que queda vivo.** No afirma que no quede otra carrera: el censo mira los
+directorios que se borran por nombre, no ficheros compartidos por otra via ni puertos. Ninguna
+herramienta del canon impide que vuelva a pasar: el censo vive en el bloque, no en `tools/`.
+`escribir` y `escribir_en` siguen recreando su directorio en cada escritura: dentro de un test es
+secuencial y no falla, pero un test que escribiera dos ficheros y leyera el primero despues del
+segundo lo perderia.

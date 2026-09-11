@@ -3470,7 +3470,9 @@ mod tests_libros_ajenos {
     /// tener una cabeza v4 cuya firma verifique sin inventarse bytes.
     fn libro_real(consumos: &[u8]) -> (App, serde_json::Value, Vec<String>) {
         let mut app = crate::tests::nodo(30);
-        let d = crate::tests_dir("libros_ajenos");
+        // §457: un nombre POR INSTANCIA, como el de `nodo()`. T2 y T3 compartian `libros_ajenos`
+        // y, en paralelo, uno borraba el `indice.bin` del firmante del otro (5.A-135).
+        let d = crate::tests_dir(&format!("libros_ajenos_{}", crate::proximo_nodo()));
         let _ = std::fs::remove_dir_all(&d);
         std::fs::create_dir_all(&d).expect("crear");
         let mut s = [0u8; 96];
@@ -3499,7 +3501,7 @@ mod tests_libros_ajenos {
     }
 
     fn escribir(nombre: &str, doc: serde_json::Value) -> String {
-        let p = crate::tests_dir("libros_ajenos").join(nombre);
+        let p = crate::tests_dir(&format!("libros_ajenos_{}", crate::proximo_nodo())).join(nombre);
         std::fs::write(&p, serde_json::to_vec(&doc).expect("json")).expect("escribir");
         p.to_string_lossy().into_owned()
     }
@@ -3591,7 +3593,8 @@ mod tests_libros_ajenos {
     /// la primera tras publicar `primeros` (seq = N) y la segunda tras publicar ademas
     /// `luego` (seq > N). Es el material del PAR de E4b-2 (§439). Los dos latidos van
     /// ANTES de escribir nada: `tests_dir` arrasa el directorio y con el el `indice.bin`
-    /// del firmante. Directorio PROPIO, para no ensanchar la carrera de T1-T3.
+    /// del firmante. Directorio PROPIO: nacio asi para no ensanchar la carrera que T2 y T3
+    /// tuvieron hasta el §457.
     fn libro_real_dos_cabezas(
         dir: &str,
         primeros: &[u8],
