@@ -119,6 +119,9 @@ pub mod store;
 mod metrics;
 #[cfg(test)]
 mod tests;
+// RFC-0007 E4a (§461): el instrumento de la puerta de la prueba de edad. Solo tests.
+#[cfg(test)]
+mod instrumento_edad;
 #[cfg(any(test, feature = "sandbox"))]
 pub mod tests_support;
 
