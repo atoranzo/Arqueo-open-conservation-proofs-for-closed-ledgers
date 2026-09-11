@@ -21,7 +21,7 @@
 | E1 — la cabeza v5 | `epoch_digest_v5`: UNA familia nueva bajo la firma —`params_digest` (los siete parámetros), `pmeta_root`, `next_pending`, `next_index`, `total_supply`—; `VersionCabeza` gana V5; el cable sirve los cinco campos y `zkssl_params` los tres parámetros que hoy no sirve; el testigo recompone y custodia; el mando acepta; KAT y fila en `NUCLEO.md`; vectores bajo su versión; testigos: recomponer rechaza una v5 sin uno de los cinco, y un parámetro cambiado en reposo cambia la cabeza | NO en el cable (claves aditivas); SÍ en la firma (formato 4 → 5) | **sellada** — §451 y §451-B (E1a: el núcleo y el mando aceptan v5), §452 y §452-B (E1b: `VERSION_FORMATO` 5, el nodo firma y sirve v5, el cable la exige por versión y el testigo la custodia) y §453 (el positivo v5 del catálogo del cable: una cabeza real) |
 | E2 — el rechazo con causa, en el cable | el objeto de error gana `data`: la causa por su NOMBRE (la variante de `LayerError`), sus campos, y el `seq` de la cabeza en cuyo estado se juzgó; `message` no cambia; el catálogo de las veinticinco causas se publica en `RPC.md` y un test lo ata al enum (dos listas son dos productores) | NO (aditivo: ningún vector ni el OpenRPC pina el objeto de error) | **sellada** — §454 (`LayerError::causa` en la capa, `data` en el `-32000` y en la negativa de `zkssl_publishConsumo`, el catálogo en `spec/RPC.md` atado por test) |
 | E3 — el rechazo con prueba, por caminos | una forma nueva del paquete de evidencia, `tipo: "rechazo"`, que el mando verifica sin nodo: la cabeza v5 firmada, la causa, y el material que la demuestra con caminos y aritmética pública sobre lo que la cabeza compromete; una tabla causa → material → qué revela; un positivo y un negativo por regla, derivados por mutación; su manifiesto y su puerta en el canon | NO (el paquete no cruza el cable) | **sellada** — §455 (E3a-1: `OverRegulatoryLimit`, `AccountLimitReached`, `ConsumoRepetido`, `ConsumoColision`), §456 (E3a-2: `StaleState`, `WrongRegulatoryLimit`, `DuplicateAccountInBatch`, `DuplicatePendingInBatch`, con un recibo real capturado por el proxy de un banco), §458-§459 (E3b: `AccountFrozen`, con el camino de congelados que el cable sirve al titular) y §460 (`SupplyCapExceeded`, con la petición del solicitante dentro del sobre). `AccountNotFound` pasa a E5 (CORRECCIÓN del §459); `PendingTreeExhausted` queda declarada sin prueba portable (CORRECCIÓN del §460) |
-| E4 — la prueba de edad, medida primero | E4a: el coste en función de `next_pending`, con el instrumento antes que el circuito, y una puerta que decide si se construye o se declara un techo. E4b: el circuito sobre el RANGO `0..next_pending` de los árboles de pendientes y de meta, con la caja vacía, el tope y la concentración por emisor nombrado como formas de un mismo enunciado; su sobre, su manifiesto y sus vectores | NO | **en curso** — E4a sellada: el instrumento (§461, §461-B) y su medida y veredicto (§462): E4b se construye, con el techo declarado (CORRECCIÓN del §462); E4b abierta |
+| E4 — la prueba de edad, medida primero | E4a: el coste en función de `next_pending`, con el instrumento antes que el circuito, y una puerta que decide si se construye o se declara un techo. E4b: el circuito sobre el RANGO `0..next_pending` de los árboles de pendientes y de meta, con la caja vacía, el tope y la concentración por emisor nombrado como formas de un mismo enunciado; su sobre, su manifiesto y sus vectores | NO | **en curso** — E4a sellada: el instrumento (§461, §461-B) y su medida y veredicto (§462): E4b se construye, con el techo declarado (CORRECCIÓN del §462); E4b-1 sellada (§463, §463-B): el AIR real de las formas por cuenta, con su juez en `crates/zk-ssl-air` sin el probador y la puerta medida con él: el techo, medido en `n` = 16384, y las formas por importe, declaradas (CORRECCIONES del §464); abiertas E4b-2 (el kit la verifica) y E4b-3 (la capa la produce sobre un nodo real) |
 | E5 — las causas por circuito, y el kit verifica | `InsufficientBalance` con prueba de banda sobre la hoja comprometida (molde `circuit_audit`, sin el ciclo de titularidad); la re-verificación del STARK del solicitante para `ProofFailed` y `VerificationFailed`; un crate de AIR sólo-verificador que el mando consume, con `winter-verifier` en su clausura y el probador fuera | NO | abierta — depende de D-F |
 
 Todas las medidas de este documento se tomaron sobre `bb02c71` (§449), en dos lecturas puras que
@@ -288,6 +288,23 @@ vivas, con `edad = seq - born`. La forma del circuito viene de la estructura, me
   aplicó no tiene edad: eso es H5b), nada sobre saldos, y nada sobre pendientes de otra época
   que la de la cabeza que firma las raíces.
 
+**CORRECCIÓN (§247, escrita por el §464).** La viñeta de las entradas públicas dice que el
+operador tiene la apertura de cada pendiente vivo porque «los recibe en `sendMaterials` y los
+guarda en `pamt:` y `pmeta:`», y el árbol de `b91109c` lo desmiente para la apertura, no para
+`(sender, born)`. `zkssl_sendMaterials` sí recibe el receptor, la sal y el importe
+(`spec/RPC.md`, su fila), pero el reposo (`crates/zk-ssl/src/persistence.rs`) guarda del
+pendiente sólo tres cosas: la hoja —el compromiso, opaco— en `pend:`, el importe en `pamt:` y
+`(sender, born)` en `pmeta:`. Ninguna clave guarda el receptor ni la sal, y en v2 `f` y `Δ` no
+llegan al nodo: el cable 0.x no transporta el sobre, y las aperturas «se generan y se quedan en
+el cliente» (`spec/rfc/0003-compromiso-v2.md`, Seguridad). El operador los ve en tránsito, así
+que no guardarlos es del código de hoy, no una propiedad del protocolo. Sin la apertura, un
+importe no se ata dentro del circuito a la hoja comprometida, y lo que el circuito no restringe
+no se afirma. Por eso E4b-1 (§463) construye las formas **por cuenta** —la caja vacía
+(`K = 0`), el tope por cuenta (`T = 0`) y la concentración de un emisor nombrado—, que sólo
+necesitan la hoja y `(sender, born)`, y **declara** las de importe de la viñeta «Un enunciado,
+tres formas»: `suma(importe) <= cap` y `suma(importe con sender == s) <= X` no se prueban sin
+la apertura. La concentración global no se construyó y sigue sin coste medido.
+
 **E4a, la puerta.** Antes de escribir el AIR: el número de hashes en función de `n` medido
 sobre las hojas reales de un libro del banco, la proyección de filas con el molde, y un tiempo
 de prueba medido en la máquina de referencia para tres `n` crecientes con la configuración de
@@ -326,6 +343,29 @@ El techo se declara ya, en dos cifras que no se mezclan: **medido**, los árbole
 latido y en media RAM hasta `n` = 32.750 (la talla de 2^19 filas); **proyectado**, la prueba
 completa, hasta `n` ≈ 8192. E4b mide su AIR real y sustituye la proyección por la medida; si la
 prueba completa para 4096 no cupiera en un latido, el techo se declara entonces, con esa cifra.
+
+**CORRECCIÓN (§247, escrita por el §464).** La del §462 declaró la prueba completa PROYECTADA
+hasta `n` ≈ 8192 y dejó dicho que E4b la sustituiría por la medida: la medida existe. El AIR
+real del §463 —`EdadAir` y su juez en `crates/zk-ssl-air`, el probador en
+`crates/stark-experiment/src/circuit_edad.rs`— prueba el enunciado entero, los dos árboles del
+rango cableados por un argumento de multiconjunto en la traza auxiliar y la comparación de
+edad, con `proof_options`, en la misma máquina de referencia y sobre el commit `393be18`
+(asiento §463):
+
+| `n` | filas | probar | prueba | pico |
+|---|---|---|---|---|
+| 1024 | 8.192 | 1,53 s | 119.369 B | 198.828 kB |
+| 4096 | 32.768 | 7,03 s | 139.153 B | 778.096 kB |
+| 16384 | 131.072 | 29,86 s | 162.305 B | 3.107.712 kB |
+
+Verificar, de 1,1 a 1,6 ms; las tres pruebas verifican y suben a la raíz del libro, y las tres
+caben en un latido y en media RAM (6.124.348 kB en esa máquina). **El techo pasa a ser
+medido: `n` = 16384**, la prueba completa en 29,86 s. La proyección de arriba (`n` ≈ 8192)
+queda superada y no se usa; el techo de los árboles solos (`n` = 32.750) sigue siendo del
+instrumento del §461, no de la prueba. Lo que sigue es proyección y se dice como tal: de 4096
+a 16384 el tiempo creció 4,25 veces y el pico 3,99 —unas 2,06 y 2,00 veces por duplicación—,
+así que `n` = 32768 costaría del orden de 61 s y 6,2 millones de kB, fuera por poco de las dos
+cotas. No se declara techo por encima de 16384 sin medirlo.
 
 ### D-F — El kit verifica pruebas: el AIR entra en la clausura, el probador no
 

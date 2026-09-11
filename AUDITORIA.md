@@ -34146,3 +34146,58 @@ sigue en linea en veintiocho circuitos; la hoja de meta mete el emisor como `Bas
 y `u64::MAX` cae en el campo como `2^32 - 2` (previo a E4b; se mide, no se afirma); dos testigos
 sin falsador propio, declarado (la prueba que no sirve para otro enunciado y la igualdad de las
 opciones). El +16 de la suma de declarados sigue siendo deduccion (asiento §461, punto 57).
+
+## §464 — RFC-0007 E4b-1: la medida del AIR real, y la apertura que el operador no guarda
+
+**Que.** Paga en el RFC-0007 lo que el §463 dejo dicho y pendiente (su <<Lo que NO afirma>>; el
+punto 184 de la cola 5.A). Tres sitios: la fila E4 de la tabla de etapas pasa a E4b-1 sellada,
+con E4b-2 y E4b-3 abiertas; una CORRECCION §247 a la vineta de las entradas publicas de la D-E,
+que dice que el operador tiene la apertura de cada pendiente vivo porque la guarda en `pamt:` y
+`pmeta:`; y otra a la del §462, que declaraba PROYECTADA la prueba completa hasta `n` ~ 8192, con
+la tabla que midio el AIR real y el techo medido en `n` = 16384. Sin codigo, sin pines y sin
+vectores: un sello de prosa, con las diez herramientas como juez.
+
+**Por que asi.** El autor ordeno el corte y sus tres sitios (sesion 128); la forma la eligio el
+asistente con la constitucion, REVERSIBLE aqui. **D-1**, cada CORRECCION va junto a lo que
+corrige, como las del §452 y el §459: la de la apertura, tras la lista de la D-E; la del techo,
+tras la del §462. La frase vieja se cita y no se borra. **D-2**, la tabla lleva por talla lo que
+el asiento 463 publica (filas, probar, prueba, pico); el verificar va como rango, 1,1 a 1,6 ms,
+porque por talla no esta en el arbol. **D-3**, `n` = 32768 se escribe como PROYECCION, con su
+derivacion (x2,06 en tiempo y x2,00 en pico por duplicacion, de 4096 a 16384: unos 61 s y 6,2
+millones de kB, fuera por poco del latido y de la media RAM), y no como techo: un techo se
+declara con medida (D-E4a-7). **D-4**, la correccion de la apertura dice tambien la confianza
+residual: el operador ve receptor, sal e importe en transito, y no guardarlos es del codigo de
+hoy, no del protocolo.
+
+**Lo medido antes de escribir un byte.** El zip de `main` en `b91109c` (`54c82f4e51491c4b`, 516
+ficheros; su comentario lleva el commit entero): las 160 anclas versionadas del TRASPASO-128
+clavan, y 30 de sus 31 SHA-REGION (la de `persistence.rs` vive en 414..441, ya declarada). El
+RFC-0007 es el POST del §462 (`e52e279df61cc72c`, 445 lineas), y los tres sitios estan donde la
+5.A-184 los puso: :24, :283-286 y :325-328. La apertura: `zkssl_sendMaterials` recibe receptor,
+sal e importe (`spec/RPC.md:106`); de las claves que `persistence.rs` escribe, el pendiente vive
+en tres, `pend:` (la hoja), `pamt:` (el importe, 8 B) y `pmeta:` (emisor y nacimiento, 16 B), y
+ninguna guarda receptor ni sal; `SendMaterialsDto` no transporta el sobre (`sobre: None`,
+`crates/zk-ssl-wire/src/lib.rs`). El RFC-0003 lo dice en su Seguridad (:169-170: `f`, el plazo
+y las aperturas se generan y se quedan en el cliente); su D2 trata de `f`. La 5.A-184 y el
+asiento 463 citaban <<RFC-0003 D-2>>: la buena es la de Seguridad, la que lleva la correccion. El
+<<8192>> y el <<32.750>> no viven en ningun otro documento vivo (los 70 `.md` sin `AUDITORIA.md`;
+el 8.192 del RFC-0002 es otra tabla), y la frase de `pamt:` tampoco: la correccion va a un solo
+sitio, y la PRECISION 195 queda comprobada, no supuesta. Las cifras del AIR real, del asiento 463.
+
+**Testigos.** Ninguno nuevo: este sello no afirma nada que un test pueda falsar, y lo declara
+(PRECISION 177). Lo sostienen la medida del §463, anclada a su commit, a su maquina y a su salida
+con huella, y la lectura del reposo y del cable citada arriba. Las diez herramientas, PRE y POST
+con juez: IDENTICAS.
+
+**Medido.** `spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md`, de 445 a 485 lineas
+(`e8130b38588e7b45`): la fila E4 crece sin pasar del ancho de la fila E3, y las dos correcciones
+van a 98 B como mucho. Y este asiento. Ningun `.rs`, ningun pin, ninguna cifra de tests, ningun
+vector. Sin canon: lo unico del canon que mira lo que este sello toca son sus diez herramientas.
+
+**Lo que NO afirma, y lo que queda vivo.** No afirma que el kit verifique la prueba de edad
+(E4b-2, que paga tambien la prosa de `crates/zk-ssl-verify/Cargo.toml`, 5.A-186) ni que la capa
+la produzca sobre un nodo real (E4b-3). La medida es de un portatil con WSL: otra maquina da otra
+cifra. La proyeccion a 32768 no es techo; la concentracion global sigue sin construir ni medir.
+La D-F del RFC habla en futuro y sigue cierta: el crate existe desde el §463 y el kit aun no lo
+consume. La cabecera del RFC (<<Asiento(s) de AUDITORIA>>) sigue sin los asientos de sus etapas,
+como tras cada sello desde el §451.
