@@ -1420,6 +1420,37 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             }
         }
 
+        // ⚠️ **RFC-0007 E3b (§458) · EL CAMINO DE CONGELADOS, PARA EL TITULAR.**
+        // El rechazo `AccountFrozen(i)` se prueba con la hoja de `i` bajo el
+        // `frozenRoot` de la cabeza. El estado de congelacion es del titular
+        // -`two_phase.rs` lo comprueba DESPUES de la autoridad para no
+        // filtrarlo-, asi que el camino pide su credencial (§261), como el
+        // recibo de inclusion. Se sirve con la hoja vacia o no: con ella el
+        // titular prueba el rechazo, o que era falso.
+        //
+        // El arbol NO se reconstruye en un `seq` pasado -el registro de una
+        // congelacion lleva su compromiso, no el indice-: el camino es del
+        // estado de AHORA y lo dice con `s`. Como ese arbol solo cambia con
+        // otra congelacion, el camino vale para toda cabeza desde la ultima.
+        // ⚠️ Aditivo: `zkssl/0.3` no sube.
+        "zkssl_frozenPath" => {
+            #[derive(Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct P { index: Q, view_key: wire::B32 }
+            let p: P = parse(params)?;
+            exige_credencial(l, p.index.0, &p.view_key)?;
+            let (hoja, camino) = l.frozen_path_of(p.index.0);
+            Ok(json!({
+                "s": Q(seq_juicio),
+                "index": Q(p.index.0),
+                "leaf": digest_to_wire(&hoja),
+                "camino": {
+                    "siblings": camino.siblings.iter().map(digest_to_wire).collect::<Vec<_>>(),
+                    "isRight": camino.is_right,
+                },
+            }))
+        }
+
         // ⚠️ **§259 · EL RECIBO DE INCLUSION.** Del arbol `accounts`, que es
         // el que firma la cabeza. `leafFormat` va OBSERVADO: la capa
         // compone la hoja de las dos formas y declara la que caso.
@@ -2052,6 +2083,26 @@ fn dispatch_dev(
                 "publicId": digest_to_wire(&stark_experiment::native::derive_public_id_wide(sk)),
                 "viewKey": digest_to_wire(&stark_experiment::native::derive_view_key_wide(sk)),
             }))
+        }
+
+        // RFC-0007 E3b (§458): el gemelo de `dev_fund` para la CONGELACION -la
+        // via delegada REAL: la subida del arbol y los dos custodios de la
+        // suite-, para que un banco con nodo real pueda provocar
+        // `AccountFrozen` y capturar su camino. Solo sobre una cuenta que
+        // existe: la capa congela cualquier posicion; el sandbox, no.
+        "dev_freeze" => {
+            #[derive(Deserialize)]
+            struct P { index: Q, frozen: bool }
+            let p: P = parse(params)?;
+            if l.public_id_of(p.index.0).is_none() {
+                return Err(RpcError::layer(LayerError::AccountNotFound(p.index.0), seq_juicio));
+            }
+            let op = ts::freeze_commitment(l, p.index.0, p.frozen);
+            let subida = ts::freeze_climb_proof(l, p.index.0, p.frozen);
+            let (pa, ia, pb, ib) = ts::delegated_pair(op, 1, 3);
+            l.apply_freeze_delegated(subida, pa, ia, pb, ib, p.index.0, p.frozen)
+                .map_err(|e| RpcError::layer(e, seq_juicio))?;
+            Ok(applied(l))
         }
 
         other => Err(RpcError::method_not_found(other)),
@@ -2693,7 +2744,7 @@ mod tests {
     /// cable lleve un prefijo conocido.
     #[test]
     fn el_despacho_y_el_documento_publican_los_mismos_metodos() {
-        const EXCEPCIONES: &[&str] = &["dev_fund", "dev_openSeeded"];
+        const EXCEPCIONES: &[&str] = &["dev_fund", "dev_openSeeded", "dev_freeze"];
         let fuente = include_str!("main.rs");
         let mut brazos: Vec<String> = Vec::new();
         for linea in fuente.lines() {
@@ -3712,5 +3763,103 @@ mod tests_libros_ajenos {
         assert_eq!(v2["accepted"], false, "bajo B@N+1 esta acreditado: {v2}");
         let r = v2["reason"].as_str().expect("reason");
         assert!(r.starts_with("otro libro"), "el rechazo tiene que NOMBRAR el motivo: {r}");
+    }
+}
+
+/// RFC-0007 E3b (§458): el camino de CONGELADOS, servido al TITULAR, y el
+/// grifo `dev_freeze` que lo pone a prueba con una congelacion REAL. El
+/// camino se sube con las reglas del VERIFICADOR (`zk_ssl_verify::congelados`),
+/// no con las de la capa: ese es el atado del cable con el nucleo.
+#[cfg(test)]
+mod tests_camino_congelados {
+    use super::*;
+    use zk_ssl_verify::congelados as cg;
+
+    fn dg(v: &Value) -> cg::Digest {
+        digest_from_wire(&serde_json::from_value::<wire::B32>(v.clone()).expect("B32"))
+            .expect("digest de 32 bytes")
+    }
+
+    fn q(v: &Value) -> u64 {
+        u64::from_str_radix(v.as_str().expect("Q").trim_start_matches("0x"), 16).expect("hex")
+    }
+
+    /// La cabeza que el cable sirve ahora: su `seq` y su `frozenRoot`.
+    fn cabeza(app: &App) -> (u64, cg::Digest) {
+        let c = dispatch(app, "zkssl_epochHead", json!({})).expect("cabeza");
+        (q(&c["seq"]), dg(&c["frozenRoot"]))
+    }
+
+    /// Sube el camino servido con las reglas del kit: profundidad fija y
+    /// cruce con el indice.
+    fn sube(r: &Value) -> Option<cg::Digest> {
+        let hermanos: Vec<cg::Digest> =
+            r["camino"]["siblings"].as_array().expect("siblings").iter().map(dg).collect();
+        let derecha: Vec<bool> = r["camino"]["isRight"].as_array().expect("isRight")
+            .iter().map(|b| b.as_bool().expect("bool")).collect();
+        assert!(cg::cruza_indice(q(&r["index"]), &derecha), "el camino es de OTRA cuenta: {r}");
+        cg::raiz_de_hoja(dg(&r["leaf"]), &hermanos, &derecha)
+    }
+
+    /// Sin la credencial de ESA cuenta no hay camino: el estado de
+    /// congelacion es del titular.
+    #[test]
+    fn sin_su_credencial_no_hay_camino_de_congelados() {
+        let app = crate::tests::nodo(30);
+        let (a, _, _) = crate::tests::cuenta(&app, 0x458A, 1_000);
+        let (_, _, vk_b) = crate::tests::cuenta(&app, 0x458B, 1_000);
+        let e = dispatch(&app, "zkssl_frozenPath", json!({ "index": Q(a), "viewKey": vk_b }))
+            .expect_err("con la clave de otra cuenta no hay camino");
+        assert_eq!(e.code, -32004, "credencial invalida, no un rechazo de la capa");
+    }
+
+    /// Sin congelar: la hoja es la VACIA y el camino sube a la `frozenRoot`
+    /// de la cabeza del mismo `seq`. Es lo que desmiente un `AccountFrozen`
+    /// falso (el disfraz de D-5).
+    #[test]
+    fn una_cuenta_libre_da_la_hoja_vacia_bajo_la_frozen_root() {
+        let app = crate::tests::nodo(30);
+        let (a, _, vk) = crate::tests::cuenta(&app, 0x458C, 1_000);
+        let r = dispatch(&app, "zkssl_frozenPath", json!({ "index": Q(a), "viewKey": vk }))
+            .expect("con su clave, si");
+        let (seq, raiz) = cabeza(&app);
+        assert_eq!(q(&r["s"]), seq, "el camino dice el seq del estado que lo produjo");
+        assert!(!cg::esta_congelada(dg(&r["leaf"])), "sin congelar, la hoja es la vacia: {r}");
+        assert_eq!(sube(&r), Some(raiz), "el camino tiene que subir a la frozenRoot servida");
+    }
+
+    /// Congelada por `dev_freeze` (la via delegada real): la hoja NO es la
+    /// vacia, el camino sube a la `frozenRoot` nueva, y el rechazo que el
+    /// titular recibe lleva ESE indice y ESE seq como dato. Son las tres
+    /// piezas del sobre de E3b, y salen del mismo estado.
+    #[test]
+    fn tras_dev_freeze_la_hoja_esta_congelada_y_el_rechazo_la_nombra() {
+        let app = crate::tests::nodo(30);
+        let (a, _, vk) = crate::tests::cuenta(&app, 0x458D, 1_000);
+        let (_, id_b, _) = crate::tests::cuenta(&app, 0x458E, 1_000);
+        dispatch(&app, "dev_freeze", json!({ "index": Q(a), "frozen": true })).expect("congelar");
+        let r = dispatch(&app, "zkssl_frozenPath", json!({ "index": Q(a), "viewKey": vk.clone() }))
+            .expect("camino");
+        let (seq, raiz) = cabeza(&app);
+        assert_eq!(q(&r["s"]), seq);
+        assert!(cg::esta_congelada(dg(&r["leaf"])), "congelada, la hoja no es la vacia: {r}");
+        assert_eq!(sube(&r), Some(raiz), "el camino tiene que subir a la frozenRoot nueva");
+        let e = dispatch(&app, "zkssl_sendMaterials", json!({
+            "sender": Q(a), "viewKey": vk, "receiverId": id_b,
+            "amount": Q(1u64), "salt": format!("0x{}", "22".repeat(32)) }))
+            .expect_err("una cuenta congelada no puede gastar");
+        let data = e.data.expect("un rechazo de la capa lleva su causa como dato");
+        assert_eq!(data["causa"], "AccountFrozen", "{data}");
+        assert_eq!(data["campos"]["index"], json!(Q(a)), "el indice que el camino prueba");
+        assert_eq!(q(&data["seq"]), seq, "juzgado en el estado del camino");
+    }
+
+    #[test]
+    fn sin_dev_no_se_congela() {
+        let mut app = crate::tests::nodo(30);
+        app.dev = false;
+        let e = dispatch(&app, "dev_freeze", json!({ "index": Q(0), "frozen": true }))
+            .expect_err("dev_* sin --dev debe rechazarse");
+        assert_eq!(e.code, -32601, "sin --dev, dev_freeze no existe");
     }
 }

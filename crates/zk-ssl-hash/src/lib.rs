@@ -200,6 +200,20 @@ pub fn path_root(leaf: Digest, siblings: &[Digest], is_right: &[bool]) -> Digest
 /// desde `consumo.rs`: un solo productor, como `native_merge` (S254).
 pub const CONS_DEPTH: usize = 63;
 
+/// **Profundidad del arbol de CONGELADOS** (RFC-0007 E3b, §458): 32 niveles,
+/// indexados por el indice de la cuenta.
+///
+/// El productor que el libro usa vive en `stark_experiment::circuit_freeze`
+/// -la geometria del circuito depende de ella- y un verificador independiente
+/// no compila ese crate: por eso el nucleo la PUBLICA aqui, y un test de la
+/// capa ata las dos (`freeze.rs`). Un camino de congelados que no mida esto no
+/// se sube: `native_merge` no separa hoja de nodo, y un camino truncado
+/// llegaria a la misma raiz con un nodo interno por hoja.
+///
+/// Es la profundidad del mundo v7: un libro no migrado reconstruye el arbol a
+/// 24 niveles, y su camino no pasa por un verificador que fije esta.
+pub const FROZEN_DEPTH: usize = 32;
+
 /// **Posicion de un consumo en su arbol**: los 63 bits bajos de sus primeros
 /// ocho bytes, leidos en little-endian - la misma serializacion que persiste
 /// la capa ([`digest_to_bytes`]).

@@ -1,6 +1,9 @@
 {
   "components": {
     "schemas": {
+      "Bool": {
+        "type": "boolean"
+      },
       "DATA": {
         "pattern": "^0x([0-9a-f][0-9a-f])*$",
         "type": "string"
@@ -554,6 +557,32 @@
       "summary": "Camino de autenticacion de un consumo bajo la cabeza de ese seq. La cabeza NO viaja y la raiz tampoco: quien verifica elige la hoja (el consumo prueba presencia; el digest cero, ausencia)."
     },
     {
+      "name": "zkssl_frozenPath",
+      "params": [
+        {
+          "name": "index",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        },
+        {
+          "name": "viewKey",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/FrozenPath"
+        }
+      },
+      "summary": "Camino de la cuenta en el arbol de CONGELADOS, para su TITULAR (exige la clave de VISTA). Hoja vacia o no; s es el seq del estado. La profundidad la fija quien verifica (RFC-0007 E3b)."
+    },
+    {
       "name": "dev_fund",
       "params": [
         {
@@ -597,6 +626,32 @@
         }
       },
       "summary": "SOLO --dev: abre desde una clave determinista de la suite."
+    },
+    {
+      "name": "dev_freeze",
+      "params": [
+        {
+          "name": "index",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        },
+        {
+          "name": "frozen",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Bool"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/Applied"
+        }
+      },
+      "summary": "SOLO --dev: congelacion delegada con custodios de PRUEBA."
     }
   ],
   "openrpc": "1.2.6"

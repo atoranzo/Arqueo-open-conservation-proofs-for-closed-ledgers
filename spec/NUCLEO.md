@@ -27,6 +27,9 @@ segunda implementación, escrita desde `spec/` sin leer el código de referencia
 El cable JSON-RPC (`spec/RPC.md`) queda **fuera**: es el contrato de interoperabilidad, gobernado por
 el mismo proceso de RFC, y exige el probador para reproducirse. El libro (los árboles de cuentas,
 pendientes y congelados) queda fuera: el paquete lo trata como raíces opacas bajo la cabeza firmada.
+Desde el §458 hay una excepción, y es por una prueba: del árbol de congelados entran su
+profundidad y la regla de su hoja, porque el rechazo `AccountFrozen` se prueba con un camino bajo
+`frozenRoot` (RFC-0007, E3b; familia CONGELADOS).
 
 ## 2. Las cuatro clases
 
@@ -60,9 +63,9 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 59 elementos alcanzables en `zk-ssl-verify` y 40 `pub` en `zk-ssl-hash`
-(LIBRO 2, NÚCLEO 75, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
-`lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`) y los
+**Censo derivado:** 63 elementos alcanzables en `zk-ssl-verify` y 41 `pub` en `zk-ssl-hash`
+(LIBRO 2, NÚCLEO 80, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+`lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
 reexportaciones de `zk-ssl-hash` no se cuentan dos veces: un elemento, una fila. En `zk-ssl-hash`,
 todo `pub` de `lib.rs` fuera de las zonas de test. Las zonas de test se recortan por el anidamiento
@@ -73,6 +76,7 @@ real de sus llaves, no por la primera marca.
 | `Digest` | `hash/lib.rs` | NÚCLEO | HASH | `type` |
 | `FormatoError` | `hash/lib.rs` | REFERENCIA | HASH | `enum` |
 | `CONS_DEPTH` | `hash/lib.rs` | NÚCLEO | HASH | `const` |
+| `FROZEN_DEPTH` | `hash/lib.rs` | NÚCLEO | HASH | `const` |
 | `STATE_WIDTH` | `hash/lib.rs` | NÚCLEO | HASH | `const` |
 | `as_digest` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
 | `digest_from_bytes` | `hash/lib.rs` | NÚCLEO | HASH | `fn` |
@@ -143,6 +147,10 @@ real de sus llaves, no por la primera marca.
 | `is_right_de_posicion` | `verify/consumos.rs` | NÚCLEO | CONSUMO | `fn` |
 | `raiz_de_ausencia` | `verify/consumos.rs` | NÚCLEO | CONSUMO | `fn` |
 | `raiz_de_presencia` | `verify/consumos.rs` | NÚCLEO | CONSUMO | `fn` |
+| `cruza_indice` | `verify/congelados.rs` | NÚCLEO | CONGELADOS | `fn` |
+| `esta_congelada` | `verify/congelados.rs` | NÚCLEO | CONGELADOS | `fn` |
+| `is_right_de_indice` | `verify/congelados.rs` | NÚCLEO | CONGELADOS | `fn` |
+| `raiz_de_hoja` | `verify/congelados.rs` | NÚCLEO | CONGELADOS | `fn` |
 | `native_leaf` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `native_leaf_salted` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `InclusionError` | `verify/inclusion.rs` | REFERENCIA | INCLUSIÓN | `enum` |
@@ -185,6 +193,9 @@ real de sus llaves, no por la primera marca.
   verificador las comprueba llamando las mismas (§274).
 - **MMR** — el MMR de cabezas: la hoja, el nodo, la cima, la inclusión y la consistencia (§291).
 - **INCLUSIÓN** — la hoja de cuenta (las dos formas) y los recibos de inclusión.
+- **CONGELADOS** — la profundidad del árbol de congelados, el cruce del camino con el índice de la
+  cuenta y la regla de la hoja (congelada es no vacía): lo que sostiene `AccountFrozen` sin la capa
+  (§458). La profundidad la fija el núcleo porque el merge no separa hoja de nodo.
 
 ## 6. Los bytes: lo que un KAT fija
 
@@ -244,6 +255,9 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §458 — `FROZEN_DEPTH` y el módulo `congelados` del verificador (`is_right_de_indice`,
+  `cruza_indice`, `raiz_de_hoja`, `esta_congelada`): la profundidad del árbol de congelados, fijada
+  por el núcleo, y la regla de su hoja (RFC-0007, E3b). Cinco filas nuevas.
 - §452 — `VERSION_FORMATO` pasa de 4 a 5: el nodo firma y sirve la cabeza v5 (RFC-0007, E1b).
   Ninguna fila nueva: la constante ya la tenía y su valor no es censo.
 - §451 — `epoch_digest_v5`, `params_digest` y `DOMINIO_PARAMS`, la variante `V5`, `lleva_consumos`

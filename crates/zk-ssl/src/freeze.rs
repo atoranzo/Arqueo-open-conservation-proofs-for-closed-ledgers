@@ -48,6 +48,18 @@ impl SovereignLayer {
         self.frozen.is_occupied(account_index)
     }
 
+    /// RFC-0007 E3b (§458): la HOJA de `account_index` en el arbol de
+    /// congelados y su CAMINO, para que el titular pruebe `AccountFrozen` -o
+    /// que era falso- contra el `frozenRoot` de una cabeza firmada.
+    ///
+    /// Del estado de AHORA: el registro no guarda el indice de una
+    /// congelacion (lleva su compromiso), asi que el arbol no se reconstruye
+    /// en un `seq` pasado. El camino mide la profundidad de ESTE libro: 32 en
+    /// el mundo v7, 24 en uno no migrado, y el verificador solo acepta 32.
+    pub fn frozen_path_of(&self, account_index: AccountIndex) -> (Digest, MerklePath) {
+        (self.frozen.leaf(account_index), self.frozen.path_for(account_index))
+    }
+
     /// Congela o descongela **sin que las claves de custodio lleguen al
     /// operador**: la via de la entrada 32/33 (§60).
     ///
@@ -314,5 +326,35 @@ mod tests_delegada {
         let r = layer.apply_freeze_delegated(subida, pa, ia, pb, ib, idx, true);
         assert!(matches!(r, Err(LayerError::NotTheIssuer)), "fue {r:?}");
         assert!(!layer.is_frozen(idx));
+    }
+}
+
+/// RFC-0007 E3b (§458): la profundidad del arbol de congelados tiene DOS
+/// productores -el circuito, que la usa (`circuit_freeze::FROZEN_DEPTH`), y el
+/// nucleo, que la publica para el verificador (`zk_ssl_hash::FROZEN_DEPTH`)-,
+/// y este test los ata. De paso fija que el camino que la capa sirve de una
+/// cuenta libre mide eso, lleva la hoja vacia y sube a `frozen_root`.
+#[cfg(test)]
+mod tests_camino {
+    use super::*;
+    use crate::tests_support::*;
+
+    #[test]
+    fn el_camino_de_congelados_mide_la_profundidad_que_el_nucleo_publica() {
+        assert_eq!(
+            zk_ssl_hash::FROZEN_DEPTH,
+            FROZEN_DEPTH,
+            "el nucleo y el circuito discrepan en la profundidad de congelados"
+        );
+        let layer = new_layer();
+        let (hoja, camino) = layer.frozen_path_of(0);
+        assert_eq!(hoja, [BaseElement::ZERO; 4], "sin congelar, la hoja es la vacia");
+        assert_eq!(camino.siblings.len(), zk_ssl_hash::FROZEN_DEPTH);
+        assert_eq!(camino.is_right.len(), zk_ssl_hash::FROZEN_DEPTH);
+        assert_eq!(
+            zk_ssl_hash::path_root(hoja, &camino.siblings, &camino.is_right),
+            layer.frozen_root(),
+            "el camino servido tiene que subir a la raiz que la cabeza compromete"
+        );
     }
 }

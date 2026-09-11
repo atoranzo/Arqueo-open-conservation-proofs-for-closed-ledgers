@@ -82,6 +82,7 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 | `zkssl_cosigs` | `{epochDigest?: Digest}` | `{epochDigest, n: Q, cosigs: Cosig[]}` |
 | `zkssl_publishConsumo` | `{consumo: Digest}` | `{accepted: bool, logSeq?: Q, reason?}` |
 | `zkssl_consumoPath` | `{consumo: Digest, seq: Q}` | `{available, s?: Q, camino?: {siblings: Digest[], isRight: bool[]}, reason?}` |
+| `zkssl_frozenPath` | `{index: Q, viewKey: Digest}` | `{s: Q, index: Q, leaf: Digest, camino: {siblings: Digest[], isRight: bool[]}}` (credencial del titular, §261) |
 
 `LogEntry = {seq: Q, kind: string, rootOld, rootNew, proofDigest, chain: Digest}`
 con `kind` ∈ {`OpenAccount`,`Mint`,`Transfer`,`Burn`,`Recovery`,
@@ -125,11 +126,16 @@ view_id_of_wide, derive_leaf_salt_wide}`.
 |---|---|---|
 | `dev_fund` | `{index, amount: Q}` | `Applied` + `custodianNullifiers: Digest[2]` |
 | `dev_openSeeded` | `{seed: Q}` | `{index: Q, publicId, viewKey: Digest}` |
+| `dev_freeze` | `{index: Q, frozen: bool}` | `Applied` |
 
 `dev_fund` es el grifo del sandbox: emisión delegada REAL con dos
 custodios de la suite, incluyendo los nullifiers de umbral que consumen
 (`circuit_threshold_single_nullifier`). Un build de producción se
 compila sin la feature `dev` y no contiene este espacio.
+
+`dev_freeze` es su gemelo para la congelación (§458): la vía delegada REAL —la subida del árbol
+de congelados y los mismos dos custodios de la suite—, y solo sobre una cuenta que existe. Está
+para que un banco con nodo real pueda provocar `AccountFrozen` y capturar su camino.
 
 ## Errores
 
@@ -948,6 +954,40 @@ no lleva su compromiso, y entonces el tramo no se reconstruye y se DICE.
 ⚠️ **Aditivo**: la superficie pasa de 24 a 26 métodos y `zkssl/0.3` NO sube — la versión la
 mueve que cambien los valores que viajan, no el tamaño de la superficie (Notas operativas;
 §222, §242, §275). Los tres vectores de conformidad quedan intactos.
+
+## El camino de congelados (§458, RFC-0007 E3b)
+
+`zkssl_frozenPath {index, viewKey}` devuelve la hoja de la cuenta `index` en el árbol de
+congelados y su camino: `{s, index, leaf, camino: {siblings, isRight}}`. Es el material con el
+que el rechazo `AccountFrozen(i)` —cuya causa viaja como dato desde el §454— se prueba sin el
+nodo: la hoja de `i` bajo el `frozenRoot` de una cabeza firmada **no es la vacía**.
+
+- **Exige la credencial del titular** (la `viewKey` de §261); sin ella, `-32004`. El estado de
+  congelación es del titular —la capa lo comprueba después de la autoridad para no filtrarlo
+  (`two_phase.rs`)— y quien recibe `AccountFrozen` es siempre el titular, que puede reenviar el
+  camino a quien quiera. Servirlo sin credencial publicaría qué cuentas están congeladas, que es
+  una acción de custodia.
+- **Sirve la hoja esté vacía o no.** Con la marca, el titular prueba el rechazo; con la vacía,
+  prueba que el rechazo era falso.
+- **Es del estado de AHORA**, y `s` dice de qué `seq`. El árbol no se reconstruye en un `seq`
+  pasado: el registro de una congelación lleva su compromiso, no el índice. Como ese árbol solo
+  cambia con otra congelación, el camino sube al `frozenRoot` de toda cabeza firmada desde la
+  última.
+- **Qué revela además de la hoja**: el hermano de nivel 0 es la hoja vecina, y su estado de
+  congelación se lee (la marca es constante); los hermanos de más arriba dicen qué subárboles no
+  tienen ninguna cuenta congelada. Es lo mismo que ya revela el `frozenPath` que
+  `zkssl_sendMaterials` entrega al mismo titular.
+
+**La profundidad la fija quien verifica, no el camino.** El árbol se sube con `native_merge`, que
+no separa hoja de nodo: un camino de 31 niveles cuya «hoja» fuera el nodo de nivel 1 subiría a la
+misma raíz, y ese nodo no es el cero. Un verificador que aceptara la profundidad que trae el
+camino daría por congelada cualquier cuenta. El núcleo publica la profundidad (`FROZEN_DEPTH`,
+32, `spec/NUCLEO.md`) y el verificador exige esa y el cruce con los bits del índice
+(`zk-ssl-verify`, módulo `congelados`). Un libro no migrado reconstruye el árbol a 24 niveles: su
+camino no pasa, y falla cerrado.
+
+⚠️ **Aditivo**: la superficie pasa de 26 a 28 métodos (`zkssl_frozenPath` y `dev_freeze`) y
+`zkssl/0.3` NO sube: no cambia ningún valor que ya viajara.
 
 ## Apagado — el fin de vida, declarado (nota 91)
 

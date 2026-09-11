@@ -102,6 +102,12 @@ pub mod mmr;
 /// sostener presencia y ausencia dentro de un sobre de evidencia.
 pub mod consumos;
 
+/// RFC-0007 E3b (§458): las reglas del arbol de CONGELADOS -la profundidad
+/// que fija el verificador, el cruce con el indice de la cuenta y la hoja no
+/// vacia-. Puras y sin la capa: el mando las usa para sostener el rechazo
+/// `AccountFrozen` dentro de un sobre de evidencia.
+pub mod congelados;
+
 pub use zk_ssl_hash::{epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5};
 
 // ⚠️ §279 · **La superficie CRECE otra vez**, y por la misma razon que en

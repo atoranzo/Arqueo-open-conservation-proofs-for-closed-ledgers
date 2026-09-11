@@ -47,8 +47,10 @@ pub fn method_names() -> Vec<&'static str> {
         "zkssl_cosigs",
         "zkssl_publishConsumo",
         "zkssl_consumoPath",
+        "zkssl_frozenPath",
         "dev_fund",
         "dev_openSeeded",
+        "dev_freeze",
     ]
 }
 
@@ -126,10 +128,15 @@ pub fn document() -> Value {
         m("zkssl_consumoPath",
           "Camino de autenticacion de un consumo bajo la cabeza de ese seq. La cabeza NO viaja y la raiz tampoco: quien verifica elige la hoja (el consumo prueba presencia; el digest cero, ausencia).",
           json!([p("consumo", "Digest"), p("seq", "Q")]), "ConsumoPath"),
+        m("zkssl_frozenPath",
+          "Camino de la cuenta en el arbol de CONGELADOS, para su TITULAR (exige la clave de VISTA). Hoja vacia o no; s es el seq del estado. La profundidad la fija quien verifica (RFC-0007 E3b).",
+          json!([p("index", "Q"), p("viewKey", "Digest")]), "FrozenPath"),
         m("dev_fund", "SOLO --dev: emision delegada con custodios de PRUEBA.",
           json!([p("index", "Q"), p("amount", "Q")]), "Applied"),
         m("dev_openSeeded", "SOLO --dev: abre desde una clave determinista de la suite.",
           json!([p("seed", "Q")]), "Opened"),
+        m("dev_freeze", "SOLO --dev: congelacion delegada con custodios de PRUEBA.",
+          json!([p("index", "Q"), p("frozen", "Bool")]), "Applied"),
     ];
     json!({
         "openrpc": "1.2.6",
@@ -145,7 +152,8 @@ pub fn document() -> Value {
             "DATA": { "type": "string", "pattern": "^0x([0-9a-f][0-9a-f])*$" },
             "Digest": { "type": "string", "pattern": "^0x[0-9a-f]{64}$",
                         "description": "32 bytes: la MISMA serializacion que persiste la capa (store::digest_to_bytes)" },
-            "ProtocolVersion": { "type": "string", "const": "zkssl/0.3" }
+            "ProtocolVersion": { "type": "string", "const": "zkssl/0.3" },
+            "Bool": { "type": "boolean" }
         } }
     })
 }
@@ -155,7 +163,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn veintiseis_metodos_unicos_y_en_orden() {
+    fn veintiocho_metodos_unicos_y_en_orden() {
         // §223: subio a 18 con `zkssl_applyMany`. §242: a 19 con
         // `zkssl_signedEpochHead`. §259: a 20 con
         // `zkssl_inclusionReceipt`. Que este test tenga el numero en el
@@ -167,15 +175,18 @@ mod tests {
         // un fichero suyo y nadie mas la veia.
         // §417: a 26 con `zkssl_publishConsumo` y `zkssl_consumoPath` — el
         // consumo por el cable (RFC-0006, E3a).
+        // §458: a 28 con `zkssl_frozenPath` y `dev_freeze` -el camino de
+        // congelados para el titular (RFC-0007, E3b) y el grifo que congela
+        // en el sandbox para poder capturarlo-.
         let nombres = method_names();
-        assert_eq!(nombres.len(), 26);
+        assert_eq!(nombres.len(), 28);
         let mut u = nombres.clone();
         u.sort();
         u.dedup();
-        assert_eq!(u.len(), 26, "nombres repetidos");
+        assert_eq!(u.len(), 28, "nombres repetidos");
         let doc = document();
         let met = doc["methods"].as_array().expect("methods");
-        assert_eq!(met.len(), 26);
+        assert_eq!(met.len(), 28);
         for (i, mm) in met.iter().enumerate() {
             assert_eq!(mm["name"].as_str().unwrap(), nombres[i]);
         }
