@@ -34014,3 +34014,47 @@ van aparte, en celdas, como proyeccion. El RFC-0007 no se toca aqui: la correcci
 y la desviacion de las «hojas reales de un libro del banco» son del §462. El +14 de la suma de
 declarados sigue sin fuente (punto 57); con el ignorado nuevo pasa a +15, y eso es deduccion y se
 declara. `check_cifras` sigue sin ver las sumas de las portadas (5.A-149).
+
+## §462 — RFC-0007 E4a-2: la medida de la puerta de la prueba de edad, y su veredicto
+
+**Que.** Cierra la E4a del RFC-0007. El instrumento que el §461 sello se corrio a mano en la
+maquina de referencia (el PASTE-E4a-M `78a813201800d88f`, sobre `808a093`) y su medida entra aqui:
+una CORRECCION §247 en la seccion D-E del RFC-0007, con la tabla medida, el veredicto de la puerta
+y los dos techos; y la fila E4, que pasa de <<abierta>> a <<en curso>> con la E4a sellada. Sin
+codigo, sin pines y sin vectores: un sello de prosa, con las diez herramientas como juez.
+
+**Por que asi.** El autor DELEGO en la constitucion la eleccion del `n` de referencia y el
+veredicto (sesion 126); REVERSIBLES aqui. **D-E4a-6**, el `n` de referencia es 4096, el que la
+seccion D-E del RFC ya escribia ANTES de medir: una puerta cuyo liston se elige despues de ver el
+resultado no es una puerta. **D-E4a-7**, el veredicto se da con la medida y la proyeccion
+SEPARADAS: los arboles medidos, la prueba completa proyectada, y cada cifra con su nombre. E4b se
+construye porque la parte medida -la dominante- cabe a 4096 con seis veces de margen (10 s frente
+a 60) y la proyeccion completa, del orden de 22 s, tambien; y E4b re-aplica la puerta con su AIR
+real: si la prueba completa para 4096 no cupiera en un latido, el techo se declara entonces.
+
+**Lo medido.** SALIDA-E4a-M-20260911-165602 (`5d7652cdc30fd1fd`, rc 0), i5-1135G7, 8 nucleos,
+MemTotal 12.248.696 kB, WSL2, rustc 1.97.1, `describe` arqueo-verify-v0.2.0-24-g808a093. Con
+`proof_options`: `n` 1024, 32.768 filas, probar 2,43 s, pico 250.344 kB, prueba 93.153 B; `n` 4096,
+131.072 filas, 10,09 s, 983.532 kB, 111.660 B; `n` 16384, 524.288 filas, 44,94 s, 3.915.228 kB,
+134.975 B. Verificar, 1,1 a 1,6 ms. Las tres pruebas verifican. El coste por fila es casi constante
+(74, 77 y 86 us; unos 7,5 kB) y cada talla cuadruplica filas y tiempo (x4,15 y x4,45). Derivado de
+la tabla y de `hashes_de_rango`: la talla de 2^19 filas cubre los arboles hasta `n` = 32.750; la
+prueba completa (las aperturas de cada hoja viva, 2 hashes en v1 o 4 en v2 y 1 de meta, y la
+comparacion) rellena a 2^18 filas con 4096 y a 2^19 con 8192, de ahi el techo proyectado.
+
+**Testigos.** Ninguno nuevo: este sello no afirma nada que un test pueda falsar, y lo declara
+(PRECISION 177). Lo sostiene la medida, anclada a su commit, a su maquina y a su salida con
+huella. Las diez herramientas, PRE y POST con juez: IDENTICAS.
+
+**Medido.** `spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md` (la fila E4 y la correccion; la
+fila crece sin pasar del ancho que ya tenia el fichero, el de la fila E3) y este asiento. Ningun
+`.rs`, ningun pin, ninguna cifra de tests. Sin canon: lo unico del canon que mira lo que este sello
+toca son sus diez herramientas, y el bloque las corre como juez, PRE y POST.
+
+**Lo que NO afirma, y lo que queda vivo.** No afirma que la prueba de edad exista: afirma cuanto
+cuesta su parte dominante en una maquina y que la puerta deja construirla. El techo de la prueba
+completa es PROYECCION hasta que E4b mida su AIR; el de los arboles es medida, pero de un portatil
+con WSL: otra maquina da otra cifra, y el instrumento la reporta. La concentracion global (D-E)
+sigue sin coste medido. La linea `tallas:` que el PASTE imprime salio en la terminal y no en su
+fichero; las cifras estan enteras en la salida del test. El +15 de la suma de declarados sigue
+siendo deduccion (asiento §461).
