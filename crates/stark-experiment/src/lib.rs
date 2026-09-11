@@ -83,6 +83,8 @@ pub mod circuit_send_v2;
 pub mod circuit_credit_climb;
 pub mod circuit_refund;
 pub mod circuit_refund_v2;
+// RFC-0007 E4b-1 (§463): el probador de la prueba de edad; su AIR vive en `zk-ssl-air`.
+pub mod circuit_edad;
 pub mod native;
 pub mod circuit_threshold;
 // Entrada 33 / §51: las dos variantes del experimento de carril unico.

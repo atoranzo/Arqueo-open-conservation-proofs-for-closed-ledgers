@@ -2471,6 +2471,7 @@ dependencies = [
  "settlement-prover",
  "sled",
  "winterfell",
+ "zk-ssl-air",
  "zk-ssl-hash",
 ]
 
@@ -3383,6 +3384,17 @@ dependencies = [
  "sled",
  "stark-experiment",
  "winterfell",
+ "zk-ssl-hash",
+]
+
+[[package]]
+name = "zk-ssl-air"
+version = "0.1.0"
+dependencies = [
+ "winter-air",
+ "winter-crypto",
+ "winter-math",
+ "winter-verifier",
  "zk-ssl-hash",
 ]
 

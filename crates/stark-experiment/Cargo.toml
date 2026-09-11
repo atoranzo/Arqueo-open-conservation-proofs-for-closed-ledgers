@@ -15,3 +15,7 @@ winterfell = "0.13"
 zk-ssl-hash = { path = "../zk-ssl-hash" }
 sled = "0.34"
 settlement-prover = { path = "../settlement-prover" }
+# ⚠️ §463 (RFC-0007 E4b-1): el AIR de la prueba de edad vive en
+#    `zk-ssl-air`, que el kit consume sin el probador; aqui solo van la
+#    traza y el `Prover`. Un AIR, un productor.
+zk-ssl-air = { path = "../zk-ssl-air" }

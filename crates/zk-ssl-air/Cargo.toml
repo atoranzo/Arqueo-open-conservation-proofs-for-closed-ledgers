@@ -1,0 +1,21 @@
+[package]
+name = "zk-ssl-air"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+# **Los AIR que un tercero verifica, sin el probador** (RFC-0007 D-F; E4b-1, §463).
+#
+# ⚠️ Los subcrates de winter SUELTOS y clavados con `=`, como `zk-ssl-hash` (§254): el paraguas
+# `winterfell` arrastra `winter-prover`, y el objetivo de este crate es que quien JUZGA una prueba
+# no compile a quien la PRODUCE. La version es la que el `Cargo.lock` ya tenia resuelta via
+# `winterfell 0.13`: dos `BaseElement` de versiones distintas no son el mismo tipo.
+#
+# ⚠️ El probador vive en `stark-experiment` (`circuit_edad`), que depende de ESTE crate: el AIR
+# tiene un solo productor y el probador y el kit lo comparten.
+[dependencies]
+winter-air = "=0.13.1"
+winter-crypto = "=0.13.1"
+winter-math = "=0.13.1"
+winter-verifier = "=0.13.1"
+zk-ssl-hash = { path = "../zk-ssl-hash" }

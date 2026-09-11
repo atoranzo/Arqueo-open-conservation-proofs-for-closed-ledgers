@@ -24,6 +24,11 @@ members = [
     # ⚠️ El GUARDIAN del indice (§296). Tercera vez de la misma regla: un
     # TESTIGO no debe compilar el NODO para firmar. Solo depende de `std`.
     "crates/zk-ssl-guardian",
+    # ⚠️ Los AIR que un tercero VERIFICA (RFC-0007 D-F, §463). Cuarta
+    # vez de la regla: un JUEZ no compila al PROBADOR. `winter-air`,
+    # `-crypto`, `-math` y `-verifier` SUELTOS, clavados con `=`; el
+    # probador (`winter-prover`) no entra.
+    "crates/zk-ssl-air",
 ]
 resolver = "2"
 

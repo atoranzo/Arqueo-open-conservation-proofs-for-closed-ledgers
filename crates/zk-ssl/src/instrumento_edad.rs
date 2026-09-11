@@ -25,6 +25,10 @@
 //! tallas de los tres `n` objetivo con `crate::proof_options()`, y reporta tiempos, bytes, el pico
 //! de memoria del proceso y la maquina. La puerta la juzga el asiento, no este fichero: un
 //! instrumento mide, no afirma.
+//!
+//! **E4b-1 (§463)** le suma, al final, el AIR REAL: la prueba de edad de `zk-ssl-air` sobre un
+//! libro de la capa, cruzada contra sus `SparseTree`; el testigo de que el juez acepta las
+//! `proof_options()` de la casa; y el instrumento que re-aplica la puerta con ese AIR.
 
 use crate::pending::pending_commitment;
 use crate::sparse_tree::SparseTree;
@@ -461,6 +465,113 @@ fn instrumento_de_la_puerta_de_edad() {
              {filas} filas x {TRACE_WIDTH} . traza {traza_ms:.0} ms . probar {probar_s:.2} s . \
              verificar {verificar_ms:.1} ms . prueba {bytes} B . verifica {ok} . pico {pico} kB . \
              cabe en un latido: {} . cabe en media RAM: {}",
+            if probar_s <= LATIDO_S { "si" } else { "no" },
+            if total > 0 && pico <= total / 2 { "si" } else { "no" }
+        );
+    }
+}
+
+// ------------------------------------------------------------------ E4b-1 (§463): el AIR real
+
+use stark_experiment::circuit_edad::{self as edad, Enunciado};
+
+/// **La prueba de edad sobre el libro de la capa.** Un arbol de pendientes de 37 posiciones con
+/// huecos (hojas de `pending_commitment`) y su arbol de meta (`meta_pendiente_hoja`): la prueba
+/// verifica, su cota es la cuenta a mano, y las dos subraices que declara, subidas por el juez a
+/// 32 niveles, son las raices de los `SparseTree`. Una viva fuera del subarbol cambia la raiz del
+/// arbol, y la subida ya no la alcanza.
+#[test]
+#[cfg_attr(debug_assertions, ignore = "winterfell valida grados en depuracion: juez release")]
+fn la_prueba_de_edad_sube_a_las_raices_del_libro() {
+    let n = 37u64;
+    let vive = |i: u64| i % 5 != 2;
+    let (mut pend, hojas) = rango_de_pendientes(n, vive);
+    let mut arbol_meta = SparseTree::new();
+    let mut meta = Vec::with_capacity(n as usize);
+    for i in 0..n {
+        if vive(i) {
+            arbol_meta.set_leaf(i, zk_ssl_hash::meta_pendiente_hoja(i % 4, i));
+            meta.push(Some((i % 4, i)));
+        } else {
+            meta.push(None);
+        }
+    }
+    let e = Enunciado { seq: 100, t: 70, emisor: 0, todos: true };
+    let traza = edad::construir(&hojas, &meta, &e).expect("construir");
+    let (bytes, pi) = edad::probar(traza).expect("probar");
+    let a_mano = (0..n).filter(|&i| vive(i) && 100 - i >= 70).count() as u64;
+    assert_eq!(pi.k, a_mano, "la cota no es la cuenta a mano");
+    assert!(edad::verificar(&bytes, &pi).is_ok(), "la prueba del libro no verifico");
+    let prof = edad::PROFUNDIDAD;
+    assert_eq!(edad::raiz_desde_subraiz(pi.subraiz_pend, pi.m, prof), pend.root());
+    assert_eq!(edad::raiz_desde_subraiz(pi.subraiz_meta, pi.m, prof), arbol_meta.root());
+    pend.set_leaf(1u64 << pi.m, pending_commitment(d(9), d(10), 11));
+    let tras = edad::raiz_desde_subraiz(pi.subraiz_pend, pi.m, prof);
+    assert_ne!(tras, pend.root(), "una viva fuera del subarbol paso desapercibida");
+}
+
+/// **D-4:** las opciones que el juez de `zk-ssl-air` acepta son las `proof_options()` de la capa.
+/// Dos literales de la misma cifra son dos productores; este test los ata.
+#[test]
+fn las_opciones_del_juez_son_las_de_la_casa() {
+    assert_eq!(edad::opciones(), crate::proof_options());
+}
+
+/// **INSTRUMENTO, no comprobacion** (RFC-0007 E4b-1, §463): la puerta de E4a re-aplicada con el
+/// AIR REAL. Correr en release, a mano:
+///
+/// ```text
+/// cargo test --release -p zk-ssl instrumento_de_la_prueba_de_edad -- --ignored --nocapture
+/// ```
+///
+/// Por cada `n` objetivo, un libro de la capa con una posicion de cada cuatro vacia y la mitad de
+/// las vivas viejas: la traza, la prueba con `crate::proof_options()` y su verificacion; tiempos,
+/// bytes, el pico de memoria (`VmHWM`, ACUMULADO: las tallas van de menor a mayor), y si la
+/// subraiz sube a la raiz del `SparseTree`. Arriba, la maquina.
+#[test]
+#[ignore = "instrumento de medida, no comprobacion: correr a mano, en release"]
+fn instrumento_de_la_prueba_de_edad() {
+    use std::time::Instant;
+    let cpu = de_proc("/proc/cpuinfo", "model name");
+    let nucleos = std::thread::available_parallelism().map(|x| x.get()).unwrap_or(0);
+    let total = kb(&de_proc("/proc/meminfo", "MemTotal"));
+    println!("E4b| maquina: {cpu} . nucleos {nucleos} . MemTotal {total} kB");
+    println!(
+        "E4b| puerta (D-E4a-1, D-E4a-2): probar <= {LATIDO_S} s y pico <= MemTotal/2 = {} kB",
+        total / 2
+    );
+    println!(
+        "E4b| AIR: {} columnas principales + {} auxiliares, {} filas por posicion",
+        edad::ANCHO,
+        edad::ANCHO_AUX,
+        edad::CICLO
+    );
+    for n in N_OBJETIVO {
+        let vive = |i: u64| i % 4 != 3;
+        let (pend, hojas) = rango_de_pendientes(n, vive);
+        let meta: Vec<Option<(u64, u64)>> =
+            (0..n).map(|i| if vive(i) { Some((i % 7, i)) } else { None }).collect();
+        let e = Enunciado { seq: n + 64, t: 64 + n / 2, emisor: 0, todos: true };
+        let t = Instant::now();
+        let traza = edad::construir(&hojas, &meta, &e).expect("construir");
+        let traza_ms = t.elapsed().as_secs_f64() * 1000.0;
+        let filas = edad::CICLO << traza.enunciado().m;
+        let t = Instant::now();
+        let (bytes, pi) = edad::probar(traza).expect("probar");
+        let probar_s = t.elapsed().as_secs_f64();
+        let t = Instant::now();
+        let ok = edad::verificar(&bytes, &pi).is_ok();
+        let verificar_ms = t.elapsed().as_secs_f64() * 1000.0;
+        let raiz = edad::raiz_desde_subraiz(pi.subraiz_pend, pi.m, edad::PROFUNDIDAD);
+        let sube = raiz == pend.root();
+        let pico = kb(&de_proc("/proc/self/status", "VmHWM"));
+        println!(
+            "E4b| n {n} . filas {filas} . k {} . traza {traza_ms:.0} ms . \
+             probar {probar_s:.2} s . verificar {verificar_ms:.1} ms . prueba {} B . \
+             verifica {ok} . sube {sube} . pico {pico} kB . cabe en un latido: {} . \
+             cabe en media RAM: {}",
+            pi.k,
+            bytes.len(),
             if probar_s <= LATIDO_S { "si" } else { "no" },
             if total > 0 && pico <= total / 2 { "si" } else { "no" }
         );
