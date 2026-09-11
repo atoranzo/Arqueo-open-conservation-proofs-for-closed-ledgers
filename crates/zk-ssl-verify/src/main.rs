@@ -803,7 +803,8 @@ fn verificar_conflicto(p: &serde_json::Value) -> Result<(), String> {
 /// Todo viaja TAL CUAL lo sirvio el cable -reunir, no recomponer-: `data` es el objeto `data` del
 /// rechazo (`spec/RPC.md`, §454), `{causa, campos, seq}`; `cabeza`, una respuesta de
 /// `zkssl_signedEpochHead`; `parametros`, la de `zkssl_params`; `presencia`, el camino de
-/// `zkssl_consumoPath`; `congelados`, la respuesta de `zkssl_frozenPath` (§459). QUE cabeza
+/// `zkssl_consumoPath`; `congelados`, la respuesta de `zkssl_frozenPath` (§459); `peticion`, los
+/// `params` de la emision rechazada tal cual los envio el solicitante (§460). QUE cabeza
 /// sirve depende de la causa y se exige con el `seq`: una
 /// ANTERIOR al rechazo, o la misma, para lo que solo crece -`nextIndex`, los consumos-; cualquiera
 /// del libro para lo que no tiene setter -el limite regulatorio-. El veredicto es de la CAUSA:
@@ -827,7 +828,7 @@ fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
     println!("1/3 la cabeza recompone su digest y su firma verifica (seq {s_cabeza})");
     match causa {
         "OverRegulatoryLimit" => {
-            let (limite, _) = parametros_comprometidos(p, c, causa)?;
+            let (limite, _, _) = parametros_comprometidos(p, c, causa)?;
             println!("2/3 los parametros recomponen el paramsDigest: el limite es {limite}");
             let dicho = u64_de(campos, "limit")?;
             let pedido = u64_de(campos, "requested")?;
@@ -843,7 +844,7 @@ fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
             println!("3/3 el importe pedido ({pedido}) supera el limite comprometido ({limite})");
         }
         "AccountLimitReached" => {
-            let (_, tope) = parametros_comprometidos(p, c, causa)?;
+            let (_, tope, _) = parametros_comprometidos(p, c, causa)?;
             let n = familia_v5(c)?.next_index;
             println!("2/3 los parametros recomponen el paramsDigest: el tope de cuentas es {tope}");
             let dicho = u64_de(campos, "limit")?;
@@ -937,7 +938,7 @@ fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
             // el nodo dice haber recibido (`declared`) NO es el comprometido (`expected`). Lo
             // que el cliente puso en su recibo es palabra del nodo, como el `requested`; su
             // refutacion es el recibo que el propio cliente guarda (spec/PAQUETE.md 2.6).
-            let (limite, _) = parametros_comprometidos(p, c, causa)?;
+            let (limite, _, _) = parametros_comprometidos(p, c, causa)?;
             println!("2/3 los parametros recomponen el paramsDigest: el limite es {limite}");
             let esperado = u64_de(campos, "expected")?;
             let declarado = u64_de(campos, "declared")?;
@@ -1056,6 +1057,46 @@ fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
             }
             println!("3/3 la hoja de la cuenta {dicho} bajo el frozenRoot de la cabeza no es la vacia");
         }
+        "SupplyCapExceeded" => {
+            // RFC-0007 E3 (§460): el tope de suministro. Los parametros recomponen el
+            // `paramsDigest` y dan el `maxSupply` comprometido; la cabeza es la del `seq` EXACTO
+            // -el suministro sube con cada emision y baja con cada quema-; y el importe NO es
+            // palabra del nodo: viaja en `peticion`, los `params` de la emision rechazada TAL
+            // CUAL los envio el solicitante. `wouldBe` tiene que ser el suministro de la cabeza
+            // mas ese importe, con la suma saturada de la capa (`mint.rs`), y pasar el tope.
+            let (_, _, tope) = parametros_comprometidos(p, c, causa)?;
+            println!(
+                "2/3 los parametros recomponen el paramsDigest: el tope de suministro es {tope}"
+            );
+            let dicho = u64_de(campos, "cap")?;
+            if dicho != tope {
+                return Err(no_es_el_comprometido("tope de suministro", dicho, tope));
+            }
+            exige_misma(s_cabeza, s_rechazo)?;
+            let pet = p
+                .get("peticion")
+                .ok_or_else(|| err("falta peticion (los params de la emision rechazada)".into()))?;
+            let importe = u64_de(pet, "amount")?;
+            let suministro = familia_v5(c)?.total_supply;
+            let seria = suministro.saturating_add(importe);
+            let dice = u64_de(campos, "wouldBe")?;
+            if dice != seria {
+                return Err(err(format!(
+                    "data: el wouldBe que el nodo dice ({dice}) no es el suministro de la cabeza \
+                     mas el importe pedido ({suministro} + {importe} = {seria})"
+                )));
+            }
+            if seria <= tope {
+                return Err(err(format!(
+                    "la causa NO se sostiene: el suministro resultante ({seria}) no supera el \
+                     tope ({tope})"
+                )));
+            }
+            println!(
+                "3/3 el suministro de la cabeza ({suministro}) mas el importe pedido ({importe}) \
+                 es {seria}, y pasa el tope comprometido ({tope})"
+            );
+        }
         otra => {
             return Err(err(format!(
                 "data: la causa {otra} no la prueba este mando (spec/PAQUETE.md, seccion 2.6)"
@@ -1068,13 +1109,13 @@ fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
 }
 
 /// Los siete parametros de `zkssl_params` contra el `paramsDigest` de una cabeza **v5** (RFC-0007
-/// D-B): si recomponen, lo que dicen es lo comprometido. Devuelve los dos que las causas citan: el
-/// limite regulatorio y el tope de cuentas.
+/// D-B): si recomponen, lo que dicen es lo comprometido. Devuelve los tres que las causas citan:
+/// el limite regulatorio, el tope de cuentas y el tope de suministro (§460).
 fn parametros_comprometidos(
     p: &serde_json::Value,
     c: &serde_json::Value,
     causa: &str,
-) -> Result<(u64, u64), String> {
+) -> Result<(u64, u64, u64), String> {
     if VersionCabeza::try_from(u64_de(c, "formatVersion")?) != Ok(VersionCabeza::V5) {
         return Err(err(format!(
             "la causa {causa} exige una cabeza v5: sus parametros viajan en paramsDigest"
@@ -1086,9 +1127,10 @@ fn parametros_comprometidos(
         .ok_or_else(|| err("falta parametros (zkssl_params)".into()))?;
     let limite = u64_de(pr, "regulatoryLimit")?;
     let tope = u64_de(pr, "maxAccounts")?;
+    let suministro_max = u64_de(pr, "maxSupply")?;
     let compuesto = params_digest(
         limite,
-        u64_de(pr, "maxSupply")?,
+        suministro_max,
         tope,
         digest_de(pr, "custodianRoot")?,
         digest_de(pr, "governanceRoot")?,
@@ -1101,7 +1143,7 @@ fn parametros_comprometidos(
                 .into(),
         ));
     }
-    Ok((limite, tope))
+    Ok((limite, tope, suministro_max))
 }
 
 /// UN productor del texto de un campo de la causa que no es el comprometido.

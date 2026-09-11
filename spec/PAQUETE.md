@@ -146,13 +146,16 @@ donde el valor es una respuesta del cable sin reescribir.
   "lote": [ {…}, {…} ] }                                      (un duplicado de lote)
 { "v": 1, "tipo": "rechazo", "data": {…}, "cabeza": {…},
   "congelados": {index, leaf, camino} }                       (AccountFrozen)
+{ "v": 1, "tipo": "rechazo", "data": {…}, "cabeza": {…}, "parametros": {…},
+  "peticion": {index, amount} }                               (SupplyCapExceeded)
 ```
 
 - **Prueba la CAUSA de un rechazo, no el rechazo.** `data` es el objeto `data` que el nodo puso
   en su negativa (`spec/RPC.md`, §454), tal cual; `cabeza`, una respuesta de
   `zkssl_signedEpochHead`; `parametros`, la de `zkssl_params`; `presencia`, el `camino` de
   `zkssl_consumoPath`; `recibo`, los `publicInputs` que el titular envió; `lote`, las `ops` de
-  `zkssl_applyMany`; `congelados`, la respuesta de `zkssl_frozenPath` (§458). Que el nodo
+  `zkssl_applyMany`; `congelados`, la respuesta de `zkssl_frozenPath` (§458); `peticion`, los
+  `params` de la emisión rechazada, tal cual los envió el solicitante (§460). Que el nodo
   rechazó —y cuándo— no lo prueba este sobre. Lo que prueba es
   que la regla que el nodo nombró **se sostiene sobre el estado que una cabeza firmada
   compromete**; si no se sostiene, el ROJO nombra por qué, y el sobre es entonces la prueba de que
@@ -162,9 +165,10 @@ donde el valor es una respuesta del cable sin reescribir.
   que ya estaba en ella seguía estando al juzgar. Para lo que no tiene setter —el límite
   regulatorio— sirve cualquiera del libro. Y para lo que se juzga sobre un estado **instantáneo**
   —las raíces de un `seq` (`StaleState`), el lote contra ese registro (los duplicados), el árbol
-  de congelados, que va y vuelve (`AccountFrozen`)— la cabeza tiene que ser **la misma** del
-  rechazo. La mutabilidad está medida en el código (§455, §456, §459).
-- Las causas que este mando prueba (RFC-0007 E3a y E3b):
+  de congelados, que va y vuelve (`AccountFrozen`), el suministro, que sube con cada emisión y
+  baja con cada quema (`SupplyCapExceeded`)— la cabeza tiene que ser **la misma** del rechazo. La
+  mutabilidad está medida en el código (§455, §456, §459, §460).
+- Las causas que este mando prueba (RFC-0007 E3: E3a, E3b y el §460):
 
 | causa | material | qué comprueba | cabeza |
 |---|---|---|---|
@@ -177,8 +181,13 @@ donde el valor es una respuesta del cable sin reescribir.
 | `DuplicateAccountInBatch` | `lote` | el primer choque del lote, con la regla de `apply_many`, es una cuenta repetida | v5, la misma (§456) |
 | `DuplicatePendingInBatch` | `lote` | el primer choque del lote es una posición repetida | v5, la misma (§456) |
 | `AccountFrozen` | `congelados` | el camino es el de la cuenta que `data` nombra (cruce con sus bits), mide los 32 niveles que fija el núcleo y sube al `frozenRoot`; la hoja no es la vacía | v3, v4 o v5, la misma (§459) |
+| `SupplyCapExceeded` | `parametros`, `peticion` | los siete recomponen; `cap` es el `maxSupply` comprometido; `wouldBe` es el `totalSupply` de la cabeza más el `amount` de la petición (la suma saturada de la capa) y pasa el tope | v5, la misma (§460) |
 
-- Cualquier otra causa se rechaza con su nombre. `AccountFrozen` la añadió el §459, con el camino
+- Cualquier otra causa se rechaza con su nombre. `SupplyCapExceeded` la añadió el §460: por el
+  cable sólo la produce el grifo del sandbox (`dev_fund`), y el importe viaja en `peticion`
+  —palabra del solicitante, no del nodo— para que un `wouldBe` inventado no pase.
+  `PendingTreeExhausted` se declara sin prueba portable: las reservas de posición no van bajo
+  la firma (RFC-0007, corrección del §460). `AccountFrozen` la añadió el §459, con el camino
   que el cable sirve al titular (§458); `AccountNotFound` pasó a E5 (RFC-0007, corrección del
   §459), y el resto de la tabla D-D es E4 y E5. `StaleState`, `WrongRegulatoryLimit` y los
   duplicados de lote los añadió el §456, reuniendo un recibo real por el proxy de un banco (su
@@ -199,7 +208,7 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 | extensión | `camino` (lista de digests) | `RPC.md:781-808` |
 | consumo | `consumo`, y `presencia`/`ausencia` → `siblings`, `isRight` | `zkssl_consumoPath`, `RPC.md` |
 | conflicto | `consumo`, y `libros[]` → `cabeza`, `presencia` → `siblings`, `isRight` | este documento, sección 2.5 |
-| rechazo | `data` → `causa`, `campos`, `seq`; `parametros` → los siete de `zkssl_params`; `presencia` → `siblings`, `isRight`; `congelados` → `index`, `leaf`, `camino` → `siblings`, `isRight` | este documento, sección 2.6 |
+| rechazo | `data` → `causa`, `campos`, `seq`; `parametros` → los siete de `zkssl_params`; `presencia` → `siblings`, `isRight`; `recibo` → `rootOld`, `pendingRootOld`, `frozenRoot`; `lote[]` → `kind`, `sender` o `receiver`, `receipt` → `notice` → `position` o `notice` → `position`; `congelados` → `index`, `leaf`, `camino` → `siblings`, `isRight`; `peticion` → `amount` | este documento, sección 2.6 |
 
 ⚠️ **§419 — el «31» de arriba ya no es la cuenta**: el sobre de consumo añade `consumo`,
 `presencia` y `ausencia`. **No se sustituye por otro número**, porque el 31 no tiene
@@ -345,7 +354,8 @@ entrada nueva del catálogo**, es el mismo texto y el mismo productor.
 - `las cabezas llevan la MISMA clave: un conflicto es entre DOS firmantes`
 - `libro[{i}]: el camino NO sube al consRoot de su cabeza`
 
-**El rechazo** (`{causa}` es la de `data`; `{que}` sale `limite` o `tope`)
+**El rechazo** (`{causa}` es la de `data`; `{que}` sale `limite`, `limite esperado`, `tope` o
+`tope de suministro`)
 
 Estos textos NACEN con esta forma. La cabeza, la versión de los consumos (`el sobre de rechazo
 exige cabezas v4 o v5: …`), los campos del camino, su descuadre y el cruce de posición salen de
@@ -379,6 +389,9 @@ los **mismos productores** de arriba, con su hueco relleno distinto.
 - `congelados: el camino no tiene los 32 niveles del arbol de congelados`
 - `congelados: el camino NO sube al frozenRoot de la cabeza`
 - `la causa NO se sostiene: la hoja de la cuenta {i} bajo el frozenRoot es la vacia - no estaba congelada`
+- `falta peticion (los params de la emision rechazada)`
+- `data: el wouldBe que el nodo dice ({dice}) no es el suministro de la cabeza mas el importe pedido ({suministro} + {importe} = {seria})`
+- `la causa NO se sostiene: el suministro resultante ({seria}) no supera el tope ({tope})`
 
 ## 6. El contrato del mando
 
@@ -467,6 +480,11 @@ nodo real que congela por la vía delegada (`dev_freeze`, el PASTE-R7E3b-M) y nu
 disfraz no es una mutación: lleva el camino REAL de una cuenta libre, con la hoja vacía bajo la
 misma raíz. El ataque del camino truncado con raíz coincidente no se fabrica en JSON: lo falsa el
 testigo de `crates/zk-ssl-verify/src/congelados.rs`.
+**Desde §460 cubre `SupplyCapExceeded`** (RFC-0007, E3, que queda entera): un positivo reunido
+de las capturas de un nodo real con un tope de suministro pequeño (`--max-supply 1000`, el
+PASTE-R7SC-M) y siete negativos. Dos no son mutaciones, y se declara: la cabeza anterior es la
+FIRMADA REAL de antes de emitir, y el tope no superado es una escena de dos campos —el importe y
+el `wouldBe` a la vez—, porque una sola mutación de lo real no llega a esa regla.
 Las demostraciones en vivo con nodo son `tools/banco_apagado.sh`, `tools/banco_consumo.sh`
 (RFC-0006, E3) y `tools/banco_dos_libros.sh` (E4a): el último levanta DOS nodos con DOS claves
 y produce el hecho que E4 existe para detectar.
@@ -503,6 +521,10 @@ y produce el hecho que E4 existe para detectar.
 - §459 — el sobre de rechazo prueba `AccountFrozen` (RFC-0007 E3b): la hoja de la cuenta bajo el
   `frozenRoot` de la cabeza del `seq` exacto, con el camino de `zkssl_frozenPath` tal cual, la
   profundidad que fija el núcleo, el cruce con el índice y la hoja no vacía.
+- §460 — el sobre de rechazo prueba `SupplyCapExceeded` (RFC-0007 E3, que queda entera): los
+  parámetros dan el `maxSupply` comprometido, la cabeza es la del `seq` exacto y el `wouldBe` del
+  nodo tiene que ser el `totalSupply` de la cabeza más el importe que el solicitante envió
+  (`peticion`); `PendingTreeExhausted` se declara sin prueba portable.
 - Hasta §397 este contrato vivía en la cabecera de `crates/zk-ssl-verify/src/main.rs` (1..90,
   `293990fedc785833`), que ya confesó una vez (§247) haber declarado su superficie como completa
   sin serlo. §397 lo muda aquí y deja la cabecera remitiendo, sin enumerar.

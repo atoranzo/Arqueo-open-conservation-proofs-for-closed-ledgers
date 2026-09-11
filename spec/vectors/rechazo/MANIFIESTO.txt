@@ -67,3 +67,15 @@ rechazo-rech-congelada-hoja-otra.json|1|congelados: el camino NO sube al frozenR
 rechazo-rech-congelada-cabeza-distinta.json|1|la cabeza (seq 5) no es la del rechazo (seq 4)
 rechazo-rech-congelada-cabeza-adulterada.json|1|cabeza: los campos NO recomponen su epochDigest
 rechazo-rech-congelada-disfraz.json|1|la causa NO se sostiene: la hoja de la cuenta 3468388789 bajo el frozenRoot es la vacia
+# E3, SupplyCapExceeded (asiento 460): el positivo REUNIDO de las CAPTURAS-R7SC de un nodo real
+# (PASTE-R7SC-M, 8ae6fc43c59a6cd0, --max-supply 1000; 72022d40ad41c355) y siete negativos. La
+# cabeza anterior es la FIRMADA REAL de antes de emitir, y el no-superado una ESCENA de dos
+# campos -importe y wouldBe a la vez-: ninguno de los dos es una mutacion, y se declara.
+tope-de-suministro.json|0|VERDE: SupplyCapExceeded se sostiene sobre el estado comprometido
+rechazo-rech-suministro-falta-peticion.json|1|falta peticion (los params de la emision rechazada)
+rechazo-rech-suministro-cap-otro.json|1|data: el tope de suministro que el nodo dice (1001) no es el comprometido (1000)
+rechazo-rech-suministro-importe-otro.json|1|el wouldBe que el nodo dice (1001) no es el suministro de la cabeza mas el importe pedido (600 + 100 = 700)
+rechazo-rech-suministro-no-superado.json|1|la causa NO se sostiene: el suministro resultante (1000) no supera el tope (1000)
+rechazo-rech-suministro-cabeza-anterior.json|1|la cabeza (seq 1) no es la del rechazo (seq 2)
+rechazo-rech-suministro-parametros-ajenos.json|1|parametros: NO recomponen el paramsDigest de la cabeza
+rechazo-rech-suministro-cabeza-adulterada.json|1|cabeza: los campos NO recomponen su epochDigest

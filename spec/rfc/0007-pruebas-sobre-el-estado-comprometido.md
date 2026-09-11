@@ -20,7 +20,7 @@
 |---|---|---|---|
 | E1 — la cabeza v5 | `epoch_digest_v5`: UNA familia nueva bajo la firma —`params_digest` (los siete parámetros), `pmeta_root`, `next_pending`, `next_index`, `total_supply`—; `VersionCabeza` gana V5; el cable sirve los cinco campos y `zkssl_params` los tres parámetros que hoy no sirve; el testigo recompone y custodia; el mando acepta; KAT y fila en `NUCLEO.md`; vectores bajo su versión; testigos: recomponer rechaza una v5 sin uno de los cinco, y un parámetro cambiado en reposo cambia la cabeza | NO en el cable (claves aditivas); SÍ en la firma (formato 4 → 5) | **sellada** — §451 y §451-B (E1a: el núcleo y el mando aceptan v5), §452 y §452-B (E1b: `VERSION_FORMATO` 5, el nodo firma y sirve v5, el cable la exige por versión y el testigo la custodia) y §453 (el positivo v5 del catálogo del cable: una cabeza real) |
 | E2 — el rechazo con causa, en el cable | el objeto de error gana `data`: la causa por su NOMBRE (la variante de `LayerError`), sus campos, y el `seq` de la cabeza en cuyo estado se juzgó; `message` no cambia; el catálogo de las veinticinco causas se publica en `RPC.md` y un test lo ata al enum (dos listas son dos productores) | NO (aditivo: ningún vector ni el OpenRPC pina el objeto de error) | **sellada** — §454 (`LayerError::causa` en la capa, `data` en el `-32000` y en la negativa de `zkssl_publishConsumo`, el catálogo en `spec/RPC.md` atado por test) |
-| E3 — el rechazo con prueba, por caminos | una forma nueva del paquete de evidencia, `tipo: "rechazo"`, que el mando verifica sin nodo: la cabeza v5 firmada, la causa, y el material que la demuestra con caminos y aritmética pública sobre lo que la cabeza compromete; una tabla causa → material → qué revela; un positivo y un negativo por regla, derivados por mutación; su manifiesto y su puerta en el canon | NO (el paquete no cruza el cable) | **en curso** — §455 (E3a-1: `OverRegulatoryLimit`, `AccountLimitReached`, `ConsumoRepetido`, `ConsumoColision`), §456 (E3a-2: `StaleState`, `WrongRegulatoryLimit`, `DuplicateAccountInBatch`, `DuplicatePendingInBatch`, con un recibo real capturado por el proxy de un banco) y §458-§459 (E3b: `AccountFrozen`, con el camino de congelados que el cable sirve al titular). `AccountNotFound` pasa a E5 (CORRECCIÓN del §459); `SupplyCapExceeded` y la marca de `PendingTreeExhausted` siguen sin sello |
+| E3 — el rechazo con prueba, por caminos | una forma nueva del paquete de evidencia, `tipo: "rechazo"`, que el mando verifica sin nodo: la cabeza v5 firmada, la causa, y el material que la demuestra con caminos y aritmética pública sobre lo que la cabeza compromete; una tabla causa → material → qué revela; un positivo y un negativo por regla, derivados por mutación; su manifiesto y su puerta en el canon | NO (el paquete no cruza el cable) | **sellada** — §455 (E3a-1: `OverRegulatoryLimit`, `AccountLimitReached`, `ConsumoRepetido`, `ConsumoColision`), §456 (E3a-2: `StaleState`, `WrongRegulatoryLimit`, `DuplicateAccountInBatch`, `DuplicatePendingInBatch`, con un recibo real capturado por el proxy de un banco), §458-§459 (E3b: `AccountFrozen`, con el camino de congelados que el cable sirve al titular) y §460 (`SupplyCapExceeded`, con la petición del solicitante dentro del sobre). `AccountNotFound` pasa a E5 (CORRECCIÓN del §459); `PendingTreeExhausted` queda declarada sin prueba portable (CORRECCIÓN del §460) |
 | E4 — la prueba de edad, medida primero | E4a: el coste en función de `next_pending`, con el instrumento antes que el circuito, y una puerta que decide si se construye o se declara un techo. E4b: el circuito sobre el RANGO `0..next_pending` de los árboles de pendientes y de meta, con la caja vacía, el tope y la concentración por emisor nombrado como formas de un mismo enunciado; su sobre, su manifiesto y sus vectores | NO | abierta — se mide antes de construir |
 | E5 — las causas por circuito, y el kit verifica | `InsufficientBalance` con prueba de banda sobre la hoja comprometida (molde `circuit_audit`, sin el ciclo de titularidad); la re-verificación del STARK del solicitante para `ProofFailed` y `VerificationFailed`; un crate de AIR sólo-verificador que el mando consume, con `winter-verifier` en su clausura y el probador fuera | NO | abierta — depende de D-F |
 
@@ -243,6 +243,21 @@ conocimiento cero de hoja vacía (decisión del autor, sesión 125). `AccountFro
 el §459 con la hoja bajo el `frozenRoot` de la cabeza del `seq` exacto; la profundidad la fija el
 núcleo (`FROZEN_DEPTH`, `spec/NUCLEO.md`), porque `native_merge` no separa hoja de nodo.
 
+**CORRECCIÓN (§247, escrita por el §460).** La medición de la sesión 126 cierra las dos filas
+que la tabla dejaba en E3. `SupplyCapExceeded` la producen dos vías de la capa
+(`apply_mint_delegated` y `apply_mint_pending_delegated`), las dos antes de verificar prueba
+alguna, y por el cable sólo la alcanza el grifo del sandbox, `dev_fund`: no hay método de
+emisión de producción. Se prueba desde el §460 con la cabeza del `seq` exacto y un material que
+la tabla no nombraba: la `peticion`, los `params` de la emisión rechazada tal cual los envió el
+solicitante. Sin ella el `wouldBe` sería palabra del nodo, y un nodo que rechazara un importe
+que cabe obtendría una prueba verde; con ella, `wouldBe` tiene que ser el `totalSupply` de la
+cabeza más el importe pedido (decisión del autor, sesión 126). `PendingTreeExhausted` NO se
+prueba: `allocate_pending` cuenta como ocupadas las posiciones RESERVADAS, y las reservas no se
+persisten ni van bajo la firma —su duración es política del nodo—, así que `next_pending`
+igual a la capacidad no es condición necesaria ni suficiente; sólo lo sería el árbol
+comprometido lleno, 2^32 hojas que ningún banco produce. Queda declarada sin prueba portable, como
+`CustodianSetExhausted` (decisión del autor, sesión 126). Con esto E3 queda sellada entera.
+
 ### D-E — La prueba de edad es sobre un RANGO, no sobre n caminos
 
 El enunciado: sobre las posiciones `0..next_pending` de los árboles de pendientes y de meta
@@ -363,6 +378,10 @@ regenerado, los vectores bajo su versión y las suites verdes, etapa a etapa.
   que `next_pending` es hoy una propiedad del código (`allocate_pending`), no un invariante
   probado; E1 la firma y E4a le pone un testigo negativo: un libro con una posición viva por
   encima de la marca tiene que romper la prueba.
+- **Un `PendingTreeExhausted` no es refutable.** Las reservas de posición no van bajo la firma:
+  con el árbol no lleno, el operador puede alegar que se agotó y nadie puede probar lo
+  contrario. Con 2^32 posiciones el alegato es inverosímil, no imposible, y se declara
+  (corrección del §460).
 - **Cada prueba de E3 revela lo que su fila dice.** `RefundTooEarly` por caminos revela emisor,
   nacimiento y, en v2, la apertura; quien no quiera revelarlo espera a E5. Nada revela un saldo.
 - **Deudas declaradas que siguen**: aviso fuera de banda (§21), nodo único, `--dev`; y la

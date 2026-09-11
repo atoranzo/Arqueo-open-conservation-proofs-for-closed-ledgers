@@ -33894,3 +33894,64 @@ es de E5 (B2). Del resto de la tabla D-D que el RFC-0007 pone en E3, `SupplyCapE
 marca de `PendingTreeExhausted` no los prueba ningun sello: E3 sigue en curso. La fila de claves
 del sobre de rechazo en `spec/PAQUETE.md` no nombraba `recibo` ni `lote` desde el §456, y sigue
 sin nombrarlos. La seccion 4 de `spec/PAQUETE.md` sigue sin los pasos del rechazo (5.A-166).
+
+## §460 — RFC-0007 E3: el mando prueba `SupplyCapExceeded`, y E3 queda entera
+
+**Que.** El sobre de rechazo gana su decima causa. Su material son los `parametros` de
+`zkssl_params` y, por primera vez, la `peticion`: los `params` de la emision rechazada TAL CUAL los
+envio el solicitante. El mando exige una cabeza v5, que los siete parametros recompongan su
+`paramsDigest`, que el `cap` de `data` sea el `maxSupply` comprometido, la cabeza del `seq` EXACTO
+-el suministro sube con cada emision y baja con cada quema-, que el `wouldBe` del nodo sea el
+`totalSupply` de la cabeza mas el `amount` de la peticion, con la suma saturada de la capa, y que
+pase el tope; si no, ROJO nombrando por que. `spec/vectors/rechazo/` gana ocho vectores y el
+catalogo pasa de 58 a 66. `spec/PAQUETE.md` (la forma, el material, la tabla de causas, la
+fila de claves -que gana tambien `recibo` y `lote`, sin nombrar desde el §456-, tres textos del
+catalogo, la puerta y la historia), el RFC-0007 (la fila E3, ahora sellada, una CORRECCION y una
+linea en Seguridad), la etapa de la fila del catalogo en `spec/README.md` y la cuenta de vectores
+de las dos portadas, de 202 a 210.
+
+**Por que asi.** Dos decisiones del autor (sesion 126). **A**, la `peticion` va dentro del sobre:
+sin ella el `wouldBe` seria palabra del nodo, y un nodo que rechazara un importe que cabe
+obtendria una prueba verde; con ella el disfraz cae. **B**, `PendingTreeExhausted` se declara sin
+prueba portable: `allocate_pending` cuenta como ocupadas las posiciones RESERVADAS, las reservas
+no van bajo la firma, y `next_pending` igual a la capacidad no es condicion necesaria ni
+suficiente. Y cuatro delegadas, REVERSIBLES aqui. **D-18**, la `peticion` son sus `params`, como
+las demas piezas son el `result` de su respuesta. **D-19**, su `index` no se juzga: la capa mira
+el tope antes que la cuenta (`mint.rs`), asi que un rechazo por tope no dice nada de ella. **D-20**,
+el orden es el de las causas: los parametros, el tope que citan, la cabeza del rechazo, la
+peticion, la suma, y solo entonces si pasa el tope. **D-21**, sin tests nuevos en Rust: el brazo
+lo falsa su catalogo, que el canon corre, como en el §459.
+
+**Lo medido.** El censo de la sesion 126 sobre el zip de `efcbdc4`: dos productores de la causa
+en la capa (`mint.rs:45`, `two_phase.rs:1551`), los dos antes de verificar prueba alguna; el unico
+llamador del nodo es `dev_fund` y no hay metodo de emision de produccion. Las CAPTURAS-R7SC
+(`72022d40ad41c355`, el PASTE-R7SC-M `8ae6fc43c59a6cd0` sobre un nodo real compilado de
+`efcbdc4`, `--latido 2 --dev --max-supply 1000`): una cuenta fondeada con 600 en el `seq` 2, y un
+segundo `dev_fund` de 401 rechazado con `-32000` `SupplyCapExceeded {cap 1000, wouldBe 1001}` en
+ese `seq`; `zkssl_supply` dice 600, y la cabeza del cable y la FIRMADA v5 del `seq` 2 dicen
+`totalSupply` 600 con el mismo `epochDigest`. Y la FIRMADA de antes de emitir, `seq` 1, con 0.
+
+**Testigos.** Un positivo, `tope-de-suministro.json`, reunido de las capturas sin reescribir una
+pieza. Siete negativos: sin `peticion`, un `cap` que no es el comprometido, la peticion con otro
+importe -el disfraz que la decision A existe para cazar-, los parametros de otro libro, la cabeza
+adulterada en su `totalSupply`, la cabeza REAL de antes de emitir -cae por no ser la del rechazo;
+no es una mutacion- y la ESCENA de dos campos -importe y `wouldBe` coherentes, justo en el tope-,
+porque una sola mutacion de lo real no llega a esa regla; se declara. Un falsador en el bloque: el
+positivo con el importe cambiado tiene que caer, y solo el.
+
+**Medido.** `crates/zk-ssl-verify/src/main.rs` (el brazo, y `parametros_comprometidos` devuelve
+tambien el tope de suministro a sus tres llamadores), los ocho vectores, el MANIFIESTO,
+`spec/PAQUETE.md`, el RFC-0007, `spec/README.md`, `README.md`, `README_EN.md` y este asiento.
+Ninguna cifra de tests se mueve. Canon `--sello` rc 0, con el rechazo en 66 de 66 (sus
+segundos, en la salida de este bloque).
+
+**Lo que NO afirma, y lo que queda vivo.** Que el nodo rechazo, y cuando, no lo prueba el sobre:
+prueba que la causa se sostiene. La cabeza del `seq` exacto solo existe si nadie escribe hasta el
+siguiente latido. Por el cable la causa solo sale del grifo del sandbox; el dia que haya emision de
+produccion, su peticion es el material. `OverRegulatoryLimit` y `WrongRegulatoryLimit` siguen
+tomando el importe y el limite declarado de la palabra del nodo, con la refutacion fuera del
+sobre: el mismo hueco que la decision A cierra aqui, medido y sin tocar. La prosa de
+`two_phase.rs:1522-1528` habla de una via antigua que devuelve `OverRegulatoryLimit` para el tope,
+y ningun productor de hoy lo hace. Una congelacion que no cambia nada verificaria (el AIR de la
+subida de congelados deja las hojas libres): deduccion, no medicion. La seccion 5 de
+`spec/NUCLEO.md` sigue sin la vineta del CONSUMO. `AccountNotFound` es de E5.
