@@ -33770,3 +33770,76 @@ herramienta del canon impide que vuelva a pasar: el censo vive en el bloque, no 
 `escribir` y `escribir_en` siguen recreando su directorio en cada escritura: dentro de un test es
 secuencial y no falla, pero un test que escribiera dos ficheros y leyera el primero despues del
 segundo lo perderia.
+
+## §458 — RFC-0007 E3b: el camino de congelados para el titular (`zkssl_frozenPath`)
+
+**Que.** El rechazo `AccountFrozen(i)` se puede probar sin el nodo: la hoja de `i` bajo el
+`frozenRoot` de una cabeza firmada no es la vacia. El cable sirve `zkssl_frozenPath {index,
+viewKey}` -la hoja y el camino, del estado de ahora, con su `s`-, con la credencial del titular
+(§261); y `dev_freeze {index, frozen}`, solo con `--dev`, congela por la via delegada real con los
+custodios de la suite, para que un banco con nodo real pueda provocar el rechazo. El nucleo publica
+`FROZEN_DEPTH` (32), atado por test en la capa a la del circuito, y el verificador gana el modulo
+`congelados`: profundidad FIJA, cruce con los bits del indice y hoja no vacia. La capa sirve
+`frozen_path_of`. OpenRPC de 26 a 28 metodos (`Bool` entra en `components`); `zkssl/0.3` no sube.
+`spec/RPC.md` (una fila, la del `dev_*` y una seccion), `spec/NUCLEO.md` (la excepcion de la
+seccion 1, cinco filas, la familia CONGELADOS) y la cuenta de metodos en sus siete sitios vivos.
+El sello: `f124a40`, empujado. Este -B mueve los pines y las cifras y escribe este asiento.
+
+**Por que asi.** Dos decisiones del AUTOR y cinco delegadas, REVERSIBLES aqui. **A**, el camino de
+congelados se entrega con credencial: el estado de congelacion es del titular -`two_phase.rs` lo
+comprueba despues de la autoridad para no filtrarlo- y quien recibe `AccountFrozen` es siempre el
+titular. **B2**, `AccountNotFound` sale de E3b y va a E5 como prueba de conocimiento cero de hoja
+vacia: no admite credencial, y un camino de ausencia publico reabriria la enumeracion que F3
+cerro. **D-9**, `dev_freeze` existe porque ningun metodo del cable congela y D-7 exige nodo real.
+**D-10**, `FROZEN_DEPTH` en `zk-ssl-hash` con test de atado en la capa; el circuito no se toca.
+**D-11**, congelada es hoja NO vacia, la regla de la capa, no la marca concreta. **D-12**, el camino
+se sirve con la hoja vacia o no, con su `s` y en la forma de `consumoPath`. **D-13**, un libro no
+migrado -congelados a 24 niveles- falla cerrado en el verificador, declarado.
+
+**Lo medido antes de escribir un byte.** Sin PASTE: el zip de `main` en `115f7b1`
+(`4b5f9beaf32b6377`, 493 ficheros), gateado por las 160 anclas versionadas del traspaso. Las dos
+variantes llevan el indice (`AccountNotFound(AccountIndex)`, `AccountFrozen(AccountIndex)`), y la
+busqueda es por indice. Ningun metodo del cable congela. `path_root` no fija la profundidad y
+`native_merge` no separa hoja de nodo: un camino truncado cuya hoja fuera un nodo interno subiria a
+la misma raiz, y ese nodo no es el cero. El registro de una congelacion lleva su compromiso, no el
+indice: el arbol no se reconstruye en un `seq` pasado. Desde el §261 todo camino exige credencial.
+Las hojas de cuenta v7 llevan sal: un camino de ausencia revela OCUPACION, no saldos, y
+`zkssl_publicId` es publico.
+
+**Testigos.** Nueve nuevos: uno en la capa (las dos profundidades atadas, y el camino de una cuenta
+libre sube a `frozen_root`), cuatro en el verificador (la hoja marcada sube y esta congelada; la
+vacia no lo esta y desmiente un rechazo falso; el camino truncado llega a la raiz y aqui no pasa;
+el camino de otra cuenta no cruza) y cuatro en el nodo (sin credencial no hay camino; una cuenta
+libre da la hoja vacia bajo la `frozenRoot` servida; tras `dev_freeze` la hoja esta congelada y el
+rechazo de `sendMaterials` nombra ese indice y ese `seq`; sin `--dev` no se congela). Cuatro
+falsadores por mutacion, cada uno con EXACTAMENTE 1 FAILED nombrado: sin la guarda de profundidad,
+sin la cota del indice, sin `exige_credencial` y con `FROZEN_DEPTH` a 31. El OpenRPC regenerado,
+identico byte a byte al predicho. Y en este -B, `check_cifras`: con los pines ya subidos y la prosa
+aun vieja da ROJO nombrando las doce cifras rancias; con la prosa corregida, verde.
+
+**Medido.** El §458 (`f124a40`, SALIDA-458-20260911-120853 `09c4d8f66d47c9a8`): los catorce POST
+predichos, clavados; la capa pasa de 332 a 333 declarados, con 330 que pasan y 3 ignorados; el
+verificador, de 96 a 100; el nodo, de 104 a 108; el cable, 22, con el test del conteo renombrado;
+`check_tests` 1238 -> 1247, `check_nucleo` 99 -> 104 filas, `check_modulos` 121 -> 122. Aqui:
+pines capa 329 -> 330, verificador 96 -> 100 y nodo 104 -> 108; sumas 1086/1223/1237 ->
+1095/1232/1246, por el MISMO delta que los pines (el +14 de la tercera sigue sin fuente, punto 57).
+Ficheros: `tools/canon.sh` (ensancha: las filas de pines llevan su historia, se declara),
+`PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`, `ARQUITECTURA.md`, `doc/INSTITUCIONAL.md`,
+`doc/INSTITUTIONAL.md` y este asiento. Canon `--sello` rc 0 (sus segundos, en la salida).
+
+**Lo que la medicion cambio, y lo que costo.** Tres errores de la preparacion, corregidos antes de
+emitir: se afirmo de memoria que las dos variantes no llevaban el indice, y el fuente dice que
+si; el primer censo de la cuenta de metodos, por grep, no vio `README_EN.md:187`, y el de python
+si; y el `summary` de `zkssl_frozenPath` ensanchaba `openrpc.rs` y el json, y se acorto. En este
+-B aparecio un resto que ninguna herramienta ve: el resumen de `PAPER_EN.md` decia «319 executable
+tests -plus one ignored-» frente a las 1086 del `PAPER.md`; pasa a decir lo mismo que su gemelo.
+
+**Lo que NO afirma, y lo que queda vivo.** No prueba todavia ningun rechazo: el mando, los vectores
+del catalogo y `spec/PAQUETE.md` son del §459, tras la captura con nodo real. El negativo
+`rechazo-rech-causa-no-probada.json` sigue usando `AccountFrozen` y queda rancio al promoverla. El
+RFC-0007 no se toca aqui: su fila E3, la correccion §247 de la del §455 (dice saldos donde es
+ocupacion) y `AccountNotFound` en E5 son del §459. `FrozenPath` es un `$ref` colgante mas (punto
+95). La seccion 5 de `spec/NUCLEO.md` no tiene vineta para CONSUMO desde el §419. El camino de
+congelados vale mientras no haya otra congelacion. `AlreadyInThatFreezeState` sigue sin cablear, y
+que hace `dev_freeze` sobre una cuenta ya congelada no se ha medido. `check_cifras` sigue sin ver
+las sumas de las portadas (5.A-149) ni el «# nodo:» de los PAPER.
