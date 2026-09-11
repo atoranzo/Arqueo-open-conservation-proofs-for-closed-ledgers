@@ -183,7 +183,7 @@ there.
 
 | piece | where it is measured |
 |---|---|
-| **17 crates** in one workspace; the canon (`tools/canon.sh --sello`) runs every crate's tests, in release, and the eight tools under `tools/` that watch figures, citations, domains and geometry | the table in [`tools/canon.sh`](./tools/canon.sh) carries the passing tests per crate; every seal updates it |
+| **18 crates** in one workspace; the canon (`tools/canon.sh --sello`) runs every crate's tests, in release, and the eight tools under `tools/` that watch figures, citations, domains and geometry | the table in [`tools/canon.sh`](./tools/canon.sh) carries the passing tests per crate; every seal updates it |
 | **Protocol `zkssl/0.3`**: 28 JSON-RPC methods (25 `zkssl_*`, 3 `dev_*`), OpenRPC generated from the code, vectors per version that are never rewritten | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (210 files: cable, núcleo, paquete, consumo, conflicto, rechazo and the three `zkssl-0.N.json`) |
 | **RFCs**: 0002, 0003, 0004 and 0006 accepted; 0005 (the frozen core) and 0007 (proofs over the committed state) proposed | [`spec/rfc/`](./spec/rfc/) |
 | **Independent verifier** `zk-ssl-verify` 0.2.0, release `arqueo-verify-v0.2.0`, reproducible from the commit its `VERSION` names | [`doc/KIT_EN.md`](./doc/KIT_EN.md) · [`tools/artefacto.sh`](./tools/artefacto.sh) |

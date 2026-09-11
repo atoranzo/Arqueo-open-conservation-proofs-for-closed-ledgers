@@ -625,7 +625,6 @@ pub fn raiz_desde_subraiz(sub: Digest, m: u32, profundidad: usize) -> Digest {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use winter_math::StarkField;
 
     fn d(k: u64) -> Digest {
         [

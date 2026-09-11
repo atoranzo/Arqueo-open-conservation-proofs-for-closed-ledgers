@@ -34058,3 +34058,91 @@ con WSL: otra maquina da otra cifra, y el instrumento la reporta. La concentraci
 sigue sin coste medido. La linea `tallas:` que el PASTE imprime salio en la terminal y no en su
 fichero; las cifras estan enteras en la salida del test. El +15 de la suma de declarados sigue
 siendo deduccion (asiento §461).
+
+## §463 — RFC-0007 E4b-1: el AIR real de la prueba de edad, sin el probador en el juez
+
+**Que.** Abre la E4b del RFC-0007: la prueba de edad deja de ser un proxy. Nace
+`crates/zk-ssl-air`, el crate con el que un tercero JUZGA la prueba sin compilar a quien la
+produce: el AIR (`EdadAir`), sus entradas publicas y su juez (`verificar`), con `winter-air`,
+`-crypto`, `-math` y `-verifier` sueltos y clavados con `=`. El probador vive en `stark-experiment`
+(`circuit_edad.rs`): las celdas de cada posicion, la traza principal, la auxiliar y el `Prover`. La
+capa cruza la prueba con sus `SparseTree` y gana el instrumento de la puerta con el AIR real. El
+sello: `393be18`, empujado. Este -B mueve tres pines y sus cifras, da fila al crate nuevo y escribe
+este asiento.
+
+**Por que asi.** El autor DELEGO en la constitucion las decisiones (sesion 127); REVERSIBLES aqui.
+**D-1**, un solo AIR para las formas por cuenta, `cuenta{p < n : vivo, seq - nacido >= T, todos o
+emisor = s} <= K`: la caja vacia es `K = 0`, el tope por cuenta `T = 0` y la concentracion un emisor
+nombrado; las formas por importe se DECLARAN, porque el operador no guarda la apertura del
+compromiso (RFC-0003 D-2) y lo que el circuito no restringe no se afirma. **D-2**, un pendiente vivo
+sin meta falla cerrado: `(1 - vivo) * P = 0` obliga a contar toda hoja no nula. **D-3**, el juez es
+un crate solo-verificador, y su clausura no lleva `winter-prover` ni `winterfell` (una puerta del
+bloque, no prosa). **D-4**, el juez acepta SOLO las `proof_options()` de la casa, y un test de la
+capa ata los dos literales. **D-5**, el arbol del rango se cablea con un argumento de multiconjunto
+en la traza auxiliar (LogUp), frente a una pila en columnas (unos 60 s proyectados a 4096) y a
+recomponer las raices en el kit (revela el emisor y el nacimiento de cada pendiente). El AIR prueba
+el subarbol `[0, 2^m)` y el juez sube la espina a 32 niveles en nativo: el AIR no depende de la
+profundidad. `K` es una COTA: el probador puede contar de mas, nunca esconder una posicion.
+
+**Lo medido antes de escribir un byte.** El zip de `main` en `fe0935c` y, por el PASTE-E4b1-M
+(`38ed9bb5eb86d4f8`), las fuentes de winter 0.13.1 de la maquina del autor, 196 ficheros atados al
+`checksum` del `Cargo.lock`: la API de la traza auxiliar, que ningun fichero de la casa usaba, se
+leyo del fuente. De ahi tres decisiones de forma: `TraceTable` no declara un segmento auxiliar (la
+traza es un tipo propio); `verify` construye el AIR con lo que diga la prueba (el juez comprueba
+antes su forma, y un fichero ajeno recibe `Err`); y en depuracion winterfell exige grados exactos
+(los tests que prueban llevan `cfg_attr(debug_assertions, ignore)`: el juez es release, nota 41).
+El diseno se simulo en Python sobre Goldilocks antes de escribir Rust, y cada negativo cayo SOLO
+por su familia de restricciones.
+
+**Testigos.** Dieciseis y un instrumento. En `zk-ssl-air`, cuatro: las ranuras declaradas son las
+escritas (centinela); la subida del juez da la raiz del arbol entero; lo que no tiene forma se
+rechaza sin panico; y las quince entradas publicas van al transcripto. En `stark-experiment`, diez:
+la subraiz de la traza es la de las hojas; la caja vacia; la cuenta de viejos; el filtro por
+emisor; los negativos -un vivo sin meta, una vieja declarada joven, una viva por encima de la marca
+(el testigo que el RFC promete en Seguridad), una hoja que no es la leida, otras opciones-; y la
+prueba que no sirve para otro enunciado. En la capa, dos y el instrumento: la prueba sube a las
+raices de los `SparseTree` del libro, y las opciones del juez son las de la casa. Ocho falsadores
+por mutacion, uno por guarda negativa (la D-2 tiene dos: el constructor y la restriccion), cada uno
+con UN FAILED por nombre. Y en este -B, `check_cifras`: con los pines subidos y la prosa vieja da
+ROJO con las quince rancias predichas; con la prosa corregida, verde.
+
+**Medido.** El §463 (`393be18`, SALIDA-463-20260911-191349 `dd839564cf8d8ae6`, rc 0 a la
+primera): el `Cargo.lock` predicho es el que cargo resuelve, y la clausura del juez son 22 paquetes
+sin el probador; la capa 339 -> 342 declarados (337 pasan y 5 ignorados, 105 s), los circuitos 328
+-> 338 (328 pasan y 10 ignorados, 76 s) y `zk-ssl-air` 4 (5 s); los ocho falsadores, exactos;
+`check_tests` 1253 -> 1270 y 15 instrumentos; `check_modulos` 123 -> 124. El Rust se escribio sin
+compilador y compilo a la primera. La puerta, con el AIR real (PASTE-E4b1-MED `33e5b152b9c3edb5`
+sobre `393be18`, SALIDA-E4b1-MED-20260911-193945 `7b56370ddd74f7f0`, la maquina del §462): `n`
+1024, 8.192 filas, probar 1,53 s, pico 198.828 kB, prueba 119.369 B; `n` 4096, 32.768 filas, 7,03
+s, 778.096 kB, 139.153 B; `n` 16384, 131.072 filas, 29,86 s, 3.107.712 kB, 162.305 B; verificar,
+1,1 a 1,6 ms. Las tres verifican y suben a la raiz del libro, y las tres caben en un latido y en
+media RAM. Aqui: los pines de la capa 335 -> 337 (y 4 -> 5 ignorados) y de los circuitos 318 -> 328,
+y la fila nueva de `zk-ssl-air`, 4; las sumas 1100/1237 -> 1116/1253 por el delta de los pines; la
+de declarados 1252 -> 1269 por el de los declarados (+17, el que mide `check_tests`), con las
+ignoradas 14 -> 15; y los <<17 crates>> de cuatro portadas, 18. Ficheros: `tools/canon.sh`
+(ensancha: las filas llevan su historia, se declara), `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`,
+`ARQUITECTURA.md`, `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md`, `README.md`, `README_EN.md`,
+`RESUMEN_EJECUTIVO.md`, `RESUMEN_BILINGUE.md`, `crates/zk-ssl-air/src/lib.rs` (una linea, abajo) y
+este asiento. Canon `--sello` rc 0 (sus segundos, en la salida).
+
+**El rojo de la primera corrida de este -B.** BLOQUE-463-B `99519e453bd2b221`,
+SALIDA-463B-20260911-195842 `129b49fb6a6d2ac8`, rc 80: todo en verde hasta el canon, y el canon
+ROJO por UNA causa, `zk-ssl-air` con 2 lineas de warning y el pin en 0. Es un import muerto en su
+modulo de tests, `winter_math::StarkField` (`as_int` es un metodo PROPIO de `BaseElement`, y el del
+trait no se usa), mas la linea de resumen de cargo. El §463 no lo vio: sus puertas compilan, listan
+y corren, pero no cuentan warnings por crate; el canon si, y por eso existe. Se quita aqui, y el
+canon lo juzga. La leccion: un bloque que hace nacer un crate cuenta sus warnings antes del canon.
+
+**Lo que NO afirma, y lo que queda vivo.** La medida es de un portatil con WSL: otra maquina da
+otra cifra, y el instrumento la reporta. El AIR real mejora al proxy de E4a (29,86 s frente a 44,94
+a 16384), y el techo PROYECTADO del §462 (la prueba completa hasta `n` = 8192) queda superado por
+MEDIDA; corregirlo en el RFC-0007, con la CORRECCION §247 pendiente de su D-E (el operador NO
+guarda la apertura del compromiso en `pamt:` ni en `pmeta:`), es del §464. Queda E4b-2 (el kit
+verifica: el sobre `tipo: "edad"`, el lock y el artefacto, y la prosa de
+`crates/zk-ssl-verify/Cargo.toml`) y E4b-3 (la capa la produce sobre un nodo real, catalogo y
+canon). Deudas declaradas: el AIR vive fuera del universo de `check_constraint_layout` y
+`check_columns` (lo compensa el centinela); la ronda de Rescue vive una vez en `zk-ssl-air` y
+sigue en linea en veintiocho circuitos; la hoja de meta mete el emisor como `BaseElement::new(u64)`
+y `u64::MAX` cae en el campo como `2^32 - 2` (previo a E4b; se mide, no se afirma); dos testigos
+sin falsador propio, declarado (la prueba que no sirve para otro enunciado y la igualdad de las
+opciones). El +16 de la suma de declarados sigue siendo deduccion (asiento §461, punto 57).
