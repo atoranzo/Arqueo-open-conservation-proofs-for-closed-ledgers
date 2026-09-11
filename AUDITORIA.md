@@ -33955,3 +33955,62 @@ sobre: el mismo hueco que la decision A cierra aqui, medido y sin tocar. La pros
 y ningun productor de hoy lo hace. Una congelacion que no cambia nada verificaria (el AIR de la
 subida de congelados deja las hojas libres): deduccion, no medicion. La seccion 5 de
 `spec/NUCLEO.md` sigue sin la vineta del CONSUMO. `AccountNotFound` es de E5.
+
+## §461 — RFC-0007 E4a-1: el instrumento de la puerta de la prueba de edad
+
+**Que.** La E4a del RFC-0007 mide lo que cuesta la prueba de edad antes de escribir su AIR, y este
+sello mete su instrumento: un modulo SOLO de tests en la capa,
+`crates/zk-ssl/src/instrumento_edad.rs`, declarado bajo `cfg(test)` en `lib.rs`. Lleva el recuento
+de hashes de la raiz del rango `0..n` de un arbol de profundidad 32 (`hashes_de_rango`) y su
+recomposicion (`raiz_de_rango`), cruzadas contra el `SparseTree` real con hojas de los productores
+reales; el testigo negativo que el RFC promete en Seguridad; la subida Merkle de la casa con la
+profundidad como parametro (`SubidaAir`, que envuelve `MerkleAir` sin copiarle una restriccion: solo
+mueve la asercion de la raiz a la ultima fila); y el instrumento, un `#[ignore]` que la prueba con
+`proof_options()` en las tallas de los tres `n` objetivo y reporta tiempos, bytes, pico de memoria y
+la maquina. El sello: `380d78e`, empujado. Este -B mueve el pin de la capa y sus cifras y escribe
+este asiento.
+
+**Por que asi.** El autor DELEGO en la constitucion las decisiones de la puerta (sesion 126);
+REVERSIBLES aqui. **D-E4a-1**, el tiempo de la puerta es un latido, 60 s (`LATIDO_POR_DEFECTO_S`,
+§121): la prueba es practicable por cabeza si sale antes que la siguiente, y la puerta da un
+techo, `n_max`, no un si o un no. **D-E4a-2**, la memoria es la mitad de `MemTotal`, medida en la
+corrida: el probador convive con el nodo, que no puede dejar de latir. **D-E4a-3**, la maquina de
+referencia es la del autor, y el instrumento la imprime junto a cada tiempo. **D-E4a-4**, tres `n`
+objetivo, 1024, 4096 y 16384, con hojas de los productores reales: el recuento depende solo de `n`,
+y un test lo prueba. **D-E4a-5**, sellado y no spike: un techo declarado con medida vale, y el hito
+tiene que poder citarla.
+
+**Lo medido antes de escribir un byte.** Sin PASTE: el zip de `main` en `efcbdc4`. El hash de la
+casa es `Rp64_256` (estado 12, 7 rondas, grado 7) y la subida gasta 8 filas por hash con 13 de
+ancho; los dos arboles tienen profundidad 32 y la hoja vacia es el cero. La raiz del rango cuesta
+`ceil(n/2^l)` merges por nivel mas la espina hasta 32, y hashea tambien los huecos. `next_pending`
+solo sube: `n` es el pico historico de simultaneos, reservas incluidas. Por posicion viva, abrir su
+hoja cuesta 2 hashes (v1) o 4 (v2) y la de meta 1; y la comparacion de edad, que la proyeccion del
+RFC omitia, pide una descomposicion en bits por posicion. Las tallas, derivadas: 2^15, 2^17 y 2^19
+filas; la espina empuja cada una justo por encima de su potencia de dos.
+
+**Testigos.** Cinco: la raiz del rango es la del arbol y su recuento el de la formula; el recuento
+depende solo de `n` (dos rellenos distintos, de pendientes y de meta); una posicion viva por encima
+de la marca rompe el rango; la subida de 16 niveles prueba y verifica con las opciones de la casa;
+y con otra raiz no verifica. Dos falsadores por mutacion: el recuento con uno de menos tumba
+EXACTAMENTE los dos del recuento, y la raiz asertada mas uno EXACTAMENTE la verificacion de la
+subida. Y en este -B, `check_cifras`: con el pin ya subido y la prosa aun vieja da ROJO nombrando
+las diez cifras rancias; con la prosa corregida, verde.
+
+**Medido.** El §461 (`380d78e`, SALIDA-461-20260911-162610 `58e14baf22f6c77f`): los dos POST
+predichos, clavados; la capa pasa de 333 a 339 declarados, con 335 que pasan y 4 ignorados, en 84
+s; `check_tests` 1247 -> 1253 y de 13 a 14 instrumentos; `check_modulos` 122 -> 123. El Rust se
+escribio sin compilador y compilo a la primera. Aqui: el pin de la capa 330 -> 335, y sus ignorados
+3 -> 4; las sumas 1095/1232 -> 1100/1237 por el mismo delta que el pin, y la de declarados 1246 ->
+1252 por el de los declarados (+6, el que mide `check_tests`), con las ignoradas 13 -> 14; y los
+modulos de la capa, 23 -> 24. Ficheros: `tools/canon.sh` (ensancha: la fila lleva su historia, se
+declara), `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`, `ARQUITECTURA.md`, `doc/INSTITUCIONAL.md`,
+`doc/INSTITUTIONAL.md` y este asiento. Canon `--sello` rc 0 (sus segundos, en la salida).
+
+**Lo que NO afirma, y lo que queda vivo.** Todavia no mide: el instrumento se corre a mano en la
+maquina del autor, y su salida entra por el §462, que da el veredicto de la puerta. El proxy mide
+la parte de hashes de los dos arboles, no la prueba de edad entera: las aperturas y la comparacion
+van aparte, en celdas, como proyeccion. El RFC-0007 no se toca aqui: la correccion de su proyeccion
+y la desviacion de las «hojas reales de un libro del banco» son del §462. El +14 de la suma de
+declarados sigue sin fuente (punto 57); con el ignorado nuevo pasa a +15, y eso es deduccion y se
+declara. `check_cifras` sigue sin ver las sumas de las portadas (5.A-149).
