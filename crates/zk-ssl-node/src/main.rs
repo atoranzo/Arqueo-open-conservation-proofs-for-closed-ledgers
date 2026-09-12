@@ -238,6 +238,34 @@ struct Args {
     /// legítimos.
     #[arg(long)]
     libros_ajenos: Option<String>,
+    /// **MODO (RFC-0007 E4b-3, §466): produce la prueba de edad y SALE.**
+    ///
+    /// No levanta servidor, no lee la semilla y no firma nada: abre el libro
+    /// de `--ledger`, comprueba que es el que la cabeza de `--edad-cabeza`
+    /// firma, y escribe en esta ruta el sobre `tipo: "edad"` que el kit
+    /// verifica sin nodo.
+    ///
+    /// ⚠️ Se corre con el servidor **PARADO**: `sled` abre el libro en
+    /// exclusiva, así que un nodo vivo sobre el mismo `--ledger` lo impide.
+    #[arg(long, value_name = "RUTA", requires = "edad_cabeza")]
+    prueba_edad: Option<String>,
+    /// La cabeza v5 **firmada**, tal como `zkssl_signedEpochHead` la sirve: el
+    /// `result` entero, o la respuesta JSON-RPC completa. Viaja VERBATIM al
+    /// sobre —un byte cambiado y su firma deja de verificar—.
+    #[arg(long, value_name = "RUTA", requires = "prueba_edad")]
+    edad_cabeza: Option<String>,
+    /// La edad del enunciado (`edad = seq - born`). Con `0`, el enunciado
+    /// habla de TODA posición viva.
+    #[arg(long, value_name = "T", default_value_t = 0)]
+    edad_t: u64,
+    /// Emisor nombrado. Sin él, el enunciado es de cualquier emisor.
+    ///
+    /// ⚠️ **Se compara en el CAMPO** (§466): un pendiente de emisión lleva
+    /// `sender = u64::MAX`, que en Goldilocks reduce a `2^32 - 2`. Nombrar ese
+    /// valor cuenta también las emisiones: la cota sale INFLADA, nunca corta,
+    /// así que el enunciado sigue siendo cierto para el emisor real.
+    #[arg(long, value_name = "INDICE")]
+    edad_emisor: Option<u64>,
     /// Filtro de tracing (stderr).
     #[arg(long, default_value = "info")]
     log: String,
@@ -678,6 +706,13 @@ async fn main() -> anyhow::Result<()> {
     init_tracing(&args.log);
 
     let layer = open_layer(&args)?;
+    // ── MODO (RFC-0007 E4b-3, §466): la prueba de edad, y salir ──
+    // Va DELANTE de todo lo demás a propósito: sin clave, sin diario, sin
+    // latido y sin escucha. Lo que produce no lo firma este nodo —lo firmó
+    // el que emitió la cabeza—, así que este modo no necesita la semilla.
+    if let Some(salida) = args.prueba_edad.clone() {
+        return modo_prueba_edad(&layer, &args, &salida);
+    }
 
     if args.dev {
         tracing::warn!("modo --dev: dev_* habilitado con custodios de PRUEBA; no usar en producción");
@@ -830,6 +865,99 @@ async fn main() -> anyhow::Result<()> {
 
     let listener = tokio::net::TcpListener::bind(args.listen).await?;
     axum::serve(listener, router).await?;
+    Ok(())
+}
+
+/// **RFC-0007 E4b-3 (§466): el sobre `tipo: "edad"`, producido sobre este libro.**
+///
+/// El testigo de la prueba —las hojas de `0..next_pending` y su `(emisor, nacido)`— es del
+/// OPERADOR y no cruza el cable: por eso el productor vive en la capa y su boca aquí, y no en
+/// el testigo, que es el binario del tercero.
+///
+/// Tres pasos, y cada uno falla cerrado por su nombre: la cabeza se tipa con el productor único
+/// del cable (`SignedEpochHeadDto::firmada`) y se exige v5; la capa RECHAZA si el libro en disco
+/// no reproduce las cuatro cifras que esa cabeza firma; y el sobre sale con la cabeza VERBATIM,
+/// tal como se leyó, porque su firma cubre esos bytes.
+fn modo_prueba_edad(layer: &SovereignLayer, a: &Args, salida: &str) -> anyhow::Result<()> {
+    let ruta = a
+        .edad_cabeza
+        .as_deref()
+        .ok_or_else(|| anyhow::anyhow!("--prueba-edad exige --edad-cabeza"))?;
+    let crudo = std::fs::read_to_string(ruta)
+        .map_err(|e| anyhow::anyhow!("{ruta}: no se puede leer: {e}"))?;
+    let leido: Value =
+        serde_json::from_str(&crudo).map_err(|e| anyhow::anyhow!("{ruta}: no es JSON: {e}"))?;
+    // Se admite la respuesta JSON-RPC entera o el `result` ya desenvuelto: el banco captura una
+    // u otra, y exigir la forma sería exigir un paso de `jq` que no prueba nada.
+    let obj = leido.get("result").cloned().unwrap_or(leido);
+
+    let dto: wire::SignedEpochHeadDto = serde_json::from_value(obj.clone())
+        .map_err(|e| anyhow::anyhow!("{ruta}: no es una cabeza del cable: {e}"))?;
+    let vista = dto
+        .firmada()
+        .map_err(|e| anyhow::anyhow!("{ruta}: cabeza malformada: {e}"))?
+        .ok_or_else(|| anyhow::anyhow!("{ruta}: esa respuesta no lleva cabeza firmada"))?;
+    if vista.format_version.0 != 5 {
+        anyhow::bail!(
+            "formatVersion {}: la prueba de edad exige una cabeza v5, la única que firma \
+             pmetaRoot y nextPending",
+            vista.format_version.0
+        );
+    }
+    let pmeta = vista
+        .pmeta_root
+        .ok_or_else(|| anyhow::anyhow!("{ruta}: cabeza v5 sin pmetaRoot"))?;
+    let next_pending = vista
+        .next_pending
+        .ok_or_else(|| anyhow::anyhow!("{ruta}: cabeza v5 sin nextPending"))?;
+
+    let cab = zk_ssl::prueba_edad::CabezaDeclarada {
+        seq: vista.seq.0,
+        pending_root: digest_from_wire(&vista.pending_root)?,
+        pmeta_root: digest_from_wire(&pmeta)?,
+        next_pending: next_pending.0,
+    };
+    let t0 = Instant::now();
+    let sobre = layer
+        .prueba_de_edad(&cab, a.edad_t, a.edad_emisor)
+        .map_err(|e| anyhow::anyhow!("{e:?}"))?;
+    let ms = t0.elapsed().as_millis() as u64;
+
+    let mut enunciado = json!({ "t": Q(sobre.t), "k": Q(sobre.k) });
+    if let Some(s) = sobre.emisor {
+        enunciado["emisor"] = json!(Q(s));
+    }
+    let fuera = json!({
+        "v": 1,
+        "tipo": "edad",
+        "cabeza": obj,
+        "enunciado": enunciado,
+        "subraices": {
+            "pendientes": digest_to_wire(&sobre.subraiz_pend),
+            "meta": digest_to_wire(&sobre.subraiz_meta),
+        },
+        // `Blob` es el productor UNICO de la forma `0x...` del cable, y el kit la exige asi:
+        // no entra una dependencia de `hex` para repetir lo que ya existe.
+        "prueba": wire::Blob(sobre.prueba.clone()),
+    });
+    std::fs::write(salida, format!("{}\n", serde_json::to_string_pretty(&fuera)?))
+        .map_err(|e| anyhow::anyhow!("{salida}: no se puede escribir: {e}"))?;
+
+    // Lo que se imprime es lo MEDIDO en esta corrida: nada arrastrado.
+    let quien = match sobre.emisor {
+        None => "de cualquier emisor".to_string(),
+        Some(s) => format!("del emisor {s}"),
+    };
+    println!(
+        "prueba de edad: seq {} · n {} · m {} · a lo sumo {} posiciones vivas {} tienen edad >= {}",
+        sobre.seq, sobre.n, sobre.m, sobre.k, quien, sobre.t
+    );
+    println!(
+        "  {} B de prueba en {} ms · sobre en {}",
+        sobre.prueba.len(),
+        ms,
+        salida
+    );
     Ok(())
 }
 

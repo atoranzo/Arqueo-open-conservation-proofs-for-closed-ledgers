@@ -119,6 +119,9 @@ pub mod store;
 mod metrics;
 #[cfg(test)]
 mod tests;
+// RFC-0007 E4b-3 (§466): el PRODUCTOR de la prueba de edad. Vive en la capa porque su
+// testigo -las hojas de `0..next_pending` y su meta- es del OPERADOR y no cruza el cable.
+pub mod prueba_edad;
 // RFC-0007 E4a (§461): el instrumento de la puerta de la prueba de edad. Solo tests.
 #[cfg(test)]
 mod instrumento_edad;
