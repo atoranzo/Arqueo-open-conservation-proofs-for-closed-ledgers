@@ -34416,3 +34416,70 @@ emisiones -la cota sale INFLADA, nunca corta-. `ARQUITECTURA.md:60` sigue public
 circuitos>> frente a 22 `circuit_*.rs`, y este corte no lo movio: sigue en la cola. Y
 `check_cifras` sigue sin ver siete de las nueve cifras totales que los documentos publican
 (punto 149).
+
+## §468 — RFC-0007 E5: las tres causas se reparten, y dos de ellas NO se prueban
+
+**Que.** Un sello de PROSA sobre el RFC-0007. La E5 gana sus TRES decisiones -D-G, D-H y D-I- y su
+fila pasa de <<abierta, depende de D-F>> a <<en curso>>. Ningun `.rs`, ningun pin, ningun vector: el
+juez son las diez herramientas de `canon.sh`, y su verde es que salgan IDENTICAS. Detras de este
+sello no va codigo todavia: va el instrumento que la D-H exige, y solo con su cifra delante se
+decide si se escribe un AIR.
+
+**La D-F estaba saldada y nadie lo habia escrito.** La fila decia <<depende de D-F>>, y la D-F pedia
+un crate de AIR solo-verificador que el mando consumiese, con `winter-verifier` en la clausura y el
+probador fuera. Eso existe desde el S463 y esta en el kit desde el S465. Medido en la 131 con `cargo
+tree`: **46 paquetes en la clausura, CERO probador**, con `winter-air`, `winter-crypto`,
+`winter-fri`, `winter-math`, `winter-utils`, `winter-verifier` y `zk-ssl-air` dentro. La fila lo
+dice ahora con esa cifra.
+
+**D-G, y la medida le dio la vuelta al caso que parecia imposible.** `AccountNotFound` se produce
+sobre un INDICE, no sobre una identidad: `records.get(&index)`. Probarla es UNA hoja vacia bajo el
+`accountsRoot` que la cabeza v5 firma, la misma forma que el S458 dio a `AccountFrozen`. El sondeo
+lineal de F3 solo estorbaria a la afirmacion <<esta IDENTIDAD no tiene cuenta>>, que no es lo que la
+causa dice. Lo caro era SERVIRLO, y por eso NO nace un metodo del cable: el camino viaja DENTRO del
+rechazo, en el mismo `data` que abrio el S454, y solo lo recibe quien hizo la peticion rechazada. Se
+descarto servirlo atado a peticiones que el nodo elija: eso seria privacidad como POLITICA DEL
+OPERADOR, y la constitucion lo prohibe.
+
+**Y el oraculo que se temia YA existia.** La causa `AccountNotFound(index)` esta publicada en el
+cable desde el S454 y ya revela la ocupacion de una posicion. Lo que F3 cerro no fue esa pregunta
+sino su BARRIDO. Anadir el camino no cambia lo que se puede preguntar; cambia si la respuesta se
+puede COMPROBAR. Es la clase del punto 149 por el otro lado: una superficie que se creia nueva y
+llevaba trece sellos abierta.
+
+**D-H: la capa YA prueba la banda con las opciones de la casa, y aun asi falta la cifra.**
+`SovereignLayer::audit` llama a `AuditProver::new(self.options)`, o sea `42, 16, 21, Quadratic`. El
+unico coste MEDIDO de `circuit_audit` sale de `medicion_130_audit`, que usa las del circuito -`32,
+8, 0, None`- y da **47,9 ms y 29.525 B**, el segundo mas barato de los diez gemelos. Ese numero no
+es el de produccion y no se extrapola. Y hay una diferencia de fondo: `audit` exige la clave de
+gasto -solo el titular revela- mientras que la causa la produce el OPERADOR, que tiene la hoja y no
+la clave. De ahi que E5 necesite la banda SIN el ciclo de titularidad: medido, UN ciclo de 8 filas
+(`CYC_PK`) y las CUATRO columnas de `COL_KEY`, sobre 31 columnas y una tuberia que acaba en la 279
+de 512. Un recorte pequeno sobre un circuito que ya cabe.
+
+**D-I: se RETIRA lo que la fila prometia, y se dice por que.** La fila hablaba de re-verificar el
+STARK del solicitante. Medido: el registro guarda el `proof_digest` y NO la prueba -serian ~62 KB
+por operacion, razon escrita en `log.rs`- y `OpKind` solo tiene las once clases APLICADAS, asi que
+una transicion RECHAZADA no deja entrada ni digest comprometido. Meter la prueba en el sobre, como
+el S460 metio la peticion, aqui NO vale: el mando verificaria bytes que el propio nodo eligio poner,
+y un nodo que quisiera disfrazar un rechazo pondria una prueba rota cualquiera. `ProofFailed` y
+`VerificationFailed` quedan DECLARADAS, con su confianza residual escrita, como
+`PendingTreeExhausted`.
+
+**Contadores.** Dos ficheros: el RFC pasa de 485 a 550 lineas y `AUDITORIA.md` gana su asiento.
+Ninguna cifra de tests se mueve, ningun pin, ningun vector, ningun `.md` nace: los documentos
+versionados siguen en 71 y `spec/vectors/` en 222 ficheros y 216 `.json`. Las diez herramientas,
+IDENTICAS antes y despues, que es el invariante de un sello de prosa.
+
+**El liston del ancho, y es una leccion propia.** El editor nacio exigiendo <<prosa de 100 BYTES>> y
+el RFC ya traia una linea de 101 en su PRE: el gate era MAS ESTRICTO que el fichero. El invariante
+real es <=100 CARACTERES, y los bytes se pasan por los acentos. Se corrigio derivando el liston del
+fichero, re-fluyendo el texto DESPUES de sustituir -no antes, que es lo que hacia cascada- y dejando
+el delta de bytes (1 -> 4) como dato DECLARADO y no como puerta. Es la PRECISION 377, escrita en el
+TRASPASO-131 y cobrada en el turno siguiente.
+
+**Lo que NO cierra.** E5 no esta sellada: este sello reparte y descarta, no construye. Queda el
+instrumento de la D-H y, con su cifra, la decision de escribir el AIR o declarar el techo. La D-G no
+tiene todavia ni vector ni testigo: cuando se construya, sus negativos por mutacion y su entrada en
+la familia del rechazo. Y sigue en pie el 5.A-202: los dos positivos de la edad llevan `emisor`
+ausente, y la concentracion por emisor nombrado no tiene positivo propio.

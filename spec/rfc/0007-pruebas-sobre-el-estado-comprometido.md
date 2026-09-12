@@ -22,7 +22,7 @@
 | E2 — el rechazo con causa, en el cable | el objeto de error gana `data`: la causa por su NOMBRE (la variante de `LayerError`), sus campos, y el `seq` de la cabeza en cuyo estado se juzgó; `message` no cambia; el catálogo de las veinticinco causas se publica en `RPC.md` y un test lo ata al enum (dos listas son dos productores) | NO (aditivo: ningún vector ni el OpenRPC pina el objeto de error) | **sellada** — §454 (`LayerError::causa` en la capa, `data` en el `-32000` y en la negativa de `zkssl_publishConsumo`, el catálogo en `spec/RPC.md` atado por test) |
 | E3 — el rechazo con prueba, por caminos | una forma nueva del paquete de evidencia, `tipo: "rechazo"`, que el mando verifica sin nodo: la cabeza v5 firmada, la causa, y el material que la demuestra con caminos y aritmética pública sobre lo que la cabeza compromete; una tabla causa → material → qué revela; un positivo y un negativo por regla, derivados por mutación; su manifiesto y su puerta en el canon | NO (el paquete no cruza el cable) | **sellada** — §455 (E3a-1: `OverRegulatoryLimit`, `AccountLimitReached`, `ConsumoRepetido`, `ConsumoColision`), §456 (E3a-2: `StaleState`, `WrongRegulatoryLimit`, `DuplicateAccountInBatch`, `DuplicatePendingInBatch`, con un recibo real capturado por el proxy de un banco), §458-§459 (E3b: `AccountFrozen`, con el camino de congelados que el cable sirve al titular) y §460 (`SupplyCapExceeded`, con la petición del solicitante dentro del sobre). `AccountNotFound` pasa a E5 (CORRECCIÓN del §459); `PendingTreeExhausted` queda declarada sin prueba portable (CORRECCIÓN del §460) |
 | E4 — la prueba de edad, medida primero | E4a: el coste en función de `next_pending`, con el instrumento antes que el circuito, y una puerta que decide si se construye o se declara un techo. E4b: el circuito sobre el RANGO `0..next_pending` de los árboles de pendientes y de meta, con la caja vacía, el tope y la concentración por emisor nombrado como formas de un mismo enunciado; su sobre, su manifiesto y sus vectores | NO | **en curso** — E4a sellada: el instrumento (§461, §461-B) y su medida y veredicto (§462): E4b se construye, con el techo declarado (CORRECCIÓN del §462); E4b-1 sellada (§463, §463-B): el AIR real de las formas por cuenta, con su juez en `crates/zk-ssl-air` sin el probador y la puerta medida con él: el techo, medido en `n` = 16384, y las formas por importe, declaradas (CORRECCIONES del §464); E4b-2 sellada (§465): el kit la verifica contra una cabeza v5 firmada, sin el probador; E4b-3 sellada (§466: la capa la produce sobre el libro de un nodo real y RECHAZA si el libro no reproduce las cuatro cifras que la cabeza v5 firma; §467: su catálogo, once vectores que el mando corre sin el nodo). **E4 queda entera** |
-| E5 — las causas por circuito, y el kit verifica | `InsufficientBalance` con prueba de banda sobre la hoja comprometida (molde `circuit_audit`, sin el ciclo de titularidad); la re-verificación del STARK del solicitante para `ProofFailed` y `VerificationFailed`; un crate de AIR sólo-verificador que el mando consume, con `winter-verifier` en su clausura y el probador fuera | NO | abierta — depende de D-F |
+| E5 — las causas por circuito, y el kit verifica | `InsufficientBalance` con prueba de banda sobre la hoja comprometida (molde `circuit_audit`, sin el ciclo de titularidad); la re-verificación del STARK del solicitante para `ProofFailed` y `VerificationFailed`; un crate de AIR sólo-verificador que el mando consume, con `winter-verifier` en su clausura y el probador fuera | NO | **en curso** — la D-F quedó saldada por E4b (`crates/zk-ssl-air` vive en la clausura del kit: 46 paquetes, cero probador, medido en el §468). Las TRES causas se reparten en la D-G, la D-H y la D-I: `AccountNotFound` SE CONSTRUYE con su camino de ausencia dentro del sobre de rechazo; `InsufficientBalance` SE MIDE antes de escribir su AIR; `ProofFailed` y `VerificationFailed` SE DECLARAN, sin prueba portable |
 
 Todas las medidas de este documento se tomaron sobre `bb02c71` (§449), en dos lecturas puras que
 no escribieron un byte en el árbol: `PASTE-H4-M` y `PASTE-H4-M2` (ver Referencias).
@@ -383,6 +383,71 @@ fuera. La frase de `crates/zk-ssl-verify/Cargo.toml` que dice «ninguno con prov
 de winterfell» gana entonces su corrección §247, no se reescribe. Lo que H2 prometió —sin el
 repositorio, sin el autor, sin red, sin telemetría— sigue en pie: el kit crece, no cambia de
 naturaleza.
+
+### D-G — `AccountNotFound`: el camino de la hoja VACIA, dentro del sobre de rechazo
+
+La causa se produce sobre un **INDICE**, no sobre una identidad: `records.get(&index)` devuelve
+`AccountNotFound(index)` y el indice es el que el solicitante mando. Probarla es, por tanto, **una
+sola hoja vacia bajo el `accountsRoot` que la cabeza v5 firma** — la misma forma que el §458 dio a
+`AccountFrozen` con el arbol de congelados—, y no la reconstruccion de una cadena de sondeo. El
+sondeo lineal de F3 (`accounts.rs`: `public_id[0] % cap`, y `+1` mientras la posicion este ocupada)
+solo estorbaria a la afirmacion <<esta IDENTIDAD no tiene cuenta>>, que no es lo que la causa dice.
+
+**Lo caro no es probarlo: es servirlo.** Un camino de ausencia sobre un indice cualquiera y sin
+credencial es un oraculo de ocupacion, y repetido deshace lo que F3 cerro. Por eso NO nace un metodo
+del cable: **el camino viaja DENTRO del rechazo**, en el mismo `data` que el §454 abrio. Solo lo
+recibe quien hizo la peticion que el nodo rechazo, que es exactamente quien ya conocia el indice.
+
+Y lo que la medida hizo ver: **ese oraculo YA existe** y este RFC no lo ensancha. La causa
+`AccountNotFound(index)` esta publicada en el cable (`spec/RPC.md`, tabla de causas) desde el §454,
+y decir <<la cuenta 7 no existe>> ya revela la ocupacion de la 7. Lo que F3 cerro no fue esa
+pregunta sino su BARRIDO: con la posicion derivada de la identidad sobre un arbol de profundidad 32,
+enumerar deja de ser recorrer `0..censo`. Anadir el camino no cambia lo que se puede preguntar;
+cambia si la respuesta se puede COMPROBAR.
+
+**Confianza residual, en una frase:** el tercero verifica que la posicion que el nodo nombra esta
+vacia bajo la cabeza firmada; no verifica que esa posicion sea la que le tocaba a su identidad, y
+eso ultimo depende de la colocacion, que el operador ejecuta.
+
+### D-H — `InsufficientBalance`: se MIDE antes de escribir su AIR
+
+El molde existe y la capa ya lo usa: `SovereignLayer::audit` prueba la banda con
+`AuditProver::new(self.options)`, es decir con las **opciones de la casa** (`42, 16, 21,
+Quadratic`), no con las del circuito (`32, 8, 0, None`). Lo que falta no es la capacidad, es la
+CIFRA: el unico coste medido de `circuit_audit` sale del instrumento `medicion_130_audit`, que usa
+las opciones del circuito y da **47,9 ms y 29.525 B**, el segundo mas barato de los diez gemelos
+—`send` cuesta 125,3 ms y 42.457 B—. Ese numero NO es el de produccion y no se extrapola aqui.
+
+Y hay una diferencia de fondo que decide la forma: `audit` **exige la clave de gasto** —solo el
+titular revela—, mientras que la causa la produce el OPERADOR, que tiene la hoja y no tiene la
+clave. Por eso E5 necesita la banda **sin el ciclo de titularidad**: medido sobre
+`crates/stark-experiment/src/circuit_audit.rs`, eso es UN ciclo de 8 filas (`CYC_PK`, con `CYC_FIN =
+CYC_PK + 1`) y las CUATRO columnas de `COL_KEY` (13..17), sobre una traza de 31 columnas cuya
+tuberia acaba en la fila 279 de 512 —232 filas de holgura declaradas por el propio fichero—. No es
+media reforma: es un recorte pequeno sobre un circuito que ya cabe.
+
+**La puerta**: un instrumento sellado en el arbol mide el coste con las opciones de la CASA, como el
+§461 hizo con la puerta de la edad. Si entra, se escribe el AIR; si no, se declara el techo con su
+cifra. Ninguna de las dos cosas se decide aqui: se decide con el numero delante.
+
+### D-I — `ProofFailed` y `VerificationFailed`: se DECLARAN, y esto retira lo que la fila prometia
+
+La fila E5 prometia <<la re-verificacion del STARK del solicitante>>. **Medido, no hay material que
+re-verificar.** El registro guarda el `proof_digest` y NO la prueba, con su razon escrita en
+`crates/zk-ssl/src/log.rs`: serian ~62 KB por operacion, y quien quiera una puede pedirla. Y
+`OpKind` solo tiene las once clases APLICADAS —OpenAccount, Mint, Transfer, Burn, Recovery,
+Governance, Freeze, Send, Claim, MintToPending, Migration—: **una transicion RECHAZADA no deja
+entrada**, luego tampoco hay digest comprometido al que atar nada.
+
+Queda una salida y se DESCARTA: meter la prueba del solicitante dentro del sobre, como el §460 metio
+la peticion para `SupplyCapExceeded`. Alli funcionaba porque la peticion se contrasta con parametros
+que la cabeza firma. Aqui no: el mando verificaria unos bytes que **el propio nodo eligio poner
+ahi**, y un nodo que quisiera disfrazar un rechazo pondria una prueba rota cualquiera. Eso no es una
+prueba frente al operador, y la vara 4 prohibe venderlo como tal.
+
+**Confianza residual, en una frase:** que una prueba fallara al verificarse es hoy la PALABRA del
+nodo, sin testigo portable; el tercero solo puede comprobar que la transicion no esta en el
+registro, que es una ausencia y no una causa.
 
 ## Lo que se DESCARTÓ al medir
 
