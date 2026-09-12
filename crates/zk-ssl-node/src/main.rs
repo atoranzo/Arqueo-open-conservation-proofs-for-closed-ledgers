@@ -266,6 +266,40 @@ struct Args {
     /// así que el enunciado sigue siendo cierto para el emisor real.
     #[arg(long, value_name = "INDICE")]
     edad_emisor: Option<u64>,
+    /// **MODO (RFC-0007 E5, §473): produce el sobre de RECHAZO y SALE.**
+    ///
+    /// El sobre `tipo: "rechazo"` no tenía PRODUCTOR en el árbol: sus vectores
+    /// se reunieron de capturas de un nodo real, el manifiesto los censa y el
+    /// mando los verifica, pero nadie construía uno. Este modo lo construye,
+    /// con la forma del hermano de arriba: abre el libro de `--ledger`,
+    /// comprueba que es el que la cabeza de `--rechazo-cabeza` firma, provoca
+    /// el rechazo contra la capa y escribe en esta ruta el sobre que el mando
+    /// verifica SIN nodo.
+    ///
+    /// ⚠️ Se corre con el servidor **PARADO**: `sled` abre el libro en
+    /// exclusiva, así que un nodo vivo sobre el mismo `--ledger` lo impide.
+    #[arg(long, value_name = "RUTA", requires = "rechazo_cabeza")]
+    prueba_rechazo: Option<String>,
+    /// La cabeza **firmada** que compromete el estado sobre el que la causa se
+    /// sostiene, tal como `zkssl_signedEpochHead` la sirve: el `result`
+    /// entero, o la respuesta JSON-RPC completa. Viaja VERBATIM al sobre.
+    #[arg(long, value_name = "RUTA", requires = "prueba_rechazo")]
+    rechazo_cabeza: Option<String>,
+    /// La causa ESPERADA, por su nombre del cable (`AccountFrozen`, ...). Se
+    /// EXIGE: si la capa devuelve otra, el modo muere NOMBRANDO la que salió.
+    ///
+    /// ⚠️ `send_materials` es la puerta ÚNICA de las causas de E5 y las separa
+    /// el ORDEN de sus guardas: fiarse del orden sería teclear una posición.
+    #[arg(long, value_name = "CAUSA", requires = "prueba_rechazo")]
+    rechazo_causa: Option<String>,
+    /// La cuenta cuyo envío se rechaza.
+    #[arg(long, value_name = "INDICE", requires = "prueba_rechazo")]
+    rechazo_cuenta: Option<u64>,
+    /// El importe del envío que se rechaza. Para `AccountFrozen` da igual -la
+    /// guarda de congelados va antes que la del saldo-; para
+    /// `InsufficientBalance` es lo que decide.
+    #[arg(long, value_name = "CANTIDAD", default_value_t = 1)]
+    rechazo_importe: u64,
     /// Filtro de tracing (stderr).
     #[arg(long, default_value = "info")]
     log: String,
@@ -714,6 +748,14 @@ async fn main() -> anyhow::Result<()> {
         return modo_prueba_edad(&layer, &args, &salida);
     }
 
+    // ── MODO (RFC-0007 E5, §473): el sobre de rechazo, y salir ──
+    // Al lado del hermano y por la misma razón: sin clave, sin diario, sin
+    // latido y sin escucha. Lo que produce no lo firma este nodo —lo firmó el
+    // que emitió la cabeza que viaja dentro—.
+    if let Some(salida) = args.prueba_rechazo.clone() {
+        return modo_prueba_rechazo(&layer, &args, &salida);
+    }
+
     if args.dev {
         tracing::warn!("modo --dev: dev_* habilitado con custodios de PRUEBA; no usar en producción");
     }
@@ -961,6 +1003,94 @@ fn modo_prueba_edad(layer: &SovereignLayer, a: &Args, salida: &str) -> anyhow::R
     Ok(())
 }
 
+/// Produce el sobre `tipo: "rechazo"` y sale. Ver la bandera
+/// `--prueba-rechazo`.
+fn modo_prueba_rechazo(layer: &SovereignLayer, a: &Args, salida: &str) -> anyhow::Result<()> {
+    let ruta = a
+        .rechazo_cabeza
+        .as_deref()
+        .ok_or_else(|| anyhow::anyhow!("--prueba-rechazo exige --rechazo-cabeza"))?;
+    let pedida = a
+        .rechazo_causa
+        .as_deref()
+        .ok_or_else(|| anyhow::anyhow!("--prueba-rechazo exige --rechazo-causa"))?;
+    let indice = a
+        .rechazo_cuenta
+        .ok_or_else(|| anyhow::anyhow!("--prueba-rechazo exige --rechazo-cuenta"))?;
+
+    let crudo = std::fs::read_to_string(ruta)
+        .map_err(|e| anyhow::anyhow!("{ruta}: no se puede leer: {e}"))?;
+    let leido: Value =
+        serde_json::from_str(&crudo).map_err(|e| anyhow::anyhow!("{ruta}: no es JSON: {e}"))?;
+    // Se admite la respuesta JSON-RPC entera o el `result` ya desenvuelto: el
+    // banco captura una u otra, y exigir la forma sería exigir un paso de `jq`
+    // que no prueba nada. (El mismo párrafo que el hermano, por lo mismo.)
+    let obj = leido.get("result").cloned().unwrap_or(leido);
+
+    let dto: wire::SignedEpochHeadDto = serde_json::from_value(obj.clone())
+        .map_err(|e| anyhow::anyhow!("{ruta}: no es una cabeza del cable: {e}"))?;
+    let vista = dto
+        .firmada()
+        .map_err(|e| anyhow::anyhow!("{ruta}: cabeza malformada: {e}"))?
+        .ok_or_else(|| anyhow::anyhow!("{ruta}: esa respuesta no lleva cabeza firmada"))?;
+    let seq = vista.seq.0;
+
+    // ⚠️ El libro de `--ledger` tiene que ser el que ESA cabeza firma: si no,
+    // el camino de congelados no subiría a su `frozenRoot` y el sobre saldría
+    // muerto —el mando lo diría, pero el productor no puede escribirlo—. Se
+    // comprueba ANTES de escribir un byte.
+    if layer.frozen_root() != digest_from_wire(&vista.frozen_root)? {
+        anyhow::bail!(
+            "el libro de --ledger no es el que la cabeza de seq {seq} firma: su frozenRoot es otra"
+        );
+    }
+
+    // Ni el receptor ni la sal llegan a usarse: las guardas de
+    // `send_materials_inner` están ANTES de que el material se componga. Van
+    // DERIVADOS de la propia cabeza para no inventar una constante.
+    let receptor = digest_from_wire(&vista.accounts_root)?;
+    let sal = digest_from_wire(&vista.chain_digest)?;
+
+    let e = match layer.send_materials(indice, receptor, a.rechazo_importe, sal) {
+        Err(e) => e,
+        Ok(_) => anyhow::bail!(
+            "no salió ningún rechazo: enviar {} desde la cuenta {indice} es LEGÍTIMO en este \
+             libro, así que no hay sobre que producir",
+            a.rechazo_importe
+        ),
+    };
+    let salio = e.causa().nombre;
+    if salio != pedida {
+        anyhow::bail!(
+            "la causa que salió es `{salio}`, no la pedida `{pedida}`: las guardas van en ORDEN \
+             y hay que sortear las de antes"
+        );
+    }
+
+    let mut fuera = json!({
+        "v": 1,
+        "tipo": "rechazo",
+        "data": data_de(&e, seq),
+        "cabeza": obj,
+    });
+    // El MATERIAL de la causa. Hoy una; el corte siguiente añade su brazo, y
+    // una causa sin material declarado no se escribe a medias.
+    match salio {
+        "AccountFrozen" => fuera["congelados"] = bloque_congelados(layer, indice, seq),
+        _ => anyhow::bail!(
+            "la causa `{salio}` no tiene material declarado en este modo: entra con su corte"
+        ),
+    }
+
+    std::fs::write(salida, format!("{}\n", serde_json::to_string_pretty(&fuera)?))
+        .map_err(|e| anyhow::anyhow!("{salida}: no se puede escribir: {e}"))?;
+
+    // Lo que se imprime es lo MEDIDO en esta corrida: nada arrastrado.
+    println!("sobre de rechazo: causa {salio} · cuenta {indice} · seq {seq}");
+    println!("  {} B en {}", std::fs::metadata(salida)?.len(), salida);
+    Ok(())
+}
+
 fn open_layer(a: &Args) -> anyhow::Result<SovereignLayer> {
     // Las raíces de los conjuntos: en dev, las de la suite; en producción
     // vendrían de la ceremonia de constitución de custodios/gobernanza.
@@ -1164,6 +1294,25 @@ fn data_de(e: &LayerError, seq: u64) -> Value {
         campos.insert(nombre.to_string(), v);
     }
     json!({ "causa": c.nombre, "campos": Value::Object(campos), "seq": Q(seq) })
+}
+
+/// El bloque `congelados`: la respuesta de `zkssl_frozenPath`, que es tambien
+/// lo que el sobre de rechazo lleva para `AccountFrozen` (§459).
+///
+/// UN productor para los dos: lo sirve el cable y lo escribe el modo
+/// `--prueba-rechazo`. Su `s` no va bajo firma y el mando no lo mira -se juzga
+/// contra la raiz-, pero se emite para que el sobre diga de que estado salio.
+fn bloque_congelados(l: &SovereignLayer, index: u64, s: u64) -> Value {
+    let (hoja, camino) = l.frozen_path_of(index);
+    json!({
+        "s": Q(s),
+        "index": Q(index),
+        "leaf": digest_to_wire(&hoja),
+        "camino": {
+            "siblings": camino.siblings.iter().map(digest_to_wire).collect::<Vec<_>>(),
+            "isRight": camino.is_right,
+        },
+    })
 }
 
 /// El objeto `error` de JSON-RPC, escrito a mano (§228).
@@ -1567,16 +1716,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             struct P { index: Q, view_key: wire::B32 }
             let p: P = parse(params)?;
             exige_credencial(l, p.index.0, &p.view_key)?;
-            let (hoja, camino) = l.frozen_path_of(p.index.0);
-            Ok(json!({
-                "s": Q(seq_juicio),
-                "index": Q(p.index.0),
-                "leaf": digest_to_wire(&hoja),
-                "camino": {
-                    "siblings": camino.siblings.iter().map(digest_to_wire).collect::<Vec<_>>(),
-                    "isRight": camino.is_right,
-                },
-            }))
+            Ok(bloque_congelados(l, p.index.0, seq_juicio))
         }
 
         // ⚠️ **§259 · EL RECIBO DE INCLUSION.** Del arbol `accounts`, que es
