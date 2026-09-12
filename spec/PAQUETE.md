@@ -533,9 +533,18 @@ de las capturas de un nodo real con un tope de suministro pequeño (`--max-suppl
 PASTE-R7SC-M) y siete negativos. Dos no son mutaciones, y se declara: la cabeza anterior es la
 FIRMADA REAL de antes de emitir, y el tope no superado es una escena de dos campos —el importe y
 el `wouldBe` a la vez—, porque una sola mutación de lo real no llega a esa regla.
+**Desde §467 cubre el sobre de EDAD** (RFC-0007, E4b-3, que cierra E4): `spec/vectors/edad/`
+trae DOS positivos REUNIDOS de las capturas de un nodo real -la capa los produjo con
+`zk-ssl-node --prueba-edad` sobre el libro de ese nodo, contra la cabeza v5 de seq 10 que el
+nodo firmo- y NUEVE negativos por UNA mutacion cada uno. Los dos positivos son las dos formas
+que el enunciado admite hoy: TODOS (`t = 0`) y la CAJA VACIA (`t` por encima de la altura,
+luego `k = 0`). Un texto de la familia no se pina entero, y se declara: el del enunciado que
+no verifica lo pone WINTERFELL y no la casa, asi que el manifiesto pina solo el prefijo
+`edad:` que antepone el mando. La cabeza capturada no viaja como vector: va entera dentro de
+los dos sobres, y su huella se declara en la cabecera del manifiesto.
 Las demostraciones en vivo con nodo son `tools/banco_apagado.sh`, `tools/banco_consumo.sh`
-(RFC-0006, E3) y `tools/banco_dos_libros.sh` (E4a): el último levanta DOS nodos con DOS claves
-y produce el hecho que E4 existe para detectar.
+(RFC-0006, E3), `tools/banco_dos_libros.sh` (E4a) y `tools/banco_edad.sh` (E4b-3): el segundo
+de ellos levanta DOS nodos con DOS claves y produce el hecho que E4 existe para detectar.
 
 ## 10. Historia
 

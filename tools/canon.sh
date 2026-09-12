@@ -349,6 +349,18 @@ else
   grep -q '^ROJO' "$OUT/rechazo.txt" || falla "rechazo: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/rechazo.txt"))"
 fi
 
+# ── 3 bis edad · el sobre de EDAD (RFC-0007 E4b-3, desde el §467): el MISMO arnes ──
+msg ""
+msg "== CANON · las formas del sobre de edad =="
+# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
+# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
+if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/edad/MANIFIESTO.txt > "$OUT/edad.txt" 2>&1; then
+  msg "  OK  edad: $(tail -n 1 "$OUT/edad.txt" | sed 's/^conformidad: //')"
+else
+  while IFS= read -r L; do falla "edad $L"; done < <(grep '^ROJO' "$OUT/edad.txt" | sed 's/^ROJO //')
+  grep -q '^ROJO' "$OUT/edad.txt" || falla "edad: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/edad.txt"))"
+fi
+
 # ── 3 ter · el ARTEFACTO (tools/artefacto.sh --check, §401): la PROPIEDAD, no un pin ──
 msg ""
 msg "== CANON · el artefacto =="

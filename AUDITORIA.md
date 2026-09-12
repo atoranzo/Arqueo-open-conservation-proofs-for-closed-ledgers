@@ -34343,3 +34343,76 @@ en ese corte. El texto del noveno negativo lo pone WINTERFELL
 caduca con ella. Las formas por IMPORTE siguen DECLARADAS y no probadas, porque el operador no
 guarda la apertura del compromiso. Y `check_cifras` sigue sin ver siete de las nueve cifras totales
 que los documentos publican (punto 149): mientras no las vea, cada delta se paga a mano.
+
+## §467 — RFC-0007 E4b-3: el catalogo de la prueba de edad, y E4 queda entera
+
+**Que.** Nace `spec/vectors/edad/`: ONCE vectores portables del sobre `tipo: "edad"` y su
+`MANIFIESTO.txt`, que el mismo arnes de conformidad corre en cada canon contra el binario de
+referencia y que una segunda implementacion puede correr contra el suyo. La familia entra en
+`FAMILIAS` de `tools/artefacto.sh` -un solo productor- y viaja dentro del tarball. Con esto la
+fila E4 del RFC-0007 tiene sus TRES exigencias pagadas: la capa produce (S466), lo hace sobre un
+nodo real (S466), y su catalogo existe (este sello). **E4b-3 sellada y E4 entera.**
+
+**De donde salen los vectores, y por que no se reescribe ninguno.** Los DOS positivos se REUNEN de
+las CAPTURAS-466: la capa los produjo con `zk-ssl-node --prueba-edad` sobre el libro de un nodo
+real, contra la cabeza v5 de **seq 10** que ese nodo firmo, y el verificador autonomo los acepto
+SIN el nodo. Son las dos formas que el enunciado admite hoy: TODOS (`t = 0`, y sale `k = 2`) y la
+CAJA VACIA (`t` por encima de la altura, y sale `k = 0`). Los NUEVE negativos salen de
+`edad-todos.json` por UNA mutacion cada uno, y se comprobo antes de copiarlos que cada uno cambia
+**una sola clave de primer nivel** y que ninguno es igual al positivo ni a otro: nueve huellas
+distintas. Los once se COPIAN byte a byte de la captura y gateados por sha; un vector jamas se
+reescribe (regla 2 del PROCESO). Su productor, `tools/banco_edad.sh`, SI vive en el arbol desde el
+S466 -a diferencia de los de las familias del rechazo, cuyo banco hubo que declarar-.
+
+**La cabeza capturada NO viaja como vector, y se declara.** `cabeza.json`
+(`8d2d729cf5fb0861`, 38.378 B) se gatea en el corte y se queda fuera del directorio: va entera
+dentro de los dos sobres, y `tools/conformidad.sh` exige que TODO `.json` del directorio tenga su
+entrada en el manifiesto, asi que un fichero de apoyo alli dentro pondria el arnes en rojo. Su
+huella queda escrita en la cabecera del manifiesto, que es donde vive la procedencia.
+
+**El texto que la casa NO gobierna, pinado por su prefijo.** El negativo de la cota movida cae
+porque la prueba no verifica contra el enunciado cambiado, y ese texto lo pone WINTERFELL
+(`InconsistentOodConstraintEvaluations`), no la casa: un vector cuyo texto es de una dependencia
+caduca con ella. El manifiesto pina SOLO el prefijo `edad:`, que es lo que antepone el mando y lo
+unico que este proyecto gobierna. La decision no se invento aqui: `tools/banco_edad.sh` ya asertaba
+ese mismo prefijo, y el catalogo copia lo que el banco ya habia medido en vivo.
+
+**Los dos textos VERDE llevaban puerta, porque eran DEDUCCION.** Los nueve fragmentos negativos son
+los que el banco aserto EN VIVO. Los dos positivos no: se derivaron del `println!` de
+`verificar_edad`, con el `seq` y la `k` leidos de cada sobre. Una deduccion sobre codigo se declara
+y se le pone una puerta antes de escribirla (PRECISION 117), asi que el bloque corre el binario
+REAL contra los once ANTES de escribir el manifiesto y exige el par (codigo, fragmento) exacto de
+cada uno. El manifiesto no se escribe si el binario no dice lo predicho.
+
+**Las prosas que ESTE corte deja rancias, y se pagan aqui.** Es la misma regla que el S466-B
+aplico a los modulos de la capa: lo que este corte deja rancio se paga en este corte; lo que ya
+estaba rancio al lado va a la cola. Son dos. La celda de estado de la fila E4 decia <<abierta
+E4b-3 (la capa la produce sobre un nodo real, con su catalogo)>> y deja de ser cierta con este
+sello: se reescribe SOLO esa celda, y ni una linea mas del RFC. Y `README.md` publicaba
+<<210 ficheros>> de `spec/vectors/` con la lista de familias: pasa a **222** y la lista gana
+`edad`. Ninguna herramienta vigila esa cifra, y se dice.
+
+**Contadores.** `spec/vectors/`: **210 -> 222 ficheros**, **205 -> 216 `.json`**, 5 -> 6
+MANIFIESTO. La familia pesa 1.215.249 B de directorio en 12 ficheros. NINGUN pin de tests se
+mueve y ningun `.rs` se toca: el corte no compila nada nuevo, solo da al arnes otro manifiesto.
+El canon pasa a correr CINCO arneses de conformidad. La cuenta de ficheros del tarball del
+artefacto se RE-DERIVA en la corrida, no se teclea. Documentos `.md` versionados: 71, ninguno
+nace. Cinco sustituciones por VALOR en cinco ficheros, cada una con su aserto de unicidad, mas
+doce ficheros que nacen.
+
+**El coste, medido, y la cifra vieja que se cae.** La carga de esta sesion comparaba la familia
+con <<los 4,56 MB de las tres actuales>>, y ese conjunto -paquete, consumo y conflicto- dejo de
+ser <<el actual>> cuando nacio la familia del rechazo en el S455. Medido sobre el arbol: las
+CUATRO familias que viajan pesan **10.185.127 B** (paquete 2.426.643, consumo 1.183.954,
+conflicto 954.190, rechazo 5.620.340), y `edad` anade **1.215.249 B**, un **+11,9 %**. Entra
+entera: recortarla dejaria reglas del sobre sin vector portable, que es justo lo que la fila E4
+pide. Un censo heredado del perimetro de un sello anterior no es un censo.
+
+**Lo que NO cierra.** El catalogo cubre las formas por CUENTA; las formas por IMPORTE siguen
+DECLARADAS y sin vector, porque el operador no guarda la apertura del compromiso (RFC-0003). La
+concentracion por emisor NOMBRADO no tiene positivo propio: los dos que hay llevan `emisor`
+ausente, y el 5.A-183 explica por que nombrar el centinela en el campo cuenta tambien las
+emisiones -la cota sale INFLADA, nunca corta-. `ARQUITECTURA.md:60` sigue publicando <<18
+circuitos>> frente a 22 `circuit_*.rs`, y este corte no lo movio: sigue en la cola. Y
+`check_cifras` sigue sin ver siete de las nueve cifras totales que los documentos publican
+(punto 149).

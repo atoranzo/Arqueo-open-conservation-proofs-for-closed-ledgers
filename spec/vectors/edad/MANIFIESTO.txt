@@ -1,0 +1,22 @@
+# Vectores del sobre de EDAD (spec/PAQUETE.md seccion 2.7, RFC-0007 E4b-3; nace en el asiento 467).
+# fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
+# Los DOS positivos se REUNEN de las CAPTURAS-466 de un nodo real: la capa los produjo con
+# `zk-ssl-node --prueba-edad` sobre el libro de ese nodo, contra la cabeza v5 de seq 10 que ese
+# nodo firmo -`cabeza.json`, `8d2d729cf5fb0861`, 38.378 B-, que NO viaja aqui porque va entera
+# dentro de los dos sobres. Su productor es `tools/banco_edad.sh`, que SI vive en el arbol (S466).
+# Los nueve negativos salen de `edad-todos.json` por UNA mutacion cada uno, y cada uno cambia UNA
+# sola clave de primer nivel; jamas se reescriben (regla 2 del PROCESO).
+# OJO con `neg-cota-movida`: el texto que sigue al prefijo lo pone WINTERFELL
+# (`InconsistentOodConstraintEvaluations`) y no la casa, asi que caducaria con la dependencia. Se
+# pina SOLO el prefijo `edad:`, que es lo que antepone el mando y lo unico que la casa gobierna.
+edad-todos.json|0|VERDE: bajo la cabeza de seq 10, a lo sumo 2 posiciones vivas de cualquier emisor
+edad-caja-vacia.json|0|VERDE: bajo la cabeza de seq 10, a lo sumo 0 posiciones vivas de cualquier emisor
+neg-sin-enunciado.json|1|falta enunciado
+neg-sin-subraices.json|1|falta subraices
+neg-sin-prueba.json|1|falta prueba
+neg-sin-cabeza.json|1|falta cabeza
+neg-sin-firma.json|1|falta signature
+neg-cabeza-v4.json|1|exige una cabeza v5
+neg-subraiz-pend.json|1|no es el pendingRoot de la cabeza
+neg-subraiz-meta.json|1|no es el pmetaRoot de la cabeza
+neg-cota-movida.json|1|edad:
