@@ -415,16 +415,20 @@ El molde existe y la capa ya lo usa: `SovereignLayer::audit` prueba la banda con
 `AuditProver::new(self.options)`, es decir con las **opciones de la casa** (`42, 16, 21,
 Quadratic`), no con las del circuito (`32, 8, 0, None`). Lo que falta no es la capacidad, es la
 CIFRA: el unico coste medido de `circuit_audit` sale del instrumento `medicion_130_audit`, que usa
-las opciones del circuito y da **47,9 ms y 29.525 B**, el segundo mas barato de los diez gemelos
-—`send` cuesta 125,3 ms y 42.457 B—. Ese numero NO es el de produccion y no se extrapola aqui.
+las opciones del circuito y da **28,7 ms y 29.525 B** —fuente: `doc/medicion-130-apareada.md`,
+medida en `6ee02d7`—, el segundo mas barato de los diez gemelos, detras de `frozen_climb`; el mas
+caro es `send`, con 102,8 ms y 42.457 B. Re-medido en la 132 con el mismo instrumento sobre
+`8972543`: **29,3-30,0 ms en tres corridas** y 29.525 B las tres, deterministas. Ese numero NO es
+el de produccion y no se extrapola aqui.
 
 Y hay una diferencia de fondo que decide la forma: `audit` **exige la clave de gasto** —solo el
 titular revela—, mientras que la causa la produce el OPERADOR, que tiene la hoja y no tiene la
 clave. Por eso E5 necesita la banda **sin el ciclo de titularidad**: medido sobre
 `crates/stark-experiment/src/circuit_audit.rs`, eso es UN ciclo de 8 filas (`CYC_PK`, con `CYC_FIN =
 CYC_PK + 1`) y las CUATRO columnas de `COL_KEY` (13..17), sobre una traza de 31 columnas cuya
-tuberia acaba en la fila 279 de 512 —232 filas de holgura declaradas por el propio fichero—. No es
-media reforma: es un recorte pequeno sobre un circuito que ya cabe.
+tuberia acaba en la fila **287** de 512 —224 filas de holgura, 28 ciclos, DERIVADAS de la cadena
+de constantes del propio fichero—. No es media reforma: es un recorte pequeno sobre un circuito
+que ya cabe.
 
 **La puerta**: un instrumento sellado en el arbol mide el coste con las opciones de la CASA, como el
 §461 hizo con la puerta de la edad. Si entra, se escribe el AIR; si no, se declara el techo con su

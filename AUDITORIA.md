@@ -34457,6 +34457,13 @@ la clave. De ahi que E5 necesite la banda SIN el ciclo de titularidad: medido, U
 (`CYC_PK`) y las CUATRO columnas de `COL_KEY`, sobre 31 columnas y una tuberia que acaba en la 279
 de 512. Un recorte pequeno sobre un circuito que ya cabe.
 
+**CORRECCION DEL §469, y se CITA en vez de borrarse (§247).** Los <<47,9 ms>> del
+parrafo de arriba y los <<125,3 ms>> que el RFC escribio a su lado NO salen de ninguna fuente
+del arbol. `doc/medicion-130-apareada.md`, medida en `6ee02d7`, da 28,7 y 102,8
+para esos dos gemelos; los BYTES que van junto a ellos SI son los suyos. Y la tuberia de
+`circuit_audit` no acaba en la 279 sino en la 287 -la 279 es `ROW_ROOT`-, con
+224 filas de holgura y no 232. El §469 lo retira del RFC y explica como paso.
+
 **D-I: se RETIRA lo que la fila prometia, y se dice por que.** La fila hablaba de re-verificar el
 STARK del solicitante. Medido: el registro guarda el `proof_digest` y NO la prueba -serian ~62 KB
 por operacion, razon escrita en `log.rs`- y `OpKind` solo tiene las once clases APLICADAS, asi que
@@ -34483,3 +34490,54 @@ instrumento de la D-H y, con su cifra, la decision de escribir el AIR o declarar
 tiene todavia ni vector ni testigo: cuando se construya, sus negativos por mutacion y su entrada en
 la familia del rechazo. Y sigue en pie el 5.A-202: los dos positivos de la edad llevan `emisor`
 ausente, y la concentracion por emisor nombrado no tiene positivo propio.
+
+## §469 — RFC-0007 E5: dos cifras sin fuente salen de la spec, y la geometria se re-deriva
+
+**Que.** Una CORRECCION MEDIDA, y va delante del codigo. El S468 publico en la D-H del RFC-0007 y
+en su propio asiento que `circuit_audit` cuesta **47,9 ms** y que `send` cuesta **125,3 ms**.
+Ninguna de las dos sale de ninguna fuente del arbol. La fuente es `doc/medicion-130-apareada.md`,
+medida en `6ee02d7` el 2026-08-04, y dice **28,7** y **102,8**; los BYTES que el S468 escribio
+junto a ellas -29.525 y 42.457- SI son los de esa tabla. De paso se repara el doc-comment de
+`circuit_audit.rs`, que publica una tuberia de antes del ciclo del salt, y la correccion SUBE al
+parrafo del §468 que se contradice, que es la forma del §247.
+
+**Como paso, y es lo que mas vale del asiento.** El S468 era un sello de PROSA y su juez fueron
+las DIEZ herramientas de `canon.sh` IDENTICAS. Ese invariante es CIEGO a una cifra falsa: ninguna
+de las diez deriva el coste de un circuito, asi que las diez podian salir identicas con el numero
+equivocado dentro. No es prosa que envejece -la clase del §297-: es una cifra que nace falsa y
+pasa el gate el mismo dia. **El invariante de un sello de prosa prueba que no se movio nada; no
+prueba que lo escrito sea verdad.**
+
+**Y el gate no podia verlo aunque quisiera, medido.** `tools/check_figures.py:141-143` arma su
+universo con los `.md` de la raiz mas `doc/*.md`: **`spec/` no entra**. Un RFC puede publicar
+cualquier cifra sin que ninguna herramienta hable. Queda declarado y va a la cola: los RFC son,
+con el PAPER, de lo primero que lee un revisor de fuera.
+
+**La geometria, re-derivada de la cadena de constantes.** El doc-comment decia que la tuberia
+acaba en la fila 279 con **232 filas de holgura** (29 ciclos). Derivado: `CYC_PK = CYC_ACC +
+TREE_DEPTH = 35`, `CYC_FIN = 36`, `ROW_PK_DONE = 287`, y la holgura son **224 filas, 28 ciclos**.
+El 279 es `ROW_ROOT`, otra constante del mismo fichero. La frase viene de
+`circuit_recovery_climb.rs`, donde el 279 SI es correcto porque ese circuito no tiene ciclo de
+titularidad: al copiarla, `audit` heredo el numero de un hermano con una fase menos. La frase se
+CITA y no se borra (§247), y el bloque toca SOLO la rancia -el hermano se comprobo derivando su
+propio presupuesto de compilacion y se dejo intacto.
+
+**Lo que se re-midio hoy, y confirma la tabla.** El instrumento `medicion_130_audit`, corrido tres
+veces en release sobre `8972543` con el arbol limpio: **30,0 . 29,4 . 29,3 ms** y **29.525 B las
+tres**. Contra los 28,7 de la tabla, +3,0 %: una corrida en serie de hace cinco semanas contra
+tres de hoy. El tamano de prueba es DETERMINISTA y clava, que es el control de que el instrumento
+es el mismo. El 47,9 estaba un 67 % por encima de su propia fuente.
+
+**Contadores.** Tres ficheros. El RFC pasa de 550 a 554 lineas (+4: los dos parrafos crecen al
+llevar su fuente dentro), `circuit_audit.rs` se queda en 1148 -tres lineas de comentario por
+tres- y `AUDITORIA.md` pasa de 34485 a 34543: las 7 lineas de la correccion que sube al parrafo
+del §468, mas el separador y este asiento. Ninguna cifra de tests se mueve, ningun pin, ningun
+vector, ningun `.md` nace: los documentos versionados siguen en 71 y `spec/vectors/` en 222
+ficheros y 216 `.json`. El unico `.rs` tocado lo es en un COMENTARIO, asi que su lista por NOMBRE
+sale identica.
+
+**Lo que NO cierra.** La D-H sigue sin su cifra: este sello retira la falsa, no pone la buena. El
+instrumento con las opciones de la CASA viene detras, y solo con su numero delante se decide si se
+escribe el AIR o se declara el techo. Queda el hueco del universo de `check_figures`, que es lo
+que dejo pasar esto. Y sigue en pie el 5.A-208, el doc-comment de
+`account_indices_are_not_enumerable`: misma familia, fuera del perimetro de este corte.

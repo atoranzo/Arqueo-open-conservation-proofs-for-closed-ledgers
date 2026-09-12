@@ -73,9 +73,9 @@ use crate::merkle::{Digest, MerklePath, TREE_DEPTH};
 use crate::rescue_hash::{apply_sbox, NUM_ROUNDS, STATE_WIDTH};
 
 pub const CYCLE_LENGTH: usize = 8;
-/// 512 filas. La tubería acaba en `ROW_PK_DONE` (fila 279): quedan
-/// **232 filas de holgura** (29 ciclos). Sin fase frozen, el mundo
-/// nuevo solo suma el ciclo del salt: 287, y 512 ALCANZA (spec §3).
+/// 512 filas. La tubería acaba en `ROW_PK_DONE` (fila 287): quedan
+/// **224 filas de holgura** (28 ciclos). El ciclo del salt ya entró:
+/// el «279» de antes era `ROW_ROOT`, y 512 ALCANZA (spec §3).
 pub const TRACE_LENGTH: usize = 512;
 pub const SEGMENT_LENGTH: usize = 64;
 /// Segmentos: saldo, saldo − inferior, superior − saldo.
