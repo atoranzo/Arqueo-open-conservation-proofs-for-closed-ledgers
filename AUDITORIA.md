@@ -34268,3 +34268,78 @@ siguen declaradas (§464). El artefacto empaqueta el binario que ahora verifica 
 de este sello, fichada y sin tocar: la seccion 6 de `spec/PAQUETE.md` enumera dos lineas de VERDE
 para siete formas, y el paso 0 de su seccion 4 nombra solo `extension` y `consumo` entre los
 `tipo`. El +16 de la suma de declarados sigue siendo deduccion (asiento §461, punto 57).
+
+## §466 — RFC-0007 E4b-3: el pin alcanza a la prueba de edad que la capa ya produce
+
+**Que.** El S466 (`7495846`) hizo que la CAPA produzca la prueba de edad sobre el libro de un nodo
+REAL, contra la cabeza v5 que ese nodo firmo, y que RECHACE si el libro no reproduce las cuatro
+cifras que esa firma cubre. Nacieron `crates/zk-ssl/src/prueba_edad.rs` (293 lineas, el productor y
+sus cuatro testigos) y `tools/banco_edad.sh` (257 lineas); `crates/zk-ssl/src/lib.rs` gano su
+`pub mod` y `crates/zk-ssl-node/src/main.rs` el modo `--prueba-edad`. Ese sello se cerro SIN
+asiento y SIN pin, por diseno: los dos van aqui. **E4b-3 del RFC-0007 queda cerrada por sus dos
+primeras exigencias** -la capa produce, y lo hace sobre un nodo real-; la tercera, su catalogo de
+vectores, es el S467.
+
+**El pin, y por que el canon estaba rojo.** La capa pasa **344** y lista **349** (los cuatro
+testigos de `prueba_edad.rs` sobre los 345 del S465), y su fila de `tools/canon.sh` seguia pinando
+340. Entre el S466 y este `-B` el canon `--sello` habria dado ROJO por esa unica causa. La fila
+pasa a **340 -> 344** con los 5 ignorados QUIETOS y con su entrada de historia; ninguna otra fila
+se mueve. El fichero no gana ni pierde una linea, asi que las tres SHA-REGION de `canon.sh` que el
+traspaso vigila van de centinela textual y no se mueven.
+
+**Las diez que el gate ve, y el paso intermedio que lo demuestra.** Con el pin ya movido y los
+documentos aun sin tocar, `check_cifras` cae con DIEZ rancias y con ninguna mas, PREDICHAS una a
+una antes de correrlo: `PAPER_EN.md:951`, `PAPER.md:992`, `ARQUITECTURA.md:58` y `:1116`,
+`PRINCIPIOS.md:136`, `doc/INSTITUCIONAL.md:514`, `doc/INSTITUTIONAL.md:496` y `PRINCIPIOS.md:0`
+-que es la :354, punto 130- por la capa; `PAPER.md:36` y `PRINCIPIOS.md:354` por el TOTAL DE SELLO
+**1126 -> 1130**. El censo del `340` se hizo EXHAUSTIVO sobre los `.md` vivos antes de fijar el
+perimetro: los demas aciertos son numeros de asiento (`§340`) y un `~340 GB/ano` de
+`doc/CONFIANZA_RESIDUAL.md`. El gate no tiene ceguera para esta cifra.
+
+**Las SIETE que el gate NO ve, y son mas de las que este corte traia escritas.** El punto 149 de la
+cola dice que `check_cifras` solo mira la cifra PEGADA a <<tests>> o <<pruebas>>. La carga con la
+que se abrio este corte nombraba TRES lineas fuera del gate; el censo de `1126|1263|1279` sobre los
+`.md` vivos dio **seis lineas y siete cifras**: `PAPER_EN.md:33` (1126 -> 1130, que se escapa
+porque dice <<1126 executable tests>> y hay una palabra por medio), `PAPER_EN.md:34` (1263 -> 1267
+y 1279 -> 1283, las dos en la misma linea), `PAPER.md:37` (1263 -> 1267), `PAPER.md:38`
+(1279 -> 1283), `PRINCIPIOS.md:357` (1263 -> 1267) y `PRINCIPIOS.md:358` (1279 -> 1283). Las tres
+que la carga nombraba llevaban UNA de las dos cifras cada una, no las dos. **Un censo heredado del
+perimetro del sello anterior no es un censo**: se re-mide, y aqui costo cuatro posiciones. Todas se
+mueven a mano por el MISMO delta que el pin, +4, y este asiento lo dice.
+
+**Los modulos de la capa, que este sello movio.** `ARQUITECTURA.md:1116` publicaba <<24 modulos>> y
+la capa tiene **25**. El universo es derivable y DOS lo dan igual: las declaraciones `mod` de
+primer nivel de `lib.rs` (25, sin contar el modulo de tests en linea de la :507) y los `.rs` bajo
+`crates/zk-ssl/src/` sin `lib.rs` (25). Sin `prueba_edad` salen 24, luego la cifra era CORRECTA
+hasta el S466 y es este sello quien la deja rancia. Vive en la misma linea que un `340` que este
+corte edita: se paga aqui, con su universo escrito, y no se deja falsa en una frase que se toca.
+
+**Lo que este corte NO ensancha.** `ARQUITECTURA.md:60` publica <<18 circuitos>> y hay 22
+`circuit_*.rs` en `crates/stark-experiment/src/`. El S466 no movio esa cifra -`circuit_edad.rs`
+nacio en el S463- y el ambito de este corte es lo que el pin mueve, no lo que este rancio al lado.
+Se declara y va a la cola.
+
+**La decision del traspaso, REVERSIBLE.** El TRASPASO-130 (`99c36f725044ac5c`) declara en su
+seccion 3 las cifras DEL ARBOL de `7495846` -sello 1126, `1126 + 137 = 1263`, `1263 + 14 = 1277`- y
+no las que este `-B` deja. Fundamento: la vara 4 del manifiesto -el sistema es lo que se demuestra,
+no lo que se desea- y la 3 -la seccion 3 y la 7 hablan del mismo arbol-; y porque las puertas G3 y
+G4 del juez solo comprueban que la suma cuadre, asi que una cifra anticipada habria pasado el gate
+sin que nadie la viera. Lo que este `-B` paga iba alli aparte, como deuda con su perimetro. El
+TRASPASO-131 llevara ya `1130 + 137 = 1267` y `1267 + 14 = 1281`, con `check_tests` en 1284.
+
+**Contadores.** Pin `zk-ssl` 340 -> 344 (4 tests), 5 ignorados quietos; ninguna otra fila. TOTAL DE
+SELLO 1126 -> 1130; largos 1263 -> 1267; declarados de los documentos 1279 -> 1283. `check_tests`
+DERIVA 1284 del arbol desde el S466, sin que nadie lo mueva: el offset contra el `+14` del traspaso
+pasa de +3 a +7 y sigue sin fuente (punto 57). `check_modulos` 124 -> 125. `tools/*.sh` 13 -> 14 y
+los bancos NUEVE -> DIEZ (`banco_edad.sh`), y las herramientas del canon siguen siendo DIEZ
+(PRECISION 78). Documentos `.md` versionados: 71, ninguno nace. Diecisiete sustituciones por VALOR
+en siete ficheros, cada una con su aserto de unicidad; ningun `.rs` tocado y ningun Cargo tocado.
+
+**Lo que NO cierra.** El catalogo de la familia `edad/` no existe: es el S467, y con el la tercera
+exigencia de la fila E4. El sobre de edad pesa ~125 KB porque la prueba viaja en hex y duplica, asi
+que la familia entera rondaria 1,2 MB frente a los 4,56 MB de las tres actuales; el coste va medido
+en ese corte. El texto del noveno negativo lo pone WINTERFELL
+(`InconsistentOodConstraintEvaluations`) y no la casa: un vector cuyo texto es de una dependencia
+caduca con ella. Las formas por IMPORTE siguen DECLARADAS y no probadas, porque el operador no
+guarda la apertura del compromiso. Y `check_cifras` sigue sin ver siete de las nueve cifras totales
+que los documentos publican (punto 149): mientras no las vea, cada delta se paga a mano.
