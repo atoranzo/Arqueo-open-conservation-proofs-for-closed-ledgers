@@ -1145,4 +1145,28 @@ mod tests {
             proof.to_bytes().len()
         );
     }
+    /// **[§470] El coste con las opciones de la CASA (D-H del RFC-0007).**
+    /// El MISMO escenario honesto y el mismo reloj que `medicion_130_audit`;
+    /// lo unico que cambia son las opciones. `zk_ssl_air::opciones()` es UN
+    /// solo productor —un test de la capa lo ata a `proof_options()`—, asi
+    /// que aqui no nace ningun literal. La cifra es una COTA SUPERIOR de lo
+    /// que costaria la banda de `InsufficientBalance`: el recorte del ciclo
+    /// de titularidad solo puede quitar. Correr a mano, en release:
+    /// `cargo test --release -p stark-experiment medicion_470 -- --ignored --nocapture`
+    #[test]
+    #[ignore = "instrumento de medida, no comprobacion: correr a mano"]
+    fn medicion_470_audit_casa() {
+        use std::time::Instant;
+        let t0 = Instant::now();
+        let (w, _root, _id) = scenario(1_000_000);
+        let trace = build_trace(&w, 900_000, 1_100_000);
+        let proof = AuditProver::new(zk_ssl_air::opciones())
+            .prove(trace)
+            .expect("el honesto debe probar con las opciones de la casa");
+        let ms = t0.elapsed().as_secs_f64() * 1000.0;
+        println!(
+            "[§470] audit CASA: prove {ms:.1} ms, proof {} bytes",
+            proof.to_bytes().len()
+        );
+    }
 }

@@ -34541,3 +34541,42 @@ instrumento con las opciones de la CASA viene detras, y solo con su numero delan
 escribe el AIR o se declara el techo. Queda el hueco del universo de `check_figures`, que es lo
 que dejo pasar esto. Y sigue en pie el 5.A-208, el doc-comment de
 `account_indices_are_not_enumerable`: misma familia, fuera del perimetro de este corte.
+
+## §470 — RFC-0007 E5: el instrumento de la D-H, y ninguna cifra todavia
+
+**Que.** Un instrumento y nada mas. Nace `medicion_470_audit_casa` en `circuit_audit.rs`: el MISMO
+escenario honesto y el mismo reloj que `medicion_130_audit`, y lo unico que cambia son las
+opciones de prueba. Este sello NO trae la cifra de la D-H: trae con que medirla. El numero y el
+veredicto -escribir el AIR de `InsufficientBalance` o declarar su techo- van en el sello siguiente,
+como el §461 y el §462 hicieron con la puerta de la edad.
+
+**Un solo productor, y por eso el instrumento no inventa nada.** Las opciones de la casa entran por
+`zk_ssl_air::opciones()`, que un test de la capa ata a `proof_options()`
+(`crates/zk-ssl/src/instrumento_edad.rs:517`, `assert_eq!`). Escribir aqui un
+`ProofOptions::new(42, 16, 21, Quadratic, ...)` habria creado un SEGUNDO productor de la misma
+verdad, que es la clase que este proyecto persigue desde el §292. El precedente exacto vive en el
+mismo crate: `circuit_edad.rs:216-218`, `probar()`, que ya prueba con las opciones de la casa por
+esa misma via. `stark-experiment` depende de `zk-ssl-air` desde el §463, asi que no nace ninguna
+dependencia.
+
+**Lo que la cifra va a ser, dicho antes de tenerla.** Es una COTA SUPERIOR del coste de la banda de
+`InsufficientBalance`, no su coste. La D-H pide el molde `circuit_audit` SIN el ciclo de
+titularidad, y ese recorte solo puede QUITAR: 8 filas de una tuberia que acaba en la 287, y
+4 columnas de 31. Medir el circuito entero acota por arriba lo que costaria el recortado,
+y una cota que ya entre decide sin escribir un AIR.
+
+**El falsador que el corte ejercita, y es gratis.** Con el test dentro y la columna de ignorados
+sin mover, `canon.sh:226` tiene que dar ROJO NOMBRADO -`stark-experiment: ignorados 11, el canon
+dice 10`- y en esa fila SOLA. El bloque corre ese paso intermedio antes de tocar la columna, como el
+§466-B hizo con las diez cifras rancias del pin: una puerta que no se ve disparar no esta probada.
+
+**Contadores.** Dos ficheros mas el asiento. El PIN de `stark-experiment` NO se mueve -sigue en
+330-: un `#[ignore]` no pasa por el arnes, y lo que sube es la columna de IGNORADOS, 10 -> 11.
+`check_tests` pasa de 1284 a 1285 tests declarados y de 15 a 16 instrumentos; las
+otras NUEVE herramientas, IDENTICAS. Ninguna cifra de tests publicada en un documento vivo se
+mueve: el 1284 solo aparece en asientos de `AUDITORIA.md`, que son pasado y no se reescriben.
+`circuit_audit.rs` pasa de 1148 a 1172 lineas; ningun vector, ningun `.md` nace.
+
+**Lo que NO cierra.** Todo lo que importa: la D-H sigue sin su numero. Este sello solo garantiza
+que cuando llegue saldra de una corrida y no de una memoria, que es exactamente lo que fallo en el
+§468.
