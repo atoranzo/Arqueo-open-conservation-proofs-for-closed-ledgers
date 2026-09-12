@@ -34580,3 +34580,58 @@ mueve: el 1284 solo aparece en asientos de `AUDITORIA.md`, que son pasado y no s
 **Lo que NO cierra.** Todo lo que importa: la D-H sigue sin su numero. Este sello solo garantiza
 que cuando llegue saldra de una corrida y no de una memoria, que es exactamente lo que fallo en el
 §468.
+
+## §471 — RFC-0007 E5: la D-H tiene su cifra, y entra
+
+**Que.** El veredicto de la D-H. El instrumento que el §470 sello ya dio su numero: `circuit_audit`
+con las opciones de la casa cuesta **137,3 ms y 51.449 B**, frente a 28,7 ms y 29.525 B con las del
+circuito -x4,79 en tiempo, x1,74 en tamano-. La cota ENTRA y **el AIR de `InsufficientBalance` se
+escribe**. Este sello no escribe una linea de ese AIR: escribe el veredicto y lo que la medida
+destapo, para que quien lo construya no tenga que volver a medir nada.
+
+**La comparacion que decide, y por que es esa.** No se compara contra una expectativa -no habia
+ninguna escrita, a proposito- sino contra lo que la capa YA paga por prueba en produccion, que son
+CONSTANTES del codigo y no memoria: `metrics.rs` fija `PUBLICADA_ENVIO_B = 66_998` y
+`PUBLICADA_COBRO_B = 65_313`. Los 51.449 B de la banda son un 23,2 % menos que el envio y un 21,2 %
+menos que el cobro: la cota superior de una causa por circuito ya es mas barata que la prueba mas
+barata que la capa emite en cada pago. Y el recorte del ciclo de titularidad -8 filas de 288 y 4
+columnas de 31- solo puede QUITAR.
+
+**Los tiempos NO se comparan, y eso tambien va escrito.** `metrics.rs` no publica ninguna constante
+de milisegundos: los 269,5 y 176,5 ms del envio y el cobro salen del M0 de la sesion 28 y estarian
+arrastrados. Un numero medido hace cinco semanas sigue siendo un numero tecleado hoy. Si el tiempo
+llega a decidir algo, se re-mide APAREADO, como se hizo aqui.
+
+**El apareamiento no es una floritura.** Los dos instrumentos corrieron alternados dentro de cada
+ronda, tres rondas, sobre `12dd192`: si la maquina deriva, deriva para los dos, y la razon sale de
+la misma corrida. El control lo dio el circuito, que midio 28,7 ms hoy contra los 28,7 de la tabla
+del §130 -la maquina no ha derivado-, y los bytes, constantes en las tres rondas de las dos series.
+La leccion es del §469, cobrada al turno siguiente.
+
+**LO QUE LA MEDIDA DESTAPO, y no estaba en la pregunta: el sobre de rechazo no tiene productor.**
+Censo del arbol por la clave `tipo`, separando quien ESCRIBE de quien LEE -un mando que verifica no
+es un productor, y un fichero de `spec/vectors/` es una captura, no codigo-: `extension`,
+`consumo`, `conflicto` y `edad` tienen productor en codigo; `rechazo` tiene 66 vectores, su
+manifiesto y su verificador, y CERO codigo que construya uno. Lo dice su propio manifiesto desde el
+§455: el banco que capturo aquellas respuestas no vive en el arbol. Asi que escribir el AIR
+arrastra una pieza que la D-H no nombraba.
+
+**La decision, REVERSIBLE y con su precedente medido.** El productor sigue la forma del §466:
+`--prueba-edad` es un MODO del binario del nodo que escribe el sobre y SALE antes de arrancar el
+servidor (`crates/zk-ssl-node/src/main.rs:713`), con su banco versionado conduciendolo. Fuera de
+banda y por invocacion explicita. Eso cierra de paso una pregunta que el numero abrio: a 137,3 ms
+por prueba, si el sobre se produjera en CADA rechazo una peticion barata compraria esa CPU del
+nodo; por invocacion explicita, no la compra nadie. Se descarto la otra forma -un camino del cable,
+como el de la D-G- justamente por eso: la D-G viaja un camino de Merkle, que es barato; esto es un
+STARK.
+
+**Contadores.** Dos ficheros mas el asiento: el RFC pasa de 554 a 572 lineas y `AUDITORIA.md` gana
+el suyo. Ningun `.rs`, ningun pin, ningun vector, ningun `.md` nace: el juez son las DIEZ
+herramientas IDENTICAS, que es el invariante de un sello de prosa. Con la salvedad que el §469 dejo
+escrita y que aqui se aplica: ese invariante prueba que no se movio nada, no que lo escrito sea
+verdad. Lo que sostiene las cifras de este asiento es que cada una sale o de una constante del
+codigo o de una corrida con su huella (`SALIDA-470-M` `65fe74f2703373a8`).
+
+**Lo que NO cierra.** El AIR. Este sello dice que se escribe y con que cota; escribirlo es el
+siguiente, y arrastra el productor del sobre. Queda tambien el hueco de `check_figures`, que no ve
+`spec/`, y que es por donde entro el §468.
