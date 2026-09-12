@@ -34635,3 +34635,35 @@ codigo o de una corrida con su huella (`SALIDA-470-M` `65fe74f2703373a8`).
 **Lo que NO cierra.** El AIR. Este sello dice que se escribe y con que cota; escribirlo es el
 siguiente, y arrastra el productor del sobre. Queda tambien el hueco de `check_figures`, que no ve
 `spec/`, y que es por donde entro el §468.
+
+## §472 — RFC-0007: la celda de E4 decia <<en curso>> con E4 entera
+
+**Que.** Una sustitucion, y la mas barata del arco. La columna de estado de la fila E4 del
+RFC-0007 empieza por `**en curso**` y termina, ocho lineas mas abajo, con `**E4 queda entera**`.
+Sus tres hermanas dicen `**sellada**`. La propia celda nombra en su ultima clausula el §467 -el
+catalogo de la prueba de edad, once vectores que el mando corre sin el nodo- y el marcador se
+quedo en el estado de antes. Un revisor que lea la tabla ve E4 abierta y el resto de la fila
+diciendo que no.
+
+**Por que aparte y por que ahora.** Es la unica frase del arbol que hoy dice algo FALSO de este
+proyecto, y la tabla del RFC-0007 es lo primero que lee quien evalua H4. No espera a E5 porque no
+depende de E5: el perimetro es UNA celda, y pegarla al primer sello de E5 la ataria a un corte que
+puede tardar. Es la clase que la sesion 132 cobro dos veces -prosa que se amplia por abajo sin
+retirar lo de arriba-, y aqui cuesta un byte.
+
+**Como se localiza, que es lo unico delicado.** El marcador NO es unico: `**en curso**` casa DOS
+filas de la misma tabla, la E4 y la E5, y la de E5 es CORRECTA -E5 esta decidida y sin una linea
+de codigo-. El ancla es `**en curso** — E4a`, que casa UNA vez; el editor lo asierta y el bloque
+imprime el conteo. Localizar por numero de fila o por columna habria sido teclear una posicion.
+
+**Contadores.** Un fichero mas el asiento. El RFC conserva sus 572 lineas y pierde UN byte -de
+47.429 a 47.428-: `en curso` mide ocho y `sellada` siete. Ningun `.rs`, ningun pin, ningun vector,
+ningun `.md` nace. El juez son las DIEZ herramientas IDENTICAS, que es el invariante de un sello de
+prosa, mas el canon en verde. Y conviene decirlo: `check_figures` no habria hablado aunque la celda
+llevara una cifra, porque su universo no incluye `spec/` (5.A-211).
+
+**Lo que NO cierra.** Nada de E5, que sigue con sus tres decisiones resueltas y cero codigo; su
+celda dice <<en curso>> y ahi es verdad. Y queda escrito lo que este sello NO prueba: el invariante
+de las diez herramientas dice que no se movio nada, no que lo escrito sea verdad (§469). Lo que
+sostiene esta correccion no son las herramientas: es que la celda se contradice CONSIGO MISMA, y su
+propio final dice <<E4 queda entera>>.
