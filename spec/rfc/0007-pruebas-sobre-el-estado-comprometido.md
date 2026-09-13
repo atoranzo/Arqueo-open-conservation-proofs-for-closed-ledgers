@@ -210,6 +210,15 @@ revelar es un coste y se declara:
 | `CustodianSetExhausted` | el cupo se deriva del registro (§393, §394), que la cabeza compromete sólo por `chainDigest` | — | declarada sin prueba portable |
 | `NotTheIssuer`, `NotTheAccountHolder` | la autorización ausente no se puede exhibir | — | declaradas sin prueba |
 | `BalanceOutsideBand` | es del camino de auditoría del titular, no de una operación | — | fuera |
+
+**Correccion (§476, E5 corte 3b).** La fila de `AccountNotFound(i)` de la tabla de arriba dice
+`nada` en la columna de lo que revela y `E3` en la de la etapa, y las dos han dejado de ser
+ciertas. La regla que se prueba no es `i >= next_index`: es **la hoja VACÍA de la cuenta `i` bajo
+el `accountsRoot` que la cabeza del `seq` EXACTO firma**, con su camino de 32 niveles viajando
+DENTRO del propio sobre de rechazo y sin método nuevo en el cable (D-G). Lo que revela es que esa
+posición está libre, y sólo a quien hizo la petición. La etapa es **E5** desde la corrección del
+§459. La fila no se reescribe: esto la corrige.
+
 | `Store` | fallo del operador, no una regla | — | se declara como fallo, nunca como rechazo |
 
 Cada causa de E3 lleva un vector positivo producido por un banco con nodo real y un negativo
@@ -442,9 +451,13 @@ milisegundos, asi que un ms de produccion citado seria arrastrado y no medido.
 
 **Y lo que la medida destapo, que la fila no preveia: el sobre de rechazo NO TIENE PRODUCTOR.**
 Censado en el arbol por la clave `tipo`, separando quien lo ESCRIBE de quien lo LEE: `extension`,
-`consumo`, `conflicto` y `edad` tienen productor en codigo; `rechazo` tiene 66 vectores, su
+`consumo`, `conflicto` y `edad` tienen productor en codigo; `rechazo` tiene 75 vectores, su
 manifiesto y su verificador en el mando, y **cero** codigo que construya uno. Su propio manifiesto
-lo declara: el banco que capturo aquellas respuestas no vive en el arbol. Escribir el AIR arrastra
+lo declara: el banco que capturo aquellas respuestas no vive en el arbol.
+**Correccion (§476).** Las dos ultimas frases son la medida de la 132 y siguen contando lo que
+entonces habia; desde el §473 el sobre de rechazo SI tiene productor —`--prueba-rechazo`, un modo
+del binario del nodo— y su banco SI vive en el arbol: `tools/banco_rechazo.sh`. La cuenta de
+vectores es la de hoy. Escribir el AIR arrastra
 por tanto una pieza que esta decision no nombraba, y su forma ya esta probada: `--prueba-edad` es
 un MODO del binario del nodo que escribe el sobre y **sale antes de arrancar el servidor**
 (`crates/zk-ssl-node/src/main.rs:713`), conducido por un banco versionado. Fuera de banda y por

@@ -146,6 +146,8 @@ donde el valor es una respuesta del cable sin reescribir.
   "lote": [ {…}, {…} ] }                                      (un duplicado de lote)
 { "v": 1, "tipo": "rechazo", "data": {…}, "cabeza": {…},
   "congelados": {index, leaf, camino} }                       (AccountFrozen)
+{ "v": 1, "tipo": "rechazo", "data": {…}, "cabeza": {…},
+  "cuenta": {index, leaf, camino} }                           (AccountNotFound)
 { "v": 1, "tipo": "rechazo", "data": {…}, "cabeza": {…}, "parametros": {…},
   "peticion": {index, amount} }                               (SupplyCapExceeded)
 ```
@@ -168,7 +170,8 @@ donde el valor es una respuesta del cable sin reescribir.
   de congelados, que va y vuelve (`AccountFrozen`), el suministro, que sube con cada emisión y
   baja con cada quema (`SupplyCapExceeded`)— la cabeza tiene que ser **la misma** del rechazo. La
   mutabilidad está medida en el código (§455, §456, §459, §460).
-- Las causas que este mando prueba (RFC-0007 E3: E3a, E3b y el §460):
+- Las causas que este mando prueba (RFC-0007 E3 —E3a, E3b y el §460— y, desde el §476,
+  la causa de E5 que se construye):
 
 | causa | material | qué comprueba | cabeza |
 |---|---|---|---|
@@ -181,6 +184,7 @@ donde el valor es una respuesta del cable sin reescribir.
 | `DuplicateAccountInBatch` | `lote` | el primer choque del lote, con la regla de `apply_many`, es una cuenta repetida | v5, la misma (§456) |
 | `DuplicatePendingInBatch` | `lote` | el primer choque del lote es una posición repetida | v5, la misma (§456) |
 | `AccountFrozen` | `congelados` | el camino es el de la cuenta que `data` nombra (cruce con sus bits), mide los 32 niveles que fija el núcleo y sube al `frozenRoot`; la hoja no es la vacía | v3, v4 o v5, la misma (§459) |
+| `AccountNotFound` | `cuenta` | el camino es el de la cuenta que `data` nombra (cruce con sus bits), mide los 32 niveles que fija el núcleo y sube al `accountsRoot`; la hoja **es** la vacía | v5, la misma (§476) |
 | `SupplyCapExceeded` | `parametros`, `peticion` | los siete recomponen; `cap` es el `maxSupply` comprometido; `wouldBe` es el `totalSupply` de la cabeza más el `amount` de la petición (la suma saturada de la capa) y pasa el tope | v5, la misma (§460) |
 
 - Cualquier otra causa se rechaza con su nombre. `SupplyCapExceeded` la añadió el §460: por el
@@ -235,7 +239,7 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 | extensión | `camino` (lista de digests) | `RPC.md:781-808` |
 | consumo | `consumo`, y `presencia`/`ausencia` → `siblings`, `isRight` | `zkssl_consumoPath`, `RPC.md` |
 | conflicto | `consumo`, y `libros[]` → `cabeza`, `presencia` → `siblings`, `isRight` | este documento, sección 2.5 |
-| rechazo | `data` → `causa`, `campos`, `seq`; `parametros` → los siete de `zkssl_params`; `presencia` → `siblings`, `isRight`; `recibo` → `rootOld`, `pendingRootOld`, `frozenRoot`; `lote[]` → `kind`, `sender` o `receiver`, `receipt` → `notice` → `position` o `notice` → `position`; `congelados` → `index`, `leaf`, `camino` → `siblings`, `isRight`; `peticion` → `amount` | este documento, sección 2.6 |
+| rechazo | `data` → `causa`, `campos`, `seq`; `parametros` → los siete de `zkssl_params`; `presencia` → `siblings`, `isRight`; `recibo` → `rootOld`, `pendingRootOld`, `frozenRoot`; `lote[]` → `kind`, `sender` o `receiver`, `receipt` → `notice` → `position` o `notice` → `position`; `congelados` → `index`, `leaf`, `camino` → `siblings`, `isRight`; `peticion` → `amount`; `cuenta` → `index`, `leaf`, `camino` → `siblings`, `isRight` | este documento, sección 2.6 |
 | edad | `enunciado` → `t`, `k`, `emisor`; `subraices` → `pendientes`, `meta`; `prueba` | este documento, sección 2.7 |
 
 ⚠️ **§419 — el «31» de arriba ya no es la cuenta**: el sobre de consumo añade `consumo`,
@@ -533,6 +537,15 @@ de las capturas de un nodo real con un tope de suministro pequeño (`--max-suppl
 PASTE-R7SC-M) y siete negativos. Dos no son mutaciones, y se declara: la cabeza anterior es la
 FIRMADA REAL de antes de emitir, y el tope no superado es una escena de dos campos —el importe y
 el `wouldBe` a la vez—, porque una sola mutación de lo real no llega a esa regla.
+**Desde §476 cubre `AccountNotFound`** (RFC-0007, E5, corte 3b, y es la primera causa de E5 con
+catálogo): un positivo reunido de las capturas de un nodo real que produce el sobre con
+`zk-ssl-node --prueba-rechazo` (`tools/banco_rechazo.sh`, las CAPTURAS-475) y **ocho** negativos,
+uno por regla producible. Dos cosas se declaran. El **disfraz** —el nodo dice que la cuenta no
+existe y la hoja bajo `accountsRoot` SÍ está ocupada— **no se puede producir**: exigiría el camino
+real de una cuenta viva, y la D-G del RFC-0007 cerró la puerta a un método del cable que lo sirva;
+su testigo es PURO y vive en los `#[test]` de `crates/zk-ssl-verify/src/cuentas.rs` (§475). Y de
+las cuatro mutaciones que el banco falsa en vivo, dos —la hoja y un hermano del camino— caen por
+la MISMA regla: el catálogo pina la regla, no la pieza mutada, así que sólo una entra como vector.
 **Desde §467 cubre el sobre de EDAD** (RFC-0007, E4b-3, que cierra E4): `spec/vectors/edad/`
 trae DOS positivos REUNIDOS de las capturas de un nodo real -la capa los produjo con
 `zk-ssl-node --prueba-edad` sobre el libro de ese nodo, contra la cabeza v5 de seq 10 que el
@@ -543,8 +556,10 @@ no verifica lo pone WINTERFELL y no la casa, asi que el manifiesto pina solo el 
 `edad:` que antepone el mando. La cabeza capturada no viaja como vector: va entera dentro de
 los dos sobres, y su huella se declara en la cabecera del manifiesto.
 Las demostraciones en vivo con nodo son `tools/banco_apagado.sh`, `tools/banco_consumo.sh`
-(RFC-0006, E3), `tools/banco_dos_libros.sh` (E4a) y `tools/banco_edad.sh` (E4b-3): el segundo
-de ellos levanta DOS nodos con DOS claves y produce el hecho que E4 existe para detectar.
+(RFC-0006, E3), `tools/banco_dos_libros.sh` (E4a), `tools/banco_edad.sh` (E4b-3) y
+`tools/banco_rechazo.sh` (RFC-0007 E5, corte 3b): el tercero de ellos levanta DOS nodos con DOS
+claves y produce el hecho que E4 existe para detectar, y el último produce el sobre de rechazo
+sobre un libro real con el servidor PARADO.
 
 ## 10. Historia
 

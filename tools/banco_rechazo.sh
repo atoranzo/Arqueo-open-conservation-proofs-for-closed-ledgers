@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-# tools/banco_rechazo.sh -- el banco del corte 3a de H4 (RFC-0007 E5): el PRODUCTOR del sobre.
+# tools/banco_rechazo.sh -- el banco del corte 3b de H4 (RFC-0007 E5): el PRODUCTOR del sobre.
 #
-# Demuestra el SOBRE DE RECHAZO como cosa producida y no reunida a mano: nodo real con --dev ->
-# se abre una cuenta y se fondea -> se CONGELA por `dev_freeze` (la via delegada real, con la
-# subida del arbol y los dos custodios de la suite) -> se custodia la cabeza v5 que ya compromete
-# esa congelacion -> el nodo MUERE -> el nodo produce el sobre con `--prueba-rechazo` -> el
-# verificador en VERDE **sin el nodo**. Y CINCO negativos: cuatro del sobre y uno del productor.
+# Demuestra el SOBRE DE RECHAZO como cosa producida y no reunida a mano, con DOS causas sobre el
+# MISMO libro: nodo real con --dev -> se abre una cuenta y se fondea -> se CONGELA por
+# `dev_freeze` (la via delegada real, con la subida del arbol y los dos custodios de la suite) ->
+# se custodia la cabeza v5 que ya compromete esa congelacion -> el nodo MUERE -> el nodo produce
+# el sobre de AccountFrozen y el de AccountNotFound con `--prueba-rechazo` -> el verificador en
+# VERDE **sin el nodo** con los dos. Y SIETE negativos: seis de los sobres y uno del productor.
 #
-# ⚠️ Es la PRIMERA congelacion de un banco del arbol (5.A-216): de los catorce `.sh` de `tools/`,
-# el unico que nombraba `dev_freeze` era `canon.sh`, y la unica congelacion viva eran los tests
-# del nodo.
+# ⚠️ Es la PRIMERA congelacion de un banco del arbol (5.A-216): de los quince `.sh` de `tools/`
+# -este incluido, y eran catorce cuando nacio- el unico que nombraba `dev_freeze` era `canon.sh`,
+# y la unica congelacion viva eran los tests del nodo.
 #
 # ⚠️ El nodo se para ANTES de producir: `sled` abre el libro en EXCLUSIVA, asi que el modo
 # `--prueba-rechazo` no puede correr con el servidor vivo. Es la razon del hermano, palabra por
@@ -254,12 +255,90 @@ if [ -n "$GUARDAR" ]; then
   msg "capturas guardadas en $GUARDAR (de aqui salen los vectores, por MUTACION)"
 fi
 
+
+# ---------------------------------------------------------------- LA SEGUNDA CAUSA: AccountNotFound
+# El nodo ya esta MUERTO y el libro es el mismo: la causa nueva no cuesta un nodo mas. El indice
+# SIN cuenta se DERIVA de una identidad que este banco NO abre, y su prueba de vida es que el
+# productor rehusa si esa cuenta existe (el negativo de mas abajo).
+FILA2=$(grep '^cuenta-inexistente\.json|' spec/vectors/rechazo/MANIFIESTO.txt) \
+  || fallo "el MANIFIESTO del rechazo no tiene fila para cuenta-inexistente.json"
+ESPERADO2=$(printf '%s' "$FILA2" | cut -d'|' -f3)
+[ -n "$ESPERADO2" ] || fallo "la fila de cuenta-inexistente.json no trae texto esperado"
+msg "el VERDE de la segunda causa, DERIVADO del MANIFIESTO: <<$ESPERADO2>>"
+
+SINCUENTA=$(python3 -c 'import sys; print(int(sys.argv[1], 16))' 0x45ff0001)
+[ "$SINCUENTA" != "$IDX" ] && [ "$SINCUENTA" != "$LIBRE" ] \
+  || fallo "el indice sin cuenta coincide con una de las abiertas: no discriminaria"
+
+SOBRE2="$DIR/rechazo-cuenta-no-existe.json"
+set +e
+SAL=$("$NODO" --ledger "$DIR/ledger" --log warn \
+        --prueba-rechazo "$SOBRE2" --rechazo-cabeza "$DIR/cabeza.json" \
+        --rechazo-causa AccountNotFound --rechazo-cuenta "$SINCUENTA" 2>&1)
+RC=$?
+set -e
+[ "$RC" = "0" ] || fallo "el nodo no produjo el sobre de AccountNotFound (exit $RC): $SAL"
+echo "$SAL" | sed 's/^/BANCO-RECHAZO|   /' >&2
+
+set +e; SAL=$("$VER" "$SOBRE2" 2>&1); RC=$?; set -e
+[ "$RC" = "0" ] || fallo "el sobre de AccountNotFound dio exit $RC (se esperaba 0): $SAL"
+case "$SAL" in
+  *"$ESPERADO2"*) : ;;
+  *) fallo "el mando dio VERDE pero NO con el texto que el MANIFIESTO declara: $SAL" ;;
+esac
+echo "$SAL" | sed 's/^/BANCO-RECHAZO|   /' >&2
+msg "POSITIVO 2: exit 0 y el texto del MANIFIESTO, con el nodo MUERTO"
+
+# El negativo del PRODUCTOR de esta causa: pedirle AccountNotFound sobre la cuenta CONGELADA.
+# La causa que sale es AccountFrozen -las guardas van en ORDEN- y tiene que rehusar NOMBRANDOLA
+# (PRECISION 410). Un productor que se fiara del orden pasaria por aqui sin decir nada.
+set +e
+SAL=$("$NODO" --ledger "$DIR/ledger" --log warn \
+        --prueba-rechazo "$DIR/tampoco-debe-nacer.json" --rechazo-cabeza "$DIR/cabeza.json" \
+        --rechazo-causa AccountNotFound --rechazo-cuenta "$IDX" 2>&1)
+RC=$?
+set -e
+[ "$RC" != "0" ] || fallo "el productor escribio un sobre de AccountNotFound para una cuenta que existe"
+case "$SAL" in
+  *"no la pedida"*) msg "NEGATIVO productor 2: exit $RC -- $(echo "$SAL" | tail -n 1)" ;;
+  *) fallo "el productor cayo, pero NO por su regla: $SAL" ;;
+esac
+[ ! -f "$DIR/tampoco-debe-nacer.json" ] || fallo "murio, pero dejo el fichero escrito"
+
+# TRES negativos del sobre, uno por REGLA. No hay un cuarto a proposito: mover un hermano del
+# camino cae por la MISMA guarda que mover la hoja, y un falsador que no discrimina no prueba
+# nada (asiento 476, D-2).
+python3 - "$DIR" <<'PY'
+import json, sys
+d = sys.argv[1]
+base = json.load(open(d + "/rechazo-cuenta-no-existe.json"))
+def esc(n, p): open("%s/%s.json" % (d, n), "w").write(json.dumps(p))
+def cop(): return json.loads(json.dumps(base))
+p = cop(); p["data"]["campos"]["index"] = hex(int(base["data"]["campos"]["index"], 16) + 1)
+esc("neg2-index-movido", p)
+p = cop(); p["data"]["seq"] = hex(int(base["data"]["seq"], 16) + 1); esc("neg2-seq-movido", p)
+p = cop(); p["cuenta"]["leaf"] = base["cabeza"]["accountsRoot"]; esc("neg2-hoja-otra", p)
+crudo = json.dumps(base)
+import os
+iguales = [f for f in sorted(os.listdir(d))
+           if f.startswith("neg2-") and open(d + "/" + f).read() == crudo]
+if iguales:
+    print("ROJO: estos sabotajes NO cambian un byte del positivo: " + " ".join(iguales))
+    raise SystemExit(3)
+print("tres cuerpos negativos derivados por MUTACION, y los tres DIFIEREN del positivo")
+PY
+
+# Los tres fragmentos estan LEIDOS de `verificar_rechazo` en crates/zk-ssl-verify/src/main.rs.
+niega "$DIR/neg2-index-movido.json"  "no es el del camino"          "2-index-movido"
+niega "$DIR/neg2-seq-movido.json"    "no es la del rechazo"         "2-seq-movido"
+niega "$DIR/neg2-hoja-otra.json"     "NO sube al accountsRoot"      "2-hoja-otra"
+
 git status --porcelain | sort > "$DIR/porcelain.post"
 SUCIO=$(comm -13 "$DIR/porcelain.base" "$DIR/porcelain.post" | wc -l)
 if [ "$SUCIO" -ne 0 ]; then
   comm -13 "$DIR/porcelain.base" "$DIR/porcelain.post" | sed 's/^/BANCO-RECHAZO|   /' >&2
   fallo "el banco ensucio $SUCIO entradas del arbol: no debe tocarlo"
 fi
-[ "$ROTOS" = "4" ] || fallo "se esperaban 4 negativos del sobre y cayeron $ROTOS"
+[ "$ROTOS" = "7" ] || fallo "se esperaban 7 negativos del sobre y cayeron $ROTOS"
 
 msg "BANCO-RECHAZO VERDE: el nodo PRODUJO el sobre sobre un libro real, el kit lo verifico SIN el nodo con el texto del MANIFIESTO, y cinco reglas cayeron EN VIVO"

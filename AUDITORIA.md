@@ -34922,3 +34922,69 @@ curso>> y cuya tabla D-D sigue poniendo `AccountNotFound(i)` en `i >= next_index
 desmentida ya por dos correcciones §247—. El disfraz seguira sin vector, y se declara. Y lo que
 este sello NO afirma: que el nodo rechazara, ni cuando; prueba que la causa se sostiene sobre el
 estado que una cabeza firmada compromete.
+
+## §476 — RFC-0007 E5, corte 3b: el CATALOGO de AccountNotFound
+
+**Que.** El mando probaba `AccountNotFound` desde el §475 y el nodo producia su sobre desde el
+§474, pero el catalogo portable tenia CERO vectores de esa causa: un tercero que descargara el
+tarball no podia ejercitarla. Este corte la mete en `spec/vectors/rechazo/` con un positivo
+REUNIDO de una corrida real y ocho negativos por UNA mutacion cada uno, da al banco su segundo
+brazo para que el material se reproduzca, y paga la prosa que el arco deja rancia. Con el, el
+corte 3b queda CERRADO por los tres lados: produccion, verificacion y catalogo.
+
+**El catalogo.** De 66 a 75 entradas y de 66 a 75 `.json`. El positivo sale de las CAPTURAS-475
+-el sobre que `zk-ssl-node --prueba-rechazo` escribio sobre un libro real, con el servidor
+parado- y se NORMALIZA al entrar: el nodo lo emite en `to_string_pretty` y el catalogo es
+compacto de una linea sin salto final, como sus setenta y cuatro hermanos. Los bytes son los del
+nodo; lo unico que cambia es el blanco.
+
+**Un vector por REGLA, y la medida corrigio la cuenta.** El arco anterior dejo CUATRO cuerpos
+negativos capturados y se anuncio un catalogo de 76. Corrido el mando REAL sobre los cuatro, dos
+de ellos -la hoja movida y un hermano del camino movido- dan EL MISMO texto, porque caen por la
+misma guarda: <<cuenta: el camino NO sube al accountsRoot de la cabeza>>. Son tres reglas y no
+cuatro. El catalogo pina la regla y no la pieza mutada, asi que entra uno y el otro se declara;
+el hermano de congelados ya lo hacia asi, con nueve negativos y nueve textos distintos. 75.
+
+**El disfraz no se construye, y se declara.** <<El nodo dice que la cuenta no existe y la hoja
+bajo `accountsRoot` SI esta ocupada>> exigiria el camino REAL de una cuenta viva, y la D-G cerro
+la puerta a un metodo del cable que lo sirva. Su testigo es PURO y ya vive en los `#[test]` de
+`crates/zk-ssl-verify/src/cuentas.rs`. Va escrito en `spec/PAQUETE.md` seccion 9, donde la casa
+declara lo que no tiene vector.
+
+**Ningun texto se teclea.** El VERDE sale de su unico productor -`main.rs`, el
+`println!("VERDE: {causa} ...")`- y cada texto de negativo sale del BINARIO en la corrida: el
+editor corre el mando sobre cada cuerpo mutado, le quita el prefijo y recorta con la convencion
+del hermano. Un candidato entra solo si da el rc Y el texto.
+
+**Lo que el corte deja al dia porque lo mueve.** La cabecera del MANIFIESTO decia <<los cuatro
+positivos>> y hoy son once, y acotaba la familia a E3 cuando entra una causa de E5. La cabecera
+de `tools/banco_rechazo.sh` describia un banco de una sola causa y contaba <<catorce `.sh`>>
+cuando son quince, este incluido -ese desfase lo dejo el <s>473, y se paga aqui porque vive en el
+parrafo que el brazo nuevo reescribe-. El RFC-0007 publicaba <<66 vectores>> en la unica frase
+viva que los cuenta, y en ese mismo parrafo seguia diciendo que el sobre no tiene productor y que
+su banco no vive en el arbol, las dos falsas desde el <s>473: se corrigen CITANDO, no borrando.
+Y la fila de `AccountNotFound(i)` de la tabla D-D seguia poniendo `nada` y `E3`: la correccion va
+debajo de la tabla y la fila no se reescribe.
+
+**El banco.** Segundo brazo sobre el MISMO libro y la MISMA cabeza: el nodo ya esta muerto cuando
+el primero termina, asi que la causa nueva no cuesta un nodo mas. Tres negativos por mutacion,
+uno por regla, y el negativo del PRODUCTOR: pedirle `AccountNotFound` sobre la cuenta CONGELADA,
+que tiene que rehusar nombrando la causa que salio. `banco_rechazo.sh` entra ademas en la lista
+de demostraciones en vivo de la seccion 9, donde faltaba desde que nacio.
+
+**Decisiones, todas REVERSIBLES y delegadas por el autor con la ley.** El nombre de la familia
+(`inexistente`, porque `cuenta` ya nombra el duplicado de un lote); un vector por regla en vez de
+uno por cuerpo capturado; el disfraz declarado; el banco en la lista; y las dos cabeceras
+reescritas. La primera y la segunda son las que mueven cifras publicadas.
+
+**Contadores.** 14 ficheros: 5 modificados con 207/21 lineas y 9 vectores nuevos con 0. `spec/vectors/rechazo/` pasa de 66 a 75 `.json` y su MANIFIESTO
+de 81 a 94 lineas. El arnes lo dijo asi: <<75 de 75 entradas dicen lo que deben (75 .json, 75 con entrada) - binario 47a7a23c6a1eea26>>. Las DIEZ herramientas, rc 0 en las
+DOS corridas y aceptadas por el juez por invariante. Canon `--sello` VERDE en 180 s.
+Ningun pin se mueve y ninguna cifra de tests: el corte no toca un `.rs`.
+
+**Lo que NO cierra.** E5 sigue abierta: falta `InsufficientBalance` con su AIR (5.A-213), que es
+lo unico que separa la fila de estar entera. `ProofFailed` y `VerificationFailed` siguen
+declaradas sin prueba portable (D-I). El disfraz de esta causa no tiene vector y no lo tendra
+mientras el camino de una cuenta viva no sea servible. Y el vector
+`rechazo-rech-causa-no-probada.json` pina hoy <<la causa InsufficientBalance no la prueba este
+mando>>: el corte que la promueva tendra que revisarlo, que es la leccion del <s>456.
