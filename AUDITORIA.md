@@ -34667,3 +34667,94 @@ celda dice <<en curso>> y ahi es verdad. Y queda escrito lo que este sello NO pr
 de las diez herramientas dice que no se movio nada, no que lo escrito sea verdad (§469). Lo que
 sostiene esta correccion no son las herramientas: es que la celda se contradice CONSIGO MISMA, y su
 propio final dice <<E4 queda entera>>.
+
+## §473 — el nodo PRODUCE el sobre de rechazo (RFC-0007 E5, corte 3a)
+
+**Que.** El sobre `tipo: "rechazo"` no tenia PRODUCTOR en el arbol. Sus 66
+vectores se reunieron de capturas de un nodo real, su MANIFIESTO los censa y el
+mando los verifica desde el S455, pero **ninguna linea de codigo construia
+uno**: el censo por la clave `tipo` daba productor a `extension`, `consumo`,
+`conflicto` y `edad`, y CERO a `rechazo`. Este sello lo pone, con la forma que
+el S471 dejo decidida y marcada reversible: un MODO del binario del nodo que
+escribe el sobre y SALE antes de arrancar el servidor.
+
+**La causa que lo estrena, y por que esa.** `AccountFrozen`. Su material es un
+camino de Merkle bajo la `frozenRoot` que la cabeza v5 FIRMA, asi que el sobre
+se sostiene solo; el de `OverRegulatoryLimit` es la palabra del nodo con la
+refutacion FUERA del sobre. Estrenar el productor donde el invariante no cierra
+habria sido construirlo en el sitio que no se puede falsar. Y es la hermana
+exacta de `AccountNotFound` —una hoja bajo una raiz firmada—, asi que el
+despacho nace con la forma que el corte 3b necesita.
+
+**La causa se EXIGE, no se deduce del orden.** `send_materials_inner` es la
+puerta unica de las tres causas de E5 y las separa el ORDEN de sus guardas:
+`account_view` da `AccountNotFound`, luego `is_frozen` da `AccountFrozen`,
+luego el saldo da `InsufficientBalance`. Un productor que se fiara de ese orden
+estaria tecleando una posicion, asi que el modo recibe la causa esperada en
+`--rechazo-causa` y **muere NOMBRANDO la que salio** si no coincide. Medido en
+vivo: sobre una cuenta que no esta congelada rehusa con <<no hay sobre que
+producir>> y no deja el fichero escrito.
+
+**El libro tiene que ser el que la cabeza firma.** Antes de escribir un byte, el
+modo compara la `frozenRoot` de la capa con la que la cabeza declarada lleva
+bajo firma. Sin esa puerta el sobre saldria muerto y el rojo lo daria el mando,
+que es tarde: el productor no puede escribir lo que sabe que no verifica.
+
+**UN productor del bloque `congelados`.** La forma de ese objeto la escribia
+solo el brazo `zkssl_frozenPath` del despacho; si el modo la hubiera vuelto a
+escribir serian dos productores del mismo objeto. Se extrae a
+`bloque_congelados` y la usan los dos, con los dos tests del cable que ya
+existian como testigo de que lo servido no mueve un byte.
+
+**El banco, y una primera vez.** Nace `tools/banco_rechazo.sh`, hermano de
+`banco_edad.sh`, y con el la **primera congelacion de un banco del arbol**: de
+los catorce `.sh` de `tools/` el unico que nombraba `dev_freeze` era
+`canon.sh`, y la unica congelacion viva eran los tests del nodo. Corrida real:
+nodo con `--dev`, dos cuentas fondeadas, una congelada por la via delegada,
+cabeza v5 de **seq 5** custodiada DESPUES de congelar —el banco lo deriva del
+`seq`, no del reloj—, el nodo MUERTO, el sobre producido y el mando en VERDE
+sin nodo, con sus tres pasos: la cabeza recompone y su firma verifica, el
+camino es el de la cuenta que el nodo nombro, y la hoja bajo el `frozenRoot` no
+es la vacia. El texto que se exige no se teclea: se DERIVA de la fila del
+MANIFIESTO, su unico productor.
+
+**CINCO reglas falsadas EN VIVO**, cuatro del sobre por UNA mutacion cada una y
+una del productor: `index-movido` (<<no es el del camino>>), `seq-movido` (<<no
+es la del rechazo>>), `hoja-otra` y `hermano-otro` (<<el camino NO sube al
+frozenRoot>>), y la del productor sobre una cuenta libre. Cada sustituto es un
+digest CANONICO que ya viajaba en el sobre, para que el rojo sea el de la regla
+y no el de la FORMA.
+
+**Capturas.** `rechazo-cuenta-congelada.json` `b3724da59e1d4f38`, 41.831 B —de
+los que 38.375 son la cabeza, que viaja entera dentro—; los cuatro negativos
+`e4cf74a0878a8452`, `c67ab565b41d1465`, `e082c98411e81c94` y
+`bb2586f8a52ebc89`, 41.112 B cada uno; la cabeza `116cf304ecb40186`. Viven en
+`CAPTURAS-473`, fuera del arbol: de ahi saldrian por MUTACION los vectores que
+hagan falta, y ninguno se reescribe.
+
+**Lo que este sello NO toca.** El catalogo: `AccountFrozen` ya tenia sus
+vectores desde el S459, asi que `spec/vectors/rechazo/` sigue en 66 `.json` y su
+MANIFIESTO fue CENTINELA. Ningun pin: el corte no anade un solo `#[test]`, y la
+lista del nodo salio IDENTICA nombre a nombre, 108. Ninguna cifra publicada, y
+las DIEZ herramientas, identicas antes y despues.
+
+**Dos defectos MIOS que la r1 se cobro, y los dos son de forma.** El primero, un
+liston ABSOLUTO de warnings de `cargo build` sobre un arbol que arrastra cuatro
+que este corte no puso: se mide una BASE y se juzga el DELTA, y es la tercera
+vez que la casa paga esa clase. El segundo, el ORDEN dentro de `restaurar()`:
+`git checkout -- <ruta>` restaura DEL INDICE, asi que con el POST ya en
+`git add` resucitaba justo lo que iba a deshacer; primero se deshace el indice.
+La r2 los arregla en la FUENTE que genera el bloque, no en la copia.
+
+**Contadores.** 2 ficheros, 150 inserciones y 10 borrados
+(`crates/zk-ssl-node/src/main.rs` 3993 -> 4133), `create mode 100755
+tools/banco_rechazo.sh` con 265 lineas. Pines: ninguno se mueve —capa 344,
+stark 330, nodo 108, verificador 104, cli 100, wire 22, hash 31—. Ningun Cargo
+tocado. `check_tests` sigue en 1285 y `check_modulos` en 125.
+
+**Lo que NO cierra.** El sobre lo produce el nodo para UNA causa: el corte 3b
+trae `AccountNotFound` y el AIR de `InsufficientBalance` sigue sin una linea
+(5.A-213). El banco vive FUERA del canon, como todos los de `tools/` (punto
+34), asi que lo que demuestra en vivo no lo vuelve a demostrar cada sello. Y el
+modo escribe el sobre con las claves en el orden de `serde_json`, que no es el
+del vector del S459: da igual al parsear y no se toca (5.A-155).
