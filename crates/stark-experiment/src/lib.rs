@@ -62,6 +62,7 @@
 //!   propiedades que llevaron a elegir este paradigma para la capa.
 
 pub mod circuit_audit;
+pub mod circuit_banda;
 pub mod circuit_burn;
 pub mod circuit_freeze;
 // Entrada 33 / §59: la subida a congelados sin la parte de autorizacion.
