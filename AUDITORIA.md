@@ -34982,6 +34982,19 @@ de 81 a 94 lineas. El arnes lo dijo asi: <<75 de 75 entradas dicen lo que deben 
 DOS corridas y aceptadas por el juez por invariante. Canon `--sello` VERDE en 180 s.
 Ningun pin se mueve y ninguna cifra de tests: el corte no toca un `.rs`.
 
+**Correccion del `-B` (S476-B).** El brazo nuevo dejo DOS cosas que su propio corte tenia que
+haber pagado, y las cazo la primera corrida del banco en vivo, no un contador. La primera: el
+bloque `--guardar` vivia DELANTE del brazo nuevo, asi que copiaba el material de la primera
+causa y el de la segunda moria con el temporal; y su glob era `neg-*.json`, que ni siquiera casa
+los `neg2-*` que el brazo nuevo escribe, ni traia el segundo sobre. Es la PRECISION 423
+reincidida DENTRO del corte cuyo asiento la cita: lo que alguien va a usar despues no nace en el
+temporal. El bloque sale de su sitio, se pone detras del segundo brazo y su glob se ensancha a
+`neg*` con `$SOBRE2` dentro. La segunda: la linea final publicaba <<cinco reglas cayeron EN
+VIVO>> y ahora son NUEVE -siete del sobre y dos de los productores-; el numero pasa a DERIVARSE
+de los dos contadores, con la puerta que exige `PROD` igual a 2 al lado de la que ya exigia
+`ROTOS` igual a 7. Un numero tecleado en una linea que se imprime en cada corrida es una cifra
+sin fuente, y esta lo era desde el mismo commit que la escribio.
+
 **Lo que NO cierra.** E5 sigue abierta: falta `InsufficientBalance` con su AIR (5.A-213), que es
 lo unico que separa la fila de estar entera. `ProofFailed` y `VerificationFailed` siguen
 declaradas sin prueba portable (D-I). El disfraz de esta causa no tiene vector y no lo tendra

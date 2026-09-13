@@ -25,7 +25,7 @@
 #   bash tools/banco_rechazo.sh [--guardar <dir>]
 #   cd ~/zk-ssl-real && bash <ruta-suelta> [--guardar <dir>]   (mientras vive en Downloads)
 #
-# --guardar  copia el sobre positivo, los cuatro cuerpos negativos y la cabeza a <dir>, con su
+# --guardar  copia los DOS sobres positivos, los SIETE cuerpos negativos y la cabeza a
 #            huella. De esas capturas se derivan por MUTACION los vectores que hagan falta
 #            (regla 2 del PROCESO: los vectores jamas se reescriben).
 #
@@ -191,13 +191,14 @@ RC=$?
 set -e
 [ "$RC" != "0" ] || fallo "el productor escribio un sobre para una cuenta que NO esta congelada"
 case "$SAL" in
-  *"no hay sobre que producir"*) msg "NEGATIVO productor: exit $RC -- $(echo "$SAL" | tail -n 1)" ;;
+  *"no hay sobre que producir"*) PROD=$((PROD+1)); msg "NEGATIVO productor: exit $RC -- $(echo "$SAL" | tail -n 1)" ;;
   *) fallo "el productor cayo, pero NO por su regla: $SAL" ;;
 esac
 [ ! -f "$DIR/no-debe-nacer.json" ] || fallo "murio, pero dejo el fichero escrito"
 
 # ---------------------------------------------------------------- LOS CUATRO NEGATIVOS DEL SOBRE
 ROTOS=0
+PROD=0
 niega(){ # niega <fichero> <fragmento esperado> <rotulo>
   local f="$1" frag="$2" rot="$3" s r
   set +e; s=$("$VER" "$f" 2>&1); r=$?; set -e
@@ -245,15 +246,6 @@ niega "$DIR/neg-seq-movido.json"    "no es la del rechazo"       "seq-movido"
 niega "$DIR/neg-hoja-otra.json"     "NO sube al frozenRoot"      "hoja-otra"
 niega "$DIR/neg-hermano-otro.json"  "NO sube al frozenRoot"      "hermano-otro"
 
-# ---------------------------------------------------------------- GUARDAR Y PUREZA
-if [ -n "$GUARDAR" ]; then
-  for f in "$SOBRE" "$DIR"/neg-*.json "$DIR/cabeza.json"; do
-    cp "$f" "$GUARDAR/"
-    printf 'BANCO-RECHAZO|   %-32s %s  %s B\n' "$(basename "$f")" \
-      "$(sha256sum "$f" | cut -c1-16)" "$(wc -c < "$f")" >&2
-  done
-  msg "capturas guardadas en $GUARDAR (de aqui salen los vectores, por MUTACION)"
-fi
 
 
 # ---------------------------------------------------------------- LA SEGUNDA CAUSA: AccountNotFound
@@ -300,7 +292,7 @@ RC=$?
 set -e
 [ "$RC" != "0" ] || fallo "el productor escribio un sobre de AccountNotFound para una cuenta que existe"
 case "$SAL" in
-  *"no la pedida"*) msg "NEGATIVO productor 2: exit $RC -- $(echo "$SAL" | tail -n 1)" ;;
+  *"no la pedida"*) PROD=$((PROD+1)); msg "NEGATIVO productor 2: exit $RC -- $(echo "$SAL" | tail -n 1)" ;;
   *) fallo "el productor cayo, pero NO por su regla: $SAL" ;;
 esac
 [ ! -f "$DIR/tampoco-debe-nacer.json" ] || fallo "murio, pero dejo el fichero escrito"
@@ -333,6 +325,16 @@ niega "$DIR/neg2-index-movido.json"  "no es el del camino"          "2-index-mov
 niega "$DIR/neg2-seq-movido.json"    "no es la del rechazo"         "2-seq-movido"
 niega "$DIR/neg2-hoja-otra.json"     "NO sube al accountsRoot"      "2-hoja-otra"
 
+# ---------------------------------------------------------------- GUARDAR Y PUREZA
+if [ -n "$GUARDAR" ]; then
+  for f in "$SOBRE" "$SOBRE2" "$DIR"/neg*.json "$DIR/cabeza.json"; do
+    cp "$f" "$GUARDAR/"
+    printf 'BANCO-RECHAZO|   %-32s %s  %s B\n' "$(basename "$f")" \
+      "$(sha256sum "$f" | cut -c1-16)" "$(wc -c < "$f")" >&2
+  done
+  msg "capturas guardadas en $GUARDAR (de aqui salen los vectores, por MUTACION)"
+fi
+
 git status --porcelain | sort > "$DIR/porcelain.post"
 SUCIO=$(comm -13 "$DIR/porcelain.base" "$DIR/porcelain.post" | wc -l)
 if [ "$SUCIO" -ne 0 ]; then
@@ -340,5 +342,6 @@ if [ "$SUCIO" -ne 0 ]; then
   fallo "el banco ensucio $SUCIO entradas del arbol: no debe tocarlo"
 fi
 [ "$ROTOS" = "7" ] || fallo "se esperaban 7 negativos del sobre y cayeron $ROTOS"
+[ "$PROD" = "2" ] || fallo "se esperaban 2 negativos del productor y cayeron $PROD"
 
-msg "BANCO-RECHAZO VERDE: el nodo PRODUJO el sobre sobre un libro real, el kit lo verifico SIN el nodo con el texto del MANIFIESTO, y cinco reglas cayeron EN VIVO"
+msg "BANCO-RECHAZO VERDE: el nodo PRODUJO el sobre sobre un libro real, el kit lo verifico SIN el nodo con el texto del MANIFIESTO, y $((ROTOS + PROD)) reglas cayeron EN VIVO"
