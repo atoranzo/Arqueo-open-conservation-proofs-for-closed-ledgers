@@ -35012,3 +35012,62 @@ declaradas sin prueba portable (D-I). El disfraz de esta causa no tiene vector y
 mientras el camino de una cuenta viva no sea servible. Y el vector
 `rechazo-rech-causa-no-probada.json` pina hoy <<la causa InsufficientBalance no la prueba este
 mando>>: el corte que la promueva tendra que revisarlo, que es la leccion del <s>456.
+
+## §477 — RFC-0007 E5, corte 4a: el AIR de la BANDA del saldo, sin titularidad
+
+**Que.** La causa `InsufficientBalance` del rechazo con prueba necesita afirmar que el saldo de
+una cuenta esta bajo un techo, y el unico AIR que sabe hacerlo -`circuit_audit`- exige la CLAVE
+de gasto. Quien produce un rechazo es el OPERADOR: tiene la hoja, el nonce, el camino y el salt,
+y NO tiene la clave. Con el ciclo de titularidad dentro, el rechazo no seria producible. Este
+corte hace nacer el AIR de la banda en el crate solo-verificador, recortado de aquel, y su
+probador en `stark-experiment`. `circuit_audit` NO se toca: dos semanticas en una pieza es lo
+que la vara prohibe, y su revelacion voluntaria es propiedad sellada.
+
+**La geometria, DERIVADA y no tecleada.** Fuera `COL_KEY` -cuatro columnas-, el ciclo `CYC_PK` y
+las familias `C_PK_INPUT` y `C_PK_CHECK`. Ancho 31 -> 27, restricciones de transicion 75 -> 63,
+y mueren las dos periodicas del ciclo. La traza sigue midiendo 512 filas porque las 280 que
+quedan ya obligaban esa potencia de dos: el recorte ahorra ancho y restricciones, NO filas. Cada
+cifra sale de evaluar la cadena de constantes del fichero real, y el generador muere si alguna
+no reproduce lo que el render del corte habia deducido.
+
+**Las CUATRO aserciones que ocupan el sitio del ciclo.** Quitar la titularidad sin poner nada
+dejaria un AIR que no ata NINGUNA cuenta: en el original nada ata `COL_ID` a la entrada publica
+-el probador la LEE de la propia traza- y lo unico que la hacia verdadera era `C_PK_CHECK`; su
+propio testigo lo dice. Aqui la atan cuatro aserciones de frontera contra el `public_id` que
+declara QUIEN VERIFICA. Cuestan cero columnas y cero restricciones de transicion, y con ellas
+las aserciones siguen siendo 17: salen cuatro de titularidad, entran cuatro de identidad.
+
+**El probador, sin una clave.** `BandaWitness` lleva identidad, saldo, nonce, camino y el salt
+que la capa LEE del almacen. No tiene campo de clave, y el censo del generador lo vigila: si
+`spend_key` apareciera en su codigo, no se emite. Esa es la diferencia entera con el hermano.
+
+**Doce testigos, y donde vive cada uno.** Los cinco de punta a punta -positivo, techo por los
+DOS lados, el tercero que declara otra identidad, otra raiz, la hoja sin salt- exigen PRODUCIR
+una prueba, y el crate solo-verificador no compila al probador: viven en `circuit_banda`, con
+los puntos de referencia contra el nativo y la prueba por mutacion de que ninguna restriccion
+esta vacia. En `banda.rs` van los cinco del molde de su crate. El render del corte los repartia
+al reves, y lo corrigio abrir el hermano: sus cinco `#[test]` no prueban ni uno.
+
+**El techo lo atan DOS cosas, y se supo matandolas.** El falsador que anula la ranura del bit
+del primer paso deja el techo EN PIE, y eso lo dijo la maquina, no la simulacion: con el
+acumulador del arranque forzado a cero, un bit alto en la primera fila queda FUERA del
+acumulador y `C_SEG_LINK` ve que no compone el valor del segmento. Anulando las DOS ranuras, un
+saldo por encima del techo verifica. Es propiedad HEREDADA de `circuit_audit` y nadie la habia
+medido; el corte deja los dos falsadores escritos, uno por cada mitad.
+
+**Contadores.** ONCE ficheros en el arco. El 4a: dos NACEN -`banda.rs` 562 lineas y
+`circuit_banda.rs` 443- y los dos `lib.rs` ganan su `pub mod`. El `-B`: `tools/canon.sh`
+sube DOS pines, circuitos **330 -> 337** y `zk-ssl-air` **5 -> 10**, y ninguno mas se mueve.
+Sumas **1135 -> 1147**, **1272 -> 1284** y **1288 -> 1300**, derivadas de la tabla
+ya subida y no tecleadas. `check_cifras` nombra SEIS de esas cifras y NO ve las TRES de
+`PAPER_EN.md`, que se corrigen igual porque una cuenta publicada en dos sitios se corrige en los
+dos. `check_tests` 1290 -> 1302, `check_modulos` 126 -> 128, `check_nucleo` rc 0 y QUIETO: las
+`pub` nuevas del AIR no obligan fila en el nucleo. Ningun Cargo tocado y ningun vector. Canon
+`--sello` VERDE en 505 s.
+
+**Lo que NO cierra.** El productor del rechazo en la capa y el brazo del mando -corte 4b- y el
+catalogo con la fila del RFC -corte 4c-. Tampoco mide el coste de la banda recortada: el
+`#[ignore]` que seria el par de `medicion_470_audit_casa` no entra, por perimetro, y la cota
+superior publicada sigue siendo la del AIR entero. Y este sello NO afirma que el nodo vaya a
+rechazar, ni cuando: prueba que el saldo bajo un techo se sostiene sobre el estado que una
+cabeza firmada compromete, sin que el probador tenga que ser el titular.
