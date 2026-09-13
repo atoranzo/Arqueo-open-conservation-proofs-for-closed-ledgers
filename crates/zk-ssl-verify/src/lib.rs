@@ -108,6 +108,12 @@ pub mod consumos;
 /// `AccountFrozen` dentro de un sobre de evidencia.
 pub mod congelados;
 
+/// RFC-0007 E5 (§475): las reglas del arbol de CUENTAS -la profundidad que
+/// fija el verificador, el cruce con el indice y la hoja VACIA-. El espejo de
+/// `congelados`: puras y sin la capa, el mando las usa para sostener el
+/// rechazo `AccountNotFound` dentro de un sobre de evidencia.
+pub mod cuentas;
+
 pub use zk_ssl_hash::{epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5};
 
 // ⚠️ §279 · **La superficie CRECE otra vez**, y por la misma razon que en

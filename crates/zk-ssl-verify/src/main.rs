@@ -806,7 +806,9 @@ fn verificar_conflicto(p: &serde_json::Value) -> Result<(), String> {
 /// Todo viaja TAL CUAL lo sirvio el cable -reunir, no recomponer-: `data` es el objeto `data` del
 /// rechazo (`spec/RPC.md`, §454), `{causa, campos, seq}`; `cabeza`, una respuesta de
 /// `zkssl_signedEpochHead`; `parametros`, la de `zkssl_params`; `presencia`, el camino de
-/// `zkssl_consumoPath`; `congelados`, la respuesta de `zkssl_frozenPath` (§459); `peticion`, los
+/// `zkssl_consumoPath`; `congelados`, la respuesta de `zkssl_frozenPath` (§459); `cuenta`, el
+/// camino del arbol de cuentas que el propio rechazo trae (§475, SIN metodo del cable);
+/// `peticion`, los
 /// `params` de la emision rechazada tal cual los envio el solicitante (§460). QUE cabeza
 /// sirve depende de la causa y se exige con el `seq`: una
 /// ANTERIOR al rechazo, o la misma, para lo que solo crece -`nextIndex`, los consumos-; cualquiera
@@ -1059,6 +1061,61 @@ fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
                 )));
             }
             println!("3/3 la hoja de la cuenta {dicho} bajo el frozenRoot de la cabeza no es la vacia");
+        }
+        "AccountNotFound" => {
+            // RFC-0007 E5, corte 3b (§475): la hoja VACIA de la cuenta bajo el
+            // `accountsRoot` de la cabeza del `seq` EXACTO, con las reglas del modulo `cuentas`
+            // (§475): profundidad FIJA, cruce con el indice y hoja vacia. El material es el
+            // bloque `cuenta` que el propio rechazo trae -`index`, `leaf`, `camino`-, y NO sale
+            // de ningun metodo del cable: solo lo recibe quien hizo la peticion (D-G). Su `s` no
+            // va bajo firma y no se mira: se juzga contra la raiz.
+            // ⚠️ Una cabeza POSTERIOR tambien probaria la ausencia -el conjunto de cuentas solo
+            // crece-, pero eso es otra regla y pide su testigo: aqui se exige la MISMA.
+            let g = p
+                .get("cuenta")
+                .ok_or_else(|| err("falta cuenta (el camino del arbol de cuentas)".into()))?;
+            exige_misma(s_cabeza, s_rechazo)?;
+            let dicho = u64_de(campos, "index")?;
+            let del_camino = u64_de(g, "index")?;
+            if dicho != del_camino {
+                return Err(err(format!(
+                    "data: el index que el nodo dice ({dicho}) no es el del camino ({del_camino})"
+                )));
+            }
+            let hoja = digest_de(g, "leaf")?;
+            if g.get("camino").is_none() {
+                return Err(err("cuenta: falta camino".into()));
+            }
+            let (herm, der) = camino_de(g, "camino", "cuenta")?;
+            if !zk_ssl_verify::cuentas::cruza_indice(dicho, &der) {
+                return Err(err(format!(
+                    "cuenta: el isRight recibido NO es el de la cuenta {dicho} - un camino de \
+                     otra cuenta no prueba nada de esta"
+                )));
+            }
+            println!("2/3 el camino es el de la cuenta {dicho}, la que el nodo nombro");
+            let raiz = digest_de(c, "accountsRoot")?;
+            match zk_ssl_verify::cuentas::raiz_de_hoja(hoja, &herm, &der) {
+                Some(r) if r == raiz => {}
+                Some(_) => {
+                    return Err(err(
+                        "cuenta: el camino NO sube al accountsRoot de la cabeza".into()
+                    ))
+                }
+                None => {
+                    return Err(err(format!(
+                        "cuenta: el camino no tiene los {} niveles del arbol de cuentas",
+                        zk_ssl_verify::cuentas::ACCOUNTS_DEPTH
+                    )))
+                }
+            }
+            if !zk_ssl_verify::cuentas::no_existe(hoja) {
+                return Err(err(format!(
+                    "la causa NO se sostiene: la hoja de la cuenta {dicho} bajo el accountsRoot \
+                     NO es la vacia - la cuenta existe"
+                )));
+            }
+            println!("3/3 la hoja de la cuenta {dicho} bajo el accountsRoot de la cabeza es la VACIA");
         }
         "SupplyCapExceeded" => {
             // RFC-0007 E3 (§460): el tope de suministro. Los parametros recomponen el
