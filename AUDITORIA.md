@@ -34758,3 +34758,78 @@ trae `AccountNotFound` y el AIR de `InsufficientBalance` sigue sin una linea
 34), asi que lo que demuestra en vivo no lo vuelve a demostrar cada sello. Y el
 modo escribe el sobre con las claves en el orden de `serde_json`, que no es el
 del vector del S459: da igual al parsear y no se toca (5.A-155).
+
+## §474 — RFC-0007 E5, corte 3b: el MATERIAL de AccountNotFound
+
+**Que.** El §473 dio PRODUCTOR al sobre de rechazo con una sola causa, y su propio codigo
+lo declaraba incompleto: <<la causa X no tiene material declarado en este modo: entra con
+su corte>>. Este es ese corte. `AccountNotFound(index)` se produce sobre un INDICE, no
+sobre una identidad —`records.get(&index)`—, asi que probarla es **UNA hoja vacia bajo el
+`accountsRoot` que la cabeza v5 firma**, la misma forma que el §458 dio a `AccountFrozen`
+con el arbol de congelados. El nodo la escribe ya; el mando la acepta en el corte
+siguiente.
+
+**Lo que faltaba, y no era el camino sino QUIEN lo sirve.** La capa exponia
+`frozen_root()` y `frozen_path_of()` y ningun hermano para cuentas: el arbol es un campo
+privado, y el accesor mas cercano, `inclusion_materials`, **rehusa con `AccountNotFound`
+justo en el caso que esta causa nombra**. Nace `accounts_path_of`, dos lineas calcadas de
+su hermano, que NO exige que la cuenta exista. La raiz ya era publica: se llama
+`state_root` en la capa y `accountsRoot` en la cabeza —dos nombres del mismo hecho, y el
+de la capa lo llevan `root:state` y el almacen: se DECLARA y no se toca.
+
+**La profundidad la fija el verificador, y por eso sube al nucleo.** `zk-ssl-hash` publica
+`ACCOUNTS_DEPTH`, hermana de `FROZEN_DEPTH` y `CONS_DEPTH`: el mando no puede depender de
+`stark-experiment` —donde vive hoy ese 32— sin romper la clausura que el §465 gateo. Y se
+deja escrito lo que mas importa: **hoy vale lo MISMO que `FROZEN_DEPTH` y son dos hechos
+distintos**. El arbol de cuentas nunca tuvo otra profundidad —`SparseTree::new()` en sus
+tres productores, sin `_PRE`/`_POST` en `migration.rs`—; el de congelados si, 24 antes de
+v7. Reusar una por la otra saldria verde por casualidad.
+
+**El testigo compara la constante contra lo que el arbol PRODUCE, no contra otra
+constante**, que es mas fuerte: el camino de una cuenta LIBRE mide `ACCOUNTS_DEPTH` en sus
+dos lados, lleva la hoja vacia y sube a `state_root`. Y abre y fondea una cuenta ANTES de
+medir, porque con `accounts` y `frozen` los dos vacios y de la misma profundidad sus
+caminos y sus raices son IDENTICOS y un falsador que los intercambie no discriminaria
+(PRECISION 171). Los dos falsadores lo ensenaron en vivo, con UN FAILED nombrado cada uno:
+la profundidad a 31, y el camino del arbol equivocado.
+
+**La puerta del libro pasa a ser POR CAUSA, y va en UN solo match.** Comparaba siempre el
+`frozenRoot`; para esta causa la raiz que sostiene el material es el `accountsRoot`.
+Exigir las DOS seria un liston mas estricto que el invariante, que es la clase que mato la
+r1 del §473. Un solo `match salio` da la raiz, su nombre, la clave y el bloque: dos
+matches sobre el mismo conjunto serian dos productores de la misma lista. Consecuencia
+declarada: la comprobacion queda DESPUES de `send_materials` —hasta que la causa no sale
+no se sabe que raiz importa—, asi que con un libro que no es el de la cabeza el rechazo
+que gana pasa a ser <<no hay sobre que producir>>.
+
+**Y una fila que el corte OBLIGA, y la destapo el ensayo, no el diseno.** Una `pub const`
+nueva en `zk-ssl-hash` exige su fila en `spec/NUCLEO.md`: `check_nucleo` cruza tabla y
+arbol en las DOS direcciones desde el §407. Sin ella el bloque moria en su propio juez con
+dos rojos —la fila que falta y el censo 63/41 contra 63/42—. El censo publicado pasa a
+**63 + 42 = 105 filas**, NUCLEO 81.
+
+**LAS SIETE DECISIONES, delegadas por el autor y todas REVERSIBLES.** D-1: nace solo el
+camino, la raiz ya era publica. D-2: la profundidad la publica el nucleo. D-3: el modulo
+del mando sera propio (`cuentas.rs`, tercero tras `consumos.rs` y `congelados.rs`), y no
+hay duplicacion real porque `path_root` ya tiene UN productor. D-4: el bloque del sobre se
+llama `cuenta`; `ausencia` esta tomada por el sobre de consumo. D-5: el catalogo CRECE, en
+el corte del mando. D-6: el arco va en tres, calcado de E3b. D-7: la puerta del libro, por
+causa. Las siete se pueden revertir; lo que no se revierte sin medir otra vez es el numero
+que cada una dejo escrito.
+
+**Contadores.** 4 ficheros, 120 inserciones y 16 borrados; `main.rs` 4133 ->
+4170. Pin de la capa **344 -> 345** (lista 350 nombres: 345 pasan y 5 ignorados);
+`zk-ssl-hash` 31, el nodo 108 y el verificador 104, QUIETOS. Sumas 1130 -> 1131, 1267 ->
+1268, 1283 -> 1284, el mismo delta en las diez apariciones vivas: DIEZ las nombra
+`check_cifras` y SEIS no las vigila nadie (5.A-149, 5.A-203). `check_tests` 1285 -> 1286,
+`check_nucleo` 104 -> 105 filas, `check_modulos` 125. Ningun Cargo tocado. Sin vectores: el
+catalogo del rechazo sigue en 66 y su MANIFIESTO fue centinela.
+
+**Lo que NO cierra.** El sobre de esta causa se PRODUCE y **ningun mando lo acepta**: el
+brazo del verificador, el modulo `cuentas.rs`, el catalogo y la corrida del banco son el
+corte siguiente, y hasta entonces el testigo de esta mitad es el Rust y no un verde de
+punta a punta. La fila `AccountNotFound(i)` de la tabla D-D del RFC-0007 sigue diciendo
+`i >= next_index` y etapa E3, desmentida ya por dos correcciones §247 (§452 y §459): la
+paga el sello que abra ese fichero. Y `crates/zk-ssl-verify/src/congelados.rs` sigue sin
+ancla en la tabla del traspaso —nacio en el §458 y sus seis hermanos si la tienen—, que es
+la clase del 5.A-190; se ancla al emitir el traspaso siguiente.
