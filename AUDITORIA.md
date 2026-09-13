@@ -34995,6 +34995,17 @@ de los dos contadores, con la puerta que exige `PROD` igual a 2 al lado de la qu
 `ROTOS` igual a 7. Un numero tecleado en una linea que se imprime en cada corrida es una cifra
 sin fuente, y esta lo era desde el mismo commit que la escribio.
 
+**Segunda correccion del `-B` (S476-C).** El contador `PROD` que el `-B` introdujo se declaraba
+SEIS lineas DESPUES de su primer incremento, asi que `set -u` mataba el banco en el primer
+negativo del productor. El orden de las operaciones es una puerta (PRECISION 235) y aqui la
+declaracion estaba del lado malo. Baja a declararse con el resto del ESTADO, antes de todo uso.
+Lo que deja escrito, y es lo que vale: **`bash -n` es CIEGO a esto**, y ningun juez de la casa
+corre un `.sh`. Dos cortes seguidos han metido en `tools/banco_rechazo.sh` un defecto que solo
+una corrida en vivo encuentra -un bloque que escribe un banco y no lo corre no puede afirmar que
+funcione-. Y la sonda que se probo para cazarlo salio CIEGA a su propio caso: en `$((PROD+1))`
+la variable va sin `$`, y un gate cuya prueba de vida no ve su caso calla en vez de confirmar
+(PRECISION 62). No entra: se declara el hueco y va a la cola con su numero.
+
 **Lo que NO cierra.** E5 sigue abierta: falta `InsufficientBalance` con su AIR (5.A-213), que es
 lo unico que separa la fila de estar entera. `ProofFailed` y `VerificationFailed` siguen
 declaradas sin prueba portable (D-I). El disfraz de esta causa no tiene vector y no lo tendra

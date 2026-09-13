@@ -60,6 +60,9 @@ esac
 PORT=8609   # libre: los censados en tools/*.sh son 8600, 8601, 8603, 8605, 8607 y 8613
 DIR=$(mktemp -d "$HOME/.banco_rechazo.XXXXXX")
 PID=""
+# Los dos contadores se declaran AQUI, antes de su primer uso: el del productor se
+# incrementa mas arriba que donde vivia (`set -u` lo mata, y `bash -n` no lo ve).
+PROD=0
 limpiar(){
   if [ -n "$PID" ]; then kill -9 "$PID" 2>/dev/null || true; fi
   rm -rf "$DIR"
@@ -198,7 +201,6 @@ esac
 
 # ---------------------------------------------------------------- LOS CUATRO NEGATIVOS DEL SOBRE
 ROTOS=0
-PROD=0
 niega(){ # niega <fichero> <fragmento esperado> <rotulo>
   local f="$1" frag="$2" rot="$3" s r
   set +e; s=$("$VER" "$f" 2>&1); r=$?; set -e
