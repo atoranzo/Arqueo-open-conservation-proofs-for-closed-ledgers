@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 63 elementos alcanzables en `zk-ssl-verify` y 41 `pub` en `zk-ssl-hash`
-(LIBRO 2, NÚCLEO 80, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 63 elementos alcanzables en `zk-ssl-verify` y 42 `pub` en `zk-ssl-hash`
+(LIBRO 2, NÚCLEO 81, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
 reexportaciones de `zk-ssl-hash` no se cuentan dos veces: un elemento, una fila. En `zk-ssl-hash`,
@@ -75,6 +75,7 @@ real de sus llaves, no por la primera marca.
 |---|---|---|---|---|
 | `Digest` | `hash/lib.rs` | NÚCLEO | HASH | `type` |
 | `FormatoError` | `hash/lib.rs` | REFERENCIA | HASH | `enum` |
+| `ACCOUNTS_DEPTH` | `hash/lib.rs` | NÚCLEO | HASH | `const` |
 | `CONS_DEPTH` | `hash/lib.rs` | NÚCLEO | HASH | `const` |
 | `FROZEN_DEPTH` | `hash/lib.rs` | NÚCLEO | HASH | `const` |
 | `STATE_WIDTH` | `hash/lib.rs` | NÚCLEO | HASH | `const` |

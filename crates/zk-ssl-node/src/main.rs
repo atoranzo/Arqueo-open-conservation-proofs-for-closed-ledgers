@@ -1035,16 +1035,6 @@ fn modo_prueba_rechazo(layer: &SovereignLayer, a: &Args, salida: &str) -> anyhow
         .ok_or_else(|| anyhow::anyhow!("{ruta}: esa respuesta no lleva cabeza firmada"))?;
     let seq = vista.seq.0;
 
-    // ⚠️ El libro de `--ledger` tiene que ser el que ESA cabeza firma: si no,
-    // el camino de congelados no subiría a su `frozenRoot` y el sobre saldría
-    // muerto —el mando lo diría, pero el productor no puede escribirlo—. Se
-    // comprueba ANTES de escribir un byte.
-    if layer.frozen_root() != digest_from_wire(&vista.frozen_root)? {
-        anyhow::bail!(
-            "el libro de --ledger no es el que la cabeza de seq {seq} firma: su frozenRoot es otra"
-        );
-    }
-
     // Ni el receptor ni la sal llegan a usarse: las guardas de
     // `send_materials_inner` están ANTES de que el material se componga. Van
     // DERIVADOS de la propia cabeza para no inventar una constante.
@@ -1073,14 +1063,39 @@ fn modo_prueba_rechazo(layer: &SovereignLayer, a: &Args, salida: &str) -> anyhow
         "data": data_de(&e, seq),
         "cabeza": obj,
     });
-    // El MATERIAL de la causa. Hoy una; el corte siguiente añade su brazo, y
-    // una causa sin material declarado no se escribe a medias.
-    match salio {
-        "AccountFrozen" => fuera["congelados"] = bloque_congelados(layer, indice, seq),
+    // El MATERIAL de la causa, y la RAIZ que lo sostiene, en UN solo match:
+    // dos matches sobre el mismo conjunto serian dos productores de la misma
+    // lista, y la causa siguiente se pagaria dos veces.
+    let (raiz_viva, raiz_firmada, nombre, clave, bloque) = match salio {
+        "AccountFrozen" => (
+            layer.frozen_root(),
+            &vista.frozen_root,
+            "frozenRoot",
+            "congelados",
+            bloque_congelados(layer, indice, seq),
+        ),
+        "AccountNotFound" => (
+            layer.state_root(),
+            &vista.accounts_root,
+            "accountsRoot",
+            "cuenta",
+            bloque_cuenta(layer, indice, seq),
+        ),
         _ => anyhow::bail!(
             "la causa `{salio}` no tiene material declarado en este modo: entra con su corte"
         ),
+    };
+    // ⚠️ El libro de `--ledger` tiene que ser el que ESA cabeza firma, y la raiz
+    // que importa es la de la CAUSA: si no, el camino no subiria y el sobre
+    // saldria muerto —el mando lo diria, pero el productor no puede escribirlo—.
+    // Exigir las DOS raices seria un liston mas estricto que el invariante (la
+    // r1 del §473). Se comprueba ANTES de escribir un byte.
+    if raiz_viva != digest_from_wire(raiz_firmada)? {
+        anyhow::bail!(
+            "el libro de --ledger no es el que la cabeza de seq {seq} firma: su {nombre} es otra"
+        );
     }
+    fuera[clave] = bloque;
 
     std::fs::write(salida, format!("{}\n", serde_json::to_string_pretty(&fuera)?))
         .map_err(|e| anyhow::anyhow!("{salida}: no se puede escribir: {e}"))?;
@@ -1304,6 +1319,28 @@ fn data_de(e: &LayerError, seq: u64) -> Value {
 /// contra la raiz-, pero se emite para que el sobre diga de que estado salio.
 fn bloque_congelados(l: &SovereignLayer, index: u64, s: u64) -> Value {
     let (hoja, camino) = l.frozen_path_of(index);
+    json!({
+        "s": Q(s),
+        "index": Q(index),
+        "leaf": digest_to_wire(&hoja),
+        "camino": {
+            "siblings": camino.siblings.iter().map(digest_to_wire).collect::<Vec<_>>(),
+            "isRight": camino.is_right,
+        },
+    })
+}
+
+/// El bloque `cuenta`: la HOJA de `index` bajo el `accountsRoot` y su camino,
+/// que es lo que el sobre de rechazo lleva para `AccountNotFound` (RFC-0007
+/// E5, D-G). La causa se produce sobre un INDICE, no sobre una identidad, asi
+/// que probarla es UNA hoja vacia bajo una raiz firmada.
+///
+/// Mismo molde que `bloque_congelados`, y su `s` tampoco va bajo firma ni lo
+/// mira el mando —se juzga contra la raiz—: se emite para que el sobre diga de
+/// que estado salio. **NO nace metodo del cable**: el camino viaja DENTRO del
+/// rechazo, y solo lo recibe quien hizo la peticion que el nodo rechazo.
+fn bloque_cuenta(l: &SovereignLayer, index: u64, s: u64) -> Value {
+    let (hoja, camino) = l.accounts_path_of(index);
     json!({
         "s": Q(s),
         "index": Q(index),

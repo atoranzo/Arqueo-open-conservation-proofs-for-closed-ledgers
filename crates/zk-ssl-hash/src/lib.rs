@@ -214,6 +214,23 @@ pub const CONS_DEPTH: usize = 63;
 /// 24 niveles, y su camino no pasa por un verificador que fije esta.
 pub const FROZEN_DEPTH: usize = 32;
 
+/// **Profundidad del arbol de CUENTAS** (RFC-0007 E5, D-G): 32 niveles,
+/// indexados por el indice de la cuenta.
+///
+/// El productor que el libro usa vive en `stark_experiment::merkle::TREE_DEPTH`
+/// —es la que `SparseTree::new()` toma— y un verificador independiente no
+/// compila ese crate: por eso el nucleo la PUBLICA aqui, y un test de la capa
+/// ata las dos (`accounts.rs`). La regla es la de congelados: un camino que no
+/// mida esto no se sube, porque `native_merge` no separa hoja de nodo y uno
+/// truncado llegaria a la misma raiz con un nodo interno por hoja.
+///
+/// OJO: hoy vale lo MISMO que `FROZEN_DEPTH` y son dos hechos distintos. El
+/// arbol de cuentas nunca ha tenido otra profundidad —`SparseTree::new()` en
+/// sus tres productores, sin `_PRE`/`_POST` en `migration.rs`—; el de
+/// congelados si (24 antes de v7). Reusar una por la otra saldria verde por
+/// casualidad y rompería en silencio el dia que una cambie.
+pub const ACCOUNTS_DEPTH: usize = 32;
+
 /// **Posicion de un consumo en su arbol**: los 63 bits bajos de sus primeros
 /// ocho bytes, leidos en little-endian - la misma serializacion que persiste
 /// la capa ([`digest_to_bytes`]).

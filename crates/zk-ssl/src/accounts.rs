@@ -10,6 +10,19 @@ impl SovereignLayer {
         self.accounts.root()
     }
 
+    /// RFC-0007 E5 (D-G): la HOJA de `index` en el arbol de CUENTAS y su
+    /// CAMINO, para que quien recibio un `AccountNotFound(index)` pueda
+    /// probar —o desmentir— esa causa contra el `accountsRoot` que una cabeza
+    /// firmada compromete.
+    ///
+    /// Hermano de `frozen_path_of` (§458) y con la misma cautela: sirve el
+    /// estado de AHORA, no el de un `seq` pasado. A diferencia de
+    /// `inclusion_materials`, **no exige que la cuenta exista**: el caso que
+    /// la causa nombra es justo el de la hoja VACIA.
+    pub fn accounts_path_of(&self, index: AccountIndex) -> (Digest, MerklePath) {
+        (self.accounts.leaf(index), self.accounts.path_for(index))
+    }
+
     pub fn total_supply(&self) -> u64 {
         self.total_supply
     }
@@ -386,5 +399,41 @@ mod t_paso2_view_id {
         fund_delegated(&mut layer, idx, 100_000);
         assert_eq!(layer.stored_view_id(idx), antes,
                    "operar cambió el view_id: la credencial no debe mutar al operar");
+    }
+}
+
+/// RFC-0007 E5 (D-G): la profundidad del arbol de cuentas tiene DOS
+/// productores —el arbol, que la toma de `SparseTree::new()`, y el nucleo, que
+/// la publica para el verificador (`zk_ssl_hash::ACCOUNTS_DEPTH`)— y este test
+/// los ata. No compara dos constantes: compara la constante contra lo que el
+/// arbol PRODUCE, que es mas fuerte. De paso fija que el camino de una cuenta
+/// LIBRE lleva la hoja vacia y sube a `state_root`.
+#[cfg(test)]
+mod tests_camino_cuentas {
+    use super::*;
+    use crate::tests_support::*;
+
+    #[test]
+    fn el_camino_de_cuentas_mide_la_profundidad_que_el_nucleo_publica() {
+        // Los dos arboles tienen que DIVERGIR o un falsador que los
+        // intercambie NO discrimina (PRECISION 171): vacios y de la misma
+        // profundidad, sus caminos y sus raices son los MISMOS.
+        let mut layer = new_layer();
+        let idx = open_and_fund(&mut layer, 1, 100);
+        assert_ne!(idx, 7, "la cuenta abierta aterrizo en la 7: elegir otro indice libre");
+        assert_ne!(
+            layer.state_root(),
+            layer.frozen_root(),
+            "los dos arboles no divergen: el testigo no probaria nada"
+        );
+        let (hoja, camino) = layer.accounts_path_of(7);
+        assert_eq!(hoja, [BaseElement::ZERO; 4], "la 7 esta libre: su hoja es la vacia");
+        assert_eq!(camino.siblings.len(), zk_ssl_hash::ACCOUNTS_DEPTH);
+        assert_eq!(camino.is_right.len(), zk_ssl_hash::ACCOUNTS_DEPTH);
+        assert_eq!(
+            zk_ssl_hash::path_root(hoja, &camino.siblings, &camino.is_right),
+            layer.state_root(),
+            "el camino servido tiene que subir a la raiz que la cabeza compromete"
+        );
     }
 }
