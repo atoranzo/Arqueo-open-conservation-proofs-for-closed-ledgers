@@ -63,9 +63,10 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 63 elementos alcanzables en `zk-ssl-verify` y 42 `pub` en `zk-ssl-hash`
-(LIBRO 2, NÚCLEO 81, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
-`lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`) y los
+**Censo derivado:** 67 elementos alcanzables en `zk-ssl-verify` y 42 `pub` en `zk-ssl-hash`
+(LIBRO 2, NÚCLEO 85, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+`lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
+`cuentas`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
 reexportaciones de `zk-ssl-hash` no se cuentan dos veces: un elemento, una fila. En `zk-ssl-hash`,
 todo `pub` de `lib.rs` fuera de las zonas de test. Las zonas de test se recortan por el anidamiento
@@ -152,6 +153,10 @@ real de sus llaves, no por la primera marca.
 | `esta_congelada` | `verify/congelados.rs` | NÚCLEO | CONGELADOS | `fn` |
 | `is_right_de_indice` | `verify/congelados.rs` | NÚCLEO | CONGELADOS | `fn` |
 | `raiz_de_hoja` | `verify/congelados.rs` | NÚCLEO | CONGELADOS | `fn` |
+| `cruza_indice` | `verify/cuentas.rs` | NÚCLEO | CUENTAS | `fn` |
+| `is_right_de_indice` | `verify/cuentas.rs` | NÚCLEO | CUENTAS | `fn` |
+| `no_existe` | `verify/cuentas.rs` | NÚCLEO | CUENTAS | `fn` |
+| `raiz_de_hoja` | `verify/cuentas.rs` | NÚCLEO | CUENTAS | `fn` |
 | `native_leaf` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `native_leaf_salted` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `InclusionError` | `verify/inclusion.rs` | REFERENCIA | INCLUSIÓN | `enum` |
@@ -197,6 +202,10 @@ real de sus llaves, no por la primera marca.
 - **CONGELADOS** — la profundidad del árbol de congelados, el cruce del camino con el índice de la
   cuenta y la regla de la hoja (congelada es no vacía): lo que sostiene `AccountFrozen` sin la capa
   (§458). La profundidad la fija el núcleo porque el merge no separa hoja de nodo.
+- **CUENTAS** — el espejo del anterior sobre el árbol de cuentas: la profundidad que fija el
+  núcleo, el cruce del camino con el índice y la regla de la hoja (no existir es hoja VACIA): lo
+  que sostiene `AccountNotFound` sin la capa (§475). `ACCOUNTS_DEPTH` vale hoy lo mismo que
+  `FROZEN_DEPTH` y son dos hechos distintos.
 
 ## 6. Los bytes: lo que un KAT fija
 
@@ -256,6 +265,10 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §475 — el módulo `cuentas` del verificador (`is_right_de_indice`, `cruza_indice`,
+  `raiz_de_hoja`, `no_existe`): el espejo de `congelados` sobre el árbol de cuentas, con la hoja
+  VACIA como regla, que es lo que sostiene `AccountNotFound` sin la capa (RFC-0007, E5, corte 3b).
+  Cuatro filas nuevas; `ACCOUNTS_DEPTH` ya entró con el §474.
 - §458 — `FROZEN_DEPTH` y el módulo `congelados` del verificador (`is_right_de_indice`,
   `cruza_indice`, `raiz_de_hoja`, `esta_congelada`): la profundidad del árbol de congelados, fijada
   por el núcleo, y la regla de su hoja (RFC-0007, E3b). Cinco filas nuevas.

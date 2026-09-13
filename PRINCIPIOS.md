@@ -351,11 +351,11 @@ sería faltar al principio de transparencia.
 - Cinco paradigmas implementados y medidos.
 - Capa de liquidación con ciclo monetario completo, persistencia,
   auditoría y verificación de integridad.
-- **1131 tests en la compuerta de sello** —345 de la capa, 330 de
-  circuitos, **108 del nodo**, 34 de la ceremonia, 17 de liquidación, **104
+- **1135 tests en la compuerta de sello** —345 de la capa, 330 de
+  circuitos, **108 del nodo**, 34 de la ceremonia, 17 de liquidación, **108
   del verificador independiente**, **100 del testigo**, y los del SDK, el
-  cable y el puente ISO—, **1268 contando los pines de `--largo` y
-  `--completo`**, y **1284 declarados**. 0 fallos y 24
+  cable y el puente ISO—, **1272 contando los pines de `--largo` y
+  `--completo`**, y **1288 declarados**. 0 fallos y 24
   warnings **pinchados** (no crecen). Cada propiedad de seguridad con
   test discriminante.
 

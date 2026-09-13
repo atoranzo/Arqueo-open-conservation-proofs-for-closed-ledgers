@@ -30,9 +30,9 @@ identical conditions, and we document a methodological error of our own —
 mixing debug and release build figures — that was detected and corrected
 during the work.
 
-The reference implementation comprises **1131 executable tests in the seal
-gate** —1268 counting the pins of the long and complete levels, and 1284
-declared—, with 15 ignored and declared, and is
+The reference implementation comprises **1135 executable tests in the seal
+gate** —1272 counting the pins of the long and complete levels, and 1288
+declared—, with 16 ignored and declared, and is
 publicly available. **It has not been audited by third parties and does
 not implement distributed consensus**; we discuss the implications of both
 limitations in detail.

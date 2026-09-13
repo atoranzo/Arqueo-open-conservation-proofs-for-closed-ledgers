@@ -34833,3 +34833,92 @@ punta a punta. La fila `AccountNotFound(i)` de la tabla D-D del RFC-0007 sigue d
 paga el sello que abra ese fichero. Y `crates/zk-ssl-verify/src/congelados.rs` sigue sin
 ancla en la tabla del traspaso —nacio en el §458 y sus seis hermanos si la tienen—, que es
 la clase del 5.A-190; se ancla al emitir el traspaso siguiente.
+
+## §475 — RFC-0007 E5, corte 3b: el mando prueba `AccountNotFound` sin el nodo
+
+**Que.** El §474 dejo el sobre PRODUCIBLE y ningun mando lo aceptaba: su propio codigo lo decia
+—<<la causa AccountNotFound no la prueba este mando>>— y una corrida con nodo real lo midio en
+vivo ANTES de escribir una linea. Este corte apaga ese rojo. Nace
+`crates/zk-ssl-verify/src/cuentas.rs`, `lib.rs` lo publica y `verificar_rechazo` gana su NOVENO
+brazo: la hoja VACIA de la cuenta bajo el `accountsRoot` de la cabeza firmada del `seq` exacto,
+con la profundidad que fija el verificador y el camino cruzado contra los bits del indice.
+
+**El espejo, y lo que NO se hereda.** El modulo es el calco de `congelados` (§458) con la tercera
+regla INVERTIDA: alli la hoja no vacia prueba que la cuenta esta congelada, aqui la vacia prueba
+que no hay cuenta. Las dos primeras reglas son las mismas y por la misma razon —la profundidad la
+fija el verificador porque `native_merge` no separa hoja de nodo, y la posicion es el indice—. La
+hoja vacia se toma de `consumos`, un solo productor, como hizo el hermano; y `ACCOUNTS_DEPTH`
+viene del nucleo (§474): hoy vale lo MISMO que `FROZEN_DEPTH` y son dos hechos distintos, asi que
+el codigo no nombra la de al lado. Un INERTE lo midio: `FROZEN_DEPTH` sale UNA vez en la prosa del
+modulo, que lo dice a proposito, y CERO en su codigo.
+
+**La cabeza del `seq` EXACTO, y la regla que tambien valdria.** Se exige la MISMA cabeza, como en
+`AccountFrozen`. Y se DECLARA lo que la medida sostiene y este corte no construye: el conjunto de
+cuentas solo CRECE, luego una cabeza POSTERIOR al rechazo probaria igual la ausencia —si la hoja
+esta vacia en un `seq` mayor, lo estaba antes—. Es la regla contraria a la de los consumos, es
+cierta, y es OTRA regla: pide su propio testigo. Queda escrita en el doc-comment como cota, no
+como promesa.
+
+**El disfraz no tiene vector, y su testigo es PURO.** El disfraz de esta causa es <<el nodo dice
+que no existe y la hoja SI esta ocupada>>. Fabricarlo en JSON pediria el camino real de una cuenta
+viva, y la D-G decidio que no nace metodo del cable: el productor solo escribe por la causa que
+salio. Es el precedente del §459 con el ataque de la hoja-nodo, que tampoco se fabrica en JSON. Lo
+cubre `una_hoja_ocupada_desmiente_la_causa`, dentro del modulo. El `neg-hoja-otra` de las capturas
+NO lo cubre: cae por <<no sube>>, que es otra regla, y decirlo al reves seria un verde que no pide
+explicacion.
+
+**El arco pasa de TRES a CUATRO, y es DECISION REVERSIBLE.** La D-6 del asiento 474 calcaba E3b
+—codigo, pin, mando con su catalogo—, y el calco no preveia que el modulo con tests cayera en el
+TERCERO: en E3b `congelados.rs` nacio en el primero y su pin lo pago el `-B`. Aqui `cuentas.rs` es
+del lado del mando y mueve el pin, y en esta casa el pin y la cifra por-crate se mueven en el MISMO
+bloque. De ahi: §475 el codigo, §475-B el pin y las cifras, y el catalogo con su banco y su prosa
+detras. La forma es la del §466 / §466-B / §467. Revertirlo es meterlo todo en un solo sello.
+
+**Lo medido, con nodo real.** El `PASTE-475-CAP-r2` (`d3b5ece8011220b9`) produjo el sobre sobre un
+libro real: la cuenta 1007266441 SIN cuenta —y eso no se supone, lo PRUEBA el productor, que
+exige la causa pedida y rehusa nombrando la que salio—, hoja `0x00...00`, camino de 32 y 32,
+cabeza v5
+del `seq` 5 custodiada despues de las altas. Capturas: positivo `661c2406eb0b08f2` (41.834 B) y
+cuatro cuerpos negativos por UNA mutacion cada uno. Con ellas el bloque midio el corte de punta a
+punta: el positivo pasa de exit 1 —<<no la prueba este mando>>— a exit 0 con sus TRES lineas, y
+los
+cuatro negativos caen cada uno por SU regla.
+
+**Testigos y falsadores.** Cuatro `#[test]` nuevos —la hoja vacia que sube, la ocupada que
+desmiente, el camino truncado y el de otra cuenta—, y DOS falsadores por MUTACION dentro del
+bloque, cada uno con su conteo EXACTO de FAILED declarado ANTES de correr: quitar la guarda de
+profundidad cae SOLO en el del truncado (1), e invertir `no_existe` cae en TRES, nombrados. El
+arbol volvio a su POST y se comprobo por huella tras cada uno.
+
+**Y una fila que el corte OBLIGA, y la destapo el ENSAYO, no el diseno.** Cuatro `pub fn` nuevas
+en el crate del verificador exigen sus filas en `spec/NUCLEO.md`: `check_nucleo` cruza tabla y
+arbol en las DOS direcciones desde el §407, y sin ellas el canon habria caido con CINCO rojos
+—las cuatro filas que faltan y el censo 63/42 contra 67/42—. Es la clase del §474 con otro
+sujeto: alli fue una `pub const` del nucleo, aqui un modulo entero del verificador. El censo
+publicado pasa a **67 + 42 = 109 filas**, NUCLEO 85, y nace el grupo CUENTAS, el espejo de
+CONGELADOS, con su linea en la seccion 5 y su entrada en la historia del documento.
+
+**Contadores.** TRES ficheros: `cuentas.rs` NUEVO de 157 lineas, `lib.rs` 1264 -> 1270 y `main.rs`
+1503 -> 1560; numstat 221/1, DERIVADO de `git show --numstat` en la corrida de este `-B` y cruzado
+por fichero contra las lineas que mide el arbol. Pin del verificador **104 -> 108**; los otros
+ocho, QUIETOS. Sumas 1131 -> 1135, 1268 -> 1272 y los declarados de los documentos 1284 -> 1288, el
+mismo delta +4 en DOCE cifras de TRES documentos: TRES las nombra `check_cifras` y NUEVE no las
+vigila nadie (5.A-149, 5.A-203). `check_tests` 1286 -> 1290 y `check_modulos` 125 -> 126, los dos
+por el §475; `check_nucleo` 105 -> 109 filas. Ningun Cargo tocado. Sin vectores: el catalogo
+del rechazo sigue en 66 `.json` y su
+MANIFIESTO fue centinela.
+
+**Una cifra rancia que este corte NO dejo, y paga igual.** `PAPER.md` y `PAPER_EN.md` publican
+<<15 ignoradas>> y la columna del canon suma DIECISEIS desde el §470 —5 de la capa y 11 de los
+circuitos—. No la dejo rancia este corte, pero vive DENTRO del parrafo que este corte reescribe
+entero, y la unidad de una sustitucion de prosa es el parrafo: dejar un 15 falso en una frase que
+se esta reescribiendo seria la clase que el §469 vino a limpiar. De paso queda derivado que el 1284
+de los documentos no era una cifra arrastrada: es 1268 + 16.
+
+**Lo que NO cierra.** El catalogo del rechazo NO tiene todavia un vector de esta causa (5.A-227):
+el positivo capturado y sus cuatro negativos entran en el corte siguiente, junto al brazo del banco
+y la prosa de `spec/PAQUETE.md` seccion 2.6 y del RFC-0007 —cuya fila E5 sigue diciendo <<en
+curso>> y cuya tabla D-D sigue poniendo `AccountNotFound(i)` en `i >= next_index` y en la etapa E3,
+desmentida ya por dos correcciones §247—. El disfraz seguira sin vector, y se declara. Y lo que
+este sello NO afirma: que el nodo rechazara, ni cuando; prueba que la causa se sostiene sobre el
+estado que una cabeza firmada compromete.
