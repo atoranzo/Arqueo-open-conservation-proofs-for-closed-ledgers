@@ -173,6 +173,24 @@ impl BandaProver {
     }
 }
 
+/// **Prueba con las opciones de la casa**, que son las UNICAS que el juez acepta
+/// (`zk_ssl_air::banda::verificar`). UN productor de las opciones: quien produce no las elige.
+/// (RFC-0007 E5, corte 4b, D-8; el molde es `circuit_edad::probar`.)
+pub fn probar(traza: TraceTable<BaseElement>) -> Result<(Vec<u8>, BandaPublicInputs), String> {
+    probar_con(traza, opciones())
+}
+
+/// Prueba con OTRAS opciones: solo para el testigo de que el juez no las acepta.
+pub fn probar_con(
+    traza: TraceTable<BaseElement>,
+    opts: ProofOptions,
+) -> Result<(Vec<u8>, BandaPublicInputs), String> {
+    let prover = BandaProver::new(opts);
+    let pi = prover.get_pub_inputs(&traza);
+    let prueba = prover.prove(traza).map_err(|e| format!("{e:?}"))?;
+    Ok((prueba.to_bytes(), pi))
+}
+
 impl Prover for BandaProver {
     type BaseField = BaseElement;
     type Air = BandaAir;
@@ -439,5 +457,31 @@ mod tests {
             informe.celdas,
             informe.nunca_disparadas
         );
+    }
+
+    /// El juez acepta UN conjunto de opciones y solo uno: con otras, la prueba no vale aunque
+    /// el enunciado sea el mismo. Es el hermano de `circuit_edad::otras_opciones_no_se_aceptan`.
+    /// SIN el ignorado condicional: los siete testigos de este fichero no lo llevan, y el molde
+    /// que manda es el del FICHERO, no el del primo.
+    #[test]
+    fn otras_opciones_no_se_aceptan() {
+        // Donde se usa, no arriba: es el molde de este fichero, que ya pone
+        // `use winterfell::Air;` en el modulo de tests y no en la cabecera.
+        use winterfell::{BatchingMethod, FieldExtension};
+        let (w, raiz) = escenario(50);
+        let traza = trazar(&w, 0, 99);
+        let otras = ProofOptions::new(
+            42,
+            16,
+            0,
+            FieldExtension::Quadratic,
+            8,
+            31,
+            BatchingMethod::Linear,
+            BatchingMethod::Linear,
+        );
+        let (bytes, pi) = probar_con(traza, otras).expect("probar");
+        assert_eq!(pi.root, raiz, "el escenario no es el que se cree");
+        assert!(verificar(&bytes, &pi).is_err(), "el juez acepto otras opciones");
     }
 }

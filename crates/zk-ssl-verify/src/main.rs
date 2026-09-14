@@ -55,6 +55,9 @@ use zk_ssl_verify::{
     CabezaFirmada, COFIRMA_V_MAX, ReciboAcuse, VersionCabeza,
 };
 use zk_ssl_air::{verificar_contra_cabeza, Afirmacion, CabezaEdad};
+use winter_math::fields::f64::BaseElement;
+use winter_math::FieldElement;
+use zk_ssl_air::banda::{verificar as verificar_banda, BandaPublicInputs};
 use zk_ssl_hash::{
     digest_from_bytes, epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5,
     params_digest, Digest,
@@ -1155,6 +1158,52 @@ fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
             println!(
                 "3/3 el suministro de la cabeza ({suministro}) mas el importe pedido ({importe}) \
                  es {seria}, y pasa el tope comprometido ({tope})"
+            );
+        }
+        "InsufficientBalance" => {
+            // RFC-0007 E5, corte 4b: la BANDA del saldo. Es el primer brazo de este mando que
+            // verifica un STARK; la regla vive en `zk_ssl_air::banda::verificar`, un solo
+            // productor en el crate que el tercero compila, y aqui solo se le pasa lo que la
+            // cabeza FIRMA. El saldo no viaja: la prueba demuestra la desigualdad sin el, y por
+            // eso el sobre no lo lleva y este brazo lo RECHAZA si aparece.
+            if campos.get("available").is_some() {
+                return Err(err(
+                    "data: esta causa no publica el saldo: la banda lo prueba sin el".into(),
+                ));
+            }
+            let g = p
+                .get("banda")
+                .ok_or_else(|| err("falta banda (la prueba de la desigualdad)".into()))?;
+            exige_misma(s_cabeza, s_rechazo)?;
+            let pedido = u64_de(campos, "requested")?;
+            if pedido != u64_de(g, "requested")? {
+                return Err(err(
+                    "data: el importe que el nodo dice no es el que la prueba acota".into(),
+                ));
+            }
+            if pedido == 0 {
+                return Err(err(
+                    "la causa NO se sostiene: pedir 0 no puede pasar de ningun saldo".into(),
+                ));
+            }
+            let pid = digest_de(g, "publicId")?;
+            let prueba = hex_a_bytes(
+                g.get("prueba")
+                    .and_then(|x| x.as_str())
+                    .ok_or_else(|| err("banda: falta prueba o no es cadena 0x".into()))?,
+            )?;
+            let pi = BandaPublicInputs {
+                root: digest_de(c, "accountsRoot")?,
+                public_id: pid,
+                lower: BaseElement::ZERO,
+                upper: BaseElement::new(pedido - 1),
+            };
+            println!("2/3 el enunciado es el de la cuenta nombrada bajo el accountsRoot firmado");
+            verificar_banda(&prueba, &pi).map_err(|e| err(format!("banda: {e}")))?;
+            println!(
+                "3/3 la prueba verifica: el saldo de esa cuenta esta en [0, {}] bajo esa raiz, y \
+                 el importe pedido era {pedido}",
+                pedido - 1
             );
         }
         otra => {

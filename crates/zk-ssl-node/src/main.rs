@@ -1060,7 +1060,7 @@ fn modo_prueba_rechazo(layer: &SovereignLayer, a: &Args, salida: &str) -> anyhow
     let mut fuera = json!({
         "v": 1,
         "tipo": "rechazo",
-        "data": data_de(&e, seq),
+        "data": data_del_sobre(&e, seq),
         "cabeza": obj,
     });
     // El MATERIAL de la causa, y la RAIZ que lo sostiene, en UN solo match:
@@ -1080,6 +1080,13 @@ fn modo_prueba_rechazo(layer: &SovereignLayer, a: &Args, salida: &str) -> anyhow
             "accountsRoot",
             "cuenta",
             bloque_cuenta(layer, indice, seq),
+        ),
+        "InsufficientBalance" => (
+            layer.state_root(),
+            &vista.accounts_root,
+            "accountsRoot",
+            "banda",
+            bloque_banda(layer, indice, a.rechazo_importe, seq)?,
         ),
         _ => anyhow::bail!(
             "la causa `{salio}` no tiene material declarado en este modo: entra con su corte"
@@ -1311,6 +1318,30 @@ fn data_de(e: &LayerError, seq: u64) -> Value {
     json!({ "causa": c.nombre, "campos": Value::Object(campos), "seq": Q(seq) })
 }
 
+/// **Lo que el SOBRE no copia del cable** (RFC-0007 E5, corte 4b, D-0).
+///
+/// `data_de` sirve a TRES sitios y dos son el cable -el `data` del `-32000` y la negativa de
+/// `zkssl_publishConsumo`-, asi que la omision NO puede vivir dentro: cambiarla ahi seria
+/// cambiar un contrato publicado. Vive aqui, en el hermano que solo usa el sobre.
+///
+/// `available` sale porque la prueba de banda demuestra la desigualdad SIN el saldo, y el mando
+/// no tiene contra que cruzarlo: un campo incruzable es la palabra del nodo sin contraste.
+const OMITE_EL_SOBRE: &[(&str, &str)] = &[("InsufficientBalance", "available")];
+
+/// El `data` del SOBRE: el del cable menos lo que [`OMITE_EL_SOBRE`] declara.
+fn data_del_sobre(e: &LayerError, seq: u64) -> Value {
+    let mut d = data_de(e, seq);
+    let causa = d["causa"].as_str().unwrap_or_default().to_string();
+    if let Some(campos) = d["campos"].as_object_mut() {
+        for (c, k) in OMITE_EL_SOBRE {
+            if *c == causa {
+                campos.remove(*k);
+            }
+        }
+    }
+    d
+}
+
 /// El bloque `congelados`: la respuesta de `zkssl_frozenPath`, que es tambien
 /// lo que el sobre de rechazo lleva para `AccountFrozen` (§459).
 ///
@@ -1350,6 +1381,24 @@ fn bloque_cuenta(l: &SovereignLayer, index: u64, s: u64) -> Value {
             "isRight": camino.is_right,
         },
     })
+}
+
+/// El bloque `banda` del sobre de `InsufficientBalance` (RFC-0007 E5, corte 4b).
+///
+/// Lleva la identidad porque sin ella la prueba diria <<alguna cuenta bajo esta raiz tiene saldo
+/// bajo>>, que no sostiene el rechazo; y el `requested`, que es lo que fija la banda. El saldo NO
+/// va: para eso esta la prueba.
+fn bloque_banda(l: &SovereignLayer, index: u64, pedido: u64, s: u64) -> anyhow::Result<Value> {
+    let cab = zk_ssl::prueba_banda::CabezaDeCuentas { seq: s, accounts_root: l.state_root() };
+    let sobre = l
+        .prueba_de_banda(&cab, index, pedido)
+        .map_err(|e| anyhow::anyhow!("prueba de banda: {e:?}"))?;
+    Ok(json!({
+        "s": Q(s),
+        "publicId": digest_to_wire(&sobre.public_id),
+        "requested": Q(sobre.requested),
+        "prueba": format!("0x{}", hex_de(&sobre.prueba)),
+    }))
 }
 
 /// El objeto `error` de JSON-RPC, escrito a mano (§228).
