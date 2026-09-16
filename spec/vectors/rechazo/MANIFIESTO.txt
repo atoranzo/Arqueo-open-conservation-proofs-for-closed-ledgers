@@ -15,7 +15,7 @@ consumo-colision.json|0|VERDE: ConsumoColision se sostiene sobre el estado compr
 rechazo-rech-falta-data.json|1|falta data (el objeto del rechazo)
 rechazo-rech-falta-causa.json|1|data: falta causa
 rechazo-rech-falta-campos.json|1|data: falta campos
-rechazo-rech-causa-no-probada.json|1|data: la causa InsufficientBalance no la prueba este mando
+rechazo-rech-banda-ausente.json|1|falta banda (la prueba de la desigualdad)
 rechazo-rech-falta-cabeza.json|1|falta cabeza
 rechazo-rech-cabeza-adulterada.json|1|cabeza: los campos NO recomponen su epochDigest
 rechazo-rech-limite-no-superado.json|1|la causa NO se sostiene: el importe pedido (1000) no supera el limite (1000)
@@ -61,6 +61,9 @@ rechazo-rech-posicion-sin-notice.json|1|lote[1]: falta notice
 # E3b (asiento 459): el positivo REUNIDO de las CAPTURAS-R7E3b de un nodo real (PASTE-R7E3b-M,
 # 42132df11f7a5a1b, con dev_freeze) y nueve negativos. El disfraz lleva el camino REAL de la cuenta
 # libre: no es una mutacion, es la escena. El negativo causa-no-probada pasa a InsufficientBalance.
+# E5 4b (asiento 478): con la banda probada ya no queda causa sin brazo, y el negativo
+# causa-no-probada se vuelve banda-ausente con sus mismos bytes: la misma escena, ahora sin la
+# prueba que el brazo decimo exige antes de nada salvo el saldo.
 cuenta-congelada.json|0|VERDE: AccountFrozen se sostiene sobre el estado comprometido
 rechazo-rech-congelada-falta-camino.json|1|falta congelados (el camino de zkssl_frozenPath)
 rechazo-rech-congelada-sin-camino.json|1|congelados: falta camino

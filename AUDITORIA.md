@@ -35071,3 +35071,65 @@ catalogo con la fila del RFC -corte 4c-. Tampoco mide el coste de la banda recor
 superior publicada sigue siendo la del AIR entero. Y este sello NO afirma que el nodo vaya a
 rechazar, ni cuando: prueba que el saldo bajo un techo se sostiene sobre el estado que una
 cabeza firmada compromete, sin que el probador tenga que ser el titular.
+
+## §478 — RFC-0007 E5, corte 4b: la capa PRUEBA la banda y el mando la verifica
+
+**Que.** El 4a dejo el AIR de la banda y su probador, y nadie que los usara: la causa
+`InsufficientBalance` no tenia quien la PRODUJERA sobre un libro vivo ni quien la aceptara
+sin nodo. Este corte pone las dos bocas. Nace `prueba_banda.rs` en la capa -el material es
+del OPERADOR y no cruza el cable, asi que nadie fuera de ella puede componerla-, el nodo
+gana la rama de su modo y el bloque `banda` del sobre, y el mando su DECIMO brazo, que es el
+primero que verifica un STARK dentro de `verificar_rechazo`.
+
+**La decision que va arriba de todo: el sobre NO publica el saldo.** Un sobre de esta causa
+con el molde de ayer llevaria `available` EN CLARO al lado de una prueba cuyo unico motivo
+de existir es no revelarlo, y el catalogo del 4c lo publicaria para siempre. De las tres
+salidas que se pesaron, la omision es la UNICA FALSABLE: un sobre con `available` cae con
+rojo nombrado, y eso convierte <<la banda no revela el saldo>> en invariante comprobable en
+release. La confianza residual va escrita: no protege a quien hizo la peticion -el CABLE se
+lo manda desde el §454, contrato publicado que este corte no toca- sino a quien LEE el
+sobre; y el operador conoce el saldo siempre, que es el modelo de esta era.
+
+**Donde vive la omision, y por que NO donde parecia.** `data_de` tiene TRES call sites y DOS
+son el CABLE -el `data` del -32000 y la negativa de `zkssl_publishConsumo`-. Filtrar ahi
+habria cambiado un contrato publicado con todos los gates en verde. La omision vive en un
+hermano que SOLO usa el sobre, `data_del_sobre`, con su lista declarada de una entrada; de
+`data_de` este corte mueve UNA linea, la del sobre, y el cable sale byte a byte igual.
+
+**La puerta que hace falsable lo que sale.** El productor no afirma sobre <<el libro>>:
+afirma sobre la cabeza v5 FIRMADA que se le da, y RECHAZA si el libro en disco no reproduce
+su `seq` y su `accountsRoot` antes de probar nada. Y re-verifica lo que produce con la MISMA
+regla que correra el tercero, no con una propia: cuesta unos milisegundos y deja de haber
+sobres muertos. Es el molde del §466.
+
+**El techo del campo, que es un hueco del FORMATO y se declara.** `MAX_VALOR` es 2^62 - 1 y
+la guarda del limite regulatorio va DESPUES de la del saldo, asi que nada acota el importe
+antes de que la causa salga: con un pedido por encima del techo la causa es producible por
+el cable y su prueba de banda NO. El productor lo comprueba y rehusa NOMBRANDO el techo, en
+vez de dejar que el AIR lo diga desde dentro. Acotar el importe antes moveria el ORDEN de
+las guardas de E5, del que dependen los cortes 3a y 3b ya sellados: no se toca.
+
+**Un productor de las opciones, y su testigo.** `circuit_banda` gana su `probar()` y su
+`probar_con()` con el molde de `circuit_edad`, porque el juez del kit acepta UN conjunto y
+solo uno: sin esa boca, cualquiera podria emitir pruebas que el mando rechaza y el rojo
+saldria en el catalogo del 4c. El testigo negativo existe y cae con otras opciones.
+
+**Contadores.** CINCO ficheros en el corte: uno NACE -`prueba_banda.rs`, 166 lineas- y
+cuatro se tocan; numstat 310/1. Seis `#[test]` nuevos y CINCO falsadores por mutacion, cada
+uno con UN FAILED nombrado. El `-B`: `tools/canon.sh` sube DOS pines, capa **345 -> 350** y
+circuitos **337 -> 338**, y ninguno mas se mueve -el nodo y el verificador siguen en 108, por
+precedente medido-. Sumas **1147 -> 1153**, **1284 -> 1290** y **1300 -> 1306**, derivadas de
+la tabla ya subida. `check_cifras` nombra QUINCE cifras y NO ve los TRES TOTALES, que se
+corrigen igual en los tres documentos; y queda medido que SI ve las dos por crate de
+`PAPER_EN.md`, contra lo que la cola decia. `check_tests` 1302 -> 1308, `check_modulos`
+128 -> 129, `check_nucleo` rc 0 y QUIETO en 109 filas. Ningun Cargo tocado. Y UN vector del
+catalogo, que el 4b dejo sin escena: con todas las causas probadas ya no hay <<causa que este
+mando no prueba>>, y el negativo `causa-no-probada` se vuelve `banda-ausente` con sus mismos
+bytes -lo cazo el canon real, no el ensayo-. Canon `--sello` VERDE en 179 s.
+
+**Lo que NO cierra.** El resto del catalogo -el positivo capturado de un nodo real y los
+negativos T6..T9- y la fila E5 a <<sellada>> -corte 4c-, con la
+correccion del §247 a la fila 208 del RFC, que promete la banda <<sin revelar el saldo>>
+mientras el cable manda el saldo desde el §454. Tampoco mide el coste de probar una banda
+recortada: la unica cota publicada sigue siendo la del AIR entero, que es superior. Y este
+sello NO afirma que el nodo vaya a rechazar, ni cuando: eso es H5b.
