@@ -35494,3 +35494,74 @@ un camino de antes de un pago no sube a la raiz de despues). Despues, el AIR, el
 metodo y el sobre. Del terreno quedan para la cola: `sparse_tree.rs:57` dice en presente que el
 arbol de congelados usa 24 niveles (son 32 desde la migracion), y `pending.rs:195` declara un
 segundo `PendingNotice` sin usuarios fuera de su fichero, homonimo del vigente.
+
+## §485 — RFC-0008 E1: el instrumento del cobro pendiente portable
+
+**Que.** Antes de escribir el AIR del cobrador, la E1 mide lo que cuesta y fija con testigos las
+dos reglas que el RFC ya escribio. Nace `crates/zk-ssl/src/instrumento_cobro.rs`, solo tests,
+con el molde de `instrumento_edad.rs` (la E4a del RFC-0007): la GEOMETRIA atada a la profundidad
+y al ciclo (35 ciclos el compromiso, 33 la meta; en un carril, 544 filas que piden 1024; en dos
+carriles con el bit compartido, 280 que piden 512); la RECETA del cobrador, que es la hoja que
+escribe `pending_commitment_v2` y sube a las dos raices con los mismos bits; el PRIMER testigo
+negativo (D-B): con los bits del pendiente, la meta de otra posicion no sube a la raiz de meta,
+ni con sus hermanos ni con los de la posicion buena; el SEGUNDO (D-F): tras un pago o un cobro en
+el arbol vivo, el camino servido de la foto sigue subiendo a la cabeza firmada y no a la raiz de
+ahora, y el de ahora hace lo contrario; y el INSTRUMENTO, que se corre a mano en release. `lib.rs`
+lo declara, y `instrumento_edad.rs` abre seis declaraciones a `pub(crate)` para que el cobro
+reuse su subida proxy y su lectura de la maquina sin copiarlas. Dos commits: el §485 con el
+codigo y su `-B` con el pin, las cifras y este asiento.
+
+**Lo que se midio antes de escribir el bloque.** Un PASTE-485-PRE (`2daed69ccf6e79e6`/483, SALIDA
+`96cf0169b0c09589`/44) compilo y corrio el candidato en una COPIA sacada con `git archive` y su
+propio target, sin tocar el clon: 0 warnings, la lista de la capa 355 -> 360 con los cinco
+nombres nuevos y cero perdidos, cuatro testigos y un ignorado, el instrumento de la edad en 10 y
+2, y los cuatro falsadores con su rojo. El instrumento, una sola corrida sin aparear (i5-1135G7):
+la subida proxy de 13 columnas prueba 512 filas en 0,16 s y 43.700 B, y 1024 filas en 0,15 s y
+49.631 B; la foto de n = 1024, 4096 y 16384 pendientes clona los dos arboles en 0,007, 0,081 y
+1,433 ms, con 1.045, 4.115 y 16.401 nodos por arbol, un `VmRSS` retenido de +3.264 kB en la
+mayor y un camino servido en 6 us. Que doblar las filas NO mueva el tiempo pide explicacion: la
+hipotesis, sin medir, es que manda el coste fijo del grinding de 21 bits, lo que encaja con los
+137,3 ms del `circuit_audit` a 512 filas; los bytes si suben, un 13,6 %. La foto crece mas que
+lineal (x11,6 y x17,7 por cada x4), y su precio a 16384 es 1,4 ms de candado por latido.
+
+**Las puertas del §485 (`4f31354`, padre `482e03a`, SALIDA `df001bde696e61a2`/77).** El mismo
+aplicador que el PRE; la capa compila con 0 warnings, igual que la BASE; la lista es la BASE mas
+CINCO nombres, por nombre; los testigos, 4 y 1, y los de la edad, 10 y 2, tras abrir sus
+declaraciones; CUATRO falsadores por mutacion con su rojo nombrado y su conteo exacto (los bits,
+3/1; servir el arbol vivo, 3/1; la receta invertida, 2/2, porque cae tambien el segundo
+negativo; los ciclos, 3/1); y las diez herramientas con juez por invariante, con DOS deltas
+previstos y medidos: `check_modulos` 129 -> 130 y `check_tests` 1308 -> 1313 (instrumentos
+16 -> 17). Commit de tres ficheros, 273/6, predicho por git.
+
+**El `-B`.** `tools/canon.sh` sube el pin de la capa **350 -> 354** y sus ignorados **5 -> 6**,
+con su entrada de historia; ningun otro pin se mueve. Sumas **1153 -> 1157**, **1290 -> 1294** y
+declarados **1306 -> 1311** (1294 + 17), y ignorados **16 -> 17**, derivadas de la tabla ya
+subida. `check_cifras`, corrido sobre una copia con el pin subido, nombra DIEZ cifras en NUEVE
+lineas; las otras SIETE lineas no las ve nadie (`PAPER_EN.md:33-35`, `PAPER.md:37-38` y
+`PRINCIPIOS.md:357-358`), y tampoco los <<5 ignorados>> ni los <<26 modulos>> de las lineas que
+si ve: todas se mueven en el mismo corte. Los modulos de la capa **26 -> 27**
+(`ARQUITECTURA.md:1116`). Dieciseis lineas en seis documentos, linea a linea y sin ensanchar, y
+la fila del pin. Las diez herramientas, rc 0 antes y despues, con juez por invariante: solo
+`check_figures` cambia, siete lineas informativas en su sitio (350 -> 354 y 1153 -> 1157).
+Canon `--sello` VERDE en 188 s.
+
+**La r1 de este `-B` dio el canon ROJO** en 282 s -la capa pasaba 353 de 354- y lo restauro todo.
+El binario de tests que compilo el ULTIMO falsador del §485 seguia en el target: `cp -p` devolvio
+al fuente restituido su fecha vieja, y cargo lo dio por fresco. La r2 lo MIDE antes de tocar nada
+-el testigo de la geometria cae con el rojo del falsador de los ciclos-, toca el fuente sin
+cambiarlo y exige 4 y 1 antes del canon. La salida del canon de la r1 vivia en el temporal del
+bloque y se perdio con el; la de la r2 vive en `$HOME`. El molde de un falsador restituye SIN
+`-p`, o toca el fuente al restituir: el contenido identico no basta, cargo mira la fecha.
+
+**Lo que NO afirma.** No mide el efecto de la foto sobre las escrituras del nodo: el molde de la
+medida M.1 del §252 que promete D-F es del sello del metodo, cuando la foto exista en el nodo.
+No decide la geometria. No escribe el AIR, ni el productor, ni el metodo, ni el sobre.
+
+**Contadores.** El §485: tres ficheros, uno nace (263 lineas), numstat 273/6, cuatro `#[test]` y
+un instrumento. El `-B`: ocho ficheros con este asiento, numstat 17/17 en los siete y el
+asiento aparte. Pin de la capa 354, ignorados 6. Ningun Cargo tocado.
+
+**Lo que NO cierra.** La geometria del AIR: en un carril hacen falta menos columnas pero hay que
+llevar los bits de la primera subida a la segunda; en dos, el bit se comparte como en el cobro
+v2. El precio de la foto sobre el nodo vivo. Y el <<el canon declara 1308>> que los traspasos
+publican pasa a 1313 con este sello.
