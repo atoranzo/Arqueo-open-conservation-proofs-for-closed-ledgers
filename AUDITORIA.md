@@ -35623,3 +35623,77 @@ versionados: 72, quietos. Pines quietos.
 antes del AIR de E1: si la prueba de otra posicion verifica, la cabecera de `circuit_claim.rs`
 afirma lo que el AIR no restringe, y eso es una correccion en cinco circuitos sellados. Despues,
 el AIR de E1 con la geometria de D-H, su productor, `zkssl_pendingPath` y el sobre.
+
+## §487 — 5.A-264: la no-congelacion la impone el aplicador, no la prueba
+
+**Que.** Una cuenta congelada podia gastar, cobrar y destruir su saldo si probaba por su cuenta. La
+comprobacion nativa `is_frozen` vivia solo en el PROBADOR (`send`, `claim`, `burn` y `client.rs`),
+que es el camino del honesto; el APLICADOR (`validate_send`, `validate_claim` y `apply_burn`) solo
+exigia que la `frozen_root` declarada fuera la vigente y que la prueba verificara. Y el circuito
+no ata el camino de congelados a la cuenta: en cinco circuitos (`burn`, `claim`, `claim_v2`,
+`send`, `send_v2`) la columna del bit de congelados (`COL_FBIT`) no esta igualada a la del camino
+de cuentas (`COL_BIT`), asi que la no-pertenencia probada es la de ALGUNA posicion libre, no la
+del titular. El titular congelado recicla el camino de la posicion vecina -su hermano de nivel 0
+es su propia hoja congelada, asi que lo deriva de su `frozenPath`- y el apply lo acepta. Es un
+fail-open de una funcion de cumplimiento, que exige la clave del titular y no rompe la
+conservacion, y que un tercero que solo ve pruebas y raices no puede detectar. Este corte cierra
+la via del aplicador (arreglo A); atar la posicion en el AIR (arreglo B) es arco propio y rotura
+de formato. Dos commits: el §487 con el codigo y los testigos, y su `-B` con el pin, las cifras
+y este asiento.
+
+**Lo que se midio antes de tocar nada.** El PASTE-264-M (`965eebc8b950272b`/438, SALIDA
+`c155f8d41ed0065e`/38), lectura pura sobre una copia con `git archive` y target propio, con
+ocho controles que discriminan: con la cuenta libre la prueba verifica; con la cuenta congelada y
+su propio camino, no; el probador honesto devuelve `AccountFrozen` en las tres vias. Y el ataque:
+el camino de otra posicion VERIFICA en 5 de 5 circuitos y el apply lo ACEPTA en 3 de 3, con los
+saldos movidos (999.000, 1.001.000 y 999.000) y el suministro en 999.000. La prediccion, escrita
+antes de correr desde la lectura del arbol, se cumplio linea a linea. La prosa del 5.A-264 decia
+que <<la capa lo cumple de forma nativa (`two_phase.rs:829` y `:1146`)>>: esas lineas son del
+probador, no del aplicador. Una comprobacion en el probador no es una comprobacion.
+
+**El arreglo A.** `validate_send` y `validate_claim` ganan `is_frozen -> AccountFrozen(idx)` tras
+el gate de `frozen_root`, con el indice que ya reciben; `apply_burn` igual, que no delega. Con
+ello `apply_many`, que reusa los dos `validate_*`, queda cubierto. La prosa que este corte deja
+rancia se corrige aqui (S247): `burn.rs` decia <<el circuito lo impone; esto solo evita gastar el
+computo>> y `two_phase.rs` <<antes filtraria el estado de congelacion>>; las dos dicen ahora que
+la garantia real vive en el aplicador hasta que el arreglo B la devuelva al AIR. Nacen TRES
+testigos en `tests.rs` (`t487_una_congelada_no_{envia,cobra,quema}_con_camino_ajeno`): el mismo
+ataque de la sonda, con su assert; sin el arreglo darian `Ok` y caerian, y eso es su falsador,
+medido sobre el mismo HEAD por la sonda. `refund` y `deissue` quedan FUERA: su circuito
+(`circuit_refund`) no lleva arbol de congelados, y que un pago caducado vuelva a un pagador
+congelado es una decision de diseno aparte, no este defecto.
+
+**Las puertas del §487 (`e52e048`, padre `964f89d`, SALIDA `0b62a09904c6e1cd`/51).** Antes, un
+PASTE-487-PRE (`b5f80badb4bc2484`/509, SALIDA `df2351649953dda5`/46) compilo y corrio el arreglo
+y los testigos en la misma copia: los tres verdes, la via honesta viva. Un rojo MIO cazado leyendo
+esa SALIDA: el filtro de la quema honesta no casaba ningun test de la capa y, con esperados
+<<-->>, un <<0 passed>> paso por verde; un gate que acepta cero no es un gate. El bloque midio la
+quema por su nombre. Sus puertas, por delta y por nombre en release: cerrojo pinado con seis
+centinelas; la lista de la capa 360 -> 363 con exactamente los tres nombres nuevos; warnings 0 ->
+0; los tres testigos y cinco del banco honesto; la suite ENTERA de la capa 357 pasan, 0 fallan, 6
+ignorados, en 218 s -el pin nuevo, medido, no deducido-; las diez herramientas con juez por
+invariante: nueve identicas y `check_tests` 1313 -> 1316; numstat 25/0, 15/2 y 163/0 predicho
+con git. Commit de tres ficheros, 203/2, y empuje dentro.
+
+**El `-B`.** `tools/canon.sh` sube el pin de la capa **354 -> 357** con su entrada de historia;
+ningun otro pin se mueve. Sumas **1157 -> 1160** y **1294 -> 1297**, declarados **1311 -> 1314**
+(1297 + 17); ignorados y modulos, quietos. `check_cifras`, corrido sobre una copia con el pin
+subido, nombra DIEZ cifras en NUEVE lineas; las otras SEIS no las ve nadie (`PAPER_EN.md:33-34`,
+`PAPER.md:37-38` y `PRINCIPIOS.md:357-358`). Quince lineas en seis documentos, linea a linea y
+sin ensanchar, y la fila del pin. Canon `--sello` VERDE en 308 s.
+
+**Lo que NO afirma.** No toca el AIR: el camino de otra posicion SIGUE verificando en los cinco
+circuitos, y un tercero que solo ve la prueba sigue sin poder saber que el titular no esta
+congelado; eso es el arreglo B. No decide si esto lleva aviso de seguridad ademas de este asiento.
+No mide el recorrido de punta a punta por el RPC del nodo (leido: el nodo aplica con estos mismos
+`apply_*` y no mira la congelacion por su cuenta).
+
+**Contadores.** El §487: tres ficheros, numstat 203/2, tres `#[test]`. El `-B`: ocho ficheros con
+este asiento, numstat 16/16 en los siete y el asiento aparte. Pin de la capa 357, ignorados 6.
+Ningun Cargo tocado.
+
+**Lo que NO cierra.** El arreglo B: atar la posicion del camino de congelados en el AIR de los
+cinco circuitos, con vectores nuevos y rotura de formato. La D-H del RFC-0008 se apoyo en que
+<<la capa lo comprueba de forma nativa>>: cierto del probador, medido falso del aplicador hasta
+este sello; su geometria no cambia, su texto si. Y el <<el canon declara 1313>> de los traspasos
+pasa a 1316 con este sello.
