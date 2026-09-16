@@ -35133,3 +35133,61 @@ correccion del §247 a la fila 208 del RFC, que promete la banda <<sin revelar e
 mientras el cable manda el saldo desde el §454. Tampoco mide el coste de probar una banda
 recortada: la unica cota publicada sigue siendo la del AIR entero, que es superior. Y este
 sello NO afirma que el nodo vaya a rechazar, ni cuando: eso es H5b.
+
+## §479 — RFC-0007 E5, corte 4c: el CATALOGO de InsufficientBalance, y E5 queda entera
+
+**Que.** El 4b dejo la banda probada por la capa y verificada por el mando, y ningun vector que
+lo ensenara ni banco que la produjera en vivo. Este corte pone las dos cosas: el tercer brazo de
+`tools/banco_rechazo.sh` produce el sobre de `InsufficientBalance` sobre el libro de un nodo
+real, con el nodo MUERTO, y de su captura nacen el positivo y OCHO negativos del catalogo.
+`spec/PAQUETE.md` gana la forma, la fila, la clave, los textos y el parrafo de la causa, que el
+4b no le dio; y el RFC-0007 corrige su fila 208, escribe en Seguridad a quien protege la banda y
+el techo del campo, y pone la fila E5 en <<sellada>>.
+
+**Lo medido antes de escribir un byte.** La escena ya existia: la cuenta libre del banco,
+fondeada y sin congelar, bajo la MISMA cabeza v5 que las otras dos causas; no hace falta otro
+nodo. El importe se DERIVA del fondeo (1000 + 1, el borde exacto de la banda) y el techo se LEE
+de `MAX_VALOR`. La captura (PASTE-4c-CAP `a4a1f69655a65687`, su SALIDA `aef8b1371fe97376` y las
+CAPTURAS-4c `aa69cc416fd095a0`) corrio contra un MANIFIESTO CANDIDATO -el del arbol mas la fila
+del positivo- y fue la PRIMERA corrida de `prueba_de_banda` sobre el libro de un nodo real: su
+puerta compara el `seq` y el `accountsRoot` de la cabeza con los del libro, y se sostuvo.
+Diecinueve reglas cayeron en vivo, quince de los sobres y cuatro del productor; dos de estas son
+nuevas: pedir EXACTAMENTE el saldo no produce sobre, y un importe por encima del techo produce
+la causa y no su prueba.
+
+**La primera medida del AIR recortado.** La prueba del positivo mide **49.051 B**, frente a los
+51.449 B de la cota del AIR entero con las opciones de la casa (§470): 2.398 B menos. Es UNA
+captura y es solo tamano; el tiempo del AIR recortado sigue sin medir.
+
+**Las decisiones (todas REVERSIBLES).** D-1 la escena es el tercer brazo del banco y el importe,
+el borde. D-2 un negativo por regla del decimo brazo: seis por UNA mutacion -el saldo publicado,
+el importe distinto, la cabeza de otro seq, la cuenta otra, la prueba ausente y la cabeza
+adulterada- y dos ESCENAS de dos campos -el pedido cero y el techo tocan los dos `requested`,
+porque tocar uno solo cae antes por el importe distinto-. Sin vector, y se declara: una prueba
+corrupta cae por la MISMA regla que la cuenta otra, y una cabeza con otro `accountsRoot` y el
+mismo `seq` no se fabrica sin romper la firma. D-3 el rojo de la cuenta otra lo escribe
+winterfell (<<InconsistentOodConstraintEvaluations>>) y se pina el nombre de la variante, con
+winterfell 0.13.1 fijado en el lock; los demas textos son las lineas medidas, cortadas donde la
+familia corta. D-4 los vectores son el JSON de la captura en una linea y con las claves
+ordenadas, como los del §476; los negativos se RE-DERIVAN por mutacion del positivo y se cruzan
+contra los cuerpos capturados. D-5 el banco lee el MANIFIESTO de `BANCO_RECHAZO_MANIFIESTO` si
+se le da: el corte que trae una causa captura antes de que su fila este en el arbol.
+
+**Lo que corrige.** La fila 208 del RFC-0007 promete la banda <<sin revelar el saldo>>: es cierto
+del SOBRE desde el §478 y no del RECHAZO, porque el `-32000` del cable lleva `available` desde
+el §454 a quien hizo la peticion. La banda protege frente a quien LEE el sobre, no frente a
+quien recibio el rechazo, y el operador conoce el saldo siempre: las dos frases van a la fila,
+por correccion, y a Seguridad, junto al techo del campo que la cola pedia declarar. La cuenta de
+vectores de la D-H, que la correccion del §476 promete <<la de hoy>>, pasa de 75 a 84.
+
+**Contadores.** CATORCE ficheros: NUEVE nacen -los vectores- y cinco se tocan; numstat de los
+trece del corte 279/30, y este asiento aparte. `spec/vectors/rechazo/` pasa de 75 a **84**
+entradas y de 5.986.610 a **7.120.725 B** con su MANIFIESTO; `spec/vectors/`, de 231 a **240**
+ficheros. Ningun `.rs`, ningun pin, ningun Cargo: las DIEZ herramientas IDENTICAS antes y
+despues. Canon `--sello` VERDE en 178 s, con el rechazo en 84/84.
+
+**Lo que NO cierra.** E5 queda entera y con ella las cinco etapas del RFC-0007: su paso a
+ACEPTADO es otro corte, con la regla 4 del PROCESO. El tiempo del AIR recortado sigue sin
+instrumento. `spec/PAQUETE.md` sigue sin los textos de `AccountNotFound` en su seccion 5, y su
+tabla de la 2.6 pide v5 para esa causa cuando el mando acepta v3, v4 o v5: van a la cola. Y este
+sello NO afirma que el nodo vaya a rechazar, ni cuando: eso es H5b.

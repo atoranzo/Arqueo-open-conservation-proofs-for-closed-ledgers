@@ -22,7 +22,7 @@
 | E2 — el rechazo con causa, en el cable | el objeto de error gana `data`: la causa por su NOMBRE (la variante de `LayerError`), sus campos, y el `seq` de la cabeza en cuyo estado se juzgó; `message` no cambia; el catálogo de las veinticinco causas se publica en `RPC.md` y un test lo ata al enum (dos listas son dos productores) | NO (aditivo: ningún vector ni el OpenRPC pina el objeto de error) | **sellada** — §454 (`LayerError::causa` en la capa, `data` en el `-32000` y en la negativa de `zkssl_publishConsumo`, el catálogo en `spec/RPC.md` atado por test) |
 | E3 — el rechazo con prueba, por caminos | una forma nueva del paquete de evidencia, `tipo: "rechazo"`, que el mando verifica sin nodo: la cabeza v5 firmada, la causa, y el material que la demuestra con caminos y aritmética pública sobre lo que la cabeza compromete; una tabla causa → material → qué revela; un positivo y un negativo por regla, derivados por mutación; su manifiesto y su puerta en el canon | NO (el paquete no cruza el cable) | **sellada** — §455 (E3a-1: `OverRegulatoryLimit`, `AccountLimitReached`, `ConsumoRepetido`, `ConsumoColision`), §456 (E3a-2: `StaleState`, `WrongRegulatoryLimit`, `DuplicateAccountInBatch`, `DuplicatePendingInBatch`, con un recibo real capturado por el proxy de un banco), §458-§459 (E3b: `AccountFrozen`, con el camino de congelados que el cable sirve al titular) y §460 (`SupplyCapExceeded`, con la petición del solicitante dentro del sobre). `AccountNotFound` pasa a E5 (CORRECCIÓN del §459); `PendingTreeExhausted` queda declarada sin prueba portable (CORRECCIÓN del §460) |
 | E4 — la prueba de edad, medida primero | E4a: el coste en función de `next_pending`, con el instrumento antes que el circuito, y una puerta que decide si se construye o se declara un techo. E4b: el circuito sobre el RANGO `0..next_pending` de los árboles de pendientes y de meta, con la caja vacía, el tope y la concentración por emisor nombrado como formas de un mismo enunciado; su sobre, su manifiesto y sus vectores | NO | **sellada** — E4a sellada: el instrumento (§461, §461-B) y su medida y veredicto (§462): E4b se construye, con el techo declarado (CORRECCIÓN del §462); E4b-1 sellada (§463, §463-B): el AIR real de las formas por cuenta, con su juez en `crates/zk-ssl-air` sin el probador y la puerta medida con él: el techo, medido en `n` = 16384, y las formas por importe, declaradas (CORRECCIONES del §464); E4b-2 sellada (§465): el kit la verifica contra una cabeza v5 firmada, sin el probador; E4b-3 sellada (§466: la capa la produce sobre el libro de un nodo real y RECHAZA si el libro no reproduce las cuatro cifras que la cabeza v5 firma; §467: su catálogo, once vectores que el mando corre sin el nodo). **E4 queda entera** |
-| E5 — las causas por circuito, y el kit verifica | `InsufficientBalance` con prueba de banda sobre la hoja comprometida (molde `circuit_audit`, sin el ciclo de titularidad); la re-verificación del STARK del solicitante para `ProofFailed` y `VerificationFailed`; un crate de AIR sólo-verificador que el mando consume, con `winter-verifier` en su clausura y el probador fuera | NO | **en curso** — la D-F quedó saldada por E4b (`crates/zk-ssl-air` vive en la clausura del kit: 46 paquetes, cero probador, medido en el §468). Las TRES causas se reparten en la D-G, la D-H y la D-I: `AccountNotFound` SE CONSTRUYE con su camino de ausencia dentro del sobre de rechazo; `InsufficientBalance` está MEDIDO —137,3 ms y 51.449 B con las opciones de la casa, §470— y su AIR SE ESCRIBE, con el productor del sobre por la forma de `--prueba-edad`; `ProofFailed` y `VerificationFailed` SE DECLARAN, sin prueba portable |
+| E5 — las causas por circuito, y el kit verifica | `InsufficientBalance` con prueba de banda sobre la hoja comprometida (molde `circuit_audit`, sin el ciclo de titularidad); la re-verificación del STARK del solicitante para `ProofFailed` y `VerificationFailed`; un crate de AIR sólo-verificador que el mando consume, con `winter-verifier` en su clausura y el probador fuera | NO | **sellada** — la D-F quedó saldada por E4b (`crates/zk-ssl-air` vive en la clausura del kit: 46 paquetes, cero probador, medido en el §468). Las TRES causas se repartieron en la D-G, la D-H y la D-I (§468): `AccountNotFound` SE CONSTRUYÓ —el nodo produce el sobre de rechazo (§473), su material y su mando (§474, §475) y su catálogo (§476)—; `InsufficientBalance` se MIDIÓ antes de escribir su AIR —137,3 ms y 51.449 B con las opciones de la casa y el AIR ENTERO, que es cota superior (§469, §470, §471)— y SE CONSTRUYÓ: el AIR de la banda sin el ciclo de titularidad (§477), el productor en la capa y el décimo brazo del mando, con un sobre que no publica el saldo (§478), y su catálogo, cuyo positivo lleva una prueba de 49.051 B medida en una sola captura (§479; el tiempo del AIR recortado no está medido); `ProofFailed` y `VerificationFailed` SE DECLARAN, sin prueba portable. **E5 queda entera** |
 
 Todas las medidas de este documento se tomaron sobre `bb02c71` (§449), en dos lecturas puras que
 no escribieron un byte en el árbol: `PASTE-H4-M` y `PASTE-H4-M2` (ver Referencias).
@@ -220,6 +220,16 @@ posición está libre, y sólo a quien hizo la petición. La etapa es **E5** des
 §459. La fila no se reescribe: esto la corrige.
 
 | `Store` | fallo del operador, no una regla | — | se declara como fallo, nunca como rechazo |
+
+**Corrección (§479, E5 corte 4c).** La fila de `InsufficientBalance` promete la banda «sin
+revelar el saldo» y dice que revela «nada más que la desigualdad». Del SOBRE, lo primero es
+cierto desde el §478: el nodo lo escribe sin `available` y el mando rechaza el que lo traiga. Lo
+segundo, casi: el sobre revela la cota `[0, requested - 1]`, que la propia negativa ya implica,
+y además el `publicId` de la cuenta, que el cable ya sirve sin credencial (`zkssl_publicId`).
+Del RECHAZO, lo primero no es cierto: el `-32000` del cable lleva `available` desde el §454, a
+quien hizo la petición, y este RFC no toca ese contrato. La banda protege frente a quien LEE EL
+SOBRE, no frente a quien recibió el rechazo; y el operador conoce el saldo siempre. La fila no
+se reescribe: esto la corrige.
 
 Cada causa de E3 lleva un vector positivo producido por un banco con nodo real y un negativo
 por mutación del material, con el texto de rechazo tomado del binario en la corrida (regla de
@@ -451,13 +461,13 @@ milisegundos, asi que un ms de produccion citado seria arrastrado y no medido.
 
 **Y lo que la medida destapo, que la fila no preveia: el sobre de rechazo NO TIENE PRODUCTOR.**
 Censado en el arbol por la clave `tipo`, separando quien lo ESCRIBE de quien lo LEE: `extension`,
-`consumo`, `conflicto` y `edad` tienen productor en codigo; `rechazo` tiene 75 vectores, su
+`consumo`, `conflicto` y `edad` tienen productor en codigo; `rechazo` tiene 84 vectores, su
 manifiesto y su verificador en el mando, y **cero** codigo que construya uno. Su propio manifiesto
 lo declara: el banco que capturo aquellas respuestas no vive en el arbol.
 **Correccion (§476).** Las dos ultimas frases son la medida de la 132 y siguen contando lo que
 entonces habia; desde el §473 el sobre de rechazo SI tiene productor —`--prueba-rechazo`, un modo
 del binario del nodo— y su banco SI vive en el arbol: `tools/banco_rechazo.sh`. La cuenta de
-vectores es la de hoy. Escribir el AIR arrastra
+vectores es la de hoy, y el §479 la lleva a 84. Escribir el AIR arrastra
 por tanto una pieza que esta decision no nombraba, y su forma ya esta probada: `--prueba-edad` es
 un MODO del binario del nodo que escribe el sobre y **sale antes de arrancar el servidor**
 (`crates/zk-ssl-node/src/main.rs:713`), conducido por un banco versionado. Fuera de banda y por
@@ -555,6 +565,17 @@ regenerado, los vectores bajo su versión y las suites verdes, etapa a etapa.
   (corrección del §460).
 - **Cada prueba de E3 revela lo que su fila dice.** `RefundTooEarly` por caminos revela emisor,
   nacimiento y, en v2, la apertura; quien no quiera revelarlo espera a E5. Nada revela un saldo.
+- **Un saldo, y a quién se le oculta** (corrección del §479 a la frase anterior). Ningún sobre
+  de RECHAZO revela un saldo: el de `InsufficientBalance` lleva en su lugar la prueba de banda,
+  y el mando rechaza el sobre que traiga `available`. El CABLE sí lo revela: el `-32000` de esa
+  causa lo manda desde el §454 a quien hizo la petición. La banda protege frente a quien lee el
+  sobre, no frente a quien recibió el rechazo; y el operador conoce todos los saldos, que es el
+  modelo de esta era.
+- **Un importe por encima del techo no tiene prueba de banda.** `MAX_VALOR` del AIR es
+  2^62 − 1 y ninguna guarda acota el importe antes de que salga `InsufficientBalance`: con un
+  pedido mayor la causa es producible por el cable y su prueba no. El productor rehúsa
+  nombrando el techo (§478) y el banco lo falsa en vivo (§479); acotar el importe antes movería
+  el orden de las guardas de E5, del que dependen los cortes ya sellados.
 - **Deudas declaradas que siguen**: aviso fuera de banda (§21), nodo único, `--dev`; y la
   concentración global, que puede no caber.
 

@@ -148,6 +148,8 @@ donde el valor es una respuesta del cable sin reescribir.
   "congelados": {index, leaf, camino} }                       (AccountFrozen)
 { "v": 1, "tipo": "rechazo", "data": {…}, "cabeza": {…},
   "cuenta": {index, leaf, camino} }                           (AccountNotFound)
+{ "v": 1, "tipo": "rechazo", "data": {…}, "cabeza": {…},
+  "banda": {s, publicId, requested, prueba} }                 (InsufficientBalance)
 { "v": 1, "tipo": "rechazo", "data": {…}, "cabeza": {…}, "parametros": {…},
   "peticion": {index, amount} }                               (SupplyCapExceeded)
 ```
@@ -157,8 +159,10 @@ donde el valor es una respuesta del cable sin reescribir.
   `zkssl_signedEpochHead`; `parametros`, la de `zkssl_params`; `presencia`, el `camino` de
   `zkssl_consumoPath`; `recibo`, los `publicInputs` que el titular envió; `lote`, las `ops` de
   `zkssl_applyMany`; `congelados`, la respuesta de `zkssl_frozenPath` (§458); `peticion`, los
-  `params` de la emisión rechazada, tal cual los envió el solicitante (§460). Que el nodo
-  rechazó —y cuándo— no lo prueba este sobre. Lo que prueba es
+  `params` de la emisión rechazada, tal cual los envió el solicitante (§460); `cuenta`, el
+  camino de la hoja vacía que el propio nodo escribe con `zk-ssl-node --prueba-rechazo` (§474),
+  y `banda`, la prueba de que el saldo no llega al importe, que el mismo modo escribe sin el
+  saldo (§478). Que el nodo rechazó —y cuándo— no lo prueba este sobre. Lo que prueba es
   que la regla que el nodo nombró **se sostiene sobre el estado que una cabeza firmada
   compromete**; si no se sostiene, el ROJO nombra por qué, y el sobre es entonces la prueba de que
   la regla era un disfraz.
@@ -168,10 +172,11 @@ donde el valor es una respuesta del cable sin reescribir.
   regulatorio— sirve cualquiera del libro. Y para lo que se juzga sobre un estado **instantáneo**
   —las raíces de un `seq` (`StaleState`), el lote contra ese registro (los duplicados), el árbol
   de congelados, que va y vuelve (`AccountFrozen`), el suministro, que sube con cada emisión y
-  baja con cada quema (`SupplyCapExceeded`)— la cabeza tiene que ser **la misma** del rechazo. La
-  mutabilidad está medida en el código (§455, §456, §459, §460).
-- Las causas que este mando prueba (RFC-0007 E3 —E3a, E3b y el §460— y, desde el §476,
-  la causa de E5 que se construye):
+  baja con cada quema (`SupplyCapExceeded`), y el saldo, que baja con cada envío
+  (`InsufficientBalance`)— la cabeza tiene que ser **la misma** del rechazo. La mutabilidad está
+  medida en el código (§455, §456, §459, §460, §478).
+- Las causas que este mando prueba (RFC-0007 E3 —E3a, E3b y el §460— y las dos causas de E5
+  que se construyen: `AccountNotFound` desde el §476 e `InsufficientBalance` desde el §478):
 
 | causa | material | qué comprueba | cabeza |
 |---|---|---|---|
@@ -185,6 +190,7 @@ donde el valor es una respuesta del cable sin reescribir.
 | `DuplicatePendingInBatch` | `lote` | el primer choque del lote es una posición repetida | v5, la misma (§456) |
 | `AccountFrozen` | `congelados` | el camino es el de la cuenta que `data` nombra (cruce con sus bits), mide los 32 niveles que fija el núcleo y sube al `frozenRoot`; la hoja no es la vacía | v3, v4 o v5, la misma (§459) |
 | `AccountNotFound` | `cuenta` | el camino es el de la cuenta que `data` nombra (cruce con sus bits), mide los 32 niveles que fija el núcleo y sube al `accountsRoot`; la hoja **es** la vacía | v5, la misma (§476) |
+| `InsufficientBalance` | `banda` | `data` no trae `available`; el `requested` de `data` es el de `banda` y no es cero; la `prueba` verifica, con las opciones de la casa y sin el saldo, que el saldo de la cuenta `publicId` está en `[0, requested - 1]` bajo el `accountsRoot` (`zk_ssl_air::banda`) | v3, v4 o v5, la misma (§478) |
 | `SupplyCapExceeded` | `parametros`, `peticion` | los siete recomponen; `cap` es el `maxSupply` comprometido; `wouldBe` es el `totalSupply` de la cabeza más el `amount` de la petición (la suma saturada de la capa) y pasa el tope | v5, la misma (§460) |
 
 - Cualquier otra causa se rechaza con su nombre. `SupplyCapExceeded` la añadió el §460: por el
@@ -196,6 +202,12 @@ donde el valor es una respuesta del cable sin reescribir.
   §459), y el resto de la tabla D-D es E4 y E5. `StaleState`, `WrongRegulatoryLimit` y los
   duplicados de lote los añadió el §456, reuniendo un recibo real por el proxy de un banco (su
   banco no vive en el árbol, y se declara).
+- `InsufficientBalance` la añadió el §478, y es la única causa de este sobre que verifica un
+  STARK. El sobre NO publica el saldo —el mando rechaza el que traiga `available`— porque la
+  banda lo prueba sin él; el `-32000` del cable sí se lo manda a quien hizo la petición desde el
+  §454, y eso no lo cambia este sobre (RFC-0007, corrección del §479). Un importe por encima del
+  techo del campo (`MAX_VALOR`, 2^62 − 1) produce la causa y no su prueba: el productor rehúsa
+  nombrándolo.
 
 ### 2.7 El paquete de edad (§465)
 
@@ -239,7 +251,7 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 | extensión | `camino` (lista de digests) | `RPC.md:781-808` |
 | consumo | `consumo`, y `presencia`/`ausencia` → `siblings`, `isRight` | `zkssl_consumoPath`, `RPC.md` |
 | conflicto | `consumo`, y `libros[]` → `cabeza`, `presencia` → `siblings`, `isRight` | este documento, sección 2.5 |
-| rechazo | `data` → `causa`, `campos`, `seq`; `parametros` → los siete de `zkssl_params`; `presencia` → `siblings`, `isRight`; `recibo` → `rootOld`, `pendingRootOld`, `frozenRoot`; `lote[]` → `kind`, `sender` o `receiver`, `receipt` → `notice` → `position` o `notice` → `position`; `congelados` → `index`, `leaf`, `camino` → `siblings`, `isRight`; `peticion` → `amount`; `cuenta` → `index`, `leaf`, `camino` → `siblings`, `isRight` | este documento, sección 2.6 |
+| rechazo | `data` → `causa`, `campos`, `seq`; `parametros` → los siete de `zkssl_params`; `presencia` → `siblings`, `isRight`; `recibo` → `rootOld`, `pendingRootOld`, `frozenRoot`; `lote[]` → `kind`, `sender` o `receiver`, `receipt` → `notice` → `position` o `notice` → `position`; `congelados` → `index`, `leaf`, `camino` → `siblings`, `isRight`; `peticion` → `amount`; `cuenta` → `index`, `leaf`, `camino` → `siblings`, `isRight`; `banda` → `s`, `publicId`, `requested`, `prueba` | este documento, sección 2.6 |
 | edad | `enunciado` → `t`, `k`, `emisor`; `subraices` → `pendientes`, `meta`; `prueba` | este documento, sección 2.7 |
 
 ⚠️ **§419 — el «31» de arriba ya no es la cuenta**: el sobre de consumo añade `consumo`,
@@ -431,6 +443,9 @@ los **mismos productores** de arriba, con su hueco relleno distinto.
 - `falta peticion (los params de la emision rechazada)`
 - `data: el wouldBe que el nodo dice ({dice}) no es el suministro de la cabeza mas el importe pedido ({suministro} + {importe} = {seria})`
 - `la causa NO se sostiene: el suministro resultante ({seria}) no supera el tope ({tope})`
+- `data: esta causa no publica el saldo: la banda lo prueba sin el` · `falta banda (la prueba de la desigualdad)`
+- `data: el importe que el nodo dice no es el que la prueba acota` · `la causa NO se sostiene: pedir 0 no puede pasar de ningun saldo`
+- `banda: falta prueba o no es cadena 0x` · `banda: {e}`, donde `{e}` es el rojo de `zk_ssl_air::banda::verificar`: `los limites {l} y {u} pasan del techo {MAX_VALOR}`, `banda vacia: inferior {l} sobre superior {u}`, `la prueba no se deserializa: …`, `forma de traza …`, o el que escribe winterfell (§478)
 
 **La edad** (§465; `{e}` sale de `zk_ssl_air::verificar_contra_cabeza`)
 
@@ -546,6 +561,15 @@ real de una cuenta viva, y la D-G del RFC-0007 cerró la puerta a un método del
 su testigo es PURO y vive en los `#[test]` de `crates/zk-ssl-verify/src/cuentas.rs` (§475). Y de
 las cuatro mutaciones que el banco falsa en vivo, dos —la hoja y un hermano del camino— caen por
 la MISMA regla: el catálogo pina la regla, no la pieza mutada, así que sólo una entra como vector.
+**Desde §479 cubre `InsufficientBalance`** (RFC-0007, E5, corte 4c, que cierra E5): un positivo
+reunido de las capturas de un nodo real que produce el sobre CON su prueba de banda
+(`tools/banco_rechazo.sh`, su tercer brazo, sobre la cuenta libre del banco y un importe
+derivado del fondeo; las CAPTURAS-4c) y **ocho** negativos, uno por regla del brazo. Dos son
+escenas, y se declara: el pedido cero y el techo tocan los dos `requested` a la vez, porque
+tocar uno solo cae antes por el importe distinto. El rojo de la cuenta otra lo escribe
+winterfell, y el manifiesto pina el nombre de su variante (0.13.1, fijado en el lock). Sin
+vector, y se declara: una prueba corrupta cae por la MISMA regla que la cuenta otra, y una
+cabeza con otro `accountsRoot` y el mismo `seq` no se fabrica sin romper la firma.
 **Desde §467 cubre el sobre de EDAD** (RFC-0007, E4b-3, que cierra E4): `spec/vectors/edad/`
 trae DOS positivos REUNIDOS de las capturas de un nodo real -la capa los produjo con
 `zk-ssl-node --prueba-edad` sobre el libro de ese nodo, contra la cabeza v5 de seq 10 que el
@@ -557,9 +581,9 @@ no verifica lo pone WINTERFELL y no la casa, asi que el manifiesto pina solo el 
 los dos sobres, y su huella se declara en la cabecera del manifiesto.
 Las demostraciones en vivo con nodo son `tools/banco_apagado.sh`, `tools/banco_consumo.sh`
 (RFC-0006, E3), `tools/banco_dos_libros.sh` (E4a), `tools/banco_edad.sh` (E4b-3) y
-`tools/banco_rechazo.sh` (RFC-0007 E5, corte 3b): el tercero de ellos levanta DOS nodos con DOS
-claves y produce el hecho que E4 existe para detectar, y el último produce el sobre de rechazo
-sobre un libro real con el servidor PARADO.
+`tools/banco_rechazo.sh` (RFC-0007 E5, cortes 3b y 4c): el tercero de ellos levanta DOS nodos
+con DOS claves y produce el hecho que E4 existe para detectar, y el último produce el sobre de
+rechazo sobre un libro real con el servidor PARADO.
 
 ## 10. Historia
 

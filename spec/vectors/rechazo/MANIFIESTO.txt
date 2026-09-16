@@ -1,9 +1,11 @@
-# Vectores del sobre de RECHAZO (spec/PAQUETE.md seccion 2.6; RFC-0007 E3 y, desde el asiento 476,
-# la causa de E5 que se construye. Nace en el asiento 455).
+# Vectores del sobre de RECHAZO (spec/PAQUETE.md seccion 2.6; RFC-0007 E3 y, desde los asientos
+# 476 y 479, las dos causas de E5 que se construyen. Nace en el asiento 455).
 # fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
 # Los positivos se REUNEN de capturas de un nodo real, UNA POR CAUSA: los cuatro primeros de las
 # CAPTURAS-455 (PASTE-455-M, a977da87413b2dc7) y los demas de las capturas de su propio corte, la
-# ultima de ellas CAPTURAS-475 (asiento 476). Cada pieza es una respuesta del cable sin reescribir.
+# ultima de ellas CAPTURAS-4c (asiento 479). Cada pieza es lo que el nodo devolvio -una respuesta
+# del cable o, desde el asiento 476, un sobre de --prueba-rechazo- sin cambiar un valor: el JSON
+# se normaliza a una linea.
 # Los negativos se derivan de ellos por UNA mutacion cada uno, UNO POR REGLA PRODUCIBLE; jamas se
 # reescriben (regla 2 del PROCESO). La cabeza v3 sale de la cabeza real de
 # spec/vectors/paquete/posicion-v2.json. De los bancos que capturaron, los de las CAPTURAS-455 y
@@ -95,3 +97,17 @@ rechazo-rech-inexistente-truncado.json|1|cuenta: el camino no tiene los 32 nivel
 rechazo-rech-inexistente-hoja-otra.json|1|cuenta: el camino NO sube al accountsRoot de la cabeza
 rechazo-rech-inexistente-cabeza-distinta.json|1|la cabeza (seq 5) no es la del rechazo (seq 6)
 rechazo-rech-inexistente-cabeza-adulterada.json|1|cabeza: los campos NO recomponen su epochDigest
+# E5 4c (asiento 479): el positivo REUNIDO de las CAPTURAS-4c de un nodo real (PASTE-4c-CAP,
+# a4a1f69655a65687: el tercer brazo de tools/banco_rechazo.sh, sobre la cuenta libre del banco y
+# un importe DERIVADO del fondeo, el borde exacto) y ocho negativos, uno por regla del brazo
+# decimo. Seis son UNA mutacion; el pedido cero y el techo son ESCENAS de dos campos -los dos
+# requested a la vez-, y se declara. El rojo de la cuenta otra lo escribe winterfell (0.13.1).
+saldo-insuficiente.json|0|VERDE: InsufficientBalance se sostiene sobre el estado comprometido
+rechazo-rech-banda-con-saldo.json|1|data: esta causa no publica el saldo: la banda lo prueba sin el
+rechazo-rech-banda-importe-otro.json|1|data: el importe que el nodo dice no es el que la prueba acota
+rechazo-rech-banda-cabeza-distinta.json|1|la cabeza (seq 5) no es la del rechazo (seq 6)
+rechazo-rech-banda-cuenta-otra.json|1|banda: InconsistentOodConstraintEvaluations
+rechazo-rech-banda-sin-prueba.json|1|banda: falta prueba o no es cadena 0x
+rechazo-rech-banda-cabeza-adulterada.json|1|cabeza: los campos NO recomponen su epochDigest
+rechazo-rech-banda-pedido-cero.json|1|la causa NO se sostiene: pedir 0 no puede pasar de ningun saldo
+rechazo-rech-banda-techo.json|1|banda: los limites 0 y 4611686018427387904 pasan del techo 4611686018427387903
