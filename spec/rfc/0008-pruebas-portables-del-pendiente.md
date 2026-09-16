@@ -10,7 +10,8 @@
   compromiso v2 del RFC-0003), §387 y §388 (las raíces en reposo), §412–§441 (el consumo
   publicado), §451–§453 (la cabeza v5), §458–§460 (el rechazo por caminos), §463–§467
   (la prueba de edad), §473–§479 (la banda sobre la hoja comprometida); el §483, que lo
-  adopta, y el §484, que decide D-F y D-G y corrige la fila E1.
+  adopta; el §484, que decide D-F y D-G y corrige la fila E1; el §485, el instrumento de E1;
+  y el §486, que decide D-H.
 - **Hito:** H5 de la propuesta enviada a NLnet Restack (140 h), en sus palabras: *«The two
   portable proofs of a pending item. Payee side and payer side, derived from the same head;
   pledge transition; format and vectors.»*
@@ -24,9 +25,10 @@
 | E3 — la prenda, como transición con prueba | el receptor marca el pendiente como prendado: una etiqueta con dominio propio sobre `C2` en el árbol de consumos, publicada por un método aditivo, `zkssl_pledge`, que EXIGE la prueba de apertura del cobro (la autorización de `circuit_claim_v2` sin el crédito); una segunda prenda es `ConsumoRepetido`, que ya tiene sobre de rechazo con prueba (RFC-0007 E3, `PAQUETE.md` 2.6). La prenda no toca el cobro ni el reembolso: lo que obliga es contrato, y se declara | NO | propuesta |
 | E4 — el catálogo y el banco | `spec/vectors/pendiente/`: dos positivos por lado, REUNIDOS de las capturas de un nodo real (molde: `edad/`), y un negativo por regla producible; `MANIFIESTO.txt`; la familia en `FAMILIAS`; el banco que lo reproduce en vivo; `PAQUETE.md` 2.8. El giro a ACEPTADO exige la regla 4 medida letra a letra, como el §481 | NO | propuesta |
 
-Las medidas de este documento se tomaron sobre `5ef3b1b` (`TERRENO-H5-144`) y, las de D-F y
-D-G, sobre `393032e` (`TERRENO-E1-145`), en lecturas puras que no escribieron un byte en el árbol
-(ver Referencias).
+Las medidas de este documento se tomaron sobre `5ef3b1b` (`TERRENO-H5-144`); las de D-F y D-G,
+sobre `393032e` (`TERRENO-E1-145`); y las de D-H, con el instrumento del §485, que corrió en una
+copia fuera del árbol, y leyendo `0424439`. Ninguna escribió un byte en el árbol (ver
+Referencias).
 
 **Correcciones del §484** (la fila E1 y D-B, como las dejó el §483). La fila decía «`receptor` es
 la identidad pública de quien prueba», y el molde que nombra no restringe quién prueba (D-G).
@@ -88,9 +90,9 @@ manda la forma de este RFC:
 
 ## Diseño
 
-Las siete decisiones las tomó el asistente por delegación del autor (D-A..D-E en la sesión 144;
-D-F y D-G en la 145), con la constitución de decisión (pureza, claridad, coherencia, imagen fiel,
-en ese orden). Todas llevan su condición de reversión, escrita aquí.
+Las ocho decisiones las tomó el asistente por delegación del autor (D-A..D-E en la sesión 144;
+D-F, D-G y D-H en la 145), con la constitución de decisión (pureza, claridad, coherencia, imagen
+fiel, en ese orden). Todas llevan su condición de reversión, escrita aquí.
 
 ### D-A — La T es del pagador; el cobrador dice «a mi nombre, al menos `inferior`, nacido en b»
 
@@ -123,7 +125,7 @@ otra posición. La cadena del compromiso son 35 ciclos de 8 filas, como la de la
 suma 33 (una permutación con dominio y la subida). En un carril la traza pasa de 512 a 1024
 filas; en dos carriles con el bit compartido se queda en 512. Las cotas medidas con las opciones
 de la casa (la banda, `circuit_audit`, el cobro v1) lo dejan en milisegundos: lo que decide el
-instrumento es la geometría, no si cabe.
+instrumento es la geometría, no si cabe. La geometría la decide D-H.
 
 ### D-C — La prenda vive en el árbol de consumos, con dominio propio y con prueba
 
@@ -209,6 +211,34 @@ igual con clave o sin ella, y atarla a quien la PRESENTA pide un reto dentro del
 ninguno de los dos lleva. **Reversible** hacia (b) sólo con ese reto y con un caso de uso medido
 que lo pida.
 
+### D-H — La geometría del cobrador: dos carriles y un solo bit
+
+Medido con el instrumento de E1 (§485, `crates/zk-ssl/src/instrumento_cobro.rs`): la cadena del
+compromiso son 35 ciclos de 8 filas y la de la meta, 33; en un carril suman 544 filas y piden una
+traza de 1024, y en dos carriles caben en 512. La subida proxy de la casa (13 columnas, con
+`crate::proof_options()`) probó 512 filas en 0,16 s y 43.700 B, y 1024 filas en 0,15 s y
+49.631 B: en esta talla, doblar las filas sube los bytes un 13,6 % y no mueve el tiempo (una sola
+corrida, sin aparear). Un segundo carril añade un estado de hash, 12 columnas; la diferencia
+medida entre `circuit_audit` (31 columnas, 51.449 B) y la banda (27 columnas, 49.051 B) da unos
+600 B por columna, así que el ancho cuesta del mismo orden (razonado). El coste no decide.
+
+Dos caminos: (a) dos carriles que se colocan con UNA columna de bit, el molde del cobro v2
+(`crates/stark-experiment/src/circuit_claim_v2.rs`, sus dos carriles con el mismo `bit`) sin su
+igualdad de hermanos, porque aquí son dos árboles distintos; (b) un carril, con la posición
+acumulada en la primera subida, recompuesta en la segunda y una aserción que las iguale. Gana
+(a): pureza (que el compromiso y su meta están en la MISMA posición lo da la estructura, no una
+igualdad que haya que acordarse de escribir), coherencia (el molde existe) y claridad (una
+posición, una columna). La casa ya sube dos árboles por la misma posición en un carril -la
+subida de congelados, tras la de cuentas- y la columna del bit de la segunda no está atada a la de
+la primera: leído en los cinco circuitos que lo hacen, y sin falsador todavía (§486).
+
+La forma: el carril A compone `C1` en los ciclos 0 y 1 y `C2 = M(C1, X)` en el 2, y sube del 3
+al 34; el carril B deja libres los ciclos 0 y 1, compone la hoja de meta en el 2 y sube del 3 al
+34 con el mismo bit. El primer testigo negativo del AIR es el del instrumento: una meta de otra
+posición no verifica. **Reversible** hacia (b) si el AIR de E1, medido en su sello con las
+opciones de la casa, pasa de 65.313 B, que es el cobro v1 (1024 filas por 55 columnas) y la cota
+superior con la que se razona aquí.
+
 ## Lo que se DESCARTÓ al medir
 
 1. Abrir `X` del lado del cobrador para probar la T: rompe D-2 del RFC-0003 (el receptor
@@ -230,6 +260,8 @@ que lo pida.
    posición ni la hoja (D-F).
 9. Firmar una cabeza a petición de quien pide el camino: quema índices XMSS (D-F).
 10. La titularidad en E1 sin un reto en el enunciado: no ata la prueba a quien la presenta (D-G).
+11. El cobrador en un carril, con la posición acumulada y una igualdad que la ate: un atado que
+    la casa no ha escrito nunca y que depende de acordarse de escribirlo (D-H).
 
 ## Compatibilidad
 
@@ -274,6 +306,8 @@ expediente aunque no rompa nada.
   RFC anteriores).
 - La lectura pura de la sesión 145 sobre `393032e`, `TERRENO-E1-145` (texto,
   `953f0aeca3a1175c`/122; en Downloads del autor, como la anterior).
+- El instrumento de E1 y su corrida: `crates/zk-ssl/src/instrumento_cobro.rs` (§485) y la salida
+  del PASTE que lo ensayó fuera del árbol (`96cf0169b0c09589`/44, en Downloads del autor).
 - El hito, verbatim, en la línea 46 del formulario enviado (`NLNET-form-answers-EN-v3.txt`,
   `26dcde32091e857d`/160) y en la sección 3.6 de la propuesta adjunta (el PDF
   `a6d5b620bf4e2283`, 9 páginas).

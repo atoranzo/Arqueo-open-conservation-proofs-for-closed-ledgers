@@ -35565,3 +35565,61 @@ asiento aparte. Pin de la capa 354, ignorados 6. Ningun Cargo tocado.
 llevar los bits de la primera subida a la segunda; en dos, el bit se comparte como en el cobro
 v2. El precio de la foto sobre el nodo vivo. Y el <<el canon declara 1308>> que los traspasos
 publican pasa a 1313 con este sello.
+
+## §486 — RFC-0008: D-H, la geometria del cobrador (dos carriles y un solo bit)
+
+**Que.** El RFC-0008, PROPUESTO, gana su octava decision, delegada por el autor en la sesion 145 y
+tomada con la constitucion: el AIR del cobrador de E1 va en DOS carriles que se colocan con UNA
+columna de bit. El carril A compone `C1` en los ciclos 0 y 1 y `C2 = M(C1, X)` en el 2, y sube
+del 3 al 34 por el arbol de pendientes; el carril B deja libres los ciclos 0 y 1, compone la hoja
+de meta en el 2 y sube del 3 al 34 por el arbol de meta con el MISMO bit. Es el molde del cobro
+v2 (`circuit_claim_v2.rs`, sus dos carriles con el mismo `bit`) sin su igualdad de hermanos,
+porque aqui los dos arboles son distintos. Nace el descarte 11 (un carril con la posicion
+acumulada y una igualdad que la ate), el recuento de decisiones pasa de siete a ocho, D-B remite
+la geometria a D-H, y las Referencias ganan el instrumento del §485 y la salida de su ensayo.
+Solo el RFC y este asiento.
+
+**Lo que se midio antes de decidir.** Con el instrumento del §485, en una copia fuera del arbol:
+la cadena del compromiso son 35 ciclos de 8 filas y la de la meta 33, que en un carril piden una
+traza de 1024 filas y en dos caben en 512; la subida proxy de 13 columnas probo 512 filas en
+0,16 s y 43.700 B y 1024 filas en 0,15 s y 49.631 B (una corrida, sin aparear): doblar las filas
+sube los bytes un 13,6 % y no mueve el tiempo en esta talla. El ancho, razonado sobre dos pruebas
+medidas: `circuit_audit` (31 columnas, 51.449 B) y la banda (27, 49.051 B) dan unos 600 B por
+columna, y un segundo carril son 12. El coste no decide.
+
+**Un hallazgo, LEIDO y sin falsador.** Cinco circuitos suben el arbol de cuentas y despues el de
+congelados por la MISMA posicion -`circuit_burn`, `circuit_claim`, `circuit_claim_v2`,
+`circuit_send` y `circuit_send_v2`-, y en los cinco la columna del bit de congelados (`COL_FBIT`)
+aparece exactamente cuatro veces: su constante, su relleno, su lectura y su restriccion booleana
+(en `circuit_claim_v2.rs`, :829 y :839). Ninguna restriccion la iguala a la del camino de cuentas
+(`COL_BIT`, :717 y :738). Si la lectura es buena, la no-pertenencia que esos circuitos prueban es
+la de ALGUNA posicion libre del arbol de congelados, no la de la cuenta, aunque la cabecera de
+`circuit_claim.rs` afirme <<3. No esta congelado>>; y la congelacion la hace cumplir la capa de
+forma nativa, al menos en el envio y el cobro (`two_phase.rs:829` y :1146). `circuit_freeze`
+lleva la misma columna sin camino de cuentas: es la transicion de ese arbol y no entra en la
+cuenta. Es la razon de fondo de D-H: la casa ya tiene el patron de un carril con los bits en
+columnas separadas, y el atado se quedo sin escribir.
+
+**La decision.** Gana dos carriles y un bit: pureza (que el compromiso y su meta estan en la
+misma posicion lo da la estructura, no una igualdad que haya que acordarse de escribir),
+coherencia (el molde existe) y claridad (una posicion, una columna). El primer testigo negativo
+del AIR es el del instrumento: una meta de otra posicion no verifica. Reversible hacia un carril
+si el AIR de E1, medido en su sello con las opciones de la casa, pasa de 65.313 B, el cobro v1
+(1024 filas por 55 columnas), que es la cota superior con la que se razona.
+
+**Lo que NO afirma.** No afirma que los cinco circuitos tengan un hueco explotable contra la capa:
+la capa comprueba la congelacion fuera del circuito. Lo que la lectura pone en duda es lo que la
+PRUEBA dice a un tercero que la verifica sin el nodo, y eso no esta medido: lo mide un falsador,
+una prueba de cobro con el camino de congelados de otra posicion libre que verifique o no. No
+escribe el AIR de E1.
+
+**Contadores.** Cero codigo, cero cifras de tests, sin canon (como el §483 y el §484). La puerta:
+las diez herramientas de `tools/canon.sh`, rc 0 antes y despues, las diez IDENTICAS y sin ningun
+delta previsto. Ficheros: `spec/rfc/0008-pruebas-portables-del-pendiente.md` 281 -> 315 lineas
+(`a0b70c72c597c417` -> `9168544c5fb3c33a`, +42/-8 por git) y este asiento. Documentos `.md`
+versionados: 72, quietos. Pines quietos.
+
+**Lo que NO cierra.** El falsador de la no-pertenencia a congelados en los cinco circuitos, que va
+antes del AIR de E1: si la prueba de otra posicion verifica, la cabecera de `circuit_claim.rs`
+afirma lo que el AIR no restringe, y eso es una correccion en cinco circuitos sellados. Despues,
+el AIR de E1 con la geometria de D-H, su productor, `zkssl_pendingPath` y el sobre.
