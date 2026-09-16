@@ -826,6 +826,11 @@ impl SovereignLayer {
 
         // Después de la autoridad: antes filtraría el estado de congelación
         // a quien no es el titular.
+        //
+        // ⚠️ §264: esta comprobacion NO es solo para el probador honesto. El
+        // circuito no ata la posicion de congelados, asi que la garantia real
+        // vive en el par (`send`/`claim`) y su `validate_*`, y en `apply_burn`
+        // (S487); el arreglo B la devolvera al AIR.
         if self.is_frozen(sender_index) {
             return Err(LayerError::AccountFrozen(sender_index));
         }
@@ -932,6 +937,17 @@ impl SovereignLayer {
         }
         if pi.frozen_root != frozen_root {
             return Err(LayerError::StaleState);
+        }
+        // ===== NO-CONGELACION: LA IMPONE ESTA CAPA, NO LA PRUEBA (S487) =====
+        //
+        // §264, MEDIDO: el circuito prueba que ALGUNA posicion del arbol de
+        // congelados esta libre, no que lo este la del titular (`COL_FBIT` no
+        // esta atada a `COL_BIT`). El titular de una cuenta congelada podia
+        // reciclar el camino de una posicion libre vecina y este apply lo
+        // aceptaba: fail-open contra la congelacion. Hasta que el arreglo B
+        // ate la posicion en el AIR, la garantia vive AQUI.
+        if self.is_frozen(sender_index) {
+            return Err(LayerError::AccountFrozen(sender_index));
         }
 
         // ===== EL LIMITE REGULATORIO =====
@@ -1237,6 +1253,15 @@ impl SovereignLayer {
         }
         if pi.frozen_root != frozen_root {
             return Err(LayerError::StaleState);
+        }
+        // ===== NO-CONGELACION: LA IMPONE ESTA CAPA, NO LA PRUEBA (S487) =====
+        //
+        // §264: ver el comentario gemelo de `validate_send`. La prueba de
+        // no-pertenencia a congelados es de ALGUNA posicion, no la del que
+        // cobra; el apply no lo miraba. Hasta el arreglo B (atar la posicion
+        // en el AIR), la garantia vive aqui.
+        if self.is_frozen(receiver_index) {
+            return Err(LayerError::AccountFrozen(receiver_index));
         }
 
         // Se verifica la prueba ANTES de tocar el estado (§73). E3b-1:

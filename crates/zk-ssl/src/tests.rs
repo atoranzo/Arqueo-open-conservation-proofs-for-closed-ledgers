@@ -3173,3 +3173,166 @@ fn a_restart_does_not_renew_an_exhausted_custodian_quota() {
     let _ = std::fs::remove_dir_all(&path);
 
 }
+
+// ===================================================================
+// TESTIGOS DEL S487 (5.A-264): con la no-congelacion impuesta por el
+// aplicador, el ataque del camino ajeno pasa de Ok(()) a AccountFrozen.
+// Fabrican la prueba a mano (via honesta) con el camino de congelados de
+// OTRA posicion libre -- el mismo ataque que midio la SONDA-264 -- y
+// exigen que el apply lo RECHACE. Sin el arreglo, estos tres pasarian a
+// Ok y el test caeria: son el falsador del arreglo.
+// ===================================================================
+
+fn t487_clave(sk: u64) -> Digest {
+    [BaseElement::new(sk), BaseElement::ZERO, BaseElement::ZERO, BaseElement::ZERO]
+}
+
+fn t487_sal(layer: &SovereignLayer, idx: AccountIndex) -> Digest {
+    layer
+        .records
+        .get(&idx)
+        .map(|r| r.leaf_salt)
+        .unwrap_or(crate::store::LEAF_SALT_LEGACY)
+}
+
+/// **5.A-264 / S487, ENVIO.** Una cuenta congelada NO envia reciclando el
+/// camino de congelados de una posicion libre vecina.
+#[test]
+fn t487_una_congelada_no_envia_con_camino_ajeno() {
+    let mut layer = new_layer();
+    let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+    set_frozen_delegated(&mut layer, alice, true);
+    let vecino = alice ^ 1;
+    assert!(layer.is_frozen(alice) && !layer.is_frozen(vecino));
+
+    let estado = state_of(&layer, alice);
+    let destino = derive_public_id(BaseElement::new(SK_BOB));
+    let sal = salt_de(0x487);
+    let importe: u64 = 1000;
+    let position = layer.reserve_pending().expect("reserva");
+    let trace = stark_experiment::circuit_send::build_trace(
+        t487_clave(SK_ALICE),
+        estado.public_id,
+        estado.balance,
+        estado.nonce,
+        t487_sal(&layer, alice),
+        &layer.accounts.path_for(alice),
+        &layer.frozen.path_for(vecino),
+        importe,
+        layer.regulatory_limit,
+        layer.total_supply,
+        0,
+        destino,
+        sal,
+        &layer.pending.path_for(position),
+    );
+    let prover = stark_experiment::circuit_send::SendProver::new(layer.options.clone());
+    let public_inputs = prover.get_pub_inputs(&trace);
+    let prueba = prover.prove(trace).expect("prove");
+    let recibo = crate::two_phase::SendReceipt {
+        proof: prueba.to_bytes(),
+        public_inputs,
+        commitment: crate::pending::pending_commitment(destino, sal, importe),
+        notice: crate::two_phase::PendingNotice {
+            position,
+            salt: sal,
+            amount: importe,
+            x: None,
+        },
+    };
+    let r = layer.apply_send(&recibo, alice, &estado, importe);
+    assert!(
+        matches!(r, Err(LayerError::AccountFrozen(_))),
+        "S487: una congelada no debe enviar con camino ajeno: {r:?}"
+    );
+    assert_eq!(layer.balance_of(alice), Some(1_000_000), "el saldo no se movio");
+}
+
+/// **5.A-264 / S487, COBRO.**
+#[test]
+fn t487_una_congelada_no_cobra_con_camino_ajeno() {
+    let mut layer = new_layer();
+    let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+    // Un pendiente a nombre de alice, hecho por bob (via honesta).
+    let bob = open_and_fund(&mut layer, SK_BOB, 1_000_000);
+    let estado_bob = state_of(&layer, bob);
+    let id_alice = layer.public_id_of(alice).expect("cuenta");
+    let envio = layer
+        .send(BaseElement::new(SK_BOB), bob, &estado_bob, id_alice, salt_de(0x4871), 1000)
+        .expect("enviar");
+    layer.apply_send(&envio, bob, &estado_bob, 1000).expect("aplicar el envio");
+    let aviso = envio.notice;
+
+    set_frozen_delegated(&mut layer, alice, true);
+    let vecino = alice ^ 1;
+    assert!(layer.is_frozen(alice) && !layer.is_frozen(vecino));
+
+    let estado = state_of(&layer, alice);
+    let trace = stark_experiment::circuit_claim::build_trace(
+        t487_clave(SK_ALICE),
+        estado.public_id,
+        estado.balance,
+        estado.nonce,
+        t487_sal(&layer, alice),
+        &layer.accounts.path_for(alice),
+        &layer.frozen.path_for(vecino),
+        aviso.amount,
+        layer.total_supply,
+        0,
+        estado.public_id,
+        aviso.salt,
+        &layer.pending.path_for(aviso.position),
+    );
+    let prover = stark_experiment::circuit_claim::ClaimProver::new(layer.options.clone());
+    let public_inputs = prover.get_pub_inputs(&trace);
+    let prueba = prover.prove(trace).expect("prove");
+    let recibo = crate::two_phase::ClaimReceipt {
+        proof: prueba.to_bytes(),
+        public_inputs,
+    };
+    let r = layer.apply_claim(&recibo, alice, &estado, &aviso);
+    assert!(
+        matches!(r, Err(LayerError::AccountFrozen(_))),
+        "S487: una congelada no debe cobrar con camino ajeno: {r:?}"
+    );
+    assert_eq!(layer.balance_of(alice), Some(1_000_000), "el saldo no subio");
+}
+
+/// **5.A-264 / S487, DESTRUCCION.**
+#[test]
+fn t487_una_congelada_no_quema_con_camino_ajeno() {
+    let mut layer = new_layer();
+    let alice = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+    set_frozen_delegated(&mut layer, alice, true);
+    let vecino = alice ^ 1;
+    assert!(layer.is_frozen(alice) && !layer.is_frozen(vecino));
+
+    let estado = state_of(&layer, alice);
+    let importe: u64 = 1000;
+    let trace = stark_experiment::circuit_burn::build_trace(
+        t487_clave(SK_ALICE),
+        estado.public_id,
+        estado.balance,
+        estado.nonce,
+        t487_sal(&layer, alice),
+        &layer.accounts.path_for(alice),
+        &layer.frozen.path_for(vecino),
+        importe,
+        layer.total_supply,
+        importe,
+    );
+    let prover = stark_experiment::circuit_burn::BurnProver::new(layer.options.clone());
+    let public_inputs = prover.get_pub_inputs(&trace);
+    let prueba = prover.prove(trace).expect("prove");
+    let recibo = crate::BurnReceipt {
+        proof: prueba.to_bytes(),
+        public_inputs,
+    };
+    let r = layer.apply_burn(&recibo, alice, &estado);
+    assert!(
+        matches!(r, Err(LayerError::AccountFrozen(_))),
+        "S487: una congelada no debe quemar con camino ajeno: {r:?}"
+    );
+    assert_eq!(layer.balance_of(alice), Some(1_000_000), "el saldo no se destruyo");
+    assert_eq!(layer.total_supply(), 1_000_000, "el suministro no bajo");
+}

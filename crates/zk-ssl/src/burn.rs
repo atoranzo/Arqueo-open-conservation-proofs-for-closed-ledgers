@@ -50,8 +50,11 @@ impl SovereignLayer {
 
         // ===== LA CONGELACIÓN BLOQUEA TAMBIÉN LA DESTRUCCIÓN =====
         //
-        // El circuito lo impone; esto solo evita gastar el cómputo de una
-        // prueba que no verificará.
+        // ⚠️ §264: se creía que "el circuito lo impone y esto solo ahorra
+        // computo". FALSO, medido: el circuito prueba no-pertenencia de ALGUNA
+        // posicion, no la del titular. La garantia REAL de la via del titular
+        // es esta comprobacion (aqui, en `send`/`claim`, y en `apply_burn`);
+        // el arreglo B la devolvera al AIR.
         //
         // Antes no se comprobaba en ninguno de los dos sitios: la
         // liquidación miraba la congelación y la destrucción no, así que
@@ -132,6 +135,16 @@ impl SovereignLayer {
         // sistema.
         if pi.frozen_root != self.frozen.root() {
             return Err(LayerError::StaleState);
+        }
+        // ===== NO-CONGELACION: LA IMPONE ESTA CAPA, NO LA PRUEBA (S487) =====
+        //
+        // §264, MEDIDO: el circuito prueba no-pertenencia de ALGUNA posicion,
+        // no la del titular (`COL_FBIT` no esta atada a `COL_BIT`). Sin esto,
+        // una cuenta congelada podia destruir su saldo reciclando el camino de
+        // una posicion libre. Hasta el arreglo B (atar la posicion en el AIR),
+        // la garantia vive aqui.
+        if self.is_frozen(account_index) {
+            return Err(LayerError::AccountFrozen(account_index));
         }
 
         if pi.root_old != self.accounts.root()
