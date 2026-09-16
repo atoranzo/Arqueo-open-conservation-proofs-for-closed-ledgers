@@ -35366,3 +35366,67 @@ invariante -rc 0, la misma cita, solo la posicion- y no por sus bytes, que es la
 **Lo que NO cierra.** La completitud de los acuses es H5b. La web (arqueo.org) sigue diciendo lo
 de antes hasta su pasada a mano, con su copia `.bak`. El reenvio a NLnet, con los hashes del
 arco §477-§482, sigue pendiente (5.B-60).
+
+## §483 — Las dos pruebas portables del pendiente: RFC-0008 PROPUESTO (H5)
+
+**Que.** Nace `spec/rfc/0008-pruebas-portables-del-pendiente.md`, PROPUESTO, calcado del 0007:
+cuatro etapas (E1 el cobro pendiente portable —banda sobre `C2` con el camino dentro, la meta por
+camino, `zkssl_pendingPath` aditivo—; E2 el pago en curso —`C2` abierto a `(receptor, importe)`,
+`nacido + delta >= T` con `delta` y `refund_id` de testigo—; E3 la prenda como transicion con
+prueba —una etiqueta con dominio propio en el arbol de consumos, por `zkssl_pledge` con la
+autorizacion de `circuit_claim_v2` sin el credito; la segunda es `ConsumoRepetido`—; E4 el
+catalogo `spec/vectors/pendiente/`, el banco y `PAQUETE.md` 2.8), Motivacion medida, cinco
+decisiones D-A..D-E con su condicion de reversion, seis descartes, Compatibilidad (`zkssl/0.3` no
+sube; la firma se queda en 5; dos metodos aditivos), Seguridad y Referencias con huella.
+`spec/README.md` gana su fila. La cuenta de RFC que la portada publicaba (0002, 0003, 0004, 0006 y
+0007 aceptados; 0005 propuesto) se paga en los CUATRO vivos que la llevaban. Es el hito H5 de la
+propuesta a NLnet, elegido en la sesion 144 tras cerrar la web (5.B-62) y decidir que no hay
+reenvio (5.B-60): el expediente enviado se declara en la segunda fase. No toca un byte de codigo.
+
+**Lo que se midio antes de escribir un byte** (`TERRENO-H5-144`, `19c76ad04ad1d84b`/124, lectura
+pura sobre el zip de `5ef3b1b`, 174/174 anclas). El pendiente ya esta comprometido de forma abrible:
+`C1 = H(H(receptor, sal), importe)`, `X = M(refund_id, delta)`, `C2 = M(C1, X)`
+(`pending.rs:70,88,108`), con la posicion salada; los circuitos que abren `C1` y `X` existen
+(`circuit_claim_v2.rs`, `circuit_refund_v2.rs`). El aviso `PendingNotice` es opaco por D-1 del 0003
+y `refund_id` viaja comprometido por D-2; el nodo persiste del pendiente `pend:`, `pamt:` y
+`pmeta:`, y de la meta solo `(emisor, nacido)`. HALLAZGO: `expiry = nacido + delta` y `delta` vive
+dentro de `X`, asi que el receptor NO puede probar <<no caduca antes de T>> con el aviso de hoy: la
+T es del pagador. La cabeza v5 ya firma `pendingRoot`, `pmetaRoot`, `next_pending` y `params_digest`
+con el `ttl`: ninguna familia nueva bajo la firma. La banda de `InsufficientBalance` (`banda.rs`) es
+el molde exacto de <<al menos X>> con el camino dentro. No hay conjunto de gastados —el cobro
+retira la hoja—, pero el arbol de consumos del 0006 es un conjunto de uso unico con raiz firmada
+donde repetir es `ConsumoRepetido`, causa que ya esta en el catalogo 2.6 con su sobre; publicar no
+exige prueba (RPC.md:936), y por eso la prenda entra por un metodo que la exige. RFC siguiente 0008
+(ocupados 0, 2, 3, 4, 5, 6, 7), asiento siguiente 483.
+
+**Las decisiones (delegadas por el autor en la sesion 144; tomadas con la constitucion;
+REVERSIBLES en el RFC).** La T es del pagador (D-A): abrir `X` del lado del cobrador rompe D-2, y
+un compromiso v3 es rotura de formato; las dos mitades juntas dan lo que el hito promete. <<Al
+menos X>> es banda en circuito (D-B), nunca un importe revelado. La prenda vive en el arbol de
+consumos con dominio propio y con prueba (D-C): una primitiva por propiedad, el rechazo del
+segundo intento ya existe, la cabeza no cambia y ningun vector caduca; lo que cambia es quien
+puede escribir esa clase de etiqueta. Prenda el receptor con la autorizacion del cobro, y la
+prenda solo obliga a la prenda (D-D): no toca el cobro ni el reembolso, y el sistema produce el
+par condenatorio, no adjudica. Dos tipos de sobre (D-E), como consumo y conflicto son dos.
+
+**Lo que NO afirma.** No sella ninguna etapa: E1-E4 son propuestas, y E1 lleva su medida de coste
+antes de existir. No afirma cuando caduca un cobro visto desde el cobrador; no afirma que el
+cobro vaya al prendatario (eso es contrato); no afirma nada sobre lo que nunca entro en el arbol
+(eso es H5b). La fila 6 sigue diciendo <<en parte>> y ninguna fila cambia.
+
+**Contadores.** Cero codigo, cero cifras de tests, sin canon (como el §412, el §441 y el §450).
+La puerta: las diez herramientas de `tools/canon.sh` (ocho del bucle y dos por ruta), rc 0 antes y
+despues, con juez por invariante: solo cambian `verificar_citas` (nombres 67 -> 68, con 0 fantasmas
+y 0 secciones muertas) y `check_publicadas` (ATADO C: 65 -> 66 documentos; la URL del repositorio
+citada 10 veces, quieta; la cita SALTADA de `README.md` sigue en :207). Ficheros:
+`spec/rfc/0008-pruebas-portables-del-pendiente.md` nace (204 lineas, `a06f0d6ef2a1c4cb`);
+`spec/README.md` 166 -> 167 (+1 fila tras la del 0007); `README.md` (:183), `README_EN.md` (:191) y
+`RESUMEN_EJECUTIVO.md` (:63) una fila cada uno, linea-neutrales; `RESUMEN_BILINGUE.md` (:47 y
+:99-100, 122 -> 122) sin ensanchar; y este asiento. Documentos `.md` versionados: 71 -> 72. Pines
+quietos. Vallas 132, invariante.
+
+**Lo que NO cierra.** La T del cobrador queda declarada como del pagador hasta que un caso de uso
+medido pida otra cosa (D-A). El coste del circuito de E1 no esta medido: es la primera puerta de
+E1. Que `ConsumoRepetido` salga por el camino de la prenda con su sobre es el primer testigo de
+E3. Las ~180 h de las 380 reasignables sin candidato medido (DIMENSION-380H-144) siguen sin
+dueno. La completitud de los acuses es H5b.
