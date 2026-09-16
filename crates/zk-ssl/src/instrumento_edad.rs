@@ -60,7 +60,7 @@ const N_OBJETIVO: [u64; 3] = [1024, 4096, 16384];
 /// El latido por defecto del nodo (`zk-ssl-node/src/latido.rs`, §121), que es el tiempo de la
 /// puerta (D-E4a-1). La capa no depende del nodo, asi que el valor se DECLARA aqui con su fuente;
 /// solo lo lee la impresion del instrumento, que no afirma nada.
-const LATIDO_S: f64 = 60.0;
+pub(crate) const LATIDO_S: f64 = 60.0;
 
 /// **Cuantos `native_merge` cuesta la raiz del rango `0..n`** en un arbol de profundidad `p`,
 /// con los subarboles vacios como constantes. Nivel a nivel, `ceil(len/2)` mientras quede mas de
@@ -240,8 +240,9 @@ pub(crate) fn traza_de_subida(hoja: Digest, camino: &MerklePath) -> TraceTable<B
     traza
 }
 
+// §485: pub(crate) para `instrumento_cobro.rs` (RFC-0008 E1), que mide con este molde.
 pub(crate) struct SubidaProver {
-    options: ProofOptions,
+    pub(crate) options: ProofOptions,
 }
 
 impl Prover for SubidaProver {
@@ -310,13 +311,13 @@ impl Prover for SubidaProver {
 }
 
 /// Un camino de `niveles` con hermanos distintos y direcciones alternas (las dos ramas).
-fn camino_de(niveles: usize) -> (Digest, MerklePath) {
+pub(crate) fn camino_de(niveles: usize) -> (Digest, MerklePath) {
     let hermanos: Vec<Digest> = (0..niveles).map(|i| d(5000 + i as u64)).collect();
     let derecha: Vec<bool> = (0..niveles).map(|i| i % 3 == 0).collect();
     (d(42), MerklePath { siblings: hermanos, is_right: derecha })
 }
 
-fn verifica(proof: Proof, raiz: Digest, opciones: &ProofOptions) -> bool {
+pub(crate) fn verifica(proof: Proof, raiz: Digest, opciones: &ProofOptions) -> bool {
     let aceptadas = AcceptableOptions::OptionSet(vec![opciones.clone()]);
     verify::<SubidaAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
         proof,
@@ -407,14 +408,14 @@ fn la_subida_variable_con_otra_raiz_no_verifica() {
 
 // ------------------------------------------------------------------ el instrumento
 
-fn de_proc(fichero: &str, clave: &str) -> String {
+pub(crate) fn de_proc(fichero: &str, clave: &str) -> String {
     std::fs::read_to_string(fichero)
         .ok()
         .and_then(|t| t.lines().find(|l| l.starts_with(clave)).map(|l| l.to_string()))
         .unwrap_or_else(|| format!("{clave} (no disponible)"))
 }
 
-fn kb(linea: &str) -> u64 {
+pub(crate) fn kb(linea: &str) -> u64 {
     linea.split_whitespace().nth(1).and_then(|x| x.parse().ok()).unwrap_or(0)
 }
 

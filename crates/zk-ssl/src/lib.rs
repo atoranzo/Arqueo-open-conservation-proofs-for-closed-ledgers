@@ -126,6 +126,9 @@ pub mod prueba_banda;
 // RFC-0007 E4a (§461): el instrumento de la puerta de la prueba de edad. Solo tests.
 #[cfg(test)]
 mod instrumento_edad;
+// RFC-0008 E1 (§485): el instrumento del cobro pendiente portable. Solo tests.
+#[cfg(test)]
+mod instrumento_cobro;
 #[cfg(any(test, feature = "sandbox"))]
 pub mod tests_support;
 
