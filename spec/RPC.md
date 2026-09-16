@@ -175,7 +175,7 @@ causa. El ejemplo es el de un pago sin saldo:
 - **`zkssl_publishConsumo` rechaza DENTRO de `result`** (`accepted: false`, `reason`): desde el
   §454 su negativa lleva el mismo `data`, con `ConsumoRepetido` o `ConsumoColision`.
 - **No es evidencia oponible**: es lo que el nodo dice, como `receptionSeq` (§253). La prueba de
-  la causa es E3 del RFC-0007.
+  la causa es E3 y E5 del RFC-0007 (`spec/PAQUETE.md`, sección 2.6).
 
 El catálogo lo produce la capa —`LayerError::causa`, un `match` exhaustivo— y un test lo ata a
 esta tabla (`tests_causa`, en `crates/zk-ssl/src/lib.rs`): una variante nueva no compila sin su

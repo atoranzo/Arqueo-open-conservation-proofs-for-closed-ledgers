@@ -1,14 +1,17 @@
 # RFC-0007 — Las pruebas sobre el estado comprometido: el rechazo, la edad y los parámetros
 
-- **Estado:** PROPUESTO — adoptado en el §450. Se conserva como registro de lo decidido, lo
-  medido y lo descartado; cada etapa se sella con su puerta y su asiento.
+- **Estado:** ACEPTADO — **la regla 4 del PROCESO, saldada con medida** (§450 la adopción;
+  E1 §451–§453, E2 §454, E3 §455–§456 y §458–§460, E4 §461–§467 y §472, E5 §468–§471 y
+  §473–§479, las etapas con sus puertas; §480 la spec al día; §481 este giro). Se conserva como
+  registro de lo decidido, lo medido y lo descartado.
 - **Autores:** Che, con Claude (sesión 119)
 - **Fecha:** 2026-09-09
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad). La cabeza
   v5 y el `data` del error son aditivos en el cable; la versión de FORMATO viaja en la firma
   (4 → 5), como pasó de 2 a 3 (§292) y de 3 a 4 (§415).
 - **Asiento(s) de AUDITORIA:** §178, §211, §246, §253, §275, §292, §321, §379, §387, §388,
-  §404, §406, §413, §414, §415, §441; el §450, que lo adopta.
+  §404, §406, §413, §414, §415, §441; el §450, que lo adopta; §451–§456 y §458–§479, las
+  etapas; el §480, la spec al día; y el §481, este giro a ACEPTADO.
 - **Hito:** H4 de la propuesta enviada a NLnet Restack (140 h), en sus palabras: *«Rejection
   with proof and the ageing proof. Circuits over the committed state: proof of the cause of a
   refusal; age distribution of what is in flight with its empty-box form and its concentration
@@ -210,6 +213,7 @@ revelar es un coste y se declara:
 | `CustodianSetExhausted` | el cupo se deriva del registro (§393, §394), que la cabeza compromete sólo por `chainDigest` | — | declarada sin prueba portable |
 | `NotTheIssuer`, `NotTheAccountHolder` | la autorización ausente no se puede exhibir | — | declaradas sin prueba |
 | `BalanceOutsideBand` | es del camino de auditoría del titular, no de una operación | — | fuera |
+| `Store` | fallo del operador, no una regla | — | se declara como fallo, nunca como rechazo |
 
 **Correccion (§476, E5 corte 3b).** La fila de `AccountNotFound(i)` de la tabla de arriba dice
 `nada` en la columna de lo que revela y `E3` en la de la etapa, y las dos han dejado de ser
@@ -218,8 +222,6 @@ el `accountsRoot` que la cabeza del `seq` EXACTO firma**, con su camino de 32 ni
 DENTRO del propio sobre de rechazo y sin método nuevo en el cable (D-G). Lo que revela es que esa
 posición está libre, y sólo a quien hizo la petición. La etapa es **E5** desde la corrección del
 §459. La fila no se reescribe: esto la corrige.
-
-| `Store` | fallo del operador, no una regla | — | se declara como fallo, nunca como rechazo |
 
 **Corrección (§479, E5 corte 4c).** La fila de `InsufficientBalance` promete la banda «sin
 revelar el saldo» y dice que revela «nada más que la desigualdad». Del SOBRE, lo primero es
@@ -542,6 +544,28 @@ registro, que es una ausencia y no una causa.
 veces: las claves nuevas de la cabeza y de los parámetros en `spec/RPC.md`, el `data` del
 error, y los vectores nuevos. Y por la regla 4: ACEPTADO exige la spec al día, el OpenRPC
 regenerado, los vectores bajo su versión y las suites verdes, etapa a etapa.
+
+> **Nota (2026-09-16, §481).** ACEPTADO. La regla 4 del PROCESO queda saldada con medida, y se
+> dice con qué. (a) La spec, actualizada: `spec/RPC.md` lleva la cabeza v5 (§452), el `data`
+> del error con su catálogo atado por test (§454) y `zkssl_frozenPath` (§458); `spec/NUCLEO.md`,
+> `epoch_digest_v5` y `params_digest` (§451) y los módulos `congelados` (§458) y `cuentas`
+> (§475); `spec/PAQUETE.md`, la sexta y la séptima forma del sobre (§455, §465), y cada causa y
+> cada texto del mando desde el §480. (b) El OpenRPC, regenerado con `gen_openrpc` en el §458:
+> 26 → 28 métodos, y el del §454 salió idéntico; `zkssl/0.3` no sube. (c) Los vectores, nuevos:
+> `spec/vectors/rechazo/` (84: §455, §456, §459, §460, §476 y §479), `spec/vectors/edad/` (11,
+> §467), los KAT de `epoch_digest_v5` y `params_digest` y los v5 del cable y del paquete
+> (§451–§453); los tres ficheros de versión del cable, intactos bajo el triple gate. Dos cosas
+> se declaran: el negativo comodín del rechazo se reescribió una vez (§459: su causa pasó de
+> `AccountFrozen` a `InsufficientBalance`) y se renombró otra con sus mismos bytes
+> (`banda-ausente`, asiento §478); y `rechazo-formatVersion-5` sigue listado con otro texto
+> desde el §451. (d) Las suites, verdes: el canon `--sello` del §480 (181 s) corre las cinco
+> familias también desde dentro del tarball —paquete 69/69, consumo 14/14, conflicto 16/16,
+> rechazo 84/84, edad 11/11— y el cable 17/17. Lo que este RFC no entrega queda en su tabla:
+> `ProofFailed`, `VerificationFailed` y `PendingTreeExhausted`, declaradas sin prueba
+> portable, y la completitud, que es H5b. La fila `Store` de la tabla D-D vuelve a su sitio:
+> la corrección del §476 la había dejado suelta, y se mueve la fila, no su texto. Doble hilo
+> de la regla 5: este documento cita el §481 y el §481 cita este RFC. Precedentes del giro: el
+> 0003 (§356), el 0004 (§400) y el 0006 (§441).
 
 ## Seguridad
 

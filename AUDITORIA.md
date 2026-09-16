@@ -35254,3 +35254,61 @@ Cargo, ningun vector; ningun `.md` nace. Las DIEZ herramientas IDENTICAS antes y
 que la correccion del §476 partio (la otra mitad del 5.A-252). La fila 7 de la portada va aparte
 (5.A-253), y su perimetro medido es mayor que el publicado: dieciseis lineas en siete ficheros
 vivos, no cuatro en tres.
+
+## §481 — El RFC-0007 pasa a ACEPTADO: la regla 4 del PROCESO, saldada con medida
+
+**Que.** `spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md` gira de PROPUESTO a ACEPTADO
+con el molde del §441: la linea de estado dice por que, con las etapas por rango de asientos;
+la nota fechada dice con que medida; y el doble hilo de la regla 5 queda cerrado por los dos
+extremos. Giran con el los otros productores del estado: la fila del 0007 en `spec/README.md`,
+que ademas decia <<nothing sealed yet>> desde el §451, y la cuenta de RFC en cinco lineas de
+cuatro documentos vivos. Ni codigo, ni pin, ni vector, ni nada que viaje en el tarball: como el
+§400 y el §441, este sello no corre el canon. Con el, H4 queda cerrado en codigo y en proceso.
+
+**La regla 4, punto por punto, medida sobre el arbol de `ae0ed98`**, reconstruido byte a byte:
+su `AUDITORIA.md` clava la huella que imprimio la SALIDA-480. (a) La spec: `spec/RPC.md` lleva
+la cabeza v5 (§452), el `data` del error con su catalogo atado por test (§454) y
+`zkssl_frozenPath` (§458); `spec/NUCLEO.md`, `epoch_digest_v5` y `params_digest` (§451) y los
+modulos `congelados` (§458) y `cuentas` (§475), gateados por `check_nucleo.py`;
+`spec/PAQUETE.md`, la sexta y la septima forma del sobre (§455, §465) y, desde el §480, cada
+causa y cada texto del mando. (b) El OpenRPC: REGENERADO en el §458, de 26 a 28 metodos, y en
+el §454 salio identico; `zkssl/0.3` no sube. (c) Los vectores: NUEVOS bajo su catalogo
+-`spec/vectors/rechazo/` 84 (§455, §456, §459, §460, §476 y §479), `spec/vectors/edad/` 11
+(§467), los KAT de `epoch_digest_v5` y `params_digest` y los v5 del cable y del paquete
+(§451-§453)-, y los tres ficheros de version del cable, intactos bajo el triple gate. Dos
+cosas se declaran: el negativo comodin del rechazo se reescribio una vez (§459: su causa paso
+de `AccountFrozen` a `InsufficientBalance`) y se renombro otra con sus mismos bytes
+(`banda-ausente`, asiento 478); y `rechazo-formatVersion-5` sigue listado con otro texto desde
+el §451. Ninguno es un vector de una version del cable. (d) Las suites: el canon `--sello` del
+§480, VERDE en 181 s, con paquete 69/69, cable 17/17, consumo 14/14, conflicto 16/16, rechazo
+84/84 y edad 11/11, tambien desde dentro del tarball.
+
+**Las decisiones (todas REVERSIBLES).** D-1 la linea de estado calca la del 0006, con las etapas
+por rango: E1 §451-§453, E2 §454, E3 §455-§456 y §458-§460, E4 §461-§467 y §472, E5
+§468-§471 y §473-§479. El §457 no entra, porque no es del RFC (la carrera de
+`tests_libros_ajenos`), y el generador lo comprueba: las etapas son exactamente los asientos del
+§451 al §479 que nombran el RFC-0007, y el §457 es el unico que no lo nombra. D-2 la fila
+`Store` de la tabla D-D vuelve a su tabla: la correccion del §476 se inserto entre la ultima
+fila y ella y la dejo suelta; se mueve la fila, no su texto, y la nota lo dice. D-3
+`spec/RPC.md` decia que la prueba de la causa es E3 del RFC-0007; desde el §475 dos causas se
+prueban en E5, y pasa a <<E3 y E5>> con remision a `spec/PAQUETE.md` 2.6: es la spec, y la regla
+4 la pide al dia. D-4 la fila de `spec/README.md` dice ACCEPTED y <<five stages sealed>> donde
+decia <<nothing sealed yet>>, con la misma anchura: es la fila mas ancha del fichero. D-5 sin
+canon: el juez son las DIEZ herramientas IDENTICAS antes y despues, como en el §441. D-6 la
+fila 7 de la portada NO entra: su perimetro medido son dieciseis lineas en siete ficheros y va
+en su propio sello.
+
+**Lo que NO hace.** No decide FINAL. No toca `PROCESO.md` ni los asientos que dicen PROPUESTO,
+que son actas. No cierra el punto 80 -`spec/README.md` sigue anclada a `c43890a`- ni su lectura
+de `RPC.md` de antes del RFC-0007. No afirma la completitud: que cada acuse acabe aplicado o
+rechazado es H5b, y el RFC lo escribe en su frontera.
+
+**Contadores.** Pines quietos: 350 / 338 / 108 / 108 / 100 / 22 / 31; total de sello 1153, y
+1290 con los niveles caros. Siete ficheros mas este asiento: el RFC (606 -> 630 lineas),
+`spec/README.md`, `spec/RPC.md`, `README.md`, `README_EN.md`, `RESUMEN_EJECUTIVO.md` y
+`RESUMEN_BILINGUE.md`, estos seis linea-neutrales. Ningun `.md` nace. Las DIEZ herramientas
+IDENTICAS antes y despues.
+
+**Lo que NO cierra.** La fila 7 de la portada y la de `doc/USE_CASES.md` siguen diciendo
+<<planeada>> (5.A-253). El reenvio a NLnet, con los hashes del arco, sigue pendiente (5.B-60).
+El tiempo del AIR recortado sigue sin instrumento (5.A-255).
