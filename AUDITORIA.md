@@ -35430,3 +35430,67 @@ medido pida otra cosa (D-A). El coste del circuito de E1 no esta medido: es la p
 E1. Que `ConsumoRepetido` salga por el camino de la prenda con su sobre es el primer testigo de
 E3. Las ~180 h de las 380 reasignables sin candidato medido (DIMENSION-380H-144) siguen sin
 dueno. La completitud de los acuses es H5b.
+
+## §484 — RFC-0008: D-F (la foto del latido), D-G (E1 es de estado) y la fila E1 corregida
+
+**Que.** El RFC-0008, PROPUESTO, gana dos decisiones y corrige su fila E1. D-F: el camino del
+pendiente y la cabeza firmada son del MISMO estado; el latido guarda, en la seccion critica en la
+que compone la cabeza, una foto de los arboles de pendientes y de meta, y `zkssl_pendingPath`
+sirve el camino de esa foto con el `seq` de la cabeza, y solo a quien presenta un aviso que
+recompone la hoja. D-G: E1 es un enunciado de ESTADO (<<bajo esta cabeza existe un pendiente a
+nombre de `receptor`, por al menos `inferior`, nacido en `b`>>), sin ciclo de titularidad. Tres
+correcciones del §483, citadas en el propio RFC: la fila decia <<`receptor` es la identidad
+publica de quien prueba>>, y el molde que nombra no restringe quien prueba; decia
+<<`importe >= X`>> con `X` tambien como sobre de reversion, un nombre para dos cosas, y la cota
+pasa a llamarse `inferior`, como el `lower` de `banda.rs`; y daba `zkssl_frozenPath` como molde
+del metodo, y ese molde sirve el estado de ahora. D-B nombra por fin su instrumento
+(`instrumento_edad.rs`, la E4a del RFC-0007: la sigla chocaba con las etapas de este RFC) y
+escribe la geometria medida. Cuatro descartes nuevos. Solo el RFC y este asiento.
+
+**Lo que se midio antes de escribir un byte** (`TERRENO-E1-145`, `953f0aeca3a1175c`/122, lectura
+pura sobre el zip de `393032e`: 175/175 anclas, 30/31 SHA-REGION con la desplazada de siempre).
+`ClaimMaterials` (`client.rs:454`) sirve `pending_path` del estado de AHORA (:163) y no lleva el
+camino bajo `pmetaRoot` ni `(emisor, nacido)`, que viven solo en el nodo y en la MISMA posicion
+que el compromiso (`two_phase.rs:238`). Los dos arboles tienen 32 niveles (`persistence.rs:62` y
+:67, `TREE_DEPTH`). La hoja de meta es UNA permutacion con dominio (`commit_operation`), no un
+`native_merge`. La cadena del compromiso son 35 ciclos, como la de la banda (`ROW_RAIZ` 279); la
+meta suma 33: en un carril, 1024 filas; en dos con el bit compartido, 512. El cobro v2 ya coloca
+sus dos carriles con un mismo `bit` e iguala sus hermanos (`circuit_claim_v2.rs:717-735`); el
+cobrador comparte el bit y NO los hermanos, y su primer testigo negativo es una meta de otra
+posicion. Cotas con las opciones de la casa: la banda 49.051 B; `circuit_audit` 137,3 ms y
+51.449 B; el cobro v1 65.313 B. `zkssl_signedEpochHead` sirve la cabeza del ultimo latido
+(`main.rs:1505`), y el arbol de pendientes lo escriben cuatro funciones de produccion
+(`apply_deissue`, `apply_refund`, `commit_send`, `commit_claim`); `zkssl_frozenPath` vale porque su
+arbol solo cambia con otra congelacion. Una `LogEntry` no lleva posicion ni hoja (`log.rs:151`).
+El latido compone la cabeza bajo el candado del estado (`latido.rs`). `banda.rs` no tiene
+titularidad: ata la identidad con cuatro aserciones contra la entrada publica (su D-2b).
+
+**Las decisiones (delegadas por el autor en la sesion 145; tomadas con la constitucion;
+REVERSIBLES en el RFC).** D-F, la foto del latido: coherencia (la misma nocion de cabeza para el
+camino y para la firma) y fail-closed. Perdieron la (ii), el camino de ahora y esperar una cabeza
+de ese `seq`, que con trafico puede no converger nunca; la (iii), reconstruir desde el registro,
+que no es posible; y la (iv), firmar a peticion, que quema indices XMSS. Precio declarado: clonar
+dos arboles dentro del candado, que mide el instrumento de E1 antes que el metodo; reversible
+hacia (ii). La foto obliga a una regla del metodo: recomponer `C2` con el aviso y el `public_id`
+de la credencial y rehusar si no casa, porque servir `(emisor, nacido)` sin eso publicaria quien
+pago y cuando (la leccion del §261, aplicada antes de escribir el metodo). D-G, estado sin
+titularidad: pureza (la autorizacion es de E3), menos columnas e imagen fiel; y la clave sin un
+reto no ata la prueba a quien la presenta. Reversible hacia la clave solo con ese reto.
+
+**Lo que NO afirma.** No mide el coste: la geometria de 512 o 1024 filas y el precio de la foto
+son del instrumento de E1. No escribe el metodo, ni el AIR, ni el sobre. No toca
+`spec/README.md`: su fila del 0008 dice <<at least X>> sin nombrar el sobre, y con D-G no es falsa.
+
+**Contadores.** Cero codigo, cero cifras de tests, sin canon (como el §483). La puerta: las diez
+herramientas de `tools/canon.sh`, rc 0 antes y despues, las diez IDENTICAS y sin ningun delta
+previsto (el terreno se cita sin extension). Ficheros:
+`spec/rfc/0008-pruebas-portables-del-pendiente.md` 204 -> 281 lineas (`a06f0d6ef2a1c4cb` ->
+`a0b70c72c597c417`, +99/-22 por `git diff`; `difflib` cuenta +100/-23, y el numstat se predice con
+git) y este asiento. Documentos `.md` versionados: 72, quietos. Pines quietos.
+
+**Lo que NO cierra.** El instrumento de E1, con el molde de `instrumento_edad.rs`: las dos
+geometrias, el precio de la foto y los dos testigos negativos (una meta de otra posicion no pasa;
+un camino de antes de un pago no sube a la raiz de despues). Despues, el AIR, el productor, el
+metodo y el sobre. Del terreno quedan para la cola: `sparse_tree.rs:57` dice en presente que el
+arbol de congelados usa 24 niveles (son 32 desde la migracion), y `pending.rs:195` declara un
+segundo `PendingNotice` sin usuarios fuera de su fichero, homonimo del vigente.

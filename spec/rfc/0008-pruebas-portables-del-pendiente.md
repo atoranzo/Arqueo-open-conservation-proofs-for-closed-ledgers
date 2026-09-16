@@ -1,7 +1,7 @@
 # RFC-0008 — Las dos pruebas portables del pendiente: el cobro, el pago en curso y la prenda
 
 - **Estado:** PROPUESTO
-- **Autores:** Che, con Claude (sesión 144)
+- **Autores:** Che, con Claude (sesiones 144 y 145)
 - **Fecha:** 2026-09-16
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad). Los dos
   métodos nuevos son aditivos; la cabeza v5 no cambia de forma; la marca de prenda es una hoja
@@ -9,8 +9,8 @@
 - **Asiento(s) de AUDITORIA:** §121, §178, §211, §275 (el acuse y su raíz), §343–§345 (el
   compromiso v2 del RFC-0003), §387 y §388 (las raíces en reposo), §412–§441 (el consumo
   publicado), §451–§453 (la cabeza v5), §458–§460 (el rechazo por caminos), §463–§467
-  (la prueba de edad), §473–§479 (la banda sobre la hoja comprometida); y el §483, que lo
-  adopta.
+  (la prueba de edad), §473–§479 (la banda sobre la hoja comprometida); el §483, que lo
+  adopta, y el §484, que decide D-F y D-G y corrige la fila E1.
 - **Hito:** H5 de la propuesta enviada a NLnet Restack (140 h), en sus palabras: *«The two
   portable proofs of a pending item. Payee side and payer side, derived from the same head;
   pledge transition; format and vectors.»*
@@ -19,13 +19,21 @@
 
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
-| E1 — el cobro pendiente, portable | el circuito del cobrador: bajo el `pendingRoot` de una cabeza v5 firmada existe un compromiso `C2 = M(C1, X)` con `C1 = H(H(receptor, sal), importe)`, `receptor` es la identidad pública de quien prueba, `importe >= X` (banda, molde de `InsufficientBalance`), y el camino va DENTRO del circuito (la posición no sale); su meta `(emisor, nacido)` por camino bajo `pmetaRoot`. Un método aditivo, `zkssl_pendingPath`, sirve los dos caminos a quien presenta el aviso (molde: `zkssl_frozenPath`). Sobre `tipo: "cobro_pendiente"` en `PAQUETE.md`, verificado por el mando sin nodo | NO | propuesta |
+| E1 — el cobro pendiente, portable | el circuito del cobrador: bajo el `pendingRoot` de una cabeza v5 firmada existe `C2 = M(C1, X)` con `C1 = H(H(receptor, sal), importe)`, a nombre de `receptor` (D-G), `importe >= inferior` (banda, molde de `InsufficientBalance`), con el camino DENTRO del circuito; su meta `(emisor, nacido)` por camino bajo `pmetaRoot`, con los mismos bits. `zkssl_pendingPath`, aditivo, sirve los dos caminos de la foto del último latido a quien presenta un aviso que recompone la hoja (D-F). Sobre `tipo: "cobro_pendiente"` en `PAQUETE.md`, verificado por el mando sin nodo | NO | propuesta |
 | E2 — el pago en curso, portable | el espejo, para el pagador: `C2` abre a `(receptor, importe)` EXACTOS, `nacido` por camino, y `nacido + delta >= T` con `delta` y `refund_id` como testigo (no se revelan). Sobre `tipo: "pago_en_curso"`, verificado sin nodo. Junto al de E1, un tercero ajeno a los dos verifica un pago disputado sin el libro de nadie | NO | propuesta |
 | E3 — la prenda, como transición con prueba | el receptor marca el pendiente como prendado: una etiqueta con dominio propio sobre `C2` en el árbol de consumos, publicada por un método aditivo, `zkssl_pledge`, que EXIGE la prueba de apertura del cobro (la autorización de `circuit_claim_v2` sin el crédito); una segunda prenda es `ConsumoRepetido`, que ya tiene sobre de rechazo con prueba (RFC-0007 E3, `PAQUETE.md` 2.6). La prenda no toca el cobro ni el reembolso: lo que obliga es contrato, y se declara | NO | propuesta |
 | E4 — el catálogo y el banco | `spec/vectors/pendiente/`: dos positivos por lado, REUNIDOS de las capturas de un nodo real (molde: `edad/`), y un negativo por regla producible; `MANIFIESTO.txt`; la familia en `FAMILIAS`; el banco que lo reproduce en vivo; `PAQUETE.md` 2.8. El giro a ACEPTADO exige la regla 4 medida letra a letra, como el §481 | NO | propuesta |
 
-Todas las medidas de este documento se tomaron sobre `5ef3b1b`, en una lectura pura que no
-escribió un byte en el árbol: `TERRENO-H5-144` (ver Referencias).
+Las medidas de este documento se tomaron sobre `5ef3b1b` (`TERRENO-H5-144`) y, las de D-F y
+D-G, sobre `393032e` (`TERRENO-E1-145`), en lecturas puras que no escribieron un byte en el árbol
+(ver Referencias).
+
+**Correcciones del §484** (la fila E1 y D-B, como las dejó el §483). La fila decía «`receptor` es
+la identidad pública de quien prueba», y el molde que nombra no restringe quién prueba (D-G).
+Decía «`importe >= X`» con `X` también como sobre de reversión: un nombre para dos cosas; la cota
+pasa a llamarse `inferior`, como el `lower` de `banda.rs`, y `X` queda para el sobre. Daba
+`zkssl_frozenPath` como molde del método, y ese molde sirve el estado de ahora (D-F). Y este
+párrafo decía que todas las medidas se tomaron sobre `5ef3b1b`.
 
 ### La frontera con H5b, y qué es de cada uno
 
@@ -62,10 +70,10 @@ manda la forma de este RFC:
 - **La regla de reversión ya existe y está comprometida**: `RefundTooEarly` si
   `ahora - nacido < ttl` (v1) o `< delta` (v2) (`two_phase.rs:437-452, 660-674`). «No
   reversible antes de T» no es una regla nueva: es esa, leída desde el otro lado.
-- **«Al menos X» es circuito, y su molde existe.** `crates/zk-ssl-air/src/banda.rs` abre una
-  hoja bajo una raíz con el camino DENTRO y prueba una banda sobre un campo; el operador la
-  produce sin la clave. Aquí la hoja es `C2`, la apertura son dos composiciones, y la banda es
-  sobre `importe`. Revelar el importe en el sobre del cobrador contradiría la promesa.
+- **«Al menos `inferior`» es circuito, y su molde existe.** `crates/zk-ssl-air/src/banda.rs`
+  abre una hoja bajo una raíz con el camino DENTRO y prueba una banda sobre un campo; el
+  operador la produce sin la clave. Aquí la hoja es `C2`, la apertura son dos composiciones, y
+  la banda es sobre `importe`. Revelar el importe en el sobre del cobrador contradiría la promesa.
 - **El conjunto de uso único que el PDF llamaba «la primera medida» ya existe.** No hay conjunto
   de gastados —el cobro retira la hoja—, pero el RFC-0006 dejó un árbol de etiquetas públicas
   con raíz firmada (`root:cons`), donde repetir es `ConsumoRepetido`
@@ -80,16 +88,16 @@ manda la forma de este RFC:
 
 ## Diseño
 
-Las cinco decisiones las tomó el asistente por delegación del autor (sesión 144), con la
-constitución de decisión (pureza, claridad, coherencia, imagen fiel, en ese orden). Todas
-llevan su condición de reversión, escrita aquí.
+Las siete decisiones las tomó el asistente por delegación del autor (D-A..D-E en la sesión 144;
+D-F y D-G en la 145), con la constitución de decisión (pureza, claridad, coherencia, imagen fiel,
+en ese orden). Todas llevan su condición de reversión, escrita aquí.
 
-### D-A — La T es del pagador; el cobrador prueba «en mi nombre, al menos X, nacido en b»
+### D-A — La T es del pagador; el cobrador dice «a mi nombre, al menos `inferior`, nacido en b»
 
 El aviso no lleva `delta`, y no debe llevarlo abierto: D-1 y D-2 del RFC-0003 existen para que
 el receptor no aprenda ni las elecciones de retorno ni la identidad de la clave de retorno. Tres
 caminos se midieron: (a) que la mitad del cobrador diga lo que su dueño sabe —existe, importe
-`>= X`, `nacido = b`— y la T la lleve la mitad del pagador, que sí lo sabe todo; (b) que el
+`>= inferior`, `nacido = b`— y la T la lleve la mitad del pagador, que sí lo sabe todo; (b) que el
 aviso gane `delta` fuera del cable y el receptor abra `X` en circuito, lo que exige `refund_id`
 como testigo y rompe D-2; (c) un compromiso v3 que separe `delta` de `refund_id`, que es rotura
 de formato y nombre nuevo. Gana (a): pureza (no toca el 0003), claridad (cada mitad dice lo que
@@ -98,14 +106,24 @@ promesa del hito se cumple con las dos mitades juntas, que es exactamente como e
 la formula. **Reversible** si un caso de uso medido exige la T del lado del cobrador: entonces
 se abre (c), nunca (b).
 
-### D-B — «Al menos X» es una banda en circuito, con el camino dentro
+### D-B — «Al menos `inferior`» es una banda en circuito, con el camino dentro
 
 El molde es la banda de `InsufficientBalance` (RFC-0007 E5): la hoja abierta dentro del AIR,
-el camino como testigo, dos cotas públicas. Aquí las cotas son `X` y el tope de importe, la
-apertura es `C1` y luego `C2`, y `x` puede ser público porque es un compromiso. La posición no
-sale del circuito: es lo que las posiciones saladas prometen. El coste se mide con el
-instrumento de E4a antes de escribir el AIR, y si no cabe bajo un latido se declara con cifra.
+el camino como testigo, dos cotas públicas. Aquí las cotas son `inferior` y `superior` (el tope
+de importe), la apertura es `C1` y luego `C2 = M(C1, X)`, y el sobre `X` puede ser público porque
+es un compromiso. La posición no sale del circuito: es lo que las posiciones saladas prometen.
+El coste se mide antes de escribir el AIR con el molde del instrumento de la E4a del RFC-0007
+(`crates/zk-ssl/src/instrumento_edad.rs`), y si no cabe bajo un latido se declara con cifra.
 **Reversible** sólo hacia una banda más estrecha; nunca hacia revelar el importe.
+
+Lo que ya está medido sobre `393032e` (`TERRENO-E1-145`). Los dos árboles tienen 32 niveles
+(`TREE_DEPTH`) y la hoja de meta vive en la MISMA posición que el compromiso: los dos caminos
+comparten los bits de dirección y NO los hermanos, y su primer testigo negativo es una meta de
+otra posición. La cadena del compromiso son 35 ciclos de 8 filas, como la de la banda; la meta
+suma 33 (una permutación con dominio y la subida). En un carril la traza pasa de 512 a 1024
+filas; en dos carriles con el bit compartido se queda en 512. Las cotas medidas con las opciones
+de la casa (la banda, `circuit_audit`, el cobro v1) lo dejan en milisegundos: lo que decide el
+instrumento es la geometría, no si cabe.
 
 ### D-C — La prenda vive en el árbol de consumos, con dominio propio y con prueba
 
@@ -142,6 +160,55 @@ llevan la cabeza v5 firmada entera, como el sobre de edad. **Reversible** hacia 
 sólo si el catálogo mostrara que las dos listas de rechazo son idénticas, que hoy no lo son (la
 del pagador tiene la T y el `refund_id`; la del cobrador tiene la banda).
 
+### D-F — El camino y la cabeza, del mismo estado: la foto del latido
+
+Medido sobre `393032e`: `zkssl_signedEpochHead` sirve la cabeza del ÚLTIMO LATIDO
+(`crates/zk-ssl-node/src/main.rs:1505`), y el camino que la capa sabe dar es el del estado de
+AHORA (`claim_materials`, `crates/zk-ssl/src/client.rs:163`). El árbol de pendientes lo escriben
+cuatro funciones de producción (`apply_deissue`, `apply_refund`, `commit_send` y `commit_claim`,
+en `two_phase.rs`), así que cualquier pago entre dos latidos mueve `pendingRoot`, y un camino de
+ahora deja de subir a una cabeza firmada. El molde que la fila E1 nombraba, `zkssl_frozenPath`,
+vale porque su árbol sólo cambia con otra congelación (`spec/RPC.md`, «El camino de
+congelados»); copiado aquí, no vale.
+
+Cuatro caminos se midieron: (i) el latido guarda, en la misma sección crítica en la que compone
+la cabeza (`crates/zk-ssl-node/src/latido.rs`, «TODO bajo el MISMO candado»), una foto de los
+dos árboles, y el método sirve el camino de esa foto con el `seq` de la cabeza firmada; (ii) el
+camino de ahora con su `s`, y el cliente espera una cabeza de ese `seq`; (iii) reconstruir el
+árbol en el `seq` de la cabeza desde el registro; (iv) firmar una cabeza a petición. Gana (i):
+coherencia (la misma noción de cabeza para el camino y para la firma) y fail-closed (sin latido,
+sin `--clave` o con un pendiente nacido tras el último latido, el método lo dice, en la forma
+del §241). La (ii) falla cerrada, pero en un nodo con tráfico puede no converger nunca. La (iii)
+no es posible: una entrada del registro no lleva la posición ni la hoja
+(`crates/zk-ssl/src/log.rs`, `LogEntry`). La (iv) quema índices XMSS a demanda. La foto es caché
+en memoria: tras un reinicio no hay camino hasta el primer latido. **Precio declarado**: clonar
+dos árboles dentro del candado, en tiempo y en memoria; lo mide el instrumento de E1 antes que
+el método, con el molde de la medida M.1 del §252 (escrituras en serie con y sin latido, mirando
+el máximo).
+**Reversible** hacia (ii) si ese precio no cabe.
+
+La foto obliga a una regla del método. Servir `(emisor, nacido)` de cualquier posición a
+cualquier cuenta con credencial publicaría quién pagó y cuándo. El nodo recompone la hoja con lo
+que el aviso trae y el `public_id` de la credencial, `C2 = M(H(H(public_id, salt), amount), x)`,
+y la compara con la hoja de esa posición en la foto; si no casa, rehúsa sin decir qué hay. Es la
+lección del §261 (un aviso que no autentica) aplicada antes de escribir el método. E1 es del
+compromiso v2: un aviso sin `x` no tiene `C2`, y el método lo rehúsa.
+
+### D-G — E1 es un enunciado de ESTADO, sin titularidad
+
+Medido sobre `393032e`: el molde que D-B nombra, `crates/zk-ssl-air/src/banda.rs`, no lleva el
+ciclo de la clave; ata la identidad con cuatro aserciones contra la entrada pública que declara
+quien verifica (su D-2b). Con ese molde, la fila E1 afirmaba algo que el circuito no restringe:
+quien conozca la apertura —el pagador la conoce— produce la misma prueba. Dos caminos: (a) el
+enunciado es de estado, «bajo esta cabeza existe un pendiente a nombre de `receptor`», y el RFC
+lo dice así; (b) el ciclo de la clave de `circuit_claim_v2` (`CYC_PK`: un ciclo y cuatro
+columnas más), y sólo el receptor la produce. Gana (a): pureza (una primitiva por propiedad; la
+autorización es de E3, donde la prenda la exige por D-D), menos columnas, e imagen fiel (lo que
+el circuito no restringe no se afirma). Y (b) no compra lo que parece: una prueba se reenvía
+igual con clave o sin ella, y atarla a quien la PRESENTA pide un reto dentro del enunciado, que
+ninguno de los dos lleva. **Reversible** hacia (b) sólo con ese reto y con un caso de uso medido
+que lo pida.
+
 ## Lo que se DESCARTÓ al medir
 
 1. Abrir `X` del lado del cobrador para probar la T: rompe D-2 del RFC-0003 (el receptor
@@ -157,6 +224,12 @@ del pagador tiene la T y el `refund_id`; la del cobrador tiene la banda).
    0006 aplicada al activo del cobrador.
 6. Que la prenda bloquee el reembolso: regla nueva sobre los derechos del pagador sin testigo
    escrito y sin compromiso en la cabeza.
+7. Servir el camino del pendiente con el molde de `zkssl_frozenPath`, del estado de ahora: en
+   cuanto un pago cae entre latidos, no sube a ninguna cabeza firmada (D-F).
+8. Reconstruir el árbol en el `seq` de la cabeza desde el registro: sus entradas no llevan la
+   posición ni la hoja (D-F).
+9. Firmar una cabeza a petición de quien pide el camino: quema índices XMSS (D-F).
+10. La titularidad en E1 sin un reto en el enunciado: no ata la prueba a quien la presenta (D-G).
 
 ## Compatibilidad
 
@@ -178,8 +251,10 @@ expediente aunque no rompa nada.
 - **El operador ve.** Ninguna de las dos pruebas oculta nada al nodo: la privacidad es frente al
   verificador externo, como en todo el sistema.
 - **Lo que el sobre del cobrador dice**: que bajo esa cabeza firmada existe un pendiente a
-  nombre de quien prueba, por al menos `X`, nacido en `b`. Lo que NO dice: cuándo caduca, ni
-  que vaya a cobrarse, ni quién lo pagó.
+  nombre de `receptor`, por al menos `inferior`, nacido en `b`. Lo que NO dice: cuándo caduca,
+  ni que vaya a cobrarse, ni quién lo pagó, ni quién produjo la prueba (D-G).
+- **Lo que el método del camino revela**: a quien presenta un aviso que recompone la hoja, los
+  dos caminos y la meta de ESA posición, en el estado del último latido; a quien no, nada (D-F).
 - **Lo que el sobre del pagador dice**: que bajo esa cabeza el pago está comprometido, por
   `importe` exacto, a `receptor`, y que no puede revertirse antes de `T`. Lo que NO dice: que
   esté hecho; se consuma al cobrar.
@@ -197,6 +272,8 @@ expediente aunque no rompa nada.
 - La lectura pura de la sesión 144 sobre `5ef3b1b`, `TERRENO-H5-144` (texto,
   `19c76ad04ad1d84b`/124; vive fuera del árbol, en Downloads del autor, como los PASTE de los
   RFC anteriores).
+- La lectura pura de la sesión 145 sobre `393032e`, `TERRENO-E1-145` (texto,
+  `953f0aeca3a1175c`/122; en Downloads del autor, como la anterior).
 - El hito, verbatim, en la línea 46 del formulario enviado (`NLNET-form-answers-EN-v3.txt`,
   `26dcde32091e857d`/160) y en la sección 3.6 de la propuesta adjunta (el PDF
   `a6d5b620bf4e2283`, 9 páginas).
