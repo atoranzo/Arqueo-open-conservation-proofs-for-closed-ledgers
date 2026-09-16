@@ -189,7 +189,7 @@ donde el valor es una respuesta del cable sin reescribir.
 | `DuplicateAccountInBatch` | `lote` | el primer choque del lote, con la regla de `apply_many`, es una cuenta repetida | v5, la misma (§456) |
 | `DuplicatePendingInBatch` | `lote` | el primer choque del lote es una posición repetida | v5, la misma (§456) |
 | `AccountFrozen` | `congelados` | el camino es el de la cuenta que `data` nombra (cruce con sus bits), mide los 32 niveles que fija el núcleo y sube al `frozenRoot`; la hoja no es la vacía | v3, v4 o v5, la misma (§459) |
-| `AccountNotFound` | `cuenta` | el camino es el de la cuenta que `data` nombra (cruce con sus bits), mide los 32 niveles que fija el núcleo y sube al `accountsRoot`; la hoja **es** la vacía | v5, la misma (§476) |
+| `AccountNotFound` | `cuenta` | el camino es el de la cuenta que `data` nombra (cruce con sus bits), mide los 32 niveles que fija el núcleo y sube al `accountsRoot`; la hoja **es** la vacía | v3, v4 o v5, la misma (§476) |
 | `InsufficientBalance` | `banda` | `data` no trae `available`; el `requested` de `data` es el de `banda` y no es cero; la `prueba` verifica, con las opciones de la casa y sin el saldo, que el saldo de la cuenta `publicId` está en `[0, requested - 1]` bajo el `accountsRoot` (`zk_ssl_air::banda`) | v3, v4 o v5, la misma (§478) |
 | `SupplyCapExceeded` | `parametros`, `peticion` | los siete recomponen; `cap` es el `maxSupply` comprometido; `wouldBe` es el `totalSupply` de la cabeza más el `amount` de la petición (la suma saturada de la capa) y pasa el tope | v5, la misma (§460) |
 
@@ -304,11 +304,20 @@ la cima nueva extiende a la vieja · `4/5` los dos caminos son los de la posici�
 del consumo, no de la que el sobre diga · `5/5` el consumo está bajo el `consRoot` de la
 nueva y **no estaba** bajo el de la vieja.
 
+**Paquete de conflicto:** `1/4` las dos cabezas recomponen su digest y sus firmas verifican ·
+`2/4` son de operadores **distintos** y las dos llevan `consRoot` (**v4 o v5**) · `3/4` los
+dos caminos son los de la posición **derivada** del consumo · `4/4` el mismo consumo está
+bajo el `consRoot` de los **dos** libros.
+
 **Paquete de rechazo:** `1/3` la cabeza recompone su digest y su firma verifica · `2/3` el
-material de la causa: los `parametros` recomponen el `paramsDigest` de una cabeza **v5**, o el
-camino es el de la posición **derivada** del consumo bajo una **v4 o v5** · `3/3` la causa se
-sostiene sobre lo comprometido, con la cabeza **anterior** al rechazo —o la misma— cuando cita
-algo que sólo crece.
+material de la causa, el que la sección 2.6 le asigna: los `parametros` recomponen el
+`paramsDigest` de una cabeza **v5**; el camino de `presencia` es el de la posición
+**derivada** del consumo bajo una **v4 o v5**; el `recibo` declaró sus tres raíces; el `lote`
+se lee en orden; el camino de `congelados` o de `cuenta` es el de la cuenta que `data` nombra;
+o el enunciado de la `banda` es el de esa cuenta bajo el `accountsRoot` firmado · `3/3` la
+causa se sostiene sobre lo comprometido, con la cabeza **anterior** al rechazo —o la misma—
+cuando cita algo que sólo crece, y con **la misma** cuando el estado es instantáneo; en la
+`banda`, lo que se sostiene es la prueba, que verifica sin el saldo.
 
 **Paquete de edad:** antes de tocar la criptografía, el sobre tiene su forma (`enunciado`,
 `subraices`, `prueba`) y la cabeza es **v5** · `1/3` la cabeza recompone su digest y su firma
@@ -402,6 +411,7 @@ entrada nueva del catálogo**, es el mismo texto y el mismo productor.
 
 - `falta libros` · `libros no es una lista`
 - `el sobre de conflicto exige DOS libros: se recibieron {n}`
+- `{cual}: falta cabeza`
 - `las cabezas llevan la MISMA clave: un conflicto es entre DOS firmantes`
 - `libro[{i}]: el camino NO sube al consRoot de su cabeza`
 
@@ -440,6 +450,11 @@ los **mismos productores** de arriba, con su hueco relleno distinto.
 - `congelados: el camino no tiene los 32 niveles del arbol de congelados`
 - `congelados: el camino NO sube al frozenRoot de la cabeza`
 - `la causa NO se sostiene: la hoja de la cuenta {i} bajo el frozenRoot es la vacia - no estaba congelada`
+- `falta cuenta (el camino del arbol de cuentas)` · `cuenta: falta camino`
+- `cuenta: el isRight recibido NO es el de la cuenta {i} - un camino de otra cuenta no prueba nada de esta`
+- `cuenta: el camino no tiene los 32 niveles del arbol de cuentas`
+- `cuenta: el camino NO sube al accountsRoot de la cabeza`
+- `la causa NO se sostiene: la hoja de la cuenta {i} bajo el accountsRoot NO es la vacia - la cuenta existe`
 - `falta peticion (los params de la emision rechazada)`
 - `data: el wouldBe que el nodo dice ({dice}) no es el suministro de la cabeza mas el importe pedido ({suministro} + {importe} = {seria})`
 - `la causa NO se sostiene: el suministro resultante ({seria}) no supera el tope ({tope})`
@@ -464,21 +479,37 @@ firma y la familia de v5— salen de los **mismos productores** de arriba.
 
 - **Invocación:** `zk-ssl-verify <paquete.json>` — **un** argumento, la ruta del fichero. Es la
   única lectura de disco del binario; no hay red, ni reloj, ni telemetría (§395 lo gatea).
-- **Salida estándar:** las líneas `1/3` · `2/3` · `3/3` (o `3/3 sin acuse en el paquete: la cabeza
-  sola queda demostrada`), la de cofirmas cuando el sobre es v2, y al final
-  `VERDE: el paquete se sostiene sin el nodo` o `VERDE: la extension se sostiene sin el nodo`.
+- **Salida estándar:** las líneas numeradas de su forma —`1/3` · `2/3` · `3/3` en los paquetes
+  de posición (o `3/3 sin acuse en el paquete: la cabeza sola queda demostrada`), de extensión,
+  de rechazo y de edad; `1/5` a `5/5` en el de consumo; `1/4` a `4/4` en el de conflicto—, la
+  de cofirmas cuando el sobre es v2, y al final el VERDE de su forma, uno de estos seis;
+  los tres últimos siguen en una segunda línea:
+  - `VERDE: el paquete se sostiene sin el nodo`
+  - `VERDE: la extension se sostiene sin el nodo`
+  - `VERDE: el consumo se publico entre las dos cabezas, sin el nodo`
+  - `VERDE: dos libros aceptaron el mismo consumo. Es DETECCION, no prevencion:`
+  - `VERDE: {causa} se sostiene sobre el estado comprometido. Dice que la regla se`
+  - `VERDE: bajo la cabeza de seq {seq}, a lo sumo {k} posiciones vivas {quien}`
 - **Salida de error:** `ROJO: {motivo}` con un texto del catálogo de la sección 5, y para.
 - **Tres códigos de salida:** `0` verde · `1` el primer fallo con nombre · `2` uso (ningún
   argumento, o más de uno; imprime el uso en la salida de error).
 
 ## 7. Quién arma el paquete
 
-Hoy **ningún mando del árbol emite el paquete**: el testigo y el cli sirven y custodian las
-respuestas del cable, y quien las reúne en el sobre es el titular — en el árbol, los bancos
-`tools/banco_apagado.sh`, `tools/banco_completo.sh`, `tools/banco_evidencia_v2.sh` y
-`tools/banco_extension.sh`, que capturan las respuestas de un nodo real y las envuelven sin
-reescribir un campo. Ese es el contrato: **reunir, no recomponer**. Un mando que arme el paquete
-es un frente propio y no cambia este documento: cambiaría quién escribe el sobre, no el sobre.
+Dos formas tienen productor en el árbol, y es el **nodo**, en un modo fuera de banda que abre su
+libro con el servidor PARADO y copia la cabeza firmada VERBATIM: `zk-ssl-node --prueba-edad`
+escribe el sobre de edad (§466), y `zk-ssl-node --prueba-rechazo` el de rechazo de
+`AccountFrozen` (§473), `AccountNotFound` (§474) e `InsufficientBalance` (§478); cualquier otra
+causa la rehúsa nombrándola. `tools/banco_edad.sh` y `tools/banco_rechazo.sh` los demuestran en
+vivo. Del resto, **ningún mando del árbol emite el paquete**: el testigo y el cli sirven y
+custodian las respuestas del cable, y quien las reúne en el sobre es el titular — en el árbol,
+los bancos `tools/banco_apagado.sh`, `tools/banco_completo.sh`, `tools/banco_evidencia_v2.sh`,
+`tools/banco_extension.sh`, `tools/banco_consumo.sh` y `tools/banco_dos_libros.sh`, que
+capturan las respuestas de un nodo real y las envuelven sin reescribir un campo; los vectores
+de las otras causas del rechazo se reunieron de capturas de un nodo real, y la sección 9 dice
+de cuáles. Ese es el contrato: **reunir, no recomponer**, y el modo del nodo lo cumple. Un
+mando que arme el paquete es un frente propio y no cambia este documento: cambiaría quién
+escribe el sobre, no el sobre —y así fue en el §466 y en el §473—.
 
 ## 8. Lo que este documento NO afirma
 
@@ -621,6 +652,26 @@ rechazo sobre un libro real con el servidor PARADO.
   parámetros dan el `maxSupply` comprometido, la cabeza es la del `seq` exacto y el `wouldBe` del
   nodo tiene que ser el `totalSupply` de la cabeza más el importe que el solicitante envió
   (`peticion`); `PendingTreeExhausted` se declara sin prueba portable.
+- §465 — el paquete de edad (RFC-0007, E4b-2), la séptima forma: el mando exige una cabeza
+  v5 y verifica la prueba de `zk-ssl-air` contra lo que ella firma, sin el probador.
+- §466 — el nodo escribe el sobre de edad con `--prueba-edad`, sobre su libro y con el
+  servidor parado (RFC-0007, E4b-3): la primera forma con productor en el árbol (sección 7).
+- §467 — el catálogo del sobre de edad (RFC-0007, E4b-3, que cierra E4): `spec/vectors/edad/`,
+  dos positivos reunidos y nueve negativos. Los catálogos son CINCO.
+- §473 — el nodo escribe el sobre de rechazo con `--prueba-rechazo` (RFC-0007, E5): la causa
+  se EXIGE, no se deduce del orden de las guardas; la primera es `AccountFrozen`.
+- §475 — el sobre de rechazo prueba `AccountNotFound` (RFC-0007, E5): la hoja VACÍA de la
+  cuenta bajo el `accountsRoot` de la cabeza del `seq` exacto, con el material dentro del
+  propio rechazo y sin método del cable (el nodo lo escribe desde el §474).
+- §476 — su catálogo: un positivo reunido y ocho negativos; el disfraz no se puede producir.
+- §478 — el sobre de rechazo prueba `InsufficientBalance` (RFC-0007, E5): la única causa que
+  verifica un STARK; el sobre no publica el saldo, y el nodo escribe la `banda`.
+- §479 — su catálogo: un positivo reunido y ocho negativos. E5 queda entera, y con ella las
+  cinco etapas del RFC-0007.
+- §480 — este documento se pone al día con el RFC-0007 entero: los textos de `AccountNotFound`
+  en la sección 5, las cabezas que su brazo acepta, el material de cada causa y el paquete de
+  conflicto en la sección 4, las líneas y los VERDE de cada forma, quién arma el paquete y el
+  quinto catálogo del artefacto.
 - Hasta §397 este contrato vivía en la cabecera de `crates/zk-ssl-verify/src/main.rs` (1..90,
   `293990fedc785833`), que ya confesó una vez (§247) haber declarado su superficie como completa
   sin serlo. §397 lo muda aquí y deja la cabecera remitiendo, sin enumerar.
@@ -629,22 +680,25 @@ rechazo sobre un libro real con el servidor PARADO.
 ## 11. El artefacto
 
 Lo que un tercero descarga es `arqueo-verify-<versión>-<host>.tar.gz` (§401), y dentro:
-`zk-ssl-verify` (el binario), `conformidad.sh` (el arnés de la sección 9, §408), `spec/PAQUETE.md`
-(este documento), `spec/vectors/paquete/`, `spec/vectors/consumo/`, `spec/vectors/conflicto/`
-y `spec/vectors/rechazo/` (los cuatro manifiestos y sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
-licencias de todo lo enlazado), `VERSION` (el commit, el toolchain y los flags con que se compiló)
-y `SHA256SUMS` (la huella de cada fichero de dentro). Se comprueba con `sha256sum -c SHA256SUMS`,
-y el binario contra los cuatro catálogos con `bash conformidad.sh ./zk-ssl-verify`,
+`zk-ssl-verify` (el binario), `conformidad.sh` (el arnés de la sección 9, §408),
+`spec/PAQUETE.md` (este documento), `spec/vectors/paquete/`, `spec/vectors/consumo/`,
+`spec/vectors/conflicto/`, `spec/vectors/rechazo/` y `spec/vectors/edad/`
+(los cinco manifiestos y sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`,
+`THIRD-PARTY.txt` (las licencias de todo lo enlazado), `VERSION` (el commit, el toolchain y los
+flags con que se compiló) y `SHA256SUMS` (la huella de cada fichero de dentro). Se comprueba con
+`sha256sum -c SHA256SUMS`, y el binario contra los cinco catálogos con
+`bash conformidad.sh ./zk-ssl-verify`,
 `bash conformidad.sh ./zk-ssl-verify spec/vectors/consumo/MANIFIESTO.txt`,
-`bash conformidad.sh ./zk-ssl-verify spec/vectors/conflicto/MANIFIESTO.txt` y
-`bash conformidad.sh ./zk-ssl-verify spec/vectors/rechazo/MANIFIESTO.txt`: cada entrada dice el
+`bash conformidad.sh ./zk-ssl-verify spec/vectors/conflicto/MANIFIESTO.txt`,
+`bash conformidad.sh ./zk-ssl-verify spec/vectors/rechazo/MANIFIESTO.txt` y
+`bash conformidad.sh ./zk-ssl-verify spec/vectors/edad/MANIFIESTO.txt`: cada entrada dice el
 código de salida y el texto.
 
 La huella del binario **no depende de la máquina ni del usuario** —se compila con
 `--remap-path-prefix`—, pero sí del toolchain y de `Cargo.lock`: con el `rustc` que `VERSION`
 nombra, `bash tools/artefacto.sh` sobre el commit que `VERSION` nombra vuelve a producir el mismo
 binario y el mismo tarball, y `tools/canon.sh` comprueba esa propiedad en cada sello (dos
-compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los cuatro manifiestos desde el
+compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los cinco manifiestos desde el
 árbol y, desde §425, otra vez **desde dentro del tarball desempaquetado y sin repo**, con el mismo
 veredicto). Lo que el binario exige: x86_64 Linux y una glibc igual o mayor que la que `VERSION`
 declara (`glibc_max`); no es estático, y se dice.

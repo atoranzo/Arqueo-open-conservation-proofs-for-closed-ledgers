@@ -35191,3 +35191,66 @@ ACEPTADO es otro corte, con la regla 4 del PROCESO. El tiempo del AIR recortado 
 instrumento. `spec/PAQUETE.md` sigue sin los textos de `AccountNotFound` en su seccion 5, y su
 tabla de la 2.6 pide v5 para esa causa cuando el mando acepta v3, v4 o v5: van a la cola. Y este
 sello NO afirma que el nodo vaya a rechazar, ni cuando: eso es H5b.
+
+## §480 — RFC-0007: spec/PAQUETE.md al dia con las cinco etapas (la regla 4, su letra a)
+
+**Que.** Las cinco etapas del RFC-0007 estan selladas, y su paso a ACEPTADO exige, por la regla
+4 del PROCESO, la especificacion actualizada. `spec/PAQUETE.md`, el unico productor normativo
+del sobre, no lo estaba: medido sobre el zip de `6a8cee8`, SIETE sitios suyos describian el
+mando de antes de E4 y E5. Este sello los pone al dia, y con ellos tres filas de
+`spec/README.md`, la guia que describe ese documento y sus vectores. Ni codigo, ni pin, ni
+vector: el giro a ACEPTADO va en el sello siguiente, y ya no tendra que declarar la spec a
+medias. El orden es el del autor en la sesion 143; la carga de la 142 ponia el giro primero y
+estos huecos en la cola.
+
+**Lo medido antes de escribir un byte.** El 5.A-251 nombraba cinco huecos, y la medida da siete.
+(1) La seccion 5 no tenia ninguno de los textos del brazo de `AccountNotFound`. El censo POR
+LLAMADA del mando da 135 llamadas a `err` con un literal y 124 distintos; leidos como patron -un
+hueco casa cualquier relleno, que es la regla del propio catalogo- faltaban SIETE: los seis de
+ese brazo y `{cual}: falta cabeza`, del sobre de conflicto, que faltaba desde el §430 y que una
+sonda mia mas laxa que el invariante -quitaba el prefijo con hueco- habia dado por presente. (2)
+La tabla de la 2.6 pedia v5 a esa causa, y el brazo llama a `cabeza_v3_verificada`, como sus dos
+hermanas `AccountFrozen` e `InsufficientBalance`: las tres versiones firman `accountsRoot`. (3)
+El paso `2/3` del paquete de rechazo, en la seccion 4, solo nombraba `parametros` y `presencia`.
+(4) La historia, en la 10, acababa en el §460. (5) La 11 decia <<los cuatro manifiestos>>, y
+`FAMILIAS` lleva cinco desde el §467. Y dos que la cola no tenia: (6) la seccion 6 nombraba dos
+VERDE de los seis que el mando imprime, y solo las lineas `1/3` a `3/3`, cuando el consumo
+cuenta hasta 5 y el conflicto hasta 4; (7) la seccion 7 decia
+<<ningun mando del arbol emite el paquete>>, y el nodo escribe dos formas desde el §466 y el
+§473. En la guia, la fila de `PAQUETE.md` decia <<the three forms>> -son siete-, la de
+`vectors/rechazo/` decia <<RFC-0007 E3>> con dos causas de E5 dentro, y `vectors/edad/` no tenia
+fila.
+
+**Ningun texto del catalogo se teclea.** Los seis de `AccountNotFound` salen del fuente del
+brazo, con el hueco de la cuenta escrito `{i}` y la profundidad leida de `ACCOUNTS_DEPTH` (32),
+que es el molde de sus hermanos de `congelados`; los seis VERDE salen de los `println!` del
+mando; los directorios y las ordenes del artefacto, de `FAMILIAS`; los brazos del productor del
+nodo, de `modo_prueba_rechazo`. El generador exige el censo con exactamente esas siete ausencias
+antes y con cero despues, y muere si una sola derivacion no es la medida.
+
+**Las decisiones (todas REVERSIBLES).** D-1 la tabla dice lo que el mando hace -v3, v4 o v5- y
+no al reves: estrechar el mando seria codigo sin un testigo que lo pida, y ninguna de las tres
+cabezas deja de firmar la raiz que la causa cita. Es razonado del fuente, no ejercitado: el
+catalogo no lleva una cabeza v3 de esta causa, como no la lleva de sus dos hermanas. D-2 la
+seccion 6 se escribe entera y paga con ella los dos VERDE del RFC-0006 que tambien faltaban: la
+unidad de una sustitucion es el parrafo. D-3 la seccion 4 gana el parrafo del paquete de
+conflicto y la 5 su texto ausente, los dos del §430: es el mismo documento, la misma derivacion
+y el contrato que el giro va a declarar al dia; se dice aqui para que no parezcan del RFC-0007.
+D-4 el canon corre aunque no haya codigo: `spec/PAQUETE.md` viaja dentro del tarball, y el 3 ter
+del canon lo produce y corre los cinco catalogos desde dentro con el documento nuevo.
+
+**Lo que NO afirma.** Que la guia este al dia: `spec/README.md` sigue anclada a `c43890a` (punto
+80), y su lectura de `RPC.md` -tres codigos de error, la cabeza hasta v3- es de antes del
+RFC-0007; va a la cola. Y lo de siempre en un sello de prosa: el invariante de las diez
+herramientas dice que nada se movio, no que lo escrito sea verdad (§469). Lo que sostiene estas
+lineas es el censo contra el fuente, y el fuente es el del mando que el canon compila.
+
+**Contadores.** Dos ficheros mas este asiento. `spec/PAQUETE.md` pasa de 661 a 715 lineas y de
+48.977 a 53.251 B; `spec/README.md`, de 165 a 166 lineas. Ningun `.rs`, ningun pin, ningun
+Cargo, ningun vector; ningun `.md` nace. Las DIEZ herramientas IDENTICAS antes y despues. Canon
+`--sello` VERDE en 181 s.
+
+**Lo que NO cierra.** El RFC-0007 sigue PROPUESTO: el giro es otro sello, y con el la tabla D-D
+que la correccion del §476 partio (la otra mitad del 5.A-252). La fila 7 de la portada va aparte
+(5.A-253), y su perimetro medido es mayor que el publicado: dieciseis lineas en siete ficheros
+vivos, no cuatro en tres.
