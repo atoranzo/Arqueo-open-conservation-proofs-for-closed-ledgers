@@ -29,11 +29,13 @@ of the world (`SECURITY.md`, the oracle limit).
 | 3 | Unrewritable history, with an extension proof | today's signed head extends yesterday's without removal or reordering | measured (`spec/RPC.md:781-808`, `zkssl_consistencyProof`) |
 | 4 | Inclusion with a receipt | an entry is in the ledger, provable without the operator | measured (`spec/RPC.md:564-735`, `zkssl_inclusionReceipt`, `zkssl_ackPath`) |
 | 5 | Authorship without the key travelling | only the holder of a key moves its account; the operator cannot | measured (`spec/RPC.md:50-59`, the API principle) |
-| 6 | Cut-off and completeness | nothing stays in flight past its time; every acknowledgement ends applied or rejected, with a trace | planned (front page, "What comes next") |
-| 7 | Rejection with cause | a refusal carries the rule that produced it | planned (front page, "What comes next") |
+| 6 | Cut-off and completeness | nothing stays in flight past its time; every acknowledgement ends applied or rejected, with a trace | in part: the empty box (RFC-0007, E4) |
+| 7 | Rejection with cause | a refusal carries the rule that produced it | measured (RFC-0007; `spec/PAQUETE.md`, 2.6) |
 
-Rows 6 and 7 do not exist in the tree. They are listed so that a reader knows
-which questions the engine intends to answer and does not yet.
+Row 6 exists only in part: the empty box is proven, and that every
+acknowledgement ends applied or rejected is not yet. Row 7 proves that the
+rule was applied over what a signed head commits; not that the node refused,
+nor when, nor that the rule is fair.
 
 ## Use cases, by the property that resolves them
 
@@ -94,12 +96,12 @@ not been measured.
   account it does not control. Companion limitation, published: the operator
   *can* fail to include a legitimate operation, and that leaves no trace.
 
-**6. Cut-off and completeness** (planned).
+**6. Cut-off and completeness** (in part: the empty box).
 - Two-phase settlement with expiry between firms; clearing between operators;
   period close, where the "empty box" proof of what is in flight is the
   cut-off that is reconciled by hand today.
 
-**7. Rejection with cause** (planned).
+**7. Rejection with cause** (measured).
 - Appeals: aid denied, claims refused, admissions to regulated programmes.
 
 ## Institutional clearing: four tests

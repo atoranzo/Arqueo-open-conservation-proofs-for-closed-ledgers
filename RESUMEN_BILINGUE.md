@@ -18,8 +18,9 @@ del libro por una **prueba de que el libro hizo lo que sus reglas dicen**, que c
 Que el dinero se conserva (lo emitido = cuentas + en vuelo, también al reabrir). Que una unidad se
 usó una sola vez en el libro, y que la misma unidad en dos libros se detecta con las dos cabezas
 firmadas. Que la historia no se reescribió. Que una entrada está dentro, con recibo. Que sólo el
-titular movió su cuenta. Dos propiedades más —corte y completitud, rechazo con causa— están
-planeadas, no hechas.
+titular movió su cuenta. Que una negativa lleva su causa y, para las causas que el sobre de
+rechazo cubre, que se sostiene sin el nodo. Que nada en vuelo es más viejo que una edad dada.
+Falta la completitud: que cada acuse acabe aplicado o rechazado.
 
 ### Qué NO es
 
@@ -46,7 +47,7 @@ contrapartida ni una moneda de banco central ([`doc/USE_CASES.md`](./doc/USE_CAS
 se reescriben; RFC 0002, 0003, 0004, 0006 y 0007 aceptados, 0005 propuesto; verificador
 `zk-ssl-verify` 0.2.0 (release `arqueo-verify-v0.2.0`, reproducible); registro con un asiento por
 cambio. Falta: auditoría externa, custodia de clave comprobada, un ancla anterior al primer
-encuentro del testigo, y las dos propiedades planeadas.
+encuentro del testigo, y la completitud de los acuses.
 
 ### La decisión que define el diseño
 
@@ -69,8 +70,9 @@ conservation, not solvency.
 That money is conserved (issued = balances + in flight, also on reopening). That a unit was used
 once inside the ledger, and that the same unit in two ledgers is detected from their two signed
 heads. That history was not rewritten. That an entry is inside, with a receipt. That only the
-holder moved their account. Two more properties — cut-off and completeness, rejection with cause —
-are planned, not built.
+holder moved their account. That a refusal carries its cause and, for the causes the rejection
+envelope covers, that it holds without the node. That nothing in flight is older than a given
+age. Missing: completeness, every acknowledgement ending applied or rejected.
 
 ### What it is NOT
 
@@ -97,7 +99,7 @@ counterparties, nor a central-bank digital currency ([`doc/USE_CASES.md`](./doc/
 that are never rewritten; RFCs 0002, 0003, 0004, 0006 and 0007 accepted, 0005 proposed; verifier
 `zk-ssl-verify` 0.2.0 (release `arqueo-verify-v0.2.0`, reproducible); a record with one entry per
 change. Missing: an external audit, a verified key custody, an anchor prior to the witness's first
-encounter, and the two planned properties.
+encounter, and the completeness of acknowledgements.
 
 ### The decision that defines the design
 

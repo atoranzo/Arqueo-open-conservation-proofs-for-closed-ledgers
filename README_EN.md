@@ -130,11 +130,12 @@ The same table, with the use cases, is [`doc/USE_CASES.md`](./doc/USE_CASES.md).
 | 3 | Unrewritable history, with an extension proof | today's signed head extends yesterday's without removal or reordering | measured (`spec/RPC.md`, `zkssl_consistencyProof`) |
 | 4 | Inclusion with a receipt | an entry is in the ledger, provable without the operator | measured (`spec/RPC.md`, `zkssl_inclusionReceipt`, `zkssl_ackPath`) |
 | 5 | Authorship without the key travelling | only the holder of a key moves its account; the operator cannot | measured (`spec/RPC.md`, the API principle) |
-| 6 | Cut-off and completeness | nothing stays in flight past its time; every acknowledgement ends applied or rejected, with a trace | planned |
-| 7 | Rejection with cause | a refusal carries the rule that produced it | planned |
+| 6 | Cut-off and completeness | nothing stays in flight past its time; every acknowledgement ends applied or rejected, with a trace | partly: the empty box — nothing in flight older than a given age — is proven without the node (RFC-0007, E4); completeness is planned |
+| 7 | Rejection with cause | a refusal carries the rule that produced it | measured (RFC-0007; which causes are proven without the node: `spec/PAQUETE.md`, 2.6) |
 
-Rows 6 and 7 **do not exist in the tree**. They are listed so that a reader knows which questions
-the engine intends to answer and does not yet.
+Row 6 **exists only in part**: the empty box is proven, and that every acknowledgement ends
+applied or rejected is not yet; it is listed whole so that a reader knows which question the
+engine intends to answer.
 
 **What none of this claims:**
 
@@ -144,7 +145,9 @@ the engine intends to answer and does not yet.
 - Prevention across ledgers: two ledgers can accept the same label; a third party holding both
   signed heads sees it afterwards, never before.
 - Who is behind a key, or that one person holds one account.
-- Rows 6 and 7 as existing.
+- Row 6 whole: the completeness of acknowledgements does not exist yet.
+- Of a rejection with cause, that the node refused, or when, or that the rule is fair: the
+  proof says the rule was applied over what a signed head commits.
 
 **What is missing, in order of importance:** distributed consensus (without it the operator sees
 the balances and can censor; the alternative this project does pursue — provable accountability,
@@ -184,7 +187,7 @@ there.
 | piece | where it is measured |
 |---|---|
 | **18 crates** in one workspace; the canon (`tools/canon.sh --sello`) runs every crate's tests, in release, and the eight tools under `tools/` that watch figures, citations, domains and geometry | the table in [`tools/canon.sh`](./tools/canon.sh) carries the passing tests per crate; every seal updates it |
-| **Protocol `zkssl/0.3`**: 28 JSON-RPC methods (25 `zkssl_*`, 3 `dev_*`), OpenRPC generated from the code, vectors per version that are never rewritten | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (210 files: cable, núcleo, paquete, consumo, conflicto, rechazo and the three `zkssl-0.N.json`) |
+| **Protocol `zkssl/0.3`**: 28 JSON-RPC methods (25 `zkssl_*`, 3 `dev_*`), OpenRPC generated from the code, vectors per version that are never rewritten | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (240 files: cable, núcleo, paquete, consumo, conflicto, rechazo, edad and the three `zkssl-0.N.json`) |
 | **RFCs**: 0002, 0003, 0004, 0006 and 0007 (proofs over the committed state) accepted; 0005 (the frozen core) proposed | [`spec/rfc/`](./spec/rfc/) |
 | **Independent verifier** `zk-ssl-verify` 0.2.0, release `arqueo-verify-v0.2.0`, reproducible from the commit its `VERSION` names | [`doc/KIT_EN.md`](./doc/KIT_EN.md) · [`tools/artefacto.sh`](./tools/artefacto.sh) |
 | **Record**: one entry per verified change, with its commit; what is corrected is marked, not erased | [`AUDITORIA.md`](./AUDITORIA.md) · [`BACKLOG.md`](./BACKLOG.md) |

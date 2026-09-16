@@ -35312,3 +35312,57 @@ IDENTICAS antes y despues.
 **Lo que NO cierra.** La fila 7 de la portada y la de `doc/USE_CASES.md` siguen diciendo
 <<planeada>> (5.A-253). El reenvio a NLnet, con los hashes del arco, sigue pendiente (5.B-60).
 El tiempo del AIR recortado sigue sin instrumento (5.A-255).
+
+## §482 — La portada dice lo que H4 construyo: la fila 7 medida y la 6 en parte
+
+**Que.** La tabla de <<Que garantiza y que no>> decia <<planeada>> en las filas 6 y 7, y una
+frase debajo decia que las dos <<no existen en el arbol>>. Las dos afirmaciones son falsas desde
+que se sellaron las etapas del RFC-0007 -ACEPTADO desde el §481-, cada una a su manera. La fila
+7 existe entera: la causa viaja en el cable (§454) y el sobre de rechazo la prueba sin el nodo
+para las causas que la tabla 2.6 de `spec/PAQUETE.md` nombra. La fila 6 existe en parte: la caja
+vacia -nada en vuelo mas viejo que una edad dada- se prueba sin el nodo (E4), y que cada acuse
+acabe aplicado o rechazado, no. Este sello lo dice en los siete documentos vivos que las
+nombran, en los dos idiomas, y paga de paso la cuenta de `spec/vectors/` de la portada
+(5.A-257). La web queda fuera: vive fuera de los gates y se actualiza a mano.
+
+**Lo medido antes de escribir un byte**, sobre el arbol de `14d86b7`, reconstruido byte a byte
+(su `AUDITORIA.md` clava la huella que la SALIDA-481 imprimio y que el render habia predicho).
+El 5.A-253 nombraba cuatro lineas en tres ficheros; el censo del generador da 21 apariciones en
+siete: las dos filas, la frase compartida y el <<no afirma>> de las dos portadas; las dos filas,
+la frase y las dos cabeceras de `doc/USE_CASES.md`, cuyas filas remitian a una seccion
+<<What comes next>> que la portada no tiene; las preguntas 4 y 22 de `PREGUNTAS.md` y
+`QUESTIONS.md`; los dos parrafos y la lista de lo que falta de `RESUMEN_BILINGUE.md`; y el
+parrafo y la lista de lo que falta de `RESUMEN_EJECUTIVO.md`, esta ultima cazada por el censo
+del generador y no por la medida. Y la cuenta: la portada espanola decia <<222 ficheros>> y la
+inglesa <<210 files>>, sin `edad`; el arbol lleva 240 en 7 familias. De las 25 causas, 12 se
+prueban sin el nodo; el numero NO entra en la portada, que remite a la tabla 2.6: una cifra ahi
+seria una cifra que ningun gate vigila.
+
+**Las decisiones (todas REVERSIBLES, aprobadas por el autor).** D-1 la fila 7 dice <<medida>>,
+con su fuente y sin cifra. D-2 la fila 6 dice <<en parte>>: nombra la caja vacia y deja la
+completitud como planeada; dejarla en <<planeada>> habria sido infiel por defecto. D-3 la frase
+compartida se reescribe para la fila 6, y el <<no afirma>> gana, para la 7, el limite que el
+propio mando imprime: la prueba dice que la regla se aplico sobre lo que una cabeza firmada
+compromete, no que el nodo rechazara, ni cuando, ni que la regla sea justa. D-4 las filas de
+`doc/USE_CASES.md` dejan de remitir a <<What comes next>>, que no existe, y remiten a su fuente.
+D-5 la cuenta de `spec/vectors/` se deriva del arbol, con la familia que a la inglesa le
+faltaba; su fila pasa de 365 a 371 caracteres, y su tope es el de la gemela espanola (373), que
+ya la llevaba. D-6 sin canon, como el §481. D-7 la web, fuera.
+
+**Lo que NO afirma.** Nada nuevo del motor: este sello no toca codigo, ni la spec, ni un vector;
+sostiene sus frases en el RFC-0007 ACEPTADO, en la tabla 2.6 de `spec/PAQUETE.md` y en el VERDE
+del mando, y el generador comprueba que las tres fuentes dicen lo que la prosa cita. El
+invariante de las diez herramientas dice que nada se movio, no que lo escrito sea verdad
+(§469).
+
+**Contadores.** Pines quietos: 350 / 338 / 108 / 108 / 100 / 22 / 31. Siete ficheros mas este
+asiento: `README.md`, `README_EN.md`, `doc/USE_CASES.md`, `PREGUNTAS.md`, `QUESTIONS.md`,
+`RESUMEN_BILINGUE.md` y `RESUMEN_EJECUTIVO.md`. Ningun `.md` nace. Nueve herramientas IDENTICAS
+antes y despues, y `check_publicadas` con UN delta, informativo: la cita SALTADA de `README.md`
+pasa de :205 a :207 porque la portada gana dos lineas encima. El juez lo acepta por su
+invariante -rc 0, la misma cita, solo la posicion- y no por sus bytes, que es la leccion de la
+117; cualquier otro cambio seria rojo.
+
+**Lo que NO cierra.** La completitud de los acuses es H5b. La web (arqueo.org) sigue diciendo lo
+de antes hasta su pasada a mano, con su copia `.bak`. El reenvio a NLnet, con los hashes del
+arco §477-§482, sigue pendiente (5.B-60).

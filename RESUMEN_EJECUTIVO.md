@@ -22,9 +22,12 @@ dicen**, que cualquiera comprueba **sin el libro, sin red y sin fiarse del autor
 - **Que la historia no se reescribió**: la cabeza de hoy extiende la de ayer sin borrar ni reordenar.
 - **Que una entrada está dentro**, con un recibo que no depende del operador.
 - **Que sólo el titular movió su cuenta**: el operador no puede, y la clave nunca viaja.
+- **Que una negativa tiene causa**: la regla viaja con el rechazo, y para las causas que el sobre
+  de rechazo cubre, un tercero comprueba sin el nodo que se sostiene sobre lo que la cabeza firma.
+- **Que nada en vuelo es más viejo que una edad dada**: la caja vacía, probada sin el nodo.
 
-Dos cosas más que el motor quiere responder y todavía no responde: el corte y la completitud de
-un periodo, y el rechazo con causa. Están listadas como planeadas, no como hechas.
+Una cosa más que el motor quiere responder y todavía no responde: la completitud de un periodo,
+que cada acuse acabe aplicado o rechazado. Está listada como planeada, no como hecha.
 
 ## Qué NO es
 
@@ -75,7 +78,7 @@ con DOI; lo que se corrigió después está marcado en su fe de erratas.
 
 Una auditoría externa, que no depende de más código. Una custodia de la clave de firma
 **comprobada**, no sólo declarada. Un ancla anterior al primer encuentro entre el testigo y el
-nodo. Las dos propiedades planeadas. El consenso distribuido es otra disciplina y no es el camino
+nodo. La completitud de los acuses. El consenso distribuido es otra disciplina y no es el camino
 de este proyecto: el camino es la responsabilidad demostrable, al modo de *Certificate
 Transparency*, y sus piezas están construidas.
 

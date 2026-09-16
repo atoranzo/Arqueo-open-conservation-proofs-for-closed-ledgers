@@ -52,9 +52,10 @@ That an omitted operation is detected: censorship leaves no trace. That the oper
 the balances: it does. That two ledgers do not accept the same label: they can; what exists is
 detection, afterwards, from the two signed heads. Who is behind a key, or that one person holds one
 account. That a payment is final before it is claimed: until the claim it is not, and if nobody
-claims, the amount stays locked until the sender refunds it (`AUDITORIA.md` §178–§181). And two
-properties the engine **intends** to answer and does not yet: cut-off and completeness, and
-rejection with cause ([`doc/USE_CASES.md`](./doc/USE_CASES.md), rows 6 and 7).
+claims, the amount stays locked until the sender refunds it (`AUDITORIA.md` §178–§181). And one
+property the engine **intends** to answer and answers only in part: cut-off and completeness
+(the empty box is proven; that every acknowledgement ends applied or rejected is not yet)
+([`doc/USE_CASES.md`](./doc/USE_CASES.md), row 6).
 
 ### 5. What does it contribute that did not exist?
 
@@ -266,7 +267,8 @@ another session**.
 For a real third party to rely on these proofs: an **external audit**, which does not depend on
 more code; a **verified key custody**, not just a declared one (§244); and an **anchor prior to the
 first encounter** between witness and node. For the engine to answer everything it intends to:
-cut-off and completeness, and rejection with cause, which exist as planned rows and not as code.
+completeness —every acknowledgement ending applied or rejected—, the half of row 6 that is not
+code yet; the empty box and rejection with cause already are.
 Distributed consensus is another discipline and not this project's road: the road is provable
 accountability, and its pieces are built (question 7).
 

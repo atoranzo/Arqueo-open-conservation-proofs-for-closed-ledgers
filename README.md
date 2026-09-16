@@ -127,11 +127,11 @@ La misma tabla, en inglés y con los casos de uso, está en [`doc/USE_CASES.md`]
 | 3 | Historia no reescribible, con prueba de extensión | la cabeza de hoy extiende la de ayer sin borrar ni reordenar | medida (`spec/RPC.md`, `zkssl_consistencyProof`) |
 | 4 | Inclusión con recibo | una entrada está en el libro, demostrable sin el operador | medida (`spec/RPC.md`, `zkssl_inclusionReceipt`, `zkssl_ackPath`) |
 | 5 | Autoría sin que la clave viaje | sólo quien tiene la clave mueve su cuenta; el operador no puede | medida (`spec/RPC.md`, el principio de la API) |
-| 6 | Corte y completitud | nada queda en vuelo pasado su plazo; cada acuse acaba aplicado o rechazado, con traza | planeada |
-| 7 | Rechazo con causa | una negativa lleva la regla que la produjo | planeada |
+| 6 | Corte y completitud | nada queda en vuelo pasado su plazo; cada acuse acaba aplicado o rechazado, con traza | en parte: la caja vacía —nada en vuelo más viejo que una edad dada— se prueba sin el nodo (RFC-0007, E4); la completitud, planeada |
+| 7 | Rechazo con causa | una negativa lleva la regla que la produjo | medida (RFC-0007; qué causas se prueban sin el nodo: `spec/PAQUETE.md`, 2.6) |
 
-Las filas 6 y 7 **no existen en el árbol**: se listan para que se sepa qué preguntas quiere
-responder el motor y todavía no responde.
+La fila 6 **existe sólo en parte**: la caja vacía se prueba, y que cada acuse acabe aplicado o
+rechazado todavía no; se lista entera para que se sepa qué pregunta quiere responder el motor.
 
 **Lo que nada de esto afirma:**
 
@@ -141,7 +141,9 @@ responder el motor y todavía no responde.
 - Prevención entre libros: dos libros pueden aceptar la misma etiqueta; un tercero con las dos
   cabezas firmadas lo ve después, nunca antes.
 - Quién está detrás de una clave, ni que una persona tenga una sola cuenta.
-- Las filas 6 y 7 como existentes.
+- La fila 6 entera: la completitud de los acuses no existe todavía.
+- Del rechazo con causa, que el nodo rechazara, ni cuándo, ni que la regla sea justa: la prueba
+  dice que la regla se aplicó sobre lo que una cabeza firmada compromete.
 
 **Lo que falta, por orden de importancia:** consenso distribuido (sin él, el operador ve los saldos
 y puede censurar; la alternativa que este proyecto sí persigue —responsabilidad demostrable, al modo
@@ -177,7 +179,7 @@ a mirar el código con intención de romperlo, empieza ahí.
 | pieza | dónde se mide |
 |---|---|
 | **18 crates** en un workspace; el canon (`tools/canon.sh --sello`) corre los tests de todos, en release, y las ocho herramientas de `tools/` que vigilan cifras, citas, dominios y geometría | la tabla de [`tools/canon.sh`](./tools/canon.sh) lleva los tests que pasan por crate; cada sello la actualiza |
-| **Protocolo `zkssl/0.3`**: 28 métodos JSON-RPC (25 `zkssl_*`, 3 `dev_*`), OpenRPC generado desde el código, vectores por versión que jamás se reescriben | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (222 ficheros: cable, núcleo, paquete, consumo, conflicto, rechazo, edad y los tres `zkssl-0.N.json`) |
+| **Protocolo `zkssl/0.3`**: 28 métodos JSON-RPC (25 `zkssl_*`, 3 `dev_*`), OpenRPC generado desde el código, vectores por versión que jamás se reescriben | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (240 ficheros: cable, núcleo, paquete, consumo, conflicto, rechazo, edad y los tres `zkssl-0.N.json`) |
 | **RFC**: 0002, 0003, 0004, 0006 y 0007 (las pruebas sobre el estado comprometido) aceptados; 0005 (el núcleo congelado) propuesto | [`spec/rfc/`](./spec/rfc/) |
 | **Verificador independiente** `zk-ssl-verify` 0.2.0, release `arqueo-verify-v0.2.0`, reproducible desde el commit que su `VERSION` nombra | [`doc/KIT.md`](./doc/KIT.md) · [`tools/artefacto.sh`](./tools/artefacto.sh) |
 | **Registro**: un asiento por cambio verificado, con su commit; lo corregido se marca, no se borra | [`AUDITORIA.md`](./AUDITORIA.md) · [`BACKLOG.md`](./BACKLOG.md) |
