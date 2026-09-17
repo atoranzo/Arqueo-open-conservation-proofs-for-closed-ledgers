@@ -123,6 +123,7 @@ mod tests;
 // testigo -las hojas de `0..next_pending` y su meta- es del OPERADOR y no cruza el cable.
 pub mod prueba_edad;
 pub mod prueba_banda;
+pub mod prueba_cobro;
 // RFC-0007 E4a (§461): el instrumento de la puerta de la prueba de edad. Solo tests.
 #[cfg(test)]
 mod instrumento_edad;
