@@ -152,9 +152,19 @@ pub fn prueba_de_cobro_pendiente(
             "el enunciado derivado no es el de esta cabeza y este receptor".to_string(),
         ));
     }
-    // El molde del S466: lo que sale ya esta verificado por la MISMA regla que corre el tercero.
-    cobro::verificar(&prueba, &pi)
-        .map_err(|e| falla(format!("la prueba recien producida no verifica: {e}")))?;
+    // El molde del S466: lo que sale ya esta verificado por la MISMA regla que corre el tercero,
+    // la que lo ENLAZA a la cabeza (RFC-0008 D-K, S495): sus raices, su `seq` y el techo.
+    let af = cobro::AfirmacionCobro { receptor, nacido: foto.nacido, inferior };
+    let cabeza = cobro::CabezaCobro {
+        seq: cab.seq,
+        pending_root: cab.pending_root,
+        pmeta_root: cab.pmeta_root,
+    };
+    let enlazado = cobro::verificar_contra_cabeza(&prueba, &af, &cabeza)
+        .map_err(|e| falla(format!("la prueba recien producida no se enlaza: {e}")))?;
+    if enlazado != pi {
+        return Err(falla("el enlace compuso otro enunciado que el probador".to_string()));
+    }
     Ok(SobreCobro {
         prueba,
         receptor,
@@ -337,6 +347,24 @@ mod tests {
             prueba_de_cobro_pendiente(&cab, id_bob, &aviso, &foto, 1),
             "la meta servida no sube",
         );
+    }
+
+    /// **D-K (S495), la regla MEDIDA antes de escribirse**: en un libro vivo la meta de un
+    /// pendiente nace antes que la cabeza que lo firma (`nacido = log.len()` al nacer, `seq =
+    /// log.len()` al componer la cabeza), y con otro pago de por medio lo sigue siendo.
+    #[test]
+    fn el_nacido_de_un_pendiente_es_anterior_a_su_cabeza() {
+        let Libro { mut l, alice, bob, aviso, .. } = libro();
+        let (cab, foto) = foto_de(&l, aviso.position);
+        let (n1, s1) = (foto.nacido, cab.seq);
+        println!("D-K| primero: nacido {n1} . seq {s1}");
+        assert!(n1 < s1, "D-K DESMENTIDA: nacido {n1} y seq {s1}");
+        let otro = envio(&mut l, alice, bob, 0xE1C3);
+        let (cab2, foto2) = foto_de(&l, otro.position);
+        let (n2, s2) = (foto2.nacido, cab2.seq);
+        println!("D-K| segundo: nacido {n2} . seq {s2}");
+        assert!(n2 < s2, "D-K DESMENTIDA: nacido {n2} y seq {s2}");
+        assert!(n1 < n2, "el segundo tenia que nacer despues");
     }
 
     /// Dos listas son dos productores: las opciones del probador y las de la capa se atan aqui.

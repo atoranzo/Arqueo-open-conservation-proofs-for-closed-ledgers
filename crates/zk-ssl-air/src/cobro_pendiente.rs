@@ -507,6 +507,56 @@ pub fn verificar(prueba: &[u8], pi: &CobroPendientePublicInputs) -> Result<(), S
     .map_err(|e| format!("{e:?}"))
 }
 
+// ------------------------------------------------------------------ el enlace (D-J, D-K)
+
+/// **Lo que una cabeza v5 firma y el cobro pendiente necesita** (RFC-0008 D-J, S495). Se lee de
+/// una cabeza ya verificada: este crate no verifica firmas, las verifica el kit.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CabezaCobro {
+    pub seq: u64,
+    pub pending_root: Digest,
+    pub pmeta_root: Digest,
+}
+
+/// **Lo que el sobre afirma** (RFC-0008 D-J): a nombre de `receptor`, por al menos `inferior`,
+/// nacido en `nacido`. La cota superior no viaja: es el techo del campo, [`MAX_VALOR`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct AfirmacionCobro {
+    pub receptor: Digest,
+    pub nacido: u64,
+    pub inferior: u64,
+}
+
+/// **La prueba de cobro pendiente contra una cabeza v5** (RFC-0008 D-K). Exige, en nativo y
+/// ANTES de tocar la prueba, que el pendiente haya nacido antes que la cabeza que lo firma
+/// (`nacido < seq`: una meta nacida despues es una cabeza que miente); compone el enunciado con
+/// las dos raices que la cabeza firma, lo que el sobre afirma y el techo del campo; y solo
+/// entonces llama al juez. Devuelve el enunciado verificado. Una prueba de otro arbol, de otra
+/// meta o con otro techo no se enlaza: la prueba es la de SU enunciado.
+pub fn verificar_contra_cabeza(
+    prueba: &[u8],
+    af: &AfirmacionCobro,
+    cabeza: &CabezaCobro,
+) -> Result<CobroPendientePublicInputs, String> {
+    if af.nacido >= cabeza.seq {
+        return Err(format!(
+            "nacido {} no es anterior a la cabeza de seq {}: una meta nacida despues de la cabeza \
+             que la firma",
+            af.nacido, cabeza.seq
+        ));
+    }
+    let pi = CobroPendientePublicInputs {
+        pending_root: cabeza.pending_root,
+        pmeta_root: cabeza.pmeta_root,
+        receptor: af.receptor,
+        nacido: BaseElement::new(af.nacido),
+        inferior: BaseElement::new(af.inferior),
+        superior: BaseElement::new(MAX_VALOR),
+    };
+    verificar(prueba, &pi)?;
+    Ok(pi)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -616,6 +666,21 @@ mod tests {
         assert_eq!(&v[4..8], &pi.pmeta_root);
         assert_eq!(&v[8..12], &pi.receptor);
         assert_eq!((v[12], v[13], v[14]), (pi.nacido, pi.inferior, pi.superior));
+    }
+
+    /// **D-K (S495): un nacido que no es anterior a la cabeza se rechaza ANTES de la prueba**:
+    /// tres bytes que no son prueba no llegan al juez; con un `seq` posterior, si llegan.
+    #[test]
+    fn un_nacido_que_no_es_anterior_a_la_cabeza_se_rechaza_antes_de_la_prueba() {
+        let af = AfirmacionCobro { receptor: d(3), nacido: 1000, inferior: 100 };
+        for seq in [1000, 999, 0] {
+            let cab = CabezaCobro { seq, pending_root: d(1), pmeta_root: d(2) };
+            let e = verificar_contra_cabeza(&[1, 2, 3], &af, &cab).unwrap_err();
+            assert!(e.contains("no es anterior a la cabeza"), "seq {seq}: {e}");
+        }
+        let cab = CabezaCobro { seq: 1001, pending_root: d(1), pmeta_root: d(2) };
+        let e = verificar_contra_cabeza(&[1, 2, 3], &af, &cab).unwrap_err();
+        assert!(!e.contains("no es anterior a la cabeza"), "con seq 1001 tenia que llegar: {e}");
     }
 
     /// La geometria de la D-H, atada a su fuente.

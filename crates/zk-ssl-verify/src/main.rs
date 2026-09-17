@@ -163,11 +163,13 @@ fn correr(ruta: &str) -> Result<(), String> {
         Some("rechazo") => return verificar_rechazo(&p),
         // RFC-0007 E4b-2 (S465): la prueba de edad contra una cabeza v5.
         Some("edad") => return verificar_edad(&p),
+        // RFC-0008 E1 (S495): el cobro pendiente contra una cabeza v5.
+        Some("cobro_pendiente") => return verificar_cobro_pendiente(&p),
         Some(otro) => {
             return Err(err(format!(
                 "tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), \
                  `tipo: \"extension\"`, `tipo: \"consumo\"`, `tipo: \"conflicto\"`, \
-                 `tipo: \"rechazo\"` o `tipo: \"edad\"`"
+                 `tipo: \"rechazo\"`, `tipo: \"edad\"` o `tipo: \"cobro_pendiente\"`"
             )))
         }
     }
@@ -1271,6 +1273,53 @@ fn verificar_edad(p: &serde_json::Value) -> Result<(), String> {
     Ok(())
 }
 
+use zk_ssl_air::cobro_pendiente::{
+    verificar_contra_cabeza as enlazar_cobro, AfirmacionCobro, CabezaCobro,
+};
+
+/// **El paquete de COBRO PENDIENTE** (RFC-0008 E1, S495): la prueba del cobrador, de
+/// `zk-ssl-air`, contra una cabeza v5 firmada. El molde es el de la edad: la forma del sobre y la
+/// v5 antes de la firma, la cabeza verificada, y la regla que ENLAZA -las dos raices y el `seq` de
+/// la cabeza, el techo del campo y el nacido anterior- en `zk_ssl_air::cobro_pendiente`, un solo
+/// productor en el crate que el tercero compila (D-J, D-K).
+fn verificar_cobro_pendiente(p: &serde_json::Value) -> Result<(), String> {
+    let e = p.get("enunciado").ok_or_else(|| err("falta enunciado".into()))?;
+    let receptor = digest_de(e, "receptor")?;
+    let nacido = u64_de(e, "nacido")?;
+    let inferior = u64_de(e, "inferior")?;
+    let prueba = hex_a_bytes(
+        p.get("prueba")
+            .and_then(|x| x.as_str())
+            .ok_or_else(|| err("falta prueba o no es cadena 0x".into()))?,
+    )?;
+    let c = p.get("cabeza").ok_or_else(|| err("falta cabeza".into()))?;
+    let version = u64_de(c, "formatVersion")?;
+    if !matches!(VersionCabeza::try_from(version), Ok(VersionCabeza::V5)) {
+        return Err(err(format!(
+            "formatVersion {version}: el cobro pendiente exige una cabeza v5, la unica que firma \
+             pmetaRoot"
+        )));
+    }
+    let _ = cabeza_v3_verificada(c, "cabeza")?;
+    let seq = u64_de(c, "seq")?;
+    let f = familia_v5(c)?;
+    println!("1/3 la cabeza v5 recompone su digest y su firma verifica (seq {seq})");
+    let cabeza = CabezaCobro {
+        seq,
+        pending_root: digest_de(c, "pendingRoot")?,
+        pmeta_root: f.pmeta_root,
+    };
+    let af = AfirmacionCobro { receptor, nacido, inferior };
+    enlazar_cobro(&prueba, &af, &cabeza).map_err(|e| err(format!("cobro: {e}")))?;
+    println!("2/3 el enunciado toma pendingRoot, pmetaRoot y el techo del campo; nacido {nacido}");
+    println!("    es anterior al seq {seq}");
+    println!("3/3 la prueba verifica contra ese enunciado con las opciones de la casa");
+    println!("VERDE: bajo la cabeza de seq {seq} hay un pendiente a nombre del receptor,");
+    println!("       por al menos {inferior}, nacido en {nacido}. Nada sobre quien lo pago");
+    println!("       ni cuando caduca (RFC-0008)");
+    Ok(())
+}
+
 /// Los siete parametros de `zkssl_params` contra el `paramsDigest` de una cabeza **v5** (RFC-0007
 /// D-B): si recomponen, lo que dicen es lo comprometido. Devuelve los tres que las causas citan:
 /// el limite regulatorio, el tope de cuentas y el tope de suministro (§460).
@@ -1605,5 +1654,52 @@ mod tests {
         });
         let e = verificar_edad(&p).unwrap_err();
         assert!(e.contains("formatVersion 4: la prueba de edad exige una cabeza v5"), "{e}");
+    }
+
+    // RFC-0008 E1 (S495). Como en la edad, lo alcanzable sin una cabeza firmada es la FORMA del
+    // sobre y la VERSION de la cabeza. El enlace tiene sus testigos con pruebas reales en
+    // `stark-experiment`, y el productor que lo usa, en la capa y en el nodo.
+
+    /// Sin `enunciado` no hay afirmacion que juzgar, y se dice con su nombre.
+    #[test]
+    fn un_sobre_de_cobro_sin_enunciado_se_nombra() {
+        let p = json!({ "v": 1, "tipo": "cobro_pendiente" });
+        assert_eq!(verificar_cobro_pendiente(&p), Err("falta enunciado".into()));
+    }
+
+    /// Sin `prueba` no hay nada que enlazar, y se dice antes de mirar la cabeza.
+    #[test]
+    fn un_sobre_de_cobro_sin_prueba_se_nombra() {
+        let en = json!({ "receptor": DIG, "nacido": "0x1", "inferior": "0x1" });
+        let p = json!({ "v": 1, "tipo": "cobro_pendiente", "enunciado": en });
+        assert_eq!(verificar_cobro_pendiente(&p), Err("falta prueba o no es cadena 0x".into()));
+    }
+
+    /// Una cabeza que no es v5 se rechaza por su VERSION, antes de tocar la firma.
+    #[test]
+    fn un_cobro_con_cabeza_que_no_es_v5_se_rechaza_antes_de_la_firma() {
+        let p = json!({
+            "v": 1, "tipo": "cobro_pendiente",
+            "enunciado": { "receptor": DIG, "nacido": "0x1", "inferior": "0x1" },
+            "prueba": "0x00",
+            "cabeza": { "available": true, "formatVersion": "0x4" }
+        });
+        let e = verificar_cobro_pendiente(&p).unwrap_err();
+        assert!(e.contains("formatVersion 4: el cobro pendiente exige una cabeza v5"), "{e}");
+    }
+
+    /// El `tipo` se despacha por el mando: `cobro_pendiente` llega a su brazo, y el desconocido
+    /// nombra ya los seis.
+    #[test]
+    fn el_mando_despacha_el_cobro_pendiente_y_lo_nombra() {
+        let ruta = std::env::temp_dir().join("zk-ssl-verify-s495-tipo.json");
+        std::fs::write(&ruta, json!({ "v": 1, "tipo": "cobro_pendiente" }).to_string()).unwrap();
+        let brazo = correr(ruta.to_str().unwrap()).unwrap_err();
+        std::fs::write(&ruta, json!({ "v": 1, "tipo": "otra" }).to_string()).unwrap();
+        let otro = correr(ruta.to_str().unwrap()).unwrap_err();
+        let _ = std::fs::remove_file(&ruta);
+        assert_eq!(brazo, "falta enunciado");
+        assert!(otro.starts_with("tipo desconocido: otra"), "{otro}");
+        assert!(otro.contains("`tipo: \"cobro_pendiente\"`"), "{otro}");
     }
 }

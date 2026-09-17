@@ -24,7 +24,8 @@ use crate::merkle::MerklePath;
 use crate::rescue_hash::{NUM_ROUNDS, STATE_WIDTH};
 
 pub use zk_ssl_air::cobro_pendiente::{
-    comprobar_enunciado, verificar, CobroPendienteAir, CobroPendientePublicInputs, ANCHO, C_A,
+    comprobar_enunciado, verificar, verificar_contra_cabeza, AfirmacionCobro, CabezaCobro,
+    CobroPendienteAir, CobroPendientePublicInputs, ANCHO, C_A,
     C_B, COL_BIT, COL_EMISOR, COL_IMPORTE, COL_INFERIOR, COL_NACIDO, COL_RECEPTOR, COL_SACC,
     COL_SAL, COL_SBIT, COL_SUPERIOR, COL_X, CYC_ACC, CYC_META, CYC_RAIZ, LARGO_SEGMENTO,
     MAX_VALOR, NUM_ASERCIONES, NUM_RESTRICCIONES, ROW_ENLACE_IMPORTE, ROW_ENLACE_X,
@@ -512,6 +513,48 @@ mod tests {
         let (bytes, derivado) = probar(trazar(&e.w, 100, MAX_VALOR)).expect("probar");
         assert_eq!(derivado, declarado);
         assert!(verificar(&bytes, &declarado).is_ok());
+    }
+
+    fn cabeza(e: &Escenario, seq: u64) -> CabezaCobro {
+        CabezaCobro { seq, pending_root: e.pending_root, pmeta_root: e.pmeta_root }
+    }
+
+    fn afirma(e: &Escenario) -> AfirmacionCobro {
+        AfirmacionCobro { receptor: e.w.receptor, nacido: P_NACIDO, inferior: 100 }
+    }
+
+    /// **D-K (S495): la cabeza fija las dos raices, y el nacido va antes que ella.** Con las
+    /// raices del escenario y un `seq` posterior al nacido la prueba se enlaza y el juez devuelve
+    /// SU enunciado; con otra raiz de pendientes, otra de meta o un `seq` que no es posterior, no.
+    #[test]
+    fn la_cabeza_fija_las_raices_y_el_nacido_va_antes() {
+        let e = escenario();
+        let (bytes, pi) = probar(trazar(&e.w, 100, MAX_VALOR)).expect("probar");
+        let buena = cabeza(&e, P_NACIDO + 1);
+        assert_eq!(verificar_contra_cabeza(&bytes, &afirma(&e), &buena), Ok(pi));
+        let mut otra = e.pending_root;
+        otra[0] += BaseElement::ONE;
+        let mut otra_meta = e.pmeta_root;
+        otra_meta[1] += BaseElement::ONE;
+        for mala in [
+            CabezaCobro { pending_root: otra, ..buena },
+            CabezaCobro { pmeta_root: otra_meta, ..buena },
+            cabeza(&e, P_NACIDO),
+        ] {
+            let r = verificar_contra_cabeza(&bytes, &afirma(&e), &mala);
+            assert!(r.is_err(), "enlazo con {mala:?}");
+        }
+    }
+
+    /// **D-J (S495): la cota superior no viaja y el enlace la fija en el techo del campo.** Una
+    /// prueba honesta con un techo mas estrecho verifica sola y no se enlaza.
+    #[test]
+    fn un_techo_distinto_del_campo_no_se_enlaza() {
+        let e = escenario();
+        let (bytes, pi) = probar(trazar(&e.w, 100, 1_000_000)).expect("probar");
+        assert!(verificar(&bytes, &pi).is_ok(), "la de techo estrecho tenia que verificar sola");
+        let r = verificar_contra_cabeza(&bytes, &afirma(&e), &cabeza(&e, P_NACIDO + 1));
+        assert!(r.is_err(), "un techo que no es el del campo se enlazo");
     }
 
     /// **PRUEBA POR MUTACION: ninguna restriccion esta vacia**, en TODAS las filas.

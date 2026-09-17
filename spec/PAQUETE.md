@@ -32,9 +32,9 @@ cuántos hacen falta lo decide el CLIENTE** con su política (§319, los mandos 
 del testigo), no el paquete: quien lo arma puede ser el operador, y dejarle elegir su propia `k`
 le devolvería justo lo que la cofirma le quita.
 
-## 2. Las siete formas
+## 2. Las ocho formas
 
-El binario acepta siete objetos. Los siete son JSON; los esqueletos van con puntos suspensivos
+El binario acepta ocho objetos. Los ocho son JSON; los esqueletos van con puntos suspensivos
 donde el valor es una respuesta del cable sin reescribir.
 
 ### 2.1 El paquete v1 — la posición
@@ -236,6 +236,35 @@ donde el valor es una respuesta del cable sin reescribir.
   real de un nodo, y su catálogo de vectores son de E4b-3: hoy el mando lleva los negativos que
   caen antes de la firma, y el juez sus testigos con pruebas reales (§465).
 
+### 2.8 El paquete de cobro pendiente (§495)
+
+```text
+{ "v": 1, "tipo": "cobro_pendiente", "cabeza": {…},
+  "enunciado": {"receptor": "0x…", "nacido": "0x…", "inferior": "0x…"},
+  "prueba": "0x…" }
+```
+
+- **Prueba que un pendiente EXISTE a nombre de alguien, por al menos un importe** (RFC-0008 D-A,
+  D-B): bajo la `pendingRoot` de una cabeza **v5** hay una hoja v2 que se abre a `receptor` y a
+  un importe en `[inferior, MAX_VALOR]`, y en la MISMA posición del árbol de meta, bajo
+  `pmetaRoot`, está la meta con ese `nacido`. Es un enunciado de ESTADO (D-G): no dice quién
+  produjo la prueba, ni que el pendiente vaya a cobrarse, ni cuándo caduca.
+- `cabeza` es una respuesta de `zkssl_signedEpochHead` tal cual; `prueba` son los bytes de la
+  prueba STARK en `0x` + hex. `seq`, `pendingRoot` y `pmetaRoot` salen **sólo de la cabeza**: el
+  sobre no los repite (D-J). Y la cota **superior no viaja**: la fija el juez en el techo del
+  campo, `MAX_VALOR`, porque un enunciado tiene una sola forma.
+- El juez es `zk_ssl_air::cobro_pendiente::verificar_contra_cabeza` (`crates/zk-ssl-air`), que el
+  kit compila **sin el probador** (D-K): exige `nacido < seq` —una meta nacida después de la
+  cabeza que la firma es una cabeza que miente, y se para con su nombre—, compone el enunciado
+  con las dos raíces firmadas y el techo, y verifica la prueba con las `proof_options()` de la
+  casa y sólo con ellas. Es el MISMO productor con el que la capa verifica lo que produce.
+- **Lo que NO prueba:** nada sobre quién pagó ni sobre el sobre `X`, que es testigo (D-I); nada
+  sobre el importe exacto por encima de `inferior`; y nada sobre otra cabeza que la que firma
+  las dos raíces. Su catálogo de vectores, la boca que escribe el sobre y el banco que lo
+  reproduce en vivo son de E4 (RFC-0008 D-L, D-M): hoy el mando lleva los negativos que caen
+  antes de la firma, el juez sus testigos con prueba real en `stark-experiment`, y el productor
+  de la capa y el test del nodo lo enlazan contra un latido real.
+
 ## 3. El sobre — lo que el binario lee
 
 El binario lee **31 nombres** distintos del JSON. Los 14 primeros son el sobre propiamente dicho;
@@ -253,6 +282,7 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 | conflicto | `consumo`, y `libros[]` → `cabeza`, `presencia` → `siblings`, `isRight` | este documento, sección 2.5 |
 | rechazo | `data` → `causa`, `campos`, `seq`; `parametros` → los siete de `zkssl_params`; `presencia` → `siblings`, `isRight`; `recibo` → `rootOld`, `pendingRootOld`, `frozenRoot`; `lote[]` → `kind`, `sender` o `receiver`, `receipt` → `notice` → `position` o `notice` → `position`; `congelados` → `index`, `leaf`, `camino` → `siblings`, `isRight`; `peticion` → `amount`; `cuenta` → `index`, `leaf`, `camino` → `siblings`, `isRight`; `banda` → `s`, `publicId`, `requested`, `prueba` | este documento, sección 2.6 |
 | edad | `enunciado` → `t`, `k`, `emisor`; `subraices` → `pendientes`, `meta`; `prueba` | este documento, sección 2.7 |
+| cobro pendiente | `enunciado` → `receptor`, `nacido`, `inferior`; `prueba` | este documento, sección 2.8 |
 
 ⚠️ **§419 — el «31» de arriba ya no es la cuenta**: el sobre de consumo añade `consumo`,
 `presencia` y `ausencia`. **No se sustituye por otro número**, porque el 31 no tiene
@@ -326,6 +356,13 @@ verifica · `2/3` las dos subraíces, subidas a 32 niveles con la `m` que el man
 que la cabeza fija (`seq`, `nextPending`, `m`) y el sobre afirma (`t`, `k`, `emisor`), con las
 opciones de la casa.
 
+**Paquete de cobro pendiente:** antes de tocar la criptografía, el sobre tiene su forma
+(`enunciado`, `prueba`) y la cabeza es **v5** · `1/3` la cabeza recompone su digest y su firma
+verifica · `2/3` el enunciado lo compone el juez con `pendingRoot`, `pmetaRoot` y el techo del
+campo, y el `nacido` que el sobre afirma es anterior al `seq` firmado · `3/3` la prueba verifica
+contra ese enunciado, con las opciones de la casa. Las dos últimas las decide el MISMO juez, que
+comprueba el `nacido` **antes** de tocar la prueba.
+
 Cabezas **v2, v3, v4 y v5** (`formatVersion`): una cabeza v2 custodiada **sigue verificando** — el
 apagado de §290 no caduca. Una cabeza v1 se verifica con la biblioteca, no con este mando.
 
@@ -345,7 +382,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `el paquete no declara su version en `v``
 - `el paquete declara v:{v_paquete} — este binario lee v1 y v2`
 - `un paquete v1 con `cofirmas`: subir la version es lo que las hace parte del contrato — declaralo v2, o quitalas`
-- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"`, `tipo: "conflicto"`, `tipo: "rechazo"` o `tipo: "edad"``
+- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"`, `tipo: "conflicto"`, `tipo: "rechazo"`, `tipo: "edad"` o `tipo: "cobro_pendiente"``
 
 **Forma de los valores** (`hex_a_bytes`, `digest_de`, `u64_de`; `{campo}` es la clave que se leía)
 
@@ -475,21 +512,34 @@ firma y la familia de v5— salen de los **mismos productores** de arriba.
   - los del enunciado: `m = {} fuera de 1..=24` · `n = {} no cabe en 2^{}` · `T = {} o seq = {} no caben en {BITS} bits` · `k = {} mayor que n = {}`
   - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` · `{e:?}`, el error de `winter-verifier`
 
+**El cobro pendiente** (§495; `{e}` sale de `zk_ssl_air::cobro_pendiente`)
+
+Estos textos NACEN con esta forma. La forma de los valores y la cabeza —su recomposición, su
+firma y la familia de v5— salen de los **mismos productores** de arriba, y `falta enunciado`,
+`falta prueba o no es cadena 0x` y `falta cabeza` son los de la edad, letra por letra.
+
+- `formatVersion {version}: el cobro pendiente exige una cabeza v5, la unica que firma pmetaRoot`
+- `cobro: {e}`, con `{e}` uno de estos:
+  - `nacido {} no es anterior a la cabeza de seq {}: una meta nacida despues de la cabeza que la firma`
+  - los del enunciado: `las cotas {l} y {u} pasan del techo {MAX_VALOR}` · `banda vacia: inferior {l} sobre superior {u}`
+  - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` · `{e:?}`, el error de `winter-verifier`
+
 ## 6. El contrato del mando
 
 - **Invocación:** `zk-ssl-verify <paquete.json>` — **un** argumento, la ruta del fichero. Es la
   única lectura de disco del binario; no hay red, ni reloj, ni telemetría (§395 lo gatea).
 - **Salida estándar:** las líneas numeradas de su forma —`1/3` · `2/3` · `3/3` en los paquetes
   de posición (o `3/3 sin acuse en el paquete: la cabeza sola queda demostrada`), de extensión,
-  de rechazo y de edad; `1/5` a `5/5` en el de consumo; `1/4` a `4/4` en el de conflicto—, la
-  de cofirmas cuando el sobre es v2, y al final el VERDE de su forma, uno de estos seis;
-  los tres últimos siguen en una segunda línea:
+  de rechazo, de edad y de cobro pendiente; `1/5` a `5/5` en el de consumo; `1/4` a `4/4` en el de conflicto—, la
+  de cofirmas cuando el sobre es v2, y al final el VERDE de su forma, uno de estos siete;
+  los cuatro últimos siguen en una segunda línea, y el del cobro además en una tercera:
   - `VERDE: el paquete se sostiene sin el nodo`
   - `VERDE: la extension se sostiene sin el nodo`
   - `VERDE: el consumo se publico entre las dos cabezas, sin el nodo`
   - `VERDE: dos libros aceptaron el mismo consumo. Es DETECCION, no prevencion:`
   - `VERDE: {causa} se sostiene sobre el estado comprometido. Dice que la regla se`
   - `VERDE: bajo la cabeza de seq {seq}, a lo sumo {k} posiciones vivas {quien}`
+  - `VERDE: bajo la cabeza de seq {seq} hay un pendiente a nombre del receptor,`
 - **Salida de error:** `ROJO: {motivo}` con un texto del catálogo de la sección 5, y para.
 - **Tres códigos de salida:** `0` verde · `1` el primer fallo con nombre · `2` uso (ningún
   argumento, o más de uno; imprime el uso en la salida de error).
@@ -509,7 +559,10 @@ capturan las respuestas de un nodo real y las envuelven sin reescribir un campo;
 de las otras causas del rechazo se reunieron de capturas de un nodo real, y la sección 9 dice
 de cuáles. Ese es el contrato: **reunir, no recomponer**, y el modo del nodo lo cumple. Un
 mando que arme el paquete es un frente propio y no cambia este documento: cambiaría quién
-escribe el sobre, no el sobre —y así fue en el §466 y en el §473—.
+escribe el sobre, no el sobre —y así fue en el §466 y en el §473—. **El de cobro pendiente no
+tiene productor todavía**: esa prueba la produce el COBRADOR, con su aviso y con lo que
+`zkssl_pendingPath` le sirve de la foto del último latido, y su boca —un mando del cli— es de E4
+(RFC-0008 D-M). Hoy lo único que la produce son los tests de la capa y del nodo.
 
 ## 8. Lo que este documento NO afirma
 
@@ -615,6 +668,12 @@ Las demostraciones en vivo con nodo son `tools/banco_apagado.sh`, `tools/banco_c
 `tools/banco_rechazo.sh` (RFC-0007 E5, cortes 3b y 4c): el tercero de ellos levanta DOS nodos
 con DOS claves y produce el hecho que E4 existe para detectar, y el último produce el sobre de
 rechazo sobre un libro real con el servidor PARADO.
+
+**El cobro pendiente (§495) todavía no tiene vectores**, y se declara: su catálogo
+`spec/vectors/pendiente/`, su familia en `FAMILIAS` y el banco que lo reproduce en vivo son de
+E4 del RFC-0008 (D-L), y hasta entonces `tools/conformidad.sh` no corre ninguno. Sus reglas sí
+tienen testigo en el árbol —los negativos del mando que caen antes de la firma, y los del juez
+con prueba real en `stark-experiment`—, pero no en un manifiesto.
 
 ## 10. Historia
 
