@@ -28,7 +28,8 @@
 //! un ciclo y se consume en otro: transporte ESTRUCTURAL) queda
 //! declarada aqui a proposito.
 //!
-//! Todo lo demas - titularidad S39, no-pertenencia a congelados,
+//! Todo lo demas - titularidad S39, no-pertenencia a congelados (S487:
+//! de ALGUNA posicion, no del titular; la impone la capa al aplicar),
 //! rangos, la envoltura de hoja S117, la constancia del salt
 //! (entrada 36 / S50.7) - es el calco del v1, cuya doctrina y
 //! comentarios largos viven alla. Fichero PROPIO porque el guardian
@@ -944,7 +945,8 @@ impl Air for ClaimAirV2 {
             self.pub_inputs.supply_new,
         ));
 
-        // La raiz de congelados: el titular no esta en ese arbol.
+        // La raiz de congelados: ALGUNA posicion esta libre; la del titular
+        // no esta atada (S487). La no-congelacion la impone la capa.
         for i in 0..4 {
             a.push(Assertion::single(
                 4 + i,

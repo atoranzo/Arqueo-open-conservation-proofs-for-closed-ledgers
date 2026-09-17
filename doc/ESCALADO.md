@@ -239,6 +239,10 @@ de la época actual (retardo efectivo: 1 época). La raíz de congelados
 aplicada queda registrada en el log de época para re-verificación del
 supervisor.
 
+⚠️ §487: hoy el circuito prueba no-pertenencia de *alguna* posición, no del
+titular; el suelo criptográfico de C6 lo pone el arreglo B, y hasta entonces
+el check que vale es el de `apply`.
+
 **C7 — Particionado por prefijo de `account_id`.** S shards, cada uno una
 instancia casi intacta: su árbol, su log, su verificación de integridad al
 arrancar. Los avisos se enrutan por prefijo del `receiver_id`: una cola con
@@ -370,6 +374,10 @@ un revisor debe mirar primero.
 | Reenviar una operación válida | Encadenamiento de raíces | **Nonce en la hoja del pagador** (C2) |
 | Gastar estando congelada | No-pertenencia demostrada en circuito | **Doble check**: circuito sobre `R_E` (suelo criptográfico, retardo ≤ W) + `apply` sobre la época actual (retardo 1 s), registrado en el log (C6) |
 | Composición de la raíz global | Implícita en el circuito (raíz vieja → raíz nueva) | **Servidor + log encadenado por época re-verificable** (C3). El circuito garantiza la transición local; el log, la composición. |
+
+⚠️ §487: la fila <<gastar estando congelada>> prueba hoy menos de lo que dice: la
+no-pertenencia demostrada en circuito es la de *alguna* posición; la cierra
+`apply` (S487) hasta el arreglo B.
 
 El resto de filas de la tabla no cambia: conservación, apertura a cero,
 custodios, tope de emisión, doble gasto (sobre C1), autoridad de gasto e

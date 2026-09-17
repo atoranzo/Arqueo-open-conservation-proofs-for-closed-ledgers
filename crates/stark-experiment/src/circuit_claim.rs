@@ -9,7 +9,10 @@
 //! 1. **El pendiente es suyo**: reconstruido con SU identidad, derivada de
 //!    su clave de gasto, da el compromiso que está en el árbol.
 //! 2. **Existe**: pertenencia al árbol de pendientes.
-//! 3. **No está congelado.**
+//! 3. **No está congelado.** ⚠️ §487: lo que el AIR prueba es que ALGUNA
+//!    posición del árbol de congelados tiene hoja cero, no la del titular
+//!    (`COL_FBIT` no está atada a `COL_BIT`). La no-congelación la impone la
+//!    capa al aplicar (S487); el arreglo B la devolverá al AIR.
 //! 4. **Su saldo sube exactamente el importe.**
 //! 5. **El pendiente queda consumido**: sale del árbol.
 //!
@@ -123,6 +126,12 @@ const ROW_PK_DONE: usize = CYC_FROZEN * CYCLE_LENGTH - 1;
 /// en el gemelo. Sin ella, una cuenta
 /// congelada **podía destruir su dinero**: la liquidación comprobaba la
 /// congelación y la destrucción no.
+///
+/// ⚠️ §487: esta fase prueba que ALGUNA posición del árbol de congelados
+/// tiene hoja cero, no la del titular (`COL_FBIT` no está atada a `COL_BIT`).
+/// La no-congelación la impone la capa al aplicar (S487); el arreglo B la
+/// devolverá al AIR. Quien solo ve la prueba no sabe si el titular está
+/// congelado.
 ///
 /// Congelar existe para que una cuenta bajo investigación no mueva fondos.
 /// Destruirlos los mueve: los saca del sistema. Que sea público e

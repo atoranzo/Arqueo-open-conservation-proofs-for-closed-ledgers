@@ -403,6 +403,26 @@ código se lo advierte.
 
 **Estado: abierto.** Backlog 51. `AUDITORIA.md` §94.
 
+### 3.6 La prueba no ata la posición del titular en congelados — ⚠️ MEDIDO, cerrado en la capa
+
+En los cinco circuitos con fase de congelados (`burn`, `claim`, `claim_v2`, `send`,
+`send_v2`) la columna del bit de esa subida (`COL_FBIT`) no está atada a la del
+camino de cuentas (`COL_BIT`). Lo que el AIR prueba es que **alguna** posición del
+árbol tiene hoja cero, no la del titular. Medido el 16-sep-2026 (`AUDITORIA.md`
+§487): una cuenta congelada que probaba por su cuenta con el camino de la posición
+vecina verificaba en los cinco y el aplicador la aceptaba en `apply_send`,
+`apply_claim` y `apply_burn`. Exige la clave de gasto del propio titular y no rompe
+la conservación: es un fail-open de una función de cumplimiento, no del dinero.
+
+**Cerrado en la capa** el mismo día (S487): `validate_send`, `validate_claim` y
+`apply_burn` rechazan con `AccountFrozen` antes de mirar la prueba; tres testigos
+lo falsan. **Abierto en el AIR**: quien solo ve la prueba sigue sin poder saber si el
+titular está congelado; atar la posición en los cinco circuitos es el arreglo B,
+rotura de formato, con fecha detrás del AIR de E1 del RFC-0008.
+
+No hay libro desplegado ni terceros a quien avisar; por eso el aviso es esta sección
+y los asientos §487 y §488, no un GHSA. `AUDITORIA.md` §487, §488.
+
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende
 
 Desde agosto de 2026 esto no es solo una capa: hay cable, nodo, SDK y un

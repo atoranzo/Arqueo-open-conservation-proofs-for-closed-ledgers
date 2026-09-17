@@ -35697,3 +35697,54 @@ cinco circuitos, con vectores nuevos y rotura de formato. La D-H del RFC-0008 se
 <<la capa lo comprueba de forma nativa>>: cierto del probador, medido falso del aplicador hasta
 este sello; su geometria no cambia, su texto si. Y el <<el canon declara 1313>> de los traspasos
 pasa a 1316 con este sello.
+
+## §488 — 5.A-264, la prosa: lo que el AIR no restringe deja de afirmarse
+
+**Que.** El §487 cerro la via del aplicador; este corte cierra la de la AFIRMACION. Cinco
+circuitos decian en su cabecera que demuestran <<no esta congelado>>, el PAPER (con DOI) lo
+ponia en la tabla 4.2, ARQUITECTURA decia que <<la liquidacion demuestra no-pertenencia>>,
+ESCALADO lo llamaba <<garantia criptografica>> y la D-H del RFC-0008 lo dejaba <<sin falsador
+todavia>>. Medido en el §487: lo que esos AIR prueban es que ALGUNA posicion del arbol de
+congelados tiene hoja cero, no la del titular, porque la columna del bit de esa subida
+(`COL_FBIT`) no esta atada a la del camino de cuentas (`COL_BIT`). La vara primera dice que lo
+que el circuito no restringe no existe y que no se afirme en el README; la cuarta, que la
+confianza residual se diga con una frase. La frase, una sola y en todos los sitios: la
+no-congelacion la impone la capa al aplicar (S487); el circuito prueba que alguna posicion esta
+libre, no la del titular; quien solo ve la prueba no lo sabe hasta el arreglo B. Se cita, no se
+borra (S247): el pasado de cada frase era lo que se creia, y se lee.
+
+**Lo que toca, once ficheros y este asiento.** Los cinco circuitos (`burn`, `claim`, `claim_v2`,
+`send`, `send_v2`): la cabecera donde la enumeran, la fase de congelados donde la explican y,
+en los v2, el comentario de la asercion de la raiz (<<el titular no esta en ese arbol>>). `PAPER.md`
+y `PAPER_EN.md`: una nota bajo la tabla 4.2, en la misma forma que la del doble gasto que ya
+esta debajo; la 5.a de Zenodo es decision aparte. `ARQUITECTURA.md`, bajo <<un arbol aparte, no
+un campo en la hoja>>. `doc/ESCALADO.md`, tras el C6 y tras su tabla de vias, porque su fila
+no admite ensanche. `spec/rfc/0008`, la D-H: <<sin falsador todavia (§486)>> pasa a <<medido en el
+§487>>, y la leccion que el 264 le da a la D-H se escribe: la posicion la ata el BIT COMPARTIDO
+en una sola columna, que es justo lo que la D-H eligio y justo lo que a `COL_FBIT` le falta.
+`SECURITY.md`: la 3.6, que es el aviso. Decision del autor delegada y REVERSIBLE: el aviso va en
+SECURITY y en los asientos, no como GHSA, porque no hay libro desplegado ni tercero a quien
+avisar, lo cazo y lo cerro el propio proyecto en el dia, y el §487 ya es publico.
+
+**Las puertas (sobre `eecc902`).** Cerrojo pinado; dieciseis anclas (los once ficheros, el
+asiento y cuatro centinelas del codigo del S487 y del canon); las diez herramientas por delta:
+nueve identicas, check_figures 7 lineas corridas (corren lineas, no cifras); la lista de tests de
+`stark-experiment` por NOMBRE, identica PRE y POST (los cinco `.rs` cambian solo en comentarios);
+el ancho, que ninguna linea nueva ensancha su fichero;
+el numstat 82/7 en los once, predicho con git; el canon `--sello` VERDE en 438 s con
+todos los pines quietos; la pureza y el conjunto exacto de doce M. Commit dentro; el empuje, a
+mano.
+
+**Lo que NO afirma.** No toca ninguna restriccion: los cinco AIR siguen aceptando el camino de
+otra posicion, y eso es el arreglo B (atar `COL_FBIT` a `COL_BIT` con un acumulador del indice
+por subida y una igualdad en la fila de la raiz de congelados, en cinco circuitos sellados, con
+vectores nuevos: rotura de formato, arco propio detras del AIR de E1). No cambia la geometria de
+la D-H, que sale reforzada. No decide sobre `refund`/`deissue`: su circuito no lleva arbol de
+congelados, y que un pago caducado vuelva a un pagador congelado es diseno, no este defecto.
+
+**Contadores.** Once ficheros y este asiento; numstat 82/7 en los once y el asiento aparte.
+Ningun pin se mueve; ningun test nace ni muere; ningun Cargo tocado.
+
+**Lo que NO cierra.** El arreglo B, con fecha: detras del AIR de E1 y delante de la E2 del
+RFC-0008. La 5.a de Zenodo del PAPER, si el autor la quiere, con esta nota dentro. Y el 5.A-264
+entero se da por CERRADO en sus dos mitades, la del dinero (§487) y la del relato (este).

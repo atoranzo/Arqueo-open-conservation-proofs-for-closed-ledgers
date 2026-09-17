@@ -258,6 +258,11 @@ technique:
 | Account not frozen | Frozen | its leaf is zero |
 | Pending position was free | Pending | its leaf was zero before insertion |
 
+⚠️ **The frozen row proves less than it says** (`AUDITORIA.md` §487): the position
+of that climb is not bound to the account's, so what is proven is that *some*
+leaf of the tree is zero, not the holder's. Non-frozenness is enforced by the
+layer on apply; fix B will return it to the AIR.
+
 ⚠️ **Double-spend prevention no longer works this way.** In the one-step
 path it was a third non-membership proof —the nullifier's position being
 free—; today it rests on **root chaining**, with the total-order dependency

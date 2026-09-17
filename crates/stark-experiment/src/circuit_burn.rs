@@ -121,6 +121,12 @@ const ROW_PK_DONE: usize = CYC_FROZEN * CYCLE_LENGTH - 1;
 /// congelada **podía destruir su dinero**: la liquidación comprobaba la
 /// congelación y la destrucción no.
 ///
+/// ⚠️ §487: esta fase prueba que ALGUNA posición del árbol de congelados
+/// tiene hoja cero, no la del titular (`COL_FBIT` no está atada a `COL_BIT`).
+/// La no-congelación la impone la capa al aplicar (S487); el arreglo B la
+/// devolverá al AIR. Quien solo ve la prueba no sabe si el titular está
+/// congelado.
+///
 /// Congelar existe para que una cuenta bajo investigación no mueva fondos.
 /// Destruirlos los mueve: los saca del sistema. Que sea público e
 /// irreversible no los devuelve.

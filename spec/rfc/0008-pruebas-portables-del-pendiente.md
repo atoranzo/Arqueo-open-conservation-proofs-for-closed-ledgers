@@ -230,7 +230,10 @@ acumulada en la primera subida, recompuesta en la segunda y una aserción que la
 igualdad que haya que acordarse de escribir), coherencia (el molde existe) y claridad (una
 posición, una columna). La casa ya sube dos árboles por la misma posición en un carril -la
 subida de congelados, tras la de cuentas- y la columna del bit de la segunda no está atada a la de
-la primera: leído en los cinco circuitos que lo hacen, y sin falsador todavía (§486).
+la primera: leído en los cinco circuitos que lo hacen y MEDIDO en el §487 (el camino de otra
+posición verifica en los cinco; la capa lo cierra al aplicar y el arreglo B lo devolverá al AIR).
+La lección del §487 refuerza (a): la posición la ata el BIT COMPARTIDO en una sola columna, que
+es justo lo que a `COL_FBIT` le falta.
 
 La forma: el carril A compone `C1` en los ciclos 0 y 1 y `C2 = M(C1, X)` en el 2, y sube del 3
 al 34; el carril B deja libres los ciclos 0 y 1, compone la hoja de meta en el 2 y sube del 3 al

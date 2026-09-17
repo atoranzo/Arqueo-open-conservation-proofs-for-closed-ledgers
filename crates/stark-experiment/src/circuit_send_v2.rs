@@ -29,7 +29,8 @@
 //!
 //! Las entradas publicas son las del v1 (`SendPublicInputs`): el sobre
 //! JAMAS se publica. Todo lo demas - titularidad, no-pertenencia a
-//! congelados, rangos con el limite regulatorio dentro, la envoltura
+//! congelados (S487: de ALGUNA posicion, no del titular; la impone la
+//! capa al aplicar), rangos con el limite regulatorio dentro, la envoltura
 //! de hoja S117 - es el calco del v1, cuya doctrina y comentarios
 //! largos viven alla. Fichero PROPIO porque el guardian de layout
 //! barre por fichero: dos Air en uno mezclarian sus ranuras.
@@ -1002,7 +1003,8 @@ impl Air for SendV2Air {
             self.pub_inputs.supply_new,
         ));
 
-        // La raiz de congelados: el titular no esta en ese arbol.
+        // La raiz de congelados: ALGUNA posicion esta libre; la del titular
+        // no esta atada (S487). La no-congelacion la impone la capa.
         for i in 0..4 {
             a.push(Assertion::single(
                 4 + i,

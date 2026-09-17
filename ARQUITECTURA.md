@@ -455,6 +455,11 @@ circuitos. En su lugar hay un **árbol de congelados** y la liquidación
 demuestra **no-pertenencia** — la misma maquinaria que usa el árbol de
 pendientes.
 
+⚠️ §487: esa no-pertenencia es la de *alguna* posición, no la del titular:
+el bit de esa subida no está atado al del camino de cuentas. La que vale es
+la comprobación nativa de la capa al aplicar (S487); el arreglo B la
+devolverá al AIR.
+
 **Profundidad 24**, porque su subida cabe en las **192 filas libres** del
 circuito de liquidación. Con profundidad 32 habría hecho falta duplicar la
 traza y con ella el coste de generar cada transferencia.

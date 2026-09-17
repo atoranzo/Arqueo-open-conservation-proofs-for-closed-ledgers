@@ -291,6 +291,11 @@ misma técnica:
 | La cuenta no está congelada | Congelados | su hoja es cero |
 | La posición del pendiente estaba libre | Pendientes | su hoja era cero antes de insertar |
 
+⚠️ **La fila de congelados prueba menos de lo que dice** (`AUDITORIA.md` §487): la
+posición de esa subida no está atada a la de la cuenta, así que lo demostrado
+es que *alguna* hoja del árbol es cero, no la del titular. La no-congelación
+la impone la capa al aplicar; el arreglo B la devolverá al AIR.
+
 ⚠️ **El doble gasto ya no se cierra así.** En la vía de un paso era una
 tercera no-pertenencia —la posición del nullificador libre—; hoy lo cierra
 el **encadenamiento de raíces**, con la dependencia del orden total que eso
