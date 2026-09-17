@@ -124,6 +124,8 @@ mod tests;
 pub mod prueba_edad;
 pub mod prueba_banda;
 pub mod prueba_cobro;
+// RFC-0008 D-F (§492): la foto de los pendientes que toma el latido; el nodo sirve de ella.
+pub mod foto_pendientes;
 // RFC-0007 E4a (§461): el instrumento de la puerta de la prueba de edad. Solo tests.
 #[cfg(test)]
 mod instrumento_edad;
