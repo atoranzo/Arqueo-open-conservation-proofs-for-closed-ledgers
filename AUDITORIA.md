@@ -35865,3 +35865,66 @@ desde un nodo. No enlaza el AIR con una cabeza firmada (esa regla es del juez qu
 sobre `cobro_pendiente` en `PAQUETE.md` y su juez en el mando, que completan la fila E1. Despues,
 el arreglo B (5.A-272), y a la cola la holgura de la banda y la opacidad condicional de `X` frente
 al receptor en el RFC-0003.
+
+## §491 — RFC-0008 E1: el productor del cobrador, una funcion libre sin clave ni libro
+
+**Que.** Nace `crates/zk-ssl/src/prueba_cobro.rs`: quien PRODUCE la prueba del AIR del §490. A
+diferencia de la banda y de la edad, ese alguien no es el operador sino el cobrador, con lo que
+tiene de verdad -su aviso (posicion, sal, importe y el sobre `X` opaco), su identidad publica- y
+con lo que el nodo le sirva de la foto del ultimo latido: los dos caminos de ESA posicion y su
+meta `(emisor, nacido)` (D-F). Por eso es una funcion LIBRE,
+`prueba_de_cobro_pendiente(cabeza, receptor, aviso, foto, inferior)`, y no un metodo del libro:
+no lo lee y corre en un cliente sin el. Sin clave: el enunciado es de estado (D-G). El techo de la
+banda es el del campo y no se pide: el sobre dice <<al menos `inferior`>> y nada mas. Lo que
+devuelve: la prueba, el receptor, el nacido, la cota, el `seq` y las dos raices; ni el importe, ni
+la sal, ni `X`, ni el emisor (D-B, D-I). Dos commits: el §491 con el codigo y sus tests, y su `-B`
+con el pin, las cifras y este asiento.
+
+**La puerta que hace falsable lo que sale.** Antes de probar, en nativo y en este orden: el aviso
+tiene que ser v2; el importe, bajo el techo y sobre la cota; los caminos, de 32 niveles; los bits
+del camino, los de la posicion del aviso; la hoja recompuesta, subir a la raiz de pendientes de
+la cabeza; y la meta, subir a la de meta por la MISMA posicion. Si algo no, rehusa y dice que, y
+siempre con `VerificationFailed`: una variante nueva de `LayerError` romperia todo `match` de
+fuera. Despues prueba, exige que el enunciado derivado sea el de esa cabeza y ese receptor, y lo
+verifica con el mismo juez que corre el tercero (el molde del S466).
+
+**Lo que se midio antes de tocar nada.** El PASTE-491-PRE, en una copia con `git archive` y target
+propio. La r1 (`89123dbf3eb7b2e3`, SALIDA 20260917-094455) compilo con warnings 0 -> 0 y cayo en
+7 de 8 tests por un supuesto MIO del escenario: los indices de cuenta 0 y 1, cuando la capa los
+asigna salados. La r2 (`0cedb96205ec1ff8`, SALIDA 20260917-095011) usa los que `open_and_fund`
+devuelve, sin tocar la funcion: 8/0/0 contra un libro VIVO -Alice paga en v2 a Bob con su propio
+`public_id` de retorno y `delta` 96, y la foto se lee del libro- y dos falsadores que tumban cada
+uno SOLO su test: sin la comprobacion de bits cae el del camino de otra posicion, y sin la subida
+de la meta cae el de la meta mentida.
+
+**Los ocho tests.** El positivo, que el juez acepta y que no vale para otra banda. La foto: tras
+otro pago, la cabeza y la foto de antes siguen probando, y la cabeza de despues con la foto de
+antes rehusa. Un aviso v1, una banda que no se sostiene, otro receptor, un camino de otra
+posicion y una meta mentida rehusan, cada uno por su nombre. Y las opciones del probador son las
+de la capa.
+
+**Las puertas del §491 (`f10839e`, padre `ea312ce`, SALIDA 20260917-095824).** Cerrojo pinado con
+once centinelas; los dos POST reconstruidos aparte y clavando; la lista de la capa por NOMBRE con
++8 exactos; warnings por delta; la capa ENTERA 365/0/6 en 56 s; los ocho en `ok` por nombre;
+`check_tests` 1332 -> 1340 y `check_modulos` 132 -> 133 a su texto predicho -predicho sobre el
+arbol de `ea312ce` reconstruido byte a byte-, las ocho restantes identicas; numstat 347/0 y 1/0;
+commit de dos y empuje dentro.
+
+**El `-B`.** `tools/canon.sh` sube el pin de la capa **357 -> 365** con su historia; ignorados
+quietos en 6. Sumas **1175 -> 1183** y **1312 -> 1320**, declarados **1330 -> 1338** (1320 + 18);
+los modulos de la capa **27 -> 28**. Quince lineas en seis documentos, linea a linea y sin
+ensanchar, y la fila del pin. Canon `--sello` VERDE en 286 s.
+
+**Lo que NO afirma.** No hay metodo en el nodo que sirva la foto: los tests la leen del libro, y
+`zkssl_pendingPath` es otro corte (D-F). No hay sobre `cobro_pendiente`, ni mando que lo lea, ni
+vectores. La funcion no enlaza la prueba con la FIRMA de la cabeza: recibe las raices y el `seq`
+como datos, y quien le de una cabeza no firmada obtiene una prueba sobre esa cabeza.
+
+**Contadores.** El §491: dos ficheros, 348/0, ocho `#[test]`. El `-B`: ocho ficheros con este
+asiento, numstat 16/16 en los siete y el asiento aparte. Pin de la capa 365, ignorados 6;
+ningun otro se mueve. Ningun Cargo tocado.
+
+**Lo que NO cierra.** La foto del latido y `zkssl_pendingPath` en el nodo, con la regla de
+recomponer `C2` antes de servir y el precio de la foto (5.A-267); el sobre `cobro_pendiente` en
+`PAQUETE.md`, su juez en el mando -que lo enlaza a la cabeza v5 firmada- y sus vectores. Con eso
+la fila E1 del RFC-0008 queda entera.
