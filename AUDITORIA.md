@@ -35996,3 +35996,73 @@ el dispatch con la credencial del recibo, la superficie 28 -> 29 en OpenRPC y `R
 precio de la foto medido en su sello (D-F4); luego el sobre `cobro_pendiente`, su juez en el mando
 -que lo enlaza a la cabeza v5 firmada- y sus vectores. Con eso la fila E1 del RFC-0008 queda
 entera.
+
+## §493 — RFC-0008 D-F: la foto en el latido y `zkssl_pendingPath`, en el nodo (28 -> 29)
+
+**Que.** El nodo cierra la D-F: `Latido` gana `foto: Arc<FotoPendientes>` (D-F1), tomada en la
+MISMA seccion critica en la que `latir` compone la cabeza -justo tras `epoch_head`, bajo el
+candado del estado-, y viaja con ella hasta `ultima_cabeza`: sus dos raices son
+`cabeza.pending_root` y `cabeza.pmeta_root`, y la igualdad del latido sigue derivada porque la de
+la foto es por raices. `zkssl_pendingPath {index, viewKey, position, salt, amount, x}` sirve de
+esa foto lo que el productor del §491 necesita -camino, hermanos de meta, emisor, nacido- con
+`s` = `seq` del latido, y exige la credencial del receptor (§261). Rehusa con `available: false`
+sin latido, con latido SIN `--clave` (el sobre se ata a una cabeza firmada) y cuando la capa no
+sirve (D-F3): aviso ajeno, otro importe u otra sal, y posicion libre reciben la MISMA razon, sin
+decir que hay. `x` es obligatorio: el pendiente v1 no tiene sobre. La superficie pasa de 28 a 29
+(`openrpc.rs`, `spec/openrpc.json` regenerado, `spec/RPC.md` con su fila y su seccion);
+`zkssl/0.3` NO sube. Dos commits: el §493 con el codigo y sus tests, y su `-B` con el pin, las
+cifras y este asiento.
+
+**Lo que el terreno cambio.** Solo hay TRES construcciones literales de `Latido` (la de `latir`
+y dos moldes de test en `diario.rs`), no las 25 que el terreno de la 148 contaba: los demas
+sitios llaman a `latir()`. `PendingNoticeDto` no lleva `x` (el 0.2 no transporta el sobre), asi
+que el metodo toma los seis parametros sueltos. Y **D-F4 no se pudo cumplir como estaba
+escrita**: la capa no siembra pendientes sin prueba STARK, asi que el precio del clon DENTRO
+de `latir` con N pendientes no se mide en un test del nodo; la unica cifra sigue siendo la del
+§485 (los dos arboles, 1,4 ms a n = 16384, sin el mapa). Queda declarado aqui y en la cola
+(5.A-267 sigue abierto), y la M.1 rehecha con pagos reales, tambien.
+
+**Lo que se midio antes de tocar nada.** El PASTE-493-PRE, en una copia con `git archive` y
+target propio. La r1 (`67ef4f04a7d56dc4`, SALIDA 20260917-133056) no compilo: `zk_ssl::Digest`
+es un alias PRIVADO (`use` sin `pub`), y el test del nodo nombra `stark_experiment::merkle::Digest`.
+La r2 (`627e803ed087944a`, 134022) salio VERDE en todo -seis POST, warnings 0 -> 0, nodo 112/0/0,
+cable 22/0/0, `gen_openrpc` reproduce el json, dos falsadores- y murio en el binario restituido:
+`cp -p` devolvia el mtime viejo y cargo, que huella por mtime, no recompilo (la clase del
+5.A-269). La r3 (`fd4b28fe993b8b62`, 135026) murio en el PRE sin tocar con 112 nombres: la copia
+de `git archive` lleva la FECHA DEL COMMIT, mas vieja que la huella del target compartido. La r4
+(`65a4568c0464f874`, 135918): `tar -m` al copiar y `touch` de los seis en cada compilado, y llego
+a su marca. El cargo de mentira del ensayo huella ahora por mtime y reproduce los dos rojos.
+
+**Los cuatro tests.** La foto del latido tiene las raices de su cabeza y sirve el cobro, que sube
+a `pending_root`; otro latido sin pago en medio da la misma foto. El nodo sirve de la foto y el
+productor del §491 PRUEBA con lo servido contra las raices de esa cabeza (dos pendientes y prueba
+de vida del escenario); un pago posterior no mueve lo servido. Sin latido y sin `--clave`, nada,
+y `reason` dice cual. Otra credencial, `-32004`; el titular con un aviso que no recompone y una
+posicion libre, la misma nada.
+
+**Las puertas del §493 (`481e436`, padre `6d16cda`, SALIDA 20260917-145027).** Cerrojo pinado
+con trece centinelas; los seis POST reconstruidos aparte y clavando, funcion del arbol
+(`editar493.py`); numstat con git 40/2, 2/0, 193/0, 11/4, 54/0 y 29/0; warnings del nodo y del
+cable por delta; nodo PRE + 4 exactos por NOMBRE y el cable con un test renombrado
+(`veintiocho_` -> `veintinueve_`); `gen_openrpc` reproduce el json; los cuatro en `ok`; nodo
+ENTERO 112/0/0 en 6 s y cable 22/0/0 con el operador del canon; `check_tests` 1347 -> 1351 a su
+texto, las nueve restantes identicas; commit de seis, 329/6, y empuje dentro.
+
+**El `-B`.** `tools/canon.sh` sube el pin del nodo **108 -> 112** con su historia. Sumas
+**1190 -> 1194** y **1327 -> 1331**, declarados **1345 -> 1349** (1331 + 18); el nodo **108 -> 112**
+en PRINCIPIOS; la superficie **28 -> 29** (26 `zkssl_*`, 3 `dev_*`) en README, README_EN,
+RESUMEN_BILINGUE, RESUMEN_EJECUTIVO y spec/README. Quince lineas en ocho documentos, linea a
+linea y sin ensanchar, y la fila del pin. Canon `--sello` VERDE en 207 s.
+
+**Lo que NO afirma.** No mide el precio de la foto dentro del candado ni el maximo de escrituras
+(D-F4, 5.A-267). La foto no es historica: una por latido, en memoria; tras un reinicio no hay
+foto hasta el primer latido, como no hay cabeza. No hay sobre `cobro_pendiente`, ni mando que lo
+lea, ni vectores: quien enlaza la prueba con la FIRMA de la cabeza es todavia el cobrador.
+
+**Contadores.** El §493: seis ficheros, 329/6, cuatro `#[test]`. El `-B`: diez ficheros con este
+asiento, numstat 16/16 en los nueve y el asiento aparte. Pin del nodo 112, ignorados 0; ningun
+otro se mueve. Ningun Cargo tocado.
+
+**Lo que NO cierra.** El sobre `cobro_pendiente` en `PAQUETE.md`, su juez en el mando -que lo
+enlaza a la cabeza v5 firmada- y sus vectores; con eso la fila E1 del RFC-0008 queda entera. Y
+detras, el arreglo B (5.A-272).
