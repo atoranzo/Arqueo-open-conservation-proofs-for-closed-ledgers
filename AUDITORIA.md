@@ -36066,3 +36066,53 @@ otro se mueve. Ningun Cargo tocado.
 **Lo que NO cierra.** El sobre `cobro_pendiente` en `PAQUETE.md`, su juez en el mando -que lo
 enlaza a la cabeza v5 firmada- y sus vectores; con eso la fila E1 del RFC-0008 queda entera. Y
 detras, el arreglo B (5.A-272).
+
+## §494 — RFC-0008: D-J..D-M, el sobre del cobro y su juez (y la fila E4, corregida)
+
+**Que.** El RFC-0008, PROPUESTO, gana cuatro decisiones, delegadas por el autor en la sesion 149 y
+tomadas con la constitucion, las cuatro REVERSIBLES: D-J la forma del sobre `cobro_pendiente`,
+D-K el juez que lo enlaza a una cabeza, D-L el perimetro de E1 y D-M la boca del cobrador. Se
+corrige la fila E4 de la tabla de etapas, citando lo que decia (S247): entregaba `PAQUETE.md`
+2.8, y esa seccion nace en E1. Nacen los descartes 13, 14 y 15; el recuento de decisiones pasa
+de nueve a trece; la cabecera, las medidas y las Referencias nombran la lectura de esta sesion.
+Solo el RFC y este asiento.
+
+**Lo que se midio antes de decidir** (lectura pura sobre el zip de `7bb3942`, `TERRENO-COBRO-149`
+`e14211dd032dd4c0`, 54 citas asertadas contra el zip y re-asertadas por el autor contra su arbol
+con `verifica_terreno149.py`). El juez del AIR, `cobro_pendiente::verificar`, toma las dos raices
+como entrada publica y nada las ata a una cabeza; la edad tiene ese enlace en el mismo crate
+(`zk-ssl-air/src/lib.rs:679`). El productor del §491 entrega el `seq` y las dos raices que la
+cabeza ya firma, fija la cota superior en `MAX_VALOR` y verifica con el juez sin enlace. La
+cabeza firma `seq = log.len()` (`zk-ssl/src/lib.rs:813`) y un pendiente nace con
+`nacido = log.len()` antes de asentarse (`two_phase.rs:1104` y :1664): razonado, `nacido < seq`.
+El aviso v2 no tiene forma serializada (`PendingNoticeDto` sin `x`), ninguna herramienta deja un
+pendiente v2 en un libro persistido (`simulate` envia por la via v1; `run_send_v2` solo lo llama
+la conformidad, en memoria), y el banco de edad produce con el nodo PARADO cuando
+`zkssl_pendingPath` pide el nodo VIVO.
+
+**Las cuatro decisiones.** D-J: el molde del sobre de edad, con la cabeza VERBATIM, `seq` y las
+dos raices solo de ella y sin `superior`, que fija el juez; un dato, una fuente. D-K: el enlace
+vive en `zk_ssl_air::cobro_pendiente`, fija `superior`, toma las raices de la cabeza y exige
+`nacido < seq` en nativo ANTES de la prueba; el productor pasa a verificar con esa regla. La
+regla es RAZONADA: se mide en el PRE del corte de codigo, y si un pendiente honesto la viola se
+revierte y no se escribe. D-L: manda el perimetro del RFC; E1 es el sobre, su juez, el brazo del
+mando y el positivo enlazado en los tests; el catalogo, la boca y el banco son de E4, y el plan
+de trabajo (fuera del arbol), que metia los vectores en E1, se corrige alli. D-M: la boca es el
+cli, con el aviso v2 en un fichero suyo, sin reciclar `PendingNoticeDto`; se ejecuta en E4.
+
+**Lo que NO afirma.** No escribe el enlace, ni el brazo del mando, ni `PAQUETE.md` 2.8: son del
+corte siguiente. No mide todavia `nacido < seq`. No toca la fila E1 de la tabla, que ya dice lo
+que D-L decide, ni el cable: el aviso v2 por RPC sigue siendo de la E4 del RFC-0003.
+
+**Contadores.** Cero codigo, cero cifras de tests, sin canon (como el §483, el §484, el §486 y el
+§489). La puerta: las diez herramientas de `tools/canon.sh`, rc 0 antes y despues, las diez
+IDENTICAS y sin ningun delta previsto. Ficheros: `spec/rfc/0008-pruebas-portables-del-pendiente.md`
+358 -> 439 lineas (`d1b0b8e547f84c85` -> `b05060d87cd5cb1b`, +89/-8 por git) y este asiento.
+Pines quietos.
+
+**Lo que NO cierra.** El corte de codigo de E1, con un PRE en copia que mida antes `nacido < seq`
+sobre un pendiente real con su cabeza: el enlace y sus testigos con prueba real, el brazo
+`cobro_pendiente` del mando con sus negativos antes de la firma, el productor verificando con el
+enlace, y en `PAQUETE.md` la seccion 2.8 y las cuatro frases que un brazo nuevo deja rancias (las
+siete formas, los siete objetos, el mensaje de `tipo desconocido` y los seis VERDE). Despues, su
+`-B` con los pines; al cerrar E1, E2 o la mitad del cobro de E4; y el arreglo B (5.A-272).
