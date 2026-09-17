@@ -35928,3 +35928,71 @@ ningun otro se mueve. Ningun Cargo tocado.
 recomponer `C2` antes de servir y el precio de la foto (5.A-267); el sobre `cobro_pendiente` en
 `PAQUETE.md`, su juez en el mando -que lo enlaza a la cabeza v5 firmada- y sus vectores. Con eso
 la fila E1 del RFC-0008 queda entera.
+
+## §492 — RFC-0008 D-F: la foto de los pendientes que toma el latido, en la capa
+
+**Que.** Nace `crates/zk-ssl/src/foto_pendientes.rs`: la FOTO que el §491 daba por hecha y que
+nadie tomaba. El cobrador prueba contra la cabeza v5 FIRMADA del ultimo latido, y el arbol de
+pendientes se mueve con cada pago, asi que un camino leido del estado de AHORA deja de subir a esa
+cabeza en cuanto cae un pago. `FotoPendientes` es la copia de los DOS arboles -pendientes y meta-
+y del MAPA de meta; `SovereignLayer::foto_pendientes()` la toma, y quien la llama decide el
+instante (D-F: el latido, bajo el mismo candado con el que compone la cabeza). La igualdad es por
+las dos raices. Las cuatro decisiones delegadas en la 148 y tomadas con la constitucion, todas
+REVERSIBLES: D-F1 la foto viaja dentro del `Latido`, con igualdad por raices (la custodia que el
+§275 dio a la cabeza); D-F2 se copian los dos arboles Y el mapa; D-F3 el metodo rehusa sin decir
+que hay; D-F4 el precio se mide en el sello del nodo. Dos commits: el §492 con el codigo y sus
+tests, y su `-B` con el pin, las cifras y este asiento. El nodo es el §493.
+
+**Por que el mapa tambien (D-F2).** La hoja de meta es un hash de `(emisor, nacido)` y no se lee
+del arbol; y las posiciones se REUTILIZAN (`allocate_pending` da el primer hueco libre), asi que
+la meta del mapa VIVO puede ser la de OTRO pendiente cuando el cobrador llega. El RFC promete la
+meta <<en el estado del ultimo latido>>, y solo la foto entera la sirve. Su testigo: el cobro borra
+la meta viva y la foto sigue sirviendo la suya.
+
+**A quien se sirve (D-F3).** `cobro(receptor, aviso)` recompone `C2 = M(H(H(receptor, sal),
+importe), X)` y la compara con la hoja de la posicion del aviso; si casa, devuelve la
+`FotoDelCobro` del §491 (camino, hermanos de meta, emisor, nacido). Si no, `None`, y la misma
+`None` para un aviso ajeno, un aviso v1 (sin `X` no hay `C2`) y una posicion libre: rehusar sin
+decir que hay. La regla vive en la capa, su unico productor; el nodo solo la llamara.
+
+**Lo que se midio antes de tocar nada.** El PASTE-492-PRE, en una copia con `git archive` y target
+propio. La r1 (`7da19253cd7420ac`, SALIDA 20260917-104716) compilo a la primera, 7/0 y 8/0, y
+murio en su F2: servir los hermanos del arbol equivocado no tumbaba el positivo, porque con UN
+pendiente los hermanos de los dos arboles dispersos son los digests de los subarboles vacios,
+IGUALES. La r2 (`56347c7329d6dec5`, SALIDA 20260917-105250) mete un segundo pendiente antes de la
+foto y una prueba de vida del escenario (`hermanos_meta != camino.siblings`), sin tocar el codigo:
+7/0/0, `prueba_cobro::` 8/0, y los dos falsadores tumban cada uno SOLO su test.
+
+**Los siete tests.** El positivo, con dos pendientes: la foto sirve el cobro de Bob y el productor
+del §491 prueba con ello. La razon de la foto: un pago posterior mueve el libro y no mueve lo
+servido, que sigue subiendo a la raiz de la foto y ya no a la del libro. Otro receptor, otro
+importe, otra sal y otro sobre reciben `None`; un aviso v1 y una posicion libre, tambien. El cobro
+posterior borra la meta viva y la foto sirve la suya. Dos fotos del mismo estado son iguales, y un
+pago las distingue.
+
+**Las puertas del §492 (`348c4a0`, padre `be642a1`, SALIDA 20260917-125206).** Cerrojo pinado con
+diecisiete centinelas; los dos POST reconstruidos aparte y clavando; la lista de la capa por
+NOMBRE con +7 exactos; warnings por delta; la capa ENTERA 372/0/6 en 57 s con el operador del
+canon; los siete en `ok` por nombre; `check_tests` 1340 -> 1347 y `check_modulos` 133 -> 134 a su
+texto predicho -predicho sobre el zip de `be642a1` con el candidato aplicado-, las ocho restantes
+identicas; numstat 251/0 y 2/0; commit de dos y empuje dentro.
+
+**El `-B`.** `tools/canon.sh` sube el pin de la capa **365 -> 372** con su historia; ignorados
+quietos en 6. Sumas **1183 -> 1190** y **1320 -> 1327**, declarados **1338 -> 1345** (1327 + 18);
+los modulos de la capa **28 -> 29**. Quince lineas en seis documentos, linea a linea y sin
+ensanchar, y la fila del pin. Canon `--sello` VERDE en 294 s.
+
+**Lo que NO afirma.** No hay foto en el nodo: `latir` no la toma, `Latido` no la lleva y no hay
+`zkssl_pendingPath` (el §493). No se midio el precio del clon dentro del candado ni el maximo de
+escrituras (5.A-267, D-F4). La foto no es historica: una por latido, en memoria. Y nadie enlaza
+aun la foto con la FIRMA de la cabeza: los tests componen la cabeza con las raices de la foto.
+
+**Contadores.** El §492: dos ficheros, 253/0, siete `#[test]`. El `-B`: ocho ficheros con este
+asiento, numstat 16/16 en los siete y el asiento aparte. Pin de la capa 372, ignorados 6;
+ningun otro se mueve. Ningun Cargo tocado.
+
+**Lo que NO cierra.** El §493: la foto en `latir` y en `Latido` (D-F1), `zkssl_pendingPath` en
+el dispatch con la credencial del recibo, la superficie 28 -> 29 en OpenRPC y `RPC.md`, y el
+precio de la foto medido en su sello (D-F4); luego el sobre `cobro_pendiente`, su juez en el mando
+-que lo enlaza a la cabeza v5 firmada- y sus vectores. Con eso la fila E1 del RFC-0008 queda
+entera.
