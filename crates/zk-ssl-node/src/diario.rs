@@ -291,6 +291,7 @@ mod tests {
                 None
             },
             emitida_unix: 1_700_000_000,
+            foto: std::sync::Arc::new(zk_ssl::tests_support::new_layer().foto_pendientes()),
         }
     }
 
@@ -386,6 +387,7 @@ mod tests_limites {
             epoch_digest: [0x33; 32],
             firma: None,
             emitida_unix: 1_700_000_000,
+            foto: std::sync::Arc::new(zk_ssl::tests_support::new_layer().foto_pendientes()),
         }
     }
 

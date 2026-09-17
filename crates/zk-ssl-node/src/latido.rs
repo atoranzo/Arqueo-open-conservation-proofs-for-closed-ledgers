@@ -58,6 +58,7 @@ use std::time::{Duration, Instant};
 
 use crate::firma_cabeza::{CabezaFirmada, FirmanteCabeza};
 use crate::App;
+use zk_ssl::foto_pendientes::FotoPendientes;
 use zk_ssl::log::EpochHead;
 
 /// Cadencia decidida en §121, tras medir el coste de almacenamiento.
@@ -86,6 +87,13 @@ pub struct Latido {
     /// explícito: con esto y la cadencia, el testigo calcula si la cabeza
     /// que recibe es la que tocaba.
     pub emitida_unix: u64,
+    /// **RFC-0008 D-F (§493): la FOTO de los pendientes**, tomada bajo el
+    /// MISMO candado que compone la cabeza: sus dos raices son
+    /// `cabeza.pending_root` y `cabeza.pmeta_root`, y `zkssl_pendingPath`
+    /// sirve de ella. `Arc` porque `conservar` clona el latido y la foto
+    /// pesa; la igualdad es la de `FotoPendientes` (por raices). Tras un
+    /// reinicio no hay foto hasta el primer latido, como no hay cabeza.
+    pub foto: Arc<FotoPendientes>,
 }
 
 /// Calcula la cabeza y, **si hay firmante**, la firma.
@@ -152,7 +160,7 @@ pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result
     // `pagos = N` SI hay una ventana en que se recorre cada vuelta: es una
     // pasada mas sobre un slice que `pares` ya recorre entero, y se declara
     // en vez de fingir que no existe. El aviso se emite FUERA, en el paso 2.
-    let (cabeza, epoch_digest, pagos_al_cruzar) = {
+    let (cabeza, epoch_digest, pagos_al_cruzar, foto) = {
         let e = app
             .estado
             .lock()
@@ -170,10 +178,14 @@ pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result
         let pares = crate::vista_acuses::pares(entradas);
         let (acuses_root, n) = crate::vista_acuses::pareja_de_ahora(&pares, limite_anterior);
         let cabeza = e.layer.epoch_head(acuses_root, n, cima_mmr, t_mmr);
+        // §493 (D-F): la foto, AQUI, con la cabeza que la describe. Fuera del
+        // candado habria una ventana con cabeza nueva y foto vieja.
+        let foto = Arc::new(e.layer.foto_pendientes());
         (
             cabeza,
             zk_ssl_wire::digest_to_wire(&cabeza.digest()).0,
             pagos_al_cruzar,
+            foto,
         )
     };
 
@@ -192,7 +204,7 @@ pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0);
-    Ok(Latido { seq: cabeza.seq, cabeza, epoch_digest, firma, emitida_unix })
+    Ok(Latido { seq: cabeza.seq, cabeza, epoch_digest, firma, emitida_unix, foto })
 }
 
 /// El límite anterior de la época en curso: el `seq` de la última
@@ -487,6 +499,32 @@ mod tests {
         assert_eq!(recompuesto, l.epoch_digest, "la cabeza y su digest divergen");
         assert_eq!(l.cabeza.n, crate::vista_acuses::N_MAX_CABEZAS);
         assert_eq!(l.cabeza.seq, l.seq);
+    }
+
+    #[test]
+    fn la_foto_del_latido_es_la_de_su_cabeza_y_sirve_el_cobro() {
+        // §493 (D-F): la foto se toma bajo el candado que compone la cabeza,
+        // asi que sus raices son las de ESA cabeza; y de ella sale lo que el
+        // cobrador necesita, que sube a esas mismas raices.
+        let app = crate::tests::nodo(30);
+        let pv = crate::tests::pendiente_v2(&app, 0xF493, 0xB493, 0x5493);
+        let l = latir(&app, None).expect("latir");
+        assert_eq!(l.foto.raiz_pendientes(), l.cabeza.pending_root);
+        assert_eq!(l.foto.raiz_meta(), l.cabeza.pmeta_root);
+        let f = l.foto.cobro(pv.id_bob, &pv.aviso).expect("la foto sirve el cobro de Bob");
+        let hoja = stark_experiment::merkle::native_merge(
+            zk_ssl::pending::pending_commitment(pv.id_bob, pv.aviso.salt, pv.aviso.amount),
+            pv.aviso.x.expect("v2"),
+        );
+        assert_eq!(
+            stark_experiment::merkle::native_root(hoja, &f.camino_pendiente),
+            l.cabeza.pending_root,
+            "el camino servido sube a la cabeza servida"
+        );
+        crate::tests::cuenta(&app, 901, 1_000);
+        let l2 = latir(&app, None).expect("latir 2");
+        assert_ne!(l2.cabeza.accounts_root, l.cabeza.accounts_root);
+        assert_eq!(l2.foto, l.foto, "sin pago en medio, la foto es la misma");
     }
 
     #[test]

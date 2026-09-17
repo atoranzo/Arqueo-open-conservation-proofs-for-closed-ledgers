@@ -83,6 +83,7 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 | `zkssl_publishConsumo` | `{consumo: Digest}` | `{accepted: bool, logSeq?: Q, reason?}` |
 | `zkssl_consumoPath` | `{consumo: Digest, seq: Q}` | `{available, s?: Q, camino?: {siblings: Digest[], isRight: bool[]}, reason?}` |
 | `zkssl_frozenPath` | `{index: Q, viewKey: Digest}` | `{s: Q, index: Q, leaf: Digest, camino: {siblings: Digest[], isRight: bool[]}}` (credencial del titular, §261) |
+| `zkssl_pendingPath` | `{index: Q, viewKey: Digest, position: Q, salt: Digest, amount: Q, x: Digest}` | `{available, s?: Q, caminoPendiente?: {siblings: Digest[], isRight: bool[]}, hermanosMeta?: Digest[], emisor?: Q, nacido?: Q, reason?}` (credencial del receptor, §261; RFC-0008 D-F) |
 
 `LogEntry = {seq: Q, kind: string, rootOld, rootNew, proofDigest, chain: Digest}`
 con `kind` ∈ {`OpenAccount`,`Mint`,`Transfer`,`Burn`,`Recovery`,
@@ -988,6 +989,34 @@ camino no pasa, y falla cerrado.
 
 ⚠️ **Aditivo**: la superficie pasa de 26 a 28 métodos (`zkssl_frozenPath` y `dev_freeze`) y
 `zkssl/0.3` NO sube: no cambia ningún valor que ya viajara.
+
+## Lo que el cobrador necesita de la foto (§493, RFC-0008 D-F)
+
+`zkssl_pendingPath {index, viewKey, position, salt, amount, x}` devuelve, para el receptor
+`index`, lo que el productor del cobro pendiente (RFC-0008 E1, §491) necesita: el camino de su
+pendiente en el árbol de pendientes, los hermanos de la misma posición en el árbol de meta y la
+meta `(emisor, nacido)`: `{available: true, s, caminoPendiente: {siblings, isRight},
+hermanosMeta, emisor, nacido}`. Con ello y una cabeza firmada de `seq` `s` el cobrador prueba,
+sin el nodo, que su pendiente existe bajo `pendingRoot` y `pmetaRoot` de esa cabeza.
+
+- **No es del estado de AHORA: es de la FOTO del último latido.** El árbol de pendientes se
+  mueve con cada pago, así que un camino del estado de ahora deja de subir a la cabeza firmada
+  en cuanto cae un pago. El latido toma la foto —los dos árboles y la meta— bajo el mismo
+  candado con el que compone la cabeza, y `s` es el `seq` de ese latido: el camino sube a
+  `pendingRoot` de la cabeza que `zkssl_signedEpochHead` sirve con ese `seq`, y a ninguna otra.
+- **Exige la credencial del receptor** (la `viewKey` de §261); sin ella, `-32004`. Y la capa
+  solo sirve si el aviso recompone la hoja de esa posición
+  (`C2 = M(H(H(receptor, salt), amount), x)`): un aviso ajeno, uno con otro importe u otra sal, y
+  una posición libre reciben la misma respuesta, `{available: false, reason}`, sin decir qué
+  hay. `x` es obligatorio: el pendiente v1 no tiene sobre y no hay `C2` que recomponer.
+- **Sin latido, y sin `--clave`, no hay nada que servir**, y `reason` dice cuál de las dos: el
+  sobre del cobro se ata a una cabeza firmada.
+- **Qué revela además del camino**: los hermanos de nivel 0 son la hoja vecina de los dos
+  árboles (un compromiso opaco y el hash de una meta); los de más arriba dicen qué subárboles no
+  tienen pendientes. Es lo que ya revela el `pendingPath` de `zkssl_sendMaterials`.
+
+⚠️ **Aditivo**: la superficie pasa de 28 a 29 métodos (`zkssl_pendingPath`) y `zkssl/0.3` NO
+sube: no cambia ningún valor que ya viajara.
 
 ## Apagado — el fin de vida, declarado (nota 91)
 

@@ -48,6 +48,7 @@ pub fn method_names() -> Vec<&'static str> {
         "zkssl_publishConsumo",
         "zkssl_consumoPath",
         "zkssl_frozenPath",
+        "zkssl_pendingPath",
         "dev_fund",
         "dev_openSeeded",
         "dev_freeze",
@@ -131,6 +132,10 @@ pub fn document() -> Value {
         m("zkssl_frozenPath",
           "Camino de la cuenta en el arbol de CONGELADOS, para su TITULAR (exige la clave de VISTA). Hoja vacia o no; s es el seq del estado. La profundidad la fija quien verifica (RFC-0007 E3b).",
           json!([p("index", "Q"), p("viewKey", "Digest")]), "FrozenPath"),
+        m("zkssl_pendingPath",
+          "Lo que el COBRADOR necesita de la FOTO del ultimo latido firmado (RFC-0008 D-F): el camino de su pendiente, los hermanos de su meta y la meta, en el seq s de esa cabeza. Exige la clave de VISTA del receptor y un aviso v2 que recomponga la hoja; si no, available false sin decir que hay.",
+          json!([p("index", "Q"), p("viewKey", "Digest"), p("position", "Q"), p("salt", "Digest"),
+                 p("amount", "Q"), p("x", "Digest")]), "PendingPath"),
         m("dev_fund", "SOLO --dev: emision delegada con custodios de PRUEBA.",
           json!([p("index", "Q"), p("amount", "Q")]), "Applied"),
         m("dev_openSeeded", "SOLO --dev: abre desde una clave determinista de la suite.",
@@ -163,7 +168,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn veintiocho_metodos_unicos_y_en_orden() {
+    fn veintinueve_metodos_unicos_y_en_orden() {
         // §223: subio a 18 con `zkssl_applyMany`. §242: a 19 con
         // `zkssl_signedEpochHead`. §259: a 20 con
         // `zkssl_inclusionReceipt`. Que este test tenga el numero en el
@@ -178,15 +183,17 @@ mod tests {
         // §458: a 28 con `zkssl_frozenPath` y `dev_freeze` -el camino de
         // congelados para el titular (RFC-0007, E3b) y el grifo que congela
         // en el sandbox para poder capturarlo-.
+        // §493: a 29 con `zkssl_pendingPath` -lo que el cobrador necesita de la
+        // foto del ultimo latido firmado (RFC-0008, D-F)-.
         let nombres = method_names();
-        assert_eq!(nombres.len(), 28);
+        assert_eq!(nombres.len(), 29);
         let mut u = nombres.clone();
         u.sort();
         u.dedup();
-        assert_eq!(u.len(), 28, "nombres repetidos");
+        assert_eq!(u.len(), 29, "nombres repetidos");
         let doc = document();
         let met = doc["methods"].as_array().expect("methods");
-        assert_eq!(met.len(), 28);
+        assert_eq!(met.len(), 29);
         for (i, mm) in met.iter().enumerate() {
             assert_eq!(mm["name"].as_str().unwrap(), nombres[i]);
         }

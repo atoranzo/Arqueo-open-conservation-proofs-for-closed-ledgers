@@ -1805,6 +1805,67 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             Ok(bloque_congelados(l, p.index.0, seq_juicio))
         }
 
+        // ⚠️ **RFC-0008 D-F (§493) · LO QUE EL COBRADOR NECESITA DE LA FOTO.**
+        // El cobrador prueba su pendiente contra la cabeza v5 FIRMADA del
+        // ultimo latido, y el arbol de pendientes se mueve con cada pago: lo
+        // que se sirve NO es el estado de ahora sino la FOTO que `latir` tomo
+        // bajo el mismo candado que compuso esa cabeza (`Latido.foto`), y `s`
+        // es el `seq` de ese latido. Exige la credencial del receptor (§261),
+        // y la capa solo sirve si el aviso recompone la hoja de esa posicion:
+        // un aviso ajeno, uno v1 y una posicion libre reciben la misma nada
+        // (D-F3, fail-closed sin decir que hay). Sin latido o sin `--clave`
+        // tampoco hay nada que servir: el sobre se ata a una cabeza firmada.
+        // ⚠️ Aditivo: `zkssl/0.3` no sube.
+        "zkssl_pendingPath" => {
+            #[derive(Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct P {
+                index: Q, view_key: wire::B32, position: Q, salt: wire::B32, amount: Q, x: wire::B32,
+            }
+            let p: P = parse(params)?;
+            exige_credencial(l, p.index.0, &p.view_key)?;
+            let receptor =
+                l.public_id_of(p.index.0).ok_or_else(|| RpcError::credencial(p.index.0))?;
+            let aviso = PendingNotice {
+                position: p.position.0,
+                salt: digest_from_wire(&p.salt).map_err(RpcError::wire)?,
+                amount: p.amount.0,
+                x: Some(digest_from_wire(&p.x).map_err(RpcError::wire)?),
+            };
+            let u = app.ultima_cabeza.lock().map_err(|_| RpcError {
+                code: -32603,
+                message: "candado de la ultima cabeza envenenado".into(),
+                data: None,
+            })?;
+            let lat = match u.as_ref() {
+                None => return Ok(json!({
+                    "available": false,
+                    "reason": "aun no ha habido latido: el nodo acaba de arrancar",
+                })),
+                Some(lat) if lat.firma.is_none() => return Ok(json!({
+                    "available": false,
+                    "reason": "el nodo arranco SIN --clave: la cabeza no esta firmada y el sobre \
+                               del cobro no tendria a que atarse",
+                })),
+                Some(lat) => lat,
+            };
+            match lat.foto.cobro(receptor, &aviso) {
+                None => Ok(json!({
+                    "available": false,
+                    "reason": "en la foto del ultimo latido esa posicion no lleva un pendiente que \
+                               este aviso recomponga",
+                })),
+                Some(f) => Ok(json!({
+                    "available": true,
+                    "s": Q(lat.seq),
+                    "caminoPendiente": wire::MerklePathDto::from(&f.camino_pendiente),
+                    "hermanosMeta": f.hermanos_meta.iter().map(digest_to_wire).collect::<Vec<_>>(),
+                    "emisor": Q(f.emisor),
+                    "nacido": Q(f.nacido),
+                })),
+            }
+        }
+
         // ⚠️ **§259 · EL RECIBO DE INCLUSION.** Del arbol `accounts`, que es
         // el que firma la cabeza. `leafFormat` va OBSERVADO: la capa
         // compone la hoja de las dos formas y declara la que caso.
@@ -2643,6 +2704,47 @@ mod tests {
 
     fn reservas_vivas(app: &App) -> usize {
         app.estado.lock().expect("mutex").reservas.len()
+    }
+
+    /// Un pendiente v2 REAL en el libro del nodo (Alice paga a Bob con prueba STARK): lo que
+    /// `zkssl_pendingPath` sirve, y con que se pide.
+    pub(crate) struct PendienteV2 {
+        pub bob: u64,
+        pub id_bob: stark_experiment::merkle::Digest,
+        pub vk_bob: wire::B32,
+        pub aviso: PendingNotice,
+    }
+
+    /// Un firmante de cabezas para un test, con su indice en `target/`.
+    fn firmante(nombre: &str) -> crate::firma_cabeza::FirmanteCabeza {
+        let d = crate::tests_dir(nombre);
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("crear");
+        let mut s = [0u8; 96];
+        for (i, b) in s.iter_mut().enumerate() {
+            *b = (i as u8).wrapping_mul(17).wrapping_add(3);
+        }
+        crate::firma_cabeza::FirmanteCabeza::desde_semilla(&s, d.join("indice.bin")).expect("abrir")
+    }
+
+    pub(crate) fn pendiente_v2(app: &App, sk_alice: u64, sk_bob: u64, sal: u64) -> PendienteV2 {
+        use zk_ssl::tests_support as ts;
+        let ka = ts::wide_key(sk_alice);
+        let kb = ts::wide_key(sk_bob);
+        let mut e = app.estado.lock().expect("mutex");
+        let alice = ts::open_and_fund_wide(&mut e.layer, ka, 1_000_000);
+        let bob = ts::open_and_fund_wide(&mut e.layer, kb, 0);
+        let id_bob = e.layer.public_id_of(bob).expect("bob");
+        let f = e.layer.public_id_of(alice).expect("alice");
+        let m = e
+            .layer
+            .send_materials_v2(alice, id_bob, 250_000, ts::salt_de(sal), f, 96)
+            .expect("materiales v2");
+        let recibo = zk_ssl::client::prove_send(&m, ka, zk_ssl::proof_options()).expect("probar");
+        let ea = ts::state_of(&e.layer, alice);
+        e.layer.apply_send(&recibo, alice, &ea, 250_000).expect("aplicar el envio");
+        let vk_bob = digest_to_wire(&stark_experiment::native::derive_view_key_wide(kb));
+        PendienteV2 { bob, id_bob, vk_bob, aviso: recibo.notice }
     }
 
     /// Un digest a partir de un u64, para las sales de los tests.
@@ -3687,6 +3789,97 @@ mod tests {
                          json!({ "receiver": Q(a), "notice": inventado, "viewKey": vk_falsa() }))
             .expect_err("un aviso inventado ya no basta");
         assert_eq!(e.code, -32004);
+    }
+
+    /// §493 (D-F): pedir `zkssl_pendingPath` para un pendiente con una credencial.
+    fn pending_path(app: &App, i: u64, vk: &wire::B32, a: &PendingNotice) -> Result<Value, RpcError> {
+        dispatch(app, "zkssl_pendingPath", json!({
+            "index": Q(i), "viewKey": vk, "position": Q(a.position),
+            "salt": digest_to_wire(&a.salt), "amount": Q(a.amount),
+            "x": digest_to_wire(&a.x.expect("aviso v2")),
+        }))
+    }
+
+    fn hex_u64(v: &Value) -> u64 {
+        u64::from_str_radix(v.as_str().expect("Q").trim_start_matches("0x"), 16).expect("hex")
+    }
+
+    #[test]
+    fn el_nodo_sirve_de_la_foto_y_el_cobrador_prueba_con_ello() {
+        // §493 (D-F): lo servido es de la FOTO del ultimo latido FIRMADO, y con
+        // ello el productor del §491 prueba contra las raices de esa cabeza.
+        use zk_ssl::prueba_cobro::{prueba_de_cobro_pendiente, CabezaDePendientes, FotoDelCobro};
+        let app = nodo(30);
+        // DOS pendientes antes del latido: con uno, los hermanos de los dos
+        // arboles son los de los subarboles vacios, iguales, y servir unos
+        // por otros no se veria (la leccion de la r1 del PASTE-492-PRE).
+        let _pv0 = pendiente_v2(&app, 0xA490, 0xB490, 0x5490);
+        let pv = pendiente_v2(&app, 0xA493, 0xB493, 0x5493);
+        let mut f = firmante("pending_path");
+        let l = crate::latido::latir(&app, Some(&mut f)).expect("latir");
+        crate::latido::conservar(&app, l.clone());
+        let r = pending_path(&app, pv.bob, &pv.vk_bob, &pv.aviso).expect("servir");
+        assert_eq!(r["available"], json!(true));
+        assert_eq!(r["s"], json!(Q(l.seq)));
+        let camino: wire::MerklePathDto =
+            serde_json::from_value(r["caminoPendiente"].clone()).expect("camino");
+        let hermanos: Vec<wire::B32> =
+            serde_json::from_value(r["hermanosMeta"].clone()).expect("hermanosMeta");
+        let foto = FotoDelCobro {
+            camino_pendiente: (&camino).try_into().expect("camino"),
+            hermanos_meta: hermanos.iter().map(|h| digest_from_wire(h).expect("digest")).collect(),
+            emisor: hex_u64(&r["emisor"]),
+            nacido: hex_u64(&r["nacido"]),
+        };
+        assert_ne!(foto.hermanos_meta, foto.camino_pendiente.siblings, "prueba de vida del escenario");
+        let cab = CabezaDePendientes {
+            seq: l.seq, pending_root: l.cabeza.pending_root, pmeta_root: l.cabeza.pmeta_root,
+        };
+        prueba_de_cobro_pendiente(&cab, pv.id_bob, &pv.aviso, &foto, 1)
+            .expect("el cobrador prueba con lo que el nodo sirve");
+        // y un pago DESPUES del latido no mueve lo servido: sigue siendo de la foto
+        let _otro = pendiente_v2(&app, 0xA494, 0xB494, 0x5494);
+        let r2 = pending_path(&app, pv.bob, &pv.vk_bob, &pv.aviso).expect("servir 2");
+        assert_eq!(r2["s"], json!(Q(l.seq)));
+        assert_eq!(r2["caminoPendiente"], r["caminoPendiente"]);
+    }
+
+    #[test]
+    fn sin_latido_firmado_no_hay_camino_de_pendientes() {
+        // §493 (D-F): sin latido, y con latido SIN --clave, nada que servir; y
+        // se dice cual de las dos, como `zkssl_signedEpochHead`.
+        let app = nodo(30);
+        let pv = pendiente_v2(&app, 0xA495, 0xB495, 0x5495);
+        let r = pending_path(&app, pv.bob, &pv.vk_bob, &pv.aviso).expect("sin latido");
+        assert_eq!(r["available"], json!(false));
+        assert!(r["reason"].as_str().expect("reason").contains("latido"));
+        let l = crate::latido::latir(&app, None).expect("latir");
+        crate::latido::conservar(&app, l);
+        let r = pending_path(&app, pv.bob, &pv.vk_bob, &pv.aviso).expect("sin clave");
+        assert_eq!(r["available"], json!(false));
+        assert!(r["reason"].as_str().expect("reason").contains("--clave"));
+    }
+
+    #[test]
+    fn el_camino_de_pendientes_es_del_receptor_y_de_su_aviso() {
+        // §493 (D-F3): otra credencial, -32004; el titular con un aviso que no
+        // recompone la hoja, la misma nada que una posicion libre.
+        let app = nodo(30);
+        let pv = pendiente_v2(&app, 0xA496, 0xB496, 0x5496);
+        let mut f = firmante("pending_path_ajeno");
+        let l = crate::latido::latir(&app, Some(&mut f)).expect("latir");
+        crate::latido::conservar(&app, l);
+        let e = pending_path(&app, pv.bob, &vk_falsa(), &pv.aviso).expect_err("otra credencial");
+        assert_eq!(e.code, -32004);
+        let mut a = pv.aviso.clone();
+        a.amount += 1;
+        let r = pending_path(&app, pv.bob, &pv.vk_bob, &a).expect("otro importe");
+        assert_eq!(r["available"], json!(false));
+        let mut a = pv.aviso.clone();
+        a.position += 1;
+        let r2 = pending_path(&app, pv.bob, &pv.vk_bob, &a).expect("posicion libre");
+        assert_eq!(r2["available"], json!(false));
+        assert_eq!(r2["reason"], r["reason"], "la misma nada, sin decir que hay");
     }
 
     #[test]
