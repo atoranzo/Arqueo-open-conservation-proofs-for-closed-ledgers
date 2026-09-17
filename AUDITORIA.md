@@ -36116,3 +36116,66 @@ sobre un pendiente real con su cabeza: el enlace y sus testigos con prueba real,
 enlace, y en `PAQUETE.md` la seccion 2.8 y las cuatro frases que un brazo nuevo deja rancias (las
 siete formas, los siete objetos, el mensaje de `tipo desconocido` y los seis VERDE). Despues, su
 `-B` con los pines; al cerrar E1, E2 o la mitad del cobro de E4; y el arreglo B (5.A-272).
+
+## §495 — RFC-0008 E1: el enlace del cobro pendiente, su brazo en el mando y la forma 2.8
+
+**Que.** La fila E1 del RFC-0008 queda ENTERA. Nace el enlace del cobro en el crate que el kit
+compila sin el probador: `zk_ssl_air::cobro_pendiente::verificar_contra_cabeza` exige, en nativo y
+ANTES de tocar la prueba, que el pendiente haya nacido antes que la cabeza que lo firma
+(`nacido < seq`), compone el enunciado con las dos raices que la cabeza firma y con el techo del
+campo, y solo entonces llama al juez (D-K). El productor de la capa del §491 pasa a verificar lo
+que produce con ESA regla, no con el juez suelto. El mando gana su sexto brazo,
+`tipo: "cobro_pendiente"`, con el molde de la edad: la forma del sobre y la version de la cabeza
+antes de la firma, la cabeza verificada, y el enlace. Y `spec/PAQUETE.md` gana la forma 2.8, con
+el sobre `{v, tipo, cabeza, enunciado: {receptor, nacido, inferior}, prueba}`, donde `seq` y las
+dos raices salen SOLO de la cabeza y la cota superior no viaja (D-J). Dos commits: el §495 con el
+codigo y la prosa, y su `-B` con los pines, las cifras y este asiento.
+
+**Lo que se midio antes de tocar nada.** El PASTE-495-PRE, en una copia con `git archive` y target
+propio, con la PUERTA de D-K por delante: en un libro vivo de la capa el primer pendiente nace en
+3 con la cabeza en `seq` 4, y el segundo en 4 con la cabeza en 5; y el test del nodo prueba que el
+productor se enlaza contra un latido REAL. Si esa medida hubiera dicho otra cosa, la regla del
+`nacido` no se escribia (rc 67) y D-K revertia a su (b). El PRE salio verde a la primera: los
+cuatro POST del codigo, las listas por NOMBRE con los ocho exactos, los nueve testigos en 9/0, las
+cinco suites enteras, los cinco catalogos con el binario POST, `check_tests` 1351 -> 1359 con las
+otras nueve identicas, y tres falsadores que tumban SOLO lo suyo (7/2, 6/3 y 8/1).
+
+**Los ocho tests.** En `zk-ssl-air`, que un `nacido` que no es anterior a la cabeza se rechaza
+ANTES de la prueba -tres bytes que no son prueba no llegan al juez-. En `stark-experiment`, con
+prueba REAL: la cabeza fija las dos raices y el orden del nacido (otra raiz de pendientes, otra de
+meta o un `seq` que no es posterior no se enlazan), y una prueba honesta con un techo mas estrecho
+verifica sola pero no se enlaza. En la capa, la MEDIDA de D-K sobre un libro vivo, con dos pagos.
+En el kit, los tres negativos que caen antes de la firma -sin enunciado, sin prueba y con una
+cabeza que no es v5- y el despacho del sexto tipo por `correr`, que ademas nombra a los seis en el
+`tipo desconocido`.
+
+**Las puertas del §495 (`7ead9a4`, padre `715226e`, SALIDA 20260917-201116).** Idempotencia por
+estado con dos discriminantes en dos ficheros; cerrojo pinado con catorce centinelas; los cinco
+POST reconstruidos APARTE y clavando antes de tocar el arbol, funcion de dos editores embebidos
+-el del codigo, el MISMO que corrio el PRE-; numstat con git 65/0, 44/1, 31/3, 97/1 y 66/7;
+warnings de los cinco crates por delta; listas PRE + 8 exactos y el nodo igual; los nueve por
+nombre en 9/0; las cinco suites con el operador del canon (air 16/0/0, circuitos 350/0/12, capa
+373/0/6, kit 112/0/0, nodo 112/0/0); los cinco catalogos enteros con el binario POST; las diez
+herramientas por delta; commit de CINCO por nombre, 303/12, y empuje dentro.
+
+**El `-B`.** `tools/canon.sh` sube CUATRO pines con su historia: la capa **372 -> 373**, los
+circuitos **348 -> 350**, el kit **108 -> 112** y `zk-ssl-air` **15 -> 16**. Seis documentos mueven
+veinte lineas: las sumas **1194 -> 1202**, **1331 -> 1339** y **1349 -> 1357**, el verificador
+independiente **108 -> 112** en PRINCIPIOS, y las cifras de la capa y de los circuitos en PAPER,
+PAPER_EN, ARQUITECTURA, PRINCIPIOS, doc/INSTITUCIONAL y doc/INSTITUTIONAL. Dos de esas veinte las
+dejo RANCIAS el §493-B y nadie las vio: `# nodo: 108` y `# node: 108` en los dos PAPER, que
+`check_cifras` no caza porque su patron pide la palabra <<tests>> al lado. Se pagan aqui y el hueco
+queda declarado en la cola. Linea a linea, sin ensanchar. Canon `--sello` VERDE en 325 s.
+
+**Lo que NO afirma.** No hay boca que escriba el sobre: la prueba la produce el COBRADOR, y su
+mando en el cli es de E4 (D-M). No hay vectores del cobro: el catalogo `spec/vectors/pendiente/`,
+su familia y su banco son de E4 (D-L), asi que `tools/conformidad.sh` no corre ninguno. El enlace
+no dice quien pago, ni el importe exacto por encima del inferior, ni cuando caduca.
+
+**Contadores.** El §495: cinco ficheros, 303/12, ocho `#[test]`. El `-B`: ocho ficheros con este
+asiento, numstat 24/24 en los siete y el asiento aparte. Pines: capa 373 con 6 ignorados,
+circuitos 350 con 12, kit 112, `zk-ssl-air` 16; ningun otro se mueve. Ningun Cargo tocado.
+
+**Lo que NO cierra.** La E2 del RFC-0008 -la prueba portable del pago en curso- y la E4 con el
+catalogo, la boca y el banco; al cerrar E1 se decide cual de las dos va antes. Y detras, el
+arreglo B (5.A-272).
