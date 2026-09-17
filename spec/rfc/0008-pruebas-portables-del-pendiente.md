@@ -1,7 +1,7 @@
 # RFC-0008 — Las dos pruebas portables del pendiente: el cobro, el pago en curso y la prenda
 
 - **Estado:** PROPUESTO
-- **Autores:** Che, con Claude (sesiones 144 y 145)
+- **Autores:** Che, con Claude (sesiones 144, 145 y 147)
 - **Fecha:** 2026-09-16
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad). Los dos
   métodos nuevos son aditivos; la cabeza v5 no cambia de forma; la marca de prenda es una hoja
@@ -11,7 +11,7 @@
   publicado), §451–§453 (la cabeza v5), §458–§460 (el rechazo por caminos), §463–§467
   (la prueba de edad), §473–§479 (la banda sobre la hoja comprometida); el §483, que lo
   adopta; el §484, que decide D-F y D-G y corrige la fila E1; el §485, el instrumento de E1;
-  y el §486, que decide D-H.
+  el §486, que decide D-H; y el §489, que decide D-I y corrige D-B y la Seguridad.
 - **Hito:** H5 de la propuesta enviada a NLnet Restack (140 h), en sus palabras: *«The two
   portable proofs of a pending item. Payee side and payer side, derived from the same head;
   pledge transition; format and vectors.»*
@@ -27,8 +27,8 @@
 
 Las medidas de este documento se tomaron sobre `5ef3b1b` (`TERRENO-H5-144`); las de D-F y D-G,
 sobre `393032e` (`TERRENO-E1-145`); y las de D-H, con el instrumento del §485, que corrió en una
-copia fuera del árbol, y leyendo `0424439`. Ninguna escribió un byte en el árbol (ver
-Referencias).
+copia fuera del árbol, y leyendo `0424439`; y las de D-I, leyendo `be90eb7`
+(`TERRENO-AIR-E1-147`). Ninguna escribió un byte en el árbol (ver Referencias).
 
 **Correcciones del §484** (la fila E1 y D-B, como las dejó el §483). La fila decía «`receptor` es
 la identidad pública de quien prueba», y el molde que nombra no restringe quién prueba (D-G).
@@ -36,6 +36,12 @@ Decía «`importe >= X`» con `X` también como sobre de reversión: un nombre p
 pasa a llamarse `inferior`, como el `lower` de `banda.rs`, y `X` queda para el sobre. Daba
 `zkssl_frozenPath` como molde del método, y ese molde sirve el estado de ahora (D-F). Y este
 párrafo decía que todas las medidas se tomaron sobre `5ef3b1b`.
+
+**Correcciones del §489** (D-B y la Seguridad, como las dejaron el §483 y el §484). D-B decía
+«el sobre `X` puede ser público porque es un compromiso»: `X` es un compromiso sin aleatoriedad
+y no esconde nada a quien adivine `refund_id` (D-I). La Seguridad decía, sin condición, que el
+sobre del cobrador no dice cuándo caduca ni quién pagó; con `X` dentro, eso sólo valía si
+`refund_id` no se adivinaba. Con D-I vale sin condición, porque `X` no viaja.
 
 ### La frontera con H5b, y qué es de cada uno
 
@@ -90,9 +96,9 @@ manda la forma de este RFC:
 
 ## Diseño
 
-Las ocho decisiones las tomó el asistente por delegación del autor (D-A..D-E en la sesión 144;
-D-F, D-G y D-H en la 145), con la constitución de decisión (pureza, claridad, coherencia, imagen
-fiel, en ese orden). Todas llevan su condición de reversión, escrita aquí.
+Las nueve decisiones las tomó el asistente por delegación del autor (D-A..D-E en la sesión 144;
+D-F, D-G y D-H en la 145; D-I en la 147), con la constitución de decisión (pureza, claridad,
+coherencia, imagen fiel, en ese orden). Todas llevan su condición de reversión, escrita aquí.
 
 ### D-A — La T es del pagador; el cobrador dice «a mi nombre, al menos `inferior`, nacido en b»
 
@@ -112,8 +118,9 @@ se abre (c), nunca (b).
 
 El molde es la banda de `InsufficientBalance` (RFC-0007 E5): la hoja abierta dentro del AIR,
 el camino como testigo, dos cotas públicas. Aquí las cotas son `inferior` y `superior` (el tope
-de importe), la apertura es `C1` y luego `C2 = M(C1, X)`, y el sobre `X` puede ser público porque
-es un compromiso. La posición no sale del circuito: es lo que las posiciones saladas prometen.
+de importe), la apertura es `C1` y luego `C2 = M(C1, X)`, y el sobre `X` es testigo (D-I): no
+esconde nada a quien adivine `refund_id`. La posición no sale del circuito: es lo que las
+posiciones saladas prometen.
 El coste se mide antes de escribir el AIR con el molde del instrumento de la E4a del RFC-0007
 (`crates/zk-ssl/src/instrumento_edad.rs`), y si no cabe bajo un latido se declara con cifra.
 **Reversible** sólo hacia una banda más estrecha; nunca hacia revelar el importe.
@@ -242,6 +249,34 @@ posición no verifica. **Reversible** hacia (b) si el AIR de E1, medido en su se
 opciones de la casa, pasa de 65.313 B, que es el cobro v1 (1024 filas por 55 columnas) y la cota
 superior con la que se razona aquí.
 
+### D-I — El sobre `X` es testigo del cobrador, no entrada pública
+
+Medido sobre `be90eb7` (`TERRENO-AIR-E1-147`): `X = M(refund_id, delta)`
+(`crates/zk-ssl/src/pending.rs:88`) es un compromiso SIN aleatoriedad, y `refund_id` lo elige el
+emisor (`crates/zk-ssl/src/client.rs:199`). Los tres productores de envíos v2 del árbol usan el
+`public_id` de la cuenta que paga: el escenario de conformidad, con `delta = 96`
+(`crates/zk-ssl-cli/src/conformance.rs:78-80`), y dos tests de la capa
+(`crates/zk-ssl/src/two_phase.rs:3429` y `:3473`). Con `X` en el sobre, quien tenga una lista de
+identidades candidatas prueba `M(pid, d)` para los `d` plausibles y aprende quién pagó y cuándo
+caduca, las dos cosas que la Seguridad dice que el sobre calla; y dos sobres del mismo emisor con
+el mismo `delta` llevan la misma `X`, enlazables sin enumerar nada. Es determinista y está
+razonado; su falsador (dos envíos con la misma pareja dan la misma `x`) va con el AIR.
+
+Dos caminos: (a) `X` es testigo: el AIR la lee de cuatro columnas en el enlace del ciclo 2, el
+enunciado dice «existe un sobre `X` tal que `M(C1, X)` está bajo `pendingRoot`», y el sobre del
+cobrador no la lleva; (b) `X` pública, y el RFC declara que su secreto depende de la entropía de
+`refund_id`. Gana (a): la privacidad es propiedad del protocolo, no una política del emisor; lo
+que no se esconde no se afirma (imagen fiel); y cuesta cuatro columnas, 44 en vez de 40
+(razonado), sin mover la cota de D-H. E1 sigue siendo del compromiso v2 (D-F): una hoja v1 no es
+`M(C1, X)` de ningún `C1` que se pueda abrir.
+
+Lo que (a) deja a E2: sin `X` en el sobre, nada público enlaza la mitad del cobrador con la del
+pagador; el enlace, si hace falta, se decide allí (la etiqueta de la prenda, `H(dominio, C2)`,
+lleva la sal y es la candidata). Y el mismo límite vale frente al RECEPTOR, que recibe `X` en el
+aviso: la opacidad de D-1 del RFC-0003 depende de que `refund_id` no se adivine. Eso es del 0003
+y esta decisión no lo toca. **Reversible** hacia (b) sólo si el sobre `X` gana aleatoriedad (una
+sal del emisor, rotura de formato del compromiso) y E2 mide que el enlace la necesita.
+
 ## Lo que se DESCARTÓ al medir
 
 1. Abrir `X` del lado del cobrador para probar la T: rompe D-2 del RFC-0003 (el receptor
@@ -265,6 +300,8 @@ superior con la que se razona aquí.
 10. La titularidad en E1 sin un reto en el enunciado: no ata la prueba a quien la presenta (D-G).
 11. El cobrador en un carril, con la posición acumulada y una igualdad que la ate: un atado que
     la casa no ha escrito nunca y que depende de acordarse de escribirlo (D-H).
+12. El sobre `X` como entrada pública del cobrador: con `refund_id` adivinable, dice quién pagó y
+    cuándo caduca, y enlaza los sobres del mismo emisor (D-I).
 
 ## Compatibilidad
 
@@ -287,7 +324,8 @@ expediente aunque no rompa nada.
   verificador externo, como en todo el sistema.
 - **Lo que el sobre del cobrador dice**: que bajo esa cabeza firmada existe un pendiente a
   nombre de `receptor`, por al menos `inferior`, nacido en `b`. Lo que NO dice: cuándo caduca,
-  ni que vaya a cobrarse, ni quién lo pagó, ni quién produjo la prueba (D-G).
+  ni que vaya a cobrarse, ni quién lo pagó, ni quién produjo la prueba (D-G). El sobre `X` no
+  viaja (D-I): con él, quien adivinara `refund_id` sabría quién pagó y cuándo caduca.
 - **Lo que el método del camino revela**: a quien presenta un aviso que recompone la hoja, los
   dos caminos y la meta de ESA posición, en el estado del último latido; a quien no, nada (D-F).
 - **Lo que el sobre del pagador dice**: que bajo esa cabeza el pago está comprometido, por
@@ -309,6 +347,8 @@ expediente aunque no rompa nada.
   RFC anteriores).
 - La lectura pura de la sesión 145 sobre `393032e`, `TERRENO-E1-145` (texto,
   `953f0aeca3a1175c`/122; en Downloads del autor, como la anterior).
+- La lectura pura de la sesión 147 sobre `be90eb7`, `TERRENO-AIR-E1-147` (texto,
+  `70c808caa9918072`/126; en Downloads del autor, como las anteriores).
 - El instrumento de E1 y su corrida: `crates/zk-ssl/src/instrumento_cobro.rs` (§485) y la salida
   del PASTE que lo ensayó fuera del árbol (`96cf0169b0c09589`/44, en Downloads del autor).
 - El hito, verbatim, en la línea 46 del formulario enviado (`NLNET-form-answers-EN-v3.txt`,

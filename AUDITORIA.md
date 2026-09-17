@@ -35748,3 +35748,53 @@ Ningun pin se mueve; ningun test nace ni muere; ningun Cargo tocado.
 **Lo que NO cierra.** El arreglo B, con fecha: detras del AIR de E1 y delante de la E2 del
 RFC-0008. La 5.a de Zenodo del PAPER, si el autor la quiere, con esta nota dentro. Y el 5.A-264
 entero se da por CERRADO en sus dos mitades, la del dinero (§487) y la del relato (este).
+
+## §489 — RFC-0008: D-I, el sobre X es testigo del cobrador (y D-B y la Seguridad, corregidas)
+
+**Que.** El RFC-0008, PROPUESTO, gana su novena decision, delegada por el autor en la sesion 147 y
+tomada con la constitucion: en el AIR de E1 el sobre de reversion `X` es TESTIGO, no entrada
+publica, y el sobre del cobrador no lo lleva. El enunciado queda: bajo `pendingRoot` existe un
+`X` tal que `M(C1, X)` es hoja. Se corrigen, citando lo que decian (S247), la frase de la D-B
+(<<el sobre `X` puede ser publico porque es un compromiso>>) y la Seguridad, que decia sin
+condicion que el sobre del cobrador no dice cuando caduca ni quien pago. Nace el descarte 12; el
+recuento de decisiones pasa de ocho a nueve; la cabecera, las medidas y las Referencias nombran
+la lectura de esta sesion. Solo el RFC y este asiento.
+
+**Lo que se midio antes de decidir** (lectura pura sobre el zip de `be90eb7`, `TERRENO-AIR-E1-147`
+`70c808caa9918072`, 32 citas asertadas contra el arbol). `X = M(refund_id, delta)` no lleva
+aleatoriedad (`pending.rs:88`) y `refund_id` lo elige el emisor (`client.rs:199`). Los TRES
+productores de envios v2 del arbol usan el `public_id` de la cuenta que paga: el escenario de
+conformidad con `delta = 96` (`conformance.rs:78-80`) y dos tests de la capa
+(`two_phase.rs:3429` y :3473). Con `X` en el sobre, quien tenga identidades candidatas prueba
+`M(pid, d)` y aprende quien pago y cuando caduca; y dos sobres del mismo emisor con el mismo
+`delta` llevan la misma `X`. Determinista y razonado; el falsador (dos envios con la misma pareja
+dan la misma `x`) va con el AIR.
+
+**La decision.** Gana `X` testigo frente a `X` publica con su secreto declarado condicional: la
+privacidad es propiedad del protocolo y no una politica del emisor, y lo que no se esconde no se
+afirma. Cuesta cuatro columnas, 44 en vez de 40 (razonado), y no mueve la cota de la D-H.
+Reversible hacia `X` publica solo si el sobre gana aleatoriedad (una sal del emisor, rotura de
+formato del compromiso) y la E2 mide que el enlace la necesita.
+
+**Un segundo hallazgo, LEIDO y sin falsador, que no es de este RFC.** La banda
+(`zk-ssl-air/src/banda.rs`) aserta el relleno del rate solo en la fila 0 (:399-:405); en el
+enlace del ciclo 1 ata capacidad, digest y `nonce` (:341-:344), y los tres limbos que `embeber`
+pone a cero quedan libres, porque la fila de enlace no lleva ronda de Rescue. No es explotable
+contra una raiz firmada (pediria una segunda preimagen): es holgura del enunciado. Para E1 es regla
+de montaje: el enlace del importe ata sus cuatro limbos y el de la meta, los ocho.
+
+**Lo que NO afirma.** No escribe el AIR de E1. No toca el RFC-0003: la opacidad de su D-1 frente
+al RECEPTOR, que ya recibe `X` en el aviso, depende igual de que `refund_id` no se adivine, y eso
+va a la cola. No decide como enlaza la E2 las dos mitades; la etiqueta de la prenda, que lleva la
+sal, es la candidata. No toca la fila E1 de la tabla de etapas, que no dice que `X` sea publica.
+
+**Contadores.** Cero codigo, cero cifras de tests, sin canon (como el §483, el §484 y el §486).
+La puerta: las diez herramientas de `tools/canon.sh`, rc 0 antes y despues, las diez IDENTICAS y
+sin ningun delta previsto. Ficheros: `spec/rfc/0008-pruebas-portables-del-pendiente.md` 318 -> 358
+lineas (`f3c42420c64b7372` -> `d1b0b8e547f84c85`, +50/-10 por git) y este asiento. Pines quietos.
+
+**Lo que NO cierra.** El AIR de E1 con la geometria de la D-H y la D-I, en copia antes del sello:
+anchura, restricciones y aserciones derivadas del fichero, bytes contra 65.313 B, y sus testigos
+negativos (meta de otra posicion, importe bajo `inferior`, otro `receptor`, otro `nacido`, relleno
+distinto de cero en el ciclo 1, y la `X` fuera de las entradas publicas). Despues, el arreglo B
+(5.A-272), y a la cola la opacidad condicional del RFC-0003 y la holgura de la banda.
