@@ -57,6 +57,9 @@ use zk_ssl_hash::{native_merge, DOMINIO_META_PENDIENTE};
 /// **El AIR de la BANDA del saldo** (RFC-0007, E5): el segundo juez de este crate.
 pub mod banda;
 
+/// **El AIR del COBRO PENDIENTE** (RFC-0008, E1): el tercer juez de este crate.
+pub mod cobro_pendiente;
+
 /// El digest de la casa: cuatro elementos (el de `zk-ssl-hash`).
 pub type Digest = zk_ssl_hash::Digest;
 

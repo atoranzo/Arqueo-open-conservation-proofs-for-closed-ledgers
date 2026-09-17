@@ -63,6 +63,8 @@
 
 pub mod circuit_audit;
 pub mod circuit_banda;
+// RFC-0008 E1: el probador del cobro pendiente portable.
+pub mod circuit_cobro_pendiente;
 pub mod circuit_burn;
 pub mod circuit_freeze;
 // Entrada 33 / §59: la subida a congelados sin la parte de autorizacion.
