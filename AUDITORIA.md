@@ -35798,3 +35798,70 @@ anchura, restricciones y aserciones derivadas del fichero, bytes contra 65.313 B
 negativos (meta de otra posicion, importe bajo `inferior`, otro `receptor`, otro `nacido`, relleno
 distinto de cero en el ciclo 1, y la `X` fuera de las entradas publicas). Despues, el arreglo B
 (5.A-272), y a la cola la opacidad condicional del RFC-0003 y la holgura de la banda.
+
+## §490 — RFC-0008 E1: el AIR del cobrador, dos carriles y un bit, con X testigo
+
+**Que.** Nace el tercer juez de `zk-ssl-air`, `cobro_pendiente.rs`, y su probador en
+`stark-experiment`, `circuit_cobro_pendiente.rs`. El enunciado es de ESTADO (D-G): bajo la raiz de
+pendientes que firma la cabeza existe una hoja `C2 = M(C1, X)` con
+`C1 = M(M(receptor, sal), [importe, 0, 0, 0])` e `importe` en `[inferior, superior]`, y en la MISMA
+posicion del arbol de meta esta la hoja `commit_operation(PMETA_V1, [emisor, nacido])` con el
+`nacido` declarado. Publico: las dos raices, `receptor`, `nacido` y las dos cotas (quince
+elementos). Testigo: la sal, el importe, `X` (D-I, §489), el emisor, los caminos y la posicion.
+Dos commits: el §490 con el codigo y los testigos, y su `-B` con los pines, las cifras y este
+asiento.
+
+**La forma (D-H).** Dos carriles de doce columnas y UNA columna de bit: el carril A compone `C1` en
+los ciclos 0 y 1 y `C2` en el 2, el carril B compone la meta en el 2, y los dos suben del 3 al 34
+leyendo la direccion de la misma columna. 44 columnas por 512 filas, 110 restricciones, 36
+columnas periodicas, 19 aserciones; las dos raices en la fila 279. Los enlaces atan el rate
+ENTERO: el del importe sus cuatro limbos y el de la meta sus ocho. La banda, de la que sale este
+AIR, deja libres tres limbos en su ciclo 1 (asiento 489); aqui no se hereda.
+
+**Lo que se midio antes de tocar nada.** El PASTE-490-PRE (`b3ce4a4a410b17ee`/1048, SALIDA
+20260917-085707) compilo el candidato en una copia con `git archive` y target propio: los dos
+crates en release con warnings 0 -> 0, los tests nuevos por nombre (+5 en el juez, +11 en el
+probador con el instrumento), el juez entero 15/0/0 y el probador 10/0/1. El instrumento, con las
+opciones de la casa: **56.174 B** en las tres corridas, probar 0,05-0,06 s, verificar 1,4-1,5 ms,
+bajo la cota de la D-H (65.313 B, el cobro v1): la D-H se sostiene y no se revierte a un carril.
+Dos falsadores por mutacion: sin el atado del relleno cae el negativo del relleno, y sin la
+colocacion del carril B por el bit cae el de la meta de otra posicion; restituidos, 10/0/1 otra
+vez.
+
+**Los seis negativos.** Una meta de otra posicion, subida con sus propios hermanos y bits -los que
+llevan a la raiz de meta de verdad- mientras la columna del bit guarda los del pendiente: no
+verifica, y es justo el atado que a `COL_FBIT` le falta en cinco circuitos (5.A-272). El suelo
+por los dos lados: con `inferior` igual al importe verifica, con uno mas no. Otro receptor
+declarado, otro nacido declarado: no verifican. Un limbo del rate del importe distinto de cero,
+declarando las raices que esa traza alcanza: no verifica. Y la `X` adivinable de los tres
+productores del arbol (el `public_id` del pagador y `delta` 96) no entra al transcripto, y la
+prueba verifica sin ella.
+
+**Las puertas del §490 (`db939e3`, padre `b037f8e`, SALIDA 20260917-090846).** Cerrojo pinado con
+ocho centinelas; los cuatro POST del PRE reconstruidos aparte y clavando; listas por NOMBRE con
++5 y +11 exactos; warnings por delta; el juez ENTERO 15/0/0 y el probador ENTERO 348/0/12 en 13 s;
+los diez del probador en `ok` por nombre; `check_tests` 1316 -> 1332 y `check_modulos` 130 -> 132
+a su texto predicho, las ocho restantes identicas; numstat 630/0, 588/0, 3/0 y 2/0 predicho con
+git; commit de cuatro, 1223 lineas, y empuje dentro.
+
+**El `-B`.** `tools/canon.sh` sube dos pines con su historia: `zk-ssl-air` **10 -> 15** y
+`stark-experiment` **338 -> 348** con sus ignorados **11 -> 12**. Sumas **1160 -> 1175** y
+**1297 -> 1312**, ignorados **17 -> 18**, declarados **1314 -> 1330** (1312 + 18). Trece lineas en
+cinco documentos, linea a linea y sin ensanchar, y las dos filas de la tabla. Dos de esas lineas,
+las de los papers, decian <<(10 ignored)>> y <<(10 ignorados)>> para `stark-experiment` cuando el
+canon pinaba 11: estaban rancias antes de este corte, y como la linea se mueve, se escriben con el
+12 que el canon pina ahora. Canon `--sello` VERDE en 454 s.
+
+**Lo que NO afirma.** No hay productor en la capa, ni `zkssl_pendingPath`, ni sobre
+`cobro_pendiente`, ni vectores: la prueba existe y el juez la verifica, pero nadie la emite aun
+desde un nodo. No enlaza el AIR con una cabeza firmada (esa regla es del juez que la enlace, como
+`verificar_contra_cabeza` en la edad). No toca la banda: su holgura queda declarada, no cerrada.
+
+**Contadores.** El §490: cuatro ficheros, 1223/0, dieciseis `#[test]` (uno ignorado). El
+`-B`: siete ficheros con este asiento, numstat 15/15 en los seis y el asiento aparte. Pines
+`zk-ssl-air` 15 y `stark-experiment` 348 (12 ignorados); ninguno mas se mueve. Ningun Cargo tocado.
+
+**Lo que NO cierra.** El productor de la capa, el metodo `zkssl_pendingPath` con su foto (D-F), el
+sobre `cobro_pendiente` en `PAQUETE.md` y su juez en el mando, que completan la fila E1. Despues,
+el arreglo B (5.A-272), y a la cola la holgura de la banda y la opacidad condicional de `X` frente
+al receptor en el RFC-0003.

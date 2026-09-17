@@ -494,7 +494,7 @@ Nothing in this document requires trusting its author.
 git clone [repository]
 cd zk-ssl
 cargo test -p zk-ssl --release              # 357 tests (6 ignored)
-cargo test -p stark-experiment --release    # 338 tests
+cargo test -p stark-experiment --release    # 348 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
 
