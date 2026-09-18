@@ -36232,3 +36232,75 @@ cabeza VERBATIM; en el mismo corte, la seccion 7 de `PAQUETE.md`. Despues el ban
 (corte B), y el catalogo `spec/vectors/pendiente/` con su manifiesto, la familia, la estrofa del
 canon, la seccion 9 de `PAQUETE.md`, los dos README y la fila de `spec/README.md` (corte C), con su
 `-B` de pines, que trae el arreglo del 5.A-283. Detras, el arreglo B (5.A-272) y E2.
+
+## §497 — RFC-0008 E4-cobro, corte A: la boca del cobrador (D-M, D-P) y su -B
+
+**Que.** El cobrador tiene por fin una boca. Nace `crates/zk-ssl-cli/src/cobro.rs`: el sexto
+subcomando del cli, `prueba-cobro`, que con el aviso v2 del pagador y la credencial del propio
+cobrador pide a un nodo VIVO la cabeza firmada (`zkssl_signedEpochHead`) y la foto de su pendiente
+(`zkssl_pendingPath`), exige que las dos sean del MISMO latido (`s == seq`, D-F: si cayo un latido
+entre las dos llamadas, se vuelve a pedir), llama al productor de la capa -que no lee libro- y
+escribe el sobre `cobro_pendiente` de `PAQUETE.md` 2.8 con la cabeza VERBATIM (reunir, no
+recomponer; `Blob` es el unico productor de la forma `0x`). `simulate` aprende la via v2
+(`--v2`, con la pareja de la conformidad: `f` = la identidad del emisor, `delta` = 96) y deja lo
+que el cobrador se lleva en DOS ficheros propios, `--aviso` (posicion, sal, importe, `x`) y
+`--credencial` (`index`, `publicId`, `viewKey`, la terna de `dev_openSeeded`): dos ficheros, dos
+duenos (D-P). El Cargo.toml del cli declara `stark-experiment` -ya se compilaba aqui por via de
+`zk-ssl`: cero nodos nuevos en el grafo- y Cargo.lock lo asienta. `spec/PAQUETE.md` retira en su
+seccion 7 y en 2.8 lo que este corte deja rancio: el cobro pendiente tiene productor, y es el
+cobrador (5.A-292, primera mitad). Dos commits: el §497 con el codigo y la prosa, y su `-B` con el
+pin, las cifras y este asiento.
+
+**Lo que se midio antes de tocar nada.** El PASTE-497-PRE, en una copia con `git archive` y target
+propio, con las DOS MEDIDAS que las decisiones traian razonadas por delante: D-P, la credencial que
+el sandbox deriva es la que `account_view_authenticated` acepta para esa cuenta (y otra clave no);
+D-N, sobre un pendiente v2 real las dos formas del positivo, `inferior = 0` e `inferior = importe`,
+se prueban y se enlazan (seq 4, nacido 3 las dos) y `importe + 1` cae por su nombre. Si una se
+hubiera desmentido, rc 67 y la boca no se escribia asi. El PRE salio VERDE A LA PRIMERA, y compilo
+a la primera: los seis POST, la lista del cli por NOMBRE con los siete exactos, la suite entera
+107/0/0, las diez herramientas por delta (`check_tests` 1359 -> 1366, `check_modulos` 134 -> 135,
+ocho identicas), y tres falsadores que tumban SOLO lo suyo (la puerta `s == seq` desactivada, el
+aviso v1 aceptado, la clave de vista sustituida por la identidad: 6/1 cada uno).
+
+**Los siete tests.** Un aviso v1 no se escribe y un fichero sin `x` no se lee; la foto de otro
+latido se rechaza nombrando los dos; una foto no disponible dice su razon; una respuesta sin cabeza
+firmada se nombra; la credencial del sandbox es la que la capa acepta (D-P); y de punta a punta sin
+nodo, con un pendiente v2 real, las dos formas de D-N se sostienen, el aviso hace ida y vuelta por
+fichero, y el sobre lleva exactamente `v`, `tipo`, `cabeza` (verbatim), `enunciado` y `prueba`.
+
+**Las puertas del §497 (`5b88aae`, padre `b7ceb4b`, SALIDA 20260918-093735).** Idempotencia por
+estado con tres discriminantes en tres ficheros; cerrojo pinado con 13 centinelas y la ausencia
+del que nace; los seis POST reconstruidos APARTE y clavando antes de tocar, funcion del MISMO
+editor que corrio el PRE (`editar497.py`, byte a byte); numstat con git 378/0, 10/1, 53/10, 5/0,
+1/0 y 10/8 (el que nace, contra `/dev/null`); el cli en release con el lock POST y `--locked`;
+warnings por delta; la lista PRE + 7 exactos; los siete en 7/0; la suite 107/0/0 con el operador
+del canon; las diez por delta; commit de SEIS por nombre -cinco M y una A-, 457/19, y empuje
+dentro. `restaurar()` borra el que nace ademas de reponer los cinco: ensayado sobre una maqueta git
+con los bytes reales, con la suite cayendo tras aplicar (porcelain 0 y `cobro.rs` borrado).
+
+**El `-B`.** `tools/canon.sh` sube el pin del cli con su historia: **100 -> 107**. Dos documentos
+mueven siete lineas: las sumas **1202 -> 1209**, **1339 -> 1346** y **1357 -> 1364** en PAPER y
+PRINCIPIOS, y el testigo **100 -> 107** en PRINCIPIOS. El perimetro se DERIVO, no se teclearon las
+lineas: `check_cifras` sobre una copia con la fila subida marco tres sitios, y el censo por grep
+los otros cuatro, que ese gate no vigila (5.A-149). Linea a linea, sin ensanchar. Canon `--sello`
+VERDE en 194 s, con el cli 107/0 en su fila. Y la SALIDA de este bloque ensena TODAS las
+filas de la tabla del canon, no solo la de la capa: el filtro del 5.A-283 queda pagado.
+
+**Lo que NO afirma.** No hay vectores del cobro: el catalogo `spec/vectors/pendiente/`, su familia
+en `FAMILIAS` y el banco que lo reproduce en vivo son los cortes B y C de E4-cobro, y hasta
+entonces `tools/conformidad.sh` no corre ninguno y la seccion 9 de `PAQUETE.md` lo sigue diciendo.
+La boca no se ha corrido todavia contra un nodo real: lo que esta medido es todo lo que no necesita
+red, y la red la ejercita el banco. La celda de estado de la fila E4 del RFC sigue en propuesta.
+
+**Contadores.** El §497: seis ficheros, 457/19, siete `#[test]`; `check_tests` 1359 -> 1366 y
+`check_modulos` 134 -> 135. El `-B`: cuatro ficheros con este asiento, numstat 8/8 en los
+tres y el asiento aparte. Pines: cli 100 -> 107; ningun otro se mueve. Cargo tocado en el §497
+(una linea del lock: la dependencia declarada), no en el `-B`.
+
+**Lo que NO cierra.** El corte B de E4-cobro, el banco `tools/banco_pendiente.sh` con `--guardar`:
+siembra por la via v2 con el nodo PARADO, levanta el nodo con `--clave-fichero` y `--latido`, pide
+el sobre por la boca con el nodo VIVO, lo verifica con el mando y deja las capturas; detras, el
+corte C con el catalogo, el manifiesto (siete negativos por regla, D-Q), la familia, la estrofa del
+canon, la seccion 9 de `PAQUETE.md`, los dos README y la fila de `spec/README.md`. Luego el
+arreglo B (5.A-272) y E2. Y `spec/README.md:39` sigue diciendo <<nothing sealed yet>> del RFC-0008:
+punto de la cola, no de este corte.
