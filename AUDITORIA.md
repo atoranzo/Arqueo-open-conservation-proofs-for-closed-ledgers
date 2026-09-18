@@ -36304,3 +36304,72 @@ corte C con el catalogo, el manifiesto (siete negativos por regla, D-Q), la fami
 canon, la seccion 9 de `PAQUETE.md`, los dos README y la fila de `spec/README.md`. Luego el
 arreglo B (5.A-272) y E2. Y `spec/README.md:39` sigue diciendo <<nothing sealed yet>> del RFC-0008:
 punto de la cola, no de este corte.
+
+## §498 — RFC-0008 E4-cobro, corte B: el banco del cobrador, con el nodo vivo y el kit sin el
+
+**Que.** Nace `tools/banco_pendiente.sh`, el banco de E4 del RFC-0008 por el lado del COBRO, y con
+el es la primera vez que el sobre `cobro_pendiente` se produce de punta a punta como servicio: un
+libro persistido con un pendiente v2 VIVO, puesto por el sandbox del cli con el nodo PARADO (prueba
+STARK real, via v2, aviso y credencial en dos ficheros de dos duenos, D-P) -> el nodo real lo abre,
+lo mete en la foto de su latido y firma una cabeza v5 -> la boca del cobrador pide la cabeza y la
+foto con el nodo VIVO, prueba en el cliente y escribe el sobre de `PAQUETE.md` 2.8 -> el nodo MUERE
+-> el verificador da VERDE sin el. Dos positivos, que son las dos formas de D-N (`inferior = 0` e
+`inferior = importe`); un rechazo de la boca EN VIVO (`inferior = importe + 1`: el productor de la
+capa se para por su nombre, <<la banda NO se sostiene>>, y no escribe nada); y SIETE negativos
+sobre el sobre, uno por regla (D-Q), derivados por mutacion del positivo de la banda. El orden es
+el INVERSO del banco de edad, y por eso no se copio su forma sin mas: la edad produce con el nodo
+muerto porque la capa abre el libro y prueba sola; la foto del cobro vive en el latido, en memoria,
+y `zkssl_pendingPath` solo la sirve con el nodo vivo (D-F), mientras `sled` tiene el libro en
+exclusiva. Un fichero y este asiento; ningun `.rs`, ningun pin, ningun vector: el catalogo es el
+corte C.
+
+**Lo que se midio antes de escribirlo.** El TERRENO-B-150, lectura pura sobre `8d064c6` con 54
+citas derivadas del arbol -ninguna tecleada- y re-asertadas 60/60 en la maquina del autor con
+porcelain 0 antes y despues. De ahi salieron las seis decisiones del banco, delegadas por el autor
+<<con la ley, REVERSIBLES como las anteriores>>: D-R un solo banco para los dos lados de E4, con el
+nombre que la cola ya usaba; D-S UNA siembra, porque los dos positivos son dos cotas sobre el mismo
+pendiente y una corrida evita la trampa de las posiciones logicas del arbol disperso; D-T la
+ventana del latido se paga con reintento -la boca exige `s == seq` y no reintenta- y latido corto,
+no largo; D-U se guardan los dos positivos, los siete cuerpos negativos, el aviso y la credencial,
+y NO la cabeza aparte, porque el sobre la lleva verbatim (D-J) y una copia serian dos fuentes del
+mismo dato; D-V el negativo de la regla del juez es la cota por encima del importe, que es entrada
+publica del AIR por una asercion de frontera (`COL_INFERIOR`), y ademas la boca lo rechaza en
+vivo; D-W fuera del canon, como el de edad, y lo corre el bloque que sella. Los tres parametros
+del libro cuadran entre el cli (`tests_support`) y el nodo (tres literales): por valor, sin atado.
+
+**La corrida del autor (SALIDA-BANCO-498-20260918-104525, el banco suelto desde Downloads, huella
+`4791c5e920188bb8`, rc 0).** Importe 250000 leido del aviso; receptor en la posicion derivada
+4052836150; cabeza v5 de seq 5 con nextPending 1; la boca escribio los dos sobres en 1 s y 0 s,
+con 55724 B y 55562 B de prueba, seq 5 y nacido 4 los dos -la regla de D-K, `nacido < seq`, otra
+vez medida-; el rechazo en vivo cayo por su nombre; el verificador dio 1/3, 2/3, 3/3 y VERDE a los
+dos sin el nodo; los siete negativos cayeron cada uno por SU texto, y el de la cota por encima con
+`cobro: InconsistentOodConstraintEvaluations`, que es lo que winterfell dice cuando las entradas
+publicas no son las de la prueba: el sobre afirma mas de lo que la prueba prueba. Once capturas en
+`CAPTURAS-498` (los positivos, 150162 B y 149842 B), de las que el corte C deriva sus vectores.
+Antes de esa corrida el banco se ensayo contra un arbol de mentira -cargo, cli, nodo JSON-RPC con
+latido y mando de mentira con el ORDEN real de las reglas- con seis sabotajes que tumban solo lo
+suyo: carrera en dos fotos (reintenta y verde), carrera siempre (muere en el quinto, nombrado),
+mando ciego, boca sin banda, credencial que no autoriza y aviso v1.
+
+**Las puertas del §498.** Idempotencia por estado (el banco no existe y no hay `## §498`); cerrojo
+pinado en `8d064c6` con padre `5b88aae`, porcelain 0, main y remoto al dia, doce centinelas por
+huella; el banco reconstruido APARTE y clavando su huella antes de tocar; `bash -n`; el banco
+corriendo desde el arbol con `--guardar` y su pureza por delta; el asiento predicho ENTERO -su
+huella POST se aserta antes de commitear-; las diez herramientas del canon PRE y POST por delta;
+commit de DOS por nombre y empuje dentro. `restaurar()` borra el que nace y repone el asiento.
+
+**Lo que NO afirma.** No hay vectores del cobro todavia: `spec/vectors/pendiente/`, su MANIFIESTO,
+la familia en `FAMILIAS`, la estrofa del canon y la seccion 9 de `PAQUETE.md` son el corte C, y las
+capturas de las que salen viven fuera del arbol hasta entonces. El RFC-0008 no gana D-R..D-W en
+este corte: las recoge el C, que es el que toca su fila E4 -cuya celda de estado debe nombrar lo
+sellado del lado del cobro (D-O)- y la de E1, que dice <<propuesta>> con la fila entera desde el
+§495. El tiempo de la boca esta medido en segundos enteros y con una sola muestra por forma.
+
+**Contadores.** Un fichero nace (314 lineas) y este asiento; numstat 314/0 y el asiento aparte.
+Pines: ninguno se mueve. `check_tests` y `check_modulos` no ven un `.sh`; ningun documento cuenta
+los bancos (son doce, y `tools/*.sh` dieciseis). Ningun Cargo tocado.
+
+**Lo que NO cierra.** El corte C. Luego el lado del pago (E2 y su mitad de E4b), y detras el arreglo
+B (5.A-272). Dos puntos para la cola: los tres parametros del libro son dos productores sin atado
+(el dia que uno se mueva, el banco morira con `ParameterMismatch` lejos de la causa), y la celda de
+estado de la fila E1 del RFC-0008 contradice a la linea 374 del mismo fichero.
