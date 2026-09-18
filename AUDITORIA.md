@@ -36443,3 +36443,69 @@ siete se tocan (`tools/artefacto.sh`, `tools/canon.sh` +12, `spec/PAQUETE.md`, `
 (5.A-272). Y una deuda pagada aqui que era del §498: la lista de demostraciones en vivo de
 `PAQUETE.md` no nombraba `tools/banco_pendiente.sh`; el 498 dejo `PAQUETE.md` para este corte por
 la frase de los vectores, y esa era otra frase. Fallo el censo de frases del fichero, no la regla.
+
+## §500 — RFC-0008 E4-cobro, corte C-2: las doce decisiones en el RFC y las celdas de E1 y E4
+
+**Que.** El RFC-0008, PROPUESTO, escribe las doce decisiones que la sesion 150 tomo y que vivian
+solo en los asientos 498 y 499 -D-R..D-W, el banco, y D-X..D-AC, el catalogo-, cada una con su
+medida y su reversion; el recuento del Diseno pasa de diecisiete a veintinueve y nacen los
+descartes 20 a 31. La celda de estado de E1 deja <<propuesta>> y nombra sus sellos (§484..§495),
+con la fila entera desde el §495 (5.A-294, pagado); la de E4 nombra lo sellado del lado del cobro
+(§496 las decisiones, §497 la boca, §498 el banco, §499 el catalogo) y deja el del pago para E2,
+que es lo que su propio texto pedia desde el §496. Las dos se cambian CITANDO lo que decian
+(S247): la correccion del §500 va bajo la tabla, como las del §484, del §489 y del §494. La
+Seguridad declara, como imagen fiel de la cabeza v5, que `emittedAtUnix` no entra en la firma
+(5.A-296: declarado, no decidido). Y la fila del RFC en `spec/README.md` deja de decir
+<<nothing sealed yet>>: nombra E1 y el lado del cobro de E4, y sigue diciendo PROPOSED. Dos
+ficheros y este asiento; ningun `.rs`, ningun pin, sin canon.
+
+**Lo que se midio antes de escribirlo** (PASTE-500-PRE `85aab175343a089b` y su r2
+`bcefa69e0a618799`, lecturas puras sobre `b5d1d0b` con porcelain 0 antes y despues; SALIDAS
+20260918-135632 y 20260918-141434). La tabla de etapas vive en 23..28 y sus cuatro celdas decian
+<<propuesta>>; la unica linea que declara E1 entera es la 374, dentro de D-O. Los tres parrafos
+de correccion citada del RFC (§484, §489, §494) abren linea en negrita y no llevan el glifo de
+aviso: es el molde que la correccion del §500 copia. El cardinal <<diecisiete>> vive en una sola
+linea, la 107, y las letras D-x escritas eran 17 de las 29 que da el objetivo A..AC.
+`spec/README.md` tiene DOS filas que nombran el 0008 -la de `vectors/pendiente/`, que el §499
+escribio, y la del RFC, que es la :40 y no la 39 desde que el §499 movio la guia de 167 a 168-,
+y la guia ya lleva el molde de un RFC PROPOSED con etapas sealed: la fila del 0005.
+`PROCESO.md:21` dice lo que ACEPTADO exige y E2 no existe: el estado del documento no se mueve,
+y las catorce frases que fuera del RFC lo declaran siguen verdaderas. `emittedAtUnix` aparece 200
+veces en 571 ficheros; `spec/RPC.md:627` dice para que existe y nada publicado dice que la firma
+lo cubra; el catalogo `pendiente/` lleva un solo valor en ocho sobres (el noveno no tiene
+cabeza), como `edad/`. Dos moldes mas, medidos en el arbol: la celda de E4 del RFC-0006, que
+nombra un lado, y las celdas del RFC-0007, que nombran los sellos.
+
+**Las doce decisiones.** D-R un banco para los dos lados; D-S una siembra; D-T reintento solo
+ante el texto de la carrera y latido corto; D-U los sobres, el aviso y la credencial, y no la
+cabeza aparte; D-V el negativo del juez es la cota por encima del importe; D-W fuera del canon;
+D-X la fuente son las capturas del sello; D-Y entran los nueve sobres; D-Z los nombres del
+banco; D-AA la segunda linea del VERDE, los textos de la casa y del juez solo `cobro:`; D-AB C-1
+y C-2; D-AC la familia `pendiente`. Las doce, REVERSIBLES, con la condicion escrita en el RFC.
+
+**Las puertas del §500.** Idempotencia por estado (no hay `## §500`); cerrojo pinado en
+`b5d1d0b` con padre `f1e0401`, porcelain 0, main y remoto al dia; las tres anclas de lo que se
+toca y dos centinelas; el editor `editar500.py` corre primero sobre una COPIA y clava los tres
+POST predichos antes de tocar el arbol, y los vuelve a clavar al aplicar; las diez herramientas
+PRE y POST por delta, con `verificar_citas` llamada por su nombre (la lista derivada del PRE la
+dejaba fuera por un filtro `check_*`); commit de TRES por nombre y empuje dentro. `restaurar()`
+deshace el indice y repone los tres.
+
+**Lo que NO afirma.** No acepta el RFC: PROPUESTO es del proceso y el giro exige la regla 4
+medida letra a letra, como la fila E4 dice. No decide si `emittedAtUnix` fuera de la firma es
+deuda ni si `RPC.md` debe declararlo: el 5.A-296 sigue abierto con ese enunciado. No toca <<at
+least X>> en la guia (5.A-271). No toca la fila de `vectors/pendiente/` de la guia, que el §499
+dejo bien.
+
+**Contadores.** Cero codigo, cero cifras de tests, sin canon (como el §496). La puerta: las diez
+herramientas de `tools/canon.sh`, rc 0 antes y despues, las diez IDENTICAS. Ficheros:
+`spec/rfc/0008-pruebas-portables-del-pendiente.md` 515 -> 670 lineas (`22886c5aa07ec216`
+-> `3258c33222a2e03c`, +167/-12 por git), `spec/README.md` 168 -> 168 (`3acb000b3f8f3b75`
+-> `4f88e5a6fc86d0aa`, una fila) y este asiento. Pines quietos.
+
+**Lo que NO cierra.** E2 -la prueba portable del pago en curso- con su mitad de E4 en el mismo
+catalogo, y detras el arreglo B (5.A-272). Para la cola: la fila E4 se contradecia consigo misma
+como la E1 y la guia entre su :31 y su :40 (las dos, pagadas aqui; la clase queda fichada), y
+cuatro defectos del PRE que sus propios falsadores destaparon: un localizador por mencion en vez
+de por ruta, otro por primera linea en vez de por encabezado, un limite de palabra que llego con
+el escape doblado y no casaba nunca, y el filtro `check_*` de la lista de herramientas.
