@@ -36509,3 +36509,77 @@ como la E1 y la guia entre su :31 y su :40 (las dos, pagadas aqui; la clase qued
 cuatro defectos del PRE que sus propios falsadores destaparon: un localizador por mencion en vez
 de por ruta, otro por primera linea en vez de por encabezado, un limite de palabra que llego con
 el escape doblado y no casaba nunca, y el filtro `check_*` de la lista de herramientas.
+
+## §501 — RFC-0008 E2, corte E2a: las siete decisiones del pago en curso, y la cota del <<nunca>>
+
+**Que.** El RFC-0008, PROPUESTO, abre E2 -la prueba portable del pago en curso- con siete
+decisiones delegadas por el autor en la sesion 151 y tomadas con la constitucion, las siete
+REVERSIBLES: D-AD el enunciado `{receptor, importe, T, nacido}`, exactos, con `nacido` de la meta
+como en E1, y lo que se prueba es `delta >= T - nacido`; D-AE el camino para el pagador por el
+MISMO metodo, con su credencial y una puerta en la meta (`foto.emisor == index`); D-AF la
+geometria de E1 con el hueco lleno (el carril B compone `X` en sus ciclos 0-1, el importe deja de
+tener banda y sus segmentos prueban la cota temporal); D-AG `delta` y `T` en el campo, a 62 bits,
+y la cota del <<nunca>> declarada; D-AH el enlace entre las dos mitades por `receptor`, `nacido` y
+`seq`, y el fuerte para la prenda; D-AI el tercer fichero, `--retorno`, del pagador; D-AJ el sobre
+2.9 y sus vectores `pago-*` en `pendiente/`, de la misma siembra. El recuento pasa de veintinueve
+a treinta y seis; nacen los descartes 32 a 38; la Seguridad gana el punto de la cota del
+<<nunca>>; las medidas y las Referencias nombran el TERRENO-E2-151, su verificador y el PASTE que
+midio el falsador. La celda de E2 sigue en <<propuesta>>. Un fichero y este asiento; ningun
+`.rs`, ningun pin, sin canon.
+
+**Lo que se midio antes de decidir.** El TERRENO-E2-151 (`274acf0873d38344`/287): lectura pura
+sobre `477dcab`, 54 citas derivadas del arbol por patron con juez de unicidad -dos casan dos veces
+y lo declaran- y tres ausencias con prueba de vida, re-asertadas por el autor 79 de 79 con
+`verifica_terrenoE2.py` (`e95466ce8a5b1f70`/173) en el PASTE-E2-PRE (`386cbcc36c4da6f3`/206,
+SALIDA 20260918-155647, rc 0, porcelain 0 antes y despues). Lo que dice: el pagador tiene la
+apertura entera, porque `send_materials_v2` la toma de el; `circuit_refund_v2` ya abre el
+compromiso entero con `C2` y el importe publicos, componiendo el sobre primero; el AIR de E1
+tiene el carril B ocioso en los ciclos 0 y 1; la capa reembolsa cuando `now - born >= delta` con
+`now = log.len()`, luego <<no antes de T>> es `T <= nacido + delta` en EPOCAS DEL REGISTRO;
+`zkssl_pendingPath` exige la credencial de `index` y deriva de ella al receptor, asi que un
+pagador hoy no puede pedir el camino del pendiente que pago; `pago_en_curso` no existe en el
+codigo, ningun metodo sirve el camino a un pagador, y `simulate --v2` no persiste `(refund_id,
+delta)`. Y el FALSADOR, medido con rc propio en una COPIA del arbol (`git archive`, un modulo de
+tests anadido a `pending.rs`, `cargo test -p zk-ssl --lib -- e2_pre`, 2 de 2 en 16 s):
+`refund_envelope(f, u64::MAX) == refund_envelope(f, 2^32 - 2)`, `C2` idem, y `u64::MAX - 1`
+sigue siendo otro sobre.
+
+**Lo que ese hallazgo es, y a donde va.** El sobre de reversion mete `delta` por
+`BaseElement::new`, y Goldilocks reduce `u64::MAX` a `2^32 - 2` (la casa ya lo deriva para el
+centinela del emisor en `prueba_edad.rs`): dos `delta` que difieren en `p` dan el mismo `X` y el
+mismo `C2`, y el test que vigila el centinela solo lo distingue de `u64::MAX - 1`. Consecuencia:
+un pendiente comprometido <<nunca>> se abre en el reembolso con `delta = 2^32 - 2`, y la capa
+aplica ese delta. Solo quien tiene la apertura -el emisor- puede hacerlo, y lo que abre es su
+propio <<nunca>>. La letra de D2 del RFC-0003, <<las elecciones del emisor atan>>, ata modulo `p`,
+y ningun test lo vigila: es un punto nuevo de la cola sobre el 0003 (declarar que <<nunca>> son
+`2^32 - 2` epocas, o cerrar el sobre al campo, que es rotura de formato); aqui solo se declara la
+cota que el circuito del pago puede probar (D-AG). CORRECCION de la unidad: el terreno escribio
+<<a un latido por minuto, ocho mil anos>>, y la unidad es la EPOCA DEL REGISTRO (`log.len()`),
+no el latido; con mil pagos por jornada siguen siendo milenios, con mil operaciones por segundo
+son unos cincuenta dias. La severidad depende de la escala declarada, y asi queda escrita.
+
+**Las puertas del §501.** Idempotencia por estado (no hay `## §501`); cerrojo pinado en
+`477dcab` con padre `b5d1d0b`, porcelain 0, main y remoto al dia; las dos anclas de lo que se
+toca y dos centinelas; el editor `editar501.py` corre primero sobre una COPIA y clava los dos
+POST predichos antes de tocar el arbol, y los vuelve a clavar al aplicar; las diez herramientas
+PRE y POST por delta, `verificar_citas` por su nombre; commit de DOS por nombre y empuje dentro.
+`restaurar()` deshace el indice y repone los dos.
+
+**Lo que NO afirma.** No sella E2 ni mueve su celda: las siete decisiones son prosa, y lo que las
+prueba -el instrumento, el AIR, el productor, la puerta del pagador, el juez, la boca, el banco y
+el catalogo- son los cortes siguientes, por el molde de E1. No mide el coste de E2: D-AF lo
+declara razonado y manda medirlo con el instrumento antes de escribir el AIR. No decide la letra
+del 0003. No toca `spec/README.md` (la fila del RFC ya dice lo que hay). No acepta el RFC.
+
+**Contadores.** Cero codigo, cero cifras de tests, sin canon (como el §496 y el §500). La
+puerta: las diez herramientas de `tools/canon.sh`, rc 0 antes y despues, las diez IDENTICAS.
+Ficheros: `spec/rfc/0008-pruebas-portables-del-pendiente.md` 670 -> 800 lineas
+(`3258c33222a2e03c` -> `6995b1bf7dc98a86`, +138/-8 por git) y este asiento. Pines quietos.
+
+**Lo que NO cierra.** E2b: el instrumento de E1 en release como BASE del coste
+(`PASTE-E2-PRE.sh --con-instrumento`) y la medida de E2 con el molde del §485; despues el AIR y
+su probador (§490), el productor (§491), la puerta del pagador en `zkssl_pendingPath` (§493), el
+juez con el brazo del mando y la forma 2.9 (§495), la boca `prueba-pago` con `--retorno` (§497),
+el banco sobre la misma siembra (§498), el catalogo `pago-*` con la primera linea del manifiesto
+(§499), y el RFC con la celda de E2 y E4 entera (C-2). Detras, el arreglo B (5.A-272) en el orden
+que el autor fije. Para la cola: el punto del 0003 de arriba, con la unidad correcta.
