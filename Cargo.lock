@@ -3407,6 +3407,7 @@ dependencies = [
  "colored",
  "serde",
  "serde_json",
+ "stark-experiment",
  "tracing",
  "tracing-subscriber 0.3.23",
  "ureq",

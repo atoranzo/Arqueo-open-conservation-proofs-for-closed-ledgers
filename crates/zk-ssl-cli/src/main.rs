@@ -1,16 +1,20 @@
 //! # zk-ssl-cli — sandbox y trazador de la capa desde la terminal
 //!
-//! Tres subcomandos sobre la capa REAL (`zk_ssl::SovereignLayer`):
+//! Seis subcomandos sobre la capa REAL (`zk_ssl::SovereignLayer`) y el nodo:
 //!
 //! - `simulate`      — pago en dos fases (send + claim) con pruebas STARK
 //!                     reales, en memoria o contra un ledger persistido.
 //! - `trace-tx`      — paso a paso de una operación según el
 //!                     `TransitionLog` encadenado de la capa.
 //! - `inspect-state` — raíces, suministro, cuentas y cabeza del registro.
+//! - `conformance`   — los vectores de conformidad (--emit / --check).
+//! - `witness`       — el TESTIGO de las cabezas firmadas de un nodo (§245).
+//! - `prueba-cobro`  — la BOCA del cobrador: el sobre `cobro_pendiente` (RFC-0008, S497).
 //!
 //! Convención de salida: **datos por stdout, diagnóstico por stderr**.
 //! Con `--json`, stdout es JSON Lines puro (un evento por línea).
 
+mod cobro;
 mod commands;
 mod conformance;
 mod fmt;
@@ -62,6 +66,10 @@ enum Command {
     /// ⚠️ Un testigo que opera el propio operador **no prueba nada**: esto
     /// es la implementación de referencia de lo que correría un TERCERO.
     Witness(witness::WitnessArgs),
+    /// **La BOCA del cobrador** (RFC-0008 E4, S497): con su aviso v2 y su credencial pide la
+    /// cabeza firmada y la foto de su pendiente a un nodo VIVO, y escribe el sobre
+    /// `cobro_pendiente` de `PAQUETE.md` 2.8 con la cabeza verbatim.
+    PruebaCobro(cobro::PruebaCobroArgs),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -81,6 +89,7 @@ fn main() -> anyhow::Result<()> {
         Command::InspectState(a) => commands::inspect_state(a, tracer.as_mut()),
         Command::Conformance(a) => conformance::conformance(a, tracer.as_mut()),
         Command::Witness(a) => witness::run(a),
+        Command::PruebaCobro(a) => cobro::run(a),
     }
 }
 

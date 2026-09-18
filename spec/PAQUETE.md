@@ -260,10 +260,11 @@ donde el valor es una respuesta del cable sin reescribir.
   casa y sólo con ellas. Es el MISMO productor con el que la capa verifica lo que produce.
 - **Lo que NO prueba:** nada sobre quién pagó ni sobre el sobre `X`, que es testigo (D-I); nada
   sobre el importe exacto por encima de `inferior`; y nada sobre otra cabeza que la que firma
-  las dos raíces. Su catálogo de vectores, la boca que escribe el sobre y el banco que lo
-  reproduce en vivo son de E4 (RFC-0008 D-L, D-M): hoy el mando lleva los negativos que caen
-  antes de la firma, el juez sus testigos con prueba real en `stark-experiment`, y el productor
-  de la capa y el test del nodo lo enlazan contra un latido real.
+  las dos raíces. Su catálogo de vectores y el banco que lo reproduce en vivo son de E4 (RFC-0008
+  D-L); la boca que escribe el sobre es `zk-ssl-cli prueba-cobro` (§497, D-M): hoy el mando
+  lleva los negativos que caen antes de la firma, el juez sus testigos con prueba real en
+  `stark-experiment`, el productor de la capa y el test del nodo lo enlazan contra un latido
+  real, y la boca reúne las cinco entradas del productor sin abrir libro.
 
 ## 3. El sobre — lo que el binario lee
 
@@ -559,10 +560,11 @@ capturan las respuestas de un nodo real y las envuelven sin reescribir un campo;
 de las otras causas del rechazo se reunieron de capturas de un nodo real, y la sección 9 dice
 de cuáles. Ese es el contrato: **reunir, no recomponer**, y el modo del nodo lo cumple. Un
 mando que arme el paquete es un frente propio y no cambia este documento: cambiaría quién
-escribe el sobre, no el sobre —y así fue en el §466 y en el §473—. **El de cobro pendiente no
-tiene productor todavía**: esa prueba la produce el COBRADOR, con su aviso y con lo que
-`zkssl_pendingPath` le sirve de la foto del último latido, y su boca —un mando del cli— es de E4
-(RFC-0008 D-M). Hoy lo único que la produce son los tests de la capa y del nodo.
+escribe el sobre, no el sobre —y así fue en el §466 y en el §473—. **El de cobro pendiente lo
+produce el COBRADOR** (§497, RFC-0008 D-M y D-P): con su aviso v2 y su credencial, la boca del
+cli, `zk-ssl-cli prueba-cobro`, pide la cabeza firmada y la foto a un nodo VIVO, exige que sean
+del mismo latido y escribe el sobre con la cabeza VERBATIM; el banco que lo reproduce en vivo y
+sus vectores son de E4 (sección 9).
 
 ## 8. Lo que este documento NO afirma
 

@@ -56,6 +56,11 @@ ureq = { version = "2.10", features = ["json"] }
 # declaradas arriba y `stark-experiment` por via de `zk-ssl`. MEDIDO.
 zk-ssl-wire = { path = "../zk-ssl-wire" }
 
+# ⚠️ **S497 (RFC-0008 E4, corte A; D-P).** La boca del cobrador deriva la clave de vista y la
+# identidad del sandbox con `stark_experiment::native`. El crate YA se compilaba aqui por
+# via de `zk-ssl` (linea 21; medido en el §312): declararlo suma CERO nodos al grafo.
+stark-experiment = { path = "../stark-experiment" }
+
 # ⚠️ **El COFIRMANTE** (§299). El testigo ya no solo mira: firma, y para
 # firmar necesita el GUARDIAN del indice —**el mismo crate que usa el nodo**
 # (§296, §298), no una copia: dos implementaciones del mismo invariante

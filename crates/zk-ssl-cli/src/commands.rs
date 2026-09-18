@@ -63,6 +63,19 @@ pub struct SimulateArgs {
     #[arg(long)]
     no_claim: bool,
 
+    /// Envía por la VÍA v2 (RFC-0003): el aviso lleva el sobre `X` opaco, que es lo que la
+    /// prueba del cobro (RFC-0008 E1) necesita. La pareja `(f, delta)` es la de la
+    /// conformidad: `f` = la identidad del emisor, `delta` = 96.
+    #[arg(long)]
+    v2: bool,
+    /// Escribe el aviso v2 en un fichero PROPIO del cliente (posición, sal, importe, `x`).
+    #[arg(long, requires = "v2")]
+    aviso: Option<String>,
+    /// Escribe la credencial del receptor (`index`, `publicId`, `viewKey`) en un fichero
+    /// propio, aparte del aviso: dos ficheros, dos dueños (RFC-0008 D-P).
+    #[arg(long, requires = "v2")]
+    credencial: Option<String>,
+
     /// Semilla base de las claves deterministas del sandbox.
     #[arg(long, default_value_t = 0xA11CE)]
     key_seed: u64,
@@ -117,16 +130,46 @@ pub fn simulate(a: SimulateArgs, tr: &mut dyn Tracer) -> anyhow::Result<()> {
         ),
     };
 
-    // FASE 1 — enviar.
-    let envio = sandbox::run_send(
-        &mut layer,
-        from_real,
-        sandbox::key_of(a.key_seed, a.from),
-        to_real,
-        a.amount,
-        a.salt_seed,
-        tr,
-    )?;
+    // FASE 1 — enviar, por la vía v1 o por la v2 (RFC-0008 D-M: el sandbox aprende la v2).
+    let envio = if a.v2 {
+        let f = layer
+            .public_id_of(from_real)
+            .ok_or_else(|| anyhow::anyhow!("la cuenta emisora #{from_real} no existe"))?;
+        sandbox::run_send_v2(
+            &mut layer,
+            from_real,
+            sandbox::key_of(a.key_seed, a.from),
+            to_real,
+            a.amount,
+            a.salt_seed,
+            f,
+            96,
+            tr,
+        )?
+    } else {
+        sandbox::run_send(
+            &mut layer,
+            from_real,
+            sandbox::key_of(a.key_seed, a.from),
+            to_real,
+            a.amount,
+            a.salt_seed,
+            tr,
+        )?
+    };
+    // Lo que el cobrador se lleva a su máquina: el aviso (del pagador) y su credencial (suya).
+    if let Some(ruta) = &a.aviso {
+        let av = crate::cobro::aviso_de(&envio.notice).map_err(|e| anyhow::anyhow!("{e}"))?;
+        crate::cobro::escribir(ruta, &av)?;
+        tr.emit(&TraceEvent::Note { text: format!("aviso v2 escrito en {ruta}") });
+    }
+    if let Some(ruta) = &a.credencial {
+        let c = crate::cobro::credencial_de(sandbox::key_of(a.key_seed, a.to), to_real);
+        crate::cobro::escribir(ruta, &c)?;
+        tr.emit(&TraceEvent::Note {
+            text: format!("credencial del receptor #{to_real} escrita en {ruta}"),
+        });
+    }
 
     // FASE 2 — cobrar (salvo que se pida ver el pendiente en tránsito).
     if a.no_claim {
