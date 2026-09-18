@@ -132,6 +132,9 @@ mod instrumento_edad;
 // RFC-0008 E1 (§485): el instrumento del cobro pendiente portable. Solo tests.
 #[cfg(test)]
 mod instrumento_cobro;
+// RFC-0008 E2 (§502): el instrumento del pago en curso portable. Solo tests.
+#[cfg(test)]
+mod instrumento_pago;
 #[cfg(any(test, feature = "sandbox"))]
 pub mod tests_support;
 
