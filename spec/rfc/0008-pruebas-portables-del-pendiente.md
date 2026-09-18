@@ -1,7 +1,7 @@
 # RFC-0008 — Las dos pruebas portables del pendiente: el cobro, el pago en curso y la prenda
 
 - **Estado:** PROPUESTO
-- **Autores:** Che, con Claude (sesiones 144, 145, 147 y 149)
+- **Autores:** Che, con Claude (sesiones 144, 145, 147, 149 y 150)
 - **Fecha:** 2026-09-16
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad). Los dos
   métodos nuevos son aditivos; la cabeza v5 no cambia de forma; la marca de prenda es una hoja
@@ -11,8 +11,9 @@
   publicado), §451–§453 (la cabeza v5), §458–§460 (el rechazo por caminos), §463–§467
   (la prueba de edad), §473–§479 (la banda sobre la hoja comprometida); el §483, que lo
   adopta; el §484, que decide D-F y D-G y corrige la fila E1; el §485, el instrumento de E1;
-  el §486, que decide D-H; el §489, que decide D-I y corrige D-B y la Seguridad; y el §494,
-  que decide D-J, D-K, D-L y D-M y corrige la fila E4.
+  el §486, que decide D-H; el §489, que decide D-I y corrige D-B y la Seguridad; el §494,
+  que decide D-J, D-K, D-L y D-M y corrige la fila E4; y el §496, que decide D-N, D-O, D-P y
+  D-Q y parte la fila E4 por lados.
 - **Hito:** H5 de la propuesta enviada a NLnet Restack (140 h), en sus palabras: *«The two
   portable proofs of a pending item. Payee side and payer side, derived from the same head;
   pledge transition; format and vectors.»*
@@ -24,13 +25,14 @@
 | E1 — el cobro pendiente, portable | el circuito del cobrador: bajo el `pendingRoot` de una cabeza v5 firmada existe `C2 = M(C1, X)` con `C1 = H(H(receptor, sal), importe)`, a nombre de `receptor` (D-G), `importe >= inferior` (banda, molde de `InsufficientBalance`), con el camino DENTRO del circuito; su meta `(emisor, nacido)` por camino bajo `pmetaRoot`, con los mismos bits. `zkssl_pendingPath`, aditivo, sirve los dos caminos de la foto del último latido a quien presenta un aviso que recompone la hoja (D-F). Sobre `tipo: "cobro_pendiente"` en `PAQUETE.md`, verificado por el mando sin nodo | NO | propuesta |
 | E2 — el pago en curso, portable | el espejo, para el pagador: `C2` abre a `(receptor, importe)` EXACTOS, `nacido` por camino, y `nacido + delta >= T` con `delta` y `refund_id` como testigo (no se revelan). Sobre `tipo: "pago_en_curso"`, verificado sin nodo. Junto al de E1, un tercero ajeno a los dos verifica un pago disputado sin el libro de nadie | NO | propuesta |
 | E3 — la prenda, como transición con prueba | el receptor marca el pendiente como prendado: una etiqueta con dominio propio sobre `C2` en el árbol de consumos, publicada por un método aditivo, `zkssl_pledge`, que EXIGE la prueba de apertura del cobro (la autorización de `circuit_claim_v2` sin el crédito); una segunda prenda es `ConsumoRepetido`, que ya tiene sobre de rechazo con prueba (RFC-0007 E3, `PAQUETE.md` 2.6). La prenda no toca el cobro ni el reembolso: lo que obliga es contrato, y se declara | NO | propuesta |
-| E4 — el catálogo y el banco | `spec/vectors/pendiente/`: dos positivos por lado, REUNIDOS de las capturas de un nodo real (molde: `edad/`), y un negativo por regla producible; `MANIFIESTO.txt`; la familia en `FAMILIAS`; el banco que lo reproduce en vivo; la sección 9 de `PAQUETE.md`. El giro a ACEPTADO exige la regla 4 medida letra a letra, como el §481 | NO | propuesta |
+| E4 — el catálogo y el banco, por lados | `spec/vectors/pendiente/`: dos positivos por lado, REUNIDOS de las capturas de un nodo real (molde: `edad/`), y un negativo por regla producible; `MANIFIESTO.txt`; la familia en `FAMILIAS`; el banco que lo reproduce en vivo; la sección 9 de `PAQUETE.md`. Va POR LADOS en una sola fila (D-O): el del cobro primero —sus dos formas (D-N), la boca del cli (D-P) y sus negativos (D-Q)— y el del pago con E2; esta celda nombra lo sellado de cada lado. El giro a ACEPTADO exige la regla 4 medida letra a letra, como el §481 | NO | propuesta |
 
 Las medidas de este documento se tomaron sobre `5ef3b1b` (`TERRENO-H5-144`); las de D-F y D-G,
 sobre `393032e` (`TERRENO-E1-145`); y las de D-H, con el instrumento del §485, que corrió en una
 copia fuera del árbol, y leyendo `0424439`; las de D-I, leyendo `be90eb7`
-(`TERRENO-AIR-E1-147`); y las de D-J a D-M, leyendo `7bb3942` (`TERRENO-COBRO-149`).
-Ninguna escribió un byte en el árbol (ver Referencias).
+(`TERRENO-AIR-E1-147`); las de D-J a D-M, leyendo `7bb3942` (`TERRENO-COBRO-149`); y las de
+D-N a D-Q, leyendo `9512915` (`TERRENO-E4-150`). Ninguna escribió un byte en el árbol (ver
+Referencias).
 
 **Correcciones del §484** (la fila E1 y D-B, como las dejó el §483). La fila decía «`receptor` es
 la identidad pública de quien prueba», y el molde que nombra no restringe quién prueba (D-G).
@@ -102,10 +104,10 @@ manda la forma de este RFC:
 
 ## Diseño
 
-Las trece decisiones las tomó el asistente por delegación del autor (D-A..D-E en la sesión
-144; D-F, D-G y D-H en la 145; D-I en la 147; D-J..D-M en la 149), con la constitución de
-decisión (pureza, claridad, coherencia, imagen fiel, en ese orden). Todas llevan su condición
-de reversión, escrita aquí.
+Las diecisiete decisiones las tomó el asistente por delegación del autor (D-A..D-E en la sesión
+144; D-F, D-G y D-H en la 145; D-I en la 147; D-J..D-M en la 149; D-N..D-Q en la 150), con la
+constitución de decisión (pureza, claridad, coherencia, imagen fiel, en ese orden). Todas llevan
+su condición de reversión, escrita aquí.
 
 ### D-A — La T es del pagador; el cobrador dice «a mi nombre, al menos `inferior`, nacido en b»
 
@@ -350,6 +352,68 @@ recicla). La (b) cambia de actor y pide parar el nodo justo tras un latido sin t
 paga por la vía v1 del cable, y su pendiente no es de E1 (D-F). **Reversible** hacia un DTO v2
 del cable cuando el cobro v2 viaje por él, que es la E4 del RFC-0003 y se decide allí.
 
+### D-N — Las dos formas del positivo del cobro: la existencia y la banda más estrecha
+
+Medido sobre `9512915` (`TERRENO-E4-150`): la fila E4 pide dos positivos por lado, reunidos de
+las capturas de un nodo real con el molde de `edad/`, cuyos dos positivos son las dos formas que
+su enunciado admite (todos, `t = 0`, y la caja vacía). El enunciado del cobro es `{receptor,
+nacido, inferior}`; el productor toma `inferior` como argumento y rehúsa si supera el importe del
+aviso (`crates/zk-ssl/src/prueba_cobro.rs`), y el juez fija la cota superior en `MAX_VALOR`
+(D-J). Dos caminos: (a) dos formas del MISMO enunciado sobre UN pendiente: `inferior = 0` —el
+pendiente existe a mi nombre, sin decir cuánto— e `inferior = importe` —la banda más estrecha que
+se sostiene, «al menos lo que hay»—; (b) dos pendientes de dos corridas, con la misma forma. Gana
+(a): pureza (un enunciado, dos formas, como en la edad), claridad (cada positivo afirma una cosa
+distinta, y entre los dos enseñan el rango que el enunciado admite) e imagen fiel (la fila pide
+dos positivos, no dos copias). **Reversible** hacia una tercera forma —una banda estricta entre 0
+y el importe— sólo si un consumidor medido la necesita, y entonces entra con su vector sin
+retirar estos dos.
+
+### D-O — E4 se parte por lados, en una sola fila
+
+Medido sobre `9512915`: D-L dejó escrita la reversión «si, al cerrar E1, E4 se parte por lados y
+la mitad del cobro se adelanta a E2», y E1 está entera (§485-§495); el 5.A-272 pone el arreglo B
+delante de E2, así que E2 arrastra una rotura de formato que la mitad del cobro no arrastra; y la
+tabla del RFC-0007 nunca partió una etapa en dos filas: E3 y E4 nombran sus cortes (E3a, E3b,
+E4a, E4b-1..3) en la celda de estado. Dos caminos: (a) la fila E4 sigue siendo una, su texto dice
+que va por lados y su celda de estado nombra lo sellado de cada lado; (b) nacen dos filas, E4a
+(cobro) y E4b (pago). Gana (a): coherencia (el molde del 0007), pureza (menos filas, menos
+excepciones) e imagen fiel (la celda dice lo que hay: hasta que los dos lados estén, la etapa no
+está). El lado del pago se hace con E2, porque su banco y su boca necesitan la prueba que E2
+trae. **Reversible** hacia (b) si el lado del pago exige entregas que no quepan en una celda.
+
+### D-P — La credencial del cobrador es suya: la boca la recibe, no la deriva
+
+Medido sobre `9512915`: `zkssl_pendingPath` exige la credencial del receptor (`viewKey`, §261) y
+la capa la cruza con el `view_id` guardado; la única boca del árbol que entrega una clave de
+vista es `dev_openSeeded`, que abre una cuenta NUEVA; `derive_view_key_wide` vive en
+`stark_experiment::native`, que el cli no declara aunque ya lo compila por vía de `zk-ssl`; y la
+posición de una cuenta es `public_id[0] % cap` con sondeo lineal, derivable pero no pura. Tres
+caminos: (a) la boca recibe `--index` y `--view-key` por argumento, como los tendría un cobrador
+real, y el sandbox —que en la demostración ES la máquina del cobrador— escribe esa credencial en
+un fichero PROPIO, aparte del aviso, derivada de su clave determinista, declarando
+`stark-experiment` en el cli (cero nodos nuevos en el grafo); (b) la boca deriva índice y
+credencial de `--key-seed` y `--to`, y sólo sirve en el sandbox; (c) un método del cable que
+sirva la clave de vista. Gana (a): coherencia de actores (el aviso es del pagador y la credencial
+del cobrador: dos ficheros, dos dueños, y ningún nombre reciclado), claridad (una boca que un
+cobrador real puede usar) y la ley de diseño (la (c) haría que el nodo entregue lo que sólo
+autoriza a leer, §261). **Reversible** hacia (b) si el fichero de la credencial resulta ser una
+pieza que nadie custodia de verdad y la traza del sandbox ya lo dice todo.
+
+### D-Q — Un negativo por regla producible con una mutación de una captura real
+
+Medido sobre `9512915`: el brazo del mando cae antes de la firma con textos de la casa (`falta
+enunciado`, `falta prueba o no es cadena 0x`, `falta cabeza`, `falta signature`, `exige una
+cabeza v5`); el juez que enlaza cae con texto de la casa en `nacido >= seq` y, si la prueba no
+verifica, con el prefijo `cobro:` delante de lo que pone winterfell (el molde de
+`neg-cota-movida` en `edad/`). Dos caminos: (a) un vector por regla: los cinco de antes de la
+firma, `nacido = seq` pinado entero, y UNO por la regla del juez —receptor movido, `inferior` por
+encima del importe y prueba corrupta caen por la misma regla, así que entra uno—: siete, y
+ninguna escena; (b) un vector por pieza mutada. Gana (a): coherencia (el catálogo pina la regla,
+no la pieza, como en `rechazo/` y en `edad/`) y pureza (menos vectores que no dicen nada nuevo).
+Se confirma con las capturas del banco y no antes: una mutación que caiga por otra regla que la
+suya no entra. **Reversible** hacia más vectores sólo si una captura enseña una regla que esta
+lista no nombra.
+
 ## Lo que se DESCARTÓ al medir
 
 1. Abrir `X` del lado del cobrador para probar la T: rompe D-2 del RFC-0003 (el receptor
@@ -380,6 +444,14 @@ del cable cuando el cobro v2 viaje por él, que es la E4 del RFC-0003 y se decid
 14. Los vectores del cobro dentro de E1: contradice la fila E4 adoptada (D-L).
 15. La boca del cobrador en un modo del nodo, que cambia de actor, o en el SDK, que paga por
     una vía que E1 rehúsa (D-M).
+16. Dos pendientes de dos corridas como los dos positivos del cobro: la misma forma dos veces
+    no enseña el rango que el enunciado admite (D-N).
+17. E4 en dos filas, E4a y E4b: la tabla del RFC-0007 nombra sus cortes en la celda de estado
+    y nunca partió una etapa (D-O).
+18. Que la boca del cobrador derive su credencial de la semilla del sandbox, o que un método
+    del cable la sirva: la primera sólo vale en el sandbox y la segunda haría que el nodo
+    entregue lo que sólo autoriza a leer (D-P).
+19. Un vector por pieza mutada donde la regla es la misma: el catálogo pina la regla (D-Q).
 
 ## Compatibilidad
 
@@ -430,6 +502,10 @@ expediente aunque no rompa nada.
 - La lectura pura de la sesión 149 sobre `7bb3942`, `TERRENO-COBRO-149` (texto,
   `e14211dd032dd4c0`/213, con 54 citas que `verifica_terreno149.py` re-aserta; en Downloads
   del autor, como las anteriores).
+- La lectura pura de la sesión 150 sobre `9512915`, `TERRENO-E4-150` (texto,
+  `705a74e9a9a26487`/294, con 55 citas que `verifica_terreno150.py` re-aserta, 55 de 55 en el
+  árbol del autor con porcelain 0 antes y después; en Downloads del autor, como las
+  anteriores).
 - El instrumento de E1 y su corrida: `crates/zk-ssl/src/instrumento_cobro.rs` (§485) y la salida
   del PASTE que lo ensayó fuera del árbol (`96cf0169b0c09589`/44, en Downloads del autor).
 - El hito, verbatim, en la línea 46 del formulario enviado (`NLNET-form-answers-EN-v3.txt`,

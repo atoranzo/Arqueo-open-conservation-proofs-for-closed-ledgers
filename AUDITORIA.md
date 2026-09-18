@@ -36179,3 +36179,56 @@ circuitos 350 con 12, kit 112, `zk-ssl-air` 16; ningun otro se mueve. Ningun Car
 **Lo que NO cierra.** La E2 del RFC-0008 -la prueba portable del pago en curso- y la E4 con el
 catalogo, la boca y el banco; al cerrar E1 se decide cual de las dos va antes. Y detras, el
 arreglo B (5.A-272).
+
+## §496 — RFC-0008: D-N..D-Q, la mitad del cobro de E4 (formas, lados, credencial y negativos)
+
+**Que.** El RFC-0008, PROPUESTO, gana cuatro decisiones mas, delegadas por el autor en la sesion 150
+y tomadas con la constitucion, las cuatro REVERSIBLES: D-N las dos formas del positivo del cobro,
+D-O que E4 se parte por lados en una sola fila, D-P que la credencial del cobrador la recibe la boca
+y no la deriva, y D-Q un negativo por regla producible. La fila E4 pasa a decir que va por lados,
+citando lo que decia (S247): su texto de entrega no cambia y su celda de estado sigue en propuesta.
+Nacen los descartes 16 a 19; el recuento de decisiones pasa de trece a diecisiete; la cabecera, las
+medidas y las Referencias nombran la lectura de esta sesion. Solo el RFC y este asiento.
+
+**Lo que se midio antes de decidir** (lectura pura sobre el zip de `9512915`, `TERRENO-E4-150`
+`705a74e9a9a26487`, 55 citas asertadas contra el zip y re-asertadas por el autor contra su arbol con
+`verifica_terreno150.py`: 55 de 55, HEAD `9512915`, porcelain 0 antes y despues). D-L dejo escrita
+la reversion de partir E4 por lados y adelantar el cobro, y el 5.A-272 pone el arreglo B delante de
+E2. El productor del cobro es una funcion libre de cinco entradas, rehusa el aviso v1 y entrega lo
+que ya esta enlazado (§495); `zkssl_pendingPath` sirve exactamente `FotoDelCobro` mas `s`, exige la
+credencial del receptor y `x` obligatorio, y su camino es de la FOTO del ultimo latido, luego la
+boca exige `s == cabeza.seq`. El aviso v2 no tiene forma de cable (`PendingNoticeDto` sin `x`),
+`simulate` va por la via v1 y `run_send_v2` solo lo llama la conformidad, en memoria;
+`simulate --ledger` abre el sled directamente, asi que se siembra con el nodo PARADO y se cobra con
+el nodo VIVO. La unica boca que entrega una clave de vista es `dev_openSeeded`, que abre una cuenta
+nueva; `derive_view_key_wide` vive en `stark_experiment::native`, que el cli no declara. La tabla
+del RFC-0007 nombra sus cortes en la celda de estado y nunca partio una etapa en dos filas. El brazo
+del mando y el juez que enlaza dan seis textos de la casa y uno con prefijo.
+
+**Las cuatro decisiones.** D-N: dos formas del MISMO enunciado sobre un pendiente, `inferior = 0`
+(existe a mi nombre) e `inferior = importe` (la banda mas estrecha que se sostiene). D-O: una sola
+fila E4, cuyo texto dice que va por lados y cuya celda de estado nombra lo sellado de cada lado; el
+lado del cobro primero, el del pago con E2. D-P: la boca recibe `--index` y `--view-key`, como un
+cobrador real; el sandbox escribe la credencial en un fichero propio, aparte del aviso, derivada de
+su clave determinista, declarando `stark-experiment` en el cli (cero nodos nuevos). D-Q: siete
+negativos, uno por regla producible con una mutacion de una captura real, y uno solo por la regla
+del juez; se confirman con las capturas y no antes.
+
+**Lo que NO afirma.** No escribe la boca, ni el banco, ni el catalogo: son los cortes siguientes. No
+mueve la celda de estado de E4, que sigue en propuesta. No toca `PAQUETE.md`: sus dos declaraciones
+(5.A-292) las retira el corte que las desmiente. No corrige la fila del RFC-0008 en `spec/README.md`
+(<<nothing sealed yet>>, rancia desde el §485): va a la cola.
+
+**Contadores.** Cero codigo, cero cifras de tests, sin canon (como el §483, el §484, el §486, el
+§489 y el §494). La puerta: las diez herramientas de `tools/canon.sh`, rc 0 antes y despues, las
+diez IDENTICAS y sin ningun delta previsto. Ficheros:
+`spec/rfc/0008-pruebas-portables-del-pendiente.md` 439 -> 515 lineas (`b05060d87cd5cb1b` ->
+`22886c5aa07ec216`, +86/-10 por git) y este asiento. Pines quietos.
+
+**Lo que NO cierra.** El corte A de la mitad del cobro, la boca: `simulate` aprende la via v2 y deja
+el aviso y la credencial del receptor en dos ficheros propios del cliente, y el sexto subcomando del
+cli reune las cinco entradas del productor, exige `s == cabeza.seq` y escribe el sobre 2.8 con la
+cabeza VERBATIM; en el mismo corte, la seccion 7 de `PAQUETE.md`. Despues el banco con `--guardar`
+(corte B), y el catalogo `spec/vectors/pendiente/` con su manifiesto, la familia, la estrofa del
+canon, la seccion 9 de `PAQUETE.md`, los dos README y la fila de `spec/README.md` (corte C), con su
+`-B` de pines, que trae el arreglo del 5.A-283. Detras, el arreglo B (5.A-272) y E2.
