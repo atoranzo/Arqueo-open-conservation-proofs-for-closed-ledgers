@@ -36583,3 +36583,74 @@ juez con el brazo del mando y la forma 2.9 (§495), la boca `prueba-pago` con `-
 el banco sobre la misma siembra (§498), el catalogo `pago-*` con la primera linea del manifiesto
 (§499), y el RFC con la celda de E2 y E4 entera (C-2). Detras, el arreglo B (5.A-272) en el orden
 que el autor fije. Para la cola: el punto del 0003 de arriba, con la unidad correcta.
+
+## §502 — RFC-0008 E2, corte E2b: el instrumento del pago en curso, y su -B
+
+**Que.** Nace `crates/zk-ssl/src/instrumento_pago.rs` (327 lineas, solo tests, molde de
+`instrumento_cobro.rs`) y `lib.rs` lo declara: cinco tests y un instrumento. La GEOMETRIA de
+D-AF, atada a la profundidad y al ciclo: el carril B del pago compone `X = M(refund_id, [delta,
+0, 0, 0])` en el ciclo 0, lo arrastra en el 1 y compone la meta en el 2 -35 ciclos, exactamente
+los dos que E1 le dejaba ociosos-, la traza sigue en 512, y la cota temporal `delta - (T -
+nacido)` es UN segmento de 64 filas donde la banda del importe gastaba tres. La RECETA del
+pagador sube a las dos raices con los mismos bits, y el par `(refund_id, delta)` ATA: otro
+`refund_id` u otro `delta` dan otra hoja. Lo que el campo NO distingue, como test con prueba de
+vida: `u64::MAX` y `2^32 - 2` dan el mismo sobre y la misma hoja (D-AG). Y los DOS testigos que el
+PASTE-E2b-PRE-r2 midio con la regla real de la capa, ahora permanentes: la frontera de `T` por
+los dos lados y el <<nunca>> que se abre con el delta reducido y muere solo en el tiempo; los dos
+prueban STARK reales y llevan `cfg_attr(debug_assertions, ignore)` con el motivo de la casa
+(nota 41). El instrumento (`#[ignore]`, a mano en release) mide la prueba del cobro que el
+productor real escribe sobre un libro vivo -la traza que E2 hereda- y la apertura del reembolso
+v2 -lo que E2 pliega en los ciclos ociosos-. Dos commits: el §502 con el codigo, y su `-B` con
+el pin, las cifras y este asiento.
+
+**Lo que se midio antes de escribirlo.** El PASTE-E2b-PRE en una copia con `git archive`: la r1
+corrio el instrumento de E1 en release -la BASE: subida proxy de 512 filas x 13 en 0,16 s y
+43.700 B, de 1024 en 0,15 s y 49.631 B; la foto de 16.384 posiciones se clona en 1,5 ms con 3,2
+MB retenidos y un camino sale en 5 us- y sus dos testigos MURIERON dentro de winter-prover
+(`evaluation_table.rs:214`), porque M2 corria SIN `--release` y el gate nombro la causa mal: la
+clase de la nota 41, y un rc que decia lo que no midio (dos defectos del PRE, a la cola). La r2,
+en release: `now 6, nacido 3, delta 4 -> RefundTooEarly` y `now 7 -> reembolsado` (la frontera
+es exactamente `T <= nacido + delta`, en epocas del registro), y el <<nunca>> abierto con
+`2^32 - 2` pasa la recomposicion y muere solo en `RefundTooEarly` (2 de 2 en 44 s). La capa
+listaba 379 en release: los 373 del pin mas los 6 ignorados.
+
+**Las puertas del §502 (`d298447`, padre `552eb5e`, SALIDA 20260918-165345).** Idempotencia por
+estado (el fichero no existe; vida: `instrumento_cobro.rs` existe); cerrojo pinado con cuatro
+centinelas; el `.rs` en base64 clavando su huella ANTES de entrar (`9c6b86681c8cd6ec`/327);
+`lib.rs` por `editar502.py` embebido, sobre una copia primero (`e8bdd4e8f499fd22`/1022 ->
+`934ee42694833f84`/1025); warnings del crate PRE y POST por delta forzando la recompilacion: 0 y
+0; la suite de la capa en RELEASE con el conjunto EXACTO predicho, **378 pasan, 0 fallan, 7
+ignorados en 58 s**, y los cinco nuevos por nombre en `--list`; las diez herramientas con los DOS
+deltas PREDICHOS aqui sobre el arbol (`check_tests` 1366 -> 1372 y 18 -> 19 instrumentos;
+`check_modulos` 135 -> 136) y ocho identicas; commit de DOS por nombre (327/0 y 3/0) y empuje.
+VERDE A LA PRIMERA, y el `.rs` compilo a la primera. Ensayado con un cargo de mentira que lee el
+estado del arbol: base verde y ocho falsadores en su clase (ya existe, sucio, ancla, editor,
+suite corta, warning nuevo, herramienta fuera de lo previsto -los tres restauran- y remoto).
+
+**El `-B`.** `tools/canon.sh` sube el pin de la capa con su historia: **373 -> 378, 6 -> 7
+ignorados**. Seis documentos mueven doce lineas: los siete sitios que `check_cifras` marco con
+la fila subida (PAPER, PAPER_EN, ARQUITECTURA x2, PRINCIPIOS, INSTITUCIONAL e INSTITUTIONAL: 373
+-> 378 y 6 -> 7), las dos sumas de sello **1209 -> 1214** (PAPER y PRINCIPIOS, con el desglose
+<<378 de la capa>>) y las dos sumas <<contando los pines>> **1346 -> 1351**, que ese gate no ve
+(la clase del S497-B). El perimetro se DERIVO: `check_cifras` sobre una copia con la fila subida,
+verde tras los cambios; `check_figures` mueve SIETE lineas informativas, PREVISTAS. Canon
+`--sello` VERDE en 341 s, con la capa 378/7 en su fila.
+
+**Lo que NO afirma.** No hay AIR del pago: la geometria esta derivada y medida contra la base de
+E1, no construida; el coste de E2 se lee del instrumento (`--ignored`, a mano) cuando se corra.
+No mueve la celda de E2 ni el RFC. No decide la letra del 0003 (dos deltas, un sobre). El
+<<nunca>> se declara con la unidad correcta: epocas del registro.
+
+**Contadores.** El §502: dos ficheros, 327/0 y 3/0, cinco `#[test]` y un instrumento;
+`check_tests` 1366 -> 1372 (19 instrumentos), `check_modulos` 135 -> 136. El `-B`: ocho ficheros
+con este asiento, doce lineas en seis documentos y la fila del canon; `check_figures` siete
+lineas previstas; las otras nueve IDENTICAS. Pines: capa 373 -> 378 y 6 -> 7; ningun otro se
+mueve. Ningun Cargo tocado.
+
+**Lo que NO cierra.** El AIR del pago (`circuit_pago_en_curso`, molde `circuit_cobro_pendiente`)
+con su juez en `zk-ssl-air` y la cota temporal por segmento; el productor de la capa (§491); la
+puerta del pagador en `zkssl_pendingPath` (§493, D-AE); el juez enlazado, el brazo del mando y
+la forma 2.9 (§495); la boca `prueba-pago` y `--retorno` (§497); el banco sobre la misma siembra
+(§498); el catalogo `pago-*` con la primera linea del manifiesto (§499); y el RFC con la celda de
+E2 y E4 entera. Detras, el arreglo B (5.A-272), en el orden que el autor fije. Para la cola: los
+dos defectos del PRE de hoy (el perfil, y el rc que nombro lo que no midio).
