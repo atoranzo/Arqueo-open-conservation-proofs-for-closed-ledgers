@@ -65,8 +65,10 @@ fn falla(que: String) -> LayerError {
     LayerError::VerificationFailed(format!("prueba de cobro: {que}"))
 }
 
-/// Los bits de una posicion, en el orden en que `SparseTree::path_for` los escribe.
-fn bits_de(posicion: u64, niveles: usize) -> Vec<bool> {
+/// Los bits de una posicion, en el orden en que `SparseTree::path_for` los escribe. Es
+/// `pub(crate)` desde el §504: el productor del pago hace la MISMA comprobacion, y dos
+/// listas de bits serian dos productores.
+pub(crate) fn bits_de(posicion: u64, niveles: usize) -> Vec<bool> {
     (0..niveles).map(|n| n < 64 && (posicion >> n) & 1 == 1).collect()
 }
 
