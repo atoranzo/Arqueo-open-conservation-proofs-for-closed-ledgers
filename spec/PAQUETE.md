@@ -259,12 +259,13 @@ donde el valor es una respuesta del cable sin reescribir.
   con las dos raíces firmadas y el techo, y verifica la prueba con las `proof_options()` de la
   casa y sólo con ellas. Es el MISMO productor con el que la capa verifica lo que produce.
 - **Lo que NO prueba:** nada sobre quién pagó ni sobre el sobre `X`, que es testigo (D-I); nada
-  sobre el importe exacto por encima de `inferior`; y nada sobre otra cabeza que la que firma
-  las dos raíces. Su catálogo de vectores y el banco que lo reproduce en vivo son de E4 (RFC-0008
-  D-L); la boca que escribe el sobre es `zk-ssl-cli prueba-cobro` (§497, D-M): hoy el mando
-  lleva los negativos que caen antes de la firma, el juez sus testigos con prueba real en
-  `stark-experiment`, el productor de la capa y el test del nodo lo enlazan contra un latido
-  real, y la boca reúne las cinco entradas del productor sin abrir libro.
+  sobre el importe exacto por encima de `inferior`; y nada sobre otra cabeza que la que firma las
+  dos raíces. Su catálogo de vectores es `spec/vectors/pendiente/` (§499, RFC-0008 E4 por el lado
+  del cobro) y el banco que lo reproduce en vivo, `tools/banco_pendiente.sh` (§498); la boca que
+  escribe el sobre es `zk-ssl-cli prueba-cobro` (§497, D-M): el mando lleva los negativos que caen
+  antes de la firma, el juez sus testigos con prueba real en `stark-experiment`, el productor de la
+  capa y el test del nodo lo enlazan contra un latido real, la boca reúne las cinco entradas del
+  productor sin abrir libro, y el manifiesto pina lo que cada sobre dice.
 
 ## 3. El sobre — lo que el binario lee
 
@@ -666,16 +667,24 @@ no verifica lo pone WINTERFELL y no la casa, asi que el manifiesto pina solo el 
 `edad:` que antepone el mando. La cabeza capturada no viaja como vector: va entera dentro de
 los dos sobres, y su huella se declara en la cabecera del manifiesto.
 Las demostraciones en vivo con nodo son `tools/banco_apagado.sh`, `tools/banco_consumo.sh`
-(RFC-0006, E3), `tools/banco_dos_libros.sh` (E4a), `tools/banco_edad.sh` (E4b-3) y
-`tools/banco_rechazo.sh` (RFC-0007 E5, cortes 3b y 4c): el tercero de ellos levanta DOS nodos
-con DOS claves y produce el hecho que E4 existe para detectar, y el último produce el sobre de
-rechazo sobre un libro real con el servidor PARADO.
+(RFC-0006, E3), `tools/banco_dos_libros.sh` (E4a), `tools/banco_edad.sh` (E4b-3),
+`tools/banco_rechazo.sh` (RFC-0007 E5, cortes 3b y 4c) y `tools/banco_pendiente.sh` (RFC-0008 E4,
+lado del cobro): el tercero de ellos levanta DOS nodos con DOS claves y produce el hecho que E4
+existe para detectar, el quinto produce el sobre de rechazo sobre un libro real con el servidor
+PARADO, y el último siembra con el servidor PARADO y pide el sobre del cobro por la boca con el
+servidor VIVO.
 
-**El cobro pendiente (§495) todavía no tiene vectores**, y se declara: su catálogo
-`spec/vectors/pendiente/`, su familia en `FAMILIAS` y el banco que lo reproduce en vivo son de
-E4 del RFC-0008 (D-L), y hasta entonces `tools/conformidad.sh` no corre ninguno. Sus reglas sí
-tienen testigo en el árbol —los negativos del mando que caen antes de la firma, y los del juez
-con prueba real en `stark-experiment`—, pero no en un manifiesto.
+**Desde §499 cubre el sobre de COBRO PENDIENTE** (RFC-0008, E4 por el lado del cobro):
+`spec/vectors/pendiente/` trae DOS positivos REUNIDOS de las capturas de un nodo real —la boca del
+cobrador (`zk-ssl-cli prueba-cobro`, §497) los escribió con el nodo VIVO contra la cabeza v5 de seq
+5 que ese nodo firmó, sobre un pendiente v2 nacido en 4— y SIETE negativos por UNA mutación cada
+uno, uno por regla producible (D-Q). Los dos positivos son las dos formas de D-N: la existencia
+(`inferior = 0`) y la banda ajustada (`inferior = importe`). Un texto de la familia no se pina
+entero, y se declara: el de la prueba que no verifica lo pone WINTERFELL y no la casa, así que el
+manifiesto pina sólo el prefijo `cobro:` que antepone el mando. La cabeza no viaja como vector: va
+entera dentro de los dos sobres; el aviso y la credencial del escenario tampoco —el mando no los
+lee— y el manifiesto los declara por su huella. Su productor es `tools/banco_pendiente.sh` (§498),
+que siembra con el nodo PARADO y pide con el nodo VIVO. El lado del pago llega con E2.
 
 ## 10. Historia
 
@@ -741,25 +750,24 @@ con prueba real en `stark-experiment`—, pero no en un manifiesto.
 ## 11. El artefacto
 
 Lo que un tercero descarga es `arqueo-verify-<versión>-<host>.tar.gz` (§401), y dentro:
-`zk-ssl-verify` (el binario), `conformidad.sh` (el arnés de la sección 9, §408),
-`spec/PAQUETE.md` (este documento), `spec/vectors/paquete/`, `spec/vectors/consumo/`,
-`spec/vectors/conflicto/`, `spec/vectors/rechazo/` y `spec/vectors/edad/`
-(los cinco manifiestos y sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`,
-`THIRD-PARTY.txt` (las licencias de todo lo enlazado), `VERSION` (el commit, el toolchain y los
-flags con que se compiló) y `SHA256SUMS` (la huella de cada fichero de dentro). Se comprueba con
-`sha256sum -c SHA256SUMS`, y el binario contra los cinco catálogos con
-`bash conformidad.sh ./zk-ssl-verify`,
-`bash conformidad.sh ./zk-ssl-verify spec/vectors/consumo/MANIFIESTO.txt`,
-`bash conformidad.sh ./zk-ssl-verify spec/vectors/conflicto/MANIFIESTO.txt`,
-`bash conformidad.sh ./zk-ssl-verify spec/vectors/rechazo/MANIFIESTO.txt` y
-`bash conformidad.sh ./zk-ssl-verify spec/vectors/edad/MANIFIESTO.txt`: cada entrada dice el
-código de salida y el texto.
+`zk-ssl-verify` (el binario), `conformidad.sh` (el arnés de la sección 9, §408), `spec/PAQUETE.md`
+(este documento), `spec/vectors/paquete/`, `spec/vectors/consumo/`, `spec/vectors/conflicto/`,
+`spec/vectors/rechazo/`, `spec/vectors/edad/` y `spec/vectors/pendiente/` (los seis manifiestos y
+sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las licencias de todo
+lo enlazado), `VERSION` (el commit, el toolchain y los flags con que se compiló) y `SHA256SUMS` (la
+huella de cada fichero de dentro). Se comprueba con `sha256sum -c SHA256SUMS`, y el binario contra
+los seis catálogos con `bash conformidad.sh ./zk-ssl-verify`, `bash conformidad.sh ./zk-ssl-verify
+spec/vectors/consumo/MANIFIESTO.txt`, `bash conformidad.sh ./zk-ssl-verify
+spec/vectors/conflicto/MANIFIESTO.txt`, `bash conformidad.sh ./zk-ssl-verify
+spec/vectors/rechazo/MANIFIESTO.txt`, `bash conformidad.sh ./zk-ssl-verify
+spec/vectors/edad/MANIFIESTO.txt` y `bash conformidad.sh ./zk-ssl-verify
+spec/vectors/pendiente/MANIFIESTO.txt`: cada entrada dice el código de salida y el texto.
 
 La huella del binario **no depende de la máquina ni del usuario** —se compila con
 `--remap-path-prefix`—, pero sí del toolchain y de `Cargo.lock`: con el `rustc` que `VERSION`
 nombra, `bash tools/artefacto.sh` sobre el commit que `VERSION` nombra vuelve a producir el mismo
 binario y el mismo tarball, y `tools/canon.sh` comprueba esa propiedad en cada sello (dos
-compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los cinco manifiestos desde el
+compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los seis manifiestos desde el
 árbol y, desde §425, otra vez **desde dentro del tarball desempaquetado y sin repo**, con el mismo
 veredicto). Lo que el binario exige: x86_64 Linux y una glibc igual o mayor que la que `VERSION`
 declara (`glibc_max`); no es estático, y se dice.

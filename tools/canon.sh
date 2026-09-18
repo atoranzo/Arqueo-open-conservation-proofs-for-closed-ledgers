@@ -361,6 +361,18 @@ else
   grep -q '^ROJO' "$OUT/edad.txt" || falla "edad: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/edad.txt"))"
 fi
 
+# ── 3 bis pendiente · el sobre de COBRO PENDIENTE (RFC-0008 E4-cobro, desde el §499): el MISMO arnes ──
+msg ""
+msg "== CANON · las formas del sobre de cobro pendiente =="
+# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
+# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
+if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/pendiente/MANIFIESTO.txt > "$OUT/pendiente.txt" 2>&1; then
+  msg "  OK  pendiente: $(tail -n 1 "$OUT/pendiente.txt" | sed 's/^conformidad: //')"
+else
+  while IFS= read -r L; do falla "pendiente $L"; done < <(grep '^ROJO' "$OUT/pendiente.txt" | sed 's/^ROJO //')
+  grep -q '^ROJO' "$OUT/pendiente.txt" || falla "pendiente: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/pendiente.txt"))"
+fi
+
 # ── 3 ter · el ARTEFACTO (tools/artefacto.sh --check, §401): la PROPIEDAD, no un pin ──
 msg ""
 msg "== CANON · el artefacto =="

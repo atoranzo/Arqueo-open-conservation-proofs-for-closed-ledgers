@@ -36373,3 +36373,73 @@ los bancos (son doce, y `tools/*.sh` dieciseis). Ningun Cargo tocado.
 B (5.A-272). Dos puntos para la cola: los tres parametros del libro son dos productores sin atado
 (el dia que uno se mueva, el banco morira con `ParameterMismatch` lejos de la causa), y la celda de
 estado de la fila E1 del RFC-0008 contradice a la linea 374 del mismo fichero.
+
+## §499 — RFC-0008 E4-cobro, corte C-1: el catalogo del cobro pendiente, y el artefacto lo lleva
+
+**Que.** Nace `spec/vectors/pendiente/`, la sexta familia de vectores del mando: DOS positivos
+REUNIDOS de las capturas de un nodo real -la boca del cobrador los escribio con el nodo VIVO contra
+la cabeza v5 de seq 5 que ese nodo firmo, sobre un pendiente v2 nacido en 4 por 250000 (D-N: la
+existencia, `inferior = 0`, y la banda ajustada, `inferior = importe`)- y SIETE negativos por UNA
+mutacion cada uno, uno por regla producible (D-Q), copiados BYTE A BYTE de las capturas de la
+corrida del sello del §498 (`CAPTURAS-498-S498`, gateadas por huella al copiar) con su
+`MANIFIESTO.txt`. La familia entra en `FAMILIAS` de `tools/artefacto.sh` -el unico productor: el
+artefacto la monta y la corre, tambien desde dentro del tarball- y en `tools/canon.sh` como la
+estrofa `3 bis pendiente`, derivada de la de edad por sustitucion y medida sin residuo. Y la prosa
+que el catalogo deja rancia se paga aqui: `spec/PAQUETE.md` retira <<todavia no tiene vectores>> y
+gana el parrafo de la familia en la seccion 9, la seccion 11 pasa de cinco a seis manifiestos con
+su orden de `conformidad.sh`, y la 2.8 nombra el catalogo y el banco; los dos README cuentan 250
+ficheros en `spec/vectors/` (eran 240; 243 `.json`, eran 234) y suman `pendiente` a la lista; y
+`spec/README.md` gana la fila de `vectors/pendiente/`. Diez ficheros nacen y siete se tocan, con
+este asiento; ningun `.rs`, ningun pin.
+
+**Las decisiones, delegadas por el autor <<con la ley, REVERSIBLES como las anteriores>>** sobre el
+TERRENO-C-150 (lectura pura de `f1e0401`, 44 citas y las once capturas re-asertadas 60/60 en su
+maquina): D-X la fuente son las capturas del SELLO, las que el asiento 498 nombra por su SALIDA;
+D-Y entran los nueve sobres y no el aviso ni la credencial -no son sobres, el mando no los lee y el
+arnes exigiria una entrada-, que el manifiesto declara por su huella; D-Z los nombres tal cual los
+guardo el banco, porque un vector se copia y no se renombra; D-AA los positivos pinan la segunda
+linea de su VERDE (<<por al menos 0, nacido en 4>> y <<por al menos 250000, nacido en 4>>), los
+negativos los textos de la casa, y el de la regla del juez SOLO el prefijo `cobro:`, porque lo que
+sigue lo pone winterfell; D-AB el catalogo con toda la prosa aqui (C-1) y el RFC aparte (C-2); D-AC
+la familia y la estrofa se llaman `pendiente`, porque el lado del pago ira al mismo catalogo (D-O).
+
+**Lo que se midio antes de escribirlo (PASTE-499-PRE, SALIDA 20260918-112533, rc 0, porcelain 0
+antes y despues).** Las 22 capturas de las dos corridas clavan por huella y tamano. Entre la corrida
+suelta y la del sello, los nueve sobres son los MISMOS bytes salvo la cabeza, y dentro de ella un
+solo campo, `emittedAtUnix`: la prueba STARK del cobro es determinista (el probador no echa dados y
+el libro se siembra con las mismas semillas), la firma XMSS tambien (misma clave, mismo indice,
+mismo mensaje), y lo unico que se mueve es la hora, que la firma no cubre. `neg-sin-cabeza.json`
+clava la misma huella en las dos, y el aviso y la credencial tambien. El mando de `f1e0401` en
+release (`194c8c3a0f1b5439`) sobre los nueve: exit 0 los dos positivos con su VERDE de tres lineas,
+exit 1 los siete negativos con su texto -`falta enunciado`, `falta prueba o no es cadena 0x`,
+`falta cabeza`, `cabeza: falta signature`, `formatVersion 4: el cobro pendiente exige una cabeza
+v5`, `cobro: nacido 5 no es anterior a la cabeza de seq 5` y `cobro:
+InconsistentOodConstraintEvaluations`-. Y `tools/conformidad.sh` sobre un catalogo TEMPORAL con el
+manifiesto borrador: 9 de 9 (9 `.json`, 9 con entrada), antes de que un byte entrara en el arbol.
+
+**Las puertas del §499.** Idempotencia por estado (no existe el catalogo y no hay `## §499`);
+cerrojo pinado en `f1e0401` con padre `8d064c6`, porcelain 0, main y remoto al dia, las siete
+anclas de lo que se toca y cuatro centinelas; los nueve sobres copiados de las capturas gateados
+por huella y el manifiesto reconstruido aparte (`4e2e4c51a7b1726e`/24); los seis POST de prosa y
+herramientas PREDICHOS enteros por el editor (`editar499.py`, funcion del PRE) y clavando al
+aplicar; `bash -n` del canon y del artefacto; las diez herramientas PRE; el canon `--sello` ENTERO
+con la estrofa nueva y el artefacto con la sexta familia: VERDE en 189 s; este asiento con
+el tiempo del canon por token; las diez herramientas POST por delta; commit de diecisiete por
+nombre y empuje dentro. `restaurar()` borra el catalogo y repone los siete.
+
+**Lo que NO afirma.** El RFC-0008 sigue en propuesta con sus cuatro celdas en <<propuesta>>: la de
+E1 con la fila entera desde el §495, la de E4 sin nombrar lo sellado del lado del cobro (§496 las
+decisiones, §497 la boca, §498 el banco, §499 este catalogo), y sin D-R..D-W ni D-X..D-AC: es el
+corte C-2, con la fila 39 de `spec/README.md`, que sigue diciendo <<nothing sealed yet>>. El
+tarball que el canon imprime no es atribuible (punto 116): sale antes del commit. El lado del pago
+del catalogo llega con E2, en el mismo directorio.
+
+**Contadores.** Diez ficheros nacen (`spec/vectors/pendiente/`: nueve `.json` y el manifiesto) y
+siete se tocan (`tools/artefacto.sh`, `tools/canon.sh` +12, `spec/PAQUETE.md`, `README.md`,
+`README_EN.md`, `spec/README.md` +1, y este asiento). `spec/vectors/` 240 -> 250 ficheros, 234 ->
+243 `.json`; familias 5 -> 6. Pines: ninguno se mueve. Ningun Cargo tocado.
+
+**Lo que NO cierra.** El C-2 (el RFC). Luego el lado del pago (E2 y su mitad de E4) y el arreglo B
+(5.A-272). Y una deuda pagada aqui que era del §498: la lista de demostraciones en vivo de
+`PAQUETE.md` no nombraba `tools/banco_pendiente.sh`; el 498 dejo `PAQUETE.md` para este corte por
+la frase de los vectores, y esa era otra frase. Fallo el censo de frases del fichero, no la regla.
