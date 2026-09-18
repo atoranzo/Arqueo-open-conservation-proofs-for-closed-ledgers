@@ -60,6 +60,9 @@ pub mod banda;
 /// **El AIR del COBRO PENDIENTE** (RFC-0008, E1): el tercer juez de este crate.
 pub mod cobro_pendiente;
 
+/// **El AIR del PAGO EN CURSO** (RFC-0008, E2): el cuarto juez de este crate.
+pub mod pago_en_curso;
+
 /// El digest de la casa: cuatro elementos (el de `zk-ssl-hash`).
 pub type Digest = zk_ssl_hash::Digest;
 
