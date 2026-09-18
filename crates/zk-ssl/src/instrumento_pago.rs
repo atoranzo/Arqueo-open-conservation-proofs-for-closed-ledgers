@@ -6,9 +6,10 @@
 //! probador.
 //!
 //! - **La geometria** (D-AF): el carril A es el del cobro -`H(receptor, sal)`, `H(., importe)`,
-//!   `M(C1, X)` y la subida: 35 ciclos-; el carril B compone `X = M(refund_id, [delta, 0, 0, 0])`
-//!   en el ciclo 0, lo arrastra en el 1, compone la meta en el 2 y sube: 35 ciclos, donde E1 lo
-//!   tenia ocioso en los ciclos 0 y 1. Dos carriles con el bit compartido: 280 filas, traza de
+//!   `M(C1, X)` y la subida: 35 ciclos-; el carril B queda OCIOSO en el ciclo 0 y compone
+//!   `X = M(refund_id, [delta, 0, 0, 0])` en el 1 -su digest sale en la fila 15, justo cuando
+//!   el carril A lo lee-, compone la meta en el 2 y sube (corregido por el §503, que
+//!   escribio el AIR y fijo la forma). Dos carriles con el bit compartido: 280 filas, traza de
 //!   512, la misma que E1. La cota temporal `delta - (T - nacido)` en `[0, 2^62)` es UN segmento
 //!   de 64 filas donde la banda del importe gastaba tres: el importe es exacto y publico.
 //! - **La receta del pagador sube a las dos raices**: la hoja que compone con SU apertura -la
@@ -41,8 +42,9 @@ use winterfell::Prover;
 
 /// Ciclos del carril A: los dos merges de `C1`, el de `C2 = M(C1, X)` y la subida, como en E1.
 const CICLOS_CARRIL_A: usize = 3 + TREE_DEPTH;
-/// Ciclos del carril B del PAGO: el sobre `X` (ciclo 0), el arrastre (ciclo 1), la meta (ciclo 2)
-/// y la subida. En E1 el carril B es la meta y la subida, y no hashea en los ciclos 0 y 1.
+/// Ciclos del carril B del PAGO, 0..34: ocioso en el 0, el sobre `X` en el 1 -su digest sale
+/// donde el carril A lo lee-, la meta en el 2 y la subida (el §503 fijo esta forma). En E1
+/// el carril B es la meta y la subida, y no hashea en los ciclos 0 y 1.
 const CICLOS_CARRIL_B: usize = 3 + TREE_DEPTH;
 /// Ciclos del carril B de E1: la meta y la subida (`instrumento_cobro::CICLOS_META`).
 const CICLOS_CARRIL_B_E1: usize = 1 + TREE_DEPTH;

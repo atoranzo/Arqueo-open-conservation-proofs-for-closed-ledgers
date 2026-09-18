@@ -36654,3 +36654,106 @@ la forma 2.9 (§495); la boca `prueba-pago` y `--retorno` (§497); el banco sobr
 (§498); el catalogo `pago-*` con la primera linea del manifiesto (§499); y el RFC con la celda de
 E2 y E4 entera. Detras, el arreglo B (5.A-272), en el orden que el autor fije. Para la cola: los
 dos defectos del PRE de hoy (el perfil, y el rc que nombro lo que no midio).
+
+## §503 — RFC-0008 E2, corte E2c-1: el AIR del pago en curso, y su -B
+
+**Que.** Nacen `crates/zk-ssl-air/src/pago_en_curso.rs` (728 lineas, el JUEZ, seis testigos) y
+`crates/stark-experiment/src/circuit_pago_en_curso.rs` (643, el PROBADOR, catorce), y los dos
+`lib.rs` los declaran: el crate del juez gana su cuarto AIR y el de los circuitos su probador.
+El enunciado, entero: bajo `pending_root` de una cabeza v5 firmada existe la hoja
+`C2 = M(C1, X)` con `C1 = M(M(receptor, sal), [importe, 0, 0, 0])` e importe EXACTO, con
+`X = M(refund_id, [delta, 0, 0, 0])`, y en la MISMA posicion, bajo `pmeta_root`, la hoja de meta
+`(emisor, nacido)`; y `delta >= T - nacido`. Publico: las dos raices, `receptor`, `importe`, `T`
+y `nacido` -quince elementos, los mismos quince que E1-. Testigo: la `sal`, el `refund_id`, el
+`delta`, el `emisor`, los dos caminos y la posicion. El plazo NO viaja: eso es lo que separa esta
+prueba de la del cobro. Dos commits: el §503 con el codigo, y su `-B` con los pines, las cifras y
+este asiento.
+
+**La geometria, y la decision que el AIR fija.** Es la de E1 con el hueco lleno (D-AF), y el
+hueco se MIDIO antes de escribir una linea: el PASTE-E2c-M lleno de basura las 192 celdas del
+carril B en sus ciclos 0 y 1, produjo una prueba REAL y el juez del kit la acepto; la misma
+basura una fila mas abajo la tumbo. **D-AF (a) queda confirmado: no hace falta ni un tercer
+carril ni una traza de 1024.** De las dos formas que D-AF admitia, el AIR fija la SEGUNDA: el
+carril B queda OCIOSO en el ciclo 0 y compone `X` en el 1, de modo que su digest sale en la fila
+15 justo cuando el carril A lo lee. La otra -componer en el 0 y arrastrar en el 1- cuesta una
+familia de restricciones mas y rompe la forma de la columna periodica que enciende el hash.
+Reversible; el §502 la habia declarado y este corte la corrige donde hablaba en presente. El
+ancho no se mueve: **44 columnas**, las mismas que E1 -salen las dos cotas de la banda, `COL_X`
+se vuelve `COL_REFUND`, nacen `COL_T` y `COL_DELTA`-, la traza sigue en 512 y el grado mayor
+sigue siendo 7, el de la ronda de Rescue. **120 restricciones** (E1: 110): dos menos por los
+segmentos que se van, doce mas por el arranque del sobre en la fila 7. **34 periodicas** (36) y
+**19 aserciones**, las mismas 19 con `importe` y `T` donde estaban `inferior` y `superior`.
+
+**Hasta donde alcanza la cota, MEDIDO en el molde y declarado.** Un segmento de 64 filas NO
+prueba <<cabe en 64 bits>>: en este campo eso no diria nada, porque `p < 2^64`. Prueba **`v <
+2^63`**, porque la primera fila del segmento exige bit y acumulador a CERO y el acumulador dobla
+en las 63 siguientes. Asi es como la banda de E1 caza `inferior = importe + 1`. Luego este AIR
+sostiene el enunciado mientras `delta - (T - nacido) < 2^63`, y `comprobar_enunciado` acota
+`importe`, `T` y `nacido` a `MAX_VALOR = 2^62 - 1` y exige `nacido <= T`. El <<nunca>> de D-AG,
+que el campo reduce a `2^32 - 2`, cae holgadamente dentro. Va tambien a la Seguridad del RFC.
+
+**Los veinte testigos.** El juez, seis: las ranuras y las periodicas declaradas son las
+escritas; las aserciones atan lo declarado y NINGUNA toca el `refund_id`, el `delta`, la sal ni
+el emisor; lo que no tiene forma se rechaza sin panico; las quince publicas sin el plazo; el
+`nacido` posterior a la cabeza se rechaza ANTES de la prueba (D-K); y la geometria por aritmetica
+de constantes. El probador, catorce: el positivo; los puntos de referencia contra el nativo, con
+el SOBRE leido del carril B en la fila 15; la meta de otra posicion (D-H heredado); otro
+`refund_id` y otro `delta`; la frontera de `T` por los DOS lados; otro receptor, otro importe -por
+arriba y por abajo- y otro nacido; el relleno del ciclo del importe; el plazo fuera del
+transcripto; el enlace con la cabeza; `buscar_vacias`, que exige que NINGUNA restriccion quede
+muerta; y que el juez acepta UN conjunto de opciones.
+
+**Las puertas del §503 (`726c3c1`, padre `f277b07`, SALIDA 20260918-200440).** Idempotencia por
+ESTADO delante del cerrojo; cerrojo pinado con cinco centinelas; los dos `.rs` en base64 clavando
+su huella ANTES de entrar; los dos `lib.rs` por un editor embebido con aserto de unicidad y sus
+POST predichos; los dos crates ENTEROS en release con warnings por DELTA sobre 0: **0**; las
+suites dentro -el juez 22/0/0, los circuitos 364/0/12 en 13 s-; las listas por NOMBRE, la POST
+igual a la PRE mas los veinte nuevos y nada mas; `check_tests` 1372 -> 1392 y `check_modulos`
+136 -> 138, PREDICHOS aqui; commit de CUATRO y empuje. VERDE A LA PRIMERA, y las 1.371 lineas de
+Rust compilaron a la primera: es lo que pagan los moldes. Ensayado en maqueta con un cargo de
+mentira: base verde y ocho falsadores en su clase.
+
+**EL ATADO DE DOS PRODUCTORES, que nace aqui y es la leccion del dia.** El PRE dio 363 nombres
+en el `--list` de los circuitos donde la fila del canon y el censo del fuente dan 362, y el
+asistente lo escribio como un <<+1 del canon>>. **Era FALSO y queda escrito como falso**: el
+nombre que sobraba era el falsador del PASTE-E2c-M, y el `--list` enumeraba el binario de la
+COPIA. Medido por los dos lados: `CARGO_TARGET_DIR` compartido entre dos arboles del mismo
+workspace sirve el binario del que se compilo el ULTIMO, y borrar la copia no lo cambia, porque
+lo envenenado es el binario del target. Es el 5.A-269 por el otro lado -alli un rojo, aqui un
+VERDE FALSO, que es peor-. De ahi la puerta que el §503 estrena y hereda todo bloque que mida una
+suite: **la lista se cruza contra el censo de `#[test]` del fuente, en PRE y en POST**, porque la
+lista sola no dice de que arbol es. Corrio 16/16 y 362/362 en PRE, 22/22 y 376/376 en POST.
+
+**El `-B`.** `tools/canon.sh` sube los dos pines con su historia: **`zk-ssl-air` 16 -> 22** y
+**los circuitos 350 -> 364**, con los ignorados quietos en 0 y en 12. Cinco documentos mueven
+OCHO lineas con NUEVE cifras: los siete sitios que `check_cifras` marco con las filas subidas
+-PAPER x2, PAPER_EN, PRINCIPIOS x2 con su desglose, INSTITUCIONAL e INSTITUTIONAL: `350 -> 364`
+y las dos sumas de sello `1214 -> 1234`- y las dos sumas <<contando los pines>> `1351 -> 1371`,
+que ese gate no ve (5.A-149). El perimetro se DERIVO: `check_cifras` sobre una copia con las
+filas subidas. Y `crates/zk-ssl/src/instrumento_pago.rs` corrige su cabecera y el comentario de
+`CICLOS_CARRIL_B`, que decian en PRESENTE que el sobre se compone en el ciclo 0 y se arrastra en
+el 1: la decision de arriba los dejo rancios, y lo que este corte deja rancio lo paga este corte.
+Ni un test se mueve alli. Canon `--sello` VERDE en 528 s.
+
+**Lo que NO afirma.** El AIR no dice quien produjo la prueba, ni que el pago vaya a cobrarse, ni
+que el receptor lo acepte; ni prueba `delta`, sino una cota inferior suya. No enlaza las dos
+mitades del pendiente mas que por `receptor`, `nacido` y `seq`: el enlace fuerte sigue siendo la
+prenda (D-AH, E3). No mueve la celda de E2 del RFC ni el sobre 2.9: el arco de E2 sigue abierto.
+
+**Contadores.** El §503: cuatro ficheros, 728/0, 643/0, 3/0 y 2/0; veinte `#[test]` nuevos y
+ningun instrumento; `check_tests` 1372 -> 1392, `check_modulos` 136 -> 138. El `-B`: ocho
+ficheros con este asiento, nueve cifras en cinco documentos, dos filas del canon y dos comentarios
+del instrumento. Pines: `zk-ssl-air` 16 -> 22 y circuitos 350 -> 364; ningun otro se mueve.
+Ningun Cargo tocado.
+
+**Lo que NO cierra.** El resto del arco de E2: el productor de la capa (§491), la puerta del
+pagador en `zkssl_pendingPath` (§493, D-AE), el juez enlazado con el brazo del mando y la forma
+2.9 (§495), la boca `prueba-pago` (§497, D-AI), el banco (§498), el catalogo `pago-*` (§499,
+D-AJ) y el RFC con la celda de E2 y E4 entera. Detras, el arreglo B (5.A-272). **Para la cola, y
+MEDIDO al derivar el perimetro**: los documentos publican <<1364 declaradas>> y <<18 ignoradas>>
+donde `check_tests` derivaba 1372 y 19 ANTES de este corte -rancias desde el §502-B, con un hueco
+de 8 y de 1 que este corte ensancha a 28-, y `PAPER_EN.md:33-34` va veinte por detras de su
+gemelo espanol porque su <<1194 executable tests>> mete una palabra entre la cifra y `tests` y el
+gate no lo ve. Este `-B` NO las toca a proposito: mueve lo que se DERIVA de la fila del canon y
+no lo que sale de un instrumento cuyo offset no tiene dueno, que es la familia del 115 y del C4.
+Y el otro punto del dia: el `--list` de un crate no prueba de que arbol es.
