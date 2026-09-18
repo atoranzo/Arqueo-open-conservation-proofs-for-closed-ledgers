@@ -36757,3 +36757,97 @@ gemelo espanol porque su <<1194 executable tests>> mete una palabra entre la cif
 gate no lo ve. Este `-B` NO las toca a proposito: mueve lo que se DERIVA de la fila del canon y
 no lo que sale de un instrumento cuyo offset no tiene dueno, que es la familia del 115 y del C4.
 Y el otro punto del dia: el `--list` de un crate no prueba de que arbol es.
+
+## §504 — RFC-0008 E2, corte E2d: el PRODUCTOR del pago en curso en la capa, y su -B
+
+**Que.** Nace `crates/zk-ssl/src/prueba_pago.rs` (463 lineas, once testigos), `lib.rs` lo declara
+y `prueba_cobro.rs` abre `bits_de` a `pub(crate)`. El AIR del pago estaba sellado desde el §503 y
+no lo llamaba nadie; ahora el PAGADOR lo llama con lo que tiene: su APERTURA —la posicion, la
+sal, el importe y la pareja `(refund_id, delta)` que el eligio y que `send_materials_v2` le
+devuelve en `SendMaterials`—, la identidad publica del receptor y la foto del ultimo latido.
+`prueba_de_pago_en_curso` falla cerrado y por su nombre en cada paso, y lo que entrega ya esta
+verificado por la MISMA regla que corre el tercero. Es el espejo del §491, el productor del
+cobro. Dos commits: el §504 con el codigo, y su `-B` con el pin, las cifras y este asiento.
+
+**Lo que se midio ANTES de escribir una linea, y por que valia la pena.** El TERRENO-E2d-153
+(45 citas con juez de unicidad, cuatro ausencias con prueba de vida y nueve anclas; re-asertado
+82 de 82 en la maquina del autor) y el PASTE-E2d-M, una lectura pura que corrio un falsador en
+una COPIA del arbol. Midio DOS cosas que el corte daba por ciertas y no lo eran todavia:
+**el pagador COMPONE el aviso del receptor entero** —posicion, sal, importe y `X`— con su sola
+apertura, de modo que `FotoPendientes::cobro` ya le sirve su camino sin una boca nueva en la
+capa; y **con lo que la foto le sirve, el AIR del §503 produce sobre un libro VIVO una prueba
+que el juez del kit ENLAZA a la cabeza**, con su prueba de vida por cuatro lados —otro importe,
+otra `T`, otra cabeza y otro `delta`—. **La prueba pesa 56.746 B**, frente a los 56.174 B del
+AIR de E1 medido en el §503 y los 65.313 B de la cota de la D-H, que es de E1 y aqui es
+comparacion y no puerta. Si la segunda medida hubiera salido falsa, esto no seria un productor:
+seria otro AIR.
+
+**Las seis decisiones, delegadas por el autor con la ley y REVERSIBLES.**
+**D-1**, el fichero es propio y vive al lado del molde: el de al lado se llama <<cobro>>.
+**D-2**, la entrada es un tipo propio, `AperturaDelPago`, y no el `PendingNotice`: el aviso es
+del RECEPTOR y lleva la `x` opaca, y lo que el pagador tiene es la pareja. **D-3**,
+`FotoDelCobro` y `CabezaDePendientes` se REUSAN tal cual: sus campos son exactamente los que el
+pago necesita y el nodo sirve lo mismo a los dos lados. El nombre del primero dice <<cobro>> y
+sirve a los dos; renombrarlo hoy arrastraria el cli y el nodo —dieciseis sitios medidos, catorce
+de codigo en tres crates— a un corte cuyo trabajo es el productor, asi que se ficha en la cola.
+**D-4**, el productor acepta cualquier `T` con `nacido <= T <= nacido + delta` y lo comprueba en
+NATIVO antes de trazar: el AIR ya lo prueba, pero una traza imposible da un error del probador y
+no una causa. **D-5**, re-verifica lo que produce con `verificar_contra_cabeza` y cruza el
+enunciado devuelto contra el del probador, que es el §466. **D-6**, sale `SobrePago` con el
+importe EXACTO y sin `inferior`, y sus testigos van sin `cfg_attr`, como los nueve del molde.
+
+**Lo que este productor comprueba y el molde no, y va declarado.** `nacido < seq` lo exige el
+enlace del §503, que corre al final; aqui se comprueba primero. Una cabeza que no puede firmar
+ese pendiente no merece una prueba, y un rc que dice <<no se enlaza>> esconde la causa. Es la
+misma regla, adelantada.
+
+**Los once testigos, todos sobre un libro VIVO salvo el ultimo.** El positivo, con el juez
+aceptando el enunciado que el sobre declara y rechazandolo con otro importe. La foto (D-F): tras
+otro pago el arbol se mueve, la prueba con la cabeza y la foto de antes sale, y mezclar la cabeza
+nueva con la foto vieja rehusa. La frontera de D-AD en el productor: en `T = nacido + delta`
+prueba y una epoca mas alla rehusa ANTES de gastar una prueba. Un plazo hacia atras. Otro
+receptor. **Otra pareja**: otro `refund_id` da otra hoja, y eso es lo que impide presentar el
+pago de otro como propio. Un camino de otra posicion. Un emisor mentido —se miente el emisor y no
+el `nacido` a proposito: mover el `nacido` chocaria antes con la puerta de la cabeza, y un
+falsador que da el rojo por otra causa no discrimina—. Una cabeza anterior al nacimiento. **Las
+dos mitades del mismo pendiente**: sobre la MISMA cabeza, el pagador prueba su pago y el cobrador
+su cobro, las dos raices y el receptor son los mismos, y cada mitad dice lo suyo. Y las opciones
+del probador atadas a las de la capa, que es la doctrina de los dos productores.
+
+**El perimetro de las cifras, DERIVADO y no tecleado.** `check_cifras` sobre una copia con la
+fila subida marca NUEVE lineas: el testigo de la capa 378 -> 389 en `PAPER.md:997`,
+`PAPER_EN.md:956`, `ARQUITECTURA.md:58` y `:1121`, `PRINCIPIOS.md:136`, `doc/INSTITUCIONAL.md:514`
+y `doc/INSTITUTIONAL.md:496`, y dentro del desglose de `PRINCIPIOS.md:354`; y el TOTAL de sello
+1234 -> 1245 en `PAPER.md:36` y en esa misma `PRINCIPIOS.md:354`. El censo anade las DOS sumas
+<<contando los pines>> que ese gate no ve (5.A-149): 1371 -> 1382 en `PAPER.md:37` y
+`PRINCIPIOS.md:357`.
+
+**D-7, nueva en este `-B` y REVERSIBLE: el gemelo ingles vuelve al paso.** `PAPER_EN.md:33-34`
+publica **1194** en la compuerta de sello y **1331** contando los pines donde su gemelo espanol
+dice 1234 y 1371: cuarenta por detras en las dos, y creciendo. No es una decision de nadie, es
+un hueco del gate —su <<1194 executable tests>> mete una palabra entre la cifra y `tests` y
+`check_cifras` no lo ve, la clase del 5.A-203 fichada en el 5.A-311—. Las dos son la MISMA
+aritmetica que las espanolas, que es justo lo que un `-B` mueve (PRECISION 543), asi que pasan a
+**1245** y **1382**. Lo que NO se mueve, y se dice: las <<1364 declaradas>> de `PAPER.md:38` y
+`PRINCIPIOS.md:358`, las <<1349 declared>> de `PAPER_EN.md:34` y las <<18 ignoradas/ignored>>,
+porque salen de un instrumento cuyo offset no tiene dueno —`check_tests` deriva 1403 y 19— y esa
+correccion exige decidir que significa <<declaradas>>, que no es cosa de un `-B` de pines
+(5.A-311, PRECISION 543).
+
+**Contadores.** §504: tres ficheros, `crates/zk-ssl/src/prueba_pago.rs` 463/0 (nace),
+`crates/zk-ssl/src/lib.rs` 4/0 y `crates/zk-ssl/src/prueba_cobro.rs` 4/2; sin canon, con la suite
+ENTERA de la capa en release dentro del bloque —**389 pasan / 0 fallan / 7 ignorados**— y las
+listas por NOMBRE, con el `--list` cruzado contra el censo de `#[test]` del fuente en PRE y en
+POST (PRECISION 541): 385 y 396, los dos por los dos lados. `check_tests` 1392 -> 1403,
+`check_modulos` 138 -> 139, las otras ocho IDENTICAS. §504-B: `tools/canon.sh` con la capa en
+`389 7 0` y su historia, once lineas en seis documentos, y este asiento; canon `--sello` VERDE
+en **372 s**.
+
+**Lo que NO cierra.** El productor no lo llama nadie todavia fuera de sus testigos: falta la
+puerta del pagador en `zkssl_pendingPath` con la credencial del pagador y `foto.emisor == index`
+(D-AE) —medido de paso en el PASTE-E2d-M que `foto.emisor` ES el `AccountIndex` del pagador, asi
+que la comparacion es directa y sin traduccion—, el juez enlazado con el brazo del mando y la
+forma 2.9, la boca `prueba-pago` con `--retorno` (D-AI), el banco sobre la misma siembra y el
+catalogo `pago-*` (D-AJ); y el RFC-0008, que sigue sin celda de E2 y sin la cota de `v < 2^63`
+en su Seguridad. Detras, el arreglo B (5.A-272) y E3. Y queda el nombre de `FotoDelCobro`,
+fichado.
