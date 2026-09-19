@@ -37572,3 +37572,56 @@ nuevo movera. El AIR de la prenda tampoco existe: la D-AV decide su forma, no lo
 5.A-346 sigue abierto — la puerta que cruza el numstat declarado contra `git show --numstat`
 viaja en el editor de este bloque y no en un fichero del repo, asi que se volvera a pagar en la
 corrida siguiente.
+
+## §515 — La geometria de la prenda: la marca publica, la clave donde estaba la banda, sin meta
+
+**Que.** El RFC-0008 gana D-AW, D-AX y D-AY, que fijan QUE publica el sobre de la prenda, DONDE
+va el ciclo de la clave y SI la prenda lleva el carril de la meta. Es un sello de PROSA: ni un
+`.rs`, ni un pin, ni una cifra de tests, ni un vector, ni un Cargo. **E3 sigue PROPUESTA**: con
+esto queda fijada su forma entera y lo que falta es escribirla.
+
+**Lo medido, y de donde sale.** El `PASTE-E3GEO-M` (`77a73749e8be3a22`, lectura pura, rc 0,
+porcelain identico antes y despues) corrio los DOS circuitos que existen, apareados y en release,
+sobre este mismo arbol. Los dos jueces comparten ancho 44, traza 512 y raiz en la 279, y se
+diferencian en piezas contables: E2 lleva diez restricciones mas y dos periodicas menos. La banda
+de E1 cuesta cuatro columnas, ocho restricciones, cinco periodicas y 192 filas. El ciclo de la
+clave, tasado donde vive, es un ciclo y cuatro columnas con doce restricciones. Bajo la raiz
+quedan 232 filas libres, veintinueve ciclos, y hacen falta dos. Y los cronometros, con el target
+CALIENTE: el juez 66-77 ms, el positivo de E1 127-137 ms y el de E2 213-218 ms, o sea una razon
+de 1,59 y 1,68 entre dos circuitos de la misma traza. La leccion que sale de ahi y que decide:
+**lo que cuesta no son las filas, son las restricciones** -E2 tiene menos banda y tarda mas-.
+
+**Las tres decisiones, delegadas por el autor con la vara y REVERSIBLES en el propio RFC.** La
+MARCA se publica y `C2` se calla, porque publicarlo enlazaria todos los sobres de la hoja, que es
+lo que la D-AH ya descarto por su lado; y el dominio sexto entra en el circuito como CAPACIDAD,
+con el molde que el carril B de E1 ya usa para el suyo. La clave ocupa las columnas que la banda
+deja y la marca se hashea en un ciclo libre: ni una columna nueva ni una fila mas. Y la prenda no
+lleva la meta: su enunciado no usa `nacido`, el carril B queda libre entero y el ancho baja a 42.
+
+**Una expectativa que la medida corrige, y va escrita.** La D-AH dejo dicho que <<el enlace
+fuerte queda para la prenda>>. Medido, no lo queda para un extrano: el sobre del cobro no publica
+`C2`, asi que quien solo tenga los dos sobres cruza `receptor` y `seq`, el enlace DEBIL que la
+propia D-AH describe. Fuerte lo tiene quien tiene el AVISO, y eso le basta al prendatario, que lo
+recibe al prendar. La D-AH no se reescribe: gana su remision subida al parrafo, como la D-C y la
+D-AS ganaron la suya (S247).
+
+**Lo que se predice y no se mide, dicho como prediccion.** El AIR de la prenda quedaria del orden
+de las 120 restricciones de E2 y su positivo del orden de sus 213-218 ms. El instrumento no puede
+correr un circuito que no existe: la puerta de esa prediccion es el AIR escrito, y si no la clava
+se declara la diferencia y su causa.
+
+**Contadores.** DOS ficheros y ninguno nace: el RFC +73 -7 y `AUDITORIA.md` +53 -0
+(el asiento, 52 lineas tras 1 separador). `AUDITORIA.md` 37.574 -> 37.627.
+Las DOS sha POST fueron PREDICHAS antes de tocar el arbol y exigidas byte a byte. El editor es
+TODO O NADA y idempotente por ESTADO con dos discriminantes, y TRES de sus SEIS
+sustituciones son ANEXOS: su texto nuevo contiene el viejo a proposito, y el censo de residuos
+deriva su esperado de los dos lados. Las DIEZ herramientas, IDENTICAS antes y despues.
+
+**Lo que NO cierra.** Falta el MONTAJE entero: el AIR con su juez y su probador, el dominio sexto
+con su fila en el REGISTRO, el productor en la capa, la puerta que verifica antes de escribir en
+el arbol de consumos, `zkssl_pledge` con su cable, el octavo brazo del mando, la forma 2.10 de
+`PAQUETE.md` y los cardinales publicados que un metodo nuevo movera. Sigue abierto el 5.A-346 -la
+puerta del numstat vive en el editor y no en el repo-, y nacen dos de la 159: la etiqueta
+<<cadena>> en la salida de un bloque, que publico el total de commits bajo el nombre de la cadena
+de sellos, y que NINGUNA herramienta vigila las citas a `.rs` desde un `.md` -el RFC-0008 publica
+treinta y una, varias con numero de linea-.

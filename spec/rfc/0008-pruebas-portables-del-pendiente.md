@@ -31,7 +31,7 @@
 |---|---|---|---|
 | E1 — el cobro pendiente, portable | el circuito del cobrador: bajo el `pendingRoot` de una cabeza v5 firmada existe `C2 = M(C1, X)` con `C1 = H(H(receptor, sal), importe)`, a nombre de `receptor` (D-G), `importe >= inferior` (banda, molde de `InsufficientBalance`), con el camino DENTRO del circuito; su meta `(emisor, nacido)` por camino bajo `pmetaRoot`, con los mismos bits. `zkssl_pendingPath`, aditivo, sirve los dos caminos de la foto del último latido a quien presenta un aviso que recompone la hoja (D-F). Sobre `tipo: "cobro_pendiente"` en `PAQUETE.md`, verificado por el mando sin nodo | NO | **sellada** — §484 (D-F y D-G, y la fila corregida), §485 y §485-B (el instrumento), §486 (D-H), §489 (D-I), §490 y §490-B (el AIR de dos carriles y un bit), §491 y §491-B (el productor, una función libre), §492 y §492-B, §493 y §493-B (la foto del latido en la capa y en el nodo, y `zkssl_pendingPath`), §494 (D-J..D-M) y §495 y §495-B (el enlace con la cabeza, el brazo del mando y `PAQUETE.md` 2.8). **E1 queda entera** |
 | E2 — el pago en curso, portable | el espejo, para el pagador: `C2` abre a `(receptor, importe)` EXACTOS, `nacido` por camino, y `nacido + delta >= T` con `delta` y `refund_id` como testigo (no se revelan). Sobre `tipo: "pago_en_curso"`, verificado sin nodo. Junto al de E1, un tercero ajeno a los dos verifica un pago disputado sin el libro de nadie | NO | **sellada** — §501 (D-AD..D-AJ), §502 y §502-B (el instrumento), §503 y §503-B (el AIR de dos carriles con el sobre compuesto dentro, y su juez), §504 y §504-B (el productor en la capa, función libre), §505 y §505-B (la puerta del pagador en `zkssl_pendingPath`, D-AE), §506 y §506-B (el séptimo brazo del mando y la forma 2.9), §507 y §507-B (la boca `prueba-pago`, D-AK..D-AO), §508 (el banco y la credencial del pagador, D-AP y D-AQ) y §509 (el catálogo, D-AR). **E2 queda entera** |
-| E3 — la prenda, como transición con prueba | el receptor marca el pendiente como prendado: una MARCA con dominio propio sobre `C2` en el árbol de consumos, publicada por un método aditivo, `zkssl_pledge`, que EXIGE el sobre de PRENDA: el enunciado del cobro con el ciclo de la clave y sin el crédito, en AIR propio (D-AV); una segunda MARCA es `ConsumoRepetido`, que ya tiene sobre de rechazo con prueba (RFC-0007 E3, `PAQUETE.md` 2.6). La PRENDA es el par marca + sobre (D-AS), y no toca el cobro ni el reembolso: lo que obliga es contrato, y se declara | NO | propuesta |
+| E3 — la prenda, como transición con prueba | el receptor marca el pendiente como prendado: una MARCA con dominio propio sobre `C2` en el árbol de consumos, publicada por un método aditivo, `zkssl_pledge`, que EXIGE el sobre de PRENDA: AIR propio (D-AV) que publica la MARCA con `C2` de testigo (D-AW), sin la banda y sin la meta, en 42 columnas y 512 filas (D-AX, D-AY); una segunda MARCA es `ConsumoRepetido`, que ya tiene sobre de rechazo con prueba (RFC-0007 E3, `PAQUETE.md` 2.6). La PRENDA es el par marca + sobre (D-AS), y no toca el cobro ni el reembolso: lo que obliga es contrato, y se declara | NO | propuesta |
 | E4 — el catálogo y el banco, por lados | `spec/vectors/pendiente/`: dos positivos por lado, REUNIDOS de las capturas de un nodo real (molde: `edad/`), y un negativo por regla producible; `MANIFIESTO.txt`; la familia en `FAMILIAS`; el banco que lo reproduce en vivo; la sección 9 de `PAQUETE.md`. Va POR LADOS en una sola fila (D-O): el del cobro primero —sus dos formas (D-N), la boca del cli (D-P) y sus negativos (D-Q)— y el del pago con E2; esta celda nombra lo sellado de cada lado. El giro a ACEPTADO exige la regla 4 medida letra a letra, como el §481 | NO | **sellada por el lado del cobro** — §496 (D-N..D-Q), §497 y §497-B (la boca del cobrador en el cli, `prueba-cobro`, y `simulate --v2`), §498 (D-R..D-W y el banco, `tools/banco_pendiente.sh`) y §499 (D-X..D-AC y el catálogo, `spec/vectors/pendiente/`, sexta familia del artefacto y del canon). **Y el lado del PAGO**: §508 (el banco propio, `tools/banco_pago.sh`, con su siembra de cuatro ficheros, D-AP y D-AQ) y §509 (el catálogo `spec/vectors/pago/`, séptima familia del artefacto y del canon, D-AR, que revierte D-AC y la letra de D-AJ). **Los dos lados están; la etapa queda entera**, y lo que falta para ACEPTADO es la regla 4 medida letra a letra |
 
 Las medidas de este documento se tomaron sobre `5ef3b1b` (`TERRENO-H5-144`); las de D-F y D-G,
@@ -124,12 +124,12 @@ manda la forma de este RFC:
 
 ## Diseño
 
-Las cuarenta y ocho decisiones las tomó el asistente por delegación del autor (D-A..D-E en la
+Las cincuenta y una decisiones las tomó el asistente por delegación del autor (D-A..D-E en la
 sesión 144; D-F, D-G y D-H en la 145; D-I en la 147; D-J..D-M en la 149; D-N..D-AC en la 150, y
 de ellas D-R..D-AC las escribió aquí el §500; D-AD..D-AJ en la 151; D-AK..D-AR en la 155, y las
-escribió aquí el §510; D-AS..D-AU en la 158, que las escribió el §513; y D-AV en la 159), con la
-constitución de decisión (pureza, claridad, coherencia, imagen fiel, en ese orden). Todas llevan
-su condición de reversión, escrita aquí.
+escribió aquí el §510; D-AS..D-AU en la 158, que las escribió el §513; y D-AV..D-AY en la 159),
+con la constitución de decisión (pureza, claridad, coherencia, imagen fiel, en ese orden). Todas
+llevan su condición de reversión, escrita aquí.
 
 ### D-A — La T es del pagador; el cobrador dice «a mi nombre, al menos `inferior`, nacido en b»
 
@@ -633,6 +633,10 @@ misma hoja y rompería lo que las posiciones saladas prometen (D-H), y una dispu
 prenda, que es la que la nombra. **Reversible** hacia (b) sólo con un caso de uso medido que la
 prenda no cubra.
 
+⚠️ **Lo que la prenda entrega, medido en la 159**: el enlace fuerte es para quien tiene el AVISO,
+no para un extraño con los dos sobres. Ver D-AY, que lo mide y lo declara sin sustituir esta
+decisión: el camino (a) de aquí sigue siendo el que se tomó.
+
 ### D-AI — La credencial de retorno es del pagador: tercer fichero, `--retorno`
 
 Medido sobre `477dcab`: `simulate --v2` fija la pareja de la conformidad —`f` = la identidad del
@@ -831,6 +835,60 @@ propuesta. **Reversible** hacia (a) sólo si un caso de uso medido mostrara que 
 con un sobre de estado; entonces la prenda deja de ser autorización y es etiqueta, y D-D cae con
 ella.
 
+### D-AW — El sobre de la prenda publica la MARCA; `C2` se queda de testigo
+
+Un tercero tiene que poder cruzar lo que el sobre dice con lo que el árbol de consumos lleva. Dos
+caminos: (a) el sobre publica `C2` y quien juzga calcula la marca fuera del circuito; (b) el
+sobre publica la MARCA y el circuito prueba dentro que `marca = H(DOMINIO_PRENDA, C2)`, con `C2`
+de testigo. Cae (a): publicar `C2` hace enlazables todos los sobres de una misma hoja y rompe lo
+que las posiciones saladas prometen, que es exactamente lo que D-AH descartó por su lado. Gana
+(b): la marca es lo que el árbol lleva, así que quien juzga compara lo que ve con lo que el sobre
+dice y no calcula nada; y el molde ya está escrito en la casa —el carril B de E1 arranca su ciclo
+poniéndose su dominio en la capacidad, `b[0] = DOMINIO_META_PENDIENTE`
+(`circuit_cobro_pendiente.rs:157`)—, así que el dominio sexto entra en el circuito como
+CAPACIDAD y no sólo como fila del REGISTRO de `zk-ssl-hash`. Cuesta un ciclo de hash, y cabe sin
+una fila nueva (D-AX). **Reversible** hacia (a) sólo si el árbol de consumos dejara de ser
+público, que hoy lo es por el RFC-0006.
+
+### D-AX — La geometría: ni una columna nueva ni una fila más
+
+Medido lado a lado sobre `3806f1e` (`PASTE-E3GEO-M`, lectura pura, rc 0): los dos jueces que
+existen comparten `ANCHO` 44, `TRAZA` 512 y `ROW_RAIZ` 279, y se diferencian en piezas
+contables —E2 lleva diez restricciones más y dos periódicas menos que E1—. La banda que la
+prenda no necesita cuesta, contada de su propio fichero, CUATRO columnas (`COL_INFERIOR`,
+`COL_SUPERIOR`, `COL_SBIT`, `COL_SACC`), OCHO restricciones (de `C_SBIT_BOOL` a
+`NUM_RESTRICCIONES`), CINCO periódicas y 192 filas. El ciclo de la clave, tasado donde vive hoy,
+es UN ciclo y CUATRO columnas con doce restricciones (`C_KEY_INPUT` ocho y `C_PK_CHECK` cuatro).
+Y bajo la raíz quedan 232 filas libres —veintinueve ciclos— cuando hacen falta dos. Luego la
+clave ocupa las columnas que la banda deja y la marca se hashea en un ciclo libre: `TRAZA` se
+queda en 512 y `ANCHO` no pasa de 44 en ninguna de las dos formas —44 exactos con la meta, 42 sin
+ella (D-AY)—. La cuenta de restricciones queda del orden de las 120 de E2, y el positivo, del
+orden de los 213-218 ms que E2 tarda en el mismo arnés, contra los 127-137 de E1. Eso último es
+PREDICCIÓN y no medida: el instrumento no puede correr un circuito que no existe, y su puerta es
+el AIR escrito. **Reversible** hacia un ancho mayor sólo si al escribirlo una restricción no
+cupiera; entonces se declara la columna y su causa.
+
+### D-AY — La prenda no lleva la meta, y el enlace con el cobro lo hace el AVISO
+
+El enunciado de la prenda es «bajo esta cabeza firmada existe este `C2`, cuya marca es la que se
+publica, y la clave que lo cobraría es mía». No necesita `nacido`, que es lo que la hoja de meta
+aporta. Dos caminos: (a) llevar el carril de la meta, como E1 y E2, y publicar `nacido`; (b) no
+llevarlo. Gana (b) por pureza —lo que el enunciado no necesita no entra— y porque sale más barato
+de verdad: medido, el carril B no hashea en los ciclos 0 y 1 y sube la meta desde el 2 hasta la
+raíz (`circuit_cobro_pendiente.rs:131` y `:140`), así que sin meta queda libre entero para la
+clave y la marca, sin tocar una fila; y se van además `COL_EMISOR` y `COL_NACIDO`, con lo que el
+ancho baja de 44 a 42.
+
+⚠️ **Y hay que decir lo que esto le hace a D-AH**, que dejó escrito que «el enlace fuerte queda
+para la prenda». Medido: no lo queda para un extraño. El sobre del cobro no publica `C2`, así que
+quien sólo tenga los dos sobres sigue cruzando `receptor` y `seq`, que es el enlace DÉBIL que la
+propia D-AH describe. Fuerte lo tiene quien tiene el AVISO: con él recompone `C2`, calcula la
+marca y comprueba que las dos mitades hablan de la misma hoja. Eso le basta al prendatario, que
+recibe el aviso al prendar, y es imagen fiel: el sistema produce el par condenatorio para quien es
+parte, no una prueba frente a todos. **Reversible** hacia (a), y hacia meter la banda DENTRO de la
+prenda para que diga ella sola el importe; esto último costaría 46 columnas, dos más que E1, y
+pide un caso de uso medido que lo exija.
+
 ## Lo que se DESCARTÓ al medir
 
 1. Abrir `X` del lado del cobrador para probar la T: rompe D-2 del RFC-0003 (el receptor
@@ -900,6 +958,12 @@ ella.
     gasto en su juez y en su probador, medido en la 159—, y el pagador lo produce igual (D-AV).
 40. `circuit_claim_v2` «sin el crédito» como modo del mismo circuito: quitar el crédito mueve
     sus entradas públicas y sus restricciones, luego es otro circuito y no un modo (D-AV).
+41. Publicar `C2` en el sobre de la prenda para que el enlace sea público: enlaza todos los
+    sobres de esa hoja, que es lo que D-AH descartó por el otro lado (D-AW).
+42. La prenda con la banda dentro, para que diga ella sola el importe: 46 columnas, dos más que
+    E1, y el prendatario ya recibe el sobre del cobro (D-AY).
+43. La prenda con el carril de la meta: publica un `nacido` que su enunciado no usa y cuesta dos
+    columnas y el ascenso entero del carril B (D-AY).
 
 ## Compatibilidad
 
@@ -933,8 +997,10 @@ expediente aunque no rompa nada.
 - **Lo que la prenda dice**: que el cobrador autorizó la prenda de esa hoja, y lo dice el PAR —la
   marca bajo la raíz firmada más el sobre de PRENDA, que prueba la apertura Y la titularidad
   (D-AV)—, nunca la marca sola, y nunca el sobre del cobro, que cualquiera con la apertura
-  produce. Un segundo intento PROBADO tiene su prueba de rechazo (D-AU). Lo que NO dice: que el
-  cobro vaya a ir al prendatario. Eso es contrato.
+  produce. El sobre publica la marca y calla `C2` (D-AW), y no publica `nacido` (D-AY). Un
+  segundo intento PROBADO tiene su prueba de rechazo (D-AU). Lo que NO dice: que el cobro vaya a
+  ir al prendatario, ni —para quien no tenga el aviso— que esta hoja sea la del sobre del cobro.
+  Las dos cosas son contrato.
 - **Lo que la marca NO dice**: nada. Es una hoja pública y precomputable por cualquiera que tenga
   el aviso —el pagador lo tiene, porque lo construyó—, y publicarla por la boca libre del 0006 no
   impide la prenda: es la misma hoja que el receptor necesitaba. La denegación dirigida exigiría
