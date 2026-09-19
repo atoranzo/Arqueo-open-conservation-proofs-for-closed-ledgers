@@ -373,6 +373,18 @@ else
   grep -q '^ROJO' "$OUT/pendiente.txt" || falla "pendiente: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/pendiente.txt"))"
 fi
 
+# ── 3 bis pago · el sobre de PAGO EN CURSO (RFC-0008 E2, desde el §509): el MISMO arnes ──
+msg ""
+msg "== CANON · las formas del sobre de pago en curso =="
+# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
+# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
+if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/pago/MANIFIESTO.txt > "$OUT/pago.txt" 2>&1; then
+  msg "  OK  pago: $(tail -n 1 "$OUT/pago.txt" | sed 's/^conformidad: //')"
+else
+  while IFS= read -r L; do falla "pago $L"; done < <(grep '^ROJO' "$OUT/pago.txt" | sed 's/^ROJO //')
+  grep -q '^ROJO' "$OUT/pago.txt" || falla "pago: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/pago.txt"))"
+fi
+
 # ── 3 ter · el ARTEFACTO (tools/artefacto.sh --check, §401): la PROPIEDAD, no un pin ──
 msg ""
 msg "== CANON · el artefacto =="

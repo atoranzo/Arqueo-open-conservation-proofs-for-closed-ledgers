@@ -295,8 +295,8 @@ donde el valor es una respuesta del cable sin reescribir.
   `zk-ssl-cli prueba-pago`** (§507, D-AI), que reúne las cinco entradas del productor sin
   abrir libro y rechaza un retorno que no recomponga el `x` de su aviso antes de pedirle
   nada al nodo; **el banco es `tools/banco_pago.sh`** (§508), que lo reproduce en vivo
-  contra un nodo real y de cuyas capturas saldrán los vectores; **el catálogo de este
-  sobre es de un corte posterior** (D-AJ).
+  contra un nodo real y de cuyas capturas salieron los vectores; **el catálogo es
+  `spec/vectors/pago/`** (§509), la séptima familia del artefacto.
 - ⚠️ **El nodo tiene que ser del §505 o posterior**: uno anterior ignora `receiverId` —el método
   nunca rechazó campos de más— y sirve la nada en vez de un error, así que el pagador no podría
   reunir la foto. Lo que dice si un nodo sabe de qué habla es su `spec/openrpc.json`, no la

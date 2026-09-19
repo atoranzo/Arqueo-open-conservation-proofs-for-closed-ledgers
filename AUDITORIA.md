@@ -37155,3 +37155,68 @@ los cinco ultimos cortes, que viven en sus asientos. Y queda dicho lo que el ban
 el `delta` sea el que fue -- la puerta barata descarta lo evidente y no mas (D-AG) --, y que la
 boca sirva fuera del sandbox, donde el retorno y la credencial del pagador los escribe quien
 envia o se pierden (reversion 37).
+
+## §509 — El catalogo del pago en curso: `spec/vectors/pago/`, la septima familia
+
+**Que.** El §508 dejo el banco corriendo y las capturas guardadas; este corte las convierte en
+catalogo. Nace `spec/vectors/pago/` con los DOS positivos, los SIETE negativos y su
+`MANIFIESTO.txt`; `tools/artefacto.sh` gana la **septima familia** y con ella el tarball la lleva
+dentro; `tools/canon.sh` gana su estrofa `3 bis pago`, y con eso **el sobre 2.9 pasa a tener
+arnes**: hasta hoy lo unico que lo vigilaba eran los testigos de la boca, los del juez y un banco
+que vive FUERA del canon. Con esto, la fila E2 del RFC-0008 queda servida por codigo, por banco y
+por catalogo, y lo que falta es escribirla.
+
+**Los vectores se COPIAN, no se escriben.** Los nueve salen byte a byte de las CAPTURAS-508 que
+`tools/banco_pago.sh --guardar` dejo al sellar el §508, y el bloque asierta la huella de cada uno
+ANTES y DESPUES de copiarlo: es la regla 2 del PROCESO -- un vector jamas se reescribe, se deriva
+de una captura real --. La escena es la del banco: cabeza v5 de **seq 5** firmada por un nodo de
+verdad, pendiente v2 **nacido en 4** por **250000** con **delta 96**, y las dos formas de `--t`,
+que es ABSOLUTO (D-AI-4): el `seq` de la cabeza y la FRONTERA `nacido + delta` = 100. Los siete
+negativos son UNA mutacion cada uno sobre el positivo de la frontera.
+
+**Lo que NO es vector, y va declarado por su huella.** Los cuatro ficheros del escenario -- aviso,
+credencial del receptor, retorno y credencial del pagador -- no los lee el mando, asi que no
+entran en el catalogo: el manifiesto los declara por huella para que la captura se pueda volver a
+producir. Y una comprobacion gratis que sale de ahi: `aviso.json` y `credencial.json` clavan las
+MISMAS huellas que el catalogo del cobro declara desde el §499 (`17f86def80cdf3c0` y
+`f1dfac359b900273`), porque la siembra del sandbox es determinista. Dos bancos distintos,
+la misma semilla, los mismos bytes.
+
+**El manifiesto pina lo que gobierna la casa, y nada mas.** Para `neg-importe-mentido` se pina el
+prefijo `pago:` y no el texto que sigue: ese lo pone WINTERFELL
+(`InconsistentOodConstraintEvaluations`) y caducaria con la dependencia. Es la misma decision que
+el catalogo del cobro tomo con su cota, y esta escrita en la cabecera del manifiesto, donde la
+lee quien lo mantenga.
+
+**Y NO se pina ningun peso, con su causa medida.** Los dos positivos son del MISMO pendiente bajo
+la MISMA cabeza, con el mismo importe y el mismo nacido, y pesan **55.317 B** y **54.888 B**: 429
+bytes de diferencia cuando lo unico que cambia es `t`. Eso descarta lo que el punto 324 sospechaba
+-- que el peso dependiera de la escena, del numero de pendientes o de la posicion -- y deja la
+causa donde mirar: el valor de una entrada PUBLICA cambia el transcript, y con el las consultas
+que FRI hace y los caminos que comparten. La explicacion queda RAZONADA y no medida, y su
+falsador es barato: una tercera `t` sobre el mismo pendiente tiene que volver a mover el peso.
+Con estas dos, el punto 324 va por CINCO medidas.
+
+**La estrofa del canon se DERIVO, no se reescribio.** Se extrajo por rango la del pendiente y se
+sustituyo solo lo que nombra a la familia -- el rotulo, el titulo, el manifiesto, el fichero de
+salida y los tres textos de fallo --, con censo de residuos: en la estrofa nueva la palabra
+<<pendiente>> no aparece ni una vez. Un arnes copiado a mano es un arnes que un dia dice el
+nombre de su hermano.
+
+**Contadores.** Dieciseis ficheros, DIEZ nacen (`spec/vectors/pago/`, nueve vectores y su
+manifiesto). `spec/vectors/` pasa de **250 a 260 ficheros**, y las dos portadas lo dicen: la
+espanola y la inglesa, la misma cuenta en los dos sitios. **Ningun pin se mueve**, ningun Cargo
+tocado, ninguna cifra de tests cambia: el corte no trae un `.rs`. Las diez herramientas,
+IDENTICAS byte a byte. El binario del artefacto se queda QUIETO -- ningun `.rs` se movio, y esa
+inmovilidad lo prueba desde fuera --, pero el TARBALL se mueve, y debe: lleva la familia nueva
+dentro; no es atribuible (punto 116). Canon `--sello` VERDE en 189 s, ya con las SIETE
+familias y el pago en 9/9. `AUDITORIA.md` 37.157 / 2.120.282 B -> 37.222.
+
+**Lo que NO cierra.** El RFC-0008 sigue sin la celda de E2, sin la cota `v < 2^63` en su Seguridad
+y sin las decisiones de los seis ultimos cortes, que viven en sus asientos y no en el RFC: es el
+corte siguiente, y con el se cierra E2 entera. Detras van el arreglo B (5.A-272) y E3. Queda
+tambien lo que este catalogo NO puede vigilar: que la boca sirva fuera del sandbox, donde el
+retorno y la credencial del pagador los escribe quien envia o se pierden (reversion 37), y que el
+`delta` sea el que fue -- la puerta barata descarta lo evidente y no mas (D-AG) --. Y sigue sin
+dueno el salto del canon del §507-B, 612 s con un corte de 2 s, donde el `CARGO_TARGET_DIR` es la
+causa candidata.

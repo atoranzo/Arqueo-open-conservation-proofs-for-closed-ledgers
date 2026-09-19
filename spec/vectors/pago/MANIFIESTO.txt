@@ -1,0 +1,32 @@
+# Vectores del sobre de PAGO EN CURSO (spec/PAQUETE.md 2.9, RFC-0008 E2; asiento 509).
+# fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
+# Los DOS positivos se REUNEN de las CAPTURAS-508 de un nodo real: la boca del pagador
+# (`zk-ssl-cli prueba-pago`, S507) los escribio con el nodo VIVO, con SU credencial y con
+# `receiverId` (D-AE, S505), contra la cabeza v5 de seq 5 que ese nodo firmo, sobre un pendiente
+# v2 nacido en 4 por 250000 y con delta 96. Son las dos formas de `--t`, que es ABSOLUTO
+# (D-AI-4): el `seq` de la cabeza, y la FRONTERA `nacido + delta` = 100, que es la ultima epoca
+# que el pago sostiene. Su productor es `tools/banco_pago.sh`, que SI vive en el arbol (S508). La
+# cabeza no viaja aparte: va entera dentro de los dos sobres (D-J). Los CUATRO ficheros del
+# escenario NO son vectores -el mando no los lee- y se declaran por su huella: `aviso.json`
+# `17f86def80cdf3c0` (204 B), `credencial.json` `f1dfac359b900273` (195 B), `retorno.json`
+# `bbcb7817ae6ec804` (106 B) y `credencial-pagador.json` `b81e717890643437` (195 B); el banco los
+# reproduce, y los dos primeros son los MISMOS que el catalogo del cobro declara, porque la
+# siembra es determinista.
+# Los siete negativos salen de `pago-t-frontera.json` por UNA mutacion cada uno, uno por regla
+# producible; jamas se reescriben (regla 2 del PROCESO).
+# OJO con `neg-importe-mentido`: el importe es entrada PUBLICA del AIR, asi que mentirlo deja la
+# prueba sin verificar su enunciado; el texto que sigue al prefijo lo pone WINTERFELL
+# (`InconsistentOodConstraintEvaluations`) y no la casa, asi que caducaria con la dependencia. Se
+# pina SOLO el prefijo `pago:`, que es lo que antepone el mando y lo unico que la casa gobierna.
+# OJO tambien con los PESOS, y por eso aqui NO se pina ninguno: los dos positivos son del MISMO
+# pendiente bajo la MISMA cabeza y pesan distinto -55.317 B y 54.888 B-, porque lo unico que
+# cambia entre ellos, `t`, cambia el transcript y con el las consultas de FRI (5.A-324).
+pago-t-seq.json|0|antes de 5. Nada sobre quien lo cobrara
+pago-t-frontera.json|0|antes de 100. Nada sobre quien lo cobrara
+neg-sin-enunciado.json|1|falta enunciado
+neg-sin-prueba.json|1|falta prueba o no es cadena 0x
+neg-sin-cabeza.json|1|falta cabeza
+neg-sin-firma.json|1|falta signature
+neg-cabeza-v4.json|1|exige una cabeza v5
+neg-nacido-igual-seq.json|1|no es anterior a la cabeza de seq
+neg-importe-mentido.json|1|pago:
