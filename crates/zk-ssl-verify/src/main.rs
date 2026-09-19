@@ -165,11 +165,14 @@ fn correr(ruta: &str) -> Result<(), String> {
         Some("edad") => return verificar_edad(&p),
         // RFC-0008 E1 (S495): el cobro pendiente contra una cabeza v5.
         Some("cobro_pendiente") => return verificar_cobro_pendiente(&p),
+        // RFC-0008 E2 (S506): el pago en curso contra una cabeza v5, la otra mitad.
+        Some("pago_en_curso") => return verificar_pago_en_curso(&p),
         Some(otro) => {
             return Err(err(format!(
                 "tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), \
                  `tipo: \"extension\"`, `tipo: \"consumo\"`, `tipo: \"conflicto\"`, \
-                 `tipo: \"rechazo\"`, `tipo: \"edad\"` o `tipo: \"cobro_pendiente\"`"
+                 `tipo: \"rechazo\"`, `tipo: \"edad\"`, `tipo: \"cobro_pendiente\"` o \
+                 `tipo: \"pago_en_curso\"`"
             )))
         }
     }
@@ -1320,6 +1323,56 @@ fn verificar_cobro_pendiente(p: &serde_json::Value) -> Result<(), String> {
     Ok(())
 }
 
+use zk_ssl_air::pago_en_curso::{
+    verificar_contra_cabeza as enlazar_pago, AfirmacionPago, CabezaPago,
+};
+
+/// **RFC-0008 E2 (S506): el PAGO EN CURSO.** El espejo del cobro, y con el enunciado al reves de
+/// exigente: el cobrador afirma <<me deben AL MENOS `inferior`>>, y el pagador <<pague `importe`
+/// EXACTO y no puedo revertirlo antes de `T`>>. El juez es el mismo que la capa usa para
+/// re-verificar lo que produce (`zk_ssl_air::pago_en_curso`, S503), que el kit compila SIN el
+/// probador; el plazo `delta` NO viaja, y por eso lo que se lee del enunciado es `t` y no un
+/// vencimiento. Todo sale de la cabeza firmada o del enunciado: nada del libro, nada de un nodo.
+fn verificar_pago_en_curso(p: &serde_json::Value) -> Result<(), String> {
+    let e = p.get("enunciado").ok_or_else(|| err("falta enunciado".into()))?;
+    let receptor = digest_de(e, "receptor")?;
+    let importe = u64_de(e, "importe")?;
+    let t = u64_de(e, "t")?;
+    let nacido = u64_de(e, "nacido")?;
+    let prueba = hex_a_bytes(
+        p.get("prueba")
+            .and_then(|x| x.as_str())
+            .ok_or_else(|| err("falta prueba o no es cadena 0x".into()))?,
+    )?;
+    let c = p.get("cabeza").ok_or_else(|| err("falta cabeza".into()))?;
+    let version = u64_de(c, "formatVersion")?;
+    if !matches!(VersionCabeza::try_from(version), Ok(VersionCabeza::V5)) {
+        return Err(err(format!(
+            "formatVersion {version}: el pago en curso exige una cabeza v5, la unica que firma \
+             pmetaRoot"
+        )));
+    }
+    let _ = cabeza_v3_verificada(c, "cabeza")?;
+    let seq = u64_de(c, "seq")?;
+    let f = familia_v5(c)?;
+    println!("1/3 la cabeza v5 recompone su digest y su firma verifica (seq {seq})");
+    let cabeza = CabezaPago {
+        seq,
+        pending_root: digest_de(c, "pendingRoot")?,
+        pmeta_root: f.pmeta_root,
+    };
+    let af = AfirmacionPago { receptor, importe, t, nacido };
+    enlazar_pago(&prueba, &af, &cabeza).map_err(|e| err(format!("pago: {e}")))?;
+    println!("2/3 el enunciado toma las dos raices, el importe EXACTO y T; nacido {nacido}");
+    println!("    es anterior al seq {seq}");
+    println!("3/3 la prueba verifica contra ese enunciado con las opciones de la casa");
+    println!("VERDE: bajo la cabeza de seq {seq} hay un pendiente a nombre del receptor por");
+    println!("       {importe} EXACTO, nacido en {nacido}, que quien lo pago no puede revertir");
+    println!("       antes de {t}. Nada sobre quien lo cobrara, ni el plazo, que no viaja");
+    println!("       (RFC-0008)");
+    Ok(())
+}
+
 /// Los siete parametros de `zkssl_params` contra el `paramsDigest` de una cabeza **v5** (RFC-0007
 /// D-B): si recomponen, lo que dicen es lo comprometido. Devuelve los tres que las causas citan:
 /// el limite regulatorio, el tope de cuentas y el tope de suministro (§460).
@@ -1701,5 +1754,56 @@ mod tests {
         assert_eq!(brazo, "falta enunciado");
         assert!(otro.starts_with("tipo desconocido: otra"), "{otro}");
         assert!(otro.contains("`tipo: \"cobro_pendiente\"`"), "{otro}");
+    }
+
+    // RFC-0008 E2 (S506). Como en el cobro: lo alcanzable sin una cabeza firmada es la FORMA del
+    // sobre y la VERSION de la cabeza. El enlace tiene sus testigos con pruebas reales en
+    // `stark-experiment` y en la capa, y el PASTE-E2f-M midio que estos campos bastan.
+
+    /// Sin `enunciado` no hay afirmacion que juzgar, y se dice con su nombre.
+    #[test]
+    fn un_sobre_de_pago_sin_enunciado_se_nombra() {
+        let p = json!({ "v": 1, "tipo": "pago_en_curso" });
+        assert_eq!(verificar_pago_en_curso(&p), Err("falta enunciado".into()));
+    }
+
+    /// Sin `prueba` no hay nada que enlazar, y se dice antes de mirar la cabeza. Y el enunciado
+    /// del pago lleva `importe` y `t` donde el del cobro lleva `inferior`.
+    #[test]
+    fn un_sobre_de_pago_sin_prueba_se_nombra() {
+        let en = json!({ "receptor": DIG, "nacido": "0x1", "importe": "0x2", "t": "0x3" });
+        let p = json!({ "v": 1, "tipo": "pago_en_curso", "enunciado": en });
+        assert_eq!(verificar_pago_en_curso(&p), Err("falta prueba o no es cadena 0x".into()));
+    }
+
+    /// Una cabeza que no es v5 se rechaza por su VERSION, antes de tocar la firma.
+    #[test]
+    fn un_pago_con_cabeza_que_no_es_v5_se_rechaza_antes_de_la_firma() {
+        let p = json!({
+            "v": 1, "tipo": "pago_en_curso",
+            "enunciado": { "receptor": DIG, "nacido": "0x1", "importe": "0x2", "t": "0x3" },
+            "prueba": "0x00",
+            "cabeza": { "available": true, "formatVersion": "0x4" }
+        });
+        let e = verificar_pago_en_curso(&p).unwrap_err();
+        assert!(e.contains("formatVersion 4: el pago en curso exige una cabeza v5"), "{e}");
+    }
+
+    /// El `tipo` se despacha por el mando: `pago_en_curso` llega a su brazo, y el desconocido
+    /// nombra ya los SIETE -esta es la parte que el S506 ENSANCHA del testigo del S495-.
+    #[test]
+    fn el_mando_despacha_el_pago_en_curso_y_nombra_los_siete() {
+        let ruta = std::env::temp_dir().join("zk-ssl-verify-s506-tipo.json");
+        std::fs::write(&ruta, json!({ "v": 1, "tipo": "pago_en_curso" }).to_string()).unwrap();
+        let brazo = correr(ruta.to_str().unwrap()).unwrap_err();
+        std::fs::write(&ruta, json!({ "v": 1, "tipo": "otra" }).to_string()).unwrap();
+        let otro = correr(ruta.to_str().unwrap()).unwrap_err();
+        let _ = std::fs::remove_file(&ruta);
+        assert_eq!(brazo, "falta enunciado");
+        assert!(otro.starts_with("tipo desconocido: otra"), "{otro}");
+        for t in ["extension", "consumo", "conflicto", "rechazo", "edad", "cobro_pendiente",
+                  "pago_en_curso"] {
+            assert!(otro.contains(&format!("`tipo: \"{t}\"`")), "no nombra {t}: {otro}");
+        }
     }
 }

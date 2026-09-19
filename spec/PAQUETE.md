@@ -32,9 +32,10 @@ cuántos hacen falta lo decide el CLIENTE** con su política (§319, los mandos 
 del testigo), no el paquete: quien lo arma puede ser el operador, y dejarle elegir su propia `k`
 le devolvería justo lo que la cofirma le quita.
 
-## 2. Las ocho formas
+## 2. Las nueve formas
 
-El binario acepta ocho objetos. Los ocho son JSON; los esqueletos van con puntos suspensivos
+El binario acepta nueve objetos. Los nueve son JSON; los esqueletos van con puntos
+suspensivos
 donde el valor es una respuesta del cable sin reescribir.
 
 ### 2.1 El paquete v1 — la posición
@@ -267,6 +268,37 @@ donde el valor es una respuesta del cable sin reescribir.
   capa y el test del nodo lo enlazan contra un latido real, la boca reúne las cinco entradas del
   productor sin abrir libro, y el manifiesto pina lo que cada sobre dice.
 
+### 2.9 El paquete de pago en curso (§506)
+
+```text
+{ "v": 1, "tipo": "pago_en_curso", "cabeza": {…},
+  "enunciado": {"receptor": "0x…", "importe": "0x…", "t": "0x…", "nacido": "0x…"},
+  "prueba": "0x…" }
+```
+
+- **Prueba que alguien pagó un importe EXACTO a un receptor y que no puede revertirlo antes de
+  `t`** (RFC-0008 D-AD, D-AF): bajo la `pendingRoot` de una cabeza **v5** hay una hoja v2 que se
+  abre a `receptor` y a `importe`, con el sobre `X = M(refund_id, [delta, 0, 0, 0])` compuesto
+  DENTRO del circuito, y en la misma posición del árbol de meta, bajo `pmetaRoot`, la meta con
+  ese `nacido`; y `t - nacido <= delta`. Es la otra mitad del 2.8: donde el cobrador afirma «me
+  deben al menos `inferior`», el pagador afirma «pagué `importe` exacto y estoy atado hasta `t`».
+- **El plazo NO viaja.** Lo que se prueba es `delta >= t - nacido`, nunca `delta`: quien lee el
+  sobre sabe hasta cuándo el pago es irreversible, no cuánto margen queda ni cuándo caduca.
+- `cabeza` es una respuesta de `zkssl_signedEpochHead` tal cual; `seq`, `pendingRoot` y
+  `pmetaRoot` salen **sólo de la cabeza** (D-J), y el juez exige `nacido < seq` antes de tocar la
+  prueba. El juez es `zk_ssl_air::pago_en_curso::verificar_contra_cabeza` (§503), el MISMO con el
+  que la capa re-verifica lo que produce, y el kit lo compila **sin el probador**.
+- **Lo que NO prueba:** nada sobre quién lo cobrará, nada sobre la `sal`, el `refund_id` ni el
+  `emisor` —son testigo—, y nada sobre otra cabeza que la que firma las dos raíces. Quien lo
+  produce es `prueba_de_pago_en_curso` en la capa (§504) con la apertura del pagador y la foto
+  que el nodo le sirve con su credencial y `receiverId` (§505, D-AE); **la boca, el banco y el
+  catálogo de este sobre son de un corte posterior** (D-AI, D-AJ), y por eso hoy se escribe a
+  mano o desde un test.
+- ⚠️ **El nodo tiene que ser del §505 o posterior**: uno anterior ignora `receiverId` —el método
+  nunca rechazó campos de más— y sirve la nada en vez de un error, así que el pagador no podría
+  reunir la foto. Lo que dice si un nodo sabe de qué habla es su `spec/openrpc.json`, no la
+  versión del protocolo, que no sube.
+
 ## 3. El sobre — lo que el binario lee
 
 El binario lee **31 nombres** distintos del JSON. Los 14 primeros son el sobre propiamente dicho;
@@ -285,6 +317,7 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 | rechazo | `data` → `causa`, `campos`, `seq`; `parametros` → los siete de `zkssl_params`; `presencia` → `siblings`, `isRight`; `recibo` → `rootOld`, `pendingRootOld`, `frozenRoot`; `lote[]` → `kind`, `sender` o `receiver`, `receipt` → `notice` → `position` o `notice` → `position`; `congelados` → `index`, `leaf`, `camino` → `siblings`, `isRight`; `peticion` → `amount`; `cuenta` → `index`, `leaf`, `camino` → `siblings`, `isRight`; `banda` → `s`, `publicId`, `requested`, `prueba` | este documento, sección 2.6 |
 | edad | `enunciado` → `t`, `k`, `emisor`; `subraices` → `pendientes`, `meta`; `prueba` | este documento, sección 2.7 |
 | cobro pendiente | `enunciado` → `receptor`, `nacido`, `inferior`; `prueba` | este documento, sección 2.8 |
+| pago en curso | `enunciado` → `receptor`, `importe`, `t`, `nacido`; `prueba` | este documento, sección 2.9 |
 
 ⚠️ **§419 — el «31» de arriba ya no es la cuenta**: el sobre de consumo añade `consumo`,
 `presencia` y `ausencia`. **No se sustituye por otro número**, porque el 31 no tiene
@@ -384,7 +417,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `el paquete no declara su version en `v``
 - `el paquete declara v:{v_paquete} — este binario lee v1 y v2`
 - `un paquete v1 con `cofirmas`: subir la version es lo que las hace parte del contrato — declaralo v2, o quitalas`
-- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"`, `tipo: "conflicto"`, `tipo: "rechazo"`, `tipo: "edad"` o `tipo: "cobro_pendiente"``
+- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"`, `tipo: "conflicto"`, `tipo: "rechazo"`, `tipo: "edad"`, `tipo: "cobro_pendiente"` o `tipo: "pago_en_curso"``
 
 **Forma de los valores** (`hex_a_bytes`, `digest_de`, `u64_de`; `{campo}` es la clave que se leía)
 
