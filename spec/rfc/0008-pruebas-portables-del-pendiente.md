@@ -1,7 +1,7 @@
 # RFC-0008 — Las dos pruebas portables del pendiente: el cobro, el pago en curso y la prenda
 
 - **Estado:** PROPUESTO
-- **Autores:** Che, con Claude (sesiones 144, 145, 147, 149, 150 y 151)
+- **Autores:** Che, con Claude (sesiones 144, 145, 147, 149, 150, 151, 152, 153, 154 y 155)
 - **Fecha:** 2026-09-16
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad). Los dos
   métodos nuevos son aditivos; la cabeza v5 no cambia de forma; la marca de prenda es una hoja
@@ -16,7 +16,11 @@
   D-Q y parte la fila E4 por lados; el §497 y el §497-B, la boca del cobrador; el §498, que
   decide D-R..D-W y trae el banco; el §499, que decide D-X..D-AC y trae el catálogo; el
   §500, que escribe aquí esas doce y pone en su celda lo sellado de E1 y del cobro de E4; y el
-  §501, que decide D-AD..D-AJ y abre E2.
+  §501, que decide D-AD..D-AJ y abre E2; el §502 y el §503 (el instrumento y el AIR del pago),
+  el §504 (el productor), el §505 (la puerta del pagador), el §506 (el brazo del mando y la
+  forma 2.9), el §507 (la boca `prueba-pago`), el §508 (el banco y la credencial del pagador) y
+  el §509 (el catálogo); y el §510, que escribe aquí D-AK..D-AR, sella la celda de E2, cierra la
+  de E4 por los dos lados y anota la cota.
 - **Hito:** H5 de la propuesta enviada a NLnet Restack (140 h), en sus palabras: *«The two
   portable proofs of a pending item. Payee side and payer side, derived from the same head;
   pledge transition; format and vectors.»*
@@ -26,9 +30,9 @@
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
 | E1 — el cobro pendiente, portable | el circuito del cobrador: bajo el `pendingRoot` de una cabeza v5 firmada existe `C2 = M(C1, X)` con `C1 = H(H(receptor, sal), importe)`, a nombre de `receptor` (D-G), `importe >= inferior` (banda, molde de `InsufficientBalance`), con el camino DENTRO del circuito; su meta `(emisor, nacido)` por camino bajo `pmetaRoot`, con los mismos bits. `zkssl_pendingPath`, aditivo, sirve los dos caminos de la foto del último latido a quien presenta un aviso que recompone la hoja (D-F). Sobre `tipo: "cobro_pendiente"` en `PAQUETE.md`, verificado por el mando sin nodo | NO | **sellada** — §484 (D-F y D-G, y la fila corregida), §485 y §485-B (el instrumento), §486 (D-H), §489 (D-I), §490 y §490-B (el AIR de dos carriles y un bit), §491 y §491-B (el productor, una función libre), §492 y §492-B, §493 y §493-B (la foto del latido en la capa y en el nodo, y `zkssl_pendingPath`), §494 (D-J..D-M) y §495 y §495-B (el enlace con la cabeza, el brazo del mando y `PAQUETE.md` 2.8). **E1 queda entera** |
-| E2 — el pago en curso, portable | el espejo, para el pagador: `C2` abre a `(receptor, importe)` EXACTOS, `nacido` por camino, y `nacido + delta >= T` con `delta` y `refund_id` como testigo (no se revelan). Sobre `tipo: "pago_en_curso"`, verificado sin nodo. Junto al de E1, un tercero ajeno a los dos verifica un pago disputado sin el libro de nadie | NO | propuesta |
+| E2 — el pago en curso, portable | el espejo, para el pagador: `C2` abre a `(receptor, importe)` EXACTOS, `nacido` por camino, y `nacido + delta >= T` con `delta` y `refund_id` como testigo (no se revelan). Sobre `tipo: "pago_en_curso"`, verificado sin nodo. Junto al de E1, un tercero ajeno a los dos verifica un pago disputado sin el libro de nadie | NO | **sellada** — §501 (D-AD..D-AJ), §502 y §502-B (el instrumento), §503 y §503-B (el AIR de dos carriles con el sobre compuesto dentro, y su juez), §504 y §504-B (el productor en la capa, función libre), §505 y §505-B (la puerta del pagador en `zkssl_pendingPath`, D-AE), §506 y §506-B (el séptimo brazo del mando y la forma 2.9), §507 y §507-B (la boca `prueba-pago`, D-AK..D-AO), §508 (el banco y la credencial del pagador, D-AP y D-AQ) y §509 (el catálogo, D-AR). **E2 queda entera** |
 | E3 — la prenda, como transición con prueba | el receptor marca el pendiente como prendado: una etiqueta con dominio propio sobre `C2` en el árbol de consumos, publicada por un método aditivo, `zkssl_pledge`, que EXIGE la prueba de apertura del cobro (la autorización de `circuit_claim_v2` sin el crédito); una segunda prenda es `ConsumoRepetido`, que ya tiene sobre de rechazo con prueba (RFC-0007 E3, `PAQUETE.md` 2.6). La prenda no toca el cobro ni el reembolso: lo que obliga es contrato, y se declara | NO | propuesta |
-| E4 — el catálogo y el banco, por lados | `spec/vectors/pendiente/`: dos positivos por lado, REUNIDOS de las capturas de un nodo real (molde: `edad/`), y un negativo por regla producible; `MANIFIESTO.txt`; la familia en `FAMILIAS`; el banco que lo reproduce en vivo; la sección 9 de `PAQUETE.md`. Va POR LADOS en una sola fila (D-O): el del cobro primero —sus dos formas (D-N), la boca del cli (D-P) y sus negativos (D-Q)— y el del pago con E2; esta celda nombra lo sellado de cada lado. El giro a ACEPTADO exige la regla 4 medida letra a letra, como el §481 | NO | **sellada por el lado del cobro** — §496 (D-N..D-Q), §497 y §497-B (la boca del cobrador en el cli, `prueba-cobro`, y `simulate --v2`), §498 (D-R..D-W y el banco, `tools/banco_pendiente.sh`) y §499 (D-X..D-AC y el catálogo, `spec/vectors/pendiente/`, sexta familia del artefacto y del canon); el lado del pago, con E2. Hasta que los dos lados estén, la etapa no está |
+| E4 — el catálogo y el banco, por lados | `spec/vectors/pendiente/`: dos positivos por lado, REUNIDOS de las capturas de un nodo real (molde: `edad/`), y un negativo por regla producible; `MANIFIESTO.txt`; la familia en `FAMILIAS`; el banco que lo reproduce en vivo; la sección 9 de `PAQUETE.md`. Va POR LADOS en una sola fila (D-O): el del cobro primero —sus dos formas (D-N), la boca del cli (D-P) y sus negativos (D-Q)— y el del pago con E2; esta celda nombra lo sellado de cada lado. El giro a ACEPTADO exige la regla 4 medida letra a letra, como el §481 | NO | **sellada por el lado del cobro** — §496 (D-N..D-Q), §497 y §497-B (la boca del cobrador en el cli, `prueba-cobro`, y `simulate --v2`), §498 (D-R..D-W y el banco, `tools/banco_pendiente.sh`) y §499 (D-X..D-AC y el catálogo, `spec/vectors/pendiente/`, sexta familia del artefacto y del canon). **Y el lado del PAGO**: §508 (el banco propio, `tools/banco_pago.sh`, con su siembra de cuatro ficheros, D-AP y D-AQ) y §509 (el catálogo `spec/vectors/pago/`, séptima familia del artefacto y del canon, D-AR, que revierte D-AC y la letra de D-AJ). **Los dos lados están; la etapa queda entera**, y lo que falta para ACEPTADO es la regla 4 medida letra a letra |
 
 Las medidas de este documento se tomaron sobre `5ef3b1b` (`TERRENO-H5-144`); las de D-F y D-G,
 sobre `393032e` (`TERRENO-E1-145`); y las de D-H, con el instrumento del §485, que corrió en una
@@ -118,9 +122,10 @@ manda la forma de este RFC:
 
 ## Diseño
 
-Las treinta y seis decisiones las tomó el asistente por delegación del autor (D-A..D-E en la
+Las cuarenta y cuatro decisiones las tomó el asistente por delegación del autor (D-A..D-E en la
 sesión 144; D-F, D-G y D-H en la 145; D-I en la 147; D-J..D-M en la 149; D-N..D-AC en la 150, y
-de ellas D-R..D-AC las escribió aquí el §500; D-AD..D-AJ en la 151), con la constitución de
+de ellas D-R..D-AC las escribió aquí el §500; D-AD..D-AJ en la 151; D-AK..D-AR en la 155, y las
+escribió aquí el §510), con la constitución de
 decisión (pureza, claridad, coherencia, imagen fiel, en ese orden). Todas llevan su condición de
 reversión, escrita aquí.
 
@@ -543,6 +548,9 @@ objeto, con dos lados dentro; (b) `cobro`, el lado. Gana (a): coherencia con D-O
 (nombres que significan una sola cosa: el catálogo es del pendiente). **Reversible** hacia dos
 familias si el lado del pago exigiera un manifiesto propio, la misma condición que la de D-O.
 
+⚠️ **REVERTIDA por D-AR (§509/§510)**: el lado del pago exigió manifiesto propio, que es la
+condición escrita arriba. Son dos familias, `pendiente` y `pago`.
+
 ### D-AD — El enunciado del pago: `{receptor, importe, T}` exactos, y `nacido`, como en el cobro
 
 Medido sobre `477dcab` (`TERRENO-E2-151`): el pagador tiene la apertura entera —receptor, sal,
@@ -644,6 +652,95 @@ manifiesto se paga en ese corte; (b) un tipo con `lado`. Gana (a): D-E ya lo dec
 rechazo son distintas (la del pago lleva la `T`), y la frase del manifiesto quedaría rancia y se
 paga donde se desmiente. **Reversible** hacia (b) sólo por la vía que D-E deja abierta: dos listas
 de rechazo idénticas, que hoy no lo son.
+
+⚠️ **La forma 2.9 se mantiene; el DIRECTORIO no** (D-AR, §509/§510): los vectores `pago-*`
+no viven en `pendiente/` sino en `spec/vectors/pago/`. Lo que cayó fue la premisa: esta
+decisión los daba <<reunidos de la MISMA siembra que los del cobro (D-S)>>, y no lo son. El
+texto de arriba se CITA, no se borra (§247).
+
+### D-AK — El productor del pago es una función libre, con la apertura entera y sin libro
+
+Medido sobre `48699ab`: el productor del cobro (§491) es una `fn` libre que no abre libro, y el
+pagador tiene lo mismo más la pareja `(refund_id, delta)` que el receptor recibe opaca. Dos
+caminos: (a) fichero propio `crates/zk-ssl/src/prueba_pago.rs` al lado del molde, con
+`AperturaDelPago` como entrada y reusando `FotoDelCobro` y `CabezaDePendientes` tal cual; (b) un
+método del libro. Gana (a): no lee libro, luego corre en un cliente que no lo tiene, y reusar los
+dos tipos evita dos productores del mismo dato. El productor **re-verifica lo que produce** con el
+mismo juez que corre el tercero, y comprueba `nacido < seq` ANTES de gastar una prueba, porque un
+rc que dice «no se enlaza» esconde la causa. **Reversible** si el pendiente dejara de caber en una
+`fn` libre —hoy no: la foto se la sirve el nodo—.
+
+### D-AL — El nodo anterior al §505 ignora `receiverId`: se DECLARA, no se arregla
+
+Medido en el terreno de E2e: la `P` de `zkssl_pendingPath` nunca llevó `deny_unknown_fields`, así
+que un nodo viejo toma el campo de más, lo tira y responde como si no viniera: sirve la NADA en
+vez de un error, y el pagador no sabe por qué. Dos caminos: (a) declararlo donde lo lee quien lo
+sufre —`spec/RPC.md` y `PAQUETE.md` 2.9—, diciendo que lo que dice si un nodo sabe de qué habla es
+su `spec/openrpc.json` y no la versión del protocolo, que no sube; (b) subir la versión. Gana (a):
+subirla por un campo aditivo rompe el cable para todos por un caso que sólo sufre quien habla con
+un nodo viejo. **Reversible** si apareciera un tercero que no pueda leer el OpenRPC.
+
+### D-AM — La boca del pagador es un fichero propio, y tres privadas suben al crate
+
+Medido sobre `6ecb063`: la boca del cobro (§497) tiene lo público reutilizable —`leer_cabeza`,
+`leer_foto`, `escribir`, `notice_de`, `credencial_de` y sus dos DTO— y CUATRO funciones privadas,
+de las que la del pago usa tres (`q_de`, `b32_de`, `respuesta`). Dos caminos: (a) `pago.rs` propio
+y esas tres a `pub(crate)` en su sitio; (b) el pago dentro de `cobro.rs`. Gana (a): la cabecera de
+`cobro.rs` dice «la BOCA del cobrador», y meter el pago dentro la haría mentir —vara 2: un nombre,
+una cosa—. `cuerpo` se queda privada, que sólo la usa `respuesta`: abrir lo que no se usa es
+cosmético. **Reversible** hacia un módulo común si naciera una tercera boca.
+
+### D-AN — El retorno viaja en su fichero, y una puerta barata lo falsa contra el aviso
+
+Medido en el PASTE-E2g-M: `simulate --v2` no persistía nada del pagador —la pareja se derivaba de
+la semilla— y `refund_envelope` es el ÚNICO productor de `X`. Dos caminos: (a) un tercer fichero
+`{refundId, delta}` escrito por `simulate --v2 --retorno`, con el precedente de D-P —un fichero
+por dueño—, y la boca comprobando `refund_envelope(retorno) == aviso.x` ANTES de pedirle nada al
+nodo; (b) banderas sueltas. Gana (a): la puerta cuesta cero, falla cerrada y ahorra una prueba, y
+el fichero se pasa como se pasa el aviso. Lo que la puerta NO prueba va escrito en la doc de la
+función: `delta` entra en Goldilocks y dos deltas congruentes dan el mismo sobre (D-AG); descarta
+lo evidente, no fija el delta. **Reversible** hacia (b) en un cliente sin ficheros.
+
+### D-AO — `--t` es ABSOLUTO
+
+Medido: el productor toma `T` absoluta y el enunciado la publica (`PAQUETE.md` 2.9). Dos caminos:
+(a) absoluta; (b) relativa a `nacido`. Gana (a): relativa obligaría a leer la foto antes de
+componer la orden, y la MISMA orden daría sobres distintos según cuándo se corre. **Reversible**
+si una boca de alto nivel quisiera ofrecer las dos, con la absoluta como la que viaja.
+
+### D-AP — La credencial del PAGADOR también va en fichero, y su testigo es el banco
+
+Medido al escribir el banco: `simulate --v2 --credencial` escribe la del RECEPTOR, y
+`zkssl_pendingPath` exige la del PAGADOR cuando quien pide es el pagador (D-AE). Ese fichero no
+existía, y la boca lo salva por bandera sólo porque un humano puede teclearla; un banco no. Dos
+caminos: (a) `--credencial-pagador`, la MISMA terna y la MISMA `credencial_de` con `a.from`; (b)
+meterla dentro del retorno. Gana (a): son dos objetos distintos con dos tipos distintos, y juntar
+la terna con la pareja daría un fichero que no es ni una cosa ni la otra. Su testigo NO es un
+unitario: si escribiera la del receptor, el nodo la aceptaría —es válida— y la puerta
+`f.emisor == p.index.0` serviría la nada, así que el falsador es el banco. **Reversible** hacia un
+solo fichero del pagador si un día el retorno dejara de ser opaco.
+
+### D-AQ — El banco del pago es propio, con su siembra de cuatro ficheros
+
+Medido en el §508: el hermano del cobro (§498) siembra dos ficheros de dos dueños; el pago
+necesita cuatro, y su rechazo barato no llega ni a pedir. Dos caminos: (a) `tools/banco_pago.sh`
+propio, con el molde del hermano y el mismo orden que la foto del latido impone; (b) un parámetro
+`--lado` en el del cobro. Gana (a): las dos siembras ya no son la misma —la del pago escribe el
+retorno y la credencial del pagador— y un banco con dos modos es un banco que un día prueba el que
+no era. **Reversible** hacia (b) si las dos siembras volvieran a coincidir.
+
+### D-AR — El catálogo del pago va en `spec/vectors/pago/`, séptima familia
+
+Medido en el §509, y esto REVIERTE D-AC y la letra de D-AJ por la puerta que D-AC dejó escrita
+—«si el lado del pago exigiera un manifiesto propio»—, con tres hechos: la siembra del pago es
+OTRA (D-AQ), la lista de rechazos es distinta (D-E ya lo decía) y `tools/conformidad.sh` exige que
+cada `.json` del directorio tenga entrada, así que un solo directorio sería un manifiesto de
+dieciocho entradas mezclando dos sobres y dos bancos, con UNA cuenta en el canon donde hay dos.
+Dos caminos: (a) `pago/` con su manifiesto, su estrofa y su familia; (b) `pendiente/` con los
+dieciocho. Gana (a), y de propina el manifiesto del pendiente no queda rancio. ⚠️ **Se tomó de
+hecho en el §509 ANTES de escribirse aquí**, siguiendo la línea del TRASPASO que citaba D-AJ y
+decía «la séptima familia»: un resumen que se había apartado de la decisión que cita. La lección
+va al asiento. **Reversible** hacia (b) si las dos listas de rechazo se igualaran.
 
 ## Lo que se DESCARTÓ al medir
 
@@ -758,6 +855,13 @@ expediente aunque no rompa nada.
   lo sumo `T <= nacido + 2^32 - 2`, en épocas del registro (D-AG). Es imagen fiel del compromiso
   v2 del RFC-0003; lo que el 0003 haga con su letra («las elecciones del emisor atan», hoy módulo
   `p`) se decide allí, y va a su cola.
+- **Hasta dónde alcanza la cota temporal, medido**: el segmento de 64 filas del carril del pago
+  NO prueba <<cabe en 64 bits>> —en este campo eso no diría nada, porque `p < 2^64`—: prueba
+  **`v < 2^63`**, porque su primera fila exige bit y acumulador a CERO y el acumulador dobla en las
+  63 siguientes. Luego el AIR sostiene el enunciado mientras **`delta - (T - nacido) < 2^63`**, y
+  `comprobar_enunciado` acota `importe`, `T` y `nacido` a `MAX_VALOR = 2^62 - 1` y exige
+  `nacido <= T`. El <<nunca>> del punto de arriba, que el campo reduce a `2^32 - 2`, cae holgado
+  dentro. Quien lea un sobre por encima de esas cotas no lee un sobre: no hay ninguno.
 - **La clave de gasto no viaja jamás** (regla 3 del PROCESO): la prueba de prenda se produce
   en el cliente, como el cobro.
 

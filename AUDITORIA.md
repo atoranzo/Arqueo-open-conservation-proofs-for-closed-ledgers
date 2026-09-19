@@ -37220,3 +37220,65 @@ retorno y la credencial del pagador los escribe quien envia o se pierden (revers
 `delta` sea el que fue -- la puerta barata descarta lo evidente y no mas (D-AG) --. Y sigue sin
 dueno el salto del canon del §507-B, 612 s con un corte de 2 s, donde el `CARGO_TARGET_DIR` es la
 causa candidata.
+
+## §510 — El RFC-0008 alcanza a su codigo: E2 sellada, E4 por los dos lados, y una reversion
+
+**Que.** Ocho sellos de E2 estaban escritos en sus asientos y no en el RFC, y el documento
+publicaba <<propuesta>> en una celda cuyo codigo corre, tiene banco y tiene catalogo. Este corte
+lo alcanza: la celda de **E2 queda sellada** con sus ocho sellos, la de **E4 se cierra por los DOS
+lados**, entran las OCHO decisiones que faltaban -- **D-AK..D-AR** --, la Seguridad gana la cota
+temporal medida, y `spec/README.md` gana la fila de `vectors/pago/`. Es prosa sin una linea de
+codigo: ningun `.rs`, ningun pin, ninguna cifra.
+
+**La reversion, declarada donde debe estar.** La D-AJ decia que los vectores `pago-*` irian al
+MISMO `spec/vectors/pendiente/`, y la D-AC que la familia y la estrofa se llamarian `pendiente`.
+El §509 construyo `spec/vectors/pago/` y una SEPTIMA familia. La reversion es legitima -- la D-AC
+escribio su propia puerta de salida, <<si el lado del pago exigiera un manifiesto propio>>, y la
+condicion se cumple con tres hechos medidos: la siembra del pago es OTRA (D-AQ), la lista de
+rechazos es distinta (D-E ya lo decia) y `tools/conformidad.sh` exige que cada `.json` del
+directorio tenga entrada, asi que un solo directorio seria un manifiesto de dieciocho entradas
+mezclando dos sobres y dos bancos --, **pero no se declaro al tomarla**, y eso es el defecto. Las
+dos decisiones lo recogen ahora: la D-AC con su <<REVERTIDA por D-AR>>, y la D-AJ citando su texto
+sin borrarlo (§247), porque lo que cayo no fue la forma 2.9 sino su premisa: daba los vectores
+<<reunidos de la MISMA siembra que los del cobro>>, y no lo son.
+
+**Y la leccion, que es de proceso y no de diseno: UN ENCARGO DERIVADO DE UN RESUMEN HEREDA SU
+DERIVA.** La linea del TRASPASO decia <<el catalogo `pago-*` con su manifiesto y la septima
+familia del artefacto (D-AJ, §499)>>: CITA la D-AJ y dice algo que la D-AJ no dice. Se construyo
+contra el resumen, no contra la fuente, y la fuente estaba a un `grep`. Es la hermana mayor de
+<<un resumen propio NO es fuente>>: aqui el resumen era ajeno, iba firmado y traia el numero de
+la decision al lado, que es justo lo que lo hace creible. La regla que queda: **cuando una linea
+de traspaso cite una decision, se abre la decision**.
+
+**Las ocho que entran, y de donde salen.** D-AK, el productor como funcion libre que no abre libro
+y re-verifica lo que produce (§504). D-AL, que un nodo anterior al §505 ignora `receiverId` y
+sirve la nada: se DECLARA donde lo lee quien lo sufre, no se arregla subiendo la version. D-AM, la
+boca en fichero propio y tres privadas al crate -- `cuerpo` se queda privada, que abrir lo que no
+se usa es cosmetico --. D-AN, el retorno en su fichero y la puerta barata que lo falsa contra el
+`x` del aviso antes de tocar el nodo, con su limite escrito: no fija el `delta` (D-AG). D-AO,
+`--t` ABSOLUTO. D-AP, la credencial del pagador tambien en fichero, cuyo testigo NO es un unitario
+sino el banco. D-AQ, el banco propio con su siembra de cuatro ficheros. D-AR, el catalogo en
+`pago/`, que es la reversion de arriba.
+
+**La cota, en la Seguridad y medida.** Un segmento de 64 filas no prueba <<cabe en 64 bits>> -- en
+este campo eso no diria nada, porque `p < 2^64` --: prueba **`v < 2^63`**, porque su primera fila
+exige bit y acumulador a CERO y el acumulador dobla en las 63 siguientes. Luego el AIR sostiene el
+enunciado mientras `delta - (T - nacido) < 2^63`, y `comprobar_enunciado` acota `importe`, `T` y
+`nacido` a `MAX_VALOR = 2^62 - 1` y exige `nacido <= T`. El <<nunca>> de D-AG, que el campo reduce
+a `2^32 - 2`, cae holgado dentro. Sale de la cabecera del AIR (§503), no de una cuenta nueva.
+
+**Contadores.** TRES ficheros, ninguno nace. El RFC pasa de 800 a 904 lineas y `spec/README.md` de
+168 a 169: once ediciones, cada una con su aserto de unicidad, y los `old_str` extraidos del arbol
+de `4927e16`. Ningun pin, ningun Cargo, ninguna cifra de tests, ningun `.rs`: **el corte NO corre
+el canon** y su juez son las DIEZ herramientas, IDENTICAS byte a byte. El estado del DOCUMENTO
+sigue siendo PROPUESTO, y no es una contradiccion: el estado del documento y el de la etapa son
+dos cosas (regla 4 del PROCESO), y por eso un RFC propuesto tiene etapas selladas.
+`AUDITORIA.md` 37.222 / 2.125.149 B -> 37.284.
+
+**Lo que NO cierra.** **E3, la prenda, sigue PROPUESTA**: es lo unico de este RFC que no tiene una
+linea de codigo, y su giro exige el metodo aditivo `zkssl_pledge` con la prueba de apertura
+dentro. El documento entero no gira a ACEPTADO hasta que la regla 4 se mida letra a letra, como
+hizo el §481 con el 0006. Y quedan en la cola, de este arco: el arreglo B (5.A-272), el peso de la
+prueba con sus cinco medidas y su causa razonada (5.A-324), el `doc/README-CLI.md` que lista seis
+de los diez `.rs` del crate, y el censo de targets de los demas crates (5.A-322), del que solo el
+cli esta medido.
