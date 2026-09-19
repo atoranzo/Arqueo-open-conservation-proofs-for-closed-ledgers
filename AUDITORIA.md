@@ -37087,3 +37087,71 @@ punta es SIN nodo, contra la capa. Y el punto 324 se queda con tres medidas y si
 **Fichado aparte, y NO se paga aqui**: el arbol de ficheros de `doc/README-CLI.md` lista SEIS de
 los DIEZ `.rs` del crate —le faltaban ya `witness.rs`, `cobro.rs` y `nucleo_kat.rs` antes de
 este corte, y ahora tambien `pago.rs`—. La rancidez no la mueve este corte: va a la cola.
+
+## §508 — El banco del pago en curso, y la credencial que le faltaba al pagador
+
+**Que.** El §507 dejo la boca del pagador escrita y con seis testigos, y dijo en su propio asiento
+lo que no habia hecho: **hablar con un nodo**. Este corte lo hace. Nace `tools/banco_pago.sh`, el
+hermano de `banco_pendiente.sh` por el otro lado del mismo pendiente: siembra un envio v2 en vuelo
+con el nodo parado, arranca un nodo real que lo mete en la foto de su latido y firma una cabeza
+v5, corre la boca CON el nodo vivo, mata el nodo, y el kit verifica los dos sobres **sin el**.
+Dos positivos, DOS rechazos en vivo y SIETE negativos por mutacion.
+
+**El hueco que el banco destapo antes de existir, y por que no es un detalle.** `simulate --v2
+--credencial` escribe la credencial del RECEPTOR (`commands.rs`, la llamada con `a.to` y
+`to_real`), y `zkssl_pendingPath` exige la del PAGADOR cuando quien pide es el pagador (D-AE,
+§505). Ese fichero no existia: la boca las toma por bandera y un humano puede teclearlas, pero un
+banco no. Es el mismo patron que la D-AI cerro con el retorno, una capa mas abajo -- **lo que el
+pagador tiene y no persiste** --, y el §507 no lo vio porque nunca corrio contra un nodo. Lo paga
+este corte con `--credencial-pagador`, la MISMA terna y la MISMA funcion `credencial_de`, ahora
+con `a.from` y `from_real`. **La siembra pasa a escribir CUATRO ficheros de DOS duenos**: aviso y
+credencial del receptor, retorno y credencial del pagador.
+
+**Y no es una apuesta: la medida ya estaba hecha.** Que esa credencial derivada con la misma
+funcion la acepta la capa para el indice del PAGADOR, y que la ajena no, lo midio el
+`PASTE-E2g-M` (M1, SALIDA 20260919-123859) antes de que supieramos para que hacia falta, y lo
+sostiene un testigo del §507. Aqui no nace un tipo nuevo ni una derivacion nueva: nace una
+bandera que escribe en un fichero lo que ya se sabia derivar.
+
+**El testigo de la bandera es el banco, y es mejor que un unitario.** Si escribiera la credencial
+del receptor en vez de la del pagador, el nodo aceptaria la credencial -es valida- y la puerta
+`f.emisor == p.index.0` serviria la NADA: la boca moriria y el banco caeria por su nombre. Por eso
+el corte no anade un `#[test]` y **ningun pin se mueve**: el falsador de esta bandera es correrla
+contra un nodo, que es justo lo que el banco hace. El banco corre DENTRO del bloque como puerta.
+
+**Lo que el banco demuestra y nadie habia visto.** `zkssl_pendingPath` **con `receiverId`**
+sirviendo al pagador contra un nodo real -- el §505 lo probo con un test del nodo, no con la
+boca --; el sobre 2.9 escrito por la boca y verificado sin el nodo; y **el rechazo barato en
+vivo**: un retorno que no recompone el `x` de su aviso muere ANTES de pedirle nada al nodo. La
+D-AI-3 dejo de ser una funcion con un testigo y paso a ser una puerta que se ve cerrarse.
+
+**Nada se teclea, y la frontera se DERIVA.** El importe sale del aviso, el delta del retorno, las
+dos credenciales de sus ficheros, y `--t` -- que es ABSOLUTO (D-AI-4) -- del arbol: el primer
+positivo usa el `seq` de la cabeza que el nodo sirve; de SU sobre se lee el `nacido`, y
+`nacido + delta` es la frontera, que da el segundo positivo y, con una epoca mas, el primer
+rechazo en vivo. El banco comprueba ademas que los dos sobres son del MISMO pendiente y que
+ninguno publica la sal, la pareja ni la identidad del pagador.
+
+**Los fragmentos de rechazo estan LEIDOS de su fuente, y el bloque lo prueba antes de correr.**
+Los siete del mando y los dos de la boca van en un INERTE que los busca en
+`crates/zk-ssl-verify/src/main.rs`, en el juez de `zk-ssl-air`, en el productor de la capa y en
+`crates/zk-ssl-cli/src/pago.rs` ANTES de levantar un proceso: un texto
+movido mataria el banco a los dos minutos y sin decir por que. Es la raiz de casi todos mis rojos
+-- un identificador ajeno escrito sin abrir su fuente -- puesta como puerta.
+
+**Contadores.** Cuatro ficheros; nace `tools/banco_pago.sh`. **Ningun pin se mueve**, ningun
+Cargo tocado, ninguna cifra publicada cambia: el corte no anade un `#[test]` ni un `.rs`, asi que
+`check_tests` se queda en 1416 y `check_modulos` en 140. Las diez herramientas, IDENTICAS byte a
+byte, y el corte NO corre el canon -- no toca nada que el canon pine --. La puerta es el banco
+corriendo desde el arbol, con sus dos positivos, sus dos rechazos en vivo y sus siete negativos.
+`AUDITORIA.md` 37.089 / 2.115.057 B -> 37.157.
+
+**Lo que NO cierra.** El catalogo `pago-*` con su manifiesto y la septima familia del artefacto
+sigue pendiente (D-AJ): **este sobre todavia no lo corre ningun arnes**, y hasta que lo corra, lo
+unico que lo vigila son los testigos de la boca, los del juez y este banco, que esta FUERA del
+canon. De sus capturas saldran los vectores, por mutacion, como manda la regla 2 del PROCESO. El
+RFC-0008 sigue sin la celda de E2, sin la cota `v < 2^63` en su Seguridad y sin las decisiones de
+los cinco ultimos cortes, que viven en sus asientos. Y queda dicho lo que el banco NO prueba: que
+el `delta` sea el que fue -- la puerta barata descarta lo evidente y no mas (D-AG) --, y que la
+boca sirva fuera del sandbox, donde el retorno y la credencial del pagador los escribe quien
+envia o se pierden (reversion 37).

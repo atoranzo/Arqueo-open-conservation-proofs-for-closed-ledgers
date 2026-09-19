@@ -84,6 +84,16 @@ pub struct SimulateArgs {
     #[arg(long, requires = "v2")]
     retorno: Option<String>,
 
+    /// Escribe la credencial del PAGADOR (`index`, `publicId`, `viewKey`) en su fichero:
+    /// la MISMA terna que `--credencial`, pero de quien envía (RFC-0008 D-AI, S508).
+    ///
+    /// Sin ella nadie puede pedir la foto COMO pagador: `zkssl_pendingPath` exige SU
+    /// credencial, no la del receptor (D-AE, S505). Su testigo es `tools/banco_pago.sh`:
+    /// si esto escribiera la del receptor, el nodo la aceptaría y la puerta del pagador
+    /// serviría la NADA.
+    #[arg(long, requires = "v2")]
+    credencial_pagador: Option<String>,
+
     /// Semilla base de las claves deterministas del sandbox.
     #[arg(long, default_value_t = 0xA11CE)]
     key_seed: u64,
@@ -186,6 +196,16 @@ pub fn simulate(a: SimulateArgs, tr: &mut dyn Tracer) -> anyhow::Result<()> {
         crate::cobro::escribir(ruta, &c)?;
         tr.emit(&TraceEvent::Note {
             text: format!("credencial del receptor #{to_real} escrita en {ruta}"),
+        });
+    }
+    // La del PAGADOR es la MISMA derivación con SU clave y SU índice (S508): la capa la
+    // acepta para ese índice y rechaza la ajena, medido en el PASTE-E2g-M y con testigo
+    // en `pago.rs`. Va aparte porque es de otro dueño, como el aviso y la credencial.
+    if let Some(ruta) = &a.credencial_pagador {
+        let c = crate::cobro::credencial_de(sandbox::key_of(a.key_seed, a.from), from_real);
+        crate::cobro::escribir(ruta, &c)?;
+        tr.emit(&TraceEvent::Note {
+            text: format!("credencial del pagador #{from_real} escrita en {ruta}"),
         });
     }
 
