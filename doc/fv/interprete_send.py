@@ -64,10 +64,10 @@ ESPEC = {
         ("let pend_any = pend_entry + pend_link;", 1),     # alias-suma (v2)
         ("(frozen_entry + frozen_link)", 1),               # suma inline (v4)
         ("let transport = [", 1),                          # array con + (v4)
-        ("AirContext::new(trace_info, degrees, 42, options)", 1),
+        ("AirContext::new(trace_info, degrees, 44, options)", 1),
     ],
-    "ESPERADO": {"TRACE_WIDTH": 56, "TRACE_LENGTH": 1024, "SEGMENT_LENGTH": 64,
-                 "NUM_SEGMENTS": 5, "LANE_B": 12, "NUM_CONSTRAINTS": 203,
+    "ESPERADO": {"TRACE_WIDTH": 58, "TRACE_LENGTH": 1024, "SEGMENT_LENGTH": 64,
+                 "NUM_SEGMENTS": 5, "LANE_B": 12, "NUM_CONSTRAINTS": 208,
                  "CYC_ACC": 3, "CYC_PK": 35, "CYC_FROZEN": 36,
                  "CYC_PEND_IN": 68, "CYC_PEND_CLIMB": 70, "CYC_FIN": 102,
                  "ROW_LEAF_LINK": 7, "ROW_SALT_LINK": 15, "ROW_LEAF_DONE": 23,

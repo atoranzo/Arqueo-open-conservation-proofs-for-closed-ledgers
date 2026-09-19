@@ -84,7 +84,16 @@ const COL_FBIT: usize = 41;
 /// merge. UN solo salt compartido por ambos carriles (spec de la
 /// máquina de hoja §2). Sin colisión en burn: no hay COL_SALT previo.
 const COL_LEAF_SALT: usize = 42; // 42..46
-pub const TRACE_WIDTH: usize = 46;
+pub const TRACE_WIDTH: usize = 48;
+
+/// **Acumulador del indice de la subida de CUENTAS** (arreglo B, 5.A-272). Dobla
+/// y suma el bit en la ultima fila de cada ciclo de `CYC_ACC` y SOSTIENE su valor
+/// el resto de la traza. No es el indice: es una funcion INYECTIVA de la secuencia
+/// de bits, y la MISMA que usa la subida de congelados.
+pub const COL_IACC: usize = 46;
+/// **Acumulador del indice de la subida de CONGELADOS.** Su igualdad con
+/// `COL_IACC` es lo que ata el camino de congelados a ESTA cuenta.
+pub const COL_FACC: usize = 47;
 
 use crate::circuit_freeze::FROZEN_DEPTH;
 
@@ -182,7 +191,14 @@ const C_SALT_DIG_A: usize = C_SALT_CAP_B + 4; // 4
 const C_SALT_DIG_B: usize = C_SALT_DIG_A + 4; // 4
 const C_SALT_IN_A: usize = C_SALT_DIG_B + 4; // 4
 const C_SALT_IN_B: usize = C_SALT_IN_A + 4; // 4
-const NUM_CONSTRAINTS: usize = C_SALT_IN_B + 4;
+/// El atado del camino de congelados a la cuenta (arreglo B, 5.A-272): cinco
+/// ranuras de grado 1 con ciclo. El grado mayor del AIR no se mueve.
+const C_IACC_STEP: usize = C_SALT_IN_B + 4; // 1
+const C_IACC_HOLD: usize = C_IACC_STEP + 1; // 1
+const C_FACC_STEP: usize = C_IACC_HOLD + 1; // 1
+const C_FACC_HOLD: usize = C_FACC_STEP + 1; // 1
+const C_ACC_EQ: usize = C_FACC_HOLD + 1; // 1
+const NUM_CONSTRAINTS: usize = C_ACC_EQ + 1;
 
 // ===== Periódicas =====
 const P_HASH_FLAG: usize = 0;
@@ -203,6 +219,14 @@ const P_SEG_LINK: usize = P_CONT_S + 1;
 const P_FROZEN_ENTRY: usize = P_SEG_LINK + NUM_SEGMENTS;
 /// Enlaces de la subida.
 const P_FROZEN_LINK: usize = P_FROZEN_ENTRY + 1;
+/// UNO en la ULTIMA fila de CADA ciclo de la subida de cuentas. **No es
+/// `P_LINK_MERKLE`**: aquel cubre `TREE_DEPTH - 1` enlaces y dejaria el ultimo
+/// bit fuera del acumulador.
+const P_ACC_STEP: usize = P_FROZEN_LINK + 1;
+/// Lo mismo para la subida de congelados.
+const P_FACC_STEP: usize = P_ACC_STEP + 1;
+/// UNO en la fila en la que los DOS acumuladores estan completos.
+const P_ACC_EQ: usize = P_FACC_STEP + 1;
 
 type Blake3 = Blake3_256<BaseElement>;
 
@@ -415,6 +439,26 @@ pub fn build_trace(
         }
     }
 
+    // Los dos acumuladores del arreglo B. Se rellenan DESPUES de los bits porque
+    // los leen, y en TODAS las filas: una columna declarada que la traza no
+    // rellena hace que sus restricciones se cumplan trivialmente.
+    {
+        let mut iacc = zero;
+        let mut facc = zero;
+        for r in 0..TRACE_LENGTH {
+            rows[r][COL_IACC] = iacc;
+            rows[r][COL_FACC] = facc;
+            let c = r / CYCLE_LENGTH;
+            let ultima = r % CYCLE_LENGTH == CYCLE_LENGTH - 1;
+            if ultima && (CYC_ACC..CYC_ACC + TREE_DEPTH).contains(&c) {
+                iacc = iacc + iacc + rows[r][COL_BIT];
+            }
+            if ultima && (CYC_FROZEN..CYC_FROZEN + FROZEN_DEPTH).contains(&c) {
+                facc = facc + facc + rows[r][COL_FBIT];
+            }
+        }
+    }
+
     let mut trace = TraceTable::new(TRACE_WIDTH, TRACE_LENGTH);
     trace.fill(
         |s| s.copy_from_slice(&rows[0]),
@@ -514,10 +558,15 @@ impl Air for BurnAir {
             degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
         }
 
+        // El atado del arreglo B (5): grado 1 con ciclo, el molde de los enlaces.
+        for _ in 0..5 {
+            degrees.push(TransitionConstraintDegree::with_cycles(1, full.clone()));
+        }
+
         assert_eq!(degrees.len(), NUM_CONSTRAINTS, "cuenta de grados");
 
         BurnAir {
-            context: AirContext::new(trace_info, degrees, 33, options),
+            context: AirContext::new(trace_info, degrees, 35, options),
             pub_inputs,
         }
     }
@@ -608,6 +657,27 @@ impl Air for BurnAir {
             frozen_link[(CYC_FROZEN + level) * CYCLE_LENGTH + 7] = one;
         }
         columns.push(frozen_link);
+
+        // El atado del arreglo B: un paso del acumulador por NIVEL, no por enlace,
+        // y la igualdad donde los dos estan completos.
+        let mut acc_step = vec![zero; TRACE_LENGTH];
+        for level in 0..TREE_DEPTH {
+            acc_step[(CYC_ACC + level) * CYCLE_LENGTH + 7] = one;
+        }
+        columns.push(acc_step);
+
+        let mut facc_step = vec![zero; TRACE_LENGTH];
+        for level in 0..FROZEN_DEPTH {
+            facc_step[(CYC_FROZEN + level) * CYCLE_LENGTH + 7] = one;
+        }
+        columns.push(facc_step);
+
+        // OJO: el ULTIMO bit de la subida de congelados entra en la TRANSICION de
+        // `ROW_FROZEN_ROOT`, asi que los dos acumuladores solo estan completos en
+        // la fila SIGUIENTE. Medido al escribir el corte, no supuesto.
+        let mut acc_eq = vec![zero; TRACE_LENGTH];
+        acc_eq[ROW_FROZEN_ROOT + 1] = one;
+        columns.push(acc_eq);
 
         columns
     }
@@ -794,11 +864,33 @@ impl Air for BurnAir {
         for seg in 0..NUM_SEGMENTS {
             result[C_SEG_LINK + seg] = periodic[P_SEG_LINK + seg] * (sacc_next - expected[seg]);
         }
+
+        // -- EL ATADO DEL ARREGLO B (5.A-272) ------------------------------
+        // Sin esto el circuito prueba que ALGUNA posicion del arbol de congelados
+        // tiene hoja vacia, no que la tenga la de ESTA cuenta.
+        let p_acc_step = periodic[P_ACC_STEP];
+        let p_facc_step = periodic[P_FACC_STEP];
+        let p_acc_eq = periodic[P_ACC_EQ];
+        let iacc_cur = current[COL_IACC];
+        let iacc_next = next[COL_IACC];
+        let facc_cur = current[COL_FACC];
+        let facc_next = next[COL_FACC];
+        result[C_IACC_STEP] =
+            p_acc_step * (iacc_next - (iacc_cur + iacc_cur + current[COL_BIT]));
+        result[C_IACC_HOLD] = (E::ONE - p_acc_step) * (iacc_next - iacc_cur);
+        result[C_FACC_STEP] =
+            p_facc_step * (facc_next - (facc_cur + facc_cur + current[COL_FBIT]));
+        result[C_FACC_HOLD] = (E::ONE - p_facc_step) * (facc_next - facc_cur);
+        result[C_ACC_EQ] = p_acc_eq * (iacc_cur - facc_cur);
     }
 
     fn get_assertions(&self) -> Vec<Assertion<Self::BaseField>> {
         let zero = BaseElement::ZERO;
-        let mut a = Vec::with_capacity(29);
+        let mut a = Vec::with_capacity(31);
+
+        // Los dos acumuladores del arreglo B arrancan en CERO.
+        a.push(Assertion::single(COL_IACC, 0, zero));
+        a.push(Assertion::single(COL_FACC, 0, zero));
 
         for i in 0..4 {
             a.push(Assertion::single(i, 0, zero));
@@ -1549,5 +1641,63 @@ mod tests {
             "[§130] burn gemelo: prove {ms:.1} ms, proof {} bytes",
             proof.to_bytes().len()
         );
+    }
+
+    /// **T1. EL CAMINO DE CONGELADOS DE OTRA POSICION NO VERIFICA** (arreglo B,
+    /// 5.A-272). Con el arbol de congelados vacio los hermanos son los mismos, asi
+    /// que la raiz no se mueve y lo unico que cambia es la POSICION que el camino
+    /// recorre. Antes de este corte verificaba -medido en vivo, PASTE-B-M2- y el
+    /// circuito probaba que ALGUNA posicion tiene hoja vacia, no que la tenga la de
+    /// esta cuenta. La no-congelacion la sigue imponiendo el aplicador; lo que
+    /// cambia es que ahora tambien la restringe el AIR.
+    #[test]
+    fn un_camino_de_congelados_de_otra_posicion_no_verifica() {
+        let mut s = scenario(1_000_000, 250_000, 10_000_000);
+        let n = s.frozen_path.is_right.len();
+        s.frozen_path.is_right[0] = !s.frozen_path.is_right[0];
+        s.frozen_path.is_right[n - 1] = !s.frozen_path.is_right[n - 1];
+        assert!(
+            !(run(&s, s.key, s.amount).is_ok()),
+            "CRITICO: el camino de congelados de otra posicion verifico"
+        );
+    }
+
+    /// **T4. EL ULTIMO NIVEL TAMBIEN ATA.** Es el borde, y existe porque el atado
+    /// pudo nacer con un agujero de un bit: `link_merkle` marca los enlaces ENTRE
+    /// niveles -`TREE_DEPTH - 1` filas- y el acumulador necesita las `TREE_DEPTH`.
+    /// Con la periodica corta, dos posiciones que solo difieren en el ULTIMO nivel
+    /// darian el mismo acumulador y esta prueba verificaria. Sin este testigo, esa
+    /// decision seria un argumento y no una medida.
+    #[test]
+    fn el_ultimo_nivel_del_camino_de_congelados_tambien_ata() {
+        let mut s = scenario(1_000_000, 250_000, 10_000_000);
+        let n = s.frozen_path.is_right.len();
+        s.frozen_path.is_right[n - 1] = !s.frozen_path.is_right[n - 1];
+        assert!(
+            !(run(&s, s.key, s.amount).is_ok()),
+            "CRITICO: el atado deja fuera el ultimo nivel del camino"
+        );
+    }
+
+    /// **T5. EL ACUMULADOR NO DESBORDA NI COLISIONA.** Son 32 niveles, luego el
+    /// valor mas alto es `2^32 - 1`, muy por debajo del modulo de Goldilocks: la
+    /// igualdad de acumuladores es igualdad de POSICIONES y no una colision del
+    /// campo. Nativo, no gasta una prueba.
+    #[test]
+    fn el_acumulador_del_indice_no_desborda_el_campo() {
+        let horner = |bits: &[bool]| {
+            let mut acc = BaseElement::ZERO;
+            for b in bits {
+                acc = acc + acc + if *b { BaseElement::ONE } else { BaseElement::ZERO };
+            }
+            acc
+        };
+        let ceros = vec![false; FROZEN_DEPTH];
+        let unos = vec![true; FROZEN_DEPTH];
+        assert_eq!(horner(&ceros), BaseElement::ZERO);
+        assert_eq!(horner(&unos), BaseElement::new((1u64 << FROZEN_DEPTH) - 1));
+        let mut casi = unos.clone();
+        casi[FROZEN_DEPTH - 1] = false;
+        assert_ne!(horner(&casi), horner(&unos), "el ULTIMO nivel mueve el acumulador");
     }
 }
