@@ -36929,3 +36929,80 @@ catalogo `pago-*` (D-AJ, §499); y el RFC-0008, que sigue sin celda de E2, sin l
 Detras, el arreglo B (5.A-272) y E3. Quedan fichados el testigo del pendiente reembolsado en el
 nodo, el nombre de `FotoDelCobro`, y una cuenta rancia del TRASPASO-154 —<<28 metodos, 658
 lineas>> donde el arbol dice 29 y 712—, que es del traspaso y no del arbol.
+
+## §506 — RFC-0008 E2, corte E2f: el juez ENLAZADO en manos de un tercero, y su -B
+
+**Que.** El mando gana su SEPTIMO brazo, `tipo: "pago_en_curso"`, y `spec/PAQUETE.md` su NOVENA
+forma, la 2.9. Con esto un tercero que no es ninguna de las dos partes verifica, **sin libro y sin
+nodo**, que bajo la cabeza v5 firmada de un `seq` hay un pendiente a nombre de un receptor por un
+importe EXACTO, nacido en `nacido`, que quien lo pago no puede revertir antes de `T`. El juez no se
+escribe aqui: `zk_ssl_air::pago_en_curso::verificar_contra_cabeza` existe desde el §503 y es el
+MISMO con el que la capa re-verifica lo que produce (§504); lo que faltaba era la boca del kit que
+lo llama y la forma publicada del sobre. Es el espejo del §495, el del cobro. Dos ficheros; dos
+commits: el §506 con el codigo y la prosa, y su `-B` con el pin, las cifras y este asiento.
+
+**Lo que se midio ANTES de escribir una linea.** El TERRENO-E2f-154 (61 citas con juez de unicidad,
+seis ausencias con prueba de vida y trece anclas; re-asertado **81 de 81** en la maquina del autor)
+y el PASTE-E2f-M, una lectura pura que injerto dos testigos en una COPIA y los corrio en release.
+Midio lo unico que el corte daba por cierto y no estaba probado: que **los campos del sobre 2.9
+BASTAN**. Un testigo produce el `SobrePago` sobre un libro vivo, lo escribe en texto plano
+-`receptor`, `importe`, `t`, `nacido`, `seq`, las dos raices y la prueba- y recompone desde ESE
+texto la `AfirmacionPago` y la `CabezaPago` para llamar al juez, que acepta: exactamente lo que
+hace el brazo. Los dos falsadores discriminan: con `importe + 1` no enlaza, y con la cabeza
+mintiendo su `seq` muere diciendo la causa entera. **La prueba peso 56.365 B** y el sobre en texto
+113.069 B. Dato para la cola: el §504 midio 56.746 B en otra escena, asi que **el tamano de una
+prueba de pago no es constante entre escenas** -381 B de diferencia-; ninguna cifra publicada
+depende de eso, y el manifiesto de un catalogo pina huellas, no tamanos.
+
+**Las cuatro decisiones, D-12..D-15, delegadas por el autor con la ley y REVERSIBLES.** **D-12**,
+el `tipo` es `pago_en_curso`: el nombre del modulo del AIR, del juez y del productor, y no uno
+nuevo; nombres que significan UNA sola cosa. **D-13**, el VERDE publica el importe EXACTO, el
+receptor, `nacido` y `T`, y dice lo que NO dice: nada de quien lo cobrara y nada del plazo, porque
+`delta` no viaja -lo que se prueba es `T - nacido <= delta`-. **D-14**, cuatro testigos con el
+molde del §495 -sin enunciado, sin prueba, cabeza que no es v5 y el despacho-, y el del despacho se
+ENSANCHA: cruza los SIETE nombres uno a uno contra el texto del `tipo` desconocido. Sin prueba real
+en el kit: las pruebas reales viven en el juez (`stark-experiment`) y en el productor (la capa).
+**D-15**, la 2.9 declara la advertencia del §505 -un nodo anterior IGNORA `receiverId` y sirve la
+nada en vez de un error, asi que el pagador no podria reunir la foto-, porque `PAQUETE.md` es lo
+que lee quien recibe un sobre y `RPC.md` lo que lee quien habla con el nodo.
+
+**Una cuenta publicada en DOS sitios se corrige en los DOS.** El texto del `tipo` desconocido vive
+en el fuente del mando y, verbatim, en la seccion 5 de `PAQUETE.md`; y la cuenta de formas, en el
+encabezado de la seccion 2 y en su primera frase. Las cuatro se mueven juntas: ocho a nueve.
+
+**EL ROJO DE ESTE CORTE, y es del gate y no del arbol.** La r1 del bloque murio en rc 64 en su PRE
+-sin tocar un byte, porcelain 0 y HEAD quieto- porque exigia `--list == censo de #[test] del
+fuente`, y el kit lista **112** donde su fuente declara 111. La causa: el kit tiene un target mas,
+su doc-test `no_run`, y `cargo test -- --list` lo lista. El operador estaba COPIADO del hermano -la
+capa, que no tiene doc-test y donde `--list == censo` si cuadra- en vez de DERIVADO de su
+invariante, que es el que la PRECISION 545 ya fijaba: `--list` = censo del fuente + doc-test = la
+fila del canon. La r2 lo arregla por los dos lados y lo deja escrito EN EL BLOQUE con su causa; su
+ensayo gano el falsador que faltaba -si el doc-test desaparece, rojo nombrado-. Y la leccion de
+segundo orden: el ensayo de la r1 salio verde porque su cargo de mentira no listaba el doc-test.
+**Una maqueta mas pobre que el arbol da un verde que no vale.**
+
+**El perimetro de las cifras, DERIVADO y no tecleado.** `check_cifras` sobre una copia con la fila
+subida marca TRES lineas: el TOTAL de sello 1248 -> 1252 en `PAPER.md:36` y `PRINCIPIOS.md:354`, y
+el testigo del verificador 112 -> 116 dentro del desglose, `PRINCIPIOS.md:355`. El censo anade las
+que ese gate no ve (5.A-149): las dos sumas <<contando los pines>> 1385 -> 1389 en `PAPER.md:37` y
+`PRINCIPIOS.md:357`, y las dos del gemelo ingles, `PAPER_EN.md:33-34`, por la D-7 (PRECISION 549).
+Siete lineas en tres documentos. Ninguna linea de ordenes las publica: los bloques de `cargo test`
+de los dos PAPER nombran la capa, los circuitos y el nodo, no el kit. Lo que NO se mueve, y por
+que: las <<1364 declaradas>>, las <<1349 declared>> y las <<18 ignoradas>>, que salen de un
+instrumento cuyo offset no tiene dueno (5.A-319, PRECISION 543).
+
+**Contadores.** §506: dos ficheros, `crates/zk-ssl-verify/src/main.rs` 105/1 y `spec/PAQUETE.md`
+36/3; sin canon, con la suite ENTERA del kit en release dentro del bloque -**92 + 23 + 1 = 116
+pasan, 0 fallan**, en sus tres targets- y las listas por NOMBRE: el `--list` POST es el PRE mas los
+cuatro nuevos y nada mas, cruzado con el censo del fuente en PRE y en POST (111 y 115, mas el
+doc-test). `check_tests` 1406 -> 1410 y las otras nueve IDENTICAS. §506-B: `tools/canon.sh` con el
+verificador en `116 0 0` y su historia, siete lineas en tres documentos, y este asiento; canon
+`--sello` VERDE en **362 s**.
+
+**Lo que NO cierra.** El sobre 2.9 no lo escribe todavia ninguna boca: hoy sale de un test o a
+mano. Faltan la boca `prueba-pago` con `--retorno` (D-AI, molde del §497), el banco sobre la misma
+siembra (§498), el catalogo `pago-*` con su manifiesto y la septima familia del artefacto (D-AJ,
+§499), y el RFC-0008, que sigue sin celda de E2, sin la cota de `v < 2^63` en su Seguridad y sin
+las decisiones de los tres ultimos cortes. Detras, el arreglo B (5.A-272) y E3. Quedan fichados: el
+testigo del pendiente reembolsado en el nodo, el nombre de `FotoDelCobro`, el import muerto del
+injerto del PASTE-E2f y que un `--list` cuenta TARGETS y no ficheros.
