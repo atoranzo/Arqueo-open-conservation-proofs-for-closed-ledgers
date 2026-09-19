@@ -31,7 +31,7 @@
 |---|---|---|---|
 | E1 — el cobro pendiente, portable | el circuito del cobrador: bajo el `pendingRoot` de una cabeza v5 firmada existe `C2 = M(C1, X)` con `C1 = H(H(receptor, sal), importe)`, a nombre de `receptor` (D-G), `importe >= inferior` (banda, molde de `InsufficientBalance`), con el camino DENTRO del circuito; su meta `(emisor, nacido)` por camino bajo `pmetaRoot`, con los mismos bits. `zkssl_pendingPath`, aditivo, sirve los dos caminos de la foto del último latido a quien presenta un aviso que recompone la hoja (D-F). Sobre `tipo: "cobro_pendiente"` en `PAQUETE.md`, verificado por el mando sin nodo | NO | **sellada** — §484 (D-F y D-G, y la fila corregida), §485 y §485-B (el instrumento), §486 (D-H), §489 (D-I), §490 y §490-B (el AIR de dos carriles y un bit), §491 y §491-B (el productor, una función libre), §492 y §492-B, §493 y §493-B (la foto del latido en la capa y en el nodo, y `zkssl_pendingPath`), §494 (D-J..D-M) y §495 y §495-B (el enlace con la cabeza, el brazo del mando y `PAQUETE.md` 2.8). **E1 queda entera** |
 | E2 — el pago en curso, portable | el espejo, para el pagador: `C2` abre a `(receptor, importe)` EXACTOS, `nacido` por camino, y `nacido + delta >= T` con `delta` y `refund_id` como testigo (no se revelan). Sobre `tipo: "pago_en_curso"`, verificado sin nodo. Junto al de E1, un tercero ajeno a los dos verifica un pago disputado sin el libro de nadie | NO | **sellada** — §501 (D-AD..D-AJ), §502 y §502-B (el instrumento), §503 y §503-B (el AIR de dos carriles con el sobre compuesto dentro, y su juez), §504 y §504-B (el productor en la capa, función libre), §505 y §505-B (la puerta del pagador en `zkssl_pendingPath`, D-AE), §506 y §506-B (el séptimo brazo del mando y la forma 2.9), §507 y §507-B (la boca `prueba-pago`, D-AK..D-AO), §508 (el banco y la credencial del pagador, D-AP y D-AQ) y §509 (el catálogo, D-AR). **E2 queda entera** |
-| E3 — la prenda, como transición con prueba | el receptor marca el pendiente como prendado: una etiqueta con dominio propio sobre `C2` en el árbol de consumos, publicada por un método aditivo, `zkssl_pledge`, que EXIGE la prueba de apertura del cobro (la autorización de `circuit_claim_v2` sin el crédito); una segunda prenda es `ConsumoRepetido`, que ya tiene sobre de rechazo con prueba (RFC-0007 E3, `PAQUETE.md` 2.6). La prenda no toca el cobro ni el reembolso: lo que obliga es contrato, y se declara | NO | propuesta |
+| E3 — la prenda, como transición con prueba | el receptor marca el pendiente como prendado: una MARCA con dominio propio sobre `C2` en el árbol de consumos, publicada por un método aditivo, `zkssl_pledge`, que EXIGE la prueba de apertura del cobro (la autorización de `circuit_claim_v2` sin el crédito); una segunda MARCA es `ConsumoRepetido`, que ya tiene sobre de rechazo con prueba (RFC-0007 E3, `PAQUETE.md` 2.6). La PRENDA es el par marca + sobre (D-AS), y no toca el cobro ni el reembolso: lo que obliga es contrato, y se declara | NO | propuesta |
 | E4 — el catálogo y el banco, por lados | `spec/vectors/pendiente/`: dos positivos por lado, REUNIDOS de las capturas de un nodo real (molde: `edad/`), y un negativo por regla producible; `MANIFIESTO.txt`; la familia en `FAMILIAS`; el banco que lo reproduce en vivo; la sección 9 de `PAQUETE.md`. Va POR LADOS en una sola fila (D-O): el del cobro primero —sus dos formas (D-N), la boca del cli (D-P) y sus negativos (D-Q)— y el del pago con E2; esta celda nombra lo sellado de cada lado. El giro a ACEPTADO exige la regla 4 medida letra a letra, como el §481 | NO | **sellada por el lado del cobro** — §496 (D-N..D-Q), §497 y §497-B (la boca del cobrador en el cli, `prueba-cobro`, y `simulate --v2`), §498 (D-R..D-W y el banco, `tools/banco_pendiente.sh`) y §499 (D-X..D-AC y el catálogo, `spec/vectors/pendiente/`, sexta familia del artefacto y del canon). **Y el lado del PAGO**: §508 (el banco propio, `tools/banco_pago.sh`, con su siembra de cuatro ficheros, D-AP y D-AQ) y §509 (el catálogo `spec/vectors/pago/`, séptima familia del artefacto y del canon, D-AR, que revierte D-AC y la letra de D-AJ). **Los dos lados están; la etapa queda entera**, y lo que falta para ACEPTADO es la regla 4 medida letra a letra |
 
 Las medidas de este documento se tomaron sobre `5ef3b1b` (`TERRENO-H5-144`); las de D-F y D-G,
@@ -122,7 +122,7 @@ manda la forma de este RFC:
 
 ## Diseño
 
-Las cuarenta y cuatro decisiones las tomó el asistente por delegación del autor (D-A..D-E en la
+Las cuarenta y siete decisiones las tomó el asistente por delegación del autor (D-A..D-E en la
 sesión 144; D-F, D-G y D-H en la 145; D-I en la 147; D-J..D-M en la 149; D-N..D-AC en la 150, y
 de ellas D-R..D-AC las escribió aquí el §500; D-AD..D-AJ en la 151; D-AK..D-AR en la 155, y las
 escribió aquí el §510), con la constitución de
@@ -175,6 +175,8 @@ registra en `zk-ssl-hash` como los demás y `check_dominios` lo censa. Lo que ca
 0006 no es el árbol sino quién puede escribir ESA clase de etiqueta: la publicación libre del
 0006 sigue para las etiquetas de consumo; la de prenda exige prueba. **Reversible** hacia (b) si
 la medida de E3 mostrara que el árbol de consumos no puede distinguir clases sin romper su regla.
+⚠️ **La medida se hizo y el árbol NO las distingue**: (a) se sostiene, pero el nombre se parte en
+MARCA y PRENDA. Ver D-AS, que enmienda esta decisión sin sustituirla.
 
 ### D-D — Prenda el receptor, y la prenda sólo obliga a la prenda
 
@@ -182,13 +184,13 @@ La autorización es conocimiento de preimagen o prueba: el pagador también tien
 `C1`, así que «saber la apertura» no distingue. Lo que sólo el receptor tiene es lo que
 `circuit_claim_v2` ya exige para cobrar: su identidad probada. La prenda es esa autorización sin
 el crédito. Y la prenda NO toca el cobro ni el reembolso: un pendiente prendado se cobra igual y
-se reembolsa igual tras T. Lo que la prenda garantiza es que no hay segunda prenda, con prueba
-del rechazo; lo que obliga al cobrador con su financiero es contrato, y el sistema produce el
-par condenatorio, no adjudica (§121.6). Una regla que bloqueara el reembolso sería una regla
-nueva de la capa sobre los derechos del pagador: menos excepciones. **Reversible** hacia
-«la prenda bloquea el reembolso hasta T» sólo con su testigo negativo escrito antes y con la
-regla comprometida en la cabeza, porque una regla que no está comprometida no sostiene una
-prueba.
+se reembolsa igual tras T. Lo que la prenda garantiza es que no hay segunda prenda PROBADA
+(D-AU), con prueba del rechazo; lo que obliga al cobrador con su financiero es contrato, y el
+sistema produce el par condenatorio, no adjudica (§121.6). Una regla que bloqueara el reembolso
+sería una regla nueva de la capa sobre los derechos del pagador: menos excepciones.
+**Reversible** hacia «la prenda bloquea el reembolso hasta T» sólo con su testigo negativo
+escrito antes y con la regla comprometida en la cabeza, porque una regla que no está
+comprometida no sostiene una prueba.
 
 ### D-E — Dos tipos de sobre, uno por lado
 
@@ -746,6 +748,51 @@ hecho en el §509 ANTES de escribirse aquí**, siguiendo la línea del TRASPASO 
 decía «la séptima familia»: un resumen que se había apartado de la decisión que cita. La lección
 va al asiento. **Reversible** hacia (b) si las dos listas de rechazo se igualaran.
 
+### D-AS — La MARCA y la PRENDA son dos objetos; D-C se sostiene en (a), enmendada
+
+Medido en el terreno de E3 sobre `0bfe066`: la hoja del árbol de consumos ES el digest entero
+(`consumo.rs:143`) y la posición son sus 63 bits bajos (`zk-ssl-hash:243`), así que la capa
+recibe un opaco y no puede distinguir clases sin la preimagen; y `apply_consumo` tiene diecisiete
+líneas de cuerpo con cero dominio, cero prueba y cero autorización, que es lo que su propio
+doc-comment ya declaraba por D-4 del 0006. La condición que D-C se dejó escrita **se cumple**: el
+árbol no distingue clases. Pero lo que cae no es (a): es el NOMBRE, que significaba dos cosas. Se
+parte en dos. La MARCA es `H(DOMINIO_PRENDA, C2)`, una hoja más del árbol de consumos, pública y
+precomputable por quien tenga el aviso —medido: el aviso con el sobre opaco recompone `C2` exacto,
+`two_phase.rs:3364`—, y **no afirma nada por sí sola**. La PRENDA es el PAR: la marca bajo la raíz
+firmada más el sobre con la prueba de apertura del cobro; un tercero exige el par. Así la garantía
+no la sostiene quién escribió la etiqueta —puede escribirla el pagador, que también tiene el
+aviso— sino quién pudo producir el sobre, que es sólo el receptor: la titularidad que
+`circuit_claim_v2` ya restringe en `COL_KEY` 25..29 con `SPEND_KEY_DOMAIN`. Gana a (b) por la vara
+entera: una primitiva por propiedad, ni una columna nueva, ninguna era de formato y ningún vector
+vivo caduca. **Reversible** hacia (b) sólo con un caso de uso medido que exija exclusividad de la
+POSICIÓN y no sólo de la prueba; entonces se paga la era 5 → 6 con los vectores de edad detrás.
+
+### D-AT — El límite de la marca, y va escrito donde lo lee quien lo sufre
+
+Cualquiera con el aviso puede publicar la marca antes que el receptor, por la boca libre
+`zkssl_publishConsumo`, que no pide prueba ni autorización; y quien sólo mire el árbol no sabe si
+hubo prenda. No es doble uso ni denegación: es que la marca sola no prueba nada (D-AS), y es la
+misma clase que la D-4 del 0006 ya publica —quien publica primero bloquea—. Adelantarse tampoco
+daña al receptor: la marca que el pagador escribiera es **la misma hoja** que el receptor
+necesitaba, y el sobre sigue siendo suyo. La denegación real sería una `ConsumoColision` DIRIGIDA
+—otro digest en los mismos 63 bits bajos—, que la capa ya rechaza con su nombre
+(`consumo.rs:222`) y que cuesta del orden de 2^63 intentos: **razonado, no medido**. Esto se dice
+en Seguridad de este RFC y, cuando E3 se monte, en `spec/PAQUETE.md`, que es donde lo lee quien va
+a prendar. **Reversible** sólo si una medida rebajara esa cota, y entonces la prenda pide árbol
+propio.
+
+### D-AU — D-D se estrecha en una palabra: segunda prenda PROBADA
+
+Donde D-D dice «no hay segunda prenda» pasa a decir «no hay segunda prenda PROBADA», y donde la
+fila E3 dice «una segunda prenda es `ConsumoRepetido`» pasa a decir «una segunda MARCA». El
+rechazo con prueba es el mismo y sigue donde estaba (RFC-0007 E3, `PAQUETE.md` 2.6): lo que cambia
+es de qué objeto habla. El resto de D-D se ratifica sin tocar una coma: la prenda no toca el cobro
+ni el reembolso, un pendiente prendado se cobra y se reembolsa igual tras `T`, y lo que obliga al
+cobrador con su financiero es contrato —el sistema produce el par condenatorio, no adjudica—.
+**Reversible** hacia «la prenda bloquea el reembolso hasta `T`» sólo con su testigo negativo
+escrito antes y con la regla comprometida en la cabeza, porque una regla que no está comprometida
+no sostiene una prueba.
+
 ## Lo que se DESCARTÓ al medir
 
 1. Abrir `X` del lado del cobrador para probar la T: rompe D-2 del RFC-0003 (el receptor
@@ -840,9 +887,14 @@ expediente aunque no rompa nada.
 - **Lo que el sobre del pagador dice**: que bajo esa cabeza el pago está comprometido, por
   `importe` exacto, a `receptor`, y que no puede revertirse antes de `T`. Lo que NO dice: que
   esté hecho; se consuma al cobrar.
-- **Lo que la prenda dice**: que esa hoja fue prendada una vez, con la autorización del cobrador,
-  y que un segundo intento tiene su prueba de rechazo. Lo que NO dice: que el cobro vaya a ir al
-  prendatario. Eso es contrato.
+- **Lo que la prenda dice**: que el cobrador autorizó la prenda de esa hoja, y lo dice el PAR —la
+  marca bajo la raíz firmada más el sobre con la prueba de apertura—, nunca la marca sola. Un
+  segundo intento PROBADO tiene su prueba de rechazo (D-AU). Lo que NO dice: que el cobro vaya a
+  ir al prendatario. Eso es contrato.
+- **Lo que la marca NO dice**: nada. Es una hoja pública y precomputable por cualquiera que tenga
+  el aviso —el pagador lo tiene, porque lo construyó—, y publicarla por la boca libre del 0006 no
+  impide la prenda: es la misma hoja que el receptor necesitaba. La denegación dirigida exigiría
+  una colisión de posición del orden de 2^63 (D-AT).
 - **La confianza en la cabeza** es la de siempre: la firma custodiada y las cofirmas de los
   testigos bajo umbral la sostienen, sin garantizar que un financiero la acepte como base
   (reto 4 de la propuesta, escrito ya).

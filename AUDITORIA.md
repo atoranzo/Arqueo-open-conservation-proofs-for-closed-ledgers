@@ -37438,3 +37438,80 @@ testigo no mueve un pin. `AUDITORIA.md` 37.368 / 2.136.641 B -> 37.440.
 a los cinco circuitos se les anadio lo MISMO: no esta explicado, y va a la cola OBSERVADO con sus
 cifras apareadas. La nota 96 sigue abierta con objeto nuevo, y su Entrada 3 del `ERRATA.md`
 tambien. Del hito H5 queda **E3, la prenda**.
+
+## §513 — La MARCA y la PRENDA se separan: las tres decisiones de E3 en el RFC-0008
+
+**Que.** La D-C del RFC-0008 se dejo escrita una condicion de reversibilidad: <<si la medida de E3
+mostrara que el arbol de consumos no puede distinguir clases sin romper su regla>>. La medida se
+hizo y la condicion SE CUMPLE. Lo que cae, sin embargo, no es la decision: es el NOMBRE, que
+significaba dos cosas. Este corte lo parte en dos, escribe las tres decisiones que salen de ahi y
+paga lo que dejan rancio. Es un sello de PROSA: ni un `.rs`, ni un pin, ni un vector, ni un Cargo.
+
+**Lo medido, y por que la condicion se cumple.** El terreno salio del `PASTE-E3-M`
+(`7a0c1a9bfcb2a949`, lectura pura, rc 0, porcelain identico antes y despues) sobre este mismo
+arbol. Cuatro hechos. La hoja del arbol de consumos ES el digest entero (`consumo.rs:143`) y la
+posicion son sus 63 bits bajos (`zk-ssl-hash:243`): la capa recibe un opaco y no puede saber de que
+clase es sin la preimagen. `apply_consumo` tiene DIECISIETE lineas de cuerpo con cero dominio, cero
+prueba y cero autorizacion — lo que su propio doc-comment ya declaraba por la D-4 del 0006. La
+puerta de `zkssl_pendingPath` si es seria (`exige_credencial`, `main.rs:1254`, contra el INDICE
+pedido, mas que el aviso recomponga la hoja), pero no hace falta pedirle nada: el aviso con el
+sobre opaco recompone `C2` exacto, y eso lo prueba un testigo que ya estaba en la casa
+(`two_phase.rs:3364`). Y el censo de prenda en codigo daba CERO.
+
+**La decision, tomada por delegacion del autor y con la vara delante.** La MARCA es
+`H(DOMINIO_PRENDA, C2)`, una hoja mas, publica y precomputable por quien tenga el aviso, y NO
+afirma nada por si sola. La PRENDA es el PAR: esa marca bajo la raiz firmada mas el sobre con la
+prueba de apertura del cobro. Quien juzga exige el par. Con eso la garantia no la sostiene quien
+escribio la etiqueta —puede escribirla el pagador, que tambien tiene el aviso— sino quien pudo
+producir el sobre, que es solo el receptor: la titularidad que `circuit_claim_v2` ya restringe en
+`COL_KEY` 25..29 con `SPEND_KEY_DOMAIN`. Gana a la via (b) —el campo `prendado` en la hoja de
+meta— por la vara entera: una primitiva por propiedad, ni una columna nueva, ninguna era de
+formato y ningun vector vivo que caduque. Las tres decisiones son D-AS, D-AT y D-AU, las tres
+REVERSIBLES y las tres con su condicion escrita.
+
+**Y una prediccion mia, FALSA y escrita como falsa.** Al medir dije que el pagador QUEMA la
+prenda. Solo es cierto si la prenda es la marca. Con las dos separadas, el pagador que publica la
+marca no quema nada: escribe la misma hoja que el receptor necesitaba, y el sobre sigue siendo
+suyo. Lo que queda de aquel ataque es una `ConsumoColision` DIRIGIDA, del orden de 2^63 intentos,
+que la capa ya rechaza con su nombre (`consumo.rs:222`) — razonado, no medido, y asi va escrito.
+
+**El perimetro salio DERIVADO y mas ancho que el frente.** El RFC nombra la prenda en TREINTA Y
+CUATRO lineas; quedan rancias SEIS, y hay DOS sitios mas que nadie habria mirado: la cuenta de
+decisiones esta publicada EN LETRAS (<<las cuarenta y cuatro decisiones>>, que `check_cifras` no ve
+porque es un adjetivo numeral) y el gemelo ingles de `spec/README.md`, que publicaba <<so a second
+pledge is ConsumoRepetido>>. Las dos se pagan aqui, con la cuenta DERIVADA contando los
+encabezados: 44 antes, 47 despues. Lo que NO es rancio queda declarado para que nadie lo toque
+luego: la linea 7 ya decia <<la marca de prenda es una hoja>> —el nombre no se inventa, se
+recoge— y la D-AH sigue hablando con razon de <<la etiqueta de la prenda>>.
+
+**La D-C no se reescribe y la D-D pierde una palabra.** La D-C gana una remision a la D-AS subida
+al parrafo que se contradice, no anotada abajo: una frase que deja de ser cierta se CITA (S247).
+La D-D pasa de <<no hay segunda prenda>> a <<no hay segunda prenda PROBADA>>, y su parrafo se
+re-fluye entero, que es la unidad de una sustitucion de prosa.
+
+**LA LECCION, y es de instrumento: EL ORDEN DE LAS SUSTITUCIONES ES UNA PUERTA, TAMBIEN HACIA
+ADELANTE.** La casa ya sabia que un `replace` de ambito ancho se ordena ANTES de insertar literales
+que lo contienen. Aqui mordio por el otro lado: la D-AU CITA a proposito las dos frases que otras
+dos sustituciones cambian, asi que insertarla primero hacia que una de ellas contara DOS y el
+editor muriera. Murio, en el ensayo, sin escribir un byte. Se cura poniendo la insercion la ULTIMA
+y, sobre todo, con un censo de residuos cuyo esperado se DERIVA de los dos lados: las veces que las
+decisiones citan el literal MAS las que su propio texto nuevo lo conserva. Un injerto puede ser
+ANEXO, y entonces el viejo vive dentro del nuevo a proposito. Sus dos hermanas, tambien cobradas en
+el ensayo: un liston de ancho ABSOLUTO cobra deuda ajena —este fichero ya vive con CUATRO filas de
+tabla de mas de 100 caracteres, y son filas—, asi que el liston va por DELTA y separando la tabla
+de la prosa; y el `rc` tras una tuberia es de la tuberia, que me devolvio un cero falso al mirar
+la idempotencia con `tail`.
+
+**Contadores.** TRES ficheros y ninguno nace: +140 lineas y -13, de las que la `AUDITORIA.md`
+pone +75 -el asiento y su separador-. Las TRES sha POST fueron PREDICHAS antes de tocar el arbol y
+exigidas byte a byte. Ningun `.rs`, ningun pin, ninguna cifra de tests, ningun vector, ningun
+Cargo: la capa sigue en 389, los circuitos en 379 y el nodo en 115. El editor es idempotente por
+ESTADO con tres discriminantes y es TODO O NADA. Y las DIEZ herramientas salieron **IDENTICAS**,
+no solo informativas: este corte no mueve un conteo. `AUDITORIA.md` 37.440 / 2.142.096 B -> 37.517.
+
+**Lo que NO cierra.** **E3 sigue PROPUESTA**, y esto no la sella: lo que falta es el montaje —la
+forma de `zkssl_pledge`, el valor del dominio sexto con su fila en el REGISTRO y el
+`tipo: "prenda"` como octavo brazo del mando por la D-E—, y ese corte pide su propio terreno. Tres
+lineas del RFC (la 77, la 116-117 y la 819) quedan imprecisas con el nombre nuevo y se pagan en
+ESTE corte por la regla de perimetro; si alguna sobrevive, va a la cola. Del hito H5 queda E3, y es
+lo unico que le queda.
