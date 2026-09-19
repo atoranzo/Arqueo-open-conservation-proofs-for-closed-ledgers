@@ -31,7 +31,7 @@
 |---|---|---|---|
 | E1 — el cobro pendiente, portable | el circuito del cobrador: bajo el `pendingRoot` de una cabeza v5 firmada existe `C2 = M(C1, X)` con `C1 = H(H(receptor, sal), importe)`, a nombre de `receptor` (D-G), `importe >= inferior` (banda, molde de `InsufficientBalance`), con el camino DENTRO del circuito; su meta `(emisor, nacido)` por camino bajo `pmetaRoot`, con los mismos bits. `zkssl_pendingPath`, aditivo, sirve los dos caminos de la foto del último latido a quien presenta un aviso que recompone la hoja (D-F). Sobre `tipo: "cobro_pendiente"` en `PAQUETE.md`, verificado por el mando sin nodo | NO | **sellada** — §484 (D-F y D-G, y la fila corregida), §485 y §485-B (el instrumento), §486 (D-H), §489 (D-I), §490 y §490-B (el AIR de dos carriles y un bit), §491 y §491-B (el productor, una función libre), §492 y §492-B, §493 y §493-B (la foto del latido en la capa y en el nodo, y `zkssl_pendingPath`), §494 (D-J..D-M) y §495 y §495-B (el enlace con la cabeza, el brazo del mando y `PAQUETE.md` 2.8). **E1 queda entera** |
 | E2 — el pago en curso, portable | el espejo, para el pagador: `C2` abre a `(receptor, importe)` EXACTOS, `nacido` por camino, y `nacido + delta >= T` con `delta` y `refund_id` como testigo (no se revelan). Sobre `tipo: "pago_en_curso"`, verificado sin nodo. Junto al de E1, un tercero ajeno a los dos verifica un pago disputado sin el libro de nadie | NO | **sellada** — §501 (D-AD..D-AJ), §502 y §502-B (el instrumento), §503 y §503-B (el AIR de dos carriles con el sobre compuesto dentro, y su juez), §504 y §504-B (el productor en la capa, función libre), §505 y §505-B (la puerta del pagador en `zkssl_pendingPath`, D-AE), §506 y §506-B (el séptimo brazo del mando y la forma 2.9), §507 y §507-B (la boca `prueba-pago`, D-AK..D-AO), §508 (el banco y la credencial del pagador, D-AP y D-AQ) y §509 (el catálogo, D-AR). **E2 queda entera** |
-| E3 — la prenda, como transición con prueba | el receptor marca el pendiente como prendado: una MARCA con dominio propio sobre `C2` en el árbol de consumos, publicada por un método aditivo, `zkssl_pledge`, que EXIGE la prueba de apertura del cobro (la autorización de `circuit_claim_v2` sin el crédito); una segunda MARCA es `ConsumoRepetido`, que ya tiene sobre de rechazo con prueba (RFC-0007 E3, `PAQUETE.md` 2.6). La PRENDA es el par marca + sobre (D-AS), y no toca el cobro ni el reembolso: lo que obliga es contrato, y se declara | NO | propuesta |
+| E3 — la prenda, como transición con prueba | el receptor marca el pendiente como prendado: una MARCA con dominio propio sobre `C2` en el árbol de consumos, publicada por un método aditivo, `zkssl_pledge`, que EXIGE el sobre de PRENDA: el enunciado del cobro con el ciclo de la clave y sin el crédito, en AIR propio (D-AV); una segunda MARCA es `ConsumoRepetido`, que ya tiene sobre de rechazo con prueba (RFC-0007 E3, `PAQUETE.md` 2.6). La PRENDA es el par marca + sobre (D-AS), y no toca el cobro ni el reembolso: lo que obliga es contrato, y se declara | NO | propuesta |
 | E4 — el catálogo y el banco, por lados | `spec/vectors/pendiente/`: dos positivos por lado, REUNIDOS de las capturas de un nodo real (molde: `edad/`), y un negativo por regla producible; `MANIFIESTO.txt`; la familia en `FAMILIAS`; el banco que lo reproduce en vivo; la sección 9 de `PAQUETE.md`. Va POR LADOS en una sola fila (D-O): el del cobro primero —sus dos formas (D-N), la boca del cli (D-P) y sus negativos (D-Q)— y el del pago con E2; esta celda nombra lo sellado de cada lado. El giro a ACEPTADO exige la regla 4 medida letra a letra, como el §481 | NO | **sellada por el lado del cobro** — §496 (D-N..D-Q), §497 y §497-B (la boca del cobrador en el cli, `prueba-cobro`, y `simulate --v2`), §498 (D-R..D-W y el banco, `tools/banco_pendiente.sh`) y §499 (D-X..D-AC y el catálogo, `spec/vectors/pendiente/`, sexta familia del artefacto y del canon). **Y el lado del PAGO**: §508 (el banco propio, `tools/banco_pago.sh`, con su siembra de cuatro ficheros, D-AP y D-AQ) y §509 (el catálogo `spec/vectors/pago/`, séptima familia del artefacto y del canon, D-AR, que revierte D-AC y la letra de D-AJ). **Los dos lados están; la etapa queda entera**, y lo que falta para ACEPTADO es la regla 4 medida letra a letra |
 
 Las medidas de este documento se tomaron sobre `5ef3b1b` (`TERRENO-H5-144`); las de D-F y D-G,
@@ -74,8 +74,9 @@ del catálogo— vivían sólo en los asientos 498 y 499, y entran aquí con su 
 Este RFC habla de un pendiente que ESTÁ en el árbol: existe, tiene importe, tiene edad, y se
 puede prendar una vez. H5b habla de lo que entró por el cable y de si acabó aplicado o rechazado.
 Un pago que el operador no aplicó no tiene hoja, no tiene `nacido` y no tiene prueba aquí: eso
-es la completitud, y sigue siendo H5b. La prenda tampoco es completitud: es uso único de una hoja
-viva, la misma propiedad que el consumo publicado da a una etiqueta.
+es la completitud, y sigue siendo H5b. La prenda tampoco es completitud: lo que es único es la
+PRUEBA —una sola prenda PROBADA por hoja (D-AU)—, y la MARCA es la etiqueta que la publica, con
+el mismo uso único que el RFC-0006 da a cualquier etiqueta.
 
 ## Motivación
 
@@ -113,21 +114,22 @@ manda la forma de este RFC:
   con raíz firmada (`root:cons`), donde repetir es `ConsumoRepetido`
   (`crates/zk-ssl/src/consumo.rs:129-139`), y esa causa ya está en el catálogo de rechazos con
   prueba (`spec/PAQUETE.md`, 2.6). Publicar hoy no exige prueba (`spec/RPC.md:936`): quien
-  publica primero bloquea, y eso es denegación, no doble uso (D-4 del 0006). Una prenda que
-  cualquiera pudiera poner sobre el pendiente de otro sería esa denegación: por eso la prenda
-  entra por un método que exige la prueba del cobrador.
+  publica primero bloquea, y eso es denegación, no doble uso (D-4 del 0006). Lo que cualquiera
+  puede poner sobre el pendiente de otro es la MARCA, y la marca sola no prueba nada (D-AS): no
+  es denegación, es una etiqueta más. Lo que exige prueba es la PRENDA, y por eso entra por un
+  método propio que pide el sobre del cobrador con su titularidad (D-AV).
 - **Los sobres portables tienen forma y juez**: `PAQUETE.md` 2.4 (consumo), 2.6 (rechazo) y
   2.7 (edad); el mando los verifica sin nodo y el artefacto los lleva dentro con su catálogo
   (`tools/artefacto.sh`, `FAMILIAS`). Dos tipos nuevos siguen ese molde sin tocar los viejos.
 
 ## Diseño
 
-Las cuarenta y siete decisiones las tomó el asistente por delegación del autor (D-A..D-E en la
+Las cuarenta y ocho decisiones las tomó el asistente por delegación del autor (D-A..D-E en la
 sesión 144; D-F, D-G y D-H en la 145; D-I en la 147; D-J..D-M en la 149; D-N..D-AC en la 150, y
 de ellas D-R..D-AC las escribió aquí el §500; D-AD..D-AJ en la 151; D-AK..D-AR en la 155, y las
-escribió aquí el §510), con la constitución de
-decisión (pureza, claridad, coherencia, imagen fiel, en ese orden). Todas llevan su condición de
-reversión, escrita aquí.
+escribió aquí el §510; D-AS..D-AU en la 158, que las escribió el §513; y D-AV en la 159), con la
+constitución de decisión (pureza, claridad, coherencia, imagen fiel, en ese orden). Todas llevan
+su condición de reversión, escrita aquí.
 
 ### D-A — La T es del pagador; el cobrador dice «a mi nombre, al menos `inferior`, nacido en b»
 
@@ -176,7 +178,9 @@ registra en `zk-ssl-hash` como los demás y `check_dominios` lo censa. Lo que ca
 0006 sigue para las etiquetas de consumo; la de prenda exige prueba. **Reversible** hacia (b) si
 la medida de E3 mostrara que el árbol de consumos no puede distinguir clases sin romper su regla.
 ⚠️ **La medida se hizo y el árbol NO las distingue**: (a) se sostiene, pero el nombre se parte en
-MARCA y PRENDA. Ver D-AS, que enmienda esta decisión sin sustituirla.
+MARCA y PRENDA. Ver D-AS, que enmienda esta decisión sin sustituirla, y D-AV, que decide cuál es
+esa «prueba de apertura del cobro» que este párrafo nombra: no el sobre de E1, sino uno con el
+ciclo de la clave.
 
 ### D-D — Prenda el receptor, y la prenda sólo obliga a la prenda
 
@@ -767,6 +771,11 @@ entera: una primitiva por propiedad, ni una columna nueva, ninguna era de format
 vivo caduca. **Reversible** hacia (b) sólo con un caso de uso medido que exija exclusividad de la
 POSICIÓN y no sólo de la prueba; entonces se paga la era 5 → 6 con los vectores de edad detrás.
 
+⚠️ **El sobre del par NO es el del cobro**: el de E1 no restringe titularidad (D-G), medido otra
+vez en la 159 —cero clave de gasto en `cobro_pendiente.rs` y en `circuit_cobro_pendiente.rs`—.
+El par lleva el sobre de PRENDA, que sí la lleva. Ver D-AV, que decide su prueba sin sustituir
+esta decisión.
+
 ### D-AT — El límite de la marca, y va escrito donde lo lee quien lo sufre
 
 Cualquiera con el aviso puede publicar la marca antes que el receptor, por la boca libre
@@ -792,6 +801,35 @@ cobrador con su financiero es contrato —el sistema produce el par condenatorio
 **Reversible** hacia «la prenda bloquea el reembolso hasta `T`» sólo con su testigo negativo
 escrito antes y con la regla comprometida en la cabeza, porque una regla que no está comprometida
 no sostiene una prueba.
+
+### D-AV — La prueba de la prenda es AIR propio: el molde del cobro con el ciclo de la clave
+
+Medido sobre `4aee725`: `crates/zk-ssl-air/src/cobro_pendiente.rs` y
+`crates/stark-experiment/src/circuit_cobro_pendiente.rs` no nombran la clave de gasto ni una
+vez, y las entradas públicas del juez del cobro son `{pending_root, pmeta_root, receptor,
+nacido, inferior, superior}`: el enunciado de ESTADO que D-G eligió a propósito. El del pago
+tampoco la nombra. Sólo `circuit_claim_v2` la lleva —ocho veces, con `SPEND_KEY_DOMAIN` en
+`COL_KEY` 25..29—, y va soldada al crédito: sus entradas públicas son la transición entera
+(`ClaimPublicInputs`, con las dos raíces de cuentas, el importe y el suministro) y sus
+restricciones acreditan el saldo (`C_BALANCE` y `C_SUPPLY`, `circuit_claim_v2.rs:855` y `:857`).
+Tres caminos. (a) El par lleva el sobre del cobro, que ya existe: cae, porque ese sobre no
+restringe titularidad y el pagador lo produce igual (D-G), así que el par no condenaría a nadie.
+(b) `circuit_claim_v2` «sin el crédito», como si fuera un modo suyo: cae, porque no es un modo
+sino otro circuito —quitar el crédito cambia las entradas públicas y las restricciones—, y
+dejarlo publicaría el importe y las raíces de cuentas, que la prenda no necesita. (c) AIR
+propio: el molde de `cobro_pendiente` más el ciclo de la clave que D-G dejó nombrado para aquí
+(`CYC_PK`: un ciclo y cuatro columnas más). Gana (c) por la vara 1 y la 4: lo que el circuito no
+restringe no existe, y una primitiva por propiedad —el enunciado de la prenda es «bajo esta
+cabeza firmada existe este `C2` a mi nombre, y soy quien podría cobrarlo», sin transición y sin
+crédito—. La objeción que D-G puso a su (b) no muerde aquí: allí se quería atar la prueba a
+quien la PRESENTA, y eso pide un reto dentro del enunciado; la prenda sólo necesita que nadie
+más HAYA PODIDO producirla, que es justo lo que el ciclo de la clave da. El coste va declarado:
+pin en `zk-ssl-air` y en `stark-experiment`, y los ~40 s por sello que cuesta un testigo que
+produce y verifica un STARK real (puntos 303 y 310). Esto decide la PRUEBA, no el montaje: el
+método, el dominio sexto y el octavo brazo del mando siguen sin escribirse, y E3 sigue
+propuesta. **Reversible** hacia (a) sólo si un caso de uso medido mostrara que basta la marca
+con un sobre de estado; entonces la prenda deja de ser autorización y es etiqueta, y D-D cae con
+ella.
 
 ## Lo que se DESCARTÓ al medir
 
@@ -858,12 +896,17 @@ no sostiene una prueba.
 37. Que la boca del pagador derive su retorno de la semilla: sólo vale en el sandbox (D-AI).
 38. Un tipo de sobre con `lado`: las listas de rechazo del cobro y del pago no son idénticas
     (D-AJ).
+39. El sobre del cobro (E1) como sobre de la prenda: no restringe titularidad —cero clave de
+    gasto en su juez y en su probador, medido en la 159—, y el pagador lo produce igual (D-AV).
+40. `circuit_claim_v2` «sin el crédito» como modo del mismo circuito: quitar el crédito mueve
+    sus entradas públicas y sus restricciones, luego es otro circuito y no un modo (D-AV).
 
 ## Compatibilidad
 
 - `zkssl/0.3` **no sube**. `zkssl_pendingPath` y `zkssl_pledge` son métodos nuevos; ningún
   método ni objeto existente cambia de forma. La versión de FORMATO de la firma se queda en 5:
-  la prenda es una hoja del árbol que `consRoot` ya firma.
+  la MARCA es una hoja del árbol que `consRoot` ya firma, y la prenda es el par (D-AS), que no
+  vive en la cabeza.
 - Los vectores de `cable/`, `nucleo/`, `paquete/`, `consumo/`, `conflicto/`, `rechazo/` y
   `edad/` no se tocan. Nace `pendiente/` bajo su propio manifiesto.
 - El aviso `PendingNotice` no cambia: la mitad del cobrador se produce con lo que ya recibe.
@@ -888,9 +931,10 @@ expediente aunque no rompa nada.
   `importe` exacto, a `receptor`, y que no puede revertirse antes de `T`. Lo que NO dice: que
   esté hecho; se consuma al cobrar.
 - **Lo que la prenda dice**: que el cobrador autorizó la prenda de esa hoja, y lo dice el PAR —la
-  marca bajo la raíz firmada más el sobre con la prueba de apertura—, nunca la marca sola. Un
-  segundo intento PROBADO tiene su prueba de rechazo (D-AU). Lo que NO dice: que el cobro vaya a
-  ir al prendatario. Eso es contrato.
+  marca bajo la raíz firmada más el sobre de PRENDA, que prueba la apertura Y la titularidad
+  (D-AV)—, nunca la marca sola, y nunca el sobre del cobro, que cualquiera con la apertura
+  produce. Un segundo intento PROBADO tiene su prueba de rechazo (D-AU). Lo que NO dice: que el
+  cobro vaya a ir al prendatario. Eso es contrato.
 - **Lo que la marca NO dice**: nada. Es una hoja pública y precomputable por cualquiera que tenga
   el aviso —el pagador lo tiene, porque lo construyó—, y publicarla por la boca libre del 0006 no
   impide la prenda: es la misma hoja que el receptor necesitaba. La denegación dirigida exigiría

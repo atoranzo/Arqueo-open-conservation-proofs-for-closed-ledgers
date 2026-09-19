@@ -37519,3 +37519,56 @@ forma de `zkssl_pledge`, el valor del dominio sexto con su fila en el REGISTRO y
 lineas del RFC (la 77, la 116-117 y la 819) quedan imprecisas con el nombre nuevo y se pagan en
 ESTE corte por la regla de perimetro; si alguna sobrevive, va a la cola. Del hito H5 queda E3, y es
 lo unico que le queda.
+
+## §514 — La prueba de la prenda: AIR propio, y las lineas que la medida deja falsas
+
+**Que.** El RFC-0008 gana la D-AV, que decide con QUE PRUEBA entra la prenda, y se corrigen las
+afirmaciones que ningun circuito de este arbol sostiene. Es un sello de PROSA: ni un `.rs`, ni
+un pin, ni una cifra de tests, ni un vector, ni un Cargo. **E3 sigue PROPUESTA**: esto decide la
+prueba, no el montaje.
+
+**Lo medido, con las fuentes abiertas y sobre este mismo arbol.** El juez del cobro
+(`crates/zk-ssl-air/src/cobro_pendiente.rs`) y su probador
+(`crates/stark-experiment/src/circuit_cobro_pendiente.rs`) no nombran la clave de gasto NI UNA
+VEZ, y las entradas publicas del juez son `pending_root`, `pmeta_root`, `receptor`, `nacido`,
+`inferior` y `superior`: el enunciado de ESTADO que la D-G eligio a proposito. El circuito del
+pago tampoco la nombra. La lleva `circuit_claim_v2`, OCHO veces, y va soldada al credito: sus
+entradas publicas son la transicion entera y sus dos restricciones acreditan el saldo
+(`C_BALANCE` y `C_SUPPLY`). Luego <<el sobre con la prueba de apertura del cobro>> no podia
+sostener la garantia que la D-AS le atribuia: ese sobre lo produce igual el pagador.
+
+**La decision, delegada por el autor con la vara delante y REVERSIBLE en el propio RFC.** AIR
+propio: el molde de `cobro_pendiente` con el ciclo de la clave que la D-G dejo nombrado para
+E3. Caen las otras dos vias, y las dos quedan escritas como descartes: el sobre del cobro no
+condena a nadie, y `circuit_claim_v2` <<sin el credito>> no es un modo sino otro circuito. El
+coste va declarado y no se paga aqui: pin en dos crates y unos 40 s por sello del testigo que
+produce y verifica un STARK real.
+
+**Lo corregido: CUATRO afirmaciones en CINCO sitios.** La frontera con H5b decia que la prenda
+es uso unico de una HOJA — lo unico es la PRUEBA, y la hoja es la marca. La Motivacion decia que
+una prenda que cualquiera pudiera poner seria denegacion — lo que cualquiera puede poner es la
+MARCA, y la marca sola no prueba nada. La Compatibilidad decia que la prenda es una hoja que
+`consRoot` firma — la MARCA lo es. Esas tres son el 5.A-345, que el asiento 513 prometio y no
+pago. La cuarta la anade esta medida, y estaba publicada en DOS sitios: la D-AS y la Seguridad.
+Se corrige en los dos (PRECISION 195), pero NO igual: la Seguridad habla del PRESENTE y se
+reescribe; la D-AS es una decision y se CITA, ganando su remision subida al parrafo que se
+contradice, como la D-C gano la suya (S247).
+
+**Y una quinta, de la misma clase por el otro lado.** El parrafo del Diseno subio a cuarenta y
+siete decisiones en el §513 y la lista de sesiones de al lado se quedo en la 155: el numero se
+re-derivo y su lista no. Sube a cuarenta y ocho y la lista nombra ya la 158 y la 159.
+
+**Contadores.** DOS ficheros y ninguno nace: el RFC +59 -15 y `AUDITORIA.md` +53 -0
+(el asiento, 52 lineas tras 1 separador). `AUDITORIA.md` 37.521 -> 37.574.
+Las DOS sha POST fueron PREDICHAS antes de tocar el arbol y exigidas byte a byte. El editor es
+TODO O NADA y idempotente por ESTADO con dos discriminantes. El censo de residuos lleva su
+esperado DERIVADO de los dos lados, porque TRES de las DIEZ sustituciones son ANEXOS: su
+texto nuevo contiene el viejo a proposito. Las DIEZ herramientas, IDENTICAS antes y despues.
+
+**Lo que NO cierra.** El MONTAJE de E3 no se ha escrito: faltan `zkssl_pledge`, el dominio sexto
+con su fila en el REGISTRO, la puerta que verifica antes de escribir en el arbol de consumos, el
+octavo brazo del mando, la forma 2.10 de `PAQUETE.md` y los cardinales publicados que un metodo
+nuevo movera. El AIR de la prenda tampoco existe: la D-AV decide su forma, no lo construye. Y el
+5.A-346 sigue abierto — la puerta que cruza el numstat declarado contra `git show --numstat`
+viaja en el editor de este bloque y no en un fichero del repo, asi que se volvera a pagar en la
+corrida siguiente.
