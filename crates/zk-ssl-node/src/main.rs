@@ -1821,11 +1821,23 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             #[serde(rename_all = "camelCase")]
             struct P {
                 index: Q, view_key: wire::B32, position: Q, salt: wire::B32, amount: Q, x: wire::B32,
+                receiver_id: Option<wire::B32>,
             }
             let p: P = parse(params)?;
             exige_credencial(l, p.index.0, &p.view_key)?;
-            let receptor =
-                l.public_id_of(p.index.0).ok_or_else(|| RpcError::credencial(p.index.0))?;
+            // §505 (RFC-0008 D-AE): con `receiverId` quien pide es el PAGADOR -trae SU
+            // credencial y nombra al receptor, como en `zkssl_sendMaterials`-, y la foto solo
+            // le sirve si la meta de esa posicion le nombra. Sin el, quien pide es el
+            // RECEPTOR y se deriva de su credencial (§493). Un nodo anterior a §505 IGNORA el
+            // campo -`P` nunca llevo `deny_unknown_fields`- y responde como si no viniera;
+            // lo declara `spec/RPC.md`.
+            let (receptor, pagador) = match &p.receiver_id {
+                Some(r) => (digest_from_wire(r).map_err(RpcError::wire)?, Some(p.index.0)),
+                None => (
+                    l.public_id_of(p.index.0).ok_or_else(|| RpcError::credencial(p.index.0))?,
+                    None,
+                ),
+            };
             let aviso = PendingNotice {
                 position: p.position.0,
                 salt: digest_from_wire(&p.salt).map_err(RpcError::wire)?,
@@ -1849,7 +1861,13 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 })),
                 Some(lat) => lat,
             };
-            match lat.foto.cobro(receptor, &aviso) {
+            // D-AE: <<la meta no te nombra>> recibe la MISMA nada que un aviso ajeno, sin
+            // decir que hay; y un pendiente reembolsado ya no nombra a nadie.
+            let servido = lat
+                .foto
+                .cobro(receptor, &aviso)
+                .filter(|f| pagador.map_or(true, |i| f.emisor == i));
+            match servido {
                 None => Ok(json!({
                     "available": false,
                     "reason": "en la foto del ultimo latido esa posicion no lleva un pendiente que \
@@ -2713,6 +2731,10 @@ mod tests {
         pub id_bob: stark_experiment::merkle::Digest,
         pub vk_bob: wire::B32,
         pub aviso: PendingNotice,
+        /// §505 (D-AE): lo que el PAGADOR tiene, para pedir con su credencial y para probar.
+        pub alice: u64,
+        pub vk_alice: wire::B32,
+        pub apertura: zk_ssl::prueba_pago::AperturaDelPago,
     }
 
     /// Un firmante de cabezas para un test, con su indice en `target/`.
@@ -2740,11 +2762,20 @@ mod tests {
             .layer
             .send_materials_v2(alice, id_bob, 250_000, ts::salt_de(sal), f, 96)
             .expect("materiales v2");
+        let sobre = m.sobre.expect("el envio v2 lleva sobre");
+        let apertura = zk_ssl::prueba_pago::AperturaDelPago {
+            posicion: m.pending_position,
+            sal: ts::salt_de(sal),
+            importe: 250_000,
+            refund_id: sobre.0,
+            delta: sobre.1,
+        };
         let recibo = zk_ssl::client::prove_send(&m, ka, zk_ssl::proof_options()).expect("probar");
         let ea = ts::state_of(&e.layer, alice);
         e.layer.apply_send(&recibo, alice, &ea, 250_000).expect("aplicar el envio");
         let vk_bob = digest_to_wire(&stark_experiment::native::derive_view_key_wide(kb));
-        PendienteV2 { bob, id_bob, vk_bob, aviso: recibo.notice }
+        let vk_alice = digest_to_wire(&stark_experiment::native::derive_view_key_wide(ka));
+        PendienteV2 { bob, id_bob, vk_bob, aviso: recibo.notice, alice, vk_alice, apertura }
     }
 
     /// Un digest a partir de un u64, para las sales de los tests.
@@ -3804,6 +3835,36 @@ mod tests {
         u64::from_str_radix(v.as_str().expect("Q").trim_start_matches("0x"), 16).expect("hex")
     }
 
+    /// §505 (D-AE): pedir `zkssl_pendingPath` como PAGADOR: su credencial, y el receptor por
+    /// su nombre.
+    fn pending_path_pagador(
+        app: &App,
+        i: u64,
+        vk: &wire::B32,
+        receptor: &stark_experiment::merkle::Digest,
+        a: &PendingNotice,
+    ) -> Result<Value, RpcError> {
+        dispatch(app, "zkssl_pendingPath", json!({
+            "index": Q(i), "viewKey": vk, "position": Q(a.position),
+            "salt": digest_to_wire(&a.salt), "amount": Q(a.amount),
+            "x": digest_to_wire(&a.x.expect("aviso v2")), "receiverId": digest_to_wire(receptor),
+        }))
+    }
+
+    /// Lo que `zkssl_pendingPath` sirvio, como `FotoDelCobro` (el molde del test del S493).
+    fn foto_servida(r: &Value) -> zk_ssl::prueba_cobro::FotoDelCobro {
+        let camino: wire::MerklePathDto =
+            serde_json::from_value(r["caminoPendiente"].clone()).expect("camino");
+        let hermanos: Vec<wire::B32> =
+            serde_json::from_value(r["hermanosMeta"].clone()).expect("hermanosMeta");
+        zk_ssl::prueba_cobro::FotoDelCobro {
+            camino_pendiente: (&camino).try_into().expect("camino"),
+            hermanos_meta: hermanos.iter().map(|h| digest_from_wire(h).expect("digest")).collect(),
+            emisor: hex_u64(&r["emisor"]),
+            nacido: hex_u64(&r["nacido"]),
+        }
+    }
+
     #[test]
     fn el_nodo_sirve_de_la_foto_y_el_cobrador_prueba_con_ello() {
         // §493 (D-F): lo servido es de la FOTO del ultimo latido FIRMADO, y con
@@ -3880,6 +3941,85 @@ mod tests {
         let r2 = pending_path(&app, pv.bob, &pv.vk_bob, &a).expect("posicion libre");
         assert_eq!(r2["available"], json!(false));
         assert_eq!(r2["reason"], r["reason"], "la misma nada, sin decir que hay");
+    }
+
+    #[test]
+    fn el_pagador_pide_con_receiver_id_y_prueba_su_pago_con_lo_servido() {
+        // §505 (RFC-0008 D-AE): con `receiverId` quien pide es el PAGADOR con SU credencial; el
+        // nodo le sirve lo MISMO que al receptor, y con ello el productor del S504 prueba contra
+        // las raices de esa cabeza (el espejo del positivo del S493).
+        use zk_ssl::prueba_cobro::CabezaDePendientes;
+        use zk_ssl::prueba_pago::prueba_de_pago_en_curso;
+        let app = nodo(30);
+        let _pv0 = pendiente_v2(&app, 0xA505, 0xB505, 0x5505);
+        let pv = pendiente_v2(&app, 0xA506, 0xB506, 0x5506);
+        let mut f = firmante("pending_path_pagador");
+        let l = crate::latido::latir(&app, Some(&mut f)).expect("latir");
+        crate::latido::conservar(&app, l.clone());
+        let r = pending_path_pagador(&app, pv.alice, &pv.vk_alice, &pv.id_bob, &pv.aviso)
+            .expect("servir al pagador");
+        assert_eq!(r["available"], json!(true), "{r}");
+        assert_eq!(r["s"], json!(Q(l.seq)));
+        assert_eq!(hex_u64(&r["emisor"]), pv.alice, "la meta le nombra");
+        let rb = pending_path(&app, pv.bob, &pv.vk_bob, &pv.aviso).expect("servir al receptor");
+        assert_eq!(r["caminoPendiente"], rb["caminoPendiente"], "lo mismo que al receptor");
+        assert_eq!(r["hermanosMeta"], rb["hermanosMeta"]);
+        let foto = foto_servida(&r);
+        let cab = CabezaDePendientes {
+            seq: l.seq, pending_root: l.cabeza.pending_root, pmeta_root: l.cabeza.pmeta_root,
+        };
+        let t = foto.nacido + pv.apertura.delta;
+        let s = prueba_de_pago_en_curso(&cab, pv.id_bob, &pv.apertura, &foto, t)
+            .expect("el pagador prueba con lo que el nodo sirve");
+        assert_eq!((s.seq, s.importe, s.t), (l.seq, pv.apertura.importe, t));
+    }
+
+    #[test]
+    fn el_camino_del_pagador_es_del_que_la_meta_nombra() {
+        // §505 (D-AE): un tercero con credencial VALIDA y el aviso de Bob, la misma nada que un
+        // aviso ajeno; Alice con un receptor equivocado, la misma; Alice con credencial falsa,
+        // -32004 antes de mirar la foto.
+        let app = nodo(30);
+        let pv = pendiente_v2(&app, 0xA507, 0xB507, 0x5507);
+        let (c, _, vk_c) = cuenta(&app, 0xC507, 1_000);
+        let vk_c: wire::B32 = serde_json::from_value(vk_c).expect("B32");
+        let mut f = firmante("pending_path_tercero");
+        let l = crate::latido::latir(&app, Some(&mut f)).expect("latir");
+        crate::latido::conservar(&app, l);
+        let ajeno = {
+            let mut a = pv.aviso.clone();
+            a.amount += 1;
+            pending_path(&app, pv.bob, &pv.vk_bob, &a).expect("aviso ajeno")
+        };
+        assert_eq!(ajeno["available"], json!(false));
+        let r = pending_path_pagador(&app, c, &vk_c, &pv.id_bob, &pv.aviso).expect("un tercero");
+        assert_eq!(r["available"], json!(false), "la meta no le nombra: {r}");
+        assert_eq!(r["reason"], ajeno["reason"], "la misma nada, sin decir que hay");
+        let r2 = pending_path_pagador(&app, pv.alice, &pv.vk_alice, &sal(9), &pv.aviso)
+            .expect("receptor equivocado");
+        assert_eq!(r2["available"], json!(false));
+        assert_eq!(r2["reason"], ajeno["reason"]);
+        let e = pending_path_pagador(&app, pv.alice, &vk_falsa(), &pv.id_bob, &pv.aviso)
+            .expect_err("credencial falsa");
+        assert_eq!(e.code, -32004);
+    }
+
+    #[test]
+    fn el_receptor_sigue_pudiendo_y_con_receiver_id_es_el_pagador_quien_pide() {
+        // §505: que el sello CIERRA no basta: NO cerro de mas. Sin `receiverId` el brazo es el
+        // del S493; con `receiverId` -aunque sea su propia identidad- quien pide es el pagador,
+        // y la meta nombra a Alice: la nada (D-9, sin caso especial).
+        let app = nodo(30);
+        let pv = pendiente_v2(&app, 0xA508, 0xB508, 0x5508);
+        let mut f = firmante("pending_path_receptor_sigue");
+        let l = crate::latido::latir(&app, Some(&mut f)).expect("latir");
+        crate::latido::conservar(&app, l);
+        let r = pending_path(&app, pv.bob, &pv.vk_bob, &pv.aviso).expect("bob sin receiverId");
+        assert_eq!(r["available"], json!(true));
+        assert_eq!(hex_u64(&r["emisor"]), pv.alice);
+        let r2 = pending_path_pagador(&app, pv.bob, &pv.vk_bob, &pv.id_bob, &pv.aviso)
+            .expect("bob con receiverId");
+        assert_eq!(r2["available"], json!(false), "con receiverId pide como pagador: {r2}");
     }
 
     #[test]
