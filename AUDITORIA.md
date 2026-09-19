@@ -37006,3 +37006,84 @@ siembra (§498), el catalogo `pago-*` con su manifiesto y la septima familia del
 las decisiones de los tres ultimos cortes. Detras, el arreglo B (5.A-272) y E3. Quedan fichados: el
 testigo del pendiente reembolsado en el nodo, el nombre de `FotoDelCobro`, el import muerto del
 injerto del PASTE-E2f y que un `--list` cuenta TARGETS y no ficheros.
+
+## §507 — La boca del pagador: `zk-ssl-cli prueba-pago` (RFC-0008 E2, D-AI)
+
+**Que.** El pagador ya tenia quien le probara su pago —el AIR (§503), el productor (§504), la
+puerta del nodo (§505) y el juez del mando (§506)—, y no tenia por donde pedirlo. Este corte
+escribe esa boca: `crates/zk-ssl-cli/src/pago.rs`, el espejo del §497 por el otro lado del mismo
+pendiente. Reune las cinco entradas del productor sin abrir libro, pide la cabeza firmada y la
+foto CON `receiverId` (§505, D-AE) y escribe el sobre `pago_en_curso` de `spec/PAQUETE.md` 2.9.
+Con el, **E2 deja de ser codigo sin puerta de entrada**: lo que queda son el banco y el catalogo
+`pago-*` (D-AJ) y el RFC con la celda de E2.
+
+**El tercer fichero, y por que es un fichero.** El cobrador tiene dos: su aviso y su credencial
+(D-P). El pagador tiene esos dos y uno mas que nadie tiene, la pareja `(refund_id, delta)` con
+la que compuso el sobre `X` y que el receptor recibe OPACA (RFC-0003). Ese es el RETORNO, y
+`simulate --v2 --retorno` lo escribe como `{refundId, delta}`. **Lo que este corte no puede
+arreglar va dicho donde lo lee quien lo sufre**: aqui lo escribe el simulador porque conoce la
+semilla, y fuera del sandbox lo escribe quien envia o se pierde —la reversion 37 del RFC-0008,
+que sigue en pie—. Y para que no haya dos productores del mismo dato, **la pareja se liga a UNA
+variable** en `commands.rs`: el envio y el fichero salen de ella, no de dos literales iguales.
+
+**La puerta barata, medida antes de escribirla.** `refund_envelope` es el UNICO productor de
+`X`, asi que un retorno que no sea el de ESE aviso se caza recomponiendo su `x`: **sin pedirle
+nada al nodo y sin gastar una prueba**. Lo midio el `PASTE-E2g-M` (SALIDA 20260919-123859, rc 0)
+sobre una copia y sin tocar el arbol, y el testigo la falsa por los dos lados —otro `delta` y
+otro `refundId`—. Va con su limite escrito en la doc de la funcion: `refund_envelope` mete
+`delta` en Goldilocks, asi que dos deltas congruentes dan el MISMO sobre (D-AG). **Descarta lo
+evidente; no fija el delta**, y decirlo es parte de la puerta.
+
+**Las cuatro decisiones, delegadas por el autor con la ley y REVERSIBLES.** D-AI-1: fichero
+propio al lado del molde —meter el pago dentro de `cobro.rs` haria mentir a su cabecera—, y las
+TRES privadas que la boca usa suben a `pub(crate)` en su sitio: `q_de`, `b32_de` y `respuesta`.
+`cuerpo` se queda privada, que solo la usa `respuesta`: **abrir lo que no se usa es cosmetico**.
+D-AI-2: tercer fichero, tercer dueno, con el precedente de la D-P. D-AI-3: la puerta barata
+falla cerrada y dice por que. D-AI-4: `--t` ABSOLUTO —es lo que el productor toma y lo que el
+enunciado publica; relativo haria que la misma orden diera sobres distintos segun cuando se
+corre—.
+
+**Lo que se midio antes, y lo que dejo de estar razonado.** El `PASTE-E2g-M` cerro tres cosas
+que el corte daba por ciertas: la credencial del PAGADOR sale de la MISMA `credencial_de` que la
+del receptor y la capa la acepta para SU indice —para el receptor lo midio el §497; para el
+pagador estaba RAZONADO—; el retorno recompone el `x`; y el productor entrega su sobre sobre un
+libro vivo, con los falsadores muriendo por su causa. **La prueba peso 54.507 B en esa escena**,
+y son 56.746 en el §504 y 56.365 en el PASTE-E2f: tercera medida del punto 324, que sigue
+abierto —el peso NO es constante entre escenas, y si un catalogo o el RFC publican uno, ira con
+su escena al lado—.
+
+**El liston del `--list`, derivado y no copiado.** El mismo PASTE censo los TARGETS del cli:
+uno solo, con 107 == 107 == 107 == 107 (`--list`, nombres, censo del fuente y fila del canon).
+Aqui, por tanto, `--list` == censo del fuente vale —es el operador que en el kit mato la r1 del
+BLOQUE-506, y la diferencia es el doc-test, que este crate no tiene porque no tiene `lib.rs`—.
+Punto 322 medido por el lado del cli; los demas crates siguen sin censar. El bloque no copio ese
+operador del hermano: lo derivo de su invariante y lo cruzo NOMBRE A NOMBRE, con las dos
+direcciones —los seis que nacen y los cero que mueren—.
+
+**Contadores.** El §507: cinco ficheros, 337 inserciones, 10 borrados, y `pago.rs` nace
+(`create crates/zk-ssl-cli/src/pago.rs`); la suite del cli 113/0/0 en 1,96 s dentro del bloque,
+y los seis nombres nuevos cruzados NOMBRE A NOMBRE en las dos direcciones. El §507-B: pin
+`zk-ssl-cli` 107 -> 113 —0 ignorados: el corte no trae instrumento—, y con el, TOTAL de sello
+1252 -> 1258 y los largos 1389 -> 1395. **SIETE lineas en TRES documentos**, y el perimetro va
+DERIVADO: `check_cifras` sobre una copia con la fila subida marca TRES —`PAPER.md`:36,
+`PRINCIPIOS.md`:354 y la fila del testigo—, y el censo anade CUATRO que ese gate no ve —las dos
+sumas <<contando los pines>> de `PAPER.md` y `PRINCIPIOS.md`, y las dos del gemelo ingles, que
+van al paso por la D-7 (PRECISION 549; `PAPER_EN.md`:33 se le escapa porque dice <<1258
+executable tests>>, con una palabra entre la cifra y `tests`)—. Y lo que NO se mueve, con su
+causa: las <<1364 declaradas>>, las <<1349 declared>> y las <<18 ignoradas>> siguen rancias a
+proposito (punto 319), porque corregirlas exige decidir que significa <<declaradas>> y esa
+decision no es de un `-B` de pines; `check_tests` deriva 1416 y 19. Ningun Cargo tocado:
+`pago.rs` no anade una sola dependencia. `check_tests` 1410 -> 1416 y `check_modulos` 139 -> 140,
+medidos los dos ANTES de tocar y despues; las OTRAS OCHO herramientas, IDENTICAS byte a byte.
+Canon `--sello` VERDE en 612 s.
+
+**Lo que NO cierra.** El banco del pago sobre la misma siembra y el catalogo `pago-*` con su
+manifiesto y la septima familia del artefacto siguen pendientes (D-AJ), y hasta que existan
+**este sobre no lo corre ningun arnes**: hoy solo lo prueban los seis testigos de la boca y los
+del juez. El RFC-0008 sigue sin la celda de E2 ni la cota `v < 2^63` en su Seguridad, y las
+decisiones de los cuatro ultimos cortes viven en sus asientos y no en el RFC. La boca no habla
+con un nodo en este corte: la red la ejercitara el banco, y lo que hoy se ejercita de punta a
+punta es SIN nodo, contra la capa. Y el punto 324 se queda con tres medidas y sin explicacion.
+**Fichado aparte, y NO se paga aqui**: el arbol de ficheros de `doc/README-CLI.md` lista SEIS de
+los DIEZ `.rs` del crate —le faltaban ya `witness.rs`, `cobro.rs` y `nucleo_kat.rs` antes de
+este corte, y ahora tambien `pago.rs`—. La rancidez no la mueve este corte: va a la cola.
