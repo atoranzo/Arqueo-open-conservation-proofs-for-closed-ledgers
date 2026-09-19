@@ -36851,3 +36851,81 @@ forma 2.9, la boca `prueba-pago` con `--retorno` (D-AI), el banco sobre la misma
 catalogo `pago-*` (D-AJ); y el RFC-0008, que sigue sin celda de E2 y sin la cota de `v < 2^63`
 en su Seguridad. Detras, el arreglo B (5.A-272) y E3. Y queda el nombre de `FotoDelCobro`,
 fichado.
+
+## §505 — RFC-0008 E2, corte E2e: la puerta del PAGADOR en `zkssl_pendingPath`, y su -B
+
+**Que.** `zkssl_pendingPath` gana un parametro OPCIONAL, `receiverId`. Con el, quien pide es el
+PAGADOR: trae SU credencial (`index`, `viewKey`), nombra al receptor con la identidad publica que
+dio a `zkssl_sendMaterials` y compone el aviso entero con su apertura; el nodo le sirve
+exactamente lo que sirve al receptor —los mismos caminos, la misma meta, el mismo `s`—, pero
+solo si la meta de esa posicion le nombra (`foto.emisor == index`). Si no le nombra, recibe la
+MISMA nada que un aviso ajeno, sin decir que hay. Sin `receiverId`, el brazo es el del §493 byte a
+byte. Tocan el nodo (`main.rs`: el brazo y los tres testigos), el cable (`openrpc.rs`:
+`p_opt("receiverId", "Digest")` y su frase), `spec/openrpc.json` REGENERADO por `gen_openrpc`
+—su unico productor— y `spec/RPC.md` (la fila y el parrafo del pagador). Es la D-AE tal como
+la escribio el §501; la superficie sigue en 29 y `zkssl/0.3` no sube. Dos commits: el §505 con el
+codigo, y su `-B` con el pin, las cifras y este asiento.
+
+**Lo que se midio ANTES de escribir una linea.** El TERRENO-E2e-154 (61 citas con juez de
+unicidad, seis ausencias con prueba de vida y trece anclas; re-asertado 81 de 81 en la maquina del
+autor) y el PASTE-E2e-M, una lectura pura que injerto dos testigos en una COPIA del arbol y los
+corrio en release. Midio tres cosas: que HOY el pagador, con su credencial VALIDA y el aviso de
+Bob, recibe la nada —el receptor se derivaba de `index`, y la hoja recompuesta con su identidad no
+es la de Bob—, con prueba de vida (Bob si; credencial falsa, `-32004`); que **la meta ya le
+nombra, y con su `AccountIndex` tal cual** (`meta_set(pos, sender_index, nacido)`, el envio lo
+escribe sin traducir; `emisor=661570860` frente a Bob `731522899`), asi que la puerta es una
+comparacion directa; y que **un `receiverId` de mas se IGNORABA en silencio**: `P` nunca llevo
+`deny_unknown_fields`, un parametro mal tipado si da `-32602` y un campo desconocido no. Esta
+ultima es la que decide lo que el corte tiene que DECLARAR y no puede arreglar.
+
+**Las cuatro decisiones, D-8..D-11, delegadas por el autor con la ley y REVERSIBLES.** **D-8**,
+el nombre es `receiverId` y el parametro es OPCIONAL: el mismo nombre que en `zkssl_sendMaterials`
+(nombres que significan una sola cosa), `p_opt` en el OpenRPC y `Option<wire::B32>` en `P`, con
+los dos precedentes del arbol (`zkssl_logEntries`, `fromSeq` y `limit`). **D-9**, el pagador que
+se nombra a si mismo no es un caso especial: con `receiverId` quien pide es SIEMPRE el pagador y
+decide la foto, y como la meta nombra al emisor, recibe la nada; un testigo lo fija. **D-10**,
+tres testigos con el molde de los del §493: el positivo prueba con el productor del §504 contra lo
+servido, como el positivo del receptor prueba con el del §491; los negativos son un tercero con
+credencial valida, un receptor equivocado —los dos con el `reason` de un aviso ajeno— y
+la credencial falsa; y <<no cerro de mas>>: el receptor sigue pudiendo sin `receiverId`. **D-11**,
+`spec/RPC.md` gana en la fila `receiverId?: Digest` y en la seccion del §493 el parrafo del
+pagador, y el OpenRPC su frase; el RFC no se toca en este corte.
+
+**Lo que se DECLARA porque no se puede arreglar.** Un nodo anterior a §505 IGNORA `receiverId` y
+responde como si no viniera: `{available: false, reason}` y no `-32602`. Rechazar hoy los campos
+desconocidos romperia la compatibilidad de los seis campos de siempre, y la version no sube por
+un aditivo; lo que dice si un nodo sabe de que habla es su `spec/openrpc.json`, que lleva
+`receiverId` desde este sello. Va escrito en `RPC.md` y en el comentario del brazo. Y una
+consecuencia del diseno que no necesita regla nueva: el reembolso escribe `REFUND_SENDER_NONE` en
+la meta (`two_phase.rs`), asi que tras un reembolso la puerta del pagador cierra sola; queda sin
+testigo en el nodo y se ficha.
+
+**El perimetro de las cifras, DERIVADO y no tecleado.** `check_cifras` sobre una copia con la fila
+subida marca TRES lineas: el TOTAL de sello 1245 -> 1248 en `PAPER.md:36` y `PRINCIPIOS.md:354`, y
+el testigo del nodo 112 -> 115 dentro del desglose, `PRINCIPIOS.md:355`. El censo anade las que
+ese gate no ve: las dos sumas <<contando los pines>> 1382 -> 1385 en `PAPER.md:37` y
+`PRINCIPIOS.md:357` (5.A-149), las dos del gemelo ingles en `PAPER_EN.md:33-34` (D-7, PRECISION
+549) y las dos lineas `# nodo: 112` / `# node: 112` de los bloques de ordenes de `PAPER.md:999` y
+`PAPER_EN.md:958`, que son la misma cifra con otra etiqueta. Diez lineas en tres documentos. Lo
+que NO se mueve, y por que: las <<1364 declaradas>> y <<1349 declared>> y las <<18 ignoradas>>,
+que salen de un instrumento cuyo offset no tiene dueno (5.A-319, PRECISION 543).
+
+**Contadores.** §505: cuatro ficheros, `crates/zk-ssl-node/src/main.rs` 144/4,
+`crates/zk-ssl-wire/src/openrpc.rs` 2/2, `spec/RPC.md` 16/2 y `spec/openrpc.json` 8/1; sin
+canon, con las suites ENTERAS del nodo —**115 pasan / 0 fallan / 0 ignorados** en 8,65 s— y del
+cable —22/0/0— en release dentro del bloque, 0 warnings sobre 0, y las listas por NOMBRE: el
+`--list` del nodo POST es el PRE mas los tres nuevos y nada mas, cruzado con el censo de `#[test]`
+del fuente en PRE y en POST (112 y 115, PRECISION 541); el del cable, identico. `check_tests`
+1403 -> 1406, las otras nueve IDENTICAS. §505-B: `tools/canon.sh` con el nodo en `115 0 0` y su
+historia, diez lineas en tres documentos, y este asiento; canon `--sello` VERDE en
+**224 s**.
+
+**Lo que NO cierra.** El pagador ya puede PEDIR su camino con lo suyo, y el productor del §504 ya
+prueba con lo servido —el positivo lo hace—, pero nadie fuera de los testigos lo enlaza ni lo
+escribe: falta el juez enlazado con el brazo del mando y la forma 2.9 (molde del §495), la boca
+`prueba-pago` con `--retorno` (D-AI, molde del §497), el banco sobre la misma siembra (§498) y el
+catalogo `pago-*` (D-AJ, §499); y el RFC-0008, que sigue sin celda de E2, sin la cota de
+`v < 2^63` en su Seguridad, y sin la advertencia del nodo viejo ni la del reembolso en la D-AE.
+Detras, el arreglo B (5.A-272) y E3. Quedan fichados el testigo del pendiente reembolsado en el
+nodo, el nombre de `FotoDelCobro`, y una cuenta rancia del TRASPASO-154 —<<28 metodos, 658
+lineas>> donde el arbol dice 29 y 712—, que es del traspaso y no del arbol.

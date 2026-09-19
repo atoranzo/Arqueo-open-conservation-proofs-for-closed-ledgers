@@ -33,8 +33,8 @@ obtenidas en condiciones idénticas, y documentamos un error metodológico
 propio —mezcla de compilaciones de depuración y optimizadas— detectado y
 corregido durante el trabajo.
 
-La implementación de referencia consta de **1245 pruebas ejecutables en la
-compuerta de sello** —1382 contando los pines de los niveles largo y
+La implementación de referencia consta de **1248 pruebas ejecutables en la
+compuerta de sello** —1385 contando los pines de los niveles largo y
 completo, y 1364 declaradas—, con 18 ignoradas y declaradas, y
 está disponible públicamente. **No ha sido auditada por terceros y no
 implementa consenso distribuido**; discutimos en detalle las implicaciones
@@ -996,7 +996,7 @@ bash tools/canon.sh --sello
 
 cargo test -p zk-ssl --release              # capa: 389 tests (7 ignorados)
 cargo test -p stark-experiment --release    # circuitos: 364 tests (12 ignorados)
-cargo test -p zk-ssl-node --release         # nodo: 112
+cargo test -p zk-ssl-node --release         # nodo: 115
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
 
