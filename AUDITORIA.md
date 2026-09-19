@@ -37502,12 +37502,16 @@ tabla de mas de 100 caracteres, y son filas—, asi que el liston va por DELTA y
 de la prosa; y el `rc` tras una tuberia es de la tuberia, que me devolvio un cero falso al mirar
 la idempotencia con `tail`.
 
-**Contadores.** TRES ficheros y ninguno nace: +140 lineas y -13, de las que la `AUDITORIA.md`
-pone +75 -el asiento y su separador-. Las TRES sha POST fueron PREDICHAS antes de tocar el arbol y
-exigidas byte a byte. Ningun `.rs`, ningun pin, ninguna cifra de tests, ningun vector, ningun
-Cargo: la capa sigue en 389, los circuitos en 379 y el nodo en 115. El editor es idempotente por
-ESTADO con tres discriminantes y es TODO O NADA. Y las DIEZ herramientas salieron **IDENTICAS**,
-no solo informativas: este corte no mueve un conteo. `AUDITORIA.md` 37.440 / 2.142.096 B -> 37.517.
+**Contadores.** TRES ficheros y ninguno nace: +142 lineas y -13, de las que la `AUDITORIA.md`
+pone +77 -el asiento y su separador-. **CORRECCION del S513-B (S247): aqui decia <<+140>> y
+<<+75>>, cifras de un ensayo con el asiento en 74 lineas que no se re-midieron al crecer a 76;
+el numstat del commit dio 77 / 1 / 64. Se citan y no se borran, y el contador de lineas del
+final cuenta el commit del S513 y se queda como esta.** Las TRES sha POST fueron PREDICHAS
+antes de tocar el arbol y exigidas byte a byte. Ningun `.rs`, ningun pin, ninguna cifra de
+tests, ningun vector, ningun Cargo: la capa sigue en 389, los circuitos en 379 y el nodo en
+115. El editor es idempotente por ESTADO con tres discriminantes y es TODO O NADA. Y las DIEZ
+herramientas salieron **IDENTICAS**, no solo informativas: este corte no mueve un conteo.
+`AUDITORIA.md` 37.440 / 2.142.096 B -> 37.517.
 
 **Lo que NO cierra.** **E3 sigue PROPUESTA**, y esto no la sella: lo que falta es el montaje —la
 forma de `zkssl_pledge`, el valor del dominio sexto con su fila en el REGISTRO y el
