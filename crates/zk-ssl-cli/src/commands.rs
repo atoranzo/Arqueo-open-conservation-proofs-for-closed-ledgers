@@ -76,6 +76,14 @@ pub struct SimulateArgs {
     #[arg(long, requires = "v2")]
     credencial: Option<String>,
 
+    /// Escribe el RETORNO del pagador (`refundId`, `delta`) en su propio fichero: la
+    /// pareja del sobre `X`, que ni el aviso ni la credencial llevan (RFC-0008 D-AI).
+    ///
+    /// Aquí lo escribe el simulador porque conoce la semilla y la pareja que usa; fuera
+    /// del sandbox lo escribe quien envía, o se pierde (reversión 37 del RFC-0008).
+    #[arg(long, requires = "v2")]
+    retorno: Option<String>,
+
     /// Semilla base de las claves deterministas del sandbox.
     #[arg(long, default_value_t = 0xA11CE)]
     key_seed: u64,
@@ -135,7 +143,10 @@ pub fn simulate(a: SimulateArgs, tr: &mut dyn Tracer) -> anyhow::Result<()> {
         let f = layer
             .public_id_of(from_real)
             .ok_or_else(|| anyhow::anyhow!("la cuenta emisora #{from_real} no existe"))?;
-        sandbox::run_send_v2(
+        // La pareja del sobre se liga UNA vez: el envío y el fichero del retorno salen
+        // de la MISMA variable, no de dos literales iguales (RFC-0008 D-AI).
+        let delta = 96;
+        let recibo = sandbox::run_send_v2(
             &mut layer,
             from_real,
             sandbox::key_of(a.key_seed, a.from),
@@ -143,9 +154,16 @@ pub fn simulate(a: SimulateArgs, tr: &mut dyn Tracer) -> anyhow::Result<()> {
             a.amount,
             a.salt_seed,
             f,
-            96,
+            delta,
             tr,
-        )?
+        )?;
+        if let Some(ruta) = &a.retorno {
+            crate::cobro::escribir(ruta, &crate::pago::retorno_de(f, delta))?;
+            tr.emit(&TraceEvent::Note {
+                text: format!("retorno del pagador #{from_real} escrito en {ruta}"),
+            });
+        }
+        recibo
     } else {
         sandbox::run_send(
             &mut layer,

@@ -1,6 +1,6 @@
 //! # zk-ssl-cli — sandbox y trazador de la capa desde la terminal
 //!
-//! Seis subcomandos sobre la capa REAL (`zk_ssl::SovereignLayer`) y el nodo:
+//! Siete subcomandos sobre la capa REAL (`zk_ssl::SovereignLayer`) y el nodo:
 //!
 //! - `simulate`      — pago en dos fases (send + claim) con pruebas STARK
 //!                     reales, en memoria o contra un ledger persistido.
@@ -10,6 +10,7 @@
 //! - `conformance`   — los vectores de conformidad (--emit / --check).
 //! - `witness`       — el TESTIGO de las cabezas firmadas de un nodo (§245).
 //! - `prueba-cobro`  — la BOCA del cobrador: el sobre `cobro_pendiente` (RFC-0008, S497).
+//! - `prueba-pago`   — la BOCA del pagador: el sobre `pago_en_curso` (RFC-0008, S507).
 //!
 //! Convención de salida: **datos por stdout, diagnóstico por stderr**.
 //! Con `--json`, stdout es JSON Lines puro (un evento por línea).
@@ -20,6 +21,7 @@ mod conformance;
 mod fmt;
 #[cfg(test)]
 mod nucleo_kat;
+mod pago;
 mod sandbox;
 mod trace;
 mod witness;
@@ -70,6 +72,10 @@ enum Command {
     /// cabeza firmada y la foto de su pendiente a un nodo VIVO, y escribe el sobre
     /// `cobro_pendiente` de `PAQUETE.md` 2.8 con la cabeza verbatim.
     PruebaCobro(cobro::PruebaCobroArgs),
+    /// **La BOCA del pagador** (RFC-0008 E2, S507): con su aviso v2, su RETORNO y su
+    /// credencial pide la cabeza firmada y la foto de su pendiente a un nodo VIVO -con
+    /// `receiverId`, S505-, y escribe el sobre `pago_en_curso` de `PAQUETE.md` 2.9.
+    PruebaPago(pago::PruebaPagoArgs),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -90,6 +96,7 @@ fn main() -> anyhow::Result<()> {
         Command::Conformance(a) => conformance::conformance(a, tracer.as_mut()),
         Command::Witness(a) => witness::run(a),
         Command::PruebaCobro(a) => cobro::run(a),
+        Command::PruebaPago(a) => pago::run(a),
     }
 }
 

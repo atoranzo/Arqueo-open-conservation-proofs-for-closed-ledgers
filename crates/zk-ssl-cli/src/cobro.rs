@@ -177,14 +177,14 @@ pub fn sobre(cabeza: Value, s: &SobreCobro) -> Value {
     })
 }
 
-fn q_de(s: &str) -> anyhow::Result<u64> {
+pub(crate) fn q_de(s: &str) -> anyhow::Result<u64> {
     match s.strip_prefix("0x") {
         Some(h) => u64::from_str_radix(h, 16).map_err(|e| anyhow::anyhow!("{s}: {e}")),
         None => s.parse::<u64>().map_err(|e| anyhow::anyhow!("{s}: {e}")),
     }
 }
 
-fn b32_de(s: &str) -> anyhow::Result<B32> {
+pub(crate) fn b32_de(s: &str) -> anyhow::Result<B32> {
     serde_json::from_value(Value::String(s.to_string())).map_err(|e| anyhow::anyhow!("{s}: {e}"))
 }
 
@@ -192,7 +192,7 @@ fn cuerpo(metodo: &str, params: Value) -> Value {
     json!({ "jsonrpc": "2.0", "id": 1, "method": metodo, "params": params })
 }
 
-fn respuesta(
+pub(crate) fn respuesta(
     agente: &ureq::Agent,
     url: &str,
     metodo: &str,

@@ -291,9 +291,10 @@ donde el valor es una respuesta del cable sin reescribir.
 - **Lo que NO prueba:** nada sobre quién lo cobrará, nada sobre la `sal`, el `refund_id` ni el
   `emisor` —son testigo—, y nada sobre otra cabeza que la que firma las dos raíces. Quien lo
   produce es `prueba_de_pago_en_curso` en la capa (§504) con la apertura del pagador y la foto
-  que el nodo le sirve con su credencial y `receiverId` (§505, D-AE); **la boca, el banco y el
-  catálogo de este sobre son de un corte posterior** (D-AI, D-AJ), y por eso hoy se escribe a
-  mano o desde un test.
+  que el nodo le sirve con su credencial y `receiverId` (§505, D-AE); **la boca es
+  `zk-ssl-cli prueba-pago`** (§507, D-AI), que reúne las cinco entradas del productor sin
+  abrir libro y rechaza un retorno que no recomponga el `x` de su aviso antes de pedirle
+  nada al nodo; **el banco y el catálogo de este sobre son de un corte posterior** (D-AJ).
 - ⚠️ **El nodo tiene que ser del §505 o posterior**: uno anterior ignora `receiverId` —el método
   nunca rechazó campos de más— y sirve la nada en vez de un error, así que el pagador no podría
   reunir la foto. Lo que dice si un nodo sabe de qué habla es su `spec/openrpc.json`, no la
