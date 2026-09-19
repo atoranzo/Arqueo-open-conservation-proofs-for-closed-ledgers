@@ -80,8 +80,8 @@ atado al importe (§74). Ambas corregidas y medidas.
   pagos tiene **ESPEC ejecutable**: un intérprete fino reproduce byte a
   byte la salida patrón-oro del circuito Rust —mutantes incluidos— y una
   compuerta cuenta **cada celda de la traza con dueño declarado**
-  (`circuit_send`: 23 clases · 1288 celdas-clase · **0 sin dueño**;
-  `circuit_claim`: 21 · 1155 · 0). Eso cierra una pregunta concreta —«¿hay
+  (`circuit_send`: 23 clases · 1334 celdas-clase · **0 sin dueño**;
+  `circuit_claim`: 21 · 1197 · 0). Eso cierra una pregunta concreta —«¿hay
   celdas que nadie restringe?»— y **no cierra** la que importa: que las
   restricciones existentes sean *suficientes*. FV-1 (censo) está HECHO;
   FV-2 (spike SMT acotado) y FV-3 (Lean/K) siguen siendo horizonte

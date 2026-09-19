@@ -37282,3 +37282,159 @@ hizo el §481 con el 0006. Y quedan en la cola, de este arco: el arreglo B (5.A-
 prueba con sus cinco medidas y su causa razonada (5.A-324), el `doc/README-CLI.md` que lista seis
 de los diez `.rs` del crate, y el censo de targets de los demas crates (5.A-322), del que solo el
 cli esta medido.
+
+## §511 — El camino de congelados queda atado a la cuenta: el arreglo B en los cinco circuitos
+
+**Que.** El 5.A-264 midio en vivo que el camino de congelados de OTRA posicion verificaba en los
+cinco circuitos: `COL_FBIT` aparecia cuatro veces —constante, relleno, lectura y booleana— y
+ninguna restriccion la igualaba a `COL_BIT`, la del camino de cuentas. Lo que el AIR probaba era
+que ALGUNA posicion del arbol de congelados tiene hoja vacia, no que la tenga la de ESTA cuenta. El
+§487 puso el dinero a salvo por el lado del aplicador y dejo escrito que el arreglo del AIR era el
+272. Este corte lo paga: `circuit_burn`, `circuit_claim`, `circuit_claim_v2`, `circuit_send` y
+`circuit_send_v2` ganan DOS columnas apendice, CINCO ranuras, TRES periodicas y DOS aserciones, y
+el ataque deja de verificar en los cinco.
+
+**El acumulador NO tiene que ser el indice, y es lo que abarata el corte.** Basta una funcion
+INYECTIVA de la secuencia de bits, la MISMA en las dos subidas: doblar y sumar el bit en la ultima
+fila de cada ciclo. `COL_IACC` la calcula sobre `COL_BIT` y `COL_FACC` sobre `COL_FBIT`, y una sola
+igualdad las cruza. Las dos profundidades son 32, asi que el valor mas alto es `2^32 - 1`: la
+igualdad de acumuladores es igualdad de POSICIONES y no una colision del campo. El grado mayor del
+AIR no se mueve —las cinco ranuras son de grado 1 con ciclo, el molde de los enlaces—, y por
+eso esto no es la columna compartida que usa el AIR del cobro: alli las dos subidas son carriles
+paralelos y aqui son ciclos secuenciales, y eso esta MEDIDO, no supuesto.
+
+**La igualdad va en `ROW_FROZEN_ROOT + 1`, y es una medida.** El RENDER de UN circuito antes del
+bloque de CINCO mostro que el ULTIMO bit de la subida de congelados entra en la TRANSICION de la
+fila de la raiz, asi que en `ROW_FROZEN_ROOT` los dos acumuladores todavia no estan completos. Con
+la igualdad una fila antes, el atado habria nacido con un agujero de un bit y habria pasado todos
+los gates. Equivocarse en UNO cuesta la quinta parte que en cinco.
+
+**Tres testigos por circuito, y el borde tiene el suyo.** T1 mueve DOS bits del camino de
+congelados —el primero y el ultimo— con el arbol vacio, asi que la raiz no se mueve y lo unico
+que cambia es la POSICION que el camino recorre: antes verificaba y ahora no. T4 mueve SOLO el
+ultimo nivel, y existe porque `link_merkle` marca los enlaces ENTRE niveles, `TREE_DEPTH - 1`
+filas: con la periodica corta, dos posiciones que solo difieran en el ultimo bit darian el mismo
+acumulador y esa decision seria un argumento en vez de una medida. T5 es nativo y no gasta una
+prueba: mide que el acumulador no desborda el campo y que el ultimo nivel lo mueve.
+
+**Los dos falsadores, MEDIDOS y no adivinados.** Con `C_ACC_EQ` anulada en los cinco caen 3/3/2/3/2
+—T1, T4 y, en los tres que lo tienen, `no_constraint_is_vacuous`— y **T1 vuelve a verificar en
+los cinco**, que es lo que prueba que T1 cae por ESA regla y no por otra. Con `C_FACC_STEP` anulada
+caen 1/1/0/1/0, y ahi esta el hallazgo: esa ranura **no tiene testigo propio**, y donde cae es por
+el guarda de vacuidad. Falsarla de verdad pide trazar con un `facc` mentido, y estos cinco no
+exponen un constructor de traza parametrizado como el `trazar_con` del AIR del cobro. Queda
+declarada asi (5.A-336) y este corte no crece por ella.
+
+**EL SEGUNDO PRODUCTOR, destapado al montar el bloque y no despues de pagar el canon.**
+`doc/fv/interprete_send.py` y `doc/fv/interprete_claim.py` —la ESPEC ejecutable de FV-1— llevan
+ANCLADO el literal de aserciones de `AirContext::new` y DECLARADOS el `TRACE_WIDTH` y el
+`NUM_CONSTRAINTS` de su circuito. Mover los tres numeros en el `.rs` y no alli mata al interprete
+con un `AssertionError`, y con el a `tools/check_constraint_layout.py`, que el canon corre en su
+bucle: habrian sido CUATRO problemas GRAVES y un canon ROJO despues de pagarlo entero. Los dos
+interpretes viajan en el corte con sus tres cifras —send 56/203/42 -> 58/208/44, claim 55/201/41
+-> 57/206/43—, y el censo se mueve solo: 1288 -> 1334 celdas-clase en send y 1155 -> 1197 en
+claim, con CERO sin dueno y mutantes 2/2 en los dos. DOS listas son DOS productores del mismo
+contrato, cobrado otra vez.
+
+**Lo que el censo destapo al lado y NO se arregla aqui.** `circuit_claim_v2` y `circuit_send_v2` no
+tienen `no_constraint_is_vacuous`, que sus tres hermanos si tienen (5.A-337). Y
+`tools/check_columns.py` toma `argv[1]` por defecto `.`, donde hay CERO `.rs`: el canon lo invoca
+sin argumento desde la raiz y lleva quien sabe cuanto verde sobre un universo vacio (5.A-334). El
+bloque lo corre CON su directorio —39 circuitos— y lo declara; tocar la fila del bucle son dos
+frentes.
+
+**Contadores.** SIETE ficheros en el corte y ninguno nace: los CINCO `.rs` con +770 lineas y -20
+—+150 cada uno— y los DOS interpretes con seis cifras, las siete sha PREDICHAS antes de tocar
+el arbol y exigidas al aplicar. Anchos de traza 46/55/59/56/60 -> +2 cada uno; aserciones de
+`AirContext::new` 33/41/41/42/42 -> +2 cada una, DERIVADAS por fichero y no copiadas del hermano
+—ese literal es un numero a mano que solo `prove` caza, y con un panico—. Pin de los circuitos
+364 -> 379, +3 por circuito, con los ignorados quietos en 12: el corte no trae instrumento. TOTAL
+de sello 1258 -> 1273 y los largos 1395 -> 1410, en ONCE cifras de DIEZ lineas de CINCO documentos,
+mas las DOS del censo FV-1 de `SECURITY.md`, que no vigila nadie. El perimetro va DERIVADO:
+`check_cifras` sobre una copia con la fila subida nombra SIETE, y el censo anade las CUATRO que ese
+gate no ve —las dos sumas <<contando los pines>> y las dos del gemelo ingles (D-7, 5.A-149)—.
+Las <<1364 declaradas>>, las <<1349 declared>> y las <<18 ignoradas>> siguen rancias a proposito
+(5.A-319). Ningun Cargo, ningun vector, ni un byte de `spec/`. `AUDITORIA.md` 37.284 / 2.130.051 B
+-> 37.368.
+
+**Lo que este corte ROMPIO, y donde se paga.** El 5.A-272 lo llevaba declarado desde la 146
+—<<pruebas nuevas, vectores, catalogo>>— y el perimetro de este sello no lo recogio: el canon
+salio ROJO por TRES, y los tres eran una causa. Se pagan en el §512, que va justo detras y sin
+canon por medio. Queda escrito aqui porque la deuda es de este corte, no de aquel.
+
+**Lo que NO cierra.** La no-congelacion la impone el aplicador y ahora tambien el AIR, pero
+`refund` y `deissue` no la miran en ningun lado y `circuit_refund` no lleva arbol de congelados:
+eso es diseno declarado (5.A-273), no deuda de este corte. Y del hito H5 queda **E3, la prenda**,
+lo unico del RFC-0008 sin una linea de codigo.
+
+## §512 — La cifra publicada y el lado caro se mueven con el arreglo B
+
+**Que.** El §511 cambio el AIR, luego cambio la prueba, y con ella todo lo que la publica. El
+canon del `-B` lo dijo en tres fallos que son UNA causa: los dos testigos de la cifra publicada de
+`metrics.rs` y la conformidad `0.3`. Es la rotura que el 5.A-272 declaraba desde la 146. Este corte
+la paga entera y no toca una restriccion: ni un `.rs` de los circuitos, ni el pin, ni una cifra de
+tests.
+
+**Las cifras, medidas y no arrastradas.** ENVIO **66.998 -> 66.739 B**, que BAJA 259; COBRO
+**65.313 -> 66.692**, que sube 1.379; el pago, **133.431** (+1.120). La jornada de mil pagos pasa
+de 126,2 a **127,2 MiB** y de 132,3 a **133,4 MB**, las dos derivadas del MISMO byte. Y el nodo va
+detras: `AVISO_ACUMULACION_PAGOS` por `PUBLICADA_PAGO_B` da **13.343.100.000 B**, que son **12,4
+GiB** y no 12,3; ese atado lo fija un test del nodo a mano, y por eso se movio con su banda. La
+derivacion no se comprobo parseando una salida: se escribieron las constantes y se exigio que las
+suites de la capa y del nodo salieran VERDES. Si la cifra no fuera la del sistema, los dos testigos
+hablan.
+
+**EL LADO CARO SE INVIRTIO, y es lo que mas dice de este arco.** El contrato del §362 afirmaba,
+SIN BANDA, que la mitad cara la soporta el PAGADOR. Medido APAREADO el 2026-09-19 —misma maquina,
+mismo target, minutos de diferencia, con un worktree en el padre `3db491f`—: envio **240,8 ->
+158,9 ms** y cobro **160,2 -> 278,4**; la razon cobro/envio pasa de **0,67 a 1,75** y los pares, de
+4 de 4 a 0 de 4. El contrato no se suprime ni gana banda: pasa a DECLARAR el lado en una constante,
+`LADO_CARO = "RECEPTOR"`, y el testigo se llama `el_lado_caro_es_el_declarado`. Su frase vieja se
+cita y no se borra (S247). El dia que vuelva a cambiar, habla otra vez sin renombrar nada.
+
+**Y eso mueve la nota 96, que NO se cierra.** Los tres preprints depositados publican que la mitad
+cara es del RECEPTOR con razon **1,77**, y hoy lo medido da **1,75**. El sentido que publican ya no
+es falso; **la causa que alegan sigue sin serlo**: la atribuyen a que el circuito del cobro recorre
+dos arboles, y lo que hoy la produce es el acumulador del arreglo B. Una afirmacion que se vuelve
+cierta por otro motivo no queda validada. La nota gana su linea fechada y cambia de objeto; la
+Entrada 3 del `ERRATA.md` sigue pendiente y es corte aparte.
+
+**El vector, por su productor y con puerta por CAMPO.** `conformance --emit`, nunca a mano. La
+puerta no es una sha predicha sino el diff: solo podian moverse CINCO campos —`proof_digest` y
+`chain` de la 0x4 y la 0x5, y el `epoch_digest`— y se movieron exactamente esos. **Ninguna
+RAIZ**: el libro hace lo mismo, las pruebas son otras. Las siete familias de catalogos siguieron
+verdes, lo que acota el dano al unico vector que lleva digests de prueba dentro.
+
+**El perimetro salio DERIVADO, y el censo hubo que corregirlo DOS veces.** `check_publicadas.py`
+nombra DIEZ citas y su propia cabecera dice por que solo esas: no entra en el codigo, solo recorre
+los `.md` de la raiz. El censo anade las que ese gate no ve: cuatro bajo `doc/`, `log.rs`,
+`metrics.rs`, tres de `latido.rs`, dos del nodo y cuatro del BACKLOG. Y las dos correcciones fueron
+mias: el primer censo buscaba `66.998` y no veia `66_998` —el GLIFO decide el grep—, y excluia
+`BACKLOG.md` entero cuando una de sus lineas ya estaba dentro del perimetro.
+
+**Lo que es HISTORIA se amplia, no se corrige.** La cadena de `metrics.rs` gana su eslabon; la cota
+de la D-H del RFC-0008 y el veredicto del RFC-0007 ganan su nota fechada, porque los dos se
+midieron con las constantes de su fecha: los porcentajes de aquel veredicto pasan de 23,2 % y 21,2
+% a **22,9 % y 22,9 %** y el veredicto no cambia. `BACKLOG`:1767, `README`:207, `VISION.md` y
+`doc/historia/` se quedan como estan.
+
+**LA LECCION, y es de instrumento: UN WORKTREE QUE COMPARTE `CARGO_TARGET_DIR` CONTAMINA LA MEDIDA
+SIGUIENTE.** El PASTE que midio la mitad cara compilo el padre en el mismo target —con la frase
+<<el instrumento no cambia>> escrita al lado— y la revision siguiente de este bloque midio el
+binario del PADRE entero: 66.998 y 65.313 en bytes y 4 de 4 al pagador en tiempo. Cargo huella por
+FECHA y los fuentes del corte eran mas viejos que aquellos artefactos: es la PRECISION 490, 513 y
+566 con sujeto nuevo. Falsado refrescando SOLO fechas, con la sha del conjunto de fuentes intacta.
+De ahi las dos puertas que este bloque estrena: **la fecha se refresca por delante** y **una PRUEBA
+DE VIDA exige el valor conocido antes de fiarse de nada**. Y su hermana, tambien medida: el censo
+de artefactos del `target` NO discrimina —24 rlib y 37 fingerprints son lo normal—; lo
+discrimina la fecha.
+
+**Contadores.** DIECISEIS ficheros y ninguno nace: +103 lineas y -53, con las quince sha PREDICHAS
+antes de tocar el arbol y la del vector gateada por campo. Ningun `.rs` de los circuitos, ningun
+pin, ninguna cifra de tests, ningun Cargo. La capa sigue en 389 y el nodo en 115: renombrar un
+testigo no mueve un pin. `AUDITORIA.md` 37.368 / 2.136.641 B -> 37.440.
+
+**Lo que NO cierra.** **Por que el envio se ABARATA un 34 % y el cobro se encarece un 74 %** cuando
+a los cinco circuitos se les anadio lo MISMO: no esta explicado, y va a la cola OBSERVADO con sus
+cifras apareadas. La nota 96 sigue abierta con objeto nuevo, y su Entrada 3 del `ERRATA.md`
+tambien. Del hito H5 queda **E3, la prenda**.
