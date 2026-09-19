@@ -199,7 +199,7 @@ pub struct LogEntry {
     ///
     /// ⚠️ **CORRECCIÓN (§308): la segunda frase es de la vía de UN PASO.**
     /// Un pago son DOS entradas —`Send` y `Claim`—, así que mil
-    /// transferencias son **dos mil** pruebas: hoy **126,2 MiB**, no 59 MB.
+    /// transferencias son **dos mil** pruebas: hoy **127,2 MiB**, no 59 MB.
     /// El «~62 KB por operación» sigue siendo bueno: es por PRUEBA.
     /// La cifra viva es `PUBLICADA_PAGO_B`, en
     /// `crates/zk-ssl/src/metrics.rs`. Esta línea no tenía gate: el atado

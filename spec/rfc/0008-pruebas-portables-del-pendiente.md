@@ -278,6 +278,10 @@ posición no verifica. **Reversible** hacia (b) si el AIR de E1, medido en su se
 opciones de la casa, pasa de 65.313 B, que es el cobro v1 (1024 filas por 55 columnas) y la cota
 superior con la que se razona aquí.
 
+> **Nota del §512 (S247: se cita y no se borra).** El arreglo B (5.A-272) movió esa cota:
+> el cobro v1 pasa a **66.692 B** y su circuito, a **57 columnas**. La decisión se tomó con
+> el dato de su fecha y **no cambia**; lo que cambia es el número contra el que se mide.
+
 ### D-I — El sobre `X` es testigo del cobrador, no entrada pública
 
 Medido sobre `be90eb7` (`TERRENO-AIR-E1-147`): `X = M(refund_id, delta)`

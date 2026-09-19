@@ -329,7 +329,7 @@ prueba que no verifica.
 
 #### 3. Acumulación de pruebas
 
-**Mil transferencias acumulan 126,2 MiB.** Es un coste de almacenamiento y
+**Mil transferencias acumulan 127,2 MiB.** Es un coste de almacenamiento y
 ancho de banda, no una parada: el sistema sigue funcionando.
 
 #### 4. Tamaño del conjunto de custodios
@@ -468,7 +468,7 @@ no aparecen en la literatura:
 
 El debate sobre privacidad en monedas digitales de banco central está
 lleno de posiciones y escaso de cifras. Aquí las hay: **verificar cuesta 4
-ms, generar 620, y mil transferencias son 126,2 MiB**.
+ms, generar 620, y mil transferencias son 127,2 MiB**.
 
 Y hay un dato del propio BCE que enmarca el problema: en su consulta
 pública, la privacidad fue el aspecto más valorado (43%), y **menos de una

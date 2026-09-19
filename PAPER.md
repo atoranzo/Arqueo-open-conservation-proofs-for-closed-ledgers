@@ -500,7 +500,7 @@ quien la acepta.
 > Se detectó ejecutando `cargo test -p zk-ssl --release metrics --
 > --nocapture` y comparando con lo publicado. Ver `AUDITORIA.md` §22.
 
-**Límite de escala cuantificado**: mil transferencias acumulan 126,2 MiB de
+**Límite de escala cuantificado**: mil transferencias acumulan 127,2 MiB de
 pruebas. Es la restricción práctica dominante de la elección de STARK, y
 el argumento cuantitativo a favor de agregación recursiva o pruebas por
 lote.
@@ -961,9 +961,9 @@ compromisión permite crear dinero sin rastro detectable.
 
 Las mediciones muestran que verificar cuesta entre el 0,5% y el 0,8% de
 generar, asimetría que hace viable el modelo, y cuantifican su límite
-principal: **126,2 MiB de pruebas acumuladas por cada mil transferencias**
+principal: **127,2 MiB de pruebas acumuladas por cada mil transferencias**
 —unidad corregida en la cuarta revisión: la cifra siempre fue binaria, y
-se etiquetaba «MB»; en unidades SI son 132,3 MB—.
+se etiquetaba «MB»; en unidades SI son 133,4 MB—.
 
 Los resultados delimitan también lo que no se ha demostrado. La
 arquitectura de nodo único implica que las transiciones de estado están

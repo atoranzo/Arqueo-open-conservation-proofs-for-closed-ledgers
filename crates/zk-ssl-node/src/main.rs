@@ -2646,13 +2646,13 @@ mod tests {
         let bytes =
             crate::latido::AVISO_ACUMULACION_PAGOS as u128 * zk_ssl::PUBLICADA_PAGO_B as u128;
         assert_eq!(
-            bytes, 13_231_100_000u128,
+            bytes, 13_343_100_000u128,
             "N x PUBLICADA_PAGO_B se movio: la nota 22 publica otra cosa"
         );
         let gib = bytes as f64 / (1024.0 * 1024.0 * 1024.0);
         assert!(
-            (gib - 12.3).abs() < 0.05,
-            "la nota 22 publica ~12,3 GiB y la aritmetica da {gib:.2}"
+            (gib - 12.4).abs() < 0.05,
+            "la nota 22 publica ~12,4 GiB y la aritmetica da {gib:.2}"
         );
     }
 

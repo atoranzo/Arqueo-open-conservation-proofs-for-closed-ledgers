@@ -252,7 +252,7 @@ another session**.
   laptop — generating both parties' proofs and applying them — comes to 1.5-1.9 payments per
   second, and for a while that figure was attributed to the node: **that was false, and by a lot**
   (§229, §238); the node works 4 % of that cycle.
-- **Size**: a thousand transfers are ~590 s of proving and 126.2 MiB accumulated (§130). Solving
+- **Size**: a thousand transfers are ~590 s of proving and 127.2 MiB accumulated (§130). Solving
   that requires recursive aggregation or batched proofs, which are not implemented.
 - **The limit that bites first**: root-anchoring contention. Every proof binds to the exact root it
   saw, so two concurrent issuers serialise; with four clients at once, one applies and the other

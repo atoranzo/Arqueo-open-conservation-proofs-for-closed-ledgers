@@ -239,11 +239,11 @@ pub fn limite_de_epoca(app: &App) -> u64 {
 /// atar, que es la figura que el §304 vino a reparar.
 ///
 /// **Por que 100.000 y no otro.** Son dos ordenes de magnitud por encima
-/// del unico punto medido -mil pagos = 126,2 MiB, `metrics.rs`- y con
-/// `PUBLICADA_PAGO_B` salen unos 12,3 GiB. **Es la ultima escala en la que
+/// del unico punto medido -mil pagos = 127,2 MiB, `metrics.rs`- y con
+/// `PUBLICADA_PAGO_B` salen unos 12,4 GiB. **Es la ultima escala en la que
 /// la copia del auditor NO DUELE**: cruzarla no dice que ya duela, dice que
 /// **se acabo el margen**. Escrito al reves -"la ultima escala rutinaria"-
-/// el aviso quedaria desacreditado el dia que sonara, porque 12,3 GiB se
+/// el aviso quedaria desacreditado el dia que sonara, porque 12,4 GiB se
 /// descargan de una sentada.
 ///
 /// ⚠ **Lo que este numero NO sostiene: no hay cruce de curvas.**

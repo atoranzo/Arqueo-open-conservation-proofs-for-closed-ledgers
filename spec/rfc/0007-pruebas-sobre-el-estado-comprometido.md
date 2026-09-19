@@ -458,6 +458,11 @@ codigo: `metrics.rs` fija `PUBLICADA_ENVIO_B = 66_998` y `PUBLICADA_COBRO_B = 65
 `InsufficientBalance`, con las opciones de produccion y SIN recortar nada, pesa 51.449 B: un
 **23,2 % menos que el envio** y un **21,2 % menos que el cobro**. La cota superior ya es mas barata
 que la prueba mas barata que la capa emite en cada pago, y el recorte del ciclo de titularidad solo
+
+> **Nota del §512 (S247).** Las dos constantes que este veredicto cita son las de su fecha.
+> El arreglo B (5.A-272) las movio a **66.739 B** el envio y **66.692 B** el cobro, asi que
+> los porcentajes de arriba pasan a 22,9 % y 22,9 %. El veredicto no cambia: la banda sigue
+> siendo mas barata que la prueba mas barata de la capa.
 puede quitar de ahi. Los TIEMPOS no se comparan aqui: `metrics.rs` no publica ninguna constante de
 milisegundos, asi que un ms de produccion citado seria arrastrado y no medido.
 

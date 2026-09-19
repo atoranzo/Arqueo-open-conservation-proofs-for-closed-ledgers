@@ -253,7 +253,7 @@ binario difieren un ~9 % (`AUDITORIA.md` §131), y **no son comparables con medi
   portátil —generar las pruebas de las dos partes y aplicarlas— sale a 1,5-1,9 pagos por segundo,
   y durante un tiempo esa cifra se atribuyó al nodo: **era falso, y por mucho** (§229, §238); el
   nodo trabaja el 4 % de ese ciclo.
-- **Tamaño**: mil transferencias son ~590 s de prueba y 126,2 MiB acumulados (§130). Resolverlo
+- **Tamaño**: mil transferencias son ~590 s de prueba y 127,2 MiB acumulados (§130). Resolverlo
   exige agregación recursiva o pruebas por lote, que no están implementadas.
 - **El límite que primero muerde**: la contención del anclaje de raíz. Cada prueba se ata a la raíz
   exacta que vio, así que dos emisores concurrentes se serializan; con cuatro clientes a la vez,

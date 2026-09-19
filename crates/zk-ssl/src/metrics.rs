@@ -68,11 +68,11 @@
 // cambian con ella: se declara, no se absorbe.
 //
 // MEDIDO el 2026-08-26: la via DOCUMENTADA -- send_materials ->
-// client::prove_send -> apply_send -- da los MISMOS bytes, 66_998 y 65_313,
+// client::prove_send -> apply_send -- da los MISMOS bytes, 66_739 y 66_692,
 // en cinco repeticiones y sin una sola diferencia. La cifra publicada NO
 // depende de la via. Lo que si dependia de ella era la RELACION temporal, y
-// por eso esa se fue a `la_mitad_cara_la_soporta_el_pagador`.
-pub const PUBLICADA_PAGO_B: usize = 132_311;
+// por eso esa se fue a `el_lado_caro_es_el_declarado`.
+pub const PUBLICADA_PAGO_B: usize = 133_431;
 
 #[cfg(test)]
 mod tests {
@@ -103,13 +103,16 @@ mod tests {
     //
     // Quien mueva esta constante mueve tambien los documentos:
     // tools/check_publicadas.py los ata y dice cuales faltan.
-    const PUBLICADA_FECHA: &str = "2026-08-14";
-    const PUBLICADA_ENVIO_B: usize = 66_998;
-    const PUBLICADA_COBRO_B: usize = 65_313;
+    const PUBLICADA_FECHA: &str = "2026-09-19";
+    const PUBLICADA_ENVIO_B: usize = 66_739;
+    const PUBLICADA_COBRO_B: usize = 66_692;
     // PUBLICADA_PAGO_B vive AHORA a nivel de fichero y es publica
     // (§318): el latido del nodo la consume. Llega hasta aqui por el
     // `use crate::*` de arriba, via el `pub use` de lib.rs.
-    const PUBLICADA_MIL_MIB: &str = "126,2";
+    const PUBLICADA_MIL_MIB: &str = "127,2";
+    // EL LADO CARO, declarado y fechado. Hasta el S511 era "PAGADOR"; el
+    // arreglo B (5.A-272) lo invirtio, medido APAREADO el 2026-09-19.
+    const LADO_CARO: &str = "RECEPTOR";
 
     // La RELACION va con BANDA y no con valor: los bytes no dependen de
     // la maquina, los tiempos SI. Medido cuatro veces: envio 260,7-286,8
@@ -125,7 +128,7 @@ mod tests {
     // `layer.send` y `layer.claim` empaquetan el trabajo del cliente y el de
     // la capa en UNA llamada, luego el cronometro sumaba los dos lados de
     // justo la frontera que esta afirmacion separa. El contrato vive ahora en
-    // `la_mitad_cara_la_soporta_el_pagador`, sobre los dos lados de verdad y
+    // `el_lado_caro_es_el_declarado`, sobre los dos lados de verdad y
     // SIN banda: se afirma el SENTIDO.
 
     /// El montaje que produce la cifra publicada.
@@ -499,6 +502,9 @@ mod tests {
         // razon. Cada prueba medía ~62 KB; §304 remidio 65,4 y 63,8 KB —eso no ha cambiado— pero
         // **un pago son ahora DOS pruebas**, asi que la acumulacion por mil
         // pagos paso de 59,1 MB a 120,4 MB, y en §304 a **126,2 MiB**.
+        // Y el §512 la movio a **127,2 MiB**: el arreglo B (5.A-272) cambio el
+        // AIR, y con el la prueba. El ENVIO bajo 259 B y el COBRO subio 1.379;
+        // el pago, +1.120. Medido el 2026-09-19.
         //
         // La cifra vieja no era un error de medicion: medía una operacion
         // que dejo de ser la de produccion. Ver `AUDITORIA.md` §31.
@@ -513,7 +519,7 @@ mod tests {
         assert!(
             (100_000..160_000).contains(&tx_bytes),
             "un PAGO COMPLETO mide {tx_bytes} bytes. Los documentos publican \
-             ~129 KiB por pago y 126,2 MiB por cada mil: si el tamaño ha \
+             ~130 KiB por pago y 127,2 MiB por cada mil: si el tamaño ha \
              cambiado de orden, esas cifras son falsas"
         );
 
@@ -584,10 +590,32 @@ mod tests {
         // AQUI VIVIA LA RELACION `envio_ms > cobro_ms x 1,20`, y se cita en
         // vez de borrarse (molde S247). Salio en el S362 porque el estimador
         // no era ruidoso: media el OBJETO equivocado. Ver
-        // `la_mitad_cara_la_soporta_el_pagador`, justo debajo de este.
+        // `el_lado_caro_es_el_declarado`, justo debajo de este.
     }
 
-    /// **La mitad cara la soporta el PAGADOR.**
+    /// **El lado caro del pago es el DECLARADO, y hoy es el RECEPTOR.**
+    ///
+    /// **EL SENTIDO SE INVIRTIO EN EL S511, Y ESTE CONTRATO LO DECLARA.**
+    /// Desde el S362 este test se llamaba `la_mitad_cara_la_soporta_el_pagador`
+    /// y afirmaba, literal, **"La mitad cara la soporta el PAGADOR"**. La frase
+    /// se cita y no se borra (molde S247). Medido APAREADO el 2026-09-19 --
+    /// misma maquina, mismo `CARGO_TARGET_DIR`, minutos de diferencia -- sobre
+    /// el padre del S511 (`3db491f`) y sobre el corte: envio 240,8 -> 158,9 ms
+    /// y cobro 160,2 -> 278,4 ms. La razon cobro/envio pasa de **0,67 a 1,75**
+    /// y los pares, de 4 de 4 a 0 de 4. El atado del arreglo B encarece el
+    /// cobro un 74 % y ABARATA el envio un 34 %; **por que, no esta explicado**,
+    /// y eso va a la cola como OBSERVADO, no aqui como si lo estuviera.
+    ///
+    /// **El lado va en una CONSTANTE y no en el signo del aserto**: asi el
+    /// contrato sigue afirmando un SENTIDO -- sin banda -- y el dia que vuelva
+    /// a cambiar habla otra vez sin que haya que renombrar nada.
+    ///
+    /// Los tres preprints (entrada 28) publican que la mitad cara es del
+    /// RECEPTOR con razon 1,77, y hoy lo medido da 1,75: **coincide el sentido
+    /// y casi el numero, pero NO la causa** -- ellos la atribuyen a que el
+    /// circuito del cobro recorre dos arboles, y lo que hoy la produce es el
+    /// acumulador del arreglo B. Una afirmacion que se vuelve cierta por otro
+    /// motivo no queda validada: la nota 96 cambia de objeto y no se cierra.
     ///
     /// Contrato traido del atado A en el S362, y no por ruido: por OBJETO. La
     /// afirmacion normativa de los preprints (entrada 28) es sobre QUIEN
@@ -622,7 +650,7 @@ mod tests {
     /// dejan de cuadrar y este test lo dice antes de que la relacion pase a
     /// significar otra cosa.
     #[test]
-    fn la_mitad_cara_la_soporta_el_pagador() {
+    fn el_lado_caro_es_el_declarado() {
         const N: usize = 5;
         let mut layer = new_layer();
         #[allow(deprecated)]
@@ -712,13 +740,14 @@ mod tests {
             by_cobro[0], PUBLICADA_COBRO_B
         );
 
-        assert!(
-            me > mc,
-            "probar el ENVIO costo {:.1} ms como minimo y el COBRO {:.1}: la \
-             mitad cara habria pasado al RECEPTOR y el argumento normativo de \
-             los preprints (entrada 28) cambiaria de sentido. No se absorbe, \
-             se declara. Muestras envio {:?}, cobro {:?}",
-            me, mc, ms_envio, ms_cobro
+        let lado = if me > mc { "PAGADOR" } else { "RECEPTOR" };
+        assert_eq!(
+            lado, LADO_CARO,
+            "el lado caro es hoy el {} -- envio {:.1} ms como minimo y cobro \
+             {:.1} -- y la constante declara el {}: el argumento normativo de \
+             los preprints (entrada 28) cambia de sentido. No se absorbe, se \
+             declara. Muestras envio {:?}, cobro {:?}",
+            lado, me, mc, LADO_CARO, ms_envio, ms_cobro
         );
     }
 

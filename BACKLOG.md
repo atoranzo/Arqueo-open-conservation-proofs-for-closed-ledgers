@@ -1532,6 +1532,18 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   suspende hasta el fin del proyecto, asi que aqui se DECLARA y no se
   repara. Entra REVERSIBLE: si se prefiere, su contenido cabe en el
   cuerpo de la 28 y esta se retira.
+  ⚠️⚠️ **2026-09-19 (S512): LA INVERSION SE HA INVERTIDO, y lo mide el
+  arbol.** El arreglo B (5.A-272, S511) cambio el AIR y con el los dos
+  lados: medido APAREADO sobre `3db491f` y sobre el corte, misma maquina y
+  mismo target, envio 240,8 -> 158,9 ms y cobro 160,2 -> 278,4 ms; la razon
+  cobro/envio pasa de 0,67 a **1,75** y los preprints publican **1,77**. El
+  sentido que publican ya NO es falso, pero **la causa que alegan sigue
+  sin serlo**: la atribuyen a que el circuito del cobro recorre dos
+  arboles, y hoy la produce el acumulador del arreglo B. **La nota no se
+  cierra: cambia de objeto** -- de una relacion invertida a una afirmacion
+  cierta por otro motivo y desde otra fecha. Y donde se mide la verdad hoy
+  es `el_lado_caro_es_el_declarado` de `metrics.rs`: la banda
+  `PUBLICADA_ENVIO_SOBRE_COBRO_MIN` que esta nota cita se fue en el S362.
 
 - [ ] **97. Lo que costaria un `zk-ssl-air` de verdad, ya medido.** El
   spike del §305 extrajo la mitad verificadora del AIR a un crate propio
@@ -1753,8 +1765,8 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   error en §42.3 dandola por inventada, y se **restituye** (§42.5): estaba
   en el codigo, se busco donde no estaba. Mismo primitivo que la 33.
 
-- [ ] **22. ⏸️ SUSPENDIDA. Agregacion de pruebas.** 126,2 MiB por mil pagos es coste, no
-  parada, pero crece linealmente: un pago son **DOS pruebas** y **132.311
+- [ ] **22. ⏸️ SUSPENDIDA. Agregacion de pruebas.** 127,2 MiB por mil pagos es coste, no
+  parada, pero crece linealmente: un pago son **DOS pruebas** y **133.431
   bytes**, medidos el 14-08-2026 en release con la configuracion real de
   la capa. **Donde se mide la verdad**: la constante `PUBLICADA_PAGO_B` en
   `crates/zk-ssl/src/metrics.rs`, atada al instrumento por el gemelo
@@ -1806,7 +1818,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **~23 h de GPU**, contra los 420 dias de CPU del §305.
   ⚠️ **Y aparece el dato que cambia la forma de esta nota**: el receipt
   **sucinto mide 223.234 B**, o sea **3,3 veces mas que una prueba suelta de
-  66.998 B**. Envolver UNA prueba no ahorra bytes: los pierde. La rama B
+  66.739 B**. Envolver UNA prueba no ahorra bytes: los pierde. La rama B
   ahorra por **AGREGAR**, no por envolver — el sucinto es de tamano
   constante, asi que el equilibrio esta en unas **cuatro pruebas** y a mil
   pagos el mismo receipt de 218 KiB frente a 127,8 MiB de STARKs da un
@@ -1826,17 +1838,17 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   y un agregador publicaria N digests — el unico termino que crece con el
   numero de pruebas distintas.
   ⏸️ **SUSPENDIDA (§318), Y LA ESCALA VA NOMBRADA.** No es cuello **por
-  debajo de 100.000 pagos** — unos **12,3 GiB** de pruebas acumuladas, que es
+  debajo de 100.000 pagos** — unos **12,4 GiB** de pruebas acumuladas, que es
   `AVISO_ACUMULACION_PAGOS` por `PUBLICADA_PAGO_B` y lo ata una comprobacion
   del nodo. **Donde se mide la verdad**: el umbral en
   `crates/zk-ssl-node/src/latido.rs`, el byte por pago en
   `crates/zk-ssl/src/metrics.rs`, y la aritmetica entre los dos en
   `el_umbral_de_acumulacion_cuadra_con_la_cifra_publicada`.
-  ⚠️ **Y lo que significa cruzar esa escala, escrito al derecho: 12,3 GiB es
+  ⚠️ **Y lo que significa cruzar esa escala, escrito al derecho: 12,4 GiB es
   la ultima en la que NO DUELE.** Sonar no dice que ya duela: dice que **se
   acabo el margen** y que la siguiente si. Escrito al reves — la ultima
   escala rutinaria — el aviso quedaria desacreditado el dia que sonara,
-  porque 12,3 GiB se descargan de una sentada.
+  porque 12,4 GiB se descargan de una sentada.
   ⚠️⚠️ **NO HAY CRUCE DE CURVAS, y por eso la escala no sale de comparar
   costes.** Agregar cuesta unos 65 s de GPU por prueba y ahorra unos 67 KB
   por prueba **a cualquier escala** (§307: 49 joins a ~0,49 s mas 40,9 s de

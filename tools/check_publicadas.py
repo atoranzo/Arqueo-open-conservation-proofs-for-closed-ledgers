@@ -41,10 +41,10 @@ llegue la migracion -- ENTRADA 32 del BACKLOG -- las mediciones cambian
 con ella, y eso se DECLARA, no se absorbe.
 
 MEDIDO el 2026-08-26: la via DOCUMENTADA -- send_materials ->
-client::prove_send -> apply_send -- da los MISMOS bytes, 66_998 y
-65_313, en cinco repeticiones y sin una sola diferencia. La cifra
+client::prove_send -> apply_send -- da los MISMOS bytes, 66_739 y
+66_692, en cinco repeticiones y sin una sola diferencia. La cifra
 publicada NO depende de la via. Desde el S362 lo PINA un segundo
-gemelo, la_mitad_cara_la_soporta_el_pagador, que asierta esos dos
+gemelo, el_lado_caro_es_el_declarado, que asierta esos dos
 bytes ademas de la relacion temporal.
 
 Ceguera declarada:
