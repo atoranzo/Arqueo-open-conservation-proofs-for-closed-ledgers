@@ -1884,6 +1884,110 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             }
         }
 
+        // ⚠️ **§519 · LA PRENDA, CON SU SOBRE** (RFC-0008 E3). El unico metodo
+        // del cable que VERIFICA una prueba STARK antes de escribir, y la razon
+        // la dice el juez en su propia doc: `verificar_contra_cabeza` NO
+        // comprueba que la marca este bajo el `consRoot` —«es la puerta de quien
+        // escribe en el, no la del juez»—, y quien escribe es este nodo.
+        //
+        // ⚠️ **No es una puerta del arbol de consumos** (D-AT): la marca sola
+        // sigue entrando por `zkssl_publishConsumo`, que no pide prueba ni
+        // autorizacion. Esto es una boca CON prueba al lado de una boca libre.
+        // Y por eso **no exige credencial**: la autorizacion es la prueba, no la
+        // posesion de una clave de vista.
+        //
+        // ⚠️ **La raiz la pone el NODO, nunca quien llama**: aceptarla como
+        // parametro seria dejar que el que pide fabrique la vara con la que se
+        // le mide (§248). Por eso el enunciado se compone de `lat.cabeza`.
+        //
+        // ⚠️ **Una prenda vale dentro de su epoca**: el nodo guarda UNA cabeza,
+        // asi que el `seq` que declara quien llama tiene que ser el de la ultima
+        // firmada. Si no lo es, se rechaza NOMBRANDOLO — y aqui la negativa no
+        // es muda, al reves que en `zkssl_pendingPath`: la marca es publica y
+        // precomputable por quien tenga el aviso.
+        //
+        // ⚠️ **Un repetido cuyo sobre verifica NO es un fallo** (D-BB): el par
+        // es la marca bajo la raiz MAS el sobre (D-AS), y la marca que escribiera
+        // el pagador es la MISMA hoja (D-AT). `yaEstaba` lo dice, y es lo unico
+        // que quien llama no puede computar.
+        "zkssl_pledge" => {
+            #[derive(Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct P { prueba: wire::Blob, receptor: wire::B32, marca: wire::B32, seq: Q }
+            let p: P = parse(params)?;
+            let receptor = digest_from_wire(&p.receptor).map_err(RpcError::wire)?;
+            let marca = digest_from_wire(&p.marca).map_err(RpcError::wire)?;
+            // El candado de la cabeza se toma DESPUES del estado, que es el orden
+            // que ya tienen `zkssl_signedEpochHead` y `zkssl_pendingPath`
+            // (`latido.rs`), y se SUELTA antes de tocar la capa: de el solo salen
+            // dos valores `Copy`.
+            let (raiz, s) = {
+                let u = app.ultima_cabeza.lock().map_err(|_| RpcError {
+                    code: -32603,
+                    message: "candado de la ultima cabeza envenenado".into(),
+                    data: None,
+                })?;
+                match u.as_ref() {
+                    None => {
+                        return Ok(json!({
+                            "accepted": false,
+                            "reason": "aun no ha habido latido: el nodo acaba de arrancar",
+                        }))
+                    }
+                    Some(lat) if lat.firma.is_none() => {
+                        return Ok(json!({
+                            "accepted": false,
+                            "reason": "el nodo arranco SIN --clave: la cabeza no esta firmada y el \
+                                       sobre de la prenda no tendria a que atarse",
+                        }))
+                    }
+                    Some(lat) => (lat.cabeza.pending_root, lat.seq),
+                }
+            };
+            if s != p.seq.0 {
+                return Ok(json!({
+                    "accepted": false,
+                    "reason": format!(
+                        "el sobre se ato al seq {} y la ultima cabeza firmada va por el {s}: pide \
+                         el camino otra vez y vuelve a probar bajo esta",
+                        p.seq.0
+                    ),
+                }));
+            }
+            let af = zk_ssl_air::prenda::AfirmacionPrenda { receptor, marca };
+            let cab = zk_ssl_air::prenda::CabezaPrenda { pending_root: raiz };
+            // El veredicto se BINDEA en vez de encadenarse: asi el falsador por mutacion del
+            // bloque puede anular la puerta con UNA linea y sin dejar nada sin usar.
+            let veredicto = zk_ssl_air::prenda::verificar_contra_cabeza(&p.prueba.0, &af, &cab);
+            if let Err(e) = veredicto {
+                return Ok(json!({
+                    "accepted": false,
+                    "reason": format!("la prueba de prenda no verifica contra la cabeza del seq {s}: {e}"),
+                }));
+            }
+            match l.apply_consumo(marca) {
+                Ok(()) => Ok(json!({
+                    "accepted": true,
+                    "yaEstaba": false,
+                    "logSeq": Q(l.transition_log().len() as u64),
+                    "s": Q(s),
+                })),
+                // D-BB: la hoja ya estaba y es la MISMA. El sobre ya verifico, asi
+                // que el par existe lo escribiera quien lo escribiera.
+                Err(LayerError::ConsumoRepetido { .. }) => Ok(json!({
+                    "accepted": true,
+                    "yaEstaba": true,
+                    "logSeq": Q(l.transition_log().len() as u64),
+                    "s": Q(s),
+                })),
+                Err(e) => Ok(json!({
+                    "accepted": false,
+                    "reason": format!("{e}"),
+                    "data": data_de(&e, seq_juicio),
+                })),
+            }
+        }
+
         // ⚠️ **§259 · EL RECIBO DE INCLUSION.** Del arbol `accounts`, que es
         // el que firma la cabeza. `leafFormat` va OBSERVADO: la capa
         // compone la hoja de las dos formas y declara la que caso.
@@ -4028,6 +4132,177 @@ mod tests {
         let e = dispatch(&app, "zkssl_inclusionReceipt", json!({ "index": Q(9_999), "viewKey": vk_falsa() }))
             .expect_err("no deberia haber recibo");
         assert_ne!(e.code, -32601, "el metodo existe: no puede ser MethodNotFound");
+    }
+
+    // ── §519 · la prenda por el cable: `zkssl_pledge` ──
+
+    /// §519 (RFC-0008 E3): lo que el PRENDADOR produce con lo que el nodo le sirve de la foto.
+    /// El molde es el testigo del cobro del §493: pedir el camino, componer la cabeza, probar.
+    fn sobre_de_prenda(
+        app: &App,
+        pv: &PendienteV2,
+        sk_bob: u64,
+        l: &crate::latido::Latido,
+    ) -> zk_ssl::prueba_prenda::SobrePrenda {
+        use zk_ssl::prueba_prenda::{prueba_de_prenda, CabezaDeLaPrenda};
+        let r = pending_path(app, pv.bob, &pv.vk_bob, &pv.aviso).expect("servir");
+        assert_eq!(r["available"], json!(true), "el escenario tiene que servir: {r}");
+        let dto: wire::MerklePathDto =
+            serde_json::from_value(r["caminoPendiente"].clone()).expect("camino");
+        let camino: stark_experiment::merkle::MerklePath = (&dto).try_into().expect("camino");
+        let cab = CabezaDeLaPrenda { seq: l.seq, pending_root: l.cabeza.pending_root };
+        let kb = zk_ssl::tests_support::wide_key(sk_bob);
+        prueba_de_prenda(&cab, kb, &pv.aviso, &camino).expect("el prendador produce su sobre")
+    }
+
+    /// §519: llamar a `zkssl_pledge` con lo que el sobre lleva dentro, y nada mas.
+    fn pledge(app: &App, s: &zk_ssl::prueba_prenda::SobrePrenda) -> Result<Value, RpcError> {
+        dispatch(
+            app,
+            "zkssl_pledge",
+            json!({
+                "prueba": wire::Blob(s.prueba.clone()),
+                "receptor": digest_to_wire(&s.receptor),
+                "marca": digest_to_wire(&s.marca),
+                "seq": Q(s.seq),
+            }),
+        )
+    }
+
+    /// ¿Esta la hoja en el arbol de consumos? Se pregunta por la boca LIBRE: si ENTRA es que no
+    /// estaba — y queda escrita, asi que esta sonda va SIEMPRE al final del testigo.
+    fn marca_ya_estaba(app: &App, marca: &stark_experiment::merkle::Digest) -> bool {
+        let v = dispatch(app, "zkssl_publishConsumo", json!({ "consumo": digest_to_wire(marca) }))
+            .expect("la boca libre no falla: acepta o rechaza");
+        v["accepted"] == json!(false)
+    }
+
+    /// Un escenario con DOS pendientes, cabeza firmada y el sobre de Bob ya producido.
+    fn escena(nombre: &str) -> (App, PendienteV2, crate::latido::Latido) {
+        let app = nodo(30);
+        // DOS pendientes antes del latido, por la misma razon que el testigo del §493: con uno
+        // solo, los hermanos de los dos arboles son los de los subarboles vacios y servir unos
+        // por otros no se veria.
+        let _otro = pendiente_v2(&app, 0xA518, 0xB518, 0x5518);
+        let pv = pendiente_v2(&app, 0xA519, 0xB519, 0x5519);
+        let mut f = firmante(nombre);
+        let l = crate::latido::latir(&app, Some(&mut f)).expect("latir");
+        crate::latido::conservar(&app, l.clone());
+        (app, pv, l)
+    }
+
+    #[test]
+    fn una_prenda_con_sobre_bueno_entra_y_la_marca_queda_publicada() {
+        // §519: el positivo. El nodo compone el enunciado con SU raiz, verifica y escribe.
+        let (app, pv, l) = escena("pledge_positivo");
+        let s = sobre_de_prenda(&app, &pv, 0xB519, &l);
+        let v = pledge(&app, &s).expect("pledge");
+        assert_eq!(v["accepted"], json!(true), "{v}");
+        assert_eq!(v["yaEstaba"], json!(false), "la hoja no estaba: {v}");
+        assert_eq!(v["s"], json!(Q(l.seq)), "el seq contra el que se juzgo: {v}");
+        assert!(marca_ya_estaba(&app, &s.marca), "la marca tiene que haber quedado escrita");
+    }
+
+    #[test]
+    fn una_prueba_mutada_se_rechaza_y_la_marca_no_queda_escrita() {
+        // §519, D-AZ, **el falsador con sus DOS mitades**: rechazar no basta. Un brazo que
+        // escribiera primero y rechazara despues pasaria la primera mitad y seria falso.
+        let (app, pv, l) = escena("pledge_mutada");
+        let mut s = sobre_de_prenda(&app, &pv, 0xB519, &l);
+        let n = s.prueba.len();
+        s.prueba[n / 2] ^= 0x01;
+        let v = pledge(&app, &s).expect("un sobre malo no es un error del que llama");
+        assert_eq!(v["accepted"], json!(false), "un sobre MUTADO no puede entrar: {v}");
+        let r = v["reason"].as_str().expect("reason");
+        assert!(r.contains("no verifica"), "el rechazo tiene que decir QUE paso: {r}");
+        assert!(!marca_ya_estaba(&app, &s.marca), "NADA se escribe si la prueba no verifica");
+    }
+
+    #[test]
+    fn un_sobre_bueno_contra_otro_seq_se_rechaza_nombrandolo() {
+        // §519, D-AZ: una prenda vale dentro de su epoca, y la negativa NO es muda.
+        let (app, pv, l) = escena("pledge_seq");
+        let mut s = sobre_de_prenda(&app, &pv, 0xB519, &l);
+        s.seq = l.seq + 1;
+        let v = pledge(&app, &s).expect("no es un error del que llama");
+        assert_eq!(v["accepted"], json!(false), "{v}");
+        let r = v["reason"].as_str().expect("reason");
+        assert!(r.contains(&format!("{}", l.seq)), "tiene que NOMBRAR el seq bueno: {r}");
+        assert!(!marca_ya_estaba(&app, &s.marca), "y no escribe nada");
+    }
+
+    #[test]
+    fn una_marca_ya_publicada_con_sobre_bueno_da_ya_estaba() {
+        // §519, D-BB: el control. El par existe en cuanto el sobre verifica, lo escribiera
+        // quien lo escribiera (D-AS + D-AT), asi que esto es un EXITO y no un fallo.
+        let (app, pv, l) = escena("pledge_ya_estaba");
+        let s = sobre_de_prenda(&app, &pv, 0xB519, &l);
+        let libre = dispatch(&app, "zkssl_publishConsumo",
+                             json!({ "consumo": digest_to_wire(&s.marca) }))
+            .expect("la boca libre la escribe primero, como en la D-AT");
+        assert_eq!(libre["accepted"], json!(true), "el adelantado entra: {libre}");
+        let v = pledge(&app, &s).expect("pledge");
+        assert_eq!(v["accepted"], json!(true), "un repetido probado NO es un fallo: {v}");
+        assert_eq!(v["yaEstaba"], json!(true), "y la respuesta lo dice: {v}");
+    }
+
+    #[test]
+    fn una_marca_ya_publicada_con_sobre_malo_se_rechaza() {
+        // §519, D-BB, **el falsador que discrimina**: si esto diera verde, el metodo estaria
+        // aceptando por el hecho de que la hoja ya esta y no por la prueba.
+        let (app, pv, l) = escena("pledge_ya_estaba_malo");
+        let mut s = sobre_de_prenda(&app, &pv, 0xB519, &l);
+        let libre = dispatch(&app, "zkssl_publishConsumo",
+                             json!({ "consumo": digest_to_wire(&s.marca) }))
+            .expect("la escribe el adelantado");
+        assert_eq!(libre["accepted"], json!(true), "{libre}");
+        let n = s.prueba.len();
+        s.prueba[n / 2] ^= 0x01;
+        let v = pledge(&app, &s).expect("no es un error del que llama");
+        assert_eq!(v["accepted"], json!(false), "la hoja esta, pero la prueba no: {v}");
+    }
+
+    #[test]
+    fn una_colision_llega_con_su_causa_como_dato() {
+        // §519, D-BA: sin `data.causa` el octavo brazo del mando no podria juzgar el rechazo.
+        // La colision se fabrica MEDIDA, no supuesta: `posicion_de_consumo` (zk-ssl-hash) son
+        // los 63 bits bajos de los OCHO PRIMEROS bytes, y `digest_to_bytes` pone ahi el PRIMER
+        // limbo. Asi que el ocupante CONSERVA el primer limbo y cambia los otros tres: misma
+        // posicion, otra hoja. La r3 de este corte lo hizo al reves -- movio el primero-- y lo
+        // que salio fue otra posicion y ninguna colision.
+        use winterfell::math::fields::f64::BaseElement as E;
+        let (app, pv, l) = escena("pledge_colision");
+        let s = sobre_de_prenda(&app, &pv, 0xB519, &l);
+        let mut otro = s.marca;
+        otro[1] = E::new(7);
+        otro[2] = E::new(8);
+        otro[3] = E::new(9);
+        assert_ne!(otro, s.marca, "el ocupante tiene que ser OTRA hoja");
+        let libre = dispatch(&app, "zkssl_publishConsumo",
+                             json!({ "consumo": digest_to_wire(&otro) }))
+            .expect("el ocupante entra");
+        assert_eq!(libre["accepted"], json!(true), "el ocupante tiene que entrar: {libre}");
+        let v = pledge(&app, &s).expect("no es un error del que llama");
+        assert_eq!(v["accepted"], json!(false), "la posicion esta ocupada por OTRA hoja: {v}");
+        assert_eq!(v["data"]["causa"], json!("ConsumoColision"), "la causa, como dato: {v}");
+    }
+
+    #[test]
+    fn el_brazo_no_pide_credencial_y_eso_es_deliberado() {
+        // §519, D-AZ: la ausencia de puerta va PROBADA, no olvidada. Bob no manda su clave de
+        // vista en ninguna parte, y el nodo no se la pide: la autorizacion es la prueba.
+        // Prueba de vida al lado: el hermano `zkssl_pendingPath` SI la exige.
+        let (app, pv, l) = escena("pledge_sin_credencial");
+        let s = sobre_de_prenda(&app, &pv, 0xB519, &l);
+        let v = pledge(&app, &s).expect("sin credencial, y entra");
+        assert_eq!(v["accepted"], json!(true), "{v}");
+        let e = dispatch(&app, "zkssl_pendingPath", json!({
+            "index": Q(pv.bob), "viewKey": vk_falsa(), "position": Q(pv.aviso.position),
+            "salt": digest_to_wire(&pv.aviso.salt), "amount": Q(pv.aviso.amount),
+            "x": digest_to_wire(&pv.aviso.x.expect("aviso v2")),
+        }))
+        .expect_err("el hermano SI pide credencial");
+        assert_eq!(e.code, -32004, "prueba de vida: la puerta del hermano existe");
     }
 
     // ── §285 / nota 80, segunda mitad: quien firma, anota ──

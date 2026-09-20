@@ -1032,6 +1032,46 @@ sube: no cambia ningún valor que ya viajara. Y el §505 (RFC-0008 D-AE) añade 
 OPCIONAL al mismo método: aditivo también, la superficie sigue en 29 y `zkssl/0.3` sigue sin
 subir.
 
+## La prenda, con su sobre (§519, RFC-0008 E3)
+
+`zkssl_pledge {prueba, receptor, marca, seq}` publica la MARCA de una prenda EXIGIENDO el sobre
+que la sostiene: `{accepted: true, yaEstaba, logSeq, s}` si la prueba verifica, y
+`{accepted: false, reason, data}` si no. La prenda es el PAR —la marca bajo la raíz firmada más
+el sobre (RFC-0008 D-AS)—, y este método es el único sitio donde las dos mitades se juntan: el
+juez de `zk-ssl-air` verifica el sobre contra un enunciado, y el árbol de consumos lo escribe el
+nodo. Lo que sale del prendador es `SobrePrenda {prueba, receptor, marca, seq, pendingRoot}`
+(§518); de ahí salen los cuatro parámetros, y `pendingRoot` **no viaja**.
+
+- **La raíz la pone el nodo, nunca quien llama.** El enunciado se compone con `pendingRoot` de
+  la cabeza firmada que el nodo custodia, no con la que traiga la petición: servir esa vara
+  sería dejar que el que pide fabrique aquélla con la que se le mide (§248). Por eso `seq` es un
+  parámetro y `pendingRoot` no lo es.
+- **Verifica ANTES de escribir, y si no verifica no escribe nada.** El juez
+  (`zk_ssl_air::prenda::verificar_contra_cabeza`) declara en su propia doc que él no comprueba
+  que la marca esté bajo `consRoot` porque «es la puerta de quien escribe en él»: quien escribe
+  es este nodo, y aquí se cierra el par.
+- **No es una puerta del árbol de consumos** (RFC-0008 D-AT). La marca sola sigue entrando por
+  `zkssl_publishConsumo`, que no pide prueba ni autorización, y eso no cambia: esto es una boca
+  CON prueba al lado de una boca libre. **Y no exige credencial**: la autorización es la prueba,
+  no la posesión de una clave de vista. Es la única boca del cable que verifica un STARK.
+- **Una prenda vale dentro de su época.** El nodo custodia UNA cabeza firmada, así que `seq`
+  tiene que ser el de la última; si no lo es, `{accepted: false}` y `reason` **nombra** el que
+  hay. Al revés que la negativa muda de `zkssl_pendingPath`: aquí no hay nada que ocultar,
+  porque la marca es pública y precomputable por cualquiera que tenga el aviso. El orden es
+  `zkssl_pendingPath`, producir, `zkssl_pledge`, bajo el mismo latido.
+- **Un repetido cuyo sobre verifica NO es un fallo** (RFC-0008 D-BB). Si la hoja ya estaba y es
+  la misma, la respuesta es `accepted: true` con `yaEstaba: true` y la capa no se toca: el par
+  existe en cuanto el sobre verifica, lo escribiera quien lo escribiera —la marca que escriba el
+  pagador es la MISMA hoja (D-AT)—. `yaEstaba` es lo único de la respuesta que quien llama no
+  puede computar por su cuenta. Una `ConsumoColision` sí es rechazo, y viaja con su causa como
+  dato, en la forma del §454.
+- **Qué revela**: nada que no fuera público. La marca es `H(DOMINIO_PRENDA, C2)` y quien tenga
+  el aviso la precomputa; el sobre no lleva ni el importe, ni la sal, ni `X`, ni `C2`, ni la
+  clave (RFC-0008 D-AW).
+
+⚠️ **Aditivo**: la superficie pasa de 29 a 30 métodos (`zkssl_pledge`) y `zkssl/0.3` NO sube: no
+cambia ningún valor que ya viajara.
+
 ## Apagado — el fin de vida, declarado (nota 91)
 
 Toda capa de liquidacion termina — por cierre, por migracion o por

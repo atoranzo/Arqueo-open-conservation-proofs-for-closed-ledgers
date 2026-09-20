@@ -37985,3 +37985,97 @@ etiqueta `cadena` de la FASE 10, el print PRE que `xargs` no supo imprimir, la c
 `check_cifras` con el gemelo ingles -- ahora con tres--, el 1431 que cambio de significado, el
 coste del positivo de E3 -- medido y con la causa abierta-- y los <<29 modulos>> de
 `ARQUITECTURA.md`.
+
+## §519 — El cable de la prenda: `zkssl_pledge`, que verifica antes de escribir
+
+**Que.** Nace el trigesimo metodo del protocolo. La MARCA de una prenda entra por una boca que
+EXIGE el sobre: el nodo compone el enunciado con la raiz de pendientes de SU cabeza firmada,
+llama a `zk_ssl_air::prenda::verificar_contra_cabeza` y solo con verde escribe la hoja. Es el
+primer metodo del cable que verifica una prueba STARK. La razon de que le toque a el la dice el
+juez en su propia doc: el NO comprueba que la marca este bajo el `consRoot` -- «es la puerta de
+quien escribe en el, no la del juez»--, y quien escribe es el nodo. Con esto el PAR de la D-AS
+se cierra en un solo sitio: la marca bajo la raiz firmada MAS el sobre que la sostiene.
+
+**Lo que NO es, y ningun asiento futuro lo repite.** No es una puerta del arbol de consumos. La
+D-AT decidio que cualquiera con el aviso publique la marca por la boca libre
+`zkssl_publishConsumo`, que no pide prueba ni autorizacion, y eso no cambia: esto es una boca
+CON prueba al lado de una boca libre. Cinco asientos de la 160 anunciaron una puerta que la D-AT
+y la enmienda de la D-AS a la D-C ya habian decidido que no existiera (5.A-353); este corte la
+cierra por escrito y el punto queda pagado.
+
+**Las tres decisiones, delegadas por el autor con la vara y REVERSIBLES.** Van al RFC en el
+`-B`, y aqui quedan dichas con lo que las sostiene.
+
+- **D-AZ, verifica y solo entonces escribe, y no pide credencial.** Cuatro caminos: exigir el
+  sobre sin mirarlo cae por la vara 4 -- un metodo que dice exigir algo que no comprueba guarda
+  bytes que nadie verifico--; verificar y no escribir cae por la vara 3 y por la doc del juez,
+  porque parte el par en dos llamadas y deja sin dueno justo la mitad que el juez declara no
+  hacer; y que el metodo no exista cae porque entonces la fila E3 del RFC seria falsa. Gana
+  verificar y escribir: una primitiva por propiedad, y el patron de la casa -- `prove` en el
+  CLIENTE y `apply` VERIFICA sin ver la clave-- se cumple al pie de la letra, porque el sobre no
+  lleva clave (D-AW). Y por eso mismo no hay credencial: la vara dice que autorizacion es
+  conocimiento de preimagen o prueba, no posesion administrativa de una clave en el servidor.
+- **D-BA, que devuelve.** El molde del hermano aditivo -- `accepted` y `logSeq`-- mas dos: `s`,
+  el `seq` de la cabeza contra la que se juzgo, que es lo que un tercero necesita para pedir
+  despues el camino; y `yaEstaba`, que es lo unico de la respuesta que quien llama no puede
+  computar por su cuenta. No devuelve la marca, que la mando el, ni la raiz, ni el camino, que
+  es `zkssl_consumoPath`. Y **no acepta `pendingRoot` como parametro**: recibirlo seria dejar
+  que el que pide fabrique la vara con la que se le mide (§248).
+- **D-BB, un repetido cuyo sobre verifica NO es un fallo.** Sale de cruzar dos decisiones ya
+  selladas: el par es la marca bajo la raiz MAS el sobre (D-AS), y la marca que escribiera el
+  pagador es la MISMA hoja (D-AT). Si las dos son ciertas, el par existe en cuanto el sobre
+  verifica, lo escribiera quien lo escribiera, y devolver `ConsumoRepetido` seria llamar fallo a
+  un exito. Se responde `accepted: true` con `yaEstaba: true` y la capa no se toca. Una
+  `ConsumoColision` si es rechazo, con su causa como dato en la forma del §454.
+
+**La epoca, y es una restriccion MEDIDA que el RFC no decia.** El nodo custodia UNA cabeza
+(`ultima_cabeza`, y se pierde al reiniciar), asi que el enunciado solo puede componerse contra la
+ultima firmada: una prenda vale dentro de su epoca, y el orden es `zkssl_pendingPath`, producir,
+`zkssl_pledge`, bajo el mismo latido. El rechazo por `seq` NOMBRA el que hay, al reves que la
+negativa muda del hermano (D-AE): aqui no hay nada que ocultar, porque la marca es publica y
+precomputable por cualquiera que tenga el aviso.
+
+**El grafo no crece, y va medido.** `zk-ssl-air` se declara en el nodo y suma CERO nodos: ya
+entraba por `zk-ssl-verify`, que el nodo declara desde el §243. `cargo tree` antes y despues,
+comparado ENTERO y no con `tail` -- que es la PRECISION 596, cobrada en la 160.
+
+**El json no se escribe a mano, y lo dicen DOS productores.** `spec/openrpc.json` lo genera
+`gen_openrpc` desde la tabla del cable, que es su unica fuente. El editor lo compone ademas por
+su cuenta, insertando el objeto del metodo en su sitio, y el bloque exige que los dos coincidan
+BYTE A BYTE. Si el serializador de Rust y la composicion del editor discreparan en una coma, el
+corte se cae antes del commit.
+
+**Los siete testigos, y dos de ellos son falsadores que discriminan.** El positivo; la prueba
+mutada, que tiene que rechazar **y** dejar el arbol sin la hoja -- las dos mitades, porque un
+brazo que escribiera primero y rechazara despues pasaria la primera--; el sobre bueno contra
+otro `seq`, que se rechaza nombrandolo; la marca ya publicada con sobre bueno, que es el control
+de D-BB; **la marca ya publicada con sobre malo, que es el falsador que discrimina** -- si diera
+verde, el metodo estaria aceptando por la hoja y no por la prueba--; la colision con su causa como
+dato -- fabricada conservando el PRIMER limbo del digest, que es de donde sale la posicion
+(`posicion_de_consumo`), y no al reves, que fue como cayo la r3--; y la ausencia de
+credencial, PROBADA y no olvidada, con la puerta del hermano al lado
+como prueba de vida. La sonda que dice si la hoja esta se hace por la boca libre, y por eso va
+siempre al final del testigo: preguntar escribe.
+
+**Contadores.** SIETE ficheros y ninguno nace: `openrpc.rs` +11 -4 (la tabla, la entrada, el
+registro y los tres cardinales del test, que es la unica sustitucion del corte), el `main.rs`
+del nodo +275 -0 (el brazo y los siete testigos), su `Cargo.toml` +5 -0, **`Cargo.lock` +1 -0**
+-- que el septimo lo escribe `cargo` y no el autor, y por eso la r2 de este bloque cayo en su
+cerrojo: el septimo no estaba declarado--, `spec/RPC.md` +40 -0, `spec/openrpc.json` +40 -0
+-- REGENERADO, no editado-- y `AUDITORIA.md` +94 -0 (este asiento, 93 lineas tras 1 separador):
+37.987 -> 38.081. Las SIETE sha POST fueron PREDICHAS y exigidas byte a byte antes de tocar el
+arbol, y la del lock la confirma `cargo` despues: si la reescribiera de otra forma, la FASE 7
+lo caza. El AIR del §516 (`ec3d13381614785e`), el productor del
+§518 (`bd86b5b73da196d5`) y `consumo.rs` (`1b3f2f81c5e31853`) van de CENTINELA: este corte los
+USA y no los mueve. `check_tests` pasa de 1459 a 1466 declarados, que son los siete testigos;
+el pin del nodo NO se mueve aqui.
+
+**Lo que NO cierra.** El `-B`: el pin del nodo, las CUATRO cuentas publicadas -- la superficie de
+`spec/RPC.md`, la de `README.md`:182, las «cincuenta y una decisiones» que el propio RFC-0008
+dice de si mismo en su :127 y el 5.A-354, que llama nuevo a `zkssl_pendingPath` cuando ya
+existe--, el RFC con D-AZ..D-BB y el canon `--sello`. De E3 quedan la boca del cli que reune los
+positivos de un nodo vivo y el octavo brazo `tipo: "prenda"` del mando con la forma 2.10 de
+`spec/PAQUETE.md`. Y queda el falsador de la deduccion que sostiene la D-BB -- dos sobres del
+mismo aviso con dos claves distintas, y el segundo no verifica--, que no es del nodo: vive donde
+vive el productor.
+

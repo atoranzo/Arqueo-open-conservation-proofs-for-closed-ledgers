@@ -49,6 +49,7 @@ pub fn method_names() -> Vec<&'static str> {
         "zkssl_consumoPath",
         "zkssl_frozenPath",
         "zkssl_pendingPath",
+        "zkssl_pledge",
         "dev_fund",
         "dev_openSeeded",
         "dev_freeze",
@@ -136,6 +137,10 @@ pub fn document() -> Value {
           "Lo que el COBRADOR necesita de la FOTO del ultimo latido firmado (RFC-0008 D-F): el camino de su pendiente, los hermanos de su meta y la meta, en el seq s de esa cabeza. Exige la clave de VISTA del receptor y un aviso v2 que recomponga la hoja; si no, available false sin decir que hay. Con receiverId (RFC-0008 D-AE) quien pide es el PAGADOR: trae SU clave de VISTA, nombra al receptor y recibe lo mismo, solo si la meta de esa posicion le nombra.",
           json!([p("index", "Q"), p("viewKey", "Digest"), p("position", "Q"), p("salt", "Digest"),
                  p("amount", "Q"), p("x", "Digest"), p_opt("receiverId", "Digest")]), "PendingPath"),
+        m("zkssl_pledge",
+          "Publica la MARCA de una prenda (RFC-0008 E3) EXIGIENDO su sobre: el nodo compone el enunciado con la raiz de pendientes de SU cabeza firmada y verifica la prueba ANTES de escribir. NO es una puerta del arbol de consumos: la marca sola sigue entrando por `zkssl_publishConsumo`, que no pide nada (D-AT). NO exige credencial: la autorizacion es la prueba. Una marca ya publicada cuyo sobre verifica no es un fallo, y la respuesta lo dice.",
+          json!([p("prueba", "DATA"), p("receptor", "Digest"), p("marca", "Digest"),
+                 p("seq", "Q")]), "PrendaPublicada"),
         m("dev_fund", "SOLO --dev: emision delegada con custodios de PRUEBA.",
           json!([p("index", "Q"), p("amount", "Q")]), "Applied"),
         m("dev_openSeeded", "SOLO --dev: abre desde una clave determinista de la suite.",
@@ -168,7 +173,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn veintinueve_metodos_unicos_y_en_orden() {
+    fn treinta_metodos_unicos_y_en_orden() {
         // §223: subio a 18 con `zkssl_applyMany`. §242: a 19 con
         // `zkssl_signedEpochHead`. §259: a 20 con
         // `zkssl_inclusionReceipt`. Que este test tenga el numero en el
@@ -185,15 +190,17 @@ mod tests {
         // en el sandbox para poder capturarlo-.
         // §493: a 29 con `zkssl_pendingPath` -lo que el cobrador necesita de la
         // foto del ultimo latido firmado (RFC-0008, D-F)-.
+        // §519: a 30 con `zkssl_pledge` -la marca de la prenda con su sobre, que el
+        // nodo verifica ANTES de escribirla (RFC-0008, E3)-.
         let nombres = method_names();
-        assert_eq!(nombres.len(), 29);
+        assert_eq!(nombres.len(), 30);
         let mut u = nombres.clone();
         u.sort();
         u.dedup();
-        assert_eq!(u.len(), 29, "nombres repetidos");
+        assert_eq!(u.len(), 30, "nombres repetidos");
         let doc = document();
         let met = doc["methods"].as_array().expect("methods");
-        assert_eq!(met.len(), 29);
+        assert_eq!(met.len(), 30);
         for (i, mm) in met.iter().enumerate() {
             assert_eq!(mm["name"].as_str().unwrap(), nombres[i]);
         }

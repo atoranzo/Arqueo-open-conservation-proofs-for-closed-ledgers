@@ -31,6 +31,11 @@ zk-ssl-verify = { path = "../zk-ssl-verify" }
 # ⚠️ §296: el GUARDIAN del indice, compartido con el testigo. Solo `std`:
 # no arrastra nada, y por eso el cli tambien podra usarlo sin romper §243.
 zk-ssl-guardian = { path = "../zk-ssl-guardian" }
+# ⚠️ **§519 (RFC-0008 E3).** El juez de la prenda vive aqui, y `zkssl_pledge` lo llama
+# ANTES de escribir la marca. El crate YA estaba en el grafo por via de `zk-ssl-verify`,
+# que este fichero declara desde §243: declararlo suma CERO nodos, y el bloque lo MIDE
+# con `cargo tree` antes y despues, comparado entero.
+zk-ssl-air = { path = "../zk-ssl-air" }
 stark-experiment = { path = "../stark-experiment" }
 winterfell = "0.13"
 # ⚠️ **0.1.0-pre.0, SIN auditoría independiente**, declarado por el propio

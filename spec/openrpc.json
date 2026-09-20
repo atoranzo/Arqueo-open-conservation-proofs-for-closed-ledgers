@@ -644,6 +644,46 @@
       "summary": "Lo que el COBRADOR necesita de la FOTO del ultimo latido firmado (RFC-0008 D-F): el camino de su pendiente, los hermanos de su meta y la meta, en el seq s de esa cabeza. Exige la clave de VISTA del receptor y un aviso v2 que recomponga la hoja; si no, available false sin decir que hay. Con receiverId (RFC-0008 D-AE) quien pide es el PAGADOR: trae SU clave de VISTA, nombra al receptor y recibe lo mismo, solo si la meta de esa posicion le nombra."
     },
     {
+      "name": "zkssl_pledge",
+      "params": [
+        {
+          "name": "prueba",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/DATA"
+          }
+        },
+        {
+          "name": "receptor",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        },
+        {
+          "name": "marca",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Digest"
+          }
+        },
+        {
+          "name": "seq",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/PrendaPublicada"
+        }
+      },
+      "summary": "Publica la MARCA de una prenda (RFC-0008 E3) EXIGIENDO su sobre: el nodo compone el enunciado con la raiz de pendientes de SU cabeza firmada y verifica la prueba ANTES de escribir. NO es una puerta del arbol de consumos: la marca sola sigue entrando por `zkssl_publishConsumo`, que no pide nada (D-AT). NO exige credencial: la autorizacion es la prueba. Una marca ya publicada cuyo sobre verifica no es un fallo, y la respuesta lo dice."
+    },
+    {
       "name": "dev_fund",
       "params": [
         {
