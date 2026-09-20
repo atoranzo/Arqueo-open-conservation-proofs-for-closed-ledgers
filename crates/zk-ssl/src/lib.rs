@@ -128,6 +128,10 @@ pub mod prueba_cobro;
 // con el cobro la cabeza y la foto; lo suyo es la APERTURA, que el receptor no tiene
 // entera -la pareja del sobre le llega opaca-.
 pub mod prueba_pago;
+// RFC-0008 E3 (§518): el PRODUCTOR de la prenda, del lado del PRENDADOR. Es el unico
+// de la familia que pide un SECRETO -la clave de gasto-, porque su enunciado es de
+// AUTORIZACION y no de estado; por eso es pieza de CLIENTE y la clave no se guarda.
+pub mod prueba_prenda;
 // RFC-0008 D-F (§492): la foto de los pendientes que toma el latido; el nodo sirve de ella.
 pub mod foto_pendientes;
 // RFC-0007 E4a (§461): el instrumento de la puerta de la prueba de edad. Solo tests.

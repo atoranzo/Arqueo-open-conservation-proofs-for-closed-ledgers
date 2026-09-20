@@ -37857,3 +37857,78 @@ publicados, que pasan de 29 a 30 metodos. Y la cola de la 160 llega a cinco punt
 `cadena` de la FASE 10, el print PRE que `xargs` no supo imprimir, la ceguera de `check_cifras`
 con el gemelo ingles -ahora con dos ocurrencias-, el 1431 que cambio de significado y el coste
 del positivo sin explicar.
+
+## §518 — El prendador produce su media prenda: el productor de E3 en la capa
+
+**Que.** Nace `crates/zk-ssl/src/prueba_prenda.rs`: la funcion LIBRE que produce el sobre de la
+prenda con lo que el prendador tiene de verdad -- su aviso, **su clave de gasto** y el camino que
+el nodo sirve de la foto del ultimo latido--, con NUEVE testigos contra un libro vivo. Es la
+pieza que le faltaba al resumen del autor: hasta hoy un supervisor no podia verificar una prenda
+sin ver el libro, porque nadie podia producirla desde un libro real. Dos ficheros y uno nace; el
+pin de la capa y el canon van al `-B`.
+
+**En que se separa del hermano de E1, y es en una sola cosa.** El productor del cobro es una
+funcion libre que no lee el libro: recompone la hoja del aviso, la sube por el camino servido,
+la compara con las raices de la cabeza FIRMADA y solo entonces prueba; y lo que sale ya viene
+enlazado por la misma regla que corre el tercero. Todo eso se conserva. Lo que cambia es que
+este productor **si necesita un secreto**: el enunciado de la prenda es de AUTORIZACION y no de
+ESTADO (D-AV). Eso no lo mete en el libro: lo pone del lado del CLIENTE, que es donde
+`client::prove_send` ya vive, y la clave entra por argumento, compone la traza y se va con ella.
+Y se va la meta (D-AY): con ella, el `emisor`, el `nacido`, los hermanos de meta y la segunda
+raiz. La foto se queda en un camino, asi que no hay struct de foto: un struct de un campo es
+ruido.
+
+**El receptor no se declara: se DERIVA.** Quien llama no puede decir a nombre de quien prenda,
+porque la identidad es funcion de la clave. Es la misma decision que el testigo del probador tomo
+en el §517 y por el mismo motivo: que el rojo salga donde esta el error y no en el AIR.
+
+**Y esa decision se comio otra que el diseno traia, lo que se dice en vez de callarlo.** El
+`DISENO-518` llevaba una D4: <<la puerta de la clave falla con `LayerError::NotTheAccountHolder`,
+como `client.rs`:352>>. Al montarlo se ve que D1 y D4 son incompatibles: si el receptor se
+DERIVA, no hay dos valores que comparar y la puerta de la clave no existe como comprobacion
+propia. Su proposito -- no gastar el computo de una prueba invalida -- lo cumple igual la puerta
+de la subida, que rehusa ANTES de probar y nombra la clave como una de las tres causas posibles.
+**D4 se retira**, y el testigo que la iba a falsar cambia de nombre:
+`la_clave_de_otro_no_sube_a_la_cabeza`.
+
+**Lo que sale es MEDIA PRENDA, y el doc-comment lo dice con esa frase.** La prenda es el PAR: la
+marca bajo la raiz firmada MAS este sobre (D-AS). Aqui la marca se COMPONE con `marca_prenda` y
+**no se publica**: escribirla en el arbol de consumos es el corte siguiente, y sin ella en el
+arbol este sobre no afirma nada por si solo. Un testigo lo ata por los dos lados: la marca del
+sobre es la nativa de la hoja del aviso, y no es la hoja -- lleva su dominio.
+
+**LA MEDIDA APAREADA, que este corte trae de su lectura pura y cierra medio punto de cola.** El
+`PASTE-518-M` (`94d68a417a6e95ec`, lectura pura, rc 0, `porcelain` y el conjunto de los `.rs`
+identicos antes y despues) corrio los instrumentos de E1 y de E3 **en la misma corrida**, un
+filtro, un proceso y un target caliente. E1: 56.174 B, **0,05-0,06 s** de probar, 1,3-1,5 ms de
+verificar. E3: 54.860 B, **0,16-0,17 s**, 1,3-1,4 ms. Con **menos** columnas (42 contra 44),
+**menos** restricciones (106 contra 110) y una prueba **mas ligera**, la prenda cuesta **2,9
+veces** lo que el cobro. La leccion `f` de la 159 -- <<lo que cuesta no son las filas, son las
+restricciones>> -- queda FALSADA tal como esta escrita y se enmienda con este contraejemplo al
+lado. La causa NO esta medida y no se escribe como si lo estuviera: sobreviven tres candidatos
+-- las aserciones caen en TRES filas en E3 y en DOS en E1; la bandera del carril B se enciende en
+CATORCE filas en E3 y en unas 263 en E1; y lo que el contexto del AIR derive de los grados--, y
+la sonda siguiente es un print de eso ultimo, que se escribe abriendo winterfell y no de memoria.
+
+**Y una cifra mia que la medida tumba.** La prediccion corregida del `DISENO-517` -- <<127-137
+ms, el orden de E1>> -- se anclo en una cifra de la 159 que hoy no reproduce: el mismo
+instrumento da 50-60 ms, y el codigo de E1 no se ha movido (`cobro_pendiente.rs`
+`2aa29996002044a4` y `circuit_cobro_pendiente.rs` `4a1a0d0b866883a4`, los mismos que la tabla de
+anclas del TRASPASO-160 ancla sobre `21f49cd`). Y la 159 anoto ademas <<el juez 66-77 ms>> donde
+hoy se miden 1,3-1,5: un factor de CINCUENTA que ningun cambio de codigo explica. La conclusion
+es la del caso 140, con sujeto nuevo: **no consta que aquellas cifras salieran de este
+instrumento**, y una prediccion anclada en una cifra de otra corrida es una prediccion sobre
+arena.
+
+**Contadores.** TRES ficheros y UNO nace: `prueba_prenda.rs` +317 -0, la linea de `lib.rs`
+que lo declara +4 -0, y `AUDITORIA.md` +75 -0 (el asiento, 74 lineas tras 1 separador):
+37.859 -> 37.934. Las TRES sha POST fueron PREDICHAS y exigidas byte a byte antes de tocar el
+arbol. El AIR del §516 (`ec3d13381614785e`) y el probador del §517 (`1ce66886cc0844ec`) van de
+CENTINELA y no se mueven: este corte los USA. El pin de la capa NO se mueve aqui.
+
+**Lo que NO cierra.** El `-B` con el pin, las cifras y el canon. Del montaje de E3 quedan la
+puerta que verifica antes de escribir en el arbol de consumos -- la otra mitad del par--,
+`zkssl_pledge` con sus tres productores de cable, el octavo brazo `tipo: "prenda"` del mando, la
+forma 2.10 de `PAQUETE.md` y los cardinales publicados, que pasan de 29 a 30 metodos. Y la cola
+de la 160 se queda en cinco puntos, con el 5.A-351 cambiado de estado: ya no es <<observado sin
+comparacion valida>> sino MEDIDO, con la causa abierta y su sonda siguiente nombrada.
