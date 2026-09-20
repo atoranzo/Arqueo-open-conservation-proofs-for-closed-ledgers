@@ -38130,3 +38130,66 @@ cardinal de <<las nueve formas>>. Sigue vivo el 5.A-319, el offset sin dueno del
 <<declaradas>>. Y sigue pendiente el falsador de la deduccion de D-BB, que vive del lado del
 productor.
 
+
+## §520 — El octavo brazo del mando: `tipo: "prenda"`, la mitad que se juzga sin nodo
+
+**Que.** El kit lee un octavo sobre. Un tercero con `zk-ssl-verify` y un fichero comprueba que
+bajo la `pendingRoot` de una cabeza v5 firmada hay un pendiente que solo puede cobrar quien tiene
+la clave de `receptor`, y que la marca de esa hoja es la que el sobre dice -- sin nodo, sin libro
+y sin el probador. Es la mitad de la prenda que VIAJA; la otra la escribe `zkssl_pledge` (§519) y
+se pide con `zkssl_consumoPath`. Es tambien el unico brazo de la familia cuyo enunciado es de
+AUTORIZACION y no de estado: el cobro y el pago los produce cualquiera que tenga la apertura, y
+este solo quien tiene la clave (D-AV).
+
+**Y lo que el VERDE dice que NO dice.** El juez declara en su propia doc que el no comprueba que
+la marca este bajo el `consRoot`, porque <<es la puerta de quien escribe en el, no la del juez>>.
+Este binario no tiene arbol que mirar, asi que un VERDE aqui es MEDIA prenda, y el mando lo
+IMPRIME en su veredicto en vez de dejarlo en la spec. El par es la marca bajo la raiz firmada MAS
+el sobre (D-AS): decirlo a medias seria vender mas de lo que se demuestra.
+
+**D-BF, delegada con la vara y REVERSIBLE: v5, y con SU razon.** Medido: `cabeza_v3_verificada`
+admite v3, v4 y v5, y `pendingRoot` entra en el digest de las tres, asi que la prenda PODRIA
+aceptarlas. Los otros tres brazos de la familia exigen v5 diciendo <<la unica que firma
+pmetaRoot>>, y la prenda no lleva la meta (D-AY), asi que copiar esa razon publicaria algo falso.
+Tres caminos: admitir las tres eras, que es lo que el enunciado estrictamente necesita; exigir v5
+con el texto del hermano; exigir v5 con razon propia. Cae el primero porque el nodo sirve v5
+desde el §452 y `zkssl_pledge` juzga contra la cabeza que custodia, asi que v3 y v4 son eras que
+NINGUN productor de prenda puede emitir, y lo que no tiene testigo que lo falsee no se construye.
+Cae el segundo por imagen fiel. Gana el tercero, y un testigo gatea que el texto NO diga
+`pmetaRoot`. Reversible el dia que un productor emita contra otra era.
+
+**El grafo no crece, y esta vez ni un Cargo se abre.** `zk-ssl-verify` declara `zk-ssl-air` desde
+el §465 y `prenda` es `pub mod` desde el §516; el modulo arrastra `winter-air`, `winter-crypto`,
+`winter-math`, `winter-verifier` y `zk-ssl-hash`, y NO `winter-prover`. Cero dependencias, cero
+`Cargo.toml` y cero `Cargo.lock` -- que es justo lo que costo dos vueltas en el §519. Los dos
+tests del lib que gatean la clausura siguen verdes sin tocarse, y son la prueba independiente.
+
+**Una deuda del §506 que este corte paga, y se dice por que.** La §6 de `spec/PAQUETE.md` listaba
+SIETE veredictos VERDE y decia <<uno de estos siete>>: faltaba el del pago en curso, que el §506
+no anadio, y su linea de formas `1/3` tampoco lo nombraba. Este corte MUEVE ese cardinal, y no se
+puede escribir <<ocho>> sabiendo que son nueve: un adjetivo numeral es una cifra (PRECISION 209).
+Entran los dos que faltan, la lista de formas gana los dos, y el cardinal va a NUEVE. Lo que NO
+se paga aqui es la estrofa del pago en el catalogo de rechazos de la §5: su ausencia no publica
+ninguna cifra falsa, y va a la cola como 5.A-357. La frontera no es <<esta mal>>, es <<lo movio
+este corte>>.
+
+**La puerta de la §6, y es barata.** Los NUEVE bullets no se teclean: el editor los DERIVA de los
+literales `println!("VERDE: ...")` del `main.rs` ya editado, en su orden, y exige que los SIETE
+que ya estaban salgan identicos. El literal del `tipo desconocido` de la §5 se COPIA del codigo
+por la misma razon. Un rotulo tecleado es como llego a faltar el del pago.
+
+**Contadores.** DOS ficheros y ninguno nace, mas el asiento: `crates/zk-ssl-verify/src/main.rs`
++115 -2 (el brazo, el despacho, el literal y los cuatro testigos),
+`spec/PAQUETE.md` +56 -6 (la forma 2.10, los dos cardinales de la §2, el
+literal de la §5, la estrofa de la prenda y la §6) y `AUDITORIA.md` +63 -0 (este
+asiento, sin cabecera propia): 38.132 -> 38.195. Las TRES sha POST fueron PREDICHAS y
+exigidas byte a byte antes de tocar el arbol, y el numstat lo da GIT y no difflib (PRECISION
+489). El canon NO corre aqui: la puerta son el crate en release sin warnings NUEVOS sobre su
+BASE, la lista de tests IDENTICA nombre a nombre mas los cuatro, dos falsadores por mutacion y
+las diez herramientas por delta -- `check_tests` es la unica que se mueve, y es la que el `-B`
+paga. El pin del verificador 116 -> 120 y las cifras publicadas viajan alli.
+
+**Lo que NO cierra.** De E3 queda la BOCA del cli (`prueba-prenda`, con D-BC, D-BD y D-BE ya
+delegadas), y detras el banco y el catalogo `spec/vectors/prenda/`, que es la octava familia y
+cuyos positivos salen de las capturas de un nodo vivo. Nace el 5.A-357. Sigue pendiente el
+falsador de la deduccion de D-BB, que vive del lado del productor.

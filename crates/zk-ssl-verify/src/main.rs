@@ -167,12 +167,14 @@ fn correr(ruta: &str) -> Result<(), String> {
         Some("cobro_pendiente") => return verificar_cobro_pendiente(&p),
         // RFC-0008 E2 (S506): el pago en curso contra una cabeza v5, la otra mitad.
         Some("pago_en_curso") => return verificar_pago_en_curso(&p),
+        // RFC-0008 E3 (S520): la prenda, la unica de la familia que prueba AUTORIZACION.
+        Some("prenda") => return verificar_prenda(&p),
         Some(otro) => {
             return Err(err(format!(
                 "tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), \
                  `tipo: \"extension\"`, `tipo: \"consumo\"`, `tipo: \"conflicto\"`, \
-                 `tipo: \"rechazo\"`, `tipo: \"edad\"`, `tipo: \"cobro_pendiente\"` o \
-                 `tipo: \"pago_en_curso\"`"
+                 `tipo: \"rechazo\"`, `tipo: \"edad\"`, `tipo: \"cobro_pendiente\"`, \
+                 `tipo: \"pago_en_curso\"` o `tipo: \"prenda\"`"
             )))
         }
     }
@@ -1373,6 +1375,64 @@ fn verificar_pago_en_curso(p: &serde_json::Value) -> Result<(), String> {
     Ok(())
 }
 
+use zk_ssl_air::prenda::{
+    verificar_contra_cabeza as enlazar_prenda, AfirmacionPrenda, CabezaPrenda,
+};
+
+/// **RFC-0008 E3 (S520): la PRENDA.** La mitad que un tercero juzga sin nodo y sin libro, y la
+/// unica de la familia cuyo enunciado es de AUTORIZACION y no de estado: el cobro y el pago los
+/// produce cualquiera que tenga la apertura; esta, solo quien tiene la clave (D-AV). Es tambien
+/// el enunciado mas corto -- `{receptor, marca}`, dos campos donde el cobro lleva tres y el pago
+/// cuatro -- porque la prenda NO lleva la meta (D-AY): su cabeza aporta UNA raiz y no hay
+/// `nacido` que comparar contra el `seq`. El juez es `zk_ssl_air::prenda` (S516), el MISMO con el
+/// que la capa re-verifica lo que produce (S518) y con el que `zkssl_pledge` juzga antes de
+/// escribir (S519), y el kit lo compila SIN el probador.
+///
+/// La cabeza se exige **v5** (D-BF) y el texto dice SU razon: no la de los hermanos -- «la unica
+/// que firma pmetaRoot» --, que aqui seria falsa, sino que es la que el nodo sirve desde el S452
+/// y contra la que `zkssl_pledge` juzga.
+///
+/// Lo que este brazo NO dice, y va impreso donde se lee: que la `marca` este publicada en el
+/// arbol de consumos. El juez lo declara en su propia doc -- «es la puerta de quien escribe en
+/// el, no la del juez» -- y este binario no tiene arbol que mirar. Un VERDE aqui es MEDIA prenda:
+/// el par es la marca bajo la raiz firmada MAS este sobre (D-AS).
+fn verificar_prenda(p: &serde_json::Value) -> Result<(), String> {
+    let e = p.get("enunciado").ok_or_else(|| err("falta enunciado".into()))?;
+    let receptor = digest_de(e, "receptor")?;
+    let marca = digest_de(e, "marca")?;
+    // `Digest` es `[BaseElement; 4]` y no se imprime solo. El hex que se ensena es el que YA
+    // paso por `digest_de`, no una segunda lectura sin puerta.
+    let marca_hex = e.get("marca").and_then(|x| x.as_str()).unwrap_or_default();
+    let prueba = hex_a_bytes(
+        p.get("prueba")
+            .and_then(|x| x.as_str())
+            .ok_or_else(|| err("falta prueba o no es cadena 0x".into()))?,
+    )?;
+    let c = p.get("cabeza").ok_or_else(|| err("falta cabeza".into()))?;
+    let version = u64_de(c, "formatVersion")?;
+    if !matches!(VersionCabeza::try_from(version), Ok(VersionCabeza::V5)) {
+        return Err(err(format!(
+            "formatVersion {version}: la prenda exige una cabeza v5 - no por la meta, que no \
+             lleva (D-AY), sino porque es la que el nodo sirve y contra la que juzga \
+             zkssl_pledge"
+        )));
+    }
+    let _ = cabeza_v3_verificada(c, "cabeza")?;
+    let seq = u64_de(c, "seq")?;
+    println!("1/3 la cabeza v5 recompone su digest y su firma verifica (seq {seq})");
+    let cabeza = CabezaPrenda { pending_root: digest_de(c, "pendingRoot")? };
+    let af = AfirmacionPrenda { receptor, marca };
+    enlazar_prenda(&prueba, &af, &cabeza).map_err(|e| err(format!("prenda: {e}")))?;
+    println!("2/3 el enunciado toma la raiz de pendientes y la marca; ni importe, ni sal, ni");
+    println!("    nacido: la prenda no lleva la meta");
+    println!("3/3 la prueba verifica contra ese enunciado con las opciones de la casa");
+    println!("VERDE: bajo la cabeza de seq {seq} hay un pendiente que solo puede cobrar quien");
+    println!("       tiene la clave del receptor, y su marca es {marca_hex}. Es MEDIA prenda:");
+    println!("       esto NO dice que la marca este publicada, que es del arbol de consumos y");
+    println!("       se pide con zkssl_consumoPath (RFC-0008 D-AS)");
+    Ok(())
+}
+
 /// Los siete parametros de `zkssl_params` contra el `paramsDigest` de una cabeza **v5** (RFC-0007
 /// D-B): si recomponen, lo que dicen es lo comprometido. Devuelve los tres que las causas citan:
 /// el limite regulatorio, el tope de cuentas y el tope de suministro (§460).
@@ -1803,6 +1863,59 @@ mod tests {
         assert!(otro.starts_with("tipo desconocido: otra"), "{otro}");
         for t in ["extension", "consumo", "conflicto", "rechazo", "edad", "cobro_pendiente",
                   "pago_en_curso"] {
+            assert!(otro.contains(&format!("`tipo: \"{t}\"`")), "no nombra {t}: {otro}");
+        }
+    }
+    // RFC-0008 E3 (S520). Como en el pago: lo alcanzable sin una cabeza firmada es la FORMA del
+    // sobre y la VERSION de la cabeza. El enlace tiene sus testigos con pruebas REALES en
+    // `stark-experiment` (S517) y en la capa (S518), que es donde vive el productor.
+
+    /// Sin `enunciado` no hay afirmacion que juzgar, y se dice con su nombre.
+    #[test]
+    fn un_sobre_de_prenda_sin_enunciado_se_nombra() {
+        let p = json!({ "v": 1, "tipo": "prenda" });
+        assert_eq!(verificar_prenda(&p), Err("falta enunciado".into()));
+    }
+
+    /// Sin `prueba` no hay nada que enlazar, y se dice antes de mirar la cabeza. El enunciado de
+    /// la prenda es el mas corto de la familia: `receptor` y `marca`, y nada mas.
+    #[test]
+    fn un_sobre_de_prenda_sin_prueba_se_nombra() {
+        let en = json!({ "receptor": DIG, "marca": DIG });
+        let p = json!({ "v": 1, "tipo": "prenda", "enunciado": en });
+        assert_eq!(verificar_prenda(&p), Err("falta prueba o no es cadena 0x".into()));
+    }
+
+    /// Una cabeza que no es v5 se rechaza por su VERSION, antes de tocar la firma -- y el texto
+    /// NO puede decir «la unica que firma pmetaRoot», que es la razon de los hermanos y en la
+    /// prenda seria falsa (D-AY, D-BF). El segundo aserto es el que lo gatea.
+    #[test]
+    fn una_prenda_con_cabeza_que_no_es_v5_se_rechaza_con_su_razon() {
+        let p = json!({
+            "v": 1, "tipo": "prenda",
+            "enunciado": { "receptor": DIG, "marca": DIG },
+            "prueba": "0x00",
+            "cabeza": { "available": true, "formatVersion": "0x4" }
+        });
+        let e = verificar_prenda(&p).unwrap_err();
+        assert!(e.contains("formatVersion 4: la prenda exige una cabeza v5"), "{e}");
+        assert!(!e.contains("pmetaRoot"), "la razon de los hermanos no vale aqui: {e}");
+    }
+
+    /// El `tipo` se despacha por el mando: `prenda` llega a su brazo, y el desconocido nombra ya
+    /// los OCHO -- esta es la parte que el S520 ENSANCHA del testigo del S506.
+    #[test]
+    fn el_mando_despacha_la_prenda_y_nombra_los_ocho() {
+        let ruta = std::env::temp_dir().join("zk-ssl-verify-s520-tipo.json");
+        std::fs::write(&ruta, json!({ "v": 1, "tipo": "prenda" }).to_string()).unwrap();
+        let brazo = correr(ruta.to_str().unwrap()).unwrap_err();
+        std::fs::write(&ruta, json!({ "v": 1, "tipo": "otra" }).to_string()).unwrap();
+        let otro = correr(ruta.to_str().unwrap()).unwrap_err();
+        let _ = std::fs::remove_file(&ruta);
+        assert_eq!(brazo, "falta enunciado");
+        assert!(otro.starts_with("tipo desconocido: otra"), "{otro}");
+        for t in ["extension", "consumo", "conflicto", "rechazo", "edad", "cobro_pendiente",
+                  "pago_en_curso", "prenda"] {
             assert!(otro.contains(&format!("`tipo: \"{t}\"`")), "no nombra {t}: {otro}");
         }
     }

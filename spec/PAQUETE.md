@@ -32,9 +32,9 @@ cuántos hacen falta lo decide el CLIENTE** con su política (§319, los mandos 
 del testigo), no el paquete: quien lo arma puede ser el operador, y dejarle elegir su propia `k`
 le devolvería justo lo que la cofirma le quita.
 
-## 2. Las nueve formas
+## 2. Las diez formas
 
-El binario acepta nueve objetos. Los nueve son JSON; los esqueletos van con puntos
+El binario acepta diez objetos. Los diez son JSON; los esqueletos van con puntos
 suspensivos
 donde el valor es una respuesta del cable sin reescribir.
 
@@ -302,6 +302,42 @@ donde el valor es una respuesta del cable sin reescribir.
   reunir la foto. Lo que dice si un nodo sabe de qué habla es su `spec/openrpc.json`, no la
   versión del protocolo, que no sube.
 
+### 2.10 El paquete de prenda (§520)
+
+```text
+{ "v": 1, "tipo": "prenda", "cabeza": {…},
+  "enunciado": {"receptor": "0x…", "marca": "0x…"},
+  "prueba": "0x…" }
+```
+
+- **Prueba que bajo la `pendingRoot` de una cabeza v5 hay un pendiente que sólo puede cobrar
+  quien tiene la clave de `receptor`, y que la marca de esa hoja es `marca`** (RFC-0008 D-AV,
+  D-AW): dentro del circuito se recompone la hoja v2 con
+  `receptor = derive_public_id_wide(clave)`, se sube por el camino hasta la raíz, y se prueba que
+  `marca = H(DOMINIO_PRENDA, C2)` con `C2` de testigo. Publicar `C2` haría enlazables todos los
+  sobres de una misma hoja; por eso viaja la marca, que es lo que el árbol de consumos lleva.
+- **De AUTORIZACIÓN, no de estado**, y es lo que la separa del 2.8 y del 2.9: aquéllos los
+  produce cualquiera que tenga la apertura, y ésta sólo quien tiene la clave (D-AV). La clave no
+  viaja ni aparece en el sobre: entra en la traza y se va con ella.
+- **No lleva la meta** (D-AY): su cabeza aporta UNA raíz, `pendingRoot`, y el enunciado no dice
+  `nacido` ni `importe`. Por eso el juez no compara nada contra el `seq`, y por eso el ancho del
+  AIR baja de 44 a 42.
+- **La cabeza se exige v5** (D-BF), y el texto del rechazo dice SU razón y no la de sus hermanos:
+  no «la única que firma pmetaRoot» —que aquí sería falsa—, sino que es la que el nodo sirve
+  desde el §452 y contra la que `zkssl_pledge` juzga. `cabeza_v3_verificada` admitiría v3 y v4,
+  pero ningún productor de prenda puede emitir contra ellas.
+- ⚠️ **Un VERDE aquí es MEDIA prenda.** El juez NO comprueba que `marca` esté bajo el `consRoot`
+  de esa misma cabeza —lo declara en su propia doc, «es la puerta de quien escribe en él»— y este
+  binario no tiene árbol que mirar. El PAR es la marca bajo la raíz firmada MÁS este sobre
+  (D-AS); la otra mitad se pide con `zkssl_consumoPath`, y quien la escribe EXIGIENDO el sobre es
+  `zkssl_pledge` (§519). El mando lo imprime en su veredicto, no sólo aquí.
+- **Lo que NO prueba:** nada sobre el importe, la sal, `X` ni `C2` —son testigo—, nada sobre si el
+  pendiente sigue vivo, y nada sobre otra cabeza que la que firma esa raíz. El juez es
+  `zk_ssl_air::prenda::verificar_contra_cabeza` (§516), el MISMO con el que la capa re-verifica lo
+  que produce (§518), y el kit lo compila **sin el probador**. Quien lo produce es
+  `prueba_de_prenda` (§518), con el aviso, la clave y el camino que el nodo sirve del último
+  latido.
+
 ## 3. El sobre — lo que el binario lee
 
 El binario lee **31 nombres** distintos del JSON. Los 14 primeros son el sobre propiamente dicho;
@@ -420,7 +456,7 @@ partidos en el fuente) y cada texto tiene que estar aquí.
 - `el paquete no declara su version en `v``
 - `el paquete declara v:{v_paquete} — este binario lee v1 y v2`
 - `un paquete v1 con `cofirmas`: subir la version es lo que las hace parte del contrato — declaralo v2, o quitalas`
-- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"`, `tipo: "conflicto"`, `tipo: "rechazo"`, `tipo: "edad"`, `tipo: "cobro_pendiente"` o `tipo: "pago_en_curso"``
+- `tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"`, `tipo: "conflicto"`, `tipo: "rechazo"`, `tipo: "edad"`, `tipo: "cobro_pendiente"`, `tipo: "pago_en_curso"` o `tipo: "prenda"``
 
 **Forma de los valores** (`hex_a_bytes`, `digest_de`, `u64_de`; `{campo}` es la clave que se leía)
 
@@ -562,15 +598,27 @@ firma y la familia de v5— salen de los **mismos productores** de arriba, y `fa
   - los del enunciado: `las cotas {l} y {u} pasan del techo {MAX_VALOR}` · `banda vacia: inferior {l} sobre superior {u}`
   - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` · `{e:?}`, el error de `winter-verifier`
 
+**La prenda** (§520; `{e}` sale de `zk_ssl_air::prenda`)
+
+- `formatVersion {version}: la prenda exige una cabeza v5 - no por la meta, que no lleva (D-AY), sino porque es la que el nodo sirve y contra la que juzga zkssl_pledge`
+- `prenda: {e}`, con `{e}` uno de estos:
+  - `la prueba no se deserializa: {e:?}` · `forma de traza {forma:?}; el enunciado pide {:?}` ·
+    `{e:?}`, el error de `winter-verifier`
+
+`falta enunciado`, `falta prueba o no es cadena 0x` y `falta cabeza` son los de la edad, letra
+por letra. **No hay rechazo por marca no publicada**: este brazo no lo comprueba, y el VERDE lo
+dice (D-AS).
+
 ## 6. El contrato del mando
 
 - **Invocación:** `zk-ssl-verify <paquete.json>` — **un** argumento, la ruta del fichero. Es la
   única lectura de disco del binario; no hay red, ni reloj, ni telemetría (§395 lo gatea).
 - **Salida estándar:** las líneas numeradas de su forma —`1/3` · `2/3` · `3/3` en los paquetes
   de posición (o `3/3 sin acuse en el paquete: la cabeza sola queda demostrada`), de extensión,
-  de rechazo, de edad y de cobro pendiente; `1/5` a `5/5` en el de consumo; `1/4` a `4/4` en el de conflicto—, la
-  de cofirmas cuando el sobre es v2, y al final el VERDE de su forma, uno de estos siete;
-  los cuatro últimos siguen en una segunda línea, y el del cobro además en una tercera:
+  de rechazo, de edad, de cobro pendiente, de pago en curso y de prenda; `1/5` a `5/5` en el
+  de consumo; `1/4` a `4/4` en el de conflicto—, la de cofirmas cuando el sobre es v2, y al
+  final el VERDE de su forma, uno de estos nueve; los seis últimos siguen en una segunda
+  línea, el del cobro llega a una tercera, y los del pago y la prenda a una cuarta:
   - `VERDE: el paquete se sostiene sin el nodo`
   - `VERDE: la extension se sostiene sin el nodo`
   - `VERDE: el consumo se publico entre las dos cabezas, sin el nodo`
@@ -578,6 +626,8 @@ firma y la familia de v5— salen de los **mismos productores** de arriba, y `fa
   - `VERDE: {causa} se sostiene sobre el estado comprometido. Dice que la regla se`
   - `VERDE: bajo la cabeza de seq {seq}, a lo sumo {k} posiciones vivas {quien}`
   - `VERDE: bajo la cabeza de seq {seq} hay un pendiente a nombre del receptor,`
+  - `VERDE: bajo la cabeza de seq {seq} hay un pendiente a nombre del receptor por`
+  - `VERDE: bajo la cabeza de seq {seq} hay un pendiente que solo puede cobrar quien`
 - **Salida de error:** `ROJO: {motivo}` con un texto del catálogo de la sección 5, y para.
 - **Tres códigos de salida:** `0` verde · `1` el primer fallo con nombre · `2` uso (ningún
   argumento, o más de uno; imprime el uso en la salida de error).
