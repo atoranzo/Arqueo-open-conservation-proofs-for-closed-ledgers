@@ -37801,3 +37801,59 @@ mando, la forma 2.10 de `PAQUETE.md` y los cardinales publicados, que pasan de 2
 Siguen abiertos los cuatro puntos que la 160 abrio: la etiqueta `cadena` de la FASE 10, el print
 PRE que `xargs` no supo imprimir, la ceguera de `check_cifras` con el gemelo ingles y el 1431
 que acaba de cambiar de significado.
+
+**El `-B`, que es lo que el §517 dejo sin pagar.** El pin de los circuitos va **379 -> 390** y
+sus ignorados **12 -> 13** en `tools/canon.sh` con su entrada de historia, las cifras publicadas
+se mueven donde el pin manda, y el canon `--sello` corre. Ni un `.rs`, ni un vector, ni un
+Cargo.
+
+**LO QUE EL POSITIVO MIDIO, y es la razon de ser de este `-B`.** El instrumento corrio DENTRO
+del BLOQUE-517, tres veces y en release, sobre este mismo arbol. El AIR se declara a si mismo:
+**42 columnas por 512 filas, 106 restricciones, 20 aserciones y la raiz en la fila 279** -- los
+numeros que el diseno derivo de su tabla, dichos ahora por el codigo que corre. Y la prueba:
+**54.860 B**, **0,16 s** de probar y **1,4 ms** de verificar, identicos en las tres corridas.
+
+**LAS DOS PREDICCIONES FALLARON, y la medida cae entre ellas.** La D-AX predijo <<del orden de
+los 213-218 ms de E2>> suponiendo unas 120 restricciones; el diseno del §516 la corrigio a
+<<127-137 ms, el orden de E1>> al medir 106. Salieron **0,16 s**. Ninguna de las dos acerto, y
+la corregida quedo mas cerca. Se dice tal cual: una prediccion que falla y se calla es peor que
+no haberla escrito.
+
+**Y deja un CONTRAEJEMPLO que no se tapa.** La prenda tiene MENOS restricciones que E1 -106
+contra 110- y su prueba pesa MENOS -54.860 B contra la cota de 65.313- y aun asi tarda MAS que
+sus 127-137 ms. La leccion `f` de la 159 -- <<lo que cuesta no son las filas, son las
+restricciones>> -- no explica esto, y pasa a OBSERVADO con este caso al lado. El peso, en
+cambio, si sigue a algo medible: los 54.860 B caen dentro de los CINCO pesos medidos de E2
+(54.507 a 56.746 B). La causa no esta medida y no se escribe como si lo estuviera; su falsador
+es barato y se nombra en la cola: medir E1 y E3 APAREADOS en la misma corrida.
+
+**El perimetro lo decidio el GATE, y salio mas ancho que el del `-B` anterior.** Se subio el pin
+en una copia y `tools/check_cifras.py` nombro SIETE rancias; el censo estrecho sobre los `.md`
+anadio las que el gate no ve. Son **TRECE cifras en CINCO documentos**: el total de sello
+**1280 -> 1291** y la suma larga **1417 -> 1428** en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`;
+el desglose **379 de circuitos -> 390** de `PRINCIPIOS.md`; y la orden publicada
+`stark-experiment --release # 379 tests` en `PAPER.md`, `PAPER_EN.md` y los DOS institucionales,
+que en los dos primeros lleva ademas su cuenta de ignorados **12 -> 13**. Los dos
+institucionales no aparecieron en el `-B` del §516 porque aquel movia el pin de `zk-ssl-air`,
+que nadie publica.
+
+**El gemelo ingles vuelve a quedar fuera del gate, y con esto son DOS.** Las dos sumas de
+`PAPER_EN.md` dicen <<1280 executable tests>> y <<1417 counting>>, con una palabra entre la cifra
+y `tests`, asi que la regla de TOTALES no las casa; sus ordenes publicadas si las ve, porque ahi
+el numero va pegado. Un hallazgo con una sola ocurrencia es una anecdota; con dos es un patron,
+y el punto de cola que nacio en el `-B` del §516 se queda con esta segunda al lado.
+
+**Contadores.** SIETE ficheros y ninguno nace: `tools/canon.sh` +1 -1, `PAPER.md` +3 -3,
+`PAPER_EN.md` +3 -3, `PRINCIPIOS.md` +2 -2, `doc/INSTITUCIONAL.md` +1 -1,
+`doc/INSTITUTIONAL.md` +1 -1 y `AUDITORIA.md` +56 -0, que recibe estos parrafos SIN cabecera
+propia: 37.803 -> 37.859. Las SEIS sha POST fueron PREDICHAS y exigidas byte a byte antes de
+tocar el arbol. El canon `--sello` corrio VERDE con los circuitos en **390(390) 13(13)** en su
+fila, y con el el punto 36 llega a **90 medidas**.
+
+**Lo que NO cierra.** Del montaje de E3 quedan el productor en la capa, la puerta que verifica
+antes de escribir en el arbol de consumos, `zkssl_pledge` con sus tres productores de cable, el
+octavo brazo `tipo: "prenda"` del mando, la forma 2.10 de `PAQUETE.md` y los cardinales
+publicados, que pasan de 29 a 30 metodos. Y la cola de la 160 llega a cinco puntos: la etiqueta
+`cadena` de la FASE 10, el print PRE que `xargs` no supo imprimir, la ceguera de `check_cifras`
+con el gemelo ingles -ahora con dos ocurrencias-, el 1431 que cambio de significado y el coste
+del positivo sin explicar.
