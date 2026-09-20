@@ -38189,6 +38189,40 @@ BASE, la lista de tests IDENTICA nombre a nombre mas los cuatro, dos falsadores 
 las diez herramientas por delta -- `check_tests` es la unica que se mueve, y es la que el `-B`
 paga. El pin del verificador 116 -> 120 y las cifras publicadas viajan alli.
 
+**El pin, y las SIETE cifras con el perimetro DERIVADO.** `canon.sh` sube la fila del
+verificador 116 -> 120 y su linea de registro gana el §520. `check_cifras` corrido sobre una
+COPIA con la fila ya subida nombra CUATRO -- `PAPER.md`:36, `PAPER_EN.md`:33,
+`PRINCIPIOS.md`:354 y el desglose <<116 del verificador independiente>> --, y el censo estrecho
+anade las TRES sumas <<contando los pines>> que ese gate no ve: `PAPER.md`:37, `PAPER_EN.md`:34 y
+`PRINCIPIOS.md`:357, las tres 1444 -> 1448. Siete cifras en TRES documentos, todas por VALOR
+dentro de su parrafo. Ninguna cambia de anchura, asi que no se re-fluye una sola linea y el
+editor lo ASERTA: los tres `.md` salen con los MISMOS bytes de largo que entraron.
+
+**El gate nombra CUATRO donde antes habria nombrado TRES**, y es el primer uso real del arreglo
+del §519-B: `PAPER_EN.md`:33 entra porque el patron dejo de exigir la cifra PEGADA a <<tests>>
+(5.A-350). Una compuerta arreglada en una sesion se cobra en la siguiente.
+
+**Dos homonimos, y por eso ningun reemplazo es global.** El censo los enseno antes de tocar nada:
+`1444` sale tambien en `spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md`:616, donde es el
+numero de LINEAS de la salida de un PASTE y no una suma; y de las OCHO apariciones de `116` en
+los `.md`, SIETE son de otra cosa -- el asiento §116 en `spec/RPC.md`, en
+`doc/CONFIANZA_RESIDUAL.md` y cuatro veces en `BACKLOG.md`, y `migration.rs:116`, que es un
+numero de linea. La cifra es UNA. Un patron sin ambito cuenta homonimos, y aqui habria roto un
+RFC.
+
+**Lo que sigue rancio A PROPOSITO.** Las <<1364 declaradas>> de `PAPER.md`:38 y
+`PRINCIPIOS.md`:358, las <<1349 declared>> de `PAPER_EN.md`:34 y las <<18 ignoradas>>: salen de un
+instrumento cuyo offset no tiene dueno (5.A-319) y `check_tests` deriva hoy 1470. No se tocan a
+ciegas en un corte que no es el suyo, y el patron arreglado sigue sin verlas.
+
+**Contadores del `-B`.** CUATRO ficheros y ninguno nace: `tools/canon.sh` +1
+-1 (la fila y su registro, en la misma linea), `PAPER.md` +2
+-2, `PAPER_EN.md` +2 -2 y `PRINCIPIOS.md`
++3 -3, mas `AUDITORIA.md` +34 -0 (estos parrafos, sin cabecera
+propia): 38.195 -> 38.229. Las CINCO sha POST fueron PREDICHAS y exigidas byte a byte,
+con el tiempo del canon dentro como TOKEN, que es lo unico que no se puede predecir
+(PRECISION 462). Canon `--sello` VERDE en 206 s, con el verificador en 120(120).
+
 **Lo que NO cierra.** De E3 queda la BOCA del cli (`prueba-prenda`, con D-BC, D-BD y D-BE ya
 delegadas), y detras el banco y el catalogo `spec/vectors/prenda/`, que es la octava familia y
 cuyos positivos salen de las capturas de un nodo vivo. Nace el 5.A-357. Sigue pendiente el
