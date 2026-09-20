@@ -37740,3 +37740,64 @@ la primera prueba REAL; y detras, el productor en la capa, la puerta del arbol d
 tres puntos nuevos: la etiqueta `cadena` de la FASE 10 (5.A-347, que este bloque tampoco
 arregla), el print PRE que `xargs` no supo imprimir y la ceguera de `check_cifras` con el gemelo
 ingles.
+
+## §517 — El probador de la prenda: la primera prueba REAL, y la deduccion que muere aqui
+
+**Que.** Nace `crates/stark-experiment/src/circuit_prenda.rs`: la traza y el `Prover` de la
+prenda (RFC-0008, E3), con ONCE testigos que pasan y un instrumento ignorado. Es el reparto del
+§463 -- el AIR en `zk-ssl-air`, que el kit compila; el probador aqui, que el kit no compila-, y
+es la primera vez que el AIR del §516 se cruza con una traza en vez de consigo mismo. Dos
+ficheros y uno nace; el pin de los circuitos y el canon van al `-B`.
+
+**La puerta de la D-AV, que era una deduccion y ya no lo es.** El diseno del §516 dedujo que el
+ciclo de la clave computa `derive_public_id_wide` -capacidad a cero, rate
+`[SPEND_KEY_DOMAIN, 0, 0, 0 | clave]`- y no lo calco de `circuit_claim_v2`, cuya siembra escribe
+solo dos tramos de su estado. Lo que cierra la deduccion se leyo en `merkle.rs`:102 --
+`native_merge` no es una copia en este crate, es un `pub use` del de `zk-ssl-hash` desde el §254,
+y es el que `derive_public_id_wide` compone--. El testigo lo convierte en medida y por los DOS
+lados: la traza toma el dominio de `zk-ssl-hash` y el testigo recompone la identidad con el de
+`crate::native`. A las dos declaraciones las ata hoy la regla R2 de `check_dominios`; desde este
+corte las ata ademas su VALOR compuesto, que es un atado mas fuerte que un gate de texto.
+
+**Lo que el testigo del positivo cruza, y son cuatro puntos y no uno.** La fila 7 del carril B
+es la identidad nativa; la fila 0 la lleva en `COL_RECEPTOR`; la fila 23 del carril A es la hoja
+v2 compuesta en nativo; y la fila 31 del B es su `marca_prenda`. Con eso, las tres piezas que el
+§516 escribio -- el ciclo de la clave, el ciclo de la marca y el enlace entre ambos -- quedan
+ancladas a funciones que la casa ya usaba.
+
+**El negativo que sostiene <<no hay dos `C2`>>.** Se hashea la marca desde OTRO `C2` dejando el
+arbol intacto y declarando la marca que esa traza alcanza: no verifica, porque `C_MARCA_IN` lee
+el digest del carril A **en la misma fila** en la que ese digest entra al arbol. Sin ese testigo,
+la frase del RFC seria prosa. Con el, y con el del relleno del rate del importe que viene del
+molde, el AIR queda falsado donde el diseno prometio que lo estaria.
+
+**El testigo tiene la clave y NO tiene el receptor.** `PrendaWitness` no lleva `receptor`: se
+DERIVA. Un testigo que llevara los dos podria mentirse a si mismo y el AIR lo rechazaria por
+`C_PK_CHECK` -- pero el rojo saldria del sitio equivocado, y un rojo que senala mal cuesta una
+sesion. Que la identidad sea funcion de la clave es lo que la prenda afirma, y la firma del
+testigo lo dice.
+
+**Una cifra del diseno que salio mal, y se dice.** El `DISENO-517` anuncio <<DIEZ que pasan y UNO
+ignorado>> y su propia tabla listaba ONCE. Son ONCE: un adjetivo numeral es una cifra, y esta no
+se derivo de la tabla que tenia al lado. El pin no la hereda -- lo cuenta el `--list` del
+bloque--, pero la cuenta del asiento si, y por eso queda escrita.
+
+**Lo que se predice y no se mide aqui.** El peso y el tiempo del positivo: la D-AX los predijo
+<<del orden de los 213-218 ms de E2>> con 120 restricciones supuestas, y el AIR salio con 106,
+entre las 110 de E1 y las 120 de E2. La prediccion corregida es el orden de E1, **127-137 ms**.
+El instrumento corrio DENTRO del bloque y su salida esta en la `SALIDA-517`; la cifra la recoge
+el `-B`, que es quien mide.
+
+**Contadores.** TRES ficheros y UNO nace: `circuit_prenda.rs` +547 -0, la linea de `lib.rs` que
+lo declara +2 -0, y `AUDITORIA.md` +61 -0 (el asiento, 60 lineas tras 1 separador):
+37.742 -> 37.803. Las TRES sha POST fueron PREDICHAS y exigidas byte a byte antes de tocar el
+arbol. `crates/zk-ssl-air/src/prenda.rs` va de CENTINELA y no se movio: el AIR del §516 se
+prueba, no se retoca. El pin de `stark-experiment` NO se mueve aqui.
+
+**Lo que NO cierra.** El `-B` con el pin, las cifras y el canon. Y detras, lo que le queda al
+montaje de E3: el productor en la capa, la puerta que verifica antes de escribir en el arbol de
+consumos, `zkssl_pledge` con sus tres productores de cable, el octavo brazo `tipo: "prenda"` del
+mando, la forma 2.10 de `PAQUETE.md` y los cardinales publicados, que pasan de 29 a 30 metodos.
+Siguen abiertos los cuatro puntos que la 160 abrio: la etiqueta `cadena` de la FASE 10, el print
+PRE que `xargs` no supo imprimir, la ceguera de `check_cifras` con el gemelo ingles y el 1431
+que acaba de cambiar de significado.

@@ -67,6 +67,8 @@ pub mod circuit_banda;
 pub mod circuit_cobro_pendiente;
 // RFC-0008 E2: el probador del pago en curso portable.
 pub mod circuit_pago_en_curso;
+// RFC-0008 E3: el probador de la prenda.
+pub mod circuit_prenda;
 pub mod circuit_burn;
 pub mod circuit_freeze;
 // Entrada 33 / §59: la subida a congelados sin la parte de autorizacion.
