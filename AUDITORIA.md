@@ -37697,3 +37697,46 @@ mando; la forma 2.10 de `PAQUETE.md` y los cardinales publicados, que pasan de 2
 probador en el corte siguiente. Y nace deuda: `stark_experiment::native::SPEND_KEY_DOMAIN`
 deberia pasar a REEXPORTAR la de `zk-ssl-hash`, como el §258 hizo con la hoja, para que la R2
 deje de ser lo unico que las ata.
+
+**El `-B`, que es lo que el §516 dejo sin pagar.** El corte anterior anadio SIETE `#[test]` a
+`zk-ssl-air` y no toco el pin a proposito: un sello de codigo deja el canon en rojo hasta que su
+`-B` lo cierra. Aqui el pin va **22 -> 29** en `tools/canon.sh` con su entrada de historia, las
+cifras publicadas se mueven donde el pin manda, y el canon `--sello` corre por primera vez desde
+el §512-B. Ni un `.rs`, ni un vector, ni un Cargo.
+
+**El perimetro de las cifras lo decidio el GATE, no el precedente.** Se subio el pin en una
+copia y se corrio `tools/check_cifras.py` sobre ella: nombro DOS rancias, `PAPER.md`:36 y
+`PRINCIPIOS.md`:354, las dos con 1273 donde el canon pina 1280. El censo estrecho sobre los
+`.md` encontro una TERCERA que el gate no nombra: `PAPER_EN.md`:33, que publica el mismo 1273 en
+ingles. Y las tres publican ademas la suma larga, 1410, que es la del sello mas 137 y se mueve
+con ella. Son SEIS cifras en TRES documentos: **1273 -> 1280** y **1410 -> 1417**, cada una en su
+parrafo y por valor, nunca por reemplazo global.
+
+**Por que el gate se salta la inglesa, falsado y no deducido.** Su regla de TOTALES busca una
+cifra de tres o cuatro digitos PEGADA a `tests` o `pruebas`; la frase espanola dice <<1273
+pruebas ejecutables>> y casa, y la inglesa dice <<1273 executable tests>>, con una palabra en
+medio, y NO casa. Probado con el patron del propio fichero sobre las tres lineas. Es la familia
+del punto 195 -una cuenta publicada en varios sitios se corrige en todos- con el agravante de
+que aqui la puerta solo cubre dos de los tres. Nace cola por ello.
+
+**Lo que este corte NO toca, y va dicho para que no parezca olvido.** Los tres documentos
+publican tambien un numero de tests <<declaradas>> -1364 en los dos espanoles y **1349** en el
+ingles- que ya estaba rancio ANTES del §516: `check_tests` deriva 1438 hoy y derivaba 1431 antes
+del corte, asi que ninguno de los dos coincidia. No lo movio este arco y no se paga aqui: lo que
+este corte deja rancio se paga en este corte, y lo que ya lo estaba va a la cola. Que los
+gemelos ademas se contradigan entre si -1364 contra 1349- es parte del mismo punto.
+
+**Contadores.** CINCO ficheros y ninguno nace: `tools/canon.sh` +1 -1, `PAPER.md` +2 -2,
+`PAPER_EN.md` +2 -2, `PRINCIPIOS.md` +2 -2 y `AUDITORIA.md` +43 -0, que recibe estos parrafos SIN
+cabecera propia, como todo `-B`: 37.699 -> 37.742. Las CINCO sha POST fueron predichas y exigidas
+byte a byte antes de tocar el arbol. De las DIEZ herramientas, NUEVE salen IDENTICAS y UNA con
+delta previsto -- `check_figures`, que publica la cifra de `PRINCIPIOS.md`:354 y pasa de 1273 a
+1280. El canon `--sello` corrio VERDE con `zk-ssl-air` en **29/29** en su fila, y con el el
+punto 36 llega a **89 medidas**.
+
+**Lo que NO cierra.** El probador de la prenda (`circuit_prenda`), que es el §517 y el que traera
+la primera prueba REAL; y detras, el productor en la capa, la puerta del arbol de consumos,
+`zkssl_pledge`, el octavo brazo del mando y la forma 2.10 de `PAQUETE.md`. De la 160 quedan
+tres puntos nuevos: la etiqueta `cadena` de la FASE 10 (5.A-347, que este bloque tampoco
+arregla), el print PRE que `xargs` no supo imprimir y la ceguera de `check_cifras` con el gemelo
+ingles.
