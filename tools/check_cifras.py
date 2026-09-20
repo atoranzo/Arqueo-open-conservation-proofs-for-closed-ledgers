@@ -245,7 +245,15 @@ def main():
                 continue
             if any(h in linea for h in LINEAS_HISTORICAS):
                 continue
-            for m in re.finditer(r"\*?\*?(\d{3,4})\*?\*?\s*(?:tests|pruebas)", linea):
+            # ⚠️ **UNA palabra entre la cifra y el sustantivo** (5.A-350, §519-B). El
+            # patron exigia `tests` PEGADO al numero, y el gemelo ingles dice
+            # <<1300 executable tests>>: llevaba VEINTE sellos rancio y esta compuerta
+            # salia verde. No es de idioma, es de forma. Y no se afloja mas: el
+            # sustantivo sigue siendo obligatorio, porque un patron suelto ya se midio
+            # y dio cinco falsas (lineas 122-125). Con este, el censo del arbol vivo
+            # pasa de 14 hits a 15, y el que entra es exactamente `PAPER_EN.md:33`.
+            for m in re.finditer(
+                    r"\*?\*?(\d{3,4})\*?\*?\s*(?:[a-zA-Z\u00e0-\u00ff]+\s+)?(?:tests|pruebas)", linea):
                 v = int(m.group(1))
                 revisadas += 1
                 if v not in posibles:

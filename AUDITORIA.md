@@ -38079,3 +38079,54 @@ positivos de un nodo vivo y el octavo brazo `tipo: "prenda"` del mando con la fo
 mismo aviso con dos claves distintas, y el segundo no verifica--, que no es del nodo: vive donde
 vive el productor.
 
+**El `-B`.** Cierra el §519 por donde el sello no llega: el pin del nodo pasa de 115 a 122 en
+`tools/canon.sh` con su linea de registro, las cuentas publicadas alcanzan al codigo, el RFC-0008
+recibe las tres decisiones que el corte tomo -- D-AZ, D-BA y D-BB-- y el canon corre en `--sello`.
+
+**El 5.A-350, CERRADO, y con el arreglo del instrumento dentro del mismo corte.** El patron de
+TOTALES de `tools/check_cifras.py` exigia el sustantivo PEGADO a la cifra, y el gemelo ingles dice
+<<1300 executable tests>>: un adjetivo en medio y la compuerta ciega. No es de idioma, es de
+forma, y **el diagnostico ya estaba escrito en el §507**, que lo midio y lo dejo para la cola.
+Veinte sellos despues seguia abierto, y el `-B` lo cierra donde vive: en el instrumento. El
+arreglo deja pasar UNA palabra y mantiene el sustantivo obligatorio, porque el propio fichero
+declara en sus lineas 122-125 que un patron suelto dio cinco discrepancias y las cinco FALSAS.
+Y va MEDIDO antes de escribirlo (`PASTE-519B-PRE`, `b3c11c9e5959198b`, lectura pura, rc 0): sobre
+todo el arbol vivo el censo pasa de CATORCE hits a QUINCE, el que entra es exactamente
+`PAPER_EN.md:33`, y no se pierde ninguno. Un arreglo de compuerta que no se mide por los dos
+lados -- lo que ve de mas y lo que deja de ver-- es una compuerta nueva sin ensayar.
+
+**Lo que el canon exigia, y no lo dijo nadie a mano.** Con el pin en 122, `check_cifras` sale rc 1
+y nombra TRES: el total de `PAPER.md:36` y el de `PRINCIPIOS.md:354` -- 1300 contra 1307 de sello
+y 1444 de todos-- y el desglose <<115 del nodo>>. La cuarta, `PAPER_EN.md:33`, **no la nombraba**:
+esa ausencia era el agujero, y por eso el arreglo entra en este corte y no en el siguiente. Las
+tres cifras del <<1437>> se mueven con sus totales a 1444, en la misma frase de los tres
+documentos.
+
+**Lo que NO se mueve, y por que.** Las <<1364 declaradas>> de `PAPER.md:38` y `PRINCIPIOS.md:358`,
+las <<1349 declared>> de `PAPER_EN.md:34` y las <<18 ignoradas>>: salen de un instrumento cuyo
+offset no tiene dueno (5.A-319, PRECISION 543) y van rancias desde el §502-B. `check_tests` deriva
+hoy 1466. No se tocan a ciegas en un corte que no es el suyo, y el patron arreglado sigue sin
+verlas -- no llevan <<tests>> al lado--, asi que quedan igual de descubiertas que antes y con su
+dueno nombrado. Tocarlas aqui seria escribir una cifra sin fuente, que es la clase que este
+proyecto lleva pagando desde la 108.
+
+**Las tres decisiones, en el RFC y no solo en el asiento.** D-AZ, D-BA y D-BB entran con su forma
+de la casa -- los caminos considerados, por que cae cada uno, la vara que decide y el punto de
+reversion--, y el cardinal del propio RFC pasa de cincuenta y una a cincuenta y cuatro en su
+:127, con la 161 anadida a la lista de sesiones. Un RFC que se cuenta a si mismo y no se recuenta
+al crecer es la misma clase que el 5.A-350: una cifra a mano envejeciendo sin avisar.
+
+**Contadores.** OCHO ficheros y ninguno nace, y siete de los ocho son de UNA cifra: `canon.sh`
++1 -1 (el pin y su registro, en la misma linea), `check_cifras.py` +9 -1 (el arreglo y su
+porque), `PRINCIPIOS.md` +3 -3, `PAPER.md` +2 -2, `PAPER_EN.md` +2 -2, `README.md` +1 -1,
+`spec/rfc/0008-...md` +59 -2 (las tres decisiones y el cardinal) y `AUDITORIA.md` +51 -0
+(este asiento, sin cabecera propia): 38.081 -> 38.132. Las OCHO sha POST fueron PREDICHAS y
+exigidas byte a byte antes de tocar el arbol. El canon corre en `--sello` DENTRO del corte,
+con el pin ya en 122 y el total en 1.307.
+
+**Lo que NO cierra.** De E3 quedan la boca del cli que reune los positivos de un nodo vivo y el
+octavo brazo `tipo: "prenda"` del mando con la forma 2.10 de `spec/PAQUETE.md`, que movera el
+cardinal de <<las nueve formas>>. Sigue vivo el 5.A-319, el offset sin dueno del que cuelgan las
+<<declaradas>>. Y sigue pendiente el falsador de la deduccion de D-BB, que vive del lado del
+productor.
+

@@ -124,10 +124,10 @@ manda la forma de este RFC:
 
 ## Diseño
 
-Las cincuenta y una decisiones las tomó el asistente por delegación del autor (D-A..D-E en la
+Las cincuenta y cuatro decisiones las tomó el asistente por delegación del autor (D-A..D-E en la
 sesión 144; D-F, D-G y D-H en la 145; D-I en la 147; D-J..D-M en la 149; D-N..D-AC en la 150, y
 de ellas D-R..D-AC las escribió aquí el §500; D-AD..D-AJ en la 151; D-AK..D-AR en la 155, y las
-escribió aquí el §510; D-AS..D-AU en la 158, que las escribió el §513; y D-AV..D-AY en la 159),
+escribió aquí el §510; D-AS..D-AU en la 158, que las escribió el §513; D-AV..D-AY en la 159; y D-AZ..D-BB en la 161, que las escribió el §519-B),
 con la constitución de decisión (pureza, claridad, coherencia, imagen fiel, en ese orden). Todas
 llevan su condición de reversión, escrita aquí.
 
@@ -888,6 +888,63 @@ recibe el aviso al prendar, y es imagen fiel: el sistema produce el par condenat
 parte, no una prueba frente a todos. **Reversible** hacia (a), y hacia meter la banda DENTRO de la
 prenda para que diga ella sola el importe; esto último costaría 46 columnas, dos más que E1, y
 pide un caso de uso medido que lo exija.
+
+### D-AZ — `zkssl_pledge` verifica el sobre y sólo entonces escribe, y no pide credencial
+
+El método aditivo que la fila E3 anuncia recibe `{prueba, receptor, marca, seq}`, compone el
+enunciado con el `pendingRoot` de la cabeza firmada que el NODO custodia —nunca con uno que venga
+de fuera—, llama a `zk_ssl_air::prenda::verificar_contra_cabeza` y sólo con verde llama a
+`apply_consumo`. Cuatro caminos: (a) exigir el sobre sin mirarlo, que cae por imagen fiel —un
+método que dice exigir algo que no comprueba guarda bytes que nadie verificó—; (b) verificar y
+escribir; (c) verificar y no escribir, dejando la marca a la boca libre; (d) que el método no
+exista. Gana (b) por coherencia y por lo que el propio juez declara: él no comprueba que la marca
+esté bajo `consRoot` porque «es la puerta de quien escribe en él», y quien escribe es el nodo. El
+patrón de la casa —`prove` en el cliente, `apply` VERIFICA sin ver la clave— se cumple al pie de
+la letra, porque el sobre no lleva clave (D-AW).
+
+⚠️ **No es una puerta del árbol de consumos, y esto cierra el 5.A-353.** La boca libre
+`zkssl_publishConsumo` sigue abierta y sin pedir nada (D-AT): esto es una boca CON prueba al lado
+de una boca libre. Y por eso mismo **no exige credencial**: la autorización es la prueba, no la
+posesión de una clave de vista en el servidor.
+
+⚠️ **Una prenda vale dentro de su época**, y es una restricción MEDIDA que no estaba escrita: el
+nodo custodia UNA cabeza firmada y la pierde al reiniciar, así que el `seq` que declara quien
+llama tiene que ser el de la última. Si no lo es, se rechaza NOMBRANDO el que hay —al revés que
+la negativa muda de D-AE, porque la marca es pública y precomputable por quien tenga el aviso—.
+El orden es `zkssl_pendingPath`, producir, `zkssl_pledge`, bajo el mismo latido. **Reversible**
+hacia (c) si alguna vez se decide que el nodo no compile un verificador STARK; hoy `zk-ssl-air`
+ya estaba en su grafo por vía de `zk-ssl-verify` y declararlo sumó cero nodos, medido.
+
+### D-BA — Lo que devuelve: el molde del hermano aditivo, más un campo
+
+En verde, `{accepted: true, yaEstaba, logSeq, s}`; en rojo, `{accepted: false, reason, data}` con
+la forma del §454. `logSeq` es el molde exacto de `zkssl_publishConsumo`; `s` es el `seq` de la
+cabeza contra la que se juzgó, que es lo que un tercero necesita para pedir después el camino; y
+`yaEstaba` entra porque es lo único de la respuesta que quien llama no puede computar por su
+cuenta (D-BB). No devuelve la marca, que la mandó él, ni el camino, que es `zkssl_consumoPath`.
+
+⚠️ **Y no acepta `pendingRoot` como parámetro.** Recibirlo sería dejar que el que pide fabrique
+la vara con la que se le mide, que es la misma razón por la que la cabeza no viaja en §248.
+**Reversible**: añadir campos a una respuesta es aditivo y no sube `zkssl/0.3`; quitarlos, no.
+Por eso se entra con los mínimos.
+
+### D-BB — Un repetido cuyo sobre verifica NO es un fallo de la prenda
+
+`zkssl_pledge` verifica SIEMPRE primero. Si la prueba no verifica, rechazo, y da igual lo que haya
+en el árbol. Si verifica y la hoja ya está y es LA MISMA, la respuesta es `accepted: true` con
+`yaEstaba: true` y la capa no se toca. Una `ConsumoColision` sí es rechazo, con su causa como
+dato. Sale de cruzar dos decisiones ya tomadas: el par es la marca bajo la raíz MÁS el sobre
+(D-AS), y la marca que escribiera el pagador es la MISMA hoja (D-AT). Si las dos son ciertas, el
+par existe en cuanto el sobre verifica, lo escribiera quien lo escribiera, y devolver
+`ConsumoRepetido` sería llamar fallo a un éxito.
+
+⚠️ **La deducción que lo sostiene va declarada**: dos prendas distintas del mismo pendiente no
+pueden existir, porque la marca es función de la hoja (`marca_prenda`, un solo productor) y la
+hoja lleva dentro al receptor; con otra clave la hoja no sube a la raíz y el productor falla
+cerrado. Su falsador —dos sobres del mismo aviso con dos claves distintas, y el segundo no
+verifica— no es del nodo: vive donde vive el productor, y queda pendiente. **Reversible** si se
+decide que la constancia debe distinguir QUIÉN escribió la hoja; entonces la prenda pide árbol
+propio, que es la salida que la propia D-AT deja escrita.
 
 ## Lo que se DESCARTÓ al medir
 
