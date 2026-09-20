@@ -37932,3 +37932,56 @@ puerta que verifica antes de escribir en el arbol de consumos -- la otra mitad d
 forma 2.10 de `PAQUETE.md` y los cardinales publicados, que pasan de 29 a 30 metodos. Y la cola
 de la 160 se queda en cinco puntos, con el 5.A-351 cambiado de estado: ya no es <<observado sin
 comparacion valida>> sino MEDIDO, con la causa abierta y su sonda siguiente nombrada.
+
+**El `-B`, que es lo que el §518 dejo sin pagar.** El pin de la capa va **389 -> 398** en
+`tools/canon.sh` con su entrada de historia -- los ignorados se quedan en 7, porque el corte no
+trae instrumento--, las cifras publicadas se mueven donde el pin manda, y el canon `--sello`
+corre. Ni un `.rs`, ni un vector, ni un Cargo.
+
+**El perimetro lo decidio el GATE, y es el mas ancho de los tres `-B` del arco.** Se subio el pin
+en una copia y `tools/check_cifras.py` nombro DIEZ rancias. Son **CATORCE cifras en SEIS
+documentos**: el total de sello **1291 -> 1300** y la suma larga **1428 -> 1437** en `PAPER.md`,
+`PAPER_EN.md` y `PRINCIPIOS.md`; el desglose **389 de la capa -> 398** de `PRINCIPIOS.md`:354; y
+la cuenta de la capa en `PAPER.md`:997, `PAPER_EN.md`:956, `PRINCIPIOS.md`:136,
+`ARQUITECTURA.md`:58 y :1121, y los DOS institucionales.
+
+**Y entran DOS sitios que ningun `-B` anterior habia tocado**: `ARQUITECTURA.md`, con dos lineas,
+y el segundo lugar de `PRINCIPIOS.md`. La causa esta medida y es util: el pin de la CAPA se
+publica donde el de los circuitos y el del AIR no llegaban. Cada pin tiene su propio reparto de
+sitios, asi que el perimetro de un `-B` **no se hereda del `-B` anterior**: se vuelve a derivar
+con el gate, cada vez.
+
+**DOS cifras que el censo saco y NO se tocan, con su razon medida.** La primera:
+`spec/rfc/0004`:253 publica un `389` que el censo estrecho encontro y que, abierto, resulta ser
+el numero de LINEAS de otro fichero (`0002-lotes-y-transicion-de-hoja.md`, `91bbdafa42d5ee51` /
+389). No es una cuenta de tests y no es nuestra. **Un numero no es su significado**: se abre
+antes de moverlo.
+
+La segunda: `ARQUITECTURA.md`:1121 publica, en la MISMA linea que el 389, que la capa tiene
+<<29 modulos>>. Medido, tenia **32** ficheros `.rs` bajo `src/` ANTES de este arco y tiene **33**
+despues -- 31 y 32 si se cuentan las declaraciones de `lib.rs`--. O sea que el 29 **ya estaba
+rancio antes del §518**: este corte mueve el valor verdadero, no el origen de la falsedad. Va a
+la cola y no al `-B`, aunque esa misma linea se edite para el 389. Es la decision que el `-B` del
+§516 tomo con el <<1364 declaradas>>, y se mantiene por coherencia: lo que ESTE corte deja
+rancio se paga aqui; lo que ya lo estaba, se nombra y espera.
+
+**El gemelo ingles, tercera ocurrencia.** Las dos sumas de `PAPER_EN.md` vuelven a quedar fuera
+de la regla de TOTALES -- <<1291 executable tests>>, con una palabra entre la cifra y `tests`--
+mientras su orden publicada si la ve. Van tres arcos seguidos con lo mismo. El punto de cola
+sigue abierto y ya no es una sospecha: es un patron con tres casos.
+
+**Contadores.** OCHO ficheros y ninguno nace: `tools/canon.sh` +1 -1, `PAPER.md` +3 -3,
+`PAPER_EN.md` +3 -3, `PRINCIPIOS.md` +3 -3, `ARQUITECTURA.md` +2 -2, `doc/INSTITUCIONAL.md`
++1 -1, `doc/INSTITUTIONAL.md` +1 -1 y `AUDITORIA.md` +53 -0, que recibe estos parrafos SIN
+cabecera propia: 37.934 -> 37.987. Las SIETE sha POST fueron PREDICHAS y exigidas byte a byte
+antes de tocar el arbol. El canon `--sello` corrio VERDE con la capa en **398(398) 7(7)** en su
+fila, y con el el punto 36 llega a **91 medidas**.
+
+**Lo que NO cierra.** Del montaje de E3 queda **la otra mitad del par**: la puerta que verifica
+antes de escribir la marca en el arbol de consumos. Detras, `zkssl_pledge` con sus tres
+productores de cable, el octavo brazo `tipo: "prenda"` del mando, la forma 2.10 de `PAQUETE.md` y
+los cardinales publicados, que pasan de 29 a 30 metodos. Y la cola de la 160 llega a SEIS: la
+etiqueta `cadena` de la FASE 10, el print PRE que `xargs` no supo imprimir, la ceguera de
+`check_cifras` con el gemelo ingles -- ahora con tres--, el 1431 que cambio de significado, el
+coste del positivo de E3 -- medido y con la causa abierta-- y los <<29 modulos>> de
+`ARQUITECTURA.md`.
