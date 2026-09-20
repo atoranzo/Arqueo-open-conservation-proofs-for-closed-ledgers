@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 67 elementos alcanzables en `zk-ssl-verify` y 42 `pub` en `zk-ssl-hash`
-(LIBRO 2, NÚCLEO 85, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 67 elementos alcanzables en `zk-ssl-verify` y 45 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 85, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -168,6 +168,9 @@ real de sus llaves, no por la primera marca.
 | `verificar_inclusion_v5` | `verify/inclusion.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `DOMINIO_META_PENDIENTE` | `hash/lib.rs` | LIBRO | LIBRO | `const` |
 | `meta_pendiente_hoja` | `hash/lib.rs` | LIBRO | LIBRO | `fn` |
+| `DOMINIO_PRENDA` | `hash/lib.rs` | LIBRO | LIBRO | `const` |
+| `marca_prenda` | `hash/lib.rs` | LIBRO | LIBRO | `fn` |
+| `SPEND_KEY_DOMAIN` | `hash/lib.rs` | LIBRO | LIBRO | `const` |
 | `COMPROMISO_AUSENTE` | `hash/lib.rs` | REGISTRO | REGISTRO | `const` |
 | `OP_FREEZE` | `hash/lib.rs` | REGISTRO | REGISTRO | `const` |
 | `OP_GOVERNANCE` | `hash/lib.rs` | REGISTRO | REGISTRO | `const` |

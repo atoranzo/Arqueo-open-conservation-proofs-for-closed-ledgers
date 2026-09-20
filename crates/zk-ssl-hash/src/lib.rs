@@ -631,6 +631,35 @@ pub fn meta_pendiente_hoja(sender: u64, born: u64) -> Digest {
 /// `tools/check_dominios.py` cruza con el censo del arbol en cada sello.
 pub const DOMINIO_PARAMS: u64 = u64::from_be_bytes(*b"PARAM_V1");
 
+/// **Dominio de derivacion de la identidad desde la clave de gasto** (entrada 15, S82).
+/// Vive aqui porque quien JUZGA una prenda necesita el dominio y no compila
+/// `stark-experiment`: el valor es EL MISMO que
+/// `stark_experiment::native::SPEND_KEY_DOMAIN`, y lo que prueba que los dos no pueden
+/// divergir es la regla R2 de `tools/check_dominios.py`, que corre en cada sello.
+///
+/// ⚠️ **El nombre no es negociable**: con cualquier otro, la regla R3 daria colision de
+/// valor dentro del grupo `produccion`. Lo que queda pendiente es que la de
+/// `stark-experiment` pase a REEXPORTAR esta, como el §258 hizo con la hoja.
+pub const SPEND_KEY_DOMAIN: u64 = 0x53504B59; // "SPKY"
+
+/// **Dominio de la MARCA de una prenda** (RFC-0008 E3, D-AW), con version en el propio
+/// valor como `PMETA_V1` y sus hermanos. La marca es [`marca_prenda`]: una hoja mas del
+/// arbol de consumos, publica y precomputable por quien tenga el aviso, y que **por si
+/// sola no afirma nada** -- la prenda es el PAR marca-bajo-la-raiz-firmada y el sobre con
+/// la prueba (D-AS).
+pub const DOMINIO_PRENDA: u64 = u64::from_be_bytes(*b"PREND_V1");
+
+/// **La marca de una prenda sobre la hoja `c2`**:
+/// `commit_operation(DOMINIO_PRENDA, C2)`. UN productor, y este: el circuito la compone
+/// dentro (D-AW) y quien tiene el aviso la recompone aqui para cruzarla con el arbol de
+/// consumos, sin compilar el probador.
+///
+/// ⚠️ [`commit_operation`] supone longitud FIJA por dominio, y la de este son los CUATRO
+/// elementos de `c2`. Si algun dia la marca cubriera otra cosa, es un dominio NUEVO.
+pub fn marca_prenda(c2: Digest) -> Digest {
+    commit_operation(DOMINIO_PRENDA, &c2)
+}
+
 /// **El digest de los siete parametros del libro** (RFC-0007 D-B): la regla que
 /// un rechazo cita, en un solo digest bajo la firma de la cabeza v5.
 ///
@@ -1066,6 +1095,7 @@ mod tests_cabeza_v2 {
 // REGISTRO: u64 plonk NULLIFIER_DOMAIN 0x4E554C4C
 // REGISTRO: u64 produccion DOMINIO_META_PENDIENTE 0x504D4554415F5631
 // REGISTRO: u64 produccion DOMINIO_PARAMS 0x504152414D5F5631
+// REGISTRO: u64 produccion DOMINIO_PRENDA 0x5052454E445F5631
 // REGISTRO: bytes ZK-SSL-ledger-key-v1
 // REGISTRO: bytes ZK-SSL-epoch-head
 // REGISTRO: bytes ZK-SSL-keystore-v1

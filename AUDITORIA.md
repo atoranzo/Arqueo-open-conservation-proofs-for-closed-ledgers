@@ -37625,3 +37625,75 @@ puerta del numstat vive en el editor y no en el repo-, y nacen dos de la 159: la
 <<cadena>> en la salida de un bloque, que publico el total de commits bajo el nombre de la cadena
 de sellos, y que NINGUNA herramienta vigila las citas a `.rs` desde un `.md` -el RFC-0008 publica
 treinta y una, varias con numero de linea-.
+
+## §516 — El AIR de la prenda: la marca dentro del circuito y la clave donde estaba la banda
+
+**Que.** Nace `crates/zk-ssl-air/src/prenda.rs`, el QUINTO juez de este crate: el AIR de la
+prenda (RFC-0008, E3) con su verificador y su enlace a una cabeza v5, sin el probador. Con el
+entran en `zk-ssl-hash` el dominio sexto `DOMINIO_PRENDA`, su unico productor nativo
+`marca_prenda` y `SPEND_KEY_DOMAIN`, que el juez necesita y no podia tomar de
+`stark-experiment` sin compilar al probador. **E3 sigue PROPUESTA**: esto es el primero de los
+cortes de su montaje, y el probador es el siguiente.
+
+**El enunciado, entero.** Bajo la raiz de pendientes que la cabeza firma existe una hoja
+`C2 = M(C1, X)` con `C1 = M(M(receptor, sal), [importe, 0, 0, 0])`; la marca declarada es
+`commit_operation(DOMINIO_PRENDA, C2)`; y quien prueba conoce la clave de gasto cuya identidad
+derivada es ese mismo receptor. Es de AUTORIZACION, y ahi se separa del hermano de E1: el cobro
+dice lo que el ESTADO contiene y el pagador lo produce igual que el receptor (D-G); esto dice
+ademas que **nadie mas HA PODIDO producirlo** (D-AV).
+
+**La geometria, DERIVADA del molde y no estimada.** Del `cobro_pendiente` salen la banda -cuatro
+columnas, ocho restricciones, cinco periodicas- y el carril de la meta con su subida y sus dos
+columnas; entran el ciclo de la clave, en las cuatro columnas que la banda deja, y el de la
+marca. Ancho 44 -> **42**, restricciones 110 -> **106**, periodicas 36 -> **31**, aserciones
+19 -> **20**, entradas publicas 15 -> **12**. La traza sigue midiendo 512 y la raiz sigue
+saliendo en la 279: **ni una fila nueva**. Y un hallazgo que abarata el corte: los dos ciclos
+nuevos no piden **ninguna columna periodica nueva** -la clave es el ciclo 0 del carril B y se
+siembra en la fila 0 con el selector de la primera fila; la marca es el ciclo 3 y se siembra en
+la fila 23 con el selector de la entrada al arbol-. El rate de la marca se lee del digest del
+carril A **en la misma fila** en la que ese digest entra a la subida: no hay dos `C2`, y ninguna
+igualdad que acordarse de escribir.
+
+**La prediccion de la D-AX, medida.** Aquella decision escribio <<del orden de las 120 de E2>> y
+la cuenta derivada de la tabla de familias da **106**: salen la subida del carril B (8) y la
+banda (8), y la clave cuesta 12. Se declara la diferencia y su causa, como la propia D-AX pedia.
+Y su otra lectura tambien se corrige: las 232 filas libres bajo la raiz **no se gastan**, porque
+los dos ciclos caben dentro de la tuberia.
+
+**Tres decisiones que el montaje fija y las selladas no fijaban, todas REVERSIBLES.** (1) El
+dominio se llama `DOMINIO_PRENDA` y vale `b"PREND_V1"`: ocho bytes porque el gate solo reconoce
+ocho, y medido que no colisiona con los dieciseis del grupo `produccion`. (2) La marca es
+`commit_operation`, no `native_merge`, y con ella su consecuencia escrita: ese hash supone
+longitud FIJA por dominio, asi que este queda atado a los CUATRO elementos de `C2` para siempre.
+(3) El ciclo de la clave se DERIVA de `derive_public_id_wide` -capacidad a cero y rate atado
+entero- y no se calca de `circuit_claim_v2`, cuya siembra escribe solo dos tramos de su estado:
+aquella es otra maquina, y un operador copiado sin su invariante es la leccion de la 117. Es una
+deduccion y lleva PUERTA: el primer testigo del probador la falsa recomputando la identidad en
+nativo, y si no clava, se sabe alli.
+
+**Lo que estrena, y su prueba de vida.** `tools/check_dominios.py` entra por primera vez como
+puerta de un corte, y se corrio en las DOS direcciones sobre una copia antes de tocar el arbol:
+sin la fila del REGISTRO da ROJO nombrando exactamente la linea que falta, y con ella VERDE. El
+censo pasa de 25 declaraciones y 22 ternas a 27 y 23: la segunda declaracion de
+`SPEND_KEY_DOMAIN` no anade terna, y es la regla R2 la que prueba que las dos no pueden
+divergir. Y el ensayo cazo lo que el diseno no habia visto: `check_nucleo` exige fila en
+`spec/NUCLEO.md` para todo `pub` de `zk-ssl-hash`, asi que el corte lleva tres filas mas y su
+censo, 42 -> 45 y 109 -> 112.
+
+**Contadores.** CINCO ficheros y UNO nace: `prenda.rs` +651 -0, `zk-ssl-air/src/lib.rs` +3 -0,
+`zk-ssl-hash/src/lib.rs` +30 -0, `spec/NUCLEO.md` +5 -2 y `AUDITORIA.md` +72 -0
+(el asiento, 71 lineas tras 1 separador). `AUDITORIA.md` 37.627 -> 37.699.
+Las CUATRO sha POST fueron PREDICHAS antes de tocar el arbol y exigidas byte a byte; el editor es
+TODO O NADA y idempotente por ESTADO con un discriminante por fichero. Siete `#[test]` nuevos, y
+el pin de `zk-ssl-air` NO se mueve aqui: va al `-B` con el canon. De las DIEZ herramientas, SEIS
+IDENTICAS y CUATRO con delta informativo y previsto: tests 1431 -> 1438, modulos 140 -> 141,
+dominios 25/22 -> 27/23 y nucleo 42/109 -> 45/112.
+
+**Lo que NO cierra.** El probador (`circuit_prenda`) y con el la primera prueba REAL de una
+prenda; el productor en la capa; la puerta que verifica antes de escribir en el arbol de
+consumos; `zkssl_pledge` con sus tres productores de cable; el octavo brazo `tipo: "prenda"` del
+mando; la forma 2.10 de `PAQUETE.md` y los cardinales publicados, que pasan de 29 a 30 metodos.
+`marca_prenda` entra SIN testigo propio en su crate, como `meta_pendiente_hoja`: lo cruza el
+probador en el corte siguiente. Y nace deuda: `stark_experiment::native::SPEND_KEY_DOMAIN`
+deberia pasar a REEXPORTAR la de `zk-ssl-hash`, como el §258 hizo con la hoja, para que la R2
+deje de ser lo unico que las ata.
