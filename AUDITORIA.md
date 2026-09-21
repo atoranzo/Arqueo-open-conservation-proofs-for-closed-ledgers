@@ -38250,6 +38250,11 @@ lleva DOS pruebas reales -un SEND y un CLAIM de un banco, repetidos en 23 operac
 las que un CAZADOR que no conoce el trazado deriva la clave de gasto de sus dos cuentas sandbox:
 41 y 42 ventanas cuya identidad es el `publicId` que el propio vector publica, senuelo a 0, y el
 cazador validado antes contra un SEND y un CLAIM frescos de clave conocida (42 y 42).
+CORRECCION (§527, 2026-09-21): de las dos columnas de la BANDA que casaban con el saldo, la
+segunda es la cota superior (`pedido - 1`), que es PUBLICA y coincidia con el saldo porque el
+testigo pedia `saldo + 1`; con el pedido lejos, el PASTE-360-M2 las conto por separado, 43 y 43. Y
+la EDAD publica el emisor cuando todos los pendientes son del mismo, no el de cada uno: con dos
+emisores, el mismo instrumento dio 0 y 0.
 
 **La frase canonica vive en UN sitio.** `SECURITY.md` la lleva entera; los demas dicen lo suyo y
 remiten al asiento, que es lo estable. Una cuenta publicada en N sitios se corrige en los N
@@ -38547,3 +38552,42 @@ un pin.
 afirmar lo falso, no hace verdad lo que afirmaba. Quedan el literal del kit con la cabecera de
 `pago_en_curso.rs`, la demarcacion de `ARQUITECTURA.md`, la semilla de `zk-core` y el RFC-0009,
 que decide que se promete. E3, el S521 de la prenda y el H5 siguen PARADOS.
+
+## §527 — Lo que revela una prueba: nace el RFC-0009, que dice que se promete (5.A-367)
+
+**Que.** Nace `spec/rfc/0009-lo-que-revela-una-prueba.md`, PROPUESTO: el RFC que los asientos
+§521 a §526 dejaban detras. Promete la SOLIDEZ y no la ocultacion (D-A); tabula, prueba a prueba,
+lo que sale literal segun la regla medida -un valor sale literal si y solo si su columna es
+constante en la traza- (D-B); mantiene la regla 3 del PROCESO como regla que hoy no se cumple
+(D-C); deja a un RFC propio la eleccion de un probador que oculte (D-D); y declara su testigo como
+etapa E2, una suite que re-mida la tabla (D-E). El texto sella su E1. Las cinco decisiones las
+delego el autor con la constitucion (sesion 165), y cada una lleva su condicion de reversion.
+
+**La tabla lleva las cuentas que un asiento registra, y ninguna mas.** Donde el §521, el §524 o
+el §526 anotaron la cuenta, la tabla la copia; donde el §523 dijo el hecho sin cuenta, la tabla lo
+dice sin cuenta. Lo de winterfell se leyo en su portada y en su issue 9 antes de escribirlo. Y lo
+que el RFC nombra y no paga se leyo en el arbol: el literal del kit, las dos cabeceras que dicen
+que el plazo no viaja -la de `pago_en_curso.rs`, en la clausura del kit, y la de `prueba_pago.rs`,
+fuera de ella y sin corte que la tocara- y las firmas de `audit`, `prove_minimum` y `burn`, que
+reciben la clave de gasto como argumento de un metodo de la capa.
+
+**De paso.** `spec/README.md` gana la fila del RFC-0009, en ingles y con las tres celdas del
+molde. Y el §521 recibe su CORRECCION, arriba, en el parrafo de lo medido: la banda y la edad,
+como las mide el modelo (5.A-366 y 5.A-365). El RFC las cita, y su fuente no puede decir otra
+cosa.
+
+**Lo que NO se toca.** `spec/rfc/PROCESO.md`: su regla 3 ya dice que hoy no se cumple. La prosa
+de los §521 a §526 y los cortes que la escribieron. El literal del kit y las dos cabeceras, que el
+RFC solo nombra. Los preprints con DOI y `doc/ZENODO.md`. Y dos filas de `spec/README.md` que ya
+tenian dos celdas y no tres -la de `vectors/pago/` y la del RFC-0008-: estaban asi, y van a la
+cola.
+
+**Contadores.** Un fichero nace y uno cambia, mas el asiento:
+`spec/rfc/0009-lo-que-revela-una-prueba.md` +184 -0, `spec/README.md` +1 -0 y
+`AUDITORIA.md` +44 -0 (la correccion subida al §521 y este asiento): 38.549 -> 38.593.
+Puertas: las regiones PRE pinadas, los tres ficheros POST predichos byte a byte y las diez
+herramientas por delta. El canon NO corre: no se abre un `.rs`, ni un test, ni un pin.
+
+**Lo que NO cierra.** El 5.A-360 y el 5.A-367 siguen abiertos como hallazgo: el RFC dice que se
+promete, no hace que el probador oculte. Queda E2, el testigo de la tabla. E3, el S521 de la
+prenda y el H5 siguen PARADOS.
