@@ -45,12 +45,16 @@ hardening and is not yet drafted (`rfc/0003-compromiso-v2.md:11-15`).
 
 ## Three things that govern everything else
 
-**1. The spend key never travels.** Opening an account sends identifiers
-derived on the client; paying and claiming means asking the node for
-public materials, proving locally, and presenting a receipt; reading your
-own balance means presenting a derived view key that authorises reading
-that account only (`RPC.md:50-59`). Every RFC must declare its effect on
-this principle, and one that erodes it is born withdrawn
+**1. The spend key never travels through the API.** Opening an account
+sends identifiers derived on the client; paying and claiming means asking
+the node for public materials, proving locally, and presenting a receipt;
+reading your own balance means presenting a derived view key that
+authorises reading that account only (`RPC.md:50-59`). **Today the proofs
+break the principle**: the house prover (winterfell 0.13) does not hide
+its witness, so every proof that takes the key —send, claim, pledge,
+audit, burn— publishes it, and the node receives it (measured;
+`../SECURITY.md` §3.bis). Every RFC must declare its effect on this
+principle, and one that erodes it is born withdrawn
 (`rfc/PROCESO.md:19-20`).
 
 **2. The version number tracks the values on the wire, not the size of

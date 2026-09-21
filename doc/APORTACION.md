@@ -40,7 +40,7 @@ pueden exigir y verificar.
 | Dimensión | Blockchain privada típica | Arqueo |
 |---|---|---|
 | **Quién valida** | Consorcio de nodos conocidos | Hoy: **nodo único**, declarado |
-| **Privacidad** | Parcial (canales, acceso restringido) o inexistente entre miembros | Conocimiento cero: terceros ven pruebas, no importes ni identidades |
+| **Privacidad** | Parcial (canales, acceso restringido) o inexistente entre miembros | Frente a terceros que solo ven raíces; quien ve una prueba ve su testigo (§521, §523) |
 | **Cumplimiento** | Suele requerir acceso privilegiado a datos | Revelación selectiva **sin acceso al ledger** |
 | **Ceremonia de setup** | Depende de la pila | **Prohibida** como dependencia soberana |
 | **Integridad** | Consenso del consorcio | Transiciones demostradas; historial no reescribible en secreto |
@@ -66,7 +66,9 @@ aún hay intermediario**.
 
 **Cumplimiento sin libro mayor.** El supervisor verifica banda, mínimo o
 saldo exacto sin ver el estado completo. Raro tanto en banca core como en
-redes privadas.
+redes privadas. Pero hoy la prueba no oculta su testigo: la de auditoría
+publica el saldo exacto y la clave de gasto (§523), así que el supervisor
+aprende más de lo que el modo pide.
 
 **Ausencia de ceremonia como decisión de soberanía.** No es preferencia
 técnica: si el setup permite crear dinero invisible, se descarta.

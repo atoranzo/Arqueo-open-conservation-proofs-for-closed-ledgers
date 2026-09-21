@@ -38352,3 +38352,70 @@ mueve con un COMENTARIO dentro de su clausura, porque no se despoja de simbolos;
 decision de otro corte, que toca el perfil o `tools/artefacto.sh`. Y una cuenta del §521: su
 commit `ff58121` se escribio `§521 — ...` y la casa escribe `S520-B: ...`; un commit empujado no
 se reescribe, y este vuelve al molde.
+CORRECCION (§523, 2026-09-21): <<ahora sin prosa falsa en el arbol salvo el literal del kit y los
+dos de otro circuito>> era falso. El censo del §523 encontro, de la misma clase, la portada
+(<<nunca ve una clave de gasto>>), la guia de la spec y los dos institucionales, entre otras; y el
+modelo de las columnas constantes (5.A-367) vuelve falsas mas: custodios, receptor y auditoria.
+
+## §523 — Lo que el modelo vuelve falso, en prosa: la mitad de los `.md` (5.A-367 y 5.A-360)
+
+**Que.** Primer corte del modelo de las columnas constantes, medido en la 163 con el PASTE-360-M2
+y sus dos falsadores: un valor sale LITERAL en una prueba de la casa si y solo si su columna es
+CONSTANTE en la traza. Treinta y siete regiones de catorce documentos dejan de afirmar lo que el
+modelo desmiente, y la frase canonica de `SECURITY.md` §3.bis gana lo que el §521 no podia decir:
+cada autorizacion delegada publica la clave de SU custodio -tras una sola emision, congelacion o
+recuperacion delegada, el nodo tiene dos y puede autorizar la siguiente-, la auditoria publica la
+clave de gasto y el saldo exacto, la quema la clave y el envio la identidad del receptor. La
+gobernanza usa el mismo circuito, y se dice deducida.
+
+**El censo lo trae el CENSO-367, y cazo lo que el del 5.A-360 no vio.** Lectura pura sobre el zip de
+`2afa996`, con las 212 anclas versionadas y las 31 SHA-REGION clavando: cada parrafo se aplana
+antes de buscar, para que una frase partida no escape. Salen 97 frases en 51 ficheros. La que mas
+pesa es de la clase del 5.A-360 y no del modelo: la portada decia <<verifica pruebas y nunca ve
+una clave de gasto>> (`README.md`:108, y su gemela inglesa), y no estaba en ninguna de las tres
+listas del 360. Igual `spec/README.md`, la guia que enlaza la web, que llevaba el principio sin la
+frase que `spec/RPC.md` lleva desde el §521.
+
+**Las regiones, por familia.** La CLAVE DE GASTO: la portada ES y EN, la guia, los dos
+institucionales, la capa de estado y el cliente de los dos PAPER, y en `ARQUITECTURA.md` el titulo
+<<La clave de gasto ya no llega al nodo>> -el §521 califico el final de su seccion, no el titulo-,
+un comentario del codigo y la formula de `sk`. Los CUSTODIOS: <<La capa ya no conoce ninguna clave
+de emision>>, <<No existe ninguna clave de custodia que robar>> en los dos institucionales, y la
+fila <<Emitir sin autorizacion | Dos custodios>> de tres tablas de vias (`ARQUITECTURA.md` y los
+dos PAPER), que pasa a decir que no cierra frente al operador. El RECEPTOR: la fila de
+`spec/RPC.md` que decia que quien procesa solo envios no lo ve, su parrafo del DTO, la vineta de
+metadatos de `SECURITY.md` -que llamaba <<mitigacion real>> a separar las mitades entre
+agregadores- y <<La capa no sabe que pendiente es de quien>>. La AUDITORIA: la revelacion
+voluntaria entrega la clave, y los tres modos, que son un circuito, publican el saldo exacto
+(`PRINCIPIOS.md`, `doc/APORTACION.md` y `ARQUITECTURA.md`). Y el MARCO: <<privada frente a
+terceros que solo ven una prueba>>, bajo <<Lo que esta demostrado>>, y sus hermanas.
+
+**De paso, dentro de los parrafos que se reescriben.** El del DTO de `spec/RPC.md` decia que el
+receptor no va del titular al nodo, y la fila de `zkssl_sendMaterials` lo lleva como parametro. La
+frase canonica decia que la edad publica <<el emisor de cada pendiente>>, y el 5.A-365 midio que
+lo publica cuando todos son del mismo. Las dos se corrigen porque la unidad de la sustitucion es el
+parrafo.
+
+**Lo que NO se toca.** Los comentarios del codigo son el §524. Lo SIN MEDIR -zk-core, solvency,
+double_entry, settlement-layer, `merkle.rs`, iso-bridge y el cobro que promete ocultar el saldo
+del receptor bajo el tope- espera al PASTE-367-M3: no se escribe sobre lo que el modelo predice y
+nadie midio. Tampoco la HISTORIA ni los preprints con DOI; en los PAPER se corrige el texto vivo y
+el deposito de Zenodo queda como estaba. La decision D-AW del RFC-0008 no se reescribe: gana una
+<<Correccion del §523>> en el molde de la del §521. Y el ultimo parrafo del §522, que decia que
+ya no quedaba prosa falsa salvo el literal del kit, lleva su CORRECCION citada, arriba.
+
+**Contadores.** CATORCE ficheros y ninguno nace, mas el asiento: `SECURITY.md` +31 -20,
+`ARQUITECTURA.md` +26 -12, `doc/INSTITUCIONAL.md` +20 -9, `doc/INSTITUTIONAL.md` +18 -9,
+`spec/README.md` +10 -6, `spec/RPC.md` +10 -4, `PAPER_EN.md` +9 -6, `README_EN.md` +9 -7, `PAPER.md`
++8 -5, `spec/rfc/0008-pruebas-portables-del-pendiente.md` +6 -0, `README.md` +5 -3, `PRINCIPIOS.md`
++4 -2, `doc/APORTACION.md` +4 -2, `doc/CONSECUENCIAS.md` +4 -3 y `AUDITORIA.md` +67 -0 (la
+correccion del §522 y este asiento): 38.354 -> 38.421. De las 31 SHA-REGION, dos cambian porque el
+corte abre sus lineas (`SECURITY.md` 205..213 y `PAPER.md` 339..354), cuatro bajan sin cambiar
+(`PAPER.md` 565..570 -> 568..573, `PAPER_EN.md` 532..537 -> 535..540, `PAPER.md` 284..307 ->
+287..310, `PAPER.md` 431..442 -> 434..445) y las otras veinticinco clavan. Puertas: las treinta y
+siete regiones PRE pinadas, los quince ficheros POST predichos byte a byte y las diez herramientas
+por delta. El canon NO corre: no se abre un `.rs`, ni un test, ni un pin.
+
+**Lo que NO cierra.** El 5.A-367 y el 5.A-360 siguen abiertos: quedan los comentarios del codigo
+(el §524), lo sin medir (el M3), el literal del kit y el RFC-0009, que decide que se promete. E3,
+el S521 de la prenda y el H5 siguen PARADOS.

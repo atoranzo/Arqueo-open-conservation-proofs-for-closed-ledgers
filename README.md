@@ -104,9 +104,11 @@ Deben salir `cadena de transiciones íntegra` y `CONFORMIDAD: … todo IDENTICO`
 ## Cómo funciona, en un párrafo
 
 Un pago son dos transiciones: el pagador **envía** (una hoja) y el receptor **cobra** (otra), cada
-uno con una prueba generada en su máquina; la capa entrega caminos y raíces —datos públicos—,
-verifica pruebas y **nunca ve una clave de gasto**. Cada época el nodo firma una **cabeza** que ata
-las raíces del estado en reposo, el registro encadenado de transiciones y el árbol de consumos
+uno con una prueba generada en su máquina; la capa entrega caminos y raíces —datos públicos— y
+verifica pruebas. **La clave de gasto no viaja por la API, pero la prueba la publica**: el probador
+de la casa no oculta su testigo, y el nodo recibe cada prueba (medido en §521; ver
+[`SECURITY.md`](./SECURITY.md) §3.bis). Cada época el nodo firma una **cabeza** que ata las raíces
+del estado en reposo, el registro encadenado de transiciones y el árbol de consumos
 publicados; testigos independientes la cofirman y **fijan la clave la primera vez que la ven**. Un
 **paquete de evidencia** lleva una cabeza firmada, un acuse con su camino y las cofirmas: un
 verificador que no conoce al nodo lo recompone y lo acepta o lo rechaza **nombrando la regla**. El

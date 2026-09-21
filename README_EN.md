@@ -107,13 +107,15 @@ CLI — `simulate`, `trace-tx`, `inspect-state`, `conformance` — is in
 
 A payment is two transitions: the payer **sends** (one leaf) and the payee **claims** (another),
 each with a proof generated on their own machine; the layer hands out paths and roots — public
-data —, verifies proofs and **never sees a spend key**. Every epoch the node signs a **head** that
-binds the state, the chained transition log and the tree of published consumptions; independent
-witnesses co-sign it and **pin the key the first time they see it**. An **evidence package**
-carries a signed head, an acknowledgement with its path and the co-signatures: a verifier that
-does not know the node recomposes it and accepts or rejects it **naming the rule**. The core is in
-[`spec/NUCLEO.md`](./spec/NUCLEO.md), the package in [`spec/PAQUETE.md`](./spec/PAQUETE.md) and
-the published consumption in
+data — and verifies proofs. **The spend key does not travel through the API, but the proof
+publishes it**: the house prover does not hide its witness, and the node receives every proof
+(measured in §521; see [`SECURITY.md`](./SECURITY.md) §3.bis, in Spanish). Every epoch the node
+signs a **head** that binds the state, the chained transition log and the tree of published
+consumptions; independent witnesses co-sign it and **pin the key the first time they see it**. An
+**evidence package** carries a signed head, an acknowledgement with its path and the
+co-signatures: a verifier that does not know the node recomposes it and accepts or rejects it
+**naming the rule**. The core is in [`spec/NUCLEO.md`](./spec/NUCLEO.md), the package in
+[`spec/PAQUETE.md`](./spec/PAQUETE.md) and the published consumption in
 [`spec/rfc/0006-consumo-publicado.md`](./spec/rfc/0006-consumo-publicado.md) (specification files
 are in Spanish; [`spec/README.md`](./spec/README.md) is the reader's guide in English).
 

@@ -299,15 +299,21 @@ sobre los DTO:
 
 | procesa | ve | NO ve |
 |---|---|---|
-| solo envíos | emisor, importe, `notice.position` | **el receptor** |
+| solo envíos | emisor, importe, `notice.position` y, dentro de la prueba, **el receptor** (§523) | — |
 | solo cobros | receptor, importe, `notice.position` | **el emisor** |
 | **ambos** | **la arista completa** | — |
 
-**El identificador del receptor NO viaja en el recibo de envío.**
+**El identificador del receptor no es un campo del recibo de envío.**
 `SendReceiptDto` lleva `proof`, `public_inputs`, `commitment` y
 `notice`; y `SendPublicInputsDto` son raíces, importe, límite y
-suministro. El `receiver_id` solo aparece en `SendMaterialsDto`, que va
-**del nodo al titular**, no del titular al nodo.
+suministro. El `receiver_id` aparece en `SendMaterialsDto`, que va
+**del nodo al titular**, y como `receiverId` en los parámetros de
+`zkssl_sendMaterials` (su fila), que van del titular al nodo: el nodo
+lo conoce siempre. **Y viaja dentro de `proof`** (§523): la prueba del
+envío publica la identidad del receptor, porque el probador no oculta
+su testigo. La tabla de arriba es cierta de los campos del recibo y
+falsa de la prueba, y lo que el §231 llamó falso —«ve quién paga a
+quién»— es cierto por esa vía.
 
 Lo que une las dos mitades es **`notice.position`**: aparece en
 `receipt.notice.position` al enviar y en `notice.position` al cobrar. Un

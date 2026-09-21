@@ -77,7 +77,8 @@ propiedad real.
 opera:
 
 - **Ve todos los saldos.** La privacidad es frente a terceros que solo
-  ven pruebas, no frente a quien mantiene el estado.
+  ven raíces, no frente a quien mantiene el estado ni frente a quien
+  ve una prueba: el probador no oculta su testigo (§521, §523).
 - **Ordena las operaciones.** Decide qué entra y en qué orden.
 - **Puede censurar.** Nada obliga a procesar la operación de nadie.
 - **Es un punto único de fallo.** Incautarlo, apagarlo o corromperlo es
@@ -278,7 +279,7 @@ de contraseñas**: no tiene coste ajustable, así que una contraseña débil
 es vulnerable a fuerza bruta. Un despliegue real necesitaría Argon2 o
 scrypt.
 
-## La clave de gasto ya no llega al nodo
+## La clave de gasto ya no llega al nodo como argumento
 
 **El problema, que estaba sin documentar**: `layer.transfer(sender_key, ...)`
 recibía la clave de gasto. Es decir, **para transferir había que
@@ -292,7 +293,7 @@ eliminar.
 ### El protocolo
 
 ```rust
-// FASE 1 — el pagador. La capa no ve su clave.
+// FASE 1 — el pagador. La capa no recibe su clave; la prueba sí la lleva (§521).
 let m = layer.send_materials(alice, id_de_bob, importe, aleatorio)?;
 let envio = client::prove_send(&m, key, proof_options())?;   // LOCAL
 layer.apply_send(&envio, alice, &estado_alice, importe)?;
@@ -312,8 +313,10 @@ vez. Ver `AUDITORIA.md` §29.
 tipo lo impone: no hay campo por donde el saldo pudiera entrar.
 
 ⚠️ **Asimetría del cobro**: `claim_materials` recibe el aviso, no lo entrega.
-**La capa no sabe qué pendiente es de quién** —esa es la privacidad del
-diseño— así que no podría decírselo al receptor. Cómo le llega el aviso es la
+El diseño quería que **la capa no supiera qué pendiente es de quién**, y hoy
+lo sabe: la prueba del envío lleva en claro la identidad del receptor, la
+sal, el importe y la `X` (§521, §523). Que no le dé el aviso al receptor es
+una decisión de la API, no una imposibilidad. Cómo le llega el aviso es la
 pieza que ISO 20022 no transporta.
 
 **`prove_send` y `prove_claim` son funciones libres, no métodos de la capa.** Es
@@ -696,7 +699,7 @@ entre 180 y 620 ms según el contexto de caché. Sirven para comparar
 |---|---|
 | Transferir más de lo debitado | Conservación (partida doble) |
 | Abrir cuenta con saldo | Apertura siempre a cero |
-| Emitir sin autorización | Dos custodios demostrados en circuito |
+| Emitir sin autorización | Dos custodios demostrados en circuito (no frente al operador: §523) |
 | Emisión encubierta | Suministro público atado en el circuito |
 | Gastar dos veces | Encadenamiento de raíces (orden total del nodo único) |
 | Gastar sin ser el titular | Autoridad de gasto |
@@ -778,8 +781,9 @@ implementado.
 
 Prueba de concepto real, verificada de extremo a extremo, de liquidación
 de pagos bancarios con cumplimiento normativo demostrado mediante pruebas
-de conocimiento cero — sin revelar saldos ni importes, vinculado a estado
-real del ledger, con protección contra doble gasto.
+STARK —vinculado a estado real del ledger, con protección contra doble
+gasto—. Esas pruebas no ocultan su testigo: publican saldos e importes
+(§521).
 
 **Todo lo que hay en este repositorio ha sido compilado y ejecutado de
 verdad.** Cada afirmación de este README tiene una ejecución de test real
@@ -822,8 +826,10 @@ let mut layer = SovereignLayer::open(
 layer.apply_mint_delegated(...)?;      // dos custodios DISTINTOS del conjunto
 ```
 
-**La capa ya no conoce ninguna clave de emisión**, solo la raíz del
-conjunto.
+**La capa ya no recibe ninguna clave de emisión**, solo la raíz del
+conjunto. Las pruebas de autorización sí la llevan: cada custodio
+publica la suya, y tras una sola emisión delegada el nodo tiene
+dos (§523).
 
 #### El riesgo que hubo que cerrar: el mismo custodio contando dos veces
 
@@ -992,6 +998,12 @@ que necesita un régimen de supervisión real.
 
 ### La decisión de diseño: revelación voluntaria, no custodia de claves
 
+⚠️ **Hoy la revelación voluntaria entrega la clave de gasto** (§523): la
+prueba de auditoría —un circuito para los tres modos— publica la clave y
+el saldo exacto, porque el probador no oculta su testigo. La decisión de
+abajo sigue siendo la buena; lo que no se cumple es que el titular revele
+solo lo que elige.
+
 Había dos caminos:
 
 **A)** Clave de visualización en poder del supervisor (el modelo de
@@ -1081,7 +1093,9 @@ cuentas y no-pertenencia del nullifier.
 
 Con `total_supply` como valor público que solo crece mediante emisiones
 demostradas, **cualquiera puede auditar que la suma de todos los saldos
-equivale a lo emitido, sin ver un solo saldo**.
+equivale a lo emitido** sin que el libro publique un solo saldo; quien
+re-verifique las pruebas, en cambio, los ve, porque no ocultan su
+testigo (§521).
 
 Verificado en `total_balances_always_equal_total_supply`, que además
 comprueba que transferir no altera el suministro.
@@ -1210,7 +1224,7 @@ agujero grave:
 El diseño corregido sigue el modelo de Zcash Sapling:
 
 ```text
-sk        = clave de gasto (privada, nunca sale del titular)
+sk        = clave de gasto (privada; la prueba la publica, §521)
 pk        = H(DOMAIN_PK,   sk)
 leaf      = H(H(pk, balance), nonce)
 nullifier = H(H(DOMAIN_NULL, sk), nonce)

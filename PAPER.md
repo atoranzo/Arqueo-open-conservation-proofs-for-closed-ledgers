@@ -193,11 +193,14 @@ gobernanza y congelación.
 
 **Capa de estado.** Mantiene los árboles de Merkle, encadena las raíces
 entre operaciones, verifica las pruebas y aplica las transiciones. No
-conoce ninguna clave privada.
+recibe ninguna clave privada como argumento; las pruebas que verifica,
+sí la llevan: la clave de gasto en las de envío y cobro, y la del
+custodio en cada autorización delegada, porque el probador no oculta su
+testigo (corrección de septiembre de 2026: §521, §523).
 
-**Cliente.** Genera las pruebas. **La clave de gasto no sale de la máquina
-del titular**: la capa entrega los caminos de autenticación y el cliente
-construye la prueba localmente.
+**Cliente.** Genera las pruebas en la máquina del titular: la capa entrega
+los caminos de autenticación y el cliente construye la prueba localmente.
+La clave de gasto no sale como dato, pero la prueba la publica (§521).
 
 > ⚠️ **Nota de corrección (cuarta revisión).** Esta propiedad era, hasta el
 > 31 de julio de 2026, una propiedad **del diseño** y no del sistema: la
@@ -345,7 +348,7 @@ dinero, y la restricción que cierra cada una:
 |---|---|
 | Transferir más de lo debitado | Conservación (partida doble) |
 | Abrir cuenta con saldo | Apertura siempre a cero |
-| Emitir sin autorización | Dos custodios demostrados en circuito |
+| Emitir sin autorización | Dos custodios demostrados en circuito (no frente al operador: §523) |
 | Emisión sin reflejo en el suministro | Suministro público atado en el circuito |
 | Superar el tope de emisión | Rango sobre `tope − suministro` |
 | Gastar dos veces | Encadenamiento de raíces (orden total del nodo único) |

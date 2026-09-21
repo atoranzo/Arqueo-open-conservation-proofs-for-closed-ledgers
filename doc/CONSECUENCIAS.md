@@ -198,9 +198,10 @@ técnica.
 ### Lo que aporta si se implanta con coherencia
 
 Un desplazamiento **parcial** de la fe institucional hacia la verificación
-criptográfica, con privacidad frente a terceros y cumplimiento sin desnudez
-total del libro — **siempre que se declaren y acoten los poderes residuales
-del operador**.
+criptográfica, con privacidad frente a terceros que solo vean raíces —las
+pruebas publican su testigo (§521)— y cumplimiento sin desnudez total del
+libro — **siempre que se declaren y acoten los poderes residuales del
+operador**.
 
 ### Lo que no aporta
 

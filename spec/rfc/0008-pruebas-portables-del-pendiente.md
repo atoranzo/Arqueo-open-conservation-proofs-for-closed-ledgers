@@ -77,6 +77,12 @@ claro y la publica, con la sal y el importe exacto; la del pago publica la sal, 
 no cambian aquí; lo que cambia es lo que pueden prometer, y eso lo decide un RFC sobre qué se
 promete.
 
+**Corrección del §523** (D-AW). Decía que el patrón de la casa —`prove` en el cliente, `apply`
+verifica sin ver la clave— se cumple al pie de la letra porque el sobre de la prenda no lleva
+clave: no la lleva como CAMPO, pero la prueba la publica (la corrección de arriba), y `apply` la
+ve al verificarla. La regla que lo explica se midió en la sesión 163: sale literal todo valor que
+va en una columna constante de la traza. Como arriba, la decisión no cambia aquí.
+
 ### La frontera con H5b, y qué es de cada uno
 
 Este RFC habla de un pendiente que ESTÁ en el árbol: existe, tiene importe, tiene edad, y se

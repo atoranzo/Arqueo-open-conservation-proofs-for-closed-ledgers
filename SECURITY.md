@@ -200,11 +200,12 @@ atado al importe (§74). Ambas corregidas y medidas.
 - **No hay recuperación si el nodo desaparece.**
 - **Metadatos**: qué posiciones cambian y cuándo siguen siendo observables.
   Medido campo a campo en §231: un envío revela **emisor, importe y
-  `notice.position`** —no el receptor—; un cobro revela **receptor,
-  importe y la misma posición**. Quien vea las dos mitades reconstruye la
-  arista por esa clave. El nodo las ve siempre; un **agregador** (§223)
-  solo si procesa ambas, así que separarlas entre agregadores distintos
-  es una mitigación real.
+  `notice.position`**; un cobro revela **receptor, importe y la misma
+  posición**. Pero la prueba del envío publica además **la identidad del
+  receptor** (medido en la sesión 163, §523), así que quien procese solo
+  envíos ya ve la arista entera: el nodo siempre, y un **agregador** (§223)
+  también. Separar las mitades entre agregadores distintos **no mitiga
+  nada** mientras el probador no oculte su testigo (§3.bis).
 - **Solidez de circuitos y del sistema de prueba**: no verificada formalmente.
 - ⚠️ **Rotar la clave exige dos custodios.** Un titular puede gastar sin
   permiso de nadie y **no puede mejorar su propia seguridad sin permiso de
@@ -222,10 +223,11 @@ a dos, y conviene nombrarlas mirando hacia delante:
    fail-stop. Eliminación: consenso/replicación o anclaje externo de
    raíces (interfaz diseñada: `doc/ANCLAJE_EXTERNO.md`; pendiente de despliegue).
 
-2. **El operador ve el estado.** La privacidad es frente a terceros,
-   no frente a quien mantiene el ledger; el titular tiene vista
-   autenticada (49-A) y el resto es asumido y documentado. Eliminación:
-   arquitectura de operador ciego (B11) o federación.
+2. **El operador ve el estado.** La privacidad es frente a terceros que
+   solo ven raíces y cabezas firmadas, no frente a quien mantiene el
+   ledger ni frente a quien ve una prueba (§3.bis); el titular tiene
+   vista autenticada (49-A) y el resto es asumido y documentado.
+   Eliminación: arquitectura de operador ciego (B11) o federación.
 
 Ninguna prueba ZK sustituye estas dos; lo que este proyecto exige es
 que estén **escritas, medidas y con su ataque diseñado** en vez de
@@ -433,8 +435,8 @@ y también trae dos defensas que antes no existían.
 
 **Lo que el diseño protege, verificado en código:**
 
-- **La clave de gasto no sale por la API, pero sí sale en la prueba**
-  (§521). El pago va en dos fases y la prueba se genera **en local**
+- **Las claves no salen por la API, pero sí salen en la prueba** (§521 y
+  §523). El pago va en dos fases y la prueba se genera **en local**
   (`prove_send`/`prove_claim`); `Wallet::spend_key` es privado y **ni
   siquiera implementa `Serialize`**: no hay accidente posible por
   serialización. Eso sigue siendo cierto, y no basta. Medido en las
@@ -443,16 +445,25 @@ y también trae dos defensas que antes no existían.
   filas de su traza en claro, y lo que va en esas filas se publica: la
   clave de gasto en el envío, el cobro y la prenda —y en el envío v2,
   además, el saldo, el importe, la sal, el `leaf_salt` y la `X`—; el saldo
-  y el `leaf_salt` en la banda; el emisor de cada pendiente en la edad; y
-  la sal en los dos sobres portables, con la `X` y el importe exacto en el
-  de cobro y el `delta` y el `refund_id` en el de pago. La solidez no cae:
+  y el `leaf_salt` en la banda; el emisor en la edad, cuando todos los
+  pendientes son del mismo; y la sal en los dos sobres portables, con la
+  `X` y el importe exacto en el de cobro y el `delta` y el `refund_id` en
+  el de pago. La regla que lo explica se midió con dos falsadores (§523):
+  **sale literal todo valor que va en una columna constante de la traza**.
+  Por eso la auditoría —un circuito para los tres modos— publica la clave
+  de gasto y el saldo exacto; la quema, la clave; el envío, la identidad
+  del receptor; y **cada autorización delegada, la clave de su custodio**:
+  tras una sola emisión, congelación o recuperación delegada, el nodo
+  tiene las claves de dos custodios y puede autorizar la siguiente. La
+  gobernanza usa el mismo circuito: deducido, no medido. La conservación
+  no cae; cae quién puede mover el suministro. La solidez tampoco cae:
   cada prueba sigue probando lo que dice. Lo que cae es la ocultación, y
-  con ella la custodia de la clave frente a quien vea una prueba. Quien ve
-  una prueba es el nodo, que las recibe, y quien lea un vector o un
-  paquete publicado: los de `spec/vectors/` son de sandbox, y del catálogo
-  de rechazos se derivan dos claves de gasto de sandbox. La regla del API
-  —la clave no viaja— hoy **no se cumple**; qué se promete mientras tanto
-  lo decide un RFC.
+  con ella la custodia de las claves —la de gasto y las de custodio—
+  frente a quien vea una prueba. Quien ve una prueba es el nodo, que las
+  recibe, y quien lea un vector o un paquete publicado: los de
+  `spec/vectors/` son de sandbox, y del catálogo de rechazos se derivan
+  dos claves de gasto de sandbox. La regla del API —la clave no viaja— hoy
+  **no se cumple**; qué se promete mientras tanto lo decide un RFC.
 - **El cable rechaza lo que no entiende**: DTOs con
   `deny_unknown_fields`, hex canónico, digests de anchura fija.
 - **Los vectores de conformidad son una defensa, no solo documentación.**

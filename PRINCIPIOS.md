@@ -154,10 +154,12 @@ adjunta, traduciendo sus errores a códigos de motivo ISO reales
 (`AM04`, `AC01`, `AG01`...). No es un parser XML ni cubre el estándar
 completo, y no hay máquina virtual.
 
-**Privacy & Compliance Module** — ✅
+**Privacy & Compliance Module** — ✅ el enunciado, ❌ la ocultación
 Revelación selectiva con tres modos: saldo exacto, mínimo, y **banda**
 ("estoy entre X e Y"). El titular produce la prueba; el supervisor la
-verifica **sin acceso al ledger**.
+verifica **sin acceso al ledger**. Pero la prueba no oculta su
+testigo: la de auditoría —un solo circuito para los tres modos—
+publica el saldo exacto y la clave de gasto (§523).
 
 **Governance Layer** — ✅
 Jerarquía de dos niveles: los **custodios** emiten y recuperan cuentas;
