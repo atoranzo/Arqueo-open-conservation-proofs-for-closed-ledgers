@@ -69,6 +69,14 @@ vive en su celda, como en el RFC-0005; el giro a ACEPTADO exige lo que la fila E
 Diseño decía «diecisiete decisiones»: las doce de la sesión 150 —D-R..D-W del banco y D-X..D-AC
 del catálogo— vivían sólo en los asientos 498 y 499, y entran aquí con su reversión.
 
+**Corrección del §521** (D-B, D-I, la corrección del §489 y la Seguridad). Decían que `X` no viaja y
+que el sobre del cobrador no la lleva: no la lleva como CAMPO, pero la prueba abre sus filas en
+claro y la publica, con la sal y el importe exacto; la del pago publica la sal, el `delta` y el
+`refund_id`; y la de la prenda, la clave de gasto del prendador, 42 veces. Medido en las sesiones
+162 y 163: winterfell 0.13 no oculta el testigo. Las decisiones se tomaron con el dato de su fecha y
+no cambian aquí; lo que cambia es lo que pueden prometer, y eso lo decide un RFC sobre qué se
+promete.
+
 ### La frontera con H5b, y qué es de cada uno
 
 Este RFC habla de un pendiente que ESTÁ en el árbol: existe, tiene importe, tiene edad, y se
@@ -1085,8 +1093,9 @@ expediente aunque no rompa nada.
   `comprobar_enunciado` acota `importe`, `T` y `nacido` a `MAX_VALOR = 2^62 - 1` y exige
   `nacido <= T`. El <<nunca>> del punto de arriba, que el campo reduce a `2^32 - 2`, cae holgado
   dentro. Quien lea un sobre por encima de esas cotas no lee un sobre: no hay ninguno.
-- **La clave de gasto no viaja jamás** (regla 3 del PROCESO): la prueba de prenda se produce
-  en el cliente, como el cobro.
+- **La regla 3 del PROCESO —la clave de gasto no viaja jamás— hoy no se cumple aquí.** La prueba de
+  prenda se produce en el cliente, como el cobro, pero publica la clave: sus filas abiertas la
+  llevan en claro, 42 veces (§521).
 
 ## Referencias
 

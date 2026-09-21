@@ -75,8 +75,10 @@ técnica: si el setup permite crear dinero invisible, se descarta.
 censurar. Ni la banca ni la mayoría de cadenas privadas formulan así su
 poder.
 
-**Separación clave / nodo.** La clave de gasto no viaja al operador; la
-prueba se genera en el cliente.
+**Separación clave / nodo.** La clave de gasto no viaja al operador por la
+API; la prueba se genera en el cliente. Pero la prueba la publica:
+winterfell 0.13 no oculta el testigo, y el nodo recibe cada prueba (medido
+en §521; ver `SECURITY.md`).
 
 **Comparativa empírica sobre una aplicación real.** No benchmarks de
 SHA-256: el mismo circuito de liquidación en cinco backends, con hallazgos

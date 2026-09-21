@@ -52,6 +52,12 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 
 **La clave de gasto no viaja jamás.**
 
+⚠️ **Hoy la implementación no cumple este principio** (medido en §521):
+la clave no cruza la API, pero las pruebas de envío y de cobro la
+publican en claro —winterfell 0.13 no oculta el testigo— y el nodo las
+recibe. El principio queda como regla; qué se promete mientras no se
+cumpla lo decide un RFC. Ver `SECURITY.md`.
+
 - Abrir cuenta = enviar identificadores derivados en el cliente:
   `publicId`, `viewId`, `leafSalt`.
 - Pagar/cobrar = pedir materiales (caminos y raíces: públicos), **probar

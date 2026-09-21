@@ -325,7 +325,9 @@ pasándosela.
 nullifier sí viaja a la capa y no revela nada nuevo, porque es público y
 aparecería igualmente al aplicar la liquidación. Esa vía se retiró y el árbol
 de nulificadores **se eliminó de la capa**: hoy nada genera un nullifier. Lo
-que sigue siendo cierto es lo de arriba: la clave de gasto no viaja.
+que sigue siendo cierto es lo de arriba: la capa no recibe la clave como
+argumento. Pero la prueba sí la lleva en claro —winterfell 0.13 no oculta el
+testigo, medido en §521—, así que «no viaja» sólo vale para la API.
 
 ### La propiedad que lo hace seguro
 

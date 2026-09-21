@@ -38227,3 +38227,69 @@ con el tiempo del canon dentro como TOKEN, que es lo unico que no se puede prede
 delegadas), y detras el banco y el catalogo `spec/vectors/prenda/`, que es la octava familia y
 cuyos positivos salen de las capturas de un nodo vivo. Nace el 5.A-357. Sigue pendiente el
 falsador de la deduccion de D-BB, que vive del lado del productor.
+
+## §521 — El testigo se publica: la prosa deja de afirmar lo contrario (5.A-360)
+
+**Que.** Ocho documentos dejan de afirmar que la clave de gasto no viaja o que lo que es testigo
+no se publica. Medido en las sesiones 162 y 163 (20 y 21 de septiembre de 2026): las pruebas
+STARK de la casa (winterfell 0.13) NO ocultan su testigo. Cada prueba abre 42 filas de su traza
+en claro -42 es el numero de consultas de `ProofOptions`-, y lo que va en esas filas se publica.
+La SOLIDEZ no cae: cada prueba sigue probando lo que dice. Cae la OCULTACION, y con ella la
+custodia de la clave frente a quien vea una prueba. Es corte de PROSA y solo de `.md`: ningun
+`.rs`, ningun pin, ninguna cifra de tests.
+
+**Lo medido, y por quien.** Cuatro lecturas puras, las cuatro restaurando con sha y porcelain:
+PASTE-521-ROJO, PASTE-ZK-M y PASTE-ZK-M2 (sesion 162) y PASTE-360-M (sesion 163), todas con
+control a 0. La clave de gasto sale 42 veces en SEND-v1, SEND-v2, CLAIM y PRENDA; la fila del
+envio v2 lleva ademas el saldo, el importe, la sal, el `leaf_salt` y la `X`. El sobre de cobro
+publica la sal, la `X` y el importe exacto; el de pago, la sal, el `delta` y el `refund_id`. La
+BANDA publica el saldo y el `leaf_salt` (el saldo casa 88 veces, dos columnas por fila), y el
+vector `saldo-insuficiente.json` lleva el suyo, 1000, leido en sus 42 aperturas. La EDAD publica
+el emisor de cada pendiente, 43 veces, tambien con `emisor: None`. Y el catalogo de rechazos
+lleva DOS pruebas reales -un SEND y un CLAIM de un banco, repetidos en 23 operaciones de lote- de
+las que un CAZADOR que no conoce el trazado deriva la clave de gasto de sus dos cuentas sandbox:
+41 y 42 ventanas cuya identidad es el `publicId` que el propio vector publica, senuelo a 0, y el
+cazador validado antes contra un SEND y un CLAIM frescos de clave conocida (42 y 42).
+
+**La frase canonica vive en UN sitio.** `SECURITY.md` la lleva entera; los demas dicen lo suyo y
+remiten al asiento, que es lo estable. Una cuenta publicada en N sitios se corrige en los N
+(PRECISION 195), pero una frase larga repetida N veces es N sitios que mantener.
+
+**Regla frente a hecho.** `spec/RPC.md`:53 y la regla 3 de `spec/rfc/PROCESO.md` enuncian el
+PRINCIPIO, y una regla no caduca: se quedan, con una frase que dice que hoy no se cumple. Lo que
+AFIRMABA el hecho -<<no viaja>>, <<no puede viajar>>, <<son testigo>> como si eso ocultara- pasa
+a hecho medido. En los RFC el pasado no se reescribe: D-B, D-I y la correccion del §489 del
+RFC-0008, y el <<Un saldo, y a quien se le oculta>> del RFC-0007, reciben una <<Correccion del
+§521>> en el molde de las que ya llevan; lo que hablaba en PRESENTE -la celda de la banda en la
+tabla del RFC-0007, sus dos bullets de Seguridad y el de la prenda en el RFC-0008- se reescribe.
+<<No prueba>> no es <<no revela>>: los <<Lo que NO prueba>> de `PAQUETE.md` siguen ciertos y no
+se tocan; ganan la frase que dice que ser testigo no es estar oculto.
+
+**Lo que NO se toca, y por que.** `PAQUETE.md`:424 dice que la prueba de la banda <<verifica sin
+el saldo>>, y es cierto: el verificador no lo recibe. `PAQUETE.md`:824 es historia de asientos.
+Los <<Efecto sobre el principio del API: NINGUNO>> de los RFC 0002-0006 son historia. Los
+preprints con DOI no se editan: un deposito es un deposito.
+
+**La particion, aprobada por el autor.** Este corte es solo `.md`. El §522 lleva los `.rs` que
+afirman lo mismo en comentario -`openrpc.rs` con el `openrpc.json` regenerado, `prueba_banda.rs`,
+`prueba_cobro.rs`, `cobro_pendiente.rs`, `pago_en_curso.rs` y los de `zk-ssl-node` y
+`zk-ssl-verify`-, con release y lista de tests identica. Ninguno lo vuelve rancio este corte: ya
+lo estaban. Y a la cola van tres cosas con su perimetro: el literal del kit <<esta causa no
+publica el saldo: la banda lo prueba sin el>>, que es contrato del negativo `3-con-saldo`, de
+`PAQUETE.md`:572 y del artefacto, y cuya primera mitad es cierta; <<sin revelar el saldo>> en
+`zk-core/src/circuit_audit.rs`:51 e `iso-bridge/src/lib.rs`:63, otro circuito y sin medir; y
+que la edad publica el emisor, un hecho medido que ninguna frase del arbol niega.
+
+**Contadores.** OCHO ficheros y ninguno nace, mas el asiento: `SECURITY.md` +20 -4,
+`spec/PAQUETE.md` +20 -11, `spec/rfc/0008-pruebas-portables-del-pendiente.md` +11 -2,
+`spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md` +10 -3, `spec/RPC.md` +6 -0,
+`doc/APORTACION.md` +4 -2, `ARQUITECTURA.md` +3 -1, `spec/rfc/PROCESO.md` +3 -1 y `AUDITORIA.md`
++66 -0 (este asiento): 38.229 -> 38.295. Las diez herramientas por delta: nueve IDENTICAS y
+`check_figures` mueve tres POSICIONES de `ARQUITECTURA.md` (841, 1121, 1164 -> +2), que es
+informativo. Las 31 SHA-REGION clavan. El canon NO corre: no hay un byte de codigo.
+
+**Lo que NO cierra.** El 5.A-360 sigue abierto: esto deja de AFIRMAR lo falso, no hace verdad lo
+que se afirmaba. Detras van el §522 y un RFC sobre que se promete -la regla 3 del PROCESO dice
+que un RFC que erosione el principio nace RETIRADO, y aqui no lo erosiona un RFC sino el
+probador-. E3, el S521 que no se sello y el H5 siguen PARADOS detras de los dos. Y las 57 frases
+de privacidad en 16 documentos siguen sin revisar una a una.

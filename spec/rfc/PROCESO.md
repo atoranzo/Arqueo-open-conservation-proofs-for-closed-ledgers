@@ -17,7 +17,9 @@ BORRADOR → PROPUESTO → ACEPTADO → FINAL · o RETIRADO en cualquier punto.
    (`zkssl/0.1` → `zkssl/0.2`) y los vectores viejos se conservan bajo
    su versión — jamás se reescriben.
 3. Todo RFC declara su efecto sobre el principio del API: **la clave de
-   gasto no viaja jamás**. Un RFC que lo erosione nace RETIRADO.
+   gasto no viaja jamás**. Un RFC que lo erosione nace RETIRADO. Hoy la
+   implementación no cumple el principio: el probador no oculta el
+   testigo (§521).
 4. ACEPTADO exige: la spec actualizada + OpenRPC regenerado + vectores
    re-emitidos (o nuevos bajo la versión nueva) + suites verdes.
 5. El asiento de AUDITORIA.md que selle el cambio referencia el RFC por

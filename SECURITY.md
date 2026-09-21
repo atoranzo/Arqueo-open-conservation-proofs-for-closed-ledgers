@@ -433,10 +433,26 @@ y también trae dos defensas que antes no existían.
 
 **Lo que el diseño protege, verificado en código:**
 
-- **La clave de gasto no viaja, y no *puede* viajar.** El pago va en dos
-  fases y la prueba se genera **en local** (`prove_send`/`prove_claim`);
-  `Wallet::spend_key` es privado y **ni siquiera implementa
-  `Serialize`** — no hay accidente posible por serialización.
+- **La clave de gasto no sale por la API, pero sí sale en la prueba**
+  (§521). El pago va en dos fases y la prueba se genera **en local**
+  (`prove_send`/`prove_claim`); `Wallet::spend_key` es privado y **ni
+  siquiera implementa `Serialize`**: no hay accidente posible por
+  serialización. Eso sigue siendo cierto, y no basta. Medido en las
+  sesiones 162 y 163 (20 y 21 de septiembre de 2026): las pruebas STARK de
+  la casa (winterfell 0.13) **no ocultan su testigo**. Cada prueba abre 42
+  filas de su traza en claro, y lo que va en esas filas se publica: la
+  clave de gasto en el envío, el cobro y la prenda —y en el envío v2,
+  además, el saldo, el importe, la sal, el `leaf_salt` y la `X`—; el saldo
+  y el `leaf_salt` en la banda; el emisor de cada pendiente en la edad; y
+  la sal en los dos sobres portables, con la `X` y el importe exacto en el
+  de cobro y el `delta` y el `refund_id` en el de pago. La solidez no cae:
+  cada prueba sigue probando lo que dice. Lo que cae es la ocultación, y
+  con ella la custodia de la clave frente a quien vea una prueba. Quien ve
+  una prueba es el nodo, que las recibe, y quien lea un vector o un
+  paquete publicado: los de `spec/vectors/` son de sandbox, y del catálogo
+  de rechazos se derivan dos claves de gasto de sandbox. La regla del API
+  —la clave no viaja— hoy **no se cumple**; qué se promete mientras tanto
+  lo decide un RFC.
 - **El cable rechaza lo que no entiende**: DTOs con
   `deny_unknown_fields`, hex canónico, digests de anchura fija.
 - **Los vectores de conformidad son una defensa, no solo documentación.**
