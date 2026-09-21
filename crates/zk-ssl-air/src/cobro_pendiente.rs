@@ -9,10 +9,10 @@
 //!
 //! ## Lo que es testigo y lo que no (D-B, D-I)
 //!
-//! Publico: las dos raices, `receptor`, `nacido` y las dos cotas. Testigo: la `sal`, el
-//! `importe`, el sobre `X`, el `emisor`, los dos caminos y la posicion. `X` es testigo porque es
-//! un compromiso sin aleatoriedad (`M(refund_id, delta)`): con un `refund_id` que se adivina
-//! diria quien pago y cuando caduca (D-I). El `emisor` es testigo por la misma Seguridad.
+//! Publico: las dos raices, `receptor`, `nacido` y las dos cotas. Testigo: la `sal`, el `importe`,
+//! el sobre `X`, el `emisor`, los dos caminos y la posicion; `X` y el `emisor`, por la Seguridad de
+//! D-I (`X = M(refund_id, delta)` no tiene aleatoriedad). Pero testigo NO es oculto: la prueba abre
+//! sus filas en claro y publica la sal, `X` y el importe exacto (medido en el S521).
 //!
 //! ## La geometria (D-H)
 //!
@@ -175,7 +175,7 @@ pub const NUM_ASERCIONES: usize = 19;
 
 // ------------------------------------------------------------------ las entradas publicas
 
-/// **Lo que el juez declara.** Ni `X` ni el emisor: son testigo (D-I).
+/// **Lo que el juez declara.** Ni `X` ni el emisor: son testigo (D-I), no ocultos (S521).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CobroPendientePublicInputs {
     pub pending_root: Digest,

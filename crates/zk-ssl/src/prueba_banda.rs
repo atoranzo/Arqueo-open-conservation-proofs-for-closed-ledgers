@@ -19,9 +19,9 @@
 //! peticion que se rechazo. No hay forma de pedir una banda mas floja.
 //!
 //! **Lo que NO prueba** esta en la cabecera de `zk_ssl_air::banda` y no se repite. Y lo que este
-//! corte decide y hay que decir aqui: el sobre NO publica el saldo -la banda lo prueba sin el-,
-//! pero el CABLE si lo manda desde el S454 a quien hizo la peticion. La banda protege a quien
-//! LEE EL SOBRE, no a quien recibio el rechazo.
+//! corte decidio: el `data` del sobre NO trae el saldo, pero la PRUEBA si lo publica -abre sus
+//! filas en claro con el saldo y el `leaf_salt`, medido en el S521-, y el CABLE lo manda desde el
+//! S454 a quien hizo la peticion. <<Probar sin el>> es del enunciado, no de lo que se ve.
 
 use crate::{AccountIndex, Digest, LayerError, SovereignLayer};
 use stark_experiment::circuit_banda as banda;
@@ -34,8 +34,8 @@ pub struct CabezaDeCuentas {
     pub accounts_root: Digest,
 }
 
-/// **Lo que el productor entrega**: la prueba y lo que el sobre declara. El saldo NO esta, y no
-/// por olvido (D-0 del corte).
+/// **Lo que el productor entrega**: la prueba y lo que el sobre declara. El saldo no va como
+/// CAMPO (D-0 del corte), pero va dentro de la prueba, que no oculta su testigo (S521).
 #[derive(Clone, Debug)]
 pub struct SobreBanda {
     pub prueba: Vec<u8>,

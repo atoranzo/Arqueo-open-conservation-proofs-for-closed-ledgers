@@ -1324,8 +1324,8 @@ fn data_de(e: &LayerError, seq: u64) -> Value {
 /// `zkssl_publishConsumo`-, asi que la omision NO puede vivir dentro: cambiarla ahi seria
 /// cambiar un contrato publicado. Vive aqui, en el hermano que solo usa el sobre.
 ///
-/// `available` sale porque la prueba de banda demuestra la desigualdad SIN el saldo, y el mando
-/// no tiene contra que cruzarlo: un campo incruzable es la palabra del nodo sin contraste.
+/// `available` sale porque el mando no tiene contra que cruzarlo: un campo incruzable es la palabra
+/// del nodo sin contraste. No porque la banda lo pruebe sin el: la prueba lo publica (§521).
 const OMITE_EL_SOBRE: &[(&str, &str)] = &[("InsufficientBalance", "available")];
 
 /// El `data` del SOBRE: el del cable menos lo que [`OMITE_EL_SOBRE`] declara.

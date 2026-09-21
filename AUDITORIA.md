@@ -38293,3 +38293,62 @@ que se afirmaba. Detras van el §522 y un RFC sobre que se promete -la regla 3 d
 que un RFC que erosione el principio nace RETIRADO, y aqui no lo erosiona un RFC sino el
 probador-. E3, el S521 que no se sello y el H5 siguen PARADOS detras de los dos. Y las 57 frases
 de privacidad en 16 documentos siguen sin revisar una a una.
+
+## §522 — El testigo se publica, la mitad de los `.rs`: comentarios y un literal (5.A-360)
+
+**Que.** La mitad del corte de prosa que el §521 dejo, con la particion que el autor aprobo: siete
+comentarios de codigo, un comentario de un banco y un literal del API dejan de afirmar que lo que
+es testigo no se publica. El literal es la descripcion que el propio API sirve en `openrpc.rs`,
+con su gemelo generado `spec/openrpc.json`; pasa de <<Principio que el API preserva: la clave de
+gasto no viaja jamas>> a decir el principio y que hoy no se cumple, con la causa y el asiento.
+El resto son `prueba_banda.rs`, `prueba_cobro.rs`, `cobro_pendiente.rs` y `pago_en_curso.rs`,
+el comentario de `OMITE_EL_SOBRE` en el nodo, el del brazo de la banda en el mando y el de la D-0
+en `tools/banco_rechazo.sh`.
+
+**TODAS las ediciones son NEUTRALES EN LINEAS, y el kit se mide SECCION A SECCION.** Cada region
+sale con las mismas lineas que entra y cada fichero con las mismas que tenia: ningun `line!()` ni
+ninguna ubicacion de panico se mueve. Importa por el KIT: su clausura es `zk-ssl-verify`,
+`zk-ssl-air`, `zk-ssl-hash` y `zk-ssl-guardian` (medido sobre `Cargo.lock`), y este corte abre
+dos ficheros de `zk-ssl-air` y el mando. La r1 de este bloque exigia el binario identico byte a
+byte y paro en rc 64, restaurando; el PASTE-522-KIT-M lo explico. Recompilar EN SITIO la misma
+fuente SI da el mismo binario (`9ecab1d449cf054f` antes, tras un `touch` y tras restaurar). Un
+comentario NO: el del mando solo da `cdc9b80e8e40cc36`, los dos de `zk-ssl-air` `4d6537a1a3dd00ef`
+y los tres `0076cf089b65269d`. Pero de 35 secciones difieren TRES -`.symtab`, `.strtab` y
+`.note.gnu.build-id`- y `.text`, `.rodata` y `.data` son identicas: cambian los sufijos
+`.llvm.<hash>` que LLVM pone a los simbolos locales que promueve, y el build-id que los resume.
+El codigo y los datos del kit no se mueven; su HUELLA si, porque el binario no se despoja de
+simbolos. La puerta de esta r2 exige exactamente lo medido: las otras 32 secciones identicas y
+solo esas tres distintas.
+`zk-ssl-wire` no entra en el kit, asi que el literal del API no puede moverlo.
+
+**El literal, y su gemelo.** El test `el_json_publicado_es_el_que_genera_esta_tabla` compara el
+json publicado con `document()` como VALOR, asi que los dos cambian en el mismo corte y el test
+corre dentro del bloque. Ademas se regenera con `gen_openrpc`: si la salida del PRE era el
+fichero byte a byte, la del POST tiene que serlo del predicho. Nadie mas consume la frase:
+medido, solo la llevan `openrpc.rs`, `spec/openrpc.json` y `spec/RPC.md` (que corrigio el §521).
+Ningun vector del cable ni ningun banco la captura.
+
+**Lo que NO se toca.** El literal del kit <<esta causa no publica el saldo: la banda lo prueba sin
+el>> es CONTRATO -lo exigen el negativo `3-con-saldo`, `spec/PAQUETE.md`:572 y el artefacto- y
+va a la cola con su perimetro; su primera mitad es cierta. <<Sin revelar el saldo>> en
+`zk-core/src/circuit_audit.rs`:51 e `iso-bridge/src/lib.rs`:63 es otro circuito y esta sin medir.
+La cabecera de `prueba_banda.rs` que dice <<Sin clave, y por eso existe>> es cierta: la banda no
+lleva la clave, medido a 0 en el PASTE-360-M.
+
+**Contadores.** NUEVE ficheros y ninguno nace, mas el asiento, todos con tantas lineas como
+tenian: `crates/zk-ssl/src/prueba_banda.rs` +5 -5, `crates/zk-ssl-air/src/cobro_pendiente.rs`
++5 -5, `crates/zk-ssl-node/src/main.rs` +2 -2, `crates/zk-ssl-verify/src/main.rs` +2 -2,
+`tools/banco_rechazo.sh` +2 -2, `crates/zk-ssl/src/prueba_cobro.rs` +1 -1,
+`crates/zk-ssl-air/src/pago_en_curso.rs` +1 -1, `crates/zk-ssl-wire/src/openrpc.rs` +1 -1,
+`spec/openrpc.json` +1 -1 y `AUDITORIA.md` +59 -0 (este asiento): 38.295 -> 38.354. Puertas: la
+lista de tests IDENTICA nombre a nombre en los cinco crates que se abren, el test del json, el
+kit identico salvo sus simbolos y las diez herramientas por delta, las diez IDENTICAS. Las 31
+SHA-REGION clavan. El canon NO corre: no cambia un test ni un pin.
+
+**Lo que NO cierra.** El 5.A-360 sigue abierto, y ahora sin prosa falsa en el arbol salvo el
+literal del kit y los dos de otro circuito. Detras va el RFC sobre que se promete, y E3, el S521
+que no se sello y el H5 siguen PARADOS. Nace un punto de cola: la huella del binario del kit se
+mueve con un COMENTARIO dentro de su clausura, porque no se despoja de simbolos; despojarlo es
+decision de otro corte, que toca el perfil o `tools/artefacto.sh`. Y una cuenta del §521: su
+commit `ff58121` se escribio `§521 — ...` y la casa escribe `S520-B: ...`; un commit empujado no
+se reescribe, y este vuelve al molde.

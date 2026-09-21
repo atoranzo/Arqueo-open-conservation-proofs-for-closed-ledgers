@@ -187,7 +187,7 @@ pub const NUM_ASERCIONES: usize = 19;
 
 // ------------------------------------------------------------------ las entradas publicas
 
-/// **Lo que el juez declara.** Ni el `refund_id` ni el `delta` ni el emisor: son testigo.
+/// **Lo que el juez declara.** Ni `refund_id` ni `delta` ni el emisor: testigo, no oculto (S521).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PagoEnCursoPublicInputs {
     pub pending_root: Digest,

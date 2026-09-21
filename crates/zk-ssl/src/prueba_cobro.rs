@@ -20,7 +20,7 @@
 //!
 //! **La cota superior no se pide.** El sobre dice <<al menos `inferior`>>, asi que el techo es el
 //! del campo (`MAX_VALOR`) y no un argumento: no hay forma de pedir una banda que diga mas de lo
-//! que el RFC promete. `X` no sale en el sobre (D-I).
+//! que el RFC promete. `X` no va como campo del sobre (D-I), pero la prueba la publica (S521).
 
 use crate::two_phase::PendingNotice;
 use crate::{Digest, LayerError};

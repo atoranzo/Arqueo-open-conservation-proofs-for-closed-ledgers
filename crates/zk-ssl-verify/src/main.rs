@@ -1171,8 +1171,8 @@ fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
             // RFC-0007 E5, corte 4b: la BANDA del saldo. Es el primer brazo de este mando que
             // verifica un STARK; la regla vive en `zk_ssl_air::banda::verificar`, un solo
             // productor en el crate que el tercero compila, y aqui solo se le pasa lo que la
-            // cabeza FIRMA. El saldo no viaja: la prueba demuestra la desigualdad sin el, y por
-            // eso el sobre no lo lleva y este brazo lo RECHAZA si aparece.
+            // cabeza FIRMA. El `data` no trae el saldo y este brazo lo RECHAZA si aparece; la
+            // prueba si lo lleva en claro (winterfell 0.13 no oculta el testigo, §521).
             if campos.get("available").is_some() {
                 return Err(err(
                     "data: esta causa no publica el saldo: la banda lo prueba sin el".into(),
