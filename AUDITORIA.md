@@ -38389,6 +38389,10 @@ agregadores- y <<La capa no sabe que pendiente es de quien>>. La AUDITORIA: la r
 voluntaria entrega la clave, y los tres modos, que son un circuito, publican el saldo exacto
 (`PRINCIPIOS.md`, `doc/APORTACION.md` y `ARQUITECTURA.md`). Y el MARCO: <<privada frente a
 terceros que solo ven una prueba>>, bajo <<Lo que esta demostrado>>, y sus hermanas.
+CORRECCION (§524, 2026-09-21): cuatro de estas regiones -R14, R16, R17 y R18 del RENDER-523,
+`ARQUITECTURA.md` 779..782, 993, 1082..1084 y 1213 del arbol de `2afa996`- hablan de la capa
+ANTERIOR, la de Groth16 (`crates/zk-core` y `crates/settlement-layer`), y no de la STARK. Lo que
+el §521 y este asiento miden es de winterfell; el §524 las devuelve a sus bytes PRE.
 
 **De paso, dentro de los parrafos que se reescriben.** El del DTO de `spec/RPC.md` decia que el
 receptor no va del titular al nodo, y la fila de `zkssl_sendMaterials` lo lleva como parametro. La
@@ -38419,3 +38423,44 @@ por delta. El canon NO corre: no se abre un `.rs`, ni un test, ni un pin.
 **Lo que NO cierra.** El 5.A-367 y el 5.A-360 siguen abiertos: quedan los comentarios del codigo
 (el §524), lo sin medir (el M3), el literal del kit y el RFC-0009, que decide que se promete. E3,
 el S521 de la prenda y el H5 siguen PARADOS.
+
+## §524 — Correccion del §523: cuatro regiones de `ARQUITECTURA.md` eran de Groth16 (5.A-367)
+
+**Que.** El §523 aplico la medida de winterfell -la prueba abre filas de su traza en claro- a
+cuatro regiones de `ARQUITECTURA.md` que describen la capa ANTERIOR, la de Groth16 (`crates/zk-core`
+y `crates/settlement-layer`), bajo <<El trabajo comparativo que fundamento la eleccion>>: la
+entrada del README incrustado, el titulo de la decision de la auditoria de `zk-core`, la auditoria
+de la conservacion de la emision de Groth16 y la formula de `sk` del modelo Sapling. Una prueba
+Groth16 son tres elementos de grupo y no abre filas de ninguna traza, asi que lo que el §521 y el
+§523 miden no le aplica. Las cuatro vuelven a sus bytes PRE, byte a byte; ninguna otra region del
+§523 cambia.
+
+**Por que paso, en dos causas.** El censo localizo cada frase en su parrafo y nunca pregunto de que
+sistema habla su seccion, y `ARQUITECTURA.md` mezcla las dos capas desde su linea 775: <<El ciclo
+monetario completo>> ya describe la STARK, con `SovereignLayer` y custodios, y el resto es la de
+Groth16. Y el censo heredo una atribucion del traspaso: el 5.A-364 dice que el PASTE-360-M2 midio
+`zk-core/src/circuit_audit.rs`:51, y lo que midio es `prove_minimum` de la capa, cuyo circuito de
+auditoria es el de `stark-experiment`; `zk-ssl` ni siquiera depende de `zk-core`.
+
+**Lo medido de paso, PASTE-367-M3**, lectura pura restaurada con sha y porcelain: la GOBERNANZA
+delegada publica la clave de cada miembro en su prueba (42 y 42; cruzado 0, el que no firma 0); la
+EMISION A PENDIENTE, la identidad del receptor y la sal (42 y 42); el COBRO, el saldo del receptor
+antes y despues (44 y 44) y su clave, pero NO al pagador (0); la SOLVENCIA de `stark-experiment`,
+el saldo y el importe (44 y 44); y MERKLE nada, porque ni la hoja ni los hermanos son constantes:
+el modelo pasa su segundo falsador. La gobernanza deja de ser deducida, y `doc/ZENODO.md`:138 y
+`crates/stark-experiment/src/solvency.rs`:3 pasan a falsas medidas.
+
+**Lo que no se sabe.** Si las pruebas de `zk-core` ocultan su testigo. Groth16 aleatorizado lo
+hace; `zk-core` pasa a `prove_generic` una semilla (`rng_seed`), y si la semilla es predecible la
+prueba es determinista y un saldo de poca entropia se puede sacar probando candidatos. Deducido,
+no medido.
+
+**Contadores.** `ARQUITECTURA.md` +4 -13 y `AUDITORIA.md` +45 -0 (la correccion subida al §523 y
+este asiento): 38.421 -> 38.466. Puertas: cinco regiones PRE pinadas, los dos ficheros POST
+predichos byte a byte y las diez herramientas por delta. El canon NO corre: no se abre un `.rs`, ni
+un test, ni un pin.
+
+**Lo que NO cierra.** La mitad `.rs` pasa a ser el §525, sin `zk-core`, iso-bridge,
+settlement-layer, plonk ni halo2: son otros sistemas de prueba y quedan fuera del modelo;
+double_entry, que es STARK, espera a un M4. Nacen dos puntos de cola: `ARQUITECTURA.md` no dice de
+que capa habla cada seccion, y la semilla de `zk-core`. Detras, el RFC-0009.

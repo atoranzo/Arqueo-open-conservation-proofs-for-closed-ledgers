@@ -781,9 +781,8 @@ implementado.
 
 Prueba de concepto real, verificada de extremo a extremo, de liquidación
 de pagos bancarios con cumplimiento normativo demostrado mediante pruebas
-STARK —vinculado a estado real del ledger, con protección contra doble
-gasto—. Esas pruebas no ocultan su testigo: publican saldos e importes
-(§521).
+de conocimiento cero — sin revelar saldos ni importes, vinculado a estado
+real del ledger, con protección contra doble gasto.
 
 **Todo lo que hay en este repositorio ha sido compilado y ejecutado de
 verdad.** Cada afirmación de este README tiene una ejecución de test real
@@ -998,12 +997,6 @@ que necesita un régimen de supervisión real.
 
 ### La decisión de diseño: revelación voluntaria, no custodia de claves
 
-⚠️ **Hoy la revelación voluntaria entrega la clave de gasto** (§523): la
-prueba de auditoría —un circuito para los tres modos— publica la clave y
-el saldo exacto, porque el probador no oculta su testigo. La decisión de
-abajo sigue siendo la buena; lo que no se cumple es que el titular revele
-solo lo que elige.
-
 Había dos caminos:
 
 **A)** Clave de visualización en poder del supervisor (el modelo de
@@ -1093,9 +1086,7 @@ cuentas y no-pertenencia del nullifier.
 
 Con `total_supply` como valor público que solo crece mediante emisiones
 demostradas, **cualquiera puede auditar que la suma de todos los saldos
-equivale a lo emitido** sin que el libro publique un solo saldo; quien
-re-verifique las pruebas, en cambio, los ve, porque no ocultan su
-testigo (§521).
+equivale a lo emitido, sin ver un solo saldo**.
 
 Verificado en `total_balances_always_equal_total_supply`, que además
 comprueba que transferir no altera el suministro.
@@ -1224,7 +1215,7 @@ agujero grave:
 El diseño corregido sigue el modelo de Zcash Sapling:
 
 ```text
-sk        = clave de gasto (privada; la prueba la publica, §521)
+sk        = clave de gasto (privada, nunca sale del titular)
 pk        = H(DOMAIN_PK,   sk)
 leaf      = H(H(pk, balance), nonce)
 nullifier = H(H(DOMAIN_NULL, sk), nonce)
