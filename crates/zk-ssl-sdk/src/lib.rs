@@ -120,7 +120,7 @@ impl Wallet {
         native::derive_leaf_salt_wide(self.spend_key)
     }
 
-    /// Solo para el keystore del propio crate: la clave no sale del proceso.
+    /// Solo para el keystore del propio crate: por aquí la clave no sale del proceso.
     pub(crate) fn spend_key(&self) -> Digest {
         self.spend_key
     }

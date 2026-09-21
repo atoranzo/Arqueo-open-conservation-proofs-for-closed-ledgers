@@ -4,8 +4,8 @@
 //! exacta, mínimo de reservas y **banda** con un solo circuito.
 //!
 //! Es revelación **voluntaria**, no custodia de claves: no hay ninguna
-//! clave maestra que robar. La contrapartida es que el supervisor
-//! depende de la cooperación del titular.
+//! clave maestra que robar. Pero la prueba publica la clave de gasto y el
+//! saldo exacto (§523), y el supervisor depende de la cooperación del titular.
 use super::*;
 
 impl SovereignLayer {
@@ -14,18 +14,18 @@ impl SovereignLayer {
 
     /// Produce una revelación dirigida a un supervisor.
     ///
-    /// Demuestra `inferior <= saldo <= superior` sobre el estado actual,
-    /// **sin revelar la clave ni ningún otro dato del árbol**. Los tres
-    /// usos:
+    /// Demuestra `inferior <= saldo <= superior` sobre el estado actual. **No
+    /// oculta el testigo**: la prueba publica la clave de gasto y el saldo
+    /// exacto (§523), en los tres usos:
     ///
     /// - `inferior = superior = saldo` → revelación exacta.
     /// - `inferior = X`, `superior = MAX_VALUE` → "supero X".
     /// - `inferior = X`, `superior = Y` → **"estoy entre X e Y"**, que es
     ///   lo que suele bastar a un supervisor y expone menos.
     ///
-    /// Requiere la clave de gasto: **solo el titular puede revelar**. Es
-    /// revelación voluntaria, no custodia de claves — no hay ninguna
-    /// clave maestra que robar.
+    /// Requiere la clave de gasto: **solo el titular puede revelar**, y al
+    /// revelar la entrega (§523). Es revelación voluntaria, no custodia de
+    /// claves: no hay ninguna clave maestra que robar.
     pub fn audit(
         &self,
         spend_key: BaseElement,

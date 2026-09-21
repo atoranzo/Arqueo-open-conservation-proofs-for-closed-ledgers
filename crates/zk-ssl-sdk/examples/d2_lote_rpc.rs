@@ -22,7 +22,7 @@
 //! 3. **UN `applyMany`** con las N operaciones.
 //! 4. Lo mismo para los cobros.
 //!
-//! ## La clave no viaja, y eso importa aquí
+//! ## La clave no viaja por la API (la prueba sí: §521), y eso importa aquí
 //!
 //! `Wallet` guarda su clave de gasto y **no la expone** — es deliberado.
 //! Este banco crea las carteras con `Wallet::from_elements`, así que tiene

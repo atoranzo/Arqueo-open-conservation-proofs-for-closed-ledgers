@@ -60,10 +60,10 @@
 //! vía. Aquí aparecería una segunda razón, técnica: **dos no pueden ganar
 //! la misma raíz.**
 //!
-//! ⚠️ Aquella vía estaba MAL enunciada y §231 la corrigió: el agregador
-//! **no** ve quién paga a quién por procesar envíos. El receptor no viaja
-//! en el recibo de envío. Solo ve la arista quien procesa **las dos
-//! mitades**, correlacionando por `notice.position`.
+//! ⚠️ Aquella vía estaba MAL enunciada y §231 la corrigió por los campos; el
+//! §523 la devuelve: la prueba del envío publica al receptor, así que quien
+//! procesa solo envíos **sí** ve quién paga a quién. Correlacionar las dos
+//! mitades por `notice.position` ya no es la única vía.
 //!
 //! Qué hacer con eso —cola de escritura en el nodo, agregador único por
 //! diseño, o encadenar lotes— es **decisión de mesa**, y este banco no la

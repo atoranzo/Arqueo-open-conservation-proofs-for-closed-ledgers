@@ -60,8 +60,8 @@ impl SovereignLayer {
         (self.frozen.leaf(account_index), self.frozen.path_for(account_index))
     }
 
-    /// Congela o descongela **sin que las claves de custodio lleguen al
-    /// operador**: la via de la entrada 32/33 (§60).
+    /// Congela o descongela sin que las claves de custodio lleguen como dato al
+    /// operador -cada prueba publica la suya (§523)-: la via de la entrada 32/33 (§60).
     ///
     /// Recibe tres pruebas: `climb_proof` de `circuit_frozen_climb` -que la
     /// transicion del arbol es una sola posicion cambiada, con el mismo camino
@@ -205,8 +205,8 @@ mod tests_delegada {
         l
     }
 
-    /// El camino honesto: dos custodios distintos congelan sin entregar
-    /// sus claves.
+    /// El camino honesto: dos custodios distintos congelan sin entregar sus
+    /// claves como dato; cada prueba publica la suya (§523).
     #[test]
     fn a_delegated_freeze_applies() {
         let mut layer = capa();

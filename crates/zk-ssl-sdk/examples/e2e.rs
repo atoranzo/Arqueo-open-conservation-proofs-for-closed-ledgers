@@ -4,8 +4,8 @@
 //!   abrir x2 (solo ids derivados) -> dev_fund(alice) -> alice.pay ->
 //!   bob.claim -> saldos por clave de VISTA.
 //!
-//! La clave de gasto no sale de este proceso: la unica linea donde
-//! interviene es dentro de prove_send/prove_claim, en local.
+//! La clave de gasto no sale de este proceso como dato: interviene solo en
+//! prove_send/prove_claim, en local, y la prueba la publica (§521).
 
 use zk_ssl_sdk::{Account, Rpc, Wallet};
 

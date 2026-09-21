@@ -6,9 +6,9 @@
 //! modelo de confianza de la 32.
 //!
 //! Este circuito prueba lo mismo para **un solo custodio**, de modo que
-//! cada uno pueda generarlo en su máquina sin entregar su clave. La capa
-//! recoge dos pruebas y **exige ambas** (vía B, §47.3): no se componen,
-//! se verifican por separado.
+//! cada uno pueda generarlo en su máquina sin entregar su clave -aunque la
+//! prueba la publica: §523-. La capa recoge dos pruebas y **exige ambas**
+//! (vía B, §47.3): no se componen, se verifican por separado.
 //!
 //! # ⚠️ VARIANTE NO ELEGIDA — NO CABLEAR EN PRODUCCION
 //!
@@ -33,8 +33,8 @@
 //! secreto *qué* custodios firman —solo se sabe que son dos del conjunto—.
 //! Esta variante **revela cuáles**. Es un cambio del modelo de confianza,
 //! no un detalle de implementación: quien observe la cadena sabe qué dos
-//! custodios autorizaron cada emisión. Ver la variante B
-//! (`circuit_threshold_single_nullifier`) para la alternativa que lo evita.
+//! custodios autorizaron cada emisión. Y la variante B
+//! (`circuit_threshold_single_nullifier`) no lo evita: publica la clave (§523).
 //!
 //! ## Qué demuestra
 //!

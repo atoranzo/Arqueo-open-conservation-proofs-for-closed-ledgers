@@ -9,8 +9,8 @@
 //! **CON clave, y ahi se separa del hermano de E1.** El enunciado del cobro es de ESTADO (D-G) y
 //! el pagador produce la misma prueba; el de la prenda es de AUTORIZACION (D-AV) y solo lo
 //! produce quien tiene la clave. Eso no mete esta pieza en el libro: la pone del lado del
-//! CLIENTE, que es donde `client::prove_send` ya vive. **La clave no viaja ni se guarda**: entra
-//! por argumento, compone la traza y se va con ella.
+//! CLIENTE, que es donde `client::prove_send` ya vive. **La clave no se guarda**: entra por
+//! argumento, compone la traza y se va con ella -la prueba la publica, 42 veces (§521)-.
 //!
 //! **El receptor no se declara: se DERIVA.** Quien llama no puede decir a nombre de quien
 //! prenda, porque la identidad es funcion de la clave (`derive_public_id_wide`). Si la clave no

@@ -192,7 +192,7 @@ pub fn run_send(
         ms: t0.elapsed().as_millis(),
     });
 
-    // En la máquina del titular: la clave no sale de aquí.
+    // En la máquina del titular: la clave no sale como dato; la prueba la lleva (§521).
     let t1 = Instant::now();
     let envio = client::prove_send(&m, from_key, proof_options())
         .map_err(|e| fail(tr, Phase::Send, e))?;

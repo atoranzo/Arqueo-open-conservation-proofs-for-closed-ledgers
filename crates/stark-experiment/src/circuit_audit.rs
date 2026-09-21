@@ -28,7 +28,7 @@
 //! posición está entre 10 y 50 millones"* cumple el requisito regulatorio
 //! sin exponer la cifra.
 //!
-//! ## Revelación voluntaria, no custodia de claves
+//! ## Revelación voluntaria, no custodia de claves (la prueba publica clave y saldo: §523)
 //!
 //! Había dos caminos: que el supervisor tenga una clave de visualización,
 //! o que el titular produzca la prueba dirigida a quien se la pida.

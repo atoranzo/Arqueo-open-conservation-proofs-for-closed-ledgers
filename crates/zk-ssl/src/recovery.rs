@@ -22,7 +22,7 @@
 //!
 //! `recover` recibe el `public_id` del nuevo titular, no su clave. El
 //! nuevo dueño genera su clave y entrega solo la identidad derivada — la
-//! capa nunca la ve, igual que no ve ninguna otra clave de gasto.
+//! capa nunca la ve aquí; las de gasto, sí, en las pruebas de envío y cobro (§521).
 
 use super::*;
 
@@ -35,8 +35,8 @@ impl SovereignLayer {
         self.recovery_count
     }
 
-    /// Recupera una cuenta **sin que las claves de custodio lleguen al
-    /// operador**: la via de la entrada 32/33 (65).
+    /// Recupera una cuenta sin que las claves de custodio lleguen como dato al
+    /// operador -cada prueba publica la suya (§523)-: la via de la entrada 32/33 (65).
     ///
     /// Tres pruebas: `climb_proof` de `circuit_recovery_climb` -que la hoja
     /// vieja y la nueva suben a las dos raices con el mismo camino, con el
@@ -198,9 +198,9 @@ mod tests_delegada {
     ///
     /// ⚠️ **Pero exige DOS CUSTODIOS.** Rotar a clave ancha **no es una
     /// accion soberana del titular**: necesita autorizacion de terceros. Eso
-    /// contradice el espiritu del resto del diseño —la clave nunca sale de
-    /// su maquina, pero **cambiarla depende de otros**— y no se resuelve
-    /// aqui: se registra (§98).
+    /// contradice el espiritu del resto del diseño —la clave no sale como dato
+    /// de su maquina, aunque las pruebas la publiquen (§521), pero **cambiarla
+    /// depende de otros**— y no se resuelve aqui: se registra (§98).
     #[test]
     fn a_narrow_account_can_rotate_to_a_256_bit_key() {
         use stark_experiment::native::derive_public_id_wide;
@@ -377,7 +377,7 @@ mod tests_delegada {
         t.root()
     }
 
-    /// Dos custodios distintos recuperan una cuenta sin entregar sus claves.
+    /// Dos custodios distintos recuperan una cuenta; sus claves viajan en sus pruebas (§523).
     #[test]
     fn a_delegated_recovery_applies() {
         let (mut layer, idx, nueva) = capa();

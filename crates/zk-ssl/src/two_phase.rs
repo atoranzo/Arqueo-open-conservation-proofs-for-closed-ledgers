@@ -1520,11 +1520,11 @@ impl SovereignLayer {
 
     // -----------------------------------------------------------------
 
-    /// Emite a un pendiente **sin que las claves de custodio lleguen al
-    /// operador**: la QUINTA y ultima de la entrada 32/33 (68).
+    /// Emite a un pendiente sin que las claves de custodio lleguen como dato
+    /// al operador: la QUINTA y ultima de la entrada 32/33 (68).
     ///
-    /// Con esta via, el fallo de la entrada 32 queda cerrado: ninguna de
-    /// las cinco operaciones privilegiadas exige ya las claves en crudo.
+    /// Ninguna operacion privilegiada exige ya las claves en crudo; el fallo de
+    /// la entrada 32 NO queda cerrado: cada prueba publica la suya (§523).
     ///
     /// Tres pruebas: `climb_proof` de `circuit_mint_pending_climb` -que el
     /// suministro sube EXACTAMENTE el importe, que el compromiso entra en
@@ -2059,7 +2059,7 @@ mod tests_delegada {
     }
 
     /// Identidad publica del destinatario. **La dan los custodios, no la
-    /// capa**: la capa no sabe de quien es cada pendiente.
+    /// capa**, y la subida la publica: la capa sabe de quien es (§524).
     fn receptor() -> Digest {
         stark_experiment::native::derive_public_id(BaseElement::new(SK_BOB))
     }
@@ -2086,7 +2086,7 @@ mod tests_delegada {
     // =================================================================
 
     /// **Dos custodios distintos emiten a un pendiente sin entregar sus
-    /// claves.** La quinta y ultima: cierra la entrada 32.
+    /// claves como dato** (sus pruebas las publican: §523). La quinta y ultima.
     #[test]
     #[cfg_attr(
         debug_assertions,

@@ -38464,3 +38464,53 @@ un test, ni un pin.
 settlement-layer, plonk ni halo2: son otros sistemas de prueba y quedan fuera del modelo;
 double_entry, que es STARK, espera a un M4. Nacen dos puntos de cola: `ARQUITECTURA.md` no dice de
 que capa habla cada seccion, y la semilla de `zk-core`. Detras, el RFC-0009.
+
+## §525 — Lo que el modelo vuelve falso, en los comentarios: la mitad `.rs` (5.A-367)
+
+**Que.** La mitad `.rs` del corte que el §523 hizo en los `.md`, con el censo corregido
+(CENSO-367-r2, donde cada frase dice de que sistema habla). Cuarenta y una regiones de veintidos
+ficheros -comentarios de codigo de `zk-ssl`, `stark-experiment`, `zk-ssl-sdk` y `zk-ssl-cli`, y
+uno del `Cargo.toml` del SDK- dejan de afirmar que la clave de gasto no sale de la maquina del
+titular, que las claves de custodio no llegan al operador, que la auditoria no revela el saldo,
+que el nulificador da anonimato y que la capa no sabe de quien es cada pendiente. Todas las frases
+son de crates STARK.
+
+**TODAS las ediciones son NEUTRALES EN LINEAS y SOLO COMENTARIO.** Cada region sale con las lineas
+con que entra, y el editor aserta linea a linea que cada linea nueva conserva la sangria y la marca
+de comentario (`//!`, `///`, `//` o `#`) de la que sustituye: no se toca un byte de codigo, y
+ningun `line!()` ni ninguna ubicacion de panico se mueve. Ningun fichero de la clausura del kit se
+abre, asi que su binario tiene que salir IDENTICO byte a byte, y el bloque lo exige.
+
+**De paso, dentro de los parrafos que se reescriben.** `mint.rs` decia que con la via delegada un
+operador comprometido ya no podia emitir, y `two_phase.rs`, dos veces, que la via cierra la
+entrada 32. Las pruebas de autorizacion publican las claves de custodio (§523), asi que no la
+cierra. La unidad de la sustitucion es el parrafo.
+
+**Lo que NO se toca.** Los crates de Groth16 (`zk-core`, iso-bridge, settlement-layer), el de
+PLONK y el de Halo2: otros sistemas, fuera del modelo. `pago_en_curso.rs`, que es clausura del
+kit: va a la cola con el literal del kit. `double_entry.rs` y la frase del umbral conjunto de
+`circuit_threshold_single.rs`:32-33, que esperan al PASTE-367-M4. Y `merkle.rs`, que dice que la
+hoja y el camino quedan privados: el M3 midio 0, no salen literales, aunque winterfell no promete
+conocimiento cero.
+
+**Contadores.** VEINTIDOS ficheros y ninguno nace, todos con las mismas lineas que tenian:
+`crates/zk-ssl/src/client.rs` +10 -10,
+`crates/stark-experiment/src/circuit_threshold_single_nullifier.rs` +8 -8,
+`crates/zk-ssl/src/audit.rs` +8 -8, `crates/zk-ssl/src/recovery.rs` +7 -7,
+`crates/zk-ssl/src/two_phase.rs` +6 -6,
+`crates/stark-experiment/src/circuit_threshold_single.rs` +5 -5, `crates/zk-ssl/src/mint.rs` +5 -5,
+`crates/zk-ssl-sdk/examples/i1_concurrencia.rs` +4 -4, `crates/zk-ssl/src/freeze.rs` +4 -4,
+`crates/zk-ssl/src/governance.rs` +3 -3, `crates/stark-experiment/src/circuit_mint.rs` +2 -2,
+`crates/stark-experiment/src/solvency.rs` +2 -2, `crates/zk-ssl-sdk/Cargo.toml` +2 -2,
+`crates/zk-ssl-sdk/examples/e2e.rs` +2 -2, `crates/zk-ssl/src/lib.rs` +2 -2,
+`crates/zk-ssl/src/prueba_prenda.rs` +2 -2, `crates/stark-experiment/src/circuit_audit.rs` +1 -1,
+`crates/zk-ssl-cli/src/sandbox.rs` +1 -1, `crates/zk-ssl-sdk/examples/d2_lote_rpc.rs` +1 -1,
+`crates/zk-ssl-sdk/src/lib.rs` +1 -1, `crates/zk-ssl/src/pending.rs` +1 -1 y
+`crates/zk-ssl/src/tests_support.rs` +1 -1. Mas el asiento: `AUDITORIA.md` +50 -0, 38.466 -> 38.516.
+Puertas: las listas de tests IDENTICAS nombre a nombre en los cuatro crates que se abren, el binario
+del kit identico byte a byte y las diez herramientas por delta. El canon NO corre: no cambia un test
+ni un pin.
+
+**Lo que NO cierra.** El 5.A-367 y el 5.A-360 siguen abiertos: quedan el M4, el literal del kit con
+la cabecera de `pago_en_curso.rs`, la demarcacion de `ARQUITECTURA.md` y la semilla de `zk-core`.
+Detras, el RFC-0009, que decide que se promete; E3, el S521 de la prenda y el H5 siguen PARADOS.

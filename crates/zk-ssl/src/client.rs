@@ -1,5 +1,5 @@
-//! **Generación de pruebas en el cliente.** La clave de gasto nunca sale
-//! de la máquina del titular.
+//! **Generación de pruebas en el cliente.** La clave de gasto no sale de la
+//! máquina del titular como dato, pero la prueba la publica (§521).
 //!
 //! ## El problema que corrige
 //!
@@ -17,7 +17,7 @@
 //! ```text
 //! 1. Cliente: pide la vista de su cuenta        → nonce, saldo, identidad
 //! 2. Cliente: pide los materiales               → caminos y raices publicas
-//! 3. Cliente: genera la prueba EN SU MÁQUINA    (la clave no sale)
+//! 3. Cliente: genera la prueba EN SU MÁQUINA    (la prueba lleva la clave, §521)
 //! 4. Cliente: envía la operación                → la capa verifica y aplica
 //! ```
 //!
@@ -469,7 +469,7 @@ pub struct ClaimMaterials {
 ///
 /// Con esto y [`prove_send`], **un pago completo se prueba en el cliente**:
 /// la capa entrega caminos y raíces, y verifica; la clave de gasto no sale
-/// de la máquina de quien paga ni de la de quien cobra.
+/// como dato de ninguna de las dos máquinas, pero cada prueba la publica (§521).
 pub fn prove_claim(
     materials: &ClaimMaterials,
     // ⚠️ **CUATRO elementos** desde §90. Es la via del CLIENTE: rellenar
@@ -799,9 +799,9 @@ mod tests_privacidad {
     /// commitments IDÉNTICOS. Un tercero que observa el árbol de pendientes
     /// no puede, del commitment, recuperar quién pagó.
     ///
-    /// ⚠️ Lo que un auditor debe valorar (§16): esto significa que el salt
-    /// es lo ÚNICO que da unlinkability. Reutilizar salt entre pagos al
-    /// mismo receptor los vuelve enlazables —ver el test siguiente—.
+    /// ⚠️ Lo que un auditor debe valorar (§16): en el ÁRBOL, el salt es lo único
+    /// que da unlinkability, y reutilizarlo al mismo receptor los enlaza (el test
+    /// siguiente). En las pruebas no: la del envío publica al receptor (§523).
     #[test]
     fn el_commitment_no_revela_al_emisor() {
         let id_bob = derive_public_id(BaseElement::new(SK_BOB));
@@ -840,8 +840,8 @@ mod tests_privacidad {
     /// El receptor recibe un `PendingNotice { position, salt, amount, x }`.
     /// **Ninguno de esos campos es la identidad del emisor** —el diseño lo
     /// fija en el tipo: no hay un campo `sender`—. El receptor sabe cuánto
-    /// cobra y desde qué posición, pero no de quién. Es la propiedad
-    /// «la capa no sabe qué pendiente es de quién», vista desde el receptor.
+    /// cobra y desde qué posición, pero no de quién. Lo que NO vale ya es la
+    /// propiedad de la capa: la prueba del envío le dice de quién es (§523).
     ///
     /// ⚠️ Auditor (§16, §21): el notice viaja FUERA de banda (ISO 20022 no
     /// lo transporta). Si el canal de entrega revelara al emisor, la fuga
@@ -1022,7 +1022,7 @@ mod tests {
         let receptor = layer.public_id_of(bob).expect("cuenta");
         let salt = salt_de(0xC11E);
 
-        // ===== 1. LA CAPA ENTREGA MATERIALES. NO VE LA CLAVE. =====
+        // ===== 1. LA CAPA ENTREGA MATERIALES; LA CLAVE NO ES ARGUMENTO. =====
         let materials = layer
             .send_materials(alice, receptor, 250_000, salt)
             .expect("materiales");

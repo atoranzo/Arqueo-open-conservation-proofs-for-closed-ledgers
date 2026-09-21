@@ -2,9 +2,9 @@
 //!
 //! Variante B del experimento de la entrada 33. Misma finalidad que
 //! `circuit_threshold_single`: que cada custodio pruebe en su máquina, sin
-//! entregar su clave (§41). Difiere en **cómo la capa comprueba que las dos
-//! autorizaciones vienen de custodios distintos**, papel que en el circuito
-//! conjunto hacía el orden estricto `idx_b − idx_a − 1` (§51.2).
+//! entregar su clave (§41), aunque la prueba la publica (§523). Difiere en
+//! **cómo la capa comprueba que las dos autorizaciones vienen de custodios
+//! distintos**, papel que en el circuito conjunto hacía `idx_b − idx_a − 1` (§51.2).
 //!
 //! ## Por qué el nulificador NO puede derivarse del índice
 //!
@@ -39,16 +39,16 @@
 //! está ejecutando. Antes, dos autorizaciones para emitir 1.000 a Alicia
 //! servían para emitir 1.000.000 a Bob (§54.4).
 //!
-//! ✅ **No hay enlazabilidad.** El nulificador cambia con cada operación, así
-//! que ya no se puede agrupar «el custodio desconocido X firmó estas cinco
-//! emisiones» (§52.4).
+//! ⚠️ **El nulificador no enlaza; la clave, sí.** Cambia con cada operación, pero
+//! la prueba publica la clave del custodio (§523): agrupar «el custodio X firmó
+//! estas cinco emisiones» es tan fácil como comparar claves (§52.4).
 //!
 //! Y **conserva** lo que hacía falta: dentro de UNA operación, el mismo
 //! custodio produce siempre el mismo nulificador, que es lo que permite
 //! exigir que las dos autorizaciones sean de custodios distintos.
 //!
-//! ✅ **Conserva el anonimato dentro del conjunto**: se demuestra que un
-//! custodio autorizado firmó, sin revelar cuál. La variante A lo pierde.
+//! ⚠️ **No conserva el anonimato dentro del conjunto**: la prueba publica la clave
+//! del custodio (§523), y la clave dice cuál firmó. La variante A lo pierde por su índice.
 //!
 //! ## Y sale más simple de lo que parece
 //!
