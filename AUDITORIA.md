@@ -38514,3 +38514,36 @@ ni un pin.
 **Lo que NO cierra.** El 5.A-367 y el 5.A-360 siguen abiertos: quedan el M4, el literal del kit con
 la cabecera de `pago_en_curso.rs`, la demarcacion de `ARQUITECTURA.md` y la semilla de `zk-core`.
 Detras, el RFC-0009, que decide que se promete; E3, el S521 de la prenda y el H5 siguen PARADOS.
+
+## §526 — Lo que midio el M4: `double_entry` y el umbral conjunto, en los comentarios (5.A-367)
+
+**Que.** El PASTE-367-M4 midio lo ultimo de STARK que el censo dejaba sin medir, con el metodo del
+M2, en lectura pura restaurada con sha y porcelain. `double_entry`, cuya cabecera dice <<sin
+revelar saldos, identidades ni importes>>, publica la identidad del emisor y la del receptor, los
+cuatro saldos -antes y despues de cada uno-, el importe y el nonce del emisor: 44 veces cada uno,
+con el control a 0. Y el umbral CONJUNTO (`circuit_threshold`), del que dos comentarios dicen que
+mantiene en secreto que custodios firman, publica las dos claves, 42 y 42; la del custodio que no
+firma da 0. Cuatro regiones de tres ficheros de `stark-experiment` dejan de afirmarlo.
+
+**Las mismas reglas que el §525.** NEUTRALES EN LINEAS y SOLO COMENTARIO, asertadas linea a linea
+por el editor; ningun fichero de la clausura del kit se abre y su binario tiene que salir IDENTICO;
+la lista de tests de `stark-experiment`, IDENTICA nombre a nombre. `circuit_threshold_single.rs`
+ya lo abrio el §525 en otras dos regiones: esta es la tercera, la del parrafo que compara las
+variantes.
+
+**Con esto, el censo del 5.A-367 queda medido en todo lo que es STARK.** Lo que queda sin medir
+es de otros sistemas de prueba -Groth16, PLONK y Halo2-, fuera del modelo, y el circuito del tope
+de `doc/ZENODO.md`, que no aparece en el arbol.
+
+**Contadores.** TRES ficheros y ninguno nace, todos con las mismas lineas que tenian:
+`crates/stark-experiment/src/circuit_threshold.rs` +2 -2,
+`crates/stark-experiment/src/circuit_threshold_single.rs` +2 -2 y
+`crates/stark-experiment/src/double_entry.rs` +2 -2. Mas el asiento: `AUDITORIA.md` +33 -0, 38.516
+-> 38.549. Puertas: la lista de tests de `stark-experiment` IDENTICA nombre a nombre, el binario del
+kit identico byte a byte y las diez herramientas por delta. El canon NO corre: no cambia un test ni
+un pin.
+
+**Lo que NO cierra.** El 5.A-367 y el 5.A-360 siguen abiertos como hallazgo: la prosa deja de
+afirmar lo falso, no hace verdad lo que afirmaba. Quedan el literal del kit con la cabecera de
+`pago_en_curso.rs`, la demarcacion de `ARQUITECTURA.md`, la semilla de `zk-core` y el RFC-0009,
+que decide que se promete. E3, el S521 de la prenda y el H5 siguen PARADOS.

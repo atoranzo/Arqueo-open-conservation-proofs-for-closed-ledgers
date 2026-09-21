@@ -29,8 +29,8 @@
 //! fuera: la capa compara los índices de las dos pruebas y exige que
 //! difieran.
 //!
-//! ⚠️ **Coste de privacidad, declarado.** `circuit_threshold` mantiene en
-//! secreto *qué* custodios firman —solo se sabe que son dos del conjunto—.
+//! ⚠️ **Coste de privacidad, declarado.** `circuit_threshold` decía mantener en
+//! secreto *qué* custodios firman, y publica las dos claves (§526).
 //! Esta variante **revela cuáles**. Es un cambio del modelo de confianza,
 //! no un detalle de implementación: quien observe la cadena sabe qué dos
 //! custodios autorizaron cada emisión. Y la variante B
