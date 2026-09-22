@@ -111,6 +111,10 @@ pub mod range_check;
 pub mod rescue_hash;
 pub mod settlement_prover_impl;
 pub mod solvency;
+// RFC-0009 E3a-0 (S532): la foto del probador pristino, tres KAT con entradas fijas.
+// Solo tests, y solo en release.
+#[cfg(test)]
+mod kat_probador;
 
 use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin, MerkleTree};
 use winterfell::math::{fields::f128::BaseElement, FieldElement};

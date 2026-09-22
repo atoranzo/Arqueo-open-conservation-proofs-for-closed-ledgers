@@ -38817,3 +38817,50 @@ cada uno; `ARQUITECTURA.md` 2/2; `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` 
 **Lo que queda.** E3a del RFC-0009 (el fork, apagado) y E3b, que pone esta tabla a cero con esta
 misma suite; el nonce, que la cuenta no mide; la D-AH del RFC-0008, que dice que el sobre calla
 el emisor cuando la prueba lo lleva; y el 5.A-149, que obliga a pagar a mano las sumas en cada -B.
+
+## §532 — RFC-0009 E3a-0: la foto del probador pristino, tres KAT para el fork apagado
+
+**Que.** Antes de que el fork de winterfell 0.13.1 entre en el arbol (E3a, D-F a D-K), el arbol
+guarda la foto del probador que hoy tiene: tres pruebas con entradas fijas -`WorkAir` (x = x^3 + 42,
+campo f128, las opciones de test 32/8/0/None/8/31), `BandaAir` y `EdadAir` (dos AIR del cable que el
+kit verifica sin el probador, con las opciones de la casa 42/16/21/Quadratic/8/31)-, cada una
+verificada por su juez, y su tamano y su blake3 escritos como constantes en
+`crates/stark-experiment/src/kat_probador.rs`, solo tests y solo en release. Los montajes son los de
+los tests positivos de `lib.rs`, `circuit_banda.rs` y `circuit_edad.rs`, copiados y no compartidos:
+la foto no puede moverse porque alguien afine un positivo. Con el fork apagado (E3a-1) cada prueba
+tiene que salir byte a byte como hoy: estas tres constantes son el falsador, y son la D-R. Tomadas
+con el fork dentro serian un verde que se certifica a si mismo (la leccion de la 169).
+
+**Lo medido, fuera del arbol.** PASTE-KAT-M (`f7e4b67352204b1a`, salida `8faab897d07a7b05`): sobre
+una copia de `81549de` hecha con `git archive`, un fichero de tests de integracion que no entra en
+el arbol (`kat_m.rs`, `96ea1af05c752ff3`) corrio DOS veces en release con su propio target; las dos
+corridas dieron los mismos bytes en los tres -`work` 3.539 B, `banda` 49.418 B, `edad` 66.880 B-,
+con 0 warnings, y dos KAT distintos difieren (la prueba de vida del comparador). Las huellas sha256
+de los tres `.bin` van en la cabecera del modulo; los ficheros, en `KAT-M-20260922-225843/` de
+Downloads. El probador de winterfell 0.13.1 es determinista sin ocultacion: por eso una prueba
+oculta sera una banda (D-J) y esta no. `kat_probador.rs` es `kat_m.rs` con `entrega` vuelta
+`asierta` y el crate nombrado `crate::`, con las tres constantes derivadas de la SALIDA por el
+editor (`ed532.py`), no tecleadas.
+
+**Lo que mueve.** El pin de los circuitos 391 -> 394 en `tools/canon.sh`, con su entrada de
+historia; las OCHO cifras que `check_cifras` nombra con el pin subido, medido sobre una copia -391
+-> 394 en `PAPER_EN.md`:960, `PAPER.md`:1001, `doc/INSTITUCIONAL.md`:526, `doc/INSTITUTIONAL.md`:506
+y `PRINCIPIOS.md`:356; el total de sello 1338 -> 1341 en `PAPER_EN.md`:33, `PAPER.md`:36 y
+`PRINCIPIOS.md`:356-, y el bloque lo demuestra en vivo antes de tocar la prosa; mas las tres sumas
+<<contando los pines>> 1475 -> 1478 (`PAPER.md`:37, `PAPER_EN.md`:34 y `PRINCIPIOS.md`:359), que no
+ve (5.A-149), a mano. El RFC-0009 gana la D-R -la foto antes que el fork, con las tres cifras como
+dato- y su celda de E3a pasa a <<en curso>>; la fila de `spec/README.md`, lo mismo. Las diez
+herramientas: `check_tests` 1497 -> 1500 y `check_modulos` 144 -> 145, las demas identicas;
+`check_cifras` verde con el pin subido. Lo que NO se mueve: las <<1364 declaradas>>, las <<1349
+declared>> y las <<18 ignoradas>> (5.A-319).
+
+**Contadores.** Once ficheros, 280 lineas insertadas y 13 borradas: nace `kat_probador.rs` (196/0);
+`lib.rs` 4/0; `tools/canon.sh` 1/1; `PAPER.md` y `PAPER_EN.md` 3/3 cada uno; `PRINCIPIOS.md` 2/2;
+`doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `spec/README.md` 1/1; el RFC-0009 21/1 (442 -> 462
+lineas); y `AUDITORIA.md` 47/0, que es este asiento. Pin 391 -> 394 (3 tests); sello 1338 -> 1341;
+los largos 1475 -> 1478; ignorados quietos en 13. Ningun Cargo tocado.
+
+**Lo que queda.** E3a-1: el fork de winterfell 0.13.1 entra APAGADO y esta foto sigue verde -por
+donde entra y donde viven sus tests se decide con el terreno del PASTE-E3a-M: `[patch]` o crate
+propio, bajo `crates/` o fuera-; E3a-2: `Oculta<A>` y los siete falsadores de D-K con el modo oculto
+solo en tests; E3b. El 5.A-149 sigue obligando a pagar a mano las sumas en cada -B.

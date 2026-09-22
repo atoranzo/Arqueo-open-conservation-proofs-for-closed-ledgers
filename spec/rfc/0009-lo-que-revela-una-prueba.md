@@ -17,7 +17,7 @@
 |---|---|---|---|
 | E1 — la promesa, escrita | este texto: qué se promete (D-A), lo que sale literal en cada prueba (D-B), el principio del API como regla que hoy no se cumple (D-C) y la ocultación fuera de este RFC (D-D) | no | sellada en el §527 |
 | E2 — el testigo de la tabla | una suite que produce cada tipo de prueba y cuenta sus valores literales contra la tabla de D-B, con un control que tiene que dar cero (D-E; su forma, D-L a D-Q) | no | sellada en el §531 |
-| E3a — el probador que oculta, dentro y apagado | el fork de winterfell 0.13.1 en el árbol, con la ocultación entera en el núcleo y sin tocar un AIR (D-F a D-J); apagado, cada prueba sale byte a byte como la de winterfell; y los falsadores de los spikes como tests del árbol, con el modo oculto solo en los tests (D-K) | no | por hacer |
+| E3a — el probador que oculta, dentro y apagado | el fork de winterfell 0.13.1 en el árbol, con la ocultación entera en el núcleo y sin tocar un AIR (D-F a D-J); apagado, cada prueba sale byte a byte como la de winterfell; y los falsadores de los spikes como tests del árbol, con el modo oculto solo en los tests (D-K); y antes, la foto del probador pristino que el fork apagado tiene que reproducir (D-R) | no | en curso: el corte 0, la foto (D-R), sellado en el §532; el fork, por hacer |
 | E3b — encenderlo | las pruebas que cruzan el cable salen ocultas; la tabla de D-B pasa a cero, con la suite de E2 como testigo (D-K) | sí: `zkssl/0.4` | por hacer; espera a E3a |
 
 Las medidas que abrieron este documento son las de los asientos §521, §523, §524 y §526:
@@ -360,6 +360,24 @@ Gana contar lo público y exigir la distinción frente a contar solo el testigo:
 que puede contar dos cosas no mide ninguna) y claridad (el lector ve en cada fila qué es público).
 **Reversible** si la cuenta pasa a leer columnas en vez de bytes: entonces la distinción sobra.
 
+### D-R — La foto del probador antes que el fork
+
+E3a promete que, apagado, «cada prueba sale byte a byte como la de winterfell». Esa frase necesita
+su falsador en el árbol antes de que el fork entre, porque una foto tomada con el fork dentro sería
+un verde que se certifica a sí mismo. El corte 0 de E3a (§532) la toma: tres pruebas con entradas
+fijas —`WorkAir`, el circuito canónico de winterfell; `BandaAir` y `EdadAir`, dos AIR del cable que
+el kit verifica sin el probador—, producidas dos veces sobre `81549de` con winterfell 0.13.1 sin
+bifurcar, idénticas entre corridas, verificadas por su juez, y con su tamaño y su blake3 escritos
+como constantes en `crates/stark-experiment/src/kat_probador.rs` (PASTE-KAT-M): `work` 3.539 B,
+`banda` 49.418 B y `edad` 66.880 B. Los montajes son copias de los positivos de sus tests, no
+referencias: la foto no se mueve porque alguien afine un positivo. El probador sin ocultación es
+determinista; el que oculte no (D-J).
+
+Gana tomar la foto antes frente a compararse con la referencia del spike: imagen fiel (el falsador
+vive en el árbol y corre en cada canon) y pureza (un KAT con entradas fijas, sin azar ni fork).
+**Reversible** sólo con winterfell: si la versión clavada cambia, la foto se toma de nuevo con su
+asiento, y quien la mueva dice por qué.
+
 ## Compatibilidad
 
 - `zkssl/0.3` **no sube**. Ningún método, tipo ni error del cable cambia; ningún vector se
@@ -428,6 +446,8 @@ deuda.
 - El §531 y sus instrumentos, fuera del árbol: PASTE-E2-M (`3bb03cdbbb44a56d`, salida
   `af9b1c5d662ab26b`), ENSAYO-531 (`b95a6f856d493203`, salida `2b1888f387367a54`) y
   ENSAYO-531-r2 (`d0b973d5bdc429f8`, salida `ed0ebac80ea101fc`, cargo `841b702722246376`).
+- El §532 y su instrumento, fuera del árbol: PASTE-KAT-M (`f7e4b67352204b1a`, salida
+  `8faab897d07a7b05`), con los tres `.bin` y sus líneas en `KAT-M-20260922-225843/` de Downloads.
 - `spec/rfc/PROCESO.md`, regla 3; `SECURITY.md` §3.bis, donde vive la frase canónica.
 - winterfell: la portada del repositorio, <https://github.com/facebook/winterfell>, y su issue 9,
   <https://github.com/facebook/winterfell/issues/9>.
