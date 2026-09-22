@@ -1,27 +1,29 @@
 # RFC-0009 — Lo que revela una prueba: la promesa mientras el probador no oculte su testigo
 
 - **Estado:** PROPUESTO
-- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165 y 166)
+- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165, 166 y 169)
 - **Fecha:** 2026-09-21
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad). Este RFC no
   cambia un método, un tipo del cable ni un vector: cambia lo que se promete de ellos.
 - **Asiento(s) de AUDITORIA:** §521 (el testigo se publica), §522 (los comentarios y el literal del
   API), §523 (el modelo de las columnas constantes), §524 (el PASTE-367-M3, y lo que era de
   Groth16), §525 (los comentarios, con el censo que dice de qué sistema habla cada frase) y §526
-  (el PASTE-367-M4); el §527, que lo adopta; y el §528, que le añade la E3.
+  (el PASTE-367-M4); el §527, que lo adopta; el §528, que le añade la E3; y el §531, que sella
+  la E2 con su suite en el árbol y remide la tabla.
 
 ## Estado de las etapas
 
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
 | E1 — la promesa, escrita | este texto: qué se promete (D-A), lo que sale literal en cada prueba (D-B), el principio del API como regla que hoy no se cumple (D-C) y la ocultación fuera de este RFC (D-D) | no | sellada en el §527 |
-| E2 — el testigo de la tabla | una suite que produce cada tipo de prueba y cuenta sus valores literales contra la tabla de D-B, con un control que tiene que dar cero (D-E) | no | por hacer |
+| E2 — el testigo de la tabla | una suite que produce cada tipo de prueba y cuenta sus valores literales contra la tabla de D-B, con un control que tiene que dar cero (D-E; su forma, D-L a D-Q) | no | sellada en el §531 |
 | E3a — el probador que oculta, dentro y apagado | el fork de winterfell 0.13.1 en el árbol, con la ocultación entera en el núcleo y sin tocar un AIR (D-F a D-J); apagado, cada prueba sale byte a byte como la de winterfell; y los falsadores de los spikes como tests del árbol, con el modo oculto solo en los tests (D-K) | no | por hacer |
-| E3b — encenderlo | las pruebas que cruzan el cable salen ocultas; la tabla de D-B pasa a cero, con la suite de E2 como testigo (D-K) | sí: `zkssl/0.4` | por hacer; espera a E2 y a E3a |
+| E3b — encenderlo | las pruebas que cruzan el cable salen ocultas; la tabla de D-B pasa a cero, con la suite de E2 como testigo (D-K) | sí: `zkssl/0.4` | por hacer; espera a E3a |
 
-Las medidas de este documento son las de los asientos §521, §523, §524 y §526: lecturas puras que
-restauraron el árbol con sha y porcelain. Sus instrumentos viven fuera del árbol, en Downloads del
-autor, como los de los RFC anteriores.
+Las medidas que abrieron este documento son las de los asientos §521, §523, §524 y §526:
+lecturas puras que restauraron el árbol con sha y porcelain, con sus instrumentos fuera del
+árbol, en Downloads del autor, como los de los RFC anteriores. Desde el §531 la tabla de D-B la
+mide el árbol en cada canon: la suite de E2, `crates/zk-ssl/src/instrumento_revela.rs`.
 
 ## Motivación
 
@@ -67,27 +69,37 @@ oculte lo pruebe con su propio falsador (D-D); nunca porque un valor deje de sal
 
 ### D-B — La tabla: lo que sale literal, prueba a prueba
 
-Con la regla de D-A y con control a cero. La cuenta, donde el asiento la registra, es el número de
-apariciones en los bytes de la prueba; donde el asiento dice el hecho sin cuenta, la tabla también.
+Con la regla de D-A y con control a cero. Desde el §531 cada fila la mide, en cada canon, su test de
+`crates/zk-ssl/src/instrumento_revela.rs` (E2), con la unidad de D-M: un elemento de columna
+constante sale k(q+2) veces y un digest k·q, con q las posiciones únicas que la prueba abre y k
+las columnas o bloques que lo llevan. La tabla dice «en dos columnas» o «en dos bloques» donde k
+es 2 y «nada» donde todo es 0. Lo público por diseño —lo que el circuito declara en sus entradas
+públicas o lo que el sobre, el recibo o la operación llevan en claro— sale igual de literal y va en
+su columna (D-Q); lo pequeño —nonces, contadores, nacidos, cotas inferiores— no se cuenta.
 
-| prueba | lo que sale literal | medido en |
-|---|---|---|
-| envío (SEND-v1 y SEND-v2) | la clave de gasto (42) y la identidad del receptor; en el v2, además, el saldo, el importe, la sal, el `leaf_salt` y el sobre `X` | §521, §523 |
-| cobro (CLAIM) | la clave de gasto (42) y el saldo del receptor antes y después (44 y 44); del pagador, nada (0) | §521, §524 |
-| prenda | la clave de gasto (42) | §521 |
-| emisión a pendiente | la identidad del receptor y la sal (42 y 42) | §524 |
-| autorización delegada de un custodio (emisión, congelación, recuperación) | la clave de SU custodio: tras una sola operación delegada, el nodo tiene dos y puede autorizar la siguiente | §523 |
-| gobernanza delegada | la clave de cada miembro (42 y 42; la del que no firma, 0) | §524 |
-| umbral conjunto (`circuit_threshold`) | las dos claves (42 y 42; la del custodio que no firma, 0) | §526 |
-| auditoría (`prove_minimum` de la capa, con el circuito de `stark-experiment`) | la clave de gasto y el saldo exacto | §523, §524 |
-| quema | la clave de gasto | §523 |
-| solvencia (`stark-experiment`) | el saldo y el importe (44 y 44) | §524 |
-| `double_entry` (`stark-experiment`) | las identidades del emisor y del receptor, los cuatro saldos, el importe y el nonce del emisor (44 cada uno) | §526 |
-| banda | el saldo y el `leaf_salt`; la cota superior (`pedido - 1`) es pública por diseño | §521, con su corrección en el §527 |
-| edad | el emisor, cuando todos los pendientes son del mismo (43); con emisores distintos, no | §521, §523 |
-| sobre de cobro (portable) | la sal, la `X` y el importe exacto | §521 |
-| sobre de pago (portable) | la sal, el `delta` y el `refund_id` | §521 |
-| camino de merkle | nada: ni la hoja ni los hermanos son constantes | §524 |
+| prueba | del testigo, sale literal | público por diseño, y sale igual | no sale | medido en |
+|---|---|---|---|---|
+| envío (SEND-v1 y SEND-v2) | la clave de gasto, la identidad del emisor, la identidad del receptor, el saldo antes y después, la sal y el `leaf_salt`; en el v2, además, el sobre `X` | el importe, el límite regulatorio y el suministro, este en dos columnas porque el envío no lo mueve | la clave de vista; en el v2, el `refund_id` y el `delta` | §521, §523; §531 |
+| cobro (CLAIM-v1 y CLAIM-v2) | la clave de gasto, la identidad del receptor —en dos bloques: la de la cuenta y la del pendiente, que el circuito obliga a ser la misma—, su saldo antes y después, la sal y su `leaf_salt`; en el v2, además, `X` | el importe y el suministro, en dos columnas | la identidad del pagador; en el v2, el `refund_id` y el `delta` | §521, §524; §531 |
+| prenda | la clave de gasto, la sal, el importe y `X` | la identidad del prendador | — | §521; §531 |
+| emisión a pendiente | la identidad del receptor y la sal | el importe, el suministro antes y después y el máximo de suministro | — | §524; §531 |
+| autorización delegada de un custodio (emisión, congelación, recuperación) | la clave de SU custodio: tras una sola operación delegada, el nodo tiene dos y puede autorizar la siguiente | la operación autorizada | la clave del otro custodio y la del que no firma | §523; §531 |
+| gobernanza delegada | la clave de cada miembro | la operación autorizada | la del otro miembro y la del que no firma | §524; §531 |
+| umbral conjunto (`circuit_threshold`) | las dos claves | — | la del custodio que no firma | §526; §531 |
+| auditoría (`prove_minimum` de la capa, con el circuito de `stark-experiment`) | la clave de gasto, el saldo exacto y el `leaf_salt` | la identidad de la cuenta, el umbral y el techo (`2^62 - 1`) | — | §523, §524; §531 |
+| quema | la clave de gasto, el saldo antes y después, el `leaf_salt` y la identidad de la cuenta | el importe y el suministro antes y después | — | §523; §531 |
+| solvencia (`stark-experiment`) | el saldo y el importe | el límite | — | §524; §531 |
+| `double_entry` (`stark-experiment`) | las identidades del emisor y del receptor, los cuatro saldos, el importe y los dos nonces | el límite | — | §526; §531 |
+| banda | el saldo y el `leaf_salt` | la identidad de la cuenta y la cota superior (`pedido - 1`); con el pedido en el saldo más uno, saldo y cota valen lo mismo y la cuenta se dobla: es la coincidencia declarada de D-Q | — | §521, con su corrección en el §527; §531 |
+| edad | el emisor, cuando todos los pendientes son del mismo | — | con emisores distintos, ninguno; ni el `nacido` ni la hoja de los pendientes | §521, §523; §531 |
+| sobre de cobro (portable) | la sal, `X`, el importe exacto y el emisor, que es el índice de su cuenta | la identidad del receptor y el techo de la banda; la cota inferior y el `nacido` también, pero son pequeños | — | §521; §531 |
+| sobre de pago (portable) | la sal, el `delta`, el `refund_id` y el emisor, el índice de su cuenta | el importe | `X` | §521; §531 |
+| camino de merkle (`stark-experiment`) | nada: ni la hoja ni los hermanos son constantes | — | la hoja y los hermanos | §524; §531 |
+| apertura del reembolso y de la des-emisión (v1 y v2) | nada: su traza no lleva columnas constantes | el importe y, en el v2, la apertura (`refund_id`, `delta`) van en el recibo, no en la prueba | la identidad del receptor, la sal y el importe; en el v2, el `refund_id`, el `delta` y `X` | §531 |
+| subida de crédito del reembolso | la identidad de la cuenta que recupera el dinero, su saldo antes y después y su `leaf_salt` | el importe | — | §531 |
+| subida de la emisión delegada | la identidad de la cuenta, su saldo antes y después y su `leaf_salt` | el importe, el suministro antes y después y el máximo | — | §531 |
+| subida de la congelación delegada | nada | — | el índice de la cuenta y la marca de congelada | §531 |
+| subida de la recuperación delegada | la identidad vieja, el saldo y el `leaf_salt` | la identidad nueva, que la operación nombra | — | §531 |
 
 El catálogo de rechazos lleva DOS pruebas reales —un SEND y un CLAIM de un banco— de las que se
 deriva la clave de gasto de sus dos cuentas sandbox (§521). Son claves de prueba: lo que era falso
@@ -95,7 +107,9 @@ era la propiedad publicada, no una filtración hecha.
 
 Gana la tabla frente a una frase general: claridad (un lector dice qué es público prueba a prueba)
 y coherencia (cada fila remite al asiento que la midió). **Reversible** fila a fila: una medida
-nueva que la contradiga la corrige, en el asiento que la mida y aquí.
+nueva que la contradiga la corrige, en el asiento que la mida, aquí y en la suite, que es la
+tabla como datos (D-O). El §531 lo hizo ya con tres celdas que el PASTE-E2-M leyó como «dos
+columnas» y eran coincidencias con el suministro (D-Q).
 
 ### D-C — El principio del API se queda como regla, y hoy no se cumple
 
@@ -142,6 +156,9 @@ entonces, la tabla vale lo que valen las lecturas que la midieron.
 Gana la suite frente a dejar la tabla como prosa: pureza (testigo antes que promesa) y coherencia
 (la misma regla que la suite de cada circuito ya sigue). **Reversible** en su forma —test del
 crate o instrumento del canon—, no en su existencia.
+
+**Sellada en el §531**: `crates/zk-ssl/src/instrumento_revela.rs`, veintiún tests de fila y el
+censo del cable, en la fila de la capa del canon. Su forma la fijan D-L a D-Q.
 
 ### D-F — El probador que oculta es un fork de winterfell 0.13.1
 
@@ -260,6 +277,89 @@ Gana partir en dos: coherencia (el orden que siguieron los asientos §521 a §52
 rompe, después lo que sí) y claridad (cada paso con su testigo). **Reversible** en su orden si E2
 se retrasa: E3a puede sellarse sola; E3b no.
 
+### D-L — El universo de la suite es el cable, y lo dice un censo leído de los fuentes
+
+Lo que la suite produce y la tabla tabula son las AIR que el nodo verifica —las trece de la capa,
+los `verify::<` de `crates/zk-ssl/src` fuera de los instrumentos, y la del par de umbral, la que
+verifica `verify_threshold_pair`— y las cinco del kit (`crates/zk-ssl-air`), que un sobre
+publica: diecinueve. Las cuatro experimentales que ya estaban medidas —`ThresholdAir`,
+`SolvencyAir`, `DoubleEntryAir` y `MerkleAir`— se quedan, fuera del cable y dichas así. El censo
+se lee de los fuentes en cada corrida, no se teclea: una AIR nueva en el cable sin fila, una fila
+del cable que ya no verifica nadie o una fila que nombre una AIR que no existe ponen la suite
+roja.
+
+Gana el censo leído frente a una lista: pureza (el universo es el ámbito del cambio, y se re-mide)
+y coherencia (el mismo censo con el que el PASTE-E2-M abrió la E2). **Reversible** si el cable
+deja de poder leerse de los fuentes: entonces la lista se escribe y el censo la cruza.
+
+### D-M — La unidad de la cuenta: k(q+2) y k·q, con q leído de cada prueba
+
+Un elemento de columna constante sale k(q+2) veces —una por posición abierta y dos fuera del
+dominio, en z y en z·g— y un digest de cuatro columnas contiguas k·q, porque fuera del dominio la
+extensión cuadrática lo intercala. q son las posiciones únicas que la prueba abre
+(`num_unique_queries`: de 38 a 42 medidas, y las 42 de `ProofOptions` son el tope) y k las
+columnas o bloques que llevan el valor. Medida en el PASTE-E2-M sobre 107 valores sin excepción
+(§531). La suite lee q de cada prueba y exige la cuenta exacta: ninguna celda baja a «al menos».
+
+Gana la unidad exacta frente a una cota: pureza (una cuenta que se cumple sin excepción es una
+regla) e imagen fiel (un «42 o más» diría menos de lo que se mide). **Reversible** si un probador
+cambia la forma de la prueba: entonces la unidad se re-mide y esta decisión la sigue.
+
+### D-N — Un test del crate `zk-ssl` por fila, en release y dentro del canon
+
+La suite vive en `crates/zk-ssl/src/instrumento_revela.rs`, solo de tests, y corre con la fila
+de la capa del canon (`cargo test -p zk-ssl --release`): veintiún tests de fila y el censo. Las
+pruebas STARK se saltan en depuración (nota 41) y `--release` las corre; el censo corre siempre.
+Un rojo junta todas las celdas que se movieron y las nombra.
+
+Gana el test del crate frente a un instrumento aparte del canon: coherencia (la misma puerta que
+gatea cada circuito) y claridad (una fila, un test, un nombre). **Reversible** si su coste deja de
+caber en la fila (hoy son 6,6 s de tests, §531): entonces pasa a `--largo`.
+
+### D-O — La tabla tiene veintiuna filas, y su fuente es la suite
+
+Las siete AIR que el censo halló sin fila entran así: `RefundAir` y `RefundAirV2` como una fila
+—la apertura del reembolso y de la des-emisión, el mismo constructor—, `CreditClimbAir`,
+`MintClimbAir`, `FrozenClimbAir` y `RecoveryClimbAir` como una fila cada una —las subidas del
+reembolso y de las operaciones delegadas—, y `ClaimAirV2` como variante de la fila del cobro, como
+SEND-v2 lo era ya de la del envío. Cada fila dice qué sale del testigo, qué es público por diseño
+—y sale igual— y qué no sale; la unidad es la de D-M. La tabla como datos (D-K): cada fila de la
+suite es una lista de celdas con su k, y E3b la pone a cero cambiando datos, no código.
+
+Gana reescribirla frente a añadir filas a la vieja: claridad (un lector dice qué es público y qué
+testigo, fila a fila) e imagen fiel (la tabla dice lo que la suite mide, con la corrección del
+§531). **Reversible** fila a fila, como antes: la corrige el asiento que la mida, aquí y en la
+suite.
+
+### D-P — Las dos pruebas del catálogo de rechazos quedan fuera de la suite
+
+El catálogo de rechazos lleva un SEND y un CLAIM de un banco (§521). La suite no los cuenta: son
+vectores, no pruebas que la suite produzca, y su fila ya está —envío y cobro—. Siguen dichos en
+D-B y en la Seguridad.
+
+Gana dejarlos fuera: pureza (la suite produce lo que cuenta) y coherencia (el ámbito del censo es
+el ámbito del cambio). **Reversible** si el catálogo gana pruebas de un tipo sin fila.
+
+### D-Q — Todo escalar grande de una columna constante es una celda, y las celdas valen distinto
+
+Lo que la suite cuenta son valores, no columnas: si dos valores distintos de la traza valieran lo
+mismo, la cuenta de uno contaría el otro. Así leyó el PASTE-E2-M «dos columnas» en la quema y en
+la emisión a pendiente, donde el suministro —público, y en columna constante— valía lo que el
+saldo o el importe de un libro con una sola cuenta; el ENSAYO-531 lo cazó en el envío, con el
+suministro igual al saldo del emisor (§531). De ahí la regla: cada fila cuenta también los
+escalares públicos que el circuito lleva en columna constante —el suministro, el límite, el techo,
+el máximo—, la suite exige antes de contar que ninguna celda que salga valga lo que otra, y cada
+montaje elige valores distintos dos a dos. Lo pequeño —nonces, contadores, nacidos, cotas
+inferiores— no se puede contar por bytes y no se cuenta; el nonce de la cuenta va en columna
+constante en el envío, el cobro, la quema, las subidas con saldo, la auditoría y la banda —leído
+en el `build_trace` de cada circuito, no medido— y dice cuántas operaciones lleva la cuenta. La
+banda con el pedido en el saldo más uno es la coincidencia declarada que enseña por qué: saldo y
+cota valen lo mismo y la cuenta se dobla.
+
+Gana contar lo público y exigir la distinción frente a contar solo el testigo: pureza (una cuenta
+que puede contar dos cosas no mide ninguna) y claridad (el lector ve en cada fila qué es público).
+**Reversible** si la cuenta pasa a leer columnas en vez de bytes: entonces la distinción sobra.
+
 ## Compatibilidad
 
 - `zkssl/0.3` **no sube**. Ningún método, tipo ni error del cable cambia; ningún vector se
@@ -284,7 +384,9 @@ deuda.
   autorizar la siguiente. La conservación no cae: la prueba sigue siendo sólida. Cae quién puede
   mover el suministro.
 - **Quien lea un sobre publicado** ve la sal, la `X` y el importe del cobro, o la sal, el `delta` y
-  el `refund_id` del pago. Los vectores de `spec/vectors/` son de sandbox, con claves de prueba.
+  el `refund_id` del pago; y en los dos, el índice de la cuenta del emisor, que el sobre calla en
+  sus campos (RFC-0008, D-AH) y la prueba lleva (§531). Los vectores de `spec/vectors/` son de
+  sandbox, con claves de prueba.
 - **Lo que este RFC nombra y no paga:**
   - el literal del kit «esta causa no publica el saldo: la banda lo prueba sin el»
     (`crates/zk-ssl-verify/src/main.rs`) y la cabecera de `crates/zk-ssl-air/src/pago_en_curso.rs`
@@ -299,8 +401,9 @@ deuda.
     depósito con DOI y no se edita;
   - y la semilla de `zk-core`, que es Groth16 y queda fuera del modelo, como iso-bridge,
     settlement-layer y los experimentos de PLONK y Halo2.
-- **Regla 3 del PROCESO:** E3b es la etapa que haría cumplir el principio del API. Hasta que la
-  suite de E2 lo mida en cada tipo de prueba, la D-C sigue diciendo dónde se incumple.
+- **Regla 3 del PROCESO:** E3b es la etapa que haría cumplir el principio del API. La suite de
+  E2 lo mide en cada tipo de prueba desde el §531, y la D-C sigue diciendo dónde se incumple
+  hasta que la suite cuente cero.
 - **Lo que el censo no ve:** que no salga nada literal no es ocultación (D-A). Más allá del censo,
   la E3 descansa en el argumento de la D-I y en la construcción de la nota 2024/1037. Ni el fork ni
   la ocultación están auditados (H7).
@@ -322,6 +425,9 @@ deuda.
   PASTE-360-M), §523 (el modelo: PASTE-360-M2 y sus dos falsadores), §524 (PASTE-367-M3) y §526
   (PASTE-367-M4); y el §522 y el §525, los cortes de los comentarios. Los instrumentos viven fuera
   del árbol, en Downloads del autor.
+- El §531 y sus instrumentos, fuera del árbol: PASTE-E2-M (`3bb03cdbbb44a56d`, salida
+  `af9b1c5d662ab26b`), ENSAYO-531 (`b95a6f856d493203`, salida `2b1888f387367a54`) y
+  ENSAYO-531-r2 (`d0b973d5bdc429f8`, salida `ed0ebac80ea101fc`, cargo `841b702722246376`).
 - `spec/rfc/PROCESO.md`, regla 3; `SECURITY.md` §3.bis, donde vive la frase canónica.
 - winterfell: la portada del repositorio, <https://github.com/facebook/winterfell>, y su issue 9,
   <https://github.com/facebook/winterfell/issues/9>.

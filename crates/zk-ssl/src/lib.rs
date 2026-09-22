@@ -143,6 +143,9 @@ mod instrumento_cobro;
 // RFC-0008 E2 (§502): el instrumento del pago en curso portable. Solo tests.
 #[cfg(test)]
 mod instrumento_pago;
+// RFC-0009 E2 (§531): el testigo de la tabla de D-B, lo que revela una prueba. Solo tests.
+#[cfg(test)]
+mod instrumento_revela;
 #[cfg(any(test, feature = "sandbox"))]
 pub mod tests_support;
 

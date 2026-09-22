@@ -38736,3 +38736,84 @@ las <<1364 declaradas>>, las <<1349 declared>> y las <<18 ignoradas>> (5.A-319).
 
 **Lo que queda.** La parada ordenada, con salida del proceso, cuando haya un banco que la mida; el
 5.A-149, que obliga a pagar a mano las sumas en cada -B; y la E2 del RFC-0009.
+
+## §531 — RFC-0009 E2: el testigo de lo que revela una prueba, y la tabla remedida en 21 filas
+
+**Que.** La tabla de D-B del RFC-0009 era prosa medida por seis lecturas puras fuera del arbol.
+Desde este sello la mide el arbol: `crates/zk-ssl/src/instrumento_revela.rs`, solo de tests,
+produce cada tipo de prueba que el nodo recibe o que un sobre publica -las diecinueve AIR del
+cable- y las cuatro experimentales que la tabla tabula, cuenta en los bytes de cada una los
+valores de su testigo y sus escalares publicos, y asierta la cuenta EXACTA que la tabla dice, con
+un control que tiene que dar cero. Veintiun tests, uno por fila, y un censo que lee los fuentes en
+cada corrida y falla si una AIR que la capa, el par de umbral o el kit verifican no tiene fila, si
+una fila del cable ya no la verifica nadie o si una fila nombra una AIR que no existe. La tabla
+pasa de 16 a 21 filas: las siete AIR que nadie habia medido -`RefundAir` y `RefundAirV2`,
+`CreditClimbAir`, `MintClimbAir`, `FrozenClimbAir`, `RecoveryClimbAir` y `ClaimAirV2`- entran
+como cinco filas nuevas y dos variantes. Las decisiones D-L a D-Q las tomo el asistente por
+delegacion del autor, con la constitucion, y van escritas en el RFC con su reversion.
+
+**La unidad, y lo que la cuenta no mide.** Medida en el PASTE-E2-M (`3bb03cdbbb44a56d`, salida
+`af9b1c5d662ab26b`, 107 valores de 107): un elemento de columna constante sale k(q+2) veces -una
+por posicion abierta y dos fuera del dominio, en z y en z*g- y un digest de cuatro columnas
+contiguas k*q, con q las posiciones UNICAS que la prueba abre (`num_unique_queries`, de 38 a 42)
+y k las columnas o bloques que lo llevan. La suite lee q de cada prueba. Lo pequeno -nonces,
+contadores, nacidos, cotas inferiores- no se puede contar por bytes y no se cuenta: el nonce de
+la cuenta va en columna constante en el envio, el cobro, la quema, las subidas con saldo, la
+auditoria y la banda -leido en el `build_trace` de cada circuito, no medido- y dice cuantas
+operaciones lleva la cuenta. Queda dicho en la D-Q.
+
+**Lo que el ensayo corrigio de la tabla.** El ENSAYO-531 (`b95a6f856d493203`, salida
+`2b1888f387367a54`) dio ROJO en una celda: el saldo del envio salio 132 veces y no 44. Bob no
+tenia saldo, asi que el suministro -que el envio lleva en dos columnas constantes,
+`COL_SUPPLY_OLD` y `COL_SUPPLY_NEW`, iguales porque un envio no lo mueve- valia lo mismo que el
+saldo de alice: 44 + 88. El mismo choque explicaba dos <<dos columnas>> que el PASTE-E2-M habia
+leido y que la suite daba por buenas: la quema con una sola cuenta, donde el suministro antes y
+despues valen los dos saldos, y la emision a pendiente con el libro vacio, donde el suministro
+despues vale el importe. `BurnAir` lleva una `COL_BAL` y una `COL_BAL_NEW`; `MintPendingClimbAir`,
+una `COL_AMOUNT`. Tres de los seis k=2 del PASTE eran coincidencias; quedan dos, y son estructura:
+la identidad del receptor en el cobro (`COL_ACC_ID` y `COL_R_ID`, que el circuito obliga a ser
+iguales) y la banda pegada, donde el saldo es la cota por construccion. Una suite que repite el
+montaje certifica el artefacto: el rojo del envio, con el montaje cambiado, es lo que lo destapo.
+
+**La regla que sale de ahi (D-Q), y el ensayo que la sello.** Todo escalar grande de una columna
+constante es una celda, del testigo o publico -el suministro, el limite, el techo, el maximo-, y
+las celdas de una prueba valen distinto dos a dos: `asierta` lo exige antes de contar y, si dos
+coincidieran, falla nombrandolas. El ENSAYO-531-r2 (`d0b973d5bdc429f8`, salida
+`ed0ebac80ea101fc`, cargo `841b702722246376`) monto cada fila sin choques y dio VERDE en trece
+comprobaciones: BASE 399/7/0 y POST 421/7/0 con 0 warnings; la suite sola, 22 passed en 21,1 s;
+las diez puertas estaticas, verdes (`check_tests` 1475 -> 1497, `check_modulos` 143 -> 144); y
+tres falsadores por mutacion, cada uno rojo por su nombre: la tabla vieja (la quema con k 2: <<el
+saldo antes sale 44 veces y la tabla dice 88>>), una AIR fantasma en el cable (un
+`verify::<AirFantasmaDelEnsayo>` en un comentario de `burn.rs`) y el choque del envio (bob sin
+saldo: <<el saldo y el suministro (publico), en dos columnas valen lo mismo>>). Los 133 valores
+contados salieron como la tabla dice, con q de 38 a 42. La fila zk-ssl del canon gana 6,6 s de
+tests (62,9 -> 69,5).
+
+**Tres hechos de la tabla, para quien la lea.** Todo envio dice quien paga: la identidad del
+emisor sale en el v1 y en el v2, cuyos bytes son iguales salvo `X`. La quema revela el saldo antes
+y despues. Y los dos sobres portables llevan el indice de la cuenta del emisor, que el sobre calla
+en sus campos (RFC-0008, D-AH) y la prueba lleva: lo cubre la D-A del 0009; el RFC-0008 no se
+toca aqui.
+
+**El S531-B, en el mismo corte.** El pin de la capa 399 -> 421, con su entrada en la historia de
+la fila de `tools/canon.sh`; `check_cifras`, corrido sobre una copia con el pin subido, nombra
+ONCE cifras en diez lineas -la capa en `PAPER_EN.md`:959, `PAPER.md`:1000, `ARQUITECTURA.md`:58 y
+:1128, `PRINCIPIOS.md`:136 y :356, `doc/INSTITUCIONAL.md`:525 y `doc/INSTITUTIONAL.md`:505; el
+total de sello 1316 -> 1338 en `PAPER_EN.md`:33, `PAPER.md`:36 y `PRINCIPIOS.md`:356-, y el
+bloque lo demuestra en vivo antes de tocar la prosa; las tres sumas <<contando los pines>>
+1453 -> 1475 (`PAPER.md`:37, `PAPER_EN.md`:34 y `PRINCIPIOS.md`:359), que no ve (5.A-149), a mano;
+y los modulos de la capa, que viven en la misma linea :1128 que un 399 que este corte edita:
+decia 29 y son 33 -las declaraciones `mod` de `lib.rs` y los `.rs` bajo `src/` sin `lib.rs` dan
+lo mismo-, rancio desde los S502, S504 y S518 y con `instrumento_revela` uno mas; se paga aqui con
+su universo escrito. Lo que NO se mueve: las <<1364 declaradas>>, las <<1349 declared>> y las
+<<18 ignoradas>> (5.A-319). El RFC-0009 gana D-L a D-Q, la tabla en 21 filas con lo publico en su
+columna, la E2 sellada, la Seguridad al dia y su fila en `spec/README.md`.
+
+**Contadores.** Doce ficheros, 1412 lineas insertadas y 47 borradas: nace `instrumento_revela.rs`
+(1175/0); `lib.rs` 3/0; `tools/canon.sh` 1/1; `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md` 3/3
+cada uno; `ARQUITECTURA.md` 2/2; `doc/INSTITUCIONAL.md`, `doc/INSTITUTIONAL.md` y `spec/README.md`
+1/1; el RFC-0009 138/32 (336 -> 442 lineas); y `AUDITORIA.md` 81/0, que es este asiento.
+
+**Lo que queda.** E3a del RFC-0009 (el fork, apagado) y E3b, que pone esta tabla a cero con esta
+misma suite; el nonce, que la cuenta no mide; la D-AH del RFC-0008, que dice que el sobre calla
+el emisor cuando la prueba lo lleva; y el 5.A-149, que obliga a pagar a mano las sumas en cada -B.

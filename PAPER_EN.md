@@ -30,8 +30,8 @@ identical conditions, and we document a methodological error of our own —
 mixing debug and release build figures — that was detected and corrected
 during the work.
 
-The reference implementation comprises **1316 executable tests in the seal
-gate** —1453 counting the pins of the long and complete levels, and 1349
+The reference implementation comprises **1338 executable tests in the seal
+gate** —1475 counting the pins of the long and complete levels, and 1349
 declared—, with 18 ignored and declared, and is
 publicly available. **It has not been audited by third parties and does
 not implement distributed consensus**; we discuss the implications of both
@@ -956,7 +956,7 @@ non-stable compilers are used.
 # Or all at once, with the canon's pinned counts checked:
 bash tools/canon.sh --sello
 
-cargo test -p zk-ssl --release              # layer: 399 tests (7 ignored)
+cargo test -p zk-ssl --release              # layer: 421 tests (7 ignored)
 cargo test -p stark-experiment --release    # circuits: 391 tests (13 ignored)
 cargo test -p zk-ssl-node --release         # node: 115
 cargo test -p zk-ssl --release metrics -- --nocapture
