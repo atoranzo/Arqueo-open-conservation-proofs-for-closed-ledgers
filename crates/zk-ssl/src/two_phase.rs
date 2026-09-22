@@ -465,7 +465,6 @@ impl SovereignLayer {
         // D-7 a los gemelos: el ancho de la traza se compara ANTES de
         // construir el Air (su fn new lo exige con assert_eq!) -- el
         // rechazo es un Err, no un panico alcanzable desde la entrada.
-        let ancho = p_ref.trace_info().width();
         match receipt.apertura {
             None => {
                 crate::comprobar_forma(
@@ -713,7 +712,6 @@ impl SovereignLayer {
         // D-7 a los gemelos: el ancho de la traza se compara ANTES de
         // construir el Air (su fn new lo exige con assert_eq!) -- el
         // rechazo es un Err, no un panico alcanzable desde la entrada.
-        let ancho = p_ref.trace_info().width();
         match receipt.apertura {
             None => {
                 crate::comprobar_forma(
@@ -1602,7 +1600,6 @@ impl SovereignLayer {
         // D-7 a los gemelos: el ancho de la traza se compara ANTES de
         // construir el Air (su fn new lo exige con assert_eq!) -- el
         // rechazo es un Err, no un panico alcanzable desde la entrada.
-        let ancho = climb_proof.trace_info().width();
         crate::comprobar_forma(
             climb_proof.trace_info(),
             stark_experiment::circuit_mint_pending_climb::TRACE_WIDTH,
