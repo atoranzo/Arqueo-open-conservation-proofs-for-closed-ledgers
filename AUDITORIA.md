@@ -38591,3 +38591,55 @@ herramientas por delta. El canon NO corre: no se abre un `.rs`, ni un test, ni u
 **Lo que NO cierra.** El 5.A-360 y el 5.A-367 siguen abiertos como hallazgo: el RFC dice que se
 promete, no hace que el probador oculte. Queda E2, el testigo de la tabla. E3, el S521 de la
 prenda y el H5 siguen PARADOS.
+
+## §528 — El probador que oculta cabe sin tocar los AIR: el RFC-0009 gana su E3 (5.A-380)
+
+**Que.** El RFC-0009 gana su E3, el probador que oculta. Su D-D la dejaba a un RFC propio porque
+ocultar <<toca todos los AIR de la casa>>, y la hacia reversible <<si un probador que oculte
+resulta caber sin tocar los AIR>>. Cabe: medido en dos juguetes fuera del arbol y, para los 35 AIR
+de produccion, por su censo y las formulas leidas. La E3 entra en dos pasos. E3a mete el fork de
+winterfell 0.13.1 apagado -las pruebas salen byte a byte como hoy y el cable no cambia- con los
+falsadores de los spikes como tests del arbol. E3b lo enciende para las pruebas que cruzan el
+cable, sube a `zkssl/0.4` y espera a la suite de E2 contando cero literales, que es el falsador
+propio que piden la D-A y la D-C. Seis decisiones nuevas, D-F a D-K, cada una con su reversion.
+Las tres de estructura -partir en dos, la frase que revierte la D-D y la subida del cable- las
+decidio el autor, con la recomendacion del hilo lateral; las demas, el asistente con la vara.
+
+**Lo medido, fuera del arbol y con la huella de cada salida.** El cociente oculto en el fork, con
+0 lineas en AIR (SPIKE-B-ETAPA2A, `bea7d79ec60919f3`). La traza oculta dentro del nucleo con un
+envoltorio que presenta al nucleo un AIR de 2T filas y deja al interno ver T (SPIKE-B-P4 r1,
+`0afe71ce812aa713`): sin molienda, x1,22 en bytes, x3,2 al probar y x1,86 al verificar frente a
+winterfell, y lo mismo que ocultar desde fuera; la sal cuesta 6.567 B. La subida del ce para los
+AIR sin sitio y el verificador que falla cerrado (r2, `5a0d1c5ee86ff89c`), y los asertos de
+depuracion de winterfell aceptando el envoltorio con la subida (r3, `7e4dfda3ced288dc`). El censo
+de los 35 (PASTE-P4-M, `bc2ab57c2a683bcc`, y PASTE-GRADOS-M r2, `112d6654666f2941`): ninguna
+exencion propia, ninguna asercion periodica ni de secuencia, ningun meta escrito, ningun metodo
+sin delegar y los 35 probadores con el evaluador de serie; 34 caben con su propio ce, y `WorkAir`,
+de grado 3, necesita 4. Codigo: 488 lineas, 350 en el fork y 138 propias, y ninguna en un AIR,
+frente a una referencia de 892 a 1.697 en Plonky3.
+
+**Lo que corrigio la revision.** El issue 9 de winterfell se leyo entero antes de escribirlo: pide
+tres piezas -valores aleatorios al final de la traza, un polinomio aleatorio combinado con el de
+composicion antes de FRI y Merkle con sal para la traza- y la aleatorizacion del cociente no es
+suya, sino de la nota 2024/1037 (apartado 4.2). El primer borrador daba la segunda pieza al
+cociente; el hilo lateral leyo el issue y lo corrigio: es la columna aleatoria que entra en DEEP.
+La D-G cuenta cuatro piezas.
+
+**De paso.** `spec/README.md`: la fila del RFC-0009 dice que la ocultacion entra como E3, en dos
+pasos, y que el cable sube con la E3b.
+
+**Lo que NO se toca.** Ni un `.rs`, ni un test, ni un pin, ni un vector: el fork no entra en el
+arbol, que es la E3a. `spec/rfc/PROCESO.md`. El ESTADO del RFC, que sigue PROPUESTO: una etapa
+nueva no lo mueve. Su titulo, que dice la promesa mientras el probador no oculte, y lo sigue
+siendo hasta la E3b. La D-A, que se revierte cuando se selle la E3b, no antes.
+
+**Contadores.** Dos ficheros cambian, mas el asiento: `spec/rfc/0009-lo-que-revela-una-prueba.md`
++154 -2, `spec/README.md` +1 -1 y `AUDITORIA.md` +52 -0 (este asiento): 38.593 -> 38.645.
+Puertas: las regiones PRE pinadas, los tres ficheros POST predichos byte a byte y las diez
+herramientas por delta. El canon NO corre: no se abre un `.rs`, ni un test, ni un pin.
+
+**Lo que NO cierra.** El 5.A-360 y el 5.A-367 siguen abiertos como hallazgo: la E3 dice como se
+oculta y todavia no oculta. El 5.A-380 queda atendido en el papel, no en el arbol. Va a la cola el
+panico de los AIR que asertan su ancho en `new` (`AuditAir`, `circuit_audit.rs`:366) ante una
+prueba con otro ancho, con marca o sin ella, que es anterior a la E3. Quedan E2 y las dos mitades
+de la E3. La E3 del RFC-0008, el S521 de la prenda y el H5 siguen PARADOS.

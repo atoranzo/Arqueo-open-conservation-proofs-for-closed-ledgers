@@ -1,14 +1,14 @@
 # RFC-0009 — Lo que revela una prueba: la promesa mientras el probador no oculte su testigo
 
 - **Estado:** PROPUESTO
-- **Autores:** Che, con Claude (sesiones 162, 163, 164 y 165)
+- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165 y 166)
 - **Fecha:** 2026-09-21
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad). Este RFC no
   cambia un método, un tipo del cable ni un vector: cambia lo que se promete de ellos.
 - **Asiento(s) de AUDITORIA:** §521 (el testigo se publica), §522 (los comentarios y el literal del
   API), §523 (el modelo de las columnas constantes), §524 (el PASTE-367-M3, y lo que era de
   Groth16), §525 (los comentarios, con el censo que dice de qué sistema habla cada frase) y §526
-  (el PASTE-367-M4); el §527, que lo adopta.
+  (el PASTE-367-M4); el §527, que lo adopta; y el §528, que le añade la E3.
 
 ## Estado de las etapas
 
@@ -16,6 +16,8 @@
 |---|---|---|---|
 | E1 — la promesa, escrita | este texto: qué se promete (D-A), lo que sale literal en cada prueba (D-B), el principio del API como regla que hoy no se cumple (D-C) y la ocultación fuera de este RFC (D-D) | no | sellada en el §527 |
 | E2 — el testigo de la tabla | una suite que produce cada tipo de prueba y cuenta sus valores literales contra la tabla de D-B, con un control que tiene que dar cero (D-E) | no | por hacer |
+| E3a — el probador que oculta, dentro y apagado | el fork de winterfell 0.13.1 en el árbol, con la ocultación entera en el núcleo y sin tocar un AIR (D-F a D-J); apagado, cada prueba sale byte a byte como la de winterfell; y los falsadores de los spikes como tests del árbol, con el modo oculto solo en los tests (D-K) | no | por hacer |
+| E3b — encenderlo | las pruebas que cruzan el cable salen ocultas; la tabla de D-B pasa a cero, con la suite de E2 como testigo (D-K) | sí: `zkssl/0.4` | por hacer; espera a E2 y a E3a |
 
 Las medidas de este documento son las de los asientos §521, §523, §524 y §526: lecturas puras que
 restauraron el árbol con sha y porcelain. Sus instrumentos viven fuera del árbol, en Downloads del
@@ -123,6 +125,12 @@ a §526 —primero dejar de afirmar lo falso, después decir qué se promete y s
 probador—. **Reversible** si un probador que oculte resulta caber sin tocar los AIR: entonces cabe
 aquí como etapa.
 
+**Revertida en la E3** (sesión 166): el probador que oculta cabe sin tocar ningún AIR —medido en
+dos juguetes fuera del árbol, y para los 35 de producción por su censo y las fórmulas leídas; lo
+confirman E3a y E3b con sus tests (D-G, D-K)—, así que la ocultación entra aquí como etapa y no
+en un RFC propio. La primitiva nueva para la propiedad nueva es el fork, y la declara la D-F: una
+primitiva por propiedad, como pedía la pureza.
+
 ### D-E — La tabla tendrá su testigo: E2
 
 Una promesa que nadie re-mide caduca en silencio. E2 convierte la tabla de D-B en suite: produce
@@ -135,12 +143,132 @@ Gana la suite frente a dejar la tabla como prosa: pureza (testigo antes que prom
 (la misma regla que la suite de cada circuito ya sigue). **Reversible** en su forma —test del
 crate o instrumento del canon—, no en su existencia.
 
+### D-F — El probador que oculta es un fork de winterfell 0.13.1
+
+Dos caminos se pesaron (INFORME-PROBADOR-165, corregido en la sesión 166): (b) bifurcar
+winterfell 0.13.1 y ocultar dentro; (c) migrar a Plonky3, que trae `HidingFriPcs`. (c) reabre los
+35 AIR de producción —10.100 líneas de implementación, 4.341 de transición— y deja fuera a
+`EdadAir`, cuyo tramo auxiliar p3-uni-stark no tiene. (b) mide 488 líneas —350 en el fork y 138
+propias, la sal y el azar sembrado— y ninguna en un AIR, frente a una referencia de 892 a 1.697
+líneas de Plonky3 para lo mismo (SPIKE-B-P4 r2).
+
+Gana (b): pureza (los 35 AIR conservan la semántica que sus suites ya prueban) e imagen fiel (el
+coste es el medido, no el esperado). **Reversible** si el código del fork pasa del doble de la
+referencia (1.784 líneas), si una auditoría lo tumba o si winterfell publica ocultación propia:
+entonces se sigue a winterfell y el fork se retira.
+
+### D-G — La ocultación vive entera en el núcleo: ningún AIR cambia
+
+El issue 9 de winterfell, que su autor abrió en 2021, pide tres piezas; la nota 2024/1037 añade
+una cuarta. Las cuatro caben dentro:
+
+- **las filas** (la primera del issue): detrás de las T filas reales, T filas aleatorias. Un
+  envoltorio, `Oculta<A>`, presenta al núcleo un AIR de 2T filas con una columna más y las
+  exenciones del interno más T, y delega en el interno transiciones, aserciones, tramo auxiliar y
+  columnas periódicas. El interno sigue viendo T, así que sus aserciones de última fila no se
+  mueven. En el hilo del issue, su autor ya daba esta pieza por cubierta sin tocar apenas el
+  diseño de las restricciones;
+- **el polinomio aleatorio antes de FRI** (la segunda): la columna de más es aleatoria entera;
+  entra en DEEP con su coeficiente, como cualquier columna, y enmascara lo que FRI abre;
+- **las hojas** (la tercera): los compromisos de Merkle llevan sal (D-I). El issue la pide para la
+  traza; el fork sala también las restricciones y FRI;
+- **el cociente** (la nota 2024/1037, apartado 4.2, que el issue no trae): el polinomio de
+  composición se parte con paso 2T − m y sus trozos se aleatorizan con polinomios de grado menor
+  que m que se cancelan en la suma, con m ≥ 44 —las 42 consultas, z y z·g— y m = 64.
+
+Que ningún AIR cambia lo sostiene el censo de los 35 (PASTE-P4-M y PASTE-GRADOS-M r2): ninguno fija
+exenciones propias —todos llevan la de serie, y 1 + T sobre 2T es justo el máximo que winterfell
+admite (`air/context.rs`:302-307)—; ninguno usa aserciones periódicas ni de secuencia; ninguno lee
+el ancho del marco; ninguno escribe en el meta de la traza; ninguno define un método del AIR que
+el envoltorio no delegue; y los 35 probadores usan el evaluador de serie.
+
+Queda la segunda cota de las exenciones (`air/context.rs`:315-327), que depende del grado. Con las
+fórmulas de `air/transition/degree.rs`:90-115, un AIR de 2T filas con T + 1 exenciones cabe si
+d + Σ(1 − 1/c) ≤ ce + ½. Caben 34 de 35 con su propio ce; `WorkAir`, de grado 3 sin ciclos,
+necesita 4 donde winterfell le da 2. El envoltorio sube el ce a la menor potencia de dos que deje
+sitio, con tope en el blowup, y lo calcula con las funciones de winterfell. El ce solo lo usa el
+probador: medido en un juguete con la forma de `WorkAir`, una prueba hecha con la subida verifica
+sin ella, y sin la subida no sale una prueba que verifique (SPIKE-B-P4 r2).
+
+Gana el núcleo frente a ocultar desde fuera, que es lo que hizo la etapa 1 del spike: coherencia
+(las suites y los pines de los 35 AIR no cambian) y pureza (una primitiva, un sitio).
+**Reversible** AIR a AIR: uno que no quepa —exenciones propias, aserciones periódicas o de
+secuencia, o un ce por encima del blowup— lo dice su RFC y se oculta desde fuera.
+
+### D-H — La marca viaja en el meta de la traza, con m dentro
+
+Una prueba oculta lo dice en el meta de su `TraceInfo`, que ningún AIR usa. Con el meta vacío, la
+prueba es la de winterfell byte a byte: el fork apagado reproduce sus bytes (medido). Con la
+marca, el meta entra en el transcript, y tocar un byte de la marca deja la prueba sin verificar
+(medido). El verificador despacha por la marca sin que cambie una sola llamada a `verify`. Con la
+marca y una traza que no se puede partir en dos —longitud menor que 16 o ancho menor que 2—
+devuelve error sin llegar al envoltorio, porque el kit tiene que fallar cerrado (medido). El m
+del cociente viaja dentro de la marca; en los spikes vive en una estática. Antes de usarlos, el
+verificador comprueba que conoce la versión de la marca y que 0 ≤ m < 2T, y si no, rechaza. m
+decide la ocultación, no la solidez: un m corto solo perjudica a quien prueba.
+
+Gana el meta frente a un campo nuevo de `ProofOptions` o del cable: pureza (las pruebas sin
+ocultar no cambian ni un byte) y coherencia (la marca va atada al mismo transcript que todo lo
+demás). **Reversible** si algún AIR llega a necesitar el meta: entonces la marca se muda, y lo dice
+aquí.
+
+### D-I — La sal se queda hasta que un argumento la retire
+
+La sal cuesta 6.567 bytes por prueba, el 46 % de lo que crece al ocultar; sin ella, la prueba
+oculta pesa ×1,12 la de winterfell en vez de ×1,22 (SPIKE-B-P4 r1). El censo literal no puede
+juzgarla, porque no ve las hojas. El argumento que la retire lleva dos cuentas separadas: por
+columna, 44 puntos abiertos —las 42 consultas, z y z·g— frente a T filas aleatorias; y en DEEP y
+FRI, las combinaciones que abren las capas frente a la columna aleatoria que las enmascara.
+
+Gana quedársela: pureza (nada se retira sin su argumento). **Reversible** cuando el argumento esté
+escrito y revisado: la sal se va y la prueba adelgaza.
+
+### D-J — Las cifras de bytes pasan a bandas y el azar sale del sistema
+
+Una prueba oculta no es determinista: con otra semilla pesa distinto (E1, E2 y E4 del SPIKE-B-P4:
+80.936, 81.637 y 80.807 bytes). Las cifras publicadas de bytes pasan a bandas; los vectores de
+`spec/vectors/` necesitan azar sembrado o una vigilancia que no compare bytes; y en producción el
+azar sale de la entropía del sistema.
+
+Lo medido sin molienda y frente a winterfell: ×1,22 en bytes con 42 columnas, ×3,2 a ×3,3 al
+probar y ×1,9 a ×2,0 al verificar; con 5 columnas, ≈ ×1,29 en bytes (una sola
+semilla). Frente a ocultar desde fuera, lo mismo: ×0,98 en bytes y ×1,05 al probar.
+
+Gana la banda frente a una cifra: imagen fiel (una cifra única mentiría). **Reversible** hacia
+ninguna parte mientras se oculte.
+
+### D-K — Dos pasos: el fork entra apagado, y encenderlo sube el cable
+
+E3a mete el fork en el árbol apagado: cada prueba sale byte a byte como hoy y el cable no cambia
+(medido con el fork apagado en los spikes). Trae, como tests del árbol y con el modo oculto solo
+en los tests, los falsadores de los spikes: censo cero, verifica, rechaza público+1, marca tocada,
+dimensiones inválidas, `WorkAir` con la subida y la regresión con el fork apagado. Sin ellos, E3a
+sellaría código que nada ejercita: testigo negativo antes que la función.
+
+E3b lo enciende para las pruebas que cruzan el cable. Una prueba oculta no la verifica un
+winterfell sin bifurcar (razonado; lo ilustra la 2a del spike, donde el verificador sin el paso
+del cociente rechaza la prueba, y en los AIR que asertan su ancho en `new` entraría en pánico en
+vez de rechazar). Así que la versión sube a `zkssl/0.4` y los vectores de la 0.3 se conservan
+bajo su versión (regla 2 del PROCESO).
+
+E3b no se sella sin la suite de E2 contando cero valores literales en cada tipo de prueba. Ese es
+el falsador propio que piden la D-A («sólo cuando un probador que oculte lo pruebe con su propio
+falsador») y la D-C («cuando lo pruebe la suite de E2 contra un probador que oculte»). Con él, la
+tabla de D-B pasa a cero y la D-A se revierte.
+
+Gana partir en dos: coherencia (el orden que siguieron los asientos §521 a §526: primero lo que no
+rompe, después lo que sí) y claridad (cada paso con su testigo). **Reversible** en su orden si E2
+se retrasa: E3a puede sellarse sola; E3b no.
+
 ## Compatibilidad
 
 - `zkssl/0.3` **no sube**. Ningún método, tipo ni error del cable cambia; ningún vector se
   reescribe ni nace.
 - La promesa ya había cambiado en la prosa y en los comentarios (§521 a §526): este RFC la fija en
   un sitio.
+- **E3a** no sube `zkssl/0.3`: con el fork apagado, las pruebas son byte a byte las de winterfell.
+- **E3b** sube a `zkssl/0.4`: las pruebas que cruzan el cable llevan la marca y solo las verifica
+  el fork. Los vectores de la 0.3 se conservan; los de la 0.4 nacen con azar sembrado (D-J).
 
 ### Por qué entra por RFC
 
@@ -171,6 +299,22 @@ deuda.
     depósito con DOI y no se edita;
   - y la semilla de `zk-core`, que es Groth16 y queda fuera del modelo, como iso-bridge,
     settlement-layer y los experimentos de PLONK y Halo2.
+- **Regla 3 del PROCESO:** E3b es la etapa que haría cumplir el principio del API. Hasta que la
+  suite de E2 lo mida en cada tipo de prueba, la D-C sigue diciendo dónde se incumple.
+- **Lo que el censo no ve:** que no salga nada literal no es ocultación (D-A). Más allá del censo,
+  la E3 descansa en el argumento de la D-I y en la construcción de la nota 2024/1037. Ni el fork ni
+  la ocultación están auditados (H7).
+- **Fallar cerrado:** con la marca, el verificador rechaza con error una traza que no se puede
+  partir (D-H). Los AIR que asertan su ancho en `new` —`AuditAir`, `circuit_audit.rs`:366, entre
+  otros— entran en pánico ante una prueba con otro ancho, con marca o sin ella. Es anterior a
+  esta etapa y queda como punto propio de la cola 5.A.
+- **Depuración:** con los asertos de depuración de winterfell encendidos —grados declarados
+  iguales a los reales y tamaño del dominio de evaluación, `constraints/evaluation_table.rs`:
+  181-230—, los dos juguetes pasan con el envoltorio y la subida, y probar G sin la subida cae en
+  el aserto de grados (`:214`): en depuración, olvidar la subida no pasa inadvertido (medido,
+  SPIKE-B-P4 r3). En los 35, el tamaño que exigen coincide con el de la subida (razonado con las
+  fórmulas leídas). En el árbol los ejercitan los tests del modo oculto de E3a, que corren en
+  depuración; la suite con el fork apagado no los toca.
 
 ## Referencias
 
@@ -182,3 +326,11 @@ deuda.
 - winterfell: la portada del repositorio, <https://github.com/facebook/winterfell>, y su issue 9,
   <https://github.com/facebook/winterfell/issues/9>.
 - RFC-0007 (la banda, la edad y el rechazo) y RFC-0008 (los dos sobres portables y la prenda).
+- Los instrumentos de la sesión 166, fuera del árbol, con la huella de su salida: PASTE-P4-M
+  (`bc2ab57c2a683bcc`), SPIKE-B-ETAPA2A (`bea7d79ec60919f3`), SPIKE-B-P4 r1 (`0afe71ce812aa713`),
+  r2 (`5a0d1c5ee86ff89c`) y r3 (`7e4dfda3ced288dc`), y PASTE-GRADOS-M r2 (`112d6654666f2941`); de
+  la 165, PASTE-PROBADOR-M, PASTE-FORK-M y SPIKE-B-ETAPA1 (`b51618eaeee76f79`), con el
+  INFORME-PROBADOR-165.
+- winterfell 0.13.1: `air/context.rs`:290-331 (las exenciones), `air/transition/degree.rs`:90-115
+  (los grados) y `constraints/evaluation_table.rs`:181-230 (los asertos de depuración); la nota
+  2024/1037, apartado 4.2; el hilo del issue 9, donde su autor da por cubierta la primera pieza.
