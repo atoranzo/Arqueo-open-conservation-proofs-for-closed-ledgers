@@ -356,7 +356,7 @@ sería faltar al principio de transparencia.
 - **1313 tests en la compuerta de sello** —399 de la capa, 391 de
   circuitos, **122 del nodo**, 34 de la ceremonia, 17 de liquidación, **120
   del verificador independiente**, **113 del testigo**, y los del SDK, el
-  cable y el puente ISO—, **1448 contando los pines de `--largo` y
+  cable y el puente ISO—, **1450 contando los pines de `--largo` y
   `--completo`**, y **1364 declarados**. 0 fallos y 24
   warnings **pinchados** (no crecen). Cada propiedad de seguridad con
   test discriminante.

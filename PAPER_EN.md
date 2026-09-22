@@ -31,7 +31,7 @@ mixing debug and release build figures — that was detected and corrected
 during the work.
 
 The reference implementation comprises **1313 executable tests in the seal
-gate** —1448 counting the pins of the long and complete levels, and 1349
+gate** —1450 counting the pins of the long and complete levels, and 1349
 declared—, with 18 ignored and declared, and is
 publicly available. **It has not been audited by third parties and does
 not implement distributed consensus**; we discuss the implications of both

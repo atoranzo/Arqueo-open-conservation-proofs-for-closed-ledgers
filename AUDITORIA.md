@@ -38679,6 +38679,19 @@ publicadas que `check_cifras` cruza contra ellos: el total 1311 -> 1313 y sus de
 `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`, `ARQUITECTURA.md` y los dos `INSTITUCIONAL`. Una cuenta
 publicada en varios sitios se corrige en todos, o envejece sin avisar.
 
+**El S529-D, en su propio commit: lo que el -B no pago.** Medido sobre `390339e`, el HEAD tras el
+S529-C. El -B movio las cifras que `check_cifras` cruza y dejo dos cosas que ningun gate ve. Una,
+las tres sumas <<contando los pines>> seguian en 1448 y la cuenta da 1313 + 137 = **1450**:
+`PAPER.md`:37, `PAPER_EN.md`:34 y `PRINCIPIOS.md`:359, que `check_cifras` no vigila (5.A-149) y
+que los `-B` anteriores pagaban a mano (el S520-B, 1444 -> 1448). Dos, la historia de las dos
+filas de `tools/canon.sh` no anotaba el 529: la de la capa acababa en el 518 (389 -> 398) y la de
+los circuitos en el 517 (379 -> 390). El S529-D paga las dos -1448 -> 1450 por valor en su linea,
+y las entradas del §529, 398 -> 399 y 390 -> 391, al final de cada fila- y cierra el 5.A-383 y el
+5.A-384. Una precision al parrafo del testigo: `guarda_forma` es el modulo, y el test es
+`guarda_forma::una_forma_ajena_da_err_no_panico`. Lo que NO se mueve: las <<1364 declaradas>>,
+las <<1349 declared>> y las <<18 ignoradas>> siguen rancias a proposito, por lo que dice el
+5.A-319.
+
 **Lo que queda.** El S530 -la red: `catch_unwind` en la frontera del kit y del nodo, y la parada con
 causa en el candado de `main.rs` en vez del `.expect`- es defensa en profundidad para un AIR futuro
 que se cuele sin guarda; con el S529 el 5.A-381 esta CERRADO por los caminos de hoy. Detras, la E2
