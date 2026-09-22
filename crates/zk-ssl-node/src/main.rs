@@ -414,6 +414,11 @@ struct App {
     /// `fsync` —**0,907 ms medidos en ext4** (K.1)— y retenerlo mientras
     /// se aplica una operación pararía el nodo entero.
     recepcion: Mutex<recepcion::ContadorRecepcion>,
+    /// **La PARADA del nodo** (§530, 5.A-382). Si un pánico deja envenenado un
+    /// candado, el estado en memoria puede haber quedado a medio mutar: el nodo
+    /// deja de servir y cada petición recibe la causa. Vacía mientras el nodo
+    /// sirve; se escribe una vez y no se borra. Reiniciar lee el estado del disco.
+    parada: std::sync::OnceLock<String>,
     /// **Los consumos que OTROS libros firmaron tener** (RFC-0006, E4b, §436).
     ///
     /// ⚠️ **Sin `Mutex`, al revés que sus vecinas**: es inmutable tras
@@ -893,6 +898,7 @@ async fn main() -> anyhow::Result<()> {
                 .map_err(|e| anyhow::anyhow!("{e}"))?,
         ),
         consumos_ajenos,
+        parada: std::sync::OnceLock::new(),
     });
 
     if args.latido > 0 {
@@ -1151,7 +1157,7 @@ async fn handle(
 ) -> Json<Value> {
     let t0 = Instant::now();
     let id = req.id.clone().unwrap_or(Value::Null);
-    let out = dispatch(&app, &req.method, req.params);
+    let out = despachar(&app, &req.method, || dispatch(&app, &req.method, req.params));
     let ms = t0.elapsed().as_millis() as u64;
 
     Json(match out {
@@ -1264,6 +1270,11 @@ impl RpcError {
     }
     fn method_not_found(m: &str) -> Self {
         Self { code: -32601, message: format!("método desconocido: {m}"), data: None }
+    }
+    /// §530: el nodo está en PARADA. `-32603`, como los demás errores internos;
+    /// el mensaje lleva la causa.
+    fn parada(causa: &str) -> Self {
+        Self { code: -32603, message: format!("nodo en PARADA: {causa}"), data: None }
     }
     fn layer(e: LayerError, seq: u64) -> Self {
         // -32000: rechazo de la capa. El mensaje es el Debug del error,
@@ -1417,6 +1428,70 @@ fn parse<T: serde::de::DeserializeOwned>(params: Value) -> Result<T, RpcError> {
     serde_json::from_value(params).map_err(RpcError::invalid_params)
 }
 
+impl App {
+    /// ¿Queda algún candado envenenado? (§530). Los cinco `Mutex` de `App`, uno a
+    /// uno: si `App` gana otro, entra aquí.
+    fn algun_candado_envenenado(&self) -> bool {
+        self.estado.is_poisoned()
+            || self.ultima_cabeza.is_poisoned()
+            || self.hojas_mmr.is_poisoned()
+            || self.cofirmas.is_poisoned()
+            || self.recepcion.is_poisoned()
+    }
+}
+
+/// **La red del pánico** (§530, 5.A-382): la frontera del despacho.
+///
+/// Un pánico dentro de `dispatch` lo recogía tokio: la conexión se caía sin
+/// respuesta y el proceso seguía. Si el pánico ocurría con el `estado` tomado, el
+/// `Mutex` quedaba envenenado y desde entonces cada petición que lo pedía volvía a
+/// entrar en pánico en el `.expect`: un nodo vivo y mudo.
+///
+/// Ahora, si el nodo ya está en PARADA, la petición se rechaza con la causa sin
+/// llegar a ejecutarse. Si `f` entra en pánico y deja CUALQUIER candado
+/// envenenado, el nodo pasa a PARADA con esa causa: el estado en memoria puede
+/// estar a medio mutar y el del disco es el último escrito. Si no deja ninguno, la
+/// petición recibe `-32603` y el nodo sigue.
+///
+/// Recibe la llamada como cierre para que los tests inyecten el pánico sin añadir
+/// un camino de pánico al binario.
+fn despachar(
+    app: &App,
+    method: &str,
+    f: impl FnOnce() -> Result<Value, RpcError>,
+) -> Result<Value, RpcError> {
+    if let Some(causa) = app.parada.get() {
+        return Err(RpcError::parada(causa));
+    }
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
+        Ok(r) => r,
+        Err(p) => {
+            let msg = if let Some(t) = p.downcast_ref::<&str>() {
+                t.to_string()
+            } else if let Some(t) = p.downcast_ref::<String>() {
+                t.clone()
+            } else {
+                "sin mensaje".to_string()
+            };
+            if app.algun_candado_envenenado() {
+                let _ = app
+                    .parada
+                    .set(format!("un pánico en {method} dejó un candado envenenado: {msg}"));
+                let causa = app.parada.get().map(String::as_str).unwrap_or("");
+                tracing::error!(method = %method, causa = %causa, "PARADA: el nodo deja de servir");
+                Err(RpcError::parada(causa))
+            } else {
+                tracing::error!(method = %method, panico = %msg, "pánico interno; ningún candado envenenado");
+                Err(RpcError {
+                    code: -32603,
+                    message: format!("pánico interno en {method}: {msg}"),
+                    data: None,
+                })
+            }
+        }
+    }
+}
+
 fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
     // Las operaciones bloquean el Mutex mientras verifican pruebas
     // (~decenas de ms). Correcto para un nodo único.
@@ -1440,7 +1515,20 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
     // 32 de uno aplicado —el 9 %—, porque la raíz se comprueba ANTES de
     // verificar las pruebas. El precio de la contención lo paga el
     // agregador que pierde, no el nodo.
-    let mut guardia = app.estado.lock().expect("mutex del estado envenenado");
+    //
+    // §530 (5.A-382): un candado envenenado ya no hace entrar en pánico al
+    // despacho. Si un pánico FUERA de `despachar` dejó el `estado` envenenado, el
+    // nodo pasa a PARADA y la petición recibe la causa, sin tocar un estado que
+    // puede haber quedado a medio mutar.
+    let mut guardia = match app.estado.lock() {
+        Ok(g) => g,
+        Err(_) => {
+            let _ = app.parada.set("el candado del estado estaba envenenado al despachar".into());
+            let causa = app.parada.get().map(String::as_str).unwrap_or("");
+            tracing::error!(method = %method, causa = %causa, "PARADA: el nodo deja de servir");
+            return Err(RpcError::parada(causa));
+        }
+    };
     let Estado { layer: l, reservas } = &mut *guardia;
 
     // ── Barrido PEREZOSO de reservas caducadas ────────────────────
@@ -2734,7 +2822,67 @@ mod tests {
                 .expect("contador de recepcion"),
             ),
             consumos_ajenos: BTreeSet::new(),
+            parada: std::sync::OnceLock::new(),
         }
+    }
+
+    /// §530 - LA RED DEL PANICO: un pánico con el `estado` tomado lo envenena, y
+    /// el nodo pasa a PARADA con su causa; la petición siguiente ni llega a
+    /// ejecutarse. Falsador: sin el `catch_unwind` de `despachar`, este test entra
+    /// en pánico.
+    #[test]
+    fn un_panico_con_el_estado_tomado_para_el_nodo() {
+        let app = nodo(60);
+        let r = despachar(&app, "zkssl_prueba", || {
+            let _g = app.estado.lock().expect("candado");
+            panic!("panico inyectado con el estado tomado");
+        });
+        let e = r.expect_err("un pánico no puede dar Ok");
+        assert_eq!(e.code, -32603);
+        assert!(e.message.starts_with("nodo en PARADA: "), "{}", e.message);
+        assert!(e.message.contains("panico inyectado con el estado tomado"), "{}", e.message);
+        assert!(app.estado.is_poisoned());
+        let causa = app.parada.get().expect("la PARADA lleva su causa").clone();
+        let corrio = std::cell::Cell::new(false);
+        let r2 = despachar(&app, "zkssl_otra", || {
+            corrio.set(true);
+            Ok(Value::Null)
+        });
+        assert!(!corrio.get(), "en PARADA la petición no llega a ejecutarse");
+        let e2 = r2.expect_err("en PARADA toda petición se rechaza");
+        assert_eq!(e2.message, format!("nodo en PARADA: {causa}"));
+    }
+
+    /// §530 - Un pánico que no deja ningún candado envenenado devuelve `-32603` y
+    /// el nodo sigue sirviendo. Falsador: sin el `catch_unwind`, pánico.
+    #[test]
+    fn un_panico_sin_candado_da_error_y_el_nodo_sigue() {
+        let app = nodo(60);
+        let r = despachar(&app, "zkssl_prueba", || panic!("panico inyectado sin candado"));
+        let e = r.expect_err("un pánico no puede dar Ok");
+        assert_eq!(e.code, -32603);
+        assert_eq!(e.message, "pánico interno en zkssl_prueba: panico inyectado sin candado");
+        assert!(app.parada.get().is_none(), "sin candado envenenado no hay PARADA");
+        let r2 = despachar(&app, "zkssl_otra", || Ok(json!({"sigue": true})));
+        assert_eq!(r2.expect("el nodo sigue sirviendo"), json!({"sigue": true}));
+    }
+
+    /// §530 - El `estado` envenenado por un pánico FUERA del despacho ya no hace
+    /// entrar en pánico a `dispatch`: el nodo pasa a PARADA y la petición recibe la
+    /// causa. El candado se toma antes de mirar el método. Falsador: el `.expect`
+    /// de antes, que aquí entraría en pánico.
+    #[test]
+    fn el_estado_envenenado_de_antes_no_hace_panicar_al_despacho() {
+        let app = nodo(60);
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _g = app.estado.lock().expect("candado");
+            panic!("envenenar el estado desde fuera del despacho");
+        }));
+        assert!(app.estado.is_poisoned());
+        let e = dispatch(&app, "zkssl_loQueSea", json!({})).expect_err("con el estado envenenado no hay Ok");
+        assert_eq!(e.code, -32603);
+        assert_eq!(e.message, "nodo en PARADA: el candado del estado estaba envenenado al despachar");
+        assert!(app.parada.get().is_some());
     }
 
     /// §318 - EL UMBRAL SE PRUEBA CON NUMEROS, no fabricando cien mil

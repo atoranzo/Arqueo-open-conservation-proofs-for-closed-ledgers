@@ -38696,3 +38696,43 @@ las <<1349 declared>> y las <<18 ignoradas>> siguen rancias a proposito, por lo 
 causa en el candado de `main.rs` en vez del `.expect`- es defensa en profundidad para un AIR futuro
 que se cuele sin guarda; con el S529 el 5.A-381 esta CERRADO por los caminos de hoy. Detras, la E2
 del RFC-0009.
+
+## §530 — La red del panico del nodo: el panico que envenena un candado lo para con su causa
+
+**Que.** Un panico dentro de `dispatch` lo recogia tokio: la conexion se caia sin respuesta y el
+proceso seguia. Si ocurria con el `estado` tomado, el `Mutex` quedaba envenenado y desde entonces
+cada peticion volvia a entrar en panico en el `.expect` de `main.rs`:1443: un nodo vivo y mudo. El
+S529 cerro el camino que lo provocaba desde el cable (5.A-381); el S530 pone la red por si un
+camino futuro se cuela (5.A-382). `handle` despacha por `despachar`, que envuelve la llamada con
+`catch_unwind`: si el panico deja CUALQUIER candado de `App` envenenado, el nodo pasa a PARADA con
+su causa, y toda peticion posterior recibe `-32603` <<nodo en PARADA: ...>> sin tocar el estado;
+si no deja ninguno, la peticion recibe `-32603` <<panico interno en ...>> y el nodo sigue. `:1443`
+deja el `.expect` por la misma PARADA. El proceso no termina: una parada ordenada con salida
+necesita otra feature de tokio y no tiene testigo en la suite sin HTTP. Reiniciar lee el estado del
+disco.
+
+**El testigo y su falsador, por pieza nueva.** Tres tests en el `mod tests` del nodo:
+`un_panico_con_el_estado_tomado_para_el_nodo` -PARADA con causa, y la peticion siguiente ni llega a
+ejecutarse-, `un_panico_sin_candado_da_error_y_el_nodo_sigue` y
+`el_estado_envenenado_de_antes_no_hace_panicar_al_despacho`. Falsados por mutacion en el
+ENSAYO-530 (`d19bfbf76aff2720`): sin el `catch_unwind` caen exactamente los dos primeros y pasan
+123; con el `.expect` de vuelta cae exactamente el tercero y pasan 124.
+
+**Lo medido.** El ENSAYO-530 sobre un clon de `d55da11` en el mismo disco: la BASE pasa 122 con 0
+warnings, la POST 125 con 0, y `--list` gana exactamente los tres nombres sin perder ninguno.
+`main.rs` pasa de `3065dc2063a96206` a `d0b5b36a1ea17aaa`, de 4827 a 4975 lineas.
+
+**El kit no se toca, y por que.** Un panico en el `main` de `zk-ssl-verify` sale con 101 y sin
+`VERDE`: falla cerrado por la frontera del proceso, y el arnes de conformidad cruza el codigo y el
+texto de cada vector. Un `catch_unwind` que saliera con 1 y `ROJO` afirmaria un rechazo que el kit
+no razono. El 5.A-382 nombraba las dos fronteras; queda puesta la del nodo.
+
+**El S530-B, en el mismo corte.** El pin del nodo 122 -> 125, con su entrada en la historia de la
+fila de `tools/canon.sh`; el total de sello 1313 -> 1316 (`PAPER.md`:36, `PAPER_EN.md`:33 y
+`PRINCIPIOS.md`:356) y el desglose del nodo (`PRINCIPIOS.md`:357), que son las cuatro cifras que
+`check_cifras` nombra con el pin subido; y las tres sumas <<contando los pines>> 1450 -> 1453
+(`PAPER.md`:37, `PAPER_EN.md`:34 y `PRINCIPIOS.md`:359), que no ve (5.A-149). Lo que NO se mueve:
+las <<1364 declaradas>>, las <<1349 declared>> y las <<18 ignoradas>> (5.A-319).
+
+**Lo que queda.** La parada ordenada, con salida del proceso, cuando haya un banco que la mida; el
+5.A-149, que obliga a pagar a mano las sumas en cada -B; y la E2 del RFC-0009.
