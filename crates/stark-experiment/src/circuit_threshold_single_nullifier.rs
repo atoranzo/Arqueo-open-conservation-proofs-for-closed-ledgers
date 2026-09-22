@@ -578,6 +578,9 @@ impl Prover for NullifierThresholdProver {
 /// Por que se rechaza un par de autorizaciones.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PairRejection {
+    /// **S529** -- una prueba tiene una TRACE_INFO que no es la forma del
+    /// AIR del umbral. Sin esto, `verify` la construiria y podria panicar.
+    WrongTraceWidth,
     /// Una de las dos pruebas no verifica.
     InvalidProof,
     /// ⚠️ Las dos vienen del **mismo custodio**: mismo nulificador. Sin
@@ -659,6 +662,19 @@ pub fn verify_threshold_pair(
     // 3. Son custodios DISTINTOS. Aqui es donde el umbral es umbral.
     if inputs_a.nullifier == inputs_b.nullifier {
         return Err(PairRejection::SameCustodian);
+    }
+
+    // 3 bis (S529). Las dos tienen la forma EXACTA del AIR del umbral, antes
+    //    de construirlo: una TRACE_INFO ajena panicaria en AIR::new.
+    let forma_ok = |p: &Proof| {
+        let i = p.trace_info();
+        i.main_trace_width() == TRACE_WIDTH
+            && i.aux_segment_width() == 0
+            && i.get_num_aux_segment_rand_elements() == 0
+            && i.length() == TRACE_LENGTH
+    };
+    if !forma_ok(&proof_a) || !forma_ok(&proof_b) {
+        return Err(PairRejection::WrongTraceWidth);
     }
 
     // 4. Y las dos pruebas son validas.
@@ -854,6 +870,36 @@ mod tests {
         assert_eq!(
             verify_threshold_pair(pa, ia, pb, ib, dominio(), root, op, &opciones()),
             Ok(())
+        );
+    }
+
+    // **S529** -- una prueba con forma de traza ajena da WrongTraceWidth, no
+    // panico: se toma un par valido, se le muta el ancho principal (byte 0 del
+    // contexto serializado) y verify_threshold_pair la rechaza ANTES de construir
+    // el AIR. Falsador de la guarda del par.
+    #[test]
+    fn una_prueba_de_forma_ajena_da_wrong_trace_width() {
+        let keys = custodian_keys();
+        let (root, paths) = build_custodian_set(&keys);
+        let op = operacion(7);
+        let (pa, ia) = autorizar(keys[1], &paths[1], op);
+        let (pb, ib) = autorizar(keys[2], &paths[2], op);
+        // el par intacto verifica -- prueba de vida del sabotaje
+        assert_eq!(
+            verify_threshold_pair(
+                pa.clone(), ia.clone(), pb.clone(), ib.clone(),
+                dominio(), root, op, &opciones()
+            ),
+            Ok(())
+        );
+        // se muta el ancho declarado de pa a un valor ajeno
+        let mut bytes = pa.to_bytes();
+        assert_eq!(bytes[0] as usize, TRACE_WIDTH, "byte0 es el ancho principal");
+        bytes[0] = (TRACE_WIDTH as u8) + 1;
+        let pa_mala = Proof::from_bytes(&bytes).expect("deserializa con la forma mutada");
+        assert_eq!(
+            verify_threshold_pair(pa_mala, ia, pb, ib, dominio(), root, op, &opciones()),
+            Err(PairRejection::WrongTraceWidth)
         );
     }
 

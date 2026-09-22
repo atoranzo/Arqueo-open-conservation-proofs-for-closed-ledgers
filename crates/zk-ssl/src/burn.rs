@@ -156,6 +156,13 @@ impl SovereignLayer {
         let proof = winterfell::Proof::from_bytes(&receipt.proof)
             .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
         let min_opts = AcceptableOptions::OptionSet(vec![self.options.clone()]);
+        crate::comprobar_forma(
+            proof.trace_info(),
+            stark_experiment::circuit_burn::TRACE_WIDTH,
+            0,
+            0,
+            stark_experiment::circuit_burn::TRACE_LENGTH,
+        )?;
         verify::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
             proof,
             pi.clone(),

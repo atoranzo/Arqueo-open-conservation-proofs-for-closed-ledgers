@@ -468,12 +468,13 @@ impl SovereignLayer {
         let ancho = p_ref.trace_info().width();
         match receipt.apertura {
             None => {
-                if ancho != stark_experiment::circuit_refund::TRACE_WIDTH {
-                    return Err(LayerError::VerificationFailed(format!(
-                        "desemision: traza de {ancho} columnas y recibo sin apertura, via v1 (la via exige {})",
-                        stark_experiment::circuit_refund::TRACE_WIDTH
-                    )));
-                }
+                crate::comprobar_forma(
+                    p_ref.trace_info(),
+                    stark_experiment::circuit_refund::TRACE_WIDTH,
+                    0,
+                    0,
+                    stark_experiment::circuit_refund::TRACE_LENGTH,
+                )?;
                 verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
                     p_ref,
                     RefundPublicInputs {
@@ -488,12 +489,13 @@ impl SovereignLayer {
                 // medido en el PASTE-E3a-M): RefundAirV2 reutiliza
                 // RefundPublicInputs, ya importado arriba.
                 use stark_experiment::circuit_refund_v2::RefundAirV2;
-                if ancho != stark_experiment::circuit_refund_v2::TRACE_WIDTH {
-                    return Err(LayerError::VerificationFailed(format!(
-                        "desemision v2: traza de {ancho} columnas y recibo con apertura, via v2 (la via exige {})",
-                        stark_experiment::circuit_refund_v2::TRACE_WIDTH
-                    )));
-                }
+                crate::comprobar_forma(
+                    p_ref.trace_info(),
+                    stark_experiment::circuit_refund_v2::TRACE_WIDTH,
+                    0,
+                    0,
+                    stark_experiment::circuit_refund_v2::TRACE_LENGTH,
+                )?;
                 verify::<RefundAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
                     p_ref,
                     RefundPublicInputs {
@@ -714,12 +716,13 @@ impl SovereignLayer {
         let ancho = p_ref.trace_info().width();
         match receipt.apertura {
             None => {
-                if ancho != stark_experiment::circuit_refund::TRACE_WIDTH {
-                    return Err(LayerError::VerificationFailed(format!(
-                        "reembolso: traza de {ancho} columnas y recibo sin apertura, via v1 (la via exige {})",
-                        stark_experiment::circuit_refund::TRACE_WIDTH
-                    )));
-                }
+                crate::comprobar_forma(
+                    p_ref.trace_info(),
+                    stark_experiment::circuit_refund::TRACE_WIDTH,
+                    0,
+                    0,
+                    stark_experiment::circuit_refund::TRACE_LENGTH,
+                )?;
                 verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
                     p_ref,
                     RefundPublicInputs {
@@ -734,12 +737,13 @@ impl SovereignLayer {
                 // medido en el PASTE-E3a-M): RefundAirV2 reutiliza
                 // RefundPublicInputs, ya importado arriba.
                 use stark_experiment::circuit_refund_v2::RefundAirV2;
-                if ancho != stark_experiment::circuit_refund_v2::TRACE_WIDTH {
-                    return Err(LayerError::VerificationFailed(format!(
-                        "reembolso v2: traza de {ancho} columnas y recibo con apertura, via v2 (la via exige {})",
-                        stark_experiment::circuit_refund_v2::TRACE_WIDTH
-                    )));
-                }
+                crate::comprobar_forma(
+                    p_ref.trace_info(),
+                    stark_experiment::circuit_refund_v2::TRACE_WIDTH,
+                    0,
+                    0,
+                    stark_experiment::circuit_refund_v2::TRACE_LENGTH,
+                )?;
                 verify::<RefundAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
                     p_ref,
                     RefundPublicInputs {
@@ -754,13 +758,13 @@ impl SovereignLayer {
         let p_cred = winterfell::Proof::from_bytes(&receipt.credit_proof)
             .map_err(|e| LayerError::VerificationFailed(format!("credito mal formado: {e:?}")))?;
         // La ranura del credito tiene su propio juez de geometria.
-        let ancho_credito = p_cred.trace_info().width();
-        if ancho_credito != stark_experiment::circuit_credit_climb::TRACE_WIDTH {
-            return Err(LayerError::VerificationFailed(format!(
-                "credito: traza de {ancho_credito} columnas (la subida de credito exige {})",
-                stark_experiment::circuit_credit_climb::TRACE_WIDTH
-            )));
-        }
+        crate::comprobar_forma(
+            p_cred.trace_info(),
+            stark_experiment::circuit_credit_climb::TRACE_WIDTH,
+            0,
+            0,
+            stark_experiment::circuit_credit_climb::TRACE_LENGTH,
+        )?;
         verify::<CreditClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
             p_cred,
             CreditClimbPublicInputs {
@@ -987,15 +991,15 @@ impl SovereignLayer {
         // recibo con la X mal puesta ABORTARIA el hilo en vez de
         // rechazarse. El rechazo es un Err, no un panico alcanzable
         // desde la entrada (medido en la sesion 63).
-        let ancho = proof.trace_info().width();
         match receipt.notice.x {
             None => {
-                if ancho != stark_experiment::circuit_send::TRACE_WIDTH {
-                    return Err(LayerError::VerificationFailed(format!(
-                        "envio: traza de {ancho} columnas y aviso sin sobre (la via v1 exige {})",
-                        stark_experiment::circuit_send::TRACE_WIDTH
-                    )));
-                }
+                crate::comprobar_forma(
+                    proof.trace_info(),
+                    stark_experiment::circuit_send::TRACE_WIDTH,
+                    0,
+                    0,
+                    stark_experiment::circuit_send::TRACE_LENGTH,
+                )?;
                 verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
                     proof,
                     pi.clone(),
@@ -1004,12 +1008,13 @@ impl SovereignLayer {
                 .map_err(|e| LayerError::VerificationFailed(format!("envio: {e:?}")))?
             }
             Some(_) => {
-                if ancho != stark_experiment::circuit_send_v2::TRACE_WIDTH {
-                    return Err(LayerError::VerificationFailed(format!(
-                        "envio v2: traza de {ancho} columnas y aviso con sobre (la via v2 exige {})",
-                        stark_experiment::circuit_send_v2::TRACE_WIDTH
-                    )));
-                }
+                crate::comprobar_forma(
+                    proof.trace_info(),
+                    stark_experiment::circuit_send_v2::TRACE_WIDTH,
+                    0,
+                    0,
+                    stark_experiment::circuit_send_v2::TRACE_LENGTH,
+                )?;
                 verify::<SendV2Air, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
                     proof,
                     pi.clone(),
@@ -1272,15 +1277,15 @@ impl SovereignLayer {
         // D-7 a los gemelos: el ancho de la traza se compara ANTES de
         // construir el Air (su fn new lo exige con assert_eq!) -- el
         // rechazo es un Err, no un panico alcanzable desde la entrada.
-        let ancho = proof.trace_info().width();
         match notice.x {
             None => {
-                if ancho != stark_experiment::circuit_claim::TRACE_WIDTH {
-                    return Err(LayerError::VerificationFailed(format!(
-                        "cobro: traza de {ancho} columnas y aviso sin sobre, via v1 (la via exige {})",
-                        stark_experiment::circuit_claim::TRACE_WIDTH
-                    )));
-                }
+                crate::comprobar_forma(
+                    proof.trace_info(),
+                    stark_experiment::circuit_claim::TRACE_WIDTH,
+                    0,
+                    0,
+                    stark_experiment::circuit_claim::TRACE_LENGTH,
+                )?;
                 verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
                     proof,
                     pi.clone(),
@@ -1288,12 +1293,13 @@ impl SovereignLayer {
                 )
             }
             Some(_) => {
-                if ancho != stark_experiment::circuit_claim_v2::TRACE_WIDTH {
-                    return Err(LayerError::VerificationFailed(format!(
-                        "cobro v2: traza de {ancho} columnas y aviso con sobre, via v2 (la via exige {})",
-                        stark_experiment::circuit_claim_v2::TRACE_WIDTH
-                    )));
-                }
+                crate::comprobar_forma(
+                    proof.trace_info(),
+                    stark_experiment::circuit_claim_v2::TRACE_WIDTH,
+                    0,
+                    0,
+                    stark_experiment::circuit_claim_v2::TRACE_LENGTH,
+                )?;
                 verify::<ClaimAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
                     proof,
                     pi.clone(),
@@ -1597,12 +1603,13 @@ impl SovereignLayer {
         // construir el Air (su fn new lo exige con assert_eq!) -- el
         // rechazo es un Err, no un panico alcanzable desde la entrada.
         let ancho = climb_proof.trace_info().width();
-        if ancho != stark_experiment::circuit_mint_pending_climb::TRACE_WIDTH {
-            return Err(LayerError::VerificationFailed(format!(
-                "subida del pendiente: traza de {ancho} columnas (la emision delegada exige {})",
-                stark_experiment::circuit_mint_pending_climb::TRACE_WIDTH
-            )));
-        }
+        crate::comprobar_forma(
+            climb_proof.trace_info(),
+            stark_experiment::circuit_mint_pending_climb::TRACE_WIDTH,
+            0,
+            0,
+            stark_experiment::circuit_mint_pending_climb::TRACE_LENGTH,
+        )?;
 
         verify::<MintPendingClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
             climb_proof,
@@ -1640,6 +1647,9 @@ impl SovereignLayer {
             &accepted,
         )
         .map_err(|r| match r {
+            PairRejection::WrongTraceWidth => LayerError::VerificationFailed(
+                "autorizacion: forma de traza equivocada".into(),
+            ),
             PairRejection::SameCustodian
             | PairRejection::WrongCustodianSet
             | PairRejection::WrongIdentityDomain => LayerError::NotTheIssuer,

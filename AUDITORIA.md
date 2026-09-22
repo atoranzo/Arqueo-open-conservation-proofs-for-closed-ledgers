@@ -38643,3 +38643,43 @@ oculta y todavia no oculta. El 5.A-380 queda atendido en el papel, no en el arbo
 panico de los AIR que asertan su ancho en `new` (`AuditAir`, `circuit_audit.rs`:366) ante una
 prueba con otro ancho, con marca o sin ella, que es anterior a la E3. Quedan E2 y las dos mitades
 de la E3. La E3 del RFC-0008, el S521 de la prenda y el H5 siguen PARADOS.
+
+## §529 — La guarda de forma es la tupla entera, en los quince verify y en el par: cierra el 5.A-381
+
+**Que.** El 5.A-381 estaba ABIERTO, no latente. Medido (PASTE-529-M): una prueba de ancho
+correcto con un tramo auxiliar declarado PANICA en `AIR::new` de winterfell 0.13.1
+(`trace_info.rs:120`), y una guarda de solo ancho la deja pasar. Las diez guardas de ancho de la
+capa se alcanzan desde el cable por `applySend`, `applyClaim` y `applyMany`, asi que un panico bajo
+el candado del estado del nodo lo envenena: denegacion de servicio remota. El S529 cambia la guarda
+de ANCHO por la de TUPLA -`(ancho, ancho_aux, aleatorios_aux, longitud)`- en un solo ayudante,
+`comprobar_forma`, aplicado ANTES de construir el AIR en los quince `verify::<...>` de la capa (las
+diez de `two_phase` mas las cinco que no tenian guarda: `apply_burn`, `apply_recovery_delegated`,
+`verify_audit`, `apply_mint_delegated`, `apply_freeze_delegated`), y en `verify_threshold_pair` de
+`stark-experiment`, con la variante nueva `PairRejection::WrongTraceWidth`. Las constantes salen de
+`TRACE_WIDTH`/`TRACE_LENGTH`, publicas en los quince AIR: nada tecleado. Que el ancho no basta lo
+decidio la medida, no la estetica; la eleccion de la tupla y de la variante nueva de error -en vez
+de reusar `InvalidProof`- las tomo el asistente con la vara, con la recomendacion del hilo lateral.
+
+**El testigo y su falsador, por pieza nueva.** En la capa, `guarda_forma`: una `TraceInfo` de forma
+ajena da `Err`, no panico, y la forma exacta pasa. En el par,
+`una_prueba_de_forma_ajena_da_wrong_trace_width`: se arma un par valido -que verifica, prueba de
+vida-, se le muta el ancho declarado de una prueba y `verify_threshold_pair` la rechaza con
+`WrongTraceWidth` ANTES de construir el AIR. El falsador de cada guarda es la misma prueba con la
+guarda anulada, que hoy panica (medido en el PASTE-529-M sobre `PagoEnCursoAir`).
+
+**Lo medido, con la huella de cada salida.** El ancho no basta (PASTE-529-M, `3a71cfa9b17fd881`):
+`auxrand` declarado panica en `AIR::new`; `aux` y `longitud corta` los caza `from_bytes`; el control
+intacto da `Err` sin panico. El corte entero ensayado sobre una copia (ENSAYO-529,
+`d45d72ac7587ebcd`): compila en release, `zk-ssl` 399/0, `stark-experiment` 391/0, `zk-ssl-node`
+122/0, y `check_cifras` verde -399 capa / 391 circuitos / total 1313-.
+
+**El S529-B, en el mismo corte.** El corte anade un test a la capa y uno a `stark-experiment`. Se
+mueven los dos pines de `tools/canon.sh` -capa 398 -> 399, circuitos 390 -> 391- y las cifras
+publicadas que `check_cifras` cruza contra ellos: el total 1311 -> 1313 y sus desgloses en
+`PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`, `ARQUITECTURA.md` y los dos `INSTITUCIONAL`. Una cuenta
+publicada en varios sitios se corrige en todos, o envejece sin avisar.
+
+**Lo que queda.** El S530 -la red: `catch_unwind` en la frontera del kit y del nodo, y la parada con
+causa en el candado de `main.rs` en vez del `.expect`- es defensa en profundidad para un AIR futuro
+que se cuele sin guarda; con el S529 el 5.A-381 esta CERRADO por los caminos de hoy. Detras, la E2
+del RFC-0009.

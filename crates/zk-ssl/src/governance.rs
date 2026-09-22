@@ -146,6 +146,9 @@ impl SovereignLayer {
             &accepted,
         )
         .map_err(|r| match r {
+            PairRejection::WrongTraceWidth => LayerError::VerificationFailed(
+                "autorizacion: forma de traza equivocada".into(),
+            ),
             PairRejection::SameCustodian => LayerError::NotTheIssuer,
             PairRejection::WrongCustodianSet => LayerError::NotTheIssuer,
             PairRejection::WrongIdentityDomain => LayerError::NotTheIssuer,

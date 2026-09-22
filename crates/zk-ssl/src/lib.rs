@@ -224,6 +224,33 @@ pub const DEFAULT_REFUND_TTL: u64 = 64;
 /// emisor-cuenta; su caducidad DES-EMITE (§178 §4).
 pub const REFUND_SENDER_NONE: u64 = u64::MAX;
 
+/// **S529** -- rechaza toda prueba cuya TRACE_INFO no sea la forma EXACTA
+/// que el AIR espera, ANTES de construirlo. Una guarda de solo ancho no
+/// basta: una prueba de ancho correcto con tramo auxiliar declarado o
+/// longitud ajena panica en `AIR::new` (medido, PASTE-529-M). Se aplica en
+/// los quince `verify::<...>` de la capa.
+pub(crate) fn comprobar_forma(
+    info: &winterfell::TraceInfo,
+    ancho: usize,
+    ancho_aux: usize,
+    aleatorios_aux: usize,
+    longitud: usize,
+) -> Result<(), LayerError> {
+    let real = (
+        info.main_trace_width(),
+        info.aux_segment_width(),
+        info.get_num_aux_segment_rand_elements(),
+        info.length(),
+    );
+    let exige = (ancho, ancho_aux, aleatorios_aux, longitud);
+    if real != exige {
+        return Err(LayerError::VerificationFailed(format!(
+            "forma de traza {real:?}; el enunciado exige {exige:?}"
+        )));
+    }
+    Ok(())
+}
+
 #[derive(Debug)]
 pub enum LayerError {
     /// El pendiente aún no cumplió la `T` de caducidad (§178).
@@ -735,6 +762,13 @@ pub fn verify_audit(disclosure: &AuditDisclosure) -> Result<(), LayerError> {
     let proof = winterfell::Proof::from_bytes(&disclosure.proof)
         .map_err(|e| LayerError::VerificationFailed(format!("prueba mal formada: {e:?}")))?;
     let min_opts = AcceptableOptions::OptionSet(vec![proof_options()]);
+    crate::comprobar_forma(
+        proof.trace_info(),
+        stark_experiment::circuit_audit::TRACE_WIDTH,
+        0,
+        0,
+        stark_experiment::circuit_audit::TRACE_LENGTH,
+    )?;
     verify::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
         proof,
         disclosure.public_inputs.clone(),
@@ -1030,4 +1064,25 @@ impl SovereignLayer {
         }
     }
 
+}
+
+#[cfg(test)]
+mod guarda_forma {
+    use super::{comprobar_forma, LayerError};
+    use winterfell::TraceInfo;
+    #[test]
+    fn una_forma_ajena_da_err_no_panico() {
+        // ancho ajeno
+        let i = TraceInfo::new(99, 512);
+        assert!(matches!(
+            comprobar_forma(&i, 44, 0, 0, 512),
+            Err(LayerError::VerificationFailed(_))
+        ));
+        // longitud ajena
+        let j = TraceInfo::new(44, 128);
+        assert!(comprobar_forma(&j, 44, 0, 0, 512).is_err());
+        // la forma EXACTA pasa
+        let k = TraceInfo::new(44, 512);
+        assert!(comprobar_forma(&k, 44, 0, 0, 512).is_ok());
+    }
 }

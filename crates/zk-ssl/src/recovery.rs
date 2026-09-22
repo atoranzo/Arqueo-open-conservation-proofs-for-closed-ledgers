@@ -119,6 +119,13 @@ impl SovereignLayer {
 
         let accepted = AcceptableOptions::OptionSet(vec![self.options.clone()]);
 
+        crate::comprobar_forma(
+            climb_proof.trace_info(),
+            stark_experiment::circuit_recovery_climb::TRACE_WIDTH,
+            0,
+            0,
+            stark_experiment::circuit_recovery_climb::TRACE_LENGTH,
+        )?;
         verify::<RecoveryClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
             climb_proof,
             RecoveryClimbPublicInputs {
@@ -146,6 +153,9 @@ impl SovereignLayer {
             &accepted,
         )
         .map_err(|r| match r {
+            PairRejection::WrongTraceWidth => LayerError::VerificationFailed(
+                "autorizacion: forma de traza equivocada".into(),
+            ),
             PairRejection::SameCustodian
             | PairRejection::WrongCustodianSet
             | PairRejection::WrongIdentityDomain => LayerError::NotTheIssuer,
