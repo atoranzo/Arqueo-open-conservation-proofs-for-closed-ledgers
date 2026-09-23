@@ -39105,3 +39105,79 @@ regenerado, los documentos que citan la version, los 34 vectores regenerados y `
 y el canon pagara probar x2,6 y verificar x1,9 en cada fila encendida. El compilador del autor
 juzgo el Rust de este sello en el ENSAYO-535 (arriba); el canon del bloque lo vuelve a juzgar
 entero.
+
+## §536 — RFC-0009 E3b-1: la foto con probadores y jueces propios, en kat_probador.rs
+
+**Que.** El corte 1 de E3b da a la foto de D-R (S532) sus PROPIOS probadores y sus propios jueces
+para `banda` y `edad`, en `crates/stark-experiment/src/kat_probador.rs` y solo ahi: `ProbadorBanda`
+y `ProbadorEdad`, los `impl Prover` de `circuit_banda.rs` (S477) y de `circuit_edad.rs` (S463)
+copiados byte a byte con `MerkleTree<Blake3>` como `VC` y la ocultacion apagada (el `None` que el
+trait del fork provee), sobre `BandaAir` y `EdadAir` reales y con las `opciones()` del kit; y el
+juez de cada KAT es el `verify` de winterfell con `MerkleTree`, como ya juzgaba `kat_work`, y no el
+`verificar` del kit. Nada de lo que entra en una prueba cambia, asi que los tres KAT siguen
+midiendo 3.539, 49.418 y 66.880 bytes con su blake3: la foto sigue 3/3 sin mover una constante.
+Cuando el corte 2 cambie el `VC` de produccion a `MerkleConSal` y encienda la ocultacion, ni los
+probadores ni los jueces de la foto se mueven: la foto sigue midiendo UNA cosa, <<nucleo apagado
+con `MerkleTree` = winterfell byte a byte>> (D-Y), y el corte 2 no abre este fichero.
+
+**Lo medido, en el arbol.** Sobre `028636a` (gateado por 230 anclas y 31 SHA-REGION al arrancar
+la 174): `kat_probador.rs` (`481208d8149f9b2b`/196) no instanciaba probador para `banda` ni
+`edad`: llamaba a `circuit_banda::probar` (:179, que construye `BandaProver::new` en :188) y a
+`circuit_edad::probar` (:217, `EdadProver { options }` en :227), y juzgaba con el `verificar` del
+kit, que el corte 2 pasa a `MerkleConSal` y rechazara una prueba sin marca (D-AB). Los dos `impl
+Prover` viven en `circuit_banda.rs` 194..268 (75 lineas) y en `circuit_edad.rs` 341..404 (64),
+los dos con `type VC = MerkleTree<Blake3>` (:199 y :346) y sin `ocultacion` propia; el de `edad`
+llama a `construir_auxiliar` (`circuit_edad.rs` 278..333), PRIVADA del modulo, y lee `trace.pi`,
+campo privado con accesor `enunciado()`. `opciones()` es publica y unica (`zk-ssl-air/src/lib.rs`
+:149). En el arbol hay 44 `type VC`: 39 fuera del fork (todos `MerkleTree`) y los 5 del trait. El
+POST se monto EXTRAYENDO esos rangos con su sha asertada (`gen_kat536.py`, con cada rango
+localizado por su contenido y su limite medido) y con tres sustituciones unicas: los dos nombres
+del `impl` y `trace.pi.clone()` -> `trace.enunciado().clone()`; la doc de la auxiliar se re-parte
+en cuatro lineas con las mismas palabras para caber sangrada. Cada nombre importado en cada modulo
+se usa fuera de su `use` y cada identificador en mayuscula esta importado o definido (censo
+mecanico: 0 warnings es puerta del canon). Las diez herramientas del canon dan rc 0 sobre el POST
+con la salida byte a byte igual que sobre el PRE (`check_tests` 1569 y `check_modulos` 191,
+quietos). El compilador del autor ya juzgo este POST sobre una copia por `git archive` (lectura
+informativa, `cargo test --release --locked -p stark-experiment kat_`, 1 min 20 s): rc 0, 0
+warnings, los tres KAT en release clavando la foto, y 3 + 411 filtrados = 414 = 401 + 13: ningun
+test nace ni muere. ENSAYO-536 (`a5846151b4ad862c`; salida `a00a335afe6c663c`, cargo
+`28959bae2607fc38`): VEREDICTO VERDE 23/23 en 471 s con cargo 1.97.1, sobre una copia de 665
+ficheros hecha repo: las diez herramientas iguales en BASE y POST; `--list` PRE = POST nombre a
+nombre, 414 = 414 sin una diferencia; los circuitos 401/13/0 con 0 warnings y la foto 3/3; y las
+tres mutaciones, restauradas, discriminan: M1, el `VC` del probador propio de `banda` a
+`MerkleConSal`, tumba `kat_banda` en su juez (`kat_probador.rs`:256) y deja en pie `kat_work` y
+`kat_edad`; M2, el `VC` del `BandaProver` de PRODUCCION a `MerkleConSal`, deja la foto 3/3 y tumba
+DOS de `circuit_banda`, `el_positivo_verifica` y `el_techo_se_prueba_por_los_dos_lados` -los dos
+positivos que pasan por el `verificar` del kit-, con 2 warnings de la propia mutacion
+(`MerkleTree` sin uso): lo que D-Y compra, medido; M3, un termino de la auxiliar copiada, tumba
+`kat_edad` en su juez (:464) y deja en pie los otros dos; restaurado, la foto vuelve a 3/3.
+
+**Las decisiones, en D-Y del RFC-0009, todas reversibles.** El juez de cada KAT es tambien propio
+(el `verify` de winterfell con `MerkleTree`), porque el `verificar` del kit pasa a `MerkleConSal`
+en el corte 2 y rechazaria la foto: sin esto el corte 2 tendria que abrir `kat_probador.rs`, y la
+foto no mediria una sola cosa. La traza auxiliar de `edad` se COPIA en vez de abrir
+`construir_auxiliar` como `pub(crate)`: el probador propio no se apoya en produccion (pureza y
+coherencia con los falsadores de D-V, que copian los suyos) al precio de 61 lineas repetidas, que
+la propia foto vigila (si la copia y la produccion se separan, se separan los bytes). Rechazado:
+retirar `banda` y `edad` de la foto (ya lo rechazo D-Y).
+
+**Lo que toca.** `crates/stark-experiment/src/kat_probador.rs` (196 -> 467: la cabecera, los dos
+`use`, los dos probadores, la auxiliar copiada y los dos jueces); el RFC-0009 (autores, asientos,
+la fila de E3b, D-Y con sus dos decisiones y Compatibilidad); la fila del 0009 en `spec/README.md`;
+y este asiento. Lo que NO se mueve: los tres KAT y sus tres constantes; el pin de los circuitos
+(401) y los otros seis; `check_tests` 1569 y `check_modulos` 191; ningun `.rs` de produccion,
+ningun `verify::<...>` del kit, ningun vector, ninguna cifra de los documentos, ningun Cargo.
+
+**Contadores.** Cuatro ficheros, 370 lineas insertadas y 15 borradas: `kat_probador.rs`
+280/9 (196 -> 467); el RFC-0009 13/5 (676 -> 684 lineas); `spec/README.md` 1/1; y
+`AUDITORIA.md` 76/0, que es este asiento (75 lineas tras un separador). Pines: ninguno de los
+siete se mueve; sello 1410; largos 1547; `check_tests` 1569; `check_modulos` 191; ignorados
+quietos (7 y 13). Ningun Cargo tocado.
+
+**Lo que queda, y se dice.** El corte 2 de E3b (D-Z a D-AC), en un solo commit porque el cable
+rompe de golpe: el `VC` y `Some(Ocultacion)` en los probadores con fila, las 25 y las 121
+`verify::<...>`, las 100 celdas de la suite a cero, la banda de `PUBLICADA_PAGO_B`, `zkssl/0.4` en
+sus tres productores y sus tests, `openrpc.json` regenerado, los documentos que citan la version,
+los 34 vectores regenerados y `zkssl-0.4.json`; y el canon pagara probar x2,6 y verificar x1,9 en
+cada fila encendida. Este corte deja `kat_probador.rs` fuera de su perimetro. El canon del bloque
+vuelve a juzgar entero el Rust que el ENSAYO-536 juzgo antes.

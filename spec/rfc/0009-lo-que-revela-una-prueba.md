@@ -1,7 +1,7 @@
 # RFC-0009 — Lo que revela una prueba: la promesa mientras el probador no oculte su testigo
 
 - **Estado:** PROPUESTO
-- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165, 166, 169, 170, 171, 172 y 173)
+- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165, 166, 169, 170, 171, 172, 173 y 174)
 - **Fecha:** 2026-09-21
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad). Este RFC no
   cambia un método, un tipo del cable ni un vector: cambia lo que se promete de ellos.
@@ -12,8 +12,9 @@
   la E2 con su suite en el árbol y remide la tabla; el §532, que toma la foto del probador prístino
   (D-R); el §533, que mete el fork en el árbol, apagado (E3a-1); y el §534, que cierra E3a: m en
   la marca, las estáticas fuera, el encendido en el API del probador y los siete falsadores de
-  D-K como tests (E3a-2, D-S a D-W); y el §535, que abre E3b con la sal como tipo, sin encender
-  nada (E3b-0, D-X a D-AC).
+  D-K como tests (E3a-2, D-S a D-W); el §535, que abre E3b con la sal como tipo, sin encender
+  nada (E3b-0, D-X a D-AC); y el §536, que da a la foto sus propios probadores y jueces
+  (E3b-1, D-Y).
 
 ## Estado de las etapas
 
@@ -22,7 +23,7 @@
 | E1 — la promesa, escrita | este texto: qué se promete (D-A), lo que sale literal en cada prueba (D-B), el principio del API como regla que hoy no se cumple (D-C) y la ocultación fuera de este RFC (D-D) | no | sellada en el §527 |
 | E2 — el testigo de la tabla | una suite que produce cada tipo de prueba y cuenta sus valores literales contra la tabla de D-B, con un control que tiene que dar cero (D-E; su forma, D-L a D-Q) | no | sellada en el §531 |
 | E3a — el probador que oculta, dentro y apagado | el fork de winterfell 0.13.1 en el árbol, con la ocultación entera en el núcleo y sin tocar un AIR (D-F a D-J); apagado, cada prueba sale byte a byte como la de winterfell; y los falsadores de los spikes como tests del árbol, con el modo oculto solo en los tests (D-K); y antes, la foto del probador pristino que el fork apagado tiene que reproducir (D-R) | no | sellada: el corte 0, la foto (D-R), en el §532; el corte 1, el fork apagado, en el §533; el corte 2, m en la marca (D-S, D-T), las estáticas fuera y el encendido en `Prover::ocultacion` (D-U) y los siete falsadores de D-K como tests (D-V), en el §534. La sal de D-I no es del fork: es el `VC` del consumidor y va con E3b (D-W) |
-| E3b — encenderlo | las pruebas que cruzan el cable salen ocultas, con la sal como `VC` de los probadores y del kit (D-W); la tabla de D-B pasa a cero, con la suite de E2 como testigo (D-K) | sí: `zkssl/0.4` | en curso: el corte 0, la sal como tipo `MerkleConSal` en `zk-ssl-air` con sus siete testigos y sin cambiar el `VC` de nadie (D-X), en el §535; quedan el corte 1, la foto con probadores propios (D-Y), y el corte 2, el encendido con el cable a `zkssl/0.4` (D-Z a D-AC) |
+| E3b — encenderlo | las pruebas que cruzan el cable salen ocultas, con la sal como `VC` de los probadores y del kit (D-W); la tabla de D-B pasa a cero, con la suite de E2 como testigo (D-K) | sí: `zkssl/0.4` | en curso: el corte 0, la sal como tipo `MerkleConSal` en `zk-ssl-air` con sus siete testigos y sin cambiar el `VC` de nadie (D-X), en el §535; el corte 1, la foto con sus propios probadores y jueces (D-Y), en el §536; queda el corte 2, el encendido con el cable a `zkssl/0.4` (D-Z a D-AC) |
 
 Las medidas que abrieron este documento son las de los asientos §521, §523, §524 y §526:
 lecturas puras que restauraron el árbol con sha y porcelain, con sus instrumentos fuera del
@@ -520,7 +521,12 @@ ocultación: ni con sal determinista ni apagados volverían a dar los bytes de l
 una sola cosa, «núcleo apagado con `MerkleTree` = winterfell byte a byte», y la sigue midiendo con
 probadores PROPIOS de `kat_probador.rs` sobre `BandaAir` y `EdadAir` reales, copiados como ya copia
 sus montajes y como hacen los falsadores de D-V con los suyos. `WorkProver` no es de producción:
-se queda como está y sigue siendo la referencia de `regresion_apagada`. Es el corte 1 de E3b.
+se queda como está y sigue siendo la referencia de `regresion_apagada`. Es el corte 1 de E3b
+(§536). El juez de cada KAT es también propio: el `verify` de winterfell con `MerkleTree`, como
+ya hacía `kat_work`, y no el `verificar` del kit, que en el corte 2 pasa a `MerkleConSal` y
+rechazaría la foto (D-AB); y el probador de `edad` lleva copiada su traza auxiliar, porque la
+función de producción que la construye es privada de `circuit_edad.rs` y un probador propio
+no se apoya en ella. El corte 2 no toca `kat_probador.rs`.
 
 Gana frente a retirar `banda` y `edad` de la foto: pureza (el falsador del núcleo no depende de
 decisiones de producción) e imagen fiel (la foto dice de qué probador es cada byte).
@@ -591,6 +597,8 @@ se oculte.
 - **E3b-0** (§535) no sube nada: `MerkleConSal` entra como tipo y nadie lo declara como `VC`;
   ninguna prueba cambia un byte. `zkssl/0.4` es de E3b aunque el RFC-0006 lo anunciara para su
   E2 y no lo consumiera (D-AA).
+- **E3b-1** (§536) no sube nada: la foto de D-R gana sus propios probadores y jueces con
+  `MerkleTree`; ninguna prueba cambia un byte y la foto sigue 3/3 (D-Y).
 
 ### Por qué entra por RFC
 
