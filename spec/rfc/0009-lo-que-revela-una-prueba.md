@@ -1,7 +1,7 @@
 # RFC-0009 — Lo que revela una prueba: la promesa mientras el probador no oculte su testigo
 
 - **Estado:** PROPUESTO
-- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165, 166, 169, 170, 171 y 172)
+- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165, 166, 169, 170, 171, 172 y 173)
 - **Fecha:** 2026-09-21
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad). Este RFC no
   cambia un método, un tipo del cable ni un vector: cambia lo que se promete de ellos.
@@ -12,7 +12,8 @@
   la E2 con su suite en el árbol y remide la tabla; el §532, que toma la foto del probador prístino
   (D-R); el §533, que mete el fork en el árbol, apagado (E3a-1); y el §534, que cierra E3a: m en
   la marca, las estáticas fuera, el encendido en el API del probador y los siete falsadores de
-  D-K como tests (E3a-2, D-S a D-W).
+  D-K como tests (E3a-2, D-S a D-W); y el §535, que abre E3b con la sal como tipo, sin encender
+  nada (E3b-0, D-X a D-AC).
 
 ## Estado de las etapas
 
@@ -21,7 +22,7 @@
 | E1 — la promesa, escrita | este texto: qué se promete (D-A), lo que sale literal en cada prueba (D-B), el principio del API como regla que hoy no se cumple (D-C) y la ocultación fuera de este RFC (D-D) | no | sellada en el §527 |
 | E2 — el testigo de la tabla | una suite que produce cada tipo de prueba y cuenta sus valores literales contra la tabla de D-B, con un control que tiene que dar cero (D-E; su forma, D-L a D-Q) | no | sellada en el §531 |
 | E3a — el probador que oculta, dentro y apagado | el fork de winterfell 0.13.1 en el árbol, con la ocultación entera en el núcleo y sin tocar un AIR (D-F a D-J); apagado, cada prueba sale byte a byte como la de winterfell; y los falsadores de los spikes como tests del árbol, con el modo oculto solo en los tests (D-K); y antes, la foto del probador pristino que el fork apagado tiene que reproducir (D-R) | no | sellada: el corte 0, la foto (D-R), en el §532; el corte 1, el fork apagado, en el §533; el corte 2, m en la marca (D-S, D-T), las estáticas fuera y el encendido en `Prover::ocultacion` (D-U) y los siete falsadores de D-K como tests (D-V), en el §534. La sal de D-I no es del fork: es el `VC` del consumidor y va con E3b (D-W) |
-| E3b — encenderlo | las pruebas que cruzan el cable salen ocultas, con la sal como `VC` de los probadores y del kit (D-W); la tabla de D-B pasa a cero, con la suite de E2 como testigo (D-K) | sí: `zkssl/0.4` | por hacer; E3a está sellada y nada la espera |
+| E3b — encenderlo | las pruebas que cruzan el cable salen ocultas, con la sal como `VC` de los probadores y del kit (D-W); la tabla de D-B pasa a cero, con la suite de E2 como testigo (D-K) | sí: `zkssl/0.4` | en curso: el corte 0, la sal como tipo `MerkleConSal` en `zk-ssl-air` con sus siete testigos y sin cambiar el `VC` de nadie (D-X), en el §535; quedan el corte 1, la foto con probadores propios (D-Y), y el corte 2, el encendido con el cable a `zkssl/0.4` (D-Z a D-AC) |
 
 Las medidas que abrieron este documento son las de los asientos §521, §523, §524 y §526:
 lecturas puras que restauraron el árbol con sha y porcelain, con sus instrumentos fuera del
@@ -477,10 +478,103 @@ La sal de D-I no vive en el fork: `MerkleConSal` es un `VectorCommitment` que el
 verificador reciben como tipo (`VC`), del lado de quien los llama —las «138 líneas propias» de
 D-F—, y por eso sala a la vez la traza, las restricciones y FRI. Cambia los bytes de toda prueba
 que la use, apagada o no, así que no cabe en E3a sin romper la foto: entra en E3b con el cambio
-de `VC` de los 35 probadores y del kit, en `zk-ssl-air` (lo que el kit ve), y con `zkssl/0.4`.
+de `VC` de los probadores con fila en D-B (D-Z; aquí decía «los 35») y del kit, en
+`zk-ssl-air` (lo que el kit ve), y con `zkssl/0.4`.
 
 Gana decirlo frente a dejar D-G en presente: imagen fiel (el árbol no sala, y lo dice).
 **Reversible** con la D-I: si el argumento retira la sal, este punto se va con ella.
+
+### D-X — La sal nace dentro del tipo, de la entropía del sistema
+
+`VectorCommitment::new(items)` llama a `with_options(items, Options::default())` y no admite
+semilla; el núcleo del fork construye sus compromisos con `V::new`
+(`winter-prover/src/matrix/col_matrix.rs`:285 y `row_matrix.rs`:227) y `winter-fri`, que no se
+bifurca (D-F), sus capas también (`prover/mod.rs`:335). Luego la sal sólo puede nacer dentro del
+tipo: `MerkleConSal::with_options` toma 32 bytes de `rand_core::OsRng` (`getrandom`) por hoja y los
+pasa por `H`. El spike la sacaba de un SplitMix64 sembrado por una estática de proceso
+(`spike/src/main.rs`:43-69), la clase que D-U retiró, y declaraba (:49-50) que en producción
+saldría de la entropía; upstream no trae un árbol salado (0 apariciones de `salt` en winter-crypto
+0.13.1, un solo `impl VectorCommitment`; PASTE-E3b-M, S2).
+
+Consecuencias, dichas: (1) una prueba con sal no se reproduce byte a byte, ni en tests: se vigila
+por lo que verifica, lo que rechaza, lo que cuenta la suite de E2 y lo que pesa (D-J ya lo
+admitía); (2) un solo tipo para las dos orillas: el kit compila `with_options` y nunca lo llama;
+`rand_core 0.6` y `getrandom 0.2` ya estaban en el lock por `winter-crypto → sha3 → digest →
+crypto-common`, así que el lock gana una arista y ningún paquete, pero la clausura del kit SÍ los
+gana como paquetes —`cargo tree -p zk-ssl-verify -e normal`: 46 → 48, medido por el ENSAYO-535;
+un lock no distingue features— y el THIRD-PARTY del artefacto los nombra desde este sello;
+`winter-prover` sigue fuera (la puerta de H2, por nombre); (3) el tipo vive en
+`crates/zk-ssl-air/src/sal.rs` (D-W), traído del spike (`spike/src/main.rs`:77-209) con siete
+testigos que no prueban ningún STARK, y entra SIN que nadie lo declare como `VC` (E3b-0, §535):
+ninguna prueba cambia un byte y la foto de D-R sigue verde.
+
+Gana frente a una semilla en `Ocultacion` con un canal por el fork: pureza (nada de estado de
+proceso) y coherencia con D-J; el canal no llegaría a FRI sin bifurcarlo. **Reversible** con D-I:
+si el argumento retira la sal, el tipo se va con ella.
+
+### D-Y — La foto guarda sus propios probadores prístinos
+
+Los tres probadores de la foto (D-R) —`WorkProver`, `BandaProver` y `EdadProver`— declaran
+`MerkleTree<Blake3>`; dos son de producción, y E3b les cambia el `VC` y les enciende la
+ocultación: ni con sal determinista ni apagados volverían a dar los bytes de la foto. La foto mide
+una sola cosa, «núcleo apagado con `MerkleTree` = winterfell byte a byte», y la sigue midiendo con
+probadores PROPIOS de `kat_probador.rs` sobre `BandaAir` y `EdadAir` reales, copiados como ya copia
+sus montajes y como hacen los falsadores de D-V con los suyos. `WorkProver` no es de producción:
+se queda como está y sigue siendo la referencia de `regresion_apagada`. Es el corte 1 de E3b.
+
+Gana frente a retirar `banda` y `edad` de la foto: pureza (el falsador del núcleo no depende de
+decisiones de producción) e imagen fiel (la foto dice de qué probador es cada byte).
+**Reversible** si la foto deja de ser el falsador del núcleo.
+
+### D-Z — Se encienden los probadores que tienen fila en la tabla de D-B
+
+E3b enciende, con `MerkleConSal` como `VC` y `Some(Ocultacion)` sembrada de la entropía, los
+probadores que tienen fila en la tabla de D-B: los del cable y los cuatro experimentales
+tabulados, que son los que el censo de D-L (`el_censo_del_cable_da_fila_a_cada_air_verificada`)
+nombra más los cuatro de la tabla; es lo que «la tabla pasa a cero» exige. Los que no tienen fila
+no cruzan el cable, no ocultan nada a nadie y siguen apagados con `MerkleTree`, y la suite lo
+mide: una fila que se encienda cuenta cero, una que no, lo que la tabla dice. Corrige la cuenta de
+D-W: no los 35, los de la tabla. Es el corte 2 de E3b, con D-AA a D-AC.
+
+Gana frente a encender los 35: minimalismo (cada pieza con su función) y coste (probar ×2,6 y
+verificar ×1,9 en cada fila encendida, medido en el spike: PASTE-E3b-M, S6); frente a encender
+sólo los del cable: coherencia con D-K, que promete la tabla entera a cero. **Reversible** hacia
+los 35 si un experimento cruza el cable.
+
+### D-AA — `zkssl/0.4` nace en E3b, y el RFC-0006 lo anunció sin consumirlo
+
+La cabecera del RFC-0006 (:9) y su fila de E2 (:225) anunciaron `zkssl/0.4` para la cabeza v4; el
+§415 dejó el cable en `zkssl/0.3` (aditivo) y decidió conservar esa cabecera y corregir debajo
+(:247). E3b es la primera etapa que sube el cable de verdad: `zkssl/0.4` nace aquí, y este RFC lo
+dice en Compatibilidad; la cabecera del 0006 no se toca (pasado, y ya corregido en su sitio).
+
+Gana decirlo: claridad (dos RFC no pueden reclamar la misma versión sin que uno diga que el otro
+no la consumió). **Reversible** hacia ninguna parte.
+
+### D-AB — Los vectores de la 0.3 se conservan bajo su versión, y el kit 0.4 no los verifica
+
+Con `MerkleConSal` en las cinco `verificar` de `zk-ssl-air`, las aperturas de una prueba 0.3 ya no
+se leen, y una prueba sin marca en el cable 0.4 se rechaza: fail-closed, sin doble despacho por la
+marca. Los 34 vectores con prueba (edad 10, pago 8, pendiente 8 y rechazo 8, medidos) se conservan
+bajo su versión (regla 2 del PROCESO) y los verifica el kit que los vio nacer,
+`arqueo-verify-v0.2.0` (§442), medido desde fuera; los de la 0.4 se regeneran desde sus bancos con
+`--guardar` (§467), nace `zkssl-0.4.json`, y el canon exige «0.4 IDÉNTICO / 0.3 RECHAZADO».
+
+Gana frente a aceptar las dos aperturas según la marca: pureza (un cable, una forma) y fail-closed;
+frente a reescribir los vectores viejos, imagen fiel (un vector es lo que su versión produjo).
+**Reversible** si una segunda implementación exige verificar 0.3 con el kit vivo.
+
+### D-AC — Las cifras publicadas de bytes pasan a banda, con sus dos atados
+
+`PUBLICADA_PAGO_B` (`crates/zk-ssl/src/metrics.rs`:75, 133.431) y sus dos atados —el test
+`la_cifra_publicada_sigue_siendo_la_medida` y `tools/check_publicadas.py`— se miden hoy sobre
+pruebas deterministas. Con la ocultación una prueba pesa según `q` y según la sal (D-J: 80.936,
+81.637 y 80.807 bytes en el spike): la constante pasa a una banda medida sobre N pruebas, el test la
+ata al instrumento y `check_publicadas` la ata a los documentos, que la citan como banda; las diez
+citas vivas (medidas) se reescriben en el corte 2, con los `~62 KB` de `metrics.rs`:513 y :517.
+
+Gana la banda frente a una cifra: imagen fiel (D-J). **Reversible** hacia ninguna parte mientras
+se oculte.
 
 ## Compatibilidad
 
@@ -491,7 +585,12 @@ Gana decirlo frente a dejar D-G en presente: imagen fiel (el árbol no sala, y l
 - **E3a** no sube `zkssl/0.3`: con el fork apagado, las pruebas son byte a byte las de winterfell,
   y apagado es lo que `Prover::ocultacion` devuelve en los 35 probadores de la casa (D-U).
 - **E3b** sube a `zkssl/0.4`: las pruebas que cruzan el cable llevan la marca y solo las verifica
-  el fork. Los vectores de la 0.3 se conservan; los de la 0.4 nacen con azar sembrado (D-J).
+  el fork. Los vectores de la 0.3 se conservan bajo su versión y los verifica el kit que los vio
+  nacer; los de la 0.4 nacen como capturas de sus bancos, con azar de la entropía, y se vigilan
+  sin comparar bytes (D-X, D-AB).
+- **E3b-0** (§535) no sube nada: `MerkleConSal` entra como tipo y nadie lo declara como `VC`;
+  ninguna prueba cambia un byte. `zkssl/0.4` es de E3b aunque el RFC-0006 lo anunciara para su
+  E2 y no lo consumiera (D-AA).
 
 ### Por qué entra por RFC
 
@@ -559,6 +658,10 @@ deuda.
   `b190fdc212bf5271`, cargo `be5669c380e1df63`) con su `meta_m.rs` (`809004b72c1f0587`), que
   midió el meta byte a byte y que m no viajaba; y `spike/src/main.rs` del spike-b-p4r3
   (`145e83ecea366126`), del que salen los siete de D-V.
+- El §535 y su instrumento, fuera del árbol: PASTE-E3b-M (`1f1bb5ba5030c04b`, salida
+  `ae34451f8cca3a12`, cargo `d934ab3e51f46e2f`, la región de la sal `34508a89201ca6d3`), que leyó
+  la sal en el spike y el trait en el registry, y corrió el spike (VEREDICTO VERDE, la sal 6.567
+  bytes por prueba).
 - `spec/rfc/PROCESO.md`, regla 3; `SECURITY.md` §3.bis, donde vive la frase canónica.
 - winterfell: la portada del repositorio, <https://github.com/facebook/winterfell>, y su issue 9,
   <https://github.com/facebook/winterfell/issues/9>.

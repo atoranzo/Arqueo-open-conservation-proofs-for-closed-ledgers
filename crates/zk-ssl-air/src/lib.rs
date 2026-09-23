@@ -5,7 +5,10 @@
 //! de `winter-verifier` y las raices nativas que el juez recompone. La traza y el `Prover` viven en
 //! `stark-experiment` (`circuit_edad`), que depende de este crate: el AIR tiene UN productor, y el
 //! probador y el kit lo comparten. Depende de `winter-air`, `winter-crypto`, `winter-math` y
-//! `winter-verifier` sueltos y clavados con `=`, y de `zk-ssl-hash`; no arrastra `winter-prover`.
+//! `winter-verifier` sueltos y clavados con `=`, de `zk-ssl-hash`, y de `rand_core` con `getrandom`
+//! para la sal de [`sal`] (RFC-0009, E3b-0, D-X); no arrastra `winter-prover`. La sal es la
+//! excepcion medida al <<nada de lo que hace falta para PRODUCIRLA>>: un solo tipo para las dos
+//! orillas, porque `VectorCommitment::new` no admite semilla; el kit lo compila y no lo llama.
 //!
 //! ## La prueba de edad (RFC-0007 D-E), en una frase
 //!
@@ -65,6 +68,11 @@ pub mod pago_en_curso;
 
 /// **El AIR de la PRENDA** (RFC-0008, E3): el quinto juez de este crate.
 pub mod prenda;
+
+/// **El compromiso con SAL** (RFC-0009, E3b-0, D-X): el `VectorCommitment` que los probadores con
+/// fila en D-B y el kit recibiran como `VC` cuando E3b encienda la ocultacion. Hoy nadie lo
+/// declara como `VC`: entra como tipo, con sus testigos, y no mueve un byte de ninguna prueba.
+pub mod sal;
 
 /// El digest de la casa: cuatro elementos (el de `zk-ssl-hash`).
 pub type Digest = zk_ssl_hash::Digest;

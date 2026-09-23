@@ -39029,3 +39029,79 @@ otro ancho (5.A). Lo que el interruptor `SUBIR_CE` media en el spike -g2 y g3- n
 el arbol: queda como medido en el r3, y `cabe_con(2)` = falso deja dicho que la subida hace falta.
 El compilador del autor juzga el Rust de este sello: el ENSAYO-534 corre los siete en release y
 en depuracion, las tres filas del fork, la foto y el kit.
+
+## §535 — RFC-0009 E3b-0: la sal como tipo, MerkleConSal en zk-ssl-air, sin encender nada
+
+**Que.** El corte 0 de E3b trae la sal de D-I al arbol como TIPO y no la enciende:
+`crates/zk-ssl-air/src/sal.rs`, `MerkleConSal<H>`, un `VectorCommitment` que sala cada hoja
+-`merge(item, sal)`- y lleva la sal en la apertura (`UnaConSal`, `VariasConSal`), con `verify_many`
+fallando cerrado si el lote trae mas o menos sales que items (`ErrorSal::Longitud`) y una lectura
+de bytes que rechaza, antes de reservar, un lote con mas sales que hojas. Traido del spike-b-p4r3
+(`spike/src/main.rs` `145e83ecea366126`, lineas 77-209, leidas por el PASTE-E3b-M) con UN cambio:
+la sal sale de la entropia del sistema (`rand_core::OsRng`, `getrandom`) y no del SplitMix64
+sembrado por una estatica de proceso del spike, la clase que el S534 retiro (D-X). Nadie lo
+declara como `VC`: los 39 `type VC` del arbol siguen en `MerkleTree`, ninguna prueba cambia un
+byte y la foto de D-R sigue 3/3. Siete testigos sin STARK, en depuracion y en release: la apertura
+verifica con el item y va y vuelve en bytes; el lote tambien; la sal mueve la raiz y dos
+compromisos de lo mismo difieren, sin repetir una sal; una sal ajena o un item ajeno rechazan; una
+sal de menos falla cerrada; la sal pesa 32 bytes por hoja abierta (y 4 de cuenta por lote); unos
+bytes cortos o un lote imposible no se leen.
+
+**Lo medido, fuera del arbol.** PASTE-E3b-M (`1f1bb5ba5030c04b`; salida `ae34451f8cca3a12`, cargo
+`d934ab3e51f46e2f`, la region de la sal `34508a89201ca6d3`; rc 0, sin avisos): el trait de
+winter-crypto 0.13.1 no admite semilla (`new` llama a `with_options(items, Options::default())`),
+el nucleo del fork y `winter-fri` -que no se bifurca- construyen con `V::new`, y upstream no sala
+(0 `salt`, un solo `impl VectorCommitment`); el spike de hoy repite las cifras del RFC (A 65.276 B,
+E 79.687, F 73.120; `sal_en_bytes=6567`; probar x2,58 y verificar x1,86 con el nucleo); en el
+arbol, 39 `type VC` (35 de produccion, `WorkProver`, dos falsadores y `SubidaProver`), 25
+`verify::<...>` fuera del fork y de los circuitos y 121 dentro, la suite de E2 con 123 celdas y 100
+con k > 0, 34 vectores con prueba, y `zkssl/0.4` anunciado por el RFC-0006 y no consumido (§415).
+`rand_core 0.6.4` y `getrandom 0.2.17` ya estaban en el lock, en la clausura de `zk-ssl-air`
+(winter-crypto -> sha3 -> digest -> crypto-common): el lock gana una arista y ningun paquete; la
+clausura del kit SI los gana como paquetes, `cargo tree -p zk-ssl-verify -e normal` 46 -> 48
+(un lock no distingue features), y el THIRD-PARTY del artefacto los nombra desde este sello;
+`winter-prover` sigue fuera. ENSAYO-535 (`5445e0861dfe806d`; salida `f0f610f8f8f1d5da`, cargo
+`1ccceaa98ec5062f`): VEREDICTO VERDE 29/29 en 289 s con cargo 1.97.1: el Rust compilo a la
+primera con 0 warnings; `zk-ssl-air` 36/0/0 en release y los siete en depuracion 7/7; el kit
+120/0/0 con la puerta de H2; los circuitos 401/13/0 con la foto 3/3 y los siete de D-K; el nodo
+125/0/0; el lock predicho lo acepta `cargo metadata --locked --offline`; la VIVA A 3 RANCIA; y
+las cuatro mutaciones caen donde deben (la hoja sin sal, la raiz no se mueve, `sal.rs`:274; la
+sal constante, una ajena verifica, :292; sin la puerta de Longitud, :308; la sal fuera de los
+bytes, :325), cada una restaurada.
+
+**Las decisiones, en el RFC-0009 (D-X a D-AC), todas reversibles.** D-X la sal nace dentro del
+tipo, de la entropia del sistema; D-Y la foto guarda sus propios probadores pristinos (corte 1);
+D-Z se encienden los probadores con fila en D-B, y D-W deja de decir <<los 35>>; D-AA `zkssl/0.4`
+nace en E3b y el RFC-0006 lo anuncio sin consumirlo; D-AB los vectores 0.3 se conservan bajo su
+version y el kit 0.4 no los verifica; D-AC las cifras de bytes pasan a banda con sus dos atados
+(corte 2). La fila de E3b pasa a <<en curso>>; Compatibilidad dice que E3b-0 no sube nada y que
+los vectores 0.4 nacen como capturas con azar de la entropia (decia <<sembrado>>, la otra
+alternativa de D-J); Referencias lleva el PASTE.
+
+**Lo que toca.** `crates/zk-ssl-air/src/sal.rs` (nace); `crates/zk-ssl-air/src/lib.rs` (el
+modulo registrado y la cabecera con la dependencia nueva); `crates/zk-ssl-air/Cargo.toml`
+(`rand_core = { version = "0.6", features = ["getrandom"] }`, la misma linea que `ceremony`) y
+`Cargo.lock` (la arista `rand_core 0.6.4` de `zk-ssl-air`, predicha); `tools/canon.sh` (la fila de
+`zk-ssl-air` 29 -> 36 con historia); las cifras a mano (5.A-149): sello 1403 -> 1410
+(`PRINCIPIOS.md`:356, `PAPER.md`:36, `PAPER_EN.md`:33) y los largos 1540 -> 1547
+(`PRINCIPIOS.md`:359, `PAPER.md`:38, `PAPER_EN.md`:35); el RFC-0009 (autores, asientos, la fila de
+E3b, D-W, D-X a D-AC, Compatibilidad y Referencias); y la fila de `spec/README.md`. Lo que NO se
+mueve: <<1364 declaradas>>, <<1349 declared>> y <<18 ignoradas>> (5.A-319), los 24 warnings
+pinchados, los siete pines, ningun `verify::<...>`, ningun probador, ningun vector.
+
+**Contadores.** Once ficheros, 555 lineas insertadas y 14 borradas: nace `sal.rs` (349);
+`crates/zk-ssl-air/src/lib.rs` 9/1 y su `Cargo.toml` 4/0; `Cargo.lock` 1/0; `tools/canon.sh` 1/1;
+`PRINCIPIOS.md`, `PAPER.md` y `PAPER_EN.md` 2/2 cada uno; el RFC-0009 108/5 (573 -> 676 lineas);
+`spec/README.md` 1/1; y `AUDITORIA.md` 76/0, que es este asiento. Pines: ninguno de los siete se
+mueve; la fila de `zk-ssl-air` 29 -> 36; sello 1403 -> 1410; los largos 1540 -> 1547;
+`check_tests` 1562 -> 1569; `check_modulos` 190 -> 191; ignorados quietos (7 y 13). Cargo
+tocado: el manifiesto de `zk-ssl-air` (una dependencia) y el lock (una arista); ningun otro.
+
+**Lo que queda, y se dice.** El corte 1 de E3b (D-Y): la foto con sus propios probadores. El corte
+2 (D-Z a D-AC), en un solo commit porque el cable rompe de golpe: el `VC` y `Some(Ocultacion)` en
+los probadores con fila, las 25 y las 121 `verify::<...>`, las 100 celdas de la suite a cero, la
+banda de `PUBLICADA_PAGO_B`, `zkssl/0.4` en sus tres productores y sus tests, `openrpc.json`
+regenerado, los documentos que citan la version, los 34 vectores regenerados y `zkssl-0.4.json`;
+y el canon pagara probar x2,6 y verificar x1,9 en cada fila encendida. El compilador del autor
+juzgo el Rust de este sello en el ENSAYO-535 (arriba); el canon del bloque lo vuelve a juzgar
+entero.

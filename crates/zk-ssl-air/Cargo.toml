@@ -18,4 +18,8 @@ winter-air = "=0.13.1"
 winter-crypto = "=0.13.1"
 winter-math = "=0.13.1"
 winter-verifier = "=0.13.1"
+# RFC-0009 E3b-0 (D-X): la sal de `MerkleConSal` sale de la entropia del sistema. `rand_core 0.6`
+# con `getrandom 0.2` ya estaban en la clausura (winter-crypto -> sha3 -> digest -> crypto-common):
+# el lock gana una arista y ningun paquete. La misma linea que `ceremony`.
+rand_core = { version = "0.6", features = ["getrandom"] }
 zk-ssl-hash = { path = "../zk-ssl-hash" }
