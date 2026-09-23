@@ -1,0 +1,75 @@
+# FORK de winterfell 0.13.1 para ARQUEO (RFC-0009 E3a-1, AUDITORIA 533). Este manifiesto es el
+# que crates.io publico para `winter-air` 0.13.1 (checksum del .crate
+# ef01227f23c7c331710f43b877a8333f5f8d539631eea763600f1a74bf018c7c), con estos cambios y ninguno mas:
+# `publish = false`, la descripcion, el repositorio, sin `documentation` ni la metadata de
+# docs.rs. Mismo nombre y misma version que el registry: asi lo
+# exige el [patch.crates-io] del Cargo.toml raiz, que lo sustituye en todo el workspace, kit
+# incluido. Licencia MIT de winterfell en LICENSE; lo que difiere de upstream, en README.md.
+
+[package]
+edition = "2021"
+rust-version = "1.87"
+name = "winter-air"
+version = "0.13.1"
+publish = false
+authors = ["winterfell contributors"]
+build = false
+autolib = false
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+description = "ARQUEO fork of winter-air 0.13.1 (winterfell): the AIR components, plus the hiding wrapper Oculta<A> (RFC-0009 E3a, switched off)"
+readme = "README.md"
+keywords = [
+    "crypto",
+    "arithmetization",
+    "air",
+]
+categories = [
+    "cryptography",
+    "no-std",
+]
+license = "MIT"
+repository = "https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers"
+
+[features]
+default = ["std"]
+std = [
+    "crypto/std",
+    "fri/std",
+    "math/std",
+    "utils/std",
+]
+
+[lib]
+name = "winter_air"
+path = "src/lib.rs"
+bench = false
+
+[dependencies.crypto]
+version = "0.13"
+default-features = false
+package = "winter-crypto"
+
+[dependencies.fri]
+version = "0.13"
+default-features = false
+package = "winter-fri"
+
+[dependencies.libm]
+version = "0.2"
+
+[dependencies.math]
+version = "0.13"
+default-features = false
+package = "winter-math"
+
+[dependencies.utils]
+version = "0.13"
+default-features = false
+package = "winter-utils"
+
+[dev-dependencies.rand-utils]
+version = "0.13"
+package = "winter-rand-utils"

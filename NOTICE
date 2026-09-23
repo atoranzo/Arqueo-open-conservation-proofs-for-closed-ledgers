@@ -23,6 +23,21 @@ crates/ceremony/
 
     Detalles en crates/ceremony/ATTRIBUTION.md.
 
+crates/winter-air/, crates/winter-prover/, crates/winter-verifier/
+
+    Fork de `winter-air`, `winter-prover` y `winter-verifier` 0.13.1
+    (winterfell; Facebook, Inc. y sus afiliados;
+    https://github.com/novifinancial/winterfell), publicados bajo licencia
+    MIT (LICENSE en cada crate). Entran por `[patch.crates-io]` con su
+    mismo nombre y versión, y nunca se publican.
+
+    Modificación funcional: la ocultación del testigo dentro del núcleo
+    (RFC-0009, D-F a D-K), APAGADA desde el asiento §533: siete ficheros
+    tocados y uno nuevo (`src/air/oculta.rs`), listados en el README de
+    cada crate. Con la ocultación apagada cada prueba sale byte a byte
+    como la de winterfell, y `crates/stark-experiment/src/kat_probador.rs`
+    lo comprueba en cada canon.
+
 --------------------------------------------------------------------------
 SIN AFILIACIÓN INSTITUCIONAL
 --------------------------------------------------------------------------

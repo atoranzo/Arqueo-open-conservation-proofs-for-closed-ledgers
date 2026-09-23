@@ -1,15 +1,16 @@
 # RFC-0009 — Lo que revela una prueba: la promesa mientras el probador no oculte su testigo
 
 - **Estado:** PROPUESTO
-- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165, 166 y 169)
+- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165, 166, 169, 170 y 171)
 - **Fecha:** 2026-09-21
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad). Este RFC no
   cambia un método, un tipo del cable ni un vector: cambia lo que se promete de ellos.
 - **Asiento(s) de AUDITORIA:** §521 (el testigo se publica), §522 (los comentarios y el literal del
   API), §523 (el modelo de las columnas constantes), §524 (el PASTE-367-M3, y lo que era de
   Groth16), §525 (los comentarios, con el censo que dice de qué sistema habla cada frase) y §526
-  (el PASTE-367-M4); el §527, que lo adopta; el §528, que le añade la E3; y el §531, que sella
-  la E2 con su suite en el árbol y remide la tabla.
+  (el PASTE-367-M4); el §527, que lo adopta; el §528, que le añade la E3; el §531, que sella
+  la E2 con su suite en el árbol y remide la tabla; el §532, que toma la foto del probador prístino
+  (D-R); y el §533, que mete el fork en el árbol, apagado (E3a-1).
 
 ## Estado de las etapas
 
@@ -17,7 +18,7 @@
 |---|---|---|---|
 | E1 — la promesa, escrita | este texto: qué se promete (D-A), lo que sale literal en cada prueba (D-B), el principio del API como regla que hoy no se cumple (D-C) y la ocultación fuera de este RFC (D-D) | no | sellada en el §527 |
 | E2 — el testigo de la tabla | una suite que produce cada tipo de prueba y cuenta sus valores literales contra la tabla de D-B, con un control que tiene que dar cero (D-E; su forma, D-L a D-Q) | no | sellada en el §531 |
-| E3a — el probador que oculta, dentro y apagado | el fork de winterfell 0.13.1 en el árbol, con la ocultación entera en el núcleo y sin tocar un AIR (D-F a D-J); apagado, cada prueba sale byte a byte como la de winterfell; y los falsadores de los spikes como tests del árbol, con el modo oculto solo en los tests (D-K); y antes, la foto del probador pristino que el fork apagado tiene que reproducir (D-R) | no | en curso: el corte 0, la foto (D-R), sellado en el §532; el fork, por hacer |
+| E3a — el probador que oculta, dentro y apagado | el fork de winterfell 0.13.1 en el árbol, con la ocultación entera en el núcleo y sin tocar un AIR (D-F a D-J); apagado, cada prueba sale byte a byte como la de winterfell; y los falsadores de los spikes como tests del árbol, con el modo oculto solo en los tests (D-K); y antes, la foto del probador pristino que el fork apagado tiene que reproducir (D-R) | no | en curso: el corte 0, la foto (D-R), sellado en el §532; el corte 1, el fork apagado, sellado en el §533; el corte 2, los falsadores de D-K, por hacer |
 | E3b — encenderlo | las pruebas que cruzan el cable salen ocultas; la tabla de D-B pasa a cero, con la suite de E2 como testigo (D-K) | sí: `zkssl/0.4` | por hacer; espera a E3a |
 
 Las medidas que abrieron este documento son las de los asientos §521, §523, §524 y §526:
@@ -174,6 +175,14 @@ coste es el medido, no el esperado). **Reversible** si el código del fork pasa 
 referencia (1.784 líneas), si una auditoría lo tumba o si winterfell publica ocultación propia:
 entonces se sigue a winterfell y el fork se retira.
 
+Cómo entra (§533): por `[patch.crates-io]` desde el `Cargo.toml` raíz, con los nombres y la
+versión de crates.io —es lo que un `[patch]` exige, y lo que el gate de H2 mide por nombre—, bajo
+`crates/winter-air`, `crates/winter-prover` y `crates/winter-verifier` como miembros del workspace
+con su fila en el canon (49, 6 y 0 tests, los de upstream), `publish = false`, la licencia MIT de
+winterfell en cada crate y siete ficheros distintos de los publicados más uno nuevo, listados en
+sus README. Sustituye a winterfell en todo el workspace, kit incluido: `winter-fri`, `-math`,
+`-crypto` y `-utils` siguen siendo los de crates.io.
+
 ### D-G — La ocultación vive entera en el núcleo: ningún AIR cambia
 
 El issue 9 de winterfell, que su autor abrió en 2021, pide tres piezas; la nota 2024/1037 añade
@@ -228,6 +237,13 @@ Gana el meta frente a un campo nuevo de `ProofOptions` o del cable: pureza (las 
 ocultar no cambian ni un byte) y coherencia (la marca va atada al mismo transcript que todo lo
 demás). **Reversible** si algún AIR llega a necesitar el meta: entonces la marca se muda, y lo dice
 aquí.
+
+Lo que el árbol lleva desde el §533, y no es todavía esto: el fork entró con las estáticas del
+spike —`COCIENTE_M` y `SUBIR_CE` en `winter-air`; `OCULTAR_FILAS`, `SEMILLA_FILAS` y
+`SEMILLA_COCIENTE` en `winter-prover`—, apagadas en su valor de nacimiento, y el verificador lee m
+de `COCIENTE_M` y despacha por la marca sin versión ni m dentro. Lo mide la foto de D-R en cada
+canon. E3a-2 lleva m a la marca, retira las estáticas y pone el encendido en el API del probador;
+hasta entonces, una prueba con la marca y m = 0 la verificaría el kit tal cual.
 
 ### D-I — La sal se queda hasta que un argumento la retire
 

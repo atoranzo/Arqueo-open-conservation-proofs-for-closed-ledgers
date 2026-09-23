@@ -38864,3 +38864,73 @@ los largos 1475 -> 1478; ignorados quietos en 13. Ningun Cargo tocado.
 donde entra y donde viven sus tests se decide con el terreno del PASTE-E3a-M: `[patch]` o crate
 propio, bajo `crates/` o fuera-; E3a-2: `Oculta<A>` y los siete falsadores de D-K con el modo oculto
 solo en tests; E3b. El 5.A-149 sigue obligando a pagar a mano las sumas en cada -B.
+
+## §533 — RFC-0009 E3a-1: el fork de winterfell 0.13.1 entra en el arbol, apagado
+
+**Que.** Los tres crates que el spike-b-p4r3 bifurco -`winter-air`, `winter-prover` y
+`winter-verifier` 0.13.1- entran bajo `crates/winter-{air,prover,verifier}` con la ocultacion del
+nucleo dentro (D-F a D-J: `Oculta<A>` en `winter-air/src/air/oculta.rs`, las filas y la columna
+aleatorias y el cociente oculto en el probador, el despacho por la marca en el verificador) y
+APAGADA: las cinco estaticas del spike en su valor de nacimiento. Entran por `[patch.crates-io]`
+desde el `Cargo.toml` raiz, con los nombres y la version de crates.io, como miembros del workspace
+con fila en el canon (49, 6 y 0 tests, los de upstream), `publish = false` y la licencia MIT de
+winterfell en cada crate. Sustituyen a winterfell en todo el workspace, kit incluido; `winter-fri`,
+`-math`, `-crypto` y `-utils` siguen siendo los de crates.io. Siete ficheros difieren de los
+publicados y uno es nuevo, listados en el README de cada crate; el resto es upstream byte a byte, y
+los tres `.crate` de la cache clavan el checksum del lock.
+
+**Lo medido, fuera del arbol.** PASTE-E3a1-M (`5b08a226f6993268`, salida `d4b802fbe05e6c48`, rc 0
+sin aviso, 181 s) sobre una copia de `8b13aba` con target propio: el fork son 7 ficheros, +394 -3
+con `diff -ruN` (122 son `oculta.rs`), el 22 % del techo de D-F; un `[patch]` con path NO hace
+miembro (18); como miembros, 21, y el gate 0 del canon exige sus filas; `check_tests` 1500 -> 1555 y
+`check_modulos` 145 -> 188, verdes; el kit resuelve air y verifier por path y NO prover: 120/120 en
+release con la puerta de H2 verde por nombre; **LA FOTO CLAVA 3/3** con el fork del vendor dentro:
+apagado, `work`, `banda` y `edad` salen byte a byte, y D-R deja de ser deduccion. Los tests propios,
+49, 6 y 0. Un solo aviso del compilador, en `winter-prover/src/trace/trace_table.rs`:199, fichero de
+upstream que el fork no tocaba: como dependencia del registry cargo lo capaba y como miembro no, y
+cargo replaya los avisos de un miembro en cada build que lo incluya, asi que las seis filas que
+arrastran el probador habrian pinchado su 0; se arregla con el lifetime explicito que el propio
+compilador sugiere. El lock crecia 348 -> 375 con las dev-deps del fork; sin `criterion` ni su
+bench, que nadie corre, bastan `winter-rand-utils` y su `rand 0.9` (8 paquetes), y el lock de este
+sello se predijo desde ese diff y lo juzga `cargo --locked`. El ENSAYO-533 (VERDE 23/23: las tres
+filas 49/6/0 con 0 warnings, el cable 22/0/0, el kit 120, los circuitos 394/13 con la foto 3/3,
+`THIRD-PARTY.txt` con el fork nombrado, y tres falsadores: `OCULTAR_FILAS` encendido y `COCIENTE_M`
+= 64 tumban la foto, el lint sin arreglar avisa) y el primer BLOQUE-533, que cayo en el canon
+(rc 21, restaurado): `zk-ssl-wire` exit 124 a los 60 s, y las filas que arrastran el probador
+tardando una compilacion (capa 162 s, circuitos 125, sdk 64, cli 66, nodo 83). El PASTE-E3a1-M2
+(`f74a66c082047184`) lo midio con el fingerprint de cargo: dos corridas seguidas de un consumidor
+no recompilan nada (wire 2, 3 y 4: 0 compilaciones); lo que el canon pagaba es la PRIMERA
+compilacion de cada variante del fork -sus consumidores unifican features distintas de `winter-air`
+(`default`), `tracing` y `zk-ssl` (`sandbox`)-, ~52 s la del cable sin correr un test; y el timeout
+del cable, 60 s, era menor que esa compilacion. Antes el probador era del registry y sus variantes
+estaban compiladas de canones anteriores; desde este sello, cada cambio en winter-* las paga.
+
+**Lo que mueve.** `Cargo.toml` raiz: tres miembros y el `[patch.crates-io]`; `Cargo.lock`: los tres
+sin `source` ni `checksum`, `winter-rand-utils` con `rand 0.9.5` (8 paquetes nuevos), `rayon` en
+`winter-utils` y dos versiones de `rand_chacha` y de `r-efi`; `tools/canon.sh`: tres filas 49/6/0
+con timeout 60, y el del cable 60 -> 180 con su historia; `tools/artefacto.sh`: `THIRD-PARTY.txt`
+nombra el fork como fork; `NOTICE`: el
+codigo de terceros; las cifras, a mano (5.A-149): sello 1341 -> 1396 (`PRINCIPIOS.md`:356,
+`PAPER.md`:36, `PAPER_EN.md`:33) y <<contando los pines>> 1478 -> 1533 (`PRINCIPIOS.md`:359,
+`PAPER.md`:37, `PAPER_EN.md`:34); <<18 crates>> -> 21 en `README.md`, `README_EN.md` y
+`RESUMEN_BILINGUE.md`; el RFC-0009 (cabecera, celda de E3a, D-F con la forma de entrar y D-H con lo
+que falta) y la fila de `spec/README.md`. Lo que NO se mueve: <<1364 declaradas>>, <<1349
+declared>> y <<18 ignoradas>> (5.A-319), y los 24 warnings pinchados, porque el fork entra con 0.
+
+**Contadores.** Ochenta y tres ficheros, 15.345 lineas insertadas y 30 borradas: nacen los 69 del
+fork (+15.117: 31 de `winter-air`, 30 de `winter-prover` y 8 de `winter-verifier`, con su
+`Cargo.toml`, su `README.md` y su `LICENSE` cada uno); `Cargo.toml` raiz 17/0; `Cargo.lock` 82/11
+(348 -> 356 paquetes); `tools/canon.sh` 4/1; `tools/artefacto.sh` 3/1; `NOTICE` 15/0; `PAPER.md`
+4/3; `PAPER_EN.md` 3/2; `PRINCIPIOS.md` 3/3; `README.md`, `README_EN.md` y `spec/README.md` 1/1;
+`RESUMEN_BILINGUE.md` 4/2; el RFC-0009 20/4 (462 -> 478 lineas); y `AUDITORIA.md` 70/0, que es
+este asiento. Pines: tres filas nuevas 49/6/0; sello 1341 -> 1396; los largos 1478 -> 1533;
+`check_tests` 1500 -> 1555; `check_modulos` 145 -> 188; ignorados quietos (7 y 13). Cargo tocado:
+el raiz y el lock, y ningun manifiesto propio. El canon de este sello paga la primera compilacion
+de cada variante del fork: su cifra no es la de los sellos que vengan.
+
+**Lo que queda, y se dice.** `COCIENTE_M`, `SUBIR_CE`, `OCULTAR_FILAS`, `SEMILLA_FILAS` y
+`SEMILLA_COCIENTE` son estaticas de proceso; el verificador lee m de una estatica y despacha por la
+marca `arqueo:oculta:1` sin version ni m dentro, cuando D-H lo promete en la marca: con la marca y
+m = 0, el kit verificaria hoy una prueba oculta tal cual. E3a-2 lleva m a la marca, retira las
+estaticas, pone el encendido en el API del probador y trae los siete falsadores de D-K a
+`stark-experiment`, nunca a `zk-ssl-air`. Luego E3b, y con ella la E3 del RFC-0008.

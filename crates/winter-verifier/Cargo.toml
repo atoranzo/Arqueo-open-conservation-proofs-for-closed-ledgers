@@ -1,0 +1,75 @@
+# FORK de winterfell 0.13.1 para ARQUEO (RFC-0009 E3a-1, AUDITORIA 533). Este manifiesto es el
+# que crates.io publico para `winter-verifier` 0.13.1 (checksum del .crate
+# 0425ea81f8f703a1021810216da12003175c7974a584660856224df04b2e2fdb), con estos cambios y ninguno mas:
+# `publish = false`, la descripcion, el repositorio, sin `documentation` ni la metadata de
+# docs.rs. Mismo nombre y misma version que el registry: asi lo
+# exige el [patch.crates-io] del Cargo.toml raiz, que lo sustituye en todo el workspace, kit
+# incluido. Licencia MIT de winterfell en LICENSE; lo que difiere de upstream, en README.md.
+
+[package]
+edition = "2021"
+rust-version = "1.87"
+name = "winter-verifier"
+version = "0.13.1"
+publish = false
+authors = ["winterfell contributors"]
+build = false
+autolib = false
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+description = "ARQUEO fork of winter-verifier 0.13.1 (winterfell): the STARK verifier, plus the dispatch of marked proofs to Oculta<AIR> (RFC-0009 E3a, switched off)"
+readme = "README.md"
+keywords = [
+    "crypto",
+    "zkp",
+    "stark",
+    "verifier",
+]
+categories = [
+    "cryptography",
+    "no-std",
+]
+license = "MIT"
+repository = "https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers"
+
+[features]
+default = ["std"]
+std = [
+    "air/std",
+    "crypto/std",
+    "fri/std",
+    "math/std",
+    "utils/std",
+]
+
+[lib]
+name = "winter_verifier"
+path = "src/lib.rs"
+bench = false
+
+[dependencies.air]
+version = "0.13"
+default-features = false
+package = "winter-air"
+
+[dependencies.crypto]
+version = "0.13"
+default-features = false
+package = "winter-crypto"
+
+[dependencies.fri]
+version = "0.13"
+default-features = false
+package = "winter-fri"
+
+[dependencies.math]
+version = "0.13"
+default-features = false
+package = "winter-math"
+
+[dependencies.utils]
+version = "0.13"
+default-features = false
+package = "winter-utils"

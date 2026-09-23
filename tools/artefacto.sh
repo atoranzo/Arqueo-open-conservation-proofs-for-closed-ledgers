@@ -50,7 +50,9 @@ montar(){ # $1 = binario, $2 = directorio destino
   # §408 · el arnes viaja dentro: `bash conformidad.sh ./zk-ssl-verify` desde la raiz del tarball
   cp tools/conformidad.sh "$2/conformidad.sh"; chmod 755 "$2/conformidad.sh"
   cp LICENSE-APACHE LICENSE-MIT NOTICE "$2/"
-  cargo tree -p zk-ssl-verify -e normal --prefix none --format '{p} {l}' --locked | sed 's/ (\/[^)]*)//; s/ (\*)//' | sort -u > "$2/THIRD-PARTY.txt"
+  # §533 · el fork de winterfell (RFC-0009 E3a-1) es path-dep del arbol: THIRD-PARTY.txt lo
+  # nombra como FORK, no como el crate de crates.io del mismo nombre y version.
+  cargo tree -p zk-ssl-verify -e normal --prefix none --format '{p} {l}' --locked | sed 's| (/[^)]*/crates/winter-[a-z]*)| (FORK en el arbol, RFC-0009 E3a-1, §533)|; s/ (\/[^)]*)//; s/ (\*)//' | sort -u > "$2/THIRD-PARTY.txt"
   {
     echo "artefacto=$NOMBRE"
     echo "commit=$(git rev-parse HEAD)"

@@ -29,6 +29,14 @@ members = [
     # `-crypto`, `-math` y `-verifier` SUELTOS, clavados con `=`; el
     # probador (`winter-prover`) no entra.
     "crates/zk-ssl-air",
+    # ⚠️ El FORK de winterfell 0.13.1 (RFC-0009 E3a-1, §533): entra APAGADO
+    # por el [patch.crates-io] del final, con los NOMBRES de crates.io, para
+    # que el gate de H2 -que mide la clausura del kit por nombre- siga
+    # viendo `winter-verifier` y no `winter-prover`. Miembros, para que el
+    # canon corra sus tests: un [patch] con path NO hace miembro (medido).
+    "crates/winter-air",
+    "crates/winter-prover",
+    "crates/winter-verifier",
 ]
 resolver = "2"
 
@@ -53,3 +61,12 @@ ark-bls12-381 = "0.4"
 ark-serialize = "0.4"
 rand = "0.8"
 rand_chacha = "0.3"
+
+# ⚠️ El FORK (§533): los tres crates de arriba sustituyen a los de crates.io en
+# TODO el workspace, kit incluido; `winter-fri`, `-math`, `-crypto` y `-utils`
+# siguen siendo los de crates.io. Un [patch] exige el mismo nombre y la misma
+# version que el registry; los tres llevan `publish = false`.
+[patch.crates-io]
+winter-air = { path = "crates/winter-air" }
+winter-prover = { path = "crates/winter-prover" }
+winter-verifier = { path = "crates/winter-verifier" }

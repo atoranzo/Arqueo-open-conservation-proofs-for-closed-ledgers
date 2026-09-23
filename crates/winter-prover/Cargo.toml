@@ -1,0 +1,96 @@
+# FORK de winterfell 0.13.1 para ARQUEO (RFC-0009 E3a-1, AUDITORIA 533). Este manifiesto es el
+# que crates.io publico para `winter-prover` 0.13.1 (checksum del .crate
+# 84cc631ed56cd39b78ef932c1ec4060cc6a44d114474291216c32f56655b3048), con estos cambios y ninguno mas:
+# `publish = false`, la descripcion, el repositorio, sin `documentation` ni la metadata de
+# docs.rs y sin el bench de criterion. Mismo nombre y misma version que el registry: asi lo
+# exige el [patch.crates-io] del Cargo.toml raiz, que lo sustituye en todo el workspace, kit
+# incluido. Licencia MIT de winterfell en LICENSE; lo que difiere de upstream, en README.md.
+
+[package]
+edition = "2021"
+rust-version = "1.87"
+name = "winter-prover"
+version = "0.13.1"
+publish = false
+authors = ["winterfell contributors"]
+build = false
+autolib = false
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+description = "ARQUEO fork of winter-prover 0.13.1 (winterfell): the STARK prover, plus the hiding of trace and quotient inside the core (RFC-0009 E3a, switched off)"
+readme = "README.md"
+keywords = [
+    "crypto",
+    "zkp",
+    "stark",
+    "prover",
+]
+categories = [
+    "cryptography",
+    "no-std",
+]
+license = "MIT"
+repository = "https://github.com/atoranzo/Arqueo-open-conservation-proofs-for-closed-ledgers"
+
+[features]
+async = ["maybe_async/async"]
+concurrent = [
+    "crypto/concurrent",
+    "math/concurrent",
+    "fri/concurrent",
+    "utils/concurrent",
+    "std",
+]
+default = ["std"]
+std = [
+    "air/std",
+    "crypto/std",
+    "fri/std",
+    "math/std",
+    "utils/std",
+]
+
+[lib]
+name = "winter_prover"
+path = "src/lib.rs"
+bench = false
+
+[dependencies.air]
+version = "0.13"
+default-features = false
+package = "winter-air"
+
+[dependencies.crypto]
+version = "0.13"
+default-features = false
+package = "winter-crypto"
+
+[dependencies.fri]
+version = "0.13"
+default-features = false
+package = "winter-fri"
+
+[dependencies.math]
+version = "0.13"
+default-features = false
+package = "winter-math"
+
+[dependencies.maybe_async]
+version = "0.13"
+package = "winter-maybe-async"
+
+[dependencies.tracing]
+version = "0.1"
+features = ["attributes"]
+default-features = false
+
+[dependencies.utils]
+version = "0.13"
+default-features = false
+package = "winter-utils"
+
+[dev-dependencies.rand-utils]
+version = "0.13"
+package = "winter-rand-utils"

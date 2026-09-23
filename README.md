@@ -180,7 +180,7 @@ a mirar el código con intención de romperlo, empieza ahí.
 
 | pieza | dónde se mide |
 |---|---|
-| **18 crates** en un workspace; el canon (`tools/canon.sh --sello`) corre los tests de todos, en release, y las ocho herramientas de `tools/` que vigilan cifras, citas, dominios y geometría | la tabla de [`tools/canon.sh`](./tools/canon.sh) lleva los tests que pasan por crate; cada sello la actualiza |
+| **21 crates** en un workspace —18 propios y los tres del fork de winterfell 0.13.1 (§533)—; el canon (`tools/canon.sh --sello`) corre los tests de todos, en release, y las ocho herramientas de `tools/` que vigilan cifras, citas, dominios y geometría | la tabla de [`tools/canon.sh`](./tools/canon.sh) lleva los tests que pasan por crate; cada sello la actualiza |
 | **Protocolo `zkssl/0.3`**: 30 métodos JSON-RPC (27 `zkssl_*`, 3 `dev_*`), OpenRPC generado desde el código, vectores por versión que jamás se reescriben | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (260 ficheros: cable, núcleo, paquete, consumo, conflicto, rechazo, edad, pendiente, pago y los tres `zkssl-0.N.json`) |
 | **RFC**: 0002, 0003, 0004, 0006 y 0007 (las pruebas sobre el estado comprometido) aceptados; 0005 (el núcleo congelado) y 0008 (las pruebas portables del pendiente) propuestos | [`spec/rfc/`](./spec/rfc/) |
 | **Verificador independiente** `zk-ssl-verify` 0.2.0, release `arqueo-verify-v0.2.0`, reproducible desde el commit que su `VERSION` nombra | [`doc/KIT.md`](./doc/KIT.md) · [`tools/artefacto.sh`](./tools/artefacto.sh) |
