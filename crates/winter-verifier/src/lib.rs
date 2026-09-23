@@ -100,11 +100,25 @@ where
     let mut public_coin_seed = proof.context.to_elements();
     public_coin_seed.append(&mut pub_inputs.to_elements());
 
-    // SPIKE-B-P4: una prueba cuyo meta de traza lleva la marca se verifica con el envoltorio
-    if proof.trace_info().meta() == ::air::MARCA_OCULTA {
-        // r2: con la marca y una traza que no se puede partir en dos, error y no panico: el kit
-        // tiene que fallar cerrado
-        if proof.trace_info().length() < 16 || proof.trace_info().main_trace_width() < 2 {
+    // ARQUEO (RFC-0009 E3a-2): el meta de la traza decide, y lo lee un solo sitio. Vacio: el AIR
+    // de siempre. La marca conocida, con m dentro: el envoltorio. Cualquier otro meta -otra
+    // version de la marca, u otro meta-: error, no panico, antes de construir ningun AIR; ningun
+    // AIR de la casa escribe en el meta (D-G) y el kit tiene que fallar cerrado
+    let marca = match ::air::Marca::leer(proof.trace_info().meta()) {
+        Ok(marca) => marca,
+        Err(_) => {
+            return Err(VerifierError::ProofDeserializationError(alloc::string::String::from(
+                "meta de traza desconocido",
+            )))
+        },
+    };
+    if let Some(marca) = marca {
+        // r2: con la marca y una traza que no se puede partir en dos, o un m que no cabe en ella
+        // (D-H: 0 <= m < 2T), error y no panico: el kit tiene que fallar cerrado
+        if proof.trace_info().length() < 16
+            || proof.trace_info().main_trace_width() < 2
+            || marca.m >= proof.trace_info().length()
+        {
             return Err(VerifierError::ProofDeserializationError(alloc::string::String::from(
                 "traza oculta mal formada",
             )));
@@ -282,8 +296,9 @@ where
     // the number of composition column polynomials. This computes H(z) (i.e.
     // the evaluation of the composition polynomial at z) using the fact that
     // H(X) = \sum_{i=0}^{m-1} X^{i * l} H_i(X).
-    // SPIKE-B-ETAPA2A: los trozos del cociente avanzan de s = T - m en s (m = 0: winterfell)
-    let paso = air.trace_length() - ::air::COCIENTE_M.load(core::sync::atomic::Ordering::Relaxed);
+    // ARQUEO (RFC-0009 E3a-2): los trozos del cociente avanzan de s = L - m en s, y el m lo dice
+    // la marca del meta de la traza del propio AIR (m = 0 sin marca: winterfell)
+    let paso = air.trace_length() - ::air::Marca::m_de(air.trace_info().meta());
     let ood_constraint_evaluations = channel.read_ood_constraint_frame();
     let ood_constraint_evaluation_2 = ood_constraint_evaluations
         .current_row()

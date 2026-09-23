@@ -2,11 +2,12 @@
 // con una columna mas y las exenciones del AIR interno mas T; delega en el las transiciones, las
 // aserciones y las columnas periodicas, y el interno sigue viendo T, asi que sus aserciones de
 // ultima fila no se mueven. El probador pone las T filas y la columna aleatorias; el verificador
-// lo reconstruye desde la prueba por la marca del meta de la traza.
+// lo reconstruye desde la prueba por la marca del meta de la traza (ARQUEO, RFC-0009 E3a; desde
+// el asiento 534 la marca lleva m y el envoltorio sube el ce siempre que haga falta).
 
 use alloc::vec::Vec;
 
-use math::{ExtensionOf, FieldElement};
+use math::{ExtensionOf, FieldElement, StarkField};
 
 use crate::{Air, AirContext, Assertion, AuxRandElements, EvaluationFrame, ProofOptions, TraceInfo};
 
@@ -23,6 +24,24 @@ impl<A: Air> Oculta<A> {
     pub fn cabe(&self) -> bool {
         self.cabe
     }
+
+    /// ARQUEO (RFC-0009 E3a-2): si la segunda cota de las exenciones (context.rs:315-327) cabe
+    /// con el factor `ce`: para cada restriccion, n + eval(L) <= ce * L - 1 + L. Consulta, no
+    /// interruptor: el falsador de WorkAir (grado 3 sin ciclos) pregunta con 2, su ce de serie,
+    /// y con 4, el que necesita.
+    pub fn cabe_con(&self, ce: usize) -> bool {
+        cabe_con(&self.ctx, ce)
+    }
+}
+
+/// La segunda cota de las exenciones de un contexto con el factor `ce`.
+fn cabe_con<B: StarkField>(ctx: &AirContext<B>, ce: usize) -> bool {
+    let l = ctx.trace_len();
+    let n = ctx.num_transition_exemptions();
+    ctx.main_transition_constraint_degrees
+        .iter()
+        .chain(ctx.aux_transition_constraint_degrees.iter())
+        .all(|d| n + d.get_evaluation_degree(l) <= ce * l - 1 + l)
 }
 
 impl<A: Air> Air for Oculta<A> {
@@ -52,23 +71,16 @@ impl<A: Air> Air for Oculta<A> {
         );
         // r2: la segunda cota de las exenciones (context.rs:315-327) pide, por restriccion,
         // n <= ce*L - 1 + L - eval(L). Se sube ce a la menor potencia de dos que deje sitio, con
-        // tope en el blowup del LDE. El ce solo lo usa el probador (el dominio donde evalua); por
-        // eso las exenciones se escriben sin la asercion y el verificador no entra en panico.
-        let cabe_con = |ce: usize| {
-            base.main_transition_constraint_degrees
-                .iter()
-                .chain(base.aux_transition_constraint_degrees.iter())
-                .all(|d| n + d.get_evaluation_degree(l) <= ce * l - 1 + l)
-        };
-        let mut ce = ctx.ce_blowup_factor;
-        if crate::SUBIR_CE.load(core::sync::atomic::Ordering::Relaxed) {
-            while !cabe_con(ce) && ce < ctx.options.blowup_factor() {
-                ce *= 2;
-            }
-        }
-        let cabe = cabe_con(ce);
-        ctx.ce_blowup_factor = ce;
+        // tope en el blowup del LDE, siempre (el interruptor del spike murio en el asiento 534).
+        // El ce solo lo usa el probador (el dominio donde evalua); por eso las exenciones se
+        // escriben sin la asercion y el verificador no entra en panico.
         ctx.num_transition_exemptions = n;
+        let mut ce = ctx.ce_blowup_factor;
+        while !cabe_con(&ctx, ce) && ce < ctx.options.blowup_factor() {
+            ce *= 2;
+        }
+        let cabe = cabe_con(&ctx, ce);
+        ctx.ce_blowup_factor = ce;
         Oculta { interno, ctx, cabe }
     }
 

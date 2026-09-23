@@ -1,9 +1,11 @@
-# FORK de winterfell 0.13.1 para ARQUEO (RFC-0009 E3a-1, AUDITORIA 533)
+# FORK de winterfell 0.13.1 para ARQUEO (RFC-0009 E3a, AUDITORIA 533 y 534)
 
 Este directorio es `winter-prover` 0.13.1 tal como lo publico crates.io (el checksum del
-`.crate`, en `Cargo.toml`), con la ocultacion del nucleo dentro y APAGADA: lo que difiere
-de upstream es `src/constraints/composition_poly.rs`, `src/lib.rs` y, con una sola linea, `src/trace/trace_table.rs`
-(spike-b-p4r3, sesiones 166 a 170); todo lo demas es upstream byte a byte. Entra por
+`.crate`, en `Cargo.toml`), con la ocultacion del nucleo dentro y APAGADA (la enciende
+`Prover::ocultacion`, que ningun probador de ARQUEO devuelve): lo que difiere de upstream es
+`src/constraints/composition_poly.rs`, `src/domain.rs`, `src/lib.rs` y, con una sola linea,
+`src/trace/trace_table.rs` (spike-b-p4r3, sesiones 166 a 172); todo lo demas es upstream byte a
+byte. Entra por
 `[patch.crates-io]` desde el `Cargo.toml` raiz, con su nombre y su version; `publish = false`.
 Licencia MIT de winterfell en `LICENSE`. Lo que sigue es el README de upstream.
 

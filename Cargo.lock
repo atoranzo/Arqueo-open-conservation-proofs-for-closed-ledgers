@@ -2517,6 +2517,8 @@ version = "0.1.0"
 dependencies = [
  "settlement-prover",
  "sled",
+ "winter-air",
+ "winter-prover",
  "winterfell",
  "zk-ssl-air",
  "zk-ssl-hash",

@@ -1,7 +1,7 @@
 # RFC-0009 — Lo que revela una prueba: la promesa mientras el probador no oculte su testigo
 
 - **Estado:** PROPUESTO
-- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165, 166, 169, 170 y 171)
+- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165, 166, 169, 170, 171 y 172)
 - **Fecha:** 2026-09-21
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad). Este RFC no
   cambia un método, un tipo del cable ni un vector: cambia lo que se promete de ellos.
@@ -10,7 +10,9 @@
   Groth16), §525 (los comentarios, con el censo que dice de qué sistema habla cada frase) y §526
   (el PASTE-367-M4); el §527, que lo adopta; el §528, que le añade la E3; el §531, que sella
   la E2 con su suite en el árbol y remide la tabla; el §532, que toma la foto del probador prístino
-  (D-R); y el §533, que mete el fork en el árbol, apagado (E3a-1).
+  (D-R); el §533, que mete el fork en el árbol, apagado (E3a-1); y el §534, que cierra E3a: m en
+  la marca, las estáticas fuera, el encendido en el API del probador y los siete falsadores de
+  D-K como tests (E3a-2, D-S a D-W).
 
 ## Estado de las etapas
 
@@ -18,8 +20,8 @@
 |---|---|---|---|
 | E1 — la promesa, escrita | este texto: qué se promete (D-A), lo que sale literal en cada prueba (D-B), el principio del API como regla que hoy no se cumple (D-C) y la ocultación fuera de este RFC (D-D) | no | sellada en el §527 |
 | E2 — el testigo de la tabla | una suite que produce cada tipo de prueba y cuenta sus valores literales contra la tabla de D-B, con un control que tiene que dar cero (D-E; su forma, D-L a D-Q) | no | sellada en el §531 |
-| E3a — el probador que oculta, dentro y apagado | el fork de winterfell 0.13.1 en el árbol, con la ocultación entera en el núcleo y sin tocar un AIR (D-F a D-J); apagado, cada prueba sale byte a byte como la de winterfell; y los falsadores de los spikes como tests del árbol, con el modo oculto solo en los tests (D-K); y antes, la foto del probador pristino que el fork apagado tiene que reproducir (D-R) | no | en curso: el corte 0, la foto (D-R), sellado en el §532; el corte 1, el fork apagado, sellado en el §533; el corte 2, los falsadores de D-K, por hacer |
-| E3b — encenderlo | las pruebas que cruzan el cable salen ocultas; la tabla de D-B pasa a cero, con la suite de E2 como testigo (D-K) | sí: `zkssl/0.4` | por hacer; espera a E3a |
+| E3a — el probador que oculta, dentro y apagado | el fork de winterfell 0.13.1 en el árbol, con la ocultación entera en el núcleo y sin tocar un AIR (D-F a D-J); apagado, cada prueba sale byte a byte como la de winterfell; y los falsadores de los spikes como tests del árbol, con el modo oculto solo en los tests (D-K); y antes, la foto del probador pristino que el fork apagado tiene que reproducir (D-R) | no | sellada: el corte 0, la foto (D-R), en el §532; el corte 1, el fork apagado, en el §533; el corte 2, m en la marca (D-S, D-T), las estáticas fuera y el encendido en `Prover::ocultacion` (D-U) y los siete falsadores de D-K como tests (D-V), en el §534. La sal de D-I no es del fork: es el `VC` del consumidor y va con E3b (D-W) |
+| E3b — encenderlo | las pruebas que cruzan el cable salen ocultas, con la sal como `VC` de los probadores y del kit (D-W); la tabla de D-B pasa a cero, con la suite de E2 como testigo (D-K) | sí: `zkssl/0.4` | por hacer; E3a está sellada y nada la espera |
 
 Las medidas que abrieron este documento son las de los asientos §521, §523, §524 y §526:
 lecturas puras que restauraron el árbol con sha y porcelain, con sus instrumentos fuera del
@@ -197,7 +199,10 @@ una cuarta. Las cuatro caben dentro:
 - **el polinomio aleatorio antes de FRI** (la segunda): la columna de más es aleatoria entera;
   entra en DEEP con su coeficiente, como cualquier columna, y enmascara lo que FRI abre;
 - **las hojas** (la tercera): los compromisos de Merkle llevan sal (D-I). El issue la pide para la
-  traza; el fork sala también las restricciones y FRI;
+  traza; la sal la pone el compromiso —`MerkleConSal`, el `VC` que probador y verificador reciben
+  como tipo, del lado del consumidor y no del fork (medido en la 172: el fork del árbol no lleva
+  sal)—, y por eso sala a la vez la traza, las restricciones y FRI; entra en E3b con el cambio de
+  `VC` (D-W);
 - **el cociente** (la nota 2024/1037, apartado 4.2, que el issue no trae): el polinomio de
   composición se parte con paso 2T − m y sus trozos se aleatorizan con polinomios de grado menor
   que m que se cancelan en la suma, con m ≥ 44 —las 42 consultas, z y z·g— y m = 64.
@@ -238,12 +243,14 @@ ocultar no cambian ni un byte) y coherencia (la marca va atada al mismo transcri
 demás). **Reversible** si algún AIR llega a necesitar el meta: entonces la marca se muda, y lo dice
 aquí.
 
-Lo que el árbol lleva desde el §533, y no es todavía esto: el fork entró con las estáticas del
+Lo que el árbol lleva desde el §533, y no era todavía esto: el fork entró con las estáticas del
 spike —`COCIENTE_M` y `SUBIR_CE` en `winter-air`; `OCULTAR_FILAS`, `SEMILLA_FILAS` y
-`SEMILLA_COCIENTE` en `winter-prover`—, apagadas en su valor de nacimiento, y el verificador lee m
-de `COCIENTE_M` y despacha por la marca sin versión ni m dentro. Lo mide la foto de D-R en cada
-canon. E3a-2 lleva m a la marca, retira las estáticas y pone el encendido en el API del probador;
-hasta entonces, una prueba con la marca y m = 0 la verificaría el kit tal cual.
+`SEMILLA_COCIENTE` en `winter-prover`—, apagadas en su valor de nacimiento, y el verificador leía m
+de `COCIENTE_M` y despachaba por la marca sin versión ni m dentro; con la marca y m = 0, el kit
+verificaba una prueba oculta tal cual (medido en la 172: PASTE-E3a2-M, y m no viajaba: la prueba
+con m = 64 llevaba los mismos 21 bytes de cabecera que la de m = 0, y verificaba o no según la
+estática). Desde el §534 es esto: la marca lleva m (D-S), lo lee un solo sitio (D-T) y las
+estáticas no existen (D-U).
 
 ### D-I — La sal se queda hasta que un argumento la retire
 
@@ -276,7 +283,8 @@ E3a mete el fork en el árbol apagado: cada prueba sale byte a byte como hoy y e
 (medido con el fork apagado en los spikes). Trae, como tests del árbol y con el modo oculto solo
 en los tests, los falsadores de los spikes: censo cero, verifica, rechaza público+1, marca tocada,
 dimensiones inválidas, `WorkAir` con la subida y la regresión con el fork apagado. Sin ellos, E3a
-sellaría código que nada ejercita: testigo negativo antes que la función.
+sellaría código que nada ejercita: testigo negativo antes que la función. Desde el §534 los siete
+son tests del árbol, `crates/stark-experiment/src/falsadores_oculta.rs` (D-V).
 
 E3b lo enciende para las pruebas que cruzan el cable. Una prueba oculta no la verifica un
 winterfell sin bifurcar (razonado; lo ilustra la 2a del spike, donde el verificador sin el paso
@@ -394,13 +402,94 @@ vive en el árbol y corre en cada canon) y pureza (un KAT con entradas fijas, si
 **Reversible** sólo con winterfell: si la versión clavada cambia, la foto se toma de nuevo con su
 asiento, y quien la mueva dice por qué.
 
+### D-S — La marca lleva m: el prefijo y cuatro bytes, con un solo lector
+
+La marca es `arqueo:oculta:1` —el prefijo, con su versión dentro— seguida de m en cuatro bytes
+little-endian: 19 bytes en el meta de la traza. La lee un solo sitio, `winter-air/src/marca.rs`:
+`Marca::leer` da nada con el meta vacío (winterfell tal cual), la marca con el prefijo y sus cuatro
+bytes, y error con cualquier otro meta —otra versión del prefijo, otro prefijo o un largo que no
+es el suyo—. El verificador rechaza ese error antes de construir ningún AIR («meta de traza
+desconocido»), y con la marca rechaza, también antes, una traza de largo menor que 16, de ancho
+menor que 2 o un m que no cabe en ella (m ≥ 2T), todo con error y sin pánico.
+
+Gana el prefijo con la versión frente a un byte de versión aparte: claridad (la marca se lee en un
+volcado) y coherencia (la de E3a-1 ya era `arqueo:oculta:1`). Y gana rechazar todo meta que no sea
+la marca frente a caer al AIR de siempre: fail-closed (medido en la 172: con la marca tocada, el
+fork apagado caía al AIR de siempre con una traza de ancho 2 y `WorkAir::new` entraba en pánico).
+**Reversible** si algún AIR de la casa llega a escribir en el meta (D-H): entonces la marca se
+muda y lo dice aquí.
+
+### D-T — Un solo productor de m: el meta de la traza
+
+m lo dice la marca y sólo la marca. El contexto del AIR lo lee del meta de su `TraceInfo` para
+partir el cociente en trozos de paso s = L − m (`context.rs`); el dominio del probador lo lee del
+mismo meta al construirse y se lo pasa a `segmentar` con la semilla propia del cociente que sólo
+el probador oculto pone (`domain.rs`, `composition_poly.rs`); y el verificador lo lee del contexto
+del AIR que ya construyó, para el paso de la evaluación del cociente. Ninguna firma que los 35
+probadores implementan cambia: `CompositionPoly::new` ya recibía el dominio.
+
+Gana el meta frente a una estática de proceso: pureza (lo que decide la verificación viaja
+firmado en el transcript, y una prueba con m = 64 ya no la acepta un verificador «en 0» ni la
+rechaza uno «en 64») y coherencia (un productor, tres lectores del mismo byte). **Reversible** con
+la D-S.
+
+### D-U — El encendido es del probador: `Prover::ocultacion`, apagado por defecto
+
+El trait `Prover` gana un método provisto, `ocultacion(&self) -> Option<Ocultacion>`, que devuelve
+`None`; `Ocultacion` lleva m y las dos semillas —la de las filas y la columna aleatorias y la del
+cociente, separadas— y las pone quien llama: en producción, de la entropía del sistema (D-J). Con
+`Some`, `generate_proof` desvía a la versión que oculta; con `None`, la prueba es la de winterfell
+byte a byte, y ningún probador de ARQUEO devuelve `Some` hasta E3b. Las cinco estáticas del spike
+mueren, `SUBIR_CE` incluida: el envoltorio sube el ce siempre que haga falta, y `Oculta::cabe_con`
+queda como consulta para el falsador.
+
+Gana el método provisto frente a un campo nuevo de `ProofOptions` o del cable: pureza (las pruebas
+sin ocultar no cambian ni un byte, y las opciones siguen diciendo lo que verifica) y coherencia
+(los 35 probadores no cambian: heredan el `None`). Lo que se pierde, y se dice: g2 y g3 del
+spike —que el ce subido sólo lo usa el probador, y que sin la subida no sale una prueba que
+verifique— necesitaban el interruptor; quedan como medidos en el spike (r3, con los asertos de
+depuración), y en el árbol `cabe_con(2)` = falso deja dicho que la subida hace falta.
+**Reversible** hacia un campo del cable si E3b lo pide.
+
+### D-V — Los siete falsadores, como tests de `stark-experiment`
+
+Los siete de D-K viven en `crates/stark-experiment/src/falsadores_oculta.rs`, traídos de
+`spike/src/main.rs` del spike-b-p4r3 (`145e83ecea366126`), donde eran tramos de un binario con
+veredicto por rc: el censo cero (80-83), verifica (84), rechaza público+1 (85), la marca tocada
+(89: aquí se exige error, y el pánico que el spike daba por bueno es rojo con nombre), las
+dimensiones inválidas (97, más m ≥ 2T), WorkAir con la subida (94, 96: ce 2 → 4, cabe, y la prueba
+verifica) y la regresión apagada (86, 88 y la estructural: apagado por el API es byte a byte el
+probador de la casa; la misma ocultación, los mismos bytes; otra semilla del cociente deja las
+raíces de la traza y mueve la de restricciones). Seis corren sobre `WorkAir` con un probador
+propio del módulo que devuelve la ocultación que el test le da; el censo cero, sobre un juguete con
+una columna constante de la traza y otra del tramo auxiliar, copiado del spike y recortado a lo
+que mide (128 filas, 3 + 2 columnas). `winter-air` y `winter-prover` entran como dependencias de
+desarrollo del crate, porque `Ocultacion`, `Marca` y `Oculta` no salen por el paraguas `winterfell`,
+que no está bifurcado. Corren en depuración y en release.
+
+Gana `stark-experiment` frente a `zk-ssl-air` (pureza: un juez no compila al probador) y frente a
+la capa (coherencia: el modo oculto sólo en tests, y el juguete es de circuitos). **Reversible** si
+E3b trae el modo oculto a los probadores de la casa: entonces los falsadores se mudan con ellos.
+
+### D-W — La sal es del consumidor y entra en E3b
+
+La sal de D-I no vive en el fork: `MerkleConSal` es un `VectorCommitment` que el probador y el
+verificador reciben como tipo (`VC`), del lado de quien los llama —las «138 líneas propias» de
+D-F—, y por eso sala a la vez la traza, las restricciones y FRI. Cambia los bytes de toda prueba
+que la use, apagada o no, así que no cabe en E3a sin romper la foto: entra en E3b con el cambio
+de `VC` de los 35 probadores y del kit, en `zk-ssl-air` (lo que el kit ve), y con `zkssl/0.4`.
+
+Gana decirlo frente a dejar D-G en presente: imagen fiel (el árbol no sala, y lo dice).
+**Reversible** con la D-I: si el argumento retira la sal, este punto se va con ella.
+
 ## Compatibilidad
 
 - `zkssl/0.3` **no sube**. Ningún método, tipo ni error del cable cambia; ningún vector se
   reescribe ni nace.
 - La promesa ya había cambiado en la prosa y en los comentarios (§521 a §526): este RFC la fija en
   un sitio.
-- **E3a** no sube `zkssl/0.3`: con el fork apagado, las pruebas son byte a byte las de winterfell.
+- **E3a** no sube `zkssl/0.3`: con el fork apagado, las pruebas son byte a byte las de winterfell,
+  y apagado es lo que `Prover::ocultacion` devuelve en los 35 probadores de la casa (D-U).
 - **E3b** sube a `zkssl/0.4`: las pruebas que cruzan el cable llevan la marca y solo las verifica
   el fork. Los vectores de la 0.3 se conservan; los de la 0.4 nacen con azar sembrado (D-J).
 
@@ -442,16 +531,18 @@ deuda.
   la E3 descansa en el argumento de la D-I y en la construcción de la nota 2024/1037. Ni el fork ni
   la ocultación están auditados (H7).
 - **Fallar cerrado:** con la marca, el verificador rechaza con error una traza que no se puede
-  partir (D-H). Los AIR que asertan su ancho en `new` —`AuditAir`, `circuit_audit.rs`:366, entre
-  otros— entran en pánico ante una prueba con otro ancho, con marca o sin ella. Es anterior a
-  esta etapa y queda como punto propio de la cola 5.A.
+  partir o un m que no cabe en ella (D-H), y desde el §534 rechaza, antes de construir ningún AIR,
+  un meta que no está vacío ni es la marca (D-S). Los AIR que asertan su ancho en `new` —`AuditAir`,
+  `circuit_audit.rs`:366, entre otros— entran en pánico ante una prueba sin marca y con otro ancho.
+  Es anterior a esta etapa y queda como punto propio de la cola 5.A.
 - **Depuración:** con los asertos de depuración de winterfell encendidos —grados declarados
   iguales a los reales y tamaño del dominio de evaluación, `constraints/evaluation_table.rs`:
   181-230—, los dos juguetes pasan con el envoltorio y la subida, y probar G sin la subida cae en
   el aserto de grados (`:214`): en depuración, olvidar la subida no pasa inadvertido (medido,
   SPIKE-B-P4 r3). En los 35, el tamaño que exigen coincide con el de la subida (razonado con las
-  fórmulas leídas). En el árbol los ejercitan los tests del modo oculto de E3a, que corren en
-  depuración; la suite con el fork apagado no los toca.
+  fórmulas leídas). En el árbol los ejercitan los tests del modo oculto de E3a
+  (`falsadores_oculta.rs`, §534), que corren en depuración y en release; la suite con el fork
+  apagado no los toca.
 
 ## Referencias
 
@@ -464,6 +555,10 @@ deuda.
   ENSAYO-531-r2 (`d0b973d5bdc429f8`, salida `ed0ebac80ea101fc`, cargo `841b702722246376`).
 - El §532 y su instrumento, fuera del árbol: PASTE-KAT-M (`f7e4b67352204b1a`, salida
   `8faab897d07a7b05`), con los tres `.bin` y sus líneas en `KAT-M-20260922-225843/` de Downloads.
+- El §534 y sus instrumentos, fuera del árbol: PASTE-E3a2-M (`b97ceff1632aa603`, salida
+  `b190fdc212bf5271`, cargo `be5669c380e1df63`) con su `meta_m.rs` (`809004b72c1f0587`), que
+  midió el meta byte a byte y que m no viajaba; y `spike/src/main.rs` del spike-b-p4r3
+  (`145e83ecea366126`), del que salen los siete de D-V.
 - `spec/rfc/PROCESO.md`, regla 3; `SECURITY.md` §3.bis, donde vive la frase canónica.
 - winterfell: la portada del repositorio, <https://github.com/facebook/winterfell>, y su issue 9,
   <https://github.com/facebook/winterfell/issues/9>.

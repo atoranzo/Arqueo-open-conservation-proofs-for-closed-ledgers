@@ -225,6 +225,14 @@ pub trait Prover {
     // PROVIDED METHODS
     // --------------------------------------------------------------------------------------------
 
+    /// ARQUEO (RFC-0009 E3a-2): la ocultacion del nucleo, apagada por defecto. Un probador que
+    /// devuelva `Some` produce la prueba con T filas y una columna aleatorias, la marca con m en
+    /// el meta de la traza y el cociente oculto; con `None`, la prueba es la de winterfell byte a
+    /// byte. Ningun probador de ARQUEO la enciende hasta E3b: solo los falsadores de D-K.
+    fn ocultacion(&self) -> Option<Ocultacion> {
+        None
+    }
+
     /// Builds and returns the auxiliary trace.
     #[allow(unused_variables)]
     #[maybe_async]
@@ -287,9 +295,9 @@ pub trait Prover {
         // 0 ----- instantiate AIR and prover channel ---------------------------------------------
 
         // serialize public inputs; these will be included in the seed for the public coin
-        // SPIKE-B-P4: con la ocultacion del nucleo encendida, la version que oculta
-        if crate::OCULTAR_FILAS.load(core::sync::atomic::Ordering::Relaxed) {
-            return self.generate_proof_oculto::<E>(trace);
+        // ARQUEO (RFC-0009 E3a-2): con la ocultacion del nucleo encendida, la version que oculta
+        if let Some(ocultacion) = self.ocultacion() {
+            return self.generate_proof_oculto::<E>(trace, ocultacion);
         }
         let pub_inputs = self.get_pub_inputs(&trace);
         let pub_inputs_elements = pub_inputs.to_elements();
@@ -555,11 +563,16 @@ pub trait Prover {
         (constraint_commitment, composition_poly)
     }
 
-    /// SPIKE-B-P4: el cuerpo de `generate_proof` con la traza oculta DENTRO del nucleo: alarga
-    /// la traza principal y la auxiliar con T filas aleatorias, anade una columna aleatoria, pone
-    /// la marca en el meta de la traza y prueba con el envoltorio del AIR.
+    /// ARQUEO (RFC-0009 E3a): el cuerpo de `generate_proof` con la traza oculta DENTRO del
+    /// nucleo: alarga la traza principal y la auxiliar con T filas aleatorias, anade una columna
+    /// aleatoria, pone la marca con m en el meta de la traza y prueba con el envoltorio del AIR.
+    /// m y las dos semillas vienen de `ocultacion`, no de estaticas (E3a-2).
     #[doc(hidden)]
-    fn generate_proof_oculto<E>(&self, trace: Self::Trace) -> Result<Proof, ProverError>
+    fn generate_proof_oculto<E>(
+        &self,
+        trace: Self::Trace,
+        ocultacion: Ocultacion,
+    ) -> Result<Proof, ProverError>
     where
         E: FieldElement<BaseField = Self::BaseField>,
         <Self::Air as Air>::PublicInputs: Send,
@@ -576,13 +589,15 @@ pub trait Prover {
         let pub_inputs = self.get_pub_inputs(&trace);
         let pub_inputs_elements = pub_inputs.to_elements();
 
-        // la moneda de las filas y la columna aleatorias, con semilla propia
-        let semilla = crate::SEMILLA_FILAS.load(core::sync::atomic::Ordering::Relaxed);
+        // la moneda de las filas y la columna aleatorias, con la semilla propia que trae la
+        // ocultacion
+        let semilla = ocultacion.semilla_filas;
         let mut moneda = DefaultRandomCoin::<Blake3_256<Self::BaseField>>::new(&[]);
         moneda.reseed(Blake3_256::<Self::BaseField>::hash(&semilla.to_le_bytes()));
 
         // la traza principal: T filas aleatorias detras de las reales y una columna aleatoria
         let t = trace.info().length();
+        assert!(ocultacion.m < 2 * t, "traza oculta: m no cabe en la traza de 2T filas");
         let principal = trace.main_segment();
         let mut columnas: alloc::vec::Vec<alloc::vec::Vec<Self::BaseField>> =
             alloc::vec::Vec::with_capacity(principal.num_cols() + 1);
@@ -599,7 +614,7 @@ pub trait Prover {
             trace.info().aux_segment_width(),
             trace.info().get_num_aux_segment_rand_elements(),
             2 * t,
-            ::air::MARCA_OCULTA.to_vec(),
+            ::air::Marca { m: ocultacion.m }.escribir(),
         );
         let principal_oculta = ColMatrix::new(columnas);
 
@@ -609,7 +624,7 @@ pub trait Prover {
             self.options().clone(),
         );
         // r2: si ni con el blowup del LDE cabe la segunda cota de las exenciones, no se prueba
-        if ::air::SUBIR_CE.load(core::sync::atomic::Ordering::Relaxed) && !air.cabe() {
+        if !air.cabe() {
             panic!("traza oculta: la segunda cota de las exenciones no cabe ni con el blowup");
         }
         let mut channel =
@@ -619,7 +634,7 @@ pub trait Prover {
             );
         let lde_domain_size = air.lde_domain_size();
         let trace_length = air.trace_length();
-        let domain = StarkDomain::new(&air);
+        let domain = StarkDomain::new(&air).con_semilla_del_cociente(ocultacion.semilla_cociente);
         assert_eq!(domain.lde_domain_size(), lde_domain_size);
         assert_eq!(domain.trace_length(), trace_length);
 
@@ -703,12 +718,14 @@ pub trait Prover {
 
 }
 
-/// SPIKE-B-ETAPA2A: semilla propia del aleatorizador del cociente, separada de la de las
-/// filas y la sal; solo la lee `constraints::composition_poly::segmentar`.
-pub static SEMILLA_COCIENTE: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
-
-/// SPIKE-B-P4: con `true`, `generate_proof` oculta la traza dentro del nucleo.
-pub static OCULTAR_FILAS: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(false);
-
-/// SPIKE-B-P4: semilla propia de las filas y la columna aleatorias del nucleo.
-pub static SEMILLA_FILAS: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(0);
+/// ARQUEO (RFC-0009 E3a-2): lo que enciende la ocultacion del nucleo en un probador. `m` es el
+/// grado de los aleatorizadores del cociente y viaja en la marca del meta de la traza (D-H); las
+/// dos semillas siembran las monedas propias de las filas y la columna aleatorias y del cociente,
+/// separadas, y las pone quien llama: en produccion, de la entropia del sistema (D-J). Un
+/// probador la devuelve en `Prover::ocultacion`; con `None`, la prueba es la de winterfell.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Ocultacion {
+    pub m: usize,
+    pub semilla_filas: u64,
+    pub semilla_cociente: u64,
+}

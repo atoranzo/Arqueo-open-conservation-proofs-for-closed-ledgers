@@ -38934,3 +38934,98 @@ marca `arqueo:oculta:1` sin version ni m dentro, cuando D-H lo promete en la mar
 m = 0, el kit verificaria hoy una prueba oculta tal cual. E3a-2 lleva m a la marca, retira las
 estaticas, pone el encendido en el API del probador y trae los siete falsadores de D-K a
 `stark-experiment`, nunca a `zk-ssl-air`. Luego E3b, y con ella la E3 del RFC-0008.
+
+## §534 — RFC-0009 E3a-2: m en la marca, las estaticas fuera, el encendido en el API, los siete
+
+**Que.** El corte 2 de E3a cierra la etapa. La marca del meta de la traza lleva m: `arqueo:oculta:1`
+y cuatro bytes little-endian, 19 en total, con un solo lector, `winter-air/src/marca.rs`
+(`Marca::leer`: nada con el meta vacio, la marca con el prefijo y sus cuatro bytes, error con
+cualquier otro meta; D-S). m tiene un solo productor, ese meta: lo leen el contexto del AIR para
+partir el cociente, el dominio del probador para segmentarlo con la semilla propia del cociente, y
+el verificador para el paso (D-T). Las cinco estaticas de proceso del spike -`COCIENTE_M`,
+`SUBIR_CE`, `OCULTAR_FILAS`, `SEMILLA_FILAS`, `SEMILLA_COCIENTE`- mueren: el encendido es
+`Prover::ocultacion(&self) -> Option<Ocultacion>`, provisto y `None`, y `Ocultacion` lleva m y las
+dos semillas; el envoltorio sube el ce siempre que haga falta y `Oculta::cabe_con` queda como
+consulta (D-U). El verificador rechaza con error, antes de construir ningun AIR, todo meta que no
+sea vacio ni la marca, y con la marca una traza de largo < 16, de ancho < 2 o un m >= 2T. Los siete
+falsadores de D-K entran como tests, `crates/stark-experiment/src/falsadores_oculta.rs`, con el
+modo oculto SOLO en ellos: seis sobre `WorkAir` con un probador propio del modulo y el censo cero
+sobre un juguete con una columna constante y un tramo auxiliar, recortado del spike (D-V); y
+`winter-air` y `winter-prover` entran como dev-deps del crate porque `Ocultacion`, `Marca` y
+`Oculta` no salen por el paraguas. La sal de D-I es el `VC` del consumidor, no el fork: va con E3b
+(D-W). Apagado sigue siendo byte a byte winterfell: la foto de D-R lo juzga, y el septimo falsador
+compara el probador de la casa con el del modulo apagado por el API.
+
+**Lo medido, fuera del arbol.** PASTE-E3a2-M (`b97ceff1632aa603`, salida `b190fdc212bf5271`, cargo
+`be5669c380e1df63`; rc 66 con cuatro avisos, los cuatro del instrumento, que suponia `Cargo.toml`
+en la raiz del spike y `vendor/winter-air` donde hay `spike/Cargo.toml` y `vendor/winter-air-
+0.13.1`; lo demas verde: cerrojo 19/19, `meta_m.rs` compilo a la primera con 0 warnings, 49/6/0,
+circuitos 394 + 13 + el instrumento, porcelain 0) sobre una copia de `087aecc` con target propio.
+La foto clava: 3.539 B y el mismo blake3. La cabecera de una prueba son 6 bytes -ancho, aux, rands,
+log2T y el largo del meta en u16- y con la marca 21 (`02 00 00 09 0f 00` + `arqueo:oculta:1`).
+El 5.A-388, medido: con la marca y la estatica en 0 el kit verificaba Ok una prueba oculta con
+m = 0 (27.124 B); y **m no viajaba**: la de m = 64 (26.713 B) llevaba el mismo meta que la de m = 0,
+y verificaba solo con la estatica en 64 (`InconsistentOodConstraintEvaluations` con 0 y con 32),
+como la de m = 0 solo con 0. D-J: apagado 19.241 B (n = 256); oculto 27.124 (m 0), 26.713 (m 64) y
+27.578 con otra semilla de filas (+865, mismo meta, Ok). Con `SUBIR_CE` = false salia prueba
+(26.296 B; su verificacion no se midio). La frontera: log2T -> 3 y ancho -> 1 dan
+`Err("traza oculta mal formada")`; **la marca tocada** (`arqueo:oculta:0`) hacia entrar en PANICO
+en `WorkAir::new` (`lib.rs`:158, `assert 1 == 2`): el despacho caia al AIR de siempre con una traza
+de ancho 2; el largo del meta a 0, error de deserializacion. El lock de la copia con las dos
+dev-deps: `30390742a21bb808`/3577, dos lineas mas, y es byte a byte el que `ed534.py` predice.
+Los spikes bajo `$HOME`: etapa2a, ocultacion, p4, p4r2 y p4r3; el p4r3 es un binario,
+`spike/src/main.rs` (`145e83ecea366126`/1201) sin un test, y `MerkleConSal` vive en el, no en
+el fork. Y en el contenedor, sobre el POST: las once herramientas de `tools/` verdes; `check_tests`
+1555 -> 1562, `check_modulos` 188 -> 190, `check_cifras` 22 cifras contra el canon nuevo;
+`check_constraint_layout` pintaba dos colisiones que no eran -las ranuras 0 y 1 del principal del
+juguete contra las de su tramo auxiliar-: desde este sello las escrituras de
+`evaluate_aux_transition` son otro espacio, con su caso en el autotest (el tool de antes lo
+pinta rojo, el de ahora no, y una ranura auxiliar escrita dos veces sigue siendo GRAVE). El
+ENSAYO-534 r1 (`a41c047ed0fde9e4`, salida `c2ffbd198cd73bcf`, cargo `a0a7cf428e058c48`): 29/31 en
+503 s sobre una copia de `087aecc` con el target de la 171; **el Rust compilo a la primera**, los
+siete pasan en release (401/13 con la foto 3/3) y en depuracion (7/7; 27 s de compilar), y las
+cuatro mutaciones caen donde deben (la M2, en el `WorkAir::new` de `stark-experiment/src/lib.rs`:162
+que la 172 midio). Los dos rojos eran mios: un import sin uso en el juguete (`StarkField`, que f64
+trae como metodo propio) y el ultimo tramo del E5 pasando dos filtros a `cargo test`, que admite
+uno. La r2 quita el import y parte el tramo en dos.
+
+**Lo que mueve.** `winter-air`: `src/marca.rs` nuevo; `src/lib.rs` (fuera `COCIENTE_M`,
+`MARCA_OCULTA` y `SUBIR_CE`, dentro `marca`); `src/air/context.rs` (m del meta);
+`src/air/oculta.rs` (`cabe_con` y la subida sin interruptor). `winter-prover`: `src/lib.rs`
+(`Prover::ocultacion`, `Ocultacion`, el desvio, `generate_proof_oculto` con su `Ocultacion`, fuera
+las tres estaticas); `src/domain.rs` (m de la marca y la semilla del cociente, con sus accesores);
+`src/constraints/composition_poly.rs` (`segmentar` los recibe del dominio). `winter-verifier`:
+`src/lib.rs` (el despacho por `Marca::leer`, el rechazo de m >= 2T, el paso). `stark-experiment`:
+`src/falsadores_oculta.rs` nuevo, su `mod` en `src/lib.rs` y las dos dev-deps en `Cargo.toml`;
+`Cargo.lock` +2. `tools/canon.sh`: circuitos 394 -> 401 con historia; las cifras a mano (5.A-149):
+sello 1396 -> 1403 (`PRINCIPIOS.md`:356, `PAPER.md`:36, `PAPER_EN.md`:33), los largos 1533 -> 1540
+(`PRINCIPIOS.md`:359, `PAPER.md`:38, `PAPER_EN.md`:35) y circuitos 394 -> 401 en `PRINCIPIOS.md`,
+`PAPER.md`, `PAPER_EN.md`, `doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md`;
+`tools/check_constraint_layout.py`: el tramo auxiliar como otro espacio y `CASO_534` en el autotest;
+los tres README FORK y el `NOTICE` (ocho ficheros tocados y dos nuevos); el RFC-0009 (cabecera,
+las celdas de E3a y E3b, D-G corregida en presente -la sal es del consumidor-, D-H con lo que lleva
+el arbol, D-K, las cinco decisiones nuevas D-S a D-W, Compatibilidad, Seguridad y Referencias) y
+la fila de `spec/README.md`. Lo que NO se mueve: <<1364 declaradas>>, <<1349 declared>> y
+<<18 ignoradas>> (5.A-319), los 24 warnings pinchados, y ningun probador de la casa, que heredan
+el `None`.
+
+**Contadores.** Veintiseis ficheros, 1.087 lineas insertadas y 121 borradas: nacen `marca.rs`
+(69) y `falsadores_oculta.rs` (562); `winter-air` `lib.rs` 7/14, `context.rs` 7/7, `oculta.rs`
+28/16 y su README 5/4; `winter-prover` `lib.rs` 38/21, `domain.rs` 30/0, `composition_poly.rs`
+12/5 y su README 6/4; `winter-verifier` `lib.rs` 22/7 y su README 4/4; `stark-experiment`
+`lib.rs` 4/0 y `Cargo.toml` 7/0; `Cargo.lock` 2/0; `tools/canon.sh` 1/1;
+`tools/check_constraint_layout.py` 58/5; `PRINCIPIOS.md` 2/2; `PAPER.md` 3/3; `PAPER_EN.md` 3/3;
+`doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md` 1/1; `NOTICE` 7/5; el RFC-0009 112/17 (478 -> 573
+lineas); `spec/README.md` 1/1; y `AUDITORIA.md` 95/0, que es este asiento. Pines: circuitos
+394 -> 401; sello 1396 -> 1403; los largos 1533 -> 1540; `check_tests` 1555 -> 1562;
+`check_modulos` 188 -> 190; ignorados quietos (7 y 13). Cargo tocado: el manifiesto de
+`stark-experiment` (dos dev-deps) y el lock; ningun otro. E3a queda sellada en tres cortes:
+§532, §533 y este.
+
+**Lo que queda, y se dice.** E3b: encenderlo para las pruebas que cruzan el cable, con la sal como
+`VC` de los probadores y del kit, en `zk-ssl-air`, y `zkssl/0.4`; con ella, la E3 del RFC-0008.
+Los AIR que asertan su ancho en `new` siguen entrando en panico ante una prueba sin marca y con
+otro ancho (5.A). Lo que el interruptor `SUBIR_CE` media en el spike -g2 y g3- no tiene test en
+el arbol: queda como medido en el r3, y `cabe_con(2)` = falso deja dicho que la subida hace falta.
+El compilador del autor juzga el Rust de este sello: el ENSAYO-534 corre los siete en release y
+en depuracion, las tres filas del fork, la foto y el kit.

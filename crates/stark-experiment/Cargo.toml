@@ -19,3 +19,10 @@ settlement-prover = { path = "../settlement-prover" }
 #    `zk-ssl-air`, que el kit consume sin el probador; aqui solo van la
 #    traza y el `Prover`. Un AIR, un productor.
 zk-ssl-air = { path = "../zk-ssl-air" }
+
+# RFC-0009 E3a-2 (S534): los falsadores de D-K encienden la ocultacion del nucleo, y `Ocultacion`,
+# `Marca` y `Oculta` no salen por el paraguas `winterfell`, que no esta bifurcado. Solo tests: por
+# el [patch.crates-io] del raiz resuelven al fork del arbol, el mismo crate que usa el paraguas.
+[dev-dependencies]
+winter-air = "=0.13.1"
+winter-prover = "=0.13.1"

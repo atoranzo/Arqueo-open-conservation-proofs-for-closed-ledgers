@@ -30,6 +30,12 @@ pub struct StarkDomain<B: StarkField> {
 
     /// Offset of the low-degree extension domain.
     domain_offset: B,
+
+    /// ARQUEO (RFC-0009 E3a-2): el grado m de los aleatorizadores del cociente, leido de la marca
+    /// del meta de la traza (0 sin marca), y la semilla propia del cociente, que solo pone el
+    /// probador oculto. Los lee `constraints::composition_poly::segmentar`.
+    cociente_m: usize,
+    semilla_cociente: Option<u64>,
 }
 
 // STARK DOMAIN IMPLEMENTATION
@@ -50,6 +56,8 @@ impl<B: StarkField> StarkDomain<B> {
             ce_to_lde_blowup: air.lde_domain_size() / air.ce_domain_size(),
             ce_domain_mod_mask: air.ce_domain_size() - 1,
             domain_offset: air.domain_offset(),
+            cociente_m: ::air::Marca::m_de(air.trace_info().meta()),
+            semilla_cociente: None,
         }
     }
 
@@ -72,6 +80,8 @@ impl<B: StarkField> StarkDomain<B> {
             ce_to_lde_blowup: 1,
             ce_domain_mod_mask: ce_domain_size - 1,
             domain_offset,
+            cociente_m: 0,
+            semilla_cociente: None,
         }
     }
 
@@ -151,5 +161,25 @@ impl<B: StarkField> StarkDomain<B> {
     /// Returns LDE domain offset.
     pub fn offset(&self) -> B {
         self.domain_offset
+    }
+
+    // COCIENTE OCULTO (ARQUEO, RFC-0009 E3a-2)
+    // --------------------------------------------------------------------------------------------
+
+    /// El grado m de los aleatorizadores del cociente que dice la marca de la traza; 0 sin marca.
+    pub fn cociente_m(&self) -> usize {
+        self.cociente_m
+    }
+
+    /// La semilla propia del cociente, si el probador oculto la puso.
+    pub fn semilla_cociente(&self) -> Option<u64> {
+        self.semilla_cociente
+    }
+
+    /// El probador oculto pone la semilla propia del cociente; m ya lo dijo la marca al construir
+    /// el dominio.
+    pub fn con_semilla_del_cociente(mut self, semilla: u64) -> Self {
+        self.semilla_cociente = Some(semilla);
+        self
     }
 }

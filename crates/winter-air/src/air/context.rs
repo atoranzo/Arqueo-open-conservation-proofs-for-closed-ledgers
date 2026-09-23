@@ -278,13 +278,13 @@ impl<B: StarkField> AirContext<B> {
         let transition_divisior_degree = trace_length - self.num_transition_exemptions();
 
         // we use the identity: ceil(a/b) = (a + b - 1)/b
-        let num_constraint_col =
-            match crate::COCIENTE_M.load(core::sync::atomic::Ordering::Relaxed) {
-                // SPIKE-B-ETAPA2A: con el cociente oculto los trozos avanzan de s = T - m en s
-                0 => (highest_constraint_degree - transition_divisior_degree).div_ceil(trace_length),
-                m => (highest_constraint_degree - transition_divisior_degree + 1)
-                    .div_ceil(trace_length - m),
-            };
+        let num_constraint_col = match crate::Marca::m_de(self.trace_info.meta()) {
+            // ARQUEO (RFC-0009 E3a-2): con el cociente oculto los trozos avanzan de s = L - m en s,
+            // y el m lo dice la marca del meta de la traza; sin marca, los trozos de winterfell
+            0 => (highest_constraint_degree - transition_divisior_degree).div_ceil(trace_length),
+            m => (highest_constraint_degree - transition_divisior_degree + 1)
+                .div_ceil(trace_length - m),
+        };
 
         cmp::max(num_constraint_col, 1)
     }

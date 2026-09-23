@@ -32,11 +32,13 @@ crates/winter-air/, crates/winter-prover/, crates/winter-verifier/
     mismo nombre y versión, y nunca se publican.
 
     Modificación funcional: la ocultación del testigo dentro del núcleo
-    (RFC-0009, D-F a D-K), APAGADA desde el asiento §533: siete ficheros
-    tocados y uno nuevo (`src/air/oculta.rs`), listados en el README de
-    cada crate. Con la ocultación apagada cada prueba sale byte a byte
-    como la de winterfell, y `crates/stark-experiment/src/kat_probador.rs`
-    lo comprueba en cada canon.
+    (RFC-0009, D-F a D-K), APAGADA desde el asiento §533 y, desde el
+    §534, encendida sólo por `Prover::ocultacion`, que ningún probador de
+    ARQUEO devuelve: ocho ficheros tocados y dos nuevos
+    (`src/air/oculta.rs`, `src/marca.rs`), listados en el README de cada
+    crate. Con la ocultación apagada cada prueba sale byte a byte como
+    la de winterfell, y `crates/stark-experiment/src/kat_probador.rs` lo
+    comprueba en cada canon.
 
 --------------------------------------------------------------------------
 SIN AFILIACIÓN INSTITUCIONAL

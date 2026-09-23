@@ -447,6 +447,15 @@ def analizar(ruta):
     if not RE_WRITE.search(texto):
         return None
 
+    # §534: las escrituras dentro de `evaluate_aux_transition` van al `result` del tramo
+    # auxiliar, OTRO espacio de ranuras (winterfell le pasa su propio `result`): no colisionan
+    # con las del principal, y entre si se miran igual. Hasta el §534 ningun circuito del
+    # barrido tenia tramo auxiliar (los de la casa viven en zk-ssl-air, fuera de RAIZ); el
+    # juguete del censo de `falsadores_oculta.rs` lo tiene, y el barrido le pintaba dos
+    # colisiones que no eran: la ranura 0 y la 1 del principal contra las del auxiliar.
+    aux = _cuerpo_de_funcion(texto, "evaluate_aux_transition")
+    aux_ini, aux_fin = (aux[1], aux[1] + len(aux[0])) if aux else (-1, -1)
+
     escrituras, indeterminadas = [], []
     for m in RE_WRITE.finditer(texto):
         idx = indices_escritos(texto, m, valores)
@@ -454,15 +463,17 @@ def analizar(ruta):
         if idx is None:
             indeterminadas.append((linea, m.group(0)))
         else:
-            escrituras.append((linea, idx))
+            escrituras.append((linea, idx, aux_ini <= m.start() < aux_fin))
 
     duenos, colisiones = {}, {}
-    for linea, idx in escrituras:
+    duenos_aux, colisiones_aux = {}, {}
+    for linea, idx, en_aux in escrituras:
+        d, c = (duenos_aux, colisiones_aux) if en_aux else (duenos, colisiones)
         for i in idx:
-            if i in duenos and duenos[i] != linea:
-                colisiones.setdefault(i, set()).update({duenos[i], linea})
+            if i in d and d[i] != linea:
+                c.setdefault(i, set()).update({d[i], linea})
             else:
-                duenos.setdefault(i, linea)
+                d.setdefault(i, linea)
 
     cubiertas = set(duenos)
     desbordes = sorted(i for i in cubiertas if total is not None and i >= total)
@@ -495,6 +506,7 @@ def analizar(ruta):
     return {
         "total": total,
         "colisiones": colisiones,
+        "colisiones_aux": colisiones_aux,
         "desbordes": desbordes,
         "muertas": muertas,
         "indeterminadas": indeterminadas,
@@ -734,6 +746,24 @@ fn evaluate_transition(&self) {
 """
 
 
+CASO_534 = """
+const C_A: usize = 0;
+const C_B: usize = 1;
+const NUM_CONSTRAINTS: usize = 2;
+
+fn evaluate_transition(&self) {
+    result[C_A] = a;
+    result[C_B] = b;
+}
+
+fn evaluate_aux_transition(&self) {
+    result[0] = c;
+    result[1] = d;
+    result[1] = e;
+}
+"""
+
+
 def autotest():
     """Comprueba que el detector caza el fallo real de §50.
 
@@ -810,6 +840,22 @@ def autotest():
         return 1
     print("autotest: la firma del candidato ciego de §188 es GRAVE "
           "y tumba el exit")
+
+    # §534: el tramo auxiliar es otro espacio de ranuras. Las ranuras 0 y 1 se escriben en el
+    # principal y en el auxiliar y NO colisionan; la 1 del auxiliar, escrita dos veces, SI.
+    with tempfile.NamedTemporaryFile("w", suffix=".rs", delete=False) as f:
+        f.write(CASO_534)
+        ruta = f.name
+    try:
+        r = analizar(ruta)
+    finally:
+        os.unlink(ruta)
+    if r["colisiones"] or sorted(r["colisiones_aux"]) != [1]:
+        print(f"AUTOTEST FALLA: el tramo auxiliar tenia que ser otro espacio; "
+              f"principal {sorted(r['colisiones'])}, auxiliar {sorted(r['colisiones_aux'])}")
+        return 1
+    print("autotest: el tramo auxiliar es otro espacio de ranuras (§534), "
+          "y sus colisiones se ven igual")
     return 0
 
 
@@ -840,6 +886,13 @@ def barrer(raiz, verbose, con_censo):
         for i, sitios in sorted(r["colisiones"].items()):
             lineas.append(
                 f"    [COLISION] ranura {i} ({grupo_de(i, r['grupos'])}): "
+                f"escrita en las lineas {sorted(sitios)}"
+            )
+            graves += 1
+
+        for i, sitios in sorted(r["colisiones_aux"].items()):
+            lineas.append(
+                f"    [COLISION AUX] ranura {i} del tramo auxiliar: "
                 f"escrita en las lineas {sorted(sitios)}"
             )
             graves += 1

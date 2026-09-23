@@ -72,7 +72,13 @@ impl<E: FieldElement> CompositionPoly<E> {
         let inv_twiddles = fft::get_inv_twiddles::<E::BaseField>(trace.len());
         fft::interpolate_poly_with_offset(&mut trace, &inv_twiddles, domain.offset());
 
-        let polys = segmentar(trace, domain.trace_length(), num_cols);
+        let polys = segmentar(
+            trace,
+            domain.trace_length(),
+            num_cols,
+            domain.cociente_m(),
+            domain.semilla_cociente(),
+        );
 
         CompositionPoly { data: ColMatrix::new(polys) }
     }
@@ -170,19 +176,21 @@ mod tests {
 // s = T - m en s y se enmascaran, h_i' = h_i + x^s * r_i - r_(i-1), con r de grado < m,
 // r_(-1) = 0 y el ultimo r = 0. La suma telescopica se cancela, sum z^(i*s) * h_i'(z) = C(z), y
 // cada trozo sigue midiendo T coeficientes. El azar sale de una moneda sembrada con la semilla
-// propia del cociente, que no comparten las filas ni la sal.
+// propia del cociente, que no comparten las filas ni la sal. m y la semilla vienen del dominio
+// (ARQUEO, RFC-0009 E3a-2): m de la marca de la traza y la semilla del probador oculto.
 fn segmentar<E: FieldElement>(
     coefficients: Vec<E>,
     trace_len: usize,
     num_cols: usize,
+    m: usize,
+    semilla: Option<u64>,
 ) -> Vec<Vec<E>> {
-    use core::sync::atomic::Ordering;
     use crypto::{hashers::Blake3_256, DefaultRandomCoin, Hasher, RandomCoin};
 
-    let m = ::air::COCIENTE_M.load(Ordering::Relaxed);
     if m == 0 {
         return segment(coefficients, trace_len, num_cols);
     }
+    let semilla = semilla.expect("cociente oculto: la marca lleva m y el probador no puso semilla");
     assert!(
         m < trace_len && num_cols >= 2,
         "cociente oculto: m={} T={} trozos={}",
@@ -197,7 +205,6 @@ fn segmentar<E: FieldElement>(
         num_cols,
         s
     );
-    let semilla = crate::SEMILLA_COCIENTE.load(Ordering::Relaxed);
     let mut moneda = DefaultRandomCoin::<Blake3_256<E::BaseField>>::new(&[]);
     moneda.reseed(Blake3_256::<E::BaseField>::hash(&semilla.to_le_bytes()));
     let mut r_ant: Vec<E> = (0..m).map(|_| E::ZERO).collect();

@@ -48,19 +48,12 @@ pub use air::{
     TransitionConstraints,
 };
 
-/// SPIKE-B-ETAPA2A: grado m de los aleatorizadores del cociente. 0 deja winterfell tal cual;
-/// con m > 0 los trozos avanzan de s = T - m en s (lo leen el contexto, el probador y el
-/// verificador).
-pub static COCIENTE_M: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
-
-/// SPIKE-B-P4: el envoltorio que oculta la traza dentro del nucleo.
+/// ARQUEO (RFC-0009 E3a): el envoltorio que oculta la traza dentro del nucleo, apagado mientras
+/// ningun probador lo encienda (`Prover::ocultacion`, en `winter-prover`).
 pub use air::Oculta;
 
-/// SPIKE-B-P4: la marca que lleva el meta de la traza de una prueba oculta; con el meta
-/// vacio, la prueba es la de winterfell tal cual.
-pub const MARCA_OCULTA: &[u8] = b"arqueo:oculta:1";
-
-/// SPIKE-B-P4 r2: con `true` (lo normal) el envoltorio sube el factor del dominio de
-/// restricciones cuando la segunda cota de las exenciones no deja sitio; con `false` no lo
-/// sube, para medir que la subida hace falta y que solo la usa el probador.
-pub static SUBIR_CE: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(true);
+/// ARQUEO (RFC-0009 E3a-2): la marca que lleva el meta de la traza de una prueba oculta, con m
+/// dentro; con el meta vacio, la prueba es la de winterfell tal cual. Un solo lector para el
+/// contexto, el probador y el verificador.
+pub mod marca;
+pub use marca::{Marca, MarcaError};

@@ -115,6 +115,10 @@ pub mod solvency;
 // Solo tests, y solo en release.
 #[cfg(test)]
 mod kat_probador;
+// RFC-0009 E3a-2 (S534): los siete falsadores de D-K, con el modo oculto solo en ellos. Solo
+// tests, en depuracion y en release.
+#[cfg(test)]
+mod falsadores_oculta;
 
 use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin, MerkleTree};
 use winterfell::math::{fields::f128::BaseElement, FieldElement};
