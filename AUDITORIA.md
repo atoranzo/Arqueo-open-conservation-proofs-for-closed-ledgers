@@ -39705,3 +39705,54 @@ declarado por su padre) y `check_figures` (la cifra que lista de `PRINCIPIOS.md`
 **Lo que NO cierra.** El banco `tools/banco_prenda.sh` -la boca contra un nodo vivo, con y sin
 `--publicar`-, el catalogo `spec/vectors/prenda/` y la celda E3 del RFC-0008.
 
+## §544 — El quinto fichero de la siembra: el keystore del receptor, para la boca del prendador
+
+**Que.** `zk-ssl-cli simulate` gana `--keystore` y `--frase-fichero` y escribe el QUINTO fichero de
+la siembra: el keystore `zkssl-keystore/1` del RECEPTOR, que es quien prenda. Sin el, el banco de
+la prenda no existe: la boca `prueba-prenda` (S543, D-BC) pide la clave de gasto por el keystore
+del SDK, y hasta hoy NINGUN binario del arbol escribia uno con una clave dada -el unico productor
+ejecutable, el ejemplo del SDK, hace `Wallet::random()`, y lo borra al salir-. Medido en el
+PASTE-544-M, con la boca parandose en vivo ante un keystore que no existe.
+
+**Un solo productor de la clave.** La clave no se vuelve a derivar: es la MISMA
+`sandbox::key_of(a.key_seed, a.to)` con la que la linea de al lado escribe `--credencial`. Por eso
+el quinto fichero entra aqui y no en un ejemplo del SDK: el SDK no sabe enviar por la via v2 -su
+`Account::pay` va por `client::prove_send`, la v1- y no puede sembrar el pendiente que la prenda
+necesita; y un productor fuera del cli obligaria a publicar la regla de `wide_key` en un segundo
+sitio. La conversion `[BaseElement; 4]` -> `[u64; 4]` se midio ANTES de escribirla (PASTE-544-PRE,
+sonda compilada fuera del arbol): `as_int`/`new` es exacto y `Wallet::from_elements` devuelve el
+MISMO `publicId` que la credencial, `0x365f91f1...e947d43e` con los defaults del sandbox.
+
+**Material de gasto en disco, y se dice.** Es el unico fichero de la siembra que lo lleva: los
+otros cuatro son el aviso, dos credenciales -la `viewKey` solo autoriza a LEER- y el retorno. Se
+escribe con modo 600, con el idioma de `zk_ssl_guardian::semilla`, y la frase entra por FICHERO con
+el MISMO lector que la boca (D-BG): nunca por la linea de ordenes. Los dos argumentos van juntos o
+no van, y eso lo impone el CODIGO y no `clap`, para que tenga testigo.
+
+**El pin y las cifras.** La fila del cli 120 -> 124: los cuatro testigos -el keystore es el de la
+credencial, que es el productor unico medido contra el otro productor; otra frase no lo abre; se
+escribe cerrado, con el juez del proyecto y no uno propio; y los dos argumentos van juntos-.
+`check_cifras`, corrido sobre una copia con la fila ya subida, nombra SIETE cifras: las tres del
+total (1424 -> 1428), los <<120 del testigo>> de `PRINCIPIOS.md` y las tres sumas <<contando los
+pines>> (1561 -> 1565).
+
+**Contadores.** CINCO ficheros mas este asiento: `crates/zk-ssl-cli/src/commands.rs` +159 -1,
+`PRINCIPIOS.md` +3 -3, `PAPER.md` +2 -2, `PAPER_EN.md` +2 -2 y `tools/canon.sh` +1 -1; cinco
+ficheros, +167 -9. `AUDITORIA.md` +51 -0 (este asiento): 39.707 -> 39.758. De las DIEZ
+herramientas que el corte corre -las nueve `check_*` y `verificar_citas`; la huerfana
+`verifica_geometria` queda fuera, punto 33-, OCHO IDENTICAS y dos con el delta que el corte
+explica: `check_tests` (1583 -> 1587, los cuatro testigos nuevos) y `check_figures` (la cifra que
+lista de `PRINCIPIOS.md`:358, 1424 -> 1428). `check_modulos` NO se mueve: el corte no crea ningun
+fichero. De las 31 SHA-REGION, las QUINCE que viven en los ficheros que este corte abre clavan en
+su rango, y ninguna se desplaza: los cinco ficheros quedan con las mismas lineas que tenian salvo
+`commands.rs`, y sus regiones estan todas por encima de lo que se toca. Canon `--sello` VERDE, con
+el cli en 124(124).
+
+**Lo que NO cierra.** El banco `tools/banco_prenda.sh`, que es el primer consumidor de este
+fichero; el catalogo `spec/vectors/prenda/`; y la celda E3 del RFC-0008. Tres deudas mas, de otro
+arco: el lector del keystore del SDK falla sin nombrar el fichero -un `os error 2` pelado donde su
+hermana `leer_frase` si dice la ruta-; ese mismo lector no comprueba los permisos, que es la regla
+del proyecto para material de clave y la leccion que `semilla.rs` cita del §199; y los
+<<declarados>> publicados en tres documentos (1364, 1364 y 1349) llevan rancios frente a los 1587
+que deja este corte, que es el 5.A-102 y no un punto nuevo.
+
