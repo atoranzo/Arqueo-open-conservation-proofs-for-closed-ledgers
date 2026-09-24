@@ -411,7 +411,7 @@ mod tests {
         );
     }
 
-    /// **EL COMPROMISO NO REVELA A QUIÉN VA DIRIGIDO** (la prueba del envío, sí: §523).
+    /// **EL COMPROMISO NO REVELA A QUIÉN VA DIRIGIDO** (ni, desde el §538, la prueba del envío).
     ///
     /// Un tercero que vea el árbol de pendientes no puede saber de quién
     /// es cada uno sin conocer el aleatorio.

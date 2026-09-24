@@ -1,5 +1,5 @@
 //! **Generación de pruebas en el cliente.** La clave de gasto no sale de la
-//! máquina del titular como dato, pero la prueba la publica (§521).
+//! máquina del titular como dato ni, desde el §538, en la prueba (hasta entonces sí, §521).
 //!
 //! ## El problema que corrige
 //!
@@ -17,7 +17,7 @@
 //! ```text
 //! 1. Cliente: pide la vista de su cuenta        → nonce, saldo, identidad
 //! 2. Cliente: pide los materiales               → caminos y raices publicas
-//! 3. Cliente: genera la prueba EN SU MÁQUINA    (la prueba lleva la clave, §521)
+//! 3. Cliente: genera la prueba EN SU MÁQUINA    (sin publicar la clave desde el §538)
 //! 4. Cliente: envía la operación                → la capa verifica y aplica
 //! ```
 //!
@@ -469,7 +469,7 @@ pub struct ClaimMaterials {
 ///
 /// Con esto y [`prove_send`], **un pago completo se prueba en el cliente**:
 /// la capa entrega caminos y raíces, y verifica; la clave de gasto no sale
-/// como dato de ninguna de las dos máquinas, pero cada prueba la publica (§521).
+/// como dato de ninguna de las dos máquinas, ni desde el §538 en ninguna prueba (antes sí: §521).
 pub fn prove_claim(
     materials: &ClaimMaterials,
     // ⚠️ **CUATRO elementos** desde §90. Es la via del CLIENTE: rellenar
@@ -801,7 +801,7 @@ mod tests_privacidad {
     ///
     /// ⚠️ Lo que un auditor debe valorar (§16): en el ÁRBOL, el salt es lo único
     /// que da unlinkability, y reutilizarlo al mismo receptor los enlaza (el test
-    /// siguiente). En las pruebas no: la del envío publica al receptor (§523).
+    /// siguiente). En las pruebas, la del envío publicaba al receptor hasta el §538 (§523).
     #[test]
     fn el_commitment_no_revela_al_emisor() {
         let id_bob = derive_public_id(BaseElement::new(SK_BOB));
@@ -840,8 +840,8 @@ mod tests_privacidad {
     /// El receptor recibe un `PendingNotice { position, salt, amount, x }`.
     /// **Ninguno de esos campos es la identidad del emisor** —el diseño lo
     /// fija en el tipo: no hay un campo `sender`—. El receptor sabe cuánto
-    /// cobra y desde qué posición, pero no de quién. Lo que NO vale ya es la
-    /// propiedad de la capa: la prueba del envío le dice de quién es (§523).
+    /// cobra y desde qué posición, pero no de quién. Lo que no valió hasta el §538
+    /// es la propiedad de la capa: la prueba del envío le decía de quién es (§523).
     ///
     /// ⚠️ Auditor (§16, §21): el notice viaja FUERA de banda (ISO 20022 no
     /// lo transporta). Si el canal de entrega revelara al emisor, la fuga

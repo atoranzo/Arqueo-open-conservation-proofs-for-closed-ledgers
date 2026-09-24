@@ -1172,7 +1172,7 @@ fn verificar_rechazo(p: &serde_json::Value) -> Result<(), String> {
             // verifica un STARK; la regla vive en `zk_ssl_air::banda::verificar`, un solo
             // productor en el crate que el tercero compila, y aqui solo se le pasa lo que la
             // cabeza FIRMA. El `data` no trae el saldo y este brazo lo RECHAZA si aparece; la
-            // prueba si lo lleva en claro (winterfell 0.13 no oculta el testigo, §521).
+            // prueba tampoco lo lleva en claro desde el §538 (hasta entonces si: §521).
             if campos.get("available").is_some() {
                 return Err(err(
                     "data: esta causa no publica el saldo: la banda lo prueba sin el".into(),

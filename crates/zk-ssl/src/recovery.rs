@@ -22,7 +22,7 @@
 //!
 //! `recover` recibe el `public_id` del nuevo titular, no su clave. El
 //! nuevo dueño genera su clave y entrega solo la identidad derivada — la
-//! capa nunca la ve aquí; las de gasto, sí, en las pruebas de envío y cobro (§521).
+//! capa nunca la ve aquí; las de gasto las veía, hasta el §538, en las pruebas de envío y cobro.
 
 use super::*;
 
@@ -35,8 +35,8 @@ impl SovereignLayer {
         self.recovery_count
     }
 
-    /// Recupera una cuenta sin que las claves de custodio lleguen como dato al
-    /// operador -cada prueba publica la suya (§523)-: la via de la entrada 32/33 (65).
+    /// Recupera una cuenta sin que las claves de custodio lleguen como dato al operador
+    /// -hasta el §538 cada prueba publicaba la suya (§523)-: la via de la entrada 32/33 (65).
     ///
     /// Tres pruebas: `climb_proof` de `circuit_recovery_climb` -que la hoja
     /// vieja y la nueva suben a las dos raices con el mismo camino, con el
@@ -209,7 +209,7 @@ mod tests_delegada {
     /// ⚠️ **Pero exige DOS CUSTODIOS.** Rotar a clave ancha **no es una
     /// accion soberana del titular**: necesita autorizacion de terceros. Eso
     /// contradice el espiritu del resto del diseño —la clave no sale como dato
-    /// de su maquina, aunque las pruebas la publiquen (§521), pero **cambiarla
+    /// de su maquina, ni desde el §538 en las pruebas (antes si: §521), pero **cambiarla
     /// depende de otros**— y no se resuelve aqui: se registra (§98).
     #[test]
     fn a_narrow_account_can_rotate_to_a_256_bit_key() {
@@ -387,7 +387,7 @@ mod tests_delegada {
         t.root()
     }
 
-    /// Dos custodios distintos recuperan una cuenta; sus claves viajan en sus pruebas (§523).
+    /// Dos custodios distintos recuperan una cuenta; sus claves iban en sus pruebas hasta el §538.
     #[test]
     fn a_delegated_recovery_applies() {
         let (mut layer, idx, nueva) = capa();

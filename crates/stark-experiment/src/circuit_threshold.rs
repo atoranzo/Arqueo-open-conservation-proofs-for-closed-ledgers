@@ -343,8 +343,8 @@ pub fn build_trace(
 
 /// Input público: la raíz del conjunto de custodios autorizados.
 ///
-/// **Los índices y las claves de quienes firman son testigo, no ocultos**: la
-/// prueba publica las dos claves (§526), y con ellas se sabe cuáles firmaron.
+/// **Los índices y las claves de quienes firman son testigo, ocultos desde el §538**:
+/// hasta entonces la prueba publicaba las dos claves, y con ellas se sabía quiénes firmaban (§526).
 #[derive(Clone, Debug)]
 pub struct ThresholdPublicInputs {
     pub custodian_set_root: Digest,

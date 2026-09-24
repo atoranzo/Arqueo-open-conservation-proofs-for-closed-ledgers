@@ -3,7 +3,7 @@
 //! `halo2-experiment::circuit_double_entry`.
 //!
 //! Demuestra la transición de estado completa de una transferencia,
-//! conservando el dinero, y la prueba publica saldos, identidades e importe (§526):
+//! conservando el dinero (hasta el §538 su prueba publicaba saldos, identidades e importe: §526):
 //!
 //! ```text
 //! saldo_emisor_nuevo   = saldo_emisor   - importe   (ADEUDO)
@@ -11,7 +11,7 @@
 //! ```
 //!
 //! Públicos: `root_old`, `root_new`, `regulatory_limit`, `nullifier`.
-//! Testigo (no oculto, §526): identidades, saldos, nonces, importe y ambos caminos.
+//! Testigo (oculto desde el §538): identidades, saldos, nonces, importe y ambos caminos.
 //!
 //! ## Los dos problemas de AIR que esta pieza resuelve
 //!

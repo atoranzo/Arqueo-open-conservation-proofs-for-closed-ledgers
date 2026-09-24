@@ -61,9 +61,9 @@
 //! la misma raíz.**
 //!
 //! ⚠️ Aquella vía estaba MAL enunciada y §231 la corrigió por los campos; el
-//! §523 la devuelve: la prueba del envío publica al receptor, así que quien
-//! procesa solo envíos **sí** ve quién paga a quién. Correlacionar las dos
-//! mitades por `notice.position` ya no es la única vía.
+//! §523 la devolvió: hasta el §538 la prueba del envío publicaba al receptor, y quien
+//! procesaba solo envíos **sí** veía quién paga a quién. Desde el §538 no lo lee en la
+//! prueba; lo que pueda deducir de ella lo acota el RFC-0009, no este banco.
 //!
 //! Qué hacer con eso —cola de escritura en el nodo, agregador único por
 //! diseño, o encadenar lotes— es **decisión de mesa**, y este banco no la

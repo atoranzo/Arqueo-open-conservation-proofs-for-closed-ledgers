@@ -37,13 +37,13 @@
 //!
 //! ## Qué garantiza cada operación
 //!
-//! Las pruebas no ocultan su testigo (§521, §523); lo que SÍ garantizan es esto:
+//! Desde el §538 las pruebas ocultan su testigo (antes no: §521, §523), y garantizan esto:
 //!
 //! | Vía de crear dinero | Cerrada por |
 //! |---|---|
 //! | Transferir más de lo debitado | Conservación (partida doble) |
 //! | Abrir cuenta con saldo | Apertura siempre a cero |
-//! | Emitir sin autorización | Dos custodios demostrados en circuito (no ante el operador, §523) |
+//! | Emitir sin autorización | Dos custodios demostrados en circuito (ante el operador: §538) |
 //! | Emisión encubierta | Suministro público atado en el circuito |
 //! | Gastar dos veces | Encadenamiento de raíces (orden total del nodo único) |
 //! | Gastar sin ser el titular | Autoridad de gasto |

@@ -30,11 +30,11 @@
 //! difieran.
 //!
 //! ⚠️ **Coste de privacidad, declarado.** `circuit_threshold` decía mantener en
-//! secreto *qué* custodios firman, y publica las dos claves (§526).
+//! secreto *qué* custodios firman, y hasta el §538 publicaba las dos claves (§526).
 //! Esta variante **revela cuáles**. Es un cambio del modelo de confianza,
 //! no un detalle de implementación: quien observe la cadena sabe qué dos
 //! custodios autorizaron cada emisión. Y la variante B
-//! (`circuit_threshold_single_nullifier`) no lo evita: publica la clave (§523).
+//! (`circuit_threshold_single_nullifier`) no lo evitaba: publicaba la clave hasta el §538 (§523).
 //!
 //! ## Qué demuestra
 //!

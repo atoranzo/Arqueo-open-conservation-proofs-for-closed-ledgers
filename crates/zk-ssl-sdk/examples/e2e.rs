@@ -5,7 +5,7 @@
 //!   bob.claim -> saldos por clave de VISTA.
 //!
 //! La clave de gasto no sale de este proceso como dato: interviene solo en
-//! prove_send/prove_claim, en local, y la prueba la publica (§521).
+//! prove_send/prove_claim, en local, y desde el §538 la prueba no la publica.
 
 use zk_ssl_sdk::{Account, Rpc, Wallet};
 

@@ -1,6 +1,6 @@
 //! Etapa 1 del circuito de cumplimiento en AIR: **solvencia con valores
 //! testigo** — demuestra `amount <= balance` y `amount <= regulatory_limit`,
-//! y la prueba publica `balance` y `amount` (medido en §524; el límite es público).
+//! y hasta el §538 la prueba publicaba `balance` y `amount` (§524; el límite es público).
 //!
 //! ## Hallazgo real que dio forma a este diseño (segunda versión)
 //!

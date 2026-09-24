@@ -81,8 +81,8 @@ impl SovereignLayer {
         self.governance_change_count
     }
 
-    /// Aplica un cambio de custodios sin que las claves lleguen como dato al
-    /// operador; cada prueba publica la de su miembro (§524). Via de la entrada 32/33 (§57).
+    /// Aplica un cambio de custodios sin que las claves lleguen como dato al operador;
+    /// hasta el §538 cada prueba publicaba la de su miembro (§524). Via de la entrada 32/33 (§57).
     ///
     /// Cada miembro del conjunto de gobernanza genera en su maquina una
     /// prueba de `circuit_threshold_single_nullifier`, y la capa exige dos
@@ -222,7 +222,7 @@ mod tests_delegada {
     }
 
     /// El camino honesto: dos miembros distintos de gobernanza cambian el
-    /// conjunto de custodios sin entregar sus claves como dato (sus pruebas, sí: §524).
+    /// conjunto de custodios sin entregar sus claves como dato (ni en sus pruebas desde el §538).
     #[test]
     fn a_delegated_governance_change_applies() {
         let mut layer = capa();

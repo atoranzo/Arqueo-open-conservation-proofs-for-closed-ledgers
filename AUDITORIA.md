@@ -39433,3 +39433,49 @@ mismo, y los de `tools/banco_rechazo.sh` y el `Cargo.toml` del sdk, fichero a fi
 D-Z, con la puerta del §522: release y `--list` identicos. El RFC-0009 a ACEPTADO, corte propio
 (S539, regla 4): con este corte la spec y el OpenRPC dejan de decir <<hoy no se cumple>>. Y el
 5.A-399: el PASTE-538B-M midio un quinto sitio con 29 metodos, `spec/README.md:20`.
+
+**El S538-C, en su propio commit: los comentarios de los `.rs`, en el molde del §522
+(2026-09-24).** Medido sobre `c701436` con los patrones del PASTE-538B-M: 56 lineas en 31 ficheros
+de codigo, de las que quedan fuera dos -`commitment.rs`:7, que habla de otro principio, y
+`circuit_threshold_single.rs`:10, el apagado hablando de su propia prueba, que sigue siendo cierto
+(D-Z)-. Las 54 restantes, en 30 ficheros (`.rs`, el `Cargo.toml` del sdk y
+`tools/banco_rechazo.sh`), dejan de decir en presente que la prueba publica la clave o el testigo,
+con sus frases enteras (`prueba_banda.rs`:22 y `circuit_threshold_single_nullifier.rs`:50 las
+completan): el pasado se fecha (<<hasta el §538>>) y el presente dice solo lo que el RFC-0009
+promete -que la prueba no lo publica literal-, y no que de lo que abre no se deduzca nada. Tres de
+esos comentarios viven en ficheros de apagados y hablan de encendidos:
+`circuit_threshold_single.rs`:33 y :37 y `circuit_mint.rs`:25. Las 52 ediciones son NEUTRALES EN
+LINEAS, cada region con las lineas con que entra, y solo tocan comentarios: ninguna ubicacion de
+panico ni ningun doc-test se mueve.
+
+**Contadores del S538-C.** TREINTA ficheros y ninguno nace, cada uno con las lineas que tenia:
+`crates/stark-experiment/src/circuit_audit.rs` +1 -1,
+`crates/stark-experiment/src/circuit_mint.rs` +2 -2,
+`crates/stark-experiment/src/circuit_threshold.rs` +2 -2,
+`crates/stark-experiment/src/circuit_threshold_single.rs` +2 -2,
+`crates/stark-experiment/src/circuit_threshold_single_nullifier.rs` +6 -6,
+`crates/stark-experiment/src/double_entry.rs` +2 -2,
+`crates/stark-experiment/src/solvency.rs` +1 -1, `crates/zk-ssl-air/src/cobro_pendiente.rs` +3 -3,
+`crates/zk-ssl-air/src/pago_en_curso.rs` +1 -1, `crates/zk-ssl-cli/src/sandbox.rs` +1 -1,
+`crates/zk-ssl-node/src/main.rs` +1 -1, `crates/zk-ssl-sdk/Cargo.toml` +1 -1,
+`crates/zk-ssl-sdk/examples/d2_lote_rpc.rs` +1 -1, `crates/zk-ssl-sdk/examples/e2e.rs` +1 -1,
+`crates/zk-ssl-sdk/examples/i1_concurrencia.rs` +3 -3, `crates/zk-ssl-verify/src/main.rs` +1 -1,
+`crates/zk-ssl/src/audit.rs` +8 -8, `crates/zk-ssl/src/client.rs` +6 -6,
+`crates/zk-ssl/src/freeze.rs` +3 -3, `crates/zk-ssl/src/governance.rs` +3 -3,
+`crates/zk-ssl/src/lib.rs` +2 -2, `crates/zk-ssl/src/mint.rs` +3 -3,
+`crates/zk-ssl/src/pending.rs` +1 -1, `crates/zk-ssl/src/prueba_banda.rs` +4 -4,
+`crates/zk-ssl/src/prueba_cobro.rs` +1 -1, `crates/zk-ssl/src/prueba_prenda.rs` +1 -1,
+`crates/zk-ssl/src/recovery.rs` +5 -5, `crates/zk-ssl/src/tests_support.rs` +1 -1,
+`crates/zk-ssl/src/two_phase.rs` +3 -3, `tools/banco_rechazo.sh` +1 -1; y `AUDITORIA.md` +46 -0
+(estos tres parrafos): 39.435 -> 39.481. Las puertas del bloque, con los fuentes refrescados por
+fecha delante: el `--list` IDENTICO nombre a nombre en los siete crates que se abren, en release;
+el kit, seccion a seccion -el corte abre el mando y dos ficheros de `zk-ssl-air`-: distintas solo
+`.symtab`, `.strtab` y `.note.gnu.build-id`, y el resto identico, lo que prueba ademas que se
+recompilo; los tests que leen su propio fuente, en la capa y en el nodo; las once herramientas
+IDENTICAS; y las 31 SHA-REGION clavan en su sitio. El canon NO corre: no cambia un test ni un pin.
+
+**Lo que NO cierra el S538-C.** El RFC-0009 a ACEPTADO, corte propio (S539, regla 4), y el
+5.A-399: 29 metodos en cinco sitios donde el OpenRPC dice 30. El literal del kit <<esta causa no
+publica el saldo: la banda lo prueba sin el>> (5.A-363) es cierto desde el §538 y queda como
+estaba: su cierre es del traspaso, por medicion. Y la huella del binario del kit se mueve otra vez
+con un comentario, como en el §522: despojarlo sigue siendo de otro corte.

@@ -21,8 +21,8 @@
 //!
 //! La autorización verdaderamente separada —cada custodio firmando desde
 //! su propio HSM, sin que las claves coincidan nunca en la misma
-//! máquina— pide delegar la prueba, y la vía delegada no lo da: cada
-//! prueba publica la clave de su custodio y el nodo junta dos (§523).
+//! máquina— pide delegar la prueba. Hasta el §538 cada prueba delegada publicaba la
+//! clave de su custodio y el nodo juntaba dos (§523); desde el §538 no la publica literal.
 //!
 //! **La garantía es "dos claves comprometidas en vez de una", no "dos
 //! voluntades independientes".** Es una mejora real del principio de

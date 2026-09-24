@@ -392,7 +392,7 @@ pub fn mint_climb_proof(
 }
 
 /// Emite `amount` en `idx` por la VÍA DELEGADA: custodios 1 y 3
-/// autorizan con sus pruebas, que publican sus claves (§523).
+/// autorizan con sus pruebas, que hasta el §538 publicaban sus claves (§523).
 pub fn fund_delegated(layer: &mut SovereignLayer, idx: AccountIndex, amount: u64) {
     let op = mint_commitment(layer, idx, amount);
     let subida = mint_climb_proof(layer, idx, amount);

@@ -8,7 +8,7 @@ license.workspace = true
 # nodo y ejecuta el lado del titular: derivar identificadores, PROBAR en
 # local (send/claim) y presentar recibos. La clave de gasto no sale del
 # proceso como dato; al nodo viajan datos públicos, la clave de VISTA y
-# las pruebas, que hoy la llevan (winterfell no oculta el testigo, §521).
+# las pruebas, que desde el §538 no la llevan (hasta entonces sí: §521).
 #
 # Síncrono a propósito (ureq): el flujo del titular es secuencial
 # —materiales, probar, aplicar— y un runtime async no aporta nada aquí.

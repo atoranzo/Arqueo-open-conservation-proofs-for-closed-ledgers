@@ -387,7 +387,7 @@ esac
 echo "$SAL" | sed 's/^/BANCO-RECHAZO|   /' >&2
 msg "POSITIVO 3: exit 0 y el texto del MANIFIESTO, con el nodo MUERTO"
 
-# La D-0 del corte 4b, EN VIVO: el `data` del sobre NO trae el saldo (la prueba si, S521), y el
+# La D-0 del corte 4b, EN VIVO: el `data` del sobre NO trae el saldo (ni la prueba, S538), y el
 # importe es el pedido en los dos sitios donde viaja.
 python3 - "$SOBRE3" "$IMPORTE3" <<'PY'
 import json, sys

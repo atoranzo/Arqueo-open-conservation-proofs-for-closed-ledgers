@@ -12,11 +12,11 @@ impl SovereignLayer {
     // -----------------------------------------------------------------
 
     /// Emite sin que las claves de custodio lleguen como dato al operador: la
-    /// via de la entrada 32/33 (67). Pero cada prueba publica la suya (§523).
+    /// via de la entrada 32/33 (67). Hasta el §538 cada prueba publicaba la suya (§523).
     ///
     /// Es la mas critica de las cinco: `mint` **crea dinero**, asi que es
     /// donde el fallo de la entrada 32 mas pesa. Un operador con las claves
-    /// podia emitir; tras la primera emision delegada, las tiene (§523).
+    /// podia emitir; hasta el §538, tras la primera emision delegada las tenia (§523).
     ///
     /// Tres pruebas: `climb_proof` de `circuit_mint_climb` -que el saldo y
     /// el suministro suben EXACTAMENTE en el importe y que no se pasa del
@@ -205,7 +205,7 @@ mod tests_delegada {
         (l, idx)
     }
 
-    /// Dos custodios distintos emiten; sus claves viajan en sus pruebas (§523).
+    /// Dos custodios distintos emiten; sus claves viajaban en sus pruebas hasta el §538 (§523).
     #[test]
     fn a_delegated_mint_applies() {
         let (mut layer, idx) = capa();

@@ -11,8 +11,8 @@
 //!
 //! Publico: las dos raices, `receptor`, `nacido` y las dos cotas. Testigo: la `sal`, el `importe`,
 //! el sobre `X`, el `emisor`, los dos caminos y la posicion; `X` y el `emisor`, por la Seguridad de
-//! D-I (`X = M(refund_id, delta)` no tiene aleatoriedad). Pero testigo NO es oculto: la prueba abre
-//! sus filas en claro y publica la sal, `X` y el importe exacto (medido en el S521).
+//! D-I (`X = M(refund_id, delta)` no tiene aleatoriedad). Y desde el S538 el testigo va
+//! oculto: hasta entonces la prueba abria sus filas en claro con la sal, `X` y el importe (S521).
 //!
 //! ## La geometria (D-H)
 //!
@@ -176,7 +176,7 @@ pub const NUM_ASERCIONES: usize = 19;
 
 // ------------------------------------------------------------------ las entradas publicas
 
-/// **Lo que el juez declara.** Ni `X` ni el emisor: son testigo (D-I), no ocultos (S521).
+/// **Lo que el juez declara.** Ni `X` ni el emisor: son testigo (D-I), ocultos desde el S538.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CobroPendientePublicInputs {
     pub pending_root: Digest,
