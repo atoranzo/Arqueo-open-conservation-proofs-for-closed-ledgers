@@ -39562,3 +39562,25 @@ herramientas IDENTICAS; las 31 SHA-REGION clavan.
 
 **Lo que NO cierra.** El S540, el 5.A-399. Las citas por linea, sin guardian: el punto de cola que
 nace con el §538-D. El RFC-0008 sigue PROPUESTO, a la espera del montaje de su E3.
+
+## §540 — Los cardinales del trigesimo metodo: 29 -> 30 en cinco lineas (5.A-399)
+
+**Que.** El §519 hizo nacer el trigesimo metodo del protocolo, `zkssl_pledge`, y su -B pago el
+cardinal de `README.md`; cuatro documentos se quedaron en 29 en cinco lineas: `README_EN.md`, con
+sus 26 `zkssl_*`; las dos lenguas de `RESUMEN_BILINGUE.md`; `RESUMEN_EJECUTIVO.md`; y
+`spec/README.md`, el quinto sitio, que midio el PASTE-538B-M. La cuenta no se teclea: el editor la
+DERIVA de `spec/openrpc.json` -30 metodos, 27 `zkssl_*` y 3 `dev_*`, en `zkssl/0.4`-, el bloque la
+vuelve a derivar sobre el arbol del autor, y `README.md` ya la decia igual, que es el testigo de
+que las dos cuentas son la misma. Cada cambio deja su linea con el mismo ancho.
+
+**Contadores.** CUATRO ficheros y ninguno nace, cada uno con las lineas que tenia:
+`README_EN.md` +1 -1, `RESUMEN_BILINGUE.md` +2 -2, `RESUMEN_EJECUTIVO.md` +1 -1,
+`spec/README.md` +1 -1; y `AUDITORIA.md` +22 -0 (este asiento): 39.564 -> 39.586. Las once
+herramientas IDENTICAS; las 31 SHA-REGION clavan. Ni un `.rs`, ni un pin, ni una cifra de tests:
+el canon no corre.
+
+**Lo que NO cierra.** Las cuentas publicadas de metodos no tienen atado: el §519-B pago una y se
+le quedaron cuatro, y ninguna herramienta lo vio: lo midio el PASTE-538B-M. Atarlas al OpenRPC -en
+`check_publicadas`, o en un test del cable- es de otro corte, y va a la cola. La otra mitad del
+5.A-399, el vector `rechazo-rech-banda-cuenta-otra.json`, que espera el texto de winterfell, no es
+una deuda sino una vigilancia: si el texto cambia, el MANIFIESTO lo sigue.
