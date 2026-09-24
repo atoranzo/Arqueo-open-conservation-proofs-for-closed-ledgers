@@ -39513,3 +39513,52 @@ corridas antes del -B siguen corridas: nace un punto de cola con su censo, y el 
 herramienta que ancle cada cita por su contenido- es de otro corte. El giro del RFC-0009 a
 ACEPTADO es el S539, y el 5.A-399 -29 metodos en la fila 20 de `spec/README.md` y en cuatro sitios
 mas, donde el OpenRPC publica 30- es el S540.
+
+## §539 — El RFC-0009 pasa a ACEPTADO: la regla 4 del PROCESO, saldada con medida
+
+**Que.** `spec/rfc/0009-lo-que-revela-una-prueba.md` gira de PROPUESTO a ACEPTADO con el molde del
+§441 y del §481: la linea de estado dice por que, con las etapas por rango de asientos; la nota
+fechada dice con que medida y corrige donde vive la frase <<No toca el cable, y el PROCESO no lo
+exige>>, falsa desde el §538; y el doble hilo de la regla 5 queda cerrado por los dos extremos.
+Giran con el los otros productores del estado: la fila del 0009 en `spec/README.md` y la cuenta de
+RFC en cinco lineas de cuatro documentos vivos, que no nombraba el 0009 ni como propuesto desde
+que se adopto (§527). Ni codigo, ni pin, ni vector: como el §400, el §441 y el §481, este
+sello no corre el canon.
+
+**La regla 4, punto por punto, medida sobre el arbol de `6edb4c8`** (el de la SALIDA-538D). (a) La
+spec: `spec/RPC.md` dice `zkssl/0.4` (§538) y su principio, lo que se cumple y desde cuando
+(§538-B); `spec/PAQUETE.md`, las formas 0.4 (§538) y su prosa (§538-B); `spec/README.md`, el
+principio, los vectores de conformidad y las citas por linea (§538-D); los RFC 0007 y 0008, sus
+correcciones del §538 (§538-B); `PROCESO.md`, la regla 3 (§538). (b) El OpenRPC: regenerado en
+el §538 y en el §538-B, byte a byte lo que `gen_openrpc` produce. (c) Los vectores:
+`zkssl-0.4.json` y los de las familias, nuevos bajo la version nueva (D-AK); los de la 0.3,
+conservados bajo `spec/vectors/0.3/`, ninguno reescrito (D-AB). (d) Las suites: el canon `--sello`
+del §538 y el del §538-B, VERDES, con sus arneses y el artefacto reproducible; el §538-C, con
+el `--list` identico en los siete crates que abrio y el kit identico salvo sus simbolos.
+
+**Las decisiones (todas REVERSIBLES).** D-1 la linea de estado calca la del 0007, con las etapas
+por rango: E1 con la adopcion (§527), la E3 al diseno (§528), E2 §531, E3a §532-§534 y E3b
+§535-§538; el §538-B, el §538-C y el §538-D, la prosa, los comentarios y la spec al dia. D-2
+la nota fechada va al final de <<Por que entra por RFC>>, como en el 0006 y el 0007, y alli dice
+que desde E3b-2 el RFC toca el cable, el PROCESO lo exige y la regla 4 se le aplica; el parrafo no
+se reescribe. D-3 la fila de `spec/README.md` dice ACCEPTED con la misma anchura: es la fila mas
+ancha del fichero. D-4 la cuenta de RFC pone el 0009 entre los aceptados en las cinco lineas, que
+no lo nombraban: la deuda nacio en el §527 y este giro la haria falsa otra vez. D-5 la linea de
+autores anade la sesion 178 y la coma que faltaba entre la 174 y la 176. D-6 sin canon: las once
+herramientas IDENTICAS antes y despues.
+
+**Lo que NO hace.** No decide FINAL. No toca `PROCESO.md` ni los asientos que dicen PROPUESTO, que
+son actas; ni el titulo del RFC ni los de sus decisiones, que son registro (<<mientras el probador
+no oculte su testigo>>, <<y hoy no se cumple>>): el propio documento dice desde el §538 que la
+ocultacion esta encendida y que la regla deja de incumplirse. No toca los 29 metodos de esos
+mismos documentos, que son el S540 (5.A-399).
+
+**Contadores.** SEIS ficheros mas este asiento: `README.md` +1 -1, `README_EN.md` +1 -1,
+`RESUMEN_BILINGUE.md` +2 -2, `RESUMEN_EJECUTIVO.md` +1 -1, `spec/README.md` +1 -1,
+`spec/rfc/0009-lo-que-revela-una-prueba.md` +28 -5. El RFC pasa de 887 a 910 lineas y los otros
+cinco quedan con las suyas; nadie cita el RFC-0009 por linea, y el bloque lo mide, asi que crecer
+no mueve ninguna cita. `AUDITORIA.md` +49 -0 (este asiento): 39.515 -> 39.564. Las once
+herramientas IDENTICAS; las 31 SHA-REGION clavan.
+
+**Lo que NO cierra.** El S540, el 5.A-399. Las citas por linea, sin guardian: el punto de cola que
+nace con el §538-D. El RFC-0008 sigue PROPUESTO, a la espera del montaje de su E3.

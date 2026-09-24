@@ -1,8 +1,11 @@
 # RFC-0009 — Lo que revela una prueba: la promesa mientras el probador no oculte su testigo
 
-- **Estado:** PROPUESTO
-- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165, 166, 169, 170, 171, 172, 173, 174
-  176 y 177)
+- **Estado:** ACEPTADO — **la regla 4 del PROCESO, saldada con medida** (§527 la adopción y E1;
+  §528 la E3, al diseño; E2 §531, E3a §532–§534 y E3b §535–§538, las etapas con sus puertas; el
+  §538-B, el §538-C y el §538-D, la prosa, los comentarios y la spec al día; §539 este giro). Se
+  conserva como registro de lo decidido, lo medido y lo descartado.
+- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165, 166, 169, 170, 171, 172, 173, 174,
+  176, 177 y 178)
 - **Fecha:** 2026-09-21
 - **Versión del protocolo afectada:** `zkssl/0.3` → **`zkssl/0.4` en E3b-2 (§538)** (ver
   Compatibilidad). Hasta E3b-2 este RFC no cambió un método, un tipo del cable ni un vector:
@@ -17,8 +20,10 @@
   D-K como tests (E3a-2, D-S a D-W); el §535, que abre E3b con la sal como tipo, sin encender
   nada (E3b-0, D-X a D-AC); el §536, que da a la foto sus propios probadores y jueces
   (E3b-1, D-Y); el §537, que hace que el probador oculto devuelva `Err`, no pánico, con un
-  testigo malo (D-AH); y el §538, que enciende la ocultación en los 23 probadores con fila y
-  sube el cable a `zkssl/0.4` (E3b-2, D-AD a D-AG y D-AI a D-AK).
+  testigo malo (D-AH); el §538, que enciende la ocultación en los 23 probadores con fila y sube
+  el cable a `zkssl/0.4` (E3b-2, D-AD a D-AG y D-AI a D-AK); el §538-B, el §538-C y el §538-D,
+  que ponen al día la prosa, los comentarios de los `.rs` y la spec; y el §539, este giro a
+  ACEPTADO.
 
 ## Estado de las etapas
 
@@ -801,6 +806,24 @@ sembrados si D-X cambiara.
 No toca el cable, y el PROCESO no lo exige. Entra porque decide qué afirma el protocolo de sus
 propias pruebas, y eso merece su expediente: los asientos §521 a §526 lo dejaron escrito como
 deuda.
+
+> **Nota (2026-09-24, §539).** ACEPTADO. La regla 4 del PROCESO queda saldada con medida, y se
+> dice con qué. Antes, lo que este párrafo afirma: **desde E3b-2 (§538) este RFC sí toca el
+> cable** —lo sube a `zkssl/0.4` y cambia la forma de toda prueba que viaja—, así que el PROCESO
+> lo exige y la regla 4 se le aplica; el párrafo no se reescribe. (a) La spec, al día:
+> `spec/RPC.md` dice `zkssl/0.4` (§538) y su principio dice lo que se cumple y desde cuándo
+> (§538-B); `spec/PAQUETE.md`, las formas 0.4 (§538) y su prosa (§538-B); `spec/README.md`, el
+> principio, los vectores de conformidad y sus citas por línea (§538-D); los RFC 0007 y 0008, sus
+> correcciones del §538 (§538-B); y `PROCESO.md`, la regla 3 (§538). (b) El OpenRPC, regenerado
+> con `gen_openrpc`: la versión en el §538 y la `description` en el §538-B, byte a byte lo que el
+> generador produce. (c) Los vectores: `zkssl-0.4.json` y los de las familias nacen bajo la
+> versión nueva, de sus bancos (D-AK); los de la 0.3 se conservan bajo `spec/vectors/0.3/` y
+> ninguno se reescribe (D-AB). (d) Las suites, verdes: el canon `--sello` del §538 y el del
+> §538-B, con sus arneses y el artefacto reproducible; el §538-C, con el `--list` idéntico en los
+> siete crates que abrió y el kit idéntico salvo sus símbolos. Lo que este RFC no promete sigue en
+> D-A: que nada se deduzca de lo que se abre. Doble hilo de la regla 5: este documento cita el
+> §539 y el §539 cita este RFC. Precedentes del giro: el 0003 (§356), el 0004 (§400), el 0006
+> (§441) y el 0007 (§481).
 
 ## Seguridad
 
