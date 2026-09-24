@@ -3,7 +3,8 @@
 > **Español:** [`README.md`](./README.md) es esta página en español, sección por sección.
 
 **Formerly ZK-SSL.** The project changed its name, not its published identifiers: the wire
-protocol is still `zkssl/0.3`, the crates are still `zk-ssl-*`, and the deposits with a DOI keep
+protocol was `zkssl/0.3` and is `zkssl/0.4` since audit entry 538 (because of hiding, RFC-0009;
+not because of the name), the crates are still `zk-ssl-*`, and the deposits with a DOI keep
 the title they were deposited under. What this page says is verified against `main` at commit
 `343d3b6`; whatever changes afterwards is recorded in [`AUDITORIA.md`](./AUDITORIA.md), one entry
 per change.
@@ -189,7 +190,7 @@ there.
 | piece | where it is measured |
 |---|---|
 | **21 crates** in one workspace —18 of our own and the three of the winterfell 0.13.1 fork (§533)—; the canon (`tools/canon.sh --sello`) runs every crate's tests, in release, and the eight tools under `tools/` that watch figures, citations, domains and geometry | the table in [`tools/canon.sh`](./tools/canon.sh) carries the passing tests per crate; every seal updates it |
-| **Protocol `zkssl/0.3`**: 29 JSON-RPC methods (26 `zkssl_*`, 3 `dev_*`), OpenRPC generated from the code, vectors per version that are never rewritten | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (260 files: cable, núcleo, paquete, consumo, conflicto, rechazo, edad, pendiente, pago and the three `zkssl-0.N.json`) |
+| **Protocol `zkssl/0.4`**: 29 JSON-RPC methods (26 `zkssl_*`, 3 `dev_*`), OpenRPC generated from the code, vectors per version that are never rewritten | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (303 files: cable, núcleo, paquete, consumo, conflicto, rechazo, edad, pendiente, pago, the 0.3 catalogues under `0.3/` and the four `zkssl-0.N.json`) |
 | **RFCs**: 0002, 0003, 0004, 0006 and 0007 (proofs over the committed state) accepted; 0005 (the frozen core) and 0008 (the portable proofs of a pending item) proposed | [`spec/rfc/`](./spec/rfc/) |
 | **Independent verifier** `zk-ssl-verify` 0.2.0, release `arqueo-verify-v0.2.0`, reproducible from the commit its `VERSION` names | [`doc/KIT_EN.md`](./doc/KIT_EN.md) · [`tools/artefacto.sh`](./tools/artefacto.sh) |
 | **Record**: one entry per verified change, with its commit; what is corrected is marked, not erased | [`AUDITORIA.md`](./AUDITORIA.md) · [`BACKLOG.md`](./BACKLOG.md) |

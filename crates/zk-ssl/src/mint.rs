@@ -87,7 +87,7 @@ impl SovereignLayer {
             0,
             stark_experiment::circuit_mint_climb::TRACE_LENGTH,
         )?;
-        verify::<MintClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+        verify::<MintClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             climb_proof,
             MintClimbPublicInputs {
                 root_old,

@@ -58,7 +58,8 @@
 //! de la variante A.
 
 use winterfell::crypto::hashers::{Blake3_256, Rp64_256};
-use winterfell::crypto::{DefaultRandomCoin, MerkleTree};
+use winterfell::crypto::DefaultRandomCoin;
+use zk_ssl_air::sal::MerkleConSal;
 use winterfell::math::{fields::f64::BaseElement, FieldElement, ToElements};
 use winterfell::matrix::ColMatrix;
 use winterfell::{
@@ -503,7 +504,7 @@ impl Prover for NullifierThresholdProver {
     type Air = NullifierThresholdAir;
     type Trace = TraceTable<BaseElement>;
     type HashFn = Blake3;
-    type VC = MerkleTree<Blake3>;
+    type VC = MerkleConSal<Blake3>;
     type RandomCoin = DefaultRandomCoin<Blake3>;
     type TraceLde<E: FieldElement<BaseField = Self::BaseField>> =
         DefaultTraceLde<E, Self::HashFn, Self::VC>;
@@ -538,6 +539,11 @@ impl Prover for NullifierThresholdProver {
 
     fn options(&self) -> &ProofOptions {
         &self.options
+    }
+
+    /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
+    fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
+        Some(crate::ocultacion_encendida())
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(
@@ -668,10 +674,10 @@ pub fn verify_threshold_pair(
     //    de construirlo: una TRACE_INFO ajena panicaria en AIR::new.
     let forma_ok = |p: &Proof| {
         let i = p.trace_info();
-        i.main_trace_width() == TRACE_WIDTH
+        i.main_trace_width() == TRACE_WIDTH + 1
             && i.aux_segment_width() == 0
             && i.get_num_aux_segment_rand_elements() == 0
-            && i.length() == TRACE_LENGTH
+            && i.length() == 2 * TRACE_LENGTH
     };
     if !forma_ok(&proof_a) || !forma_ok(&proof_b) {
         return Err(PairRejection::WrongTraceWidth);
@@ -679,7 +685,7 @@ pub fn verify_threshold_pair(
 
     // 4. Y las dos pruebas son validas.
     let ok = |p: Proof, i: NullifierThresholdPublicInputs| {
-        verify::<NullifierThresholdAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+        verify::<NullifierThresholdAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             p, i, accepted,
         )
         .is_ok()
@@ -736,7 +742,7 @@ mod tests {
                     NullifierThresholdAir,
                     Blake3,
                     DefaultRandomCoin<Blake3>,
-                    MerkleTree<Blake3>,
+                    MerkleConSal<Blake3>,
                 >(proof, declared, &min_opts)
                 .is_ok()
             }
@@ -892,10 +898,12 @@ mod tests {
             ),
             Ok(())
         );
-        // se muta el ancho declarado de pa a un valor ajeno
+        // se muta el ancho declarado de pa a un valor ajeno: la forma APAGADA. Desde
+        // D-AD (RFC-0009) la prueba declara ancho + 1 (la columna de ocultacion) y en
+        // zkssl/0.4 solo vale esa forma.
         let mut bytes = pa.to_bytes();
-        assert_eq!(bytes[0] as usize, TRACE_WIDTH, "byte0 es el ancho principal");
-        bytes[0] = (TRACE_WIDTH as u8) + 1;
+        assert_eq!(bytes[0] as usize, TRACE_WIDTH + 1, "byte0 es el ancho principal OCULTO");
+        bytes[0] = TRACE_WIDTH as u8;
         let pa_mala = Proof::from_bytes(&bytes).expect("deserializa con la forma mutada");
         assert_eq!(
             verify_threshold_pair(pa_mala, ia, pb, ib, dominio(), root, op, &opciones()),
@@ -1016,7 +1024,7 @@ mod tests {
                     NullifierThresholdAir,
                     Blake3,
                     DefaultRandomCoin<Blake3>,
-                    MerkleTree<Blake3>,
+                    MerkleConSal<Blake3>,
                 >(proof, declared, &opciones())
                 .is_ok()
             }

@@ -474,7 +474,7 @@ impl SovereignLayer {
                     0,
                     stark_experiment::circuit_refund::TRACE_LENGTH,
                 )?;
-                verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                     p_ref,
                     RefundPublicInputs {
                         commitment: receipt.commitment,
@@ -495,7 +495,7 @@ impl SovereignLayer {
                     0,
                     stark_experiment::circuit_refund_v2::TRACE_LENGTH,
                 )?;
-                verify::<RefundAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                verify::<RefundAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                     p_ref,
                     RefundPublicInputs {
                         commitment: receipt.commitment,
@@ -721,7 +721,7 @@ impl SovereignLayer {
                     0,
                     stark_experiment::circuit_refund::TRACE_LENGTH,
                 )?;
-                verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                     p_ref,
                     RefundPublicInputs {
                         commitment: receipt.commitment,
@@ -742,7 +742,7 @@ impl SovereignLayer {
                     0,
                     stark_experiment::circuit_refund_v2::TRACE_LENGTH,
                 )?;
-                verify::<RefundAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                verify::<RefundAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                     p_ref,
                     RefundPublicInputs {
                         commitment: receipt.commitment,
@@ -763,7 +763,7 @@ impl SovereignLayer {
             0,
             stark_experiment::circuit_credit_climb::TRACE_LENGTH,
         )?;
-        verify::<CreditClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+        verify::<CreditClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             p_cred,
             CreditClimbPublicInputs {
                 root_old,
@@ -998,7 +998,7 @@ impl SovereignLayer {
                     0,
                     stark_experiment::circuit_send::TRACE_LENGTH,
                 )?;
-                verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                     proof,
                     pi.clone(),
                     &min_opts,
@@ -1013,7 +1013,7 @@ impl SovereignLayer {
                     0,
                     stark_experiment::circuit_send_v2::TRACE_LENGTH,
                 )?;
-                verify::<SendV2Air, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                verify::<SendV2Air, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                     proof,
                     pi.clone(),
                     &min_opts,
@@ -1284,7 +1284,7 @@ impl SovereignLayer {
                     0,
                     stark_experiment::circuit_claim::TRACE_LENGTH,
                 )?;
-                verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                     proof,
                     pi.clone(),
                     &min_opts,
@@ -1298,7 +1298,7 @@ impl SovereignLayer {
                     0,
                     stark_experiment::circuit_claim_v2::TRACE_LENGTH,
                 )?;
-                verify::<ClaimAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+                verify::<ClaimAirV2, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                     proof,
                     pi.clone(),
                     &min_opts,
@@ -1608,7 +1608,7 @@ impl SovereignLayer {
             stark_experiment::circuit_mint_pending_climb::TRACE_LENGTH,
         )?;
 
-        verify::<MintPendingClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+        verify::<MintPendingClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             climb_proof,
             MintPendingClimbPublicInputs {
                 supply_old: BaseElement::new(supply_old),
@@ -1884,17 +1884,24 @@ mod tests_lote {
     }
 
     /// Un lote de UNA operacion deja el mismo estado que `apply_send`.
+    ///
+    /// E3b-2 (RFC-0009): la MISMA prueba por los dos caminos. Con la ocultacion
+    /// encendida dos pruebas del mismo envio no son los mismos bytes (D-X), y el
+    /// `head` del registro ata los bytes de la prueba: se prueba UNA vez y se aplica
+    /// por lote y a mano.
     #[test]
     fn un_lote_de_uno_equivale_a_apply_send() {
+        let (c0, idx0) = capa_con_cuentas(2);
+        let m = c0
+            .send_materials(idx0[0], c0.public_id_of(idx0[1]).unwrap(), 5_000, salt_de(99))
+            .expect("materiales");
+        let e = crate::client::prove_send(&m, wide_key(0xA11CE), crate::proof_options())
+            .expect("prueba");
         let hacer = |por_lote: bool| -> (Digest, Digest, usize) {
             let (mut c, idx) = capa_con_cuentas(2);
-            let (a, b) = (idx[0], idx[1]);
+            let a = idx[0];
+            assert_eq!(idx, idx0, "las dos capas nacen iguales");
             let est = estado(&c, a);
-            let m = c
-                .send_materials(a, c.public_id_of(b).unwrap(), 5_000, salt_de(99))
-                .expect("materiales");
-            let e = crate::client::prove_send(&m, wide_key(0xA11CE), crate::proof_options())
-                .expect("prueba");
             if por_lote {
                 c.apply_many(&[BatchOp::Send {
                     receipt: &e,

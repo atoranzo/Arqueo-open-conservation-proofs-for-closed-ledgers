@@ -1,7 +1,7 @@
 # El paquete de evidencia portable — especificación del sobre y del mando
 
 - **Estado:** normativa vigente desde §397 (RFC-0004, etapa E1)
-- **Versión del protocolo:** `zkssl/0.3` — este documento no la mueve: el paquete no cruza el cable
+- **Versión del protocolo:** `zkssl/0.4` — este documento no la mueve: el paquete no cruza el cable
 - **Origen:** `spec/rfc/0004-paquete-de-evidencia.md`; asiento que lo sella: §397
 - **Implementación de referencia:** el binario `zk-ssl-verify` (`crates/zk-ssl-verify/src/main.rs`)
 

@@ -152,7 +152,7 @@ pub fn document() -> Value {
         "openrpc": "1.2.6",
         "info": {
             "title": "ZK-SSL JSON-RPC",
-            "version": "zkssl/0.3",
+            "version": "zkssl/0.4",
             "description": "Especificacion normativa: spec/RPC.md. Principio del API: la clave de gasto no viaja jamas. Hoy no se cumple: las pruebas de envio y de cobro la publican (winterfell 0.13 no oculta el testigo; AUDITORIA.md, asiento 521)."
         },
         "methods": methods,
@@ -162,7 +162,7 @@ pub fn document() -> Value {
             "DATA": { "type": "string", "pattern": "^0x([0-9a-f][0-9a-f])*$" },
             "Digest": { "type": "string", "pattern": "^0x[0-9a-f]{64}$",
                         "description": "32 bytes: la MISMA serializacion que persiste la capa (store::digest_to_bytes)" },
-            "ProtocolVersion": { "type": "string", "const": "zkssl/0.3" },
+            "ProtocolVersion": { "type": "string", "const": "zkssl/0.4" },
             "Bool": { "type": "boolean" }
         } }
     })
@@ -231,7 +231,7 @@ mod tests {
     fn el_documento_declara_version_y_esquemas() {
         let doc = document();
         assert_eq!(doc["openrpc"], "1.2.6");
-        assert_eq!(doc["info"]["version"], "zkssl/0.3");
+        assert_eq!(doc["info"]["version"], "zkssl/0.4");
         assert!(doc["components"]["schemas"]["Digest"].is_object());
     }
 }

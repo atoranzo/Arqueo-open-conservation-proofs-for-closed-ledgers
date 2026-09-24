@@ -87,6 +87,16 @@ pub mod circuit_claim;
 pub mod circuit_claim_v2;
 pub mod circuit_send;
 pub mod circuit_send_v2;
+/// E3b2-M3: el compromiso con sal, un solo tipo para las dos orillas (D-X, D-AF).
+pub use zk_ssl_air::sal::MerkleConSal;
+/// E3b2-M3: la ocultacion de los probadores con fila (D-Z, D-AE): m 64, semillas.
+pub fn ocultacion_encendida() -> winter_prover::Ocultacion {
+    winter_prover::Ocultacion {
+        m: 64,
+        semilla_filas: zk_ssl_air::sal::semilla(),
+        semilla_cociente: zk_ssl_air::sal::semilla(),
+    }
+}
 pub mod circuit_credit_climb;
 pub mod circuit_refund;
 pub mod circuit_refund_v2;

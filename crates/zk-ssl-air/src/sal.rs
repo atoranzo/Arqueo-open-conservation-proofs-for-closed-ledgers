@@ -123,6 +123,13 @@ fn con_sal<H: Hasher>(items: &[H::Digest], sales: &[H::Digest]) -> Vec<H::Digest
     items.iter().zip(sales).map(|(item, sal)| H::merge(&[item.clone(), sal.clone()])).collect()
 }
 
+/// E3b2-M3: una semilla fresca de 64 bits, de la misma entropia que la sal.
+pub fn semilla() -> u64 {
+    let mut bytes = [0u8; 8];
+    OsRng.fill_bytes(&mut bytes);
+    u64::from_le_bytes(bytes)
+}
+
 /// Una sal fresca: 32 bytes de la entropia del sistema, pasados por `H`. Aqui, y solo aqui, este
 /// crate toma azar; el kit lo compila y nunca lo llama (D-X).
 fn sal<H: Hasher>() -> H::Digest {

@@ -163,7 +163,7 @@ impl SovereignLayer {
             0,
             stark_experiment::circuit_burn::TRACE_LENGTH,
         )?;
-        verify::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+        verify::<BurnAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             pi.clone(),
             &min_opts,

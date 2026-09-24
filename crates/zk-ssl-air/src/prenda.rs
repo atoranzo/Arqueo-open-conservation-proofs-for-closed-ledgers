@@ -70,7 +70,8 @@ use winter_air::{
     TransitionConstraintDegree,
 };
 use winter_crypto::hashers::Rp64_256;
-use winter_crypto::{DefaultRandomCoin, MerkleTree};
+use winter_crypto::DefaultRandomCoin;
+use crate::sal::MerkleConSal;
 use winter_math::fields::f64::BaseElement;
 use winter_math::{FieldElement, ToElements};
 use winter_verifier::{verify, AcceptableOptions};
@@ -465,14 +466,14 @@ pub fn verificar(prueba: &[u8], pi: &PrendaPublicInputs) -> Result<(), String> {
         info.get_num_aux_segment_rand_elements(),
         info.length(),
     );
-    if forma != (ANCHO, 0, 0, TRAZA) {
+    if forma != (ANCHO + 1, 0, 0, 2 * TRAZA) {
         return Err(format!(
             "forma de traza {forma:?}; el enunciado pide {:?}",
-            (ANCHO, 0, 0, TRAZA)
+            (ANCHO + 1, 0, 0, 2 * TRAZA)
         ));
     }
     let aceptadas = AcceptableOptions::OptionSet(vec![opciones()]);
-    verify::<PrendaAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+    verify::<PrendaAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
         proof,
         pi.clone(),
         &aceptadas,

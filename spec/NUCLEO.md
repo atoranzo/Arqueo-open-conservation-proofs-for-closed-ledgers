@@ -1,7 +1,7 @@
 # El núcleo congelado — lo que un verificador recompone y no cambia
 
 - **Estado:** normativa vigente desde §407 (RFC-0005, etapa E1)
-- **Versión del protocolo:** `zkssl/0.3` — este documento no la mueve: el núcleo no cruza el cable
+- **Versión del protocolo:** `zkssl/0.4` — este documento no la mueve: el núcleo no cruza el cable
 - **Origen:** `spec/rfc/0005-nucleo-congelado.md` (D-A, D-B, D-C); asiento que lo sella: §407
 - **Implementación de referencia:** los crates `zk-ssl-verify` y `zk-ssl-hash`; el binario `zk-ssl-verify`
 - **Atado:** `tools/check_nucleo.py`, en el canon: la tabla de este documento y los `pub` del árbol dicen lo mismo en las dos direcciones

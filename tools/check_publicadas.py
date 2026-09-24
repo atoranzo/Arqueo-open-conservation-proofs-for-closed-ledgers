@@ -13,7 +13,8 @@ promesa, no un gate.
 
 LAS DOS UNIDADES. La cifra es binaria. Un documento puede escribirla en
 MiB (2^20) o dar su equivalente SI en MB (10^6); las dos son correctas y
-las dos se derivan del MISMO byte: PUBLICADA_PAGO_B. Lo que NO vale es
+las dos se derivan de los MISMOS bytes: PUBLICADA_PAGO_MIN_B y
+PUBLICADA_PAGO_MAX_B, los extremos de la banda (S538). Lo que NO vale es
 el valor binario con etiqueta MB, que es el defecto que §83.3 cazo y que
 hace leer un 9,9 % menos.
 
@@ -44,7 +45,7 @@ MEDIDO el 2026-08-26: la via DOCUMENTADA -- send_materials ->
 client::prove_send -> apply_send -- da los MISMOS bytes, 66_739 y
 66_692, en cinco repeticiones y sin una sola diferencia. La cifra
 publicada NO depende de la via. Desde el S362 lo PINA un segundo
-gemelo, el_lado_caro_es_el_declarado, que asierta esos dos
+gemelo, los_dos_lados_del_pago_atan_la_banda, que asierta esos dos
 bytes ademas de la relacion temporal.
 
 Ceguera declarada:
@@ -86,6 +87,7 @@ VENTANA = 2
 
 EXCLUIDOS = {
     "AUDITORIA.md": "registro historico: una cifra vieja en un asiento es correcta",
+    "BACKLOG.md": "registro: las entradas no se reescriben (la 22 cita la cifra de su fecha)",
     "VISION.md": "nota 98: la seccion 3.8 ENTERA deriva de la era de UN PASO "
                  "-59 MB/mil, 59 GB/dia x3, 131 MB/dia, 463x, 137 B por entrada-. "
                  "No es una cifra rancia: es un analisis. Corte propio",
@@ -122,15 +124,20 @@ def constante():
     except OSError as exc:
         print("ROJO: no se puede leer la fuente unica: %s" % exc)
         sys.exit(1)
-    m = re.search(r"const PUBLICADA_PAGO_B:\s*usize\s*=\s*([0-9_]+)", src)
-    if not m:
-        print("ROJO: no aparece PUBLICADA_PAGO_B en %s" % FUENTE)
-        print("      la fuente unica es esa constante: sin ella no hay atado")
-        sys.exit(1)
-    b = int(m.group(1).replace("_", ""))
+    # S538 (RFC-0009 D-AC): la cifra es una BANDA con dos extremos publicos; una cita
+    # vale si es uno de los dos, en MiB (2^20) o en su equivalente SI (10^6).
+    ext = {}
+    for nombre in ("PUBLICADA_PAGO_MIN_B", "PUBLICADA_PAGO_MAX_B"):
+        m = re.search(r"const %s:\s*usize\s*=\s*([0-9_]+)" % nombre, src)
+        if not m:
+            print("ROJO: no aparece %s en %s" % (nombre, FUENTE))
+            print("      la fuente unica son esas dos constantes: sin ellas no hay atado")
+            sys.exit(1)
+        ext[nombre] = int(m.group(1).replace("_", ""))
+    b = (ext["PUBLICADA_PAGO_MIN_B"], ext["PUBLICADA_PAGO_MAX_B"])
     f = re.search(r'const PUBLICADA_FECHA:\s*&str\s*=\s*"([^"]+)"', src)
-    mib = "%.1f" % (b * 1000 / 1048576.0)
-    msi = "%.1f" % (b * 1000 / 1000000.0)
+    mib = tuple("%.1f" % (x * 1000 / 1048576.0) for x in b)
+    msi = tuple("%.1f" % (x * 1000 / 1000000.0) for x in b)
     return b, mib, msi, (f.group(1) if f else "sin fecha")
 
 
@@ -192,8 +199,8 @@ def atado_c():
 
 def main():
     pago_b, mib, msi, fecha = constante()
-    par_mib = tuple(mib.split("."))
-    par_msi = tuple(msi.split("."))
+    pares_mib = {tuple(x.split(".")) for x in mib}
+    pares_msi = {tuple(x.split(".")) for x in msi}
 
     fallos = []
     saltadas = []
@@ -221,25 +228,25 @@ def main():
                     )
                     continue
                 vistos += 1
-                if par == par_mib and unidad == "MiB":
+                if par in pares_mib and unidad == "MiB":
                     continue
-                if par == par_msi and unidad == "MB":
+                if par in pares_msi and unidad == "MB":
                     continue
-                if par == par_mib and unidad == "MB":
+                if par in pares_mib and unidad == "MB":
                     fallos.append(
                         (nombre, i + 1, "UNIDAD",
                          "el valor binario lleva etiqueta MB; o MiB, o el "
-                         "equivalente SI %s MB" % msi)
+                         "equivalente SI %s-%s MB" % msi)
                     )
                 else:
                     fallos.append(
                         (nombre, i + 1, "VALOR",
-                         "dice %s %s; se esperan %s MiB o %s MB"
-                         % (citada, unidad, mib, msi))
+                         "dice %s %s; se esperan %s o %s MiB, o %s o %s MB"
+                         % ((citada, unidad) + mib + msi))
                     )
 
-    print("check_publicadas: %d B por pago -> %s MiB / %s MB por mil (medido el %s)"
-          % (pago_b, mib, msi, fecha))
+    print("check_publicadas: %d..%d B por pago -> %s-%s MiB / %s-%s MB por mil (banda "
+          "medida el %s)" % (pago_b + mib + msi + (fecha,)))
     print("  %d citas examinadas en documentos del repo" % vistos)
     for nombre, razon in sorted(EXCLUIDOS.items()):
         print("  excluido %s - %s" % (nombre, razon))

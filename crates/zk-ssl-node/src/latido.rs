@@ -239,11 +239,11 @@ pub fn limite_de_epoca(app: &App) -> u64 {
 /// atar, que es la figura que el §304 vino a reparar.
 ///
 /// **Por que 100.000 y no otro.** Son dos ordenes de magnitud por encima
-/// del unico punto medido -mil pagos = 127,2 MiB, `metrics.rs`- y con
-/// `PUBLICADA_PAGO_B` salen unos 12,4 GiB. **Es la ultima escala en la que
+/// del unico punto medido -mil pagos = 139,2 a 160,2 MiB, la banda de `metrics.rs`- y
+/// con `PUBLICADA_PAGO_MAX_B` salen unos 15,6 GiB. **Es la ultima escala en la que
 /// la copia del auditor NO DUELE**: cruzarla no dice que ya duela, dice que
 /// **se acabo el margen**. Escrito al reves -"la ultima escala rutinaria"-
-/// el aviso quedaria desacreditado el dia que sonara, porque 12,4 GiB se
+/// el aviso quedaria desacreditado el dia que sonara, porque 15,6 GiB se
 /// descargan de una sentada.
 ///
 /// ⚠ **Lo que este numero NO sostiene: no hay cruce de curvas.**
@@ -267,7 +267,7 @@ pub(crate) const AVISO_ACUMULACION_PAGOS: usize = 100_000;
 /// Se suman las dos: contar solo `Send` infravalora los pagos viejos.
 ///
 /// ⚠ **Y el byte por pago SOBREVALORA la era 1, a proposito.**
-/// `PUBLICADA_PAGO_B` se midio con la via de dos fases; aplicarlo tambien a
+/// `PUBLICADA_PAGO_MAX_B` se midio con la via de dos fases; aplicarlo tambien a
 /// los `Transfer` -que costaban unos 59.100 B- adelanta el aviso. Es la
 /// direccion correcta para un despertador, y va declarado en vez de
 /// escondido.
@@ -302,7 +302,7 @@ pub(crate) fn avisar_acumulacion(app: &App, pagos: usize) {
     {
         return;
     }
-    let bytes = pagos as u128 * zk_ssl::PUBLICADA_PAGO_B as u128;
+    let bytes = pagos as u128 * zk_ssl::PUBLICADA_PAGO_MAX_B as u128;
     let gib = format!("{:.1}", bytes as f64 / (1024.0 * 1024.0 * 1024.0));
     tracing::warn!(
         target: "zk_ssl_node::acumulacion",

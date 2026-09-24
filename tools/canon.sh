@@ -282,8 +282,10 @@ done
 # ── 3 · conformidad ─────────────────────────────────────────────
 msg ""
 msg "== CANON · conformidad =="
+cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.4.json > "$OUT/c04.txt" 2>&1
+if grep -q "todo IDENTICO" "$OUT/c04.txt"; then msg "  OK  0.4 -> todo IDENTICO (en lo que el circuito fija, D-AI)"; else falla "0.4 NO da 'todo IDENTICO'"; fi
 cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.3.json > "$OUT/c03.txt" 2>&1
-if grep -q "todo IDENTICO" "$OUT/c03.txt"; then msg "  OK  0.3 -> todo IDENTICO"; else falla "0.3 NO da 'todo IDENTICO'"; fi
+if grep -q "OTRA version" "$OUT/c03.txt"; then msg "  OK  0.3 RECHAZADO (otra version)"; else falla "0.3 deberia rechazarse por version"; fi
 cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.2.json > "$OUT/c02.txt" 2>&1
 if grep -q "OTRA version" "$OUT/c02.txt"; then msg "  OK  0.2 RECHAZADO (otra version)"; else falla "0.2 deberia rechazarse por version"; fi
 cargo run --release -p zk-ssl-cli -- conformance --check spec/vectors/zkssl-0.1.json > "$OUT/c01.txt" 2>&1

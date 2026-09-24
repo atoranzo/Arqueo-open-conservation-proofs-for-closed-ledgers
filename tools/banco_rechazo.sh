@@ -135,7 +135,8 @@ for _ in $(seq 1 60); do
 done
 [ -n "$CAB" ] || { sed 's/^/BANCO-RECHAZO|   /' "$DIR/nodo.err" >&2; fallo "no llego una cabeza firmada"; }
 SEQ0=$(qnum "$(campo "$CAB" result.seq)")
-msg "nodo vivo y firmando: seq $SEQ0"
+FR0=$(campo "$CAB" result.frozenRoot)
+msg "nodo vivo y firmando: seq $SEQ0 (frozenRoot de partida ${FR0:0:18}...)"
 
 # ---------------------------------------------------------------- LA CUENTA CONGELADA Y SU PAREJA
 abrir(){ # abrir <semilla-hex> -> imprime el indice en decimal
@@ -155,18 +156,20 @@ R=$(rpc dev_freeze "{\"index\":\"$(printf '0x%x' "$IDX")\",\"frozen\":true}")
 case "$R" in *'"error"'*) fallo "dev_freeze fallo sobre la cuenta $IDX: $R" ;; esac
 msg "cuenta $IDX CONGELADA por la via delegada; la $LIBRE queda libre y fondeada"
 
-# La cabeza tiene que ser POSTERIOR a la congelacion, y eso se DERIVA del seq, no del reloj:
-# cada transicion aplicada lo mueve.
+# La cabeza tiene que ser POSTERIOR a la congelacion, y eso se DERIVA del libro, no del reloj ni
+# del seq: el seq crece con los fondeos antes de que la congelacion este en la cabeza (carrera
+# cazada por el ENSAYO-538, S538: seq 4 sin la congelacion). Vale la cabeza cuyo frozenRoot ya
+# no es el de partida: solo la congelacion mueve el arbol de congelados.
 CAB=""
 for _ in $(seq 1 60); do
   V=$(rpc zkssl_signedEpochHead '{}' 2>/dev/null || true)
   case "$V" in *'"available":true'*)
     S=$(qnum "$(campo "$V" result.seq)")
-    if [ "$S" -gt "$SEQ0" ]; then CAB="$V"; break; fi ;;
+    if [ "$S" -gt "$SEQ0" ] && [ "$(campo "$V" result.frozenRoot)" != "$FR0" ]; then CAB="$V"; break; fi ;;
   esac
   sleep 0.5
 done
-[ -n "$CAB" ] || fallo "no llego una cabeza firmada POSTERIOR a la congelacion (seq de partida $SEQ0)"
+[ -n "$CAB" ] || fallo "no llego una cabeza firmada con la congelacion dentro (seq de partida $SEQ0, frozenRoot de partida $FR0)"
 FV=$(campo "$CAB" result.formatVersion)
 SEQ=$(qnum "$(campo "$CAB" result.seq)")
 [ "$(qnum "$FV")" = "5" ] || fallo "la cabeza dice formatVersion $(qnum "$FV") y se esperaba v5"

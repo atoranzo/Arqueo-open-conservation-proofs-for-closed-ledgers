@@ -2,10 +2,11 @@
 
 - **Estado:** PROPUESTO
 - **Autores:** Che, con Claude (sesiones 162, 163, 164, 165, 166, 169, 170, 171, 172, 173, 174
-  y 176)
+  176 y 177)
 - **Fecha:** 2026-09-21
-- **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad). Este RFC no
-  cambia un método, un tipo del cable ni un vector: cambia lo que se promete de ellos.
+- **Versión del protocolo afectada:** `zkssl/0.3` → **`zkssl/0.4` en E3b-2 (§538)** (ver
+  Compatibilidad). Hasta E3b-2 este RFC no cambió un método, un tipo del cable ni un vector:
+  cambió lo que se promete de ellos; E3b-2 cambia la forma de toda prueba que cruza el cable.
 - **Asiento(s) de AUDITORIA:** §521 (el testigo se publica), §522 (los comentarios y el literal del
   API), §523 (el modelo de las columnas constantes), §524 (el PASTE-367-M3, y lo que era de
   Groth16), §525 (los comentarios, con el censo que dice de qué sistema habla cada frase) y §526
@@ -15,8 +16,9 @@
   la marca, las estáticas fuera, el encendido en el API del probador y los siete falsadores de
   D-K como tests (E3a-2, D-S a D-W); el §535, que abre E3b con la sal como tipo, sin encender
   nada (E3b-0, D-X a D-AC); el §536, que da a la foto sus propios probadores y jueces
-  (E3b-1, D-Y); y el §537, que hace que el probador oculto devuelva `Err`, no pánico, con un
-  testigo malo (D-AH).
+  (E3b-1, D-Y); el §537, que hace que el probador oculto devuelva `Err`, no pánico, con un
+  testigo malo (D-AH); y el §538, que enciende la ocultación en los 23 probadores con fila y
+  sube el cable a `zkssl/0.4` (E3b-2, D-AD a D-AG y D-AI a D-AK).
 
 ## Estado de las etapas
 
@@ -25,7 +27,7 @@
 | E1 — la promesa, escrita | este texto: qué se promete (D-A), lo que sale literal en cada prueba (D-B), el principio del API como regla que hoy no se cumple (D-C) y la ocultación fuera de este RFC (D-D) | no | sellada en el §527 |
 | E2 — el testigo de la tabla | una suite que produce cada tipo de prueba y cuenta sus valores literales contra la tabla de D-B, con un control que tiene que dar cero (D-E; su forma, D-L a D-Q) | no | sellada en el §531 |
 | E3a — el probador que oculta, dentro y apagado | el fork de winterfell 0.13.1 en el árbol, con la ocultación entera en el núcleo y sin tocar un AIR (D-F a D-J); apagado, cada prueba sale byte a byte como la de winterfell; y los falsadores de los spikes como tests del árbol, con el modo oculto solo en los tests (D-K); y antes, la foto del probador pristino que el fork apagado tiene que reproducir (D-R) | no | sellada: el corte 0, la foto (D-R), en el §532; el corte 1, el fork apagado, en el §533; el corte 2, m en la marca (D-S, D-T), las estáticas fuera y el encendido en `Prover::ocultacion` (D-U) y los siete falsadores de D-K como tests (D-V), en el §534. La sal de D-I no es del fork: es el `VC` del consumidor y va con E3b (D-W) |
-| E3b — encenderlo | las pruebas que cruzan el cable salen ocultas, con la sal como `VC` de los probadores y del kit (D-W); la tabla de D-B pasa a cero, con la suite de E2 como testigo (D-K) | sí: `zkssl/0.4` | en curso: el corte 0, la sal como tipo `MerkleConSal` en `zk-ssl-air` con sus siete testigos y sin cambiar el `VC` de nadie (D-X), en el §535; el corte 1, la foto con sus propios probadores y jueces (D-Y), en el §536; el §537 hace que el probador oculto devuelva `Err`, no pánico, con un testigo malo (D-AH); queda el corte 2, el encendido con el cable a `zkssl/0.4` (D-Z a D-AC) |
+| E3b — encenderlo | las pruebas que cruzan el cable salen ocultas, con la sal como `VC` de los probadores y del kit (D-W); la tabla de D-B pasa a cero, con la suite de E2 como testigo (D-K) | sí: `zkssl/0.4` | SELLADA: corte 0 (§535, la sal como tipo, D-X a D-AC), corte 1 (§536, la foto con probadores y jueces propios, D-Y), D-AH (§537, `Err` con testigo malo) y corte 2 (§538: los 23 probadores con fila encendidos con `MerkleConSal` y m 64, D-AD a D-AG; `zkssl/0.4`; los vectores 0.4 desde sus bancos y los 0.3 bajo `spec/vectors/0.3/`; la banda de D-AC; el comparador de D-AI; la tabla de D-B a cero: 22/22 y 100 celdas, D-A revertida) |
 
 Las medidas que abrieron este documento son las de los asientos §521, §523, §524 y §526:
 lecturas puras que restauraron el árbol con sha y porcelain, con sus instrumentos fuera del
@@ -74,6 +76,22 @@ sale literal como si estuviera oculto. Gana (a): imagen fiel (lo que el probador
 oculto) y pureza (la regla es la medida, no un deseo). **Reversible** sólo cuando un probador que
 oculte lo pruebe con su propio falsador (D-D); nunca porque un valor deje de salir literal.
 
+**REVERTIDA en el §538 (E3b-2), por el camino que esta misma decisión dejó escrito.** Desde el §538
+el probador oculta: los 23 probadores con fila en la tabla de D-B producen con `Ocultacion { m: 64
+}` y semillas de la entropía del sistema (D-Z, D-AE), y el falsador propio que D-A y D-C exigían —la
+suite de E2 contra un probador que oculte— cuenta CERO en las 100 celdas con k > 0 de la tabla, en
+las 22 filas que imprimen, en cada canon (PASTE-538-M, R4 y R9a; el árbol desde el §538). Lo que se
+promete ahora, con sus palabras: **una prueba de Arqueo que verifica demuestra la transición que
+enuncia y no publica literal ningún valor de columna constante de su traza.** Lo que no se promete:
+que nada se deduzca de lo que se abre. La construcción (filas aleatorias y cociente cegado, nota
+2024/1037, con la cota de D-I: 44 aberturas por columna frente a T ≥ 64 filas aleatorias) es la que
+sostiene la ocultación más allá del censo, y ni el fork ni ella están auditados (H7).
+
+**Confianza residual, en una frase:** quien reciba una prueba —y el nodo las recibe todas— ve el
+enunciado público, las raíces y lo que el sobre, el recibo o la operación llevan en claro por diseño
+(la columna «público por diseño» de la tabla sigue siendo cierta); del testigo no ve ningún literal,
+y lo que pueda deducir de las aberturas lo acota D-I, no lo mide E2.
+
 ### D-B — La tabla: lo que sale literal, prueba a prueba
 
 Con la regla de D-A y con control a cero. Desde el §531 cada fila la mide, en cada canon, su test de
@@ -118,6 +136,12 @@ nueva que la contradiga la corrige, en el asiento que la mida, aquí y en la sui
 tabla como datos (D-O). El §531 lo hizo ya con tres celdas que el PASTE-E2-M leyó como «dos
 columnas» y eran coincidencias con el suministro (D-Q).
 
+**Desde el §538 (E3b-2) la tabla mide cero.** Las 100 celdas con k > 0 de arriba —lo que salía
+literal con el probador apagado— cuentan 0 en las 22 filas que imprimen: la suite de E2 pasa 22/22
+con su tabla a cero como dato (`instrumento_revela.rs`, S538), y una celda que volviera a contar la
+pondría roja. La tabla se conserva tal cual como lo que la 0.3 revelaba, medido asiento a asiento:
+un vector es lo que su versión produjo, y la fila de su verdad es la suite, no este texto (D-O).
+
 ### D-C — El principio del API se queda como regla, y hoy no se cumple
 
 La regla 3 del PROCESO —**la clave de gasto no viaja jamás**— no se reescribe. Dos caminos: (a)
@@ -131,6 +155,13 @@ medido prueba a prueba.
 Este RFC no erosiona el principio —lo erosiona el probador— y por eso no nace RETIRADO.
 **Reversible** hacia ninguna parte: una regla no caduca. Deja de incumplirse cuando lo pruebe la
 suite de E2 contra un probador que oculte.
+
+**Deja de incumplirse en el §538 (E3b-2), y en la medida exacta en que la suite lo mide.** La suite
+de E2 cuenta cero literales del testigo en las 23 pruebas con fila (100 celdas, 22/22): la clave de
+gasto no sale literal en el envío, el cobro, la prenda, la auditoría ni la quema, ni las de los
+custodios en las autorizaciones delegadas, la gobernanza y el umbral conjunto. La regla 3 del
+PROCESO lo dice así desde el §538, y lo que queda fuera de la medida lo dice D-A: la confianza
+residual está en las aberturas y en la construcción, no en el censo.
 
 ### D-D — La ocultación, fuera de este RFC
 
@@ -585,6 +616,71 @@ citas vivas (medidas) se reescriben en el corte 2, con los `~62 KB` de `metrics.
 Gana la banda frente a una cifra: imagen fiel (D-J). **Reversible** hacia ninguna parte mientras
 se oculte.
 
+**Medido en el §538.** Quince muestras por eje (cinco por la vía de la capa y diez por la del
+cliente, PASTE-538-M R12): envío 77.444..80.232 B, cobro 76.192..79.736 B; con un margen declarado
+del 5 % por cada lado, la banda que el árbol ata es envío 73.571..84.244, cobro 72.382..83.723 y
+pago 145.953..167.967 B (139,2 a 160,2 MiB por mil pagos; 146,0 a 168,0 MB en SI).
+`PUBLICADA_PAGO_B` se parte en `PUBLICADA_PAGO_MIN_B` y `PUBLICADA_PAGO_MAX_B`; el latido del nodo y
+su atado consumen el máximo (adelanta el aviso de la nota 22, que es su sentido);
+`check_publicadas.py` ata cada cita viva a uno de los dos extremos y saca `BACKLOG.md` de su
+universo como registro, como ya lo estaba del ATADO C. La cifra apagada (133.431 B, 127,2 MiB) queda
+en los asientos y en la entrada 22.
+
+### D-AD — La forma oculta es la única forma del cable 0.4
+
+Una prueba oculta declara ancho + 1 (la columna de ocultación) y 2T filas: es lo que `Oculta::new`
+construye y lo que la guarda de forma del S529 —`comprobar_forma` en la capa, las cinco
+comparaciones del kit y `forma_ok` del par de umbral— rechazaba con la forma apagada del enunciado
+(5.A-393, medido en el PASTE-E3b2-M: la capa rechazaba el envío v2 encendido con `MerkleTree` y con
+`MerkleConSal`, y lo aceptaba en cuanto la guarda exigía la oculta). Desde el §538 la forma exigida
+en `zkssl/0.4` es la OCULTA, derivada en la propia función de la del AIR (`ancho + 1`, `2 *
+longitud`; el tramo auxiliar y sus aleatorios no cambian), y la apagada se rechaza: dos falsadores
+lo dicen —`guarda_forma` con la forma oculta (45, 1024) como la exacta y (44, 512) rechazada, y el
+par mutado a la forma apagada da `WrongTraceWidth`—.
+
+Gana una sola forma frente a admitir las dos por la marca: pureza (un cable, una forma; menos eras
+silenciosas) y fail-closed (coherente con D-AB). **Reversible** hacia el doble despacho por la marca
+si una segunda implementación no pudiera ocultar.
+
+### D-AE — `Ocultacion` se construye en `stark-experiment`, con `winter-prover` normal
+
+Los 23 probadores con fila devuelven `Some(crate::ocultacion_encendida())`: m = 64 y dos semillas de
+`zk_ssl_air::sal::semilla()`, la misma entropía que la sal (D-X). `winter-prover` pasa de dev-dep a
+dependencia normal de `stark-experiment` (ya estaba en su clausura por `winterfell`: el lock no se
+mueve, `f8c226859ec029af`), y `Ocultacion` no sale por el paraguas `winterfell`.
+
+Gana un solo constructor frente a uno por circuito: coherencia (el mismo patrón en los 23, y en la
+fila de D-B se lee de dónde sale cada uno). **Reversible** hacia un m por AIR si D-AG no bastara.
+
+### D-AF — El tipo llega a la capa por `stark-experiment`, sin dependencia nueva
+
+`pub use zk_ssl_air::sal::MerkleConSal` en `stark-experiment`; la capa lo importa de ahí (no depende
+de `zk-ssl-air`: llega a los AIR por `stark-experiment`, medido). Un solo tipo para las dos orillas
+(D-X): los 21 `verify` de producción —15 de la capa, el del par y los 5 del kit—, los dos de
+`metrics.rs` y los 69 de los tests de los 23 circuitos verifican con `MerkleConSal<Blake3>`; los 16
+probadores apagados y los dos de la foto siguen con `MerkleTree` (18, censo del generador).
+
+Gana el reexport frente a una dependencia nueva: minimalismo. **Reversible** hacia ninguna parte
+mientras la capa no dependa de `zk-ssl-air`.
+
+### D-AG — `m` no cabe en las trazas cortas: acolchado a 64 y `edad` con m ≥ 3
+
+El fork exige m < 2T y desde el §537 lo devuelve como `Err(OcultacionNoCabe)`; con m = 64 caían
+`RefundAir` (T = 2 × 8 = 16), `RefundAirV2` (4 × 8 = 32) y `EdadAir` cuando `filas = 8 << m` queda
+por debajo de 64 (5.A-395; el banco monta libros con `nextPending = 2`: m = 1). La T de los 23,
+leída de sus constantes: 1024 (6), 512 (9), 256 (3), 64 (2), 32, 16 y 8 × hojas; y D-I pide además T
+≥ 44. Desde el §538 los dos reembolsos llevan `CICLOS = 8` (64 filas: los merges y el acolchado
+detrás, que nada aserta; `ROW_P` fijo en el último merge) y `edad` cuenta al menos 8 hojas en
+`celdas_del_libro` Y el kit sube el suelo de `m_canonico` y de `comprobar_enunciado` de 1 a 3,
+porque deriva m de `nextPending` (D-2 de E4b-2, «una marca, un subárbol»): subir el probador sin el
+kit rechazaba la marca y subir el kit sin el 0.4 rechazaba los positivos de `edad` 0.3 (8/11
+medido). Por eso D-AG no es separable del 0.4 y va con E3b-2 (PRECISION 717). Medido: 12/12 en los
+reembolsos, 7.401 → 21.014 B y 10.147 → 24.732 B ocultos; `banco_edad` VERDE con m = 3 (79.060 y
+75.048 B frente a 43.092 y 44.935 de los vectores 0.3).
+
+Gana el acolchado a 64 con m = 64 frente a un m propio con suelo 44: pureza (una sola regla, sin
+excepción por circuito) y claridad. **Reversible** hacia un m por AIR (D-AE lo admite).
+
 ### D-AH — Un testigo malo es un `Err` del probador, nunca un pánico
 
 Con la ocultación encendida, una traza que no cumple sus restricciones hacía saltar dos asertos
@@ -618,10 +714,64 @@ por `CompositionPoly::new`, `DefaultConstraintCommitment::new` y los `impl Prove
 ancho, la misma promesa. D-AD a D-AG —la forma oculta como única forma de la 0.4, el constructor
 de `Ocultacion`, el reexport por `stark-experiment` y las trazas cortas— llegan con el corte 2.
 
+### D-AI — El comparador 0.4 cruza lo que el circuito fija y declara lo que no se reproduce
+
+El escenario de conformidad era determinista de punta a punta, prueba incluida, y su cadena lo
+ataba: `proof_digest = digest_of_proof(proof)` sobre los bytes de la prueba (`log.rs`), `chain` lo
+arrastra y `epoch_digest` lo lleva dentro. Con la ocultación encendida los bytes de una prueba no se
+reproducen (D-X). Medido en el §538 (PASTE-538-M R11): dos `--emit` del mismo escenario dan iguales
+`spec`, `sellado`, `escenario`, `canon`, `supply`, `pending` y, en las seis entradas, `seq`, `kind`,
+`root_old`, `root_new` y `compromiso`; difieren exactamente en `proof_digest` y `chain` de las dos
+entradas con prueba (seq 0x4 y 0x5) y en `epoch_digest`; el comparador de la 0.3 daba «conformidad
+ROTA: 3 diferencia(s)». Desde el §538 `--check` cruza lo que el circuito fija —`seq`, `kind`, las
+dos raíces, el compromiso, el suministro y el pendiente— y DECLARA no reproducibles los tres
+digests; el vector 0.4 los lleva como lo que su emisión produjo (D-AB), y el canon exige «0.4 → todo
+IDENTICO (en lo que el circuito fija)» y «0.3 RECHAZADO (otra version)».
+
+Gana declarar frente a cambiar lo que la cadena ata: pureza (lo que el circuito no restringe no es
+un invariante: los bytes de una prueba no lo son) y minimalismo (la cadena del registro no cambia de
+formato). **Reversible** hacia una cadena que ate el enunciado en vez de los bytes de la prueba, que
+es un cambio de formato del registro y de la cabeza, con su RFC.
+
+### D-AJ — El lado caro deja de afirmarse: encendidos, los dos lados cuestan lo mismo
+
+`el_lado_caro_es_el_declarado` afirmaba el SENTIDO (el receptor paga más, medido apareado el
+2026-09-19 con 260-290 ms de envío y 160-190 de cobro). Encendida la ocultación, cada lado cuesta
+700-750 ms y el sentido cayó dentro del ruido: una de tres corridas dio PAGADOR (envío 741,6 ms y
+cobro 696,9 como mínimos, razón 1,064) y las otras 0,975 y verde (PASTE-538-M R4 y R12). Un contrato
+que cae una de cada tres veces no afirma nada: desde el §538 el aserto se retira y se cita (molde
+S247), `LADO_CARO` se retira con su historia, los tiempos se imprimen y el test pasa a llamarse por
+lo que ata, `los_dos_lados_del_pago_atan_la_banda`: los bytes de los dos lados por la vía del
+cliente, dentro de la banda de D-AC (una fila del `--list` de la capa cambia de nombre, ninguna nace
+ni muere).
+
+Gana retirar frente a una banda temporal: imagen fiel (los tiempos dependen de la máquina y el
+sentido ya no se sostiene). **Reversible** si el sentido volviera a medirse estable.
+
+### D-AK — Los vectores 0.4 los produce el bloque, y las anclas nacen después
+
+Con pruebas no deterministas un vector no se embebe por huella predicha: el BLOQUE-538 corre los
+cuatro bancos (`banco_pago`, `banco_pendiente`, `banco_rechazo`, `banco_edad`, con `--guardar`),
+renombra las capturas de rechazo a los nombres del catálogo con el mapa derivado del propio banco
+(el texto de cada `niega` contra la línea del MANIFIESTO), pasa el arnés línea a línea sobre lo
+fresco con el kit 0.4 y solo con 9/9, 9/9, 84/84 y 11/11 comitea; los catálogos 0.3 de pago,
+pendiente y edad se apartan enteros bajo `spec/vectors/0.3/<familia>/` (R10: todos sus ficheros
+cambian, la cabeza es otra) y de rechazo los nueve que el banco regenera, con un MANIFIESTO de nueve
+líneas; los 75 restantes de rechazo se quedan (82/84 con el kit 0.4: sus textos no dependen de la
+forma). Los MANIFIESTOS 0.3 sirven a los vectores 0.4 línea a línea (medido: 9/9, 9/9, 11/11 en la
+SALIDA-538M), así que el 0.4 es el 0.3 con su cabecera. Todo lo demás del commit se predice; las
+anclas de los vectores se miden en el asiento después.
+
+Gana producirlos en el bloque frente a llevarlos en el bloque: fail-closed (sin el arnés en verde no
+hay commit) e imagen fiel (un vector es lo que su versión produjo). **Reversible** hacia vectores
+sembrados si D-X cambiara.
+
 ## Compatibilidad
 
-- `zkssl/0.3` **no sube**. Ningún método, tipo ni error del cable cambia; ningún vector se
-  reescribe ni nace.
+- `zkssl/0.3` **no subió** hasta E3b-2; **desde el §538 el cable es `zkssl/0.4`**: ningún
+  método, tipo ni error del cable cambia, pero cambia la FORMA de toda prueba que viaja (ancho + 1
+  y 2T, D-AD) y con qué se verifica (`MerkleConSal`, D-AF); ningún vector se reescribe: los de la
+  0.3 se conservan bajo `spec/vectors/0.3/` y los de la 0.4 nacen de sus bancos (D-AB, D-AK).
 - La promesa ya había cambiado en la prosa y en los comentarios (§521 a §526): este RFC la fija en
   un sitio.
 - **E3a** no sube `zkssl/0.3`: con el fork apagado, las pruebas son byte a byte las de winterfell,
@@ -638,6 +788,13 @@ de `Ocultacion`, el reexport por `stark-experiment` y las trazas cortas— llega
 - **D-AH** (§537) no sube nada: apagado, el probador no comprueba y ninguna prueba cambia un
   byte; encendido —hoy sólo en los falsadores—, un testigo malo devuelve `Err` en vez de
   entrar en pánico.
+- **E3b-2** (538) sube a `zkssl/0.4`: los 23 probadores con fila encendidos (D-Z, D-AE), la forma
+  oculta como única forma (D-AD), `MerkleConSal` en las dos orillas (D-AF), los reembolsos a 64
+  filas y `edad` con m ≥ 3 en el probador y en el kit (D-AG); el `zkssl_protocolVersion`, el OpenRPC
+  y el escenario de conformidad dicen `zkssl/0.4` con su comparador (D-AI); los vectores 0.3 se
+  conservan bajo `spec/vectors/0.3/` y los 0.4 nacen de sus bancos (D-AB, D-AK); las cifras de bytes
+  son una banda (D-AC) y el lado caro deja de afirmarse (D-AJ); la tabla de D-B mide cero (D-A,
+  D-C).
 
 ### Por qué entra por RFC
 
@@ -647,7 +804,9 @@ deuda.
 
 ## Seguridad
 
-- **El principio del API** (regla 3 del PROCESO): hoy no se cumple; D-C dice dónde.
+- **El principio del API** (regla 3 del PROCESO): desde el §538 se cumple en lo que la suite de E2
+  mide —ningún valor de columna constante sale literal en ninguna de las 23 pruebas con fila, 100
+  celdas a cero— y no más: D-C dice qué se mide y D-A qué confianza residual queda.
 - **El operador es el adversario que recibe las pruebas.** El nodo ve todo lo que dice la tabla de
   D-B, y tras una sola operación delegada tiene las claves de dos custodios, que bastan para
   autorizar la siguiente. La conservación no cae: la prueba sigue siendo sólida. Cae quién puede
@@ -670,10 +829,10 @@ deuda.
     depósito con DOI y no se edita;
   - y la semilla de `zk-core`, que es Groth16 y queda fuera del modelo, como iso-bridge,
     settlement-layer y los experimentos de PLONK y Halo2.
-- **Regla 3 del PROCESO:** E3b es la etapa que haría cumplir el principio del API. La suite de
-  E2 lo mide en cada tipo de prueba desde el §531, y la D-C sigue diciendo dónde se incumple
-  hasta que la suite cuente cero.
-- **Lo que el censo no ve:** que no salga nada literal no es ocultación (D-A). Más allá del censo,
+- **Regla 3 del PROCESO:** E3b-2 (§538) es la etapa que lo hizo cumplir en lo medido: la suite
+  de E2, que lo mide en cada tipo de prueba desde el §531, cuenta cero desde el §538 (D-C).
+- **Lo que el censo no ve:** que no salga nada literal no es, por sí solo, ocultación (D-A, hasta
+  el §538; desde entonces la sostiene la construcción encendida). Más allá del censo,
   la E3 descansa en el argumento de la D-I y en la construcción de la nota 2024/1037. Ni el fork ni
   la ocultación están auditados (H7).
 - **Fallar cerrado:** con la marca, el verificador rechaza con error una traza que no se puede
@@ -709,6 +868,11 @@ deuda.
   `ae34451f8cca3a12`, cargo `d934ab3e51f46e2f`, la región de la sal `34508a89201ca6d3`), que leyó
   la sal en el spike y el trait en el registry, y corrió el spike (VEREDICTO VERDE, la sal 6.567
   bytes por prueba).
+- El §538 y sus instrumentos, fuera del árbol: PASTE-538-M (`e94784996beeddc7`, salida
+  `d92b91297a878cc1`, cargo `93d716f89a286f52`), que midió el corte entero sobre una copia de
+  `0eda58c` —las siete suites con cero rojos, los cuatro bancos, las capturas contra el catálogo, el
+  escenario dos veces y la banda—, y sus cuatro generadores `gen_m3.py`, `gen537.py`, `gen538.py` y
+  `gen538b.py`, que el editor del corte lleva como cargas.
 - `spec/rfc/PROCESO.md`, regla 3; `SECURITY.md` §3.bis, donde vive la frase canónica.
 - winterfell: la portada del repositorio, <https://github.com/facebook/winterfell>, y su issue 9,
   <https://github.com/facebook/winterfell/issues/9>.

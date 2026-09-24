@@ -1,3 +1,7 @@
+# zkssl/0.4 (S538, RFC-0009 E3b-2): los vectores de esta familia se REGENERARON desde su banco con
+# pruebas OCULTAS (D-Z, D-AK); las lineas de abajo son las del catalogo 0.3, medidas sobre las capturas
+# 0.4 con el kit 0.4 (SALIDA-538M R10: todas dicen lo que deben). Los ficheros 0.3 viven bajo
+# spec/vectors/0.3/ (D-AB) y los verifica el kit que los vio nacer, arqueo-verify-v0.2.0.
 # Vectores del sobre de PAGO EN CURSO (spec/PAQUETE.md 2.9, RFC-0008 E2; asiento 509).
 # fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
 # Los DOS positivos se REUNEN de las CAPTURAS-508 de un nodo real: la boca del pagador

@@ -39266,3 +39266,132 @@ los tres `t487`, que esperaran el `Err` en el prove. Dos avisos del PASTE que no
 dicen: el kit imprime 92 + 27 + 1 (caso 21 de la familia), y el arnes de edad 0.3 con el kit
 encendido da 8/11 y no 9/11, porque `m_canonico` en 3 rechaza `neg-subraiz-meta` por la raiz de
 pendientes antes de llegar a la de meta (D-AB; lo dira 0.4).
+
+## §538 — RFC-0009 E3b-2: el encendido entero, zkssl/0.4; la tabla de D-B a cero
+
+**Que.** Se enciende la ocultacion en los 23 probadores con fila en la tabla de D-B (D-Z): cada
+uno declara `type VC = MerkleConSal<Blake3>` y devuelve `Some(crate::ocultacion_encendida())` -m =
+64 y dos semillas de `zk_ssl_air::sal::semilla()`, la entropia del sistema (D-AE)-; los 21
+`verify` de produccion (15 de la capa, el del par y los 5 del kit), los dos de `metrics.rs` y los
+69 de los tests de esos circuitos verifican con `MerkleConSal`, y el tipo llega a la capa por
+`stark-experiment` (D-AF); `winter-prover` pasa a dependencia normal de `stark-experiment` con el
+lock quieto. La forma exigida en el cable es la OCULTA (ancho + 1, 2T): `comprobar_forma` la
+deriva en su unico sitio, las cinco guardas del kit y `forma_ok` del par tambien, y la apagada se
+rechaza (D-AD, dos falsadores). Los reembolsos van a 64 filas (`CICLOS = 8`, `ROW_P` en el ultimo
+merge) y `edad` cuenta al menos 8 hojas Y el kit sube el suelo de
+`m_canonico`/`comprobar_enunciado` a 3 (D-AG, no separable del 0.4). El cable sube a `zkssl/0.4`:
+`zkssl_protocolVersion`, el OpenRPC (regenerado: cuatro lineas) y el escenario de conformidad,
+cuyo `sellado` y `canon` ([403, 421, 1412, 39]) se DERIVAN del arbol. Los seis tests que suponian
+pruebas deterministas o la forma apagada se adaptan (`un_lote_de_uno` prueba UNA vez y aplica por
+los dos caminos; `guarda_forma` con la oculta (45, 1024) y el negativo de la apagada; el par
+mutado a la apagada; `metrics` a banda) y los tres `t487` esperan el `Err` de D-AH en el prove y
+prueban la puerta del aplicador con un recibo sin prueba, que la congelacion rechaza antes de
+leerla (S487). El import `crypto::MerkleTree` sale del lib de la capa. La tabla de E2 pasa a cero:
+las 100 celdas con k > 0, dato y no codigo, y la suite 22/22 (D-A REVERTIDA, D-C cumplida en lo
+medido, D-B a cero). Las cifras de bytes son una BANDA (D-AC): 15 muestras por eje con margen del
+5 %, envio 73.571..84.244, cobro 72.382..83.723, pago 145.953..167.967 B (139,2 a 160,2 MiB por
+mil); `PUBLICADA_PAGO_B` se parte en `PUBLICADA_PAGO_MIN_B`/`PUBLICADA_PAGO_MAX_B`, el latido y su
+atado del nodo usan el maximo (100.000 pagos = 15,6 GiB) y `check_publicadas.py` ata cada cita a
+un extremo y saca `BACKLOG.md` de su universo como registro. El comparador 0.4 cruza lo que el
+circuito fija y declara no reproducibles `proof_digest`, `chain` y `epoch_digest` (D-AI); el lado
+caro deja de afirmarse y el test pasa a llamarse `los_dos_lados_del_pago_atan_la_banda` (D-AJ).
+Los vectores 0.3 de pago, pendiente y edad se apartan enteros bajo `spec/vectors/0.3/` y de
+rechazo los nueve que el banco regenera, con su MANIFIESTO; los 0.4 los producen los cuatro bancos
+dentro del bloque y el arnes los cruza linea a linea con el MANIFIESTO 0.3 antes de comitear
+(D-AB, D-AK). El canon exige <<0.4 -> todo IDENTICO>> (en lo que el circuito fija) y <<0.3
+RECHAZADO>>.
+
+**Los cuatro generadores.** El codigo es funcion pura del arbol de `0eda58c`: `gen_m3.py`
+(`7988a258e24b724c`, el encendido mecanico del M3, verbatim: 23 `type VC`, 23 `fn ocultacion`, 64
++ 5 `verify` de los tests, 17 de la capa, 5 del kit, `comprobar_forma`, 5 guardas, `forma_ok`, 23
+imports fuera; 18 apagados = 16 + 2 del KAT), `gen537.py --dag` (`971f81346a995c63`, D-AG: refund
+3, refund_v2 4, edad 2, kit 4), `gen538.py` (`1d96f40bfea7ccbe`: version 3 + 3 + 3, los seis tests
+y los t487, el import, la tabla, la banda provisional) y `gen538b.py` (`2c8a218929f1b186`, r3: el
+comparador, el lado caro, la banda final derivada de las muestras, las 13 citas, la estrofa, la
+carrera de `banco_rechazo.sh`). Los lleva `ed538.py` como cargas por huella, con los 71 PRE del
+arbol y la prosa; el POST del OpenRPC que el editor escribe por diff de cuatro lineas es byte a
+byte el que `gen_openrpc` produjo (`b75a5adcd57ba285`).
+
+**Lo medido antes de sellar.** El PASTE-538-M (`e94784996beeddc7`, sesion 177, 1.523 s; SALIDA
+`d92b91297a878cc1`, CARGO `93d716f89a286f52`) sobre una copia de `0eda58c` con target y `.git`
+propios y los fuentes refrescados por fecha: los tres generadores clavan sus 43 POST; compila en
+release con `--locked`, el lock quieto y los mismos cinco warnings que HEAD (del bin del nodo,
+5.A-397); los nombres del `--list` de circuitos y capa, identicos; las siete suites con cero
+rojos: circuitos 403/13 (la foto 3/3, nueve falsadores, reembolsos 12/12, el par), capa 421/7
+(t487 3/3 en `Err`, E2 22/22 a cero, `guarda_forma`), nodo 125, kit 92 + 27 + 1, kit-AIR 36, cable
+22, cli 113. Los cuatro bancos VERDES: en pago, pendiente y edad TODOS los ficheros cambian (la
+cabeza es otra) y los del escenario clavan las huellas que su MANIFIESTO declara; el kit 0.4
+rechaza los positivos 0.3 (2/9, 2/9, 3/11) y las capturas 0.4 clavan el MANIFIESTO 0.3 linea a
+linea: 9/9, 9/9, 11/11; de rechazo el banco guarda 38 ficheros con otros nombres y el mapa sale
+del texto de sus `niega`. Dos `--emit` del escenario: iguales `spec`, `sellado`, `canon`,
+`supply`, `pending` y, en las seis entradas, `seq`, `kind`, las raices y `compromiso`; distintos
+`proof_digest` y `chain` en seq 0x4 y 0x5 y `epoch_digest`; el comparador de la 0.3 daba <<ROTA:
+3>>. La banda: envio 77.444..80.232 B, cobro 76.192..79.736 B, pago 155.337..159.329 (15 muestras
+por eje). `el_lado_caro` cayo una de tres veces (razon 1,064; las otras 0,975 y verde). Las once
+herramientas rc 0 sobre el POST, con la prosa de este corte puesta. Tres rojos del instrumento,
+ninguno del arbol: dos lineas residuo que solo hacen ruido y una redireccion suelta que trunco la
+medida del <<0.3 RECHAZADO>>, que el ENSAYO-538 vuelve a medir. `gen538b.py` se ensayo sobre la
+copia POST: `check_publicadas` rc 0 con 9 citas. El compilador del autor, sobre el POST de la r1
+(lectura informativa, no el ENSAYO), tumbo dos cosas que la r2 de `gen538b` corrige en la fuente:
+el cierre `fija` no podia devolver referencias a su argumento y pasa a fn anidada, y el test del
+nodo tenia un TERCER aserto (~12,4 GiB) que la r1 no abrio entero: la cifra se deriva tambien alli
+(15,6 GiB) y en la segunda mencion del latido. El ENSAYO-538 (r1, VEREDICTO ROJO 23/37) cazo tres
+cosas de instrumento y una del arbol: `--offline` detras del `--` de cargo (las siete suites y
+M2/M3 sin medir), la cuenta 265, y una CARRERA en `tools/banco_rechazo.sh` que el corte cierra
+(gen538b r3): la cabeza posterior a la congelacion se derivaba del seq, que crece con los fondeos
+antes de que la congelacion este en la cabeza (seq 4 sin ella, `su frozenRoot es otra`; el
+PASTE-538-M la vio en seq 5 y paso); vale la cabeza cuyo frozenRoot ya no es el de partida. M1
+discrimino a la primera: el comparador de la 0.3 da `conformidad ROTA: 2 diferencia(s)` sobre el
+escenario 0.4. El ENSAYO-538-r2 (`aad6eeb1cc1889d3`/2833) dio VEREDICTO VERDE 37/37 en 1598 s
+sobre la copia de `0eda58c` bajo `$HOME`: los 79 POST, `openrpc.json` = `gen_openrpc`, lock, once
+herramientas, `--list` de los circuitos IDENTICO (416) y de la capa con solo el nombre de D-AJ
+cambiado (428); los cuatro bancos VERDES con `--guardar` (13, 11, 38 y 12 capturas), 9 + 9 + 11
+vectores por el MANIFIESTO y 9 por el mapa, los cuatro arneses 9/9, 9/9, 84/84 y 11/11 con el kit
+0.4 (`d78b6f0b0aadeda2`), `zkssl-0.4.json` de 3351 B con `--check` todo IDENTICO y el 0.3 OTRA
+version, 303 ficheros; las siete suites 403/13, 421/7, 125, 120, 36, 22 y 113 con 0 warnings, la
+foto 3/3, los nueve falsadores, t487 3/3 y E2 22/22; M1 ROTA (2 diferencias), M2 tumba exactamente
+`revela_el_envio` (la clave de gasto sale 0 veces y la tabla dice 42), M3 tumba
+`una_forma_ajena_da_err_no_panico`, y el POST restaurado vuelve a verde. Las huellas de los
+vectores 0.4 cambian en cada corrida (sal y filas aleatorias): las fija el bloque, a posteriori
+(D-AK). SALIDA-E538r2-20260924-105631; CARGO `2c7aae06d60146c1`/1469.
+
+**Prosa.** El RFC-0009 gana D-AD a D-AG como secciones (vivian solo en los traspasos), D-AI, D-AJ
+y D-AK, la reversion de D-A con su falsador y su confianza residual, D-B a cero, D-C cumplida,
+D-AC medido, la fila de E3b SELLADA, Compatibilidad (E3b-2 sube a 0.4), Seguridad y Referencias;
+la version afectada pasa a `zkssl/0.3` -> `zkssl/0.4`. `spec/README.md` (la fila del RPC, la del
+OpenRPC, la del 0009 y la version vigente), `spec/PAQUETE.md`, `spec/NUCLEO.md`, `spec/RPC.md`
+(titulo, `zkssl_protocolVersion`, version vigente), `README.md`, `README_EN.md`, los dos RESUMEN,
+`PREGUNTAS.md` y `QUESTIONS.md`: las veinte lineas de presente con `zkssl/0.3`; las otras cuarenta
+y cinco son historia y no se tocan. La regla 3 del PROCESO dice desde cuando se cumple. Las 13
+citas de la cifra publicada pasan a la banda. `README.md` y `README_EN.md` cuentan 303 ficheros
+bajo `spec/vectors/` (260 + los 38 que nacen del banco + los cuatro MANIFIESTOs 0.3 +
+`zkssl-0.4.json`; la r1 decia 265: olvido que los 38 del 0.3 se conservan). El comentario de
+`conformance.rs` deja de decir determinista de punta a punta. Los cuatro MANIFIESTOs de la 0.4
+llevan su cabecera, y los de la 0.3 la suya.
+
+**Contadores.** Sin los vectores ni este asiento, 65 ficheros, 912 lineas insertadas y 473
+borradas: los 23 circuitos y `lib.rs` de stark-experiment (+10/0), su `Cargo.toml` 2/0; la capa
+`lib.rs` 14/6, `two_phase.rs` 23/16, `tests.rs` 21/6, `metrics.rs` 103/72, `instrumento_revela.rs`
+100/100, `log.rs` 3/2, `burn`/`freeze`/`mint`/`recovery` 1/1; el kit `lib.rs` 21/18, `sal.rs` 7/0
+y sus cuatro AIR 5/4; `conformance.rs` 30/13; el nodo `main.rs` 9/9 y `latido.rs` 5/5;
+`openrpc.rs` 3/3 y `spec/openrpc.json` 2/2; el RFC-0009 177/13 (723 -> 887 lineas);
+`spec/README.md` 4/4, `RPC.md` 4/3, `PROCESO.md` 4/3, `PAQUETE.md` y `NUCLEO.md` 1/1; `README.md`
+y `README_EN.md` 3/2, los dos RESUMEN 2/2, `PREGUNTAS.md` y `QUESTIONS.md` 3/2, `ARQUITECTURA.md`
+1/1, `PAPER.md` y `PAPER_EN.md` 3/3, los dos institucionales 2/2; `tools/canon.sh` 3/1,
+`tools/check_publicadas.py` 27/20 y `tools/banco_rechazo.sh` 8/5. Mas `AUDITORIA.md` 129/0, que es
+este asiento (128 lineas tras un separador): 67 ficheros, 1.054 y 481. Los vectores: 38 ficheros
+renombrados byte a byte bajo `spec/vectors/0.3/`, cuatro MANIFIESTOs nuevos alli (25, 35, 27 y 15
+lineas) y los cuatro vigentes con su cabecera (4, 4, 4 y 15); los 38 vectores 0.4 y
+`zkssl-0.4.json` los produce el bloque y sus lineas y huellas van en su salida, no aqui: son lo
+que su version produjo. Pines quietos: circuitos 403/13, capa 421/7, nodo 125, kit 120, kit-AIR
+36, cable 22, cli 113; sello 1412 y largos 1549; `check_tests` 1571, `check_modulos` 191. El
+`--list` de la capa cambia UN nombre (D-AJ), ninguno nace ni muere. Un Cargo tocado
+(`stark-experiment`), el lock quieto (`f8c226859ec029af`).
+
+**Lo que NO cierra, y se dice.** La prosa del 521 -veintisiete ficheros que dicen que la prueba
+publica la clave o el testigo, censados en el PASTE-538-M R14- se paga en el S538-B, en esta misma
+sesion: el RFC ya dice lo que se cumple y desde cuando, y esos ficheros lo diran uno a uno. El RFC
+sigue PROPUESTO: ACEPTARLO es un corte propio (regla 4). `README_EN.md` y los dos RESUMEN dicen 29
+metodos donde `README.md` dice 30: deuda anterior, a la cola. `neg3-cuenta-otra` espera el texto
+de winterfell (`InconsistentOodConstraintEvaluations`), que el bloque mide sobre la captura
+fresca.

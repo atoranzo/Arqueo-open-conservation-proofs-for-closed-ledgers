@@ -645,7 +645,7 @@ eso se ve en el propio constructor.
 
 ### El límite cuantificado
 
-**Mil transferencias: ~620 s de prueba y 127,2 MiB acumulados.** Ese es el
+**Mil transferencias: ~620 s de prueba y 139,2 a 160,2 MiB acumulados.** Ese es el
 argumento numérico a favor de las pruebas por lote — no una intuición.
 
 ⚠️ **El límite que este documento publicaba aquí ya no aplica.** Decía que la

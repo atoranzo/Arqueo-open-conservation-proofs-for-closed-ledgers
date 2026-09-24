@@ -322,7 +322,7 @@ proof that will not verify.
 
 #### 3. Proof accumulation
 
-**One thousand transfers accumulate 127.2 MiB.** This is a storage and
+**One thousand transfers accumulate 139.2 to 160.2 MiB.** This is a storage and
 bandwidth cost, not a stop: the system keeps working.
 
 #### 4. Custodian set size
@@ -460,7 +460,7 @@ literature:
 
 The debate on privacy in central bank digital currencies is rich in
 positions and poor in figures. Here there are some: **verification costs
-4 ms, proving 620 ms, and one thousand transfers are 127.2 MiB**.
+4 ms, proving 620 ms, and one thousand transfers are 139.2 to 160.2 MiB**.
 
 And there is an ECB data point that frames the problem: in its public
 consultation, privacy was the most valued aspect (43%), and **fewer than

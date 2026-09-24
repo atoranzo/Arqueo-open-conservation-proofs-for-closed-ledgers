@@ -35,7 +35,8 @@
 
 // ===== LA CIFRA PUBLICADA - LA PARTE QUE EL NODO CONSUME =====
 //
-// **PUBLICADA_PAGO_B sale de `mod tests` en el §318 y se hace publica.**
+// **PUBLICADA_PAGO_B sale de `mod tests` en el §318 y se hace publica** (y en el S538
+// se parte en PUBLICADA_PAGO_MIN_B y PUBLICADA_PAGO_MAX_B, los extremos de la banda).
 // La razon del §304 para tenerla dentro CADUCO: entonces no habia
 // consumidor y una const a nivel de fichero habria sido codigo muerto en
 // release. Ahora el latido del nodo la lee para poder decir cuantos BYTES
@@ -59,8 +60,11 @@
 // igual para esta.
 //
 // UNIDAD: bytes de UN pago, que son DOS pruebas (envio + cobro). Mil pagos
-// son PUBLICADA_PAGO_B * 1000 / 2^20 MiB. Medida el 2026-08-14 y remedida
-// el 2026-08-17 sin variacion. Quien la mueva mueve tambien los
+// son PUBLICADA_PAGO_*_B * 1000 / 2^20 MiB. Medida el 2026-08-14 y remedida
+// el 2026-08-17 sin variacion; desde el S538 (RFC-0009 D-AC) es una BANDA:
+// con la ocultacion cada prueba pesa segun q y segun la sal, y los dos
+// extremos salen de 15 muestras por eje (SALIDA-538M, 2026-09-24) con un
+// margen declarado del 5 %. Quien mueva la banda mueve tambien los
 // documentos: `tools/check_publicadas.py` los ata y dice cuales faltan.
 // VIA: medida sobre `send`/`claim` de la capa, que es la que las cifras
 // publicadas describen; el permiso y su razon estan en `mod tests`. La
@@ -71,8 +75,12 @@
 // client::prove_send -> apply_send -- da los MISMOS bytes, 66_739 y 66_692,
 // en cinco repeticiones y sin una sola diferencia. La cifra publicada NO
 // depende de la via. Lo que si dependia de ella era la RELACION temporal, y
-// por eso esa se fue a `el_lado_caro_es_el_declarado`.
-pub const PUBLICADA_PAGO_B: usize = 133_431;
+// por eso esa se fue a `los_dos_lados_del_pago_atan_la_banda`.
+// Desde el S538 los dos extremos de un pago: la suma de los minimos y la suma
+// de los maximos de las bandas de envio y de cobro (mod tests). El latido del
+// nodo consume el MAXIMO (adelanta el aviso de la nota 22, que es su sentido).
+pub const PUBLICADA_PAGO_MIN_B: usize = 145_953;
+pub const PUBLICADA_PAGO_MAX_B: usize = 167_967;
 
 #[cfg(test)]
 mod tests {
@@ -103,16 +111,26 @@ mod tests {
     //
     // Quien mueva esta constante mueve tambien los documentos:
     // tools/check_publicadas.py los ata y dice cuales faltan.
-    const PUBLICADA_FECHA: &str = "2026-09-19";
-    const PUBLICADA_ENVIO_B: usize = 66_739;
-    const PUBLICADA_COBRO_B: usize = 66_692;
-    // PUBLICADA_PAGO_B vive AHORA a nivel de fichero y es publica
-    // (§318): el latido del nodo la consume. Llega hasta aqui por el
-    // `use crate::*` de arriba, via el `pub use` de lib.rs.
-    const PUBLICADA_MIL_MIB: &str = "127,2";
-    // EL LADO CARO, declarado y fechado. Hasta el S511 era "PAGADOR"; el
-    // arreglo B (5.A-272) lo invirtio, medido APAREADO el 2026-09-19.
-    const LADO_CARO: &str = "RECEPTOR";
+    const PUBLICADA_FECHA: &str = "2026-09-24";
+    // D-AC (RFC-0009, S538): con la ocultacion una prueba pesa segun q y segun la sal,
+    // y la cifra es una BANDA. Cada extremo sale de 15 muestras por eje (5 por la via de
+    // la capa y 10 por la del cliente, SALIDA-538M): envio 77.444..80.232 B, cobro
+    // 76.192..79.736 B, con un margen DECLARADO del 5 % por cada lado. Un rojo aqui dice
+    // que el sistema se salio de la banda: se remide, se mueve la banda y
+    // check_publicadas.py senala los documentos.
+    const BANDA_ENVIO_B: (usize, usize) = (73_571, 84_244);
+    const BANDA_COBRO_B: (usize, usize) = (72_382, 83_723);
+    // PUBLICADA_PAGO_MIN_B y PUBLICADA_PAGO_MAX_B viven a nivel de fichero y son
+    // publicas (§318, S538): el latido del nodo consume el maximo. Llegan hasta aqui
+    // por el `use crate::*` de arriba, via el `pub use` de lib.rs.
+    const PUBLICADA_MIL_MIB_MIN: &str = "139,2";
+    const PUBLICADA_MIL_MIB_MAX: &str = "160,2";
+    // EL LADO CARO, declarado y fechado, se RETIRO en el S538 (RFC-0009 D-AJ): hasta el
+    // S511 era "PAGADOR", el arreglo B (5.A-272) lo invirtio a "RECEPTOR" medido APAREADO
+    // el 2026-09-19, y con la ocultacion encendida los dos lados cuestan lo mismo dentro
+    // del ruido (SALIDA-538M: envio 697,9-741,6 ms y cobro 696,9-715,6 ms como minimos;
+    // razon 0,975 y 1,064 en dos corridas, la segunda invertia el sentido). Un contrato
+    // que cae una de cada tres veces no afirma nada: se cita y no se borra (molde S247).
 
     // La RELACION va con BANDA y no con valor: los bytes no dependen de
     // la maquina, los tiempos SI. Medido cuatro veces: envio 260,7-286,8
@@ -128,7 +146,7 @@ mod tests {
     // `layer.send` y `layer.claim` empaquetan el trabajo del cliente y el de
     // la capa en UNA llamada, luego el cronometro sumaba los dos lados de
     // justo la frontera que esta afirmacion separa. El contrato vive ahora en
-    // `el_lado_caro_es_el_declarado`, sobre los dos lados de verdad y
+    // `los_dos_lados_del_pago_atan_la_banda`, sobre los dos lados de verdad y
     // SIN banda: se afirma el SENTIDO.
 
     /// El montaje que produce la cifra publicada.
@@ -273,7 +291,7 @@ mod tests {
         for i in 0..=N {
             let p = winterfell::Proof::from_bytes(&envio.proof).expect("prueba");
             let t = Instant::now();
-            verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+            verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                 p,
                 envio.public_inputs.clone(),
                 &accepted,
@@ -290,7 +308,7 @@ mod tests {
         for i in 0..=N {
             let p = winterfell::Proof::from_bytes(&cobro.proof).expect("prueba");
             let t = Instant::now();
-            verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+            verify::<ClaimAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
                 p,
                 cobro.public_inputs.clone(),
                 &accepted,
@@ -509,17 +527,17 @@ mod tests {
         // La cifra vieja no era un error de medicion: medía una operacion
         // que dejo de ser la de produccion. Ver `AUDITORIA.md` §31.
         assert!(
-            (50_000..80_000).contains(&send_bytes),
-            "la prueba de ENVIO mide {send_bytes} bytes; se esperan ~62 KB"
+            (73_571..=84_244).contains(&send_bytes),
+            "la prueba de ENVIO mide {send_bytes} bytes; la banda del 0.4 (D-AC) es otra"
         );
         assert!(
-            (50_000..80_000).contains(&claim_bytes),
-            "la prueba de COBRO mide {claim_bytes} bytes; se esperan ~62 KB"
+            (72_382..=83_723).contains(&claim_bytes),
+            "la prueba de COBRO mide {claim_bytes} bytes; la banda del 0.4 (D-AC) es otra"
         );
         assert!(
-            (100_000..160_000).contains(&tx_bytes),
+            (145_953..=167_967).contains(&tx_bytes),
             "un PAGO COMPLETO mide {tx_bytes} bytes. Los documentos publican \
-             ~130 KiB por pago y 127,2 MiB por cada mil: si el tamaño ha \
+             la banda 139,2 a 160,2 MiB por cada mil: si el tamaño ha \
              cambiado de orden, esas cifras son falsas"
         );
 
@@ -552,45 +570,55 @@ mod tests {
     fn la_cifra_publicada_sigue_siendo_la_medida() {
         // El reloj se fue al S362: aqui solo quedan los contratos EXACTOS.
         let (envio_b, cobro_b, _, _) = medir_el_pago_publicado();
+        println!("S538M| capa envio {envio_b} B cobro {cobro_b} B pago {} B", envio_b + cobro_b);
 
-        assert_eq!(
-            envio_b, PUBLICADA_ENVIO_B,
-            "el ENVIO mide {} B; la constante dice {} (medida el {}). El \
-             sistema se movio: remide, mueve la constante y deja que \
+        assert!(
+            (BANDA_ENVIO_B.0..=BANDA_ENVIO_B.1).contains(&envio_b),
+            "el ENVIO mide {} B; la banda dice {:?} (medida el {}). El \
+             sistema se movio: remide, mueve la banda y deja que \
              check_publicadas.py senale los documentos que se quedan atras",
-            envio_b, PUBLICADA_ENVIO_B, PUBLICADA_FECHA
+            envio_b, BANDA_ENVIO_B, PUBLICADA_FECHA
         );
-        assert_eq!(
-            cobro_b, PUBLICADA_COBRO_B,
-            "el COBRO mide {} B; la constante dice {} (medida el {})",
-            cobro_b, PUBLICADA_COBRO_B, PUBLICADA_FECHA
+        assert!(
+            (BANDA_COBRO_B.0..=BANDA_COBRO_B.1).contains(&cobro_b),
+            "el COBRO mide {} B; la banda dice {:?} (medida el {})",
+            cobro_b, BANDA_COBRO_B, PUBLICADA_FECHA
         );
-        assert_eq!(
-            envio_b + cobro_b,
-            PUBLICADA_PAGO_B,
-            "un PAGO mide {} B; la constante dice {}. Un pago son DOS \
-             pruebas: envio + cobro",
-            envio_b + cobro_b,
-            PUBLICADA_PAGO_B
+        assert!(
+            (BANDA_ENVIO_B.0 + BANDA_COBRO_B.0..=BANDA_ENVIO_B.1 + BANDA_COBRO_B.1)
+                .contains(&(envio_b + cobro_b)),
+            "un PAGO mide {} B y la banda de un pago es la suma de las dos. Un pago \
+             son DOS pruebas: envio + cobro",
+            envio_b + cobro_b
         );
 
         // La jornada de mil pagos, DERIVADA aqui y no recordada.
         // MiB = 2^20, con una decimal y coma, como la escriben los
         // documentos en castellano.
-        let mil = (PUBLICADA_PAGO_B * 1000) as f64 / 1_048_576.0;
-        let escrito = format!("{:.1}", mil).replace('.', ",");
         assert_eq!(
-            escrito, PUBLICADA_MIL_MIB,
-            "la jornada de mil pagos deriva {} MiB y la constante dice {} \
-             MiB. La unidad es 2^20: quien escriba MB de 10^6 publica un \
-             9,9 % menos",
-            escrito, PUBLICADA_MIL_MIB
+            (PUBLICADA_PAGO_MIN_B, PUBLICADA_PAGO_MAX_B),
+            (BANDA_ENVIO_B.0 + BANDA_COBRO_B.0, BANDA_ENVIO_B.1 + BANDA_COBRO_B.1),
+            "los dos extremos publicos de un pago son las sumas de las bandas"
         );
+        for (pago_b, dice) in [
+            (PUBLICADA_PAGO_MIN_B, PUBLICADA_MIL_MIB_MIN),
+            (PUBLICADA_PAGO_MAX_B, PUBLICADA_MIL_MIB_MAX),
+        ] {
+            let mil = (pago_b * 1000) as f64 / 1_048_576.0;
+            let escrito = format!("{:.1}", mil).replace('.', ",");
+            assert_eq!(
+                escrito, dice,
+                "la jornada de mil pagos deriva {} MiB y la constante dice {} \
+                 MiB. La unidad es 2^20: quien escriba MB de 10^6 publica un \
+                 9,9 % menos",
+                escrito, dice
+            );
+        }
 
         // AQUI VIVIA LA RELACION `envio_ms > cobro_ms x 1,20`, y se cita en
         // vez de borrarse (molde S247). Salio en el S362 porque el estimador
         // no era ruidoso: media el OBJETO equivocado. Ver
-        // `el_lado_caro_es_el_declarado`, justo debajo de este.
+        // `los_dos_lados_del_pago_atan_la_banda`, justo debajo de este.
     }
 
     /// **El lado caro del pago es el DECLARADO, y hoy es el RECEPTOR.**
@@ -642,15 +670,17 @@ mod tests {
     /// fenomeno sino que es casi gratis -- quitar una muestra solo puede
     /// SUBIR un minimo, y el efecto medido fue de 0,3 %.
     ///
-    /// **SIN BANDA.** Se afirma el SENTIDO, que es lo que dice la afirmacion.
-    /// Un margen numerico seria un numero que nadie puede justificar.
+    /// **SIN BANDA se afirmaba el SENTIDO, y el S538 lo retiro (D-AJ)**: encendida la
+    /// ocultacion los dos lados cuestan ~700-750 ms y el sentido cae dentro del ruido
+    /// (razon 0,975 / 1,064 en la SALIDA-538M). Los tiempos se IMPRIMEN y no se
+    /// asertan; lo que este test ATA es la banda de bytes de los dos lados.
     ///
     /// Las dos aserciones de BYTES no son adorno: ATAN este montaje al que
     /// produce la cifra publicada. Si alguien separa uno del otro, los bytes
     /// dejan de cuadrar y este test lo dice antes de que la relacion pase a
     /// significar otra cosa.
     #[test]
-    fn el_lado_caro_es_el_declarado() {
+    fn los_dos_lados_del_pago_atan_la_banda() {
         const N: usize = 5;
         let mut layer = new_layer();
         #[allow(deprecated)]
@@ -726,29 +756,30 @@ mod tests {
         println!("  min envio {me:.1} ms   min cobro {mc:.1} ms   razon {:.3}", me / mc);
         println!("  pares con envio > cobro: {pares} de {}", N - 1);
         println!("  bytes  envio {}  cobro {}", by_envio[0], by_cobro[0]);
+        println!("S538M| cliente envio {by_envio:?} cobro {by_cobro:?}");
 
-        assert_eq!(
-            by_envio[0], PUBLICADA_ENVIO_B,
-            "el ENVIO por la via del cliente mide {} B y la constante dice {}: \
-             o este montaje se separo del de la cifra publicada, o la via dejo \
-             de dar la misma prueba. Las dos cosas hay que declararlas",
-            by_envio[0], PUBLICADA_ENVIO_B
-        );
-        assert_eq!(
-            by_cobro[0], PUBLICADA_COBRO_B,
-            "el COBRO por la via del cliente mide {} B y la constante dice {}",
-            by_cobro[0], PUBLICADA_COBRO_B
-        );
+        for b in &by_envio {
+            assert!(
+                (BANDA_ENVIO_B.0..=BANDA_ENVIO_B.1).contains(b),
+                "el ENVIO por la via del cliente mide {} B y la banda dice {:?}: \
+                 o este montaje se separo del de la cifra publicada, o la via dejo \
+                 de dar la misma clase de prueba. Las dos cosas hay que declararlas",
+                b, BANDA_ENVIO_B
+            );
+        }
+        for b in &by_cobro {
+            assert!(
+                (BANDA_COBRO_B.0..=BANDA_COBRO_B.1).contains(b),
+                "el COBRO por la via del cliente mide {} B y la banda dice {:?}",
+                b, BANDA_COBRO_B
+            );
+        }
 
+        // AQUI VIVIA `assert_eq!(lado, LADO_CARO)` -el SENTIDO del lado caro- y se cita en
+        // vez de borrarse (molde S247): salio en el S538 (D-AJ) porque la ocultacion iguala
+        // los dos lados y el sentido cayo dentro del ruido. El sentido se imprime.
         let lado = if me > mc { "PAGADOR" } else { "RECEPTOR" };
-        assert_eq!(
-            lado, LADO_CARO,
-            "el lado caro es hoy el {} -- envio {:.1} ms como minimo y cobro \
-             {:.1} -- y la constante declara el {}: el argumento normativo de \
-             los preprints (entrada 28) cambia de sentido. No se absorbe, se \
-             declara. Muestras envio {:?}, cobro {:?}",
-            lado, me, mc, LADO_CARO, ms_envio, ms_cobro
-        );
+        println!("  lado mas caro en esta corrida: {lado} (no se aserta desde el S538)");
     }
 
     #[test]

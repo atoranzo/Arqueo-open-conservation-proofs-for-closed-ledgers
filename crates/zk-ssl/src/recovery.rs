@@ -126,7 +126,7 @@ impl SovereignLayer {
             0,
             stark_experiment::circuit_recovery_climb::TRACE_LENGTH,
         )?;
-        verify::<RecoveryClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+        verify::<RecoveryClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             climb_proof,
             RecoveryClimbPublicInputs {
                 root_old,

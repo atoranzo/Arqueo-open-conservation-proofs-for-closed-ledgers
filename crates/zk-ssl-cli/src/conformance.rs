@@ -1,11 +1,15 @@
 //! Vectores de conformidad (nota 74, Fase 1): el escenario canonico —
-//! DETERMINISTA de punta a punta, prueba STARK incluida (el prover de
-//! winterfell no tira dados; §197 lo midio cruzando CLI↔RPC) — reducido
-//! a los hechos que una SEGUNDA implementacion debe reproducir: por
-//! operacion, raiz vieja y nueva, digest de la prueba y digest de
-//! cadena; al final, la cabeza de epoca y el suministro. `--emit` los
-//! fija en disco; `--check` re-ejecuta el escenario y compara campo a
-//! campo. Los digests van en el hex canonico del proyecto (el de
+//! determinista en lo que el circuito fija y, desde zkssl/0.4 (RFC-0009
+//! E3b, §538), NO en los bytes de la prueba: con la ocultacion encendida
+//! cada prueba lleva sal y filas aleatorias (D-X), asi que proof_digest,
+//! chain y epoch_digest cambian de una emision a otra y se DECLARAN no
+//! reproducibles (D-AI; hasta la 0.3 el prover apagado no tiraba dados y
+//! §197 lo midio cruzando CLI↔RPC) — reducido a los hechos que una
+//! SEGUNDA implementacion debe reproducir: por operacion, raiz vieja y
+//! nueva y el compromiso; al final, el suministro y el pendiente. `--emit`
+//! los fija en disco, digests incluidos: un vector es lo que su version
+//! produjo; `--check` re-ejecuta el escenario y compara lo que se fija.
+//! Los digests van en el hex canonico del proyecto (el de
 //! `store::digest_to_bytes`): el mismo byte a byte que persiste la capa
 //! y que define `spec/RPC.md`.
 
@@ -99,7 +103,7 @@ fn recolectar(layer: &SovereignLayer) -> Vectores {
         })
         .collect();
     Vectores {
-        spec: "zkssl/0.3".into(),
+        spec: "zkssl/0.4".into(),
         // Re-emitido en §278: las cuatro entradas delegadas del escenario
         // —dos OpenAccount y dos Mint— dejan de asentar la prueba vacia,
         // asi que cambian sus digests, TODA la cadena y la cabeza.
@@ -115,10 +119,17 @@ fn recolectar(layer: &SovereignLayer) -> Vectores {
         // emitir): [tests de circuitos, tests de la capa, suma de la
         // compuerta de sello, circuitos con impl Air]. Los antiguos 40
         // (sin fuente nombrada en el registro) y 28: ver el asiento.
-        sellado: "§354".into(),
+        // Re-emitido como zkssl/0.4 (RFC-0009 E3b, §538): los 23 probadores con
+        // fila salen OCULTOS (D-Z), con sal y filas aleatorias de la entropia del
+        // sistema (D-X). Dos emisiones del MISMO escenario ya no dan los mismos bytes
+        // de prueba: proof_digest, chain y epoch_digest no se reproducen; seq, kind,
+        // root_old, root_new, compromiso, supply y pending si. Lo mide el
+        // PASTE-538-M (dos --emit, campo a campo) y lo que un --check puede exigir en
+        // 0.4 lo decide el asiento.
+        sellado: "§538".into(),
         escenario: ESCENARIO.into(),
         // §207 sumo tres tests al arbol disperso: 242 -> 245.
-        canon: [318, 279, 973, 31],
+        canon: [403, 421, 1412, 39],
         entradas,
         // ⚠️ §292: el vector SELLADO pina LA COMPOSICION V2 — es un artefacto
         // congelado y su significado no se mueve con el formato vivo. Por eso
@@ -173,8 +184,13 @@ pub fn conformance(a: ConformanceArgs, tr: &mut dyn Tracer) -> anyhow::Result<()
                 );
             }
             let mut malas = 0usize;
+            // D-AI (RFC-0009, zkssl/0.4): se cruza lo que el circuito fija; los digests que
+            // llevan bytes de prueba no se reproducen con la ocultacion encendida.
+            fn fija(e: &Entrada) -> (&str, &str, &str, &str, Option<&str>) {
+                (&e.seq, &e.kind, &e.root_old, &e.root_new, e.compromiso.as_deref())
+            }
             for (f, n) in fijo.entradas.iter().zip(ahora.entradas.iter()) {
-                if f != n {
+                if fija(f) != fija(n) {
                     malas += 1;
                     tr.emit(&TraceEvent::Note {
                         text: format!("DIFIERE seq {}:\n  fijo  {f:?}\n  ahora {n:?}", f.seq),
@@ -182,7 +198,6 @@ pub fn conformance(a: ConformanceArgs, tr: &mut dyn Tracer) -> anyhow::Result<()
                 }
             }
             let colas = [
-                ("epoch_digest", &fijo.epoch_digest, &ahora.epoch_digest),
                 ("supply", &fijo.supply, &ahora.supply),
                 ("pending", &fijo.pending, &ahora.pending),
             ];
@@ -195,7 +210,9 @@ pub fn conformance(a: ConformanceArgs, tr: &mut dyn Tracer) -> anyhow::Result<()
             if malas == 0 {
                 tr.emit(&TraceEvent::Note {
                     text: format!(
-                        "CONFORMIDAD: {} entradas + cabeza + suministro, todo IDENTICO",
+                        "CONFORMIDAD: {} entradas + suministro + pendiente, todo IDENTICO en lo \
+                         que el circuito fija (proof_digest, chain y epoch_digest no se \
+                         reproducen con la ocultacion: D-AI)",
                         ahora.entradas.len()
                     ),
                 });

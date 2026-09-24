@@ -12,7 +12,8 @@
 //! lo que tumbe la prueba sea el AIR y no esta funcion.
 
 use winterfell::crypto::hashers::{Blake3_256, Rp64_256};
-use winterfell::crypto::{DefaultRandomCoin, MerkleTree};
+use winterfell::crypto::DefaultRandomCoin;
+use zk_ssl_air::sal::MerkleConSal;
 use winterfell::math::{batch_inversion, fields::f64::BaseElement, FieldElement};
 use winterfell::matrix::ColMatrix;
 use winterfell::{
@@ -57,7 +58,9 @@ pub struct Celda {
 
 const CERO: Digest = [BaseElement::ZERO; 4];
 
-/// Las celdas HONESTAS de un libro, rellenas con huecos hasta la potencia de dos (al menos 2).
+/// Las celdas HONESTAS de un libro, rellenas con huecos hasta la potencia de dos (al menos 8:
+/// D-AG, la traza oculta pide T >= 64 y la traza mide 8 * hojas; el enunciado permite contar
+/// de mas, n <= 2^m).
 /// Falla cerrada ante un vivo sin meta o una meta en un hueco.
 pub fn celdas_del_libro(
     hojas: &[Digest],
@@ -70,7 +73,7 @@ pub fn celdas_del_libro(
     if en.t >= (1u64 << BITS) || en.seq >= (1u64 << BITS) {
         return Err(format!("T = {} o seq = {} no caben en {BITS} bits", en.t, en.seq));
     }
-    let tam = hojas.len().next_power_of_two().max(2);
+    let tam = hojas.len().next_power_of_two().max(8);
     let nombrado = BaseElement::new(en.emisor);
     let mut celdas = Vec::with_capacity(tam);
     for p in 0..tam {
@@ -343,7 +346,7 @@ impl Prover for EdadProver {
     type Air = EdadAir;
     type Trace = TrazaEdad;
     type HashFn = Blake3;
-    type VC = MerkleTree<Blake3>;
+    type VC = MerkleConSal<Blake3>;
     type RandomCoin = DefaultRandomCoin<Blake3>;
     type TraceLde<E: FieldElement<BaseField = Self::BaseField>> =
         DefaultTraceLde<E, Self::HashFn, Self::VC>;
@@ -358,6 +361,11 @@ impl Prover for EdadProver {
 
     fn options(&self) -> &ProofOptions {
         &self.options
+    }
+
+    /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
+    fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
+        Some(crate::ocultacion_encendida())
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(

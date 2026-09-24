@@ -3228,9 +3228,16 @@ fn t487_una_congelada_no_envia_con_camino_ajeno() {
     );
     let prover = stark_experiment::circuit_send::SendProver::new(layer.options.clone());
     let public_inputs = prover.get_pub_inputs(&trace);
-    let prueba = prover.prove(trace).expect("prove");
+    // E3b-2 (RFC-0009 D-AH): encendido, el probador COMPRUEBA la traza real antes de
+    // ocultarla y el camino ajeno no la satisface: devuelve Err. Apagado, winterfell
+    // emitia la prueba y la capa la rechazaba en el aplicador (S487). Las DOS puertas se
+    // prueban: la del probador aqui, y la del aplicador con un recibo SIN prueba, que la
+    // congelacion rechaza antes de leerla.
+    let err = prover.prove(trace).expect_err("un camino ajeno no satisface el AIR (D-AH)");
+    let que = format!("{err:?}");
+    assert!(que.starts_with("UnsatisfiedTransitionConstraintError"), "otro error: {que}");
     let recibo = crate::two_phase::SendReceipt {
-        proof: prueba.to_bytes(),
+        proof: Vec::new(),
         public_inputs,
         commitment: crate::pending::pending_commitment(destino, sal, importe),
         notice: crate::two_phase::PendingNotice {
@@ -3285,9 +3292,13 @@ fn t487_una_congelada_no_cobra_con_camino_ajeno() {
     );
     let prover = stark_experiment::circuit_claim::ClaimProver::new(layer.options.clone());
     let public_inputs = prover.get_pub_inputs(&trace);
-    let prueba = prover.prove(trace).expect("prove");
+    // E3b-2 (D-AH): el probador devuelve Err con el camino ajeno; el aplicador rechaza
+    // la congelada antes de leer la prueba (S487).
+    let err = prover.prove(trace).expect_err("un camino ajeno no satisface el AIR (D-AH)");
+    let que = format!("{err:?}");
+    assert!(que.starts_with("UnsatisfiedTransitionConstraintError"), "otro error: {que}");
     let recibo = crate::two_phase::ClaimReceipt {
-        proof: prueba.to_bytes(),
+        proof: Vec::new(),
         public_inputs,
     };
     let r = layer.apply_claim(&recibo, alice, &estado, &aviso);
@@ -3323,9 +3334,13 @@ fn t487_una_congelada_no_quema_con_camino_ajeno() {
     );
     let prover = stark_experiment::circuit_burn::BurnProver::new(layer.options.clone());
     let public_inputs = prover.get_pub_inputs(&trace);
-    let prueba = prover.prove(trace).expect("prove");
+    // E3b-2 (D-AH): el probador devuelve Err con el camino ajeno; el aplicador rechaza
+    // la congelada antes de leer la prueba (S487).
+    let err = prover.prove(trace).expect_err("un camino ajeno no satisface el AIR (D-AH)");
+    let que = format!("{err:?}");
+    assert!(que.starts_with("UnsatisfiedTransitionConstraintError"), "otro error: {que}");
     let recibo = crate::BurnReceipt {
-        proof: prueba.to_bytes(),
+        proof: Vec::new(),
         public_inputs,
     };
     let r = layer.apply_burn(&recibo, alice, &estado);

@@ -2,7 +2,7 @@
 
 Para quien tiene cinco minutos y no es técnico. En dos lenguas y más corto:
 [`RESUMEN_BILINGUE.md`](./RESUMEN_BILINGUE.md). El proyecto se llamaba antes ZK-SSL; cambió el
-nombre, no los identificadores publicados (`zkssl/0.3`, `zk-ssl-*`). Lo que dice esta página está
+nombre, no los identificadores publicados (`zkssl/0.4` desde el asiento 538, `zk-ssl-*`). Lo que dice esta página está
 verificado contra `main` en el commit `3294986`.
 
 ## Qué es, en tres frases
@@ -60,7 +60,7 @@ están revisados: [`doc/USE_CASES.md`](./doc/USE_CASES.md).
 | pieza | estado |
 |---|---|
 | El motor | 18 crates en Rust; cada cambio pasa por el canon (los tests de todos los crates y ocho herramientas que vigilan cifras, citas, dominios y geometría) |
-| El protocolo | `zkssl/0.3`: 29 métodos JSON-RPC, vectores de conformidad por versión que jamás se reescriben; RFC 0002-0004, 0006, 0007 aceptados; 0005, 0008 propuestos |
+| El protocolo | `zkssl/0.4`: 29 métodos JSON-RPC, vectores de conformidad por versión que jamás se reescriben; RFC 0002-0004, 0006, 0007 aceptados; 0005, 0008 propuestos |
 | El verificador | `zk-ssl-verify` 0.2.0, release `arqueo-verify-v0.2.0`, reproducible desde el commit que su `VERSION` nombra |
 | El registro | [`AUDITORIA.md`](./AUDITORIA.md): un asiento por cambio verificado, con su commit; lo que se corrige se marca, no se borra |
 

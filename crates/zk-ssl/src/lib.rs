@@ -154,9 +154,10 @@ use std::collections::HashMap;
 use winterfell::math::fields::f64::BaseElement;
 use winterfell::math::FieldElement;
 use winterfell::{
-    crypto::hashers::Blake3_256, crypto::DefaultRandomCoin, crypto::MerkleTree, verify,
+    crypto::hashers::Blake3_256, crypto::DefaultRandomCoin, verify,
     AcceptableOptions, BatchingMethod, FieldExtension, ProofOptions, Prover,
 };
+use stark_experiment::MerkleConSal;
 
 use stark_experiment::circuit_audit::{
     build_trace as build_audit_trace, AuditAir, AuditProver, AuditPublicInputs, AuditWitness,
@@ -174,7 +175,7 @@ pub use stark_experiment::circuit_governance::{build_governance_set};
 pub use stark_experiment::circuit_threshold::build_custodian_set;
 // §318: la cifra por pago se hace API porque el nodo la consume.
 // `mod metrics` sigue privado; lo que se publica es solo esta const.
-pub use crate::metrics::PUBLICADA_PAGO_B;
+pub use crate::metrics::{PUBLICADA_PAGO_MAX_B, PUBLICADA_PAGO_MIN_B};
 // §435: el productor unico de la raiz de consumos se hace API porque el nodo
 // lo consume para acreditar libros ajenos (RFC-0006, E4b).
 // `mod consumo` sigue privado; lo que se publica es solo esta fn.
@@ -245,7 +246,8 @@ pub(crate) fn comprobar_forma(
         info.get_num_aux_segment_rand_elements(),
         info.length(),
     );
-    let exige = (ancho, ancho_aux, aleatorios_aux, longitud);
+    // E3b2-M3 (D-AD): la forma OCULTA, derivada de la del AIR por Oculta::new.
+    let exige = (ancho + 1, ancho_aux, aleatorios_aux, 2 * longitud);
     if real != exige {
         return Err(LayerError::VerificationFailed(format!(
             "forma de traza {real:?}; el enunciado exige {exige:?}"
@@ -772,7 +774,7 @@ pub fn verify_audit(disclosure: &AuditDisclosure) -> Result<(), LayerError> {
         0,
         stark_experiment::circuit_audit::TRACE_LENGTH,
     )?;
-    verify::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+    verify::<AuditAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
         proof,
         disclosure.public_inputs.clone(),
         &min_opts,
@@ -1084,8 +1086,14 @@ mod guarda_forma {
         // longitud ajena
         let j = TraceInfo::new(44, 128);
         assert!(comprobar_forma(&j, 44, 0, 0, 512).is_err());
-        // la forma EXACTA pasa
-        let k = TraceInfo::new(44, 512);
+        // la forma EXACTA pasa, y desde D-AD (RFC-0009) es la OCULTA: ancho + 1 y 2T
+        let k = TraceInfo::new(45, 1024);
         assert!(comprobar_forma(&k, 44, 0, 0, 512).is_ok());
+        // la forma APAGADA -la del AIR- se rechaza: en zkssl/0.4 solo hay una forma
+        let apagada = TraceInfo::new(44, 512);
+        assert!(matches!(
+            comprobar_forma(&apagada, 44, 0, 0, 512),
+            Err(LayerError::VerificationFailed(_))
+        ));
     }
 }

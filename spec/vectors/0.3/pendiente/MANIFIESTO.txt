@@ -1,0 +1,27 @@
+# zkssl/0.3, CONSERVADO (S538, RFC-0009 D-AB): estos vectores nacieron con el probador apagado y el kit 0.4
+# no los verifica (rechaza su forma, D-AD); los verifica arqueo-verify-v0.2.0 (asiento 442), medido desde
+# fuera. Jamas se reescriben (regla 2 del PROCESO).
+# Vectores del sobre de COBRO PENDIENTE (spec/PAQUETE.md 2.8, RFC-0008 E4-cobro; asiento 499).
+# fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
+# Los DOS positivos se REUNEN de las CAPTURAS-498-S498 de un nodo real: la boca del cobrador
+# (`zk-ssl-cli prueba-cobro`, S497) los escribio con el nodo VIVO, contra la cabeza v5 de seq 5 que
+# ese nodo firmo, sobre un pendiente v2 nacido en 4 por 250000. Son las dos formas de D-N: la
+# existencia (`inferior = 0`) y la banda ajustada (`inferior = importe`). Su productor es
+# `tools/banco_pendiente.sh`, que SI vive en el arbol (S498). La cabeza no viaja aparte: va entera
+# dentro de los dos sobres (D-J). El aviso y la credencial del escenario NO son vectores -el mando
+# no los lee- y se declaran por su huella: `aviso.json` `17f86def80cdf3c0` (204 B) y
+# `credencial.json` `f1dfac359b900273` (195 B); el banco los reproduce.
+# Los siete negativos salen de `cobro-inferior-importe.json` por UNA mutacion cada uno, uno por
+# regla producible (D-Q); jamas se reescriben (regla 2 del PROCESO).
+# OJO con `neg-inferior-por-encima`: el texto que sigue al prefijo lo pone WINTERFELL
+# (`InconsistentOodConstraintEvaluations`) y no la casa, asi que caducaria con la dependencia. Se
+# pina SOLO el prefijo `cobro:`, que es lo que antepone el mando y lo unico que la casa gobierna.
+cobro-inferior-0.json|0|por al menos 0, nacido en 4
+cobro-inferior-importe.json|0|por al menos 250000, nacido en 4
+neg-sin-enunciado.json|1|falta enunciado
+neg-sin-prueba.json|1|falta prueba o no es cadena 0x
+neg-sin-cabeza.json|1|falta cabeza
+neg-sin-firma.json|1|falta signature
+neg-cabeza-v4.json|1|exige una cabeza v5
+neg-nacido-igual-seq.json|1|no es anterior a la cabeza de seq
+neg-inferior-por-encima.json|1|cobro:

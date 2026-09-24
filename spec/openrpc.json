@@ -14,7 +14,7 @@
         "type": "string"
       },
       "ProtocolVersion": {
-        "const": "zkssl/0.3",
+        "const": "zkssl/0.4",
         "type": "string"
       },
       "Q": {
@@ -27,7 +27,7 @@
   "info": {
     "description": "Especificacion normativa: spec/RPC.md. Principio del API: la clave de gasto no viaja jamas. Hoy no se cumple: las pruebas de envio y de cobro la publican (winterfell 0.13 no oculta el testigo; AUDITORIA.md, asiento 521).",
     "title": "ZK-SSL JSON-RPC",
-    "version": "zkssl/0.3"
+    "version": "zkssl/0.4"
   },
   "methods": [
     {

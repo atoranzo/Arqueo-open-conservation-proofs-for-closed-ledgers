@@ -1,3 +1,18 @@
+# zkssl/0.4 (S538, RFC-0009 E3b-2): los vectores de esta familia se REGENERARON desde su banco con
+# pruebas OCULTAS (D-Z, D-AK); las lineas de abajo son las del catalogo 0.3, medidas sobre las capturas
+# 0.4 con el kit 0.4 (SALIDA-538M R10: todas dicen lo que deben). Los ficheros 0.3 viven bajo
+# spec/vectors/0.3/ (D-AB) y los verifica el kit que los vio nacer, arqueo-verify-v0.2.0.
+# De esta familia el banco regenera NUEVE (las ocho de banda con prueba y saldo-insuficiente);
+# el mapa de nombres captura -> catalogo sale del propio banco:
+#   neg3-cabeza-adulterada.json -> rechazo-rech-banda-cabeza-adulterada.json
+#   neg3-con-saldo.json -> rechazo-rech-banda-con-saldo.json
+#   neg3-cuenta-otra.json -> rechazo-rech-banda-cuenta-otra.json
+#   neg3-importe-otro.json -> rechazo-rech-banda-importe-otro.json
+#   neg3-pedido-cero.json -> rechazo-rech-banda-pedido-cero.json
+#   neg3-seq-movido.json -> rechazo-rech-banda-cabeza-distinta.json
+#   neg3-sin-prueba.json -> rechazo-rech-banda-sin-prueba.json
+#   neg3-techo.json -> rechazo-rech-banda-techo.json
+#   rechazo-saldo-insuficiente.json -> saldo-insuficiente.json
 # Vectores del sobre de RECHAZO (spec/PAQUETE.md seccion 2.6; RFC-0007 E3 y, desde los asientos
 # 476 y 479, las dos causas de E5 que se construyen. Nace en el asiento 455).
 # fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener

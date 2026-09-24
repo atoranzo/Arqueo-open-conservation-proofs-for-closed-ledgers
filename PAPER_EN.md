@@ -473,7 +473,7 @@ on the party accepting it.
 > **verifies, mutates the tree and writes to disk**. The two are not
 > comparable. See `AUDITORIA.md` §22.
 
-**Quantified scaling limit**: one thousand transfers accumulate 127.2 MiB of
+**Quantified scaling limit**: one thousand transfers accumulate 139.2 to 160.2 MiB of
 proofs. This is the dominant practical constraint of choosing STARK, and
 the quantitative argument for recursive aggregation or batched proofs.
 
@@ -921,9 +921,9 @@ trace.
 
 Measurements show that verification costs 0.5–0.8% of proving — an
 asymmetry that makes the model viable — and quantify its principal limit:
-**127.2 MiB of accumulated proofs per thousand transfers** — unit
+**139.2 to 160.2 MiB of accumulated proofs per thousand transfers** — unit
 corrected in the fourth revision: the figure was always binary and was
-labelled "MB"; in SI units it is 133.4 MB.
+labelled "MB"; in SI units it is 146.0 to 168.0 MB.
 
 ⚠️ That asymmetry is measured on **audit disclosures**, which verify without
 mutating state — precisely the supervisory case. A transfer's apply step

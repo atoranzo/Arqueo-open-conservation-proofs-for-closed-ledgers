@@ -3,7 +3,8 @@
 > **English:** [`README_EN.md`](./README_EN.md) is this page in English, section by section.
 
 **Antes se llamaba ZK-SSL.** Cambió el nombre del proyecto, no los identificadores publicados:
-el cable sigue siendo `zkssl/0.3`, los crates `zk-ssl-*`, y los depósitos con DOI conservan el
+el cable era `zkssl/0.3` y desde el asiento 538 es `zkssl/0.4` (por la ocultación, RFC-0009; no
+por el nombre), los crates `zk-ssl-*`, y los depósitos con DOI conservan el
 título con el que se depositaron. Lo que dice este documento está verificado contra `main` en el
 commit `343d3b6`; lo que cambie después lo registra [`AUDITORIA.md`](./AUDITORIA.md), un asiento
 por cambio.
@@ -181,7 +182,7 @@ a mirar el código con intención de romperlo, empieza ahí.
 | pieza | dónde se mide |
 |---|---|
 | **21 crates** en un workspace —18 propios y los tres del fork de winterfell 0.13.1 (§533)—; el canon (`tools/canon.sh --sello`) corre los tests de todos, en release, y las ocho herramientas de `tools/` que vigilan cifras, citas, dominios y geometría | la tabla de [`tools/canon.sh`](./tools/canon.sh) lleva los tests que pasan por crate; cada sello la actualiza |
-| **Protocolo `zkssl/0.3`**: 30 métodos JSON-RPC (27 `zkssl_*`, 3 `dev_*`), OpenRPC generado desde el código, vectores por versión que jamás se reescriben | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (260 ficheros: cable, núcleo, paquete, consumo, conflicto, rechazo, edad, pendiente, pago y los tres `zkssl-0.N.json`) |
+| **Protocolo `zkssl/0.4`**: 30 métodos JSON-RPC (27 `zkssl_*`, 3 `dev_*`), OpenRPC generado desde el código, vectores por versión que jamás se reescriben | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (303 ficheros: cable, núcleo, paquete, consumo, conflicto, rechazo, edad, pendiente, pago, los catálogos 0.3 bajo `0.3/` y los cuatro `zkssl-0.N.json`) |
 | **RFC**: 0002, 0003, 0004, 0006 y 0007 (las pruebas sobre el estado comprometido) aceptados; 0005 (el núcleo congelado) y 0008 (las pruebas portables del pendiente) propuestos | [`spec/rfc/`](./spec/rfc/) |
 | **Verificador independiente** `zk-ssl-verify` 0.2.0, release `arqueo-verify-v0.2.0`, reproducible desde el commit que su `VERSION` nombra | [`doc/KIT.md`](./doc/KIT.md) · [`tools/artefacto.sh`](./tools/artefacto.sh) |
 | **Registro**: un asiento por cambio verificado, con su commit; lo corregido se marca, no se borra | [`AUDITORIA.md`](./AUDITORIA.md) · [`BACKLOG.md`](./BACKLOG.md) |

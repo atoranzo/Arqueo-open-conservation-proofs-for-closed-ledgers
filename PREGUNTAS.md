@@ -21,7 +21,8 @@ reescribió, que una entrada está dentro, que sólo el titular movió su cuenta
 Debajo hay una capa de liquidación en Rust con pagos en dos fases probados con STARK, y el trabajo
 comparativo que fundamentó su diseño: el mismo circuito en cinco sistemas de prueba
 ([`FIVE_BACKENDS.md`](./FIVE_BACKENDS.md)). Antes se llamaba ZK-SSL; cambió el nombre del
-proyecto, no los identificadores publicados (`zkssl/0.3`, `zk-ssl-*`).
+proyecto, no los identificadores publicados (`zkssl/0.3` entonces y `zkssl/0.4` desde el
+asiento 538, por la ocultación; `zk-ssl-*`).
 
 ### 2. ¿Qué NO es?
 
@@ -253,7 +254,7 @@ binario difieren un ~9 % (`AUDITORIA.md` §131), y **no son comparables con medi
   portátil —generar las pruebas de las dos partes y aplicarlas— sale a 1,5-1,9 pagos por segundo,
   y durante un tiempo esa cifra se atribuyó al nodo: **era falso, y por mucho** (§229, §238); el
   nodo trabaja el 4 % de ese ciclo.
-- **Tamaño**: mil transferencias son ~590 s de prueba y 127,2 MiB acumulados (§130). Resolverlo
+- **Tamaño**: mil transferencias son ~590 s de prueba y 139,2 a 160,2 MiB acumulados (§130). Resolverlo
   exige agregación recursiva o pruebas por lote, que no están implementadas.
 - **El límite que primero muerde**: la contención del anclaje de raíz. Cada prueba se ata a la raíz
   exacta que vio, así que dos emisores concurrentes se serializan; con cuatro clientes a la vez,

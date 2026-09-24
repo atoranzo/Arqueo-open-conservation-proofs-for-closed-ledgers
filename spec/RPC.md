@@ -1,4 +1,4 @@
-# Arqueo JSON-RPC — especificación v0.3 (`zkssl/0.3`)
+# Arqueo JSON-RPC — especificación v0.4 (`zkssl/0.4`)
 
 > **Qué cambió de `0.1` a `0.2` (§209, etapa 1 del RFC-0002).** Un solo
 > cambio, y no está en los métodos: **`proof_digest` deja de calcularse
@@ -71,7 +71,7 @@ cumpla lo decide un RFC. Ver `SECURITY.md`.
 
 | método | params | result |
 |---|---|---|
-| `zkssl_protocolVersion` | — | `"zkssl/0.3"` |
+| `zkssl_protocolVersion` | — | `"zkssl/0.4"` |
 | `zkssl_params` | — | `{regulatoryLimit, maxSupply, maxAccounts: Q, custodianRoot, governanceRoot: Digest, refundTtl, maxCustodianUses: Q}` |
 | `zkssl_epochHead` | — | `{seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, acusesRoot, n, mmrRoot, mmrSize, consRoot, consCount, paramsDigest, pmetaRoot, nextPending, nextIndex, totalSupply, epochDigest}` |
 | `zkssl_supply` | — | `{total, pending: Q}` |
@@ -1165,7 +1165,8 @@ si la distingue, y por eso el manifiesto pina clase y texto. Abrir una clase sub
 - Parámetros de un ledger persistido: inmutables
   (`ParameterMismatch` al reabrir con otros valores).
 - Versionado: `zkssl_protocolVersion` gobierna compatibilidad. **La
-  versión vigente es `zkssl/0.3`** desde §354 (la `0.2` rigió desde §209), y lo que la sube es que
+  versión vigente es `zkssl/0.4`** desde §538 (la `0.3` rigió desde §354, la `0.2` desde §209), y lo
+  que la sube es que
   cambien los **valores que viajan**, no el tamaño de la superficie:
   añadir un método de forma aditiva —como `zkssl_applyMany` en §222— no
   la sube, porque los vectores de conformidad no se mueven.

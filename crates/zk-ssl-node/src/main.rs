@@ -1556,7 +1556,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
 
     match method {
         // ── lectura ────────────────────────────────────────────────
-        "zkssl_protocolVersion" => Ok(json!("zkssl/0.3")),
+        "zkssl_protocolVersion" => Ok(json!("zkssl/0.4")),
 
         "zkssl_params" => Ok(serde_json::to_value(wire::ParamsDto {
             regulatory_limit: Q(l.regulatory_limit()),
@@ -2888,7 +2888,7 @@ mod tests {
     /// §318 - EL UMBRAL SE PRUEBA CON NUMEROS, no fabricando cien mil
     /// entradas. Por eso la decision vive separada del recorrido.
     ///
-    /// Y el segundo assert es EL ATADO: N y `PUBLICADA_PAGO_B` son dos
+    /// Y el segundo assert es EL ATADO: N y `PUBLICADA_PAGO_MAX_B` son dos
     /// productores de la misma afirmacion -la escala que la nota 22
     /// publica- y aqui se comparan. Si alguien mueve la constante de la
     /// capa, esto se pone rojo y la nota deja de mentir en silencio.
@@ -2896,15 +2896,15 @@ mod tests {
     fn el_umbral_de_acumulacion_cuadra_con_la_cifra_publicada() {
         assert_eq!(crate::latido::AVISO_ACUMULACION_PAGOS, 100_000);
         let bytes =
-            crate::latido::AVISO_ACUMULACION_PAGOS as u128 * zk_ssl::PUBLICADA_PAGO_B as u128;
+            crate::latido::AVISO_ACUMULACION_PAGOS as u128 * zk_ssl::PUBLICADA_PAGO_MAX_B as u128;
         assert_eq!(
-            bytes, 13_343_100_000u128,
-            "N x PUBLICADA_PAGO_B se movio: la nota 22 publica otra cosa"
+            bytes, 16_796_700_000u128,
+            "N x PUBLICADA_PAGO_MAX_B se movio: la nota 22 publica otra cosa"
         );
         let gib = bytes as f64 / (1024.0 * 1024.0 * 1024.0);
         assert!(
-            (gib - 12.4).abs() < 0.05,
-            "la nota 22 publica ~12,4 GiB y la aritmetica da {gib:.2}"
+            (gib - 15.6).abs() < 0.05,
+            "la nota 22 publica ~15,6 GiB (el maximo de la banda, S538) y la aritmetica da {gib:.2}"
         );
     }
 
@@ -3266,7 +3266,7 @@ mod tests {
         let app = nodo(30);
         assert_eq!(
             dispatch(&app, "zkssl_protocolVersion", json!([])).expect("version"),
-            json!("zkssl/0.3")
+            json!("zkssl/0.4")
         );
         let h = dispatch(&app, "zkssl_epochHead", json!({})).expect("epochHead");
         assert!(h["signature"].is_null(), "epochHead NO debe llevar firma");
@@ -3279,7 +3279,7 @@ mod tests {
         let v = dispatch(&app, "zkssl_protocolVersion", json!([])).expect("version");
         // ⚠️ Si esto cambia, cambia el CABLE. spec/RPC.md §versionado: lo
         // que sube version es que cambien los VALORES que viajan.
-        assert_eq!(v, json!("zkssl/0.3"));
+        assert_eq!(v, json!("zkssl/0.4"));
     }
 
     #[test]

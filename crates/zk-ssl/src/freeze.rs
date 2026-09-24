@@ -112,7 +112,7 @@ impl SovereignLayer {
             0,
             stark_experiment::circuit_frozen_climb::TRACE_LENGTH,
         )?;
-        verify::<FrozenClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+        verify::<FrozenClimbAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             climb_proof,
             FrozenClimbPublicInputs { root_a: root_old, root_b: root_new },
             &accepted,

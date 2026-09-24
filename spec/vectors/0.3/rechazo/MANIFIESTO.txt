@@ -1,0 +1,15 @@
+# zkssl/0.3, CONSERVADO (S538, RFC-0009 D-AB): estos vectores nacieron con el probador apagado y el kit 0.4
+# no los verifica (rechaza su forma, D-AD); los verifica arqueo-verify-v0.2.0 (asiento 442), medido desde
+# fuera. Jamas se reescriben (regla 2 del PROCESO).
+# Solo los nueve vectores que el banco regenera; los otros 75 no llevan prueba y siguen en
+# spec/vectors/rechazo/ (82/84 con el kit 0.4, medido).
+# fichero|codigo de salida esperado|texto
+saldo-insuficiente.json|0|VERDE: InsufficientBalance se sostiene sobre el estado comprometido
+rechazo-rech-banda-con-saldo.json|1|data: esta causa no publica el saldo: la banda lo prueba sin el
+rechazo-rech-banda-importe-otro.json|1|data: el importe que el nodo dice no es el que la prueba acota
+rechazo-rech-banda-cabeza-distinta.json|1|la cabeza (seq 5) no es la del rechazo (seq 6)
+rechazo-rech-banda-cuenta-otra.json|1|banda: InconsistentOodConstraintEvaluations
+rechazo-rech-banda-sin-prueba.json|1|banda: falta prueba o no es cadena 0x
+rechazo-rech-banda-cabeza-adulterada.json|1|cabeza: los campos NO recomponen su epochDigest
+rechazo-rech-banda-pedido-cero.json|1|la causa NO se sostiene: pedir 0 no puede pasar de ningun saldo
+rechazo-rech-banda-techo.json|1|banda: los limites 0 y 4611686018427387904 pasan del techo 4611686018427387903

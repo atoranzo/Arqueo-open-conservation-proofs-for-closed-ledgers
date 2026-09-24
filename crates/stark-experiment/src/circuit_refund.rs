@@ -32,7 +32,8 @@
 //! release —donde la suite corre— genera y verifica correctamente.
 
 use winterfell::crypto::hashers::{Blake3_256, Rp64_256};
-use winterfell::crypto::{DefaultRandomCoin, MerkleTree};
+use winterfell::crypto::DefaultRandomCoin;
+use zk_ssl_air::sal::MerkleConSal;
 use winterfell::math::{fields::f64::BaseElement, FieldElement, ToElements};
 use winterfell::matrix::ColMatrix;
 use winterfell::{
@@ -51,15 +52,20 @@ type Blake3 = Blake3_256<BaseElement>;
 pub const CYCLE_LENGTH: usize = 8;
 /// Dos merges: `H(id_r, salt)` y `H(interior, importe)`.
 pub const NUM_MERGES: usize = 2;
-/// 16 filas: la traza más corta de la casa.
-pub const TRACE_LENGTH: usize = NUM_MERGES * CYCLE_LENGTH;
+/// D-AG (RFC-0009): OCHO ciclos, 64 filas -- los dos merges y seis ciclos de ACOLCHADO que
+/// siguen permutando detras del compromiso sin que nada los aserte. La traza oculta pide
+/// T >= 64: el fork exige m < 2T con m = 64, y las 44 aberturas por columna (42 consultas,
+/// z y z*g) piden al menos 44 filas aleatorias (D-I). Antes, 16 filas: la mas corta de la casa.
+pub const CICLOS: usize = 8;
+pub const TRACE_LENGTH: usize = CICLOS * CYCLE_LENGTH;
 /// Una sola vía de estado Rescue; sin columnas extra.
 pub const TRACE_WIDTH: usize = STATE_WIDTH;
 /// Fila donde el segundo merge absorbe: el importe queda aquí, público.
 pub const ROW_AMOUNT: usize = CYCLE_LENGTH;
-/// Fila final: el compromiso `P` queda en `estado[4..8]`.
-pub const ROW_P: usize = TRACE_LENGTH - 1;
-const _: () = assert!(ROW_P == NUM_MERGES * CYCLE_LENGTH - 1);
+/// Fila final del segundo merge: el compromiso `P` queda en `estado[4..8]`; detras, el
+/// acolchado (D-AG), que ninguna asercion mira.
+pub const ROW_P: usize = NUM_MERGES * CYCLE_LENGTH - 1;
+const _: () = assert!(ROW_P < TRACE_LENGTH && CICLOS >= NUM_MERGES);
 
 // ── Ranuras de restricciones (disposición para el guardián) ──
 /// 12 rondas de Rescue sobre la vía.
@@ -185,7 +191,9 @@ pub fn build_trace(
             state = [zero; STATE_WIDTH];
             state[4..8].copy_from_slice(&digest);
             state[8] = BaseElement::new(amount);
-            // state[9..12] quedan a cero: [importe, 0, 0, 0].
+            // state[9..12] quedan a cero: [importe, 0, 0, 0]. En los ciclos de acolchado
+            // (D-AG) el mismo enlace vuelve a caer: capacidad limpia, digest portado y el
+            // importe absorbido otra vez; las restricciones lo admiten y nada lo aserta.
         }
         rows[r + 1][..STATE_WIDTH].copy_from_slice(&state);
     }
@@ -350,7 +358,7 @@ impl Prover for RefundProver {
     type Air = RefundAir;
     type Trace = TraceTable<BaseElement>;
     type HashFn = Blake3;
-    type VC = MerkleTree<Blake3>;
+    type VC = MerkleConSal<Blake3>;
     type RandomCoin = DefaultRandomCoin<Blake3>;
     type TraceLde<E: FieldElement<BaseField = Self::BaseField>> =
         DefaultTraceLde<E, Self::HashFn, Self::VC>;
@@ -375,6 +383,11 @@ impl Prover for RefundProver {
 
     fn options(&self) -> &ProofOptions {
         &self.options
+    }
+
+    /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
+    fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
+        Some(crate::ocultacion_encendida())
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(
@@ -472,7 +485,7 @@ mod tests {
         let proof = prover.prove(trace).expect("la generacion no deberia fallar");
 
         let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
-        let ok = verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+        let ok = verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             RefundPublicInputs {
                 commitment: native_refund_commitment(receptor, salt, importe),
@@ -496,7 +509,7 @@ mod tests {
         let proof = prover.prove(trace).expect("prueba");
 
         let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
-        let mal = verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+        let mal = verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             RefundPublicInputs {
                 commitment: native_refund_commitment(receptor, salt, importe),
@@ -523,7 +536,7 @@ mod tests {
         ajeno[0] += BaseElement::ONE;
 
         let min_opts = AcceptableOptions::OptionSet(vec![prover.options().clone()]);
-        let mal = verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+        let mal = verify::<RefundAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
             proof,
             RefundPublicInputs {
                 commitment: ajeno,

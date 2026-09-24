@@ -51,7 +51,8 @@ use winter_air::{
     ProofOptions, TraceInfo, TransitionConstraintDegree,
 };
 use winter_crypto::hashers::{Blake3_256, Rp64_256};
-use winter_crypto::{DefaultRandomCoin, MerkleTree};
+use winter_crypto::DefaultRandomCoin;
+use crate::sal::MerkleConSal;
 use winter_math::fields::f64::BaseElement;
 use winter_math::{ExtensionOf, FieldElement, ToElements};
 use winter_verifier::{verify, AcceptableOptions};
@@ -202,8 +203,8 @@ impl ToElements<BaseElement> for EdadPublicInputs {
 /// Lo que el enunciado tiene que cumplir ANTES de construir el AIR: fuera de estos rangos la
 /// aritmetica del campo daria la vuelta, o el AIR no tendria forma. Nunca entra en panico.
 pub fn comprobar_enunciado(pi: &EdadPublicInputs) -> Result<(), String> {
-    if pi.m < 1 || pi.m > 24 {
-        return Err(format!("m = {} fuera de 1..=24", pi.m));
+    if pi.m < 3 || pi.m > 24 {
+        return Err(format!("m = {} fuera de 3..=24", pi.m));
     }
     if pi.n > (1u64 << pi.m) {
         return Err(format!("n = {} no cabe en 2^{}", pi.n, pi.m));
@@ -601,14 +602,14 @@ pub fn verificar(prueba: &[u8], pi: &EdadPublicInputs) -> Result<(), String> {
         info.get_num_aux_segment_rand_elements(),
         info.length(),
     );
-    if forma != (ANCHO, ANCHO_AUX, ALEATORIOS, filas) {
+    if forma != (ANCHO + 1, ANCHO_AUX, ALEATORIOS, 2 * filas) {
         return Err(format!(
             "forma de traza {forma:?}; el enunciado pide {:?}",
-            (ANCHO, ANCHO_AUX, ALEATORIOS, filas)
+            (ANCHO + 1, ANCHO_AUX, ALEATORIOS, 2 * filas)
         ));
     }
     let aceptadas = AcceptableOptions::OptionSet(vec![opciones()]);
-    verify::<EdadAir, Blake3, DefaultRandomCoin<Blake3>, MerkleTree<Blake3>>(
+    verify::<EdadAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>(
         proof,
         pi.clone(),
         &aceptadas,
@@ -674,12 +675,13 @@ pub struct Afirmacion {
     pub subraiz_meta: Digest,
 }
 
-/// **La `m` de una marca**: el menor `m >= 1` con `n <= 2^m`, la que usa el probador
-/// (`next_power_of_two`, al menos 2). Una marca, un subarbol: un enunciado tiene una sola forma
-/// (decision D-2 de E4b-2). No desborda: para `n > 2^63` da 64, que el enunciado rechaza.
+/// **La `m` de una marca**: el menor `m >= 3` con `n <= 2^m`, la que usa el probador
+/// (`next_power_of_two`, al menos 8). Una marca, un subarbol: un enunciado tiene una sola forma
+/// (decision D-2 de E4b-2; el suelo sube de 1 a 3 en D-AG del RFC-0009: la traza oculta pide
+/// T >= 64 y la traza mide 8 * 2^m). No desborda: para `n > 2^63` da 64, que el enunciado rechaza.
 pub fn m_canonico(n: u64) -> u32 {
-    if n <= 2 {
-        1
+    if n <= 8 {
+        3
     } else {
         64 - (n - 1).leading_zeros()
     }
@@ -813,16 +815,17 @@ mod tests {
     }
 
     /// **D-2 de E4b-2 (S465):** la `m` de una marca es la minima, la del probador
-    /// (`next_power_of_two`, al menos 2), y no desborda en los extremos.
+    /// (`next_power_of_two`, al menos 8 desde D-AG), y no desborda en los extremos.
     #[test]
     fn la_m_de_una_marca_es_la_minima() {
         let tabla = [
-            (0, 1),
-            (1, 1),
-            (2, 1),
-            (3, 2),
-            (4, 2),
+            (0, 3),
+            (1, 3),
+            (2, 3),
+            (3, 3),
             (5, 3),
+            (8, 3),
+            (9, 4),
             (13, 4),
             (16, 4),
             (17, 5),
@@ -834,7 +837,7 @@ mod tests {
             assert_eq!(m_canonico(n), m, "n = {n}");
         }
         for n in 0..300u64 {
-            let del_probador = (n as usize).next_power_of_two().max(2) as u64;
+            let del_probador = (n as usize).next_power_of_two().max(8) as u64;
             assert_eq!(1u64 << m_canonico(n), del_probador, "n = {n}");
         }
     }

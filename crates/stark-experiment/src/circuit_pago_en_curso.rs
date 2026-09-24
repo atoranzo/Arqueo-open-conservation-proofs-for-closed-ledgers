@@ -15,7 +15,8 @@
 //! compromiso, sin decir cual es.
 
 use winterfell::crypto::hashers::{Blake3_256, Rp64_256};
-use winterfell::crypto::{DefaultRandomCoin, MerkleTree};
+use winterfell::crypto::DefaultRandomCoin;
+use zk_ssl_air::sal::MerkleConSal;
 use winterfell::math::{fields::f64::BaseElement, FieldElement};
 use winterfell::matrix::ColMatrix;
 use winterfell::{
@@ -219,7 +220,7 @@ impl Prover for PagoEnCursoProver {
     type Air = PagoEnCursoAir;
     type Trace = TraceTable<BaseElement>;
     type HashFn = Blake3;
-    type VC = MerkleTree<Blake3>;
+    type VC = MerkleConSal<Blake3>;
     type RandomCoin = DefaultRandomCoin<Blake3>;
     type TraceLde<E: FieldElement<BaseField = Self::BaseField>> =
         DefaultTraceLde<E, Self::HashFn, Self::VC>;
@@ -251,6 +252,11 @@ impl Prover for PagoEnCursoProver {
 
     fn options(&self) -> &ProofOptions {
         &self.options
+    }
+
+    /// E3b2-M3: encendido, sembrado de la entropia del sistema (D-Z, D-AE).
+    fn ocultacion(&self) -> Option<winter_prover::Ocultacion> {
+        Some(crate::ocultacion_encendida())
     }
 
     fn new_trace_lde<E: FieldElement<BaseField = Self::BaseField>>(

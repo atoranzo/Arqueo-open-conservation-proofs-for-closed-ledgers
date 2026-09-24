@@ -450,16 +450,16 @@ fn revela_el_envio() {
     let (limite, suministro) = (l.regulatory_limit(), l.total_supply());
     let comunes = |sal: Digest| {
         vec![
-            celda("la clave de gasto", Valor::D(ka), 1),
-            celda("la identidad del receptor", Valor::D(id_bob), 1),
-            celda("la identidad del emisor", Valor::D(id_alice), 1),
-            celda("el saldo", el(FONDO_A), 1),
-            celda("el saldo despues", el(FONDO_A - IMPORTE), 1),
-            celda("el importe (publico)", el(IMPORTE), 1),
-            celda("el limite regulatorio (publico)", el(limite), 1),
-            celda("el suministro (publico), en dos columnas", el(suministro), 2),
-            celda("la sal", Valor::D(sal), 1),
-            celda("el leaf_salt", Valor::D(leaf_salt), 1),
+            celda("la clave de gasto", Valor::D(ka), 0),
+            celda("la identidad del receptor", Valor::D(id_bob), 0),
+            celda("la identidad del emisor", Valor::D(id_alice), 0),
+            celda("el saldo", el(FONDO_A), 0),
+            celda("el saldo despues", el(FONDO_A - IMPORTE), 0),
+            celda("el importe (publico)", el(IMPORTE), 0),
+            celda("el limite regulatorio (publico)", el(limite), 0),
+            celda("el suministro (publico), en dos columnas", el(suministro), 0),
+            celda("la sal", Valor::D(sal), 0),
+            celda("el leaf_salt", Valor::D(leaf_salt), 0),
             celda("la clave de vista", Valor::D(derive_view_key_wide(ka)), 0),
         ]
     };
@@ -472,7 +472,7 @@ fn revela_el_envio() {
     let r2 = client::prove_send(&m2, ka, proof_options()).expect("el envio v2");
     let x = r2.notice.x.expect("el aviso v2 lleva X");
     let mut celdas = comunes(sal2());
-    celdas.push(celda("el sobre X", Valor::D(x), 1));
+    celdas.push(celda("el sobre X", Valor::D(x), 0));
     celdas.push(celda("el refund_id", Valor::D(rf), 0));
     celdas.push(celda("el delta", el(DELTA), 0));
     asierta("envio v2 (SendV2Air)", &r2.proof, &celdas);
@@ -495,14 +495,14 @@ fn revela_el_cobro() {
     let suministro = l.total_supply();
     let comunes = |sal: Digest| {
         vec![
-            celda("el suministro (publico), en dos columnas", el(suministro), 2),
-            celda("la clave de gasto", Valor::D(kb), 1),
-            celda("la identidad del receptor, en dos bloques", Valor::D(id_bob), 2),
-            celda("el saldo del receptor antes", el(SALDO_B), 1),
-            celda("el saldo del receptor despues", el(SALDO_B + IMPORTE), 1),
-            celda("el importe (publico)", el(IMPORTE), 1),
-            celda("la sal", Valor::D(sal), 1),
-            celda("el leaf_salt del receptor", Valor::D(leaf_salt), 1),
+            celda("el suministro (publico), en dos columnas", el(suministro), 0),
+            celda("la clave de gasto", Valor::D(kb), 0),
+            celda("la identidad del receptor, en dos bloques", Valor::D(id_bob), 0),
+            celda("el saldo del receptor antes", el(SALDO_B), 0),
+            celda("el saldo del receptor despues", el(SALDO_B + IMPORTE), 0),
+            celda("el importe (publico)", el(IMPORTE), 0),
+            celda("la sal", Valor::D(sal), 0),
+            celda("el leaf_salt del receptor", Valor::D(leaf_salt), 0),
             celda("la identidad del pagador", Valor::D(id_alice), 0),
         ]
     };
@@ -523,7 +523,7 @@ fn revela_el_cobro() {
     let cm2 = l.claim_materials(bob, &r2.notice).expect("materiales del cobro v2");
     let c2 = client::prove_claim(&cm2, kb, proof_options()).expect("el cobro v2");
     let mut celdas = comunes(sal2());
-    celdas.push(celda("el sobre X", Valor::D(x), 1));
+    celdas.push(celda("el sobre X", Valor::D(x), 0));
     celdas.push(celda("el refund_id", Valor::D(rf), 0));
     celdas.push(celda("el delta", el(DELTA), 0));
     asierta("cobro v2 (ClaimAirV2)", &c2.proof, &celdas);
@@ -544,11 +544,11 @@ fn revela_la_prenda() {
     let camino = l.pending.path_for(aviso.position);
     let s = prueba_de_prenda(&cab, kb, &aviso, &camino).expect("la prenda");
     let celdas = [
-        celda("la clave de gasto", Valor::D(kb), 1),
-        celda("la sal", Valor::D(aviso.salt), 1),
-        celda("el importe", el(aviso.amount), 1),
-        celda("el sobre X", Valor::D(x), 1),
-        celda("la identidad del prendador (publica)", Valor::D(id_bob), 1),
+        celda("la clave de gasto", Valor::D(kb), 0),
+        celda("la sal", Valor::D(aviso.salt), 0),
+        celda("el importe", el(aviso.amount), 0),
+        celda("el sobre X", Valor::D(x), 0),
+        celda("la identidad del prendador (publica)", Valor::D(id_bob), 0),
     ];
     asierta("prenda (PrendaAir)", &s.prueba, &celdas);
 }
@@ -566,12 +566,12 @@ fn revela_la_emision_a_pendiente() {
     let (suministro, maximo) = (l.total_supply(), l.max_supply());
     let p = mint_pending_climb_proof(&l, receptor, sal_e(), IMPORTE_EMISION);
     let celdas = [
-        celda("la identidad del receptor", Valor::D(receptor), 1),
-        celda("la sal", Valor::D(sal_e()), 1),
-        celda("el importe (publico)", el(IMPORTE_EMISION), 1),
-        celda("el suministro antes (publico)", el(suministro), 1),
-        celda("el suministro despues (publico)", el(suministro + IMPORTE_EMISION), 1),
-        celda("el maximo de suministro (publico)", el(maximo), 1),
+        celda("la identidad del receptor", Valor::D(receptor), 0),
+        celda("la sal", Valor::D(sal_e()), 0),
+        celda("el importe (publico)", el(IMPORTE_EMISION), 0),
+        celda("el suministro antes (publico)", el(suministro), 0),
+        celda("el suministro despues (publico)", el(suministro + IMPORTE_EMISION), 0),
+        celda("el maximo de suministro (publico)", el(maximo), 0),
     ];
     asierta("emision a pendiente (MintPendingClimbAir)", &p.to_bytes(), &celdas);
 }
@@ -589,8 +589,8 @@ fn revela_la_autorizacion_delegada() {
         ("autorizacion delegada, custodio 3", pb, 3, 1),
     ] {
         let celdas = [
-            celda("la clave de SU custodio", Valor::E(ck[suya]), 1),
-            celda("la operacion autorizada (publica)", Valor::D(op), 1),
+            celda("la clave de SU custodio", Valor::E(ck[suya]), 0),
+            celda("la operacion autorizada (publica)", Valor::D(op), 0),
             celda("la clave del otro custodio", Valor::E(ck[otra]), 0),
             celda("la clave del que no firma", Valor::E(ck[0]), 0),
         ];
@@ -611,8 +611,8 @@ fn revela_la_gobernanza_delegada() {
         ("gobernanza delegada, miembro 3", pb, 3, 1),
     ] {
         let celdas = [
-            celda("la clave del miembro", Valor::E(gk[suya]), 1),
-            celda("la operacion autorizada (publica)", Valor::D(op), 1),
+            celda("la clave del miembro", Valor::E(gk[suya]), 0),
+            celda("la operacion autorizada (publica)", Valor::D(op), 0),
             celda("la clave del otro miembro", Valor::E(gk[otra]), 0),
             celda("la clave del que no firma", Valor::E(gk[0]), 0),
         ];
@@ -638,8 +638,8 @@ fn revela_el_umbral_conjunto() {
         .prove(traza)
         .expect("el umbral conjunto");
     let celdas = [
-        celda("la clave del custodio 1", Valor::E(ck[1]), 1),
-        celda("la clave del custodio 3", Valor::E(ck[3]), 1),
+        celda("la clave del custodio 1", Valor::E(ck[1]), 0),
+        celda("la clave del custodio 3", Valor::E(ck[3]), 0),
         celda("la clave del que no firma", Valor::E(ck[0]), 0),
     ];
     asierta("umbral conjunto (ThresholdAir)", &p.to_bytes(), &celdas);
@@ -657,12 +657,12 @@ fn revela_la_auditoria() {
         .prove_minimum(BaseElement::new(SK_AUD), i, &state_of(&l, i), UMBRAL_AUD)
         .expect("la auditoria");
     let celdas = [
-        celda("la clave de gasto", el(SK_AUD), 1),
-        celda("el saldo exacto", el(SALDO_AUD), 1),
-        celda("el leaf_salt", Valor::D(v.leaf_salt), 1),
-        celda("la identidad de la cuenta (publica)", Valor::D(v.public_id), 1),
-        celda("el umbral (publico)", el(UMBRAL_AUD), 1),
-        celda("el techo (publico)", el(stark_experiment::circuit_audit::MAX_VALUE), 1),
+        celda("la clave de gasto", el(SK_AUD), 0),
+        celda("el saldo exacto", el(SALDO_AUD), 0),
+        celda("el leaf_salt", Valor::D(v.leaf_salt), 0),
+        celda("la identidad de la cuenta (publica)", Valor::D(v.public_id), 0),
+        celda("el umbral (publico)", el(UMBRAL_AUD), 0),
+        celda("el techo (publico)", el(stark_experiment::circuit_audit::MAX_VALUE), 0),
     ];
     asierta("auditoria (AuditAir)", &au.proof, &celdas);
 }
@@ -680,14 +680,14 @@ fn revela_la_quema() {
     let suministro = l.total_supply();
     let qu = l.burn(BaseElement::new(SK_AUD), i, &state_of(&l, i), QUEMA).expect("la quema");
     let celdas = [
-        celda("la clave de gasto", el(SK_AUD), 1),
-        celda("el saldo antes", el(SALDO_AUD), 1),
-        celda("el saldo despues", el(SALDO_AUD - QUEMA), 1),
-        celda("el importe (publico)", el(QUEMA), 1),
-        celda("el suministro antes (publico)", el(suministro), 1),
-        celda("el suministro despues (publico)", el(suministro - QUEMA), 1),
-        celda("el leaf_salt", Valor::D(v.leaf_salt), 1),
-        celda("la identidad de la cuenta", Valor::D(v.public_id), 1),
+        celda("la clave de gasto", el(SK_AUD), 0),
+        celda("el saldo antes", el(SALDO_AUD), 0),
+        celda("el saldo despues", el(SALDO_AUD - QUEMA), 0),
+        celda("el importe (publico)", el(QUEMA), 0),
+        celda("el suministro antes (publico)", el(suministro), 0),
+        celda("el suministro despues (publico)", el(suministro - QUEMA), 0),
+        celda("el leaf_salt", Valor::D(v.leaf_salt), 0),
+        celda("la identidad de la cuenta", Valor::D(v.public_id), 0),
     ];
     asierta("quema (BurnAir)", &qu.proof, &celdas);
 }
@@ -701,9 +701,9 @@ fn revela_la_solvencia() {
         .prove(traza)
         .expect("la solvencia");
     let celdas = [
-        celda("el saldo", el(SOLV_SALDO), 1),
-        celda("el importe", el(SOLV_IMPORTE), 1),
-        celda("el limite (publico)", el(SOLV_LIMITE), 1),
+        celda("el saldo", el(SOLV_SALDO), 0),
+        celda("el importe", el(SOLV_IMPORTE), 0),
+        celda("el limite (publico)", el(SOLV_LIMITE), 0),
     ];
     asierta("solvencia (SolvencyAir)", &p.to_bytes(), &celdas);
 }
@@ -759,16 +759,16 @@ fn revela_el_double_entry() {
     let traza = de::build_trace(&emisor, &receptor, IMPORTE_DE, IMPORTE_DE, LIMITE_DE);
     let p = de::DoubleEntryProver::new(proof_options()).prove(traza).expect("el double_entry");
     let celdas = [
-        celda("la identidad del emisor", Valor::E(s_id), 1),
-        celda("el saldo del emisor antes", el(S_BAL), 1),
-        celda("el saldo del emisor despues", el(S_BAL - IMPORTE_DE), 1),
-        celda("la identidad del receptor", Valor::E(r_id), 1),
-        celda("el saldo del receptor antes", el(R_BAL), 1),
-        celda("el saldo del receptor despues", el(R_BAL + IMPORTE_DE), 1),
-        celda("el importe", el(IMPORTE_DE), 1),
-        celda("el nonce del emisor", Valor::E(s_nonce), 1),
-        celda("el nonce del receptor", Valor::E(r_nonce), 1),
-        celda("el limite (publico)", el(LIMITE_DE), 1),
+        celda("la identidad del emisor", Valor::E(s_id), 0),
+        celda("el saldo del emisor antes", el(S_BAL), 0),
+        celda("el saldo del emisor despues", el(S_BAL - IMPORTE_DE), 0),
+        celda("la identidad del receptor", Valor::E(r_id), 0),
+        celda("el saldo del receptor antes", el(R_BAL), 0),
+        celda("el saldo del receptor despues", el(R_BAL + IMPORTE_DE), 0),
+        celda("el importe", el(IMPORTE_DE), 0),
+        celda("el nonce del emisor", Valor::E(s_nonce), 0),
+        celda("el nonce del receptor", Valor::E(r_nonce), 0),
+        celda("el limite (publico)", el(LIMITE_DE), 0),
     ];
     asierta("double_entry (DoubleEntryAir)", &p.to_bytes(), &celdas);
 }
@@ -787,17 +787,17 @@ fn revela_la_banda() {
     };
     let lejos = l.prueba_de_banda(&cab, a, PEDIDO_LEJOS).expect("la banda con el pedido lejos");
     let celdas = [
-        celda("el saldo", el(SALDO_BANDA), 1),
-        celda("el leaf_salt", Valor::D(v.leaf_salt), 1),
-        celda("la cota superior, pedido - 1 (publica)", el(PEDIDO_LEJOS - 1), 1),
-        celda("la identidad de la cuenta (publica)", Valor::D(v.public_id), 1),
+        celda("el saldo", el(SALDO_BANDA), 0),
+        celda("el leaf_salt", Valor::D(v.leaf_salt), 0),
+        celda("la cota superior, pedido - 1 (publica)", el(PEDIDO_LEJOS - 1), 0),
+        celda("la identidad de la cuenta (publica)", Valor::D(v.public_id), 0),
     ];
     asierta("banda, pedido lejos (BandaAir)", &lejos.prueba, &celdas);
     let pegada = l.prueba_de_banda(&cab, a, SALDO_BANDA + 1).expect("la banda pegada");
     let celdas = [
-        celda("el saldo, que es la cota: dos columnas", el(SALDO_BANDA), 2),
-        celda("el leaf_salt", Valor::D(v.leaf_salt), 1),
-        celda("la identidad de la cuenta (publica)", Valor::D(v.public_id), 1),
+        celda("el saldo, que es la cota: dos columnas", el(SALDO_BANDA), 0),
+        celda("el leaf_salt", Valor::D(v.leaf_salt), 0),
+        celda("la identidad de la cuenta (publica)", Valor::D(v.public_id), 0),
     ];
     asierta("banda, pedido = saldo + 1 (BandaAir)", &pegada.prueba, &celdas);
 }
@@ -817,7 +817,7 @@ fn revela_la_edad() {
     envia(&mut l, &[(ea, SK_ALICE, 100, 1), (ea, SK_ALICE, 200, 2)], eb);
     let s = l.prueba_de_edad(&cabeza_declarada(&l), 1, None).expect("la edad, un emisor");
     let (emisor, _) = l.pending_meta_of(0).expect("un vivo tiene meta");
-    let mut celdas = vec![celda("el emisor, el mismo en todos los pendientes", el(emisor), 1)];
+    let mut celdas = vec![celda("el emisor, el mismo en todos los pendientes", el(emisor), 0)];
     for p in 0..l.next_pending {
         let (em, na) = l.pending_meta_of(p).expect("un vivo tiene meta");
         assert_eq!(em, emisor, "el montaje quiere un solo emisor");
@@ -856,12 +856,12 @@ fn revela_el_sobre_de_cobro() {
     let (cab, foto) = foto_de(&l, aviso.position);
     let s = prueba_de_cobro_pendiente(&cab, id_bob, &aviso, &foto, 1).expect("el sobre de cobro");
     let celdas = [
-        celda("la sal", Valor::D(aviso.salt), 1),
-        celda("el sobre X", Valor::D(x), 1),
-        celda("el importe exacto", el(aviso.amount), 1),
-        celda("el emisor, el indice de su cuenta", el(foto.emisor), 1),
-        celda("la identidad del receptor (publica)", Valor::D(id_bob), 1),
-        celda("el techo de la banda (publico)", el(TECHO_DE_LA_BANDA), 1),
+        celda("la sal", Valor::D(aviso.salt), 0),
+        celda("el sobre X", Valor::D(x), 0),
+        celda("el importe exacto", el(aviso.amount), 0),
+        celda("el emisor, el indice de su cuenta", el(foto.emisor), 0),
+        celda("la identidad del receptor (publica)", Valor::D(id_bob), 0),
+        celda("el techo de la banda (publico)", el(TECHO_DE_LA_BANDA), 0),
     ];
     asierta("sobre de cobro (CobroPendienteAir)", &s.prueba, &celdas);
 }
@@ -888,11 +888,11 @@ fn revela_el_sobre_de_pago() {
     };
     let s = prueba_de_pago_en_curso(&cab, id_bob, &ap, &foto, foto.nacido).expect("el pago");
     let celdas = [
-        celda("la sal", Valor::D(aviso.salt), 1),
-        celda("el delta", el(DELTA), 1),
-        celda("el refund_id", Valor::D(refund_f()), 1),
-        celda("el emisor, el indice de su cuenta", el(foto.emisor), 1),
-        celda("el importe (publico)", el(aviso.amount), 1),
+        celda("la sal", Valor::D(aviso.salt), 0),
+        celda("el delta", el(DELTA), 0),
+        celda("el refund_id", Valor::D(refund_f()), 0),
+        celda("el emisor, el indice de su cuenta", el(foto.emisor), 0),
+        celda("el importe (publico)", el(aviso.amount), 0),
         celda("el sobre X", Valor::D(x), 0),
     ];
     asierta("sobre de pago (PagoEnCursoAir)", &s.prueba, &celdas);
@@ -965,11 +965,11 @@ fn revela_la_apertura_del_reembolso() {
 fn revela_la_subida_de_credito() {
     let r = reembolso_v1();
     let celdas = [
-        celda("la identidad de la cuenta", Valor::D(r.emisor), 1),
-        celda("el saldo antes", el(r.saldo), 1),
-        celda("el saldo despues", el(r.saldo + r.importe), 1),
-        celda("el importe (publico)", el(r.importe), 1),
-        celda("el leaf_salt", Valor::D(r.leaf_salt), 1),
+        celda("la identidad de la cuenta", Valor::D(r.emisor), 0),
+        celda("el saldo antes", el(r.saldo), 0),
+        celda("el saldo despues", el(r.saldo + r.importe), 0),
+        celda("el importe (publico)", el(r.importe), 0),
+        celda("el leaf_salt", Valor::D(r.leaf_salt), 0),
     ];
     asierta("subida de credito (CreditClimbAir)", &r.recibo.credit_proof, &celdas);
 }
@@ -986,14 +986,14 @@ fn revela_la_subida_de_la_emision() {
     let (suministro, maximo) = (l.total_supply(), l.max_supply());
     let p = mint_climb_proof(&l, c, IMPORTE_MINT);
     let celdas = [
-        celda("la identidad de la cuenta", Valor::D(v.public_id), 1),
-        celda("el saldo antes", el(FONDO_C), 1),
-        celda("el saldo despues", el(FONDO_C + IMPORTE_MINT), 1),
-        celda("el leaf_salt", Valor::D(v.leaf_salt), 1),
-        celda("el importe (publico)", el(IMPORTE_MINT), 1),
-        celda("el suministro antes (publico)", el(suministro), 1),
-        celda("el suministro despues (publico)", el(suministro + IMPORTE_MINT), 1),
-        celda("el maximo de suministro (publico)", el(maximo), 1),
+        celda("la identidad de la cuenta", Valor::D(v.public_id), 0),
+        celda("el saldo antes", el(FONDO_C), 0),
+        celda("el saldo despues", el(FONDO_C + IMPORTE_MINT), 0),
+        celda("el leaf_salt", Valor::D(v.leaf_salt), 0),
+        celda("el importe (publico)", el(IMPORTE_MINT), 0),
+        celda("el suministro antes (publico)", el(suministro), 0),
+        celda("el suministro despues (publico)", el(suministro + IMPORTE_MINT), 0),
+        celda("el maximo de suministro (publico)", el(maximo), 0),
     ];
     asierta("subida de la emision delegada (MintClimbAir)", &p.to_bytes(), &celdas);
 }
@@ -1022,10 +1022,10 @@ fn revela_la_subida_de_la_recuperacion() {
     let v = l.account_view(c).expect("vista");
     let p = recovery_climb_proof(&l, c, nueva());
     let celdas = [
-        celda("la identidad vieja", Valor::D(v.public_id), 1),
-        celda("la identidad nueva (la operacion la nombra)", Valor::D(nueva()), 1),
-        celda("el saldo", el(FONDO_C), 1),
-        celda("el leaf_salt", Valor::D(v.leaf_salt), 1),
+        celda("la identidad vieja", Valor::D(v.public_id), 0),
+        celda("la identidad nueva (la operacion la nombra)", Valor::D(nueva()), 0),
+        celda("el saldo", el(FONDO_C), 0),
+        celda("el leaf_salt", Valor::D(v.leaf_salt), 0),
     ];
     asierta("subida de la recuperacion delegada (RecoveryClimbAir)", &p.to_bytes(), &celdas);
 }
