@@ -40,7 +40,7 @@ pueden exigir y verificar.
 | Dimensión | Blockchain privada típica | Arqueo |
 |---|---|---|
 | **Quién valida** | Consorcio de nodos conocidos | Hoy: **nodo único**, declarado |
-| **Privacidad** | Parcial (canales, acceso restringido) o inexistente entre miembros | Frente a terceros que solo ven raíces; quien ve una prueba ve su testigo (§521, §523) |
+| **Privacidad** | Parcial (canales, acceso restringido) o inexistente entre miembros | Frente a terceros que solo ven raíces y, desde el §538, frente a quien ve una prueba: ningún literal del testigo (§538) |
 | **Cumplimiento** | Suele requerir acceso privilegiado a datos | Revelación selectiva **sin acceso al ledger** |
 | **Ceremonia de setup** | Depende de la pila | **Prohibida** como dependencia soberana |
 | **Integridad** | Consenso del consorcio | Transiciones demostradas; historial no reescribible en secreto |
@@ -66,9 +66,10 @@ aún hay intermediario**.
 
 **Cumplimiento sin libro mayor.** El supervisor verifica banda, mínimo o
 saldo exacto sin ver el estado completo. Raro tanto en banca core como en
-redes privadas. Pero hoy la prueba no oculta su testigo: la de auditoría
-publica el saldo exacto y la clave de gasto (§523), así que el supervisor
-aprende más de lo que el modo pide.
+redes privadas. Entre el §523 y el §538 la prueba no ocultaba su testigo —la
+de auditoría publicaba el saldo exacto y la clave de gasto, y el supervisor
+aprendía más de lo que el modo pedía—; desde el §538 (RFC-0009 E3b-2) la
+oculta y no publica literal ninguno de los dos.
 
 **Ausencia de ceremonia como decisión de soberanía.** No es preferencia
 técnica: si el setup permite crear dinero invisible, se descarta.
@@ -78,9 +79,10 @@ censurar. Ni la banca ni la mayoría de cadenas privadas formulan así su
 poder.
 
 **Separación clave / nodo.** La clave de gasto no viaja al operador por la
-API; la prueba se genera en el cliente. Pero la prueba la publica:
-winterfell 0.13 no oculta el testigo, y el nodo recibe cada prueba (medido
-en §521; ver `SECURITY.md`).
+API; la prueba se genera en el cliente. Entre el §521 y el §538 la prueba la
+publicaba —winterfell 0.13 no ocultaba el testigo, y el nodo recibe cada
+prueba—; desde el §538 el probador oculta el testigo y la clave no sale
+literal (RFC-0009 E3b-2; ver `SECURITY.md`).
 
 **Comparativa empírica sobre una aplicación real.** No benchmarks de
 SHA-256: el mismo circuito de liquidación en cinco backends, con hallazgos

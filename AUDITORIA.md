@@ -39395,3 +39395,41 @@ sigue PROPUESTO: ACEPTARLO es un corte propio (regla 4). `README_EN.md` y los do
 metodos donde `README.md` dice 30: deuda anterior, a la cola. `neg3-cuenta-otra` espera el texto
 de winterfell (`InconsistentOodConstraintEvaluations`), que el bloque mide sobre la captura
 fresca.
+
+**El S538-B, en su propio commit: la prosa del 521, un dia despues del encendido (2026-09-24).**
+Medido sobre `7b87a4c`, el HEAD tras el S538, por el PASTE-538B-M (`c7aa71020d77813d`, lectura
+pura, rc 0): 48 ficheros citan los asientos 521..526 en 137 lineas, y 51 forman la union con la
+frase sin cita. Lo que este arbol afirmaba en presente de si mismo y el S538 volvio falso -que la
+prueba publica la clave o el testigo, <<no oculta el testigo>>- se paga aqui en los QUINCE `.md`
+que hablan en presente y en la `description` del OpenRPC (`openrpc.rs` y, regenerado,
+`spec/openrpc.json`), con el molde del §521: el pasado no se reescribe, se fecha (<<entre el
+§521 y el §538>>), y lo que habla del presente dice lo que el RFC-0009 promete desde el §538
+(D-A revertida, D-C): una prueba que verifica no publica literal ningun valor de columna constante
+de su traza, y no se promete que nada se deduzca de lo que se abre. En los RFC 0007 y 0008 el
+pasado se conserva y entra una <<Correccion del §538>> en el molde de las del §521; la frase
+canonica sigue en UN sitio, `SECURITY.md` §3.bis, y los demas remiten. El nodo sigue conociendo
+al receptor por la API (`receiverId` en `zkssl_sendMaterials`): lo que cambia es la prueba. Los
+seis circuitos sin fila (freeze, governance, mint, mint_pending, recovery, threshold_single)
+siguen apagados, y lo que dicen de si mismos no esta rancio (D-Z).
+
+**Contadores del S538-B.** DIECISIETE ficheros y ninguno nace: `ARQUITECTURA.md` +22 -14,
+`PAPER.md` +9 -6, `PAPER_EN.md` +8 -6, `PRINCIPIOS.md` +6 -4, `README.md` +9 -9,
+`README_EN.md` +12 -11, `SECURITY.md` +52 -37, `crates/zk-ssl-wire/src/openrpc.rs` +1 -1,
+`doc/APORTACION.md` +9 -7, `doc/CONSECUENCIAS.md` +3 -3, `doc/INSTITUCIONAL.md` +20 -17,
+`doc/INSTITUTIONAL.md` +19 -15, `spec/PAQUETE.md` +27 -23, `spec/RPC.md` +15 -11,
+`spec/openrpc.json` +1 -1, `spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md` +11 -4,
+`spec/rfc/0008-pruebas-portables-del-pendiente.md` +11 -3; y `AUDITORIA.md` +38 -0 (estos tres
+parrafos): 39.397 -> 39.435. Ni un pin ni una cifra de tests. Las puertas del bloque:
+`zk-ssl-wire` compila en release con el `--list` identico nombre a nombre; `gen_openrpc` reproduce
+`spec/openrpc.json` byte a byte; las once herramientas por delta, diez IDENTICAS y
+`check_figures`, que solo mueve posiciones (informativo); y el canon `--sello`, sin cuyo VERDE no
+hay commit. De las 31 SHA-REGION, 25 clavan en su rango, cuatro bajan con la misma huella (las
+tres de `PAPER.md` tres lineas y la de `PAPER_EN.md` dos) y dos se re-derivan porque el corte abre
+sus lineas: `SECURITY.md` 206..214 (la cola de la vineta de metadatos; la del §98.4, debajo,
+queda intacta) y `PAPER.md` 343..358 (la tabla de vias).
+
+**Lo que NO cierra el S538-B.** El S538-C: los comentarios de los `.rs` del censo que dicen lo
+mismo, y los de `tools/banco_rechazo.sh` y el `Cargo.toml` del sdk, fichero a fichero contra la
+D-Z, con la puerta del §522: release y `--list` identicos. El RFC-0009 a ACEPTADO, corte propio
+(S539, regla 4): con este corte la spec y el OpenRPC dejan de decir <<hoy no se cumple>>. Y el
+5.A-399: el PASTE-538B-M midio un quinto sitio con 29 metodos, `spec/README.md:20`.

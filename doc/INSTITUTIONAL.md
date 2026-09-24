@@ -93,10 +93,11 @@ does not resolve it in production, because there is no production.**
 ### What has been demonstrated
 
 An operation can be **verifiable by a supervisor** without that
-supervisor having ledger access or any master key. What does **not**
-hold is privacy against whoever sees the proof: the house prover does not
-hide its witness, and the proof publishes what the circuit keeps constant
-— the spend key, the balance, the recipient — (§521, §523).
+supervisor having ledger access or any master key. Against whoever sees
+the proof, since §538 (RFC-0009 E3b-2) the house prover hides its witness
+and the proof does not publish literally what the circuit keeps constant
+— the spend key, the balance, the recipient —; between §521 and §538 it
+published them (§521, §523).
 
 The mechanism is selective disclosure with three modes:
 
@@ -116,9 +117,10 @@ free function.
 
 **There is no supervisory master key to steal** in order to obtain
 general access to balances. There is no supervisory backdoor. Custodian
-keys are another matter, and today the node receives them: each delegated
-authorisation publishes its custodian's key, and two of them authorise
-the next issuance, freeze or recovery (§523).
+keys are another matter: between §523 and §538 the node received them —
+each delegated authorisation published its custodian's key, and two of
+them authorised the next issuance, freeze or recovery (§523) —; since
+§538 the proof hides it (RFC-0009 E3b-2).
 
 The trade-off is stated: if the holder refuses to cooperate, the system
 offers no forced-disclosure mechanism. Supervision is cooperative, not
@@ -220,12 +222,13 @@ unattended. Storing it alongside the data would protect nothing.
 5. It submits the settlement; the layer verifies and applies
 ```
 
-**The spend key does not reach the node operator as data, but it
-does inside the proof**: the house prover does not hide its
-witness, and the node receives every proof (§521). An attacker who
-intercepts the materials — Merkle paths, balances, nonces — cannot
-generate the proof without the key; whoever intercepts a proof has
-it.
+**The spend key does not reach the node operator as data and, since
+§538, not inside the proof either**: the house prover hides its witness
+(RFC-0009 E3b-2); between §521 and §538 it did not, and the node, which
+receives every proof, had it (§521). An attacker who intercepts the
+materials — Merkle paths, balances, nonces — cannot generate the proof
+without the key; whoever intercepts a proof, since §538, does not read
+it there.
 
 ### Computational cost
 
@@ -390,8 +393,9 @@ not been performed. It is documented as an open question.
 **Every balance.** The layer maintains the state, therefore it knows it.
 
 This system's privacy is **against third parties who see only roots and
-signed heads**, not against whoever maintains the ledger nor against
-whoever sees a proof, which publishes its witness (§521, §523).
+signed heads**, not against whoever maintains the ledger; against whoever
+sees a proof, since §538 (RFC-0009 E3b-2): the proof does not publish its
+witness literally, and between §521 and §538 it did (§521, §523).
 
 For an institution, this means the current model applies to a scenario
 where **the entity operating the node legitimately has access to the data**

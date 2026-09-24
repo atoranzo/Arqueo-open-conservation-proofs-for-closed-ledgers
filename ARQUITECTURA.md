@@ -77,8 +77,10 @@ propiedad real.
 opera:
 
 - **Ve todos los saldos.** La privacidad es frente a terceros que solo
-  ven raíces, no frente a quien mantiene el estado ni frente a quien
-  ve una prueba: el probador no oculta su testigo (§521, §523).
+  ven raíces, no frente a quien mantiene el estado. Frente a quien ve
+  una prueba, desde el §538 (RFC-0009 E3b-2): el probador oculta su
+  testigo y la prueba no publica literal ningún valor de columna
+  constante de su traza; entre el §521 y el §538 los publicaba.
 - **Ordena las operaciones.** Decide qué entra y en qué orden.
 - **Puede censurar.** Nada obliga a procesar la operación de nadie.
 - **Es un punto único de fallo.** Incautarlo, apagarlo o corromperlo es
@@ -293,7 +295,7 @@ eliminar.
 ### El protocolo
 
 ```rust
-// FASE 1 — el pagador. La capa no recibe su clave; la prueba sí la lleva (§521).
+// FASE 1 — el pagador. La capa no recibe su clave; la prueba tampoco la publica (§538).
 let m = layer.send_materials(alice, id_de_bob, importe, aleatorio)?;
 let envio = client::prove_send(&m, key, proof_options())?;   // LOCAL
 layer.apply_send(&envio, alice, &estado_alice, importe)?;
@@ -313,11 +315,14 @@ vez. Ver `AUDITORIA.md` §29.
 tipo lo impone: no hay campo por donde el saldo pudiera entrar.
 
 ⚠️ **Asimetría del cobro**: `claim_materials` recibe el aviso, no lo entrega.
-El diseño quería que **la capa no supiera qué pendiente es de quién**, y hoy
-lo sabe: la prueba del envío lleva en claro la identidad del receptor, la
-sal, el importe y la `X` (§521, §523). Que no le dé el aviso al receptor es
-una decisión de la API, no una imposibilidad. Cómo le llega el aviso es la
-pieza que ISO 20022 no transporta.
+El diseño quería que **la capa no supiera qué pendiente es de quién**, y lo
+sabe: el nodo recibe `receiverId` en `zkssl_sendMaterials` (`spec/RPC.md`).
+Entre el §521 y el §538 lo sabía además por la prueba del envío, que llevaba
+en claro la identidad del receptor, la sal y la `X` (§521, §523); desde el
+§538 (RFC-0009 E3b-2) la prueba los oculta y sólo el importe sale, público
+por diseño. Que no le dé el aviso al receptor es una decisión de la API, no
+una imposibilidad. Cómo le llega el aviso es la pieza que ISO 20022 no
+transporta.
 
 **`prove_send` y `prove_claim` son funciones libres, no métodos de la capa.** Es
 deliberado: la capa **no puede** llamarla porque no tiene la clave. Si
@@ -329,8 +334,10 @@ nullifier sí viaja a la capa y no revela nada nuevo, porque es público y
 aparecería igualmente al aplicar la liquidación. Esa vía se retiró y el árbol
 de nulificadores **se eliminó de la capa**: hoy nada genera un nullifier. Lo
 que sigue siendo cierto es lo de arriba: la capa no recibe la clave como
-argumento. Pero la prueba sí la lleva en claro —winterfell 0.13 no oculta el
-testigo, medido en §521—, así que «no viaja» sólo vale para la API.
+argumento. Entre el §521 y el §538 la prueba sí la llevaba en claro
+—winterfell 0.13 no ocultaba el testigo, medido en §521—, así que «no viaja»
+sólo valía para la API; desde el §538 (RFC-0009 E3b-2) el probador oculta el
+testigo y la clave no sale literal de la prueba.
 
 ### La propiedad que lo hace seguro
 
@@ -699,7 +706,7 @@ entre 180 y 620 ms según el contexto de caché. Sirven para comparar
 |---|---|
 | Transferir más de lo debitado | Conservación (partida doble) |
 | Abrir cuenta con saldo | Apertura siempre a cero |
-| Emitir sin autorización | Dos custodios demostrados en circuito (no frente al operador: §523) |
+| Emitir sin autorización | Dos custodios demostrados en circuito (también frente al operador desde el §538: §523, §538) |
 | Emisión encubierta | Suministro público atado en el circuito |
 | Gastar dos veces | Encadenamiento de raíces (orden total del nodo único) |
 | Gastar sin ser el titular | Autoridad de gasto |
@@ -826,9 +833,10 @@ layer.apply_mint_delegated(...)?;      // dos custodios DISTINTOS del conjunto
 ```
 
 **La capa ya no recibe ninguna clave de emisión**, solo la raíz del
-conjunto. Las pruebas de autorización sí la llevan: cada custodio
-publica la suya, y tras una sola emisión delegada el nodo tiene
-dos (§523).
+conjunto. Las pruebas de autorización la llevaban en claro entre el §523
+y el §538: cada custodio publicaba la suya, y tras una sola emisión
+delegada el nodo tenía dos (§523). Desde el §538 (RFC-0009 E3b-2) la
+prueba oculta la clave del custodio.
 
 #### El riesgo que hubo que cerrar: el mismo custodio contando dos veces
 

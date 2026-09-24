@@ -201,11 +201,13 @@ atado al importe (§74). Ambas corregidas y medidas.
 - **Metadatos**: qué posiciones cambian y cuándo siguen siendo observables.
   Medido campo a campo en §231: un envío revela **emisor, importe y
   `notice.position`**; un cobro revela **receptor, importe y la misma
-  posición**. Pero la prueba del envío publica además **la identidad del
-  receptor** (medido en la sesión 163, §523), así que quien procese solo
-  envíos ya ve la arista entera: el nodo siempre, y un **agregador** (§223)
-  también. Separar las mitades entre agregadores distintos **no mitiga
-  nada** mientras el probador no oculte su testigo (§3.bis).
+  posición**. Entre el §523 y el §538 la prueba del envío publicaba además
+  **la identidad del receptor** (medido en la sesión 163, §523), así que
+  quien procesara solo envíos veía la arista entera; desde el §538 la
+  prueba la oculta (§3.bis). El nodo la ve siempre, por la prueba o no:
+  recibe `receiverId` en `zkssl_sendMaterials`. Un **agregador** (§223)
+  que solo vea envíos ya no la lee en la prueba, y lo que pueda deducir
+  de una prueba lo acota el RFC-0009 (D-A, D-I), no este documento.
 - **Solidez de circuitos y del sistema de prueba**: no verificada formalmente.
 - ⚠️ **Rotar la clave exige dos custodios.** Un titular puede gastar sin
   permiso de nadie y **no puede mejorar su propia seguridad sin permiso de
@@ -225,9 +227,10 @@ a dos, y conviene nombrarlas mirando hacia delante:
 
 2. **El operador ve el estado.** La privacidad es frente a terceros que
    solo ven raíces y cabezas firmadas, no frente a quien mantiene el
-   ledger ni frente a quien ve una prueba (§3.bis); el titular tiene
-   vista autenticada (49-A) y el resto es asumido y documentado.
-   Eliminación: arquitectura de operador ciego (B11) o federación.
+   ledger; frente a quien ve una prueba, desde el §538 (§3.bis); el
+   titular tiene vista autenticada (49-A) y el resto es asumido y
+   documentado. Eliminación: arquitectura de operador ciego (B11) o
+   federación.
 
 Ninguna prueba ZK sustituye estas dos; lo que este proyecto exige es
 que estén **escritas, medidas y con su ataque diseñado** en vez de
@@ -435,35 +438,47 @@ y también trae dos defensas que antes no existían.
 
 **Lo que el diseño protege, verificado en código:**
 
-- **Las claves no salen por la API, pero sí salen en la prueba** (§521 y
-  §523). El pago va en dos fases y la prueba se genera **en local**
-  (`prove_send`/`prove_claim`); `Wallet::spend_key` es privado y **ni
-  siquiera implementa `Serialize`**: no hay accidente posible por
-  serialización. Eso sigue siendo cierto, y no basta. Medido en las
-  sesiones 162 y 163 (20 y 21 de septiembre de 2026): las pruebas STARK de
-  la casa (winterfell 0.13) **no ocultan su testigo**. Cada prueba abre 42
-  filas de su traza en claro, y lo que va en esas filas se publica: la
-  clave de gasto en el envío, el cobro y la prenda —y en el envío v2,
-  además, el saldo, el importe, la sal, el `leaf_salt` y la `X`—; el saldo
-  y el `leaf_salt` en la banda; el emisor en la edad, cuando todos los
-  pendientes son del mismo; y la sal en los dos sobres portables, con la
-  `X` y el importe exacto en el de cobro y el `delta` y el `refund_id` en
-  el de pago. La regla que lo explica se midió con dos falsadores (§523):
-  **sale literal todo valor que va en una columna constante de la traza**.
-  Por eso la auditoría —un circuito para los tres modos— publica la clave
-  de gasto y el saldo exacto; la quema, la clave; el envío, la identidad
-  del receptor; y **cada autorización delegada, la clave de su custodio**:
-  tras una sola emisión, congelación o recuperación delegada, el nodo
-  tiene las claves de dos custodios y puede autorizar la siguiente. La
-  gobernanza usa el mismo circuito: deducido, no medido. La conservación
-  no cae; cae quién puede mover el suministro. La solidez tampoco cae:
-  cada prueba sigue probando lo que dice. Lo que cae es la ocultación, y
-  con ella la custodia de las claves —la de gasto y las de custodio—
-  frente a quien vea una prueba. Quien ve una prueba es el nodo, que las
-  recibe, y quien lea un vector o un paquete publicado: los de
-  `spec/vectors/` son de sandbox, y del catálogo de rechazos se derivan
-  dos claves de gasto de sandbox. La regla del API —la clave no viaja— hoy
-  **no se cumple**; qué se promete mientras tanto lo decide un RFC.
+- **Las claves no salen por la API y, desde el §538, tampoco salen literales
+  en la prueba** (§521, §523; §538). El pago va en dos fases y la prueba se
+  genera **en local** (`prove_send`/`prove_claim`); `Wallet::spend_key` es
+  privado y **ni siquiera implementa `Serialize`**: no hay accidente posible
+  por serialización. Eso sigue siendo cierto. Medido en las sesiones 162 y
+  163 (20 y 21 de septiembre de 2026): las pruebas STARK de la casa con
+  winterfell 0.13 **no ocultaban su testigo**. Cada prueba abría 42 filas de
+  su traza en claro, y lo que iba en esas filas se publicaba: la clave de
+  gasto en el envío, el cobro y la prenda —y en el envío v2, además, el
+  saldo, el importe, la sal, el `leaf_salt` y la `X`—; el saldo y el
+  `leaf_salt` en la banda; el emisor en la edad, cuando todos los pendientes
+  son del mismo; y la sal en los dos sobres portables, con la `X` y el
+  importe exacto en el de cobro y el `delta` y el `refund_id` en el de pago.
+  La regla que lo explicaba se midió con dos falsadores (§523): **salía
+  literal todo valor que va en una columna constante de la traza**. Por eso
+  la auditoría —un circuito para los tres modos— publicaba la clave de gasto
+  y el saldo exacto; la quema, la clave; el envío, la identidad del
+  receptor; y **cada autorización delegada, la clave de su custodio**: tras
+  una sola emisión, congelación o recuperación delegada, el nodo tenía las
+  claves de dos custodios y podía autorizar la siguiente. La gobernanza
+  usaba el mismo circuito: deducido, no medido. La conservación no caía;
+  caía quién podía mover el suministro. La solidez tampoco caía: cada prueba
+  seguía probando lo que decía. Lo que caía era la ocultación, y con ella la
+  custodia de las claves —la de gasto y las de custodio— frente a quien
+  viera una prueba. **Desde el §538 (RFC-0009 E3b-2, `zkssl/0.4`) el
+  probador oculta el testigo**: los 23 probadores con fila en la tabla del
+  RFC-0009 producen con filas aleatorias y cociente cegado sobre un fork de
+  winterfell 0.13.1 (`crates/winter-*`), y lo que se promete es lo que la
+  suite de E2 mide en cada canon: **una prueba que verifica demuestra la
+  transición que enuncia y no publica literal ningún valor de columna
+  constante de su traza** (cero literales en 100 celdas y 22 filas). Lo que
+  no se promete: que nada se deduzca de lo que se abre; la cota vive en el
+  RFC-0009 (D-I: 44 aberturas por columna frente a T ≥ 64 filas aleatorias)
+  y ni el fork ni la construcción están auditados (H7). Quien ve una prueba
+  sigue siendo el nodo, que las recibe, y quien lea un vector o un paquete
+  publicado: los de `spec/vectors/` de la 0.4 no llevan ningún literal del
+  testigo; los de la 0.3, conservados bajo `spec/vectors/0.3/`, siguen
+  llevando lo que llevaban, y del catálogo de rechazos de la 0.3 siguen
+  derivándose dos claves de gasto de sandbox. La regla del API —la clave no
+  viaja— se cumple desde el §538 en lo que la suite mide; entre el §521 y el
+  §538 no se cumplía, y los asientos lo dicen.
 - **El cable rechaza lo que no entiende**: DTOs con
   `deny_unknown_fields`, hex canónico, digests de anchura fija.
 - **Los vectores de conformidad son una defensa, no solo documentación.**

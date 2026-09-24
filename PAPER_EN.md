@@ -186,14 +186,16 @@ freezing.
 
 **State layer.** Maintains the Merkle trees, chains roots between
 operations, verifies proofs, and applies transitions. It takes no private
-key as an argument; the proofs it verifies carry them: the spend key in
-send and claim proofs, and the custodian's key in every delegated
-authorisation, because the prover does not hide its witness (September
-2026 correction: §521, §523).
+key as an argument and, since §538 (RFC-0009 E3b-2), the proofs it
+verifies do not publish one either: the prover hides its witness. Between
+§521 and §538 the proofs carried them in the clear — the spend key in send
+and claim proofs, and the custodian's key in every delegated authorisation
+(September 2026 corrections: §521, §523 and §538).
 
 **Client.** Generates proofs on the holder's machine: the layer supplies
 authentication paths and the client builds the proof locally. The spend
-key does not leave as data, but the proof publishes it (§521).
+key does not leave as data nor, since §538, does it come out literally in
+the proof (RFC-0009 E3b-2); between §521 and §538 the proof published it.
 
 > ⚠️ **Correction note (fourth revision).** Until 31 July 2026 this was a
 > property **of the design**, not of the system: the layer **did not verify
@@ -324,7 +326,7 @@ money, and the constraint closing each:
 |---|---|
 | Transferring more than debited | Conservation (double entry) |
 | Opening an account with a balance | Accounts always open at zero |
-| Issuing without authorization | Two custodians proven in-circuit (not against the operator: §523) |
+| Issuing without authorization | Two custodians proven in-circuit (against the operator too from §538: §523, §538) |
 | Issuance without supply update | Public supply bound in-circuit |
 | Exceeding the issuance cap | Range check on `cap − supply` |
 | Double spending | Root chaining (total order of the single node) |

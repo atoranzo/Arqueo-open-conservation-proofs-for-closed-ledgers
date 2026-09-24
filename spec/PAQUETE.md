@@ -204,12 +204,13 @@ donde el valor es una respuesta del cable sin reescribir.
   duplicados de lote los añadió el §456, reuniendo un recibo real por el proxy de un banco (su
   banco no vive en el árbol, y se declara).
 - `InsufficientBalance` la añadió el §478, y es la única causa de este sobre que verifica un STARK.
-  El `data` del sobre no trae el saldo —el mando rechaza el que traiga `available`—, pero **la
-  prueba de banda sí lo publica**: abre sus filas en claro con el saldo y el `leaf_salt` dentro
-  (medido en §521; el vector `saldo-insuficiente.json` lleva el suyo). El `-32000` del cable
-  también se lo manda a quien hizo la petición desde el §454 (RFC-0007, corrección del §479). Un
-  importe por encima del techo del campo (`MAX_VALOR`, 2^62 − 1) produce la causa y no su prueba:
-  el productor rehúsa nombrándolo.
+  El `data` del sobre no trae el saldo —el mando rechaza el que traiga `available`—, y desde el
+  §538 (RFC-0009 E3b-2) **la prueba de banda tampoco lo publica**: entre el §521 y el §538 abría sus
+  filas en claro con el saldo y el `leaf_salt` dentro (medido en §521; el `saldo-insuficiente.json`
+  de la 0.3, conservado bajo `spec/vectors/0.3/rechazo/`, lleva el suyo; el de la 0.4, ninguno). El
+  `-32000` del cable también se lo manda a quien hizo la petición desde el §454 (RFC-0007,
+  corrección del §479). Un importe por encima del techo del campo (`MAX_VALOR`, 2^62 − 1) produce
+  la causa y no su prueba: el productor rehúsa nombrándolo.
 
 ### 2.7 El paquete de edad (§465)
 
@@ -262,14 +263,15 @@ donde el valor es una respuesta del cable sin reescribir.
   casa y sólo con ellas. Es el MISMO productor con el que la capa verifica lo que produce.
 - **Lo que NO prueba:** nada sobre quién pagó ni sobre el sobre `X`, que es testigo (D-I); nada
   sobre el importe exacto por encima de `inferior`; y nada sobre otra cabeza que la que firma las
-  dos raíces. **Ser testigo no es estar oculto**: la prueba abre sus filas en claro y publica la
-  sal, la `X` y el importe exacto (medido en §521). Su catálogo de vectores es
-  `spec/vectors/pendiente/` (§499, RFC-0008 E4 por el lado
-  del cobro) y el banco que lo reproduce en vivo, `tools/banco_pendiente.sh` (§498); la boca que
-  escribe el sobre es `zk-ssl-cli prueba-cobro` (§497, D-M): el mando lleva los negativos que caen
-  antes de la firma, el juez sus testigos con prueba real en `stark-experiment`, el productor de la
-  capa y el test del nodo lo enlazan contra un latido real, la boca reúne las cinco entradas del
-  productor sin abrir libro, y el manifiesto pina lo que cada sobre dice.
+  dos raíces. **Ser testigo no es estar oculto, y desde el §538 lo está en lo que la suite del
+  RFC-0009 mide**: entre el §521 y el §538 la prueba abría sus filas en claro y publicaba la sal, la
+  `X` y el importe exacto (medido en §521); desde el §538 (E3b-2) no publica literal ninguno. Su
+  catálogo de vectores es `spec/vectors/pendiente/` (§499, RFC-0008 E4 por el lado del cobro) y el
+  banco que lo reproduce en vivo, `tools/banco_pendiente.sh` (§498); la boca que escribe el sobre
+  es `zk-ssl-cli prueba-cobro` (§497, D-M): el mando lleva los negativos que caen antes de la
+  firma, el juez sus testigos con prueba real en `stark-experiment`, el productor de la capa y el
+  test del nodo lo enlazan contra un latido real, la boca reúne las cinco entradas del productor
+  sin abrir libro, y el manifiesto pina lo que cada sobre dice.
 
 ### 2.9 El paquete de pago en curso (§506)
 
@@ -286,17 +288,18 @@ donde el valor es una respuesta del cable sin reescribir.
   ese `nacido`; y `t - nacido <= delta`. Es la otra mitad del 2.8: donde el cobrador afirma «me
   deben al menos `inferior`», el pagador afirma «pagué `importe` exacto y estoy atado hasta `t`».
 - **El plazo no va en el enunciado, pero sí en la prueba.** Lo que se prueba es
-  `delta >= t - nacido`, nunca `delta`; y sin embargo la prueba abre sus filas en claro con `delta`
-  dentro (medido en §521): quien lea los bytes del sobre lee el `delta` que esta línea decía que no
-  viajaba.
+  `delta >= t - nacido`, nunca `delta`; y entre el §521 y el §538 la prueba abría sus filas en claro
+  con `delta` dentro (medido en §521): quien leyera los bytes del sobre leía el `delta` que esta
+  línea decía que no viajaba. Desde el §538 (RFC-0009 E3b-2) no sale literal.
 - `cabeza` es una respuesta de `zkssl_signedEpochHead` tal cual; `seq`, `pendingRoot` y
   `pmetaRoot` salen **sólo de la cabeza** (D-J), y el juez exige `nacido < seq` antes de tocar la
   prueba. El juez es `zk_ssl_air::pago_en_curso::verificar_contra_cabeza` (§503), el MISMO con el
   que la capa re-verifica lo que produce, y el kit lo compila **sin el probador**.
 - **Lo que NO prueba:** nada sobre quién lo cobrará, nada sobre la `sal`, el `refund_id` ni el
   `emisor` —son testigo—, y nada sobre otra cabeza que la que firma las dos raíces. **Ser testigo
-  no es estar oculto**: la prueba abre sus filas en claro y publica la sal, el `delta` y el
-  `refund_id` (medido en §521). Quien lo
+  no es estar oculto, y desde el §538 lo está en lo que la suite del RFC-0009 mide**: entre el §521
+  y el §538 la prueba abría sus filas en claro y publicaba la sal, el `delta` y el `refund_id`
+  (medido en §521); desde el §538 (E3b-2) no publica literal ninguno. Quien lo
   produce es `prueba_de_pago_en_curso` en la capa (§504) con la apertura del pagador y la foto
   que el nodo le sirve con su credencial y `receiverId` (§505, D-AE); **la boca es
   `zk-ssl-cli prueba-pago`** (§507, D-AI), que reúne las cinco entradas del productor sin
@@ -340,10 +343,11 @@ donde el valor es una respuesta del cable sin reescribir.
   `zkssl_pledge` (§519). El mando lo imprime en su veredicto, no sólo aquí.
 - **Lo que NO prueba:** nada sobre el importe, la sal, `X` ni `C2` —son testigo—, nada sobre si el
   pendiente sigue vivo, y nada sobre otra cabeza que la que firma esa raíz. **Ser testigo no es
-  estar oculto**: la prueba abre sus filas en claro y en ellas va la clave de gasto del prendador,
-  42 veces (medido en §521); quien lea el sobre la tiene. El juez es
-  `zk_ssl_air::prenda::verificar_contra_cabeza` (§516), el MISMO con el que la capa re-verifica lo
-  que produce (§518), y el kit lo compila **sin el probador**. Quien lo produce es
+  estar oculto, y desde el §538 lo está en lo que la suite del RFC-0009 mide**: entre el §521 y el
+  §538 la prueba abría sus filas en claro y en ellas iba la clave de gasto del prendador, 42 veces
+  (medido en §521), y quien leyera el sobre la tenía; desde el §538 (E3b-2) no sale literal. El
+  juez es `zk_ssl_air::prenda::verificar_contra_cabeza` (§516), el MISMO con el que la capa
+  re-verifica lo que produce (§518), y el kit lo compila **sin el probador**. Quien lo produce es
   `prueba_de_prenda` (§518), con el aviso, la clave y el camino que el nodo sirve del último
   latido.
 

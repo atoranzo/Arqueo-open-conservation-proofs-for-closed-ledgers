@@ -93,11 +93,11 @@ resuelve en producción porque no hay producción.**
 ### Lo que está demostrado
 
 Una operación puede ser **verificable por un supervisor** sin que este
-tenga acceso al ledger ni a ninguna clave maestra. Lo que **no** se
-cumple es que sea privada frente a quien ve la prueba: el probador de la
-casa no oculta su testigo, y la prueba publica lo que el circuito
-mantiene constante —la clave de gasto, el saldo, el receptor— (§521,
-§523).
+tenga acceso al ledger ni a ninguna clave maestra. Frente a quien ve la
+prueba, desde el §538 (RFC-0009 E3b-2) el probador de la casa oculta su
+testigo y la prueba no publica literal lo que el circuito mantiene
+constante —la clave de gasto, el saldo, el receptor—; entre el §521 y el
+§538 lo publicaba (§521, §523).
 
 El mecanismo es revelación selectiva con tres modos:
 
@@ -118,10 +118,10 @@ función libre.
 
 **No existe ninguna clave maestra de supervisión que robar** para
 obtener acceso general a los saldos. No hay puerta trasera de
-supervisión. Las claves de custodio son otra cosa, y hoy el nodo las
-recibe: cada autorización delegada publica la de su custodio, y con
-dos se autoriza la siguiente emisión, congelación o recuperación
-(§523).
+supervisión. Las claves de custodio son otra cosa: entre el §523 y el
+§538 el nodo las recibía —cada autorización delegada publicaba la de su
+custodio, y con dos se autorizaba la siguiente emisión, congelación o
+recuperación (§523)—; desde el §538 la prueba la oculta (RFC-0009 E3b-2).
 
 La contrapartida está declarada: si el titular se niega a cooperar, el
 sistema no ofrece mecanismo de revelación forzosa. La supervisión es
@@ -223,11 +223,13 @@ protegería nada.
 5. Envía la liquidación; la capa verifica y aplica
 ```
 
-**La clave de gasto no llega al operador del nodo como dato, pero sí
-dentro de la prueba**: el probador de la casa no oculta su testigo, y
-el nodo recibe cada prueba (§521). Un atacante que intercepte los
-materiales —caminos de Merkle, saldos, nonces— no puede generar la
-prueba sin la clave; quien intercepte una prueba, la tiene.
+**La clave de gasto no llega al operador del nodo como dato y, desde el
+§538, tampoco dentro de la prueba**: el probador de la casa oculta su
+testigo (RFC-0009 E3b-2); entre el §521 y el §538 no lo ocultaba, y el
+nodo, que recibe cada prueba, la tenía (§521). Un atacante que intercepte
+los materiales —caminos de Merkle, saldos, nonces— no puede generar la
+prueba sin la clave; quien intercepte una prueba, desde el §538, no la lee
+en ella.
 
 ### Coste computacional
 
@@ -405,9 +407,10 @@ ha hecho. Se documenta como pregunta abierta.
 **Todos los saldos.** La capa mantiene el estado, luego lo conoce.
 
 La privacidad de este sistema es **frente a terceros que solo ven
-raíces y cabezas firmadas**, no frente a quien mantiene el ledger
-ni frente a quien ve una prueba, que publica su testigo
-(§521, §523).
+raíces y cabezas firmadas**, no frente a quien mantiene el ledger;
+frente a quien ve una prueba, desde el §538 (RFC-0009 E3b-2): la
+prueba no publica literal su testigo, y entre el §521 y el §538 lo
+publicaba (§521, §523).
 
 Para una institución, eso significa que el modelo actual es aplicable a un
 escenario donde **la entidad que opera el nodo tiene legítimamente acceso

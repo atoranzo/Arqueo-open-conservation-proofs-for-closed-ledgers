@@ -52,11 +52,13 @@ pertenecen al cuerpo se rechaza con `-32602` antes de tocar la capa.
 
 **La clave de gasto no viaja jamás.**
 
-⚠️ **Hoy la implementación no cumple este principio** (medido en §521):
-la clave no cruza la API, pero las pruebas de envío y de cobro la
-publican en claro —winterfell 0.13 no oculta el testigo— y el nodo las
-recibe. El principio queda como regla; qué se promete mientras no se
-cumpla lo decide un RFC. Ver `SECURITY.md`.
+⚠️ **Entre el §521 y el §538 la implementación no cumplía este principio**:
+la clave no cruzaba la API, pero las pruebas de envío y de cobro la
+publicaban en claro —winterfell 0.13 no ocultaba el testigo— y el nodo las
+recibía. **Desde el §538 (RFC-0009 E3b-2, `zkssl/0.4`) se cumple en lo que
+la suite de E2 mide**: el probador oculta el testigo y la clave no sale
+literal en ninguna prueba con fila; qué se promete y qué no lo dice el
+RFC-0009 (D-A, D-C). Ver `SECURITY.md`.
 
 - Abrir cuenta = enviar identificadores derivados en el cliente:
   `publicId`, `viewId`, `leafSalt`.
@@ -299,7 +301,7 @@ sobre los DTO:
 
 | procesa | ve | NO ve |
 |---|---|---|
-| solo envíos | emisor, importe, `notice.position` y, dentro de la prueba, **el receptor** (§523) | — |
+| solo envíos | emisor, importe, `notice.position` (y, entre el §523 y el §538, **el receptor** dentro de la prueba) | **el receptor** por la prueba, desde el §538 (RFC-0009 E3b-2) |
 | solo cobros | receptor, importe, `notice.position` | **el emisor** |
 | **ambos** | **la arista completa** | — |
 
@@ -309,11 +311,13 @@ sobre los DTO:
 suministro. El `receiver_id` aparece en `SendMaterialsDto`, que va
 **del nodo al titular**, y como `receiverId` en los parámetros de
 `zkssl_sendMaterials` (su fila), que van del titular al nodo: el nodo
-lo conoce siempre. **Y viaja dentro de `proof`** (§523): la prueba del
-envío publica la identidad del receptor, porque el probador no oculta
-su testigo. La tabla de arriba es cierta de los campos del recibo y
-falsa de la prueba, y lo que el §231 llamó falso —«ve quién paga a
-quién»— es cierto por esa vía.
+lo conoce siempre. **Y entre el §523 y el §538 viajaba dentro de
+`proof`**: la prueba del envío publicaba la identidad del receptor,
+porque el probador no ocultaba su testigo; desde el §538 (RFC-0009
+E3b-2) la oculta y no sale literal. La tabla de arriba es cierta de los
+campos del recibo; de la prueba fue falsa entre el §523 y el §538, y lo
+que el §231 llamó falso —«ve quién paga a quién»— fue cierto por esa vía
+mientras duró.
 
 Lo que une las dos mitades es **`notice.position`**: aparece en
 `receipt.notice.position` al enviar y en `notice.position` al cobrar. Un

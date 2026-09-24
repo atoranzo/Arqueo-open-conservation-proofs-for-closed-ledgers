@@ -153,7 +153,7 @@ pub fn document() -> Value {
         "info": {
             "title": "ZK-SSL JSON-RPC",
             "version": "zkssl/0.4",
-            "description": "Especificacion normativa: spec/RPC.md. Principio del API: la clave de gasto no viaja jamas. Hoy no se cumple: las pruebas de envio y de cobro la publican (winterfell 0.13 no oculta el testigo; AUDITORIA.md, asiento 521)."
+            "description": "Especificacion normativa: spec/RPC.md. Principio del API: la clave de gasto no viaja jamas. Desde el asiento 538 (RFC-0009 E3b-2, zkssl/0.4) el probador oculta el testigo y la clave no sale literal en ninguna prueba con fila; entre el asiento 521 y el 538 las pruebas de envio y de cobro la publicaban (winterfell 0.13 no ocultaba el testigo; AUDITORIA.md, asientos 521 y 538)."
         },
         "methods": methods,
         "components": { "schemas": {

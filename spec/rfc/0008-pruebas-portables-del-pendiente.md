@@ -83,6 +83,13 @@ clave: no la lleva como CAMPO, pero la prueba la publica (la corrección de arri
 ve al verificarla. La regla que lo explica se midió en la sesión 163: sale literal todo valor que
 va en una columna constante de la traza. Como arriba, la decisión no cambia aquí.
 
+**Corrección del §538** (a las dos anteriores). Desde el §538 (RFC-0009 E3b-2, `zkssl/0.4`) el
+probador oculta el testigo en lo que la suite de E2 mide: la prueba del cobro no publica literal la
+sal, la `X` ni el importe exacto; la del pago, ni la sal, ni el `delta` ni el `refund_id`; la de la
+prenda, ni la clave del prendador. Lo que cada sobre lleva como CAMPO no cambia, y las decisiones
+tampoco; lo que se promete de las pruebas lo fija el RFC-0009 (D-A revertida), y lo que no se
+promete —que nada se deduzca de lo que se abre— también.
+
 ### La frontera con H5b, y qué es de cada uno
 
 Este RFC habla de un pendiente que ESTÁ en el árbol: existe, tiene importe, tiene edad, y se
@@ -1099,9 +1106,10 @@ expediente aunque no rompa nada.
   `comprobar_enunciado` acota `importe`, `T` y `nacido` a `MAX_VALOR = 2^62 - 1` y exige
   `nacido <= T`. El <<nunca>> del punto de arriba, que el campo reduce a `2^32 - 2`, cae holgado
   dentro. Quien lea un sobre por encima de esas cotas no lee un sobre: no hay ninguno.
-- **La regla 3 del PROCESO —la clave de gasto no viaja jamás— hoy no se cumple aquí.** La prueba de
-  prenda se produce en el cliente, como el cobro, pero publica la clave: sus filas abiertas la
-  llevan en claro, 42 veces (§521).
+- **La regla 3 del PROCESO —la clave de gasto no viaja jamás— se cumple aquí desde el §538** en lo
+  que la suite de E2 del RFC-0009 mide: la prueba de prenda se produce en el cliente, como el cobro,
+  y desde el §538 (E3b-2) no publica literal la clave del prendador; entre el §521 y el §538 la
+  llevaba en claro, 42 veces (§521).
 
 ## Referencias
 

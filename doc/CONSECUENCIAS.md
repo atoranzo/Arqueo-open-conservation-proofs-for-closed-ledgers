@@ -199,9 +199,9 @@ técnica.
 
 Un desplazamiento **parcial** de la fe institucional hacia la verificación
 criptográfica, con privacidad frente a terceros que solo vean raíces —las
-pruebas publican su testigo (§521)— y cumplimiento sin desnudez total del
-libro — **siempre que se declaren y acoten los poderes residuales del
-operador**.
+pruebas publicaron su testigo entre el §521 y el §538, y desde el §538 lo
+ocultan (RFC-0009 E3b-2)— y cumplimiento sin desnudez total del libro —
+**siempre que se declaren y acoten los poderes residuales del operador**.
 
 ### Lo que no aporta
 

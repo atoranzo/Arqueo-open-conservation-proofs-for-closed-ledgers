@@ -208,7 +208,7 @@ revelar es un coste y se declara:
 | `RecoveryToSameIdentity` | la identidad de la hoja de `i` bajo `accountsRoot`, frente a la pedida | el `public_id`, que es público | E3 |
 | `DuplicateAccountInBatch`, `DuplicatePendingInBatch` | el propio lote | nada del estado | E3 |
 | `PendingTreeExhausted` | `next_pending` igual a la capacidad, y que no hay hueco: la segunda mitad es la prueba de rango de E4 | nada | E3 la marca; E4 el hueco |
-| `InsufficientBalance` | prueba de banda: saldo < pedido bajo `accountsRoot`, sin `available` en el sobre | el saldo y el `leaf_salt`: la prueba abre sus filas en claro (§521) | E5 |
+| `InsufficientBalance` | prueba de banda: saldo < pedido bajo `accountsRoot`, sin `available` en el sobre | la cuenta y la cota superior (`pedido - 1`), públicas por diseño; el saldo y el `leaf_salt` salieron literales entre el §521 y el §538, cuando la prueba abría sus filas en claro (RFC-0009 D-B; desde el §538, E3b-2, no) | E5 |
 | `ProofFailed`, `VerificationFailed` | el STARK y las entradas públicas que el solicitante envió, re-verificados | lo que el solicitante ya envió | E5 |
 | `CustodianSetExhausted` | el cupo se deriva del registro (§393, §394), que la cabeza compromete sólo por `chainDigest` | — | declarada sin prueba portable |
 | `NotTheIssuer`, `NotTheAccountHolder` | la autorización ausente no se puede exhibir | — | declaradas sin prueba |
@@ -575,9 +575,10 @@ regenerado, los vectores bajo su versión y las suites verdes, etapa a etapa.
 ## Seguridad
 
 - **Ninguna etapa de este RFC toca la clave de gasto**: las pruebas de E3 las produce el operador
-  con lo que ya tiene, y las de E5 con lo que ya recibió. Pero la clave sí viaja fuera de él: las
-  pruebas de envío y de cobro que E5 re-verifica la llevan en claro, porque winterfell 0.13 no
-  oculta el testigo (§521).
+  con lo que ya tiene, y las de E5 con lo que ya recibió. Entre el §521 y el §538 la clave sí
+  viajaba fuera de él: las pruebas de envío y de cobro que E5 re-verifica la llevaban en claro,
+  porque winterfell 0.13 no ocultaba el testigo (§521); desde el §538 (RFC-0009 E3b-2) las
+  ocultan, y la clave no sale literal de ninguna.
 - **Un rechazo con prueba demuestra que la regla se aplicó, no que la regla sea justa.** Lo que
   compra es que la censura tenga que disfrazarse de regla y que ese disfraz sea verificable.
 - **Los parámetros comprometidos hacen visible un cambio; no lo impiden.** Quien controla el
@@ -607,6 +608,12 @@ regenerado, los vectores bajo su versión y las suites verdes, etapa a etapa.
   repo lleva el suyo, `1000`, en sus 42 aperturas. Lo que sigue siendo cierto es que el `data` del
   sobre no trae `available` y que el mando rechaza el que lo traiga; lo falso era que eso bastara
   para no revelarlo.
+- **Corrección del §538 a las dos anteriores.** Desde el §538 (RFC-0009 E3b-2) la prueba de banda
+  no revela el saldo ni el `leaf_salt`: el probador oculta el testigo y la suite de E2 del RFC-0009
+  cuenta cero literales en su fila. El `saldo-insuficiente.json` de la 0.4 no lleva ninguno; el de
+  la 0.3, conservado bajo `spec/vectors/0.3/rechazo/`, sigue llevando el suyo. Lo que sigue siendo
+  cierto es lo de arriba: el `data` del sobre no trae `available` y el mando rechaza el que lo
+  traiga; y lo que no se promete lo dice el RFC-0009 (D-A): que nada se deduzca de lo que se abre.
 - **Un importe por encima del techo no tiene prueba de banda.** `MAX_VALOR` del AIR es
   2^62 − 1 y ninguna guarda acota el importe antes de que salga `InsufficientBalance`: con un
   pedido mayor la causa es producible por el cable y su prueba no. El productor rehúsa

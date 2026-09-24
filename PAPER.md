@@ -194,14 +194,17 @@ gobernanza y congelación.
 
 **Capa de estado.** Mantiene los árboles de Merkle, encadena las raíces
 entre operaciones, verifica las pruebas y aplica las transiciones. No
-recibe ninguna clave privada como argumento; las pruebas que verifica,
-sí la llevan: la clave de gasto en las de envío y cobro, y la del
-custodio en cada autorización delegada, porque el probador no oculta su
-testigo (corrección de septiembre de 2026: §521, §523).
+recibe ninguna clave privada como argumento y, desde el §538 (RFC-0009
+E3b-2), tampoco la publican las pruebas que verifica: el probador oculta
+su testigo. Las pruebas la llevaban en claro entre el §521 y el §538 —la
+clave de gasto en las de envío y cobro, y la del custodio en cada
+autorización delegada— (correcciones de septiembre de 2026: §521, §523 y
+§538).
 
 **Cliente.** Genera las pruebas en la máquina del titular: la capa entrega
 los caminos de autenticación y el cliente construye la prueba localmente.
-La clave de gasto no sale como dato, pero la prueba la publica (§521).
+La clave de gasto no sale como dato ni, desde el §538, sale literal en la
+prueba (RFC-0009 E3b-2); entre el §521 y el §538 la prueba la publicaba.
 
 > ⚠️ **Nota de corrección (cuarta revisión).** Esta propiedad era, hasta el
 > 31 de julio de 2026, una propiedad **del diseño** y no del sistema: la
@@ -349,7 +352,7 @@ dinero, y la restricción que cierra cada una:
 |---|---|
 | Transferir más de lo debitado | Conservación (partida doble) |
 | Abrir cuenta con saldo | Apertura siempre a cero |
-| Emitir sin autorización | Dos custodios demostrados en circuito (no frente al operador: §523) |
+| Emitir sin autorización | Dos custodios demostrados en circuito (también frente al operador desde el §538: §523, §538) |
 | Emisión sin reflejo en el suministro | Suministro público atado en el circuito |
 | Superar el tope de emisión | Rango sobre `tope − suministro` |
 | Gastar dos veces | Encadenamiento de raíces (orden total del nodo único) |

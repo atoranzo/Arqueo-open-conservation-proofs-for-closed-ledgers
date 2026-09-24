@@ -106,15 +106,15 @@ Deben salir `cadena de transiciones íntegra` y `CONFORMIDAD: … todo IDENTICO`
 
 Un pago son dos transiciones: el pagador **envía** (una hoja) y el receptor **cobra** (otra), cada
 uno con una prueba generada en su máquina; la capa entrega caminos y raíces —datos públicos— y
-verifica pruebas. **La clave de gasto no viaja por la API, pero la prueba la publica**: el probador
-de la casa no oculta su testigo, y el nodo recibe cada prueba (medido en §521; ver
-[`SECURITY.md`](./SECURITY.md) §3.bis). Cada época el nodo firma una **cabeza** que ata las raíces
-del estado en reposo, el registro encadenado de transiciones y el árbol de consumos
-publicados; testigos independientes la cofirman y **fijan la clave la primera vez que la ven**. Un
-**paquete de evidencia** lleva una cabeza firmada, un acuse con su camino y las cofirmas: un
-verificador que no conoce al nodo lo recompone y lo acepta o lo rechaza **nombrando la regla**. El
-núcleo está en [`spec/NUCLEO.md`](./spec/NUCLEO.md), el paquete en
-[`spec/PAQUETE.md`](./spec/PAQUETE.md) y el consumo publicado en
+verifica pruebas. **La clave de gasto no viaja por la API y, desde el §538, tampoco sale literal en
+la prueba**: el probador de la casa oculta su testigo (RFC-0009 E3b-2, `zkssl/0.4`); entre el §521
+y el §538 la prueba la publicaba (ver [`SECURITY.md`](./SECURITY.md) §3.bis). Cada época el nodo
+firma una **cabeza** que ata las raíces del estado en reposo, el registro encadenado de
+transiciones y el árbol de consumos publicados; testigos independientes la cofirman y **fijan la
+clave la primera vez que la ven**. Un **paquete de evidencia** lleva una cabeza firmada, un acuse
+con su camino y las cofirmas: un verificador que no conoce al nodo lo recompone y lo acepta o lo
+rechaza **nombrando la regla**. El núcleo está en [`spec/NUCLEO.md`](./spec/NUCLEO.md), el paquete
+en [`spec/PAQUETE.md`](./spec/PAQUETE.md) y el consumo publicado en
 [`spec/rfc/0006-consumo-publicado.md`](./spec/rfc/0006-consumo-publicado.md).
 
 ---

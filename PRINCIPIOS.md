@@ -154,12 +154,14 @@ adjunta, traduciendo sus errores a códigos de motivo ISO reales
 (`AM04`, `AC01`, `AG01`...). No es un parser XML ni cubre el estándar
 completo, y no hay máquina virtual.
 
-**Privacy & Compliance Module** — ✅ el enunciado, ❌ la ocultación
+**Privacy & Compliance Module** — ✅ el enunciado, ✅ ningún literal del testigo desde el §538
 Revelación selectiva con tres modos: saldo exacto, mínimo, y **banda**
 ("estoy entre X e Y"). El titular produce la prueba; el supervisor la
-verifica **sin acceso al ledger**. Pero la prueba no oculta su
-testigo: la de auditoría —un solo circuito para los tres modos—
-publica el saldo exacto y la clave de gasto (§523).
+verifica **sin acceso al ledger**. Desde el §538 (RFC-0009 E3b-2) la
+prueba oculta su testigo: la de auditoría —un solo circuito para los tres
+modos— no publica literal el saldo exacto ni la clave de gasto; entre el
+§523 y el §538 los publicaba. Lo que no se promete: que nada se deduzca de
+lo que se abre (RFC-0009 D-A); la construcción no está auditada (H7).
 
 **Governance Layer** — ✅
 Jerarquía de dos niveles: los **custodios** emiten y recuperan cuentas;
