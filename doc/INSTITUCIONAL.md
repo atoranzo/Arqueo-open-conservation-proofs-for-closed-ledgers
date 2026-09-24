@@ -523,7 +523,7 @@ Nada de este documento requiere confianza en su autor.
 git clone [repositorio]
 cd zk-ssl
 cargo test -p zk-ssl --release              # 421 tests (7 ignorados)
-cargo test -p stark-experiment --release    # 401 tests
+cargo test -p stark-experiment --release    # 403 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```
 

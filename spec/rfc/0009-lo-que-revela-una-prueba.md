@@ -1,7 +1,8 @@
 # RFC-0009 — Lo que revela una prueba: la promesa mientras el probador no oculte su testigo
 
 - **Estado:** PROPUESTO
-- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165, 166, 169, 170, 171, 172, 173 y 174)
+- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165, 166, 169, 170, 171, 172, 173, 174
+  y 176)
 - **Fecha:** 2026-09-21
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad). Este RFC no
   cambia un método, un tipo del cable ni un vector: cambia lo que se promete de ellos.
@@ -13,8 +14,9 @@
   (D-R); el §533, que mete el fork en el árbol, apagado (E3a-1); y el §534, que cierra E3a: m en
   la marca, las estáticas fuera, el encendido en el API del probador y los siete falsadores de
   D-K como tests (E3a-2, D-S a D-W); el §535, que abre E3b con la sal como tipo, sin encender
-  nada (E3b-0, D-X a D-AC); y el §536, que da a la foto sus propios probadores y jueces
-  (E3b-1, D-Y).
+  nada (E3b-0, D-X a D-AC); el §536, que da a la foto sus propios probadores y jueces
+  (E3b-1, D-Y); y el §537, que hace que el probador oculto devuelva `Err`, no pánico, con un
+  testigo malo (D-AH).
 
 ## Estado de las etapas
 
@@ -23,7 +25,7 @@
 | E1 — la promesa, escrita | este texto: qué se promete (D-A), lo que sale literal en cada prueba (D-B), el principio del API como regla que hoy no se cumple (D-C) y la ocultación fuera de este RFC (D-D) | no | sellada en el §527 |
 | E2 — el testigo de la tabla | una suite que produce cada tipo de prueba y cuenta sus valores literales contra la tabla de D-B, con un control que tiene que dar cero (D-E; su forma, D-L a D-Q) | no | sellada en el §531 |
 | E3a — el probador que oculta, dentro y apagado | el fork de winterfell 0.13.1 en el árbol, con la ocultación entera en el núcleo y sin tocar un AIR (D-F a D-J); apagado, cada prueba sale byte a byte como la de winterfell; y los falsadores de los spikes como tests del árbol, con el modo oculto solo en los tests (D-K); y antes, la foto del probador pristino que el fork apagado tiene que reproducir (D-R) | no | sellada: el corte 0, la foto (D-R), en el §532; el corte 1, el fork apagado, en el §533; el corte 2, m en la marca (D-S, D-T), las estáticas fuera y el encendido en `Prover::ocultacion` (D-U) y los siete falsadores de D-K como tests (D-V), en el §534. La sal de D-I no es del fork: es el `VC` del consumidor y va con E3b (D-W) |
-| E3b — encenderlo | las pruebas que cruzan el cable salen ocultas, con la sal como `VC` de los probadores y del kit (D-W); la tabla de D-B pasa a cero, con la suite de E2 como testigo (D-K) | sí: `zkssl/0.4` | en curso: el corte 0, la sal como tipo `MerkleConSal` en `zk-ssl-air` con sus siete testigos y sin cambiar el `VC` de nadie (D-X), en el §535; el corte 1, la foto con sus propios probadores y jueces (D-Y), en el §536; queda el corte 2, el encendido con el cable a `zkssl/0.4` (D-Z a D-AC) |
+| E3b — encenderlo | las pruebas que cruzan el cable salen ocultas, con la sal como `VC` de los probadores y del kit (D-W); la tabla de D-B pasa a cero, con la suite de E2 como testigo (D-K) | sí: `zkssl/0.4` | en curso: el corte 0, la sal como tipo `MerkleConSal` en `zk-ssl-air` con sus siete testigos y sin cambiar el `VC` de nadie (D-X), en el §535; el corte 1, la foto con sus propios probadores y jueces (D-Y), en el §536; el §537 hace que el probador oculto devuelva `Err`, no pánico, con un testigo malo (D-AH); queda el corte 2, el encendido con el cable a `zkssl/0.4` (D-Z a D-AC) |
 
 Las medidas que abrieron este documento son las de los asientos §521, §523, §524 y §526:
 lecturas puras que restauraron el árbol con sha y porcelain, con sus instrumentos fuera del
@@ -467,7 +469,8 @@ propio del módulo que devuelve la ocultación que el test le da; el censo cero,
 una columna constante de la traza y otra del tramo auxiliar, copiado del spike y recortado a lo
 que mide (128 filas, 3 + 2 columnas). `winter-air` y `winter-prover` entran como dependencias de
 desarrollo del crate, porque `Ocultacion`, `Marca` y `Oculta` no salen por el paraguas `winterfell`,
-que no está bifurcado. Corren en depuración y en release.
+que no está bifurcado. Corren en depuración y en release. Desde el §537 el módulo lleva dos
+falsadores más, los de D-AH.
 
 Gana `stark-experiment` frente a `zk-ssl-air` (pureza: un juez no compila al probador) y frente a
 la capa (coherencia: el modo oculto sólo en tests, y el juguete es de circuitos). **Reversible** si
@@ -582,6 +585,39 @@ citas vivas (medidas) se reescriben en el corte 2, con los `~62 KB` de `metrics.
 Gana la banda frente a una cifra: imagen fiel (D-J). **Reversible** hacia ninguna parte mientras
 se oculte.
 
+### D-AH — Un testigo malo es un `Err` del probador, nunca un pánico
+
+Con la ocultación encendida, una traza que no cumple sus restricciones hacía saltar dos asertos
+del fork: el de `m < 2T` en `generate_proof_oculto` y el del cociente oculto en
+`composition_poly.rs` («el polinomio no cabe en N trozos de paso 2T − m»). Winterfell apagado
+emitía en release una prueba inválida que el verificador rechazaba con error; el fork encendido
+se caía (5.A-396, medido en el M3 de la 175 sobre los tres
+`t487_una_congelada_no_*_con_camino_ajeno`). Un cliente con testigo malo no debe caerse.
+
+Desde el §537 el probador oculto comprueba la traza REAL contra el AIR interno del envoltorio
+(`Oculta::interno`) antes de ocultarla —las aserciones y las transiciones, tramo auxiliar
+incluido, con `Trace::comprobar`, la gemela de `validate` que devuelve `Err` en vez de asertar— y
+lo hace siempre, también en release: cuesta una evaluación de cada restricción por fila, sin
+FFT. Un testigo malo es `ProverError::UnsatisfiedTransitionConstraintError(paso)`,
+`AsercionNoSatisfecha` o `RestriccionAuxNoSatisfecha`; una traza corta para ese m es
+`OcultacionNoCabe { m, filas }`; un envoltorio cuya segunda cota de las exenciones no cabe ni con
+el blowup, `EnvoltorioNoCabe`. Los asertos del cociente quedan como invariantes que una traza
+comprobada no puede violar. Apagado, nada cambia: el probador no comprueba y las pruebas siguen
+byte a byte (la foto de D-R).
+
+Dos falsadores más en `falsadores_oculta.rs` (nueve con los siete de D-V): una celda falseada en la
+fila 100 de `WorkAir` devuelve `Err` en el paso 99, no pánico; 16 filas con m = 64 devuelven
+`OcultacionNoCabe { 64, 32 }`, el caso de los reembolsos antes de D-AG. Medido en el PASTE-537-M
+(sesión 176): con el encendido entero del corte 2, los tres `t487` reciben
+`prove: UnsatisfiedTransitionConstraintError(544)` del probador en vez de caerse, y desde el corte 2
+esperan ese `Err` donde hoy esperan una prueba.
+
+Gana `Err` frente a asertar: fail-closed sin pánico rige también dentro del fork (PRECISION 714).
+**Reversible** hacia devolver el error desde el propio `segmentar`, que obliga a enhebrar `Result`
+por `CompositionPoly::new`, `DefaultConstraintCommitment::new` y los `impl Prover` de la casa: más
+ancho, la misma promesa. D-AD a D-AG —la forma oculta como única forma de la 0.4, el constructor
+de `Ocultacion`, el reexport por `stark-experiment` y las trazas cortas— llegan con el corte 2.
+
 ## Compatibilidad
 
 - `zkssl/0.3` **no sube**. Ningún método, tipo ni error del cable cambia; ningún vector se
@@ -599,6 +635,9 @@ se oculte.
   E2 y no lo consumiera (D-AA).
 - **E3b-1** (§536) no sube nada: la foto de D-R gana sus propios probadores y jueces con
   `MerkleTree`; ninguna prueba cambia un byte y la foto sigue 3/3 (D-Y).
+- **D-AH** (§537) no sube nada: apagado, el probador no comprueba y ninguna prueba cambia un
+  byte; encendido —hoy sólo en los falsadores—, un testigo malo devuelve `Err` en vez de
+  entrar en pánico.
 
 ### Por qué entra por RFC
 

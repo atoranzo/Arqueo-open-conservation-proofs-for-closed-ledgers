@@ -597,7 +597,10 @@ pub trait Prover {
 
         // la traza principal: T filas aleatorias detras de las reales y una columna aleatoria
         let t = trace.info().length();
-        assert!(ocultacion.m < 2 * t, "traza oculta: m no cabe en la traza de 2T filas");
+        // D-AG / D-AH: una traza corta para ese m es un Err nombrado, no un panico
+        if ocultacion.m >= 2 * t {
+            return Err(ProverError::OcultacionNoCabe { m: ocultacion.m, filas: 2 * t });
+        }
         let principal = trace.main_segment();
         let mut columnas: alloc::vec::Vec<alloc::vec::Vec<Self::BaseField>> =
             alloc::vec::Vec::with_capacity(principal.num_cols() + 1);
@@ -624,8 +627,15 @@ pub trait Prover {
             self.options().clone(),
         );
         // r2: si ni con el blowup del LDE cabe la segunda cota de las exenciones, no se prueba
+        // (D-AH: con error, no con panico)
         if !air.cabe() {
-            panic!("traza oculta: la segunda cota de las exenciones no cabe ni con el blowup");
+            return Err(ProverError::EnvoltorioNoCabe);
+        }
+        // D-AH: la traza REAL se comprueba contra el AIR interno antes de probarla, tambien
+        // en release; un testigo malo devuelve Err y los asertos del cociente oculto quedan
+        // como invariantes. Con tramo auxiliar, la comprobacion espera a tenerlo.
+        if !info_oculta.is_multi_segment() {
+            trace.comprobar::<Self::Air, E>(air.interno(), None)?;
         }
         let mut channel =
             ProverChannel::<::air::Oculta<Self::Air>, E, Self::HashFn, Self::RandomCoin, Self::VC>::new(
@@ -652,6 +662,7 @@ pub trait Prover {
                 .get_aux_rand_elements(channel.public_coin())
                 .expect("failed to draw random elements for the auxiliary trace segment");
             let aux = self.build_aux_trace(&trace, &aux_rand_elements);
+            trace.comprobar(air.interno(), Some((&aux, &aux_rand_elements)))?;
             let mut cols: alloc::vec::Vec<alloc::vec::Vec<E>> =
                 alloc::vec::Vec::with_capacity(aux.num_cols());
             for c in 0..aux.num_cols() {

@@ -39181,3 +39181,88 @@ sus tres productores y sus tests, `openrpc.json` regenerado, los documentos que 
 los 34 vectores regenerados y `zkssl-0.4.json`; y el canon pagara probar x2,6 y verificar x1,9 en
 cada fila encendida. Este corte deja `kat_probador.rs` fuera de su perimetro. El canon del bloque
 vuelve a juzgar entero el Rust que el ENSAYO-536 juzgo antes.
+
+## §537 — RFC-0009 D-AH: el probador oculto devuelve Err, no panico, con un testigo malo
+
+**Que.** Con la ocultacion encendida, una traza que no cumple sus restricciones hacia saltar dos
+asertos del fork: el de `m < 2T` en `generate_proof_oculto` y el del cociente oculto en
+`composition_poly.rs` (<<el polinomio no cabe en N trozos de paso 2T - m>>). Winterfell apagado
+emitia en release una prueba invalida que el verificador rechazaba con error; el fork encendido se
+caia (5.A-396, medido en el M3 de la 175 sobre los tres `t487_una_congelada_no_*_con_camino_ajeno`).
+Desde este asiento el probador oculto comprueba la traza REAL contra el AIR interno del envoltorio
+antes de ocultarla y devuelve `Err`: `Trace::comprobar` (`winter-prover/src/trace/mod.rs`) es la
+gemela de `validate` que devuelve `Err` en vez de asertar -las aserciones y las transiciones del
+tramo principal y las del auxiliar, con sus elementos aleatorios-; `Oculta::interno` (`winter-air`)
+expone el AIR interno de longitud T; `generate_proof_oculto` la llama siempre, tambien en release
+(sin tramo auxiliar, antes de la LDE; con auxiliar, en cuanto lo construye), y devuelve `Err`
+tambien cuando `m >= 2T` (`OcultacionNoCabe { m, filas }`) y cuando la segunda cota de las
+exenciones no cabe ni con el blowup (`EnvoltorioNoCabe`). `ProverError` gana cinco variantes
+(`AnchoDiscordante`, `AsercionNoSatisfecha`, `RestriccionAuxNoSatisfecha`, `OcultacionNoCabe` y
+`EnvoltorioNoCabe`); la transicion reutiliza `UnsatisfiedTransitionConstraintError(paso)`. Los
+asertos del cociente se quedan como invariantes que una traza comprobada no puede violar. Apagado,
+nada cambia: el probador no comprueba y la foto de D-R sigue 3/3 sin mover una constante.
+
+**Los dos falsadores.** En `crates/stark-experiment/src/falsadores_oculta.rs`, junto a los siete
+de D-K: `traza_no_satisfecha_da_err` falsea una celda de la fila 100 de `WorkAir` (256 filas) y
+exige `Err(UnsatisfiedTransitionConstraintError(99))` bajo `catch_unwind`, con el panico como rojo
+nombrado; `m_que_no_cabe_da_err` prueba 16 filas con m = 64 y exige `Err(OcultacionNoCabe { m: 64,
+filas: 32 })`, el caso de los reembolsos antes de D-AG. Los dos entran en el pin de los circuitos.
+
+**Lo medido antes de sellar.** El PASTE-537-M (`0708bb612c93f725`, sesion 176, 1.990 s) sobre una
+copia de `9adca5c` con target y `.git` propios. Fase A, apagado con este corte: compila en release
+con `--locked` y el lock quieto; los mismos cinco warnings de `cargo build` que HEAD (cuatro del
+bin del nodo, que el canon no ve porque mide `cargo test`: 5.A-397, medido: no son del corte 2);
+los circuitos 403/13 con la foto 3/3 y los nueve falsadores en verde; el fork 49 y 6; la capa
+421/7; el nodo 125; el kit 92 + 27 + 1 = 120; el arnes de edad sobre los vectores 0.3, 11/11. Fase
+B, el encendido entero del M3 mas D-AG sobre la misma copia: ningun <<m no cabe>>; los tres `t487`
+reciben `prove: UnsatisfiedTransitionConstraintError(544)` del probador en vez de caerse -y desde
+el corte 2 lo esperaran como `Err` en su propio `.expect`-; `banco_edad --guardar` VERDE con
+pruebas ocultas (el rojo del M3b); los reembolsos 16 -> 64 filas 7.401 -> 21.014 B y 32 -> 64
+filas 10.147 -> 24.732 B ocultos; edad con m = 3, 79.060 y 75.048 B frente a 43.092 y 44.935 B de
+los vectores 0.3. Instrumentos en Downloads: `PASTE-537-M.sh`, `SALIDA-537M-20260923-221823.txt`
+(`d94a743e10224c0b`/238) y `CARGO-537M-20260923-221823.txt` (`a3799cc644803b71`/3294).
+ENSAYO-537 (`65369ce8accb515c`; salida `e986744e074ff635`, cargo `ae079a2e83e83f08`): VEREDICTO
+VERDE 24/24 en 498 s con cargo 1.97.1, sobre una copia de 665 ficheros hecha repo: las diez
+herramientas en verde en BASE y POST (`check_tests` 1569 -> 1571); `--list` PRE -> POST 414 -> 416,
+nacen exactamente los dos de D-AH y ninguno muere; el lock intacto por `--locked`; los circuitos
+403/13/0 con 0 warnings, la foto 3/3 y los nueve falsadores; el fork 49 y 6 con 0 warnings; y las
+tres mutaciones en el fork, restauradas, discriminan: M1, la comprobacion del camino sin auxiliar
+fuera, y M3, `comprobar` sin mirar las transiciones, tumban `traza_no_satisfecha_da_err` con el
+panico del cociente oculto (`composition_poly.rs`:202) y dejan en pie los otros ocho; M2, el
+`assert!` de m < 2T repuesto, tumba `m_que_no_cabe_da_err` con el panico de `lib.rs`:601 y deja
+los otros ocho; restaurado el POST, los nueve vuelven a verde. La r2 del ENSAYO
+(`dc2a2a6ff58889da`, el mismo Rust, el asiento con este parrafo) dio 23/24: su `--list` BASE leyo
+416 sin compilar, porque el target compartido dio por fresco el binario del POST del r1 sobre la
+copia PRE, cuyas fechas son las del `git archive` (5.A-345 otra vez, del lado del ensayo); la r3
+refresca por fecha los fuentes de la copia antes de tocar cargo, y mide.
+
+**Prosa.** El RFC-0009 gana la seccion D-AH, y lo dicen su fila de E3b, Compatibilidad, D-V y los
+autores (sesion 176); `spec/README.md`, la fila del RFC; los README FORK de `winter-prover` (sus
+ficheros) y `winter-air` (sus asientos); el comentario de `stark-experiment/src/lib.rs` que nombra
+a los falsadores. Las cifras a mano (5.A-149): sello 1410 -> 1412 (`PRINCIPIOS.md`:356,
+`PAPER.md`:36, `PAPER_EN.md`:33), los largos 1547 -> 1549 (`PRINCIPIOS.md`:359, `PAPER.md`:38,
+`PAPER_EN.md`:35) y circuitos 401 -> 403 en `PRINCIPIOS.md`, `PAPER.md`, `PAPER_EN.md`,
+`doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md`; `tools/canon.sh`, circuitos 401 -> 403 con
+historia. El editor `ed537.py` aplica el codigo con las mismas sustituciones que el PASTE y cruza
+sus cinco POST contra los predichos.
+
+**Contadores.** Diecisiete ficheros, 333 lineas insertadas y 28 borradas: `winter-prover`
+`errors.rs` 30/0, `lib.rs` 13/2, `trace/mod.rs` 97/0 y su README 5/4; `winter-air` `oculta.rs` 6/0
+y su README 1/1; `stark-experiment` `falsadores_oculta.rs` 37/2 y `lib.rs` 3/2; `tools/canon.sh`
+1/1; `PRINCIPIOS.md` 2/2; `PAPER.md` 3/3; `PAPER_EN.md` 3/3; `doc/INSTITUCIONAL.md` y
+`doc/INSTITUTIONAL.md` 1/1; el RFC-0009 44/5 (684 -> 723 lineas); `spec/README.md` 1/1; y
+`AUDITORIA.md` 85/0, que es este asiento (84 lineas tras un separador). Pines: circuitos
+401 -> 403; sello 1410 -> 1412; los largos 1547 -> 1549; `check_tests` 1569 -> 1571;
+`check_modulos` 191; ignorados quietos (7 y 13). Ningun Cargo tocado; el lock quieto. Ningun `.rs`
+de produccion fuera del fork: apagado, ningun byte de una prueba cambia.
+
+**Lo que queda, y se dice.** El corte 2 de E3b (S538), en un solo commit porque el cable rompe de
+golpe: el encendido del M3 -23 probadores, los `verify`, las guardas-, D-AD a D-AG (la forma
+oculta como unica forma de la 0.4, `Ocultacion` con `winter-prover` normal, el reexport, los
+reembolsos a 64 filas y `edad` con m >= 3 en el probador Y en `m_canonico` del kit: el kit deriva
+m de `nextPending` (D-2 de E4b-2) y el banco monta libros de dos posiciones, asi que D-AG no es
+separable del 0.4), `zkssl/0.4`, los 34 vectores regenerados, la banda de D-AC, los seis tests y
+los tres `t487`, que esperaran el `Err` en el prove. Dos avisos del PASTE que no son del arbol y se
+dicen: el kit imprime 92 + 27 + 1 (caso 21 de la familia), y el arnes de edad 0.3 con el kit
+encendido da 8/11 y no 9/11, porque `m_canonico` en 3 rechaza `neg-subraiz-meta` por la raiz de
+pendientes antes de llegar a la de meta (D-AB; lo dira 0.4).

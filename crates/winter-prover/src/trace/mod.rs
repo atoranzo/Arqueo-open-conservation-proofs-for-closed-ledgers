@@ -7,6 +7,7 @@ use air::{Air, AuxRandElements, EvaluationFrame, TraceInfo};
 use math::{polynom, FieldElement, StarkField};
 
 use super::ColMatrix;
+use crate::ProverError;
 
 mod trace_lde;
 pub use trace_lde::{DefaultTraceLde, TraceLde};
@@ -198,6 +199,102 @@ pub trait Trace: Sized {
             // update x coordinate of the domain
             x *= g;
         }
+    }
+
+    /// ARQUEO (RFC-0009 D-AH): lo que `validate` comprueba, devuelto como `Err` y no como
+    /// panico. El probador oculto lo corre SIEMPRE, tambien en release: un testigo malo es un
+    /// error del cliente, y los asertos del cociente oculto quedan como invariantes que una
+    /// traza comprobada no puede violar. Cuesta T evaluaciones de las restricciones sobre el
+    /// dominio de la traza, nada frente a probar. Con tramo auxiliar, `aux` lleva la traza
+    /// auxiliar real y sus elementos aleatorios.
+    fn comprobar<A, E>(
+        &self,
+        air: &A,
+        aux: Option<(&ColMatrix<E>, &AuxRandElements<E>)>,
+    ) -> Result<(), ProverError>
+    where
+        A: Air<BaseField = Self::BaseField>,
+        E: FieldElement<BaseField = Self::BaseField>,
+    {
+        if self.main_trace_width() != air.trace_info().main_trace_width() {
+            return Err(ProverError::AnchoDiscordante {
+                esperado: air.trace_info().main_trace_width(),
+                real: self.main_trace_width(),
+            });
+        }
+
+        // --- 1. las aserciones, sobre el tramo principal y sobre el auxiliar -------------
+        for assertion in air.get_assertions() {
+            let mut malo = None;
+            assertion.apply(self.length(), |step, value| {
+                if malo.is_none() && value != self.main_segment().get(assertion.column(), step) {
+                    malo = Some(step);
+                }
+            });
+            if let Some(paso) = malo {
+                return Err(ProverError::AsercionNoSatisfecha { columna: assertion.column(), paso });
+            }
+        }
+        if let Some((aux_trace, aux_rand_elements)) = aux {
+            for assertion in air.get_aux_assertions(aux_rand_elements) {
+                let mut malo = None;
+                assertion.apply(self.length(), |step, value| {
+                    if malo.is_none() && value != aux_trace.get(assertion.column(), step) {
+                        malo = Some(step);
+                    }
+                });
+                if let Some(paso) = malo {
+                    return Err(ProverError::AsercionNoSatisfecha {
+                        columna: assertion.column(),
+                        paso,
+                    });
+                }
+            }
+        }
+
+        // --- 2. las restricciones de transicion, paso a paso salvo las exenciones ---------
+        let g = air.trace_domain_generator();
+        let periodic_values_polys = air.get_periodic_column_polys();
+        let mut periodic_values = vec![Self::BaseField::ZERO; periodic_values_polys.len()];
+        let mut x = Self::BaseField::ONE;
+        let mut main_frame = EvaluationFrame::new(self.main_trace_width());
+        let mut aux_frame = if air.trace_info().is_multi_segment() {
+            Some(EvaluationFrame::<E>::new(self.aux_trace_width()))
+        } else {
+            None
+        };
+        let mut main_evaluations =
+            vec![Self::BaseField::ZERO; air.context().num_main_transition_constraints()];
+        let mut aux_evaluations = vec![E::ZERO; air.context().num_aux_transition_constraints()];
+        for step in 0..self.length() - air.context().num_transition_exemptions() {
+            for (p, v) in periodic_values_polys.iter().zip(periodic_values.iter_mut()) {
+                let num_cycles = air.trace_length() / p.len();
+                let x = x.exp((num_cycles as u32).into());
+                *v = polynom::eval(p, x);
+            }
+            self.read_main_frame(step, &mut main_frame);
+            air.evaluate_transition(&main_frame, &periodic_values, &mut main_evaluations);
+            if main_evaluations.iter().any(|e| *e != Self::BaseField::ZERO) {
+                return Err(ProverError::UnsatisfiedTransitionConstraintError(step));
+            }
+            if let Some(af) = aux_frame.as_mut() {
+                let (aux_trace, aux_rand_elements) =
+                    aux.expect("expected aux trace to be present");
+                read_aux_frame(aux_trace, step, af);
+                air.evaluate_aux_transition(
+                    &main_frame,
+                    af,
+                    &periodic_values,
+                    aux_rand_elements,
+                    &mut aux_evaluations,
+                );
+                if let Some(indice) = aux_evaluations.iter().position(|e| *e != E::ZERO) {
+                    return Err(ProverError::RestriccionAuxNoSatisfecha { indice, paso: step });
+                }
+            }
+            x *= g;
+        }
+        Ok(())
     }
 }
 

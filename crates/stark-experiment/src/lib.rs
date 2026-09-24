@@ -115,8 +115,9 @@ pub mod solvency;
 // Solo tests, y solo en release.
 #[cfg(test)]
 mod kat_probador;
-// RFC-0009 E3a-2 (S534): los siete falsadores de D-K, con el modo oculto solo en ellos. Solo
-// tests, en depuracion y en release.
+// RFC-0009 E3a-2 (S534): los siete falsadores de D-K, con el modo oculto solo en ellos, y
+// desde el S537 los dos de D-AH (el probador oculto devuelve Err). Solo tests, en depuracion
+// y en release.
 #[cfg(test)]
 mod falsadores_oculta;
 

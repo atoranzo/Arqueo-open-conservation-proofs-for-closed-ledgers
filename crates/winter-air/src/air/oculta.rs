@@ -32,6 +32,12 @@ impl<A: Air> Oculta<A> {
     pub fn cabe_con(&self, ce: usize) -> bool {
         cabe_con(&self.ctx, ce)
     }
+
+    /// ARQUEO (RFC-0009 D-AH): el AIR interno, de longitud T, contra el que el probador
+    /// comprueba la traza real antes de ocultarla.
+    pub fn interno(&self) -> &A {
+        &self.interno
+    }
 }
 
 /// La segunda cota de las exenciones de un contexto con el factor `ce`.

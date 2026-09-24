@@ -1,4 +1,4 @@
-//! Los siete falsadores de la ocultacion del nucleo (RFC-0009 D-K; E3a-2, S534), traidos del
+//! Los nueve falsadores de la ocultacion del nucleo (RFC-0009 D-K; E3a-2, S534; 8 y 9, D-AH), traidos del
 //! spike que los midio (`~/spike-b-p4r3/spike/src/main.rs`, `145e83ecea366126`: un binario con
 //! veredicto por rc, no tests) y con el modo oculto SOLO aqui: ningun probador de la casa devuelve
 //! `Some` en `Prover::ocultacion`, y los dos de este modulo lo devuelven solo cuando el test se lo
@@ -20,12 +20,17 @@
 //!    D-R); la misma ocultacion, los mismos bytes; otra semilla de filas u otra del cociente, otros
 //!    bytes, y la del cociente deja las raices de la traza y mueve la de restricciones (86, 88 y
 //!    la estructural del spike).
+//! 8. `traza_no_satisfecha_da_err` (D-AH, 5.A-396): un testigo malo con la ocultacion encendida
+//!    es un `Err` del probador con su paso, nunca un panico: la traza real se comprueba antes
+//!    de que el cociente oculto aserte, tambien en release.
+//! 9. `m_que_no_cabe_da_err` (D-AG, D-AH, 5.A-395): m >= 2T es un `Err` nombrado, no un panico;
+//!    16 filas con m = 64 era el caso de los reembolsos antes del acolchado.
 
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::Mutex;
 
 use winter_air::{Marca, MarcaError, Oculta};
-use winter_prover::Ocultacion;
+use winter_prover::{Ocultacion, ProverError};
 use winterfell::crypto::{hashers::Blake3_256, DefaultRandomCoin, Hasher, MerkleTree};
 use winterfell::math::fields::f128::BaseElement as Base128;
 use winterfell::math::fields::f64::BaseElement as Base;
@@ -293,6 +298,36 @@ fn regresion_apagada() {
     assert_ne!(traza_a, traza_b);
     assert_eq!(traza_a, traza_c);
     assert_ne!(restricciones_a, restricciones_c);
+}
+
+#[test]
+fn traza_no_satisfecha_da_err() {
+    // una celda falseada en medio: la transicion 99 -> 100 deja de cumplirse
+    let mut traza = build_trace(Base128::new(3), 256);
+    let fila = 100;
+    let v = traza.get(0, fila);
+    traza.set(0, fila, v + Base128::ONE);
+    let probador = ProbadorWork { opciones: opciones(), ocultacion: Some(OC) };
+    match catch_unwind(AssertUnwindSafe(|| probador.prove(traza))) {
+        Ok(Err(ProverError::UnsatisfiedTransitionConstraintError(paso))) => {
+            assert_eq!(paso, fila - 1, "el paso que no se cumple");
+        },
+        Ok(Err(e)) => panic!("otro error: {e:?}"),
+        Ok(Ok(_)) => panic!("probo una traza no satisfecha"),
+        Err(_) => panic!("el probador entra en PANICO en vez de devolver Err (5.A-396)"),
+    }
+}
+
+#[test]
+fn m_que_no_cabe_da_err() {
+    // 16 filas y m = 64: 2T = 32 < m, la traza corta de los reembolsos antes de D-AG
+    let probador = ProbadorWork { opciones: opciones(), ocultacion: Some(OC) };
+    match catch_unwind(AssertUnwindSafe(|| probador.prove(build_trace(Base128::new(3), 16)))) {
+        Ok(Err(ProverError::OcultacionNoCabe { m: 64, filas: 32 })) => {},
+        Ok(Err(e)) => panic!("otro error: {e:?}"),
+        Ok(Ok(_)) => panic!("probo con m = 64 en una traza oculta de 32 filas"),
+        Err(_) => panic!("el probador entra en PANICO en vez de devolver Err (5.A-395)"),
+    }
 }
 
 // EL JUGUETE DEL CENSO: UNA COLUMNA CONSTANTE Y OTRA EN EL TRAMO AUXILIAR

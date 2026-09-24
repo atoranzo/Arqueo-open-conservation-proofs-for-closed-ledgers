@@ -1,4 +1,4 @@
-# FORK de winterfell 0.13.1 para ARQUEO (RFC-0009 E3a, AUDITORIA 533 y 534)
+# FORK de winterfell 0.13.1 para ARQUEO (RFC-0009 E3a y D-AH, AUDITORIA 533, 534 y 537)
 
 Este directorio es `winter-air` 0.13.1 tal como lo publico crates.io (el checksum del
 `.crate`, en `Cargo.toml`), con la ocultacion del nucleo dentro y APAGADA (la enciende
