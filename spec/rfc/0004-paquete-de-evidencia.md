@@ -160,7 +160,7 @@ adulterado— trasladado a un gate que no necesita levantar un nodo.
    puede citar lo que todavía no existe. El nombre se fija en E1, en el mismo commit
    que crea el fichero.
 8. **Subir la versión del cable.** Descartado por el criterio publicado en
-   `spec/RPC.md:864`: la versión sube cuando cambian **los valores que viajan**, no
+   `spec/RPC.md:868`: la versión sube cuando cambian **los valores que viajan**, no
    cuando crece la superficie. Aquí no viaja ningún valor nuevo.
 
 ## Compatibilidad
@@ -186,7 +186,7 @@ dentro, y entra por RFC.
 
 **Por el espíritu**, el paquete no cruza el cable, así que no hay valor que viaje que
 cambie. Eso exime de **subir la versión**, que es otra regla y otro criterio
-(`RPC.md:864`). No exime del proceso.
+(`RPC.md:868`). No exime del proceso.
 
 **`spec/openrpc.json` no se toca ni se regenera**, porque este RFC no añade ningún
 método. La regla 4 exige, para ACEPTADO, «la spec actualizada + OpenRPC regenerado +
@@ -196,7 +196,7 @@ esta declaración de que el OpenRPC queda fuera del alcance por no haber método
 
 > **Nota (2026-09-05, §400).** ACEPTADO. La regla 4 del PROCESO queda saldada con
 > medida: la spec es `spec/PAQUETE.md` (E1, §397; la cota del índice, §399) y
-> `RPC.md:828` remite a ella — el OpenRPC **no se regenera**, por la declaración de
+> `RPC.md:832` remite a ella — el OpenRPC **no se regenera**, por la declaración de
 > arriba: no hay método nuevo, y `spec/openrpc.json` sigue en el `zkssl/0.3` del §354
 > con sus tres tests de atado — los vectores son nuevos bajo `spec/vectors/paquete/`
 > (E2, §398; 67 entradas desde §399) y los tres del cable siguen intactos bajo el
@@ -264,7 +264,7 @@ Medido sobre `bb5322f` (§395), con las huellas en `sha256 | cut -c1-16` y las l
 `:30-34`. Este RFC toma el **0004** por correlativo, tras el 0002 y el 0003.
 
 **Procedencia de dos citas arrastradas.** Todo lo anterior se midió en la sesión 92 salvo
-dos referencias, que se declaran: `spec/RPC.md:864` —el criterio de cuándo sube la
+dos referencias, que se declaran: `spec/RPC.md:868` —el criterio de cuándo sube la
 versión— se midió en la sesión 66 y **sigue vigente porque el fichero conserva su huella**
 (`3eaa7a433d53f579` / 867, re-medida hoy); y la remisión a `SECURITY.md` §6 por el nodo
 único se **copia de la sección Seguridad del RFC-0003**, que es el precedente ACEPTADO.

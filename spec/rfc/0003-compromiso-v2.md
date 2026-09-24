@@ -11,7 +11,7 @@
 - **Número: 0003, FIRME.** La regla 1 de `PROCESO.md` es numeración correlativa
   desde 0001, y el `0001` no falta: está **reservado** al endurecimiento del KDF
   del keystore (SHA-256 → Argon2id), «no está redactado» — nota de numeración del
-  `0002` (`:30-34`) y `SECURITY.md:425-432` («no es un descuido, es una deuda con
+  `0002` (`:30-34`) y `SECURITY.md:428-435` («no es un descuido, es una deuda con
   expediente»).
 
 ## Motivación

@@ -39479,3 +39479,37 @@ IDENTICAS; y las 31 SHA-REGION clavan en su sitio. El canon NO corre: no cambia 
 publica el saldo: la banda lo prueba sin el>> (5.A-363) es cierto desde el §538 y queda como
 estaba: su cierre es del traspaso, por medicion. Y la huella del binario del kit se mueve otra vez
 con un comentario, como en el §522: despojarlo sigue siendo de otro corte.
+
+**El S538-D, en su propio commit: la spec al dia, lo que el -B no pago (2026-09-24).** Medido
+sobre `fa3bb92`. Tres deudas en `spec/README.md`, que el -B dejo de centinela para el giro: el
+principio del API en presente (<<Today the proofs break the principle>>, partido en dos lineas y
+por eso invisible para un censo por linea; el censo por parrafo sobre todo el arbol no encuentra
+otro), la frase de la fila del RFC-0009 que decia <<a rule that today is not met>>, y la fila de
+los vectores de conformidad, que no nombraba `zkssl-0.4.json` ni el archivo `vectors/0.3/` del
+§538 (D-AB). El principio pasa al molde del §521: el pasado se fecha y el presente dice lo que
+el RFC-0009 promete. Y una cuarta, de otra clase: las citas por numero de linea, que nada vigila.
+El -B alargo trece ficheros, y de las 46 citas que apuntan a ellos fuera de `AUDITORIA.md`, 38 ya
+no veian lo que veian en `7b87a4c`. Vuelven una a una a lo que veian: 35 con el mismo texto,
+comprobado por el bloque contra `7b87a4c` con git, y tres que cruzan un parrafo que el -B
+reescribio, ensanchadas a su imagen (`RPC.md:50-59` pasa a `50-61`, dos veces, y `169-360` a
+`171-364`). No se juzga aqui si aquello era lo que cada frase queria decir: el mapa de secciones
+de `RPC.md` en `spec/README.md`, por ejemplo, ya estaba corrido antes del -B (`RPC.md:863-867` no
+apuntaba a la regla de version ni en `7b87a4c`).
+
+**Contadores del S538-D.** OCHO ficheros y ninguno nace, cada uno con las lineas que tenia, asi
+que ninguna cita hacia ellos se mueve: `doc/USE_CASES.md` +4 -4, `spec/PAQUETE.md` +9 -9,
+`spec/README.md` +22 -22, `spec/rfc/0003-compromiso-v2.md` +1 -1,
+`spec/rfc/0004-paquete-de-evidencia.md` +4 -4, `spec/rfc/0005-nucleo-congelado.md` +2 -2,
+`spec/rfc/0006-consumo-publicado.md` +2 -2,
+`spec/rfc/0008-pruebas-portables-del-pendiente.md` +2 -2; y `AUDITORIA.md` +34 -0 (estos tres
+parrafos): 39.481 -> 39.515. Las puertas del bloque: el censo de citas, 46 y 38, repetido sobre el
+arbol del autor con `git show 7b87a4c`; cada cita nueva ve, con su huella, lo que veia la vieja;
+`RPC.md`, `SECURITY.md` y `INSTITUTIONAL.md`, quietos; las once herramientas IDENTICAS; las 31
+SHA-REGION clavan. Ni un `.rs`, ni un pin, ni una cifra de tests: el canon no corre, como en el
+§441.
+
+**Lo que NO cierra el S538-D.** Las citas por linea siguen sin guardian, y las que ya estaban
+corridas antes del -B siguen corridas: nace un punto de cola con su censo, y el guardian -una
+herramienta que ancle cada cita por su contenido- es de otro corte. El giro del RFC-0009 a
+ACEPTADO es el S539, y el 5.A-399 -29 metodos en la fila 20 de `spec/README.md` y en cuatro sitios
+mas, donde el OpenRPC publica 30- es el S540.

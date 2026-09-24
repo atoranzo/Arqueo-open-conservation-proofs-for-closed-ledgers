@@ -140,7 +140,7 @@ La tensión se declara, no se esconde: la ley del proyecto también dice «ante 
 Aquí las dos mitades reparten la duda: **sobre la versión, fail-closed**; **sobre las claves no
 firmadas, indiferencia**, porque no hay duda que resolver — nada de lo verificado depende de
 ellas. Si el autor prefiere fail-closed también en las claves, la consecuencia es que todo
-campo aditivo sube versión, `spec/RPC.md:864` deja de ser cierto y el binario publicado cambia
+campo aditivo sube versión, `spec/RPC.md:868` deja de ser cierto y el binario publicado cambia
 de conducta: es una decisión reversible y se escribe como tal.
 
 **Familias nuevas.** Un objeto nuevo (otra prueba portable, otro sobre) entra con su propio
@@ -206,7 +206,7 @@ si pasa y falla igual. Lo que ningún KAT da es la firma: RFC 8391.
 1. **Congelar el cable.** Descartado: reproducirlo exige el probador (`proof_digest`), luego
    exige leer el código de referencia; contradice la línea 95 de la propuesta y la nota 85.
 2. **Rechazar claves desconocidas como regla del formato.** Descartado (reversible): haría de
-   todo campo aditivo una rotura y dejaría falsa la normativa de `spec/RPC.md:864` y sus cuatro
+   todo campo aditivo una rotura y dejaría falsa la normativa de `spec/RPC.md:868` y sus cuatro
    precedentes. Queda como elección declarada de la implementación de referencia.
 3. **Meter el núcleo en `spec/RPC.md`.** Descartado: `spec/RPC.md` especifica lo que cruza el cable,
    y el núcleo es lo que se verifica sin cable (descarte 2 del RFC-0004, misma razón).

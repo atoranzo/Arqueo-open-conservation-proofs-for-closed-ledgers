@@ -23,7 +23,7 @@ Lo que sostiene la posición del titular ante un tercero **cuando el operador de
 miente**: las respuestas del cable que ya custodia, reunidas en **un** fichero JSON y verificadas
 **sin el nodo, sin la capa y sin el probador** (§243) — sólo el binario y lo publicado. Es el
 procedimiento de apagado que `spec/RPC.md` declara en su sección «Apagado — el fin de vida»
-(`RPC.md:810-855`): al cerrar, el operador no publica nada que no esté ya publicado; el titular se
+(`RPC.md:814-859`): al cerrar, el operador no publica nada que no esté ya publicado; el titular se
 lleva lo que ya custodia; y con este paquete lo sostiene después.
 
 El paquete **REPORTA, no juzga.** Dice si la cabeza es de quien dice, si el acuse sube hasta la
@@ -53,8 +53,8 @@ donde el valor es una respuesta del cable sin reescribir.
 }
 ```
 
-- `cabeza` es el `result` de `zkssl_signedEpochHead` (`RPC.md:433-478`), con `available:true`.
-- `acuse` es lo que `zkssl_ackPath` devuelve (`RPC.md:564-735`) más el `hashPrueba` de la entrada
+- `cabeza` es el `result` de `zkssl_signedEpochHead` (`RPC.md:437-482`), con `available:true`.
+- `acuse` es lo que `zkssl_ackPath` devuelve (`RPC.md:568-739`) más el `hashPrueba` de la entrada
   del titular (el `proofDigest` asentado). Si no viaja, la cabeza sola queda demostrada.
 
 ### 2.2 El paquete v2 — las cofirmas dentro (§322)
@@ -68,7 +68,7 @@ donde el valor es una respuesta del cable sin reescribir.
 }
 ```
 
-- `cofirmas` es el contenido de `zkssl_cosigs` sin reescribir (`RPC.md:737-779`): cada elemento
+- `cofirmas` es el contenido de `zkssl_cosigs` sin reescribir (`RPC.md:741-783`): cada elemento
   acredita que **un** testigo vio **esta** cabeza de **este** operador, y nada más.
 - **El binario lee v1 y v2**: lo custodiado no caduca (§290). Lo que la subida de versión compra
   es que un binario viejo se niegue en voz alta ante un v2 en vez de ignorar las cofirmas e
@@ -87,7 +87,7 @@ donde el valor es una respuesta del cable sin reescribir.
 
 - `vieja` y `nueva` son dos cabezas **v3** firmadas, cada una el `result` de
   `zkssl_signedEpochHead`; `camino` es la prueba de consistencia entre sus cimas
-  (`RPC.md:781-808`). Quien custodia la vieja comprueba que la nueva la **extiende**, con el MMR
+  (`RPC.md:785-812`). Quien custodia la vieja comprueba que la nueva la **extiende**, con el MMR
   de cabezas (§291) como juez, sin el registro y sin el nodo.
 - La forma se elige por `tipo`: si vale `"extension"`, el sobre es este; si no, es el de posición.
   `v` se comprueba antes en los dos casos.
@@ -360,10 +360,10 @@ verificar, y cuyo significado está en `spec/RPC.md`.
 | objeto | claves que el binario lee | dónde está su semántica |
 |---|---|---|
 | sobre | `v`, `tipo`, `cabeza`, `acuse`, `cofirmas`, `vieja`, `nueva`, `camino` | este documento, sección 2 |
-| `cabeza` (y `vieja`/`nueva`) | `available`, `formatVersion`, `seq`, `n`, `accountsRoot`, `pendingRoot`, `frozenRoot`, `chainDigest`, `acusesRoot`, `epochDigest`, `publicKey`, `signature`, `index`; en v3 y v4 `mmrRoot`, `mmrSize`; y en v4 `consRoot`, `consCount` | `zkssl_signedEpochHead`, `RPC.md:433-478` |
-| `acuse` | `hashPrueba`, `seq`, `camino` → `siblings`, `isRight` | `zkssl_ackPath`, `RPC.md:564-735` |
-| cada cofirma | `v`, `epochDigest`, `clavePublicaOperador`, `clavePublicaTestigo`, `firma`, `versionFormato`, `indice` | `zkssl_cosigs`, `RPC.md:737-779` |
-| extensión | `camino` (lista de digests) | `RPC.md:781-808` |
+| `cabeza` (y `vieja`/`nueva`) | `available`, `formatVersion`, `seq`, `n`, `accountsRoot`, `pendingRoot`, `frozenRoot`, `chainDigest`, `acusesRoot`, `epochDigest`, `publicKey`, `signature`, `index`; en v3 y v4 `mmrRoot`, `mmrSize`; y en v4 `consRoot`, `consCount` | `zkssl_signedEpochHead`, `RPC.md:437-482` |
+| `acuse` | `hashPrueba`, `seq`, `camino` → `siblings`, `isRight` | `zkssl_ackPath`, `RPC.md:568-739` |
+| cada cofirma | `v`, `epochDigest`, `clavePublicaOperador`, `clavePublicaTestigo`, `firma`, `versionFormato`, `indice` | `zkssl_cosigs`, `RPC.md:741-783` |
+| extensión | `camino` (lista de digests) | `RPC.md:785-812` |
 | consumo | `consumo`, y `presencia`/`ausencia` → `siblings`, `isRight` | `zkssl_consumoPath`, `RPC.md` |
 | conflicto | `consumo`, y `libros[]` → `cabeza`, `presencia` → `siblings`, `isRight` | este documento, sección 2.5 |
 | rechazo | `data` → `causa`, `campos`, `seq`; `parametros` → los siete de `zkssl_params`; `presencia` → `siblings`, `isRight`; `recibo` → `rootOld`, `pendingRootOld`, `frozenRoot`; `lote[]` → `kind`, `sender` o `receiver`, `receipt` → `notice` → `position` o `notice` → `position`; `congelados` → `index`, `leaf`, `camino` → `siblings`, `isRight`; `peticion` → `amount`; `cuenta` → `index`, `leaf`, `camino` → `siblings`, `isRight`; `banda` → `s`, `publicId`, `requested`, `prueba` | este documento, sección 2.6 |

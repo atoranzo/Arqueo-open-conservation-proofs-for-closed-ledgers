@@ -53,7 +53,7 @@ operador ya manda.
 
 `doc/USE_CASES.md:28` publica, en la tabla de propiedades, la fila «No double use — a unit is
 consumed once (nullifiers) — measured». Lo medido es otra cosa: que la vía de producción en dos
-fases no usa nulificador alguno (`SECURITY.md:376`) y que la capa no persiste ninguno (RFC-0005,
+fases no usa nulificador alguno (`SECURITY.md:379`) y que la capa no persiste ninguno (RFC-0005,
 D-C). La fila es verdadera para el doble gasto de una cuenta —lo cierra el orden total del
 registro— y falsa en su paréntesis. El caso de uso que la misma página describe en `:62-69` —la
 doble certificación de un mismo gasto bajo dos programas— no lo cubre hoy ninguna pieza del
@@ -92,7 +92,7 @@ Lo que el árbol tiene hoy, medido (`PASTE-NULL-M`):
   y `nulificador` 43; con tres grafías y tres significados (gasto, umbral, legado). El punto 25
   de la cola de la sesión 80 lo dejó abierto y esta lectura lo acota: el patrón «tiene / hay un
   árbol de nulificadores» da cero fuera de `AUDITORIA.md`, y las filas en presente que quedan de
-  cara al público —`INSTITUCIONAL.md:271`, `INSTITUTIONAL.md:279`, `VISION.md:127`,
+  cara al público —`INSTITUCIONAL.md:271`, `INSTITUTIONAL.md:282`, `VISION.md:127`,
   `doc/USE_CASES.md:28`— se citan aquí y se corrigen cuando un sello toque cada fichero.
 
 Y lo que falta, también medido: no existe en el árbol un objeto que dos operadores puedan calcular

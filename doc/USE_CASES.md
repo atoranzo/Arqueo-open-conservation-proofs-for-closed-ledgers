@@ -26,9 +26,9 @@ of the world (`SECURITY.md`, the oracle limit).
 |---|---|---|---|
 | 1 | Conservation | supply = balances + in flight; nothing created or lost between epochs | measured, in flight and on reopening (`AUDITORIA.md` §387–§394) |
 | 2 | No double use | a label is consumed once in a ledger and published in its signed head; the same label in two ledgers is detected from both | measured (RFC-0006; `doc/KIT.md`) |
-| 3 | Unrewritable history, with an extension proof | today's signed head extends yesterday's without removal or reordering | measured (`spec/RPC.md:781-808`, `zkssl_consistencyProof`) |
-| 4 | Inclusion with a receipt | an entry is in the ledger, provable without the operator | measured (`spec/RPC.md:564-735`, `zkssl_inclusionReceipt`, `zkssl_ackPath`) |
-| 5 | Authorship without the key travelling | only the holder of a key moves its account; the operator cannot | measured (`spec/RPC.md:50-59`, the API principle) |
+| 3 | Unrewritable history, with an extension proof | today's signed head extends yesterday's without removal or reordering | measured (`spec/RPC.md:785-812`, `zkssl_consistencyProof`) |
+| 4 | Inclusion with a receipt | an entry is in the ledger, provable without the operator | measured (`spec/RPC.md:568-739`, `zkssl_inclusionReceipt`, `zkssl_ackPath`) |
+| 5 | Authorship without the key travelling | only the holder of a key moves its account; the operator cannot | measured (`spec/RPC.md:50-61`, the API principle) |
 | 6 | Cut-off and completeness | nothing stays in flight past its time; every acknowledgement ends applied or rejected, with a trace | in part: the empty box (RFC-0007, E4) |
 | 7 | Rejection with cause | a refusal carries the rule that produced it | measured (RFC-0007; `spec/PAQUETE.md`, 2.6) |
 
@@ -111,7 +111,7 @@ who cannot see it? (iii) Is the question conservation, or counterparty risk?
 (iv) Scale: measured throughput is 1.5–1.9 transactions per second, given as a
 band because two runs on the same machine differed by 22 % (`AUDITORIA.md`
 §123); 2^32 simultaneous payments in flight; one node, one writer, no
-distributed consensus (`spec/RPC.md:856-867`).
+distributed consensus (`spec/RPC.md:860-871`).
 
 - Fits: registers of entitlements (agricultural payment rights, irrigation and
   fishing quotas, planting rights); netting between operators; netting between

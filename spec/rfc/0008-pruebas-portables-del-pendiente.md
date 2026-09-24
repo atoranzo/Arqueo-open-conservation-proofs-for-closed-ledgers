@@ -134,7 +134,7 @@ manda la forma de este RFC:
   de gastados —el cobro retira la hoja—, pero el RFC-0006 dejó un árbol de etiquetas públicas
   con raíz firmada (`root:cons`), donde repetir es `ConsumoRepetido`
   (`crates/zk-ssl/src/consumo.rs:129-139`), y esa causa ya está en el catálogo de rechazos con
-  prueba (`spec/PAQUETE.md`, 2.6). Publicar hoy no exige prueba (`spec/RPC.md:936`): quien
+  prueba (`spec/PAQUETE.md`, 2.6). Publicar hoy no exige prueba (`spec/RPC.md:940`): quien
   publica primero bloquea, y eso es denegación, no doble uso (D-4 del 0006). Lo que cualquiera
   puede poner sobre el pendiente de otro es la MARCA, y la marca sola no prueba nada (D-AS): no
   es denegación, es una etiqueta más. Lo que exige prueba es la PRENDA, y por eso entra por un
@@ -674,7 +674,7 @@ sólo si la traza del sandbox ya lo dijera todo, que es la reversión de D-P.
 ### D-AJ — El sobre 2.9 y sus vectores, en `pendiente/`
 
 Medido sobre `477dcab`: la forma 2.8 es `{v, tipo: "cobro_pendiente", cabeza, enunciado, prueba}`
-con la cabeza VERBATIM y las raíces sólo de ella (`spec/PAQUETE.md:239`); el mando dispatcha por
+con la cabeza VERBATIM y las raíces sólo de ella (`spec/PAQUETE.md:240`); el mando dispatcha por
 `tipo` (`crates/zk-ssl-verify/src/main.rs:167`); la primera línea del manifiesto de `pendiente/`
 dice «Vectores del sobre de COBRO PENDIENTE» (`spec/vectors/pendiente/MANIFIESTO.txt:1`); y
 `pago_en_curso` no existe en ningún `.rs`, `.sh`, `.json` ni `.txt`. Dos caminos: (a) la forma 2.9,
