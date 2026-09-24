@@ -39657,3 +39657,51 @@ IDENTICAS y dos con el delta que el corte explica: `check_tests` (1571 -> 1576) 
 
 **Lo que NO cierra.** La boca del cli, `prueba-prenda` (D-BC..D-BI), que mete el SDK en el cli
 con la puerta de clausura del 5.A-359; y detras el banco y el catalogo `spec/vectors/prenda/`.
+
+## §543 — La boca del prendador: `zk-ssl-cli prueba-prenda`, con el SDK en el cli y su puerta
+
+**Que.** `crates/zk-ssl-cli/src/prenda.rs`, nuevo, es la boca de la prenda (RFC-0008 E3,
+D-BC..D-BI): lee el aviso v2, abre el wallet con el keystore `zkssl-keystore/1` del SDK y la frase
+de su fichero -el cli nunca ve la clave de gasto-, pide la cabeza firmada y la foto del ultimo
+latido a un nodo VIVO, compone el sobre `prenda` de `PAQUETE.md` 2.10 con
+`Wallet::prueba_de_prenda` (§542) y lo escribe SIEMPRE (D-BE). Con `--publicar` pide ademas a
+`zkssl_pledge` que escriba la marca bajo ese latido, imprime lo que responde y sale en rojo si no
+la acepta. Sin `--receptor`: sale de la clave (D-BD). La cabeza y la foto, con lectores PROPIOS
+(D-BI): v5 con la razon de la prenda (D-BF), sin `pmetaRoot` y sin `hermanosMeta`, `emisor` ni
+`nacido`. `main.rs` la registra y su cabecera pasa a ocho subcomandos; `PAQUETE.md` 2.10 nombra
+la boca en la frase de quien produce el sobre.
+
+**El SDK entra en el cli, medido antes de escribirlo.** El PASTE-543-M (SALIDA
+`ae5706da1a75c854`) compilo la boca en una copia de `cd13aa7`, con sus seis testigos puros en verde
+y el cli en 119/0/0: `--locked` rehusa la dependencia hasta que el lock la lleva; el lock gana UNA
+linea, `"zk-ssl-sdk",` entre `zk-ssl-hash` y `zk-ssl-verify` (`f8c226859ec029af` ->
+`5b41669e07371004`, 3578 -> 3579, la huella que este corte PREDIJO), y con ella `--locked` pasa. La
+clausura cuesta tres paquetes por el lock, que suma las aristas de desarrollo -`zk-ssl-sdk`, `rand`
+0.8.7 y `rand_chacha` 0.3.1, lo que D-BC escribio con ese operador-, y cinco por
+`cargo tree -e normal`, lo que entra en el binario: esos tres mas `ppv-lite86` 0.2.21 y `zerocopy`
+0.8.55. El comentario del `Cargo.toml` del cli que dice <<NO se usa zk-ssl-sdk>> se CITA y se
+corrige, como el §312 hizo con su razon.
+
+**La puerta de clausura del cli (5.A-359, cerrado).** El kit tenia la suya y el cli ninguna. El
+septimo testigo de la boca camina el lock desde `zk-ssl-cli`, como la del kit, y exige que los
+crates del arbol que entran -los que no tienen `source`: el workspace y el fork- sean EXACTAMENTE
+trece, `zk-ssl-sdk` entre ellos, y que el nodo no este. Uno que entre o salga pasa por ella.
+
+**El pin y las cifras, con el perimetro DERIVADO.** La fila del cli 113 -> 120: los seis testigos
+puros -lectores, sobre, frase y keystore- y la puerta. `check_cifras`, corrido sobre una copia con
+la fila ya subida, nombro CUATRO cifras: las tres del total (1417 -> 1424) y los <<113 del
+testigo>> de `PRINCIPIOS.md`; el censo estrecho anade las tres sumas <<contando los pines>> (1554
+-> 1561). Siete cifras en tres documentos, cada una por VALOR en su linea y con su ancho.
+
+**Contadores.** NUEVE ficheros mas este asiento: `crates/zk-ssl-cli/src/prenda.rs` nuevo (326
+lineas), `crates/zk-ssl-cli/src/main.rs` +8 -1, `crates/zk-ssl-cli/Cargo.toml` +13 -0,
+`Cargo.lock` +1 -0, `spec/PAQUETE.md` +3 -1, `tools/canon.sh` +1 -1, `PRINCIPIOS.md` +3 -3,
+`PAPER.md` +2 -2 y `PAPER_EN.md` +2 -2; `AUDITORIA.md` +48 -0 (este asiento): 39.659 ->
+39.707. De las once herramientas, ocho IDENTICAS y tres con el delta que el corte explica:
+`check_tests` (1576 -> 1583), `check_modulos` (191 -> 192 ficheros bajo `src/`, el nuevo
+declarado por su padre) y `check_figures` (la cifra que lista de `PRINCIPIOS.md`:358, 1417 ->
+1424). Las 31 SHA-REGION clavan. Canon `--sello` VERDE en 742 s, con el cli en 120(120).
+
+**Lo que NO cierra.** El banco `tools/banco_prenda.sh` -la boca contra un nodo vivo, con y sin
+`--publicar`-, el catalogo `spec/vectors/prenda/` y la celda E3 del RFC-0008.
+

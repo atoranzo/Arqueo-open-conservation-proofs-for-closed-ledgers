@@ -1,6 +1,6 @@
 //! # zk-ssl-cli — sandbox y trazador de la capa desde la terminal
 //!
-//! Siete subcomandos sobre la capa REAL (`zk_ssl::SovereignLayer`) y el nodo:
+//! Ocho subcomandos sobre la capa REAL (`zk_ssl::SovereignLayer`) y el nodo:
 //!
 //! - `simulate`      — pago en dos fases (send + claim) con pruebas STARK
 //!                     reales, en memoria o contra un ledger persistido.
@@ -11,6 +11,7 @@
 //! - `witness`       — el TESTIGO de las cabezas firmadas de un nodo (§245).
 //! - `prueba-cobro`  — la BOCA del cobrador: el sobre `cobro_pendiente` (RFC-0008, S497).
 //! - `prueba-pago`   — la BOCA del pagador: el sobre `pago_en_curso` (RFC-0008, S507).
+//! - `prueba-prenda` — la BOCA del prendador: el sobre `prenda` (RFC-0008, S543).
 //!
 //! Convención de salida: **datos por stdout, diagnóstico por stderr**.
 //! Con `--json`, stdout es JSON Lines puro (un evento por línea).
@@ -22,6 +23,7 @@ mod fmt;
 #[cfg(test)]
 mod nucleo_kat;
 mod pago;
+mod prenda;
 mod sandbox;
 mod trace;
 mod witness;
@@ -76,6 +78,10 @@ enum Command {
     /// credencial pide la cabeza firmada y la foto de su pendiente a un nodo VIVO -con
     /// `receiverId`, S505-, y escribe el sobre `pago_en_curso` de `PAQUETE.md` 2.9.
     PruebaPago(pago::PruebaPagoArgs),
+    /// **La BOCA del prendador** (RFC-0008 E3, S543): con su aviso v2 y su keystore pide la
+    /// cabeza firmada y la foto de su pendiente a un nodo VIVO, escribe el sobre `prenda` de
+    /// `PAQUETE.md` 2.10 y, con `--publicar`, pide a `zkssl_pledge` que escriba la marca.
+    PruebaPrenda(prenda::PruebaPrendaArgs),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -97,6 +103,7 @@ fn main() -> anyhow::Result<()> {
         Command::Witness(a) => witness::run(a),
         Command::PruebaCobro(a) => cobro::run(a),
         Command::PruebaPago(a) => pago::run(a),
+        Command::PruebaPrenda(a) => prenda::run(a),
     }
 }
 

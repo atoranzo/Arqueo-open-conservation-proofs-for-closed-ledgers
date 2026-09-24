@@ -43,6 +43,10 @@ anyhow = "1"
 # RPC hecho: arrastraria `stark-experiment`, y **un testigo no debe
 # compilar el probador STARK para comprobar una firma**. Es la leccion de
 # §243 a menor escala.
+# ⚠️⚠️ **§543 · CORRECCION. La frase de arriba se CITA, no se borra**
+# (§247). Desde el §543 el cli SI depende de `zk-ssl-sdk`: la boca de la
+# prenda (RFC-0008 E3, D-BC) abre la clave de gasto con su keystore, y el
+# cli nunca la ve. La linea va al final de este bloque, con lo que cuesta.
 zk-ssl-verify = { path = "../zk-ssl-verify" }
 # ⚠️ **§411 (RFC-0005, E5).** Los KAT del nucleo: `nucleo_kat` recompone cada fn NUCLEO de
 #    `zk-ssl-hash` contra `spec/vectors/nucleo/`. Suma CERO nodos al grafo: `zk-ssl` ya lo trae.
@@ -78,3 +82,12 @@ xmss = "=0.1.0-pre.0"
 # se COPIO de `crates/zk-ssl-node/Cargo.toml`, no se tecleo. Es BEST-EFFORT y
 # va dicho en la doc de la funcion.
 zeroize = "1"
+
+# ⚠️ **§543 (RFC-0008 E3, D-BC).** La boca `prueba-prenda` abre la clave de
+# gasto con el keystore `zkssl-keystore/1` del SDK. Lo que cuesta, MEDIDO por
+# el PASTE-543-M: por el `Cargo.lock`, que suma las aristas de desarrollo,
+# tres paquetes -`zk-ssl-sdk`, `rand` 0.8.7 y `rand_chacha` 0.3.1-; por
+# `cargo tree -e normal`, lo que entra en el binario, cinco: esos tres mas
+# `ppv-lite86` 0.2.21 y `zerocopy` 0.8.55. La puerta de clausura del cli
+# (`prenda::tests`, 5.A-359) fija los crates del arbol que entran.
+zk-ssl-sdk = { path = "../zk-ssl-sdk" }

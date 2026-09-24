@@ -349,7 +349,9 @@ donde el valor es una respuesta del cable sin reescribir.
   juez es `zk_ssl_air::prenda::verificar_contra_cabeza` (§516), el MISMO con el que la capa
   re-verifica lo que produce (§518), y el kit lo compila **sin el probador**. Quien lo produce es
   `prueba_de_prenda` (§518), con el aviso, la clave y el camino que el nodo sirve del último
-  latido.
+  latido; y desde el §543 lo escribe su prendador con `zk-ssl-cli prueba-prenda`
+  (D-BC..D-BI): la clave entra por el keystore del SDK y el cli no la ve, y con `--publicar`
+  la boca pide además a `zkssl_pledge` que escriba la marca bajo ese mismo latido.
 
 ## 3. El sobre — lo que el binario lee
 
