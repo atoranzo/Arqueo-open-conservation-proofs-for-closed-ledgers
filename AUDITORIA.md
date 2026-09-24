@@ -39584,3 +39584,38 @@ le quedaron cuatro, y ninguna herramienta lo vio: lo midio el PASTE-538B-M. Atar
 `check_publicadas`, o en un test del cable- es de otro corte, y va a la cola. La otra mitad del
 5.A-399, el vector `rechazo-rech-banda-cuenta-otra.json`, que espera el texto de winterfell, no es
 una deuda sino una vigilancia: si el texto cambia, el MANIFIESTO lo sigue.
+
+## §541 — El RFC-0008 escribe D-BC..D-BI: las siete decisiones de la boca de la prenda
+
+**Que.** `spec/rfc/0008-pruebas-portables-del-pendiente.md` gana D-BC..D-BI, las siete decisiones
+de la boca de la prenda que la sesion 162 tomo y no escribio: el §520 las nombro (<<D-BC, D-BD y
+D-BE ya delegadas>>) y el RFC se quedo en D-BB, asi que desde entonces vivian solo en un chat. La
+179 las recupero de alli, re-midio sus premisas sobre `cf65876` y el autor las ratifico. Entran
+con el molde del Diseno: lo medido, los caminos, por que gana el que gana y su reversion; la D-BF,
+que el §520 ya aplico en el mando y en la forma 2.10, se escribe con el texto de su asiento. El
+parrafo del Diseno pasa de cincuenta y cuatro decisiones a sesenta y una, con su lista de
+sesiones al dia, y lo descartado gana diez entradas (44-53). Ni codigo, ni pin, ni vector: el
+canon no corre, como en el §539.
+
+**Lo que la medida de la 179 corrige de la 162.** El coste de la D-BC: se dijo que la clausura del
+cli ganaba `chacha20poly1305`, `sha2` y `rand`; medido en el `Cargo.lock` de `cf65876` por nombre
+y version, las dos primeras ya estaban, y lo que entra es `zk-ssl-sdk`, `rand 0.8.7` y
+`rand_chacha 0.3.1`, sin ningun paquete nuevo en el lock. Y la frase de la custodia en
+`SECURITY.md` ha cambiado de linea desde entonces: por eso las siete citan por simbolo y por
+seccion, y no por numero de linea (PRECISION 735).
+
+**Lo que NO hace.** No gira E3, que sigue <<propuesta>> hasta que esten la boca, el banco y el
+catalogo. No toca las lineas de autores y de asientos de la cabecera, que se quedaron en la 155 y
+en el §510: las reescribe el giro a ACEPTADO, como el §539 hizo con la de autores del RFC-0009. Y
+no paga el 5.A-345, que el traspaso sigue dando abierto: medido, sus tres lineas las corrigio el
+§514 (<<Esas tres son el 5.A-345>>), y el punto se cierra por medida en el traspaso.
+
+**Contadores.** UN fichero mas este asiento: `spec/rfc/0008-pruebas-portables-del-pendiente.md`
++131 -4; el RFC pasa de 1150 a 1277 lineas, y el unico parrafo que se reescribe, el del Diseno,
+pierde su linea de 145 caracteres. Nadie cita el RFC-0008 por linea -medido, y el bloque lo vuelve
+a medir-, asi que crecer no mueve ninguna cita. `AUDITORIA.md` +35 -0 (este asiento): 39.586 ->
+39.621. Las once herramientas IDENTICAS; las 31 SHA-REGION clavan.
+
+**Lo que NO cierra.** El montaje de E3: la operacion en el SDK, la boca con su puerta de clausura,
+el banco y el catalogo. Lo descartado sigue sin las entradas de D-AZ..D-BB, que el §519-B no
+escribio. Y el falsador de la deduccion de D-BB, del lado del productor, sigue pendiente.

@@ -145,12 +145,14 @@ manda la forma de este RFC:
 
 ## Diseño
 
-Las cincuenta y cuatro decisiones las tomó el asistente por delegación del autor (D-A..D-E en la
+Las sesenta y una decisiones las tomó el asistente por delegación del autor (D-A..D-E en la
 sesión 144; D-F, D-G y D-H en la 145; D-I en la 147; D-J..D-M en la 149; D-N..D-AC en la 150, y
 de ellas D-R..D-AC las escribió aquí el §500; D-AD..D-AJ en la 151; D-AK..D-AR en la 155, y las
-escribió aquí el §510; D-AS..D-AU en la 158, que las escribió el §513; D-AV..D-AY en la 159; y D-AZ..D-BB en la 161, que las escribió el §519-B),
-con la constitución de decisión (pureza, claridad, coherencia, imagen fiel, en ese orden). Todas
-llevan su condición de reversión, escrita aquí.
+escribió aquí el §510; D-AS..D-AU en la 158, que las escribió el §513; D-AV..D-AY en la 159;
+D-AZ..D-BB en la 161, que las escribió el §519-B; y D-BC..D-BI en la 162 —la D-BC la eligió el
+autor entre tres, y la D-BF ya la aplicó el §520—, ratificadas en la 179 y escritas aquí por el
+§541), con la constitución de decisión (pureza, claridad, coherencia, imagen fiel, en ese orden).
+Todas llevan su condición de reversión, escrita aquí.
 
 ### D-A — La T es del pagador; el cobrador dice «a mi nombre, al menos `inferior`, nacido en b»
 
@@ -967,6 +969,110 @@ verifica— no es del nodo: vive donde vive el productor, y queda pendiente. **R
 decide que la constancia debe distinguir QUIÉN escribió la hoja; entonces la prenda pide árbol
 propio, que es la salida que la propia D-AT deja escrita.
 
+### D-BC — La clave de gasto de la boca entra por el keystore del SDK: el cli nunca ve un `Digest`
+
+Medido en la 162 sobre `afd72d6` y re-medido en la 179 sobre `cf65876`. La boca de la prenda es
+la primera del cli que necesita la clave de gasto —el cobro es de ESTADO (D-G) y el pago va con su
+retorno (D-AI)—, y en `crates/zk-ssl-cli/src/` no hay una sola `spend_key`. El SDK ya la custodia:
+`Wallet` es «la clave ancha del titular y sus derivaciones. Nunca sale de aquí», y su accesor
+`spend_key()` es `pub(crate)`. Y ya tiene formato de reposo, `zkssl-keystore/1`
+(`crates/zk-ssl-sdk/src/keystore.rs`: XChaCha20-Poly1305, el `public_id` en claro y el material
+de gasto cifrado), cuyo `load` exige que la clave descifrada derive el `public_id` declarado. La
+sección 3.bis de `SECURITY.md` publica, como verificado en código, que `Wallet::spend_key` es
+privado y ni siquiera implementa `Serialize`. Tres caminos: (a) el cli depende de `zk-ssl-sdk`,
+`keystore::load(fichero, frase)` le da el `Wallet`, y la operación entera la hace el SDK (D-BH);
+(b) un fichero en claro con la clave, que es lo que se propuso primero, deduciendo su formato del
+`--clave-fichero` del testigo —que es la semilla XMSS, material de FIRMA, y no la clave de
+gasto—; (c) la boca dentro del SDK. Gana (a), y la eligió el autor, porque toca una propiedad
+publicada y no se toma con la vara: no nace otro formato de material de clave (vara 1), la frase
+de `SECURITY.md` sigue cierta letra por letra (vara 4) y la boca sigue en el cli con sus dos
+hermanas (vara 3). La (b) mete un tercer formato, en claro, al lado de un keystore cifrado, y
+obliga a reescribir esa frase; la (c) no toca nada, pero deja de ser `zk-ssl-cli prueba-prenda` y
+rompe la simetría con `prueba-cobro` y `prueba-pago`. El coste, medido en el `Cargo.lock` de
+`cf65876` por nombre y versión: la clausura del cli gana tres paquetes —`zk-ssl-sdk`,
+`rand 0.8.7` y `rand_chacha 0.3.1`—, porque `chacha20poly1305`, `sha2` y `ureq` ya estaban en
+ella; ninguno nace en el lock, donde el SDK ya resuelve como miembro del workspace. El cli no
+tiene puerta de clausura, y ésta es la dependencia que el 5.A-359 anunció. La confianza residual,
+con las palabras del propio keystore: SHA-256 no es una función de derivación de contraseñas, así
+que el fichero guarda la clave tanto como la guarde su frase; endurecerlo es materia de otro RFC.
+**Reversible** sólo si el SDK dejara de custodiar la clave: entonces la boca necesitaría un
+formato propio, y esa sería otra decisión.
+
+### D-BD — La boca no lleva `--receptor`: el receptor se deriva de la clave
+
+El productor no lo acepta como dato: `prueba_de_prenda` lo deriva de la clave con
+`derive_public_id_wide`, y si la clave no es la del pendiente, la hoja recompuesta no sube a la
+raíz y rehúsa antes de gastar una prueba (§518). Dos caminos: (a) la boca no lo pide; (b) una
+bandera `--receptor` que el productor ignoraría. Gana (a) por claridad: una bandera que no
+gobierna nada puede mentir, y quien leyera la orden creería que se puede prendar a nombre de
+otro. El receptor sale en el sobre, derivado. **Reversible** sólo si el enunciado dejara de
+derivarlo de la clave, y eso sería otro AIR (D-AV).
+
+### D-BE — `--publicar`, opcional: la boca escribe siempre el sobre, y con la bandera lo publica
+
+`prueba-pago` pide la cabeza y la foto a un nodo vivo, compone su sobre y lo escribe (§507); no
+publica nada, porque el suyo no es una transición. La prenda sí lo es, y D-AZ midió que vale
+DENTRO DE SU ÉPOCA: el nodo custodia una sola cabeza firmada y `zkssl_pledge` rechaza el sobre
+cuyo `seq` no sea el de ella, así que el orden es `zkssl_pendingPath`, producir, `zkssl_pledge`,
+bajo el mismo latido. Tres caminos: (a) sólo escribir, como `prueba-pago`; (b) escribir y
+publicar siempre; (c) escribir siempre y publicar sólo con `--publicar`, imprimiendo lo que
+`zkssl_pledge` devuelva, `yaEstaba` incluido (D-BA). Cae (a): entre escribir y publicar a mano,
+la ventana de la época se abre sola. Cae (b): publicar es escribir en el libro —la marca entra en
+el árbol de consumos—, y ninguna de sus dos hermanas escribe en él; el sobre, además, ya es él
+solo la mitad que el mando juzga sin nodo (§520). Gana (c). **Reversible** hacia (a) si
+`zkssl_pledge` dejara de atarse a la última cabeza firmada (D-AZ).
+
+### D-BF — La prenda exige cabeza v5, y con SU razón
+
+Medido en la 162 sobre `afd72d6` y re-medido en la 179 sobre `cf65876`: `cabeza_v3_verificada`
+admite v3, v4 y v5, y `pendingRoot` entra en el digest de las tres, así que la prenda PODRÍA
+aceptarlas. Los otros tres brazos de la familia —la edad, el cobro y el pago— exigen v5 diciendo
+«la única que firma pmetaRoot», y la prenda no lleva la meta (D-AY): copiar esa razón publicaría
+algo falso. Tres caminos: (a) admitir las tres eras, que es lo que el enunciado estrictamente
+necesita; (b) exigir v5 con el texto de los hermanos; (c) exigir v5 con razón propia. Cae (a)
+porque el nodo sirve v5 desde el §452 y `zkssl_pledge` juzga contra la cabeza que custodia: v3 y
+v4 son eras que ningún productor de prenda puede emitir, y lo que no tiene testigo que lo falsee
+no se construye. Cae (b) por imagen fiel. Gana (c), y un testigo del mando gatea que el texto NO
+diga `pmetaRoot`. La aplicó el §520 en el octavo brazo del mando y en la forma 2.10 de
+`PAQUETE.md`, y aquí se escribe; la boca la hereda (D-BI). **Reversible** el día que un productor
+emita contra otra era.
+
+### D-BG — La frase de paso entra por `--frase-fichero`
+
+El nodo ya decidió esto para su semilla y publica la razón en su propio rechazo: `--clave` en la
+línea de órdenes deja la semilla en el HISTORIAL del shell y en `ps`, y para operar está
+`--clave-fichero` (`crates/zk-ssl-node/src/main.rs`). La razón transfiere entera a la frase del
+keystore (D-BC). Tres caminos: (a) `--frase-fichero`; (b) la frase como valor de una bandera;
+(c) pedirla por la terminal. Cae (b) por la razón que el nodo publica; cae (c) porque un banco no
+la automatiza sin llevar la frase en su guion. Gana (a): el mismo patrón que el nodo usa para su
+material secreto (vara 3), y lo único que un banco automatiza sin meter un secreto en su guion.
+**Reversible** sin tocar el keystore: la frase es entrada de la boca y no formato, y otra entrada
+puede sumarse si un uso interactivo la pide.
+
+### D-BH — La operación vive en `Wallet`, no en `Account`
+
+Medido en la 162 y re-medido en la 179: `Account` se construye con un `Rpc` —`Account::open` y
+`Account::attach` lo reciben— y habla con el nodo; `Wallet` sólo lleva la clave y sus
+derivaciones (`public_id`, `view_key`, `view_id`, `leaf_salt`). Y las dos bocas hermanas hacen la
+red ellas mismas —piden `zkssl_signedEpochHead` y `zkssl_pendingPath`— y llaman a un productor que
+no lee libro (§491, §504). Dos caminos: (a) `Wallet::prueba_de_prenda`, con la cabeza, el aviso y
+el camino que la boca le pase, que envuelve el productor de la capa
+(`zk_ssl::prueba_prenda::prueba_de_prenda`, §518) con la clave que no sale; (b) un método de
+`Account`, que además pediría la cabeza y el camino. Gana (a): la clave no sale del crate ni del
+proceso, y `SECURITY.md` sigue cierto letra por letra (vara 4); la red queda en la boca, que es
+donde la ponen sus hermanas (vara 3); y el productor sigue siendo una función que no lee libro.
+**Reversible** hacia (b) sólo si el SDK hiciera de boca, que es la (c) que D-BC descarta.
+
+### D-BI — La boca de la prenda lee la cabeza y la foto con lectores propios
+
+Medido en la 162 y re-medido en la 179 sobre `cf65876`: `leer_cabeza` de `cobro.rs`, que la boca
+del pago reutiliza, exige v5 con la razón del cobro —«la única que firma pmetaRoot», falsa para
+la prenda (D-BF)— y exige `pmetaRoot`; `leer_foto` exige `hermanosMeta`, `emisor` y `nacido`, que
+el enunciado de la prenda no usa (D-AY). Dos caminos: (a) lectores propios y cortos en la boca de
+la prenda; (b) generalizar los del cobro, ensanchando el corte a `cobro.rs`. Gana (a): el
+perímetro del corte queda en lo que la prenda necesita, y el rechazo dice SU razón (vara 4, D-BF).
+**Reversible** hacia (b) si naciera una cuarta boca: entonces se unifican.
+
 ## Lo que se DESCARTÓ al medir
 
 1. Abrir `X` del lado del cobrador para probar la T: rompe D-2 del RFC-0003 (el receptor
@@ -1042,6 +1148,27 @@ propio, que es la salida que la propia D-AT deja escrita.
     E1, y el prendatario ya recibe el sobre del cobro (D-AY).
 43. La prenda con el carril de la meta: publica un `nacido` que su enunciado no usa y cuesta dos
     columnas y el ascenso entero del carril B (D-AY).
+44. La clave de gasto de la boca en un fichero en claro: un tercer formato de material de clave al
+    lado del keystore cifrado del SDK, y una frase de `SECURITY.md` que habría que reescribir
+    (D-BC).
+45. La boca de la prenda dentro del SDK: deja de ser un subcomando del cli y rompe la simetría con
+    sus dos hermanas (D-BC).
+46. Una bandera `--receptor`: el productor lo deriva de la clave, y una bandera que no gobierna nada
+    puede mentir (D-BD).
+47. Que la boca sólo escriba el sobre, como `prueba-pago`: entre escribir y publicar a mano, la
+    ventana de la época se abre sola (D-BE).
+48. Que la boca publique siempre: escribiría en el libro sin que se le pida, y ninguna de sus dos
+    hermanas escribe en él (D-BE).
+49. Que la prenda admita v3 y v4: ningún productor de prenda emite contra ellas, y lo que no tiene
+    testigo que lo falsee no se construye (D-BF).
+50. Exigir v5 con la razón de los hermanos: daría como razón una raíz, `pmetaRoot`, que la prenda
+    no lleva (D-BF).
+51. La frase de paso como valor de una bandera, o pedida por la terminal: la primera queda en el
+    historial y en `ps`, y la segunda no la automatiza un banco sin llevarla en su guion (D-BG).
+52. La operación como método de `Account`: `Account` lleva un `Rpc`, y la red es de la boca
+    (D-BH).
+53. Generalizar los lectores del cobro para la prenda: ensancha el corte a `cobro.rs` por una
+    cuarta boca que no existe (D-BI).
 
 ## Compatibilidad
 
