@@ -39619,3 +39619,41 @@ a medir-, asi que crecer no mueve ninguna cita. `AUDITORIA.md` +35 -0 (este asie
 **Lo que NO cierra.** El montaje de E3: la operacion en el SDK, la boca con su puerta de clausura,
 el banco y el catalogo. Lo descartado sigue sin las entradas de D-AZ..D-BB, que el §519-B no
 escribio. Y el falsador de la deduccion de D-BB, del lado del productor, sigue pendiente.
+
+## §542 — La prenda desde el Wallet: la operacion en el SDK, con la clave que no sale del crate
+
+**Que.** `crates/zk-ssl-sdk/src/lib.rs` gana `Wallet::prueba_de_prenda`, la D-BH del RFC-0008:
+envuelve el productor de la capa (`zk_ssl::prueba_prenda::prueba_de_prenda`, §518) con la clave
+del wallet, que no sale del crate ni, desde el §538, de la prueba. La cabeza, el aviso y el camino
+los trae quien llama, el receptor se deriva de la clave (D-BD) y el error es el `LayerError` del
+productor, sin variantes nuevas. Con cinco testigos, medidos ANTES de escribirlos por el
+PASTE-542-M en una copia de `20673de` (SALIDA `c6cc523c34d00c40`): el juez del mando acepta el
+sobre; la clave de gasto no esta en la prueba, ni entera ni por elementos, con prueba de vida del
+contador y un control positivo -es el testigo que en la 162 salio rojo-; el viaje keystore ->
+wallet -> prenda; otro wallet rehusa antes de gastar una prueba; y un aviso v1 se rehusa por su
+nombre.
+
+**El escenario, sin libro.** `tests_support` exige la feature `sandbox` y el SDK depende de
+`zk-ssl` sin ella: los testigos montan el pendiente con los compositores publicos de la capa
+(`pending_commitment_v2`, `refund_envelope`, `native_root`) y un camino de 32 niveles, porque el
+productor no lee libro. Ningun `Cargo.toml` y ningun `Cargo.lock` se tocan. Los tres testigos que
+prueban llevan el ignore de la casa en depuracion; en release, que es donde corre el canon, no.
+
+**El pin y las cifras, con el perimetro DERIVADO.** La fila del SDK 6 -> 11 con su entrada de
+historia: el PASTE-542-M midio los 6 con el operador del canon (los cinco del keystore y el
+doc-test `no_run` de la cabecera). El sello 1412 -> 1417 y los largos 1549 -> 1554: `check_cifras`,
+corrido sobre una copia con la fila ya subida, nombro las TRES del total (`PRINCIPIOS.md`,
+`PAPER.md`, `PAPER_EN.md`) y el censo estrecho anade las TRES sumas <<contando los pines>> que ese
+gate no ve. Seis cifras en tres documentos, cada una por VALOR en su linea y con su ancho.
+`check_tests` 1571 -> 1576. Las <<1364 declaradas>> y las <<18 ignoradas>> siguen rancias a
+proposito (5.A-319).
+
+**Contadores.** CINCO ficheros mas este asiento: `crates/zk-ssl-sdk/src/lib.rs` +154 -1 (de 288
+a 441 lineas), `tools/canon.sh` +1 -1, `PRINCIPIOS.md` +2 -2, `PAPER.md` +2 -2 y `PAPER_EN.md`
++2 -2; `AUDITORIA.md` +38 -0 (este asiento): 39.621 -> 39.659. De las once herramientas, nueve
+IDENTICAS y dos con el delta que el corte explica: `check_tests` (1571 -> 1576) y `check_figures`
+(la cifra que lista de `PRINCIPIOS.md`:358, 1412 -> 1417). Las 31 SHA-REGION clavan. Canon
+`--sello` VERDE en 761 s, con el SDK en 11(11).
+
+**Lo que NO cierra.** La boca del cli, `prueba-prenda` (D-BC..D-BI), que mete el SDK en el cli
+con la puerta de clausura del 5.A-359; y detras el banco y el catalogo `spec/vectors/prenda/`.
