@@ -198,6 +198,34 @@ def desgloses(pins, alias):
     return fallos, vistas
 
 
+def cronica():
+    """La CRONICA de cada fila del canon: si una fila cuenta su historia, su pin tiene que ser
+    el segundo numero de su ULTIMA entrada.
+
+    Nace en el S552. El S550 movio el pin del SDK de 11 a 13 y dejo su cronica en el S542:
+    nueve filas de diez cuadraban y la decima contaba una historia falsa. Ninguna compuerta lo
+    veia, y es la misma familia que el ATADO B -- el canon vigila el codigo, y su propia tabla
+    no la miraba nadie.
+
+    NO se exige que la cadena de entradas sea CONTINUA. Hoy cuatro filas saltan (mudanzas de
+    crate, entradas que no se escribieron), y un juez mas estricto que su invariante da rojo
+    por algo legitimo: esa es la leccion de la 117.
+    """
+    ruta = os.path.join(RAIZ, "tools", "canon.sh")
+    fallos, con_cronica = [], 0
+    for n, linea in enumerate(open(ruta, encoding="utf-8"), 1):
+        m = re.match(r"^([a-z0-9-]+)\s+\w+\s+(\d+)\s+\d+\s+\d+\s", linea)
+        if not m:
+            continue
+        ents = re.findall(r"\u00a7(\d+[A-Z-]*): (\d+) -> (\d+)", linea)
+        if not ents:
+            continue
+        con_cronica += 1
+        if int(ents[-1][2]) != int(m.group(2)):
+            fallos.append((n, m.group(1), int(m.group(2)), ents[-1][0], int(ents[-1][2])))
+    return fallos, con_cronica
+
+
 def main():
     p = pines()
     if not p:
@@ -261,6 +289,10 @@ def main():
                                   f"{suma_sello} (sello) o {suma_todos} (todos)",
                                   linea.strip()[:78]))
 
+    fallos_cr, con_cronica = cronica()
+    print("  CRONICA: %d fila(s) del canon cuentan su historia, y su pin es el de su ultima "
+          "entrada" % con_cronica)
+
     fallos_desglose, vistas_desglose = desgloses(p, alias_de_crates())
     malas.extend(fallos_desglose)
     revisadas += vistas_desglose
@@ -269,6 +301,17 @@ def main():
         print(f"  RANCIA  {rel}:{n}")
         print(f"          dice {v} tests para `{crate}` y el canon pina {pin}")
         print(f"          {l}")
+
+    if fallos_cr:
+        print("")
+        print("ROJO: %d fila(s) del canon con el pin y su cronica discordes" % len(fallos_cr))
+        for n, crate, pin, sello, hasta in fallos_cr:
+            print("  tools/canon.sh:%-4d %s: pina %d y su ultima entrada dice "
+                  "§%s: -> %d" % (n, crate, pin, sello, hasta))
+        print("")
+        print("  Un pin que se mueve sin escribir su entrada deja la fila contando una")
+        print("  historia falsa. El pin lo mueve el corte; la entrada, el mismo corte.")
+        return 1
 
     if malas:
         print(f"\n{len(malas)} cifra(s) que contradicen el canon. "

@@ -40136,3 +40136,40 @@ total de LARGOS que ninguna herramienta ata, los dos PAPER que publican <<declar
 numeros distintos entre si, y la linea muerta de `Cargo.lock` en `.gitignore`. Sigue vivo el
 arreglo B (5.A-272). H5b no ha empezado.
 
+## §552 — La cronica de una fila del canon: el pin del SDK y el guardian que lo ata
+
+**Que.** Al montar el TRASPASO-183 se midio la tabla de `tools/canon.sh` fila a fila y una de las
+diez no cuadraba consigo misma: la del SDK pina 13 desde el §550 y su cronica se quedaba en
+`§542: 6 -> 11`. Las otras nueve cierran -el pin es, en todas, el segundo numero de su ultima
+entrada-. Lo dejo este mismo arco: el §550 movio el numero y no escribio la entrada. Este corte
+escribe la entrada que faltaba Y pone el guardian, porque una linea arreglada sin falsador es la
+misma clase esperando a repetirse. TRES ficheros, ninguno nace.
+
+**Ninguna compuerta lo veia, y es la familia del ATADO B.** `check_cifras` cruza los pines del
+canon contra los documentos vivos; nadie cruzaba la tabla del canon consigo misma. El canon
+vigila el codigo y su propia tabla no la miraba nadie, que es literalmente lo que el ATADO B
+nacio a resolver en el otro sentido (§304). El guardian vive donde ya se lee esa tabla.
+
+**El invariante, y lo que NO se exige.** Si una fila cuenta su historia, su pin es el segundo
+numero de su ULTIMA entrada. No se exige que la cadena de entradas sea CONTINUA: medido hoy,
+cuatro de las diez saltan -mudanzas de crate, entradas que nunca se escribieron-, y un juez mas
+estricto que su invariante da rojo por algo legitimo, que es la leccion de la 117. Tampoco se
+exige que TODA fila lleve cronica: las del fork traen los tests de upstream y no tienen historia
+de esta casa. La puerta es condicional a proposito, y lo dice.
+
+**Los dos falsadores, y los dos discriminan.** Retirar la entrada que este corte escribe: ROJO
+NOMBRADO, `tools/canon.sh:94 zk-ssl-sdk: pina 13 y su ultima entrada dice §542: -> 11`. Y mover
+el pin de OTRA fila sin tocar su cronica -el nodo a 127-: ROJO NOMBRADO igual, en su linea. Una
+puerta que solo cazara el caso que la hizo nacer no seria una puerta.
+
+**Contadores.** TRES ficheros, ninguno nace: `tools/canon.sh` (la entrada, en la misma linea),
+`tools/check_cifras.py` (289 -> 332 lineas) y este asiento. Ningun pin cambia de VALOR -el 13 ya
+estaba-, ninguna suma, ninguna cifra de tests, ningun Cargo. De las diez herramientas del canon,
+NUEVE identicas byte a byte y la decima gana UNA linea, la del informe de la CRONICA. Con canon,
+porque el corte cambia una herramienta que el canon corre.
+
+**Lo que NO cierra.** Nace y se cierra en el mismo corte lo que el §550 dejo debiendo. Siguen el
+5.A-400, el 401 y el 402, y las tres deudas que la 182 midio y no toca: las cifras del total de
+LARGOS sin atado, los dos PAPER que publican <<declaradas>> con numeros distintos, y la linea
+muerta de `Cargo.lock` en `.gitignore`. Sigue vivo el arreglo B (5.A-272). H5b no ha empezado.
+
