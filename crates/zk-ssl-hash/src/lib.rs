@@ -442,6 +442,73 @@ pub fn epoch_digest_v5(
     )
 }
 
+/// **v6 (RFC-0010, E2; §557): la envoltura de v5, otra vez** -- el molde de
+/// §275, §292, §414 y §451:
+///
+/// ```text
+///   v6 = merge( epoch_digest_v5(los dieciseis),
+///               merge(recep_root, as_digest(recep_count)) )
+/// ```
+///
+/// La pareja de RECEPCION: la raiz del arbol de recibos de la era y el
+/// contador de recepcion en el momento de componer la cabeza. Con ella, un
+/// recibo firmado bajo esa raiz y una cabeza posterior hacen medible el
+/// retraso en cabezas, que es lo que la promesa del §121 acota.
+///
+/// ⚠️ **El limite INFERIOR de la era no se firma**: es el `recep_count` de
+/// la cabeza anterior, y quien custodia dos cabezas consecutivas lo tiene.
+/// Mismo reparto que `limites_para` hace con los `seq` del diario.
+///
+/// ⚠️ **Genesis, DECLARADO**: la PRIMERA cabeza compone con la raiz del
+/// arbol de recibos VACIO y `recep_count = 0`.
+///
+/// ⚠️ Sin tag de dominio, por la razon de `epoch_digest`: el **byte de
+/// version** del preambulo (5 -> 6) es lo que separa las composiciones
+/// (§236). En E2a el nucleo la ACEPTA; el nodo la emite en E2c.
+#[allow(clippy::too_many_arguments)]
+pub fn epoch_digest_v6(
+    seq: u64,
+    accounts_root: Digest,
+    pending_root: Digest,
+    frozen_root: Digest,
+    chain_digest: Digest,
+    acuses_root: Digest,
+    n: u64,
+    cima_mmr: Digest,
+    t: u64,
+    cons_root: Digest,
+    cons_count: u64,
+    params_digest: Digest,
+    pmeta_root: Digest,
+    next_pending: u64,
+    next_index: u64,
+    total_supply: u64,
+    recep_root: Digest,
+    recep_count: u64,
+) -> Digest {
+    native_merge(
+        epoch_digest_v5(
+            seq,
+            accounts_root,
+            pending_root,
+            frozen_root,
+            chain_digest,
+            acuses_root,
+            n,
+            cima_mmr,
+            t,
+            cons_root,
+            cons_count,
+            params_digest,
+            pmeta_root,
+            next_pending,
+            next_index,
+            total_supply,
+        ),
+        native_merge(recep_root, as_digest(recep_count)),
+    )
+}
+
 #[cfg(test)]
 mod tests_digest_v3 {
     use super::*;
@@ -463,6 +530,41 @@ mod tests_digest_v3 {
         let base = epoch_digest_v3(1, d, d, d, d, d, 5, as_digest(0), 0);
         assert_ne!(base, epoch_digest_v3(1, d, d, d, d, d, 5, as_digest(9), 0));
         assert_ne!(base, epoch_digest_v3(1, d, d, d, d, d, 5, as_digest(0), 1));
+    }
+}
+
+#[cfg(test)]
+mod tests_digest_v6 {
+    use super::*;
+
+    /// Los dieciseis de v5 con los que componen todos los testigos de aqui.
+    fn v5_base() -> Digest {
+        let d = as_digest(7);
+        let g = params_digest(0, 0, 0, as_digest(0), as_digest(0), 0, 0);
+        epoch_digest_v5(1, d, d, d, d, d, 5, as_digest(0), 0, as_digest(0), 0, g, as_digest(0), 0, 0, 0)
+    }
+
+    fn v6(rr: Digest, rc: u64) -> Digest {
+        let d = as_digest(7);
+        let g = params_digest(0, 0, 0, as_digest(0), as_digest(0), 0, 0);
+        epoch_digest_v6(
+            1, d, d, d, d, d, 5, as_digest(0), 0, as_digest(0), 0, g, as_digest(0), 0, 0, 0, rr, rc,
+        )
+    }
+
+    #[test]
+    fn v6_no_es_v5_ni_con_la_pareja_de_genesis() {
+        // La envoltura SIEMPRE separa: hasta el genesis (raiz de recibos
+        // vacia, contador 0) compone distinto de v5 -- si no, una cabeza v6
+        // recien nacida seria confundible con una v5.
+        assert_ne!(v5_base(), v6(as_digest(0), 0));
+    }
+
+    #[test]
+    fn la_raiz_y_la_cuenta_de_recepcion_mueven_el_digest_cada_una_por_su_lado() {
+        let base = v6(as_digest(0), 0);
+        assert_ne!(base, v6(as_digest(9), 0), "recep_root");
+        assert_ne!(base, v6(as_digest(0), 1), "recep_count");
     }
 }
 
@@ -594,6 +696,34 @@ pub const DOMINIO_ACUSE: u64 = u64::from_be_bytes(*b"ACUSE_V1");
 pub fn acuse_digest(hash_prueba: Digest, epoca: u64, n: u64) -> Digest {
     let par = native_merge(as_digest(epoca), as_digest(n));
     native_merge(as_digest(DOMINIO_ACUSE), native_merge(hash_prueba, par))
+}
+
+/// **Dominio del recibo de recepcion** (RFC-0010, D-B; §557), con version en
+/// el propio valor: los ocho bytes ASCII de `RECEP_V1` leidos como `u64`,
+/// hermano de `ACUSE_V1` y de `PARAM_V1`, con su fila en el REGISTRO.
+///
+/// ⚠️ **Septimo dominio, y separado A PROPOSITO del acuse.** El acuse es la
+/// hoja de una transicion APLICADA; el recibo, la de una operacion que el
+/// nodo llego a EVALUAR, se aplicara o no. Son dos objetos y dos arboles: si
+/// compartieran dominio, un recibo podria pasar por acuse y el numero de
+/// hojas de una era dejaria de significar una sola cosa.
+pub const DOMINIO_RECEP: u64 = u64::from_be_bytes(*b"RECEP_V1");
+
+/// **Recibo de recepcion**: ata el hash de una prueba a la era y al `N`
+/// declarado, con el molde EXACTO de [`acuse_digest`] y otro dominio.
+///
+/// ⚠️ **El `hash_prueba` va con la longitud codificada**, y no hay que hacer
+/// nada para eso: [`digest_of_proof`] la mete desde §116 (su dominio dice
+/// `v2`). Quien componga la hoja con otro resumen de la prueba se sale del
+/// contrato.
+///
+/// ⚠️ **La `n` va DENTRO de la hoja**, como en el acuse (§270): cambiar el
+/// techo cambia el arbol entero, y por eso una `n` mentida en una respuesta
+/// produce una hoja que no verifica contra la raiz recompuesta con la `n` de
+/// la cabeza FIRMADA.
+pub fn recibo_digest(hash_prueba: Digest, era: u64, n: u64) -> Digest {
+    let par = native_merge(as_digest(era), as_digest(n));
+    native_merge(as_digest(DOMINIO_RECEP), native_merge(hash_prueba, par))
 }
 
 
@@ -992,6 +1122,21 @@ mod acuse {
             "el valor del acuse se ha movido: si es a proposito, sube la version del dominio"
         );
     }
+
+    #[test]
+    fn un_recibo_no_puede_pasar_por_un_acuse() {
+        // D-B del RFC-0010: misma forma, OTRO dominio. Con las mismas tres
+        // entradas los dos valores tienen que diferir -- si coincidieran, el
+        // arbol de recibos y el de acuses serian el mismo objeto con dos
+        // nombres, que es justo lo que la decision descarta.
+        let hp = as_digest(0xA11CE);
+        assert_ne!(
+            recibo_digest(hp, 100, 1_440),
+            acuse_digest(hp, 100, 1_440),
+            "el recibo compone como el acuse: el dominio septimo no esta haciendo nada"
+        );
+        assert_eq!(DOMINIO_RECEP, u64::from_be_bytes(*b"RECEP_V1"), "el dominio, con version");
+    }
 }
 
 #[cfg(test)]
@@ -1096,6 +1241,7 @@ mod tests_cabeza_v2 {
 // REGISTRO: u64 produccion DOMINIO_META_PENDIENTE 0x504D4554415F5631
 // REGISTRO: u64 produccion DOMINIO_PARAMS 0x504152414D5F5631
 // REGISTRO: u64 produccion DOMINIO_PRENDA 0x5052454E445F5631
+// REGISTRO: u64 produccion DOMINIO_RECEP 0x52454345505F5631
 // REGISTRO: bytes ZK-SSL-ledger-key-v1
 // REGISTRO: bytes ZK-SSL-epoch-head
 // REGISTRO: bytes ZK-SSL-keystore-v1

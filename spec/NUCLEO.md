@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 67 elementos alcanzables en `zk-ssl-verify` y 45 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 85, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 67 elementos alcanzables en `zk-ssl-verify` y 48 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 88, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -94,6 +94,7 @@ real de sus llaves, no por la primera marca.
 | `epoch_digest_v3` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
 | `epoch_digest_v4` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
 | `epoch_digest_v5` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
+| `epoch_digest_v6` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
 | `params_digest` | `hash/lib.rs` | NÚCLEO | CABEZA | `fn` |
 | `DOMINIO_PARAMS` | `hash/lib.rs` | NÚCLEO | CABEZA | `const` |
 | `ANCHO_INDICE` | `verify/lib.rs` | NÚCLEO | FIRMA | `const` |
@@ -125,6 +126,8 @@ real de sus llaves, no por la primera marca.
 | `verificar_cofirma` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `DOMINIO_ACUSE` | `hash/lib.rs` | NÚCLEO | ACUSES | `const` |
 | `acuse_digest` | `hash/lib.rs` | NÚCLEO | ACUSES | `fn` |
+| `DOMINIO_RECEP` | `hash/lib.rs` | NÚCLEO | ACUSES | `const` |
+| `recibo_digest` | `hash/lib.rs` | NÚCLEO | ACUSES | `fn` |
 | `epoca_de_acuse` | `verify/acuses.rs` | NÚCLEO | ACUSES | `fn` |
 | `hoja_de_acuse` | `verify/acuses.rs` | NÚCLEO | ACUSES | `fn` |
 | `indice_de_hoja` | `verify/acuses.rs` | NÚCLEO | ACUSES | `fn` |
@@ -245,7 +248,12 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
   `v5 = merge(v4, merge(merge(params_digest, pmeta_root), merge(as_digest(next_pending),
   merge(as_digest(next_index), as_digest(total_supply)))))` (RFC-0007 E1a, §451), génesis los
   parámetros de apertura, la raíz del árbol de meta vacío, `next_pending = 0` y las cuentas y el
-  suministro de esa cabeza; `params_digest = merge(as_digest(PARAM_V1),
+  suministro de esa cabeza;
+  `v6 = merge(v5, merge(recep_root, as_digest(recep_count)))` (RFC-0010 E2, §557), génesis la raíz
+  del árbol de recibos vacío y `recep_count = 0`;
+  `recibo_digest = merge(as_digest(RECEP_V1), merge(hash_prueba, merge(as_digest(era),
+  as_digest(n))))`, el molde de `acuse_digest` con el séptimo dominio;
+  `params_digest = merge(as_digest(PARAM_V1),
   merge(merge(as_digest(regulatory_limit), as_digest(max_supply)),
   merge(merge(as_digest(max_accounts), custodian_set_root), merge(governance_set_root,
   merge(as_digest(refund_ttl), as_digest(max_custodian_uses))))))`, los siete en ese orden;
@@ -268,6 +276,9 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §557 — `epoch_digest_v6`, `recibo_digest` y `DOMINIO_RECEP`: el núcleo compone la cabeza v6 y la
+  hoja del recibo de recepción (RFC-0010, E2); los KAT de las dos. Tres filas nuevas. La variante
+  `V6` NO entra aquí: el conjunto que un verificador acepta se mueve en su propio sello.
 - §475 — el módulo `cuentas` del verificador (`is_right_de_indice`, `cruza_indice`,
   `raiz_de_hoja`, `no_existe`): el espejo de `congelados` sobre el árbol de cuentas, con la hoja
   VACIA como regla, que es lo que sostiene `AccountNotFound` sin la capa (RFC-0007, E5, corte 3b).
