@@ -115,6 +115,25 @@ EXCLUIDOS_URL = {
 }
 PREFIJOS_EXCLUIDOS_URL = ("doc/preprints/",)
 
+# ATADO D (S549) - el ESTADO de un RFC contra lo que los documentos publican de el.
+# El vocabulario lo dicta spec/rfc/PROCESO.md (BORRADOR -> PROPUESTO -> ACEPTADO ->
+# FINAL, o RETIRADO); aqui va la cara que cada estado tiene PUBLICADA, por idioma.
+DIR_RFC = os.path.join(RAIZ, "spec", "rfc")
+PLANTILLA = "0000"
+ESTADOS = {
+    "ACEPTADO": ("ACCEPTED", ("aceptado", "aceptados", "accepted")),
+    "PROPUESTO": ("PROPOSED", ("propuesto", "propuestos", "proposed")),
+}
+# Los sitios que hoy publican la CUENTA entera. No es un tope: si aparece uno nuevo se
+# cruza igual. Esta lista existe para que uno que DEJE de publicarla no pase callando.
+CARDINALES = ("README.md", "README_EN.md", "RESUMEN_BILINGUE.md", "RESUMEN_EJECUTIVO.md")
+FILA_RFC = "spec/README.md"
+UMBRAL_CARDINAL = 3   # tres numeros en una linea; con menos es una mencion, no una cuenta
+NUM_RFC = re.compile(r"\b(000\d)\b")
+PAL_ESTADO = re.compile(r"\b(aceptad[oa]s?|propuest[oa]s?|accepted|proposed)\b", re.I)
+RANGO_RFC = re.compile(r"000\d\s*[-\u2013]\s*000\d")
+
+
 
 def constante():
     """Lee la fuente unica. Por ESTRUCTURA, no por posicion."""
@@ -197,6 +216,120 @@ def atado_c():
     return fallos, nuevas, recorridos
 
 
+def rfcs():
+    """(numero, ruta, estado) de cada RFC del directorio, menos la plantilla.
+    El PRODUCTOR del estado es la linea `- **Estado:**` del propio RFC: una sola."""
+    salida = []
+    for f in sorted(os.listdir(DIR_RFC)):
+        m = re.match(r"^(\d{4})-.*\.md$", f)
+        if not m or m.group(1) == PLANTILLA:
+            continue
+        with open(os.path.join(DIR_RFC, f), encoding="utf-8") as fh:
+            txt = fh.read()
+        e = re.findall(r"^- \*\*Estado:\*\* ([A-Z]+)", txt, re.M)
+        salida.append((m.group(1), "spec/rfc/" + f, e))
+    return salida
+
+
+def repartir(linea):
+    """{numero: ESTADO} de una linea que ENUMERA: los numeros que van antes de una
+    palabra de estado son suyos, desde la palabra anterior. Devuelve tambien los
+    numeros repetidos, porque un diccionario se queda con el ultimo y no lo diria."""
+    grupos = {}
+    repes = [n for n in set(NUM_RFC.findall(linea))
+             if NUM_RFC.findall(linea).count(n) > 1]
+    ini = 0
+    for m in PAL_ESTADO.finditer(linea):
+        pal = m.group(0).lower()
+        estado = None
+        for e, (_, palabras) in ESTADOS.items():
+            if pal in palabras:
+                estado = e
+        if estado is not None:
+            for num in NUM_RFC.findall(linea[ini:m.start()]):
+                grupos[num] = estado
+        ini = m.end()
+    return grupos, sorted(repes)
+
+
+def atado_d():
+    """Devuelve (fallos, RFC con estado, sitios con cuenta, cuentas halladas)."""
+    fallos = []
+    lista = rfcs()
+    conocidos = set(num for num, _, _ in lista)
+    esperado = {}
+    for num, rel, estados in lista:
+        if len(estados) != 1:
+            fallos.append((rel, 0, "ESTADO", "declara %d lineas de estado, se esperaba 1"
+                           % len(estados)))
+        elif estados[0] not in ESTADOS:
+            fallos.append((rel, 0, "ESTADO", "%s no tiene cara publicada; el vocabulario "
+                           "vive en spec/rfc/PROCESO.md" % estados[0]))
+        else:
+            esperado[num] = estados[0]
+
+    # D.1 - la FILA de spec/README.md: una por RFC, y con su token de estado
+    with open(os.path.join(RAIZ, FILA_RFC), encoding="utf-8") as fh:
+        filas = fh.read().split("\n")
+    for num, rel, _ in lista:
+        if num not in esperado:
+            continue
+        cabeza = "| `" + rel[len("spec/"):] + "`"
+        hit = [(i + 1, l) for i, l in enumerate(filas) if l.startswith(cabeza)]
+        if len(hit) != 1:
+            fallos.append((FILA_RFC, 0, "FILA", "el RFC-%s tiene %d filas, se esperaba 1"
+                           % (num, len(hit))))
+            continue
+        n, linea = hit[0]
+        token = "RFC-%s, %s" % (num, ESTADOS[esperado[num]][0])
+        if token not in linea:
+            dice = re.search(r"RFC-%s[,:]?\s*[A-Z]*" % num, linea)
+            fallos.append((FILA_RFC, n, "TOKEN", "no dice <<%s>>; dice <<%s>>"
+                           % (token, dice.group(0).strip() if dice else "nada")))
+
+    # D.2 - los CARDINALES: toda linea del universo con tres numeros y una palabra de
+    # estado es una cuenta, y una cuenta las lleva TODAS, cada una en su grupo.
+    sitios = {}
+    for rel in documentos_url():
+        if rel == FILA_RFC or not rel.endswith(".md"):
+            continue
+        try:
+            with open(os.path.join(RAIZ, rel), encoding="utf-8") as fh:
+                lineas = fh.read().split("\n")
+        except OSError as exc:
+            fallos.append((rel, 0, "ILEGIBLE", str(exc)))
+            continue
+        for i, linea in enumerate(lineas, 1):
+            if not PAL_ESTADO.search(linea):
+                continue
+            if len(set(NUM_RFC.findall(linea))) < UMBRAL_CARDINAL:
+                continue
+            sitios.setdefault(rel, []).append(i)
+            if RANGO_RFC.search(linea):
+                fallos.append((rel, i, "RANGO", "una cuenta se ENUMERA: un rango lo lee "
+                               "mal quien lo lee y quien lo mide"))
+                continue
+            grupos, repes = repartir(linea)
+            for num in repes:
+                fallos.append((rel, i, "DUPLICADO", "el RFC-%s sale dos veces" % num))
+            for num in sorted(esperado):
+                if num not in grupos:
+                    fallos.append((rel, i, "AUSENTE", "el RFC-%s no esta en la cuenta" % num))
+                elif grupos[num] != esperado[num]:
+                    fallos.append((rel, i, "DISCREPA", "el RFC-%s sale como %s y su RFC dice "
+                                   "%s" % (num, grupos[num], esperado[num])))
+            for num in sorted(set(grupos) - set(esperado)):
+                if num in conocidos:
+                    continue   # su RFC ya tiene su ROJO arriba: una causa, un rojo
+                fallos.append((rel, i, "SOBRA", "cita el RFC-%s, que no esta en spec/rfc/"
+                               % num))
+    for nombre in CARDINALES:
+        if nombre not in sitios:
+            fallos.append((nombre, 0, "SIN CUENTA", "sitio conocido que ha dejado de "
+                           "publicar la cuenta de los RFC"))
+    return fallos, len(esperado), len(sitios), sum(len(v) for v in sitios.values())
+
+
 def main():
     pago_b, mib, msi, fecha = constante()
     pares_mib = {tuple(x.split(".")) for x in mib}
@@ -261,6 +394,11 @@ def main():
         print("  excluido (URL) %s - %s" % (nombre, razon))
     print("  excluido (URL) doc/preprints/ - entrada 28; lo que alli quede se DECLARA")
 
+    fallos_d, n_rfc, n_sitios, n_cuentas = atado_d()
+    print("  ATADO D: %d RFC con estado propio; %d cuenta(s) en %d sitio(s), y la fila de "
+          "cada uno en %s" % (n_rfc, n_cuentas, n_sitios, FILA_RFC))
+
+
 
     if vistos == 0:
         print("ROJO: CERO citas encontradas.")
@@ -286,6 +424,18 @@ def main():
             print("  %-40s :%-5d %-19s %s" % (nombre, n, clase, detalle))
         print("")
         print("  La URL vive en URL_REPO, aqui arriba, y en CITATION.cff.")
+        return 1
+
+    if fallos_d:
+        print("")
+        print("ROJO: %d sitio(s) no dicen del RFC lo que el RFC dice de si mismo"
+              % len(fallos_d))
+        for nombre, n, clase, detalle in fallos_d:
+            print("  %-40s :%-5d %-10s %s" % (nombre, n, clase, detalle))
+        print("")
+        print("  El estado lo declara la linea `- **Estado:**` de cada spec/rfc/NNNN-*.md,")
+        print("  y el vocabulario, spec/rfc/PROCESO.md. Si el rojo es del RFC y no del")
+        print("  documento, quien se quedo atras es el RFC.")
         return 1
 
     if nuevas == 0:

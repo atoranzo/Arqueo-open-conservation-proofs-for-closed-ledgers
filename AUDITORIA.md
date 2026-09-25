@@ -39979,3 +39979,59 @@ nadie los cruza. Siguen el 5.A-407 (la huella del artefacto del §546, deducida 
 5.A-400, el 401, el 402 y las dos deudas del lector del keystore del SDK (5.A-403 y 5.A-404).
 Sigue vivo el arreglo B (5.A-272), que E3 esquivo. H5b no ha empezado.
 
+## §549 — El estado de un RFC gana guardian: el ATADO D de `check_publicadas`
+
+**Que.** El 5.A-405 nacio midiendo el §547: `tools/` no tenia una sola herramienta que mirase si
+lo que un documento publica del estado de un RFC es lo que ese RFC dice de si mismo, y el giro del
+0008 se pago censando la prosa a mano. Este corte pone el guardian. Nace el **ATADO D** dentro de
+`tools/check_publicadas.py`, con el molde de su hermano el ATADO C (§403), que ya vive ahi y
+vigila otra cosa: una herramienta, dos atados independientes, cada uno con su universo y sus
+rojos nombrados. Y, porque el gate nace exigiendo, se pagan las DOS omisiones que destapo el
+censo. CUATRO ficheros, ninguno nace.
+
+**El censo salio de SIETE sitios, no de seis.** El punto decia seis; medido sobre el arbol son
+siete por RFC: la linea `- **Estado:**` del propio RFC, su fila en `spec/README.md` con el token
+`RFC-NNNN, ACCEPTED|PROPOSED`, y CINCO cardinales en prosa -las dos portadas, las dos lenguas del
+RESUMEN bilingue y el ejecutivo-. La cuenta del punto se corrige aqui, y el punto queda cerrado.
+
+**Lo que el ATADO D cruza, y su invariante.** El PRODUCTOR es la linea de estado del propio RFC, y
+es una: si un RFC no la tiene, o la tiene dos veces, o dice un estado sin cara publicada, ese es el
+primer rojo y no se sigue. Contra ella: (i) cada RFC tiene UNA fila en `spec/README.md` y esa fila
+lleva su token; (ii) toda linea del universo del ATADO C con TRES numeros de RFC y una palabra de
+estado es una CUENTA, y una cuenta las lleva TODAS, cada una en su grupo, sin repetir ninguna y sin
+citar numeros que no existan. El umbral de tres esta medido: con dos, la propia fila del 0008
+entraba como cuenta; con tres, el barrido caza los cinco cardinales y nada mas. Los cuatro
+ficheros que hoy publican cuenta van por nombre, no como tope sino al reves: uno nuevo se cruza
+igual, y uno que DEJE de publicarla no pasa callando.
+
+**El cable no era candidato, y se midio.** El punto ofrecia <<un test del cable o
+`check_publicadas`>>. Abierta la fuente, `openrpc.rs` ata los metodos del documento publicado
+contra el despacho: no sabe nada de RFC ni de estados. Queda una sola casa, y es la que tiene el
+molde.
+
+**Las dos omisiones que el censo destapo, pagadas aqui.** La fila del RFC-0002 en
+`spec/README.md` no llevaba token de estado -decia `RFC-0002: batches...`- mientras su RFC dice
+ACEPTADO: un gate que cruzara solo las filas CON token habria sido ciego justo a la que faltaba,
+asi que el gate exige presencia y la fila gana su `, ACCEPTED`. Y el cardinal del
+`RESUMEN_EJECUTIVO.md` publicaba por RANGOS (`RFC 0002-0004, 0006-0009 aceptados`) donde los otros
+cuatro enumeran: pasa a enumerar. Un gate con dos gramaticas son dos cegueras, y el propio ATADO D
+rechaza un rango con su rojo, en vez de leerlo a medias.
+
+**Los siete falsadores, y los siete discriminan.** Sobre una copia del arbol, con su rojo
+NOMBRADO cada uno: un RFC que cambia de estado (seis rojos: la fila y las cinco cuentas), una fila
+que pierde su token, un rango que vuelve, un cardinal que deja de publicar, un numero repetido en
+una cuenta -que un diccionario se habria tragado quedandose con el ultimo-, un RFC sin linea de
+estado, y un RFC NUEVO que nadie publica todavia, que es el caso para el que existe el gate.
+
+**Contadores.** CUATRO ficheros, ninguno nace: `tools/check_publicadas.py` (302 -> 452 lineas),
+`spec/README.md`, `RESUMEN_EJECUTIVO.md` y este asiento. Ningun pin de los siete, ninguna suma,
+ningun Cargo, ninguna cifra de tests: una herramienta no es un test. De las diez del canon, NUEVE
+salen identicas byte a byte y la decima gana UNA linea, la del informe del ATADO D, predicha antes
+de correr. Con canon, porque el corte cambia una herramienta que el canon corre.
+
+**Lo que NO cierra.** El 5.A-405 queda CERRADO. Siguen el 5.A-400 (las citas por numero de linea
+sin guardian), el 401 (las cuentas de metodos sin atado), el 402 (la huella del kit del §538 que
+no se reproduce), el 407 (la huella del artefacto del §546, deducida y no medida) y el 408 (las
+sesiones del arco de E3, que solo el autor puede dar), mas las dos deudas del lector del keystore
+del SDK (5.A-403 y 5.A-404). Sigue vivo el arreglo B (5.A-272). H5b no ha empezado.
+
