@@ -39932,3 +39932,50 @@ este giro lo pago censando la prosa a mano. Y siguen las dos deudas del lector d
 SDK (5.A-403 y 5.A-404), el parrafo propio del pago en la seccion 9 de `PAQUETE.md`, y la fila de
 `vectors/pago/` con dos celdas.
 
+## §548 — Tres prosas que el arco de la prenda dejo debiendo: la celda, la fila y el parrafo
+
+**Que.** Ni un `.rs`, ningun pin, ninguna cifra de tests: tres correcciones de prosa en DOS
+ficheros, `spec/README.md` y `spec/PAQUETE.md`. Por eso sin canon, como el §500, el §539 y el
+§547, y con las diez herramientas por DELTA. Dos de las tres estaban fichadas -el 5.A-406 y la
+mitad que quedaba del 5.A-378-; la tercera se midio al arrancar la 182, cruzando la prosa contra
+el arbol, y nunca llego a ser punto de la cola: nace y se paga aqui.
+
+**La frase que el §547 dejo contradiciendose dentro de la misma linea.** La fila del RFC-0008 en
+`spec/README.md` -la que su asiento dice que <<reescribe entera>> para girar el estado- decia
+<<E3, the pledge, is still proposed Accepted at §547>>: el giro se escribio ENCIMA sin retirar el
+<<is still proposed>>. La cabecera de la celda (<<RFC-0008, ACCEPTED>>) y los cinco cardinales
+estaban bien; lo roto era la frase, y en la unica portada de la spec que esta en ingles. Ahora la
+celda dice lo que el RFC dice de si mismo: E3 SELLADA con su arco §513-§546, la PARADA entre el
+§521 y el §538 dentro -la prueba publicaba la clave de gasto del prendador hasta que el RFC-0009
+E3b oculto el testigo-, y el documento ACEPTADO en el §547. **Es la familia del 5.A-405**, que
+nacio midiendo ese mismo sello: el estado de un RFC no tiene guardian, y por eso este defecto lo
+caza una lectura y no una herramienta.
+
+**La fila de `vectors/pago/` gana su tercera celda, y el 5.A-378 queda cerrado.** Era la ultima de
+la tabla con DOS celdas donde sus diez hermanas tienen tres; la otra mitad la pago el §547. El
+texto no se inventa: las SEIS filas de familia que llevan la frase canonica la dicen con su
+nombre y su ruta, asi que esta dice <<you check that a verifier accepts and refuses exactly what the
+payment-in-progress envelope says, with `tools/conformidad.sh <binary>
+spec/vectors/pago/MANIFIESTO.txt`>>, con el nombre del sobre que la propia celda ya usaba.
+
+**El parrafo del pago en la seccion 9 de `PAQUETE.md`, y el 5.A-406 queda cerrado.** Todas las
+familias tienen el suyo; el del pago nunca se escribio, y el §546 convirtio la promesa vieja
+(<<El lado del pago llega con E2>>) en un hecho DECLARADO y no en un parrafo. Este corte lo
+escribe en el molde de sus hermanas y con lo que su propio MANIFIESTO mide: dos positivos
+REUNIDOS de las capturas de un nodo real, las dos formas de `--t` -el `seq` de la cabeza y la
+frontera `nacido + delta` = 100-, siete negativos por una mutacion cada uno desde el positivo de
+la frontera, el prefijo `pago:` como unico texto pinado porque el resto lo pone WINTERFELL, y
+NINGUN peso pinado porque los dos positivos pesan distinto (5.A-324). Va entre el del cobro y el
+de la prenda, que es su sitio por asiento. Y la declaracion de la deuda, que vivia en el parrafo
+del cobro, se RETIRA en el mismo corte: una deuda que se paga no se sigue declarando.
+
+**Contadores.** TRES ficheros, ninguno nace: `spec/README.md` (-2 +2), `spec/PAQUETE.md` (-2 +17)
+y este asiento. Ningun pin de los siete, ninguna suma, ningun Cargo, ninguna cifra de tests: las
+diez herramientas del canon, IDENTICAS byte a byte contra su BASE. Sin canon.
+
+**Lo que NO cierra.** El 5.A-405 -el estado de un RFC sin guardian- va detras de este corte, y es
+lo que impide que la frase de arriba vuelva a escribirse: hoy el estado vive en SEIS sitios y
+nadie los cruza. Siguen el 5.A-407 (la huella del artefacto del §546, deducida y no medida), el
+5.A-400, el 401, el 402 y las dos deudas del lector del keystore del SDK (5.A-403 y 5.A-404).
+Sigue vivo el arreglo B (5.A-272), que E3 esquivo. H5b no ha empezado.
+

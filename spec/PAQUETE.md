@@ -790,8 +790,23 @@ manifiesto pina sólo el prefijo `cobro:` que antepone el mando. La cabeza no vi
 entera dentro de los dos sobres; el aviso y la credencial del escenario tampoco —el mando no los
 lee— y el manifiesto los declara por su huella. Su productor es `tools/banco_pendiente.sh` (§498),
 que siembra con el nodo PARADO y pide con el nodo VIVO. **El lado del pago llegó en el §509** y su
-catálogo es `spec/vectors/pago/`; el párrafo propio que sus hermanas tienen aquí sigue sin
-escribirse, y se declara.
+catálogo es `spec/vectors/pago/`, que tiene aquí su párrafo propio desde el §548.
+
+**Desde §509 cubre el sobre de PAGO EN CURSO** (RFC-0008, E2): `spec/vectors/pago/` trae DOS
+positivos REUNIDOS de las capturas de un nodo real —la boca del pagador (`zk-ssl-cli prueba-pago`,
+§507) los escribió con el nodo VIVO, con SU credencial y con `receiverId` (D-AE, §505), contra la
+cabeza v5 de seq 5 que ese nodo firmó, sobre un pendiente v2 nacido en 4 por 250000 y con delta
+96— y SIETE negativos por UNA mutación cada uno, uno por regla producible, todos derivados del
+positivo de la frontera. Los dos positivos son las dos formas de `--t`, que es ABSOLUTO (D-AI-4):
+el `seq` de la cabeza y la FRONTERA `nacido + delta` = 100, que es la última época que el pago
+sostiene. Un texto de la familia no se pina entero, y se declara: el de `neg-importe-mentido` lo
+pone WINTERFELL —el importe es entrada PÚBLICA del AIR, así que mentirlo deja la prueba sin
+verificar su enunciado—, así que el manifiesto pina sólo el prefijo `pago:` que antepone el
+mando. Y aquí no se pina ningún PESO: los dos positivos son del MISMO pendiente bajo la MISMA
+cabeza y pesan distinto —55.317 B y 54.888 B—, porque lo único que cambia entre ellos, `t`,
+cambia el transcript y con él las consultas de FRI (5.A-324). La cabeza no viaja como vector: va
+entera dentro de los dos sobres (D-J); los CUATRO ficheros del escenario tampoco —el mando no los
+lee— y el manifiesto los declara por su huella. Su productor es `tools/banco_pago.sh` (§508).
 
 **Desde §546 cubre el sobre de PRENDA** (RFC-0008, E3): `spec/vectors/prenda/` trae DOS positivos
 CAPTURADOS de un nodo real —la boca del prendador (`zk-ssl-cli prueba-prenda`, §543) los escribió
