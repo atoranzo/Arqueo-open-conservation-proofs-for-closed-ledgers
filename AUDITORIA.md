@@ -40035,3 +40035,62 @@ no se reproduce), el 407 (la huella del artefacto del §546, deducida y no medid
 sesiones del arco de E3, que solo el autor puede dar), mas las dos deudas del lector del keystore
 del SDK (5.A-403 y 5.A-404). Sigue vivo el arreglo B (5.A-272). H5b no ha empezado.
 
+## §550 — El lector del keystore del SDK: dice QUE fichero, y mira sus permisos
+
+**Que.** El 5.A-403 y el 5.A-404, los dos del mismo lector y los dos nacidos del arco del §544.
+`keystore::load` moria con un `os error 2` pelado -sin ruta y sin decir que hablaba del keystore-
+mientras su hermana `leer_frase`, en el MISMO paso del cli, si nombraba; y abria cualquier
+fichero, lo dejaran como lo dejaran, siendo material de clave. Ahora nombra, y comprueba. OCHO
+ficheros, ninguno nace: el lector, el `Cargo.toml` del SDK, el lock, `tools/canon.sh`, los dos
+PAPER, `PRINCIPIOS.md` y este asiento. Y una curiosidad medida al montarlo: `.gitignore` lista
+`Cargo.lock` desde antes de que el repo lo versionara, y como git no ignora lo que ya sigue, el
+lock viaja igual; la linea del `.gitignore` es letra muerta que dice lo contrario de lo que pasa.
+
+**La regla de permisos NO se duplica: se usa la que hay.** `zk-ssl-guardian::semilla::
+comprobar_permisos` ya la escribe, con su mensaje -modo, ruta y `chmod 600`-, y el §296 mudo el
+guardian a un crate SIN dependencias justo para que otros pudieran usarlo: ya lo hacen el nodo, el
+mando y el verificador. El SDK se suma. Doce lineas copiadas habrian sido DOS productores de la
+misma regla, que es como empiezan las divergencias que luego cuesta un corte cerrar.
+
+**El orden importa, y no es el del guardian.** Se lee PRIMERO y se comprueban los permisos DESPUES.
+Al reves, un keystore que no existe moriria por el `Io` del guardian, cuyo Display dice <<guardian
+del indice>> -con sus tildes, en el fuente- y aqui mentiria: no hay indice. Leyendo primero, cada
+fallo sale por su boca. Y fallar es DURO, no aviso: el escritor ya crea con 0600 desde siempre, la
+ley del proyecto es fail-closed ante duda sobre material de clave, y el caso <<viene de otra
+maquina>> lo resuelve el propio mensaje, que dice como.
+
+**Una premisa mia, FALSADA por el ensayo, y por eso este asiento la cuenta.** Decidi que los dos
+testigos que reescriben el keystore -`manipulacion_detectada` y `public_id_ajeno_no_cuela`-
+quedarian CIEGOS con la puerta puesta: la puerta moriria antes que lo que ellos prueban, y su
+verde dejaria de decir lo que dice su nombre. Iban a llevar un `chmod 600` por eso. El
+ENSAYO-550-r2 lo midio y dijo que no: `fs::write` sobre un fichero que YA existe lo trunca y
+CONSERVA su modo, asi que el 0600 de `save` sobrevive y la puerta no se dispara ahi. El `chmod`
+se retiro y en su sitio va la medida escrita, que es lo que de verdad hacia falta: hoy esos dos
+testigos dependen EN SILENCIO de ese comportamiento, y el comentario lo dice, con la ruta nueva
+como caso a mirar si alguien la cambia. Una guarda que se justifica con una premisa falsa es
+adorno; la medida, no.
+
+**Y una sugerencia del compilador, rechazada.** `expect_err` exige `T: Debug`, y `T` aqui es
+`Wallet`, que guarda `spend_key` y cuyo doc dice <<Nunca sale de aqui>>. `rustc` propone
+`#[derive(Debug)]` sobre `Wallet`: eso haria IMPRIMIBLE la clave de gasto -en un panico, en un
+log, en cualquier `{:?}` futuro-. Los dos testigos usan `match` en su lugar, y el codigo lleva
+escrito por que, para que nadie lo <<arregle>> derivandolo.
+
+**Lo que mueve, y lo que una herramienta no vio.** Pin del SDK 11 -> 13, TOTAL DE SELLO 1428 ->
+1430, largos 1565 -> 1567, `check_tests` 1587 -> 1589. Las cifras publicadas: `check_cifras` caza
+las TRES del total (`PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`) y las nombra por linea; las TRES
+del total de largos, en esos mismos tres documentos, NO las ata nadie y se corrigen aqui a mano,
+derivadas del canon. Un gate que ata el TOTAL y no el total de largos es medio gate, y queda
+dicho.
+
+**Contadores.** OCHO ficheros y ningun nacimiento. De las diez herramientas del canon, OCHO
+identicas byte a byte y DOS con UNA linea cambiada cada una, las dos predichas: `check_tests`
+(1587 -> 1589) y `check_figures` (la cita de `PRINCIPIOS.md:358`). Con canon, y con
+`cargo build --locked` por delante, porque el corte toca `Cargo.toml` y el lock.
+
+**Lo que NO cierra.** Cierran el 5.A-403 y el 5.A-404. Nace una deuda medida aqui: los dos PAPER
+publican la cuenta de <<declaradas>> con numeros DISTINTOS entre si -1364 el espanol, 1349 el
+ingles- y ninguno es el de `check_tests`; ninguna herramienta las ata y este corte no las toca,
+porque su ambito es otro. Siguen el 5.A-400, el 401, el 402 y el 408, que espera los numeros de
+sesion del arco de E3. Sigue vivo el arreglo B (5.A-272). H5b no ha empezado.
+

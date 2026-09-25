@@ -24,6 +24,7 @@ use chacha20poly1305::{AeadCore, XChaCha20Poly1305, XNonce};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as _, Sha256};
 use std::path::Path;
+use zk_ssl_guardian::semilla::comprobar_permisos;
 use zk_ssl::store::{digest_from_bytes, digest_to_bytes};
 
 use crate::Wallet;
@@ -111,8 +112,20 @@ pub fn save(path: &Path, wallet: &Wallet, passphrase: &str) -> anyhow::Result<()
 
 /// Carga el wallet. Falla con contrasena incorrecta, fichero manipulado,
 /// o un fichero que no corresponde a su `public_id` declarado.
+///
+/// Falla tambien, y DICIENDO CUAL, si el fichero no se puede leer (5.A-403), y si sus
+/// permisos lo dejan legible por grupo u otros (5.A-404): es material de clave, y esa
+/// regla se comprueba al LEER, no al escribir (S199).
 pub fn load(path: &Path, passphrase: &str) -> anyhow::Result<Wallet> {
-    let f: Fichero = serde_json::from_str(&std::fs::read_to_string(path)?)?;
+    // 5.A-403: un lector que falla NOMBRA el fichero. Su hermana `leer_frase`, en el
+    // mismo paso del cli, ya lo hacia; esta moria con un `os error 2` pelado.
+    let crudo = std::fs::read_to_string(path).map_err(|e| {
+        anyhow::anyhow!("{}: no se puede leer el keystore: {e}", path.display())
+    })?;
+    // 5.A-404: se comprueba al LEER, y la regla tiene UN productor, el guardian.
+    comprobar_permisos(path).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let f: Fichero = serde_json::from_str(&crudo)
+        .map_err(|e| anyhow::anyhow!("{}: no es un keystore: {e}", path.display()))?;
     anyhow::ensure!(f.version == VERSION, "version de keystore desconocida: {}", f.version);
 
     let sealed = des_hex(&f.sealed)?;
@@ -176,6 +189,10 @@ mod tests {
         b[ultimo] ^= 0x01;
         f.sealed = hex(&b);
         std::fs::write(&p, serde_json::to_string(&f).unwrap()).unwrap();
+        // El fichero conserva el 0600 que le puso `save`: `fs::write` sobre uno que ya
+        // existe no cambia el modo, asi que la puerta de permisos (5.A-404) no se
+        // dispara aqui y este testigo sigue probando lo suyo. Medido en el ENSAYO-550-r2;
+        // si algun dia esto escribiera en una ruta NUEVA, habria que mirarlo.
         assert!(load(&p, "clave").is_err(), "CRITICO: manipulacion no detectada");
         let _ = std::fs::remove_file(&p);
     }
@@ -191,6 +208,10 @@ mod tests {
             serde_json::from_str(&std::fs::read_to_string(&p).unwrap()).unwrap();
         f.public_id = hex(&digest_to_bytes(&otro.public_id()));
         std::fs::write(&p, serde_json::to_string(&f).unwrap()).unwrap();
+        // El fichero conserva el 0600 que le puso `save`: `fs::write` sobre uno que ya
+        // existe no cambia el modo, asi que la puerta de permisos (5.A-404) no se
+        // dispara aqui y este testigo sigue probando lo suyo. Medido en el ENSAYO-550-r2;
+        // si algun dia esto escribiera en una ruta NUEVA, habria que mirarlo.
         assert!(load(&p, "clave").is_err(), "CRITICO: public_id ajeno acepto");
         let _ = std::fs::remove_file(&p);
     }
@@ -212,6 +233,46 @@ mod tests {
             ledger.open(&sealed).is_err(),
             "CRITICO: el dominio del ledger abrio el keystore"
         );
+        let _ = std::fs::remove_file(&p);
+    }
+
+    /// **5.A-403: un lector que falla dice QUE fichero.** Antes moria con `os error 2` pelado.
+    #[test]
+    fn un_keystore_que_no_existe_dice_su_ruta() {
+        let p = tmp("nohay");
+        let _ = std::fs::remove_file(&p);
+        // Sin `expect_err`: exige `Wallet: Debug`, y el struct que guarda la clave de gasto
+        // NO se imprime. El compilador sugiere derivarlo; aqui eso es que no.
+        let e = match load(&p, "clave") {
+            Ok(_) => panic!("CRITICO: abrio un keystore que no existe"),
+            Err(e) => e,
+        };
+        let msg = format!("{e}");
+        assert!(msg.contains(&p.display().to_string()), "el error no nombra el fichero: {msg}");
+        assert!(
+            msg.contains("no se puede leer el keystore"),
+            "el error no dice de que hablaba: {msg}"
+        );
+    }
+
+    /// **5.A-404: material de clave legible por otros NO se abre.** Con 0600 SI abre: el mismo
+    /// testigo prueba los dos lados, para que un verde no pueda venir de que la puerta no este.
+    #[cfg(unix)]
+    #[test]
+    fn un_keystore_legible_por_otros_no_se_abre() {
+        use std::os::unix::fs::PermissionsExt;
+        let w = Wallet::random();
+        let p = tmp("modo");
+        save(&p, &w, "clave").expect("guardar");
+        load(&p, "clave").expect("con 0600 tiene que abrir");
+        std::fs::set_permissions(&p, std::fs::Permissions::from_mode(0o644)).unwrap();
+        let e = match load(&p, "clave") {
+            Ok(_) => panic!("CRITICO: abrio un keystore legible por otros"),
+            Err(e) => e,
+        };
+        let msg = format!("{e}");
+        assert!(msg.contains("0644"), "el error no dice el modo: {msg}");
+        assert!(msg.contains("chmod 600"), "el error no dice como arreglarlo: {msg}");
         let _ = std::fs::remove_file(&p);
     }
 }

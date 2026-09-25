@@ -16,6 +16,9 @@ license.workspace = true
 [dependencies]
 zk-ssl = { path = "../zk-ssl" }
 zk-ssl-wire = { path = "../zk-ssl-wire" }
+# La regla de permisos del material de clave tiene UN productor (5.A-404, S199):
+# `semilla::comprobar_permisos`. El guardian no arrastra nada: solo `std`.
+zk-ssl-guardian = { path = "../zk-ssl-guardian" }
 stark-experiment = { path = "../stark-experiment" }
 winterfell = "0.13"
 

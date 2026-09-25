@@ -3545,6 +3545,7 @@ dependencies = [
  "ureq",
  "winterfell",
  "zk-ssl",
+ "zk-ssl-guardian",
  "zk-ssl-wire",
 ]
 
