@@ -40361,3 +40361,67 @@ y el sobre de completitud tampoco. Y sigue sin atado la cifra `N = 1.440`, publi
 modo que su salida es <<0 circuitos>> en cada canon; la herramienta que nacio para cazar columnas
 declaradas y nunca rellenadas lleva corriendo sobre cero ficheros.
 
+## §557 — RFC-0010 E2a-0: el nucleo compone la cabeza v6 y la hoja del recibo
+
+**Que.** Nacen en `zk-ssl-hash` las tres piezas que el RFC-0010 pide para que la raiz de
+recepcion pueda entrar en la cabeza: `DOMINIO_RECEP`, los ocho bytes de `RECEP_V1` con su fila en
+el REGISTRO; `recibo_digest(hash_prueba, era, n)`, el molde EXACTO de `acuse_digest` con ese
+septimo dominio; y `epoch_digest_v6 = merge(v5, merge(recep_root, as_digest(recep_count)))`, la
+envoltura de la v5 con el molde del §275, el §292, el §414 y el §451. Tres testigos y los dos
+KAT, emitidos por su UNICO productor. `spec/NUCLEO.md` gana tres filas, su censo pasa de 45 a 48
+`pub` en hash, la seccion 6 gana la composicion de la v6 y la hoja, y la historia su entrada.
+Cinco ficheros -dos nacen- en el §557, y cuatro mas en el -B.
+
+**Lo que este corte NO hace, y es la mitad del corte.** La variante `V6` NO entra en
+`VersionCabeza`: el conjunto que un verificador ACEPTA se mueve en su propio sello. Ni el mando,
+ni el cable, ni el testigo, ni un vector de conformidad se tocan -- los siete centinelas lo
+prueban. El reparto no es comodidad: al entrar la `V6`, el negativo
+`spec/vectors/cable/rechazo-formatVersion-6.json`, que el §451 derivo como `TODAS.max + 1`, deja
+de probar lo que dice -- un 6 ya no se rechazaria por estar fuera del conjunto -- y su texto se
+mide EN VIVO. Eso, con el catalogo del cable entero, es el §558.
+
+**Por que la hoja lleva dominio propio (D-B).** Un acuse es hoy la hoja de una transicion
+APLICADA; un recibo, la de una operacion que el nodo llego a EVALUAR, se aplicara o no. Con las
+MISMAS tres entradas los dos valores tienen que diferir, y un testigo lo comprueba: si
+coincidieran, los dos arboles serian el mismo objeto con dos nombres y el numero de hojas de una
+era dejaria de significar una sola cosa. El `hash_prueba` va con la longitud codificada y no hubo
+que hacer nada: `digest_of_proof` la mete desde el §116, y su dominio lo dice (`v2`). El D-B del
+RFC induce a pensar lo contrario; queda escrito aqui que la funcion vale tal cual.
+
+**Como se ensayo, y que prueba el ensayo.** El bloque reconstruyo los tres ficheros APARTE -sobre
+un `git archive` del propio HEAD- y no toco el arbol hasta que clavaron `086b86549d0831b2`,
+`326c71966547626d` y `8b882f10c3de743b`. Los KAT se emitieron a un `ZKSSL_KAT_DIR` temporal: los
+21 viejos salieron byte a byte IDENTICOS a los del arbol y solo se copiaron los dos nuevos
+(`218d678652fda7bc` y `02535e1d014416e5`). La lista de tests en release se exigio contra la BASE
+medida antes de tocar nada y crece con los TRES nombres previstos, uno a uno; la del cli, la
+MISMA. Y las diez herramientas se juzgaron por DELTA contra esa base: siete IDENTICAS y tres con
+una linea, las tres conteos derivados -- `check_nucleo` 45 -> 48, `check_dominios` 27 -> 28
+declaraciones y `check_tests` 1589 -> 1592. Antes, el guion corrio entero contra un arbol de
+mentira con los bytes reales, con tres falsadores que discriminaron por su cuenta: re-correrlo da
+rc 7 y no toca nada, un arbol sucio muere en el cerrojo, y un byte cambiado en el payload lo mata
+por huella dejando el arbol intacto. Lo que esa maqueta NO probaba era la compilacion, porque su
+`cargo` era un doble; eso lo pago la corrida real.
+
+**El -B, y por que va aparte.** El pin de `zk-ssl-hash` pasa de 31 a 34 en `tools/canon.sh`, con
+su entrada de historia en la propia fila, y con el se mueven las SEIS cifras publicadas que
+`check_cifras` vigila: el TOTAL DE SELLO 1430 -> 1433 en `PAPER.md`:36, `PAPER_EN.md`:33 y
+`PRINCIPIOS.md`:358, y el total con largos 1567 -> 1570 en los tres mismos documentos. El
+perimetro no se dedujo: se subio el pin en una copia y el propio gate nombro las seis, que es la
+regla desde el §304. Entre el §557 y su -B el canon queda ROJO a proposito -- la lista da 34 y la
+tabla pina 31 -- y el -B lo cierra corriendo `--sello` entero.
+
+**Contadores.** §557, cinco ficheros y +208 -5: `crates/zk-ssl-hash/src/lib.rs` +146 -0,
+`crates/zk-ssl-cli/src/nucleo_kat.rs` +15 -2, `spec/NUCLEO.md` +14 -3,
+`spec/vectors/nucleo/epoch_digest_v6.json` +24 -0 (NACE) y
+`spec/vectors/nucleo/recibo_digest.json` +9 -0 (NACE). Suites en release: hash 34/34 y cli
+124/124, cero fallos. §557-B: `tools/canon.sh`, `PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md` y
+este asiento.
+
+**Lo que NO cierra.** La cabeza v6 se puede COMPONER y todavia no la acepta nadie: eso es el
+§558, con la variante, el mando, el cable, el testigo y el catalogo. El almacen de los recibos
+-sin el, la raiz no tiene hojas: hoy nada persiste la pareja `(rx, hash_de_la_prueba)` y el arbol
+de acuses se deriva del registro, que por definicion no tiene lo rechazado- es la E2c, con
+D-I..D-M ya tomadas y sin escribir en el RFC. Y queda fichado un hallazgo que este corte no
+mueve: `PAPER.md`:38 dice 1364 declaradas y `PAPER_EN.md`:35 dice 1349 en la MISMA frase, y
+ninguna herramienta cruza esa cifra.
+
