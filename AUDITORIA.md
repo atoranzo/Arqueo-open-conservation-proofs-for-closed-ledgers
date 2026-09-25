@@ -40094,3 +40094,45 @@ ingles- y ninguno es el de `check_tests`; ninguna herramienta las ata y este cor
 porque su ambito es otro. Siguen el 5.A-400, el 401, el 402 y el 408, que espera los numeros de
 sesion del arco de E3. Sigue vivo el arreglo B (5.A-272). H5b no ha empezado.
 
+## §551 — El arco de E3 gana sus sesiones: el campo de autores del RFC-0008
+
+**Que.** El 5.A-408. El campo de autores listaba las sesiones 144..155 y, para el arco de E3,
+declaraba una renuncia: <<que el arbol fecha por sus asientos y no por sesion>>. Este corte las
+escribe, DERIVADAS, y retira la frase. DOS ficheros, ninguno nace: el RFC y este asiento. Prosa:
+ni un `.rs`, ningun pin, ninguna cifra de tests, y por eso sin canon, con las diez herramientas
+por delta.
+
+**La premisa del punto era falsa, y lo era desde el §513.** El 5.A-408 dice que el arco no tiene
+sus numeros <<en ningun sitio que el arbol pueda leer>>, y se comprobo asiento a asiento del 513
+al 546. Cierto para los ASIENTOS. Falso para el DOCUMENTO: el parrafo del Diseno de este mismo
+RFC lleva <<D-AS..D-AU en la 158, que las escribio el §513>>, <<D-AV..D-AY en la 159>>,
+<<D-AZ..D-BB en la 161, que las escribio el §519-B>> y <<D-BC..D-BI en la 162>>, escritas ahi por
+los propios sellos del arco. El campo de autores declaraba una renuncia mientras el parrafo de al
+lado se fechaba solo. El §547 no lo vio y dio la renuncia por medida; la leccion no es del §547
+sino del censo: buscar en los asientos y llamar a eso <<el arbol>> deja fuera el documento.
+
+**De donde sale cada numero.** 158, 159, 161 y 162, del propio RFC (y las tres primeras, ademas,
+del TRASPASO-182: su bloque MUERTAS <<en la 159>> lleva los PRE del S514 y del S515, y su vineta
+dice que los DOS asientos de la 159 son el 514 y el 515). 179, 180 y 181, de la seccion 7 del
+TRASPASO-182, que las nombra con sus sellos. Y **160, del TRASPASO-182 y de una sola fuente**: su
+HISTORIA de la 160 dice que movio los CIRCUITOS 379 -> 390 (S517-B), la CAPA 389 -> 398 (S518-B)
+y `zk-ssl-air` 22 -> 29 (S516-B). Esa parte SI la corrobora el arbol: `tools/canon.sh` registra
+esos tres movimientos con esos tres sellos, asi que lo unico que aporta el traspaso es el numero
+de la sesion. El autor ratifico esa fuente antes de escribirla.
+
+**Lo que NO se hace.** No se reescribe el asiento del §547: su renuncia fue correcta con lo que
+tenia delante y el pasado en prosa no se toca. La frase que se retira es la del RFC, que habla
+del PRESENTE, y es la que el propio §547 dejo dicho que se retiraria si los numeros aparecian.
+
+**Contadores.** DOS ficheros, ninguno nace: el RFC (+2 -1) y el asiento. Ningun pin, ninguna
+suma, ninguna cifra de tests, ningun Cargo. Las diez herramientas del canon, IDENTICAS byte a
+byte. Sin canon, como el §500, el §539, el §547 y el §548.
+
+**Lo que NO cierra.** El 5.A-408 queda CERRADO, y con el la cola corta que la 181 abrio: el 405
+lo cerro el §549, el 406 el §548, el 407 quedo cerrado por medida y el 408 aqui. Siguen el
+5.A-400 (las citas por numero de linea sin guardian), el 401 (las cuentas de metodos sin atado) y
+el 402 (la huella del kit del §538). Nacen tres deudas medidas en la 182: las tres cifras del
+total de LARGOS que ninguna herramienta ata, los dos PAPER que publican <<declaradas>> con
+numeros distintos entre si, y la linea muerta de `Cargo.lock` en `.gitignore`. Sigue vivo el
+arreglo B (5.A-272). H5b no ha empezado.
+

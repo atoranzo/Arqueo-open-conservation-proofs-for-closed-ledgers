@@ -10,7 +10,8 @@
   desde el §540, y el test del cable lo ata a la tabla desde el §259. Se conserva como registro
   de lo decidido, lo medido y lo descartado.
 - **Autores:** Che, con Claude (sesiones 144, 145, 147, 149, 150, 151, 152, 153, 154 y 155; y el
-  arco de E3, que el árbol fecha por sus asientos y no por sesión: §513–§520 y §541–§547)
+  arco de E3: 158 (§513), 159 (§514 y §515), 160 (§516–§518 con sus `-B`), 161 (§519 y
+  §519-B), 162 (§520 y §520-B), 179 (§541–§543), 180 (§544 y §545) y 181 (§546 y §547))
 - **Fecha:** 2026-09-16
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad). Los dos
   métodos nuevos son aditivos; la cabeza v5 no cambia de forma; la marca de prenda es una hoja
