@@ -40173,3 +40173,47 @@ porque el corte cambia una herramienta que el canon corre.
 LARGOS sin atado, los dos PAPER que publican <<declaradas>> con numeros distintos, y la linea
 muerta de `Cargo.lock` en `.gitignore`. Sigue vivo el arreglo B (5.A-272). H5b no ha empezado.
 
+## §553 — El total con largos gana atado: la otra mitad del gate de las cifras
+
+**Que.** `tools/check_cifras.py` ataba el TOTAL DE SELLO y no el TOTAL CON LARGOS. Al mover el
+pin del SDK en el §550, la herramienta canto las TRES cifras del sello (1428 -> 1430) y callo
+las TRES del largo (1565 -> 1567), en los mismos tres documentos; se corrigieron a mano
+derivandolas del canon, y la propia herramienta las imprimia en su rojo: <<1430 (sello) o 1567
+(todos)>>. Era medio gate, y estaba en la cola como 5.A-409.
+
+**Por que no las veia.** Su bucle de TOTALES exige la cifra con <<tests>> o <<pruebas>> a un
+paso. Las tres del largo llevan su propia cara —<<contando los pines>>, <<counting the pins>>—
+y ningun sustantivo detras. No es de idioma ni de documento: es de forma, la misma familia del
+5.A-149 y del 5.A-289.
+
+**Lo que entra.** Un atado con DOS reglas, colgado del ancla que este mismo fichero ya valida
+desde el §239 —el total de sello— y no de una superficie nueva, que es la doctrina que el §262
+dejo escrita para los desgloses. VALOR: toda cifra con la cara publicada del total con largos,
+en cualquier documento vivo, tiene que ser la suma de TODOS los pines; no es un tope, si
+aparece un sitio nuevo se cruza igual. PRESENCIA, con el molde del ATADO D del §549: donde se
+publica el total de sello se publica el del largo, y el que DEJE de publicarlo no pasa
+callando. El ancla no se re-detecta: el bucle de TOTALES la APUNTA cuando la valida. UN
+productor, dos consumidores.
+
+**La regla que la medida mato.** El hermano —la frase de los desgloses— exige que entre el
+ancla y el dato NO HAYA UN PUNTO. Aqui no sirve: entre las dos cifras hay DOS PUNTOS en los dos
+PAPER, y son los de <<winterfell 0.13.1>>. Un juez mas estricto que su invariante da rojo por
+algo legitimo, que es la leccion de la 117. Lo que discrimina es la CARA que sigue a la cifra,
+y el parrafo —de blanco a blanco— como ambito.
+
+**Falsado.** Sobre un arbol de mentira con los bytes reales de este commit: mover UN pin de
+nivel largo deja el total de sello quieto y el del largo en 1568, y el atado nuevo canta las
+TRES —`PAPER.md`, `PAPER_EN.md`, `PRINCIPIOS.md`— con rc 1; el gate de HOY, sobre el MISMO
+sabotaje, sale VERDE y mudo, que es el 5.A-409 medido en vivo. Quitarle la clausula a un
+documento da el rojo de PRESENCIA. Las dos shas del saboteado, asertadas antes y despues.
+
+**Contadores.** 1 fichero, +85 -0. `tools/check_cifras.py` 332 -> 417 lineas. Ningun pin se
+mueve y ninguna cifra publicada se toca: los tres documentos quedan como estaban. La salida de
+la herramienta gana UNA linea, la del informe; las otras nueve, identicas. Canon VERDE.
+
+**Lo que NO cierra.** El 5.A-410 sigue vivo y este corte lo roza sin tocarlo: en el mismo
+parrafo los dos PAPER publican <<declaradas>> con numeros distintos —1364 el espanol, 1349 el
+ingles— y, medido aqui, el 1364 lo publica tambien `PRINCIPIOS.md`:362: son TRES sitios y no
+dos como el punto dice. Ninguna herramienta los ata y antes hay que decidir que cuenta son. El
+5.A-149 tambien sigue abierto: una frase como <<unos quinientos tests>> se escapa igual.
+

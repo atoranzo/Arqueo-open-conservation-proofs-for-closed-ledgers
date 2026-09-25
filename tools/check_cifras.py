@@ -198,6 +198,69 @@ def desgloses(pins, alias):
     return fallos, vistas
 
 
+# ── §553 · el TOTAL CON LARGOS ────────────────────────────
+#
+# ⚠️ El hueco que esto cierra (5.A-409): el bucle de TOTALES exige la cifra con
+#    «tests» o «pruebas» a un paso. Los tres documentos que publican el total
+#    del sello publican TAMBIEN el total con largos, y esa cifra va seguida de
+#    su propia cara —«contando los pines», «counting the pins»—, sin el
+#    sustantivo. Al mover el pin del SDK (§550) el gate canto las TRES del
+#    sello y callo las TRES del largo, que se corrigieron a mano.
+#
+# ⚠️ NO es una segunda superficie: se cuelga del ANCLA QUE YA ESTA VALIDADA,
+#    como los desgloses del §262. Y no re-detecta el ancla: el bucle de
+#    TOTALES la APUNTA cuando la valida. UN productor, dos consumidores.
+#
+# ⚠️ ADYACENCIA, medida, y la regla del hermano NO sirve: entre las dos cifras
+#    hay DOS PUNTOS en los dos PAPER —«winterfell 0.13.1»—, así que el «sin
+#    punto en medio» de los desgloses daría rojo por algo legítimo (la lección
+#    de la 117). Lo que discrimina es la CARA que sigue a la cifra, y el
+#    párrafo —de blanco a blanco— como ámbito.
+#
+# ⚠️ PRESENCIA, con el molde del ATADO D (§549): un gate que sólo cruza lo que
+#    ya lleva la marca es ciego justo a lo que falta. Donde se publica el total
+#    del sello se publica el del largo, y el que deje de publicarlo NO pasa
+#    callando. Si algún día un documento cita legítimamente sólo el del sello,
+#    esto se pone rojo y lo paga un corte: es fail-closed a propósito.
+
+CARAS_LARGOS = ("contando los pines", "counting the pins")
+LARGOS_EN_PROSA = re.compile(
+    r"(?<![\d.])(\d{3,4})(?![\d])\*{0,2}\s*(?:%s)" % "|".join(CARAS_LARGOS))
+
+
+def parrafo(lineas, n):
+    """El párrafo que contiene la línea n (1-based), de blanco a blanco, aplanado."""
+    i = j = n - 1
+    while i > 0 and lineas[i - 1].strip():
+        i -= 1
+    while j + 1 < len(lineas) and lineas[j + 1].strip():
+        j += 1
+    return " ".join("\n".join(lineas[i:j + 1]).split())
+
+
+def total_largos(anclas, suma_todos):
+    """El TOTAL CON LARGOS: su VALOR en todo documento vivo, y su PRESENCIA
+    donde el total del sello ya está validado.
+
+    `anclas` son los (documento, línea) que el bucle de TOTALES apuntó al
+    validar el total del sello: no se vuelven a detectar aquí.
+    """
+    fallos, ausentes, vistas = [], [], 0
+    for rel in vivos():
+        plano = " ".join(open(os.path.join(RAIZ, rel), encoding="utf-8").read().split())
+        for m in LARGOS_EN_PROSA.finditer(plano):
+            vistas += 1
+            v = int(m.group(1))
+            if v != suma_todos:
+                fallos.append((rel, 0, "TOTAL con largos", v, suma_todos,
+                               plano[max(0, m.start() - 30):m.start() + 48]))
+    for rel, n in anclas:
+        lineas = open(os.path.join(RAIZ, rel), encoding="utf-8").read().split("\n")
+        if not LARGOS_EN_PROSA.search(parrafo(lineas, n)):
+            ausentes.append((rel, n))
+    return fallos, ausentes, vistas
+
+
 def cronica():
     """La CRONICA de cada fila del canon: si una fila cuenta su historia, su pin tiene que ser
     el segundo numero de su ULTIMA entrada.
@@ -264,6 +327,7 @@ def main():
     suma_sello = sum(pines_sello().values())
     suma_todos = sum(p.values())
     posibles = {suma_sello, suma_todos}
+    anclas_sello = []
     for rel in vivos():
         texto = open(os.path.join(RAIZ, rel), encoding="utf-8").read()
         for n, linea in enumerate(texto.split("\n"), 1):
@@ -284,6 +348,8 @@ def main():
                     r"\*?\*?(\d{3,4})\*?\*?\s*(?:[a-zA-Z\u00e0-\u00ff]+\s+)?(?:tests|pruebas)", linea):
                 v = int(m.group(1))
                 revisadas += 1
+                if v == suma_sello:
+                    anclas_sello.append((rel, n))   # §553: el ancla se APUNTA aqui
                 if v not in posibles:
                     malas.append((rel, n, "TOTAL", v,
                                   f"{suma_sello} (sello) o {suma_todos} (todos)",
@@ -292,6 +358,13 @@ def main():
     fallos_cr, con_cronica = cronica()
     print("  CRONICA: %d fila(s) del canon cuentan su historia, y su pin es el de su ultima "
           "entrada" % con_cronica)
+
+    fallos_lg, ausentes_lg, vistas_lg = total_largos(anclas_sello, suma_todos)
+    malas.extend(fallos_lg)
+    revisadas += vistas_lg
+    print("  LARGOS: %d cita(s) del total con largos, y %d de las %d ancla(s) del total de "
+          "sello lo llevan en su parrafo"
+          % (vistas_lg, len(anclas_sello) - len(ausentes_lg), len(anclas_sello)))
 
     fallos_desglose, vistas_desglose = desgloses(p, alias_de_crates())
     malas.extend(fallos_desglose)
@@ -311,6 +384,18 @@ def main():
         print("")
         print("  Un pin que se mueve sin escribir su entrada deja la fila contando una")
         print("  historia falsa. El pin lo mueve el corte; la entrada, el mismo corte.")
+        return 1
+
+    if ausentes_lg:
+        print("")
+        print("ROJO: %d documento(s) publican el total de sello y no el total con largos"
+              % len(ausentes_lg))
+        for rel, n in ausentes_lg:
+            print("  %s:%-4d su parrafo no lleva ninguna cifra con %s"
+                  % (rel, n, " ni ".join("<<%s>>" % c for c in CARAS_LARGOS)))
+        print("")
+        print("  Un gate que solo cruza lo que ya lleva la marca es ciego a lo que falta:")
+        print("  el que DEJE de publicar la cuenta no puede pasar callando (ATADO D, S549).")
         return 1
 
     if malas:
