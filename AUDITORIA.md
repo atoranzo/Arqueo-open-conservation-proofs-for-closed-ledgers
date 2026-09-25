@@ -40425,7 +40425,7 @@ D-I..D-M ya tomadas y sin escribir en el RFC. Y queda fichado un hallazgo que es
 mueve: `PAPER.md`:38 dice 1364 declaradas y `PAPER_EN.md`:35 dice 1349 en la MISMA frase, y
 ninguna herramienta cruza esa cifra.
 
-## §558-B — RFC-0010 E2a: el pin, el censo del nucleo y el catalogo del conjunto nuevo
+## §558 — RFC-0010 E2a: el pin, el censo del nucleo y el catalogo del conjunto nuevo
 
 **Que.** Cierra el rojo que el §558 dejo a proposito. El pin de `zk-ssl-verify` pasa de 120 a
 121 -el testigo que nace con los dos predicados- con su entrada de CRONICA en la propia fila, que
