@@ -39811,3 +39811,76 @@ capturas de este banco con `--guardar`; y la celda E3 del RFC-0008 con su giro a
 Y sigue viva la deuda del lector del keystore del SDK: no nombra el fichero que no pudo abrir, y no
 comprueba sus permisos siendo material de clave.
 
+## §546 — El catalogo de la prenda: `spec/vectors/prenda/`, la octava familia
+
+**Que.** El §545 dejo el banco en el arbol y sus capturas guardadas; este corte las convierte en
+catalogo. Nace `spec/vectors/prenda/` con los DOS positivos, los SIETE negativos y su
+`MANIFIESTO.txt`; `tools/artefacto.sh` gana la **octava familia** y con ella el tarball la lleva
+dentro; `tools/canon.sh` gana su estrofa `3 bis prenda`, y con eso **el sobre 2.10 pasa a tener
+arnes**: hasta hoy lo unico que lo vigilaba eran los testigos de la boca, los del juez y un banco
+que vive FUERA del canon. Con esto, la fila E3 del RFC-0008 queda servida por codigo, por banco y
+por catalogo, y lo que falta es escribirla (S547).
+
+**Los vectores se COPIAN, y aqui no hay otra via.** Los nueve salen byte a byte de las
+CAPTURAS-546 que `tools/banco_prenda.sh --guardar` dejo tras el §545, y el bloque asierta la
+huella de cada uno ANTES y DESPUES de copiarlo. En las familias anteriores copiar era la regla 2
+del PROCESO; aqui es ademas la UNICA manera: desde que el probador oculta (§538), dos pruebas del
+mismo enunciado bajo la misma cabeza no dan los mismos bytes, y van cuatro medidas que lo dicen
+-- 68.068 y 66.333 B en el PASTE-545-M, 67.145 y 66.398 B en estas capturas --. Correr el banco
+otra vez produce otros ficheros, no estos.
+
+**Los dos positivos afirman LO MISMO, y es la primera familia en la que pasa.** El segundo publico
+ademas la marca con `zkssl_pledge` bajo el mismo latido, pero eso no se ve en el sobre: mismo
+enunciado, misma cabeza v5 de seq 5, y lo unico que los separa son los bytes de la prueba. Por eso
+el mando imprime para los dos el MISMO veredicto y el manifiesto los pina con el MISMO texto --
+donde el catalogo del pago podia pinar su `t` en cada uno, aqui no hay nada que distinguir --. Se
+declara en la cabecera del manifiesto, para que nadie lea el texto repetido como un descuido.
+
+**El manifiesto pina lo que gobierna la casa, y nada mas.** En `neg-receptor-mentido` y
+`neg-marca-mentida` se pina el prefijo `prenda:` y no el texto que sigue: ese lo pone WINTERFELL y
+es el MISMO para los dos, porque los dos campos del enunciado son entradas PUBLICAS del AIR. Es la
+misma decision que tomaron el cobro con su cota y el pago con su importe.
+
+**La siembra va declarada por huella, menos una.** Los CINCO ficheros del escenario no los lee el
+mando, asi que no entran en el catalogo. Cuatro se declaran -- `aviso.json` `17f86def80cdf3c0`,
+`credencial.json` `f1dfac359b900273`, `retorno.json` `bbcb7817ae6ec804` y `credencial-pagador.json`
+`b81e717890643437` --, y CLAVAN las que los catalogos del cobro (§499) y del pago (§509) ya
+publican: tres bancos distintos, la misma semilla, los mismos bytes. El QUINTO, el `keystore.json`
+que el §544 anadio, NO se declara: su cifrado lleva un nonce y cambia en cada corrida. Y tampoco
+su modo, medido en la captura: el banco lo escribe en 600, pero una captura que cruza de sistema
+de ficheros lo pierde, que es el caso que el 5.A-404 describe.
+
+**Y NO puede vivir en la carpeta lo que no es vector, medido.** `tools/conformidad.sh` exige que
+todo `.json` del directorio tenga su entrada en el manifiesto, asi que meter la siembra dentro
+pondria el arnes en ROJO: se comprobo en el PASTE-546-M con el kit real, copiando los cinco a una
+maqueta, y dio rc 1 nombrando los cinco. La deduccion se convirtio en medida antes de escribir una
+linea.
+
+**La estrofa del canon se DERIVO, no se reescribio.** Se extrajo por rango la del pago y se
+sustituyo solo lo que nombra a la familia, con censo de residuos: en la estrofa nueva no aparece
+ni una vez la palabra <<pago>>, ni su E2, ni su asiento. Un arnes copiado a mano es un arnes que
+un dia dice el nombre de su hermano.
+
+**Y la seccion 9 se puso al dia de lo que ya era falso al lado.** Escribir aqui el parrafo de la
+prenda obligo a censar TODAS las frases de `spec/PAQUETE.md` que hablan de catalogos y de bancos,
+que es la regla que el 5.A-298 dejo escrita. Salieron dos: su lista de demostraciones en vivo no
+nombraba `tools/banco_pago.sh` (§508) ni `tools/banco_prenda.sh` (§545) -- y sus ordinales, que
+son cifras escritas con letras, se re-derivaron al crecer la lista --, y su ultima frase decia
+<<El lado del pago llega con E2>> cuando el pago llego en el §509. Lo que este corte deja rancio
+se paga en este corte; el parrafo propio del pago, que es prosa de otro sello, queda declarado en
+su sitio y fichado.
+
+**Contadores.** DIECISIETE ficheros: SIETE se editan y DIEZ nacen (`spec/vectors/prenda/`, los
+nueve vectores y su manifiesto). `spec/vectors/` pasa de **303 a 313 ficheros**, y las dos
+portadas lo dicen, la espanola y la inglesa, con la familia nueva en su lista. **Ningun pin se
+mueve**, ningun Cargo tocado, ninguna cifra de tests cambia: el corte no trae un `.rs`. Las diez
+herramientas, IDENTICAS byte a byte. El binario del artefacto se queda QUIETO -- ningun `.rs` se
+movio --, pero el TARBALL se mueve, y debe: lleva la familia nueva dentro; no es atribuible
+(punto 116).
+
+**Lo que NO cierra.** La celda E3 del RFC-0008 y su giro a ACEPTADO (S547), que cierra H5 por este
+lado. El parrafo propio del pago en la seccion 9 de `spec/PAQUETE.md`, declarado y no escrito. Las
+dos filas de `spec/README.md` con dos celdas en vez de tres (5.A-378): la que nace aqui lleva sus
+tres, la del pago sigue con dos. Y las dos deudas del lector del keystore del SDK (5.A-403 y
+5.A-404), que este catalogo roza al no poder pinar el modo y no paga.
+

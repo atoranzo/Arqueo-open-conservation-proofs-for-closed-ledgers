@@ -1,0 +1,40 @@
+# Vectores del sobre de PRENDA (spec/PAQUETE.md 2.10, RFC-0008 E3; asiento 546). zkssl/0.4.
+# fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
+# Los DOS positivos se CAPTURAN de las CAPTURAS-546 de un nodo real: la boca del prendador
+# (`zk-ssl-cli prueba-prenda`, S543) los escribio con el nodo VIVO, abriendo el keystore del
+# receptor que la siembra sella (S544), contra la cabeza v5 de seq 5 que ese nodo firmo, sobre un
+# pendiente v2 nacido en 4 por 250000 y con delta 96. El segundo ademas PUBLICO la marca con
+# `zkssl_pledge` bajo el MISMO latido (`--publicar`), y eso NO se ve en el sobre: los dos afirman
+# lo mismo bajo la misma cabeza, asi que el mando imprime para los dos el mismo veredicto y este
+# manifiesto los pina con el mismo texto. Su productor es `tools/banco_prenda.sh`, que SI vive en
+# el arbol (S545). La cabeza no viaja aparte: va entera dentro de los dos sobres (D-J).
+# ESTA FAMILIA SE CAPTURA Y NO SE RE-DERIVA: desde que el probador oculta (S538), dos pruebas del
+# MISMO enunciado bajo la MISMA cabeza no dan los mismos bytes. Van cuatro medidas -- 68.068 y
+# 66.333 B en el PASTE-545-M, 67.145 y 66.398 B en estas capturas --, asi que aqui NO se pina
+# ningun peso y correr el banco otra vez NO reproduce estos ficheros: se copian de la captura o no
+# existen.
+# Los siete negativos salen de `prenda-publicada.json` por UNA mutacion cada uno, uno por regla
+# producible; jamas se reescriben (regla 2 del PROCESO).
+# OJO con `neg-receptor-mentido` y `neg-marca-mentida`: los dos campos del enunciado son entradas
+# PUBLICAS del AIR, asi que mentirlos deja la prueba sin verificar lo que el sobre dice; el texto
+# que sigue al prefijo lo pone WINTERFELL y es el MISMO para los dos, asi que se pina SOLO el
+# prefijo `prenda:`, que es lo que antepone el mando y lo unico que la casa gobierna.
+# Los CINCO ficheros de la siembra NO son vectores -el mando no los lee- y cuatro se declaran por
+# su huella: `aviso.json` `17f86def80cdf3c0` (204 B), `credencial.json` `f1dfac359b900273`
+# (195 B), `retorno.json` `bbcb7817ae6ec804` (106 B) y `credencial-pagador.json`
+# `b81e717890643437` (195 B), las MISMAS que declaran los catalogos del cobro y del pago porque la
+# siembra es determinista. El QUINTO, el `keystore.json` del receptor (S544), NO se declara: su
+# cifrado lleva un nonce aleatorio y cambia en cada corrida. El banco lo escribe en modo 600 y lo
+# exige, pero una captura que cruza de sistema de ficheros pierde el modo, asi que tampoco eso se
+# pina (5.A-404).
+# UN VERDE AQUI ES MEDIA PRENDA (D-AS): el mando no mira si la marca esta bajo el `consRoot` de
+# esa cabeza -no tiene arbol que mirar-, y esa otra mitad se pide con `zkssl_consumoPath`.
+prenda.json|0|hay un pendiente que solo puede cobrar quien
+prenda-publicada.json|0|hay un pendiente que solo puede cobrar quien
+neg-sin-enunciado.json|1|falta enunciado
+neg-sin-prueba.json|1|falta prueba o no es cadena 0x
+neg-sin-cabeza.json|1|falta cabeza
+neg-sin-firma.json|1|cabeza: falta signature
+neg-cabeza-v4.json|1|exige una cabeza v5
+neg-receptor-mentido.json|1|prenda:
+neg-marca-mentida.json|1|prenda:

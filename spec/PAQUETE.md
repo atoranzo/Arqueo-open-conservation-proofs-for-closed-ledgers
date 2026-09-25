@@ -353,7 +353,8 @@ donde el valor es una respuesta del cable sin reescribir.
   (D-BC..D-BI): la clave entra por el keystore del SDK y el cli no la ve, y con `--publicar`
   la boca pide además a `zkssl_pledge` que escriba la marca bajo ese mismo latido; **el banco es
   `tools/banco_prenda.sh`** (§545), que lo reproduce en vivo contra un nodo real —dos positivos, un
-  rechazo en vivo y siete negativos— y de cuyas capturas saldrán los vectores.
+  rechazo en vivo y siete negativos—, y **el catálogo es `spec/vectors/prenda/`** (§546), la octava
+  familia del artefacto, COPIADA de esas capturas y no re-derivada.
 
 ## 3. El sobre — lo que el binario lee
 
@@ -771,11 +772,12 @@ no verifica lo pone WINTERFELL y no la casa, asi que el manifiesto pina solo el 
 los dos sobres, y su huella se declara en la cabecera del manifiesto.
 Las demostraciones en vivo con nodo son `tools/banco_apagado.sh`, `tools/banco_consumo.sh`
 (RFC-0006, E3), `tools/banco_dos_libros.sh` (E4a), `tools/banco_edad.sh` (E4b-3),
-`tools/banco_rechazo.sh` (RFC-0007 E5, cortes 3b y 4c) y `tools/banco_pendiente.sh` (RFC-0008 E4,
-lado del cobro): el tercero de ellos levanta DOS nodos con DOS claves y produce el hecho que E4
-existe para detectar, el quinto produce el sobre de rechazo sobre un libro real con el servidor
-PARADO, y el último siembra con el servidor PARADO y pide el sobre del cobro por la boca con el
-servidor VIVO.
+`tools/banco_rechazo.sh` (RFC-0007 E5, cortes 3b y 4c), `tools/banco_pendiente.sh` (RFC-0008 E4,
+lado del cobro), `tools/banco_pago.sh` (RFC-0008 E2) y `tools/banco_prenda.sh` (RFC-0008 E3): el
+tercero de ellos levanta DOS nodos con DOS claves y produce el hecho que E4 existe para detectar,
+el quinto produce el sobre de rechazo sobre un libro real con el servidor PARADO, el sexto siembra
+con el servidor PARADO y pide el sobre del cobro por la boca con el servidor VIVO, y el octavo es
+el único en el que la boca abre un keystore y el nodo ACEPTA la marca bajo el mismo latido.
 
 **Desde §499 cubre el sobre de COBRO PENDIENTE** (RFC-0008, E4 por el lado del cobro):
 `spec/vectors/pendiente/` trae DOS positivos REUNIDOS de las capturas de un nodo real —la boca del
@@ -787,7 +789,26 @@ entero, y se declara: el de la prueba que no verifica lo pone WINTERFELL y no la
 manifiesto pina sólo el prefijo `cobro:` que antepone el mando. La cabeza no viaja como vector: va
 entera dentro de los dos sobres; el aviso y la credencial del escenario tampoco —el mando no los
 lee— y el manifiesto los declara por su huella. Su productor es `tools/banco_pendiente.sh` (§498),
-que siembra con el nodo PARADO y pide con el nodo VIVO. El lado del pago llega con E2.
+que siembra con el nodo PARADO y pide con el nodo VIVO. **El lado del pago llegó en el §509** y su
+catálogo es `spec/vectors/pago/`; el párrafo propio que sus hermanas tienen aquí sigue sin
+escribirse, y se declara.
+
+**Desde §546 cubre el sobre de PRENDA** (RFC-0008, E3): `spec/vectors/prenda/` trae DOS positivos
+CAPTURADOS de un nodo real —la boca del prendador (`zk-ssl-cli prueba-prenda`, §543) los escribió
+abriendo el keystore del receptor (§544) contra la cabeza v5 de seq 5 que ese nodo firmó, y el
+segundo además publicó la marca con `zkssl_pledge` bajo el mismo latido— y SIETE negativos por UNA
+mutación cada uno, uno por regla producible. Los dos positivos afirman LO MISMO bajo la MISMA
+cabeza, así que el veredicto del mando no los distingue y el manifiesto los pina con el mismo
+texto: lo único que los separa son los bytes de la prueba. Y por eso esta familia se CAPTURA y no
+se re-deriva —desde el §538 el probador oculta, y dos pruebas del mismo enunciado no pesan lo
+mismo: cuatro medidas, 68.068 y 66.333 B, 67.145 y 66.398 B—, así que el manifiesto no pina ningún
+peso. Un texto de la familia no se pina entero, y se declara: el de la prueba que no verifica lo
+pone WINTERFELL y es el MISMO para los dos campos del enunciado, así que el manifiesto pina sólo
+el prefijo `prenda:` que antepone el mando. La cabeza no viaja como vector: va entera dentro de
+los dos sobres; los cinco ficheros de la siembra tampoco —el mando no los lee—, y el manifiesto
+declara por huella los cuatro deterministas, no el `keystore.json`, que lleva nonce. Su productor
+es `tools/banco_prenda.sh` (§545). Un VERDE aquí es MEDIA prenda (D-AS): la otra mitad es la marca
+bajo el `consRoot` de esa misma cabeza, y se pide con `zkssl_consumoPath`.
 
 ## 10. Historia
 
