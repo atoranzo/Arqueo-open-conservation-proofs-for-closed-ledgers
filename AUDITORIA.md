@@ -40306,3 +40306,58 @@ las paga ese sello, no este. Y el ATADO D sigue sin vigilar la cifra `N = 1.440`
 publicada en `spec/RPC.md:508` y en `doc/CONFIANZA_RESIDUAL.md:63` sin atado: es deuda del
 arco de H5b, no de este corte.
 
+## §556 — El recibo de recepcion gana expediente: RFC-0010, PROPUESTO (H5b)
+
+**Que.** Nace `spec/rfc/0010-el-recibo-de-recepcion.md`, PROPUESTO, con el molde del 0008:
+cabecera de seis campos, tabla de cinco etapas, la frontera con H4 y H5 mirada desde este lado,
+ocho decisiones D-A..D-H, lo descartado al medir, compatibilidad, seguridad y referencias. Con
+el, `spec/README.md` gana su fila y las CINCO cuentas de RFC de cuatro documentos vivos ganan
+el 0010. Siete ficheros y este asiento. Sin canon.
+
+**Por que el §555 iba delante.** Medido sobre una copia: con el operador viejo, `repartir()` no
+podia leer `0010` en una cuenta, asi que los cinco `AUSENTE` que el ATADO D levanta al nacer un
+RFC eran INALCANZABLES -- ninguna edicion de esos cuatro documentos los habria quitado. El §555
+ensancho el operador y le puso la puerta D.0. Este corte es lo primero que usa esos ojos.
+
+**Lo que el RFC decide, y todo es REVERSIBLE mientras sea PROPUESTO.** D-A: el objeto nuevo es el
+RECIBO DE RECEPCION y NO es el acuse -- hoy un acuse es la hoja de una transicion APLICADA, asi
+que la frase del hito es cierta por vacio: la rama del rechazo no cuelga de nada. D-B: la hoja,
+`recibo_digest(hash_de_la_prueba, era, n)`, con dominio septimo `RECEP_V1` y el molde de
+`acuse_digest`; el hash con longitud codificada, que el §116 midio y el §121 decidio. D-C: la
+cabeza v6 firma la pareja `(recepRoot, recepCount)` con el molde de la pareja de consumos del
+§414; el limite inferior no se firma, es el de la cabeza anterior. D-D: la era que el recibo
+declara es la PRIMERA cabeza que puede contenerlo, computada en la recepcion -- atarla a la que
+acabe conteniendolo pondria el valor de la evidencia en manos del acusado (§274). D-E: cuenta lo
+que el nodo llego a EVALUAR, la regla que `recepcion.rs` ya mide desde el §253. D-F: el sobre
+`tipo: "completitud"` y sus TRES veredictos. D-G: la grieta de las causas de rechazo sin prueba
+portable, con un cuarto estado que la nombra. D-H: el residuo -- la operacion para la que el nodo
+NUNCA firmo recibo, indetectable por construccion.
+
+**Lo que el tercer veredicto es y lo que no es, dicho aqui.** <<no resuelta en la ventana>> NO es
+prueba criptografica de ausencia: probar que algo no esta en ninguna de `N` epocas exigiria las
+`N` epocas enteras. Es evidencia OPONIBLE -- la promesa lleva la firma del acusado dentro y la
+ventana es aritmetica sobre dos cabezas firmadas. Se escribe asi para que nadie lo lea de mas.
+
+**Falsado, sobre una copia en `/tmp` y con el clon sin tocar.** Con el RFC y su fila pero SIN las
+cinco cuentas, `check_publicadas` da ROJO y nombra los cinco `AUSENTE` del 0010: las cinco
+ediciones son carga, no adorno. Con todo puesto, rc 0 y <<9 RFC con estado propio>>. Y ninguna
+linea del propio RFC se convierte en una cuenta: cero lineas suyas juntan tres numeros y una
+palabra de estado, medido sobre sus bytes.
+
+**Contadores.** 7 ficheros versionados mas el asiento; uno NACE. De las diez herramientas se
+mueven TRES lineas, ninguna con un numero tecleado: `check_publicadas` suma uno en su ATADO D
+-un RFC mas con estado propio- y uno en su ATADO C -un documento mas recorrido, porque el RFC
+nace `.md`-, las dos derivadas de su propia base; y `verificar_citas` gana los nombres de `.md`
+que el RFC cita y nadie citaba, el suyo incluido, juzgado por su INVARIANTE porque ese numero no
+es derivable de antemano. El resto de la salida, identica linea a linea. Ningun
+pin, ninguna cifra de tests, ningun metodo: los <<30 metodos>> y los <<313 ficheros>> de las
+portadas no se tocan, porque este corte no trae ni uno.
+
+**Lo que NO cierra.** El RFC es PROPUESTO: la regla 4 del PROCESO pide spec al dia, OpenRPC
+regenerado, vectores y suites verdes, y eso son las etapas E2..E5. La cabeza v6 no existe todavia
+y el sobre de completitud tampoco. Y sigue sin atado la cifra `N = 1.440`, publicada en
+`spec/RPC.md` y en `doc/CONFIANZA_RESIDUAL.md`: la paga E2. Ficha aparte, de otra familia:
+`tools/check_columns.py` se invoca sin argumentos en `canon.sh` y analiza el directorio raiz, de
+modo que su salida es <<0 circuitos>> en cada canon; la herramienta que nacio para cazar columnas
+declaradas y nunca rellenadas lleva corriendo sobre cero ficheros.
+
