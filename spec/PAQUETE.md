@@ -351,7 +351,9 @@ donde el valor es una respuesta del cable sin reescribir.
   `prueba_de_prenda` (§518), con el aviso, la clave y el camino que el nodo sirve del último
   latido; y desde el §543 lo escribe su prendador con `zk-ssl-cli prueba-prenda`
   (D-BC..D-BI): la clave entra por el keystore del SDK y el cli no la ve, y con `--publicar`
-  la boca pide además a `zkssl_pledge` que escriba la marca bajo ese mismo latido.
+  la boca pide además a `zkssl_pledge` que escriba la marca bajo ese mismo latido; **el banco es
+  `tools/banco_prenda.sh`** (§545), que lo reproduce en vivo contra un nodo real —dos positivos, un
+  rechazo en vivo y siete negativos— y de cuyas capturas saldrán los vectores.
 
 ## 3. El sobre — lo que el binario lee
 

@@ -39756,3 +39756,58 @@ del proyecto para material de clave y la leccion que `semilla.rs` cita del §199
 <<declarados>> publicados en tres documentos (1364, 1364 y 1349) llevan rancios frente a los 1587
 que deja este corte, que es el 5.A-102 y no un punto nuevo.
 
+## §545 — El banco de la prenda: `tools/banco_prenda.sh`, y es MEDIA prenda dicha en voz alta
+
+**Que.** Nace `tools/banco_prenda.sh`, el banco de E3 del RFC-0008. Demuestra la prenda de punta a
+punta y en vivo: siembra con los CINCO ficheros -el quinto, el keystore del receptor, es del
+§544-, nodo real que firma una cabeza v5, la boca del prendador abriendo su keystore y escribiendo
+el sobre, `zkssl_pledge` aceptando la marca bajo el MISMO latido, el nodo MUERTO y el kit en VERDE
+sin el. Dos positivos, UN rechazo en vivo -el barato, la frase que no abre el keystore, que se caza
+en el SDK sin tocar el nodo- y SIETE negativos, uno por regla. El camino entero se hizo A MANO una
+vez antes de escribirlo (PASTE-545-M), y de esa corrida salen sus cifras.
+
+**Media prenda, y se dice.** El banco comprueba que `zkssl_pledge` ACEPTA, no que la marca quede
+bajo el `consRoot`: ese par es D-AS y su banco es el del consumo (RFC-0006 E3). Un banco que
+probara las dos mitades estaria probando el consumo con el instrumento de la prenda, y la ley dice
+una primitiva por propiedad. El mando ya lo imprime en su veredicto; ahora lo dice tambien quien lo
+reproduce, en su cabecera y en su rotulo final.
+
+**Lo que este banco puede afirmar y ningun otro.** Que los dos sobres afirman el MISMO enunciado
+bajo la MISMA cabeza y sus pruebas NO son los mismos bytes -68.260 B y 66.441 B en el ensayo, y
+68.068 y 66.333 en el PASTE-545-M-: la ocultacion del §538, viva y medida desde fuera. De ahi sale
+la regla del catalogo que viene: un vector de prenda se CAPTURA, no se re-deriva corriendo el banco
+otra vez. Y que el keystore de la siembra lleva la clave de la credencial del receptor, cruzado
+ANTES de gastar una prueba: si algun dia hubiera dos productores de esa clave, el banco lo dice en
+la siembra. El falsador F1 del ensayo rompio justo eso -la siembra sellando el keystore del
+PAGADOR- y el banco lo nombro antes de arrancar el nodo.
+
+**Lo medido que fija su forma.** El latido va en 3 s como el del hermano y no en 45: la prueba
+tarda 1 s (PASTE-545-M), asi que la ventana sobra y la carrera se reintenta. El puerto es el 8617,
+derivado del censo de `tools/*.sh`. Los siete negativos NO son los del hermano: el enunciado de la
+prenda tiene DOS campos, asi que los que mienten importe o nacido no tienen gemelo y en su lugar
+van los que mienten receptor y marca; y los dos dan EXACTAMENTE el mismo texto de winterfell
+-`InconsistentOodConstraintEvaluations`-, por lo que `niega` exige el prefijo `prenda:` del mando y
+NUNCA el nombre del error de la libreria, y les pone ademas `exige una cabeza` como fragmento
+PROHIBIDO para que no puedan colarse cayendo por la regla de la version. Los otros cinco fragmentos
+estan leidos del fuente, y uno lleva prefijo propio: <<cabeza: falta signature>>.
+
+**Contadores.** TRES ficheros: nace `tools/banco_prenda.sh` +322 -0 y `spec/PAQUETE.md` gana UNA
+frase en su 2.10, +3 -1; `AUDITORIA.md` +55 -0 (este asiento): 39.758 -> 39.813. **Ningun pin se
+mueve**, ningun Cargo tocado, ninguna cifra publicada cambia: el corte no anade un `#[test]` ni un
+`.rs`, asi que `check_tests` se queda en 1587 -los <<instrumentos de medida>> que cuenta son
+`#[ignore]` marcados, no ficheros de `tools/`- y `check_modulos` no se mueve. Las diez
+herramientas, IDENTICAS byte a byte, y el corte NO corre el canon: no toca nada que el canon pine,
+como el §508. La puerta es el banco corriendo desde el arbol, en verde.
+
+**Ensayado 21/21** (ENSAYO-545-r2) sobre una maqueta con los bytes reales de `a770448`: el banco
+VERDE en 122 s con sus dos positivos, su rechazo en vivo, sus siete negativos y sus catorce
+capturas, y los DOS falsadores -que mutan el ARBOL y no el banco, porque un banco es su propia
+puerta- cayendo cada uno por su lado: la siembra y el veredicto. La r1 murio porque el ensayo
+exportaba `CARGO_TARGET_DIR` fuera de la maqueta y el banco buscaba sus binarios donde su hermano
+los busca: el instrumento de ensayo le habia cambiado el suelo a la herramienta que ensayaba.
+
+**Lo que NO cierra.** El catalogo `spec/vectors/prenda/` (S546), octava familia, que saldra de las
+capturas de este banco con `--guardar`; y la celda E3 del RFC-0008 con su giro a ACEPTADO (S547).
+Y sigue viva la deuda del lector del keystore del SDK: no nombra el fichero que no pudo abrir, y no
+comprueba sus permisos siendo material de clave.
+
