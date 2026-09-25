@@ -40217,3 +40217,41 @@ ingles— y, medido aqui, el 1364 lo publica tambien `PRINCIPIOS.md`:362: son TR
 dos como el punto dice. Ninguna herramienta los ata y antes hay que decidir que cuenta son. El
 5.A-149 tambien sigue abierto: una frase como <<unos quinientos tests>> se escapa igual.
 
+## §554 — La linea muerta del `.gitignore`: el lock se versiona y el fichero decia lo contrario
+
+**Que.** `.gitignore` listaba `Cargo.lock` mientras el repo lo versiona. No era contradictorio
+para git —no ignora lo que ya sigue, y el lock entro antes que la linea—, pero el fichero decia
+lo contrario de lo que pasa, y el dia que alguien borrara el lock y lo volviera a anadir, no
+entraria. Estaba en la cola como 5.A-411, nacido al montar el BLOQUE-550.
+
+**La clase, medida antes de tocar.** De los 720 ficheros versionados, `git check-ignore`
+`--no-index` sobre todos ellos caza EXACTAMENTE UNO, y es el lock por `.gitignore:10`. No habia
+mas letra muerta en el fichero: el punto era una linea y no una familia.
+
+**Lo que no mueve, y por que hubo que medirlo antes.** La PRECISION 616 dice que <<`git archive`
+se deja lo que el `.gitignore` excluye -- el `Cargo.lock`, versionado a la fuerza>>. Si eso
+fuera cierto hoy, este corte moveria la huella del tarball del artefacto, que el canon publica.
+Medido sobre `bfd46f9`: el archive lleva 809 entradas y de los 720 versionados NO FALTA
+NINGUNO, el lock incluido. La causa es estructural y no del arbol: `git archive` no mira el
+`.gitignore` —lo que gobierna es `export-ignore` en `.gitattributes`, y este repo no versiona
+ninguno—. Y `tools/artefacto.sh` tampoco usa `git archive`: empaqueta con
+`tar --sort=name --mtime=@0` UN fichero, el binario. La 616 queda FALSADA; retirarla o
+corregirla en su sitio es de otro corte, y aqui solo se declara con su medida.
+
+**Lo que entra.** Cae la linea y en su sitio queda el comentario que dice por que el lock SI se
+versiona y por que la regla era letra muerta, en la convencion del propio fichero, que razona
+cada una de sus reglas. Sin canon: el corte no toca un `.rs`, ni un pin, ni una cifra, ni nada
+que viaje en el tarball.
+
+**Falsado.** En un repositorio de mentira en `/tmp`, con la lista REAL de los 720 versionados:
+con el `.gitignore` de ANTES la puerta caza 1 y con el de DESPUES caza 0. Y sobre el arbol real,
+tras aplicar, esa misma puerta pasa de 1 a CERO y la lista de rutas de `git archive` es
+IDENTICA a la de antes, que es la prueba de que el tarball no se mueve.
+
+**Contadores.** 1 fichero, +5 -1. `.gitignore` 40 -> 44 lineas. Las ocho herramientas que el
+canon corre, IDENTICAS. Ningun pin, ninguna cifra publicada y ningun documento vivo: lo que
+habla de esto vive en `AUDITORIA.md`, que es registro y no se reescribe.
+
+**Lo que NO cierra.** La PRECISION 616, falsada aqui, sigue escrita en el traspaso. Y el
+`.gitignore` no tenia ancla en la seccion 7: nace con este corte.
+

@@ -7,7 +7,11 @@
 # la seccion de secretos de mas abajo queria evitar.
 **/target/
 **/*.rs.bk
-Cargo.lock
+# ⚠️ `Cargo.lock` SI se versiona: esto es una aplicacion, no una libreria, y el
+# artefacto reproducible depende de el (`tools/artefacto.sh`). La linea que lo
+# ignoraba estuvo aqui desde antes de que el repo lo siguiera, y era LETRA MUERTA:
+# git no ignora lo que ya sigue, asi que el lock viajaba igual. Medido en el 5.A-411:
+# de 720 versionados era el UNICO que una regla de este fichero cazaba.
 # Ledgers de prueba
 /ledger*
 *.bin
