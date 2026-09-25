@@ -39884,3 +39884,51 @@ dos filas de `spec/README.md` con dos celdas en vez de tres (5.A-378): la que na
 tres, la del pago sigue con dos. Y las dos deudas del lector del keystore del SDK (5.A-403 y
 5.A-404), que este catalogo roza al no poder pinar el modo y no paga.
 
+## §547 — El RFC-0008 pasa a ACEPTADO: la celda de E3, y H5 cerrado por este lado
+
+**Que.** El §546 dio a la prenda su catalogo, que era lo ultimo que la regla 4 del PROCESO pedia.
+Este corte lo escribe: la celda de E3 deja de decir <<propuesta>> y nombra su arco; la cola de la
+celda de E4, que prometia <<lo que falta para ACEPTADO es la regla 4 medida letra a letra>>, dice
+que la saldo el §546; el documento gira a **ACEPTADO**; y los CINCO sitios que publicaban su
+estado -- las dos portadas, las dos lenguas del RESUMEN bilingue y el ejecutivo -- pasan el 0008
+al lado de los aceptados, donde solo queda propuesto el 0005. Es prosa: ni un `.rs`, ningun pin,
+ninguna cifra de tests, y por eso sin canon, con las diez herramientas por delta.
+
+**La regla 4, medida letra a letra y no supuesta.** La spec al dia: `PAQUETE.md` 2.8, 2.9 y 2.10
+con sus tres sobres, y la seccion 9 con el parrafo de cada familia (el de la prenda lo escribio el
+§546). Los vectores, nuevos bajo `zkssl/0.4`: `pendiente/`, `pago/` y `prenda/`, nueve cada uno.
+Las suites verdes: el canon del §546 salio VERDE en 270 s y corrio las ocho familias por el arnes,
+tambien desde dentro del tarball. Y el OpenRPC: **no se regenera, y se dice por que** -- ningun
+metodo se ha movido desde el §540, y el test del cable lo ata a la tabla desde el §259, asi que
+regenerarlo no cambiaria un byte. Un requisito que se cumple por inaccion se declara; no se
+presume.
+
+**La celda de E3 cuenta tambien su parada.** Entre el §521 y el §538 la etapa estuvo PARADA por el
+5.A-360: la prueba de la prenda publicaba la clave de gasto del prendador 42 veces, porque
+winterfell 0.13 no ocultaba el testigo. La reabrio el RFC-0009 E3b-2 (§538), que enciende la
+ocultacion. Una celda que contara el arco sin la parada diria que todo fue de frente, y no lo fue.
+
+**Los autores se fechan por asientos, no por sesion, y es una renuncia declarada.** El campo
+listaba las sesiones 144..155. El arco de E3 no tiene sus numeros de sesion en el arbol: ningun
+asiento del §513 al §546 los nombra -se comprobo uno a uno-, y el TRASPASO-181 solo mapea cuatro
+de los catorce. Escribirlos de memoria seria teclear un numero en vez de derivarlo, que es la
+clase que mas rojos ha costado aqui; asi que el campo gana el arco por sus asientos y lo dice. Si
+el autor da los numeros, se escriben y esta frase se retira.
+
+**La fila de `spec/README.md` gana su tercera celda.** Tenia DOS donde sus hermanas tienen tres --
+la de cuando leerlo --, y es la mitad del 5.A-378. Este corte reescribe esa fila entera para girar
+su estado, asi que la deja completa; la otra mitad, la fila de `vectors/pago/`, nadie la toca y
+sigue en la cola.
+
+**Contadores.** SIETE ficheros, ninguno nace: el RFC, `spec/README.md`, las dos portadas,
+`RESUMEN_BILINGUE.md` -sus dos lenguas-, `RESUMEN_EJECUTIVO.md` y el asiento. Ningun pin, ningun
+Cargo, ninguna cifra de tests: las diez herramientas, IDENTICAS byte a byte. Sin canon, como el
+§500 y el §539, que son sus moldes.
+
+**Lo que NO cierra.** H5 queda cerrado por el lado del RFC-0008; H5b no ha empezado. Sigue abierto
+el arreglo B (5.A-272), que E3 esquivo y no resolvio. Sigue sin guardian el estado de un RFC:
+`tools/` no mira si lo que un documento publica del 0008 es lo que el 0008 dice de si mismo, y
+este giro lo pago censando la prosa a mano. Y siguen las dos deudas del lector del keystore del
+SDK (5.A-403 y 5.A-404), el parrafo propio del pago en la seccion 9 de `PAQUETE.md`, y la fila de
+`vectors/pago/` con dos celdas.
+
