@@ -129,9 +129,13 @@ ESTADOS = {
 CARDINALES = ("README.md", "README_EN.md", "RESUMEN_BILINGUE.md", "RESUMEN_EJECUTIVO.md")
 FILA_RFC = "spec/README.md"
 UMBRAL_CARDINAL = 3   # tres numeros en una linea; con menos es una mencion, no una cuenta
-NUM_RFC = re.compile(r"\b(000\d)\b")
+# El consumidor de un numero se deriva de su PRODUCTOR, que es `rfcs()`: cuatro digitos.
+# `000\d` se quedo en el 0009 -- el techo que el S555 midio -- y `\d{4}` leeria un ano o
+# una posicion de fichero como RFC. `0\d{3}` cubre la numeracion correlativa entera sin
+# alcanzar fuera de ella, y deja viva la regla SOBRA. La puerta D.0 vigila el techo.
+NUM_RFC = re.compile(r"\b(0\d{3})\b")
 PAL_ESTADO = re.compile(r"\b(aceptad[oa]s?|propuest[oa]s?|accepted|proposed)\b", re.I)
-RANGO_RFC = re.compile(r"000\d\s*[-\u2013]\s*000\d")
+RANGO_RFC = re.compile(r"0\d{3}\s*[-\u2013]\s*0\d{3}")
 
 
 
@@ -267,6 +271,15 @@ def atado_d():
                            "vive en spec/rfc/PROCESO.md" % estados[0]))
         else:
             esperado[num] = estados[0]
+
+    # D.0 - el OPERADOR contra el PRODUCTOR. `rfcs()` lee el numero del NOMBRE del fichero
+    # con cuatro digitos; `repartir()` lo lee de una linea de prosa con NUM_RFC. Si el
+    # segundo no sabe leer lo que el primero produce, el gate se queda CIEGO con ese RFC y
+    # no lo dice: paso con el 0010 y `000\d` (S555). Un techo callado, nunca mas.
+    for num, rel, _ in lista:
+        if not NUM_RFC.fullmatch(num):
+            fallos.append((rel, 0, "OPERADOR", "NUM_RFC no sabe leer el RFC-%s: mientras "
+                           "no lo lea, ninguna cuenta puede citarlo" % num))
 
     # D.1 - la FILA de spec/README.md: una por RFC, y con su token de estado
     with open(os.path.join(RAIZ, FILA_RFC), encoding="utf-8") as fh:

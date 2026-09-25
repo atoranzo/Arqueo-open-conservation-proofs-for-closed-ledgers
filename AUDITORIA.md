@@ -40255,3 +40255,54 @@ habla de esto vive en `AUDITORIA.md`, que es registro y no se reescribe.
 **Lo que NO cierra.** La PRECISION 616, falsada aqui, sigue escrita en el traspaso. Y el
 `.gitignore` no tenia ancla en la seccion 7: nace con este corte.
 
+## §555 — El operador del ATADO D: el consumidor de un numero se deriva de su productor
+
+**Que.** `tools/check_publicadas.py` cambia el operador con el que el ATADO D (§549) lee un
+numero de RFC dentro de una CUENTA, y gana una puerta que cruza ese operador contra el
+productor de los numeros. Un fichero y este asiento. Sin canon.
+
+**El hueco, medido.** El ATADO D tiene DOS reglas para el mismo objeto dentro del mismo
+fichero: `rfcs()` saca el numero del NOMBRE con `^(\d{4})-.*\.md$` y `repartir()` lo saca de
+una linea de prosa con `NUM_RFC = \b(000\d)\b`. El segundo se para en el 0009. Medido sobre
+una copia de `17fcd60` con un `spec/rfc/0010-*.md` de mentira: el directorio lo VE -- de 8 RFC
+con estado propio pasa a 9 -- y las cuentas NO pueden citarlo jamas, porque `000\d` no casa
+`0010`: lo ciego no es el gate, es `repartir()`. El gate pide seis cosas del RFC nuevo -- la
+fila de `spec/README.md` y su presencia en
+las cinco cuentas de `README.md:186`, `README_EN.md:195`, `RESUMEN_BILINGUE.md:48` y `:101` y
+`RESUMEN_EJECUTIVO.md:63` -- y cinco de ellas eran inalcanzables: seguirian en ROJO aunque los
+cuatro documentos dijeran lo correcto.
+
+**Lo que entra, y por que ese operador.** `NUM_RFC` y `RANGO_RFC` pasan a `0\d{3}`. Los cuatro
+candidatos se corrieron contra el universo real del D.2 -- 68 documentos -- y dieron lo MISMO:
+5 cuentas, 8 tokens, cero impropios. El delta de hoy no discrimina, asi que el operador se
+deriva del invariante: `\d{4}` leeria un ano o una posicion de fichero como numero de RFC y
+daria `SOBRA` sobre prosa sana -- un gate mas estricto que su invariante (§440-B, la leccion de
+la 117) --; `00\d\d` repite el techo un orden mas tarde; `0\d{3}` cubre la numeracion
+correlativa entera del PROCESO sin alcanzar fuera de ella. Y atar el operador al directorio se
+descarta con su razon: mataria la regla `SOBRA`, que existe para cazar una cuenta que cita un
+RFC inexistente.
+
+**La puerta D.0, que es el arreglo de verdad.** La regex sola no cierra la clase: cualquier
+techo futuro volveria a quedarse callado. Entra una puerta que cruza el CONSUMIDOR contra el
+PRODUCTOR -- todo numero que `rfcs()` devuelve tiene que casar `NUM_RFC` -- con ROJO NOMBRADO.
+El dia que el directorio produzca un numero que el operador no lea, el gate lo dice en vez de
+ignorarlo. Es la hermana de la §771: una herramienta que vigila el arbol y no se vigilaba a si
+misma.
+
+**Falsado.** Sobre una copia en `/tmp`, el clon sin tocar. El CONTROL: con el POST y el arbol
+tal cual, la salida es IDENTICA a la del PRE, linea a linea. El TECHO: con un 0010 de mentira,
+su fila puesta y las cinco cuentas citandolo, el PRE deja cinco rojos `AUSENTE` que ninguna
+edicion puede quitar -- `repartir()` no lee `0010` -- y el POST los quita todos. La PUERTA: con
+un `1000-*.md` de mentira -- cuatro digitos que el productor acepta y el operador no lee -- el
+POST da `OPERADOR` con su nombre, que es la prueba de vida de D.0.
+
+**Contadores.** 1 fichero versionado mas el asiento. La salida de la herramienta sobre el arbol
+de hoy, IDENTICA linea a linea: 8 RFC con estado propio, 5 cuentas en 4 sitios. Las otras nueve
+herramientas del canon, identicas. Ningun pin, ninguna cifra publicada, ningun documento vivo.
+
+**Lo que NO cierra.** El RFC-0010 no existe todavia: este corte solo deja el gate en
+condiciones de verlo, y el 0010 es el §556. Las cinco cuentas y la fila de `spec/README.md`
+las paga ese sello, no este. Y el ATADO D sigue sin vigilar la cifra `N = 1.440`, que vive
+publicada en `spec/RPC.md:508` y en `doc/CONFIANZA_RESIDUAL.md:63` sin atado: es deuda del
+arco de H5b, no de este corte.
+
