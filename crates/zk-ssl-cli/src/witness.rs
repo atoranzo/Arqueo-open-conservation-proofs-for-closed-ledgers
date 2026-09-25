@@ -925,6 +925,28 @@ fn recomponer(v: &Value, firmado: &[u8; 32]) -> Result<(), String> {
             leer_q(&v["nextIndex"])?,
             leer_q(&v["totalSupply"])?,
         ),
+        // RFC-0010 E2 (§558): la pareja de recepcion. El nodo sigue emitiendo v5 hasta
+        // E2c; el brazo lo exige el compilador, y el testigo ya la acepta.
+        VersionCabeza::V6 => zk_ssl_verify::epoch_digest_v6(
+            seq,
+            accounts,
+            pending,
+            frozen,
+            chain,
+            acuses,
+            n,
+            dg!("mmrRoot"),
+            leer_q(&v["mmrSize"])?,
+            dg!("consRoot"),
+            leer_q(&v["consCount"])?,
+            dg!("paramsDigest"),
+            dg!("pmetaRoot"),
+            leer_q(&v["nextPending"])?,
+            leer_q(&v["nextIndex"])?,
+            leer_q(&v["totalSupply"])?,
+            dg!("recepRoot"),
+            leer_q(&v["recepCount"])?,
+        ),
         VersionCabeza::V2 => {
             zk_ssl_verify::epoch_digest_v2(seq, accounts, pending, frozen, chain, acuses, n)
         }
@@ -4866,7 +4888,7 @@ mod tests {
             c["formatVersion"] = json!(v);
             let e = recomponer(&c, &[0x11u8; 32]).expect_err(v);
             assert!(e.contains("formatVersion"), "{v}: {e}");
-            assert!(e.contains("v2, v3, v4 o v5"), "{v}: {e}");
+            assert!(e.contains(&VersionCabeza::texto()), "{v}: {e}");
         }
     }
 
@@ -4880,7 +4902,10 @@ mod tests {
             let mut c = cabeza_firmada_completa();
             c["formatVersion"] = json!(v);
             let e = verificar(&c).expect_err(v);
-            assert!(e.contains("formatVersion") && e.contains("v2, v3, v4 o v5"), "{v}: {e}");
+            assert!(
+                e.contains("formatVersion") && e.contains(&VersionCabeza::texto()),
+                "{v}: {e}"
+            );
         }
         let e = verificar(&cabeza_firmada_completa()).expect_err("firma de mentira");
         assert!(!e.contains("formatVersion"), "{e}");

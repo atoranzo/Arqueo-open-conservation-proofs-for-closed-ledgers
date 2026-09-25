@@ -1118,7 +1118,7 @@ impl SignedEpochHeadDto {
             _ => (self.cons_root, self.cons_count),
         };
         let exige_familia_v5 = match version {
-            Some(zk_ssl_verify::VersionCabeza::V5) => true,
+            Some(zk_ssl_verify::VersionCabeza::V5 | zk_ssl_verify::VersionCabeza::V6) => true,
             Some(
                 zk_ssl_verify::VersionCabeza::V2
                 | zk_ssl_verify::VersionCabeza::V3

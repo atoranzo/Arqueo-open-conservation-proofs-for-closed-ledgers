@@ -60,7 +60,7 @@ use winter_math::FieldElement;
 use zk_ssl_air::banda::{verificar as verificar_banda, BandaPublicInputs};
 use zk_ssl_hash::{
     digest_from_bytes, epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5,
-    params_digest, Digest,
+    epoch_digest_v6, params_digest, Digest,
 };
 
 /// Punto unico de forma de error del binario (hoy identidad; el dia que
@@ -207,13 +207,13 @@ fn correr(ruta: &str) -> Result<(), String> {
     //     abajo elegia por un `Option`, y una v4 habria pasado por v3 en silencio).
     let mmr = match version {
         VersionCabeza::V2 => None,
-        VersionCabeza::V3 | VersionCabeza::V4 | VersionCabeza::V5 => {
+        VersionCabeza::V3 | VersionCabeza::V4 | VersionCabeza::V5 | VersionCabeza::V6 => {
             Some((digest_de(c, "mmrRoot")?, u64_de(c, "mmrSize")?))
         }
     };
     let cons = match version {
         VersionCabeza::V2 | VersionCabeza::V3 => None,
-        VersionCabeza::V4 | VersionCabeza::V5 => {
+        VersionCabeza::V4 | VersionCabeza::V5 | VersionCabeza::V6 => {
             Some((digest_de(c, "consRoot")?, u64_de(c, "consCount")?))
         }
     };
@@ -221,19 +221,29 @@ fn correr(ruta: &str) -> Result<(), String> {
     // igual que exigio la pareja de consumos en el §414.
     let estado = match version {
         VersionCabeza::V2 | VersionCabeza::V3 | VersionCabeza::V4 => None,
-        VersionCabeza::V5 => Some(familia_v5(c)?),
+        VersionCabeza::V5 | VersionCabeza::V6 => Some(familia_v5(c)?),
     };
-    let compuesto = match (mmr, cons, estado) {
-        (None, _, _) => epoch_digest_v2(seq, accounts, pending, frozen, chain, acuses_root, n),
-        (Some((cima, t)), None, _) => {
+    // RFC-0010 E2 (§558): la pareja de recepcion, con el molde de la de consumos.
+    let recep = match version {
+        VersionCabeza::V2 | VersionCabeza::V3 | VersionCabeza::V4 | VersionCabeza::V5 => None,
+        VersionCabeza::V6 => Some((digest_de(c, "recepRoot")?, u64_de(c, "recepCount")?)),
+    };
+    let compuesto = match (mmr, cons, estado, recep) {
+        (None, _, _, _) => epoch_digest_v2(seq, accounts, pending, frozen, chain, acuses_root, n),
+        (Some((cima, t)), None, _, _) => {
             epoch_digest_v3(seq, accounts, pending, frozen, chain, acuses_root, n, cima, t)
         }
-        (Some((cima, t)), Some((raiz, k)), None) => epoch_digest_v4(
+        (Some((cima, t)), Some((raiz, k)), None, _) => epoch_digest_v4(
             seq, accounts, pending, frozen, chain, acuses_root, n, cima, t, raiz, k,
         ),
-        (Some((cima, t)), Some((raiz, k)), Some(f)) => epoch_digest_v5(
+        (Some((cima, t)), Some((raiz, k)), Some(f), None) => epoch_digest_v5(
             seq, accounts, pending, frozen, chain, acuses_root, n, cima, t, raiz, k,
             f.params_digest, f.pmeta_root, f.next_pending, f.next_index, f.total_supply,
+        ),
+        (Some((cima, t)), Some((raiz, k)), Some(f), Some((rr, rc))) => epoch_digest_v6(
+            seq, accounts, pending, frozen, chain, acuses_root, n, cima, t, raiz, k,
+            f.params_digest, f.pmeta_root, f.next_pending, f.next_index, f.total_supply,
+            rr, rc,
         ),
     };
     if compuesto != epoch_digest {
@@ -491,6 +501,29 @@ fn cabeza_v3_verificada(
                 f.total_supply,
             )
         }
+        Ok(VersionCabeza::V6) => {
+            let f = familia_v5(c)?;
+            epoch_digest_v6(
+                seq,
+                digest_de(c, "accountsRoot")?,
+                digest_de(c, "pendingRoot")?,
+                digest_de(c, "frozenRoot")?,
+                digest_de(c, "chainDigest")?,
+                digest_de(c, "acusesRoot")?,
+                u64_de(c, "n")?,
+                digest_de(c, "mmrRoot")?,
+                u64_de(c, "mmrSize")?,
+                digest_de(c, "consRoot")?,
+                u64_de(c, "consCount")?,
+                f.params_digest,
+                f.pmeta_root,
+                f.next_pending,
+                f.next_index,
+                f.total_supply,
+                digest_de(c, "recepRoot")?,
+                u64_de(c, "recepCount")?,
+            )
+        }
         Ok(VersionCabeza::V2) | Err(_) => {
             return Err(err(format!(
                 "{cual}: formatVersion {version} — la extension exige cabezas {}: \
@@ -593,7 +626,10 @@ fn verificar_consumo(p: &serde_json::Value) -> Result<(), String> {
         (Some(v), Some(n)) => (v, n),
         _ => return Err(exige_consumos("consumo")),
     };
-    println!("2/5 misma publicKey y las dos cabezas llevan consRoot (v4 o v5) a los dos lados");
+    println!(
+        "2/5 misma publicKey y las dos cabezas llevan consRoot ({}) a los dos lados",
+        VersionCabeza::texto_con_consumos()
+    );
     if !zk_ssl_verify::mmr::verificar_consistencia(cima_v, t_v, cima_n, t_n, &camino_mmr(p)?) {
         return Err(err(format!(
             "la nueva (t={t_n}) NO extiende a la vieja (t={t_v}): historia \
@@ -650,7 +686,7 @@ fn claves_distintas() -> String {
 
 /// UN productor del texto de la version del sobre, con su SUJETO como hueco y el
 /// conjunto DERIVADO de `VersionCabeza::texto_con_consumos()` (RFC-0007 E1a, §451):
-/// <<v4 o v5>>. Los fragmentos que los manifiestos pinan (`exige cabezas v4`) siguen
+/// <<v4, v5 o v6>>. Los fragmentos que los manifiestos pinan (`exige cabezas v4`) siguen
 /// dentro del texto, byte a byte, asi que ningun vector del catalogo se mueve: lo
 /// gatea el arnes en cada canon.
 fn exige_consumos(cual: &str) -> String {
@@ -786,7 +822,10 @@ fn verificar_conflicto(p: &serde_json::Value) -> Result<(), String> {
             "las cabezas llevan la MISMA clave: un conflicto es entre DOS firmantes".into(),
         ));
     }
-    println!("2/4 las dos cabezas son de operadores DISTINTOS, y las dos llevan consRoot (v4 o v5)");
+    println!(
+        "2/4 las dos cabezas son de operadores DISTINTOS, y las dos llevan consRoot ({})",
+        VersionCabeza::texto_con_consumos()
+    );
     for (i, libro) in libros.iter().enumerate() {
         let cual = format!("libro[{i}]");
         let (herm, der) = camino_de(libro, "presencia", &cual)?;
@@ -1246,10 +1285,11 @@ fn verificar_edad(p: &serde_json::Value) -> Result<(), String> {
     )?;
     let c = p.get("cabeza").ok_or_else(|| err("falta cabeza".into()))?;
     let version = u64_de(c, "formatVersion")?;
-    if !matches!(VersionCabeza::try_from(version), Ok(VersionCabeza::V5)) {
+    if !VersionCabeza::try_from(version).map_or(false, VersionCabeza::lleva_parametros) {
         return Err(err(format!(
-            "formatVersion {version}: la prueba de edad exige una cabeza v5, la unica que firma \
-             pmetaRoot y nextPending"
+            "formatVersion {version}: la prueba de edad exige una cabeza {}, las que firman \
+             pmetaRoot y nextPending",
+            VersionCabeza::texto_con_parametros()
         )));
     }
     let _ = cabeza_v3_verificada(c, "cabeza")?;
@@ -1299,10 +1339,11 @@ fn verificar_cobro_pendiente(p: &serde_json::Value) -> Result<(), String> {
     )?;
     let c = p.get("cabeza").ok_or_else(|| err("falta cabeza".into()))?;
     let version = u64_de(c, "formatVersion")?;
-    if !matches!(VersionCabeza::try_from(version), Ok(VersionCabeza::V5)) {
+    if !VersionCabeza::try_from(version).map_or(false, VersionCabeza::lleva_parametros) {
         return Err(err(format!(
-            "formatVersion {version}: el cobro pendiente exige una cabeza v5, la unica que firma \
-             pmetaRoot"
+            "formatVersion {version}: el cobro pendiente exige una cabeza {}, las que firman \
+             pmetaRoot",
+            VersionCabeza::texto_con_parametros()
         )));
     }
     let _ = cabeza_v3_verificada(c, "cabeza")?;
@@ -1348,10 +1389,11 @@ fn verificar_pago_en_curso(p: &serde_json::Value) -> Result<(), String> {
     )?;
     let c = p.get("cabeza").ok_or_else(|| err("falta cabeza".into()))?;
     let version = u64_de(c, "formatVersion")?;
-    if !matches!(VersionCabeza::try_from(version), Ok(VersionCabeza::V5)) {
+    if !VersionCabeza::try_from(version).map_or(false, VersionCabeza::lleva_parametros) {
         return Err(err(format!(
-            "formatVersion {version}: el pago en curso exige una cabeza v5, la unica que firma \
-             pmetaRoot"
+            "formatVersion {version}: el pago en curso exige una cabeza {}, las que firman \
+             pmetaRoot",
+            VersionCabeza::texto_con_parametros()
         )));
     }
     let _ = cabeza_v3_verificada(c, "cabeza")?;
@@ -1410,11 +1452,12 @@ fn verificar_prenda(p: &serde_json::Value) -> Result<(), String> {
     )?;
     let c = p.get("cabeza").ok_or_else(|| err("falta cabeza".into()))?;
     let version = u64_de(c, "formatVersion")?;
-    if !matches!(VersionCabeza::try_from(version), Ok(VersionCabeza::V5)) {
+    if !VersionCabeza::try_from(version).map_or(false, VersionCabeza::lleva_parametros) {
         return Err(err(format!(
-            "formatVersion {version}: la prenda exige una cabeza v5 - no por la meta, que no \
+            "formatVersion {version}: la prenda exige una cabeza {} - no por la meta, que no \
              lleva (D-AY), sino porque es la que el nodo sirve y contra la que juzga \
-             zkssl_pledge"
+             zkssl_pledge",
+            VersionCabeza::texto_con_parametros()
         )));
     }
     let _ = cabeza_v3_verificada(c, "cabeza")?;
@@ -1441,9 +1484,12 @@ fn parametros_comprometidos(
     c: &serde_json::Value,
     causa: &str,
 ) -> Result<(u64, u64, u64), String> {
-    if VersionCabeza::try_from(u64_de(c, "formatVersion")?) != Ok(VersionCabeza::V5) {
+    if !VersionCabeza::try_from(u64_de(c, "formatVersion")?)
+        .map_or(false, VersionCabeza::lleva_parametros)
+    {
         return Err(err(format!(
-            "la causa {causa} exige una cabeza v5: sus parametros viajan en paramsDigest"
+            "la causa {causa} exige una cabeza {}: sus parametros viajan en paramsDigest",
+            VersionCabeza::texto_con_parametros()
         )));
     }
     let f = familia_v5(c)?;

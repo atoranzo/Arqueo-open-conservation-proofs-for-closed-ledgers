@@ -114,7 +114,9 @@ pub mod congelados;
 /// rechazo `AccountNotFound` dentro de un sobre de evidencia.
 pub mod cuentas;
 
-pub use zk_ssl_hash::{epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5};
+pub use zk_ssl_hash::{
+    epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5, epoch_digest_v6,
+};
 
 // ⚠️ §279 · **La superficie CRECE otra vez**, y por la misma razon que en
 // §275: el modulo es PRIVADO, asi que un `pub` que no aparezca aqui no
@@ -169,17 +171,25 @@ pub enum VersionCabeza {
     /// RFC-0007 E1 (§451): los siete parametros en un digest, la raiz de meta, las dos
     /// marcas de agua y el suministro entran en el digest.
     V5 = 5,
+    /// RFC-0010 E2 (§558): la raiz y la cuenta de recepcion entran en el digest,
+    /// con el molde exacto de la pareja de consumos que estreno la v4 (D-C).
+    V6 = 6,
 }
 
 impl VersionCabeza {
     /// Todas, en orden: el conjunto que se enumera y del que se deriva el texto.
-    pub const TODAS: [VersionCabeza; 4] =
-        [VersionCabeza::V2, VersionCabeza::V3, VersionCabeza::V4, VersionCabeza::V5];
+    pub const TODAS: [VersionCabeza; 5] = [
+        VersionCabeza::V2,
+        VersionCabeza::V3,
+        VersionCabeza::V4,
+        VersionCabeza::V5,
+        VersionCabeza::V6,
+    ];
     /// El byte que entra en el preambulo.
     pub fn as_u8(self) -> u8 {
         self as u8
     }
-    /// `v2, v3, v4 o v5`, DERIVADO de [`Self::TODAS`]: el texto que los rechazos citan.
+    /// `v2, v3, v4, v5 o v6`, DERIVADO de [`Self::TODAS`]: el texto que los rechazos citan.
     pub fn texto() -> String {
         Self::texto_de(Self::TODAS.iter().copied())
     }
@@ -189,7 +199,7 @@ impl VersionCabeza {
     pub fn lleva_mmr(self) -> bool {
         !matches!(self, VersionCabeza::V2)
     }
-    /// `v3, v4 o v5`: las versiones con pareja del MMR, DERIVADO de [`Self::TODAS`].
+    /// `v3, v4, v5 o v6`: las versiones con pareja del MMR, DERIVADO de [`Self::TODAS`].
     pub fn texto_con_mmr() -> String {
         Self::texto_de(Self::TODAS.iter().copied().filter(|v| v.lleva_mmr()))
     }
@@ -199,9 +209,30 @@ impl VersionCabeza {
     pub fn lleva_consumos(self) -> bool {
         !matches!(self, VersionCabeza::V2 | VersionCabeza::V3)
     }
-    /// `v4 o v5`: las versiones con pareja de consumos, DERIVADO de [`Self::TODAS`].
+    /// `v4, v5 o v6`: las versiones con pareja de consumos, DERIVADO de [`Self::TODAS`].
     pub fn texto_con_consumos() -> String {
         Self::texto_de(Self::TODAS.iter().copied().filter(|v| v.lleva_consumos()))
+    }
+    /// RFC-0010 E2 (§558): si la composicion lleva la pareja de recepcion
+    /// (`recepRoot`, `recepCount`). Mismo molde que [`Self::lleva_consumos`].
+    pub fn lleva_recepcion(self) -> bool {
+        matches!(self, VersionCabeza::V6)
+    }
+    /// `v6`: las versiones con pareja de recepcion, DERIVADO de [`Self::TODAS`].
+    pub fn texto_con_recepcion() -> String {
+        Self::texto_de(Self::TODAS.iter().copied().filter(|v| v.lleva_recepcion()))
+    }
+    /// RFC-0010 E2 (§558): si la composicion lleva la FAMILIA del estado comprometido
+    /// que estreno la v5 (`paramsDigest`, `pmetaRoot`, las dos marcas y el suministro).
+    /// Los sobres que la exigen preguntaban <<es exactamente V5?>>, y una v6 -que la
+    /// lleva entera, porque `epoch_digest_v6` compone sobre la v5- se habria quedado
+    /// fuera en silencio: la misma ceguera que la v4 tuvo con `lleva_mmr`.
+    pub fn lleva_parametros(self) -> bool {
+        !matches!(self, VersionCabeza::V2 | VersionCabeza::V3 | VersionCabeza::V4)
+    }
+    /// `v5 o v6`: las versiones con la familia del estado, DERIVADO de [`Self::TODAS`].
+    pub fn texto_con_parametros() -> String {
+        Self::texto_de(Self::TODAS.iter().copied().filter(|v| v.lleva_parametros()))
     }
     fn texto_de(vs: impl Iterator<Item = VersionCabeza>) -> String {
         let vs: Vec<String> = vs.map(|v| format!("v{}", v.as_u8())).collect();
@@ -1228,31 +1259,47 @@ mod tests {
     }
 
     #[test]
-    fn el_conjunto_es_exactamente_v2_v3_v4_y_v5_y_su_texto_se_deriva() {
-        assert_eq!(crate::VersionCabeza::TODAS.map(|v| v.as_u8()), [2, 3, 4, 5]);
-        assert_eq!(crate::VersionCabeza::texto(), "v2, v3, v4 o v5");
+    fn el_conjunto_es_exactamente_v2_v3_v4_v5_y_v6_y_su_texto_se_deriva() {
+        assert_eq!(crate::VersionCabeza::TODAS.map(|v| v.as_u8()), [2, 3, 4, 5, 6]);
+        assert_eq!(crate::VersionCabeza::texto(), "v2, v3, v4, v5 o v6");
     }
 
-    /// RFC-0006 E2a (§414): la pareja del MMR la llevan v3 y v4 -y desde §451 v5-, y el
-    /// texto que la extension y el canal de la historia citan se DERIVA de aqui.
+    /// RFC-0006 E2a (§414): la pareja del MMR la llevan v3 y v4 -y desde §451 v5, y
+    /// desde §558 v6-, y el texto que la extension y el canal de la historia citan se
+    /// DERIVA de aqui.
     #[test]
-    fn la_pareja_del_mmr_la_llevan_v3_v4_y_v5() {
+    fn la_pareja_del_mmr_la_llevan_v3_v4_v5_y_v6() {
         assert!(!crate::VersionCabeza::V2.lleva_mmr());
         assert!(crate::VersionCabeza::V3.lleva_mmr());
         assert!(crate::VersionCabeza::V4.lleva_mmr());
         assert!(crate::VersionCabeza::V5.lleva_mmr());
-        assert_eq!(crate::VersionCabeza::texto_con_mmr(), "v3, v4 o v5");
+        assert!(crate::VersionCabeza::V6.lleva_mmr());
+        assert_eq!(crate::VersionCabeza::texto_con_mmr(), "v3, v4, v5 o v6");
     }
 
-    /// RFC-0007 E1a (§451): la pareja de consumos la llevan v4 y v5, y el texto que el
-    /// sobre de consumo y el de conflicto citan se DERIVA de aqui.
+    /// RFC-0007 E1a (§451): la pareja de consumos la llevan v4 y v5 -y desde §558 v6-,
+    /// y el texto que el sobre de consumo y el de conflicto citan se DERIVA de aqui.
     #[test]
-    fn la_pareja_de_consumos_la_llevan_v4_y_v5() {
+    fn la_pareja_de_consumos_la_llevan_v4_v5_y_v6() {
         assert!(!crate::VersionCabeza::V2.lleva_consumos());
         assert!(!crate::VersionCabeza::V3.lleva_consumos());
         assert!(crate::VersionCabeza::V4.lleva_consumos());
         assert!(crate::VersionCabeza::V5.lleva_consumos());
-        assert_eq!(crate::VersionCabeza::texto_con_consumos(), "v4 o v5");
+        assert!(crate::VersionCabeza::V6.lleva_consumos());
+        assert_eq!(crate::VersionCabeza::texto_con_consumos(), "v4, v5 o v6");
+    }
+
+    /// RFC-0010 E2 (§558): la pareja de recepcion la lleva SOLO la v6, y la familia del
+    /// estado comprometido la llevan v5 y v6. Los dos textos se DERIVAN del conjunto.
+    #[test]
+    fn la_pareja_de_recepcion_la_lleva_v6_y_la_familia_la_llevan_v5_y_v6() {
+        assert!(!crate::VersionCabeza::V5.lleva_recepcion());
+        assert!(crate::VersionCabeza::V6.lleva_recepcion());
+        assert_eq!(crate::VersionCabeza::texto_con_recepcion(), "v6");
+        assert!(!crate::VersionCabeza::V4.lleva_parametros());
+        assert!(crate::VersionCabeza::V5.lleva_parametros());
+        assert!(crate::VersionCabeza::V6.lleva_parametros());
+        assert_eq!(crate::VersionCabeza::texto_con_parametros(), "v5 o v6");
     }
 
     /// Cinco valores fuera del conjunto, el `0x103` entre ellos: el valor viaja
@@ -1264,7 +1311,11 @@ mod tests {
             let e = crate::VersionCabeza::try_from(v).expect_err("fuera del conjunto");
             assert_eq!(e.0, v, "el valor tiene que viajar entero");
             let t = e.to_string();
-            assert!(t.contains(&format!("formatVersion {v}")) && t.contains("v2, v3, v4 o v5"), "{t}");
+            assert!(
+                t.contains(&format!("formatVersion {v}"))
+                    && t.contains(&crate::VersionCabeza::texto()),
+                "{t}"
+            );
         }
     }
 }
