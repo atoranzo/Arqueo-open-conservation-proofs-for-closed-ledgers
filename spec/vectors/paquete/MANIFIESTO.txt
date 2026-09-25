@@ -21,7 +21,8 @@ rechazo-formatVersion-ausente.json|1|falta formatVersion o no es cadena 0x
 rechazo-formatVersion-1.json|1|formatVersion 1: el paquete v1 empaqueta cabezas v2, v3, v4, v5 o v6
 rechazo-formatVersion-4.json|1|falta seq o no es cadena 0x
 rechazo-formatVersion-5.json|1|falta seq o no es cadena 0x
-rechazo-formatVersion-6.json|1|formatVersion 6: el paquete v1 empaqueta cabezas v2, v3, v4 o v5
+rechazo-formatVersion-6.json|1|falta seq o no es cadena 0x
+rechazo-formatVersion-7.json|1|formatVersion 7: el paquete v1 empaqueta cabezas v2, v3, v4, v5 o v6
 rechazo-seq-ausente.json|1|falta seq o no es cadena 0x
 rechazo-seq-sin-0x.json|1|seq sin 0x
 rechazo-seq-no-hex.json|1|seq: 

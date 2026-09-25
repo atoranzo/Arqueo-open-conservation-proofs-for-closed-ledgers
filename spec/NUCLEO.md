@@ -63,7 +63,7 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 67 elementos alcanzables en `zk-ssl-verify` y 48 `pub` en `zk-ssl-hash`
+**Censo derivado:** 71 elementos alcanzables en `zk-ssl-verify` y 48 `pub` en `zk-ssl-hash`
 (LIBRO 5, NÚCLEO 88, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`) y los
@@ -117,11 +117,15 @@ real de sus llaves, no por la primera marca.
 | `indice_de_firma` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `lleva_mmr` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `lleva_consumos` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
+| `lleva_recepcion` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
+| `lleva_parametros` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `preambulo` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `preambulo_cofirma` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `texto` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `texto_con_mmr` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `texto_con_consumos` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
+| `texto_con_recepcion` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
+| `texto_con_parametros` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `verificar_cabeza` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `verificar_cofirma` | `verify/lib.rs` | NÚCLEO | FIRMA | `fn` |
 | `DOMINIO_ACUSE` | `hash/lib.rs` | NÚCLEO | ACUSES | `const` |
@@ -276,6 +280,10 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §558 — la variante `V6`, `lleva_recepcion` y `texto_con_recepcion`, `lleva_parametros` y
+  `texto_con_parametros`: el conjunto que un verificador ACEPTA crece a v6, y los sobres que
+  exigian la familia del estado dejan de preguntar <<¿es V5?>> para preguntar por el predicado
+  (RFC-0010, E2a). Cuatro filas nuevas; la variante no es fila, el `enum` ya la tenía.
 - §557 — `epoch_digest_v6`, `recibo_digest` y `DOMINIO_RECEP`: el núcleo compone la cabeza v6 y la
   hoja del recibo de recepción (RFC-0010, E2); los KAT de las dos. Tres filas nuevas. La variante
   `V6` NO entra aquí: el conjunto que un verificador acepta se mueve en su propio sello.

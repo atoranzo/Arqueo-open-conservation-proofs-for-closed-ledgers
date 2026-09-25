@@ -46,7 +46,7 @@ rechazo-rech-repetido-cabeza-sin-el.json|1|presencia: el camino NO sube al consR
 rechazo-rech-repetido-cabeza-posterior.json|1|la cabeza (seq 4) es POSTERIOR al rechazo (seq 3): un consumo publicado no se quita
 rechazo-rech-repetido-otra-posicion.json|1|presencia: el isRight recibido NO es el de la posicion 117440512
 rechazo-rech-repetido-falta-presencia.json|1|falta presencia (camino del consumo)
-rechazo-rech-repetido-cabeza-v3.json|1|el sobre de rechazo exige cabezas v4 o v5
+rechazo-rech-repetido-cabeza-v3.json|1|el sobre de rechazo exige cabezas v4, v5 o v6
 rechazo-rech-colision-mismo.json|1|la causa NO se sostiene: ocupante y consumo son el MISMO
 rechazo-rech-colision-otra-posicion.json|1|el ocupante vive en la posicion 117440512, no en la 134217728 del consumo
 # E3a-2 (asiento 456): cuatro positivos REUNIDOS de las CAPTURAS-456 de un nodo real (PASTE-456-M,

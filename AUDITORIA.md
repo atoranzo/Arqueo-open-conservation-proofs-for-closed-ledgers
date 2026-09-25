@@ -40425,3 +40425,56 @@ D-I..D-M ya tomadas y sin escribir en el RFC. Y queda fichado un hallazgo que es
 mueve: `PAPER.md`:38 dice 1364 declaradas y `PAPER_EN.md`:35 dice 1349 en la MISMA frase, y
 ninguna herramienta cruza esa cifra.
 
+## §558-B — RFC-0010 E2a: el pin, el censo del nucleo y el catalogo del conjunto nuevo
+
+**Que.** Cierra el rojo que el §558 dejo a proposito. El pin de `zk-ssl-verify` pasa de 120 a
+121 -el testigo que nace con los dos predicados- con su entrada de CRONICA en la propia fila, que
+es lo que `check_cifras` exige desde el §552. Las cifras que envejecen no se dedujeron: se subio
+el pin en una COPIA y el gate NOMBRO las seis -el TOTAL DE SELLO 1433 -> 1434 y el TOTAL CON
+LARGOS 1570 -> 1571, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`- mas la del por-crate del
+verificador en `PRINCIPIOS.md`. Siete en tres documentos.
+
+**El censo del nucleo, que el §558 dejo rojo y nadie vio.** El corte anterior anadio CUATRO `pub
+fn` al productor y no las publico: `check_nucleo` quedo en rojo con cinco entradas -una por
+funcion sin fila y la del censo- y el §558 no lo supo porque su bloque no corria las diez
+herramientas. Aqui las cuatro filas entran en `spec/NUCLEO.md`, el censo de `zk-ssl-verify` pasa
+de 67 a 71 y la historia gana su entrada. La leccion va al traspaso: las diez herramientas son un
+gate de dos segundos y entran en las compuertas de TODO bloque, tenga canon o no.
+
+**El catalogo, con su texto MEDIDO y no deducido.** Con la v6 dentro del conjunto, los dos
+`rechazo-formatVersion-6.json` dejaron de decir lo que sus manifiestos exigian, y lo que dicen
+ahora se leyo corriendo el mando contra ellos ANTES de escribir una fila: el del cable cae con
+<<cabeza firmada sin consRoot: el productor la sirvio incompleta>> y el del paquete con <<falta
+seq o no es cadena 0x>>, que es PALABRA POR PALABRA lo que ya dicen las filas del `-4` y del `-5`
+desde el §451. El fuera-del-conjunto se muda al `-7`, que nace por los dos lados del `-6` con la
+version cambiada y nada mas, y su texto tambien salio del binario. `spec/vectors` pasa de 315 a
+317 ficheros y las dos portadas lo dicen.
+
+**La tercera fila, y la leccion que la caza.** El §558 dejo rancia una fila mas de la que yo
+declare: `rechazo-rech-repetido-cabeza-v3.json` cita `texto_con_consumos()`, que ahora deriva
+<<v4, v5 o v6>>, y <<v4 o v5>> no esta contenido en eso. No la vio mi bloque porque su VIVA corria
+DOS arneses -el del cable y el del paquete- y las familias son NUEVE; la cazo el canon, que es
+quien mira el universo entero. La clase es la misma que ya se cobro dos veces en este arco: el
+ambito del gate mas estrecho que el ambito del cambio. Va corregida por los dos lados -la fila,
+y el bloque, que deriva las nueve familias de `spec/vectors/*/MANIFIESTO.txt` en vez de nombrar
+dos-.
+
+**Lo que este corte NO hace.** La prosa de `spec/PAQUETE.md` -quince citas del texto derivado y
+tres de los mensajes del mando- y las tres copias de la frase que viven fuera del mando
+-`cli/prenda.rs`, `cli/cobro.rs` y `node/main.rs`, esta ultima con una tilde donde el mando es
+ASCII- van al §559, que tiene tesis propia: una frase, un productor. Con ellas van los CUATRO
+`case ... in 4|5)` de `banco_consumo.sh` y `banco_dos_libros.sh`, que escriben el conjunto a mano
+en shell, fuera del unico productor. Ninguna expectativa congelada pina esas copias: se censo
+antes de decidirlo, no despues de un rojo.
+
+**Contadores.** Pin `zk-ssl-verify` 120 -> 121 (un test nuevo). TOTAL DE SELLO 1433 -> 1434,
+TOTAL CON LARGOS 1570 -> 1571, `check_tests` 1592 -> 1593, offset +8 quieto. Censo del nucleo en
+`zk-ssl-verify` 67 -> 71, filas de la tabla 115 -> 119. `spec/vectors` 315 -> 317 ficheros. Los
+demas seis pines, quietos. Ningun Cargo tocado.
+
+**Lo que NO cierra.** El `-6` sigue listado y cae por otra causa, como el `-4` y el `-5`: no se
+retira, porque un vector que prueba algo distinto sigue probando. Que el nodo EMITA la v6 es la
+E2c, y con ella el cable TIPADO -el `EpochHeadDto` estricto no lleva la pareja de recepcion, y
+anadirsela arrastra la capa y el nodo, que son quienes lo construyen-. El 5.A-418 sigue vivo: la
+cuenta de `spec/vectors` la ha pagado a mano este corte, como el §546 y el §557-B, y el gate que
+la derive del arbol no existe todavia.

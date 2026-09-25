@@ -13,7 +13,8 @@ rechazo-formatVersion-4.json|1|no-verifica · cabeza firmada sin consRoot: el pr
 rechazo-formatVersion-1.json|1|no-verifica · formatVersion 1: el testigo recompone cabezas v2, v3, v4, v5 o v6
 rechazo-formatVersion-0x103.json|1|no-verifica · formatVersion 259: el testigo recompone cabezas v2, v3, v4, v5 o v6
 rechazo-formatVersion-5.json|1|no-verifica · cabeza firmada sin consRoot: el productor la sirvio incompleta
-rechazo-formatVersion-6.json|1|no-verifica · formatVersion 6: el testigo recompone cabezas v2, v3, v4 o v5
+rechazo-formatVersion-6.json|1|no-verifica · cabeza firmada sin consRoot: el productor la sirvio incompleta
+rechazo-formatVersion-7.json|1|no-verifica · formatVersion 7: el testigo recompone cabezas v2, v3, v4, v5 o v6
 rechazo-recomposicion.json|1|no-verifica · los campos NO recomponen el epochDigest firmado (v3)
 rechazo-firma.json|1|no-verifica · la firma no verifica
 rechazo-forma-del-cable.json|1|no-verifica · forma del cable
