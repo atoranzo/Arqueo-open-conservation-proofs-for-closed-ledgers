@@ -25,8 +25,8 @@
 
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
-| E1 — la promesa, escrita | este texto: qué objeto nace y por qué no es el acuse (D-A), la hoja y su dominio (D-B), la pareja en la cabeza v6 (D-C), la era que el recibo declara (D-D), qué cuenta y qué no (D-E), el sobre de completitud y sus tres veredictos (D-F), la grieta de las causas sin prueba portable (D-G) y el residuo (D-H) | no | **propuesta** |
-| E2 — la raíz de recepción en la cabeza | las reglas compartidas en `zk-ssl-verify` con el molde de `acuses.rs`, la vista del nodo con el molde de `vista_acuses.rs`, la composición v6 en el núcleo con su vector conocido, y la pareja firmada | no (aditivo, v6) | propuesta |
+| E1 — la promesa, escrita | este texto: qué objeto nace y por qué no es el acuse (D-A), la hoja y su dominio (D-B), la pareja en la cabeza v6 (D-C), la era que el recibo declara (D-D), qué cuenta y qué no (D-E), el sobre de completitud y sus tres veredictos (D-F), la grieta de las causas sin prueba portable (D-G) y el residuo (D-H) | no | **sellada (§556)** |
+| E2 — la raíz de recepción en la cabeza | **E2a** la composición v6 en el núcleo con su vector conocido, la V6 en el conjunto y los consumidores al predicado — sellada (§557, §558, §559) · **E2b** las reglas compartidas en `zk-ssl-verify`, molde `acuses.rs` · **E2c** la vista del nodo, molde `vista_acuses.rs` · **E2d** la pareja firmada en el cable (5.A-422) | no (aditivo, v6) | en curso: E2a sellada; faltan E2b, E2c y E2d |
 | E3 — el recibo, en el cable | `{rx, era, n}` como DATO en el resultado y en `error.data` de las vías del titular, y el método de lectura del camino cuando la era cierra | no (métodos aditivos) | propuesta |
 | E4 — el sobre portable de completitud | `tipo: "completitud"`, que un tercero verifica con el kit y sin nodo, con sus tres veredictos y sus reglas de rechazo | no | propuesta |
 | E5 — catálogo y banco | `spec/vectors/completitud/`, su MANIFIESTO, la familia en `FAMILIAS` y su estrofa del canon, y el banco que siembra una recepción resuelta y una sin resolver | no | propuesta |
@@ -41,6 +41,12 @@ frontera. Este documento la mira desde el otro lado y la cierra:
   un vector de aquella familia**: los consume.
 - **Del RFC-0008 es** lo que un tercero puede comprobar de un pendiente. Nada de esto depende
   de este documento ni al revés.
+- **Del §121 es** *qué promete el operador al recibir*: el recibo de ADMISIÓN, cuya política
+  este documento hereda entera y conserva. Lo que de ella falta es la extensión de la cabeza que
+  el §253 ya tiene fichada, y **este documento no la construye**: aquí el acuse es el objeto cuya
+  resolución se demuestra, y el enunciado de H5b pone el acuse no emitido del lado de lo
+  DECLARADO. Decisión del asistente, DELEGADA con la ley y REVERSIBLE: si los dos recibos han de
+  ir en un expediente, este punto se retira y la tabla gana su fila.
 - **De aquí es** *cuándo*: que toda operación que el nodo llegó a evaluar se resuelva dentro de
   una ventana acotada, y que el titular tenga con qué demostrar que no se resolvió.
 

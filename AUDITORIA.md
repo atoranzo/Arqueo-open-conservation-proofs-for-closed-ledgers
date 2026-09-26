@@ -40560,3 +40560,85 @@ es cierto, y si el conjunto se quedara en una volveria a ser falso. Y el 5.A-419
 CORREGIDO por medida: son TRES productores del texto, no cuatro, y uno de ellos -el de
 la prenda- afirma otra cosa.
 
+
+## §560 — RFC-0010: el expediente al dia, y la frontera con el §121 escrita
+
+**Que.** La tabla de etapas del RFC-0010 decia <<propuesta>> en las CINCO celdas: en la E1, que
+el §556 escribio, y en la E2, cuya E2a llevan TRES sellos (§557, §558, §559). Y el reparto
+E2a/E2b/E2c/E2d no existia en el fichero: vivia solo en los titulos de los asientos, con CERO
+apariciones medidas. Este corte lo paga: la E1 pasa a <<sellada (§556)>>, la E2 a <<en curso>>
+nombrando lo sellado y lo que falta, y el reparto queda ESCRITO donde se lee el expediente. Un
+hito que se cobra contra su resultado publicado no puede ir por detras de lo sellado.
+Ademas, la seccion <<La frontera con H4 y con H5, y que es de cada uno>> gana su CUARTA vineta:
+su propio preambulo promete <<la cierra>> y cerraba dos tercios — el RFC-0007 y el RFC-0008 —,
+sin repartir el recibo de ADMISION. UN fichero y este asiento; ni un `.rs`, ningun pin, ninguna
+cifra de tests, y por eso sin canon, con las diez herramientas por delta.
+
+**Lo que se midio antes de escribirlo, y son TRES lecturas puras y DOS renders.** Las lecturas
+no escribieron un byte y lo probaron por CONTENIDO en los dos extremos (`git diff HEAD` mas el
+porcelain, PRECISION 808), no por el conteo ni por el texto de `git status`:
+`PASTE-560-PRE` `79cc7cb727940e0b`/376 — SALIDA `4ea9c192c69c462b`/1274;
+`PASTE-560-PRE2` `7b3f8244f9ca8bd1`/322 — SALIDA `d282c76879c2a99d`/610;
+`PASTE-560-PRE3` `eb3c9f8af5ec1bbe`/267 — SALIDA `c2f7ae41e34e3979`/583.
+Lo medido que este corte usa: la tabla vive en 26..32 con SHA-REGION `04b96a7b53df8dc8`; las
+cinco celdas decian <<propuesta>>, la de E1 en negrita y las otras cuatro en redonda; `E2a`,
+`E2b`, `E2c` y `E2d` daban CERO apariciones; la seccion de frontera va de la 34 a la 46 con TRES
+vinetas; y el §121 esta citado CUATRO veces en el propio RFC, que hereda su politica y la
+conserva. El molde de prosa se DERIVO de los asientos §500 (`5a2d44d7d20e7a59`, 36447..36512)
+y §547 (`89856e00bb6a86e0`, 39887..39934), volcados con IDA Y VUELTA.
+
+**El alcance del hito, DELEGADO por el autor con la ley y REVERSIBLE.** El 5.A-263 preguntaba si
+el recibo de admision es de H5b. Decidido FUERA, y el documento lo dice en su vineta nueva. Las
+varas: es otra primitiva con otro dominio (`DOMINIO_RECEP` frente a `acuse_digest`) y la propia
+D-A de este RFC existe para separarlos (vara 1); un expediente con los dos recibos es un nombre
+con dos cosas dentro (vara 2); y el enunciado publicado de H5b ya pone <<el acuse no emitido>>
+del lado de lo DECLARADO, asi que meterlo dentro entregaria mas de lo que el texto promete y
+haria del hito una deuda sin perimetro (vara 4). Lo que de esa politica falta es la extension de
+cabeza que el §253 ya tiene fichada. NO se re-derivan las horas: el <<120 = 60 + 60>> y el
+<<~60 h>> descansan en un reparto sin medir, y el enunciado publicado no cambia.
+
+**Tres puntos de la cola, RE-MEDIDOS antes de darlos por buenos, y uno sube de categoria.** El
+5.A-419 no es prosa rancia: queda UN productor a mano, `cli/prenda.rs`:49, y su guarda es
+`format_version.0 != 5`, la comparacion literal que el §559 quito del cobro y del nodo. Los
+asertos del productor lo falsan: `V5.lleva_parametros()` y `V6.lleva_parametros()` son los dos
+ciertos, luego ese `!= 5` RECHAZARA una v6 legitima en cuanto el nodo emita, o sea en la E2c, y
+ningun compilador lo dira. El 5.A-421 son **72 lineas y 121 apariciones** de `spec/PAQUETE.md`,
+no las <<80 y 101>> que el plan traia; y el 5.A-422 queda EJERCITADO con su DTO NOMBRADO:
+`EpochHeadDto` (`wire/lib.rs`:571, 17 campos, CERO `Option`), cuyos constructores directos son
+CINCO y no los tres que el plan citaba — la capa y el nodo se arrastran por `From<&EpochHead>`.
+
+**Lo que las lecturas destaparon y este sello NO paga, fichado para la cola.** El productor
+tiene CINCO textos y no cuatro: `texto_con_recepcion()` da <<v6>>, asi que el ATADO E nacera con
+cinco llamadas. Tres bancos (`banco_edad.sh`:144, `banco_pago.sh`:167, `banco_pendiente.sh`:156)
+siguen publicando <<la unica que firma pmetaRoot>>, la clausula que el §559 borro del binario
+por FALSA. Y el techo `N = 1.440` aparece en DOCE ficheros con UN solo productor
+(`vista_acuses.rs`:28): la mayoria son literales de TEST, no el techo, asi que el atado del
+S561 tiene que separar el perimetro PUBLICADO — `RPC.md`:508, `CONFIANZA_RESIDUAL.md`:63 y
+este RFC en :66 y :194 — de los fixtures, o sera un gate mas estricto que su invariante.
+Y una DISCREPANCIA que el censo de las guias destapo y que este corte NO mide:
+`RESUMEN_EJECUTIVO.md`:63 publica <<30 metodos JSON-RPC>> y la seccion 3 del traspaso dice 29,
+medidos sobre `6ecb063`, que es un arbol de veinte sesiones atras. Son dos productores de la
+misma cuenta y uno esta arrastrado: se ficha sin tocarlo, porque cual de los dos miente exige
+medir el cable de HOY.
+
+**Lo que este corte NO afirma.** No acepta el RFC: sigue PROPUESTO, y el giro exige la regla 4
+del PROCESO medida letra a letra. Y no abre ninguna guia, porque el estado NO gira: se CENSO
+donde vive y son SEIS sitios en CINCO ficheros — `spec/README.md`:44 (la fila del RFC, que
+describe D-A..D-H y no las etapas), `README.md`:186, `README_EN.md`:195, `RESUMEN_BILINGUE.md`:48
+y :101, y `RESUMEN_EJECUTIVO.md`:63 —, y NINGUNO publica las ETAPAS. No toca la guarda de la
+prenda ni los tres bancos: son codigo y van en su propio sello. Y no escribe en las colas: viven
+en el TRASPASO, no en el repo, asi que las tres correcciones las recoge el gen189.
+
+**Contadores.** UN fichero y este asiento. `spec/rfc/0010-el-recibo-de-recepcion.md`
+`0a01366978e71ca0`/246 -> `c225930c4d4300fd`/252, delta **+6 lineas / +721 B**, PREDICHO por
+`ed560-r2.py` `8651dd2d86d5acfd` antes de tocar el arbol y clavado en el POST. Ancho maximo del
+fichero 363 -> 443 B, juzgado por DELTA: el arbol no gatea el ancho de los `.md` hoy (98 lineas
+de mas de 100 B en `spec/PAQUETE.md`, medido). Ningun pin, ningun Cargo, ninguna cifra de tests:
+las diez herramientas de `tools/canon.sh`, rc 0 antes y despues, por DELTA. Sin canon, como el
+§500 y el §547, que son sus moldes. El `ed560.py` `40a4ea4ee350c2de` queda CADUCADO: su S3
+anclaba encima de una seccion que no habia leido, y el render lo cazo antes de escribir.
+
+**Lo que NO cierra.** La E2 entera: E2b (las reglas compartidas en `zk-ssl-verify`, molde
+`acuses.rs`), E2c (la vista del nodo, molde `vista_acuses.rs`) y E2d (la pareja firmada en el
+cable, 5.A-422). Detras, el S561 con el atado del techo, que E4 cita en sus tres veredictos. Y
+la guarda de `prenda.rs`, que es el 5.A-419 con su categoria nueva y falla cerrada en la E2c.
