@@ -23,6 +23,7 @@ use serde_json::{json, Value};
 use stark_experiment::merkle::MerklePath;
 use zk_ssl::prueba_cobro::{prueba_de_cobro_pendiente, CabezaDePendientes, FotoDelCobro, SobreCobro};
 use zk_ssl::two_phase::PendingNotice;
+use zk_ssl_verify::VersionCabeza;
 use zk_ssl_wire::{
     digest_from_wire, digest_to_wire, Blob, MerklePathDto, SignedEpochHeadDto, B32, Q,
 };
@@ -98,14 +99,21 @@ pub fn leer_cabeza(v: &Value) -> Result<(Value, CabezaDePendientes), String> {
         .firmada()
         .map_err(|e| format!("cabeza malformada: {e}"))?
         .ok_or_else(|| "la respuesta no lleva cabeza firmada (available: false)".to_string())?;
-    if vista.format_version.0 != 5 {
+    // RFC-0010 E2a (S559): el sobre exige la FAMILIA del estado, no la variante. Preguntaba
+    // <<es exactamente 5?>> y una v6 -que la lleva entera, porque epoch_digest_v6 compone
+    // sobre la v5- se habria quedado fuera en silencio.
+    if !matches!(
+        VersionCabeza::try_from(vista.format_version.0),
+        Ok(v) if v.lleva_parametros()
+    ) {
         return Err(format!(
-            "formatVersion {}: el cobro pendiente exige una cabeza v5, la unica que firma \
+            "formatVersion {}: el cobro pendiente exige una cabeza {}: son las que firman \
              pmetaRoot",
-            vista.format_version.0
+            vista.format_version.0,
+            VersionCabeza::texto_con_parametros()
         ));
     }
-    let pmeta = vista.pmeta_root.ok_or_else(|| "cabeza v5 sin pmetaRoot".to_string())?;
+    let pmeta = vista.pmeta_root.ok_or_else(|| "la cabeza no lleva pmetaRoot".to_string())?;
     let cab = CabezaDePendientes {
         seq: vista.seq.0,
         pending_root: digest_from_wire(&vista.pending_root)
@@ -374,5 +382,25 @@ mod tests {
         }
         let e = prueba_de_cobro_pendiente(&cab, id_bob, &notice, &fc, IMPORTE + 1).unwrap_err();
         assert!(format!("{e:?}").contains("NO se sostiene"), "{e:?}");
+    }
+
+    /// RFC-0010 E2a (S559): la guarda de la cabeza pregunta por el PREDICADO y no por la
+    /// variante. El positivo es la cabeza v5 REAL del catalogo del cable; la v6 y la v4 se
+    /// derivan de ella por MUTACION del campo, que es el molde que su MANIFIESTO declara
+    /// para los negativos. Antes del S559 la v6 caia aqui diciendo que la v5 era la unica.
+    #[test]
+    fn la_guarda_de_la_cabeza_mira_la_familia_y_no_la_variante() {
+        const CAT: &str = include_str!("../../../spec/vectors/cable/positivo-cabeza-v5.json");
+        let base: Value = serde_json::from_str(CAT).expect("el vector del catalogo");
+        leer_cabeza(&base).expect("la v5, la que el nodo sirve hoy, pasa");
+        let mut v6 = base.clone();
+        v6["result"]["formatVersion"] = json!("0x6");
+        leer_cabeza(&v6).expect("la v6 lleva la familia del estado: tiene que pasar");
+        let mut v4 = base.clone();
+        v4["result"]["formatVersion"] = json!("0x4");
+        let e = leer_cabeza(&v4).unwrap_err();
+        let texto = VersionCabeza::texto_con_parametros();
+        assert!(e.contains(&texto), "la causa cita el texto DERIVADO ({texto}): {e}");
+        assert!(!e.contains("la unica"), "el singular ya no es cierto: {e}");
     }
 }
