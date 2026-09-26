@@ -40769,7 +40769,6 @@ libre en el fichero que existe para que no haya prosa libre—, y el perimetro d
 tiene quien lo cruce contra lo que el corte acaba tocando, que es lo que dejo su seccion 4
 corta en cuatro ficheros.
 
-
 ## §563 — RFC-0010 E2a: los consumidores que faltaban, al predicado
 
 `50b08f9`, sobre `dacaafb`. Nueve ficheros, 34 inserciones, 21 borrados. Once exigencias de
@@ -40862,3 +40861,4 @@ diccionario indexado por linea falla EN SILENCIO cuando la linea se mueve, asi q
 claves se assertan contra la tabla; y un `say` de comillas dobles con una comilla invertida
 dentro ejecuta su propio texto, porque una comilla invertida dentro de comillas dobles es
 sustitucion de ordenes y el texto de un bloque es DATO.
+
