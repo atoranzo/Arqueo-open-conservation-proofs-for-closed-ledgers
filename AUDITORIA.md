@@ -40689,3 +40689,83 @@ censado en las otras nueve herramientas: se ficha, y es frente propio. Y del 5.A
 corregida la CITA, no el mecanismo: el gate que vigile una cita por numero de linea sigue sin
 existir, y mientras no exista la siguiente caducara igual.
 
+## §562 — RFC-0010 E2b: las reglas compartidas del recibo, y el pin que se midio
+
+**Que.** Nace `crates/zk-ssl-verify/src/recibos.rs` con las CINCO reglas del recibo de
+recepcion —la era que declara, su posicion densa, la hoja con dominio propio y la ventana de
+la promesa— y ocho testigos. Molde: `acuses.rs`, y por su mismo argumento del §274: el
+constructor sera del nodo (E2c) y el verificador de este crate, asi que la regla de que recibo
+cae en que era vive en UN solo sitio o habra dos. Es la E2b de la tabla del RFC-0010.
+
+**La decision que ROMPE el molde, y por que no es capricho.** `hoja_de_acuse` funde la epoca
+por dentro; aqui no se puede. La era sale del `seq` de la ULTIMA CABEZA FIRMADA en el instante
+de recibir (D-D), que es un hecho de ese instante y que el verificador NO tiene: le llega ya
+fijada, dentro del recibo. Van SEPARADAS —`era_de_recibo` para el productor, `hoja_de_recibo`
+para el verificador—, y la cabecera del modulo dice por que, para que nadie las <<arregle>>
+fundiendolas. La objecion de que asi `hoja_de_recibo` queda como alias desnudo de
+`recibo_digest` tiene respuesta MEDIDA y no opinada: `crates/zk-ssl-node/Cargo.toml` NO lista
+`zk-ssl-hash`, asi que o la hoja vive en el verificador o la E2c le abre al nodo una
+dependencia nueva. El alias no es indireccion: es el cable.
+
+**Las otras cuatro, breves.** El modulo se llama `recibos` y no `recepcion`, que ya existe en
+el nodo desde el §253 y seria homonimo entre crates. La ventana `S - e <= N` entra AQUI y no
+espera a la E4, por el mismo argumento del molde, y lleva escrito que un `false` NO prueba
+ausencia —el propio D-F lo dice con todas las letras—. No lleva cruce, a diferencia de
+`consumos`, porque el arbol es DENSO y la posicion se DERIVA; se declara para que la ausencia
+sea decision leida y no olvido. Y `pertenece_a_era` es propia, con un testigo que la CRUZA
+contra `acuses::pertenece`: hoy coinciden, y el dia que diverjan el testigo lo NOMBRA en vez
+de que la divergencia viaje muda.
+
+**Los testigos se falsaron por MUTACION antes de escribir el bloque.** Once mutaciones sobre
+las cinco reglas —Q exclusivo, el indice absoluto, la era sin su uno, la hoja ignorando la
+prueba, la era o la `n`, el dominio del acuse en lugar del suyo, la ventana sin su borde y sin
+su guarda—: ninguna sobrevive. Una suite que pasa no prueba nada hasta que se ensena que cada
+testigo PUEDE fallar.
+
+**El pin se MIDIO, no se predijo.** La cabecera del canon manda: <<se MIDE primero y se edita
+la tabla despues, nunca al reves>>. El bloque corrio `cargo test -p zk-ssl-verify --release`,
+sumo los `N passed` como los suma `canon.sh`:223, escribio lo medido —129— y SOLO DESPUES lo
+comparo contra el 129 que el PRE habia derivado de la ley <<el delta del pin es el numero de
+testigos nuevos>>. CLAVA. Es la cuarta confirmacion de esa ley y la primera contra un caso que
+no la vio nacer; sigue siendo induccion sobre precedentes, no teorema, y lo que manda es la
+medida.
+
+**Lo que el pin arrastro, y como se encontro.** Mover el pin mueve TRES cifras publicadas en
+TRES documentos, y el RENDER no lo habia previsto: su seccion 4 nombraba tres ficheros y el
+corte toca SIETE. No se dedujeron: se subio el pin y se dejo que `check_cifras` las NOMBRARA
+—el metodo del §558, en su propio asiento—, y el bloque corrigio exactamente las siete que el
+juez nombro. Localizarlas tiene su miga y queda escrito: la ventana que el juez imprime CRUZA
+el salto del markdown, asi que se busca con los blancos flexibles sobre el texto entero; y la
+cifra por-crate va PARTIDA de su alias (`**121` y en la linea siguiente `del verificador
+independiente**`), asi que se localiza por el ALIAS que `canon.sh` declara, que es como la
+localiza el juez.
+
+**Lo que el §561 cobro de inmediato.** `check_nucleo` cruza el desglose por clase desde el
+sello anterior. Este corte mueve el censo de 71 a 76 y el desglose de NUCLEO de 92 a 97: si el
+bloque hubiera pagado la cifra y callado el parentesis —que es LITERALMENTE lo que hizo el
+§558—, habria muerto en la compuerta de despues. Un sello que se paga solo en el corte
+siguiente.
+
+**El numero, y el pronostico que se mueve OTRA VEZ.** El §561 escribio que el atado del techo
+pasaba al §562. Este sello entro antes y se lleva el 562; el atado pasa al §563. Van dos
+pronosticos consecutivos caducados por lo mismo, y la leccion ya no admite otra vuelta: **un
+pronostico nombra LA COSA, no el numero**. El numero lo decide el orden de sellado, que nadie
+conoce cuando escribe el pronostico.
+
+**Contadores.** Pin `zk-ssl-verify` 121 -> 129, MEDIDO (ocho testigos nuevos). TOTAL DE SELLO
+1436 -> 1444 y TOTAL CON LARGOS 1573 -> 1581, en `PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`;
+la cifra por-crate del verificador, 121 -> 129, en `PRINCIPIOS.md`. Censo del nucleo en
+`zk-ssl-verify` 71 -> 76, filas de la tabla 119 -> 124, desglose NUCLEO 92 -> 97.
+`recibos.rs` nace con 198 lineas y 8 `#[test]`. Los otros seis pines, quietos. Ningun Cargo
+tocado. El cable NO sube: `zkssl/0.4` quieto, porque esto no toca un byte de lo firmado.
+Canon `--sello` VERDE en 289 s.
+
+**Lo que NO cierra.** La E2c (la vista del nodo, molde `vista_acuses.rs`) y la E2d (la pareja
+firmada en el cable, 5.A-422): esto son las reglas, no quien LLENA el arbol ni quien lo pone
+en el cable. El sobre de completitud es la E4, y su cuarto estado —el D-G, <<resolucion
+declarada, no probada>>— sigue siendo grieta del RFC-0007, no de aqui. Y dos deudas que este
+corte destapa y no paga: la columna FAMILIA de `spec/NUCLEO.md` no la vigila NADIE —es prosa
+libre en el fichero que existe para que no haya prosa libre—, y el perimetro de un RENDER no
+tiene quien lo cruce contra lo que el corte acaba tocando, que es lo que dejo su seccion 4
+corta en cuatro ficheros.
+

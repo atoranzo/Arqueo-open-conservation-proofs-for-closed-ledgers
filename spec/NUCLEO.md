@@ -63,10 +63,10 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 71 elementos alcanzables en `zk-ssl-verify` y 48 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 92, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 76 elementos alcanzables en `zk-ssl-verify` y 48 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 97, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
-`cuentas`) y los
+`cuentas`, `recibos`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
 reexportaciones de `zk-ssl-hash` no se cuentan dos veces: un elemento, una fila. En `zk-ssl-hash`,
 todo `pub` de `lib.rs` fuera de las zonas de test. Las zonas de test se recortan por el anidamiento
@@ -164,6 +164,11 @@ real de sus llaves, no por la primera marca.
 | `is_right_de_indice` | `verify/cuentas.rs` | NÚCLEO | CUENTAS | `fn` |
 | `no_existe` | `verify/cuentas.rs` | NÚCLEO | CUENTAS | `fn` |
 | `raiz_de_hoja` | `verify/cuentas.rs` | NÚCLEO | CUENTAS | `fn` |
+| `dentro_de_ventana` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
+| `era_de_recibo` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
+| `hoja_de_recibo` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
+| `indice_de_recibo` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
+| `pertenece_a_era` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
 | `native_leaf` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `native_leaf_salted` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `InclusionError` | `verify/inclusion.rs` | REFERENCIA | INCLUSIÓN | `enum` |

@@ -114,6 +114,15 @@ pub mod congelados;
 /// rechazo `AccountNotFound` dentro de un sobre de evidencia.
 pub mod cuentas;
 
+/// RFC-0010 E2b (S562): las reglas del arbol de RECIBOS DE RECEPCION -la era
+/// que el recibo declara, su posicion densa dentro de ella, la hoja con
+/// dominio propio y la ventana de la promesa-. Puras y sin la capa, como sus
+/// cuatro hermanas: el nodo las usara para CONSTRUIR el arbol (E2c) y el mando
+/// para recomponer su raiz sin nodo.
+///
+/// OJO: la era NO se computa como la epoca del acuse. Ver la cabecera del modulo.
+pub mod recibos;
+
 pub use zk_ssl_hash::{
     epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5, epoch_digest_v6,
 };
