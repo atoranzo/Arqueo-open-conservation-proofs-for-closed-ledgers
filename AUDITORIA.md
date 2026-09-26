@@ -40769,3 +40769,96 @@ libre en el fichero que existe para que no haya prosa libre—, y el perimetro d
 tiene quien lo cruce contra lo que el corte acaba tocando, que es lo que dejo su seccion 4
 corta en cuatro ficheros.
 
+
+## §563 — RFC-0010 E2a: los consumidores que faltaban, al predicado
+
+`50b08f9`, sobre `dacaafb`. Nueve ficheros, 34 inserciones, 21 borrados. Once exigencias de
+version literal en ocho ficheros, mas la fila 29 del RFC-0010. Canon `--sello` VERDE en
+277 s con los dieciocho crates a exit 0; `tools/banco_prenda.sh` VERDE en vivo.
+
+**El 5.A-419 y el 5.A-420 declaraban CINCO sitios. El arbol tenia ONCE.** Los dos puntos de
+cola nombraban una comparacion literal en Rust y cuatro `case 4|5)` en dos bancos. Los seis
+que faltaban no salieron de pensar: salieron de tres censos con tres ojos distintos, y cada
+ojo vio lo que el anterior no podia. El primero, por `qnum`, enseno cuatro guardas mas
+escritas a mano en `banco_edad`, `banco_pago`, `banco_pendiente` y `banco_rechazo` —y tres
+de ellas llevaban la clausula <<la unica que firma pmetaRoot>> que el §559 ya habia borrado
+del binario como FALSA, en las MISMAS lineas que este corte abre, asi que se cobra aqui por
+la regla de perimetro de la 130—. El segundo, con el universo de los diecinueve `.sh`
+DERIVADO por `git ls-files`, enseno `tools/banco_prenda.sh`:159, que compara sin pasar por
+`qnum` y por eso la ruta del primero no podia verlo. El tercero, ensanchado a proposito para
+admitir `== 5,`, enseno `tools/banco_prenda.sh`:233: un `assert` de Python DENTRO del
+heredoc del banco, que se habria puesto rojo el dia que el nodo emitiera la v6 sin que
+ningun compilador lo dijera, porque ahi no hay compilador. La leccion queda: **un punto de
+cola que cuenta sitios cuenta los de SU PATRON, no los del arbol**, y quien lo cierre tiene
+que traer su propio censo con el universo derivado.
+
+**El corte no redacto una frase: copio la de su gemelo, y ahora se cruzan.**
+`crates/zk-ssl-verify/src/main.rs` ya llevaba, para esta misma boca, el predicado y EL MISMO
+TEXTO: el §559 movio el mando y se dejo el cli. Asi que el corte no invento el mensaje —lo
+copio— y el bloque los CRUZA: extrae el literal de los dos productores, aplana lo que cruza
+el salto de linea, normaliza la captura de `{version}` y exige que sean iguales. El precio
+va declarado: la frase dice <<es la que el nodo sirve>> con dos versiones en el conjunto, y
+NO se corrige aqui, porque tocarlo en uno solo rompe el cruce. Se corrige en los dos a la
+vez o no se corrige.
+
+**La fila 29 del RFC-0010 mentia por dos lados.** Declaraba <<los consumidores al predicado
+— sellada (§559)>> con once sitios desmintiendolo, y daba la E2b por PENDIENTE cuando
+`recibos.rs` esta en el arbol con sus ocho `#[test]` desde el §562. Las dos quedan al dia, y
+el numero de la E2b no se hereda de una nota: se DERIVA del `git log --diff-filter=A` de ese
+fichero, y si no se puede derivar el bloque para en vez de adivinarlo.
+
+**El pronostico del §562, caducado: TERCERA VEZ, y por su propia frase.** El §561 escribio
+que el atado del techo pasaba al §562; el §562 entro antes, se llevo el numero, y escribio
+<<el atado pasa al §563>> en el MISMO PARRAFO en que declaraba que <<un pronostico nombra LA
+COSA, no el numero>> y que la leccion <<ya no admite otra vuelta>>. Este sello acaba de
+tomar el 563. Van tres, y la tercera la provoca la frase que enuncia la regla: **escribir la
+leccion no la aplica**. El atado del techo sigue vivo y desde aqui NO lleva numero.
+
+**Contadores: ninguno se mueve, y eso tambien es una medida.** Ningun pin cambia —no nace un
+solo `#[test]`, y `zk-ssl-cli` se queda en 125 y `zk-ssl-verify` en 129—; los 1603 tests
+declarados, quietos; ninguna cifra publicada se toca; ningun `Cargo` tocado. El cable NO
+sube: `zkssl/0.4` quieto, porque esto no toca un byte de lo firmado. Lo unico que crece son
+lineas de codigo y de prosa: `prenda.rs` 326 -> 337, `banco_prenda.sh` 322 -> 323,
+`banco_rechazo.sh` 531 -> 532 —las dos ultimas porque un `|| fallo` pasa a su propia linea
+para que las cuatro guardas de test queden con la MISMA forma—, y los otros seis ficheros no
+cambian de recuento.
+
+**Lo que el banco prueba, y lo que NO.** El `NEGATIVO cabeza-v4` sale con el texto DERIVADO
+—<<la prenda exige una cabeza v5 o v6>>— y eso es el mensaje saliendo de un binario de
+verdad, pero el binario que lo produce es el MANDO, cuya guarda ya estaba en el predicado
+desde el §559. Del corte de hoy el banco prueba el camino POSITIVO: el cli acepto la cabeza
+v5 firmada del nodo vivo y escribio su sobre, luego la guarda nueva ACEPTA. Su rama de
+RECHAZO sigue sin ejercitar, y no por descuido: el banco no puede darle una v4 porque el
+nodo no la emite. El CRUCE prueba que el texto de las dos es el mismo byte a byte, asi que
+lo que falta no es el mensaje, es que la rama dispare. Eso afila la cola: el fixture de
+`SignedEpochHeadDto` no es cosmetico, es la UNICA via de ejercitar ese rechazo.
+
+**Lo que el corte deja para mirar, medido y no deducido.** Veintinueve lineas siguen
+nombrando la v5 en los siete bancos; once son rotulos CIERTOS hoy, porque `VERSION_FORMATO`
+sigue en 5, y se mueven cuando la E2c la suba. Y cuatro testigos — `banco_edad`:234,
+`banco_pago`:332, `banco_pendiente`:292 y `banco_prenda`:299— afirman el mensaje del mando
+por el PREFIJO <<exige una cabeza v5>>: pasa con <<v5 o v6>> y pasaria con <<v5, v6 o v7>>.
+Dejaron de fijar el conjunto sin dejar de pasar, que es peor que caerse. No estan rotos y no
+se tocan aqui.
+
+**Lo que NO cierra.** La E2c y la E2d. Y el terreno de la E2c queda medido por la lectura
+pura que abrio este corte: el almacen de recibos NO EXISTE —el censo de raices en reposo ve
+ochenta y un prefijos y CERO `recep:`, con prueba de vida, asi que el cero significa
+ausencia—; `VERSION_FORMATO` sigue en 5 en `crates/zk-ssl-verify/src/lib.rs`:163, consumido
+por `firma_cabeza.rs` en cuatro sitios, y es el UNICO interruptor que hace que el nodo emita
+la v6; y `latido.rs`:141 pasa el `seq` de la ultima cabeza como limite anterior, que para
+los recibos tiene que ser el `recep_count` de la cabeza anterior (D-C). Los dos son `u64` y
+ningun compilador lo diria: el molde `vista_acuses` da el arbol, NO da el limite.
+
+**Deuda del instrumento, saldada en el arco.** La SALIDA que viaja lleva ahora su huella y
+su marca DENTRO, asi que un `tail -2` la verifica sin volver al terminal; un tope que corta
+levanta AVISO en vez de salir en verde; un rojo a media edicion dice que se movio y como
+deshacerlo; un 92 sobre el propio perimetro reconoce su corte y da el camino de
+`--verificar`; y el sello se cruza contra el mayor que el `git log` ensena, para que no pise
+uno puesto. **Lecciones del arco, las cuatro:** un numero de linea medido sobre un arbol
+CORTADO no es un numero del arbol limpio —costo una vuelta entera—; un fichero que PARSEA no
+es un fichero que IMPORTA, y un `ast.parse` deja pasar un `NameError` de nivel de modulo; un
+diccionario indexado por linea falla EN SILENCIO cuando la linea se mueve, asi que sus
+claves se assertan contra la tabla; y un `say` de comillas dobles con una comilla invertida
+dentro ejecuta su propio texto, porque una comilla invertida dentro de comillas dobles es
+sustitucion de ordenes y el texto de un bloque es DATO.
