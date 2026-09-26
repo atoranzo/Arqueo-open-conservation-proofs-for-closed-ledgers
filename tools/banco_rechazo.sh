@@ -172,7 +172,8 @@ done
 [ -n "$CAB" ] || fallo "no llego una cabeza firmada con la congelacion dentro (seq de partida $SEQ0, frozenRoot de partida $FR0)"
 FV=$(campo "$CAB" result.formatVersion)
 SEQ=$(qnum "$(campo "$CAB" result.seq)")
-[ "$(qnum "$FV")" = "5" ] || fallo "la cabeza dice formatVersion $(qnum "$FV") y se esperaba v5"
+[ "$(qnum "$FV")" = "5" ] || [ "$(qnum "$FV")" = "6" ] \
+  || fallo "la cabeza dice formatVersion $(qnum "$FV") y se esperaban v5 o v6"
 campo "$CAB" result > "$DIR/cabeza.json"
 msg "cabeza v5 custodiada DESPUES de congelar: seq $SEQ (era $SEQ0)"
 

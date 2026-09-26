@@ -156,7 +156,8 @@ done
 printf '%s' "$CAB" > "$DIR/cabeza.json"
 FV=$(python3 -c 'import json,sys; print(int(json.load(open(sys.argv[1]))["result"]["formatVersion"],16))' "$DIR/cabeza.json")
 SEQ=$(python3 -c 'import json,sys; print(int(json.load(open(sys.argv[1]))["result"]["seq"],16))' "$DIR/cabeza.json")
-[ "$FV" = "5" ] || fallo "el nodo firmo una cabeza v$FV y la prenda exige v5 (D-BF)"
+[ "$FV" = "5" ] || [ "$FV" = "6" ] \
+  || fallo "el nodo firmo una cabeza v$FV y la prenda exige v5 o v6 (D-BF)"
 msg "nodo VIVO: cabeza v5 firmada, seq $SEQ"
 
 # ------------------------------------------------------------------------------- LA BOCA
@@ -230,7 +231,7 @@ for s, n in ((a, "prenda"), (b, "prenda-publicada")):
     assert sorted(s["enunciado"]) == ["marca", "receptor"], "%s: el enunciado no es receptor+marca" % n
     assert s["enunciado"]["receptor"] == receptor, "%s: el receptor no es el de la credencial" % n
     assert int(s["cabeza"]["seq"], 16) == seq, "%s: no es la cabeza que el nodo firmo" % n
-    assert int(s["cabeza"]["formatVersion"], 16) == 5, "%s: la cabeza no es v5" % n
+    assert int(s["cabeza"]["formatVersion"], 16) in (5, 6), "%s: la cabeza no es v5 ni v6" % n
     assert hex(importe) not in json.dumps(s), "%s: el sobre lleva el importe, que es testigo" % n
 assert a["enunciado"] == b["enunciado"], "los dos sobres no afirman lo mismo"
 assert a["cabeza"] == b["cabeza"], "los dos sobres no son de la misma cabeza"

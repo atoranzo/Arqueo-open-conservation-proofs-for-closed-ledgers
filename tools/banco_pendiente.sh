@@ -152,8 +152,8 @@ done
 FV=$(campo "$CAB" result.formatVersion)
 SEQ=$(campo "$CAB" result.seq)
 NP=$(campo "$CAB" result.nextPending)
-[ "$(qnum "$FV")" = "5" ] \
-  || fallo "la cabeza dice formatVersion $(qnum "$FV"): el cobro pendiente exige v5, la unica que firma pmetaRoot"
+[ "$(qnum "$FV")" = "5" ] || [ "$(qnum "$FV")" = "6" ] \
+  || fallo "la cabeza dice formatVersion $(qnum "$FV"): el cobro pendiente exige v5 o v6, las que firman pmetaRoot"
 [ "$(qnum "$NP")" -ge 1 ] \
   || fallo "la cabeza firma nextPending $(qnum "$NP"): el sandbox no dejo la posicion viva"
 msg "cabeza v5 firmada: seq $(qnum "$SEQ") - nextPending $(qnum "$NP"); el nodo sigue VIVO para la boca"

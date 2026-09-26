@@ -15,6 +15,7 @@ use serde_json::{json, Value};
 use stark_experiment::merkle::MerklePath;
 use zk_ssl::prueba_prenda::{CabezaDeLaPrenda, SobrePrenda};
 use zk_ssl_sdk::{keystore, Wallet};
+use zk_ssl_verify::VersionCabeza;
 use zk_ssl_wire::{digest_from_wire, digest_to_wire, Blob, MerklePathDto, SignedEpochHeadDto, Q};
 
 use crate::cobro::{escribir, notice_de, q_de, respuesta, AvisoV2};
@@ -37,7 +38,8 @@ pub fn wallet_de(keystore_ruta: &PathBuf, frase_ruta: &PathBuf) -> anyhow::Resul
 }
 
 /// De `zkssl_signedEpochHead`: la cabeza VERBATIM y lo que la prenda necesita, con SU razon (D-BF,
-/// D-BI): v5 porque es la que el nodo sirve y contra la que juzga `zkssl_pledge`, no por la meta.
+/// D-BI): la FAMILIA del estado (`lleva_parametros`) porque es la que el nodo sirve y contra la
+/// que juzga `zkssl_pledge`, no por la meta.
 pub fn leer_cabeza(v: &Value) -> Result<(Value, CabezaDeLaPrenda), String> {
     let obj = v.get("result").cloned().unwrap_or_else(|| v.clone());
     let dto: SignedEpochHeadDto = serde_json::from_value(obj.clone())
@@ -46,11 +48,20 @@ pub fn leer_cabeza(v: &Value) -> Result<(Value, CabezaDeLaPrenda), String> {
         .firmada()
         .map_err(|e| format!("cabeza malformada: {e}"))?
         .ok_or_else(|| "la respuesta no lleva cabeza firmada (available: false)".to_string())?;
-    if vista.format_version.0 != 5 {
+    // RFC-0010 E2a (§559 en el binario, §563 aqui): la boca exige la FAMILIA del estado, no
+    // la variante. Preguntaba <<es exactamente 5?>> y una v6 -que la lleva entera, porque
+    // epoch_digest_v6 compone sobre la v5- se habria quedado fuera en silencio.
+    // ⚠️ MOLDE: `zk-ssl-verify/src/main.rs` ya lleva este predicado y ESTE MISMO texto para
+    // la misma boca. Los dos productores se CRUZAN en el bloque que los junto.
+    if !matches!(
+        VersionCabeza::try_from(vista.format_version.0),
+        Ok(v) if v.lleva_parametros()
+    ) {
         return Err(format!(
-            "formatVersion {}: la prenda exige una cabeza v5 - no por la meta, que no lleva \
+            "formatVersion {}: la prenda exige una cabeza {} - no por la meta, que no lleva \
              (D-AY), sino porque es la que el nodo sirve y contra la que juzga zkssl_pledge",
-            vista.format_version.0
+            vista.format_version.0,
+            VersionCabeza::texto_con_parametros()
         ));
     }
     let cab = CabezaDeLaPrenda {

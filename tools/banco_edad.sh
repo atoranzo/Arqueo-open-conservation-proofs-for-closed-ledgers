@@ -140,8 +140,8 @@ done
 FV=$(campo "$CAB" result.formatVersion)
 SEQ=$(campo "$CAB" result.seq)
 NP=$(campo "$CAB" result.nextPending)
-[ "$(qnum "$FV")" = "5" ] \
-  || fallo "la cabeza dice formatVersion $(qnum "$FV"): la prueba de edad exige v5, la unica que firma pmetaRoot y nextPending"
+[ "$(qnum "$FV")" = "5" ] || [ "$(qnum "$FV")" = "6" ] \
+  || fallo "la cabeza dice formatVersion $(qnum "$FV"): la prueba de edad exige v5 o v6, las que firman pmetaRoot y nextPending"
 [ "$(qnum "$NP")" -ge 2 ] \
   || fallo "la cabeza firma nextPending $(qnum "$NP"): el sandbox no dejo las dos posiciones vivas, y sin ellas el positivo no discrimina"
 campo "$CAB" result > "$DIR/cabeza.json"
