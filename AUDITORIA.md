@@ -40560,7 +40560,6 @@ es cierto, y si el conjunto se quedara en una volveria a ser falso. Y el 5.A-419
 CORREGIDO por medida: son TRES productores del texto, no cuatro, y uno de ellos -el de
 la prenda- afirma otra cosa.
 
-
 ## §560 — RFC-0010: el expediente al dia, y la frontera con el §121 escrita
 
 **Que.** La tabla de etapas del RFC-0010 decia <<propuesta>> en las CINCO celdas: en la E1, que
@@ -40642,3 +40641,4 @@ anclaba encima de una seccion que no habia leido, y el render lo cazo antes de e
 `acuses.rs`), E2c (la vista del nodo, molde `vista_acuses.rs`) y E2d (la pareja firmada en el
 cable, 5.A-422). Detras, el S561 con el atado del techo, que E4 cita en sus tres veredictos. Y
 la guarda de `prenda.rs`, que es el 5.A-419 con su categoria nueva y falla cerrada en la E2c.
+
