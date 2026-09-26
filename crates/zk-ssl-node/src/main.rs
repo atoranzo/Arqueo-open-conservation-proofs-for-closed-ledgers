@@ -916,6 +916,43 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// RFC-0010 E2a (S559-b): la cabeza que un sobre de este nodo exige lleva la FAMILIA del
+/// estado comprometido, no una variante concreta. Vive APARTE de su llamante para poder
+/// falsarla sin capa, sin `Args` y sin fichero -es la razon por la que el cobro tiene su
+/// `leer_cabeza`-, y toma la cifra y no la vista, porque `firmada()` devuelve una
+/// `VistaFirmada` que PRESTA del DTO.
+fn exige_familia_del_estado(fv: u64) -> anyhow::Result<()> {
+    if matches!(
+        zk_ssl_verify::VersionCabeza::try_from(fv),
+        Ok(v) if v.lleva_parametros()
+    ) {
+        return Ok(());
+    }
+    anyhow::bail!(
+        "formatVersion {fv}: la prueba de edad exige una cabeza {}: son las que firman \
+         pmetaRoot y nextPending",
+        zk_ssl_verify::VersionCabeza::texto_con_parametros()
+    )
+}
+
+#[cfg(test)]
+mod guarda_de_la_cabeza {
+    /// RFC-0010 E2a (S559-b): la guarda mira el PREDICADO y no la variante. Antes preguntaba
+    /// <<es exactamente 5?>> y una v6 -que lleva la familia entera, porque epoch_digest_v6
+    /// compone sobre la v5- se habria quedado fuera en silencio.
+    #[test]
+    fn la_familia_del_estado_manda_y_no_la_variante() {
+        super::exige_familia_del_estado(5).expect("la v5, la que el nodo sirve hoy, pasa");
+        super::exige_familia_del_estado(6).expect("la v6 lleva la familia del estado");
+        let e = super::exige_familia_del_estado(4).unwrap_err().to_string();
+        let texto = zk_ssl_verify::VersionCabeza::texto_con_parametros();
+        assert!(e.contains(&texto), "la causa cita el texto DERIVADO ({texto}): {e}");
+        assert!(!e.contains("la unica"), "el singular ya no es cierto: {e}");
+        let fuera = super::exige_familia_del_estado(99).unwrap_err().to_string();
+        assert!(fuera.contains("99"), "una version fuera del conjunto se nombra: {fuera}");
+    }
+}
+
 /// **RFC-0007 E4b-3 (§466): el sobre `tipo: "edad"`, producido sobre este libro.**
 ///
 /// El testigo de la prueba —las hojas de `0..next_pending` y su `(emisor, nacido)`— es del
@@ -923,8 +960,9 @@ async fn main() -> anyhow::Result<()> {
 /// el testigo, que es el binario del tercero.
 ///
 /// Tres pasos, y cada uno falla cerrado por su nombre: la cabeza se tipa con el productor único
-/// del cable (`SignedEpochHeadDto::firmada`) y se exige v5; la capa RECHAZA si el libro en disco
-/// no reproduce las cuatro cifras que esa cabeza firma; y el sobre sale con la cabeza VERBATIM,
+/// del cable (`SignedEpochHeadDto::firmada`) y se exige la familia del estado; la capa RECHAZA
+/// si el libro en disco no reproduce las cuatro cifras que esa cabeza firma; y el sobre sale
+/// con la cabeza VERBATIM,
 /// tal como se leyó, porque su firma cubre esos bytes.
 fn modo_prueba_edad(layer: &SovereignLayer, a: &Args, salida: &str) -> anyhow::Result<()> {
     let ruta = a
@@ -945,19 +983,14 @@ fn modo_prueba_edad(layer: &SovereignLayer, a: &Args, salida: &str) -> anyhow::R
         .firmada()
         .map_err(|e| anyhow::anyhow!("{ruta}: cabeza malformada: {e}"))?
         .ok_or_else(|| anyhow::anyhow!("{ruta}: esa respuesta no lleva cabeza firmada"))?;
-    if vista.format_version.0 != 5 {
-        anyhow::bail!(
-            "formatVersion {}: la prueba de edad exige una cabeza v5, la única que firma \
-             pmetaRoot y nextPending",
-            vista.format_version.0
-        );
-    }
+
+    exige_familia_del_estado(vista.format_version.0)?;
     let pmeta = vista
         .pmeta_root
-        .ok_or_else(|| anyhow::anyhow!("{ruta}: cabeza v5 sin pmetaRoot"))?;
+        .ok_or_else(|| anyhow::anyhow!("{ruta}: la cabeza no lleva pmetaRoot"))?;
     let next_pending = vista
         .next_pending
-        .ok_or_else(|| anyhow::anyhow!("{ruta}: cabeza v5 sin nextPending"))?;
+        .ok_or_else(|| anyhow::anyhow!("{ruta}: la cabeza no lleva nextPending"))?;
 
     let cab = zk_ssl::prueba_edad::CabezaDeclarada {
         seq: vista.seq.0,
