@@ -40642,3 +40642,50 @@ anclaba encima de una seccion que no habia leido, y el render lo cazo antes de e
 cable, 5.A-422). Detras, el S561 con el atado del techo, que E4 cita en sus tres veredictos. Y
 la guarda de `prenda.rs`, que es el 5.A-419 con su categoria nueva y falla cerrada en la E2c.
 
+## §561 — La R4 de `check_nucleo` hace lo que la R4 dice
+
+**Que.** La regla estaba DECLARADA desde el §407 —<<los totales que el documento DECLARA (por
+crate y por clase) son los derivados>>— y el codigo hacia la mitad: cruzaba el por-crate y
+calculaba `por_clase` solo para decorar el mensaje verde. Un contador que se imprime y no se
+cruza es un numero tecleado, que es exactamente lo que esa regla prohibe. Aqui se escribe la
+mitad que faltaba. No nace una regla nueva: nace el cumplimiento de una que ya estaba escrita.
+
+**Lo que envejecio, y de donde sale.** No se dedujo: lo dice el asiento del §558, <<filas de la
+tabla 115 -> 119>>. Aquel corte anadio cuatro filas —las cuatro `pub fn` que el §557 no
+publico— y el parentesis del censo se quedo en 115. Desde entonces el juez venia imprimiendo
+`NUCLEO 92` en cada corrida VERDE del canon, al lado de un documento que decia 88, y nada
+cruzaba las dos cifras. La leccion que el §558 saco —las diez herramientas entran en las
+compuertas de TODO bloque— dejaba este cabo suelto, y aqui se ve por que: una herramienta que
+corre en verde no prueba que mire lo que dice mirar.
+
+**La puerta, falsada con la trampilla que el §407 dejo puesta.** `NUCLEO_DOC` vive en la `:33`
+del juez <<solo para ensayar el gate contra una copia>>, asi que la falsacion no toca el arbol:
+sobre una copia con el desglose rancio el juez tiene que cazarlo, y sobre el bueno tiene que
+callar. El falsador sabotea una clase DISTINTA de la que estaba mal —si tocara justo NUCLEO
+probaria que caza ESA; tocando otra prueba que caza cualquiera—.
+
+**El numero, y el pronostico que se mueve.** El §560 escribio DOS veces que el S561 seria el
+atado del techo. Este sello entro antes y se lleva el 561; el atado pasa al §562. El §560 no se
+reescribe: una cifra que un asiento publico se corrige en el SIGUIENTE, y este es el siguiente.
+
+**La correccion del 5.A-432, por esa misma via.** El §560 fija el perimetro PUBLICADO del atado
+del techo en <<`RPC.md`:508, `CONFIANZA_RESIDUAL.md`:63 y este RFC en :66 y :194>>. Las dos
+primeras clavan. Las dos del RFC no: el arbol tiene el techo en `:72` —<<`N = 1.440` cabezas
+firmadas>>— y la otra aparicion de la cifra en `:200`, que no es el techo sino el gasto de
+indices del latido. Delta +6 en las dos, que es exactamente lo que el §560 anadio a ese fichero
+(246 -> 252, numstat 8/2): aquella medida se tomo sobre el PRE de su propio sello. La `:66` de
+entonces es hoy otra prosa y la `:194` esta EN BLANCO. Se corrige aqui para que el atado del
+§562 no nazca con el perimetro torcido. Y la clase del defecto queda dicha: una cita por numero
+de linea no la vigila nadie, y caduca con el corte anterior.
+
+**Contadores.** Ningun pin se mueve: el juez es herramienta, no test del canon. `spec/NUCLEO.md`
+315 lineas quietas, UNA cambiada; lo que cambia es el desglose publicado, NUCLEO 88 -> 92,
+DERIVADO de las 119 filas de la tabla y no tecleado. `tools/check_nucleo.py` 226 -> 256 lineas.
+Censo 71/48 y 119 filas, quietos. Los siete pines, quietos. Ningun Cargo tocado.
+
+**Lo que NO cierra.** Que el desglose sea ahora derivable no ata las demas cifras que el
+documento publica en prosa. La clase de defecto —regla DECLARADA, mitad implementada— no se ha
+censado en las otras nueve herramientas: se ficha, y es frente propio. Y del 5.A-432 queda
+corregida la CITA, no el mecanismo: el gate que vigile una cita por numero de linea sigue sin
+existir, y mientras no exista la siguiente caducara igual.
+

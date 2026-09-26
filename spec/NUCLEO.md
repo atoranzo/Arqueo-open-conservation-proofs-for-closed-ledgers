@@ -64,7 +64,7 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 ## 4. El censo
 
 **Censo derivado:** 71 elementos alcanzables en `zk-ssl-verify` y 48 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 88, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+(LIBRO 5, NÚCLEO 92, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las

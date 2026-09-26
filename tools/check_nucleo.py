@@ -13,7 +13,9 @@
 #      cajon sin RFC.
 #  R4  los totales que el documento DECLARA (por crate y por clase) son los
 #      derivados: un contador declarado que no se cruza con el derivado es
-#      un numero tecleado (PRECISION 16).
+#      un numero tecleado (PRECISION 16). Las DOS mitades desde el S561: la
+#      del por-clase se declaraba aqui y no se cruzaba, y el parentesis del
+#      censo envejecio cuatro filas en el S558 sin que nada lo viera.
 #
 # Como se deriva (el mismo instrumento que el PASTE-407-M2 de la sesion 97):
 #  - las zonas de test se recortan por ANIDAMIENTO REAL DE LLAVES desde cada
@@ -165,6 +167,20 @@ def declarados(doc):
     return int(m.group(1)), int(m.group(2))
 
 
+def declarados_por_clase(doc):
+    """el parentesis `(LIBRO n, NUCLEO n, ...)` que acompana al censo -> {CLASE: n}.
+
+    Va en la linea de ABAJO de la frase del censo, asi que se lee del TEXTO ENTERO y no de
+    una linea: una sonda que mirara solo la linea del `**Censo derivado:**` no lo veria.
+    """
+    t = ascii_(open(doc, encoding='utf-8').read())
+    m = re.search(r'\*\*Censo derivado:\*\*[^(]*\(([^)]*)\)', t, re.S)
+    if not m:
+        return None
+    d = {k.upper(): int(v) for k, v in re.findall(r'([A-Za-z]+)\s+(\d+)', m.group(1))}
+    return d if set(d) == set(CLASES) else None
+
+
 def main():
     os.chdir(RAIZ)
     rojo = []
@@ -211,6 +227,20 @@ def main():
     por_clase = {}
     for (n, f), fs in filas.items():
         por_clase[fs[0][0]] = por_clase.get(fs[0][0], 0) + 1
+    # R4, la otra mitad (S561). La regla de arriba dice "por crate Y POR CLASE", y hasta
+    # aqui `por_clase` se calculaba solo para decorar el mensaje verde: un contador que se
+    # imprime y no se cruza es un numero tecleado, que es justo lo que la R4 prohibe. Y
+    # envejecio: el S558 movio las filas de 115 a 119 y el parentesis se quedo en 115,
+    # imprimiendose la cifra buena al lado en cada corrida sin que nada las cruzara.
+    dc = declarados_por_clase(DOC)
+    if dc is None:
+        rojo.append('R4: el documento no declara su desglose por clase (el parentesis '
+                    '`(LIBRO n, NUCLEO n, REFERENCIA n, REGISTRO n)` que sigue al censo)')
+    else:
+        for c in CLASES:
+            if dc[c] != por_clase.get(c, 0):
+                rojo.append(f'R4: el documento declara {dc[c]} de clase {c} y la tabla '
+                            f'tiene {por_clase.get(c, 0)}: corregir el desglose del censo')
     if rojo:
         for r in rojo:
             print('  ROJO ' + r)
