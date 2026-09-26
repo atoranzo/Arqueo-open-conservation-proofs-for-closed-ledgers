@@ -40479,3 +40479,84 @@ anadirsela arrastra la capa y el nodo, que son quienes lo construyen-. El 5.A-41
 cuenta de `spec/vectors` la ha pagado a mano este corte, como el §546 y el §557-B, y el gate que
 la derive del arbol no existe todavia.
 
+## §559 — RFC-0010 E2a: el cobro y el nodo preguntan por el PREDICADO de la familia
+
+**Que.** Las dos bocas que producen un sobre sobre la cabeza de epoca preguntaban
+<<es exactamente la v5?>> y una v6 se habria quedado fuera en silencio, aunque la v6
+lleva la familia del estado comprometido entera porque `epoch_digest_v6` compone SOBRE
+la v5. Es la misma ceguera que el <<es 3?>> tuvo con la v4 y el <<es 4?>> con la v5, y
+la que el §558 ya cerro en las cinco puertas del mando. Tres cortes: el S559-a el cobro
+(`44ea7d2`), el S559-b el nodo (`f5b33b7`) y este, que paga los dos pines, las cifras y
+el asiento con UNA sola corrida de canon.
+
+**El giro, y lo que NO es.** En los dos sitios la guarda `format_version.0 != 5` pasa a
+preguntar por `lleva_parametros()` con el idioma `matches!` que el PROPIO productor usa
+-el molde se deriva del fichero, no de un hermano-, y el mensaje deja de escribir el
+enumerado a mano: lo pide a `texto_con_parametros()`. La CLAUSULA DE UNICIDAD cae con
+el, y es una decision marcada REVERSIBLE: <<la unica que firma pmetaRoot>> era falsa
+con dos versiones en el conjunto, y ese singular no lo derivaba nadie. Lo que NO entra:
+el dispatch del recompositor (`verify/main.rs`:483 y `cli/witness.rs`:910), donde la
+variante exacta es CORRECTA porque cada version tiene su propia funcion de digest. Una
+guarda por variante es ciega cuando decide si una PROPIEDAD esta presente, y es correcta
+cuando elige el RECOMPOSITOR: esa es la frontera, y esta medida.
+
+**La extraccion del nodo, y por que.** Dentro de `modo_prueba_edad` la guarda no se
+podia falsar: esa fn pide capa, `Args` y un fichero en disco, y su banco corre contra un
+nodo que hoy emite v5, asi que la v6 que habria que probar es inalcanzable por ese lado.
+Nace `exige_familia_del_estado(fv)` con su modulo propio. Toma la CIFRA y no la vista,
+y eso se leyo en el fuente antes de escribir una linea: `firmada()` devuelve una
+`VistaFirmada` que PRESTA del DTO, asi que una fn que la devolviera no compila. Su
+mensaje no llevaba el contexto de la ruta, asi que la fn no lo recibe.
+
+**Lo que se MIDIO, y no se razono.** (a) La v6 pasa `firmada()` HOY: el testigo del cobro
+carga la cabeza v5 REAL del catalogo, deriva la v6 por mutacion del campo -el molde que
+el MANIFIESTO del cable declara para sus negativos- y la acepta. Con eso el 5.A-422 deja
+de estar razonado y queda ejercitado. (b) Las NUEVE filas de manifiesto que congelan
+<<exige una cabeza v5>> SIGUEN VERDES con el texto derivado dentro, porque
+`tools/conformidad.sh`:42 compara por SUBCADENA (`grep -qF`) y <<v5 o v6>> la contiene.
+La doctrina `dddd` del 186 decia que el fragmento es prefijo-seguro; ahora esta corrido.
+(c) Y queda la bomba con fecha, declarada: el dia que el enumerado llegue a TRES
+versiones, `texto_de` mete una coma y las nueve caen de golpe.
+
+**El perimetro de las cifras, DERIVADO y no deducido.** Los dos pines se subieron en una
+COPIA del arbol (`git archive`) y `check_cifras` nombro OCHO cifras en TRES documentos:
+el TOTAL DE SELLO 1434 -> 1436 en `PRINCIPIOS.md`:358, `PAPER.md`:36 y `PAPER_EN.md`:33;
+el TOTAL CON LARGOS 1571 -> 1573 en los tres; y el desglose de `PRINCIPIOS.md`, 125 -> 126
+del nodo y 124 -> 125 del testigo. CUATRO de las ocho viven en frases PARTIDAS por el
+salto de linea, asi que se sustituyen por su fragmento y nunca como cadena contigua. Las
+<<1364 declarados>> y las <<1349 declared>> NO se tocan: siguen rancias a proposito
+(punto 319) y el gate no las nombra. Y el mismo gate destapo un rojo que el corte no
+habia previsto: el guardian de la CRONICA del §552 exige que la fila que mueve su pin
+escriba su entrada, asi que las dos filas ganan la suya.
+
+**Las decisiones, delegadas <<con la ley>> y todas REVERSIBLES.** (D-1) `cli/prenda.rs`
+NO se toca: su mensaje dice que exige la v5 <<porque es la que el nodo sirve>>, y esa
+razon no es de composicion; meterla en un predicado de `VersionCabeza` mezclaria dos
+semanticas (vara 2). Deja deuda: el dia que el nodo emita v6, esa guarda y su frase se
+re-miden. (D-2) NO nace ningun predicado: `lleva_parametros` ya cubre `nextPending`,
+porque las <<dos marcas de agua>> de la familia v5 son `nextPending` y `nextIndex`,
+medido en `wire/lib.rs`:724 y :1129. Por eso el censo del nucleo no se mueve. (D-3) las
+guardas ENTRAN: cambiar el texto y dejar el `!= 5` habria creado una mentira nueva
+(vara 4). (D-4) el reparto en tres, con un solo `-B` para los dos pines. (D-5) los cuatro
+`case ... in 4|5)` de `banco_consumo.sh` y `banco_dos_libros.sh` NO se fingen atados:
+quedan con su numero de cola, porque el shell no tiene predicado y la unica forma de
+<<un productor>> seria una boca nueva en el mando. (D-6) la extraccion de arriba. (D-7)
+partir el corte, porque el contenedor del chat no compila Rust y un bloque que no se
+puede ensayar entero llega sin falsar su propio codigo.
+
+**Contadores.** Pines `zk-ssl-cli` 124 -> 125 (un test nuevo) y `zk-ssl-node` 125 -> 126
+(un test nuevo), cada uno con su entrada de CRONICA. TOTAL DE SELLO 1434 -> 1436, TOTAL
+CON LARGOS 1571 -> 1573, en OCHO cifras de TRES documentos que el gate nombro sobre una
+copia. `check_tests` y el offset +8, sin medir aqui: los declara el canon. Numstat de los
+tres cortes: `crates/zk-ssl-cli/src/cobro.rs` 32/4 (`44ea7d2`),
+`crates/zk-ssl-node/src/main.rs` 44/11 (`f5b33b7`) y el conjunto de este. Ningun Cargo
+tocado: los dos crates ya dependian de `zk-ssl-verify`, censado en sus manifiestos.
+
+**Lo que NO cierra.** El ATADO E que el 5.A-421 pide -las VEINTE citas del conjunto en
+`spec/PAQUETE.md`, sin gate- no entra aqui: nace verde solo si la barrida va en su mismo
+sello, y ese es el §560. Los cuatro enumerados en shell del 5.A-420 siguen abiertos con
+su numero. El plural <<son las que firman>> no lo deriva nadie: hoy son dos versiones y
+es cierto, y si el conjunto se quedara en una volveria a ser falso. Y el 5.A-419 queda
+CORREGIDO por medida: son TRES productores del texto, no cuatro, y uno de ellos -el de
+la prenda- afirma otra cosa.
+
