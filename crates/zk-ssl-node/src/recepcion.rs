@@ -73,7 +73,7 @@
 
 use std::path::Path;
 
-use zk_ssl_guardian::{GuardianError, GuardianIndice};
+use zk_ssl_guardian::{GuardianError, GuardianIndice, Reconciliacion};
 
 /// Cuenta, con `fsync`, las operaciones que el nodo **llega a evaluar**.
 ///
@@ -108,11 +108,30 @@ impl ContadorRecepcion {
     pub fn actual(&self) -> u64 {
         self.guardian.actual()
     }
+
+    /// Lo que se encuentra al comparar este contador con lo que el REGISTRO
+    /// dice haber anotado, tras un reinicio (RFC-0010, D-J).
+    ///
+    /// ⚠️ **No decide aquí.** Devuelve la misma [`Reconciliacion`] que el
+    /// guardián usa para el índice de firma, porque es el MISMO problema con
+    /// otros dos números: uno que sólo avanza y otro que debería ir detrás.
+    /// Escribir un segundo veredicto sería la clase de §296 y §298 — dos
+    /// implementaciones del mismo problema pueden discrepar.
+    ///
+    /// La política es de quien llama, salvo una parte que no es suya:
+    /// [`zk_ssl_guardian::no_admite_matiz`] marca `ClaveAdelantada`, que aquí
+    /// significa **el registro por delante del contador**. Eso no es un hueco:
+    /// es que dos operaciones distintas pueden llevar el mismo número, y es
+    /// justo lo que produce restaurar uno de los dos ficheros sin el otro.
+    pub fn reconciliar(&self, mayor_anotado: u64) -> Reconciliacion {
+        self.guardian.reconciliar(mayor_anotado)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use zk_ssl_guardian::no_admite_matiz;
 
     fn en_disco(nombre: &str) -> std::path::PathBuf {
         let d = crate::tests_dir(nombre);
@@ -175,5 +194,29 @@ mod tests {
         cb.recibir().expect("b");
         assert_eq!(ca.actual(), 2);
         assert_eq!(cb.actual(), 1, "cada contador lleva SU cuenta");
+    }
+
+    #[test]
+    fn reconciliar_dice_lo_mismo_que_el_guardian() {
+        // No es un adorno. Sin un testigo que lo llame, `reconciliar` sale
+        // `dead_code` y el canon exige CERO warnings -- lo cazo la VIVA del
+        // S565. Y un `dead_code` suele senalar que **falta una llamada**, no
+        // que sobre una funcion: aqui faltaba esta.
+        let p = en_disco("rec_reconcilia");
+        let mut c = ContadorRecepcion::abrir(&p).expect("abrir");
+        for _ in 0..3 {
+            c.recibir().expect("recibir");
+        }
+        // el registro al dia
+        assert!(matches!(c.reconciliar(3), Reconciliacion::Coincide { .. }));
+        // el registro DETRAS: huecos entre reservar y anotar. Declarables.
+        let huecos = c.reconciliar(1);
+        assert!(matches!(huecos, Reconciliacion::ContadorAdelantado { .. }));
+        assert!(!no_admite_matiz(&huecos), "un hueco no es un muro");
+        // El registro DELANTE del contador: el caso M5 de HBS-STATE, restaurar
+        // uno de los dos ficheros sin el otro. NO ADMITE MATIZ.
+        let delante = c.reconciliar(9);
+        assert!(matches!(delante, Reconciliacion::ClaveAdelantada { .. }));
+        assert!(no_admite_matiz(&delante), "el registro por delante tiene que parar");
     }
 }

@@ -42,6 +42,7 @@ mod latido;
 /// aplicar.**
 mod diario;
 mod recepcion;
+mod registro_recepcion;
 mod vista_acuses;
 
 use std::collections::{BTreeMap, BTreeSet};
