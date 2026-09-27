@@ -4,7 +4,8 @@
   (§412 la adopción; E1 §413, E2 §414–§415, E3 §416–§422, E4 §427–§431, §433–§437 y
   §439–§440-B, las etapas con sus puertas; §441 este giro). Se conserva como registro de lo
   decidido, lo medido y lo descartado.
-- **Autores:** Che, con Claude (sesión 99)
+- **Autor:** Ángel José Toranzo Portela
+- **Asistencia GenAI:** Claude (sesión 99) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-06
 - **Versión del protocolo afectada:** `zkssl/0.3` — **sube a `zkssl/0.4` en E2** (ver Compatibilidad)
 - **Asiento(s) de AUDITORIA:** §32, §36, §55, §117, §236, §275, §292, §387, §391, §392, §405, el §412, que lo sella, el §413 (E1), §414–§415 (E2), §416–§422 (E3), §427–§431, §433–§437 y §439–§440-B (E4), y el §441 (este giro a ACEPTADO)

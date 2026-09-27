@@ -4,7 +4,8 @@
   (§396 la adopción; §397–§399 las etapas E1–E3 con sus puertas;
   §400 este giro). Se conserva como registro de lo decidido, lo medido
   y lo descartado.
-- **Autores:** Che, con Claude (sesión 92)
+- **Autor:** Ángel José Toranzo Portela
+- **Asistencia GenAI:** Claude (sesión 92) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-04
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad)
 - **Asiento(s) de AUDITORIA:** §243, §289, §290, §293, §322, §395, el §396, que lo sella, el §397 (E1) y el §398 (E2), el §399 (E3), y el §400 (este giro a ACEPTADO)

@@ -1,7 +1,8 @@
 # RFC-0010 — El recibo de recepción: lo que el operador no puede negar haber recibido
 
 - **Estado:** PROPUESTO
-- **Autores:** Che, con Claude (sesión 184)
+- **Autor:** Ángel José Toranzo Portela
+- **Asistencia GenAI:** Claude (sesión 184) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-25
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube** (ver Compatibilidad). La cabeza
   pasa a **v6** con una pareja aditiva, exactamente como la v4 del RFC-0006 (§414) y la v5 del

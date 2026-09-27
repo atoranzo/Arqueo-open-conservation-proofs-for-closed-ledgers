@@ -4,7 +4,8 @@
   E1 §451–§453, E2 §454, E3 §455–§456 y §458–§460, E4 §461–§467 y §472, E5 §468–§471 y
   §473–§479, las etapas con sus puertas; §480 la spec al día; §481 este giro). Se conserva como
   registro de lo decidido, lo medido y lo descartado.
-- **Autores:** Che, con Claude (sesión 119)
+- **Autor:** Ángel José Toranzo Portela
+- **Asistencia GenAI:** Claude (sesión 119) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-09
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad). La cabeza
   v5 y el `data` del error son aditivos en el cable; la versión de FORMATO viaja en la firma

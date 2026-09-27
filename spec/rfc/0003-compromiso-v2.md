@@ -4,7 +4,8 @@
   (§343 la adopcion; §345-§354 las etapas E1-E3 con sus puertas;
   §356 este giro). Se conserva como registro de lo decidido, lo medido
   y lo descartado.
-- **Autores:** Che (con Claude, sesiones 56-57)
+- **Autor:** Ángel José Toranzo Portela
+- **Asistencia GenAI:** Claude (sesiones 56-57) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-08-22 (r2; la r1 del 2026-08-21, `9bc8f30d3a14e0de`/182, se conserva para diff)
 - **Versión del protocolo afectada:** zkssl/0.2 → zkssl/0.3 (rotura de formato)
 - **Asiento(s) de AUDITORIA:** §178 (diseño de la caducidad), §180 (ejecución), §340 (el reloj atado), §342 (quién/cuándo son metadatos, medido) — y el **§343** (la adopción de este RFC), y §352–§354 (la E3c entera: SendV2Air, la via viva, la emision 0.3), y el §356 (este giro a ACEPTADO)

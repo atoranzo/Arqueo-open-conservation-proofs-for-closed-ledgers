@@ -4,8 +4,9 @@
   §528 la E3, al diseño; E2 §531, E3a §532–§534 y E3b §535–§538, las etapas con sus puertas; el
   §538-B, el §538-C y el §538-D, la prosa, los comentarios y la spec al día; §539 este giro). Se
   conserva como registro de lo decidido, lo medido y lo descartado.
-- **Autores:** Che, con Claude (sesiones 162, 163, 164, 165, 166, 169, 170, 171, 172, 173, 174,
-  176, 177 y 178)
+- **Autor:** Ángel José Toranzo Portela
+- **Asistencia GenAI:** Claude (sesiones 162, 163, 164, 165, 166, 169, 170, 171, 172, 173, 174,
+  176, 177 y 178) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-21
 - **Versión del protocolo afectada:** `zkssl/0.3` → **`zkssl/0.4` en E3b-2 (§538)** (ver
   Compatibilidad). Hasta E3b-2 este RFC no cambió un método, un tipo del cable ni un vector:

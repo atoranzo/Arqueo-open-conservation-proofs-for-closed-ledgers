@@ -1,7 +1,8 @@
 # RFC-0005 — El núcleo congelado y la regla de extensión
 
 - **Estado:** PROPUESTO
-- **Autores:** Che, con Claude (sesiones 96-97)
+- **Autor:** Ángel José Toranzo Portela
+- **Asistencia GenAI:** Claude (sesiones 96-97) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-05
 - **Versión del protocolo afectada:** `zkssl/0.3` — **no sube** (ver Compatibilidad)
 - **Asiento(s) de AUDITORIA:** §236, §243, §290, §395, §397, §398, §404 (el primer sello de H3), y el §405, que lo sella

@@ -1,7 +1,8 @@
 # RFC-0000 — <título corto>
 
 - **Estado:** BORRADOR
-- **Autores:** <quién>
+- **Autor:** <quién>
+- **Asistencia GenAI:** <modelo y versión, o «ninguna»> — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** <aaaa-mm-dd>
 - **Versión del protocolo afectada:** zkssl/0.1
 - **Asiento(s) de AUDITORIA:** <## NNN. al sellar>
