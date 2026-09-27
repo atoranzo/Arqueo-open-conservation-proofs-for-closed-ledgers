@@ -52,9 +52,30 @@
 //! §253 declaró peor que no tener contador.
 //!
 //! El caso real no es una caída: es **restaurar uno de los dos ficheros sin el
-//! otro**. Es el mismo defecto que el banco de HBS-STATE mide en LMS (su M5):
-//! restaurada una clave vieja, la librería vuelve a firmar con hojas ya
-//! usadas, y las dos firmas verifican.
+//! otro**. Y eso **no nombra un veredicto: nombra dos**, porque los dos ficheros
+//! no son simétricos. Restaurar viejo el CONTADOR deja el registro por delante
+//! —`ClaveAdelantada`, que es esta rama—. Restaurar viejo el REGISTRO deja el
+//! contador por delante —`ContadorAdelantado`, el que la sección anterior acaba
+//! de declarar benigno—.
+//!
+//! ⚠️ CORRECCIÓN (§565-B), citada y no borrada. Este párrafo decía: «Es el mismo
+//! defecto que el banco de HBS-STATE mide en LMS (su M5): restaurada una clave
+//! vieja, la librería vuelve a firmar con hojas ya usadas, y las dos firmas
+//! verifican.» La mecánica es correcta y **la etiqueta estaba colgada de la rama
+//! equivocada**: restaurada una clave VIEJA, el material queda DETRÁS del
+//! contador, y eso es `ContadorAdelantado`. El M5 cae en la rama benigna, no en
+//! ésta; el que cae aquí es su espejo.
+//!
+//! ⚠️ Y LO QUE ESTA RAMA NO PARA, dicho junto a lo que para: restaurar el
+//! REGISTRO viejo con el contador vivo es `ContadorAdelantado`, y es
+//! **indistinguible de un hueco legítimo por caída** —los dos casos son el MISMO
+//! par de números—. El spec de HBS-STATE lo dice verbatim, «No datum on disk
+//! separates the innocent case from the dangerous one», y anota su vector `A4`
+//! —`counter=7 key=5 -> CounterAhead, fatal=False`— como «the normal case».
+//! Fallar cerrado ante cualquier discrepancia hacia atrás pararía también la
+//! operativa normal. La salida no es una política de este módulo: pide un DATO
+//! MÁS ALLÁ DEL PAR —comprobación al ABRIR el material y un testigo negativo de
+//! la hoja quemada—, y eso es otra etapa. **La D-J cubre media restauración.**
 //!
 //! Por eso el arranque **no lo interpreta aquí**: se lo pregunta a
 //! [`zk_ssl_guardian::Reconciliacion`] a través de
@@ -358,8 +379,11 @@ mod tests {
 
     #[test]
     fn el_registro_por_delante_del_contador_no_admite_matiz() {
-        // ⚠️⚠️ EL CASO M5, traducido: restaurar el contador de un respaldo
-        // viejo con el registro vivo. La maquina que lo dice es la del
+        // ⚠️⚠️ EL ESPEJO DEL M5, traducido: restaurar el CONTADOR de un
+        // respaldo viejo con el registro vivo. (Decia <<EL CASO M5>> y era
+        // falso: el M5 restaura el MATERIAL viejo, que deja el contador por
+        // delante -- `ContadorAdelantado`, la rama benigna. Corregido en el
+        // §565-B, citando y sin borrar.) La maquina que lo dice es la del
         // guardian, no una propia -- dos implementaciones del mismo problema
         // pueden discrepar.
         let adelantado = Reconciliacion::ClaveAdelantada { contador: 3, clave: 9, sin_registrar: 6 };

@@ -40943,3 +40943,120 @@ Un atado que exija, por cada `spec/rfc/NNNN-*.md` distinto de la plantilla, una 
 y una `- **Asistencia GenAI:**`, seria barato y es de la misma familia que el resto de atados de
 esta casa: dos listas, un contrato. Queda nombrado, sin numero.
 
+
+## §565 — RFC-0010 E2c-1: el registro de recepcion, el pin que se midio y la etiqueta mal atribuida
+
+`9208b58` (el S565) y el commit que lleva este asiento (el S565-B), sobre `09755e3`. El primero
+hace NACER `crates/zk-ssl-node/src/registro_recepcion.rs` -370 lineas, 10 testigos- y anade el
+undecimo en `recepcion.rs` (3 files changed, 415 insertions(+), 1 deletion(-)); el segundo mueve el
+pin del nodo, las SIETE cifras que ese pin arrastra, corrige la prosa de TRES comentarios y corre el
+canon. Canon `--sello` VERDE en el -B. En el S565 NO CORRIO, y no podia.
+
+**Por que el sello va partido, y no es una comodidad.** El S565 anade once testigos, asi que el pin
+del nodo se mueve y `canon.sh` da rojo mientras el declarado no los siga. Correrlo en el primero
+seria un rojo garantizado por diseno. El patron es el del S495 / S495-B: el codigo en el sello, y el
+pin, las cifras y el canon VERDE en el `-B`. Estaba escrito en el propio bloque del S565 y en su
+salida, y por eso este asiento cubre los dos.
+
+**EL PIN SE MIDIO, y la medida NO es la cuenta de `#[test]`.** La cabecera de la tabla del canon lo
+dice con todas las letras: `pasan` es lo que el arnes EJECUTA, no los testigos declarados. La VIVA
+del S565 corrio FILTRADA -`cargo test -p zk-ssl-node --release recepcion`-, asi que el total del
+crate no lo habia medido nadie: el `126 -> 137` que la carga anunciaba era una DERIVACION de los
+declarados -126 en el PRE, que coincidian con el pin, mas 10 del fichero nuevo y 1 de
+`reconciliar`-. Este bloque MIDE primero, con `cargo test -p zk-ssl-node --release` sin filtro y la
+suma de los `N passed` por el mismo canalillo de `canon.sh`:223, y se niega a tocar un byte si la
+medida no es la esperada. Un numero que nadie ha medido no se escribe.
+
+**EL PERIMETRO DE LAS CIFRAS SE DERIVO, no se supuso.** Primero el control, `check_cifras` VERDE
+sobre el arbol sellado; luego el pin subido en una COPIA, y el gate NOMBRO siete cifras en tres
+documentos: el TOTAL DE SELLO 1444 -> 1455 en `PAPER.md`:36, `PAPER_EN.md`:33 y `PRINCIPIOS.md`:358;
+el TOTAL CON LARGOS 1581 -> 1592 en `PAPER.md`:38, `PAPER_EN.md`:35 y `PRINCIPIOS.md`:361; y el
+DESGLOSE del nodo 126 -> 137 en `PRINCIPIOS.md`:359. Con las siete puestas el gate vuelve a rc 0 con
+el MISMO censo -25 cifras, 7 de desglose, LARGOS 3 de 3, CRONICA 10 filas-, y esa vuelta al verde es
+la prueba de que el perimetro es EXACTAMENTE siete. Clava con el precedente de la 187, que movio DOS
+pines y pago OCHO cifras. Cada literal casa UNA sola vez en todo su fichero, y el parche lo asserta
+por token Y por linea: un diccionario indexado por linea falla en silencio cuando la linea se mueve.
+
+**Y la fila del canon cuenta su historia.** `tools/canon.sh`:97 gana su entrada del 565. Desde el
+S552 hay compuerta para esto, y no es adorno: el S550 movio un pin y dejo la cronica en el sello
+anterior, con nueve filas cuadrando y la decima contando una historia falsa. La fila queda en 429
+lineas y 94 bytes mas -mismas lineas, huella nueva: la trampa del 83-.
+
+**LOS TRES DOCUMENTOS SALEN LINEA- Y BYTE-NEUTRALES, y se predijo antes de tocarlos.** Las siete
+sustituciones conservan el ancho -cuatro digitos a cuatro, y 126 a 137 tres a tres-, asi que
+`PAPER.md` se queda en 1037 lineas y 46.751 B, `PAPER_EN.md` en 994 y 42.908 B, y `PRINCIPIOS.md` en
+450 y 19.012 B. El bloque lo exige por BYTES y no solo por lineas. **Y ninguna SHA-REGION cubre una
+linea que este corte toca**: las 31 clavan sobre `9208b58` y ninguna se re-deriva. Los rangos
+`PAPER.md` 36..41 y `PRINCIPIOS.md` 354..360 que el traspaso cita estan en su bloque de MUERTAS, no
+en la tabla viva -PRECISION 67-, y tomarlos por vivos habria metido una falsedad en este asiento.
+Las vivas de `PAPER.md` son 291..314, 346..361, 438..449 y 572..577; la de `PAPER_EN.md`, 538..543;
+`PRINCIPIOS.md` no tiene ninguna.
+
+**LAS <<1364 declaradas>> Y LAS <<1349 declared>> NO SE TOCAN, y el bloque lo EXIGE.** Son la
+tercera cifra de esos mismos parrafos, el gate no las ve -hueco declarado en la cabecera de la
+herramienta desde el S239 y con numero de cola en el 5.A-149, que no vigila las dos sumas de las
+portadas- y estan rancias A PROPOSITO por el punto 319; ademas discrepan entre si, 1364 el
+castellano y 1349 el ingles, que es el 5.A-416. Un inerte censa que las tres siguen donde estaban:
+fail-closed contra la tentacion de arreglarlas de paso, que es como se ensancha un corte hasta que
+deja de cerrar.
+
+**LA ETIQUETA <<M5>> ESTABA MAL ATRIBUIDA, Y EN TRES SITIOS DE DOS FICHEROS, no en dos de uno.** El
+M5 que el banco de HBS-STATE mide en LMS es restaurar el MATERIAL viejo, y eso deja la clave DETRAS
+del contador: es `ContadorAdelantado`, la rama que esta casa declara BENIGNA. La fatal,
+`ClaveAdelantada`, es su ESPEJO -el CONTADOR restaurado viejo con el material vivo-. Los dos
+ficheros NO son simetricos, luego <<restaurar uno de los dos sin el otro>> no nombra un veredicto:
+nombra DOS, y el peligroso de HBS-STATE cae justo en el que no para. La mecanica estaba bien contada
+en los tres sitios; la etiqueta, colgada de la rama equivocada:
+
+- `registro_recepcion.rs`:54-57, en la seccion <<Lo que NO es benigno>>, con el M5 de justificacion.
+- `registro_recepcion.rs`:361, en el comentario del testigo, que llamaba M5 a su propio espejo.
+- `recepcion.rs`:216-217, **EL QUE LA CARGA-193 NO FICHO** -dice <<dos comentarios de
+  `registro_recepcion.rs`>>-: entro con el propio testigo del S565 y dice <<el caso M5 de
+  HBS-STATE ... NO ADMITE MATIZ>>. Lo caza un censo del literal sobre el arbol ENTERO; el de
+  la carga miro UN fichero. Leccion (a) del arco otra vez, y le toco justo a la seccion que
+  corrige un censo mal acotado.
+
+Los DOS `assert` y el NOMBRE del test estaban BIEN y no mencionan M5: lo que fallaba era prosa, y la
+prueba no. Se corrige CITANDO y no borrando, con la correccion subida al parrafo que se contradice,
+que es la forma del 5.A-432. El censo del literal queda en CERO sitios sin correccion.
+
+**LO QUE ESA RAMA NO PARA, y ahora esta escrito junto a lo que para.** La D-J que se ratifico cubre
+MEDIA restauracion. Restaurar el REGISTRO viejo con el contador vivo es `ContadorAdelantado` y es
+INDISTINGUIBLE de un hueco legitimo por caida: los dos casos son el MISMO par de numeros. El spec de
+HBS-STATE lo dice verbatim -<<No datum on disk separates the innocent case from the dangerous
+one>>- y su vector `A4 counter=7 key=5 -> CounterAhead, fatal=False` lo anota como <<the normal
+case>>. Fallar cerrado ante cualquier discrepancia hacia atras pararia tambien la operativa normal.
+La salida NO es una politica del consumidor: pide un DATO MAS ALLA DEL PAR -comprobacion al ABRIR el
+material, antes de que el juez vea un numero, y un testigo negativo de la hoja quemada-. Eso es un
+hito aparte y no entra en E2c: queda nombrado, sin numero.
+
+**Contadores.** El pin del nodo 126 -> 137, y los otros seis de los siete sin mover. El TOTAL DE
+SELLO 1444 -> 1455 y el TOTAL CON LARGOS 1581 -> 1592. `check_tests` 1603 -> 1614 en el ARCO, y el
+offset en mas 8, QUIETO: 1455 + 137 = 1592 ; 1592 + 14 = 1606 ; el canon declara 1614. OJO con ese
+par: el 1603 es el PRE del S565 y el 1614 el del `-B`, asi que los declarados son INVARIANTES a los
+dos lados de ESTE corte -los once testigos los anadio el sello, no su mitad-, y el bloque los juzga
+por valor Y por invariante contra su propia captura del PRE. Ningun `Cargo` tocado. El
+cable NO sube: `zkssl/0.4` quieto, porque el -B no toca un byte de lo firmado. La correccion de
+prosa no anade ni quita un testigo, y el bloque lo comprueba: el crate sigue en 137 `#[test]`.
+
+**LECCION, y es la septima de su clase en este arco.** Reusar una abstraccion da la TRADUCCION y no
+da la COBERTURA: que encaje no significa que cubra, y lo que no trae se hereda igual. La forma de
+DECIRLO es nombrar lo que la rama NO para, junto a lo que para. La forma de COMPROBARLO es censar el
+literal sobre el arbol entero y no sobre el fichero que se esta editando -- y lo mismo vale para un
+rango leido del bloque de MUERTAS de la seccion 7 en vez de la tabla viva.
+
+**Y UNA TERCERA DEL MISMO TRONCO, pagada en la maquina del autor y con el bloque ya escrito.** La
+puerta del PRE exigia `check_tests` 1603, que es el valor sobre `09755e3` -el PRE del S565- y no
+sobre `9208b58`, que es el de este corte y vale 1614. Los dos numeros estaban MEDIDOS, y se escribio
+el del arbol equivocado. **Un numero medido sobre OTRO arbol es un numero ajeno**, y se cruza contra
+SU fuente igual que se cruza un identificador: la raiz de casi todos los rojos de esta casa. Lo cazo
+la puerta con TOCADO=0, sin escribir un byte, que es exactamente para lo que esta -- y el arreglo no
+fue aflojarla: fue anadirle la forma que no depende de que yo acierte el literal, el INVARIANTE
+contra su propia captura del PRE. Van ya TRES puertas de este arco corregidas en su fuente y ninguna
+aflojada.
+
+**Lo que NO cierra.** La cobertura de la restauracion sigue abierta y pide un dato mas alla del par:
+nombrada, sin numero, hito aparte. Las dos sumas de las portadas siguen sin compuerta (5.A-149) y
+las <<1364>>/<<1349>> siguen rancias y discrepantes (5.A-416, punto 319). El 5.A-432 y el 5.A-442
+siguen mal medidos y su correccion es de la CARGA, no de este corte. Y el atado del techo de la
+vista de recibos no entra aqui: nace en su propio sello, antes de E4.

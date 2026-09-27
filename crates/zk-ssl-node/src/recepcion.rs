@@ -213,8 +213,10 @@ mod tests {
         let huecos = c.reconciliar(1);
         assert!(matches!(huecos, Reconciliacion::ContadorAdelantado { .. }));
         assert!(!no_admite_matiz(&huecos), "un hueco no es un muro");
-        // El registro DELANTE del contador: el caso M5 de HBS-STATE, restaurar
-        // uno de los dos ficheros sin el otro. NO ADMITE MATIZ.
+        // El registro DELANTE del contador: el CONTADOR restaurado de un
+        // respaldo viejo con el registro vivo. NO ADMITE MATIZ. (Decia <<el caso
+        // M5 de HBS-STATE>> y era falso: el M5 restaura el MATERIAL viejo y cae
+        // en `ContadorAdelantado`, la rama benigna -- §565-B.)
         let delante = c.reconciliar(9);
         assert!(matches!(delante, Reconciliacion::ClaveAdelantada { .. }));
         assert!(no_admite_matiz(&delante), "el registro por delante tiene que parar");
