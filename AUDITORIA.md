@@ -40862,3 +40862,84 @@ claves se assertan contra la tabla; y un `say` de comillas dobles con una comill
 dentro ejecuta su propio texto, porque una comilla invertida dentro de comillas dobles es
 sustitucion de ordenes y el texto de un bloque es DATO.
 
+## §564 — La declaracion de uso de IA generativa, y el alias fuera de las cabeceras
+
+`95e8785` y `d46002d`, sobre `ae94544`. Dos cortes de PROSA: el primero crea `GENAI.md` y lo
+enlaza desde los dos README y desde `CONTRIBUTING.md` (4 files changed, 152 insertions(+)); el
+segundo cambia las NUEVE cabeceras de `spec/rfc/` (9 files changed, 22 insertions(+), 12
+deletions(-)). Ni un `.rs`, ni un `Cargo`, ni un vector. Canon `--sello` VERDE en los dos.
+
+**Por que existe este corte, y de donde sale.** El repositorio llevaba UN commit con una linea
+de atribucion a un asistente, de 845. El autor pidio quitarla, y se quito con un `--amend` y un
+empuje forzado sobre el ultimo commit, que era el S563-C. Lo que la medicion destapo al hacerlo
+es que el agujero real no era esa linea: era que **el arbol no declaraba en ninguna parte como se
+produce**, mientras ocho cabeceras de RFC nombraban al asistente desde la sesion 56. Un lector
+externo se encontraba la asistencia SIN MARCO. Eso no se cierra borrando: se cierra
+**ANADIENDO**, y eso es todo lo que hace este sello.
+
+**Lo que `GENAI.md` afirma, y lo que el registro sostiene.** Que el metodo es medir, decidir,
+proponer un bloque, EJECUTARLO en la maquina del autor, correr el canon y commitear solo lo
+verde; que nada entra sin pasar las compuertas; y que ninguna afirmacion del repositorio
+descansa en el conocimiento del modelo, porque lo que se afirma del presente esta verificado
+contra el arbol y lo que no se midio se declara como no medido. Dice tambien, con todas las
+letras, que **el marcado por commit nunca fue el metodo de este proyecto y no se presenta como
+tal**: el registro por cambio es este fichero. El documento NO nombra ningun expediente ni
+ninguna via de financiacion, y un INERTE del bloque daba rojo si alguna de esas palabras se
+colaba: es un documento del PROYECTO.
+
+**El alias fuera, y el universo DERIVADO en vez de supuesto.** Un `git grep -lIw` sobre el arbol
+entero dio OCHO ficheros, los ocho bajo `spec/rfc/`, y el gate comparaba contra ese censo: si
+hubiera aparecido un noveno sitio, el bloque paraba en vez de dejarlo a medias. El `0002`, que
+dice `(mesa)`, no se toco. La plantilla `0000` SI, porque es el unico productor de la FORMA de
+la cabecera —`PROCESO.md` no la describe, medido— y cambiar las ocho sin cambiar el molde
+garantizaba que el RFC-0011 naciera en la forma vieja: dos listas, un contrato.
+
+**El texto de las sesiones se EXTRAJO; no se reteclo.** Y hubo que hacerlo con DOS patrones,
+no con uno: siete cabeceras ponen el parentesis en la sesion —`Che, con Claude (sesion 92)`— y
+el `0003` lo pone por fuera —`Che (con Claude, sesiones 56-57)`—. El que no casara ninguna de
+las dos moria nombrando el valor que no caso, en vez de inventarselo. Dos cabeceras cruzaban el
+salto de linea (tres lineas el `0008`, dos el `0009`) y el `0008` lleva parentesis ANIDADOS:
+salieron intactas, solo re-envueltas. Y el INERTE que lo prueba no mira el fichero, mira el
+DIFF: todo lo que entra y sale es una vineta de autoria o su continuacion, y las diez lineas
+`- **Estado:**` —lo unico que `check_publicadas` deriva de un RFC— se cruzaron byte a byte antes
+y despues.
+
+**DOS PREMISAS DEL ASISTENTE, FALSADAS, y quedan escritas como falsas.** La primera: sostuvo que
+estos ficheros pasaban una PUERTA DE ANCHO y que habia que respetarla. No existe. `canon.sh:272`
+corre ocho herramientas y `check_columns.py` mide columnas de AIR, no ancho de markdown; el
+arbol lo confirma con `README.md` a 431 y el `0008` a 1598. Un identificador ajeno escrito sin
+abrir su fuente, que es la raiz de casi todos los rojos de esta casa, cometido esta vez por el
+asistente. La segunda: sostuvo que si el alias vivia en las cabeceras, el enlace entre la obra y
+su autor podia estar roto en el `git log`. Medido: los 845 commits van firmados con el nombre,
+autor y committer, desde el primero. El enlace nunca estuvo roto.
+
+**CASO 26 DE LA FAMILIA, y lo caza el ensayo: `grep` cuenta BYTES, no caracteres.** El gate de
+unicidad del ancla del README usaba `'^### C.digo de terceros'` y devolvia CERO sobre
+`### Codigo de terceros` con tilde, porque el `.` de `grep` casa UN byte y la vocal acentuada
+ocupa DOS en UTF-8. Hermano exacto del separador decimal que ya mordio con el 120,4. El bloque
+murio en su propia puerta con `TOCADO=0` —sin escribir un byte— y el conteo paso a Python, que
+lee caracteres; y se puso a proposito en **el mismo motor que luego parchea**, para que el gate
+y el parche no puedan discrepar: un solo productor del ancla.
+
+**Contadores: ninguno se mueve, y eso tambien es una medida.** Ningun pin cambia, no nace un
+solo test, ninguna cifra publicada se toca, ningun `Cargo` tocado. El cable NO sube: `zkssl/0.4`
+quieto, porque esto no toca un byte de lo firmado. Lo unico que crece son lineas de prosa.
+`GENAI.md` nace con 131; `README.md` 280 -> 287, `README_EN.md` 249 -> 257,
+`CONTRIBUTING.md` 156 -> 162; y las nueve cabeceras suman una linea cada una salvo el `0008`
+(+2) y el `0009` (+1).
+
+**Lo que el corte deja para mirar, medido y no deducido.** El arbol nombra al autor de DOS
+maneras. Diez sitios vivos dicen `Angel Toranzo Portela` —`Cargo.toml`, `LICENSE-MIT`, `NOTICE`,
+los dos README, `doc/ZENODO.md` y tres de `doc/historia/`, ademas de los 845 commits— y
+`CITATION.cff` y los cuatro preprints con DOI dicen `Angel Jose Toranzo Portela`, que es el
+nombre completo y el que ahora llevan las nueve cabeceras, con sus tildes. Dos productores del
+mismo dato. NO se unifica aqui: un aviso de copyright y un `CITATION.cff` merecen su propio
+corte y su propia decision, y los preprints depositados no se reescriben nunca.
+
+**Lo que NO cierra.** La declaracion no tiene compuerta: ninguna herramienta comprueba que
+`GENAI.md` siga diciendo la verdad sobre el metodo, ni que una cabecera nueva traiga su vineta
+de asistencia. Hoy lo sostiene la plantilla `0000` —que ya nace con las dos vinetas— y nada mas.
+Un atado que exija, por cada `spec/rfc/NNNN-*.md` distinto de la plantilla, una vineta `- **Autor:**`
+y una `- **Asistencia GenAI:**`, seria barato y es de la misma familia que el resto de atados de
+esta casa: dos listas, un contrato. Queda nombrado, sin numero.
+
