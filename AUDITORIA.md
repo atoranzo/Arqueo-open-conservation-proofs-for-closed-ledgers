@@ -40943,7 +40943,6 @@ Un atado que exija, por cada `spec/rfc/NNNN-*.md` distinto de la plantilla, una 
 y una `- **Asistencia GenAI:**`, seria barato y es de la misma familia que el resto de atados de
 esta casa: dos listas, un contrato. Queda nombrado, sin numero.
 
-
 ## §565 — RFC-0010 E2c-1: el registro de recepcion, el pin que se midio y la etiqueta mal atribuida
 
 `9208b58` (el S565) y el commit que lleva este asiento (el S565-B), sobre `09755e3`. El primero
@@ -41060,3 +41059,4 @@ nombrada, sin numero, hito aparte. Las dos sumas de las portadas siguen sin comp
 las <<1364>>/<<1349>> siguen rancias y discrepantes (5.A-416, punto 319). El 5.A-432 y el 5.A-442
 siguen mal medidos y su correccion es de la CARGA, no de este corte. Y el atado del techo de la
 vista de recibos no entra aqui: nace en su propio sello, antes de E4.
+
