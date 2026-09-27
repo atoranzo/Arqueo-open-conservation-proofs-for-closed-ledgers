@@ -76,6 +76,12 @@ pretendías hacer. Este proyecto tiene registrados **tres mensajes que
 afirmaban lo que su commit no hacía** (`AUDITORIA.md` §91), y el historial es
 tan documento del proyecto como el README.
 
+⚠️ **Si usas un asistente de IA generativa, dilo en el PR**: qué
+modelo y para qué. Este repositorio declara su propio uso en
+[`GENAI.md`](./GENAI.md), y aquí manda la misma regla del párrafo anterior:
+el mensaje describe lo que el commit contiene. Lo generado sin medir, sin
+ejecutar y sin que alguien responda de ello no entra.
+
 ## 4. Pruebas y validación
 
 ```bash

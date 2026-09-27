@@ -234,6 +234,14 @@ Dual licensed: MIT **or** Apache-2.0, at your option. See [`LICENSE-MIT`](./LICE
 [`LICENSE-APACHE`](./LICENSE-APACHE). Both licenses require keeping the copyright notice and the
 license text in any copy or derivative; Apache-2.0 also requires honouring [`NOTICE`](./NOTICE).
 
+### Use of generative AI
+
+This project is developed with the assistance of a generative AI model
+(Anthropic's Claude): the assistant proposes, **the author runs, measures
+and accepts**, and only what the canon lets through gets into `main`. The
+method, its scope and where the per-change record lives:
+[`GENAI.md`](./GENAI.md).
+
 ### Third-party code
 
 `crates/ceremony/` **is not original code of this project**: it comes from

@@ -262,6 +262,13 @@ Las dos licencias exigen **conservar el aviso de copyright y el texto de la
 licencia** en cualquier copia o trabajo derivado. Apache-2.0 exige además
 respetar el fichero [`NOTICE`](./NOTICE).
 
+### Uso de IA generativa
+
+Este proyecto se desarrolla con asistencia de un modelo de IA generativa
+(Claude, de Anthropic): el asistente propone, **el autor ejecuta, mide y
+acepta**, y sólo entra en `main` lo que el canon deja pasar. El método, su
+alcance y dónde vive el registro por cambio: [`GENAI.md`](./GENAI.md).
+
 ### Código de terceros
 
 `crates/ceremony/` **no es código original de este proyecto**: procede de
