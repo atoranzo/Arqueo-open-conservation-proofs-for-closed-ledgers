@@ -395,6 +395,10 @@ mod tests {
         leer_cabeza(&base).expect("la v5, la que el nodo sirve hoy, pasa");
         let mut v6 = base.clone();
         v6["result"]["formatVersion"] = json!("0x6");
+        // §570 (RFC-0010 E2d): una v6 lleva ademas la pareja de recepcion, que `firmada()` exige
+        // desde la E2d; entra por la misma mutacion. Lo que este test mira sigue siendo la familia.
+        v6["result"]["recepRoot"] = base["result"]["accountsRoot"].clone();
+        v6["result"]["recepCount"] = json!("0x0");
         leer_cabeza(&v6).expect("la v6 lleva la familia del estado: tiene que pasar");
         let mut v4 = base.clone();
         v4["result"]["formatVersion"] = json!("0x4");

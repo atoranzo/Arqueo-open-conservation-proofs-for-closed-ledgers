@@ -464,7 +464,7 @@ pub fn epoch_digest_v5(
 ///
 /// ⚠️ Sin tag de dominio, por la razon de `epoch_digest`: el **byte de
 /// version** del preambulo (5 -> 6) es lo que separa las composiciones
-/// (§236). En E2a el nucleo la ACEPTA; el nodo la emite en E2c.
+/// (§236). En E2a el nucleo la ACEPTA; el nodo la emite desde la E2d (§570).
 #[allow(clippy::too_many_arguments)]
 pub fn epoch_digest_v6(
     seq: u64,

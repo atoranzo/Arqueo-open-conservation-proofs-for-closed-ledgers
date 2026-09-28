@@ -386,6 +386,10 @@ declara, no se inventa; queda para el corte que le encuentre uno.
 `pmetaRoot`, `nextPending`, `nextIndex` y `totalSupply` (RFC-0007 E1, D-B), que el binario lee
 con los mismos lectores y exige los cinco; la fila de `cabeza` de arriba se lee con ese añadido.
 
+**§570 — la cabeza v6.** Una `cabeza` con `formatVersion` 6 lleva además `recepRoot` y
+`recepCount` (RFC-0010 D-C, E2d), que el binario lee con los mismos lectores y exige los dos,
+además de los cinco de la v5; la fila de `cabeza` se lee con los dos añadidos.
+
 Cantidades en convención `Q` (`0x` + hex, u64); digests como `0x` + 64 hex; firmas y claves como
 `0x` + hex. Un valor que no tenga esa forma se rechaza **antes** de tocar la criptografía (sección 5).
 

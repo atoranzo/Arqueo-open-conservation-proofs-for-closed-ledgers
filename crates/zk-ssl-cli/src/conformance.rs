@@ -139,6 +139,7 @@ fn recolectar(layer: &SovereignLayer) -> Vectores {
             let h = layer.epoch_head(
                 zk_ssl_verify::acuses::as_digest(0), 0,
                 zk_ssl_verify::acuses::as_digest(0), 0,
+                zk_ssl_verify::acuses::as_digest(0), 0,
             );
             zk_ssl_verify::epoch_digest_v2(
                 h.seq, h.accounts_root, h.pending_root, h.frozen_root,

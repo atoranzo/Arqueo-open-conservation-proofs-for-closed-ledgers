@@ -139,6 +139,8 @@ pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result
     // AQUI evita solapar los dos candados; el orden establecido
     // estado -> ultima_cabeza no se toca.
     let limite_anterior = limite_de_epoca(app);
+    // §570: y el `Q` de la recepcion, por la misma razon y con el mismo orden de fuentes.
+    let limite_recepcion = limite_de_recepcion(app);
 
     // ── 1 · con el candado: leer, componer la pareja, y solo eso ──
     //
@@ -177,7 +179,11 @@ pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result
         };
         let pares = crate::vista_acuses::pares(entradas);
         let (acuses_root, n) = crate::vista_acuses::pareja_de_ahora(&pares, limite_anterior);
-        let cabeza = e.layer.epoch_head(acuses_root, n, cima_mmr, t_mmr);
+        // §570 (RFC-0010 E2d): la pareja de recepcion, BAJO el mismo candado: ver
+        // `pareja_de_recepcion`, es lo que impide leer un `rx` reservado y sin anotar.
+        let (recep_root, recep_count) = pareja_de_recepcion(app, limite_recepcion)?;
+        let cabeza =
+            e.layer.epoch_head(acuses_root, n, cima_mmr, t_mmr, recep_root, recep_count);
         // §493 (D-F): la foto, AQUI, con la cabeza que la describe. Fuera del
         // candado habria una ventana con cabeza nueva y foto vieja.
         let foto = Arc::new(e.layer.foto_pendientes());
@@ -231,6 +237,62 @@ pub fn limite_de_epoca(app: &App) -> u64 {
         .as_ref()
         .and_then(|r| crate::diario::ultimo_seq(r))
         .unwrap_or(0)
+}
+
+/// `Q`: el `recep_count` de la ultima cabeza emitida (RFC-0010 D-C; E2d, §570). Mismo orden
+/// que [`limite_de_epoca`]: la memoria, el diario si no, y 0 en ultimo termino. ⚠️ El borde del
+/// REINICIO, declarado: sin `--diario`, o con un diario anterior al §570 que no lo guardaba, la
+/// primera era sale gorda -desde 0-. Las hojas siguen siendo correctas; lo que engorda es UN
+/// arbol.
+pub fn limite_de_recepcion(app: &App) -> u64 {
+    if let Ok(u) = app.ultima_cabeza.lock() {
+        if let Some(l) = u.as_ref() {
+            return l.cabeza.recep_count;
+        }
+    }
+    app.diario
+        .as_ref()
+        .and_then(|r| crate::diario::ultimo_recep_count(r))
+        .unwrap_or(0)
+}
+
+/// **La pareja `(recep_root, recep_count)`** que la cabeza va a firmar (RFC-0010 E2d, §570):
+/// el arbol de los recibos `(Q, R]` del REGISTRO, con `R` el contador de recepcion.
+///
+/// ⚠️⚠️ **SE LLAMA CON EL CANDADO DEL ESTADO TOMADO**, y es lo que la hace coherente: el
+/// despacho retiene ese candado mientras `recibir` y `anotar`, asi que ningun `rx <= R` puede
+/// estar reservado y todavia sin anotar mientras esto lee. Orden de candados: estado ->
+/// recepcion y estado -> registro, el mismo del despacho.
+///
+/// ⚠️ Es el **UNICO productor** de la pareja: la usan el latido, `zkssl_epochHead` y
+/// `zkssl_inclusionReceipt`, y el test «la cabeza del latido es la que sirve el RPC» los ata.
+///
+/// ⚠️ **Falla CERRADA si el contador ha retrocedido** por debajo del `recep_count` de la
+/// cabeza anterior: firmar una cuenta que BAJA es firmar que dos eras comparten numeros.
+pub fn pareja_de_recepcion(
+    app: &App,
+    limite_anterior: u64,
+) -> anyhow::Result<(zk_ssl_verify::acuses::Digest, u64)> {
+    let r = app
+        .recepcion
+        .lock()
+        .map_err(|_| anyhow::anyhow!("el candado del contador de recepcion esta envenenado"))?
+        .actual();
+    if r < limite_anterior {
+        anyhow::bail!(
+            "EL CONTADOR DE RECEPCION HA RETROCEDIDO: R = {r} por debajo del recepCount de la \
+             cabeza anterior, {limite_anterior}. Componer firmaria una cuenta que baja: no se \
+             compone"
+        );
+    }
+    let entradas = app
+        .registro
+        .lock()
+        .map_err(|_| anyhow::anyhow!("el candado del registro de recepcion esta envenenado"))?
+        .entradas_posteriores_a(limite_anterior)
+        .map_err(|e| anyhow::anyhow!("el registro de recepcion: {e}"))?;
+    crate::vista_recibos::pareja_de_ahora(&entradas, limite_anterior, r)
+        .map_err(|e| anyhow::anyhow!("la vista de recibos: {e:?}"))
 }
 
 /// **El umbral del aviso de acumulacion, en PAGOS** (§318).

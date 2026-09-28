@@ -831,18 +831,26 @@ impl SovereignLayer {
     ///
     /// RFC-0007 E1b (§452): la familia de v5 la rellena la capa, que es quien la tiene
     /// en reposo; la firma de esta funcion no cambia y ningun llamador se entera.
+    ///
+    /// RFC-0010 E2d (§570): la pareja de RECEPCION entra por parametro, como la de acuses y la
+    /// del MMR: la compone el nodo con su registro, que la capa no tiene (D-I).
+    #[allow(clippy::too_many_arguments)]
     pub fn epoch_head(
         &self,
         acuses_root: zk_ssl_hash::Digest,
         n: u64,
         mmr_cima: zk_ssl_hash::Digest,
         mmr_t: u64,
+        recep_root: zk_ssl_hash::Digest,
+        recep_count: u64,
     ) -> crate::log::EpochHead {
         crate::log::EpochHead {
             acuses_root,
             n,
             mmr_cima,
             mmr_t,
+            recep_root,
+            recep_count,
             cons_root: self.cons_root(),
             cons_count: self.cons_count(),
             // Los siete de `meta:`, `root:pmeta`, `meta:next_pending`, `meta:next_index` y

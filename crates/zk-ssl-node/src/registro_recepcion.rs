@@ -92,7 +92,7 @@
 //! encontró un piso más arriba.
 
 use std::fs;
-use std::io::Write;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
 use zk_ssl_guardian::GuardianError;
@@ -224,6 +224,55 @@ impl RegistroRecepcion {
         Ok(mayor)
     }
 
+    /// Las entradas `(rx, era, hash_prueba)` con `rx > q`, de TODAS las eras (RFC-0010 E2d,
+    /// §570): lo que la vista necesita para el árbol `(Q, R]` de la cabeza que se compone.
+    ///
+    /// ⚠️ **Una era del ÁRBOL no es una era del REGISTRO.** La era de cada entrada la fijó el
+    /// recibo al recibir (D-D), y las de una misma cabeza vienen de más de un fichero: la que
+    /// entró mientras se firmaba la anterior declara la de antes, y un reinicio con índices
+    /// huérfanos, o sin `--clave`, salta eras. Adivinar qué ficheros mirar con aritmética de
+    /// índices falla justo en esos bordes; por eso se miran TODOS y se descarta barato: dentro
+    /// de un fichero el `rx` crece —se anota en orden, bajo el candado del estado—, así que
+    /// basta su ÚLTIMA entrada para saber si tiene algo por encima de `q`.
+    ///
+    /// ⚠️ Coste por cabeza, declarado y sin medir: un `read_dir` y 40 bytes por fichero, más la
+    /// lectura entera de los que sí tienen algo. Sin poda, los ficheros crecen con las eras.
+    pub fn entradas_posteriores_a(&self, q: u64) -> Result<Vec<(u64, u64, Digest)>, GuardianError> {
+        let mut fuera = Vec::new();
+        for e in fs::read_dir(&self.dir).map_err(io)? {
+            let e = e.map_err(io)?;
+            let nombre = e.file_name().to_string_lossy().to_string();
+            if !(nombre.starts_with(PREFIJO) && nombre.ends_with(SUFIJO)) {
+                continue;
+            }
+            let medio = &nombre[PREFIJO.len()..nombre.len() - SUFIJO.len()];
+            let era: u64 = match medio.parse() {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+            let largo = e.metadata().map_err(io)?.len() as usize;
+            if largo % ANCHO_ENTRADA != 0 {
+                return Err(GuardianError::Corrupto { bytes: largo });
+            }
+            if largo == 0 {
+                continue;
+            }
+            let mut f = fs::File::open(e.path()).map_err(io)?;
+            f.seek(SeekFrom::End(-(ANCHO_ENTRADA as i64))).map_err(io)?;
+            let mut ocho = [0u8; 8];
+            f.read_exact(&mut ocho).map_err(io)?;
+            if u64::from_le_bytes(ocho) <= q {
+                continue;
+            }
+            for (rx, hash_prueba) in self.pares_de_era(era)? {
+                if rx > q {
+                    fuera.push((rx, era, hash_prueba));
+                }
+            }
+        }
+        Ok(fuera)
+    }
+
     /// Borra las eras cuya ventana ya expiró y devuelve cuántos ficheros
     /// quitó. La regla es la del RFC, no una propia:
     /// `zk_ssl_verify::recibos::dentro_de_ventana`.
@@ -288,6 +337,27 @@ mod tests {
         r.anotar(2, 8, as_digest(2)).expect("b");
         assert_eq!(r.pares_de_era(7).expect("7").len(), 1, "la 8 se colo en la 7");
         assert_eq!(r.pares_de_era(8).expect("8").len(), 1, "la 7 se colo en la 8");
+    }
+
+    #[test]
+    fn las_entradas_posteriores_a_q_salen_de_todas_las_eras() {
+        // §570: las de una cabeza vienen de varios ficheros, y solo cuentan las de encima de Q.
+        let mut r = RegistroRecepcion::abrir(dir("reg_posteriores")).expect("abrir");
+        for rx in 1..=3 {
+            r.anotar(rx, 1, as_digest(rx)).expect("era 1");
+        }
+        r.anotar(4, 2, as_digest(4)).expect("era 2");
+        r.anotar(5, 2, as_digest(5)).expect("era 2");
+        r.anotar(6, 5, as_digest(6)).expect("era 5, tras huerfanos");
+        let mut e = r.entradas_posteriores_a(3).expect("leer");
+        e.sort_by_key(|x| x.0);
+        assert_eq!(
+            e,
+            vec![(4, 2, as_digest(4)), (5, 2, as_digest(5)), (6, 5, as_digest(6))],
+            "de la era 1 no queda nada por encima de 3, y las otras dos entran enteras"
+        );
+        assert_eq!(r.entradas_posteriores_a(0).expect("todo").len(), 6);
+        assert!(r.entradas_posteriores_a(6).expect("nada").is_empty());
     }
 
     #[test]

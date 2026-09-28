@@ -637,6 +637,16 @@ pub struct EpochHead {
     /// El suministro (`meta:supply`). Genesis de la familia: lo que el libro tenga al
     /// emitir la primera cabeza v5, sin valor especial (RFC-0007, D-B).
     pub total_supply: u64,
+    /// **La raiz de recepcion de la era** (RFC-0010 D-C; E2d, §570): el arbol de los recibos
+    /// `(Q, R]`, con una hoja por cada operacion que el nodo se puso a EVALUAR, se aplicara o
+    /// no. Firmada desde el formato v6. ⚠️ La compone el NODO con su registro -la capa no
+    /// tiene registro, y no debe: es politica del operador (D-I)-, asi que entra por
+    /// parametro en `epoch_head`, como la pareja de acuses.
+    pub recep_root: Digest,
+    /// `R`: las recepciones evaluadas al componer la cabeza, que es el ULTIMO `rx` reservado
+    /// (§567). El limite inferior `Q` no se firma: es el `recep_count` de la cabeza anterior.
+    /// Genesis: 0, con la raiz del arbol vacio.
+    pub recep_count: u64,
     // ⚠️ **FALTA `verifier_hash`, y no por olvido.**
     //
     // `CONFIANZA_RESIDUAL.md` §2.2 lo propone con el mejor argumento de esa
@@ -693,7 +703,8 @@ impl EpochHead {
     pub fn digest(&self) -> Digest {
         // RFC-0006 E2b (§415): v4, la envoltura de v3 con la pareja de consumos.
         // RFC-0007 E1b (§452): v5, la envoltura de v4 con la familia del estado comprometido.
-        zk_ssl_hash::epoch_digest_v5(
+        // RFC-0010 E2d (§570): v6, la envoltura de v5 con la pareja de recepcion.
+        zk_ssl_hash::epoch_digest_v6(
             self.seq,
             self.accounts_root,
             self.pending_root,
@@ -710,6 +721,8 @@ impl EpochHead {
             self.next_pending,
             self.next_index,
             self.total_supply,
+            self.recep_root,
+            self.recep_count,
         )
     }
 }
@@ -725,10 +738,10 @@ mod tests_mmr_en_cabeza {
     fn la_pareja_del_mmr_mueve_el_digest() {
         let layer = new_layer();
         let a = layer
-            .epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0)
+            .epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0)
             .digest();
         let b = layer
-            .epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(3), 1)
+            .epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(3), 1, zk_ssl_hash::as_digest(0), 0)
             .digest();
         assert_ne!(a, b, "la cima del MMR debe mover el digest");
     }
@@ -767,6 +780,8 @@ mod tests_mmr_en_cabeza {
             next_pending: 0,
             next_index: 0,
             total_supply: 0,
+            recep_root: d,
+            recep_count: 0,
         };
         let mut otra = base;
         otra.seq = base.seq + 1;
@@ -803,6 +818,8 @@ mod tests_mmr_en_cabeza {
             next_pending: 0,
             next_index: 0,
             total_supply: 0,
+            recep_root: d,
+            recep_count: 0,
         };
         let mut otra_raiz = base;
         otra_raiz.cons_root = zk_ssl_hash::as_digest(9);
@@ -835,6 +852,8 @@ mod tests_mmr_en_cabeza {
             next_pending: 0,
             next_index: 0,
             total_supply: 0,
+            recep_root: d,
+            recep_count: 0,
         };
         let otra = zk_ssl_hash::as_digest(9);
         let variantes = [
@@ -849,6 +868,43 @@ mod tests_mmr_en_cabeza {
         }
     }
 
+    /// RFC-0010 E2d (§570): **la pareja de recepcion entra en el digest** -la raiz y la cuenta,
+    /// cada una sola-, y la cabeza compone EXACTAMENTE `epoch_digest_v6`: el mismo productor que
+    /// el verificador usa, no uno parecido. Fabricada a mano, como la de la altura.
+    #[test]
+    fn la_pareja_de_recepcion_entra_en_el_digest_y_compone_v6() {
+        let d = zk_ssl_hash::as_digest(0);
+        let base = crate::log::EpochHead {
+            seq: 7,
+            accounts_root: d,
+            pending_root: d,
+            frozen_root: d,
+            chain_digest: d,
+            acuses_root: d,
+            n: 0,
+            mmr_cima: d,
+            mmr_t: 0,
+            cons_root: d,
+            cons_count: 0,
+            params_digest: d,
+            pmeta_root: d,
+            next_pending: 0,
+            next_index: 0,
+            total_supply: 0,
+            recep_root: d,
+            recep_count: 0,
+        };
+        let otra_raiz = crate::log::EpochHead { recep_root: zk_ssl_hash::as_digest(9), ..base };
+        let otra_cuenta = crate::log::EpochHead { recep_count: 1, ..base };
+        assert_ne!(base.digest(), otra_raiz.digest(), "la raiz de recepcion debe mover el digest");
+        assert_ne!(base.digest(), otra_cuenta.digest(), "la cuenta de recepcion debe mover el digest");
+        assert_eq!(
+            base.digest(),
+            zk_ssl_hash::epoch_digest_v6(7, d, d, d, d, d, 0, d, 0, d, 0, d, d, 0, 0, 0, d, 0),
+            "la cabeza tiene que componer con el productor del nucleo, no con uno propio"
+        );
+    }
+
     /// RFC-0007 E1b (§452): **la cabeza v5 lleva lo que el libro tiene en reposo** -los siete
     /// parametros compuestos, la raiz de meta, las dos marcas y el suministro-, leido de la
     /// capa y no fabricado. `next_index` es la CUOTA de altas, no una posicion (F3).
@@ -856,9 +912,9 @@ mod tests_mmr_en_cabeza {
     fn la_cabeza_v5_lleva_lo_que_el_libro_tiene_en_reposo() {
         let mut layer = new_layer();
         let cero = zk_ssl_hash::as_digest(0);
-        let antes = layer.epoch_head(cero, 0, cero, 0);
+        let antes = layer.epoch_head(cero, 0, cero, 0, cero, 0);
         open_and_fund(&mut layer, SK_ALICE, 1_000_000);
-        let h = layer.epoch_head(cero, 0, cero, 0);
+        let h = layer.epoch_head(cero, 0, cero, 0, cero, 0);
         assert!(h.next_index > antes.next_index, "una alta mueve la cuota");
         assert_eq!(h.next_index, layer.next_index, "la cuota que firma es la de la capa");
         assert_eq!(h.next_pending, layer.next_pending);
@@ -886,9 +942,9 @@ mod tests_mmr_en_cabeza {
     fn un_parametro_cambiado_en_reposo_cambia_la_cabeza() {
         let mut layer = new_layer();
         let cero = zk_ssl_hash::as_digest(0);
-        let antes = layer.epoch_head(cero, 0, cero, 0);
+        let antes = layer.epoch_head(cero, 0, cero, 0, cero, 0);
         layer.set_refund_ttl(layer.refund_ttl() + 1);
-        let despues = layer.epoch_head(cero, 0, cero, 0);
+        let despues = layer.epoch_head(cero, 0, cero, 0, cero, 0);
         assert_ne!(antes.params_digest, despues.params_digest, "la T entra en params_digest");
         assert_ne!(antes.digest(), despues.digest(), "y params_digest, en la cabeza");
     }
@@ -918,16 +974,16 @@ mod tests_cabeza {
         let alice_a = open_and_fund(&mut a, SK_ALICE, 1_000_000);
         let _alice_b = open_and_fund(&mut b, SK_ALICE, 1_000_000);
         assert_eq!(
-            a.epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0).digest(),
-            b.epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0).digest(),
+            a.epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0).digest(),
+            b.epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0).digest(),
             "dos nodos con la misma historia deben tener la misma cabeza"
         );
 
         // La vista A recibe una operación que la B no ve.
         open_and_fund(&mut a, SK_BOB, 0);
 
-        let ha = a.epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0);
-        let hb = b.epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0);
+        let ha = a.epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0);
+        let hb = b.epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0);
         assert_ne!(
             ha.digest(),
             hb.digest(),
@@ -955,7 +1011,7 @@ mod tests_cabeza {
     #[test]
     fn a_head_does_not_say_who_issued_it() {
         let layer = new_layer();
-        let legitima = layer.epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0);
+        let legitima = layer.epoch_head(zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0, zk_ssl_hash::as_digest(0), 0);
 
         // Cualquiera puede construir esto. No hace falta ser el operador.
         let inventada = crate::log::EpochHead {
@@ -970,6 +1026,8 @@ mod tests_cabeza {
             next_pending: 0,
             next_index: 0,
             total_supply: 0,
+            recep_root: zk_ssl_hash::as_digest(0),
+            recep_count: 0,
             seq: legitima.seq,
             accounts_root: [BaseElement::new(0xFA15A); 4],
             pending_root: legitima.pending_root,

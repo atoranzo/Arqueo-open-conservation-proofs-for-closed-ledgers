@@ -1316,7 +1316,10 @@ fn verificar_edad(p: &serde_json::Value) -> Result<(), String> {
     let _ = cabeza_v3_verificada(c, "cabeza")?;
     let seq = u64_de(c, "seq")?;
     let f = familia_v5(c)?;
-    println!("1/3 la cabeza v5 recompone su digest y su firma verifica (seq {seq})");
+    println!(
+        "1/3 la cabeza v{} recompone su digest y su firma verifica (seq {seq})",
+        u64_de(c, "formatVersion")?
+    );
     let cabeza = CabezaEdad {
         seq,
         pending_root: digest_de(c, "pendingRoot")?,
@@ -1370,7 +1373,10 @@ fn verificar_cobro_pendiente(p: &serde_json::Value) -> Result<(), String> {
     let _ = cabeza_v3_verificada(c, "cabeza")?;
     let seq = u64_de(c, "seq")?;
     let f = familia_v5(c)?;
-    println!("1/3 la cabeza v5 recompone su digest y su firma verifica (seq {seq})");
+    println!(
+        "1/3 la cabeza v{} recompone su digest y su firma verifica (seq {seq})",
+        u64_de(c, "formatVersion")?
+    );
     let cabeza = CabezaCobro {
         seq,
         pending_root: digest_de(c, "pendingRoot")?,
@@ -1420,7 +1426,10 @@ fn verificar_pago_en_curso(p: &serde_json::Value) -> Result<(), String> {
     let _ = cabeza_v3_verificada(c, "cabeza")?;
     let seq = u64_de(c, "seq")?;
     let f = familia_v5(c)?;
-    println!("1/3 la cabeza v5 recompone su digest y su firma verifica (seq {seq})");
+    println!(
+        "1/3 la cabeza v{} recompone su digest y su firma verifica (seq {seq})",
+        u64_de(c, "formatVersion")?
+    );
     let cabeza = CabezaPago {
         seq,
         pending_root: digest_de(c, "pendingRoot")?,
@@ -1483,7 +1492,10 @@ fn verificar_prenda(p: &serde_json::Value) -> Result<(), String> {
     }
     let _ = cabeza_v3_verificada(c, "cabeza")?;
     let seq = u64_de(c, "seq")?;
-    println!("1/3 la cabeza v5 recompone su digest y su firma verifica (seq {seq})");
+    println!(
+        "1/3 la cabeza v{} recompone su digest y su firma verifica (seq {seq})",
+        u64_de(c, "formatVersion")?
+    );
     let cabeza = CabezaPrenda { pending_root: digest_de(c, "pendingRoot")? };
     let af = AfirmacionPrenda { receptor, marca };
     enlazar_prenda(&prueba, &af, &cabeza).map_err(|e| err(format!("prenda: {e}")))?;

@@ -47,7 +47,7 @@ profundidad y la regla de su hoja, porque el rechazo `AccountFrozen` se prueba c
 
 **Primera mitad — lo que se firma crece sólo por versión.** El conjunto de versiones de cabeza que
 el núcleo acepta tiene **un solo productor**: `VersionCabeza` en `zk-ssl-verify` (§406), un `enum`
-exhaustivo cuyo texto («v2, v3, v4 o v5» desde el §451) se deriva de sus variantes y del que el mando y el testigo
+exhaustivo cuyo texto («v2, v3, v4, v5 o v6» desde el §558; «v2, v3, v4 o v5» desde el §451) se deriva de sus variantes y del que el mando y el testigo
 **consumen**, sin repetirlo. Una composición nueva es una variante nueva: el compilador marca cada
 `match` que la olvide, y `VERSION_FORMATO` tiene que ser miembro (atado en los tests del crate).
 Una `formatVersion` fuera del conjunto se rechaza con texto y **sin truncar**: `0x103` no es un 3.
@@ -287,6 +287,9 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §570 — `VERSION_FORMATO` pasa de 5 a 6: el nodo compone, firma y sirve la cabeza v6, con la
+  pareja de recepción que su registro da (RFC-0010, E2d). Ninguna fila nueva: la constante ya la
+  tenía y su valor no es censo.
 - §567 — el módulo `recibos` cambia lo que dice y no cómo se llama: la era es `(Q, R]` —el
   contador de recepción empieza en 1— y la posición `rx - Q - 1`; la era y la ventana se cuentan
   en el índice XMSS de la firma y no en el `seq` de la cabeza (RFC-0010, E2b; correcciones

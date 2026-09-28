@@ -7,8 +7,12 @@
 # Desde el asiento 453 (RFC-0007 E1): positivo-cabeza-v5.json es una cabeza v5 REAL, capturada por tools/banco_consumo.sh --guardar con la
 # semilla de consumo.json, y rechazo-v5-recomposicion.json su mutacion (totalSupply + 1). Su familia es la de un libro sin cuentas: el
 # orden de sus tres contadores lo fija el KAT epoch_digest_v5.
+# Desde el asiento 570 (RFC-0010 E2d): positivo-cabeza-v6.json es una cabeza v6 REAL, la `nueva` del sobre que tools/banco_consumo.sh
+# --guardar capturo contra el nodo del S570; su pareja es la del GENESIS (el banco de consumo no recibe envios: recepCount 0 y la raiz
+# del arbol vacio). De ella derivan por mutacion rechazo-v6-sin-recepRoot (se quita la clave) y rechazo-v6-recomposicion (recepCount + 1).
 positivo-cabeza.json|0|VERDE: nueva
 positivo-cabeza-v5.json|0|VERDE: nueva
+positivo-cabeza-v6.json|0|VERDE: nueva
 rechazo-formatVersion-4.json|1|no-verifica · cabeza firmada sin consRoot: el productor la sirvio incompleta
 rechazo-formatVersion-1.json|1|no-verifica · formatVersion 1: el testigo recompone cabezas v2, v3, v4, v5 o v6
 rechazo-formatVersion-0x103.json|1|no-verifica · formatVersion 259: el testigo recompone cabezas v2, v3, v4, v5 o v6
@@ -25,3 +29,5 @@ rechazo-sin-index.json|1|no-verifica · cabeza firmada sin index: el productor l
 rechazo-v5-sin-paramsDigest.json|1|no-verifica · cabeza firmada sin paramsDigest: el productor la sirvio incompleta
 rechazo-v5-con-firma-de-v4.json|1|no-verifica · la firma es VALIDA pero de otro mensaje
 rechazo-v5-recomposicion.json|1|no-verifica · los campos NO recomponen el epochDigest firmado (v5)
+rechazo-v6-sin-recepRoot.json|1|no-verifica · cabeza firmada sin recepRoot: el productor la sirvio incompleta
+rechazo-v6-recomposicion.json|1|no-verifica · los campos NO recomponen el epochDigest firmado (v6)

@@ -75,7 +75,7 @@ RFC-0009 (D-A, D-C). Ver `SECURITY.md`.
 |---|---|---|
 | `zkssl_protocolVersion` | — | `"zkssl/0.4"` |
 | `zkssl_params` | — | `{regulatoryLimit, maxSupply, maxAccounts: Q, custodianRoot, governanceRoot: Digest, refundTtl, maxCustodianUses: Q}` |
-| `zkssl_epochHead` | — | `{seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, acusesRoot, n, mmrRoot, mmrSize, consRoot, consCount, paramsDigest, pmetaRoot, nextPending, nextIndex, totalSupply, epochDigest}` |
+| `zkssl_epochHead` | — | `{seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, acusesRoot, n, mmrRoot, mmrSize, consRoot, consCount, paramsDigest, pmetaRoot, nextPending, nextIndex, totalSupply, recepRoot, recepCount, epochDigest}` |
 | `zkssl_supply` | — | `{total, pending: Q}` |
 | `zkssl_accountCount` | — | `Q` |
 | `zkssl_publicId` | `{index: Q}` | `Digest` |
@@ -521,8 +521,8 @@ honesto. Ver los asientos §274 y §275.
 ### `zkssl_signedEpochHead` — la última cabeza firmada, para un TESTIGO
 
 Devuelve la cabeza de época **más reciente que el nodo firmó**, con todo lo
-que hace falta para verificarla sin él: los **dieciséis campos** de la
-cabeza (§275, §292, §415, §452), `publicKey`, `epochDigest`, `formatVersion`, `index` y
+que hace falta para verificarla sin él: los **dieciocho campos** de la
+cabeza (§275, §292, §415, §452, §570), `publicKey`, `epochDigest`, `formatVersion`, `index` y
 `signature` — campos+digest+firma **juntos**, del mismo latido: un solo
 artefacto de custodia, sin carrera entre llamadas.
 
@@ -601,6 +601,29 @@ hay clave nueva en el almacén, así que un libro anterior abre y compone v5.
 Como en v4: aditivo en el cable (`zkssl/0.3` no sube), rotura en voz alta para
 un consumidor con `deny_unknown_fields`, y una cabeza v2, v3 o v4 custodiada
 **sigue verificando** con su recomponedor.
+
+### ⚠️ Formato **v6** (§570, RFC-0010 E2d): la cabeza firma lo que el nodo RECIBIÓ
+
+La cabeza gana dos claves, **una pareja** (RFC-0010 D-C): `recepRoot` —la raíz del árbol de
+recibos de la era `(Q, R]`, con una hoja por cada operación que el nodo se puso a EVALUAR, se
+aplicara o no— y `recepCount` —`R`, el último número de recepción reservado al componer—. El
+límite inferior `Q` **no viaja**: es el `recepCount` de la cabeza anterior. Viajan **firmadas**
+— `formatVersion: 6` — y con ellas un rechazo que el operador quisiera callar deja hoja bajo la
+firma: el árbol de acuses dice lo que se APLICÓ; éste, lo que se RECIBIÓ (RFC-0010, D-A y D-E).
+
+La composición, por envoltura como v4→v5 (la forma exacta en `spec/NUCLEO.md`, sección 6):
+```text
+v6 = merge( epoch_digest_v5(los dieciséis), merge(recepRoot, as_digest(recepCount)) )
+```
+La hoja, la posición densa `rx - Q - 1` y la era que el recibo declara —el índice XMSS de la
+última cabeza firmada, más uno— son las reglas de `zk_ssl_verify::recibos` (§562, §567), las
+mismas que usa el constructor del nodo. **Génesis declarado**: la primera cabeza compone con la
+raíz del árbol vacío y `recepCount: 0`; tras un reinicio `Q` sale del diario del nodo, que desde
+el §570 anota `recepCount` en cada línea, y sin él la primera era sale gorda —desde 0—, como la
+primera época de acuses. Como en v5: aditivo en el cable (`zkssl/0.3` no sube), rotura en voz alta
+para un consumidor con `deny_unknown_fields`, y una cabeza v2 a v5 custodiada **sigue
+verificando** con su recomponedor. El recibo de recepción en el cable es la E3; hasta entonces el
+titular no tiene el suyo, y lo que esta versión fija es el árbol bajo la firma.
 
 ⚠️ **Tres respuestas, y ninguna es un error genérico**:
 
@@ -728,7 +751,7 @@ el fallo honesto ya diseñado, no una lectura a medias.
 
 Devuelve lo que un tercero necesita para comprobar que **una hoja estaba en
 la cabeza firmada**: `index`, `leaf`, `path` y los campos de `head` —
-**dieciséis desde el §452** (siete en §275, nueve en §292, once en §415); la
+**dieciocho desde el §570** (siete en §275, nueve en §292, once en §415, dieciséis en §452); la
 `formatVersion` de la firma dice cuáles componen.
 La verificación es la de §256: subir el camino hasta `accountsRoot` y
 comprobar que esos campos componen —según la versión declarada— el
@@ -1099,7 +1122,7 @@ y `zkssl_ackPath` — viajaron en cada latido; un cierre ordenado solo
 exige servirlas hasta el ultimo.
 
 **Que se lleva el titular**: lo que ya custodia. La ultima cabeza
-firmada (los dieciséis campos con `publicKey`, `epochDigest`,
+firmada (los dieciocho campos con `publicKey`, `epochDigest`,
 `formatVersion`, `index` y `signature`, juntos, del mismo latido), el
 `hashPrueba` de su entrada (el `proofDigest` asentado, servido en el
 acuse de la respuesta y en `zkssl_logEntry`), y el camino de acuse
@@ -1149,7 +1172,10 @@ escribirlo (`PASTE-409-S`, `PASTE-453-M`). Los de la era v3 derivan por mutacion
 de `spec/vectors/paquete/posicion-v2.json`; los dos `rechazo-v5-*` del §452, de la cabeza v4 real
 `nueva` de `spec/vectors/consumo/consumo.json`; y el positivo v5 es una cabeza v5 REAL que capturo
 `tools/banco_consumo.sh --guardar` (§453), de la que deriva por mutacion su negativo de
-recomposicion.
+recomposicion. El positivo v6 (§570) es otra cabeza REAL del mismo banco, contra el nodo que ya
+firma v6, con la pareja del genesis —el banco de consumo no recibe envios: `recepCount` 0 y la
+raiz del arbol vacio—; de ella derivan por mutacion sus dos negativos, sin `recepRoot` y con
+`recepCount` + 1.
 `MANIFIESTO.txt` fija, por fichero, el codigo de salida y el texto que la salida tiene que contener;
 `tools/conformidad.sh tools/cable_respuesta.sh spec/vectors/cable/MANIFIESTO.txt` los corre —el
 mismo arnes que el paquete, sin doblar su contrato— y `tools/canon.sh` lo hace en cada canon.

@@ -1792,9 +1792,11 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             let p_epoca = crate::latido::limite_de_epoca(app);
             let pares = crate::vista_acuses::pares(l.transition_log().entries());
             let (r, n) = crate::vista_acuses::pareja_de_ahora(&pares, p_epoca);
+            // §570 (RFC-0010 E2d): la pareja de recepcion, del MISMO productor que el latido.
+            let (rr, rc) = pareja_de_recepcion_rpc(app)?;
             {
                 let (cm, tm) = crate::latido::pareja_mmr(app);
-                Ok(serde_json::to_value(wire::EpochHeadDto::from(&l.epoch_head(r, n, cm, tm))).unwrap())
+                Ok(serde_json::to_value(wire::EpochHeadDto::from(&l.epoch_head(r, n, cm, tm, rr, rc))).unwrap())
             }
         }
 
@@ -2313,7 +2315,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 leaf: digest_to_wire(&m.leaf),
                 path: wire::MerklePathDto::from(&m.path),
                 leaf_format: m.forma.como_cable().to_string(),
-                head: wire::EpochHeadDto::from(&{ let p_epoca = crate::latido::limite_de_epoca(app); let pares = crate::vista_acuses::pares(l.transition_log().entries()); let (r, n) = crate::vista_acuses::pareja_de_ahora(&pares, p_epoca); let (cm, tm) = crate::latido::pareja_mmr(app); l.epoch_head(r, n, cm, tm) }),
+                head: wire::EpochHeadDto::from(&{ let p_epoca = crate::latido::limite_de_epoca(app); let pares = crate::vista_acuses::pares(l.transition_log().entries()); let (r, n) = crate::vista_acuses::pareja_de_ahora(&pares, p_epoca); let (cm, tm) = crate::latido::pareja_mmr(app); let (rr, rc) = pareja_de_recepcion_rpc(app)?; l.epoch_head(r, n, cm, tm, rr, rc) }),
             })
             .unwrap())
         }
@@ -2831,6 +2833,13 @@ fn recibir(app: &App) -> Result<u64, RpcError> {
         .map_err(|e| RpcError { code: -32603, message: format!("{e}"), data: None })
 }
 
+/// La pareja de recepcion para los brazos que sirven cabeza (RFC-0010 E2d, §570): el productor
+/// del latido, con su `Q`, y su fallo como `-32603`.
+fn pareja_de_recepcion_rpc(app: &App) -> Result<(zk_ssl_verify::acuses::Digest, u64), RpcError> {
+    crate::latido::pareja_de_recepcion(app, crate::latido::limite_de_recepcion(app))
+        .map_err(|e| RpcError { code: -32603, message: format!("{e}"), data: None })
+}
+
 /// Anota `rx` en el **registro de recepción** (RFC-0010, E2c-2; §569): la era
 /// que este instante fija y el digest de la prueba que llegó con él.
 ///
@@ -3333,7 +3342,7 @@ mod tests {
 
     /// §569 · Un envio con una prueba de ceros: la conversion del cable pasa y
     /// la capa lo rechaza. Es el caso que importa para la D-E.
-    fn envio_de_ceros() -> (Value, Vec<u8>) {
+    pub(crate) fn envio_de_ceros() -> (Value, Vec<u8>) {
         use winterfell::math::fields::f64::BaseElement as E;
         let cero = [E::new(0); 4];
         let recibo = zk_ssl::two_phase::SendReceipt {
@@ -3432,6 +3441,63 @@ mod tests {
         assert!(r.is_err());
         assert!(app.registro.is_poisoned());
         assert!(app.parada.get().is_some(), "un registro envenenado PARA el nodo");
+    }
+
+    #[test]
+    fn una_recepcion_rechazada_entra_en_la_cabeza_siguiente_y_q_sale_de_la_anterior() {
+        // ⚠️⚠️ LA E2d DE PUNTA A PUNTA: una operacion que la CAPA rechaza deja hoja (§569) y
+        // esa hoja entra en la cabeza que el latido compone, con R el ultimo rx; la cabeza
+        // siguiente arranca en Q = el recep_count de esta, y el rx 1 ya no esta en su arbol.
+        let app = nodo(30);
+        let (params, prueba) = envio_de_ceros();
+        let d = zk_ssl::log::digest_of_proof(&prueba);
+        let _ = dispatch(&app, "zkssl_applySend", params);
+        let l1 = crate::latido::latir(&app, None).expect("latir");
+        let n = crate::vista_acuses::N_MAX_CABEZAS;
+        assert_eq!(l1.cabeza.recep_count, 1, "R es el ultimo rx reservado");
+        assert_eq!(
+            l1.cabeza.recep_root,
+            crate::vista_recibos::raiz_de_era(&[(1, 1, d)], 0, 1, n).expect("raiz"),
+            "la recepcion rechazada no entro en la cabeza"
+        );
+        crate::latido::conservar(&app, l1);
+        let _ = dispatch(&app, "zkssl_applySend", envio_de_ceros().0);
+        let l2 = crate::latido::latir(&app, None).expect("latir");
+        assert_eq!(l2.cabeza.recep_count, 2);
+        assert_eq!(
+            l2.cabeza.recep_root,
+            crate::vista_recibos::raiz_de_era(&[(2, 1, d)], 1, 2, n).expect("raiz"),
+            "Q tiene que salir de la cabeza anterior"
+        );
+    }
+
+    #[test]
+    fn q_sobrevive_al_reinicio_por_el_diario() {
+        let ruta = tests_dir(&format!("diario_q_{}", proximo_nodo())).join("diario.jsonl");
+        let mut app = nodo(30);
+        app.diario = Some(ruta.clone());
+        let _ = dispatch(&app, "zkssl_applySend", envio_de_ceros().0);
+        crate::latido::conservar(&app, crate::latido::latir(&app, None).expect("latir"));
+        let mut otra = nodo(30);
+        otra.diario = Some(ruta);
+        assert_eq!(
+            crate::latido::limite_de_recepcion(&otra),
+            1,
+            "sin memoria, Q sale de la ultima linea del diario"
+        );
+    }
+
+    #[test]
+    fn un_contador_por_detras_de_la_cabeza_anterior_no_compone() {
+        // Falla CERRADA: firmar un recep_count que BAJA es firmar que dos eras comparten rx.
+        let app = nodo(30);
+        let mut l = crate::latido::latir(&app, None).expect("latir");
+        l.cabeza.recep_count = 5;
+        crate::latido::conservar(&app, l);
+        let e = crate::latido::latir(&app, None).expect_err("no puede componer");
+        assert!(format!("{e}").contains("HA RETROCEDIDO"), "{e}");
+        let r = dispatch(&app, "zkssl_epochHead", json!({})).expect_err("el RPC tampoco");
+        assert_eq!(r.code, -32603, "{}", r.message);
     }
 
     #[test]
@@ -3559,11 +3625,12 @@ mod tests {
         for k in ["seq", "epochDigest", "domain", "formatVersion", "index",
                   "signature", "publicKey", "emittedAtUnix", "beatSeconds",
                   "consRoot", "consCount",
-                  "paramsDigest", "pmetaRoot", "nextPending", "nextIndex", "totalSupply"] {
+                  "paramsDigest", "pmetaRoot", "nextPending", "nextIndex", "totalSupply",
+                  "recepRoot", "recepCount"] {
             assert!(!v[k].is_null(), "falta el campo {k}");
         }
         assert_eq!(v["domain"], json!("ZK-SSL-epoch-head"));
-        assert_eq!(v["formatVersion"], json!("0x5"), "RFC-0007 E1b (§452): el nodo firma v5");
+        assert_eq!(v["formatVersion"], json!("0x6"), "RFC-0010 E2d (§570): el nodo firma v6");
         assert_eq!(v["index"], json!("0x1"), "Q es una cantidad HEX del cable");
 
         // ⚠️ LO QUE IMPORTA: lo servido se VERIFICA, sin el nodo.
@@ -3585,17 +3652,18 @@ mod tests {
     }
 
     /// RFC-0007 E1b (§452): **la cabeza que el nodo sirve lleva la familia de v5, y lo servido
-    /// RECOMPONE su `epochDigest`** con el recomponedor v5 del verificador, sin la capa. Si el
-    /// `From` del cable olvidara una pieza o la cambiara, esto se pondria rojo.
+    /// RECOMPONE su `epochDigest`** sin la capa. Si el `From` del cable olvidara una pieza o la
+    /// cambiara, esto se pondria rojo. Desde el §570 (RFC-0010 E2d) recompone con el v6 del
+    /// verificador, que envuelve el v5 con la pareja de recepcion.
     #[test]
-    fn la_cabeza_servida_lleva_la_familia_de_v5_y_recompone_su_digest() {
+    fn la_cabeza_servida_lleva_la_familia_de_v5_y_recompone_su_digest_v6() {
         let app = nodo(30);
         let h = dispatch(&app, "zkssl_epochHead", json!({})).expect("epochHead");
         let dg = |k: &str| {
             digest_from_wire(&serde_json::from_value::<wire::B32>(h[k].clone()).expect("B32"))
                 .expect("digest")
         };
-        let recompuesto = zk_ssl_verify::epoch_digest_v5(
+        let recompuesto = zk_ssl_verify::epoch_digest_v6(
             q_de(&h["seq"]),
             dg("accountsRoot"),
             dg("pendingRoot"),
@@ -3612,8 +3680,10 @@ mod tests {
             q_de(&h["nextPending"]),
             q_de(&h["nextIndex"]),
             q_de(&h["totalSupply"]),
+            dg("recepRoot"),
+            q_de(&h["recepCount"]),
         );
-        assert_eq!(recompuesto, dg("epochDigest"), "lo servido tiene que recomponer el digest v5");
+        assert_eq!(recompuesto, dg("epochDigest"), "lo servido tiene que recomponer el digest v6");
     }
 
     #[test]
@@ -4188,6 +4258,17 @@ mod tests {
         (dg("paramsDigest"), dg("pmetaRoot"), q("nextPending"), q("nextIndex"), q("totalSupply"))
     }
 
+    /// La pareja de recepcion (RFC-0010 E2d, §570), del MISMO `head` que el recibo.
+    fn recepcion_desde_cable(v: &Value) -> (zk_ssl_verify::acuses::Digest, u64) {
+        let h = &v["head"];
+        let raiz =
+            digest_from_wire(&serde_json::from_value::<wire::B32>(h["recepRoot"].clone()).expect("B32"))
+                .expect("digest");
+        let k = u64::from_str_radix(h["recepCount"].as_str().expect("Q").trim_start_matches("0x"), 16)
+            .expect("hex");
+        (raiz, k)
+    }
+
     #[test]
     fn el_recibo_de_inclusion_verifica_contra_la_cabeza() {
         // ⚠️⚠️ EL TEST QUE JUSTIFICA TODA LA CADENA §256-§259: un camino
@@ -4209,8 +4290,9 @@ mod tests {
         let (acuses_root, n) = pareja_desde_cable(&r);
         let (cons_root, cons_count) = consumos_desde_cable(&r);
         let (params, meta, np, ni, s) = familia_v5_desde_cable(&r);
+        let (rr, rc) = recepcion_desde_cable(&r);
         assert_eq!(
-            zk_ssl_verify::verificar_inclusion_v5(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, cons_root, cons_count, params, meta, np, ni, s, firmado),
+            zk_ssl_verify::verificar_inclusion_v6(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, cons_root, cons_count, params, meta, np, ni, s, rr, rc, firmado),
             Ok(())
         );
     }
@@ -4275,17 +4357,18 @@ mod tests {
         let (acuses_root, n) = pareja_desde_cable(&r);
         let (cons_root, cons_count) = consumos_desde_cable(&r);
         let (params, meta, np, ni, s) = familia_v5_desde_cable(&r);
+        let (rr, rc) = recepcion_desde_cable(&r);
         let suya = digest_from_wire(
             &serde_json::from_value::<wire::B32>(r["head"]["epochDigest"].clone()).expect("B32"),
         )
         .expect("digest");
         assert_eq!(
-            zk_ssl_verify::verificar_inclusion_v5(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, cons_root, cons_count, params, meta, np, ni, s, suya),
+            zk_ssl_verify::verificar_inclusion_v6(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, cons_root, cons_count, params, meta, np, ni, s, rr, rc, suya),
             Ok(()),
             "el recibo debe valer contra la cabeza de SU epoca"
         );
         assert_eq!(
-            zk_ssl_verify::verificar_inclusion_v5(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, cons_root, cons_count, params, meta, np, ni, s, firmado),
+            zk_ssl_verify::verificar_inclusion_v6(&recibo_desde_cable(&r), acuses_root, n, zk_ssl_verify::acuses::as_digest(0), 0, cons_root, cons_count, params, meta, np, ni, s, rr, rc, firmado),
             Err(zk_ssl_verify::InclusionError::CabezaDistinta)
         );
     }

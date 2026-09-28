@@ -81,12 +81,17 @@ fn q(n: u64) -> String {
 /// Las cuatro claves de firma —`formatVersion`, `index`, `signature`,
 /// `publicKey`— **faltan** si el nodo arrancó sin `--clave`. Esa ausencia
 /// es lo que hace que `comparar_lineas` salte la línea, y es deliberada.
+///
+/// RFC-0010 E2d (§570): `recepCount` va en TODA línea, firmada o no, como `seq`: es el `Q`
+/// de la cabeza siguiente, y tras un reinicio la memoria no lo tiene. Clave añadida, así que
+/// `DIARIO_VERSION` no sube.
 pub fn linea(l: &Latido, clave_publica: &[u8]) -> Value {
     let mut v = json!({
         "v": DIARIO_VERSION,
         "seq": q(l.seq),
         "epochDigest": format!("0x{}", crate::hex_de(&l.epoch_digest)),
         "emittedAtUnix": q(l.emitida_unix),
+        "recepCount": q(l.cabeza.recep_count),
     });
     if let Some(c) = l.firma.as_ref() {
         v["formatVersion"] = json!(q(u64::from(c.version_formato)));
@@ -142,6 +147,28 @@ pub fn limites(ruta: impl AsRef<Path>) -> Vec<u64> {
 /// la memoria es caché** (§275).
 pub fn ultimo_seq(ruta: impl AsRef<Path>) -> Option<u64> {
     limites(ruta).into_iter().last()
+}
+
+/// El `recepCount` de la ÚLTIMA línea que lo lleva (RFC-0010 E2d, §570): el `Q` de la cabeza
+/// siguiente cuando la memoria llega vacía tras un reinicio. Mismo criterio que
+/// [`ultimo_seq`]: las líneas ilegibles se saltan —cuesta una era gorda en la lectura, no un
+/// pánico—, y las anteriores al §570, que no lo llevan, también. Un diario solo de ellas da
+/// `None`, y la primera era sale gorda: declarado, como la primera época de acuses.
+pub fn ultimo_recep_count(ruta: impl AsRef<Path>) -> Option<u64> {
+    let texto = std::fs::read_to_string(ruta).ok()?;
+    let mut ultimo = None;
+    for l in texto.lines() {
+        let j: Value = match serde_json::from_str(l) {
+            Ok(j) => j,
+            Err(_) => continue,
+        };
+        if let Some(s) = j["recepCount"].as_str() {
+            if let Ok(x) = u64::from_str_radix(s.trim_start_matches("0x"), 16) {
+                ultimo = Some(x);
+            }
+        }
+    }
+    ultimo
 }
 
 /// El MAXIMO `index` anotado, o `None` si el diario no tiene ni una firma.
@@ -282,6 +309,8 @@ mod tests {
                 next_pending: 0,
                 next_index: 0,
                 total_supply: 0,
+                recep_root: as_digest(0),
+                recep_count: 0,
             },
             seq: 42,
             epoch_digest: [digest; 32],
@@ -301,7 +330,7 @@ mod tests {
         // aqui se llamaran de otro modo, el nucleo dejaria de ser comun y
         // la comparacion cruzada seria imposible sin traducir.
         let v = linea(&cabeza(7, 0x11, true), &[0x01, 0x02]);
-        for k in ["seq", "epochDigest", "emittedAtUnix", "formatVersion", "index", "signature", "publicKey"] {
+        for k in ["seq", "epochDigest", "emittedAtUnix", "recepCount", "formatVersion", "index", "signature", "publicKey"] {
             assert!(!v[k].is_null(), "falta la clave {k}");
         }
     }
@@ -321,6 +350,7 @@ mod tests {
         // porque comparar_lineas salta las lineas sin signature.
         let v = linea(&cabeza(0, 0x22, false), &[]);
         assert!(!v["seq"].is_null(), "el limite de epoca tiene que quedar");
+        assert!(!v["recepCount"].is_null(), "y el de la era de recepcion, firmada o no (§570)");
         assert!(v["signature"].is_null(), "sin clave no puede haber firma");
         assert!(v["index"].is_null(), "sin firma no hay indice que anotar");
     }
@@ -382,6 +412,8 @@ mod tests_limites {
                 next_pending: 0,
                 next_index: 0,
                 total_supply: 0,
+                recep_root: as_digest(0),
+                recep_count: 0,
             },
             seq,
             epoch_digest: [0x33; 32],
@@ -389,6 +421,27 @@ mod tests_limites {
             emitida_unix: 1_700_000_000,
             foto: std::sync::Arc::new(zk_ssl::tests_support::new_layer().foto_pendientes()),
         }
+    }
+
+    #[test]
+    fn el_ultimo_recep_count_sale_del_diario_y_las_lineas_viejas_no_lo_dan() {
+        // §570: Q tras un reinicio. Una linea anterior al §570 no lo lleva y no cuenta; una
+        // ilegible se salta; manda la ULTIMA que lo lleva.
+        let d = std::path::Path::new("target").join("diario_recep_count");
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("dir");
+        let ruta = d.join("diario.jsonl");
+        std::fs::write(&ruta, "{\"v\":1,\"seq\":\"0x1\",\"epochDigest\":\"0x00\",\"emittedAtUnix\":\"0x1\"}\n")
+            .expect("una linea vieja");
+        assert_eq!(ultimo_recep_count(&ruta), None, "un diario de antes del §570 no da Q");
+        let mut l = latido_sin_firma(7);
+        l.cabeza.recep_count = 3;
+        anotar(&ruta, &l, &[]).expect("anotar");
+        l.cabeza.recep_count = 9;
+        anotar(&ruta, &l, &[]).expect("anotar");
+        let mut f = std::fs::OpenOptions::new().append(true).open(&ruta).expect("abrir");
+        writeln!(f, "esto no es json").expect("una linea rota");
+        assert_eq!(ultimo_recep_count(&ruta), Some(9), "manda la ultima que lo lleva");
     }
 
     #[test]

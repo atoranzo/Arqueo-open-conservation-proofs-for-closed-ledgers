@@ -41372,3 +41372,113 @@ del registro-, el DTO con sus dos campos, `VERSION_FORMATO` a 6 y el vector v6 p
 poda, que se ata al cierre de la cabeza v6. El hueco de la D-E. Y los bancos, que arrancan el nodo
 con esta politica y NO se corrieron en esta sesion: el humo cubre el arranque, no sus flujos.
 
+## §570 — RFC-0010 E2d: el nodo compone, firma y sirve la cabeza v6
+
+El commit que lleva este asiento, sobre `b6d29fb` (el S569). Un solo sello: el codigo de seis
+crates -uno, `zk-ssl-hash`, solo por un comentario-, los pines, las cifras que arrastran, la prosa
+del contrato, tres vectores del cable y este asiento, con el canon `--sello` VERDE dentro del
+bloque. Treinta ficheros mas este asiento, con 566 inserciones y 81 borrados fuera de el; NACEN los
+tres vectores. Con este sello la E2 del RFC-0010 queda SELLADA entera (§557-§570).
+
+**De donde sale.** De la E2d -<<la pareja firmada en el cable (5.A-422)>>- y del mapa que la sesion
+193 midio sobre el S569 antes de tocar nada: el conjunto de versiones, los dos recomponedores, el
+mando, el `recomponer` del testigo y las compuertas de los bancos YA aceptaban la v6 desde la E2a;
+lo unico que seguia produciendo v5 era el nodo -`EpochHead` sin la pareja, `digest()` fijo en v5,
+los DTO sin sus dos claves y `VERSION_FORMATO` en 5-. Y una advertencia medida: subir la constante
+sin pasar `digest()` a v6 firma el preambulo 6 sobre un digest v5, y todo verificador recompone v6 y
+cae.
+
+**Lo que hace, por capas.** (1) LA CAPA: `EpochHead` gana `recep_root` y `recep_count`, `digest()`
+compone `epoch_digest_v6` -el productor del nucleo, no uno parecido- y `epoch_head` recibe la pareja
+por parametro, como la de acuses: el registro es del NODO (D-I) y la capa no lo tiene. (2) EL CABLE:
+`EpochHeadDto` gana `recepRoot` y `recepCount`; `SignedEpochHeadDto` y `VistaFirmada` los ganan como
+`Option` -la version elige-, y `firmada()` los exige si `lleva_recepcion()`, DESPUES de la pareja de
+consumos y de la familia de v5, para que el vector `rechazo-formatVersion-6` -una v3 mutada, que no
+se reescribe- siga cayendo por `consRoot`. (3) EL NODO:
+`RegistroRecepcion::entradas_posteriores_a(q)`; `latido::pareja_de_recepcion`, el UNICO productor de
+la pareja, que usan el latido, `zkssl_epochHead` y `zkssl_inclusionReceipt`;
+`latido::limite_de_recepcion`, el `Q`; y el diario anota `recepCount` en TODA linea. (4)
+`VERSION_FORMATO` 5 -> 6. (5) EL TESTIGO custodia en su diario la pareja, y EL MANDO imprime la
+version que recompuso en vez de un <<v5>> escrito a mano en cuatro sitios.
+
+**Cinco DECISIONES del asistente, REVERSIBLES.** (a) El PRECEDENTE de v4 y v5: las dos claves son
+OBLIGATORIAS en `EpochHeadDto`. El precio es el mismo que pagaron el §415 y el §452, y se declara:
+un cuerpo sin firmar anterior ya no deserializa, y una vista firmada v5 ya no da cabeza sin firmar
+-nombra `recepRoot`-, asi que `--libros-ajenos` deja de aceptar cabezas ajenas v5, como hoy no
+acepta v4. (b) `Q` sale de la cabeza anterior en memoria, si no de la ULTIMA linea del diario que lo
+lleva, y si no 0: tras un reinicio sin diario, o con un diario anterior a este sello, la primera era
+sale gorda, como la primera epoca de acuses. `recepCount` es clave AÑADIDA al diario, asi que
+`DIARIO_VERSION` no sube. (c) `R` y las entradas se leen BAJO el candado del estado, en el orden
+estado -> recepcion y estado -> registro, el del despacho: `recibir` y `anotar` ocurren los dos
+dentro de ese candado, y asi ningun `rx <= R` puede leerse reservado y sin anotar. (d) Las entradas
+de una cabeza se buscan en TODAS las eras del registro: la aritmetica de indices falla con
+reinicios, huerfanos y nodos sin clave; se mira la ULTIMA entrada de cada fichero -dentro de uno el
+`rx` crece- y solo se lee entero el que tiene algo por encima de `Q`. Coste por cabeza declarado y
+sin medir: un `read_dir` y 40 bytes por fichero. (e) Si el contador de recepcion ha RETROCEDIDO por
+debajo del `recep_count` de la cabeza anterior, NO se compone: firmar una cuenta que baja es firmar
+que dos eras comparten numeros.
+
+**Los testigos.** Nacen siete. En la capa, la pareja entra en el digest y la cabeza compone
+exactamente `epoch_digest_v6`. En el cable, una v6 sin su pareja no da vista y la nombra, una v5 si
+da vista sin ella, y esa vista v5 ya no da cabeza sin firmar. En el nodo, cinco: el registro da las
+entradas posteriores a `Q` de todas sus eras; el diario da el ultimo `recepCount` y las lineas
+viejas no; una recepcion RECHAZADA por la capa entra en la cabeza siguiente y la de despues arranca
+en su `Q`; `Q` sobrevive al reinicio por el diario; y un contador por detras de la cabeza anterior
+no compone, ni en el latido ni en el RPC. Se AJUSTAN, sin cambiar de numero: la forma servida pasa a
+`0x6` con sus dos claves; la recomposicion de la cabeza servida y las del recibo de inclusion pasan
+a la v6; dos testigos de forma del cable cambian de nombre porque sus cuentas cambian -veintinueve
+claves la firmada, dieciocho campos la ida y vuelta-; la lista del diario del testigo pasa de 26 a
+28; y el testigo de la guarda del cobro, que fabricaba su v6 mutando SOLO la `formatVersion` de la
+v5 real, le añade la pareja en la misma mutacion -lo que mira, la familia y no la variante, no
+cambia-.
+
+**Los falsadores, ENSAYADOS.** `digest()` devuelto a v5: cae el testigo de la capa y los tres del
+nodo que recomponen lo servido -la cabeza de `zkssl_epochHead` y los dos del recibo de inclusion-.
+`firmada()` sin exigir la pareja: cae el testigo nuevo del cable. `Q` siempre 0: caen los tres del
+nodo que lo miran. Sin la guarda del retroceso: cae el suyo. Restaurado, pasan todos.
+
+**Un rojo propio, y lo cazo el CANON.** El primer canon del sello salio ROJO por `check_tests`: el
+testigo nuevo del diario escribia una linea rota con dos llaves abiertas dentro de una cadena, y el
+contador de llaves del canon -que no es el compilador- declaro ANIDADOS los tres testigos siguientes
+del fichero: para el, tests que compilan y no se ejecutan. `rustc` si los ejecutaba -el VIVA daba
+160-, pero un test que el contador de la casa no ve es un test que no protege: la linea rota deja de
+llevar llaves, la fuente del script se corrige con ella, y los 1643 declarados salen limpios.
+
+**EL VECTOR, VIVO.** `tools/banco_consumo.sh --guardar` -el primer banco que se corre desde el S569-
+contra el nodo de este sello: VERDE, las dos cabezas v6 verificadas sin el nodo y los seis negativos
+del sobre caidos. De su sobre sale `positivo-cabeza-v6.json`, la cabeza `nueva` con la envoltura
+JSON-RPC del positivo v5, y por MUTACION sus dos negativos: sin `recepRoot` -<<cabeza firmada sin
+recepRoot: el productor la sirvio incompleta>>- y con `recepCount` + 1 -<<los campos NO recomponen
+el epochDigest firmado (v6)>>-. Declarado: su pareja es la del GENESIS, porque el banco de consumo
+no recibe envios. El catalogo del cable pasa de 18 a 21, y el MANIFIESTO y `spec/RPC.md` lo dicen.
+
+**LOS PINES SE MIDIERON**, sin filtro y con cero warnings: la capa 421 -> 422, el cable 22 -> 23, el
+nodo 155 -> 160; el verificador en 133 y el cli en 125, quietos. `check_cifras` NOMBRO quince cifras
+con los pines subidos: el 421 de la capa en siete sitios mas su desglose, el TOTAL DE SELLO 1477 ->
+1484 y el TOTAL CON LARGOS 1614 -> 1621 en los tres documentos, y el desglose del nodo 155 -> 160;
+con las quince vuelve a su censo -25 cifras, 7 de desglose, LARGOS 3 de 3- y todas salen LINEA- y
+BYTE-NEUTRALES. Las tres filas ganan su CRONICA del §570.
+
+**La prosa.** `spec/RPC.md` gana la seccion del formato v6 con el molde de la v5, y sus cuentas de
+campos pasan de dieciseis a dieciocho. `spec/PAQUETE.md` dice que el binario exige los dos.
+`spec/NUCLEO.md` corrige el texto del conjunto -decia <<v2, v3, v4 o v5>> desde el §451, y desde el
+§558 es <<... o v6>>, citado y no borrado- y gana su historia. Dos comentarios rancios que decian
+que el nodo emitiria v6 <<en E2c>> dicen ahora que fue la E2d. La fila E2 del RFC-0010 dice SELLADA.
+
+**El residuo que el canon no ve, a la baja otra vez.** `cargo build -p zk-ssl-node --release`: 10 ->
+4 warnings. Se van cinco de los seis de la vista, `pares_de_era` y `actual`, que ya tienen llamante.
+Quedan dos de siempre -el import de `firma_cabeza` y `tests_dir`-, `podar` y `camino_de_era`: la
+poda y la E3.
+
+**Contadores.** Pines: la capa 421 -> 422, el cable 22 -> 23, el nodo 155 -> 160; los otros
+dieciocho sin mover. El TOTAL DE SELLO 1477 -> 1484 y el TOTAL CON LARGOS 1614 -> 1621.
+`check_tests` 1636 -> 1643 y el offset en mas 8, QUIETO: 1484 + 137 = 1621 ; 1621 + 14 = 1635 ; el
+canon declara 1643. El catalogo del cable 18 -> 21. El censo del nucleo, quieto en 126:
+`VERSION_FORMATO` ya tenia fila y su valor no es censo. Ningun `Cargo` tocado. `VERSION_FORMATO` 5
+-> 6, y el cable sigue en `zkssl/0.3`.
+
+**Lo que NO cierra.** La E3: el recibo `{rx, era, n}` en el cable y el metodo del camino, que usara
+`camino_de_era`. La poda, que sigue sin llamante. El hueco de la D-E -`applyMany` y `zkssl_pledge`
+evaluan sin reservar-. Las etiquetas <<cabeza v5>> de cinco bancos, que el nodo de este sello vuelve
+falsas sin que fallen, y los otros trece bancos, que no se corrieron en esta sesion.
+

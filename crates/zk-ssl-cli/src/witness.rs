@@ -506,12 +506,13 @@ pub fn linea_de_diario(v: &Veredicto, servido: &Value, visto_unix: u64) -> Value
         // RFC-0007 E1b (§452): la familia de v5, por el mismo criterio. Y desde aqui un test
         // ata esta lista a la forma firmada del cable (punto 89 de la cola): ya no son dos
         // productores sueltos (`la_lista_del_diario_es_la_forma_firmada_del_cable`).
+        // RFC-0010 E2d (§570): la pareja de recepcion, otra vez por el mismo criterio.
         for k in ["index", "epochDigest", "domain", "formatVersion", "signature",
                   "publicKey", "emittedAtUnix", "beatSeconds", "custody",
                   "custodyChecked", "mmrRoot", "mmrSize", "consRoot", "consCount",
                   "seq", "n", "accountsRoot", "pendingRoot", "frozenRoot",
                   "chainDigest", "acusesRoot", "paramsDigest", "pmetaRoot",
-                  "nextPending", "nextIndex", "totalSupply"] {
+                  "nextPending", "nextIndex", "totalSupply", "recepRoot", "recepCount"] {
             if !servido[k].is_null() {
                 l[k] = servido[k].clone();
             }
@@ -925,8 +926,8 @@ fn recomponer(v: &Value, firmado: &[u8; 32]) -> Result<(), String> {
             leer_q(&v["nextIndex"])?,
             leer_q(&v["totalSupply"])?,
         ),
-        // RFC-0010 E2 (§558): la pareja de recepcion. El nodo sigue emitiendo v5 hasta
-        // E2c; el brazo lo exige el compilador, y el testigo ya la acepta.
+        // RFC-0010 E2 (§558): la pareja de recepcion. El testigo la acepta desde el §558 y el
+        // nodo la emite desde el §570 (E2d); decia «hasta E2c», y la etapa fue la E2d.
         VersionCabeza::V6 => zk_ssl_verify::epoch_digest_v6(
             seq,
             accounts,
@@ -3165,7 +3166,8 @@ mod tests {
     /// firmada del cable**. Eran dos productores del mismo conjunto -la lista escrita a mano
     /// de `linea_de_diario` y los campos de `VistaFirmada`- sin test que los atara. Aqui el
     /// conjunto del cable se DERIVA serializando la forma v5 que `con_firma` produce, y el del
-    /// diario, de la linea: una clave nueva en uno solo se pone roja.
+    /// diario, de la linea: una clave nueva en uno solo se pone roja. Desde el §570 la forma es
+    /// la v6, con la pareja de recepcion.
     #[test]
     fn la_lista_del_diario_es_la_forma_firmada_del_cable() {
         use std::collections::BTreeSet;
@@ -3187,12 +3189,14 @@ mod tests {
             next_pending: Q(3),
             next_index: Q(4),
             total_supply: Q(0x1f4),
+            recep_root: B32([0xbb; 32]),
+            recep_count: Q(9),
             epoch_digest: B32([0x11; 32]),
         };
         let dto = SignedEpochHeadDto::con_firma(
             &cabeza,
             "ZK-SSL-epoch-head".into(),
-            Q(5),
+            Q(6),
             Q(2),
             Blob(vec![0xde, 0xad]),
             Blob(vec![0xab, 0xcd]),
@@ -3218,7 +3222,7 @@ mod tests {
             .cloned()
             .collect();
         assert_eq!(del_diario, del_cable, "la lista del diario y la forma firmada del cable divergen");
-        assert_eq!(del_cable.len(), 26, "la forma firmada v5 son veintisiete claves con available");
+        assert_eq!(del_cable.len(), 28, "la forma firmada v6 son veintinueve claves con available");
     }
 
     #[test]
