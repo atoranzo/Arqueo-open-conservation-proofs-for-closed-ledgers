@@ -27,7 +27,7 @@
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
 | E1 — la promesa, escrita | este texto: qué objeto nace y por qué no es el acuse (D-A), la hoja y su dominio (D-B), la pareja en la cabeza v6 (D-C), la era que el recibo declara (D-D), qué cuenta y qué no (D-E), el sobre de completitud y sus tres veredictos (D-F), la grieta de las causas sin prueba portable (D-G) y el residuo (D-H) | no | **sellada (§556)** |
-| E2 — la raíz de recepción en la cabeza | **E2a** la composición v6 en el núcleo con su vector conocido, la V6 en el conjunto y los consumidores al predicado — sellada (§557, §558, §559 el binario, §563 el cli y los siete bancos, §566 el acuse v6 del mando) · **E2b** las reglas compartidas en `zk-ssl-verify`, molde `acuses.rs` — sellada (§562) · **E2c** la vista del nodo, molde `vista_acuses.rs` · **E2d** la pareja firmada en el cable (5.A-422) | no (aditivo, v6) | en curso: E2a y E2b selladas; faltan E2c y E2d |
+| E2 — la raíz de recepción en la cabeza | **E2a** la composición v6 en el núcleo con su vector conocido, la V6 en el conjunto y los consumidores al predicado — sellada (§557, §558, §559 el binario, §563 el cli y los siete bancos, §566 el acuse v6 del mando) · **E2b** las reglas compartidas en `zk-ssl-verify`, molde `acuses.rs` — sellada (§562; §567 el borde `(Q, R]` y la era en índice XMSS) · **E2c** la vista del nodo, molde `vista_acuses.rs` · **E2d** la pareja firmada en el cable (5.A-422) | no (aditivo, v6) | en curso: E2a y E2b selladas; faltan E2c y E2d |
 | E3 — el recibo, en el cable | `{rx, era, n}` como DATO en el resultado y en `error.data` de las vías del titular, y el método de lectura del camino cuando la era cierra | no (métodos aditivos) | propuesta |
 | E4 — el sobre portable de completitud | `tipo: "completitud"`, que un tercero verifica con el kit y sin nodo, con sus tres veredictos y sus reglas de rechazo | no | propuesta |
 | E5 — catálogo y banco | `spec/vectors/completitud/`, su MANIFIESTO, la familia en `FAMILIAS` y su estrofa del canon, y el banco que siembra una recepción resuelta y una sin resolver | no | propuesta |
@@ -124,6 +124,15 @@ El índice de la hoja dentro del árbol de su era es **denso desde cero**: `rx -
 propósito, como en el acuse: la era es pequeña y cualquiera reconstruye posiciones desde dos
 cabezas firmadas sin datos extra.
 
+⚠️ **CORRECCIÓN (§567), citada y no borrada.** Los dos párrafos de arriba razonan con una
+recepción número cero que el contador **no da**: `reservar` devuelve `actual + 1`, así que la
+primera recepción es `rx = 1`. Con `[Q, R)` y `R = recep_count`, la ÚLTIMA recepción de cada era
+quedaba fuera de su propio árbol. Rige, por decisión del autor en la sesión 193: la era es
+**`(Q, R]`**, con `R = recep_count` —las recepciones evaluadas al componer la cabeza, que es el
+último `rx` reservado— y `Q` el de la cabeza anterior; pertenece `Q < rx <= R`; el índice denso
+es **`rx - Q - 1`**. El génesis `recep_count = 0` sigue siendo el árbol vacío, y la convención
+del recibo es exactamente la del acuse aplicada a `rx - 1`.
+
 ### D-D — La era que el recibo declara es la primera cabeza que puede contenerlo
 
 `era = seq_de_la_última_cabeza_firmada + 1`, computada **en la recepción**, no al cerrar. Es el
@@ -138,6 +147,16 @@ de la cabeza solos. La promesa es `S - e <= N`.
 Una era adelantada no le sirve al operador: el titular contrasta `e` contra la cabeza que ya
 custodia en el momento de recibir, y una `e` por delante de lo que el nodo ha firmado es visible
 al instante. Y como la era va **dentro** de la hoja, mentirla después rompe el camino.
+
+⚠️ **CORRECCIÓN (§567), citada y no borrada.** Esta sección fija la era sobre el `seq` de la
+última cabeza firmada y dice que `S - e` es el retraso **en cabezas**. El `seq` de una cabeza es
+`log.len()` —el reloj del §340— y el latido emite cabeza aunque no haya transiciones, así que dos
+cabezas seguidas llevan el mismo `seq`: `S - e` contaba **entradas aplicadas**, y un censor que
+dejara de aplicar **congelaba** el reloj, con la ventana abierta para siempre. Rige, por decisión
+del autor en la sesión 193: la era y `S` son el **índice XMSS** de la firma de la cabeza. La
+clave del nodo sólo firma cabezas, así que el índice cuenta **cabezas firmadas** —más los
+índices huérfanos, quemados sin firma, que sólo acortan la ventana y cuentan en contra de quien
+los quemó—, y `N = 1.440` vuelve a ser lo que dice: 1.440 cabezas firmadas.
 
 ### D-E — Cuenta lo que el nodo llegó a EVALUAR; ni el ruido ni lo aceptado
 
@@ -163,7 +182,8 @@ existe— la resolución. El verificador dice una de tres cosas:
 2. **Resuelta como rechazo con prueba**: la resolución es un sobre `tipo: "rechazo"` del
    RFC-0007, verificado por sus propias reglas, sobre una cabeza dentro de la ventana. VERDE.
 3. **No resuelta en la ventana**: el recibo verifica, la ventana ha expirado —`S - e > N` con `S`
-   de una cabeza firmada— y no se presenta ninguna de las dos. **ROJO NOMBRADO**, y ése es el
+   el índice XMSS de una cabeza firmada (§567; ver la corrección de la D-D)— y no se presenta
+   ninguna de las dos. **ROJO NOMBRADO**, y ése es el
    producto: un objeto portable que dice, con la firma del propio operador dentro, que se
    comprometió a resolver y no lo hizo.
 

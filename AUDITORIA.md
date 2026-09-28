@@ -41137,3 +41137,75 @@ Quedan medidos, sin numero, dos huecos que no son de este corte: la seccion 8 de
 tiene entrada del §562, que anadio las cinco filas RECIBOS; y `applyMany` y `zkssl_pledge` evaluan
 pruebas sin reservar numero de recepcion, que la D-E del RFC no excluye.
 
+## §567 — RFC-0010 E2b corregida: la era es (Q, R] y se cuenta en el indice XMSS de la firma
+
+El commit que lleva este asiento, sobre `6720f83` (el S566-B). Un solo sello: el codigo, el pin,
+las cifras que el pin arrastra, la prosa del RFC y de `spec/NUCLEO.md`, y este asiento, con el canon
+`--sello` VERDE dentro del bloque. Ocho ficheros mas este asiento, con 152 inserciones y 64 borrados
+fuera de el. DECISION del asistente, REVERSIBLE: el molde partido del S495 existe para no correr el
+canon en un sello que mueve el pin SIN llevarlo (PRECISION 859); aqui el pin viaja en el mismo
+commit, se mide antes de escribirse, y el canon sale verde sobre el arbol del sello.
+
+**De donde sale.** De la lectura pura de la E2c-2 (sesion 193), que midio dos defectos en reglas ya
+selladas en el §562, y de las dos decisiones que el autor tomo sobre ellos. Ninguno mordio todavia:
+el registro de recepcion no esta conectado al nodo y ninguna cabeza firma la pareja.
+
+**El primero: el contador empieza en 1.** `GuardianIndice::reservar` persiste y devuelve `actual +
+1`, y `ContadorRecepcion::recibir` es ese `reservar`: la primera recepcion es `rx = 1`. La E2b usaba
+el borde del acuse, `[Q, R)`, con el argumento de la D-C -<<con Q exclusivo la recepcion numero uno
+no perteneceria a ninguna era>>- y un testigo que metia una recepcion 0 en la primera era. Con `R =
+recep_count` -las recepciones evaluadas al componer, que es el ULTIMO `rx` reservado-, la ultima
+recepcion de cada era caia FUERA de su arbol. DECISION DEL AUTOR: la era es `(Q, R]`, pertenece `Q <
+rx <= R`, la posicion densa es `rx - Q - 1`, y el genesis `recep_count = 0` sigue siendo el arbol
+vacio.
+
+**El segundo: el `seq` de una cabeza no cuenta cabezas.** `epoch_head` firma `seq = log.len()` -el
+reloj del §340- y el latido emite una cabeza en cada vuelta, haya o no transiciones. La D-D decia
+que `S - e` es el retraso EN CABEZAS y la D-F vendia `N = 1.440` como 24 h al latido: medido,
+contaba ENTRADAS APLICADAS, y un censor que dejara de aplicar CONGELABA el reloj -sin entradas
+nuevas `S` no avanza y la ventana no expira nunca, que es justo el caso que el veredicto 3 existe
+para exhibir-. DECISION DEL AUTOR: la era y `S` son el INDICE XMSS de la firma. La clave del nodo
+solo firma cabezas -`firmar` se llama unicamente en `latido.rs`:199-, asi que el indice cuenta
+cabezas firmadas, mas los huerfanos, que solo acortan la ventana y cuentan en contra de quien los
+quemo.
+
+**Lo que hace.** `pertenece_a_era` pasa a `(Q, R]` e `indice_de_recibo` a `rx - Q - 1`, con una
+GUARDA: un `rx` que no pertenece no tiene posicion y lo dice con un `panic` nombrado, en vez de
+desbordar a un numero que ningun arbol tiene. `era_de_recibo` y `dentro_de_ventana` no cambian de
+aritmetica: cambia su unidad, y su nombre de parametro y su doc lo dicen. `podar` recibe el
+`indice_cierre`. Los NOMBRES no cambian, asi que `spec/NUCLEO.md` no gana ni pierde filas; gana la
+historia del §567 y la del §562, que anadio las cinco filas RECIBOS sin su entrada y que la lectura
+pura encontro faltando.
+
+**Correccion CITADA y no borrada.** La D-C y la D-D del RFC-0010 y la cabecera de `recibos.rs`
+llevan su CORRECCION (§567) junto al texto que corrigen, y la D-F dice que `S` es el indice. La
+celda de E2b en la tabla de etapas lo nombra. Lo que se dijo mal se queda escrito como dicho, y la
+correccion al lado.
+
+**El testigo del cruce, dado la vuelta.** `la_convencion_del_borde_coincide_hoy_con_la_del_acuse`
+existia para NOMBRAR el dia en que los dos bordes divergieran. Es este. Se sustituye por
+`la_convencion_del_borde_es_la_del_acuse_sobre_rx_menos_uno`, que sigue cruzando las dos funciones
+-no se comparten: dos objetos, dos convenciones- con la relacion que es cierta, y cruza tambien la
+posicion. Nace `un_rx_que_no_pertenece_no_tiene_indice`, el de la guarda.
+
+**Los falsadores, ENSAYADOS.** Devuelto el borde viejo `[Q, R)` a `pertenece_a_era`, caen
+EXACTAMENTE los tres testigos que lo nombran -el borde, la recepcion numero uno y el cruce- y pasan
+los otros seis del modulo; restaurado, pasan todos.
+
+**EL PIN SE MIDIO.** `cargo test -p zk-ssl-verify --release` sin filtro: 104 + 28 + 1 = 133 passed,
+CERO ignorados, CERO warnings. El del nodo, sin mover: 137, porque `podar` solo cambia el nombre de
+un parametro. `check_cifras` NOMBRO siete cifras con el pin subido y el gate verde antes de tocar:
+el TOTAL DE SELLO 1458 -> 1459 en los tres documentos, el TOTAL CON LARGOS 1595 -> 1596 en los tres,
+y el desglose del verificador 132 -> 133 en `PRINCIPIOS.md`; con las siete vuelve a su censo -25
+cifras, 7 de desglose, LARGOS 3 de 3-. Los tres salen LINEA- Y BYTE-NEUTRALES. Las <<1364>>/<<1349>>
+no se tocan. La fila del verificador gana su CRONICA, <<§567: 132 -> 133>>.
+
+**Contadores.** El pin del verificador 132 -> 133 y los otros seis sin mover. El TOTAL DE SELLO 1458
+-> 1459 y el TOTAL CON LARGOS 1595 -> 1596. `check_tests` 1617 -> 1618 y el offset en mas 8, QUIETO:
+1459 + 137 = 1596 ; 1596 + 14 = 1610 ; el canon declara 1618. El censo del nucleo, quieto en 126.
+Ningun `Cargo` tocado. El cable NO sube y `VERSION_FORMATO` sigue en 5.
+
+**Lo que NO cierra.** La E2c-2 -la vista de recibos y la conexion del registro al nodo, que ya nacen
+con el borde y la unidad buenos- y la E2d. Y queda el hueco de la D-E que la lectura midio:
+`applyMany` y `zkssl_pledge` evaluan pruebas sin reservar numero de recepcion.
+

@@ -287,9 +287,18 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §567 — el módulo `recibos` cambia lo que dice y no cómo se llama: la era es `(Q, R]` —el
+  contador de recepción empieza en 1— y la posición `rx - Q - 1`; la era y la ventana se cuentan
+  en el índice XMSS de la firma y no en el `seq` de la cabeza (RFC-0010, E2b; correcciones
+  citadas en su D-C y su D-D). Ninguna fila nueva.
 - §566 — `verificar_acuse_v6` y `verificar_inclusion_v6`: el acuse y la inclusión contra una
   cabeza v6 se recomponen con la v6. Hasta aquí el mando ACEPTABA la v6 en su paso 1 y mandaba su
   acuse al recomponedor v5 (RFC-0010, E2a). Dos filas nuevas.
+- §562 — el módulo `recibos` del verificador (`pertenece_a_era`, `indice_de_recibo`,
+  `era_de_recibo`, `hoja_de_recibo`, `dentro_de_ventana`): las reglas del árbol de recibos de
+  recepción, compartidas por el constructor del nodo y el verificador (RFC-0010, E2b). Cinco
+  filas nuevas. Entrada que faltaba: el §562 añadió las filas y no su historia, y la escribió
+  el §567.
 - §558 — la variante `V6`, `lleva_recepcion` y `texto_con_recepcion`, `lleva_parametros` y
   `texto_con_parametros`: el conjunto que un verificador ACEPTA crece a v6, y los sobres que
   exigian la familia del estado dejan de preguntar <<¿es V5?>> para preguntar por el predicado

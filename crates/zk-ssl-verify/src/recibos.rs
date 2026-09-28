@@ -11,31 +11,53 @@
 //! ## ⚠️ La era NO se computa como la epoca del acuse
 //!
 //! `epoca_de_acuse(seq)` toma el `seq` de una ENTRADA del diario. La era
-//! toma el `seq` de la ULTIMA CABEZA FIRMADA en el instante de recibir
-//! (RFC-0010, D-D), que es un hecho de ese instante y que el verificador
-//! **no tiene**: le llega la era ya fijada, DENTRO del recibo. Misma
-//! aritmetica, argumento de otra naturaleza.
+//! toma el **indice XMSS** de la ULTIMA CABEZA FIRMADA en el instante de
+//! recibir (RFC-0010, D-D), que es un hecho de ese instante y que el
+//! verificador **no tiene**: le llega la era ya fijada, DENTRO del recibo.
+//!
+//! ⚠️ CORRECCION (§567), citada y no borrada. Decia: <<La era toma el `seq`
+//! de la ULTIMA CABEZA FIRMADA>>. El `seq` de una cabeza es `log.len()`
+//! -el reloj del §340-, y el latido emite cabeza aunque no haya
+//! transiciones: dos cabezas seguidas llevan el MISMO `seq`. Contar la
+//! ventana en `seq` contaba ENTRADAS APLICADAS, no cabezas, y un censor que
+//! dejara de aplicar CONGELABA el reloj: la ventana no expiraba nunca. El
+//! indice XMSS lo quema UNA firma de cabeza -la clave del nodo solo firma
+//! cabezas- y cuenta lo que la D-F promete, <<N cabezas firmadas>>. Decision
+//! del autor, sesion 193.
 //!
 //! Por eso [`era_de_recibo`] y [`hoja_de_recibo`] estan **separadas** y no
 //! fundidas como en el molde. Fundirlas obligaria al verificador a
 //! sostener un dato que nadie le manda.
 //!
-//! ## El borde `[Q, R)`, con Q INCLUSIVO
+//! ## El borde `(Q, R]`, con Q EXCLUSIVO y R INCLUSIVO
 //!
-//! Igual que la epoca del acuse, y por el mismo borde: con `Q` exclusivo
-//! **la recepcion numero uno no perteneceria a ninguna era** (D-C).
+//! `R` es el `recep_count` de la cabeza que cierra la era: las recepciones
+//! que el nodo habia evaluado al componerla, que es tambien el ULTIMO `rx`
+//! reservado, porque el contador empieza en 1 (`reservar` devuelve
+//! `actual + 1`). `Q` es el de la cabeza anterior, 0 en el genesis. La era
+//! son los `rx` con `Q < rx <= R`, y el genesis `recep_count = 0` sigue
+//! siendo el arbol vacio.
+//!
+//! ⚠️ CORRECCION (§567), citada y no borrada. Este borde era `[Q, R)` <<igual
+//! que la epoca del acuse>>, con el argumento de que con `Q` exclusivo <<la
+//! recepcion numero uno no perteneceria a ninguna era>>. Razonaba con una
+//! recepcion 0 que el contador NO da: con `[Q, R)` y `R = actual()`, la
+//! ULTIMA recepcion de cada era caia fuera de su arbol. La convencion del
+//! recibo es la del acuse aplicada a `rx - 1`, y el testigo del cruce lo
+//! dice asi. Decision del autor, sesion 193.
 //!
 //! ## Denso — y por eso SIN cruce
 //!
 //! `consumos` cruza la posicion porque su arbol es disperso y el mismo
 //! camino sirve a una posicion ocupada y a una vacia. Aqui el indice es
-//! **denso desde cero** (`rx - Q`): la posicion se DERIVA de dos cabezas
+//! **denso desde cero** (`rx - Q - 1`): la posicion se DERIVA de dos cabezas
 //! firmadas, no se recibe. No hay ambiguedad que cruzar, y la ausencia de
 //! cruce es una decision leida, no un olvido.
 //!
 //! ## ⚠️ La ventana es ARITMETICA, y no es prueba de ausencia
 //!
-//! [`dentro_de_ventana`] dice si `S - e <= N` sobre dos numeros firmados.
+//! [`dentro_de_ventana`] dice si `S - e <= N` sobre dos numeros firmados:
+//! `S` el indice XMSS de una cabeza firmada y `e` la era del recibo.
 //! El veredicto 3 del D-F —«no resuelta en la ventana»— **no es una prueba
 //! criptografica de ausencia**: probar que algo no esta en ninguna de `N`
 //! epocas exigiria las `N` epocas enteras. Es evidencia OPONIBLE, y el RFC
@@ -46,30 +68,41 @@ use zk_ssl_hash::recibo_digest;
 // no se abre un segundo.
 use crate::acuses::Digest;
 
-/// ¿Cae la recepcion `rx` en la era `[limite_anterior, limite)`?
+/// ¿Cae la recepcion `rx` en la era `(limite_anterior, limite]`?
 ///
 /// `limite_anterior` = `recep_count` de la cabeza anterior (0 si no hay
-/// ninguna); `limite` = `recep_count` de la cabeza que cierra la era. El
-/// limite inferior **no se firma**: lo tiene el titular que custodia dos
-/// cabezas consecutivas (D-C).
+/// ninguna); `limite` = `recep_count` de la cabeza que cierra la era, que es
+/// el ULTIMO `rx` que el nodo reservo antes de componerla. El limite
+/// inferior **no se firma**: lo tiene el titular que custodia dos cabezas
+/// consecutivas (D-C).
 pub fn pertenece_a_era(rx: u64, limite_anterior: u64, limite: u64) -> bool {
-    limite_anterior <= rx && rx < limite
+    limite_anterior < rx && rx <= limite
 }
 
-/// La posicion de la hoja dentro del arbol de su era: densa desde 0.
+/// La posicion de la hoja dentro del arbol de su era: densa desde 0. El
+/// primer `rx` de la era es `limite_anterior + 1` y ocupa la posicion 0.
+///
+/// ⚠️ Llamarla con un `rx` que no pertenece es un error del llamante: con
+/// `rx <= limite_anterior` no hay posicion, y se DICE con un `panic` en vez
+/// de devolver un numero enorme por desbordamiento.
 pub fn indice_de_recibo(rx: u64, limite_anterior: u64) -> u64 {
-    rx - limite_anterior
+    assert!(
+        rx > limite_anterior,
+        "indice_de_recibo: rx {rx} no es posterior al limite anterior {limite_anterior}"
+    );
+    rx - limite_anterior - 1
 }
 
 /// La era que el recibo declara: **la primera cabeza que puede
-/// contenerlo** (D-D). Se computa EN LA RECEPCION, sobre el `seq` de la
-/// ultima cabeza firmada — no sobre el `seq` de una entrada del diario.
+/// contenerlo** (D-D). Se computa EN LA RECEPCION, sobre el **indice XMSS**
+/// de la ultima cabeza firmada — no sobre su `seq`, que es `log.len()` y no
+/// avanza sin transiciones (ver la cabecera).
 ///
 /// ⚠️ Atar la era a la cabeza que acabe conteniendo el recibo pondria el
 /// valor de la evidencia en manos del acusado: el titular no podria fijar
 /// su recibo hasta que el operador decidiera.
-pub fn era_de_recibo(seq_ultima_cabeza_firmada: u64) -> u64 {
-    seq_ultima_cabeza_firmada + 1
+pub fn era_de_recibo(indice_ultima_cabeza_firmada: u64) -> u64 {
+    indice_ultima_cabeza_firmada + 1
 }
 
 /// La hoja: `recibo_digest(hash_prueba, era, n)`, con la era como DATO.
@@ -85,19 +118,21 @@ pub fn hoja_de_recibo(hash_prueba: Digest, era: u64, n: u64) -> Digest {
     recibo_digest(hash_prueba, era, n)
 }
 
-/// ¿Sigue viva la promesa? `S - e <= N`, con `S` el `seq` de una cabeza
-/// firmada y `e` la era del recibo (D-D).
+/// ¿Sigue viva la promesa? `S - e <= N`, con `S` el **indice XMSS** de una
+/// cabeza firmada y `e` la era del recibo (D-D): `S - e` cuenta CABEZAS
+/// FIRMADAS, mas los indices huerfanos -quemados sin firma-, que solo
+/// acortan la ventana y cuentan en contra del operador que los quemo.
 ///
 /// ⚠️ Un `false` NO prueba que el recibo no se resolvio: prueba que la
 /// ventana expiro. Ver la cabecera del modulo.
-pub fn dentro_de_ventana(era: u64, seq_cierre: u64, n: u64) -> bool {
-    // `seq_cierre < era` es una cabeza ANTERIOR a la era: la ventana no ha
-    // empezado a correr, luego no ha expirado. Se DICE, no se satura en
+pub fn dentro_de_ventana(era: u64, indice_cierre: u64, n: u64) -> bool {
+    // `indice_cierre < era` es una cabeza ANTERIOR a la era: la ventana no
+    // ha empezado a correr, luego no ha expirado. Se DICE, no se satura en
     // silencio.
-    if seq_cierre < era {
+    if indice_cierre < era {
         return true;
     }
-    seq_cierre - era <= n
+    indice_cierre - era <= n
 }
 
 #[cfg(test)]
@@ -106,36 +141,48 @@ mod tests {
     use crate::acuses::{as_digest, hoja_de_acuse};
 
     #[test]
-    fn la_era_incluye_q_y_excluye_r() {
-        // La cabeza que cierra lleva recep_count = R, y contiene rx < R.
-        assert!(pertenece_a_era(5, 5, 9), "el limite anterior pertenece");
-        assert!(pertenece_a_era(8, 5, 9), "la ultima antes del cierre pertenece");
-        assert!(!pertenece_a_era(9, 5, 9), "el cierre mismo NO pertenece");
-        assert!(!pertenece_a_era(4, 5, 9), "lo anterior a Q es de otra era");
+    fn la_era_excluye_q_e_incluye_r() {
+        // La cabeza que cierra lleva recep_count = R -el ULTIMO rx reservado
+        // al componerla- y contiene Q < rx <= R (§567).
+        assert!(!pertenece_a_era(5, 5, 9), "el limite anterior es de la era ANTERIOR");
+        assert!(pertenece_a_era(6, 5, 9), "el primero tras Q pertenece");
+        assert!(pertenece_a_era(9, 5, 9), "el cierre mismo -el ultimo rx- pertenece");
+        assert!(!pertenece_a_era(10, 5, 9), "lo posterior a R es de la era siguiente");
     }
 
     #[test]
     fn la_primera_era_cubre_la_recepcion_numero_uno() {
-        // El borde que FUERZA la convencion (D-C): con Q exclusivo, la
-        // recepcion numero uno no perteneceria a NINGUNA era.
-        assert!(pertenece_a_era(0, 0, 3), "la recepcion 0 pertenece a la primera era");
-        assert_eq!(indice_de_recibo(0, 0), 0, "y ocupa la posicion 0");
+        // El contador empieza en 1: la recepcion numero uno es rx = 1, y
+        // con el genesis Q = 0 pertenece a la primera era y ocupa la
+        // posicion 0. El borde viejo razonaba con un rx = 0 que no existe.
+        assert!(pertenece_a_era(1, 0, 3), "la recepcion 1 pertenece a la primera era");
+        assert_eq!(indice_de_recibo(1, 0), 0, "y ocupa la posicion 0");
+        assert!(!pertenece_a_era(0, 0, 3), "no hay recepcion 0 que meter");
     }
 
     #[test]
     fn el_indice_es_denso_y_reversible() {
         // Denso desde 0, y rx se recupera de (Q, indice): cualquiera
         // reconstruye posiciones desde dos cabezas firmadas, sin datos extra.
-        for rx in 5..9 {
+        for rx in 6..=9 {
             let i = indice_de_recibo(rx, 5);
-            assert_eq!(i, rx - 5);
-            assert_eq!(5 + i, rx, "el indice no es reversible");
+            assert_eq!(i, rx - 6);
+            assert_eq!(5 + 1 + i, rx, "el indice no es reversible");
         }
     }
 
     #[test]
+    #[should_panic(expected = "no es posterior al limite anterior")]
+    fn un_rx_que_no_pertenece_no_tiene_indice() {
+        // Sin la guarda, 5 - 5 - 1 desbordaria: en release un numero enorme
+        // que ningun arbol tiene; en debug un panic sin nombre.
+        let _ = indice_de_recibo(5, 5);
+    }
+
+    #[test]
     fn la_era_es_la_primera_cabeza_que_puede_contenerlo() {
-        // S+1, y sobre la ULTIMA CABEZA FIRMADA, no sobre un seq del diario.
+        // Indice + 1, y sobre el INDICE XMSS de la ULTIMA CABEZA FIRMADA, no
+        // sobre un seq (§567).
         assert_eq!(era_de_recibo(0), 1);
         assert_eq!(era_de_recibo(41), 42);
     }
@@ -165,19 +212,28 @@ mod tests {
     }
 
     #[test]
-    fn la_convencion_del_borde_coincide_hoy_con_la_del_acuse() {
-        // Los dos arboles usan HOY el mismo borde [Q, R). No se comparte la
-        // funcion a proposito (dos objetos, dos convenciones): se CRUZA, para
-        // que el dia que una cambie este testigo lo NOMBRE en vez de que la
-        // divergencia viaje muda.
-        for x in 0..12u64 {
+    fn la_convencion_del_borde_es_la_del_acuse_sobre_rx_menos_uno() {
+        // HASTA EL §567 este testigo exigia que los dos bordes COINCIDIERAN,
+        // y existia para NOMBRAR el dia en que divergieran. Ese dia es este:
+        // el acuse cuenta `seq` desde 0 y el recibo `rx` desde 1, y el borde
+        // del recibo es EXACTAMENTE el del acuse aplicado a `rx - 1`. Se
+        // sigue cruzando -no se comparte la funcion: dos objetos, dos
+        // convenciones-, ahora con la relacion que es cierta.
+        for x in 1..13u64 {
             for q in 0..6u64 {
                 for r in q..12u64 {
                     assert_eq!(
                         pertenece_a_era(x, q, r),
-                        crate::acuses::pertenece(x, q, r),
-                        "el borde de la era y el de la epoca han divergido en ({x}, {q}, {r})"
+                        crate::acuses::pertenece(x - 1, q, r),
+                        "el borde de la era no es el de la epoca sobre rx - 1 en ({x}, {q}, {r})"
                     );
+                    if pertenece_a_era(x, q, r) {
+                        assert_eq!(
+                            indice_de_recibo(x, q),
+                            crate::acuses::indice_de_hoja(x - 1, q),
+                            "la posicion no es la del acuse sobre rx - 1 en ({x}, {q})"
+                        );
+                    }
                 }
             }
         }

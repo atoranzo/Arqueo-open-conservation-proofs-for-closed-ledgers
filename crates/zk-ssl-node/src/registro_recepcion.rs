@@ -29,9 +29,9 @@
 //! un fichero por era, podar es borrar ficheros: la operación más simple que
 //! existe y la única que no puede dejar el índice a medias.
 //!
-//! La era se conoce **al recibir** (`era_de_recibo` sobre el `seq` de la
-//! última cabeza firmada, D-D), así que el destino está decidido antes de
-//! escribir. El límite inferior `Q` NO se guarda: se deriva de dos cabezas
+//! La era se conoce **al recibir** (`era_de_recibo` sobre el índice XMSS de
+//! la última cabeza firmada, D-D, §567), así que el destino está decidido
+//! antes de escribir. El límite inferior `Q` NO se guarda: se deriva de dos cabezas
 //! firmadas al componer, que es lo que dice `recibos`.
 //!
 //! ## ⚠️ El orden, y qué se persiste antes de responder (D-J)
@@ -232,7 +232,10 @@ impl RegistroRecepcion {
     /// `dentro_de_ventana` devuelve `false` y la promesa expiró —, así que
     /// retener más no sirve a ningún veredicto. Lo que se poda es lo que ya
     /// no puede responder nada.
-    pub fn podar(&mut self, seq_cierre: u64, n: u64) -> Result<usize, GuardianError> {
+    ///
+    /// `indice_cierre` es el **índice XMSS** de una cabeza firmada (§567): la
+    /// ventana cuenta cabezas firmadas, no `seq`.
+    pub fn podar(&mut self, indice_cierre: u64, n: u64) -> Result<usize, GuardianError> {
         let mut quitados = 0usize;
         for e in fs::read_dir(&self.dir).map_err(io)? {
             let e = e.map_err(io)?;
@@ -247,7 +250,7 @@ impl RegistroRecepcion {
                 // y lo que no se entiende se deja quieto.
                 Err(_) => continue,
             };
-            if !zk_ssl_verify::recibos::dentro_de_ventana(era, seq_cierre, n) {
+            if !zk_ssl_verify::recibos::dentro_de_ventana(era, indice_cierre, n) {
                 fs::remove_file(e.path()).map_err(io)?;
                 quitados += 1;
             }
