@@ -179,9 +179,24 @@ número y antes de la capa, con la era del índice de la última firma (D-D). Si
 operación **no se evalúa** y el número queda **hueco** —reservado sin hoja—, que el arranque
 declara al reconciliar el registro con el contador.
 
-⚠️ **HUECO MEDIDO, sin decidir (sesión 193):** `applyMany` y `zkssl_pledge` evalúan pruebas y
-**no reservan número**. Por esta misma regla deberían; hasta que se decida, lo que entra por ellos
-no deja hoja de recepción, y un censor que rechazara por ahí no quedaría a la vista.
+⚠️ **HUECO MEDIDO (sesión 193) —DECIDIDO en el §576, abajo—:** `applyMany` y `zkssl_pledge` evalúan
+pruebas y **no reservan número**. Por esta misma regla deberían; hasta que se decida, lo que entra
+por ellos no deja hoja de recepción, y un censor que rechazara por ahí no quedaría a la vista.
+
+**DECIDIDO (§576): el recibo cubre las DOS vías directas del titular, `applySend` y
+`applyClaim`** —el mismo corte que el acuse, que sólo ellas devuelven (§274)—. Decisión delegada
+en el asistente (sesión 193) con la instrucción de aplicar los principios y el manifiesto del
+proyecto, y REVERSIBLE. `applyMany` y `zkssl_pledge` quedan FUERA de la promesa, y es residuo
+declarado (D-H), porque un recibo suyo **no tendría hoy resolución** y el sobre de completitud
+acusaría a un operador honrado: (a) un lote se aplica o se rechaza ENTERO, y rechazado su causa es
+la de UNA operación —las demás no tienen sobre de rechazo propio—; (b) la prenda aceptada asienta
+su `Consumo` con prueba VACÍA (`consumo.rs`), así que ningún acuse lleva el hash de su prueba, y la
+prenda que no verifica no tiene sobre de rechazo en el RFC-0007. Su respuesta no trae
+`recepcion`: quien las usa lo sabe al instante, como en D-H, y la vía directa sigue abierta para
+quien quiera al operador atado. **Un testigo del nodo lo ata** (§576): el lote y la prenda EVALÚAN
+sin consumir recibo, y la vía directa sí; si una de las dos empieza a reservar, cae, y esto se
+decide otra vez con su resolución. La propiedad fuerte —el recibo del lote, con la atadura de sus
+compañeras, y el de la prenda, con su resolución— es una etapa por diseñar, no un olvido.
 
 ### D-F — El sobre de completitud, y sus tres veredictos
 
@@ -224,6 +239,13 @@ Eso es el residuo del hito, y es irreducible en este modelo: un operador que no 
 indistinguible de una red caída. Lo que el recibo cambia es el terreno: quien contesta queda
 atado, y el silencio total es una conducta visible y sostenida en el tiempo, no un descarte
 silencioso entre miles de operaciones atendidas.
+
+**Y el residuo tiene una segunda parte, que ésta sí es DE DISEÑO y no del modelo (D-E, §576):** lo
+que entra por `applyMany` o por `zkssl_pledge` no lleva recibo por construcción. Quien lo manda lo
+sabe igual de pronto —la respuesta no trae `recepcion`—, y en el despliegue con agregadores
+(`SECURITY.md` 2.ter) eso es TODO lo agregado: quien quiera al operador atado manda por la vía
+directa. A diferencia de la primera parte, ésta se puede cerrar, con una etapa que diseñe cómo se
+resuelve un recibo del lote y uno de la prenda.
 
 ## Lo que se DESCARTÓ al medir
 

@@ -5098,6 +5098,51 @@ mod tests {
         assert_eq!(e.code, -32004, "prueba de vida: la puerta del hermano existe");
     }
 
+    #[test]
+    fn el_lote_y_la_prenda_evaluan_sin_consumir_recibo_y_la_via_directa_si() {
+        // §576 (RFC-0010, D-E, DECIDIDO y REVERSIBLE): el recibo cubre las DOS vias directas del
+        // titular, `applySend` y `applyClaim`, el mismo corte que el acuse (§274). `applyMany` y
+        // `zkssl_pledge` EVALUAN pruebas y NO consumen recibo: hoy un recibo suyo no tendria
+        // resolucion -el lote rechazado no da causa a sus companeras; la prenda asienta su
+        // `Consumo` con prueba vacia y su rechazo no tiene sobre- y el sobre de completitud
+        // acusaria a un operador honrado. Si una de las dos empieza a reservar, este testigo cae y
+        // la D-E se decide otra vez, con su resolucion.
+        let (app, _pv, l) = escena("alcance_d_e");
+        let contador = |app: &App| app.recepcion.lock().expect("contador").actual();
+        let antes = contador(&app);
+        let mut op = envio_de_ceros().0;
+        op["kind"] = json!("send");
+        let e = dispatch(&app, "zkssl_applyMany", json!({ "ops": [op] }))
+            .expect_err("la capa rechaza el lote");
+        assert_ne!(e.code, -32603, "lo rechazo la CAPA, luego se EVALUO: {}", e.message);
+        assert!(
+            e.data.as_ref().map_or(true, |d| d.get("recepcion").is_none()),
+            "el lote no lleva recibo en su error: {:?}",
+            e.data
+        );
+        let v = dispatch(
+            &app,
+            "zkssl_pledge",
+            json!({
+                "prueba": wire::Blob(vec![0u8; 32]),
+                "receptor": digest_to_wire(&l.cabeza.pending_root),
+                "marca": digest_to_wire(&l.cabeza.pending_root),
+                "seq": Q(l.seq),
+            }),
+        )
+        .expect("un sobre malo no es un error del que llama");
+        let r = v["reason"].as_str().expect("reason");
+        assert!(r.contains("no verifica"), "la prueba de la prenda SE EVALUO: {v}");
+        assert!(v.get("recepcion").is_none(), "la prenda no lleva recibo: {v}");
+        assert_eq!(contador(&app), antes, "ni el lote ni la prenda consumen recibo");
+        let e = dispatch(&app, "zkssl_applySend", envio_de_ceros().0).expect_err("ceros");
+        assert!(
+            e.message.contains(&format!("receptionSeq=0x{:x}", antes + 1)),
+            "y la via directa SI lo consume: {}",
+            e.message
+        );
+    }
+
     // ── §285 / nota 80, segunda mitad: quien firma, anota ──
 
     #[test]

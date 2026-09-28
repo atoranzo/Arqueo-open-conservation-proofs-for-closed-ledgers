@@ -544,6 +544,12 @@ hereda al cerrar la era, con `zkssl_recepPath`. Un `-32603` porque el nodo no pu
 lleva recibo**: no hay hoja que prometer, y la operación no se evaluó. ⚠️ La clave es `recepcion` y
 no `recibo`: `recibo` ya nombra en el cable los `publicInputs` del sobre de rechazo.
 
+⚠️ **`zkssl_applyMany` y `zkssl_pledge` NO llevan recibo, ni en el resultado ni en el error**, y
+no consumen `receptionSeq` (RFC-0010, D-E, decidido en el §576): hoy un recibo suyo no tendría
+resolución —el lote rechazado da la causa de UNA operación, y la prenda no deja acuse de su
+prueba ni tiene sobre de rechazo—, y el sobre de completitud acusaría a un operador honrado. Quien
+quiera al operador atado manda por `applySend` o `applyClaim`. Un testigo del nodo lo ata.
+
 ### `zkssl_signedEpochHead` — la última cabeza firmada, para un TESTIGO
 
 Devuelve la cabeza de época **más reciente que el nodo firmó**, con todo lo

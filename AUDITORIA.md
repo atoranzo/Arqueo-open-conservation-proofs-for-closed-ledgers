@@ -41793,3 +41793,56 @@ llega a ellos está sin medir. `winterfell` upstream tiene el mismo defecto, y a
 `UnaConSal` —la apertura suelta— no está en ninguna vía de verificación y sigue leyendo su camino
 con el de upstream.
 
+## §576 — RFC-0010, D-E: el alcance del recibo, decidido y atado
+
+El commit que lleva este asiento, sobre `f5948c3` (el S575). Un solo sello: el testigo del nodo,
+su pin, las cifras, la D-E y la D-H del RFC, `spec/RPC.md`, `SECURITY.md` y este asiento, con el
+canon `--sello` VERDE dentro del bloque. Ocho ficheros más este asiento, con 89 inserciones y
+11 borrados fuera de él.
+
+**De dónde sale.** Del hueco que la sesión 193 midió y dejó escrito en la D-E SIN DECIDIR:
+`applyMany` y `zkssl_pledge` evalúan pruebas y no reservan número. Antes de aceptar el RFC había
+que decidirlo. El autor delegó la decisión en el asistente con la instrucción de aplicar los
+principios y el manifiesto del proyecto —el molde de las decisiones delegadas del RFC-0005, que
+el §405 recogió—. Es REVERSIBLE. Su primer ensayo, numerado §575, no llegó al canon: su VIVA
+abortó por un fallo anterior a este arco, que el §575 cerró; aquí se vuelve a ensayar entero.
+
+**Lo que se MIDIÓ antes de decidir.** (1) El acuse ya tiene ese corte: `con_acuse` sólo lo llaman
+`applySend` y `applyClaim` (§274), y `spec/RPC.md` da el recibo a «las mismas dos vías del
+titular» desde el §571. (2) Un lote se aplica o se rechaza ENTERO (§222): aplicado, cada
+operación deja su acuse con su prueba; rechazado, la causa es la de UNA operación, y sus
+compañeras no tienen sobre de rechazo propio. (3) La prenda aceptada asienta su `Consumo` con
+prueba VACÍA (`consumo.rs`, `append_con_compromiso` con `&[]`): ningún acuse lleva el hash de su
+prueba; y la prenda que no verifica sale `accepted: false`, sin causa del RFC-0007 ni sobre. Un
+recibo de esas dos vías acabaría, en esos casos, en «NO RESUELTA EN LA VENTANA» contra un operador
+que SÍ resolvió.
+
+**La decisión, y por qué.** Tres salidas, contra los principios. (a) Reservar ya fabricaría un
+instrumento que acusa al honrado, y el proyecto se mide por la imagen fiel (`PRINCIPIOS.md`, 10).
+(b) Aceptar con «sin decidir» dejaría la norma de la D-E incumplida por el código dentro de un RFC
+aceptado: vender la propiedad escondiendo su contraria (`PRINCIPIOS.md`, 0). (c) Decidir el
+alcance, declararlo y atarlo. Gana (c): el recibo cubre `applySend` y `applyClaim`; `applyMany` y
+`zkssl_pledge` quedan FUERA de la promesa, y la D-H lo recoge como la segunda parte del residuo,
+la que es de diseño y se puede cerrar. Quien las usa lo sabe al instante —su respuesta no trae
+`recepcion`—, y la vía directa sigue abierta. La propiedad fuerte —el recibo del lote, con la
+atadura de sus compañeras, y el de la prenda, con su resolución— queda como etapa por diseñar.
+
+**Lo que hace.** (1) El testigo del nodo
+`el_lote_y_la_prenda_evaluan_sin_consumir_recibo_y_la_via_directa_si`: sobre una cabeza firmada,
+un lote que la capa rechaza y una prenda cuya prueba no verifica —las dos EVALUADAS— no mueven el
+contador de recepción, y el envío directo que sigue toma el número siguiente. (2) La D-E conserva
+el párrafo del hueco, CITADO, y gana el DECIDIDO; la D-H, su segunda parte. (3) `spec/RPC.md` lo
+dice donde se lee el recibo, y `SECURITY.md` 2.ter donde se recomienda el agregador: lo agregado
+no lleva recibo.
+
+**Los falsadores, ENSAYADOS.** Con `applyMany` reservando un número antes de la capa, el testigo
+cae; con `zkssl_pledge` reservándolo antes de verificar, cae también. Restaurado, VERDE.
+
+**Contadores.** El nodo 166 -> 167; los otros veinte sin mover. El TOTAL DE SELLO 1500 -> 1501 y
+el TOTAL CON LARGOS 1637 -> 1638, y el desglose del nodo en `PRINCIPIOS.md`: siete cifras, LÍNEA-
+y BYTE-NEUTRALES. `check_tests` 1659 -> 1660 y el offset en más 8, QUIETO: 1501 + 137 = 1638 ;
+1638 + 14 = 1652 ; el canon declara 1660. Ni el núcleo ni el cable se mueven.
+
+**Lo que NO cierra.** El RFC-0010 sigue PROPUESTO: el sello siguiente lo acepta. La etapa del
+lote y de la prenda no se abre aquí.
+
