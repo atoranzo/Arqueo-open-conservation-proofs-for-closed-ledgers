@@ -41060,3 +41060,80 @@ las <<1364>>/<<1349>> siguen rancias y discrepantes (5.A-416, punto 319). El 5.A
 siguen mal medidos y su correccion es de la CARGA, no de este corte. Y el atado del techo de la
 vista de recibos no entra aqui: nace en su propio sello, antes de E4.
 
+## §566 — RFC-0010 E2a: el acuse de una cabeza v6 se recompone con la v6, en el nucleo y en el mando
+
+`32ac540` (el S566) y el commit que lleva este asiento (el S566-B), sobre `d531c80`. El primero
+hace nacer `verificar_acuse_v6` y `verificar_inclusion_v6` en `zk-ssl-verify` con sus dos testigos,
+saca el paso 3 del mando a `acuse_contra_cabeza` con el suyo, y da a los dos `pub` su fila en
+`spec/NUCLEO.md` (4 files changed, 305 insertions(+), 19 deletions(-)); el segundo mueve el pin del
+verificador, las SIETE cifras que ese pin arrastra, la celda de E2 del RFC-0010 y escribe este
+asiento. Canon `--sello` VERDE en el -B. En el S566 NO CORRIO, y no podia: el pin se mueve.
+
+**De donde sale.** De la lectura pura de la E2c-2, no de la E2c-2. El paso 3 del paquete de posicion
+-el acuse, `verify/main.rs`:332-348 sobre `d531c80`- casaba TRES piezas, `(mmr, cons, estado)`, y el
+brazo de la v5 cubria tambien la v6: la mandaba a `verificar_acuse_v5`, que recompone con
+`epoch_digest_v5` (`inclusion.rs`:645), y eso es `CabezaDistinta` sobre una cabeza v6 legitima. El
+paso 1 del MISMO fichero casa CUATRO desde el §558. No existian `verificar_acuse_v6` ni
+`verificar_inclusion_v6`. No mordio porque ningun nodo emite v6 -`VERSION_FORMATO` sigue en 5-:
+habria mordido el dia que la E2d la encienda, y ningun compilador lo habria dicho, porque el brazo
+de tres cubria la v6 sin nombrarla.
+
+**Es el §414 otra vez, en el paso de al lado.** El comentario del paso 1 lo dice desde entonces:
+<<cada pareja la decide un `match` EXHAUSTIVO sobre `VersionCabeza` ... el 3/3 de abajo elegia por
+un `Option`, y una v4 habria pasado por v3 en silencio>>. El §558 aplico el molde al paso 1 y no al
+paso 3, y los dos viven en la misma funcion. Leccion (a) del arco del 565, un piso mas cerca: censar
+el caso sobre el fichero ENTERO, y no sobre el `match` que se esta editando.
+
+**Lo que hace.** `verificar_acuse_v6` y `verificar_inclusion_v6` son sus hermanas v5 con la pareja
+de recepcion `(recep_root, recep_count)` y `epoch_digest_v6`: el mismo molde de §275, §292, §414 y
+§451, y la version que la firma declara elige recomponedor. El paso 3 del mando sale a
+`acuse_contra_cabeza`, que casa las CUATRO piezas que el paso 1 ya lee -`recep` incluida- con un
+`match` en el que el compilador marca el brazo que falte. DECISION del asistente, REVERSIBLE:
+sacarlo a una funcion es lo que deja probar el paso 3 SIN firma; dentro de `correr`, el paso 2 exige
+una firma XMSS de verdad antes de llegar al acuse, y ningun test del binario la tiene.
+
+**Los testigos, y sus falsadores.** Dos en `inclusion.rs` (`tests_v6`): el acuse v6 verifica con la
+v6 y el recomponedor v5 lo RECHAZA; y la pareja no es decorativa -otra raiz de recepcion u otra
+cuenta rompen la recomposicion, y la v5 tampoco acepta el digest-. Uno en el mando,
+`el_acuse_de_una_cabeza_v6_se_recompone_con_la_v6`, con el falsador DENTRO: sin la pareja -que es
+por donde el brazo viejo la mandaba a la v5- el mismo acuse contra el mismo digest cae con
+`CabezaDistinta`. Y el camino rojo, ENSAYADO y no supuesto: reintroducido el brazo viejo -la v6 al
+recomponedor v5-, el testigo del mando CAE (0 passed, 1 failed); revertido, pasa.
+
+**El censo del nucleo va en el S566, y no en el -B.** Dos filas nuevas en `spec/NUCLEO.md`
+-`verificar_acuse_v6` en ACUSES y `verificar_inclusion_v6` en INCLUSION-, 76 -> 78 alcanzables en
+`zk-ssl-verify`, NUCLEO 97 -> 99, 124 -> 126 filas, y su entrada en la seccion 8. Un `pub` y su fila
+nacen en el MISMO commit, para que ningun commit del historial lleve un `pub` sin clasificar, que es
+la R1 de `check_nucleo`. `check_nucleo` VERDE en los dos sellos.
+
+**EL PIN SE MIDIO, y la medida no es la cuenta de `#[test]`.** `cargo test -p zk-ssl-verify
+--release` sin filtro: 103 + 28 + 1 = 132 passed, CERO ignorados, CERO warnings; 129 + los tres
+testigos. `check_cifras` NOMBRO siete cifras sobre el arbol con el pin subido -con el gate VERDE
+antes de tocar, que es el control-: el TOTAL DE SELLO 1455 -> 1458 en `PAPER.md`, `PAPER_EN.md` y
+`PRINCIPIOS.md`; el TOTAL CON LARGOS 1592 -> 1595 en los tres; y el desglose del verificador 129 ->
+132 en `PRINCIPIOS.md`. Con las siete, el gate vuelve a su censo -25 cifras, 7 de desglose, LARGOS 3
+de 3-, y esa vuelta es la prueba de que el perimetro es EXACTAMENTE siete: el mismo que el S565-B.
+Cada literal casa UNA vez en su fichero, y los tres salen LINEA- Y BYTE-NEUTRALES: `PAPER.md` 1037
+lineas y 46.751 B, `PAPER_EN.md` 994 y 42.908 B, `PRINCIPIOS.md` 450 y 19.012 B. Las <<1364
+declaradas>>, las <<1364 declarados>> y las <<1349 declared>> NO se tocan (5.A-149, 5.A-416, punto
+319). Y la fila del verificador de `tools/canon.sh` gana su entrada de CRONICA, <<§566: 129 ->
+132>>, en la misma linea.
+
+**Contadores.** El pin del verificador 129 -> 132 y los otros seis sin mover. El TOTAL DE SELLO 1455
+-> 1458 y el TOTAL CON LARGOS 1592 -> 1595. `check_tests` 1614 -> 1617 y el offset en mas 8, QUIETO:
+1458 + 137 = 1595 ; 1595 + 14 = 1609 ; el canon declara 1617. El censo del nucleo 124 -> 126. Ningun
+`Cargo` tocado. El cable NO sube: `zkssl/0.4` quieto y `VERSION_FORMATO` en 5, porque ni el nodo ni
+la capa se tocan: el corte vive entero en el verificador.
+
+**Lo que NO cierra.** La E2c-2 (la vista de recibos) y la E2d (la pareja en el cable, con la que el
+nodo EMITIRA la v6: medido en la lectura, subir `VERSION_FORMATO` sin la pareja en el DTO hace que
+el mando y el testigo den <<falta recepRoot>> en TODA cabeza viva, asi que van juntos). Y las DOS
+decisiones que la lectura forzo y el autor tomo en la sesion 193, que se pagan en sus propios
+sellos: la era de los recibos es `(Q, R]` con `R = actual()` -el contador de recepcion empieza en 1
+(`reservar` devuelve `actual + 1`) y la E2b razonaba con una recepcion 0-; y la era y la ventana se
+miden en el INDICE XMSS de la firma -el `seq` de una cabeza es `log.len()`, el latido emite cabeza
+aunque no haya transiciones, y un censor que deja de aplicar congelaria el reloj de la ventana-.
+Quedan medidos, sin numero, dos huecos que no son de este corte: la seccion 8 de `spec/NUCLEO.md` no
+tiene entrada del §562, que anadio las cinco filas RECIBOS; y `applyMany` y `zkssl_pledge` evaluan
+pruebas sin reservar numero de recepcion, que la D-E del RFC no excluye.
+
