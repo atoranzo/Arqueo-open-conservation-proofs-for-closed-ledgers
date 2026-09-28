@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 76 elementos alcanzables en `zk-ssl-verify` y 48 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 97, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 78 elementos alcanzables en `zk-ssl-verify` y 48 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 99, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`, `recibos`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -141,6 +141,7 @@ real de sus llaves, no por la primera marca.
 | `verificar_acuse_v3` | `verify/inclusion.rs` | NÚCLEO | ACUSES | `fn` |
 | `verificar_acuse_v4` | `verify/inclusion.rs` | NÚCLEO | ACUSES | `fn` |
 | `verificar_acuse_v5` | `verify/inclusion.rs` | NÚCLEO | ACUSES | `fn` |
+| `verificar_acuse_v6` | `verify/inclusion.rs` | NÚCLEO | ACUSES | `fn` |
 | `DOMINIO_MMR_HOJA` | `hash/lib.rs` | NÚCLEO | MMR | `const` |
 | `DOMINIO_MMR_NODO` | `hash/lib.rs` | NÚCLEO | MMR | `const` |
 | `mmr_hoja` | `hash/lib.rs` | NÚCLEO | MMR | `fn` |
@@ -178,6 +179,7 @@ real de sus llaves, no por la primera marca.
 | `verificar_inclusion_v3` | `verify/inclusion.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `verificar_inclusion_v4` | `verify/inclusion.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `verificar_inclusion_v5` | `verify/inclusion.rs` | NÚCLEO | INCLUSIÓN | `fn` |
+| `verificar_inclusion_v6` | `verify/inclusion.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `DOMINIO_META_PENDIENTE` | `hash/lib.rs` | LIBRO | LIBRO | `const` |
 | `meta_pendiente_hoja` | `hash/lib.rs` | LIBRO | LIBRO | `fn` |
 | `DOMINIO_PRENDA` | `hash/lib.rs` | LIBRO | LIBRO | `const` |
@@ -285,6 +287,9 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §566 — `verificar_acuse_v6` y `verificar_inclusion_v6`: el acuse y la inclusión contra una
+  cabeza v6 se recomponen con la v6. Hasta aquí el mando ACEPTABA la v6 en su paso 1 y mandaba su
+  acuse al recomponedor v5 (RFC-0010, E2a). Dos filas nuevas.
 - §558 — la variante `V6`, `lleva_recepcion` y `texto_con_recepcion`, `lleva_parametros` y
   `texto_con_parametros`: el conjunto que un verificador ACEPTA crece a v6, y los sobres que
   exigian la familia del estado dejan de preguntar <<¿es V5?>> para preguntar por el predicado

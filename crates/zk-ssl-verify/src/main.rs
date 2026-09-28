@@ -329,23 +329,7 @@ fn correr(ruta: &str) -> Result<(), String> {
                 acuses_root,
                 n,
             };
-            match (mmr, cons, estado) {
-                (None, _, _) => verificar_acuse(&recibo, epoch_digest)
-                    .map_err(|e| err(format!("acuse: {e:?}")))?,
-                (Some((cima, t)), None, _) => verificar_acuse_v3(&recibo, cima, t, epoch_digest)
-                    .map_err(|e| err(format!("acuse: {e:?}")))?,
-                (Some((cima, t)), Some((raiz, k)), None) => {
-                    zk_ssl_verify::verificar_acuse_v4(&recibo, cima, t, raiz, k, epoch_digest)
-                        .map_err(|e| err(format!("acuse: {e:?}")))?
-                }
-                (Some((cima, t)), Some((raiz, k)), Some(f)) => {
-                    zk_ssl_verify::verificar_acuse_v5(
-                        &recibo, cima, t, raiz, k, f.params_digest, f.pmeta_root,
-                        f.next_pending, f.next_index, f.total_supply, epoch_digest,
-                    )
-                    .map_err(|e| err(format!("acuse: {e:?}")))?
-                }
-            }
+            acuse_contra_cabeza(&recibo, mmr, cons, estado, recep, epoch_digest)?;
             println!("3/3 el acuse sube hasta la raiz firmada: la entrada {seq_a} queda demostrada");
         }
     }
@@ -368,6 +352,43 @@ fn correr(ruta: &str) -> Result<(), String> {
 
 /// Un campo hex de una cofirma, con su numero en el error: un instrumento
 /// que falla dice QUE fallo, no cuantos (§254).
+/// 3/3 · el acuse contra la cabeza empaquetada: la VERSION elige recomponedor
+/// con el MISMO `match` exhaustivo de CUATRO piezas que el paso 1 (§566).
+///
+/// ⚠️ Hasta el §566 este brazo casaba TRES piezas -`(mmr, cons, estado)`- y
+/// dejaba fuera la pareja de recepcion, asi que una cabeza v6 caia en el brazo
+/// de la v5: `CabezaDistinta` sobre una cabeza legitima. El paso 1 ya casaba
+/// cuatro desde el §558; el paso 3 se quedo atras y ningun compilador podia
+/// verlo, porque el brazo de tres cubria la v6 sin nombrarla. Con cuatro, el
+/// brazo que falte lo marca el compilador.
+fn acuse_contra_cabeza(
+    recibo: &ReciboAcuse,
+    mmr: Option<(Digest, u64)>,
+    cons: Option<(Digest, u64)>,
+    estado: Option<FamiliaV5>,
+    recep: Option<(Digest, u64)>,
+    epoch_digest: Digest,
+) -> Result<(), String> {
+    match (mmr, cons, estado, recep) {
+        (None, _, _, _) => verificar_acuse(recibo, epoch_digest),
+        (Some((cima, t)), None, _, _) => verificar_acuse_v3(recibo, cima, t, epoch_digest),
+        (Some((cima, t)), Some((raiz, k)), None, _) => {
+            zk_ssl_verify::verificar_acuse_v4(recibo, cima, t, raiz, k, epoch_digest)
+        }
+        (Some((cima, t)), Some((raiz, k)), Some(f), None) => zk_ssl_verify::verificar_acuse_v5(
+            recibo, cima, t, raiz, k, f.params_digest, f.pmeta_root, f.next_pending,
+            f.next_index, f.total_supply, epoch_digest,
+        ),
+        (Some((cima, t)), Some((raiz, k)), Some(f), Some((rr, rc))) => {
+            zk_ssl_verify::verificar_acuse_v6(
+                recibo, cima, t, raiz, k, f.params_digest, f.pmeta_root, f.next_pending,
+                f.next_index, f.total_supply, rr, rc, epoch_digest,
+            )
+        }
+    }
+    .map_err(|e| err(format!("acuse: {e:?}")))
+}
+
 fn hex_de_cofirma(c: &serde_json::Value, campo: &str, n: usize) -> Result<Vec<u8>, String> {
     let s = c
         .get(campo)
@@ -1633,6 +1654,56 @@ mod tests {
     }
 
     /// Un paquete sin la clave no es un error: es un paquete sin cofirmas.
+    fn dg(n: u64) -> Digest {
+        [
+            BaseElement::new(n),
+            BaseElement::new(n + 1),
+            BaseElement::new(n + 2),
+            BaseElement::new(n + 3),
+        ]
+    }
+
+    /// §566 · El acuse de una cabeza v6 se recompone con la v6. FALSADOR del
+    /// brazo viejo: sin la pareja de recepcion -que es por donde el paso 3 la
+    /// mandaba a la v5- el MISMO acuse contra el MISMO digest cae.
+    #[test]
+    fn el_acuse_de_una_cabeza_v6_se_recompone_con_la_v6() {
+        let hoja = dg(40);
+        let recibo = ReciboAcuse {
+            hoja,
+            hermanos: Vec::new(),
+            derecha: Vec::new(),
+            seq: 9,
+            accounts_root: dg(1),
+            pending_root: dg(2),
+            frozen_root: dg(3),
+            chain_digest: dg(4),
+            acuses_root: hoja,
+            n: 5,
+        };
+        let f = FamiliaV5 {
+            params_digest: dg(110),
+            pmeta_root: dg(120),
+            next_pending: 7,
+            next_index: 8,
+            total_supply: 9,
+        };
+        let (cima, cons, recep) = (dg(60), dg(90), dg(130));
+        let firmado = epoch_digest_v6(
+            9, dg(1), dg(2), dg(3), dg(4), hoja, 5, cima, 2, cons, 1, f.params_digest,
+            f.pmeta_root, 7, 8, 9, recep, 3,
+        );
+        let mmr = Some((cima, 2));
+        let cn = Some((cons, 1));
+        acuse_contra_cabeza(&recibo, mmr, cn, Some(f), Some((recep, 3)), firmado)
+            .expect("el acuse de una v6 debe verificar con la v6");
+        let viejo = acuse_contra_cabeza(&recibo, mmr, cn, Some(f), None, firmado);
+        assert!(
+            viejo.as_ref().is_err_and(|e| e.contains("CabezaDistinta")),
+            "el brazo de la v5 no puede aceptar un digest v6: {viejo:?}"
+        );
+    }
+
     #[test]
     fn sin_la_clave_no_hay_cofirmas_y_no_es_un_error() {
         let p = json!({ "v": 2 });

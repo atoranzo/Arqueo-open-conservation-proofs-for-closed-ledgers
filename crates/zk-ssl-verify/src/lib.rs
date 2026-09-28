@@ -80,6 +80,7 @@ mod inclusion;
 // de las cabezas ya custodiadas, y esas no cambian de forma.
 pub use inclusion::{
     verificar_acuse_v4, verificar_inclusion_v4, verificar_acuse_v5, verificar_inclusion_v5,
+    verificar_acuse_v6, verificar_inclusion_v6,
     verificar_acuse, verificar_acuse_v3, verificar_inclusion, verificar_inclusion_v2,
     verificar_inclusion_v3, InclusionError, ReciboAcuse, ReciboInclusion,
 };

@@ -717,6 +717,122 @@ pub fn verificar_inclusion_v5(
     Ok(())
 }
 
+/// El acuse contra una cabeza **v6** (RFC-0010 E2a, §566): mismos pasos que
+/// [`verificar_acuse_v5`], y el digest firmado se recompone ademas con la
+/// pareja de recepcion `(recep_root, recep_count)`. **La version que la firma
+/// declara elige recomponedor**, como entre v3, v4 y v5.
+///
+/// ⚠️ Nace TARDE, y se dice: el §558 hizo que el mando ACEPTARA la v6 -la
+/// recompone en su paso 1- y su paso 3 seguia mandando el acuse de una v6 al
+/// recomponedor v5, que da `CabezaDistinta` sobre una cabeza legitima. No
+/// mordio porque ningun nodo emite v6 todavia (`VERSION_FORMATO` = 5); habria
+/// mordido en cuanto la E2d la encendiera.
+pub fn verificar_acuse_v6(
+    recibo: &ReciboAcuse,
+    mmr_cima: Digest,
+    mmr_t: u64,
+    cons_root: Digest,
+    cons_count: u64,
+    params_digest: Digest,
+    pmeta_root: Digest,
+    next_pending: u64,
+    next_index: u64,
+    total_supply: u64,
+    recep_root: Digest,
+    recep_count: u64,
+    epoch_digest_firmado: Digest,
+) -> Result<(), InclusionError> {
+    if recibo.hermanos.len() != recibo.derecha.len() {
+        return Err(InclusionError::CaminoDescuadrado {
+            hermanos: recibo.hermanos.len(),
+            derecha: recibo.derecha.len(),
+        });
+    }
+    let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
+    if raiz != recibo.acuses_root {
+        return Err(InclusionError::RaizDistinta);
+    }
+    let compuesto = zk_ssl_hash::epoch_digest_v6(
+        recibo.seq,
+        recibo.accounts_root,
+        recibo.pending_root,
+        recibo.frozen_root,
+        recibo.chain_digest,
+        recibo.acuses_root,
+        recibo.n,
+        mmr_cima,
+        mmr_t,
+        cons_root,
+        cons_count,
+        params_digest,
+        pmeta_root,
+        next_pending,
+        next_index,
+        total_supply,
+        recep_root,
+        recep_count,
+    );
+    if compuesto != epoch_digest_firmado {
+        return Err(InclusionError::CabezaDistinta);
+    }
+    Ok(())
+}
+
+/// La inclusion contra una cabeza **v6** (RFC-0010 E2a, §566). Ver
+/// [`verificar_inclusion_v5`]: mismos pasos, recomponedor v6.
+pub fn verificar_inclusion_v6(
+    recibo: &ReciboInclusion,
+    acuses_root: Digest,
+    n: u64,
+    mmr_cima: Digest,
+    mmr_t: u64,
+    cons_root: Digest,
+    cons_count: u64,
+    params_digest: Digest,
+    pmeta_root: Digest,
+    next_pending: u64,
+    next_index: u64,
+    total_supply: u64,
+    recep_root: Digest,
+    recep_count: u64,
+    epoch_digest_firmado: Digest,
+) -> Result<(), InclusionError> {
+    if recibo.hermanos.len() != recibo.derecha.len() {
+        return Err(InclusionError::CaminoDescuadrado {
+            hermanos: recibo.hermanos.len(),
+            derecha: recibo.derecha.len(),
+        });
+    }
+    let raiz = path_root(recibo.hoja, &recibo.hermanos, &recibo.derecha);
+    if raiz != recibo.accounts_root {
+        return Err(InclusionError::RaizDistinta);
+    }
+    let compuesto = zk_ssl_hash::epoch_digest_v6(
+        recibo.seq,
+        recibo.accounts_root,
+        recibo.pending_root,
+        recibo.frozen_root,
+        recibo.chain_digest,
+        acuses_root,
+        n,
+        mmr_cima,
+        mmr_t,
+        cons_root,
+        cons_count,
+        params_digest,
+        pmeta_root,
+        next_pending,
+        next_index,
+        total_supply,
+        recep_root,
+        recep_count,
+    );
+    if compuesto != epoch_digest_firmado {
+        return Err(InclusionError::CabezaDistinta);
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests_v3 {
     use super::*;
@@ -957,6 +1073,99 @@ mod tests_v5 {
                 "{rotulo} debe romper la recomposicion"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod tests_v6 {
+    use super::*;
+    use winter_math::fields::f64::BaseElement;
+
+    fn d(n: u64) -> Digest {
+        [
+            BaseElement::new(n),
+            BaseElement::new(n + 1),
+            BaseElement::new(n + 2),
+            BaseElement::new(n + 3),
+        ]
+    }
+
+    /// Un acuse contra el digest v6: verifica con el recomponedor v6 y CAE con
+    /// el v5 -- que es EXACTAMENTE lo que el paso 3 del mando hacia hasta el
+    /// §566 con toda cabeza v6.
+    #[test]
+    fn el_acuse_v6_verifica_y_el_recomponedor_v5_lo_rechaza() {
+        let hoja = d(40);
+        let recibo = ReciboAcuse {
+            hoja,
+            hermanos: Vec::new(),
+            derecha: Vec::new(),
+            seq: 9,
+            accounts_root: d(1),
+            pending_root: d(2),
+            frozen_root: d(3),
+            chain_digest: d(4),
+            acuses_root: hoja,
+            n: 5,
+        };
+        let (cima, cons, params, meta, recep) = (d(60), d(90), d(110), d(120), d(130));
+        let firmado_v6 = zk_ssl_hash::epoch_digest_v6(
+            9, d(1), d(2), d(3), d(4), hoja, 5, cima, 2, cons, 1, params, meta, 7, 8, 9, recep, 3,
+        );
+        verificar_acuse_v6(&recibo, cima, 2, cons, 1, params, meta, 7, 8, 9, recep, 3, firmado_v6)
+            .expect("v6 debe verificar");
+        assert!(
+            matches!(
+                verificar_acuse_v5(&recibo, cima, 2, cons, 1, params, meta, 7, 8, 9, firmado_v6),
+                Err(InclusionError::CabezaDistinta)
+            ),
+            "el recomponedor v5 no puede aceptar un digest v6"
+        );
+    }
+
+    /// La pareja de recepcion no es decorativa: con la cabeza de siempre
+    /// delante, mover la raiz o la cuenta rompe la recomposicion.
+    #[test]
+    fn la_pareja_de_recepcion_no_es_decorativa_en_la_inclusion_v6() {
+        let hoja = d(70);
+        let recibo = ReciboInclusion {
+            indice: 0,
+            hoja,
+            hermanos: Vec::new(),
+            derecha: Vec::new(),
+            seq: 3,
+            accounts_root: hoja,
+            pending_root: d(2),
+            frozen_root: d(3),
+            chain_digest: d(4),
+        };
+        let (cima, cons, params, meta, recep) = (d(80), d(90), d(110), d(120), d(130));
+        let firmado = zk_ssl_hash::epoch_digest_v6(
+            3, hoja, d(2), d(3), d(4), d(5), 7, cima, 4, cons, 2, params, meta, 7, 8, 9, recep, 11,
+        );
+        let con = |rr: Digest, rc: u64| {
+            verificar_inclusion_v6(
+                &recibo, d(5), 7, cima, 4, cons, 2, params, meta, 7, 8, 9, rr, rc, firmado,
+            )
+        };
+        con(recep, 11).expect("v6 debe verificar");
+        let rotos = [
+            ("otra raiz de recepcion", con(d(131), 11)),
+            ("otra cuenta de recepcion", con(recep, 12)),
+        ];
+        for (rotulo, roto) in rotos {
+            assert!(
+                matches!(roto, Err(InclusionError::CabezaDistinta)),
+                "{rotulo} debe romper la recomposicion"
+            );
+        }
+        assert!(
+            matches!(
+                verificar_inclusion_v5(&recibo, d(5), 7, cima, 4, cons, 2, params, meta, 7, 8, 9, firmado),
+                Err(InclusionError::CabezaDistinta)
+            ),
+            "el recomponedor v5 no puede aceptar un digest v6"
+        );
     }
 }
 
