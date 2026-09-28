@@ -4,7 +4,9 @@ Este directorio es `winter-air` 0.13.1 tal como lo publico crates.io (el checksu
 `.crate`, en `Cargo.toml`), con la ocultacion del nucleo dentro y APAGADA (la enciende
 `Prover::ocultacion`, que ningun probador de ARQUEO devuelve): lo que difiere de upstream es
 `src/air/context.rs`, `src/air/mod.rs`, `src/air/oculta.rs` (nuevo), `src/marca.rs` (nuevo) y
-`src/lib.rs` (spike-b-p4r3, sesiones 166 a 172); todo lo demas es upstream byte a byte. Entra por
+`src/lib.rs` (spike-b-p4r3, sesiones 166 a 172), y desde el §575 `src/proof/mod.rs` -`from_bytes`
+lee con el lector acotado, para que una prueba malformada no aborte el proceso- y
+`src/proof/acotado.rs` (nuevo); todo lo demas es upstream byte a byte. Entra por
 `[patch.crates-io]` desde el `Cargo.toml` raiz, con su nombre y su version; `publish = false`.
 Licencia MIT de winterfell en `LICENSE`. Lo que sigue es el README de upstream.
 

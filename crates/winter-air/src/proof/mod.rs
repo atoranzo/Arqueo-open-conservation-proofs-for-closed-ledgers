@@ -32,6 +32,10 @@ mod security;
 mod table;
 pub use table::Table;
 
+// ARQUEO (§575): el lector que no reserva lo que sus bytes no traen.
+mod acotado;
+use acotado::LectorAcotado;
+
 #[cfg(test)]
 mod tests;
 
@@ -139,7 +143,9 @@ impl Proof {
     /// # Errors
     /// Returns an error of a valid STARK proof could not be read from the specified `source`.
     pub fn from_bytes(source: &[u8]) -> Result<Self, DeserializationError> {
-        Deserializable::read_from_bytes(source)
+        // ARQUEO (§575): con el lector ACOTADO y no con `SliceReader`, que reserva cada longitud
+        // que lee antes de mirar si sus bytes existen: una prueba malformada abortaba el proceso.
+        Self::read_from(&mut LectorAcotado::new(source))
     }
 
     /// Creates a dummy `Proof` for use in tests.

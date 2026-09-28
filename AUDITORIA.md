@@ -41733,3 +41733,63 @@ el alcance del recibo —`applyMany` y `zkssl_pledge` evalúan sin reservar `rx`
 que la sesión 193 midió y dejó sin decidir—, y el de después lo acepta con la regla 4 del PROCESO.
 `podar` sigue sin llamador, declarado.
 
+## §575 — la lectura de una prueba no reserva lo que sus bytes no traen
+
+El commit que lleva este asiento, sobre `ace5459` (el S574). Un solo sello: el lector acotado
+del fork, el lote con sal acotado, sus cuatro testigos, el pin, las cifras, `SECURITY.md` 3.7, el
+README del fork y este asiento, con el canon `--sello` VERDE dentro del bloque. Ocho ficheros
+tocados y uno que nace, más este asiento, con 230 inserciones y 13 borrados fuera de él.
+
+**De dónde sale.** Del primer ensayo del bloque que decidía el alcance del recibo: su VIVA no
+falló, ABORTÓ —`memory allocation of 862916669440 bytes failed`— en un testigo del §519,
+`una_marca_ya_publicada_con_sobre_malo_se_rechaza`, que voltea un bit del byte central de una
+prueba de prenda. El autor decidió arreglarlo YA, antes de seguir. El §574 anunció como siguiente
+el alcance del recibo: pasa al §576, y la aceptación del RFC-0010 al §577.
+
+**Lo que se MIDIÓ.** (1) La causa: `winter-crypto` 0.13.1 lee el lote de un árbol
+(`BatchMerkleProof::read_from`) reservando cada cuenta que saca de los bytes —el número de
+vectores de nodos y la longitud de cada uno— antes de mirar si esos bytes existen, y
+`winter-utils` 0.13.1 hace lo mismo en `read_many`, por donde pasa toda `Vec` que se lee. Una
+reserva que falla NO es un pánico: el proceso aborta, y la red del pánico del nodo (§530) no lo
+ve. (2) Por qué ahora: las pruebas llevan sal desde el §538 y sus bytes cambian en cada corrida,
+así que el bit volteado cae a veces en una longitud. En treinta corridas de los dos testigos que
+voltean un byte, una abortó, pidiendo 544.766.607.872 bytes. (3) El alcance: cualquiera que
+mandara una prueba al nodo podía tumbarlo, y un sobre malformado hacía abortar al mando en vez de
+salir ROJO nombrado, fuera de su contrato de salida. (4) Por dónde pasa: casi todos los circuitos
+comprometen con `MerkleConSal`, cuyo lote se leía con el de upstream; las capas FRI
+—`winter-fri`, que no se bifurca— leen su lote con el `MultiProof` del compromiso; y
+`Proof::from_bytes` lee la prueba entera con `SliceReader`, cuyo `check_eor` además SUMA
+`pos + n`, y con un `n` gigante esa suma da la vuelta.
+
+**Lo que hace.** (1) En el fork, `winter-air` gana `src/proof/acotado.rs`: `LectorAcotado`, un
+`ByteReader` cuyo `read_many` comprueba que caben los elementos —al menos un byte cada uno— ANTES
+de reservar, y cuyo `check_eor` compara con lo que queda, sin sumar; y `Proof::from_bytes` lee con
+él. Falla con el MISMO `UnexpectedEOF` que upstream daba al quedarse sin bytes: una prueba bien
+formada se lee igual, y ningún texto de ningún catálogo se mueve. El README del fork lo suma a su
+lista de divergencias. (2) En `zk-ssl-air`, `sal.rs` lee el lote con el formato de upstream pero
+con sus cuentas acotadas —`caben`, que acota `n` antes de preguntar—, y las sales, además de no
+pasar de las hojas, no pasan de los bytes: con un `depth` mentido aquel tope no acotaba nada. (3)
+`SECURITY.md` gana la 3.7: el fallo, medido y cerrado, con su residuo.
+
+**Los testigos, cuatro, en `zk-ssl-air`.** Un lote que declara más vectores que bytes; un vector
+de nodos con una longitud gigante; más sales que bytes aunque quepan en el árbol; y una prueba con
+un contexto de verdad cuya primera `Queries` declara un terabyte. Los cuatro fallan con
+`UnexpectedEOF`.
+
+**Los falsadores, ENSAYADOS.** El lote leído con el de upstream: la suite ABORTA pidiendo 26 y 35
+billones de bytes. `Proof::from_bytes` con el `SliceReader` de siempre: aborta pidiendo un
+terabyte. Las sales sin su cuenta acotada: aborta pidiendo 137 mil millones. Restaurado, la suite
+entera en verde. Y con el arreglo, sesenta corridas de los dos testigos del §519: las sesenta
+VERDES, ningún aborto. No lo demuestran ellas, que dependen del azar: lo demuestran los cuatro.
+
+**Contadores.** `zk-ssl-air` 36 -> 40; los otros veinte sin mover, y el fork con sus 49 de
+upstream, tal cual. El TOTAL DE SELLO 1496 -> 1500 y el TOTAL CON LARGOS 1633 -> 1637: seis
+cifras, LÍNEA- y BYTE-NEUTRALES. `check_tests` 1655 -> 1659 y el offset en más 8, QUIETO:
+1500 + 137 = 1637 ; 1637 + 14 = 1651 ; el canon declara 1659. Ni el núcleo ni el cable se mueven.
+
+**Lo que NO cierra.** Los dos circuitos SIN sal (`range_check`, `governance`) siguen leyendo el
+lote de sus aperturas y de sus capas FRI con el `BatchMerkleProof` de upstream; qué entrada ajena
+llega a ellos está sin medir. `winterfell` upstream tiene el mismo defecto, y avisarle es deuda.
+`UnaConSal` —la apertura suelta— no está en ninguna vía de verificación y sigue leyendo su camino
+con el de upstream.
+

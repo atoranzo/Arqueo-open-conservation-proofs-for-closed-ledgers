@@ -28,7 +28,7 @@
 //! Medido en el spike, donde B1 y E1..E4 verifican asi; el testigo `una_apertura_...` lo exige.
 
 use rand_core::{OsRng, RngCore};
-use winter_crypto::{Hasher, MerkleTree, VectorCommitment};
+use winter_crypto::{BatchMerkleProof, Hasher, MerkleTree, VectorCommitment};
 use winter_verifier::{ByteReader, ByteWriter, Deserializable, DeserializationError, Serializable};
 
 /// Compromiso con sal: cada hoja es `merge(item, sal)` y la sal viaja en la apertura.
@@ -103,6 +103,8 @@ impl<H: Hasher> Deserializable for VariasConSal<H> {
                 "un lote con {n} sales sobre un arbol de {tope} hojas"
             )));
         }
+        // §575: y no mas sales que bytes: con un `depth` mentido el tope no acota nada
+        caben(source, n)?;
         let mut sales = Vec::with_capacity(n);
         for _ in 0..n {
             sales.push(<H::Digest as Deserializable>::read_from(source)?);
@@ -111,11 +113,39 @@ impl<H: Hasher> Deserializable for VariasConSal<H> {
     }
 }
 
-/// El lote del arbol de debajo, leido de sus bytes.
+/// §575: ¿caben `n` elementos -de al menos un byte cada uno- en lo que queda? Falla cerrado ANTES
+/// de reservar, con el mismo `UnexpectedEOF` que daria quedarse sin bytes. `n` se acota primero: el
+/// `check_eor` de `SliceReader` suma `pos + n`, y con un `n` gigante esa suma da la vuelta.
+fn caben<R: ByteReader>(source: &R, n: usize) -> Result<(), DeserializationError> {
+    if n > isize::MAX as usize {
+        return Err(DeserializationError::UnexpectedEOF);
+    }
+    source.check_eor(n)
+}
+
+/// El lote del arbol de debajo, leido de sus bytes: el formato de `BatchMerkleProof` de
+/// winter-crypto 0.13.1 -`depth`, el numero de vectores de nodos y cada vector con su longitud-,
+/// pero con las cuentas ACOTADAS (§575). Aquel reserva cada cuenta que lee sin mirar si sus bytes
+/// existen, y una prueba malformada abortaba el proceso pidiendo cientos de GB. Las capas FRI
+/// tambien pasan por aqui: `winter-fri`, que no se bifurca, lee su lote con el `MultiProof` de este
+/// compromiso.
 fn leer_lote<H: Hasher, R: ByteReader>(
     source: &mut R,
 ) -> Result<<MerkleTree<H> as VectorCommitment<H>>::MultiProof, DeserializationError> {
-    <<MerkleTree<H> as VectorCommitment<H>>::MultiProof as Deserializable>::read_from(source)
+    let depth = source.read_u8()?;
+    let vectores = source.read_usize()?;
+    caben(source, vectores)?;
+    let mut nodes = Vec::with_capacity(vectores);
+    for _ in 0..vectores {
+        let k = source.read_usize()?;
+        caben(source, k)?;
+        let mut digests = Vec::with_capacity(k);
+        for _ in 0..k {
+            digests.push(<H::Digest as Deserializable>::read_from(source)?);
+        }
+        nodes.push(digests);
+    }
+    Ok(BatchMerkleProof { nodes, depth })
 }
 
 /// Las hojas saladas: `merge(item, sal)`, item a item.
@@ -352,5 +382,77 @@ mod tests {
             VariasConSal::<Blake3>::read_from(&mut SliceReader::new(&bytes)),
             Err(DeserializationError::InvalidValue(_))
         ));
+    }
+
+    // ── §575 · una cuenta que no cabe en los bytes falla CERRADA, sin reservar ──
+    // Antes de este sello, cualquiera de estos cuatro pedia al sistema cientos de GB y el proceso
+    // ABORTABA -una reserva que falla no es un panico-: esta suite no llegaba al final. Un testigo
+    // por sitio que lee una cuenta.
+
+    /// Los bytes que escribe `f`, con el `ByteWriter` de winter.
+    fn bytes_de(f: impl FnOnce(&mut Vec<u8>)) -> Vec<u8> {
+        let mut b = Vec::new();
+        f(&mut b);
+        b
+    }
+
+    fn es_eof<T>(r: Result<T, DeserializationError>) -> bool {
+        matches!(r, Err(DeserializationError::UnexpectedEOF))
+    }
+
+    #[test]
+    fn un_lote_que_declara_mas_vectores_que_bytes_falla_cerrado_sin_reservar() {
+        let b = bytes_de(|b| {
+            b.write_u8(3);
+            b.write_usize(1 << 40);
+        });
+        assert!(es_eof(VariasConSal::<Blake3>::read_from(&mut SliceReader::new(&b))));
+    }
+
+    #[test]
+    fn un_vector_de_nodos_con_una_longitud_gigante_falla_cerrado_sin_reservar() {
+        let b = bytes_de(|b| {
+            b.write_u8(3);
+            b.write_usize(1);
+            b.write_usize(1 << 40);
+        });
+        assert!(es_eof(VariasConSal::<Blake3>::read_from(&mut SliceReader::new(&b))));
+    }
+
+    #[test]
+    fn mas_sales_que_bytes_falla_cerrado_aunque_quepan_en_el_arbol() {
+        // un `depth` de 40 deja pasar el tope de hojas con 2^32 - 1 sales: lo para la cuenta
+        let b = bytes_de(|b| {
+            b.write_u8(40);
+            b.write_usize(0);
+            b.write_u32(u32::MAX);
+        });
+        assert!(es_eof(VariasConSal::<Blake3>::read_from(&mut SliceReader::new(&b))));
+    }
+
+    #[test]
+    fn una_prueba_que_declara_mas_bytes_de_los_que_trae_falla_cerrado_sin_reservar() {
+        // Un contexto de verdad y, tras el, la primera longitud que `Proof` lee con `read_many`:
+        // los `values` de la primera `Queries`. Sin el lector acotado del fork, pedia un terabyte.
+        use winter_air::proof::{Context, Proof};
+        use winter_air::{BatchingMethod, FieldExtension, ProofOptions, TraceInfo};
+        let opciones = ProofOptions::new(
+            28,
+            8,
+            0,
+            FieldExtension::None,
+            4,
+            7,
+            BatchingMethod::Linear,
+            BatchingMethod::Linear,
+        );
+        let contexto = Context::new::<BaseElement>(TraceInfo::new(8, 8), opciones, 1);
+        let b = bytes_de(|b| {
+            contexto.write_into(b);
+            b.write_u8(1); // num_unique_queries
+            b.write_u16(0); // los compromisos: cero bytes
+            b.write_usize(1 << 40); // los `values` de la primera `Queries`
+        });
+        assert!(es_eof(Proof::from_bytes(&b)));
     }
 }

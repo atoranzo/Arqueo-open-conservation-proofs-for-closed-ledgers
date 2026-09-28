@@ -428,6 +428,29 @@ rotura de formato, con fecha detrás del AIR de E1 del RFC-0008.
 No hay libro desplegado ni terceros a quien avisar; por eso el aviso es esta sección
 y los asientos §487 y §488, no un GHSA. `AUDITORIA.md` §487, §488.
 
+### 3.7 Una prueba malformada abortaba el proceso — ⚠️ MEDIDO, cerrado en las vías con sal
+
+Al leer una prueba, `winter-utils` 0.13.1 (`read_many`) y `winter-crypto` 0.13.1
+(`BatchMerkleProof::read_from`) reservan memoria con una cuenta sacada de los propios
+bytes ANTES de comprobar que esos bytes existen. Una prueba malformada que declara una
+longitud gigante hace que el proceso pida cientos de GB, y una reserva que falla **no
+es un pánico**: el proceso aborta, y la red del pánico del nodo (§530) no lo ve.
+Medido el 28-sep-2026 (`AUDITORIA.md` §575): los testigos del §519 que voltean un
+byte de una prueba de prenda abortaron el nodo pidiendo 862.916.669.440 y
+544.766.607.872 bytes, una vez en treinta corridas y otra en la VIVA de un bloque;
+las pruebas llevan sal desde el §538, sus bytes cambian en cada corrida, y el byte
+volteado cae a veces en una longitud. Lo podía disparar cualquiera que mandara una
+prueba al nodo, y un sobre malformado hacía abortar al mando en vez de salir ROJO.
+
+**Cerrado** en el §575 en los dos sitios que lo producían: `Proof::from_bytes` lee con
+un lector acotado (fork de `winter-air`, `src/proof/acotado.rs`), y el lote de las
+aperturas con sal (`zk-ssl-air/src/sal.rs`) se lee con sus cuentas acotadas, también
+en las capas FRI. Cuatro testigos deterministas lo falsan. **Residuo, declarado**: los
+dos circuitos SIN sal (`range_check`, `governance`) siguen leyendo el lote de sus
+aperturas y de sus capas FRI con el `BatchMerkleProof` de upstream, sin acotar; qué
+entrada ajena llega a ellos está sin medir. `winterfell` upstream tiene el mismo
+defecto, y avisarle es deuda. `AUDITORIA.md` §575.
+
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende
 
 Desde agosto de 2026 esto no es solo una capa: hay cable, nodo, SDK y un
