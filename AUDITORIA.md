@@ -41558,3 +41558,45 @@ sin nodo, y sus tres veredictos -resuelta como transicion aplicada, resuelta com
 prueba, no resuelta en la ventana-; y la E5, su catalogo y su banco. Antes de la E4, el atado del
 techo N = 1.440. Y siguen la poda sin llamante y el hueco de la D-E.
 
+## §572 — El atado del techo N: la prosa que cita 1.440 dice lo que dice la constante
+
+El commit que lleva este asiento, sobre `391e2cb` (el S571). Un solo sello: un juez nuevo, su sitio
+en el canon, la frase que lo nombra en el RFC-0010 y este asiento, con el canon `--sello` VERDE
+dentro del bloque -y el juez nuevo corriendo en el-. Tres ficheros mas este asiento, con 102
+inserciones y 1 borrado fuera de el. NACE `tools/check_techo.py`. Es el atado que el §560 anuncio
+para el §561, que paso al §562 y que desde el §562 viajaba SIN numero, siempre <<antes de la E4>>:
+la E4 lo cita en sus tres veredictos.
+
+**De donde sale.** El techo de la promesa -<<no inclusion en N cabezas firmadas es censura>> (§121)-
+tiene UN productor, `N_MAX_CABEZAS` en `vista_acuses.rs`, firmado en cada cabeza desde el §275 y
+dentro de cada hoja de acuse y de recibo. La prosa lo cita en un perimetro publicado y nadie
+comparaba las dos cosas. El §560 midio el techo en doce ficheros y avisaba: la mayoria son literales
+de TEST, y un atado que los mirara seria un gate mas estricto que su invariante. El §561 corrigio la
+cita del perimetro que el §560 habia dado POR NUMERO DE LINEA y ya caducada, y dejo dicha la clase
+del defecto: una cita por numero de linea no la vigila nadie.
+
+**Lo que hace.** `tools/check_techo.py` lee el productor DEL CODIGO -R1: cambiar el techo es cambiar
+una linea, y el juez sigue a la linea- y exige que cada sitio del perimetro diga ese numero en la
+forma en que lo escribe: decimal en `spec/RPC.md` (<<`n` = 1440>>), hex del cable en sus dos
+ejemplos -el acuse del §274 y el recibo del §571-, y con punto de millar en
+`doc/CONFIANZA_RESIDUAL.md` y en las dos frases del RFC-0010 que lo fijan. Cada sitio se localiza
+por PATRON y no por linea (R2), y cada patron tiene que aparecer EXACTAMENTE las veces declaradas
+(R3): si la prosa se mueve, se duplica o se borra, el juez lo dice en vez de callar. Siete citas en
+tres ficheros. Quedan FUERA, declarados en su cabecera (R5), los literales de test y el gasto de
+indices del latido -1.440 al dia a un latido por minuto-, que coincide con N y no es N. Lleva la
+trampilla `TECHO_RAIZ`, el molde de `NUCLEO_DOC` del §561, para ensayarlo contra una copia sin tocar
+el arbol. El canon lo corre con las otras ocho herramientas, que pasan a ser nueve, y el RFC-0010 lo
+nombra donde fija N.
+
+**Los falsadores, ENSAYADOS contra una COPIA** con la trampilla, sin tocar el arbol. El productor
+cambiado a 720: caen las SIETE citas, cada una nombrada con su fichero y su linea. La confianza
+residual con otro N: cae esa, sola. Un ejemplo del cable borrado: cae R3 -el patron aparece una vez
+y se declararon dos-. Restaurada la copia: VERDE.
+
+**Contadores.** Ningun pin se mueve: el juez es herramienta, no test del canon. Las cifras, quietas.
+El censo del nucleo, quieto en 126. Ningun `Cargo` tocado. Las herramientas del canon, 8 -> 9.
+
+**Lo que NO cierra.** La E4, el sobre portable de completitud, con sus tres veredictos y sus reglas
+de rechazo; y la E5, su catalogo y su banco. Y el juez que la clase del §561 pide para las citas por
+numero de linea en general: este ata UNA constante, no la clase.
+

@@ -73,6 +73,9 @@ ya se decidió en el §121, con su techo: **no inclusión en `N` épocas es cens
 `N = 1.440` cabezas firmadas, veinticuatro horas al latido del §115, con el precedente del MMD
 de Certificate Transparency. Esa constante vive hoy en el árbol, viaja firmada en la cabeza
 desde el §275 y entra en cada hoja del acuse, de modo que una `n` mentida no verifica.
+Desde el §572 la prosa que la cita está ATADA a esa constante: `tools/check_techo.py`, en el
+canon, lee `N_MAX_CABEZAS` del código y exige que cada sitio del perímetro publicado —este RFC,
+`spec/RPC.md` y `doc/CONFIANZA_RESIDUAL.md`— diga ese número, localizado por patrón y no por línea.
 
 La pieza que falta es un objeto, no una idea: **una raíz de recepción en la cabeza firmada**.
 Con ella, la ecuación que `doc/CONFIANZA_RESIDUAL.md` ya escribe se vuelve comprobable por un
