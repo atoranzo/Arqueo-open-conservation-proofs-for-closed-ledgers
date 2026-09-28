@@ -1,0 +1,67 @@
+# Vectores del sobre de COMPLETITUD (spec/PAQUETE.md 2.11, RFC-0010 E5; asiento 574). zkssl/0.4.
+# fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
+# TODOS se CAPTURAN de UNA corrida de su productor, que vive en el arbol:
+# `bash tools/banco_completitud.sh --largo --guardar <dir>` (S574), contra un nodo REAL que firma
+# un latido por segundo con la semilla '37' x 96. Un envio de prueba de CEROS que la capa RECHAZA
+# (`StaleState`) deja su recibo en el `error.data` del cable -rx 1, era 2, n 1440 (§571)- y la
+# cabeza v6 firmada de indice 2 cierra su era, con Q 0 y recepCount 1 (§570).
+# Los TRES positivos son un veredicto cada uno:
+#   - `resuelta-por-rechazo`, salida 0: el sobre de rechazo se arma con ese `error.data` -su
+#     `recepcion` lo ata al recibo, y esa atadura es la PALABRA del nodo (D3)-, la cabeza de su
+#     seq y los publicInputs del envio;
+#   - `no-resuelta`, salida 1: sin resolucion, con la cabeza vigente de indice 1443 = era + n + 1,
+#     la PRIMERA fuera de la ventana: el ROJO NOMBRADO que es el producto del hito;
+#   - `declarada`, salida 3: el cuarto estado (D4). Se DERIVA por MUTACION del `data` real -su
+#     causa pasa a `NotTheIssuer`-, porque el nodo no produce hoy esas causas por esta via.
+# El veredicto 1 -RESUELTA como transicion APLICADA- NO tiene vector: pide la prueba STARK real de
+# un envio aplicado, y su par cabeza + acuse se verifica COMO el paquete de posicion (2.1), cuyos
+# vectores viven en `paquete/`. Las reglas propias de esa rama SI lo tienen, abajo.
+# Los TREINTA Y DOS negativos salen de lo capturado por UNA mutacion cada uno, uno por regla
+# producible del sobre y por SITIO; jamas se reescriben (regla 2 del PROCESO). Los de las claves
+# DISTINTAS llevan la cabeza de un SEGUNDO nodo, de semilla '38' x 96, que el banco levanta un
+# momento; los de FUERA de la ventana, la vigente de indice 1443. Cuatro reglas se comprueban en
+# mas de un sitio -las claves en la vigente, el acuse y el rechazo; la ventana en el acuse y el
+# rechazo; OTRA operacion y el `data` sin `recepcion` en el rechazo y la declarada- y cada sitio
+# lleva su vector: comparten texto salvo donde el mando antepone el sitio.
+# No tienen vector AQUI, y se declara, las reglas que el sobre COMPARTE con otras familias: lo que
+# se exige de una cabeza -salvo una, `neg-cierre-recepRoot-mentida`, que muestra que la recepRoot
+# viaja bajo la firma-, la lectura del camino y de los campos hex, y lo que la resolucion
+# re-verifica como paquete de posicion o como sobre de rechazo: viven en sus familias.
+# Dos corridas del banco dan el MISMO cierre salvo `emittedAtUnix`, que NO va firmado -la firma y
+# el epochDigest coinciden: medido en la sesion 193-. La familia se COPIA de la corrida del sello
+# y no se re-deriva byte a byte, y ningun texto pina un emittedAtUnix.
+resuelta-por-rechazo.json|0|VERDE: el recibo se resolvio dentro de la ventana, y se sostiene sin el nodo
+no-resuelta.json|1|NO RESUELTA EN LA VENTANA
+declarada.json|3|DECLARADA, NO PROBADA
+neg-sin-cierre.json|1|falta cierre
+neg-cierre-formatVersion-7.json|1|el sobre de completitud lee cabezas
+neg-cierre-v5.json|1|exige una cabeza v6
+neg-cierre-recepRoot-mentida.json|1|cierre: los campos NO recomponen su epochDigest
+neg-sin-recepcion.json|1|falta recepcion
+neg-n-mentida.json|1|no es la que el cierre firma
+neg-q-mentido.json|1|no pertenece a la era
+neg-sin-camino.json|1|falta camino
+neg-camino-truncado.json|1|no mide 32 niveles
+neg-era-mentida.json|1|NO sube a la recepRoot
+neg-sin-resolucion-ni-vigente.json|1|sin resolucion y sin cabeza vigente
+neg-ventana-abierta.json|1|ventana ABIERTA
+neg-vigente-de-otra-clave.json|1|claves DISTINTAS
+neg-acuse-sin-cabeza.json|1|resolucion: falta cabeza
+neg-acuse-sin-acuse.json|1|resolucion: falta acuse
+neg-acuse-de-otra-clave.json|1|claves DISTINTAS
+neg-acuse-de-otra-prueba.json|1|el acuse es de OTRA prueba
+neg-acuse-fuera-de-ventana.json|1|resolucion: llega FUERA de la ventana
+neg-rechazo-sin-sobre.json|1|resolucion: falta sobre
+neg-rechazo-de-otro-tipo.json|1|el sobre no es de tipo rechazo
+neg-rechazo-sin-data.json|1|resolucion.sobre: falta data
+neg-rechazo-data-sin-recepcion.json|1|resolucion.sobre: su data no lleva recepcion
+neg-rechazo-de-otra-operacion.json|1|resolucion.sobre: es de OTRA operacion
+neg-rechazo-sin-cabeza.json|1|resolucion.sobre: falta cabeza
+neg-rechazo-de-otra-clave.json|1|claves DISTINTAS
+neg-rechazo-fuera-de-ventana.json|1|resolucion: llega FUERA de la ventana
+neg-declarada-sin-data.json|1|resolucion: falta data
+neg-declarada-sin-causa.json|1|resolucion.data: falta causa
+neg-declarada-con-prueba.json|1|no es de las que el RFC-0007 dejo sin prueba portable
+neg-declarada-data-sin-recepcion.json|1|resolucion.data: su data no lleva recepcion
+neg-declarada-de-otra-operacion.json|1|resolucion.data: es de OTRA operacion
+neg-resolucion-desconocida.json|1|desconocido: se lee acuse, rechazo o declarada

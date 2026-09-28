@@ -41672,3 +41672,64 @@ segundo un sobre de rechazo del nodo sobre la misma operacion. El tercero pide u
 con `N = 1.440` son 1.441 firmas, unos 24 minutos a un latido por segundo, y el banco lo tendra que
 pagar o medir otro camino.
 
+## §574 — RFC-0010 E5: el catálogo del sobre de completitud, su banco y su estrofa del canon
+
+El commit que lleva este asiento, sobre `3179c3a` (el S573). Un solo sello: el banco, el
+catálogo, la estrofa del canon, la familia del artefacto, la prosa que los nombra y este asiento,
+con el canon `--sello` VERDE dentro del bloque. Ocho ficheros tocados y treinta y siete que nacen,
+más este asiento, con 5199 inserciones y 23 borrados fuera de él. Con este sello la E5 del
+RFC-0010 queda SELLADA, y con ella sus cinco etapas.
+
+**Lo que hace.** (1) Nace `tools/banco_completitud.sh`, el banco de la E5, FUERA del canon: un nodo
+REAL que firma un latido por segundo; un envío de prueba de CEROS que la capa RECHAZA
+(`StaleState`) y deja su recibo en el `error.data` del cable (§571); la cabeza v6 firmada que
+cierra su era (§570); `zkssl_recepPath`; y el mando (§573), que juzga los sobres SIN el nodo. Con
+`--largo` espera a la cabeza de índice `era + n + 1` —1443, unos 24 minutos— y siembra la NO
+RESUELTA. Levanta un momento un SEGUNDO nodo, de otra semilla, para la cabeza de otra clave. No
+escribe en el árbol, y lo comprueba al salir. (2) Nace `spec/vectors/completitud/`, la NOVENA
+familia: TRES positivos, uno por veredicto que se siembra —la resuelta por rechazo (0), la NO
+RESUELTA (1, el ROJO NOMBRADO) y la declarada (3)—, y TREINTA Y DOS negativos, uno por regla
+producible y por SITIO, con su `MANIFIESTO.txt`. (3) La estrofa del canon «las formas del sobre de
+completitud», molde de la prenda: el MISMO binario y `tools/conformidad.sh` con otro manifiesto.
+(4) `completitud` entra en `FAMILIAS` de `tools/artefacto.sh`: el tarball la lleva y el `--check`
+la corre, desde el árbol y desde dentro. (5) La cabecera del arnés nombra el 3 del cuarto estado.
+(6) `spec/PAQUETE.md` nombra el banco y el catálogo en 2.11 y en la sección 9; el RFC-0010 marca
+su E5 SELLADA; `spec/README.md` gana su fila.
+
+**Lo que se MIDIÓ antes de escribir.** Dos corridas del banco dan el MISMO cierre salvo
+`emittedAtUnix`, que NO va firmado: la firma y el `epochDigest` coinciden. La familia se COPIA de
+la corrida del sello, y el manifiesto no pina ningún `emittedAtUnix`. Y los veredictos que el §573
+dejó sin ver en vivo se ven aquí contra el binario: el sobre de rechazo del nodo sobre la MISMA
+operación —atado por su `data.recepcion`— sale VERDE, y la ventana EXPIRADA sale ROJO NOMBRADO.
+
+**Lo que NO tiene vector, declarado.** El veredicto 1, RESUELTA como transición APLICADA: pide la
+prueba STARK real de un envío aplicado; su par cabeza + acuse se verifica como el paquete de
+posición, cuyos vectores viven en `paquete/`, y las reglas propias de esa rama sí tienen el suyo.
+La declarada se DERIVA por mutación —su causa pasa a `NotTheIssuer`—, porque el nodo no produce hoy
+esas causas por esta vía. Las reglas que el sobre COMPARTE con otras familias viven en ellas.
+
+**Tres cifras atrasadas, CORREGIDAS aquí y citadas.** (a) `README.md` y `README_EN.md` decían 317
+ficheros bajo `spec/vectors/`; el §570 sumó tres vectores del cable sin contarlos, y eran 320: con
+los treinta y seis de esta familia son 356. (b) `spec/README.md` decía que el cable trae un
+positivo por era de cabeza, «v3 y v5»; el §570 sumó el de v6. (c) La sección 11 de `PAQUETE.md`
+decía SEIS manifiestos en el tarball: el pago (§509) y la prenda (§546) entraron en `FAMILIAS` sin
+que lo dijera. Ninguna herramienta del canon vigila esas tres cifras, y se declara.
+
+**El banco, VIVO, antes de sellar.** Con `--largo --guardar`: los TREINTA Y CINCO sobres dicen lo
+que deben, tras unos treinta y un minutos de espera. Sin `--largo`, treinta y dos en unos cinco
+segundos.
+
+**Los falsadores, ENSAYADOS.** (1) Un nibble adulterado en la firma del cierre de
+`resuelta-por-rechazo`, en una COPIA de la familia: el arnés la pone ROJA y la nombra. (2) Un
+vector sin entrada en el manifiesto: ROJO, con su nombre. (3) El mando sin la guarda de claves de
+la `vigente`, en el clon de ensayo: cae `neg-vigente-de-otra-clave`, y sólo él. Restaurado, todo
+VERDE.
+
+**Contadores.** Ninguno se mueve: ni un test, ni un pin, ni el núcleo; el TOTAL DE SELLO sigue en
+1496. Las herramientas del canon siguen siendo nueve: el banco vive fuera.
+
+**Lo que NO cierra.** El RFC-0010 sigue PROPUESTO. Antes de aceptarlo, el sello siguiente decide
+el alcance del recibo —`applyMany` y `zkssl_pledge` evalúan sin reservar `rx`, el hueco de la D-E
+que la sesión 193 midió y dejó sin decidir—, y el de después lo acepta con la regla 4 del PROCESO.
+`podar` sigue sin llamador, declarado.
+

@@ -10,7 +10,9 @@
 #     bash tools/conformidad.sh <binario> [manifiesto]
 #
 # <binario>    la ruta de un ejecutable que cumpla el contrato del mando (PAQUETE.md, seccion 6):
-#              un argumento -la ruta de un paquete JSON-, exit 0 verde, 1 fallo con nombre, 2 uso.
+#              un argumento -la ruta de un paquete JSON-, exit 0 verde, 1 fallo con nombre, 2 uso,
+#              y desde el §573 el 3 del cuarto estado del sobre de completitud: el manifiesto lo
+#              pide como pide cualquier otro codigo.
 # [manifiesto] por defecto spec/vectors/paquete/MANIFIESTO.txt relativo al directorio actual, que
 #              es donde vive tanto en el arbol como dentro del tarball. Los vectores se buscan en
 #              el directorio del manifiesto. Formato: fichero|codigo esperado|texto que la salida

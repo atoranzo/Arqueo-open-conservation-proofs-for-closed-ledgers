@@ -393,6 +393,11 @@ cabeza firmada por la misma clave, el que la firma lleva embebido (§399), con `
    al recibo por su `recepcion`: el **cuarto estado**, «resolución declarada, no probada», que
    sale con su propio código (D4). Una causa que sí tiene prueba se exhibe, no se declara.
 
+**El banco es `tools/banco_completitud.sh`** (§574), que lo reproduce en vivo contra un nodo real
+que firma —con `--largo`, hasta que la ventana EXPIRA—, y **el catálogo es
+`spec/vectors/completitud/`** (§574), la novena familia del artefacto, COPIADA de una corrida
+suya: sección 9.
+
 ## 3. El sobre — lo que el binario lee
 
 El binario lee **31 nombres** distintos del JSON. Los 14 primeros son el sobre propiamente dicho;
@@ -817,11 +822,13 @@ los dos sobres, y su huella se declara en la cabecera del manifiesto.
 Las demostraciones en vivo con nodo son `tools/banco_apagado.sh`, `tools/banco_consumo.sh`
 (RFC-0006, E3), `tools/banco_dos_libros.sh` (E4a), `tools/banco_edad.sh` (E4b-3),
 `tools/banco_rechazo.sh` (RFC-0007 E5, cortes 3b y 4c), `tools/banco_pendiente.sh` (RFC-0008 E4,
-lado del cobro), `tools/banco_pago.sh` (RFC-0008 E2) y `tools/banco_prenda.sh` (RFC-0008 E3): el
-tercero de ellos levanta DOS nodos con DOS claves y produce el hecho que E4 existe para detectar,
-el quinto produce el sobre de rechazo sobre un libro real con el servidor PARADO, el sexto siembra
-con el servidor PARADO y pide el sobre del cobro por la boca con el servidor VIVO, y el octavo es
-el único en el que la boca abre un keystore y el nodo ACEPTA la marca bajo el mismo latido.
+lado del cobro), `tools/banco_pago.sh` (RFC-0008 E2), `tools/banco_prenda.sh` (RFC-0008 E3) y
+`tools/banco_completitud.sh` (RFC-0010 E5): el tercero de ellos levanta DOS nodos con DOS claves
+y produce el hecho que E4 existe para detectar, el quinto produce el sobre de rechazo sobre un
+libro real con el servidor PARADO, el sexto siembra con el servidor PARADO y pide el sobre del
+cobro por la boca con el servidor VIVO, el octavo es el único en el que la boca abre un keystore
+y el nodo ACEPTA la marca bajo el mismo latido, y el noveno es el único que ESPERA: firma un
+latido por segundo hasta que la ventana de un recibo expira.
 
 **Desde §499 cubre el sobre de COBRO PENDIENTE** (RFC-0008, E4 por el lado del cobro):
 `spec/vectors/pendiente/` trae DOS positivos REUNIDOS de las capturas de un nodo real —la boca del
@@ -868,6 +875,23 @@ los dos sobres; los cinco ficheros de la siembra tampoco —el mando no los lee�
 declara por huella los cuatro deterministas, no el `keystore.json`, que lleva nonce. Su productor
 es `tools/banco_prenda.sh` (§545). Un VERDE aquí es MEDIA prenda (D-AS): la otra mitad es la marca
 bajo el `consRoot` de esa misma cabeza, y se pide con `zkssl_consumoPath`.
+
+**Desde §574 cubre el sobre de COMPLETITUD** (RFC-0010, E5): `spec/vectors/completitud/` trae TRES
+positivos CAPTURADOS de un nodo real que firma un latido por segundo —un envío de prueba de ceros
+que la capa rechaza deja su recibo en el `error.data` del cable, y la cabeza v6 de índice 2 cierra
+su era—, uno por veredicto que se siembra: RESUELTA como rechazo con prueba (salida 0), NO RESUELTA
+EN LA VENTANA con la cabeza vigente de índice 1443, la primera fuera de ella (salida 1, el ROJO
+NOMBRADO), y el cuarto estado (salida 3), DERIVADO del `data` real con una causa sin prueba
+portable, porque el nodo no produce hoy esas causas por esta vía, y se declara. Y TREINTA Y DOS
+negativos por UNA mutación cada uno, uno por regla producible y por SITIO: los de las claves
+distintas llevan la cabeza de un segundo nodo, de otra semilla. El veredicto 1 —resuelta como
+transición APLICADA— no tiene vector: pide la prueba STARK real de un envío aplicado, y su par
+cabeza + acuse se verifica como el paquete de posición, con los vectores de `paquete/`; las reglas
+propias de esa rama sí lo tienen. Las que el sobre comparte con otras familias —lo que se exige de
+una cabeza, la lectura del camino, lo que la resolución re-verifica— viven en ellas, y se declara.
+Dos corridas del banco dan el mismo cierre salvo `emittedAtUnix`, que no va firmado: la familia se
+COPIA de la corrida del sello. Su productor es `tools/banco_completitud.sh` (§574), con `--largo`
+—unos 24 minutos— para la ventana expirada.
 
 ## 10. Historia
 
@@ -934,23 +958,22 @@ bajo el `consRoot` de esa misma cabeza, y se pide con `zkssl_consumoPath`.
 
 Lo que un tercero descarga es `arqueo-verify-<versión>-<host>.tar.gz` (§401), y dentro:
 `zk-ssl-verify` (el binario), `conformidad.sh` (el arnés de la sección 9, §408), `spec/PAQUETE.md`
-(este documento), `spec/vectors/paquete/`, `spec/vectors/consumo/`, `spec/vectors/conflicto/`,
-`spec/vectors/rechazo/`, `spec/vectors/edad/` y `spec/vectors/pendiente/` (los seis manifiestos y
-sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las licencias de todo
-lo enlazado), `VERSION` (el commit, el toolchain y los flags con que se compiló) y `SHA256SUMS` (la
-huella de cada fichero de dentro). Se comprueba con `sha256sum -c SHA256SUMS`, y el binario contra
-los seis catálogos con `bash conformidad.sh ./zk-ssl-verify`, `bash conformidad.sh ./zk-ssl-verify
-spec/vectors/consumo/MANIFIESTO.txt`, `bash conformidad.sh ./zk-ssl-verify
-spec/vectors/conflicto/MANIFIESTO.txt`, `bash conformidad.sh ./zk-ssl-verify
-spec/vectors/rechazo/MANIFIESTO.txt`, `bash conformidad.sh ./zk-ssl-verify
-spec/vectors/edad/MANIFIESTO.txt` y `bash conformidad.sh ./zk-ssl-verify
-spec/vectors/pendiente/MANIFIESTO.txt`: cada entrada dice el código de salida y el texto.
+(este documento), `spec/vectors/<familia>/` por cada una de las NUEVE familias de `FAMILIAS`
+—paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda y completitud— (los nueve
+manifiestos y sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
+licencias de todo lo enlazado), `VERSION` (el commit, el toolchain y los flags con que se compiló)
+y `SHA256SUMS` (la huella de cada fichero de dentro). Se comprueba con `sha256sum -c SHA256SUMS`, y
+el binario contra los nueve catálogos con `bash conformidad.sh ./zk-ssl-verify` —el del paquete,
+por defecto— y `bash conformidad.sh ./zk-ssl-verify spec/vectors/<familia>/MANIFIESTO.txt` para
+cada una de las otras ocho: cada entrada dice el código de salida y el texto. Esta sección decía
+SEIS hasta el §574: el pago (§509) y la prenda (§546) entraron en `FAMILIAS`, y en el tarball, sin
+que ella lo dijera; el §574 lo corrige al sumar la novena.
 
 La huella del binario **no depende de la máquina ni del usuario** —se compila con
 `--remap-path-prefix`—, pero sí del toolchain y de `Cargo.lock`: con el `rustc` que `VERSION`
 nombra, `bash tools/artefacto.sh` sobre el commit que `VERSION` nombra vuelve a producir el mismo
 binario y el mismo tarball, y `tools/canon.sh` comprueba esa propiedad en cada sello (dos
-compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los seis manifiestos desde el
+compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los nueve manifiestos desde el
 árbol y, desde §425, otra vez **desde dentro del tarball desempaquetado y sin repo**, con el mismo
 veredicto). Lo que el binario exige: x86_64 Linux y una glibc igual o mayor que la que `VERSION`
 declara (`glibc_max`); no es estático, y se dice.
