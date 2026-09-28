@@ -311,6 +311,11 @@ y un objeto al paquete de evidencia. Es exactamente lo que el PROCESO reserva pa
 - **Lo que sigue sin estar cerrado.** El operador puede no emitir recibo (D-H). Puede ordenar.
   Y una cabeza no firmada no obliga a nadie: toda esta promesa cuelga de que el nodo firme sus
   cabezas, que es la misma raíz de confianza que el resto del sistema declara.
+- **La retención del registro de recibos, sin decidir (§580).** `podar` existe, probada, y NO
+  tiene llamador por decisión del autor: podar al vencer la ventana dejaría sin sobre al titular
+  que no pidió su camino a tiempo, porque la NO RESUELTA llega después de la ventana y necesita
+  ese camino. Es política con víctimas, como el plazo `N`; hasta que haya operador real, el
+  registro crece sin tope, 40 bytes por recibo.
 - **El reinicio.** El §242 declaró huecos de índice benignos al reiniciar; el contador de
   recepción, en cambio, **no se reinicia** y su fichero tiene su propio guardián. Que fuera
   benigno en un sitio y catastrófico en el otro está medido y escrito desde el §253: dos

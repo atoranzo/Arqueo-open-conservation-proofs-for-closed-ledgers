@@ -41965,3 +41965,31 @@ con el contador en 1, «EL CONTADOR HA RETROCEDIDO» y cero cofirmas nuevas.
 del `--largo` de la completitud. Meterlos en un nivel del canon, o en una rutina, lo decide el
 autor.
 
+## §580 — `podar`, declarada sin llamador, y la razón de su doc, corregida
+
+El commit que lleva este asiento, sobre `121d797` (el S579). Un solo sello: la doc de `podar`, una
+línea de la sección de seguridad del RFC-0010 y este asiento, con el canon `--sello` VERDE dentro
+del bloque. Dos ficheros más este asiento, con 18 inserciones y ningún borrado fuera de él.
+
+**De dónde sale.** De una deuda que el arco del RFC-0010 arrastraba sin decidir: `podar` borra las
+eras del registro de recibos cuya ventana venció, y nadie la llama. El autor decidió, en la sesión
+193, DECLARARLA y no conectarla: la retención es política con víctimas y se decide cuando haya
+operador real.
+
+**Lo que se MIDIÓ al escribirlo.** La doc de `podar` razonaba que fuera de la ventana «retener más
+no sirve a ningún veredicto». Es anterior al sobre de completitud (§573) y está MAL: el veredicto
+que llega después de la ventana, «NO RESUELTA EN LA VENTANA», necesita justo el camino del recibo
+bajo la `recepRoot` del cierre, y ese camino lo sirve `zkssl_recepPath` desde este registro. Podar
+al vencer la ventana dejaría sin sobre al titular que no pidió su camino a tiempo: la razón de la
+decisión, medida. El registro crece `ANCHO_ENTRADA` = 40 bytes por recibo, en un fichero por era.
+
+**Lo que hace.** La doc de `podar` gana la CORRECCIÓN, citando el párrafo viejo en vez de borrarlo,
+y la declaración: sin llamador por decisión del autor, el registro crece sin tope, y el aviso de
+código muerto queda a la vista a propósito. La sección de seguridad del RFC-0010 gana una línea:
+la retención del registro, sin decidir, con su razón.
+
+**Contadores.** Ninguno se mueve.
+
+**Lo que NO cierra.** La retención misma. Y el aviso de código muerto del nodo sigue en tres -el
+import de `firma_cabeza`, `tests_dir` y `podar`-, declarados.
+

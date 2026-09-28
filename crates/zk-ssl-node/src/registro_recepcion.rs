@@ -282,6 +282,19 @@ impl RegistroRecepcion {
     /// retener más no sirve a ningún veredicto. Lo que se poda es lo que ya
     /// no puede responder nada.
     ///
+    /// ⚠️ **CORRECCIÓN (§580):** el párrafo de arriba es anterior al sobre de
+    /// completitud (§573), y está mal. El veredicto que llega DESPUÉS de la
+    /// ventana —«NO RESUELTA EN LA VENTANA»— es justo el que necesita el camino
+    /// del recibo bajo la `recepRoot` del cierre, y ese camino lo sirve
+    /// `zkssl_recepPath` desde este registro: podar al vencer la ventana dejaría
+    /// sin sobre al titular que no pidió su camino a tiempo.
+    ///
+    /// ⚠️ **SIN LLAMADOR, por decisión del autor** (sesión 193, §580): la
+    /// retención es política con víctimas, no un parámetro, y se decide cuando
+    /// haya operador real. Hasta entonces el registro crece sin tope,
+    /// [`ANCHO_ENTRADA`] bytes por recibo, y el aviso de código muerto de esta
+    /// función queda a la vista a propósito.
+    ///
     /// `indice_cierre` es el **índice XMSS** de una cabeza firmada (§567): la
     /// ventana cuenta cabezas firmadas, no `seq`.
     pub fn podar(&mut self, indice_cierre: u64, n: u64) -> Result<usize, GuardianError> {
