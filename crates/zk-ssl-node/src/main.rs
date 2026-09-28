@@ -44,6 +44,7 @@ mod diario;
 mod recepcion;
 mod registro_recepcion;
 mod vista_acuses;
+mod vista_recibos;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::net::SocketAddr;

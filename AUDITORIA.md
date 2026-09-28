@@ -41209,3 +41209,77 @@ Ningun `Cargo` tocado. El cable NO sube y `VERSION_FORMATO` sigue en 5.
 con el borde y la unidad buenos- y la E2d. Y queda el hueco de la D-E que la lectura midio:
 `applyMany` y `zkssl_pledge` evaluan pruebas sin reservar numero de recepcion.
 
+## §568 — RFC-0010 E2c-2, primera mitad: la vista de recibos
+
+El commit que lleva este asiento, sobre `4e2773d` (el S567). Un solo sello, como el §567: el
+codigo, el pin, las cifras que el pin arrastra, la celda del RFC y este asiento, con el canon
+`--sello` VERDE dentro del bloque. Siete ficheros mas este asiento, con 240 inserciones y 9 borrados
+fuera de el. Uno NACE: `crates/zk-ssl-node/src/vista_recibos.rs`.
+
+**De donde sale.** De la E2c del RFC-0010 -<<la vista del nodo, molde `vista_acuses.rs`>>- y de la
+lectura pura de la sesion 193, que la partio en dos: la vista, que es aritmetica sobre entradas y se
+prueba sola, y la CONEXION del registro al nodo, que toca el arranque, el `App` y los dos brazos que
+reciben. Este sello es la primera mitad; la conexion es el siguiente. Las reglas ya nacen con el
+borde `(Q, R]` y la era en indice XMSS del §567.
+
+**Lo que hace.** `vista_recibos.rs` es una VISTA, no una estructura: recibe entradas `(rx, era,
+hash_prueba)` y los dos limites de la era, y compone con las reglas COMPARTIDAS de
+`zk_ssl_verify::recibos` -pertenencia, posicion y hoja no viven aqui, por el argumento de `acuses`
+desde el §274-. Tres funciones con el molde de `vista_acuses`: `raiz_de_era`, `pareja_de_ahora` -la
+pareja `(recep_root, recep_count)` que la cabeza v6 firmara, con `n` del MISMO productor,
+`vista_acuses::N_MAX_CABEZAS`- y `camino_de_era`, que devuelve la raiz solo para tests y compuertas:
+el RPC no la sirve (§248).
+
+**Dos diferencias con el molde, y por que.** (1) La ERA de cada hoja entra como DATO y no se
+recalcula: la fija el recibo al recibir, y una recepcion que llega entre que una cabeza se COMPONE y
+se FIRMA declara la era de la anterior pero cae, por su `rx`, en el arbol de la siguiente.
+Recalcularla seria un segundo productor de un numero ya prometido. (2) La vista FALLA CERRADA ante
+un `rx` repetido dentro de la era: en el arbol de acuses cada `seq` sale de la capa y no se repite
+por construccion; aqui las entradas salen de un directorio que el operador escribe (D-I), y
+`set_leaf` se quedaria en silencio con la ultima. `ErrorVista::RxRepetido` lo NOMBRA. Un repetido
+FUERA de la era no es asunto de esa era, y el testigo lo dice.
+
+**Los testigos, nueve.** La era vacia es la raiz del arbol vacio -el vacio tambien se firma-; lo que
+no pertenece no entra y el `rx = R` SI; el orden de llegada no importa; la era declarada va dentro
+de la hoja; `n` distinto, raiz distinta; el `rx` repetido se nombra; la pareja firma la raiz y el
+ultimo `rx`, y el genesis es `(vacio, 0)`; el camino sube, con `path_root` de las reglas
+compartidas, hasta la raiz de su era; y sin hoja no hay camino -fuera de `(Q, R]` o dentro sin
+entrada-.
+
+**Los falsadores, ENSAYADOS.** Quitada la guarda del `rx` repetido, cae EXACTAMENTE
+`un_rx_repetido_en_la_era_se_nombra_y_no_compone` y pasan los otros ocho. Quitada la exigencia de
+hoja en `camino_de_era`, cae EXACTAMENTE `sin_hoja_no_hay_camino`. Restaurado, pasan los nueve.
+
+**EL PIN SE MIDIO.** `cargo test -p zk-ssl-node --release` sin filtro: 146 passed, CERO ignorados,
+CERO warnings. `check_cifras` NOMBRO siete cifras con el pin subido y el gate verde antes de tocar:
+el TOTAL DE SELLO 1459 -> 1468 en los tres documentos, el TOTAL CON LARGOS 1596 -> 1605 en los tres,
+y el desglose del nodo 137 -> 146 en `PRINCIPIOS.md`; con las siete vuelve a su censo -25 cifras, 7
+de desglose, LARGOS 3 de 3-. Los tres salen LINEA- Y BYTE-NEUTRALES. Las <<1364>>/<<1349>> no se
+tocan. La fila del nodo gana su CRONICA, <<§568: 137 -> 146>>.
+
+**Un residuo MEDIDO que el canon no ve.** `cargo build -p zk-ssl-node --release` -el binario sin
+tests- da 16 warnings, y el canon no los ve porque mide `cargo test`. Seis son de esta vista, que no
+tiene llamante fuera de los tests hasta la E2d (`pareja_de_ahora`) y la E3 (`camino_de_era`). De los
+diez de antes, cuatro son los de siempre (5.A-397) y SEIS nombran el registro del §565 -el tipo, sus
+metodos, sus constantes y su `io`-, que su asiento no declaro: el §565 subio los cuatro a diez en
+silencio. Queda dicho aqui. No va un `allow(dead_code)`: un `dead_code` puede estar diciendo que
+FALTA una llamada, y en este caso la llamada que falta es exactamente la conexion del siguiente
+sello.
+
+**La celda de E2c.** La tabla de etapas del RFC-0010 nombra ahora la particion: E2c-1 el registro,
+sellada en el §565 -la celda no lo decia-, y E2c-2 la vista (§568) y la conexion. El estado de la
+fila dice lo que falta: la conexion del registro y la E2d.
+
+**Contadores.** El pin del nodo 137 -> 146 y los otros seis sin mover. El TOTAL DE SELLO 1459 ->
+1468 y el TOTAL CON LARGOS 1596 -> 1605. `check_tests` 1618 -> 1627 y el offset en mas 8, QUIETO:
+1468 + 137 = 1605 ; 1605 + 14 = 1619 ; el canon declara 1627. Los ficheros `.rs` bajo `src/`, 194 ->
+195, todos declarados por su padre. El censo del nucleo, quieto en 126: la vista es del nodo. Ningun
+`Cargo` tocado. El cable NO sube y `VERSION_FORMATO` sigue en 5.
+
+**Lo que NO cierra.** La conexion del registro al nodo -el `App` con su registro y su indice de
+firma, el arranque que reconcilia, y los dos brazos que anotan tras recibir-, que es el siguiente
+sello y el que se lleva los seis warnings del registro. Despues, la E2d: la cabeza que firma la
+pareja, que tendra que reunir entradas de MAS de una era del registro -las que entraron entre
+componer y firmar la anterior declaran la era de antes-. Y el hueco de la D-E: `applyMany` y
+`zkssl_pledge` evaluan pruebas sin reservar numero de recepcion.
+
