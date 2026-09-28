@@ -854,3 +854,42 @@ mod tests {
         assert_eq!(resto, vec![4, 13, 100, 10, 7, 0, 3]);
     }
 }
+
+/// **§578: toda verificacion del kit lee con SAL** -el compromiso cuyo lote acota `sal.rs` (§575)-:
+/// las cinco que el mando alcanza, una por sobre con prueba (edad, banda, prenda, pago en curso y
+/// cobro pendiente). Si alguien anade una sin sal, o cambia el compromiso de una, cae.
+#[cfg(test)]
+mod tests_sal {
+    /// Las lineas de CODIGO -no de comentario- que llaman a `verify` con sus tipos. La aguja se
+    /// arma por partes para que este mismo fuente no la contenga.
+    fn llamadas(fuente: &str) -> Vec<&str> {
+        let aguja = concat!("verify", "::<");
+        fuente.lines().filter(|l| !l.trim_start().starts_with("//") && l.contains(aguja)).collect()
+    }
+
+    /// Cada modulo, con sus llamadas contadas y todas con sal. Devuelve cuantas hubo.
+    fn todas_con_sal(modulos: &[(&str, &str, usize)]) -> usize {
+        let mut total = 0;
+        for (nombre, fuente, esperadas) in modulos {
+            let l = llamadas(fuente);
+            assert_eq!(l.len(), *esperadas, "{nombre}: {l:?}");
+            for x in &l {
+                assert!(x.contains("MerkleConSal<Blake3>>("), "{nombre} verifica SIN sal: {x}");
+            }
+            total += l.len();
+        }
+        total
+    }
+
+    #[test]
+    fn toda_verificacion_del_kit_lee_con_sal() {
+        let total = todas_con_sal(&[
+            ("lib.rs", include_str!("lib.rs"), 1),
+            ("banda.rs", include_str!("banda.rs"), 1),
+            ("prenda.rs", include_str!("prenda.rs"), 1),
+            ("pago_en_curso.rs", include_str!("pago_en_curso.rs"), 1),
+            ("cobro_pendiente.rs", include_str!("cobro_pendiente.rs"), 1),
+        ]);
+        assert_eq!(total, 5, "las cinco del kit");
+    }
+}

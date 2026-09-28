@@ -41882,3 +41882,45 @@ como el único propuesto.
 `podar` sigue sin llamador, declarado. La etapa del recibo del lote y de la prenda está por
 diseñar.
 
+## §578 — el residuo del §575, medido: toda verificación viva lee con sal
+
+El commit que lleva este asiento, sobre `99cce7d` (el S577). Un solo sello: dos testigos, sus
+pines, las cifras, la corrección de `SECURITY.md` 3.7 y este asiento, con el canon `--sello` VERDE
+dentro del bloque. Diez ficheros más este asiento, con 115 inserciones y 20 borrados fuera de él.
+
+**De dónde sale.** De una frase del §575, publicada en `SECURITY.md` 3.7: el residuo del aborto
+eran «los dos circuitos SIN sal (`range_check`, `governance`)», y «qué entrada ajena llega a ellos
+está sin medir». Al medirlo para la siguiente tarea, la lista resultó de una búsqueda RECORTADA -la
+salida de un `grep` cortada a veinte líneas- y estaba mal por los dos lados.
+
+**Lo que se MIDIÓ.** (1) Las llamadas `verify` de las vías vivas, una a una: los quince de la capa
+que ya declara `comprobar_forma` -diez en `two_phase.rs`, una en `burn.rs`, `lib.rs` (la
+auditoría), `freeze.rs`, `recovery.rs` y `mint.rs`-, la pareja umbral de los custodios
+(`verify_threshold_pair`, en `stark-experiment`), por donde pasa también la gobernanza, y las
+cinco del kit -edad, banda, prenda, pago en curso y cobro pendiente-: las veintiuna con
+`MerkleConSal`. (2) Ningún otro crate de las vías vivas -el nodo, el cli, el SDK, el cable, el
+mando, el hash, el guardián- llama a `verify` por su cuenta. (3) Los verificadores SIN sal quedan
+en `range_check` y el `ComplianceAir` de `settlement-prover` -experimentos, que se enlazan pero que
+ninguna vía de la capa llama- y en `instrumento_edad`, que sólo compila en tests. Luego el residuo
+del §575 en las vías vivas es NINGUNO: lo que queda sin acotar sólo lo alcanza código de medida.
+
+**Lo que hace.** (1) `SECURITY.md` 3.7 dice el residuo medido, y la frase del §575 queda CITADA
+con su corrección, no borrada. (2) Dos testigos que leen su propio fuente, molde de
+`variantes_del_fuente`: en la capa, los quince `verify` de los seis módulos, contados por módulo,
+más la pareja umbral, todos con `MerkleConSal`; en el kit, los cinco. La aguja se arma por partes,
+para que el propio testigo no la contenga.
+
+**Los falsadores, ENSAYADOS.** La verificación de `mint.rs` con `MerkleTree` -compila, el tipo es
+genérico-: cae el de la capa, nombrando `mint.rs`. La de `banda.rs` con `MerkleTree`: cae el del
+kit, nombrando `banda.rs`. Restaurado, VERDE.
+
+**Contadores.** La capa 422 -> 423 y `zk-ssl-air` 40 -> 41; los otros diecinueve sin mover. El
+TOTAL DE SELLO 1501 -> 1503 y el TOTAL CON LARGOS 1638 -> 1640, y el pin de la capa en siete
+sitios más que `check_cifras` nombró -los dos PAPER, ARQUITECTURA dos veces, PRINCIPIOS y los dos
+INSTITUCIONAL-: catorce cifras, LÍNEA- y BYTE-NEUTRALES. `check_tests` 1660 -> 1662 y el offset en
+más 8, QUIETO: 1503 + 137 = 1640 ; 1640 + 14 = 1654 ; el canon declara 1662. Ni el núcleo ni el
+cable se mueven.
+
+**Lo que NO cierra.** Avisar a `winterfell` upstream del mismo defecto sigue siendo deuda. Y la
+lección, dicha: una lista que sale de una búsqueda se cuenta ENTERA antes de publicarla.
+

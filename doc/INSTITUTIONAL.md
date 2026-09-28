@@ -506,7 +506,7 @@ Nothing in this document requires trusting its author.
 ```bash
 git clone [repository]
 cd zk-ssl
-cargo test -p zk-ssl --release              # 422 tests (7 ignored)
+cargo test -p zk-ssl --release              # 423 tests (7 ignored)
 cargo test -p stark-experiment --release    # 403 tests
 cargo test -p zk-ssl --release metrics -- --nocapture
 ```

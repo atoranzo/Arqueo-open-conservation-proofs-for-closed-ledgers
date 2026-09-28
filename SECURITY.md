@@ -450,11 +450,18 @@ prueba al nodo, y un sobre malformado hacía abortar al mando en vez de salir RO
 **Cerrado** en el §575 en los dos sitios que lo producían: `Proof::from_bytes` lee con
 un lector acotado (fork de `winter-air`, `src/proof/acotado.rs`), y el lote de las
 aperturas con sal (`zk-ssl-air/src/sal.rs`) se lee con sus cuentas acotadas, también
-en las capas FRI. Cuatro testigos deterministas lo falsan. **Residuo, declarado**: los
-dos circuitos SIN sal (`range_check`, `governance`) siguen leyendo el lote de sus
-aperturas y de sus capas FRI con el `BatchMerkleProof` de upstream, sin acotar; qué
-entrada ajena llega a ellos está sin medir. `winterfell` upstream tiene el mismo
-defecto, y avisarle es deuda. `AUDITORIA.md` §575.
+en las capas FRI. Cuatro testigos deterministas lo falsan. **Residuo, MEDIDO en el
+§578: ninguno en las vías vivas.** Toda verificación que alcanza una prueba ajena lee
+con sal: los quince `verify` de la capa, la pareja umbral de los custodios y los cinco
+del kit, y dos testigos lo atan. Los verificadores SIN sal quedan en código que
+ninguna vía viva alcanza —`range_check` y el `ComplianceAir` de `settlement-prover`,
+experimentos, e `instrumento_edad`, sólo tests—; si una vía los alcanzara, leerían su
+lote con el `BatchMerkleProof` de upstream, sin acotar. ⚠️ **CORRECCIÓN (§578):** el
+§575 escribió aquí «los dos circuitos SIN sal (`range_check`, `governance`)» y «qué
+entrada ajena llega a ellos está sin medir». La lista salió de una búsqueda recortada
+y estaba mal por los dos lados: la gobernanza se verifica con sal
+(`verify_threshold_pair`), y sin sal hay más, ninguno alcanzable. `winterfell`
+upstream tiene el mismo defecto, y avisarle es deuda. `AUDITORIA.md` §575, §578.
 
 ## 3.bis La superficie de protocolo (§197-§201): qué añade y qué defiende
 

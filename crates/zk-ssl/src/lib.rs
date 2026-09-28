@@ -1105,3 +1105,52 @@ mod guarda_forma {
         ));
     }
 }
+
+/// **§578: toda verificacion viva de la capa lee con SAL.** El §575 acoto la lectura del lote con
+/// sal (`zk-ssl-air/src/sal.rs`); el lote SIN sal lo sigue leyendo el `BatchMerkleProof` de
+/// upstream, sin acotar, asi que una verificacion sin sal en una via viva devolveria el aborto.
+/// Este testigo lee el fuente de los seis modulos que verifican y exige los quince `verify` de
+/// `comprobar_forma`, todos con `MerkleConSal`; y la pareja umbral de los custodios, que vive en
+/// `stark-experiment`. Si alguien anade una verificacion sin sal, o cambia el compromiso de una,
+/// cae.
+#[cfg(test)]
+mod tests_sal {
+    /// Las lineas de CODIGO -no de comentario- que llaman a `verify` con sus tipos. La aguja se
+    /// arma por partes para que este mismo fuente no la contenga.
+    fn llamadas(fuente: &str) -> Vec<&str> {
+        let aguja = concat!("verify", "::<");
+        fuente.lines().filter(|l| !l.trim_start().starts_with("//") && l.contains(aguja)).collect()
+    }
+
+    /// Cada modulo, con sus llamadas contadas y todas con sal. Devuelve cuantas hubo.
+    fn todas_con_sal(modulos: &[(&str, &str, usize)]) -> usize {
+        let mut total = 0;
+        for (nombre, fuente, esperadas) in modulos {
+            let l = llamadas(fuente);
+            assert_eq!(l.len(), *esperadas, "{nombre}: {l:?}");
+            for x in &l {
+                assert!(x.contains("MerkleConSal<Blake3>>("), "{nombre} verifica SIN sal: {x}");
+            }
+            total += l.len();
+        }
+        total
+    }
+
+    #[test]
+    fn toda_verificacion_viva_de_la_capa_lee_con_sal() {
+        let total = todas_con_sal(&[
+            ("two_phase.rs", include_str!("two_phase.rs"), 10),
+            ("burn.rs", include_str!("burn.rs"), 1),
+            ("lib.rs", include_str!("lib.rs"), 1),
+            ("freeze.rs", include_str!("freeze.rs"), 1),
+            ("recovery.rs", include_str!("recovery.rs"), 1),
+            ("mint.rs", include_str!("mint.rs"), 1),
+        ]);
+        assert_eq!(total, 15, "los quince de `comprobar_forma`");
+        let umbral =
+            include_str!("../../stark-experiment/src/circuit_threshold_single_nullifier.rs");
+        let ini = umbral.find("pub fn verify_threshold_pair(").expect("la pareja umbral");
+        let fin = umbral[ini..].find("\n}\n").expect("su cierre");
+        assert_eq!(todas_con_sal(&[("verify_threshold_pair", &umbral[ini..ini + fin], 1)]), 1);
+    }
+}
