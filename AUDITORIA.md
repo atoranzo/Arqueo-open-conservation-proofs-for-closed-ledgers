@@ -41283,3 +41283,92 @@ pareja, que tendra que reunir entradas de MAS de una era del registro -las que e
 componer y firmar la anterior declaran la era de antes-. Y el hueco de la D-E: `applyMany` y
 `zkssl_pledge` evaluan pruebas sin reservar numero de recepcion.
 
+## §569 — RFC-0010 E2c-2, segunda mitad: el registro de recepcion conectado al nodo
+
+El commit que lleva este asiento, sobre `3788be5` (el S568). Un solo sello, como el §567 y el §568:
+el codigo, el pin, las cifras que el pin arrastra, la prosa del RFC y este asiento, con el canon
+`--sello` VERDE dentro del bloque. Siete ficheros mas este asiento, con 368 inserciones y 17
+borrados fuera de el. Con este sello la E2c queda SELLADA: el registro del §565 deja de ser una
+pieza sin llamante.
+
+**Lo que hace.** (1) `App` gana `registro`, con candado propio que se toma y se suelta dentro, con
+el molde del contador, y `indice_firma`, ATOMICA y sin candado como `aviso_acumulacion` y por su
+razon: la escribe el latido tras firmar y la leen los brazos que reciben ya dentro del candado del
+estado. (2) `applySend` y `applyClaim` ANOTAN tras `recibir` y antes de la capa: `(rx, era, digest
+de la prueba)`, con `era = era_de_recibo(indice_firma)` (§567) y el digest de `zk_ssl::log`, el
+mismo que la entrada asentada lleva. Para leer la prueba antes de la capa el tipo del recibo va
+ANOTADO; la posicion se sigue leyendo despues. (3) El latido publica el indice de su firma en cuanto
+la firma existe. (4) El ARRANQUE abre el contador y el registro ANTES de construir `App`, los
+reconcilia con la MISMA `Reconciliacion` que el guardian de firma, y decide con
+`politica_del_registro`. (5) El registro entra en el censo de candados envenenados del §530: son
+seis.
+
+**La politica, caso a caso, y en que se aparta de la del guardian.** A la par, arranca. Contador por
+delante, arranca AVISANDO: son HUECOS declarados -el proceso murio entre reservar y anotar, o anotar
+fallo-. Registro VACIO sobre un contador vivo, arranca AVISANDO y NO resincroniza: es el caso de
+todo nodo que ya contaba antes de este sello, y no hay clave que mover; un registro no se pone al
+dia inventando hojas. Registro POR DELANTE, NO arranca: el siguiente recibo repetiria un `rx` ya
+anotado. Es el caso que `no_admite_matiz` marca, y el unico.
+
+**Tres DECISIONES del asistente, REVERSIBLES.** (a) Si anotar falla, la operacion NO se evalua:
+`-32603` con su `receptionSeq`, y el numero queda hueco. Evaluar sin hoja es lo que el registro
+existe para impedir. (b) El registro vive por defecto JUNTO a su contador -la ruta del contador con
+la extension `.registro`-, y `--registro-recepcion` lo mueve. Medido antes de decidir: los bancos
+pasan `--contador-recepcion` en su directorio de trabajo; con un directorio fijo, los dos nodos del
+banco de cofirmas lo compartirian, y un banco repetido desde el mismo sitio encontraria el registro
+de la corrida anterior frente a un contador nuevo, que es justo el caso que no arranca. (c) Sin
+`--clave`, `indice_firma` es 0 y toda recepcion declara la era 1: un nodo que no firma no tiene
+reloj de cabezas firmadas, y la ventana de la D-D no corre.
+
+**Los testigos, nueve.** Cuatro de la politica -el registro por delante no arranca; el registro
+nuevo sobre un contador vivo arranca avisando y no resincroniza; los huecos arrancan avisando y a la
+par arranca; el registro vive junto a su contador-. Cuatro del despacho, con un envio de prueba de
+CEROS que el cable acepta y la capa rechaza: la recepcion RECHAZADA tambien deja hoja, con su `rx` y
+el digest de su prueba -la D-E, que es por lo que este arbol no es el de acuses-; la era es el
+indice de la ultima firma mas uno; si anotar falla la operacion no se evalua y el `rx` queda hueco;
+un panico con el registro tomado PARA el nodo. Y uno del latido: la era sigue al indice de la firma.
+
+**Los falsadores, ENSAYADOS.** La hoja solo al APLICAR: caen EXACTAMENTE tres -la rechazada, la era
+y el hueco-. El registro fuera del censo: cae el del panico. El latido sin publicar el indice: cae
+el del latido. Restaurado, pasan todos.
+
+**Un rojo propio, cazado por el HUMO y no por los testigos.** El arranque del binario real, en sus
+tres casos -limpio, contador vivo con registro vacio, registro por delante-, arranco, arranco
+avisando y se nego con `rc=1`, como debia; pero el mensaje de la negativa decia <<9 frente a
+[dieciocho espacios] 5>>. El script que escribio el codigo perdio las continuaciones `\` de los tres
+`format!` -Python las consumio como suyas-, y los testigos, que buscan una palabra, pasaban igual.
+Se repusieron, el script se corrigio para que reproduzca el arbol, y los tres testigos de la
+politica ganan una GUARDA: el mensaje no lleva dos espacios seguidos. Falsador: devuelta una
+continuacion perdida, cae el testigo del registro por delante. Los scripts, reaplicados sobre un
+S568 limpio, dan los siete ficheros IDENTICOS.
+
+**EL PIN SE MIDIO.** `cargo test -p zk-ssl-node --release` sin filtro: 155 passed, CERO ignorados,
+CERO warnings. `check_cifras` NOMBRO siete cifras con el pin subido y los documentos sin tocar: el
+TOTAL DE SELLO 1468 -> 1477 en los tres, el TOTAL CON LARGOS 1605 -> 1614 en los tres, y el desglose
+del nodo 146 -> 155 en `PRINCIPIOS.md`; con las siete vuelve a su censo -25 cifras, 7 de desglose,
+LARGOS 3 de 3-. Los tres salen LINEA- Y BYTE-NEUTRALES. La fila del nodo gana su CRONICA, <<§569:
+146 -> 155>>.
+
+**El residuo que el canon no ve, a la baja.** `cargo build -p zk-ssl-node --release`: 16 -> 10
+warnings. Se van los seis del registro del §565 que el §568 declaro, mas `indice_del_guardian` y
+`reconciliar`, que tienen llamante. Quedan tres de siempre -el import de `firma_cabeza`, `tests_dir`
+y `actual`-, `pares_de_era` y `podar` del registro, y los seis de la vista. Todos los que no son de
+siempre tienen su sello: la E2d llama a `pares_de_era`, a la vista y a la poda; la E3, a
+`camino_de_era`.
+
+**El RFC.** La celda de E2c dice SELLADA y el estado de la fila, que falta la E2d. La D-E gana dos
+parrafos: el registro anota en el MISMO punto que el contador, y el HUECO MEDIDO sin decidir que la
+lectura pura encontro -`applyMany` y `zkssl_pledge` evaluan pruebas sin reservar numero-, escrito en
+la norma que incumplen y no solo aqui.
+
+**Contadores.** El pin del nodo 146 -> 155 y los otros seis sin mover. El TOTAL DE SELLO 1468 ->
+1477 y el TOTAL CON LARGOS 1605 -> 1614. `check_tests` 1627 -> 1636 y el offset en mas 8, QUIETO:
+1477 + 137 = 1614 ; 1614 + 14 = 1628 ; el canon declara 1636. El censo del nucleo, quieto en 126.
+Ningun `Cargo` tocado. El cable NO sube y `VERSION_FORMATO` sigue en 5: la respuesta de los brazos
+no cambia, solo lo que el nodo guarda.
+
+**Lo que NO cierra.** La E2d: la cabeza que firma la pareja -reuniendo entradas de mas de una era
+del registro-, el DTO con sus dos campos, `VERSION_FORMATO` a 6 y el vector v6 positivo, juntos. La
+poda, que se ata al cierre de la cabeza v6. El hueco de la D-E. Y los bancos, que arrancan el nodo
+con esta politica y NO se corrieron en esta sesion: el humo cubre el arranque, no sus flujos.
+

@@ -147,6 +147,18 @@ struct Args {
     #[arg(long, value_name = "RUTA", default_value = "recepcion.bin")]
     contador_recepcion: String,
 
+    /// Directorio del **registro de recepción** (RFC-0010, E2c; §565, §569):
+    /// por cada número reservado, la era que declaró y el digest de su prueba.
+    ///
+    /// ⚠️ **Por defecto vive JUNTO a su contador**: la ruta del contador con
+    /// la extensión cambiada a `.registro`. Los dos se reconcilian al
+    /// arrancar, y restaurar uno sin el otro es justo lo que no arranca. Un
+    /// directorio fijo lo compartirían dos nodos lanzados desde el mismo
+    /// sitio —los dos del banco de cofirmas— y un banco repetido encontraría
+    /// el registro de la corrida anterior frente a un contador nuevo.
+    #[arg(long, value_name = "DIR")]
+    registro_recepcion: Option<String>,
+
     /// Fichero del contador de índices de firma (§234).
     ///
     /// ⚠️ El guardián **se niega a arrancar si su `fsync` no persiste**:
@@ -416,6 +428,25 @@ struct App {
     /// `fsync` —**0,907 ms medidos en ext4** (K.1)— y retenerlo mientras
     /// se aplica una operación pararía el nodo entero.
     recepcion: Mutex<recepcion::ContadorRecepcion>,
+    /// **El registro de recepción** (RFC-0010, E2c-2; §569): qué operación
+    /// llevó cada número, con su era y el digest de su prueba.
+    ///
+    /// ⚠️ Candado propio y se suelta enseguida, con el molde del contador:
+    /// anotar cuesta un `fsync` y retenerlo durante la operación pararía el
+    /// nodo entero.
+    registro: Mutex<registro_recepcion::RegistroRecepcion>,
+    /// **El índice XMSS de la última cabeza firmada** (§567, D-D): la era de
+    /// un recibo es este número más uno.
+    ///
+    /// ⚠️ Atómica y SIN candado, como `aviso_acumulacion` y por su razón: la
+    /// escribe el latido tras firmar y la leen los brazos que reciben, ya
+    /// dentro del candado del estado. Un `Mutex` más ahí sería otro candado
+    /// en un orden que `latido.rs` trabaja para no tocar.
+    ///
+    /// ⚠️ Nace del guardián al arrancar, y es **0 sin `--clave`**: entonces
+    /// toda recepción declara la era 1. Un nodo que no firma no tiene reloj
+    /// de cabezas firmadas que ofrecer, y la ventana de la D-D no corre.
+    indice_firma: std::sync::atomic::AtomicU64,
     /// **La PARADA del nodo** (§530, 5.A-382). Si un pánico deja envenenado un
     /// candado, el estado en memoria puede haber quedado a medio mutar: el nodo
     /// deja de servir y cada petición recibe la causa. Vacía mientras el nodo
@@ -617,6 +648,130 @@ fn politica_de_reconciliacion(
                  hizo lo que dijo. LA CLAVE DEBE CONSIDERARSE COMPROMETIDA"
             ))
         }
+    }
+}
+
+/// Que hace el ARRANQUE al reconciliar el REGISTRO de recepcion con su
+/// contador (RFC-0010, D-J; §569). Es la MISMA reconciliacion que el guardian
+/// de firma -el contador hace de contador y el mayor `rx` anotado de clave-,
+/// con su politica propia, y la diferencia se dice caso a caso.
+///
+/// ⚠️ **El registro NO se resincroniza nunca**: no hay clave que mover, y un
+/// registro no se pone al dia inventando hojas. Esta politica no devuelve
+/// `ArrancaResincronizando`, y el arranque falla cerrada si alguna vez lo hiciera.
+fn politica_del_registro(r: &zk_ssl_guardian::Reconciliacion) -> DecisionDeArranque {
+    match r {
+        zk_ssl_guardian::Reconciliacion::Coincide { indice } => DecisionDeArranque::Arranca(
+            format!("registro de recepcion y contador a la par en el rx {indice}"),
+        ),
+        zk_ssl_guardian::Reconciliacion::ContadorAdelantado { contador, clave, huerfanos } => {
+            DecisionDeArranque::ArrancaAvisando(format!(
+                "contador de recepcion {contador} por delante del registro {clave}: {huerfanos} \
+                 rx reservado(s) SIN HOJA. Son HUECOS declarados -el proceso murio entre \
+                 reservar y anotar, o anotar fallo y la operacion no se evaluo-, no hojas perdidas"
+            ))
+        }
+        zk_ssl_guardian::Reconciliacion::ClaveEnCero { contador, indeterminados } => {
+            DecisionDeArranque::ArrancaAvisando(format!(
+                "registro de recepcion VACIO sobre un contador vivo en {contador}: las \
+                 {indeterminados} recepcion(es) de antes NO tienen hoja. Es el caso de todo \
+                 nodo que ya contaba antes del S569, y el de un registro nuevo o perdido: \
+                 residuo declarado, y las eras que las contenian no se pueden componer"
+            ))
+        }
+        zk_ssl_guardian::Reconciliacion::ClaveAdelantada { contador, clave, sin_registrar } => {
+            DecisionDeArranque::NoArranca(format!(
+                "EL REGISTRO DE RECEPCION VA POR DELANTE DEL CONTADOR: {clave} frente a \
+                 {contador}. {sin_registrar} rx anotado(s) que el contador no reservo: el \
+                 siguiente recibo repetiria un numero ya anotado, y dos operaciones distintas \
+                 llevarian el mismo rx. Se restauro uno de los dos sin el otro"
+            ))
+        }
+    }
+}
+
+/// Donde vive el registro: el que se pase, o JUNTO al contador (§569).
+fn ruta_del_registro(contador: &str, explicito: Option<&str>) -> std::path::PathBuf {
+    match explicito {
+        Some(d) => std::path::PathBuf::from(d),
+        None => std::path::Path::new(contador).with_extension("registro"),
+    }
+}
+
+#[cfg(test)]
+mod arranque_del_registro {
+    use super::*;
+    use zk_ssl_guardian::Reconciliacion;
+
+    #[test]
+    fn el_registro_por_delante_del_contador_no_arranca() {
+        // ⚠️⚠️ EL ROJO: el caso que `no_admite_matiz` marca, con su consecuencia.
+        match politica_del_registro(&Reconciliacion::ClaveAdelantada {
+            contador: 7,
+            clave: 9,
+            sin_registrar: 2,
+        }) {
+            DecisionDeArranque::NoArranca(m) => {
+                assert!(m.contains("mismo rx"), "el motivo nombra la consecuencia: {m}");
+                assert!(!m.contains("  "), "una continuacion perdida deja sangria: {m}");
+            }
+            otra => panic!("el registro por delante del contador NO puede arrancar: {otra:?}"),
+        }
+    }
+
+    #[test]
+    fn el_registro_nuevo_sobre_un_contador_vivo_arranca_avisando_y_no_resincroniza() {
+        // El caso de TODO nodo que ya contaba antes del S569. Pararse aqui seria
+        // negarse a arrancar en la primera vuelta de cada nodo existente; y
+        // resincronizar -lo que el guardian de firma hace en su hermano- aqui
+        // no significa nada: no hay clave que mover.
+        match politica_del_registro(&Reconciliacion::ClaveEnCero {
+            contador: 40,
+            indeterminados: 40,
+        }) {
+            DecisionDeArranque::ArrancaAvisando(m) => {
+                assert!(m.contains("NO tienen hoja"), "el aviso dice lo que falta: {m}");
+                assert!(!m.contains("  "), "una continuacion perdida deja sangria: {m}");
+            }
+            otra => panic!("un registro vacio sobre un contador vivo arranca AVISANDO: {otra:?}"),
+        }
+    }
+
+    #[test]
+    fn los_huecos_arrancan_avisando_y_a_la_par_arranca() {
+        match politica_del_registro(&Reconciliacion::ContadorAdelantado {
+            contador: 9,
+            clave: 7,
+            huerfanos: 2,
+        }) {
+            DecisionDeArranque::ArrancaAvisando(m) => {
+                assert!(m.contains("HUECOS"), "{m}");
+                assert!(!m.contains("  "), "una continuacion perdida deja sangria: {m}");
+            }
+            otra => panic!("los huecos son el caso normal tras una caida: {otra:?}"),
+        }
+        match politica_del_registro(&Reconciliacion::Coincide { indice: 7 }) {
+            DecisionDeArranque::Arranca(m) => assert!(m.contains('7'), "{m}"),
+            otra => panic!("a la par arranca sin aviso: {otra:?}"),
+        }
+    }
+
+    #[test]
+    fn el_registro_vive_junto_a_su_contador() {
+        // Dos contadores, dos registros: los dos nodos del banco de cofirmas
+        // no comparten directorio. Y el que se pasa explicito manda.
+        assert_eq!(
+            ruta_del_registro("d/recepcion1.bin", None),
+            std::path::PathBuf::from("d/recepcion1.registro")
+        );
+        assert_ne!(
+            ruta_del_registro("d/recepcion1.bin", None),
+            ruta_del_registro("d/recepcion2.bin", None)
+        );
+        assert_eq!(
+            ruta_del_registro("recepcion.bin", Some("otro/sitio")),
+            std::path::PathBuf::from("otro/sitio")
+        );
     }
 }
 
@@ -881,6 +1036,31 @@ async fn main() -> anyhow::Result<()> {
         }
         None => BTreeSet::new(),
     };
+    // §569 · RFC-0010 E2c-2 — EL REGISTRO SE RECONCILIA CON SU CONTADOR AL
+    // ARRANCAR, y la decision es de `politica_del_registro`. El contador se
+    // abre AQUI y no dentro de `App` para poder preguntarle antes de servir.
+    let recepcion = recepcion::ContadorRecepcion::abrir(&args.contador_recepcion)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    let dir_registro =
+        ruta_del_registro(&args.contador_recepcion, args.registro_recepcion.as_deref());
+    let registro = registro_recepcion::RegistroRecepcion::abrir(&dir_registro)
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    let mayor_anotado = registro.mayor_anotado().map_err(|e| anyhow::anyhow!("{e}"))?;
+    match politica_del_registro(&recepcion.reconciliar(mayor_anotado)) {
+        DecisionDeArranque::Arranca(m) => {
+            tracing::info!(registro = %dir_registro.display(), "{m}")
+        }
+        DecisionDeArranque::ArrancaAvisando(m) => {
+            tracing::warn!(registro = %dir_registro.display(), "{m}")
+        }
+        DecisionDeArranque::NoArranca(m) => anyhow::bail!("{m}"),
+        DecisionDeArranque::ArrancaResincronizando { aviso, .. } => {
+            anyhow::bail!("la politica del registro no resincroniza nunca: {aviso}")
+        }
+    }
+    // §569: la era de los recibos sale del indice de la ultima firma, y al
+    // arrancar ese indice es el del guardian ya reconciliado.
+    let indice_firma = firmante.as_ref().map(|f| f.indice_del_guardian()).unwrap_or(0);
     let app = std::sync::Arc::new(App {
         estado: Mutex::new(Estado { layer, reservas: BTreeMap::new() }),
         dev: args.dev,
@@ -895,10 +1075,9 @@ async fn main() -> anyhow::Result<()> {
         custodia_comprobada,
         cofirmas: Mutex::new(BTreeMap::new()),
         max_cofirmas: args.max_cofirmas,
-        recepcion: Mutex::new(
-            recepcion::ContadorRecepcion::abrir(&args.contador_recepcion)
-                .map_err(|e| anyhow::anyhow!("{e}"))?,
-        ),
+        recepcion: Mutex::new(recepcion),
+        registro: Mutex::new(registro),
+        indice_firma: std::sync::atomic::AtomicU64::new(indice_firma),
         consumos_ajenos,
         parada: std::sync::OnceLock::new(),
     });
@@ -1464,14 +1643,15 @@ fn parse<T: serde::de::DeserializeOwned>(params: Value) -> Result<T, RpcError> {
 }
 
 impl App {
-    /// ¿Queda algún candado envenenado? (§530). Los cinco `Mutex` de `App`, uno a
-    /// uno: si `App` gana otro, entra aquí.
+    /// ¿Queda algún candado envenenado? (§530). Los seis `Mutex` de `App`, uno a
+    /// uno: si `App` gana otro, entra aquí. El sexto, el registro, desde §569.
     fn algun_candado_envenenado(&self) -> bool {
         self.estado.is_poisoned()
             || self.ultima_cabeza.is_poisoned()
             || self.hojas_mmr.is_poisoned()
             || self.cofirmas.is_poisoned()
             || self.recepcion.is_poisoned()
+            || self.registro.is_poisoned()
     }
 }
 
@@ -2372,7 +2552,10 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 amount: Q,
             }
             let p: P = parse(params)?;
-            let receipt = (&p.receipt).try_into().map_err(RpcError::wire)?;
+            // §569: el tipo va ANOTADO para leer la prueba ANTES de la capa, que
+            // es donde se anota. La posicion se sigue leyendo despues.
+            let receipt: zk_ssl::two_phase::SendReceipt =
+                (&p.receipt).try_into().map_err(RpcError::wire)?;
             let state = (&p.sender_state).try_into().map_err(RpcError::wire)?;
             // ⚠️ **Toda reserva necesita una salida que NO sea el reloj.**
             // Con exito la suelta `commit_send` en la capa; con FALLO no la
@@ -2395,6 +2578,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             // consume TAMBIEN si la capa rechaza: ahi es donde se
             // esconderia un censor, alegando prueba invalida.
             let rx = recibir(app)?;
+            anotar(app, rx, zk_ssl::log::digest_of_proof(&receipt.proof))?;
             let r = l.apply_send(&receipt, p.sender.0, &state, p.amount.0);
             let pos = receipt.notice.position;
             reservas.remove(&pos);
@@ -2434,10 +2618,12 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 notice: wire::PendingNoticeDto,
             }
             let p: P = parse(params)?;
-            let receipt = (&p.receipt).try_into().map_err(RpcError::wire)?;
+            let receipt: zk_ssl::two_phase::ClaimReceipt =
+                (&p.receipt).try_into().map_err(RpcError::wire)?;
             let state = (&p.receiver_state).try_into().map_err(RpcError::wire)?;
             let notice = (&p.notice).try_into().map_err(RpcError::wire)?;
             let rx = recibir(app)?;
+            anotar(app, rx, zk_ssl::log::digest_of_proof(&receipt.proof))?;
             l.apply_claim(&receipt, p.receiver.0, &state, &notice)
                 .map_err(|e| RpcError::layer(e, seq_juicio).con_recepcion(rx))?;
             Ok(con_rx(con_acuse(applied(l), l), rx))
@@ -2643,6 +2829,31 @@ fn recibir(app: &App) -> Result<u64, RpcError> {
         })?
         .recibir()
         .map_err(|e| RpcError { code: -32603, message: format!("{e}"), data: None })
+}
+
+/// Anota `rx` en el **registro de recepción** (RFC-0010, E2c-2; §569): la era
+/// que este instante fija y el digest de la prueba que llegó con él.
+///
+/// ⚠️ Va TRAS `recibir` y ANTES de la capa, como el contador: se anota lo que
+/// el nodo se puso a evaluar, **también si la capa lo rechaza** (D-E). Es la
+/// hoja que un censor que rechaza no puede quitar.
+///
+/// ⚠️ La era es el índice de la ÚLTIMA cabeza firmada más uno (§567), leído
+/// sin candado. Una recepción que entra mientras se firma ve la anterior y
+/// declara su era; la vista lo sabe y recibe la era como dato.
+///
+/// ⚠️ Si anotar falla, la operación **NO se evalúa**: `-32603` con su número,
+/// que queda HUECO —reservado sin hoja— y el arranque lo declara como tal.
+/// Evaluar sin hoja sería justo lo que el registro existe para impedir.
+fn anotar(app: &App, rx: u64, hash_prueba: zk_ssl_verify::acuses::Digest) -> Result<(), RpcError> {
+    let era = zk_ssl_verify::recibos::era_de_recibo(
+        app.indice_firma.load(std::sync::atomic::Ordering::Acquire),
+    );
+    let r = match app.registro.lock() {
+        Ok(mut g) => g.anotar(rx, era, hash_prueba).map_err(|e| format!("{e}")),
+        Err(_) => Err("candado del registro de recepcion envenenado".to_string()),
+    };
+    r.map_err(|message| RpcError { code: -32603, message, data: None }.con_recepcion(rx))
 }
 
 /// Añade el número de recepción a una respuesta.
@@ -2856,6 +3067,14 @@ mod tests {
                 )
                 .expect("contador de recepcion"),
             ),
+            registro: Mutex::new(
+                registro_recepcion::RegistroRecepcion::abrir(tests_dir(&format!(
+                    "reg_{}",
+                    proximo_nodo()
+                )))
+                .expect("registro de recepcion"),
+            ),
+            indice_firma: std::sync::atomic::AtomicU64::new(0),
             consumos_ajenos: BTreeSet::new(),
             parada: std::sync::OnceLock::new(),
         }
@@ -3110,6 +3329,109 @@ mod tests {
         let v = con_rx(json!({"logSeq": Q(3)}), 7);
         assert_eq!(v["receptionSeq"], json!("0x7"), "y en el hex del cable");
         assert_eq!(v["logSeq"], json!("0x3"), "sin tocar lo que ya habia");
+    }
+
+    /// §569 · Un envio con una prueba de ceros: la conversion del cable pasa y
+    /// la capa lo rechaza. Es el caso que importa para la D-E.
+    fn envio_de_ceros() -> (Value, Vec<u8>) {
+        use winterfell::math::fields::f64::BaseElement as E;
+        let cero = [E::new(0); 4];
+        let recibo = zk_ssl::two_phase::SendReceipt {
+            proof: vec![0u8; 32],
+            public_inputs: stark_experiment::circuit_send::SendPublicInputs {
+                root_old: cero,
+                root_new: cero,
+                frozen_root: cero,
+                pending_root_old: cero,
+                pending_root_new: cero,
+                amount: E::new(5),
+                regulatory_limit: E::new(1_000),
+                supply_old: E::new(0),
+                supply_new: E::new(0),
+            },
+            commitment: cero,
+            notice: zk_ssl::two_phase::PendingNotice { position: 0, salt: cero, amount: 5, x: None },
+        };
+        let estado = zk_ssl::commitment::ClientState { public_id: cero, balance: 5, nonce: E::new(0) };
+        (
+            json!({
+                "receipt": wire::SendReceiptDto::from(&recibo),
+                "sender": Q(0),
+                "senderState": wire::ClientStateDto::from(&estado),
+                "amount": Q(5),
+            }),
+            recibo.proof,
+        )
+    }
+
+    #[test]
+    fn una_recepcion_que_la_capa_rechaza_tambien_deja_hoja() {
+        // ⚠️⚠️ LA D-E. Un censor se esconderia RECHAZANDO: si la hoja solo
+        // naciera al aplicar, el arbol de recepcion diria lo mismo que el de
+        // acuses y no probaria nada. La hoja nace al RECIBIR.
+        let app = nodo(30);
+        let (params, prueba) = envio_de_ceros();
+        let e = dispatch(&app, "zkssl_applySend", params).expect_err("una prueba de ceros");
+        assert_ne!(e.code, -32603, "lo rechazo la CAPA, no el registro: {}", e.message);
+        assert!(e.message.contains("receptionSeq=0x1"), "{}", e.message);
+        let pares = app.registro.lock().expect("registro").pares_de_era(1).expect("era 1");
+        assert_eq!(
+            pares,
+            vec![(1, zk_ssl::log::digest_of_proof(&prueba))],
+            "la recepcion rechazada no dejo su hoja"
+        );
+    }
+
+    #[test]
+    fn la_era_del_recibo_es_el_indice_de_la_ultima_firma_mas_uno() {
+        // §567: la era cuenta en indice XMSS. Sin firmar, 0 + 1; tras la firma
+        // numero 5, la era es la 6.
+        let app = nodo(30);
+        let _ = dispatch(&app, "zkssl_applySend", envio_de_ceros().0);
+        app.indice_firma.store(5, std::sync::atomic::Ordering::Release);
+        let _ = dispatch(&app, "zkssl_applySend", envio_de_ceros().0);
+        let r = app.registro.lock().expect("registro");
+        assert_eq!(r.pares_de_era(1).expect("era 1").len(), 1, "sin firma, la era 1");
+        let seis = r.pares_de_era(6).expect("era 6");
+        assert_eq!(seis.len(), 1, "tras la firma 5, la era 6");
+        assert_eq!(seis[0].0, 2, "y el rx sigue su cuenta");
+    }
+
+    #[test]
+    fn si_anotar_falla_la_operacion_no_se_evalua_y_el_rx_queda_hueco() {
+        // Un DIRECTORIO donde iria el fichero de la era 1: abrirlo para anadir
+        // falla, sin permisos ni medios raros.
+        let app = nodo(30);
+        let dir = tests_dir(&format!("reg_roto_{}", proximo_nodo()));
+        std::fs::create_dir_all(dir.join("era-1.bin")).expect("el obstaculo");
+        *app.registro.lock().expect("registro") =
+            registro_recepcion::RegistroRecepcion::abrir(&dir).expect("abrir");
+        let e = dispatch(&app, "zkssl_applySend", envio_de_ceros().0)
+            .expect_err("sin hoja no se evalua");
+        assert_eq!(e.code, -32603, "{}", e.message);
+        assert!(e.message.contains("receptionSeq=0x1"), "el numero viaja: {}", e.message);
+        assert_eq!(app.recepcion.lock().expect("contador").actual(), 1, "el rx se QUEMO");
+        // Sin el obstaculo: con el, `mayor_anotado` tambien falla CERRADA.
+        std::fs::remove_dir(dir.join("era-1.bin")).expect("quitar el obstaculo");
+        assert_eq!(
+            app.registro.lock().expect("registro").mayor_anotado().expect("mayor"),
+            0,
+            "y quedo HUECO: el arranque lo vera como contador adelantado"
+        );
+    }
+
+    #[test]
+    fn un_panico_con_el_registro_tomado_para_el_nodo() {
+        // §530 + §569: el candado nuevo esta en el censo. Falsador: quitar
+        // `registro` de `algun_candado_envenenado` y esto no para.
+        let app = nodo(60);
+        let r = despachar(&app, "zkssl_prueba", || {
+            let _g = app.registro.lock().expect("candado");
+            panic!("panico inyectado con el registro tomado");
+        });
+        assert!(r.is_err());
+        assert!(app.registro.is_poisoned());
+        assert!(app.parada.get().is_some(), "un registro envenenado PARA el nodo");
     }
 
     #[test]

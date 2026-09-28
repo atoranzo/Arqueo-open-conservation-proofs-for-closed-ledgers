@@ -199,6 +199,11 @@ pub fn latir(app: &App, firmante: Option<&mut FirmanteCabeza>) -> anyhow::Result
         Some(f) => Some(f.firmar(&epoch_digest)?),
         None => None,
     };
+    // §569: la era de los recibos sigue a la FIRMA, no a la composicion: se
+    // publica el indice en cuanto la firma existe (§567, D-D).
+    if let Some(c) = &firma {
+        app.indice_firma.store(c.indice, std::sync::atomic::Ordering::Release);
+    }
 
     let emitida_unix = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -460,6 +465,21 @@ mod tests {
             Reconciliacion::Coincide { indice: 3 },
             "el guardian y la clave deben ir juntos tras cada latido"
         );
+    }
+
+    #[test]
+    fn la_era_de_los_recibos_sigue_al_indice_de_la_firma() {
+        // §569: sin clave el indice no se mueve; con clave, cada latido lo
+        // lleva al de su firma.
+        let app = crate::tests::nodo(30);
+        latir(&app, None).expect("latir sin clave");
+        assert_eq!(app.indice_firma.load(std::sync::atomic::Ordering::Acquire), 0);
+        let mut f =
+            FirmanteCabeza::desde_semilla(&semilla(), en_disco("indices_era")).expect("abrir");
+        for esperado in 1..=2u64 {
+            latir(&app, Some(&mut f)).expect("latir");
+            assert_eq!(app.indice_firma.load(std::sync::atomic::Ordering::Acquire), esperado);
+        }
     }
 
     #[test]

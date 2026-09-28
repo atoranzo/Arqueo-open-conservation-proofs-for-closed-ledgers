@@ -27,7 +27,7 @@
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
 | E1 — la promesa, escrita | este texto: qué objeto nace y por qué no es el acuse (D-A), la hoja y su dominio (D-B), la pareja en la cabeza v6 (D-C), la era que el recibo declara (D-D), qué cuenta y qué no (D-E), el sobre de completitud y sus tres veredictos (D-F), la grieta de las causas sin prueba portable (D-G) y el residuo (D-H) | no | **sellada (§556)** |
-| E2 — la raíz de recepción en la cabeza | **E2a** la composición v6 en el núcleo con su vector conocido, la V6 en el conjunto y los consumidores al predicado — sellada (§557, §558, §559 el binario, §563 el cli y los siete bancos, §566 el acuse v6 del mando) · **E2b** las reglas compartidas en `zk-ssl-verify`, molde `acuses.rs` — sellada (§562; §567 el borde `(Q, R]` y la era en índice XMSS) · **E2c** la vista del nodo, molde `vista_acuses.rs` — E2c-1 el registro de recepción, sellada (§565); E2c-2 la vista de recibos (§568) y la conexión del registro al nodo · **E2d** la pareja firmada en el cable (5.A-422) | no (aditivo, v6) | en curso: E2a, E2b y E2c-1 selladas, y la vista de la E2c-2 (§568); faltan la conexión del registro y E2d |
+| E2 — la raíz de recepción en la cabeza | **E2a** la composición v6 en el núcleo con su vector conocido, la V6 en el conjunto y los consumidores al predicado — sellada (§557, §558, §559 el binario, §563 el cli y los siete bancos, §566 el acuse v6 del mando) · **E2b** las reglas compartidas en `zk-ssl-verify`, molde `acuses.rs` — sellada (§562; §567 el borde `(Q, R]` y la era en índice XMSS) · **E2c** la vista del nodo, molde `vista_acuses.rs` — E2c-1 el registro de recepción, sellada (§565); E2c-2 la vista de recibos (§568) y la conexión del registro al nodo (§569) — sellada · **E2d** la pareja firmada en el cable (5.A-422) | no (aditivo, v6) | en curso: E2a, E2b y E2c selladas; falta E2d |
 | E3 — el recibo, en el cable | `{rx, era, n}` como DATO en el resultado y en `error.data` de las vías del titular, y el método de lectura del camino cuando la era cierra | no (métodos aditivos) | propuesta |
 | E4 — el sobre portable de completitud | `tipo: "completitud"`, que un tercero verifica con el kit y sin nodo, con sus tres veredictos y sus reglas de rechazo | no | propuesta |
 | E5 — catálogo y banco | `spec/vectors/completitud/`, su MANIFIESTO, la familia en `FAMILIAS` y su estrofa del canon, y el banco que siembra una recepción resuelta y una sin resolver | no | propuesta |
@@ -170,6 +170,15 @@ La regla ya está medida y escrita en `recepcion.rs`, y este RFC la eleva a norm
 El contador es el que ya existe (`ContadorRecepcion`), con su `fsync` antes de devolver y su
 negativa a arrancar sobre un medio que no persiste. **No nace un segundo contador**: dos
 implementaciones del mismo problema pueden discrepar.
+
+**El registro anota en el MISMO punto (§569)**: en `applySend` y `applyClaim`, tras reservar el
+número y antes de la capa, con la era del índice de la última firma (D-D). Si anotar falla, la
+operación **no se evalúa** y el número queda **hueco** —reservado sin hoja—, que el arranque
+declara al reconciliar el registro con el contador.
+
+⚠️ **HUECO MEDIDO, sin decidir (sesión 193):** `applyMany` y `zkssl_pledge` evalúan pruebas y
+**no reservan número**. Por esta misma regla deberían; hasta que se decida, lo que entra por ellos
+no deja hoja de recepción, y un censor que rechazara por ahí no quedaría a la vista.
 
 ### D-F — El sobre de completitud, y sus tres veredictos
 
