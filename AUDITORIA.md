@@ -41846,3 +41846,39 @@ y BYTE-NEUTRALES. `check_tests` 1659 -> 1660 y el offset en más 8, QUIETO: 1501
 **Lo que NO cierra.** El RFC-0010 sigue PROPUESTO: el sello siguiente lo acepta. La etapa del
 lote y de la prenda no se abre aquí.
 
+## §577 — el RFC-0010 pasa a ACEPTADO: la regla 4 del PROCESO, saldada con medida
+
+El commit que lleva este asiento, sobre `98ef845` (el S576). Un solo sello: la cabecera del
+RFC-0010 y los cinco sitios que listan su estado, con este asiento y el canon `--sello` VERDE
+dentro del bloque. Seis ficheros más este asiento, con 27 inserciones y 9 borrados fuera de él.
+Con este sello el hito H5b queda cerrado.
+
+**La regla 4, contada.** El PROCESO exige, para ACEPTADO, la spec al día, el OpenRPC regenerado,
+vectores re-emitidos o nuevos, y suites verdes. (1) La spec: `spec/NUCLEO.md` compone la cabeza
+v6 y la hoja del recibo (§557); `spec/RPC.md` lleva `recepcion` y `zkssl_recepPath` (§571) y el
+alcance del recibo (§576); `spec/PAQUETE.md`, la forma 2.11 (§573) y la novena familia en la
+sección 9 (§574). (2) El OpenRPC se regeneró en el §571 con el método 31, y el test del cable lo
+ata a la tabla. (3) Los vectores son nuevos bajo `zkssl/0.4`, que no sube: los KAT
+`epoch_digest_v6` y `recibo_digest` (§557), el fuera-del-conjunto `rechazo-formatVersion-7` del
+cable y del paquete (§558-B), el positivo v6 y dos rechazos del cable (§570) y `completitud/`
+(§574). (4) Las suites: el canon `--sello` VERDE dentro de cada bloque del arco —desde el §575,
+sin abortar por azar al leer una prueba malformada—, y la familia nueva corrida por el arnés,
+desde el árbol y desde dentro del tarball.
+
+**Lo que se acepta CON su residuo, declarado en la cabecera.** El veredicto 1 no tiene vector:
+pide la prueba STARK real de un envío aplicado, y su verificación es la del paquete de posición.
+El operador puede no emitir recibo (D-H). Y lo que entra por `applyMany` o por `zkssl_pledge` no
+lo lleva, por decisión (D-E, §576) y atado por un testigo, con su etapa por diseñar.
+
+**Lo que hace.** La cabecera del RFC-0010 pasa a ACEPTADO con la cuenta de la regla 4 y el
+residuo; su línea de asistencia nombra la sesión 193, del §566 al §577; su lista de asientos gana
+las etapas, el §576 y este. `README.md`, `README_EN.md`, `RESUMEN_BILINGUE.md` (en sus dos
+lenguas), `RESUMEN_EJECUTIVO.md` y `spec/README.md` lo cuentan entre los aceptados: el 0005 queda
+como el único propuesto.
+
+**Contadores.** Ninguno se mueve.
+
+**Lo que NO cierra.** El aviso a NLnet de que el hito H5b está cerrado vive fuera del árbol.
+`podar` sigue sin llamador, declarado. La etapa del recibo del lote y de la prenda está por
+diseñar.
+

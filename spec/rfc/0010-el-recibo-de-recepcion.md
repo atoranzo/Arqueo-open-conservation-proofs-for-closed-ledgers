@@ -1,8 +1,25 @@
 # RFC-0010 — El recibo de recepción: lo que el operador no puede negar haber recibido
 
-- **Estado:** PROPUESTO
+- **Estado:** ACEPTADO — **la regla 4 del PROCESO, saldada con medida** (§556 la adopción; E2
+  §557–§570 —la composición v6 en el núcleo, las reglas del recibo, el registro y la vista de
+  recibos del nodo, y la pareja firmada en el cable—, E3 §571 —el recibo en el cable y
+  `zkssl_recepPath`—, el atado del techo `N` §572, E4 §573 —el sobre de completitud— y E5 §574 —el
+  banco y el catálogo, la novena familia del artefacto y del canon—, §576 el alcance del recibo,
+  decidido y atado; §577 este giro). La spec está al día (`NUCLEO.md` con la composición v6 y la
+  hoja del recibo, `RPC.md` con `recepcion` y `zkssl_recepPath`, `PAQUETE.md` 2.11 y la sección 9);
+  el OpenRPC se regeneró en el §571 con el método 31, y el test del cable lo ata a la tabla; los
+  vectores son nuevos bajo `zkssl/0.4` —`nucleo/epoch_digest_v6.json` y `nucleo/recibo_digest.json`
+  (§557), el fuera-del-conjunto `rechazo-formatVersion-7` del cable y del paquete (§558-B), el
+  positivo v6 y dos rechazos del cable (§570) y `completitud/`, treinta y cinco sobres y su
+  manifiesto (§574)—; y las suites están verdes: el canon los corre por el arnés, y también desde
+  dentro del tarball. **Lo que se acepta CON su residuo, declarado:** el veredicto 1 no tiene vector
+  —pide la prueba STARK real de un envío aplicado; su verificación es la del paquete de posición—;
+  el operador puede no emitir recibo (D-H); y lo que entra por `applyMany` o por `zkssl_pledge` no
+  lo lleva, por decisión (D-E, §576) y atado por un testigo, con su etapa por diseñar. Se conserva
+  como registro de lo decidido, lo medido y lo descartado.
 - **Autor:** Ángel José Toranzo Portela
-- **Asistencia GenAI:** Claude (sesión 184) — ver [`GENAI.md`](../../GENAI.md)
+- **Asistencia GenAI:** Claude (sesión 184, que lo escribe; y la 193, del §566 al §577; las
+  etapas de en medio las fechan sus asientos) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-25
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube** (ver Compatibilidad). La cabeza
   pasa a **v6** con una pareja aditiva, exactamente como la v4 del RFC-0006 (§414) y la v5 del
@@ -17,7 +34,8 @@
   hoja, las delegadas, los límites del diario, la vista del nodo y la `n` firmada), §414 y §415
   (la pareja de consumos, el molde de una pareja nueva en la cabeza), §451–§453 (la cabeza v5 y
   los vectores de su era), §555 (el operador del ATADO D, sin el cual este RFC entra ciego); y
-  el §556, que lo adopta.
+  el §556, que lo adopta. Las etapas, del §557 al §574 (ver «Estado de las etapas»); el §576,
+  que decide el alcance del recibo; y el §577, que lo acepta.
 - **Hito:** H5b de la propuesta enviada a NLnet Restack (120 h), en sus palabras: *«The proof of
   completeness. Every committed acknowledgement resolves within a bounded epoch as an applied
   transition or a rejection with proof; the residue declared.»*
