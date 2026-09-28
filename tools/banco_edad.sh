@@ -2,7 +2,7 @@
 # tools/banco_edad.sh -- el banco de E4b-3 del RFC-0007 (la prueba de edad, de punta a punta).
 #
 # Demuestra la PRUEBA DE EDAD como servicio: un libro con pendientes VIVOS -puestos por el
-# sandbox del cli, con pruebas STARK reales- -> nodo real que lo abre y FIRMA una cabeza v5 ->
+# sandbox del cli, con pruebas STARK reales- -> nodo real que lo abre y FIRMA su cabeza ->
 # se custodia esa cabeza -> el nodo MUERE -> la CAPA produce la prueba sobre ese libro, contra
 # esa cabeza -> el verificador en VERDE **sin el nodo**. Y NUEVE negativos sobre el sobre.
 #
@@ -121,7 +121,7 @@ for S in 7 8; do
     >"$DIR/sim-$S.txt" 2>&1 || { sed 's/^/BANCO-EDAD|   /' "$DIR/sim-$S.txt" >&2; fallo "el sandbox no dejo el envio en vuelo (salt-seed $S, key-seed $K, accounts $A)"; }
 done
 
-# ---------------------------------------------------------------- LA CABEZA v5 FIRMADA
+# ---------------------------------------------------------------- LA CABEZA FIRMADA
 "$NODO" --listen "127.0.0.1:$PORT" --latido 2 \
   --clave-fichero "$DIR/semilla.hex" --custodia fichero \
   --diario "$DIR/diario.jsonl" --ledger "$DIR/ledger" \
@@ -145,7 +145,7 @@ NP=$(campo "$CAB" result.nextPending)
 [ "$(qnum "$NP")" -ge 2 ] \
   || fallo "la cabeza firma nextPending $(qnum "$NP"): el sandbox no dejo las dos posiciones vivas, y sin ellas el positivo no discrimina"
 campo "$CAB" result > "$DIR/cabeza.json"
-msg "cabeza v5 custodiada: seq $(qnum "$SEQ") - nextPending $(qnum "$NP")"
+msg "cabeza v$(qnum "$FV") custodiada: seq $(qnum "$SEQ") - nextPending $(qnum "$NP")"
 
 kill -9 "$PID"; wait "$PID" 2>/dev/null || true
 PID=""

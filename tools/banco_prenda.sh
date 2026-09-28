@@ -4,7 +4,7 @@
 # Demuestra la PRUEBA PORTABLE DE LA PRENDA de punta a punta, y es la primera vez que la boca del
 # prendador habla con un nodo. Un libro con un pendiente v2 VIVO -puesto por el sandbox del cli con
 # el nodo PARADO, con prueba STARK real y por la via v2- -> nodo real que lo abre, lo mete en la
-# FOTO de su latido y FIRMA una cabeza v5 -> la BOCA del prendador (`zk-ssl-cli prueba-prenda`)
+# FOTO de su latido y FIRMA su cabeza -> la BOCA del prendador (`zk-ssl-cli prueba-prenda`)
 # abre su KEYSTORE, pide la cabeza y la foto, prueba en el cliente y escribe el sobre `prenda`
 # (spec/PAQUETE.md 2.10); la segunda vez ademas PUBLICA la marca con `zkssl_pledge` bajo el mismo
 # latido -> el nodo MUERE -> el verificador en VERDE **sin el nodo**. Dos positivos; UN rechazo EN
@@ -158,7 +158,7 @@ FV=$(python3 -c 'import json,sys; print(int(json.load(open(sys.argv[1]))["result
 SEQ=$(python3 -c 'import json,sys; print(int(json.load(open(sys.argv[1]))["result"]["seq"],16))' "$DIR/cabeza.json")
 [ "$FV" = "5" ] || [ "$FV" = "6" ] \
   || fallo "el nodo firmo una cabeza v$FV y la prenda exige v5 o v6 (D-BF)"
-msg "nodo VIVO: cabeza v5 firmada, seq $SEQ"
+msg "nodo VIVO: cabeza v$FV firmada, seq $SEQ"
 
 # ------------------------------------------------------------------------------- LA BOCA
 boca(){ # boca <keystore> <frase> <salida> <rotulo> [--publicar]
@@ -237,9 +237,10 @@ assert a["enunciado"] == b["enunciado"], "los dos sobres no afirman lo mismo"
 assert a["cabeza"] == b["cabeza"], "los dos sobres no son de la misma cabeza"
 assert a["prueba"] != b["prueba"], \
     "las dos pruebas son los MISMOS bytes: la ocultacion del S538 estaria apagada"
-print("los dos sobres afirman lo mismo bajo la misma cabeza v5 de seq %d, y sus pruebas DIFIEREN "
+print("los dos sobres afirman lo mismo bajo la misma cabeza v%d de seq %d, y sus pruebas DIFIEREN "
       "(%d B y %d B): un vector de prenda se CAPTURA, no se re-deriva"
-      % (seq, (len(a["prueba"]) - 2) // 2, (len(b["prueba"]) - 2) // 2))
+      % (int(a["cabeza"]["formatVersion"], 16), seq, (len(a["prueba"]) - 2) // 2,
+         (len(b["prueba"]) - 2) // 2))
 PY
 msg "POSITIVOS: exit 0 los dos, sin el nodo; enunciado de DOS campos y ningun literal del testigo"
 
@@ -273,7 +274,7 @@ for clave, nombre in (("enunciado", "neg-sin-enunciado"), ("prueba", "neg-sin-pr
     p = cop(); del p[clave]; esc(nombre, p)
 # La firma que falta: la cabeza deja de ser verificable, y el mando lo dice CON su prefijo.
 p = cop(); del p["cabeza"]["signature"]; esc("neg-sin-firma", p)
-# La ERA: la prenda exige v5, y con SU razon -no la de sus hermanos- (D-BF).
+# La ERA: la prenda exige v5 o v6, y con SU razon -no la de sus hermanos- (D-BF).
 p = cop(); p["cabeza"]["formatVersion"] = "0x4"; esc("neg-cabeza-v4", p)
 # LOS DOS CAMPOS QUE EL ENUNCIADO SI AFIRMA. Son entradas publicas del AIR, asi que la prueba deja
 # de verificar el enunciado que el sobre dice. El texto lo pone winterfell y es el MISMO para los

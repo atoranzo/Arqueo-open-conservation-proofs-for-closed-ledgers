@@ -4,7 +4,7 @@
 # Demuestra la PRUEBA PORTABLE DEL COBRO PENDIENTE como servicio, de punta a punta: un libro con
 # un pendiente v2 VIVO -puesto por el sandbox del cli con el nodo PARADO, con prueba STARK real y
 # por la via v2, que es la que lleva el sobre `X`- -> nodo real que lo abre, lo mete en la FOTO
-# de su latido y FIRMA una cabeza v5 -> la BOCA del cobrador (`zk-ssl-cli prueba-cobro`) pide la
+# de su latido y FIRMA su cabeza -> la BOCA del cobrador (`zk-ssl-cli prueba-cobro`) pide la
 # cabeza y la foto con el nodo VIVO, prueba en el cliente y escribe el sobre `cobro_pendiente`
 # (spec/PAQUETE.md 2.8) -> el nodo MUERE -> el verificador en VERDE **sin el nodo**. Dos positivos,
 # que son las dos formas de D-N; un rechazo de la boca EN VIVO; y SIETE negativos sobre el sobre,
@@ -156,7 +156,7 @@ NP=$(campo "$CAB" result.nextPending)
   || fallo "la cabeza dice formatVersion $(qnum "$FV"): el cobro pendiente exige v5 o v6, las que firman pmetaRoot"
 [ "$(qnum "$NP")" -ge 1 ] \
   || fallo "la cabeza firma nextPending $(qnum "$NP"): el sandbox no dejo la posicion viva"
-msg "cabeza v5 firmada: seq $(qnum "$SEQ") - nextPending $(qnum "$NP"); el nodo sigue VIVO para la boca"
+msg "cabeza v$(qnum "$FV") firmada: seq $(qnum "$SEQ") - nextPending $(qnum "$NP"); el nodo sigue VIVO para la boca"
 
 # ---------------------------------------------------------------- LA BOCA, CON EL NODO VIVO
 # `boca` corre la boca del cobrador y REINTENTA solo ante la carrera del latido (D-T): el texto

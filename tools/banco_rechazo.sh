@@ -5,7 +5,7 @@
 # Demuestra el SOBRE DE RECHAZO como cosa producida y no reunida a mano, con TRES causas sobre el
 # MISMO libro: nodo real con --dev -> se abren dos cuentas y se fondean -> una se CONGELA por
 # `dev_freeze` (la via delegada real, con la subida del arbol y los dos custodios de la suite) ->
-# se custodia la cabeza v5 que ya compromete esa congelacion -> el nodo MUERE -> el nodo produce
+# se custodia la cabeza que ya compromete esa congelacion -> el nodo MUERE -> el nodo produce
 # con `--prueba-rechazo` el sobre de AccountFrozen, el de AccountNotFound y, desde el corte 4c,
 # el de InsufficientBalance con su prueba de banda -> el verificador en VERDE **sin el nodo** con
 # los tres. Y QUINCE negativos de los sobres, uno por regla, mas CUATRO del productor.
@@ -175,7 +175,7 @@ SEQ=$(qnum "$(campo "$CAB" result.seq)")
 [ "$(qnum "$FV")" = "5" ] || [ "$(qnum "$FV")" = "6" ] \
   || fallo "la cabeza dice formatVersion $(qnum "$FV") y se esperaban v5 o v6"
 campo "$CAB" result > "$DIR/cabeza.json"
-msg "cabeza v5 custodiada DESPUES de congelar: seq $SEQ (era $SEQ0)"
+msg "cabeza v$(qnum "$FV") custodiada DESPUES de congelar: seq $SEQ (era $SEQ0)"
 
 kill -9 "$PID"; wait "$PID" 2>/dev/null || true
 PID=""

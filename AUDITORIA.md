@@ -41924,3 +41924,44 @@ cable se mueven.
 **Lo que NO cierra.** Avisar a `winterfell` upstream del mismo defecto sigue siendo deuda. Y la
 lección, dicha: una lista que sale de una búsqueda se cuenta ENTERA antes de publicarla.
 
+## §579 — los bancos, corridos contra el nodo v6: lo que decían mal
+
+El commit que lleva este asiento, sobre `cc1632f` (el S578). Un solo sello: seis bancos y este
+asiento, con el canon `--sello` VERDE dentro del bloque. Seis ficheros más este asiento, con 61
+inserciones y 34 borrados fuera de él.
+
+**De dónde sale.** De una deuda que la sesión 193 anotó al abrir: los bancos no se habían corrido
+desde que el nodo firma cabezas v6 (§570), y los que la nombraban decían «v5».
+
+**Lo que se MIDIÓ.** Los catorce bancos del árbol que no son el de la completitud (§574), uno a
+uno sobre el árbol del S578 limpio, en unos quince minutos: TRECE VERDES -apagado, cofirma,
+completo, consistencia, consumo, dos libros, edad, evidencia v2, extensión, pago, pendiente,
+prenda y rechazo- y UNO ROJO, el de la reutilización. Y dos hallazgos:
+(1) Cinco rótulos escritos a mano -edad, pago, pendiente, prenda y rechazo- imprimían «cabeza v5
+firmada» mientras, en la línea siguiente, el mando verificaba «la cabeza v6». Los cinco ya
+aceptaban v5 o v6 y leían `formatVersion`; el mensaje no lo usaba.
+(2) El banco de la reutilización (§331) asertaba que un segundo proceso del testigo con el mismo
+contador NO arranca. El §337 cambió esa tesis A PROPÓSITO -negarse dejaba inservible a todo
+testigo tras su primera cofirma-: resincroniza la clave hasta el contador, y sólo falla cerrada
+si el contador ha retrocedido por debajo de lo que las cofirmas prueban. Cambió su test y citó el
+viejo; el banco no se tocó, y estaba ROJO desde entonces sin que nadie lo corriera.
+
+**Lo que hace.** (1) Los cinco rótulos imprimen la versión LEÍDA de la cabeza -`v$(qnum "$FV")`,
+y en el `print` de la prenda la de su `cabeza`-, y sus cabeceras dicen «FIRMA su cabeza», sin un
+número que envejezca. Los textos de regla que pinan «exige una cabeza v5» no se tocan: el mando
+dice «v5 o v6», y siguen casando. (2) El banco de la reutilización asierta las dos mitades del
+§337: tras reiniciar, el testigo RESINCRONIZA -lo dice- y ninguna cofirma nueva repite ni baja de
+un índice ya gastado; con el contador RESTAURADO hacia atrás y las cofirmas en su sitio, falla
+cerrada nombrando el retroceso y no escribe ninguna. La tesis vieja queda CITADA en su cabecera.
+
+**Los seis, otra vez, con el sello puesto: VERDES.** Los rótulos dicen «cabeza v6», y el de la
+prenda, «la misma cabeza v6 de seq 5». La reutilización: índices viejos [1 2 3 4 5], nuevo [6];
+con el contador en 1, «EL CONTADOR HA RETROCEDIDO» y cero cofirmas nuevas.
+
+**Contadores.** Ninguno se mueve: los bancos viven fuera del canon.
+
+**Lo que NO cierra.** Los bancos siguen FUERA del canon, y por eso uno pudo estar ROJO desde el
+§337 sin que nada lo dijera. Correrlos todos lleva unos quince minutos, más la media hora larga
+del `--largo` de la completitud. Meterlos en un nivel del canon, o en una rutina, lo decide el
+autor.
+

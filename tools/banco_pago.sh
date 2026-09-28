@@ -5,7 +5,7 @@
 # boca del pagador habla con un nodo: hasta el S507 solo se habia ejercitado contra la capa. Un
 # libro con un pendiente v2 VIVO -puesto por el sandbox del cli con el nodo PARADO, con prueba
 # STARK real y por la via v2, que es la que lleva el sobre `X`- -> nodo real que lo abre, lo mete
-# en la FOTO de su latido y FIRMA una cabeza v5 -> la BOCA del pagador (`zk-ssl-cli prueba-pago`)
+# en la FOTO de su latido y FIRMA su cabeza -> la BOCA del pagador (`zk-ssl-cli prueba-pago`)
 # pide la cabeza y la foto CON `receiverId` (D-AE, S505), prueba en el cliente y escribe el sobre
 # `pago_en_curso` (spec/PAQUETE.md 2.9) -> el nodo MUERE -> el verificador en VERDE **sin el
 # nodo**. Dos positivos; DOS rechazos EN VIVO, uno de ellos la puerta barata que no llega ni a
@@ -167,7 +167,7 @@ NP=$(campo "$CAB" result.nextPending)
   || fallo "la cabeza dice formatVersion $(qnum "$FV"): el pago en curso exige v5 o v6, las que firman pmetaRoot"
 [ "$(qnum "$NP")" -ge 1 ] \
   || fallo "la cabeza firma nextPending $(qnum "$NP"): el sandbox no dejo la posicion viva"
-msg "cabeza v5 firmada: seq $SEQ - nextPending $(qnum "$NP"); el nodo sigue VIVO para la boca"
+msg "cabeza v$(qnum "$FV") firmada: seq $SEQ - nextPending $(qnum "$NP"); el nodo sigue VIVO para la boca"
 
 # ---------------------------------------------------------------- LA BOCA, CON EL NODO VIVO
 # `boca` corre la boca del pagador y REINTENTA solo ante la carrera del latido: el texto es el de
