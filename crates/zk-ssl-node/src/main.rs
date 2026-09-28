@@ -1518,6 +1518,15 @@ impl RpcError {
         self.message = format!("{} [receptionSeq={rx:#x}]", self.message);
         self
     }
+    /// §571 (RFC-0010 E3): el recibo de recepción, como DATO, en el `data` del rechazo. Solo si
+    /// hay `data`: el rechazo de la capa la lleva siempre, con su causa (§454). Un `-32603` de
+    /// `anotar` NO lleva recibo, porque no hay hoja que prometer.
+    fn con_recibo_de_recepcion(mut self, recibo: Value) -> Self {
+        if let Some(d) = self.data.as_mut().and_then(|d| d.as_object_mut()) {
+            d.insert("recepcion".into(), recibo);
+        }
+        self
+    }
     fn wire(e: wire::WireError) -> Self {
         Self::invalid_params(e)
     }
@@ -2371,6 +2380,84 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             }
         }
 
+        // ⚠️ **§571 (RFC-0010 E3) · EL CAMINO DE UN RECIBO DE RECEPCION**, con el molde de
+        // `zkssl_ackPath`: la cabeza NO viaja, ni la raiz (§248); el titular sube el camino hasta
+        // la `recepRoot` de la cabeza que custodia. La era `(Q, R]` que cierra `rx` sale de la
+        // serie de `recepCount` del DIARIO (§570): `R` es el primero `>= rx` y `Q` el de la cabeza
+        // anterior. La respuesta dice QUE cabeza la cierra -su `recepCount` y, si va firmada, su
+        // `index`- para que el titular la encuentre entre las que custodia.
+        // ⚠️ Aditivo: `zkssl/0.4` no sube, como con los anteriores.
+        "zkssl_recepPath" => {
+            #[derive(Deserialize)]
+            struct P { rx: Q }
+            let p: P = parse(params)?;
+            if p.rx.0 == 0 {
+                return Err(RpcError {
+                    code: -32602,
+                    message: "rx 0 no existe: el contador de recepcion empieza en 1 (§567)".into(),
+                    data: None,
+                });
+            }
+            let ruta = match app.diario.as_ref() {
+                None => {
+                    return Ok(json!({
+                        "available": false,
+                        "reason": "el nodo corre sin --diario: los limites de las eras de recepcion no se conservan",
+                    }))
+                }
+                Some(r) => r,
+            };
+            let cierres = crate::diario::cierres_de_recepcion(ruta);
+            let cuentas: Vec<u64> = cierres.iter().map(|c| c.0).collect();
+            let (q, r, i) = match crate::vista_recibos::era_cerrada_de(&cuentas, p.rx.0) {
+                None => {
+                    return Ok(json!({
+                        "available": false,
+                        "reason": "la era de ese rx sigue ABIERTA: vuelve tras el proximo latido",
+                        "beatSeconds": Q(app.latido_s),
+                    }))
+                }
+                Some(x) => x,
+            };
+            let entradas = app
+                .registro
+                .lock()
+                .map_err(|_| RpcError {
+                    code: -32603,
+                    message: "candado del registro de recepcion envenenado".into(),
+                    data: None,
+                })?
+                .entradas_posteriores_a(q)
+                .map_err(|e| RpcError { code: -32603, message: format!("{e}"), data: None })?;
+            match crate::vista_recibos::camino_de_era(
+                &entradas, q, r, p.rx.0, crate::vista_acuses::N_MAX_CABEZAS,
+            ) {
+                Err(e) => Err(RpcError {
+                    code: -32603,
+                    message: format!("la vista de recibos: {e:?}"),
+                    data: None,
+                }),
+                Ok(None) => Ok(json!({
+                    "available": false,
+                    "reason": "ese rx no tiene hoja en su era: es un HUECO declarado, reservado sin anotar",
+                })),
+                Ok(Some((_raiz, hermanos, derecha))) => {
+                    let mut v = json!({
+                        "available": true,
+                        "recepCount": Q(r),
+                        "camino": {
+                            "siblings": hermanos.iter().map(digest_to_wire).collect::<Vec<_>>(),
+                            "isRight": derecha,
+                        },
+                    });
+                    if let Some(idx) = cierres[i].1 {
+                        v["index"] = json!(Q(idx));
+                    }
+                    Ok(v)
+                }
+            }
+        }
+
         "zkssl_consistencyProof" => {
             // §293: el eslabon 2 como SERVICIO. El camino que prueba que la
             // cima ACTUAL extiende a la de una cabeza custodiada de tamano
@@ -2580,7 +2667,10 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             // consume TAMBIEN si la capa rechaza: ahi es donde se
             // esconderia un censor, alegando prueba invalida.
             let rx = recibir(app)?;
-            anotar(app, rx, zk_ssl::log::digest_of_proof(&receipt.proof))?;
+            let hash_prueba = zk_ssl::log::digest_of_proof(&receipt.proof);
+            let era = anotar(app, rx, hash_prueba)?;
+            // §571 (RFC-0010 E3): el recibo de recepcion, en el resultado Y en el error.
+            let recibo = recibo_de_recepcion(rx, era, hash_prueba);
             let r = l.apply_send(&receipt, p.sender.0, &state, p.amount.0);
             let pos = receipt.notice.position;
             reservas.remove(&pos);
@@ -2588,9 +2678,11 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 l.release_pending(pos);
                 // ⚠️ El numero viaja TAMBIEN en el error: el caso que
                 // importa es justo el rechazo.
-                return Err(RpcError::layer(e, seq_juicio).con_recepcion(rx));
+                return Err(RpcError::layer(e, seq_juicio)
+                    .con_recepcion(rx)
+                    .con_recibo_de_recepcion(recibo));
             }
-            Ok(con_rx(con_acuse(applied(l), l), rx))
+            Ok(con_recibo(con_rx(con_acuse(applied(l), l), rx), recibo))
         }
 
         "zkssl_claimMaterials" => {
@@ -2625,10 +2717,15 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             let state = (&p.receiver_state).try_into().map_err(RpcError::wire)?;
             let notice = (&p.notice).try_into().map_err(RpcError::wire)?;
             let rx = recibir(app)?;
-            anotar(app, rx, zk_ssl::log::digest_of_proof(&receipt.proof))?;
-            l.apply_claim(&receipt, p.receiver.0, &state, &notice)
-                .map_err(|e| RpcError::layer(e, seq_juicio).con_recepcion(rx))?;
-            Ok(con_rx(con_acuse(applied(l), l), rx))
+            let hash_prueba = zk_ssl::log::digest_of_proof(&receipt.proof);
+            let era = anotar(app, rx, hash_prueba)?;
+            let recibo = recibo_de_recepcion(rx, era, hash_prueba);
+            l.apply_claim(&receipt, p.receiver.0, &state, &notice).map_err(|e| {
+                RpcError::layer(e, seq_juicio)
+                    .con_recepcion(rx)
+                    .con_recibo_de_recepcion(recibo.clone())
+            })?;
+            Ok(con_recibo(con_rx(con_acuse(applied(l), l), rx), recibo))
         }
 
         // ── lote: N operaciones contra UNA raiz de arranque ──────
@@ -2854,7 +2951,9 @@ fn pareja_de_recepcion_rpc(app: &App) -> Result<(zk_ssl_verify::acuses::Digest, 
 /// ⚠️ Si anotar falla, la operación **NO se evalúa**: `-32603` con su número,
 /// que queda HUECO —reservado sin hoja— y el arranque lo declara como tal.
 /// Evaluar sin hoja sería justo lo que el registro existe para impedir.
-fn anotar(app: &App, rx: u64, hash_prueba: zk_ssl_verify::acuses::Digest) -> Result<(), RpcError> {
+///
+/// Devuelve la ERA que anotó (§571): el recibo de recepción la lleva al titular.
+fn anotar(app: &App, rx: u64, hash_prueba: zk_ssl_verify::acuses::Digest) -> Result<u64, RpcError> {
     let era = zk_ssl_verify::recibos::era_de_recibo(
         app.indice_firma.load(std::sync::atomic::Ordering::Acquire),
     );
@@ -2862,7 +2961,8 @@ fn anotar(app: &App, rx: u64, hash_prueba: zk_ssl_verify::acuses::Digest) -> Res
         Ok(mut g) => g.anotar(rx, era, hash_prueba).map_err(|e| format!("{e}")),
         Err(_) => Err("candado del registro de recepcion envenenado".to_string()),
     };
-    r.map_err(|message| RpcError { code: -32603, message, data: None }.con_recepcion(rx))
+    r.map(|()| era)
+        .map_err(|message| RpcError { code: -32603, message, data: None }.con_recepcion(rx))
 }
 
 /// Añade el número de recepción a una respuesta.
@@ -2899,6 +2999,35 @@ fn con_acuse(mut v: Value, l: &SovereignLayer) -> Value {
 
 fn con_rx(mut v: Value, rx: u64) -> Value {
     v["receptionSeq"] = json!(Q(rx));
+    v
+}
+
+/// **El recibo de recepción en el cable** (RFC-0010 E3, §571): `{rx, era, n, hashPrueba}`, como
+/// DATO. Hermano del `acuse`, y a su lado: el acuse dice que la operación se APLICÓ; esto, que el
+/// nodo la RECIBIÓ y se puso a evaluarla, se aplicara o no.
+///
+/// - `rx`: la posición. Dentro de la era `(Q, R]` que la cierre, la hoja es la `rx - Q - 1`.
+/// - `era`: la que el nodo declaró al anotar, el índice XMSS de la última cabeza firmada más uno
+///   (D-D, §567). Va DENTRO de la hoja.
+/// - `n`: el techo, `vista_acuses::N_MAX_CABEZAS`, también dentro de la hoja.
+/// - `hashPrueba`: el digest de la prueba que llegó; el titular lo recomputa de la suya.
+///
+/// La hoja es `hoja_de_recibo(hashPrueba, era, n)`. ⚠️ Como el acuse, **no va firmado**: lo hereda
+/// al cerrar la era, cuando `zkssl_recepPath` da el camino hasta la `recepRoot` de una cabeza
+/// firmada. ⚠️ Se llama `recepcion` y no `recibo`: `recibo` ya nombra en el cable los
+/// `publicInputs` del sobre de rechazo, y la casa no recicla un nombre.
+fn recibo_de_recepcion(rx: u64, era: u64, hash_prueba: zk_ssl_verify::acuses::Digest) -> Value {
+    json!({
+        "rx": Q(rx),
+        "era": Q(era),
+        "n": Q(vista_acuses::N_MAX_CABEZAS),
+        "hashPrueba": digest_to_wire(&hash_prueba),
+    })
+}
+
+/// Añade el recibo de recepción a una respuesta (§571).
+fn con_recibo(mut v: Value, recibo: Value) -> Value {
+    v["recepcion"] = recibo;
     v
 }
 
@@ -3498,6 +3627,82 @@ mod tests {
         assert!(format!("{e}").contains("HA RETROCEDIDO"), "{e}");
         let r = dispatch(&app, "zkssl_epochHead", json!({})).expect_err("el RPC tampoco");
         assert_eq!(r.code, -32603, "{}", r.message);
+    }
+
+    #[test]
+    fn el_recibo_de_recepcion_viaja_como_dato_en_el_error_del_rechazo() {
+        // §571 (RFC-0010 E3): el caso que importa es el rechazo. El `data` sigue llevando su
+        // causa (§454) y gana el recibo, con la era que el nodo anoto.
+        let app = nodo(30);
+        let (params, prueba) = envio_de_ceros();
+        let e = dispatch(&app, "zkssl_applySend", params).expect_err("la capa rechaza");
+        let d = e.data.expect("el rechazo de la capa lleva data");
+        assert!(d["causa"].is_string(), "la causa sigue ahi (§454): {d}");
+        assert_eq!(
+            d["recepcion"],
+            json!({
+                "rx": Q(1),
+                "era": Q(1),
+                "n": Q(crate::vista_acuses::N_MAX_CABEZAS),
+                "hashPrueba": digest_to_wire(&zk_ssl::log::digest_of_proof(&prueba)),
+            })
+        );
+    }
+
+    #[test]
+    fn el_camino_del_recibo_sube_a_la_recep_root_de_la_cabeza_que_lo_cierra() {
+        // ⚠️⚠️ LA E3 DE PUNTA A PUNTA, sin el nodo en el ultimo paso: el titular guarda su
+        // recibo del RECHAZO, la era cierra, pide el camino y sube SU hoja hasta la recepRoot
+        // de la cabeza que custodia.
+        let ruta = tests_dir(&format!("recep_path_{}", proximo_nodo())).join("diario.jsonl");
+        let mut app = nodo(30);
+        app.diario = Some(ruta);
+        let (params, prueba) = envio_de_ceros();
+        let e = dispatch(&app, "zkssl_applySend", params).expect_err("rechazado");
+        let recibo = e.data.expect("data")["recepcion"].clone();
+        let abierta = dispatch(&app, "zkssl_recepPath", json!({ "rx": Q(1) })).expect("recepPath");
+        assert_eq!(abierta["available"], json!(false), "antes del latido la era sigue abierta");
+        let l = crate::latido::latir(&app, None).expect("latir");
+        let raiz = l.cabeza.recep_root;
+        crate::latido::conservar(&app, l);
+        let v = dispatch(&app, "zkssl_recepPath", json!({ "rx": Q(1) })).expect("recepPath");
+        assert_eq!(v["available"], json!(true), "{v}");
+        assert_eq!(v["recepCount"], json!(Q(1)));
+        assert!(v.get("index").is_none(), "sin clave la cabeza que cierra no lleva indice");
+        let q = |x: &Value| {
+            u64::from_str_radix(x.as_str().expect("Q").trim_start_matches("0x"), 16).expect("hex")
+        };
+        let hoja = zk_ssl_verify::recibos::hoja_de_recibo(
+            zk_ssl::log::digest_of_proof(&prueba),
+            q(&recibo["era"]),
+            q(&recibo["n"]),
+        );
+        let hermanos: Vec<zk_ssl_verify::acuses::Digest> = v["camino"]["siblings"]
+            .as_array()
+            .expect("siblings")
+            .iter()
+            .map(|s| {
+                digest_from_wire(&serde_json::from_value::<wire::B32>(s.clone()).expect("B32"))
+                    .expect("digest")
+            })
+            .collect();
+        let derecha: Vec<bool> =
+            serde_json::from_value(v["camino"]["isRight"].clone()).expect("isRight");
+        assert_eq!(
+            zk_ssl_verify::acuses::path_root(hoja, &hermanos, &derecha),
+            raiz,
+            "el camino no sube a la recepRoot de la cabeza que cierra la era"
+        );
+    }
+
+    #[test]
+    fn sin_diario_el_camino_del_recibo_lo_dice_y_el_rx_cero_no_existe() {
+        let app = nodo(30);
+        let v = dispatch(&app, "zkssl_recepPath", json!({ "rx": Q(1) })).expect("recepPath");
+        assert_eq!(v["available"], json!(false));
+        assert!(v["reason"].as_str().expect("reason").contains("--diario"), "{v}");
+        let e = dispatch(&app, "zkssl_recepPath", json!({ "rx": Q(0) })).expect_err("rx 0");
+        assert_eq!(e.code, -32602, "{}", e.message);
     }
 
     #[test]

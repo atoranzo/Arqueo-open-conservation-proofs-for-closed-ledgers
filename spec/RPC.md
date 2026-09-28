@@ -92,6 +92,7 @@ RFC-0009 (D-A, D-C). Ver `SECURITY.md`.
 | `zkssl_consumoPath` | `{consumo: Digest, seq: Q}` | `{available, s?: Q, camino?: {siblings: Digest[], isRight: bool[]}, reason?}` |
 | `zkssl_frozenPath` | `{index: Q, viewKey: Digest}` | `{s: Q, index: Q, leaf: Digest, camino: {siblings: Digest[], isRight: bool[]}}` (credencial del titular, §261) |
 | `zkssl_pendingPath` | `{index: Q, viewKey: Digest, position: Q, salt: Digest, amount: Q, x: Digest, receiverId?: Digest}` | `{available, s?: Q, caminoPendiente?: {siblings: Digest[], isRight: bool[]}, hermanosMeta?: Digest[], emisor?: Q, nacido?: Q, reason?}` (credencial del receptor, §261; RFC-0008 D-F; con `receiverId`, la del PAGADOR, que nombra al receptor: RFC-0008 D-AE, §505) |
+| `zkssl_recepPath` | `{rx: Q}` | `{available, recepCount?: Q, index?: Q, camino?: {siblings: Digest[], isRight: bool[]}, reason?, beatSeconds?}` (RFC-0010 E3, §571) |
 
 `LogEntry = {seq: Q, kind: string, rootOld, rootNew, proofDigest, chain: Digest}`
 con `kind` ∈ {`OpenAccount`,`Mint`,`Transfer`,`Burn`,`Recovery`,
@@ -518,6 +519,31 @@ gastaría índices XMSS (§121.2). El acuse hereda la firma **al cerrar la
 entonces es palabra del nodo, y la ventana es ≤1 latido con operador
 honesto. Ver los asientos §274 y §275.
 
+#### El recibo de recepción en la respuesta (§571, RFC-0010 E3)
+
+Las mismas dos vías del titular devuelven, junto al `acuse`, su hermano:
+
+```json
+"recepcion": { "rx": "0x2a", "era": "0x7", "n": "0x5a0", "hashPrueba": "0x..." }
+```
+
+y lo devuelven **también en el `error.data` de un rechazo de la capa**, al lado de la causa (§454):
+es el caso que importa, porque un censor se escondería rechazando. El acuse dice que la operación
+se APLICÓ; el recibo, que el nodo la RECIBIÓ y se puso a evaluarla, se aplicara o no (RFC-0010,
+D-A y D-E).
+
+- **`rx`** es el número de recepción (el `receptionSeq` de siempre, ahora como dato): dentro de la
+  era `(Q, R]` que lo cierre, la hoja es la `rx − Q − 1`.
+- **`era`** la declaró el nodo al anotar: el índice XMSS de la última cabeza firmada, más uno
+  (D-D, §567). Va DENTRO de la hoja.
+- **`n`** es el techo, el mismo del acuse, también dentro de la hoja.
+- **`hashPrueba`** es el digest de la prueba que llegó; el titular lo recomputa de la suya.
+
+La hoja es `recibo_digest(hashPrueba, era, n)` (D-B). ⚠️ Como el acuse, **no va firmado**: lo
+hereda al cerrar la era, con `zkssl_recepPath`. Un `-32603` porque el nodo no pudo anotar **no
+lleva recibo**: no hay hoja que prometer, y la operación no se evaluó. ⚠️ La clave es `recepcion` y
+no `recibo`: `recibo` ya nombra en el cable los `publicInputs` del sobre de rechazo.
+
 ### `zkssl_signedEpochHead` — la última cabeza firmada, para un TESTIGO
 
 Devuelve la cabeza de época **más reciente que el nodo firmó**, con todo lo
@@ -746,6 +772,19 @@ dentro de esa época.
 ⚠️ **Aditivo**: `zkssl/0.2` no sube. La cabeza gana `acusesRoot` y `n`;
 `deny_unknown_fields` hace que un parser viejo **rompa en voz alta** —
 el fallo honesto ya diseñado, no una lectura a medias.
+
+### `zkssl_recepPath` — el camino de un recibo de recepción, cuando su era CIERRA (§571)
+
+`{rx}` → el camino de la hoja del recibo en el árbol de la era `(Q, R]` que lo contiene, **sin la
+cabeza y sin la raíz** (§248): el titular sube SU hoja —la de su recibo— hasta la `recepRoot` de la
+cabeza que custodia. La era sale de la serie de `recepCount` del diario del nodo (§570): `R` es el
+primero `>= rx` y `Q` el de la cabeza anterior. La respuesta identifica la cabeza que cierra por su
+`recepCount` y, si va firmada, su `index`.
+
+Dice lo que falta, en la forma de §241: sin `--diario`, `available: false`; con la era todavía
+ABIERTA, `available: false` y `beatSeconds`; con un `rx` reservado y sin anotar —un HUECO
+declarado—, `available: false`. El `rx` 0 no existe (el contador empieza en 1) y es `-32602`.
+⚠️ Aditivo: la superficie pasa de 30 a 31 métodos y `zkssl/0.4` no sube.
 
 ### `zkssl_inclusionReceipt` — la inclusión, comprobable sin el nodo
 

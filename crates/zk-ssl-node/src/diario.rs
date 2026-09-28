@@ -171,6 +171,31 @@ pub fn ultimo_recep_count(ruta: impl AsRef<Path>) -> Option<u64> {
     ultimo
 }
 
+/// Los CIERRES de las eras de recepción (RFC-0010 E3, §571): por cada línea que lleva
+/// `recepCount` -desde el §570, todas-, esa cuenta y el `index` de su firma si lo lleva, en el
+/// orden en que se anotaron. Las ilegibles y las anteriores al §570 se saltan, como en
+/// [`limites`]: una línea perdida junta dos eras en la lectura -una era gorda-, no un pánico.
+pub fn cierres_de_recepcion(ruta: impl AsRef<Path>) -> Vec<(u64, Option<u64>)> {
+    let texto = match std::fs::read_to_string(ruta) {
+        Ok(t) => t,
+        Err(_) => return Vec::new(),
+    };
+    let hex = |v: &Value| {
+        v.as_str().and_then(|s| u64::from_str_radix(s.trim_start_matches("0x"), 16).ok())
+    };
+    let mut v = Vec::new();
+    for l in texto.lines() {
+        let j: Value = match serde_json::from_str(l) {
+            Ok(j) => j,
+            Err(_) => continue,
+        };
+        if let Some(c) = hex(&j["recepCount"]) {
+            v.push((c, hex(&j["index"])));
+        }
+    }
+    v
+}
+
 /// El MAXIMO `index` anotado, o `None` si el diario no tiene ni una firma.
 ///
 /// ⚠️⚠️ **MAXIMO y no ULTIMO**, a diferencia de [`ultimo_seq`]: el caso
@@ -333,6 +358,23 @@ mod tests {
         for k in ["seq", "epochDigest", "emittedAtUnix", "recepCount", "formatVersion", "index", "signature", "publicKey"] {
             assert!(!v[k].is_null(), "falta la clave {k}");
         }
+    }
+
+    #[test]
+    fn los_cierres_de_recepcion_salen_del_diario_con_su_indice() {
+        // §571: la serie que `zkssl_recepPath` usa. Una cabeza firmada lleva su indice; una
+        // sin firmar, no, y el cierre igual cuenta.
+        let d = std::path::Path::new("target").join("diario_cierres_recep");
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("dir");
+        let ruta = d.join("diario.jsonl");
+        let mut firmada = cabeza(7, 0x11, true);
+        firmada.cabeza.recep_count = 4;
+        anotar(&ruta, &firmada, &[]).expect("anotar");
+        let mut sin = cabeza(0, 0x22, false);
+        sin.cabeza.recep_count = 9;
+        anotar(&ruta, &sin, &[]).expect("anotar");
+        assert_eq!(cierres_de_recepcion(&ruta), vec![(4, Some(7)), (9, None)]);
     }
 
     #[test]

@@ -41482,3 +41482,79 @@ canon declara 1643. El catalogo del cable 18 -> 21. El censo del nucleo, quieto 
 evaluan sin reservar-. Las etiquetas <<cabeza v5>> de cinco bancos, que el nodo de este sello vuelve
 falsas sin que fallen, y los otros trece bancos, que no se corrieron en esta sesion.
 
+## §571 — RFC-0010 E3: el recibo de recepcion, en el cable, y su camino cuando la era cierra
+
+El commit que lleva este asiento, sobre `a522184` (el S570). Un solo sello: el codigo del nodo y
+del contrato publicado, el pin, las cifras que arrastra, la prosa y este asiento, con el canon
+`--sello` VERDE dentro del bloque. Dieciseis ficheros mas este asiento, con 367 inserciones y 28
+borrados fuera de el. Con este sello la E3 del RFC-0010 queda SELLADA.
+
+**De donde sale.** De la E3 -<<`{rx, era, n}` como DATO en el resultado y en `error.data` de las
+vias del titular, y el metodo de lectura del camino cuando la era cierra>>-, sobre lo que la E2
+dejo: el nodo anota cada recepcion con su era (§569) y firma la pareja de su era (§570), pero el
+titular no se llevaba nada con que exigirla. Tenia `receptionSeq` -un numero en el resultado y un
+`[receptionSeq=0x..]` dentro del `message` del error-, y ni su era ni su camino.
+
+**Lo que hace.** (1) `applySend` y `applyClaim` devuelven, al lado del `acuse`, `recepcion: {rx,
+era, n, hashPrueba}`, y lo devuelven TAMBIEN en el `error.data` de un rechazo de la capa, junto a su
+causa (§454): el caso que importa es el rechazo. `anotar` devuelve la era que anoto, y el recibo
+sale de UN productor, `recibo_de_recepcion`. (2) Nace `zkssl_recepPath {rx}`, con el molde de
+`zkssl_ackPath`: la era `(Q, R]` que cierra `rx` sale de la serie de `recepCount` del diario (§570)
+-`R` el primero `>= rx`, `Q` el de la cabeza anterior-, las entradas de `entradas_posteriores_a(Q)`
+y el camino de `camino_de_era`; se sirven los hermanos y los lados, NI la cabeza NI la raiz (§248),
+y la cabeza que cierra se identifica por su `recepCount` y, si va firmada, su `index`. Dice lo que
+falta: sin diario, con la era abierta, o con un hueco. (3) El metodo es el 31 del contrato
+publicado: la tabla de `openrpc.rs`, su testigo -que lleva el numero en el nombre para obligar a
+mirar, y pasa de treinta a treinta y uno- y `spec/openrpc.json`, regenerado con `gen_openrpc`.
+
+**Dos DECISIONES del asistente, REVERSIBLES.** (a) La clave es `recepcion` y no `recibo`: MEDIDO
+antes de escribir, `recibo` ya nombra en el cable los `publicInputs` del rechazado en el sobre de
+rechazo, y la casa no recicla un nombre -el precedente de `acuse`, que no reutilizo `receipt`-. (b)
+El recibo lleva `hashPrueba` ademas de `{rx, era, n}`, como el `acuse`: el titular lo puede
+recomputar de su prueba, pero con el la hoja sale del recibo solo. Un `-32603` porque el nodo no
+pudo anotar NO lleva recibo: no hay hoja que prometer, y la operacion no se evaluo (§569).
+
+**Los testigos, cinco.** La era cerrada de un `rx` sale de la serie de cuentas -con cuentas
+repetidas, el borde `R` inclusivo, la era abierta, el `rx` 0 y el genesis-; el diario da sus cierres
+con el indice de la firma, si lo hay; el recibo viaja como dato en el error del rechazo, con la
+causa intacta; y la E3 DE PUNTA A PUNTA: el titular guarda el recibo de un envio RECHAZADO, la era
+cierra, pide el camino y sube su hoja -`hoja_de_recibo` de las reglas compartidas- hasta la
+`recepRoot` de la cabeza que la cierra; y sin diario el metodo lo dice, y el `rx` 0 es `-32602`.
+
+**Los falsadores, ENSAYADOS.** El recibo fuera del `data` del rechazo: caen EXACTAMENTE el suyo y el
+de punta a punta, que lo lee de ahi. `R` exclusivo -el borde viejo, `c > rx`-: caen el de la serie y
+el de punta a punta. Restaurado, pasan todos.
+
+**EL PIN SE MIDIO.** El nodo, sin filtro: 165 passed, cero ignorados, cero warnings; el cable en 23,
+quieto, con su testigo del contrato renombrado. `check_cifras` NOMBRO siete cifras con el pin
+subido: el TOTAL DE SELLO 1484 -> 1489 y el TOTAL CON LARGOS 1621 -> 1626 en los tres documentos, y
+el desglose del nodo 160 -> 165; con las siete vuelve a su censo, LINEA- y BYTE-NEUTRALES. La fila
+del nodo gana su CRONICA del §571.
+
+**El residuo que el canon no ve.** `cargo build -p zk-ssl-node --release`: 4 -> 3 warnings;
+`camino_de_era` ya tiene llamante. Quedan los dos de siempre y `podar`.
+
+**La prosa.** `spec/RPC.md` gana la fila del metodo en la tabla, el recibo de recepcion junto al
+acuse, y la seccion de `zkssl_recepPath`. La fila E3 del RFC-0010 dice SELLADA.
+
+**Un rojo propio, cazado MIDIENDO y no por el canon.** El primer ensayo de este bloque salio VERDE,
+y la superficie publicada estaba rancia: seis sitios vivos dicen cuantos metodos tiene el protocolo
+-`README.md`, `README_EN.md`, `RESUMEN_EJECUTIVO.md`, `RESUMEN_BILINGUE.md` dos veces y
+`spec/README.md`, que ademas desglosa los `zkssl_*`- y los seis decian 30. Lo cazo el censo del
+perimetro del techo N, que se hizo mientras el bloque se ensayaba: ninguna herramienta del canon
+cuenta metodos en la prosa, asi que el verde no decia nada de ellos. Los seis pasan a 31 -y 28
+`zkssl_*`-, LINEA- y BYTE-NEUTRALES, y la seccion del metodo en `RPC.md` dice que la superficie pasa
+de 30 a 31; la frase historica del §519, <<de 29 a 30>>, no se toca. Queda fichado sin numero: la
+cuenta de metodos de la prosa no tiene juez, y la tabla de `openrpc.rs` es su unico productor.
+
+**Contadores.** El pin del nodo 160 -> 165 y los otros veinte sin mover. El TOTAL DE SELLO 1484 ->
+1489 y el TOTAL CON LARGOS 1621 -> 1626. `check_tests` 1643 -> 1648 y el offset en mas 8, QUIETO:
+1489 + 137 = 1626 ; 1626 + 14 = 1640 ; el canon declara 1648. El contrato publicado, 30 -> 31
+metodos, y los seis sitios de prosa que lo cuentan. El censo del nucleo, quieto en 126. Ningun
+`Cargo` tocado. `zkssl/0.4` no sube y `VERSION_FORMATO` sigue en 6.
+
+**Lo que NO cierra.** La E4: el sobre portable de completitud, que un tercero verifica con el kit y
+sin nodo, y sus tres veredictos -resuelta como transicion aplicada, resuelta como rechazo con
+prueba, no resuelta en la ventana-; y la E5, su catalogo y su banco. Antes de la E4, el atado del
+techo N = 1.440. Y siguen la poda sin llamante y el hueco de la D-E.
+

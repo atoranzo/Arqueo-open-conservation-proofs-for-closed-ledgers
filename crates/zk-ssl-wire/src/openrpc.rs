@@ -50,6 +50,7 @@ pub fn method_names() -> Vec<&'static str> {
         "zkssl_frozenPath",
         "zkssl_pendingPath",
         "zkssl_pledge",
+        "zkssl_recepPath",
         "dev_fund",
         "dev_openSeeded",
         "dev_freeze",
@@ -141,6 +142,9 @@ pub fn document() -> Value {
           "Publica la MARCA de una prenda (RFC-0008 E3) EXIGIENDO su sobre: el nodo compone el enunciado con la raiz de pendientes de SU cabeza firmada y verifica la prueba ANTES de escribir. NO es una puerta del arbol de consumos: la marca sola sigue entrando por `zkssl_publishConsumo`, que no pide nada (D-AT). NO exige credencial: la autorizacion es la prueba. Una marca ya publicada cuyo sobre verifica no es un fallo, y la respuesta lo dice.",
           json!([p("prueba", "DATA"), p("receptor", "Digest"), p("marca", "Digest"),
                  p("seq", "Q")]), "PrendaPublicada"),
+        m("zkssl_recepPath",
+          "Camino del recibo de recepcion `rx` en la era CERRADA que lo contiene (RFC-0010 E3). La cabeza NO viaja, ni la raiz: el titular sube su hoja hasta la recepRoot de la cabeza que custodia, que la respuesta identifica por su recepCount y su index.",
+          json!([p("rx", "Q")]), "RecepPath"),
         m("dev_fund", "SOLO --dev: emision delegada con custodios de PRUEBA.",
           json!([p("index", "Q"), p("amount", "Q")]), "Applied"),
         m("dev_openSeeded", "SOLO --dev: abre desde una clave determinista de la suite.",
@@ -173,7 +177,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn treinta_metodos_unicos_y_en_orden() {
+    fn treinta_y_un_metodos_unicos_y_en_orden() {
         // §223: subio a 18 con `zkssl_applyMany`. §242: a 19 con
         // `zkssl_signedEpochHead`. §259: a 20 con
         // `zkssl_inclusionReceipt`. Que este test tenga el numero en el
@@ -192,15 +196,16 @@ mod tests {
         // foto del ultimo latido firmado (RFC-0008, D-F)-.
         // §519: a 30 con `zkssl_pledge` -la marca de la prenda con su sobre, que el
         // nodo verifica ANTES de escribirla (RFC-0008, E3)-.
+        // §571: a 31 con `zkssl_recepPath` -el camino del recibo de recepcion (RFC-0010, E3)-.
         let nombres = method_names();
-        assert_eq!(nombres.len(), 30);
+        assert_eq!(nombres.len(), 31);
         let mut u = nombres.clone();
         u.sort();
         u.dedup();
-        assert_eq!(u.len(), 30, "nombres repetidos");
+        assert_eq!(u.len(), 31, "nombres repetidos");
         let doc = document();
         let met = doc["methods"].as_array().expect("methods");
-        assert_eq!(met.len(), 30);
+        assert_eq!(met.len(), 31);
         for (i, mm) in met.iter().enumerate() {
             assert_eq!(mm["name"].as_str().unwrap(), nombres[i]);
         }

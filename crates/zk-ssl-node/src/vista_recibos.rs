@@ -123,6 +123,23 @@ pub fn camino_de_era(
     Ok(Some((arbol.root(), camino.siblings, camino.is_right)))
 }
 
+/// La era CERRADA `(Q, R]` que contiene `rx`, y la posición en `cuentas` de la cabeza que la
+/// cierra (RFC-0010 E3, §571); `None` si su era sigue ABIERTA. `cuentas` son los `recepCount` de
+/// las cabezas, en orden: la serie del diario (§570). `R` es el PRIMERO `>= rx` y `Q` el de la
+/// cabeza anterior, o 0 -el génesis-. Es el molde de `vista_acuses::limites_para` con el borde
+/// del §567: las cabezas que no reciben repiten cuenta, y la primera que la supera es la que
+/// cierra.
+///
+/// ⚠️ El `rx` 0 no existe -el contador empieza en 1- y no tiene era.
+pub fn era_cerrada_de(cuentas: &[u64], rx: u64) -> Option<(u64, u64, usize)> {
+    if rx == 0 {
+        return None;
+    }
+    let i = cuentas.iter().position(|&c| c >= rx)?;
+    let q = if i == 0 { 0 } else { cuentas[i - 1] };
+    Some((q, cuentas[i], i))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -215,6 +232,18 @@ mod tests {
         assert_eq!(raiz, raiz_de_era(&e, 5, 9, N_MAX_CABEZAS).expect("raiz"));
         let hoja = hoja_de_recibo(as_digest(0x2000 + 9), 7, N_MAX_CABEZAS);
         assert_eq!(path_root(hoja, &hermanos, &derecha), raiz, "el camino no sube");
+    }
+
+    #[test]
+    fn la_era_cerrada_de_un_rx_sale_de_la_serie_de_cuentas() {
+        // Cinco cabezas con cuentas 0, 0, 3, 3, 5: las que no reciben repiten cuenta.
+        let c = [0, 0, 3, 3, 5];
+        assert_eq!(era_cerrada_de(&c, 1), Some((0, 3, 2)), "la primera recepcion la cierra la tercera");
+        assert_eq!(era_cerrada_de(&c, 3), Some((0, 3, 2)), "R es inclusivo (§567)");
+        assert_eq!(era_cerrada_de(&c, 4), Some((3, 5, 4)));
+        assert_eq!(era_cerrada_de(&c, 6), None, "por encima de la ultima cuenta, la era sigue abierta");
+        assert_eq!(era_cerrada_de(&c, 0), None, "el rx 0 no existe: el contador empieza en 1");
+        assert_eq!(era_cerrada_de(&[4], 2), Some((0, 4, 0)), "sin cabeza anterior, Q es el genesis");
     }
 
     #[test]

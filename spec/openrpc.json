@@ -684,6 +684,25 @@
       "summary": "Publica la MARCA de una prenda (RFC-0008 E3) EXIGIENDO su sobre: el nodo compone el enunciado con la raiz de pendientes de SU cabeza firmada y verifica la prueba ANTES de escribir. NO es una puerta del arbol de consumos: la marca sola sigue entrando por `zkssl_publishConsumo`, que no pide nada (D-AT). NO exige credencial: la autorizacion es la prueba. Una marca ya publicada cuyo sobre verifica no es un fallo, y la respuesta lo dice."
     },
     {
+      "name": "zkssl_recepPath",
+      "params": [
+        {
+          "name": "rx",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/Q"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RecepPath"
+        }
+      },
+      "summary": "Camino del recibo de recepcion `rx` en la era CERRADA que lo contiene (RFC-0010 E3). La cabeza NO viaja, ni la raiz: el titular sube su hoja hasta la recepRoot de la cabeza que custodia, que la respuesta identifica por su recepCount y su index."
+    },
+    {
       "name": "dev_fund",
       "params": [
         {
