@@ -135,9 +135,68 @@ pub fn dentro_de_ventana(era: u64, indice_cierre: u64, n: u64) -> bool {
     indice_cierre - era <= n
 }
 
+/// **La profundidad del arbol de recibos** (RFC-0010 E4, §573): la del `SparseTree::new()` con
+/// que el nodo lo compone, `TREE_DEPTH` = 32. Un camino de recibo mide EXACTAMENTE esto en sus dos
+/// lados: la profundidad no la elige quien sirve el camino. El nodo ata esta constante a su arbol
+/// con un testigo (`vista_recibos`), como `ACCOUNTS_DEPTH` y `FROZEN_DEPTH` a los suyos.
+pub const RECEP_DEPTH: usize = 32;
+
+/// Sube la hoja de un recibo hasta su raiz, **o `None`** si el camino no mide [`RECEP_DEPTH`] en
+/// sus dos lados, si la posicion no cabe en el arbol, o si sus lados no son los de `indice` -la
+/// posicion densa `rx - Q - 1` de [`indice_de_recibo`]-. Molde de `congelados::raiz_de_hoja` con
+/// el cruce de `congelados::cruza_indice`: un camino de otra posicion no prueba nada de este recibo.
+pub fn raiz_de_camino_de_recibo(
+    indice: u64,
+    hoja: Digest,
+    siblings: &[Digest],
+    is_right: &[bool],
+) -> Option<Digest> {
+    if siblings.len() != RECEP_DEPTH
+        || is_right.len() != RECEP_DEPTH
+        || indice >= (1u64 << RECEP_DEPTH)
+    {
+        return None;
+    }
+    if (0..RECEP_DEPTH).any(|i| is_right[i] != ((indice >> i) & 1 == 1)) {
+        return None;
+    }
+    Some(zk_ssl_hash::path_root(hoja, siblings, is_right))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn el_camino_de_un_recibo_mide_recep_depth_y_cruza_su_posicion() {
+        // §573: la profundidad y los lados los fija la regla, no quien sirve el camino.
+        let hoja = zk_ssl_hash::as_digest(77);
+        let hermanos: Vec<Digest> = (0..RECEP_DEPTH as u64).map(zk_ssl_hash::as_digest).collect();
+        let indice = 5u64;
+        let lados: Vec<bool> = (0..RECEP_DEPTH).map(|i| (indice >> i) & 1 == 1).collect();
+        assert_eq!(
+            raiz_de_camino_de_recibo(indice, hoja, &hermanos, &lados),
+            Some(zk_ssl_hash::path_root(hoja, &hermanos, &lados)),
+            "el camino bueno sube"
+        );
+        assert_eq!(
+            raiz_de_camino_de_recibo(indice, hoja, &hermanos[1..], &lados[1..]),
+            None,
+            "un camino truncado no sube"
+        );
+        let mut otro = lados.clone();
+        otro[0] = !otro[0];
+        assert_eq!(
+            raiz_de_camino_de_recibo(indice, hoja, &hermanos, &otro),
+            None,
+            "los lados de otra posicion no cruzan"
+        );
+        assert_eq!(
+            raiz_de_camino_de_recibo(1u64 << RECEP_DEPTH, hoja, &hermanos, &lados),
+            None,
+            "una posicion que no cabe no cruza con nada"
+        );
+    }
     use crate::acuses::{as_digest, hoja_de_acuse};
 
     #[test]

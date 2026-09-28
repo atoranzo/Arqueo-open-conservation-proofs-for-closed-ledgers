@@ -247,6 +247,27 @@ mod tests {
     }
 
     #[test]
+    fn el_arbol_de_recibos_mide_recep_depth_y_su_camino_sube_con_la_regla_del_verificador() {
+        // §573: el constructor (este arbol) y el verificador (`raiz_de_camino_de_recibo`) miden
+        // lo mismo. Si el `SparseTree` cambiara de profundidad, esto se pondria rojo antes que
+        // cualquier sobre de completitud.
+        let e = entradas(6..=9, 7);
+        let (raiz, hermanos, derecha) =
+            camino_de_era(&e, 5, 9, 8, N_MAX_CABEZAS).expect("compone").expect("camino");
+        assert_eq!(hermanos.len(), zk_ssl_verify::recibos::RECEP_DEPTH);
+        let hoja = hoja_de_recibo(as_digest(0x2000 + 8), 7, N_MAX_CABEZAS);
+        assert_eq!(
+            zk_ssl_verify::recibos::raiz_de_camino_de_recibo(
+                zk_ssl_verify::recibos::indice_de_recibo(8, 5),
+                hoja,
+                &hermanos,
+                &derecha,
+            ),
+            Some(raiz)
+        );
+    }
+
+    #[test]
     fn sin_hoja_no_hay_camino() {
         // Fuera de (Q, R] -> None; dentro pero sin entrada -> None. Un camino
         // de una hoja vacia "verificaria" contra un arbol que no la contiene.

@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 78 elementos alcanzables en `zk-ssl-verify` y 48 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 99, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 80 elementos alcanzables en `zk-ssl-verify` y 48 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 101, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`, `recibos`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -165,11 +165,13 @@ real de sus llaves, no por la primera marca.
 | `is_right_de_indice` | `verify/cuentas.rs` | NÚCLEO | CUENTAS | `fn` |
 | `no_existe` | `verify/cuentas.rs` | NÚCLEO | CUENTAS | `fn` |
 | `raiz_de_hoja` | `verify/cuentas.rs` | NÚCLEO | CUENTAS | `fn` |
+| `RECEP_DEPTH` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `const` |
 | `dentro_de_ventana` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
 | `era_de_recibo` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
 | `hoja_de_recibo` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
 | `indice_de_recibo` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
 | `pertenece_a_era` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
+| `raiz_de_camino_de_recibo` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
 | `native_leaf` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `native_leaf_salted` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `InclusionError` | `verify/inclusion.rs` | REFERENCIA | INCLUSIÓN | `enum` |
@@ -287,6 +289,9 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §573 — `RECEP_DEPTH` y `raiz_de_camino_de_recibo` en el módulo `recibos`: la profundidad del árbol
+  de recibos y la regla de su camino —la medida y el cruce con la posición `rx - Q - 1`—, que el
+  sobre de completitud usa y el nodo ata a su árbol (RFC-0010, E4). Dos filas nuevas.
 - §570 — `VERSION_FORMATO` pasa de 5 a 6: el nodo compone, firma y sirve la cabeza v6, con la
   pareja de recepción que su registro da (RFC-0010, E2d). Ninguna fila nueva: la constante ya la
   tenía y su valor no es censo.

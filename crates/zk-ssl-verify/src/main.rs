@@ -51,7 +51,7 @@
 use std::process::ExitCode;
 
 use zk_ssl_verify::{
-    acuses, verificar_acuse, verificar_acuse_v3, indice_de_firma, verificar_cabeza, verificar_cofirma,
+    acuses, recibos, verificar_acuse, verificar_acuse_v3, indice_de_firma, verificar_cabeza, verificar_cofirma,
     CabezaFirmada, COFIRMA_V_MAX, ReciboAcuse, VersionCabeza,
 };
 use zk_ssl_air::{verificar_contra_cabeza, Afirmacion, CabezaEdad};
@@ -129,6 +129,13 @@ fn correr(ruta: &str) -> Result<(), String> {
     let crudo = std::fs::read_to_string(ruta).map_err(|e| err(format!("no se puede leer {ruta}: {e}")))?;
     let p: serde_json::Value =
         serde_json::from_str(&crudo).map_err(|e| err(format!("JSON ilegible: {e}")))?;
+    verificar_paquete(&p)
+}
+
+/// El paquete ya leido, de cualquier forma. Vivia dentro de `correr`; sale a su funcion en el §573
+/// para que el sobre de completitud verifique su resolucion por acuse COMO el paquete de posicion
+/// que es -una cabeza y su acuse-, con el mismo codigo y no con una copia.
+fn verificar_paquete(p: &serde_json::Value) -> Result<(), String> {
     // §322 · v1 Y v2: lo custodiado no caduca. Un v1 con `cofirmas` se
     //          rechaza, porque subir la version es lo que las hace contrato.
     let v_paquete = p
@@ -169,12 +176,14 @@ fn correr(ruta: &str) -> Result<(), String> {
         Some("pago_en_curso") => return verificar_pago_en_curso(&p),
         // RFC-0008 E3 (S520): la prenda, la unica de la familia que prueba AUTORIZACION.
         Some("prenda") => return verificar_prenda(&p),
+        // RFC-0010 E4 (§573): la completitud de un recibo de recepcion, y sus tres veredictos.
+        Some("completitud") => return verificar_completitud(&p),
         Some(otro) => {
             return Err(err(format!(
                 "tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), \
                  `tipo: \"extension\"`, `tipo: \"consumo\"`, `tipo: \"conflicto\"`, \
                  `tipo: \"rechazo\"`, `tipo: \"edad\"`, `tipo: \"cobro_pendiente\"`, \
-                 `tipo: \"pago_en_curso\"` o `tipo: \"prenda\"`"
+                 `tipo: \"pago_en_curso\"`, `tipo: \"prenda\"` o `tipo: \"completitud\"`"
             )))
         }
     }
@@ -1610,6 +1619,253 @@ fn op_cuenta_y_posicion(op: &serde_json::Value, i: usize) -> Result<(u64, u64), 
     }
 }
 
+/// Las causas que el RFC-0007 DECLARO sin prueba portable -su tabla de causas y la correccion del
+/// §476-: `CustodianSetExhausted` y `PendingTreeExhausted` (declaradas sin prueba portable) y
+/// `NotTheIssuer`, `NotTheAccountHolder` (la autorizacion ausente no se puede exhibir). Un recibo que
+/// se resuelve por una de ellas no puede exhibir el veredicto 2: es la grieta de la D-G del RFC-0010,
+/// y el sobre la NOMBRA en vez de callarla.
+const CAUSAS_SIN_PRUEBA_PORTABLE: [&str; 4] =
+    ["CustodianSetExhausted", "PendingTreeExhausted", "NotTheIssuer", "NotTheAccountHolder"];
+
+/// El prefijo del CUARTO estado (RFC-0010 D-G; decision D4 del autor, sesion 193): «resolucion
+/// declarada, no probada». Ni VERDE ni ROJO: `codigo_de_salida` lo cuenta aparte, con el 3.
+const DECLARADA_NO_PROBADA: &str = "DECLARADA, NO PROBADA: ";
+
+/// El codigo de salida de un veredicto: 0 VERDE, 3 el cuarto estado del sobre de completitud, 1
+/// cualquier otro fallo con nombre. El 2 -uso- lo decide `main` antes de leer nada.
+fn codigo_de_salida(r: &Result<(), String>) -> u8 {
+    match r {
+        Ok(()) => 0,
+        Err(e) if e.starts_with(DECLARADA_NO_PROBADA) => 3,
+        Err(_) => 1,
+    }
+}
+
+/// D3 del autor: un rechazo se ata a ESTE recibo por el `recepcion.hashPrueba` que el nodo puso en
+/// su `data` (§571). ⚠️ Es la PALABRA del nodo: el `error` del cable no va firmado. Lo que la firma
+/// cubre es la causa sobre el estado comprometido; que fuera ESTA operacion lo dice el acusado.
+fn exige_mismo_recibo(data: &serde_json::Value, hash: Digest, que: &str) -> Result<(), String> {
+    let rp = data
+        .get("recepcion")
+        .ok_or_else(|| err(format!("{que}: su data no lleva recepcion: no se ata a este recibo")))?;
+    if digest_de(rp, "hashPrueba")? != hash {
+        return Err(err(format!(
+            "{que}: es de OTRA operacion: su hashPrueba no es el del recibo"
+        )));
+    }
+    Ok(())
+}
+
+/// **El sobre de COMPLETITUD** (RFC-0010 E4, §573): un recibo de recepcion bajo la `recepRoot` de
+/// una cabeza v6 firmada -el `cierre` de su era-, y lo que el operador hizo con el. Tres veredictos
+/// (D-F) y un cuarto estado (D-G):
+///
+/// 1. `resolucion.tipo = "acuse"`: la transicion se APLICO dentro de la ventana -el acuse de la
+///    MISMA prueba bajo una cabeza del mismo operador cuyo indice XMSS `S` cumple `S - era <= n`-.
+///    VERDE.
+/// 2. `resolucion.tipo = "rechazo"`: un sobre de rechazo del RFC-0007, verificado por sus reglas,
+///    sobre una cabeza dentro de la ventana, y atado al recibo por su `data.recepcion` (D3). VERDE.
+/// 3. Sin resolucion, con una cabeza `vigente` del mismo operador fuera de la ventana: **ROJO
+///    NOMBRADO**, «NO RESUELTA EN LA VENTANA». Es el producto: un objeto portable que dice, con la
+///    firma del propio operador dentro, que se comprometio a resolver y no lo hizo. ⚠️ No es una
+///    prueba criptografica de ausencia (D-F): es evidencia oponible.
+/// 4. `resolucion.tipo = "declarada"` con una causa sin prueba portable: el cuarto estado, salida 3.
+///
+/// `limiteAnterior` (Q) va DECLARADO (D1): la hoja no lleva `rx`, asi que un Q mentido solo produce
+/// un camino que no cruza. `S` es siempre el indice de una cabeza FIRMADA, que `verificar_cabeza` ata
+/// al embebido en la firma (§399): la ventana no se declara, se mide (D2).
+fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
+    // 1 · el cierre: una cabeza v6 firmada, entera
+    let cierre = p
+        .get("cierre")
+        .ok_or_else(|| err("falta cierre (la cabeza v6 que cierra la era del recibo)".into()))?;
+    let version = VersionCabeza::try_from(u64_de(cierre, "formatVersion")?).map_err(|e| {
+        err(format!(
+            "cierre: formatVersion {}: el sobre de completitud lee cabezas {}",
+            e.0,
+            VersionCabeza::texto_con_recepcion()
+        ))
+    })?;
+    if !version.lleva_recepcion() {
+        return Err(err(format!(
+            "cierre: el sobre de completitud exige una cabeza {}: la pareja de recepcion viaja \
+             firmada desde ella",
+            VersionCabeza::texto_con_recepcion()
+        )));
+    }
+    let (_, _, clave, _) = cabeza_v3_verificada(cierre, "cierre")?;
+    let raiz = digest_de(cierre, "recepRoot")?;
+    let r = u64_de(cierre, "recepCount")?;
+    let n_firmada = u64_de(cierre, "n")?;
+    println!(
+        "1/3 el cierre es una cabeza v{} que recompone su digest y cuya firma verifica \
+         (indice {}, recepCount {r})",
+        version.as_u8(),
+        u64_de(cierre, "index")?
+    );
+
+    // 2 · el recibo, bajo la firma del cierre
+    let rec = p
+        .get("recepcion")
+        .ok_or_else(|| err("falta recepcion (el recibo del cable, §571)".into()))?;
+    let rx = u64_de(rec, "rx")?;
+    let era = u64_de(rec, "era")?;
+    let n = u64_de(rec, "n")?;
+    let hash = digest_de(rec, "hashPrueba")?;
+    if n != n_firmada {
+        return Err(err(format!(
+            "recepcion: n {n} no es la que el cierre firma ({n_firmada}): una n mentida produce \
+             una hoja que no verifica"
+        )));
+    }
+    let q = u64_de(p, "limiteAnterior")?;
+    if !recibos::pertenece_a_era(rx, q, r) {
+        return Err(err(format!(
+            "recepcion: el rx {rx} no pertenece a la era ({q}, {r}] que el cierre cierra"
+        )));
+    }
+    let pos = recibos::indice_de_recibo(rx, q);
+    if p.get("camino").is_none() {
+        return Err(err("falta camino (el de zkssl_recepPath)".into()));
+    }
+    let (hermanos, derecha) = camino_de(p, "camino", "camino")?;
+    let hoja = recibos::hoja_de_recibo(hash, era, n);
+    match recibos::raiz_de_camino_de_recibo(pos, hoja, &hermanos, &derecha) {
+        None => {
+            return Err(err(format!(
+                "camino: no mide {} niveles o sus lados no son los de la posicion {pos} \
+                 (rx {rx} - Q {q} - 1)",
+                recibos::RECEP_DEPTH
+            )))
+        }
+        Some(x) if x != raiz => {
+            return Err(err("el recibo NO sube a la recepRoot que el cierre firma".into()))
+        }
+        Some(_) => {}
+    }
+    println!(
+        "2/3 el recibo (rx {rx}, era {era}) esta bajo la recepRoot que el cierre firma: \
+         el operador lo RECIBIO"
+    );
+
+    // 3 · el veredicto
+    let res = p.get("resolucion");
+    match res.map(|x| x.get("tipo").and_then(|t| t.as_str())) {
+        None => {
+            let vig = p.get("vigente").ok_or_else(|| {
+                err("sin resolucion y sin cabeza vigente: no hay ventana que medir".into())
+            })?;
+            let (_, _, clave_v, _) = cabeza_v3_verificada(vig, "vigente")?;
+            if clave_v != clave {
+                return Err(claves_distintas());
+            }
+            let s = u64_de(vig, "index")?;
+            if recibos::dentro_de_ventana(era, s, n) {
+                return Err(err(format!(
+                    "ventana ABIERTA: la cabeza vigente tiene indice {s} y la era es {era}; con \
+                     n {n} la promesa sigue viva y el sobre es prematuro"
+                )));
+            }
+            return Err(err(format!(
+                "NO RESUELTA EN LA VENTANA: el operador recibio la operacion bajo su firma \
+                 (rx {rx}, era {era}) y su cabeza vigente de indice {s} -{} cabezas despues, \
+                 n {n}- llega sin resolucion: se comprometio a resolver y no lo hizo",
+                s - era
+            )));
+        }
+        Some(Some("acuse")) => {
+            let x = res.expect("hay resolucion");
+            let c = x
+                .get("cabeza")
+                .ok_or_else(|| err("resolucion: falta cabeza".into()))?;
+            let a = x
+                .get("acuse")
+                .ok_or_else(|| err("resolucion: falta acuse".into()))?;
+            let (_, _, clave_r, _) = cabeza_v3_verificada(c, "resolucion.cabeza")?;
+            if clave_r != clave {
+                return Err(claves_distintas());
+            }
+            if digest_de(a, "hashPrueba")? != hash {
+                return Err(err(
+                    "resolucion: el acuse es de OTRA prueba: no resuelve este recibo".into()
+                ));
+            }
+            let s = u64_de(c, "index")?;
+            if !recibos::dentro_de_ventana(era, s, n) {
+                return Err(err(format!(
+                    "resolucion: llega FUERA de la ventana (indice {s}, era {era}, n {n})"
+                )));
+            }
+            println!("   la resolucion, como paquete de posicion con su acuse:");
+            verificar_paquete(&serde_json::json!({ "v": 1, "cabeza": c, "acuse": a }))?;
+            println!(
+                "3/3 RESUELTA como transicion aplicada, dentro de la ventana (indice {s}, \
+                 era {era}, n {n})"
+            );
+        }
+        Some(Some("rechazo")) => {
+            let sobre = res
+                .expect("hay resolucion")
+                .get("sobre")
+                .ok_or_else(|| err("resolucion: falta sobre (el de rechazo)".into()))?;
+            if sobre.get("tipo").and_then(|t| t.as_str()) != Some("rechazo") {
+                return Err(err("resolucion: el sobre no es de tipo rechazo".into()));
+            }
+            let d = sobre
+                .get("data")
+                .ok_or_else(|| err("resolucion.sobre: falta data".into()))?;
+            exige_mismo_recibo(d, hash, "resolucion.sobre")?;
+            let c = sobre
+                .get("cabeza")
+                .ok_or_else(|| err("resolucion.sobre: falta cabeza".into()))?;
+            let (_, _, clave_r, _) = cabeza_v3_verificada(c, "resolucion.sobre.cabeza")?;
+            if clave_r != clave {
+                return Err(claves_distintas());
+            }
+            let s = u64_de(c, "index")?;
+            if !recibos::dentro_de_ventana(era, s, n) {
+                return Err(err(format!(
+                    "resolucion: llega FUERA de la ventana (indice {s}, era {era}, n {n})"
+                )));
+            }
+            println!("   la resolucion, como sobre de rechazo:");
+            verificar_rechazo(sobre)?;
+            println!(
+                "3/3 RESUELTA como rechazo con prueba, dentro de la ventana (indice {s}); la \
+                 atadura al recibo es la palabra del nodo en su data"
+            );
+        }
+        Some(Some("declarada")) => {
+            let d = res
+                .expect("hay resolucion")
+                .get("data")
+                .ok_or_else(|| err("resolucion: falta data (la del rechazo declarado)".into()))?;
+            let causa = d
+                .get("causa")
+                .and_then(|x| x.as_str())
+                .ok_or_else(|| err("resolucion.data: falta causa".into()))?;
+            if !CAUSAS_SIN_PRUEBA_PORTABLE.contains(&causa) {
+                return Err(err(format!(
+                    "resolucion declarada con la causa {causa}, que no es de las que el RFC-0007 \
+                     dejo sin prueba portable: se exhibe su sobre de rechazo, no se declara"
+                )));
+            }
+            exige_mismo_recibo(d, hash, "resolucion.data")?;
+            return Err(format!(
+                "{DECLARADA_NO_PROBADA}el operador declara {causa}, una causa que el RFC-0007 \
+                 dejo sin prueba portable: se cuenta aparte (RFC-0010, D-G)"
+            ));
+        }
+        Some(otro) => {
+            return Err(err(format!(
+                "resolucion: tipo {otro:?} desconocido: se lee acuse, rechazo o declarada"
+            )))
+        }
+    }
+    println!("VERDE: el recibo se resolvio dentro de la ventana, y se sostiene sin el nodo");
+    Ok(())
+}
+
 fn main() -> ExitCode {
     let mut args = std::env::args().skip(1);
     let ruta = match (args.next(), args.next()) {
@@ -1621,13 +1877,14 @@ fn main() -> ExitCode {
             return ExitCode::from(2);
         }
     };
-    match correr(&ruta) {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(e) => {
-            eprintln!("ROJO: {e}");
-            ExitCode::FAILURE
-        }
+    let r = correr(&ruta);
+    match &r {
+        Ok(()) => {}
+        // §573: el cuarto estado se imprime con su nombre, sin «ROJO»: no lo es.
+        Err(e) if codigo_de_salida(&r) == 3 => eprintln!("{e}"),
+        Err(e) => eprintln!("ROJO: {e}"),
     }
+    ExitCode::from(codigo_de_salida(&r))
 }
 
 #[cfg(test)]
@@ -1663,6 +1920,65 @@ mod tests {
             "firma": "0xcc",
             "vistoUnix": "0x0"
         })
+    }
+
+    /// §573 · el `tipo` completitud se despacha, y sin cierre se rechaza con su nombre.
+    #[test]
+    fn el_sobre_de_completitud_se_despacha_y_sin_cierre_lo_dice() {
+        let e = verificar_paquete(&json!({ "v": 1, "tipo": "completitud" })).unwrap_err();
+        assert!(e.starts_with("falta cierre"), "{e}");
+    }
+
+    /// §573 · el cierre tiene que llevar la pareja de recepcion: una v5 se rechaza ANTES de tocar
+    /// la criptografia, con el texto DERIVADO del conjunto.
+    #[test]
+    fn un_cierre_sin_la_pareja_de_recepcion_no_cierra_nada() {
+        let e = verificar_completitud(&json!({
+            "v": 1, "tipo": "completitud", "cierre": { "formatVersion": "0x5" }
+        }))
+        .unwrap_err();
+        assert!(e.contains("exige una cabeza v6"), "{e}");
+        let e = verificar_completitud(&json!({
+            "v": 1, "tipo": "completitud", "cierre": { "formatVersion": "0x9" }
+        }))
+        .unwrap_err();
+        assert!(e.contains("formatVersion 9"), "{e}");
+    }
+
+    /// §573 · la grieta de la D-G, nombrada: las cuatro causas que el RFC-0007 dejo sin prueba
+    /// portable, escritas como literales y no derivadas del propio `match`.
+    #[test]
+    fn las_causas_sin_prueba_portable_son_las_cuatro_del_rfc_0007() {
+        assert_eq!(
+            CAUSAS_SIN_PRUEBA_PORTABLE,
+            ["CustodianSetExhausted", "PendingTreeExhausted", "NotTheIssuer", "NotTheAccountHolder"]
+        );
+    }
+
+    /// §573 · D4 del autor: el cuarto estado se cuenta APARTE, con su propio codigo.
+    #[test]
+    fn el_cuarto_estado_sale_con_el_tres_y_el_resto_no() {
+        assert_eq!(codigo_de_salida(&Ok(())), 0);
+        assert_eq!(codigo_de_salida(&Err(format!("{DECLARADA_NO_PROBADA}x"))), 3);
+        assert_eq!(codigo_de_salida(&Err("NO RESUELTA EN LA VENTANA: x".into())), 1);
+        assert_eq!(codigo_de_salida(&Err("falta cierre".into())), 1);
+    }
+
+    /// §573 · D3 del autor: el rechazo se ata al recibo por su `data.recepcion`, y de otra
+    /// operacion NO se ata.
+    #[test]
+    fn un_rechazo_se_ata_al_recibo_por_su_data_y_de_otra_operacion_no() {
+        let h = dg(70);
+        let hex = |d: &Digest| {
+            let b = zk_ssl_hash::digest_to_bytes(d);
+            format!("0x{}", b.iter().map(|x| format!("{x:02x}")).collect::<String>())
+        };
+        let data = json!({ "causa": "X", "recepcion": { "hashPrueba": hex(&h) } });
+        assert_eq!(exige_mismo_recibo(&data, h, "r"), Ok(()));
+        let e = exige_mismo_recibo(&data, dg(71), "r").unwrap_err();
+        assert!(e.contains("OTRA operacion"), "{e}");
+        let e = exige_mismo_recibo(&json!({ "causa": "X" }), h, "r").unwrap_err();
+        assert!(e.contains("no lleva recepcion"), "{e}");
     }
 
     /// Un paquete sin la clave no es un error: es un paquete sin cofirmas.

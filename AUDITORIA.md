@@ -41600,3 +41600,75 @@ El censo del nucleo, quieto en 126. Ningun `Cargo` tocado. Las herramientas del 
 de rechazo; y la E5, su catalogo y su banco. Y el juez que la clase del §561 pide para las citas por
 numero de linea en general: este ata UNA constante, no la clase.
 
+## §573 — RFC-0010 E4: el sobre portable de completitud, sus tres veredictos y el cuarto estado
+
+El commit que lleva este asiento, sobre `0536e85` (el S572). Un solo sello: el mando, las reglas
+compartidas del recibo, el atado del nodo, el contrato del paquete, el nucleo, los pines, las cifras
+y este asiento, con el canon `--sello` VERDE dentro del bloque. Diez ficheros mas este asiento, con
+467 inserciones y 26 borrados fuera de el. Con este sello la E4 del RFC-0010 queda SELLADA.
+
+**De donde sale.** De la D-F y la D-G del RFC-0010 y de CUATRO DECISIONES DEL AUTOR (sesion 193),
+tomadas sobre un diseño medido antes de escribir -fuera del arbol-: (D1) `Q` va DECLARADO,
+porque la hoja no lleva `rx` y un `Q` mentido solo produce un camino que no cruza; (D2) la ventana
+se prueba con una cabeza `vigente` firmada por la MISMA clave, con su indice XMSS; (D3) un rechazo
+se ata al recibo por el `data.recepcion.hashPrueba` que el cable trae desde el §571, y se declara
+que esa atadura es palabra del nodo; (D4) el cuarto estado sale con la salida 3. El hecho que obligo
+a la D3, MEDIDO: el sobre de rechazo del RFC-0007 lleva la causa, la cabeza y el material de la
+causa, y NO la prueba ni el `hashPrueba` de la operacion rechazada; demuestra que la causa se
+sostenia, no a que operacion se aplico.
+
+**Lo que hace.** (1) `zk_ssl_verify::recibos` gana `RECEP_DEPTH` -la profundidad del arbol de
+recibos, la del `SparseTree::new()` del nodo, 32- y `raiz_de_camino_de_recibo`, que sube la hoja
+SOLO por un camino de esa medida y con los lados de la posicion `rx - Q - 1`: molde de
+`congelados::raiz_de_hoja` y su cruce. El nodo ata la constante a su arbol con un testigo. (2) El
+mando despacha `tipo: "completitud"` a `verificar_completitud`: el cierre -una v6 que recompone y
+cuya firma verifica-, la `n` del recibo igual a la firmada, `Q < rx <= recepCount`, la hoja bajo la
+`recepRoot` del cierre -el operador RECIBIO-, y el veredicto: RESUELTA como transicion aplicada -la
+cabeza de la resolucion dentro de la ventana, el acuse de la MISMA prueba, y el par verificado COMO
+el paquete de posicion que es, con su mismo codigo-; RESUELTA como rechazo con prueba -el sobre
+verificado por sus reglas, dentro de la ventana y atado por su `data`-; NO RESUELTA EN LA VENTANA
+-ROJO NOMBRADO, el producto del hito-; o DECLARADA, NO PROBADA, con una de las cuatro causas que el
+RFC-0007 dejo sin prueba portable -el cuarto estado, salida 3, impreso sin `ROJO` porque no lo es-.
+Con la `vigente` aun dentro de la ventana, el sobre es prematuro y lo dice. (3) El cuerpo de
+`correr` sale a `verificar_paquete`, para que la resolucion por acuse no sea una copia. (4)
+`spec/PAQUETE.md` gana su undecima forma -la seccion 2.11, el VERDE y el cuarto codigo de salida- y
+la fila E4 del RFC-0010 dice SELLADA con las cuatro decisiones.
+
+**El nucleo.** Dos filas nuevas en `spec/NUCLEO.md`, y el censo declarado sigue al derivado -78 ->
+80 de verify, NUCLEO 99 -> 101, 126 -> 128 filas-: `check_nucleo` lo nombro antes de tocar, con sus
+dos R1 y su R4.
+
+**Los testigos, siete.** En el verificador, uno de las reglas -el camino mide `RECEP_DEPTH` y cruza
+su posicion: truncado no sube, otra posicion no cruza, una posicion que no cabe no cruza con nada- y
+cinco del mando: el `tipo` se despacha y sin cierre lo dice; un cierre sin la pareja de recepcion no
+cierra nada, con el texto DERIVADO del conjunto; las cuatro causas sin prueba portable, escritas
+como literales; el cuarto estado sale con el 3 y el resto no; y el rechazo se ata al recibo por su
+`data`, y de otra operacion no. En el nodo, uno: el arbol de recibos mide `RECEP_DEPTH` y su camino
+sube con la regla del verificador.
+
+**EL HUMO, VIVO, antes de sellar.** `humo573.py` contra un nodo REAL que firma, con latido de tres
+segundos: un envio de prueba de ceros que la capa RECHAZA (`StaleState`) deja su recibo -rx 1, era
+2-; la cabeza firmada de indice 2 cierra su era; `zkssl_recepPath` da su camino; y el mando, sobre
+el sobre armado con lo que el titular custodia, dice `1/3` y `2/3` -el cierre verifica y el recibo
+esta bajo su firma- y cinco rechazos mas, cada uno por su regla: la ventana ABIERTA, el cuarto
+estado con la salida 3, una causa CON prueba que se pretende declarar, la era mentida, el `Q`
+mentido y la `n` mentida. VERDE. Es la cadena S569 -> S573 entera, de punta a punta, contra el
+binario.
+
+**Los falsadores, ENSAYADOS.** El cuarto estado con la salida 1: cae el suyo. El camino sin el cruce
+de posicion: cae el de las reglas. Sin la guarda de la `n` firmada, EN EL HUMO: la `n` mentida sigue
+cayendo, pero por otra regla y sin su nombre, y el humo lo pone ROJO. Restaurado, todo VERDE.
+
+**Contadores.** El verificador 133 -> 139 y el nodo 165 -> 166; los otros diecinueve sin mover. El
+TOTAL DE SELLO 1489 -> 1496 y el TOTAL CON LARGOS 1626 -> 1633, y los desgloses del nodo y del
+verificador en `PRINCIPIOS.md`: ocho cifras que `check_cifras` nombro, LINEA- y BYTE-NEUTRALES.
+`check_tests` 1648 -> 1655 y el offset en mas 8, QUIETO: 1496 + 137 = 1633 ; 1633 + 14 = 1647 ; el
+canon declara 1655. El nucleo, 126 -> 128 filas. Ningun `Cargo` tocado; el cable, quieto.
+
+**Lo que NO cierra.** La E5: el catalogo `spec/vectors/completitud/` con su MANIFIESTO -un positivo
+por veredicto y un negativo por regla-, su familia en el canon y su banco. Los dos veredictos VERDES
+no se han visto todavia en vivo: el primero pide una transicion APLICADA con prueba real, y el
+segundo un sobre de rechazo del nodo sobre la misma operacion. El tercero pide una ventana EXPIRADA:
+con `N = 1.440` son 1.441 firmas, unos 24 minutos a un latido por segundo, y el banco lo tendra que
+pagar o medir otro camino.
+

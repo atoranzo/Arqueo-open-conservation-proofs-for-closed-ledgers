@@ -32,9 +32,9 @@ cuántos hacen falta lo decide el CLIENTE** con su política (§319, los mandos 
 del testigo), no el paquete: quien lo arma puede ser el operador, y dejarle elegir su propia `k`
 le devolvería justo lo que la cofirma le quita.
 
-## 2. Las diez formas
+## 2. Las once formas
 
-El binario acepta diez objetos. Los diez son JSON; los esqueletos van con puntos
+El binario acepta once objetos (la undécima, desde el §573). Los once son JSON; los esqueletos van con puntos
 suspensivos
 donde el valor es una respuesta del cable sin reescribir.
 
@@ -356,6 +356,43 @@ donde el valor es una respuesta del cable sin reescribir.
   rechazo en vivo y siete negativos—, y **el catálogo es `spec/vectors/prenda/`** (§546), la octava
   familia del artefacto, COPIADA de esas capturas y no re-derivada.
 
+### 2.11 El sobre de completitud (§573, RFC-0010 E4)
+
+```text
+{ "v": 1, "tipo": "completitud",
+  "cierre": {…},                                  la cabeza v6 firmada que cierra la era del recibo
+  "recepcion": {"rx", "era", "n", "hashPrueba"},  el recibo del cable, tal cual (§571)
+  "limiteAnterior": "0x…",                        Q, DECLARADO (D1)
+  "camino": {"siblings": […], "isRight": […]},    el de zkssl_recepPath
+  "resolucion": {"tipo": "acuse", "cabeza": {…}, "acuse": {"seq", "hashPrueba", "camino"}}
+              | {"tipo": "rechazo", "sobre": {…}}      un sobre de la sección 2.6
+              | {"tipo": "declarada", "data": {…}},    el `error.data` del rechazo, tal cual
+  "vigente": {…} }                                una cabeza del MISMO operador, para la ventana
+```
+
+El mando comprueba, en orden, que el `cierre` es una cabeza v6 que recompone y cuya firma
+verifica, que la `n` del recibo es la firmada, que `Q < rx <= recepCount`, y que la hoja
+`recibo_digest(hashPrueba, era, n)` sube por un camino de `RECEP_DEPTH` niveles con los lados de
+la posición `rx − Q − 1` hasta la `recepRoot` del cierre: el operador **recibió** la operación.
+Después, el veredicto (RFC-0010, D-F y D-G). La ventana se MIDE siempre con el índice XMSS de una
+cabeza firmada por la misma clave, el que la firma lleva embebido (§399), con `S − era <= n` (D2):
+
+1. **`acuse`**: la cabeza está dentro de la ventana, el acuse es de la MISMA prueba y el par
+   cabeza+acuse verifica como el paquete de posición de la sección 2.1. VERDE, «resuelta como
+   transición aplicada».
+2. **`rechazo`**: el sobre verifica por sus propias reglas, su cabeza está dentro de la ventana, y
+   su `data.recepcion.hashPrueba` es el del recibo (D3). ⚠️ Esa atadura es la PALABRA del nodo: el
+   `error` del cable no va firmado. VERDE, «resuelta como rechazo con prueba».
+3. **Sin resolución**, con una cabeza `vigente` fuera de la ventana: **ROJO NOMBRADO**, «NO
+   RESUELTA EN LA VENTANA». Es el producto del hito: la promesa firmada por el acusado, la ventana
+   aritmética sobre dos cabezas firmadas, y la carga de exhibir la resolución de quien la tiene.
+   No es una prueba criptográfica de ausencia (D-F). Con la `vigente` todavía dentro de la
+   ventana, el sobre es prematuro y se rechaza con su nombre.
+4. **`declarada`**, con una de las causas que el RFC-0007 dejó sin prueba portable
+   (`CustodianSetExhausted`, `PendingTreeExhausted`, `NotTheIssuer`, `NotTheAccountHolder`) y atada
+   al recibo por su `recepcion`: el **cuarto estado**, «resolución declarada, no probada», que
+   sale con su propio código (D4). Una causa que sí tiene prueba se exhibe, no se declara.
+
 ## 3. El sobre — lo que el binario lee
 
 El binario lee **31 nombres** distintos del JSON. Los 14 primeros son el sobre propiamente dicho;
@@ -639,7 +676,7 @@ dice (D-AS).
   de posición (o `3/3 sin acuse en el paquete: la cabeza sola queda demostrada`), de extensión,
   de rechazo, de edad, de cobro pendiente, de pago en curso y de prenda; `1/5` a `5/5` en el
   de consumo; `1/4` a `4/4` en el de conflicto—, la de cofirmas cuando el sobre es v2, y al
-  final el VERDE de su forma, uno de estos nueve; los seis últimos siguen en una segunda
+  final el VERDE de su forma, uno de estos diez; los seis del cuarto al noveno siguen en una segunda
   línea, el del cobro llega a una tercera, y los del pago y la prenda a una cuarta:
   - `VERDE: el paquete se sostiene sin el nodo`
   - `VERDE: la extension se sostiene sin el nodo`
@@ -650,9 +687,12 @@ dice (D-AS).
   - `VERDE: bajo la cabeza de seq {seq} hay un pendiente a nombre del receptor,`
   - `VERDE: bajo la cabeza de seq {seq} hay un pendiente a nombre del receptor por`
   - `VERDE: bajo la cabeza de seq {seq} hay un pendiente que solo puede cobrar quien`
+  - `VERDE: el recibo se resolvio dentro de la ventana, y se sostiene sin el nodo` (§573)
 - **Salida de error:** `ROJO: {motivo}` con un texto del catálogo de la sección 5, y para.
-- **Tres códigos de salida:** `0` verde · `1` el primer fallo con nombre · `2` uso (ningún
-  argumento, o más de uno; imprime el uso en la salida de error).
+- **Cuatro códigos de salida:** `0` verde · `1` el primer fallo con nombre · `2` uso (ningún
+  argumento, o más de uno; imprime el uso en la salida de error) · `3`, desde el §573, el cuarto
+  estado del sobre de completitud, «resolución declarada, no probada», que se imprime con su nombre
+  y sin `ROJO`, porque no lo es.
 
 ## 7. Quién arma el paquete
 
