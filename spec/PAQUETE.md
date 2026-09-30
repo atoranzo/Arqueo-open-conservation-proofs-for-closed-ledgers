@@ -32,10 +32,10 @@ cuántos hacen falta lo decide el CLIENTE** con su política (§319, los mandos 
 del testigo), no el paquete: quien lo arma puede ser el operador, y dejarle elegir su propia `k`
 le devolvería justo lo que la cofirma le quita.
 
-## 2. Las once formas
+## 2. Las doce formas
 
-El binario acepta once objetos (la undécima, desde el §573). Los once son JSON; los esqueletos van con puntos
-suspensivos
+El binario acepta doce objetos (la undécima, desde el §573; la duodécima, desde el §586). Los
+doce son JSON; los esqueletos van con puntos suspensivos
 donde el valor es una respuesta del cable sin reescribir.
 
 ### 2.1 El paquete v1 — la posición
@@ -398,6 +398,54 @@ que firma —con `--largo`, hasta que la ventana EXPIRA—, y **el catálogo es
 `spec/vectors/completitud/`** (§574), la novena familia del artefacto, COPIADA de una corrida
 suya: sección 9.
 
+### 2.12 El sobre del ancla (§586, RFC-0012 E3)
+
+```text
+{ "v": 1, "tipo": "ancla",
+  "cabeza": {…},                        la cabeza firmada (payload de zkssl_signedEpochHead,
+                                        available:true, v3 a v6: la pareja del MMR viaja desde ellas)
+  "ancla": { "v": 1, "clave": "0x…",    OPCIONAL: el ancla publicada en el medio, tal cual --
+             "indice": "0x…",           la huella de la clave, el indice XMSS EMBEBIDO, el digest
+             "epochDigest": "0x…",      firmado y la pareja del MMR (RFC-0012, D-A)
+             "mmrRoot": "0x…", "mmrSize": "0x…" },
+  "camino": ["0x…", …],                 OPCIONAL: la consistencia MMR del lote anclado a la cabeza
+                                        (RFC 6962), la lista plana del sobre de extensión
+  "contraria": {…} }                    OPCIONAL: una segunda cabeza firmada -- la vista dividida
+```
+
+El orden: primero la FORMA —`contraria` y `ancla` no conviven, y un `camino` sin `ancla` no
+tiene nada que extender—; después la `cabeza`, ENTERA —recompone su digest, su firma verifica, y
+el índice que cuenta es el **EMBEBIDO** en la firma (§399; RFC-0012, D-C)—. Con eso, cuatro
+modos:
+
+1. **La cabeza sola**: el mando DERIVA el ancla y su huella
+   (`ancla_digest(huella_de_clave(publicKey), indice_embebido, epochDigest, mmrRoot, mmrSize)`,
+   `spec/NUCLEO.md` §6) y las imprime. Es el productor de B10.6: lo impreso es lo que se publica
+   en el medio. El que comprueba compara la huella con el medio **él mismo**: este binario no
+   tiene red y lo dice en su salida. VERDE.
+2. **Con `ancla` y sin `camino`**: el ancla ES esta cabeza. Los cinco campos, iguales, cada uno
+   con su rechazo nombrado; la `clave` contra la huella de la `publicKey`, el `indice` contra el
+   embebido. VERDE.
+3. **Con `ancla` y `camino`**: el ancla es ANTERIOR. Misma clave, `indice` estrictamente
+   anterior al embebido, y la cima de la cabeza EXTIENDE el lote anclado —`mmrRoot`/`mmrSize`
+   del ancla contra los de la cabeza, el juez de consistencia del §291—. El ancla del génesis
+   (`mmrSize` 0) no tiene historia que extender y se rechaza con su nombre. VERDE: la historia
+   anclada es un prefijo.
+4. **Con `contraria`**: la VISTA DIVIDIDA. La contraria se verifica ENTERA como la cabeza;
+   misma clave, mismo índice EMBEBIDO, contenidos distintos —dos preámbulos bajo un índice de
+   un solo uso, que sólo quien tiene la clave puede producir (§248)—. Sale **DETECCIÓN**, con
+   salida 0, el molde del conflicto (2.5): el sobre que la exhibe no falla — delata. Dos
+   cabezas con índices embebidos DISTINTOS no dividen ninguna vista y se rechazan con su nombre.
+
+⚠️ Lo que este sobre NO dice: que el ancla estuviera PUBLICADA, ni desde cuándo — eso es del
+medio elegido, y la confianza en el medio queda desplazada y declarada (RFC-0012, D-H). El
+sobre verifica la criptografía; el orden externo lo da el medio.
+
+**El banco es `tools/banco_ancla.sh`** (§587), que lo reproduce en vivo contra un nodo real que
+firma —la vista dividida incluida, reproduciendo el ataque de verdad: la misma semilla con un
+contador de índice fresco y otro libro—, y **el catálogo es `spec/vectors/ancla/`** (§587), la
+décima familia del artefacto, COPIADA de una corrida suya: sección 9.
+
 ## 3. El sobre — lo que el binario lee
 
 El binario lee **31 nombres** distintos del JSON. Los 14 primeros son el sobre propiamente dicho;
@@ -673,15 +721,42 @@ firma y la familia de v5— salen de los **mismos productores** de arriba, y `fa
 por letra. **No hay rechazo por marca no publicada**: este brazo no lo comprueba, y el VERDE lo
 dice (D-AS).
 
+**El ancla** (§586, RFC-0012 E3)
+
+- `falta cabeza (la firmada que el ancla compromete)`
+- `un sobre con contraria no lleva ancla: la vista dividida se demuestra con las dos cabezas solas`
+- `camino sin ancla: no hay nada que extender`
+- `cabeza: formatVersion {version}: el ancla lee cabezas v3, v4, v5 o v6: la pareja del MMR
+  viaja firmada desde ellas` — el conjunto, derivado de su productor; y el mismo texto con
+  `contraria:` como sujeto
+- `el ancla no declara v 1: este binario lee ancla v1`
+- `el ancla es de OTRA clave: su clave no es la huella de la publicKey de la cabeza`
+- `el ancla no ES esta cabeza: su {campo} no casa`, con `{campo}` uno de `indice`,
+  `epochDigest`, `mmrRoot` y `mmrSize` — un vector por campo
+- `el ancla del genesis (mmrSize 0) no tiene historia que extender: se compara entera, sin camino`
+- `el ancla declara un indice ({a}) que no es ANTERIOR al embebido de la cabeza ({b})`
+- `la cabeza (t={t}) NO extiende el ancla (t={a}): historia bifurcada, recortada, o camino que
+  no es el suyo`
+- `los indices embebidos son DISTINTOS ({a}, {b}): dos firmas con su indice propio no dividen
+  la vista`
+- `las dos cabezas son LA MISMA: no hay vista que dividir`
+- `las cabezas llevan claves DISTINTAS: la continuidad es de UN firmante` — el de la extensión,
+  letra por letra
+
+Lo que el sobre exige de una cabeza —`available:true`, la recomposición del digest, la firma—
+y la lectura del `camino` son los de la extensión, con `cabeza` o `contraria` como sujeto: viven
+en su bloque y no se repiten aquí.
+
 ## 6. El contrato del mando
 
 - **Invocación:** `zk-ssl-verify <paquete.json>` — **un** argumento, la ruta del fichero. Es la
   única lectura de disco del binario; no hay red, ni reloj, ni telemetría (§395 lo gatea).
 - **Salida estándar:** las líneas numeradas de su forma —`1/3` · `2/3` · `3/3` en los paquetes
   de posición (o `3/3 sin acuse en el paquete: la cabeza sola queda demostrada`), de extensión,
-  de rechazo, de edad, de cobro pendiente, de pago en curso y de prenda; `1/5` a `5/5` en el
+  de rechazo, de edad, de cobro pendiente, de pago en curso, de prenda y del ancla; `1/5` a
+  `5/5` en el
   de consumo; `1/4` a `4/4` en el de conflicto—, la de cofirmas cuando el sobre es v2, y al
-  final el VERDE de su forma, uno de estos diez; los seis del cuarto al noveno siguen en una segunda
+  final el VERDE de su forma, uno de estos catorce; los seis del cuarto al noveno siguen en una segunda
   línea, el del cobro llega a una tercera, y los del pago y la prenda a una cuarta:
   - `VERDE: el paquete se sostiene sin el nodo`
   - `VERDE: la extension se sostiene sin el nodo`
@@ -693,6 +768,12 @@ dice (D-AS).
   - `VERDE: bajo la cabeza de seq {seq} hay un pendiente a nombre del receptor por`
   - `VERDE: bajo la cabeza de seq {seq} hay un pendiente que solo puede cobrar quien`
   - `VERDE: el recibo se resolvio dentro de la ventana, y se sostiene sin el nodo` (§573)
+  - `VERDE: el ancla se deriva de la cabeza firmada, y se sostiene sin el nodo` (§586; las dos
+    líneas anteriores llevan el ancla derivada y su huella, para publicarlas)
+  - `VERDE: el ancla ES esta cabeza firmada, y se sostiene sin el nodo` (§586)
+  - `VERDE: la cabeza extiende el ancla: la historia anclada es un prefijo, y se sostiene sin el nodo` (§586)
+  - `VERDE: VISTA DIVIDIDA - la clave firmo DOS cabezas con el indice embebido {i}. Es
+    DETECCION del operador: dos historias, y solo quien tiene la clave pudo producirlas` (§586)
 - **Salida de error:** `ROJO: {motivo}` con un texto del catálogo de la sección 5, y para.
 - **Cuatro códigos de salida:** `0` verde · `1` el primer fallo con nombre · `2` uso (ningún
   argumento, o más de uno; imprime el uso en la salida de error) · `3`, desde el §573, el cuarto

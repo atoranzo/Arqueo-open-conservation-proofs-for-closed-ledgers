@@ -42401,3 +42401,39 @@ Ningún `Cargo` tocado; el cable y `VERSION_FORMATO`, quietos.
 **Lo que NO cierra.** El sobre que consuma estas composiciones (E3) y su catálogo (E4). Y la
 cifra «1364 declarados» de PRINCIPIOS/PAPER no se toca: su productor no está en el árbol y esta
 sesión no lo reproduce — queda anotado que tres declarados nuevos existen y esa prosa envejece.
+
+## §592 — RFC-0012 E3: el sobre del ancla, undécimo brazo del mando
+
+El commit que lleva este asiento, sobre `8eab2b6` (el S591). Un solo sello: el brazo, su
+contrato en `spec/PAQUETE.md` y las cifras, con la suite del verificador y las compuertas
+VERDES dentro del bloque. Cinco ficheros más este asiento.
+
+**De dónde sale.** De la E3 del RFC-0012: B10.7 pedía «el verificador de ancla en
+cliente/testigo (camino Merkle → raíz anclada)», y el productor de B10.6 —quién deriva el ancla
+que se publica— no podía ser un método del cable (§248). El mando es las dos cosas.
+
+**Lo que hace.** `tipo: "ancla"`, la duodécima forma, con las reglas de FORMA cortando antes
+que la criptografía y cuatro modos: (1) la cabeza sola DERIVA el ancla y su huella y las
+imprime —lo publicable, con el aviso de que este binario no tiene red y la comparación con el
+medio es del que comprueba—; (2) el ancla ES la cabeza, campo a campo con el rechazo nombrado
+por campo; (3) el ancla ANTERIOR, con la clave igual, el índice estrictamente anterior al
+EMBEBIDO y el juez de consistencia del §291 sobre la pareja del MMR —el génesis (mmrSize 0)
+rechazado con su nombre—; y (4) la VISTA DIVIDIDA: la contraria verificada ENTERA, misma clave,
+MISMO índice embebido y contenidos distintos, con el VERDE-DETECCIÓN del molde del conflicto
+(§430). El índice que cuenta es SIEMPRE el embebido (D-C, §399): el declarado, acotado sólo por
+abajo, fabricaría vistas divididas falsas. `PAQUETE.md` gana la 2.12, el bloque del ancla en el
+catálogo de rechazos y los cuatro finales en el contrato del mando (doce formas, catorce
+finales).
+
+**Los testigos, CUATRO.** El despacho y `falta cabeza`; la pareja del MMR exigida ANTES de la
+criptografía con el texto derivado del conjunto (v2 y v9); las dos reglas de forma (contraria
+con ancla, camino sin ancla); y el desconocido que enumera el brazo nuevo. Los modos con firma
+de verdad no se fabrican en la suite: los siembra el banco de la E4 contra un nodo real, como
+en la completitud (§574).
+
+**Contadores.** El verificador 140 -> 144, sobre el 139 -> 140 del §586, y los otros veinte sin mover; TOTAL DE SELLO
+1507 -> 1511; TOTAL CON LARGOS 1644 -> 1648; el desglose de PRINCIPIOS y los dos PAPER, al
+día. Cero warnings. Ningún `Cargo` tocado; el cable y `VERSION_FORMATO`, quietos.
+
+**Lo que NO cierra.** El catálogo y el banco (E4). Y el sobre no dice que el ancla estuviera
+PUBLICADA ni desde cuándo: eso es del medio, y queda escrito en la 2.12.

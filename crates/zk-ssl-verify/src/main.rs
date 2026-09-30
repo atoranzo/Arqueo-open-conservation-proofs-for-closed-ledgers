@@ -59,8 +59,8 @@ use winter_math::fields::f64::BaseElement;
 use winter_math::FieldElement;
 use zk_ssl_air::banda::{verificar as verificar_banda, BandaPublicInputs};
 use zk_ssl_hash::{
-    digest_from_bytes, epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5,
-    epoch_digest_v6, params_digest, Digest,
+    ancla_digest, digest_from_bytes, digest_to_bytes, epoch_digest_v2, epoch_digest_v3,
+    epoch_digest_v4, epoch_digest_v5, epoch_digest_v6, huella_de_clave, params_digest, Digest,
 };
 
 /// Punto unico de forma de error del binario (hoy identidad; el dia que
@@ -178,12 +178,15 @@ fn verificar_paquete(p: &serde_json::Value) -> Result<(), String> {
         Some("prenda") => return verificar_prenda(&p),
         // RFC-0010 E4 (§573): la completitud de un recibo de recepcion, y sus tres veredictos.
         Some("completitud") => return verificar_completitud(&p),
+        // RFC-0012 E3 (§586): el ancla de cabezas, sus tres modos y la vista dividida.
+        Some("ancla") => return verificar_ancla(&p),
         Some(otro) => {
             return Err(err(format!(
                 "tipo desconocido: {otro} - se lee un paquete de posicion (sin `tipo`), \
                  `tipo: \"extension\"`, `tipo: \"consumo\"`, `tipo: \"conflicto\"`, \
                  `tipo: \"rechazo\"`, `tipo: \"edad\"`, `tipo: \"cobro_pendiente\"`, \
-                 `tipo: \"pago_en_curso\"`, `tipo: \"prenda\"` o `tipo: \"completitud\"`"
+                 `tipo: \"pago_en_curso\"`, `tipo: \"prenda\"`, `tipo: \"completitud\"` \
+                 o `tipo: \"ancla\"`"
             )))
         }
     }
@@ -1866,6 +1869,222 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
     Ok(())
 }
 
+/// Un digest, en el hex del cable (`0x…`, 64 nibbles): lo que el sobre del
+/// ancla IMPRIME para que el que comprueba lo compare con el medio.
+fn hex_de_digest(d: &Digest) -> String {
+    let b = digest_to_bytes(d);
+    let mut s = String::with_capacity(2 + 64);
+    s.push_str("0x");
+    for x in b {
+        s.push_str(&format!("{x:02x}"));
+    }
+    s
+}
+
+/// **El sobre del ANCLA** (RFC-0012 E3, §586): una cabeza firmada y, si
+/// viajan, el ancla publicada en el medio y lo que la une a la cabeza.
+/// Cuatro modos:
+///
+/// 1. La cabeza SOLA: el mando DERIVA el ancla y su huella y las imprime —
+///    el productor de B10.6. Lo impreso es lo que se publica; quien
+///    comprueba contra el medio compara la huella byte a byte, porque el
+///    mando no tiene red y no puede leer el medio por nadie. VERDE.
+/// 2. Con `ancla` y sin `camino`: el ancla ES esta cabeza — los cinco
+///    campos iguales, el indice contra el EMBEBIDO en la firma. VERDE.
+/// 3. Con `ancla` y `camino`: el ancla es ANTERIOR — misma clave, indice
+///    anterior, y la consistencia del MMR (§291, RFC 6962) del lote
+///    anclado a la cabeza. VERDE: la historia anclada es un prefijo.
+/// 4. Con `contraria`: la VISTA DIVIDIDA — dos cabezas firmadas de la
+///    misma clave con el MISMO indice embebido y contenidos distintos.
+///    DETECCION con salida 0, el molde del conflicto (§430): el sobre que
+///    la exhibe no falla — delata, y solo el operador pudo producirla.
+///
+/// El indice del ancla es el EMBEBIDO (D-C): el declarado solo esta
+/// acotado por abajo (§399), y dos cabezas honestas pueden compartirlo.
+fn verificar_ancla(p: &serde_json::Value) -> Result<(), String> {
+    // Las reglas de FORMA, antes de tocar la criptografia: que combinacion
+    // de claves es un sobre y cual no.
+    if p.get("ancla").is_some() && p.get("contraria").is_some() {
+        return Err(err(
+            "un sobre con contraria no lleva ancla: la vista dividida se demuestra con las \
+             dos cabezas solas"
+                .into(),
+        ));
+    }
+    if p.get("camino").is_some() && p.get("ancla").is_none() {
+        return Err(err("camino sin ancla: no hay nada que extender".into()));
+    }
+    let c = p
+        .get("cabeza")
+        .ok_or_else(|| err("falta cabeza (la firmada que el ancla compromete)".into()))?;
+    let version = u64_de(c, "formatVersion")?;
+    match VersionCabeza::try_from(version) {
+        Ok(v) if v.lleva_mmr() => {}
+        _ => {
+            return Err(err(format!(
+                "cabeza: formatVersion {version}: el ancla lee cabezas {}: la pareja del MMR \
+                 viaja firmada desde ellas",
+                VersionCabeza::texto_con_mmr()
+            )))
+        }
+    }
+    let (cima, t, clave_hex, _) = cabeza_v3_verificada(c, "cabeza")?;
+    let epoch_digest = digest_de(c, "epochDigest")?;
+    let firma = hex_a_bytes(c.get("signature").and_then(|x| x.as_str()).unwrap_or(""))?;
+    let embebido = indice_de_firma(&firma).map_err(|e| err(format!("cabeza: {e}")))?;
+    let huella_clave = huella_de_clave(&hex_a_bytes(&clave_hex)?);
+    println!(
+        "1/3 la cabeza (v{version}) recompone su digest y su firma verifica \
+         (indice embebido {embebido})"
+    );
+
+    match (p.get("ancla"), p.get("contraria")) {
+        (None, None) => {
+            // Modo 1: DERIVAR. El unico modo sin nada que creer: todo sale
+            // de la cabeza verificada.
+            let huella = ancla_digest(huella_clave, embebido, epoch_digest, cima, t);
+            println!("2/3 el ancla, derivada de la cabeza sola: lo que se publica en el medio");
+            println!(
+                "   {{ \"v\": 1, \"clave\": \"{}\", \"indice\": \"{:#x}\", \
+                 \"epochDigest\": \"{}\", \"mmrRoot\": \"{}\", \"mmrSize\": \"{:#x}\" }}",
+                hex_de_digest(&huella_clave),
+                embebido,
+                hex_de_digest(&epoch_digest),
+                hex_de_digest(&cima),
+                t
+            );
+            println!(
+                "3/3 la huella del ancla: {} - comparala con el medio: este mando no tiene red",
+                hex_de_digest(&huella)
+            );
+            println!("VERDE: el ancla se deriva de la cabeza firmada, y se sostiene sin el nodo");
+            Ok(())
+        }
+        (Some(a), None) => {
+            if a.get("v").and_then(|x| x.as_u64()) != Some(1) {
+                return Err(err("el ancla no declara v 1: este binario lee ancla v1".into()));
+            }
+            let a_clave = digest_de(a, "clave")?;
+            if a_clave != huella_clave {
+                return Err(err(
+                    "el ancla es de OTRA clave: su clave no es la huella de la publicKey de \
+                     la cabeza"
+                        .into(),
+                ));
+            }
+            let a_indice = u64_de(a, "indice")?;
+            let a_digest = digest_de(a, "epochDigest")?;
+            let a_root = digest_de(a, "mmrRoot")?;
+            let a_size = u64_de(a, "mmrSize")?;
+            let huella = ancla_digest(a_clave, a_indice, a_digest, a_root, a_size);
+            match p.get("camino") {
+                None => {
+                    // Modo 2: el ancla ES esta cabeza. Campo a campo, con el
+                    // nombre del que no casa: un ancla es una afirmacion
+                    // publicada, y el que no casa es EL dato manipulado.
+                    for (campo, casa) in [
+                        ("indice", a_indice == embebido),
+                        ("epochDigest", a_digest == epoch_digest),
+                        ("mmrRoot", a_root == cima),
+                        ("mmrSize", a_size == t),
+                    ] {
+                        if !casa {
+                            return Err(err(format!(
+                                "el ancla no ES esta cabeza: su {campo} no casa"
+                            )));
+                        }
+                    }
+                    println!("2/3 los cinco campos del ancla son los de la cabeza firmada");
+                    println!("3/3 la huella del ancla: {}", hex_de_digest(&huella));
+                    println!("VERDE: el ancla ES esta cabeza firmada, y se sostiene sin el nodo");
+                }
+                Some(_) => {
+                    // Modo 3: el ancla es ANTERIOR y la cabeza la extiende.
+                    if a_size == 0 {
+                        return Err(err(
+                            "el ancla del genesis (mmrSize 0) no tiene historia que extender: \
+                             se compara entera, sin camino"
+                                .into(),
+                        ));
+                    }
+                    if a_indice >= embebido {
+                        return Err(err(format!(
+                            "el ancla declara un indice ({a_indice}) que no es ANTERIOR al \
+                             embebido de la cabeza ({embebido})"
+                        )));
+                    }
+                    let camino = camino_mmr(p)?;
+                    if !zk_ssl_verify::mmr::verificar_consistencia(a_root, a_size, cima, t, &camino)
+                    {
+                        return Err(err(format!(
+                            "la cabeza (t={t}) NO extiende el ancla (t={a_size}): historia \
+                             bifurcada, recortada, o camino que no es el suyo"
+                        )));
+                    }
+                    println!(
+                        "2/3 la cima de la cabeza EXTIENDE el lote anclado: consistencia \
+                         O(log N), sin el registro"
+                    );
+                    println!("3/3 la huella del ancla: {}", hex_de_digest(&huella));
+                    println!(
+                        "VERDE: la cabeza extiende el ancla: la historia anclada es un \
+                         prefijo, y se sostiene sin el nodo"
+                    );
+                }
+            }
+            Ok(())
+        }
+        (None, Some(otra)) => {
+            // Modo 4: la VISTA DIVIDIDA. La contraria se verifica ENTERA,
+            // como la cabeza: dos firmas de verdad o no hay delacion.
+            let version_o = u64_de(otra, "formatVersion")?;
+            match VersionCabeza::try_from(version_o) {
+                Ok(v) if v.lleva_mmr() => {}
+                _ => {
+                    return Err(err(format!(
+                        "contraria: formatVersion {version_o}: el ancla lee cabezas {}: la \
+                         pareja del MMR viaja firmada desde ellas",
+                        VersionCabeza::texto_con_mmr()
+                    )))
+                }
+            }
+            let (_, _, clave_o, _) = cabeza_v3_verificada(otra, "contraria")?;
+            if clave_o != clave_hex {
+                return Err(claves_distintas());
+            }
+            let firma_o =
+                hex_a_bytes(otra.get("signature").and_then(|x| x.as_str()).unwrap_or(""))?;
+            let embebido_o = indice_de_firma(&firma_o).map_err(|e| err(format!("contraria: {e}")))?;
+            if embebido_o != embebido {
+                return Err(err(format!(
+                    "los indices embebidos son DISTINTOS ({embebido}, {embebido_o}): dos \
+                     firmas con su indice propio no dividen la vista"
+                )));
+            }
+            let digest_o = digest_de(otra, "epochDigest")?;
+            if digest_o == epoch_digest && version_o == version {
+                return Err(err(
+                    "las dos cabezas son LA MISMA: no hay vista que dividir".into(),
+                ));
+            }
+            println!(
+                "2/3 la contraria recompone y su firma verifica: misma clave, mismo indice \
+                 embebido {embebido}"
+            );
+            println!(
+                "3/3 los contenidos DIFIEREN: dos preambulos bajo un indice de un solo uso"
+            );
+            println!(
+                "VERDE: VISTA DIVIDIDA - la clave firmo DOS cabezas con el indice embebido \
+                 {embebido}. Es DETECCION del operador: dos historias, y solo quien tiene la \
+                 clave pudo producirlas"
+            );
+            Ok(())
+        }
+        (Some(_), Some(_)) => unreachable!("la regla de forma corta antes"),
+    }
+}
+
 fn main() -> ExitCode {
     let mut args = std::env::args().skip(1);
     let ruta = match (args.next(), args.next()) {
@@ -1943,6 +2162,52 @@ mod tests {
         }))
         .unwrap_err();
         assert!(e.contains("formatVersion 9"), "{e}");
+    }
+
+    /// §586 · el `tipo` ancla se despacha, y sin cabeza se rechaza con su nombre.
+    #[test]
+    fn el_sobre_del_ancla_se_despacha_y_sin_cabeza_lo_dice() {
+        let e = verificar_paquete(&json!({ "v": 1, "tipo": "ancla" })).unwrap_err();
+        assert!(e.starts_with("falta cabeza"), "{e}");
+    }
+
+    /// §586 · el ancla exige la pareja del MMR: una v2 y una version desconocida caen ANTES de
+    /// tocar la criptografia, con el texto DERIVADO del conjunto.
+    #[test]
+    fn un_ancla_sin_la_pareja_del_mmr_no_ancla_nada() {
+        let e = verificar_ancla(&json!({
+            "v": 1, "tipo": "ancla", "cabeza": { "formatVersion": "0x2" }
+        }))
+        .unwrap_err();
+        assert!(e.contains("el ancla lee cabezas"), "{e}");
+        let e = verificar_ancla(&json!({
+            "v": 1, "tipo": "ancla", "cabeza": { "formatVersion": "0x9" }
+        }))
+        .unwrap_err();
+        assert!(e.contains("formatVersion 9"), "{e}");
+    }
+
+    /// §586 · las dos reglas de forma cortan antes que la criptografia: contraria y ancla no
+    /// conviven, y un camino sin ancla no tiene nada que extender.
+    #[test]
+    fn la_forma_del_sobre_del_ancla_corta_antes_de_creer_nada() {
+        let e = verificar_ancla(&json!({
+            "v": 1, "tipo": "ancla", "cabeza": {}, "ancla": {}, "contraria": {}
+        }))
+        .unwrap_err();
+        assert!(e.starts_with("un sobre con contraria no lleva ancla"), "{e}");
+        let e = verificar_ancla(&json!({
+            "v": 1, "tipo": "ancla", "cabeza": {}, "camino": []
+        }))
+        .unwrap_err();
+        assert!(e.starts_with("camino sin ancla"), "{e}");
+    }
+
+    /// §586 · el desconocido enumera el brazo nuevo: el texto del catalogo lleva `tipo: "ancla"`.
+    #[test]
+    fn el_tipo_desconocido_enumera_el_ancla() {
+        let e = verificar_paquete(&json!({ "v": 1, "tipo": "otra" })).unwrap_err();
+        assert!(e.contains("`tipo: \"ancla\"`"), "{e}");
     }
 
     /// §573 · la grieta de la D-G, nombrada: las cuatro causas que el RFC-0007 dejo sin prueba
