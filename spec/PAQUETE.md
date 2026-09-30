@@ -966,9 +966,12 @@ NOMBRADO), y el cuarto estado (salida 3), DERIVADO del `data` real con una causa
 portable, porque el nodo no produce hoy esas causas por esta vía, y se declara. Y TREINTA Y DOS
 negativos por UNA mutación cada uno, uno por regla producible y por SITIO: los de las claves
 distintas llevan la cabeza de un segundo nodo, de otra semilla. El veredicto 1 —resuelta como
-transición APLICADA— no tiene vector: pide la prueba STARK real de un envío aplicado, y su par
-cabeza + acuse se verifica como el paquete de posición, con los vectores de `paquete/`; las reglas
-propias de esa rama sí lo tienen. Las que el sobre comparte con otras familias —lo que se exige de
+transición APLICADA— no tuvo vector hasta el §605: pide la prueba STARK real de un envío aplicado,
+y su par cabeza + acuse se verifica como el paquete de posición, con los vectores de `paquete/`; las
+reglas propias de esa rama sí lo tienen. **Desde el §605 lo tiene**: `resuelta-por-acuse`, un CUARTO
+positivo copiado de OTRO productor, `tools/banco_mentiroso_sin_resolver.sh --guardar` (RFC-0011
+E4): un nodo `--dev` contra el que el ejemplo `e2e` del sdk paga con una prueba STARK real, y el
+acuse de la entrada bajo la cabeza que la firma. Las que el sobre comparte con otras familias —lo que se exige de
 una cabeza, la lectura del camino, lo que la resolución re-verifica— viven en ellas, y se declara.
 Dos corridas del banco dan el mismo cierre salvo `emittedAtUnix`, que no va firmado: la familia se
 COPIA de la corrida del sello. Su productor es `tools/banco_completitud.sh` (§574), con `--largo`

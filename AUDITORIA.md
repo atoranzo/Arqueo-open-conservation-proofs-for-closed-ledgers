@@ -42979,3 +42979,41 @@ que dejó al medir vive en la 109 (el sdk que tira el recibo) y la 110 (el vecto
 que se aceptó el RFC-0010. El RFC-0012 sigue PROPUESTO, a la espera de su
 propio giro.
 
+## §605 — el veredicto 1 del sobre de completitud tiene vector: la 110, cerrada
+
+El commit que lleva este asiento, sobre `fc1a9ae` (el S604). Un solo sello: el vector
+`resuelta-por-acuse` en `spec/vectors/completitud/` con su línea del manifiesto, el `--guardar`
+del banco que lo produce, las notas que decían que no lo había, la 110 cerrada, la columna de
+`tools/bancos.sh` y este asiento, con el canon `--sello` VERDE dentro del bloque. Nueve ficheros
+más este asiento, con 270 inserciones y 26 borrados fuera de él.
+
+**De dónde sale.** El RFC-0010 se aceptó en el §577 con un residuo declarado: el veredicto 1 -la
+recepción RESUELTA como transición aplicada- no tenía vector, porque pedía una prueba STARK real de
+un envío aplicado. El banco de la E4 del RFC-0011 (§602) la pone: su control paga con el ejemplo
+`e2e` del sdk contra un nodo `--dev`, y el sobre con el acuse de la cabeza que lo firma sale VERDE.
+
+**Lo que hace.** `tools/banco_mentiroso_sin_resolver.sh` gana `--guardar <dir>`, como sus
+hermanos, y copia allí el sobre resuelto del control. De una corrida suya sale
+`resuelta-por-acuse.json`: el recibo rx 1, era 2, n 1440, cerrado por la cabeza v6 de índice 3
+con Q 0 y recepCount 2, y esa misma cabeza firma bajo su `acusesRoot` el acuse de la entrada 3. El
+mando lo verifica entero sin el nodo -el recibo bajo la `recepRoot`, y la resolución como paquete
+de posición: «el acuse sube hasta la raíz firmada»- y dice «RESUELTA como transicion aplicada». Es
+el CUARTO positivo de la familia y el primero de OTRO productor, y el manifiesto lo dice con su
+procedencia: semilla '44' x 96, no la '37' de los demás. Las notas que decían «no tiene vector»
+-el manifiesto, `PAQUETE.md` 2.11, `spec/README.md`, la cabecera del RFC-0010 y la de
+`banco_completitud.sh`- pasan a decir desde cuándo lo tiene, sin borrar lo que decían.
+
+**Lo que se midió.** El arnés sobre la familia: 36 de 36. `tools/artefacto.sh --check`, VERDE:
+el binario reproducible entre rutas y la familia 36 de 36 desde el árbol y desde dentro del tarball.
+El vector pesa 83 KB -dos cabezas con su firma XMSS-, del orden de sus hermanos.
+
+**De paso.** La columna del nombre en `tools/bancos.sh` pasa de 18 a 24 caracteres:
+`mentiroso_sin_resolver` la desbordaba en la foto del autor sobre `639b5eb`.
+
+**Contadores.** Ningún test de Rust nace: los pines no se mueven. La familia `completitud` pasa de
+35 a 36 entradas; el canon y el artefacto la cuentan, no la pinan. `check_cifras`,
+`check_figures`, `check_publicadas` y `verificar_citas`, VERDES.
+
+**Lo que NO cierra.** Las cifras de `doc/ecst/` que dicen 35 de 35 van fechadas contra `71c5aad` y
+siguen siendo ciertas de aquel árbol: no se tocan. Queda la 109, el sdk que tira el recibo.
+

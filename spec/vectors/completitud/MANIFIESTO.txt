@@ -13,9 +13,15 @@
 #     la PRIMERA fuera de la ventana: el ROJO NOMBRADO que es el producto del hito;
 #   - `declarada`, salida 3: el cuarto estado (D4). Se DERIVA por MUTACION del `data` real -su
 #     causa pasa a `NotTheIssuer`-, porque el nodo no produce hoy esas causas por esta via.
-# El veredicto 1 -RESUELTA como transicion APLICADA- NO tiene vector: pide la prueba STARK real de
-# un envio aplicado, y su par cabeza + acuse se verifica COMO el paquete de posicion (2.1), cuyos
-# vectores viven en `paquete/`. Las reglas propias de esa rama SI lo tienen, abajo.
+# El veredicto 1 -RESUELTA como transicion APLICADA- no tuvo vector hasta el §605: pide la prueba
+# STARK real de un envio aplicado. Su par cabeza + acuse se verifica COMO el paquete de posicion
+# (2.1), cuyos vectores viven en `paquete/`. Las reglas propias de esa rama SI lo tienen, abajo.
+# Y desde el §605, un CUARTO positivo de OTRO productor: `resuelta-por-acuse`, salida 0, el
+# veredicto 1. Se COPIA de una corrida de `bash tools/banco_mentiroso_sin_resolver.sh --guardar
+# <dir>` (§602, §605), de su CONTROL: un nodo REAL de semilla '44' x 96 con el grifo `--dev`, contra
+# el que el ejemplo `e2e` del sdk paga con una prueba STARK real hecha en el cliente. El recibo -rx 1,
+# era 2, n 1440- lo cierra la cabeza v6 de indice 3, con Q 0 y recepCount 2, y esa misma cabeza firma
+# bajo su acusesRoot el acuse de la entrada 3: la resolucion es su camino.
 # Los TREINTA Y DOS negativos salen de lo capturado por UNA mutacion cada uno, uno por regla
 # producible del sobre y por SITIO; jamas se reescriben (regla 2 del PROCESO). Los de las claves
 # DISTINTAS llevan la cabeza de un SEGUNDO nodo, de semilla '38' x 96, que el banco levanta un
@@ -33,6 +39,7 @@
 resuelta-por-rechazo.json|0|VERDE: el recibo se resolvio dentro de la ventana, y se sostiene sin el nodo
 no-resuelta.json|1|NO RESUELTA EN LA VENTANA
 declarada.json|3|DECLARADA, NO PROBADA
+resuelta-por-acuse.json|0|RESUELTA como transicion aplicada
 neg-sin-cierre.json|1|falta cierre
 neg-cierre-formatVersion-7.json|1|el sobre de completitud lee cabezas
 neg-cierre-v5.json|1|exige una cabeza v6

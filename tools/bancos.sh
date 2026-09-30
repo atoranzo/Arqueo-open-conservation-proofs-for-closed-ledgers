@@ -57,14 +57,14 @@ mapfile -t BANCOS < <(ls tools/banco_*.sh 2>/dev/null | sort)
 [ "${#BANCOS[@]}" -gt 0 ] || { msg "bancos: ningun tools/banco_*.sh"; exit 2; }
 mkdir -p "$LOGS"
 msg "== BANCOS · ${#BANCOS[@]} bancos, uno a uno, sobre $(git rev-parse --short HEAD) =="
-msg "   banco               exit     seg"
+msg "   banco                     exit     seg"
 T_INI=$(date +%s)
 for b in "${BANCOS[@]}"; do
   n=$(basename "$b" .sh); n=${n#banco_}
   t0=$(date +%s)
   timeout "$TOPE" bash "$b" > "$LOGS/$n.log" 2>&1; rc=$?
   t=$(( $(date +%s) - t0 ))
-  printf '   %-18s %5s %7s\n' "$n" "$rc" "$t" >&2
+  printf '   %-24s %5s %7s\n' "$n" "$rc" "$t" >&2
   if [ "$rc" = "124" ]; then
     fallos+=("$n: pasados $TOPE s sin acabar (timeout)")
   elif [ "$rc" != "0" ]; then

@@ -31,16 +31,22 @@
 # FUERA del canon: levanta procesos y espera latidos. NO ESCRIBE EN EL ARBOL: todo vive en un
 # temporal bajo $HOME, que borra al salir, y lo comprueba al final por `git status --porcelain`.
 #
-#   bash tools/banco_mentiroso_sin_resolver.sh [--largo]
+#   bash tools/banco_mentiroso_sin_resolver.sh [--largo] [--guardar <dir>]
+#
+# --guardar  copia a <dir> el sobre RESUELTO del control como `resuelta-por-acuse.json`: de ahi sale
+#            el vector del veredicto 1 de `spec/vectors/completitud/` (§605), COPIADO.
 set -u
 msg(){ echo "BANCO-MENT-SINRES| $*" >&2; }
 fallo(){ msg "ROJO: $*"; exit 1; }
-LARGO=0
-case "${1:-}" in
-  "") ;;
-  --largo) LARGO=1 ;;
-  *) fallo "uso: bash tools/banco_mentiroso_sin_resolver.sh [--largo]" ;;
-esac
+LARGO=0; GUARDAR=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --largo) LARGO=1 ;;
+    --guardar) GUARDAR="${2:?--guardar exige un directorio}"; mkdir -p "$GUARDAR"; shift ;;
+    *) fallo "uso: bash tools/banco_mentiroso_sin_resolver.sh [--largo] [--guardar <dir>]" ;;
+  esac
+  shift
+done
 [ -z "$(git status --porcelain)" ] || fallo "el arbol no esta limpio: el banco comprueba al final que no lo toca"
 # Bajo $HOME, no /tmp: el guardian del indice (K.1, §234) se niega sobre un fsync que no
 # persiste, y en WSL /tmp es tmpfs (medido en §290).
@@ -52,9 +58,9 @@ msg "compilando nodo, cli, verificador y el ejemplo e2e del sdk en RELEASE (aqui
 { cargo build --release -q -p zk-ssl-sdk --example e2e 2>/dev/null \
     || cargo build --release -p zk-ssl-sdk --example e2e; } || fallo "no compila el e2e"
 
-python3 - "$DIR" "$LARGO" <<'PY'
+python3 - "$DIR" "$LARGO" "${GUARDAR:-}" <<'PY'
 import http.server, json, os, re, shutil, subprocess, sys, threading, time, urllib.request
-DIR, LARGO = sys.argv[1], sys.argv[2] == '1'
+DIR, LARGO, GUARDAR = sys.argv[1], sys.argv[2] == '1', sys.argv[3]
 NODO, CLI, MANDO = 'target/release/zk-ssl-node', 'target/release/zk-ssl-cli', 'target/release/zk-ssl-verify'
 E2E = 'target/release/examples/e2e'
 PN, PP = 8818, 8819
@@ -217,8 +223,11 @@ try:
     resuelto = dict(base1, resolucion={'tipo': 'acuse', 'cabeza': c_ack, 'acuse': {
         'hashPrueba': ac1['hashPrueba'], 'seq': pago1['logSeq'], 'camino': ack['camino']}})
     rc, out = mando('control-resuelto', resuelto)
-    exigir(rc == 0 and 'RESUELTA como transicion aplicada' in out,
-           'CONTROL: el sobre con su acuse, VERDE -el veredicto 1, en vivo por primera vez-', out[-1200:])
+    if exigir(rc == 0 and 'RESUELTA como transicion aplicada' in out,
+              'CONTROL: el sobre con su acuse, VERDE -el veredicto 1, en vivo por primera vez-', out[-1200:]) \
+            and GUARDAR:
+        shutil.copy(DIR + '/control-resuelto.json', GUARDAR + '/resuelta-por-acuse.json')
+        msg('     guardado en %s/resuelta-por-acuse.json (de ahi sale el vector, COPIADO)' % GUARDAR)
 
     # ── la COPIA del operador, con el nodo parado ──
     matar(n)

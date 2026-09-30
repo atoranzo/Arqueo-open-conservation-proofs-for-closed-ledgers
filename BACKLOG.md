@@ -2144,7 +2144,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   tal como llegaron -el sobre los compara con lo que el cierre firma-. Es código
   del sdk: no toca el nodo, el cable ni los vectores.
 
-- [ ] **110. El veredicto 1 del sobre de completitud ya se produce en vivo: falta
+- [x] **110. El veredicto 1 del sobre de completitud ya se produce en vivo: falta
   su vector.** El RFC-0010 se aceptó con ese residuo declarado (§577): el
   veredicto 1 pedía una prueba STARK real de un envío aplicado. El banco del §602
   la pone -el ejemplo `e2e` del sdk contra un nodo `--dev`- y el sobre con su
@@ -2152,6 +2152,9 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   el banco, la entrada en `spec/vectors/completitud/` y su manifiesto, y los
   pines del canon y del artefacto, que pasan de 35 a 36. Corte propio: mueve el
   catálogo, el canon y el tarball.
+  ✅ **CERRADA en el §605**: `resuelta-por-acuse`, el cuarto positivo de
+  `spec/vectors/completitud/`, copiado de `banco_mentiroso_sin_resolver.sh
+  --guardar`; el arnés da 36 de 36, desde el árbol y desde el tarball.
 
 ## F. Publicacion, cuando el circuito este cerrado
 

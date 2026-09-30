@@ -16,8 +16,10 @@
 #     treinta siempre, y con --largo dos mas, los de una resolucion FUERA de la ventana. Las tres
 #     de las claves DISTINTAS se producen con la cabeza de un SEGUNDO nodo, de otra semilla, que se
 #     levanta un momento y se para.
-# El veredicto 1 (resuelta como transicion APLICADA) NO se siembra: pide una prueba STARK real de
-# un envio aplicado, y su verificacion es la del paquete de posicion, que tiene sus vectores.
+# El veredicto 1 (resuelta como transicion APLICADA) NO se siembra aqui: pide una prueba STARK real
+# de un envio aplicado, y su verificacion es la del paquete de posicion, que tiene sus vectores. Lo
+# siembra desde el §605 `tools/banco_mentiroso_sin_resolver.sh --guardar`, y su vector es el cuarto
+# positivo de `spec/vectors/completitud/`.
 #
 # FUERA del canon: levanta procesos y espera latidos. NO ESCRIBE EN EL ARBOL: todo vive en un
 # temporal bajo $HOME, que borra al salir, y lo comprueba al final por `git status --porcelain`.
