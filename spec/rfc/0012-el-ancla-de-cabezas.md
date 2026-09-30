@@ -1,10 +1,17 @@
 # RFC-0012 — El ancla de cabezas: la historia publicada donde el operador no puede borrarla
 
-- **Estado:** PROPUESTO — las cuatro etapas construidas y medidas en la sesión 194 (E1 §590,
-  E2 §591, E3 §592, E4 §593), sobre la rama de esa sesión; la aceptación es del autor —la regla 4
-  del PROCESO exige su canon y su merge—, y las decisiones D-A a D-H son DELEGADAS y REVERSIBLES.
+- **Estado:** ACEPTADO (§607) — **la regla 4 del PROCESO, saldada con medida**, que es lo que esta
+  línea pedía: «su canon y su merge». (1) La spec: `PAQUETE.md` 2.12, el sobre del ancla (§592), y
+  en `NUCLEO.md` el REGISTRO con `DOMINIO_ANCLA`, `ancla_digest` y `huella_de_clave` (§591). (2) El
+  OpenRPC no se mueve: ni un método ni un campo. (3) Los vectores, nuevos bajo `zkssl/0.4`:
+  `nucleo/ancla_digest.json` y `nucleo/huella_de_clave.json` (§591) y la familia `ancla/`, veintiún
+  sobres (§593). (4) Las suites: el canon `--sello` del autor, VERDE en cada sello desde su merge
+  con «ancla 21/21» desde el árbol y desde dentro del tarball, y `tools/banco_ancla.sh` VERDE en su
+  `--bancos` de 20 sobre `639b5eb`. Las cuatro etapas se construyeron en la sesión 194 (E1 §590,
+  E2 §591, E3 §592, E4 §593); las decisiones D-A a D-H eran DELEGADAS y REVERSIBLES, y se aceptan
+  con su residuo D-H: el ancla sigue sin medio donde vivir -lo propone el RFC-0013-.
 - **Autor:** Ángel José Toranzo Portela
-- **Asistencia GenAI:** Claude (sesión 194, que lo escribe entero) — ver [`GENAI.md`](../../GENAI.md)
+- **Asistencia GenAI:** Claude (sesión 194, que lo escribe entero; sesión 193, el giro del §607) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-30
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no la mueve, y tampoco mueve la cabeza**:
   ni un método nuevo, ni un campo nuevo, ni un byte nuevo bajo la firma. La familia entra por su
@@ -16,7 +23,7 @@
   diarios prueban que emitió dos cosas para el mismo índice), §291–§292 (el MMR de cabezas y su
   pareja firmada), §399 (el índice embebido, el único que la firma acredita), §567 (el reloj es
   el índice XMSS, no el `seq`), §580 (la casa no cría código sin llamador); y los de esta serie:
-  §590 (E1), §591 (E2), §592 (E3), §593 (E4).
+  §590 (E1), §591 (E2), §592 (E3), §593 (E4); y §607 (la aceptación).
 - **Backlog:** B10.6 (el formato del ancla + `M`) y B10.7 (el verificador en cliente) del
   backlog de `doc/CONFIANZA_RESIDUAL.md`; la mitad portable de B10.2 (la prueba de fraude); y
   compone con las entradas 83 y 86 del BACKLOG (el ancla acota la ventana del primer encuentro).

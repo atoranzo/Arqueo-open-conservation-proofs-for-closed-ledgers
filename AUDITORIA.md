@@ -43054,3 +43054,39 @@ sello pasa de 1519 a 1521 y el de todos los pines de 1656 a 1658, y `check_cifra
 en `.aviso`. Dentro del workspace eran dos llamadores y los dos se adaptan aquí; fuera, el sdk no
 se ha publicado como crate. El siguiente frente grande es de decisión del autor: el RFC-0013.
 
+## §607 — el RFC-0012 pasa a ACEPTADO: el ancla de cabezas, con su residuo del medio
+
+El commit que lleva este asiento, sobre `2028c1c` (el S606). Un solo sello: la cabecera del
+RFC-0012, los cinco sitios que publican su estado y este asiento, con el canon `--sello` VERDE
+dentro del bloque. Seis ficheros más este asiento, con 18 inserciones y 11 borrados fuera de él.
+
+**De dónde sale.** El RFC-0012 lo escribió y lo construyó entero la sesión 194 (§590–§593), y su
+cabecera dejó dicho qué faltaba para aceptarlo: «la aceptación es del autor —la regla 4 del
+PROCESO exige su canon y su merge—». El merge llegó con la integración de aquella rama, y el canon
+del autor ha corrido VERDE sobre él en cada sello desde entonces. Lo que faltaba es este giro.
+
+**La regla 4, contada.** (1) La spec: `PAQUETE.md` 2.12, el sobre del ancla (§592), y el REGISTRO
+de `NUCLEO.md` con `DOMINIO_ANCLA`, `ancla_digest` y `huella_de_clave` (§591). (2) El OpenRPC no se
+mueve: el RFC no añade método ni campo, y la familia entra por su `tipo`, su dominio y sus
+vectores. (3) Los vectores, nuevos bajo `zkssl/0.4`: los KAT `nucleo/ancla_digest.json` y
+`nucleo/huella_de_clave.json` (§591) y la familia `ancla/`, veintiún sobres (§593). (4) Las suites:
+el canon `--sello` VERDE con «ancla 21/21» desde el árbol y desde dentro del tarball, la última
+vez en el paso del S606 sobre `2028c1c`, y `tools/banco_ancla.sh` VERDE en el `--bancos` de 20 del
+autor sobre `639b5eb`.
+
+**Lo que se acepta CON su residuo, declarado.** El D-H del propio RFC, intacto: el medio es
+confianza desplazada, no eliminada; la cola entre anclas queda acotada, no cerrada; el ancla prueba
+qué historia era canónica, no que estuviera completa; y mientras nadie publique en un medio real,
+el ancla es un objeto correcto sin sitio donde vivir. El medio lo propone el RFC-0013 (§603), que
+sigue PROPUESTO. Las decisiones D-A a D-H eran delegadas y reversibles, y se aceptan así.
+
+**Lo que hace.** La cabecera del RFC-0012 pasa a ACEPTADO con la cuenta de la regla 4 y su
+residuo; su línea de asistencia gana el giro de la sesión 193 y su lista de asientos, éste.
+`README.md`, `README_EN.md`, `RESUMEN_BILINGUE.md` (en sus dos lenguas), `RESUMEN_EJECUTIVO.md` y
+`spec/README.md` lo cuentan entre los aceptados: quedan propuestos el 0005 y el 0013.
+
+**Contadores.** Ninguno se mueve.
+
+**Lo que NO cierra.** El despliegue del ancla, que es el RFC-0013 y su decisión. Empujar este
+sello es la aceptación del autor, como la regla del RFC-0012 pedía.
+
