@@ -685,6 +685,33 @@ mod tests {
     }
 
     #[test]
+    fn un_contador_borrado_reabre_en_cero_y_coincide_con_la_clave_en_cero() {
+        // ⚠⚠ ECST §8.1 (doc/ecst/ECST.md): la PREMISA del hallazgo, medida
+        // aqui. La pieza no distingue "no habia fichero" de "lo borraron": un
+        // contador que ya firmo y cuyo fichero desaparece reabre en 0, y con la
+        // clave de la semilla -que al rearrancar esta en 0- el par COINCIDE. R
+        // solo ve el par, asi que la pieza NO puede cazarlo: lo caza la politica
+        // del arranque consultando el segundo testigo -el diario del nodo, las
+        // cofirmas del testigo- en todo estado, no solo en `ClaveEnCero`.
+        let p = en_disco("borrado");
+        {
+            let mut g = GuardianIndice::abrir(&p).expect("abrir");
+            for _ in 0..3 {
+                g.reservar().expect("reservar");
+            }
+            assert_eq!(g.actual(), 3, "el fixture tiene que haber reservado");
+        }
+        std::fs::remove_file(&p).expect("borrar el contador");
+        let g = GuardianIndice::abrir(&p).expect("reabrir");
+        assert_eq!(g.actual(), 0, "reabre en cero sin saber que hubo reservas");
+        assert_eq!(
+            g.reconciliar(0),
+            Reconciliacion::Coincide { indice: 0 },
+            "y con la clave en cero COINCIDE: el caso que la politica tiene que cazar"
+        );
+    }
+
+    #[test]
     fn un_fichero_de_otro_tamano_se_rechaza_en_vez_de_interpretarse() {
         let p = en_disco("corrupto");
         std::fs::write(&p, b"esto no son ocho bytes").expect("escribir");

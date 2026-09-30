@@ -1,0 +1,728 @@
+{
+ "cluster": "custody",
+ "base_commit": "5d808712d420d98600c86faae7e3e143715a8ed5",
+ "adjudications": [
+  {
+   "id": "C1a",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reabierto y confirmado. send_materials_inner devuelve SendMaterials con sender: AccountView (public_id, balance, nonce, leaf_salt), y el DTO del cable lo serializa entero. En su favor, el borrador repite la fórmula del propio repo: README.md:107-109 («la capa entrega caminos y raíces —datos públicos—»), spec/RPC.md:66-67 y AUDITORIA §33 («Lo único que la capa aporta son caminos y raíces»). Esa fórmula es la que hay que matizar. Los caminos sólo dejan de enumerar saldos gracias al leaf_salt del §117 (RPC.md:818-854), y la respuesta lleva además la vista privada del remitente. El brazo del nodo exige la viewKey (§261) antes de tocar la capa y recibe en claro receiverId, amount y salt. Las citas del verificador a spec/RPC.md y a main.rs estaban desplazadas por los commits S566–S582. El contenido no cambió y el veredicto tampoco.",
+   "evidence": [
+    "crates/zk-ssl/src/client.rs:222-270",
+    "crates/zk-ssl/src/client.rs:61-76",
+    "crates/zk-ssl-wire/src/lib.rs:199-204",
+    "crates/zk-ssl-wire/src/lib.rs:291-302",
+    "spec/RPC.md:116",
+    "spec/RPC.md:66-67",
+    "spec/RPC.md:818-854",
+    "spec/RPC.md:900-908",
+    "crates/zk-ssl-node/src/main.rs:2598-2606",
+    "README.md:107-109",
+    "AUDITORIA.md §33 (línea 2719-2722)"
+   ],
+   "correct_statement": "zkssl_sendMaterials exige la clave de vista del remitente (§261) y devuelve caminos y raíces de los árboles de cuentas, congelados y pendientes, la posición de pendiente reservada, el límite regulatorio y el suministro. Devuelve además la vista privada del remitente: saldo, nonce y leaf_salt, que el operador ya conoce porque guarda los saldos en claro. El nodo recibe en claro el receptor, el importe y la sal. Los caminos no revelan saldos a terceros sólo porque la hoja lleva el leaf_salt del §117 (crates/zk-ssl/src/client.rs:222-270; spec/RPC.md:116, 818-854, 900-908). El «sólo datos públicos» es la fórmula del propio README (README.md:107-109), no una propiedad literal.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C1b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Confirmado, con un matiz nuevo. prove_send y prove_claim son funciones libres (client.rs:339, :473) y el SDK las ejecuta en local (zk-ssl-sdk/src/lib.rs:204-239, 254-274). SovereignLayer::send y ::claim siguen siendo métodos públicos que reciben la clave (two_phase.rs:791-793, 1138-1140), y su propio comentario admite: «Nada la marca. No lleva #[deprecated]» (two_phase.rs:866-867). En cambio open_account sí está deprecada (accounts.rs:97-106). Matiz que el verificador no vio: esos métodos de la capa reciben la clave ESTRECHA (BaseElement, 64 bits) y la rellenan como [sk,0,0,0]. Por eso no sirven para una cuenta de clave ancha real, como Wallet::random del SDK o dev_openSeeded. El nodo nunca los invoca: en main.rs no hay llamadas a .send/.claim de la capa, y el único envío en sus tests va por client::prove_send (main.rs:3417). Los usan sólo los tests, las métricas y los instrumentos cfg(test). La CLI simulate ejecuta prove_send en el mismo proceso que la capa (sandbox.rs:1-10).",
+   "evidence": [
+    "crates/zk-ssl/src/client.rs:330-346",
+    "crates/zk-ssl/src/client.rs:473",
+    "crates/zk-ssl/src/two_phase.rs:791-793",
+    "crates/zk-ssl/src/two_phase.rs:856-878",
+    "crates/zk-ssl/src/two_phase.rs:1138-1140",
+    "crates/zk-ssl/src/accounts.rs:97-106",
+    "crates/zk-ssl-sdk/src/lib.rs:1-18",
+    "crates/zk-ssl-sdk/src/lib.rs:204-239",
+    "crates/zk-ssl-node/src/main.rs:3417",
+    "crates/zk-ssl-cli/src/sandbox.rs:1-10",
+    "crates/zk-ssl/src/instrumento_pago.rs:5",
+    "AUDITORIA.md §33"
+   ],
+   "correct_statement": "prove_send y prove_claim son funciones libres que no tocan la capa. El SDK (Account::pay/claim) las ejecuta en la máquina del titular con su clave ancha, y el nodo JSON-RPC no genera pruebas de pago. El código no impone dónde se ejecutan: la capa conserva SovereignLayer::send/claim, que reciben una clave estrecha de 64 bits y prueban dentro de la capa. Sólo los usan tests y métricas, y no llevan ninguna marca (two_phase.rs:791, 866-867, 1138). «Exclusivamente en la máquina del cliente» es una propiedad del despliegue con el SDK, no del código (client.rs:330-346; AUDITORIA §33).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C1c",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Confirmado. apply_send(receipt, sender_index, sender_state, amount) no tiene la clave como argumento (two_phase.rs:1118-1135), pero recibe el ClientState en claro: identidad, saldo y nonce (commitment.rs:71-75). Hasta el §538 la prueba que apply_send recibe publicaba la clave de gasto 42 veces (§521; RFC-0009:113), así que el «jamás» es falso para toda prueba anterior. Desde el §538, la suite de E2 mide cero literales, con la cota D-I sin auditar. Tras los commits S566–S582, SECURITY §3.bis está en las líneas 476-516 (antes 441-481). El texto no cambió.",
+   "evidence": [
+    "crates/zk-ssl/src/two_phase.rs:1118-1135",
+    "crates/zk-ssl/src/commitment.rs:70-75",
+    "SECURITY.md:476-516",
+    "spec/RPC.md:53-61",
+    "spec/rfc/0009-lo-que-revela-una-prueba.md:96-99",
+    "spec/rfc/0009-lo-que-revela-una-prueba.md:113",
+    "AUDITORIA.md §521 (línea 38231)"
+   ],
+   "correct_statement": "apply_send no recibe la clave de gasto como argumento. Recibe el recibo (prueba, entradas públicas, compromiso y aviso), el estado declarado en claro (identidad, saldo y nonce) y el importe. Hasta el §538 (zkssl/0.3 y anteriores), la prueba que recibía llevaba literal la clave de gasto, y el nodo tenía acceso a ella. Desde el §538 (RFC-0009 E3b-2, zkssl/0.4) la suite de E2 mide cero literales. Lo deducible de las aperturas lo acota D-I, y ni el fork de winterfell ni la construcción están auditados (SECURITY.md:476-516; spec/RPC.md:53-61).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C2a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Confirmado FALSA. No hay barrera de tipos en la capa. SovereignLayer tiene métodos públicos que reciben la clave de gasto: open_account (deprecado), open_account_wide, send, claim, refund, refund_v2, burn, audit, disclose_exact y prove_minimum. El RFC-0009 lo nombra como deuda no pagada (líneas 849-850). Además, antes del §538 la clave viajaba DENTRO de la prueba que acepta el propio apply_send. Así que «técnicamente imposible que la clave sea transmitida a la capa» fallaba por la vía que el borrador pone de ejemplo. Lo más parecido a un argumento de tipos que hace el repo es otra cosa. AUDITORIA §33: «el tipo cierra la fuga hacia la contraparte», porque SendMaterials no tiene campo para el saldo del receptor. Y el SDK: Wallet::spend_key es privado y Wallet no implementa Serialize (SECURITY.md:476-480). Ninguno de los dos impide que la capa reciba una clave.",
+   "evidence": [
+    "crates/zk-ssl/src/accounts.rs:97-106",
+    "crates/zk-ssl/src/accounts.rs:126",
+    "crates/zk-ssl/src/accounts.rs:164",
+    "crates/zk-ssl/src/two_phase.rs:525-527",
+    "crates/zk-ssl/src/two_phase.rs:579-581",
+    "crates/zk-ssl/src/two_phase.rs:791-793",
+    "crates/zk-ssl/src/two_phase.rs:1138-1140",
+    "crates/zk-ssl/src/burn.rs:19-21",
+    "crates/zk-ssl/src/audit.rs:29-31",
+    "crates/zk-ssl/src/audit.rs:96-98",
+    "crates/zk-ssl/src/audit.rs:113-115",
+    "spec/rfc/0009-lo-que-revela-una-prueba.md:849-850",
+    "crates/zk-ssl/src/lib.rs:53-60",
+    "crates/zk-ssl-sdk/src/lib.rs:92-133",
+    "SECURITY.md:476-480",
+    "AUDITORIA.md §33 (líneas 2709-2713)"
+   ],
+   "correct_statement": "No hay barrera de tipos en la capa. SovereignLayer expone métodos públicos que reciben la clave de gasto: open_account(_wide), send, claim, refund(_v2), burn, audit, disclose_exact y prove_minimum (el RFC-0009 lo declara deuda en sus líneas 849-850). Lo que sí existe: (1) una superficie JSON-RPC sin ningún método de producción que reciba la clave (abrir cuenta viaja como publicId, viewId y leafSalt); (2) el encapsulado del SDK, donde Wallet::spend_key es privado y Wallet no implementa Serialize. Hasta el §538 la clave viajaba literal dentro de la prueba que apply_send acepta. La custodia es del cable y del SDK, no del tipo (SECURITY.md:476-516; spec/RPC.md:53-61).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C2b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido en el árbol actual. Las líneas de main.rs se movieron con los 706 añadidos de S566–S582; el contenido es el mismo. dev_fund (main.rs:3067-3082) y dev_freeze (3102-3118) firman como custodio con ts::delegated_pair. dev_openSeeded (3084-3099) deriva la clave con ts::wide_key(seed) y abre la cuenta con ella. Los tres exigen app.dev (3053-3059). open_layer aborta sin la feature dev (1336-1348), que va por defecto (Cargo.toml:21-22). Añado dos vías que el verificador no listó. (5) Hasta el §538, cada prueba de envío, cobro o prenda que el nodo recibía llevaba la clave de gasto, y cada autorización delegada la del custodio (RFC-0009:113-117); los vectores 0.3 conservados la siguen llevando (SECURITY.md:511-514). (6) El nodo NO usa la vía de la capa send/claim: no llama a SovereignLayer::send ni a ::claim.",
+   "evidence": [
+    "crates/zk-ssl-node/src/main.rs:3053-3059",
+    "crates/zk-ssl-node/src/main.rs:3067-3118",
+    "crates/zk-ssl-node/src/main.rs:1336-1348",
+    "crates/zk-ssl-node/Cargo.toml:15-22",
+    "crates/zk-ssl/src/tests_support.rs:33-61",
+    "crates/zk-ssl/src/tests_support.rs:82-110",
+    "crates/zk-ssl-cli/src/sandbox.rs:1-10",
+    "crates/zk-ssl-cli/src/sandbox.rs:43-48",
+    "crates/zk-ssl-cli/src/sandbox.rs:99",
+    "spec/RPC.md:133-148",
+    "spec/rfc/0009-lo-que-revela-una-prueba.md:113-117",
+    "SECURITY.md:511-514",
+    "doc/ecst/borrador/simulate-2026-09-28.log:4-6"
+   ],
+   "correct_statement": "Sí hay vías en las que el nodo o la herramienta tiene claves. (1) dev_openSeeded: el nodo deriva una clave de gasto de una semilla pública y abre la cuenta con ella. (2) dev_fund y dev_freeze: el nodo firma como custodio con las claves de prueba de tests_support, que son constantes del fuente. (3) La CLI simulate ejecuta capa y cliente en un mismo proceso con claves de sandbox; su send/claim va por client::prove_send. (4) Los tests y las métricas usan SovereignLayer::send/claim, que reciben la clave; el nodo no los llama. (5) Hasta el §538, toda prueba recibida publicaba la clave de gasto o la de custodio. Los dev_* exigen feature dev y --dev. Sin la feature, el nodo no arranca: faltan raíces reales de custodios y gobernanza (crates/zk-ssl-node/src/main.rs:1336-1348, 3053-3118).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C2c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado. tools/check_publicadas.py:37-48 dice que la cifra se mide sobre send/claim de la capa y que la vía documentada dio los mismos bytes el 2026-08-26. Precisión: el test que ata la banda, los_dos_lados_del_pago_atan_la_banda (metrics.rs:683-731), usa client::prove_send y client::prove_claim. Las dos vías están, pues, ejercidas en las métricas. La banda post-§538 figura en metrics.rs:82-83 y 121-127.",
+   "evidence": [
+    "tools/check_publicadas.py:37-48",
+    "crates/zk-ssl/src/metrics.rs:60-83",
+    "crates/zk-ssl/src/metrics.rs:121-127",
+    "crates/zk-ssl/src/metrics.rs:683-731",
+    "AUDITORIA.md §538 (línea 39270)"
+   ],
+   "correct_statement": "Las cifras de bytes publicadas se miden por la vía de la capa (SovereignLayer::send/claim, que recibe la clave y prueba dentro de la capa). El 2026-08-26 se midió que la vía del cliente daba los mismos bytes (66.739 y 66.692 B, antes del §538). Desde el §538 son una banda: envío 73.571..84.244 B, cobro 72.382..83.723 B y pago 145.953..167.967 B. El testigo que la ata prueba por la vía del cliente (tools/check_publicadas.py:37-48; crates/zk-ssl/src/metrics.rs:82-83, 683-731). La vía de la capa sigue viva en el código, aunque el cable no la exponga.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C3",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado. README.md:107-111 no cambió y SECURITY §3.bis está ahora en 476-516. La precisión del verificador se sostiene: el §521 dice «Ninguno lo vuelve rancio este corte: ya lo estaban». La fuga era estructural (winterfell 0.13 sin ZK; RFC-0009:45-49). Con una matización: lo MEDIDO fue la generación 0.3, en las sesiones 162-164 (§521, §523, §524, §526). Que las versiones anteriores también publicaran es una deducción del repo desde la propiedad de winterfell. «Toda prueba anterior» no está medido versión a versión. Hay además una discrepancia interna: SECURITY dice de la gobernanza «deducido, no medido» (SECURITY.md:495-496), y la tabla del RFC-0009:118 la da por medida (§524, §531).",
+   "evidence": [
+    "README.md:107-111",
+    "SECURITY.md:476-516",
+    "AUDITORIA.md §521 (línea 38231)",
+    "AUDITORIA.md §538 (línea 39270)",
+    "spec/rfc/0009-lo-que-revela-una-prueba.md:44-61",
+    "spec/rfc/0009-lo-que-revela-una-prueba.md:113-133",
+    "spec/RPC.md:53-61"
+   ],
+   "correct_statement": "El README dice que la clave de gasto no viaja por la API y que, desde el §538, tampoco sale literal en la prueba (RFC-0009 E3b-2, zkssl/0.4). El §521 (20-21 sep 2026) es cuando se midió la fuga y se dejó de negar, no cuando empezó. Winterfell 0.13 no oculta el testigo, y lo medido en la 0.3 fue esto: la clave de gasto salía literal en envío, cobro, prenda, auditoría y quema, y la del custodio en cada autorización delegada. Desde el §538 la suite de E2 mide cero literales, con la cota D-I sin auditar. Los vectores 0.3 conservados siguen llevando los literales (README.md:107-111; SECURITY.md:476-516; RFC-0009:44-61, 113-133). Un informe ECST debe incluirlo.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C4a",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Confirmado. Envío: C_BALANCE es bal_new = bal − amt y C_SUPPLY es supply_new = supply_old (circuit_send.rs:1091-1101); el compromiso del pendiente usa la MISMA columna del importe (circuit_send.rs:1198). Cobro: bal_new = bal + amt (circuit_claim_v2.rs:855-858), y la hoja del pendiente sube a cero (circuit_claim_v2.rs:950; two_phase.rs:1325-1332). El agregado no es un circuito: se comprueba al reabrir (§379). No hay «suma de salidas = suma de entradas».",
+   "evidence": [
+    "crates/stark-experiment/src/circuit_send.rs:1091-1101",
+    "crates/stark-experiment/src/circuit_send.rs:1198",
+    "crates/stark-experiment/src/circuit_send.rs:708-724",
+    "crates/stark-experiment/src/circuit_claim_v2.rs:855-858",
+    "crates/stark-experiment/src/circuit_claim_v2.rs:950",
+    "crates/zk-ssl/src/two_phase.rs:1325-1332",
+    "crates/zk-ssl/src/mint.rs:1-5",
+    "AUDITORIA.md §379 (línea 28640-28656)"
+   ],
+   "correct_statement": "No hay un circuito de «suma de salidas = suma de entradas»: el modelo es de cuentas y en dos fases. Cada transición prueba en circuito su conservación local. En el envío, saldo_nuevo = saldo − importe, y el compromiso del pendiente lleva ese mismo importe, con el suministro sin cambios. En el cobro, saldo_nuevo = saldo + importe, y la hoja del pendiente queda vacía. En la emisión el suministro sube exactamente el importe, sin pasar del tope; en la quema baja; en la recuperación el saldo no cambia. El invariante global Σ saldos + Σ pendientes = suministro no es un circuito: lo comprueba la capa al abrir el libro (AUDITORIA §379).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C4b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Confirmado. Frente a quien ve una prueba, desde el §538 no sale literal ningún saldo. Antes salían el saldo antes y después en el envío y en el cobro (RFC-0009:113-114). El importe es entrada pública (circuit_send.rs:719). Por metadatos se ven el emisor o el receptor y la posición (SECURITY.md:201-210). El operador lo ve todo (README.md:34, :145).",
+   "evidence": [
+    "README.md:33-34",
+    "README.md:145",
+    "spec/rfc/0009-lo-que-revela-una-prueba.md:96-99",
+    "spec/rfc/0009-lo-que-revela-una-prueba.md:113-114",
+    "crates/stark-experiment/src/circuit_send.rs:719",
+    "SECURITY.md:201-210",
+    "SECURITY.md:228-233"
+   ],
+   "correct_statement": "Frente a terceros que sólo ven una prueba, desde el §538 no sale literal ningún saldo; antes del §538, el envío y el cobro publicaban el saldo antes y después. El importe es entrada pública de las pruebas de envío y cobro. Por metadatos se ven el emisor o el receptor y la posición del pendiente. Frente al operador no hay privacidad: ve todos los saldos (README.md:34; SECURITY.md:201-210; RFC-0009 D-A, D-B).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C4c",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Confirmado FALSA, con dos apoyos más. (1) El kit no tiene ninguna comprobación de conservación: grep «conserva» en crates/zk-ssl-verify no da ninguna. (2) Para las operaciones delegadas el registro no guarda ni la prueba de subida ni las dos autorizaciones: sólo sello_de_autorizacion(operación) (mint.rs:141, recovery.rs:176, freeze.rs:160, governance.rs:166). Tampoco la subida de la emisión (el suministro sube exactamente el importe, sin pasar del tope) es re-verificable por un tercero; y las de envío, cobro, quema, reembolso y migración sólo dejan su digest (reverificacion.rs:43-47). En descargo del borrador, la tabla del README llama a la fila 1 «lo que un tercero comprueba» y la da por «medida», citando comprobaciones del nodo al reabrir (§387–§394; README.md:126-128). El borrador amplifica una redacción del propio repo. Tras los commits S566–S582, SECURITY §3.1 está en 304-318.",
+   "evidence": [
+    "crates/zk-ssl-verify/src/reverificacion.rs:1-52",
+    "crates/zk-ssl/src/mint.rs:141",
+    "crates/zk-ssl/src/recovery.rs:176",
+    "crates/zk-ssl/src/freeze.rs:160",
+    "crates/zk-ssl/src/governance.rs:166",
+    "crates/zk-ssl-hash/src/lib.rs:1324-1329",
+    "AUDITORIA.md §379 (línea 28640)",
+    "crates/zk-ssl/src/tests.rs:2706",
+    "crates/zk-ssl/src/tests.rs:2987",
+    "SECURITY.md:304-318",
+    "SECURITY.md:176-199",
+    "README.md:36",
+    "README.md:126-128",
+    "crates/zk-ssl/src/lib.rs:205-222"
+   ],
+   "correct_statement": "Un tercero no obtiene «certeza matemática» de la conservación. Sin el nodo, el kit verifica cabezas firmadas (que comprometen totalSupply y las raíces), inclusión, extensión, cofirmas, consumos, causas de rechazo y, desde el RFC-0010, el sobre de completitud. No verifica ningún agregado de saldos. El registro guarda de envío, cobro, quema, reembolso y migración sólo el digest de la prueba, y de las operaciones delegadas (emisión, congelación, recuperación, gobernanza) sólo el sello de la autorización. Ninguna de esas pruebas es re-verificable por un tercero. El invariante Σ saldos + pendientes = suministro lo comprueba la capa del operador al reabrir, sobre saldos en claro (§379, §387–§394). Todo descansa además en la completitud de los AIR (sin especificación formal ni auditoría; SECURITY.md:304-318), en un verificador que el operador puede cambiar sin rastro (SECURITY.md:176-199) y en ~127 bits conjeturados (crates/zk-ssl/src/lib.rs:205-222).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C4d",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado. README.md:18, :28-29 y :128 no cambiaron. El matiz del verificador se refuerza con C4c: la fila 1 descansa en las puertas fail-closed del nodo al reabrir (§379, §387, §393). Las pruebas de subida y de autorización de las operaciones delegadas no quedan en el registro.",
+   "evidence": [
+    "README.md:18",
+    "README.md:28-29",
+    "README.md:128",
+    "AUDITORIA.md §387 (línea 29201)",
+    "AUDITORIA.md §393 (línea 29600)",
+    "doc/USE_CASES.md:20-21",
+    "doc/USE_CASES.md:27"
+   ],
+   "correct_statement": "El repo prueba conservación dentro del libro, no solvencia ni la existencia de las unidades fuera de él. La fila 1 del README («medida, en vuelo y al reabrir», §387–§394) se apoya en las comprobaciones fail-closed del propio nodo al reabrir. Lo que llega a un tercero es la cabeza firmada con totalSupply y raíces. La solidez de cada transición la comprobó el nodo, y sus pruebas no quedan en el registro. No debe presentarse la fila 1 como una comprobación independiente del agregado hecha por el tercero.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C5a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Confirmado FALSA, con un matiz que el verificador omitió. El árbol de consumos recibe también la MARCA de prenda del RFC-0008 E3: zkssl_pledge verifica una prueba de prenda contra la pendingRoot de la última cabeza firmada ANTES de apply_consumo (main.rs:2227-2290). No todo consumo entra «sin prueba ni autorización»: los que entran por zkssl_publishConsumo sí. Aun así, la marca no impide cobrar ni reembolsar el pendiente: el RFC-0008 dice que la prenda «no toca el cobro ni el reembolso: lo que obliga es contrato» (línea 51). Tras los commits S566–S582 hay que citar README:251 (antes 244) y SECURITY §3.4 en 384-400.",
+   "evidence": [
+    "README.md:251",
+    "AUDITORIA.md §32 (línea 2567)",
+    "AUDITORIA.md §36 (línea 2951)",
+    "SECURITY.md:384-400",
+    "crates/zk-ssl/src/consumo.rs:11-18",
+    "crates/zk-ssl/src/consumo.rs:127-151",
+    "crates/zk-ssl-node/src/main.rs:2008-2030",
+    "crates/zk-ssl-node/src/main.rs:2227-2290",
+    "spec/rfc/0008-pruebas-portables-del-pendiente.md:51",
+    "spec/rfc/0006-consumo-publicado.md:21",
+    "doc/README-CLI.md:26-33"
+   ],
+   "correct_statement": "El árbol de consumos no impide que un activo se gaste dos veces. Un consumo es una etiqueta pública y precomputable, H(dominio, identificador acordado). Por zkssl_publishConsumo el libro la publica sin prueba ni autorización, y no está atada a ningún pago (E5 fuera de alcance). La marca de prenda del RFC-0008 entra tras verificar una prueba, pero no bloquea el cobro ni el reembolso. El doble gasto de saldos lo impide el encadenamiento de raíces bajo el orden total del nodo único, y en el cobro la hoja del pendiente pasa a vacía en el circuito. El árbol de nulificadores de la vía de un paso se retiró (§32, §36): «evitado, no resuelto», y vuelve si se distribuye el orden (SECURITY.md:384-400; crates/zk-ssl/src/consumo.rs:11-18).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C5b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado. El RFC-0006 no cambió. NUCLEO.md creció cuatro filas de censo, así que la composición v4 está ahora en la línea 259. Añado que el mismo árbol aloja la marca de prenda del RFC-0008. Una segunda marca del mismo pendiente es ConsumoRepetido (RFC-0008:51).",
+   "evidence": [
+    "README.md:28-30",
+    "README.md:129",
+    "spec/rfc/0006-consumo-publicado.md:13-22",
+    "spec/rfc/0006-consumo-publicado.md:175-199",
+    "crates/zk-ssl/src/consumo.rs:127-151",
+    "spec/NUCLEO.md:259-260",
+    "SECURITY.md:384-400",
+    "spec/rfc/0008-pruebas-portables-del-pendiente.md:51"
+   ],
+   "correct_statement": "Al gasto no lo sustituyó el árbol de consumos, sino el encadenamiento de raíces (SECURITY §3.4). El árbol de consumos del RFC-0006 aporta la unicidad de una etiqueta acordada dentro de un libro. La capa rechaza el consumo repetido con ConsumoRepetido o ConsumoColision, y consRoot y consCount entran firmados en la cabeza v4 y siguientes. Entre libros, un tercero con las dos cabezas firmadas detecta después la misma etiqueta, sin nodos (E4a). Un nodo que custodia cabezas ajenas puede negarse a tramitarla (E4b). No hay prevención entre libros, ni atado en circuito, ni autenticación del publicador. El mismo árbol aloja la marca de prenda del RFC-0008 (spec/rfc/0006-consumo-publicado.md:13-22, 175-199; spec/NUCLEO.md:259-260).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C6a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado. Las dos hojas usan la misma columna COL_BAL, con un rango de 64 bits (circuit_recovery_climb.rs:8-13), y la capa copia el saldo (recovery.rs:84-88). Matiz: la prueba de subida sólo la verifica el nodo. El registro guarda el sello de la autorización, no la prueba (recovery.rs:176), así que un tercero no puede re-verificar que el saldo se conservó.",
+   "evidence": [
+    "crates/stark-experiment/src/circuit_recovery_climb.rs:8-20",
+    "crates/stark-experiment/src/circuit_recovery_climb.rs:877",
+    "crates/zk-ssl/src/tests.rs:2109",
+    "crates/zk-ssl/src/recovery.rs:84-88",
+    "crates/zk-ssl/src/recovery.rs:176"
+   ],
+   "correct_statement": "Confirmado. circuit_recovery_climb, que es el que usa la capa, construye la hoja vieja y la nueva con la misma columna de saldo (rango de 64 bits): la recuperación no mueve dinero. El saldo es testigo, no entrada pública. La prueba la verifica el nodo, y el registro sólo guarda el sello de la autorización (crates/stark-experiment/src/circuit_recovery_climb.rs:8-20; crates/zk-ssl/src/recovery.rs:176).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C6b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Confirmado. Es la misma hoja en la misma posición, con otra identidad, el mismo saldo y el nonce + 1. Se copian view_id y leaf_salt de la clave vieja (recovery.rs:84-105). El test citado recovery_deja_view_id_viejo no existe (grep). La consecuencia deducida se sostiene: account_view_authenticated compara contra el view_id guardado (client.rs:123-133), y el nodo exige esa credencial en sendMaterials, claimMaterials y en los caminos (main.rs:2606, 2697). Deducido, sin medir: tras una recuperación el nuevo titular no puede pedir materiales por el RPC con su propia clave de vista. La recuperación, además, no está expuesta por el RPC (C6f).",
+   "evidence": [
+    "crates/zk-ssl/src/recovery.rs:84-105",
+    "crates/zk-ssl/src/client.rs:113-133",
+    "crates/zk-ssl-node/src/main.rs:2598-2606",
+    "crates/zk-ssl-node/src/main.rs:2697",
+    "crates/zk-ssl/src/tests.rs:2070",
+    "crates/stark-experiment/src/circuit_recovery.rs:57-59",
+    "BACKLOG.md:3041-3053"
+   ],
+   "correct_statement": "No hay vaciado de una cuenta A hacia otra B. La misma hoja, en la misma posición, cambia de identidad (id_viejo → id_nuevo) con el mismo saldo y el nonce + 1, y la clave vieja pierde la autoridad de gasto (test recovery_locks_out_the_compromised_key). Se copian el view_id y el leaf_salt derivados de la clave vieja. Deducido de la lectura, sin medir: la clave comprometida sigue autenticando la vista de la cuenta y conoce el salt de la hoja, y la nueva no reproduce la credencial de vista que el nodo exige desde el §261. El test que el código cita para esta costura no existe. Tampoco hay protección frente a un gasto del atacante anterior a la recuperación (crates/zk-ssl/src/recovery.rs:84-105; crates/stark-experiment/src/circuit_recovery.rs:57-59).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C6c",
+   "agree": false,
+   "final_verdict": "PARCIAL",
+   "reason": "Discrepo del CONFIRMADA. El «+1» en circuito como entrada pública es cierto (circuit_recovery_climb.rs:124-125, 325-333, 638-647). Pero la fórmula del borrador, Count_B = Count_A + 1 junto a S_B = S_A, trata el contador como un atributo de la identidad A o B. En realidad es UN contador global del libro: recovery_count de SovereignLayer, persistido como meta:recoveries y re-derivado del registro al abrir (recovery.rs:30-36, 79-81; §393). Cuenta todas las recuperaciones de todas las cuentas y funciona como nonce anti-repetición de la autorización. Tampoco es «público» en el sentido fuerte. No va en la cabeza firmada ni en zkssl_params (spec/RPC.md:77-78), y la prueba de subida que lo asierta no queda en el registro (recovery.rs:176). Un tercero sólo lo reconstruye contando las entradas 'Recovery' y recomputando su sello (reverificacion.rs:14-17).",
+   "evidence": [
+    "crates/stark-experiment/src/circuit_recovery_climb.rs:67-70",
+    "crates/stark-experiment/src/circuit_recovery_climb.rs:124-125",
+    "crates/stark-experiment/src/circuit_recovery_climb.rs:325-333",
+    "crates/stark-experiment/src/circuit_recovery_climb.rs:638-647",
+    "crates/zk-ssl/src/recovery.rs:30-36",
+    "crates/zk-ssl/src/recovery.rs:79-81",
+    "crates/zk-ssl/src/recovery.rs:176",
+    "AUDITORIA.md §393 (línea 29600)",
+    "spec/RPC.md:77-78",
+    "spec/RPC.md:84",
+    "crates/zk-ssl-verify/src/reverificacion.rs:14-17"
+   ],
+   "correct_statement": "La recuperación incrementa en uno un contador GLOBAL de recuperaciones del libro (meta:recoveries), no un contador por identidad. La subida lo prueba en circuito como entradas públicas (count_viejo, count_nuevo = count_viejo + 1), y el contador entra en el compromiso que firman los dos custodios, donde hace de nonce anti-repetición (§393). No es un campo de la cabeza firmada ni del RPC, y la prueba que lo asierta no se guarda. Un tercero lo obtiene contando las entradas 'Recovery' del registro público (crates/stark-experiment/src/circuit_recovery_climb.rs:124-125, 325-333; crates/zk-ssl/src/recovery.rs:30-36, 79-81, 176).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C6d",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "De acuerdo con PARCIAL, por una razón más precisa que la del verificador. El borrador dice que el CIRCUITO de recuperación exige la doble autorización. El circuito que usa la capa, circuit_recovery_climb, declara que la autorización «se ha amputado» y que no prueba «quién autorizó» (circuit_recovery_climb.rs:1-6, 22-24). La exige la capa, verificando dos pruebas aparte de circuit_threshold_single_nullifier (recovery.rs:147-170). El circuito completo circuit_recovery, con el umbral dentro, no lo usa la capa. Matiz sobre la frase del repo «dos claves comprometidas, no dos voluntades independientes» (lib.rs:84-91, 938-941): la razón que da (quien genera la prueba necesita las dos claves a la vez) describe el circuito conjunto. En la vía delegada cada custodio prueba en su máquina (circuit_threshold_single_nullifier.rs:3-5). Esto es deducción; el repo mantiene la garantía débil. En el nodo que arranca hoy, las dos pruebas las genera el propio nodo con claves de prueba (C2b).",
+   "evidence": [
+    "crates/stark-experiment/src/circuit_recovery_climb.rs:1-6",
+    "crates/stark-experiment/src/circuit_recovery_climb.rs:22-24",
+    "crates/zk-ssl/src/recovery.rs:147-170",
+    "crates/stark-experiment/src/circuit_threshold_single_nullifier.rs:1-7",
+    "crates/stark-experiment/src/circuit_threshold_single_nullifier.rs:636-698",
+    "crates/zk-ssl/src/recovery.rs:410",
+    "crates/zk-ssl/src/recovery.rs:450",
+    "crates/zk-ssl/src/lib.rs:84-91",
+    "crates/zk-ssl/src/lib.rs:938-941",
+    "crates/stark-experiment/src/circuit_recovery.rs:51-56",
+    "crates/zk-ssl-node/src/main.rs:3067-3118"
+   ],
+   "correct_statement": "La doble autorización no está en el circuito de recuperación que usa la capa (circuit_recovery_climb), sino en la capa. apply_recovery_delegated exige dos pruebas de circuit_threshold_single_nullifier, de dos custodios distintos del conjunto de custodios; la gobernanza no sirve. Cada prueba está atada a esta transición (raíces y contadores) y consume cupo de custodios. El umbral es fijo en 2, sin k-de-n. El repo declara la garantía como «dos claves comprometidas, no dos voluntades independientes». Nada prueba que el nuevo titular sea legítimo. En el nodo ejecutable, las claves de custodio son constantes de prueba (crates/zk-ssl/src/recovery.rs:147-170; circuit_recovery_climb.rs:22-24; lib.rs:84-91).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C6e",
+   "agree": false,
+   "final_verdict": "PARCIAL",
+   "reason": "Discrepo del FALSA. Hay dos raíces públicas, y cada una compromete la hoja con la identidad A (antes) o B (después). La frase del borrador admite esa lectura y acierta en «dos raíces, antes y después». Lo que falla: (a) no son «raíces de identidad», que no existen como objeto, sino las raíces del árbol de cuentas ENTERO antes y después; (b) omite que recovery_count_old y recovery_count_new también son entradas públicas; (c) sugiere dos cuentas A y B, el mismo error de modelo que C6b. Las identidades son testigo (COL_ID_OLD, COL_ID_NEW). Es incompleto e impreciso más que contradicho, así que PARCIAL, severidad media.",
+   "evidence": [
+    "crates/stark-experiment/src/circuit_recovery_climb.rs:325-340",
+    "crates/stark-experiment/src/circuit_recovery_climb.rs:59-63",
+    "crates/stark-experiment/src/circuit_recovery.rs:439-448",
+    "crates/zk-ssl/src/recovery.rs:108-138",
+    "spec/rfc/0009-lo-que-revela-una-prueba.md:133"
+   ],
+   "correct_statement": "Las entradas públicas de la subida de recuperación son cuatro: la raíz del árbol de cuentas antes y después (el estado entero, que compromete la hoja con la identidad vieja o con la nueva) y el contador global de recuperaciones antes y después. Las identidades vieja y nueva son testigo. La nueva viaja en claro como argumento de apply_recovery_delegated, y la vieja salía literal en la prueba hasta el §538 (crates/stark-experiment/src/circuit_recovery_climb.rs:325-340; RFC-0009:133).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C6f",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. apply_recovery_delegated sólo tiene llamadores en tests (tests.rs:2162, 2198; recovery.rs:249-403; tests_support.rs:527). Ninguna de las 31 entradas de dispatch del nodo, 28 zkssl_* y 3 dev_*, es de recuperación, gobernanza, quema ni reembolso. La CLI sólo nombra el OpKind (commands.rs:374). La subida la construye quien tiene el registro (tests_support.rs:504-518).",
+   "evidence": [
+    "crates/zk-ssl/src/recovery.rs:52-60",
+    "crates/zk-ssl/src/tests.rs:2162",
+    "crates/zk-ssl/src/tests.rs:2198",
+    "crates/zk-ssl/src/tests_support.rs:490-530",
+    "crates/zk-ssl-node/src/main.rs:2008-3118",
+    "crates/zk-ssl-cli/src/commands.rs:374",
+    "crates/stark-experiment/src/lib.rs:83"
+   ],
+   "correct_statement": "La recuperación existe como API de la capa: apply_recovery_delegated verifica la subida y el par de custodios. No está expuesta en el JSON-RPC del nodo, y en el árbol sólo la ejercitan los tests. La prueba de subida necesita el registro de la cuenta (saldo, leaf_salt y camino), así que en la práctica la genera el operador. La capa no usa el circuito circuit_recovery con el umbral dentro (crates/zk-ssl/src/tests_support.rs:504-518).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C7a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Confirmado FALSA, con otro apoyo. Las operaciones administrativas delegadas (emisión, congelación, recuperación y gobernanza) no dejan su prueba en el registro, sólo el sello de la autorización (mint.rs:141, freeze.rs:160, recovery.rs:176, governance.rs:166). El tercero no puede re-verificarlas, que es lo contrario de «la misma rigidez matemática que las transacciones». Por comparación, de las transacciones queda al menos el digest de la prueba. La cita a NUCLEO pasa a las líneas 269-272.",
+   "evidence": [
+    "crates/zk-ssl/src/recovery.rs:12-19",
+    "crates/zk-ssl/src/governance.rs:42-56",
+    "crates/zk-ssl/src/governance.rs:96-103",
+    "crates/zk-ssl/src/two_phase.rs:255-259",
+    "spec/NUCLEO.md:269-272",
+    "crates/zk-ssl/src/mint.rs:141",
+    "crates/zk-ssl/src/freeze.rs:160",
+    "crates/zk-ssl/src/governance.rs:166",
+    "SECURITY.md:176-199",
+    "SECURITY.md:113-115"
+   ],
+   "correct_statement": "Los contadores de recuperación, congelación y gobernanza hacen contables esas intervenciones, pero no las impiden: «El contador no impide el abuso: nada en un circuito puede» (recovery.rs:12-19). Sólo la subida de recuperación prueba el +1 en circuito; la gobernanza lo comprueba en la capa. Ninguna de esas pruebas queda en el registro. Siguen abiertos canales administrativos fuera de toda prueba: el operador puede subir el cupo de custodios o cambiar la T de caducidad sin autorización (visible desde la cabeza v5 en paramsDigest), ordenar y cambiar el verificador sin rastro.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C7b",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "De acuerdo. La afirmación es general sobre la gobernanza descentralizada y no tiene fuente en el repo. Aplicada a Arqueo, la contradicen el propio árbol y AUDITORIA:53-56. CONTRIBUTING sigue en las líneas 149-154.",
+   "evidence": [
+    "README.md:33",
+    "AUDITORIA.md:53-56",
+    "crates/zk-ssl/src/governance.rs:18-25",
+    "CONTRIBUTING.md:147-154"
+   ],
+   "correct_statement": "Arqueo no es un sistema de gobernanza descentralizada, y ningún documento del repo dice que cierre esa brecha. La gobernanza es un conjunto inmutable que cambia el conjunto de custodios con 2 firmas. Si se compromete, la única salida es un libro nuevo, y el código dice que la circularidad «se traslada», no desaparece (crates/zk-ssl/src/governance.rs:18-25; AUDITORIA.md:53-56).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C7c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado, pero la frase «ordenar, censurar u omitir operaciones» hay que actualizarla porque el árbol cambió. Desde el RFC-0010 (ACEPTADO en el §577), una operación que el nodo recibe por applySend o applyClaim lleva un recibo bajo la recepRoot de la cabeza v6 firmada. Dejarla sin resolver en N = 1.440 cabezas produce un ROJO oponible (spec/PAQUETE.md:359-399). La censura sin rastro queda para lo que el nodo no acusa: sin recibo, con -32603 al anotar, por applyMany o zkssl_pledge, y para los métodos que no reservan recibo (openAccount, publishConsumo). El resto del catálogo de poderes se sostiene.",
+   "evidence": [
+    "crates/zk-ssl/src/mint.rs:14-24",
+    "crates/zk-ssl/src/two_phase.rs:1559",
+    "crates/zk-ssl/src/freeze.rs:28-30",
+    "crates/zk-ssl/src/recovery.rs:8-10",
+    "crates/zk-ssl/src/governance.rs:96-110",
+    "crates/zk-ssl/src/governance.rs:42-56",
+    "crates/zk-ssl/src/two_phase.rs:255-259",
+    "SECURITY.md:171-175",
+    "SECURITY.md:176-199",
+    "SECURITY.md:212-214",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:182-217",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:250-266",
+    "crates/zk-ssl-node/src/main.rs:2669",
+    "crates/zk-ssl-node/src/main.rs:2719"
+   ],
+   "correct_statement": "Con 2 custodios, el emisor puede emitir (con el tope en circuito), emitir a pendiente, congelar o descongelar cualquier cuenta sin justificación en circuito y reasignar cualquier cuenta. Con 2 miembros de gobernanza se cambia el conjunto de custodios. El operador, solo, puede: ver todos los saldos; ordenar; abrir cuentas a cero; publicar consumos; fijar el cupo y la T sin autorización (visible en paramsDigest desde la cabeza v5); declarar un modelo de custodia de su clave que no se comprueba; y cambiar el verificador sin rastro. Censurar le sigue siendo posible. Desde el RFC-0010, si censura una operación de applySend o applyClaim a la que ya dio recibo, queda un rastro firmado. Sin recibo, en lote o prenda, no deja rastro oponible (RFC-0010 D-E, D-H). El titular no puede rotar su propia clave sin dos custodios (SECURITY.md:171-214).",
+   "changed_by_tree": true
+  },
+  {
+   "id": "C7d",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado. README pasa a las líneas 163-164, y freeze.rs:30 dice «No hay caducidad». Un matiz a «los pendientes quedan inmovilizados»: el receptor congelado no puede cobrar (claim_materials rechaza con AccountFrozen, client.rs:153-158). Pero un pendiente con meta puede reembolsarlo su emisor pasada la T (SECURITY.md:42-49, 103-108). Sólo los anteriores a la caducidad quedan «para siempre».",
+   "evidence": [
+    "README.md:163-164",
+    "crates/zk-ssl/src/freeze.rs:18-30",
+    "crates/zk-ssl/src/client.rs:153-158",
+    "crates/zk-ssl/src/tests.rs:1368",
+    "SECURITY.md:42-49",
+    "SECURITY.md:103-108"
+   ],
+   "correct_statement": "Una congelación dura hasta que dos custodios la levantan: no hay caducidad ni justificación en circuito. Una cuenta congelada no puede gastar, cobrar ni quemar. Los pendientes dirigidos a ella no los puede cobrar. Si tienen meta, su emisor puede reembolsarlos pasada la T; si son anteriores a la caducidad, quedan inmovilizados. La recuperación no levanta una congelación (crates/zk-ssl/src/freeze.rs:18-30; README.md:163-164; SECURITY.md:42-49).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C8",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Confirmado. En descargo del borrador, repite la fila 5 del README («sólo quien tiene la clave mueve su cuenta; el operador no puede», README.md:132), y eso vale para gastar, cobrar y quemar. El «técnicamente imposible» cae por cuatro vías: (a) las pruebas anteriores al §538 entregaban claves de gasto y de custodio; (b) el verificador se puede cambiar sin rastro; (c) los AIR no tienen especificación formal; (d) hay transiciones sin prueba que el operador emite solo (OpenAccount, Consumo) y ajustes sin autorización. Añado dos cosas. Las operaciones delegadas no dejan su prueba en el registro, así que un tercero no puede comprobar a posteriori que estaban autorizadas. Y la posición del congelado no está atada en el AIR (SECURITY §3.6, ahora 416-434).",
+   "evidence": [
+    "crates/zk-ssl/src/lib.rs:41-49",
+    "README.md:132",
+    "spec/rfc/0009-lo-que-revela-una-prueba.md:117",
+    "SECURITY.md:492-496",
+    "crates/zk-ssl/src/accounts.rs:120-125",
+    "crates/zk-ssl/src/consumo.rs:127-134",
+    "SECURITY.md:176-199",
+    "SECURITY.md:304-318",
+    "SECURITY.md:416-434",
+    "crates/zk-ssl/src/recovery.rs:176",
+    "crates/zk-ssl-node/src/main.rs:1336-1348",
+    "crates/zk-ssl/src/tests_support.rs:33-61"
+   ],
+   "correct_statement": "Hay que acotarlo. Gastar, cobrar, quemar y reembolsar exigen una prueba con la clave del titular. Emitir, congelar y recuperar exigen dos custodios, y cambiar el conjunto de custodios dos miembros de gobernanza. El operador, solo, puede abrir cuentas a cero, publicar consumos, ajustar el cupo y la T, y ordenar. Cuatro cosas quitan el «técnicamente imposible»: (a) hasta el §538 las pruebas entregaban al nodo las claves de gasto y de custodio; (b) el operador puede sustituir el verificador sin dejar rastro; (c) la solidez de los AIR no está verificada formalmente ni auditada, y la posición de congelados no está atada en el AIR; (d) de las operaciones delegadas sólo queda el sello de la autorización, no las pruebas. Además, en el nodo ejecutable actual los custodios son claves de prueba públicas (crates/zk-ssl/src/lib.rs:41-49; SECURITY.md:176-199, 304-318, 416-434, 492-496).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C9a",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "De acuerdo. «Dictador de bloque» no aparece en el repo y no hay bloques. La sustancia, un único operador que decide orden e inclusión, está declarada (README.md:33; SECURITY.md:29-31). applyMany está ahora en RPC.md:120 y :250.",
+   "evidence": [
+    "README.md:33",
+    "SECURITY.md:29-31",
+    "README.md:111-114",
+    "spec/RPC.md:120",
+    "spec/RPC.md:250-263"
+   ],
+   "correct_statement": "Arqueo asume un único operador que ordena todas las operaciones (un nodo, un escritor), no una cadena de bloques. Las unidades son transiciones en un registro encadenado, cabezas de época firmadas con XMSS a cada latido y lotes applyMany que arma el agregador. «Dictador de bloque» es terminología ajena al repo (README.md:33; SECURITY.md:29-31).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C9b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Confirmado. grep de «smart contract», «contrato inteligente» o «contratos inteligentes» en todo el árbol, fuera de doc/ecst: cero resultados. doc/README-CLI.md:8-21 dice que la capa no tiene EVM.",
+   "evidence": [
+    "doc/README-CLI.md:8-21",
+    "SECURITY.md:180-184"
+   ],
+   "correct_statement": "Arqueo no tiene contratos inteligentes. Las reglas son circuitos AIR fijos en Rust (fork de winterfell) más las comprobaciones de la capa. Una prueba afirma que una transición cumple su AIR, y el cambio de verificador no queda registrado (doc/README-CLI.md:8-21; SECURITY.md:176-199).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C9c",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "De acuerdo. doc/USE_CASES.md cambió en el §581 sólo en las filas 5 y 6 y en «What none of this claims». La lista de casos de uso no cambió, pero sí sus números de línea: dominios en 46-113, encaje institucional en 115-132 y banco central en 134-144. «Registros de propiedad» genéricos no figuran; sí «registers of entitlements», «share and fund-unit registers» y «securities registers at low volume».",
+   "evidence": [
+    "doc/USE_CASES.md:16-18",
+    "doc/USE_CASES.md:46-113",
+    "doc/USE_CASES.md:115-132",
+    "doc/USE_CASES.md:134-144",
+    "SECURITY.md:27-28"
+   ],
+   "correct_statement": "USE_CASES lista libros cerrados donde el operador emite y retira la unidad. Seis dominios están revisados: devolución de depósitos, garantías de origen y derechos de emisión, monedas comunitarias y comunidades energéticas, préstamo bibliotecario digital y salvaguarda de fondos de clientes. El resto son candidatos sin medir. Encajan los registros de derechos y la compensación entre operadores y entre administraciones; en parte, los registros de valores de bajo volumen. No encajan las entidades de contrapartida central, y la moneda de banco central es un argumento, no un caso de uso. Es un prototipo de 1,5-1,9 TPS medidos (doc/USE_CASES.md:46-144).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C10a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "De acuerdo. Pedersen no aparece en el repo fuera de doc/ecst. La tabla de SECURITY sigue diciendo «no hay curva que romper» (SECURITY.md:551, antes 508-518). Precisión: CONTRIBUTING no lo excluye, pide «discusión previa con números».",
+   "evidence": [
+    "CONTRIBUTING.md:147-151",
+    "SECURITY.md:551",
+    "SECURITY.md:553-559"
+   ],
+   "correct_statement": "Los compromisos de Pedersen se apoyan en el logaritmo discreto sobre curvas. Contradicen la tesis post-cuántica y «sin curvas» del núcleo (SECURITY.md:551), y CONTRIBUTING exige discutirlos antes con números (CONTRIBUTING.md:147-151). Presentarlos como extensión de Arqueo es falso: nada de eso está hecho ni es compatible con el núcleo tal como está.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C10b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "De acuerdo. native_leaf_salted y pending_commitment están verificados en zk-ssl-hash/src/lib.rs:100-106, 145-169 y en pending.rs:70-80. La cabecera de sal.rs sigue diciendo «Hoy NADIE lo declara como VC» (sal.rs:5-8), desmentido por el §538 y por el testigo tests_sal del §578 (lib.rs:1109-1155).",
+   "evidence": [
+    "crates/zk-ssl-hash/src/lib.rs:100-106",
+    "crates/zk-ssl-hash/src/lib.rs:145-169",
+    "crates/zk-ssl/src/pending.rs:70-80",
+    "SECURITY.md:320-348",
+    "crates/zk-ssl-air/src/sal.rs:1-8",
+    "crates/zk-ssl/src/lib.rs:1109-1155",
+    "SECURITY.md:228-233"
+   ],
+   "correct_statement": "El estado de Arqueo ya es un árbol de Merkle disperso de hojas ocultantes basadas en hash: Rescue-Prime Rp64_256 sobre Goldilocks, con un leaf_salt derivado de la clave (entrada 50). Oculta frente a terceros, no frente al operador, que guarda los saldos en claro. MerkleConSal es otra cosa: el compromiso vectorial con sal (Blake3) que el probador STARK usa desde el §538 para ocultar la traza. La privacidad frente al operador (B11, operador ciego) está diseñada en el backlog y no construida.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C10c",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "De acuerdo. grep de Quarantined, Suspected, Healthy, TEE, SGX o enclave en los dos repos: cero. «Anomal» sólo aparece como adjetivo en comentarios y tests.",
+   "evidence": [
+    "crates/zk-ssl/src/lib.rs:84-91",
+    "BACKLOG.md:3041-3053",
+    "BACKLOG.md:1729-1740",
+    "SECURITY.md:212-214"
+   ],
+   "correct_statement": "Nada de ECST-R está implementado en ninguno de los dos repos. Lo más cercano: autorizaciones de 2 custodios para operaciones de custodia (no claves de gasto por umbral); recuperación asistida por dos custodios, que sustituye la identidad sin ninguna máquina de estados y copia el view_id y el leaf_salt viejos; y rotación de custodios por cupo de uso. La rotación de claves (entrada 52) sigue abierta, y no hay TEE ni detección de anomalías.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C11",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "De acuerdo. README.md:24-27 no cambió. Una reserva que conviene conservar, de SECURITY.md:553-559: «post-cuántico» significa sin supuestos de curva, no invulnerable, y la configuración sin extensión se midió con un techo de 63 bits (la de producción usa extensión cuadrática).",
+   "evidence": [
+    "README.md:24-27",
+    "SECURITY.md:551",
+    "SECURITY.md:553-564",
+    "crates/zk-ssl/src/lib.rs:205-222",
+    "crates/zk-ssl-sdk/src/lib.rs:204-239"
+   ],
+   "correct_statement": "Correcto, con matices. La prueba la genera el titular con client::prove_send (SDK Account::pay), aunque la capa conserva SovereignLayer::send, que prueba con la clave. Es STARK/FRI sobre un fork de winterfell 0.13.1, con ocultación desde el §538, hashes Rescue-Prime Rp64_256 y Blake3 y campo Goldilocks. En la vía de pago no hay setup de confianza ni curvas elípticas. La seguridad son ~127 bits conjeturados, no demostrados, y «post-cuántico» significa sin supuestos de curva, no invulnerable (SECURITY.md:553-559). Ni los circuitos ni el fork están auditados.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "C12a",
+   "agree": false,
+   "final_verdict": "PARCIAL",
+   "reason": "El veredicto cambió sólo porque cambió el árbol. En d531c80 (S565) el borrador acertaba: la cabeza era v5 y el recibo no viajaba. Hoy el RFC-0010 está ACEPTADO (§577) y construido. applySend y applyClaim reservan un rx tras el parseo y ANTES de la capa, anotan la hoja recibo_digest(hashPrueba, era, n) y devuelven `recepcion` en el resultado y también en el error.data de un rechazo (main.rs:2669-2683, 2719-2730). La cabeza v6 firma (recepRoot, recepCount). El sobre de completitud, verificable sin nodo, da un ROJO oponible, «NO RESUELTA EN LA VENTANA», a lo que el nodo recibió y no aplicó ni rechazó con prueba en N = 1.440 cabezas (PAQUETE.md:359-399). El «sin dejar rastro» ya no es cierto en general. Sigue siéndolo para lo que el nodo no acusa: no contestar, contestar sin recibo o con -32603 al anotar (main.rs:2956-2965; D-H); applyMany y zkssl_pledge (D-E, §576); y openAccount y publishConsumo, que no reservan recibo (recibir() sólo se llama en main.rs:2669 y 2719). Deducido de la lectura, sin medir: el recibo de la respuesta no va firmado (RPC.md:542-543). Se vuelve oponible cuando el titular obtiene su camino con zkssl_recepPath, que el nodo sirve sólo con --diario (RPC.md:782-793); un operador que retenga el camino deja al titular sin sobre. Queda además prosa sin actualizar: README.md:33-34 sigue diciendo «puede omitir una operación sin dejar rastro» sin matiz, y RFC-0010:74-79 conserva la motivación histórica («hoy ese tramo no deja huella firmada»).",
+   "evidence": [
+    "spec/rfc/0010-el-recibo-de-recepcion.md:3-19",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:98-101",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:182-239",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:250-266",
+    "spec/RPC.md:522-552",
+    "spec/RPC.md:637-658",
+    "spec/RPC.md:782-793",
+    "spec/PAQUETE.md:359-399",
+    "crates/zk-ssl-node/src/main.rs:2634-2686",
+    "crates/zk-ssl-node/src/main.rs:2705-2730",
+    "crates/zk-ssl-node/src/main.rs:2921-2965",
+    "crates/zk-ssl-node/src/main.rs:5102",
+    "README.md:33-34",
+    "README.md:136-156",
+    "doc/USE_CASES.md:99-105",
+    "doc/USE_CASES.md:146-161",
+    "SECURITY.md:113-115",
+    "SECURITY.md:221-226",
+    "AUDITORIA.md §576 (línea 41796)",
+    "AUDITORIA.md §577 (línea 41849)",
+    "AUDITORIA.md §581 (línea 41996)"
+   ],
+   "correct_statement": "El operador puede censurar, pero desde el RFC-0010 (ACEPTADO en el §577) ya no siempre sin rastro. Toda operación que el nodo evalúa por applySend o applyClaim recibe un recibo de recepción, también si la capa la rechaza, y queda como hoja bajo la recepRoot de la cabeza v6 firmada. Si no se resuelve en N = 1.440 cabezas (aplicada, o rechazada con prueba portable), el titular forma sin nodo un sobre de completitud que da un ROJO nombrado. Es evidencia oponible firmada por el propio operador, no prueba criptográfica de ausencia. La censura sigue sin dejar rastro oponible cuando el nodo no emite recibo (no contesta, contesta sin recepcion o con -32603), cuando la operación entra por applyMany o zkssl_pledge, y en los métodos que no reservan recibo, como zkssl_openAccount o zkssl_publishConsumo. El titular lo sabe al instante, pero no puede probarlo (RFC-0010 D-E, D-F, D-H; spec/PAQUETE.md:359-399; README.md:136-156). El operador sigue decidiendo el orden.",
+   "changed_by_tree": true
+  },
+  {
+   "id": "C12b",
+   "agree": false,
+   "final_verdict": "PARCIAL",
+   "reason": "La descripción del diseño que dio el verificador (D-C, D-E, D-F, D-H) es correcta, pero el estado cambió con el árbol. El RFC-0010 ya no está PROPUESTO: está ACEPTADO (§577), y todas sus etapas están selladas. E2a-E2c del §557 al §569, E2d en el §570 (el nodo compone, firma y sirve v6), E3 en el §571 (`recepcion` en el cable y zkssl_recepPath, método 31), E4 en el §573 (sobre de completitud con tres veredictos más el cuarto estado) y E5 en el §574 (catálogo spec/vectors/completitud/ con 35 sobres y banco). En el §576 se decidió el alcance: sólo applySend y applyClaim. La frase «E2d, E3, E4 y E5 pendientes» es del árbol viejo. Queda algo sin decidir que el verificador no pudo ver: la retención del registro de recibos (§580: podar sin llamador, crece 40 B por recibo). Otra cosa la deduzco de la lectura, sin medir. Un rechazo por VerificationFailed o ProofFailed, que el RFC-0007 D-I declaró sin prueba portable, no está entre las cuatro causas «declarables» del kit (zk-ssl-verify/src/main.rs:1622-1632, 1838-1858), ni tiene sobre de rechazo. Su sobre de completitud no puede salir VERDE ni en el cuarto estado. Es justo la causa tras la que, según D-E, «se escondería un censor».",
+   "evidence": [
+    "spec/rfc/0010-el-recibo-de-recepcion.md:3-19",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:44-50",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:182-266",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:304-318",
+    "spec/NUCLEO.md:265-268",
+    "spec/PAQUETE.md:359-399",
+    "spec/RPC.md:522-552",
+    "spec/RPC.md:782-793",
+    "AUDITORIA.md §570 (línea 41375)",
+    "AUDITORIA.md §571 (línea 41485)",
+    "AUDITORIA.md §573 (línea 41603)",
+    "AUDITORIA.md §574 (línea 41675)",
+    "AUDITORIA.md §576 (línea 41796)",
+    "AUDITORIA.md §577 (línea 41849)",
+    "AUDITORIA.md §580 (línea 41968)",
+    "crates/zk-ssl-verify/src/main.rs:1622-1632",
+    "crates/zk-ssl-verify/src/main.rs:1838-1858",
+    "spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md:486-500",
+    "tools/banco_completitud.sh:5-11"
+   ],
+   "correct_statement": "El RFC-0010 (ACEPTADO en el §577, hito H5b) hace que toda operación que el nodo llega a evaluar por applySend o applyClaim, aunque la rechace, deje una hoja «recibo de recepción», recibo_digest(hashPrueba, era, n), bajo una raíz firmada en la cabeza v6 (recepRoot, recepCount). El recibo viaja en la respuesta y en el error.data. Hereda la firma al cerrar la era, y el camino se pide con zkssl_recepPath. Con él el titular forma, sin nodo, un sobre de completitud con tres veredictos: aplicada; rechazada con prueba; o NO RESUELTA en N = 1.440 cabezas firmadas, medidas por el índice XMSS. Hay un cuarto estado, «declarada, no probada», para las causas sin prueba portable. El ROJO es evidencia oponible, no prueba de ausencia: la censura sigue siendo posible, pero deja de ser gratuita. Residuo declarado: el operador que no emite recibo (D-H); applyMany y zkssl_pledge, fuera por decisión del §576; y la retención del registro, sin decidir (§580). Todas las etapas están selladas (§557–§574) (spec/rfc/0010-el-recibo-de-recepcion.md:3-19, 182-318; spec/PAQUETE.md:359-399).",
+   "changed_by_tree": true
+  }
+ ],
+ "extra_facts_rejected": [
+  "Hecho extra n.º 2 (superficie RPC): «La superficie es de 30 métodos: 27 zkssl_* y 3 dev_*» está desfasado por el árbol. Desde el §571 son 31: 28 zkssl_*, porque se añadió zkssl_recepPath, y 3 dev_* (README.md:192; crates/zk-ssl-node/src/main.rs:2390). El resto del hecho, que no hay método de producción para emitir, quemar, reembolsar, congelar, recuperar ni gobernar, se mantiene.",
+  "Hecho extra n.º 6 (anti-repetición): «la anti-repetición entre operaciones la dan los contadores dentro de commit_operation» sólo vale para congelación, recuperación y gobernanza (meta:freezes, meta:recoveries, meta:gov_changes; AUDITORIA §393). En la emisión la dan las raíces antes y después, el importe, el suministro antes y después y el tope que entran en commit_operation(OP_MINT) (crates/zk-ssl/src/mint.rs:104-112). El resto (claves de un elemento, 16 miembros como máximo, umbral fijo en 2, nulificadores sin persistir) se sostiene."
+ ],
+ "extra_facts_new": [
+  {
+   "fact": "Los métodos de la capa que reciben la clave de gasto (send, claim, refund, refund_v2, burn, audit, disclose_exact, prove_minimum) la reciben ESTRECHA, un BaseElement de 64 bits, y la rellenan como [sk,0,0,0]. Sólo la vía del cliente (client::prove_send/prove_claim) acepta la clave ancha de 4 elementos, que es la que genera Wallet::random del SDK. No hay variante de cliente ni ancha para quemar, reembolsar ni revelar. Deducido de las firmas, sin medir: una cuenta de clave ancha real no tiene hoy ninguna vía para quemar, reembolsar un pendiente caducado ni auditarse, y la vía de la capa send/claim sólo sirve a cuentas estrechas (open_account, deprecado). El comentario de la capa lo admite para send: «Nada la marca».",
+   "evidence": [
+    "crates/zk-ssl/src/two_phase.rs:525-527",
+    "crates/zk-ssl/src/two_phase.rs:579-581",
+    "crates/zk-ssl/src/two_phase.rs:791-793",
+    "crates/zk-ssl/src/two_phase.rs:856-878",
+    "crates/zk-ssl/src/two_phase.rs:1138-1140",
+    "crates/zk-ssl/src/burn.rs:19-21",
+    "crates/zk-ssl/src/burn.rs:82-92",
+    "crates/zk-ssl/src/audit.rs:29-31",
+    "crates/zk-ssl/src/audit.rs:69-71",
+    "crates/zk-ssl/src/client.rs:339",
+    "crates/zk-ssl/src/client.rs:473",
+    "crates/zk-ssl-sdk/src/lib.rs:97-101",
+    "crates/zk-ssl/src/accounts.rs:97-106",
+    "BACKLOG.md:1087-1098"
+   ]
+  },
+  {
+   "fact": "De las operaciones delegadas (emisión, congelación, recuperación y gobernanza) el registro encadenado sólo guarda sello_de_autorizacion(operación) y el compromiso de la operación. No guarda la prueba de subida ni las dos pruebas de custodio. Un tercero puede recomputar el sello, pero no puede re-verificar ni la conservación en circuito (saldo igual en la recuperación, suministro +importe y tope en la emisión) ni que dos custodios distintos autorizaran. Sólo las verifica el nodo.",
+   "evidence": [
+    "crates/zk-ssl/src/mint.rs:141",
+    "crates/zk-ssl/src/freeze.rs:160",
+    "crates/zk-ssl/src/recovery.rs:176",
+    "crates/zk-ssl/src/governance.rs:166",
+    "crates/zk-ssl-hash/src/lib.rs:1324-1329",
+    "crates/zk-ssl-verify/src/reverificacion.rs:30-47"
+   ]
+  },
+  {
+   "fact": "El RFC-0010 en el árbol actual (71c5aad y siguientes): ACEPTADO en el §577 y con todas sus etapas selladas. Sólo applySend y applyClaim reservan número de recepción (las únicas llamadas a recibir() están en main.rs:2669 y 2719). zkssl_openAccount, zkssl_publishConsumo, zkssl_pledge, zkssl_applyMany y zkssl_submitCosig no dejan recibo. El recibo de la respuesta no va firmado: lo hereda al cerrar la era y el titular necesita zkssl_recepPath, que devuelve available:false si el nodo corre sin --diario. Un -32603 al anotar no lleva recibo. El registro de recibos no se poda (§580). Un testigo del nodo ata que el lote y la prenda evalúan sin consumir recibo.",
+   "evidence": [
+    "crates/zk-ssl-node/src/main.rs:2669",
+    "crates/zk-ssl-node/src/main.rs:2719",
+    "crates/zk-ssl-node/src/main.rs:2921-2965",
+    "crates/zk-ssl-node/src/main.rs:5102",
+    "spec/RPC.md:522-552",
+    "spec/RPC.md:782-793",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:3-19",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:314-318"
+   ]
+  },
+  {
+   "fact": "Deducido de la lectura, sin medir y sin vector que lo ejerza. El kit sólo admite como resolución «declarada» cuatro causas: CustodianSetExhausted, PendingTreeExhausted, NotTheIssuer y NotTheAccountHolder. No admite ProofFailed ni VerificationFailed, que el RFC-0007 D-I declaró sin prueba portable, y para ellas no hay sobre de rechazo. Un envío o cobro rechazado por prueba inválida no puede, por tanto, resolverse en VERDE ni en el cuarto estado: su sobre de completitud acaba en ROJO. Choca con la D-G del RFC-0010, que promete el cuarto estado para toda causa sin prueba portable. Y deja a un operador honrado expuesto a un ROJO provocado por un titular que envíe a propósito una prueba inválida, que sí consume recibo según la D-E.",
+   "evidence": [
+    "crates/zk-ssl-verify/src/main.rs:1622-1632",
+    "crates/zk-ssl-verify/src/main.rs:1838-1858",
+    "spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md:486-500",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:182-190",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:241-248",
+    "spec/PAQUETE.md:391-394",
+    "tools/banco_completitud.sh:10-11",
+    "crates/zk-ssl/src/two_phase.rs:1018-1022"
+   ]
+  },
+  {
+   "fact": "Hay prosa viva que el §581 no puso al día. README.md:33-34 sigue diciendo, sin matiz, que el operador «puede omitir una operación sin dejar rastro». SECURITY.md:221-226 llama todavía «Mitigación diseñada» a recibos y acuse. RFC-0010:74-79 conserva como motivación «hoy ese tramo no deja huella firmada». Un informe debe citar la redacción actual, README.md:136-156 y doc/USE_CASES.md:35-44, 99-105 y 146-161: la censura de lo que el nodo nunca acusa no deja rastro; la de lo que acusa, sí.",
+   "evidence": [
+    "README.md:33-34",
+    "README.md:136-156",
+    "SECURITY.md:221-226",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:74-79",
+    "doc/USE_CASES.md:35-44",
+    "doc/USE_CASES.md:99-105",
+    "doc/USE_CASES.md:146-161",
+    "AUDITORIA.md §581 (línea 41996)"
+   ]
+  },
+  {
+   "fact": "El nodo no ejecuta nunca la vía de la capa send/claim: no hay llamadas a SovereignLayer::send ni ::claim en crates/zk-ssl-node/src/main.rs. Las llamadas que hay en el árbol están en tests, en instrumentos cfg(test) (instrumento_pago, instrumento_revela, prueba_edad, foto_pendientes) y en tests_support::two_phase_transfer. La CLI simulate y el SDK usan client::prove_send.",
+   "evidence": [
+    "crates/zk-ssl-node/src/main.rs:3417",
+    "crates/zk-ssl/src/instrumento_pago.rs:5",
+    "crates/zk-ssl/src/tests_support.rs:82-110",
+    "crates/zk-ssl-cli/src/sandbox.rs:1-10",
+    "crates/zk-ssl-sdk/src/lib.rs:238"
+   ]
+  },
+  {
+   "fact": "Hasta el §575 (28-sep-2026), cualquiera que mandara una prueba malformada al nodo podía abortar el proceso: winter-utils y winter-crypto 0.13.1 reservaban memoria según una cuenta leída de los bytes, y se midieron peticiones de 862.916.669.440 B. Se cerró con lectores acotados (fork winter-air y zk-ssl-air/src/sal.rs). El §578 midió que toda verificación viva lee con sal. Es un riesgo de la vía «apply_* recibe y verifica la prueba» que el borrador no contempla.",
+   "evidence": [
+    "SECURITY.md:436-464",
+    "crates/zk-ssl-air/src/sal.rs:116-148",
+    "crates/zk-ssl/src/lib.rs:1109-1155",
+    "AUDITORIA.md §575 (línea 41736)",
+    "AUDITORIA.md §578 (línea 41885)"
+   ]
+  },
+  {
+   "fact": "spec/RPC.md:125 sigue dando «~54–66 KB según circuito» para SendReceipt.proof y ClaimReceipt.proof. Es una cifra anterior a la ocultación; desde el §538 la banda es de 73.571..84.244 B (envío) y 72.382..83.723 B (cobro). Completa el hecho extra n.º 10, que sólo señalaba SECURITY.md y lib.rs.",
+   "evidence": [
+    "spec/RPC.md:124-126",
+    "crates/zk-ssl/src/metrics.rs:121-122",
+    "SECURITY.md:585"
+   ]
+  }
+ ]
+}

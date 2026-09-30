@@ -1,0 +1,518 @@
+[
+ {
+  "review": "fidelity",
+  "quote": "un contador de firma borrado reabre en cero",
+  "applied": true,
+  "note": "Comprobado (guardian lib.rs:419-444 persiste 0 al crear; main.rs:596-601 Coincide arranca sin mirar el diario). Extendido a 'borrado o puesto a cero' en el título de §8.1 (acortado a '…cae en `Coincide`'), el cuerpo de §8.1 (copia tomada tras el primer arranque y antes de la primera firma), §3.6, §3.7, G6, G7, §6.3, §7.4, §9 y el Resumen."
+ },
+ {
+  "review": "fidelity",
+  "quote": "`politica_de_reconciliacion`; `tools/banco_reutilizacion.sh` (§579)",
+  "applied": true,
+  "note": "Comprobado en tools/banco_reutilizacion.sh (reinicia sólo el testigo; NEGATIVO restaura el contador a 1). Respaldo de G7 reescrito: nodo = politica_de_reconciliacion y tests unitarios [LECTURA], sin banco; testigo = politica_del_cofirmante y el banco, que compara el ordinal y cuyo negativo restaura a 1, no a 0. §8.1 dice también que el banco no ejerce el nodo ni el caso cero."
+ },
+ {
+  "review": "fidelity",
+  "quote": "banco K.1, 25/25 **[MEDIDO: `AUDITORIA.md` §234]**",
+  "applied": true,
+  "note": "Comprobado en AUDITORIA §234 ('no tiene consumidor todavía', 'xmss sigue sin ser dependencia') y §236. Respaldo de G6: K.1 sobre el guardián aislado antes del firmante de cabezas; se añade el orden reservar-firmar-verificar de FirmanteCabeza::firmar por lectura y tests (G4c)."
+ },
+ {
+  "review": "fidelity",
+  "quote": "Frente a la muerte del proceso **[MEDIDO:",
+  "applied": true,
+  "note": "Aplicado en §4.2: K.1 sobre el guardián original de Arqueo, sin consumidor, antes del firmante (§236) y de hbs-state, sin xmss; 'qué firmaba el hijo no consta'; se transfiere a IndexGuard por ser traducción casi literal (H18a, G7a, G1a). También en la fila 'muerte del proceso' de §7.1."
+ },
+ {
+  "review": "fidelity",
+  "quote": "en su portátil (Intel Core i5-1135G7 bajo WSL2)",
+  "applied": true,
+  "note": "Comprobado con VERIFICACION M1 y AUDITORIA (i5 sólo en §229/§234; §89-§217 sin hardware). §7.1 ya no atribuye todo al i5 (menciona el 'Ryzen del piloto' de §181) y la fila M1 de §7.5 dice 'un portátil bajo WSL2 (i5-1135G7 donde consta)'. 'Las cifras de tiempo son de una máquina' -> 'dependen de la máquina'."
+ },
+ {
+  "review": "fidelity",
+  "quote": "`doc/ecst/ECST.md`, todavía sin commit.",
+  "applied": true,
+  "note": "Comprobado con git log (a7c72b9, 70f6370; además HEAD 6a868ed con las revisiones). Disponibilidad: primer borrador en a7c72b9, revisiones en 6a868ed; material de verificación 71710b2 a 70f6370."
+ },
+ {
+  "review": "fidelity",
+  "quote": "64 latidos por defecto",
+  "applied": true,
+  "note": "Comprobado: DEFAULT_REFUND_TTL cuenta 'latidos de log.seq' (now = log.len()); v2 usa delta. Aplicado en §5.2, pero se cita apply_refund (two_phase.rs:656-676): las líneas 433-453 que proponía la revisión son la des-emisión, no el reembolso de un pago."
+ },
+ {
+  "review": "fidelity",
+  "quote": "que el nodo emitiera recibo; firma de la cabeza que cierra la era",
+  "applied": true,
+  "note": "Comprobado en RFC-0010 (D-F; 'Seguridad': podar dejaría sin sobre al titular que no pidió su camino). Hipótesis de G5 ampliada; §5.12: el titular forma el sobre con el camino que sirve el nodo y se verifica sin nodo; se añade el recibo cuyo camino no se sirve a lo que sigue sin rastro oponible."
+ },
+ {
+  "review": "fidelity",
+  "quote": "Es la base de que el autocontrol de §4.8 mida el",
+  "applied": true,
+  "note": "Comprobado (ningún árbol menciona POSIX). §2: 'Todo ello es coherente con que el autocontrol… la razón que da el propio repositorio es la medida en tmpfs de AUDITORIA §234'."
+ },
+ {
+  "review": "fidelity",
+  "quote": "un test ata las dos",
+  "applied": true,
+  "note": "Comprobado: sólo witness.rs:3049-3075 ata la política al juez; los tests de politica_de_reconciliacion enumeran casos. §4.5 corregido con la ruta del test."
+ },
+ {
+  "review": "fidelity",
+  "quote": "salida no nula, vacía o no",
+  "applied": true,
+  "note": "Comprobado en HBS-STATE v0.3 (contract rules). §4.6: 'código de salida distinto de cero, salida estándar vacía o última línea que no es JSON'."
+ },
+ {
+  "review": "fidelity",
+  "quote": "un `match` de tres brazos sobre `counter.cmp(&key)`",
+  "applied": true,
+  "note": "Comprobado: reconcile_values tiene cuatro brazos; 'tres brazos' es de la spec. Fusionado con R19: partición de N², el match sobre los tres valores de Ordering con la guarda como brazo previo, y la spec llama 'precedencia' a esa guarda."
+ },
+ {
+  "review": "fidelity",
+  "quote": "una vez, sin n ni",
+  "applied": true,
+  "note": "Comprobado: §234 da un valor por fila sin n. Quitado 'una vez' en §4.8 y en la fila fsync de §7.1 ('sin n ni dispersión publicados')."
+ },
+ {
+  "review": "fidelity",
+  "quote": "| una permutación Rescue | 7,44–8,91 µs | §217 |",
+  "applied": true,
+  "note": "Comprobado en AUDITORIA §217 ('µs por merge implícito': 7,53/7,44/8,91). Fila de §7.1 reescrita; §7.3 (coste del encadenado y ritmo de recomposición) pasa a 'coste implícito por merge'."
+ },
+ {
+  "review": "fidelity",
+  "quote": "El coste del `fsync` adicional por operación",
+  "applied": true,
+  "note": "Comprobado: recibir->reservar (sync_all) y anotar (sync_all) más sync del directorio al abrir era. §7.4 reescrito."
+ },
+ {
+  "review": "fidelity",
+  "quote": "al revés que el código",
+  "applied": true,
+  "note": "Comprobado: el brazo ContadorAdelantado imprime lo mismo que el docstring. §8.3: sólo 'ClaveEnCero SÍ para' va contra el código; lo de ContadorAdelantado va contra el modelo derivado de semilla (§4.3)."
+ },
+ {
+  "review": "fidelity",
+  "quote": "así que «as low as 2^34» invierte el sentido",
+  "applied": true,
+  "note": "Comprobado: la spec dice 'on the order of 2^34'. §4.11: 'la fórmula de los borradores, «as low as 2^34»'."
+ },
+ {
+  "review": "fidelity",
+  "quote": "la frase «in production for a",
+  "applied": true,
+  "note": "Comprobado (README.md:33-34 y :170; src/lib.rs:73-74 de hbs-state). §5.1 cita las dos frases con su ubicación."
+ },
+ {
+  "review": "fidelity",
+  "quote": "La inclusión que el kit demuestra es la de un **acuse**",
+  "applied": true,
+  "note": "Comprobado en zk-ssl-verify main.rs (consumo, completitud). §5.8 amplía la frase de inclusión."
+ },
+ {
+  "review": "fidelity",
+  "quote": "y no tiene llamantes",
+  "applied": true,
+  "note": "Comprobado: reverificar() sólo lo llaman sus tests. §5.11: 'no tiene más llamantes que sus propios tests'."
+ },
+ {
+  "review": "fidelity",
+  "quote": "no hay clave de operador real (§5.6)",
+  "applied": true,
+  "note": "Comprobado SECURITY.md:144-147. D1 cita SECURITY.md «NO HAY CLAVE QUE ANCLAR» además de §5.6."
+ },
+ {
+  "review": "fidelity",
+  "quote": "el diseño sólo está descrito en",
+  "applied": true,
+  "note": "Comprobado (L7c; CONFIANZA_RESIDUAL B10.6/B10.7). §8.5 añade la segunda fuente."
+ },
+ {
+  "review": "fidelity",
+  "quote": "está retractada en la propia especificación",
+  "applied": true,
+  "note": "Comprobado en la spec (retracta la inferencia general de la v0.1; la tabla la conserva para clave persistida). Fusionado con R26 en §4.3."
+ },
+ {
+  "review": "fidelity",
+  "quote": "ni ningún `fsync` falso que cueste 20 µs o más",
+  "applied": true,
+  "note": "Comprobado: rechazo sólo si ratio<10 Y with<20 µs. §4.8 añade el caso '≥ 10× una escritura sin persistir'."
+ },
+ {
+  "review": "fidelity",
+  "quote": "Que Arqueo esté en producción, maneje dinero real o haya sido auditado por terceros",
+  "applied": true,
+  "note": "Comprobado (doc/INSTITUCIONAL.md:91-92; RFC-0010 'Seguridad'). §5.1: 'no hay producción ni operador real', con las tres fuentes."
+ },
+ {
+  "review": "rigor",
+  "quote": "Sean $\\mathrm{Hc}$ y $\\mathrm{Hp}$ resistentes a colisiones y $\\mathrm{Enc}_v$",
+  "applied": true,
+  "note": "Enunciado de la Proposición 1 con todas las hipótesis: CR y salida de anchura fija de Hc y Hp (Hp como función de los bytes con su codificación interna), R1 con versión v fija (R2) y R4; nota de que R4 se cumple por definición en el modelo. §1.3 lista versión fija y, entre las condiciones de uso, la versión de la codificación; G1 recoge R1, R2, R4."
+ },
+ {
+  "review": "rigor",
+  "quote": "R1 y R4 se han violado en Arqueo sin romper ninguna función de hash",
+  "applied": true,
+  "note": "Comprobado en AUDITORIA §116/§124: fallos del relleno interno de digest_of_proof. §3.2 los describe como Hp no resistente a colisiones (no fallo de Enc_v) y §1.3 cambia el contraejemplo a 'la resistencia a colisiones de Hp como función de los bytes' y R4. No se redefinió R1: se enuncia la hipótesis sobre Hp en la Proposición."
+ },
+ {
+  "review": "rigor",
+  "quote": "Inválido si no, con el primer índice divergente",
+  "applied": true,
+  "note": "Nivel A reescrito: con una sola cabeza, Inválido para el tramo; el índice sólo se acota con cabezas intermedias autenticadas y al tramo entre la última que coincide y la primera que no. En §3.5 se aclara que t1 localiza k=5 'con las dos historias a mano'."
+ },
+ {
+  "review": "rigor",
+  "quote": "tiene que llegarle firmado y con la clave anclada antes del primer",
+  "applied": true,
+  "note": "D1 reescrito: cabeza anclada y custodiada por el tercero o un testigo ANTES de la alteración, porque el firmante puede volver a firmar. Entrada de §3.10 y fila Link de §3.6 heredan la condición."
+ },
+ {
+  "review": "rigor",
+  "quote": "de historias de longitud o génesis distintas: por eso el índice $i$ entra en la codificación",
+  "applied": true,
+  "note": "Comprobado el razonamiento (i entra en Enc_v, H_0 en u_1). Nota (ii) reescrita y D2 explicado ('una cabeza correcta de un prefijo pasa por la de la historia entera')."
+ },
+ {
+  "review": "rigor",
+  "quote": "con una cabeza autenticada, la alteración, inserción, borrado o reordenación de un campo encadenado",
+  "applied": true,
+  "note": "Fila Link/HistoryOK de §3.6: cabeza custodiada antes de la alteración y n conocido, con remisión a la nota (ii)."
+ },
+ {
+  "review": "rigor",
+  "quote": "exhibir con $n$ evaluaciones una colisión de $\\mathrm{Hc}$ o de $\\mathrm{Hp}$",
+  "applied": true,
+  "note": "Cuenta corregida (a lo sumo 2n evaluaciones de Hc y 2n de Hp) y lectura como reducción constructiva [Rogaway06]. Rogaway06 verificado en cryptobib (VIETCRYPT 2006, LNCS 4341, DOI 10.1007/11958239_14; ePrint 2006/281 con el subtítulo); páginas omitidas porque cryptobib da 211-228 y no 221-228 como proponía la revisión."
+ },
+ {
+  "review": "rigor",
+  "quote": "los campos codificados coinciden (por R1)",
+  "applied": true,
+  "note": "Esbozo: la descomposición única de u_i por anchura fija de dom_c, H_{i-1} y Hp(Π_i); §3.1 declara esa anchura fija."
+ },
+ {
+  "review": "rigor",
+  "quote": "**En Arqueo** (§5.4), $\\mathrm{Hc}$ es `native_merge`",
+  "applied": true,
+  "note": "Comprobado en log.rs:250-294 (merges anidados, COMPROMISO_AUSENTE en la era 2). Añadido en 'En Arqueo' de §3.5: traslado merge a merge y la propiedad de tipo preimagen entre eras; D4 incluye la era; G1 lo recoge."
+ },
+ {
+  "review": "rigor",
+  "quote": "la transición respeta las reglas semánticas del sistema",
+  "applied": true,
+  "note": "§3.1: C_i = Com(S_i) vinculante; §3.3: StateOK sobre aperturas, y sin ellas sólo lo que Π_i prueba."
+ },
+ {
+  "review": "rigor",
+  "quote": "con la clave de verificación $vk_i$ vigente en $i$",
+  "applied": true,
+  "note": "Aplicado como hueco del modelo, sin añadir un séptimo campo a E_i (se mantienen 'seis campos' en §1.2): §3.1 dice que ni E_i ni H_i comprometen vk_i ni las reglas, que habría que encadenar un resumen (p. ej. dentro de O_i) y que en Arqueo paramsDigest (v5+) compromete parámetros del sistema, no el AIR (comprobado en zk-ssl-hash params_digest)."
+ },
+ {
+  "review": "rigor",
+  "quote": "semántica y consenso son predicados distintos, y ninguno implica a los otros",
+  "applied": true,
+  "note": "Resumen reescrito (cinco propiedades, 'en general'); §3.4 añade el párrafo sobre la no implicación en general con el ejemplo Verify⇒Authorize en el envío. Se mantiene el lema y la frase final de §10, que no afirman no implicación universal."
+ },
+ {
+  "review": "rigor",
+  "quote": "Ningún uso puede existir con un índice mayor que el contador persistido.",
+  "applied": true,
+  "note": "Invariante de §3.7 reescrito como K ≤ C (hoja desde 0 < C) y equivalencia con el índice declarado de §5.5; se cita la convención de EIP-8310 ('strictly above'), comprobada en su texto."
+ },
+ {
+  "review": "rigor",
+  "quote": "Cuando $R$ devuelve un estado cuyo pasado no se puede decidir con los datos durables",
+  "applied": true,
+  "note": "§3.8 retitulado 'La regla de los índices indeterminados': [0,C) en KeyAtZero y [K,C) en CounterAhead con clave persistida; punto 1: 'ningún índice menor que C'. Resumen y §1.3 en plural."
+ },
+ {
+  "review": "rigor",
+  "quote": "ECST propone **[PROPUESTA]**:",
+  "applied": true,
+  "note": "Marca corregida: ECST adopta como regla general la política que Arqueo ya aplica en ClaveEnCero; sólo su aplicación a CounterAhead y la consulta del registro en todos los estados son [PROPUESTA]."
+ },
+ {
+  "review": "rigor",
+  "quote": "El resultado es un **vector** $(r_A, r_B, r_C)",
+  "applied": true,
+  "note": "Vector de cuatro componentes (Link, Verify, Auth, State) en {Válido, Inválido, Indeterminado, No aplica}, agregación por tramo y cobertura; Resumen ajustado; fila 'vector de resultado' de §5.14 precisa que el 3 es 'declarada, no probada'."
+ },
+ {
+  "review": "rigor",
+  "quote": "para cada $i$, $\\mathsf{Verify}$ sobre $\\Pi_i$",
+  "applied": true,
+  "note": "Nivel B: sólo sobre entradas con A Válido, primero Hp(Π_i) contra el resumen encadenado, después Verify con las x_i de la entrada."
+ },
+ {
+  "review": "rigor",
+  "quote": "**Consumo**, `digest_of_proof(&[])`",
+  "applied": true,
+  "note": "Comprobado en consumo.rs:147 (append con &[]). §3.1: la ausencia se codifica con constante de dominio propio distinta de Hp(''); §3.2: el consumo aún encadena digest_of_proof(&[]) con el resumen en el compromiso."
+ },
+ {
+  "review": "rigor",
+  "quote": "### 3.9 Consumo monótono",
+  "applied": true,
+  "note": "§3.9 retitulado 'Uso único: por contador y por conjunto', separando los dos mecanismos; fila de §5.14 y del Apéndice A renombradas."
+ },
+ {
+  "review": "rigor",
+  "quote": "La precedencia la fija un `match` de tres brazos",
+  "applied": true,
+  "note": "Fusionado con F11 en §4.4; en §3.7 se quita 'y una precedencia fija'."
+ },
+ {
+  "review": "rigor",
+  "quote": "tras reiniciar, si el recurso de consumo monótono y su contador están en uno de cuatro estados, y cuál",
+  "applied": true,
+  "note": "Fila R(C,K) de §3.6: detecta la violación visible en el par (KeyAhead) y clasifica el resto en tres estados no fatales."
+ },
+ {
+  "review": "rigor",
+  "quote": "una pérdida marginal **[LECTURA]**",
+  "applied": true,
+  "note": "Marca cambiada a [DERIVADO] y cuantificada: cada limb cae en [p,2^64) con prob. ≈ 2^-32 y una colisión por la reducción exige además que coincidan los otros tres limbs (se evita la afirmación no verificada sobre 'colisión genérica')."
+ },
+ {
+  "review": "rigor",
+  "quote": "estado indeterminado que falla cerrado sin reutilizar recursos y sin negarse para siempre a operar",
+  "applied": true,
+  "note": "Citas verificadas: RFC 10033 §5.9 (copia en rfc10033.txt: los índices reservados 'will be lost if the signing device loses power or is reset') y el requisito de vivacidad de Ariadne (resumen vía WebSearch). Aplicado en §1.3 (contribución 2) y §3.8."
+ },
+ {
+  "review": "rigor",
+  "quote": "estudian cómo un módulo protegido evita que se le restaure un estado anterior",
+  "applied": true,
+  "note": "§2: Ariadne exige además vivacidad (verificado vía WebSearch). No se atribuye vivacidad a Memoir (no verificado). Nimble añadido [Nimble23] (autores y ePrint 2023/761 en cryptobib; OSDI 23, pp. 193-208, vía WebSearch) y caracterizado sólo como servicio que ayuda a aplicaciones en TEE a detectar retrocesos."
+ },
+ {
+  "review": "rigor",
+  "quote": "este informe descansa en el conocimiento del modelo",
+  "applied": true,
+  "note": "Declaración de IA reescrita: qué se cotejó (cifras y código con ficheros/fichas; metadatos de toda la bibliografía; texto de RFC 10033, SP 800-208, EIP-8310 y HBS-STATE v0.3) y qué no (caracterizaciones de §2 por títulos, resúmenes o fragmentos de búsqueda; proceso IETF/IRTF de §9 en la guía del CFRG y fragmentos de búsqueda; el esbozo es razonamiento propio)."
+ },
+ {
+  "review": "rigor",
+  "quote": "Mide el orden persistir-antes-de-firmar, no un corte de corriente.",
+  "applied": true,
+  "note": "§4.2: K.1 mide escritura-antes-de-firma tal como la ve la caché de páginas, no persistencia; la cota del 11 % es por muerte aleatoria, no de la corrección del orden; lo que acotaría el orden es inyectar la caída en cada llamada al sistema, como ALICE [Pillai14] (ALICE verificado vía WebSearch)."
+ },
+ {
+  "review": "rigor",
+  "quote": "la inferencia «lo normal tras una caída es",
+  "applied": true,
+  "note": "Fusionado con F22 en §4.3."
+ },
+ {
+  "review": "rigor",
+  "quote": "Toda afirmación empírica o de estado lleva una de estas marcas",
+  "applied": true,
+  "note": "Leyenda: las marcas son para cifras, resultados de ejecución y estados declarados; las descripciones de código sin marca son [LECTURA]. Fila de la banda publicada marcada [DECLARADO]; §7.4 marcado [NO MEDIDO]."
+ },
+ {
+  "review": "rigor",
+  "quote": "protocolo de auditoría cuyo resultado es un vector sobre {Válido, Inválido, Indeterminado}",
+  "applied": true,
+  "note": "Resumen: 'protocolo de auditoría por niveles, propuesto y sin implementar'."
+ },
+ {
+  "review": "rigor",
+  "quote": "instancia casi todo el modelo",
+  "applied": true,
+  "note": "Resumen y §10: 'la mayoría de los componentes' con los huecos declarados (pruebas no conservadas, nadie recompone, sin herramienta de auditoría)."
+ },
+ {
+  "review": "rigor",
+  "quote": "que es la mejor evidencia disponible de que la",
+  "applied": true,
+  "note": "§1.3 y §5.13: segundo uso de la misma clasificación, del mismo autor; indica generalización como clasificación, no es evidencia independiente."
+ },
+ {
+  "review": "rigor",
+  "quote": "Lo que aquí podría ser nuevo no son las piezas, sino tres cosas",
+  "applied": true,
+  "note": "'Posición' reducida a dos cosas (separación explícita, con [AlBassam21] como literatura que ya separa validez y disponibilidad de datos, y reconciliación como componente clasificado); el contrato ejecutable de HBS-STATE se declara trabajo previo del autor. AlBassam21 verificado en cryptobib; se caracteriza por su título (clientes ligeros), no como 'rollups'."
+ },
+ {
+  "review": "rigor",
+  "quote": "quien custodia una cabeza anterior detecta una historia de cabezas reescrita",
+  "applied": true,
+  "note": "Hipótesis de G3 ampliada con L4d (c) [LECTURA] y la continuidad del chainDigest; §5.8 también lo dice."
+ },
+ {
+  "review": "rigor",
+  "quote": "una operación con recibo que no se resolvió en N cabezas deja un ROJO oponible",
+  "applied": true,
+  "note": "Hipótesis de G5 ampliada con la salvedad de §8.2."
+ },
+ {
+  "review": "rigor",
+  "quote": "`politica_de_reconciliacion`; `tools/banco_reutilizacion.sh` (§579)",
+  "applied": true,
+  "note": "Fusionado con F1 en el respaldo de G7."
+ },
+ {
+  "review": "rigor",
+  "quote": "apareció un caso que ni la reconciliación ni la",
+  "applied": true,
+  "note": "§10 reescrito: 'por lectura y sin reproducir todavía, un caso que la política de Arqueo no parece ver (§8.1); que R no pueda verlo se sigue de su definición'."
+ },
+ {
+  "review": "rigor",
+  "quote": "La ventaja de ECST frente a IVC se presenta",
+  "applied": true,
+  "note": "§7.4: 'La posible ventaja… sólo como argumento cualitativo, sin medir'."
+ },
+ {
+  "review": "rigor",
+  "quote": "Por eso la Proposición 1 cubre las pruebas de envío y cobro",
+  "applied": true,
+  "note": "§5.4: envío, cobro, quema y reembolso."
+ },
+ {
+  "review": "rigor",
+  "quote": "sino que compromete su resumen",
+  "applied": true,
+  "note": "§1.2: 'el resumen acumulado H_i compromete el resumen de cada prueba'."
+ },
+ {
+  "review": "rigor",
+  "quote": "## 2. Trabajo relacionado",
+  "applied": true,
+  "note": "Nuevo párrafo en §2 'Libros y máquinas de estado verificables' con LedgerDB20 (PVLDB 13(12):3138-3151, DOI vía WebSearch), zkLedger18 (NSDI 18 pp. 65-80 vía WebSearch; ePrint en cryptobib), Piperine20 (cryptobib; páginas omitidas por discrepancia), VSM20 (ePrint 2020/758, cryptobib) y AlBassam21 (cryptobib). Cada obra caracterizada sólo por lo verificado."
+ },
+ {
+  "review": "rigor",
+  "quote": "no impide la mala conducta, la hace",
+  "applied": true,
+  "note": "Parcial: MS02 (dblp.yaml; fork consistency vía WebSearch) y SUNDR04 (bibsleigh) añadidos en §2 con el testigo como instancia de un observador. Chuat et al. (CNS 2015) NO se añade: no se pudieron verificar sus metadatos."
+ },
+ {
+  "review": "rigor",
+  "quote": "Schneier y Kelsey la aplicaron a registros de auditoría en máquinas no fiables [SK99]",
+  "applied": true,
+  "note": "Parcial: DGHS16 añadido (cryptobib; 'cuatro propiedades de seguridad de esquemas de registro como CT y que CT las cumple' vía WebSearch). Bellare-Yee 1997 NO se añade: informe técnico sin metadatos verificables desde el entorno."
+ },
+ {
+  "review": "rigor",
+  "quote": "Lo único medido con plegado es una",
+  "applied": true,
+  "note": "BMNW25 añadido (cryptobib ITCS 2025; 'primer esquema de acumulación basado en hash, ROM, pasos acotados' vía WebSearch) en §2 y §7.4. Arc (CRYPTO 2025) no se añade para no alargar."
+ },
+ {
+  "review": "rigor",
+  "quote": "**Gestión del estado en firmas basadas en hash.** McGrew et al. analizan",
+  "applied": true,
+  "note": "ETSI21 y FIPS205 añadidos con los metadatos de las referencias de RFC 10033 (copia en GitHub); §2 recoge RFC 10033 §4 (verificador con todas las firmas detecta un índice repetido -> testigo) y §1.1 (SLH-DSA para la mayoría de las aplicaciones)."
+ },
+ {
+  "review": "rigor",
+  "quote": "que es la contramedida",
+  "applied": true,
+  "note": "Grafting18 añadido (cryptobib) en §7.4 y §9, pero sólo como descripción de los fallos de tipo injerto contra el marco SPHINCS; la contramedida de cachear las capas intermedias se sigue atribuyendo a VERIFICACION.md P12a, no a Castelnovi et al. (no verificado que la proponga)."
+ },
+ {
+  "review": "rigor",
+  "quote": "Las fuentes primarias que cita RFC 10033",
+  "applied": true,
+  "note": "Comprobado vía WebSearch del resumen de ePrint 2023/1905. §2 y §4.11: Fluhrer corrige el análisis de Winternitz de BH17 y mantiene la conclusión. NO se afirma que la curva de QRL derive de BH17 (no verificado); se dice que no se ha cotejado con ninguna de las dos y no debe citarse como cifra."
+ },
+ {
+  "review": "rigor",
+  "quote": "La cifra procede de un artículo de QRL",
+  "applied": false,
+  "note": "No se añade entrada para el blog de QRL: autor y URL no se pudieron verificar (theqrl.org y medium bloqueados). En su lugar §4.11 y la cabecera de Referencias dicen que no tiene entrada, por qué, y que se cita a través de AUDITORIA §288."
+ },
+ {
+  "review": "rigor",
+  "quote": "Sólo entradas de `doc/ecst/referencias.bib`, verificadas el 2026-09-30",
+  "applied": true,
+  "note": "Parcial: cabecera de Referencias corregida ('cuyos metadatos se verificaron… con las fuentes que anota cada una') y clave BibTeX al final de cada entrada (mapeo explícito, 47 de 47 cotejadas con el .bib). No se quitan del .bib las cinco entradas no citadas (rfc2119, rfc8174, rfc3552, rfc8126, fips202), por instrucción."
+ },
+ {
+  "review": "rigor",
+  "quote": "Las pruebas de Arqueo son STARK [STARK18; BBHR19].",
+  "applied": true,
+  "note": "§2: 'STARK [BBHR19] (versión completa en [STARK18]), en la implementación de winterfell' (relación de versiones verificada vía WebSearch)."
+ },
+ {
+  "review": "rigor",
+  "quote": "POSIX admite una implementación nula de `fsync()`",
+  "applied": true,
+  "note": "§2: 'aunque la glibc de Linux sí lo define' (comprobado: _POSIX_SYNCHRONIZED_IO 200809L en posix_opt.h y getconf) y Zheng13 añadido (dblp.yaml). No se incluye la cifra '13 de 15': no se pudo verificar."
+ },
+ {
+  "review": "rigor",
+  "quote": "se registra antes de producirlo",
+  "applied": true,
+  "note": "Elnozahy02 añadido (dblp.yaml; 'output commit problem' vía WebSearch) en §3.9."
+ },
+ {
+  "review": "rigor",
+  "quote": "`hbs-state` implementa esa estrategia con",
+  "applied": true,
+  "note": "§2: 'persiste antes de cada firma, que es el caso degenerado de esa estrategia (intervalo 1): paga una escritura sincronizada por firma y pierde como mucho un índice por caída' (RFC 10033 §2.2/§5.9 comprobados)."
+ },
+ {
+  "review": "rigor",
+  "quote": "Lo que aporta, y ninguna fuente de §2",
+  "applied": true,
+  "note": "Comprobado en EIP-8310 ('Test Cases: To be added', con regresión y caída). §4.12 matizado."
+ },
+ {
+  "review": "rigor",
+  "quote": "la nota 92 que cita el código de Arqueo",
+  "applied": true,
+  "note": "Comprobado BACKLOG entrada 92 y guardian lib.rs:146-147. §3.8 cita ambos."
+ },
+ {
+  "review": "rigor",
+  "quote": "HBS-STATE v0.3, que sólo instancia la reconciliación",
+  "applied": true,
+  "note": "Resumen: HBS-STATE descrito como especificación con implementación de referencia y Arqueo con una prueba STARK por transición."
+ },
+ {
+  "review": "rigor",
+  "quote": "todavía sin commit",
+  "applied": true,
+  "note": "Fusionado con F5; además se registra 6a868ed (las revisiones)."
+ },
+ {
+  "review": "rigor",
+  "quote": "Se enuncian con modestia, porque ninguna es una pieza nueva:",
+  "applied": true,
+  "note": "'Se enuncian con modestia, porque…' -> 'Ninguna es una pieza nueva:'."
+ },
+ {
+  "review": "rigor",
+  "quote": "El autor aportó varios borradores generados con IA",
+  "applied": true,
+  "note": "Parcial: la cabecera ya no repite el 305 (remite a §1.5), §1.5 se acorta y la declaración de IA ya no da el recuento; se conserva en §1.5 el desglose de veredictos, que es un dato."
+ },
+ {
+  "review": "rigor",
+  "quote": "### 5.14 Componente ECST ↔ Arqueo",
+  "applied": true,
+  "note": "§5.14 queda con tres columnas (componente, en Arqueo, estado) y remite al Apéndice A, al que se trasladan todas las rutas que sólo estaban en §5.14."
+ },
+ {
+  "review": "rigor",
+  "quote": "### 7.5 Cifras de los borradores que este informe retira",
+  "applied": false,
+  "note": "No aplicado: quitar la tabla de §7.5 perdería datos (cifras retiradas y su sustituto), y §8.3-§8.4 no se pueden mover a BACKLOG.md porque sólo se permite editar ECST.md y referencias.bib. En su lugar se recortan repeticiones en §5.7 y §8.5 (remisiones a §7.2 y a las secciones de origen)."
+ },
+ {
+  "review": "rigor",
+  "quote": "**Normalización.** Si HBS-STATE se lleva al IETF",
+  "applied": true,
+  "note": "Parcial: el párrafo de normalización conserva los hechos pero declara que descansan en la guía del CFRG y en fragmentos de búsqueda sobre la carta de PQUIP, RFC 5742 y RFC 5743 (P2, P3, P5c, P5d). ECST-R no se reduce porque sus correcciones no son repetición; se añade [Grafting18]."
+ }
+]

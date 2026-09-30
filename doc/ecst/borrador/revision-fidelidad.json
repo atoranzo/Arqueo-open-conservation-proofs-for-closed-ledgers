@@ -1,0 +1,304 @@
+[
+ {
+  "line": 973,
+  "quote": "un contador de firma borrado reabre en cero",
+  "problem": "El hallazgo es más amplio que 'borrado': cualquier contador que valga 0 al abrir (fichero borrado, o restaurado/puesto a 0 — p. ej. una copia del fichero tomada tras el primer arranque, que `abrir` persiste a 0, y antes de la primera firma) da Coincide{0} con la clave derivada de semilla, y la política arranca sin mirar el diario. VERIFICACION.md P15b, que el propio §8.1 cita, lo dice así: 'un contador borrado o puesto a cero cae en Coincide{0}'. El informe lo reduce a 'borrado' en el título, en §8.1 (l. 990), en §3.6 (l. 305), §3.7 (l. 326), G7 (l. 839), §6.3 (l. 854) y el Resumen (l. 50), con lo que la hipótesis 'contador no borrado' de G7 es insuficiente.",
+  "evidence": [
+   "crates/zk-ssl-guardian/src/lib.rs:419-444",
+   "crates/zk-ssl-guardian/src/lib.rs:474-476",
+   "crates/zk-ssl-node/src/main.rs:596-601",
+   "crates/zk-ssl-node/src/main.rs:991-993",
+   "doc/ecst/VERIFICACION.md (P15b)"
+  ],
+  "fix": "Título: «un contador de firma borrado o puesto a cero reabre en Coincide{0}». En §8.1, tras «lo recrea a 0 sin avisar», añadir: «(lo mismo ocurre si el fichero se restaura con el valor 0, p. ej. desde una copia tomada tras el primer arranque y antes de la primera firma)». En §3.6, §3.7, §6.3, el Resumen y la hipótesis de G7, sustituir «contador borrado»/«contador no borrado» por «contador borrado o puesto a cero»/«contador ni borrado ni puesto a cero».",
+  "severity": "media"
+ },
+ {
+  "line": 839,
+  "quote": "`politica_de_reconciliacion`; `tools/banco_reutilizacion.sh` (§579)",
+  "problem": "G7 habla de 'la clave de firma' del nodo, pero `tools/banco_reutilizacion.sh` sólo arranca el nodo una vez y reinicia el TESTIGO cofirmante: ejerce `politica_del_cofirmante` (cofirmas, operador `<=`), no `politica_de_reconciliacion` (diario, `<`). Ningún banco reinicia el nodo firmante; su política sólo tiene tests unitarios. Además su NEGATIVO restaura el contador a 1, no a 0, así que tampoco cubre el caso de §8.1. El propio §5.13 (l. 784) dice correctamente que el banco mide 'el testigo'.",
+  "evidence": [
+   "tools/banco_reutilizacion.sh:1-15",
+   "tools/banco_reutilizacion.sh:41-56",
+   "tools/banco_reutilizacion.sh:71-98",
+   "crates/zk-ssl-cli/src/witness.rs:2345-2350",
+   "crates/zk-ssl-node/src/main.rs:780-900",
+   "doc/ecst/VERIFICACION.md (G1f: 'lo MIDE para el testigo')"
+  ],
+  "fix": "Respaldo de G7: «`politica_de_reconciliacion` y sus tests unitarios (sin banco que reinicie el nodo); para el testigo cofirmante, `politica_del_cofirmante` y `tools/banco_reutilizacion.sh` (§579), cuyo negativo restaura el contador a 1».",
+  "severity": "media"
+ },
+ {
+  "line": 838,
+  "quote": "banco K.1, 25/25 **[MEDIDO: `AUDITORIA.md` §234]**",
+  "problem": "K.1 no respalda 'ninguna firma de cabeza': se midió en §234 sobre el guardián aislado, cuando 'esta pieza no tiene consumidor todavía' y 'xmss sigue sin ser dependencia. El guardián no firma: cuenta'; el firmante de cabezas llega en §236. Qué 'firmaba' el hijo no consta (VERIFICACION.md G7a). Presentarlo como medida de la garantía sobre firmas de cabeza es una sobreafirmación.",
+  "evidence": [
+   "AUDITORIA.md:16821-16824",
+   "AUDITORIA.md:16916-16918",
+   "AUDITORIA.md:17034",
+   "doc/ecst/VERIFICACION.md (G7a, H18a, G4c)"
+  ],
+  "fix": "Respaldo de G6: «banco K.1, 25/25, sobre el guardián aislado antes de que existiera el firmante de cabezas **[MEDIDO: `AUDITORIA.md` §234]**; el orden reservar-firmar-verificar de `FirmanteCabeza::firmar`, por lectura y tests (VERIFICACION.md, G4c); tests del guardián **[REPRODUCIDO: `26 passed`]**».",
+  "severity": "media"
+ },
+ {
+  "line": 395,
+  "quote": "Frente a la muerte del proceso **[MEDIDO:",
+  "problem": "En la sección de `hbs-state` (§4.2, sobre `IndexGuard::reserve`) se presenta K.1 como medida sin decir que se tomó sobre el guardián ORIGINAL de Arqueo (`zk-ssl-guardian`) en agosto de 2026, antes de que existiera `hbs-state` (primer commit 2026-09-26) y cuando xmss no era dependencia. `hbs-state` no se ha medido frente a kill -9; la cifra se transfiere sólo porque es una traducción casi literal. VERIFICACION.md H18a lo formula así ('una muestra de 25 sobre el guardián original de ARQUEO') y el informe no cita H18a aquí.",
+  "evidence": [
+   "AUDITORIA.md:16819-16824",
+   "AUDITORIA.md:16916",
+   "doc/ecst/VERIFICACION.md (H18a, G7a, G1a)",
+   "/home/user/atoranzo/hbs-state git log: primer commit 402c889 2026-09-26"
+  ],
+  "fix": "«Frente a la muerte del proceso **[MEDIDO: `AUDITORIA.md` §234, banco K.1, sobre el guardián original de Arqueo antes de que existiera `hbs-state`, una sola máquina]** …» y añadir al final de la frase «(VERIFICACION.md, H18a); se aplica a `IndexGuard` por ser traducción casi literal (G1a)».",
+  "severity": "media"
+ },
+ {
+  "line": 862,
+  "quote": "en su portátil (Intel Core i5-1135G7 bajo WSL2)",
+  "problem": "Sobreafirmación del hardware. El i5-1135G7 consta en §229 y §234 (y §462), pero las series §89.1, §130–§131, §204, §209 y §217 sólo dicen 'una máquina'/'WSL2 sobre un portátil de consumo'; VERIFICACION.md M1 concluye que 'el hardware de esas series no está documentado' y que §181 menciona un 'Ryzen del piloto'. El mismo error se repite en §7.5, fila M1 (l. 954: 'portátil i5-1135G7 bajo WSL2 (§7.1)').",
+  "evidence": [
+   "doc/ecst/VERIFICACION.md (M1)",
+   "AUDITORIA.md:7495",
+   "AUDITORIA.md:10646-10672",
+   "AUDITORIA.md:16394",
+   "AUDITORIA.md:16912"
+  ],
+  "fix": "«Todo lo de esta subsección es **[MEDIDO]** por el autor en un portátil bajo WSL2 salvo donde se indica; el modelo i5-1135G7 consta en §229 y §234, y las series anteriores (§89, §130–§131, §204–§217) no documentan el hardware (VERIFICACION.md, M1).» En §7.5, fila M1, columna «lo que hay»: «un portátil bajo WSL2 (i5-1135G7 donde consta; §7.1)».",
+  "severity": "media"
+ },
+ {
+  "line": 1122,
+  "quote": "`doc/ecst/ECST.md`, todavía sin commit.",
+  "problem": "Falso en el árbol revisado: ECST.md está commiteado en a7c72b9 ('doc/ecst: ECST.md, primer borrador del informe unificado (sin revisar)'), y el árbol está limpio. Además (l. 1129-1130) el material de verificación no termina en 0f8cd1e: le sigue 70f6370 ('doc/ecst/borrador: el indice del material de trabajo, al estado final').",
+  "evidence": [
+   "git log --oneline 71c5aad..HEAD (a7c72b9, 70f6370, 0f8cd1e … 71710b2)",
+   "git log -1 -- doc/ecst/ECST.md → a7c72b9"
+  ],
+  "fix": "«**Este informe:** `doc/ecst/ECST.md`, commit a7c72b9 (borrador sin revisar).» y en Árboles: «con el material de verificación en los commits 71710b2 a 70f6370 y este informe en a7c72b9, que sólo añaden ficheros bajo `doc/ecst/`».",
+  "severity": "media"
+ },
+ {
+  "line": 588,
+  "quote": "64 latidos por defecto",
+  "problem": "En el informe 'latido' es la tarea de 60 s que firma cabezas (§5.5), pero `DEFAULT_REFUND_TTL` cuenta entradas del registro: 'en latidos de `log.seq`'; `born`/`now` son `self.log.len()`. Leído como 64 latidos de 60 s, el plazo se malinterpreta. Además sólo rige para pendientes v1: los v2 llevan su propio plazo `delta` comprometido en el sobre (u64::MAX = nunca).",
+  "evidence": [
+   "crates/zk-ssl/src/lib.rs:224-226",
+   "crates/zk-ssl/src/two_phase.rs:433-453",
+   "crates/zk-ssl/src/two_phase.rs:1107-1108"
+  ],
+  "fix": "«… o hasta el reembolso tras la caducidad T: por defecto 64 entradas del registro (`log.seq`, no latidos de 60 s) en los pendientes v1 (`DEFAULT_REFUND_TTL`, `crates/zk-ssl/src/lib.rs:226`); en los v2, el plazo `delta` comprometido en el pendiente (`crates/zk-ssl/src/two_phase.rs:433-453`).»",
+  "severity": "media"
+ },
+ {
+  "line": 837,
+  "quote": "que el nodo emitiera recibo; firma de la cabeza que cierra la era",
+  "problem": "Falta una hipótesis: el sobre de completitud 'lleva el recibo con su camino bajo la recepRoot', y ese camino sólo lo sirve el nodo (`zkssl_recepPath`) desde su registro tras cerrar la era. El RFC-0010 y el §580 lo reconocen: podar el registro 'dejaría sin sobre al titular que no pidió su camino a tiempo'. Un operador que emitió recibo pero no sirve el camino deja al titular sin ROJO. Por lo mismo, 'el titular forma sin el nodo un sobre de completitud' (l. 745) sobreafirma: sin el nodo se VERIFICA; formarlo exige el camino que da el nodo.",
+  "evidence": [
+   "spec/rfc/0010-el-recibo-de-recepcion.md:221-223",
+   "spec/rfc/0010-el-recibo-de-recepcion.md:314-318",
+   "AUDITORIA.md:41980-41984",
+   "crates/zk-ssl-node/src/main.rs:2390"
+  ],
+  "fix": "Hipótesis de G5: «que el nodo emitiera recibo y sirva después su camino (`zkssl_recepPath`), o que el titular lo pidiera a tiempo; firma de la cabeza que cierra la era». En §5.12: «Con el recibo y su camino, que el nodo sirve por `zkssl_recepPath` al cerrarse la era, el titular forma un sobre de completitud que se verifica sin el nodo…».",
+  "severity": "media"
+ },
+ {
+  "line": 173,
+  "quote": "Es la base de que el autocontrol de §4.8 mida el",
+  "problem": "Afirmación de motivación sin fuente: ninguno de los dos repositorios menciona POSIX ni `_POSIX_SYNCHRONIZED_IO`. La razón documentada del autocontrol es la medida de tmpfs de K.1 ('la única señal disponible desde dentro del proceso es que su propio fsync cueste algo'). Contradice la declaración de que ninguna afirmación descansa en el conocimiento del modelo.",
+  "evidence": [
+   "AUDITORIA.md:16840-16852",
+   "crates/zk-ssl-guardian/src/lib.rs:49-71",
+   "grep -ri posix en ambos árboles: 0 resultados"
+  ],
+  "fix": "«Es coherente con que el autocontrol de §4.8 mida el coste de `fsync` en lugar de fiarse de su valor de retorno; la razón que da el repositorio es la medida en tmpfs de `AUDITORIA.md` §234.»",
+  "severity": "baja"
+ },
+ {
+  "line": 440,
+  "quote": "un test ata las dos",
+  "problem": "Sólo la política del testigo tiene un test que la ata al juez (`no_admite_matiz`). La política de firma del nodo, `politica_de_reconciliacion`, no tiene ningún test que llame a `no_admite_matiz`; sus tests enumeran los casos a mano. En el nodo, `no_admite_matiz` sólo aparece en tests de `recepcion.rs`/`registro_recepcion.rs`, sobre la Reconciliacion y no sobre una política.",
+  "evidence": [
+   "crates/zk-ssl-cli/src/witness.rs:3050-3075",
+   "crates/zk-ssl-node/src/main.rs:780-900",
+   "crates/zk-ssl-node/src/recepcion.rs:210-222",
+   "crates/zk-ssl-guardian/src/lib.rs:363-368"
+  ],
+  "fix": "«… cada política hace su propio `match`; en el testigo, un test exige que su política no arranque donde `no_admite_matiz` marca fatal, y la política de firma del nodo no tiene ese atado (VERIFICACION.md, H6a).»",
+  "severity": "baja"
+ },
+ {
+  "line": 458,
+  "quote": "salida no nula, vacía o no",
+  "problem": "La especificación dice 'a non-zero exit code, empty stdout, or a last line that is not JSON'. 'Salida no nula' se lee como 'salida no vacía', que invierte el sentido.",
+  "evidence": [
+   "/home/user/atoranzo/hbs-state/spec/HBS-STATE-v0.3.md:226-227",
+   "/home/user/atoranzo/hbs-state/spec/verify-state.py:31-34"
+  ],
+  "fix": "«… y todo fallo —código de salida distinto de cero, salida estándar vacía o última línea que no es JSON— cuenta como fila fallada …»",
+  "severity": "baja"
+ },
+ {
+  "line": 431,
+  "quote": "un `match` de tres brazos sobre `counter.cmp(&key)`",
+  "problem": "El código que se cita (`reconcile_values`, lib.rs:412-431) tiene cuatro brazos: Equal, `Greater if key == 0`, Greater y Less. 'Tres brazos' es la frase de la especificación (spec:150), y se refiere a los tres valores de Ordering, no al código.",
+  "evidence": [
+   "/home/user/atoranzo/hbs-state/src/lib.rs:412-431",
+   "/home/user/atoranzo/hbs-state/spec/HBS-STATE-v0.3.md:149-151"
+  ],
+  "fix": "«La precedencia la fija un `match` sobre `counter.cmp(&key)` —los tres valores de `Ordering`— con una sola guarda, `Greater if key == 0`, como brazo previo al `Greater` general: …»",
+  "severity": "baja"
+ },
+ {
+  "line": 493,
+  "quote": "una vez, sin n ni",
+  "problem": "Contradicción: §234 no publica n, así que no dice 'una vez'. La tabla de §234 da un solo valor por fila, sin número de repeticiones. Afirmar 'una vez' y a la vez 'sin n publicado' es incoherente. Lo mismo en §7.1, fila fsync (l. 868: 'una vez, sin dispersión publicada').",
+  "evidence": [
+   "AUDITORIA.md:16833-16840"
+  ],
+  "fix": "l. 493: «[MEDIDO: `AUDITORIA.md` §234, WSL2 sobre i5-1135G7, sin n ni dispersión publicados]»; l. 868: «§234, banco K.1, sin n ni dispersión publicados».",
+  "severity": "baja"
+ },
+ {
+  "line": 877,
+  "quote": "| una permutación Rescue | 7,44–8,91 µs | §217 |",
+  "problem": "§217 no mide una permutación aislada: da 'el µs por merge implícito' (7,53 en §204, 7,44 en el `set_leaf` de B.2, 8,91 en el arranque de B.4), es decir, tiempos de operaciones de árbol divididos por su número de merges, con la sobrecarga incluida.",
+  "evidence": [
+   "AUDITORIA.md:14745-14749"
+  ],
+  "fix": "«| coste implícito por merge Rescue (≈ una permutación), de `set_leaf` y del arranque | 7,44–8,91 µs | §217 (y 7,53 en §204) |»",
+  "severity": "baja"
+ },
+ {
+  "line": 942,
+  "quote": "El coste del `fsync` adicional por operación",
+  "problem": "Cada applySend/applyClaim evaluado añade DOS fsync: el del contador de recepción (`recibir` → `GuardianIndice::reservar` → `sync_all`) y el del fichero de era del registro (`anotar` → `sync_all`), más un fsync del directorio cuando nace una era nueva.",
+  "evidence": [
+   "crates/zk-ssl-node/src/recepcion.rs:97-105",
+   "crates/zk-ssl-guardian/src/lib.rs:453-460",
+   "crates/zk-ssl-guardian/src/lib.rs:495-506",
+   "crates/zk-ssl-node/src/registro_recepcion.rs:140-166"
+  ],
+  "fix": "«El coste de los dos `fsync` adicionales por operación que añade el recibo de recepción —contador y registro, más el del directorio al abrir cada era—, y el crecimiento del registro en disco a escala.»",
+  "severity": "baja"
+ },
+ {
+  "line": 1028,
+  "quote": "al revés que el código",
+  "problem": "Sólo la segunda mitad contradice al código: ClaveEnCero no 'SÍ para', resincroniza. La primera, 'ContadorAdelantado es el caso NORMAL tras una caída', no va contra el código, que imprime lo mismo en su brazo (main.rs:602-607). Va contra el modelo de clave derivada de semilla, en el que tras reiniciar nunca hay ContadorAdelantado (§4.3; VERIFICACION.md G7b).",
+  "evidence": [
+   "crates/zk-ssl-node/src/main.rs:584-591",
+   "crates/zk-ssl-node/src/main.rs:602-607",
+   "crates/zk-ssl-node/src/main.rs:608-643",
+   "doc/ecst/VERIFICACION.md (G7b)"
+  ],
+  "fix": "«… aún dice que ContadorAdelantado es «el caso NORMAL tras una caída», que con clave derivada de semilla no ocurre tras un reinicio (§4.3), y que ClaveEnCero «SÍ para», al revés que el código, que resincroniza; …»",
+  "severity": "baja"
+ },
+ {
+  "line": 545,
+  "quote": "así que «as low as 2^34» invierte el sentido",
+  "problem": "«as low as» no está en HBS-STATE v0.3 (que dice 'on the order of 2^34 hashes') ni en ningún fichero de hbs-state: es la redacción del borrador (VERIFICACION.md H15, 'Borrador: … as low as 2^34'). Sin atribución, se lee como frase de la especificación.",
+  "evidence": [
+   "/home/user/atoranzo/hbs-state/spec/HBS-STATE-v0.3.md:171-172",
+   "doc/ecst/VERIFICACION.md (H15)"
+  ],
+  "fix": "«… así que la fórmula de los borradores, «as low as 2^34», invierte el sentido; …»",
+  "severity": "baja"
+ },
+ {
+  "line": 565,
+  "quote": "la frase «in production for a",
+  "problem": "Cita inexacta: «in production for a year» sólo aparece en README.md:170. README.md:33-34 y src/lib.rs:73-74 dicen 'extracted from a production system where it has been signing for a year'. La spec:23 habla de 'a production implementation'.",
+  "evidence": [
+   "/home/user/atoranzo/hbs-state/README.md:33-34",
+   "/home/user/atoranzo/hbs-state/README.md:169-170",
+   "/home/user/atoranzo/hbs-state/src/lib.rs:73-74",
+   "/home/user/atoranzo/hbs-state/spec/HBS-STATE-v0.3.md:23"
+  ],
+  "fix": "«… las frases «in production for a year» (README.md:170) y «a production system where it has been signing for a year» (README.md:33-34; src/lib.rs:73-74) de `hbs-state` son falsas (VERIFICACION.md, G2a, H12b).»",
+  "severity": "baja"
+ },
+ {
+  "line": 704,
+  "quote": "La inclusión que el kit demuestra es la de un **acuse**",
+  "problem": "Incompleto: el kit también demuestra la inclusión de una etiqueta bajo `consRoot` (sobre de consumo) y, desde §573, la de un recibo bajo `recepRoot` (sobre de completitud).",
+  "evidence": [
+   "crates/zk-ssl-verify/src/main.rs:165-178",
+   "doc/ecst/VERIFICACION.md (L5a, C12b)"
+  ],
+  "fix": "«La inclusión de una operación aplicada que el kit demuestra es la de su **acuse** bajo la raíz de acuses, que sólo emiten `applySend` y `applyClaim`; además demuestra la de un consumo bajo `consRoot` y, desde §573, la de un recibo bajo `recepRoot` (VERIFICACION.md, L5a).»",
+  "severity": "baja"
+ },
+ {
+  "line": 737,
+  "quote": "y no tiene llamantes",
+  "problem": "`reverificar()` sí tiene llamantes: sus propios tests (reverificacion.rs:277-370). Lo que no tiene es llamantes de producción, ni del binario ni del nodo.",
+  "evidence": [
+   "crates/zk-ssl-verify/src/reverificacion.rs:277",
+   "crates/zk-ssl-verify/src/reverificacion.rs:345-370"
+  ],
+  "fix": "«… existe en `crates/zk-ssl-verify/src/reverificacion.rs` y no tiene más llamantes que sus propios tests (VERIFICACION.md, L5d).»",
+  "severity": "baja"
+ },
+ {
+  "line": 281,
+  "quote": "no hay clave de operador real (§5.6)",
+  "problem": "Puntero equivocado: §5.6 habla de TOFU y testigos, pero no dice que no haya clave de operador. La fuente es SECURITY.md: 'NO HAY CLAVE QUE ANCLAR … El operador no tiene ninguna'.",
+  "evidence": [
+   "SECURITY.md:144-147",
+   "doc/ecst/VERIFICACION.md (G2a)"
+  ],
+  "fix": "«En Arqueo el ancla es TOFU y no hay clave de operador real (SECURITY.md, «NO HAY CLAVE QUE ANCLAR»; §5.6).»",
+  "severity": "baja"
+ },
+ {
+  "line": 1049,
+  "quote": "el diseño sólo está descrito en",
+  "problem": "VERIFICACION.md L7c dice que el diseño está descrito en AUDITORIA §174 'y en las filas B10.6/B10.7 de doc/CONFIANZA_RESIDUAL.md'. 'Sólo en §174' omite la segunda fuente.",
+  "evidence": [
+   "doc/ecst/VERIFICACION.md (L7c)",
+   "doc/CONFIANZA_RESIDUAL.md (B10.6/B10.7)"
+  ],
+  "fix": "«… el diseño sólo está descrito en `AUDITORIA.md` §174 y en las filas B10.6/B10.7 de `doc/CONFIANZA_RESIDUAL.md` (VERIFICACION.md, L7c).»",
+  "severity": "baja"
+ },
+ {
+  "line": 417,
+  "quote": "está retractada en la propia especificación",
+  "problem": "La spec retracta la inferencia general de la v0.1 y la del modelo derivado de semilla, pero su propia tabla (§1) y la del informe (l. 411) conservan 'CounterAhead: el caso normal tras una caída' para clave persistida. Sin el matiz, el párrafo contradice la tabla que tiene justo encima.",
+  "evidence": [
+   "/home/user/atoranzo/hbs-state/spec/HBS-STATE-v0.3.md:69-86",
+   "/home/user/atoranzo/hbs-state/spec/HBS-STATE-v0.3.md:103-107"
+  ],
+  "fix": "«… y la inferencia «lo normal tras una caída es CounterAhead» está retractada en la propia especificación como regla general y para el modelo derivado de semilla; la tabla sólo la conserva para clave persistida (VERIFICACION.md, H18b, G7b).»",
+  "severity": "baja"
+ },
+ {
+  "line": 516,
+  "quote": "ni ningún `fsync` falso que cueste 20 µs o más",
+  "problem": "Incompleto frente a la regla que el propio informe da con 'si y sólo si': también pasa cualquier fsync falso cuya razón con/sin sea ≥ 10×, aunque cueste menos de 20 µs.",
+  "evidence": [
+   "/home/user/atoranzo/hbs-state/src/lib.rs:548-554",
+   "crates/zk-ssl-guardian/src/lib.rs:534-541"
+  ],
+  "fix": "«… ni un `fsync` falso que cueste 20 µs o más, o que cueste al menos 10 veces una escritura sin persistir (VERIFICACION.md, G9a).»",
+  "severity": "baja"
+ },
+ {
+  "line": 118,
+  "quote": "Que Arqueo esté en producción, maneje dinero real o haya sido auditado por terceros",
+  "problem": "Las tres negaciones tienen fuente en el repositorio, pero §5.1 sólo cita SECURITY.md 'prototipo de investigación, no un producto' para la primera. La fuente explícita de 'no está en producción' está en otros ficheros y no se cita: doc/INSTITUCIONAL.md:91-92 ('no hay producción') y la sección de seguridad del RFC-0010 / AUDITORIA §580 ('hasta que haya operador real').",
+  "evidence": [
+   "SECURITY.md:27-28",
+   "SECURITY.md:8-9",
+   "doc/INSTITUCIONAL.md:91-92",
+   "spec/rfc/0010-el-recibo-de-recepcion.md:317",
+   "AUDITORIA.md:41975-41977"
+  ],
+  "fix": "En §5.1: «**[DECLARADO]** Arqueo es un prototipo de investigación, no un producto; no hay producción ni operador real, y no maneja dinero real (SECURITY.md, «Estado del proyecto»; doc/INSTITUCIONAL.md:91-92; RFC-0010, «Seguridad»).»",
+  "severity": "baja"
+ }
+]

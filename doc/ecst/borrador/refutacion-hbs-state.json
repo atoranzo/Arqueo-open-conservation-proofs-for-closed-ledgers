@@ -1,0 +1,755 @@
+{
+ "cluster": "H — hbs-state (crate 0.2.0 @ a960828) y especificación HBS-STATE v0.3 (DRAFT, revisada 2026-09-27) — revisión adversarial",
+ "adjudications": [
+  {
+   "id": "H1a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. Corrijo un puntero: la frase de versiones independientes está en .zenodo.json:19 (campo description), no en :17 (que es la palabra clave 'fsync').",
+   "evidence": [
+    "hbs-state/README.md:8 \"It is the **reference implementation of [HBS-STATE](spec/HBS-STATE-v0.3.md)**\"",
+    "hbs-state/Cargo.toml:3 version = \"0.2.0\"; :6 description \"... Reference implementation of HBS-STATE.\"",
+    "hbs-state/.zenodo.json:19 \"This release is crate version 0.2.0 and it implements specification HBS-STATE v0.3 ... The two version numbers are independent\""
+   ],
+   "correct_statement": "hbs-state (crate 0.2.0, Rust) es la implementación de referencia de la especificación HBS-STATE v0.3; la versión del crate y la de la especificación son independientes (.zenodo.json:19)."
+  },
+  {
+   "id": "H1b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido: el contador y la reconciliación son genéricos; la lectura/escritura del índice está fijada a SK de 137 B e índice de 5 B y un SK de 136 B (XMSS de árbol único) se rechaza. Matiz que añado: ese layout no es solo de xmss 0.1.0-pre.0; es el de la implementación de referencia en C (xmss-reference), que el crate Rust porta.",
+   "evidence": [
+    "hbs-state/README.md:3 \"(XMSS, XMSS^MT)\"; :144-152 index_width fijo a 5",
+    "hbs-state/src/lib.rs:92-94 index_width() -> 5; :128-132 exige sk.len()==137 o UnexpectedLayout",
+    "hbs-state/src/lib.rs:734-745 test an_sk_of_another_size_is_rejected_not_read (136 B rechazado)",
+    "hbs-state/tests/vectors.rs:277-287 SK de 137 se lee, de 136 se rechaza",
+    "clon github.com/XMSS/xmss-reference @171ccbd params.c:738-743 index_bytes=4 para XMSS, (full_height+7)/8 para XMSS^MT; xmss.c:18-25 OID de 4 B delante del SK"
+   ],
+   "correct_statement": "El contador y la reconciliación son aritmética genérica sobre dos u64; pero index_from_sk/set_index_in_sk están fijados a un único conjunto, XMSSMT-SHA2_40/8_256 con el layout OID(4)||idx(5 B, big-endian)||4×32 = 137 B (el de xmss 0.1.0-pre.0 y de la implementación de referencia en C que porta). Un SK de XMSS de árbol único (136 B, índice de 4 B) se rechaza con UnexpectedLayout (src/lib.rs:128-132, 734-745)."
+  },
+  {
+   "id": "H1c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. Corrijo punteros: en Cargo.toml (25 líneas) [dependencies] está en la línea 17 y [dev-dependencies] en la 21; las líneas 59-63 citadas no existen en ese fichero.",
+   "evidence": [
+    "hbs-state/Cargo.toml:17 [dependencies] y :21 [dev-dependencies], ambos vacíos",
+    "hbs-state/src/lib.rs:10-11 \"Signing is the OPERATOR's duty\"",
+    "hbs-state/src/lib.rs:126-127 \"it drags no `xmss` in: it is offset arithmetic over `&[u8]`\"",
+    "AUDITORIA.md §234 (línea ~16907) \"El guardián no firma: cuenta.\"",
+    "hbs-state/src/seed.rs:18-25, 32-53 lectura de semilla de 96 B con comprobación de permisos"
+   ],
+   "correct_statement": "No firma ni verifica; sí manipula material de clave: lee/escribe el índice dentro de los bytes del SK (index_from_sk/set_index_in_sk) y lee semillas de 96 B comprobando permisos al leer (src/seed.rs)."
+  },
+  {
+   "id": "H2a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido línea a línea. Añado la consecuencia de 'arranca en 0 sin avisar': borrar el fichero del contador no se detecta; con SK derivado de semilla (clave en 0) R da InSync{0} y nada impide reusar desde el índice 0 (deducido del código; ARQUEO lo mitiga fuera de hbs-state con diario/cofirmas).",
+   "evidence": [
+    "hbs-state/src/lib.rs:448 `pub fn open(path: impl AsRef<Path>) -> Result<Self, GuardError>`",
+    "hbs-state/src/lib.rs:450-453 create_dir_all(padre) y check_persistence(&folder) ANTES de leer",
+    "hbs-state/src/lib.rs:455-466 si existe: exige 8 bytes (si no Corrupt{bytes}), u64::from_le_bytes; si no existe: 0",
+    "hbs-state/src/lib.rs:468-472 persist(current) incluso si es 0",
+    "hbs-state/src/lib.rs:412-415 (0,0) => InSync"
+   ],
+   "correct_statement": "`IndexGuard::open(path: impl AsRef<Path>) -> Result<IndexGuard, GuardError>`: crea el directorio padre, ejecuta la autocomprobación de fsync en ese directorio, lee el contador (8 bytes little-endian; otro tamaño => GuardError::Corrupt) y reescribe+fsync el valor de arranque, incluso si es 0. Si el fichero no existe arranca en 0 sin avisar, de modo que un contador borrado es indistinguible de uno nuevo (src/lib.rs:448-473)."
+  },
+  {
+   "id": "H2b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. Precisión: seed.rs no exige 0600 exactamente; rechaza cualquier bit de grupo/otros (mode & 0o077 != 0), así que 0400 o 0700 pasan. Contexto útil: reservar-persistir-antes-de-firmar es el caso de intervalo 1 de la 'State Reservation Strategy' de McGrew et al. 2016, que el texto fuente de RFC 10033 cita en 'Interval-based Approaches'.",
+   "evidence": [
+    "hbs-state/src/lib.rs:482-489 reserve: checked_add(1) -> persist(next_one)? -> self.current = next_one -> Ok(next_one)",
+    "hbs-state/src/lib.rs:506-519 persist: OpenOptions create+write+truncate(false), seek(0), write_all(to_le_bytes), sync_all (\"`sync_all` is `fsync(2)`\")",
+    "hbs-state/src/seed.rs:41 `if mode & 0o077 != 0` => PermissionsTooOpen",
+    "clon github.com/hbs-guidance/draft-hbs-state @4ee80a2 draft-ietf-pquip-hbs-state.md:843-852 reserva escrita a memoria no volátil 'prior to their usage'; claves reservadas se pierden al reiniciar"
+   ],
+   "correct_statement": "reserve(&mut self) calcula current+1 (desbordamiento de u64 => GuardError::Io), lo persiste (abre el fichero, seek 0, escribe 8 bytes little-endian en sitio, sync_all = fsync(2) del fichero) y solo entonces actualiza el estado en memoria y devuelve el índice. No hay fsync del directorio padre, ni temporal+rename, ni cerrojo, ni fijación de permisos del fichero del contador; la comprobación de permisos (sin bits de grupo/otros) solo se aplica a ficheros de semilla (src/seed.rs:32-53). Es la estrategia de reserva de McGrew et al. 2016 con intervalo 1."
+  },
+  {
+   "id": "H2c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido.",
+   "evidence": [
+    "hbs-state/src/lib.rs:502-504 `pub fn reconcile(&self, key_index: u64) -> Reconciliation { reconcile_values(self.current, key_index) }`",
+    "hbs-state/src/lib.rs:412 `pub fn reconcile_values(counter: u64, key: u64) -> Reconciliation`",
+    "hbs-state/src/lib.rs:323-354 enum de cuatro variantes",
+    "hbs-state/src/lib.rs:370-377 is_fatal",
+    "hbs-state/src/lib.rs:801-815 test the_method_and_the_free_function_agree"
+   ],
+   "correct_statement": "`reconcile(&self, key_index: u64) -> Reconciliation` delega en la función pura `reconcile_values(counter: u64, key: u64)`; el índice de la clave lo aporta el llamante (p. ej. con index_from_sk). Variantes: InSync{index}, CounterAhead{counter,key,orphans}, KeyAtZero{counter,indeterminate}, KeyAhead{counter,key,unrecorded}; el juez es `is_fatal(&Reconciliation) -> bool`."
+  },
+  {
+   "id": "H3",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido en el código y ejecutando la regla de referencia del verificador (familia A N1/N2/N3 12/12).",
+   "evidence": [
+    "hbs-state/src/lib.rs:412-431 match counter.cmp(&key) { Equal => InSync{index: counter}, Greater if key == 0 => KeyAtZero{indeterminate: counter}, Greater => CounterAhead{orphans: counter - key}, Less => KeyAhead{unrecorded: key - counter} }",
+    "hbs-state/spec/HBS-STATE-v0.3.md:141-151 y :364-372 (D1-D5)",
+    "hbs-state/spec/verify-state.py:53-71",
+    "python3 -B spec/verify-state.py: 'family A (12 vectors): N1 12/12 N2 12/12 N3 12/12', rc=0"
+   ],
+   "correct_statement": "R es una función pura de (counter,key) en u64: Equal => InSync(index=counter); Greater con key==0 => KeyAtZero(indeterminate=counter, un solo término); Greater => CounterAhead(orphans=counter-key); Less => KeyAhead(unrecorded=key-counter). Precedencia: Equal antes que la guarda, así que (0,0) es InSync, y la guarda `Greater if key == 0` va antes del Greater general. (0,1) es KeyAhead. No hay variante de agotamiento (A11/A12 en 2^40-1). Solo KeyAhead es fatal (is_fatal, src/lib.rs:370-377)."
+  },
+  {
+   "id": "H4",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido en la spec, en el JSON y en la fuente de hbs-lms @7063cc8 (wipe pone a cero semilla, conjunto de parámetros y contador; increment llama a wipe si falla).",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:107 fila 'after a restart' corregida; :115-123",
+    "hbs-state/spec/state-vectors-v0.3.json:32-40 persisted.reachable_after_restart incluye KeyAtZero; note_v0_3_1",
+    "clon github.com/Fraunhofer-AISEC/hbs-lms-rust @7063cc8 src/hss/reference_impl_private_key.rs:93-97 fn wipe; :184-186 `.increment(&tree_heights).unwrap_or_else(|_| self.wipe())`",
+    "clon completo de hbs-state: git diff v0.1.0 v0.2.0 muestra que la fila decía antes solo 'InSync, CounterAhead or KeyAhead'"
+   ],
+   "correct_statement": "KeyAtZero es el estado counter>0 y key==0. En el modelo de SK derivado de semilla es siempre el estado tras un reinicio con counter>0 (from_seed devuelve índice 0). Desde la revisión del 2026-09-27, la spec reconoce que un sujeto con SK persistido también lo alcanza cuando borra la clave al agotarse (hbs-lms 0.2.0-alpha.1, commit 7063cc8). KeyAtZero no distingue una clave borrada (terminal) de un reinicio: el discriminador es el conjunto de parámetros, que el campo índice no lleva (spec §0 y §1)."
+  },
+  {
+   "id": "H5",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido. Añado que la inferencia retractada tampoco se ha limpiado en ARQUEO: el doc de politica_de_reconciliacion y el mensaje de arranque del nodo siguen llamando a ContadorAdelantado 'el caso NORMAL tras una caida -13 de 25'.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:108 CounterAhead: PERSISTED 'the normal case after a crash' / SEED-DERIVED 'INTRA-PROCESS only'",
+    "hbs-state/spec/HBS-STATE-v0.3.md:69-86 §0: 'The second sentence is FALSE ... measures ... deaths inside a live process, not restarts'",
+    "hbs-state/spec/state-vectors-v0.3.json:71 \"intra_process_only_if\": \"sk_model == seed_derived\"",
+    "hbs-state/src/bin/subject.rs:63-68 declara seed_derived",
+    "hbs-state/src/lib.rs:33-36 y :611-612 conservan '13 of 25 ... normal path after a crash' sin salvedad (el doc del enum en :326-335 sí la lleva)",
+    "crates/zk-ssl-node/src/main.rs:554 y :573 (ARQUEO) 'Es el caso NORMAL tras una caida'",
+    "AUDITORIA.md §331 línea 25552 'K.1: la cifra es correcta y la inferencia no'"
+   ],
+   "correct_statement": "CounterAhead significa que se reservaron índices que nunca se firmaron (huérfanos), p. ej. porque el proceso murió entre reserve() y la firma. Es 'el caso normal tras un crash' solo en el modelo de SK persistido, y eso lo afirma la spec sin medirlo. En el modelo derivado de semilla (el de hbs-state y ARQUEO), CounterAhead solo ocurre dentro de un proceso vivo; tras un reinicio el estado es siempre KeyAtZero (spec §1). La cifra 13/25 se midió dentro de un proceso. El comentario de módulo de src/lib.rs:33-36 y los textos del nodo de ARQUEO conservan la inferencia retractada."
+  },
+  {
+   "id": "H6a",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido. Matiz a favor del borrador: la parte normativa está respaldada (spec N3 'Refuses to operate on KeyAhead'; README:64 'DO NOT START'). La salvedad es que ni la spec dice 'detener el proceso' (dice 'rehusar operar') ni la librería detiene nada.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:179-185 `fatal(state) = (state is KeyAhead)`",
+    "hbs-state/spec/HBS-STATE-v0.3.md:202 'N3 -- judges. Refuses to operate on `KeyAhead`, and only there.'",
+    "hbs-state/README.md:64 'Reconciliation::KeyAhead { .. } => {} // DO NOT START'; :73-74",
+    "hbs-state/src/lib.rs:364 'production does not call it, and that is on purpose'",
+    "crates/zk-ssl-node/src/main.rs:612-619 y crates/zk-ssl-cli/src/witness.rs:2757-2770 (ARQUEO) NoArranca"
+   ],
+   "correct_statement": "El juez de HBS-STATE marca como fatal exactamente KeyAhead, y solo KeyAhead; N3 exige rehusar operar en KeyAhead y solo ahí. La librería no detiene nada: is_fatal es un predicado puro que devuelve un booleano y la producción de ARQUEO ni siquiera lo llama. Negarse a arrancar es deber del llamante; en ARQUEO, el nodo y el testigo devuelven NoArranca y declaran la clave comprometida."
+  },
+  {
+   "id": "H6b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "El veredicto se sostiene, pero corrijo la evidencia. spec §9 habla de la política sobre los HUÉRFANOS, no sobre KeyAtZero; que KeyAtZero sea política del dueño lo dicen README:73-74 y src/lib.rs:358-362. Además, N3 'only there' implica que rehusar en KeyAtZero no es lo que describe N3. La spec no define 'fail closed'; leerlo como 'no reutilizar 0..counter-1' es una interpretación sostenida por lib.rs y ARQUEO, no un texto normativo. Matiz histórico: entre §331 y §335 (ambos del 2026-08-20), ARQUEO sí fallaba cerrado negándose a arrancar ('cualquier reinicio ... dejaba el nodo muerto').",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:144 KeyAtZero fatal = no; :163 'cannot be resolved, only failed closed'; :202 N3 'only there'",
+    "hbs-state/spec/state-vectors-v0.3.json:81 KeyAtZero \"fatal\": false",
+    "hbs-state/README.md:73-74 'only KeyAhead admits no nuance. The other three are each owner's policy.'",
+    "hbs-state/src/lib.rs:358-362 'Two different signers decide different things faced with CounterAhead or with KeyAtZero ... that is policy'",
+    "hbs-state/src/lib.rs:143-147 y :347-348 'a lost index is better than an indeterminate one'",
+    "crates/zk-ssl-node/src/main.rs:576-611; crates/zk-ssl-cli/src/witness.rs:2731-2756",
+    "AUDITORIA.md §331 (25508) 'falla cerrada en los dos firmantes'; §335 (25979-25985) 'cualquier reinicio posterior a la primera cabeza firmada dejaba el nodo muerto' y el arreglo por resincronización"
+   ],
+   "correct_statement": "Ni la especificación ni el código exigen intervención ante KeyAtZero: no es fatal (spec §2-§3) y su tratamiento es política de cada dueño (README:73-74, src/lib.rs:358-362). La spec dice que KeyAtZero 'no se puede resolver, solo fallar cerrado', sin definir el término; en hbs-state y ARQUEO significa no volver a usar nunca los índices indeterminados 0..counter-1. ARQUEO lo hace automáticamente desde §335: resincroniza la clave a counter y abandona 0..counter-1. Solo se niega a arrancar si un segundo testigo (diario del nodo o cofirmas del testigo) muestra que el contador retrocedió. Durante un breve intervalo del 2026-08-20 (§331 a §335), ARQUEO sí se negaba a arrancar en KeyAtZero."
+  },
+  {
+   "id": "H6c",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido. La frase 'the classification is the same' ya estaba en la v0.1.0 archivada (no aparece en el diff v0.1.0..v0.2.0), así que el I-D la contradice incluso frente al texto anterior.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:130-132 'The model does not change the table in section 2 -- the classification is the same'",
+    "hbs-state/spec/HBS-STATE-v0.3.md:234-238 'family A is scored the same for both models'",
+    "hbs-state/spec/HBS-STATE-v0.3.md:115-122",
+    "hbs-state/spec/state-vectors-v0.3.json:33-38"
+   ],
+   "correct_statement": "En HBS-STATE v0.3 la clasificación no depende del modelo, y KeyAtZero no es fatal en ninguno de los dos. Para un sujeto persistido, KeyAtZero puede ser una clave borrada por agotamiento (terminal, caso hbs-lms) y no una violación; distinguir ambos casos exige conocer el conjunto de parámetros, que (counter,key) no lleva."
+  },
+  {
+   "id": "H6d",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido: es la política real de ARQUEO, pero condicionada, y no es un MUST de la spec.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:380-388 §9 (sin requisitos de política salvo 'not going back')",
+    "hbs-state/src/lib.rs:140-168 set_index_in_sk, documentado como CONSERVATIVE",
+    "crates/zk-ssl-node/src/main.rs:590-609 NoArranca si `*contador < d` (diario); si no, ArrancaResincronizando{hasta: *contador}",
+    "crates/zk-ssl-cli/src/witness.rs:2731-2756 NoArranca si `*contador <= t` (cofirmas), comentario 'S337'",
+    "AUDITORIA.md §335, §337"
+   ],
+   "correct_statement": "Avanzar la clave hasta counter es la POLÍTICA del dueño ARQUEO (nodo §335, testigo §337), condicionada a que un segundo testigo no muestre retroceso del contador. No es un requisito normativo de HBS-STATE v0.3, que deja la política al dueño; hbs-state solo aporta el mecanismo set_index_in_sk."
+  },
+  {
+   "id": "H6e",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido. Añado que adelantar la clave sobre los huérfanos es una forma de 'quemarlos', así que el MAY es compatible con la spec, aunque la spec no lo escribe.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:158-159 'The orphans are burnt or recorded; the counter never goes back'",
+    "hbs-state/spec/HBS-STATE-v0.3.md:383-384 §9",
+    "crates/zk-ssl-node/src/main.rs:570-575 ContadorAdelantado => ArrancaAvisando",
+    "crates/zk-ssl-cli/src/witness.rs:2703-2712 igual en el testigo"
+   ],
+   "correct_statement": "La especificación solo dice que los huérfanos se queman o se registran y que el contador nunca retrocede; qué hacer con ellos lo decide el dueño. Adelantar la clave hasta counter es una forma de quemarlos y es compatible, pero la spec no lo escribe. ARQUEO, ante CounterAhead, arranca avisando sin mover la clave."
+  },
+  {
+   "id": "H6f",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "Reproducido: grep sin resultados en hbs-state; en ARQUEO, 'agotado' solo aparece para cupos de custodios, nunca para el árbol HBS. El único zeroize es del búfer temporal al resincronizar.",
+   "evidence": [
+    "grep -i 'exhaust|wipe|destroy|zeroize|agotad|colapso' en hbs-state/src y spec: 0 coincidencias",
+    "hbs-state/src/lib.rs:370-377 is_fatal solo devuelve bool; :460-462 Corrupt{bytes}",
+    "crates/zk-ssl-node/src/main.rs:612-619 NoArranca 'LA CLAVE DEBE CONSIDERARSE COMPROMETIDA'",
+    "crates/zk-ssl-node/src/firma_cabeza.rs:219-237 zeroize best-effort del búfer al resincronizar",
+    "grep 'agotad' en crates/*.rs: solo CustodianSetExhausted (crates/zk-ssl/src/tests.rs:907-932)"
+   ],
+   "correct_statement": "Ni hbs-state ni ARQUEO destruyen claves en RAM ni marcan el árbol HBS como agotado. Ante KeyAhead, la política de ARQUEO es no arrancar y declarar la clave comprometida; ante un fichero de contador que no mide 8 bytes, open() devuelve GuardError::Corrupt."
+  },
+  {
+   "id": "H6g",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido.",
+   "evidence": [
+    "crates/zk-ssl-node/src/main.rs:570-575 CounterAhead (K!=0): solo aviso",
+    "crates/zk-ssl-node/src/main.rs:576-611 KeyAtZero: resincroniza salvo retroceso según el diario",
+    "hbs-state/src/lib.rs:154-168 set_index_in_sk falla cerrado si index >= 2^(8·5)"
+   ],
+   "correct_statement": "En ARQUEO, el fast-forward K<-C solo se aplica a KeyAtZero (C>K con K==0) y solo si el diario o las cofirmas no contradicen el contador; en CounterAhead (K!=0) la clave no se mueve. No es una regla de la especificación."
+  },
+  {
+   "id": "H6h",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido. Matiz: la premisa 'K es volátil' es cierta a medias en el modelo derivado de semilla (el índice de la clave solo vive en RAM), pero no desaparece: se re-deriva en 0, que es justo lo que KeyAtZero captura. El conjunto de tres estados está mal para ambos modelos: con semilla, CounterAhead no es alcanzable tras un reinicio; con SK persistido, KeyAhead sí lo es.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:103-108",
+    "hbs-state/spec/state-vectors-v0.3.json:42-47 seed_derived.reachable_after_restart = [KeyAtZero]",
+    "hbs-state/spec/HBS-STATE-v0.3.md:141-146 cuatro estados; no existen 'Indeterminate' como estado ni 'DurableEvidence'",
+    "hbs-state/src/lib.rs:323-354"
+   ],
+   "correct_statement": "Tras un reinicio la evaluación sigue siendo R(counter,key) con cuatro estados. Con SK derivado de semilla, key se re-deriva en 0 y el resultado es KeyAtZero (campo indeterminate=counter), o InSync si counter=0; CounterAhead no es alcanzable tras el reinicio. Con SK persistido, key sobrevive y KeyAhead sigue siendo detectable. 'indeterminate' es el nombre de un campo derivado, no de un estado."
+  },
+  {
+   "id": "H7a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. Matiz deducido: se mide el directorio padre del path, no el destino del fichero del contador; si index.bin fuera un enlace simbólico a otro sistema de ficheros, se mediría el sistema equivocado.",
+   "evidence": [
+    "hbs-state/src/lib.rs:450-453 folder = path.parent(); check_persistence(&folder)",
+    "hbs-state/src/lib.rs:523-556 sonda '.hbs-state-selfcheck'; `if ratio < MIN_RATIO && with < FLOOR_MICROS` => FakePersistence",
+    "hbs-state/README.md:78-79",
+    "hbs-state/src/lib.rs:747-796 on_tmpfs_it_refuses_to_operate; :817-822 on_a_real_disk_it_does_operate",
+    "AUDITORIA.md §247 (18104-18109) negativa real en /tmp: '0.6 µs con fsync frente a 0.8 µs sin él, razón 0.8×'"
+   ],
+   "correct_statement": "open() mide fsync en el directorio padre del contador con un fichero sonda `.hbs-state-selfcheck` y devuelve GuardError::FakePersistence{with_fsync_us, without_fsync_us, ratio} si, a la vez, la razón con/sin fsync es < 10 y el coste medio con fsync es < 20 µs."
+  },
+  {
+   "id": "H7b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido.",
+   "evidence": [
+    "hbs-state/src/lib.rs:97 SELFCHECK_SAMPLES = 20",
+    "hbs-state/src/lib.rs:525-547 abre la sonda con truncate, un Instant sobre 20 iteraciones seek+write_all(8 B)[+sync_all], elapsed/20; without primero, with después; ratio = with/without (∞ si without=0)"
+   ],
+   "correct_statement": "No es una diferencia sino una RAZÓN de medias (con/sin sync_all) más un suelo absoluto: 20 escrituras de 8 bytes por modo (primero sin sync y luego con sync_all), cronometradas con un único Instant sobre el bucle y divididas entre 20."
+  },
+  {
+   "id": "H7c1",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. Precisión: el 'ext4' era $HOME bajo WSL2, es decir, un disco virtual; es una sola muestra en una sola máquina.",
+   "evidence": [
+    "hbs-state/README.md:82-85",
+    "hbs-state/src/lib.rs:40-45 y :58-61 'WSL2 on an i5-1135G7 -- and are declared, not derived'",
+    "AUDITORIA.md §234 (16835-16838) '$HOME (ext4) 0,907 ms 382×; /tmp (tmpfs) 0,002 ms 1×'",
+    "grep de K.1 en tools/, doc/, spec/: ningún script implementa el banco"
+   ],
+   "correct_statement": "Medido una vez (banco K.1, AUDITORIA §234) en una sola máquina (WSL2 sobre i5-1135G7, $HOME en ext4 sobre disco virtual): fsync en ext4 0,907 ms, 382× frente a no persistir; en tmpfs 0,002 ms, 1×. El script de K.1 no está en ninguno de los dos árboles."
+  },
+  {
+   "id": "H7c2",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "Reproducido: 0 coincidencias en ambos repos para 1,82 ms / 1.82 ms / 0,03 ms.",
+   "evidence": [
+    "grep '1[.,]82 ms|0[.,]03 ms' en hbs-state y ARQUEO (md, rs, sh, py): 0 coincidencias",
+    "hbs-state/README.md:82-85 0.907 ms y 0.002 ms"
+   ],
+   "correct_statement": "Las únicas cifras registradas son 0,907 ms (ext4) y 0,002 ms (tmpfs), de una sola máquina; 1,82 ms y 0,03 ms no tienen fuente."
+  },
+  {
+   "id": "H7d",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido.",
+   "evidence": [
+    "hbs-state/src/lib.rs:532-541 un Instant sobre el bucle de 20, devuelve elapsed/20",
+    "hbs-state/src/lib.rs:543-548 una media por modo, sin varianza, percentiles ni repeticiones"
+   ],
+   "correct_statement": "La autocomprobación calcula una sola media por modo (20 escrituras) y una razón; no construye ninguna distribución estadística."
+  },
+  {
+   "id": "H7e",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "Reproducido. El efecto sobre tmpfs coincide (se rechaza), pero por tiempos, no inspeccionando montajes.",
+   "evidence": [
+    "grep -i 'mounts|ramfs|procfs|statfs' en hbs-state/src, spec, README, tests: 0 coincidencias",
+    "hbs-state/src/lib.rs:762-769 solo el test usa `df -T --output=fstype`",
+    "hbs-state/src/lib.rs:54-56 'It is the only signal available from inside the process'",
+    "hbs-state/spec/HBS-STATE-v0.3.md:382 §9 persistencia fuera de alcance"
+   ],
+   "correct_statement": "hbs-state no inspecciona /proc/mounts ni mantiene una lista de sistemas de ficheros prohibidos: detecta la persistencia falsa solo por tiempos. La especificación no regula la persistencia (§9). Solo tmpfs está medido; ramfs y procfs no se han probado."
+  },
+  {
+   "id": "H7f",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "Reproducido.",
+   "evidence": [
+    "grep -i override en hbs-state: 0 coincidencias",
+    "hbs-state/src/lib.rs:99-103 MIN_RATIO = 10.0 'DECLARED threshold, not derived'",
+    "hbs-state/src/lib.rs:105-108 FLOOR_MICROS = 20.0 'A fast NVMe does fsync in ~100 us legitimately'"
+   ],
+   "correct_statement": "No existe override. El caso NVMe se resuelve en el diseño: solo se rechaza si la razón es < 10× Y fsync < 20 µs, así que cualquier fsync ≥ 20 µs pasa. Los ~100 µs de un NVMe son una suposición declarada, no una medida. Umbrales (20 muestras, 10×, 20 µs) declarados y no derivados, de una sola máquina."
+  },
+  {
+   "id": "H8",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. Corrijo punteros: Cargo.toml:14-21 (el fichero tiene 25 líneas). Cargo.lock contiene un solo [[package]].",
+   "evidence": [
+    "hbs-state/Cargo.toml:14-21 comentario ZERO DEPENDENCIES, [dependencies] y [dev-dependencies] vacíos",
+    "hbs-state/Cargo.lock: único [[package]] name = \"hbs-state\" 0.2.0",
+    "hbs-state/tests/vectors.rs:6-11 'the JSON reader is written BY HAND, without `serde`'; :19-28 EXPECTED_ROWS 12/6/1; :32-97 collection/objects/number/text",
+    "hbs-state/src/bin/subject.rs:27-30 salida JSON a mano",
+    "hbs-state/src/lib.rs:762 el test invoca `df`"
+   ],
+   "correct_statement": "Confirmado: cero dependencias de Cargo en [dependencies] y [dev-dependencies]; el lector JSON de tests/vectors.rs es ad hoc y comprueba el número de filas (12/6/1). Matiz: el test de tmpfs invoca el binario externo `df`, y el verificador es Python con solo la biblioteca estándar."
+  },
+  {
+   "id": "H9a",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido. Precisión: el NONE por falta de N0 solo se aplica si el sujeto responde mal; en modo referencia N0 queda BLIND y no rebaja el nivel.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:196-202",
+    "hbs-state/spec/verify-state.py:231-238 N2 exige todos los campos de v['derived'] (incluido index); N3 exige 'fatal' igual al vector",
+    "hbs-state/spec/verify-state.py:323-326 n0_ok False => NONE; :168 n0_ok None = BLIND"
+   ],
+   "correct_statement": "N0 declara el modelo (persisted | seed_derived; obligatorio desde v0.3: un sujeto que no lo declara queda sin nivel); N1 distingue los cuatro estados; N2 acierta todos los campos derivados (index, orphans, indeterminate, unrecorded); N3 marca como fatal exactamente KeyAhead y ningún otro estado. Los niveles son acumulativos. El verificador solo comprueba el booleano 'fatal'; no ejercita un rechazo real."
+  },
+  {
+   "id": "H9b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido. Un fragmento del borrador es correcto ('identifying fatal states' = marcar KeyAhead), pero el núcleo (N3 impone juicios de política y acciones definidas por el operador) contradice la separación invariante/política de la spec.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:202 N3 'Refuses to operate on KeyAhead, and only there'",
+    "hbs-state/spec/HBS-STATE-v0.3.md:383-384",
+    "hbs-state/src/lib.rs:358 'the invariant belongs to the guard; the policy, to each owner'",
+    "hbs-state/spec/verify-state.py:234-235 N3 = derived_ok y fatal == vector"
+   ],
+   "correct_statement": "N3 no evalúa políticas ni acciones definidas por el operador: solo que el juez marque como fatal exactamente KeyAhead (y el verificador lo comprueba con el booleano 'fatal')."
+  },
+  {
+   "id": "H9c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. Corrijo el puntero: [[bin]] está en Cargo.toml:23-25, no en 65-67. Añado que el rc 0 exige también la familia B, aunque la familia B no puntúa nivel (verify-state.py:360-362).",
+   "evidence": [
+    "hbs-state/spec/verify-state.py (367 líneas; imports argparse, glob, json, os, subprocess, sys; :42 rc 0/1/2)",
+    "hbs-state/Cargo.toml:23-25 [[bin]] name = \"hbs-state-subject\"",
+    "hbs-state/spec/HBS-STATE-v0.3.md:208-238 (60 s en :232)",
+    "hbs-state/src/bin/subject.rs:17-19, 63-68",
+    "hbs-state/spec/verify-state.py:218, 267 solo 'reconciliation' e 'index_read'"
+   ],
+   "correct_statement": "Confirmado. Añadir: el sujeto de referencia declara seed_derived y no toca disco ni claves (subject.rs:17-19, 63-68), así que su N3 certifica la función pura y no la durabilidad del IndexGuard. El verificador no ejercita B7 (solo 'reconciliation' e 'index_read', 18 filas)."
+  },
+  {
+   "id": "H10a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido.",
+   "evidence": [
+    "hbs-state/spec/state-vectors-v0.3.json:2 \"schema\": \"hbs-state/0.3\"",
+    "hbs-state/spec/state-vectors-v0.3.json:110-265 'reconciliation' A1..A12 (id, counter, key, state, derived, fatal, provenance, note); :266-321 B1..B6; :322-337 B7; :338-361 B8 y C; :370 CC0-1.0",
+    "grep 'TC-0|expected_state' en hbs-state: 0 coincidencias"
+   ],
+   "correct_statement": "El fichero real es spec/state-vectors-v0.3.json (schema \"hbs-state/0.3\", CC0-1.0), con 12 vectores de reconciliación (A1-A12), 6 de lectura de índice (B1-B6), 1 de escritura fuera de campo (B7) y dos candidatos sin vectores (B8 y la familia C). Los casos TC-01..TC-04 son inventados."
+  },
+  {
+   "id": "H10b",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "Reproducido. Matiz: 'LMS_SHA256_M32_H10' es un nombre real de RFC 8554 (typecode 0x00000006, Table 2), pero hbs-state no tiene ningún vector LMS ni campo 'algorithm'.",
+   "evidence": [
+    "grep 'LMS_SHA256|\"algorithm\"' en hbs-state: 0 coincidencias",
+    "hbs-state/spec/state-vectors-v0.3.json:10-24 único reference_parameter_set XMSSMT-SHA2_40/8_256",
+    "hbs-state/spec/HBS-STATE-v0.3.md:386 'LMS/HSS: the table ought to hold; it has not been tested'",
+    "réplica de RFC 8554 (clon github.com/tex2e/rfc-translater, html/rfc8554.html): 'LMS_SHA256_M32_H10 | Section 5 | 0x00000006'"
+   ],
+   "correct_statement": "No existe ningún vector LMS ni campo 'algorithm' en HBS-STATE v0.3. El único conjunto de parámetros de referencia es XMSSMT-SHA2_40/8_256; la spec declara LMS/HSS como no probado (§9). LMS_SHA256_M32_H10 es un conjunto real de RFC 8554, pero no forma parte del banco."
+  },
+  {
+   "id": "H10c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido con verify-state.reference().",
+   "evidence": [
+    "python3 -B con spec/verify-state.py reference(): (10,10) InSync index=10; (15,10) CounterAhead orphans=5; (5,12) KeyAhead unrecorded=7 fatal=True; (20,0) KeyAtZero indeterminate=20"
+   ],
+   "correct_statement": "Los cuatro pares inventados son aritméticamente coherentes con R, pero no son vectores de la especificación y no deben citarse como tales."
+  },
+  {
+   "id": "H11a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido en la réplica de RFC 8391: el registro XMSS^MT es la Table 8 del RFC. Sigue sin verificar la atribución a la 'table 11' de SP 800-208 (nvlpubs bloqueado; ninguna búsqueda lo confirma). Nota lateral: el OID 5 colisiona con XMSS-SHA2_16_512 del registro de árbol único, que es el origen del defecto de xmss (§335). doc/issue-rustcrypto.md:59 dice 'Five of the eight SHA2-256 XMSS^MT sets collide', lo que no cuadra con los 21 OID de árbol único 0x01-0x15 que define xmss (params.rs:1215-1226), según los cuales colisionarían los ocho.",
+   "evidence": [
+    "réplica de RFC 8391 (clon github.com/tex2e/rfc-translater, html/rfc8391.html): '0x00000005 | XMSSMT-SHA2_40/8_256 | Section 5.4', tabla titulada 'Table 8'",
+    "~/.cargo/registry/.../xmss-0.1.0-pre.0/src/params.rs:960 `XmssMtSha2_40_8_256 = XMSSMT_OID_OFFSET | 0x05`",
+    "hbs-state/spec/HBS-STATE-v0.3.md:265 y README.md:143 'SP 800-208, table 11' (no verificado)",
+    "WebSearch 'SP 800-208 Table 11 XMSS^MT ... 0x00000005': sin confirmación"
+   ],
+   "correct_statement": "XMSSMT-SHA2_40/8_256 (h=40, d=8, n=32, w=16) tiene OID 0x00000005 en el registro XMSS^MT de RFC 8391 (Table 8, §5.4). La atribución a la 'tabla 11' de SP 800-208 no se ha podido verificar."
+  },
+  {
+   "id": "H11b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. Refino la procedencia: el layout no es solo de xmss 0.1.0-pre.0. Es el de la implementación de referencia en C de XMSS (xmss-reference, de Hülsing y Rijneveld, CC0), cuyos nombres de función y comentarios reproduce el crate Rust: los 24 nombres de función de xmss_core.rs, hash_address.rs y wots.rs existen en los .c de la referencia.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:266-268",
+    "xmss-0.1.0-pre.0/src/params.rs:59-61 `let index_bytes = if d == 1 { 4 } else { h.div_ceil(8) }; 4 + index_bytes + 4 * n`",
+    "xmss-0.1.0-pre.0/src/xmss_core.rs:92 'Format sk: [(ceil(h/8) bit) index || SK_SEED || SK_PRF || root || PUB_SEED]'",
+    "clon github.com/XMSS/xmss-reference @171ccbd xmss_core.c:131,165 mismo comentario; params.c:738-743 index_bytes; xmss.c:18-25 OID de 4 B antepuesto al SK; README.md:17 'written by Andreas Hülsing and Joost Rijneveld'",
+    "hbs-state/tests/vectors.rs:277-287"
+   ],
+   "correct_statement": "El layout es OID(4, big-endian) || idx (ceil(h/8) B big-endian; 4 B en árbol único) || SK_SEED || SK_PRF || root || PUB_SEED (4×n). Para 40/8: 4+5+128 = 137 B; en árbol único, 136 B. Es el layout de la implementación de referencia en C (xmss-reference @171ccbd), que xmss 0.1.0-pre.0 porta."
+  },
+  {
+   "id": "H11c",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido (citas de RFC 8391 §4.1.7 y §4.2.2 y de RFC 8554 §4.2 y §5.2 verificadas en la réplica). Dos refinamientos. (1) RFC 8391 §4.2.2 sí fija el CONTENIDO y la anchura del índice de SK_MT ('a single (ceil(h / 8))-byte index idx_MT'), aunque no su serialización. (2) Llamarlo 'el layout de UNA implementación' se queda corto: es el de la implementación de referencia en C y sus ports. Contexto: en la v0.1.0 archivada, el título de la §6 decía 'reading the index out of the format (RFC 8391)', así que los borradores reflejan un texto que ya se retiró.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:46-48 §0 'the attribution is withdrawn'; :287-306",
+    "réplica de RFC 8391 §4.1.7: 'Note that we do not define any specific format or handling for the XMSS private key SK by introducing this algorithm.'",
+    "réplica de RFC 8391 §4.2.2: 'This document does not define any specific format for the XMSS^MT private key SK_MT as it is not required for interoperability' y 'a single (ceil(h / 8))-byte index idx_MT'",
+    "réplica de RFC 8391 Algorithm 10: 'SK = idx || wots_sk || SK_PRF || root || SEED; PK = OID || root || SEED'",
+    "réplica de RFC 8554 §4.2 (LM-OTS) y §5.2 (LMS): 'is an internal matter to the implementation'",
+    "clon completo de hbs-state: git diff v0.1.0 v0.2.0 -- spec: '-## 6. Family B -- reading the index out of the format (RFC 8391)'"
+   ],
+   "correct_statement": "Ningún estándar define el formato serializado del SK: RFC 8391 (§4.1.7 y §4.2.2), RFC 8554 (§4.2 para LM-OTS y §5.2 para LMS) y SP 800-208 renuncian a definirlo; RFC 8391 solo enumera su contenido (en XMSS^MT, un índice de ceil(h/8) bytes) y pone el OID en la clave pública. OID(4)+idx+4×32 es el layout de la implementación de referencia en C y de su port xmss 0.1.0-pre.0. La spec retiró la atribución a RFC 8391 en su revisión del 2026-09-27, así que un sujeto con otro layout que falle la familia B no incumple RFC 8391 (spec §6; aún no implementado en el verificador)."
+  },
+  {
+   "id": "H12a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido: mismo algoritmo línea a línea (abrir/reservar/persistir/comprobar_persistencia, las mismas constantes 20/10.0/20.0). Solo cambian los nombres y el fichero sonda ('.guardian-autocomprobacion' frente a '.hbs-state-selfcheck'); hbs-state añade la función libre reconcile_values.",
+   "evidence": [
+    "crates/zk-ssl-guardian/src/lib.rs:96, 102, 107 MUESTRAS_AUTOCOMPROBACION=20, RAZON_MINIMA=10.0, SUELO_MICROS=20.0",
+    "crates/zk-ssl-guardian/src/lib.rs:325-352 Reconciliacion{Coincide, ContadorAdelantado, ClaveEnCero, ClaveAdelantada}; :369 no_admite_matiz; :419-527 abrir/reservar/reconciliar/persistir/comprobar_persistencia",
+    "hbs-state/spec/state-vectors-v0.3.json:376 'the source and note fields point into the ARQUEO guardian'",
+    "hbs-state/README.md:169-171"
+   ],
+   "correct_statement": "hbs-state es una traducción al inglés del crate zk-ssl-guardian de ARQUEO, con la reconciliación extraída como función pura reconcile_values."
+  },
+  {
+   "id": "H12b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido. El primer commit de hbs-state (402c889, 2026-09-26) ya contenía la frase 'a year'. §234 no tiene fecha propia; queda acotado entre la fecha citada en §159 (2026-08-03) y §275 (2026-08-12). A 2026-09-26 eso son unas 6,5-7,5 semanas.",
+   "evidence": [
+    "hbs-state/README.md:33-34 y :169-170; hbs-state/src/lib.rs:73-74",
+    "hbs-state/src/lib.rs:71 'and this piece has no consumer yet'",
+    "AUDITORIA.md §234 (16821) 'Esta pieza no tiene consumidor todavía'; §236 (17036-17038) 'el guardián de §234 deja de estar sin consumidor'",
+    "AUDITORIA.md:12110 '(2026-08-03, ...' en §159; :20729 '§275 — 2026-08-12'",
+    "AUDITORIA.md §331 (25508) 2026-08-20",
+    "SECURITY.md:27 'Prototipo de investigación, no un producto. No maneja dinero real'",
+    "clon completo de hbs-state: git show 402c889:README.md líneas 34 y 170 ya dicen 'a year'"
+   ],
+   "correct_statement": "Según los propios registros de ARQUEO, el guardián nació entre el 2026-08-03 y el 2026-08-12 (§234), tuvo su primer consumidor en §236 y adoptó su forma de cuatro estados el 2026-08-20 (§331). ARQUEO se declara prototipo de investigación que no maneja dinero real. Son unas siete semanas dentro de un prototipo, no 'un año en producción'."
+  },
+  {
+   "id": "H13a",
+   "agree": true,
+   "final_verdict": "NO_VERIFICABLE",
+   "reason": "Reproducido: WebSearch de 'zenodo.22993572' sin resultados; zenodo.org, doi.org y la API de GitHub para ese repo, bloqueados. Plausiblemente es un DOI de versión (Zenodo asigna uno por release), pero no consta en ningún sitio.",
+   "evidence": [
+    "hbs-state/CITATION.cff:16 doi: 10.5281/zenodo.22980547",
+    "clon completo de hbs-state: `git grep zenodo $(git rev-list --all)` solo encuentra 22980547 (476eaaf CITATION.cff:14 y a960828 CITATION.cff:16); `git log -S22993572`: vacío",
+    "476eaaf 'Add CITATION.cff with the concept DOI'",
+    "WebFetch zenodo.org/api/records/22993572 y doi.org: EGRESS_BLOCKED"
+   ],
+   "correct_statement": "El DOI que declara el repositorio es 10.5281/zenodo.22980547 (DOI de concepto, según el commit 476eaaf). 22993572 no aparece en ninguna revisión y no se ha podido resolver; podría ser un DOI de versión, pero no debe citarse sin verificarlo."
+  },
+  {
+   "id": "H13b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. El tag v0.2.0 es anotado (objeto 6d1fe24) y apunta a a960828. Corrijo el puntero: .zenodo.json:4 (version) y :19 (description).",
+   "evidence": [
+    "hbs-state/CITATION.cff:10-11 version 0.2.0, date-released 2026-09-27",
+    "hbs-state/.zenodo.json:4 \"version\": \"0.2.0\"; :19",
+    "clon completo: v0.1.0^{} = 4368860 (2026-09-26 18:48); v0.2.0^{} = a960828 (2026-09-27 11:08)",
+    "hbs-state/spec/HBS-STATE-v0.3.md:37-40"
+   ],
+   "correct_statement": "Crate 0.2.0 (publicado el 2026-09-27) que implementa la especificación HBS-STATE v0.3 revisada el 2026-09-27. La release v0.1.0 (2026-09-26) contiene la v0.3 antes de las dos correcciones."
+  },
+  {
+   "id": "H13c",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido. Corrijo punteros: .zenodo.json:5 (no :4) y Cargo.toml:5 (no :47).",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:481-482 'The vectors under spec/, CC0-1.0. Everything else, MIT OR Apache-2.0.'",
+    "hbs-state/Cargo.toml:5 license = \"MIT OR Apache-2.0\"",
+    "hbs-state/CITATION.cff:4 (abstract) y :12-14",
+    "hbs-state/.zenodo.json:5 \"license\": \"mit\"; :19 'the single field above is a label, not the terms'",
+    "hbs-state/spec/LICENSE-CC0 existe"
+   ],
+   "correct_statement": "El código está bajo MIT OR Apache-2.0, a elección del receptor; solo los vectores de spec/ son CC0-1.0. El campo 'mit' de Zenodo es una etiqueta: los términos válidos son los de LICENSE-MIT, LICENSE-APACHE y spec/LICENSE-CC0."
+  },
+  {
+   "id": "H14a",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido: el título existe según WebSearch (rfc-editor.org/info/rfc10033) y el texto fuente del WG dice 'category: info' y lista cinco autores. El mes no se ha podido verificar.",
+   "evidence": [
+    "WebSearch: 'RFC 10033: Hash-Based Signatures: State and Backup Management | RFC Editor' (rfc-editor.org/info/rfc10033)",
+    "clon github.com/hbs-guidance/draft-hbs-state @4ee80a2 (2026-02-27) draft-ietf-pquip-hbs-state.md:2-4 title y 'category: info'; autores Wiggers (PQShield), Bashiri (BSI), Kölbl (Google), Goodman (Crypto4A), Kousidis (BSI)"
+   ],
+   "correct_statement": "RFC 10033 'Hash-Based Signatures: State and Backup Management' existe (título confirmado por búsqueda) y procede de draft-ietf-pquip-hbs-state, de categoría informativa. El mes de publicación (septiembre de 2026) no se ha podido verificar."
+  },
+  {
+   "id": "H14b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido. Añado lo que un informe ECST necesita. La propiedad Durability del texto exige sobrevivir a 'crashes, power loss, or device failure' (hbs-state declara no garantizar nada frente a un corte de corriente) e Isolation incluye 'separate processes or devices' (hbs-state no toma cerrojos). Así que hbs-state no satisface por sí solo la lista ACID que cita.",
+   "evidence": [
+    "draft-ietf-pquip-hbs-state.md:474 '# Requirements for Secure State Management' (cuarta sección de nivel 1); :483 'State management systems should satisfy all _ACID_ properties'",
+    "draft-ietf-pquip-hbs-state.md:492-497 Isolation 'separate processes or devices'; Durability 'must survive crashes, power loss, or device failure'",
+    "hbs-state/README.md:96 'Nothing against a power cut.'",
+    "hbs-state/spec/HBS-STATE-v0.3.md:382 cerrojos fuera de alcance"
+   ],
+   "correct_statement": "En el texto fuente del WG, la sección 4 'Requirements for Secure State Management' dice que los sistemas 'should satisfy all ACID properties': es una recomendación de un documento informativo, no una exigencia. La propiedad de durabilidad incluye cortes de corriente y la de aislamiento, procesos separados, dos cosas que hbs-state ni mide ni cubre. La numeración del RFC final no se ha verificado."
+  },
+  {
+   "id": "H14c",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido: el texto fuente no lleva coma y empieza con mayúscula.",
+   "evidence": [
+    "draft-ietf-pquip-hbs-state.md:525-528 'Using dedicated cryptographic hardware is recommended ... In particular, this enables implementing rollback resistant counters which can be difficult to achieve in a software-only fashion.'",
+    "hbs-state/README.md:23-25 y spec:16-18 citan con coma"
+   ],
+   "correct_statement": "El texto fuente del WG dice \"In particular, this enables implementing rollback resistant counters which can be difficult to achieve in a software-only fashion\" (sin coma), justo después de recomendar hardware criptográfico dedicado. La forma exacta en el RFC 10033 publicado no se ha podido comprobar."
+  },
+  {
+   "id": "H14d",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido: nueve secciones de nivel 2 bajo '# Potential State Management Approaches'. Contexto: la novena, 'Interval-based Approaches', describe la estrategia de reserva de McGrew et al. 2016, de la que el reservar-persistir-firmar de hbs-state es el caso de intervalo 1.",
+   "evidence": [
+    "draft-ietf-pquip-hbs-state.md:550 '# Potential State Management Approaches'; :560, 585, 627, 673, 704, 717, 742, 769, 841 (nueve '##')",
+    "draft-ietf-pquip-hbs-state.md:843-852 'State Reservation Strategy described in Section 5 of {{MCGREW}}'; :95-106 MCGREW = eprint 2016/357"
+   ],
+   "correct_statement": "En el texto fuente del WG, la sección 5 'Potential State Management Approaches' tiene nueve subsecciones (numeración del RFC final no verificada); ninguna trae vectores ejecutables, algo esperable en un documento informativo. Una de ellas, la reserva por intervalos (McGrew et al. 2016), es la técnica que hbs-state implementa con intervalo 1."
+  },
+  {
+   "id": "H14e",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido por fragmento de búsqueda (nvlpubs bloqueado).",
+   "evidence": [
+    "WebSearch: 'Implementations of the key generation and signature algorithms in this document shall only be validated for use within hardware cryptographic modules' ... 'FIPS 140-2 or FIPS 140-3 Level 3 or higher physical security' (fragmento de nvlpubs.nist.gov/.../NIST.SP.800-208.pdf)",
+    "WebFetch nvlpubs.nist.gov: EGRESS_BLOCKED"
+   ],
+   "correct_statement": "SP 800-208 dispone que las implementaciones de generación de claves y de firma solo se validen dentro de módulos criptográficos hardware (FIPS 140-2/140-3 nivel 3 o superior de seguridad física). Confirmado por fragmento de búsqueda, no por lectura directa del PDF."
+  },
+  {
+   "id": "H14f",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "La frase está confirmada por fragmento de búsqueda; el número de sección §8.1 no se ha podido confirmar (búsqueda dirigida sin resultado, PDF bloqueado).",
+   "evidence": [
+    "WebSearch: 'The cryptographic module shall not allow for the export of private keying material' en SP 800-208; NIST 'is currently working on a revision of SP 800-208 that would enable key export'",
+    "WebSearch '\"SP 800-208\" \"Section 8.1\"': sin confirmación",
+    "hbs-state/spec/HBS-STATE-v0.3.md:297-299, 317-319"
+   ],
+   "correct_statement": "La frase 'The cryptographic module shall not allow for the export of private keying material' aparece en SP 800-208 (fuente secundaria: fragmento de búsqueda; que esté en la §8.1 no se ha comprobado). NIST ha anunciado una revisión que permitiría exportar claves."
+  },
+  {
+   "id": "H15",
+   "agree": false,
+   "final_verdict": "PARCIAL",
+   "reason": "No es FALSA del todo. Para un solo reúso (dos firmas del mismo índice), la cifra ~2^34 coincide con la fuente que cita el proyecto (QRL) y con AUDITORIA §331 ('el caso de dos firmas de la curva de QRL: ~2^34 hashes'). Lo erróneo es el 'as low as': más reúsos abaratan el ataque (3 firmas ~2^23, 4 ~2^18). También está mal la procedencia: la spec la etiqueta 'MEASURED' y habla de 'second reuse', pero es una cifra consultada en un blog (QRL, 'consultado 2026-08-12'), y 'second reuse' equivaldría a tres firmas (~2^23). QRL habla además de obtener por fuerza bruta la clave privada OTS, no directamente de falsificar. Corrección a la evidencia del verificador: el 'ESTATUTO ... TODO es RAZONADO, no medido' (AUDITORIA:21433) es el de §287, que lista el artículo de QRL como fuente consultada; la curva se incorpora en §288 (línea 21490).",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:174-175 '(MEASURED, QRL curve): at the **second reuse** of an index, forging a signature costs on the order of **2^34 hashes**'",
+    "hbs-state/spec/state-vectors-v0.3.json:99",
+    "BACKLOG.md:628-631 'con **2** firmas, ~2³⁴ hashes; con **3**, ~2²³; con **4**, ~2¹⁸' (extraer la clave privada)",
+    "AUDITORIA.md:21428-21433 (§287) procedencia QRL 'Statefulness and security', 'TODO es RAZONADO, no medido'; :21489-21490 (§288) 'QRL, consultado 2026-08-12'",
+    "AUDITORIA.md §331 (25525-25527) 'el caso de dos firmas de la curva de QRL: ~2^34 hashes, cinco veces'",
+    "WebSearch: artículo de QRL 'Statefulness and security' (P. Waterland): 'grind out the one-time signature private key ... with 2 signatures ... 2^34 hashes, 3 ... 2^23, 4 ... 2^18' (theqrl.org y medium, bloqueados para lectura directa)",
+    "draft-ietf-pquip-hbs-state.md:212-215 cita BH16 (eprint 2016/1042) y Fluhrer23 (eprint 2023/1905 según búsqueda)"
+   ],
+   "correct_statement": "Según el artículo 'Statefulness and security' de QRL (fuente divulgativa, con sus propios parámetros no verificados), con dos firmas del mismo índice (un reúso) se puede obtener por fuerza bruta la clave privada OTS con ~2^34 hashes; con 3 firmas, ~2^23; con 4, ~2^18. Por tanto 2^34 es el punto más caro de esa curva, no una cota inferior. La etiqueta 'MEASURED, second reuse' de la spec es incorrecta en los dos términos: la cifra es consultada, no medida, y corresponde a dos firmas. Para la literatura académica sobre reúso, el texto fuente de RFC 10033 cita a Bruinderink y Hülsing (2016/SAC 2017) y a Fluhrer (2023)."
+  },
+  {
+   "id": "H16",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido. Añado lo que el borrador sí tiene a su favor: la propia spec declara en su primer párrafo que su alcance incluye LMS y HSS, aunque en §9 las declara no probadas.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:3-6 '(XMSS, XMSS^MT, LMS, HSS)'",
+    "hbs-state/spec/HBS-STATE-v0.3.md:386 'LMS/HSS: the table ought to hold; it has not been tested'",
+    "hbs-state/spec/HBS-STATE-v0.3.md:115-122, 436-438",
+    "hbs-lms @7063cc8 src/hss/reference_impl_private_key.rs:286-288 CompressedUsedLeafsIndexes{count: u64}"
+   ],
+   "correct_statement": "La spec declara LMS/HSS dentro de su alcance (§ inicial), pero en §9 los marca como no probados. La regla de la familia A es aritmética sobre dos enteros y se puede aplicar a cualquier esquema con un índice monótono único (hbs-lms guarda un solo contador u64). Aun así, el único contacto con LMS (hbs-lms, medido fuera del protocolo de sujeto) reveló una vía nueva a KeyAtZero que (counter,key) no puede desambiguar sin el conjunto de parámetros. La familia B no aplica a LMS."
+  },
+  {
+   "id": "H17a",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "Reproducido.",
+   "evidence": [
+    "grep -i 'flock|fcntl|lock' en hbs-state/src: 0 coincidencias",
+    "hbs-state/spec/HBS-STATE-v0.3.md:382 '`fsync`, ordering, locks, copies' fuera de alcance; :385 'Multiple signers'"
+   ],
+   "correct_statement": "hbs-state no toma ningún cerrojo: dos procesos (o dos IndexGuard) pueden abrir el mismo contador. La spec excluye expresamente los cerrojos y los firmantes múltiples."
+  },
+  {
+   "id": "H17b",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "Reproducido.",
+   "evidence": [
+    "grep -i 'mutex|atomic' en hbs-state/src: 0 coincidencias",
+    "hbs-state/src/lib.rs:482 reserve(&mut self)"
+   ],
+   "correct_statement": "No hay primitivas de concurrencia: la exclusión dentro de un proceso depende solo de &mut self sobre una única instancia. La concurrencia queda fuera del alcance de la spec (§9)."
+  },
+  {
+   "id": "H17c",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "Reproducido.",
+   "evidence": [
+    "grep -i 'tpm|nvram' en hbs-state: 0 coincidencias",
+    "draft-ietf-pquip-hbs-state.md:525-528 recomienda hardware criptográfico dedicado, sin nombrar TPM ni NVRAM"
+   ],
+   "correct_statement": "hbs-state es solo software (contador en fichero + fsync). El anclaje en hardware lo recomienda RFC 10033 (texto fuente) y SP 800-208 lo exige para la validación; TPM NVRAM es una adición del I-D sin implementación."
+  },
+  {
+   "id": "H17d",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido. Precisión: un retroceso a C' con K ≤ C' no es detectable, pero con SK persistido tampoco es peligroso, porque la clave firma con su propio índice. El caso peligroso sin detección es el del modelo de semilla y el de la restauración conjunta.",
+   "evidence": [
+    "hbs-state/src/lib.rs:425-429 Less => KeyAhead{unrecorded: key - counter}",
+    "hbs-state/spec/HBS-STATE-v0.3.md:160-161 'There are only two causes: the order was inverted, or `fsync` lied'",
+    "hbs-state/spec/HBS-STATE-v0.3.md:170-172 'a restored state is indistinguishable from a legitimate one'",
+    "hbs-state/src/lib.rs:455-466 fichero ausente => 0 sin error",
+    "crates/zk-ssl-node/src/main.rs:590-596; crates/zk-ssl-cli/src/witness.rs:2731-2742; AUDITORIA.md §335 'el gate se apaga quitando un fichero'"
+   ],
+   "correct_statement": "Es lógicamente correcto en un caso: si el contador retrocede a C' y la clave persistida (no restaurada) está en K > C', R da KeyAhead (unrecorded = K − C'). No se detecta si se restauran a la vez clave y contador. En el modelo derivado de semilla, R no ve el retroceso: da KeyAtZero con un counter menor, o InSync(0) si se borra el fichero. La spec no hace esta afirmación, y su lista de 'solo dos causas' de KeyAhead omite el retroceso. ARQUEO lo aborda fuera de hbs-state atando el contador al diario o a las cofirmas, un control que se desactiva borrando ese fichero."
+  },
+  {
+   "id": "H18a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido.",
+   "evidence": [
+    "AUDITORIA.md §234 (16859-16862) encabezado 'se sostiene bajo `kill -9`'; 'un hijo que persiste-y-luego-firma y un padre que lo mata en un instante aleatorio: **25 de 25 sin una sola firma por delante.**'",
+    "hbs-state/README.md:96-100; hbs-state/src/lib.rs:65-69",
+    "grep de K.1 en tools/, doc/, spec/ y crates: solo referencias, ningún script del banco"
+   ],
+   "correct_statement": "Registro de ARQUEO (banco K.1, §234): 25 muertes de un proceso hijo que persiste y luego firma, matado por el padre en un instante aleatorio con kill -9, sin ninguna firma por delante del contador. Es una muestra de 25, tomada sobre el guardián original de ARQUEO, dentro de un proceso y en una sola máquina, y sin script reproducible en ninguno de los dos árboles. Prueba el orden persistir-antes-de-firmar, no la durabilidad de fsync (un kill -9 no descarta lo ya escrito en la caché de páginas)."
+  },
+  {
+   "id": "H18b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:69-86",
+    "AUDITORIA.md §234 (16864-16866) '13 de 25 ... El 52 %'; §331 (25552-25558) 'la cifra es correcta y la inferencia no'",
+    "hbs-state/src/lib.rs:33-36, :326, :612"
+   ],
+   "correct_statement": "13 de 25 muertes (52 %) dentro de un proceso dejaron el contador por delante (huérfanos). La inferencia 'lo normal tras un crash es CounterAhead' se retractó en spec §0, porque tras un reinicio con SK derivado de semilla el estado es KeyAtZero. El comentario de módulo de src/lib.rs aún conserva la inferencia retractada."
+  },
+  {
+   "id": "H19a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:420-429",
+    "hbs-state/spec/HBS-STATE-v0.3.md:23-24 'MEASURED = taken byte by byte from a production implementation (the ARQUEO index guard)'"
+   ],
+   "correct_statement": "HBS-STATE v0.3 es un DRAFT (revisado el 2026-09-27) derivado de una única implementación; hasta que un segundo sujeto independiente pase los vectores, 'describe un programa'. En los vectores, 'MEASURED' significa extraído de la fuente y los tests del guardián de ARQUEO: es autoconformidad."
+  },
+  {
+   "id": "H19b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido en la fuente de hbs-lms: firma primero (HssSignature::sign), luego increment() y private_key_update_function(...), y solo después devuelve la firma; si el persistidor falla, devuelve error y la firma no sale.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:431-450",
+    "hbs-lms @7063cc8 (2024-09-30 'Update clap to v4'; Cargo.toml:3 0.2.0-alpha.1, :5 Fraunhofer AISEC, :11 Apache-2.0) src/hss/mod.rs:224-236",
+    "grep 'hbs-lms|hbs_lms' en ambos repos: solo aparece en spec/HBS-STATE-v0.3.md (el arnés no está publicado)"
+   ],
+   "correct_statement": "hbs-lms 0.2.0-alpha.1 (Fraunhofer AISEC, commit 7063cc8) se midió el 2026-09-27 con un arnés aparte, no con el protocolo de sujeto, y no se le atribuye nivel. Sus dos hechos de código se verifican leyendo su fuente: solo entrega la firma después de que el persistidor del llamante haya aceptado el estado actualizado, y borra la clave al agotarse. El arnés no está publicado en ninguno de los dos árboles."
+  },
+  {
+   "id": "H19c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido con cmp. Añado que ambos crates reproducen los nombres de función de la implementación de referencia en C de XMSS, así que ningún crate Rust de esta estirpe sería independiente del layout de la familia B.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:468-473",
+    "cmp pq-xmss/src/hash_address.rs (65 líneas) y utils.rs (19) contra xmss-0.1.0-pre.0/src/: idénticos; ambos Cargo.toml: authors = Michael Lodder; pq-xmss version 0.2.0",
+    "los 24 nombres de función de xmss-0.1.0-pre.0 (xmss_core.rs, hash_address.rs, wots.rs) existen en xmss-reference @171ccbd *.c"
+   ],
+   "correct_statement": "pq-xmss 0.2.0 comparte autor y código con xmss (hash_address.rs y utils.rs idénticos byte a byte): es un segundo crate, no un segundo implementador. Los dos siguen la implementación de referencia en C. oxicrypt-xmss quedó descartado (versiones yanked; 0.24.0 solo verifica), según spec §10."
+  },
+  {
+   "id": "H19d",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido, incluida la salida del verificador.",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:337-340, 344-360, 387-388",
+    "hbs-state/spec/state-vectors-v0.3.json:338-361",
+    "python3 -B spec/verify-state.py: 'there are 2 CANDIDATE families with no vectors yet: B8, C'"
+   ],
+   "correct_statement": "B8 (con h no múltiplo de 8, escribir 2^h debe fallar aunque quepa en el campo; la implementación de origen no lo cubre) y la familia C (siete errores sobre el estado en disco, entre ellos FakePersistence) están declarados sin vectores y no puntúan."
+  },
+  {
+   "id": "H20",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido.",
+   "evidence": [
+    "hbs-state/README.md:94-100 '**Nothing against a power cut.** ... What was measured is durability against **process death** -- 25 of 25 ...'",
+    "hbs-state/src/lib.rs:63-69 '... and that has not been done'",
+    "hbs-state/src/lib.rs:521-556"
+   ],
+   "correct_statement": "El README no habla de 'garantía' frente a la muerte del proceso: dice que se MIDIÓ la durabilidad frente a la muerte del proceso (25/25) y que no garantiza nada frente a un corte de corriente, que no se ha medido. Esa propiedad viene del orden persistir-antes-de-firmar, no de la autocomprobación, que solo verifica que fsync cueste algo."
+  }
+ ],
+ "extra_facts_rejected": [
+  "Recuento de tests en hbs-state: '36 funciones #[test] (src/lib.rs 20, src/seed.rs 8, tests/vectors.rs 8)' es FALSO. Son 35: src/lib.rs tiene 19 atributos #[test]; la vigésima coincidencia de grep es un comentario de documentación en src/lib.rs:171 ('putting tests between a `#[test]` and its `fn`'). `grep -cE '^\\s*#\\[test\\]\\s*$'` da 19/8/8, coherente con '27 (lib) + 8' al ejecutar. La parte de ese hecho sobre las cifras del README (823 líneas de fichero, 505 con código) sí es correcta: recalculada con python3.",
+  "En el hecho sobre la procedencia 'MEASURED': la afirmación 'Una de ellas se ha desplazado' (A3 -> guardian/lib.rs:562) no está respaldada. Con un clon superficial de ARQUEO no hay historial que muestre que alguna vez apuntara a otra línea. Lo único comprobable es que guardian/lib.rs:562 es el test arranca_en_cero_y_avanza_de_uno_en_uno, que no llama a reconciliar, y que el test de (2,2) es coincidir_es_coincidir (líneas 679-685).",
+  "Hecho sobre la curva de reúso (usado en la evidencia de H15): atribuir el 'ESTATUTO ... TODO es RAZONADO, no medido' (AUDITORIA.md:21428-21436) a la curva de QRL es impreciso. Ese estatuto es de §287 (mapa del modelo de confianza), que lista el artículo de QRL entre sus fuentes consultadas; la curva se incorpora en §288 (AUDITORIA.md:21489-21490) con '(QRL, consultado 2026-08-12)'.",
+  "Hecho sobre el formato del SK (en H11b, H11c y el hecho del defecto de OID): presentar OID(4)+idx+4×32 como 'el layout de xmss 0.1.0-pre.0', o de 'UNA implementación', se queda corto. Es el layout de la implementación de referencia en C de XMSS (github.com/XMSS/xmss-reference @171ccbd, de Hülsing y Rijneveld: params.c:738-743, xmss.c:18-25, xmss_core.c:131), cuyos nombres de función reproduce el crate Rust. Sigue sin estar estandarizado por RFC 8391."
+ ]
+}

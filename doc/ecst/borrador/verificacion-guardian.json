@@ -1,0 +1,564 @@
+{
+ "cluster": "G — El guardián del índice propio de Arqueo (zk-ssl-guardian) y su relación con hbs-state / HBS-STATE",
+ "findings": [
+  {
+   "id": "G1a",
+   "claim": "hbs-state fue extraído directamente de ARQUEO (el origen es zk-ssl-guardian)",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "hbs-state/README.md:169-171 \"Extracted from ARQUEO ... This crate is that piece, relabelled to the domain and with no dependencies\"",
+    "hbs-state/spec/HBS-STATE-v0.3.md:23-24 \"(the ARQUEO index guard, XMSSMT-SHA2_40/8_256)\"",
+    "crates/zk-ssl-guardian/src/lib.rs frente a hbs-state/src/lib.rs: traducción línea a línea (mismas constantes lib.rs:87-107 vs hbs-state/src/lib.rs:88-108; mismo abrir/reservar/persistir/comprobar_persistencia lib.rs:419-543 vs 448-556; mismos tests traducidos)",
+    "crates/zk-ssl-guardian/src/semilla.rs (247 líneas) vs hbs-state/src/seed.rs (248): mismo lector de semilla",
+    "Añadidos solo en hbs-state: reconcile_values (hbs-state/src/lib.rs:405-431) + test the_method_and_the_free_function_agree (801-815), src/bin/subject.rs, tests/vectors.rs",
+    "El repo Arqueo local es un clon superficial (git rev-parse --is-shallow-repository = true, 50 commits): el commit de extracción no es visible"
+   ],
+   "correct_statement": "hbs-state es una traducción al inglés, casi literal, del crate zk-ssl-guardian de Arqueo (lib.rs + semilla.rs), con tres añadidos propios: la función pura reconcile_values y su test de atadura, el binario sujeto del banco y tests/vectors.rs (fuente: hbs-state/README.md:169-171 y comparación de ambos src/lib.rs)."
+  },
+  {
+   "id": "G1b",
+   "claim": "Mismos cuatro estados en Arqueo y en hbs-state",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "crates/zk-ssl-guardian/src/lib.rs:325-353 enum Reconciliacion {Coincide{indice}, ContadorAdelantado{contador,clave,huerfanos}, ClaveEnCero{contador,indeterminados}, ClaveAdelantada{contador,clave,sin_registrar}}",
+    "crates/zk-ssl-guardian/src/lib.rs:474-493 reconciliar: match cmp con guarda 'Greater if indice_de_la_clave == 0' antes del Greater general",
+    "hbs-state/src/lib.rs:323-354 y 412-431 (InSync, CounterAhead, KeyAtZero, KeyAhead; misma precedencia)",
+    "crates/zk-ssl-guardian/src/lib.rs:369-376 no_admite_matiz (solo ClaveAdelantada = true) ≡ hbs-state/src/lib.rs:370-377 is_fatal"
+   ],
+   "correct_statement": "Los cuatro estados, sus campos derivados y la precedencia son idénticos: Coincide/InSync, ContadorAdelantado/CounterAhead, ClaveEnCero/KeyAtZero (gana sobre ContadorAdelantado cuando clave==0) y ClaveAdelantada/KeyAhead; el juez no_admite_matiz (Arqueo) = is_fatal (hbs-state) marca solo ClaveAdelantada/KeyAhead (crates/zk-ssl-guardian/src/lib.rs:325-376)."
+  },
+  {
+   "id": "G1c",
+   "claim": "Los nombres son los mismos (en Arqueo, en castellano)",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "crates/zk-ssl-guardian/src/lib.rs:411-414 GuardianIndice{ruta,actual}; métodos abrir/reservar/actual/reconciliar (419-493)",
+    "crates/zk-ssl-guardian/src/lib.rs:222-251 GuardianError::{Io, IndiceFueraDeCampo, Corrupto, PersistenciaFalsa{con_fsync_us,sin_fsync_us,razon}, PermisosAbiertos, SemillaLongitud, SemillaHexLongitud, SemillaNoHex, LayoutInesperado}",
+    "hbs-state/src/lib.rs:223-252 GuardError::{..., FakePersistence{with_fsync_us,without_fsync_us,ratio}, PermissionsTooOpen, ...}"
+   ],
+   "correct_statement": "En Arqueo el tipo es GuardianIndice (abrir/reservar/reconciliar), el enum Reconciliacion {Coincide, ContadorAdelantado, ClaveEnCero, ClaveAdelantada}, el juez no_admite_matiz y el error PersistenciaFalsa; hbs-state los renombra IndexGuard (open/reserve/reconcile), Reconciliation {InSync, CounterAhead, KeyAtZero, KeyAhead}, is_fatal y FakePersistence."
+  },
+  {
+   "id": "G1d",
+   "claim": "Misma autocomprobación de fsync en ambos",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "crates/zk-ssl-guardian/src/lib.rs:510-543 comprobar_persistencia (fichero sonda '.guardian-autocomprobacion')",
+    "hbs-state/src/lib.rs:523-556 check_persistence (fichero sonda '.hbs-state-selfcheck')",
+    "Constantes idénticas: MUESTRAS_AUTOCOMPROBACION=20 / SELFCHECK_SAMPLES=20; RAZON_MINIMA=10.0 / MIN_RATIO=10.0; SUELO_MICROS=20.0 / FLOOR_MICROS=20.0"
+   ],
+   "correct_statement": "El algoritmo de autocomprobación es el mismo en ambos crates (20 escrituras sin y con sync_all, razón mínima 10×, suelo 20 µs); solo cambia el nombre del fichero sonda (crates/zk-ssl-guardian/src/lib.rs:95-107, 510-543)."
+  },
+  {
+   "id": "G1e",
+   "claim": "El guardián de Arqueo es 'derivado de semilla': el SK se regenera de la semilla y vuelve al índice 0 tras reiniciar",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl-node/src/firma_cabeza.rs:164-176 desde_semilla: GuardianIndice::abrir + KeyPair::<Conjunto>::from_seed(semilla)",
+    "crates/zk-ssl-guardian/src/lib.rs:340-344 \"El SK no se persiste: al rearrancar, from_seed la devuelve en CERO\"",
+    "crates/zk-ssl-guardian/src/semilla.rs:19-25 SEMILLA_LEN = 96 = SK_SEED‖SK_PRF‖PUB_SEED",
+    "AUDITORIA.md §335 (l.25981-25984) \"El SK no se persiste: al reiniciar, la clave se rederiva de la semilla y su indice vuelve a cero mientras el contador del guardian sobrevive\"",
+    "crates/zk-ssl-guardian/Cargo.toml: [dependencies] vacío (el guardián no conoce xmss)"
+   ],
+   "correct_statement": "El guardián en sí es solo un contador de 8 bytes y no conoce xmss; lo derivado de semilla son sus consumidores firmantes (FirmanteCabeza del nodo y Cofirmante del testigo), que reconstruyen el par con KeyPair::from_seed(96 bytes) en cada arranque y no persisten el SK, de modo que tras un reinicio real la clave está en el índice 0 y la reconciliación da ClaveEnCero (firma_cabeza.rs:164-176; AUDITORIA.md §335)."
+  },
+  {
+   "id": "G1f",
+   "claim": "En KeyAtZero (estado de todo reinicio real) la implementación de origen 'falla cerrada' / se niega a arrancar (HBS-STATE §2: 'KeyAtZero cannot be resolved, only failed closed')",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl-node/src/main.rs:569-601 rama ClaveEnCero: si el diario tiene un índice d con contador < d → NoArranca; en otro caso ArrancaResincronizando{hasta: contador} con aviso 'SE ABANDONAN ... PERDIDOS y NO REUTILIZABLES'",
+    "crates/zk-ssl-node/src/main.rs:833-845 el arranque llama f.resincronizar_a(hasta) (firma_cabeza.rs:225-247: pone el índice del SK en 'contador', aplica el apaño del OID y relee)",
+    "crates/zk-ssl-cli/src/witness.rs:2695-2760 politica_del_cofirmante: igual, pero contra el máximo índice EMBEBIDO del fichero de cofirmas y con '<=' (NoArranca si contador <= tope)",
+    "main.rs:647-666 test la_clave_en_cero_resincroniza_si_el_diario_no_lo_contradice; main.rs:688-736 mod gate_del_diario (incluye sin_diario_el_gate_pasa_y_ese_es_su_limite)",
+    "AUDITORIA.md §331 (2026-08-20): ClaveEnCero nació fallando cerrada; §335 (2026-08-20): 'cualquier reinicio posterior a la primera cabeza firmada dejaba el nodo muerto' → se resincroniza; §337 lo mismo para el testigo",
+    "Comentarios rancios que aún dicen lo contrario: main.rs:556-557 \"Y su hermano ClaveEnCero SI para\"; witness.rs:2335-2337 \"sale ClaveEnCero, que NO arranca\"",
+    "hbs-state/spec/HBS-STATE-v0.3.md:163 (título) y :383-384 'Policy ... belongs to the owner'; is_fatal(KeyAtZero)=false (hbs-state/src/lib.rs:374)"
+   ],
+   "correct_statement": "Arqueo no se niega a arrancar en ClaveEnCero: el nodo (y el testigo cofirmante) resincroniza la clave al valor del contador y abandona los índices 0..contador−1 como perdidos, y solo falla cerrado si un segundo registro en disco (el diario del nodo, o el fichero de cofirmas del testigo) prueba un índice mayor que el contador. 'Fallar cerrado' en HBS-STATE debe entenderse como 'no reutilizar los índices indeterminados', no como 'no operar' (main.rs:560-601; witness.rs:2695-2760; AUDITORIA §331, §335, §337)."
+  },
+  {
+   "id": "G1g",
+   "claim": "Política de arranque en los demás estados",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "crates/zk-ssl-node/src/main.rs:564-568 Coincide → Arranca",
+    "main.rs:569-574 ContadorAdelantado → ArrancaAvisando ('Es el caso NORMAL tras una caida')",
+    "main.rs:602-609 ClaveAdelantada → NoArranca ('LA CLAVE DEBE CONSIDERARSE COMPROMETIDA')",
+    "crates/zk-ssl-cli/src/witness.rs:2699-2713 y 2761-2774 (misma política en el testigo)",
+    "crates/zk-ssl-guardian/src/lib.rs:363-368 'La producción no lo llama' (no_admite_matiz solo lo consumen tests)"
+   ],
+   "correct_statement": "En Arqueo: Coincide arranca; ContadorAdelantado arranca con aviso; ClaveAdelantada no arranca (clave comprometida); ClaveEnCero resincroniza salvo contradicción del diario/cofirmas. La función no_admite_matiz no la llama producción: la decisión la toma el match de cada política (main.rs:560-609; witness.rs:2695-2775; crates/zk-ssl-guardian/src/lib.rs:363-368)."
+  },
+  {
+   "id": "G2a",
+   "claim": "El guardián 'está en producción desde hace un año' / 'lleva operando en entornos reales de firma'",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "GENAI.md: \"Desde cuándo: desde la primera sesión del proyecto, el 29 de julio de 2026\"",
+    "AUDITORIA.md '## 234.' (l.16819) nace el guardián; está entre el triaje del 2026-08-03 (AUDITORIA.md:12110) y BACKLOG.md:3076-3080, que lo da por hecho 'medido sobre af9e786, 10-08-2026'",
+    "SECURITY.md:27-28 \"Prototipo de investigación, no un producto. No maneja dinero real y no debe manejarlo\"",
+    "SECURITY.md:145-148 \"NO HAY CLAVE QUE ANCLAR ... El operador no tiene ninguna; --clave existe «para ejercitar el mecanismo, no como forma de operar»\"",
+    "doc/INSTITUCIONAL.md:91 \"no lo resuelve en producción porque no hay producción\"; doc/INSTITUTIONAL.md:190 \"no production environment\"",
+    "La afirmación procede del propio repo hbs-state: hbs-state/README.md:33-34 y :169-170, hbs-state/src/lib.rs:73-74 ('signing for a year'), hbs-state/spec/HBS-STATE-v0.3.md:23 ('a production implementation')",
+    "hbs-state v0.1.0 archivada 2026-09-26 (spec:35-36); v0.2.0 2026-09-27 (CITATION.cff)"
+   ],
+   "correct_statement": "No hay evidencia de uso en producción: Arqueo empezó el 29-07-2026, el guardián nació en la entrada 234 (primera quincena de agosto de 2026, unas siete semanas antes de publicar hbs-state), el propio repositorio se declara prototipo de investigación sin producción y sin clave de operador real. Las únicas ejecuciones documentadas son bancos y pruebas en la máquina del autor. La frase 'in production for a year' de hbs-state (README.md:34, :170; src/lib.rs:73-74; spec:23) es falsa y debe retirarse, no repetirse."
+  },
+  {
+   "id": "G2b",
+   "claim": "(implícito) La pieza tiene consumidores/uso real según su propia documentación",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl-guardian/src/lib.rs:73-79 \"Y esta pieza NO tiene consumidor todavía ... el 3 —la cabeza firmada, emitida— no existe\" (rancio: consumidores en firma_cabeza.rs:50-52, recepcion.rs:76-95, witness.rs:2801, zk-ssl-sdk/src/keystore.rs:27)",
+    "hbs-state/src/lib.rs:71-75: bajo el título 'WARNING: and this piece has no consumer yet' pone 'extracted from a production system where it has been signing for a year' (contradicción interna)"
+   ],
+   "correct_statement": "Dentro de Arqueo el guardián sí tiene consumidores de código (firmante del nodo, contador de recepción, cofirmante del testigo, regla de permisos del SDK), pero ninguno opera en producción; la cabecera de zk-ssl-guardian/src/lib.rs:73-79 ('no tiene consumidor todavía') está rancia y la de hbs-state/src/lib.rs:71-75 se contradice a sí misma."
+  },
+  {
+   "id": "G3a",
+   "claim": "Autocomprobación de fsync: umbral 10× frente a no persistir; se niega a operar donde fsync no persiste",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl-guardian/src/lib.rs:95-107 MUESTRAS_AUTOCOMPROBACION=20, RAZON_MINIMA=10.0, SUELO_MICROS=20.0",
+    "lib.rs:510-543: mide media por escritura de 20× (seek(0)+write_all de 8 B) sin sync_all y luego con sync_all en el directorio del contador; rechaza si 'razon < RAZON_MINIMA && con < SUELO_MICROS'",
+    "lib.rs:60-63 'Los umbrales salen de UNA máquina —WSL2 sobre un i5-1135G7— y están declarados, no derivados'",
+    "lib.rs:731-779 test en_tmpfs_se_niega_a_operar: si no encuentra tmpfs, imprime AVISO y pasa ('se salta EN VOZ ALTA')"
+   ],
+   "correct_statement": "El guardián rechaza arrancar solo si, a la vez, fsync cuesta menos de 10× lo que una escritura sin fsync y menos de 20 µs de media (20 muestras); es decir, detecta el caso 'no hay disco' (tmpfs), no cualquier fsync falso: un fsync que mienta pero cueste ≥20 µs pasa. Umbrales declarados, medidos en una sola máquina WSL2/i5-1135G7 (crates/zk-ssl-guardian/src/lib.rs:95-107, 510-543)."
+  },
+  {
+   "id": "G3b",
+   "claim": "Tipo de error de la autocomprobación",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "crates/zk-ssl-guardian/src/lib.rs:232-234 PersistenciaFalsa { con_fsync_us: f64, sin_fsync_us: f64, razon: f64 }",
+    "lib.rs:267-274 mensaje '... el nodo NO arranca así'",
+    "hbs-state/src/lib.rs:237 FakePersistence { with_fsync_us, without_fsync_us, ratio }"
+   ],
+   "correct_statement": "El error es GuardianError::PersistenciaFalsa{con_fsync_us, sin_fsync_us, razon} en Arqueo (FakePersistence{with_fsync_us, without_fsync_us, ratio} en hbs-state), devuelto por GuardianIndice::abrir antes de leer el contador (crates/zk-ssl-guardian/src/lib.rs:232-234, 419-424)."
+  },
+  {
+   "id": "G3c",
+   "claim": "ext4: fsync 0,907 ms, 382× frente a no persistir; tmpfs: 0,002 ms, 1×",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "AUDITORIA.md '## 234.' l.16831-16841, banco K.1: '$HOME (ext4) 0,907 ms 382× · /tmp (tmpfs) 0,002 ms 1×'",
+    "AUDITORIA.md l.16912-16915: 'Los umbrales salen de UNA máquina —WSL2 sobre un i5-1135G7—'",
+    "crates/zk-ssl-guardian/src/lib.rs:42-47; hbs-state/src/lib.rs:40-45; hbs-state/README.md:82-85",
+    "AUDITORIA.md l.16843-16844: coste = 0,57 % de una firma MT 40/8 (0,907/160,5 ms)"
+   ],
+   "correct_statement": "Medido una vez (banco K.1, AUDITORIA entrada 234) en una sola máquina (WSL2 sobre i5-1135G7): fsync en $HOME/ext4 = 0,907 ms (382× una escritura sin fsync) y en /tmp/tmpfs = 0,002 ms (1×). Es una medida de una máquina, sin dispersión publicada."
+  },
+  {
+   "id": "G3d",
+   "claim": "Cifras de fsync '1,82 ms / 0,03 ms'",
+   "verdict": "SIN_FUENTE",
+   "severity": "alta",
+   "evidence": [
+    "grep de '1[.,]82' y '0[.,]03 ms' en todos los .md/.rs de Arqueo y en todo hbs-state: 0 coincidencias",
+    "Las únicas cifras del repo son 0,907 ms / 0,002 ms / 382× / 1× (AUDITORIA.md l.16836-16839)"
+   ],
+   "correct_statement": "No existen en ninguna fuente; son inventadas. Deben sustituirse por las medidas de K.1: 0,907 ms (ext4, 382×) y 0,002 ms (tmpfs, 1×), AUDITORIA entrada 234."
+  },
+  {
+   "id": "G3e",
+   "claim": "Dónde está medido y si se ha ejercitado fuera del banco",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "AUDITORIA.md l.18102-18115 (§247/L.1): primer intento con el contador en /tmp → '0.6 µs con fsync frente a 0.8 µs sin él, razón 0.8×, mínimo 10×' y el nodo no arrancó",
+    "AUDITORIA.md l.21575-21580: un banco puso su casa en /tmp (WSL) y el guardián se negó con 'razon 1.0x frente al minimo 10x'"
+   ],
+   "correct_statement": "La medida de referencia está en AUDITORIA entrada 234 (K.1); además hay dos rechazos reales registrados con nodo vivo sobre /tmp en WSL (razón 0,8× y 1,0×), AUDITORIA l.18102-18115 y l.21575-21580."
+  },
+  {
+   "id": "G4a",
+   "claim": "La cabeza de época se firma con XMSS^MT (conjunto de parámetros)",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "crates/zk-ssl-verify/src/lib.rs:69 y :139 'pub type Conjunto = XmssMtSha2_40_8_256' ('2⁴⁰ firmas, ~35.000 años a una por segundo')",
+    "crates/zk-ssl-verify/src/lib.rs:909-916 test: OID publicado 0x00000005, clave pública 68 B",
+    "doc/xmss-evaluacion.md §5: elección MT 40/8 (firma 160,5 ms medida, verif 2,7 ms, 18.469 B)",
+    "crates/zk-ssl-guardian/src/lib.rs:109-138: SK = 137 B = OID(4)+índice(5, BE)+4×32"
+   ],
+   "correct_statement": "Conjunto XMSSMT-SHA2_40/8_256 (xmss::XmssMtSha2_40_8_256, OID RFC 8391 0x00000005), 2^40 firmas; SK de 137 B con el índice en los bytes [4,9) big-endian (crates/zk-ssl-verify/src/lib.rs:139; crates/zk-ssl-guardian/src/lib.rs:109-138)."
+  },
+  {
+   "id": "G4b",
+   "claim": "Crate y versión de XMSS, fijada con '='",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "crates/zk-ssl-node/Cargo.toml:41-45 'xmss = \"=0.1.0-pre.0\"' (comentario: '0.1.0-pre.0, SIN auditoría independiente ... master ya diverge del tag (sha3 → shake)')",
+    "crates/zk-ssl-verify/Cargo.toml:45 y crates/zk-ssl-cli/Cargo.toml:78, mismo pin",
+    "Cargo.lock:3296-3299 xmss 0.1.0-pre.0 (crates.io)",
+    "README.md:36-37 'Una dependencia criptográfica (xmss, pre-release) va clavada con = y declarada'"
+   ],
+   "correct_statement": "Se usa el crate xmss 0.1.0-pre.0 de RustCrypto, pre-release sin auditoría independiente, fijado con '=0.1.0-pre.0' en zk-ssl-node, zk-ssl-verify y zk-ssl-cli (Cargo.toml de cada uno; Cargo.lock:3296-3299)."
+  },
+  {
+   "id": "G4c",
+   "claim": "El guardián reserva el índice antes de firmar",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "crates/zk-ssl-node/src/firma_cabeza.rs:179-202 firmar: 1) guardian.reservar() (persiste actual+1 con sync_all) 2) sign 3) verificar_cabeza con el mismo verificador del tercero (2,4 ms, 1,7 %)",
+    "crates/zk-ssl-guardian/src/lib.rs:453-460 reservar; 495-507 persistir (seek 0, write_all LE, sync_all)",
+    "firma_cabeza.rs:77-112 test: SK puesto en 5 → CabezaFirmada.indice = 6, indice_de_firma(firma) = 5",
+    "firma_cabeza.rs:327-350 test el_guardian_persiste_antes_y_los_dos_indices_avanzan_juntos (lee el contador en disco)"
+   ],
+   "correct_statement": "FirmanteCabeza::firmar persiste primero contador+1 con fsync, después firma y por último verifica su propia firma; el índice declarado en la cabeza es el valor del contador y la hoja realmente gastada (embebida en la firma) es contador−1 (firma_cabeza.rs:179-202 y 77-112)."
+  },
+  {
+   "id": "G4d",
+   "claim": "El 'latido' firma la cabeza de cada época",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl-node/src/latido.rs:17-35 'El nodo no firma por defecto. Sin --clave, el latido sigue corriendo y anotando la cabeza; lo que falta es la firma'",
+    "latido.rs:64 LATIDO_POR_DEFECTO_S = 60; main.rs:156-161 '--latido' (0 lo apaga)",
+    "main.rs:791-801 firmar exige --diario ('quien firma, anota')",
+    "latido.rs:136-205: compone la cabeza bajo el Mutex del estado y firma FUERA del candado (144,5 ms); latido.rs:99-131 M.1: p99 igual con y sin firma",
+    "latido.rs:322-328 el firmante lo posee solo la tarea del latido; 'a demanda' (latido.rs:8) no tiene camino de código"
+   ],
+   "correct_statement": "El latido es una tarea periódica (60 s por defecto, §121) que compone la EpochHead y solo la firma si el operador arrancó con --clave/--clave-fichero (y --diario); sin clave calcula y sirve la cabeza sin firma. La firma se hace fuera del candado del estado. La firma 'a demanda' mencionada en §121 no está implementada (latido.rs:17-35, 64, 136-205, 322-328)."
+  },
+  {
+   "id": "G5a",
+   "claim": "Testigos (independientes) cofirman la cabeza y fijan la clave la primera vez que la ven",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "README.md:112-114 (texto literal de la afirmación)",
+    "crates/zk-ssl-cli/src/witness.rs:1-35 TOFU ('Un testigo que anota la clave que vio la primera vez y se detiene si cambia'); witness.rs:676-693 Memoria::anclar; se detiene ante vista dividida y cambio de clave (witness.rs:37-47)",
+    "witness.rs:630-652 el ancla vive en Memoria (RAM); witness.rs:2310 Memoria::nueva() al arrancar run (no encontré recarga del ancla desde el diario; el auditor offline sí detecta CambioDeClave dentro de un diario, witness.rs:1012-1014)",
+    "witness.rs:2318-2360 cofirmar es un modo opcional (--cofirmar) con clave XMSS y guardián propios",
+    "SECURITY.md:59 'hoy nadie fuera del operador observa cabezas'; SECURITY.md:134-143 'TOFU fija la mentira' y 'un testigo que opera el propio operador no prueba nada'"
+   ],
+   "correct_statement": "El testigo de referencia fija por TOFU la clave pública que ve por primera vez y se detiene si cambia o si ve dos digests con el mismo índice; opcionalmente (--cofirmar) cofirma con su propia clave XMSS y su propio guardián bajo el dominio 'ZK-SSL-witness-cosign'. TOFU no protege el primer encuentro, el ancla vive en memoria del proceso testigo, y hoy no hay testigos independientes: solo la implementación de referencia que corre el propio autor (witness.rs:1-47, 630-693; SECURITY.md:59, 122-143)."
+  },
+  {
+   "id": "G5b",
+   "claim": "Cada época requiere la co-firma de testigos (para que el paquete verifique)",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "spec/PAQUETE.md:29-33 'Qué testigos valen y cuántos hacen falta lo decide el CLIENTE con su política (--testigos y --k), no el paquete'",
+    "spec/PAQUETE.md:60-67 paquete v2: 'cofirmas: [...] OPCIONAL'; v1 no lleva cofirmas (PAQUETE.md:399)",
+    "spec/PAQUETE.md:415-417 paso 4: 'Se imprime cuántas verifican; cuántas hacen falta no es asunto del paquete'; :679",
+    "spec/PAQUETE.md:695 vector positivo 'v2 con cero cofirmas'",
+    "spec/RPC.md:893-905 el nodo solo transporta: comprueba época en curso y firma, no acredita al testigo; una cofirma viva por clave de testigo y solo la época en curso"
+   ],
+   "correct_statement": "Las cofirmas son opcionales: una cabeza firmada verifica sin ninguna, el paquete v1 no las lleva y el v2 las admite (incluso cero); el verificador informa cuántas verifican y el umbral k lo fija el cliente, no el protocolo (spec/PAQUETE.md:29-33, 60-67, 415-417, 695)."
+  },
+  {
+   "id": "G5c",
+   "claim": "El nodo acredita/verifica a los testigos al recibir cofirmas",
+   "verdict": "FALSA",
+   "severity": "media",
+   "evidence": [
+    "spec/RPC.md:874-898 zkssl_submitCosig/zkssl_cosigs: el nodo es TRANSPORTE; 'Comprueba que la cofirma es de la epoca EN CURSO y que la firma cierra ... No acredita al testigo, y no puede'",
+    "crates/zk-ssl-cli/src/witness.rs:2303-2305 'lo anadido NO esta verificado: el nodo no verifica, solo filtra' (discrepa en matiz con RPC.md, que dice que comprueba la firma)"
+   ],
+   "correct_statement": "El nodo transporta cofirmas (zkssl_submitCosig/zkssl_cosigs), filtra las malformadas o de otra época, pero no acredita la identidad de ningún testigo; qué testigos cuentan lo decide el cliente (spec/RPC.md:874-905)."
+  },
+  {
+   "id": "G6a",
+   "claim": "RFC-0010 / registro_recepcion.rs usa 'CounterAhead' y cita HBS-STATE",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl-node/src/registro_recepcion.rs:54-78 usa los nombres castellanos del guardián (ClaveAdelantada, ContadorAdelantado); 'CounterAhead' solo aparece citando el vector A4 de HBS-STATE (l.72-74)",
+    "registro_recepcion.rs:61-67 y recepcion.rs:216-219: corrección §565-B, la etiqueta 'M5 de HBS-STATE' estaba colgada de la rama equivocada",
+    "spec/rfc/0010-el-recibo-de-recepcion.md: grep de 'HBS-STATE|CounterAhead|ContadorAdelantado' = 0; solo cita §234 (l.14) y §253 (l.243)",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:3 'Estado: PROPUESTO'; define D-A..D-H, mientras registro_recepcion.rs cita D-I, D-J, D-K que el RFC no define"
+   ],
+   "correct_statement": "El texto del RFC-0010 (PROPUESTO) no cita HBS-STATE; lo citan los comentarios de registro_recepcion.rs y recepcion.rs, que usan la variante castellana ContadorAdelantado de zk-ssl-guardian y citan literalmente el vector A4 'CounterAhead' del spec (registro_recepcion.rs:54-78)."
+  },
+  {
+   "id": "G6b",
+   "claim": "Qué contador monótono se reconcilia en RFC-0010 y cómo encaja en R(C,K)",
+   "verdict": "CONFIRMADA",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl-node/src/recepcion.rs:3-29 y 85-110: ContadorRecepcion = GuardianIndice entero (fsync + autocomprobación); cuenta operaciones que el nodo llega a EVALUAR (no el ruido de parseo; sí los rechazos de la capa); fichero por defecto recepcion.bin (main.rs:146-147)",
+    "recepcion.rs:112-128 reconciliar(mayor_anotado) → la misma Reconciliacion ('el MISMO problema con otros dos números'); ClaveAdelantada = 'el registro por delante del contador'",
+    "registro_recepcion.rs:198-225 mayor_anotado = máximo rx en los ficheros era-<era>.bin (0 si no hay ninguno)",
+    "registro_recepcion.rs:47-59: CONTADOR restaurado viejo → registro por delante → ClaveAdelantada (fatal); REGISTRO restaurado viejo → ContadorAdelantado (benigno e indistinguible de un hueco por caída)"
+   ],
+   "correct_statement": "En RFC-0010 E2c-1 el par es C = contador de recepción rx (persistido con el mismo GuardianIndice) y K = mayor rx anotado en el registro por eras. Coincide = al día; C>K = huecos (benigno, pero indistinguible de restaurar un registro viejo); K>C = contador restaurado de un respaldo con el registro vivo, fatal; el caso K=0<C (registro vacío) cae en ClaveEnCero y no tiene semántica ni política definida en este dominio (recepcion.rs:112-128; registro_recepcion.rs:47-78, 198-225)."
+  },
+  {
+   "id": "G6c",
+   "claim": "(implícito) La reconciliación de recepción ya opera en el arranque del nodo",
+   "verdict": "FALSA",
+   "severity": "media",
+   "evidence": [
+    "grep de 'RegistroRecepcion|registro_recepcion::|ANCHO_ENTRADA|mayor_anotado' fuera de registro_recepcion.rs: 0 usos; main.rs:45 solo declara 'mod registro_recepcion;'",
+    "ContadorRecepcion::reconciliar solo lo llama el test reconciliar_dice_lo_mismo_que_el_guardian (recepcion.rs:199-223; el comentario admite que sin él sería dead_code)",
+    "ContadorRecepcion::recibir sí está cableado: main.rs:2635-2645 y App.recepcion (main.rs:897-900)",
+    "tools/canon.sh:97 describe §565 como 'el registro de recepcion y su reconciliacion al abrir', pero RegistroRecepcion::abrir solo crea el directorio (registro_recepcion.rs:131-135)"
+   ],
+   "correct_statement": "Hoy solo el contador de recepción está en producción; el registro por eras y su reconciliación contra el contador existen como código con tests (E2c-1, RFC-0010 PROPUESTO) sin llamada desde el arranque del nodo (grep; recepcion.rs:199-223; registro_recepcion.rs:131-135)."
+  },
+  {
+   "id": "G6d",
+   "claim": "(ECST) R(C,K) se generaliza a otros recursos monótonos",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "recepcion.rs:115-125: Arqueo reutiliza la misma Reconciliacion para un recurso que no es un índice HBS",
+    "AUDITORIA.md §565 (l.41033-41040): 'Reusar una abstraccion da la TRADUCCION y no da la COBERTURA'",
+    "registro_recepcion.rs:69-78: restaurar el REGISTRO viejo cae en ContadorAdelantado, indistinguible de un hueco legítimo; 'La D-J cubre media restauración'; la salida 'pide un DATO MAS ALLA DEL PAR'",
+    "hbs-state/spec/HBS-STATE-v0.3.md:97-133: el significado de KeyAtZero depende del modelo (SK persistido vs. derivado de semilla)"
+   ],
+   "correct_statement": "El repositorio muestra un segundo uso real de la misma función R(C,K) (contador de recepción frente a registro), lo que sostiene la generalización como función de clasificación; pero el propio autor documenta que la traducción no da cobertura: el par (C,K) no distingue restaurar el registro de un hueco legítimo, y el estado KeyAtZero, propio del modelo derivado de semilla, no tiene significado definido en el nuevo dominio (recepcion.rs:115-125; registro_recepcion.rs:69-78; AUDITORIA §565)."
+  },
+  {
+   "id": "G7a",
+   "claim": "Prueba de muerte del proceso '25 de 25 sin una sola firma por delante'",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "AUDITORIA.md '## 234.' l.16856-16862 '### El invariante, y que se sostiene bajo kill -9 ... K.1 lo probó con un hijo que persiste-y-luego-firma y un padre que lo mata en un instante aleatorio: 25 de 25 sin una sola firma por delante'",
+    "crates/zk-ssl-guardian/src/lib.rs:67-71 y hbs-state/README.md:96-100 repiten la cifra",
+    "grep 'kill|SIGKILL|libc::' en crates/zk-ssl-guardian, zk-ssl-node/src, zk-ssl-cli/src: 0; ningún script K.1 en tools/: el código del banco no está en el árbol",
+    "AUDITORIA.md l.16914-16916: en la entrada 234 'xmss sigue sin ser dependencia. El guardián no firma: cuenta' (qué 'firmaba' el hijo no consta)"
+   ],
+   "correct_statement": "La cifra 25/25 está registrada en AUDITORIA (entrada 234, banco K.1: hijo que persiste y luego firma, padre que lo mata con kill -9 en un instante aleatorio, invariante 'ninguna firma con índice mayor que el contador persistido'), pero el código del banco no está en el repositorio y en ese momento xmss aún no era dependencia, así que no es reproducible desde el árbol. Mide muerte del proceso, no corte de corriente ni reinicio; con n=25 y 0 fallos la cota superior exacta al 95 % de la tasa de fallo es ≈11 % (cálculo propio: 1−0,05^(1/25))."
+  },
+  {
+   "id": "G7b",
+   "claim": "'13 de 25 muertes dejan el contador adelantado': es el caso normal tras un reinicio",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "AUDITORIA.md l.16864-16868 (subproducto de K.1: 13/25 = 52 %)",
+    "AUDITORIA.md §331 l.25552-25560 'la cifra es correcta y la inferencia no ... Tras un REINICIO la clave nace en cero, asi que ContadorAdelantado no ocurre el 52 % sino el 100 %, y no significa «unos pocos huerfanos» sino «N indices por reutilizar»'",
+    "crates/zk-ssl-guardian/src/lib.rs:332-335 'K.1 midió esto DENTRO de un proceso ... no tras un REINICIO'",
+    "hbs-state/spec/HBS-STATE-v0.3.md:72-89 (corrección: 'The second sentence is FALSE')"
+   ],
+   "correct_statement": "El 13/25 mide muertes dentro de un proceso vivo (ventana entre reservar y firmar), no reinicios; tras un reinicio real con clave derivada de semilla el estado es siempre ClaveEnCero/KeyAtZero (AUDITORIA §331; HBS-STATE v0.3 §0)."
+  },
+  {
+   "id": "G8a",
+   "claim": "El guardián usa bloqueos de fichero (flock/fcntl) o sincronización propia entre hilos/procesos",
+   "verdict": "FALSA",
+   "severity": "media",
+   "evidence": [
+    "grep 'flock|fcntl|lockfile|try_lock' en crates/zk-ssl-guardian: 0",
+    "crates/zk-ssl-guardian/src/lib.rs:411-414, 453: GuardianIndice sin mutabilidad interior; reservar(&mut self) → exclusión solo por préstamo de Rust dentro del proceso",
+    "crates/zk-ssl-node/src/latido.rs:322-328 el FirmanteCabeza lo posee una sola tarea tokio; main.rs:897-900 el ContadorRecepcion va en std::sync::Mutex",
+    "hbs-state/spec/HBS-STATE-v0.3.md:382-385 excluye 'fsync, ordering, locks, copies' y 'Multiple signers over the same public key'"
+   ],
+   "correct_statement": "No hay bloqueo de fichero: nada impide que dos procesos abran el mismo contador. Dentro del proceso, la exclusión viene de la propiedad (&mut self) o de un Mutex del llamante; HBS-STATE deja expresamente fuera los locks y los firmantes múltiples (crates/zk-ssl-guardian/src/lib.rs:411-460; hbs-state/spec/HBS-STATE-v0.3.md:382-385)."
+  },
+  {
+   "id": "G8b",
+   "claim": "El guardián comprueba permisos 0600 al leer",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl-guardian/src/semilla.rs:27-52 comprobar_permisos: error PermisosAbiertos si mode & 0o077 != 0; solo #[cfg(unix)], no-op en otros SO",
+    "semilla.rs:85-105 leer_hex/leer_cruda la llaman antes de leer la SEMILLA; main.rs:1214-1218 el nodo la aplica a --clave-fichero",
+    "crates/zk-ssl-guardian/src/lib.rs:426-437 y 495-507: el fichero del CONTADOR se abre y crea sin modo explícito ni comprobación de permisos"
+   ],
+   "correct_statement": "La comprobación al leer (sin bits de grupo ni de otros, es decir 0600 o más estricto; solo en Unix) se aplica al fichero de la SEMILLA, no al del contador de índices, que se crea con el umask por defecto y no se comprueba (semilla.rs:27-52; lib.rs:426-437, 495-507)."
+  },
+  {
+   "id": "G8c",
+   "claim": "El guardián hace fsync del directorio",
+   "verdict": "FALSA",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl-guardian/src/lib.rs:495-507 persistir: solo f.sync_all() del fichero; ningún fsync del directorio padre, tampoco al crearlo en abrir (lib.rs:439-443)",
+    "En cambio registro_recepcion.rs:161-165 y 255-257 sí sincronizan el directorio al crear un fichero de era y al podar ('sin esto el nombre del fichero nuevo puede no sobrevivir a un corte')"
+   ],
+   "correct_statement": "El guardián persiste con sync_all (fsync de datos y metadatos del fichero) escribiendo en el sitio 8 bytes little-endian; no sincroniza el directorio. Solo el registro de recepción (RFC-0010 E2c-1) hace fsync del directorio (crates/zk-ssl-guardian/src/lib.rs:495-507; registro_recepcion.rs:161-165)."
+  },
+  {
+   "id": "G9a",
+   "claim": "HBS-STATE mitiga los falsos fsync en entornos virtuales o volátiles",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl-guardian/src/lib.rs:534-541: rechazo solo si razón<10 Y con_fsync<20 µs",
+    "lib.rs:49-58 'En tmpfs, fsync devuelve éxito sin persistir nada ... la única señal disponible desde dentro del proceso'",
+    "lib.rs:65-71 '«fsync puede mentir» habla de discos que confirman escrituras que siguen en caché volátil ... eso no es lo mismo'",
+    "hbs-state/spec/HBS-STATE-v0.3.md:350-356: la autocomprobación es fila candidata de la 'Family C' (sin vectores); spec:382 no cubre cómo se persiste el contador",
+    "hbs-state/spec/HBS-STATE-v0.3.md:446-450: la durabilidad de hbs-lms se delega al persistidor, 'That gap is the one the fsync self-check of this bench exists to close'"
+   ],
+   "correct_statement": "La implementación de referencia (no la especificación, que deja la persistencia fuera y la autocomprobación como candidata sin vectores) detecta almacenamiento donde fsync cuesta lo mismo que no hacerlo, como tmpfs; no detecta discos o capas virtuales que confirman escrituras aún en caché volátil, ni cualquier fsync falso que cueste ≥20 µs. Solo se midió en WSL2 (crates/zk-ssl-guardian/src/lib.rs:49-71, 534-541)."
+  },
+  {
+   "id": "G9b",
+   "claim": "La seguridad frente a pérdidas de energía requiere NVRAM/HSM (según SECURITY.md)",
+   "verdict": "SIN_FUENTE",
+   "severity": "media",
+   "evidence": [
+    "grep 'corriente|corte|fsync|guardi|NVRAM' en SECURITY.md: 0 coincidencias; SECURITY.md no habla del guardián ni de cortes de corriente",
+    "El aviso vive en crates/zk-ssl-guardian/src/lib.rs:65-71 y AUDITORIA.md l.16907-16911: 'Nada frente a un corte de corriente ... Medirlo exige cortar la corriente de verdad, y no se ha hecho'; hbs-state/README.md:96-100",
+    "SECURITY.md:158-160 menciona HSM solo a propósito del ancla ('Aunque la clave privada viviera en un HSM ... el testigo seguiría sin poder afirmar de quién es la firma'); main.rs:136-138 '--custodia hsm' es una afirmación no comprobada",
+    "Fuera del repo: hbs-state/spec/HBS-STATE-v0.3.md:12-19 cita SP 800-208 (módulos hardware) y RFC 10033 §4 ('rollback resistant counters ... software-only'); WebSearch encontró la ficha 'RFC 10033: Hash-Based Signatures: State and Backup Management' en rfc-editor.org, pero su texto no pudo leerse (rfc-editor/ietf bloqueados)"
+   ],
+   "correct_statement": "Ningún documento de los repositorios afirma que haga falta NVRAM/HSM. Lo que dicen (guardian lib.rs:65-71; AUDITORIA entrada 234) es que el diseño no garantiza nada frente a un corte de corriente y que eso no se ha medido. La recomendación de hardware procede de la literatura externa (SP 800-208; RFC 10033 según su cita en HBS-STATE, texto no verificado aquí) y debe atribuirse a esas fuentes, no a SECURITY.md."
+  },
+  {
+   "id": "G9c",
+   "claim": "Falta una 'custodia de clave comprobada, no sólo declarada' (README)",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "README.md:153-156 '...le falta un ancla anterior al primer encuentro y una custodia de clave comprobada, no sólo declarada'",
+    "SECURITY.md:171-175 'Custodia de la clave privada: declarada, no comprobada (§244) ... Solo fichero se comprueba'",
+    "crates/zk-ssl-node/src/main.rs:136-138 --custodia {sin-declarar (defecto), fichero, hsm, kms, otro}; main.rs:775-825 solo 'fichero' con --clave-fichero se marca comprobada",
+    "crates/zk-ssl-node/src/firma_cabeza.rs:37-39 'No hay custodia de clave'"
+   ],
+   "correct_statement": "La custodia de la clave del operador es una declaración (--custodia); el nodo solo comprueba el caso 'fichero' (semilla en un fichero con permisos 0600 o más estrictos). hsm/kms/otro son afirmaciones del operador (SECURITY.md:171-175; main.rs:136-138, 775-825)."
+  },
+  {
+   "id": "G10a",
+   "claim": "El nodo firma la cabeza con XMSS: firma post-cuántica",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "AUDITORIA.md §106 (l.8876-8930, 01-08-2026): XMSS elegido porque 'no añade una familia de supuestos nueva' (resistencia de la función hash)",
+    "crates/zk-ssl-node/src/latido.rs:17-35: sin --clave no firma; SECURITY.md:145-148 no existe clave de operador real",
+    "crates/zk-ssl-verify/src/lib.rs:53-58 'Esto hace posible verificar; no hace válido lo verificado'"
+   ],
+   "correct_statement": "Cuando el operador le entrega una semilla, el nodo firma la cabeza de época con XMSS^MT (SHA2-40/8-256), un esquema basado en hash y con estado, elegido por no añadir supuestos distintos de los del STARK. Por defecto no firma, no hay clave de operador real y la implementación es una pre-release sin auditar (AUDITORIA §106; latido.rs:17-35; SECURITY.md:145-148)."
+  },
+  {
+   "id": "G10b",
+   "claim": "Salvedades declaradas sobre la dependencia xmss",
+   "verdict": "CONFIRMADA",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl-node/Cargo.toml:41-45: pre-release, sin auditoría independiente, master diverge del tag (sha3→shake)",
+    "crates/zk-ssl-verify/src/lib.rs:511-538 OFFSET_MT_UPSTREAM = 0x0001_0000 (apaño del OID) y centinela el_apano_del_oid_sigue_haciendo_falta (l.918-934)",
+    "AUDITORIA.md §335 (l.26016-26022): SigningKey::try_from rechaza los bytes de from_seed con InvalidOid(5); resincronizar exige el apaño (firma_cabeza.rs:228-233)",
+    "~/.cargo/registry/.../xmss-0.1.0-pre.0/src/xmss.rs:21 'XmssOid::try_from(raw_oid).or_else(...)'; xmss.rs:32 #[derive(Clone)] en SigningKey; sin index()/remaining() (grep 0)",
+    "BACKLOG.md:3065-3071 KAT ausente en el proyecto; doc/CONFIANZA_RESIDUAL.md:58-60 from_seed deja una copia sin borrar (backlog 102)"
+   ],
+   "correct_statement": "Salvedades declaradas por el repo sobre xmss 0.1.0-pre.0: es una pre-release sin auditar, fijada con '='; no expone el índice (se lee del layout del SK de 137 B); SigningKey es Clone (reutilización silenciosa posible); un defecto de parseo de OID obliga a un apaño en lectura y en resincronización, vigilado por un test centinela; no hay KAT en el proyecto; y from_seed deja una copia de la clave sin borrar (Cargo.toml del nodo; zk-ssl-verify/src/lib.rs:511-538; AUDITORIA §335; BACKLOG 77)."
+  },
+  {
+   "id": "G10c",
+   "claim": "El defecto del OID está 'reportado en RustCrypto/signatures#1442' (implícitamente, por el autor) / el issue de Arqueo fue enviado",
+   "verdict": "PARCIAL",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl-guardian/src/lib.rs:472-473 'El issue upstream que pide index() está redactado en doc/issue-rustcrypto.md y sin enviar'; BACKLOG.md:3072-3075 'No consta que se haya presentado'",
+    "doc/issue-rustcrypto.md:1 'Issue draft', pide index()/remaining(), BDS, aviso de Clone y el OID ('Five of the eight SHA2-256 XMSS^MT sets collide')",
+    "hbs-state/README.md:156-160 'Reported in RustCrypto/signatures#1442'; hbs-state/spec/HBS-STATE-v0.3.md:405-406 'Published as RustCrypto/signatures issue 1442', '21 of the 56'",
+    "WebFetch https://github.com/RustCrypto/signatures/issues/1442 (2026-09-28): 'XMSSMT OID parsing bug', abierto el 2026-09-10 por joshhh7, abierto, sin comentarios; no menciona index()/remaining() ni '21 of 56'",
+    "xmss-0.1.0-pre.0/src/params.rs:1206-1226 acepta OID de árbol único 0x01..0x15 (21) y :1228-1284 OID MT 0x01..0x38 (56) → 21/56 MT mal parseados, incluidos los 8 SHA2-256 (lectura del fuente, sin ejecutar)"
+   ],
+   "correct_statement": "El defecto de OID existe en xmss 0.1.0-pre.0 y afecta a 21 de los 56 conjuntos XMSS^MT (todos los de OID bruto 1..21, incluidos los ocho SHA2-256; el 'cinco de ocho' del borrador de Arqueo no casa con el fuente). El issue público #1442 lo abrió otro usuario (joshhh7) el 2026-09-10; el issue propio de Arqueo (index()/remaining()/BDS/Clone) sigue siendo un borrador sin constancia de envío. Un informe no debe atribuir #1442 al autor (params.rs:1206-1284; doc/issue-rustcrypto.md; BACKLOG 77; WebFetch del issue)."
+  }
+ ],
+ "extra_facts": [
+  {
+   "fact": "La reutilización de índices tras un reinicio se demostró en Arqueo con el árbol real antes del arreglo. El 2026-08-20 (entrada §331), el testigo corrido dos veces con la misma semilla y el mismo contador reutilizó los índices WOTS 0-4 (índices declarados 1-5 y 6-11, embebidos 0-4 y 0-5), cada uno firmando dos digests distintos. El detector --verificar-cofirmas dio 'sin hallazgos' porque miraba el ordinal declarado y no el índice embebido. Para ECST es la evidencia de que el fallo no es hipotético y de que un detector que mide el número equivocado da una tranquilidad falsa.",
+   "evidence": [
+    "AUDITORIA.md §331 l.25520-25531 'Solapamiento 0,1,2,3,4 y LOS CINCO con digest distinto'",
+    "AUDITORIA.md l.25543-25551 'LA CEGUERA: el detector mide el numero equivocado'"
+   ]
+  },
+  {
+   "fact": "El índice declarado y el índice real son dos números distintos. CabezaFirmada.indice es el valor del contador y no entra en el preámbulo firmado; la hoja gastada, embebida en la firma, es contador−1. Los verificadores exigen declarado > embebido, así que el índice declarado solo queda acotado por abajo.",
+   "evidence": [
+    "crates/zk-ssl-node/src/firma_cabeza.rs:77-112 (declarado 6, embebido 5)",
+    "crates/zk-ssl-cli/src/witness.rs:2655-2660 'el ordinal declarado no entra en el preambulo y nadie lo acredita'",
+    "spec/PAQUETE.md:407-409 y :681-685"
+   ]
+  },
+  {
+   "fact": "Caso sin cubrir, DEDUCIDO de la lectura del código y no medido: si el fichero del contador desaparece, abrir() arranca en 0, la clave derivada de semilla está en 0, la reconciliación da Coincide{0} y el nodo arranca sin mirar el diario, porque el gate del diario solo se consulta en la rama ClaveEnCero. Volvería a firmar desde la hoja 0. Lo relacionado que el repo sí declara es más estrecho: la restauración del directorio entero y el borrado del fichero de cofirmas.",
+   "evidence": [
+    "crates/zk-ssl-guardian/src/lib.rs:426-437 (sin fichero → 0) y 476-477 (Equal → Coincide)",
+    "crates/zk-ssl-node/src/main.rs:564-568 (Coincide → Arranca, ignora tope_diario) frente a 569-601",
+    "doc/CONFIANZA_RESIDUAL.md:44-57; AUDITORIA.md l.26228-26233"
+   ]
+  },
+  {
+   "fact": "Límites declarados del gate del diario, que es la única defensa contra un contador restaurado hacia atrás. El diario vive en el mismo disco ('dos testigos en el mismo disco son un solo testigo frente a una restauracion'). Se desactiva quitando el fichero. Se escribe en append sin fsync y salta las líneas ilegibles, así que falla hacia el lado permisivo. Sin --diario, el gate pasa.",
+   "evidence": [
+    "doc/CONFIANZA_RESIDUAL.md:44-57",
+    "AUDITORIA.md §335 l.26000-26013",
+    "crates/zk-ssl-node/src/main.rs:726-735 test sin_diario_el_gate_pasa_y_ese_es_su_limite"
+   ]
+  },
+  {
+   "fact": "Cronología verificable. 01-08-2026: decisión de usar XMSS (§106) y evaluación de las candidatas. Entrada 234, entre el 03-08 y el 10-08-2026: nace el guardián. Entrada 236: el firmante. §296: el guardián se muda a su propio crate. 2026-08-20: §331 (ClaveEnCero falla cerrada) y §335 (resincronización y gate del diario). §337: resincronización del testigo. 2026-09-25: RFC-0010. 2026-09-26: hbs-state v0.1.0. 2026-09-27: hbs-state v0.2.0 (spec v0.3). El proyecto empezó el 29-07-2026.",
+   "evidence": [
+    "AUDITORIA.md l.8876-8878; doc/xmss-evaluacion.md:3-5",
+    "AUDITORIA.md:12110 y BACKLOG.md:3076-3080",
+    "AUDITORIA.md l.21954, 25508, 25979, 26178",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:6; hbs-state/spec/HBS-STATE-v0.3.md:35-36; hbs-state/CITATION.cff; GENAI.md"
+   ]
+  },
+  {
+   "fact": "Consumidores del guardián dentro de Arqueo. El nodo lo usa dos veces con dos ficheros: el índice de firma XMSS (zkssl-indice-firma.bin) y el contador de recepción, un recurso que no es un índice HBS (recepcion.bin). Lo usan también el cofirmante del testigo (fichero propio, --indice-cofirma), el keystore del SDK (solo la regla de permisos) y zk-ssl-verify (dev-dependency, para atar el ancho del índice). Es la evidencia concreta de reutilización de un mismo contador monótono para dos recursos.",
+   "evidence": [
+    "crates/zk-ssl-node/src/main.rs:146-154",
+    "crates/zk-ssl-node/src/recepcion.rs:85-95",
+    "crates/zk-ssl-cli/src/witness.rs:2795-2805",
+    "crates/zk-ssl-sdk/Cargo.toml:18-20; crates/zk-ssl-verify/Cargo.toml:59-65"
+   ]
+  },
+  {
+   "fact": "Cifras de firma con su procedencia. Firmar cuesta 144,5 ms según la re-medida S.3; la evaluación del 01-08-2026 dio 160,5 ms. Verificar cuesta 2,7 ms y la autoverificación 2,4 ms (1,7 %). La firma RFC ocupa 18.469 B; la CabezaFirmada, 18.519 B, porque xmss adjunta el preámbulo de 50 B (dominio de 17 + versión de 1 + digest de 32). El latido libera el candado del estado antes de firmar; M.1 midió colas iguales con y sin firma, en serie, en una sola máquina.",
+   "evidence": [
+    "crates/zk-ssl-node/src/latido.rs:99-131",
+    "crates/zk-ssl-node/src/firma_cabeza.rs:194-201, 322-323",
+    "crates/zk-ssl-verify/src/lib.rs:143, 279",
+    "doc/xmss-evaluacion.md §5 tabla MT 40/8"
+   ]
+  },
+  {
+   "fact": "Comentarios rancios en Arqueo que un informe no debe citar como estado actual. main.rs:556-557 y witness.rs:2335-2337 dicen que ClaveEnCero no arranca, pero el código resincroniza. crates/zk-ssl-guardian/src/lib.rs:73-79 dice que el guardián no tiene consumidor. Además, en lib.rs:337-351 los /// de 'LO QUE NUNCA DEBE PASAR' (ClaveAdelantada) quedan pegados a la variante ClaveEnCero y ClaveAdelantada no tiene doc; hbs-state lo corrigió.",
+   "evidence": [
+    "crates/zk-ssl-node/src/main.rs:556-557 vs 569-601",
+    "crates/zk-ssl-cli/src/witness.rs:2335-2337 vs 2735-2760",
+    "crates/zk-ssl-guardian/src/lib.rs:73-79, 337-352; hbs-state/src/lib.rs:337-353"
+   ]
+  },
+  {
+   "fact": "Contexto estadístico, calculado por mí sobre las cifras del repo. 25 de 25 sin fallo da una cota superior exacta al 95 % de ≈11,3 % para la tasa de fallo (1−0,05^(1/25)). 13 de 25 = 52 %, con intervalo de Wilson al 95 % de ≈[34 %, 70 %]. Es una sola tanda de una sola máquina y mide muerte de proceso, no corte de corriente.",
+   "evidence": [
+    "AUDITORIA.md l.16861-16865 (cifras de origen)",
+    "cálculo propio (Clopper-Pearson unilateral y Wilson)"
+   ]
+  },
+  {
+   "fact": "El test que justifica la autocomprobación puede pasar sin ejercitarla: si la máquina de pruebas no tiene /dev/shm ni un temp_dir en tmpfs, imprime un AVISO y pasa. Que la suite salga en verde no prueba que el rechazo en tmpfs se haya ejecutado en ese entorno. No reejecutado aquí, porque cargo no estaba permitido.",
+   "evidence": [
+    "crates/zk-ssl-guardian/src/lib.rs:731-779",
+    "hbs-state/src/lib.rs:747-796"
+   ]
+  },
+  {
+   "fact": "Recuento de tests no verificado por ejecución. zk-ssl-guardian declara 27 #[test] (19 en lib.rs y 8 en semilla.rs) mientras el pin del canon dice 26 tests que pasan. hbs-state/src/lib.rs:77-79 recoge la misma discrepancia 26/27 como corregida en su crate. No pude ejecutar cargo para dirimirlo.",
+   "evidence": [
+    "grep -c '#[test]': crates/zk-ssl-guardian/src/lib.rs = 19, semilla.rs = 8",
+    "tools/canon.sh:100 'zk-ssl-guardian sello 26'",
+    "hbs-state/src/lib.rs:77-79"
+   ]
+  }
+ ]
+}

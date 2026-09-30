@@ -1,0 +1,614 @@
+{
+ "cluster": "L — Registro de transiciones, cabeza de época, historia (MMR), paquete de evidencia, verificación offline y anclaje (Arqueo)",
+ "findings": [
+  {
+   "id": "L1a",
+   "claim": "Fórmula del registro encadenado: H_i = H(seq_i, op_i, root_{i-1}, root_i, H(pi_i), H_{i-1})",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:24-26 (esquema en el doc del módulo: 'resumen = H(numero, tipo, raiz_antigua, raiz_nueva, H(prueba), resumen_anterior)')",
+    "ARQUITECTURA.md:390 y PAPER.md:879 (el mismo esquema, era 1)",
+    "crates/zk-ssl/src/log.rs:250-261 chain_digest: cabecera=native_merge(as_digest(seq), as_digest(kind.tag())); raices=native_merge(root_old, root_new); cuerpo=native_merge(cabecera, raices); native_merge(native_merge(cuerpo, proof_digest), previous)",
+    "crates/zk-ssl/src/log.rs:281-294 chain_digest_v2 = native_merge(chain_digest(...), compromiso)",
+    "crates/zk-ssl/src/log.rs:358-379 append_con_compromiso: toda entrada nueva es era 2 (compromiso: Some)",
+    "crates/zk-ssl/src/log.rs:151-160 root_old/root_new son SIEMPRE la raíz del árbol de CUENTAS"
+   ],
+   "correct_statement": "La fórmula del borrador es el esquema de la era 1 que publican log.rs:24-26, ARQUITECTURA.md:390 y PAPER.md:879, no la composición real. La composición real (crates/zk-ssl/src/log.rs:250-294) es un árbol de merges 2 a 1: c1 = M(M(M(M(emb(seq), emb(tag)), M(R_old, R_new)), pd_i), c_{i-1}). En la era 2, que es la de toda entrada nueva desde §281, se añade c2 = M(c1, compromiso_i). M es native_merge (Rescue-Prime Rp64_256), emb(x) = [x,0,0,0], tag es el u64 de OpKind (de 1 a 13), R_old y R_new son raíces del árbol de CUENTAS (no de pendientes ni de congelados), y c_{-1} = [0;4]."
+  },
+  {
+   "id": "L1b",
+   "claim": "Fórmula ECST: H_i = H(H_{i-1} || S_{i-1} || S_i || O_i || H(Pi_i))",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:250-294 (orden real: seq, tag, raíces, proof_digest, anterior, compromiso; merges anidados, no concatenación)",
+    "crates/zk-ssl-hash/src/lib.rs:100-106 native_merge: estado de 12 elementos, l en [4..8], r en [8..12], una permutación, salida [4..8]",
+    "spec/NUCLEO.md:236-240 (definición normativa de native_merge y embeber)"
+   ],
+   "correct_statement": "Aplicada a Arqueo, la fórmula ECST es incorrecta en tres cosas. (1) Orden: el resumen anterior entra en el penúltimo merge, no el primero. (2) Codificación: no hay concatenación de bytes; son merges Rescue de digests de 4 elementos Goldilocks, con enteros embebidos como [x,0,0,0]. (3) Campos: falta seq; S_i no es 'el estado' sino solo la raíz de cuentas; O_i es solo la etiqueta u64 del tipo de operación, no su descripción ni sus parámetros; y falta el campo compromiso de la era 2. Fórmula correcta: c_i = M(M(M(M(M(emb(seq_i), emb(tag_i)), M(Racc_{i-1}, Racc_i)), pd_i), c_{i-1}), compromiso_i) (log.rs:250-294)."
+  },
+  {
+   "id": "L1c",
+   "claim": "Función hash del registro/cabeza tratada como un H genérico (sin decir si es Rescue, Blake3 o SHA-256)",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl-hash/src/lib.rs:100-106 (Rp64_256::apply_permutation, winter-crypto =0.13.1, BaseElement f64 = Goldilocks)",
+    "crates/zk-ssl-hash/src/lib.rs:1303-1320 digest_of_proof usa winter_crypto::hashers::Blake3_256",
+    "crates/zk-ssl-verify/src/lib.rs:69,139 Conjunto = XmssMtSha2_40_8_256",
+    "AUDITORIA.md §209: 'Ahora es Blake3(dominio || longitud || prueba)... chain_digest SIGUE en Rescue'",
+    "spec/NUCLEO.md:236-240"
+   ],
+   "correct_statement": "Hay tres hashes distintos. (1) La cadena, el digest de la cabeza, todos los árboles y el 'MMR' usan Rescue-Prime Rp64_256 de winter-crypto 0.13.1 sobre el campo Goldilocks (p = 2^64 - 2^32 + 1), en merge 2 a 1 con la capacidad a cero. (2) El resumen de prueba es Blake3-256, partido en cuatro u64 little-endian y reducidos al campo (lo cambió §209 en zkssl/0.2; antes era una esponja Rescue de unos 31 ms por prueba). (3) La firma de la cabeza es XMSS^MT-SHA2_40/8_256 (RFC 8391), es decir SHA-256 dentro de la firma."
+  },
+  {
+   "id": "L1d",
+   "claim": "(Implícito en los borradores) el encadenado lleva separación de dominio",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:250-261 (chain_digest sin etiqueta de dominio)",
+    "crates/zk-ssl-hash/src/lib.rs:1290-1298 dominios de bytes: b\"ZK-SSL-proof-digest-v2\", b\"ZK-SSL-authorization-seal-v1\", b\"ZK-SSL-no-proof-by-design-v1\"",
+    "crates/zk-ssl-hash/src/lib.rs:1303-1310 digest_of_proof = Blake3(dominio || len_u64_LE || prueba)",
+    "crates/zk-ssl/src/store.rs:418-445 (137 B = era 1, 169 B = era 2; otra longitud se rechaza)",
+    "crates/zk-ssl-hash/src/lib.rs:252-266 epoch_digest sin etiqueta: 'siempre se consume dentro de un preambulo firmado'",
+    "crates/zk-ssl-verify/src/lib.rs:143 DOMINIO = b\"ZK-SSL-epoch-head\""
+   ],
+   "correct_statement": "chain_digest y chain_digest_v2 no llevan etiqueta de dominio. La era la separan el merge adicional y, en disco, la longitud de la entrada (137 o 169 B). Sí llevan dominio: el resumen de prueba (b\"ZK-SSL-proof-digest-v2\" más la longitud codificada, §116/§124), los dos sellos de §278 (autorización y ausencia declarada) y la firma, cuyo preámbulo es b\"ZK-SSL-epoch-head\" || versión || epoch_digest. Las composiciones de cabeza v1 a v6 tampoco llevan etiqueta: las separa el byte de versión del preámbulo firmado (§236)."
+  },
+  {
+   "id": "L1e",
+   "claim": "La entrada encadenada incluye un digest de la prueba STARK H(Pi_i)",
+   "verdict": "PARCIAL",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:370-372 proof_digest = digest_of_proof(proof)",
+    "crates/zk-ssl/src/two_phase.rs:1112 (Send con &receipt.proof), :1378 (Claim), :520/:786 (Refund); crates/zk-ssl/src/burn.rs:217",
+    "crates/zk-ssl/src/mint.rs:141, freeze.rs:160, recovery.rs:176, governance.rs:166, two_phase.rs:1677: sello_de_autorizacion(&operation) en lugar de la prueba",
+    "crates/zk-ssl/src/accounts.rs:258-263 OpenAccount: sello_sin_prueba()",
+    "crates/zk-ssl/src/consumo.rs:146-147 Consumo: append_con_compromiso(..., &[], consumo)",
+    "crates/zk-ssl/src/migration.rs:109-116 Migration: payload de 64 B (frozen_old||frozen_new), 'NO es una prueba'",
+    "spec/RPC.md:239-244 garantía 4"
+   ],
+   "correct_statement": "Depende de la clase de operación. Send, Claim, Burn y Refund encadenan proof_digest = Blake3(dominio || len || bytes de la prueba STARK). Las cinco vías delegadas (Mint, MintToPending, Recovery, Freeze, Governance) encadenan el digest del sello de autorización del compromiso, no los bytes de ninguna prueba: ni las de umbral de los custodios ni la de subida de emisión. OpenAccount encadena la constante de ausencia declarada; Migration, el digest de un payload de 64 B con las raíces de congelados; y Consumo, el digest de la entrada vacía, es decir la constante 74de079f... (log.rs:213-217). Lo recoge la garantía 4 de spec/RPC.md:239-244."
+  },
+  {
+   "id": "L1f",
+   "claim": "La entrada encadenada incluye material de autorización A_i",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:182-190 campo compromiso: None = era 1, Some = era 2",
+    "crates/zk-ssl/src/mint.rs:105-119 operation = commit_operation(OP_MINT, raíces||amount||supply_old||supply_new||max_supply); verify_threshold_pair(proof_a, ..., proof_b, ..., operation)",
+    "crates/zk-ssl-hash/src/lib.rs:1383 COMPROMISO_AUSENTE = [0xC0A92281;4]",
+    "crates/zk-ssl-verify/src/reverificacion.rs:27-52 (era 2: seis clases con sello recomputables; Send/Claim/Burn/Refund/Migration 'no seran recomputables desde el registro nunca')"
+   ],
+   "correct_statement": "Desde §281, cada entrada nueva (era 2) encadena un campo compromiso. En las vías delegadas es commit_operation(OP_*, parámetros), el compromiso contra el que se verificó el par de pruebas de umbral de los custodios. En las no delegadas es el centinela declarado COMPROMISO_AUSENTE, y en Consumo es el propio digest del consumo. No se encadenan las pruebas ni las firmas de autorización. En Send y Claim la autoría (la clave de gasto) está dentro del STARK y solo queda atada por el digest de la prueba. Las entradas de la era 1 no tienen compromiso."
+  },
+  {
+   "id": "L2a",
+   "claim": "La cabeza de época ata las raíces del estado en reposo, el registro encadenado de transiciones y el árbol de consumos publicados",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "README.md:110-112 (la frase, literal)",
+    "crates/zk-ssl/src/log.rs:586-661 EpochHead: 16 campos",
+    "crates/zk-ssl-hash/src/lib.rs:403-452 epoch_digest_v5",
+    "spec/RPC.md:78 zkssl_epochHead y :521-527 zkssl_signedEpochHead ('los dieciséis campos')"
+   ],
+   "correct_statement": "La frase es del README (README.md:110-112), es cierta y está incompleta. La cabeza v5 compromete 16 campos: seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, acusesRoot, n (N_MAX_CABEZAS = 1440), mmrRoot, mmrSize, consRoot, consCount, paramsDigest (los siete parámetros), pmetaRoot, nextPending, nextIndex y totalSupply. Del registro encadenado solo ata su último resumen (chainDigest), no sus entradas. Excluye a propósito verifier_hash (log.rs:630-661: 'un campo CIEGO')."
+  },
+  {
+   "id": "L2b",
+   "claim": "Versión de la cabeza firmada (los borradores no la fijan; v5/v6)",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl-verify/src/lib.rs:163 VERSION_FORMATO: u8 = 5 ('4 -> 5 en el §452')",
+    "crates/zk-ssl/src/log.rs:693-716 EpochHead::digest() llama a epoch_digest_v5",
+    "crates/zk-ssl-verify/src/lib.rs:185 V6 = 6 (aceptada por el núcleo)",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:28-30 'E2a y E2b selladas; faltan E2c y E2d'",
+    "AUDITORIA.md §452"
+   ],
+   "correct_statement": "El nodo firma cabezas v5 desde §452 (VERSION_FORMATO = 5). La composición v6, que envuelve la v5 con merge(recep_root, as_digest(recep_count)), existe en zk-ssl-hash y el verificador la acepta (§557-§559), pero el nodo aún no la emite porque las etapas E2c y E2d del RFC-0010, que es PROPUESTO, están pendientes. No hay que presentar la v6 como vigente."
+  },
+  {
+   "id": "L2c",
+   "claim": "(Implícito) Todo lo que sirve la cabeza firmada está bajo la firma",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl-node/src/firma_cabeza.rs:21-23 'preámbulo = b\"ZK-SSL-epoch-head\" ‖ versión_de_formato ‖ epoch_digest'",
+    "spec/NUCLEO.md:246-249 preámbulo de 17 + 1 + 32 = 50 B",
+    "crates/zk-ssl-verify/src/lib.rs:279 FIRMA_RFC_BYTES = 18_469; firma_cabeza.rs:324-325 c.firma.len() == 18_519",
+    "crates/zk-ssl-node/src/firma_cabeza.rs:178-201 (reserva el índice con fsync ANTES de firmar y verifica su propia salida)",
+    "spec/RPC.md:616-646 custody/custodyChecked/emittedAtUnix/beatSeconds",
+    "crates/zk-ssl-node/src/main.rs:2647-2652 receptionSeq 'NO está firmado'"
+   ],
+   "correct_statement": "Solo se firman 50 bytes: b\"ZK-SSL-epoch-head\" (17) || formatVersion (1, hoy 5) || epoch_digest (32). La firma es XMSS^MT-SHA2_40/8_256: 18.469 B en formato RFC 8391, 18.519 B con el mensaje adjunto. Los 16 campos quedan cubiertos porque recomponen epoch_digest. En cambio, custody, custodyChecked, emittedAtUnix, beatSeconds y el receptionSeq de las respuestas viajan sin firma. El firmante reserva el índice XMSS con fsync antes de firmar y verifica su propia firma antes de devolverla."
+  },
+  {
+   "id": "L3a",
+   "claim": "El test t1_cabeza_ata_la_historia se ejecutó sobre N=100 épocas",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:1140 'const N: u64 = 12;'",
+    "AUDITORIA.md §115.1 (tabla de t1_*: '3/3 en verde')"
+   ],
+   "correct_statement": "N = 12 entradas del TransitionLog (log.rs:1140). No son 100 ni son épocas firmadas. El test está registrado en verde en AUDITORIA.md §115.1; aquí no se ha re-ejecutado porque cargo está vetado en esta sesión."
+  },
+  {
+   "id": "L3b",
+   "claim": "Se alteró la época k=10",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:1141 'const K: u64 = 5; // la epoca de la mentira'"
+   ],
+   "correct_statement": "K = 5 (log.rs:1141). En el test, 'época' designa el índice de una entrada del registro (seq), no el intervalo entre dos cabezas firmadas."
+  },
+  {
+   "id": "L3c",
+   "claim": "Se alteró un único byte de la prueba Pi_k",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:1150-1165 historia(): las 'pruebas' son los bytes b\"honesta\" + [i] (o b\"mentira\" + [i] en K); tipo = primer tag válido (1, OpenAccount); raíces as_digest(i) -> as_digest(i+1)",
+    "crates/zk-ssl/src/log.rs:1183-1200 recompute: en seq == K sustituye el proof_digest por digest_of_proof(b\"mentira-injertada\")",
+    "crates/zk-ssl/src/log.rs:1210 assert_ne!(historia(N, true).head(), cabeza_firmada)"
+   ],
+   "correct_statement": "No se altera un byte de ninguna prueba STARK: el test no contiene pruebas STARK. Hace dos cosas. (1) Al recomputar, sustituye el proof_digest de la entrada K por digest_of_proof(b\"mentira-injertada\"). (2) Construye una segunda historia en la que la entrada K lleva los bytes b\"mentira\"+[5] en lugar de b\"honesta\"+[5]: varios bytes y otra longitud (log.rs:1150-1210)."
+  },
+  {
+   "id": "L3d",
+   "claim": "Resultado H_100' != H_100 (la cabeza cambia)",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:1179-1211: cabeza_firmada = a.head() (TransitionLog::head, el último chain); assert_eq!(recompute(None), cabeza_firmada); assert_ne!(recompute(Some(K)), cabeza_firmada); assert_ne!(historia(N,true).head(), cabeza_firmada)"
+   ],
+   "correct_statement": "El test afirma tres cosas: el control (recomputar desde los campos crudos reproduce head()), que el chain final recomputado con la entrada 5 alterada difiere de head(), y que la historia alternativa completa da otro head(). La variable 'cabeza_firmada' es solo TransitionLog::head(). No interviene EpochHead, ni XMSS, ni el MMR. La extensión a la cabeza firmada se deduce de que chainDigest es un campo de epoch_digest; el test no la mide."
+  },
+  {
+   "id": "L3e",
+   "claim": "Detectado sin re-verificar ZK",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:1150-1211 (solo digest_of_proof y chain_digest_v2; ningún verificador STARK)",
+    "crates/zk-ssl/src/log.rs:1134-1137 'Sostiene la decision 1-firma/min (entrada 53)'"
+   ],
+   "correct_statement": "Es cierto de forma trivial: el test es una comprobación de enlace por hash, con Blake3 para el digest y Rescue para la cadena, y ni hay ni se verifica ninguna prueba ZK. Demuestra que alterar el digest de la entrada k cambia el chain de la entrada n. No dice nada de que las pruebas fueran válidas. Su finalidad declarada es sostener la cadencia de una firma por minuto (§115)."
+  },
+  {
+   "id": "L4a",
+   "claim": "Historia no reescribible sobre un MMR",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl-verify/src/mmr.rs:20-26 'Los algoritmos son los del arbol de historia de RFC 6962 ... MTH, PATH y SUBPROOF'",
+    "AUDITORIA.md §291 'Por que RFC 6962 y no un MMR de picos'",
+    "crates/zk-ssl-hash/src/lib.rs:737-739, 843-851 mmr_hoja = M(as_digest(MMRHOJA1), cabeza); mmr_nodo = M(as_digest(MMRNODO1), M(izq, der))",
+    "crates/zk-ssl-hash/src/lib.rs:296-333 epoch_digest_v3 (cima, t) firmados",
+    "spec/RPC.md:922-926 'la pareja firmada es el acumulador ANTES de cada cabeza'"
+   ],
+   "correct_statement": "Lo que el código llama 'MMR de cabezas' no es un MMR de picos: es un árbol de historia RFC 6962 (MTH/PATH/SUBPROOF, corte en la mayor potencia de dos < n) construido sobre primitivas propias. Usa Rescue con etiquetas u64 MMRHOJA1/MMRNODO1, no SHA-256 con los prefijos 0x00/0x01. Sus hojas son los digests de las cabezas ANTERIORES, no las entradas del registro. La pareja (mmrRoot, mmrSize) va firmada desde la v3 (§292) y es el acumulador previo a esa cabeza."
+  },
+  {
+   "id": "L4b",
+   "claim": "Con prueba de extensión (consistency proof) por RPC",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "spec/RPC.md:88 'zkssl_consistencyProof | {oldSize: Q} | {available, mmrSize: Q, camino?: Digest[], reason?}'",
+    "spec/RPC.md:918-944 (tres negativas: oldSize 0, identidad, 'va por detrás')",
+    "README.md:130 fila 3 'medida (spec/RPC.md, zkssl_consistencyProof)'",
+    "AUDITORIA.md §293"
+   ],
+   "correct_statement": "zkssl_consistencyProof({oldSize}) devuelve {available, mmrSize, camino?, reason?}. El camino de tamaño t lo firma la cabeza siguiente, a lo sumo un latido después. Hay tres respuestas sin camino con razón propia: oldSize 0, identidad y 'va por detrás' (el nodo rearrancó sin diario) (spec/RPC.md:918-944)."
+  },
+  {
+   "id": "L4c",
+   "claim": "El verificador comprueba la extensión sin el nodo",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "crates/zk-ssl-verify/src/main.rs:578-601 verificar_extension: 1/3 dos cabezas v3+ recomponen su digest y verifican su firma; 2/3 misma publicKey; 3/3 mmr::verificar_consistencia(cima_v, t_v, cima_n, t_n, camino)",
+    "spec/PAQUETE.md:82-93 y :421-423",
+    "crates/zk-ssl-cli/src/witness.rs:59-80 (el testigo: canal de historia, 'no-extiende' SE DETIENE, 'por-detras' anota y sigue)"
+   ],
+   "correct_statement": "El paquete de extensión ({v:1, tipo:'extension', vieja, nueva, camino}) se verifica sin el nodo. Las dos cabezas, v3 o posteriores, recomponen su epochDigest y verifican su firma; deben llevar la misma publicKey; y la cima nueva debe extender a la vieja según mmr::verificar_consistencia (main.rs:578-601). El testigo del cli hace la misma comprobación en vivo."
+  },
+  {
+   "id": "L4d",
+   "claim": "Historia no reescribible",
+   "verdict": "PARCIAL",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:561-563 (§76: la garantía 'solo vale para quien ya observó una cabeza anterior')",
+    "crates/zk-ssl-verify/src/main.rs:578-601 (compara cimas; no comprueba que el digest de la cabeza vieja sea hoja del acumulador nuevo ni relaciona los chainDigest)",
+    "tools/banco_consistencia.sh:25-29 NEGATIVO-B: nodo reseteado -> 'por-detras', el testigo NO se detiene",
+    "spec/RPC.md:660-700 (§248: el operador NO sirve el histórico; 'un testigo que no existía no tiene diario')",
+    "crates/zk-ssl-cli/src/witness.rs:108-114 ('No detecta omisión')",
+    "SECURITY.md:115-119"
+   ],
+   "correct_statement": "Lo que la estructura da es que la secuencia de cabezas firmadas no se reescribe sin que lo vea quien custodia una cabeza anterior de la misma clave. Es evidencia de manipulación, no inmutabilidad. Límites: (a) sin cabeza previa custodiada no hay nada que comparar (§76, TOFU); (b) la prueba de consistencia no comprueba que el chainDigest nuevo continúe el viejo, cosa que exige recomputar la cadena con zkssl_logEntries y que ninguna herramienta del árbol hace contra una cabeza custodiada; (c) el paquete de extensión no comprueba que el digest de la propia cabeza vieja sea hoja del acumulador nuevo (observación de lectura, no ejercitada); (d) un reinicio sin diario queda visible como 'por-detras' pero no detiene al testigo; (e) no detecta omisiones ni censura; (f) el operador no sirve el histórico de cabezas, que depende de los diarios de testigos independientes."
+  },
+  {
+   "id": "L5a",
+   "claim": "El paquete de evidencia contiene cabeza firmada, acuse con camino y cofirmas",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "README.md:114-115 'Un paquete de evidencia lleva una cabeza firmada, un acuse con su camino y las cofirmas'",
+    "spec/PAQUETE.md:41-80 (v1: cabeza + acuse opcional {seq, hashPrueba, s, camino}; v2: + cofirmas de zkssl_cosigs tal cual)",
+    "spec/PAQUETE.md:35-37 'El binario acepta diez objetos'"
+   ],
+   "correct_statement": "Ese es el paquete de POSICIÓN v2 (spec/PAQUETE.md:60-80), con cabeza, acuse y cofirmas opcionales. Contiene: cabeza (el result de zkssl_signedEpochHead, con los 16 campos, publicKey, epochDigest, formatVersion, index y signature); acuse opcional {seq, hashPrueba = proofDigest de la entrada, s, camino} obtenido de zkssl_ackPath; y cofirmas opcionales, tal como las sirve zkssl_cosigs. El binario acepta diez formas en total: posición v1 y v2, extensión, consumo, conflicto, rechazo, edad, cobro_pendiente, pago_en_curso y prenda."
+  },
+  {
+   "id": "L5b",
+   "claim": "La verificación offline re-verifica las pruebas STARK de las transiciones (Verify(Pi_i))",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl-verify/src/main.rs:198-365 (posición: 1/3 recompone epochDigest según la versión; 2/3 firma XMSS contra la publicKey del paquete y el preámbulo; 3/3 hoja acuse_digest(hashPrueba, seq+1, n) -> path_root -> acusesRoot -> digest firmado; cofirmas: las cuenta, no juzga)",
+    "spec/PAQUETE.md:674-676 'el paquete demuestra QUE la entrada está acusada bajo esa cabeza firmada, no QUÉ dice'",
+    "crates/zk-ssl-verify/Cargo.toml (zk-ssl-air + winter-verifier solo para pruebas sobre el estado comprometido; §465)",
+    "spec/PAQUETE.md:215-241, 242-358 y 2.6 fila InsufficientBalance (únicos sobres con STARK)"
+   ],
+   "correct_statement": "zk-ssl-verify no re-verifica las pruebas de transición (Send, Claim, etc.). En el paquete de posición comprueba cuatro cosas: la recomposición del digest, la firma XMSS contra la clave que trae el propio paquete, la inclusión del acuse (que liga el proofDigest, no la prueba) y el recuento de cofirmas. Solo verifica STARKs en los sobres edad, cobro_pendiente, pago_en_curso, prenda y rechazo/InsufficientBalance. Son pruebas nuevas sobre el estado comprometido bajo una cabeza v5 (RFC-0007/0008), no las Pi_i del registro."
+  },
+  {
+   "id": "L5c",
+   "claim": "La prueba Pi_i se conserva como evidencia adjunta recuperable",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:194-199 'Resumen de la prueba, no la prueba entera'",
+    "spec/RPC.md:239-244 'El registro no guarda ninguno de los tres'",
+    "spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md:488-492 D-I: 'Medido, no hay material que re-verificar. El registro guarda el proof_digest y NO la prueba'",
+    "doc/DIAGNOSTICO_ESCALADO.md:412-419 'El nodo no los guarda ... si nadie conserva las pruebas, la re-verificación por un tercero depende de que el productor guarde la suya ... hoy no tiene ni política ni sección propia'",
+    "spec/RPC.md:76-93 (ningún método sirve pruebas)"
+   ],
+   "correct_statement": "Arqueo no conserva las pruebas de transición. El nodo guarda solo proof_digest, y ningún método RPC sirve pruebas. Re-verificarlas después depende de que el productor (pagador o cobrador) guarde la suya, y el propio repositorio reconoce que eso no tiene política de retención (doc/DIAGNOSTICO_ESCALADO.md:412-419; RFC-0007 D-I). Las transiciones rechazadas no dejan entrada."
+  },
+  {
+   "id": "L5d",
+   "claim": "El auditor recalcula la cadena de H_0 a H_N y ejecuta Verify(Pi_i) para cada transición",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "grep: chain_digest solo existe en crates/zk-ssl/src/log.rs:250,281 (no en zk-ssl-hash ni en zk-ssl-verify)",
+    "crates/zk-ssl-verify/src/reverificacion.rs:44-47 'el registro no guarda la prueba: no seran recomputables desde el registro nunca'",
+    "grep 'reverificar(': sin llamantes fuera de su módulo (ni el kit, ni el cli, ni el nodo)",
+    "spec/NUCLEO.md:43-45 (REGISTRO: 'no pertenecen al sobre')"
+   ],
+   "correct_statement": "No existe tal procedimiento. La fórmula de la cadena vive solo en la capa (crates/zk-ssl/src/log.rs) y no forma parte del núcleo ni del crate verificador. La biblioteca zk-ssl-verify ofrece reverificar(), que comprueba los sellos de las seis clases con sello, pero nadie la llama y no recompone la cadena. Verify(Pi_i) es imposible porque las pruebas no se conservan."
+  },
+  {
+   "id": "L6a",
+   "claim": "Crecimiento del log ~256 bytes por transición (almacenando solo H(Pi_i))",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl/src/store.rs:418-430 log_entry_to_bytes: seq u64 (8) + tag (1) + root_old, root_new, proof_digest, chain (4x32) [+ compromiso 32]",
+    "crates/zk-ssl/src/log.rs:1470-1484 test la_ida_y_vuelta_del_disco_conserva_la_era: 169 (era 2) y 137 (era 1)",
+    "doc/DIAGNOSTICO_ESCALADO.md:409-412 '≈137 bytes ... Estimación desde la estructura, no medida en disco'"
+   ],
+   "correct_statement": "Cada entrada serializada ocupa 169 B en la era 2 (8 de seq + 1 de tag + 5 digests de 32) y 137 B en la era 1 (store.rs:418-445, fijado por test). No incluye la clave ni la sobrecarga de sled, que nadie ha medido."
+  },
+  {
+   "id": "L6b",
+   "claim": "Reducción del 99,6 %",
+   "verdict": "SIN_FUENTE",
+   "severity": "alta",
+   "evidence": [
+    "grep '99[.,]6' en el repo: solo AUDITORIA.md:22949 ('99,65 GiB', no relacionado)",
+    "crates/zk-ssl/src/metrics.rs:82-83, 111-112 (pago 145.953..167.967 B; envío 73.571..84.244 B, cobro 72.382..83.723 B con margen del 5 %; medidos 77.444..80.232 y 76.192..79.736)",
+    "cálculo propio: 1-256/62.000 = 99,59 %; 1-169/77.444 = 99,78 %"
+   ],
+   "correct_statement": "El repositorio no contiene esa cifra. Parece salir de 1 - 256/62.000, con dos datos erróneos: 256 B no es el tamaño de la entrada y 62 KB es la cifra antigua de la prueba. Con los datos vigentes (169 B por entrada; pruebas de 72-84 KB tras §538, metrics.rs:111-112) la razón aritmética sería de ≈99,78-99,80 %. Es un cálculo nuestro, no una medida. Además, el nodo nunca ha almacenado pruebas, así que no se 'reduce' respecto de nada desplegado."
+  },
+  {
+   "id": "L6c",
+   "claim": "Auditoría histórica offline ~125.000 bloques/s",
+   "verdict": "SIN_FUENTE",
+   "severity": "alta",
+   "evidence": [
+    "grep '125[.,]000|125000|bloques/s|blocks/s': ninguna medida relacionada",
+    "AUDITORIA.md §219 (apply 3,58-3,67 ms, 273-280 op/s a 1e3-1e5 cuentas; no es verificación de cadena)"
+   ],
+   "correct_statement": "No hay ninguna medida de ritmo de auditoría ni de recomputación de la cadena, y no existe herramienta offline que la haga. Las cifras medidas cercanas son otras: apply ≈3,6 ms/op (≈273 op/s con 1e5 cuentas, §219) y digest_of_proof ≈0,01 ms (§209)."
+  },
+  {
+   "id": "L6d",
+   "claim": "Sobrecarga de encadenamiento < 0,002 ms",
+   "verdict": "SIN_FUENTE",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl-guardian/src/lib.rs:44-47 y AUDITORIA.md §234: '0,002 ms' es el coste de fsync en tmpfs",
+    "AUDITORIA.md §204/§209: 'chain_digest (5 merges) SE QUEDA en Rescue'; Blake3 sobre 65.840 B = 0,011 ms"
+   ],
+   "correct_statement": "El coste del encadenado no se ha medido por separado. Lo único que se sabe es su tamaño: 5 merges Rescue en la era 1 y 6 en la era 2, más un Blake3 del orden de 0,01 ms por prueba de 65 KB (§204, §209). El único '0,002 ms' del repositorio es el fsync sobre tmpfs del guardián (§234), que no tiene relación con esto."
+  },
+  {
+   "id": "L7a",
+   "claim": "La no-reescribibilidad necesita una cabeza autenticada externamente",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "README.md:152-155 'le falta un ancla anterior al primer encuentro y una custodia de clave comprobada, no sólo declarada'",
+    "SECURITY.md:122-170 ('Lo que TOFU NO da: el primer encuentro'; 'NO HAY CLAVE QUE ANCLAR' §246; 'Es lo que Certificate Transparency resuelve publicando las claves de log fuera del log')",
+    "SECURITY.md:176-180 custodia declarada, solo 'fichero' comprobable"
+   ],
+   "correct_statement": "El repositorio lo reconoce: hoy un tercero verifica la firma contra la clave que el mismo nodo le entrega, lo cual es circular. No hay ancla anterior al primer encuentro. §246 lo resume así: no hay clave de producción que anclar. La custodia de la clave es declarada y no comprobada, salvo la modalidad 'fichero'."
+  },
+  {
+   "id": "L7b",
+   "claim": "Los testigos fijan la clave por TOFU",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "crates/zk-ssl-cli/src/witness.rs:1-45 ('fija la clave que ve la primera vez'; se DETIENE ante vista dividida o cambio de clave)",
+    "SECURITY.md:122-138",
+    "README.md:112-113"
+   ],
+   "correct_statement": "El testigo de referencia (zk-ssl-cli witness, §245) fija la clave en el primer encuentro y se detiene ante una vista dividida o un cambio de clave. Un testigo operado por el propio operador no prueba nada."
+  },
+  {
+   "id": "L7c",
+   "claim": "Anclaje externo: interfaz diseñada en doc/ANCLAJE_EXTERNO.md",
+   "verdict": "PARCIAL",
+   "severity": "alta",
+   "evidence": [
+    "doc/ANCLAJE_EXTERNO.md: una sola línea, '[el contenido de ANCLAJE_EXTERNO.md]', sin salto final; así desde el commit de importación 087aecc",
+    "SECURITY.md:225-226 'interfaz diseñada: doc/ANCLAJE_EXTERNO.md; pendiente de despliegue'",
+    "AUDITORIA.md §174 (el diseño descrito: publicar la raíz en un medio append-only, por lotes cada M latidos)",
+    "doc/CONFIANZA_RESIDUAL.md:487-488 B10.6/B10.7"
+   ],
+   "correct_statement": "En el árbol actual, doc/ANCLAJE_EXTERNO.md es un marcador vacío de una línea. El diseño solo queda descrito en AUDITORIA §174 y en las filas B10.6 y B10.7 de CONFIANZA_RESIDUAL, y no hay nada construido ni desplegado. §174 dice además que la raíz de recepción 'ya va firmada en cada EpochHead', pero hoy no entra en la cabeza: exige la v6, que el nodo no emite. No se debe citar ese documento como fuente de contenido."
+  },
+  {
+   "id": "L8",
+   "claim": "Una vez publicada y atada a una cabeza de época, la historia se vuelve inalterable y auditable de forma independiente con el nodo apagado",
+   "verdict": "PARCIAL",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:561-583 (detectable, no oponible sin firma/ancla; 'la independencia de los testigos es un supuesto social')",
+    "spec/PAQUETE.md:674-685 (no hace oponibles las firmas; no dice qué contiene la entrada)",
+    "crates/zk-ssl-node/src/main.rs:2661-2667 (acuse solo en applySend/applyClaim; las delegadas no lo emiten)",
+    "spec/RPC.md:643-700 (el operador no sirve histórico; solo diarios de testigos)",
+    "SECURITY.md:208 'No hay recuperación si el nodo desaparece'",
+    "crates/zk-ssl-cli/src/witness.rs:108-114"
+   ],
+   "correct_statement": "La afirmación ha de matizarse. La historia no es inalterable: es evidente a la manipulación para quien custodia una cabeza anterior de la misma clave (TOFU, sin ancla externa). Con el nodo apagado, el titular prueba con su paquete que la cabeza la firmó la clave del paquete, que sus campos la recomponen y que su acuse (solo en Send y Claim) está bajo acusesRoot, sin demostrar qué dice la entrada. No se pueden auditar la historia completa ni la validez de cada transición, porque las pruebas no se conservan y el operador no sirve el histórico. Tampoco detecta omisiones ni censura, y sin custodia comprobada de la clave la firma carece de valor probatorio."
+  },
+  {
+   "id": "L9a",
+   "claim": "Un tercero importa los vectores y la cabeza publicada y verifica toda la secuencia de evidencia histórica sin consultar el nodo",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl-verify/src/main.rs:157-178 (un fichero, una forma; contrato './zk-ssl-verify <fichero.json>')",
+    "doc/KIT.md:36-40 (VERDE/ROJO por fichero)",
+    "grep 'reverificar(' sin llamantes; chain_digest solo en crates/zk-ssl/src/log.rs",
+    "crates/zk-ssl-cli/src/witness.rs:1068-1079 (auditar_lineas: re-verifica un DIARIO de cabezas, no el registro)"
+   ],
+   "correct_statement": "El kit verifica afirmaciones empaquetadas de una en una: posición, extensión entre dos cabezas, consumo, conflicto entre dos libros, causa de un rechazo y pruebas de estado v5. No recorre ni recompone el registro de transiciones. Lo más parecido a una 'historia' es el '--auditar' del testigo en zk-ssl-cli, que re-verifica sin nodo el diario de cabezas firmadas que ese testigo recogió, no las transiciones."
+  },
+  {
+   "id": "L9b",
+   "claim": "Existe la release arqueo-verify-v0.2.0 utilizable contra la cabeza publicada",
+   "verdict": "PARCIAL",
+   "severity": "alta",
+   "evidence": [
+    "GitHub API get_release_by_tag arqueo-verify-v0.2.0: publicada 2026-09-09T11:39:34Z, commit 1528943fdfb9399f56fd836f75ffbe655d004d78, tarball sha256 2fe9030a...79f5ce, 2.891.949 B; catálogos package 68, consumption 14, conflict 16",
+    "list_releases: es la última (antes: arqueo-verify-v0.1.0, v1.0.0)",
+    "AUDITORIA.md §443 (release) frente a §451/§452 (v5 en núcleo y nodo, VERSION_FORMATO 4 -> 5)",
+    "spec/PAQUETE.md:699 (hasta §451 'rechazo-formatVersion-5' era un vector NEGATIVO)",
+    "spec/PAQUETE.md:889-894 (el artefacto del árbol ya lleva seis catálogos)"
+   ],
+   "correct_statement": "La release existe y está verificada vía la API de GitHub: tag arqueo-verify-v0.2.0, commit 1528943, tarball sha256 2fe9030a…f5ce de 2.891.949 B y binario 6356debd…. Pero es anterior a §451/§452: acepta cabezas v2 a v4 y rechaza por diseño la v5, que es la que el nodo firma desde §452. Tampoco incluye los sobres de rechazo, edad, cobro, pago ni prenda. El kit del árbol actual, con seis catálogos y el crate aún numerado 0.2.0, no se ha publicado como release."
+  },
+  {
+   "id": "L9c",
+   "claim": "Hay un kit del verificador documentado",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "doc/KIT.md:1-134 (descarga, sha256sum -c SHA256SUMS, cuatro pasos, conformidad.sh)",
+    "README.md:44-75",
+    "AUDITORIA.md §442-§443"
+   ],
+   "correct_statement": "doc/KIT.md (con traducción en doc/KIT_EN.md) guía cuatro comprobaciones sin red con el tarball de la release: posición VERDE, paquete manipulado ROJO con la regla nombrada, conflicto entre dos libros e intercambio de libros rechazado. El guion corresponde a la release v0.2.0."
+  },
+  {
+   "id": "L10a",
+   "claim": "Arqueo extiende CT (RFC 9162)",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "grep 'RFC 9162|9162' en .md/.rs: 0 apariciones; 'RFC 6962': 9",
+    "doc/CONFIANZA_RESIDUAL.md:154 'El patrón es el de Certificate Transparency (RFC 6962)'",
+    "crates/zk-ssl-verify/src/mmr.rs:20-26 (algoritmos RFC 6962 'sobre las primitivas de la casa')",
+    "WebSearch: RFC 9162 (CT v2.0, dic. 2021, Experimental) deja obsoleto el RFC 6962 (rfc-editor.org/rfc/rfc9162; datatracker.ietf.org/doc/rfc9162)",
+    "WebSearch: RFC 6962 §2.1 MTH con SHA-256, 0x00 hoja / 0x01 interior"
+   ],
+   "correct_statement": "Arqueo no extiende ningún protocolo CT ni cita el RFC 9162. Adopta el patrón de CT (no impedir la mala conducta, hacerla imposible de ocultar) y los algoritmos del árbol de historia del RFC 6962, pero sobre primitivas propias: Rescue/Goldilocks con etiquetas MMRHOJA1/MMRNODO1 en lugar de SHA-256 con 0x00/0x01. Las hojas del árbol son cabezas, no entradas; las entradas se encadenan por hash-chain. No hay SCT ni gossip, y la clave no se publica fuera del registro. El RFC 9162 (CT v2.0) deja obsoleto el 6962, según la búsqueda web."
+  },
+  {
+   "id": "L10b",
+   "claim": "README: 'responsabilidad demostrable, al modo de Certificate Transparency'",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "README.md:152-155",
+    "crates/zk-ssl/src/log.rs:44-46; ARQUITECTURA.md:397; PAPER.md:887",
+    "crates/zk-ssl-node/src/vista_acuses.rs:17-19 (N = 1440 cabezas = 24 h, 'con el precedente del MMD de Certificate Transparency')"
+   ],
+   "correct_statement": "El README se sitúa en la responsabilidad demostrable al modo de CT, no en el consenso. Declara que tiene firmante, guardián del índice, latido, verificador independiente y testigos, y que le faltan un ancla previa al primer encuentro y una custodia de clave comprobada. La cota n = 1440 cabezas (24 h al latido de 60 s) sigue el precedente del MMD de CT."
+  },
+  {
+   "id": "L11a",
+   "claim": "Partes del NÚCLEO congelado",
+   "verdict": "CONFIRMADA",
+   "severity": "media",
+   "evidence": [
+    "spec/NUCLEO.md:1-5 'normativa vigente desde §407 (RFC-0005, etapa E1)'",
+    "spec/NUCLEO.md:36-45 (cuatro clases: NÚCLEO, REFERENCIA, LIBRO, REGISTRO)",
+    "spec/NUCLEO.md:66-67 'LIBRO 5, NÚCLEO 97, REFERENCIA 7, REGISTRO 15' (76 en verify + 48 en hash)",
+    "spec/NUCLEO.md:186-200 (digest_of_proof, sellos, commit_operation, reverificar = REGISTRO)",
+    "spec/NUCLEO.md:203-227 (familias HASH, CABEZA, FIRMA, ACUSES, MMR, INCLUSIÓN, CONGELADOS, CUENTAS)"
+   ],
+   "correct_statement": "El núcleo congela el lado del verificador: hash y serialización, composiciones de cabeza v1 a v6, firma y preámbulos, acuses, MMR, inclusión y los árboles de congelados y cuentas. Lo fijan KAT en spec/vectors/nucleo/ y lo vigila tools/check_nucleo.py. Quedan fuera el cable y el libro. digest_of_proof, los sellos, commit_operation y reverificar son de clase REGISTRO. La composición del chain_digest del registro no está ni en el núcleo ni en los crates del verificador: vive solo en la capa (crates/zk-ssl/src/log.rs). Hay deriva menor: NUCLEO §3 y §5 y PAQUETE §4 siguen diciendo 'v2..v5' cuando el enum ya admite V6."
+  },
+  {
+   "id": "L11b",
+   "claim": "RFC-0005 (núcleo congelado) está PROPUESTO",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "spec/rfc/0005-nucleo-congelado.md:3 '- **Estado:** PROPUESTO'",
+    "spec/rfc/0005-nucleo-congelado.md:10-18 (E1-E4 selladas; E5 'fuera del árbol')",
+    "README.md:185 '0005 (el núcleo congelado) y 0010 (el recibo de recepción) propuestos'"
+   ],
+   "correct_statement": "El RFC-0005 está PROPUESTO. Aun así, NUCLEO.md es normativa vigente desde §407, con las etapas E1 a E4 selladas. El criterio E5, una segunda implementación independiente, no existe todavía y queda fuera del árbol."
+  },
+  {
+   "id": "L11c",
+   "claim": "Versión del protocolo zkssl/0.4",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "spec/RPC.md:1 y :1171-1172 'La versión vigente es zkssl/0.4 desde §538'",
+    "crates/zk-ssl-node/src/main.rs:1593 zkssl_protocolVersion -> \"zkssl/0.4\"",
+    "crates/zk-ssl-wire/src/openrpc.rs:155",
+    "crates/zk-ssl-verify/src/lib.rs:158-161 (comentario rancio: 'el cable sigue en zkssl/0.3')"
+   ],
+   "correct_statement": "El cable está en zkssl/0.4 desde §538 (RFC-0009 E3b-2, ocultación del testigo); antes rigieron la 0.3 desde §354 y la 0.2 desde §209. Es un eje distinto del formato de cabeza firmada, formatVersion = 5. Queda algún comentario rancio que aún dice 0.3."
+  },
+  {
+   "id": "L12",
+   "claim": "Teorema 1 aplicado a Arqueo: alterar Pi_k cambia H_n",
+   "verdict": "PARCIAL",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:250-294, 370-372 (la cadena ata seq, tag, raíces de cuentas, proof_digest, el anterior y el compromiso)",
+    "crates/zk-ssl/src/log.rs:151-160 (solo raíces de CUENTAS por entrada)",
+    "crates/zk-ssl-hash/src/lib.rs:1303-1320 (Blake3 -> 4 elementos reducidos al campo)",
+    "crates/zk-ssl/src/log.rs:1179-1211 (T1: sustituye el digest, no los bytes)",
+    "crates/zk-ssl/src/mint.rs:141 (las delegadas no atan bytes de prueba)",
+    "spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md:488-492 (no hay prueba que re-verificar)"
+   ],
+   "correct_statement": "La cadena sí incluye un digest de prueba, pero solo en Send, Claim, Burn y Refund. Para esas clases, alterar un byte de Pi_k cambia digest_of_proof, luego c_k…c_n, luego chainDigest y epoch_digest, y la firma deja de verificar. Hay cuatro límites. (1) Solo lo detecta quien tiene los bytes de Pi_k, porque el nodo no los guarda. (2) Enlazar no es validar: la cadena no demuestra que Pi_k verificara. (3) En las vías delegadas se ata el sello del compromiso autorizante, y en OpenAccount y Consumo constantes, así que alterar sus pruebas de custodios no cambia nada. (4) Cada entrada ata solo seq, tipo, raíces de cuentas vieja y nueva, proof_digest, el resumen anterior y el compromiso. Importes, partes y las raíces de pendientes y congelados quedan fuera; estas últimas solo las ata cada cabeza firmada."
+  }
+ ],
+ "extra_facts": [
+  {
+   "fact": "Fórmula exacta del registro (era 2, toda entrada nueva desde §281): c_i = M(M(M(M(M(emb(seq), emb(tag)), M(Racc_old, Racc_new)), pd_i), c_{i-1}), compromiso_i). Aquí M = native_merge (Rescue-Prime Rp64_256 de winter-crypto =0.13.1 sobre Goldilocks; estado de 12 a cero, l en [4..8], r en [8..12], salida [4..8]), emb(x) = [x,0,0,0] y c_{-1} = [0;4]. La era 1 omite el merge exterior. head() de un registro vacío = [0;4].",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:250-294, 330-335",
+    "crates/zk-ssl-hash/src/lib.rs:100-133",
+    "spec/NUCLEO.md:236-240"
+   ]
+  },
+  {
+   "fact": "proof_digest = Blake3-256(b\"ZK-SSL-proof-digest-v2\" || len(prueba) u64 LE || prueba), partido en cuatro u64 LE convertidos con BaseElement::new, que reduce módulo p. La reducción no es sobreyectiva: 'BaseElement::new(u64::MAX) sale 2^32 - 2'. Coste medido ≈0,011 ms frente a 30,99 ms de la versión Rescue anterior (§204, §209).",
+   "evidence": [
+    "crates/zk-ssl-hash/src/lib.rs:1290-1320",
+    "crates/zk-ssl-hash/src/lib.rs:1395-1399",
+    "AUDITORIA.md §204 y §209"
+   ]
+  },
+  {
+   "fact": "Tamaño en disco de una entrada: 137 B en la era 1 y 169 B en la era 2 (8 de seq + 1 de tag + root_old + root_new + proof_digest + chain [+ compromiso], 32 B por digest). Cualquier otra longitud se rechaza. En el cable, LogEntryDto lleva compromiso como campo opcional, pero spec/RPC.md:93-96 aún describe LogEntry sin compromiso y sin el tipo Consumo (deriva de la especificación).",
+   "evidence": [
+    "crates/zk-ssl/src/store.rs:418-458",
+    "crates/zk-ssl-wire/src/lib.rs:537-567",
+    "spec/RPC.md:93-96"
+   ]
+  },
+  {
+   "fact": "Las entradas Consumo (tag 13) se asientan con prueba vacía &[], de modo que su proof_digest es digest_of_proof(&[]) = 74de079f... (la constante que §278 eliminó de las otras seis vías). Lo que ata la entrada es el compromiso, que aquí es el digest del consumo. Migration ata un payload de 64 B frozen_old||frozen_new que 'NO es una prueba', aunque reverificacion.rs:44-47 la incluye entre las clases con 'prueba REAL'.",
+   "evidence": [
+    "crates/zk-ssl/src/consumo.rs:125-150",
+    "crates/zk-ssl/src/log.rs:209-217",
+    "crates/zk-ssl/src/migration.rs:109-116",
+    "crates/zk-ssl-verify/src/reverificacion.rs:44-47"
+   ]
+  },
+  {
+   "fact": "Composición de la cabeza, por envoltura: v1 = M(M(M(emb(seq), accounts), M(pending, frozen)), chain); v2 = M(v1, M(acuses_root, emb(n))); v3 = M(v2, M(cima_mmr, emb(t))); v4 = M(v3, M(cons_root, emb(cons_count))); v5 = M(v4, M(M(params_digest, pmeta_root), M(emb(next_pending), M(emb(next_index), emb(total_supply))))); v6 = M(v5, M(recep_root, emb(recep_count))). El nodo firma la v5.",
+   "evidence": [
+    "crates/zk-ssl-hash/src/lib.rs:256-525",
+    "spec/NUCLEO.md:250-265",
+    "crates/zk-ssl-verify/src/lib.rs:163"
+   ]
+  },
+  {
+   "fact": "Acuse: la hoja es acuse_digest(proofDigest, seq+1, n) = M(emb(ACUSE_V1), M(proofDigest, M(emb(seq+1), emb(n)))) en un árbol denso por época, [P, S). Solo lo emiten applySend y applyClaim; las vías delegadas no emiten acuse. N_MAX_CABEZAS = 1440 (24 h al latido por defecto de 60 s).",
+   "evidence": [
+    "crates/zk-ssl-hash/src/lib.rs:696-699",
+    "crates/zk-ssl-verify/src/acuses.rs:44-77",
+    "crates/zk-ssl-node/src/main.rs:2661-2677",
+    "crates/zk-ssl-node/src/vista_acuses.rs:15-28",
+    "crates/zk-ssl-node/src/latido.rs:64-65"
+   ]
+  },
+  {
+   "fact": "Hueco latente de v6 en el verificador: el paquete de posición recompone la cabeza con la v6, pero su rama del acuse hace match solo sobre (mmr, cons, estado) y llama a verificar_acuse_v5, que compone la v5 y la compara con el digest firmado. Un paquete v6 con acuse fallaría. No se ha ejecutado; es latente porque el nodo aún no emite la v6.",
+   "evidence": [
+    "crates/zk-ssl-verify/src/main.rs:238-247 y 327-348",
+    "crates/zk-ssl-verify/src/inclusion.rs:622-662"
+   ]
+  },
+  {
+   "fact": "El verificador de recibos de inclusión de cuenta (verificar_inclusion_v2..v5, para zkssl_inclusionReceipt) es solo de biblioteca. Ningún sobre del kit ni ningún mando del cli lo consume. La 'inclusión' que el kit demuestra es la del acuse bajo acusesRoot.",
+   "evidence": [
+    "grep verificar_inclusion: sin usos fuera de crates/zk-ssl-verify/src/inclusion.rs y lib.rs:82",
+    "spec/PAQUETE.md:392-420"
+   ]
+  },
+  {
+   "fact": "Comentarios rancios que un informe no debe citar como vigentes: (1) log.rs:571-573 dice que EpochHead 'No lleva firma, y el proyecto no tiene ninguna primitiva de firma', pero el nodo firma con XMSS desde §241-§243 y tests_cabeza lo corrige en log.rs:969-972. (2) mmr.rs:12-17 dice 'La cabeza de epoca NO la compromete aun', cosa falsa desde §292 (v3). (3) spec/RPC.md:122-124 da pruebas de '~54–66 KB', cuando metrics.rs mide 72-84 KB desde §538. (4) ARQUITECTURA.md y PAPER.md describen OpenAccount con 'resumen de prueba cero', sustituido en §278 por el sello de ausencia declarada.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:571-573, 969-972",
+    "crates/zk-ssl-verify/src/mmr.rs:12-17",
+    "spec/RPC.md:122-124",
+    "crates/zk-ssl/src/metrics.rs:105-112",
+    "PAPER.md:899-905"
+   ]
+  },
+  {
+   "fact": "El firmante reserva el índice XMSS con fsync en el guardián ANTES de firmar y verifica su propia firma antes de devolverla (2,4 ms de 144,5 ms). Tras una caída, un índice quemado sin firma es el caso normal (13 de 25 en K.1). El crate xmss es 0.1.0-pre.0 y no tiene auditoría. La custodia de la clave es declarada, y solo la modalidad 'fichero' se comprueba.",
+   "evidence": [
+    "crates/zk-ssl-node/src/firma_cabeza.rs:27-40, 178-201",
+    "SECURITY.md:176-180",
+    "spec/RPC.md:616-628"
+   ]
+  },
+  {
+   "fact": "Política de retención: 'Los ~124 MiB por mil pagos son bytes de prueba generados y en tránsito, no crecimiento del ledger. El nodo no los guarda ... si nadie conserva las pruebas, la re-verificación por un tercero depende de que el productor guarde la suya'. A volumen Fedwire, el registro estimado sería de ~114 MB/día y ~42 GB/año con 137 B por entrada: 'Estimación desde la estructura, no medida en disco'.",
+   "evidence": [
+    "doc/DIAGNOSTICO_ESCALADO.md:399-419"
+   ]
+  },
+  {
+   "fact": "Histórico de cabezas: el operador sirve solo la última cabeza firmada, en memoria, que se pierde al reiniciar. El histórico lo llevan los diarios de los testigos (§248), a ~54 MB/día y ~20 GB/año por testigo. 'Un testigo que no existía no tiene diario'. Las cofirmas se retienen solo para la última época con envíos, y cada una ocupa ~37 KB.",
+   "evidence": [
+    "spec/RPC.md:643-700",
+    "spec/RPC.md:905-916"
+   ]
+  },
+  {
+   "fact": "El paquete de posición verifica la firma contra la publicKey que viaja dentro del propio paquete. El índice de la cabeza solo está acotado por abajo, mediante el índice de hoja embebido en la firma. Las cofirmas se cuentan pero no se juzgan: la política k la fija el cliente.",
+   "evidence": [
+    "crates/zk-ssl-verify/src/main.rs:262-284, 351-365",
+    "spec/PAQUETE.md:674-685"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,596 @@
+{
+ "cluster": "measures",
+ "base_commit": "8b8564f958726645b42acb3e485385216a07c0ae",
+ "adjudications": [
+  {
+   "id": "M1",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Lo reproduje. Buscando EPYC, 7763 y '128 GB/GiB' en todo el árbol (sin target/ ni doc/ecst) no sale nada. 'NVMe' aparece sólo como hipótesis de umbral (zk-ssl-guardian/src/lib.rs:61,104; AUDITORIA.md:16914). Busqué la refutación por el único sitio posible: el pod de §306 (RTX 5090). Allí nproc/free veían 128 núcleos lógicos y 754 GiB del anfitrión, y el cgroup daba 15,3 núcleos y 99,65 GiB. El modelo de CPU no consta en §306-§307, así que no puede descartarse que fuera un EPYC, pero en ese pod sólo corrió la envoltura en zkVM y ninguna de las cifras de evaluación del borrador. Los '64 núcleos' coinciden con el supuesto de dimensionado de ESCALADO.md y con la línea de proyección de metrics.rs:338, que es su origen probable. Hay tres precisiones a la redacción del verificador. (1) El i5-1135G7 sólo se nombra desde §229/§234 y en §462/RFC-0007. §89, §130-§131 y FIVE_BACKENDS.md:3-5 no nombran la CPU ('WSL2 sobre un portátil de consumo'), y §181 habla de un 'Ryzen del piloto'. Atribuir TODA serie histórica al i5 es una inferencia. (2) \"'nproc'=8\" no está escrito así: §462 dice '8 nucleos', y §229 da 4 físicos y 8 lógicos. (3) El disco del portátil no se describe (ext4 bajo $HOME en WSL2), así que el repo tampoco documenta ningún NVMe. El veredicto no cambia con el árbol: S566-S582 no añaden ninguna máquina.",
+   "evidence": [
+    "grep -rniE 'EPYC|7763|128 ?GB|128 ?GiB' (sin target/ ni doc/ecst): 0 coincidencias",
+    "spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md:351-352 'máquina de referencia (i5-1135G7, 8 núcleos, 12.248.696 kB de RAM, WSL2)'",
+    "AUDITORIA.md §462 (l.34035-34036) 'i5-1135G7, 8 nucleos, MemTotal 12.248.696 kB, WSL2, rustc 1.97.1'",
+    "AUDITORIA.md §229 (l.16302-16304, 16378-16380, 16393-16394) 'portátil de cuatro núcleos'; 'cuatro de ocho hilos lógicos'; 'es lo que da un i5-1135G7'",
+    "AUDITORIA.md §234 (l.16912-16914) y crates/zk-ssl-guardian/src/lib.rs:60 'WSL2 sobre un i5-1135G7'",
+    "FIVE_BACKENDS.md:3-5 'WSL2 sobre un portátil de consumo' (sin CPU); AUDITORIA.md §181 (l.12988) 'Ryzen del piloto'; doc/medicion-130-apareada.md:7 'la del piloto (WSL...)'",
+    "AUDITORIA.md §306 (l.22858-22877, 22945-22947): pod RTX 5090, 'nproc y free mienten: veian 128 nucleos y 754 GiB ... el cgroup daba 15,3 nucleos y 99,65 GiB'; sin modelo de CPU",
+    "AUDITORIA.md §89.5 (l.7495-7497); doc/ESCALADO.md:32-33; crates/zk-ssl/src/metrics.rs:338 (proyección '64 nucleos ... TPS')",
+    "crates/zk-ssl/src/metrics.rs:24-28 'falta repetición, control de varianza y hardware documentado'"
+   ],
+   "correct_statement": "Ninguna medición del repositorio declara un AMD EPYC 7763, 64 núcleos, 128 GB de RAM ni un disco NVMe. La máquina que el repo llama 'de referencia' es un portátil Intel Core i5-1135G7 (4 núcleos físicos, 8 hilos) bajo WSL2, con MemTotal 12.248.696 kB (RFC-0007:351-352; AUDITORIA §229, §234, §462). Las series anteriores (§89, §130-§131, FIVE_BACKENDS.md) sólo dicen 'WSL2 sobre un portátil de consumo', y §181 menciona un 'Ryzen del piloto', así que el hardware de esas series no está documentado (metrics.rs:24-28). La única otra máquina es un pod con RTX 5090, cuyo anfitrión no se identifica (cgroup de 15,3 núcleos y 99,65 GiB), y sólo se usó para la envoltura en zkVM (§306-§307). Los '64 núcleos' del repo son un supuesto de dimensionado (ESCALADO.md; §89.5; metrics.rs:338), no hardware medido.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M2a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Lo reproduje: '62,4' no aparece en ninguna parte del árbol. El tamaño no depende de la máquina (metrics.rs:505-512: 'El tamaño de la prueba no depende de la maquina'), así que la banda medida lo contradice directamente y FALSA está bien puesto. En la convención del repo (KB = bytes/1024: §218; zk-ssl-cli/src/trace.rs:253-255), 62,4 KB son 63.898 B, y no coinciden con ninguna medida histórica: envío 64.722 / 65.840 / 66.164 / 66.998 / 66.739 B; cobro 65.250 / 66.820 / 65.313 / 66.692 B; transferencia de un paso 61.966 B. Hay dos correcciones al enunciado del verificador. (a) 'cada prueba de la capa pesa entre 76.192 y 80.232 B' generaliza de más. La banda del §538 es sólo de ENVÍO y COBRO; otros circuitos no tienen cifra publicada tras el §538. En la microVM del 2026-09-28, en una sola ejecución (REPRODUCCION.md), la emisión delegada dio 64,3 y 65,3 KiB. (b) El §538 registra también lo medido por PAGO, 155.337-159.329 B. La banda publicada, 145.953-167.967 B, es esa medida con el margen declarado del 5 %. Hay además una prueba que el verificador no pudo ver. En la re-ejecución del 2026-09-30 sobre main 71c5aad, UNA sola corrida, el envío midió 78,9 KiB, entre 80.742 y 80.845 B, y el pago 156,7 KiB, unos 160.360-160.560 B. Los dos quedan POR ENCIMA de los máximos medidos en el §538 (80.232 y 159.329 B) y DENTRO de la banda publicada. Lo que ata el sistema es la banda con margen, no el rango de las 15 muestras. metrics.rs no ha cambiado desde d531c80.",
+   "evidence": [
+    "grep '62[,.]4' en el árbol: 0 coincidencias",
+    "AUDITORIA.md §538 (l.39290-39292, 39320-39321): 'envio 73.571..84.244, cobro 72.382..83.723, pago 145.953..167.967 B'; 'La banda: envio 77.444..80.232 B, cobro 76.192..79.736 B, pago 155.337..159.329 (15 muestras por eje)'",
+    "crates/zk-ssl/src/metrics.rs:62-83 (PUBLICADA_PAGO_MIN_B = 145_953, MAX_B = 167_967; 'UNIDAD: bytes de UN pago, que son DOS pruebas')",
+    "crates/zk-ssl/src/metrics.rs:114-122 (BANDA_ENVIO_B (73_571, 84_244); BANDA_COBRO_B (72_382, 83_723)); 505-512 (el tamaño no depende de la máquina)",
+    "AUDITORIA.md §218 (l.14936-14942): 54.858 B = '53,6' KB (KB = 1024 B); crates/zk-ssl-cli/src/trace.rs:253-255 fmt_kb = bytes/1024",
+    "crates/zk-ssl/src/log.rs:196-204 ('~62 KB por operación ... es por PRUEBA'); AUDITORIA.md §31 (l.2511-2518)",
+    "doc/ecst/borrador/simulate-2026-09-28.log (UNA ejecución, microVM, d531c80): mint 64.3 KB y 65.3 KB, send 77.6 KB, claim 76.7 KB",
+    "doc/ecst/borrador/simulate-2026-09-30.log y REPRODUCCION.md (UNA ejecución, microVM, 71c5aad): mint 66.8/66.5 KB, send 78.9 KB, claim 77.8 KB"
+   ],
+   "correct_statement": "Desde el §538 (2026-09-24; zkssl/0.4, pruebas con ocultación y MerkleConSal), una prueba de ENVÍO midió 77.444-80.232 B y una de COBRO 76.192-79.736 B (15 muestras por eje), y un pago, que son dos pruebas, 155.337-159.329 B. Con el margen declarado del 5 %, las bandas publicadas son: envío 73.571-84.244 B, cobro 72.382-83.723 B y pago 145.953-167.967 B, es decir, 139,2-160,2 MiB por mil pagos (AUDITORIA §538; crates/zk-ssl/src/metrics.rs:62-83, 114-122). El tamaño ya no es determinista: depende de q y de la sal. Una ejecución suelta puede quedar fuera del rango medido y dentro de la banda: el 2026-09-30 un envío midió unos 80,8 kB. La banda no cubre los demás circuitos. '~62 KB' es prosa antigua, POR PRUEBA y anterior a la ocultación (log.rs:196-204; §31; §304). La cifra de 62,4 KB no tiene fuente.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M2b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "El veredicto es correcto, pero el enunciado correcto del verificador arrastra un error de fecha que también trae la lista de 'hechos conocidos' de esta tarea. 66.739 y 66.692 B NO son del 2026-08-26. Salen del §512, el arreglo B: 'ENVIO 66.998 -> 66.739 B ... COBRO 65.313 -> 66.692; el pago, 133.431', y la medida apareada de ese sello es del 2026-09-19. El 2026-08-26 (§362), la vía documentada dio 66.998 y 65.313 B, las cifras del §304. El comentario de metrics.rs:74-78 y el docstring de tools/check_publicadas.py:44-49 casan la fecha del §362 con las cifras del §512: es un anacronismo del propio repo. Además, ese docstring dice que los_dos_lados_del_pago_atan_la_banda 'asierta esos dos bytes', y desde el §538 lo que asierta es la banda (metrics.rs:763-774). La serie correcta, por prueba (envío/cobro), es: §130 64.722/65.250; §218 66.164/66.820; §304 (14-08, remedida el 17-08) y §362 (26-08) 66.998/65.313; §512 (19-09) 66.739/66.692; §538 la banda. Todo lo anterior al §538 va sin ocultación.",
+   "evidence": [
+    "AUDITORIA.md §512 (l.37370-37380, 37388-37391): 'ENVIO 66.998 -> 66.739 B ... COBRO 65.313 -> 66.692; el pago, 133.431'; 'Medido APAREADO el 2026-09-19'",
+    "AUDITORIA.md §362 (l.27567-27571): la vía documentada, 'cinco repeticiones, 66.998 y 65.313 sin una sola diferencia'",
+    "crates/zk-ssl/src/metrics.rs:74-78 'MEDIDO el 2026-08-26 ... 66_739 y 66_692' (anacrónico)",
+    "tools/check_publicadas.py:44-49 (mismo texto; 'asierta esos dos bytes')",
+    "crates/zk-ssl/src/metrics.rs:763-774 (desde el §538 el test asierta BANDA_ENVIO_B/BANDA_COBRO_B)",
+    "AUDITORIA.md §304 (l.22656) '66.998 y 65.313, identicos en cuatro corridas'; §130.1 (l.10662-10663); §218 (l.14941-14942)",
+    "spec/rfc/0009-lo-que-revela-una-prueba.md:632 'La cifra apagada (133.431 B, 127,2 MiB)'"
+   ],
+   "correct_statement": "66.739 B (envío) y 66.692 B (cobro) son el tamaño de UNA prueba de cada lado tras el arreglo B. Se midieron en el §512 (2026-09-19), sin ocultación, y eran deterministas. Suman 133.431 B por pago (127,2 MiB por mil), la 'cifra apagada' que el §538 retiró (RFC-0009:632). El comentario de metrics.rs:74-78 les pone la fecha 2026-08-26, pero ese día (§362) la vía documentada dio 66.998 y 65.313 B, las cifras del §304. No son una banda ni la cifra vigente. La vigente es la banda del §538: 145.953-167.967 B por pago.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M2c",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Lo reproduje: FIVE_BACKENDS.md:39,146, AUDITORIA §218 y SECURITY.md:585, que antes era la línea 550 y se ha movido con los 35 renglones que añadieron S566-S582. El verdadero sesgo está en la frase final del verificador, 'hoy son 72-84 KB por prueba'. Esa banda es sólo de envío y cobro, y está en miles de bytes. En la convención del repo (KB = 1024 B) son 70,7-82,3 KB. Del mismo modo, los '53,6-65,3 KB' del §218 son 54.858-66.820 B.",
+   "evidence": [
+    "FIVE_BACKENDS.md:39 (tabla: 'Tamaño de prueba ... 36,7 KB'); :146 ('blowup 16, ext. cuadrática | 36,7 KB | 39 ms | 127 bits | 29 / 63'); :301-303 (una sola ejecución)",
+    "PAPER.md:151-154 'Las pruebas STARK del circuito de comparación ocupan 36,7 KB ... 53,6 a 65,3 KB, medidos en §218'",
+    "AUDITORIA.md §218 (l.14936-14951) '36,7 KB es una medida correcta —del circuito de comparación'",
+    "SECURITY.md:585 'Los 36,7 KB de las tablas comparativas son del circuito de comparación'",
+    "crates/zk-ssl/src/metrics.rs:114-122 (bandas de envío y cobro)"
+   ],
+   "correct_statement": "36,7 KB es el tamaño de la prueba STARK del circuito de COMPARACIÓN de FIVE_BACKENDS.md (blowup 16, extensión cuadrática; 127 bits conjeturados frente a 29/63 demostrables), medido en una sola ejecución (FIVE_BACKENDS.md:39, 146, 301-303). No es el tamaño de una transición de la capa. Los circuitos de producción midieron 54.858-66.820 B (53,6-65,3 KB con KB = 1024 B) antes de la ocultación (§218). Desde el §538, una prueba de envío o de cobro mide 76.192-80.232 B, con banda publicada de 72.382-84.244 B (metrics.rs:114-122). Los demás circuitos no tienen cifra publicada tras el §538.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M3a",
+   "agree": false,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "No hay ningún 412 ms en el árbol, en eso coincido. Pero FALSA exige que las fuentes lo contradigan, y aquí no lo hacen de forma concluyente. (1) El §219 publica la columna de generación como '282 · 461 · 220 ms', con un ±50 % ('ruido con nombre de medida'), y el §220 cita 'la generación de una prueba —220 a 461 ms' (también el §229, l.16375-16376). 412 ms cae dentro de ese rango. (2) Los tiempos absolutos dependen de la máquina (metrics.rs:134-137; §304 no los ata), y el borrador los atribuye a un EPYC que el repo nunca usó. (3) Los probadores corren en un solo hilo: ningún Cargo.toml activa la feature 'concurrent' de winterfell (crates/zk-ssl/Cargo.toml:26 'winterfell = \"0.13\"'; el fork crates/winter-prover/Cargo.toml:37-46 la define con default = [\"std\"]). Por eso un núcleo Zen 3 puede quedar por encima o por debajo del i5, y sus 64 núcleos no aceleran una prueba. Es una cifra inventada a la que no respalda ninguna medición: SIN_FUENTE, severidad alta. El cambio de veredicto NO viene del árbol, porque el §219 ya estaba en d531c80. Añado lo que el verificador no vio: los tiempos posteriores al §538 sólo constan en metrics.rs:128-133 y en RFC-0009:744-748. AUDITORIA no tiene ninguna cifra en ms después de la l.39270, y README.md:199-200 sigue remitiendo a §130-§131, anteriores a la ocultación, como 'los tiempos medidos'.",
+   "evidence": [
+    "grep '412 ms' en el árbol: 0 coincidencias",
+    "AUDITORIA.md §219 (l.15115-15121) '282 · 461 · 220 ms ... aun promediando tres varía un ±50 %'; §220 (l.15181-15182) 'la generación de una prueba —220 a 461 ms con ±50 % de ruido (§219)'",
+    "AUDITORIA.md §130.1 (l.10660-10668) send 353,2 ms, claim 243,1 ms; §131.1-131.2 (l.10724-10740) 322,2 ± 1,8 / 217,7 ± 0,9 ms; deriva ~9 %",
+    "crates/zk-ssl/src/metrics.rs:128-133 (SALIDA-538M: 'envio 697,9-741,6 ms y cobro 696,9-715,6 ms como minimos'); spec/rfc/0009-lo-que-revela-una-prueba.md:744-748",
+    "crates/zk-ssl/src/metrics.rs:134-137 'los bytes no dependen de la maquina, los tiempos SI'",
+    "crates/zk-ssl/Cargo.toml:26; crates/winter-prover/Cargo.toml:37-46 (concurrent opcional, default = [\"std\"]); ningún otro Cargo.toml nombra 'concurrent'",
+    "README.md:199-200 (remite a §130 y §131 como 'los tiempos y tamaños medidos')",
+    "doc/ecst/borrador/simulate-2026-09-28.log (UNA ejecución, microVM, d531c80): send 970 ms, claim 1198 ms; simulate-2026-09-30.log (71c5aad): send 1333 ms, claim 879 ms"
+   ],
+   "correct_statement": "Ninguna medición del repo da 412 ms: la cifra no tiene fuente. En el portátil del autor, en release y antes de la ocultación, generar una prueba de envío costó 322-353 ms y una de cobro 218-243 ms, en dos tandas de 5 muestras (σ intra-tanda ~0,5 %, deriva sistemática entre tandas ~9 %; AUDITORIA §130-§131). Tras la ocultación del §538, cada lado costó 697-742 ms, tomado como el mínimo de repeticiones entrelazadas con la primera descartada, en dos o tres corridas (metrics.rs:128-133; RFC-0009:744-748). Esta última cifra no figura en AUDITORIA. Son valores absolutos de una sola máquina, sin gate (§304), y el probador es monohilo. En otra máquina (microVM, una ejecución por día), el envío tardó 970 y 1.333 ms y el cobro 1.198 y 879 ms: el orden entre los dos lados se invierte de una corrida a otra.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M3b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Lo sostengo con más evidencia de la que citó el verificador. Toda medida de verificación STARK de la capa en el repo queda muy por debajo de 8,1 ms: 2,32-2,41 ms (§89.1), 2,49/2,43 ms de envío/cobro (§204 A.2, que el verificador no citó), 2,37-2,86 ms con el verificador aislado (§305) y 1,1-1,6 ms en la prueba de edad (§462). Incluso el coste por operación vía RPC, con todo dentro, se queda en 4,035 ms (§229). Además, en la microVM (una ejecución el 2026-09-28 sobre d531c80 y otra el 2026-09-30 sobre 71c5aad, ambas después del §538) el apply entero de envío y de cobro tardó 5-6 ms, y ese apply incluye la verificación con MerkleConSal (two_phase.rs:974-1021). Que un 3,4× más lento se deba al hardware no es plausible. Hay que dejar dicho el matiz: el repo no tiene una re-medida de la verificación aislada posterior al §538. El instrumento el_coste_de_verificar_una_prueba (metrics.rs:241-300) ya verifica con sal y podría medirla. Los 8 ms de las tablas son del PLONK/KZG. El '~4 ms' de PAPER.md:489 es de la transferencia de un paso, una vía retirada.",
+   "evidence": [
+    "AUDITORIA.md §89.1 (l.7426-7433) '2,36 / 2,34 / 2,41 / 2,32 / 2,35 ms ... Media 2,35 ms, dispersion 4 %'",
+    "AUDITORIA.md §204 A.2 (l.13850-13857) 'verificacion sola | send 2,49 ms ... claim 2,43 ms'; 'Verificacion 7 %'",
+    "AUDITORIA.md §305 (l.22752-22754) 'verifica el fixture en nativo en 2,37-2,86 ms'; §462 (l.34039) 'Verificar, 1,1 a 1,6 ms'",
+    "AUDITORIA.md §229 (l.16311-16325) '0,225 + 4,035·n'",
+    "crates/zk-ssl/src/two_phase.rs:974-1021 (validate_send: 'SE VERIFICA LA PRUEBA'; verify::<SendAir|SendV2Air, Blake3, ..., MerkleConSal<Blake3>>)",
+    "crates/zk-ssl/src/metrics.rs:241-300 (instrumento #[ignore], N = 50, verifica con MerkleConSal)",
+    "doc/ecst/borrador/simulate-2026-09-28.log y simulate-2026-09-30.log (UNA ejecución cada uno): 'aplicado → log#4 Send ... [5 ms]', 'log#5 Claim ... [6 ms]'",
+    "FIVE_BACKENDS.md:38 'Verificación | 5 ms | 91 ms | 1 ms | 8 ms' (el 8 ms es de PLONK/KZG); PAPER.md:473"
+   ],
+   "correct_statement": "Verificar una prueba de envío o de cobro, sin árbol ni disco, midió 2,32-2,41 ms (5 ejecuciones, media 2,35 ms; §89.1) y 2,43-2,49 ms (§204 A.2); el verificador aislado, 2,37-2,86 ms (§305). Todo es anterior a la ocultación del §538, y el repo no tiene una re-medida posterior. En una microVM (2026-09-28 y 2026-09-30, una ejecución cada día), el apply ENTERO, que incluye la verificación con sal, tardó 5-6 ms. Por RPC, el coste por operación aplicada es 4,035 ms (§229). La cifra de 8,1 ms no tiene fuente. Los 8 ms que aparecen en las tablas son la verificación PLONK/KZG del circuito de comparación (FIVE_BACKENDS.md:38).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M4a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "El veredicto se sostiene aunque el repo no mida el encadenamiento directamente. Una sola permutación Rescue ya cuesta 7,44-8,91 µs según tres instrumentos (§217), y 8,1 µs por derive_public_id (§82.3). Eso es 3,7-4,5 veces el tope de 2 µs que afirma el borrador, y el chain_digest hace 5 (6 en la era 2). Un núcleo de servidor no explica un factor de ~20. Corrijo dos cosas del enunciado correcto del verificador. (1) El rango derivado es 37-54 µs (5 × 7,44 a 6 × 8,91), no 'unos 40-60'. (2) 'Lo dominante del apply son los árboles, el registro y la serialización' es falso según los propios números del repo. La verificación STARK sola cuesta 2,43-2,49 ms (§204 A.2) y el apply_send tras el §209 cuesta 3,11-3,33 ms, así que la verificación es ~73-80 % del apply (derivado). La frase del §209 sobre 'arboles, registro, serializacion' se refiere a la diferencia entre lo proyectado y lo medido, no al total.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:250-262 (chain_digest = 5 native_merge), 281-294 (chain_digest_v2 = +1)",
+    "crates/zk-ssl-hash/src/lib.rs:100-106 (native_merge = Rp64_256::apply_permutation)",
+    "AUDITORIA.md §217 (l.14746-14747) 'El µs por merge implícito sale 7,53 en §204, 7,44 ... y 8,91'",
+    "AUDITORIA.md §82.3 (l.6765) 'derive_public_id por segundo y nucleo | 122.850' (≈8,1 µs por evaluación Rescue)",
+    "AUDITORIA.md §204 A.4 (l.13876-13893) 'Blake3 sobre los mismos bytes | 0,011 ms'; §204 A.2 (l.13850-13857) verificación sola 2,49/2,43 ms",
+    "AUDITORIA.md §209 (l.14160-14170) 'apply_send | 33,27 ms | 3,11-3,33 ms'"
+   ],
+   "correct_statement": "El repo no mide directamente el sobrecoste de encadenar una entrada, pero los componentes que sí mide lo sitúan un orden de magnitud por encima de 0,002 ms. El resumen de la prueba (Blake3 sobre ~66 KB) midió 0,011 ms (§204 A.4, §209). El chain_digest son 5 permutaciones Rescue-Prime Rp64_256, 6 en la era 2 (log.rs:250-294; zk-ssl-hash/src/lib.rs:100-106), a 7,44-8,91 µs cada una (§217). Eso da una ESTIMACIÓN derivada de 37-54 µs por entrada. Tras el §209, el apply_send cuesta 3,11-3,33 ms, y lo que domina es la verificación STARK (2,43-2,49 ms, §204 A.2), no el hash; el encadenamiento sería del orden del 1-2 % (derivado). Todo es anterior al §538.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M4b",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "De acuerdo: no hay ninguna medición del rendimiento de una auditoría offline. Busqué la cifra más cercana para que un lector no la confunda. El §82.3 da 122.850 evaluaciones de derive_public_id por segundo y núcleo, a menos del 2 % de 125.000, pero mide un hash Rescue, no una auditoría. Un rendimiento de auditoría sólo puede DERIVARSE. Recomponer la cadena (5-6 permutaciones por entrada a 7,44-8,91 µs) daría del orden de 18.700-26.900 entradas/s por núcleo. Re-verificar las pruebas, del orden de 425/s por núcleo (1/2,35 ms, §89.1, antes del §538). Además, el registro guarda resúmenes y no pruebas (log.rs:194-198), así que re-verificar exige obtener las pruebas aparte. Arqueo no tiene 'bloques'. No lo marco FALSA porque, según qué se entienda por 'auditoría', ninguna medida la excluye del todo.",
+   "evidence": [
+    "grep '125[.,]000' en el árbol: 0 coincidencias",
+    "crates/zk-ssl-verify/src/reverificacion.rs:1-40 (veredicto por entrada; sin cifra de rendimiento); AUDITORIA.md §279 (l.20976-21000), §282",
+    "AUDITORIA.md §82.3 (l.6765) '122.850' derive_public_id por segundo y núcleo (otra magnitud)",
+    "AUDITORIA.md §217 (l.14746-14747); §89.1 (l.7432) 'Pruebas/s por nucleo | 425'",
+    "crates/zk-ssl/src/log.rs:194-198 'Resumen de la prueba, no la prueba entera'"
+   ],
+   "correct_statement": "El repo no mide el rendimiento del reverificador ni el de ninguna auditoría histórica offline (zk-ssl-verify/src/reverificacion.rs; §279-§282). Arqueo no tiene 'bloques': tiene entradas de registro y cabezas de época. Sólo caben ESTIMACIONES derivadas, y deben declararse como tales. Recomponer la cadena (5-6 permutaciones Rescue por entrada, a 7,44-8,91 µs; §217) daría unas 19.000-27.000 entradas/s por núcleo. Re-verificar las pruebas, que el registro no guarda, daría unas 425 por segundo y núcleo (§89.1, antes del §538). La cifra de 125.000/s no tiene fuente. La más parecida del repo, 122.850 derive_public_id/s por núcleo (§82.3), mide otra cosa.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M4c",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Lo reproduje: store.rs:415-455 describe 137/169 B y el test la_ida_y_vuelta_del_disco_conserva_la_era asierta b2.len() == 169 y b1.len() == 137. El test está hoy en log.rs:1528 y no en la 1469: log.rs creció con S570. El árbol añade además un hecho que el verificador no podía ver en d531c80. Desde el S569, el nodo anota 40 B por cada applySend/applyClaim directo que EVALÚA, lo aplique o lo rechace, en el registro de recepción. Lo hace con fsync del fichero, y del directorio si la era es nueva, ANTES de llamar a la capa. Ese registro crece sin poda (§580). El lote de applyMany y la prenda no lo llevan (§576). En el nodo, cada operación directa deja 169 + 40 = 209 B. Tampoco es 256. El veredicto no cambia; el enunciado correcto, sí.",
+   "evidence": [
+    "crates/zk-ssl/src/store.rs:415-455 ('137 = seq(8) | kind(1) | root_old(32) | root_new(32) | proof_digest(32) | chain(32)'; '169'; 'se esperaban 137 (era 1) o 169 (era 2)')",
+    "crates/zk-ssl/src/log.rs:1528-1556 (la_ida_y_vuelta_del_disco_conserva_la_era: assert_eq!(b2.len(), 169); assert_eq!(b1.len(), 137))",
+    "crates/zk-ssl-node/src/registro_recepcion.rs:110 (ANCHO_ENTRADA = 40), 141-167 (anotar: write_all + sync_all del fichero y, si es nuevo, del directorio)",
+    "crates/zk-ssl-node/src/main.rs:2669-2673 (recibir -> anotar -> apply_send)",
+    "AUDITORIA.md §569 (l.41286-41300), §576 (l.41796-41840), §580 (l.41975-41984: 'El registro crece ANCHO_ENTRADA = 40 bytes por recibo')",
+    "crates/zk-ssl/src/log.rs:194-198 (la entrada guarda el resumen, no la prueba)"
+   ],
+   "correct_statement": "Cada entrada del registro encadenado ocupa en disco 137 B (era 1) o 169 B (era 2, con el compromiso autorizante) (crates/zk-ssl/src/store.rs:415-455; test la_ida_y_vuelta_del_disco_conserva_la_era, log.rs:1528). Desde el S569, el nodo anota además 40 B, con fsync, por cada applySend o applyClaim directo que evalúa, lo aplique o lo rechace, en el registro de recepción (registro_recepcion.rs:110, 141-167; AUDITORIA §569). Ese registro hoy crece sin poda (§580). El lote de applyMany y la prenda no lo llevan (§576). La entrada guarda el resumen de la prueba, no la prueba (log.rs:194-198); si se retienen las pruebas, cada envío o cobro añade 76-80 KB (§538). Ninguna cifra del repo da 256 B.",
+   "changed_by_tree": true
+  },
+  {
+   "id": "M4d",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "De acuerdo, y con un hallazgo. El 99,6 % es exactamente el cociente de dos cifras que los propios borradores se inventan: 1 − 256/62.400 = 99,59 %, y 1 − 256/63.898 = 99,60 % si KB = 1024 B. Es internamente coherente y hereda la falta de fuente de sus dos términos. Con las cifras del repo, y como DERIVACIÓN, sale otra cosa. Entrada de era 2 frente a prueba del §538: 1 − 169/76.192..80.232 = 99,78-99,79 %. Por pago, dos entradas frente a 145.953-167.967 B: 99,77-99,80 %. Contando los 40 B del registro de recepción (S569): 99,73-99,74 %. La única frase del repo es cualitativa y está desfasada (doc/CONSECUENCIAS.md:45-47: ~472×).",
+   "evidence": [
+    "grep '99[,.]6' en el árbol: 0 coincidencias",
+    "python3: 1-256/62400 = 0,99590; 1-169/80232 = 0,99789; 1-169/76192 = 0,99778",
+    "doc/CONSECUENCIAS.md:45-47 '137 bytes por operación en vez de ~65 KB: ~472 veces menos'",
+    "crates/zk-ssl/src/store.rs:415-417; crates/zk-ssl/src/metrics.rs:114-122"
+   ],
+   "correct_statement": "El repo no publica ninguna 'reducción del 99,6 %'. Ese porcentaje es exactamente el cociente de dos cifras sin fuente de los propios borradores: 256 B frente a 62,4 KB, 1 − 256/62.400 = 99,59 %. Con cifras del repo, y como DERIVACIÓN, guardar la entrada de 169 B (era 2) en lugar de la prueba (76.192-80.232 B, §538) ahorra un 99,78-99,79 %. La frase más cercana es cualitativa, anterior a la era 2 y a la ocultación: doc/CONSECUENCIAS.md:45-47, '137 bytes por operación en vez de ~65 KB: ~472 veces menos'.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M4e",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Lo reproduje: §229 da la recta 0,225 + 4,035·n y un 'TECHO DEL NODO POR RPC: 248 op/s', con sus condiciones (un cliente en serie, sin --ledger, sólo envíos, i5-1135G7), y §238 lo tabula. Añado lo que cambia el árbol. H.1 midió zkssl_applyMany: 'se cronometra solo la petición que los aplica'. Desde el §576, ese lote es justamente la vía que NO lleva recibo de recepción. La vía directa (applySend/applyClaim), desde el S569, hace un fsync del registro de recepción antes de evaluar, y su rendimiento en HEAD no está medido. Hay que distinguirlo también de los ~320 op/s del §209 y de los 273 op/s del §219 a 1e5 cuentas: esos son techos IMPLÍCITOS del apply en proceso, no del RPC.",
+   "evidence": [
+    "AUDITORIA.md §229 (l.16305-16330) 'Recta: 0,225 + 4,035·n'; 'TECHO DEL NODO POR RPC: 248 op/s'",
+    "AUDITORIA.md §229 (l.16383-16394) 'La CONCURRENCIA no está medida ... sin --ledger ... Solo envíos ... es lo que da un i5-1135G7'",
+    "AUDITORIA.md §238 (l.17247-17251); §230 (l.16405-16410); spec/RPC.md:388",
+    "AUDITORIA.md §576 (l.41826-41833) 'el recibo cubre applySend y applyClaim; applyMany y zkssl_pledge quedan FUERA'",
+    "crates/zk-ssl-node/src/registro_recepcion.rs:141-167 (fsync antes de volver); AUDITORIA.md §569",
+    "AUDITORIA.md §209 (l.14166) '~320 op/s'; §219 (l.15039, 15046) '273 op/s'; 'Citar «~320 op/s» era citar el mejor caso'"
+   ],
+   "correct_statement": "El techo del nodo por RPC es 248 op/s. Sale de un ajuste lineal, 0,225 + 4,035·n ms, sobre lotes de zkssl_applyMany de 1, 4, 8 y 15 envíos con tres repeticiones cada uno (AUDITORIA §229). Condiciones: nodo en memoria sin --ledger, un solo cliente en serie, sólo envíos, i5-1135G7 bajo WSL2, y antes de la ocultación del §538. La concurrencia no está medida, y con varios emisores sobre la misma raíz se pierde el 75 % de las pruebas (§230). El ciclo completo en un portátil da 4,95 ± 0,15 pagos/s, y el nodo es el 4 % de ese ciclo (§222, §229, §238). Desde el RFC-0010 (S569-S577), la vía directa con recibo hace un fsync más por operación, y ese coste no está medido. Los 248 op/s son de la vía agregada, que no lleva recibo (§576).",
+   "changed_by_tree": true
+  },
+  {
+   "id": "M5a",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "De acuerdo. No hay 1,82 ms ni 0,03 ms en ninguno de los dos repositorios; busqué en Arqueo y en hbs-state (README, spec, src). No lo marco FALSA porque el fsync absoluto depende del disco y del entorno, y el repo no puede contradecir una cifra tomada en otra máquina: el guardián discrimina por RAZÓN precisamente por eso. Como evidencia de que los absolutos no se transfieren, y marcada como UNA corrida en UN entorno: la microVM del 2026-09-28 dio ext4 p50 128,9-173,1 µs y tmpfs 0,54 µs. Es un tercer juego de cifras, distinto de las de K.1 y de las del borrador.",
+   "evidence": [
+    "grep '1[,.]82' y '0[,.]03 ms' en Arqueo y en hbs-state@a960828: 0 coincidencias",
+    "AUDITORIA.md §234 (l.16835-16838) '$HOME (ext4) | 0,907 ms | 382× ... /tmp (tmpfs) | 0,002 ms | 1×'",
+    "crates/zk-ssl-guardian/src/lib.rs:60-63 'Un NVMe rápido puede dar fsync de ~100 µs legítimos; por eso el discriminante principal es la razón'",
+    "doc/ecst/borrador/REPRODUCCION.md (sonda-fsync, dos tandas de 30): ext4 p50 128,9/173,1 µs; tmpfs 0,537/0,536 µs"
+   ],
+   "correct_statement": "Ninguno de los dos repositorios registra 1,82 ms ni 0,03 ms. La única medición del repo es el banco K.1 (§234), en ext4 bajo WSL2: fsync de 0,907 ms, y de 0,002 ms en tmpfs. Los valores absolutos dependen del disco y del entorno. Por eso el guardián no decide por el valor absoluto sino por la RAZÓN con escribir sin persistir (crates/zk-ssl-guardian/src/lib.rs:60-63, 96-106).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M5b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Lo reproduje. 0,907/0,002 = 453×, no 382×. El 382× es el fsync en ext4 frente a escribir sin persistir en el MISMO ext4; en tmpfs esa razón es 1×. Completo el enunciado con el procedimiento que declara el código: 20 escrituras de muestra, RAZON_MINIMA = 10 y SUELO_MICROS = 20 µs. Ambos umbrales están DECLARADOS, no derivados (lib.rs:94-106). La réplica de la microVM (una corrida, dos tandas de 30) da una razón p50 de 161-189 en ext4 y de 1,3 en tmpfs, coherente con la lógica del umbral.",
+   "evidence": [
+    "AUDITORIA.md §234 (l.16831-16848) tabla 'fsync | frente a no persistir'; 'el umbral se fija en 10×'",
+    "crates/zk-ssl-guardian/src/lib.rs:40-47 (misma tabla), 94-106 (MUESTRAS_AUTOCOMPROBACION = 20; RAZON_MINIMA = 10.0; SUELO_MICROS = 20.0)",
+    "AUDITORIA.md §234 (l.16862-16868) '25 de 25 sin una sola firma por delante'; '13 de 25'",
+    "AUDITORIA.md §234 (l.16907-16911) 'Nada frente a un corte de corriente ... no se ha hecho'",
+    "doc/ecst/borrador/REPRODUCCION.md: razón p50 ext4 161,4/189,4; tmpfs 1,3 (UNA corrida, microVM)"
+   ],
+   "correct_statement": "El banco K.1 (AUDITORIA §234) midió fsync en dos sistemas de ficheros de la misma máquina (WSL2 sobre un i5-1135G7): 0,907 ms en ext4 y 0,002 ms en tmpfs. El factor 382× NO es el cociente ext4/tmpfs, que sería 453×. Es lo que cuesta fsync en ext4 frente a escribir sin persistir en ese mismo ext4. En tmpfs esa razón es 1×, porque fsync devuelve éxito sin persistir nada. De ahí el umbral declarado del guardián: razón mínima de 10× y suelo de 20 µs, sobre 20 escrituras (crates/zk-ssl-guardian/src/lib.rs:94-106). K.1 probó durabilidad frente a la muerte del proceso (25 de 25 sin firma por delante; 13 de 25 con el contador adelantado), no frente a un corte de corriente.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M6a",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "De acuerdo, y amplío la búsqueda a hbs-state@a960828, de donde viene R(C,K): allí tampoco aparece TLA+ ni ningún método formal. En Arqueo, las únicas herramientas formales nombradas son Lean4/Coq y K-Framework (FV-3) y cvc5 (FV-2). Una matización útil para el informe: R(C,K) es una función pura de cuatro ramas sobre (contador, clave), cuya exhaustividad ya comprueban el match de Rust y los vectores. Lo que no tiene ningún modelo formal es el protocolo de persistir y luego firmar frente a caídas, probado sólo con kill -9 en 25 muertes y sin cortes de corriente.",
+   "evidence": [
+    "grep -rwiE 'TLA|tlaplus|PlusCal' en Arqueo y en hbs-state@a960828: 0 coincidencias",
+    "doc/VERIFICACION_FORMAL.md:96-104 (§3 FV-3: 'Lean4/Coq ... o K-Framework ... Se declaran como dirección ... no como deuda')",
+    "AUDITORIA.md §234 (l.16862-16865, 16907-16911): kill -9, 25/25; corte de corriente sin medir",
+    "crates/zk-ssl-guardian/src/lib.rs:324-353 (enum Reconciliacion, cuatro variantes)"
+   ],
+   "correct_statement": "Ni Arqueo ni hbs-state mencionan TLA+ ni ningún modelo formal de la reconciliación R(C,K); lo comprobé con grep en ambos árboles. El horizonte formal que declara Arqueo, FV-3 (Lean4/Coq o K-Framework), se refiere a la solidez del AIR y está marcado como 'dirección, no deuda' (doc/VERIFICACION_FORMAL.md §3). Un modelo TLA+ del protocolo de persistir y luego firmar frente a caídas sería una propuesta del propio informe, y así debe presentarse. Hoy ese protocolo sólo está probado con tests y con el banco K.1 (kill -9 en 25 muertes; §234), no frente a cortes de corriente.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M6b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Lo reproduje (§188-§190, §196; check_constraint_layout.py). El canon ejecuta la herramienta en tools/canon.sh:314; en d531c80 estaba en la línea 272. Corrijo tres cosas. (1) '6 de los 28 circuitos' usa la cuenta de agosto. Hoy crates/stark-experiment/src tiene 26 ficheros circuit_*.rs, más 5 de zk-core. Los seis censos son circuit_mint_climb, credit_climb, recovery_climb, mint, send y claim. NO cubren las variantes v2 que la capa verifica en vivo (SendV2Air en two_phase.rs:1016; claim_v2, refund_v2) ni los circuitos posteriores (prenda, edad, banda, cobro_pendiente, pago_en_curso). (2) SECURITY.md:86-88 sigue diciendo que 'FV-2 (spike SMT acotado) y FV-3 (Lean/K) siguen siendo horizonte declarado', lo que contradice el §190 y doc/VERIFICACION_FORMAL.md §2 ('EJECUTADA en §190'). (3) FV-2 es verificación mecanizada, aunque mínima: cvc5 da unsat en q2. Por eso 'falta de verificación formal mecanizada' es PARCIAL y no CONFIRMADA.",
+   "evidence": [
+    "doc/VERIFICACION_FORMAL.md §0 (l.5-12), §1, §2 ('EJECUTADA en §190: q2 unsat · q1 intratable por memoria'), §3",
+    "AUDITORIA.md §190 (l.13226-13262): 'q2_cadena_uf → unsat en 18/43/46 ms'; q1 'agotan la jaula de 6 GB en ~21 s'; 'Escalar a circuit_send ... CERRADO con datos'",
+    "tools/check_constraint_layout.py:641-672 (censo_mint_climb ... censo_claim), 964-972 (los seis ficheros censados)",
+    "ls crates/stark-experiment/src/circuit_*.rs: 26 ficheros; crates/zk-core/src: 5",
+    "crates/zk-ssl/src/two_phase.rs:1016 (verify::<SendV2Air, ...>: vía viva sin censo FV-1)",
+    "tools/canon.sh:314 (check_constraint_layout entre las nueve herramientas)",
+    "SECURITY.md:86-88 'FV-2 ... y FV-3 ... siguen siendo horizonte declarado' (desfasado frente a §190)"
+   ],
+   "correct_statement": "No hay ninguna demostración mecanizada de la solidez del AIR, de FRI, de Rescue ni de las propiedades de la capa. Sí hay trabajo formal parcial. FV-1 es un censo sintáctico de celdas y es compuerta del canon en seis circuitos (mint_climb, credit_climb, recovery_climb, mint, send y claim; tools/check_constraint_layout.py:964-972). Garantiza que ninguna celda de su traza queda sin restricción ni declaración ('referenciada', no 'determinada'), y no cubre las variantes v2 ni los circuitos posteriores. FV-2 fue un sondeo SMT con cvc5 --ff sobre circuit_refund: dio unsat en la consistencia de la cadena, con Rescue abstraído, y la pregunta de determinación completa agotó 6 GB en ~21 s, lo que cerró con datos su extensión (AUDITORIA §183-§190, §196). FV-3 (Lean4/Coq/K) es horizonte declarado. SECURITY.md:86-88 aún presenta FV-2 como horizonte, en contra del §190.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M6c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Lo reproduje. SECURITY.md §3.1 está hoy en la línea 304 (antes 299) y sigue con 'Estado: abierto'. doc/air/ contiene sólo circuit_burn.md y circuit_mint.md, y el propio documento los declara 'NO es un contrato'. La cuenta '28 circuitos' del verificador es la de agosto (§105: 'Las otras 26'); conviene no fijarla.",
+   "evidence": [
+    "SECURITY.md:304-317 (§3.1 'Ausencia de especificación formal del AIR — prioridad más alta ... Estado: abierto')",
+    "ls doc/air/: circuit_burn.md, circuit_mint.md; doc/air/circuit_mint.md:6-9 'Escrita por el autor del circuito ... NO es un contrato'",
+    "AUDITORIA.md §105 (l.8798-8830)"
+   ],
+   "correct_statement": "No existe especificación formal del AIR. SECURITY.md §3.1 la declara la carencia de mayor prioridad y la mantiene abierta. Sólo hay dos especificaciones en prosa, escritas por el propio autor, circuit_burn y circuit_mint, y el documento dice expresamente que 'no son un contrato' (doc/air/). La propiedad de no creación de dinero descansa en que las restricciones sean completas, y eso no está demostrado.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M7a",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "De acuerdo con el veredicto. Añado tres matices. (1) La frase del §47.2 que cita el verificador, 'no hay recursion, folding, agregacion ... en ningun crate', es inexacta leída a la letra: nova-experiment es miembro del workspace (Cargo.toml:10) y pliega. Se refiere al camino de producción. (2) La prueba que se envolvió en zkVM es anterior al §538 (66.998 B). Frente a las pruebas actuales de 76-80 KB, el receipt sucinto de 223.234 B sería ~2,8-2,9 veces mayor (derivado), no 3,3. (3) El borrador omite la contrapartida. Sin recursión, auditar la historia exige verificar cada prueba, y el registro sólo guarda resúmenes (log.rs:194-198). ECST abarata la PRUEBA pero no ofrece verificación sucinta de la historia.",
+   "evidence": [
+    "AUDITORIA.md §47.2 (l.4226-4229) 'no hay recursion, folding, agregacion ni verificacion-de-prueba-en-circuito en ningun crate'; Cargo.toml:10 (miembro crates/nova-experiment)",
+    "AUDITORIA.md §204 (l.14013-14018) recursión/Plonky3-Miden descartada: 'la etapa 2 no necesita recursion'",
+    "AUDITORIA.md §305 (l.22752-22771): 47.513.440 ciclos; proyección 5 h 07 en portátil sin GPU",
+    "AUDITORIA.md §306 (l.22875-22899): 40,9 s + 23,8 s en RTX 5090; receipt sucinto 223.234 B frente a 66.998 B; equilibrio en ~4 pruebas",
+    "AUDITORIA.md §307 (l.23029-23069): sucinto constante; join ~0,49 s; verificar el sucinto 18,2 ms",
+    "BACKLOG.md:1768, 1840-1856 (entrada 22 SUSPENDIDA; 'NO HAY CRUCE DE CURVAS')",
+    "crates/zk-ssl/src/log.rs:194-198 (el registro guarda el resumen, no la prueba)"
+   ],
+   "correct_statement": "En Arqueo, cada prueba se verifica de forma nativa en la capa (~2,35 ms, antes del §538) y su resumen se encadena en un registro con hash, sin recursión (§47.2, para el camino de producción; la única recursión del árbol es la prueba de concepto nova-experiment). El ahorro sólo tiene un apoyo medido indirecto: envolver UNA prueba de la capa verificándola dentro de una zkVM (RISC Zero) cuesta 47,5 M ciclos, ~5 h de CPU en el portátil o ~65 s de GPU en una RTX 5090, y el receipt sucinto (223.234 B) es MAYOR que la prueba suelta. Sólo ahorra bytes al agregar unas cuatro pruebas o más (§305-§307, con pruebas anteriores al §538). Es un experimento de envoltura, no un IVC, y la nota 22 sigue suspendida. La contrapartida es que, sin recursión, verificar la historia exige verificar cada prueba, y el registro no las guarda.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M7b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Lo reproduje: FIVE_BACKENDS.md:57-90 y crates/nova-experiment/src/lib.rs:81-103. Completo las cifras que el verificador omitió: PublicParams::setup 4,02 s, RecursiveSNARK::verify 108 ms y CompressedSNARK::verify 50 ms. 'Masiva' no está medido. El repo dice 'sustancial' y 'solo se amortiza con muchos pasos', y todo sale de una prueba de concepto cuyo paso es un único Poseidon. Para producción, además, HyperKZG exige los ficheros ptau de una ceremonia (crates/nova-experiment/Cargo.toml, feature test-setup).",
+   "evidence": [
+    "FIVE_BACKENDS.md:57-90 (setup 4,02 s; prove_step ~250 ms CONSTANTE; RecursiveSNARK::verify 108 ms; CompressedSNARK::prove 1,84 s; verify 50 ms; 10.764/10.538 restricciones; 'El sobrecoste del plegado es sustancial')",
+    "crates/nova-experiment/src/lib.rs:81-103 ('el mecanismo de plegado funciona y su coste es constante, no que Nova sea más rápido')",
+    "crates/nova-experiment/src/folding_chain.rs:39-49 (Bn256EngineKZG/GrumpkinEngine, HyperKZG + IPA, Spartan)",
+    "crates/nova-experiment/Cargo.toml [features] ('HyperKZG::setup is disabled in production builds ... ptau files from a trusted setup ceremony')"
+   ],
+   "correct_statement": "Lo único medido de IVC o plegado es una prueba de concepto con Nova (nova-snark 0.73, BN254/Grumpkin, HyperKZG) cuyo paso es un único hash Poseidon. Cuesta 10.764 restricciones por paso, casi todas del circuito verificador que inserta el plegado, y ~250 ms constantes por paso (el paso 9 costó 0,77 veces el paso 1). A eso se suman 4,02 s de setup, 1,84 s de compresión final y 108 ms / 50 ms de verificación (FIVE_BACKENDS.md:57-90). El repo califica el sobrecoste de 'sustancial', constante y amortizable, y advierte que no es comparable con los otros backends porque no implementa el circuito de cumplimiento. 'Masiva' no está medido. Nova quedó descartado por diseño: usa curvas y un compromiso que en producción exige ceremonia.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M7c",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "De acuerdo: no hay ninguna comparación medida entre ECST e IVC sobre la misma carga. Lo más cercano (§305-§307) mide envolver UNA prueba de la capa en una zkVM, en otra máquina, con pruebas anteriores al §538; no es IVC. Añado a la evidencia que README.md:196 repite la misma inexactitud que el resumen de PAPER.md ('el mismo circuito en cinco sistemas'), cuando nova-experiment no implementa ese circuito.",
+   "evidence": [
+    "FIVE_BACKENDS.md:86-90 ('Comparar de verdad exigiría portar la partida doble al StepCircuit'; 'No implementa el circuito de cumplimiento')",
+    "PAPER.md:12-15 ('el mismo circuito de liquidación financiera en cinco sistemas ... Nova/plegado'); PAPER.md:477-481",
+    "README.md:196 'El diseño se eligió midiendo el mismo circuito en cinco sistemas de prueba'",
+    "AUDITORIA.md §305-§307 (envoltura en zkVM, no IVC)"
+   ],
+   "correct_statement": "No hay ninguna comparación medida entre el modelo ECST (verificación nativa más encadenamiento con hash) e IVC/PCD sobre la misma carga, máquina y circuito. Las cifras de Nova, con un paso trivial y a nivel de prueba de concepto, y las de la zkVM (§305-§307: otra máquina, envoltura de una prueba) no son comparables entre sí ni con la capa. Un informe riguroso debe presentar la ventaja de ECST frente a IVC como argumento CUALITATIVO. La frase 'el mismo circuito en cinco sistemas' (PAPER.md:12-15; README.md:196) es inexacta para Nova.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M8a",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Lo reproduje. crates/zk-ssl/src/lib.rs:207-221 documenta proof_options como 'Configuración de 127 bits conjeturados' y enlaza a FIVE_BACKENDS; la advertencia post-cuántica está hoy en SECURITY.md:553-559 (antes 518-524). Añado un matiz. Que los 127/29-63 bits de FIVE_BACKENDS.md:146 correspondan a las proof_options de producción (42 consultas, grinding 21) lo afirma el comentario del código, no una medida publicada para los circuitos de la capa. Tampoco hay una declaración de bits posterior al §538, con MerkleConSal y ocultación.",
+   "evidence": [
+    "crates/zk-ssl/src/lib.rs:200, 207-221 (type Blake3 = Blake3_256; ProofOptions::new(42, 16, 21, Quadratic, 8, 31, Linear, Linear); '127 bits conjeturados')",
+    "SECURITY.md:553-559 '«post-cuántico» aquí significa sin supuestos de curva, no invulnerable. Grover degrada los hashes ... 63 bits de solidez sin extensión de campo'",
+    "FIVE_BACKENDS.md:140-151 (brecha: 127 conjeturados frente a 29/63 demostrables; 128/128 a 125,6 KB)",
+    "crates/zk-ssl-hash/src/lib.rs:100-106 (Rp64_256 sobre Goldilocks)",
+    "ARQUITECTURA.md:1568 'La resistencia post-cuántica del backend STARK no es gratuita'",
+    "AUDITORIA.md §106.2 (l.8893-8906); §48.3 (l.4330-4340)"
+   ],
+   "correct_statement": "En Arqueo, 'post-cuántico' significa que el camino de producción no depende de curvas, sólo de hashes: Blake3_256 en los compromisos FRI/Merkle (MerkleConSal<Blake3> desde el §538) y Rescue-Prime Rp64_256 sobre Goldilocks en los árboles y la cadena. No significa una seguridad cuántica cuantificada (SECURITY.md:553-559). Las opciones de producción (42 consultas, blowup 16, grinding 21, extensión cuadrática) están documentadas como 127 bits CONJETURADOS (crates/zk-ssl/src/lib.rs:207-221). El repo no publica su seguridad demostrable, y en la configuración de comparación equivalente los 127 bits conjeturados conviven con 29-63 demostrables (FIVE_BACKENDS.md:146). Alcanzar 128 bits demostrables cuesta ~125,6 KB por prueba y sólo se usa en el puente ISO. Nada de esto está auditado.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M8b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "De acuerdo con el veredicto. Hago tres precisiones. (1) El verificador omite la re-medida del §236: keygen 17,9 ms, firmar 144,5 ms y verificar 2,4 ms, un 5-11 % más rápido que el 01-08. (2) 'Reusar un índice filtra la clave' es la forma de hablar del repo (§106.4). Técnicamente, reusar un índice expone la clave de un solo uso (WOTS+) de ese índice y abre la falsificación; no entrega la clave maestra. El informe no debe repetir la frase sin matizarla. (3) Las citas de NUCLEO.md se han desplazado: el esquema está en 214 y el apaño del OID en 277-278.",
+   "evidence": [
+    "AUDITORIA.md §106.3-106.5 (l.8910-8958): 'no añade una familia de supuestos nueva'; 'tiene estado'; 'reusar un indice filtra la clave privada'",
+    "spec/NUCLEO.md:214, 277-278 (XmssMtSha2_40_8_256, RFC 8391; apaño de OID de xmss 0.1.0-pre.0)",
+    "doc/xmss-evaluacion.md:19-21 ('Pre-release y sin auditoría independiente'), :133 (MT 40/8: 160,5 ms, 2,7 ms, 18.469 B)",
+    "AUDITORIA.md §236 (l.17130-17131) 'keygen 17,9 ms, firmar 144,5, verificar 2,4'",
+    "AUDITORIA.md §238 (l.17268-17274) 'sin custodia declarada de la clave, una firma no tiene valor probatorio'; §234 (kill -9, no corte de corriente)"
+   ],
+   "correct_statement": "Las cabezas de época se firman con XMSS^MT (XmssMtSha2_40_8_256, RFC 8391: altura 40, 8 capas, SHA2-256), un esquema basado en hash que no añade supuestos nuevos a los del STARK (§106.3). Es un esquema CON ESTADO: reusar un índice rompe la firma de un solo uso de ese índice y permite falsificar. El repo lo mitiga con un guardián de índice persistido con fsync, probado sólo frente a la muerte del proceso (§234). La implementación es el crate xmss 0.1.0-pre.0 de RustCrypto: pre-release, sin auditoría independiente y clavado con '='. Medido: firmar 144,5-160,5 ms, verificar 2,4-2,7 ms, 18.469 B por firma (doc/xmss-evaluacion.md:133; §236). La custodia de la clave no está comprobada (§238).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M9",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Lo reproduje: §131.2 (dos dispersiones), §131.4 truncado en la l.10762, §263 (las cuatro reglas), el mínimo con la primera repetición descartada (metrics.rs:742-756), la mediana de instrumento_cobro.rs:44/181 y la media del §89.1. Sólo añado que la cifra de tiempo más reciente, posterior al §538, se publica como MÍNIMO de repeticiones entrelazadas y no figura en AUDITORIA.",
+   "evidence": [
+    "AUDITORIA.md §131.1-131.4 (l.10724-10762); la l.10762 termina en 'declaradas**:### 131.5' (truncado)",
+    "AUDITORIA.md §130.3 (l.10686-10700) protocolo APAREADO con control interno",
+    "AUDITORIA.md §263 (l.19782-19810) reglas 1-4",
+    "crates/zk-ssl/src/metrics.rs:742-756 ('minimo ... skip(1)'; 'primera descartada, repeticiones ENTRELAZADAS')",
+    "crates/zk-ssl/src/instrumento_cobro.rs:44, 181 (mediana de cinco)",
+    "AUDITORIA.md §89.1 (l.7430) 'Media 2,35 ms, dispersion 4 %'"
+   ],
+   "correct_statement": "La práctica del repo no es 'nunca medias', sino un protocolo. (1) Publicar RANGOS con las dos dispersiones declaradas: intra-tanda (σ ~0,5 %) y entre tandas (~9 %, sistemática), en lugar de una cifra con σ (§131). (2) Comparar sólo dentro de la misma corrida, de forma APAREADA dentro de cada repetición y con control interno (§130.3, §263). (3) No declarar consistencia de signo con n = 3 (§263). (4) Elegir el estimador según el instrumento: el MÍNIMO de repeticiones entrelazadas con la primera descartada (metrics.rs:742-756), la mediana (instrumento_cobro.rs:44) o la media acompañada de sus muestras (§89.1). Desde el §538 los tamaños se publican como banda. Los tiempos absolutos se consideran dependientes de la máquina y no se atan con gates (§304).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M10a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Lo reproduje: README.md:36 y SECURITY.md:8-9 siguen igual. La cita 'ni el fork ni la construcción están auditados' está hoy en SECURITY.md:509 (antes 474). El árbol añade un hecho relevante. Desde el §575 (S575), el fork no auditado de winterfell 0.13.1 diverge de upstream en algo más que la ocultación: winter-air gana un lector acotado (src/proof/acotado.rs) que cierra un aborto por reserva de memoria con pruebas malformadas (SECURITY.md 3.7). El veredicto no cambia; el enunciado correcto se amplía.",
+   "evidence": [
+    "README.md:36 'No está auditado por terceros. Ninguna cantidad de tests propios lo sustituye.'",
+    "SECURITY.md:8-9; SECURITY.md:505-509 ('ni el fork ni la construcción están auditados (H7)')",
+    "SECURITY.md §3.7 (l.436-464) y AUDITORIA.md §575 (l.41736-41790): crates/winter-air/src/proof/acotado.rs",
+    "FIVE_BACKENDS.md:317 'Nada de esto ha sido auditado por terceros.'"
+   ],
+   "correct_statement": "Confirmado: nada de Arqueo ha sido auditado por terceros (README.md:36; SECURITY.md:8-9). Tampoco su fork en el árbol de winterfell 0.13.1, que desde el §533/§538 añade la ocultación y desde el §575 un lector acotado de pruebas (SECURITY.md 3.7), ni su construcción (SECURITY.md:505-509).",
+   "changed_by_tree": true
+  },
+  {
+   "id": "M10b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Lo reproduje: el nodo, el verificador y la CLI tienen xmss = \"=0.1.0-pre.0\", y Cargo.lock:3296-3298 lo fija con esa versión. Nada cambió en S566-S582.",
+   "evidence": [
+    "crates/zk-ssl-node/Cargo.toml:45; crates/zk-ssl-verify/Cargo.toml:45; crates/zk-ssl-cli/Cargo.toml:78 (xmss = \"=0.1.0-pre.0\")",
+    "Cargo.lock:3296-3298 (name = \"xmss\", version = \"0.1.0-pre.0\")",
+    "README.md:36-38 'Una dependencia criptográfica (xmss, pre-release) va clavada con = y declarada'",
+    "doc/xmss-evaluacion.md:19-21"
+   ],
+   "correct_statement": "Confirmado. El nodo, el verificador independiente y la CLI dependen de xmss con la versión clavada '=0.1.0-pre.0' (RustCrypto: pre-release, sin auditoría según declara el propio crate), fijada también en Cargo.lock. El probador STARK es, a su vez, un fork en el árbol de winterfell 0.13.1 ([patch.crates-io] en Cargo.toml:66-72).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M11",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Lo reproduje (CONTRIBUTING.md:91-99; AUDITORIA §20, §366; declarada rancia en l.29274-29277, 29364-29365 y 29515). El árbol cambia un dato del enunciado del verificador. El pin de zk-ssl ya no es 421: es 423 pasan y 7 ignorados (tools/canon.sh:99; §570: 421 -> 422; §578: 422 -> 423), y PAPER.md:1006 y ARQUITECTURA.md:58 lo repiten. Para la reproducibilidad añado dos hechos nuevos del árbol. Los bancos viven fuera del canon, y uno, el de la reutilización, estuvo ROJO desde el §337 hasta el §579 sin que nada lo dijera. Desde el §582, 'canon.sh --bancos' los corre todos (15 de 15 en 779 s), pero no es compuerta.",
+   "evidence": [
+    "CONTRIBUTING.md:91-99 'Medido el 26-08-2026 ... 188 pasan, 93 fallan y 9 ignorados; en release, 307 pasan, 0 fallan y 3 ignorados'",
+    "AUDITORIA.md §20 (l.1423-1427) y §366 (l.27845-27849): '188 pasan / 93 fallan / 9 ignorados en 383,87 s'; '287 pasan, 0 fallan, 3 ignorados en release'",
+    "AUDITORIA.md l.29274-29277, 29364-29365, 29515 (cifra de depuración rancia, sin compuerta)",
+    "tools/canon.sh:99 'zk-ssl sello 423 7 0 ... §394: 304 -> 307 ... §570: 421 -> 422 ... §578: 422 -> 423'",
+    "PAPER.md:1006 'capa: 423 tests (7 ignorados)'; ARQUITECTURA.md:58",
+    "AUDITORIA.md §579 (l.41933-41945) y §582 (l.42031-42075): bancos fuera del canon; 'QUINCE de QUINCE VERDES en 779 s'"
+   ],
+   "correct_statement": "CONTRIBUTING.md:91-99 dice literalmente eso, pero mezcla dos momentos. La medición del 26-08-2026 (AUDITORIA §20, §366) dio 188/93/9 en depuración y 287/0/3 en release. El 307 es el pin posterior del §394, y el propio AUDITORIA declara rancia la cifra de depuración. Hoy el canon fija para zk-ssl 423 tests que pasan y 7 ignorados en release (tools/canon.sh:99). Lo relevante para reproducir es que la capa sólo se valida en release. En depuración, winterfell comprueba que se realice el grado declarado, y hay restricciones cuyo grado depende del testigo; los 93 fallos son todos de esa clase (§366). Los bancos de integración quedan fuera del canon: 'canon.sh --bancos' los corre desde el §582, pero no es compuerta.",
+   "changed_by_tree": true
+  },
+  {
+   "id": "M12a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Lo reproduje. Los seis DOI y sus títulos coinciden; la sección 'Publicación' está hoy en README.md:205-239 (antes 196-231). La lista de doc/ZENODO.md:326-345 y el DOI preferido de CITATION.cff:15 también coinciden. No pude comprobar desde aquí que los DOI resuelvan: queda NO_VERIFICABLE, y el informe debe decirlo.",
+   "evidence": [
+    "README.md:205-239 (seis títulos y DOI 21736125, 21736082, 21905595, 22078086, 22077991, 22076721; versiones anteriores 21683239, 21677737, 21678396, 21679208)",
+    "doc/ZENODO.md:326-345; CITATION.cff:15 doi 10.5281/zenodo.21736125",
+    "README.md:39-40 'Los seis depósitos con DOI preceden a correcciones del árbol'"
+   ],
+   "correct_statement": "El repo lista seis depósitos con DOI vigente (README.md:205-239; doc/ZENODO.md:326-345). Los tres primeros son preprints técnicos (21736125, 21736082 y 21905595) y citan sus versiones anteriores. Los tres últimos (22078086, 22077991 y 22076721) son trabajos de economía y política sobre confianza residual. La cita preferida es 10.5281/zenodo.21736125 (CITATION.cff). No se ha comprobado desde este entorno que los DOI resuelvan. El repo advierte que los seis depósitos PRECEDEN a correcciones del árbol (README.md:39-40).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M12b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Lo reproduje. La frase literal está en README.md:207-209 (antes 201-202), no en ERRATA.md. ERRATA.md tiene cuatro entradas (l.23, 63, 90 y 137), todas sobre los tres preprints de doc/preprints/.",
+   "evidence": [
+    "README.md:207-209 'una cifra publicada que se corrige no se borra, se marca'",
+    "doc/preprints/ERRATA.md:3-6 ('no se edita el cuerpo: se registra aquí'), 15-19; entradas en l.23, 63, 90, 137",
+    "doc/preprints/README.md:11-17 (los tres)"
+   ],
+   "correct_statement": "La frase literal está en README.md:207-209, en la sección 'Publicación', no en ERRATA.md. ERRATA.md formula la regla equivalente ('no se edita el cuerpo: se registra aquí') y aclara que registrar una errata no la corrige para quien ya leyó el PDF. Tiene cuatro entradas y cubre sólo los tres preprints técnicos de doc/preprints/, no los tres depósitos económicos.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M13",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Lo reproduje. §16 (l.1208) tiene los subapartados 16.1-16.9 y §17 empieza en la l.1334. La enumeración y los matices del verificador (16.9 superado por el §36; SECURITY §3.1 y §2) son correctos. El árbol no ha tocado §16.",
+   "evidence": [
+    "AUDITORIA.md §16 (l.1208-1332): 16.1 open_account, 16.2 congelación, 16.3 grados, 16.4 lockstep, 16.5 tests negativos, 16.6 bloqueo de sled, 16.7 techo 2^63−1, 16.8 instantánea, 16.9 colisiones del árbol de nullifiers",
+    "AUDITORIA.md §17 (l.1334-1352); §36 (l.2951)",
+    "README.md:182 (remite a esa sección); SECURITY.md:304-317 (§3.1)"
+   ],
+   "correct_statement": "AUDITORIA.md §16 enumera nueve puntos de baja confianza del autor. 1) La apertura de cuentas sin autorización, con sólo un tope de cupo. 2) La congelación sin motivo ni caducidad. 3) Los grados de restricción. 4) El argumento general del lockstep C_SIBLING, no revisado por terceros. 5) Tests negativos que pueden no discriminar. 6) El bloqueo de directorio de sled al reabrir. 7) El techo 2^63−1, sin validar max_supply. 8) La instantánea que se queda atrás al añadir estado. 9) Las colisiones del árbol de nullifiers. §17 añade el orden de ataque que sugiere el autor. Es una sección temprana: el punto 16.9 quedó superado al retirarse el árbol de nullifiers (§36). Un apartado honesto de limitaciones debe citarla junto a SECURITY §3.1 (sin especificación formal del AIR) y §2.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M14a",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Lo reproduje. El módulo t1_chain_retroactivo está hoy en log.rs:1189-1285 (antes 1131-1227): log.rs creció con S570. Un diff contra d531c80 confirma que su texto es IDÉNTICO, y que N = 12 y K = 5 están en log.rs:1198-1199. REPRODUCCION.md lo ejecutó sobre d531c80 y otra vez sobre 71c5aad (3 pasan en ambas), en una microVM y con 'pruebas' sintéticas (b\"honesta\"/b\"mentira\"), sin STARK. Además, el test ata la cabeza del REGISTRO (head()), no la cabeza de época firmada. Ésta es v6 desde el §570 e incluye más campos.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:1189-1285 (mod t1_chain_retroactivo; N = 12, K = 5 en 1198-1199; t1_cabeza_ata_la_historia en 1237)",
+    "diff del módulo entre d531c80 y HEAD: idéntico",
+    "AUDITORIA.md §115.1 (l.9468-9483) 'la firma en n cubre la mentira en k'",
+    "crates/zk-ssl/src/log.rs:250-262 (chain_digest sobre native_merge/Rp64_256)",
+    "doc/ecst/borrador/REPRODUCCION.md (3 passed en d531c80 el 2026-09-28 y en 71c5aad el 2026-09-30; microVM)"
+   ],
+   "correct_statement": "El test existe y pasa, pero es un caso concreto (12 entradas, una alteración en la entrada 5, con pruebas sintéticas), no una demostración. Comprueba en una instancia que la cabeza del registro en n depende de la entrada k < n (crates/zk-ssl/src/log.rs:1189-1285). La validez general se sigue de la resistencia a colisiones de Rescue-Prime Rp64_256 en chain_digest, que es un supuesto y no algo verificado. El repo lo presenta como la 'premisa medida' de la cadencia de firma de 1/min (§115), no como la validación de un teorema.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "M14b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "El veredicto se sostiene. El árbol mueve cuatro datos del enunciado del verificador. (1) spec/vectors pasa de 317 a 356 ficheros, con un catálogo nuevo, completitud, de 35 vectores más su MANIFIESTO (S573-S574), y README.md:192 ya dice 356. (2) Desde el §573, el contrato del mando que ejercita tools/conformidad.sh admite un código de salida 3, el cuarto estado del sobre de completitud. (3) Las líneas del canon para la conformidad 0.4/0.3 están hoy en tools/canon.sh:327-334, y las de NUCLEO.md en 24-25, 233-234 y 284. (4) El verificador no vio una tercera cita de HBS-STATE: crates/zk-ssl-node/src/recepcion.rs:218, que ya estaba en d531c80, corrige la atribución del 'M5' a la rama benigna. La frase 'No datum on disk...' se refiere en HBS-STATE a KeyAtZero (spec l.165-172), y Arqueo la aplica a la restauración del registro, que es un uso analógico.",
+   "evidence": [
+    "spec/NUCLEO.md:24-25 ('tiene que producir los mismos bytes'), 233-234, 284 ('No afirma que una segunda implementación exista (E5 del RFC-0005)')",
+    "find spec/vectors -type f | wc -l = 356 (317 en d531c80); ls spec/vectors/completitud | wc -l = 36; README.md:192",
+    "tools/conformidad.sh:12-15 ('desde el §573 el 3 del cuarto estado'); tools/canon.sh:327-334 ('0.4 -> todo IDENTICO'; '0.3 RECHAZADO')",
+    "AUDITORIA.md §538 (l.39299-39302) comparador 0.4: proof_digest, chain y epoch_digest no reproducibles",
+    "crates/zk-ssl-node/src/registro_recepcion.rs:58-80; crates/zk-ssl-node/src/recepcion.rs:216-219; AUDITORIA.md §565 (l.41003-41027)",
+    "doc/ecst/borrador/REPRODUCCION.md (2026-09-30, 71c5aad): conformidad 257/257, con el catálogo NUEVO completitud 35/35 (su directorio tiene 36 ficheros: 35 vectores y el MANIFIESTO)",
+    "hbs-state/spec/HBS-STATE-v0.3.md:165-172 (la frase, sobre KeyAtZero); hbs-state/spec/state-vectors-v0.3.json:150-158 (A4); grep 'M5' en hbs-state@a960828: 0"
+   ],
+   "correct_statement": "En Arqueo, la conformidad es un contrato para una segunda implementación que no existe, y NUCLEO.md lo dice expresamente: 'no afirma que exista' (spec/NUCLEO.md:284). Hay KAT byte a byte del núcleo (spec/vectors/nucleo/, 23 ficheros), vectores de protocolo por versión (zkssl-0.1 a 0.4) y catálogos de paquete, 356 ficheros en total, con un arnés (tools/conformidad.sh) ejecutable sobre cualquier binario verificador que cumpla el contrato de salida 0/1/2/3. Hoy sólo se han ejercitado contra la implementación de referencia; una re-ejecución externa sobre 71c5aad dio 257 de 257 entradas (REPRODUCCION.md, 2026-09-30). Desde el §538, la conformidad de la 0.4 es 'todo IDENTICO en lo que el circuito fija'. Arqueo no afirma que los vectores de HBS-STATE validen implementaciones dispares: cita un vector (A4) y una frase de su especificación en registro_recepcion.rs, recepcion.rs:218 y §565, y el 'M5' que menciona no está en el clon hbs-state@a960828.",
+   "changed_by_tree": true
+  }
+ ],
+ "extra_facts_rejected": [
+  "Hecho 3 (§209: 'subió el techo del nodo de 30 a ~320 op/s'): hay que matizarlo, no citarlo tal cual. Los ~320 op/s son un techo IMPLÍCITO del apply en proceso, con dos cuentas. El §219 lo corrige: 'Citar «~320 op/s» era citar el mejor caso de un sistema con dos cuentas'; a 1e5 cuentas son 273 op/s, dentro de la banda 265-320 del §218. El techo del NODO por RPC es otro, 248 op/s (§229). Evidencia: AUDITORIA.md l.15039, 15046 (§219), 14722 (§217), 16311-16325 (§229).",
+  "Hecho 4 (envoltura en zkVM: 'receipt sucinto ... 3,3 veces una prueba suelta'): hay que fecharlo. El 3,3 se calcula contra una prueba de 66.998 B, anterior al §538 (§306, l.22895-22896). Contra las pruebas actuales de envío y cobro (76.192-80.232 B), el mismo receipt de 223.234 B sería ~2,8-2,9 veces mayor (derivado). Ninguna prueba con sal se ha envuelto.",
+  "Hecho 8 ('El canon completo dura 53,6 min'): el presente dice más de lo que hay. Es la primera pasada del §226, que la cabecera de tools/canon.sh:8-18 conserva junto al '--sello · 151 s' de entonces. El canon ha crecido mucho desde aquello: 1500 tests de sello en el §575. Una pasada posterior citada en AUDITORIA dio '~55 min' (l.27162). Desde el §582 existe además '--bancos', con 15 bancos en 779 s (canon.sh:20; AUDITORIA §582). Hay que citarlo como 'medido en el §226', no como la duración actual.",
+  "Hecho 10 (inconsistencia en hbs-state): exagera. Hay TENSIÓN, no contradicción estricta. §9 dice 'LMS/HSS: the table ought to hold; it has not been tested', y la sección del implementador independiente aclara que hbs-lms se midió 'with a separate harness', 'not run through the subject protocol of section 4. It has not taken this exam' (hbs-state/spec/HBS-STATE-v0.3.md:433-438). Lo exacto es que §9 no se actualizó para mencionar la medida PARCIAL de hbs-lms (KeyAtZero por borrado al agotarse, l.114-120; no puede producir KeyAhead por sí misma, l.446-447).",
+  "Hecho 5, punto (4): la cita 'SECURITY.md:545-548' está hoy en SECURITY.md:583-585, porque S566-S582 añadieron 35 líneas. El contenido rancio ('1,5-1,9 TPS medidos (§123)') sigue ahí y el hecho se mantiene; sólo cambia la línea. Lo mismo vale para las demás citas de SECURITY.md posteriores a la l.277 en todo el bloque M."
+ ],
+ "extra_facts_new": [
+  {
+   "fact": "Árbol adjudicado. El código y la documentación son los de main 71c5aad (S582) más el commit del borrador 71710b2. HEAD (base_commit) incluye además commits posteriores que sólo añaden ficheros bajo doc/ecst/borrador/ (escépticos de otros bloques, delta-guardian-hbs.json, simulate-2026-09-30.log y la sección del 2026-09-30 de REPRODUCCION.md). No cambian ninguna fuente del bloque M.",
+   "evidence": [
+    "git diff --stat 71710b2 HEAD: sólo doc/ecst/borrador/*"
+   ]
+  },
+  {
+   "fact": "66.739 / 66.692 B no son del 2026-08-26, contra lo que dicen el comentario de metrics.rs:74-78, el docstring de tools/check_publicadas.py:44-49 y la lista de 'hechos conocidos' de esta tarea. Son del §512 (arreglo B; medida apareada del 2026-09-19). El 2026-08-26 (§362), la vía documentada dio 66.998 / 65.313 B. El repo empareja la fecha de una medida con las cifras de otra.",
+   "evidence": [
+    "AUDITORIA.md §512 (l.37378-37380)",
+    "AUDITORIA.md §362 (l.27567-27571)",
+    "crates/zk-ssl/src/metrics.rs:74-78",
+    "tools/check_publicadas.py:44-49"
+   ]
+  },
+  {
+   "fact": "Lo MEDIDO por pago en el §538 es 155.337-159.329 B (15 muestras por eje). La banda publicada, 145.953-167.967 B, es esa medida ensanchada con un margen declarado del 5 %, y sólo cubre envío y cobro. En una sola ejecución en microVM (2026-09-28), las pruebas de emisión delegada midieron 64,3 y 65,3 KiB, fuera de ninguna banda publicada.",
+   "evidence": [
+    "AUDITORIA.md §538 (l.39290-39292, 39320-39321)",
+    "crates/zk-ssl/src/metrics.rs:114-122",
+    "doc/ecst/borrador/simulate-2026-09-28.log"
+   ]
+  },
+  {
+   "fact": "Los tiempos de generación posteriores a la ocultación (envío 697,9-741,6 ms y cobro 696,9-715,6 ms, como mínimos) sólo constan en un comentario de metrics.rs y en la D-AJ del RFC-0009. AUDITORIA no tiene ninguna cifra en ms después de la l.39270. README.md:199-200 sigue remitiendo a §130-§131, anteriores a la ocultación y ~2× más rápidos, como 'los tiempos y tamaños medidos'.",
+   "evidence": [
+    "crates/zk-ssl/src/metrics.rs:128-133",
+    "spec/rfc/0009-lo-que-revela-una-prueba.md:744-748",
+    "awk 'NR>=39270' AUDITORIA.md | grep ms: sólo líneas de numstat",
+    "README.md:199-200"
+   ]
+  },
+  {
+   "fact": "Tras el §209, la verificación STARK domina el apply: 2,43-2,49 ms de 3,11-3,33 ms, un ~73-80 % derivado. El hash de la cadena (5-6 permutaciones Rescue, 37-54 µs) y el resumen Blake3 (0,011 ms) suman del orden del 1-2 %. El enunciado del verificador en M4a ('lo dominante son los árboles, el registro y la serialización') es erróneo.",
+   "evidence": [
+    "AUDITORIA.md §204 A.2 (l.13850-13857)",
+    "AUDITORIA.md §209 (l.14160-14166)",
+    "AUDITORIA.md §217 (l.14746-14747)"
+   ]
+  },
+  {
+   "fact": "El repo tiene cifras cercanas a las de los borradores que miden OTRA cosa, y un informe no debe confundirlas. 122.850 derive_public_id/s por núcleo (§82.3) es un hash Rescue, no una auditoría; está al 2 % de los '125.000 bloques/s'. La columna de generación de 220-461 ms con ±50 % de ruido (§219, §220) contiene los '412 ms'. 8 ms es la verificación de PLONK/KZG en FIVE_BACKENDS, no la de STARK ('8,1 ms').",
+   "evidence": [
+    "AUDITORIA.md §82.3 (l.6765)",
+    "AUDITORIA.md §219 (l.15115-15121); §220 (l.15181-15182)",
+    "FIVE_BACKENDS.md:38"
+   ]
+  },
+  {
+   "fact": "Los probadores STARK de Arqueo corren en un solo hilo. Ningún Cargo.toml activa la feature 'concurrent' de winterfell, que en el fork es opcional (default = [\"std\"]). Una prueba no se acelera con más núcleos (los '64 cores' del borrador). El paralelismo del diseño está en que cada titular prueba en su máquina (§229).",
+   "evidence": [
+    "crates/zk-ssl/Cargo.toml:26 'winterfell = \"0.13\"'",
+    "crates/winter-prover/Cargo.toml:37-46",
+    "grep -rl concurrent --include=Cargo.toml: sólo crates/winter-prover/Cargo.toml",
+    "AUDITORIA.md §229 (l.16374-16377)"
+   ]
+  },
+  {
+   "fact": "El único entorno de medida distinto del portátil es el pod con RTX 5090 de §306-§307. Su anfitrión mostraba 128 núcleos lógicos y 754 GiB, pero el CPU no está identificado, y el cgroup daba 15,3 núcleos y 99,65 GiB. Allí sólo corrió la envoltura en zkVM.",
+   "evidence": [
+    "AUDITORIA.md §306 (l.22858-22877, 22945-22949)"
+   ]
+  },
+  {
+   "fact": "Desde el RFC-0010 (S569-S577, posterior a d531c80), cada applySend/applyClaim directo reserva un número de recepción y anota 40 B (rx + digest de la prueba) con fsync del fichero, y del directorio en una era nueva, ANTES de evaluar la prueba. La anotación ocurre también si la capa rechaza. applyMany y la prenda no la hacen (§576). El registro crece sin poda, porque 'podar' está declarada sin llamador (§580). Ni el coste en rendimiento ni el crecimiento en disco están medidos a escala.",
+   "evidence": [
+    "crates/zk-ssl-node/src/registro_recepcion.rs:110, 141-167",
+    "crates/zk-ssl-node/src/main.rs:2669-2673",
+    "AUDITORIA.md §569 (l.41286-41300), §576 (l.41826-41833), §580 (l.41968-41990)"
+   ]
+  },
+  {
+   "fact": "SECURITY.md:86-88 dice que 'FV-2 (spike SMT acotado) y FV-3 (Lean/K) siguen siendo horizonte declarado'. Contradice el §190 y doc/VERIFICACION_FORMAL.md §2, según los cuales FV-2 fue EJECUTADA con acta. Es un documento vivo desfasado.",
+   "evidence": [
+    "SECURITY.md:86-88",
+    "AUDITORIA.md §190 (l.13226)",
+    "doc/VERIFICACION_FORMAL.md:75, 288"
+   ]
+  },
+  {
+   "fact": "El censo FV-1, que es compuerta, cubre circuit_send.rs y circuit_claim.rs, pero NO las variantes v2 que la capa verifica en la vía viva (SendV2Air; también claim_v2 y refund_v2). Tampoco cubre los circuitos añadidos desde agosto (prenda, edad, banda, cobro_pendiente, pago_en_curso). stark-experiment tiene hoy 26 ficheros circuit_*.rs.",
+   "evidence": [
+    "tools/check_constraint_layout.py:964-972",
+    "crates/zk-ssl/src/two_phase.rs:1016",
+    "ls crates/stark-experiment/src/circuit_*.rs (26)"
+   ]
+  },
+  {
+   "fact": "Los bancos de integración (tools/banco_*.sh) viven FUERA del canon. El de la reutilización estuvo ROJO desde el §337 hasta el §579 sin que nada lo avisara. Desde el §582, 'canon.sh --bancos' corre los quince (15/15 VERDES en 779 s) y cada invocación del canon imprime cuándo pasaron por última vez, pero no es compuerta: 'la línea lo dice, no lo impone'.",
+   "evidence": [
+    "AUDITORIA.md §579 (l.41933-41967)",
+    "AUDITORIA.md §582 (l.42031-42075)",
+    "tools/bancos.sh",
+    "tools/canon.sh:20"
+   ]
+  },
+  {
+   "fact": "Desde el §575 (2026-09-28), el fork no auditado de winterfell 0.13.1 incluye un lector acotado de pruebas (winter-air/src/proof/acotado.rs). Cierra un aborto del proceso (una reserva de 544-863 GB) que cualquiera podía provocar mandando una prueba malformada. upstream tiene el mismo defecto y no se le ha avisado (SECURITY.md 3.7). Es relevante para la afirmación 'verificador seguro frente a entradas hostiles' de cualquier evaluación.",
+   "evidence": [
+    "SECURITY.md:436-464 (§3.7)",
+    "AUDITORIA.md §575 (l.41736-41790), §578"
+   ]
+  },
+  {
+   "fact": "proof_digest no es la salida cruda de Blake3. Es Blake3_256(DOMINIO_PRUEBA || len u64 LE || prueba), leída como cuatro u64 LE y reducida módulo p = 2^64 − 2^32 + 1 con BaseElement::new. Un informe que describa el encadenamiento debe decir que el digest vive en Goldilocks^4.",
+   "evidence": [
+    "crates/zk-ssl-hash/src/lib.rs:1303-1320"
+   ]
+  },
+  {
+   "fact": "Reproducción en otra máquina, con UNA ejecución por día en una microVM Firecracker de 4 vCPU. El 2026-09-28, sobre d531c80: generar emisión 345-417 ms, envío 970 ms y cobro 1.198 ms; aplicar, con la verificación con sal dentro, 4-6 ms; fsync en ext4 p50 129-173 µs frente a 0,54 µs en tmpfs. El 2026-09-30, sobre 71c5aad (el árbol de código de HEAD): emisión 328-364 ms, envío 1.333 ms, cobro 879 ms, apply 5-6 ms, conformidad 257/257 y t1_ 3/3. Muestra que los tiempos absolutos no se transfieren entre máquinas ni entre corridas: el lado caro se invierte. También muestra que un envío suelto, 78,9 KiB, unos 80,8 kB, y su pago, unos 160,4 kB, quedaron por encima de los máximos MEDIDOS en el §538 (80.232 y 159.329 B) pero dentro de la banda publicada. No son mediciones con dispersión.",
+   "evidence": [
+    "doc/ecst/borrador/REPRODUCCION.md",
+    "doc/ecst/borrador/simulate-2026-09-28.log",
+    "doc/ecst/borrador/simulate-2026-09-30.log",
+    "crates/zk-ssl/src/two_phase.rs:974-1021",
+    "AUDITORIA.md §538 (l.39320-39321)"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,38 @@
+// Replica literal de hbs-state@a960828 src/lib.rs::check_persistence
+// (20 escrituras de 8 bytes, con y sin sync_all), repetida R veces por ruta
+// para dar dispersion. Solo mide; no decide nada.
+use std::fs::OpenOptions;
+use std::io::{Seek, SeekFrom, Write};
+use std::path::Path;
+use std::time::Instant;
+const SAMPLES: u32 = 20;
+fn measure(probe: &Path, with_fsync: bool) -> f64 {
+    let mut f = OpenOptions::new().create(true).write(true).truncate(true).open(probe).unwrap();
+    let t0 = Instant::now();
+    for n in 0..SAMPLES {
+        f.seek(SeekFrom::Start(0)).unwrap();
+        f.write_all(&(n as u64).to_le_bytes()).unwrap();
+        if with_fsync { f.sync_all().unwrap(); }
+    }
+    t0.elapsed().as_secs_f64() * 1e6 / SAMPLES as f64
+}
+fn pct(v: &mut Vec<f64>, p: f64) -> f64 { v.sort_by(|a,b| a.partial_cmp(b).unwrap()); v[((v.len()-1) as f64 * p).round() as usize] }
+fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    let dir = Path::new(&args[1]);
+    let reps: usize = args[2].parse().unwrap();
+    let probe = dir.join(".fsyncprobe-selfcheck");
+    let (mut w, mut wo, mut r) = (vec![], vec![], vec![]);
+    for _ in 0..reps {
+        let without = measure(&probe, false);
+        let with = measure(&probe, true);
+        w.push(with); wo.push(without); r.push(if without > 0.0 { with / without } else { f64::INFINITY });
+    }
+    let _ = std::fs::remove_file(&probe);
+    let refused = r.iter().zip(w.iter()).filter(|(ra, wi)| **ra < 10.0 && **wi < 20.0).count();
+    println!("dir={} reps={} | con_fsync_us p50={:.3} min={:.3} max={:.3} | sin_fsync_us p50={:.3} min={:.3} max={:.3} | ratio p50={:.1} min={:.1} max={:.1} | rechazos(ratio<10 y con<20us)={}/{}",
+        dir.display(), reps,
+        pct(&mut w.clone(),0.5), pct(&mut w.clone(),0.0), pct(&mut w.clone(),1.0),
+        pct(&mut wo.clone(),0.5), pct(&mut wo.clone(),0.0), pct(&mut wo.clone(),1.0),
+        pct(&mut r.clone(),0.5), pct(&mut r.clone(),0.0), pct(&mut r.clone(),1.0), refused, reps);
+}

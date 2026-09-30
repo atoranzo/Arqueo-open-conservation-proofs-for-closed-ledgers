@@ -2697,6 +2697,35 @@ fn politica_del_cofirmante(
     r: &Reconciliacion,
     tope_cofirmas: Option<u64>,
 ) -> DecisionDelCofirmante {
+    // ⚠️⚠️ ECST §8.1 (doc/ecst/ECST.md): EL GATE DE LAS COFIRMAS NO ERA SOLO
+    //    DE `ClaveEnCero`. Un contador BORRADO o puesto a CERO reabre en 0, la
+    //    clave de la semilla tambien esta en 0 y el par da `Coincide { indice:
+    //    0 }`: la rama de abajo arrancaba sin mirar las cofirmas y el testigo
+    //    volvia a gastar la hoja 0, que ya probaba una firma. Mismo operador
+    //    `<=` y por la misma razon que en `ClaveEnCero` (el tope es el EMBEBIDO
+    //    y en estado limpio va por DEBAJO del contador). `ClaveEnCero` lleva su
+    //    gate dentro desde el S337 y no se toca; `ClaveAdelantada` ya no arranca.
+    //    Los textos de siempre no cambian: lo nuevo solo añade un caso rojo.
+    let leido = match r {
+        Reconciliacion::Coincide { indice } => Some(*indice),
+        Reconciliacion::ContadorAdelantado { contador, .. } => Some(*contador),
+        _ => None,
+    };
+    if let (Some(contador), Some(t)) = (leido, tope_cofirmas) {
+        if contador <= t {
+            return DecisionDelCofirmante::NoArranca {
+                aviso: [
+                    format!("⚠️⚠️ EL CONTADOR HA RETROCEDIDO: dice {contador} y las"),
+                    format!("   cofirmas prueban el indice {t}. Un contador borrado o puesto"),
+                    "   a cero reabre en 0 y coincide con la clave de la semilla:".to_string(),
+                    "   arrancar aqui reutilizaria una hoja ya gastada, y eso filtra".to_string(),
+                    "   la clave. Se falla cerrada.".to_string(),
+                ]
+                .join("\n"),
+                razon: format!("contador retrocedido: dice {contador} y las cofirmas prueban {t}"),
+            };
+        }
+    }
     match r {
         Reconciliacion::Coincide { indice } => DecisionDelCofirmante::Arranca(format!(
             "   guardian y clave a la par en el indice {indice}."
@@ -3022,6 +3051,51 @@ mod tests {
             }
             otra => panic!("un contador que retrocede filtra la clave: {otra:?}"),
         }
+    }
+
+    // ── ECST §8.1: el gate en los estados que no eran `ClaveEnCero` ──
+    //
+    // ⚠️ EL POSITIVO VA PRIMERO (§66.2).
+
+    /// Estado limpio con un SK que no vuelve a cero: el embebido va por DEBAJO
+    /// del contador y se arranca como siempre.
+    #[test]
+    fn a_la_par_con_el_tope_por_debajo_arranca() {
+        assert!(matches!(
+            politica_del_cofirmante(&Reconciliacion::Coincide { indice: 5 }, Some(4)),
+            DecisionDelCofirmante::Arranca(_)
+        ));
+    }
+
+    /// ⚠️⚠️ EL ROJO DEL HALLAZGO: contador borrado, reabre en 0, la clave de la
+    /// semilla en 0, COINCIDEN; y una cofirma prueba ya la hoja 0.
+    #[test]
+    fn un_contador_borrado_que_coincide_en_cero_no_arranca_si_hay_cofirmas() {
+        match politica_del_cofirmante(&Reconciliacion::Coincide { indice: 0 }, Some(0)) {
+            DecisionDelCofirmante::NoArranca { aviso, razon } => {
+                assert!(aviso.contains("EL CONTADOR HA RETROCEDIDO"), "{aviso}");
+                assert!(
+                    razon.contains("dice 0") && razon.contains("prueban 0"),
+                    "{razon}"
+                );
+            }
+            otra => panic!("la hoja 0 esta probada: no se puede reutilizar: {otra:?}"),
+        }
+    }
+
+    #[test]
+    fn un_contador_adelantado_por_debajo_de_lo_cofirmado_no_arranca() {
+        assert!(matches!(
+            politica_del_cofirmante(
+                &Reconciliacion::ContadorAdelantado {
+                    contador: 4,
+                    clave: 2,
+                    huerfanos: 2,
+                },
+                Some(9)
+            ),
+            DecisionDelCofirmante::NoArranca { .. }
+        ));
     }
 
     #[test]

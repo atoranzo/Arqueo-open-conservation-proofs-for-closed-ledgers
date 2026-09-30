@@ -1,0 +1,706 @@
+{
+ "cluster": "history",
+ "base_commit": "04012b2c7c6e35cb167f37f9c2863ccd42f3f2c8",
+ "adjudications": [
+  {
+   "id": "L1a",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Lo re-derivé sobre el árbol actual; chain_digest y chain_digest_v2 no cambiaron entre d531c80 y HEAD. La fórmula del borrador no es inventada: es, literalmente, el esquema que el propio repositorio publica en el doc del módulo (log.rs:22-26), en ARQUITECTURA.md:390 y en PAPER.md:879. Como abstracción de la era 1 acierta los seis campos y su orden: seq, tipo, raíz vieja, raíz nueva, H(prueba) y anterior. La composición real es un árbol de merges 2 a 1 sobre esas hojas en ese mismo orden (log.rs:250-261). Sigue siendo PARCIAL por cuatro motivos. Toda entrada nueva desde §281 es de la era 2 y añade el compromiso (log.rs:281-294, 358-380). Las raíces son solo las de CUENTAS (log.rs:151-156). El campo 'H(prueba)' no siempre digiere una prueba (ver L1e). Y H no es un hash de mensaje, sino merges Rescue. Matiz que el verificador no dio: el mismo doc de módulo afirma en log.rs:36-39 'la prueba está ahí y verifica', una frase rancia, porque las pruebas no se guardan. Es probable que de ahí venga la suposición de los borradores.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:22-26",
+    "crates/zk-ssl/src/log.rs:36-39",
+    "crates/zk-ssl/src/log.rs:151-156",
+    "crates/zk-ssl/src/log.rs:250-261",
+    "crates/zk-ssl/src/log.rs:281-294",
+    "crates/zk-ssl/src/log.rs:358-380",
+    "ARQUITECTURA.md:390",
+    "PAPER.md:879",
+    "git diff d531c80 HEAD -- crates/zk-ssl/src/log.rs (no toca chain_digest ni chain_digest_v2)"
+   ],
+   "correct_statement": "La fórmula del borrador reproduce el esquema abstracto de la era 1 que el propio repositorio publica (log.rs:22-26; ARQUITECTURA.md:390; PAPER.md:879). La composición real (crates/zk-ssl/src/log.rs:250-294) es c1_i = M(M(M(M(emb(seq_i), emb(tag_i)), M(Racc_{i-1}, Racc_i)), pd_i), c_{i-1}). En la era 2, que rige toda entrada nueva desde §281, se toma c_i = M(c1_i, compromiso_i). M es native_merge (Rescue-Prime Rp64_256 de winter-crypto =0.13.1, sobre Goldilocks), emb(x) = [x,0,0,0], tag_i es el u64 de OpKind (de 1 a 13), las raíces son las del árbol de CUENTAS y c_{-1} = [0;4].",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L1b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Coincido en el veredicto si la fórmula se presenta como la que Arqueo calcula. Contra el código falla en el orden: el anterior entra en el quinto merge de seis (o siete en la era 2), no el primero. Falla en la codificación: no hay concatenación de bytes, sino un árbol de merges de digests de 4 elementos de campo. Y falla en los campos: le faltan seq y compromiso, S es solo la raíz de cuentas y O es solo la etiqueta u64. Hay un matiz que el verificador no dio. Los cinco campos que nombra existen en la cadena de Arqueo, así que como MODELO abstracto de ECST puede conservarse, siempre que se rotule como modelo y se dé aparte su instanciación exacta. El árbol no cambió en esto.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:250-294",
+    "crates/zk-ssl-hash/src/lib.rs:100-106",
+    "crates/zk-ssl-hash/src/lib.rs:121-132",
+    "spec/NUCLEO.md:238-242"
+   ],
+   "correct_statement": "La fórmula H(H_{i-1} || S_{i-1} || S_i || O_i || H(Pi_i)) no es la de Arqueo. Solo vale como modelo abstracto de ECST y declarado como tal. La instanciación en Arqueo es c_i = M(M(M(M(M(emb(seq_i), emb(tag_i)), M(Racc_{i-1}, Racc_i)), pd_i), c_{i-1}), compromiso_i), con merges Rescue 2 a 1 y sin concatenación. S es la raíz de cuentas, O la etiqueta u64 de OpKind, pd el digest de L1e, y compromiso el de L1f (crates/zk-ssl/src/log.rs:250-294).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L1c",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Confirmado: native_merge (lib.rs:100-106) sobre Rp64_256::apply_permutation, con la capacidad a cero; digest_of_proof con Blake3_256 (lib.rs:1303-1320); y la firma XmssMtSha2_40_8_256. El coste Rescue de 30,99 ms frente a 0,011 ms de Blake3 está en AUDITORIA.md §204 (líneas 13882-13884) y en §209 (14164). Falta un cuarto papel del hash que el verificador omitió: las propias pruebas STARK comprometen su traza con Blake3, en el Merkle con sal y en la moneda de Fiat-Shamir. La capa las verifica como verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>> (two_phase.rs:1001, 1016, 1287). Ese Blake3 es interno al sistema de prueba y distinto del digest del registro. Sin cambios en el árbol.",
+   "evidence": [
+    "crates/zk-ssl-hash/src/lib.rs:100-106",
+    "crates/zk-ssl-hash/src/lib.rs:1303-1320",
+    "crates/zk-ssl-hash/Cargo.toml (winter-crypto =0.13.1, winter-math =0.13.1)",
+    "crates/zk-ssl/src/two_phase.rs:1001",
+    "crates/zk-ssl/src/two_phase.rs:1287",
+    "crates/zk-ssl-verify/src/lib.rs:69,139 (Conjunto)",
+    "AUDITORIA.md §204 (13882-13884), §209 (14164)"
+   ],
+   "correct_statement": "Hay cuatro papeles de hash. (1) La cadena del registro, el digest de la cabeza, todos los árboles del libro y el árbol de historia de cabezas usan native_merge: Rescue-Prime Rp64_256 de winter-crypto =0.13.1 sobre Goldilocks, con estado de 12 y capacidad a cero. (2) El resumen de prueba es Blake3-256(dominio || len || bytes), partido en 4 u64 y reducido al campo (§209). (3) Las pruebas STARK usan internamente Blake3 como hasher de sus compromisos Merkle y de Fiat-Shamir. (4) La firma de la cabeza es XMSS^MT-SHA2_40/8_256 (RFC 8391), es decir, SHA-256 dentro de la firma.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L1d",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Confirmado: chain_digest y chain_digest_v2 no llevan etiqueta, y la era la discriminan el merge extra y la longitud en disco (137 o 169). Sí llevan dominio el resumen de prueba, los dos sellos, el preámbulo firmado, ACUSE_V1, MMRHOJA1/MMRNODO1, PARAM_V1 y PMETA_V1, y desde §557 también RECEP_V1, el dominio de la hoja del recibo de recepción (zk-ssl-hash/src/lib.rs:710-727), que el verificador no listó. Por el cambio del árbol, el byte de versión del preámbulo firmado es hoy 6 y no 5. El veredicto no cambia.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:250-294",
+    "crates/zk-ssl/src/store.rs:411-445",
+    "crates/zk-ssl-hash/src/lib.rs:1290-1335",
+    "crates/zk-ssl-hash/src/lib.rs:673",
+    "crates/zk-ssl-hash/src/lib.rs:710-727",
+    "crates/zk-ssl-hash/src/lib.rs:737-739",
+    "crates/zk-ssl-verify/src/lib.rs:144, 166",
+    "spec/NUCLEO.md:247-250"
+   ],
+   "correct_statement": "chain_digest y chain_digest_v2 no llevan etiqueta de dominio. La era se separa por el merge adicional y, en disco, por la longitud: 137 B en la era 1 y 169 B en la era 2 (store.rs:411-445). Tampoco llevan etiqueta las composiciones de cabeza v1 a v6: las separa el byte de versión del preámbulo firmado, b\"ZK-SSL-epoch-head\" || versión || epoch_digest, que hoy va con la versión 6. Llevan dominio el resumen de prueba (b\"ZK-SSL-proof-digest-v2\" más la longitud), los sellos de §278, las hojas de acuse (ACUSE_V1) y de recibo de recepción (RECEP_V1, desde §557), el árbol de historia (MMRHOJA1/MMRNODO1), PARAM_V1 y PMETA_V1.",
+   "changed_by_tree": true
+  },
+  {
+   "id": "L1e",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Lo re-derivé con grep sobre las llamadas a append y append_con_compromiso. Send (two_phase.rs:1112), Claim (:1378), Burn (burn.rs:217) y Refund (two_phase.rs:520, :786) pasan los bytes de la prueba STARK. Mint, Freeze, Recovery, Governance y MintToPending pasan sello_de_autorizacion(&operation), así que proof_digest = digest_of_proof(b\"ZK-SSL-authorization-seal-v1\" || operation), sin la prueba de umbral ni la de subida. OpenAccount pasa sello_sin_prueba(). Migration pasa un payload de 64 B que su propio comentario dice que 'NO es una prueba'. Consumo pasa &[]. Las líneas no cambiaron.",
+   "evidence": [
+    "crates/zk-ssl/src/two_phase.rs:520, 786, 1112, 1378, 1677-1683",
+    "crates/zk-ssl/src/burn.rs:217",
+    "crates/zk-ssl/src/mint.rs:141",
+    "crates/zk-ssl/src/freeze.rs:160",
+    "crates/zk-ssl/src/recovery.rs:176",
+    "crates/zk-ssl/src/governance.rs:166",
+    "crates/zk-ssl/src/accounts.rs:258-263",
+    "crates/zk-ssl/src/migration.rs:109-116",
+    "crates/zk-ssl/src/consumo.rs:145-147",
+    "crates/zk-ssl-hash/src/lib.rs:1324-1335",
+    "spec/RPC.md:240-247"
+   ],
+   "correct_statement": "Depende de la clase. Send, Claim, Burn y Refund encadenan proof_digest = Blake3(b\"ZK-SSL-proof-digest-v2\" || len || bytes de la prueba STARK). Mint, MintToPending, Recovery, Freeze y Governance encadenan el digest de sello_de_autorizacion(compromiso), no los bytes de ninguna prueba. OpenAccount encadena el sello constante de ausencia declarada, Migration el digest de un payload de 64 B (frozen_old || frozen_new) y Consumo digest_of_proof(&[]). Lo recoge la garantía 4 de spec/RPC.md:240-247.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L1f",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Confirmado: compromiso es Option, None en la era 1 y Some en la era 2 (log.rs:182-190). Las delegadas llevan commit_operation(OP_*, parámetros), por ejemplo Freeze con raíces de congelados y contadores (freeze.rs:122-126). Las no delegadas llevan COMPROMISO_AUSENTE (zk-ssl-hash lib.rs:1383) y Consumo lleva el propio consumo (consumo.rs:147). No se encadenan firmas ni pruebas de autorización. Sin cambios en el árbol.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:182-190",
+    "crates/zk-ssl/src/freeze.rs:122-126",
+    "crates/zk-ssl/src/mint.rs:105-141",
+    "crates/zk-ssl-hash/src/lib.rs:1274, 1383",
+    "crates/zk-ssl-verify/src/reverificacion.rs:27-52"
+   ],
+   "correct_statement": "Desde §281 cada entrada nueva encadena un campo compromiso. En las cinco vías delegadas es commit_operation(OP_*, parámetros): el compromiso contra el que se verificó el par de pruebas de umbral de los custodios, que contiene las raíces del árbol que esa vía mueve. En las demás es el centinela COMPROMISO_AUSENTE y en Consumo es el digest del consumo. No se encadenan las pruebas de umbral ni las firmas. En Send y Claim la autoría está dentro del STARK y solo queda atada por el digest de la prueba. Las entradas de la era 1 no tienen compromiso.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L2a",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "El veredicto se mantiene (la frase del README:110-113 es cierta e incompleta), pero el correct_statement del verificador quedó ANTICUADO por el árbol. Desde S570 (§570, RFC-0010 E2d) EpochHead tiene 18 campos: se añaden recep_root y recep_count (log.rs:645-649). digest() compone epoch_digest_v6 (log.rs:703-727). Precisión adicional: chainDigest compromete TODAS las entradas por transitividad, pero comprobar cualquiera de ellas exige obtenerlas con zkssl_logEntries y recomputar la cadena, cosa que ninguna herramienta de terceros del árbol hace. verifier_hash sigue excluido a propósito (log.rs:650).",
+   "evidence": [
+    "README.md:110-113",
+    "crates/zk-ssl/src/log.rs:586-689 (18 campos; recep_root:645, recep_count:649; FALTA verifier_hash:650)",
+    "crates/zk-ssl/src/log.rs:703-727 (digest() -> epoch_digest_v6)",
+    "crates/zk-ssl-hash/src/lib.rs:469-510",
+    "spec/RPC.md:554-560 ('los dieciocho campos')",
+    "AUDITORIA.md §570",
+    "git diff d531c80 HEAD -- crates/zk-ssl/src/log.rs"
+   ],
+   "correct_statement": "La frase del README (README.md:110-113) es cierta e incompleta. La cabeza que el nodo firma hoy es la v6 (§570). Compromete 18 campos: seq, accountsRoot, pendingRoot, frozenRoot, chainDigest, acusesRoot, n (1440), mmrRoot, mmrSize, consRoot, consCount, paramsDigest, pmetaRoot, nextPending, nextIndex, totalSupply, recepRoot y recepCount (log.rs:586-649; zk-ssl-hash/src/lib.rs:469-510). Del registro encadenado ata el último resumen, chainDigest, que compromete toda la historia por transitividad, pero no ata las entradas en sí. Excluye verifier_hash a propósito.",
+   "changed_by_tree": true
+  },
+  {
+   "id": "L2b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "El veredicto (los borradores no fijan la versión) se mantiene, pero el correct_statement del verificador es hoy FALSO por el cambio del árbol. Afirmaba que 'el nodo firma v5; la v6 existe pero el nodo no la emite porque E2c/E2d del RFC-0010, que es PROPUESTO, están pendientes; no hay que presentar la v6 como vigente'. En HEAD, VERSION_FORMATO = 6 (zk-ssl-verify/src/lib.rs:166, '5 -> 6 en el §570'). El nodo compone, firma y sirve la v6 (latido.rs:186-205; log.rs:703-727). El RFC-0010 está ACEPTADO desde §577 (0010:3). Era cierto en d531c80 (VERSION_FORMATO = 5).",
+   "evidence": [
+    "crates/zk-ssl-verify/src/lib.rs:158-166",
+    "crates/zk-ssl-verify/src/lib.rs:175-190 (VersionCabeza V2..V6)",
+    "crates/zk-ssl-node/src/latido.rs:186-205",
+    "crates/zk-ssl/src/log.rs:703-727",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:3-19, 43-50",
+    "spec/RPC.md:637-651",
+    "AUDITORIA.md §570, §577",
+    "git show d531c80:crates/zk-ssl-verify/src/lib.rs (VERSION_FORMATO: u8 = 5)"
+   ],
+   "correct_statement": "El nodo firma cabezas v6 desde §570 (RFC-0010 E2d; VERSION_FORMATO = 6). La v6 es la v5 envuelta con merge(recepRoot, as_digest(recepCount)). El RFC-0010 está ACEPTADO desde §577. Antes rigieron la v5 (§452), la v4 (§415), la v3 (§292) y la v2 (§275). Una cabeza custodiada de v2 a v5 sigue verificando con su recomponedor. Un informe debe fijar la versión y el commit, porque la versión cambió dentro del periodo en que se escribieron los borradores.",
+   "changed_by_tree": true
+  },
+  {
+   "id": "L2c",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "El veredicto se mantiene, con dos cambios del árbol en el correct_statement. (1) El byte de versión del preámbulo es hoy 6, no 5, y los campos que recomponen el digest son 18. (2) Sobre el receptionSeq: el campo de la respuesta sigue sin firma (main.rs:2968-2972). Pero desde §570-§571 cada recibo {rx, era, n, hashPrueba} es una hoja bajo la recepRoot que firma la cabeza v6 que cierra su era, en la posición densa rx - Q - 1, y el camino se obtiene con zkssl_recepPath. El rx queda atado a posteriori, igual que el acuse. Los 50 B, los 18.469 B de firma RFC y los 18.519 B con el preámbulo siguen igual.",
+   "evidence": [
+    "crates/zk-ssl-node/src/firma_cabeza.rs:20-23, 178-201, 319-323",
+    "crates/zk-ssl-verify/src/lib.rs:144, 166, 282",
+    "spec/NUCLEO.md:247-250",
+    "crates/zk-ssl-node/src/main.rs:2968-2972 (receptionSeq sin firma)",
+    "crates/zk-ssl-verify/src/recibos.rs:1-80",
+    "spec/RPC.md:95 (zkssl_recepPath), 637-651, 680-705",
+    "spec/PAQUETE.md:359-376"
+   ],
+   "correct_statement": "Solo se firman 50 bytes: b\"ZK-SSL-epoch-head\" (17) || formatVersion (1 B, hoy 6) || epoch_digest (32). La firma es XMSS^MT-SHA2_40/8_256: 18.469 B en formato RFC 8391 y 18.519 B con el mensaje adjunto. Los 18 campos quedan cubiertos porque recomponen epoch_digest. Viajan sin firma custody, custodyChecked, emittedAtUnix, beatSeconds y el receptionSeq de las respuestas. Este último queda atado a posteriori cuando la era del recibo cierra bajo una cabeza v6 (hoja recibo_digest bajo recepRoot, camino por zkssl_recepPath). El firmante reserva el índice con fsync antes de firmar y verifica su propia firma antes de devolverla.",
+   "changed_by_tree": true
+  },
+  {
+   "id": "L3a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reabierto: const N: u64 = 12 está en log.rs:1198, que en d531c80 era la línea 1140; el test no cambió, solo se desplazó 58 líneas. No hay en el árbol ningún test con N = 100 ni K = 10 (grep). Son 12 entradas del TransitionLog, no épocas firmadas. Consta en verde en AUDITORIA §115.1 ('3/3 en verde'). Yo no lo re-ejecuté, porque cargo está vetado, pero doc/ecst/borrador/REPRODUCCION.md:53 registra una re-ejecución del 2026-09-30 sobre 71c5aad, en esta misma serie: 'cargo test --release -p zk-ssl --lib t1_ -> 3 passed, 0 failed'. REPRODUCCION.md:14 cita aún las líneas antiguas (log.rs:1140-1141).",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:1189-1199",
+    "AUDITORIA.md §115.1 (líneas 9467-9481)",
+    "doc/ecst/borrador/REPRODUCCION.md:13-14, 53",
+    "grep 'const N: u64 = 100|K: u64 = 10' crates: sin resultados"
+   ],
+   "correct_statement": "El test t1_cabeza_ata_la_historia usa N = 12 entradas del registro de transiciones (crates/zk-ssl/src/log.rs:1198), no 100 épocas. Está registrado en verde en AUDITORIA.md §115.1, y la re-ejecución del 2026-09-30 sobre 71c5aad dio 3 passed (doc/ecst/borrador/REPRODUCCION.md:53).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L3b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reabierto: const K: u64 = 5 con el comentario '// la epoca de la mentira' (log.rs:1199). En el módulo t1, 'época' designa el seq de una entrada.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:1199"
+   ],
+   "correct_statement": "La entrada alterada es K = 5 (crates/zk-ssl/src/log.rs:1199). En el test, 'época' es el índice seq de una entrada del registro, no el intervalo entre dos cabezas firmadas.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L3c",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "El veredicto es correcto, pero el correct_statement del verificador tiene un error de hecho: dice que la historia alternativa lleva 'varios bytes y otra longitud'. En historia(N, true) la entrada K lleva b\"mentira\" + [5] en lugar de b\"honesta\" + [5] (log.rs:1207-1222). Las dos palabras tienen 7 letras, así que ambas cadenas miden 8 B y difieren en 5 de sus 8 bytes (h/m, o/e, e/t, s/i, t/r), según comprobé con python3. La LONGITUD ES LA MISMA. Aparte, recompute sustituye el proof_digest de la entrada K por digest_of_proof(b\"mentira-injertada\") (log.rs:1247), de modo que altera el digest y no los bytes. t1_verify_chain_caza_sustitucion hace lo mismo sobre la entrada guardada (log.rs:1288). En ningún caso hay una prueba STARK.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:1207-1222",
+    "crates/zk-ssl/src/log.rs:1214",
+    "crates/zk-ssl/src/log.rs:1243-1256",
+    "crates/zk-ssl/src/log.rs:1280-1293",
+    "python3: len(b'honesta'+bytes([5])) == len(b'mentira'+bytes([5])) == 8; 5 bytes distintos"
+   ],
+   "correct_statement": "No se altera 'un byte de la prueba Pi_k'. El test no contiene pruebas STARK: las 'pruebas' son cadenas sintéticas de 8 B (b\"honesta\" + [i]). La propiedad se ejerce de dos maneras. (1) Sustituyendo el proof_digest de la entrada 5 por digest_of_proof(b\"mentira-injertada\") al recomputar (log.rs:1243-1256). (2) Construyendo otra historia en la que la entrada 5 lleva b\"mentira\" + [5]: misma longitud y 5 de 8 bytes distintos (log.rs:1207-1222).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L3d",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Confirmado. Los asserts están en log.rs:1261-1276: el control es assert_eq, la propiedad y la otra historia son assert_ne. 'cabeza_firmada' es TransitionLog::head(), sin EpochHead, XMSS ni árbol de historia. El verificador omitió el test hermano t1_divergencia_localizada (log.rs:1225-1234), que afirma más: first_divergence == Some(K), y los chain son iguales para j < K y distintos para todo j >= K. Así lo anota AUDITORIA §115.1. Todas las entradas son OpenAccount (el primer tag válido, 1), con raíces sintéticas as_digest(i) -> as_digest(i+1) y compromiso COMPROMISO_AUSENTE.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:1201-1222",
+    "crates/zk-ssl/src/log.rs:1225-1234",
+    "crates/zk-ssl/src/log.rs:1236-1277",
+    "AUDITORIA.md §115.1 (líneas 9475-9481)"
+   ],
+   "correct_statement": "El test afirma que recomputar desde los campos crudos reproduce head(), que la cadena final recomputada con la entrada 5 alterada difiere de head() y que la historia alternativa da otro head(), todo con N = 12. Su hermano t1_divergencia_localizada afirma que la divergencia se localiza exactamente en k = 5 y contamina todo j >= 5. 'H_N' es el último chain del registro, no una cabeza firmada. Que la firma cubra la alteración se deduce de que chainDigest entra en epoch_digest; el test no lo ejerce.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L3e",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Confirmado. Añado lo que el propio repositorio dice en AUDITORIA §116: 'T1 mide el encadenamiento, no la resistencia a colisión del resumen'. Por eso el test no puede citarse como prueba de que la cadena 'ata a una prueba concreta'.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:1189-1195",
+    "crates/zk-ssl/src/log.rs:1236-1277",
+    "AUDITORIA.md §115.1 y §116 (líneas 9525-9531)"
+   ],
+   "correct_statement": "Es trivialmente cierto: el test solo usa digest_of_proof (Blake3) y chain_digest_v2 (Rescue), sin ninguna prueba ni verificador ZK. Mide que alterar el digest de la entrada k cambia el chain de n. No dice nada de la validez de las pruebas, y según AUDITORIA §116 tampoco mide la resistencia a colisión del resumen. Su finalidad declarada es sostener la cadencia de una firma por minuto (§115).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L4a",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Confirmado sin cambios: mmr.rs:20-26 (algoritmos del RFC 6962), AUDITORIA §291 ('Por qué RFC 6962 y no un MMR de picos', línea 21611), mmr_hoja y mmr_nodo con MMRHOJA1 y MMRNODO1 (zk-ssl-hash/src/lib.rs:737-739, 843-851). La pareja viaja firmada desde la v3 y la llevan v3, v4, v5 y v6. Aviso: mmr.rs:12-17 dice todavía 'La cabeza de época NO la compromete aún', frase rancia desde §292.",
+   "evidence": [
+    "crates/zk-ssl-verify/src/mmr.rs:12-26",
+    "crates/zk-ssl-hash/src/lib.rs:737-739, 843-851",
+    "AUDITORIA.md §291 (21611)",
+    "spec/RPC.md:985-994",
+    "crates/zk-ssl-verify/src/lib.rs:203-208 (lleva_mmr)"
+   ],
+   "correct_statement": "Lo que el código llama 'MMR de cabezas' es un árbol de historia al estilo del RFC 6962 (MTH, PATH y SUBPROOF, con corte en la mayor potencia de dos menor que n), construido sobre primitivas propias: Rescue con etiquetas MMRHOJA1 y MMRNODO1, no SHA-256 con 0x00/0x01. Sus hojas son los digests de las cabezas anteriores, no entradas del registro. La pareja (mmrRoot, mmrSize), firmada desde la v3 (§292), es el acumulador previo a esa cabeza.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L4b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado en el árbol actual; solo cambian las líneas. La fila del método está en spec/RPC.md:88 y la sección en spec/RPC.md:985-1011, con las tres respuestas sin camino.",
+   "evidence": [
+    "spec/RPC.md:88",
+    "spec/RPC.md:985-1011",
+    "README.md:130"
+   ],
+   "correct_statement": "zkssl_consistencyProof({oldSize}) devuelve {available, mmrSize, camino?, reason?}. El camino de tamaño t lo firma la cabeza siguiente, a lo sumo un latido después. Hay tres respuestas sin camino: oldSize 0, identidad y 'va por detrás' (spec/RPC.md:985-1001).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L4c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado: verificar_extension (main.rs:608-640) y cabeza_v3_verificada (main.rs:476-602) aceptan v3, v4, v5 y v6, ya en d531c80. Hay deriva de documento: spec/PAQUETE.md, sección 4, dice aún 'las dos cabezas (v3, v4 o v5)'.",
+   "evidence": [
+    "crates/zk-ssl-verify/src/main.rs:476-602",
+    "crates/zk-ssl-verify/src/main.rs:608-640",
+    "spec/PAQUETE.md:82-93",
+    "crates/zk-ssl-cli/src/witness.rs:59-80"
+   ],
+   "correct_statement": "El paquete de extensión ({v:1, tipo:'extension', vieja, nueva, camino}) se verifica sin el nodo en tres pasos. Primero, las dos cabezas (v3 a v6) recomponen su epochDigest y verifican su firma. Segundo, deben tener la misma publicKey. Tercero, mmr::verificar_consistencia ha de dar que la cima nueva extiende a la vieja (crates/zk-ssl-verify/src/main.rs:608-640).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L4d",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "El veredicto se mantiene, pero el punto (e) del correct_statement ('no detecta omisiones ni censura') quedó ANTICUADO por el árbol. Desde el RFC-0010 (§570-§577, ACEPTADO), cada operación que entra por applySend o applyClaim recibe un recibo bajo la cabeza v6 firmada. El sobre de completitud dice sin el nodo si se resolvió o da el rojo nombrado 'NO RESUELTA EN LA VENTANA', que es evidencia oponible y no prueba criptográfica de ausencia (0010 D-F). Siguen sin rastro la operación sin recibo (D-H) y lo que entra por applyMany o zkssl_pledge (D-E, §576). El README se corrigió en §581. El testigo en sí sigue sin detectar omisiones (witness.rs:107). Sobre el punto (d): quien firma lleva diario obligado (§285; spec/RPC.md), así que 'por-detras' implica un operador que perdió o descartó su diario. Los puntos (b) y (c) siguen en pie: verificar_extension solo compara cimas.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:558-563",
+    "crates/zk-ssl-verify/src/main.rs:608-640",
+    "tools/banco_consistencia.sh:25-29",
+    "crates/zk-ssl-cli/src/witness.rs:107-111",
+    "spec/RPC.md:703-751",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:219-266 (D-F, D-G, D-H)",
+    "README.md:133-156",
+    "spec/PAQUETE.md:359-399",
+    "SECURITY.md:116-120"
+   ],
+   "correct_statement": "La estructura da evidencia de manipulación, no inmutabilidad: la secuencia de cabezas firmadas no se reescribe sin que lo vea quien custodia una cabeza anterior de la misma clave. Límites. (a) Sin una cabeza previa custodiada no hay nada que comparar (§76, TOFU). (b) La prueba de consistencia no comprueba que el chainDigest nuevo continúe al viejo, y ninguna herramienta recompone la cadena contra una cabeza custodiada. (c) El paquete de extensión no comprueba que la propia cabeza vieja sea hoja del acumulador nuevo (lectura, no ejercitada). (d) Un reinicio que pierde el diario queda visible como 'por-detras' y no detiene al testigo. (e) Omisión: desde el RFC-0010, una operación recibida por applySend o applyClaim deja recibo firmado y su falta de resolución se demuestra de forma oponible con el sobre de completitud. En cambio, la operación a la que el nodo nunca dio recibo y la que entra por applyMany o pledge no dejan rastro. (f) El operador no sirve el histórico de cabezas.",
+   "changed_by_tree": true
+  },
+  {
+   "id": "L5a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "El veredicto se mantiene, pero el recuento del verificador ('diez formas') quedó anticuado. Desde §573 (RFC-0010 E4) el binario acepta ONCE: se añade el sobre 'completitud' (spec/PAQUETE.md:35-37 y 359-399; main.rs:164-187).",
+   "evidence": [
+    "README.md:114-115",
+    "spec/PAQUETE.md:35-80",
+    "spec/PAQUETE.md:359-399",
+    "crates/zk-ssl-verify/src/main.rs:164-187"
+   ],
+   "correct_statement": "Ese es el paquete de POSICIÓN v2 (spec/PAQUETE.md:60-80), con la cabeza (el result de zkssl_signedEpochHead), el acuse opcional {seq, hashPrueba, s, camino} de zkssl_ackPath y las cofirmas opcionales tal como las sirve zkssl_cosigs. El binario acepta once formas: posición v1 y v2, extensión, consumo, conflicto, rechazo, edad, cobro_pendiente, pago_en_curso, prenda y, desde §573, completitud.",
+   "changed_by_tree": true
+  },
+  {
+   "id": "L5b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "El veredicto se mantiene. Dos precisiones. (1) Por el cambio del árbol, el sobre de completitud (§573) puede verificar un STARK de forma indirecta: si su resolución es un rechazo, llama a verificar_rechazo (main.rs:1832), que en la banda de InsufficientBalance verifica un STARK (main.rs:1278). Si la resolución es un acuse, lo verifica como paquete de posición, sin STARK (main.rs:1800). (2) Detalle menor del verificador: winter-verifier no es dependencia directa de zk-ssl-verify. Llega de forma transitiva por zk-ssl-air (crates/zk-ssl-air/Cargo.toml). Ninguna vía verifica una Pi_i del registro.",
+   "evidence": [
+    "crates/zk-ssl-verify/src/main.rs:138-370",
+    "crates/zk-ssl-verify/src/main.rs:1278, 1339, 1800, 1832",
+    "crates/zk-ssl-verify/Cargo.toml",
+    "crates/zk-ssl-air/Cargo.toml",
+    "spec/PAQUETE.md:723-730"
+   ],
+   "correct_statement": "zk-ssl-verify no re-verifica las pruebas de transición. En el paquete de posición recompone el epochDigest, verifica la firma XMSS contra la clave que trae el propio paquete, sube el acuse (que liga el proofDigest, no la prueba) y cuenta las cofirmas. Solo verifica STARKs en los sobres edad, cobro_pendiente, pago_en_curso, prenda y rechazo por InsufficientBalance, y en el de completitud cuando su resolución es uno de esos rechazos. Son pruebas nuevas sobre el estado comprometido bajo una cabeza v5 o v6 (RFC-0007/0008), no las Pi_i del registro.",
+   "changed_by_tree": true
+  },
+  {
+   "id": "L5c",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Confirmado. Añado de dónde puede venir el error de los borradores. log.rs:196-198 dice 'quien quiera verificarla puede pedirla', y el RFC-0007 D-I lo repite (0007:488-490). Pero ningún método RPC sirve pruebas (spec/RPC.md:76-95), y el doc del módulo (log.rs:36-39) promete 'la prueba está ahí y verifica'. Las dos frases están rancias.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:36-39",
+    "crates/zk-ssl/src/log.rs:191-198",
+    "spec/RPC.md:76-95",
+    "spec/RPC.md:240-247",
+    "spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md:486-492",
+    "doc/DIAGNOSTICO_ESCALADO.md:399-419"
+   ],
+   "correct_statement": "Arqueo no conserva las pruebas de transición. El nodo guarda solo proof_digest y ningún método RPC sirve pruebas. Re-verificarlas más tarde depende de que el productor (pagador o cobrador) guarde la suya, y el repositorio reconoce que eso no tiene política de retención (doc/DIAGNOSTICO_ESCALADO.md:412-419; RFC-0007 D-I). Las frases 'quien quiera verificarla puede pedirla' (log.rs:198) y 'la prueba está ahí y verifica' (log.rs:38) están rancias y no deben citarse.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L5d",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Confirmado. Hay recomputaciones de la cadena que el verificador no mencionó, y ninguna es la del auditor que describe el borrador. El nodo se verifica a sí mismo con zkssl_verifyChain (main.rs:2576). El CLI verifica su capa LOCAL en simulate (commands.rs:464-466; trace.rs:208, 'cadena de transiciones íntegra'). La capa comprueba la cadena al reabrir y al importar un snapshot (persistence.rs:586-590; snapshot.rs:534). TransitionLog::verify_chain es pública en el crate de la capa, pero ninguna herramienta la usa contra entradas de zkssl_logEntries y una cabeza custodiada. Además, spec/RPC.md:97-99 describe LogEntry sin compromiso, aunque el DTO del cable lo lleva (zk-ssl-wire/src/lib.rs:539-553).",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:250, 281, 393-431",
+    "crates/zk-ssl-node/src/main.rs:2558, 2576",
+    "crates/zk-ssl-cli/src/commands.rs:464-466",
+    "crates/zk-ssl/src/persistence.rs:586-590",
+    "crates/zk-ssl-verify/src/reverificacion.rs:44-47",
+    "grep 'reverificar(': solo lib.rs:137 (reexport)",
+    "spec/RPC.md:97-99",
+    "crates/zk-ssl-wire/src/lib.rs:539-553"
+   ],
+   "correct_statement": "No existe tal procedimiento de auditor. La fórmula de la cadena vive en la capa (crates/zk-ssl/src/log.rs) y no en el núcleo ni en zk-ssl-verify. Recomputan la cadena el propio nodo (zkssl_verifyChain, una autoevaluación), el CLI sobre su capa local y la capa al reabrir. Ninguna herramienta de terceros la recomputa contra una cabeza custodiada. reverificar() comprueba los sellos de las seis clases con sello, pero no tiene llamantes. Verify(Pi_i) es imposible porque las pruebas no se conservan.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L6a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Confirmado: 169 B en la era 2 y 137 B en la era 1, fijados por el test la_ida_y_vuelta_del_disco_conserva_la_era (log.rs:1527-1556). Añado lo que cuesta en disco según el código (cálculo propio, no medido). La clave sled es b\"log:\" + seq u64 LE, 12 B (persistence.rs:839-841). El nodo abre la capa sin cifrar (main.rs:1350, SovereignLayer::open), así que el valor son 169 B en claro. Con open_encrypted cada valor se sella con XChaCha20-Poly1305 (nonce de 24 B + etiqueta de 16 B, crypto.rs:103-113) y serían 209 B. Clave más valor: 181 B, o 221 B cifrado, antes de la sobrecarga interna de sled, que nadie ha medido. Ninguna variante da 256 B.",
+   "evidence": [
+    "crates/zk-ssl/src/store.rs:411-445",
+    "crates/zk-ssl/src/log.rs:1527-1556",
+    "crates/zk-ssl/src/persistence.rs:20, 49, 839-841",
+    "crates/zk-ssl/src/crypto.rs:103-113",
+    "crates/zk-ssl-node/src/main.rs:1350",
+    "doc/DIAGNOSTICO_ESCALADO.md:405-412"
+   ],
+   "correct_statement": "Cada entrada serializada ocupa 169 B en la era 2 (8 de seq + 1 de tag + 5 digests de 32) y 137 B en la era 1 (store.rs:411-445, fijado por test). En sled se guarda con una clave de 12 B. Si el libro se abre cifrado, el valor sube a 209 B. Son cálculos desde el código; nadie ha medido el crecimiento en disco. La cifra de ~256 B no tiene fuente.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L6b",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "Confirmado por grep: no hay '99,6' relacionado. La reconstrucción del verificador cuadra: 1 - 256/62.000 = 99,587 %. Con los datos vigentes, 169 B frente a pruebas de 72.382 a 84.244 B (banda de metrics.rs), la razón es 99,77-99,80 % (cálculo propio).",
+   "evidence": [
+    "grep '99[.,]6' (solo AUDITORIA '99,65 GiB', no relacionado)",
+    "crates/zk-ssl/src/metrics.rs:82-83, 111-117",
+    "cálculo propio con python3"
+   ],
+   "correct_statement": "El repositorio no contiene esa cifra. Si se quiere una razón, es aritmética y no medida: 169 B por entrada frente a 72-84 KB por prueba (metrics.rs) da ≈99,8 %. Y no 'reduce' nada desplegado, porque el nodo nunca almacenó pruebas.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L6c",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "Confirmado por grep: no hay '125.000', 'bloques/s' ni 'blocks/s'. Tampoco existe una herramienta offline que recorra la cadena, así que no puede existir la medida. Las cifras de §219 (apply 3,58-3,67 ms, 273-280 op/s) son de apply, no de auditoría.",
+   "evidence": [
+    "grep '125[.,]000|bloques/s|blocks/s': sin resultados",
+    "AUDITORIA.md §219 (15024 y ss.)"
+   ],
+   "correct_statement": "No hay medida de ritmo de auditoría ni de recomputación de la cadena. Las cifras medidas más próximas son de otra cosa: apply ≈3,6 ms/op con 1e5 cuentas (§219) y digest_of_proof ≈0,01 ms (§209).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L6d",
+   "agree": true,
+   "final_verdict": "SIN_FUENTE",
+   "reason": "Confirmado: el único '0,002 ms' del árbol es el fsync del guardián en tmpfs (zk-ssl-guardian/src/lib.rs:47; AUDITORIA §234, línea 16839). Nadie midió el coste aislado del encadenado.",
+   "evidence": [
+    "crates/zk-ssl-guardian/src/lib.rs:44-47",
+    "AUDITORIA.md §234 (16839)",
+    "AUDITORIA.md §204 (13882-13884), §209"
+   ],
+   "correct_statement": "El coste del encadenado no se ha medido por separado. Se conoce su tamaño: 5 merges Rescue por entrada en la era 1 y 6 en la era 2, más un Blake3 del orden de 0,01 ms por prueba de ~65 KB (§204, §209). El '0,002 ms' del repositorio es el fsync sobre tmpfs del guardián y no tiene relación.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L7a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado. Solo cambian las líneas del README, que ahora están en 157-162.",
+   "evidence": [
+    "README.md:157-162",
+    "SECURITY.md:122-170",
+    "SECURITY.md:171-175",
+    "spec/RPC.md:694-696"
+   ],
+   "correct_statement": "El repositorio lo reconoce: hoy un tercero verifica la firma contra la clave que le entrega el mismo nodo, lo cual es circular. No hay ancla anterior al primer encuentro, y §246 lo resume así: no hay clave de producción que anclar. La custodia de la clave es declarada y no comprobada, salvo la modalidad 'fichero'.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L7b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado; witness.rs:1-45 no cambió.",
+   "evidence": [
+    "crates/zk-ssl-cli/src/witness.rs:1-45",
+    "SECURITY.md:122-143",
+    "README.md:113-114"
+   ],
+   "correct_statement": "El testigo de referencia (zk-ssl-cli witness, §245) fija la clave en el primer encuentro y se detiene ante una vista dividida (mismo índice, digest distinto) o un cambio de clave. Si lo opera el propio operador, no prueba nada.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L7c",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "El veredicto se mantiene. doc/ANCLAJE_EXTERNO.md es un marcador de 37 B, '[el contenido de ANCLAJE_EXTERNO.md]'. Hay dos errores en el correct_statement del verificador. (1) Dice 'así desde el commit de importación 087aecc'. Este clon es SUPERFICIAL (git rev-parse --is-shallow-repository = true; 69 commits) y 087aecc (S533) es solo su commit más antiguo disponible, no una importación. Solo cabe decir que no cambió desde 087aecc. (2) Dice que la raíz de recepción de §174 'hoy no entra en la cabeza: exige la v6, que el nodo no emite'. Es FALSO en HEAD, porque el nodo firma la v6 con recepRoot desde §570. Además §174 remite a §121.2, cuya 'raíz de recepción' es el diseño de los acuses como hojas bajo una raíz comprometida en la cabeza, y esa acusesRoot va firmada desde la v2 (§275). La frase de §174 es hoy cierta en las dos lecturas, aunque fuera anacrónica al escribirse. El anclaje sigue sin construir.",
+   "evidence": [
+    "doc/ANCLAJE_EXTERNO.md (37 B, una línea)",
+    "git rev-parse --is-shallow-repository -> true; git log --oneline | tail -1 -> 087aecc",
+    "AUDITORIA.md §174 (12659-12689)",
+    "AUDITORIA.md §121.2 (9823-9840)",
+    "SECURITY.md:222-226",
+    "doc/CONFIANZA_RESIDUAL.md:487-488",
+    "crates/zk-ssl/src/log.rs:645-649, 703-727"
+   ],
+   "correct_statement": "En el árbol, doc/ANCLAJE_EXTERNO.md es un marcador vacío de una línea, sin cambios desde el commit más antiguo de este clon superficial. El diseño del anclaje externo solo está descrito en AUDITORIA §174 y en las filas B10.6/B10.7 de doc/CONFIANZA_RESIDUAL.md: publicar la raíz en un medio append-only, por lotes de M latidos. No hay nada construido ni desplegado. Lo que §174 propone anclar sí existe hoy bajo la firma: acusesRoot desde la v2 y recepRoot desde la v6 (§570). No se debe citar ANCLAJE_EXTERNO.md como fuente de contenido.",
+   "changed_by_tree": true
+  },
+  {
+   "id": "L8",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "El veredicto se mantiene, pero hay que corregir dos cosas del correct_statement del verificador. (1) Por el cambio del árbol, 'Tampoco detecta omisiones ni censura' ya no es exacto. El RFC-0010 (ACEPTADO, §577) hace oponible la falta de resolución de lo recibido por applySend y applyClaim. El residuo es lo que nunca recibió recibo (D-H) y el lote y la prenda (D-E). (2) Cita log.rs:561-583 como apoyo de que 'no es oponible sin firma/ancla', pero ese doc está rancio: dice 'No lleva firma... no tiene ninguna primitiva de firma' y 'No hay testigos'. La razón vigente de la oponibilidad débil es que la clave no tiene ancla y la custodia no está comprobada (SECURITY.md:134-176; spec/RPC.md:694-696).",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:558-583 (doc rancio en lo de la firma)",
+    "spec/PAQUETE.md:723-734",
+    "crates/zk-ssl-node/src/main.rs:2634-2728, 2989-3000 (acuse y recibo solo en applySend/applyClaim)",
+    "spec/RPC.md:703-751",
+    "SECURITY.md:200",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:219-266",
+    "README.md:133-156",
+    "crates/zk-ssl-cli/src/witness.rs:107-111"
+   ],
+   "correct_statement": "Hay que matizarlo. La historia no es inalterable: es evidente a la manipulación para quien custodia una cabeza anterior de la misma clave (TOFU, sin ancla externa). Con el nodo apagado, el titular prueba con su paquete tres cosas: que la cabeza la firmó la clave que trae el paquete, que sus campos la recomponen y que su acuse (solo en Send y Claim) está bajo acusesRoot. No prueba qué dice la entrada. Con el sobre de completitud (RFC-0010) puede además probar que una operación recibida por applySend o applyClaim se resolvió en su ventana, o señalar de forma oponible que no. No se pueden auditar la historia completa ni la validez de cada transición: las pruebas no se conservan y el operador no sirve el histórico. Lo que nunca recibió recibo, y lo que entra por applyMany o pledge, no deja rastro. Sin ancla ni custodia comprobada, la firma no identifica a nadie ante terceros.",
+   "changed_by_tree": true
+  },
+  {
+   "id": "L9a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Confirmado: el contrato es un fichero y una forma (main.rs:128-187; KIT.md). Añado un dato: los vectores del propio kit son cabezas históricas; spec/vectors/paquete/posicion-v2.json lleva formatVersion 0x3. La release publicada no puede verificar la cabeza v6 que el nodo firma hoy (ver L9b).",
+   "evidence": [
+    "crates/zk-ssl-verify/src/main.rs:128-187",
+    "doc/KIT.md:1-45",
+    "spec/vectors/paquete/posicion-v2.json (cabeza.formatVersion = 0x3)",
+    "crates/zk-ssl-cli/src/witness.rs:1060-1090 (auditar_lineas)"
+   ],
+   "correct_statement": "El kit verifica afirmaciones empaquetadas de una en una: posición, extensión entre dos cabezas, consumo, conflicto entre dos libros, causa de un rechazo, pruebas de estado v5/v6 y, en el árbol, completitud de un recibo. No recorre ni recompone el registro de transiciones. Lo más parecido a una historia es el '--auditar' del testigo, que re-verifica sin el nodo el diario de cabezas firmadas que ese testigo recogió.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L9b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Confirmado de nuevo por la API de GitHub (2026-09-30): arqueo-verify-v0.2.0 sigue siendo la última release. Commit 1528943, tarball 2fe9030a…79f5ce de 2.891.949 B, binario 6356debd…478b. El cuerpo de la release declara tres catálogos (package 68, consumption 14, conflict 16). Hay dos correcciones. (1) Por el cambio del árbol, la release no solo rechaza la v5: tampoco acepta la v6, que es la que firma el nodo desde §570. (2) Error del verificador, previo al cambio del árbol: 'el kit del árbol actual, con seis catálogos' venía de un PAQUETE §11 rancio. En d531c80, FAMILIAS de tools/artefacto.sh ya tenía ocho familias y hoy tiene nueve, con completitud. PAQUETE §11 lo corrige en §574 (spec/PAQUETE.md:957-970).",
+   "evidence": [
+    "GitHub API get_release_by_tag arqueo-verify-v0.2.0 y list_releases (2026-09-30)",
+    "AUDITORIA.md §443 (32823 y ss.)",
+    "README.md:47-52, 194",
+    "doc/KIT.md:16-24",
+    "spec/PAQUETE.md:748-750",
+    "spec/PAQUETE.md:957-970",
+    "tools/artefacto.sh:31 (FAMILIAS, nueve)",
+    "git show d531c80:tools/artefacto.sh (FAMILIAS, ocho)"
+   ],
+   "correct_statement": "La release arqueo-verify-v0.2.0 existe: commit 1528943, tarball sha256 2fe9030a…79f5ce de 2.891.949 B, binario 6356debd…478b y tres catálogos. Es anterior a §451, así que acepta cabezas v2 a v4 y rechaza la v5 y la v6. Tampoco incluye los sobres de rechazo, edad, cobro, pago, prenda ni completitud. No sirve, por tanto, para las cabezas v6 que el nodo firma desde §570. El artefacto del árbol actual, con nueve familias y el crate aún numerado 0.2.0, no se ha publicado como release.",
+   "changed_by_tree": true
+  },
+  {
+   "id": "L9c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado: doc/KIT.md (134 líneas) y doc/KIT_EN.md existen. El guion es el de la release v0.2.0 y sus vectores, con cabezas v3.",
+   "evidence": [
+    "doc/KIT.md:1-134",
+    "doc/KIT_EN.md",
+    "README.md:44-75",
+    "AUDITORIA.md §442-§443"
+   ],
+   "correct_statement": "doc/KIT.md, con traducción en doc/KIT_EN.md, guía cuatro comprobaciones sin red con el tarball de la release v0.2.0. Son una posición en VERDE, un paquete manipulado en ROJO con la regla nombrada, un conflicto entre dos libros y un intercambio de libros rechazado. Sus vectores son históricos (cabezas v3).",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L10a",
+   "agree": false,
+   "final_verdict": "PARCIAL",
+   "reason": "Discrepo del veredicto FALSA. La afirmación junta dos cosas. La filiación con CT es CIERTA y el propio repositorio la declara: 'El patrón es el de Certificate Transparency (RFC 6962)' (CONFIANZA_RESIDUAL.md:154), los algoritmos MTH/PATH/SUBPROOF del RFC 6962 (mmr.rs:20-26), 'al modo de Certificate Transparency' (README.md:159-160) y el MMD como precedente de N (vista_acuses.rs:18). Lo falso es el verbo 'extiende', porque Arqueo no implementa ni amplía el protocolo CT: no hay SCT, gossip, SHA-256 0x00/0x01 ni claves de log fuera del log. También es falsa la cita del RFC 9162, que el repositorio no menciona nunca (grep '9162' = 0). La búsqueda web confirma que el RFC 9162 (CT 2.0, diciembre de 2021, Experimental) deja obsoleto al 6962. El correct_statement del verificador describe precisamente esta situación de 'en parte cierto'. Es PARCIAL de severidad alta, no FALSA.",
+   "evidence": [
+    "grep '9162' en .md/.rs: 0",
+    "doc/CONFIANZA_RESIDUAL.md:154",
+    "crates/zk-ssl-verify/src/mmr.rs:20-26",
+    "README.md:157-162",
+    "crates/zk-ssl-node/src/vista_acuses.rs:18",
+    "SECURITY.md:168-169",
+    "WebSearch: https://www.rfc-editor.org/info/rfc9162/ y https://datatracker.ietf.org/doc/rfc9162/ (CT v2.0, deja obsoleto al RFC 6962)"
+   ],
+   "correct_statement": "Arqueo no extiende el protocolo CT ni cita el RFC 9162. Adopta el patrón de CT (no impedir la mala conducta, sino hacerla imposible de ocultar) y los algoritmos del árbol de historia del RFC 6962, sobre primitivas propias: Rescue/Goldilocks con MMRHOJA1/MMRNODO1. Las hojas de ese árbol son cabezas, no entradas; las entradas se encadenan por hash. No hay SCT ni gossip, y la clave no se publica fuera del registro (doc/CONFIANZA_RESIDUAL.md:154; crates/zk-ssl-verify/src/mmr.rs:20-26). El RFC 9162 (CT 2.0) deja obsoleto al 6962, pero Arqueo no se refiere a él.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L10b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado; ahora en README.md:157-162.",
+   "evidence": [
+    "README.md:157-162",
+    "crates/zk-ssl/src/log.rs:44-46",
+    "crates/zk-ssl-node/src/vista_acuses.rs:17-28"
+   ],
+   "correct_statement": "El README se sitúa en la responsabilidad demostrable al modo de CT, no en el consenso. Declara que tiene firmante, guardián del índice, latido, verificador independiente y testigos, y que le faltan un ancla previa al primer encuentro y una custodia de clave comprobada. La cota n = 1440 cabezas (24 h al latido de 60 s) sigue el precedente del MMD de CT.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L11a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "El veredicto se mantiene, pero dos datos del verificador cambiaron con el árbol. (1) El censo es hoy de 80 elementos alcanzables en zk-ssl-verify y 48 pub en zk-ssl-hash: LIBRO 5, NÚCLEO 101, REFERENCIA 7, REGISTRO 15 (NUCLEO.md:66-67). En d531c80 eran 76 y NÚCLEO 97. (2) La deriva que señalaba se corrigió en parte. NUCLEO §3 dice ya 'v2, v3, v4, v5 o v6' (NUCLEO.md:50), pero NUCLEO §5 sigue con 'las cinco composiciones (v1..v5)' (NUCLEO.md:211) y PAQUETE §4 con '2, 3, 4 o 5' (PAQUETE.md:449, 504).",
+   "evidence": [
+    "spec/NUCLEO.md:1-7",
+    "spec/NUCLEO.md:36-45",
+    "spec/NUCLEO.md:50",
+    "spec/NUCLEO.md:66-67",
+    "spec/NUCLEO.md:97, 133-134",
+    "spec/NUCLEO.md:186-205",
+    "spec/NUCLEO.md:211-212",
+    "spec/PAQUETE.md:449, 504",
+    "git diff d531c80 HEAD -- spec/NUCLEO.md"
+   ],
+   "correct_statement": "El núcleo congela el lado del verificador: hash y serialización, composiciones de cabeza v1 a v6, firma y preámbulos, acuses y recibos de recepción, el árbol de historia, inclusión, congelados y cuentas. Lo fijan KAT en spec/vectors/nucleo/ y lo vigila tools/check_nucleo.py; quedan fuera el cable y el libro. digest_of_proof, los sellos, commit_operation y reverificar son de clase REGISTRO. La composición de chain_digest no está ni en el núcleo ni en los crates del verificador. Queda deriva documental: NUCLEO §5 y PAQUETE §4 no nombran la v6.",
+   "changed_by_tree": true
+  },
+  {
+   "id": "L11b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado: spec/rfc/0005-nucleo-congelado.md:3 dice 'PROPUESTO'. La cita del README del verificador quedó anticuada por el árbol. README.md:193 dice hoy que 0010 está 'aceptado' y 0005 'propuesto'; antes decía '0005 y 0010 propuestos'.",
+   "evidence": [
+    "spec/rfc/0005-nucleo-congelado.md:3-18",
+    "README.md:193",
+    "spec/NUCLEO.md:3"
+   ],
+   "correct_statement": "El RFC-0005 está PROPUESTO. Aun así, NUCLEO.md es normativa vigente desde §407, con E1 a E4 selladas. El criterio E5, una segunda implementación independiente, no existe y queda fuera del árbol. El RFC-0010 ya está ACEPTADO (§577).",
+   "changed_by_tree": true
+  },
+  {
+   "id": "L11c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado: main.rs:1783 devuelve 'zkssl/0.4', igual que openrpc.rs:159 y RPC.md:1 y 1243. Los comentarios rancios siguen ahí e incluso crecieron. zk-ssl-verify/src/lib.rs:161-165 dice 'el cable sigue en zkssl/0.3' también en la frase añadida en §570, y la sección v6 de spec/RPC.md dice 'zkssl/0.3 no sube'.",
+   "evidence": [
+    "crates/zk-ssl-node/src/main.rs:1783",
+    "crates/zk-ssl-wire/src/openrpc.rs:159",
+    "spec/RPC.md:1, 1243",
+    "crates/zk-ssl-verify/src/lib.rs:158-166",
+    "spec/RPC.md:648-655"
+   ],
+   "correct_statement": "El cable está en zkssl/0.4 desde §538 (RFC-0009 E3b-2). Antes rigieron la 0.3 desde §354 y la 0.2 desde §209. Es un eje distinto del formato de cabeza firmada, que hoy es formatVersion = 6. Varios comentarios y párrafos aún dicen 0.3 y no deben citarse.",
+   "changed_by_tree": false
+  },
+  {
+   "id": "L12",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "El veredicto se mantiene. El límite (4) del correct_statement del verificador exagera. Dice que 'importes, partes y las raíces de pendientes y congelados quedan fuera' de la cadena, y no es así en la era 2. El compromiso de las delegadas los ata como digest: Freeze ata las raíces de congelados y sus contadores (freeze.rs:122-126), MintToPending las de pendientes más el importe, Mint el importe y el suministro, y Governance las raíces de custodios (reverificacion.rs:17-22). Migration ata las raíces de congelados vía su payload (migration.rs:109-116). En Send y Claim el importe y las partes solo quedan atados indirectamente, por el digest de los bytes de la prueba, cuyo transcript fija las entradas públicas. Añado AUDITORIA §116: T1 no mide la resistencia a colisión del resumen.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:250-294, 358-380",
+    "crates/zk-ssl/src/freeze.rs:122-126",
+    "crates/zk-ssl/src/migration.rs:109-116",
+    "crates/zk-ssl-verify/src/reverificacion.rs:11-52",
+    "crates/zk-ssl-hash/src/lib.rs:1303-1320",
+    "crates/zk-ssl/src/log.rs:1236-1277",
+    "AUDITORIA.md §116",
+    "spec/rfc/0007-pruebas-sobre-el-estado-comprometido.md:486-492"
+   ],
+   "correct_statement": "La cadena sí incluye un digest de prueba, pero solo en Send, Claim, Burn y Refund. En esas clases, alterar un byte de Pi_k cambia digest_of_proof, luego c_k…c_n, luego chainDigest y epoch_digest, y la firma deja de verificar. Hay cuatro límites. (1) Solo lo detecta quien tiene los bytes de Pi_k, porque el nodo no los guarda. (2) Enlazar no es validar: la cadena no demuestra que Pi_k verificara. (3) En las vías delegadas se ata el sello del compromiso autorizante, y en OpenAccount y Consumo constantes, así que alterar sus pruebas de custodios no cambia nada. (4) Cada entrada ata como campos propios seq, tipo, raíces de cuentas vieja y nueva, proof_digest, el anterior y el compromiso. Las raíces de congelados, pendientes y custodios, importes y suministro entran solo a través del compromiso en las delegadas y en Migration. En Send y Claim, importes y partes solo quedan atados indirectamente por el digest de la prueba. En los demás casos, las raíces de pendientes y congelados solo las ata la cabeza firmada.",
+   "changed_by_tree": false
+  }
+ ],
+ "extra_facts_rejected": [
+  "Extra 2 (proof_digest): 'La reducción no es sobreyectiva' está mal dicho. La reducción u64 -> F_p con BaseElement::new es SOBREYECTIVA (p < 2^64) y NO INYECTIVA: los valores >= p colisionan con valores pequeños. El ejemplo que cita el propio repositorio, u64::MAX -> 2^32 - 2 (zk-ssl-hash/src/lib.rs:1395-1399), muestra precisamente una colisión, es decir, no inyectividad. El resto del hecho (dominio, longitud, 4 u64 LE, 0,011 ms frente a 30,99 ms) es correcto.",
+  "Extra 5 (composición de la cabeza): las fórmulas de v1 a v6 son correctas, pero la frase final 'El nodo firma la v5' es FALSA en HEAD. Desde §570, VERSION_FORMATO = 6 (crates/zk-ssl-verify/src/lib.rs:166) y EpochHead::digest() compone epoch_digest_v6 (crates/zk-ssl/src/log.rs:703-727). Era cierto en d531c80; ha cambiado el árbol.",
+  "Extra 7 ('Hueco latente de v6 en el verificador: la rama del acuse casa solo (mmr, cons, estado) y llama a verificar_acuse_v5; un paquete v6 con acuse fallaría'): era cierto en d531c80 (S565), pero se CERRÓ en §566 (S566). acuse_contra_cabeza casa ahora las cuatro piezas (mmr, cons, estado, recep) y llama a verificar_acuse_v6 (crates/zk-ssl-verify/src/main.rs:363-399, con la nota 'Hasta el §566 este brazo casaba TRES piezas'). spec/NUCLEO.md §8 registra la fila verificar_acuse_v6. Ya no es un hecho del árbol.",
+  "Extra 10, en la parte 'Tras una caída, un índice quemado sin firma es el caso normal (13 de 25 en K.1)': la cifra es la de firma_cabeza.rs:32, pero el propio repositorio ha declarado RANCIA esa inferencia. En AUDITORIA.md §331 (línea 25552): 'K.1: la cifra es correcta y la inferencia no'. El 13 de 25 se midió DENTRO de un proceso (un hijo que persiste y luego firma, muerto en un instante aleatorio). Tras un reinicio real, la clave derivada de semilla nace en 0, así que el estado no aparece en el 52 % de los casos sino en el 100 %, con otra variante (clave en cero). firma_cabeza.rs:32 está entre las citas pendientes de corregir. Solo puede citarse como medida intra-proceso. El resto del hecho (reserva con fsync antes de firmar, autoverificación de 2,4 ms sobre 144,5, xmss 0.1.0-pre.0 sin auditar, custodia declarada) es correcto.",
+  "Extra 12, en la parte 'Las cofirmas se retienen solo para la última época con envíos': es una mala lectura. spec/RPC.md:975-980 dice 'se conserva UNA época, la última con submisiones', es decir, con submisiones de COFIRMAS (zkssl_submitCosig), no con envíos (Send). En este proyecto 'envío' designa la operación Send, así que la frase induce a error. El resto del hecho (solo la última cabeza en memoria, diarios de ~54 MB/día y ~20 GB/año por testigo, ~37 KB por cofirma) es correcto (spec/RPC.md:703-751, 965-980)."
+ ],
+ "extra_facts_new": [
+  {
+   "fact": "Base de esta adjudicación. base_commit es el HEAD en el momento de escribir, pero el código y la especificación son los de 71c5aad (S582): todos los commits posteriores (71710b2, b81e7fb, cf4d693, d299653 y los que siguieron durante esta adjudicación) solo añaden ficheros bajo doc/ecst/borrador/. La re-ejecución registrada en REPRODUCCION.md (2026-09-30, sobre 71c5aad) da t1_ 3/3 y conformidad 257/257, con el catálogo del paquete en 70/70 en el árbol, frente a 68 en la release v0.2.0, y completitud en 35/35.",
+   "evidence": [
+    "git diff --stat 71c5aad HEAD (solo doc/ecst/borrador/)",
+    "doc/ecst/borrador/REPRODUCCION.md:47-61"
+   ]
+  },
+  {
+   "fact": "Cambio del árbol entre d531c80 (S565) y HEAD, decisivo para el bloque L. Desde §570 (S570, RFC-0010 E2d) el nodo compone, firma y sirve cabezas v6 de 18 campos: VERSION_FORMATO pasa de 5 a 6 y se añaden recepRoot y recepCount. El RFC-0010 está ACEPTADO desde §577. El README se corrigió en §581: la fila 6 ('Corte y completitud') pasa a 'medida' y desaparecen de 'lo que nada de esto afirma' las frases 'la censura no deja rastro' y 'la completitud de los acuses no existe todavía'. El binario acepta una undécima forma, el sobre de completitud (§573).",
+   "evidence": [
+    "git log d531c80..HEAD (S566-S582)",
+    "crates/zk-ssl-verify/src/lib.rs:158-166",
+    "crates/zk-ssl/src/log.rs:645-649, 703-727",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:3-19",
+    "README.md:133-156",
+    "spec/PAQUETE.md:35-37, 359-399",
+    "AUDITORIA.md §566, §570, §573, §577, §581"
+   ]
+  },
+  {
+   "fact": "El recibo de recepción (RFC-0010). La hoja es recibo_digest(hashPrueba, era, n) = M(emb(RECEP_V1), M(hashPrueba, M(emb(era), emb(n)))). La era es el índice XMSS de la última cabeza firmada más uno, y no el seq. La posición es densa, rx - Q - 1, en la era (Q, R], donde R = recepCount de la cabeza que cierra y Q, el de la anterior, no se firma. Solo lo emiten applySend y applyClaim: applyMany y zkssl_pledge quedan fuera por decisión (D-E, §576). El veredicto 'NO RESUELTA EN LA VENTANA' es aritmética sobre dos números firmados y el propio RFC lo declara 'no es una prueba criptográfica de ausencia'. El residuo irreducible es el operador que no emite recibo (D-H). No hay que confundirlo con el 'recibo de admisión' de §121, que el README sigue listando como pendiente.",
+   "evidence": [
+    "crates/zk-ssl-hash/src/lib.rs:710-727",
+    "crates/zk-ssl-verify/src/recibos.rs:1-80",
+    "crates/zk-ssl-node/src/main.rs:2634-2728",
+    "spec/rfc/0010-el-recibo-de-recepcion.md:56-70, 219-266",
+    "spec/RPC.md:540-552",
+    "README.md:162"
+   ]
+  },
+  {
+   "fact": "Detalle exacto de T1 que el verificador describió mal. En historia(N, true) la entrada 5 lleva b\"mentira\" + [5] en lugar de b\"honesta\" + [5]: misma longitud (8 B) y 5 de 8 bytes distintos. recompute y t1_verify_chain_caza_sustitucion sustituyen el proof_digest por digest_of_proof(b\"mentira-injertada\") y no tocan ningún byte de prueba. Todas las entradas son OpenAccount (tag 1) con raíces sintéticas as_digest(i) -> as_digest(i+1) y compromiso COMPROMISO_AUSENTE. Son tres tests (divergencia_localizada, cabeza_ata_la_historia y verify_chain_caza_sustitucion), '3/3 en verde' según §115.1. AUDITORIA §116 advierte que 'T1 mide el encadenamiento, no la resistencia a colisión del resumen'.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:1189-1296",
+    "AUDITORIA.md §115.1, §116",
+    "python3 (longitudes y bytes distintos)"
+   ]
+  },
+  {
+   "fact": "Tamaño en disco de una entrada del registro, calculado desde el código y NO medido. La clave sled es b\"log:\" + seq u64 LE (12 B) y el valor, 169 B en la era 2. El nodo abre la capa sin cifrar (SovereignLayer::open), con lo que suma 181 B de clave y valor. Con open_encrypted, XChaCha20-Poly1305 añade 24 B de nonce y 16 B de etiqueta: 209 B de valor y 221 B en total. A esto se suma la sobrecarga interna de sled, sin medir. La estimación del repositorio (~114 MB/día, ~42 GB/año a volumen Fedwire) usa 137 B, la era 1. Con 169 B, el mismo método daría ≈141 MB/día y ≈51,6 GB/año (cálculo propio).",
+   "evidence": [
+    "crates/zk-ssl/src/persistence.rs:20, 49, 839-841",
+    "crates/zk-ssl/src/crypto.rs:103-113",
+    "crates/zk-ssl-node/src/main.rs:1350",
+    "crates/zk-ssl/src/store.rs:411-430",
+    "doc/DIAGNOSTICO_ESCALADO.md:405-412"
+   ]
+  },
+  {
+   "fact": "Hay un cuarto papel de hash que el informe no debe confundir con el proof_digest. Las pruebas STARK de la capa usan Blake3 como hasher de sus compromisos Merkle (con sal desde §538) y de Fiat-Shamir: verify::<SendAir, Blake3, DefaultRandomCoin<Blake3>, MerkleConSal<Blake3>>. El fork de winterfell 0.13.1 (winter-air, winter-prover, winter-verifier) entra por [patch.crates-io]; winter-crypto y winter-math son los de crates.io, fijados con =0.13.1.",
+   "evidence": [
+    "crates/zk-ssl/src/two_phase.rs:1001, 1016, 1287",
+    "Cargo.toml:22-39, 66-72",
+    "crates/zk-ssl-hash/Cargo.toml:17-18"
+   ]
+  },
+  {
+   "fact": "Hay frases rancias del propio repositorio que probablemente originaron errores de los borradores y que un informe no debe citar como vigentes. log.rs:36-39: 'Que cada transición está demostrada: la prueba está ahí y verifica'. log.rs:196-198: 'quien quiera verificarla puede pedirla', cuando no hay RPC que sirva pruebas. ARQUITECTURA.md:392-394: 'Publicar la cabeza basta. 32 bytes comprometen todo el historial', que solo vale para quien tiene las entradas. ARQUITECTURA.md:422-424: 'resumen de prueba cero', sustituido en §278 por el sello de ausencia declarada. zk-ssl-verify/src/lib.rs:161-165: 'el cable sigue en zkssl/0.3', cuando es 0.4. Siguen además con 'v2..v5' NUCLEO.md:211 y PAQUETE.md:449 y 504.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:36-39, 196-198",
+    "ARQUITECTURA.md:390-409, 422-424",
+    "crates/zk-ssl-verify/src/lib.rs:158-166",
+    "spec/NUCLEO.md:211",
+    "spec/PAQUETE.md:449, 504"
+   ]
+  },
+  {
+   "fact": "Quién recomputa hoy la cadena del registro. El nodo sobre sí mismo (zkssl_verifyChain), el CLI sobre su capa local ('cadena de transiciones íntegra' en simulate) y la capa al reabrir el almacén o importar un snapshot. Ningún tercero lo hace contra una cabeza custodiada. spec/RPC.md:97-99 describe LogEntry sin el campo compromiso y sin el tipo Consumo, aunque el DTO del cable los lleva: sin el compromiso, un tercero no puede recomponer chain_digest_v2 con la especificación en la mano.",
+   "evidence": [
+    "crates/zk-ssl-node/src/main.rs:2558, 2576",
+    "crates/zk-ssl-cli/src/commands.rs:464-466",
+    "crates/zk-ssl-cli/src/trace.rs:208",
+    "crates/zk-ssl/src/persistence.rs:586-590",
+    "crates/zk-ssl/src/snapshot.rs:534",
+    "spec/RPC.md:97-99",
+    "crates/zk-ssl-wire/src/lib.rs:539-553"
+   ]
+  },
+  {
+   "fact": "El artefacto del verificador en el árbol lleva nueve familias de vectores (FAMILIAS en tools/artefacto.sh:31, con completitud). La release v0.2.0 publicada lleva tres catálogos (package 68, consumption 14, conflict 16). PAQUETE §11 dijo 'seis' hasta §574, mientras FAMILIAS ya tenía ocho en d531c80.",
+   "evidence": [
+    "tools/artefacto.sh:31",
+    "git show d531c80:tools/artefacto.sh (FAMILIAS)",
+    "spec/PAQUETE.md:957-970",
+    "GitHub API get_release_by_tag arqueo-verify-v0.2.0"
+   ]
+  }
+ ]
+}

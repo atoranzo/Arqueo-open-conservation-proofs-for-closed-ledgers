@@ -1,0 +1,761 @@
+{
+ "cluster": "P — Proceso IETF/IRTF, el Internet-Draft tal como está escrito, y las afirmaciones lógicas y formales de ECST",
+ "findings": [
+  {
+   "id": "P1",
+   "claim": "«CFRG (Crypto Forum Research Group), el brazo de investigación criptográfica del IETF»",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "raw.githubusercontent.com/ietf/wiki.ietf.org/main/group/cfrg/CFRG-Process.md (editado 2026-09-23): «CFRG documents are not IETF standards»; recorrido RGLC -> IRTF Chair -> IRSG Poll -> IESG Conflict Review",
+    "WebSearch: datatracker.ietf.org/doc/charter-irtf-cfrg/ y irtf.org/cfrg.html: es un Research Group del IRTF, lista cfrg@irtf.org"
+   ],
+   "correct_statement": "El CFRG es un grupo de investigación (Research Group) del IRTF, no un grupo de trabajo del IETF. Sus RFC salen por el flujo IRTF (Informational/Experimental) y no son estándares del IETF, aunque asesora a los WG del IETF en criptografía (guía de proceso del CFRG en wiki.ietf.org)."
+  },
+  {
+   "id": "P2",
+   "claim": "«Vía Grupo de Trabajo: el CFRG adopta el borrador, que pasa a llamarse draft-ietf-cfrg-hbs-state»",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "CFRG-Process.md: «The draft name usually changes from draft-yourname-cfrg-topic to draft-irtf-cfrg-topic»",
+    "raw.githubusercontent.com/ietf/authors.ietf.org/main/naming-your-internet-draft.md:55-66: «\"irtf\" for the IRTF stream … any I-D submitted with one of these stream/organization strings … that has not been adopted … will either be rejected or replaced»; :75: tras la adopción la versión vuelve a -00",
+    "WebSearch: RFC 8391 (XMSS) se tramitó como draft-irtf-cfrg-xmss-hash-based-signatures (datatracker.ietf.org/doc/rfc8391/writeup/)"
+   ],
+   "correct_statement": "Si el CFRG lo adoptara, el nombre sería draft-irtf-cfrg-hbs-state-00 (flujo IRTF). El prefijo «draft-ietf-» está reservado a documentos adoptados en el flujo IETF (por ejemplo, un WG como PQUIP: draft-ietf-pquip-…). Antes de la adopción, la convención es draft-toranzo-cfrg-hbs-state."
+  },
+  {
+   "id": "P3",
+   "claim": "«El IESG aprueba formalmente el documento» (para un documento del CFRG)",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "CFRG-Process.md pasos 5-7: «IRTF Chair Review … IRSG Poll: IRSG members vote on the publication … IESG Conflict Review: The IESG checks for conflicts with ongoing IETF work»",
+    "WebSearch RFC 5743: «the IRSG reviews the document and approves it for publication … the IESG reviews the document to assure that there are no conflicts»",
+    "WebSearch RFC 5742 (BCP 92): el IESG hace conflict review de los flujos IRTF e Independent, con cinco conclusiones posibles",
+    "WebSearch: RFC 7209 es «Requirements for Ethernet VPN (EVPN)», sin relación"
+   ],
+   "correct_statement": "En el flujo IRTF aprueba la publicación el IRSG, después de la RGLC del CFRG y de la revisión del IRTF Chair. El IESG solo hace «conflict review» (RFC 5742) para comprobar que no interfiere con trabajo del IETF (RFC 5743). Las referencias adecuadas son RFC 5743, RFC 5742, RFC 2014 y RFC 7418. RFC 7209 no tiene relación con esto."
+  },
+  {
+   "id": "P4",
+   "claim": "«Vía envío individual: un Area Director de Seguridad puede patrocinarlo»",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "raw.githubusercontent.com/ietf/wiki.ietf.org/main/group/iesg/adsponsoring.html: «AD sponsored documents skip the Working Group phase … Set the Stream to \"IETF\" … do an IETF Last Call»; para documentos «reasonably small» y sin «contentious issues»",
+    "WebSearch RFC 4846: flujo de Envíos Independientes a cargo del ISE designado por el IAB, distinto del patrocinio de AD en el flujo IETF",
+    "WebSearch RFC 5742: el conflict review del IESG también se aplica al flujo Independent"
+   ],
+   "correct_statement": "Un documento Informational de autor individual tiene cuatro caminos: (1) adopción por un WG del IETF (por ejemplo PQUIP), flujo IETF; (2) patrocinio de un AD, también flujo IETF, con IETF Last Call y consenso del IETF, discrecional y pensado para documentos pequeños y no conflictivos; (3) adopción por un RG del IRTF (CFRG), flujo IRTF aprobado por el IRSG; (4) flujo de Envíos Independientes a través del ISE (RFC 4846), con conflict review del IESG (RFC 5742). El patrocinio de AD existe, pero no es un «envío individual» en el sentido de flujo: es flujo IETF."
+  },
+  {
+   "id": "P5a",
+   "claim": "RFC 10033 salió del WG PQUIP (lo que los borradores no mencionan)",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "raw.githubusercontent.com/hbs-guidance/draft-hbs-state/main/draft-ietf-pquip-hbs-state.md (commit 4ee80a2, 2026-02-27), cabecera: docname draft-ietf-pquip-hbs-state, workgroup «Post-Quantum Use In Protocols», mail pqc@ietf.org; autores Wiggers, Bashiri, Kölbl, Goodman, Kousidis",
+    "WebSearch: rfc-editor.org/info/rfc10033 «Hash-Based Signatures: State and Backup Management»; datatracker draft-ietf-pquip-hbs-state",
+    "hbs-state/spec/HBS-STATE-v0.3.md:14-19 cita RFC 10033 como Informational, septiembre de 2026"
+   ],
+   "correct_statement": "RFC 10033 es el antiguo draft-ietf-pquip-hbs-state del WG PQUIP del IETF (flujo IETF, Informational). No se pudieron comprobar la fecha exacta ni la numeración final de secciones del RFC, porque rfc-editor.org está bloqueado. En la copia del editor, §4 contiene los requisitos ACID y §5 los nueve enfoques."
+  },
+  {
+   "id": "P5b",
+   "claim": "LAMPS es un destino natural para HBS-STATE",
+   "verdict": "FALSA",
+   "severity": "media",
+   "evidence": [
+    "WebSearch: los productos de LAMPS sobre firmas con estado son RFC 9802 (identificadores X.509 para HSS/XMSS) y RFC 9708 (HSS/LMS en CMS): ámbito PKIX/CMS",
+    "hbs-state/spec/HBS-STATE-v0.3.md:3-10: «not an XMSS implementation. It is not a parameter profile»; no contiene ASN.1, X.509 ni CMS"
+   ],
+   "correct_statement": "LAMPS trata formatos PKIX, CMS y S/MIME (por ejemplo RFC 9802 y RFC 9708). HBS-STATE no define identificadores, ASN.1 ni formatos de certificado, así que no encaja en su ámbito."
+  },
+  {
+   "id": "P5c",
+   "claim": "El CFRG es el destino natural de HBS-STATE",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "CFRG-Process.md: «If your problem predominantly concerns implementation details, performance optimization, or configuration choices using well-understood cryptography, it might be more appropriately handled within an IETF working group»; «CFRG has in the past declined to adopt documents that were … primarily aimed at giving immediate implementer guidance without new research context»",
+    "WebSearch: el CFRG produjo RFC 8391 (XMSS) y RFC 8554 (LMS)",
+    "hbs-state/spec/HBS-STATE-v0.3.md:422-427: «DRAFT … Derived from one single implementation … Until then it describes a programme»"
+   ],
+   "correct_statement": "El CFRG puede revisar el trabajo y alojó las especificaciones de XMSS y LMS (RFC 8391 y 8554). Pero su propia guía de proceso manda los problemas de ingeniería y de orientación a implementadores a un WG del IETF. HBS-STATE (estados de reconciliación, un juez y vectores) es guía operacional, no un resultado criptográfico nuevo."
+  },
+  {
+   "id": "P5d",
+   "claim": "Recomendación de los borradores: presentarlo en «CFRG y LAMPS» (sin mencionar PQUIP)",
+   "verdict": "FALSA",
+   "severity": "media",
+   "evidence": [
+    "WebSearch, carta de PQUIP (datatracker.ietf.org/doc/charter-ietf-pquip/): «Documenting design guidance and best practices … will not … define new cryptographic mechanisms»; publica Informational/BCP",
+    "Copia del editor de RFC 10033: venue PQUIP, pqc@ietf.org",
+    "WebSearch (search_code en ietf/wiki.ietf.org): existe el grupo secdispatch"
+   ],
+   "correct_statement": "El destino natural es el WG PQUIP (lista pqc@ietf.org). Ese grupo produjo RFC 10033, el documento cuyo hueco (ningún vector ejecutable) HBS-STATE pretende cubrir, y su carta abarca la guía operacional sin definir primitivas nuevas. Si PQUIP no lo aceptara, SECDISPATCH es el cauce para decidir dónde va un trabajo de seguridad nuevo. El CFRG puede aportar revisión; LAMPS no encaja. No se pudo comprobar si la carta de PQUIP sigue vigente en 2026 (datatracker bloqueado)."
+  },
+  {
+   "id": "P6a",
+   "claim": "«Un Internet-Draft tiene una validez de 6 meses»",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "raw.githubusercontent.com/ietf/authors.ietf.org/main/submitting-your-internet-draft.md:54: «An I-D expires 185 days after it was placed in the Repository, unless it is in a state that prevents it from expiring»",
+    "required-content.md:50: boilerplate «valid for a maximum of six months»",
+    "WebSearch: draft-thomson-gendispatch-no-expiry propone sustituir la caducidad por active/inactive; no se encontró evidencia de que se haya aprobado"
+   ],
+   "correct_statement": "Un I-D deja de estar activo 185 días (unos 6 meses) después de publicarse, salvo que se suba una revisión o que esté en tramitación (IESG o ISE). Las versiones caducadas siguen en el archivo público."
+  },
+  {
+   "id": "P6b",
+   "claim": "«Todo el proceso es gratuito»",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "WebSearch RFC 9501 (BCP 239): «there must be a free option for online participation»",
+    "WebSearch ietf-announce, IETF 126: las reuniones tienen cuota de inscripción presencial y remota"
+   ],
+   "correct_statement": "Enviar I-Ds, participar en las listas de correo y publicar un RFC no cuesta nada, y no es obligatorio asistir a reuniones. Las reuniones plenarias sí tienen cuota, presencial y remota, con exenciones para la participación remota."
+  },
+  {
+   "id": "P6c",
+   "claim": "«Asistir en persona cuesta 700-1000 (USD)»",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "WebSearch, ietf-announce «IETF 126 registration reminder» (Viena, 18-24 jul 2026): Onsite Week Pass 950 USD super early (1140 con IVA), 1180 USD early, estándar anunciada unos 1300 USD; pase de un día 500 USD (cifras de resultados de búsqueda; la página de inscripción está bloqueada)"
+   ],
+   "correct_statement": "En IETF 126 (Viena, julio de 2026) el pase semanal presencial costaba 950 USD con tarifa super early (1.140 con IVA), 1.180 USD con tarifa early y unos 1.300 USD con tarifa estándar, sin contar viaje ni alojamiento. Las cifras proceden de resultados de búsqueda de ietf-announce, no de la página de inscripción."
+  },
+  {
+   "id": "P6d",
+   "claim": "«La participación remota es gratuita (o de coste simbólico)»",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "WebSearch IETF 126: Remote Week Pass 270 USD super early; estándar anunciada 390 USD",
+    "WebSearch RFC 9501 / ietf.org fee waiver: «unlimited number of fee waivers available to remote participants and does not ask participants to explain»"
+   ],
+   "correct_statement": "La inscripción remota tiene cuota (en IETF 126, 270 USD super early y unos 390 USD con tarifa estándar), que no es un coste simbólico. Aun así, RFC 9501 (BCP 239) exige una opción gratuita, y el IETF concede exenciones ilimitadas sin pedir justificación."
+  },
+  {
+   "id": "P6e",
+   "claim": "«Las decisiones se toman en las listas de correo»",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "WebSearch RFC 2418 §3.2: «decisions at meetings … are not final and must be reviewed on the mailing list»",
+    "CFRG-Process.md: la llamada a adopción y la RGLC se hacen en la lista de correo"
+   ],
+   "correct_statement": "Es correcto. En los WG del IETF (RFC 2418 §3.2) y en el CFRG (llamadas a adopción y RGLC) el consenso aproximado se verifica en la lista de correo, y lo acordado en una reunión tiene que confirmarse en la lista."
+  },
+  {
+   "id": "P7a",
+   "claim": "«gem install kramdown-rfc2629»",
+   "verdict": "PARCIAL",
+   "severity": "baja",
+   "evidence": [
+    "rubygems.org API: kramdown-rfc 1.7.43 y kramdown-rfc2629 1.7.43, ambos del 2026-08-27",
+    "Instalación en el scratchpad: «Successfully installed kramdown-rfc2629-1.7.43 / kramdown-rfc-1.7.43» (kramdown-rfc arrastra el antiguo)",
+    "github.com/cabo/kramdown-rfc README:27 «gem install kramdown-rfc»; :62-64 «what was called kramdown-rfc2629 is now called kramdown-rfc»"
+   ],
+   "correct_statement": "El nombre vigente es kramdown-rfc (`gem install kramdown-rfc`). El nombre antiguo sigue publicado en la misma versión, 1.7.43, y funciona como compatibilidad."
+  },
+  {
+   "id": "P7b",
+   "claim": "Comandos «kramdown-rfc2629 file.md > file.xml; xml2rfc --text --html file.xml»",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "Prueba en el scratchpad: `kramdown-rfc2629` produce la misma salida que `kramdown-rfc` (cmp idéntico), y xml2rfc 3.34.1 (PyPI) con `--text --html` escribe «Created file legacy.txt / legacy.html»",
+    "kramdown-rfc README:42-56 documenta `kramdown-rfc mydraft.md >mydraft.xml`, `xml2rfc mydraft.xml` y `kdrfc`"
+   ],
+   "correct_statement": "Los comandos funcionan. La forma documentada hoy es `kramdown-rfc draft.md > draft.xml && xml2rfc --text --html draft.xml`, o bien `kdrfc draft.md`, que encadena los dos pasos."
+  },
+  {
+   "id": "P7c",
+   "claim": "«ipr: trust200902»",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "authors.ietf.org required-content.md:62-66: la mayoría de los I-D usan «trust200902», que genera el aviso de TLP §6.b",
+    "kramdown-rfc examples/stupid-s.mkd: «ipr: trust200902»"
+   ],
+   "correct_statement": "`ipr: trust200902` es la opción estándar y es correcta. Implica que el texto del I-D queda bajo las disposiciones del IETF Trust (BCP 78/79)."
+  },
+  {
+   "id": "P7d",
+   "claim": "«workgroup: Crypto Forum Research Group» en un -00 individual llamado draft-toranzo-hbs-state",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "Borradores individuales dirigidos al CFRG: draft-connolly-cfrg-xwing-kem.md y draft-chen-cfrg-vdaf-pine.md usan «submissiontype: IRTF» y «workgroup: \"Crypto Forum\"» (raw.githubusercontent)",
+    "authors.ietf.org naming-your-internet-draft.md:72-75: convención draft-authors-wgname-subject para buscar adopción",
+    "CFRG-Process.md: «draft-yourname-cfrg-topic»"
+   ],
+   "correct_statement": "Poner el CFRG en workgroup de un -00 individual es práctica habitual cuando se busca ese grupo, pero el docname debería llevar el grupo: draft-toranzo-cfrg-hbs-state-00. Si el destino es PQUIP, sería draft-toranzo-pquip-hbs-state. Nunca debe llevar «draft-ietf-» ni «draft-irtf-» antes de la adopción."
+  },
+  {
+   "id": "P7e",
+   "claim": "Implícito: el apéndice de vectores (bloque JSON abierto con tres acentos graves y nunca cerrado) se procesa como código",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "kramdown REL_2_4_0 lib/kramdown/parser/kramdown/codeblock.rb:33-34: FENCED_CODEBLOCK_START = /^~{3,}/ (solo tildes); kramdown-rfc usa input 'RFC2629Kramdown' < Kramdown (lib/kramdown-rfc/command.rb:250; lib/kramdown-rfc2629.rb:86)",
+    "Prueba en el scratchpad (kramdown-rfc 1.7.43 y xml2rfc 3.34.1, documento mínimo): `~~~ json` genera <sourcecode type=\"json\">; con acentos graves cerrados sale <spanx style=\"verb\"> dentro de un párrafo; sin cerrar sale el texto «```json {\"c\": 3, \"d\": 4}» refundido en una línea, con exit 0 y sin avisos",
+    "No hay copia del I-D pegado en disco (grep sin resultados); el defecto se toma de la descripción del orquestador"
+   ],
+   "correct_statement": "Los vectores tienen que ir en un bloque `~~~ json` … `~~~`, que se convierte en <sourcecode type=\"json\">. Con acentos graves, cerrados o no, kramdown-rfc no genera código y el JSON sale refundido como prosa sin ningún aviso. Eso rompe precisamente los vectores, que son el entregable principal."
+  },
+  {
+   "id": "P7f",
+   "claim": "Implícito: el diagrama ASCII de decisión, colapsado en una sola línea, se reproduce",
+   "verdict": "FALSA",
+   "severity": "media",
+   "evidence": [
+    "Prueba en el scratchpad: una línea «+-----+ --> +-----+ | A | --> | B | …» se interpreta como tabla (texttable sin filas) y xml2rfc 3.34.1 aborta con «Expecting an element , got nothing, at /rfc/middle/section[2]/table … Unable to complete processing»"
+   ],
+   "correct_statement": "El diagrama tiene que ir línea a línea dentro de un bloque `~~~ ascii-art` (o `~~~` como artwork), con sus saltos de línea y 72 columnas como máximo. Colapsado en una línea no solo se pierde el dibujo: con barras verticales kramdown lo toma por una tabla y xml2rfc falla."
+  },
+  {
+   "id": "P7g",
+   "claim": "Referencias escritas como líneas «[*RFC2119]» en vez de bloques YAML",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "Prueba en el scratchpad: avisos «No link definition for link ID '*rfc2119' found», salida «[<em>RFC2119] [</em>RFC10033]» y ninguna sección de referencias generada",
+    "kramdown-rfc README:173-186: {{!RFC2119}} para normativas, {{?RFC1925}} para informativas, o bloques normative:/informative: en el YAML",
+    "lib/kramdown-rfc/command.rb:99-114: el boilerplate bcp14 produce «BCP 14 {{!RFC2119}} {{!RFC8174}}»"
+   ],
+   "correct_statement": "Las referencias se declaran en la cabecera YAML (normative:/informative:) o en línea con {{!RFC2119}} / {{?RFC10033}}. Para las palabras clave se usa `{::boilerplate bcp14-tagged}`, que cita RFC 2119 y RFC 8174 (hacen falta las dos). «[*RFC2119]» no es sintaxis de kramdown-rfc ni de mmark (que usa [@!RFC2119])."
+  },
+  {
+   "id": "P7h",
+   "claim": "Correo del autor «autor@ejemplo.com»",
+   "verdict": "FALSA",
+   "severity": "media",
+   "evidence": [
+    "WebSearch RFC 2606: solo están reservados example.com/.net/.org y los TLD .test, .example, .invalid y .localhost; ejemplo.com no",
+    "authors.ietf.org submitting-your-internet-draft.md:26: «the authors will receive email with a request to verify the submission»",
+    "required-content.md:140: el I-D debe incluir el contacto de los autores"
+   ],
+   "correct_statement": "El I-D debe llevar un correo real del autor, porque la herramienta de envío pide confirmación por correo a los autores salvo que el remitente esté autenticado y figure como autor. Además, ejemplo.com no es un dominio reservado (RFC 2606 solo reserva example.com/.net/.org), así que como marcador podría pertenecer a un tercero."
+  },
+  {
+   "id": "P7i",
+   "claim": "RFC 10033 figura como referencia informativa aunque el texto se apoya en ella",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "WebSearch, IESG Statement «Normative and Informative References»: «Normative references specify documents that must be read to understand or implement the technology»",
+    "hbs-state/spec/HBS-STATE-v0.3.md:12-21: usa RFC 10033 §4/§5 como motivación (el hueco), no para definir los estados",
+    "WebSearch RFC 3967: las reglas de downref se refieren a documentos Standards Track"
+   ],
+   "correct_statement": "Si el I-D usa definiciones o requisitos de RFC 10033 (por ejemplo, los requisitos ACID de su §4) para que el lector entienda o implemente el mecanismo, la referencia es normativa. Si solo motiva el hueco, basta con informativa. En un documento Informational la downref no es obstáculo. Hay que decidirlo según el uso real que haga el texto."
+  },
+  {
+   "id": "P7j",
+   "claim": "«normative: NIST-SP800-208» es correcto",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "Prueba en el scratchpad: la clave YAML «NIST-SP800-208:» sin campos da «*** don't know how to expand ref NIST-SP800-208 nil», y xml2rfc: «IDREF attribute target references an unknown ID \"NIST-SP800-208\" … Unable to complete processing»",
+    "Prueba: «NIST.SP.800-208» se mapea a la entidad bibxml2 https://bib.ietf.org/public/rfc/bibxml2/reference.NIST.SP.800-208.xml (no se comprobó que exista; bib.ietf.org bloqueado)",
+    "Copia del editor de RFC 10033: declara «SP.800-208» como normativa con título, autores, fecha y target https://doi.org/10.6028/NIST.SP.800-208"
+   ],
+   "correct_statement": "Es razonable que SP 800-208 sea normativa, pero la entrada tiene que poder resolverse: un bloque YAML completo (como hace el borrador de PQUIP), un ancla BibXML válida (NIST.SP.800-208) o DOI.10.6028/NIST.SP.800-208. Escrita como «NIST-SP800-208» a secas, xml2rfc aborta."
+  },
+  {
+   "id": "P7k",
+   "claim": "El I-D remite a «la ecuación de la Sección 3.1»",
+   "verdict": "PARCIAL",
+   "severity": "baja",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:179-185: §3 «The judge» no tiene §3.1 ni ecuaciones numeradas",
+    "Copia del editor de RFC 10033: §3.1 es «Assessing Operational Costs», sin ecuación",
+    "kramdown-rfc lib/kramdown-rfc2629.rb:110-116 (XREF_SINGLE/SECTIONS_RE): admite {{Section N of RFCxxxx}} y anclas internas"
+   ],
+   "correct_statement": "Las referencias internas tienen que ser anclas (por ejemplo {{sec-reconciliation}}) y las externas deben escribirse «{{Section N of RFCxxxx}}». RFCXML no numera ecuaciones, así que la fórmula debe ir en un bloque con ancla. Ni HBS-STATE v0.3 ni la copia del editor de RFC 10033 tienen una §3.1 con ecuación."
+  },
+  {
+   "id": "P8a",
+   "claim": "El anuncio enlaza https://github.com/atoranzo/hbs-state",
+   "verdict": "CONFIRMADA",
+   "severity": "baja",
+   "evidence": [
+    "hbs-state: git remote origin https://github.com/atoranzo/hbs-state; Cargo.toml:53",
+    "WebSearch: el repositorio aparece indexado en GitHub"
+   ],
+   "correct_statement": "El repositorio existe (commit a960828, «Release 0.2.0»)."
+  },
+  {
+   "id": "P8b",
+   "claim": "El anuncio cita «v0.2.0»",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "hbs-state: tag v0.2.0 en a960828 (2026-09-27); Cargo.toml:45; CITATION.cff:10-11",
+    "hbs-state/.zenodo.json: «crate version 0.2.0 … implements specification HBS-STATE v0.3 … The two version numbers are independent»",
+    "hbs-state/spec/HBS-STATE-v0.3.md:37-41: la release v0.1.0 (2026-09-26) lleva la v0.3 anterior a las dos correcciones"
+   ],
+   "correct_statement": "El anuncio debe decir «hbs-state 0.2.0 (crate), que implementa la especificación HBS-STATE v0.3 revisada el 2026-09-27». La versión del crate y la de la especificación son independientes, y la release 0.1.0 contiene una v0.3 anterior con dos afirmaciones que luego se retiraron."
+  },
+  {
+   "id": "P8c",
+   "claim": "Licencia «CC0 / Dual MIT/Apache-2.0»",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "hbs-state/README.md:182: «MIT OR Apache-2.0. The vectors under spec/, CC0-1.0.»",
+    "hbs-state/spec/HBS-STATE-v0.3.md:479-482: «The vectors under spec/, CC0-1.0. Everything else, MIT OR Apache-2.0.»",
+    "hbs-state/.zenodo.json:6: license «mit» (una etiqueta, según su propia descripción); CITATION.cff:4",
+    "WebSearch, TLP del IETF Trust §4: los componentes de código de documentos IETF quedan bajo la Revised BSD License"
+   ],
+   "correct_statement": "El código está bajo MIT OR Apache-2.0, a elección del receptor. Los vectores de spec/ están bajo CC0-1.0. El texto de la especificación está bajo MIT OR Apache-2.0, no CC0. El campo de licencia de Zenodo («mit») es solo una etiqueta. Lo que se copie dentro del I-D queda además bajo BCP 78 (IETF Trust), con los componentes de código bajo Revised BSD."
+  },
+  {
+   "id": "P8d",
+   "claim": "El correo de anuncio al CFRG da una URL de datatracker del draft como si ya existiera",
+   "verdict": "NO_VERIFICABLE",
+   "severity": "alta",
+   "evidence": [
+    "datatracker.ietf.org y www.ietf.org bloqueados (EGRESS_BLOCKED / 403)",
+    "WebSearch «draft-toranzo-hbs-state» OR «draft-toranzo»: sin resultados",
+    "grep en ambos repos: 0 menciones de draft-toranzo, datatracker o cfrg"
+   ],
+   "correct_statement": "No hay evidencia de que draft-toranzo-hbs-state se haya enviado: no aparece en búsquedas ni en los repositorios. El anuncio no debe incluir una URL de datatracker hasta que exista el envío. Lo correcto es enviar el -00 primero y anunciarlo después."
+  },
+  {
+   "id": "P9a",
+   "claim": "Teorema 1 (atado retroactivo bajo resistencia a colisiones): cambiar Π_k por Π'_k hace H'_n ≠ H_n salvo con probabilidad despreciable",
+   "verdict": "PARCIAL",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:250-262: chain_digest = merge(merge(cuerpo, proof_digest), previous)",
+    "log.rs:1131-1225, módulo t1_chain_retroactivo (N=12, K=5; «alterar la epoca K falsifica la cabeza de N»); AUDITORIA.md §115.1: 3/3 en verde",
+    "AUDITORIA.md §116: «T1 mide el encadenamiento, no la resistencia a colision del resumen»"
+   ],
+   "correct_statement": "La idea es correcta, pero el enunciado es informal. Enunciado correcto: si un adversario PPT produce dos historias distintas con el mismo H_n, se construye un adversario que encuentra una colisión de la función de encadenamiento o de la función de resumen de pruebas. Prueba: se recorre la cadena hacia atrás desde n; la primera posición j ≥ k en la que las entradas difieren y las salidas coinciden es una colisión de H; si las entradas coinciden hasta k, H(Π_k) = H(Π'_k) es una colisión del resumen. Decir «para todo Π'_k, salvo probabilidad despreciable» es impreciso con funciones sin clave, porque las colisiones existen; lo que se afirma es que es difícil encontrarlas. Arqueo tiene esta propiedad medida para su cadena (T1)."
+  },
+  {
+   "id": "P9b",
+   "claim": "Basta la resistencia a colisiones de H para el atado retroactivo",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "AUDITORIA.md §116 (relleno sin longitud: dos pruebas que difieren en ceros finales colisionan) y §124.1 (la reducción % p hacía colisionar un bloque de valor p con ceros): colisiones sin romper el hash",
+    "crates/zk-ssl-hash/src/lib.rs:1287-1320: digest_of_proof = Blake3(dominio ‖ longitud ‖ prueba) reducido a 4 elementos Goldilocks",
+    "AUDITORIA.md §271 y log.rs:161-231: seis vías asentaban digest_of_proof(&[]) = 74de079f…cfa1 (una constante) hasta §278",
+    "log.rs:385-392: verify_chain «No detecta que falte el principio»",
+    "SECURITY.md:122-165: ancla TOFU y «NO HAY CLAVE QUE ANCLAR»",
+    "crates/zk-ssl-hash/src/lib.rs:210,224: «native_merge no separa hoja de nodo»"
+   ],
+   "correct_statement": "Faltan hipótesis. (1) Codificación inyectiva y canónica de cada entrada (campos de longitud fija o prefijada, y dominios): Arqueo tuvo dos familias de colisión reales por codificación (§116 y §124) sin romper Rescue ni Blake3. (2) Que el resumen de cada Π_i esté de verdad en la cadena y ate algo: seis vías de Arqueo asentaron un resumen constante hasta §278. (3) Resistencia a colisiones de las dos funciones: el encadenado Rescue-Prime y el resumen Blake3 reducido a Goldilocks. (4) Génesis H_0 y longitud n conocidos: verify_chain no detecta un prefijo truncado. (5) H_n autenticado frente a un ancla que el verificador ya tenga: firma XMSS con clave anclada, hoy solo TOFU. (6) Disponibilidad de las preimágenes para poder recomputar. (7) Separación de dominios entre la cadena y otros árboles que comparten el mismo merge."
+  },
+  {
+   "id": "P9c",
+   "claim": "El atado retroactivo del Teorema 1 como aportación propia de ECST",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "WebSearch: Haber y Stornetta, «How to time-stamp a digital document», J. Cryptology 3:99-111, 1991 (link.springer.com/article/10.1007/BF00196791): enlazado de sellos por hash",
+    "WebSearch: Crosby y Wallach, «Efficient Data Structures for Tamper-Evident Logging», USENIX Security 2009",
+    "crates/zk-ssl/src/log.rs:44-46: Arqueo se compara con Certificate Transparency"
+   ],
+   "correct_statement": "Es la propiedad clásica del enlazado por hash de Haber y Stornetta (1991), la base de los registros a prueba de manipulación (Crosby y Wallach 2009) y de Certificate Transparency (RFC 6962/9162). ECST puede usarla citándola, pero no es una aportación nueva."
+  },
+  {
+   "id": "P10a",
+   "claim": "«HistoryOK no implica CryptoValid»",
+   "verdict": "CONFIRMADA",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:436-437: «No verifica las pruebas —no las guarda— pero sí que cada entrada esté atada a una prueba concreta»",
+    "spec/PAQUETE.md:680-681: el paquete demuestra «que la entrada está acusada bajo esa cabeza firmada, no qué dice»"
+   ],
+   "correct_statement": "Correcto. La coherencia de la cadena (secuencia, continuidad de raíces y recomposición de H_i) no dice nada sobre la validez de las pruebas cuyos resúmenes encadena. Así lo implementa Arqueo en TransitionLog::verify."
+  },
+  {
+   "id": "P10b",
+   "claim": "«CryptoValid + HistoryOK dan base para reconstruir la secuencia»",
+   "verdict": "PARCIAL",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl-verify/src/reverificacion.rs:44-47: en Send, Claim, Burn, Refund y Migration «el registro no guarda la prueba: no seran recomputables desde el registro nunca»",
+    "spec/RPC.md:659-700 (§248): el operador NO sirve el histórico; los testigos guardan cabezas firmadas",
+    "crates/zk-ssl/src/log.rs:52-56: «El operador podría no publicar el registro», «No impide la censura»",
+    "SECURITY.md:176-200: el operador puede cambiar el verificador y hoy eso es invisible",
+    "SECURITY.md:122-165: TOFU"
+   ],
+   "correct_statement": "Solo es cierto bajo hipótesis explícitas: (a) todas las Π_i y sus entradas públicas están disponibles por una vía que no controla el operador (en Arqueo el registro guarda solo resúmenes y el operador no sirve histórico); (b) la cabeza está autenticada contra un ancla previa; (c) se conocen las reglas (AIR y verificador) vigentes en cada transición; (d) la historia está completa, cosa que no se garantiza porque la omisión o la censura no dejan rastro. Además, lo reconstruible es la secuencia de compromisos (raíces), no el contenido del estado, que las pruebas ocultan."
+  },
+  {
+   "id": "P11a",
+   "claim": "«IVC … el coste de verificación O(log n) en el auditor permanece constante»",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "WebSearch: Valiant, TCC 2008, LNCS 4948: el verificador IVC usa tiempo y espacio «essentially constant»",
+    "WebSearch: Nova (Kothapalli, Setty, Tzialla, CRYPTO 2022; ePrint 2021/370)",
+    "FIVE_BACKENDS.md:59-96: PoC Nova con RecursiveSNARK::verify 108 ms y CompressedSNARK::verify 50 ms; el paso 9 cuesta 0,77 veces el paso 1; 10.764 restricciones por paso; prueba de concepto",
+    "WebSearch: Ben-Sasson et al., ePrint 2018/046: la verificación STARK escala de forma polilogarítmica"
+   ],
+   "correct_statement": "O(log n) no es constante: la frase se contradice. Con IVC el coste del verificador no depende del número n de pasos (depende del parámetro de seguridad y del tamaño del circuito de paso). O(log n) es lo que cuesta, por ejemplo, una prueba de inclusión o de consistencia en un Merkle/MMR (Arqueo tiene MMR de cabezas y zkssl_consistencyProof), y O(polylog T) la verificación de un STARK sobre una traza de longitud T."
+  },
+  {
+   "id": "P11b",
+   "claim": "«Tiempo de validación sublineal respecto al tamaño de la transición»",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "ARQUITECTURA.md:620-632: verificar cuesta ~1,5-4 ms frente a 105-620 ms de generar, por prueba (medido)",
+    "WebSearch: ePrint 2018/046, verificación STARK polilogarítmica",
+    "crates/zk-ssl/src/log.rs:438-470: verify recorre las N entradas, coste O(N)"
+   ],
+   "correct_statement": "Por transición es cierto: un STARK se verifica en tiempo polilogarítmico en la traza, y en Arqueo se midieron ~1,5-4 ms por prueba frente a 105-620 ms de generación. Pero un auditor que verifica una historia de N transiciones sin IVC paga N verificaciones y N pasos de cadena, es decir, un coste lineal en N. Ese es el compromiso que ECST debe declarar. Sin IVC: verificación lineal en N, fallo localizado por transición y sin maquinaria recursiva. Con IVC: verificación constante en N, a cambio del sobrecoste recursivo (10.764 restricciones por paso en el PoC Nova) y, en la pila medida, de supuestos de curva y setup confiable."
+  },
+  {
+   "id": "P12a",
+   "claim": "ECST-R: «un salto de instrucción inducido por hardware no sirve de nada porque el verificador externo computará Verify(Π_i)=0»",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "SECURITY.md:66-69: hasta el 31-07-2026 la capa no verificaba las pruebas de la vía de pago: aceptación sin verificación que ningún tercero detectó",
+    "crates/zk-ssl-verify/src/reverificacion.rs:44-47: las pruebas reales no se guardan",
+    "SECURITY.md:57-59: «hoy nadie fuera del operador observa cabezas»",
+    "SECURITY.md:176-200: el verificador es sustituible sin que se vea",
+    "WebSearch: Castelnovi, Martinelli y Prest, «Grafting Trees», PQCrypto 2018: un fallo al construir un subárbol no superior de XMSS^MT/HSS da una firma WOTS+ defectuosa y permite una falsificación universal",
+    "spec/NUCLEO.md:210: las cabezas de Arqueo se firman con XmssMtSha2_40_8_256",
+    "SECURITY.md:519-522: techo de 63 bits de solidez"
+   ],
+   "correct_statement": "Un fallo inyectado que haga aceptar una transición inválida solo se detecta después, y solo si Π_i se publica, un tercero independiente la vuelve a verificar con las reglas correctas y la solidez es suficiente. No se impide. Además, hay fallos que el verificador no puede ver: un fallo durante la firma de un subárbol intermedio de XMSS^MT (ataque «Grafting Trees») produce una falsificación que sí verifica, y un fallo en la gestión del índice provoca reutilización de hojas, que solo detecta quien observe todas las firmas."
+  },
+  {
+   "id": "P12b",
+   "claim": "«ECST traslada la carga de la prueba desde el hardware a la verificación matemática»",
+   "verdict": "PARCIAL",
+   "severity": "alta",
+   "evidence": [
+    "hbs-state/README.md:94-100: «Nothing against a power cut»",
+    "hbs-state/spec/HBS-STATE-v0.3.md:12-21: SP 800-208 exige módulos hardware; RFC 10033: «rollback resistant counters … difficult … in a software-only fashion»",
+    "Copia del editor de RFC 10033 (líneas 504-511): «how an accidental/intentional failure/glitch might affect the state security»",
+    "SECURITY.md:8: «Nada de este proyecto ha sido auditado por terceros»"
+   ],
+   "correct_statement": "ECST traslada la detección de transiciones inválidas: deja de depender de la confianza en el hardware que ejecuta y pasa a depender de la verificación de evidencia, siempre que la evidencia esté disponible y haya verificadores independientes. No traslada la custodia de los secretos (claves de gasto, clave XMSS del operador) ni la del estado del índice XMSS. Ambas siguen dependiendo del hardware y del sistema, y por eso SP 800-208 y RFC 10033 recomiendan hardware dedicado."
+  },
+  {
+   "id": "P12c",
+   "claim": "«Ningún ataque microarquitectónico puede falsificar … sin conocer las claves»",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl-sdk/src/lib.rs:1-20 y 88-104: la clave de gasto vive en el cliente (Wallet) y la prueba se genera en local",
+    "SECURITY.md:56: «Autoridad de gasto: solo quien controla la clave puede gastar»",
+    "SECURITY.md:441-481: entre §521 y §538 las pruebas publicaban en claro la clave de gasto y las de custodio",
+    "WebSearch: Kannwischer, Genêt, Butin, Krämer y Buchmann, «Differential Power Analysis of XMSS and SPHINCS», COSADE 2018"
+   ],
+   "correct_statement": "La frase es tautológica: los canales laterales son precisamente la forma de conocer las claves. Un canal lateral en la máquina del pagador, donde vive Wallet::spend_key y se genera la prueba, rompe la autoría: las pruebas del atacante son válidas e indistinguibles de las legítimas. Lo mismo vale para la clave XMSS del operador. La formulación defendible es: «sin extraer claves ni romper la solidez, ningún ataque sobre el ejecutor produce una prueba aceptada de una transición inválida»."
+  },
+  {
+   "id": "P13",
+   "claim": "«El umbral eleva exponencialmente la complejidad del ataque» (luego retractado en los borradores)",
+   "verdict": "FALSA",
+   "severity": "media",
+   "evidence": [
+    "ARQUITECTURA.md:860-866: «Da: robar una clave ya no basta. Se necesitan dos»; «No da … quien genera la prueba necesita las dos claves a la vez»",
+    "ARQUITECTURA.md:836-839: entre §523 y §538, tras una emisión delegada el nodo tenía las claves de dos custodios",
+    "SECURITY.md:441-481"
+   ],
+   "correct_statement": "Un umbral k-de-n eleva de 1 a k el número de claves que hay que comprometer: el crecimiento es lineal en k, no exponencial en el parámetro de seguridad. Solo si los compromisos fueran independientes, con probabilidad p cada uno, la probabilidad de éxito sería p^k; con compromisos correlacionados (misma máquina, mismo probador) eso no vale. En Arqueo (2-de-N), quien genera la prueba necesita ambas claves a la vez, y entre §523 y §538 el umbral colapsó porque las pruebas revelaban las claves de custodio. La retractación de los borradores es correcta."
+  },
+  {
+   "id": "P14",
+   "claim": "Uso de «compromisos de Pedersen» en un diseño post-cuántico",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "grep -i pedersen en Arqueo (.md y .rs, sin target): 0 resultados",
+    "spec/NUCLEO.md:249-262: hojas y compromisos por merge Rescue-Prime; SECURITY.md:315: el compromiso de hoja es ocultante (hash con sal)",
+    "crates/nova-experiment/Cargo.toml:11-12 y src/folding_chain.rs:39-47: el único componente sobre curvas, el PoC Nova, usa BN254/Grumpkin con HyperKZG/IPA",
+    "WebSearch: Pedersen es perfectamente ocultante y computacionalmente vinculante bajo logaritmo discreto, y Shor rompe la vinculación"
+   ],
+   "correct_statement": "Arqueo no usa compromisos de Pedersen: sus compromisos son hash (Rescue-Prime sobre Goldilocks, con sal para ocultar). Pedersen solo es vinculante bajo el logaritmo discreto, que Shor rompe (permite equivocar), así que no es aceptable en un diseño que se presenta como post-cuántico. Lo coherente son compromisos por hash, vinculantes bajo resistencia a colisiones, o reticulares."
+  },
+  {
+   "id": "P15a",
+   "claim": "«KeyAtZero ⇒ NoSign»",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:103-107: en el modelo derivado de semilla, tras un reinicio «always KeyAtZero»; :141-146: KeyAtZero no es fatal; :179-185: el juez solo marca KeyAhead",
+    "hbs-state/src/lib.rs:370-377: is_fatal devuelve false para KeyAtZero",
+    "crates/zk-ssl-node/src/main.rs:576-609: ClaveEnCero -> ArrancaResincronizando hasta el contador («SE ABANDONAN … de 0 a contador-1 … PERDIDOS y NO REUTILIZABLES»); NoArranca solo si el diario lo contradice (`Some(d) if *contador < d`)",
+    "crates/zk-ssl-cli/src/witness.rs:2731-2757: el testigo hace lo mismo, con `<=` contra las cofirmas"
+   ],
+   "correct_statement": "En el modelo derivado de semilla todo reinicio real da KeyAtZero; si eso implicara NoSign, el nodo no volvería a firmar nunca. La regla correcta, la de HBS-STATE v0.3 y la de Arqueo desde S335/S337, es esta: KeyAtZero no es fatal. Se falla cerrado tratando 0..contador-1 como consumidos, se resincroniza la clave al índice `contador` (una hoja que nunca se reservó) y se sigue. Solo se detiene si un segundo registro (el diario del nodo o las cofirmas del testigo) prueba que el contador retrocedió. El único estado que prohíbe firmar es KeyAhead."
+  },
+  {
+   "id": "P15b",
+   "claim": "«S ∈ U ⇒ NoSign» (U = conjunto de estados inseguros)",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "hbs-state/src/lib.rs:412-432: reconcile_values; hbs-state/spec/HBS-STATE-v0.3.md:204-206: fusionar CounterAhead con KeyAhead «does not meet N1»",
+    "crates/zk-ssl-node/src/main.rs:586-590: «El gate se apaga quitando un fichero» (límite declarado)",
+    "main.rs:558 y witness.rs:2338: comentarios antiguos que aún dicen que ClaveEnCero «SI para» / «NO arranca», contradichos por el código de S335/S337"
+   ],
+   "correct_statement": "La regla es correcta si U = {KeyAhead}, que es el juez de HBS-STATE, más, como política de Arqueo, «el contador es menor que el último índice anotado por un segundo testigo». Meter KeyAtZero o CounterAhead en U viola N1 y N3 de HBS-STATE. El gate del segundo testigo desaparece si se borra su fichero, y Arqueo lo declara como límite."
+  },
+  {
+   "id": "P16a",
+   "claim": "Tabla: «Custodia Cero en API: Garantizada por tipos»",
+   "verdict": "PARCIAL",
+   "severity": "alta",
+   "evidence": [
+    "SECURITY.md:441-446: «Wallet::spend_key es privado y ni siquiera implementa Serialize»",
+    "SECURITY.md:446-481: con winterfell 0.13 las pruebas «no ocultaban su testigo» y publicaban la clave de gasto y las de custodio; desde §538 «se cumple … en lo que la suite mide», sobre un fork no auditado",
+    "spec/RPC.md:53-61"
+   ],
+   "correct_statement": "Los tipos impiden serializar la clave (Wallet no implementa Serialize), pero no la «garantizan»: entre §521 y §538 la clave de gasto y las de custodio salían en claro dentro de las pruebas que se enviaban por la API. Desde §538 el probador, un fork no auditado de winterfell 0.13.1, oculta el testigo, y la propiedad se cumple en lo que mide la suite. La formulación correcta es: «la clave no se serializa por diseño de tipos; que no se filtre a través de las pruebas está medido, no demostrado»."
+  },
+  {
+   "id": "P16b",
+   "claim": "Tabla: «Recursión ZK intra-circuito: IVC Sí (Requerida)»",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:250-294: el encadenado se hace fuera del circuito y cada transición lleva su propia prueba",
+    "FIVE_BACKENDS.md:59-96: Nova es solo una prueba de concepto, que «no implementa el circuito de cumplimiento ni la partida doble»",
+    "crates/nova-experiment/Cargo.toml:11-12 y 31-50: curvas BN254/Grumpkin; HyperKZG exige ceremonia",
+    "Los propios borradores afirman que «ECST no es IVC» (ver P17)"
+   ],
+   "correct_statement": "Arqueo no tiene recursión dentro del circuito: cada transición lleva su STARK y la historia se ata con una cadena hash fuera del circuito. La IVC es opcional y ortogonal a ECST. El único experimento con IVC (Nova) es una prueba de concepto sobre curvas (BN254/Grumpkin, con setup confiable para HyperKZG) y no es post-cuántico. La celda contradice además la tesis de los propios borradores de que «ECST no es IVC»."
+  },
+  {
+   "id": "P16c",
+   "claim": "Tabla: «Verificación offline: un ledger convencional requiere sincronización»",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "spec/PAQUETE.md:20-34: verificación sin nodo, sin capa y sin probador (firma de cabeza, camino de acuse y cofirmas)",
+    "SECURITY.md:122-165: el ancla es TOFU",
+    "spec/RPC.md:659-700: una vista dividida solo se detecta comparando diarios de testigos independientes",
+    "WebSearch, whitepaper de Bitcoin §8 (SPV): basta con las cabeceras y la rama de Merkle, no la cadena entera"
+   ],
+   "correct_statement": "Es un hombre de paja. Los ledgers convencionales tienen clientes ligeros (SPV), que solo necesitan las cabeceras y una rama de Merkle. El paquete de Arqueo sí se verifica sin conexión con una sola cabeza firmada, pero depende de un ancla de clave (hoy TOFU) y de testigos independientes para detectar vistas divididas. La comparación honesta es «sin conexión frente a un ancla» contra «en línea frente a la cadena de cabeceras»."
+  },
+  {
+   "id": "P16d",
+   "claim": "Tabla: «Semántica de estado físico: explícita»",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:93-133 (eje del modelo de SK), :141-146 (cuatro estados), :380-388 (no cubre cómo se persiste el contador, varios firmantes, ni LMS/HSS probados)",
+    "hbs-state/src/lib.rs:547: el autocontrol rechaza solo si ratio<10 Y con fsync <20 µs; :57-61 y :97-108: umbrales declarados, de una sola máquina",
+    "hbs-state/README.md:94-100: nada contra un corte de corriente",
+    "hbs-state/src/lib.rs:455-465: si falta el fichero del contador, el contador vale 0 sin aviso"
+   ],
+   "correct_statement": "Es defendible para hbs-state/HBS-STATE, con matices. Los cuatro estados, el juez y el modelo de SK son explícitos y tienen vectores. Pero la persistencia solo se comprueba con un heurístico de coste de fsync (umbrales declarados, medidos en una máquina), no hay garantía ante un corte de corriente, y un fichero de contador borrado o restaurado no se detecta: vuelve a 0. La comparación con un ledger convencional no está medida."
+  },
+  {
+   "id": "P17",
+   "claim": "«ECST no es IVC: no compone la validez de Π_{i-1} dentro de Π_i; compromete su representación mediante el digest» (y la duda de si Arqueo compromete los resúmenes de prueba)",
+   "verdict": "CONFIRMADA",
+   "severity": "media",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:20-27 (resumen = H(numero, tipo, raiz_antigua, raiz_nueva, H(prueba), resumen_anterior)), :250-262, :281-294, :358-378 (append: proof_digest = digest_of_proof(proof) entra en chain_digest_v2)",
+    "log.rs:330-336: head(); crates/zk-ssl/src/lib.rs:867: `chain_digest: self.log.head()` en la cabeza de época",
+    "crates/zk-ssl-hash/src/lib.rs:256-266: epoch_digest incluye chain_digest; :696-699: acuse_digest(hash_prueba, epoca, n)",
+    "spec/NUCLEO.md:244-262: preámbulo firmado b\"ZK-SSL-epoch-head\" ‖ version ‖ epoch_digest y composiciones v1-v6",
+    "AUDITORIA.md §115: firma 1/min más a demanda; §278 y log.rs:161-231: sellos de las vías delegadas",
+    "crates/zk-ssl-verify/src/reverificacion.rs:44-47: el registro no guarda las pruebas"
+   ],
+   "correct_statement": "Es correcto, y Arqueo SÍ compromete los resúmenes de prueba. La correspondencia es esta. H(Π_i) corresponde a proof_digest = Blake3-256(\"ZK-SSL-proof-digest-v2\" ‖ longitud_le64 ‖ bytes de Π_i), llevado a 4 elementos Goldilocks; en las vías delegadas es el resumen del sello de autorización de su compromiso, y en OpenAccount el de la ausencia declarada (desde §278; antes, seis vías asentaban el resumen constante de la prueba vacía). H_i corresponde a chain_digest_v2(seq, tipo, raíz_vieja, raíz_nueva, proof_digest, H_{i-1}, compromiso), con merges Rescue-Prime Rp64_256 y génesis cero. H_n corresponde a TransitionLog::head(), que entra como chain_digest en epoch_digest y se firma con XMSS^MT por época (1/min más a demanda), no por transición; desde v2, además, el árbol de acuses de cada época lleva acuse_digest(hash_prueba, época, n). Ninguna prueba verifica a la anterior dentro del circuito, y el registro no guarda las Π_i."
+  },
+  {
+   "id": "P18a",
+   "claim": "Una versión dice en §3 que C<K es «colapso» y en §11.7 que K está en RAM y desaparece",
+   "verdict": "PARCIAL",
+   "severity": "media",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:103-108 (tabla de modelos), :141-146, :179-185",
+    "hbs-state/src/lib.rs:323-356: CounterAhead se midió dentro de un proceso; tras un reinicio el caso es KeyAtZero"
+   ],
+   "correct_statement": "Las dos frases son ciertas, pero en modelos distintos, y los borradores no declaran cuál usan (el nivel N0 de HBS-STATE). C<K (KeyAhead) es el único estado fatal. En el modelo derivado de semilla, K no sobrevive al reinicio (vuelve a 0, lo que da KeyAtZero), así que KeyAhead solo se puede observar dentro del proceso vivo. En el modelo con SK persistida, K sí sobrevive y KeyAhead puede observarse tras reiniciar. El informe debe declarar el modelo antes de clasificar."
+  },
+  {
+   "id": "P18b",
+   "claim": "Autoevaluaciones del tipo «8.5/10»",
+   "verdict": "SIN_FUENTE",
+   "severity": "media",
+   "evidence": [
+    "grep en ambos repositorios: no aparece ninguna puntuación de ese tipo",
+    "hbs-state/spec/HBS-STATE-v0.3.md:422-427: DRAFT derivado de una sola implementación",
+    "SECURITY.md:3-17: sin auditoría externa; «Si algo aquí suena más seguro de lo que puedes verificar … trátalo como afirmación pendiente»",
+    "CONTRIBUTING.md:10-14: «Medir antes que afirmar … Distinguir lo medido de lo estimado de lo supuesto»"
+   ],
+   "correct_statement": "Hay que quitar las notas numéricas: no tienen método ni fuente. En su lugar debe ir el estado declarado: HBS-STATE v0.3 es un borrador derivado de una sola implementación, y Arqueo no tiene auditoría externa."
+  },
+  {
+   "id": "P18c",
+   "claim": "«ECST/HBS-STATE establece un nuevo estándar»",
+   "verdict": "FALSA",
+   "severity": "alta",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:422-427: «v0.3 -- DRAFT … What is still missing is the only thing that turns this into a standard: a second INDEPENDENT subject … Until then it describes a programme»",
+    "hbs-state/spec/HBS-STATE-v0.3.md:468-473: pq-xmss no cuenta como segundo implementador",
+    "P8d: el I-D ni siquiera consta como enviado"
+   ],
+   "correct_statement": "No es un estándar. Es una especificación en borrador, derivada de una única implementación, que la propia especificación califica de «programa» hasta que se mida un segundo sujeto independiente. Tampoco hay constancia de que exista un Internet-Draft enviado."
+  },
+  {
+   "id": "P18d",
+   "claim": "«Cambio de paradigma», «revolucionario»",
+   "verdict": "SIN_FUENTE",
+   "severity": "media",
+   "evidence": [
+    "grep en ambos repositorios: «paradigm» solo aparece en el sentido de «paradigmas de prueba» (PAPER_EN.md:23-138), nunca como autoevaluación",
+    "P9c: la propiedad central (encadenado por hash) viene de Haber y Stornetta (1991)"
+   ],
+   "correct_statement": "Hay que quitar los calificativos promocionales. Lo que se puede afirmar es la combinación concreta, con su evidencia: pruebas por transición, resúmenes encadenados con cabezas firmadas XMSS^MT, testigos y un verificador sin conexión, todo con sus límites declarados. Los componentes están en la literatura y deben citarse."
+  }
+ ],
+ "extra_facts": [
+  {
+   "fact": "Fórmula real del encadenado de Arqueo. Era 1: chain_i = merge(merge(merge(merge(as_digest(seq), as_digest(tag)), merge(root_old, root_new)), proof_digest), chain_{i-1}). Era 2 (desde §281): merge(chain_era1, compromiso). La génesis es el digest cero [0;4]. merge es native_merge, una compresión 2-a-1 sobre Rescue-Prime Rp64_256 (winter-crypto =0.13.1) en el campo Goldilocks.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:250-262, :281-294, :330-336",
+    "spec/NUCLEO.md:233-236 (permutación y merge), :249-262 (composiciones)"
+   ]
+  },
+  {
+   "fact": "El resumen de prueba NO usa el mismo hash que la cadena. digest_of_proof = Blake3-256(b\"ZK-SSL-proof-digest-v2\" ‖ len(u64 LE) ‖ prueba), partido en 4 palabras u64 reducidas mod p (BaseElement::new). Se cambió de Rescue a Blake3 en §209: el apply bajó de ~33 a ~3 ms. La reducción mod p supone una pérdida marginal de entropía (deducción, no medida).",
+   "evidence": [
+    "crates/zk-ssl-hash/src/lib.rs:1287-1320",
+    "AUDITORIA.md §209 (tabla: digest_of_proof de 30,99 ms a ~0,01 ms)",
+    "crates/zk-ssl/src/log.rs:1256-1264 (t6_aliasing_del_campo)"
+   ]
+  },
+  {
+   "fact": "El Teorema 1 tiene un análogo medido en Arqueo: el módulo t1_chain_retroactivo (3 tests: divergencia localizada, «la cabeza ata la historia» y verify_chain detecta la sustitución), con N=12, K=5 y pruebas sintéticas (bytes, sin STARK). La propia auditoría advierte que T1 mide el encadenamiento y no la resistencia a colisión del resumen. La reproducción de esta sesión dio 3/3 en verde.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:1131-1225",
+    "AUDITORIA.md §115.1, §116",
+    "scratchpad/reproduccion.md (cargo test -p zk-ssl --lib t1_: 3 passed)"
+   ]
+  },
+  {
+   "fact": "Arqueo tuvo dos familias de colisión reales en el resumen de prueba por problemas de codificación, no por debilidad del hash: relleno sin longitud (§116) y la reducción % p que hacía colisionar un bloque de valor p con ceros (§124). Además, seis vías asentaron el resumen constante de la prueba vacía (74de079f…cfa1) hasta §278. Son los contraejemplos que justifican las hipótesis de codificación inyectiva y de «resumen presente y significativo» que le faltan al Teorema 1.",
+   "evidence": [
+    "AUDITORIA.md §116, §124.1, §271",
+    "crates/zk-ssl/src/log.rs:161-231"
+   ]
+  },
+  {
+   "fact": "Autenticación de H_n. Las cabezas de época se firman con XMSS^MT XmssMtSha2_40_8_256 sobre el preámbulo b\"ZK-SSL-epoch-head\" ‖ version ‖ epoch_digest, una vez por minuto y además a demanda (con caché por seq). El ancla de la clave pública es TOFU, y hoy «NO HAY CLAVE QUE ANCLAR». Sin custodia declarada de la clave, lo que se sirve no tiene valor probatorio.",
+   "evidence": [
+    "spec/NUCLEO.md:210, :244-247",
+    "AUDITORIA.md §115",
+    "SECURITY.md:122-165",
+    "spec/RPC.md:696-700"
+   ]
+  },
+  {
+   "fact": "Disponibilidad de la evidencia. El registro guarda resúmenes y no pruebas (unos 62 KB por prueba), y las pruebas reales de Send, Claim, Burn, Refund y Migration nunca se podrán recomputar desde el registro. El operador no sirve histórico (§248): lo llevan los testigos en su diario (cabezas firmadas, unos 20 GB al año por testigo), y comparar diarios detecta la divergencia pero no dice quién miente.",
+   "evidence": [
+    "crates/zk-ssl/src/log.rs:196-199",
+    "crates/zk-ssl-verify/src/reverificacion.rs:44-47",
+    "spec/RPC.md:659-700"
+   ]
+  },
+  {
+   "fact": "Un caso real de aceptación sin verificación: hasta el 31-07-2026 la capa no verificaba las pruebas de la vía de pago (§73). Ilustra que la aceptación del nodo y la verificación son actos distintos, y que un tercero solo lo detectaría con las pruebas en la mano.",
+   "evidence": [
+    "SECURITY.md:66-69"
+   ]
+  },
+  {
+   "fact": "Límites declarados de solidez y de reglas. La configuración STARK por defecto tiene un techo de 63 bits de solidez sin extensión de campo. El operador puede cambiar el verificador (el AIR es código, no datos) sin dejar rastro, y el campo hash_verificador_vigente no se puede rellenar hoy.",
+   "evidence": [
+    "SECURITY.md:519-522",
+    "SECURITY.md:176-200"
+   ]
+  },
+  {
+   "fact": "Fuga real de claves a través de las pruebas, no de la API. Entre §521 y §538, las pruebas STARK de winterfell 0.13 abrían 42 filas de la traza en claro y publicaban la clave de gasto y las claves de custodio. Desde §538 un fork no auditado oculta el testigo, y la garantía es «lo que la suite mide».",
+   "evidence": [
+    "SECURITY.md:441-481",
+    "spec/RPC.md:53-61",
+    "ARQUITECTURA.md:836-839"
+   ]
+  },
+  {
+   "fact": "Contador borrado o restaurado. IndexGuard::open inicializa el contador a 0 si el fichero no existe, sin aviso. Con una clave derivada de semilla también en 0, el resultado es InSync y se reutilizarían todas las hojas. hbs-state no lo detecta (su §9 excluye cómo se persiste el contador). Arqueo añade un segundo testigo (el diario del nodo y las cofirmas del testigo) y declara que el gate se apaga borrando ese fichero.",
+   "evidence": [
+    "hbs-state/src/lib.rs:455-465",
+    "hbs-state/spec/HBS-STATE-v0.3.md:380-388",
+    "crates/zk-ssl-node/src/main.rs:581-590",
+    "crates/zk-ssl-cli/src/witness.rs:2726-2730"
+   ]
+  },
+  {
+   "fact": "El autocontrol de fsync rechaza solo si ratio < 10 Y el coste con fsync es < 20 µs, con 20 muestras. Los umbrales están declarados a partir de una sola máquina (WSL2, i5-1135G7). En la microVM de esta sesión, ext4 dio un ratio p50 de 161-189 (0/30 rechazos) y tmpfs 1,3 (30/30 rechazos). El guest no puede saber si el host honra el vaciado a disco.",
+   "evidence": [
+    "hbs-state/src/lib.rs:57-61, :97-108, :523-555",
+    "scratchpad/reproduccion.md (tabla de autocontrol)"
+   ]
+  },
+  {
+   "fact": "La copia del editor de RFC 10033 (hbs-guidance/draft-hbs-state, commit 4ee80a2, 2026-02-27) confirma §4 = requisitos ACID con la frase sobre «rollback resistant counters» (sin coma en esa copia) y §5 = nueve enfoques. Contiene 0 apariciones de «vector». Además propone la detección de reutilización de índices por el verificador cuando este tiene acceso a todas las firmas (cita RFC 9162), que es la contraparte ECST más cercana. La numeración final del RFC no pudo verificarse.",
+   "evidence": [
+    "raw.githubusercontent.com/hbs-guidance/draft-hbs-state/main/draft-ietf-pquip-hbs-state.md líneas 474-548 (§4) y 550-868 (§5, 9 subsecciones)",
+    "grep -c vector = 0"
+   ]
+  },
+  {
+   "fact": "Hay ataques de fallo conocidos contra el esquema de firma que usa Arqueo. «Grafting Trees» (PQCrypto 2018) muestra que un fallo durante la firma de un subárbol no superior de XMSS^MT/HSS permite una falsificación universal que verifica. Aplica a XMSSMT-SHA2_40/8_256 (d=8 capas). La exposición concreta depende de si la implementación recalcula las firmas de capas intermedias: es una deducción no medida, aunque el coste medido de 144,5 ms por firma sugiere recálculo.",
+   "evidence": [
+    "WebSearch: link.springer.com/chapter/10.1007/978-3-319-79063-3_8; eprint.iacr.org/2018/674",
+    "hbs-state/src/lib.rs (comentario: 256 x 144,5 ms)",
+    "spec/NUCLEO.md:210"
+   ]
+  },
+  {
+   "fact": "Documentación desfasada en Arqueo sobre KeyAtZero. El docstring de main.rs:558 («Y su hermano ClaveEnCero SI para») y el comentario de witness.rs:2338 («sale ClaveEnCero, que NO arranca») contradicen el código vigente desde S335/S337, que resincroniza salvo que un segundo registro lo contradiga. Un informe que cite esos comentarios repetiría el error de P15a.",
+   "evidence": [
+    "crates/zk-ssl-node/src/main.rs:558 frente a :576-609",
+    "crates/zk-ssl-cli/src/witness.rs:2338 frente a :2731-2757"
+   ]
+  },
+  {
+   "fact": "Tensión entre repositorios sobre la madurez. El README y lib.rs de hbs-state dicen que la pieza lleva «un año firmando en producción», mientras que el SECURITY.md de Arqueo declara «Prototipo de investigación, no un producto. No maneja dinero real». Las fechas más antiguas que se encontraron en AUDITORIA.md son de 2026-06/07, y el clon es superficial, así que el «año» no puede verificarse desde aquí.",
+   "evidence": [
+    "hbs-state/README.md:34, :170; hbs-state/src/lib.rs:74",
+    "SECURITY.md:27-28",
+    "AUDITORIA.md (primeras fechas ISO: 2026-06-25, 2026-07-14)"
+   ]
+  },
+  {
+   "fact": "Donde sí aplica O(log n) en Arqueo: el MMR de cabezas (formato v3, §291-§292) con pruebas de extensión y consistencia (zkssl_consistencyProof), al estilo de CT. Es el sitio correcto para una afirmación logarítmica, no la verificación de pruebas.",
+   "evidence": [
+    "spec/NUCLEO.md §5 (MMR)",
+    "spec/RPC.md:88, :918-920"
+   ]
+  },
+  {
+   "fact": "Proceso del CFRG según su guía vigente (2026-09-23): borrador individual, llamada a adopción, RGLC (unos 1 mes; exige al menos una revisión del Crypto Review Panel), writeup del shepherd, revisión del IRTF Chair, votación del IRSG, conflict review del IESG y RFC Editor. Para documentos de algoritmos se esperan vectores de prueba y el estado del análisis de seguridad documentado.",
+   "evidence": [
+    "raw.githubusercontent.com/ietf/wiki.ietf.org/main/group/cfrg/CFRG-Process.md (secciones «CFRG Document Publishing Process» y «Editor/Author Guidelines»)"
+   ]
+  },
+  {
+   "fact": "Comportamiento medido de las herramientas (kramdown-rfc 1.7.43 y xml2rfc 3.34.1 instalados en el scratchpad, documentos mínimos): `~~~ json` genera sourcecode; los bloques con acentos graves (cerrados o no) no generan código y no dan aviso; una referencia sin resolver aborta xml2rfc; una línea con «|» se convierte en tabla y aborta xml2rfc. Conviene pasar idnits y xml2rfc antes de enviar.",
+   "evidence": [
+    "scratchpad/idtest/{ok3n,unclosed3n,refs,nist}.{md,xml,err}",
+    "kramdown REL_2_4_0 lib/kramdown/parser/kramdown/codeblock.rb:33-34"
+   ]
+  }
+ ]
+}

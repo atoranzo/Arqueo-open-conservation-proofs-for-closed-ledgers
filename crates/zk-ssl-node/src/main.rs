@@ -593,6 +593,35 @@ fn politica_de_reconciliacion(
     r: &zk_ssl_guardian::Reconciliacion,
     tope_diario: Option<u64>,
 ) -> DecisionDeArranque {
+    // ⚠️⚠️ ECST §8.1 (doc/ecst/ECST.md): EL GATE DEL DIARIO NO ERA SOLO DE
+    //    `ClaveEnCero`. Un contador BORRADO o puesto a CERO reabre en 0
+    //    -`GuardianIndice::abrir` no distingue "no habia fichero" de "lo
+    //    borraron"-, la clave de la semilla tambien esta en 0, y el par da
+    //    `Coincide { indice: 0 }`: la rama de abajo arrancaba SIN mirar el
+    //    diario y el firmante volvia a gastar la hoja 0 y las siguientes. R solo
+    //    ve el par; el dato de fuera del par se consulta en TODO estado que lea
+    //    un contador. Mismo operador `<` y por la misma razon que en
+    //    `ClaveEnCero` (la igualdad es el estado limpio). `ClaveEnCero` lleva su
+    //    gate dentro desde el S335 y no se toca; `ClaveAdelantada` ya no arranca.
+    //
+    // ⚠️ CONSECUENCIA DECLARADA: una clave NUEVA con el diario de la vieja
+    //    tampoco arranca ahora -el diario no dice de que clave es cada linea-.
+    //    Es fallar cerrada: se aparta el diario viejo a mano, y se sabe.
+    let leido = match r {
+        zk_ssl_guardian::Reconciliacion::Coincide { indice } => Some(*indice),
+        zk_ssl_guardian::Reconciliacion::ContadorAdelantado { contador, .. } => Some(*contador),
+        _ => None,
+    };
+    if let (Some(contador), Some(d)) = (leido, tope_diario) {
+        if contador < d {
+            return DecisionDeArranque::NoArranca(format!(
+                "EL CONTADOR HA RETROCEDIDO: dice {contador} y el diario tiene \
+                 anotado el indice {d}. Un contador borrado o puesto a cero reabre \
+                 en 0 y coincide con la clave de la semilla: arrancar aqui volveria \
+                 a firmar hojas ya firmadas, y eso filtra la clave. Se falla cerrada"
+            ));
+        }
+    }
     match r {
         zk_ssl_guardian::Reconciliacion::Coincide { indice } => {
             DecisionDeArranque::Arranca(format!(
@@ -892,6 +921,63 @@ mod gate_del_diario {
         assert!(matches!(
             politica_de_reconciliacion(&en_cero(3), None),
             DecisionDeArranque::ArrancaResincronizando { hasta: 3, .. }
+        ));
+    }
+
+    // ── ECST §8.1: el gate en los estados que no eran `ClaveEnCero` ──
+    //
+    // ⚠️ EL POSITIVO VA PRIMERO (§66.2): con el positivo roto, los rojos de
+    //    abajo pasarian por la razon equivocada.
+
+    /// El caso limpio sigue arrancando: a la par con el diario.
+    #[test]
+    fn a_la_par_y_a_la_par_con_el_diario_arranca() {
+        assert!(matches!(
+            politica_de_reconciliacion(&Reconciliacion::Coincide { indice: 5 }, Some(5)),
+            DecisionDeArranque::Arranca(_)
+        ));
+    }
+
+    /// El arranque limpio de siempre -contador y clave en 0, sin diario- tampoco
+    /// cambia: sin segundo testigo el gate pasa, que es su limite declarado.
+    #[test]
+    fn a_la_par_en_cero_sin_diario_arranca() {
+        assert!(matches!(
+            politica_de_reconciliacion(&Reconciliacion::Coincide { indice: 0 }, None),
+            DecisionDeArranque::Arranca(_)
+        ));
+    }
+
+    /// ⚠️⚠️ EL ROJO DEL HALLAZGO: el contador se borro -o se puso a cero-,
+    /// reabre en 0, la clave de la semilla esta en 0 y el par COINCIDE. El
+    /// diario dice que ya se firmo: arrancar volveria a gastar la hoja 0.
+    #[test]
+    fn un_contador_borrado_que_coincide_en_cero_no_arranca_si_el_diario_firmo() {
+        match politica_de_reconciliacion(&Reconciliacion::Coincide { indice: 0 }, Some(3)) {
+            DecisionDeArranque::NoArranca(m) => {
+                assert!(m.contains("RETROCEDIDO"), "nombra lo que paso: {m}");
+                assert!(m.contains('0') && m.contains('3'), "y los dos numeros: {m}");
+                assert!(m.contains("diario"), "y su segunda fuente: {m}");
+            }
+            otra => panic!("un contador borrado NO puede arrancar sobre hojas firmadas: {otra:?}"),
+        }
+    }
+
+    /// El mismo rojo en `ContadorAdelantado`: con un SK persistido la clave no
+    /// vuelve a cero, y un contador restaurado hacia atras puede seguir por
+    /// delante de ella y por detras del diario.
+    #[test]
+    fn un_contador_adelantado_por_debajo_del_diario_no_arranca() {
+        assert!(matches!(
+            politica_de_reconciliacion(
+                &Reconciliacion::ContadorAdelantado {
+                    contador: 4,
+                    clave: 2,
+                    huerfanos: 2,
+                },
+                Some(9)
+            ),
+            DecisionDeArranque::NoArranca(_)
         ));
     }
 }

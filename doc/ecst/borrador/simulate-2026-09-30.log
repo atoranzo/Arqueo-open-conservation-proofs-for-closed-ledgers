@@ -1,0 +1,40 @@
+  ⚠️ sandbox con claves DETERMINISTAS (semilla 0xa11ce); pruebas STARK reales, tarda unos segundos
+  cuenta #296740276 abierta — saldo CERO por diseño
+
+━━ FASE FUND ━━ emisión delegada de 1000000 a #296740276: exige DOS custodios
+  ✔ prueba STARK generada: 66.8 KB — digest 8a44571d…abb1f286 [328 ms]
+  · custodio #1 autoriza — nullifier consumido: 9bf2716af865153f78939e650184d932d6e568a5b189ef527fe46176d775f7a1  op: d441d94f…4c50121b
+  · custodio #3 autoriza — nullifier consumido: cb29e669a475934d2222417d05b1ee815c1e883b481b7962c606fc201ca4d13b  op: d441d94f…4c50121b
+  ✔ aplicado → log#1 Mint  raíz 6590b0bf…0ebb7b1a → f3fca118…3ebc0ad6  cadena 7dc073fa…f0c149c4 [5 ms]
+  cuenta #4052836150 abierta — saldo CERO por diseño
+
+━━ FASE FUND ━━ emisión delegada de 1000000 a #4052836150: exige DOS custodios
+  ✔ prueba STARK generada: 66.5 KB — digest c852acee…af37d359 [364 ms]
+  · custodio #1 autoriza — nullifier consumido: 6bb6812f168018e55843a69a63de69078c29d10697f6b75d286d226dfcff6412  op: 3938ee28…9f578ad8
+  · custodio #3 autoriza — nullifier consumido: 1dd8cc9975ef58ed1c1ff1df795b3339a31d6e5a725b3717e338c76408f04642  op: 3938ee28…9f578ad8
+  ✔ aplicado → log#3 Mint  raíz bee1fa00…bca74c5d → 75418f6b…a592ea0b  cadena 3b2878d0…ffdb5784 [5 ms]
+
+━━ FASE SEND ━━ #296740276 → #4052836150, importe 250000: materiales → prueba LOCAL → apply_send
+  · materiales listos (pendiente@0) [0 ms]
+  ✔ prueba STARK generada: 78.9 KB — digest 7a54f3fd…d10a5732 [1333 ms]
+  ✔ aplicado → log#4 Send  raíz 75418f6b…a592ea0b → d44542e0…6088e69e  cadena e1db21f3…f1c3e9fb [5 ms]
+  el dinero está EN TRÁNSITO: no es del receptor hasta que cobre (§29)
+
+━━ FASE CLAIM ━━ #4052836150 cobra el aviso: materiales → prueba LOCAL → apply_claim
+  · materiales listos [0 ms]
+  ✔ prueba STARK generada: 77.8 KB — digest a8e4897f…745e38c9 [879 ms]
+  ✔ aplicado → log#5 Claim  raíz d44542e0…6088e69e → 84f8f0db…95c51a39  cadena 529ae747…9b04524a [6 ms]
+
+✔ cadena de transiciones íntegra (6 entradas)
+  saldo final #296740276: 750000 (vista del operador)
+  saldo final #4052836150: 1250000 (vista del operador)
+
+── estado del libro mayor ──
+  cuentas          2
+  suministro       2000000
+  en tránsito      0   (pendientes sin cobrar)
+  raíz cuentas     84f8f0db…95c51a39
+  raíz pendientes  cef70622…819539bb
+  raíz congelados  cef70622…819539bb
+  registro         6 entradas, cabeza 529ae747…9b04524a
+  epoch head       05d6a4d3…25b9ee62

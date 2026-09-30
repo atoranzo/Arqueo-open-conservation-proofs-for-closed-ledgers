@@ -1,0 +1,959 @@
+{
+ "cluster": "biblio",
+ "adjudications": [
+  {
+   "id": "B1a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido por dos vías independientes. relaton da «A. Mohaisen», y el texto del RFC 8391 (réplica mnot/rfc-refs) lo confirma en la cabecera («A. Mohaisen / University of Central Florida») y en Authors' Addresses («Aziz Mohaisen»). «Mohassel» no aparece en ninguna fuente.",
+   "evidence": [
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC8391.yaml",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc8391.txt",
+    "https://raw.githubusercontent.com/liudonghua123/rfc/main/data/rfc8391.json"
+   ],
+   "correct_statement": "Huelsing, A., Butin, D., Gazdag, S., Rijneveld, J., y A. Mohaisen, «XMSS: eXtended Merkle Signature Scheme», RFC 8391, DOI 10.17487/RFC8391, mayo de 2018 (IRTF, CFRG, Informational)."
+  },
+  {
+   "id": "B1b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido. En Authors' Addresses del RFC 8391 constan los nombres completos Andreas Huelsing, Denis Butin, Stefan-Lukas Gazdag, Joost Rijneveld y Aziz Mohaisen. Tanto «Azam» como «Mohassel» son erróneos.",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc8391.txt"
+   ],
+   "correct_statement": "BibTeX: author = {Andreas Huelsing and Denis Butin and Stefan-Lukas Gazdag and Joost Rijneveld and Aziz Mohaisen}. El RFC escribe «Huelsing», sin diéresis."
+  },
+  {
+   "id": "B1c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido: relaton da «published 2018-05» y «DOI 10.17487/RFC8391», y la cabecera del texto del RFC dice «May 2018».",
+   "evidence": [
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC8391.yaml",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc8391.txt"
+   ],
+   "correct_statement": "RFC 8391, mayo de 2018, DOI 10.17487/RFC8391."
+  },
+  {
+   "id": "B1d",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. La cabecera del RFC dice «Internet Research Task Force (IRTF)» y «Category: Informational», relaton registra la rama IRTF y los metadatos del índice RFC dan source «Crypto Forum», con borrador de origen draft-irtf-cfrg-xmss-hash-based-signatures-12.",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc8391.txt",
+    "https://raw.githubusercontent.com/liudonghua123/rfc/main/data/rfc8391.json",
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC8391.yaml"
+   ],
+   "correct_statement": "RFC 8391 es Informational, de la rama IRTF y producto del CFRG (procede de draft-irtf-cfrg-xmss-hash-based-signatures-12). No es un estándar del IETF."
+  },
+  {
+   "id": "B2a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. Cabecera del RFC 8554: «Internet Research Task Force (IRTF) ... Category: Informational ... D. McGrew, M. Curcio, S. Fluhrer, Cisco Systems, April 2019». En Authors' Addresses figuran David McGrew, Michael Curcio y Scott Fluhrer. El borrador de origen es draft-mcgrew-hash-sigs-15.",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc8554.txt",
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC8554.yaml",
+    "https://raw.githubusercontent.com/liudonghua123/rfc/main/data/rfc8554.json"
+   ],
+   "correct_statement": "McGrew, D., Curcio, M., y S. Fluhrer, «Leighton-Micali Hash-Based Signatures», RFC 8554, DOI 10.17487/RFC8554, abril de 2019 (IRTF, CFRG, Informational)."
+  },
+  {
+   "id": "B2b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido: ninguna fuente contiene «秩序». Es una corrupción de la cadena BibTeX. Además de romper la ordenación, en pdfLaTeX sin soporte CJK provoca un error de compilación.",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc8554.txt"
+   ],
+   "correct_statement": "author = {David McGrew and Michael Curcio and Scott Fluhrer}."
+  },
+  {
+   "id": "B3a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido. Cabecera del RFC 9162: «B. Laurie, E. Messeri (Google), R. Stradling (Sectigo), Obsoletes: 6962, Category: Experimental, December 2021». Sus Authors' Addresses son Ben Laurie, Eran Messeri y Rob Stradling. Procede de draft-ietf-trans-rfc6962-bis-42 (grupo TRANS). «C. Lin» no aparece y Kasper no es autor del RFC 9162: solo figura en sus agradecimientos.",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc9162.txt",
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC9162.yaml",
+    "https://raw.githubusercontent.com/liudonghua123/rfc/main/data/rfc9162.json"
+   ],
+   "correct_statement": "Laurie, B., Messeri, E., y R. Stradling, «Certificate Transparency Version 2.0», RFC 9162, DOI 10.17487/RFC9162, diciembre de 2021 (IETF, Experimental; deja obsoleto el RFC 6962)."
+  },
+  {
+   "id": "B3b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido. El RFC 6962 lo firman Ben Laurie, Adam Langley y Emilia Kasper (junio de 2013, Experimental, obsoletedBy RFC 9162). El BibTeX de los borradores mezcla ambos RFC e inventa «Eran Kasper» y «Emilia Messeri».",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc6962.txt",
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC6962.yaml",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc9162.txt"
+   ],
+   "correct_statement": "RFC 9162: author = {Ben Laurie and Eran Messeri and Rob Stradling}. RFC 6962: author = {Ben Laurie and Adam Langley and Emilia Kasper}."
+  },
+  {
+   "id": "B3c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido: la cabecera dice «December 2021».",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc9162.txt"
+   ],
+   "correct_statement": "RFC 9162, diciembre de 2021. Los algoritmos MTH/PATH/SUBPROOF que usa Arqueo son los del RFC 6962 (crates/zk-ssl-verify/src/mmr.rs:21-22), que es el que debe citarse como origen, indicando que el 9162 lo deja obsoleto."
+  },
+  {
+   "id": "B4a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado con más fuerza que en la primera verificación, que dependía de la fuente del borrador: he leído el TEXTO PUBLICADO del RFC 10033 en tres réplicas de GitHub (mnot/rfc-refs, kesara/watcher, liudonghua123/rfc). La cabecera dice «Internet Engineering Task Force (IETF) / Request for Comments: 10033 / Category: Informational / ISSN: 2070-1721 / September 2026». En «Status of This Memo» consta que es producto del IETF y representa el consenso de su comunidad. El rfc10033.xml tiene category=\"info\", consensus=\"true\", submissionType=\"IETF\" y workgroup pquip. Authors' Addresses: Thom Wiggers (PQShield), Kaveh Bashiri (BSI), Stefan Kölbl (Google), Jim Goodman (Crypto4A Technologies) y Stavros Kousidis (BSI). Colaboradores: Jeff Andersen, Bruno Couillard y Stefan-Lukas Gazdag. El título publicado es «Hash-Based Signatures: ...», con B mayúscula, mientras que el borrador usa «Hash-based».",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.txt",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.xml",
+    "https://raw.githubusercontent.com/liudonghua123/rfc/main/data/rfc10033.json",
+    "https://raw.githubusercontent.com/kesara/watcher/main/rfc/rfc10033.txt",
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC10033.yaml"
+   ],
+   "correct_statement": "Wiggers, T., Bashiri, K., Kölbl, S., Goodman, J., y S. Kousidis, «Hash-Based Signatures: State and Backup Management», RFC 10033, DOI 10.17487/RFC10033, septiembre de 2026 (rama IETF, grupo PQUIP, Informational, documento de consenso del IETF)."
+  },
+  {
+   "id": "B4b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado y precisado. El atributo docName del rfc10033.xml publicado es \"draft-ietf-pquip-hbs-state-04\", y el campo draft de los metadatos del índice coincide. La versión que se convirtió en RFC es la -04, no la -03 que aparecía en el resultado de búsqueda de la primera verificación (la -03 es la versión que aparece en los comentarios de evaluación del IESG del repositorio ietf-artarea/ad-comments). El antecesor individual draft-wiggers-hbs-state solo está atestiguado por resultados del buscador.",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.xml",
+    "https://raw.githubusercontent.com/liudonghua123/rfc/main/data/rfc10033.json",
+    "https://raw.githubusercontent.com/hbs-guidance/draft-hbs-state/main/draft-ietf-pquip-hbs-state.md",
+    "github.com/ietf-artarea/ad-comments iesg-evaluation/draft-ietf-pquip-hbs-state-03/idnits-report.txt"
+   ],
+   "correct_statement": "RFC 10033 procede de draft-ietf-pquip-hbs-state-04 (grupo PQUIP del IETF), sucesor del borrador individual draft-wiggers-hbs-state."
+  },
+  {
+   "id": "B4c",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Confirmado sobre el texto publicado, con lo que se resuelve la reserva de la primera verificación. El §4 «Requirements for Secure State Management» dice: «State management systems should satisfy all _ACID_ properties:», y cada propiedad se describe con «must» en minúscula. El RFC no incluye el texto estándar de BCP 14 ni ninguna palabra clave en mayúsculas. Lo más fuerte que dice es que «the system must ensure that no two signing operations can ever be issued from the same state» y que «must not release a signature without irrevocably and correctly updating the state». Decir que el §4 «exige» (demands) ACID exagera un «should» informativo.",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.txt",
+    "https://raw.githubusercontent.com/kesara/watcher/main/rfc/rfc10033.txt"
+   ],
+   "correct_statement": "El §4 de RFC 10033 (Informational, sin BCP 14) dice que los sistemas de gestión de estado «should satisfy all ACID properties»: lo recomienda, no lo exige de forma normativa. Sí afirma, en minúscula, que el sistema «must not release a signature without irrevocably and correctly updating the state»."
+  },
+  {
+   "id": "B4d",
+   "agree": false,
+   "final_verdict": "CONFIRMADA",
+   "reason": "REFUTO la reserva de la primera verificación. El texto publicado del RFC 10033, §4, idéntico en tres réplicas independientes, dice: «Using dedicated cryptographic hardware is recommended to enforce these requirements, ensure correct behavior, and handle the complexity of state management. In particular, this enables implementing rollback resistant counters, which can be difficult to achieve in a software-only fashion.» La coma tras «counters» SÍ está en el RFC publicado; la añadió la edición del RFC Editor. La versión sin coma es la fuente del borrador en GitHub, que fue lo único que leyó la primera verificación. La cita de los borradores coincide literalmente, salvo la mayúscula inicial «In».",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.txt",
+    "https://raw.githubusercontent.com/kesara/watcher/main/rfc/rfc10033.txt",
+    "https://raw.githubusercontent.com/liudonghua123/rfc/main/data/rfc10033.txt",
+    "https://raw.githubusercontent.com/hbs-guidance/draft-hbs-state/main/draft-ietf-pquip-hbs-state.md"
+   ],
+   "correct_statement": "RFC 10033 §4: «Using dedicated cryptographic hardware is recommended to enforce these requirements, ensure correct behavior, and handle the complexity of state management. In particular, this enables implementing rollback resistant counters, which can be difficult to achieve in a software-only fashion.» (cita literal del RFC publicado, con coma)."
+  },
+  {
+   "id": "B4e",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Confirmado sobre el índice publicado. El §5 «Potential State Management Approaches» tiene nueve subsecciones: 5.1 Multiple Public Keys (SP 800-208), 5.2 Distributed Multi-trees (SP 800-208), 5.3 Sectorization, 5.4 Key/State Transfer, 5.5 Key Rotation, 5.6 Variable-Length Signature Chains, 5.7 Pre-Assigning States, 5.8 Time-Based State Management y 5.9 Interval-Based Approaches. En el texto no aparece la palabra «vector». El §5 aclara que su propósito es «to analyze these trade-offs rather than to recommend a single universally applicable solution».",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.txt"
+   ],
+   "correct_statement": "El §5 de RFC 10033 analiza nueve «enfoques potenciales» de gestión de estado (5.1–5.9) sin recomendar ninguno en particular, y el documento no incluye vectores de prueba."
+  },
+  {
+   "id": "B5a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido con metadatos oficiales. La referencia NIST de bibxml del IETF da David A. Cooper, Daniel C. Apon, Quynh H. Dang, Michael S. Davidson, Morris J. Dworkin y Carl A. Miller, octubre de 2020, DOI 10.6028/NIST.SP.800-208, y la portada del SP (copia de texto en GitHub) coincide. Una precisión: la errata «David Apon» está solo en la fuente del borrador; la referencia normativa del RFC 10033 publicado usa iniciales («Apon, D.») y no la contiene.",
+   "evidence": [
+    "https://raw.githubusercontent.com/ietf-tools/bibxml-data-archive/main/bibxml-nist/reference.NIST.SP.800-208.xml",
+    "https://raw.githubusercontent.com/neurogaussthm/NIST-SP800-Data/HEAD/try2/SP800-208.txt",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.txt"
+   ],
+   "correct_statement": "Cooper, D. A., Apon, D. C., Dang, Q. H., Davidson, M. S., Dworkin, M. J., y Miller, C. A., «Recommendation for Stateful Hash-Based Signature Schemes», NIST Special Publication 800-208, octubre de 2020, DOI 10.6028/NIST.SP.800-208."
+  },
+  {
+   "id": "B5b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido: es el target que usa la propia referencia bibxml del IETF. Para citar es preferible el DOI.",
+   "evidence": [
+    "https://raw.githubusercontent.com/ietf-tools/bibxml-data-archive/main/bibxml-nist/reference.NIST.SP.800-208.xml"
+   ],
+   "correct_statement": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-208.pdf es el PDF oficial; como identificador estable, https://doi.org/10.6028/NIST.SP.800-208."
+  },
+  {
+   "id": "B5c",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido. El hilo «Update on SP 800-208» de pqc-forum (noviembre de 2024) dice que NIST «plans to revise SP 800-208 to enable key export while also mitigating security concerns». He buscado «SP 800-208 Rev. 1» / «800-208r1» y no hay ningún borrador público. Aparte, he verificado la cita del §8.1 que usa la especificación: «The cryptographic module shall not allow for the export of private keying material», dentro del §8.1, que además exige módulos de hardware FIPS 140-2/140-3 de nivel 3 o superior.",
+   "evidence": [
+    "https://groups.google.com/a/list.nist.gov/g/pqc-forum/c/t8SSD639Z0M (vía WebSearch)",
+    "https://raw.githubusercontent.com/neurogaussthm/NIST-SP800-Data/HEAD/try2/SP800-208.txt"
+   ],
+   "correct_statement": "NIST anunció en noviembre de 2024 (pqc-forum) que planea revisar SP 800-208 para permitir la exportación de claves; no consta un borrador público de la revisión. El §8.1 vigente dice «The cryptographic module shall not allow for the export of private keying material»."
+  },
+  {
+   "id": "B6a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido en cryptobib (EPRINT:BBHR18): Eli Ben-Sasson, Iddo Bentov, Yinon Horesh, Michael Riabzev, «Scalable, transparent, and post-quantum secure computational integrity», Cryptology ePrint Archive, Report 2018/046.",
+   "evidence": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_EPRINT18.bib"
+   ],
+   "correct_statement": "Ben-Sasson, E., Bentov, I., Horesh, Y., y Riabzev, M., «Scalable, transparent, and post-quantum secure computational integrity», Cryptology ePrint Archive, Paper 2018/046, 2018."
+  },
+  {
+   "id": "B6b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido en cryptobib (C:BBHR19): «Scalable Zero Knowledge with No Trusted Setup», pp. 701--732, DOI 10.1007/978-3-030-26954-8_23. Según abbrev3: CRYPTO 2019 Parte III, LNCS 11694, editores Alexandra Boldyreva y Daniele Micciancio, Springer, Cham.",
+   "evidence": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_C19.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ],
+   "correct_statement": "Ben-Sasson, E., Bentov, I., Horesh, Y., y Riabzev, M., «Scalable Zero Knowledge with No Trusted Setup», en A. Boldyreva y D. Micciancio (eds.), CRYPTO 2019, Parte III, LNCS 11694, Springer, 2019, pp. 701–732, DOI 10.1007/978-3-030-26954-8_23."
+  },
+  {
+   "id": "B7a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido en cryptobib: C:KotSetTzi22 da «Nova: Recursive Zero-Knowledge Arguments from Folding Schemes», pp. 359--388, DOI 10.1007/978-3-031-15985-5_13, y abbrev3 lo sitúa en CRYPTO 2022 Parte IV, LNCS 13510, editores Yevgeniy Dodis y Thomas Shrimpton, Springer, Cham. EPRINT:KotSetTzi21 (2021/370) tiene el mismo título. Ni «Proofs without Trusted Setup» ni CCS 2022 aparecen en ninguna fuente.",
+   "evidence": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_C22.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_EPRINT21.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ],
+   "correct_statement": "Kothapalli, A., Setty, S., y Tzialla, I., «Nova: Recursive Zero-Knowledge Arguments from Folding Schemes», en Y. Dodis y T. Shrimpton (eds.), CRYPTO 2022, Parte IV, LNCS 13510, Springer, 2022, pp. 359–388, DOI 10.1007/978-3-031-15985-5_13; ePrint 2021/370."
+  },
+  {
+   "id": "B7b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido. La página de dl.acm.org/doi/10.1145/3548606.3560610 (en los resultados de WebSearch) corresponde a «Strengthening Order Preserving Encryption with Differential Privacy», CCS '22. La exportación dblp (conf/ccs/0001DJLZ22) da como autores a Amrita Roy Chowdhury, Bolin Ding, Somesh Jha, Weiran Liu y Jingren Zhou, pp. 2519--2533. Una tercera lista independiente de CCS 2022 (mali-kh/papers) coincide.",
+   "evidence": [
+    "https://dl.acm.org/doi/10.1145/3548606.3560610 (vía WebSearch)",
+    "github.com/freezed-corpse-143/topaperlist PAPERS/A/CSS/2022.jsonl",
+    "github.com/mali-kh/papers papers/ccs/2022/papers.bib"
+   ],
+   "correct_statement": "10.1145/3548606.3560610 = Roy Chowdhury, A., Ding, B., Jha, S., Liu, W., Zhou, J., «Strengthening Order Preserving Encryption with Differential Privacy», ACM CCS 2022, pp. 2519–2533. El DOI de Nova es 10.1007/978-3-031-15985-5_13."
+  },
+  {
+   "id": "B7c",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido: según cryptobib, las páginas son 359--388.",
+   "evidence": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_C22.bib"
+   ],
+   "correct_statement": "Nova: pp. 359–388 de CRYPTO 2022, Parte IV (LNCS 13510)."
+  },
+  {
+   "id": "B7d",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido: tanto la entrada C:KotSetTzi22 como la de ePrint dan «Ioanna Tzialla».",
+   "evidence": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_C22.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_EPRINT21.bib"
+   ],
+   "correct_statement": "author = {Abhiram Kothapalli and Srinath Setty and Ioanna Tzialla}."
+  },
+  {
+   "id": "B8a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido en cryptobib (TCC:Valiant08): «Incrementally Verifiable Computation or Proofs of Knowledge Imply Time/Space Efficiency», pp. 1--18, DOI 10.1007/978-3-540-78524-8_1. Según abbrev3: TCC 2008, LNCS 4948, editor Ran Canetti, Springer, Berlin, Heidelberg, marzo de 2008.",
+   "evidence": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_TCC08.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ],
+   "correct_statement": "Valiant, P., «Incrementally Verifiable Computation or Proofs of Knowledge Imply Time/Space Efficiency», en R. Canetti (ed.), TCC 2008, LNCS 4948, Springer, 2008, pp. 1–18, DOI 10.1007/978-3-540-78524-8_1."
+  },
+  {
+   "id": "B8b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido en cryptobib: FOCS:IndRuz08 tiene doi = 10.1109/FOCS.2008.82 y es Piotr Indyk y Milan Ruzic, «Near-Optimal Sparse Recovery in the L1 Norm», 49th FOCS, pp. 199--207.",
+   "evidence": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_FOCS08.bib"
+   ],
+   "correct_statement": "10.1109/FOCS.2008.82 = Indyk, P., y Ružić, M., «Near-Optimal Sparse Recovery in the L1 Norm», FOCS 2008, pp. 199–207. El artículo de Valiant sobre IVC no es de FOCS."
+  },
+  {
+   "id": "B9a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido en cryptobib: ITCS:ChiTro10 da «Proof-Carrying Data and Hearsay Arguments from Signature Cards», pp. 310--331, año 2010 y ningún DOI. Según abbrev3: «ICS 2010», editor Andrew Chi-Chih Yao, Tsinghua University Press, enero.",
+   "evidence": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_ITCS10.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ],
+   "correct_statement": "Chiesa, A., y Tromer, E., «Proof-Carrying Data and Hearsay Arguments from Signature Cards», en A. C.-C. Yao (ed.), Innovations in Computer Science (ICS 2010), Tsinghua University Press, Pekín, enero de 2010, pp. 310–331 (sin DOI)."
+  },
+  {
+   "id": "B9b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido, y añado un matiz. En el volcado de ACM DL de ITCS 2013 faltan exactamente los sufijos 2422437, 2422442, 2422447, 2422452, 2422457, 2422462, 2422467, 2422472, 2422477, 2422483, 2422488 y 2422493. Es un patrón regular, casi siempre cada cinco, compatible con registros de SESIÓN de ACM DL y no con artículos. 2422472 cae entre Klauck–Prakash (…2471, pp. 305–320) y Reichardt–Unger–Vazirani (…2473, pp. 321–322). Que sea un registro de sesión es una hipótesis: dl.acm.org y doi.org están bloqueados. En cualquier caso, no es un artículo de Chiesa y Tromer.",
+   "evidence": [
+    "https://raw.githubusercontent.com/boudinfl/acm-cr/0e65d68f5caae0eb902f4a3881575fd37fdb53e8/data/acm-dl/icts/icts-2013.bib",
+    "WebSearch '\"10.1145/2422436.2422472\"' (sin coincidencia directa)"
+   ],
+   "correct_statement": "10.1145/2422436.2422472 pertenece a las actas de ITCS 2013 pero no designa ningún artículo sobre PCD de Chiesa y Tromer (con toda probabilidad es un registro de sesión). Debe citarse el artículo de ICS 2010, que no tiene DOI."
+  },
+  {
+   "id": "B10a",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido en bibsleigh (dblp conf/osdi/PillaiCAAAA14) y en la página y el PDF de USENIX que devuelve WebSearch (osdi14-paper-pillai.pdf).",
+   "evidence": [
+    "https://raw.githubusercontent.com/slebok/bibsleigh/905fd7d58bf3134c14a69e43f29e14cab0134d78/corpus/SYS/2014/OSDI-2014/OSDI-2014-PillaiCAAAA.json",
+    "https://www.usenix.org/conference/osdi14/technical-sessions/presentation/pillai (vía WebSearch)"
+   ],
+   "correct_statement": "Título: «All File Systems Are Not Created Equal: On the Complexity of Crafting Crash-Consistent Applications»."
+  },
+  {
+   "id": "B10b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido: la lista de autores de dblp/bibsleigh no incluye ningún «G. P. Arpaci-Dusseau».",
+   "evidence": [
+    "https://raw.githubusercontent.com/slebok/bibsleigh/905fd7d58bf3134c14a69e43f29e14cab0134d78/corpus/SYS/2014/OSDI-2014/OSDI-2014-PillaiCAAAA.json"
+   ],
+   "correct_statement": "Autores: Thanumalayan Sankaranarayana Pillai, Vijay Chidambaram, Ramnatthan Alagappan, Samer Al-Kiswany, Andrea C. Arpaci-Dusseau y Remzi H. Arpaci-Dusseau."
+  },
+  {
+   "id": "B10c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido: bibsleigh da «pages 433-448», y WebSearch (Illinois Experts / USENIX) confirma OSDI '14, pp. 433–448.",
+   "evidence": [
+    "https://raw.githubusercontent.com/slebok/bibsleigh/905fd7d58bf3134c14a69e43f29e14cab0134d78/corpus/SYS/2014/OSDI-2014/OSDI-2014-PillaiCAAAA.json"
+   ],
+   "correct_statement": "11th USENIX Symposium on Operating Systems Design and Implementation (OSDI '14), Broomfield (CO), octubre de 2014, pp. 433–448, USENIX Association (sin DOI)."
+  },
+  {
+   "id": "B11a",
+   "agree": false,
+   "final_verdict": "PARCIAL",
+   "reason": "Discrepo solo en la etiqueta. Título, autores implícitos, congreso y año son correctos; lo único que falla son las páginas (228–243 según dblp/bibsleigh, y el PDF de SIGOPS se llama p228-chidambaram.pdf). Por la definición del flujo (parte correcta, parte errónea), el veredicto que corresponde es PARCIAL, con la corrección de páginas marcada como obligatoria. El DOI erróneo se trata aparte, en B11b.",
+   "evidence": [
+    "https://raw.githubusercontent.com/slebok/bibsleigh/905fd7d58bf3134c14a69e43f29e14cab0134d78/corpus/SYS/2013/SOSP-2013/SOSP-2013-ChidambaramPAA.json",
+    "https://sigops.org/s/conferences/sosp/2013/papers/p228-chidambaram.pdf (vía WebSearch)"
+   ],
+   "correct_statement": "Chidambaram, V., Pillai, T. S., Arpaci-Dusseau, A. C., y Arpaci-Dusseau, R. H., «Optimistic Crash Consistency», SOSP '13 (24th ACM Symposium on Operating Systems Principles), Farmington (PA), ACM, 2013, pp. 228–243 (no 361–377)."
+  },
+  {
+   "id": "B11b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido: bibsleigh/dblp da doi 10.1145/2517349.2522726, y WebSearch devuelve dl.acm.org/doi/10.1145/2517349.2522726 como «Optimistic crash consistency».",
+   "evidence": [
+    "https://raw.githubusercontent.com/slebok/bibsleigh/905fd7d58bf3134c14a69e43f29e14cab0134d78/corpus/SYS/2013/SOSP-2013/SOSP-2013-ChidambaramPAA.json",
+    "https://dl.acm.org/doi/10.1145/2517349.2522726 (vía WebSearch)"
+   ],
+   "correct_statement": "DOI 10.1145/2517349.2522726."
+  },
+  {
+   "id": "B12",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido. La página fsync de POSIX.1-2017 (réplica en GitHub) lleva el pie «The Open Group Base Specifications Issue 7, 2018 edition / IEEE Std 1003.1-2017 (Revision of IEEE Std 1003.1-2008)». Su RATIONALE dice: «If _POSIX_SYNCHRONIZED_IO is not defined, the wording relies heavily on the conformance document ... It is explicitly intended that a null implementation is permitted.» Según WebSearch (IEEE Xplore 10555529 y standards.ieee.org), POSIX.1-2024 (Issue 8, junio de 2024) es la revisión de 1003.1-2017. La cita de los borradores es válida si declara la edición, pero no es la vigente.",
+   "evidence": [
+    "https://raw.githubusercontent.com/bscothern/SwiftyPOSIX/HEAD/POSIX.1-2017/functions/fsync.html",
+    "https://ieeexplore.ieee.org/document/10555529 (vía WebSearch)"
+   ],
+   "correct_statement": "IEEE Std 1003.1-2024 (POSIX.1-2024, The Open Group Base Specifications Issue 8), System Interfaces, fsync(); o bien IEEE Std 1003.1-2017 (Issue 7, 2018 edition) declarando la edición. Su RATIONALE admite una implementación nula de fsync() cuando _POSIX_SYNCHRONIZED_IO no está definido."
+  },
+  {
+   "id": "B13",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido en cryptobib (C:Merkle89a): «A Certified Digital Signature», pp. 218--238, año 1990, DOI 10.1007/0-387-34805-0_21. Según abbrev3: CRYPTO '89, editor Gilles Brassard, LNCS 435, Springer, Nueva York.",
+   "evidence": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_C89.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ],
+   "correct_statement": "Merkle, R. C., «A Certified Digital Signature», en G. Brassard (ed.), CRYPTO '89, LNCS 435, Springer, 1990, pp. 218–238, DOI 10.1007/0-387-34805-0_21."
+  },
+  {
+   "id": "B14a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido en el fichero fuente eip-8310.md del repositorio ethereum/EIPs: «title: Post-Quantum Keystore for Stateful Keys», «status: Draft», «type: Standards Track», «category: Interface», «created: 2026-06-19», «requires: 2335, 3076». El hilo de ethereum-magicians existe. Por tanto, NO es una referencia inventada, contra lo que suponía el enunciado de la tarea.",
+   "evidence": [
+    "https://raw.githubusercontent.com/ethereum/EIPs/master/EIPS/eip-8310.md",
+    "https://ethereum-magicians.org/t/eip-8310-post-quantum-keystore-for-stateful-keys/28853 (vía WebSearch)"
+   ],
+   "correct_statement": "EIP-8310, «Post-Quantum Keystore for Stateful Keys» (Shukla, Wagner, Singh, Ballet, Drake, Moroz Liebl, Ramanujam, Naiyer, Coratger, Leepaisalsuwanna), Draft, Standards Track (Interface), creado el 2026-06-19."
+  },
+  {
+   "id": "B14b",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido. EIP-8310 define «High-water mark» y exige (MUST) comprobarla, persistirla antes de firmar («written, flushed (fsync or platform equivalent), and committed via atomic rename ... before step 5») y detectar su regresión. No cita RFC 8391, SP 800-208 ni RFC 10033. El texto publicado de RFC 10033 tampoco usa «high-water mark», así que «otras especificaciones» no tiene respaldo.",
+   "evidence": [
+    "https://raw.githubusercontent.com/ethereum/EIPs/master/EIPS/eip-8310.md",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.txt"
+   ],
+   "correct_statement": "EIP-8310 (Draft) exige una marca de agua alta autoritativa, persistida de forma duradera antes de entregar la firma, y la detección de su regresión. No se conoce otra especificación de las citadas que use ese término."
+  },
+  {
+   "id": "B15a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. Cabecera del RFC 3552: «BCP: 72, Category: Best Current Practice, July 2003», autores Eric Rescorla y Brian Korver, rama IAB. Los metadatos del índice no registran ningún RFC que lo deje obsoleto.",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc3552.txt",
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC3552.yaml",
+    "https://raw.githubusercontent.com/liudonghua123/rfc/main/data/rfc3552.json"
+   ],
+   "correct_statement": "Rescorla, E., y B. Korver, «Guidelines for Writing RFC Text on Security Considerations», BCP 72, RFC 3552, DOI 10.17487/RFC3552, julio de 2003."
+  },
+  {
+   "id": "B15b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. Cabecera: «BCP: 26, Obsoletes: 5226, Category: Best Current Practice, June 2017». Autores: Michelle Cotton, Barry Leiba y Thomas Narten.",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc8126.txt",
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC8126.yaml"
+   ],
+   "correct_statement": "Cotton, M., Leiba, B., y T. Narten, «Guidelines for Writing an IANA Considerations Section in RFCs», BCP 26, RFC 8126, DOI 10.17487/RFC8126, junio de 2017 (deja obsoleto el RFC 5226)."
+  },
+  {
+   "id": "B15c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido: el autor es Scott Bradner (Harvard University), BCP 14, marzo de 1997.",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc2119.txt",
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC2119.yaml"
+   ],
+   "correct_statement": "Bradner, S., «Key words for use in RFCs to Indicate Requirement Levels», BCP 14, RFC 2119, DOI 10.17487/RFC2119, marzo de 1997."
+  },
+  {
+   "id": "B15d",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido: B. Leiba, mayo de 2017, BCP 14, «updates RFC 2119».",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc8174.txt",
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC8174.yaml"
+   ],
+   "correct_statement": "Leiba, B., «Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words», BCP 14, RFC 8174, DOI 10.17487/RFC8174, mayo de 2017."
+  },
+  {
+   "id": "B15e",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido: la portada de FIPS PUB 202 dice «August 2015» y da el DOI 10.6028/NIST.FIPS.202. Aviso: la referencia bibxml del IETF la fecha en «July 2015» y la atribuye a Morris J. Dworkin; la fecha correcta es la de la portada.",
+   "evidence": [
+    "https://raw.githubusercontent.com/CloudSecurityAlliance-DataSets/dataset-public-laws-regulations-standards/main/reference/nist.gov/fips-202/fips-202.md",
+    "https://raw.githubusercontent.com/ietf-tools/bibxml-data-archive/main/bibxml-nist/reference.NIST.FIPS.202.xml"
+   ],
+   "correct_statement": "NIST, «SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions», FIPS PUB 202, agosto de 2015, DOI 10.6028/NIST.FIPS.202."
+  },
+  {
+   "id": "B16a",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. La referencia [STMGMT] del RFC 8554 publicado da «SSR 2016 ... pp. 244-260, Lecture Notes in Computer Science Vol. 10074, DOI 10.1007/978-3-319-49100-4_11». cryptobib (EPRINT:MKFGBB16) da los nombres completos: David McGrew, Panos Kampanakis, Scott Fluhrer, Stefan-Lukas Gazdag, Denis Butin y Johannes Buchmann. Con esto queda resuelta la reserva de la primera verificación sobre «Panos». RFC 10033 la cita como [MCGREW].",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc8554.txt",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_EPRINT16.bib",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.txt"
+   ],
+   "correct_statement": "McGrew, D., Kampanakis, P., Fluhrer, S., Gazdag, S.-L., Butin, D., y Buchmann, J., «State Management for Hash-Based Signatures», Security Standardisation Research (SSR 2016), LNCS 10074, Springer, 2016, pp. 244–260, DOI 10.1007/978-3-319-49100-4_11; ePrint 2016/357."
+  },
+  {
+   "id": "B16b",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido en cryptobib: SAC:BruHul17 da pp. 299--322 y DOI 10.1007/978-3-319-72565-9_15; abbrev3 da LNCS 10719, editores Carlisle Adams y Jan Camenisch, Springer, Cham. La versión de ePrint es la 2016/1042 (EPRINT:BruHul16). Tres precisiones. (1) El congreso es de 2017 pero el volumen LNCS apareció en 2018; hay que elegir uno de los dos años y no mezclarlos. (2) El apellido es «Groot Bruinderink». (3) La referencia [BH16] del propio RFC 10033 está mal formada: mezcla ePrint 2016 y SAC 2017 con fechas incoherentes, así que no debe copiarse.",
+   "evidence": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_SAC17.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_EPRINT16.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.txt"
+   ],
+   "correct_statement": "Groot Bruinderink, L., y Hülsing, A., «“Oops, I Did It Again” – Security of One-Time Signatures Under Two-Message Attacks», en C. Adams y J. Camenisch (eds.), SAC 2017, LNCS 10719, Springer, 2018, pp. 299–322, DOI 10.1007/978-3-319-72565-9_15; ePrint 2016/1042."
+  },
+  {
+   "id": "B16c",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido en cryptobib: JC:HabSto91 da Journal of Cryptology 3(2):99--111, enero de 1991, DOI 10.1007/BF00196791. También existe la versión de CRYPTO '90 (C:HabSto90): LNCS 537, pp. 437--455, DOI 10.1007/3-540-38424-3_32.",
+   "evidence": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_JC91.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_C90.bib"
+   ],
+   "correct_statement": "Haber, S., y Stornetta, W. S., «How to Time-Stamp a Digital Document», Journal of Cryptology 3(2):99–111, 1991, DOI 10.1007/BF00196791."
+  },
+  {
+   "id": "B16d",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido en cryptobib (USENIX:CroWal09): pp. 317--334, USENIX Security 2009, agosto. WebSearch confirma la página de USENIX y el lugar (18th USENIX Security Symposium, Montreal).",
+   "evidence": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_USENIX09.bib",
+    "https://www.usenix.org/conference/usenixsecurity09/technical-sessions/presentation/efficient-data-structures-tamper-evident (vía WebSearch)"
+   ],
+   "correct_statement": "Crosby, S. A., y Wallach, D. S., «Efficient Data Structures for Tamper-Evident Logging», 18th USENIX Security Symposium, Montreal, agosto de 2009, pp. 317–334."
+  },
+  {
+   "id": "B16e",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido con dos fuentes: dblp (davidar/dblp.yaml, journals/tissec.bib) y las referencias de ACM (vintageplayer/SciBase-ACMTemp, «v.2 n.2, p.159-176, May 1999, doi 10.1145/317087.317089»).",
+   "evidence": [
+    "github.com/davidar/dblp.yaml journals/tissec.bib",
+    "github.com/vintageplayer/SciBase-ACMTemp Journals/TISSEC/Volumes/Volume 2 Issue 2, May 1999/Pages: 159-176/doi.txt"
+   ],
+   "correct_statement": "Schneier, B., y Kelsey, J., «Secure Audit Logs to Support Computer Forensics», ACM Transactions on Information and System Security 2(2):159–176, mayo de 1999, DOI 10.1145/317087.317089."
+  },
+  {
+   "id": "B16f",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido en bibsleigh/dblp (conf/sosp/HaeberlenKD07): pp. 175-188, DOI 10.1145/1294261.1294279, 21st ACM SOSP.",
+   "evidence": [
+    "https://raw.githubusercontent.com/slebok/bibsleigh/905fd7d58bf3134c14a69e43f29e14cab0134d78/corpus/SYS/2007/SOSP-2007/SOSP-2007-HaeberlenKD.json"
+   ],
+   "correct_statement": "Haeberlen, A., Kouznetsov, P., y Druschel, P., «PeerReview: Practical Accountability for Distributed Systems», SOSP '07, ACM, 2007, pp. 175–188, DOI 10.1145/1294261.1294279."
+  },
+  {
+   "id": "B16g",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido. Varias bibliografías independientes dan «Commun. ACM 57, 10 (October 2014), 40–46, doi 10.1145/2659897». RFC 6962 queda verificado en B3b.",
+   "evidence": [
+    "github.com/aj-stein-nist/semi-transparent README.md",
+    "github.com/syclops/caps doc/paper/bib.bib",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc6962.txt"
+   ],
+   "correct_statement": "Laurie, B., «Certificate Transparency», Communications of the ACM 57(10):40–46, octubre de 2014, DOI 10.1145/2659897; o RFC 6962 (Laurie, Langley, Kasper, junio de 2013)."
+  },
+  {
+   "id": "B16h",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido en cryptobib (USENIX:MBBFF15): Marcela S. Melara, Aaron Blankstein, Joseph Bonneau, Edward W. Felten y Michael J. Freedman, pp. 383--398, USENIX Security 2015.",
+   "evidence": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_USENIX15.bib"
+   ],
+   "correct_statement": "Melara, M. S., Blankstein, A., Bonneau, J., Felten, E. W., y Freedman, M. J., «CONIKS: Bringing Key Transparency to End Users», 24th USENIX Security Symposium, Washington D.C., agosto de 2015, pp. 383–398."
+  },
+  {
+   "id": "B16i",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido en cryptobib (STOC:BCCT13): pp. 111--120, DOI 10.1145/2488608.2488623. Según abbrev3: 45th ACM STOC, editores Dan Boneh, Tim Roughgarden y Joan Feigenbaum, ACM Press, junio de 2013.",
+   "evidence": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_STOC13.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ],
+   "correct_statement": "Bitansky, N., Canetti, R., Chiesa, A., y Tromer, E., «Recursive Composition and Bootstrapping for SNARKs and Proof-Carrying Data», 45th ACM STOC, 2013, pp. 111–120, DOI 10.1145/2488608.2488623; ePrint 2012/095."
+  },
+  {
+   "id": "B16j",
+   "agree": true,
+   "final_verdict": "CONFIRMADA",
+   "reason": "Reproducido y completado. cryptobib (C:KotSet24) da pp. 345--379 y DOI 10.1007/978-3-031-68403-6_11; abbrev3 da CRYPTO 2024 Parte X, LNCS 14929, editores Leonid Reyzin y Douglas Stebila. El volumen que la primera verificación dejó sin comprobar es el 14929.",
+   "evidence": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_C24.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_EPRINT23.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ],
+   "correct_statement": "Kothapalli, A., y Setty, S. T. V., «HyperNova: Recursive Arguments for Customizable Constraint Systems», en L. Reyzin y D. Stebila (eds.), CRYPTO 2024, Parte X, LNCS 14929, Springer, 2024, pp. 345–379, DOI 10.1007/978-3-031-68403-6_11; ePrint 2023/573."
+  },
+  {
+   "id": "B17a",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido. WebSearch devuelve la entrada de QRL «Statefulness and security» (Peter Waterland, theqrl.org/blog y Medium): «With 2 signatures this requires 2^34 hashes, 3 requires 2^23 hashes, 4 requires just 2^18 hashes». AUDITORIA.md:21490 registra «(QRL, consultado 2026-08-12)». El RESUMEN de ePrint 2016/1042 solo dice que para WOTS «typical parameters do not provide any reasonable level of security under two-message attacks». El dato ~2^34 (m=256, w=16, mensajes aleatorios, «a few days») aparece solo en síntesis del buscador atribuidas al PDF, que está bloqueado, y queda pendiente de cotejo. RFC 10033 §1 cita [BH16][Fluhrer23] para «computationally feasible ... to create forgeries», sin dar cifras.",
+   "evidence": [
+    "https://www.theqrl.org/blog/statefulness-and-security/ (vía WebSearch)",
+    "https://eprint.iacr.org/2016/1042 (vía WebSearch; PDF bloqueado)",
+    "AUDITORIA.md:21490",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.txt"
+   ],
+   "correct_statement": "La curva 2^34/2^23/2^18 (dos, tres y cuatro firmas con el mismo índice) procede del blog de QRL «Statefulness and security». La fuente primaria es Groot Bruinderink y Hülsing (SAC 2017; ePrint 2016/1042), cuyo resumen concluye que WOTS con parámetros típicos no ofrece seguridad razonable ante ataques de dos mensajes. La cifra concreta ~2^34 (m=256, w=16) debe cotejarse con el PDF antes de atribuírsela. Fluhrer (ePrint 2023/1905) revisa ese análisis."
+  },
+  {
+   "id": "B17b",
+   "agree": true,
+   "final_verdict": "FALSA",
+   "reason": "Reproducido. hbs-state/spec/HBS-STATE-v0.3.md:174 dice «**Cost of getting it wrong** (MEASURED, QRL curve)», mientras que la línea 24 define MEASURED como «taken byte by byte from a production implementation». Por su propia definición, una cifra tomada de un blog externo no es MEASURED. AUDITORIA.md:21433 dice «TODO es RAZONADO, no medido».",
+   "evidence": [
+    "hbs-state/spec/HBS-STATE-v0.3.md:24,174",
+    "AUDITORIA.md:21433,21490"
+   ],
+   "correct_statement": "El coste ~2^34 es una cifra CITADA de fuente externa (QRL, que remite a Groot Bruinderink–Hülsing). No es MEASURED ni DEDUCED y debe etiquetarse como externa."
+  },
+  {
+   "id": "B17c",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido: la curva de QRL asigna 2^34 a «2 signatures». La especificación y el código dicen «at the second reuse» (hbs-state/src/lib.rs:341; spec/state-vectors-v0.3.json:99), lo que en inglés sugiere tres usos, que corresponden a ~2^23.",
+   "evidence": [
+    "hbs-state/src/lib.rs:341",
+    "hbs-state/spec/state-vectors-v0.3.json:99",
+    "crates/zk-ssl-guardian/src/lib.rs:344"
+   ],
+   "correct_statement": "~2^34 hashes corresponde a dos firmas con el mismo índice (un reúso), según la curva de QRL."
+  },
+  {
+   "id": "B17d",
+   "agree": true,
+   "final_verdict": "PARCIAL",
+   "reason": "Reproducido. RFC 10033 (resumen): «double-signing with the same OTS key allows forgeries». EIP-8310: «Reuse of a leaf across two distinct messages enables forgery and is therefore key-destroying». Ninguna de las dos dice que se filtre la clave privada completa (la semilla XMSS).",
+   "evidence": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.txt",
+    "https://raw.githubusercontent.com/ethereum/EIPs/master/EIPS/eip-8310.md"
+   ],
+   "correct_statement": "Reutilizar un índice permite falsificar firmas con coste factible y la clave debe darse por perdida, pero no revela la semilla XMSS completa."
+  },
+  {
+   "id": "B18a",
+   "agree": true,
+   "final_verdict": "NO_VERIFICABLE",
+   "reason": "Reproducido: el valor no aparece en ninguno de los dos repositorios (tampoco en CITATION.cff de atoranzo/hbs-state en main) ni en WebSearch, y zenodo.org, doi.org y api.datacite.org están bloqueados. Un matiz: el commit 476eaaf («Add CITATION.cff with the concept DOI») hace de 22980547 el DOI de concepto, y el release 0.2.0 (a960828) debió generar un DOI de versión nuevo. 22993572 es plausible como ese DOI de versión, pero no hay rastro que lo confirme.",
+   "evidence": [
+    "hbs-state git log 476eaaf, a960828",
+    "https://raw.githubusercontent.com/atoranzo/hbs-state/main/CITATION.cff",
+    "WebSearch '\"zenodo.22993572\"' (sin resultado)"
+   ],
+   "correct_statement": "No citar 10.5281/zenodo.22993572 hasta abrir el registro de Zenodo y comprobar si es el DOI de versión de hbs-state 0.2.0."
+  },
+  {
+   "id": "B18b",
+   "agree": true,
+   "final_verdict": "NO_VERIFICABLE",
+   "reason": "Reproducido: CITATION.cff:16 declara «doi: 10.5281/zenodo.22980547», y el commit 476eaaf lo presenta como DOI de concepto. No hay confirmación externa porque Zenodo y DataCite están bloqueados.",
+   "evidence": [
+    "hbs-state/CITATION.cff:16",
+    "hbs-state git log 476eaaf"
+   ],
+   "correct_statement": "10.5281/zenodo.22980547 es el DOI de concepto que el autor declara en CITATION.cff; conviene citarlo como tal hasta verificarlo en Zenodo."
+  },
+  {
+   "id": "B18c",
+   "agree": true,
+   "final_verdict": "NO_VERIFICABLE",
+   "reason": "Reproducido: solo hay fuentes del propio autor (README, doc/ZENODO.md, CITATION.cff) y Zenodo está bloqueado.",
+   "evidence": [
+    "README.md",
+    "doc/ZENODO.md",
+    "CITATION.cff"
+   ],
+   "correct_statement": "Los seis DOI de Arqueo son los que declara el autor. Deben citarse así, o comprobarse en Zenodo antes de publicar."
+  }
+ ],
+ "extra_facts_rejected": [
+  "[B4d y extra_facts 39] Es FALSO que la frase del RFC 10033 «NO lleva coma tras counters» y que el texto publicado del RFC no se pudiera leer. El RFC publicado (réplicas mnot/rfc-refs, kesara/watcher y liudonghua123/rfc de rfc10033.txt) dice «In particular, this enables implementing rollback resistant counters, which can be difficult to achieve in a software-only fashion.», con coma. La versión sin coma es la de la fuente del borrador en GitHub.",
+  "[extra_facts 4] «from draft-ietf-pquip-hbs-state»: está incompleto. La versión publicada es draft-ietf-pquip-hbs-state-04 (docName en rfc10033.xml, campo draft en rfc10033.json), no la -03.",
+  "[extra_facts 24] El título de Fluhrer va con punto y coma («revisited; another look»). La ficha de ePrint 2023/1905, cryptobib (EPRINT:Fluhrer23) y RFC 10033 usan dos puntos: «Oops, I did it again revisited: another look at reusing one-time signatures». Solo el PDF usa punto y coma; en el BibTeX hay que usar dos puntos. Aviso adicional: RFC 10033 fecha mal [Fluhrer23] («23 December 2017»), y esa fecha no debe copiarse.",
+  "[extra_facts 23] Hay una incoherencia interna: el texto dice «Springer, 2018» y el BibTeX pone year = {2017}. Además, author = {Leon Groot Bruinderink and ...} hace que BibTeX tome «Bruinderink» como apellido; debe escribirse {Groot Bruinderink}, Leon. «Hülsing» va en UTF-8 sin escapar, lo que biber acepta pero BibTeX 0.99 no siempre; es preferible H{\\\"u}lsing.",
+  "[extra_facts 33] El BibTeX ParnoLDMM11 lleva booktitle «(S&P 2011)» con '&' sin escapar, lo que rompe la compilación LaTeX (tiene que ser S\\&P). El autor es «James W. Mickens» según cryptobib SP:PLDMM11. La reserva de que Ariadne tiene «una sola fuente secundaria» queda superada: cryptobib USENIX:StrPie16 da pp. 875–892.",
+  "[extra_facts 14] El BibTeX posix2024 usa @standard, un tipo exclusivo de biblatex; con BibTeX clásico es un tipo desconocido. Hay que usar @misc o @manual. En cuanto al contenido, la edición 2024 (Issue 8, junio de 2024) es correcta.",
+  "[extra_facts 17] En el BibTeX eip8310, «Kolby Moroz Liebl» va sin llaves, así que BibTeX toma «Liebl» como apellido, en contradicción con el texto «Moroz Liebl, K.». Debe escribirse Kolby {Moroz Liebl}.",
+  "[extra_facts 25] Dice que RFC 10033 cita [MCGREW] para afirmar que las falsificaciones son factibles. En el RFC publicado (§1) esa afirmación se apoya en [BH16] y [Fluhrer23]; [MCGREW] se cita junto a [ETSI-TR-103-692] para «extreme care should be taken» y para los modos de fallo y la estrategia de reserva.",
+  "[extra_facts 5 y B5a] «la referencia del propio borrador del RFC 10033 lo escribe mal («David»)»: solo es cierto en la fuente del borrador en GitHub. El RFC 10033 publicado usa iniciales («Apon, D.») y no tiene esa errata.",
+  "[extra_facts 32] La cita de HyperNova omite el volumen: es LNCS 14929 (cryptobib abbrev3: crypto24vol10 = 14929). La nota «no se ha verificado» queda resuelta.",
+  "[extra_facts 22] La nota de que «Panos» Kampanakis no está verificado queda resuelta: cryptobib EPRINT:MKFGBB16 da «Panos Kampanakis». No es un error, pero la reserva ya no aplica.",
+  "[extra_facts 35] Sobre 10.1145/2422436.2422472 («sin artículo asociado»): en el volcado de ACM DL faltan sufijos a intervalos regulares (…2437, 2442, …, 2472, 2477, …), lo que indica con toda probabilidad un registro de SESIÓN, no un DOI inexistente. La conclusión (no es Chiesa–Tromer) se mantiene."
+ ],
+ "bibtex_verified": [
+  {
+   "key": "rfc8391",
+   "bibtex": "@misc{rfc8391, author = {Andreas Huelsing and Denis Butin and Stefan-Lukas Gazdag and Joost Rijneveld and Aziz Mohaisen}, title = {{XMSS: eXtended Merkle Signature Scheme}}, howpublished = {RFC 8391}, series = {Request for Comments}, number = {8391}, publisher = {RFC Editor}, year = {2018}, month = may, doi = {10.17487/RFC8391}, url = {https://www.rfc-editor.org/info/rfc8391}, note = {IRTF (CFRG), Informational}}",
+   "sources": [
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC8391.yaml",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc8391.txt"
+   ]
+  },
+  {
+   "key": "rfc8554",
+   "bibtex": "@misc{rfc8554, author = {David McGrew and Michael Curcio and Scott Fluhrer}, title = {{Leighton-Micali Hash-Based Signatures}}, howpublished = {RFC 8554}, series = {Request for Comments}, number = {8554}, publisher = {RFC Editor}, year = {2019}, month = apr, doi = {10.17487/RFC8554}, url = {https://www.rfc-editor.org/info/rfc8554}, note = {IRTF (CFRG), Informational}}",
+   "sources": [
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC8554.yaml",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc8554.txt"
+   ]
+  },
+  {
+   "key": "rfc9162",
+   "bibtex": "@misc{rfc9162, author = {Ben Laurie and Eran Messeri and Rob Stradling}, title = {{Certificate Transparency Version 2.0}}, howpublished = {RFC 9162}, series = {Request for Comments}, number = {9162}, publisher = {RFC Editor}, year = {2021}, month = dec, doi = {10.17487/RFC9162}, url = {https://www.rfc-editor.org/info/rfc9162}, note = {Experimental; obsoletes RFC 6962}}",
+   "sources": [
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC9162.yaml",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc9162.txt"
+   ]
+  },
+  {
+   "key": "rfc6962",
+   "bibtex": "@misc{rfc6962, author = {Ben Laurie and Adam Langley and Emilia Kasper}, title = {{Certificate Transparency}}, howpublished = {RFC 6962}, series = {Request for Comments}, number = {6962}, publisher = {RFC Editor}, year = {2013}, month = jun, doi = {10.17487/RFC6962}, url = {https://www.rfc-editor.org/info/rfc6962}, note = {Experimental; obsoleted by RFC 9162}}",
+   "sources": [
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC6962.yaml",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc6962.txt"
+   ]
+  },
+  {
+   "key": "rfc10033",
+   "bibtex": "@misc{rfc10033, author = {Thom Wiggers and Kaveh Bashiri and Stefan K{\\\"o}lbl and Jim Goodman and Stavros Kousidis}, title = {{Hash-Based Signatures: State and Backup Management}}, howpublished = {RFC 10033}, series = {Request for Comments}, number = {10033}, publisher = {RFC Editor}, year = {2026}, month = sep, doi = {10.17487/RFC10033}, url = {https://www.rfc-editor.org/info/rfc10033}, note = {IETF (PQUIP), Informational; from draft-ietf-pquip-hbs-state-04}}",
+   "sources": [
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC10033.yaml",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.txt",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.xml"
+   ]
+  },
+  {
+   "key": "rfc3552",
+   "bibtex": "@misc{rfc3552, author = {Eric Rescorla and Brian Korver}, title = {{Guidelines for Writing RFC Text on Security Considerations}}, howpublished = {BCP 72, RFC 3552}, series = {Request for Comments}, number = {3552}, publisher = {RFC Editor}, year = {2003}, month = jul, doi = {10.17487/RFC3552}, url = {https://www.rfc-editor.org/info/rfc3552}, note = {IAB stream, Best Current Practice}}",
+   "sources": [
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC3552.yaml",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc3552.txt"
+   ]
+  },
+  {
+   "key": "rfc8126",
+   "bibtex": "@misc{rfc8126, author = {Michelle Cotton and Barry Leiba and Thomas Narten}, title = {{Guidelines for Writing an IANA Considerations Section in RFCs}}, howpublished = {BCP 26, RFC 8126}, series = {Request for Comments}, number = {8126}, publisher = {RFC Editor}, year = {2017}, month = jun, doi = {10.17487/RFC8126}, url = {https://www.rfc-editor.org/info/rfc8126}, note = {Best Current Practice; obsoletes RFC 5226}}",
+   "sources": [
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC8126.yaml",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc8126.txt"
+   ]
+  },
+  {
+   "key": "rfc2119",
+   "bibtex": "@misc{rfc2119, author = {Scott Bradner}, title = {{Key words for use in RFCs to Indicate Requirement Levels}}, howpublished = {BCP 14, RFC 2119}, series = {Request for Comments}, number = {2119}, publisher = {RFC Editor}, year = {1997}, month = mar, doi = {10.17487/RFC2119}, url = {https://www.rfc-editor.org/info/rfc2119}}",
+   "sources": [
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC2119.yaml",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc2119.txt"
+   ]
+  },
+  {
+   "key": "rfc8174",
+   "bibtex": "@misc{rfc8174, author = {Barry Leiba}, title = {{Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words}}, howpublished = {BCP 14, RFC 8174}, series = {Request for Comments}, number = {8174}, publisher = {RFC Editor}, year = {2017}, month = may, doi = {10.17487/RFC8174}, url = {https://www.rfc-editor.org/info/rfc8174}, note = {Updates RFC 2119}}",
+   "sources": [
+    "https://raw.githubusercontent.com/ietf-tools/relaton-data-rfcs/main/data/RFC8174.yaml",
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc8174.txt"
+   ]
+  },
+  {
+   "key": "nist-sp800-208",
+   "bibtex": "@techreport{nist-sp800-208, author = {David A. Cooper and Daniel C. Apon and Quynh H. Dang and Michael S. Davidson and Morris J. Dworkin and Carl A. Miller}, title = {Recommendation for Stateful Hash-Based Signature Schemes}, institution = {National Institute of Standards and Technology}, address = {Gaithersburg, MD}, type = {NIST Special Publication}, number = {800-208}, year = {2020}, month = oct, doi = {10.6028/NIST.SP.800-208}, url = {https://doi.org/10.6028/NIST.SP.800-208}}",
+   "sources": [
+    "https://raw.githubusercontent.com/ietf-tools/bibxml-data-archive/main/bibxml-nist/reference.NIST.SP.800-208.xml",
+    "https://raw.githubusercontent.com/neurogaussthm/NIST-SP800-Data/HEAD/try2/SP800-208.txt"
+   ]
+  },
+  {
+   "key": "fips202",
+   "bibtex": "@techreport{fips202, author = {{National Institute of Standards and Technology}}, title = {{SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions}}, institution = {National Institute of Standards and Technology}, address = {Gaithersburg, MD}, type = {Federal Information Processing Standards Publication}, number = {202}, year = {2015}, month = aug, doi = {10.6028/NIST.FIPS.202}, url = {https://doi.org/10.6028/NIST.FIPS.202}}",
+   "sources": [
+    "https://raw.githubusercontent.com/CloudSecurityAlliance-DataSets/dataset-public-laws-regulations-standards/main/reference/nist.gov/fips-202/fips-202.md",
+    "https://raw.githubusercontent.com/ietf-tools/bibxml-data-archive/main/bibxml-nist/reference.NIST.FIPS.202.xml"
+   ]
+  },
+  {
+   "key": "posix2024",
+   "bibtex": "@misc{posix2024, author = {{IEEE and The Open Group}}, title = {{IEEE/Open Group Standard for Information Technology--Portable Operating System Interface (POSIX) Base Specifications, Issue 8}}, howpublished = {IEEE Std 1003.1-2024}, year = {2024}, month = jun, note = {System Interfaces, fsync(); revision of IEEE Std 1003.1-2017}, url = {https://ieeexplore.ieee.org/document/10555529}}",
+   "sources": [
+    "https://ieeexplore.ieee.org/document/10555529 (vía WebSearch)",
+    "https://standards.ieee.org/ieee/1003.1/7700/ (vía WebSearch)",
+    "https://raw.githubusercontent.com/bscothern/SwiftyPOSIX/HEAD/POSIX.1-2017/functions/fsync.html"
+   ]
+  },
+  {
+   "key": "eprint-2018-046",
+   "bibtex": "@misc{eprint-2018-046, author = {Eli {Ben-Sasson} and Iddo Bentov and Yinon Horesh and Michael Riabzev}, title = {Scalable, transparent, and post-quantum secure computational integrity}, howpublished = {Cryptology ePrint Archive, Paper 2018/046}, year = {2018}, url = {https://eprint.iacr.org/2018/046}}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_EPRINT18.bib"
+   ]
+  },
+  {
+   "key": "C:BBHR19",
+   "bibtex": "@inproceedings{C:BBHR19, author = {Eli {Ben-Sasson} and Iddo Bentov and Yinon Horesh and Michael Riabzev}, title = {Scalable Zero Knowledge with No Trusted Setup}, booktitle = {Advances in Cryptology -- CRYPTO 2019, Part III}, editor = {Alexandra Boldyreva and Daniele Micciancio}, series = {Lecture Notes in Computer Science}, volume = {11694}, pages = {701--732}, publisher = {Springer, Cham}, year = {2019}, doi = {10.1007/978-3-030-26954-8_23}}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_C19.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ]
+  },
+  {
+   "key": "C:KotSetTzi22",
+   "bibtex": "@inproceedings{C:KotSetTzi22, author = {Abhiram Kothapalli and Srinath Setty and Ioanna Tzialla}, title = {Nova: Recursive Zero-Knowledge Arguments from Folding Schemes}, booktitle = {Advances in Cryptology -- CRYPTO 2022, Part IV}, editor = {Yevgeniy Dodis and Thomas Shrimpton}, series = {Lecture Notes in Computer Science}, volume = {13510}, pages = {359--388}, publisher = {Springer, Cham}, year = {2022}, doi = {10.1007/978-3-031-15985-5_13}, note = {Cryptology ePrint Archive, Paper 2021/370}}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_C22.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_EPRINT21.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ]
+  },
+  {
+   "key": "TCC:Valiant08",
+   "bibtex": "@inproceedings{TCC:Valiant08, author = {Paul Valiant}, title = {Incrementally Verifiable Computation or Proofs of Knowledge Imply Time/Space Efficiency}, booktitle = {Theory of Cryptography -- TCC 2008}, editor = {Ran Canetti}, series = {Lecture Notes in Computer Science}, volume = {4948}, pages = {1--18}, publisher = {Springer, Berlin, Heidelberg}, year = {2008}, month = mar, doi = {10.1007/978-3-540-78524-8_1}}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_TCC08.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ]
+  },
+  {
+   "key": "ITCS:ChiTro10",
+   "bibtex": "@inproceedings{ITCS:ChiTro10, author = {Alessandro Chiesa and Eran Tromer}, title = {Proof-Carrying Data and Hearsay Arguments from Signature Cards}, booktitle = {Innovations in Computer Science -- ICS 2010}, editor = {Andrew Chi-Chih Yao}, pages = {310--331}, publisher = {Tsinghua University Press}, address = {Beijing, China}, year = {2010}, month = jan}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_ITCS10.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ]
+  },
+  {
+   "key": "STOC:BCCT13",
+   "bibtex": "@inproceedings{STOC:BCCT13, author = {Nir Bitansky and Ran Canetti and Alessandro Chiesa and Eran Tromer}, title = {Recursive Composition and Bootstrapping for {SNARKs} and Proof-Carrying Data}, booktitle = {45th Annual ACM Symposium on Theory of Computing (STOC 2013)}, editor = {Dan Boneh and Tim Roughgarden and Joan Feigenbaum}, pages = {111--120}, publisher = {ACM Press}, year = {2013}, month = jun, doi = {10.1145/2488608.2488623}}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_STOC13.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ]
+  },
+  {
+   "key": "C:KotSet24",
+   "bibtex": "@inproceedings{C:KotSet24, author = {Abhiram Kothapalli and Srinath T. V. Setty}, title = {{HyperNova}: Recursive Arguments for Customizable Constraint Systems}, booktitle = {Advances in Cryptology -- CRYPTO 2024, Part X}, editor = {Leonid Reyzin and Douglas Stebila}, series = {Lecture Notes in Computer Science}, volume = {14929}, pages = {345--379}, publisher = {Springer, Cham}, year = {2024}, doi = {10.1007/978-3-031-68403-6_11}, note = {Cryptology ePrint Archive, Paper 2023/573}}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_C24.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_EPRINT23.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ]
+  },
+  {
+   "key": "PillaiCAAAA14",
+   "bibtex": "@inproceedings{PillaiCAAAA14, author = {Thanumalayan Sankaranarayana Pillai and Vijay Chidambaram and Ramnatthan Alagappan and Samer Al-Kiswany and Andrea C. Arpaci-Dusseau and Remzi H. Arpaci-Dusseau}, title = {All File Systems Are Not Created Equal: On the Complexity of Crafting Crash-Consistent Applications}, booktitle = {11th USENIX Symposium on Operating Systems Design and Implementation (OSDI 14)}, pages = {433--448}, publisher = {USENIX Association}, address = {Broomfield, CO}, year = {2014}, month = oct, url = {https://www.usenix.org/conference/osdi14/technical-sessions/presentation/pillai}}",
+   "sources": [
+    "https://raw.githubusercontent.com/slebok/bibsleigh/905fd7d58bf3134c14a69e43f29e14cab0134d78/corpus/SYS/2014/OSDI-2014/OSDI-2014-PillaiCAAAA.json"
+   ]
+  },
+  {
+   "key": "ChidambaramPAA13",
+   "bibtex": "@inproceedings{ChidambaramPAA13, author = {Vijay Chidambaram and Thanumalayan Sankaranarayana Pillai and Andrea C. Arpaci-Dusseau and Remzi H. Arpaci-Dusseau}, title = {Optimistic Crash Consistency}, booktitle = {Proceedings of the 24th ACM Symposium on Operating Systems Principles (SOSP '13)}, pages = {228--243}, publisher = {ACM}, address = {Farmington, PA}, year = {2013}, month = nov, doi = {10.1145/2517349.2522726}}",
+   "sources": [
+    "https://raw.githubusercontent.com/slebok/bibsleigh/905fd7d58bf3134c14a69e43f29e14cab0134d78/corpus/SYS/2013/SOSP-2013/SOSP-2013-ChidambaramPAA.json",
+    "https://dl.acm.org/doi/10.1145/2517349.2522726 (vía WebSearch)"
+   ]
+  },
+  {
+   "key": "C:Merkle89a",
+   "bibtex": "@inproceedings{C:Merkle89a, author = {Ralph C. Merkle}, title = {A Certified Digital Signature}, booktitle = {Advances in Cryptology -- CRYPTO '89}, editor = {Gilles Brassard}, series = {Lecture Notes in Computer Science}, volume = {435}, pages = {218--238}, publisher = {Springer, New York}, year = {1990}, doi = {10.1007/0-387-34805-0_21}}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_C89.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ]
+  },
+  {
+   "key": "eip8310",
+   "bibtex": "@misc{eip8310, author = {Anshal Shukla and Benedikt Wagner and Gajinder Singh and Guillaume Ballet and Justin Drake and Kolby {Moroz Liebl} and Parthasarathy Ramanujam and Shariq Naiyer and Thomas Coratger and Unnawut Leepaisalsuwanna}, title = {{EIP-8310: Post-Quantum Keystore for Stateful Keys}}, howpublished = {Ethereum Improvement Proposals, no. 8310}, year = {2026}, month = jun, note = {Status: Draft; Standards Track (Interface); created 2026-06-19; requires EIP-2335, EIP-3076}, url = {https://eips.ethereum.org/EIPS/eip-8310}}",
+   "sources": [
+    "https://raw.githubusercontent.com/ethereum/EIPs/master/EIPS/eip-8310.md"
+   ]
+  },
+  {
+   "key": "McGrewKFGBB16",
+   "bibtex": "@inproceedings{McGrewKFGBB16, author = {David McGrew and Panos Kampanakis and Scott Fluhrer and Stefan-Lukas Gazdag and Denis Butin and Johannes Buchmann}, title = {State Management for Hash-Based Signatures}, booktitle = {Security Standardisation Research -- SSR 2016}, series = {Lecture Notes in Computer Science}, volume = {10074}, pages = {244--260}, publisher = {Springer, Cham}, year = {2016}, doi = {10.1007/978-3-319-49100-4_11}, note = {Cryptology ePrint Archive, Paper 2016/357}}",
+   "sources": [
+    "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc8554.txt",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_EPRINT16.bib"
+   ]
+  },
+  {
+   "key": "SAC:BruHul17",
+   "bibtex": "@inproceedings{SAC:BruHul17, author = {{Groot Bruinderink}, Leon and H{\\\"u}lsing, Andreas}, title = {``{O}ops, {I} Did It Again'' -- Security of One-Time Signatures Under Two-Message Attacks}, booktitle = {Selected Areas in Cryptography -- SAC 2017}, editor = {Carlisle Adams and Jan Camenisch}, series = {Lecture Notes in Computer Science}, volume = {10719}, pages = {299--322}, publisher = {Springer, Cham}, year = {2018}, doi = {10.1007/978-3-319-72565-9_15}, note = {Conference held August 2017; Cryptology ePrint Archive, Paper 2016/1042}}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_SAC17.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_EPRINT16.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ]
+  },
+  {
+   "key": "eprint-2023-1905",
+   "bibtex": "@misc{eprint-2023-1905, author = {Scott Fluhrer}, title = {Oops, {I} did it again revisited: another look at reusing one-time signatures}, howpublished = {Cryptology ePrint Archive, Paper 2023/1905}, year = {2023}, url = {https://eprint.iacr.org/2023/1905}}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_EPRINT23.bib",
+    "https://eprint.iacr.org/2023/1905 (vía WebSearch)"
+   ]
+  },
+  {
+   "key": "JC:HabSto91",
+   "bibtex": "@article{JC:HabSto91, author = {Stuart Haber and W. Scott Stornetta}, title = {How to Time-Stamp a Digital Document}, journal = {Journal of Cryptology}, volume = {3}, number = {2}, pages = {99--111}, year = {1991}, month = jan, publisher = {Springer}, doi = {10.1007/BF00196791}}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_JC91.bib"
+   ]
+  },
+  {
+   "key": "USENIX:CroWal09",
+   "bibtex": "@inproceedings{USENIX:CroWal09, author = {Scott A. Crosby and Dan S. Wallach}, title = {Efficient Data Structures for Tamper-Evident Logging}, booktitle = {18th USENIX Security Symposium}, editor = {Fabian Monrose}, pages = {317--334}, publisher = {USENIX Association}, address = {Montreal, Canada}, year = {2009}, month = aug, url = {https://www.usenix.org/conference/usenixsecurity09/technical-sessions/presentation/efficient-data-structures-tamper-evident}}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_USENIX09.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ]
+  },
+  {
+   "key": "SchneierK99",
+   "bibtex": "@article{SchneierK99, author = {Bruce Schneier and John Kelsey}, title = {Secure Audit Logs to Support Computer Forensics}, journal = {ACM Transactions on Information and System Security}, volume = {2}, number = {2}, pages = {159--176}, year = {1999}, month = may, doi = {10.1145/317087.317089}}",
+   "sources": [
+    "github.com/davidar/dblp.yaml journals/tissec.bib",
+    "github.com/vintageplayer/SciBase-ACMTemp Journals/TISSEC/Volumes/Volume 2 Issue 2, May 1999"
+   ]
+  },
+  {
+   "key": "HaeberlenKD07",
+   "bibtex": "@inproceedings{HaeberlenKD07, author = {Andreas Haeberlen and Petr Kouznetsov and Peter Druschel}, title = {{PeerReview}: Practical Accountability for Distributed Systems}, booktitle = {Proceedings of the 21st ACM Symposium on Operating Systems Principles (SOSP '07)}, pages = {175--188}, publisher = {ACM}, year = {2007}, doi = {10.1145/1294261.1294279}}",
+   "sources": [
+    "https://raw.githubusercontent.com/slebok/bibsleigh/905fd7d58bf3134c14a69e43f29e14cab0134d78/corpus/SYS/2007/SOSP-2007/SOSP-2007-HaeberlenKD.json"
+   ]
+  },
+  {
+   "key": "Laurie14",
+   "bibtex": "@article{Laurie14, author = {Ben Laurie}, title = {Certificate Transparency}, journal = {Communications of the ACM}, volume = {57}, number = {10}, pages = {40--46}, year = {2014}, month = oct, doi = {10.1145/2659897}}",
+   "sources": [
+    "github.com/aj-stein-nist/semi-transparent README.md",
+    "github.com/syclops/caps doc/paper/bib.bib"
+   ]
+  },
+  {
+   "key": "USENIX:MBBFF15",
+   "bibtex": "@inproceedings{USENIX:MBBFF15, author = {Marcela S. Melara and Aaron Blankstein and Joseph Bonneau and Edward W. Felten and Michael J. Freedman}, title = {{CONIKS}: Bringing Key Transparency to End Users}, booktitle = {24th USENIX Security Symposium (USENIX Security 15)}, editor = {Jaeyeon Jung and Thorsten Holz}, pages = {383--398}, publisher = {USENIX Association}, address = {Washington, D.C.}, year = {2015}, month = aug, url = {https://www.usenix.org/conference/usenixsecurity15/technical-sessions/presentation/melara}}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_USENIX15.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ]
+  },
+  {
+   "key": "SP:PLDMM11",
+   "bibtex": "@inproceedings{SP:PLDMM11, author = {Bryan Parno and Jacob R. Lorch and John R. Douceur and James W. Mickens and Jonathan M. McCune}, title = {Memoir: Practical State Continuity for Protected Modules}, booktitle = {2011 IEEE Symposium on Security and Privacy (S\\&P 2011)}, pages = {379--394}, publisher = {IEEE Computer Society Press}, year = {2011}, month = may, doi = {10.1109/SP.2011.38}}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_SP11.bib"
+   ]
+  },
+  {
+   "key": "USENIX:MAKDSG17",
+   "bibtex": "@inproceedings{USENIX:MAKDSG17, author = {Sinisa Matetic and Mansoor Ahmed and Kari Kostiainen and Aritra Dhar and David Sommer and Arthur Gervais and Ari Juels and Srdjan Capkun}, title = {{ROTE}: Rollback Protection for Trusted Execution}, booktitle = {26th USENIX Security Symposium (USENIX Security 17)}, editor = {Engin Kirda and Thomas Ristenpart}, pages = {1289--1306}, publisher = {USENIX Association}, year = {2017}, month = aug, url = {https://www.usenix.org/conference/usenixsecurity17/technical-sessions/presentation/matetic}}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_USENIX17.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ]
+  },
+  {
+   "key": "USENIX:StrPie16",
+   "bibtex": "@inproceedings{USENIX:StrPie16, author = {Raoul Strackx and Frank Piessens}, title = {Ariadne: {A} Minimal Approach to State Continuity}, booktitle = {25th USENIX Security Symposium (USENIX Security 16)}, editor = {Thorsten Holz and Stefan Savage}, pages = {875--892}, publisher = {USENIX Association}, year = {2016}, month = aug, url = {https://www.usenix.org/conference/usenixsecurity16/technical-sessions/presentation/strackx}}",
+   "sources": [
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/crypto_USENIX16.bib",
+    "https://raw.githubusercontent.com/thomwiggers/cryptobib-export-split-demo/a03c9a5a89afab3ec53b3f22ae3cfdfff679fbad/bib/abbrev3.bib"
+   ]
+  },
+  {
+   "key": "Necula97",
+   "bibtex": "@inproceedings{Necula97, author = {George C. Necula}, title = {Proof-Carrying Code}, booktitle = {Conference Record of the 24th ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages (POPL '97)}, editor = {Peter Lee and Fritz Henglein and Neil D. Jones}, pages = {106--119}, publisher = {ACM Press}, year = {1997}, doi = {10.1145/263699.263712}}",
+   "sources": [
+    "https://raw.githubusercontent.com/slebok/bibsleigh/905fd7d58bf3134c14a69e43f29e14cab0134d78/corpus/PLT/1997/POPL-1997/POPL-1997-Necula.json"
+   ]
+  }
+ ]
+}

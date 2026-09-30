@@ -42483,3 +42483,55 @@ cadencia `M` sin constante ni vigía hasta que exista su llamador (D-F). El kit
 publicado (`arqueo-verify-v0.2.0`) no lleva la familia —ni la novena—: entra con la release
 siguiente, y `doc/KIT.md` sigue describiendo la publicada. La pasada `--bancos` completa. Y el
 RFC-0012 queda PROPUESTO: la aceptación es del autor, con su canon y su merge.
+
+## §594 — ECST §8.1: el gate del diario y el de las cofirmas, en todo estado que lea un contador
+
+El commit que lleva este asiento, sobre `9d3f9d6` (el S593-b). Un solo sello: el arreglo en el nodo,
+el testigo y el guardián con sus ocho tests, los tres pines, las cifras, una línea de
+`doc/CONFIANZA_RESIDUAL.md`, el informe `doc/ecst/` que lo encontró y este asiento, con el canon
+`--sello` VERDE dentro del bloque. Treinta y ocho ficheros más este asiento -treinta del informe,
+que nacen-, con 25896 inserciones y 11 borrados fuera de él.
+
+**De dónde sale.** De otra sesión de trabajo del autor, la del informe ECST (*Evidence-Carrying
+State Transitions*), que leyendo el código para su §8.1 encontró un fallo de seguridad y lo arregló
+en su rama de trabajo, `claude/awesome-pasteur-u08nq9`, sobre `71c5aad`. Esa rama NO se fusiona: sus
+commits llevaban como autor al asistente, y el autor lo excluye de `main`. Por decisión suya, este
+sello la rehace a su nombre sobre el `main` del ancla, con el mismo contenido.
+
+**El fallo, VERIFICADO en `main` antes de tocar nada.** `GuardianIndice::abrir` arranca en 0 si el
+fichero del contador no existe (`zk-ssl-guardian/src/lib.rs`), y la clave que sale de la semilla
+también está en 0: el par reconcilia `Coincide { indice: 0 }`, y `politica_de_reconciliacion`
+(`zk-ssl-node/src/main.rs`) arrancaba en `Coincide` SIN mirar el diario, que sólo se consultaba en
+`ClaveEnCero` (§335). Borrar un fichero bastaba para que el nodo volviera a firmar hojas XMSS ya
+usadas, y reutilizar una hoja filtra la clave. `politica_del_cofirmante` del testigo tenía la misma
+forma con sus cofirmas (§337).
+
+**Lo que hace.** El gate se consulta en TODO estado que lea un contador -`Coincide` y
+`ContadorAdelantado`, además de `ClaveEnCero`-, con los operadores de siempre, `<` en el nodo y `<=`
+en el testigo, y la misma razón derivada que el §335 y el §337 dejaron escrita. `ClaveAdelantada` ya
+no arrancaba. Consecuencia declarada en el código: una clave NUEVA con el diario de la vieja tampoco
+arranca -el diario no dice de qué clave es cada línea-; es fallar cerrada, y se sabe. Tests: el
+guardián mide la premisa -un contador borrado reabre en cero y coincide con la clave en cero-; el
+nodo, dos positivos primero y dos rojos; el testigo, un positivo y dos rojos. La cabecera-mapa de
+`doc/CONFIANZA_RESIDUAL.md` declara el hueco que no declaraba, sin tocar su cuerpo verbatim. Y el
+informe entra entero, con su material de trabajo: sus citas al commit de la rama de trabajo
+(`78d71a4`) apuntan ahora a este asiento conservando el hash, y su índice gana una nota de
+integración. **Integrar no es aceptar:** el informe lo generó un asistente y la aceptación que
+describe `GENAI.md` sigue pendiente, como su índice ya decía.
+
+**Medido aquí, sobre la base del ancla.** `zk-ssl-guardian` 27, `zk-ssl-node` 171 y `zk-ssl-cli`
+128, VERDES y sin avisos. **Los falsadores, ENSAYADOS:** el gate nuevo del nodo apagado tumba sus
+dos rojos -el contador borrado que coincide en cero y el contador adelantado por debajo del diario-
+y nada más; el del testigo, apagado, tumba sus dos. Restaurado, VERDE.
+
+**Contadores.** `zk-ssl-guardian` 26 -> 27, `zk-ssl-node` 167 -> 171 y `zk-ssl-cli` 125 -> 128; los
+otros dieciocho sin mover. Las crónicas del canon, que en la rama de trabajo decían «§0-ECST» con
+número provisional, dicen §594. El TOTAL DE SELLO 1511 -> 1519 y el TOTAL CON LARGOS 1648 -> 1656,
+más el nodo y el testigo en `PRINCIPIOS.md`: ocho cifras que `check_cifras` nombró, LÍNEA- y
+BYTE-NEUTRALES. `check_tests` 1670 -> 1678 y el offset en más 8, QUIETO: 1519 + 137 = 1656 ; 1656 +
+14 = 1670 ; el canon declara 1678.
+
+**Lo que NO cierra.** Lo que la misma cabecera ya declaraba: sin diario no hay segundo testigo, y el
+directorio entero restaurado no se ve. `hbs-state`, el otro repositorio del autor, tiene la misma
+forma en su guardián, y este sello no lo toca. La declaración del kit publicado va en el §595.
+

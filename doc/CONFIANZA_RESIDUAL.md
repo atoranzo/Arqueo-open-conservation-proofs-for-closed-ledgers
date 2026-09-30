@@ -64,6 +64,14 @@ decidido, y dónde):
   falla hacia el lado PERMISIVO por dos vias mas, las dos deliberadas: el diario
   no hace `fsync` y las lineas ilegibles se saltan. **Permisivo significa que
   puede no ver un rollback, no que sea seguro.** Backlog 103.
+  ⚠️ **Y un hueco que esta cabecera NO declaraba (2026-09-30, `doc/ecst/ECST.md`
+  §8.1, hallado leyendo)**: el gate solo se consultaba en `ClaveEnCero`. Un
+  contador BORRADO o puesto a CERO reabre en 0 y COINCIDE con la clave de la
+  semilla, asi que el arranque no miraba el diario y volvia a firmar la hoja 0; el
+  cofirmante del testigo tenia la misma forma con sus cofirmas. Desde el §594
+  los dos gates se consultan en TODO estado que lea un contador, con sus operadores
+  de siempre (`<` el nodo, `<=` el testigo). Lo de arriba sigue igual: el
+  directorio entero restaurado y el diario quitado no se ven.
   ⚠️ El borrado del buffer temporal del SK es **best-effort** y la fuga de
   `KeyPair::from_seed` es de un crate ajeno: backlog 102. El cuerpo de este
   documento no se toca —sigue siendo texto de sesion verbatim—.

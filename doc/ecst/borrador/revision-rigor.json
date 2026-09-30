@@ -1,0 +1,678 @@
+[
+ {
+  "line": 255,
+  "quote": "Sean $\\mathrm{Hc}$ y $\\mathrm{Hp}$ resistentes a colisiones y $\\mathrm{Enc}_v$",
+  "problem": "El enunciado de la Proposición 1 sólo toma como hipótesis la resistencia a colisiones y R1, pero §1.3 (l. 97-99), la garantía G1 de §6.2 (l. 833) y la ficha P9b que se cita presentan R4 (atar los bytes reales) como hipótesis DEL TEOREMA. O R4 es hipótesis y falta en el enunciado, o es una condición de conformidad de la implementación y entonces §1.3 y §6.2 no deben llamarla hipótesis. Además, si dos historias pueden usar versiones de codificación distintas, la inyectividad por versión no basta: hace falta fijar v (o R2 como hipótesis). §1.3 tampoco menciona D4 entre las condiciones de uso.",
+  "evidence": [
+   "doc/ecst/ECST.md:97-100",
+   "doc/ecst/ECST.md:833",
+   "doc/ecst/VERIFICACION.md (P9b)"
+  ],
+  "fix": "**Proposición 1.** Sean $\\mathrm{Hc}$ y $\\mathrm{Hp}$ resistentes a colisiones y de salida de anchura fija, $\\mathrm{Enc}_v$ inyectiva (R1) para una versión $v$ fija y conocida, y $\\mathrm{Hp}$ calculado sobre los bytes de $\\Pi_i$ tal como se verificaron (R4). [Y tras el enunciado:] «En el modelo abstracto R4 se cumple por definición; se nombra porque es la condición para que una implementación instancie la fórmula.» En §1.3 añadir «versión de la codificación» a la lista de condiciones de uso.",
+  "severity": "alta"
+ },
+ {
+  "line": 220,
+  "quote": "R1 y R4 se han violado en Arqueo sin romper ninguna función de hash",
+  "problem": "Mal atribuido. Los defectos de §116 (relleno con ceros sin longitud) y §124 (bloques de 8 bytes reducidos módulo p) estaban en el relleno interno de digest_of_proof, es decir, hacían que Hp no fuera resistente a colisiones; no violan R1 tal como §3.2 lo define (inyectividad de Enc_v sobre (i, O_i, C_{i-1}, C_i, a_i)). Son violaciones de la cláusula «longitud de la entrada» de R3 o de la hipótesis de resistencia a colisiones de Hp. Por tanto el «contraejemplo de la codificación inyectiva» que §1.3 (l. 100-101) anuncia como contribución no es de R1.",
+  "evidence": [
+   "AUDITORIA.md:9504-9508",
+   "AUDITORIA.md:10118-10150",
+   "doc/ecst/ECST.md:211-216"
+  ],
+  "fix": "Redefinir R1: «**R1 · Inyectividad y canonicidad de toda entrada a $\\mathrm{Hc}$ y a $\\mathrm{Hp}$**, incluido el relleno interno: …». Y sustituir la frase por: «La inyectividad de la entrada de un hash y R4 se han violado en Arqueo sin romper ninguna permutación: el relleno de `digest_of_proof` añadía ceros sin codificar la longitud (`AUDITORIA.md` §116) y reducía bloques de 8 bytes módulo $p$ (§124), de modo que $\\mathrm{Hp}$ no era resistente a colisiones aunque su permutación lo fuera; y seis vías encadenaron…». En §1.3, punto 1: «la inyectividad de la entrada de cada hash y la atadura de los bytes reales».",
+  "severity": "alta"
+ },
+ {
+  "line": 362,
+  "quote": "Inválido si no, con el primer índice divergente",
+  "problem": "Imposible tal como está especificado. Con una sola cabeza autenticada, H_n ≠ Ĥ_n sólo dice que el tramo no cuadra: no identifica qué entrada se alteró. `t1_chain_retroactivo` localiza k = 5 porque dispone de las dos historias (la original y la alterada), no de una cabeza. Localizar exige valores Ĥ_j autenticados intermedios (cabezas firmadas de épocas anteriores) y entonces sólo se acota al tramo entre dos cabezas.",
+  "evidence": [
+   "doc/ecst/ECST.md:291-294",
+   "crates/zk-ssl/src/log.rs:1189-1295"
+  ],
+  "fix": "«Inválido si no. El índice divergente sólo se localiza si hay valores $\\hat H_j$ autenticados intermedios —por ejemplo, cabezas firmadas de épocas anteriores—, y sólo hasta el tramo entre la última que coincide y la primera que no; con una sola cabeza, el resultado es Inválido para el tramo entero.»",
+  "severity": "alta"
+ },
+ {
+  "line": 280,
+  "quote": "tiene que llegarle firmado y con la clave anclada antes del primer",
+  "problem": "D1 es necesaria pero no suficiente frente al propio firmante: el operador que reescribe la historia firma también la cabeza nueva, que es auténtica. La Proposición 1 sólo protege a quien custodia Ĥ_n (o a un testigo que lo hizo) desde ANTES de la alteración. §5.8 lo dice para Arqueo («sólo lo ve quien custodia una cabeza anterior»), pero la lista D1-D4 del modelo lo omite, y §3.6 y §3.10 heredan la omisión.",
+  "evidence": [
+   "doc/ecst/ECST.md:301",
+   "doc/ecst/ECST.md:359-360",
+   "doc/ecst/ECST.md:702-704"
+  ],
+  "fix": "«- **D1 · Cabeza autenticada y anterior a la alteración.** $\\hat H_n$ tiene que llegarle firmado, con la clave anclada antes del primer encuentro, y custodiado por él o por un testigo **antes** de la alteración que se quiere detectar: frente al firmante, una cabeza firmada después de reescribir la historia autentica la historia reescrita. En Arqueo el ancla es TOFU y no hay clave de operador real (§5.6).»",
+  "severity": "alta"
+ },
+ {
+  "line": 272,
+  "quote": "de historias de longitud o génesis distintas: por eso el índice $i$ entra en la codificación",
+  "problem": "Razonamiento confuso y contrario a §3.6. Precisamente porque i entra en Enc_v y H_0 entra en u_1, el mismo recorrido da una colisión si H_n = H'_m con n ≠ m (u_n ≠ u'_m por el índice) o con g ≠ g' (en i = 1, u_1 = u'_1 forzaría H_0 = H'_0). Lo que la proposición no da es que el tercero sepa a qué (g, n) corresponde la cabeza, que es D2, hoy una viñeta sin texto (l. 282). Tal como está, la tabla de §3.6 (inserción, borrado) afirma más que la proposición.",
+  "evidence": [
+   "doc/ecst/ECST.md:256-258",
+   "doc/ecst/ECST.md:282",
+   "doc/ecst/ECST.md:301"
+  ],
+  "fix": "«(ii) La restricción a la misma génesis y la misma longitud es de comodidad: como $i$ entra en $\\mathrm{Enc}_v$ y $H_0$ en $u_1$, el mismo recorrido da una colisión si $H_n = H'_m$ con $n \\neq m$ o con $g \\neq g'$. Lo que no da es que el tercero sepa a qué génesis y a qué $n$ corresponde la cabeza: eso es D2.» Y en D2: «**D2 · Génesis y longitud conocidas**: sin ellas, una cabeza correcta de un prefijo pasa por la de la historia entera.»",
+  "severity": "media"
+ },
+ {
+  "line": 301,
+  "quote": "con una cabeza autenticada, la alteración, inserción, borrado o reordenación de un campo encadenado",
+  "problem": "La fila afirma más de lo que se demuestra: la Proposición 1 está enunciada sólo para historias de la misma longitud (inserción y borrado cambian n), y «autenticada» no basta frente al firmante (véase D1). Los dos arreglos (extender la proposición, D1 con custodia previa) son necesarios para que la fila sea cierta.",
+  "evidence": [
+   "doc/ecst/ECST.md:256-258",
+   "doc/ecst/ECST.md:270-272"
+  ],
+  "fix": "«con una cabeza autenticada **custodiada antes** de la alteración y $n$ conocido, la alteración, inserción, borrado o reordenación de un campo encadenado (Proposición 1 y su nota (ii))»",
+  "severity": "media"
+ },
+ {
+  "line": 259,
+  "quote": "exhibir con $n$ evaluaciones una colisión de $\\mathrm{Hc}$ o de $\\mathrm{Hp}$",
+  "problem": "Cuenta incorrecta y formulación asintótica mal definida. La reducción tiene que recomponer las dos cadenas: hasta 2n evaluaciones de Hc y 2n de Hp. «Con la misma probabilidad» debe ser «al menos la misma, con un coste adicional lineal en n». Y para funciones sin clave (Rescue-Prime, Blake3), «adversario eficiente con probabilidad no despreciable» no es una noción bien definida; la forma correcta es una reducción constructiva explícita en el sentido de Rogaway (VIETCRYPT 2006), que el esbozo ya casi da.",
+  "evidence": [
+   "https://eprint.iacr.org/2006/281",
+   "https://link.springer.com/chapter/10.1007/11958239_14"
+  ],
+  "fix": "«Entonces, si $H_n = H'_n$, a partir de las dos historias se exhibe, con a lo sumo $2n$ evaluaciones de $\\mathrm{Hc}$ y $2n$ de $\\mathrm{Hp}$, una colisión explícita de una de las dos. Como $\\mathrm{Hc}$ y $\\mathrm{Hp}$ no llevan clave, se lee como una reducción constructiva [Rogaway06]: quien produzca tales pares produce una colisión, con al menos el mismo éxito y un coste adicional lineal en $n$.» Añadir al .bib: P. Rogaway, «Formalizing Human Ignorance: Collision-Resistant Hashing without the Keys», VIETCRYPT 2006, LNCS 4341, pp. 221-228; ePrint 2006/281.",
+  "severity": "media"
+ },
+ {
+  "line": 265,
+  "quote": "los campos codificados coinciden (por R1)",
+  "problem": "Paso incompleto: pasar de u_i = u'_i a «H_{i-1} = H'_{i-1} y campos iguales» exige que la concatenación dom_c ‖ H_{i-1} ‖ Enc_v(...) ‖ Hp(Π_i) se descomponga de una sola manera, lo que vale si dom_c, H y Hp tienen anchura fija (o la concatenación es libre de prefijos). R1 sólo habla de Enc_v.",
+  "evidence": [
+   "doc/ecst/ECST.md:202"
+  ],
+  "fix": "«Si $u_i = u'_i$, entonces, como $\\mathsf{dom}_c$, $H_{i-1}$ y $\\mathrm{Hp}(\\Pi_i)$ tienen anchura fija, $u_i$ se descompone de una sola manera: $H_{i-1} = H'_{i-1}$, los campos codificados coinciden (por R1) y…»",
+  "severity": "baja"
+ },
+ {
+  "line": 287,
+  "quote": "**En Arqueo** (§5.4), $\\mathrm{Hc}$ es `native_merge`",
+  "problem": "No se argumenta que la proposición se traslade a Arqueo, donde Hc no es un hash sobre una concatenación sino un árbol de 5-6 merges 2-a-1 sin etiqueta de dominio, con las eras distinguidas sólo por un merge extra y por la longitud en disco. El recorrido se traslada merge a merge para historias con el mismo patrón de eras; pero si difieren en la era de una entrada, la igualdad de resúmenes no se reduce a una colisión sino a encontrar una salida de native_merge igual a un valor estructurado ([x,0,0,0] = emb(seq), o la constante declarada COMPROMISO_AUSENTE), un suceso de tipo preimagen. «R3 se cumple sólo estructuralmente» esconde esa hipótesis adicional.",
+  "evidence": [
+   "crates/zk-ssl/src/log.rs:250-294",
+   "doc/ecst/ECST.md:606-607",
+   "doc/ecst/ECST.md:635-636"
+  ],
+  "fix": "Añadir tras «…es un supuesto.»: «La proposición se traslada a la composición anidada de §5.4 merge a merge, porque cada entrada de `native_merge` tiene anchura fija; pero sin etiqueta de dominio, dos historias que difieran en la era de una entrada sólo dan una colisión si además es difícil encontrar una salida de `native_merge` con forma prefijada —`[x,0,0,0]` o la constante `COMPROMISO_AUSENTE`—, propiedad de tipo preimagen que la resistencia a colisiones no implica. Por eso D4 exige conocer la era de cada entrada.»",
+  "severity": "media"
+ },
+ {
+  "line": 227,
+  "quote": "la transición respeta las reglas semánticas del sistema",
+  "problem": "StateOK se define sobre estados S, que §3.1 acaba de sacar del paquete («lo que viaja es un compromiso»). El modelo no dice qué relación hay entre C y S (compromiso vinculante, aperturas), así que StateOK no es evaluable a partir de E_i y «x_i derivadas de (C_{i-1}, C_i, O_i)» no dice nada de S sin vinculación. Tampoco dice quién puede evaluarlo (en Arqueo, sólo el operador).",
+  "evidence": [
+   "doc/ecst/ECST.md:193-194",
+   "doc/ecst/ECST.md:366-367"
+  ],
+  "fix": "Añadir en §3.1: «$C_i = \\mathsf{Com}(S_i)$ con $\\mathsf{Com}$ vinculante.» Y en §3.3: «$\\mathsf{StateOK}(S_{i-1}, O_i, S_i)$ se evalúa sobre aperturas de $(C_{i-1}, C_i)$; sin ellas —un tercero en Arqueo— sólo es comprobable lo que $\\Pi_i$ prueba.»",
+  "severity": "media"
+ },
+ {
+  "line": 229,
+  "quote": "con la clave de verificación $vk_i$ vigente en $i$",
+  "problem": "CryptoValid es relativo a vk_i, pero ni E_i ni H_i comprometen vk_i (ni el resumen del AIR/reglas). La historia no dice qué reglas rigieron cada paso, que es exactamente por qué «el operador puede cambiar el verificador sin rastro» (§6.1) y por qué el nivel B del protocolo recibe las reglas como entrada no autenticada. Es un hueco del modelo, no sólo de Arqueo.",
+  "evidence": [
+   "doc/ecst/ECST.md:302",
+   "doc/ecst/ECST.md:359-360",
+   "doc/ecst/ECST.md:817-819"
+  ],
+  "fix": "Añadir a $E_i$ (y a $\\mathrm{Enc}_v$) «$\\rho_i$, el resumen de las reglas vigentes —$vk_i$ o el del AIR—», con la nota: «Arqueo no lo encadena (sólo `paramsDigest` en la cabeza desde la v5); por eso las reglas de cada época son, en el nivel B, una entrada no autenticada.»",
+  "severity": "media"
+ },
+ {
+  "line": 42,
+  "quote": "semántica y consenso son predicados distintos, y ninguno implica a los otros",
+  "problem": "Dos problemas. (a) Los «cuatro» de la tesis (compromiso, validez, conformidad, consenso) no son los cuatro predicados de §3.3 (StateOK, Verify, Authorize, Link): Authorize desaparece y Consenso nunca se define como predicado. (b) «Ninguno implica a los otros» es falso como enunciado universal: en un sistema concreto hay implicaciones por construcción (en el envío de Arqueo, Verify ⇒ Authorize porque la autoría va dentro de Π_i, l. 197; Verify ⇒ StateOK para las reglas que el AIR codifica). Lo defendible es que no hay implicación en general. Además «A ≠ B ≠ C ≠ D» no expresa no-implicación.",
+  "evidence": [
+   "doc/ecst/ECST.md:197-198",
+   "doc/ecst/ECST.md:225-235",
+   "doc/ecst/ECST.md:239"
+  ],
+  "fix": "«Su tesis es de separación: la integridad de la historia, la validez criptográfica, la autorización, la conformidad semántica y la unicidad de la historia (consenso) son propiedades distintas; ninguna implica a las otras en general, y cuando en un sistema concreto una implica a otra —la autoría dentro del circuito, por ejemplo— es una afirmación sobre ese sistema que hay que demostrar.» Ajustar igual el lema de l. 239 y l. 1103.",
+  "severity": "media"
+ },
+ {
+  "line": 316,
+  "quote": "Ningún uso puede existir con un índice mayor que el contador persistido.",
+  "problem": "Ambigüedad de uno. §3.8 cuenta hojas desde 0 («[0, C)», «continuar desde C, el primer índice que nunca se reservó»); con esa convención el invariante es «< C», y «mayor que» permite usar la hoja C, que nunca se reservó. La redacción de HBS-STATE sólo es correcta con el índice declarado de §5.5 (hoja + 1). EIP-8310 fija la convención explícitamente («signing is permitted only strictly above» la marca de agua).",
+  "evidence": [
+   "doc/ecst/ECST.md:334-335",
+   "doc/ecst/ECST.md:657-659",
+   "https://raw.githubusercontent.com/ethereum/EIPs/master/EIPS/eip-8310.md"
+  ],
+  "fix": "«> **Todo uso tiene un índice de hoja, contado desde 0, menor que el contador persistido; equivalentemente, $K \\le C$.** Con el índice declarado de §5.5, que es la hoja más uno, la misma regla se escribe «ningún índice declarado mayor que el contador», que es la redacción de HBS-STATE (§4.2).»",
+  "severity": "media"
+ },
+ {
+  "line": 330,
+  "quote": "Cuando $R$ devuelve un estado cuyo pasado no se puede decidir con los datos durables",
+  "problem": "La regla sólo contempla KeyAtZero como indeterminado, pero con clave persistida los huérfanos [K, C) de CounterAhead son igual de indecidibles (una firma con hoja en [K, C) pudo salir antes de persistirse la clave), y HBS-STATE exige quemarlos o registrarlos (l. 441). El Resumen y §1.3 hablan de «el estado indeterminado» en singular.",
+  "evidence": [
+   "doc/ecst/ECST.md:428",
+   "doc/ecst/ECST.md:440-442"
+  ],
+  "fix": "«Cuando $R$ devuelve un estado con un intervalo cuyo uso no se puede decidir con los datos durables —$[0, C)$ en KeyAtZero, $[K, C)$ en CounterAhead—, …» y en el punto 1: «no reutilizar nunca un índice menor que $C$».",
+  "severity": "media"
+ },
+ {
+  "line": 332,
+  "quote": "ECST propone **[PROPUESTA]**:",
+  "problem": "Uso incoherente de la marca: la leyenda define [PROPUESTA] como «parte del modelo que no está implementada», y l. 342-343 dice que es «la política que Arqueo aplica a su índice de firma desde el §335 y §337». Lo único no implementado es extender el punto 3 a todos los estados (§8.1).",
+  "evidence": [
+   "doc/ecst/ECST.md:24",
+   "doc/ecst/ECST.md:342-344"
+  ],
+  "fix": "«ECST adopta como regla general la política que Arqueo ya aplica a su índice de firma (§5.13); sólo su extensión del punto 3 a todos los estados es **[PROPUESTA]** (§8.1):»",
+  "severity": "media"
+ },
+ {
+  "line": 369,
+  "quote": "El resultado es un **vector** $(r_A, r_B, r_C)",
+  "problem": "El vector funde Authorize y StateOK en r_C, en contra de §1.2 («cuatro predicados … se comprueben y se informen por separado»). No define cómo se agrega por tramo (¿basta un Inválido?) ni distingue «no aplica» (clases con Π_i explícitamente vacía, l. 196) de «falta el dato»: con {Válido, Inválido, Indeterminado}, OpenAccount quedaría Indeterminado para siempre en el nivel B. La correspondencia de §5.14 con los códigos 0/1/3 también es laxa (3 es «declarada, no probada», no falta de datos).",
+  "evidence": [
+   "doc/ecst/ECST.md:82-84",
+   "doc/ecst/ECST.md:196",
+   "doc/ecst/ECST.md:807"
+  ],
+  "fix": "«El resultado es un vector $(r_{\\mathsf{Link}}, r_{\\mathsf{Verify}}, r_{\\mathsf{Auth}}, r_{\\mathsf{State}})$ por transición, cada componente en {Válido, Inválido, Indeterminado, No aplica}; sobre un tramo cada componente se agrega con Inválido por encima de Indeterminado y éste por encima de Válido, y se informa la cobertura. No aplica es para las clases que declaran $\\Pi_i$ vacía.»",
+  "severity": "media"
+ },
+ {
+  "line": 364,
+  "quote": "para cada $i$, $\\mathsf{Verify}$ sobre $\\Pi_i$",
+  "problem": "El nivel B no ata la prueba a la historia: una Π_i obtenida fuera del nodo (el nodo no las conserva) debe comprobarse primero contra el resumen encadenado Hp(Π_i) de la entrada i; si no, cualquier prueba válida con las mismas entradas públicas pasa. B sólo tiene sentido sobre entradas con A Válido.",
+  "evidence": [
+   "doc/ecst/ECST.md:615-617",
+   "doc/ecst/ECST.md:637-638"
+  ],
+  "fix": "«**Nivel B · evidencia:** para cada $i$ con nivel A Válido, comprobar que $\\mathrm{Hp}(\\Pi_i)$ coincide con el resumen encadenado en la entrada $i$ y después $\\mathsf{Verify}$ sobre $\\Pi_i$ con las $x_i$ derivadas de esa entrada. Indeterminado si…»",
+  "severity": "media"
+ },
+ {
+  "line": 623,
+  "quote": "**Consumo**, `digest_of_proof(&[])`",
+  "problem": "Tensión con R4 y con l. 222: el consumo sigue encadenando el resumen constante de la prueba vacía que l. 222 da por eliminado «hasta el §278». El modelo admite Π_i «explícitamente, nada» (l. 196) pero no dice cómo se codifica la ausencia; si es Hp de la cadena vacía, colisiona con una prueba vacía real y no está separada por dominio (R3).",
+  "evidence": [
+   "doc/ecst/ECST.md:196",
+   "doc/ecst/ECST.md:222",
+   "crates/zk-ssl/src/log.rs:263-270"
+  ],
+  "fix": "En l. 196: «…o, explícitamente, nada, que se codifica con una constante de dominio propio, distinta de $\\mathrm{Hp}$ de la cadena vacía (R3)». En l. 222: «…hasta el §278; el consumo aún encadena `digest_of_proof(&[])`, con el resumen del consumo en el compromiso (§5.4)».",
+  "severity": "media"
+ },
+ {
+  "line": 346,
+  "quote": "### 3.9 Consumo monótono",
+  "problem": "Mezcla dos mecanismos distintos bajo «consumo monótono»: el de contador (hoja XMSS, rx), al que se aplica R(C,K), y el de conjunto (etiqueta de consumo del RFC-0006, hoja de pendiente), que no tiene par (C,K) que reconciliar. La definición de §3.7 (dos datos durables C y K) no se aplica a los segundos.",
+  "evidence": [
+   "doc/ecst/ECST.md:311-314",
+   "doc/ecst/ECST.md:348-353"
+  ],
+  "fix": "Retitular «3.9 Uso único» y sustituir la segunda frase por: «Aparece con dos mecanismos: por contador monótono (la hoja XMSS, el `rx` del RFC-0010), al que se aplica R(C,K), y por conjunto (la etiqueta de consumo del RFC-0006, la hoja de pendiente que el cobro vacía), que no tiene par que reconciliar.»",
+  "severity": "baja"
+ },
+ {
+  "line": 431,
+  "quote": "La precedencia la fija un `match` de tres brazos",
+  "problem": "Las cuatro condiciones de la tabla (==; > con key == 0; > con key ≠ 0; <) forman una partición de ℕ², así que matemáticamente no hay precedencia que fijar; §3.7 (l. 319) también habla de «precedencia fija». Lo que hay es una implementación de la partición.",
+  "evidence": [
+   "doc/ecst/ECST.md:424-429",
+   "doc/ecst/ECST.md:318-319"
+  ],
+  "fix": "«Las cuatro condiciones forman una partición de $\\mathbb{N}^2$, así que no hace falta precedencia; el código la realiza con un `match` de tres brazos…» y en l. 319 quitar «y una precedencia fija».",
+  "severity": "baja"
+ },
+ {
+  "line": 305,
+  "quote": "tras reiniciar, si el recurso de consumo monótono y su contador están en uno de cuatro estados, y cuál",
+  "problem": "Vacuo: R es total, siempre devuelve uno de los cuatro estados. Lo que R detecta es la violación del invariante visible en el par (KeyAhead).",
+  "evidence": [
+   "doc/ecst/ECST.md:318-321"
+  ],
+  "fix": "«tras reiniciar, la violación del invariante visible en el par (KeyAhead); clasifica el resto en tres estados no fatales con su intervalo perdido»",
+  "severity": "baja"
+ },
+ {
+  "line": 289,
+  "quote": "una pérdida marginal **[LECTURA]**",
+  "problem": "Es una estimación matemática, no un hecho leído del código: por la leyenda es [DERIVADO], y debe cuantificarse.",
+  "evidence": [
+   "doc/ecst/ECST.md:22",
+   "doc/ecst/ECST.md:26"
+  ],
+  "fix": "«una pérdida marginal **[DERIVADO]**: cada limb cae en $[p, 2^{64})$ con probabilidad $\\approx 2^{-32}$, y encontrar dos salidas de Blake3 que difieran exactamente en $p$ en un limb e igualen el resto no es más fácil que una colisión genérica»",
+  "severity": "baja"
+ },
+ {
+  "line": 103,
+  "quote": "estado indeterminado que falla cerrado sin reutilizar recursos y sin negarse para siempre a operar",
+  "problem": "Atribución que falta en una contribución declarada. «Dar por perdido lo reservado y no confirmado y seguir» es la semántica de la reserva por intervalos de McGrew et al. §5, que RFC 10033 §5.9 resume así: «the reserved OTS keys are kept in dynamic memory so they will be lost if the signing device loses power or is reset». Y «fallar cerrado sin quedar parado para siempre» es el requisito explícito de vivacidad de Ariadne («an unexpected loss of power must never leave the system in a state from which it can never resume»). El informe no cita ninguno de los dos para la regla de §3.8.",
+  "evidence": [
+   "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.txt (§5.9)",
+   "https://www.usenix.org/conference/usenixsecurity16/technical-sessions/presentation/strackx",
+   "https://eprint.iacr.org/2016/357"
+  ],
+  "fix": "«2. **La reconciliación del estado físico, R(C,K), como componente del modelo**, con una regla para el estado indeterminado —dar por perdido lo reservado y no confirmado, como en la reserva por intervalos de [McGrew16] (RFC 10033, §5.9), sin perder la vivacidad que exige [Ariadne16]—, y la observación, que sí es de este trabajo, de que el significado de cada estado depende del modelo de clave.» Citar lo mismo en §3.8.",
+  "severity": "alta"
+ },
+ {
+  "line": 158,
+  "quote": "estudian cómo un módulo protegido evita que se le restaure un estado anterior",
+  "problem": "Caracterización incompleta: Ariadne (y Memoir) no sólo tratan el retroceso; formulan y resuelven la vivacidad ante una caída en mitad de una actualización del contador, que es el problema de §3.8. Presentarlos sólo como anti-retroceso oculta el solapamiento con la contribución 2. Falta además el trabajo reciente del área (Nimble, OSDI 2023).",
+  "evidence": [
+   "https://www.usenix.org/conference/usenixsecurity16/technical-sessions/presentation/strackx",
+   "https://www.usenix.org/conference/osdi23/presentation/angel"
+  ],
+  "fix": "«[ROTE17] estudian cómo un módulo protegido evita que se le restaure un estado anterior sin perder la vivacidad: Ariadne exige que una pérdida de corriente nunca deje el módulo en un estado del que no pueda reanudar, que es el problema de §3.8 para un recurso de un solo uso; Nimble [Nimble23] lo lleva a servicios replicados.» Añadir al .bib: S. Angel, A. Basu, W. Cui, T. Jaeger, S. Lau, S. Setty, S. Singanamalla, «Nimble: Rollback Protection for Confidential Cloud Services», OSDI ’23, pp. 193-208.",
+  "severity": "media"
+ },
+ {
+  "line": 1117,
+  "quote": "este informe descansa en el conocimiento del modelo",
+  "problem": "Afirmación de procedencia que no se sostiene: la cabecera de referencias.bib dice que sólo se re-derivaron METADATOS, no el contenido que el texto atribuye a cada obra (las caracterizaciones de §2, p. ej. PeerReview, CONIKS o Chidambaram13, no remiten a un pasaje); el párrafo de normalización de §9 (flujo IRTF, IRSG, revisión de conflictos del IESG, carta de PQUIP) no tiene fuente; el esbozo de §3.5 es razonamiento, no una cita.",
+  "evidence": [
+   "doc/ecst/referencias.bib:1-6",
+   "doc/ecst/ECST.md:1082-1087",
+   "doc/ecst/ECST.md:135-179"
+  ],
+  "fix": "«Toda cifra y toda afirmación sobre el código remiten a un fichero de los dos repositorios o a una ficha de `VERIFICACION.md`. De la literatura se verificaron los metadatos, y el texto citado sólo en RFC 10033, SP 800-208 y EIP-8310; las caracterizaciones de §2 no se han cotejado con el texto completo de cada obra.»",
+  "severity": "alta"
+ },
+ {
+  "line": 399,
+  "quote": "Mide el orden persistir-antes-de-firmar, no un corte de corriente.",
+  "problem": "Sobreinterpretación de un resultado [MEDIDO]. Tras un kill -9 del hijo, lo escrito sin fsync sigue en el caché de páginas del núcleo y se lee al reabrir: el banco no distingue escribir+sync_all de escribir sin sync, así que mide escritura-antes-de-firma, no persistencia. Además, con instantes de muerte aleatorios y sin conocer la fracción del ciclo en que un orden invertido fallaría, 25/25 no acota la probabilidad de que el orden sea incorrecto: la cota del 11 % es por muerte aleatoria, no sobre el diseño. El método estándar es inyectar la caída en cada frontera de llamada al sistema (ALICE, de [Pillai14], ya citado). G6 (l. 838) pone «fsync honrado» como hipótesis y usa este banco como respaldo.",
+  "evidence": [
+   "https://www.usenix.org/conference/osdi14/technical-sessions/presentation/pillai",
+   "doc/ecst/ECST.md:838"
+  ],
+  "fix": "«Mide que la escritura del contador precede a la firma tal como la ve el caché de páginas —un `kill -9` no distingue una escritura con `sync_all` de una sin él—, no la persistencia ni un corte de corriente. Como el instante de la muerte es aleatorio y no se conoce la fracción del ciclo en que un orden invertido fallaría, la cota acota la tasa por muerte aleatoria, no la corrección del orden; lo que la acotaría es inyectar la caída en cada llamada al sistema, como ALICE [Pillai14].»",
+  "severity": "media"
+ },
+ {
+  "line": 417,
+  "quote": "la inferencia «lo normal tras una caída es",
+  "problem": "Contradicción interna: la frase da por retractada sin matiz la inferencia que la tabla de encima (l. 411), §3.7 (l. 324) y §5.13 (l. 776) afirman para la clave persistida. Según H18b/G7b la retractación es sólo para la clave derivada de semilla.",
+  "evidence": [
+   "doc/ecst/ECST.md:324",
+   "doc/ecst/ECST.md:411",
+   "doc/ecst/ECST.md:776",
+   "doc/ecst/VERIFICACION.md (H18b, G7b)"
+  ],
+  "fix": "«…y la inferencia «lo normal tras una caída es CounterAhead» está retractada en la propia especificación **para la clave derivada de semilla**; con clave persistida sigue valiendo, como dice la tabla (VERIFICACION.md, H18b, G7b).»",
+  "severity": "media"
+ },
+ {
+  "line": 15,
+  "quote": "Toda afirmación empírica o de estado lleva una de estas marcas",
+  "problem": "La promesa no se cumple: la mayoría de las afirmaciones de estado del código en §4.2-§5.13 (p. ej. l. 637-638, 709-713, 718-725) no llevan marca, y por la propia leyenda son [LECTURA] (leídas por los agentes verificadores, no ejercidas). Sólo §8.1, §8.2 y tres sitios más llevan [LECTURA], con lo que §8.1 parece epistémicamente más débil que §5 cuando es la misma clase de evidencia. [NO MEDIDO] se define y no se usa nunca en el texto; §7.1 declara todo [MEDIDO] e incluye la banda publicada (l. 873), que es declarada.",
+  "evidence": [
+   "doc/ecst/ECST.md:637-641",
+   "doc/ecst/ECST.md:709-714",
+   "doc/ecst/ECST.md:862",
+   "doc/ecst/ECST.md:873"
+  ],
+  "fix": "«Toda cifra y todo resultado de ejecución llevan una de estas marcas. Las descripciones del código sin marca son **[LECTURA]** verificada: remiten a una ficha de `VERIFICACION.md` o a una ruta `fichero:línea`, y nadie las ha ejercido salvo que se diga.» Marcar la fila de l. 873 como [DECLARADO] y usar [NO MEDIDO] en §7.4 o quitarlo de la leyenda.",
+  "severity": "media"
+ },
+ {
+  "line": 46,
+  "quote": "protocolo de auditoría cuyo resultado es un vector sobre {Válido, Inválido, Indeterminado}",
+  "problem": "El Resumen presenta el protocolo de auditoría sin decir que es una PROPUESTA sin herramienta (§3.10, §5.14 «no existe»); un lector del Resumen lo tomará como implementado.",
+  "evidence": [
+   "doc/ecst/ECST.md:357",
+   "doc/ecst/ECST.md:808"
+  ],
+  "fix": "«y un protocolo de auditoría por niveles, propuesto y sin implementar, cuyo resultado es un vector sobre {Válido, Inválido, Indeterminado}»",
+  "severity": "media"
+ },
+ {
+  "line": 48,
+  "quote": "instancia casi todo el modelo",
+  "problem": "Sobredimensionado a la vista de §5.14 y §6.3: las Π_i no se conservan (D3 falla), ningún tercero recompone la cadena, no existe la herramienta de auditoría, el ancla es TOFU y el vector es parcial. Se repite en §10 (l. 1097).",
+  "evidence": [
+   "doc/ecst/ECST.md:796-809",
+   "doc/ecst/ECST.md:844-845"
+  ],
+  "fix": "«que instancia la mayoría de los componentes del paquete, con huecos declarados —no conserva las pruebas, ningún tercero recompone la cadena y no hay herramienta de auditoría— (§5.14)». Igual en l. 1097.",
+  "severity": "media"
+ },
+ {
+  "line": 107,
+  "quote": "que es la mejor evidencia disponible de que la",
+  "problem": "Afirma más que su fuente: un segundo uso de la MISMA enumeración, en el mismo código y del mismo autor, indica reutilización, no es evidencia independiente de que la clasificación se generalice. La ficha G6d sólo dice que «sostiene la generalización como función de clasificación». Se repite en l. 773-775.",
+  "evidence": [
+   "doc/ecst/VERIFICACION.md (G6d)",
+   "doc/ecst/ECST.md:772-775"
+  ],
+  "fix": "«dentro de Arqueo, el registro de recepción: un segundo uso de la misma clasificación, con el mismo tipo y del mismo autor, que indica que se generaliza como clasificación pero no es evidencia independiente.» Igual en l. 773-775.",
+  "severity": "media"
+ },
+ {
+  "line": 176,
+  "quote": "Lo que aquí podría ser nuevo no son las piezas, sino tres cosas",
+  "problem": "La «Posición» no coincide con §1.3: incluye el contrato ejecutable de HBS-STATE, que es trabajo previo del autor ya depositado y que §1.3 no reclama, y omite la contribución 4. Y la novedad de la «separación explícita» no puede valorarse sin la literatura de rollups de validez y de disponibilidad de datos, que ya separa validez, disponibilidad y secuenciación.",
+  "evidence": [
+   "doc/ecst/ECST.md:97-111",
+   "https://link.springer.com/chapter/10.1007/978-3-662-64331-0_15"
+  ],
+  "fix": "«Lo que aquí podría ser nuevo no son las piezas, sino dos cosas: la **separación explícita** de los predicados en un solo modelo, con lo que cada uno no detecta (§3.6) —la literatura de rollups ya separa validez, disponibilidad de datos y secuenciación [AlBassam21]—, y la **reconciliación como componente clasificado** del modelo (§3.7-§3.8). El contrato ejecutable de HBS-STATE (§4) es trabajo previo del autor, que aquí se analiza.»",
+  "severity": "media"
+ },
+ {
+  "line": 835,
+  "quote": "quien custodia una cabeza anterior detecta una historia de cabezas reescrita",
+  "problem": "Omite un límite conocido: según L4d (c), el paquete de extensión no comprueba que la propia cabeza custodiada sea hoja del árbol nuevo (lectura, no ejercida), así que un operador podría bifurcar justo en la cabeza custodiada; y según L4d (b), la consistencia no comprueba que el chainDigest continúe (§5.8 lo dice, G3 no).",
+  "evidence": [
+   "doc/ecst/VERIFICACION.md (L4d)",
+   "doc/ecst/ECST.md:702-704"
+  ],
+  "fix": "Celda de hipótesis: «la cabeza anterior custodiada; misma clave. No cubre que la propia cabeza custodiada sea hoja del árbol nuevo, que el paquete de extensión no comprueba **[LECTURA]** (VERIFICACION.md, L4d), ni la continuidad del `chainDigest` (§5.8)»",
+  "severity": "media"
+ },
+ {
+  "line": 837,
+  "quote": "una operación con recibo que no se resolvió en N cabezas deja un ROJO oponible",
+  "problem": "Contradice §8.2 sin remitir a él: si la lectura de §8.2 es correcta, un titular puede provocar un ROJO contra un operador honrado enviando a propósito una prueba inválida, así que un ROJO no es por sí solo evidencia de censura.",
+  "evidence": [
+   "doc/ecst/ECST.md:1010-1018"
+  ],
+  "fix": "Añadir a la columna de hipótesis: «; y, mientras §8.2 no se resuelva, un ROJO por una prueba rechazada como inválida no distingue al operador que censura del titular que envió una prueba inválida»",
+  "severity": "media"
+ },
+ {
+  "line": 839,
+  "quote": "`politica_de_reconciliacion`; `tools/banco_reutilizacion.sh` (§579)",
+  "problem": "El respaldo de G7 está sobredimensionado: según §5.13 (l. 784-786), el banco mide el TESTIGO y no el firmante de cabezas del nodo, y su aserción de no-reúso compara el ordinal declarado, no la hoja WOTS; lo del nodo es sólo lectura.",
+  "evidence": [
+   "doc/ecst/ECST.md:784-788"
+  ],
+  "fix": "«lectura de `politica_de_reconciliacion` **[LECTURA]**; `tools/banco_reutilizacion.sh` (§579) mide la resincronización del testigo, no la del nodo, y su aserción de no-reúso compara el ordinal declarado, no la hoja WOTS (§5.13)»",
+  "severity": "media"
+ },
+ {
+  "line": 1100,
+  "quote": "apareció un caso que ni la reconciliación ni la",
+  "problem": "La conclusión presenta como establecido un hallazgo [LECTURA] no reproducido (§8.1). Que R no pueda verlo se sigue de su definición (R(0,0) = InSync); lo no comprobado es que la política de Arqueo lo pase por alto.",
+  "evidence": [
+   "doc/ecst/ECST.md:973-1006"
+  ],
+  "fix": "«Al contrastar el modelo con el código apareció además, por lectura y sin reproducir todavía, un caso que la política de Arqueo no parece ver (§8.1); que R no pueda verlo se sigue de su definición.»",
+  "severity": "media"
+ },
+ {
+  "line": 938,
+  "quote": "La ventaja de ECST frente a IVC se presenta",
+  "problem": "Presupone una ventaja que §1.4 (l. 115) se niega a afirmar.",
+  "evidence": [
+   "doc/ecst/ECST.md:115"
+  ],
+  "fix": "«La posible ventaja de ECST frente a IVC se presenta aquí sólo como argumento cualitativo, sin medir.»",
+  "severity": "baja"
+ },
+ {
+  "line": 626,
+  "quote": "Por eso la Proposición 1 cubre las pruebas de envío y cobro",
+  "problem": "Incoherente con la lista de encima (l. 619), según la cual también quema y reembolso encadenan el resumen de su prueba.",
+  "evidence": [
+   "doc/ecst/ECST.md:619"
+  ],
+  "fix": "«Por eso la Proposición 1 cubre las pruebas de envío, cobro, quema y reembolso, y no las de custodios.»",
+  "severity": "baja"
+ },
+ {
+  "line": 88,
+  "quote": "sino que compromete su resumen",
+  "problem": "Ambiguo: parece decir que Π_i compromete el resumen de Π_{i-1}. Lo que compromete el resumen de cada prueba es el resumen acumulado H_i, no la prueba siguiente.",
+  "evidence": [
+   "doc/ecst/ECST.md:202",
+   "doc/ecst/VERIFICACION.md (P17)"
+  ],
+  "fix": "«sino que el resumen acumulado $H_i$ compromete el resumen de cada prueba (VERIFICACION.md, P17)»",
+  "severity": "baja"
+ },
+ {
+  "line": 133,
+  "quote": "## 2. Trabajo relacionado",
+  "problem": "Falta el trabajo previo más cercano, sin el que el revisor no puede valorar la «Posición». Un libro centralizado con evidencia de manipulación y verificación por terceros es LedgerDB (PVLDB 2020); auditar un libro privado sin ver las transacciones es zkLedger (NSDI ’18); pruebas por transición con raíces de estado encadenadas son las máquinas de estado verificables (Piperine, S&P 2020; Setty et al., ePrint 2020/758) y los rollups de validez, cuya separación entre validez y disponibilidad de datos está en Al-Bassam et al. (FC 2021).",
+  "evidence": [
+   "https://www.vldb.org/pvldb/vol13/p3138-yang.pdf",
+   "https://www.usenix.org/conference/nsdi18/presentation/narula",
+   "https://eprint.iacr.org/2020/195",
+   "https://eprint.iacr.org/2020/758",
+   "https://link.springer.com/chapter/10.1007/978-3-662-64331-0_15"
+  ],
+  "fix": "Añadir antes de «Posición» un párrafo: «**Libros y máquinas de estado verificables.** LedgerDB [LedgerDB20] da un libro centralizado con evidencia de manipulación verificable por terceros; zkLedger [zkLedger18] audita un libro privado sin revelar sus transacciones; y las máquinas de estado verificables [Piperine20] y los rollups de validez componen pruebas por transición con raíces de estado encadenadas y separan validez y disponibilidad de datos [AlBassam21]. ECST comparte ese esqueleto; lo que añade es la tabla de lo que cada predicado no detecta y la reconciliación del estado físico.» Entradas: X. Yang et al., PVLDB 13(12):3138-3151, 2020; N. Narula, W. Vasquez, M. Virza, NSDI ’18, pp. 65-80; J. Lee, K. Nikitin, S. Setty, IEEE S&P 2020; M. Al-Bassam, A. Sonnino, V. Buterin, I. Khoffi, FC 2021, LNCS 12675, pp. 279-298.",
+  "severity": "alta"
+ },
+ {
+  "line": 142,
+  "quote": "no impide la mala conducta, la hace",
+  "problem": "La detección de vistas divididas comparando cabezas (§3.4, §5.6, fila «Cabeza firmada y testigos») es la consistencia por bifurcación (fork consistency) de Mazières y Shasha (PODC 2002), llevada a sistema en SUNDR (OSDI 2004); en CT se organiza con protocolos de cotilleo (Chuat et al., CNS 2015). Ninguno se cita, y son la referencia natural para «Ninguno implica Consenso».",
+  "evidence": [
+   "https://dl.acm.org/doi/10.1145/571825.571840",
+   "https://dl.acm.org/doi/10.5555/1251254.1251263",
+   "https://arxiv.org/abs/1511.01514"
+  ],
+  "fix": "Añadir tras la frase de CT: «Detectar una vista dividida comparando cabezas es la consistencia por bifurcación de Mazières y Shasha [MS02], que SUNDR llevó a un sistema de ficheros [SUNDR04]; en CT la comparación se organiza con protocolos de cotilleo [Chuat15]. El testigo de §5.6 es una instancia de ese patrón con un solo observador.» Entradas: D. Mazières, D. Shasha, PODC 2002, pp. 108-117, DOI 10.1145/571825.571840; J. Li, M. Krohn, D. Mazières, D. Shasha, OSDI 2004; L. Chuat, P. Szalachowski, A. Perrig, B. Laurie, E. Messeri, IEEE CNS 2015, pp. 415-423.",
+  "severity": "media"
+ },
+ {
+  "line": 137,
+  "quote": "Schneier y Kelsey la aplicaron a registros de auditoría en máquinas no fiables [SK99]",
+  "problem": "Falta el marco formal con el que comparar la Proposición 1 y las condiciones D1-D4: Bellare y Yee definieron la integridad hacia delante de los registros de auditoría (1997, antes de SK99), y Dowling, Günther, Herath y Stebila dieron definiciones de juego para registros seguros y demostraron CT (ESORICS 2016).",
+  "evidence": [
+   "https://www.semanticscholar.org/paper/Forward-Integrity-For-Secure-Audit-Logs-Bellare-Yee/a63ffbb0e928e4cfefb245e65d370e2e2e4e81e8",
+   "https://doi.org/10.1007/978-3-319-45741-3_8"
+  ],
+  "fix": "«Bellare y Yee definieron la integridad hacia delante de los registros de auditoría [BY97]; Schneier y Kelsey la aplicaron a máquinas no fiables [SK99]; y Dowling et al. dieron definiciones formales de registro seguro y las demostraron para CT [DGHS16], que es el marco con el que debe leerse la Proposición 1.» Entradas: M. Bellare, B. Yee, «Forward Integrity for Secure Audit Logs», informe técnico, UC San Diego, 1997; B. Dowling, F. Günther, U. Herath, D. Stebila, ESORICS 2016, LNCS 9879, pp. 140-158, DOI 10.1007/978-3-319-45741-3_8.",
+  "severity": "media"
+ },
+ {
+  "line": 936,
+  "quote": "Lo único medido con plegado es una",
+  "problem": "La comparación con IVC descansa en una instanciación concreta (Nova sobre curvas, con ceremonia), pero hay recursión transparente y sin curvas: recursión de STARK y acumulación basada en hash (Bünz, Mishra, Nguyen, Wang, ITCS 2025; Arc, CRYPTO 2025). Justo el argumento que hace a Arqueo descartar IVC (post-cuántico, sin ceremonia) no se aplica a esas alternativas, y §2 no las menciona.",
+  "evidence": [
+   "https://eprint.iacr.org/2024/474",
+   "https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ITCS.2025.23"
+  ],
+  "fix": "Añadir: «Tampoco representa a la recursión transparente y sin curvas —recursión de STARK o acumulación basada en hash [BMNW25]—, que es la alternativa que habría que medir contra ECST.» Y mencionarla en §2 junto a [Nova22; HyperNova24]. Entrada: B. Bünz, P. Mishra, W. Nguyen, W. Wang, «Accumulation without Homomorphism», ITCS 2025, LIPIcs 325, art. 23; ePrint 2024/474.",
+  "severity": "media"
+ },
+ {
+  "line": 163,
+  "quote": "**Gestión del estado en firmas basadas en hash.** McGrew et al. analizan",
+  "problem": "Faltan ETSI TR 103 692, que RFC 10033 cita como el análisis amplio de la gestión del estado junto a [McGrew16], y la alternativa sin estado, SLH-DSA (FIPS 205), que elimina el problema: un revisor preguntará por qué XMSS^MT y no un esquema sin estado. RFC 10033 §4 también señala que un verificador con acceso a todas las firmas detecta un índice repetido (el patrón CT), lo que conecta con los testigos de §5.6.",
+  "evidence": [
+   "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.txt (§1, §4)",
+   "https://www.etsi.org/deliver/etsi_tr/103600_103699/103692/01.01.01_60/tr_103692v010101p.pdf"
+  ],
+  "fix": "Añadir al párrafo: «ETSI TR 103 692 [ETSI21] analiza los riesgos del objeto de estado y su gestión. RFC 10033 §4 observa además que un verificador con todas las firmas detecta un índice repetido, que es lo que hace un testigo (§5.6). La alternativa sin estado, SLH-DSA [FIPS205], elimina el problema a cambio de firmas mayores.» Entradas: ETSI TR 103 692 V1.1.1, «CYBER; State management for stateful authentication mechanisms», noviembre de 2021; NIST FIPS 205, agosto de 2024, DOI 10.6028/NIST.FIPS.205.",
+  "severity": "media"
+ },
+ {
+  "line": 947,
+  "quote": "que es la contramedida",
+  "problem": "Afirmación sobre literatura sin cita: los ataques de fallo por injerto contra hiperárboles y su contramedida (cachear las firmas de las capas intermedias) proceden de Castelnovi, Martinelli y Prest (PQCrypto 2018). Lo mismo en §9 (l. 1077-1078).",
+  "evidence": [
+   "https://doi.org/10.1007/978-3-319-79063-3_8",
+   "https://kannwischer.eu/papers/2018_hbs_fa_preprint20180710.pdf"
+  ],
+  "fix": "«…que es la contramedida publicada frente a los fallos de tipo injerto [Grafting18]», y la misma cita en l. 1077. Entrada: L. Castelnovi, A. Martinelli, T. Prest, «Grafting Trees: a Fault Attack against the SPHINCS framework», PQCrypto 2018, LNCS 10786, pp. 165-184, DOI 10.1007/978-3-319-79063-3_8.",
+  "severity": "media"
+ },
+ {
+  "line": 546,
+  "quote": "Las fuentes primarias que cita RFC 10033",
+  "problem": "Se presentan [BH17] y [Fluhrer23] como fuentes concordantes, pero Fluhrer 2023 corrige a Groot Bruinderink y Hülsing: su análisis de Winternitz suponía independientes probabilidades que no lo son («leading to invalid conclusions»), aunque la conclusión de que el reúso permite falsificar se mantiene. La curva de QRL deriva de [BH17] y hereda el defecto. Lo mismo en §2 (l. 168).",
+  "evidence": [
+   "https://eprint.iacr.org/2023/1905",
+   "https://eprint.iacr.org/2016/1042"
+  ],
+  "fix": "«Las fuentes primarias que cita RFC 10033 son [BH17] y [Fluhrer23], y la segunda corrige a la primera: su análisis de Winternitz suponía independientes probabilidades que no lo son. La curva de QRL, derivada de [BH17], no debe citarse como cifra; basta la conclusión común a las dos: un solo reúso permite falsificar con coste factible.» En l. 168: «…[BH17], corregido por Fluhrer [Fluhrer23]».",
+  "severity": "media"
+ },
+ {
+  "line": 542,
+  "quote": "La cifra procede de un artículo de QRL",
+  "problem": "El artículo de QRL se cita en el texto sin entrada en referencias.bib, en contra de «Sólo entradas de referencias.bib» (l. 1138).",
+  "evidence": [
+   "doc/ecst/referencias.bib",
+   "doc/ecst/ECST.md:1138"
+  ],
+  "fix": "Añadir al .bib: @misc{qrl-statefulness, author = {Peter Waterland}, title = {Statefulness and security}, howpublished = {The QRL blog}, note = {consultado el 2026-08-12}} y citarlo como [QRL], o retirar la cifra (véase el arreglo de l. 546).",
+  "severity": "baja"
+ },
+ {
+  "line": 1138,
+  "quote": "Sólo entradas de `doc/ecst/referencias.bib`, verificadas el 2026-09-30",
+  "problem": "Las 31 etiquetas del texto están todas en la lista, pero ninguna coincide con su clave BibTeX (HS91 frente a JC:HabSto91, CW09 frente a USENIX:CroWal09, …), así que ninguna herramienta puede cotejar texto y .bib. El .bib tiene además cinco entradas no citadas (rfc2119, rfc8174, rfc3552, rfc8126, fips202), restos del Internet-Draft. Y «verificadas» exagera: la cabecera del .bib dice que se verificaron los metadatos.",
+  "evidence": [
+   "doc/ecst/referencias.bib:1-6",
+   "doc/ecst/referencias.bib:23-39"
+  ],
+  "fix": "«Sólo entradas de `doc/ecst/referencias.bib`, cuyos metadatos se verificaron el 2026-09-30. Cada etiqueta remite a la clave BibTeX que se indica al final de su entrada.» Añadir a cada entrada su clave, p. ej. «(bib: JC:HabSto91)», y quitar del .bib las cinco entradas no citadas o separarlas con un comentario.",
+  "severity": "baja"
+ },
+ {
+  "line": 155,
+  "quote": "Las pruebas de Arqueo son STARK [STARK18; BBHR19].",
+  "problem": "[STARK18] (ePrint 2018/046) y [BBHR19] (CRYPTO 2019) son el mismo trabajo en dos versiones; citarlos como dos fuentes duplica. Arqueo usa winterfell, y su seguridad «conjeturada» (l. 596) remite a conjeturas sobre FRI que no están en ninguna de las dos.",
+  "evidence": [
+   "doc/ecst/referencias.bib:44-48"
+  ],
+  "fix": "«Las pruebas de Arqueo son STARK [BBHR19] (versión extendida en [STARK18]), en la implementación de winterfell.»",
+  "severity": "baja"
+ },
+ {
+  "line": 172,
+  "quote": "POSIX admite una implementación nula de `fsync()`",
+  "problem": "Justificación débil: Linux define _POSIX_SYNCHRONIZED_IO, así que esa cláusula no cubre el entorno medido. El riesgo práctico son los dispositivos y capas virtuales que confirman escrituras que se pierden ante un corte (13 de 15 SSD perdieron datos en Zheng et al., FAST ’13), que es lo que §4.8 no puede detectar.",
+  "evidence": [
+   "https://www.usenix.org/conference/fast13/technical-sessions/presentation/zheng"
+  ],
+  "fix": "«POSIX admite una implementación nula de `fsync()` cuando `_POSIX_SYNCHRONIZED_IO` no está definido [POSIX24], aunque Linux sí lo define; el riesgo práctico es otro: dispositivos que confirman escrituras que pierden ante un corte de corriente [Zheng13].» Entrada: M. Zheng, J. Tucek, F. Qin, M. Lillibridge, «Understanding the Robustness of SSDs under Power Fault», FAST ’13, pp. 271-284.",
+  "severity": "baja"
+ },
+ {
+  "line": 349,
+  "quote": "se registra antes de producirlo",
+  "problem": "Es la regla de output commit de la recuperación por retroceso (y el registro previo a la escritura de las bases de datos); citarla sitúa la propiedad y evita que parezca propia.",
+  "evidence": [
+   "https://dl.acm.org/doi/10.1145/568522.568525"
+  ],
+  "fix": "«…se registra antes de producirlo, que es la regla de *output commit* [Elnozahy02].» Entrada: E. N. Elnozahy, L. Alvisi, Y.-M. Wang, D. B. Johnson, ACM Computing Surveys 34(3), 2002, pp. 375-408, DOI 10.1145/568522.568525.",
+  "severity": "baja"
+ },
+ {
+  "line": 164,
+  "quote": "`hbs-state` implementa esa estrategia con",
+  "problem": "La reserva por intervalos de McGrew et al. existe para NO escribir el estado en cada firma (RFC 10033 §5.9); el intervalo 1 es su caso degenerado, es decir, actualizar antes de liberar (RFC 10033 §2.2 y §4). Decir que implementa «esa estrategia» exagera el parentesco.",
+  "evidence": [
+   "https://raw.githubusercontent.com/mnot/rfc-refs/main/rfcs/rfc10033.txt (§2.2, §4, §5.9)"
+  ],
+  "fix": "«`hbs-state` persiste antes de cada firma, que es el caso degenerado de esa estrategia (intervalo 1): paga una escritura sincronizada por firma y a cambio pierde como mucho un índice por caída.»",
+  "severity": "baja"
+ },
+ {
+  "line": 552,
+  "quote": "Lo que aporta, y ninguna fuente de §2",
+  "problem": "Es cierto hoy, pero EIP-8310 (citado en §2) anuncia casos de prueba, entre ellos «refusal to sign on high-water regression» y «crash-injection … demonstrating no reuse on restart» («To be added»). Conviene matizarlo para que no caduque en silencio.",
+  "evidence": [
+   "https://raw.githubusercontent.com/ethereum/EIPs/master/EIPS/eip-8310.md"
+  ],
+  "fix": "«Lo que aporta, y ninguna fuente de §2 trae todavía —EIP-8310 anuncia casos de prueba de regresión y de caída, pero aún no los publica—, es un contrato semántico ejecutable…»",
+  "severity": "baja"
+ },
+ {
+  "line": 336,
+  "quote": "la nota 92 que cita el código de Arqueo",
+  "problem": "Referencia opaca: «nota 92» es la entrada 92 de BACKLOG.md, y la frase citada está en crates/zk-ssl-guardian/src/lib.rs:147. En lib.rs:349 aparece la forma inversa («un índice indeterminado es peor que uno perdido»).",
+  "evidence": [
+   "BACKLOG.md:824",
+   "crates/zk-ssl-guardian/src/lib.rs:147",
+   "crates/zk-ssl-guardian/src/lib.rs:349"
+  ],
+  "fix": "«(entrada 92 de `BACKLOG.md`, citada en `crates/zk-ssl-guardian/src/lib.rs:147`)»",
+  "severity": "baja"
+ },
+ {
+  "line": 47,
+  "quote": "HBS-STATE v0.3, que sólo instancia la reconciliación",
+  "problem": "El Resumen no se entiende solo: usa HBS-STATE sin decir qué es y no dice que Arqueo produce una prueba STARK por transición, que es lo que da sentido a Π_i.",
+  "evidence": [
+   "doc/ecst/ECST.md:380-386",
+   "doc/ecst/ECST.md:573-575"
+  ],
+  "fix": "«HBS-STATE v0.3, una especificación con implementación de referencia para decidir tras un reinicio si el índice de una firma basada en hash con estado es seguro, que sólo instancia la reconciliación, y Arqueo, un libro cerrado de un solo operador con una prueba STARK por transición, que…»",
+  "severity": "baja"
+ },
+ {
+  "line": 1122,
+  "quote": "todavía sin commit",
+  "problem": "Desfasado: ECST.md está en el commit a7c72b9, y el material de verificación llega hasta 70f6370 y a7c72b9, no sólo hasta 0f8cd1e (l. 1129-1130).",
+  "evidence": [
+   "git log --oneline (a7c72b9, 70f6370, 0f8cd1e)"
+  ],
+  "fix": "«`doc/ecst/ECST.md`, en el commit a7c72b9 (primer borrador, sin revisar)», y en l. 1129-1130: «en los commits 71710b2 a a7c72b9».",
+  "severity": "baja"
+ },
+ {
+  "line": 95,
+  "quote": "Se enuncian con modestia, porque ninguna es una pieza nueva:",
+  "problem": "La modestia autodeclarada es retórica; el alcance ya queda claro con la segunda mitad.",
+  "evidence": [
+   "doc/ecst/ECST.md:95"
+  ],
+  "fix": "«Ninguna es una pieza nueva:»",
+  "severity": "baja"
+ },
+ {
+  "line": 125,
+  "quote": "El autor aportó varios borradores generados con IA",
+  "problem": "Repetición: la procedencia y el recuento de las 305 afirmaciones aparecen en la cabecera (l. 11-13), en §1.5 (l. 125-129) y en la declaración de IA (l. 1110-1115). En un informe sobre ECST basta una vez.",
+  "evidence": [
+   "doc/ecst/ECST.md:11-13",
+   "doc/ecst/ECST.md:1110-1115"
+  ],
+  "fix": "Reducir §1.5 a: «Este informe parte de borradores generados con IA; sus 305 afirmaciones se verificaron una a una (`VERIFICACION.md`) y aquí sólo se recoge lo que resistió.» y quitar el recuento de la declaración de IA.",
+  "severity": "baja"
+ },
+ {
+  "line": 790,
+  "quote": "### 5.14 Componente ECST ↔ Arqueo",
+  "problem": "§5.14 (l. 790-809) y el Apéndice A (l. 1221-1244) duplican la correspondencia modelo↔código con rutas casi idénticas.",
+  "evidence": [
+   "doc/ecst/ECST.md:1221-1244"
+  ],
+  "fix": "Dejar en §5.14 sólo las columnas «componente ECST», «en Arqueo» y «estado», y remitir las rutas al Apéndice A.",
+  "severity": "baja"
+ },
+ {
+  "line": 950,
+  "quote": "### 7.5 Cifras de los borradores que este informe retira",
+  "problem": "§7.5 (l. 950-967) es procedencia (qué decían unos borradores no publicados), no evaluación; lo mismo §8.3-§8.4 (l. 1020-1037), que son tareas de mantenimiento del repositorio. En un depósito de Zenodo alargan §7-§8 sin aportar a la tesis, y §7.2 repite resultados ya dados en §3.5, §4.6, §4.10, §5.7 y §5.12.",
+  "evidence": [
+   "doc/ecst/ECST.md:1020-1037",
+   "doc/ecst/VERIFICACION.md"
+  ],
+  "fix": "Sustituir §7.5 por una frase: «Las cifras de los borradores que no resistieron la verificación se retiran; la lista, con su motivo, está en `VERIFICACION.md` (bloque M).» y mover §8.3-§8.4 a `BACKLOG.md`, dejando en §8 una línea que remita a él.",
+  "severity": "baja"
+ },
+ {
+  "line": 1082,
+  "quote": "**Normalización.** Si HBS-STATE se lleva al IETF",
+  "problem": "Fuera de alcance y sin fuente: afirmaciones sobre el flujo IRTF (draft-irtf-cfrg-*, aprobación del IRSG, revisión de conflictos del IESG) y sobre la carta de PQUIP sin citar RFC 5743, RFC 5742 ni la carta. El párrafo ECST-R (l. 1070-1081) también es sobre todo una lista de correcciones a los borradores.",
+  "evidence": [
+   "doc/ecst/ECST.md:1070-1087"
+  ],
+  "fix": "Reducir a: «**Normalización.** Si HBS-STATE se lleva al IETF, el grupo natural es PQUIP, que produjo RFC 10033; no consta que el Internet-Draft se haya enviado.» Reducir ECST-R a sus dos puntos accionables (umbral k-de-n y fallos inducidos, con [Grafting18]).",
+  "severity": "baja"
+ }
+]
