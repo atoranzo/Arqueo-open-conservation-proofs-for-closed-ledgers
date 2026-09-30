@@ -42367,3 +42367,37 @@ cadencia y coste, desplegar—, sin cerrar la entrada.
 vigía, que entran con el componente que publique. Y cómo se perdió el contenido en el S548
 —si fue el único, lo dirá una pasada por el árbol publicado; el único otro marcador con esa
 forma no existe hoy, medido con grep—.
+
+## §591 — RFC-0012 E2: el ancla en el núcleo, con sus KAT
+
+El commit que lleva este asiento, sobre `20412a1` (el S590). Un solo sello: el núcleo, sus KAT,
+el censo y las cifras, con las compuertas y las dos suites tocadas VERDES dentro del bloque.
+Ocho ficheros más este asiento, y dos KAT que nacen.
+
+**De dónde sale.** De la E2 del RFC-0012: el ancla necesita que quien la publique y quien la
+compruebe compongan EXACTAMENTE igual, y eso en esta casa es una función en `zk-ssl-hash` con su
+dominio en el REGISTRO y su KAT en `spec/vectors/nucleo/` — el molde del §557.
+
+**Lo que hace.** (1) `DOMINIO_ANCLA` («ANCLA_V1», octavo dominio u64 de producción) y
+`ancla_digest(huella_clave, indice, epoch_digest, mmr_root, mmr_size)`, el dominio por delante
+como el acuse y el recibo. (2) `huella_de_clave`, con el molde del §116 —dominio de bytes
+propio, `ZK-SSL-anchor-key-v1`, y longitud codificada—; el molde compartido con
+`digest_of_proof` se extrae a UN productor privado (`resumen_con_dominio`): dos implementaciones
+del mismo molde podrían discrepar, y los bytes de `digest_of_proof` no se mueven, atado por sus
+tests de siempre. (3) Tres testigos nuevos en el hash: el tag separa el ancla del merge pelado y
+pincha el valor del dominio; cada uno de los cinco campos mueve la huella por su lado; y la
+huella de clave codifica la longitud y no es el digest de prueba. (4) Los KAT `ancla_digest` y
+`huella_de_clave`: emitidos a un directorio aparte, los veintitrés anteriores byte a byte
+IGUALES antes de copiar los dos nuevos (el método del §414), y el test de biyección del testigo
+en verde con veinticinco. (5) `spec/NUCLEO.md`: tres filas nuevas (familia ANCLA), el censo
+80 + 51 = 131 (NÚCLEO 104), la composición en la sección 6 y su historia en la 8.
+
+**Contadores.** El hash 34 -> 37 y los otros veinte sin mover; TOTAL DE SELLO 1504 -> 1507;
+TOTAL CON LARGOS 1641 -> 1644; los tres párrafos ancla (PRINCIPIOS y los dos PAPER) al día.
+`check_dominios` censa 29 declaraciones u64 y 8 cadenas; `check_nucleo` deriva 131 filas; las
+ocho compuertas y `verificar_citas`, VERDES. El testigo sigue en 125: un caso KAT no es un test.
+Ningún `Cargo` tocado; el cable y `VERSION_FORMATO`, quietos.
+
+**Lo que NO cierra.** El sobre que consuma estas composiciones (E3) y su catálogo (E4). Y la
+cifra «1364 declarados» de PRINCIPIOS/PAPER no se toca: su productor no está en el árbol y esta
+sesión no lo reproduce — queda anotado que tres declarados nuevos existen y esa prosa envejece.

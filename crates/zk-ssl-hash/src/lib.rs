@@ -726,6 +726,45 @@ pub fn recibo_digest(hash_prueba: Digest, era: u64, n: u64) -> Digest {
     native_merge(as_digest(DOMINIO_RECEP), native_merge(hash_prueba, par))
 }
 
+/// **Dominio del ancla de cabezas** (RFC-0012, D-A; §591), con version en el
+/// propio valor: los ocho bytes ASCII de `ANCLA_V1` leidos como `u64`,
+/// hermano de `ACUSE_V1`, `PARAM_V1` y `RECEP_V1`, con su fila en el REGISTRO.
+///
+/// ⚠️ **Octavo dominio, y separado A PROPOSITO de todos.** El ancla no es la
+/// hoja de ningun arbol de la casa: es el resumen del objeto que se publica
+/// FUERA, en un medio append-only ajeno al operador, y que cualquiera
+/// recompone desde una cabeza firmada sola. Sin dominio propio, su huella
+/// podria componer como un nodo cualquiera de cinco entradas.
+pub const DOMINIO_ANCLA: u64 = u64::from_be_bytes(*b"ANCLA_V1");
+
+/// **La huella del ancla** (RFC-0012, D-A): ata la huella de la clave del
+/// operador, el indice XMSS EMBEBIDO en la firma, el digest firmado y la
+/// pareja del MMR — los campos del ancla, en el orden del RFC.
+///
+/// ⚠️ **Esta es LA composicion**, por la razon de [`acuse_digest`]: quien
+/// publique la huella en el medio y quien la compruebe contra el tienen que
+/// componer exactamente igual, y la unica forma segura es que sea la misma
+/// funcion.
+///
+/// ⚠️ **El indice es el EMBEBIDO en la firma** (§399; RFC-0012, D-C): el
+/// declarado solo esta acotado por abajo y dos cabezas honestas pueden
+/// compartirlo — componer el ancla con el declarado fabricaria vistas
+/// divididas falsas.
+pub fn ancla_digest(
+    huella_clave: Digest,
+    indice: u64,
+    epoch_digest: Digest,
+    mmr_root: Digest,
+    mmr_size: u64,
+) -> Digest {
+    let lote = native_merge(mmr_root, as_digest(mmr_size));
+    let historia = native_merge(epoch_digest, lote);
+    native_merge(
+        as_digest(DOMINIO_ANCLA),
+        native_merge(huella_clave, native_merge(as_digest(indice), historia)),
+    )
+}
+
 
 /// **Dominios del MMR de cabezas** (§291, eslabon 2 de la nota 83), con
 /// version en el propio valor, como `ACUSE_V1`: ocho bytes ASCII leidos
@@ -1137,6 +1176,48 @@ mod acuse {
         );
         assert_eq!(DOMINIO_RECEP, u64::from_be_bytes(*b"RECEP_V1"), "el dominio, con version");
     }
+
+    #[test]
+    fn el_tag_separa_el_ancla_y_pincha_su_valor() {
+        // D-A del RFC-0012: el dominio por delante, como el acuse y el
+        // recibo. Sin el, la huella del ancla seria el merge pelado de sus
+        // cinco entradas y podria componer como un nodo cualquiera.
+        let (k, e, r) = (as_digest(1), as_digest(2), as_digest(3));
+        let pelado = native_merge(
+            k,
+            native_merge(as_digest(7), native_merge(e, native_merge(r, as_digest(9)))),
+        );
+        assert_ne!(
+            ancla_digest(k, 7, e, r, 9),
+            pelado,
+            "el ancla compone como el merge pelado: el octavo dominio no esta haciendo nada"
+        );
+        assert_eq!(DOMINIO_ANCLA, u64::from_be_bytes(*b"ANCLA_V1"), "el dominio, con version");
+    }
+
+    #[test]
+    fn la_huella_del_ancla_mueve_con_cada_campo() {
+        // Cada uno de los cinco campos entra en el digest por su lado: un
+        // ancla con la clave, el indice, el digest firmado o la pareja del
+        // MMR mentidos no puede dar la misma huella.
+        let base = ancla_digest(as_digest(1), 7, as_digest(2), as_digest(3), 9);
+        assert_ne!(base, ancla_digest(as_digest(11), 7, as_digest(2), as_digest(3), 9), "clave");
+        assert_ne!(base, ancla_digest(as_digest(1), 8, as_digest(2), as_digest(3), 9), "indice");
+        assert_ne!(base, ancla_digest(as_digest(1), 7, as_digest(22), as_digest(3), 9), "digest");
+        assert_ne!(base, ancla_digest(as_digest(1), 7, as_digest(2), as_digest(33), 9), "raiz");
+        assert_ne!(base, ancla_digest(as_digest(1), 7, as_digest(2), as_digest(3), 10), "tamano");
+    }
+
+    #[test]
+    fn la_huella_de_clave_codifica_la_longitud_y_no_es_el_digest_de_prueba() {
+        // D-B del RFC-0012: el molde del §116 -- dos claves que difieran en
+        // ceros finales no colisionan -- y un dominio de bytes propio: la
+        // misma entrada por digest_of_proof da OTRO valor.
+        let corta = huella_de_clave(&[1, 2, 3]);
+        assert_eq!(corta, huella_de_clave(&[1, 2, 3]), "determinista");
+        assert_ne!(corta, huella_de_clave(&[1, 2, 3, 0]), "los ceros finales tienen que separar");
+        assert_ne!(corta, digest_of_proof(&[1, 2, 3]), "el dominio de la clave no es el de la prueba");
+    }
 }
 
 #[cfg(test)]
@@ -1242,6 +1323,7 @@ mod tests_cabeza_v2 {
 // REGISTRO: u64 produccion DOMINIO_PARAMS 0x504152414D5F5631
 // REGISTRO: u64 produccion DOMINIO_PRENDA 0x5052454E445F5631
 // REGISTRO: u64 produccion DOMINIO_RECEP 0x52454345505F5631
+// REGISTRO: u64 produccion DOMINIO_ANCLA 0x414E434C415F5631
 // REGISTRO: bytes ZK-SSL-ledger-key-v1
 // REGISTRO: bytes ZK-SSL-epoch-head
 // REGISTRO: bytes ZK-SSL-keystore-v1
@@ -1249,6 +1331,7 @@ mod tests_cabeza_v2 {
 // REGISTRO: bytes ZK-SSL-authorization-seal-v1
 // REGISTRO: bytes ZK-SSL-no-proof-by-design-v1
 // REGISTRO: bytes ZK-SSL-witness-cosign
+// REGISTRO: bytes ZK-SSL-anchor-key-v1
 
 /// Dominios de operacion. **Uno por tipo**, para que una autorizacion de
 /// congelacion no pueda reutilizarse como autorizacion de emision.
@@ -1297,17 +1380,23 @@ const DOMINIO_AUTORIZACION: &[u8] = b"ZK-SSL-authorization-seal-v1";
 /// diseno» de «autorizada y no registrada».
 const DOMINIO_SIN_PRUEBA: &[u8] = b"ZK-SSL-no-proof-by-design-v1";
 
-/// Resumen de una prueba serializada, con dominio y **longitud codificada**
-/// por delante (§116: dos pruebas que difieran en ceros finales no
-/// colisionan).
-pub fn digest_of_proof(proof: &[u8]) -> Digest {
+/// **Dominio de la huella de clave del ancla** (RFC-0012, D-B; §591): la
+/// familia bytes, porque la clave entra en Blake3 como bytes, no en Rescue.
+const DOMINIO_CLAVE_ANCLA: &[u8] = b"ZK-SSL-anchor-key-v1";
+
+/// El molde compartido de los resumenes de bytes: dominio y **longitud
+/// codificada** por delante (§116: dos entradas que difieran en ceros
+/// finales no colisionan). UN productor para [`digest_of_proof`] y
+/// [`huella_de_clave`]: dos implementaciones del mismo molde podrian
+/// discrepar.
+fn resumen_con_dominio(dominio: &[u8], datos: &[u8]) -> Digest {
     use winter_crypto::hashers::Blake3_256;
     use winter_crypto::{Digest as _, Hasher as _};
 
-    let mut entrada = Vec::with_capacity(DOMINIO_PRUEBA.len() + 8 + proof.len());
-    entrada.extend_from_slice(DOMINIO_PRUEBA);
-    entrada.extend_from_slice(&(proof.len() as u64).to_le_bytes());
-    entrada.extend_from_slice(proof);
+    let mut entrada = Vec::with_capacity(dominio.len() + 8 + datos.len());
+    entrada.extend_from_slice(dominio);
+    entrada.extend_from_slice(&(datos.len() as u64).to_le_bytes());
+    entrada.extend_from_slice(datos);
 
     let bytes = Blake3_256::<BaseElement>::hash(&entrada).as_bytes();
     let mut salida: Digest = [BaseElement::ZERO; 4];
@@ -1317,6 +1406,22 @@ pub fn digest_of_proof(proof: &[u8]) -> Digest {
         *hueco = BaseElement::new(u64::from_le_bytes(w));
     }
     salida
+}
+
+/// Resumen de una prueba serializada, con dominio y **longitud codificada**
+/// por delante (§116: dos pruebas que difieran en ceros finales no
+/// colisionan).
+pub fn digest_of_proof(proof: &[u8]) -> Digest {
+    resumen_con_dominio(DOMINIO_PRUEBA, proof)
+}
+
+/// **Huella de la clave del operador** (RFC-0012, D-B; §591): el molde de
+/// [`digest_of_proof`] —dominio propio y longitud codificada (§116)— sobre
+/// los bytes de la clave publica tal como viajan en `publicKey`. Por el
+/// medio va la huella y no la clave: 32 bytes caben en cualquier sitio, y
+/// quien compara tiene siempre la clave entera en la cabeza firmada.
+pub fn huella_de_clave(clave: &[u8]) -> Digest {
+    resumen_con_dominio(DOMINIO_CLAVE_ANCLA, clave)
 }
 
 /// **Sello de autorizacion** (§278): lo que una via delegada asienta en

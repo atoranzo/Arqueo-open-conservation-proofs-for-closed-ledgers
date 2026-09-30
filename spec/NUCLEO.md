@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 80 elementos alcanzables en `zk-ssl-verify` y 48 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 101, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 80 elementos alcanzables en `zk-ssl-verify` y 51 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 104, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`, `recibos`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -172,6 +172,9 @@ real de sus llaves, no por la primera marca.
 | `indice_de_recibo` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
 | `pertenece_a_era` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
 | `raiz_de_camino_de_recibo` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
+| `DOMINIO_ANCLA` | `hash/lib.rs` | NÚCLEO | ANCLA | `const` |
+| `ancla_digest` | `hash/lib.rs` | NÚCLEO | ANCLA | `fn` |
+| `huella_de_clave` | `hash/lib.rs` | NÚCLEO | ANCLA | `fn` |
 | `native_leaf` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `native_leaf_salted` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `InclusionError` | `verify/inclusion.rs` | REFERENCIA | INCLUSIÓN | `enum` |
@@ -225,6 +228,9 @@ real de sus llaves, no por la primera marca.
   núcleo, el cruce del camino con el índice y la regla de la hoja (no existir es hoja VACIA): lo
   que sostiene `AccountNotFound` sin la capa (§475). `ACCOUNTS_DEPTH` vale hoy lo mismo que
   `FROZEN_DEPTH` y son dos hechos distintos.
+- **ANCLA** — la huella del ancla de cabezas y la huella de la clave del operador (RFC-0012):
+  lo que se publica en un medio ajeno al operador y lo que un tercero recompone para compararlo.
+  Un solo productor: dos implementaciones que difieran aquí no comparan la misma ancla.
 
 ## 6. Los bytes: lo que un KAT fija
 
@@ -266,6 +272,11 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
   del árbol de recibos vacío y `recep_count = 0`;
   `recibo_digest = merge(as_digest(RECEP_V1), merge(hash_prueba, merge(as_digest(era),
   as_digest(n))))`, el molde de `acuse_digest` con el séptimo dominio;
+  `ancla_digest = merge(as_digest(ANCLA_V1), merge(huella_clave, merge(as_digest(indice),
+  merge(epoch_digest, merge(mmr_root, as_digest(mmr_size))))))` (RFC-0012, §591), con el octavo
+  dominio y el índice EMBEBIDO en la firma;
+  `huella_de_clave = Blake3(b"ZK-SSL-anchor-key-v1" ‖ len(u64 LE) ‖ clave)`, el molde de
+  `digest_of_proof` (§116) con dominio de bytes propio;
   `params_digest = merge(as_digest(PARAM_V1),
   merge(merge(as_digest(regulatory_limit), as_digest(max_supply)),
   merge(merge(as_digest(max_accounts), custodian_set_root), merge(governance_set_root,
@@ -289,6 +300,10 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §591 — `DOMINIO_ANCLA`, `ancla_digest` y `huella_de_clave`: el núcleo compone la huella del
+  ancla de cabezas y la de la clave del operador (RFC-0012, E2); los KAT de las dos funciones.
+  Tres filas nuevas, familia ANCLA. La cabeza y el conjunto de versiones no se mueven: el ancla
+  se deriva de lo ya firmado.
 - §573 — `RECEP_DEPTH` y `raiz_de_camino_de_recibo` en el módulo `recibos`: la profundidad del árbol
   de recibos y la regla de su camino —la medida y el cruce con la posición `rx - Q - 1`—, que el
   sobre de completitud usa y el nodo ata a su árbol (RFC-0010, E4). Dos filas nuevas.
