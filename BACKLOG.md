@@ -1977,6 +1977,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   las mentiras con clave las produce el binario honesto con la semilla -el banco del ancla ya lo
   hace-, y viven en bancos de `tools/`. Etapas: vista dividida contra el testigo, firma sin anotar,
   censura antes del recibo, recibo sin resolver.
+  **E1, §599**: `tools/banco_mentiroso_vista.sh`. La vista dividida, servida por un nodo REAL: dos
+  testigos que, cada uno solo, no ven nada, y `--comparar` ROJO con cada índice; y el contador
+  restaurado bajo un testigo vivo, que se detiene, con `--auditar` ROJO en el índice. La primera fila
+  de la tabla del RFC deja de ser «alcanzable, no ejercitada». Siguen E2 a E4.
 
 - [ ] **94. Clases de resultado que el canon NO VE: las cegueras del
   instrumento, medidas.** El canon corre en release y cuenta los

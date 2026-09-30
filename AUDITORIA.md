@@ -42684,3 +42684,55 @@ y eso llega con las etapas.
 mentiroso es el binario honesto con la semilla, cualquier operador lo es; las defensas se prueban
 contra lo que de verdad podría hacer.
 
+## §599 — la vista dividida, servida por un nodo real: el testigo la ve, y cada testigo solo no
+
+El commit que lleva este asiento, sobre `697c9b4` (el S598). Un solo sello: la E1 del RFC-0011 -un
+banco nuevo, `tools/banco_mentiroso_vista.sh`-, su marca en el RFC, su fila en `spec/README.md`,
+la nota de la entrada 93 y este asiento, con el canon `--sello` VERDE dentro del bloque. Cuatro
+ficheros más este asiento, con 227 inserciones y 4 borrados fuera de él.
+
+**De dónde sale.** La primera etapa del orden del §598: la vista dividida contra el testigo. Hasta
+hoy `--comparar` y `--auditar` sólo habían visto vistas divididas FABRICADAS en tests; ningún nodo
+real se la había servido.
+
+**Lo que se hizo.** Un banco, sin una línea de código en el workspace: el método de
+`banco_ancla.sh` -la misma semilla con un contador de índice fresco, y un envío de ceros rechazado
+que mueve el `recepCount` firmado- con el binario del nodo SIN TOCAR. Dos escenas. (1) **Dos
+testigos, dos vistas**: dos nodos de la semilla 37 a la vez, un testigo en cada uno durante veinte
+vueltas. Se asierta el silencio de cada testigo solo -exit 0, y su diario pasa `--auditar`
+LIMPIO- y después `--comparar` de los dos diarios: ROJO, con CADA índice dividido nombrado y todos
+de la misma clave. (2) **El contador restaurado, bajo un testigo vivo**: el nodo cae y vuelve con
+la misma semilla y directorios frescos en el MISMO puerto; el testigo SE DETIENE con
+`vista-dividida`, su última línea es la evidencia, y `--auditar` la ve sin el nodo. Los índices
+esperados salen de los diarios crudos -el mismo índice con dos digests-, no del texto de la
+herramienta.
+
+**Lo que se midió.** Tres corridas VERDES seguidas, unos 40 s cada una con los binarios ya
+compilados. Escena 1: 18 o 19 índices divididos según la corrida, del 2 en adelante; el 1 no se
+nombra en ninguna, porque las dos vistas firmaron la MISMA cabeza antes del envío y el testigo no
+lo confunde con una vista dividida. Escena 2: el diario del testigo dice `nueva x9 · sin-firma ·
+repetida · vista-dividida` -el índice 1 vuelve idéntico y se anota `repetida`, sin alarma; el 2
+vuelve con otro digest y el testigo se detiene-. `--auditar` añade `indice-retrocede`: el contador
+que vuelve atrás.
+
+**El falsador**, fuera del árbol y deshecho: tres líneas de `witness.rs` apagadas -la divergencia
+de `comparar_lineas`, la vista dividida de `clasificar` y la de `auditar_lineas`-, y el banco sale
+ROJO en las cuatro comprobaciones que las miran, con el resto VERDE. Y un hallazgo que no se
+buscaba: sin la comprobación del índice, el testigo vivo se detiene IGUAL, en la novena cabeza del
+nodo nuevo en vez de en la segunda, por el canal de la historia (§294): la cima del nodo nuevo no
+extiende a la custodiada. El contador restaurado lo ven dos defensas independientes.
+
+**Lo que la escena 1 convierte en medida.** `doc/CONFIANZA_RESIDUAL.md` dice de la vista dividida
+que cada historia es internamente consistente y que la contradicción sólo es visible
+comparándolas. Era un argumento; ahora lo asierta un banco: dos testigos en exit 0, dos diarios
+limpios, y la contradicción sólo en `--comparar`. Un testigo aislado no protege de la vista
+dividida; protegen dos que comparan.
+
+**Contadores.** Ningún test de Rust nace: los pines no se mueven. Los bancos pasan de 16 a 17;
+`bancos.sh` los lee del directorio, y el canon dirá «toca --bancos» hasta la próxima pasada.
+`check_cifras`, `check_figures`, `check_publicadas` y `verificar_citas`, VERDES.
+
+**Lo que NO cierra.** E2 a E4. Y la otra defensa de la primera fila de la tabla del RFC -dos
+cofirmas de un testigo con el mismo índice- no es del nodo: es del testigo que cofirma, y no entra
+en este banco. El RFC sigue PROPUESTO.
+

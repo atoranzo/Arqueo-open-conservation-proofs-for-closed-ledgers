@@ -1,12 +1,13 @@
 # RFC-0011 — El nodo mentiroso: las defensas, ejercitadas contra quien miente de verdad
 
 - **Estado:** PROPUESTO (§588), con sus decisiones TOMADAS en el §598 -delegadas por el autor y
-  REVERSIBLES, ver «Decisiones»-. Sin código todavía: las etapas se abren en el orden del §598.
+  REVERSIBLES, ver «Decisiones»-. **E1 HECHA en el §599**, con un banco y sin una línea de código
+  en el workspace; las demás etapas se abren en el orden del §598.
 - **Autor:** Ángel José Toranzo Portela
-- **Asistencia GenAI:** Claude (sesión 193, §588 y §598) — ver [`GENAI.md`](../../GENAI.md)
+- **Asistencia GenAI:** Claude (sesión 193, §588, §598 y §599) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-30
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube**: nada de esto toca el cable.
-- **Asiento(s) de AUDITORIA:** §588 (la propuesta); §598 (las decisiones).
+- **Asiento(s) de AUDITORIA:** §588 (la propuesta); §598 (las decisiones); §599 (la E1).
 
 ## Motivación
 
@@ -20,6 +21,9 @@ contra un nodo HONESTO; «alcanzable, no ejercitada» es lo más que pueden deci
 | una cabeza firmada que su diario no recoge | el testigo, `--ausentes` (§283) | nunca ROJO en un banco |
 | un recibo emitido que no se resuelve | el sobre de completitud, «NO RESUELTA EN LA VENTANA» (RFC-0010 E4) | el banco arma el sobre sin resolución contra un nodo honesto |
 | una operación censurada ANTES de emitir recibo | ninguna, por diseño: el residuo D-H del RFC-0010 | declarada, no medida |
+
+⚠️ La primera fila es la foto del §588: desde el §599 la vista dividida la produce un nodo real
+y las dos defensas la ven en un banco (E1, en «Decisiones»).
 
 La última fila no es un hueco que este RFC cierre: es un residuo que ejercitar para MEDIR su
 silencio. Un banco que censura sin recibo y comprueba que todas las defensas siguen VERDES convierte
@@ -120,6 +124,16 @@ además, justo lo que las defensas tienen que ver.
 - **El orden, rehecho**, de lo que la casa ya sabe producir a lo que está por medir:
   - **E1 — la vista dividida contra el TESTIGO.** El método del banco del ancla: la misma semilla
     con un contador fresco. Éxito: `--comparar` y `--auditar` ROJOS, nombrando el índice.
+    **HECHA en el §599**: `tools/banco_mentiroso_vista.sh`, en dos escenas. (1) Dos nodos de la
+    misma semilla A LA VEZ, un testigo en cada uno: cada testigo, solo, no ve nada, y cada diario
+    pasa `--auditar` LIMPIO -el silencio se asierta: una vista, sola, es coherente-; `--comparar`
+    de los dos sale ROJO y nombra CADA índice dividido, todos de la misma clave. (2) El contador
+    restaurado bajo un testigo vivo: el nodo cae y vuelve con la misma semilla en el mismo puerto;
+    el testigo SE DETIENE con `vista-dividida` en el índice, y `--auditar` lo ve sin el nodo. Los
+    índices esperados salen de los diarios crudos, no del texto de la herramienta. Con las tres
+    comprobaciones del testigo apagadas (el falsador, fuera del árbol) el banco sale ROJO en las
+    cuatro que las miran, y el testigo vivo se detiene IGUAL por el otro canal: la historia no
+    extiende.
   - **E2 — la firma que el diario no recoge.** El operador firma con un `--diario` y enseña otro.
     Éxito: `--ausentes` ROJO en un banco por primera vez. Que se pueda sin código se mide en ella.
   - **E3 — la censura antes del recibo.** Un proxy que reenvía y descarta, escrito dentro del banco.
