@@ -21,11 +21,14 @@ fn main() -> anyhow::Result<()> {
     rpc.dev_fund(alice.index, 1_000_000)?;
     println!("E2E: alice fondeada (grifo dev, dos custodios)");
 
-    let notice = alice.pay(&bob.public_id(), 250_000)?;
+    let pago = alice.pay(&bob.public_id(), 250_000)?;
     println!("E2E: FASE 1 aplicada — aviso en mano (viaja fuera de banda, §21)");
+    // §606: la constancia es del titular. Una linea JSON por operacion, para quien la custodie.
+    println!("E2E: constancia-pago {}", pago.constancia.respuesta);
 
-    bob.claim(&notice)?;
+    let cobro = bob.claim(&pago.aviso)?;
     println!("E2E: FASE 2 aplicada — bob cobro");
+    println!("E2E: constancia-cobro {}", cobro.respuesta);
 
     let sa = alice.balance()?;
     let sb = bob.balance()?;

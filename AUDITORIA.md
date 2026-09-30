@@ -43017,3 +43017,40 @@ El vector pesa 83 KB -dos cabezas con su firma XMSS-, del orden de sus hermanos.
 **Lo que NO cierra.** Las cifras de `doc/ecst/` que dicen 35 de 35 van fechadas contra `71c5aad` y
 siguen siendo ciertas de aquel árbol: no se tocan. Queda la 109, el sdk que tira el recibo.
 
+## §606 — el titular guarda su constancia: el sdk ya no tira el recibo, la 109, cerrada
+
+El commit que lleva este asiento, sobre `33c086f` (el S605). Un solo sello: el código del sdk, sus
+dos tests y su pin, los dos ejemplos que lo llaman, el banco del §602 sin su proxy, las cifras que
+citan los totales, la 109 cerrada y este asiento, con el canon `--sello` VERDE dentro del bloque.
+Nueve ficheros más este asiento, con 127 inserciones y 65 borrados fuera de él.
+
+**De dónde sale.** De lo que el §602 midió al construir su banco: `zk-ssl-sdk` no leía `recepcion`
+ni `acuse` de la respuesta de `zkssl_applySend` ni de `zkssl_applyClaim`, y `Account::pay`
+devolvía sólo el aviso. El RFC-0010 ata al operador con un recibo que custodia el TITULAR; con el
+sdk de la casa, el titular no lo custodiaba, y el banco tuvo que guardarlo con un proxy de su lado.
+
+**Lo que hace.** Nace `Constancia`: el recibo, el acuse y el `logSeq` de la respuesta, TAL COMO
+LLEGARON -como `Value`, a propósito: el sobre de completitud los compara con lo que la cabeza de
+cierre firma, y reescribirlos sería adulterarlos-, más la respuesta entera. Si el nodo no da
+recibo, `recepcion` queda en `None`, a la vista: es el residuo D-H contado desde el lado del
+titular, que lo sabe ahí mismo. `Account::pay` devuelve un `Pago` -el aviso, que viaja al
+receptor, y la constancia, que se queda con quien paga- y `Account::claim`, la suya. Los dos
+llamadores del workspace, los ejemplos `e2e` y `d1_rpc_baseline`, se adaptan; `e2e` imprime una
+línea JSON por constancia. Y el banco del §602 deja su proxy de registro: arma el sobre resuelto
+del control y el de la mentira con las constancias que el sdk le da al titular.
+
+**Lo que se midió.** Los tests del sdk, de 13 a 15: la constancia guarda recibo y acuse byte a
+byte y lee el `logSeq` que `zkssl_ackPath` pide -sobre la respuesta de un `applySend` real,
+capturada en el banco del §602-, y sin recibo lo dice y no lo inventa. Los ejemplos compilan sin
+un aviso. El banco, sin proxy, VERDE: «el sdk le deja sus dos constancias», el veredicto 1 en
+vivo y la mentira, igual que antes.
+
+**Contadores.** El pin del sdk pasa de 13 a 15, con su crónica en `tools/canon.sh`. El total de
+sello pasa de 1519 a 1521 y el de todos los pines de 1656 a 1658, y `check_cifras` los ata en
+`PAPER.md`, `PAPER_EN.md` y `PRINCIPIOS.md`; la cuenta de `check_tests`, de 1678 a 1680.
+`check_figures`, `check_publicadas` y `verificar_citas`, VERDES.
+
+**Lo que NO cierra.** La API del sdk cambia: quien llamara `pay` esperando el aviso ahora lo lee
+en `.aviso`. Dentro del workspace eran dos llamadores y los dos se adaptan aquí; fuera, el sdk no
+se ha publicado como crate. El siguiente frente grande es de decisión del autor: el RFC-0013.
+

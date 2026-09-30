@@ -10,10 +10,13 @@
 //! // (en un nodo --dev: rpc.dev_fund(alice.index, 1_000_000)?)
 //!
 //! // FASE 1 — Alice paga: materiales del nodo, prueba EN LOCAL, recibo.
-//! let notice = alice.pay(&bob.public_id(), 250_000)?;
+//! let pago = alice.pay(&bob.public_id(), 250_000)?;
+//! // Su constancia -el recibo de recepcion y el acuse, tal como llegaron- es de ELLA:
+//! // con ella arma el sobre de completitud sin el nodo (RFC-0010, §606).
+//! let _recibo = pago.constancia.recepcion.as_ref();
 //!
 //! // El aviso viaja FUERA de banda (§21) hasta Bob, que cobra igual:
-//! bob.claim(&notice)?;
+//! bob.claim(&pago.aviso)?;
 //! # Ok::<(), anyhow::Error>(())
 //! ```
 //!
@@ -203,8 +206,9 @@ impl<'a> Account<'a> {
 
     /// FASE 1 completa: materiales → `prove_send` EN LOCAL → `applySend`.
     /// Devuelve el aviso que hay que hacer llegar al receptor (fuera de
-    /// banda: ISO 20022 no lo transporta, §21).
-    pub fn pay(&self, receiver_id: &Digest, amount: u64) -> anyhow::Result<PendingNotice> {
+    /// banda: ISO 20022 no lo transporta, §21) y la [`Constancia`] de la
+    /// respuesta, que es del titular (§606).
+    pub fn pay(&self, receiver_id: &Digest, amount: u64) -> anyhow::Result<Pago> {
         self.pay_with_salt(receiver_id, amount, random_salt())
     }
 
@@ -213,7 +217,7 @@ impl<'a> Account<'a> {
         receiver_id: &Digest,
         amount: u64,
         salt: Digest,
-    ) -> anyhow::Result<PendingNotice> {
+    ) -> anyhow::Result<Pago> {
         let estado = self.state()?;
 
         let m_dto: wire::SendMaterialsDto = self.rpc.call(
@@ -239,7 +243,7 @@ impl<'a> Account<'a> {
             .map_err(|e| anyhow::anyhow!("prove_send: {e:?}"))?;
         let notice = receipt.notice.clone();
 
-        let _applied: Value = self.rpc.call(
+        let aplicado: Value = self.rpc.call(
             "zkssl_applySend",
             json!({
                 "receipt": wire::SendReceiptDto::from(&receipt),
@@ -248,11 +252,12 @@ impl<'a> Account<'a> {
                 "amount": Q(amount),
             }),
         )?;
-        Ok(notice)
+        Ok(Pago { aviso: notice, constancia: Constancia::de_respuesta(aplicado) })
     }
 
     /// FASE 2 completa: materiales → `prove_claim` EN LOCAL → `applyClaim`.
-    pub fn claim(&self, notice: &PendingNotice) -> anyhow::Result<()> {
+    /// Devuelve la [`Constancia`] del cobro (§606).
+    pub fn claim(&self, notice: &PendingNotice) -> anyhow::Result<Constancia> {
         let estado = self.state()?;
 
         let m_dto: wire::ClaimMaterialsDto = self.rpc.call(
@@ -273,7 +278,7 @@ impl<'a> Account<'a> {
         let receipt = client::prove_claim(&materials, self.wallet.spend_key, proof_options())
             .map_err(|e| anyhow::anyhow!("prove_claim: {e:?}"))?;
 
-        let _applied: Value = self.rpc.call(
+        let aplicado: Value = self.rpc.call(
             "zkssl_applyClaim",
             json!({
                 "receipt": wire::ClaimReceiptDto::from(&receipt),
@@ -282,8 +287,52 @@ impl<'a> Account<'a> {
                 "notice": wire::PendingNoticeDto::from(notice),
             }),
         )?;
-        Ok(())
+        Ok(Constancia::de_respuesta(aplicado))
     }
+}
+
+/// Lo que el titular CUSTODIA de una operacion aplicada (RFC-0010, §606): el recibo de recepcion
+/// que ata al operador a haberla RECIBIDO y el acuse que dice que la APLICO, **tal como llegaron**.
+///
+/// ⚠️ Hasta el §606 el sdk los tiraba: `pay` devolvia solo el aviso, y quien pagaba con el sdk de
+/// la casa no podia armar su sobre de completitud -la 109, medida en el §602, donde el banco tuvo
+/// que guardarlos con un proxy de su lado-. Van como `Value` y no como tipos propios a proposito:
+/// el sobre los compara con lo que la cabeza de cierre firma, y reescribirlos seria adulterarlos.
+#[derive(Debug, Clone)]
+pub struct Constancia {
+    /// `recepcion` de la respuesta: `{rx, era, n, hashPrueba}` (spec/RPC.md, §571). `None` si el
+    /// nodo no lo dio: es el residuo D-H -sin recibo no hay objeto que oponer-, y el titular lo sabe
+    /// aqui mismo, que es todo lo que se puede saber.
+    pub recepcion: Option<Value>,
+    /// `acuse` de la respuesta: `{epoca, hashPrueba, n}`. La resolucion del recibo es su camino,
+    /// que `zkssl_ackPath` sirve cuando la epoca cierra.
+    pub acuse: Option<Value>,
+    /// `logSeq`: la entrada del registro, lo que `zkssl_ackPath` pide. ⚠️ No es la `epoca` del
+    /// acuse, que es `logSeq + 1` -la primera cabeza que puede contenerla-.
+    pub log_seq: Option<u64>,
+    /// La respuesta entera, por si el titular quiere guardar mas de lo que aqui se nombra.
+    pub respuesta: Value,
+}
+
+impl Constancia {
+    /// Lee la constancia de la respuesta de `zkssl_applySend` o `zkssl_applyClaim`, sin
+    /// transformar nada: lo que falta queda en `None`, a la vista.
+    pub fn de_respuesta(respuesta: Value) -> Self {
+        let campo = |k: &str| respuesta.get(k).filter(|v| !v.is_null()).cloned();
+        let log_seq = respuesta
+            .get("logSeq")
+            .and_then(|v| v.as_str())
+            .and_then(|s| u64::from_str_radix(s.trim_start_matches("0x"), 16).ok());
+        Self { recepcion: campo("recepcion"), acuse: campo("acuse"), log_seq, respuesta }
+    }
+}
+
+/// El resultado de [`Account::pay`]: el aviso, que viaja al receptor, y la constancia, que se
+/// queda con quien paga.
+#[derive(Debug, Clone)]
+pub struct Pago {
+    pub aviso: PendingNotice,
+    pub constancia: Constancia,
 }
 
 /// Aleatorio del pendiente, con entropía del sistema.
@@ -313,7 +362,7 @@ pub mod keystore;
 /// necesita la cabeza, el aviso y el camino.
 #[cfg(test)]
 mod tests {
-    use super::{keystore, Digest, Wallet};
+    use super::{keystore, Constancia, Digest, Wallet};
     use stark_experiment::circuit_prenda::{
         verificar_contra_cabeza, AfirmacionPrenda, CabezaPrenda, PROFUNDIDAD,
     };
@@ -437,5 +486,33 @@ mod tests {
         let e = w.prueba_de_prenda(&cab, &aviso, &camino).expect_err("tenia que rehusar");
         let t = format!("{e:?}");
         assert!(t.contains("el aviso es v1"), "{t}");
+    }
+
+    /// §606 (la 109): la constancia se lee de la respuesta TAL COMO LLEGA. La respuesta es la de
+    /// un `zkssl_applySend` real, capturada en el banco del §602 contra un nodo `--dev`.
+    #[test]
+    fn la_constancia_guarda_el_recibo_y_el_acuse_tal_como_llegaron() {
+        let recepcion = serde_json::json!({ "era": "0x4", "n": "0x5a0", "rx": "0x1",
+            "hashPrueba": "0x9f77f9d2b36963aaff955f0d3bbbaff79bb688c9642437e7c3a878f728a00d0f" });
+        let acuse = serde_json::json!({ "epoca": "0x4", "n": "0x5a0",
+            "hashPrueba": "0x9f77f9d2b36963aaff955f0d3bbbaff79bb688c9642437e7c3a878f728a00d0f" });
+        let respuesta = serde_json::json!({ "kind": "Send", "logSeq": "0x3", "receptionSeq": "0x1",
+            "recepcion": recepcion, "acuse": acuse, "chain": "0x00", "accountsRoot": "0x00" });
+        let c = Constancia::de_respuesta(respuesta.clone());
+        assert_eq!(c.recepcion.as_ref(), Some(&recepcion), "el recibo, byte a byte");
+        assert_eq!(c.acuse.as_ref(), Some(&acuse), "el acuse, byte a byte");
+        assert_eq!(c.log_seq, Some(3), "la entrada, que es lo que zkssl_ackPath pide");
+        assert_eq!(c.respuesta, respuesta, "y la respuesta entera, sin tocar");
+    }
+
+    /// §606: una respuesta SIN recibo no se rellena ni falla en silencio: queda `None`, a la vista
+    /// de quien paga. Es el residuo D-H del RFC-0010 contado desde el lado del titular.
+    #[test]
+    fn sin_recibo_la_constancia_lo_dice_y_no_lo_inventa() {
+        let c = Constancia::de_respuesta(serde_json::json!({ "kind": "Send", "logSeq": "0x3",
+            "recepcion": null }));
+        assert!(c.recepcion.is_none(), "sin recibo no hay objeto que oponer, y se ve");
+        assert!(c.acuse.is_none());
+        assert_eq!(c.log_seq, Some(3));
     }
 }

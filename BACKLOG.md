@@ -2133,7 +2133,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **Dos testigos en el mismo disco son un solo testigo frente a una
   restauracion.** Declarado tambien en `doc/CONFIANZA_RESIDUAL.md`.
 
-- [ ] **109. El sdk del titular TIRA el recibo: quien paga con él no puede armar
+- [x] **109. El sdk del titular TIRA el recibo: quien paga con él no puede armar
   su sobre de completitud.** Medido en el §602: `zk-ssl-sdk` no lee `recepcion`
   ni `acuse` de la respuesta de `zkssl_applySend` ni de `zkssl_applyClaim` —ni
   una mención en `src/lib.rs`— y `Account::pay` devuelve sólo el aviso. El
@@ -2143,6 +2143,11 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   de verdad. **Lo que pide**: que `pay` y `claim` devuelvan el recibo y el acuse
   tal como llegaron -el sobre los compara con lo que el cierre firma-. Es código
   del sdk: no toca el nodo, el cable ni los vectores.
+  ✅ **CERRADA en el §606**: `Account::pay` devuelve un `Pago` -el aviso y su
+  `Constancia`- y `Account::claim`, su `Constancia`: el recibo, el acuse y el
+  `logSeq` de la respuesta tal como llegaron, y `None` a la vista si el nodo no
+  dio recibo. Dos tests sin nodo; el ejemplo `e2e` imprime las constancias, y el
+  banco del §602 deja su proxy y arma los sobres con ellas.
 
 - [x] **110. El veredicto 1 del sobre de completitud ya se produce en vivo: falta
   su vector.** El RFC-0010 se aceptó con ese residuo declarado (§577): el

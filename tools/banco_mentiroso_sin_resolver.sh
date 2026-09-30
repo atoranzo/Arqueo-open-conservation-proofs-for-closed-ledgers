@@ -24,9 +24,10 @@
 #            segundo- y el sobre sale ROJO NOMBRADO, «NO RESUELTA EN LA VENTANA», esta vez con
 #            razon: el operador no tiene resolucion que exhibir. El del control sigue VERDE.
 #
-# El titular guarda lo que recibe con un proxy de REGISTRO de su lado: el sdk no devuelve el
-# `recepcion` de la respuesta (se anota en BACKLOG). Claves de prueba siempre (D-E): semillas
-# deterministas y el grifo `--dev`.
+# El titular guarda lo que recibe con el SDK: desde el §606 `pay` y `claim` devuelven su
+# constancia -el recibo y el acuse tal como llegaron- y el ejemplo `e2e` la imprime, una linea JSON
+# por operacion. Hasta el §606 el sdk la tiraba y este banco la guardaba con un proxy de registro
+# de su lado (la 109). Claves de prueba siempre (D-E): semillas deterministas y el grifo `--dev`.
 #
 # FUERA del canon: levanta procesos y espera latidos. NO ESCRIBE EN EL ARBOL: todo vive en un
 # temporal bajo $HOME, que borra al salir, y lo comprueba al final por `git status --porcelain`.
@@ -59,11 +60,11 @@ msg "compilando nodo, cli, verificador y el ejemplo e2e del sdk en RELEASE (aqui
     || cargo build --release -p zk-ssl-sdk --example e2e; } || fallo "no compila el e2e"
 
 python3 - "$DIR" "$LARGO" "${GUARDAR:-}" <<'PY'
-import http.server, json, os, re, shutil, subprocess, sys, threading, time, urllib.request
+import json, os, re, shutil, subprocess, sys, threading, time, urllib.request
 DIR, LARGO, GUARDAR = sys.argv[1], sys.argv[2] == '1', sys.argv[3]
 NODO, CLI, MANDO = 'target/release/zk-ssl-node', 'target/release/zk-ssl-cli', 'target/release/zk-ssl-verify'
 E2E = 'target/release/examples/e2e'
-PN, PP = 8818, 8819
+PN = 8818
 def msg(m): print('BANCO-MENT-SINRES| ' + m, file=sys.stderr, flush=True)
 fallos = 0
 def exigir(ok, texto, detalle=''):
@@ -73,34 +74,6 @@ def exigir(ok, texto, detalle=''):
     if not ok and detalle:
         msg('     ' + str(detalle).strip().replace('\n', '\n     '))
     return ok
-
-# ── el proxy de REGISTRO del titular: reenvia todo y guarda lo que el titular recibe ──
-recibido = []
-class Registro(http.server.BaseHTTPRequestHandler):
-    protocol_version = 'HTTP/1.1'
-    def log_message(self, *a):
-        pass
-    def do_POST(self):
-        cuerpo = self.rfile.read(int(self.headers.get('Content-Length', 0)))
-        try:
-            r = urllib.request.Request('http://127.0.0.1:%d' % PN, cuerpo, {'Content-Type': 'application/json'})
-            with urllib.request.urlopen(r, timeout=120) as x:
-                crudo = x.read()
-        except Exception as e:
-            crudo = json.dumps({'jsonrpc': '2.0', 'id': 1, 'error': {'code': -32000, 'message': 'proxy: %s' % e}}).encode()
-        try:
-            m = json.loads(cuerpo).get('method')
-            if m in ('zkssl_applySend', 'zkssl_applyClaim'):
-                recibido.append((m, json.loads(crudo)))
-        except Exception:
-            pass
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self.send_header('Content-Length', str(len(crudo)))
-        self.end_headers()
-        self.wfile.write(crudo)
-registro = http.server.ThreadingHTTPServer(('127.0.0.1', PP), Registro)
-threading.Thread(target=registro.serve_forever, daemon=True).start()
 
 def rpc(m, p):
     c = json.dumps({'jsonrpc': '2.0', 'id': 1, 'method': m, 'params': p}).encode()
@@ -156,18 +129,23 @@ def nodo(latido, err):
     return p
 def titular(nombre):
     # el ejemplo e2e del sdk: abre dos cuentas, fondea con el grifo dev, PAGA y COBRA con pruebas
-    # STARK reales hechas en el cliente -la clave de gasto no viaja-, todo POR el proxy de registro
-    antes = len(recibido)
+    # STARK reales hechas en el cliente -la clave de gasto no viaja-, e imprime la constancia que el
+    # sdk le devuelve de cada operacion (§606): lo que el titular custodia, sin nadie en medio
     t = time.time()
-    p = subprocess.run([E2E], env=dict(os.environ, ZKSSL_URL='http://127.0.0.1:%d' % PP),
+    p = subprocess.run([E2E], env=dict(os.environ, ZKSSL_URL='http://127.0.0.1:%d' % PN),
                        capture_output=True, text=True, timeout=600)
-    ok = exigir(p.returncode == 0 and len(recibido) - antes == 2,
-                '%s paga y cobra con pruebas reales en %.1f s, y guarda sus dos recibos' % (nombre, time.time() - t),
-                p.stdout[-600:] + p.stderr[-600:])
+    c = {}
+    for linea in p.stdout.splitlines():
+        m = re.match(r'E2E: constancia-(pago|cobro) (\{.*\})$', linea)
+        if m:
+            c[m.group(1)] = json.loads(m.group(2))
+    ok = exigir(p.returncode == 0 and sorted(c) == ['cobro', 'pago']
+                and all(c[k].get('recepcion') and c[k].get('acuse') for k in c),
+                '%s paga y cobra con pruebas reales en %.1f s, y el sdk le deja sus dos constancias'
+                % (nombre, time.time() - t), p.stdout[-600:] + p.stderr[-600:])
     if not ok:
         raise SystemExit(1)
-    pago = recibido[antes][1]['result']
-    return pago, recibido[antes + 1][1]['result']
+    return c['pago'], c['cobro']
 def camino_de_recibo(rx, seg=60):
     fin = time.time() + seg
     while time.time() < fin:
@@ -296,7 +274,6 @@ finally:
     vivo[0] = False
     for p in procesos:
         matar(p)
-    registro.shutdown()
 sys.exit(1 if fallos else 0)
 PY
 RC=$?

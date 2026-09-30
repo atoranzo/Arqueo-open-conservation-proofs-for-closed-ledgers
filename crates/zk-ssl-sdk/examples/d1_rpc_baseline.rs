@@ -135,7 +135,7 @@ fn main() -> anyhow::Result<()> {
                     let aviso = loop {
                         g.fetch_add(1, Ordering::Relaxed);
                         match cuenta_a.pay(id_b, 1_000) {
-                            Ok(n) => break n,
+                            Ok(p) => break p.aviso,
                             Err(e) => {
                                 // Un fallo por estado obsoleto es EL dato:
                                 // la prueba se genero y llego muerta.
@@ -152,7 +152,7 @@ fn main() -> anyhow::Result<()> {
                     loop {
                         g.fetch_add(1, Ordering::Relaxed);
                         match cuenta_b.claim(&aviso) {
-                            Ok(()) => break,
+                            Ok(_) => break,
                             Err(e) => {
                                 let msg = format!("{e}");
                                 if msg.contains("Stale") || msg.contains("stale") {
