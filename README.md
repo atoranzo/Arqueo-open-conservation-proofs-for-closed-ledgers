@@ -130,23 +130,30 @@ La misma tabla, en inglés y con los casos de uso, está en [`doc/USE_CASES.md`]
 | 3 | Historia no reescribible, con prueba de extensión | la cabeza de hoy extiende la de ayer sin borrar ni reordenar | medida (`spec/RPC.md`, `zkssl_consistencyProof`) |
 | 4 | Inclusión con recibo | una entrada está en el libro, demostrable sin el operador | medida (`spec/RPC.md`, `zkssl_inclusionReceipt`, `zkssl_ackPath`) |
 | 5 | Autoría sin que la clave viaje | sólo quien tiene la clave mueve su cuenta; el operador no puede | medida (`spec/RPC.md`, el principio de la API) |
-| 6 | Corte y completitud | nada queda en vuelo pasado su plazo; cada acuse acaba aplicado o rechazado, con traza | en parte: la caja vacía —nada en vuelo más viejo que una edad dada— se prueba sin el nodo (RFC-0007, E4); la completitud, planeada |
+| 6 | Corte y completitud | nada queda en vuelo pasado su plazo; toda operación que el nodo recibe acaba aplicada, rechazada con prueba o declarada, o un rojo nombrado dice que no | medida (RFC-0010; `spec/PAQUETE.md`, 2.11; la caja vacía, RFC-0007 E4) |
 | 7 | Rechazo con causa | una negativa lleva la regla que la produjo | medida (RFC-0007; qué causas se prueban sin el nodo: `spec/PAQUETE.md`, 2.6) |
 
-La fila 6 **existe sólo en parte**: la caja vacía se prueba, y que cada acuse acabe aplicado o
-rechazado todavía no; se lista entera para que se sepa qué pregunta quiere responder el motor.
+La fila 6, desde el RFC-0010 (H5b, §556–§577): toda operación que el nodo evalúa por las vías
+directas del titular lleva un recibo bajo su cabeza firmada, y el sobre de completitud dice, sin el
+nodo, que se resolvió en su ventana —aplicada, o rechazada con prueba— o nombra al operador que no
+la resolvió («NO RESUELTA EN LA VENTANA»), o la cuenta aparte cuando su causa no tiene prueba
+portable. Su residuo, declarado: un operador que no emite recibo no deja rastro (D-H), y el lote y
+la prenda no lo llevan (D-E, §576).
 
 **Lo que nada de esto afirma:**
 
 - Privacidad frente al operador: el operador lo ve todo.
 - Que las unidades del libro existan fuera del libro.
-- Que una operación omitida se detecte: la censura no deja rastro.
+- Que se detecte una operación que el nodo nunca acusó: un operador que no emite recibo no deja
+  rastro (RFC-0010, D-H), y el lote y la prenda no lo llevan (D-E).
 - Prevención entre libros: dos libros pueden aceptar la misma etiqueta; un tercero con las dos
   cabezas firmadas lo ve después, nunca antes.
 - Quién está detrás de una clave, ni que una persona tenga una sola cuenta.
-- La fila 6 entera: la completitud de los acuses no existe todavía.
 - Del rechazo con causa, que el nodo rechazara, ni cuándo, ni que la regla sea justa: la prueba
   dice que la regla se aplicó sobre lo que una cabeza firmada compromete.
+
+⚠️ **Corregido en el §581**: hasta entonces la fila 6 decía «en parte» y esta lista decía también
+«la censura no deja rastro» y «la fila 6 entera: la completitud de los acuses no existe todavía».
 
 **Lo que falta, por orden de importancia:** consenso distribuido (sin él, el operador ve los saldos
 y puede censurar; la alternativa que este proyecto sí persigue —responsabilidad demostrable, al modo

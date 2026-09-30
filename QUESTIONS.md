@@ -49,14 +49,16 @@ operation runs on a corrupt state. Each of those guarantees has a test that trie
 
 ### 4. What does it NOT guarantee?
 
-That an omitted operation is detected: censorship leaves no trace. That the operator does not see
+That an operation the node never acknowledges is detected: an operator that issues no receipt
+leaves no trace (RFC-0010, D-H). That the operator does not see
 the balances: it does. That two ledgers do not accept the same label: they can; what exists is
 detection, afterwards, from the two signed heads. Who is behind a key, or that one person holds one
 account. That a payment is final before it is claimed: until the claim it is not, and if nobody
-claims, the amount stays locked until the sender refunds it (`AUDITORIA.md` §178–§181). And one
-property the engine **intends** to answer and answers only in part: cut-off and completeness
-(the empty box is proven; that every acknowledgement ends applied or rejected is not yet)
-([`doc/USE_CASES.md`](./doc/USE_CASES.md), row 6).
+claims, the amount stays locked until the sender refunds it (`AUDITORIA.md` §178–§181). Cut-off
+and completeness is answered since RFC-0010 for what the node receives on the holder's direct
+paths: each operation ends applied, rejected with proof or declared, or a named red says it did
+not; the batch and the pledge carry no receipt (D-E) ([`doc/USE_CASES.md`](./doc/USE_CASES.md),
+row 6).
 
 ### 5. What does it contribute that did not exist?
 
@@ -267,9 +269,10 @@ another session**.
 
 For a real third party to rely on these proofs: an **external audit**, which does not depend on
 more code; a **verified key custody**, not just a declared one (§244); and an **anchor prior to the
-first encounter** between witness and node. For the engine to answer everything it intends to:
-completeness —every acknowledgement ending applied or rejected—, the half of row 6 that is not
-code yet; the empty box and rejection with cause already are.
+first encounter** between witness and node. For the engine to answer everything it intends to,
+only the declared residue of row 6 is left —the operator that issues no receipt, and the batch
+and the pledge (RFC-0010, D-H and D-E)—; the empty box, rejection with cause and completeness
+already are code.
 Distributed consensus is another discipline and not this project's road: the road is provable
 accountability, and its pieces are built (question 7).
 

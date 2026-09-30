@@ -4,7 +4,7 @@ This page maps what the engine proves to the situations where that proof is
 worth having. It adds no claim that the tree does not already make: every
 "measured" row below points to the file that carries it, and every domain not
 reviewed in the project's documents is marked as a candidate. Verified against
-`main` at commit `2401008`.
+`main` at commit `dca287b` (§581; before it, `2401008`).
 
 ## The shape of the problem
 
@@ -29,13 +29,19 @@ of the world (`SECURITY.md`, the oracle limit).
 | 3 | Unrewritable history, with an extension proof | today's signed head extends yesterday's without removal or reordering | measured (`spec/RPC.md:785-812`, `zkssl_consistencyProof`) |
 | 4 | Inclusion with a receipt | an entry is in the ledger, provable without the operator | measured (`spec/RPC.md:568-739`, `zkssl_inclusionReceipt`, `zkssl_ackPath`) |
 | 5 | Authorship without the key travelling | only the holder of a key moves its account; the operator cannot | measured (`spec/RPC.md:50-61`, the API principle) |
-| 6 | Cut-off and completeness | nothing stays in flight past its time; every acknowledgement ends applied or rejected, with a trace | in part: the empty box (RFC-0007, E4) |
+| 6 | Cut-off and completeness | nothing stays in flight past its time; every operation the node receives ends applied, rejected with proof or declared, or a named red says it did not | measured (RFC-0010; `spec/PAQUETE.md`, 2.11; the empty box, RFC-0007 E4) |
 | 7 | Rejection with cause | a refusal carries the rule that produced it | measured (RFC-0007; `spec/PAQUETE.md`, 2.6) |
 
-Row 6 exists only in part: the empty box is proven, and that every
-acknowledgement ends applied or rejected is not yet. Row 7 proves that the
-rule was applied over what a signed head commits; not that the node refused,
-nor when, nor that the rule is fair.
+Row 6, since RFC-0010 (H5b, §556-§577): every operation the node evaluates on
+the holder's direct paths gets a receipt under its signed head, and the
+completeness envelope says, with no node, that it was resolved in its window
+-applied, or rejected with proof- or names the operator that did not
+(«NOT RESOLVED IN THE WINDOW»), or counts it apart when its cause has no
+portable proof. Its residue is declared: an operator that issues no receipt
+at all (RFC-0010, D-H), and the batch and the pledge, which carry none (D-E,
+§576). Row 7 proves that the rule was applied over what a signed head
+commits; not that the rule is fair, and its binding to one received operation
+is the node's word in its error data (RFC-0010, D3).
 
 ## Use cases, by the property that resolves them
 
@@ -94,9 +100,11 @@ not been measured.
 - Systems where the operator is the suspect: local currencies, time banks,
   community savings. The operator sees everything and still cannot move an
   account it does not control. Companion limitation, published: the operator
-  *can* fail to include a legitimate operation, and that leaves no trace.
+  *can* fail to include a legitimate operation; since RFC-0010 a received one
+  that it neither applies nor rejects in its window leaves a signed trace, and
+  only an operator that issues no receipt leaves none (row 6).
 
-**6. Cut-off and completeness** (in part: the empty box).
+**6. Cut-off and completeness** (measured).
 - Two-phase settlement with expiry between firms; clearing between operators;
   period close, where the "empty box" proof of what is in flight is the
   cut-off that is reconciled by hand today.
@@ -139,9 +147,15 @@ surfaces in retail CBDC incidents (doi:10.5281/zenodo.22077991).
 
 - Privacy against the operator: the operator sees everything (`SECURITY.md`).
 - That the ledger's units exist outside the ledger.
-- That an omitted operation would be detected: censorship leaves no trace.
+- That an operation the node never acknowledged would be detected: an
+  operator that issues no receipt leaves no trace (RFC-0010, D-H), and the
+  batch and the pledge carry none (D-E).
 - Prevention across ledgers: two ledgers can accept the same label; a third
   party holding both signed heads sees it afterwards, never before.
 - Who is behind a key, or that one person holds one account.
-- Rows 6–7 as existing.
 - Any domain beyond the six reviewed as measured.
+
+⚠️ **Corrected in §581**: until then this list also said «censorship leaves no
+trace» and «Rows 6–7 as existing», and row 6 read «in part». Row 7 exists
+since RFC-0007 and row 6 since RFC-0010; the trace now exists for every
+operation the node receives on the holder's direct paths.

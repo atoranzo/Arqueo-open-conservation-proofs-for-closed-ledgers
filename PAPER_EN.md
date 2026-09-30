@@ -846,9 +846,12 @@ certificate authorities: it does not prevent misbehavior, it makes it
 **detectable after the fact**.
 
 **Limitations of the mitigation**: no one is obliged to observe; the
-operator could decline to publish the log; and censorship leaves no trace,
-because an operation never processed generates no entry, and its absence
-is indistinguishable from its never having been requested.
+operator could decline to publish the log; and censoring what the node
+never acknowledges leaves no trace, because an operation with no receipt
+generates no entry, and its absence is indistinguishable from its never
+having been requested. One it acknowledges, since RFC-0010, ends resolved
+in its window or names the operator that did not resolve it
+(`AUDITORIA.md` §556–§577, §581).
 
 ### 11.4 An asymmetry revealed by the log
 

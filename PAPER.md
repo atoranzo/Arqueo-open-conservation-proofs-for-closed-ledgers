@@ -889,9 +889,11 @@ autoridades de certificación: no impide el comportamiento incorrecto, lo
 hace **detectable a posteriori**.
 
 **Limitaciones de la mitigación**: nadie está obligado a observar; el
-operador podría no publicar el registro; y la censura no deja rastro,
-porque una operación nunca procesada no genera entrada y su ausencia es
-indistinguible de que nunca se solicitó.
+operador podría no publicar el registro; y la censura de lo que el nodo
+nunca acusa no deja rastro, porque una operación sin recibo no genera
+entrada y su ausencia es indistinguible de que nunca se solicitó. La que
+acusa, desde el RFC-0010, acaba resuelta en su ventana o nombra al
+operador que no la resolvió (`AUDITORIA.md` §556–§577, §581).
 
 ### 11.4 Una asimetría revelada por el registro
 

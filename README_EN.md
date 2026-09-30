@@ -134,24 +134,30 @@ The same table, with the use cases, is [`doc/USE_CASES.md`](./doc/USE_CASES.md).
 | 3 | Unrewritable history, with an extension proof | today's signed head extends yesterday's without removal or reordering | measured (`spec/RPC.md`, `zkssl_consistencyProof`) |
 | 4 | Inclusion with a receipt | an entry is in the ledger, provable without the operator | measured (`spec/RPC.md`, `zkssl_inclusionReceipt`, `zkssl_ackPath`) |
 | 5 | Authorship without the key travelling | only the holder of a key moves its account; the operator cannot | measured (`spec/RPC.md`, the API principle) |
-| 6 | Cut-off and completeness | nothing stays in flight past its time; every acknowledgement ends applied or rejected, with a trace | partly: the empty box — nothing in flight older than a given age — is proven without the node (RFC-0007, E4); completeness is planned |
+| 6 | Cut-off and completeness | nothing stays in flight past its time; every operation the node receives ends applied, rejected with proof or declared, or a named red says it did not | measured (RFC-0010; `spec/PAQUETE.md`, 2.11; the empty box, RFC-0007 E4) |
 | 7 | Rejection with cause | a refusal carries the rule that produced it | measured (RFC-0007; which causes are proven without the node: `spec/PAQUETE.md`, 2.6) |
 
-Row 6 **exists only in part**: the empty box is proven, and that every acknowledgement ends
-applied or rejected is not yet; it is listed whole so that a reader knows which question the
-engine intends to answer.
+Row 6, since RFC-0010 (H5b, §556–§577): every operation the node evaluates on the holder's
+direct paths gets a receipt under its signed head, and the completeness envelope says, with no
+node, that it was resolved in its window —applied, or rejected with proof— or names the operator
+that did not («NOT RESOLVED IN THE WINDOW»), or counts it apart when its cause has no portable
+proof. Its residue is declared: an operator that issues no receipt leaves no trace (D-H), and the
+batch and the pledge carry none (D-E, §576).
 
 **What none of this claims:**
 
 - Privacy against the operator: the operator sees everything.
 - That the ledger's units exist outside the ledger.
-- That an omitted operation would be detected: censorship leaves no trace.
+- That an operation the node never acknowledged would be detected: an operator that issues no
+  receipt leaves no trace (RFC-0010, D-H), and the batch and the pledge carry none (D-E).
 - Prevention across ledgers: two ledgers can accept the same label; a third party holding both
   signed heads sees it afterwards, never before.
 - Who is behind a key, or that one person holds one account.
-- Row 6 whole: the completeness of acknowledgements does not exist yet.
 - Of a rejection with cause, that the node refused, or when, or that the rule is fair: the
   proof says the rule was applied over what a signed head commits.
+
+⚠️ **Corrected in §581**: until then row 6 read «partly» and this list also said «censorship
+leaves no trace» and «Row 6 whole: the completeness of acknowledgements does not exist yet».
 
 **What is missing, in order of importance:** distributed consensus (without it the operator sees
 the balances and can censor; the alternative this project does pursue — provable accountability,

@@ -41993,3 +41993,38 @@ la retención del registro, sin decidir, con su razón.
 **Lo que NO cierra.** La retención misma. Y el aviso de código muerto del nodo sigue en tres -el
 import de `firma_cabeza`, `tests_dir` y `podar`-, declarados.
 
+## §581 — la fila 6, al día en los documentos que la citan
+
+El commit que lleva este asiento, sobre `dca287b` (el S580). Un solo sello: siete documentos y
+este asiento, con el canon `--sello` VERDE dentro del bloque. Siete ficheros más este asiento, con
+80 inserciones y 42 borrados fuera de él.
+
+**De dónde sale.** De una lectura del autor: `doc/USE_CASES.md` seguía diciendo que la censura no
+deja rastro y que la completitud no existe. El RFC-0010 (H5b, §556-§577) la hizo código, y el
+rechazo con causa -la fila 7- lo era desde el RFC-0007. El autor pidió ponerlo al día.
+
+**Lo que se MIDIÓ.** Las frases, buscadas en todo documento vivo y no sólo en el que se nombró. En
+`doc/USE_CASES.md`: la fila 6 («in part»), el párrafo bajo la tabla («Row 6 exists only in part»),
+la línea de límites («that leaves no trace»), el título de su sección y la lista de lo que no se
+afirma («censorship leaves no trace», «Rows 6–7 as existing»); la cabecera verificaba contra
+`2401008`. En `QUESTIONS.md` y `PREGUNTAS.md`, la §4 y la §22. Y la búsqueda dio tres más que nadie
+había nombrado: `README.md` y `README_EN.md` -la misma tabla, «existe sólo en parte», «la censura
+no deja rastro», «la completitud de los acuses no existe todavía»- y la limitación de la
+mitigación de `PAPER.md` y `PAPER_EN.md` («la censura no deja rastro»). El «recibo de admisión»
+de la lista de lo que falta (§121) NO es el del RFC-0010: el §560 lo dejó FUERA de H5b, y se queda.
+
+**Lo que hace.** La fila 6 pasa a MEDIDA: toda operación que el nodo recibe acaba aplicada,
+rechazada con prueba o declarada, o un rojo nombrado dice que no (RFC-0010; `spec/PAQUETE.md`,
+2.11; la caja vacía, RFC-0007 E4). El párrafo nombra lo que NO cubre: un operador que no emite
+recibo no deja rastro (D-H), y el lote y la prenda no lo llevan (D-E, §576); la fila 7, que el
+enlace es la palabra del nodo (D3). La lista de lo que no se afirma dice ESO en vez de «la censura
+no deja rastro», y el PAPER lo mismo en su limitación: la censura de lo que el nodo nunca acusa
+sigue sin rastro; la de lo que acusa, no. Las frases viejas quedan CITADAS en una corrección, no
+borradas, en `USE_CASES` y en los dos README. `USE_CASES` verifica contra `dca287b`.
+
+**Contadores.** Ninguno se mueve. `check_cifras`, `check_publicadas` y `verificar_citas`, VERDES.
+
+**Lo que NO cierra.** El residuo D-H mismo, y el recibo del lote y de la prenda, que es etapa por
+diseñar. Y la lección, dicha otra vez: la frase que el autor nombra en un documento se busca en
+TODOS antes de sellar.
+

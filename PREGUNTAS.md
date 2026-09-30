@@ -49,14 +49,16 @@ un estado corrupto. Cada una de esas garantías tiene un test que intenta romper
 
 ### 4. ¿Qué NO garantiza?
 
-Que una operación omitida se detecte: la censura no deja rastro. Que el operador no vea los saldos:
+Que se detecte una operación que el nodo nunca acusa: un operador que no emite recibo no deja
+rastro (RFC-0010, D-H). Que el operador no vea los saldos:
 los ve. Que dos libros no acepten la misma etiqueta: pueden; lo que hay es detección, después,
 con las dos cabezas firmadas. Quién está detrás de una clave, ni que una persona tenga una sola
 cuenta. Que un pago sea firme antes de cobrarse: hasta el cobro no lo es, y si nadie cobra, el
-importe queda inmovilizado hasta que el emisor lo reembolse (`AUDITORIA.md` §178–§181). Y una
-propiedad que el motor **quiere** responder y sólo responde en parte: el corte y la completitud
-(la caja vacía se prueba; que cada acuse acabe aplicado o rechazado, todavía no)
-([`doc/USE_CASES.md`](./doc/USE_CASES.md), fila 6).
+importe queda inmovilizado hasta que el emisor lo reembolse (`AUDITORIA.md` §178–§181). El corte y
+la completitud se responden desde el RFC-0010 para lo que el nodo recibe por las vías directas del
+titular: cada operación acaba aplicada, rechazada con prueba o declarada, o un rojo con nombre dice
+que no; el lote y la prenda no llevan recibo (D-E) ([`doc/USE_CASES.md`](./doc/USE_CASES.md),
+fila 6).
 
 ### 5. ¿Qué aporta que no existiera?
 
@@ -270,8 +272,9 @@ binario difieren un ~9 % (`AUDITORIA.md` §131), y **no son comparables con medi
 Para que un tercero real se apoye en estas pruebas: una **auditoría externa**, que no depende de
 más código; una **custodia de clave comprobada**, no sólo declarada (§244); y un **ancla anterior
 al primer encuentro** del testigo con el nodo. Para que el motor responda a todo lo que quiere
-responder: la completitud —que cada acuse acabe aplicado o rechazado—, la mitad de la fila 6 que
-todavía no es código; la caja vacía y el rechazo con causa ya lo son. El consenso distribuido es
+responder sólo queda el residuo declarado de la fila 6 —el operador que no emite recibo, y el lote y
+la prenda (RFC-0010, D-H y D-E)—; la caja vacía, el rechazo con causa y la completitud ya son
+código. El consenso distribuido es
 otra disciplina y no es el camino de este proyecto: el camino es la responsabilidad demostrable, y
 sus piezas están construidas (pregunta 7).
 
