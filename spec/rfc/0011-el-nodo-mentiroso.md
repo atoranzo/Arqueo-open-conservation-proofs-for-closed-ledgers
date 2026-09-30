@@ -1,13 +1,13 @@
 # RFC-0011 — El nodo mentiroso: las defensas, ejercitadas contra quien miente de verdad
 
 - **Estado:** PROPUESTO (§588), con sus decisiones TOMADAS en el §598 -delegadas por el autor y
-  REVERSIBLES, ver «Decisiones»-. **E1 HECHA en el §599**, con un banco y sin una línea de código
-  en el workspace; las demás etapas se abren en el orden del §598.
+  REVERSIBLES, ver «Decisiones»-. **E1 y E2 HECHAS en el §599 y el §600**, cada una con un banco y
+  sin una línea de código en el workspace; las demás etapas se abren en el orden del §598.
 - **Autor:** Ángel José Toranzo Portela
-- **Asistencia GenAI:** Claude (sesión 193, §588, §598 y §599) — ver [`GENAI.md`](../../GENAI.md)
+- **Asistencia GenAI:** Claude (sesión 193, §588, §598, §599 y §600) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-30
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube**: nada de esto toca el cable.
-- **Asiento(s) de AUDITORIA:** §588 (la propuesta); §598 (las decisiones); §599 (la E1).
+- **Asiento(s) de AUDITORIA:** §588 (la propuesta); §598 (las decisiones); §599 (la E1); §600 (la E2).
 
 ## Motivación
 
@@ -22,8 +22,9 @@ contra un nodo HONESTO; «alcanzable, no ejercitada» es lo más que pueden deci
 | un recibo emitido que no se resuelve | el sobre de completitud, «NO RESUELTA EN LA VENTANA» (RFC-0010 E4) | el banco arma el sobre sin resolución contra un nodo honesto |
 | una operación censurada ANTES de emitir recibo | ninguna, por diseño: el residuo D-H del RFC-0010 | declarada, no medida |
 
-⚠️ La primera fila es la foto del §588: desde el §599 la vista dividida la produce un nodo real
-y las dos defensas la ven en un banco (E1, en «Decisiones»).
+⚠️ Las dos primeras filas son la foto del §588: desde el §599 la vista dividida la produce un nodo
+real y las dos defensas la ven en un banco (E1), y desde el §600 `--ausentes` ha dado ROJO contra el
+diario de un nodo real (E2). Las dos, en «Decisiones».
 
 La última fila no es un hueco que este RFC cierre: es un residuo que ejercitar para MEDIR su
 silencio. Un banco que censura sin recibo y comprueba que todas las defensas siguen VERDES convierte
@@ -136,6 +137,17 @@ además, justo lo que las defensas tienen que ver.
     extiende.
   - **E2 — la firma que el diario no recoge.** El operador firma con un `--diario` y enseña otro.
     Éxito: `--ausentes` ROJO en un banco por primera vez. Que se pueda sin código se mide en ella.
+    **HECHA en el §600**, sin código: `tools/banco_mentiroso_ausentes.sh`, en dos escenas. (1) El
+    diario cambiado: el nodo firma con un testigo mirando, el operador lo reinicia con el mismo
+    contador y el mismo libro y OTRO `--diario`, y enseña sólo el nuevo. El nodo arranca sin
+    reutilizar ningún índice -nada en él exige que el diario siga; sólo lo avisa en su log- y el
+    testigo vivo anota `por-detras` y sigue, el reseteo visible del §292. `--ausentes` contra el
+    diario enseñado: ROJO, con cada índice del primer periodo que el testigo vio; contra los dos
+    diarios juntos, sin ausentes. (2) La línea borrada: contra el diario entero de un nodo honesto,
+    VERDE aunque el nodo anote índices que el testigo -que muestrea uno de cada dos- no pidió;
+    borrada a mano una línea firmada que el testigo vio, `--ausentes` nombra ESE índice y ninguno
+    más. Dos falsadores fuera del árbol: con la comprobación apagada, ROJO en las dos que esperan
+    ROJO; contando también la dirección contraria (BACKLOG 80), ROJO el control del nodo honesto.
   - **E3 — la censura antes del recibo.** Un proxy que reenvía y descarta, escrito dentro del banco.
     Éxito: el SILENCIO de todas las defensas, asertado: el residuo D-H del RFC-0010, medido.
   - **E4 — el recibo que no se resuelve, por un nodo de verdad.** Cómo producirlo sin código -parar

@@ -1981,6 +1981,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   testigos que, cada uno solo, no ven nada, y `--comparar` ROJO con cada índice; y el contador
   restaurado bajo un testigo vivo, que se detiene, con `--auditar` ROJO en el índice. La primera fila
   de la tabla del RFC deja de ser «alcanzable, no ejercitada». Siguen E2 a E4.
+  **E2, §600**: `tools/banco_mentiroso_ausentes.sh`. `--ausentes` da ROJO en un banco por primera
+  vez: el operador reinicia con otro `--diario` y enseña sólo el nuevo, y una línea firmada se borra
+  a mano; las dos veces nombra exactamente lo que falta, y contra la verdad entera sale VERDE. Siguen
+  E3 y E4.
 
 - [ ] **94. Clases de resultado que el canon NO VE: las cegueras del
   instrumento, medidas.** El canon corre en release y cuenta los

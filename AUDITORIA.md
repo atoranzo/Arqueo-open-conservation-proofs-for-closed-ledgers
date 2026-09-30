@@ -42736,3 +42736,53 @@ dividida; protegen dos que comparan.
 cofirmas de un testigo con el mismo índice- no es del nodo: es del testigo que cofirma, y no entra
 en este banco. El RFC sigue PROPUESTO.
 
+## §600 — la firma que el diario no recoge: `--ausentes`, ROJO en un banco por primera vez
+
+El commit que lleva este asiento, sobre `ef26237` (el S599). Un solo sello: la E2 del RFC-0011 -un
+banco nuevo, `tools/banco_mentiroso_ausentes.sh`-, su marca en el RFC, su fila en
+`spec/README.md`, la nota de la entrada 93, una línea en la cabecera de
+`doc/CONFIANZA_RESIDUAL.md` y este asiento, con el canon `--sello` VERDE dentro del bloque. Cinco
+ficheros más este asiento, con 229 inserciones y 7 borrados fuera de él.
+
+**De dónde sale.** La segunda etapa del orden del §598. `--ausentes` (§283) -los índices que el
+testigo tiene y el diario del nodo no- nunca había dado ROJO en un banco: el §288 ya decía que sin
+un nodo mentiroso no podía. El §598 dejó a esta etapa medir si se podía sin código.
+
+**Se puede.** El operador firma con un diario y ENSEÑA otro, con el binario del nodo SIN TOCAR:
+basta la bandera `--diario`. Dos escenas. (1) **El diario cambiado**: el nodo firma con un testigo
+mirando; se reinicia con el mismo contador, el mismo libro y otro `--diario`, y se enseña sólo el
+nuevo. `--ausentes` del testigo contra el diario enseñado sale ROJO con cada índice del primer
+periodo que el testigo vio (nueve, del 1 al 9, en las cuatro corridas); contra los dos diarios
+juntos -la verdad entera-, sin ausentes. (2) **La línea borrada**: contra el diario entero de un
+nodo honesto, VERDE aunque el nodo anote cuatro índices que el testigo no pidió -muestrea uno de
+cada dos: esa dirección es paisaje, entrada 80-; borrada a mano UNA línea firmada que el testigo
+vio, `--ausentes` nombra ese índice y ninguno más. Los índices esperados salen de los diarios
+crudos, no del texto de la herramienta.
+
+**Lo que se midió además.** El nodo arranca con el diario vacío y NO reutiliza ningún índice:
+resincroniza la clave al contador y sólo lo dice en su propio log («LA CLAVE ESTABA EN CERO Y EL
+CONTADOR EN 9»). Nada en él exige que el diario siga al contador, que es el límite que
+`main.rs` y `doc/CONFIANZA_RESIDUAL.md` ya declaraban. El testigo vivo lo nota por el canal de
+la historia: el acumulador del nodo, que se siembra del diario (§292), vuelve a empezar, y el
+testigo anota `por-detras` cinco veces y sigue -el reseteo VISIBLE del §292, que el §294 decidió
+no tratar como oponible-. Lo que lo hace oponible es `--ausentes`: el operador no puede enseñar
+un diario que no recoja lo que el testigo guarda firmado.
+
+**Los falsadores**, fuera del árbol y deshechos, uno por dirección. (a) `ausentes()` que no
+devuelve nada: ROJO en las dos comprobaciones que esperan ROJO, los controles VERDES. (b)
+`ausentes()` con la diferencia SIMÉTRICA -contar también lo que el nodo anota y el testigo no
+pidió, el error que la entrada 80 advertía-: ROJO el control del nodo honesto. El control de la
+escena 1 NO lo ve, porque allí el testigo pide cada índice; por eso la escena 2 muestrea uno de
+cada dos.
+
+**Lo que la E1 y la E2 dicen juntas**, y va a la cabecera de `doc/CONFIANZA_RESIDUAL.md`: el
+directorio restaurado y el diario quitado, que el nodo no ve, los ve el testigo de fuera del
+disco, medido contra un nodo real -el primero con `vista-dividida` (§599), el segundo con
+`--ausentes` (§600)-. Sin un testigo que mire, siguen sin verse.
+
+**Contadores.** Ningún test de Rust nace: los pines no se mueven. Los bancos pasan de 17 a 18.
+`check_cifras`, `check_figures`, `check_publicadas` y `verificar_citas`, VERDES.
+
+**Lo que NO cierra.** E3 (la censura antes del recibo, cuyo banco asierta el silencio) y E4 (el
+recibo que no se resuelve). El RFC sigue PROPUESTO.
+

@@ -72,6 +72,12 @@ decidido, y dónde):
   los dos gates se consultan en TODO estado que lea un contador, con sus operadores
   de siempre (`<` el nodo, `<=` el testigo). Lo de arriba sigue igual: el
   directorio entero restaurado y el diario quitado no se ven.
+  ✅ **No los ve el nodo; los ve el testigo de fuera del disco, y está medido
+  contra un nodo real.** El directorio restaurado -en el banco, el extremo: vacío-
+  vuelve a firmar índices ya firmados, y el testigo vivo se detiene con
+  `vista-dividida` (§599, `tools/banco_mentiroso_vista.sh`). El diario quitado deja
+  fuera lo que el testigo vio, y `--ausentes` lo nombra (§600,
+  `tools/banco_mentiroso_ausentes.sh`). Sin un testigo que mire, siguen sin verse.
   ⚠️ El borrado del buffer temporal del SK es **best-effort** y la fuga de
   `KeyPair::from_seed` es de un crate ajeno: backlog 102. El cuerpo de este
   documento no se toca —sigue siendo texto de sesion verbatim—.
