@@ -2398,11 +2398,14 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                     "logSeq": Q(l.transition_log().len() as u64),
                     "s": Q(s),
                 }),
-                Err(e) => json!({
-                    "accepted": false,
-                    "reason": format!("{e}"),
-                    "data": data_de(&e, seq_juicio),
-                }),
+                // §613 (RFC-0014 E4b): el recibo va TAMBIEN dentro del `data`, como en el rechazo
+                // del lote y en el de la via directa (§571): el sobre de rechazo se arma con ese
+                // `data` tal cual, y se ata al recibo por el (D3).
+                Err(e) => {
+                    let mut d = data_de(&e, seq_juicio);
+                    d["recepcion"] = recibo.clone();
+                    json!({ "accepted": false, "reason": format!("{e}"), "data": d })
+                }
             };
             Ok(con_recibo(v, recibo))
         }
@@ -5217,6 +5220,10 @@ mod tests {
         let v = pledge(&app, &s).expect("no es un error del que llama");
         assert_eq!(v["accepted"], json!(false), "la posicion esta ocupada por OTRA hoja: {v}");
         assert_eq!(v["data"]["causa"], json!("ConsumoColision"), "la causa, como dato: {v}");
+        // §613 (RFC-0014 E4b): y el recibo, dentro del `data` y fuera, el MISMO.
+        assert_eq!(v["data"]["recepcion"], v["recepcion"], "{v}");
+        let h = digest_to_wire(&zk_ssl::log::digest_of_proof(&s.prueba));
+        assert_eq!(v["data"]["recepcion"]["hashPrueba"], json!(h), "{v}");
     }
 
     #[test]

@@ -369,7 +369,11 @@ donde el valor es una respuesta del cable sin reescribir.
               | {"tipo": "declarada", "data": {…}}     el `error.data` del rechazo, tal cual
               | {"tipo": "lote",                       el recibo de un zkssl_applyMany (§612)
                  "composicion": [{"hashPrueba", "cuenta", "posicion"}, …],
-                 "acuses": [{"cabeza", "acuse"}, …]  | "sobre": {…}  | "data": {…}},
+                 "acuses": [{"cabeza", "acuse"}, …]  | "sobre": {…}  | "data": {…}}
+              | {"tipo": "prenda", "sobre": {…},       el recibo de un zkssl_pledge (§613), y el
+                                                       sobre de la sección 2.10
+                 "consumo": {"cabeza", "camino"}
+                 | "respuesta": {…}, "juzgada": {…}  | "rechazo": {…}},
   "vigente": {…} }                                una cabeza del MISMO operador, para la ventana
 ```
 
@@ -414,6 +418,26 @@ cabeza firmada por la misma clave, el que la firma lleva embebido (§399), con `
      operador, lo dice (RFC-0014, decisión 3). ⚠️ El «no» del nodo es su palabra en su `data`
      (D3): si alguien lo inventara, el operador lo desmiente exhibiendo la resolución verdadera.
      Con una de las causas sin prueba portable, el cuarto estado, como en el 4.
+6. **`prenda`** (§613, RFC-0014 E4b, D-E): el recibo de un `zkssl_pledge` cuya prueba llegó al
+   juez, con `hashPrueba` el digest de esa prueba (§116). El `sobre` de la sección 2.10 se ata a
+   él por ESO -su prueba tiene que tener ese digest- y, si no, no sigue. Después, UNA de tres:
+   - **`consumo`**, `{cabeza, camino}`: el sobre verifica y su `marca` está bajo el `consRoot` de
+     una cabeza del mismo operador dentro de la ventana, por el camino de `zkssl_consumoPath` y
+     con los lados de la posición que la marca deriva. Es el PAR entero (D-AS): VERDE, «resuelta
+     como PRENDA aceptada».
+   - **`respuesta`**, la negativa del nodo tal cual -`accepted: false`, atada al recibo por su
+     `recepcion` y SIN `data`-, y **`juzgada`**, la cabeza contra la que el nodo juzgó: la última
+     firmada al recibir, de índice `era − 1` (§567), del mismo operador y v5 o posterior. El mando
+     REPITE el juicio con el mismo juez y la `pendingRoot` de esa cabeza: si el sobre no verifica,
+     VERDE, «resuelta como PRENDA rechazada con prueba», y cualquiera lo comprueba sin el nodo; si
+     verifica, **ROJO NOMBRADO, «RECHAZO SIN FUNDAMENTO»** (RFC-0014, decisión 3): un operador
+     honrado no puede producirlo, porque el recibo sólo existe si el `seq` casó y entonces juzgó
+     esa cabeza con ese juez. ⚠️ La negativa es su palabra (D3): si alguien la inventara, el
+     operador la desmiente con el PAR.
+   - **`rechazo`**, el sobre de la sección 2.6 de la causa con que la capa rechazó la marca
+     (`apply_consumo`, p. ej. `ConsumoColision`): resuelto como el veredicto 2 -desde el §613 el
+     `data` de esa negativa lleva su `recepcion`- y con el consumo rechazado igual a la marca del
+     sobre. VERDE, «resuelta como PRENDA rechazada por la capa».
 
 **El banco es `tools/banco_completitud.sh`** (§574), que lo reproduce en vivo contra un nodo real
 que firma —con `--largo`, hasta que la ventana EXPIRA—, y **el catálogo es

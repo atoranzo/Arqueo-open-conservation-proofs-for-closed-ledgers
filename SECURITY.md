@@ -290,10 +290,12 @@ formas porque la raíz lo exige (§230); el reparto viaja encima.
   `zkssl_applyMany` no lo llevaba. El RFC-0014 (§608) propuso el del lote
   -y el de la prenda-, y desde su E3 (§611) el nodo lo emite: UNO por
   lote, sobre la huella de su composición, que el agregador reenvía a
-  cada titular con la respuesta. Su resolución en el sobre de completitud
-  es la E4; hasta entonces el recibo existe y el mando todavía no lo
-  resuelve, y quien quiera al operador atado ya, manda por la vía
-  directa: el agregador es una recomendación, no un requisito.
+  cada titular con la respuesta, y desde su E4 (§612) el sobre de
+  completitud lo resuelve: aplicado, rechazado con prueba, por su forma
+  -o RECHAZO SIN FUNDAMENTO, si la composición no la sostiene-, o
+  declarado. El agregador que no reenvía queda fuera (D-C, D-H): lo elige
+  el titular, y la vía directa sigue abierta; el agregador es una
+  recomendación, no un requisito.
 
 #### Lo que queda abierto
 

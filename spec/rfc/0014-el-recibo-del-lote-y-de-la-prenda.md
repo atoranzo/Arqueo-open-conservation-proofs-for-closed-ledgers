@@ -2,16 +2,16 @@
 
 - **Estado:** PROPUESTO (§608), con sus decisiones TOMADAS en el §609 -delegadas por el autor con
   su criterio escrito, y REVERSIBLES, ver «Decisiones»-. Medido y diseñado; la E2 construida en el
-  §610, la E3 en el §611 y la mitad del lote de la E4 en el §612; las demás se abren en el orden
-  de la tabla.
+  §610, la E3 en el §611 y la E4 en el §612 (el lote) y el §613 (la prenda); la E5 queda
+  abierta.
 - **Autor:** Ángel José Toranzo Portela
-- **Asistencia GenAI:** Claude (sesión 193, §608 a §612) — ver [`GENAI.md`](../../GENAI.md)
+- **Asistencia GenAI:** Claude (sesión 193, §608 a §613) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-30
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube**: todo es aditivo, como el recibo
   del §571 -dos respuestas y un error ganan `recepcion`, el error del lote gana `operacion`, y el
   sobre de completitud gana dos resoluciones-. La cabeza no se mueve.
 - **Asiento(s) de AUDITORIA:** §608 (la propuesta); §609 (las decisiones); §610 (la E2); §611 (la
-  E3); §612 (la E4a).
+  E3); §612 (la E4a); §613 (la E4b).
 - **Backlog:** la segunda parte del D-H del RFC-0010 -«una etapa por diseñar, no un olvido»-; y
   `SECURITY.md` 2.ter, el despliegue con agregadores.
 
@@ -77,11 +77,14 @@ ruido del cable del D-E del RFC-0010, y el titular vuelve a probar bajo la cabez
   cabeza dentro de la ventana -el camino de `zkssl_consumoPath`-. Es la prenda ENTERA, la que el
   2.10 llama «el PAR»;
 - **rechazada con prueba**: el sobre NO verifica contra esa cabeza, y cualquiera lo comprueba sin
-  el nodo;
+  el nodo. «Esa cabeza», precisada en el §613, es la que el nodo JUZGÓ: la última firmada al
+  recibir, de índice `era − 1` (§567), que el sobre de completitud lleva como `juzgada` -el nodo
+  compone el enunciado con la raíz de su cabeza, no con la del sobre-;
 - ⚠️ **rechazada sin fundamento**: el sobre VERIFICA y el nodo dijo que no. El mando lo nombra
   -ROJO NOMBRADO, «RECHAZO SIN FUNDAMENTO»-, que es evidencia más fuerte que la no resolución:
   no hay que esperar a la ventana;
-- **error de `apply_consumo`** distinto de `ConsumoRepetido`: su causa en `data`, como en el lote.
+- **error de `apply_consumo`** distinto de `ConsumoRepetido`: su causa en `data`, como en el lote;
+  desde el §613 ese `data` lleva su `recepcion`, y se resuelve con su sobre de rechazo (2.6).
 
 **D-F. El testigo del §576 cae A PROPÓSITO**, en la etapa del nodo, como su propio texto anuncia:
 «si una de las dos empieza a reservar, este testigo cae y la D-E se decide otra vez, con su
@@ -154,7 +157,7 @@ REVERSIBLES.
 | E2 — el núcleo | `DOMINIO_LOTE` y `hash_del_lote` en `zk-ssl-hash`, su KAT en `spec/vectors/nucleo/` y su fila del REGISTRO | no (aditivo) | **construida (§610)**: `DOMINIO_LOTE` en la familia bytes del REGISTRO de dominios, `hash_del_lote` con su fila en el censo de `NUCLEO.md` (RECIBOS), tres testigos, y el KAT `hash_del_lote.json`, el vigesimosexto, con los veinticinco anteriores byte a byte iguales; `k` va en la longitud codificada |
 | E3 — el nodo | `zkssl_applyMany` y `zkssl_pledge` reservan y anotan su recibo en el mismo punto que la vía directa (§569); `operacion` en el error del lote; el testigo del §576, reescrito | no (aditivo) | **construida (§611)**: la capa gana `apply_many_con_operacion` -el mismo juicio, y el error con el índice- y `apply_many` es ella sin el índice; el lote reserva tras el parseo y antes de la capa, sobre `hash_del_lote` de su composición, re-exportada por el kit (`zk_ssl_verify::recibos`); la prenda, tras comprobar el `seq` y antes del juez; el testigo del §576 cae y se reescribe al revés, con las tres previas asertadas sin recibo. ⚠️ Hasta la E4 el recibo existe y su resolución no: el mando no sabe aún resolver el de un lote aplicado ni el de una prenda, y no se le lleva ninguno |
 | E4a — el mando, el lote | `resolucion.tipo` «lote» en el sobre de completitud: la composición recompuesta, y aplicado, rechazado con prueba, por su forma -o sin fundamento- y declarado | no | **construida (§612)**: la huella recompuesta con la función del kit antes de nada; `acuses` uno por operación resueltos como el veredicto 1, `sobre` como el 2 con su `operacion` dentro del lote, y `data` con la forma juzgada otra vez o el cuarto estado; los dos veredictos de la vía directa salen a funciones que el lote reusa, con sus textos intactos y los 36 vectores iguales |
-| E4b — el mando, la prenda | `resolucion.tipo` «prenda», con el «RECHAZO SIN FUNDAMENTO» | no | pendiente |
+| E4b — el mando, la prenda | `resolucion.tipo` «prenda», con el «RECHAZO SIN FUNDAMENTO» | no (aditivo: el `data` del rechazo de la capa gana `recepcion`) | **construida (§613)**: el sobre de la 2.10 atado al recibo por el digest de su prueba; `consumo` -el PAR, la marca bajo el `consRoot` en la ventana-, `respuesta` con la `juzgada` -el juicio repetido contra la cabeza de índice `era − 1`: rechazada con prueba, o RECHAZO SIN FUNDAMENTO- o `rechazo` -la 2.6 de la causa de la capa, con el consumo rechazado igual a la marca-; humo vivo con prendas de verdad, 17 de 17 |
 | E5 — catálogo y banco | sus vectores en `completitud/`, y un banco que siembre contra un nodo real las dos resoluciones del lote, las tres de la prenda y el rechazo sin fundamento | no | pendiente |
 
 ## Compatibilidad

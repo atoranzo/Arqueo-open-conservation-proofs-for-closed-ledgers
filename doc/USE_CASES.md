@@ -38,8 +38,8 @@ completeness envelope says, with no node, that it was resolved in its window
 -applied, or rejected with proof- or names the operator that did not
 («NOT RESOLVED IN THE WINDOW»), or counts it apart when its cause has no
 portable proof. Its residue is declared: an operator that issues no receipt
-at all (RFC-0010, D-H), and the batch and the pledge, which carry one since
-§611 (RFC-0014, E3) that the completeness envelope does not resolve yet. Row 7 proves that the rule was applied over what a signed head
+at all (RFC-0010, D-H). The batch and the pledge carry one since §611, and the
+completeness envelope resolves them since §613 (RFC-0014). Row 7 proves that the rule was applied over what a signed head
 commits; not that the rule is fair, and its binding to one received operation
 is the node's word in its error data (RFC-0010, D3).
 

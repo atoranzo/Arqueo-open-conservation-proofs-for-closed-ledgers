@@ -145,9 +145,9 @@ Row 6, since RFC-0010 (H5b, §556–§577): every operation the node evaluates o
 direct paths gets a receipt under its signed head, and the completeness envelope says, with no
 node, that it was resolved in its window —applied, or rejected with proof— or names the operator
 that did not («NOT RESOLVED IN THE WINDOW»), or counts it apart when its cause has no portable
-proof. Its residue is declared: an operator that issues no receipt leaves no trace (D-H); and the
-batch and the pledge carry one since §611 (RFC-0014, E3), but the completeness envelope does not
-resolve them yet.
+proof. Its residue is declared: an operator that issues no receipt leaves no trace (D-H). The
+batch and the pledge carry one since §611, and the completeness envelope resolves them since §613
+(RFC-0014).
 
 **What none of this claims:**
 

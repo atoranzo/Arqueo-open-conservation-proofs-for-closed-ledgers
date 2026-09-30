@@ -564,9 +564,8 @@ la misma regla: uno por cada cosa que el nodo EVALÚA, reservado en el mismo pun
 directa. El lote, UNO por lote, sobre la huella de su composición (regla 7 de su sección); la
 prenda, cuando su prueba llega al juez, con el digest de esa prueba (ver «La prenda, con su
 sobre»). Hasta el §611 no lo llevaban, por la decisión del §576 (RFC-0010, D-E), que el RFC-0014
-reabrió con su resolución. ⚠️ **Entre la E3 y la E4 del RFC-0014 el recibo existe y su resolución
-en el sobre de completitud todavía no**: el mando no sabe aún resolver el de un lote aplicado ni
-el de una prenda, y no se le lleva ninguno hasta la E4.
+reabrió con su resolución. Sus resoluciones en el sobre de completitud son las formas `lote`
+(§612) y `prenda` (§613) de `spec/PAQUETE.md` 2.11.
 
 ### `zkssl_signedEpochHead` — la última cabeza firmada, para un TESTIGO
 
@@ -1174,7 +1173,9 @@ nodo. Lo que sale del prendador es `SobrePrenda {prueba, receptor, marca, seq, p
   forma del de la vía directa y `hashPrueba` el digest de la prueba que llegó (§116), en TODAS
   las respuestas que llegan al juez -aceptada, `yaEstaba`, no verifica, o rechazada por la capa-.
   Las tres que no llegan -sin latido, cabeza sin firmar, `seq` viejo- no lo llevan ni consumen
-  número: son ruido, y quien prenda vuelve a probar bajo la cabeza nueva.
+  número: son ruido, y quien prenda vuelve a probar bajo la cabeza nueva. Desde el §613, la que
+  rechaza la capa lo lleva además DENTRO de su `data`, como el rechazo del lote y el de la vía
+  directa: su sobre de rechazo se arma con ese `data` tal cual.
 
 ⚠️ **Aditivo**: la superficie pasa de 29 a 30 métodos (`zkssl_pledge`) y `zkssl/0.3` NO sube: no
 cambia ningún valor que ya viajara.

@@ -59,8 +59,9 @@ use winter_math::fields::f64::BaseElement;
 use winter_math::FieldElement;
 use zk_ssl_air::banda::{verificar as verificar_banda, BandaPublicInputs};
 use zk_ssl_hash::{
-    ancla_digest, digest_from_bytes, digest_to_bytes, epoch_digest_v2, epoch_digest_v3,
-    epoch_digest_v4, epoch_digest_v5, epoch_digest_v6, huella_de_clave, params_digest, Digest,
+    ancla_digest, digest_from_bytes, digest_of_proof, digest_to_bytes, epoch_digest_v2,
+    epoch_digest_v3, epoch_digest_v4, epoch_digest_v5, epoch_digest_v6, huella_de_clave,
+    params_digest, Digest,
 };
 
 /// Punto unico de forma de error del binario (hoy identidad; el dia que
@@ -1481,17 +1482,7 @@ use zk_ssl_air::prenda::{
 /// el, no la del juez» -- y este binario no tiene arbol que mirar. Un VERDE aqui es MEDIA prenda:
 /// el par es la marca bajo la raiz firmada MAS este sobre (D-AS).
 fn verificar_prenda(p: &serde_json::Value) -> Result<(), String> {
-    let e = p.get("enunciado").ok_or_else(|| err("falta enunciado".into()))?;
-    let receptor = digest_de(e, "receptor")?;
-    let marca = digest_de(e, "marca")?;
-    // `Digest` es `[BaseElement; 4]` y no se imprime solo. El hex que se ensena es el que YA
-    // paso por `digest_de`, no una segunda lectura sin puerta.
-    let marca_hex = e.get("marca").and_then(|x| x.as_str()).unwrap_or_default();
-    let prueba = hex_a_bytes(
-        p.get("prueba")
-            .and_then(|x| x.as_str())
-            .ok_or_else(|| err("falta prueba o no es cadena 0x".into()))?,
-    )?;
+    let (af, prueba, marca_hex) = enunciado_de_prenda(p)?;
     let c = p.get("cabeza").ok_or_else(|| err("falta cabeza".into()))?;
     let version = u64_de(c, "formatVersion")?;
     if !VersionCabeza::try_from(version).map_or(false, VersionCabeza::lleva_parametros) {
@@ -1509,7 +1500,6 @@ fn verificar_prenda(p: &serde_json::Value) -> Result<(), String> {
         u64_de(c, "formatVersion")?
     );
     let cabeza = CabezaPrenda { pending_root: digest_de(c, "pendingRoot")? };
-    let af = AfirmacionPrenda { receptor, marca };
     enlazar_prenda(&prueba, &af, &cabeza).map_err(|e| err(format!("prenda: {e}")))?;
     println!("2/3 el enunciado toma la raiz de pendientes y la marca; ni importe, ni sal, ni");
     println!("    nacido: la prenda no lleva la meta");
@@ -1519,6 +1509,25 @@ fn verificar_prenda(p: &serde_json::Value) -> Result<(), String> {
     println!("       esto NO dice que la marca este publicada, que es del arbol de consumos y");
     println!("       se pide con zkssl_consumoPath (RFC-0008 D-AS)");
     Ok(())
+}
+
+/// Lo que un sobre de prenda AFIRMA -`{receptor, marca}`- y la prueba que lo sostiene, leidos SIN
+/// su cabeza, con los textos de siempre. Lo comparten el paquete de prenda y la resolucion de la
+/// prenda en el sobre de completitud (§613), que la juzga contra OTRA cabeza: la que juzgo el nodo.
+/// Devuelve tambien la marca en el hex en que llego, para imprimirla.
+fn enunciado_de_prenda(p: &serde_json::Value) -> Result<(AfirmacionPrenda, Vec<u8>, String), String> {
+    let e = p.get("enunciado").ok_or_else(|| err("falta enunciado".into()))?;
+    let receptor = digest_de(e, "receptor")?;
+    let marca = digest_de(e, "marca")?;
+    // `Digest` es `[BaseElement; 4]` y no se imprime solo. El hex que se ensena es el que YA
+    // paso por `digest_de`, no una segunda lectura sin puerta.
+    let marca_hex = e.get("marca").and_then(|x| x.as_str()).unwrap_or_default().to_string();
+    let prueba = hex_a_bytes(
+        p.get("prueba")
+            .and_then(|x| x.as_str())
+            .ok_or_else(|| err("falta prueba o no es cadena 0x".into()))?,
+    )?;
+    Ok((AfirmacionPrenda { receptor, marca }, prueba, marca_hex))
 }
 
 /// Los siete parametros de `zkssl_params` contra el `paramsDigest` de una cabeza **v5** (RFC-0007
@@ -1693,25 +1702,27 @@ fn resolver_por_acuse(
 
 /// La resolucion por RECHAZO (veredicto 2 del RFC-0010): el sobre de la seccion 2.6, atado al
 /// recibo por su `data.recepcion` (D3), sobre una cabeza del mismo operador dentro de la ventana, y
-/// verificado por sus reglas. Devuelve el indice XMSS de su cabeza y su `data`.
+/// verificado por sus reglas. `que` nombra el sitio: `resolucion.sobre` en la via directa y en el
+/// lote, `resolucion.rechazo` en la prenda (§613). Devuelve el indice XMSS de su cabeza y su `data`.
 fn resolver_por_rechazo<'a>(
     sobre: &'a serde_json::Value,
     hash: Digest,
     era: u64,
     n: u64,
     clave: &str,
+    que: &str,
 ) -> Result<(u64, &'a serde_json::Value), String> {
     if sobre.get("tipo").and_then(|t| t.as_str()) != Some("rechazo") {
         return Err(err("resolucion: el sobre no es de tipo rechazo".into()));
     }
     let d = sobre
         .get("data")
-        .ok_or_else(|| err("resolucion.sobre: falta data".into()))?;
-    exige_mismo_recibo(d, hash, "resolucion.sobre")?;
+        .ok_or_else(|| err(format!("{que}: falta data")))?;
+    exige_mismo_recibo(d, hash, que)?;
     let c = sobre
         .get("cabeza")
-        .ok_or_else(|| err("resolucion.sobre: falta cabeza".into()))?;
-    let (_, _, clave_r, _) = cabeza_v3_verificada(c, "resolucion.sobre.cabeza")?;
+        .ok_or_else(|| err(format!("{que}: falta cabeza")))?;
+    let (_, _, clave_r, _) = cabeza_v3_verificada(c, &format!("{que}.cabeza"))?;
     if clave_r != clave {
         return Err(claves_distintas());
     }
@@ -1856,7 +1867,7 @@ fn resolver_lote(
             );
         }
         (false, true, false) => {
-            let (s, d) = resolver_por_rechazo(&x["sobre"], hash, era, n, clave)?;
+            let (s, d) = resolver_por_rechazo(&x["sobre"], hash, era, n, clave, "resolucion.sobre")?;
             let j = operacion_nombrada(d, k, "resolucion.sobre.data")?;
             println!(
                 "3/3 RESUELTA como LOTE rechazado con prueba, dentro de la ventana (indice {s}): \
@@ -1909,6 +1920,181 @@ fn resolver_lote(
         _ => {
             return Err(err(
                 "resolucion del lote: lleva UNA de tres, acuses, sobre o data".into(),
+            ))
+        }
+    }
+    Ok(())
+}
+
+/// **La resolucion de una PRENDA** (RFC-0014 E4b, §613; D-E). El recibo de una prenda lleva como
+/// `hashPrueba` el digest de la prueba que llego (§611), y lo primero es atar a el el `sobre` de la
+/// seccion 2.10: su prueba tiene que tener ESE digest. Despues, UNA de tres:
+///
+/// - `consumo`, `{cabeza, camino}`: la prenda se ACEPTO -el sobre verifica, y su marca esta bajo el
+///   `consRoot` de una cabeza del mismo operador dentro de la ventana, por el camino de
+///   `zkssl_consumoPath`-. Es el PAR entero (2.10, D-AS). VERDE.
+/// - `respuesta`, con `juzgada`: la negativa del nodo, tal cual, y la cabeza contra la que juzgo
+///   -la ultima firmada al recibir, de indice `era - 1` (§567)-. El mando repite el juicio con EL
+///   MISMO juez y la `pendingRoot` de esa cabeza: si el sobre no verifica, VERDE, rechazada con
+///   prueba; si verifica, **ROJO NOMBRADO, «RECHAZO SIN FUNDAMENTO»** (decision 3 del §609). Una
+///   negativa con causa en su `data` no es de esta rama: se exhibe su sobre de rechazo.
+/// - `rechazo`: la capa la rechazo con causa al escribir la marca (`apply_consumo`, p. ej.
+///   `ConsumoColision`): el sobre de la 2.6, resuelto como el veredicto 2 y atado al recibo por su
+///   `data.recepcion`, y el consumo que rechaza es la marca de ESTE sobre. VERDE.
+///
+/// ⚠️ La negativa es la palabra del nodo (D3): si alguien la inventara, el operador la desmiente con
+/// el PAR. ⚠️ Si un latido firmo ENTRE la comprobacion del `seq` y la reserva, la `era - 1` es una
+/// cabeza posterior a la juzgada; con el mismo `seq` su raiz es la misma, y sin el, un sobre que
+/// verificara contra ella tendria que haberse probado contra una raiz que aun no existia.
+fn resolver_prenda(
+    x: &serde_json::Value,
+    hash: Digest,
+    era: u64,
+    n: u64,
+    clave: &str,
+) -> Result<(), String> {
+    let sobre = x
+        .get("sobre")
+        .ok_or_else(|| err("resolucion: falta sobre (el de la prenda, 2.10)".into()))?;
+    if sobre.get("tipo").and_then(|t| t.as_str()) != Some("prenda") {
+        return Err(err("resolucion: el sobre no es de tipo prenda".into()));
+    }
+    let (af, prueba, marca_hex) =
+        enunciado_de_prenda(sobre).map_err(|e| err(format!("resolucion.sobre: {e}")))?;
+    if digest_of_proof(&prueba) != hash {
+        return Err(err(
+            "resolucion: la prenda es de OTRA prueba: su digest no es el hashPrueba del recibo"
+                .into(),
+        ));
+    }
+    println!("   la prueba del sobre de prenda es la del recibo: su digest es su hashPrueba");
+    let hay = |c: &str| x.get(c).is_some();
+    match (hay("consumo"), hay("respuesta"), hay("rechazo")) {
+        (true, false, false) => {
+            let c = sobre
+                .get("cabeza")
+                .ok_or_else(|| err("resolucion.sobre: falta cabeza".into()))?;
+            let (_, _, clave_s, _) = cabeza_v3_verificada(c, "resolucion.sobre.cabeza")?;
+            if clave_s != clave {
+                return Err(claves_distintas());
+            }
+            println!("   la resolucion, como sobre de prenda:");
+            verificar_prenda(sobre)?;
+            let k = &x["consumo"];
+            let cc = k
+                .get("cabeza")
+                .ok_or_else(|| err("resolucion.consumo: falta cabeza".into()))?;
+            let (_, _, clave_c, cons) = cabeza_v3_verificada(cc, "resolucion.consumo.cabeza")?;
+            if clave_c != clave {
+                return Err(claves_distintas());
+            }
+            let raiz = cons.ok_or_else(|| exige_consumos("prenda"))?;
+            let s = u64_de(cc, "index")?;
+            if !recibos::dentro_de_ventana(era, s, n) {
+                return Err(err(format!(
+                    "resolucion: llega FUERA de la ventana (indice {s}, era {era}, n {n})"
+                )));
+            }
+            let pos = zk_ssl_verify::consumos::posicion_de_consumo(&af.marca);
+            let (herm, der) = camino_de(k, "camino", "resolucion.consumo.camino")?;
+            if !zk_ssl_verify::consumos::cruza_posicion(pos, &der) {
+                return Err(cruce_fallado("resolucion.consumo.camino", pos));
+            }
+            match zk_ssl_verify::consumos::raiz_de_presencia(af.marca, &herm, &der) {
+                Some(r) if r == raiz => {}
+                Some(_) => {
+                    return Err(err(
+                        "resolucion.consumo: la marca NO esta bajo el consRoot de su cabeza".into(),
+                    ))
+                }
+                None => return Err(err(camino_descuadrado("resolucion.consumo.camino"))),
+            }
+            println!(
+                "3/3 RESUELTA como PRENDA aceptada: el PAR -el sobre verifica y su marca \
+                 {marca_hex} esta bajo el consRoot de la cabeza de indice {s}, dentro de la \
+                 ventana (era {era}, n {n})-"
+            );
+        }
+        (false, true, false) => {
+            let r = &x["respuesta"];
+            if r.get("accepted") != Some(&serde_json::Value::Bool(false)) {
+                return Err(err(
+                    "resolucion.respuesta: no es una negativa (accepted false): una prenda \
+                     aceptada se resuelve con su consumo"
+                        .into(),
+                ));
+            }
+            exige_mismo_recibo(r, hash, "resolucion.respuesta")?;
+            if r.get("data").is_some() {
+                return Err(err(
+                    "resolucion.respuesta: la negativa lleva causa en su data: se exhibe su sobre \
+                     de rechazo (resolucion.rechazo)"
+                        .into(),
+                ));
+            }
+            let j = x.get("juzgada").ok_or_else(|| {
+                err("resolucion: falta juzgada (la cabeza que el nodo juzgo: la ultima firmada al \
+                     recibir, de indice era - 1)"
+                    .into())
+            })?;
+            let version = u64_de(j, "formatVersion")?;
+            if !VersionCabeza::try_from(version).map_or(false, VersionCabeza::lleva_parametros) {
+                return Err(err(format!(
+                    "resolucion.juzgada: formatVersion {version}: la prenda se juzga contra una \
+                     cabeza {}",
+                    VersionCabeza::texto_con_parametros()
+                )));
+            }
+            let (_, _, clave_j, _) = cabeza_v3_verificada(j, "resolucion.juzgada")?;
+            if clave_j != clave {
+                return Err(claves_distintas());
+            }
+            let sj = u64_de(j, "index")?;
+            if sj.checked_add(1) != Some(era) {
+                return Err(err(format!(
+                    "resolucion.juzgada: su indice {sj} no es el de la cabeza que el nodo juzgo: \
+                     la ultima firmada al recibir es la de la era menos uno ({})",
+                    era.saturating_sub(1)
+                )));
+            }
+            let cab = CabezaPrenda { pending_root: digest_de(j, "pendingRoot")? };
+            match enlazar_prenda(&prueba, &af, &cab) {
+                Err(e) => println!(
+                    "3/3 RESUELTA como PRENDA rechazada con prueba: el sobre NO verifica contra la \
+                     cabeza que el nodo juzgo (indice {sj}), y cualquiera lo comprueba sin el \
+                     nodo: {e}"
+                ),
+                Ok(_) => {
+                    let dijo = r.get("reason").and_then(|x| x.as_str()).unwrap_or("(sin razon)");
+                    return Err(err(format!(
+                        "RECHAZO SIN FUNDAMENTO: el sobre de la prenda VERIFICA contra la cabeza \
+                         que el nodo juzgo (indice {sj}), con el mismo juez y sin el nodo, y el \
+                         nodo dijo que no: {dijo}. Su negativa es su palabra, en su respuesta \
+                         (D3); si alguien la inventara, el operador la desmiente con el PAR"
+                    )));
+                }
+            }
+        }
+        (false, false, true) => {
+            let (s, d) =
+                resolver_por_rechazo(&x["rechazo"], hash, era, n, clave, "resolucion.rechazo")?;
+            let rechazado = d.get("campos").and_then(|c| digest_de(c, "consumo").ok());
+            if rechazado != Some(af.marca) {
+                return Err(err(
+                    "resolucion.rechazo: el consumo que la capa rechazo no es la marca de este \
+                     sobre"
+                        .into(),
+                ));
+            }
+            println!(
+                "3/3 RESUELTA como PRENDA rechazada por la capa, con prueba, dentro de la ventana \
+                 (indice {s}): la causa se sostiene sobre el estado comprometido, y el consumo \
+                 rechazado es su marca"
+            );
+        }
+        _ => {
+            return Err(err(
+                "resolucion de la prenda: lleva UNA de tres, consumo, respuesta o rechazo".into(),
             ))
         }
     }
@@ -2044,7 +2230,7 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
                 .expect("hay resolucion")
                 .get("sobre")
                 .ok_or_else(|| err("resolucion: falta sobre (el de rechazo)".into()))?;
-            let (s, _) = resolver_por_rechazo(sobre, hash, era, n, &clave)?;
+            let (s, _) = resolver_por_rechazo(sobre, hash, era, n, &clave, "resolucion.sobre")?;
             println!(
                 "3/3 RESUELTA como rechazo con prueba, dentro de la ventana (indice {s}); la \
                  atadura al recibo es la palabra del nodo en su data"
@@ -2052,6 +2238,9 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
         }
         Some(Some("lote")) => {
             resolver_lote(res.expect("hay resolucion"), hash, era, n, &clave)?;
+        }
+        Some(Some("prenda")) => {
+            resolver_prenda(res.expect("hay resolucion"), hash, era, n, &clave)?;
         }
         Some(Some("declarada")) => {
             let d = res
@@ -2076,8 +2265,8 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
         }
         Some(otro) => {
             return Err(err(format!(
-                "resolucion: tipo {otro:?} desconocido: se lee acuse, rechazo o declarada, y lote \
-                 para el recibo de un lote (RFC-0014)"
+                "resolucion: tipo {otro:?} desconocido: se lee acuse, rechazo o declarada, y lote o \
+                 prenda para los recibos del RFC-0014"
             )))
         }
     }
@@ -2511,6 +2700,44 @@ mod tests {
         let e = operacion_nombrada(&json!({ "operacion": "0x4" }), 4, "r").unwrap_err();
         assert!(e.contains("la operacion 4 no esta en un lote de 4"), "{e}");
         assert_eq!(operacion_nombrada(&json!({ "operacion": "0x3" }), 4, "r"), Ok(3));
+    }
+
+    /// §613 (RFC-0014 D-E): la resolucion de una prenda se ata al recibo por el digest de SU
+    /// prueba -el de la casa, §116- antes de nada; lleva UNA de tres; y la negativa es una
+    /// negativa, atada al recibo, sin causa -la que la lleva se exhibe como rechazo- y con la
+    /// cabeza que el nodo juzgo. Todo esto se decide sin tocar una cabeza.
+    #[test]
+    fn la_resolucion_de_una_prenda_se_ata_por_su_prueba_y_lleva_una_de_tres() {
+        let hex = |d: &Digest| {
+            let b = zk_ssl_hash::digest_to_bytes(d);
+            format!("0x{}", b.iter().map(|x| format!("{x:02x}")).collect::<String>())
+        };
+        let prueba = [1u8, 2, 3, 4];
+        let h = zk_ssl_hash::digest_of_proof(&prueba);
+        let sobre = json!({ "v": 1, "tipo": "prenda", "prueba": "0x01020304",
+                            "enunciado": { "receptor": hex(&dg(1)), "marca": hex(&dg(2)) } });
+        let rec = json!({ "hashPrueba": hex(&h) });
+        let r = |x: serde_json::Value| resolver_prenda(&x, h, 5, 1440, "0xaa").unwrap_err();
+        let casos = [
+            (json!({}), "falta sobre (el de la prenda"),
+            (json!({ "sobre": { "tipo": "rechazo" } }), "el sobre no es de tipo prenda"),
+            (json!({ "sobre": { "tipo": "prenda" } }), "resolucion.sobre: falta enunciado"),
+            (json!({ "sobre": sobre }), "lleva UNA de tres"),
+            (json!({ "sobre": sobre, "consumo": {}, "respuesta": {} }), "lleva UNA de tres"),
+            (json!({ "sobre": sobre, "respuesta": { "accepted": true } }), "no es una negativa"),
+            (json!({ "sobre": sobre, "respuesta": { "accepted": false } }), "no lleva recepcion"),
+            (json!({ "sobre": sobre, "respuesta": { "accepted": false, "recepcion": { "hashPrueba": hex(&dg(9)) } } }),
+             "es de OTRA operacion"),
+            (json!({ "sobre": sobre, "respuesta": { "accepted": false, "recepcion": rec, "data": {} } }),
+             "la negativa lleva causa"),
+            (json!({ "sobre": sobre, "respuesta": { "accepted": false, "recepcion": rec } }), "falta juzgada"),
+        ];
+        for (x, texto) in casos {
+            let e = r(x);
+            assert!(e.contains(texto), "se esperaba «{texto}» y salio: {e}");
+        }
+        let e = resolver_prenda(&json!({ "sobre": sobre }), dg(9), 5, 1440, "0xaa").unwrap_err();
+        assert!(e.contains("la prenda es de OTRA prueba"), "{e}");
     }
 
     /// Un paquete sin la clave no es un error: es un paquete sin cofirmas.

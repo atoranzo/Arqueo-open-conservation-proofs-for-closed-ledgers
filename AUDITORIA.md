@@ -43327,3 +43327,63 @@ quietos.
 vectores de las dos en `completitud/`, y un banco que siembre contra un nodo real también el lote
 APLICADO).
 
+## §613 — RFC-0014 E4b: el mando resuelve el recibo de la prenda, y nombra el rechazo sin fundamento
+
+El commit que lleva este asiento, sobre `686c8b3` (el S612). Un solo sello: el mando y su testigo,
+el `data` de la negativa de la capa en el nodo y su testigo, el contrato del sobre y del cable, la
+etapa marcada en el RFC, los textos que decían que el mando aún no resolvía, las cifras y este
+asiento, con el canon `--sello` VERDE dentro del bloque. 15 ficheros más este asiento, con 328
+inserciones y 64 borrados fuera de él. Con este sello la E4 del RFC-0014 queda entera.
+
+**De dónde sale.** De la D-E del RFC-0014 y de su decisión 3 del §609: el rechazo de una prenda
+cuyo sobre verifica tiene nombre, «RECHAZO SIN FUNDAMENTO».
+
+**Lo que hace.** (1) `resolucion.tipo = "prenda"` en el sobre de completitud: el `sobre` de la 2.10
+se ata al recibo por el digest de SU prueba -el de la casa, §116, el que el nodo anotó en el §611-,
+y si no es ése no sigue. Después, UNA de tres: `consumo`, el PAR -el sobre verifica y su marca
+está bajo el `consRoot` de una cabeza del mismo operador dentro de la ventana, por el camino de
+`zkssl_consumoPath` y con los lados que la marca deriva-; `respuesta` con `juzgada`, la negativa
+del nodo tal cual -atada a su recibo y sin `data`- y la cabeza contra la que juzgó; o `rechazo`, la
+2.6 de la causa de la capa, resuelta como el veredicto 2 y con el consumo rechazado igual a la
+marca del sobre. (2) **La cabeza juzgada, precisada.** La D-E decía «esa cabeza»; lo MEDIDO al
+construir es que el nodo compone el enunciado con la raíz de SU última cabeza firmada y compara
+sólo el `seq`, así que el sobre puede traer otra cabeza de igual `seq` y distinto índice. La que
+juzgó es la última firmada al recibir, de índice `era − 1` (§567), y el mando repite el juicio con
+el MISMO juez contra la `pendingRoot` de ésa: si no verifica, rechazada con prueba; si verifica,
+ROJO NOMBRADO. Un latido que firme entre la comprobación del `seq` y la reserva da una `era − 1`
+posterior a la juzgada: con el mismo `seq` su raíz es la misma, y sin él un sobre que verificara
+contra ella se habría probado contra una raíz que aún no existía; se declara en su doc. (3) El
+nodo pone el recibo TAMBIÉN dentro del `data` de la negativa de la capa, como en el rechazo del
+lote y en el de la vía directa: el sobre de rechazo se arma con ese `data` tal cual y se ata por
+él. Aditivo; el testigo de la colisión lo aserta. (4) `verificar_prenda` y la resolución comparten
+la lectura del enunciado, con los textos de siempre, y el sitio del sobre de rechazo se nombra
+(`resolucion.sobre` o `resolucion.rechazo`) sin mover un byte de los textos pinados.
+
+**El testigo, uno, en el mando.** Todo lo que se decide antes de tocar una cabeza: el sobre falta,
+no es de prenda o no se lee; su prueba es OTRA; no lleva rama o lleva dos; la respuesta no es una
+negativa, no lleva recibo, es de otra operación o lleva causa; y falta la juzgada.
+
+**EL HUMO, VIVO, antes de sellar.** `humo613.py`, fuera del árbol, contra DOS nodos reales que
+firman, cada uno con su siembra del sandbox y una prenda DE VERDAD hecha por la boca del
+prendador. En el primero: la prenda MUTADA se evalúa y se rechaza con recibo -RESUELTA como PRENDA
+rechazada con prueba contra la juzgada-, la buena entra con el suyo -RESUELTA como PRENDA
+aceptada, el PAR-, y el RECHAZO SIN FUNDAMENTO se deriva por MUTACIÓN de la respuesta aceptada: un
+nodo honrado no lo produce, y se dice. En el segundo, la boca libre escribe antes un OCUPANTE en la
+posición de la marca y la capa rechaza la prenda con `ConsumoColision`: RESUELTA como PRENDA
+rechazada por la capa, con su sobre de rechazo y el recibo dentro del `data`. Y trece negativos,
+cada uno por su regla. 17 de 17, a la primera.
+
+**Los falsadores, ENSAYADOS, los dos en una corrida.** Sin la atadura por el digest de la prueba,
+cae el testigo del mando y el sobre de OTRA prueba cae por el juez y no por su nombre; sin la regla
+de la juzgada, otra cabeza de la misma raíz da un RECHAZO SIN FUNDAMENTO donde debía decir que no
+es la cabeza juzgada. Restaurado, todo VERDE.
+
+**Contadores.** El verificador 146 -> 147 y los demás sin mover -el nodo gana asertos en un
+testigo que ya estaba-; TOTAL DE SELLO 1528 -> 1529; TOTAL CON LARGOS 1665 -> 1666; los tres
+párrafos ancla y la cita del verificador al día; la cuenta de `check_tests`, 1688. Ningún `Cargo`
+tocado; la cabeza, quieta; el cable, aditivo bajo `zkssl/0.4`.
+
+**Lo que NO cierra.** La E5: los vectores de las dos resoluciones en `completitud/`, COPIADOS de un
+banco que las siembre contra un nodo real -con el lote APLICADO, que pide pruebas STARK reales-, y
+el RFC-0014 a ACEPTADO cuando esté.
+
