@@ -112,7 +112,9 @@ atado al importe (§74). Ambas corregidas y medidas.
 
 - **El operador ve el estado.** Es el mayor límite de privacidad y está
   asumido.
-- **El operador puede censurar y ordenar.**
+- **El operador puede censurar y ordenar.** Desde el RFC-0010, censurar DESPUÉS del
+  recibo deja evidencia portable; ANTES del recibo no deja ninguna, y eso ya no es
+  sólo declarado: lo mide el §601 (`tools/banco_mentiroso_censura.sh`, el residuo D-H).
 - **La custodia del registro está en manos del operador.** Sin observadores
   externos de sus cabezas, podría presentar historias distintas a partes
   distintas. **Desde §241-§243 el nodo firma, emite y sirve sus cabezas, y

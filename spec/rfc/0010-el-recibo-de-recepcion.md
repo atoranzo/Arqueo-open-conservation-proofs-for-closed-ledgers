@@ -253,6 +253,13 @@ Lo que este RFC **no cierra**: la operación para la que el nodo **nunca firmó 
 contesta, o contesta sin recibo, no hay objeto que oponer. El titular lo sabe al instante —su
 petición no trae recibo— y puede reintentar y publicar la ausencia, pero **no puede probarla**.
 
+**Medido en el §601** (RFC-0011, E3: `tools/banco_mentiroso_censura.sh`): un proxy del operador,
+delante de un nodo honesto, que no contesta o contesta sin recibo. El titular lo sabe al instante;
+el registro firmado no se mueve, porque el nodo no la vio; y todas las defensas callan -dos
+testigos, uno por el proxy y otro directo, `--auditar`, `--comparar` y `--ausentes`-. Con el proxy
+reenviando dicen exactamente lo mismo: para ellas, la operación censurada es indistinguible de la
+que nunca se envió.
+
 Eso es el residuo del hito, y es irreducible en este modelo: un operador que no responde es
 indistinguible de una red caída. Lo que el recibo cambia es el terreno: quien contesta queda
 atado, y el silencio total es una conducta visible y sostenida en el tiempo, no un descarte

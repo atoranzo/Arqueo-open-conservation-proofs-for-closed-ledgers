@@ -1,13 +1,13 @@
 # RFC-0011 — El nodo mentiroso: las defensas, ejercitadas contra quien miente de verdad
 
 - **Estado:** PROPUESTO (§588), con sus decisiones TOMADAS en el §598 -delegadas por el autor y
-  REVERSIBLES, ver «Decisiones»-. **E1 y E2 HECHAS en el §599 y el §600**, cada una con un banco y
-  sin una línea de código en el workspace; las demás etapas se abren en el orden del §598.
+  REVERSIBLES, ver «Decisiones»-. **E1, E2 y E3 HECHAS en el §599, el §600 y el §601**, cada una
+  con un banco y sin una línea de código en el workspace; queda la E4, por medir.
 - **Autor:** Ángel José Toranzo Portela
-- **Asistencia GenAI:** Claude (sesión 193, §588, §598, §599 y §600) — ver [`GENAI.md`](../../GENAI.md)
+- **Asistencia GenAI:** Claude (sesión 193, §588 y §598 a §601) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-30
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube**: nada de esto toca el cable.
-- **Asiento(s) de AUDITORIA:** §588 (la propuesta); §598 (las decisiones); §599 (la E1); §600 (la E2).
+- **Asiento(s) de AUDITORIA:** §588 (la propuesta); §598 (las decisiones); §599 (la E1); §600 (la E2); §601 (la E3).
 
 ## Motivación
 
@@ -24,7 +24,8 @@ contra un nodo HONESTO; «alcanzable, no ejercitada» es lo más que pueden deci
 
 ⚠️ Las dos primeras filas son la foto del §588: desde el §599 la vista dividida la produce un nodo
 real y las dos defensas la ven en un banco (E1), y desde el §600 `--ausentes` ha dado ROJO contra el
-diario de un nodo real (E2). Las dos, en «Decisiones».
+diario de un nodo real (E2). Y la última está MEDIDA desde el §601: el banco que censura sin
+recibo asierta el silencio de todas las defensas (E3). Las tres, en «Decisiones».
 
 La última fila no es un hueco que este RFC cierre: es un residuo que ejercitar para MEDIR su
 silencio. Un banco que censura sin recibo y comprueba que todas las defensas siguen VERDES convierte
@@ -150,6 +151,14 @@ además, justo lo que las defensas tienen que ver.
     ROJO; contando también la dirección contraria (BACKLOG 80), ROJO el control del nodo honesto.
   - **E3 — la censura antes del recibo.** Un proxy que reenvía y descarta, escrito dentro del banco.
     Éxito: el SILENCIO de todas las defensas, asertado: el residuo D-H del RFC-0010, medido.
+    **HECHA en el §601**: `tools/banco_mentiroso_censura.sh`. Delante de un nodo honesto, un proxy
+    del operador que reenvía todo salvo lo que decide callar. Tres envíos del mismo titular: A con
+    el proxy reenviando -el recibo llega, la cabeza firmada pasa a recepCount 1-; B sin respuesta;
+    C con un error sin recibo. El titular lo sabe al instante en B y en C, y el registro firmado
+    sigue en recepCount 1: el nodo no las vio. Dos testigos, uno por el proxy y otro directo:
+    terminan sin hallazgo, y `--auditar`, `--comparar` y `--ausentes` callan. El falsador -el
+    proxy que reenvía todo- pone ROJAS las cuatro comprobaciones que dicen que la censura ocurrió,
+    y deja VERDES las del silencio: las defensas dicen exactamente lo mismo con censura y sin ella.
   - **E4 — el recibo que no se resuelve, por un nodo de verdad.** Cómo producirlo sin código -parar
     el nodo entre el recibo y la resolución- está por medir. Si sólo se puede con código, D-B se
     reabre aquí.

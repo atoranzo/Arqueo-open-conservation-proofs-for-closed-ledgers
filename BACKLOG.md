@@ -1985,6 +1985,9 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   vez: el operador reinicia con otro `--diario` y enseña sólo el nuevo, y una línea firmada se borra
   a mano; las dos veces nombra exactamente lo que falta, y contra la verdad entera sale VERDE. Siguen
   E3 y E4.
+  **E3, §601**: `tools/banco_mentiroso_censura.sh`. La censura antes del recibo, con un proxy del
+  operador delante de un nodo honesto: el titular sabe que no tiene recibo, el registro firmado no
+  se mueve, y todas las defensas callan -asertado-. El residuo D-H del RFC-0010, medido. Sigue E4.
 
 - [ ] **94. Clases de resultado que el canon NO VE: las cegueras del
   instrumento, medidas.** El canon corre en release y cuenta los

@@ -42786,3 +42786,47 @@ disco, medido contra un nodo real -el primero con `vista-dividida` (§599), el s
 **Lo que NO cierra.** E3 (la censura antes del recibo, cuyo banco asierta el silencio) y E4 (el
 recibo que no se resuelve). El RFC sigue PROPUESTO.
 
+## §601 — la censura antes del recibo, medida: todas las defensas callan, y lo dice un banco
+
+El commit que lleva este asiento, sobre `293713a` (el S600). Un solo sello: la E3 del RFC-0011 -un
+banco nuevo, `tools/banco_mentiroso_censura.sh`-, su marca en el RFC, la nota de medida en el D-H
+del RFC-0010, una frase en `SECURITY.md`, su fila en `spec/README.md`, la nota de la entrada 93 y
+este asiento, con el canon `--sello` VERDE dentro del bloque. Seis ficheros más este asiento, con
+253 inserciones y 7 borrados fuera de él.
+
+**De dónde sale.** La tercera etapa del orden del §598, y la excepción de D-D del RFC-0011: su
+éxito no es que una defensa dispare, sino el silencio de todas, asertado. El residuo D-H del
+RFC-0010 -«si no contesta, o contesta sin recibo, no hay objeto que oponer»- estaba declarado y
+nunca se había medido.
+
+**Lo que se hizo.** Delante de un nodo honesto -el binario SIN TOCAR-, un proxy del operador que
+reenvía todo salvo lo que decide callar: la única mentira que se puede sin la clave es la omisión
+(D-B). Vive embebido en el banco y muere con él. Tres envíos del mismo titular, por el proxy: A,
+reenviado -el recibo llega en `error.data.recepcion` y la cabeza firmada pasa a recepCount 1-; B,
+sin respuesta -la conexión se cierra sin una cabecera-; C, con un error genérico sin recibo. Dos
+testigos miran todo el rato, uno por el proxy y otro directo al nodo.
+
+**Lo que se midió.** Tres corridas VERDES seguidas, unos 42 s cada una. El titular lo sabe al instante en
+B (`RemoteDisconnected`) y en C (un error sin `recepcion`). Cuatro cabezas después, el registro
+firmado sigue en recepCount 1, y los dos testigos no vieron nunca más de 1: el nodo no las vio, y
+su registro lo dice sin mentir. Y todas las defensas callan: los dos testigos terminan sin
+hallazgo, `--auditar` de los dos diarios limpio, `--comparar` sin divergencias -el proxy no toca
+las cabezas- y `--ausentes` de los dos contra el diario del nodo sin ausentes.
+
+**El falsador**, fuera del árbol y deshecho: el proxy que reenvía TODO. El banco sale ROJO en las
+cuatro comprobaciones que dicen que la censura ocurrió -B y C traen respuesta con recibo, y el
+registro firmado llega a 3- y deja VERDES las seis del silencio. Ése es el resultado, y no un
+defecto del banco: las defensas dicen exactamente lo mismo con censura y sin ella. Para todas, la
+operación censurada es indistinguible de la que nunca se envió.
+
+**Lo que no se midió.** La segunda parte de D-H -lo que entra por `applyMany` o por `zkssl_pledge`
+no lleva recibo por diseño (D-E, §576)- no entra en este banco: no es una mentira del operador sino
+una decisión del protocolo, con su etapa por diseñar.
+
+**Contadores.** Ningún test de Rust nace: los pines no se mueven. Los bancos pasan de 18 a 19.
+`check_cifras`, `check_figures`, `check_publicadas` y `verificar_citas`, VERDES.
+
+**Lo que NO cierra.** La E4, el recibo que no se resuelve producido por un nodo de verdad: cómo
+producirlo sin código está por medir, y si sólo se puede con código, D-B se reabre ahí. El RFC
+sigue PROPUESTO.
+
