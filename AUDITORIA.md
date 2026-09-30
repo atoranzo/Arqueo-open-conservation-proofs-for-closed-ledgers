@@ -42181,3 +42181,42 @@ la ceguera de la (d). Restaurado, VERDE, y el censo de la propia entrada da 35 y
 **Lo que NO cierra.** El documento resuelve pero no da FORMA, por diseño: de él no se genera un
 cliente sin `RPC.md`. Darle forma sería otra entrada, y es REVERSIBLE.
 
+## §586 — la 101, cerrada: el ancho del índice sale del conjunto de `xmss`
+
+El commit que lleva este asiento, sobre `5e4fbdc` (el S585). Un solo sello: un test en
+`zk-ssl-verify` y su doc, el pin, las cifras, la entrada 101 y este asiento, con el canon `--sello`
+VERDE dentro del bloque. Seis ficheros más este asiento, con 62 inserciones y 11 borrados fuera de
+él.
+
+**De dónde sale.** De la entrada 101, siguiente por prioridad tras la 95: el ancho del índice XMSS
+-cinco bytes- está declarado en `zk-ssl-guardian::ancho_indice()` y en
+`zk-ssl-verify::ANCHO_INDICE`, el §332 los ata entre sí, y ninguno está atado a `xmss`. La entrada
+decía que un cambio de conjunto de parámetros «valida mal, en silencio».
+
+**Lo que se MIDIÓ.** (1) `xmss 0.1.0-pre.0` no expone `index_bytes` ni `full_height`, pero su
+trait `XmssParameter` es público, y con él `NAME`, `SK_LEN`, `VK_LEN`, `SIG_LEN` y `SEED_LEN`,
+calculados con la regla que la propia `xmss` usa: con d > 1, el ancho es ⌈h/8⌉. La entrada decía
+«Lo único público es el NOMBRE DEL TIPO»: estaba mal. (2) `zk-ssl-verify` fija el conjunto en
+`pub type Conjunto = XmssMtSha2_40_8_256`: es el punto por el que un cambio entraría.
+
+**Lo que hace.** `el_ancho_del_indice_sale_del_conjunto_de_xmss` lee el `NAME` de `Conjunto`
+-`XMSSMT-SHA2_40/8_256`: h, d y n-, deriva el ancho, lo exige igual a `ANCHO_INDICE`, lo confirma
+contra `SK_LEN` (OID, índice y cuatro valores de N) y contra `SIG_LEN` (índice, r, d firmas WOTS y
+h nodos), y exige `8*ancho = h`, que es lo que hace que el techo `2^(8*ancho)` del guardián (§335)
+sea `2^h`. La cadena queda `xmss` -> `verify` -> guardián, con el test del §332 como segundo
+eslabón. El doc de `ANCHO_INDICE` lo dice, y la 101 queda `[x]` con su frase equivocada CITADA.
+
+**Los falsadores, ENSAYADOS.** `Conjunto` en `XmssMtSha2_60_6_256`: cae el nuevo, «xmss dice un
+ancho de 8 bytes», y el del §332 sigue VERDE: ésa era la grieta, medida. `ANCHO_INDICE = 4`: caen
+los dos. `Conjunto` en `XmssMtSha2_40_4_256`, del mismo ancho: pasa, como debe; el test vigila el
+ancho, no el conjunto. Restaurado, `zk-ssl-verify` entero VERDE: 140.
+
+**Contadores.** `zk-ssl-verify` 139 -> 140; los otros veinte sin mover. El TOTAL DE SELLO 1503 ->
+1504, el TOTAL CON LARGOS 1640 -> 1641 y el verificador en `PRINCIPIOS.md`: siete cifras que
+`check_cifras` nombró, LÍNEA- y BYTE-NEUTRALES. `check_tests` 1662 -> 1663 y el offset en más 8,
+QUIETO: 1504 + 137 = 1641 ; 1641 + 14 = 1655 ; el canon declara 1663.
+
+**Lo que NO cierra.** El guardián sigue declarando su ancho a mano, atado sólo a través del test
+del §332. Y el ancho que `xmss` usa POR DENTRO al firmar -su `index_bytes` en tiempo de
+ejecución- se ata por la regla publicada, no por una firma leída byte a byte.
+

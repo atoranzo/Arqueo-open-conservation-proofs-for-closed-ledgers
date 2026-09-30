@@ -509,6 +509,10 @@ pub fn indice_de_firma(firma: &[u8]) -> Result<u64, VerificaError> {
 /// que es la primera. **Las ata un test**, no la buena fe:
 /// `el_ancho_del_indice_esta_atado_al_guardian`. Un censo que cuente tres
 /// fuentes se estara equivocando; si algun dia hay una tercera, sobra.
+///
+/// Y desde el §586 esta atada a `xmss`: no expone `index_bytes`, pero SI las
+/// constantes de su `XmssParameter` -`NAME`, `SK_LEN`, `SIG_LEN`-, y de ellas
+/// se DERIVA el ancho en `el_ancho_del_indice_sale_del_conjunto_de_xmss`.
 pub const ANCHO_INDICE: usize = 5;
 
 /// ⚠️ **APAÑO SOBRE UN FALLO DE `xmss 0.1.0-pre.0`** (§240, sondas S.5/S.6).
@@ -1047,6 +1051,42 @@ mod tests {
     }
 
     // ── el indice que va DENTRO de la firma (§332) ──
+
+    #[test]
+    fn el_ancho_del_indice_sale_del_conjunto_de_xmss() {
+        // §586, entrada 101 del BACKLOG: `xmss` no expone `index_bytes` ni `full_height`,
+        // pero SI las constantes de su `XmssParameter`: el nombre del conjunto y las
+        // longitudes del SK y de la firma. De ahi se DERIVA el ancho con la regla de la
+        // propia `xmss` (con d > 1, ⌈h/8⌉) y se ata a ANCHO_INDICE -y, por el test de
+        // abajo, al guardian-. Cambiar `Conjunto` por uno de otro ancho tumba esto en
+        // vez de validar mal en silencio.
+        use xmss::XmssParameter;
+        let nombre = <Conjunto as XmssParameter>::NAME;
+        // «XMSSMT-SHA2_<h>/<d>_<bits de n>»
+        let resto = nombre
+            .strip_prefix("XMSSMT-SHA2_")
+            .unwrap_or_else(|| panic!("{nombre}: no es un conjunto XMSS^MT con SHA2"));
+        let (hd, bits) = resto.split_once('_').expect(nombre);
+        let (h, d) = hd.split_once('/').expect(nombre);
+        let num = |x: &str| -> usize { x.parse().expect(nombre) };
+        let (h, d, n) = (num(h), num(d), num(bits) / 8);
+        let ancho = if d == 1 { 4 } else { h.div_ceil(8) };
+        assert_eq!(ANCHO_INDICE, ancho, "{nombre}: xmss dice un ancho de {ancho} bytes");
+        // Las longitudes publicas lo confirman por dos lados, con las formulas del RFC 8391.
+        assert_eq!(
+            <Conjunto as XmssParameter>::SK_LEN,
+            4 + ANCHO_INDICE + 4 * n,
+            "{nombre}: el SK es OID + indice + cuatro valores de N bytes"
+        );
+        let wots = (2 * n + 3) * n;
+        assert_eq!(
+            <Conjunto as XmssParameter>::SIG_LEN,
+            ANCHO_INDICE + n + d * wots + h * n,
+            "{nombre}: la firma es indice + r + d firmas WOTS + h nodos"
+        );
+        // Y el techo del guardian, 2^(8*ancho) (§335), solo es 2^h si h llena el campo.
+        assert_eq!(8 * ANCHO_INDICE, h, "{nombre}: el techo 2^(8*ancho) no seria 2^h");
+    }
 
     #[test]
     fn el_ancho_del_indice_esta_atado_al_guardian() {

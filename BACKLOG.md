@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 45 abiertas, 61 resueltas — **3 suspendidas** (16, 22 y 28).
-Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583, §584, §585).
+**Estado**: 44 abiertas, 62 resueltas — **3 suspendidas** (16, 22 y 28).
+Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583, §584, §585, §586).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
 asi la lista mentia. Tres entradas abiertas estaban cerradas en el arbol: la 69
@@ -2025,7 +2025,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   Lo que faltaba no era el parche, que llevaba escrito desde el §334, sino un
   arbol donde el TESTIGO reiniciara (§337).
 
-- [ ] **101. El ancho del indice esta declarado en DOS sitios y ninguno lo lee
+- [x] **101. El ancho del indice esta declarado en DOS sitios y ninguno lo lee
   de `xmss`.** `zk-ssl-guardian::ancho_indice()` devuelve 5 y
   `zk-ssl-verify::ANCHO_INDICE` vale lo mismo; el §332 dejo el test que
   **los ata entre si**, y el doc de `verify` dice con todas las letras que es
@@ -2038,6 +2038,17 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   ⚠️ El §335 la estrecha sin cerrarla: `poner_indice_en_sk` **no anade una
   tercera copia** —usa `ancho_indice()`— y su techo se DERIVA del ancho
   del campo, `2^(8*ancho)`, que aqui coincide con `2^h` porque 40 = 8x5.
+
+  ✅ **CERRADA EN EL §586.** `zk-ssl-verify` gana
+  `el_ancho_del_indice_sale_del_conjunto_de_xmss`: DERIVA el ancho del `NAME` del
+  conjunto (`XMSSMT-SHA2_40/8_256`: h, d y n) con la regla de la propia `xmss`, lo
+  confirma contra su `SK_LEN` y su `SIG_LEN`, y exige `8*ancho = h`, que es lo que hace
+  que el techo del guardian sea `2^h`. La cadena queda `xmss` -> `verify` -> guardian,
+  con el test del §332 como segundo eslabon. Falsadores: `Conjunto` en 60/6 tumba SOLO el
+  nuevo -el del §332 sigue VERDE: era la grieta-, y `ANCHO_INDICE = 4` tumba los dos; en
+  40/4, mismo ancho, pasa, como debe. ⚠️ **CORRECCION**: esta entrada decia «Lo unico
+  publico es el NOMBRE DEL TIPO». Falso: el trait `XmssParameter` es publico, y con el
+  sus constantes `NAME`, `SK_LEN`, `VK_LEN`, `SIG_LEN` y `SEED_LEN`.
 
 - [ ] **102. El borrado del buffer del SK es BEST-EFFORT, y upstream deja una
   copia sin borrar.** `resincronizar_a` saca los bytes del SK a un `Vec` para
