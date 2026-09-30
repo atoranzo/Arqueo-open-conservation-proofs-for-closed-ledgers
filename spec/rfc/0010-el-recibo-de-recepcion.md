@@ -216,7 +216,9 @@ prenda que no verifica no tiene sobre de rechazo en el RFC-0007. Su respuesta no
 quien quiera al operador atado. **Un testigo del nodo lo ata** (§576): el lote y la prenda EVALÚAN
 sin consumir recibo, y la vía directa sí; si una de las dos empieza a reservar, cae, y esto se
 decide otra vez con su resolución. La propiedad fuerte —el recibo del lote, con la atadura de sus
-compañeras, y el de la prenda, con su resolución— es una etapa por diseñar, no un olvido.
+compañeras, y el de la prenda, con su resolución— es una etapa por diseñar, no un olvido. **La
+propone el RFC-0014 (§608)**: un recibo por lote sobre la huella de su composición, y uno por
+prenda evaluada, cada uno con su resolución.
 
 ### D-F — El sobre de completitud, y sus tres veredictos
 

@@ -288,7 +288,8 @@ formas porque la raíz lo exige (§230); el reparto viaja encima.
   agregado** (D-E, §576): cubre `applySend` y `applyClaim`, y el lote que
   manda un agregador por `zkssl_applyMany` no lo lleva. Quien quiera al
   operador atado manda por la vía directa: el agregador es una
-  recomendación, no un requisito.
+  recomendación, no un requisito. El recibo del lote -y el de la prenda-
+  lo propone el RFC-0014 (§608); hasta que se construya, esto sigue igual.
 
 #### Lo que queda abierto
 

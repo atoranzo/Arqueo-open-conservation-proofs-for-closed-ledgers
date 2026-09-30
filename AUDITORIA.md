@@ -43090,3 +43090,47 @@ residuo; su línea de asistencia gana el giro de la sesión 193 y su lista de as
 **Lo que NO cierra.** El despliegue del ancla, que es el RFC-0013 y su decisión. Empujar este
 sello es la aceptación del autor, como la regla del RFC-0012 pedía.
 
+## §608 — RFC-0014, PROPUESTO: el recibo del lote y de la prenda, medido y diseñado
+
+El commit que lleva este asiento, sobre `146643a` (el S607). Un solo sello: el texto del RFC-0014,
+su fila en `spec/README.md`, la cuenta de RFC propuestos en los cuatro sitios que la publican, un
+puntero en el D-E del RFC-0010 y otro en `SECURITY.md` 2.ter, y este asiento, con el canon
+`--sello` VERDE dentro del bloque. Ocho ficheros más este asiento, con 147 inserciones y 7 borrados
+fuera de él.
+
+**De dónde sale.** El autor eligió este frente entre los que quedaban: la segunda parte del D-H del
+RFC-0010. En el §576 el recibo se dejó fuera de `zkssl_applyMany` y de `zkssl_pledge` porque un
+recibo suyo no tendría resolución y el sobre de completitud acusaría a un operador honrado, y se
+declaró «una etapa por diseñar, no un olvido». Con agregadores (`SECURITY.md` 2.ter), eso es todo
+lo agregado.
+
+**Lo que se MIDIÓ**, leyendo el código. El lote: `apply_many` valida TODAS las operaciones contra
+la misma foto y aplica sólo si pasan todas; aplicado, devuelve por entrada su `logSeq`, y
+`zkssl_ackPath` ya sirve el acuse de cada una -esa rama tiene resolución hoy-; rechazado, el
+error lleva `{causa, campos, seq}` y NO dice qué operación falló, y dos causas son del lote como
+tal (`DuplicateAccountInBatch`, `DuplicatePendingInBatch`). La prenda: verifica su prueba contra
+la `pendingRoot` de la última cabeza firmada y asienta la marca con `apply_consumo`; rechaza con
+CINCO respuestas blandas, tres de ellas antes de evaluar la prueba (sin latido, cabeza sin firmar,
+`seq` viejo); y aceptada deja la marca bajo `consRoot` y un sobre de prenda que la reverifica,
+sin nada que los ate a un recibo.
+
+**Lo que propone.** Un recibo por LOTE, no por operación: el nodo lo evalúa como una unidad, y su
+hoja es la de siempre con `hashPrueba` la huella de la composición del lote -por operación, su
+prueba, su cuenta y su posición-, con dominio propio y longitud codificada. Se resuelve aplicado
+(un acuse por prueba), rechazado con la prueba de la operación que el nodo nombre -el error gana
+`operacion`, y la atadura es la palabra del nodo, como en el D3 del RFC-0010- o rechazado por su
+forma, que la composición sola prueba. Y un recibo por PRENDA cuya prueba se evalúa, resuelto por
+su sobre de prenda y la marca bajo `consRoot`, o por el sobre que no verifica; si el sobre VERIFICA
+y el nodo dijo que no, el mando lo nombra: RECHAZO SIN FUNDAMENTO, sin esperar a la ventana. Todo
+aditivo bajo `zkssl/0.4`. El testigo del §576 cae a propósito en la etapa del nodo, como él mismo
+anuncia.
+
+**Las tres preguntas para el autor**, en «Decisiones» del RFC, cada una con la recomendada: un
+recibo por lote o por operación; qué respuestas de la prenda consumen recibo; y si el rechazo de
+prenda cuyo sobre verifica tiene veredicto propio.
+
+**Contadores.** Ningún pin se mueve: sólo documentación. La cuenta de RFC propuestos pasa de dos a
+tres. `check_cifras`, `check_figures`, `check_publicadas` y `verificar_citas`, VERDES.
+
+**Lo que NO cierra.** Todo lo construible: E2 a E5. Y el residuo que el RFC declara en su D-H.
+
