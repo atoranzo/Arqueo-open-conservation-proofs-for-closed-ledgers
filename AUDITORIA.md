@@ -42323,3 +42323,47 @@ apunta a la fila que ya lo carga. `USE_CASES` verifica contra `71c5aad`.
 **Lo que NO cierra.** El residuo D-H y el recibo del lote y de la prenda, que siguen donde el
 §581 los dejó. Y la lección del §581, afinada: buscar la frase no basta; lo que se busca es la
 AFIRMACIÓN, dicha como sea.
+
+## §590 — RFC-0012 E1: el ancla de cabezas, escrita; y el documento perdido, reconstruido
+
+El commit que lleva este asiento, sobre `ccb81ce` (el S589). Un solo sello: el RFC que nace, la
+reconstrucción, y las cuentas de RFC al día, con las compuertas de documentos VERDES dentro del
+bloque. Un fichero que nace, uno reconstruido y siete tocados, más este asiento, con 381
+inserciones y 6 borrados fuera de él.
+
+**De dónde sale.** Del hueco que la lectura previa de la sesión 194 midió y ningún asiento
+decía: `doc/ANCLAJE_EXTERNO.md` —el diseño de la medida 10, §174, citado por seis documentos
+vivos como «interfaz diseñada»— llegó al árbol publicado como **marcador de posición de una
+línea** en el S548, el primer commit del repositorio público. La promesa estaba publicada y el
+contenido no. Y del encargo de la sesión: el anclaje público de las cabezas es el punto 2.
+
+**Lo que se MIDIÓ antes de escribir.** Todas las afirmaciones vivas sobre lo que ese documento
+contiene: el acta del §174 (mecanismo, lotes de `M`, B10.6/B10.7, el residuo triple, «vista
+dividida» y «RPO»), las filas B10.6/B10.7 de `doc/CONFIANZA_RESIDUAL.md`, `SECURITY.md` §2.bis
+y §6, las entradas 70, 83 y 86 del BACKLOG, `doc/DIAGNOSTICO_ESCALADO.md` §4, y la estructura
+del hermano `doc/CADUCIDAD_PENDIENTE.md`. Y las piezas del árbol sobre las que el ancla se
+apoya: la pareja del MMR firmada desde la v3 (§291–§292) con inclusión y consistencia en el
+verificador, el índice embebido como lo único que la firma acredita (§399), y el reloj del §567.
+
+**Lo que hace.** (1) `doc/ANCLAJE_EXTERNO.md` se RECONSTRUYE desde esas fuentes, declarándose
+reconstrucción en su cabecera y en su nota §9 —si el original aparece, manda el original—, con
+la estructura del hermano y sin afirmar nada que las fuentes no carguen. (2) Nace
+`spec/rfc/0012-el-ancla-de-cabezas.md`, PROPUESTO: el ancla como objeto DERIVABLE de la cabeza
+firmada sola —la huella de la clave con longitud codificada (§116), el índice EMBEBIDO (§399),
+el digest firmado y la pareja del MMR—, su huella con dominio `ANCLA_V1`, la vista dividida
+como mitad portable de B10.2, `M` declarada sin constante (sin publicador no hay llamador,
+§580), y el residuo del §174 entero. El cable y la cabeza, quietos: la familia entra por
+`tipo` + dominio + vectores, la vía de `NUCLEO.md` §3. (3) Las cuentas de RFC de los cuatro
+cardinales y la fila de `spec/README.md` dicen el 0011 PROPUESTO; la entrada 86 del BACKLOG y
+el MAPA de `CONFIANZA_RESIDUAL.md` anotan lo construido y lo que QUEDA —elegir medio, medir
+cadencia y coste, desplegar—, sin cerrar la entrada.
+
+**Contadores.** Ninguno se mueve: ni un test, ni una línea de código. `check_cifras`,
+`check_publicadas` (con el RFC nuevo en sus cuentas), `check_dominios`, `check_nucleo`,
+`check_techo` y `verificar_citas`, VERDES.
+
+**Lo que NO cierra.** El despliegue: sin medio elegido, el ancla no vive en ningún sitio, y
+`SECURITY.md` §2.bis sigue diciendo «pendiente de despliegue» con razón. La constante `M` y su
+vigía, que entran con el componente que publique. Y cómo se perdió el contenido en el S548
+—si fue el único, lo dirá una pasada por el árbol publicado; el único otro marcador con esa
+forma no existe hoy, medido con grep—.

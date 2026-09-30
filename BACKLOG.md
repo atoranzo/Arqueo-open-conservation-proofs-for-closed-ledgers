@@ -678,6 +678,12 @@ instrumentacion) al grupo E.*
   arbitrarios, con qué cadencia, y qué coste tiene por época. Y si el
   ancla externa se convierte en dependencia de liveness, va declarada
   como tal.
+  ⚠️ (§590, sesión 194): el documento del §174 llegó al árbol publicado
+  como marcador de posición (S548) y se reconstruyó en el §590.
+  ✅ a medias (§591–§593): B10.6 y B10.7 construidos —el formato del
+  ancla, su huella y el sobre `tipo: "ancla"` del RFC-0012, con la
+  vista dividida dentro—. QUEDA lo que esta entrada pide medir (qué
+  logs, cadencia, coste) y el despliegue: la entrada sigue abierta.
 
 - [ ] **87. Agilidad criptográfica: el ESQUEMA DE FIRMA no está
   versionado.** La cabeza tiene byte de versión (§275) y el registro

@@ -47,7 +47,7 @@ contrapartida ni una moneda de banco central ([`doc/USE_CASES.md`](./doc/USE_CAS
 
 21 crates en Rust (18 propios y el fork de winterfell 0.13.1 en tres) con canon en cada cambio;
 protocolo `zkssl/0.4` con 31 métodos y vectores que no se reescriben;
-RFC 0002, 0003, 0004, 0006, 0007, 0008, 0009 y 0010 aceptados, 0005 y 0011 propuestos; verificador
+RFC 0002, 0003, 0004, 0006, 0007, 0008, 0009 y 0010 aceptados, 0005, 0011 y 0012 propuestos; verificador
 `zk-ssl-verify` 0.2.0 (release `arqueo-verify-v0.2.0`, reproducible); registro con un asiento por
 cambio. Falta: auditoría externa, custodia de clave comprobada, y un ancla anterior al primer
 encuentro del testigo (⚠️ §589: esta lista pedía también «la completitud de los acuses»).
@@ -103,7 +103,7 @@ counterparties, nor a central-bank digital currency ([`doc/USE_CASES.md`](./doc/
 
 21 crates in Rust (18 of our own and the winterfell 0.13.1 fork in three) with the canon on every
 change; protocol `zkssl/0.4` with 31 methods and vectors that are never rewritten;
-RFCs 0002, 0003, 0004, 0006, 0007, 0008, 0009 and 0010 accepted, 0005 and 0011 proposed;
+RFCs 0002, 0003, 0004, 0006, 0007, 0008, 0009 and 0010 accepted, 0005, 0011 and 0012 proposed;
 verifier `zk-ssl-verify` 0.2.0 (release `arqueo-verify-v0.2.0`, reproducible); a record with one
 entry per change. Missing: an external audit, a verified key custody, and an anchor prior to the
 witness's first encounter (⚠️ §589: this list also asked for "the completeness of

@@ -42,6 +42,15 @@ decidido, y dónde):
   este documento no se toca: sigue siendo texto de sesión verbatim.
 · B10.2  → primitiva construida y testada (`first_divergence`, T1);
   falta el componente de testigos.
+· B10.6 / B10.7 (ancla externa) — CONSTRUIDOS (RFC-0012, §592–§593,
+  sesión 194): el formato del ancla —seis campos derivables de la cabeza
+  firmada sola, con la huella de la clave y el índice EMBEBIDO— y su
+  verificador en el mando (`tipo: "ancla"`), con la mitad portable de
+  B10.2 dentro (la vista dividida con nombre). QUEDA elegir el medio y
+  desplegar la cadencia `M` (BACKLOG 86). `doc/ANCLAJE_EXTERNO.md` se
+  reconstruyó en el §591: el árbol publicado lo llevaba como marcador de
+  posición desde el S548. El cuerpo de este documento no se toca —sigue
+  siendo texto de sesión verbatim—.
 · B10.1 / guardian del indice — AMPLIADO (§335, 2026-08-20): el nodo
   ya no muere al reiniciar. La clave se resincroniza al contador y **abandona**
   los indices de abajo, que quedan perdidos y no reutilizables. Para detectar un
