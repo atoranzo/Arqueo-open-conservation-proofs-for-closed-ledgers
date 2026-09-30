@@ -50,7 +50,7 @@ commit; if a file has moved on, the reference tells you where to look.
 | `rfc/0014-el-recibo-del-lote-y-de-la-prenda.md` | RFC-0014, PROPOSED (§608): the receipt for what enters through `zkssl_applyMany` and `zkssl_pledge`, which RFC-0010 left out in §576 because it would have no resolution — ONE receipt per batch over the hash of its composition, resolved as applied (one ack per proof), as rejected with the proof of the operation the node names, or by its own form; and one per pledge whose proof is evaluated, resolved by the pledge envelope and its mark under `consRoot`, or named as a rejection WITHOUT GROUNDS when the envelope verifies. All additive under `zkssl/0.4`; its three decisions taken in §609 by delegation, reversible; E2 (the batch hash in the core, with its KAT) built in §610 and E3 (the node issues both receipts, and the batch error names its operation) in §611; E4, the resolutions in the completeness envelope, in §612 (the batch: applied, rejected with proof, by its form, or a rejection WITHOUT GROUNDS when the composition does not sustain it) and §613 (the pledge: accepted as the pair, rejected with proof against the head the node judged, rejected by the layer, or a rejection WITHOUT GROUNDS when the envelope verifies); and E5 in §614 (the bench `tools/banco_recibo_agregado.sh` against three real nodes, the applied batch with real STARK proofs, and 37 vectors in `vectors/completitud/`) | every stage built |
 
 RFC-0001 is not missing: the number is reserved for the keystore KDF
-hardening and is not yet drafted (`rfc/0003-compromiso-v2.md:11-15`).
+hardening and is not yet drafted (the «Número» note in the header of `rfc/0003-compromiso-v2.md` §«RFC-0003»).
 
 ## Three things that govern everything else
 
@@ -58,60 +58,60 @@ hardening and is not yet drafted (`rfc/0003-compromiso-v2.md:11-15`).
 sends identifiers derived on the client; paying and claiming means asking
 the node for public materials, proving locally, and presenting a receipt;
 reading your own balance means presenting a derived view key that
-authorises reading that account only (`RPC.md:50-61`). **Until §538 the
+authorises reading that account only (`RPC.md` §«Principio que el API preserva»). **Until §538 the
 proofs broke the principle**: the house prover (winterfell 0.13) did not
 hide its witness, so every proof that takes the key —send, claim, pledge,
 audit, burn— published it. Since §538 (RFC-0009 E3b-2) the prover hides
 it: no proof with a row publishes a literal of its witness (`../SECURITY.md`
 §3.bis). Every RFC must declare its effect on this principle, and one that
-erodes it is born withdrawn (`rfc/PROCESO.md:19-20`).
+erodes it is born withdrawn (`rfc/PROCESO.md` §«Reglas», rule 3).
 
 **2. The version number tracks the values on the wire, not the size of
 the surface.** `zkssl_protocolVersion` governs compatibility. The version
 in force is `zkssl/0.4` (since audit entry §538; `0.3` ruled from §354, `0.2` from §209).
 It goes up when values that travel change; adding a method additively
 does not raise it, because the conformance vectors do not move
-(`RPC.md:867-871`). When it does go up, the old vectors stay under their
-version and are never rewritten (`rfc/PROCESO.md:16-18`).
+(`RPC.md` §«Notas operativas»). When it does go up, the old vectors stay under their
+version and are never rewritten (`rfc/PROCESO.md` §«Reglas», rule 2).
 
 **3. No statement enters the specification without the witness that would
 falsify it.** That is why the log-guarantee section of `RPC.md` was
-written *before* batching was implemented (`RPC.md:144-150`), why every
+written *before* batching was implemented (`RPC.md` §«Qué afirma el registro de transiciones»), why every
 RFC is tied to an audit entry by number in both directions
-(`rfc/PROCESO.md:23-24`), and why each vector file carries the seal it
+(`rfc/PROCESO.md` §«Reglas», rule 5), and why each vector file carries the seal it
 was issued under (its `sellado` key).
 
 ## Reading `RPC.md` in order
 
-- **Transport and envelope** (`RPC.md:25-37`). HTTP `POST /`, JSON-RPC 2.0,
+- **Transport and envelope** (`RPC.md` §«Transporte y sobre»). HTTP `POST /`, JSON-RPC 2.0,
   one object per request; JSON-RPC batches are not accepted. The default
   body limit is 2,097,152 bytes, measured; one operation with its proof is
   about 159 KB in the body today, so a `zkssl_applyMany` holds 13 (measured
   in §615: 13 weighed 2,064,578 and 2,076,308 bytes in two runs, and 14 get
   a 413; it said 15 until then).
-- **Encoding** (`RPC.md:39-48`). `QUANTITY` is a u64 in `0x` hex without
+- **Encoding** (`RPC.md` §«Codificación»). `QUANTITY` is a u64 in `0x` hex without
   leading zeros; `DATA` is `0x` hex of even length; a `Digest` is 32 bytes
   in the same serialisation the layer persists. A non-canonical digest is
   rejected with `-32602` before the layer is touched.
-- **Methods** (`RPC.md:63-131`). Read methods; `zkssl_openAccount` (an
+- **Methods** (`RPC.md` §«Métodos»). Read methods; `zkssl_openAccount` (an
   account is born with zero balance; the three identifiers are derived on
   the client); the two-phase payment (`sendMaterials` → `applySend` on the
   payer's side, `claimMaterials` → `applyClaim` on the payee's side,
   `applyMany` for a batch of operations against one root); and the `dev_*`
   namespace, which only exists in builds with the `dev` feature and uses
   test custodians.
-- **Errors** (`RPC.md:133-142`). Three codes: unknown method, invalid or
+- **Errors** (`RPC.md` §«Errores»). Three codes: unknown method, invalid or
   non-canonical parameters, and a layer refusal whose `message` is the
   layer's own error. `StaleState` is expected under concurrency: refresh
   the view and retry.
-- **What the transition log always guarantees** (`RPC.md:152-170`).
+- **What the transition log always guarantees** (`RPC.md` §«Lo que el registro afirma SIEMPRE»).
   Consecutive sequence numbers from zero; `rootOld` of an entry is
   `rootNew` of the previous one, the first starting at genesis; `chain` is
   the running digest of the entry and everything before it; `proofDigest`
   ties the entry to what authorised it. The subsections that follow
-  (`RPC.md:171-364`) say exactly which of these survive batching and which
+  (from `RPC.md` §«`zkssl_applyMany` — N operaciones contra UNA raíz de arranque» through `RPC.md` §«Y una consecuencia para la conformidad») say exactly which of these survive batching and which
   do not — read them before building on the log.
-- **The signed epoch head** (`RPC.md:437-482`). `zkssl_signedEpochHead`
+- **The signed epoch head** (`RPC.md` §«`zkssl_signedEpochHead` — la última cabeza firmada», and its formats from `RPC.md` §«Formato v3»). `zkssl_signedEpochHead`
   returns the most recent head the node signed: the nine head fields,
   `publicKey`, `epochDigest`, `formatVersion`, `index` and `signature`,
   together, from the same heartbeat — one custody artefact. Format v3 adds
@@ -120,25 +120,25 @@ was issued under (its `sellado` key).
   answers are possible and none is a generic error: no heartbeat yet, a
   node started without a key (the head comes unsigned and says so), or a
   signed head.
-- **The extension proof** (`RPC.md:785-812`). `zkssl_consistencyProof`
+- **The extension proof** (`RPC.md` §«La prueba de extension»). `zkssl_consistencyProof`
   turns that check into a service: a holder sends its `mmrSize` and gets
   an O(log N) path against the history tree.
 - **Inclusion, the acknowledgement path, and what a path exposes**
-  (`RPC.md:568-739`). What a receipt proves, what an acknowledgement is,
+  (from `RPC.md` §«`zkssl_ackPath` — el camino de acuse» through `RPC.md` §«Qué promete el recibo, antes y después»). What a receipt proves, what an acknowledgement is,
   and the corrections the specification records about itself when an
-  earlier statement turned out to be wrong (`RPC.md:655-698`). Those
+  earlier statement turned out to be wrong (`RPC.md` §«CORRECCIÓN (§265)» and `RPC.md` §«CORRECCIÓN (§261)»). Those
   corrections are kept in place on purpose: the file narrates its own
   history.
-- **Co-signature transport** (`RPC.md:741-783`). `zkssl_submitCosig` and
+- **Co-signature transport** (`RPC.md` §«El transporte de la cofirma»). `zkssl_submitCosig` and
   `zkssl_cosigs` make the node the *transport* of witness co-signatures,
   not their authority: it checks that a co-signature is for the current
   epoch and that the signature closes, and it does **not** accredit the
   witness — which witnesses count is the client's policy, not the node's.
-- **Shutdown** (`RPC.md:814-859`). What the operator publishes on closing
+- **Shutdown** (`RPC.md` §«Apagado»). What the operator publishes on closing
   (nothing that was not already published every heartbeat) and what the
   holder keeps: the last signed head, the proof digest of their entry, and
   the acknowledgement path.
-- **Operating notes** (`RPC.md:860-871`). One node, one writer; ledger
+- **Operating notes** (`RPC.md` §«Notas operativas»). One node, one writer; ledger
   parameters are immutable once persisted; distributed consensus is a
   different problem and is not implemented.
 
@@ -149,7 +149,7 @@ Each `vectors/zkssl-X.Y.json` is one object with the same eight keys:
 `entradas`, `epoch_digest`, `supply`, `pending`. An implementation of a
 given wire version is checked against the file of *that* version; the
 conformance check refuses to validate vectors of a different version, and
-that refusal is correct (`RPC.md:11-13`). The three files are kept side by
+that refusal is correct (the opening note of `RPC.md` §«Arqueo JSON-RPC»). The three files are kept side by
 side so that a `0.1` or `0.2` implementation can still be checked against
 what it claims to speak.
 
@@ -163,12 +163,12 @@ the canon red.
 
 A change to what crosses the wire — `RPC.md`, `openrpc.json`, the
 vectors — does not enter by direct commit; it enters by RFC
-(`rfc/PROCESO.md:3-7`). States: DRAFT → PROPOSED → ACCEPTED → FINAL, or
-WITHDRAWN at any point (`rfc/PROCESO.md:8-10`). ACCEPTED requires the
+(the opening of `rfc/PROCESO.md` §«Proceso RFC del protocolo»). States: DRAFT → PROPOSED → ACCEPTED → FINAL, or
+WITHDRAWN at any point (`rfc/PROCESO.md` §«Estados»). ACCEPTED requires the
 specification updated, the OpenRPC document regenerated, the vectors
 re-issued or new ones under the new version, and green suites
-(`rfc/PROCESO.md:21-22`). The audit entry that seals the change cites the
-RFC by number, and the RFC cites the entry (`rfc/PROCESO.md:23-24`).
+(`rfc/PROCESO.md` §«Reglas», rule 4). The audit entry that seals the change cites the
+RFC by number, and the RFC cites the entry (`rfc/PROCESO.md` §«Reglas», rule 5).
 
 ## Where the rest lives
 

@@ -65,5 +65,47 @@ for p in ficheros("rs"):
             muertas += 1
             fallos += 1
 
-print(f"{len(citas)} nombres citados · {sum(1 for t in citas if t not in docs)} fantasmas · {muertas} secciones muertas")
+# v3 (§616, la 112): la cita por ENCABEZADO, `FICHERO.md` §«Titulo», desde `.md` y desde `.rs`.
+# El titulo tiene que ABRIR un encabezado vivo de ese documento, leido sin sus `#`, sus `**` y sus
+# ⚠️, y fuera de los bloques de codigo. Es la forma con que la guia de `spec/README.md` cita
+# `spec/RPC.md` desde el §616: los numeros de linea se desfasaban sin que nada lo viera -en
+# 221170f, de diecisiete, solo uno caia en su sitio-, y un titulo que se renombra o desaparece
+# ahora se NOMBRA aqui. El fichero se resuelve junto al que cita, despues en la raiz, y por
+# ultimo por su nombre.
+ENCABEZADO = re.compile(r"`([A-Za-z0-9_./-]+\.md)`\s*§\s*«([^»]+)»")
+
+
+def normal(t):
+    return re.sub(r"\s+", " ", t.replace("⚠️", "").replace("**", "")).strip()
+
+
+def titulos(ruta):
+    fuera, dentro = [], False
+    for linea in ruta.read_text(encoding="utf-8", errors="replace").splitlines():
+        if linea.lstrip().startswith("```"):
+            dentro = not dentro
+            continue
+        if not dentro and linea.startswith("#"):
+            fuera.append(normal(linea.lstrip("#")))
+    return fuera
+
+
+encabezados = 0
+rotos = 0
+cache_t = {}
+for p in list(ficheros("rs")) + list(ficheros("md")):
+    for doc, titulo in ENCABEZADO.findall(p.read_text(encoding="utf-8", errors="replace")):
+        ruta = next((c for c in (p.parent / doc, RAIZ / doc) if c.is_file()),
+                    docs.get(Path(doc).name))
+        if ruta is None:
+            continue  # ya contado como FALTA
+        encabezados += 1
+        if ruta not in cache_t:
+            cache_t[ruta] = titulos(ruta)
+        if not any(h.startswith(normal(titulo)) for h in cache_t[ruta]):
+            print(f"ENCABEZADO MUERTO  {doc} §«{titulo}»  (citado en {p})")
+            rotos += 1
+            fallos += 1
+
+print(f"{len(citas)} nombres citados · {sum(1 for t in citas if t not in docs)} fantasmas · {muertas} secciones muertas · {encabezados} encabezados citados, {rotos} muertos")
 sys.exit(1 if fallos else 0)

@@ -1316,7 +1316,7 @@ vez de dejarlo en un comentario.
 
 ⚠️ **Esta lista es la de `zk-core`/Groth16, el backend de COMPARACIÓN.**
 El camino de producción es STARK (§106) y sus faltantes están en
-`README.md` §«Estado y límites» y en `SECURITY.md`. Se dice aquí porque
+`README.md` §«Qué garantiza y qué no» y en `SECURITY.md`. Se dice aquí porque
 leer esta lista como «lo que le falta al sistema» sería confundir el
 backend que se conserva **como evidencia de por qué se eligió STARK**
 con el que está en el camino de producción.

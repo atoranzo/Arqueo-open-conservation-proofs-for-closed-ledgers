@@ -2184,6 +2184,18 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   números de línea, así que nada lo ata. **Lo que pide**: recomputar cada tramo
   por su encabezado y, mejor, que un cerrojo lo compruebe o que la guía cite por
   sección y no por línea.
+  ✅ **CERRADA en el §616**: la guía cita por ENCABEZADO -`RPC.md` §«Errores»,
+  la forma que `ARQUITECTURA.md` ya usaba- y `verificar_citas` (v3) comprueba que
+  cada encabezado citado abre uno vivo del documento: treinta, ninguno muerto. Al
+  estrenarse nombró el precedente, que estaba roto: citaba en `README.md` una
+  sección «Estado y límites» que no existe.
+
+- [ ] **113. La cifra de vectores de `README.md` no la ata nada.** Medido en el
+  §616: la tabla «Estado» decía que `spec/vectors/` tiene 380 ficheros, y en
+  221170f tenía 381; el §610 le sumó un KAT y el §614 treinta y siete vectores sin
+  moverla, porque `check_figures` sólo vigila cifras de tests. Corregida a 419 en
+  los dos README. **Lo que pide**: que un cerrojo la compare con `git ls-files
+  spec/vectors`, o que la tabla no dé un número que nadie recuenta.
 
 ## F. Publicacion, cuando el circuito este cerrado
 

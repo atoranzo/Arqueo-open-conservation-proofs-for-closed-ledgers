@@ -43471,3 +43471,42 @@ transporte y no se toca-; lo que cambia es lo que se dice de él.
 **Lo que NO cierra.** La 112; y el giro del RFC-0014 a ACEPTADO, que espera el canon y los bancos
 del autor sobre los sellos que lo construyen.
 
+## §616 — la 112: la guía de `RPC.md` cita por encabezado, y un cerrojo lo ata
+
+El commit que lleva este asiento, sobre `e8ac246` (el S615). Un solo sello: la guía de
+`spec/README.md`, el cerrojo que la ata, la cita rota que el cerrojo encontró, la cifra de vectores
+de los dos README, dos entradas del BACKLOG y este asiento, con el canon `--sello` VERDE dentro del
+bloque. 6 ficheros más este asiento, con 83 inserciones y 29 borrados fuera de él.
+
+**De dónde sale.** De la 112, que el §615 abrió al medir: la guía «Reading `RPC.md` in order» y las
+secciones vecinas de `spec/README.md` citaban `spec/RPC.md` y `spec/rfc/PROCESO.md` por NÚMERO DE
+LÍNEA, y los números se habían desfasado sin que nada lo viera -en 221170f, de las diecisiete a
+`RPC.md`, sólo la del transporte empezaba en su encabezado; la regla 5 de `PROCESO.md` se había
+corrido cuando la 3 creció en el §538-.
+
+**Lo que hace.** (1) Las veinticinco citas por línea de `spec/README.md` pasan a citar por
+ENCABEZADO, con la forma que `ARQUITECTURA.md` ya usaba -el fichero entre comillas invertidas, `§` y
+el título entre comillas latinas-; las que citaban un párrafo citan la sección que lo contiene, y
+las reglas de `PROCESO.md`, su sección y su número de regla. (2) `tools/verificar_citas.py` (v3)
+comprueba toda cita de esa forma, desde `.md` y desde `.rs`: el título tiene que ABRIR un
+encabezado vivo del documento -leído sin sus `#`, sus `**` y sus ⚠️, y fuera de los bloques de
+código-, resuelto junto al fichero que cita, después en la raíz y por último por su nombre. Un
+título que se renombre o desaparezca se NOMBRA. (3) **Lo que encontró al estrenarse**: el único
+precedente de la forma estaba roto -`ARQUITECTURA.md` citaba en `README.md` una sección «Estado y
+límites» que no existe-; ahora cita «Qué garantiza y qué no», que es donde viven los faltantes. Y
+me cazó a mí: la primera redacción de la 112 cerrada citaba esa sección rota como ejemplo, con la
+misma forma; se reescribió. (4) **La cifra de vectores**: la tabla «Estado» de los dos README decía
+que `spec/vectors/` tiene 380 ficheros; en 221170f tenía 381, el §610 le sumó un KAT y el §614
+treinta y siete vectores, y ninguno la movió porque `check_figures` sólo vigila cifras de tests.
+Dice 419, y queda como la 113.
+
+**El falsador, ENSAYADO.** Con el encabezado «Errores» de `RPC.md` renombrado en el árbol, el
+cerrojo sale con 1 y nombra la cita de la guía; restaurado, treinta y un encabezados citados y
+ninguno muerto.
+
+**Contadores.** Ninguno se mueve. El canon ya corría `verificar_citas`: desde aquí mira también
+los encabezados.
+
+**Lo que NO cierra.** La 113; y el giro del RFC-0014 a ACEPTADO, que espera el canon y los bancos
+del autor sobre los sellos que lo construyen.
+
