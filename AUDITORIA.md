@@ -43387,3 +43387,52 @@ tocado; la cabeza, quieta; el cable, aditivo bajo `zkssl/0.4`.
 banco que las siembre contra un nodo real -con el lote APLICADO, que pide pruebas STARK reales-, y
 el RFC-0014 a ACEPTADO cuando esté.
 
+## §614 — RFC-0014 E5: el banco del recibo agregado y sus treinta y siete vectores
+
+El commit que lleva este asiento, sobre `0ee6718` (el S613). Un solo sello: el banco, el ejemplo
+del sdk que hace de agregador, los vectores y su manifiesto, el contrato del sobre, la etapa
+marcada en el RFC, una entrada del BACKLOG y este asiento, con el canon `--sello` VERDE dentro del
+bloque. 7 ficheros de texto más este asiento, con 413 inserciones y 10 borrados fuera de él, el
+manifiesto con sus 37 líneas y 37 vectores que nacen. Con este sello todas las etapas del RFC-0014
+están construidas.
+
+**Lo que hace.** (1) `tools/banco_recibo_agregado.sh`, el vigesimoprimer banco: TRES nodos reales
+de semilla '37' x 96 que firman, uno tras otro, y el mando juzgando sin ellos. El del LOTE, con el
+grifo `--dev` y latido de 1 s: el recibo de la vía directa da el digest de la prueba de ceros, un
+lote de ceros cae al VALIDAR y otro por su FORMA, y el ejemplo `d2_lote_rpc` del sdk paga un lote de
+DOS envíos con pruebas STARK reales; cada acuse sale de `zkssl_ackPath`. Los dos de la PRENDA, con
+latido de 3 s, cada uno con su siembra del sandbox y una prenda de verdad hecha por la boca del
+prendador: la mutada, la buena y, en el segundo, un OCUPANTE escrito antes por la boca libre que
+hace caer la prenda por `ConsumoColision`. Las cabezas se recogen en un hilo todo el rato: la del
+acuse y la juzgada tienen que estar, también mientras el sdk prueba. No escribe en el árbol, y lo
+comprueba. (2) `d2_lote_rpc` imprime lo que un agregador reenvía a cada titular (D-C): la
+composición del lote y la respuesta, con su recibo, una línea JSON por lote. (3) Los 37 sobres de
+la corrida, COPIADOS a `spec/vectors/completitud/` -diez veredictos y veintisiete negativos, uno por
+regla producible y por sitio-, con sus líneas en el manifiesto derivadas de las propias llamadas
+del banco: el arnés da 73 de 73. (4) `spec/PAQUETE.md` (2.11 y sección 9), `spec/README.md`, el
+RFC-0010 y la fila E5 del RFC-0014, al día.
+
+**Lo que se MIDIÓ por el camino, y se dice.** (a) `d2_lote_rpc` llevaba roto desde el §261:
+`zkssl_sendMaterials` y `zkssl_claimMaterials` exigen la clave de VISTA y el ejemplo no la mandaba;
+compilaba, así que el canon no lo veía. Se arregla aquí porque el banco lo usa. Los otros tres que
+llaman a esos brazos -`h1_techo_apply`, `i1_concurrencia`, `j1_lote_mixto`- tienen el mismo fallo, y
+quedan como la 111 del BACKLOG: no son de esta etapa. (b) La primera corrida dio dos sobres ROJOS,
+y eran del banco: el sobre de rechazo de una `StaleState` se juzga sobre la cabeza del MISMO `seq`
+que el rechazo (`exige_misma`), y el cierre de la era se había firmado cuando el sdk ya había
+movido el registro. El banco cierra ahora esas eras antes de lanzar el sdk y toma la cabeza del
+`seq` del rechazo; el mando tenía razón.
+
+**Lo que se declara.** Los tres RECHAZOS SIN FUNDAMENTO y el cuarto estado del lote se DERIVAN por
+mutación de lo capturado: un nodo honrado no los produce. No se producen aquí las claves
+DISTINTAS -su regla es la de las formas del RFC-0010, con sus vectores- ni una resolución FUERA de
+la ventana. Dos pruebas del mismo enunciado no son los mismos bytes (S538): estos vectores se
+copian, no se re-derivan. La familia pasa de 2,1 a 7,3 MB: cada sobre de prenda lleva su prueba
+(unos 130 KB) y cada cabeza su firma XMSS (unos 37 KB), y un catálogo de conformidad para otra
+implementación no se recorta por peso.
+
+**Contadores.** Ningún test nuevo -los ejemplos no lo son- y ningún pin movido; el arnés de
+completitud, 36 -> 73; los bancos, 20 -> 21. Ningún `Cargo` tocado; el nodo, el mando y el cable,
+quietos.
+
+**Lo que NO cierra.** El giro del RFC-0014 a ACEPTADO, en su sello; y la 111.
+

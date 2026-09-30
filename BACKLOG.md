@@ -2161,6 +2161,16 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   `spec/vectors/completitud/`, copiado de `banco_mentiroso_sin_resolver.sh
   --guardar`; el arnés da 36 de 36, desde el árbol y desde el tarball.
 
+- [ ] **111. Tres ejemplos del sdk llevan rotos desde el §261.** Medido en el §614:
+  `h1_techo_apply`, `i1_concurrencia` y `j1_lote_mixto` llaman a
+  `zkssl_sendMaterials` -y el último también a `zkssl_claimMaterials`- sin la clave
+  de VISTA que esos brazos exigen desde el §261, y el nodo los rechaza con
+  `missing field viewKey`. Compilan, así que el canon no los ve: son instrumentos de
+  medida que nadie ha vuelto a correr. `d2_lote_rpc` tenía el mismo fallo y se
+  arregló en el §614 porque el banco del recibo agregado lo usa. **Lo que pide**:
+  mandar `viewKey` desde la cartera, como hace `Account`, y correrlos una vez.
+  Toca sólo ejemplos: ni el nodo, ni el cable, ni los vectores.
+
 ## F. Publicacion, cuando el circuito este cerrado
 
 La 28 se hace **al final**, por decision explicita: no se tocan los

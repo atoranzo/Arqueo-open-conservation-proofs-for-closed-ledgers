@@ -149,6 +149,9 @@ fn main() -> anyhow::Result<()> {
                 "zkssl_sendMaterials",
                 json!({
                     "sender": Q(p.ia),
+                    // §614: el brazo exige la clave de VISTA desde el §261, y este banco no la
+                    // mandaba: llevaba roto desde entonces sin que nadie lo corriera.
+                    "viewKey": digest_to_wire(&Wallet::from_elements(p.sa).view_key()),
                     "receiverId": digest_to_wire(&p.id_b),
                     "amount": Q(1_000u64),
                     "salt": digest_to_wire(&[
@@ -199,6 +202,20 @@ fn main() -> anyhow::Result<()> {
             })
             .collect();
         let res: Value = rpc.call("zkssl_applyMany", json!({ "ops": ops }))?;
+        // §614 (RFC-0014 E5): lo que el AGREGADOR reenvia a cada titular del lote (D-C): la
+        // composicion -por operacion, el digest de su prueba, su cuenta y su posicion- y la
+        // respuesta, con su recibo. Una linea JSON por lote, que lee el banco del recibo agregado.
+        let composicion: Vec<Value> = recibos
+            .iter()
+            .map(|(r, ia, _)| {
+                json!({
+                    "hashPrueba": digest_to_wire(&zk_ssl::log::digest_of_proof(&r.proof)),
+                    "cuenta": Q(*ia),
+                    "posicion": Q(r.notice.position),
+                })
+            })
+            .collect();
+        println!("D2: lote-envio {}", json!({ "composicion": composicion, "respuesta": res }));
         lotes += 1;
         let n_apl = res["applied"].as_array().map(|a| a.len()).unwrap_or(0);
         eprintln!(
@@ -221,6 +238,7 @@ fn main() -> anyhow::Result<()> {
                 "zkssl_claimMaterials",
                 json!({
                     "receiver": Q(p.ib),
+                    "viewKey": digest_to_wire(&Wallet::from_elements(p.sb).view_key()),
                     "notice": wire::PendingNoticeDto::from(aviso),
                 }),
             )?;
@@ -256,6 +274,17 @@ fn main() -> anyhow::Result<()> {
             })
             .collect();
         let res_c: Value = rpc.call("zkssl_applyMany", json!({ "ops": ops_c }))?;
+        let composicion_c: Vec<Value> = recibos_c
+            .iter()
+            .map(|(r, ib, _, av)| {
+                json!({
+                    "hashPrueba": digest_to_wire(&zk_ssl::log::digest_of_proof(&r.proof)),
+                    "cuenta": Q(*ib),
+                    "posicion": Q(av.position),
+                })
+            })
+            .collect();
+        println!("D2: lote-cobro {}", json!({ "composicion": composicion_c, "respuesta": res_c }));
         lotes += 1;
         let n_c = res_c["applied"].as_array().map(|a| a.len()).unwrap_or(0);
         eprintln!(

@@ -442,7 +442,8 @@ cabeza firmada por la misma clave, el que la firma lleva embebido (§399), con `
 **El banco es `tools/banco_completitud.sh`** (§574), que lo reproduce en vivo contra un nodo real
 que firma —con `--largo`, hasta que la ventana EXPIRA—, y **el catálogo es
 `spec/vectors/completitud/`** (§574), la novena familia del artefacto, COPIADA de una corrida
-suya: sección 9.
+suya: sección 9. Las formas 5 y 6 tienen su propio banco, `tools/banco_recibo_agregado.sh`
+(§614), y sus vectores en la misma familia.
 
 ### 2.12 El sobre del ancla (§592, RFC-0012 E3)
 
@@ -1021,7 +1022,16 @@ acuse de la entrada bajo la cabeza que la firma. Las que el sobre comparte con o
 una cabeza, la lectura del camino, lo que la resolución re-verifica— viven en ellas, y se declara.
 Dos corridas del banco dan el mismo cierre salvo `emittedAtUnix`, que no va firmado: la familia se
 COPIA de la corrida del sello. Su productor es `tools/banco_completitud.sh` (§574), con `--largo`
-—unos 24 minutos— para la ventana expirada.
+—unos 24 minutos— para la ventana expirada. **Desde el §614 cubre también las formas `lote` y
+`prenda`** (RFC-0014, E5): TREINTA Y SIETE vectores más, COPIADOS de una corrida de
+`tools/banco_recibo_agregado.sh --guardar` contra tres nodos reales —el del lote con el grifo
+`--dev`, contra el que el ejemplo `d2_lote_rpc` del sdk paga un lote de dos envíos con pruebas STARK
+reales; los dos de la prenda con su siembra y una prenda de verdad—: diez veredictos —el LOTE
+aplicado, rechazado con prueba, por su FORMA, declarado y dos RECHAZOS SIN FUNDAMENTO; la PRENDA
+aceptada, rechazada con prueba, rechazada por la capa y un RECHAZO SIN FUNDAMENTO— y veintisiete
+negativos, uno por regla producible y por sitio. Los RECHAZOS SIN FUNDAMENTO y el cuarto estado del
+lote se DERIVAN por mutación de lo capturado, porque un nodo honrado no los produce, y se declara;
+las claves distintas y la resolución fuera de la ventana no se producen ahí.
 
 **Desde §593 cubre el sobre del ANCLA** (RFC-0012, E4): `spec/vectors/ancla/` trae CUATRO
 positivos CAPTURADOS de un nodo real que firma un latido por segundo, uno por modo: el ancla

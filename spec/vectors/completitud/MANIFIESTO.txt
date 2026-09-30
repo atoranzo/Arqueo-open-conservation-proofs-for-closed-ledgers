@@ -72,3 +72,58 @@ neg-declarada-con-prueba.json|1|no es de las que el RFC-0007 dejo sin prueba por
 neg-declarada-data-sin-recepcion.json|1|resolucion.data: su data no lleva recepcion
 neg-declarada-de-otra-operacion.json|1|resolucion.data: es de OTRA operacion
 neg-resolucion-desconocida.json|1|desconocido: se lee acuse, rechazo o declarada
+# ── §614 (RFC-0014 E5): los recibos del LOTE y de la PRENDA, y sus resoluciones (PAQUETE.md 2.11,
+# formas 5 y 6). TREINTA Y SIETE, COPIADOS de UNA corrida de su productor, que vive en el arbol:
+# `bash tools/banco_recibo_agregado.sh --guardar <dir>`, contra TRES nodos reales de semilla '37' x
+# 96 que firman. EL LOTE, en un nodo con el grifo `--dev` y latido de 1 s: un lote de ceros cae al
+# VALIDAR (StaleState, su sobre de rechazo con la cabeza del MISMO seq) y otro por su FORMA (la
+# misma cuenta dos veces, operacion 1); el ejemplo `d2_lote_rpc` del sdk paga un lote de DOS envios
+# con pruebas STARK reales y reenvia la composicion y la respuesta (§614), y cada acuse sale de
+# `zkssl_ackPath`. El cuarto estado se DERIVA por MUTACION de la causa, y los dos RECHAZOS SIN
+# FUNDAMENTO -por cuenta y por posicion- por MUTACION del `data`: un nodo honrado no los produce.
+# LA PRENDA, en dos nodos con latido de 3 s, cada uno con su siembra del sandbox del cli y una
+# prenda DE VERDAD hecha por la boca del prendador: la MUTADA se rechaza -contra la cabeza JUZGADA,
+# de indice era - 1-, la buena entra -el PAR, con el camino de `zkssl_consumoPath`-, el RECHAZO SIN
+# FUNDAMENTO se DERIVA por MUTACION de la respuesta aceptada, y en el segundo nodo un OCUPANTE
+# escrito antes por la boca libre hace que la capa la rechace con ConsumoColision. DIEZ veredictos
+# -seis del lote y cuatro de la prenda, con los tres RECHAZOS SIN FUNDAMENTO- y VEINTISIETE
+# negativos, uno por regla PRODUCIBLE de las dos resoluciones y por SITIO. No se producen aqui, y se declara: las claves DISTINTAS -su regla es la
+# de las formas de arriba, con sus vectores- y una resolucion FUERA de la ventana. Dos pruebas del
+# mismo enunciado no son los mismos bytes (S538): estos vectores se COPIAN, no se re-derivan.
+lote-aplicado.json|0|RESUELTA como LOTE aplicado
+lote-rechazado-con-prueba.json|0|RESUELTA como LOTE rechazado con prueba
+lote-por-su-forma.json|0|RESUELTA como LOTE rechazado por su FORMA
+lote-declarada.json|3|DECLARADA, NO PROBADA
+lote-sin-fundamento-cuenta.json|1|RECHAZO SIN FUNDAMENTO
+lote-sin-fundamento-posicion.json|1|RECHAZO SIN FUNDAMENTO
+neg-lote-sin-composicion.json|1|falta composicion
+neg-lote-composicion-vacia.json|1|composicion VACIA
+neg-lote-composicion-sin-cuenta.json|1|resolucion.composicion[1]: falta cuenta
+neg-lote-composicion-ajena.json|1|la composicion NO es la del recibo
+neg-lote-una-de-tres.json|1|lleva UNA de tres
+neg-lote-acuses-de-menos.json|1|acuse(s) para un lote de 2
+neg-lote-acuse-de-otra-prueba.json|1|resolucion.acuses[0]: el acuse es de OTRA prueba
+neg-lote-acuse-sin-cabeza.json|1|resolucion.acuses[0]: falta cabeza
+neg-lote-operacion-fuera.json|1|la operacion 1 no esta en un lote de 1
+neg-lote-sin-operacion.json|1|nombra su operacion
+neg-lote-data-de-otra-operacion.json|1|resolucion.data: es de OTRA operacion
+neg-lote-sin-campos.json|1|resolucion.data: falta campos
+neg-lote-causa-con-prueba.json|1|se exhibe su sobre de rechazo
+prenda-aceptada.json|0|RESUELTA como PRENDA aceptada
+prenda-rechazada-con-prueba.json|0|RESUELTA como PRENDA rechazada con prueba
+prenda-sin-fundamento.json|1|RECHAZO SIN FUNDAMENTO
+neg-prenda-juzgada-otra.json|1|no es el de la cabeza que el nodo juzgo
+neg-prenda-sin-juzgada.json|1|falta juzgada
+neg-prenda-respuesta-aceptada.json|1|no es una negativa
+neg-prenda-de-otra-prueba.json|1|la prenda es de OTRA prueba
+neg-prenda-negativa-de-otro-recibo.json|1|resolucion.respuesta: es de OTRA operacion
+neg-prenda-sin-sobre.json|1|resolucion: falta sobre (el de la prenda
+neg-prenda-sobre-no-prenda.json|1|el sobre no es de tipo prenda
+neg-prenda-una-de-tres.json|1|lleva UNA de tres
+neg-prenda-consumo-sin-camino.json|1|falta resolucion.consumo.camino
+neg-prenda-consumo-otra-posicion.json|1|el isRight recibido NO es el de la posicion
+neg-prenda-consumo-no-publicado.json|1|la marca NO esta bajo el consRoot de su cabeza
+prenda-rechazada-por-la-capa.json|0|RESUELTA como PRENDA rechazada por la capa
+neg-prenda-colision-como-negativa.json|1|la negativa lleva causa
+neg-prenda-rechazo-de-otro-recibo.json|1|resolucion.rechazo: es de OTRA operacion
+neg-prenda-tipo-desconocido.json|1|desconocido: se lee acuse, rechazo o declarada

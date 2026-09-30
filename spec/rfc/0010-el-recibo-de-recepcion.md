@@ -11,7 +11,8 @@
   vectores son nuevos bajo `zkssl/0.4` —`nucleo/epoch_digest_v6.json` y `nucleo/recibo_digest.json`
   (§557), el fuera-del-conjunto `rechazo-formatVersion-7` del cable y del paquete (§558-B), el
   positivo v6 y dos rechazos del cable (§570) y `completitud/`, treinta y cinco sobres y su
-  manifiesto (§574), treinta y seis desde el §605—; y las suites están verdes: el canon los corre por el arnés, y también desde
+  manifiesto (§574), treinta y seis desde el §605 y setenta y tres desde el §614, con los del
+  RFC-0014—; y las suites están verdes: el canon los corre por el arnés, y también desde
   dentro del tarball. **Lo que se acepta CON su residuo, declarado:** el veredicto 1 no tiene vector
   —pide la prueba STARK real de un envío aplicado; su verificación es la del paquete de posición.
   Desde el §602 se produce EN VIVO, en `tools/banco_mentiroso_sin_resolver.sh`, y desde el §605
