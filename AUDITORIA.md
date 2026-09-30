@@ -42074,3 +42074,45 @@ sus casos, positivos y negativos.
 **Lo que NO cierra.** Nadie obliga a correr `--bancos`: la línea lo dice, no lo impone. Y el
 `--largo` de la completitud sigue sin vigilar.
 
+## §583 — el BACKLOG, recontado contra el árbol: la cuenta cuadraba y la lista no
+
+El commit que lleva este asiento, sobre `71c5aad` (el S582). Un solo sello: `BACKLOG.md` y este
+asiento, con el canon `--sello` VERDE dentro del bloque. Un fichero más este asiento, con 49
+inserciones y 5 borrados fuera de él.
+
+**De dónde sale.** De la deuda que la sesión 193 anotó al abrir: la cabecera del `BACKLOG` se
+revisó por última vez el 21 de agosto; desde entonces han pasado 314 commits, y diez de ellos
+lo tocaron.
+
+**Lo que se MIDIÓ.** (1) La cuenta de casillas: 50 abiertas y 56 resueltas, lo mismo que la
+cabecera. Contar, que es lo que la cabecera promete, no encontró nada. (2) Diez entradas abiertas
+contra el árbol, una a una: las que el trabajo reciente podía tocar y las que se comprueban con
+una búsqueda o una compilación. TRES estaban cerradas sin marcar. La **69** -tres ayudantes de
+test sin usar en `circuit_settlement.rs`- desde el §176 (`1f41a1d`), que borró el fichero
+entero: `t2b_recuperacion_nativa` y `t2a_salt_hoja` no existen en el árbol. La **106** -la API
+de emisión retirada, documentada en tres sitios- desde el §361 (`203919c`), que arregló los tres
+y el doc traspuesto y escribió «BACKLOG quieto». La **98** -la sección 3.8 de `VISION.md`- desde
+el §448 (`3294986`), que llevó el documento a `doc/historia/` con un aviso de historia: la vía
+que la propia entrada prefería a media reparación. Y CUATRO siguen abiertas con algo nuevo que
+decir: la **81**, compilada con `--features sandbox`, da los tres avisos en las mismas líneas;
+en la **95** los esquemas que cuelgan del OpenRPC han CRECIDO -35 referenciados, 5 declarados,
+30 sin resolver, donde eran 23 y 4- y la (b) ya no se da; la **94** gana una clase, los bancos,
+vigilada desde el §582 y no cerrada; y la **97** gana un cruce con `zk-ssl-air` (§463), que hizo
+la primera pieza de su camino para los AIR del kit. Las otras tres -55, 101 y 105- dicen lo que
+el árbol dice: el `xmss` publicado sigue con `full_height` e `index_bytes` en `pub(crate)`.
+
+**Lo que hace.** Marca `[x]` la 69, la 98 y la 106, cada una con el sello que la cerró y la
+razón de que siguiera abierta; la de la 98, REVERSIBLE, porque cerrar como historia es una
+decisión y no una medida. Anota la 81, la 94, la 95 y la 97. Y la cabecera dice 47 abiertas y 59
+resueltas, CONTADAS por el propio script antes de escribir, con una nota: es una rancia de otra
+clase, porque la cuenta cuadraba y aun así la lista mentía, y nombra las diez miradas y las
+cuarenta que NO.
+
+**Contadores.** Ninguno se mueve. `check_figures` -cero cifras de tests en entradas abiertas-,
+`check_cifras`, `check_publicadas` y `verificar_citas`, VERDES.
+
+**Lo que NO cierra.** Cuarenta entradas abiertas sin mirar contra el árbol. Casi todas son
+decisiones o frentes -la auditoría externa, el consenso, la sucesión, la agilidad
+criptográfica-, que ningún sello cierra por accidente; pero eso es una suposición, no una medida.
+Y la lección: un sello que arregla lo que una entrada nombra marca la entrada en el mismo commit.
+

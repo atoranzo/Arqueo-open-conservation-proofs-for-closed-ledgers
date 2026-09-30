@@ -12,8 +12,14 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 50 abiertas, 56 resueltas — **3 suspendidas** (16, 22 y 28).
-Ultima revision: 21 de agosto de 2026 — **contada, no recordada**.
+**Estado**: 47 abiertas, 59 resueltas — **3 suspendidas** (16, 22 y 28).
+Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583).
+
+⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
+asi la lista mentia. Tres entradas abiertas estaban cerradas en el arbol: la 69
+desde el §176, la 106 desde el §361 y la 98 desde el §448. Contar casillas no ve
+eso; hay que mirar el arbol. Miradas contra el, una a una: 55, 69, 81, 94, 95, 97,
+98, 101, 105 y 106. Las otras cuarenta, NO.
 
 ## La cadena de la oponibilidad, de un vistazo
 
@@ -1417,6 +1423,9 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   (§275). Arreglo: quitar el `mut` y las dos asignaciones muertas —o
   usarlas—; se marca aquí cuando el ejemplo compile limpio.
 
+  Medida otra vez en el §583: los tres avisos siguen, en las mismas lineas (:244,
+  :254 y :289), compilando con `--features sandbox`, que el ejemplo exige.
+
 - [x] **82. Acumulador de razones para romper el formato del log.** Una
   rotura de formato cuesta persistencia, store, DTO, vector y spec, así
   que «un formato se rompe una vez por razón» tiene corolario: **se rompe
@@ -1514,6 +1523,11 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   `spec/RPC.md`; (c) se resuelve solo con el (iii); (d) es barato y no
   depende de los otros.
 
+  Medida otra vez en el §583: el documento referencia 35 esquemas distintos y declara
+  5 -`Bool`, `DATA`, `Digest`, `ProtocolVersion` y `Q`-, asi que cuelgan 30 (eran 23 y
+  4): la (a) ha CRECIDO con el protocolo. La (b) ya no se da: todo lo declarado se
+  referencia.
+
 - [ ] **96. Una RELACION publicada, INVERTIDA.** Los tres preprints afirman
   que la mitad cara de un pago cae en el RECEPTOR —cobro de unos 500 ms
   contra 283 ms de envio— y construyen sobre eso un argumento normativo:
@@ -1565,7 +1579,12 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **sobrevive a la decision sobre la rama B**: vale aunque la agregacion
   se abandone, y por eso no vive dentro de la 22.
 
-- [ ] **98. `VISION.md` §3.8: una seccion entera construida sobre la aritmetica de la era de UN PASO.**
+  **Cruce, sin cerrarla (§583).** El §463 hizo nacer `zk-ssl-air` con la primera pieza
+  de este camino -los cuatro `winter-*` sueltos y clavados, sin `winter-prover`- para
+  los AIR que el kit verifica. Lo que partio el spike del §305 no se ha partido en el
+  arbol.
+
+- [x] **98. `VISION.md` §3.8: una seccion entera construida sobre la aritmetica de la era de UN PASO.**
   «Sobre la retencion de pruebas — P7 aplicado» compara retencion central
   contra distribuida, y su aparato numerico entero viene de la via de un paso,
   **retirada desde entonces**: la acumulacion por millar (`:325`), su derivada
@@ -1586,6 +1605,13 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   exclusion. La conclusion cualitativa de la seccion —la retencion distribuida
   gana por dos ordenes de magnitud— **probablemente sobrevive**: lo que cambia
   es la magnitud del factor, no su signo.
+
+  ✅ **CERRADA COMO HISTORIA en el §448** (`3294986`): `VISION.md` salio de la raiz a
+  `doc/historia/`, con un aviso que dice que se conserva tal cual y que sus
+  afirmaciones en presente son del proyecto de entonces. Es la via que esta entrada
+  preferia a media reparacion: coherentemente vieja, con una nota que la senala.
+  Marcada en el recuento del §583, REVERSIBLE: si se quiere la reparacion, se reabre
+  midiendo el denominador.
 
 - [x] **99. La marca del cofirmante se dispara también cuando las dos líneas
   son IDÉNTICAS.** `contar_acreditacion` marca a un cofirmante en cuanto
@@ -1668,7 +1694,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   ⚠️ **SIGUE ABIERTA por DOS**: la auditoria por terceros, y la delegacion de
   la prueba, respaldada por la cabecera de `client.rs` pero no declarada aqui.
 
-- [ ] **106. La API de emisión RETIRADA sigue documentada en tres sitios.**
+- [x] **106. La API de emisión RETIRADA sigue documentada en tres sitios.**
   Medido en el §342 al censar el ámbito de la cabecera de la capa.
   `ARQUITECTURA.md:6-17` abre el documento con un ejemplo que usa
   `SovereignLayer::open(..., issuer_key, ...)`, `layer.mint(issuer_key, ...)` y
@@ -1683,6 +1709,14 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   envejecida, y por eso no se tocó nada: decidirlo exige leer entero cada sitio.
   **Cruce**: misma familia que el §329, el §339 y el §341, ahora también en el
   documento principal y en el resumen público.
+
+  ✅ **CERRADA EN EL §361** (`203919c`): la portada de `ARQUITECTURA.md` dejo la API
+  retirada, `accounts.rs` dejo de decir que emitir exige la clave del emisor, y el doc
+  traspuesto volvio a su funcion. Aquel asiento dijo «BACKLOG quieto», y la entrada
+  siguio abierta hasta el recuento del §583. Fuera de lo que nombraba, y sin medir
+  aqui: `layer.mint(issuer_key, …)` sigue en `ARQUITECTURA.md:1077`, en la seccion
+  «Emision: la ultima puerta por la que se podia crear dinero».
+
 ## E. Operacion
 
 - [ ] **17. Replica y alta disponibilidad.** **Comprobable**: `grep -rn
@@ -1940,6 +1974,11 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   aviso a la vez. La nota que habla de lo que el instrumento NO VE fue
   cazada por el instrumento en lo que SI ve. Queda escrito porque es el
   argumento de la propia nota, del derecho.
+
+  **(f) Los BANCOS** tampoco los ve: viven fuera del canon, y el de la reutilizacion
+  estuvo ROJO del §337 al §579 sin que nada lo dijera. ✅ **VIGILADA desde el §582, no
+  cerrada**: `canon.sh --bancos` los corre todos, y TODA invocacion dice cuando pasaron
+  VERDES y si lo que ejercen cambio desde entonces; nada obliga a correrlos.
 
 - [x] **100. Un nodo que ha firmado no vuelve a arrancar.** ⚠️ **RESUELTA
   en el §335.** La clave se resincroniza al contador al arrancar, y el
@@ -2803,10 +2842,15 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   garantía sigue siendo **condicional** —vale para quien ya vio una cabeza
   anterior— pero **ahora la condición se puede cumplir**. El `README` la
   afirmaba sin condición; §268 se la pone, encima y sin tocar el párrafo.
-- [ ] **69. Tres ayudantes de test sin usar en `circuit_settlement.rs`.**
+- [x] **69. Tres ayudantes de test sin usar en `circuit_settlement.rs`.**
   `SK` y `d()` en `t2b_recuperacion_nativa`, `claves()` en `t2a_salt_hoja`
   (§136.3). **Peso muerto, no garantia falsa** —a diferencia de los
   `assert_eq!` de §125.2—. Limpieza, no hallazgo.
+
+  ✅ **CERRADA POR DERRIBO en el §176** (`1f41a1d`): el `circuit_settlement.rs` de
+  `stark-experiment` se borro entero, y con el los tres ayudantes; ni
+  `t2b_recuperacion_nativa` ni `t2a_salt_hoja` existen en el arbol. ⚠️ Siguio
+  abierta hasta el recuento del §583: el derribo no miro esta lista.
 
 - [x] **50. ⚠️ PRIVACIDAD FRENTE A TERCEROS — propiedad DEMOSTRADA,
   despliegue pendiente (§126).**
