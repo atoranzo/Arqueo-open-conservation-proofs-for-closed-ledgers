@@ -137,6 +137,16 @@ NUM_RFC = re.compile(r"\b(0\d{3})\b")
 PAL_ESTADO = re.compile(r"\b(aceptad[oa]s?|propuest[oa]s?|accepted|proposed)\b", re.I)
 RANGO_RFC = re.compile(r"0\d{3}\s*[-\u2013]\s*0\d{3}")
 
+# ATADO E (S617, la 113) - la CUENTA de ficheros de spec/vectors/ contra lo que los README
+# publican de ella. El §616 midio que la tabla «Estado» decia 380 cuando habia 419: el §610 y el
+# §614 anadieron vectores sin moverla, y ningun cerrojo miraba esa cifra -check_figures vigila
+# las de tests-. La cuenta es la del arbol: todo fichero bajo spec/vectors/, recursivo. La cita
+# es «(N ficheros» o «(N files» en una linea que nombra `spec/vectors/`, y los sitios que la
+# publican estan en la lista para que uno que DEJE de publicarla no pase callando.
+DIR_VECTORES = os.path.join(RAIZ, "spec", "vectors")
+SITIOS_VECTORES = ("README.md", "README_EN.md")
+CUENTA_VECTORES = re.compile(r"\((\d+)\s+(?:ficheros|files)\b")
+
 
 
 def constante():
@@ -343,6 +353,28 @@ def atado_d():
     return fallos, len(esperado), len(sitios), sum(len(v) for v in sitios.values())
 
 
+def atado_e():
+    """Devuelve (fallos, ficheros contados, citas halladas, sitios que la citan)."""
+    n = sum(len(fs) for _, _, fs in os.walk(DIR_VECTORES))
+    fallos, citas, sitios = [], 0, set()
+    for nombre in SITIOS_VECTORES:
+        with open(os.path.join(RAIZ, nombre), encoding="utf-8") as fh:
+            for i, linea in enumerate(fh, 1):
+                if "spec/vectors/" not in linea:
+                    continue
+                for m in CUENTA_VECTORES.finditer(linea):
+                    citas += 1
+                    sitios.add(nombre)
+                    if int(m.group(1)) != n:
+                        fallos.append((nombre, i, "VECTORES", "dice %s y spec/vectors/ tiene %d "
+                                       "ficheros" % (m.group(1), n)))
+    for nombre in SITIOS_VECTORES:
+        if nombre not in sitios:
+            fallos.append((nombre, 0, "VECTORES", "ya no publica la cuenta de spec/vectors/: si "
+                           "es a proposito, sale de SITIOS_VECTORES con su razon"))
+    return fallos, n, citas
+
+
 def main():
     pago_b, mib, msi, fecha = constante()
     pares_mib = {tuple(x.split(".")) for x in mib}
@@ -411,6 +443,10 @@ def main():
     print("  ATADO D: %d RFC con estado propio; %d cuenta(s) en %d sitio(s), y la fila de "
           "cada uno en %s" % (n_rfc, n_cuentas, n_sitios, FILA_RFC))
 
+    fallos_e, n_vec, citas_e = atado_e()
+    print("  ATADO E: spec/vectors/ tiene %d ficheros; %d cita(s) de esa cuenta en %s"
+          % (n_vec, citas_e, " y ".join(SITIOS_VECTORES)))
+
 
 
     if vistos == 0:
@@ -449,6 +485,15 @@ def main():
         print("  El estado lo declara la linea `- **Estado:**` de cada spec/rfc/NNNN-*.md,")
         print("  y el vocabulario, spec/rfc/PROCESO.md. Si el rojo es del RFC y no del")
         print("  documento, quien se quedo atras es el RFC.")
+        return 1
+
+    if fallos_e:
+        print("")
+        print("ROJO: %d sitio(s) no dicen de spec/vectors/ lo que el arbol cuenta" % len(fallos_e))
+        for nombre, n, clase, detalle in fallos_e:
+            print("  %-40s :%-5d %-10s %s" % (nombre, n, clase, detalle))
+        print("")
+        print("  La cuenta es la del arbol: todo fichero bajo spec/vectors/, recursivo.")
         return 1
 
     if nuevas == 0:

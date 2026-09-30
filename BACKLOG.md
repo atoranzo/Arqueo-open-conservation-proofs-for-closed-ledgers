@@ -2196,6 +2196,9 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   moverla, porque `check_figures` sólo vigila cifras de tests. Corregida a 419 en
   los dos README. **Lo que pide**: que un cerrojo la compare con `git ls-files
   spec/vectors`, o que la tabla no dé un número que nadie recuenta.
+  ✅ **CERRADA en el §617**: el ATADO E de `check_publicadas` cuenta los ficheros
+  de `spec/vectors/` y exige que `README.md` y `README_EN.md` digan ese número, y
+  que ninguno de los dos deje de decirlo sin salir de su lista con su razón.
 
 ## F. Publicacion, cuando el circuito este cerrado
 

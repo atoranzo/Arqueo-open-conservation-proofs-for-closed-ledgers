@@ -43510,3 +43510,29 @@ los encabezados.
 **Lo que NO cierra.** La 113; y el giro del RFC-0014 a ACEPTADO, que espera el canon y los bancos
 del autor sobre los sellos que lo construyen.
 
+## §617 — la 113: la cifra de vectores que publican los README, atada
+
+El commit que lleva este asiento, sobre `37e1be7` (el S616). Un solo sello: un atado nuevo en
+`tools/check_publicadas.py`, la entrada del BACKLOG y este asiento, con el canon `--sello` VERDE
+dentro del bloque. 2 ficheros más este asiento, con 48 inserciones fuera de él.
+
+**De dónde sale.** De la 113, que el §616 abrió al medir: la tabla «Estado» de los dos README
+decía que `spec/vectors/` tiene 380 ficheros, cuando en 221170f tenía 381 y hoy tiene 419. El
+§610 le sumó un KAT y el §614 treinta y siete vectores, y ninguno movió la cifra, porque
+`check_figures` sólo vigila las de tests.
+
+**Lo que hace.** El ATADO E de `check_publicadas`: cuenta los ficheros de `spec/vectors/` en el
+árbol, recursivo, y exige que cada cita «(N ficheros» o «(N files» en una línea que nombre
+`spec/vectors/` diga ese número. Los sitios que la publican, `README.md` y `README_EN.md`, van en
+una lista, como las cuentas del ATADO D: si uno deja de publicarla, sale ROJO hasta que salga de
+la lista con su razón. El canon ya corría `check_publicadas`.
+
+**Los falsadores, ENSAYADOS.** Con 418 en `README.md`, ROJO nombrando la línea y los dos números;
+con la cuenta quitada de `README_EN.md`, ROJO diciendo que ya no la publica. Restaurado, VERDE:
+419 ficheros y dos citas.
+
+**Contadores.** Ninguno se mueve.
+
+**Lo que NO cierra.** El giro del RFC-0014 a ACEPTADO, que espera el canon y los bancos del autor
+sobre los sellos que lo construyen.
+
