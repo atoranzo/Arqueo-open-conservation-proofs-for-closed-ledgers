@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 44 abiertas, 62 resueltas — **3 suspendidas** (16, 22 y 28).
-Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583, §584, §585, §586).
+**Estado**: 43 abiertas, 63 resueltas — **3 suspendidas** (16, 22 y 28).
+Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
 asi la lista mentia. Tres entradas abiertas estaban cerradas en el arbol: la 69
@@ -1670,7 +1670,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   ponerlo por escrito donde se leen los límites: `doc/CONFIANZA_RESIDUAL.md`.
   Corte propio, sin urgencia.
 
-- [ ] **105. La cabecera del crate de la capa dice en presente lo que dejó de
+- [x] **105. La cabecera del crate de la capa dice en presente lo que dejó de
   ser cierto.** `crates/zk-ssl/src/lib.rs` titula una sección **⚠️ Lo que esta
   capa NO es** y afirma, sin marca histórica, que **no hay persistencia**
   —«reiniciar pierde el ledger»— y que **no hay destrucción de
@@ -1708,6 +1708,15 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   documento publico y cuyo propio texto ya se desmentia dos veces.
   ⚠️ **SIGUE ABIERTA por DOS**: la auditoria por terceros, y la delegacion de
   la prueba, respaldada por la cabecera de `client.rs` pero no declarada aqui.
+
+  ✅ **CERRADA EN EL §587: las dos, MEDIDAS y CIERTAS.** La delegacion: las tres
+  funciones que generan prueba en la capa -`client::prove_send`, `client::prove_claim`
+  y `prove_minimum` de `audit.rs`- toman la clave de gasto, y la cabecera de
+  `client.rs` dice por que no hay otra via: probar sin ella exige verificar una firma
+  en el circuito, que es la entrada 21, abierta. La auditoria por terceros: no hay
+  ninguna; lo dicen `SECURITY.md` y `README.md`, y la 7 y la 89 siguen abiertas. Cada
+  vineta de la cabecera lleva ahora su respaldo escrito al lado. Las seis vinetas de
+  la seccion quedan medidas.
 
 - [x] **106. La API de emisión RETIRADA sigue documentada en tres sitios.**
   Medido en el §342 al censar el ámbito de la cabecera de la capa.

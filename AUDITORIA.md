@@ -42220,3 +42220,30 @@ QUIETO: 1504 + 137 = 1641 ; 1641 + 14 = 1655 ; el canon declara 1663.
 del §332. Y el ancho que `xmss` usa POR DENTRO al firmar -su `index_bytes` en tiempo de
 ejecución- se ata por la regla publicada, no por una firma leída byte a byte.
 
+## §587 — la 105, cerrada: las dos viñetas que quedaban, medidas y ciertas
+
+El commit que lleva este asiento, sobre `7a4b2e8` (el S586). Un solo sello: la cabecera de la
+capa, la entrada 105 y este asiento, con el canon `--sello` VERDE dentro del bloque. Dos ficheros
+más este asiento, con 19 inserciones y 5 borrados fuera de él.
+
+**De dónde sale.** De la entrada 105, siguiente abierta en el orden del `BACKLOG`: la sección «Lo
+que esta capa NO es» de `crates/zk-ssl/src/lib.rs` tenía seis viñetas; el §341 midió y reparó
+tres, el §342 cerró el umbral, y quedaban dos SIN MEDIR: «No hay delegación de la prueba» y «Nada
+de esto ha sido auditado por terceros».
+
+**Lo que se MIDIÓ.** (1) Las tres funciones que generan prueba en la capa -`client::prove_send`,
+`client::prove_claim` y `prove_minimum` de `audit.rs`- toman la clave de gasto; la cabecera de
+`client.rs` dice por qué no hay otra vía: probar sin ella exige verificar una firma dentro del
+circuito, y eso es la entrada 21, abierta. (2) No hay auditoría de terceros: lo dicen
+`SECURITY.md` y `README.md`, y la 7 -encargarla- y la 89 -el proyecto sólo se ha auditado a sí
+mismo- siguen abiertas. Las dos viñetas son CIERTAS.
+
+**Lo que hace.** Cada una lleva ahora su respaldo escrito al lado, en la propia cabecera. La 105
+queda `[x]`, con las seis viñetas medidas, y el `BACKLOG` dice 43 abiertas y 63 resueltas,
+CONTADAS; su línea de revisión cita el tramo (§583 a §587) para no pasar de cien columnas.
+
+**Contadores.** Ninguno se mueve: sólo comentarios de documentación.
+
+**Lo que NO cierra.** Que una viñeta sea cierta hoy no la ata: nada en el canon contrasta esta
+cabecera con el código -la clase (d) de la 94-.
+

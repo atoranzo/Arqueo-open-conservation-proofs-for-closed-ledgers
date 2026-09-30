@@ -76,7 +76,10 @@
 //!   guarda en `sled`, con cifrado autenticado en reposo.
 //! - **No hay delegación de la prueba.** Quien la genera necesita la
 //!   clave de gasto; en un banco, la clave estaría en un HSM y el cómputo
-//!   en otro servicio.
+//!   en otro servicio. Medido en el §587: `client::prove_send`,
+//!   `client::prove_claim` y `prove_minimum` (`audit.rs`) la toman, y probar
+//!   sin ella exige verificar una firma en el circuito (cabecera de
+//!   `client.rs`; `BACKLOG.md`, entrada 21, abierta).
 //! - **No hay política monetaria.** La destrucción de circulante SÍ
 //!   existe —`burn.rs`, con su circuito y su medida en `metrics.rs`—;
 //!   lo que no hay es una regla que gobierne emisión y destrucción
@@ -88,7 +91,9 @@
 //!   "dos claves comprometidas en vez de una", **no**
 //!   "dos voluntades independientes": en un nodo único, quien genera la
 //!   prueba necesita las dos claves a la vez.
-//! - **Nada de esto ha sido auditado por terceros.**
+//! - **Nada de esto ha sido auditado por terceros.** Lo dicen también
+//!   `SECURITY.md` y `README.md`, y el `BACKLOG.md` lo tiene abierto en la
+//!   entrada 7 (encargarla) y en la 89 (sólo se ha auditado a sí mismo).
 
 mod accounts;
 mod migration;
