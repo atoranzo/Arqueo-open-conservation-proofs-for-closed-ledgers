@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 43 abiertas, 63 resueltas — **3 suspendidas** (16, 22 y 28).
-Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587).
+**Estado**: 44 abiertas, 63 resueltas — **3 suspendidas** (16, 22 y 28).
+Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
 asi la lista mentia. Tres entradas abiertas estaban cerradas en el arbol: la 69
@@ -2172,6 +2172,27 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   tocaron **solo identificadores** -ni una cifra, ni un parrafo- y desde ese
   commit **ya no son byte a byte los PDF depositados**. Rehacer los papers
   sigue suspendido: esto no lo adelanta.
+
+- [ ] **107. El kit publicado no comprueba lo que el nodo firma hoy.**
+  `arqueo-verify-v0.2.0` (§442, §443; commit `1528943`) recompone cabezas hasta
+  la v4 y el nodo firma la v5 desde el §452 y la v6 desde el §570. **Medido el
+  2026-09-30** con el binario compilado desde su tag contra los vectores de
+  71c5aad: sus paquetes (cabezas v3 y v4) salen VERDE; `edad`, `prenda`,
+  `cobro_pendiente` y `completitud` (cabezas v5 y v6) salen ROJO con salida 1,
+  «tipo desconocido». **Falla cerrada, nunca un VERDE falso.** Declarado ya en
+  `doc/KIT.md` y `doc/KIT_EN.md` (seccion 0) y en los dos README.
+  **Decision (2026-09-30, sesion de ECST): A LA COLA, no inmediata**, por tres
+  razones del proyecto: (a) publicar es acto manual del autor, con huellas
+  medidas desde fuera y dos sellos (D-K5 del §442), no algo que un asistente
+  corte; (b) el nucleo no esta congelado (RFC-0005 sigue propuesto) y la v6 y el
+  sobre de completitud son de esta misma semana: cortar hoy es arriesgarse a
+  otra release rancia en dias; (c) no hay aceptacion falsa que cerrar: lo que se
+  pierde es cobertura, no solidez, y eso se DECLARA, que ya esta hecho.
+  **Disparador**: cortar la 0.3.0 —cabezas v5 y v6, los sobres posteriores a la
+  0.2.0 con sus catalogos, `tools/artefacto.sh` y el asiento del registro medido
+  desde fuera— cuando el autor de por estable la v6, y **en todo caso ANTES** de
+  cualquier deposito, anuncio o correo que invite a un tercero a verificar un
+  paquete de un nodo real.
 
 ## G. Otro proyecto, no una incidencia
 

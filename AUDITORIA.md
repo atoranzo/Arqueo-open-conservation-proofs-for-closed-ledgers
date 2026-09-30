@@ -42535,3 +42535,38 @@ BYTE-NEUTRALES. `check_tests` 1670 -> 1678 y el offset en más 8, QUIETO: 1519 +
 directorio entero restaurado no se ve. `hbs-state`, el otro repositorio del autor, tiene la misma
 forma en su guardián, y este sello no lo toca. La declaración del kit publicado va en el §595.
 
+## §595 — el kit publicado no comprueba lo que el nodo firma hoy: medido, declarado y a la cola
+
+El commit que lleva este asiento, sobre `b6c3e64` (el S594). Un solo sello: `doc/KIT.md`,
+`doc/KIT_EN.md`, una frase en cada README, la entrada 107 del `BACKLOG` y este asiento, con el canon
+`--sello` VERDE dentro del bloque. Cinco ficheros más este asiento, con 57 inserciones y 4 borrados
+fuera de él.
+
+**De dónde sale.** De la misma sesión de trabajo que el §594, en su misma rama sin fusionar, y
+rehecho aquí a nombre del autor con el mismo contenido. La release `arqueo-verify-v0.2.0` (§442,
+§443; `1528943`) es el kit que un tercero descarga para verificar sin el nodo, y es anterior a las
+cabezas v5 (§452) y v6 (§570).
+
+**Lo que se MIDIÓ, en aquella sesión** -con el binario compilado desde su tag contra los vectores de
+`71c5aad`-: sus propios paquetes, de cabezas v3 y v4, salen VERDE; `edad`, `prenda`,
+`cobro_pendiente` y `completitud`, de cabezas v5 y v6, salen ROJO con salida 1, «tipo desconocido».
+El kit publicado FALLA CERRADA ante un paquete de un nodo de hoy: nunca da un VERDE falso, pero no
+puede comprobar lo que el nodo firma. Ninguna vía de este sello lo re-mide; se integra la medida con
+su fecha y su base.
+
+**Lo que se decide, en aquella sesión y por los principios, y lo acepta el autor al integrarlo.** NO
+se corta una release ahora: publicar es un acto manual del autor, con huellas medidas desde fuera
+(D-K5 del §442); el núcleo no está congelado (RFC-0005 sigue propuesto) y la v6 y el sobre de
+completitud son de esta semana; y no hay aceptación falsa que cerrar, sólo cobertura que se DECLARA.
+Sí se declara ya: la sección 0 de `doc/KIT.md` y de `doc/KIT_EN.md`, y una frase en cada README. Y
+se encola como la entrada 107, en el grupo F, con su disparador: cortar la 0.3.0 cuando el autor dé
+por estable la v6, y en todo caso ANTES de cualquier depósito, anuncio o correo que invite a un
+tercero a verificar un paquete de un nodo real.
+
+**Contadores.** Ninguno se mueve. El `BACKLOG` dice 44 abiertas y 63 resueltas, CONTADAS por el
+script. `check_cifras`, `check_figures`, `check_publicadas` y `verificar_citas`, VERDES.
+
+**Lo que NO cierra.** La 107 misma: la próxima release, con las cabezas v5 y v6, los sobres
+posteriores a la 0.2.0 y sus catálogos. Y la rama de trabajo `claude/awesome-pasteur-u08nq9`, cuyo
+contenido ya está entero en el §594 y en éste, queda para que el autor la borre.
+

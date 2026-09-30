@@ -50,7 +50,10 @@ One download, and four checks on the checker's own machine, offline. The current
 `arqueo-verify-v0.2.0`, produced on commit `1528943fdfb9399f56fd836f75ffbe655d004d78`; the
 tarball's fingerprint is published next to its commit, on the release page and in the
 `AUDITORIA.md` entry that records it. The full script, with the expected output of every step, is
-[`doc/KIT_EN.md`](./doc/KIT_EN.md).
+[`doc/KIT_EN.md`](./doc/KIT_EN.md). ⚠️ That release recomposes heads up to v4 and the node signs v6
+today: with the vectors in its tarball it works, and a package from a current node is rejected — it
+fails closed, never a false GREEN. Measured and declared in `doc/KIT_EN.md`, section 0; the next
+release, in `BACKLOG.md`, entry 107.
 
 ```bash
 sha256sum arqueo-verify-*.tar.gz          # must be the fingerprint published next to the commit

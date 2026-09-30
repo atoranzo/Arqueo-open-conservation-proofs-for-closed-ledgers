@@ -23,6 +23,19 @@ binary `6356debde7f117b15d16cc755a798fdd29ba55ef98707a7a9d05124406dc478b`. Both 
 measured from the outside — `curl` download, asset in the API, the downloaded kit running the four
 steps — in the `AUDITORIA.md` entry that registers this release.
 
+⚠️ **What this release NO LONGER covers (declared on 2026-09-30; `BACKLOG.md`, entry 107).** The
+`arqueo-verify-v0.2.0` binary recomposes heads up to **v4** — it imports `epoch_digest_v2` to
+`epoch_digest_v4` and nothing else — and the node signs v5 since §452 and **v6** since §570.
+Measured on 2026-09-30 with that binary built from its tag against the vectors of `main` at 71c5aad:
+its own packages — `posicion-v2.json` with a v3 head, `consumo.json` with a v4 head — still come out
+GREEN, and the envelopes born later — `edad`, `prenda`, `cobro_pendiente`, `completitud`, with v5
+and v6 heads — come out **RED with exit 1** ("tipo desconocido", unknown type). **It fails closed: it
+never gives a false GREEN.** The four steps below use the vectors that travel inside the tarball, and
+with them it works; what it cannot do is check a package from today's node. For that, today, the
+in-tree `zk-ssl-verify` (`cargo build --release -p zk-ssl-verify`), which is **not** a published
+artifact with a fingerprint. The next release is queued with its trigger, not cut: publishing it is
+the author's act, measured from the outside (D-K5 of §442).
+
 Every release carries a tag and is produced on the commit its `VERSION` file names; the tarball's
 hash is published **next to its commit**, on the release page and in the `AUDITORIA.md` entry that
 sealed it, never as a bare number. With the tarball in hand:

@@ -49,7 +49,10 @@ Una descarga, y cuatro comprobaciones en la máquina del que comprueba, sin red.
 es `arqueo-verify-v0.2.0`, producida sobre el commit `1528943fdfb9399f56fd836f75ffbe655d004d78`;
 la huella del tarball se publica con su commit al lado, en la página de la release y en el asiento
 de `AUDITORIA.md` que la registra. El guion completo, con la salida esperada de cada paso, es
-[`doc/KIT.md`](./doc/KIT.md).
+[`doc/KIT.md`](./doc/KIT.md). ⚠️ Esa release recompone cabezas hasta la v4 y el nodo firma hoy la
+v6: con los vectores de su tarball funciona, y un paquete de un nodo actual lo rechaza —falla
+cerrada, nunca un VERDE falso—. Medido y declarado en `doc/KIT.md`, sección 0; la siguiente release,
+en `BACKLOG.md`, entrada 107.
 
 ```bash
 sha256sum arqueo-verify-*.tar.gz          # tiene que ser la huella publicada junto al commit

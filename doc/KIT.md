@@ -23,6 +23,19 @@ binario `6356debde7f117b15d16cc755a798fdd29ba55ef98707a7a9d05124406dc478b`. Las 
 medidas desde fuera —descarga por `curl`, asset en la API, el kit descargado corriendo los cuatro
 pasos— en el asiento de `AUDITORIA.md` que registra esta release.
 
+⚠️ **Lo que esta release ya NO cubre (declarado el 2026-09-30; `BACKLOG.md`, entrada 107).** El
+binario de `arqueo-verify-v0.2.0` recompone cabezas hasta la **v4** —importa `epoch_digest_v2` a
+`epoch_digest_v4` y nada más—, y el nodo firma la v5 desde el §452 y la **v6** desde el §570. Medido
+el 2026-09-30 con ese binario compilado desde su tag contra los vectores de `main` en 71c5aad: sus
+propios paquetes —`posicion-v2.json` con cabeza v3, `consumo.json` con cabeza v4— siguen saliendo
+VERDE, y los sobres que nacieron después —`edad`, `prenda`, `cobro_pendiente`, `completitud`, con
+cabezas v5 y v6— salen **ROJO con salida 1** («tipo desconocido»). **Falla cerrada: nunca da un
+VERDE falso.** Los cuatro pasos de abajo usan los vectores que viajan dentro del tarball y con ellos
+funciona; lo que no puede es comprobar un paquete de un nodo de hoy. Para eso, hoy, el `zk-ssl-verify`
+del árbol (`cargo build --release -p zk-ssl-verify`), que **no** es un artefacto publicado con
+huella. La siguiente release está en la cola con su disparador, no cortada: publicarla es un acto del
+autor medido desde fuera (D-K5 del §442).
+
 Cada release lleva un tag y se produce sobre el commit que su fichero `VERSION` nombra; la huella
 del tarball se publica **con su commit al lado**, en la página de la release y en el asiento de
 `AUDITORIA.md` que la selló, nunca como número suelto. Con el tarball en la mano:
