@@ -490,6 +490,12 @@ instrumentacion) al grupo E.*
   es un detalle**: hay que medir si cada testigo firma con su propia
   clave XMSS o si ahí conviene otra primitiva. **Esto se mide antes de
   diseñar nada.**
+  ✅ **Medido y contestado en el RFC-0013 (§603)**: en el medio no firma XMSS. El
+  ecosistema de testigos de C2SP tiene desde 2026 una cofirma poscuántica sin
+  estado, ML-DSA-44 tipo `0x06`, y mtc-core la implementó y la contrastó byte a
+  byte con la implementación de referencia del IETF. XMSS sigue firmando la
+  cabeza; el medio es otro canal con otra clave. Lo que sigue abierto de esta
+  entrada es el despliegue, no la primitiva.
   ✅ **TRAMO (i) CUMPLIDO (§294) — el testigo CONSUME la extension.**
   Antes de anclar, el testigo pide `zkssl_consistencyProof` con el
   `mmrSize` que custodia y juzga con `mmr::verificar_consistencia`: si
@@ -685,6 +691,10 @@ instrumentacion) al grupo E.*
   vista dividida dentro—. QUEDA lo que esta entrada pide medir (qué
   logs, cadencia, coste) y el despliegue: la entrada sigue abierta.
 
+  ⚠️ **RFC-0013 (§603) elige el medio en diseño**: un log de checkpoints C2SP
+  —nota `tlog-checkpoint` firmada con ML-DSA-44 tipo `0x06`, árbol SHA-256 de
+  anclas, testigos ajenos por `tlog-witness`— y deja el despliegue y su medida
+  como etapas E2 a E4, pendientes. Sigue abierta por eso.
 - [ ] **87. Agilidad criptográfica: el ESQUEMA DE FIRMA no está
   versionado.** La cabeza tiene byte de versión (§275) y el registro
   tiene dos eras (§281). **El esquema de firma no tiene ninguna de las

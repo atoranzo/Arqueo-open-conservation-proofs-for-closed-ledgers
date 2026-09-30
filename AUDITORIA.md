@@ -42889,3 +42889,60 @@ silencio queda medido.
 **Lo que NO cierra.** El giro del RFC-0011 a ACEPTADO, que es su propio sello (regla 4 del
 PROCESO). La 109 y la 110.
 
+## §603 — RFC-0013, PROPUESTO: el medio del ancla son los testigos C2SP, y la primitiva de ese medio no es XMSS
+
+El commit que lleva este asiento, sobre `53357f9` (el S602). Se escribió en la rama de otra
+sesión, sobre `9a03818` (el S601) y con `main` fusionado en ella, reservando el §603 porque el
+§602 estaba en curso; se rehace aquí en un solo commit a nombre del autor, sin la historia de
+fusiones de aquella rama, y con el §602 ya sellado la numeración queda correlativa. Lo que traía, sólo documentación: el RFC-0013, `doc/MTC.md`, las notas de la 83 y la 86 y una
+fila del README. **Al rehacerlo cambian tres cosas**, y se dicen: esta primera línea; la de
+asistencia del RFC, que remitía a un trailer que no viaja; y su ESTADO, que pasa de BORRADOR a
+PROPUESTO. BORRADOR está en el vocabulario de `spec/rfc/PROCESO.md` pero no tiene cara publicada en
+`check_publicadas` (ATADO D), que falla cerrado: la rama no pasó ese cerrojo. Entra como entró el
+RFC-0011, propuesto con sus decisiones delegadas, y con él su fila en `spec/README.md` y la cuenta
+de RFC propuestos en los cuatro sitios que la publican (`README.md`, `README_EN.md`,
+`RESUMEN_BILINGUE.md` y `RESUMEN_EJECUTIVO.md`). Ocho ficheros más este asiento.
+
+**De dónde sale.** De tres sitios que coinciden en el mismo hueco: el RFC-0012 D-H deja el ancla
+«sin ningún sitio donde vivir» porque el medio no se eligió; `ANCLAJE_EXTERNO` §2 y la entrada 86
+piden medir qué medio antes de elegirlo; y la 83 tiene marcada la pregunta de qué primitiva firma
+en ese medio —Ed25519 en el modelo de referencia, XMSS con estado aquí— «antes de diseñar nada».
+Lo que permitió contestar fue el trabajo de mtc-core de estos dos días, fuera de este árbol: la
+interoperabilidad medida en las dos direcciones contra la implementación de referencia del IETF,
+la cofirma ML-DSA-44 tipo `0x06` de `tlog-cosignature` producida y verificada byte a byte, y el
+checkpoint de esa herramienta reconstruido desde sus tejas (mtc-core, AUDIT §14 y §15).
+
+**Lo que se MIDIÓ, y dónde.** (1) Que `signed-note` no tiene tipo para XMSS y que los testigos
+ignoran los tipos que no conocen: leído en la especificación. (2) Que `tlog-witness` exige
+consistencia RFC 6962 sobre SHA-256 entre el último tamaño cofirmado y el nuevo, y responde `409`
+con el tamaño que recuerda: leído, y ejercido por mtc-core contra la herramienta del IETF. (3) Que
+el mensaje del tipo `0x06` es el `subtree/v1` que mtc-core implementa: contrastado con Go, mismas
+claves desde la misma semilla, 26 de 26 y 9 de 9 veredictos. (4) Que el árbol de cabezas de aquí
+es Rescue Prime y por tanto no consumible por un testigo genérico: leído en `zk-ssl-hash`
+(`mmr_hoja`, `mmr_nodo`). (5) Que este árbol no tiene hoy ninguna mención a C2SP, tlog ni notas,
+y ninguna clave que no sea XMSS: `grep` sobre código y documentos, cero coincidencias.
+
+**Lo que hace.** `spec/rfc/0013-el-medio-del-ancla.md`, PROPUESTO, ocho decisiones delegadas y
+reversibles: el ancla del RFC-0012 como hoja de un árbol SHA-256 propio del medio; la nota
+`checkpoint` firmada por el publicador con ML-DSA-44 tipo `0x06`, sin estado ni guardián, con un
+puente Ed25519 declarado mientras no haya testigos con `0x06`; testigos ajenos de umbral por
+`tlog-witness`, con la política del cliente que el kit ya tiene; un sobre nuevo en el kit; la
+cadencia `M` del RFC-0012; las piezas de mtc-core nombradas con su medida; y el residuo. En el
+BACKLOG, la 83 recibe la respuesta a su pregunta y la 86 la nota de que el medio está elegido en
+diseño y pendiente en despliegue; ninguna se cierra.
+
+**Contadores.** Ningún pin se mueve: solo documentación. La cuenta de RFC propuestos pasa de
+tres a cuatro. Los cerrojos de citas, cifras y figuras,
+verdes.
+
+**Lo que NO cierra.** Todo lo construible: E2, E3 y E4 del RFC. Y lo que el RFC declara en D-H:
+no hay hoy testigo público que acepte `origin` de tipo `0x06`; `ml-dsa` no está auditado; y una
+clave más que custodiar. **Además, esta sesión retiró un duplicado antes de este asiento**: había
+sellado en su rama un §588 que cerraba el gate del diario en todo estado, y `main` lo había
+cerrado ya en el §594 con el mismo cierre y los mismos tests; el commit se descartó de la rama sin
+llegar a `main`, y `doc/MTC.md` queda como único cambio propio de esta sesión en Arqueo además de
+este RFC.
+
+**Lección.** Dos sesiones sobre el mismo árbol leen el mismo informe y llegan al mismo cierre; lo
+que evita el duplicado no es la coordinación, que llegó tarde, sino mirar `main` antes de sellar.
+
