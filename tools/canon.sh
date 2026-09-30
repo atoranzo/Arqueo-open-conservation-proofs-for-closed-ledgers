@@ -17,6 +17,7 @@
 # zk-core 2.032 s aqui frente a los 2.317 que sumaban las dos
 # invocaciones separadas de G.2.
 #     bash tools/canon.sh --lista      # solo enseña la tabla, no ejecuta
+#     bash tools/canon.sh --bancos     # los bancos, todos (tools/bancos.sh) · **~15 min**
 #
 # ## Lo que lo hace ROBUSTO, y no es la tabla
 #
@@ -55,6 +56,14 @@
 # `.canon/ultimo-completo`, y TODA invocacion dice cuando fue y cuantos
 # sellos han pasado desde entonces.
 #
+# ⚠️ **Los bancos, tampoco (§582).** Viven fuera de los niveles: arrancan
+# el nodo, el testigo y el mando reales. `--bancos` los corre todos
+# (`tools/bancos.sh`), cada pasada VERDE deja constancia en
+# `.canon/ultimo-bancos`, y TODA invocacion dice cuando fue y si lo que
+# ejercen -`crates/`, los `Cargo.*` y los propios bancos- cambio desde
+# entonces. El de la reutilizacion estuvo ROJO del §337 al §579 sin que
+# nada lo dijera.
+#
 # ## Como se actualiza un pin
 #
 # Se MIDE primero y se edita la tabla despues. Nunca al reves.
@@ -78,6 +87,7 @@ RAIZ="${CANON_RAIZ:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$RAIZ" || exit 2
 NIVEL="${1:---sello}"
 SELLO_FILE=".canon/ultimo-completo"
+BANCOS_FILE=".canon/ultimo-bancos"
 
 # ── LA TABLA ────────────────────────────────────────────────────
 # crate | nivel | pasan | ignorados | warnings | timeout_s | nota
@@ -177,9 +187,33 @@ estado_completo() {
   fi
 }
 
+# Los bancos (§582): cuando pasaron VERDES por ultima vez, y si cambio lo que ejercen.
+estado_bancos() {
+  if [ -f "$BANCOS_FILE" ]; then
+    local c f k n toc
+    read -r c f k < "$BANCOS_FILE"
+    n=$(git rev-list --count "$c..HEAD" 2>/dev/null || echo "?")
+    if [ "$n" = "0" ]; then
+      msg "  ultimo --bancos: $c ($f, $k bancos) · AL DIA"
+    elif [ "$n" = "?" ]; then
+      msg "  ultimo --bancos: $c ($f) · ese sello ya no se alcanza: se remide con --bancos"
+    else
+      toc=$(git diff --name-only "$c..HEAD" -- crates Cargo.toml Cargo.lock 'tools/banco_*' \
+            2>/dev/null | wc -l | tr -d ' ')
+      if [ "$toc" != "0" ]; then
+        msg "  ultimo --bancos: $c ($f) · **$n sello(s) por detras**, y $toc fichero(s) de lo que ejercen cambiados — toca --bancos"
+      else
+        msg "  ultimo --bancos: $c ($f) · $n sello(s) por detras, limpio en lo que ejercen: la foto VALE"
+      fi
+    fi
+  else
+    msg "  ultimo --bancos: **NUNCA** desde que se anotan (§582). Los ~15 min de --bancos no los ha corrido nadie."
+  fi
+}
+
 case "$NIVEL" in
-  --sello|--largo|--completo|--lista) : ;;
-  *) msg "nivel desconocido: $NIVEL. Usa --sello, --largo, --completo o --lista."; exit 2 ;;
+  --sello|--largo|--completo|--lista|--bancos) : ;;
+  *) msg "nivel desconocido: $NIVEL. Usa --sello, --largo, --completo, --bancos o --lista."; exit 2 ;;
 esac
 
 # ── 0 · COHERENCIA: la tabla y el workspace dicen lo mismo ──────
@@ -197,6 +231,14 @@ for c in $EN_TABLA; do
 done
 [ $rojo -eq 0 ] && msg "  OK  todos los crates tienen fila y todas las filas tienen crate"
 estado_completo
+estado_bancos
+
+if [ "$NIVEL" = "--bancos" ]; then
+  msg ""
+  bash tools/bancos.sh; rb=$?
+  [ $rojo -eq 0 ] || rb=1
+  exit $rb
+fi
 
 if [ "$NIVEL" = "--lista" ]; then
   msg ""

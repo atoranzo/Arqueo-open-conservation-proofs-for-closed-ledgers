@@ -42028,3 +42028,49 @@ borradas, en `USE_CASES` y en los dos README. `USE_CASES` verifica contra `dca28
 diseñar. Y la lección, dicha otra vez: la frase que el autor nombra en un documento se busca en
 TODOS antes de sellar.
 
+## §582 — los bancos, vigilados: `--bancos` y su foto en cada invocación
+
+El commit que lleva este asiento, sobre `4ba15b2` (el S581). Un solo sello: `tools/bancos.sh`,
+que nace, el canon y este asiento, con el canon `--sello` VERDE dentro del bloque. Un fichero que
+nace y uno tocado, más este asiento, con 138 inserciones y 2 borrados fuera de él.
+
+**De dónde sale.** Del §579: el banco de la reutilización estuvo ROJO desde el §337 sin que nada
+lo dijera, porque los bancos viven FUERA del canon y nadie los corría; y aquel asiento dejó al
+autor meterlos en un nivel del canon o en una rutina. El autor eligió, en la sesión 193, «los
+bancos, vigilados» como siguiente frente.
+
+**Lo que se decide, aplicando los principios, y REVERSIBLE.** Un nivel del canon, no una rutina.
+Una rutina en la nube correría lejos del árbol del autor, sobre otra máquina y sin su `target`, y
+su VERDE no diría nada del sello que él empuja. Y el nivel NO es compuerta: como el `--completo`
+(§225), quince minutos en cada sello acabarían saltados. Lo que se hace por construcción es lo
+mismo que el `--completo` hizo: no fiarlo a la memoria.
+
+**Lo que hace.** (1) `tools/bancos.sh` corre todo `tools/banco_*.sh` -la lista se LEE del
+directorio, y un banco nuevo entra solo-, uno a uno, con un tope por banco (1800 s), sin pararse
+en el primer fallo, y con el árbol LIMPIO antes y después de cada uno: un banco que lo ensucia es
+un fallo nombrado, y los demás no se corren sobre él. Si los quince pasan, anota la pasada en
+`.canon/ultimo-bancos` -el hash, la fecha y cuántos-, que no se versiona. El `--largo` de la
+completitud queda FUERA, declarado: corre su modo por defecto. (2) `canon.sh` gana `--bancos`,
+que lo invoca, y en TODA invocación una línea: cuándo pasaron los bancos por última vez y, si hay
+sellos por detrás, si cambió lo que ejercen -`crates/`, los `Cargo.*` y los propios bancos-, o si
+la foto VALE. Sin pasada, dice NUNCA.
+
+**Los falsadores, ENSAYADOS** en un repositorio de juguete: un banco que sale 3, uno que se cuelga
+con un tope de 2 s y uno que deja un fichero -los tres nombrados, ninguna foto escrita, y tras el
+que ensucia no corre ninguno más-; y el árbol sucio ANTES, que no arranca. Las líneas del canon,
+contra la historia real: con la pasada recién anotada, AL DÍA; con la foto
+puesta a mano en el S580 -después, sólo documentos y `tools/bancos.sh`-, «la foto VALE»; en el
+S578 -después, seis bancos y el nodo-, «toca --bancos», con sus siete ficheros; y en un hash que
+no existe, «se remide».
+
+**La pasada real.** `bash tools/canon.sh --bancos` sobre el árbol de este sello -sin el asiento
+ni un retoque de ancho de dos líneas, ensayado aparte-, con el `target` caliente: QUINCE de QUINCE
+VERDES en 779 s, el árbol limpio tras cada uno, y la foto anotada. La completitud tardó 5 s, y su
+registro dice por qué no es un banco vacío: compila en release, arranca los dos nodos y ejerce
+sus casos, positivos y negativos.
+
+**Contadores.** Ninguno se mueve: ni un test nuevo, y los bancos siguen fuera de los pines.
+
+**Lo que NO cierra.** Nadie obliga a correr `--bancos`: la línea lo dice, no lo impone. Y el
+`--largo` de la completitud sigue sin vigilar.
+
