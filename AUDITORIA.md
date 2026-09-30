@@ -42247,3 +42247,40 @@ CONTADAS; su línea de revisión cita el tramo (§583 a §587) para no pasar de 
 **Lo que NO cierra.** Que una viñeta sea cierta hoy no la ata: nada en el canon contrasta esta
 cabecera con el código -la clase (d) de la 94-.
 
+## §588 — RFC-0011, PROPUESTO: el nodo mentiroso
+
+El commit que lleva este asiento, sobre `3ed7a60` (el S587). Un solo sello: el RFC que nace, su
+fila en `spec/README.md`, las cinco cuentas de RFC publicadas, la entrada 93 y este asiento, con el
+canon `--sello` VERDE dentro del bloque. Un fichero que nace y seis tocados, más este asiento, con
+111 inserciones y 5 borrados fuera de él.
+
+**De dónde sale.** De la entrada 93, recomendada como siguiente frente tras la 105: el proyecto
+tiene defensas contra un operador que miente, y ninguna ha visto nunca uno. Frente grande, así que
+empieza como en esta casa empiezan: un RFC PROPUESTO, sin código, que el autor acepta o corrige.
+
+**Lo que se MIDIÓ.** (1) El censo de defensas contra las cuatro mentiras de la entrada: la vista
+dividida la ven `--comparar` y `--auditar` del testigo y la regla de dos cofirmas con el mismo
+índice; la firma que el diario no recoge, `--ausentes` (§283); el recibo sin resolver, el sobre de
+completitud (RFC-0010 E4); la censura antes del recibo, NADA, por diseño (D-H). Y cómo se
+ejercitan hoy: contra diarios fabricados o contra un nodo honesto -el banco de completitud arma el
+sobre sin resolución-; `--ausentes` no ha dado ROJO en un banco nunca. (2) El coste de la costura:
+`zk-ssl-node` es SÓLO binario, sin `[lib]`, así que ningún otro crate puede reutilizar su código
+sin que el nodo gane primero una biblioteca.
+
+**Lo que hace.** `spec/rfc/0011-el-nodo-mentiroso.md`, PROPUESTO: la mentira en un crate APARTE
+del que el nodo no depende (D-A), descartadas la `feature` y la bandera porque un binario que la
+lleva apagada es un binario que puede mentir; una costura donde el nodo firma y anota (D-B), con su
+coste declarado; una compuerta del canon sobre el árbol de dependencias normales del nodo (D-C),
+ensayada con su falsador antes de la primera mentira; bancos cuyo éxito es que la defensa DISPARE
+(D-D), salvo el del residuo D-H, que asierta el SILENCIO de todas y convierte «no detectable» en
+medida; y claves de prueba siempre (D-E). Cinco etapas: la compuerta, el proxy que miente por
+omisión, la biblioteca del nodo, la vista dividida y la firma sin anotar. Tres decisiones quedan al
+autor: el nombre del crate, darle o no biblioteca al nodo, y el orden.
+
+**Contadores.** Ninguno se mueve. `check_publicadas` cuenta 10 RFC con estado propio, y las cinco
+cuentas que lo publican dicen «0005 y 0011 propuestos». `check_cifras`, `check_figures` y
+`verificar_citas`, VERDES.
+
+**Lo que NO cierra.** Todo: es una propuesta. La 93 sigue abierta hasta que el autor la acepte y
+las etapas se sellen.
+

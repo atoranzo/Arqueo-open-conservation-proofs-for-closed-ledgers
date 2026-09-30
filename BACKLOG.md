@@ -1956,6 +1956,11 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   ⚠️ Ningun auto-informe del nodo protege de nada: «yo soy honesto» es
   el operador hablando de si mismo.
 
+  **RFC-0011, PROPUESTO (§588):** `spec/rfc/0011-el-nodo-mentiroso.md` fija este
+  diseño -crate aparte, costura, compuerta del canon- con el censo de defensas medido, el
+  coste de la costura (el nodo es hoy SOLO binario) y cinco etapas, la compuerta antes que
+  ninguna mentira. Sigue abierta hasta que el autor lo acepte y las etapas se sellen.
+
 - [ ] **94. Clases de resultado que el canon NO VE: las cegueras del
   instrumento, medidas.** El canon corre en release y cuenta los
   warnings de la compilación de TESTS; fuera de su vista quedan clases
