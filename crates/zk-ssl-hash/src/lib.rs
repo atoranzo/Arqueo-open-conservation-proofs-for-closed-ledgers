@@ -1218,6 +1218,53 @@ mod acuse {
         assert_ne!(corta, huella_de_clave(&[1, 2, 3, 0]), "los ceros finales tienen que separar");
         assert_ne!(corta, digest_of_proof(&[1, 2, 3]), "el dominio de la clave no es el de la prueba");
     }
+
+    #[test]
+    fn el_dominio_del_lote_es_propio_y_pincha_su_valor() {
+        // D-A del RFC-0014: la misma entrada de bytes por los otros dos moldes
+        // del §116 da OTRO valor, y el dominio queda pinchado.
+        let (a, cuenta, pos) = (as_digest(0xA11CE), 1u64, 2u64);
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&digest_to_bytes(&a));
+        bytes.extend_from_slice(&cuenta.to_le_bytes());
+        bytes.extend_from_slice(&pos.to_le_bytes());
+        let lote = hash_del_lote(&[(a, cuenta, pos)]);
+        assert_ne!(lote, digest_of_proof(&bytes), "el dominio del lote no es el de la prueba");
+        assert_ne!(lote, huella_de_clave(&bytes), "ni el de la clave del ancla");
+        // El VALOR del dominio lo pina la fila del REGISTRO (check_dominios, R5); aqui
+        // solo que es propio, sin escribir el literal fuera de su const (R1).
+        assert_ne!(DOMINIO_LOTE, DOMINIO_CLAVE_ANCLA, "el dominio del lote es propio");
+        assert_ne!(DOMINIO_LOTE, DOMINIO_PRUEBA, "y no es el de la prueba");
+    }
+
+    #[test]
+    fn la_huella_del_lote_mueve_con_cada_campo_y_con_el_orden() {
+        // Cada uno de los tres campos de cada operacion entra por su lado, y el
+        // ORDEN del lote tambien: la composicion es la del lote tal como el nodo
+        // lo evaluo, no un conjunto.
+        let (a, b) = (as_digest(1), as_digest(2));
+        let base = hash_del_lote(&[(a, 1, 2), (b, 3, 4)]);
+        assert_ne!(base, hash_del_lote(&[(as_digest(11), 1, 2), (b, 3, 4)]), "prueba");
+        assert_ne!(base, hash_del_lote(&[(a, 11, 2), (b, 3, 4)]), "cuenta");
+        assert_ne!(base, hash_del_lote(&[(a, 1, 22), (b, 3, 4)]), "posicion");
+        assert_ne!(base, hash_del_lote(&[(b, 3, 4), (a, 1, 2)]), "el orden");
+        assert_ne!(base, hash_del_lote(&[(a, 1, 2)]), "una operacion menos");
+    }
+
+    #[test]
+    fn la_huella_del_lote_codifica_la_longitud_y_el_lote_de_uno_no_es_su_prueba() {
+        // El molde del §116: un lote con una operacion de ceros al final no es
+        // el lote sin ella (48 bytes de ceros que la longitud separa), y el lote
+        // de UNA operacion no es el resumen de esa prueba: el recibo del lote
+        // es otro objeto que el de la via directa aunque lleven una sola.
+        let a = as_digest(7);
+        let cero = [BaseElement::ZERO; 4];
+        let uno = hash_del_lote(&[(a, 1, 2)]);
+        assert_eq!(uno, hash_del_lote(&[(a, 1, 2)]), "determinista");
+        assert_ne!(uno, hash_del_lote(&[(a, 1, 2), (cero, 0, 0)]), "los ceros finales separan");
+        assert_ne!(hash_del_lote(&[]), hash_del_lote(&[(cero, 0, 0)]), "el vacio no es el de ceros");
+        assert_ne!(uno, a, "el lote de uno no es su prueba");
+    }
 }
 
 #[cfg(test)]
@@ -1332,6 +1379,7 @@ mod tests_cabeza_v2 {
 // REGISTRO: bytes ZK-SSL-no-proof-by-design-v1
 // REGISTRO: bytes ZK-SSL-witness-cosign
 // REGISTRO: bytes ZK-SSL-anchor-key-v1
+// REGISTRO: bytes ZK-SSL-batch-v1
 
 /// Dominios de operacion. **Uno por tipo**, para que una autorizacion de
 /// congelacion no pueda reutilizarse como autorizacion de emision.
@@ -1384,6 +1432,12 @@ const DOMINIO_SIN_PRUEBA: &[u8] = b"ZK-SSL-no-proof-by-design-v1";
 /// familia bytes, porque la clave entra en Blake3 como bytes, no en Rescue.
 const DOMINIO_CLAVE_ANCLA: &[u8] = b"ZK-SSL-anchor-key-v1";
 
+/// **Dominio de la huella del lote** (RFC-0014, D-A; §610): la familia bytes,
+/// porque la composicion de un lote tiene longitud VARIABLE -`k` operaciones-
+/// y el molde del §116 la codifica; en Rescue, `commit_operation` supone
+/// longitud fija por dominio.
+const DOMINIO_LOTE: &[u8] = b"ZK-SSL-batch-v1";
+
 /// El molde compartido de los resumenes de bytes: dominio y **longitud
 /// codificada** por delante (§116: dos entradas que difieran en ceros
 /// finales no colisionan). UN productor para [`digest_of_proof`] y
@@ -1422,6 +1476,29 @@ pub fn digest_of_proof(proof: &[u8]) -> Digest {
 /// quien compara tiene siempre la clave entera en la cabeza firmada.
 pub fn huella_de_clave(clave: &[u8]) -> Digest {
     resumen_con_dominio(DOMINIO_CLAVE_ANCLA, clave)
+}
+
+/// **La huella del lote** (RFC-0014, D-A; §610): lo que va como `hash_prueba`
+/// en el [`recibo_digest`] de un lote de `zkssl_applyMany`. Por cada operacion,
+/// en el orden del lote, sus 48 bytes: el resumen de su prueba, su cuenta y la
+/// posicion de su pendiente, los dos `u64 LE`. `k` no se escribe: va en la
+/// longitud que el molde codifica (48 · k), y dos lotes de distinto tamano no
+/// pueden colisionar por eso.
+///
+/// ⚠️ **Esta es LA composicion**, por la razon de [`acuse_digest`]: el nodo, el
+/// agregador que reenvia y el titular que arma su sobre tienen que componer
+/// exactamente igual, y la unica forma segura es que sea la misma funcion. El
+/// nodo la calcula sobre lo que EVALUO como unidad -una foto, un veredicto- y
+/// la hoja del recibo no cambia: un recibo por evaluacion, como en la via
+/// directa.
+pub fn hash_del_lote(operaciones: &[(Digest, u64, u64)]) -> Digest {
+    let mut datos = Vec::with_capacity(operaciones.len() * 48);
+    for (hash_prueba, cuenta, posicion) in operaciones {
+        datos.extend_from_slice(&digest_to_bytes(hash_prueba));
+        datos.extend_from_slice(&cuenta.to_le_bytes());
+        datos.extend_from_slice(&posicion.to_le_bytes());
+    }
+    resumen_con_dominio(DOMINIO_LOTE, &datos)
 }
 
 /// **Sello de autorizacion** (§278): lo que una via delegada asienta en

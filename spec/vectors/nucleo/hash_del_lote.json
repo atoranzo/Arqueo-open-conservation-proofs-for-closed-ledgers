@@ -1,0 +1,18 @@
+{
+  "entradas": {
+    "operaciones": [
+      {
+        "cuenta": "0x1",
+        "hash_prueba": "0x0100000000000000000000000000000000000000000000000000000000000000",
+        "posicion": "0x2"
+      },
+      {
+        "cuenta": "0x3",
+        "hash_prueba": "0x0200000000000000000000000000000000000000000000000000000000000000",
+        "posicion": "0x4"
+      }
+    ]
+  },
+  "fn": "hash_del_lote",
+  "salida": "0x39620d8bf96805996ae6c04b89d104a1c4e2cd02ec286b85f8e6afeb41b47bef"
+}

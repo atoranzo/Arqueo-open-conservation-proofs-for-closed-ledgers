@@ -1,15 +1,15 @@
 # RFC-0014 — El recibo del lote y de la prenda: lo agregado, atado como lo directo
 
 - **Estado:** PROPUESTO (§608), con sus decisiones TOMADAS en el §609 -delegadas por el autor con
-  su criterio escrito, y REVERSIBLES, ver «Decisiones»-. Medido y diseñado; ninguna etapa
-  construida: se abren en el orden de la tabla.
+  su criterio escrito, y REVERSIBLES, ver «Decisiones»-. Medido y diseñado; la E2 construida en el
+  §610, las demás se abren en el orden de la tabla.
 - **Autor:** Ángel José Toranzo Portela
-- **Asistencia GenAI:** Claude (sesión 193, §608 y §609) — ver [`GENAI.md`](../../GENAI.md)
+- **Asistencia GenAI:** Claude (sesión 193, §608 a §610) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-30
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube**: todo es aditivo, como el recibo
   del §571 -dos respuestas y un error ganan `recepcion`, el error del lote gana `operacion`, y el
   sobre de completitud gana dos resoluciones-. La cabeza no se mueve.
-- **Asiento(s) de AUDITORIA:** §608 (la propuesta); §609 (las decisiones).
+- **Asiento(s) de AUDITORIA:** §608 (la propuesta); §609 (las decisiones); §610 (la E2).
 - **Backlog:** la segunda parte del D-H del RFC-0010 -«una etapa por diseñar, no un olvido»-; y
   `SECURITY.md` 2.ter, el despliegue con agregadores.
 
@@ -146,7 +146,7 @@ REVERSIBLES.
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
 | E1 — la promesa, escrita | este texto | no | **propuesto (§608), decidido (§609)** |
-| E2 — el núcleo | `DOMINIO_LOTE` y `hash_del_lote` en `zk-ssl-hash`, su KAT en `spec/vectors/nucleo/` y su fila del REGISTRO | no (aditivo) | pendiente |
+| E2 — el núcleo | `DOMINIO_LOTE` y `hash_del_lote` en `zk-ssl-hash`, su KAT en `spec/vectors/nucleo/` y su fila del REGISTRO | no (aditivo) | **construida (§610)**: `DOMINIO_LOTE` en la familia bytes del REGISTRO de dominios, `hash_del_lote` con su fila en el censo de `NUCLEO.md` (RECIBOS), tres testigos, y el KAT `hash_del_lote.json`, el vigesimosexto, con los veinticinco anteriores byte a byte iguales; `k` va en la longitud codificada |
 | E3 — el nodo | `zkssl_applyMany` y `zkssl_pledge` reservan y anotan su recibo en el mismo punto que la vía directa (§569); `operacion` en el error del lote; el testigo del §576, reescrito | no (aditivo) | pendiente |
 | E4 — el mando | `resolucion.tipo` «lote» y «prenda» en el sobre de completitud, cada regla con su nombre | no | pendiente |
 | E5 — catálogo y banco | sus vectores en `completitud/`, y un banco que siembre contra un nodo real las dos resoluciones del lote, las tres de la prenda y el rechazo sin fundamento | no | pendiente |

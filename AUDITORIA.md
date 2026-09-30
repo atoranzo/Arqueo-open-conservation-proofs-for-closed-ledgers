@@ -43173,3 +43173,41 @@ puede cerrar.
 **Lo que NO cierra.** Las etapas E2 a E5. La siguiente es la E2, el núcleo: `DOMINIO_LOTE` y
 `hash_del_lote` en `zk-ssl-hash`, su KAT y su fila del REGISTRO.
 
+## §610 — RFC-0014 E2: la huella del lote en el núcleo, con su KAT
+
+El commit que lleva este asiento, sobre `221170f` (el S609). Un solo sello: el núcleo, sus
+testigos y su pin, el KAT, el censo, las cifras, la etapa marcada en el RFC y este asiento, con el
+canon `--sello` VERDE dentro del bloque. 9 ficheros más este asiento, con 123 inserciones y 15
+borrados fuera de él, y un KAT que nace.
+
+**De dónde sale.** De la E2 del RFC-0014, con la decisión 1 del §609: un recibo por LOTE, con la
+hoja de siempre y `hash_prueba` la huella de la composición. Quien la publique en el recibo y quien
+la recomponga para su sobre tienen que componer EXACTAMENTE igual, y eso en esta casa es una función
+en `zk-ssl-hash` con su dominio en el REGISTRO y su KAT en `spec/vectors/nucleo/`: el molde del
+§557 y del §591.
+
+**Lo que hace.** (1) `DOMINIO_LOTE`, en la familia BYTES del REGISTRO de dominios y no en la u64:
+la composición de un lote tiene longitud variable -`k` operaciones- y el molde del §116 la codifica,
+mientras que en Rescue `commit_operation` supone longitud fija por dominio. Novena cadena
+`ZK-SSL-`. (2) `hash_del_lote(&[(hash_prueba, cuenta, posicion)])`: 48 bytes por operación en el
+orden del lote -el resumen de su prueba, y su cuenta y la posición de su pendiente como `u64 LE`-
+por el productor único `resumen_con_dominio`; `k` no se escribe, va en la longitud, y dos lotes de
+distinto tamaño no pueden colisionar por eso. (3) Tres testigos: el dominio es propio -sin escribir
+su literal fuera de la `const`, que es la R1 del gate; su valor lo pina la fila del REGISTRO-; cada
+campo de cada operación y el ORDEN del lote mueven la huella; y la longitud separa los ceros
+finales, el vacío no es el lote de ceros, y el lote de una operación no es el resumen de su prueba:
+el recibo del lote es otro objeto que el de la vía directa aunque lleve una sola. (4) El KAT
+`hash_del_lote`, el vigesimosexto: emitido con los demás a un directorio aparte, los veinticinco
+anteriores byte a byte IGUALES antes de copiar el nuevo (el método del §414), y el test de
+biyección en verde con veintiséis. (5) `spec/NUCLEO.md`: una fila nueva (familia RECIBOS), el
+censo 80 + 52 = 132 (NÚCLEO 105), la composición en la sección 6 y su historia en la 8.
+
+**Contadores.** El hash 37 -> 40 y los otros veinte sin mover; TOTAL DE SELLO 1521 -> 1524; TOTAL
+CON LARGOS 1658 -> 1661; los tres párrafos ancla (PRINCIPIOS y los dos PAPER) al día; la cuenta de
+`check_tests`, 1683. `check_dominios` censa 29 declaraciones u64 y 9 cadenas; `check_nucleo` deriva
+132 filas y las cruza con la tabla; los diez cerrojos, VERDES. Ningún `Cargo` tocado; el cable y
+la cabeza, quietos.
+
+**Lo que NO cierra.** E3 (el nodo reserva y anota el recibo del lote y de la prenda, y el testigo
+del §576 se reescribe), E4 (las dos resoluciones en el mando) y E5 (vectores y banco).
+

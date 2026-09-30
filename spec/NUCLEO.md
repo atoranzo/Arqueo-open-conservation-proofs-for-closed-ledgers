@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 80 elementos alcanzables en `zk-ssl-verify` y 51 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 104, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 80 elementos alcanzables en `zk-ssl-verify` y 52 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 105, REFERENCIA 7, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`, `recibos`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -172,6 +172,7 @@ real de sus llaves, no por la primera marca.
 | `indice_de_recibo` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
 | `pertenece_a_era` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
 | `raiz_de_camino_de_recibo` | `verify/recibos.rs` | NÚCLEO | RECIBOS | `fn` |
+| `hash_del_lote` | `hash/lib.rs` | NÚCLEO | RECIBOS | `fn` |
 | `DOMINIO_ANCLA` | `hash/lib.rs` | NÚCLEO | ANCLA | `const` |
 | `ancla_digest` | `hash/lib.rs` | NÚCLEO | ANCLA | `fn` |
 | `huella_de_clave` | `hash/lib.rs` | NÚCLEO | ANCLA | `fn` |
@@ -277,6 +278,10 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
   dominio y el índice EMBEBIDO en la firma;
   `huella_de_clave = Blake3(b"ZK-SSL-anchor-key-v1" ‖ len(u64 LE) ‖ clave)`, el molde de
   `digest_of_proof` (§116) con dominio de bytes propio;
+  `hash_del_lote = Blake3(b"ZK-SSL-batch-v1" ‖ len(u64 LE) ‖ (hash_prueba_i ‖ cuenta_i ‖
+  posicion_i)*)` (RFC-0014, §610), el mismo molde, con 48 bytes por operación en el orden del lote
+  -el digest de su prueba, y su cuenta y su posición como `u64 LE`- y `k` en la longitud, que es lo
+  que va como `hash_prueba` en el `recibo_digest` de un lote;
   `params_digest = merge(as_digest(PARAM_V1),
   merge(merge(as_digest(regulatory_limit), as_digest(max_supply)),
   merge(merge(as_digest(max_accounts), custodian_set_root), merge(governance_set_root,
@@ -300,6 +305,9 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §610 — `hash_del_lote`: el núcleo compone la huella de un lote de `zkssl_applyMany` (RFC-0014,
+  E2), con `DOMINIO_LOTE` en la familia bytes; su KAT. Una fila nueva, familia RECIBOS. La hoja del
+  recibo y la cabeza no se mueven: un recibo por lo que el nodo evalúa como unidad.
 - §591 — `DOMINIO_ANCLA`, `ancla_digest` y `huella_de_clave`: el núcleo compone la huella del
   ancla de cabezas y la de la clave del operador (RFC-0012, E2); los KAT de las dos funciones.
   Tres filas nuevas, familia ANCLA. La cabeza y el conjunto de versiones no se mueven: el ancla

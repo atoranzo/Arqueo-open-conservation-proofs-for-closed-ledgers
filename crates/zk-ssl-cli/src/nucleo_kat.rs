@@ -27,7 +27,7 @@ use serde_json::{json, Value};
 use zk_ssl_hash::{
     acuse_digest, ancla_digest, as_digest, digest_from_bytes, digest_to_bytes, element_from_bytes,
     embeber, epoch_digest, epoch_digest_v2, epoch_digest_v3, epoch_digest_v4, epoch_digest_v5,
-    epoch_digest_v6, huella_de_clave, mmr_hoja, mmr_nodo, native_leaf, native_leaf_salted,
+    epoch_digest_v6, hash_del_lote, huella_de_clave, mmr_hoja, mmr_nodo, native_leaf, native_leaf_salted,
     native_merge, params_digest, path_root, recibo_digest, Digest,
 };
 use zk_ssl_verify::{acuses::hoja_de_acuse, mmr::cima, preambulo, preambulo_cofirma};
@@ -153,6 +153,11 @@ fn casos() -> Vec<(&'static str, Value)> {
         ("huella_de_clave", json!({"fn": "huella_de_clave",
             "entradas": {"clave": hx(&clave_op)},
             "salida": dg(&huella_de_clave(&clave_op))})),
+        ("hash_del_lote", json!({"fn": "hash_del_lote",
+            "entradas": {"operaciones": [
+                {"hash_prueba": dg(&a), "cuenta": q(1), "posicion": q(2)},
+                {"hash_prueba": dg(&b), "cuenta": q(3), "posicion": q(4)}]},
+            "salida": dg(&hash_del_lote(&[(a, 1, 2), (b, 3, 4)]))})),
         ("hoja_de_acuse", json!({"fn": "hoja_de_acuse",
             "entradas": {"hash_prueba": dg(&a), "seq": q(0x2b), "n": q(3)},
             "salida": dg(&hoja_de_acuse(a, 0x2b, 3))})),
