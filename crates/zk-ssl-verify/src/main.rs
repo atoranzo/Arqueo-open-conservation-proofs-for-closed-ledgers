@@ -1659,6 +1659,262 @@ fn exige_mismo_recibo(data: &serde_json::Value, hash: Digest, que: &str) -> Resu
     Ok(())
 }
 
+/// La resolucion por ACUSE (veredicto 1 del RFC-0010): la cabeza del mismo operador dentro de la
+/// ventana, el acuse de la MISMA prueba y el par verificado COMO el paquete de posicion que es.
+/// `que` nombra el sitio: `resolucion` en la via directa, `resolucion.acuses[i]` en el lote (§612).
+/// Devuelve el indice XMSS de la cabeza.
+fn resolver_por_acuse(
+    x: &serde_json::Value,
+    hash: Digest,
+    era: u64,
+    n: u64,
+    clave: &str,
+    que: &str,
+) -> Result<u64, String> {
+    let c = x.get("cabeza").ok_or_else(|| err(format!("{que}: falta cabeza")))?;
+    let a = x.get("acuse").ok_or_else(|| err(format!("{que}: falta acuse")))?;
+    let (_, _, clave_r, _) = cabeza_v3_verificada(c, &format!("{que}.cabeza"))?;
+    if clave_r != clave {
+        return Err(claves_distintas());
+    }
+    if digest_de(a, "hashPrueba")? != hash {
+        return Err(err(format!("{que}: el acuse es de OTRA prueba: no resuelve este recibo")));
+    }
+    let s = u64_de(c, "index")?;
+    if !recibos::dentro_de_ventana(era, s, n) {
+        return Err(err(format!(
+            "{que}: llega FUERA de la ventana (indice {s}, era {era}, n {n})"
+        )));
+    }
+    println!("   la resolucion, como paquete de posicion con su acuse:");
+    verificar_paquete(&serde_json::json!({ "v": 1, "cabeza": c, "acuse": a }))?;
+    Ok(s)
+}
+
+/// La resolucion por RECHAZO (veredicto 2 del RFC-0010): el sobre de la seccion 2.6, atado al
+/// recibo por su `data.recepcion` (D3), sobre una cabeza del mismo operador dentro de la ventana, y
+/// verificado por sus reglas. Devuelve el indice XMSS de su cabeza y su `data`.
+fn resolver_por_rechazo<'a>(
+    sobre: &'a serde_json::Value,
+    hash: Digest,
+    era: u64,
+    n: u64,
+    clave: &str,
+) -> Result<(u64, &'a serde_json::Value), String> {
+    if sobre.get("tipo").and_then(|t| t.as_str()) != Some("rechazo") {
+        return Err(err("resolucion: el sobre no es de tipo rechazo".into()));
+    }
+    let d = sobre
+        .get("data")
+        .ok_or_else(|| err("resolucion.sobre: falta data".into()))?;
+    exige_mismo_recibo(d, hash, "resolucion.sobre")?;
+    let c = sobre
+        .get("cabeza")
+        .ok_or_else(|| err("resolucion.sobre: falta cabeza".into()))?;
+    let (_, _, clave_r, _) = cabeza_v3_verificada(c, "resolucion.sobre.cabeza")?;
+    if clave_r != clave {
+        return Err(claves_distintas());
+    }
+    let s = u64_de(c, "index")?;
+    if !recibos::dentro_de_ventana(era, s, n) {
+        return Err(err(format!(
+            "resolucion: llega FUERA de la ventana (indice {s}, era {era}, n {n})"
+        )));
+    }
+    println!("   la resolucion, como sobre de rechazo:");
+    verificar_rechazo(sobre)?;
+    Ok((s, d))
+}
+
+/// Una operacion de un lote tal como la compone quien lo arma: el digest de su prueba, su cuenta y
+/// la posicion de su pendiente (RFC-0014 D-A). Los mismos tres campos que `hash_del_lote` escribe.
+type OperacionDelLote = (Digest, u64, u64);
+
+/// **La composicion de un lote** (RFC-0014 D-B, §612): lo que el agregador reenvia a cada titular,
+/// `[{hashPrueba, cuenta, posicion}]` en el orden del lote (D-C). Se lee ENTERA antes de nada, y
+/// vacia no es un lote: el nodo no evalua uno vacio.
+fn composicion_de(x: &serde_json::Value) -> Result<Vec<OperacionDelLote>, String> {
+    let a = x
+        .get("composicion")
+        .and_then(|c| c.as_array())
+        .ok_or_else(|| err("resolucion: falta composicion (la lista del lote, D-C)".into()))?;
+    if a.is_empty() {
+        return Err(err("resolucion: composicion VACIA: el nodo no evalua un lote vacio".into()));
+    }
+    a.iter()
+        .enumerate()
+        .map(|(i, o)| {
+            let en = |e: String| err(format!("resolucion.composicion[{i}]: {e}"));
+            Ok((
+                digest_de(o, "hashPrueba").map_err(en)?,
+                u64_de(o, "cuenta").map_err(en)?,
+                u64_de(o, "posicion").map_err(en)?,
+            ))
+        })
+        .collect()
+}
+
+/// La operacion `j` que el nodo nombra en el `data` de un lote rechazado (§611), dentro del lote.
+fn operacion_nombrada(d: &serde_json::Value, k: usize, que: &str) -> Result<usize, String> {
+    let j = u64_de(d, "operacion").map_err(|e| err(format!("{que}: {e}: el rechazo de un lote \
+                                                            nombra su operacion (§611)")))?;
+    if j >= k as u64 {
+        return Err(err(format!("{que}: la operacion {j} no esta en un lote de {k}")));
+    }
+    Ok(j as usize)
+}
+
+/// El campo de `data.campos` que nombra lo repetido, por causa de FORMA: la capa lo escribe asi
+/// (`LayerError::causa`, §454).
+fn campo_de_forma(causa: &str) -> Option<&'static str> {
+    match causa {
+        "DuplicateAccountInBatch" => Some("index"),
+        "DuplicatePendingInBatch" => Some("position"),
+        _ => None,
+    }
+}
+
+/// **La FORMA del lote, juzgada OTRA VEZ y sin el nodo** (RFC-0014 D-B, §612).
+/// `DuplicateAccountInBatch` y `DuplicatePendingInBatch` se prueban con la composicion sola: la
+/// operacion `j` que el nodo nombra tiene que llevar la cuenta -o la posicion- `valor` que su
+/// `campos` dice, y alguna ANTERIOR tiene que llevarla tambien. Devuelve la primera del par.
+///
+/// ⚠️ `Err` aqui no es un fallo de lectura -lo leido ya se leyo-: es el juicio del operador
+/// REPETIDO y contradicho, y quien llama lo nombra (la regla de la decision 3 del §609).
+fn juzgar_forma(
+    comp: &[OperacionDelLote],
+    j: usize,
+    causa: &str,
+    valor: u64,
+) -> Result<usize, String> {
+    let (por_cuenta, que) = match campo_de_forma(causa) {
+        Some("index") => (true, "cuenta"),
+        Some(_) => (false, "posicion"),
+        None => return Err(format!("{causa} no es una causa de la forma del lote")),
+    };
+    let de = |o: &OperacionDelLote| if por_cuenta { o.1 } else { o.2 };
+    let op = comp.get(j).ok_or_else(|| format!("no hay operacion {j} en un lote de {}", comp.len()))?;
+    if de(op) != valor {
+        return Err(format!(
+            "la operacion {j} lleva la {que} {} y la causa nombra la {valor}",
+            de(op)
+        ));
+    }
+    comp[..j]
+        .iter()
+        .position(|o| de(o) == valor)
+        .ok_or_else(|| format!("ninguna operacion anterior a la {j} lleva la {que} {valor}"))
+}
+
+/// **La resolucion de un LOTE** (RFC-0014 E4a, §612; D-B). El recibo del lote lleva como
+/// `hashPrueba` la huella de su COMPOSICION, y lo primero es recomponerla: sin eso nada de lo demas
+/// habla de este recibo. Despues, UNA de tres cosas:
+///
+/// - `acuses`: el lote se APLICO -uno por operacion, en su orden, cada uno el de SU prueba y
+///   resuelto como en la via directa-. VERDE.
+/// - `sobre`: se RECHAZO con prueba -el sobre de la seccion 2.6 de la operacion que el nodo nombra,
+///   atado al recibo por su `data.recepcion` y su `data.operacion`, que son la PALABRA del nodo
+///   (D3)-. Las companeras quedan resueltas por ella: el lote es la unidad. VERDE.
+/// - `data`: el `error.data` del rechazo, tal cual. Con una causa de FORMA, el mando repite el
+///   juicio con la composicion: si la sostiene, VERDE sin cabeza ni ventana -el rechazo fue en el
+///   acto-; si no, **ROJO NOMBRADO, «RECHAZO SIN FUNDAMENTO»**. Con una causa sin prueba portable,
+///   el cuarto estado, como en la via directa.
+fn resolver_lote(
+    x: &serde_json::Value,
+    hash: Digest,
+    era: u64,
+    n: u64,
+    clave: &str,
+) -> Result<(), String> {
+    let comp = composicion_de(x)?;
+    let k = comp.len();
+    if recibos::hash_del_lote(&comp) != hash {
+        return Err(err(
+            "resolucion: la composicion NO es la del recibo: su huella no es su hashPrueba".into(),
+        ));
+    }
+    println!("   la composicion, {k} operacion(es), recompone el hashPrueba del recibo");
+    let hay = |c: &str| x.get(c).is_some();
+    match (hay("acuses"), hay("sobre"), hay("data")) {
+        (true, false, false) => {
+            let acuses = x["acuses"]
+                .as_array()
+                .ok_or_else(|| err("resolucion.acuses: no es una lista".into()))?;
+            if acuses.len() != k {
+                return Err(err(format!(
+                    "resolucion: {} acuse(s) para un lote de {k}: el lote se aplica ENTERO o no \
+                     se aplica",
+                    acuses.len()
+                )));
+            }
+            for (i, (par, op)) in acuses.iter().zip(&comp).enumerate() {
+                resolver_por_acuse(par, op.0, era, n, clave, &format!("resolucion.acuses[{i}]"))?;
+            }
+            println!(
+                "3/3 RESUELTA como LOTE aplicado: sus {k} operacion(es), cada una con el acuse de \
+                 SU prueba dentro de la ventana (era {era}, n {n})"
+            );
+        }
+        (false, true, false) => {
+            let (s, d) = resolver_por_rechazo(&x["sobre"], hash, era, n, clave)?;
+            let j = operacion_nombrada(d, k, "resolucion.sobre.data")?;
+            println!(
+                "3/3 RESUELTA como LOTE rechazado con prueba, dentro de la ventana (indice {s}): \
+                 la operacion {j} no se sostenia, y sus companeras quedan resueltas por ella -el \
+                 lote es la unidad-; la atadura al recibo y a la operacion {j} es la palabra del \
+                 nodo en su data"
+            );
+        }
+        (false, false, true) => {
+            let d = &x["data"];
+            exige_mismo_recibo(d, hash, "resolucion.data")?;
+            let j = operacion_nombrada(d, k, "resolucion.data")?;
+            let causa = d
+                .get("causa")
+                .and_then(|c| c.as_str())
+                .ok_or_else(|| err("resolucion.data: falta causa".into()))?;
+            if let Some(campo) = campo_de_forma(causa) {
+                let valor = d
+                    .get("campos")
+                    .ok_or_else(|| err("resolucion.data: falta campos".into()))
+                    .and_then(|c| u64_de(c, campo).map_err(|e| format!("resolucion.data.campos: {e}")))?;
+                match juzgar_forma(&comp, j, causa, valor) {
+                    Ok(i) => println!(
+                        "3/3 RESUELTA como LOTE rechazado por su FORMA: {causa} en la operacion \
+                         {j}, que repite la de la {i} -lo prueba la composicion sola, en el acto y \
+                         sin cabeza-"
+                    ),
+                    Err(por_que) => {
+                        return Err(err(format!(
+                            "RECHAZO SIN FUNDAMENTO: el nodo dijo {causa} en la operacion {j} del \
+                             lote, y la composicion que su recibo firma no lo sostiene: {por_que}. \
+                             El juicio se repite sin el nodo; su negativa es su palabra, en su data \
+                             (D3)"
+                        )))
+                    }
+                }
+            } else if CAUSAS_SIN_PRUEBA_PORTABLE.contains(&causa) {
+                return Err(format!(
+                    "{DECLARADA_NO_PROBADA}el operador declara {causa} en la operacion {j} del \
+                     lote, una causa que el RFC-0007 dejo sin prueba portable: se cuenta aparte \
+                     (RFC-0010, D-G)"
+                ));
+            } else {
+                return Err(err(format!(
+                    "resolucion del lote con la causa {causa} y sin sobre: no es de forma ni de \
+                     las que el RFC-0007 dejo sin prueba portable: se exhibe su sobre de rechazo"
+                )));
+            }
+        }
+        _ => {
+            return Err(err(
+                "resolucion del lote: lleva UNA de tres, acuses, sobre o data".into(),
+            ))
+        }
+    }
+    Ok(())
+}
+
 /// **El sobre de COMPLETITUD** (RFC-0010 E4, §573): un recibo de recepcion bajo la `recepRoot` de
 /// una cabeza v6 firmada -el `cierre` de su era-, y lo que el operador hizo con el. Tres veredictos
 /// (D-F) y un cuarto estado (D-G):
@@ -1777,30 +2033,7 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
             )));
         }
         Some(Some("acuse")) => {
-            let x = res.expect("hay resolucion");
-            let c = x
-                .get("cabeza")
-                .ok_or_else(|| err("resolucion: falta cabeza".into()))?;
-            let a = x
-                .get("acuse")
-                .ok_or_else(|| err("resolucion: falta acuse".into()))?;
-            let (_, _, clave_r, _) = cabeza_v3_verificada(c, "resolucion.cabeza")?;
-            if clave_r != clave {
-                return Err(claves_distintas());
-            }
-            if digest_de(a, "hashPrueba")? != hash {
-                return Err(err(
-                    "resolucion: el acuse es de OTRA prueba: no resuelve este recibo".into()
-                ));
-            }
-            let s = u64_de(c, "index")?;
-            if !recibos::dentro_de_ventana(era, s, n) {
-                return Err(err(format!(
-                    "resolucion: llega FUERA de la ventana (indice {s}, era {era}, n {n})"
-                )));
-            }
-            println!("   la resolucion, como paquete de posicion con su acuse:");
-            verificar_paquete(&serde_json::json!({ "v": 1, "cabeza": c, "acuse": a }))?;
+            let s = resolver_por_acuse(res.expect("hay resolucion"), hash, era, n, &clave, "resolucion")?;
             println!(
                 "3/3 RESUELTA como transicion aplicada, dentro de la ventana (indice {s}, \
                  era {era}, n {n})"
@@ -1811,32 +2044,14 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
                 .expect("hay resolucion")
                 .get("sobre")
                 .ok_or_else(|| err("resolucion: falta sobre (el de rechazo)".into()))?;
-            if sobre.get("tipo").and_then(|t| t.as_str()) != Some("rechazo") {
-                return Err(err("resolucion: el sobre no es de tipo rechazo".into()));
-            }
-            let d = sobre
-                .get("data")
-                .ok_or_else(|| err("resolucion.sobre: falta data".into()))?;
-            exige_mismo_recibo(d, hash, "resolucion.sobre")?;
-            let c = sobre
-                .get("cabeza")
-                .ok_or_else(|| err("resolucion.sobre: falta cabeza".into()))?;
-            let (_, _, clave_r, _) = cabeza_v3_verificada(c, "resolucion.sobre.cabeza")?;
-            if clave_r != clave {
-                return Err(claves_distintas());
-            }
-            let s = u64_de(c, "index")?;
-            if !recibos::dentro_de_ventana(era, s, n) {
-                return Err(err(format!(
-                    "resolucion: llega FUERA de la ventana (indice {s}, era {era}, n {n})"
-                )));
-            }
-            println!("   la resolucion, como sobre de rechazo:");
-            verificar_rechazo(sobre)?;
+            let (s, _) = resolver_por_rechazo(sobre, hash, era, n, &clave)?;
             println!(
                 "3/3 RESUELTA como rechazo con prueba, dentro de la ventana (indice {s}); la \
                  atadura al recibo es la palabra del nodo en su data"
             );
+        }
+        Some(Some("lote")) => {
+            resolver_lote(res.expect("hay resolucion"), hash, era, n, &clave)?;
         }
         Some(Some("declarada")) => {
             let d = res
@@ -1861,7 +2076,8 @@ fn verificar_completitud(p: &serde_json::Value) -> Result<(), String> {
         }
         Some(otro) => {
             return Err(err(format!(
-                "resolucion: tipo {otro:?} desconocido: se lee acuse, rechazo o declarada"
+                "resolucion: tipo {otro:?} desconocido: se lee acuse, rechazo o declarada, y lote \
+                 para el recibo de un lote (RFC-0014)"
             )))
         }
     }
@@ -2244,6 +2460,57 @@ mod tests {
         assert!(e.contains("OTRA operacion"), "{e}");
         let e = exige_mismo_recibo(&json!({ "causa": "X" }), h, "r").unwrap_err();
         assert!(e.contains("no lleva recepcion"), "{e}");
+    }
+
+    /// §612 (RFC-0014 D-B): la composicion de un lote se lee ENTERA, nombrando el sitio de lo
+    /// que falta; vacia no es un lote; y leida, recompone con la MISMA funcion que el nodo anota.
+    #[test]
+    fn la_composicion_de_un_lote_se_lee_entera_y_vacia_no_es_un_lote() {
+        let hex = |d: &Digest| {
+            let b = zk_ssl_hash::digest_to_bytes(d);
+            format!("0x{}", b.iter().map(|x| format!("{x:02x}")).collect::<String>())
+        };
+        let e = composicion_de(&json!({})).unwrap_err();
+        assert!(e.contains("falta composicion"), "{e}");
+        let e = composicion_de(&json!({ "composicion": [] })).unwrap_err();
+        assert!(e.contains("VACIA"), "{e}");
+        let bien = json!({ "hashPrueba": hex(&dg(80)), "cuenta": "0x3", "posicion": "0x7" });
+        let sin_cuenta = json!({ "hashPrueba": hex(&dg(81)), "posicion": "0x8" });
+        let e = composicion_de(&json!({ "composicion": [bien, sin_cuenta] })).unwrap_err();
+        assert!(e.contains("resolucion.composicion[1]: falta cuenta"), "{e}");
+        let otra = json!({ "hashPrueba": hex(&dg(81)), "cuenta": "0x4", "posicion": "0x8" });
+        let c = composicion_de(&json!({ "composicion": [bien, otra] })).expect("se lee");
+        assert_eq!(c, vec![(dg(80), 3, 7), (dg(81), 4, 8)]);
+        assert_eq!(
+            recibos::hash_del_lote(&c),
+            zk_ssl_hash::hash_del_lote(&[(dg(80), 3, 7), (dg(81), 4, 8)]),
+            "la huella del mando es la del nucleo"
+        );
+    }
+
+    /// §612 (RFC-0014 D-B, y la regla de la decision 3 del §609): la FORMA se juzga otra vez con la
+    /// composicion sola. Lo que la sostiene devuelve la primera del par; lo que no -otro valor en
+    /// la operacion nombrada, o ninguna anterior que lo repita- vuelve como juicio contradicho, que
+    /// quien llama nombra «RECHAZO SIN FUNDAMENTO». Y la operacion nombrada tiene que estar en el lote.
+    #[test]
+    fn la_forma_del_lote_se_juzga_otra_vez_y_la_que_no_se_sostiene_vuelve_contradicha() {
+        let c = [(dg(1), 5, 10), (dg(2), 6, 11), (dg(3), 5, 12), (dg(4), 7, 11)];
+        assert_eq!(campo_de_forma("DuplicateAccountInBatch"), Some("index"));
+        assert_eq!(campo_de_forma("DuplicatePendingInBatch"), Some("position"));
+        assert_eq!(campo_de_forma("StaleState"), None);
+        assert_eq!(juzgar_forma(&c, 2, "DuplicateAccountInBatch", 5), Ok(0));
+        assert_eq!(juzgar_forma(&c, 3, "DuplicatePendingInBatch", 11), Ok(1));
+        let e = juzgar_forma(&c, 2, "DuplicateAccountInBatch", 6).unwrap_err();
+        assert!(e.contains("lleva la cuenta 5 y la causa nombra la 6"), "{e}");
+        let e = juzgar_forma(&c, 1, "DuplicateAccountInBatch", 6).unwrap_err();
+        assert!(e.contains("ninguna operacion anterior a la 1 lleva la cuenta 6"), "{e}");
+        let e = juzgar_forma(&c, 2, "DuplicatePendingInBatch", 12).unwrap_err();
+        assert!(e.contains("ninguna operacion anterior a la 2 lleva la posicion 12"), "{e}");
+        let e = operacion_nombrada(&json!({ "causa": "X" }), 4, "r").unwrap_err();
+        assert!(e.contains("nombra su operacion"), "{e}");
+        let e = operacion_nombrada(&json!({ "operacion": "0x4" }), 4, "r").unwrap_err();
+        assert!(e.contains("la operacion 4 no esta en un lote de 4"), "{e}");
+        assert_eq!(operacion_nombrada(&json!({ "operacion": "0x3" }), 4, "r"), Ok(3));
     }
 
     /// Un paquete sin la clave no es un error: es un paquete sin cofirmas.

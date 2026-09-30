@@ -366,7 +366,10 @@ donde el valor es una respuesta del cable sin reescribir.
   "camino": {"siblings": […], "isRight": […]},    el de zkssl_recepPath
   "resolucion": {"tipo": "acuse", "cabeza": {…}, "acuse": {"seq", "hashPrueba", "camino"}}
               | {"tipo": "rechazo", "sobre": {…}}      un sobre de la sección 2.6
-              | {"tipo": "declarada", "data": {…}},    el `error.data` del rechazo, tal cual
+              | {"tipo": "declarada", "data": {…}}     el `error.data` del rechazo, tal cual
+              | {"tipo": "lote",                       el recibo de un zkssl_applyMany (§612)
+                 "composicion": [{"hashPrueba", "cuenta", "posicion"}, …],
+                 "acuses": [{"cabeza", "acuse"}, …]  | "sobre": {…}  | "data": {…}},
   "vigente": {…} }                                una cabeza del MISMO operador, para la ventana
 ```
 
@@ -392,6 +395,25 @@ cabeza firmada por la misma clave, el que la firma lleva embebido (§399), con `
    (`CustodianSetExhausted`, `PendingTreeExhausted`, `NotTheIssuer`, `NotTheAccountHolder`) y atada
    al recibo por su `recepcion`: el **cuarto estado**, «resolución declarada, no probada», que
    sale con su propio código (D4). Una causa que sí tiene prueba se exhibe, no se declara.
+5. **`lote`** (§612, RFC-0014 E4a, D-B): el recibo de un `zkssl_applyMany`, cuyo `hashPrueba` es
+   la huella de su composición (§611). El mando recompone `hash_del_lote` con la `composicion`
+   -la que el agregador reenvía a cada titular (D-C), en el orden del lote- y, si no es la del
+   recibo, no sigue. Después, UNA de tres:
+   - **`acuses`**, uno por operación y en su orden, cada uno resuelto como en el veredicto 1 y de
+     SU prueba: VERDE, «resuelta como LOTE aplicado». El lote se aplica entero o no se aplica, así
+     que faltar uno es no resolver.
+   - **`sobre`**, el de la sección 2.6 de la operación que el nodo nombra en `data.operacion`,
+     resuelto como en el veredicto 2: VERDE, «resuelta como LOTE rechazado con prueba». Las
+     compañeras quedan resueltas por ella: el lote es la unidad. ⚠️ Que el rechazo sea de ESA
+     operación es la palabra del nodo (D3), como la atadura al recibo.
+   - **`data`**, el `error.data` tal cual. Con `DuplicateAccountInBatch` o
+     `DuplicatePendingInBatch` el mando REPITE el juicio con la composición sola -la operación
+     nombrada lleva la cuenta o la posición de `campos`, y una anterior también-: si lo sostiene,
+     VERDE en el acto y sin cabeza, «resuelta como LOTE rechazado por su FORMA»; si no, **ROJO
+     NOMBRADO, «RECHAZO SIN FUNDAMENTO»**: donde el verificador puede repetir el juicio del
+     operador, lo dice (RFC-0014, decisión 3). ⚠️ El «no» del nodo es su palabra en su `data`
+     (D3): si alguien lo inventara, el operador lo desmiente exhibiendo la resolución verdadera.
+     Con una de las causas sin prueba portable, el cuarto estado, como en el 4.
 
 **El banco es `tools/banco_completitud.sh`** (§574), que lo reproduce en vivo contra un nodo real
 que firma —con `--largo`, hasta que la ventana EXPIRA—, y **el catálogo es

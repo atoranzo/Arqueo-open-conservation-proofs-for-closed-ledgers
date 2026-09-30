@@ -43267,3 +43267,63 @@ aditivo bajo `zkssl/0.4`.
 **Lo que NO cierra.** E4 (las dos resoluciones en el mando, «lote» y «prenda», con el «RECHAZO SIN
 FUNDAMENTO») y E5 (vectores y banco).
 
+## §612 — RFC-0014 E4a: el mando resuelve el recibo del lote, y juzga otra vez su forma
+
+El commit que lleva este asiento, sobre `e9d61a4` (el S611). Un solo sello: el mando, sus testigos
+y su pin, el contrato del sobre, la etapa marcada en el RFC, las cifras y este asiento, con el
+canon `--sello` VERDE dentro del bloque. 7 ficheros más este asiento, con 355 inserciones y 61
+borrados fuera de él.
+
+**De dónde sale.** De la D-B del RFC-0014 y de la E4 de su tabla, que este sello parte en dos: el
+lote ahora (E4a) y la prenda después (E4b), porque la prenda trae su propio juez y su propio
+veredicto con nombre, y cada mitad se mide mejor sola.
+
+**Lo que hace.** (1) `resolucion.tipo = "lote"` en el sobre de completitud: lo primero, recomponer
+`hash_del_lote` con la `composicion` que el agregador reenvía (D-C), con la función del kit que el
+nodo anota (§611); si no es el `hashPrueba` del recibo, nada de lo demás habla de este recibo.
+Después, UNA de tres: `acuses`, uno por operación y en su orden, cada uno resuelto como el
+veredicto 1 -el lote se aplica entero o no se aplica: faltar uno es no resolver-; `sobre`, el de
+la 2.6 de la operación que el nodo nombra, resuelto como el veredicto 2 y con su `operacion` dentro
+del lote -las compañeras quedan resueltas por ella-; o `data`, tal cual: con una causa de FORMA el
+mando repite el juicio con la composición sola -en el acto y sin cabeza-, con una sin prueba
+portable da el cuarto estado, y con otra pide su sobre. (2) Si la composición NO sostiene la causa
+de forma que el nodo dio -la operación nombrada lleva otro valor, o ninguna anterior lo repite-:
+**ROJO NOMBRADO, «RECHAZO SIN FUNDAMENTO»**. Es la regla de la decisión 3 del §609 -«donde el
+verificador puede repetir el juicio del operador, lo dice»- en el otro sitio donde se puede; la
+decisión la tomó para la prenda, y esto la aplica sin ampliarla: REVERSIBLE con ella. ⚠️ La
+negativa es la palabra del nodo en su `data` (D3): si alguien la inventara, el operador la
+desmiente exhibiendo la resolución verdadera. (3) Los veredictos 1 y 2 de la vía directa salen a
+`resolver_por_acuse` y `resolver_por_rechazo`, que el lote reusa, con sus textos byte a byte: el
+tipo desconocido gana «lote» sin perder la frase que su vector pina, y los 36 vectores de
+`completitud/` siguen iguales. (4) `spec/PAQUETE.md` 2.11 gana la quinta forma de resolución y
+sus reglas.
+
+**Los testigos, dos, en el mando.** La composición se lee ENTERA, nombrando el sitio de lo que
+falta, vacía no es un lote, y recompone con la función del núcleo; y la forma se juzga otra vez
+-lo que la sostiene devuelve la primera del par, y lo que no vuelve contradicho: otro valor, o
+ninguna anterior, por cuenta y por posición-, con la operación nombrada dentro del lote.
+
+**EL HUMO, VIVO, antes de sellar.** `humo612.py`, fuera del árbol, contra un nodo REAL que firma un
+latido por segundo: el recibo de la vía directa da el digest de la prueba de ceros -el de la casa,
+§116-; un lote de una operación cae al VALIDAR (`StaleState`, operación 0) y otro cae por su FORMA
+(`DuplicateAccountInBatch`, operación 1); la cabeza de índice 2 cierra la era de los dos. Y el
+mando, con lo que el titular custodia: RESUELTA como LOTE rechazado con prueba, RESUELTA como LOTE
+rechazado por su FORMA, tres RECHAZOS SIN FUNDAMENTO -otra cuenta, la primera del par, por
+posición-, el cuarto estado con la salida 3, y trece negativos, cada uno por su regla. 19 de 19.
+El veredicto del lote APLICADO pide pruebas STARK reales y es de la E5, con su banco.
+
+**Los falsadores, ENSAYADOS, los dos en una corrida.** Sin la recomposición de la huella, la
+composición AJENA sale VERDE y la CORTA cae por otra regla y sin su nombre; con el juicio de forma
+buscando también en la propia operación, cae el testigo de la forma y dos RECHAZOS SIN FUNDAMENTO
+del humo salen VERDE: cuatro ROJOS en el humo. Restaurado, todo VERDE.
+
+**Contadores.** El verificador 144 -> 146 y los demás sin mover; TOTAL DE SELLO 1526 -> 1528;
+TOTAL CON LARGOS 1663 -> 1665; los tres párrafos ancla y la cita del verificador en `PRINCIPIOS.md`
+al día; la cuenta de `check_tests`, 1687. `check_dominios` y `check_nucleo` sin cambio: las
+funciones nuevas son del binario, no del núcleo. Ningún `Cargo` tocado; el nodo y el cable,
+quietos.
+
+**Lo que NO cierra.** E4b (la resolución de la prenda, con su RECHAZO SIN FUNDAMENTO) y E5 (los
+vectores de las dos en `completitud/`, y un banco que siembre contra un nodo real también el lote
+APLICADO).
+

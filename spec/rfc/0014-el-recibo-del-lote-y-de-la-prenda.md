@@ -2,15 +2,16 @@
 
 - **Estado:** PROPUESTO (§608), con sus decisiones TOMADAS en el §609 -delegadas por el autor con
   su criterio escrito, y REVERSIBLES, ver «Decisiones»-. Medido y diseñado; la E2 construida en el
-  §610 y la E3 en el §611, las demás se abren en el orden de la tabla.
+  §610, la E3 en el §611 y la mitad del lote de la E4 en el §612; las demás se abren en el orden
+  de la tabla.
 - **Autor:** Ángel José Toranzo Portela
-- **Asistencia GenAI:** Claude (sesión 193, §608 a §611) — ver [`GENAI.md`](../../GENAI.md)
+- **Asistencia GenAI:** Claude (sesión 193, §608 a §612) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-30
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube**: todo es aditivo, como el recibo
   del §571 -dos respuestas y un error ganan `recepcion`, el error del lote gana `operacion`, y el
   sobre de completitud gana dos resoluciones-. La cabeza no se mueve.
 - **Asiento(s) de AUDITORIA:** §608 (la propuesta); §609 (las decisiones); §610 (la E2); §611 (la
-  E3).
+  E3); §612 (la E4a).
 - **Backlog:** la segunda parte del D-H del RFC-0010 -«una etapa por diseñar, no un olvido»-; y
   `SECURITY.md` 2.ter, el despliegue con agregadores.
 
@@ -51,7 +52,10 @@ lleva la composición y el mando recompone `hash_del_lote` antes de nada:
   RFC-0010: el hash de una prueba no deja ver sus entradas públicas, y el mando no puede
   recomponerla. Las compañeras quedan resueltas por ella: el lote es la unidad;
 - **rechazado por su forma**: `DuplicateAccountInBatch` y `DuplicatePendingInBatch` se prueban
-  con la composición sola -dos entradas con la misma cuenta, o con la misma posición-;
+  con la composición sola -dos entradas con la misma cuenta, o con la misma posición-. Y si la
+  composición NO sostiene la causa que el nodo dio, el mando lo nombra, «RECHAZO SIN FUNDAMENTO»
+  (§612): es la regla de la decisión 3 -donde el verificador puede repetir el juicio del operador,
+  lo dice- en el otro sitio donde se puede;
 - **lo demás**, las causas que el RFC-0007 dejó sin prueba portable: el cuarto estado,
   «declarada, no probada», como en el D-G del RFC-0010.
 
@@ -149,7 +153,8 @@ REVERSIBLES.
 | E1 — la promesa, escrita | este texto | no | **propuesto (§608), decidido (§609)** |
 | E2 — el núcleo | `DOMINIO_LOTE` y `hash_del_lote` en `zk-ssl-hash`, su KAT en `spec/vectors/nucleo/` y su fila del REGISTRO | no (aditivo) | **construida (§610)**: `DOMINIO_LOTE` en la familia bytes del REGISTRO de dominios, `hash_del_lote` con su fila en el censo de `NUCLEO.md` (RECIBOS), tres testigos, y el KAT `hash_del_lote.json`, el vigesimosexto, con los veinticinco anteriores byte a byte iguales; `k` va en la longitud codificada |
 | E3 — el nodo | `zkssl_applyMany` y `zkssl_pledge` reservan y anotan su recibo en el mismo punto que la vía directa (§569); `operacion` en el error del lote; el testigo del §576, reescrito | no (aditivo) | **construida (§611)**: la capa gana `apply_many_con_operacion` -el mismo juicio, y el error con el índice- y `apply_many` es ella sin el índice; el lote reserva tras el parseo y antes de la capa, sobre `hash_del_lote` de su composición, re-exportada por el kit (`zk_ssl_verify::recibos`); la prenda, tras comprobar el `seq` y antes del juez; el testigo del §576 cae y se reescribe al revés, con las tres previas asertadas sin recibo. ⚠️ Hasta la E4 el recibo existe y su resolución no: el mando no sabe aún resolver el de un lote aplicado ni el de una prenda, y no se le lleva ninguno |
-| E4 — el mando | `resolucion.tipo` «lote» y «prenda» en el sobre de completitud, cada regla con su nombre | no | pendiente |
+| E4a — el mando, el lote | `resolucion.tipo` «lote» en el sobre de completitud: la composición recompuesta, y aplicado, rechazado con prueba, por su forma -o sin fundamento- y declarado | no | **construida (§612)**: la huella recompuesta con la función del kit antes de nada; `acuses` uno por operación resueltos como el veredicto 1, `sobre` como el 2 con su `operacion` dentro del lote, y `data` con la forma juzgada otra vez o el cuarto estado; los dos veredictos de la vía directa salen a funciones que el lote reusa, con sus textos intactos y los 36 vectores iguales |
+| E4b — el mando, la prenda | `resolucion.tipo` «prenda», con el «RECHAZO SIN FUNDAMENTO» | no | pendiente |
 | E5 — catálogo y banco | sus vectores en `completitud/`, y un banco que siembre contra un nodo real las dos resoluciones del lote, las tres de la prenda y el rechazo sin fundamento | no | pendiente |
 
 ## Compatibilidad
