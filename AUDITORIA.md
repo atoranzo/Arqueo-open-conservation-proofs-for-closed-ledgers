@@ -43134,3 +43134,42 @@ tres. `check_cifras`, `check_figures`, `check_publicadas` y `verificar_citas`, V
 
 **Lo que NO cierra.** Todo lo construible: E2 a E5. Y el residuo que el RFC declara en su D-H.
 
+## §609 — RFC-0014, decidido: un recibo por lo que se evalúa, y el juicio repetible se nombra
+
+El commit que lleva este asiento, sobre `75e13a8` (el S608). Un solo sello: las decisiones del
+RFC-0014 y este asiento, con el canon `--sello` VERDE dentro del bloque. Un fichero más este
+asiento.
+
+**De dónde sale.** El §608 dejó tres preguntas al autor, y el autor las delegó con su criterio
+escrito: decidir según los principios del proyecto y el manifiesto, priorizando que se aplique al
+mayor número de casos de uso sin modificaciones significativas, porque el objetivo del proyecto es
+establecer el estándar. Se leyeron para esto `PRINCIPIOS.md` §3 y §9, la portada del `README.md`
+-«Leer antes de nada» y «Qué garantiza y qué no»-, el D-E del RFC-0010 y el `REGISTRO` de
+`NUCLEO.md`, para no tocar lo que ya compone.
+
+**Lo que se decide**, y por qué con ese criterio. (1) **Un recibo por LOTE.** La regla del D-E -un
+recibo por cada cosa que el nodo evalúa- aplicada a lo que el nodo evalúa como una unidad. No mueve
+nada de lo existente: ni la hoja del recibo, ni su dominio, ni la cabeza, ni un vector; nace sólo la
+huella de la composición, con dominio propio y KAT. Vale para cualquier agregador y cualquier
+lote, incluido el de uno. Uno por operación habría puesto un tercer campo bajo la firma y
+prometido resolución a operaciones que el nodo no llegó a evaluar, porque el lote aborta en la
+primera que falla. (2) **Consumen recibo sólo las respuestas de la prenda que EVALÚAN la prueba.**
+La misma frontera del D-E y el mismo punto del §569; contar las tres previas abriría huecos en el
+registro a quien mande prendas contra una cabeza vieja. Un «seq viejo» falso queda como conducta
+visible, no evidencia portable: la clase del operador que no contesta, y va al D-H. (3) **El
+rechazo de una prenda cuyo sobre verifica se NOMBRA**, «RECHAZO SIN FUNDAMENTO». No cuesta nada
+nuevo -el juez de la prenda ya está en el kit y es el mismo del nodo-, un operador honrado no
+puede producirlo -el recibo sólo existe si el `seq` casó-, y es la única vía donde el verificador
+puede repetir hoy el juicio del operador. Fija una regla de estándar: donde se puede repetir el
+juicio, se dice.
+
+**Lo que NO se decide aquí.** El orden de las etapas, que la tabla ya fija -núcleo, nodo, mando,
+catálogo y banco-, y el residuo del agregador que no reenvía, que ninguna decisión de este RFC
+puede cerrar.
+
+**Contadores.** Ninguno se mueve: sólo documentación. `check_cifras`, `check_figures`,
+`check_publicadas` y `verificar_citas`, VERDES.
+
+**Lo que NO cierra.** Las etapas E2 a E5. La siguiente es la E2, el núcleo: `DOMINIO_LOTE` y
+`hash_del_lote` en `zk-ssl-hash`, su KAT y su fila del REGISTRO.
+

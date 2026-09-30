@@ -1,14 +1,15 @@
 # RFC-0014 — El recibo del lote y de la prenda: lo agregado, atado como lo directo
 
-- **Estado:** PROPUESTO (§608) — medido y diseñado; ninguna etapa construida. Tres preguntas para
-  el autor en «Decisiones», cada una con la opción que este texto recomienda.
+- **Estado:** PROPUESTO (§608), con sus decisiones TOMADAS en el §609 -delegadas por el autor con
+  su criterio escrito, y REVERSIBLES, ver «Decisiones»-. Medido y diseñado; ninguna etapa
+  construida: se abren en el orden de la tabla.
 - **Autor:** Ángel José Toranzo Portela
-- **Asistencia GenAI:** Claude (sesión 193, §608) — ver [`GENAI.md`](../../GENAI.md)
+- **Asistencia GenAI:** Claude (sesión 193, §608 y §609) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-30
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube**: todo es aditivo, como el recibo
   del §571 -dos respuestas y un error ganan `recepcion`, el error del lote gana `operacion`, y el
   sobre de completitud gana dos resoluciones-. La cabeza no se mueve.
-- **Asiento(s) de AUDITORIA:** §608 (la propuesta).
+- **Asiento(s) de AUDITORIA:** §608 (la propuesta); §609 (las decisiones).
 - **Backlog:** la segunda parte del D-H del RFC-0010 -«una etapa por diseñar, no un olvido»-; y
   `SECURITY.md` 2.ter, el despliegue con agregadores.
 
@@ -88,7 +89,8 @@ REGISTRO de `NUCLEO.md`, `DOMINIO_LOTE` y `hash_del_lote`, con su KAT; y dos res
 sobre de completitud (2.11), con sus vectores y su banco.
 
 **D-H. El residuo, declarado.** El agregador que no reenvía; la prenda con `seq` viejo, que no
-deja recibo y el titular reintenta; las causas sin prueba portable, en el cuarto estado; y lo de
+deja recibo y el titular reintenta -y un «seq viejo» FALSO es conducta visible, no evidencia
+portable-; las causas sin prueba portable, en el cuarto estado; y lo de
 siempre, el operador que no contesta (D-H del RFC-0010), que tampoco aquí deja rastro.
 
 ## Decisiones
@@ -105,11 +107,45 @@ Las tres que este texto deja al autor, con la que recomienda primero:
    FUNDAMENTO», o dejarlo caer en «no resuelta en la ventana». El nombre no cuesta nada que la
    verificación no haga ya, y convierte veinticuatro horas de espera en evidencia inmediata.
 
+**TOMADAS en el §609**, por delegación del autor y con el criterio que dictó: los principios del
+proyecto y su portada -una capa base «neutral, minimalista y resistente» (`PRINCIPIOS.md` §3), la
+evidencia que «un verificador independiente comprueba con el nodo apagado» y la «responsabilidad
+demostrable, al modo de Certificate Transparency» (`README.md`)-, aplicables **al mayor número de
+casos de uso sin modificaciones significativas**, porque el objetivo es fijar el estándar. Todas
+REVERSIBLES.
+
+- **1, el recibo va por LOTE (D-A).** Es la regla que ya hay -un recibo por cada cosa que el nodo
+  EVALÚA (RFC-0010, D-E)- aplicada a lo que el nodo evalúa como una unidad: una foto, un
+  veredicto, todo o nada. No toca nada existente: ni la hoja `recibo_digest(hash_prueba, era, n)`,
+  ni `DOMINIO_RECEP`, ni la cabeza v6, ni un vector; sólo nace la huella de la composición, con su
+  dominio y su KAT. Vale para cualquier agregador, con cualquier tamaño y mezcla de lote, y también
+  para el lote de uno; el titular no cambia su prueba, y lo único que necesita -la respuesta y la
+  composición- el agregador ya lo tiene. Uno por operación habría puesto un tercer campo bajo la
+  firma -otro `recibo_digest`, otro KAT, otros vectores, el 2.11 cambiado para todas las vías- y
+  prometido resolución a operaciones que el nodo NO evaluó, porque el lote aborta en la primera que
+  falla. Una regla, una hoja, todas las vías: eso es lo que un estándar puede pedir a otra
+  implementación.
+- **2, consumen recibo sólo las respuestas que EVALÚAN la prueba (D-D).** Es la misma frontera del
+  D-E -«ni el ruido»- y el mismo punto del §569: se reserva tras comprobar el `seq` y antes de
+  verificar, como en la vía directa. Contar las tres previas abriría huecos en el registro ajeno a
+  quien mande prendas contra una cabeza vieja, sin coste. El titular las ve al instante -la
+  respuesta dice por qué- y vuelve a probar bajo la cabeza nueva. Residuo, declarado en D-H: un
+  «seq viejo» falso es conducta visible, no evidencia portable, la misma clase que el operador que
+  no contesta.
+- **3, el rechazo de una prenda cuyo sobre verifica tiene nombre: «RECHAZO SIN FUNDAMENTO»
+  (D-E).** No cuesta nada nuevo: el juez de la prenda ya está en el kit, sin el probador, y es EL
+  MISMO con el que el nodo juzga (`verificar_contra_cabeza`, `PAQUETE.md` 2.10); el sobre de
+  completitud ya delega en otros jueces, y aquí delega en uno más. Un operador honrado no puede
+  producirlo: el recibo sólo existe si el `seq` casó, luego el nodo juzgó contra esa cabeza con ese
+  juez. Y es la única vía donde hoy se puede: en la directa, la prueba del rechazo depende del
+  estado (la grieta D-G del RFC-0010). Convierte una espera de `n` cabezas en evidencia inmediata,
+  y fija la regla del estándar: donde el verificador puede repetir el juicio del operador, lo dice.
+
 ## Etapas
 
 | etapa | qué entrega | ¿rompe el cable? | estado |
 |---|---|---|---|
-| E1 — la promesa, escrita | este texto | no | **propuesto (§608)** |
+| E1 — la promesa, escrita | este texto | no | **propuesto (§608), decidido (§609)** |
 | E2 — el núcleo | `DOMINIO_LOTE` y `hash_del_lote` en `zk-ssl-hash`, su KAT en `spec/vectors/nucleo/` y su fila del REGISTRO | no (aditivo) | pendiente |
 | E3 — el nodo | `zkssl_applyMany` y `zkssl_pledge` reservan y anotan su recibo en el mismo punto que la vía directa (§569); `operacion` en el error del lote; el testigo del §576, reescrito | no (aditivo) | pendiente |
 | E4 — el mando | `resolucion.tipo` «lote» y «prenda» en el sobre de completitud, cada regla con su nombre | no | pendiente |
