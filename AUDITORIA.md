@@ -42645,3 +42645,42 @@ línea de revisión cita este sello.
 la fuente primaria de Falcon, los originales de lo leído en espejo y la aceptación que describe
 `GENAI.md`. La rama de trabajo, cuyo contenido ya está entero aquí, queda para que el autor la
 borre.
+
+## §598 — RFC-0011, decidido: las mentiras con clave no piden otro código, piden la clave
+
+El commit que lleva este asiento, sobre `4c08c88` (el S597). Un solo sello: las decisiones del
+RFC-0011, su fila en `spec/README.md`, la nota de la entrada 93 y este asiento, con el canon
+`--sello` VERDE dentro del bloque. Tres ficheros más este asiento, con 45 inserciones y 6
+borrados fuera de él.
+
+**De dónde sale.** El §588 dejó al autor tres preguntas: el nombre del crate del mentiroso, si darle
+biblioteca al nodo y el orden de las etapas. El autor las delegó: «HACER: tu decisión». Se deciden
+con los principios de la casa -medir antes de construir, lo más barato que responde, no tocar el
+binario de producción sin necesidad-, y REVERSIBLES.
+
+**Lo que se MIDIÓ antes de decidir.** El §593, posterior al RFC, trajo un banco que ya hace lo que
+la etapa de la vista dividida pedía: `tools/banco_ancla.sh`, en su corrida B, levanta la MISMA
+semilla con directorios frescos, el contador de índice vuelve a empezar, y el binario del nodo SIN
+TOCAR firma dos cabezas con el mismo índice y digests distintos. El RFC suponía que las mentiras
+«que exigen la clave» exigían una costura en el nodo; exigen la clave, no otro código.
+
+**Lo que se decide.** (1) **Ninguna biblioteca para el nodo**: ninguna mentira conocida la pide, y
+partir su `main.rs` sería el corte más caro del RFC sin motivo; se reabre si una mentira sólo sale
+de código modificado. (2) **Ningún crate por ahora**: las mentiras viven en bancos de `tools/`,
+fuera del workspace de Cargo, donde nada las puede enlazar -más fuerte que el crate aparte-; el
+nombre `zk-ssl-mentiroso` queda reservado, y la compuerta del árbol de dependencias no nace porque
+no hay árbol que vigilar. (3) **Cuatro etapas**, de lo que ya se sabe producir a lo que está por
+medir: la vista dividida contra el testigo (`--comparar` y `--auditar` ROJOS), la firma que el
+diario no recoge (`--ausentes` ROJO por primera vez), la censura antes del recibo con un proxy
+dentro del banco (el silencio de las defensas, asertado: el residuo D-H medido) y el recibo que no
+se resuelve, cuyo modo de producirse sin código está por medir. El RFC conserva lo que proponía y lo
+marca sustituido.
+
+**Contadores.** Ninguno se mueve. `check_cifras`, `check_figures`, `check_publicadas` y
+`verificar_citas`, VERDES. El RFC sigue PROPUESTO: aceptar exige lo que la regla 4 del PROCESO pide,
+y eso llega con las etapas.
+
+**Lo que NO cierra.** Las cuatro etapas. Y una consecuencia que queda dicha en el RFC: si el
+mentiroso es el binario honesto con la semilla, cualquier operador lo es; las defensas se prueban
+contra lo que de verdad podría hacer.
+

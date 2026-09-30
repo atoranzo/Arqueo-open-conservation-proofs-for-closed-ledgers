@@ -1973,6 +1973,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   diseño -crate aparte, costura, compuerta del canon- con el censo de defensas medido, el
   coste de la costura (el nodo es hoy SOLO binario) y cinco etapas, la compuerta antes que
   ninguna mentira. Sigue abierta hasta que el autor lo acepte y las etapas se sellen.
+  **Decisiones, §598** (delegadas por el autor, REVERSIBLES): ni crate ni biblioteca del nodo;
+  las mentiras con clave las produce el binario honesto con la semilla -el banco del ancla ya lo
+  hace-, y viven en bancos de `tools/`. Etapas: vista dividida contra el testigo, firma sin anotar,
+  censura antes del recibo, recibo sin resolver.
 
 - [ ] **94. Clases de resultado que el canon NO VE: las cegueras del
   instrumento, medidas.** El canon corre en release y cuenta los

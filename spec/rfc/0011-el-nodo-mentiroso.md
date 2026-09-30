@@ -1,12 +1,12 @@
 # RFC-0011 — El nodo mentiroso: las defensas, ejercitadas contra quien miente de verdad
 
-- **Estado:** PROPUESTO (§588). Sin código: fija el diseño, las decisiones y el orden de las
-  etapas. Ninguna etapa se abre sin que el autor acepte este documento o lo corrija.
+- **Estado:** PROPUESTO (§588), con sus decisiones TOMADAS en el §598 -delegadas por el autor y
+  REVERSIBLES, ver «Decisiones»-. Sin código todavía: las etapas se abren en el orden del §598.
 - **Autor:** Ángel José Toranzo Portela
-- **Asistencia GenAI:** Claude (sesión 193, §588) — ver [`GENAI.md`](../../GENAI.md)
+- **Asistencia GenAI:** Claude (sesión 193, §588 y §598) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-30
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube**: nada de esto toca el cable.
-- **Asiento(s) de AUDITORIA:** §588 (la propuesta).
+- **Asiento(s) de AUDITORIA:** §588 (la propuesta); §598 (las decisiones).
 
 ## Motivación
 
@@ -72,6 +72,9 @@ como `dev_openSeeded` y los custodios de PRUEBA; nunca lee `--clave-fichero` ni 
   un banco, nombrando el índice.
 - **E5 — la firma sin anotar.** `--ausentes` ROJO en un banco por primera vez.
 
+⚠️ **Esta lista la SUSTITUYE la del §598**, en «Decisiones»: sin crate ni biblioteca, las etapas
+E1 y E3 de arriba desaparecen, y el orden cambia. Se conserva como lo que se propuso.
+
 ## Compatibilidad
 
 Ninguna sobre el cable ni sobre los vectores. El workspace gana un miembro, con su fila en el
@@ -86,12 +89,44 @@ encienda en el binario del nodo, y el canon comprueba el árbol de dependencias 
 NO cubre: un operador que compile su propio binario puede mentir igual; esto no lo impide ni lo
 pretende, sólo hace que las defensas se prueben contra lo que él haría.
 
-## Decisiones para el autor
+## Decisiones
+
+Las tres preguntas que el §588 dejó al autor, tal como se formularon:
 
 - **D-A**, el nombre del crate: `zk-ssl-mentiroso` (REVERSIBLE).
 - **D-B**, darle biblioteca al nodo en E3, o limitar el RFC a las mentiras por omisión (E1 y E2) y
   dejar la vista dividida y la firma sin anotar en «alcanzable, no ejercitada».
 - **El orden** E1 a E5: la compuerta antes que ninguna mentira, y la omisión antes que la clave.
+
+**TOMADAS en el §598**, por delegación del autor («HACER: tu decisión») y con los principios de la
+casa -medir antes de construir, lo más barato que responde, no tocar el binario de producción sin
+necesidad-. Todas REVERSIBLES.
+
+**Lo que se midió antes de decidir.** El banco del ancla (`tools/banco_ancla.sh`, §593) ya produce
+una vista dividida DE VERDAD con el binario del nodo SIN TOCAR: su corrida B levanta la misma
+semilla con directorios frescos, el contador de índice vuelve a empezar, y el nodo firma dos cabezas con el
+mismo índice y digests distintos. Las mentiras «que exigen la clave» (D-B) exigen la CLAVE, no un
+código distinto: cualquier operador con la semilla las produce con el binario honesto. Eso es,
+además, justo lo que las defensas tienen que ver.
+
+- **D-B: NO se le da biblioteca al nodo.** No hace falta para ninguna de las mentiras con clave
+  conocidas, y partir `main.rs` sería el corte más caro del RFC sin nada que lo pida. Se reabre si
+  aparece una mentira que sólo un código modificado produce; la candidata es la última etapa.
+- **D-A: tampoco hay crate, por ahora.** Las mentiras viven en `tools/banco_mentiroso_*.sh` -bash y
+  python, como los demás bancos-, fuera del workspace de Cargo: nada puede enlazarlas, que es más
+  fuerte que el crate aparte que D-A proponía. El nombre `zk-ssl-mentiroso` queda reservado por si
+  una etapa necesita un crate. Consecuencia: la compuerta D-C no tiene árbol que vigilar y no nace;
+  nacería con el crate. Los bancos los vigila `--bancos` (§582), como a todos.
+- **El orden, rehecho**, de lo que la casa ya sabe producir a lo que está por medir:
+  - **E1 — la vista dividida contra el TESTIGO.** El método del banco del ancla: la misma semilla
+    con un contador fresco. Éxito: `--comparar` y `--auditar` ROJOS, nombrando el índice.
+  - **E2 — la firma que el diario no recoge.** El operador firma con un `--diario` y enseña otro.
+    Éxito: `--ausentes` ROJO en un banco por primera vez. Que se pueda sin código se mide en ella.
+  - **E3 — la censura antes del recibo.** Un proxy que reenvía y descarta, escrito dentro del banco.
+    Éxito: el SILENCIO de todas las defensas, asertado: el residuo D-H del RFC-0010, medido.
+  - **E4 — el recibo que no se resuelve, por un nodo de verdad.** Cómo producirlo sin código -parar
+    el nodo entre el recibo y la resolución- está por medir. Si sólo se puede con código, D-B se
+    reabre aquí.
 
 ## Referencias
 
