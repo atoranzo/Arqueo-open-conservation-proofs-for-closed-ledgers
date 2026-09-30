@@ -1955,7 +1955,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **M1b sigue estimada y el coste del guest agregador sin medir**, pero
   ninguna de las dos importa mientras no se construya.
 
-- [ ] **93. El nodo MENTIROSO: la variante que hace ejercitables las
+- [x] **93. El nodo MENTIROSO: la variante que hace ejercitables las
   defensas.** Instrumentacion, no modelo de confianza: una variante que
   sirva dos cabezas para el mismo indice, censure una entrada, omita un
   acuse o firme algo que su diario no recoge. Sin el, media docena de
@@ -2003,6 +2003,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   restaura el libro a una copia. El recibo queda firmado y el acuse no llega nunca; el testigo calla,
   y el sobre de completitud es la única defensa que lo ve, al expirar la ventana. **Las cuatro etapas,
   hechas, y D-B no se reabre**: queda el giro del RFC a ACEPTADO. Deja la 109 y la 110.
+  ✅ **CERRADA en el §604: el RFC-0011, ACEPTADO.** Las defensas contra el operador que miente ya
+  no están en «alcanzable, no ejercitada»: cada una se ejercita en un banco contra un nodo real que
+  miente con la clave, con un fichero o con un proxy, y la única que no ve nada -la censura antes
+  del recibo- tiene su silencio asertado. Lo que sigue vive en la 109 y la 110.
 
 - [ ] **94. Clases de resultado que el canon NO VE: las cegueras del
   instrumento, medidas.** El canon corre en release y cuenta los

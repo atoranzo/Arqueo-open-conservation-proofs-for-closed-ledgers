@@ -1,14 +1,19 @@
 # RFC-0011 — El nodo mentiroso: las defensas, ejercitadas contra quien miente de verdad
 
-- **Estado:** PROPUESTO (§588), con sus decisiones TOMADAS en el §598 -delegadas por el autor y
-  REVERSIBLES, ver «Decisiones»-. **Las cuatro etapas HECHAS, del §599 al §602**, cada una con un
-  banco y sin una línea de código en el workspace: D-B no se reabre. Queda el giro a ACEPTADO, que es
-  su propio sello (regla 4 del PROCESO).
+- **Estado:** ACEPTADO (§604) — **la regla 4 del PROCESO, saldada con medida**: no toca el cable,
+  así que no hay spec, OpenRPC ni vectores que mover, y sus suites son los cuatro bancos del
+  mentiroso, VERDES en el `--bancos` del autor sobre `639b5eb` (20 de 20) con su canon `--sello`
+  VERDE. Propuesto en el §588; decisiones TOMADAS en el §598 -delegadas por el autor y REVERSIBLES,
+  ver «Decisiones»-; las cuatro etapas, del §599 al §602, cada una con un banco y sin una línea de
+  código en el workspace: D-B no se reabre. **Lo que se acepta CON su residuo, declarado:** la
+  censura antes del recibo no la ve ninguna defensa, y el banco de la E3 lo asierta; el crate
+  `zk-ssl-mentiroso` y la compuerta D-C no nacieron, y nacen con la primera mentira que pida
+  código; y un operador que compile su propio binario miente igual, como dice «Seguridad».
 - **Autor:** Ángel José Toranzo Portela
-- **Asistencia GenAI:** Claude (sesión 193, §588 y §598 a §602) — ver [`GENAI.md`](../../GENAI.md)
+- **Asistencia GenAI:** Claude (sesión 193, §588, §598 a §602 y §604) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-30
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube**: nada de esto toca el cable.
-- **Asiento(s) de AUDITORIA:** §588 (la propuesta); §598 (las decisiones); §599 (la E1); §600 (la E2); §601 (la E3); §602 (la E4).
+- **Asiento(s) de AUDITORIA:** §588 (la propuesta); §598 (las decisiones); §599 (la E1); §600 (la E2); §601 (la E3); §602 (la E4); §604 (la aceptación).
 
 ## Motivación
 

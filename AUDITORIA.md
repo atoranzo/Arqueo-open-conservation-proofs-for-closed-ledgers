@@ -42946,3 +42946,36 @@ este RFC.
 **Lección.** Dos sesiones sobre el mismo árbol leen el mismo informe y llegan al mismo cierre; lo
 que evita el duplicado no es la coordinación, que llegó tarde, sino mirar `main` antes de sellar.
 
+## §604 — el RFC-0011 pasa a ACEPTADO: las defensas, ejercitadas contra quien miente de verdad
+
+El commit que lleva este asiento, sobre `639b5eb` (el S603). Un solo sello: la cabecera del
+RFC-0011, los cinco sitios que publican su estado, el cierre de la entrada 93 y este asiento, con
+el canon `--sello` VERDE dentro del bloque. Siete ficheros más este asiento, con 22 inserciones y 13
+borrados fuera de él.
+
+**La regla 4, contada.** El PROCESO exige, para ACEPTADO, la spec al día, el OpenRPC regenerado,
+vectores re-emitidos o nuevos, y suites verdes. (1), (2) y (3) no tienen objeto: el RFC-0011 no toca
+el cable -su «Compatibilidad» lo dice desde el §588 y las cuatro etapas lo cumplieron: ni un método,
+ni un campo, ni un vector-. (4) Sus suites son los cuatro bancos del mentiroso, y los corrió el
+autor en su máquina: `--bancos` VERDE, 20 de 20, sobre `639b5eb`, con el canon `--sello` VERDE en
+cada uno de los cuatro sellos de las etapas. Es la medida que el RFC-0012 pide para su propia
+aceptación -«su canon y su merge»-, y aquí ya está hecha.
+
+**Lo que se acepta CON su residuo, declarado en la cabecera.** La censura antes del recibo no la ve
+ninguna defensa, y el banco de la E3 asierta ese silencio en vez de callarlo. El crate
+`zk-ssl-mentiroso` y la compuerta D-C no nacieron: nacen con la primera mentira que pida código,
+que hasta hoy no ha aparecido. Y un operador que compile su propio binario miente igual; esto no
+lo impide ni lo pretende.
+
+**Lo que hace.** La cabecera del RFC-0011 pasa a ACEPTADO con la cuenta de la regla 4 y el
+residuo; su línea de asistencia y su lista de asientos ganan este. `README.md`, `README_EN.md`,
+`RESUMEN_BILINGUE.md` (en sus dos lenguas), `RESUMEN_EJECUTIVO.md` y `spec/README.md` lo cuentan
+entre los aceptados: quedan propuestos el 0005, el 0012 y el 0013. La entrada 93 se cierra: lo
+que dejó al medir vive en la 109 (el sdk que tira el recibo) y la 110 (el vector del veredicto 1).
+
+**Contadores.** Ninguno se mueve.
+
+**Lo que NO cierra.** La 110 y la 109, en ese orden: la 110 primero, porque cierra el residuo con
+que se aceptó el RFC-0010. El RFC-0012 sigue PROPUESTO, a la espera de su
+propio giro.
+
