@@ -26,7 +26,8 @@
 # 4. **El arbol, LIMPIO antes y despues de cada banco.** Un banco mide el
 #    arbol del sello; uno que lo ensucia es un fallo, y se nombra.
 # 5. **Declarado FUERA**: el `--largo` de la completitud (unos 24 minutos
-#    mas, §574). Aqui corre su modo por defecto.
+#    mas, §574) y el del recibo sin resolver (otros tantos, §602). Aqui
+#    corren sus modos por defecto.
 #
 # ================================================================
 

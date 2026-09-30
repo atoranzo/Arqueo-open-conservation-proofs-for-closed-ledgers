@@ -13,7 +13,9 @@
   positivo v6 y dos rechazos del cable (§570) y `completitud/`, treinta y cinco sobres y su
   manifiesto (§574)—; y las suites están verdes: el canon los corre por el arnés, y también desde
   dentro del tarball. **Lo que se acepta CON su residuo, declarado:** el veredicto 1 no tiene vector
-  —pide la prueba STARK real de un envío aplicado; su verificación es la del paquete de posición—;
+  —pide la prueba STARK real de un envío aplicado; su verificación es la del paquete de posición.
+  Desde el §602 se produce EN VIVO, en `tools/banco_mentiroso_sin_resolver.sh`; el vector, BACKLOG
+  110—;
   el operador puede no emitir recibo (D-H); y lo que entra por `applyMany` o por `zkssl_pledge` no
   lo lleva, por decisión (D-E, §576) y atado por un testigo, con su etapa por diseñar. Se conserva
   como registro de lo decidido, lo medido y lo descartado.

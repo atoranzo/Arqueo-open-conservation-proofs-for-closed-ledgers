@@ -1988,6 +1988,11 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   **E3, §601**: `tools/banco_mentiroso_censura.sh`. La censura antes del recibo, con un proxy del
   operador delante de un nodo honesto: el titular sabe que no tiene recibo, el registro firmado no
   se mueve, y todas las defensas callan -asertado-. El residuo D-H del RFC-0010, medido. Sigue E4.
+  **E4, §602**: `tools/banco_mentiroso_sin_resolver.sh`. El recibo que no se resuelve, por un nodo
+  de verdad y sin código: el operador aplica, responde con el recibo y, antes de la cabeza siguiente,
+  restaura el libro a una copia. El recibo queda firmado y el acuse no llega nunca; el testigo calla,
+  y el sobre de completitud es la única defensa que lo ve, al expirar la ventana. **Las cuatro etapas,
+  hechas, y D-B no se reabre**: queda el giro del RFC a ACEPTADO. Deja la 109 y la 110.
 
 - [ ] **94. Clases de resultado que el canon NO VE: las cegueras del
   instrumento, medidas.** El canon corre en release y cuenta los
@@ -2113,6 +2118,26 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   DIRECTORIO ENTERO no hay nada que hacer: contador y diario vuelven juntos.
   **Dos testigos en el mismo disco son un solo testigo frente a una
   restauracion.** Declarado tambien en `doc/CONFIANZA_RESIDUAL.md`.
+
+- [ ] **109. El sdk del titular TIRA el recibo: quien paga con él no puede armar
+  su sobre de completitud.** Medido en el §602: `zk-ssl-sdk` no lee `recepcion`
+  ni `acuse` de la respuesta de `zkssl_applySend` ni de `zkssl_applyClaim` —ni
+  una mención en `src/lib.rs`— y `Account::pay` devuelve sólo el aviso. El
+  RFC-0010 ata al operador con un recibo que el TITULAR custodia; con el sdk de
+  la casa, el titular no lo custodia. El banco del §602 lo suple con un proxy de
+  registro de su lado, y eso es instrumentación, no una salida para un titular
+  de verdad. **Lo que pide**: que `pay` y `claim` devuelvan el recibo y el acuse
+  tal como llegaron -el sobre los compara con lo que el cierre firma-. Es código
+  del sdk: no toca el nodo, el cable ni los vectores.
+
+- [ ] **110. El veredicto 1 del sobre de completitud ya se produce en vivo: falta
+  su vector.** El RFC-0010 se aceptó con ese residuo declarado (§577): el
+  veredicto 1 pedía una prueba STARK real de un envío aplicado. El banco del §602
+  la pone -el ejemplo `e2e` del sdk contra un nodo `--dev`- y el sobre con su
+  acuse sale VERDE. Capturarlo como vector cierra el residuo: un `--guardar` en
+  el banco, la entrada en `spec/vectors/completitud/` y su manifiesto, y los
+  pines del canon y del artefacto, que pasan de 35 a 36. Corte propio: mueve el
+  catálogo, el canon y el tarball.
 
 ## F. Publicacion, cuando el circuito este cerrado
 

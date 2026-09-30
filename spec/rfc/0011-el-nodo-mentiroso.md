@@ -1,13 +1,14 @@
 # RFC-0011 — El nodo mentiroso: las defensas, ejercitadas contra quien miente de verdad
 
 - **Estado:** PROPUESTO (§588), con sus decisiones TOMADAS en el §598 -delegadas por el autor y
-  REVERSIBLES, ver «Decisiones»-. **E1, E2 y E3 HECHAS en el §599, el §600 y el §601**, cada una
-  con un banco y sin una línea de código en el workspace; queda la E4, por medir.
+  REVERSIBLES, ver «Decisiones»-. **Las cuatro etapas HECHAS, del §599 al §602**, cada una con un
+  banco y sin una línea de código en el workspace: D-B no se reabre. Queda el giro a ACEPTADO, que es
+  su propio sello (regla 4 del PROCESO).
 - **Autor:** Ángel José Toranzo Portela
-- **Asistencia GenAI:** Claude (sesión 193, §588 y §598 a §601) — ver [`GENAI.md`](../../GENAI.md)
+- **Asistencia GenAI:** Claude (sesión 193, §588 y §598 a §602) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-30
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube**: nada de esto toca el cable.
-- **Asiento(s) de AUDITORIA:** §588 (la propuesta); §598 (las decisiones); §599 (la E1); §600 (la E2); §601 (la E3).
+- **Asiento(s) de AUDITORIA:** §588 (la propuesta); §598 (las decisiones); §599 (la E1); §600 (la E2); §601 (la E3); §602 (la E4).
 
 ## Motivación
 
@@ -24,8 +25,10 @@ contra un nodo HONESTO; «alcanzable, no ejercitada» es lo más que pueden deci
 
 ⚠️ Las dos primeras filas son la foto del §588: desde el §599 la vista dividida la produce un nodo
 real y las dos defensas la ven en un banco (E1), y desde el §600 `--ausentes` ha dado ROJO contra el
-diario de un nodo real (E2). Y la última está MEDIDA desde el §601: el banco que censura sin
-recibo asierta el silencio de todas las defensas (E3). Las tres, en «Decisiones».
+diario de un nodo real (E2). La tercera, desde el §602: el recibo que no se resuelve lo firma un
+nodo de verdad, que ya no tiene resolución que exhibir (E4). Y la última está MEDIDA desde el §601:
+el banco que censura sin recibo asierta el silencio de todas las defensas (E3). Las cuatro, en
+«Decisiones».
 
 La última fila no es un hueco que este RFC cierre: es un residuo que ejercitar para MEDIR su
 silencio. Un banco que censura sin recibo y comprueba que todas las defensas siguen VERDES convierte
@@ -162,6 +165,15 @@ además, justo lo que las defensas tienen que ver.
   - **E4 — el recibo que no se resuelve, por un nodo de verdad.** Cómo producirlo sin código -parar
     el nodo entre el recibo y la resolución- está por medir. Si sólo se puede con código, D-B se
     reabre aquí.
+    **HECHA en el §602, sin código: D-B no se reabre.** `tools/banco_mentiroso_sin_resolver.sh`.
+    El operador aplica la operación, responde con el recibo y, antes de la cabeza siguiente, para
+    el nodo y restaura el libro a una copia, conservando contador y registro de recepción. El
+    recibo queda firmado; el `seq` firmado no llega nunca a la entrada, y `zkssl_ackPath` contesta
+    «vuelve tras el próximo latido» cabeza tras cabeza; el testigo calla. El sobre dice «ventana
+    ABIERTA» y, con `--largo`, expirada la ventana, «NO RESUELTA EN LA VENTANA»: ROJO NOMBRADO, y
+    esta vez con razón. Su control, contra el mismo nodo honrado, siembra el veredicto 1 en vivo
+    por primera vez. El falsador -el operador que no restaura- pone ROJAS las dos comprobaciones
+    que dicen que no hay resolución que exhibir.
 
 ## Referencias
 

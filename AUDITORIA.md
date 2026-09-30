@@ -42830,3 +42830,62 @@ una decisión del protocolo, con su etapa por diseñar.
 producirlo sin código está por medir, y si sólo se puede con código, D-B se reabre ahí. El RFC
 sigue PROPUESTO.
 
+## §602 — el recibo que no se resuelve, por un nodo de verdad: el RFC-0011, en sus cuatro etapas
+
+El commit que lleva este asiento, sobre `9a03818` (el S601). Un solo sello: la E4 del RFC-0011 -un
+banco nuevo, `tools/banco_mentiroso_sin_resolver.sh`-, su marca en el RFC, una nota en el RFC-0010,
+una frase en `SECURITY.md`, su fila en `spec/README.md`, la nota de la entrada 93, dos entradas
+nuevas del BACKLOG -la 109 y la 110-, la línea de `tools/bancos.sh` que declara fuera su `--largo`
+y este asiento, con el canon `--sello` VERDE dentro del bloque. Siete ficheros más este asiento,
+con 348 inserciones y 9 borrados fuera de él.
+
+**De dónde sale.** La última etapa del orden del §598: el recibo que no se resuelve, producido por
+un nodo de verdad. El veredicto 3 del sobre de completitud -«NO RESUELTA EN LA VENTANA»- sólo se
+había sembrado contra un nodo honesto, callando una resolución que existía (§574). El §598 dejó por
+medir si un operador de verdad podía no tenerla sin tocar el código; si no, D-B se reabría aquí.
+
+**Se puede, sin código.** El operador aplica la operación y responde con su recibo; antes de la
+cabeza siguiente para el nodo y restaura el libro a una copia anterior, conservando el contador y
+el registro de recepción. El recibo queda bajo la `recepRoot` de la cabeza que cierra su era; la
+operación ya no existe, y ninguna cabeza firmará su acuse. El latido de 30 s del banco no es una
+trampa: el §121 eligió 60, y la ventana entre aplicar y firmar es del diseño. El titular paga y
+cobra con el ejemplo `e2e` del sdk -pruebas STARK reales hechas en el cliente, unos 3 s- contra un
+nodo `--dev`, y guarda lo que recibe con un proxy de registro de su lado.
+
+**Lo que se midió**, tres corridas VERDES seguidas, la última con `--largo`. El CONTROL, contra el mismo
+nodo honrado: el sobre con el acuse de la cabeza que lo firma sale VERDE -**el veredicto 1, en vivo
+por primera vez**; el RFC-0010 se aceptó sin él-. La MENTIRA: los dos recibos (pago y cobro) bajo
+la `recepRoot` de la primera cabeza tras el rearranque; el `seq` firmado se queda en 5 cabeza tras
+cabeza, mientras la entrada del pago pedía una con `seq` 9 o más; `zkssl_ackPath` contesta «la
+época de esa entrada sigue ABIERTA: vuelve tras el próximo latido», indefinidamente; el testigo,
+que miraba desde el principio, no se detiene, y `--auditar` y `--ausentes` callan; y el sobre dice
+«ventana ABIERTA». Con `--largo`, 31 minutos de corrida, expirada la ventana -la cabeza de índice
+1446, era 5 más n 1.440 más uno-: el sobre sale ROJO NOMBRADO, «NO RESUELTA EN LA VENTANA», el
+operador sigue sin acuse que exhibir, y el sobre resuelto del control sigue VERDE.
+
+**El falsador**, fuera del árbol y deshecho: el operador que NO restaura el libro. El banco sale
+ROJO en las dos comprobaciones que dicen que no hay resolución que exhibir -el `seq` firmado avanza
+y `zkssl_ackPath` da el camino- y el resto queda VERDE. El sobre sin resolución dice «ventana
+ABIERTA» en los dos casos: el veredicto 3 es una afirmación sobre lo que se exhibe (D-F), y lo que
+separa al operador que miente es que ÉL no tiene nada que exhibir.
+
+**Lo que aparece al medir**, y va al BACKLOG. (a) **La 109: el sdk del titular tira el recibo.**
+`zk-ssl-sdk` no lee `recepcion` ni `acuse` de la respuesta, y `Account::pay` devuelve sólo el
+aviso: quien paga con el sdk de la casa no custodia lo que el RFC-0010 le da para atar al operador.
+El banco lo suple con su proxy; un titular real no tiene esa salida. (b) **La 110: el veredicto 1
+ya tiene productor en vivo**, y capturarlo como vector cierra el residuo que la aceptación del
+RFC-0010 declaró; corte propio, porque mueve el catálogo, el canon y el tarball.
+
+**Lo que dicen las cuatro etapas juntas.** Las cuatro mentiras se hicieron con el binario honesto:
+con la clave (la vista dividida), con un fichero (el diario enseñado, el libro restaurado) o con un
+proxy (la censura). Ninguna pidió código, y D-B no se reabre. Cada una la ve la defensa que debía
+-el testigo, `--ausentes`, el sobre de completitud- salvo la censura antes del recibo, cuyo
+silencio queda medido.
+
+**Contadores.** Ningún test de Rust nace: los pines no se mueven. Los bancos pasan de 19 a 20; el
+`--largo` de este, como el de la completitud, queda FUERA de `bancos.sh`. `check_cifras`,
+`check_figures`, `check_publicadas` y `verificar_citas`, VERDES.
+
+**Lo que NO cierra.** El giro del RFC-0011 a ACEPTADO, que es su propio sello (regla 4 del
+PROCESO). La 109 y la 110.
+
