@@ -42604,3 +42604,44 @@ la entrada 107 y tres filas de `doc/ecst/borrador/REPRODUCCION.md`.
 **Lo que NO cierra.** La 107 misma. Y la lección del §581, repetida: una frase se busca por su
 SENTIDO, con sus variantes, no por la primera forma que se recuerda.
 
+## §597 — la firma corta, evaluada: con estas piezas no baja de 100 bytes
+
+El commit que lleva este asiento, sobre `be8aa31` (el S596). Un solo sello: la evaluación que nace,
+`doc/firma-corta-evaluacion.md`, tres cambios del `BACKLOG` y este asiento, con el canon `--sello`
+VERDE dentro del bloque. Un fichero que nace y uno tocado, más este asiento, con 396 inserciones
+y 3 borrados fuera de él.
+
+**De dónde sale.** De una pregunta del autor en otra sesión de trabajo: si con las piezas de la casa
+-la firma de cabezas con estado, el guardián del índice, los árboles del acuse y del consumo y las
+pruebas STARK- se puede diseñar una firma poscuántica de menos de 100 bytes, sin perder seguridad y
+sin árboles de estado. Esa sesión la contestó en la rama `claude/brave-wozniak-7l7ivr`, que NO se
+fusiona: sus commits llevaban como autor al asistente. Por decisión del autor, este sello la rehace
+a su nombre sobre `main`, con el mismo contenido.
+
+**Lo que dice, y con qué medida.** NO. La aritmética de WOTS+ del RFC 8391 -la misma fórmula que ata
+el §586- no deja caber una firma en tres elementos de 32 B: con la fórmula del RFC la longitud nunca
+vale 3, y sin suma de control haría falta un w de más de 2^85 pasos por cadena. Lo único vivo por
+debajo de 100 B es multivariante (uov-Is, 96 B de firma con 66.576 B de clave), la familia que el
+§106 rechazó. Los árboles de Merkle amortizan, no comprimen. Todo con su convención -medido,
+derivado, leído en fuente, «espejo» cuando el original no era alcanzable- y lo no medido declarado.
+
+**Lo que se MIDIÓ aquí al integrar.** Las constantes que el documento cita, en el árbol:
+`FIRMA_RFC_BYTES` = 18.469 y `RECEP_DEPTH` = 32. Y su propio script de medida sobre `be8aa31`: 364
+vectores leídos, la firma de cabeza 18.519 B en 340 ocurrencias y la cofirma 18.593 B en 11; los
+caminos y las pruebas STARK, idénticos a los suyos. Su recuento -341 vectores, 314 firmas- es el de
+su base declarada, `da6a768`, anterior al ancla, que añadió 24 vectores y 26 firmas: los tamaños no
+cambian. El documento gana esa nota y una línea de procedencia.
+
+**Lo que hace en el `BACKLOG`.** La **87** corrige su tabla con tachado: SLH-DSA no pesa «decenas de
+KB» sino 7.856 B (128s), 16.224 B (192s) y 29.792 B (256s), FIPS 205, las dos primeras por debajo de
+los 18.469 B de la XMSS^MT de hoy; el tiempo de firma sigue sin medir. Nace la **108**, en el grupo
+G, con la evaluación. La cabecera dice 45 abiertas y 63 resueltas, CONTADAS por el script, y su
+línea de revisión cita este sello.
+
+**Contadores.** Ninguno se mueve: sólo documentación. `check_cifras`, `check_figures`,
+`check_publicadas` y `verificar_citas`, VERDES.
+
+**Lo que NO cierra.** Lo que el propio documento declara pendiente: el tiempo de firma de SLH-DSA,
+la fuente primaria de Falcon, los originales de lo leído en espejo y la aceptación que describe
+`GENAI.md`. La rama de trabajo, cuyo contenido ya está entero aquí, queda para que el autor la
+borre.

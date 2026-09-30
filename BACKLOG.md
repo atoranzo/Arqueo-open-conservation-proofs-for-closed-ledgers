@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 44 abiertas, 63 resueltas — **3 suspendidas** (16, 22 y 28).
-Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595).
+**Estado**: 45 abiertas, 63 resueltas — **3 suspendidas** (16, 22 y 28).
+Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
 asi la lista mentia. Tres entradas abiertas estaban cerradas en el arbol: la 69
@@ -729,8 +729,15 @@ instrumentacion) al grupo E.*
   |---|---|---|---|
   | Supuesto | solo el hash | solo el hash | reticulos (Module-LWE/SIS) |
   | Estado | **con estado** | sin estado | sin estado |
-  | Firma | 18.469 B (medido) | decenas de KB | ~2,4-4,6 KB |
+  | Firma | 18.469 B (medido) | ~~decenas de KB~~ **7.856 B** (128s) · 16.224 B (192s) · 29.792 B (256s), FIPS 205 | ~2,4-4,6 KB |
   | Firmar | 144,5-160,5 ms (medido) | lento | sub-ms a pocos ms |
+
+  ⚠️ **Corrección (30-09-2026, `doc/firma-corta-evaluacion.md` §3)**: la fila «Firma»
+  daba «decenas de KB» a SLH-DSA. FIPS 205, Tabla 2, leída en espejo: **7.856 B en
+  SHA2-128s y 16.224 B en 192s, las dos por debajo de los 18.469 B medidos de la
+  XMSS^MT 40/8 de hoy**; solo 256s (29.792 B) es mayor. El precio de «sin estado»
+  que esta entrada daba por sabido hay que **re-medirlo, tiempo de firma incluido**,
+  antes de decidir: es lo que la 108 deja como pendiente.
 
   ⚠️⚠️ **Lo decisivo no es el tamaño: sin estado, las entradas 84 y 92
   casi desaparecen** —sin indice no hay guardian, ni agotamiento, ni la
@@ -3195,6 +3202,38 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   **Evidencia**: medido sobre `af9e786`, 10-08-2026.
   **Dónde vive**: con la 56 y la 53, donde acaben. La sección G está declarada
   **cajón** en §266 y ese reparto no lo toca este sello.
+
+- [ ] **108. Una firma poscuántica de menos de 100 bytes, sin estado: evaluada,
+  y NO sale de las piezas de la casa.** Nace el 30-09-2026 de una pregunta hecha
+  con lo que la casa maneja —la firma de cabezas con estado, su guardián, los
+  árboles de Merkle del acuse y del consumo, las pruebas STARK—: ¿se puede
+  diseñar una firma resistente a cuánticos de **menos de 100 bytes**, sin perder
+  seguridad y sin árboles de estado? `doc/firma-corta-evaluacion.md` la contesta
+  **con medida, no con opinión**, y la respuesta es no:
+  - **La aritmética del hash lo cierra** (§2 del doc): con elementos de 32 B caben
+    tres, y la fórmula de WOTS+ del RFC 8391 —la misma que ata
+    `el_ancho_del_indice_sale_del_conjunto_de_xmss` en el verificador— exige
+    entonces `log2 w ≥ 86`, es decir **más de 2⁸⁵ hashes por cadena** para
+    verificar. Bajar el resumen para esquivarlo es bajar a 64 bits poscuánticos.
+  - **Lo único vivo por debajo de 100 B es `uov-Is`** (96 B, clave pública de
+    66 KB, multivariante): la familia de Rainbow y GeMSS, y adoptarla revoca §106.
+    SQIsign se queda en 200 B desde el 01-09-2026; Falcon en 666. **El listón no
+    son los 2.420 B de ML-DSA-44**, que además es categoría 2, no 1.
+  - **Los árboles de Merkle amortizan, no comprimen**: `32 · h` B por elemento,
+    **1.024 B medidos** con `h = 32` en 74 vectores. Bajo 100 B solo con `h ≤ 3` y
+    un verificador que ya tenga la cabeza: eso es un recibo bajo la firma de otro,
+    no una firma, y es el árbol que la pregunta quería evitar.
+  ⚠️ **Hallazgo colateral, y es de la 87**: su tabla daba «decenas de KB» a
+  SLH-DSA. FIPS 205 dice 7.856 B (128s) y 16.224 B (192s), **menos que los
+  18.469 B de la XMSS^MT que la casa firma hoy**, sin estado y con el mismo
+  supuesto. Corregido en la 87 con tachado; el tiempo de firma **no está medido**.
+  **Lo que deja, y por eso queda abierta**: (1) cotejar con el original cada
+  cifra leída en espejo —la red de la sesión bloqueaba nist.gov, ietf.org y
+  eprint—; (2) re-medir la 87 con SLH-DSA-SHA2-128s y 192s sobre el hardware
+  real, tiempo de firma incluido, método de §263; (3) si alguien quiere el recibo
+  de lote de `h = 3`, es un banco, no un diseño. **No antes que la 87.**
+  **Dónde vive**: G, porque diseñar una firma nueva es otro proyecto —y este
+  asiento dice que ni siquiera ése—.
 
 ## Lo que NO esta en esta lista
 
