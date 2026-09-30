@@ -162,7 +162,9 @@ leaves no trace» and «Row 6 whole: the completeness of acknowledgements does n
 **What is missing, in order of importance:** distributed consensus (without it the operator sees
 the balances and can censor; the alternative this project does pursue — provable accountability,
 in the manner of Certificate Transparency — has the signer, the index guardian, the heartbeat, the
-independent verifier and the witnesses, and lacks an anchor prior to the first encounter and a
+independent verifier and the witnesses, and lacks the deployment of the external anchor — the
+format and its verifier exist since RFC-0012; the medium, and with it the anchor prior to the
+first encounter, is still missing — and a
 **verified** key custody, not just a declared one) · an external audit · the admission receipt
 (`AUDITORIA.md` §121) · delegating the proof to third parties (verifying the signature in circuit) ·
 an expiry policy for freezes. Everything else is listed in [`AUDITORIA.md`](./AUDITORIA.md),
@@ -197,7 +199,7 @@ there.
 | piece | where it is measured |
 |---|---|
 | **21 crates** in one workspace —18 of our own and the three of the winterfell 0.13.1 fork (§533)—; the canon (`tools/canon.sh --sello`) runs every crate's tests, in release, and the eight tools under `tools/` that watch figures, citations, domains and geometry | the table in [`tools/canon.sh`](./tools/canon.sh) carries the passing tests per crate; every seal updates it |
-| **Protocol `zkssl/0.4`**: 31 JSON-RPC methods (28 `zkssl_*`, 3 `dev_*`), OpenRPC generated from the code, vectors per version that are never rewritten | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (356 files: cable, núcleo, paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda, completitud, the 0.3 catalogues under `0.3/` and the four `zkssl-0.N.json`) |
+| **Protocol `zkssl/0.4`**: 31 JSON-RPC methods (28 `zkssl_*`, 3 `dev_*`), OpenRPC generated from the code, vectors per version that are never rewritten | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (380 files: cable, núcleo, paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda, completitud, ancla, the 0.3 catalogues under `0.3/` and the four `zkssl-0.N.json`) |
 | **RFCs**: 0002, 0003, 0004, 0006, 0007 (proofs over the committed state), 0008 (the portable proofs of a pending item), 0009 (what a proof reveals) and 0010 (the reception receipt) accepted; 0005 (the frozen core), 0011 (the lying node) and 0012 (the head anchor) proposed | [`spec/rfc/`](./spec/rfc/) |
 | **Independent verifier** `zk-ssl-verify` 0.2.0, release `arqueo-verify-v0.2.0`, reproducible from the commit its `VERSION` names | [`doc/KIT_EN.md`](./doc/KIT_EN.md) · [`tools/artefacto.sh`](./tools/artefacto.sh) |
 | **Record**: one entry per verified change, with its commit; what is corrected is marked, not erased | [`AUDITORIA.md`](./AUDITORIA.md) · [`BACKLOG.md`](./BACKLOG.md) |

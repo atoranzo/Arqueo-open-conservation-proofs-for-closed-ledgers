@@ -96,7 +96,9 @@ The road this project does take is that of *Certificate Transparency*: not preve
 from misbehaving, but making sure it **cannot do so in secret**. For that there are the head signer
 (`AUDITORIA.md` §236), the signature-index guardian (§234), the heartbeat (§241), the independent
 verifier (§243) and the witnesses that pin the key the first time they see it (§245). What is
-missing: an anchor prior to the first encounter, and a **verified** key custody, not just a
+missing: deploying the external anchor to a real medium (the format and its verifier exist since
+RFC-0012, and deployment brings the anchor prior to the first encounter), and a **verified** key
+custody, not just a
 declared one (§244).
 
 ### 8. Why document your own errors?
@@ -268,8 +270,9 @@ another session**.
 ### 22. How far is it from being usable?
 
 For a real third party to rely on these proofs: an **external audit**, which does not depend on
-more code; a **verified key custody**, not just a declared one (§244); and an **anchor prior to the
-first encounter** between witness and node. For the engine to answer everything it intends to,
+more code; a **verified key custody**, not just a declared one (§244); and the **deployment of the
+external anchor** (RFC-0012), which brings the anchor prior to the
+first encounter between witness and node. For the engine to answer everything it intends to,
 only the declared residue of row 6 is left —the operator that issues no receipt, and the batch
 and the pledge (RFC-0010, D-H and D-E)—; the empty box, rejection with cause and completeness
 already are code.

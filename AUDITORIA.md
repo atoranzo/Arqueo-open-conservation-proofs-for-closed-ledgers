@@ -42437,3 +42437,49 @@ día. Cero warnings. Ningún `Cargo` tocado; el cable y `VERSION_FORMATO`, quiet
 
 **Lo que NO cierra.** El catálogo y el banco (E4). Y el sobre no dice que el ancla estuviera
 PUBLICADA ni desde cuándo: eso es del medio, y queda escrito en la 2.12.
+
+## §593 — RFC-0012 E4: el catálogo del ancla, su banco, la familia décima; y los documentos vivos, al día
+
+Dos commits: `467dab2` (el S593-a, `tools/banco_ancla.sh`, que nace solo para que el banco corra
+sobre un árbol sellado) y el que lleva este asiento (el S593-b), sobre `18f86e3` (el S592). El
+canon `--sello` ENTERO, VERDE dentro del bloque del S593-b, en el contenedor de la sesión 194.
+Treinta y un ficheros más este asiento, con 1127 inserciones y 28 borrados fuera de él —la diferencia sobre lo escrito primero es la renumeración: main tomó los §583–§588 y el número 0011 mientras esta serie se escribía (los §583–§587 en `3ed7a60`, y el §588 con el RFC-0011 del nodo mentiroso en `da6a768`), así que estos asientos son §589–§593 y el RFC del ancla es el 0012 («el número lo decide el orden de sellado», §562)—.
+
+**De dónde sale.** De la E4 del RFC-0012, con el molde de la E5 del RFC-0010 (§574): la familia
+no existe hasta que un banco la siembra contra un nodo real y el canon la vuelve compuerta.
+
+**Lo que hace.** (1) `tools/banco_ancla.sh`: dos nodos reales a un latido por segundo; el ancla
+la DERIVA el mando y el banco la parsea —un solo productor—; el camino, de
+`zkssl_consistencyProof`, emparejado con la cabeza que firma su tamaño (el molde de
+`banco_extension.sh`); y la VISTA DIVIDIDA sembrada reproduciendo el ATAQUE: la corrida A
+evalúa-y-rechaza el envío de ceros (su `recepCount` firmado pasa a 1) y la corrida B es la
+MISMA semilla con directorios frescos —el contador de índice restaurado— y sin envío: dos
+cabezas de índice embebido 1 con digests distintos, que el mando delata. (2) El catálogo
+`spec/vectors/ancla/`, COPIADO de la corrida del sello: CUATRO positivos —uno por modo— y
+DIECISIETE negativos, uno por regla producible y por sitio, con su MANIFIESTO; la corrida, 21
+de 21. (3) La familia décima: `FAMILIAS` en `artefacto.sh`, la estrofa «3 bis ancla» del canon,
+la sección 9 y la cuenta de la 11 en `PAQUETE.md` (DIEZ), y la fila de `spec/vectors/ancla/` en
+`spec/README.md`. (4) Los documentos vivos: `SECURITY.md` §2.bis y §6 pasan de «interfaz
+diseñada» a «formato y verificador construidos (RFC-0012); pendiente de despliegue»; los dos
+README, `PREGUNTAS.md` y `QUESTIONS.md` dicen que lo que falta es DESPLEGAR el ancla —el medio,
+y con él el ancla anterior al primer encuentro—, no diseñarla; los README cuentan 380 ficheros
+de vectores.
+
+**La pasada real.** `bash tools/canon.sh --sello` sobre este árbol, VERDE entero: las
+veintiuna suites con sus pines (el hash 37, el verificador 144, el testigo 125, el nodo 167),
+las nueve herramientas, la conformidad de versiones («todo IDENTICO» en 0.4, «OTRA version» en
+las tres viejas), los DIEZ manifiestos —el del ancla, 21 de 21— y el artefacto reproducible
+con la décima familia dentro del tarball y verificada también DESDE DENTRO (binario
+`9ced79e304616422`, tarball `0a3510d7938c6766`, en este contenedor). Y el banco del ancla,
+VERDE con árbol limpio antes y después; `banco_completitud.sh` corrido también aquí, VERDE,
+como contraste del entorno.
+
+**Contadores.** Ninguno se mueve en este sello: los pines los pagaron el §591 y el §592.
+`.canon/ultimo-bancos` queda VENCIDA por construcción (cambió `crates/` y nació un banco):
+la pasada entera de `--bancos` no se corrió en esta sesión, y se declara.
+
+**Lo que NO cierra.** El DESPLIEGUE: ningún medio elegido, ninguna ancla publicada, la
+cadencia `M` sin constante ni vigía hasta que exista su llamador (D-F). El kit
+publicado (`arqueo-verify-v0.2.0`) no lleva la familia —ni la novena—: entra con la release
+siguiente, y `doc/KIT.md` sigue describiendo la publicada. La pasada `--bancos` completa. Y el
+RFC-0012 queda PROPUESTO: la aceptación es del autor, con su canon y su merge.

@@ -223,7 +223,9 @@ a dos, y conviene nombrarlas mirando hacia delante:
    atestiguadas, recibos y **acuse** (§121,
    `doc/CONFIANZA_RESIDUAL.md`) — mentir pasa a dejar evidencia
    fail-stop. Eliminación: consenso/replicación o anclaje externo de
-   raíces (interfaz diseñada: `doc/ANCLAJE_EXTERNO.md`; pendiente de despliegue).
+   raíces (formato y verificador construidos: RFC-0012,
+   `doc/ANCLAJE_EXTERNO.md`; pendiente de despliegue en un medio, con su
+   cadencia `M` por medir).
 
 2. **El operador ve el estado.** La privacidad es frente a terceros que
    solo ven raíces y cabezas firmadas, no frente a quien mantiene el
@@ -711,7 +713,8 @@ ordenador entre miles, sabe menos de sí mismo.
 
 Mientras el dinero cuántico no exista, quedan los cierres clásicos, todos
 escritos y ninguno prometido como hecho: cabezas atestiguadas y acuse
-(§121), anclaje externo de raíces (`doc/ANCLAJE_EXTERNO.md`), consenso o
+(§121), anclaje externo de raíces (RFC-0012, `doc/ANCLAJE_EXTERNO.md`;
+construido, pendiente de despliegue), consenso o
 replicación. Cada uno **encarece** al último intermediario. Ninguno lo
 elimina.
 

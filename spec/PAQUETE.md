@@ -34,7 +34,7 @@ le devolvería justo lo que la cofirma le quita.
 
 ## 2. Las doce formas
 
-El binario acepta doce objetos (la undécima, desde el §573; la duodécima, desde el §586). Los
+El binario acepta doce objetos (la undécima, desde el §573; la duodécima, desde el §592). Los
 doce son JSON; los esqueletos van con puntos suspensivos
 donde el valor es una respuesta del cable sin reescribir.
 
@@ -398,7 +398,7 @@ que firma —con `--largo`, hasta que la ventana EXPIRA—, y **el catálogo es
 `spec/vectors/completitud/`** (§574), la novena familia del artefacto, COPIADA de una corrida
 suya: sección 9.
 
-### 2.12 El sobre del ancla (§586, RFC-0012 E3)
+### 2.12 El sobre del ancla (§592, RFC-0012 E3)
 
 ```text
 { "v": 1, "tipo": "ancla",
@@ -441,9 +441,9 @@ modos:
 medio elegido, y la confianza en el medio queda desplazada y declarada (RFC-0012, D-H). El
 sobre verifica la criptografía; el orden externo lo da el medio.
 
-**El banco es `tools/banco_ancla.sh`** (§587), que lo reproduce en vivo contra un nodo real que
+**El banco es `tools/banco_ancla.sh`** (§593), que lo reproduce en vivo contra un nodo real que
 firma —la vista dividida incluida, reproduciendo el ataque de verdad: la misma semilla con un
-contador de índice fresco y otro libro—, y **el catálogo es `spec/vectors/ancla/`** (§587), la
+contador de índice fresco y otro libro—, y **el catálogo es `spec/vectors/ancla/`** (§593), la
 décima familia del artefacto, COPIADA de una corrida suya: sección 9.
 
 ## 3. El sobre — lo que el binario lee
@@ -721,7 +721,7 @@ firma y la familia de v5— salen de los **mismos productores** de arriba, y `fa
 por letra. **No hay rechazo por marca no publicada**: este brazo no lo comprueba, y el VERDE lo
 dice (D-AS).
 
-**El ancla** (§586, RFC-0012 E3)
+**El ancla** (§592, RFC-0012 E3)
 
 - `falta cabeza (la firmada que el ancla compromete)`
 - `un sobre con contraria no lleva ancla: la vista dividida se demuestra con las dos cabezas solas`
@@ -768,12 +768,12 @@ en su bloque y no se repiten aquí.
   - `VERDE: bajo la cabeza de seq {seq} hay un pendiente a nombre del receptor por`
   - `VERDE: bajo la cabeza de seq {seq} hay un pendiente que solo puede cobrar quien`
   - `VERDE: el recibo se resolvio dentro de la ventana, y se sostiene sin el nodo` (§573)
-  - `VERDE: el ancla se deriva de la cabeza firmada, y se sostiene sin el nodo` (§586; las dos
+  - `VERDE: el ancla se deriva de la cabeza firmada, y se sostiene sin el nodo` (§592; las dos
     líneas anteriores llevan el ancla derivada y su huella, para publicarlas)
-  - `VERDE: el ancla ES esta cabeza firmada, y se sostiene sin el nodo` (§586)
-  - `VERDE: la cabeza extiende el ancla: la historia anclada es un prefijo, y se sostiene sin el nodo` (§586)
+  - `VERDE: el ancla ES esta cabeza firmada, y se sostiene sin el nodo` (§592)
+  - `VERDE: la cabeza extiende el ancla: la historia anclada es un prefijo, y se sostiene sin el nodo` (§592)
   - `VERDE: VISTA DIVIDIDA - la clave firmo DOS cabezas con el indice embebido {i}. Es
-    DETECCION del operador: dos historias, y solo quien tiene la clave pudo producirlas` (§586)
+    DETECCION del operador: dos historias, y solo quien tiene la clave pudo producirlas` (§592)
 - **Salida de error:** `ROJO: {motivo}` con un texto del catálogo de la sección 5, y para.
 - **Cuatro códigos de salida:** `0` verde · `1` el primer fallo con nombre · `2` uso (ningún
   argumento, o más de uno; imprime el uso en la salida de error) · `3`, desde el §573, el cuarto
@@ -974,6 +974,21 @@ Dos corridas del banco dan el mismo cierre salvo `emittedAtUnix`, que no va firm
 COPIA de la corrida del sello. Su productor es `tools/banco_completitud.sh` (§574), con `--largo`
 —unos 24 minutos— para la ventana expirada.
 
+**Desde §593 cubre el sobre del ANCLA** (RFC-0012, E4): `spec/vectors/ancla/` trae CUATRO
+positivos CAPTURADOS de un nodo real que firma un latido por segundo, uno por modo: el ancla
+DERIVADA de la cabeza sola —el mando la imprime y el banco la parsea, sin recomputar nada: un
+solo productor—, la EXACTA contra su propia cabeza, la EXTENDIDA —el ancla de la cabeza vieja,
+el camino de `zkssl_consistencyProof` y la cabeza que firma el tamaño de ese camino— y la
+VISTA DIVIDIDA, sembrada reproduciendo el ataque de verdad: la misma semilla con un contador de
+índice fresco y un libro en el que un envío evaluado-y-rechazado movió el `recepCount` firmado
+—dos cabezas con el mismo índice embebido y digests distintos, que sólo quien tiene la clave
+puede producir—. Y DIECISIETE negativos por UNA mutación cada uno, uno por regla producible y
+por sitio: los de las claves distintas llevan la cabeza de un segundo nodo, de otra semilla.
+Las reglas que el sobre comparte con otras familias —lo que se exige de una cabeza, la lectura
+del camino plano— viven en ellas, y se declara. Dos corridas del banco no dan los mismos bytes
+(`emittedAtUnix` no va firmado): la familia se COPIA de la corrida del sello. Su productor es
+`tools/banco_ancla.sh` (§593).
+
 ## 10. Historia
 
 - §289: nace el paquete (formato v1) y su binario; §290: el apagado declarado; §293: el paquete de
@@ -1039,22 +1054,23 @@ COPIA de la corrida del sello. Su productor es `tools/banco_completitud.sh` (§5
 
 Lo que un tercero descarga es `arqueo-verify-<versión>-<host>.tar.gz` (§401), y dentro:
 `zk-ssl-verify` (el binario), `conformidad.sh` (el arnés de la sección 9, §408), `spec/PAQUETE.md`
-(este documento), `spec/vectors/<familia>/` por cada una de las NUEVE familias de `FAMILIAS`
-—paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda y completitud— (los nueve
+(este documento), `spec/vectors/<familia>/` por cada una de las DIEZ familias de `FAMILIAS`
+—paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda, completitud y ancla— (los
+diez
 manifiestos y sus vectores), `LICENSE-APACHE`, `LICENSE-MIT`, `NOTICE`, `THIRD-PARTY.txt` (las
 licencias de todo lo enlazado), `VERSION` (el commit, el toolchain y los flags con que se compiló)
 y `SHA256SUMS` (la huella de cada fichero de dentro). Se comprueba con `sha256sum -c SHA256SUMS`, y
-el binario contra los nueve catálogos con `bash conformidad.sh ./zk-ssl-verify` —el del paquete,
+el binario contra los diez catálogos con `bash conformidad.sh ./zk-ssl-verify` —el del paquete,
 por defecto— y `bash conformidad.sh ./zk-ssl-verify spec/vectors/<familia>/MANIFIESTO.txt` para
-cada una de las otras ocho: cada entrada dice el código de salida y el texto. Esta sección decía
+cada una de las otras nueve: cada entrada dice el código de salida y el texto. Esta sección decía
 SEIS hasta el §574: el pago (§509) y la prenda (§546) entraron en `FAMILIAS`, y en el tarball, sin
-que ella lo dijera; el §574 lo corrige al sumar la novena.
+que ella lo dijera; el §574 lo corrige al sumar la novena, y el §593 suma la décima, el ancla.
 
 La huella del binario **no depende de la máquina ni del usuario** —se compila con
 `--remap-path-prefix`—, pero sí del toolchain y de `Cargo.lock`: con el `rustc` que `VERSION`
 nombra, `bash tools/artefacto.sh` sobre el commit que `VERSION` nombra vuelve a producir el mismo
 binario y el mismo tarball, y `tools/canon.sh` comprueba esa propiedad en cada sello (dos
-compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los nueve manifiestos desde el
+compilaciones en dos rutas, misma huella; dos tarballs, misma huella; los diez manifiestos desde el
 árbol y, desde §425, otra vez **desde dentro del tarball desempaquetado y sin repo**, con el mismo
 veredicto). Lo que el binario exige: x86_64 Linux y una glibc igual o mayor que la que `VERSION`
 declara (`glibc_max`); no es estático, y se dice.

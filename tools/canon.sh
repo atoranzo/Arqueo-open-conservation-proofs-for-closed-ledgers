@@ -456,6 +456,18 @@ else
   grep -q '^ROJO' "$OUT/completitud.txt" || falla "completitud: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/completitud.txt"))"
 fi
 
+# ── 3 bis ancla · el sobre del ANCLA (RFC-0012 E4, desde el §593): el MISMO arnes ──
+msg ""
+msg "== CANON · las formas del sobre del ancla =="
+# El binario es el MISMO que el 3 bis ya construyo en release: no se vuelve a compilar.
+# Un solo productor del bucle, tools/conformidad.sh, con OTRO manifiesto. Cada ROJO entra por falla.
+if bash tools/conformidad.sh target/release/zk-ssl-verify spec/vectors/ancla/MANIFIESTO.txt > "$OUT/ancla.txt" 2>&1; then
+  msg "  OK  ancla: $(tail -n 1 "$OUT/ancla.txt" | sed 's/^conformidad: //')"
+else
+  while IFS= read -r L; do falla "ancla $L"; done < <(grep '^ROJO' "$OUT/ancla.txt" | sed 's/^ROJO //')
+  grep -q '^ROJO' "$OUT/ancla.txt" || falla "ancla: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/ancla.txt"))"
+fi
+
 # ── 3 ter · el ARTEFACTO (tools/artefacto.sh --check, §401): la PROPIEDAD, no un pin ──
 msg ""
 msg "== CANON · el artefacto =="

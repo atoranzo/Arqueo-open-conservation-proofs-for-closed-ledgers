@@ -96,7 +96,9 @@ El camino que este proyecto sí toma es el de *Certificate Transparency*: no imp
 se porte mal, sino que **no pueda hacerlo en secreto**. Para eso existen el firmante de cabezas
 (`AUDITORIA.md` §236), el guardián del índice de firma (§234), el latido (§241), el verificador
 independiente (§243) y los testigos que fijan la clave la primera vez que la ven (§245). Lo que le
-falta: un ancla anterior al primer encuentro y una custodia de clave **comprobada**, no sólo
+falta: desplegar el ancla externa en un medio real (el formato y su verificador existen desde el
+RFC-0012, y con el despliegue llega el ancla anterior al primer encuentro) y una custodia de clave
+**comprobada**, no sólo
 declarada (§244).
 
 ### 8. ¿Por qué se documentan los errores propios?
@@ -270,8 +272,9 @@ binario difieren un ~9 % (`AUDITORIA.md` §131), y **no son comparables con medi
 ### 22. ¿Cuánto falta para que sea usable?
 
 Para que un tercero real se apoye en estas pruebas: una **auditoría externa**, que no depende de
-más código; una **custodia de clave comprobada**, no sólo declarada (§244); y un **ancla anterior
-al primer encuentro** del testigo con el nodo. Para que el motor responda a todo lo que quiere
+más código; una **custodia de clave comprobada**, no sólo declarada (§244); y el **despliegue del
+ancla externa** (RFC-0012), que trae el ancla anterior
+al primer encuentro del testigo con el nodo. Para que el motor responda a todo lo que quiere
 responder sólo queda el residuo declarado de la fila 6 —el operador que no emite recibo, y el lote y
 la prenda (RFC-0010, D-H y D-E)—; la caja vacía, el rechazo con causa y la completitud ya son
 código. El consenso distribuido es

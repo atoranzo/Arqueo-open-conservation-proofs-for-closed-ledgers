@@ -158,7 +158,9 @@ la prenda no lo llevan (D-E, §576).
 **Lo que falta, por orden de importancia:** consenso distribuido (sin él, el operador ve los saldos
 y puede censurar; la alternativa que este proyecto sí persigue —responsabilidad demostrable, al modo
 de Certificate Transparency— tiene el firmante, el guardián del índice, el latido, el verificador
-independiente y los testigos, y le falta un ancla anterior al primer encuentro y una custodia de
+independiente y los testigos, y le falta desplegar el ancla externa —el formato y su verificador
+existen desde el RFC-0012; falta el medio, y con él el ancla anterior al primer encuentro— y una
+custodia de
 clave **comprobada**, no sólo declarada) · auditoría externa · el recibo de admisión (`AUDITORIA.md`
 §121) · delegar la prueba a terceros (verificar la firma en circuito) · una política de caducidad
 para las congelaciones. Todo lo demás está enumerado en [`AUDITORIA.md`](./AUDITORIA.md), sección 4.
@@ -189,7 +191,7 @@ a mirar el código con intención de romperlo, empieza ahí.
 | pieza | dónde se mide |
 |---|---|
 | **21 crates** en un workspace —18 propios y los tres del fork de winterfell 0.13.1 (§533)—; el canon (`tools/canon.sh --sello`) corre los tests de todos, en release, y las ocho herramientas de `tools/` que vigilan cifras, citas, dominios y geometría | la tabla de [`tools/canon.sh`](./tools/canon.sh) lleva los tests que pasan por crate; cada sello la actualiza |
-| **Protocolo `zkssl/0.4`**: 31 métodos JSON-RPC (28 `zkssl_*`, 3 `dev_*`), OpenRPC generado desde el código, vectores por versión que jamás se reescriben | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (356 ficheros: cable, núcleo, paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda, completitud, los catálogos 0.3 bajo `0.3/` y los cuatro `zkssl-0.N.json`) |
+| **Protocolo `zkssl/0.4`**: 31 métodos JSON-RPC (28 `zkssl_*`, 3 `dev_*`), OpenRPC generado desde el código, vectores por versión que jamás se reescriben | [`spec/RPC.md`](./spec/RPC.md) · [`spec/openrpc.json`](./spec/openrpc.json) · [`spec/vectors/`](./spec/vectors/) (380 ficheros: cable, núcleo, paquete, consumo, conflicto, rechazo, edad, pendiente, pago, prenda, completitud, ancla, los catálogos 0.3 bajo `0.3/` y los cuatro `zkssl-0.N.json`) |
 | **RFC**: 0002, 0003, 0004, 0006, 0007 (las pruebas sobre el estado comprometido), 0008 (las pruebas portables del pendiente), 0009 (lo que revela una prueba) y 0010 (el recibo de recepción) aceptados; 0005 (el núcleo congelado), 0011 (el nodo mentiroso) y 0012 (el ancla de cabezas) propuestos | [`spec/rfc/`](./spec/rfc/) |
 | **Verificador independiente** `zk-ssl-verify` 0.2.0, release `arqueo-verify-v0.2.0`, reproducible desde el commit que su `VERSION` nombra | [`doc/KIT.md`](./doc/KIT.md) · [`tools/artefacto.sh`](./tools/artefacto.sh) |
 | **Registro**: un asiento por cambio verificado, con su commit; lo corregido se marca, no se borra | [`AUDITORIA.md`](./AUDITORIA.md) · [`BACKLOG.md`](./BACKLOG.md) |

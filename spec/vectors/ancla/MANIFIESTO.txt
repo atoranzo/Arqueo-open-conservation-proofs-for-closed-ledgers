@@ -1,0 +1,51 @@
+# Vectores del sobre del ANCLA (spec/PAQUETE.md 2.12, RFC-0012 E3-E4; asiento 593). zkssl/0.4.
+# fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
+# TODOS se CAPTURAN de UNA corrida de su productor, que vive en el arbol:
+# `bash tools/banco_ancla.sh --guardar <dir>` (S593-a), contra un nodo REAL que firma un latido
+# por segundo con la semilla '37' x 96. El ancla la DERIVA el mando de la cabeza sola (modo 1,
+# el productor de B10.6): el banco parsea lo que el mando imprime y no recomputa nada.
+# Los CUATRO positivos son un modo cada uno:
+#   - `ancla-derivada`, salida 0: la cabeza sola; el mando imprime el ancla y su huella, y avisa
+#     de que la comparacion con el medio es del que comprueba (este binario no tiene red);
+#   - `ancla-exacta`, salida 0: el ancla derivada contra su propia cabeza, campo a campo;
+#   - `ancla-extendida`, salida 0: el ancla de la cabeza VIEJA (mmrSize 2), el camino de
+#     zkssl_consistencyProof y la cabeza NUEVA que firma el tamano de ese camino (mmrSize 6):
+#     la pareja firmada es el acumulador ANTES de cada cabeza, como en la extension;
+#   - `vista-dividida`, salida 0: DOS cabezas de la misma clave con el MISMO indice embebido
+#     (el 1, declarado 0x2) y digests distintos, sembradas reproduciendo el ATAQUE de verdad:
+#     la corrida A evaluo-y-rechazo un envio de ceros (su recepCount firmado es 1) y la corrida
+#     B es la MISMA semilla con directorios frescos y sin envio (recepCount 0) -- el contador de
+#     indice restaurado reusa el indice, y el sobre lo delata con VERDE-DETECCION (molde del
+#     conflicto). Solo quien tiene la clave puede producir este par.
+# Los DIECISIETE negativos salen de lo capturado por UNA mutacion cada uno, uno por regla
+# producible del sobre y por sitio; jamas se reescriben (regla 2 del PROCESO). Los de las claves
+# DISTINTAS llevan la cabeza de un SEGUNDO nodo, de semilla '38' x 96, que el banco levanta un
+# momento; su ancla derivada presta la `clave` ajena del neg-ancla-de-otra-clave.
+# No tienen vector AQUI, y se declara, las reglas que el sobre COMPARTE con otras familias: lo
+# que se exige de una cabeza (available, la recomposicion del digest, la firma) y la lectura de
+# los campos hex y del camino plano: viven en las familias del paquete y de la extension.
+# El indice del ancla es el EMBEBIDO en la firma (RFC-0012 D-C, §399): el declarado, acotado
+# solo por abajo, fabricaria vistas divididas falsas. Dos corridas del banco no dan los mismos
+# bytes (emittedAtUnix no va firmado y los relojes de las corridas difieren): la familia se
+# COPIA de la corrida del sello y no se re-deriva.
+ancla-derivada.json|0|VERDE: el ancla se deriva de la cabeza firmada, y se sostiene sin el nodo
+ancla-exacta.json|0|VERDE: el ancla ES esta cabeza firmada, y se sostiene sin el nodo
+ancla-extendida.json|0|VERDE: la cabeza extiende el ancla: la historia anclada es un prefijo
+vista-dividida.json|0|VISTA DIVIDIDA
+neg-sin-cabeza.json|1|falta cabeza
+neg-cabeza-v2.json|1|el ancla lee cabezas
+neg-contraria-con-ancla.json|1|un sobre con contraria no lleva ancla
+neg-camino-sin-ancla.json|1|camino sin ancla: no hay nada que extender
+neg-ancla-v-2.json|1|lee ancla v1
+neg-ancla-de-otra-clave.json|1|el ancla es de OTRA clave
+neg-ancla-indice-mentido.json|1|su indice no casa
+neg-ancla-digest-mentido.json|1|su epochDigest no casa
+neg-ancla-raiz-mentida.json|1|su mmrRoot no casa
+neg-ancla-tamano-mentido.json|1|su mmrSize no casa
+neg-ancla-genesis-con-camino.json|1|el ancla del genesis (mmrSize 0) no tiene historia que extender
+neg-ancla-indice-posterior.json|1|no es ANTERIOR
+neg-no-extiende.json|1|NO extiende el ancla
+neg-contraria-de-otra-clave.json|1|claves DISTINTAS
+neg-contraria-indice-distinto.json|1|los indices embebidos son DISTINTOS
+neg-contraria-identica.json|1|no hay vista que dividir
+neg-contraria-v2.json|1|contraria: formatVersion
