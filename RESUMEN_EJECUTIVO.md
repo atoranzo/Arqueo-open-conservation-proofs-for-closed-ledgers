@@ -25,9 +25,16 @@ dicen**, que cualquiera comprueba **sin el libro, sin red y sin fiarse del autor
 - **Que una negativa tiene causa**: la regla viaja con el rechazo, y para las causas que el sobre
   de rechazo cubre, un tercero comprueba sin el nodo que se sostiene sobre lo que la cabeza firma.
 - **Que nada en vuelo es más viejo que una edad dada**: la caja vacía, probada sin el nodo.
+- **Que lo que el nodo recibió se resolvió a tiempo**: toda operación que el nodo evalúa por las
+  vías directas del titular deja un recibo bajo su cabeza firmada, y un sobre portable dice, sin
+  el nodo, que se resolvió en su ventana —aplicada o rechazada con causa— o nombra al operador
+  que no la resolvió. Sus residuos, declarados: un operador que no emite recibo no deja rastro,
+  y el lote y la prenda no lo llevan (RFC-0010).
 
-Una cosa más que el motor quiere responder y todavía no responde: la completitud de un periodo,
-que cada acuse acabe aplicado o rechazado. Está listada como planeada, no como hecha.
+⚠️ **Corregido en el §589**: hasta entonces esta página decía aquí «la completitud de un periodo
+[…] está listada como planeada, no como hecha», y en «Qué falta» pedía «la completitud de los
+acuses». La fila 6 se midió en el RFC-0010 (§556–§577) y los documentos grandes se corrigieron
+en el §581; este resumen se había quedado atrás.
 
 ## Qué NO es
 
@@ -78,7 +85,7 @@ con DOI; lo que se corrigió después está marcado en su fe de erratas.
 
 Una auditoría externa, que no depende de más código. Una custodia de la clave de firma
 **comprobada**, no sólo declarada. Un ancla anterior al primer encuentro entre el testigo y el
-nodo. La completitud de los acuses. El consenso distribuido es otra disciplina y no es el camino
+nodo. El consenso distribuido es otra disciplina y no es el camino
 de este proyecto: el camino es la responsabilidad demostrable, al modo de *Certificate
 Transparency*, y sus piezas están construidas.
 

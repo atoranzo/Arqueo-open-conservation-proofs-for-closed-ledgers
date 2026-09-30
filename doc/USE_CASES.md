@@ -4,7 +4,7 @@ This page maps what the engine proves to the situations where that proof is
 worth having. It adds no claim that the tree does not already make: every
 "measured" row below points to the file that carries it, and every domain not
 reviewed in the project's documents is marked as a candidate. Verified against
-`main` at commit `dca287b` (§581; before it, `2401008`).
+`main` at commit `da6a768` (§589; before it, `dca287b`).
 
 ## The shape of the problem
 
@@ -42,6 +42,23 @@ at all (RFC-0010, D-H), and the batch and the pledge, which carry none (D-E,
 §576). Row 7 proves that the rule was applied over what a signed head
 commits; not that the rule is fair, and its binding to one received operation
 is the node's word in its error data (RFC-0010, D3).
+
+### The classical audit assertions, mapped (§589)
+
+For an auditor who thinks in assertions, the table above reads as follows.
+The mapping adds no claim: each cell points at the row that carries it, and
+what a row does not cover stays uncovered.
+
+| assertion | where it lands | what stays outside |
+|---|---|---|
+| Existence / occurrence | row 4: an entry is in the committed record, provable without the operator; row 1 counts what is in flight | that the unit or the event exists **outside** the ledger: the oracle limit (`SECURITY.md`) |
+| Accuracy | rows 1 and 2: the conservation arithmetic and single use hold under the signed head, recomputed by the checker | valuation: the proofs carry amounts, not worth |
+| Cut-off | row 6, first half: the "empty box" proof that nothing in flight outlives its age (RFC-0007 E4) | — |
+| Completeness | row 6, second half: every operation the node evaluates on the holder's direct paths resolves in its window or a named red says it did not (RFC-0010) | what the node never receipted (D-H), and the batch and pledge paths (D-E): completeness of the receipted, never of the unreceipted |
+| Rights / authorization | row 5: only the key holder moves the account; the operator cannot | who is behind a key, and whether one person holds one account |
+
+The classification and presentation assertions have no row: the ledger's
+categories are the operator's, and no proof here speaks of them.
 
 ## Use cases, by the property that resolves them
 

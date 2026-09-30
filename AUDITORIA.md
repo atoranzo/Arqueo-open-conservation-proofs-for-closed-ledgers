@@ -42284,3 +42284,42 @@ cuentas que lo publican dicen «0005 y 0011 propuestos». `check_cifras`, `check
 **Lo que NO cierra.** Todo: es una propuesta. La 93 sigue abierta hasta que el autor la acepte y
 las etapas se sellen.
 
+
+## §589 — los resúmenes, al día con la fila 6; y las aserciones clásicas, mapeadas
+
+El commit que lleva este asiento, sobre `da6a768` (el S588). Un solo sello: tres documentos y
+este asiento, con las compuertas de documentos VERDES dentro del bloque. Tres ficheros más este
+asiento, con 40 inserciones y 9 borrados fuera de él.
+
+**La sesión, declarada.** Este asiento y los que siguen salen de la sesión 194, la primera que
+trabaja en un contenedor remoto sobre la rama `claude/arqueo-completitud-anclaje-jxsj6g`, para
+revisión del autor: lo que aquí se dice medido está medido en ese contenedor, y la aceptación es
+el merge del autor, no este texto. El método no cambia: se mide primero, y el canon decide.
+
+**De dónde sale.** Del encargo de la sesión: «cerrar la completitud y hacer el paquete de
+evidencia oponible». La lectura previa midió que ya estaba cerrada —el RFC-0010 ACEPTADO
+(§556–§577) y la fila 6 al día (§581)— salvo dos restos documentales, y este asiento los paga.
+
+**Lo que se MIDIÓ.** El §581 buscó las frases viejas «en todo documento vivo» y corrigió siete;
+los dos resúmenes se le escaparon porque lo decían con OTRAS palabras: `RESUMEN_EJECUTIVO.md`
+(«la completitud de un periodo […] está listada como planeada, no como hecha»; y en «Qué falta»,
+«La completitud de los acuses») y `RESUMEN_BILINGUE.md` («Falta la completitud», dos veces por
+lengua). Una búsqueda por frase no caza la paráfrasis. Y de la superficie entera: ningún
+documento mapea las aserciones clásicas de auditoría (existencia, exactitud, corte, completitud)
+sobre la tabla de propiedades; lo más cercano era el propio nombre de la fila 6.
+
+**Lo que hace.** (1) Los dos resúmenes dicen la fila 6 como MEDIDA, con sus residuos (D-H, D-E)
+en la frase, y las frases viejas quedan CITADAS en su corrección, no borradas, como manda el
+§581. (2) `doc/USE_CASES.md` gana «The classical audit assertions, mapped»: existencia →
+fila 4, exactitud → filas 1–2, corte → fila 6 (la caja vacía, RFC-0007 E4), completitud →
+fila 6 (RFC-0010, con su residuo en la celda: completitud de lo acusado, nunca de lo no
+acusado), autorización → fila 5; y lo que queda fuera —valoración, clasificación, el límite del
+oráculo— dicho en la misma tabla. El mapa es lectura para el auditor, no norma nueva: cada celda
+apunta a la fila que ya lo carga. `USE_CASES` verifica contra `71c5aad`.
+
+**Contadores.** Ninguno se mueve: ni un test, ni un pin. `check_cifras`, `check_publicadas`,
+`check_techo` y `verificar_citas`, VERDES.
+
+**Lo que NO cierra.** El residuo D-H y el recibo del lote y de la prenda, que siguen donde el
+§581 los dejó. Y la lección del §581, afinada: buscar la frase no basta; lo que se busca es la
+AFIRMACIÓN, dicha como sea.

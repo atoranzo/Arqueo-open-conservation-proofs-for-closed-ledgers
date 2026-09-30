@@ -20,7 +20,9 @@ usó una sola vez en el libro, y que la misma unidad en dos libros se detecta co
 firmadas. Que la historia no se reescribió. Que una entrada está dentro, con recibo. Que sólo el
 titular movió su cuenta. Que una negativa lleva su causa y, para las causas que el sobre de
 rechazo cubre, que se sostiene sin el nodo. Que nada en vuelo es más viejo que una edad dada.
-Falta la completitud: que cada acuse acabe aplicado o rechazado.
+Y la completitud, medida desde el RFC-0010: lo que el nodo evalúa por las vías del titular deja
+un recibo bajo su cabeza firmada y acaba aplicado, rechazado con causa, o señalado con un rojo
+nombrado; sus residuos, declarados. ⚠️ Corregido en el §589: aquí decía «Falta la completitud».
 
 ### Qué NO es
 
@@ -47,8 +49,8 @@ contrapartida ni una moneda de banco central ([`doc/USE_CASES.md`](./doc/USE_CAS
 protocolo `zkssl/0.4` con 31 métodos y vectores que no se reescriben;
 RFC 0002, 0003, 0004, 0006, 0007, 0008, 0009 y 0010 aceptados, 0005 y 0011 propuestos; verificador
 `zk-ssl-verify` 0.2.0 (release `arqueo-verify-v0.2.0`, reproducible); registro con un asiento por
-cambio. Falta: auditoría externa, custodia de clave comprobada, un ancla anterior al primer
-encuentro del testigo, y la completitud de los acuses.
+cambio. Falta: auditoría externa, custodia de clave comprobada, y un ancla anterior al primer
+encuentro del testigo (⚠️ §589: esta lista pedía también «la completitud de los acuses»).
 
 ### La decisión que define el diseño
 
@@ -73,7 +75,10 @@ once inside the ledger, and that the same unit in two ledgers is detected from t
 heads. That history was not rewritten. That an entry is inside, with a receipt. That only the
 holder moved their account. That a refusal carries its cause and, for the causes the rejection
 envelope covers, that it holds without the node. That nothing in flight is older than a given
-age. Missing: completeness, every acknowledgement ending applied or rejected.
+age. And completeness, measured since RFC-0010: what the node evaluates through the holder's
+direct paths leaves a receipt under its signed head and ends applied, rejected with a cause, or
+flagged by a named red; its residues, declared. ⚠️ Corrected in §589: this read "Missing:
+completeness".
 
 ### What it is NOT
 
@@ -100,8 +105,9 @@ counterparties, nor a central-bank digital currency ([`doc/USE_CASES.md`](./doc/
 change; protocol `zkssl/0.4` with 31 methods and vectors that are never rewritten;
 RFCs 0002, 0003, 0004, 0006, 0007, 0008, 0009 and 0010 accepted, 0005 and 0011 proposed;
 verifier `zk-ssl-verify` 0.2.0 (release `arqueo-verify-v0.2.0`, reproducible); a record with one
-entry per change. Missing: an external audit, a verified key custody, an anchor prior to the
-witness's first encounter, and the completeness of acknowledgements.
+entry per change. Missing: an external audit, a verified key custody, and an anchor prior to the
+witness's first encounter (⚠️ §589: this list also asked for "the completeness of
+acknowledgements").
 
 ### The decision that defines the design
 
