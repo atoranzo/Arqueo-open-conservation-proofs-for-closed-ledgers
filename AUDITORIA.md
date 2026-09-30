@@ -43211,3 +43211,59 @@ la cabeza, quietos.
 **Lo que NO cierra.** E3 (el nodo reserva y anota el recibo del lote y de la prenda, y el testigo
 del §576 se reescribe), E4 (las dos resoluciones en el mando) y E5 (vectores y banco).
 
+## §611 — RFC-0014 E3: el lote y la prenda evaluada llevan su recibo, y el testigo del §576 cae al revés
+
+El commit que lleva este asiento, sobre `38bf1b5` (el S610). Un solo sello: la capa, el kit, el
+nodo, sus testigos y su pin, el cable escrito, los textos que decían lo contrario, las cifras, la
+etapa marcada en el RFC y este asiento, con el canon `--sello` VERDE dentro del bloque. 15
+ficheros más este asiento, con 361 inserciones y 91 borrados fuera de él.
+
+**De dónde sale.** De la E3 del RFC-0014, con las decisiones 1 y 2 del §609: el recibo va por LOTE
+y, en la prenda, sólo lo consumen las respuestas que EVALÚAN la prueba. Y del D-F: el testigo del
+§576 anunciaba en su propio texto que caería «si una de las dos empieza a reservar».
+
+**Lo que hace.** (1) La capa: `apply_many_con_operacion`, el MISMO juicio que `apply_many` -mismo
+orden, mismo error- con el índice en `ops` de la operación que el lote no admitió: por su forma,
+la segunda del par que repite cuenta o posición; al validar, la primera que no valida; al aplicar,
+la que falló al escribir. `apply_many` es ella con el índice quitado, así que ningún llamador
+existente cambia. (2) El kit re-exporta `hash_del_lote` en `zk_ssl_verify::recibos`: el nodo la
+anota y el mando la recompondrá con la misma función, la razón del §270. (3) `zkssl_applyMany`
+reserva y anota UN recibo en el punto del §569 -tras el parseo y la conversión, que son ruido, y
+antes de la capa-, con `hashPrueba` la huella de su composición: por operación, el digest de su
+prueba, su cuenta y la posición de su pendiente, los dos números con los que la capa juzga su
+forma. Lo lleva en el resultado y en el `error.data` del rechazo, y el rechazo gana `operacion`.
+(4) `zkssl_pledge` reserva tras comprobar el `seq` y antes del juez, con el digest de la prueba
+que llegó, y lo lleva en las cuatro respuestas que llegan a juzgarse -aceptada, `yaEstaba`, no
+verifica, rechazada por la capa-; las tres previas no lo consumen. (5) Testigos: el del §576 se
+reescribe al revés -las tres respuestas previas de la prenda asertadas sin recibo y con el contador
+quieto, sobre tres nodos: sin latido, con cabeza sin firmar y con `seq` viejo; después la prenda
+evaluada, el lote rechazado y la vía directa consumen `antes+1`, `antes+2` y `antes+3`-; nacen dos:
+el rechazo del lote por su FORMA lleva su recibo, nombra la SEGUNDA del par y su huella se
+recompone con la función del kit desde lo que el agregador ya tiene, y el lote ACEPTADO, con una
+prueba de verdad, lleva el suyo con la huella recompuesta; el positivo de la prenda aserta el
+digest de SU prueba; y el testigo de la cuenta repetida de la capa mide los nombres con recibos de
+ceros -la cuenta que repite en la tercera, la posición en la segunda, la validación en la primera-,
+con el mismo error por los dos caminos, y el de la validación fallida nombra la segunda. (6) El
+cable escrito: dos reglas nuevas del lote en `spec/RPC.md` y una viñeta en la prenda; el párrafo
+que decía que no llevaban recibo, reescrito con su historia.
+
+**Por qué el testigo de la capa no es uno nuevo.** Lo fue en la primera versión de este sello, y
+`check_cifras` lo paró: el 423 de la capa está citado en ocho documentos vivos, uno en `doc/ecst/`.
+La propiedad cabe en el testigo que ya juzga la forma del lote, sin mover ninguna cita: la capa
+sigue en 423.
+
+**Lo que se declara, y es de ESTA etapa.** Hasta la E4, el recibo del lote y el de la prenda
+EXISTEN y el mando todavía NO los resuelve: el de un lote aplicado buscaría un acuse con la huella
+del lote y no lo encontraría, y el de la prenda no tiene rama. Nadie debe llevarle uno hasta la
+E4; está escrito en `spec/RPC.md`, en `SECURITY.md` 2.ter, en el RFC-0010, en los dos README y en
+`doc/USE_CASES.md`, donde antes se decía que no llevaban recibo.
+
+**Contadores.** El nodo 171 -> 173 y los demás sin mover; TOTAL DE SELLO 1524 -> 1526; TOTAL CON
+LARGOS 1661 -> 1663; los tres párrafos ancla al día; la cuenta de `check_tests`, 1685.
+`check_dominios` y `check_nucleo` sin cambio (29 y 9; 132 filas): ningún dominio nuevo, y la
+re-exportación no es un elemento del censo. Ningún `Cargo` tocado; la cabeza, quieta; el cable,
+aditivo bajo `zkssl/0.4`.
+
+**Lo que NO cierra.** E4 (las dos resoluciones en el mando, «lote» y «prenda», con el «RECHAZO SIN
+FUNDAMENTO») y E5 (vectores y banco).
+

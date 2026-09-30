@@ -256,8 +256,9 @@ BatchOp = {kind: "send",  receipt: SendReceipt,  sender: Q,
            receiverState: ClientState, notice: PendingNotice}
 
 BatchApplied = {
-  batch:   {size, fromSeq, toSeq: Q, rootOld, rootNew, chain: Digest},
-  applied: Applied[]
+  batch:     {size, fromSeq, toSeq: Q, rootOld, rootNew, chain: Digest},
+  applied:   Applied[],
+  recepcion: {rx, era, n: Q, hashPrueba: Digest}      // §611, RFC-0014 E3
 }
 ```
 
@@ -288,6 +289,20 @@ Reglas normativas:
    TODAS las pruebas.** Es lo único que el lote puede devolver a cambio
    de la garantía que quita (ver la sección siguiente): deja al cliente
    comprobar contra qué se validó la suya.
+7. **El lote recibe UN recibo de recepción** (§611, RFC-0014 E3, D-A), en
+   el resultado y en el `error.data` de un rechazo de la capa, con la
+   forma del de la vía directa. Su `hashPrueba` es
+   `hash_del_lote(composición)`: por cada operación, en su orden, el
+   digest de su prueba (§116), su cuenta (`sender` o `receiver`) y la
+   posición de su pendiente (`receipt.notice.position` o
+   `notice.position`). La composición **no viaja de vuelta**: la tiene
+   quien arma el lote, y queda firmada porque su huella está bajo la
+   `recepRoot`. Se reserva tras el parseo -un lote vacío o mal formado
+   es ruido y no consume número- y antes de la capa.
+8. **El rechazo nombra su operación**: `error.data.operacion` (Q) es el
+   índice en `ops` de la que el lote no admitió -por su forma, la segunda
+   del par que repite cuenta o posición; al validar, la primera que no
+   valida-. Es la palabra del nodo (RFC-0014, D-B).
 
 ⚠️ **Quien arma el lote no es el nodo.** El nodo no acumula operaciones:
 aplica las que le llegan juntas en una petición. Juntarlas es trabajo de
@@ -544,11 +559,14 @@ hereda al cerrar la era, con `zkssl_recepPath`. Un `-32603` porque el nodo no pu
 lleva recibo**: no hay hoja que prometer, y la operación no se evaluó. ⚠️ La clave es `recepcion` y
 no `recibo`: `recibo` ya nombra en el cable los `publicInputs` del sobre de rechazo.
 
-⚠️ **`zkssl_applyMany` y `zkssl_pledge` NO llevan recibo, ni en el resultado ni en el error**, y
-no consumen `receptionSeq` (RFC-0010, D-E, decidido en el §576): hoy un recibo suyo no tendría
-resolución —el lote rechazado da la causa de UNA operación, y la prenda no deja acuse de su
-prueba ni tiene sobre de rechazo—, y el sobre de completitud acusaría a un operador honrado. Quien
-quiera al operador atado manda por `applySend` o `applyClaim`. Un testigo del nodo lo ata.
+⚠️ **Desde el §611 (RFC-0014 E3) `zkssl_applyMany` y `zkssl_pledge` también llevan recibo**, con
+la misma regla: uno por cada cosa que el nodo EVALÚA, reservado en el mismo punto que la vía
+directa. El lote, UNO por lote, sobre la huella de su composición (regla 7 de su sección); la
+prenda, cuando su prueba llega al juez, con el digest de esa prueba (ver «La prenda, con su
+sobre»). Hasta el §611 no lo llevaban, por la decisión del §576 (RFC-0010, D-E), que el RFC-0014
+reabrió con su resolución. ⚠️ **Entre la E3 y la E4 del RFC-0014 el recibo existe y su resolución
+en el sobre de completitud todavía no**: el mando no sabe aún resolver el de un lote aplicado ni
+el de una prenda, y no se le lleva ninguno hasta la E4.
 
 ### `zkssl_signedEpochHead` — la última cabeza firmada, para un TESTIGO
 
@@ -1152,6 +1170,11 @@ nodo. Lo que sale del prendador es `SobrePrenda {prueba, receptor, marca, seq, p
 - **Qué revela**: nada que no fuera público. La marca es `H(DOMINIO_PRENDA, C2)` y quien tenga
   el aviso la precomputa; el sobre no lleva ni el importe, ni la sal, ni `X`, ni `C2`, ni la
   clave (RFC-0008 D-AW).
+- **Lleva recibo cuando se EVALÚA su prueba** (§611, RFC-0014 E3, D-D): `recepcion`, con la
+  forma del de la vía directa y `hashPrueba` el digest de la prueba que llegó (§116), en TODAS
+  las respuestas que llegan al juez -aceptada, `yaEstaba`, no verifica, o rechazada por la capa-.
+  Las tres que no llegan -sin latido, cabeza sin firmar, `seq` viejo- no lo llevan ni consumen
+  número: son ruido, y quien prenda vuelve a probar bajo la cabeza nueva.
 
 ⚠️ **Aditivo**: la superficie pasa de 29 a 30 métodos (`zkssl_pledge`) y `zkssl/0.3` NO sube: no
 cambia ningún valor que ya viajara.

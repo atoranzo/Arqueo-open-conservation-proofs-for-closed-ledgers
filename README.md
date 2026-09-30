@@ -141,8 +141,8 @@ La fila 6, desde el RFC-0010 (H5b, §556–§577): toda operación que el nodo e
 directas del titular lleva un recibo bajo su cabeza firmada, y el sobre de completitud dice, sin el
 nodo, que se resolvió en su ventana —aplicada, o rechazada con prueba— o nombra al operador que no
 la resolvió («NO RESUELTA EN LA VENTANA»), o la cuenta aparte cuando su causa no tiene prueba
-portable. Su residuo, declarado: un operador que no emite recibo no deja rastro (D-H), y el lote y
-la prenda no lo llevan (D-E, §576).
+portable. Su residuo, declarado: un operador que no emite recibo no deja rastro (D-H); y el lote y
+la prenda lo llevan desde el §611 (RFC-0014, E3), pero el sobre de completitud aún no los resuelve.
 
 **Lo que nada de esto afirma:**
 

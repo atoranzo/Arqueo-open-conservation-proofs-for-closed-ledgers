@@ -1446,6 +1446,25 @@ impl SovereignLayer {
     /// Agrupar la persistencia es trabajo posterior; §204 midio que es el
     /// 3 % del coste.
     pub fn apply_many(&mut self, ops: &[BatchOp<'_>]) -> Result<(), LayerError> {
+        self.apply_many_con_operacion(ops).map_err(|(_, e)| e)
+    }
+
+    /// **[`Self::apply_many`], y su error NOMBRA la operacion** (RFC-0014 D-B, §611): el
+    /// indice en `ops`, en el orden de entrada, de la que el lote no admitio. Es la palabra que
+    /// el sobre de completitud ata al recibo del lote; sin ella el rechazo no resuelve ni a la
+    /// que fallo ni a sus companeras.
+    ///
+    /// - Por su FORMA (paso 1), la que REPITE cuenta o posicion: la segunda del par, porque
+    ///   la primera era admisible hasta que llego ella. Se comprueba con la composicion sola.
+    /// - Al VALIDAR (paso 3), la primera que no valida: las de despues no se llegaron a juzgar.
+    /// - Al APLICAR (paso 4), la que fallo al escribir.
+    ///
+    /// ⚠️ Mismo juicio, mismo orden y mismo error que `apply_many`, que es esta con el indice
+    /// quitado: un nombre no puede cambiar el veredicto.
+    pub fn apply_many_con_operacion(
+        &mut self,
+        ops: &[BatchOp<'_>],
+    ) -> Result<(), (usize, LayerError)> {
         if ops.is_empty() {
             return Ok(());
         }
@@ -1453,14 +1472,14 @@ impl SovereignLayer {
         // 1 · una operacion por cuenta, y posiciones distintas.
         let mut cuentas = std::collections::BTreeSet::new();
         let mut posiciones = std::collections::BTreeSet::new();
-        for op in ops {
+        for (j, op) in ops.iter().enumerate() {
             let idx = op.account();
             if !cuentas.insert(idx) {
-                return Err(LayerError::DuplicateAccountInBatch { index: idx });
+                return Err((j, LayerError::DuplicateAccountInBatch { index: idx }));
             }
             let pos = op.pending_position();
             if !posiciones.insert(pos) {
-                return Err(LayerError::DuplicatePendingInBatch { position: pos });
+                return Err((j, LayerError::DuplicatePendingInBatch { position: pos }));
             }
         }
 
@@ -1472,7 +1491,7 @@ impl SovereignLayer {
 
         // 3 · validar TODAS. Nada se muta aqui.
         let mut planes: Vec<PlanListo<'_>> = Vec::with_capacity(ops.len());
-        for op in ops {
+        for (j, op) in ops.iter().enumerate() {
             let plan = match op {
                 BatchOp::Send {
                     receipt,
@@ -1488,7 +1507,8 @@ impl SovereignLayer {
                         *sender_index,
                         sender_state,
                         *amount,
-                    )?,
+                    )
+                    .map_err(|e| (j, e))?,
                     receipt,
                 ),
                 BatchOp::Claim {
@@ -1505,7 +1525,8 @@ impl SovereignLayer {
                         *receiver_index,
                         receiver_state,
                         notice,
-                    )?,
+                    )
+                    .map_err(|e| (j, e))?,
                     receipt,
                 ),
             };
@@ -1513,11 +1534,12 @@ impl SovereignLayer {
         }
 
         // 4 · aplicar. A partir de aqui se muta.
-        for plan in &planes {
+        for (j, plan) in planes.iter().enumerate() {
             match plan {
-                PlanListo::Send(p, r) => self.commit_send(p, r)?,
-                PlanListo::Claim(p, r) => self.commit_claim(p, r)?,
+                PlanListo::Send(p, r) => self.commit_send(p, r),
+                PlanListo::Claim(p, r) => self.commit_claim(p, r),
             }
+            .map_err(|e| (j, e))?;
         }
         Ok(())
     }
@@ -1804,6 +1826,10 @@ mod tests_lote {
 
     /// El lote rechaza dos operaciones de la misma cuenta, **antes** de
     /// validar nada.
+    ///
+    /// §611 (RFC-0014 D-B): y su error NOMBRA la operacion -la segunda del par que repite
+    /// cuenta o posicion- sin cambiar el veredicto: `apply_many` es `apply_many_con_operacion`
+    /// con el indice quitado.
     #[test]
     fn el_lote_rechaza_una_cuenta_repetida() {
         let (mut c, idx) = capa_con_cuentas(2);
@@ -1836,6 +1862,38 @@ mod tests_lote {
         );
         // Y NADA se aplico.
         assert_eq!(c.balance_of(a).unwrap(), 1_000_000);
+
+        // §611: la forma se juzga sin probar nada, asi que los nombres se miden con recibos de
+        // CEROS: la cuenta que repite en la TERCERA, la posicion que repite en la segunda, y un
+        // lote bien formado cae al validar en la primera. Los dos caminos, el mismo error.
+        let (r1, r2, r3) = (envio_de_ceros(1), envio_de_ceros(2), envio_de_ceros(3));
+        let op = |receipt, sender_index| BatchOp::Send {
+            receipt,
+            sender_index,
+            sender_state: &est,
+            amount: 5,
+        };
+        let casos: [(Vec<BatchOp<'_>>, usize, &str); 3] = [
+            (vec![op(&r1, a), op(&r2, b), op(&r3, a)], 2, "DuplicateAccountInBatch"),
+            (vec![op(&r1, a), op(&r1, b)], 1, "DuplicatePendingInBatch"),
+            (vec![op(&r1, a), op(&r2, b)], 0, "valida"),
+        ];
+        let entradas = c.log.len();
+        for (ops, j, que) in &casos {
+            let nombrado = c.apply_many_con_operacion(ops);
+            let llano = c.apply_many(ops);
+            match (&nombrado, &llano) {
+                (Err((k, e)), Err(e2)) => {
+                    assert_eq!(k, j, "{que}: nombra la operacion {j}, y nombro la {k}");
+                    assert_eq!(format!("{e:?}"), format!("{e2:?}"), "{que}: el MISMO error");
+                    if que.starts_with("Duplicate") {
+                        assert!(format!("{e:?}").starts_with(que), "{que}: {e:?}");
+                    }
+                }
+                otro => panic!("{que}: los dos tenian que rechazar, y salio {otro:?}"),
+            }
+        }
+        assert_eq!(c.log.len(), entradas, "ningun lote rechazado escribe");
     }
 
     /// Si una validacion falla, **no se aplica ninguna**.
@@ -1881,6 +1939,49 @@ mod tests_lote {
         assert!(r.is_err(), "la segunda deberia fallar la validacion");
         assert_eq!(c.balance_of(a1).unwrap(), saldo_antes, "la PRIMERA no debe haberse aplicado");
         assert_eq!(c.accounts.root(), raiz_antes, "el arbol debe estar intacto");
+        // §611 (RFC-0014 D-B): el MISMO lote, sobre el estado intacto, nombra a la SEGUNDA: la
+        // primera valido, y es la unica forma de ver un indice que no sea el cero sin probar mas.
+        let n = c.apply_many_con_operacion(&[
+            BatchOp::Send {
+                receipt: &e1,
+                sender_index: a1,
+                sender_state: &est1,
+                amount: 1_000,
+            },
+            BatchOp::Send {
+                receipt: &e2,
+                sender_index: a2,
+                sender_state: &est2_falso,
+                amount: 1_000,
+            },
+        ]);
+        assert!(
+            matches!(&n, Err((1, e)) if format!("{e:?}") == format!("{:?}", r.as_ref().unwrap_err())),
+            "la segunda, con el MISMO error que apply_many: {n:?} frente a {r:?}"
+        );
+        assert_eq!(c.balance_of(a1).unwrap(), saldo_antes, "y nombrar no aplica nada");
+    }
+
+    /// Un envio con prueba de CEROS en la posicion `pos`: la forma del lote se juzga sin
+    /// probar nada, y la validacion lo rechaza.
+    fn envio_de_ceros(pos: u64) -> SendReceipt {
+        let cero = [BaseElement::new(0); 4];
+        SendReceipt {
+            proof: vec![0u8; 32],
+            public_inputs: SendPublicInputs {
+                root_old: cero,
+                root_new: cero,
+                frozen_root: cero,
+                pending_root_old: cero,
+                pending_root_new: cero,
+                amount: BaseElement::new(5),
+                regulatory_limit: BaseElement::new(1_000),
+                supply_old: BaseElement::new(0),
+                supply_new: BaseElement::new(0),
+            },
+            commitment: cero,
+            notice: PendingNotice { position: pos, salt: cero, amount: 5, x: None },
+        }
     }
 
     /// Un lote de UNA operacion deja el mismo estado que `apply_send`.

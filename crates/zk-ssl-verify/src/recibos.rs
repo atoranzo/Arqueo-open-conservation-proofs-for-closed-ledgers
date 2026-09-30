@@ -68,6 +68,12 @@ use zk_ssl_hash::recibo_digest;
 // no se abre un segundo.
 use crate::acuses::Digest;
 
+/// §611 (RFC-0014 E3): la huella del lote, re-exportada desde el nucleo. El nodo la
+/// ANOTA como `hashPrueba` del recibo de un `zkssl_applyMany` y el mando la RECOMPONE de
+/// la composicion; que las dos manos llamen a la misma funcion es la unica garantia de
+/// que componen igual (la razon de `acuse_digest`, §270).
+pub use zk_ssl_hash::hash_del_lote;
+
 /// ¿Cae la recepcion `rx` en la era `(limite_anterior, limite]`?
 ///
 /// `limite_anterior` = `recep_count` de la cabeza anterior (0 si no hay

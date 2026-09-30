@@ -284,12 +284,16 @@ formas porque la raíz lo exige (§230); el reparto viaja encima.
   de envíos bloquea un pago **entero** sin tocar el cobro. Eso cae bajo el
   **recibo de admisión** (§121, `doc/CONFIANZA_RESIDUAL.md`) — y es la
   **cuarta** convergencia hacia esa pieza, que sigue sin construir.
-  ⚠️ **Desde el RFC-0010 el recibo de recepción existe, pero NO para lo
-  agregado** (D-E, §576): cubre `applySend` y `applyClaim`, y el lote que
-  manda un agregador por `zkssl_applyMany` no lo lleva. Quien quiera al
-  operador atado manda por la vía directa: el agregador es una
-  recomendación, no un requisito. El recibo del lote -y el de la prenda-
-  lo propone el RFC-0014 (§608); hasta que se construya, esto sigue igual.
+  ⚠️ **Desde el RFC-0010 el recibo de recepción existe, y para lo
+  agregado desde el §611.** Hasta entonces cubría `applySend` y
+  `applyClaim` (D-E, §576), y el lote que manda un agregador por
+  `zkssl_applyMany` no lo llevaba. El RFC-0014 (§608) propuso el del lote
+  -y el de la prenda-, y desde su E3 (§611) el nodo lo emite: UNO por
+  lote, sobre la huella de su composición, que el agregador reenvía a
+  cada titular con la respuesta. Su resolución en el sobre de completitud
+  es la E4; hasta entonces el recibo existe y el mando todavía no lo
+  resuelve, y quien quiera al operador atado ya, manda por la vía
+  directa: el agregador es una recomendación, no un requisito.
 
 #### Lo que queda abierto
 

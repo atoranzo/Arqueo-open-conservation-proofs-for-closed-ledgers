@@ -1613,6 +1613,14 @@ impl RpcError {
         }
         self
     }
+    /// §611 (RFC-0014 D-B): la operacion del lote que la capa no admitio, su indice en `ops`,
+    /// en el `data` del rechazo y al lado de la causa. Solo si hay `data`, como el recibo.
+    fn con_operacion(mut self, j: usize) -> Self {
+        if let Some(d) = self.data.as_mut().and_then(|d| d.as_object_mut()) {
+            d.insert("operacion".into(), json!(Q(j as u64)));
+        }
+        self
+    }
     fn wire(e: wire::WireError) -> Self {
         Self::invalid_params(e)
     }
@@ -2354,38 +2362,49 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                     ),
                 }));
             }
+            // ⚠️⚠️ §611 (RFC-0014 E3, D-D): la prenda recibe su recibo cuando se EVALUA su
+            // prueba, y aqui empieza a evaluarse. Las tres respuestas de arriba -sin latido,
+            // cabeza sin firmar, `seq` viejo- no llegan al juez y no lo consumen: son el ruido
+            // del cable (RFC-0010, D-E), y quien prenda vuelve a probar bajo la cabeza nueva. Es
+            // el punto del §569: tras lo que no se evalua y ANTES del juez, asi que un rechazo
+            // tambien deja hoja. `hashPrueba`, el digest de la prueba que llego (§116).
+            let rx = recibir(app)?;
+            let hash_prueba = zk_ssl::log::digest_of_proof(&p.prueba.0);
+            let era = anotar(app, rx, hash_prueba)?;
+            let recibo = recibo_de_recepcion(rx, era, hash_prueba);
             let af = zk_ssl_air::prenda::AfirmacionPrenda { receptor, marca };
             let cab = zk_ssl_air::prenda::CabezaPrenda { pending_root: raiz };
             // El veredicto se BINDEA en vez de encadenarse: asi el falsador por mutacion del
             // bloque puede anular la puerta con UNA linea y sin dejar nada sin usar.
             let veredicto = zk_ssl_air::prenda::verificar_contra_cabeza(&p.prueba.0, &af, &cab);
             if let Err(e) = veredicto {
-                return Ok(json!({
+                return Ok(con_recibo(json!({
                     "accepted": false,
                     "reason": format!("la prueba de prenda no verifica contra la cabeza del seq {s}: {e}"),
-                }));
+                }), recibo));
             }
-            match l.apply_consumo(marca) {
-                Ok(()) => Ok(json!({
+            let v = match l.apply_consumo(marca) {
+                Ok(()) => json!({
                     "accepted": true,
                     "yaEstaba": false,
                     "logSeq": Q(l.transition_log().len() as u64),
                     "s": Q(s),
-                })),
+                }),
                 // D-BB: la hoja ya estaba y es la MISMA. El sobre ya verifico, asi
                 // que el par existe lo escribiera quien lo escribiera.
-                Err(LayerError::ConsumoRepetido { .. }) => Ok(json!({
+                Err(LayerError::ConsumoRepetido { .. }) => json!({
                     "accepted": true,
                     "yaEstaba": true,
                     "logSeq": Q(l.transition_log().len() as u64),
                     "s": Q(s),
-                })),
-                Err(e) => Ok(json!({
+                }),
+                Err(e) => json!({
                     "accepted": false,
                     "reason": format!("{e}"),
                     "data": data_de(&e, seq_juicio),
-                })),
-            }
+                }),
+            };
+            Ok(con_recibo(v, recibo))
         }
 
         // ⚠️ **§259 · EL RECIBO DE INCLUSION.** Del arbol `accounts`, que es
@@ -2906,6 +2925,30 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                 });
             }
 
+            // ⚠️⚠️ §611 (RFC-0014 E3, D-A): el lote recibe UN recibo, en el MISMO punto que la
+            // via directa (§569): tras el parseo y la conversion -eso es ruido, y un lote vacio
+            // tambien- y ANTES de la capa, que lo evalua como una unidad: una foto, un veredicto,
+            // todo o nada. Su `hashPrueba` es la huella de la COMPOSICION, en el orden del lote:
+            // por cada operacion el digest de su prueba (§116), su cuenta y la posicion de su
+            // pendiente, los mismos dos numeros que la capa mira para juzgar su forma. La
+            // composicion no se devuelve: la tiene quien arma el lote, y queda firmada porque su
+            // huella esta bajo la `recepRoot`.
+            let composicion: Vec<(zk_ssl_verify::acuses::Digest, u64, u64)> = propias
+                .iter()
+                .map(|o| match o {
+                    Propia::Send(r, cuenta, ..) => {
+                        (zk_ssl::log::digest_of_proof(&r.proof), *cuenta, r.notice.position)
+                    }
+                    Propia::Claim(r, cuenta, _, n) => {
+                        (zk_ssl::log::digest_of_proof(&r.proof), *cuenta, n.position)
+                    }
+                })
+                .collect();
+            let rx = recibir(app)?;
+            let hash_lote = zk_ssl_verify::recibos::hash_del_lote(&composicion);
+            let era = anotar(app, rx, hash_lote)?;
+            let recibo = recibo_de_recepcion(rx, era, hash_lote);
+
             // Las posiciones que el lote toca, para soltarlas si falla.
             let posiciones: Vec<u64> = propias
                 .iter()
@@ -2939,7 +2982,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
 
             let antes = l.transition_log().len();
             let raiz_antes = digest_to_wire(&l.state_root());
-            let r = l.apply_many(&ops);
+            let r = l.apply_many_con_operacion(&ops);
             drop(ops);
 
             // ⚠️ **Soltar las reservas pase lo que pase.** `apply_many`
@@ -2952,11 +2995,15 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             for pos in &posiciones {
                 reservas.remove(pos);
             }
-            if let Err(e) = r {
+            if let Err((j, e)) = r {
                 for pos in &posiciones {
                     l.release_pending(*pos);
                 }
-                return Err(RpcError::layer(e, seq_juicio));
+                // §611 (RFC-0014 D-B): el recibo, y la operacion que el lote no admitio, en el
+                // `data` del rechazo. Esa atadura es la PALABRA del nodo, como en la via directa.
+                return Err(RpcError::layer(e, seq_juicio)
+                    .con_recibo_de_recepcion(recibo)
+                    .con_operacion(j));
             }
 
             // El sobre: `applied` en ORDEN DE ENTRADA, que es el mismo en
@@ -2978,7 +3025,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                     })
                 })
                 .collect();
-            Ok(json!({
+            Ok(con_recibo(json!({
                 "batch": {
                     "size": Q(nuevas.len() as u64),
                     "fromSeq": nuevas.first().map(|e| Q(e.seq)),
@@ -2988,7 +3035,7 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
                     "chain": digest_to_wire(&l.log_head()),
                 },
                 "applied": aplicadas,
-            }))
+            }), recibo))
         }
 
         // ── dev_* : SOLO con --dev (custodios de prueba) ───────────
@@ -3097,6 +3144,9 @@ fn con_rx(mut v: Value, rx: u64) -> Value {
 ///   (D-D, §567). Va DENTRO de la hoja.
 /// - `n`: el techo, `vista_acuses::N_MAX_CABEZAS`, también dentro de la hoja.
 /// - `hashPrueba`: el digest de la prueba que llegó; el titular lo recomputa de la suya.
+///
+/// Desde el §611 (RFC-0014 E3) lo llevan también el LOTE, uno por lote y con `hashPrueba` la
+/// huella de su composición (`hash_del_lote`), y la PRENDA cuya prueba llega al juez.
 ///
 /// La hoja es `hoja_de_recibo(hashPrueba, era, n)`. ⚠️ Como el acuse, **no va firmado**: lo hereda
 /// al cerrar la era, cuando `zkssl_recepPath` da el camino hasta la `recepRoot` de una cabeza
@@ -5079,6 +5129,9 @@ mod tests {
         assert_eq!(v["accepted"], json!(true), "{v}");
         assert_eq!(v["yaEstaba"], json!(false), "la hoja no estaba: {v}");
         assert_eq!(v["s"], json!(Q(l.seq)), "el seq contra el que se juzgo: {v}");
+        // §611 (RFC-0014 D-D): evaluada, lleva su recibo, con el digest de SU prueba.
+        let h = digest_to_wire(&zk_ssl::log::digest_of_proof(&s.prueba));
+        assert_eq!(v["recepcion"]["hashPrueba"], json!(h), "{v}");
         assert!(marca_ya_estaba(&app, &s.marca), "la marca tiene que haber quedado escrita");
     }
 
@@ -5184,49 +5237,126 @@ mod tests {
         assert_eq!(e.code, -32004, "prueba de vida: la puerta del hermano existe");
     }
 
+    /// §611: una prenda con prueba de CEROS atada al `seq` dado. No verifica nunca; lo que se
+    /// mira es hasta donde llega.
+    fn prenda_de_ceros(app: &App, seq: u64) -> Value {
+        use winterfell::math::fields::f64::BaseElement as E;
+        let cero = digest_to_wire(&[E::new(0); 4]);
+        dispatch(
+            app,
+            "zkssl_pledge",
+            json!({ "prueba": wire::Blob(vec![0u8; 32]), "receptor": cero, "marca": cero, "seq": Q(seq) }),
+        )
+        .expect("una prenda mala no es un error del que llama")
+    }
+
     #[test]
-    fn el_lote_y_la_prenda_evaluan_sin_consumir_recibo_y_la_via_directa_si() {
-        // §576 (RFC-0010, D-E, DECIDIDO y REVERSIBLE): el recibo cubre las DOS vias directas del
-        // titular, `applySend` y `applyClaim`, el mismo corte que el acuse (§274). `applyMany` y
-        // `zkssl_pledge` EVALUAN pruebas y NO consumen recibo: hoy un recibo suyo no tendria
-        // resolucion -el lote rechazado no da causa a sus companeras; la prenda asienta su
-        // `Consumo` con prueba vacia y su rechazo no tiene sobre- y el sobre de completitud
-        // acusaria a un operador honrado. Si una de las dos empieza a reservar, este testigo cae y
-        // la D-E se decide otra vez, con su resolucion.
-        let (app, _pv, l) = escena("alcance_d_e");
+    fn el_lote_y_la_prenda_consumen_recibo_al_evaluar_y_las_tres_previas_no() {
+        // §611 (RFC-0014 E3, D-F): el testigo del §576, AL REVES y a proposito, como su texto
+        // anunciaba -«si una de las dos empieza a reservar, este testigo cae»-. El lote y la
+        // prenda EVALUAN y consumen recibo, en el mismo punto que la via directa (§569); las tres
+        // respuestas de la prenda que no llegan al juez -sin latido, cabeza sin firmar, `seq`
+        // viejo- no lo consumen. Una regla para todas las vias: un recibo por cada cosa que el
+        // nodo se pone a evaluar (RFC-0010, D-E).
         let contador = |app: &App| app.recepcion.lock().expect("contador").actual();
+        let ceros = digest_to_wire(&zk_ssl::log::digest_of_proof(&[0u8; 32]));
+
+        let sin_latido = nodo(30);
+        let v = prenda_de_ceros(&sin_latido, 0);
+        assert!(v["reason"].as_str().expect("reason").contains("latido"), "{v}");
+        assert!(v.get("recepcion").is_none(), "sin latido no se evalua: {v}");
+        assert_eq!(contador(&sin_latido), 0, "ni se consume");
+
+        let sin_firma = nodo(30);
+        let l0 = crate::latido::latir(&sin_firma, None).expect("latir sin clave");
+        crate::latido::conservar(&sin_firma, l0.clone());
+        let v = prenda_de_ceros(&sin_firma, l0.seq);
+        assert!(v["reason"].as_str().expect("reason").contains("SIN --clave"), "{v}");
+        assert!(v.get("recepcion").is_none(), "cabeza sin firmar, sin juez: {v}");
+        assert_eq!(contador(&sin_firma), 0, "ni se consume");
+
+        let (app, _pv, l) = escena("alcance_d_e");
         let antes = contador(&app);
+        let v = prenda_de_ceros(&app, l.seq + 1);
+        assert!(v["reason"].as_str().expect("reason").contains(&format!("{}", l.seq)), "{v}");
+        assert!(v.get("recepcion").is_none(), "seq viejo, sin juez: {v}");
+        assert_eq!(contador(&app), antes, "las TRES previas no consumen recibo");
+
+        let v = prenda_de_ceros(&app, l.seq);
+        assert!(v["reason"].as_str().expect("reason").contains("no verifica"), "SE EVALUO: {v}");
+        assert_eq!(v["recepcion"]["rx"], json!(Q(antes + 1)), "la prenda evaluada, su recibo: {v}");
+        assert_eq!(v["recepcion"]["hashPrueba"], json!(ceros), "el digest de SU prueba: {v}");
+
         let mut op = envio_de_ceros().0;
         op["kind"] = json!("send");
         let e = dispatch(&app, "zkssl_applyMany", json!({ "ops": [op] }))
             .expect_err("la capa rechaza el lote");
         assert_ne!(e.code, -32603, "lo rechazo la CAPA, luego se EVALUO: {}", e.message);
-        assert!(
-            e.data.as_ref().map_or(true, |d| d.get("recepcion").is_none()),
-            "el lote no lleva recibo en su error: {:?}",
-            e.data
-        );
-        let v = dispatch(
-            &app,
-            "zkssl_pledge",
-            json!({
-                "prueba": wire::Blob(vec![0u8; 32]),
-                "receptor": digest_to_wire(&l.cabeza.pending_root),
-                "marca": digest_to_wire(&l.cabeza.pending_root),
-                "seq": Q(l.seq),
-            }),
-        )
-        .expect("un sobre malo no es un error del que llama");
-        let r = v["reason"].as_str().expect("reason");
-        assert!(r.contains("no verifica"), "la prueba de la prenda SE EVALUO: {v}");
-        assert!(v.get("recepcion").is_none(), "la prenda no lleva recibo: {v}");
-        assert_eq!(contador(&app), antes, "ni el lote ni la prenda consumen recibo");
+        let d = e.data.expect("el rechazo de la capa lleva data");
+        assert_eq!(d["recepcion"]["rx"], json!(Q(antes + 2)), "el lote evaluado, su recibo: {d}");
+        assert_eq!(d["operacion"], json!(Q(0)), "y nombra la que no admitio: {d}");
+
         let e = dispatch(&app, "zkssl_applySend", envio_de_ceros().0).expect_err("ceros");
         assert!(
-            e.message.contains(&format!("receptionSeq=0x{:x}", antes + 1)),
-            "y la via directa SI lo consume: {}",
+            e.message.contains(&format!("receptionSeq=0x{:x}", antes + 3)),
+            "y la via directa, como siempre: {}",
             e.message
         );
+        assert_eq!(contador(&app), antes + 3, "tres evaluaciones, tres recibos");
+    }
+
+    #[test]
+    fn el_rechazo_del_lote_por_su_forma_lleva_su_recibo_y_nombra_la_segunda() {
+        // §611 (RFC-0014 D-B): dos envios de la MISMA cuenta en posiciones distintas. El lote cae
+        // por su FORMA en la segunda -`DuplicateAccountInBatch`, que la composicion sola prueba- y
+        // el rechazo lleva el recibo y `operacion: 1`. Y la huella se RECOMPONE con lo que quien
+        // armo el lote ya tiene, con la funcion del kit: lo mismo que hara el mando.
+        let app = nodo(30);
+        let (mut a, prueba) = envio_de_ceros();
+        a["kind"] = json!("send");
+        let mut b = a.clone();
+        b["receipt"]["notice"]["position"] = json!(Q(1));
+        let e = dispatch(&app, "zkssl_applyMany", json!({ "ops": [a, b] }))
+            .expect_err("la misma cuenta dos veces");
+        let d = e.data.expect("el rechazo de la capa lleva data");
+        assert_eq!(d["causa"], json!("DuplicateAccountInBatch"), "{d}");
+        assert_eq!(d["operacion"], json!(Q(1)), "la SEGUNDA del par: {d}");
+        let h = zk_ssl::log::digest_of_proof(&prueba);
+        let huella = zk_ssl_verify::recibos::hash_del_lote(&[(h, 0, 0), (h, 0, 1)]);
+        assert_eq!(d["recepcion"]["hashPrueba"], json!(digest_to_wire(&huella)), "{d}");
+        assert_eq!(d["recepcion"]["rx"], json!(Q(1)), "{d}");
+    }
+
+    #[test]
+    fn un_lote_aceptado_lleva_su_recibo_y_su_huella_recompone() {
+        // §611 (RFC-0014 D-A): el positivo, con una prueba DE VERDAD. La respuesta del lote gana
+        // `recepcion`, aditiva, y su `hashPrueba` es la huella de la composicion: el digest de la
+        // prueba, la cuenta y la posicion. La hoja no cambia: `recibo_digest(hashPrueba, era, n)`.
+        use zk_ssl::tests_support as ts;
+        let app = nodo(30);
+        let (op, huella) = {
+            let mut e = app.estado.lock().expect("mutex");
+            let ka = ts::wide_key(0xA611);
+            let alice = ts::open_and_fund_wide(&mut e.layer, ka, 1_000_000);
+            let bob = ts::open_and_fund_wide(&mut e.layer, ts::wide_key(0xB611), 0);
+            let id_bob = e.layer.public_id_of(bob).expect("bob");
+            let m = e.layer.send_materials(alice, id_bob, 7_000, ts::salt_de(611)).expect("materiales");
+            let r = zk_ssl::client::prove_send(&m, ka, zk_ssl::proof_options()).expect("probar");
+            let op = json!({
+                "kind": "send",
+                "receipt": wire::SendReceiptDto::from(&r),
+                "sender": Q(alice),
+                "senderState": wire::ClientStateDto::from(&ts::state_of(&e.layer, alice)),
+                "amount": Q(7_000),
+            });
+            let comp = [(zk_ssl::log::digest_of_proof(&r.proof), alice, r.notice.position)];
+            (op, zk_ssl_verify::recibos::hash_del_lote(&comp))
+        };
+        let v = dispatch(&app, "zkssl_applyMany", json!({ "ops": [op] })).expect("el lote entra");
+        assert_eq!(v["batch"]["size"], json!(Q(1)), "{v}");
+        assert_eq!(v["recepcion"]["rx"], json!(Q(1)), "el lote aceptado, su recibo: {v}");
+        assert_eq!(v["recepcion"]["hashPrueba"], json!(digest_to_wire(&huella)), "{v}");
+        assert_eq!(v["recepcion"]["n"], json!(Q(crate::vista_acuses::N_MAX_CABEZAS)), "{v}");
     }
 
     // ── §285 / nota 80, segunda mitad: quien firma, anota ──

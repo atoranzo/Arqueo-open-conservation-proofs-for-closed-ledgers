@@ -17,8 +17,9 @@
   Desde el §602 se produce EN VIVO, en `tools/banco_mentiroso_sin_resolver.sh`, y desde el §605
   tiene su vector en `completitud/` (BACKLOG 110, cerrada)—;
   el operador puede no emitir recibo (D-H); y lo que entra por `applyMany` o por `zkssl_pledge` no
-  lo lleva, por decisión (D-E, §576) y atado por un testigo, con su etapa por diseñar. Se conserva
-  como registro de lo decidido, lo medido y lo descartado.
+  lo llevó, por decisión (D-E, §576) y atado por un testigo, hasta que el RFC-0014 le dio etapa: lo
+  lleva desde el §611 (su E3), y su resolución es su E4. Se conserva como registro de lo decidido,
+  lo medido y lo descartado.
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude (sesión 184, que lo escribe; y la 193, del §566 al §577; las
   etapas de en medio las fechan sus asientos) — ver [`GENAI.md`](../../GENAI.md)
@@ -218,7 +219,9 @@ sin consumir recibo, y la vía directa sí; si una de las dos empieza a reservar
 decide otra vez con su resolución. La propiedad fuerte —el recibo del lote, con la atadura de sus
 compañeras, y el de la prenda, con su resolución— es una etapa por diseñar, no un olvido. **La
 propone el RFC-0014 (§608)**: un recibo por lote sobre la huella de su composición, y uno por
-prenda evaluada, cada uno con su resolución.
+prenda evaluada, cada uno con su resolución. **Y el testigo cayó, a propósito, en el §611** (su
+E3): el lote y la prenda evaluada reservan y anotan su recibo en el mismo punto que la vía directa,
+y el testigo se reescribió al revés. Sus resoluciones son la E4 del RFC-0014.
 
 ### D-F — El sobre de completitud, y sus tres veredictos
 
@@ -274,7 +277,8 @@ que entra por `applyMany` o por `zkssl_pledge` no lleva recibo por construcción
 sabe igual de pronto —la respuesta no trae `recepcion`—, y en el despliegue con agregadores
 (`SECURITY.md` 2.ter) eso es TODO lo agregado: quien quiera al operador atado manda por la vía
 directa. A diferencia de la primera parte, ésta se puede cerrar, con una etapa que diseñe cómo se
-resuelve un recibo del lote y uno de la prenda.
+resuelve un recibo del lote y uno de la prenda. La diseñó el RFC-0014; desde el §611 los dos llevan
+recibo, y su resolución es la E4 de aquél.
 
 ## Lo que se DESCARTÓ al medir
 
