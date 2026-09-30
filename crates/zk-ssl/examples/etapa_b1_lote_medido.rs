@@ -191,7 +191,10 @@ fn modo_lote(hilos: usize, rondas: u32) -> Medida {
     let (layer, pares) = montar(hilos);
     let capa = Arc::new(Mutex::new(layer));
     let mut generaciones = 0u64;
-    let mut stale = 0u64;
+    // El lote no CUENTA `StaleState`: si aparece uno, el banco entra en panico (1c y fase 2),
+    // porque por construccion no puede haberlo. El campo existe para que la tabla compare los
+    // dos modos con las mismas columnas (§584: antes se sumaba justo antes del panico).
+    let stale = 0u64;
     let mut pagos = 0u64;
     let t0 = Instant::now();
 
@@ -241,7 +244,6 @@ fn modo_lote(hilos: usize, rondas: u32) -> Medida {
             match l.apply_many(&ops) {
                 Ok(()) => {}
                 Err(LayerError::StaleState) => {
-                    stale += ops.len() as u64;
                     panic!("el lote de envios no deberia quedar obsoleto");
                 }
                 Err(e) => panic!("apply_many (envios): {e:?}"),
@@ -251,7 +253,7 @@ fn modo_lote(hilos: usize, rondas: u32) -> Medida {
         // ── FASE 2: N cobros en otro lote ──
         let mut trabajo2 = Vec::new();
         {
-            let mut l = capa.lock().unwrap();
+            let l = capa.lock().unwrap();
             for (j, &(_, b, _, kb)) in pares.iter().enumerate() {
                 let est = estado(&l, b);
                 let m = l
@@ -286,7 +288,6 @@ fn modo_lote(hilos: usize, rondas: u32) -> Medida {
             match l.apply_many(&ops) {
                 Ok(()) => {}
                 Err(LayerError::StaleState) => {
-                    stale += ops.len() as u64;
                     panic!("el lote de cobros no deberia quedar obsoleto");
                 }
                 Err(e) => panic!("apply_many (cobros): {e:?}"),

@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 47 abiertas, 59 resueltas — **3 suspendidas** (16, 22 y 28).
-Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583).
+**Estado**: 46 abiertas, 60 resueltas — **3 suspendidas** (16, 22 y 28).
+Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583, §584).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
 asi la lista mentia. Tres entradas abiertas estaban cerradas en el arbol: la 69
@@ -1414,7 +1414,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
     CUMPLIDA (§285), ratificada la recomendacion: un nodo con clave NO
     ARRANCA sin `--diario` —el molde de `--custodia fichero`—. La 80
     queda entera: mando (§283) + memoria obligada al firmar (§285).
-- [ ] **81. Tres warnings en un ejemplo que el canon no ve.** El canon
+- [x] **81. Tres warnings en un ejemplo que el canon no ve.** El canon
   no compila ejemplos, así que la fila de zk-ssl marca 0 mientras
   `crates/zk-ssl/examples/etapa_b1_lote_medido.rs` avisa tres veces en
   cada compilación: un `mut` inútil (:254) y `stale` asignado y nunca
@@ -1425,6 +1425,10 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
 
   Medida otra vez en el §583: los tres avisos siguen, en las mismas lineas (:244,
   :254 y :289), compilando con `--features sandbox`, que el ejemplo exige.
+
+  ✅ **CERRADA EN EL §584**: quitado el `mut` y las dos sumas, que iban justo antes de
+  un `panic!` y nadie leia; `stale` queda en un cero fijo con su razon escrita, y el
+  banco hace lo mismo que antes. El ejemplo compila sin un aviso.
 
 - [x] **82. Acumulador de razones para romper el formato del log.** Una
   rotura de formato cuesta persistencia, store, DTO, vector y spec, así

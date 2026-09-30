@@ -42116,3 +42116,31 @@ decisiones o frentes -la auditoría externa, el consenso, la sucesión, la agili
 criptográfica-, que ningún sello cierra por accidente; pero eso es una suposición, no una medida.
 Y la lección: un sello que arregla lo que una entrada nombra marca la entrada en el mismo commit.
 
+## §584 — la 81, cerrada: el ejemplo del banco B.1 compila sin un aviso
+
+El commit que lleva este asiento, sobre `373c9d5` (el S583). Un solo sello: el ejemplo, la
+entrada 81 del `BACKLOG` y este asiento, con el canon `--sello` VERDE dentro del bloque. Dos
+ficheros más este asiento, con 12 inserciones y 7 borrados fuera de él.
+
+**De dónde sale.** Del recuento del §583, que la midió otra vez y la dejó abierta con su arreglo
+ya escrito: `crates/zk-ssl/examples/etapa_b1_lote_medido.rs`, el banco del lote (§216), da tres
+avisos en cada compilación -un `mut` inútil (:254) y `stale` asignado y nunca leído (:244 y
+:289)- que el canon no ve, porque no compila ejemplos.
+
+**Lo que se MIDIÓ.** Las dos sumas a `stale` van justo antes de un `panic!`: el lote no puede
+quedar obsoleto por construcción, y si lo queda el banco se para. Nada las lee. El `mut` guarda un
+cerrojo por el que sólo se piden materiales, que no mutan la capa.
+
+**Lo que hace.** Quita el `mut` y las dos sumas. `stale` queda en un cero fijo, con un comentario
+que dice por qué: el campo existe para que la tabla compare los dos modos con las mismas columnas.
+El banco hace lo mismo que antes: lo quitado precedía a un pánico o no se usaba. La 81 queda `[x]`,
+y la cabecera del `BACKLOG` dice 46 abiertas y 60 resueltas, CONTADAS.
+
+**Medido.** `cargo build --release -p zk-ssl --features sandbox --example etapa_b1_lote_medido`:
+cero avisos, donde el §583 contó tres.
+
+**Contadores.** Ninguno se mueve: un ejemplo no es un test.
+
+**Lo que NO cierra.** El canon sigue sin compilar ejemplos -la clase (c) de la 94-, así que otro
+aviso en otro ejemplo volvería a pasar callado.
+
