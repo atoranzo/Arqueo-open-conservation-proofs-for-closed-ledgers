@@ -39,7 +39,8 @@ en el §581; este resumen se había quedado atrás.
 ## Qué NO es
 
 No es una cadena: un nodo, un escritor, sin consenso distribuido ni token. **El operador ve todos
-los saldos** y puede omitir una operación sin dejar rastro. Entre libros detecta, no previene. No
+los saldos** y puede omitir una operación: sin dejar rastro si no emite recibo; si lo emitió, el
+sobre de completitud lo nombra (RFC-0010). Entre libros detecta, no previene. No
 está auditado por terceros. Nadie lo usa con dinero real. Y no prueba solvencia: prueba que el
 libro es coherente consigo mismo, no que sus unidades existan fuera de él.
 

@@ -42570,3 +42570,37 @@ script. `check_cifras`, `check_figures`, `check_publicadas` y `verificar_citas`,
 posteriores a la 0.2.0 y sus catálogos. Y la rama de trabajo `claude/awesome-pasteur-u08nq9`, cuyo
 contenido ya está entero en el §594 y en éste, queda para que el autor la borre.
 
+## §596 — la omisión con recibo sí deja rastro: siete frases de portada; y el ancla, en el kit
+
+El commit que lleva este asiento, sobre `ab79a50` (el S595). Un solo sello: siete frases de
+portada, `doc/KIT.md`, `doc/KIT_EN.md`, la entrada 107, una tabla del material del ECST y este
+asiento, con el canon `--sello` VERDE dentro del bloque. Diez ficheros más este asiento, con 36
+inserciones y 22 borrados fuera de él.
+
+**De dónde sale.** De la sesión de trabajo del ECST, que al retirarse de su frente señaló dos cosas
+que no estaban en `main`, y el autor pidió coordinarlas. Las dos se midieron aquí antes de tocar
+nada.
+
+**Lo que se MIDIÓ.** (1) Siete frases de portada seguían diciendo, sin el matiz del RFC-0010, que el
+operador «puede omitir una operación sin dejar rastro» -«can omit an operation without leaving a
+trace»-: `README.md`, `README_EN.md`, `PREGUNTAS.md`, `QUESTIONS.md`, `RESUMEN_EJECUTIVO.md` y las
+dos lenguas de `RESUMEN_BILINGUE.md`. ⚠️ **CORRECCIÓN del §581:** aquel sello buscó «no deja rastro»
+y «leaves no trace» en todo documento vivo, no «sin dejar rastro» ni «without leaving a trace», y
+dejó éstas atrás; las demás apariciones de «sin dejar rastro» hablan de crear dinero con una
+ceremonia comprometida, que es otra cosa, y están bien. (2) El kit publicado,
+`arqueo-verify-v0.2.0`, compilado aquí desde su tag: los tres vectores de `spec/vectors/ancla/` de
+`main` en ab79a50 salen con salida 1, «ROJO: tipo desconocido: ancla», y el verificador del árbol
+los da en 0; de control, `posicion-v2` sale 0 y `edad` 1, como midió el §595. La lista del §595 era
+la medida sobre `71c5aad`, anterior al ancla.
+
+**Lo que hace.** Las siete frases dicen que el operador puede omitir una operación sin dejar rastro
+si no emite recibo, y que si lo emitió el sobre de completitud lo nombra (RFC-0010). El ancla entra
+en la lista de lo que el kit no comprueba, con su fecha y su base, en `doc/KIT.md`, `doc/KIT_EN.md`,
+la entrada 107 y tres filas de `doc/ecst/borrador/REPRODUCCION.md`.
+
+**Contadores.** Ninguno se mueve. `check_cifras`, `check_figures`, `check_publicadas` y
+`verificar_citas`, VERDES.
+
+**Lo que NO cierra.** La 107 misma. Y la lección del §581, repetida: una frase se busca por su
+SENTIDO, con sus variantes, no por la primera forma que se recuerda.
+

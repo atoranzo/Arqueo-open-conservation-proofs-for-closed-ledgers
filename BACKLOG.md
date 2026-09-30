@@ -2179,7 +2179,9 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   2026-09-30** con el binario compilado desde su tag contra los vectores de
   71c5aad: sus paquetes (cabezas v3 y v4) salen VERDE; `edad`, `prenda`,
   `cobro_pendiente` y `completitud` (cabezas v5 y v6) salen ROJO con salida 1,
-  «tipo desconocido». **Falla cerrada, nunca un VERDE falso.** Declarado ya en
+  «tipo desconocido»; y el `ancla` del §593 (cabeza v6), medida en el §596 contra
+  `main` en ab79a50: sus tres vectores, salida 1, «tipo desconocido: ancla».
+  **Falla cerrada, nunca un VERDE falso.** Declarado ya en
   `doc/KIT.md` y `doc/KIT_EN.md` (seccion 0) y en los dos README.
   **Decision (2026-09-30, sesion de ECST): A LA COLA, no inmediata**, por tres
   razones del proyecto: (a) publicar es acto manual del autor, con huellas

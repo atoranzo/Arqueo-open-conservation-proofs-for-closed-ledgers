@@ -27,7 +27,8 @@ entry 538 because of hiding; `zk-ssl-*`).
 ### 2. What is it NOT?
 
 **Not a chain.** One node, one writer. **Not decentralised**: whoever operates it sees every
-balance and can omit an operation without leaving a trace. **Not audited** by anyone external.
+balance and can omit an operation —without a trace if it issues no receipt; if it issued one, the
+completeness envelope names it (RFC-0010)—. **Not audited** by anyone external.
 **Not in production**, and nobody has used it with real money. **It does not prove solvency**: it
 proves that the ledger is consistent with itself, not that its units exist outside it (the oracle
 limit, [`SECURITY.md`](./SECURITY.md)). And it is not quantum money: it is the classical

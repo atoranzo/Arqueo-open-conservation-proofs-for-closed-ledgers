@@ -31,8 +31,9 @@ operador. Prueba **conservación, no solvencia**: las pruebas hablan del libro, 
   la clave viaje. La tabla de [«Qué garantiza y qué no»](#qué-garantiza-y-qué-no) da la fuente de
   cada fila.
 - **Qué no es.** No es una cadena: un nodo, un escritor, sin consenso distribuido ni token. **El
-  operador ve todos los saldos** y puede omitir una operación sin dejar rastro. Entre libros
-  **detecta, no previene**.
+  operador ve todos los saldos** y puede omitir una operación: sin dejar rastro si no emite
+  recibo; si lo emitió, el sobre de completitud lo nombra (RFC-0010). Entre libros **detecta, no
+  previene**.
 - **No está auditado por terceros.** Ninguna cantidad de tests propios lo sustituye. Una
   dependencia criptográfica (`xmss`, pre-release) va clavada con `=` y declarada. Todo en
   [`SECURITY.md`](./SECURITY.md).

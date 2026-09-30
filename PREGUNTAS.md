@@ -27,7 +27,8 @@ asiento 538, por la ocultación; `zk-ssl-*`).
 ### 2. ¿Qué NO es?
 
 **No es una cadena.** Un nodo, un escritor. **No es descentralizado**: quien lo opera ve todos los
-saldos y puede omitir una operación sin dejar rastro. **No está auditado** por nadie externo. **No
+saldos y puede omitir una operación —sin dejar rastro si no emite recibo; si lo emitió, el sobre de
+completitud lo nombra (RFC-0010)—. **No está auditado** por nadie externo. **No
 está en producción** ni lo ha usado nadie con dinero real. **No prueba solvencia**: prueba que el
 libro es coherente consigo mismo, no que sus unidades existan fuera de él (el límite oráculo,
 [`SECURITY.md`](./SECURITY.md)). Y no es dinero cuántico: es la aproximación clásica, con un

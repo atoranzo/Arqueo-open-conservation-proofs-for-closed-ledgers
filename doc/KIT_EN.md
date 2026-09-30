@@ -29,12 +29,13 @@ steps — in the `AUDITORIA.md` entry that registers this release.
 Measured on 2026-09-30 with that binary built from its tag against the vectors of `main` at 71c5aad:
 its own packages — `posicion-v2.json` with a v3 head, `consumo.json` with a v4 head — still come out
 GREEN, and the envelopes born later — `edad`, `prenda`, `cobro_pendiente`, `completitud`, with v5
-and v6 heads — come out **RED with exit 1** ("tipo desconocido", unknown type). **It fails closed: it
-never gives a false GREEN.** The four steps below use the vectors that travel inside the tarball, and
-with them it works; what it cannot do is check a package from today's node. For that, today, the
-in-tree `zk-ssl-verify` (`cargo build --release -p zk-ssl-verify`), which is **not** a published
-artifact with a fingerprint. The next release is queued with its trigger, not cut: publishing it is
-the author's act, measured from the outside (D-K5 of §442).
+and v6 heads, and the `ancla` of §593, measured in §596 against `main` at ab79a50 — come out **RED
+with exit 1** ("tipo desconocido", unknown type). **It fails closed: it never gives a false GREEN.**
+The four steps below use the vectors that travel inside the tarball, and with them it works; what it
+cannot do is check a package from today's node. For that, today, the in-tree `zk-ssl-verify` (`cargo
+build --release -p zk-ssl-verify`), which is **not** a published artifact with a fingerprint. The
+next release is queued with its trigger, not cut: publishing it is the author's act, measured from
+the outside (D-K5 of §442).
 
 Every release carries a tag and is produced on the commit its `VERSION` file names; the tarball's
 hash is published **next to its commit**, on the release page and in the `AUDITORIA.md` entry that

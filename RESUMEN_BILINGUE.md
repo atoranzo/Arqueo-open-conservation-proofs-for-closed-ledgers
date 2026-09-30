@@ -27,7 +27,8 @@ nombrado; sus residuos, declarados. ⚠️ Corregido en el §589: aquí decía �
 ### Qué NO es
 
 No es una cadena: un nodo, sin consenso ni token. El operador ve todos los saldos y puede omitir
-una operación sin dejar rastro. Entre libros detecta, no previene. No está auditado por terceros
+una operación: sin dejar rastro si no emite recibo; si lo emitió, el sobre de completitud lo nombra
+(RFC-0010). Entre libros detecta, no previene. No está auditado por terceros
 ni lo usa nadie con dinero real.
 
 ### Cómo se comprueba
@@ -83,7 +84,8 @@ completeness".
 ### What it is NOT
 
 Not a chain: one node, no consensus, no token. The operator sees every balance and can omit an
-operation without leaving a trace. Across ledgers it detects, it does not prevent. Not audited by
+operation: without a trace if it issues no receipt; if it issued one, the completeness envelope
+names it (RFC-0010). Across ledgers it detects, it does not prevent. Not audited by
 third parties, and nobody uses it with real money.
 
 ### How it is checked

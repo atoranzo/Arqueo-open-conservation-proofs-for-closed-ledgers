@@ -32,8 +32,9 @@ speak of the ledger, not of the world.
   without the key travelling. The table in [What it guarantees and what it does
   not](#what-it-guarantees-and-what-it-does-not) gives the source of every row.
 - **What it is not.** Not a chain: one node, one writer, no distributed consensus, no token. **The
-  operator sees every balance** and can omit an operation without leaving a trace. Across ledgers
-  it **detects, it does not prevent**.
+  operator sees every balance** and can omit an operation: without a trace if it issues no
+  receipt; if it issued one, the completeness envelope names it (RFC-0010). Across ledgers it
+  **detects, it does not prevent**.
 - **Not audited by third parties.** No amount of the author's own tests replaces that. One
   cryptographic dependency (`xmss`, a pre-release) is pinned with `=` and declared. All of it in
   [`SECURITY.md`](./SECURITY.md).

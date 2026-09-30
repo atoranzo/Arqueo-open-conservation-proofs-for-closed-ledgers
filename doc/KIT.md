@@ -29,12 +29,13 @@ binario de `arqueo-verify-v0.2.0` recompone cabezas hasta la **v4** —importa `
 el 2026-09-30 con ese binario compilado desde su tag contra los vectores de `main` en 71c5aad: sus
 propios paquetes —`posicion-v2.json` con cabeza v3, `consumo.json` con cabeza v4— siguen saliendo
 VERDE, y los sobres que nacieron después —`edad`, `prenda`, `cobro_pendiente`, `completitud`, con
-cabezas v5 y v6— salen **ROJO con salida 1** («tipo desconocido»). **Falla cerrada: nunca da un
-VERDE falso.** Los cuatro pasos de abajo usan los vectores que viajan dentro del tarball y con ellos
-funciona; lo que no puede es comprobar un paquete de un nodo de hoy. Para eso, hoy, el `zk-ssl-verify`
-del árbol (`cargo build --release -p zk-ssl-verify`), que **no** es un artefacto publicado con
-huella. La siguiente release está en la cola con su disparador, no cortada: publicarla es un acto del
-autor medido desde fuera (D-K5 del §442).
+cabezas v5 y v6, y el `ancla` del §593, medida en el §596 contra `main` en ab79a50— salen **ROJO con
+salida 1** («tipo desconocido»). **Falla cerrada: nunca da un VERDE falso.** Los cuatro pasos de
+abajo usan los vectores que viajan dentro del tarball y con ellos funciona; lo que no puede es
+comprobar un paquete de un nodo de hoy. Para eso, hoy, el `zk-ssl-verify` del árbol (`cargo build
+--release -p zk-ssl-verify`), que **no** es un artefacto publicado con huella. La siguiente release
+está en la cola con su disparador, no cortada: publicarla es un acto del autor medido desde fuera
+(D-K5 del §442).
 
 Cada release lleva un tag y se produce sobre el commit que su fichero `VERSION` nombra; la huella
 del tarball se publica **con su commit al lado**, en la página de la release y en el asiento de

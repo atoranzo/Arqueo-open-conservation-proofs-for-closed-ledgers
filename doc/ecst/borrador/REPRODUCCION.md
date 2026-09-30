@@ -75,5 +75,8 @@ recepcion, RFC-0010 ACEPTADO, sobre de completitud).
 | `pendiente/cobro-inferior-0.json` | v5 | 1 ROJO «tipo desconocido: cobro_pendiente» | 0 |
 | `completitud/declarada.json` | v6 | 1 ROJO «tipo desconocido: completitud» | 3 (su salida para «declarada») |
 | `completitud/no-resuelta.json` | v6 | 1 ROJO «tipo desconocido: completitud» | 1 (el rojo con nombre que el vector pide) |
+| `ancla/ancla-derivada.json` | v6 | 1 ROJO «tipo desconocido: ancla» | 0 (§596, contra `main` en ab79a50) |
+| `ancla/ancla-exacta.json` | v6 | 1 ROJO «tipo desconocido: ancla» | 0 (§596, contra `main` en ab79a50) |
+| `ancla/ancla-extendida.json` | v6 | 1 ROJO «tipo desconocido: ancla» | 0 (§596, contra `main` en ab79a50) |
 
 Y por lectura: su `main.rs` importa `epoch_digest_v2`, `v3` y `v4`, y nada mas. Falla cerrada: ningun VERDE falso.
