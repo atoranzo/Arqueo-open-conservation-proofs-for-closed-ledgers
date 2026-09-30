@@ -2170,6 +2170,20 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   arregló en el §614 porque el banco del recibo agregado lo usa. **Lo que pide**:
   mandar `viewKey` desde la cartera, como hace `Account`, y correrlos una vez.
   Toca sólo ejemplos: ni el nodo, ni el cable, ni los vectores.
+  ✅ **CERRADA en el §615**: los tres mandan la clave de vista y corren de punta a
+  punta contra un nodo `--dev`. Y al correr `h1_techo_apply` salió lo que ningún
+  cerrojo miraba: su último lote, de 15, ya NO cabe bajo el muro del cuerpo -una
+  operación pesa hoy ~159 KB y no los 132,7 KB del §218-, así que caben 13; el
+  ejemplo, `spec/RPC.md`, `spec/README.md` y el comentario del nodo lo dicen ya.
+
+- [ ] **112. Las citas por línea de `spec/README.md` a `spec/RPC.md` están
+  desfasadas.** Medido en el §615: la guía «Reading `RPC.md` in order» cita
+  tramos como `RPC.md:133-142` para «Errors», y en 221170f -antes de los sellos
+  del RFC-0014- ese tramo ya empezaba en la sección `dev_*`; de las diecisiete,
+  sólo la del transporte empieza en su encabezado. `verificar_citas` censa nombres y secciones, no
+  números de línea, así que nada lo ata. **Lo que pide**: recomputar cada tramo
+  por su encabezado y, mejor, que un cerrojo lo compruebe o que la guía cite por
+  sección y no por línea.
 
 ## F. Publicacion, cuando el circuito este cerrado
 

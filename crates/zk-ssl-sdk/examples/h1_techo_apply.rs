@@ -36,8 +36,9 @@
 //! contra **la misma raíz de arranque**, así que se pueden generar antes,
 //! tardando lo que haga falta, y **cronometrar solo la petición**.
 //!
-//! Se miden lotes de 1, 4, 8 y 15 para separar el coste FIJO del coste POR
-//! OPERACIÓN, igual que hizo E.2 con el transporte.
+//! Se miden lotes de 1, 4, 8 y 13 para separar el coste FIJO del coste POR
+//! OPERACIÓN, igual que hizo E.2 con el transporte. ⚠️ Hasta el §615 el
+//! mayor era 15; hoy ya no cabe (ver `tamanos`).
 //!
 //! ## Hipótesis, escritas ANTES del dato
 //!
@@ -100,23 +101,26 @@ fn main() -> anyhow::Result<()> {
     let url = args.next().unwrap_or_else(|| "http://127.0.0.1:8647".into());
     let reps: usize = args.next().and_then(|s| s.parse().ok()).unwrap_or(3);
 
-    // Quince es el maximo que cabe bajo el muro del cuerpo (§218, C0.2):
-    // 15 x 132.728 = 1.990.920 B contra 2.097.152.
-    let tamanos = [1usize, 4, 8, 15];
-    let maximo = 15usize;
+    // Trece es el maximo que cabe bajo el muro del cuerpo, 2.097.152 B (§218,
+    // C0.2). MEDIDO en el §615: una operacion pesa hoy ~159 KB en el cuerpo -la
+    // prueba crecio con la ocultacion del §538-, el lote de 13 peso 2.064.578 y
+    // 2.076.308 B en dos corridas (hasta el 99,0 % del muro) y el de 14 da 413. Hasta el §615 esto decia 15, con
+    // los 132.728 B por operacion del §218, y el banco moria en su ultimo lote.
+    let tamanos = [1usize, 4, 8, 13];
+    let maximo = 13usize;
 
     eprintln!("== BANCO H.1 · el techo del NODO por RPC ==");
     eprintln!("   nodo: {url} · {reps} repeticiones por tamaño");
     eprintln!("   B.3 midio `apply` EN LA CAPA: 3,67 ms -> 272 op/s");
     eprintln!("   E.2 midio la peticion: 0,255 ms fijo · 808 MB/s");
-    eprintln!("   se predice: ~3,85 ms/op, 15 ops en ~58 ms, ~250 op/s");
+    eprintln!("   se predice: ~3,85 ms/op, 13 ops en ~50 ms, ~250 op/s");
     eprintln!("   ⚠️ generar las pruebas NO entra en la medida\n");
 
     let rpc = Rpc::new(url.clone());
     let v: Value = rpc.call("zkssl_protocolVersion", json!([]))?;
     eprintln!("   protocolo: {v}");
 
-    // ── Montaje: quince pares ──────────────────────────────────────
+    // ── Montaje: trece pares ───────────────────────────────────────
     eprintln!("-- montaje: {maximo} pares --");
     let mut pares: Vec<Par> = Vec::new();
     for i in 0..maximo {
@@ -151,6 +155,9 @@ fn main() -> anyhow::Result<()> {
                     "zkssl_sendMaterials",
                     json!({
                         "sender": Q(p.ia),
+                        // §615 (la 111): el brazo exige la clave de VISTA desde el §261, y este
+                        // banco no la mandaba: llevaba roto desde entonces sin que nadie lo corriera.
+                        "viewKey": digest_to_wire(&Wallet::from_elements(p.sa).view_key()),
                         "receiverId": digest_to_wire(&p.id_b),
                         "amount": Q(1_000u64),
                         "salt": digest_to_wire(&sal(ronda * 1_000 + p.ia)),
@@ -249,9 +256,9 @@ fn main() -> anyhow::Result<()> {
     println!();
     println!("  H1 (~3,85 ms/op): {}", if (2.5..5.5).contains(&b) { "ACIERTA" } else { "FALLA" });
     println!("  H2 (fijo 0,3-1 ms): {}", if (0.0..2.0).contains(&a) { "ACIERTA" } else { "FALLA" });
-    let q15 = pts.last().map(|p| p.1).unwrap_or(0.0);
-    println!("  H3 (15 ops en ~58 ms): {q15:.1} ms medidos — {}",
-             if (40.0..90.0).contains(&q15) { "ACIERTA" } else { "FALLA" });
+    let q_max = pts.last().map(|p| p.1).unwrap_or(0.0);
+    println!("  H3 (el lote mayor en ~50 ms; eran 15 ops en ~58 hasta el §615): {q_max:.1} ms medidos — {}",
+             if (40.0..90.0).contains(&q_max) { "ACIERTA" } else { "FALLA" });
     println!();
     println!("== VEREDICTO ==");
     if techo < 150.0 {

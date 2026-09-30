@@ -90,6 +90,9 @@ fn envio(rpc: &Rpc, p: &Par, salt: u64) -> anyhow::Result<(Value, PendingNotice)
         "zkssl_sendMaterials",
         json!({
             "sender": Q(p.ia),
+            // §615 (la 111): los dos brazos exigen la clave de VISTA desde el §261, y este banco
+            // no la mandaba: llevaba roto desde entonces sin que nadie lo corriera.
+            "viewKey": digest_to_wire(&Wallet::from_elements(p.sa).view_key()),
             "receiverId": digest_to_wire(&p.id_b),
             "amount": Q(1_000u64),
             "salt": digest_to_wire(&sal(salt)),
@@ -116,7 +119,11 @@ fn cobro(rpc: &Rpc, p: &Par, aviso: &PendingNotice) -> anyhow::Result<Value> {
     let est = estado(&cuenta)?;
     let m_dto: wire::ClaimMaterialsDto = rpc.call(
         "zkssl_claimMaterials",
-        json!({ "receiver": Q(p.ib), "notice": wire::PendingNoticeDto::from(aviso) }),
+        json!({
+            "receiver": Q(p.ib),
+            "viewKey": digest_to_wire(&Wallet::from_elements(p.sb).view_key()),
+            "notice": wire::PendingNoticeDto::from(aviso),
+        }),
     )?;
     let m: ClaimMaterials = (&m_dto).try_into()?;
     let rec = client::prove_claim(&m, p.sb.map(BaseElement::new), proof_options())?;

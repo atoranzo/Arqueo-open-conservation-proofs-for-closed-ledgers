@@ -31,8 +31,12 @@ roadmap.)
   PETICIONES, y no se admite. La misma palabra para dos cosas ha
   causado confusión desde v0.1 y por eso se separa aquí.
 - **Tamaño del cuerpo**: el límite por defecto del transporte son
-  **2.097.152 bytes** (§218, medido). Una operación con prueba ronda los
-  132.728 en hex, así que en un `zkssl_applyMany` entran **15**.
+  **2.097.152 bytes** (§218, medido). Una operación con prueba ronda hoy los
+  **159 KB** en el cuerpo, así que en un `zkssl_applyMany` entran **13**:
+  medido en el §615, el lote de 13 pesó 2.064.578 y 2.076.308 bytes en dos
+  corridas -hasta el 99,0 % del límite, porque el tamaño de la prueba varía- y el
+  de 14 se rechaza con 413. Hasta el §615 aquí decía 15, con los 132.728 del
+  §218: la prueba creció con la ocultación del §538, y nadie volvió a medir.
 - Respuesta: `{"jsonrpc":"2.0","id":…,"result":…}` o
   `{"jsonrpc":"2.0","id":…,"error":{"code":…,"message":…}}`; un rechazo de la capa (`-32000`)
   lleva además `data`, su causa como dato (sección «Errores», §454).

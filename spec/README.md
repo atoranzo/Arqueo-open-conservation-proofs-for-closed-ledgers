@@ -86,7 +86,9 @@ was issued under (its `sellado` key).
 - **Transport and envelope** (`RPC.md:25-37`). HTTP `POST /`, JSON-RPC 2.0,
   one object per request; JSON-RPC batches are not accepted. The default
   body limit is 2,097,152 bytes, measured; one operation with its proof is
-  about 132,728 bytes in hex, so a `zkssl_applyMany` holds 15.
+  about 159 KB in the body today, so a `zkssl_applyMany` holds 13 (measured
+  in §615: 13 weighed 2,064,578 and 2,076,308 bytes in two runs, and 14 get
+  a 413; it said 15 until then).
 - **Encoding** (`RPC.md:39-48`). `QUANTITY` is a u64 in `0x` hex without
   leading zeros; `DATA` is `0x` hex of even length; a `Digest` is 32 bytes
   in the same serialisation the layer persists. A non-canonical digest is

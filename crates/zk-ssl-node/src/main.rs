@@ -2867,12 +2867,15 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
         // sobre el cable, no sobre quién opera qué.
         //
         // ⚠️ **Cabe sin tocar el transporte.** El muro del cuerpo son
-        // 2.097.152 bytes (§218, banco C0.2) y una operacion ronda los
-        // 132.728 en hex: entran **15**. La carga que §216 midio —8
-        // pagos— son 8 envios y 8 cobros, y no pueden ir juntos de todas
-        // formas: un cobro necesita que su pendiente exista, y
-        // `apply_many` los rechazaria por `DuplicatePendingInBatch`.
-        // Van en dos lotes de 8, que son 1,06 MB: la mitad del muro.
+        // 2.097.152 bytes (§218, banco C0.2) y una operacion ronda hoy los
+        // ~159 KB en el cuerpo: entran **13** (MEDIDO en el §615: el lote de
+        // 13 peso 2.064.578 y 2.076.308 B en dos corridas, y el de 14 da 413;
+        // hasta entonces aqui decia 15,
+        // con los 132.728 B del §218, antes de la ocultacion del §538). La
+        // carga que §216 midio —8 pagos— son 8 envios y 8 cobros, y no pueden
+        // ir juntos de todas formas: un cobro necesita que su pendiente
+        // exista, y `apply_many` los rechazaria por `DuplicatePendingInBatch`.
+        // Van en dos lotes de 8, que son ~1,27 MB: el 61 % del muro.
         "zkssl_applyMany" => {
             #[derive(Deserialize)]
             #[serde(tag = "kind", rename_all = "camelCase")]

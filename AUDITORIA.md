@@ -43436,3 +43436,38 @@ quietos.
 
 **Lo que NO cierra.** El giro del RFC-0014 a ACEPTADO, en su sello; y la 111.
 
+## §615 — la 111: los tres ejemplos del sdk vuelven a hablar con el nodo, y el lote cabe en 13
+
+El commit que lleva este asiento, sobre `cc74bb8` (el S614). Un solo sello: tres ejemplos del sdk,
+el muro del lote corregido donde se cita, el comentario del nodo, dos entradas del BACKLOG y este
+asiento, con el canon `--sello` VERDE dentro del bloque. 7 ficheros más este asiento, con 61
+inserciones y 21 borrados fuera de él.
+
+**De dónde sale.** De la 111, que el §614 abrió al medir: `h1_techo_apply`, `i1_concurrencia` y
+`j1_lote_mixto` llamaban a `zkssl_sendMaterials` -y `j1`, también a `zkssl_claimMaterials`- sin la
+clave de VISTA que esos brazos exigen desde el §261. Compilaban, así que el canon no los veía.
+
+**Lo que hace.** (1) Los tres mandan `viewKey` desde la cartera, como `Account`, y se CORRIERON una
+vez contra un nodo `--dev` desechable, en memoria: los tres, exit 0 -`h1` con una repetición,
+`i1` con dos agregadores, dos operaciones y una ronda, `j1` con dos pares-. No se miden aquí sus
+números: son instrumentos, y lo que se pedía era que volvieran a funcionar. (2) **Lo que salió al
+correr `h1`.** Su último lote, de 15, dio 413: el muro del cuerpo son 2.097.152 bytes (§218) y una
+operación pesa hoy ~159 KB en el cuerpo, no los 132.728 del §218 -la prueba creció con la ocultación
+del §538, y nadie volvió a medir-. MEDIDO: el lote de 13 pesó 2.064.578 y 2.076.308 bytes en dos
+corridas -hasta el 99,0 % del muro, porque el tamaño de la prueba varía- y el de 14 dio 413. Así que
+en un `zkssl_applyMany` caben 13, y lo decían mal cuatro sitios: `spec/RPC.md` -el transporte-,
+`spec/README.md`, el comentario del brazo en el nodo -donde los dos lotes de 8 del §216 pasan de
+«1,06 MB, la mitad del muro» a ~1,27 MB, el 61 %- y el propio `h1`, que ahora mide 1, 4, 8 y 13. Su
+H3 conserva su rango y dice qué cambió.
+
+**Lo que se abre.** La 112: las citas por número de línea de la guía de `spec/README.md` a
+`spec/RPC.md` estaban ya desfasadas antes de los sellos del RFC-0014 -en 221170f, «Errors» caía en
+la sección `dev_*`-, y sólo la del transporte empieza en su encabezado. Nada lo ata:
+`verificar_citas` censa nombres y secciones, no líneas. Va en su propio sello.
+
+**Contadores.** Ninguno se mueve: los ejemplos no son tests. El cable no cambia -el muro es del
+transporte y no se toca-; lo que cambia es lo que se dice de él.
+
+**Lo que NO cierra.** La 112; y el giro del RFC-0014 a ACEPTADO, que espera el canon y los bancos
+del autor sobre los sellos que lo construyen.
+
