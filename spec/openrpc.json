@@ -1,8 +1,50 @@
 {
   "components": {
     "schemas": {
+      "AccountView": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. En el cable: zk_ssl_wire::AccountViewDto. Lo usan: zkssl_accountView."
+      },
+      "AckPath": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_ackPath."
+      },
+      "Applied": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_applySend, zkssl_applyClaim, dev_fund, dev_freeze."
+      },
+      "BatchApplied": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_applyMany."
+      },
+      "BatchOp": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_applyMany."
+      },
       "Bool": {
         "type": "boolean"
+      },
+      "ClaimMaterials": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. En el cable: zk_ssl_wire::ClaimMaterialsDto. Lo usan: zkssl_claimMaterials."
+      },
+      "ClaimReceipt": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. En el cable: zk_ssl_wire::ClaimReceiptDto. Lo usan: zkssl_applyClaim."
+      },
+      "ClientState": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. En el cable: zk_ssl_wire::ClientStateDto. Lo usan: zkssl_applySend, zkssl_applyClaim."
+      },
+      "ConsistencyProof": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_consistencyProof."
+      },
+      "ConsumoPath": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_consumoPath."
+      },
+      "ConsumoPublicado": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_publishConsumo."
+      },
+      "Cosig": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. En el cable: zk_ssl_wire::CofirmaDto. Lo usan: zkssl_submitCosig."
+      },
+      "CosigAccepted": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_submitCosig."
+      },
+      "Cosigs": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_cosigs."
       },
       "DATA": {
         "pattern": "^0x([0-9a-f][0-9a-f])*$",
@@ -13,6 +55,36 @@
         "pattern": "^0x[0-9a-f]{64}$",
         "type": "string"
       },
+      "EpochHead": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. En el cable: zk_ssl_wire::EpochHeadDto. Lo usan: zkssl_epochHead."
+      },
+      "FrozenPath": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_frozenPath."
+      },
+      "InclusionReceipt": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. En el cable: zk_ssl_wire::InclusionReceiptDto. Lo usan: zkssl_inclusionReceipt."
+      },
+      "LogEntries": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_logEntries."
+      },
+      "LogEntry": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. En el cable: zk_ssl_wire::LogEntryDto. Lo usan: zkssl_logEntry."
+      },
+      "Opened": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_openAccount, dev_openSeeded."
+      },
+      "Params": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. En el cable: zk_ssl_wire::ParamsDto. Lo usan: zkssl_params."
+      },
+      "PendingNotice": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. En el cable: zk_ssl_wire::PendingNoticeDto. Lo usan: zkssl_claimMaterials, zkssl_applyClaim."
+      },
+      "PendingPath": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_pendingPath."
+      },
+      "PrendaPublicada": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_pledge."
+      },
       "ProtocolVersion": {
         "const": "zkssl/0.4",
         "type": "string"
@@ -21,6 +93,24 @@
         "description": "u64 en hex, sin ceros a la izquierda",
         "pattern": "^0x[0-9a-f]+$",
         "type": "string"
+      },
+      "RecepPath": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_recepPath."
+      },
+      "SendMaterials": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. En el cable: zk_ssl_wire::SendMaterialsDto. Lo usan: zkssl_sendMaterials."
+      },
+      "SendReceipt": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. En el cable: zk_ssl_wire::SendReceiptDto. Lo usan: zkssl_applySend."
+      },
+      "SignedEpochHead": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. En el cable: zk_ssl_wire::SignedEpochHeadDto. Lo usan: zkssl_signedEpochHead."
+      },
+      "Supply": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_supply."
+      },
+      "VerifyChain": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_verifyChain."
       }
     }
   },

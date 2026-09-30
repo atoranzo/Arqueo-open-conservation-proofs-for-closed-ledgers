@@ -42144,3 +42144,40 @@ cero avisos, donde el §583 contó tres.
 **Lo que NO cierra.** El canon sigue sin compilar ejemplos -la clase (c) de la 94-, así que otro
 aviso en otro ejemplo volvería a pasar callado.
 
+## §585 — la 95, cerrada: toda referencia del OpenRPC publicado resuelve
+
+El commit que lleva este asiento, sobre `8a81731` (el S584). Un solo sello: el generador del
+OpenRPC y sus dos tests, el documento regenerado, una corrección en el cable, la fila de
+`spec/README.md`, la entrada 95 y este asiento, con el canon `--sello` VERDE dentro del bloque.
+Cinco ficheros más este asiento, con 263 inserciones y 13 borrados fuera de él.
+
+**De dónde sale.** De la entrada 95, que el autor eligió como siguiente frente en la sesión 193
+y que el recuento del §583 había medido CRECIDA: `spec/openrpc.json` -el documento que se publica
+para que un tercero o una segunda implementación consuma la API sin leer el nodo- referenciaba 35
+esquemas y declaraba 5. Un validador OpenRPC lo habría rechazado.
+
+**Lo que se MIDIÓ.** (1) Los 30 nombres que colgaban. (2) Qué tipo usa el nodo en el manejador de
+cada método: 13 de esos nombres los tipa un DTO del cable -`Cosig` es `CofirmaDto`- y los otros
+17 los compone el nodo con `json!`, `BatchOp` incluido, cuyo `OpDto` vive en el nodo. (3) La (c)
+de la entrada se había cerrado sola: `SignedEpochHeadDto` existe. (4) La cabecera del generador
+dice que el documento es CONCISO a propósito: la forma campo a campo la dan `spec/RPC.md` y los
+vectores. Y `spec/README.md` prometía, aun así, que con él «you generate a client».
+
+**Lo que hace.** (a) Una tabla, `esquemas_por_referencia`, declara cada nombre referenciado: un
+puntero a `spec/RPC.md`, el DTO del cable cuando lo hay y los métodos que lo usan, DERIVADOS de
+la tabla de métodos y no escritos a mano. (b) El test del documento exige que lo referenciado y
+lo declarado sean IGUALES en los dos sentidos, y que cada DTO nombrado sea un tipo del crate. (d)
+El test del fichero publicado compara también los BYTES. Y dos correcciones, citadas: la
+cabecera de `SignedEpochHeadDto`, que decía «sin definición», y la fila de `spec/README.md`, que
+ahora dice que la forma está en `RPC.md`. La 95 queda `[x]`; el `BACKLOG`, 45 y 61, CONTADAS.
+
+**Los falsadores, ENSAYADOS.** Sin la fila `Supply`: «referencias SIN esquema declarado». Con una
+fila de más: «esquemas que NADIE referencia». Con `ParamDto` por `ParamsDto`: «no es un tipo de
+zk_ssl_wire». Y con el JSON reformateado -mismo contenido, otra forma- cae SÓLO el test de bytes:
+la ceguera de la (d). Restaurado, VERDE, y el censo de la propia entrada da 35 y 35.
+
+**Contadores.** Ninguno se mueve: los tests del cable siguen siendo 23, con más asertos dentro.
+
+**Lo que NO cierra.** El documento resuelve pero no da FORMA, por diseño: de él no se genera un
+cliente sin `RPC.md`. Darle forma sería otra entrada, y es REVERSIBLE.
+

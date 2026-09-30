@@ -12,8 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 46 abiertas, 60 resueltas — **3 suspendidas** (16, 22 y 28).
-Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583, §584).
+**Estado**: 45 abiertas, 61 resueltas — **3 suspendidas** (16, 22 y 28).
+Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583, §584, §585).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
 asi la lista mentia. Tres entradas abiertas estaban cerradas en el arbol: la 69
@@ -1496,7 +1496,7 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   era 2 **basta un tramo** del registro. Sigue abierto el segundo
   destino: la semántica de lotes, con su gancho documentado.
 
-- [ ] **95. El documento OpenRPC publicado no es autocontenido: cuatro
+- [x] **95. El documento OpenRPC publicado no es autocontenido: cuatro
   defectos del ARTEFACTO, medidos.** ⚠️ **No es una ampliación de la 94**,
   y conviene decir por qué: la 94 es del INSTRUMENTO —clases de resultado
   que el canon no ve—; ésta es del ARTEFACTO que se publica a terceros,
@@ -1531,6 +1531,17 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   5 -`Bool`, `DATA`, `Digest`, `ProtocolVersion` y `Q`-, asi que cuelgan 30 (eran 23 y
   4): la (a) ha CRECIDO con el protocolo. La (b) ya no se da: todo lo declarado se
   referencia.
+
+  ✅ **CERRADA EN EL §585, las cuatro.** (a) Toda referencia RESUELVE: los 30 nombres
+  que colgaban tienen su esquema -un puntero a `spec/RPC.md`, con el DTO del cable que
+  lo tipa cuando lo hay (13, medidos contra el manejador de cada metodo) y los metodos
+  que lo usan, derivados de la tabla-. (b) Un test exige que lo referenciado y lo
+  declarado sean lo MISMO en los dos sentidos. (c) Se cerro sola: `SignedEpochHeadDto`
+  existe. (d) El fichero se compara tambien en BYTES. Falsadores ensayados: sin una
+  fila, con una de mas, con un DTO mal nombrado y con el JSON reformateado, los cuatro
+  ROJOS nombrando su causa. ⚠️ **Residuo, por diseno** (cabecera de `openrpc.rs`): el
+  documento RESUELVE pero no da FORMA; de el no se genera un cliente sin `RPC.md`, y
+  `spec/README.md` dejo de prometerlo. REVERSIBLE: dar forma seria otra entrada.
 
 - [ ] **96. Una RELACION publicada, INVERTIDA.** Los tres preprints afirman
   que la mitad cara de un pago cae en el RECEPTOR —cobro de unos 500 ms

@@ -7,6 +7,15 @@
 //! parametros y resultado con esquemas por referencia a los tipos de
 //! `spec/RPC.md` (Q, DATA, Digest) — el contraste campo a campo lo dan
 //! los vectores de conformidad, no este documento.
+//!
+//! **Toda referencia RESUELVE (§585, entrada 95 del BACKLOG).** Hasta el §585 el
+//! documento referenciaba 35 esquemas y declaraba 5: un validador OpenRPC lo
+//! habria rechazado. Ahora cada nombre referenciado tiene su esquema -un puntero a
+//! `spec/RPC.md`, con el DTO del cable que lo tipa cuando lo hay y los metodos que
+//! lo usan-, y un test exige que lo referenciado y lo declarado sean lo MISMO. Lo
+//! que el documento sigue sin dar, por diseno: la FORMA campo a campo.
+
+use std::collections::BTreeMap;
 
 use serde_json::{json, Value};
 
@@ -71,6 +80,70 @@ fn m(name: &str, summary: &str, params: Value, result_tipo: &str) -> Value {
     json!({ "name": name, "summary": summary, "params": params,
             "result": { "name": "result",
                         "schema": { "$ref": format!("#/components/schemas/{result_tipo}") } } })
+}
+
+/// **Los esquemas que el documento declara por referencia (§585).** Cada nombre que un metodo
+/// referencia y que no es un tipo base (`Q`, `DATA`, `Digest`, `ProtocolVersion`, `Bool`) tiene
+/// aqui su fila, con el DTO de este crate que lo tipa cuando lo hay. Los emparejamientos se
+/// MIDIERON contra el nodo -el tipo que usa el manejador de cada metodo-; los que dicen `None` los
+/// compone el nodo con `json!`, y `BatchOp` tambien: su `OpDto` vive en el nodo, no en el cable.
+/// Un metodo nuevo con un nombre nuevo tumba el test hasta que alguien le ponga fila.
+fn esquemas_por_referencia() -> Vec<(&'static str, Option<&'static str>)> {
+    vec![
+        ("AccountView", Some("AccountViewDto")),
+        ("AckPath", None),
+        ("Applied", None),
+        ("BatchApplied", None),
+        ("BatchOp", None),
+        ("ClaimMaterials", Some("ClaimMaterialsDto")),
+        ("ClaimReceipt", Some("ClaimReceiptDto")),
+        ("ClientState", Some("ClientStateDto")),
+        ("ConsistencyProof", None),
+        ("ConsumoPath", None),
+        ("ConsumoPublicado", None),
+        ("Cosig", Some("CofirmaDto")),
+        ("CosigAccepted", None),
+        ("Cosigs", None),
+        ("EpochHead", Some("EpochHeadDto")),
+        ("FrozenPath", None),
+        ("InclusionReceipt", Some("InclusionReceiptDto")),
+        ("LogEntries", None),
+        ("LogEntry", Some("LogEntryDto")),
+        ("Opened", None),
+        ("Params", Some("ParamsDto")),
+        ("PendingNotice", Some("PendingNoticeDto")),
+        ("PendingPath", None),
+        ("PrendaPublicada", None),
+        ("RecepPath", None),
+        ("SendMaterials", Some("SendMaterialsDto")),
+        ("SendReceipt", Some("SendReceiptDto")),
+        ("SignedEpochHead", Some("SignedEpochHeadDto")),
+        ("Supply", None),
+        ("VerifyChain", None),
+    ]
+}
+
+/// Los nombres de esquema que `v` referencia (`#/components/schemas/<nombre>`), en orden de
+/// aparicion y con repeticiones.
+fn referencias_en(v: &Value, fuera: &mut Vec<String>) {
+    match v {
+        Value::Object(o) => {
+            if let Some(Value::String(r)) = o.get("$ref") {
+                if let Some(n) = r.strip_prefix("#/components/schemas/") {
+                    fuera.push(n.to_string());
+                }
+            }
+            for x in o.values() {
+                referencias_en(x, fuera);
+            }
+        }
+        Value::Array(a) => {
+            for x in a {
+                referencias_en(x, fuera);
+            }
+        }
+        _ => {}
+    }
 }
 
 pub fn document() -> Value {
@@ -152,6 +225,38 @@ pub fn document() -> Value {
         m("dev_freeze", "SOLO --dev: congelacion delegada con custodios de PRUEBA.",
           json!([p("index", "Q"), p("frozen", "Bool")]), "Applied"),
     ];
+    let mut schemas = json!({
+        "Q": { "type": "string", "pattern": "^0x[0-9a-f]+$",
+               "description": "u64 en hex, sin ceros a la izquierda" },
+        "DATA": { "type": "string", "pattern": "^0x([0-9a-f][0-9a-f])*$" },
+        "Digest": { "type": "string", "pattern": "^0x[0-9a-f]{64}$",
+                    "description": "32 bytes: la MISMA serializacion que persiste la capa (store::digest_to_bytes)" },
+        "ProtocolVersion": { "type": "string", "const": "zkssl/0.4" },
+        "Bool": { "type": "boolean" }
+    });
+    // Quien usa cada esquema, DERIVADO de la tabla de metodos: no se escribe a mano.
+    let mut usos: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for mm in &methods {
+        let nombre = mm["name"].as_str().expect("name").to_string();
+        let mut r = Vec::new();
+        referencias_en(mm, &mut r);
+        for n in r {
+            let e = usos.entry(n).or_default();
+            if !e.contains(&nombre) {
+                e.push(nombre.clone());
+            }
+        }
+    }
+    for (nombre, dto) in esquemas_por_referencia() {
+        let cable = match dto {
+            Some(t) => format!("En el cable: zk_ssl_wire::{t}."),
+            None => "Sin DTO en el cable: la compone el nodo.".to_string(),
+        };
+        let lo_usan = usos.get(nombre).map(|v| v.join(", ")).unwrap_or_default();
+        schemas[nombre] = json!({ "description": format!(
+            "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores \
+             de conformidad. {cable} Lo usan: {lo_usan}.") });
+    }
     json!({
         "openrpc": "1.2.6",
         "info": {
@@ -160,15 +265,7 @@ pub fn document() -> Value {
             "description": "Especificacion normativa: spec/RPC.md. Principio del API: la clave de gasto no viaja jamas. Desde el asiento 538 (RFC-0009 E3b-2, zkssl/0.4) el probador oculta el testigo y la clave no sale literal en ninguna prueba con fila; entre el asiento 521 y el 538 las pruebas de envio y de cobro la publicaban (winterfell 0.13 no ocultaba el testigo; AUDITORIA.md, asientos 521 y 538)."
         },
         "methods": methods,
-        "components": { "schemas": {
-            "Q": { "type": "string", "pattern": "^0x[0-9a-f]+$",
-                   "description": "u64 en hex, sin ceros a la izquierda" },
-            "DATA": { "type": "string", "pattern": "^0x([0-9a-f][0-9a-f])*$" },
-            "Digest": { "type": "string", "pattern": "^0x[0-9a-f]{64}$",
-                        "description": "32 bytes: la MISMA serializacion que persiste la capa (store::digest_to_bytes)" },
-            "ProtocolVersion": { "type": "string", "const": "zkssl/0.4" },
-            "Bool": { "type": "boolean" }
-        } }
+        "components": { "schemas": schemas }
     })
 }
 
@@ -230,6 +327,19 @@ mod tests {
             publicado, document(),
             "spec/openrpc.json NO es lo que genera esta tabla: regenerar con gen_openrpc"
         );
+        // ⚠️ §585, la (d) de la entrada 95: comparar valores PARSEADOS es ciego a la FORMA -el
+        // §302 midio que el artefacto llevo desde el §275 una clave fuera de orden sin que nada
+        // lo viera-. Ahora tambien los BYTES: lo publicado es exactamente lo que `gen_openrpc`
+        // imprime, con su salto de linea final.
+        let texto = std::fs::read_to_string(&ruta).expect("spec/openrpc.json");
+        let generado = format!(
+            "{}\n",
+            serde_json::to_string_pretty(&document()).expect("serializable")
+        );
+        assert!(
+            texto == generado,
+            "spec/openrpc.json dice lo mismo pero con OTRA FORMA: regenerar con gen_openrpc"
+        );
     }
 
     #[test]
@@ -238,5 +348,40 @@ mod tests {
         assert_eq!(doc["openrpc"], "1.2.6");
         assert_eq!(doc["info"]["version"], "zkssl/0.4");
         assert!(doc["components"]["schemas"]["Digest"].is_object());
+        // §585, la (a) y la (b) de la entrada 95: lo referenciado y lo declarado, IGUALES.
+        let mut r = Vec::new();
+        referencias_en(&doc["methods"], &mut r);
+        let refs: std::collections::BTreeSet<String> = r.into_iter().collect();
+        let decl: std::collections::BTreeSet<String> =
+            doc["components"]["schemas"].as_object().expect("schemas").keys().cloned().collect();
+        let cuelgan: Vec<_> = refs.difference(&decl).collect();
+        assert!(cuelgan.is_empty(), "referencias SIN esquema declarado: {cuelgan:?}");
+        let sobran: Vec<_> = decl.difference(&refs).collect();
+        assert!(sobran.is_empty(), "esquemas que NADIE referencia: {sobran:?}");
+        // Y cada DTO que la tabla nombra es un tipo de este crate: el nombre, contra el tipo.
+        let tipos = [
+            std::any::type_name::<crate::AccountViewDto>(),
+            std::any::type_name::<crate::ClaimMaterialsDto>(),
+            std::any::type_name::<crate::ClaimReceiptDto>(),
+            std::any::type_name::<crate::ClientStateDto>(),
+            std::any::type_name::<crate::CofirmaDto>(),
+            std::any::type_name::<crate::EpochHeadDto>(),
+            std::any::type_name::<crate::InclusionReceiptDto>(),
+            std::any::type_name::<crate::LogEntryDto>(),
+            std::any::type_name::<crate::ParamsDto>(),
+            std::any::type_name::<crate::PendingNoticeDto>(),
+            std::any::type_name::<crate::SendMaterialsDto>(),
+            std::any::type_name::<crate::SendReceiptDto>(),
+            std::any::type_name::<crate::SignedEpochHeadDto>(),
+        ];
+        let nombrados: Vec<&str> =
+            esquemas_por_referencia().into_iter().filter_map(|(_, d)| d).collect();
+        assert_eq!(nombrados.len(), tipos.len(), "un DTO nombrado sin su tipo, o al reves");
+        for d in nombrados {
+            assert!(
+                tipos.iter().any(|t| t.rsplit("::").next() == Some(d)),
+                "{d} no es un tipo de zk_ssl_wire"
+            );
+        }
     }
 }

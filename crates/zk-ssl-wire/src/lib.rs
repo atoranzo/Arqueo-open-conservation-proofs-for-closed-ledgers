@@ -768,6 +768,10 @@ pub struct ParamsDto {
 /// `SignedEpochHead` figura en el documento publicado **sin definicion**.
 /// La rotura futura ocurrira dentro del mismo commit que la causa.
 ///
+/// CORRECCION (§585): desde el §585 el esquema `SignedEpochHead` figura DECLARADO, pero
+/// solo como puntero a `spec/RPC.md` y a este DTO: sigue sin forma de la que generar tipos,
+/// y la razon de arriba se sostiene.
+///
 /// CORRECCION (S247, escrita por el §452): la rotura ya ha ocurrido DOS veces, y las dos
 /// dentro del commit que la causa: con la pareja de consumos (§415) y con la familia de v5
 /// (§452). Las cofirmas siguen sin entrar.
