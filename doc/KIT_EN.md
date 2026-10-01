@@ -39,8 +39,9 @@ build --release -p zk-ssl-verify`), which is **not** a published artifact with a
 
 **Release 0.3.0 is CUT in the code since §619.** The author declared v6 stable on 2026-10-01, and
 the in-tree verifier is `zk-ssl-verify` 0.3.0: it recomposes heads up to v6 and reads the ten
-families of section 11 of `spec/PAQUETE.md`. It is published on the commit of that entry and in that
-section's order — tag, produce, upload —; publishing it is the author's act, measured from the
+families of section 11 of `spec/PAQUETE.md`. It is published on the commit of §620 — which corrects,
+before they travel in the tarball, a false sentence in four of its manifests — and in that section's
+order — tag, produce, upload —; publishing it is the author's act, measured from the
 outside (D-K5 of §442), and until the entry that registers it fixes it with its hash, the current
 release is still the 0.2.0 above.
 

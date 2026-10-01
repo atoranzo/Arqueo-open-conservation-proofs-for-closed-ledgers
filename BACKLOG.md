@@ -12,7 +12,8 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 45 abiertas, 63 resueltas — **3 suspendidas** (16, 22 y 28).
+**Estado**: 45 abiertas, 69 resueltas — **3 suspendidas** (16, 22 y 28). Casillas
+recontadas en el §620: la línea seguía con las del §597 (45 y 63).
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
 ⚠️ **Rancia de OTRA clase** (30-09-2026, §583): la cuenta cuadraba —50 y 56— y aun
@@ -2200,6 +2201,28 @@ proposito, y la auditoria externa que ahora es instrumento y no deseo.
   de `spec/vectors/` y exige que `README.md` y `README_EN.md` digan ese número, y
   que ninguno de los dos deje de decirlo sin salir de su lista con su razón.
 
+- [ ] **114. Un test del canon da ROJO por azar: el de la correlación entre
+  importe y tamaño de prueba.** Medido en el §620: el primer `--sello` sobre ese
+  commit, que no toca código, cayó en `proof_size_does_not_correlate_with_amount`
+  con r lineal −0,791 (el umbral es 0,7) sobre 16 pruebas. Diez corridas más de
+  ese test, todas en verde: r entre +0,03 y +0,43. Agrupadas las once (176
+  pruebas, centradas por corrida), log2(importe) frente a tamaño da r 0,053, con
+  p 0,49 por permutación: ni rastro de dependencia del importe. **La causa**:
+  desde el §538 el tamaño de la prueba es aleatorio de una corrida a otra (la
+  ocultación lleva sal de la entropía); su distribución tiene cola izquierda
+  (asimetría −0,79); y la r LINEAL contra importes en potencias de dos la deciden
+  los dos últimos puntos. Bajo la hipótesis nula, con esas 176 medidas, la
+  compuerta lineal salta en el **0,5 %** de las corridas, y la logarítmica en
+  torno al 0,1 %: un canon que un tercero corre puede dar ROJO sin que nada esté
+  mal. **Abierto además**: en esas once corridas el índice 13 (importe 2^16)
+  sale +457 B sobre la media de su corrida en diez de once (t +4,5; con
+  dieciséis índices, p ≈ 0,02). El test no puede separar el importe del ORDEN en
+  que se genera cada prueba, ni de la sal de su compromiso, que va por índice.
+  **Lo que pide**: medir con los importes barajados por corrida -importe, orden
+  o nada-, y después una compuerta calibrada (permutación, con falsa alarma
+  declarada y muy por debajo del 1 %) que conserve la potencia contra una fuga
+  grosera. Ni se salta ni se ignora el test mientras tanto.
+
 ## F. Publicacion, cuando el circuito este cerrado
 
 La 28 se hace **al final**, por decision explicita: no se tocan los
@@ -2308,6 +2331,11 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
   manuales con su paso 5 y los sitios que publican la version- y se publica
   sobre ese commit en el orden de la seccion 11 de `PAQUETE.md`; la entrada se
   cierra con el asiento que REGISTRE la release medida desde fuera.
+  **El commit del corte pasa al §620**: preparando el registro, cuatro
+  manifiestos que viajan en el tarball decian que los vectores del cable 0.3 los
+  verifica `arqueo-verify-v0.2.0`, y medido es falso (0 de 38; los verifica el
+  arbol en `0eda58c`, 38 de 38). Se corrige antes de publicar, y el tag va sobre
+  el commit del §620.
 
 ## G. Otro proyecto, no una incidencia
 

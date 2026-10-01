@@ -39,8 +39,9 @@ comprobar un paquete de un nodo de hoy. Para eso, hoy, el `zk-ssl-verify` del á
 
 **La 0.3.0 está CORTADA en el código desde el §619.** El autor dio la v6 por estable el
 2026-10-01, y el verificador del árbol es `zk-ssl-verify` 0.3.0: recompone cabezas hasta la v6 y lee
-las diez familias de la sección 11 de `spec/PAQUETE.md`. Se publica sobre el commit de ese asiento y
-en el orden de esa sección -tag, producir, subir-; publicarla es un acto del autor medido desde
+las diez familias de la sección 11 de `spec/PAQUETE.md`. Se publica sobre el commit del §620 -que
+corrige, antes de que viajen en el tarball, una frase falsa de cuatro de sus manifiestos- y en el
+orden de esa sección -tag, producir, subir-; publicarla es un acto del autor medido desde
 fuera (D-K5 del §442), y hasta que el asiento que la registre la fije con su huella, la release
 vigente sigue siendo la 0.2.0 de arriba.
 

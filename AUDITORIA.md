@@ -43626,3 +43626,70 @@ nombran la release vigente, ni la cita histórica del RFC-0009: lo hará el regi
 **Lo que NO cierra.** El segundo sello: la release producida, subida y medida desde fuera, con su
 huella al lado de su commit en los dos manuales, y la 107 cerrada.
 
+## §620 — antes de publicar la 0.3.0: los vectores del cable 0.3 no los verifica la 0.2.0
+
+El commit que lleva este asiento, sobre `1a42217` (el S619). Un solo sello de comentarios y
+documentos: las cabeceras de ocho manifiestos, una corrección en el RFC-0009, los dos manuales del
+kit, los dos README, la entrada 107 y la 114 nueva, y este asiento, con el canon `--sello` VERDE
+dentro del bloque. 14 ficheros más este asiento, con 76 inserciones y 21 borrados fuera de él.
+Ningún vector cambia un byte.
+
+**De dónde sale.** Preparando el registro de la 0.3.0 -el segundo sello del D-K5 del §442-, la cita
+del RFC-0009 que el §619 le dejó dice, en su D-AB, que los vectores con prueba del cable 0.3 «los
+verifica el kit que los vio nacer, `arqueo-verify-v0.2.0` (§442), medido desde fuera», y los cuatro
+manifiestos de `spec/vectors/0.3/` y los cuatro vivos de esas familias lo repiten. Los cuatro vivos
+-edad, pago, pendiente y rechazo- están entre las diez familias de `tools/artefacto.sh`: **viajan
+en el tarball**. Medido aquí antes de dejarlos viajar, con `tools/conformidad.sh` sobre los cuatro
+manifiestos de `spec/vectors/0.3/`:
+
+- El binario de la release `arqueo-verify-v0.2.0`, DESCARGADO hoy de la URL de su asset (tarball
+  `2fe9030a310a1e0b…`, 2.891.949 B, el que registró el §443; binario `6356debde7f117b1`): **0 de 11,
+  0 de 9, 0 de 9 y 0 de 9**, salida 1 en los cuatro; el primero dice «tipo desconocido: edad - se lee
+  un paquete de posicion (sin `tipo`), `tipo: "extension"`, `tipo: "consumo"` o `tipo:
+  "conflicto"`». No puede ser de otra forma: las cuatro familias nacen después del §442 (rechazo en
+  el §455, edad en el §467, cobro pendiente en el §499, pago en el §509).
+- El `zk-ssl-verify` del árbol compilado en `0eda58c` -el §537, el último sello con el cable 0.3-:
+  **11 de 11, 9 de 9, 9 de 9 y 9 de 9**, antes y después de este cambio. Ese crate se llamaba 0.2.0
+  sin ser la release, y de ahí la confusión. Binario `775428d29ee1ca1b`, rustc 1.94.1 y sin remap: es
+  una medida, no un artefacto.
+- El de la 0.3.0, el del ensayo del §619 (`e7651e1709ccdac9`, rustc 1.94.1): 29 de 38. Los nueve
+  que no cuadran son los siete positivos, rechazados con salida 1, y dos negativos que caen antes por
+  otra regla. Ningún VERDE a un vector 0.3, como manda el D-AD.
+
+La frase no se midió nunca: el §538, que conservó los vectores, no la mide, y el «medido desde
+fuera» es el del §443, que midió los tres catálogos de la 0.2.0, no estos.
+
+**Lo que hace.** (1) Las cabeceras de los ocho manifiestos dicen quién los verifica de verdad: el
+`zk-ssl-verify` del árbol en `0eda58c`, y que la release 0.2.0 no. Decían, los conservados, «los
+verifica arqueo-verify-v0.2.0 (asiento 442), medido desde fuera», y los vivos, «los verifica el kit
+que los vio nacer, arqueo-verify-v0.2.0». Sólo cambia el comentario: ni un `.json` ni una línea
+`fichero|codigo|texto` (regla 2 del PROCESO). (2) El RFC-0009 gana una **Corrección (§620)** bajo
+su D-AB, en el molde de las del RFC-0006: la frase se conserva y la corrección dice lo medido.
+(3) **El corte de la 0.3.0 pasa al commit de este asiento**: el tag `arqueo-verify-v0.3.0` irá sobre
+él y no sobre `1a42217`, porque un tarball publicado no se corrige. Lo dicen los dos manuales del
+kit, los dos README y la entrada 107.
+
+**Lo que NO hace.** No publica: la release sigue siendo un acto del autor. No toca los vectores, el
+código ni `tools/artefacto.sh`. No vuelve a medir la 0.2.0 en sus propios tres catálogos: el §443
+los midió y siguen en pie. No reescribe el §619, que dijo que el tag iría sobre su commit: lo dijo
+con lo que sabía, y este asiento lo mueve.
+
+**Un ROJO del canon que no es de este sello, declarado.** El primer `--sello` sobre este commit
+cayó en `zk-ssl`, 422 de 423: `proof_size_does_not_correlate_with_amount`, con r lineal −0,791
+entre importe y tamaño de prueba sobre 16 pruebas, y el umbral en 0,7. Este sello no toca código, y
+el mismo código pasó el canon del §619 una hora antes; pero «azar» no es una causa, así que se
+midió. Diez corridas más de ese test, todas en verde: r entre +0,03 y +0,43. Las once agrupadas
+-176 pruebas, centradas por corrida- dan r 0,053 entre log2(importe) y tamaño, con p 0,49 por
+permutación. El tamaño es aleatorio desde el §538, tiene cola izquierda, y la r lineal contra
+importes en potencias de dos la deciden los dos últimos puntos: la compuerta salta por azar en
+torno al 0,5 % de las corridas. Re-corrido el canon UNA vez: VERDE. Queda abierto como entrada
+**114**, con lo que esas once corridas no dejan cerrado: el índice 13 sale +457 B en diez de once
+(t +4,5), y el test no separa el importe del orden de generación. Se mide con los importes
+barajados antes de tocar la compuerta.
+
+**Contadores.** Ninguno se mueve: ni un test, ni un pin, ni un vector. `BACKLOG.md` gana la 114 y
+recuenta su línea de estado, que seguía con las cifras del §597: 45 abiertas y 69 resueltas.
+
+**Lo que NO cierra.** El registro: la release publicada sobre este commit y medida desde fuera, con
+su huella al lado de su commit en los dos manuales, y la 107 cerrada. Y la 114.
+

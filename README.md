@@ -53,8 +53,8 @@ de `AUDITORIA.md` que la registra. El guion completo, con la salida esperada de 
 [`doc/KIT.md`](./doc/KIT.md). ⚠️ Esa release recompone cabezas hasta la v4 y el nodo firma hoy la
 v6: con los vectores de su tarball funciona, y un paquete de un nodo actual lo rechaza —falla
 cerrada, nunca un VERDE falso—. La 0.3.0, que lee la v6 y las diez familias, está cortada en el
-código desde el §619 y se publica sobre ese commit; hasta que su asiento la registre, la vigente es
-ésta. Medido y declarado en `doc/KIT.md`, sección 0.
+código desde el §619 y se publica sobre el commit del §620; hasta que su asiento la registre, la
+vigente es ésta. Medido y declarado en `doc/KIT.md`, sección 0.
 
 ```bash
 sha256sum arqueo-verify-*.tar.gz          # tiene que ser la huella publicada junto al commit

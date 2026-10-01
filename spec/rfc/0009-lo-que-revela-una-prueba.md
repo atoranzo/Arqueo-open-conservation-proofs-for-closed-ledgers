@@ -610,6 +610,15 @@ Gana frente a aceptar las dos aperturas según la marca: pureza (un cable, una f
 frente a reescribir los vectores viejos, imagen fiel (un vector es lo que su versión produjo).
 **Reversible** si una segunda implementación exige verificar 0.3 con el kit vivo.
 
+> **Corrección (§620, antes de publicar la 0.3.0).** «Los verifica el kit que los vio nacer,
+> `arqueo-verify-v0.2.0` (§442), medido desde fuera» —y la viñeta de E3b, que lo repite— no se midió
+> nunca, y es falso: esa release es anterior a estas cuatro familias (nacen entre el §455 y el §509)
+> y su binario, `6356debde7f117b1`, rechaza los 38 vectores de `spec/vectors/0.3/` con «tipo
+> desconocido». Los que los vieron nacer son los `zk-ssl-verify` del árbol, que llevaban el número
+> 0.2.0 sin ser esa release: el último con el cable 0.3, compilado en `0eda58c` (el §537), da **38 de
+> 38** con los cuatro manifiestos de `spec/vectors/0.3/`. Medido en el §620. La frase se conserva; lo
+> que vale es esto, y los ocho manifiestos que la repetían ya lo dicen.
+
 ### D-AC — Las cifras publicadas de bytes pasan a banda, con sus dos atados
 
 `PUBLICADA_PAGO_B` (`crates/zk-ssl/src/metrics.rs`:75, 133.431) y sus dos atados —el test

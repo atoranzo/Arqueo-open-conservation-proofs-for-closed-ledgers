@@ -1,6 +1,9 @@
 # zkssl/0.3, CONSERVADO (S538, RFC-0009 D-AB): estos vectores nacieron con el probador apagado y el kit 0.4
-# no los verifica (rechaza su forma, D-AD); los verifica arqueo-verify-v0.2.0 (asiento 442), medido desde
-# fuera. Jamas se reescriben (regla 2 del PROCESO).
+# no los verifica (rechaza su forma, D-AD); los verifica el zk-ssl-verify del arbol en 0eda58c (S537, el
+# ultimo sello del cable 0.3), compilado de ese commit y corrido con tools/conformidad.sh sobre este
+# manifiesto: todas sus entradas dicen lo que deben (asiento 620). La release arqueo-verify-v0.2.0 NO:
+# es anterior a esta familia y rechaza estos vectores con <<tipo desconocido>>. Jamas se reescriben
+# (regla 2 del PROCESO).
 # Vectores del sobre de PAGO EN CURSO (spec/PAQUETE.md 2.9, RFC-0008 E2; asiento 509).
 # fichero|codigo de salida esperado|texto que la salida (stdout+stderr) tiene que contener
 # Los DOS positivos se REUNEN de las CAPTURAS-508 de un nodo real: la boca del pagador

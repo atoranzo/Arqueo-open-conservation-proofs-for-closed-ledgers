@@ -54,8 +54,8 @@ tarball's fingerprint is published next to its commit, on the release page and i
 [`doc/KIT_EN.md`](./doc/KIT_EN.md). ⚠️ That release recomposes heads up to v4 and the node signs v6
 today: with the vectors in its tarball it works, and a package from a current node is rejected — it
 fails closed, never a false GREEN. Release 0.3.0, which reads v6 and the ten families, is cut in the
-code since §619 and is published on that commit; until its entry registers it, this one is current.
-Measured and declared in `doc/KIT_EN.md`, section 0.
+code since §619 and is published on the commit of §620; until its entry registers it, this one is
+current. Measured and declared in `doc/KIT_EN.md`, section 0.
 
 ```bash
 sha256sum arqueo-verify-*.tar.gz          # must be the fingerprint published next to the commit
