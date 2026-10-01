@@ -1111,6 +1111,28 @@ mod guarda_forma {
         v
     }
 
+    /// §653 (SEG-04): una prueba son SUS bytes. Un envio honesto con un byte de mas
+    /// detras verificaba igual y tenia otra huella; ahora no se deserializa.
+    #[test]
+    fn un_envio_con_bytes_de_cola_no_verifica() {
+        use crate::tests_support::*;
+        use winterfell::math::fields::f64::BaseElement;
+        let mut layer = new_layer();
+        let a = open_and_fund(&mut layer, SK_ALICE, 1_000_000);
+        let b = open_and_fund(&mut layer, SK_BOB, 0);
+        let ea = state_of(&layer, a);
+        let receptor = layer.public_id_of(b).expect("cuenta");
+        let mut envio = layer
+            .send(BaseElement::new(SK_ALICE), a, &ea, receptor, salt_de(0x653), 250_000)
+            .expect("envio");
+        envio.proof.push(0);
+        let r = layer.apply_send(&envio, a, &ea, 250_000);
+        assert!(matches!(r, Err(LayerError::VerificationFailed(_))), "{r:?}");
+        // y la honesta, despues, sigue valiendo: el rechazo no movio el estado
+        envio.proof.pop();
+        assert!(layer.apply_send(&envio, a, &ea, 250_000).is_ok());
+    }
+
     /// §651 (D3-META): un envio honesto con el meta de su prueba VACIADO. Antes:
     /// `apply_send` llegaba a `SendAir::new` y entraba en panico (58 frente a 59),
     /// con el candado del nodo tomado. Ahora: `VerificationFailed`, sin panico.

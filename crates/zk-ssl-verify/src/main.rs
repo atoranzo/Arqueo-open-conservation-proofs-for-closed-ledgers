@@ -3664,3 +3664,25 @@ mod tests_marca_651 {
         caso("prenda/prenda.json", &["prueba"]);
     }
 }
+
+/// §653 (SEG-04): una prueba con un byte de cola. Antes se leia igual y verificaba, con otra huella;
+/// ahora el lector del fork la rechaza (`UnconsumedBytes`) y el mando dice ROJO.
+#[cfg(test)]
+mod tests_cola_653 {
+    use super::*;
+
+    #[test]
+    fn una_prueba_con_bytes_de_cola_es_rojo() {
+        let base = format!("{}/../../spec/vectors/prenda/prenda.json", env!("CARGO_MANIFEST_DIR"));
+        assert_eq!(codigo_de_salida(&correr(&base)), 0, "el positivo va primero y solo");
+        let mut v: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&base).unwrap()).unwrap();
+        let p = format!("{}00", v["prueba"].as_str().unwrap());
+        v["prueba"] = serde_json::Value::String(p);
+        let tmp = std::env::temp_dir().join(format!("cola-653-{}", std::process::id()));
+        std::fs::write(&tmp, serde_json::to_string(&v).unwrap()).unwrap();
+        let r = correr(tmp.to_str().unwrap());
+        let _ = std::fs::remove_file(&tmp);
+        assert_eq!(codigo_de_salida(&r), 1, "ROJO: {r:?}");
+    }
+}

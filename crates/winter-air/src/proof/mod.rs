@@ -145,7 +145,16 @@ impl Proof {
     pub fn from_bytes(source: &[u8]) -> Result<Self, DeserializationError> {
         // ARQUEO (§575): con el lector ACOTADO y no con `SliceReader`, que reserva cada longitud
         // que lee antes de mirar si sus bytes existen: una prueba malformada abortaba el proceso.
-        Self::read_from(&mut LectorAcotado::new(source))
+        let mut lector = LectorAcotado::new(source);
+        let proof = Self::read_from(&mut lector)?;
+        // ARQUEO (§653, SEG-04): una prueba son SUS bytes, y ninguno mas. Sin esto, una prueba
+        // valida con cualquier cola verificaba igual y tenia otro digest: la huella de una
+        // operacion (`digest_of_proof`, `hashPrueba`) no la identificaba. Las subestructuras ya
+        // rechazaban su cola; faltaba el nivel exterior.
+        if lector.has_more_bytes() {
+            return Err(DeserializationError::UnconsumedBytes);
+        }
+        Ok(proof)
     }
 
     /// Creates a dummy `Proof` for use in tests.

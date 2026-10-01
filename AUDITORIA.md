@@ -45356,3 +45356,44 @@ decida divulgarlo.
 **Contadores.** `stark-experiment` 404 -> 406. TOTAL DE SELLO 1595 -> 1597; TOTAL CON LARGOS 1732 ->
 1734, en los tres párrafos ancla, y la cifra de los circuitos en `PAPER.md`, `PAPER_EN.md`,
 `doc/INSTITUCIONAL.md` y `doc/INSTITUTIONAL.md`. El `BACKLOG.md` no se mueve.
+
+## §653 — una prueba son sus bytes: `Proof::from_bytes` rechaza la cola, y la huella vuelve a identificar
+
+El commit que lleva este asiento, sobre el §652 de esta misma rama. Es el cuarto corte del aviso
+privado de seguridad del §637 (SEG-04, P1), y el último de los cuatro que esta rama se repartió
+(§650 a §653). Lo escribe, lo prueba y lo commitea una sesión de Claude Code en la nube, fuera del
+paso 4 de `GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello`
+salió VERDE: los 19 crates del nivel en sus pines, con 711 s de tests; la conformidad 0.4, todo IDÉNTICO, y los once catálogos en verde con el binario nuevo del kit.
+
+**El defecto.** `Proof::from_bytes` del fork lee con el lector acotado del §575, pero no miraba si
+quedaban bytes: las subestructuras rechazaban su propia cola y el nivel exterior no. Una prueba
+válida con cualquier cola detrás verificaba igual y tenía otro digest, así que `digest_of_proof` y
+`hashPrueba` no identificaban una operación: la deduplicación por huella se esquivaba, y la huella
+de una operación en el registro y en los recibos dejaba de ser única, lo que enturbia el sobre de
+completitud (RFC-0010 E4) en las dos direcciones. Lo confirmó el verificador del enjambre del §637
+por lectura (`crates/winter-air/src/proof/mod.rs`, `from_bytes`; `acotado.rs`, `has_more_bytes`).
+
+**Lo que hace.** Sólo en el fork, cuatro líneas marcadas `ARQUEO (§653, SEG-04)`, como el cambio del
+§575: tras leer la prueba, si el lector tiene bytes, `DeserializationError::UnconsumedBytes`. No hay
+re-serialización en la capa: el lector es compartido por la capa y el kit, y una compuerta por
+cada sitio que verifica sería duplicarla.
+
+**Falsadores.** En la capa, un envío honesto con un byte de cola no verifica, y la misma prueba sin
+el byte, después, sí (el rechazo no movió el estado). En el kit, `prenda/prenda.json` con un byte de
+cola en la prueba es ROJO, con el positivo primero. **Medido con la comprobación desactivada**: los
+dos caen. Los vectores no cambian, y `conformance --check` y los catálogos salen iguales en el canon.
+
+**Contadores.** `zk-ssl` 424 -> 425, `zk-ssl-verify` 160 -> 161. TOTAL DE SELLO 1597 -> 1599; TOTAL
+CON LARGOS 1734 -> 1736, en los tres párrafos ancla, y la cifra de la capa donde `check_cifras` la
+señaló. El `BACKLOG.md` no se mueve.
+
+**El kit, tras los cuatro cortes.** El §650 (el hexadecimal), el §651 (la marca), el §652 (la
+semilla, que el kit compila en `zk-ssl-air`) y este cambian el binario de `zk-ssl-verify`: la
+`v0.3.0` publicada sale con 101 ante un hex multibyte o una prueba sin marca, y acepta una prueba
+con cola. Hace falta una versión nueva de `arqueo-verify` con los cuatro, una sola, como pide el
+aviso; publicarla es del autor.
+
+**Lo que NO cierra.** Del aviso quedan SEG-03 (el reenvío por recurrencia de raíz, que sobre esta
+huella ya canónica pide el conjunto de pruebas aplicadas y un suelo para el delta del reembolso),
+SEG-05 y SEG-06, que piden decisiones de diseño del autor; SEG-01 y SEG-08 los cierra la rama
+`claude/nice-cannon-arzmc9` (§641, RFC-0017), aún fuera de `main`.
