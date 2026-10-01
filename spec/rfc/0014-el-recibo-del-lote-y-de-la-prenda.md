@@ -1,17 +1,27 @@
 # RFC-0014 — El recibo del lote y de la prenda: lo agregado, atado como lo directo
 
-- **Estado:** PROPUESTO (§608), con sus decisiones TOMADAS en el §609 -delegadas por el autor con
-  su criterio escrito, y REVERSIBLES, ver «Decisiones»-. Medido y diseñado; la E2 construida en el
-  §610, la E3 en el §611, la E4 en el §612 (el lote) y el §613 (la prenda), y la E5 en el §614:
-  todas las etapas, construidas.
+- **Estado:** ACEPTADO (§618) — **la regla 4 del PROCESO, saldada con medida.** (1) La spec:
+  `PAQUETE.md` 2.11 gana sus formas 5 y 6, la resolución del lote (§612) y la de la prenda
+  (§613); `RPC.md` dice que el lote y la prenda evaluada llevan `recepcion`, que el error del lote
+  nombra su `operacion` (§611) y que el `data` del rechazo de la prenda lleva su recibo (§613); y
+  en `NUCLEO.md`, el REGISTRO con `DOMINIO_LOTE` y `hash_del_lote` (§610). (2) El OpenRPC no se
+  mueve: ningún método nuevo, y los campos viajan en resultados y errores cuya forma normativa es
+  `RPC.md`, a la que el OpenRPC remite. (3) Los vectores, nuevos bajo `zkssl/0.4`: el KAT
+  `nucleo/hash_del_lote.json` (§610) y treinta y siete sobres en `completitud/` (§614). (4) Las
+  suites: el canon `--sello` del autor, VERDE en cada sello del S610 al S617 -con «completitud
+  73/73» desde el árbol y desde dentro del tarball desde el S614-, y su `--bancos` VERDE, 21 de 21,
+  sobre `8b8e3f4`, con `tools/banco_recibo_agregado.sh` entre ellos. Propuesto en el §608, con sus
+  decisiones TOMADAS en el §609 -delegadas por el autor con su criterio escrito, y REVERSIBLES,
+  ver «Decisiones»-; las etapas, construidas del §610 al §614. Se acepta CON su residuo, el D-H,
+  intacto.
 - **Autor:** Ángel José Toranzo Portela
-- **Asistencia GenAI:** Claude (sesión 193, §608 a §614) — ver [`GENAI.md`](../../GENAI.md)
+- **Asistencia GenAI:** Claude (sesión 193, §608 a §614 y el giro del §618) — ver [`GENAI.md`](../../GENAI.md)
 - **Fecha:** 2026-09-30
 - **Versión del protocolo afectada:** `zkssl/0.4` — **no sube**: todo es aditivo, como el recibo
   del §571 -dos respuestas y un error ganan `recepcion`, el error del lote gana `operacion`, y el
   sobre de completitud gana dos resoluciones-. La cabeza no se mueve.
 - **Asiento(s) de AUDITORIA:** §608 (la propuesta); §609 (las decisiones); §610 (la E2); §611 (la
-  E3); §612 (la E4a); §613 (la E4b); §614 (la E5).
+  E3); §612 (la E4a); §613 (la E4b); §614 (la E5); §618 (la aceptación).
 - **Backlog:** la segunda parte del D-H del RFC-0010 -«una etapa por diseñar, no un olvido»-; y
   `SECURITY.md` 2.ter, el despliegue con agregadores.
 

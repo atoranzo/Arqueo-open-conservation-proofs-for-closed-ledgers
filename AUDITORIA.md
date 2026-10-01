@@ -43536,3 +43536,49 @@ con la cuenta quitada de `README_EN.md`, ROJO diciendo que ya no la publica. Res
 **Lo que NO cierra.** El giro del RFC-0014 a ACEPTADO, que espera el canon y los bancos del autor
 sobre los sellos que lo construyen.
 
+## §618 — el RFC-0014 pasa a ACEPTADO: lo agregado, atado como lo directo
+
+El commit que lleva este asiento, sobre `8b8e3f4` (el S617). Un solo sello: la cabecera del
+RFC-0014, los cinco sitios que publican su estado y este asiento, con el canon `--sello` VERDE
+dentro del bloque. Seis ficheros más este asiento, con 22 inserciones y 12 borrados fuera de él.
+
+**De dónde sale.** El RFC-0014 se propuso en el §608, sus tres decisiones se tomaron por delegación
+en el §609 y sus etapas se construyeron del §610 al §614; la aceptación es del autor, y la regla 4
+del PROCESO pide su canon y su merge. Los dos han llegado: el autor empujó cada sello del S610 al
+S617 con su canon `--sello` VERDE, y corrió su `--bancos` sobre `8b8e3f4`.
+
+**La regla 4, contada.** (1) La spec: `PAQUETE.md` 2.11, sus formas 5 y 6 -la resolución del lote
+(§612) y la de la prenda (§613)-; `RPC.md`, el recibo del lote y de la prenda evaluada, la
+`operacion` del error del lote (§611) y el recibo dentro del `data` del rechazo de la prenda (§613);
+y en `NUCLEO.md`, el REGISTRO con `DOMINIO_LOTE` y `hash_del_lote` (§610). (2) El OpenRPC no se
+mueve: ningún método, y los campos viajan en resultados y errores cuya forma normativa es `RPC.md`.
+(3) Los vectores, nuevos bajo `zkssl/0.4`: el KAT `nucleo/hash_del_lote.json` (§610) y treinta y
+siete sobres en `completitud/` (§614). (4) Las suites: el canon `--sello` del autor, VERDE en cada
+sello desde el S610 -«completitud 73/73» desde el árbol y desde dentro del tarball desde el S614-, y
+su `--bancos`, VERDE, 21 de 21, sobre `8b8e3f4`, con `recibo_agregado` en 27 segundos. Antes, sobre
+`0ee6718`, sus veinte bancos de siempre habían pasado ya VERDES sobre el nodo y el mando del
+RFC-0014: el de la prenda con la prenda que lleva recibo, el de completitud y los cuatro mentirosos.
+
+**Lo que se acepta CON su residuo, declarado.** El D-H del propio RFC, intacto: el agregador que no
+reenvía la composición queda fuera -lo elige el titular, y la vía directa sigue abierta-; la prenda
+con `seq` viejo no deja recibo y el titular reintenta, y un «seq viejo» falso es conducta visible,
+no evidencia portable; las causas sin prueba portable van al cuarto estado; y el operador que no
+contesta no deja rastro, como en el RFC-0010. Y lo que la construcción añadió y se declaró en su
+sitio: la negativa del nodo es su palabra en su respuesta o en su `data` (D3), así que un RECHAZO
+SIN FUNDAMENTO inventado lo desmiente el operador exhibiendo la resolución verdadera; y si un latido
+firma entre la comprobación del `seq` de una prenda y su reserva, la cabeza de índice `era − 1` es
+posterior a la juzgada, con la misma raíz si el `seq` no cambió (§613). Las decisiones del §609 eran
+delegadas y reversibles, y se aceptan así, con la aplicación de la decisión 3 a la forma del lote
+que hizo el §612.
+
+**Lo que hace.** La cabecera del RFC-0014 pasa a ACEPTADO con la cuenta de la regla 4; su línea de
+asistencia y su lista de asientos ganan este giro. `README.md`, `README_EN.md`,
+`RESUMEN_BILINGUE.md` (en sus dos lenguas), `RESUMEN_EJECUTIVO.md` y la fila de `spec/README.md`
+lo cuentan entre los aceptados: quedan propuestos el 0005 y el 0013. El ATADO D de
+`check_publicadas` lo cruza: trece RFC con estado propio, y cada sitio dice lo que su RFC dice.
+
+**Contadores.** Ninguno se mueve.
+
+**Lo que NO cierra.** El RFC-0013, el medio del ancla, sigue PROPUESTO y su E2 es decisión del
+autor. Empujar este sello es la aceptación del autor, como la regla del PROCESO pide.
+
