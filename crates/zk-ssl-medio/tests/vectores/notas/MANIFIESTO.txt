@@ -1,0 +1,39 @@
+# Las notas del medio (RFC-0013 E2b, §632) y lo que dice cada verificador.
+# columna 2: lo que dice zk-ssl-medio (`verificar_nota` contra publicador.vkey): ACEPTA o
+#            la variante de `ErrorDeNota`.
+# columna 3: lo que dijo note.Open con torchwood.NewLogVerifier (veredictos-torchwood.txt).
+# Una negativa que torchwood ACEPTA es una regla en la que el medio es mas estricto, y
+# lleva su motivo detras de `#`. tests/vectores_notas.rs comprueba las tres columnas.
+neg-dos-lineas-en-blanco.txt        Checkpoint              RECHAZA
+neg-extension.txt                   Checkpoint              RECHAZA
+neg-firma-cambiada.txt              FirmaInvalida           RECHAZA
+neg-firma-no-canonica.txt           Malformada              ACEPTA  # base64 no canonica en la firma
+neg-firma-repetida-identica.txt     FirmaRepetida           ACEPTA  # dos lineas del publicador
+neg-firma-repetida-y-basura.txt     FirmaRepetida           ACEPTA  # dos lineas del publicador
+neg-firma-truncada.txt              FirmaInvalida           RECHAZA
+neg-key-id-cambiado.txt             SinFirmaDelPublicador   RECHAZA
+neg-linea-sin-raya.txt              Malformada              RECHAZA
+neg-marca-2-63.txt                  FirmaInvalida           RECHAZA
+neg-marca-cambiada.txt              FirmaInvalida           RECHAZA
+neg-nombre-cambiado.txt             SinFirmaDelPublicador   RECHAZA
+neg-origen-ajeno-firmado.txt        OrigenAjeno             ACEPTA  # origin distinto del nombre (D-A)
+neg-origen-cambiado.txt             OrigenAjeno             RECHAZA
+neg-otra-clave-mismo-nombre.txt     SinFirmaDelPublicador   RECHAZA
+neg-raiz-cambiada.txt               FirmaInvalida           RECHAZA
+neg-raiz-no-canonica.txt            Checkpoint              RECHAZA
+neg-retorno-de-carro.txt            Malformada              RECHAZA
+neg-sin-firma-del-publicador.txt    SinFirmaDelPublicador   RECHAZA
+neg-sin-linea-en-blanco.txt         Malformada              RECHAZA
+neg-tamano-cambiado.txt             FirmaInvalida           RECHAZA
+neg-tamano-con-cero.txt             Checkpoint              RECHAZA
+neg-testigo-mal-formado.txt         Malformada              RECHAZA
+pos-00-anclas.txt                   ACEPTA                  ACEPTA
+pos-01-anclas.txt                   ACEPTA                  ACEPTA
+pos-02-anclas.txt                   ACEPTA                  ACEPTA
+pos-05-anclas.txt                   ACEPTA                  ACEPTA
+pos-13-anclas.txt                   ACEPTA                  ACEPTA
+pos-sin-testigo.txt                 ACEPTA                  ACEPTA
+pos-testigo-primero.txt             ACEPTA                  ACEPTA
+rust-con-sal-03-anclas.txt          ACEPTA                  ACEPTA
+rust-con-sal-21-anclas.txt          ACEPTA                  ACEPTA
+rust-determinista-08-anclas.txt     ACEPTA                  ACEPTA

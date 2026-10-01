@@ -1,8 +1,8 @@
 # RFC-0013 — El medio del ancla: las cabezas como checkpoints C2SP, cofirmadas por testigos ajenos
 
 - **Estado:** PROPUESTO — el texto y las decisiones, escritos sobre lo medido en mtc-core y en
-  las especificaciones C2SP; construida la E2a (§631), el árbol del medio, y el resto sin
-  construir. Nació BORRADOR y entra PROPUESTO al
+  las especificaciones C2SP; construida la E2 —el árbol del medio (E2a, §631) y su nota firmada
+  (E2b, §632)—, y E3 y E4 sin construir. Nació BORRADOR y entra PROPUESTO al
   integrarse (§603): BORRADOR no tiene cara publicada en el cerrojo de `check_publicadas`, y el
   RFC-0011 nació igual, propuesto con sus decisiones delegadas. Las decisiones D-A a D-H son DELEGADAS y
   REVERSIBLES: la aceptación es del autor.
@@ -17,8 +17,9 @@
 - **Asiento(s) de AUDITORIA:** §174 (el diseño del anclaje externo), §248 (una raíz servida por
   el acusado no prueba nada), §291–§292 (el MMR de cabezas y su pareja firmada), §590–§593
   (RFC-0012, el ancla y su sobre), §594 (el gate del diario en todo estado), §599 (la vista
-  dividida servida por un nodo real: cada testigo solo no la ve), §603 (la integración) y §631
-  (la E2a: el árbol del medio, y la D-G decidida); y, en mtc-core, sus asientos
+  dividida servida por un nodo real: cada testigo solo no la ve), §603 (la integración), §631
+  (la E2a: el árbol del medio, y la D-G decidida) y §632 (la E2b: la nota, contrastada con
+  torchwood); y, en mtc-core, sus asientos
   §14 y §15 (la interoperabilidad medida contra la implementación de referencia del IETF, en las
   dos direcciones, y el checkpoint de esa herramienta reconstruido desde sus tejas).
 - **Backlog:** la 86 (elegir y medir el medio), que este RFC cierra en diseño y deja abierta en
@@ -34,7 +35,7 @@
 |---|---|---|---|
 | E1 — el medio, decidido | este texto: qué se publica (D-A), en qué árbol (D-B), con qué firma (D-C), a qué testigos y cómo (D-D), quién lo comprueba (D-E), con qué cadencia (D-F), con qué piezas (D-G) y qué no resuelve (D-H) | no | **este texto, propuesto (§603)** |
 | E2a — el árbol del medio | el árbol SHA-256 de anclas (`crates/zk-ssl-medio`) y los vectores de consistencia SHA-256: los acumulados y los grandes del borrador del IETF y las 685 sondas de `transparency-dev/merkle` | no (aditivo, fuera del cable) | **construida (§631)** |
-| E2b — la nota del medio | la nota `checkpoint` con su firma ML-DSA-44 tipo `0x06`, y sus vectores positivos y negativos | no (aditivo, fuera del cable) | pendiente |
+| E2b — la nota del medio | la nota `checkpoint` con su firma ML-DSA-44 tipo `0x06` (`zk_ssl_medio::nota`), y 33 notas positivas y negativas con el veredicto de `filippo.io/torchwood` | no (aditivo, fuera del cable) | **construida (§632)** |
 | E3 — el publicador | el cliente `add-checkpoint` del protocolo tlog-witness, la retención de las cofirmas de testigos y su publicación como nota cofirmada | no | pendiente |
 | E4 — el sobre en el kit | `tipo: "ancla-cofirmada"`: la nota, la política de testigos con umbral, la inclusión del ancla en el árbol del medio y, debajo, el sobre del ancla del RFC-0012; su banco y su catálogo | no | pendiente |
 
@@ -185,6 +186,17 @@ por consulta, que E3 medirá si se queda corta. El precio, declarado: dos copias
 divergir, atadas por los mismos vectores del IETF, que pasan en los dos repositorios. `cosign.rs` y
 `pem.rs` se deciden en E2b, con la misma regla.
 
+**Decidido en el §632.** De `pem.rs` se copia la base64 (`src/base64.rs`), sin lo de PEM y sin
+saltar blancos, que en una nota son un error. `cosign.rs` **no** se copia: arma su mensaje con los
+identificadores OID de MTC (`TrustAnchorId`) y arrastra `hbs-state`, y el medio firma con nombres
+de `signed-note`. `zk_ssl_medio::nota` se escribió aquí desde las especificaciones, y lo que la
+ata no es mtc-core sino una implementación de otra mano: `filippo.io/torchwood` v0.10.0, del autor
+de las especificaciones C2SP, sobre el `crypto/mldsa` de Go 1.27. La línea del publicador que
+firma torchwood sale aquí byte a byte, y de 33 notas no hay ninguna que torchwood rechace y el
+medio acepte; las 4 que torchwood acepta y el medio no son tres reglas más estrictas, declaradas
+en `src/nota.rs`: el `origin` es el nombre del publicador (D-A), una sola línea del publicador, y
+base64 canónica en las firmas.
+
 ### D-H — El residuo, declarado
 
 Los del RFC-0012 D-H siguen: el medio es confianza **desplazada, no eliminada** —ahora a un
@@ -193,7 +205,8 @@ anclas queda acotada por `M`, no cerrada; y el ancla prueba qué historia era ca
 estuviera completa. Y los propios: (1) no hay hoy testigo público que acepte `origin` de tipo
 `0x06`; hasta que lo haya, E3 se mide con el puente Ed25519 contra un testigo público real y con
 `0x06` contra el verificador de mtc-core, y se dice cuál de los dos se midió; (2) `ml-dsa` no
-está auditado, lo dice su propio crate; (3) la clave ML-DSA-44 del publicador es una clave más
+está auditado, lo dice su propio crate —desde el §632 entra clavado con `=`, y lo que lo acota
+es el contraste byte a byte con el `crypto/mldsa` de Go, no una auditoría—; (3) la clave ML-DSA-44 del publicador es una clave más
 que custodiar, sin estado pero con custodia.
 
 ## Lo que se DESCARTÓ al medir
@@ -221,7 +234,8 @@ usó. Los vectores nuevos son de tres clases: notas positivas y negativas (firma
 distinto, raíz que no cuadra, cofirma de testigo no nombrado), consistencia SHA-256 (los del
 borrador del IETF sirven tal cual, y ya están copiados en mtc-core con su licencia; desde el §631,
 también en `crates/zk-ssl-medio`, con las 685 sondas de `transparency-dev/merkle`), y cofirmas
-`0x06` (el corpus de mtc-core, contrastado con Go).
+`0x06` (el corpus de mtc-core, contrastado con Go; desde el §632, las 33 notas de
+`crates/zk-ssl-medio/tests/vectores/notas/`, firmadas y juzgadas por torchwood).
 
 ### Por qué entra por RFC
 
@@ -262,5 +276,7 @@ porque contesta una pregunta que el BACKLOG tenía marcada como «antes de dise�
 - `transparency-dev/merkle` (`fbbcd74`): `testdata/`, las 685 sondas que copia la E2a, y
   `proof.VerifyConsistency`, con la que comprueba la consistencia el testigo de
   `transparency-dev/witness` (`witness/witness.go`, `b4c9458`).
+- `filippo.io/torchwood` v0.10.0 (`cosignature.go`, `checkpoint.go`) y `golang.org/x/mod/sumdb`
+  v0.40.0 (`note`, `tlog`), sobre el `crypto/mldsa` de Go 1.27: el contraste de la E2b.
 - `ietf-plants-wg/merkle-tree-certs`, issue #341: el checkpoint de la herramienta de referencia
   no es todavía una línea de `tlog-cosignature`; confirmado por su autor.

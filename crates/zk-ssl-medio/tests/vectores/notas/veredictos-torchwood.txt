@@ -1,0 +1,34 @@
+# note.Open (golang.org/x/mod v0.40.0) con torchwood.NewLogVerifier (v0.10.0), Go go1.27.0
+neg-dos-lineas-en-blanco.txt RECHAZA invalid signature for key zkssl/v1/8c40b55b1d40cf7f71f9ea99c770f701db95da5876e6ce889f86af12b0def53a+7057071a
+neg-extension.txt RECHAZA invalid signature for key zkssl/v1/8c40b55b1d40cf7f71f9ea99c770f701db95da5876e6ce889f86af12b0def53a+7057071a
+neg-firma-cambiada.txt RECHAZA invalid signature for key zkssl/v1/8c40b55b1d40cf7f71f9ea99c770f701db95da5876e6ce889f86af12b0def53a+7057071a
+neg-firma-no-canonica.txt ACEPTA 1 firma(s) verificada(s), 1 ajena(s)
+neg-firma-repetida-identica.txt ACEPTA 1 firma(s) verificada(s), 1 ajena(s)
+neg-firma-repetida-y-basura.txt ACEPTA 1 firma(s) verificada(s), 1 ajena(s)
+neg-firma-truncada.txt RECHAZA invalid signature for key zkssl/v1/8c40b55b1d40cf7f71f9ea99c770f701db95da5876e6ce889f86af12b0def53a+7057071a
+neg-key-id-cambiado.txt RECHAZA note has no verifiable signatures
+neg-linea-sin-raya.txt RECHAZA malformed note
+neg-marca-2-63.txt RECHAZA invalid signature for key zkssl/v1/8c40b55b1d40cf7f71f9ea99c770f701db95da5876e6ce889f86af12b0def53a+7057071a
+neg-marca-cambiada.txt RECHAZA invalid signature for key zkssl/v1/8c40b55b1d40cf7f71f9ea99c770f701db95da5876e6ce889f86af12b0def53a+7057071a
+neg-nombre-cambiado.txt RECHAZA note has no verifiable signatures
+neg-origen-ajeno-firmado.txt ACEPTA 1 firma(s) verificada(s), 1 ajena(s)
+neg-origen-cambiado.txt RECHAZA invalid signature for key zkssl/v1/8c40b55b1d40cf7f71f9ea99c770f701db95da5876e6ce889f86af12b0def53a+7057071a
+neg-otra-clave-mismo-nombre.txt RECHAZA note has no verifiable signatures
+neg-raiz-cambiada.txt RECHAZA invalid signature for key zkssl/v1/8c40b55b1d40cf7f71f9ea99c770f701db95da5876e6ce889f86af12b0def53a+7057071a
+neg-raiz-no-canonica.txt RECHAZA invalid signature for key zkssl/v1/8c40b55b1d40cf7f71f9ea99c770f701db95da5876e6ce889f86af12b0def53a+7057071a
+neg-retorno-de-carro.txt RECHAZA malformed note
+neg-sin-firma-del-publicador.txt RECHAZA note has no verifiable signatures
+neg-sin-linea-en-blanco.txt RECHAZA malformed note
+neg-tamano-cambiado.txt RECHAZA invalid signature for key zkssl/v1/8c40b55b1d40cf7f71f9ea99c770f701db95da5876e6ce889f86af12b0def53a+7057071a
+neg-tamano-con-cero.txt RECHAZA invalid signature for key zkssl/v1/8c40b55b1d40cf7f71f9ea99c770f701db95da5876e6ce889f86af12b0def53a+7057071a
+neg-testigo-mal-formado.txt RECHAZA malformed note
+pos-00-anclas.txt ACEPTA 1 firma(s) verificada(s), 1 ajena(s)
+pos-01-anclas.txt ACEPTA 1 firma(s) verificada(s), 1 ajena(s)
+pos-02-anclas.txt ACEPTA 1 firma(s) verificada(s), 1 ajena(s)
+pos-05-anclas.txt ACEPTA 1 firma(s) verificada(s), 1 ajena(s)
+pos-13-anclas.txt ACEPTA 1 firma(s) verificada(s), 1 ajena(s)
+pos-sin-testigo.txt ACEPTA 1 firma(s) verificada(s), 0 ajena(s)
+pos-testigo-primero.txt ACEPTA 1 firma(s) verificada(s), 1 ajena(s)
+rust-con-sal-03-anclas.txt ACEPTA 1 firma(s) verificada(s), 0 ajena(s)
+rust-con-sal-21-anclas.txt ACEPTA 1 firma(s) verificada(s), 0 ajena(s)
+rust-determinista-08-anclas.txt ACEPTA 1 firma(s) verificada(s), 0 ajena(s)

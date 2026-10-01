@@ -1,8 +1,9 @@
-# Vectores del árbol del medio: procedencia y licencias
+# Vectores del medio: procedencia y licencias
 
 Tres corpus de dos manos ajenas, copiados **byte a byte** (§631). Ninguno lo
 escribió Arqueo; lo que Arqueo añade está en los `.rs` de `tests/` y se dice
-allí.
+allí. El cuarto, las notas `checkpoint` contrastadas con torchwood (§632),
+tiene su propio `notas/README.md`.
 
 ## 1. Los vectores acumulados del borrador del IETF
 

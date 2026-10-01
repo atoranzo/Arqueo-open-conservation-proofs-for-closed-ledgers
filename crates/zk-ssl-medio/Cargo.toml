@@ -4,10 +4,12 @@ version = "0.1.0"
 edition = "2021"
 license.workspace = true
 
-# **El árbol del medio del ancla** (RFC-0013 E2a, §631). Cada ancla del
-# RFC-0012 es una hoja; los nodos son SHA-256 con los prefijos `0x00`/`0x01`
-# de RFC 6962 (D-B), y las pruebas de inclusión y de consistencia son las
-# que un testigo genérico de `tlog-witness` comprueba.
+# **El medio del ancla** (RFC-0013 E2). El árbol (E2a, §631): cada ancla
+# del RFC-0012 es una hoja; los nodos son SHA-256 con los prefijos
+# `0x00`/`0x01` de RFC 6962 (D-B), y las pruebas de inclusión y de
+# consistencia son las que un testigo genérico de `tlog-witness` comprueba.
+# La nota (E2b, §632): el `checkpoint` de C2SP que lo publica, firmado con
+# ML-DSA-44 en el tipo `0x06` de `tlog-cosignature` (D-C).
 #
 # ⚠️ **Es un crate aparte por la regla de siempre** (§243, §254, §296,
 # §463): quien comprueba el medio no compila el nodo, ni el probador, ni
@@ -15,10 +17,25 @@ license.workspace = true
 #
 # ⚠️ **El árbol está COPIADO de mtc-core, no dependido** (D-G, decidido en
 # §631): `src/hash.rs` y `src/subtree.rs` de `github.com/atoranzo/mtc-core`
-# en `d3b0ca6`, byte a byte salvo las líneas `ADAPTADO (§631)`. Las
-# razones, en `src/lib.rs`.
+# en `d3b0ca6`, byte a byte salvo las líneas `ADAPTADO (§631)`, y desde el
+# §632 la base64 de su `src/pem.rs`. La nota no se copió: se escribió aquí y
+# se contrasta con torchwood. Las razones, en `src/lib.rs`.
 
 [dependencies]
 # SHA-256, el hash del log (RFC 6962/9162). Ya está en el Cargo.lock del
 # workspace en 0.10.9: no entra ninguna versión nueva.
 sha2 = "0.10"
+
+# ML-DSA-44 (FIPS 204), la firma de la nota del medio (RFC-0013 D-C, E2b,
+# §632): el tipo `0x06` de `tlog-cosignature`, sin estado. Clavado con `=`
+# como `xmss`: ⚠️ el propio crate declara que **no está auditado**
+# (RFC-0013 D-H, 2). Sin `pkcs8` ni `alloc`: aquí no se lee DER. Con él
+# entran 11 paquetes al Cargo.lock y ninguno de los que había cambia de
+# versión (medido en §632).
+ml-dsa = { version = "=0.1.1", default-features = false, features = ["rand_core", "zeroize"] }
+# La sal de la firma con sal (FIPS 204, la variante recomendada): 32 bytes
+# del sistema por firma. Ya está en el Cargo.lock en 0.4.3.
+getrandom = { version = "0.4", features = ["sys_rng"] }
+# Borrar la copia local de la semilla del publicador. Ya está en el
+# Cargo.lock en 1.9.0.
+zeroize = "1"

@@ -53,7 +53,9 @@ crates/zk-ssl-medio/  (§631)
     `src/hash.rs` y `src/subtree.rs` proceden de mtc-core
     (https://github.com/atoranzo/mtc-core, commit d3b0ca6), del mismo
     autor y bajo la misma licencia dual MIT / Apache-2.0; las líneas
-    cambiadas llevan la marca «ADAPTADO (§631)».
+    cambiadas llevan la marca «ADAPTADO (§631)». Desde el §632,
+    también `src/base64.rs`, la base64 de su `src/pem.rs`, con la marca
+    «ADAPTADO (§632)».
 
     `tests/vectores/large_*.json` son los vectores grandes del borrador
     draft-ietf-plants-merkle-tree-certs (ietf-plants-wg/merkle-tree-certs,
@@ -67,7 +69,13 @@ crates/zk-ssl-medio/  (§631)
     Copyright 2025 Google LLC, bajo la Apache License 2.0
     (LICENSE-APACHE). Sin modificar.
 
-    Detalles y hashes en crates/zk-ssl-medio/tests/vectores/README.md.
+    `tests/vectores/notas/` (§632) son notas que firmó un programa de
+    este repositorio con filippo.io/torchwood (BSD de 3 cláusulas, The Go
+    Authors y The Torchwood Authors), y tres que firmó este crate; de
+    torchwood no se copia nada.
+
+    Detalles y hashes en crates/zk-ssl-medio/tests/vectores/README.md y
+    en crates/zk-ssl-medio/tests/vectores/notas/README.md.
 
 --------------------------------------------------------------------------
 SIN AFILIACIÓN INSTITUCIONAL

@@ -710,6 +710,11 @@ instrumentacion) al grupo E.*
   `crates/zk-ssl-medio` y contrastado con los vectores del IETF y las 685
   sondas de `transparency-dev/merkle`. QUEDAN la nota (E2b), el publicador
   (E3) y el sobre del kit (E4): sigue abierta.
+  ✅ a medias (§632): la E2b, la nota `checkpoint` firmada con ML-DSA-44
+  tipo `0x06`, construida y contrastada con `filippo.io/torchwood` sobre el
+  ML-DSA de Go: la línea del publicador sale byte a byte. QUEDAN el
+  publicador (E3), con el despliegue y su medida (qué testigos, cadencia,
+  coste), y el sobre del kit (E4): sigue abierta.
 - [ ] **87. Agilidad criptográfica: el ESQUEMA DE FIRMA no está
   versionado.** La cabeza tiene byte de versión (§275) y el registro
   tiene dos eras (§281). **El esquema de firma no tiene ninguna de las

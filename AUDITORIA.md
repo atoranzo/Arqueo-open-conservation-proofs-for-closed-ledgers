@@ -44405,3 +44405,104 @@ fuera y la decide el autor.
 copias de aquí y de mtc-core pueden divergir: las atan los mismos vectores del IETF, no una
 dependencia.
 
+## §632 — RFC-0013 E2b: la nota del medio, firmada con ML-DSA-44 y contrastada con torchwood
+
+El commit que lleva este asiento, sobre `7d13f26` (el §631). Un solo sello. `zk-ssl-medio` gana la
+nota (`src/nota.rs`), la base64 estricta (`src/base64.rs`) y 33 notas con el veredicto de dos
+verificadores, y fija `ml-dsa` con `=`. El RFC-0013 marca la E2 construida y cierra su D-G. Se
+ponen al día `NOTICE`, la fila del canon, la entrada 86, la fila del RFC en `spec/README.md` y las
+cifras de tres documentos; y este asiento. 13 ficheros tocados, con 230 inserciones y 54 borrados
+fuera de él, y 44 que nacen: el código y su test (3), el programa de contraste en Go con su
+`go.mod` y su `go.sum` (3), y 38 de datos —33 notas, dos `vkey`, los veredictos de torchwood, el
+manifiesto y su README—. Lo escribe, lo prueba y lo commitea la misma sesión de Claude Code que el
+§631, no el autor en su máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`; el autor
+corre el canon `--sello` y empuja. En la sesión, sobre este mismo árbol, el canon `--sello` salió
+VERDE: los 19 crates de ese nivel en sus pines, `zk-ssl-medio` 37 de 37 en 4 s.
+
+**De dónde sale.** Es la segunda mitad de la E2 que pidió el autor: el §631 la partió en dos, y
+esta es la que trae `ml-dsa`.
+
+**Lo que hace.** (1) `src/nota.rs`, escrito aquí desde `signed-note`, `tlog-checkpoint` y
+`tlog-cosignature`. `Checkpoint` escribe y lee las tres líneas, solo en su forma canónica.
+`mensaje_cofirmado` es el `cosigned_message` del tipo `0x06`, con sus reglas: nombres de 1 a 255
+bytes, marca de tiempo hasta `2^63-1`, un subárbol válido, y el vacío con SHA-256 de nada.
+`id_de_clave` da `SHA-256(nombre || "\n" || 0x06 || clave)[:4]`. `ClaveDeNota` lee y escribe la
+`vkey` y verifica la cofirma de un testigo cuya clave se le dé. `Publicador` firma con sal por
+defecto (FIPS 204, la variante recomendada) y en determinista solo para vectores, y verifica su
+propia nota antes de devolverla (§299). `verificar_nota` aplica las reglas de `note.Open` y de
+`ParseCheckpoint`, y devuelve el checkpoint, la marca y las líneas ajenas sin verificar. El
+`origin` es `zkssl/v1/` y la huella de la clave XMSS (D-A). (2) `src/base64.rs`, la base64 de
+`src/pem.rs` de mtc-core `d3b0ca6`: `base64_encode` y `value`, byte a byte; el decodificador, con
+un cambio marcado `ADAPTADO (§632)`: no salta blancos, que en una nota son un error. (3) Las
+dependencias: `ml-dsa = "=0.1.1"` sin `pkcs8` ni `alloc`, `getrandom` con `sys_rng` para la sal y
+`zeroize` para borrar la copia de la semilla. El `Cargo.lock` gana 11 paquetes y ninguno de los
+que había cambia de versión; las 17 líneas que pierde son nombres que pasan a llevar la versión
+para desambiguar.
+
+**La D-G, cerrada.** `cosign.rs` de mtc-core no se copia. Arma su mensaje con los identificadores
+OID de MTC (`TrustAnchorId`) y arrastra `hbs-state`, y el medio firma con nombres de
+`signed-note`. Lo que ata la nota no es mtc-core, sino una implementación de otra mano.
+
+**El contraste: torchwood, del autor de las especificaciones.** `filippo.io/torchwood` v0.10.0
+implementa el tipo `0x06` (`cosignature.go`, `checkpoint.go`) sobre el `crypto/mldsa` de la
+biblioteca estándar de Go 1.27, y la nota con `golang.org/x/mod/sumdb/note`. Lo firmó la misma
+mano que escribió `signed-note` y `tlog-cosignature`. `tests/vectores/notas/torchwood/main.go`,
+en el árbol pero fuera del canon, genera 30 notas firmadas por torchwood. Son 7 positivas: el
+publicador y un testigo sobre 0, 1, 2, 5 y 13 anclas, la de 5 sin testigo y la de 5 con el
+testigo delante. Y 23 negativas, cada una la de 5 estropeada de una manera. Luego las juzga
+todas, junto con 3 que firmó este crate (dos con sal). El `origin` de todas es el del operador de
+`spec/vectors/ancla/` (`clave` `8c40b55b…`). `tests/vectores_notas.rs` comprueba en cada canon:
+
+- Las claves salen iguales de la misma semilla en RustCrypto y en Go, hasta la `vkey`.
+- Las positivas verifican, y la línea del publicador **sale byte a byte** firmando aquí en
+  determinista con la misma marca: el mismo `cosigned_message`, el mismo `key_id`, la misma firma
+  y la misma base64.
+- La raíz que torchwood calculó con el árbol de `golang.org/x/mod/sumdb/tlog` es la de
+  `ArbolDelMedio` en los cinco tamaños.
+- La cofirma del testigo, también de torchwood, verifica con `verificar_cofirma`.
+- El `MANIFIESTO.txt` dice lo que dicen los dos verificadores.
+
+**Lo que dicen los dos.** Las 10 positivas, también las 3 firmadas aquí, las aceptan los dos. Las
+23 negativas caen aquí, cada una por su regla: 6 por firma inválida, 5 por nota mal formada, 4 por
+checkpoint no canónico o con extensión, 4 sin firma del publicador, 2 por `origin` ajeno y 2 por
+firma repetida. torchwood rechaza 19 de ellas. Las otras 4 las acepta, y aquí caen por tres reglas
+más estrictas, declaradas en `src/nota.rs`. La primera es un `origin`
+distinto del nombre del publicador: torchwood firma y verifica una nota así, y el medio exige que
+sean el mismo (D-A). La segunda son dos líneas del publicador: `note.Open` verifica la primera y
+descarta las demás sin mirarlas, y una de las dos notas lleva basura en la segunda línea. La
+tercera es la base64 no canónica en una firma, que el decodificador de Go acepta con los bits
+sobrantes. **No hay ninguna al revés**: nada que torchwood rechace lo acepta el medio, y el test
+lo exige.
+
+**Las mutaciones, medidas.** Seis, cada una restaurada después:
+
+| mutación del verificador | lo que cae |
+|---|---|
+| sin la regla `origin` = nombre | el manifiesto |
+| acepta líneas de extensión | el manifiesto y un unitario |
+| gana la primera línea del publicador, como en `note.Open` | el manifiesto |
+| nombre y `origin` cambiados de orden en el mensaje | la reproducción byte a byte y un unitario |
+| base64 laxa en los bits sobrantes | el manifiesto |
+| el `key_id` sin el byte de tipo | los cuatro tests de las notas |
+
+La segunda es la que importa: la firma `0x06` no cubre las líneas de extensión. Un verificador que
+las aceptara daría por firmada una línea que nadie firmó, y torchwood las rechaza por eso.
+
+**Contadores.** `zk-ssl-medio` pasa de 25 a 37 tests: 8 unitarios (2 de la base64 y 6 de la nota)
+y 4 de las notas, con 0 ignorados, 0 warnings y 11 s en frío con `ml-dsa`. TOTAL DE SELLO 1554 ->
+1566 y TOTAL CON LARGOS 1691 -> 1703, en los tres párrafos ancla. La cuenta de `check_tests` pasa
+de 1713 a 1725. Los crates siguen siendo 22. Siguen rancias a propósito (5.A-319) las «1364
+declaradas», las «1349 declared» y las «18 ignoradas». El `BACKLOG.md` sigue en 43 abiertas y 73
+resueltas: la 86 gana su avance y sigue abierta.
+
+**Lo que NO hace.** No publica nada ni habla con ningún testigo: eso es E3. No juzga a los
+testigos: devuelve sus líneas, y `verificar_cofirma` comprueba una si se le da su clave; qué
+testigos valen y cuántos hacen falta es la política de E4. No custodia la clave del publicador:
+borra su copia de la semilla, y de dónde sale es de E3. No toca el cable, ni la cabeza, ni el
+nodo, ni el kit. El canon no corre Go: lee lo que Go dejó escrito, y rehacerlo pide Go 1.27 y red.
+
+**Lo que NO cierra.** E3 y E4. Entre las negativas que el RFC listaba, la de un testigo que la
+política no nombra es de E4, que es quien tiene política. `ml-dsa` sigue sin auditar: el
+contraste byte a byte con el `crypto/mldsa` de Go lo acota, no lo sustituye. Si una marca de
+tiempo del futuro se rechaza lo decide quien verifica, en E4.
+
