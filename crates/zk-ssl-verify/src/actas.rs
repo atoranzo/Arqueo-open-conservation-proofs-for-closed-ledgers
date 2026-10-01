@@ -241,6 +241,112 @@ pub fn verificar_acta(a: &ActaFirmada, previa: Option<&Acta>) -> Result<(), Acta
     Ok(())
 }
 
+/// ⚠️ §647 · **La cadena entera**, eslabón a eslabón (D-C, reglas 1 a 3): la génesis sola y cada
+/// rotación contra la previa. Un productor para el nodo que arranca, el testigo que rota y los
+/// sobres de la E5. El error dice qué eslabón, contando desde 0, y por qué.
+pub fn verificar_cadena(actas: &[ActaFirmada]) -> Result<(), (usize, ActaError)> {
+    for (i, a) in actas.iter().enumerate() {
+        let previa = i.checked_sub(1).map(|j| &actas[j].acta);
+        verificar_acta(a, previa).map_err(|e| (i, e))?;
+    }
+    Ok(())
+}
+
+/// Lo que una rotación juzgada deja fijado: el tramo de índices EMBEBIDOS de la clave que llega
+/// (D-C, regla 4) —por encima de su `desde`, que es la hoja de su acta, y por debajo del `desde`
+/// de la siguiente, si la cadena la trae— y cuántos eslabones se cruzaron.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Rotacion {
+    pub desde: u64,
+    pub hasta: Option<u64>,
+    pub eslabones: usize,
+}
+
+impl Rotacion {
+    /// Si una cabeza de la clave, con este índice EMBEBIDO, cae en su tramo.
+    pub fn en_su_tramo(&self, embebido: u64) -> bool {
+        embebido > self.desde && self.hasta.map_or(true, |h| embebido < h)
+    }
+}
+
+/// Por qué una clave no rota a otra con esta cadena.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RotacionError {
+    /// Un eslabón de la cadena no vale: cuál, contando desde 0, y su regla.
+    Cadena { eslabon: usize, error: ActaError },
+    /// La clave que llega no está en la cadena: nadie la comprometió.
+    RecibidaFuera,
+    /// La clave que se tenía no está en la cadena antes de la que llega.
+    FijadaFuera,
+    /// ⚠️ **Solapamiento** (D-C, reglas 3 y 4): una firma de la clave que se va con un índice
+    /// embebido que alcanza el `desde` de su sucesora. Evidencia oponible con nombre, como la
+    /// vista dividida: rotar no escapa de lo ya firmado.
+    Solapamiento { indice: u64, desde: u64 },
+}
+
+impl std::fmt::Display for RotacionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RotacionError::Cadena { eslabon, error } => {
+                write!(f, "el acta {eslabon} de la cadena no vale: {error}")
+            }
+            RotacionError::RecibidaFuera => {
+                write!(
+                    f,
+                    "la clave que llega no esta en la cadena: nadie la comprometio"
+                )
+            }
+            RotacionError::FijadaFuera => {
+                write!(
+                    f,
+                    "la clave que se tenia no esta en la cadena antes de la que llega"
+                )
+            }
+            RotacionError::Solapamiento { indice, desde } => write!(
+                f,
+                "SOLAPAMIENTO: la clave que se va firmo en la hoja {indice}, y su sucesora \
+                 empieza en la {desde}"
+            ),
+        }
+    }
+}
+
+/// ⚠️ §647 · **Juzga el paso de la clave `de` a la clave `a` con una cadena de actas** (RFC-0015,
+/// D-C y D-E): la cadena entera vale; `a` está en ella y `de` antes; y lo que el verificador vio
+/// firmar a `de` —su mayor índice EMBEBIDO, si vio alguno— queda por debajo del `desde` de su
+/// sucesora. Puede cruzar varios eslabones: un testigo que estuvo apagado ve la clave de hoy, no
+/// las de en medio. Si una clave vuelve a la cadena, cuenta su última entrada.
+pub fn juzgar_rotacion(
+    actas: &[ActaFirmada],
+    de: &[u8],
+    a: &[u8],
+    ultimo_de_la_vieja: Option<u64>,
+) -> Result<Rotacion, RotacionError> {
+    verificar_cadena(actas).map_err(|(eslabon, error)| RotacionError::Cadena { eslabon, error })?;
+    let j = actas
+        .iter()
+        .rposition(|x| x.acta.clave == a)
+        .ok_or(RotacionError::RecibidaFuera)?;
+    let i = actas[..j]
+        .iter()
+        .rposition(|x| x.acta.clave == de)
+        .ok_or(RotacionError::FijadaFuera)?;
+    if let Some(u) = ultimo_de_la_vieja {
+        let sucesora = actas[i + 1].acta.desde;
+        if u >= sucesora {
+            return Err(RotacionError::Solapamiento {
+                indice: u,
+                desde: sucesora,
+            });
+        }
+    }
+    Ok(Rotacion {
+        desde: actas[j].acta.desde,
+        hasta: actas.get(j + 1).map(|x| x.acta.desde),
+        eslabones: j - i,
+    })
+}
+
 /// ⚠️ §646 · **El acta en JSON, con UN productor** (RFC-0015 D-D: en el diario, en el cable y en
 /// los sobres, tal cual). Con las convenciones de `spec/RPC.md`: la clave y las firmas en `DATA`,
 /// el esquema, el `desde` y el tamaño del MMR en `Q`, y los digests en `Digest`, con la
@@ -590,6 +696,62 @@ mod tests {
         assert_eq!(preambulo_acta(ACTA_VERSION, &d).len(), 47);
         assert_ne!(DOMINIO_ACTA_FIRMA, crate::DOMINIO);
         assert_ne!(DOMINIO_ACTA_FIRMA, crate::DOMINIO_COFIRMA);
+    }
+
+    /// ⚠️ §647 · **la rotación juzgada con la cadena.** De la clave 1 a la 2 vale, con su tramo
+    /// por encima de 40 y sin techo; la cadena al revés no la explica; una clave que nadie
+    /// comprometió tampoco; la cadena sin su génesis no vale, y dice el eslabón. Y la clave que
+    /// se va con una firma en la hoja 40 —el `desde` de su sucesora— es SOLAPAMIENTO; en la 39 no.
+    #[test]
+    fn la_rotacion_se_juzga_con_la_cadena_y_el_solapamiento_tiene_nombre() {
+        let e = escena();
+        let cadena = [e.genesis.clone(), e.rotacion.clone()];
+        let (k1, k2) = (&e.genesis.acta.clave, &e.rotacion.acta.clave);
+        let r = juzgar_rotacion(&cadena, k1, k2, Some(39)).expect("rota");
+        assert_eq!(
+            r,
+            Rotacion {
+                desde: 40,
+                hasta: None,
+                eslabones: 1
+            }
+        );
+        assert!(
+            !r.en_su_tramo(40),
+            "la hoja 40 es del acta, no de una cabeza"
+        );
+        assert!(r.en_su_tramo(41) && r.en_su_tramo(u64::MAX));
+        assert_eq!(
+            juzgar_rotacion(&cadena, k1, k2, None).map(|r| r.desde),
+            Ok(40)
+        );
+        assert_eq!(
+            juzgar_rotacion(&cadena, k1, k2, Some(40)),
+            Err(RotacionError::Solapamiento {
+                indice: 40,
+                desde: 40
+            })
+        );
+        assert_eq!(
+            juzgar_rotacion(&cadena, k2, k1, None),
+            Err(RotacionError::FijadaFuera),
+            "la cadena no rota hacia atras"
+        );
+        assert_eq!(
+            juzgar_rotacion(&cadena, k1, &[9u8; 4], None),
+            Err(RotacionError::RecibidaFuera)
+        );
+        assert!(matches!(
+            juzgar_rotacion(&cadena[1..], k1, k2, None),
+            Err(RotacionError::Cadena { eslabon: 0, .. })
+        ));
+        assert_eq!(verificar_cadena(&cadena), Ok(()));
+        let tramo = Rotacion {
+            desde: 40,
+            hasta: Some(90),
+            eslabones: 1,
+        };
+        assert!(tramo.en_su_tramo(89) && !tramo.en_su_tramo(90));
     }
 
     /// ⚠️ §646 · **el acta en JSON va y vuelve, y dice qué campo falla.** Sin firmar nada: leer

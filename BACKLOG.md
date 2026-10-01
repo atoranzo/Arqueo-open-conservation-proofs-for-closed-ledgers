@@ -693,6 +693,10 @@ instrumentacion) al grupo E.*
   desde la génesis, con el JSON del acta escrito y leído por el kit, que
   es también la línea del diario. QUEDAN el testigo (E4), los sobres con
   su banco (E5) y el medio (E6): sigue abierta.
+  ✅ a medias (§647): la E4, el testigo sigue una rotación que la cadena
+  explica y se detiene ante la que no, con el solapamiento por su nombre,
+  y `--auditar` la rejuzga sin el nodo. QUEDAN los sobres con su banco
+  (E5) y el medio (E6): sigue abierta.
 
 - [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en cuatro hitos (§623, §626).**
   `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con

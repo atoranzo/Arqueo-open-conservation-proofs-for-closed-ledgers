@@ -627,17 +627,14 @@ fn cadena_servida(ruta: &str) -> Vec<Value> {
 
 /// La cadena de actas del diario, juzgada entera con el juez del tercero (D-C): la genesis
 /// sola y cada rotacion contra la anterior. Una cadena rota no arranca.
+/// ⚠️ §647: el recorrido es el del kit (`verificar_cadena`), el mismo que usa el testigo.
 fn verificar_cadena_de_actas(actas: &[zk_ssl_verify::actas::ActaFirmada]) -> Result<(), String> {
-    for (i, a) in actas.iter().enumerate() {
-        let previa = i.checked_sub(1).map(|j| &actas[j].acta);
-        zk_ssl_verify::actas::verificar_acta(a, previa).map_err(|e| {
-            format!(
-                "el acta {} del diario no vale: {e}. Una cadena rota no arranca",
-                i + 1
-            )
-        })?;
-    }
-    Ok(())
+    zk_ssl_verify::actas::verificar_cadena(actas).map_err(|(i, e)| {
+        format!(
+            "el acta {} del diario no vale: {e}. Una cadena rota no arranca",
+            i + 1
+        )
+    })
 }
 
 /// **Que acta toca firmar**, con las actas que el diario ya tiene y la clave con que se arranca.

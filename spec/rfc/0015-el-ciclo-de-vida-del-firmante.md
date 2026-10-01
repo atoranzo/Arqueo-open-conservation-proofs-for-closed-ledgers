@@ -4,8 +4,8 @@
   (§636, §638) y en el RFC 10033 de la IETF. Las cinco decisiones, TOMADAS en el §642 por
   delegación del autor, con el criterio del §609, y REVERSIBLES: ver «Decisiones». Construida la
   E2, el núcleo del acta (§643), la E3a, el nodo que firma sus actas (§644), la E3b-1, la firma
-  de la clave que se va y el techo que no reserva (§645), y la E3b-2, `zkssl_keyActs` (§646); E4
-  a E6 sin construir.
+  de la clave que se va y el techo que no reserva (§645), la E3b-2, `zkssl_keyActs` (§646), y la
+  E4, el testigo que rota con las actas (§647); E5 y E6 sin construir.
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude (sesión 193, §639, que lo escribe entero sobre la medida de los
   §636 y §638) — ver [`GENAI.md`](../../GENAI.md)
@@ -21,7 +21,7 @@
   índice), §591 (la huella de la clave), §594 (la puerta del diario en todo estado), §636 y §638
   (lo que hoy pasa al cambiar de clave, medido), §639 (esta propuesta), §642 (las decisiones) y
   §643 (la E2),
-  §644 (la E3a), §645 (la E3b-1) y §646 (la E3b-2).
+  §644 (la E3a), §645 (la E3b-1), §646 (la E3b-2) y §647 (la E4).
 - **Backlog:** la **84** (agotamiento, rotación y pérdida del índice), con la **92** (custodia y
   supervivencia del índice) y la **19** en su línea de familia, que el §288 pidió cortar juntas;
   la **87** (agilidad criptográfica: el acta lleva el esquema de la clave que presenta); y la
@@ -36,7 +36,7 @@
 | E3a — el nodo firma sus actas | el acta génesis, la rotación a la sucesora comprometida y el aviso de agotamiento, al arrancar | no | **construida (§644)**: opt-in con `--siguiente` (sin ella y sin actas, el nodo firma como hasta hoy); `--huella-de-clave-fichero` imprime la huella de la clave fría; al arrancar, el nodo juzga la cadena de actas del diario, firma la génesis o la rotación por el camino de las cabezas y la anota con `fsync`, y no arranca con una clave que nadie comprometió; el umbral de un año de latidos exige `--reconozco-agotamiento`. La línea del acta no la ve ningún lector de cabezas y sí la puerta del contador |
 | E3b-1 — la vieja firma y el techo | la firma de la clave que se va (decisión 5), y el latido que deja de quemar el contador en el techo | no | **construida (§645)**: `--clave-anterior-fichero` da la semilla de la clave que se va, solo en una rotación; la vieja firma el mismo preámbulo en la hoja que da el contador y la nueva empieza en la siguiente, y una semilla que no es la del acta en vigor no gasta nada. En el techo el firmante devuelve `Agotada` **sin reservar**: el contador dice el techo, porque el SK no lo representa (medido) |
 | E3b-2 — el cable | `zkssl_keyActs`, que sirve la cadena de actas desde la génesis | no (aditivo: un método) | **construida (§646)**: sin parámetros, `{actas}` desde la génesis, armada una vez al arrancar tras juzgarla; el acta en JSON la escriben y la leen `acta_a_json` y `acta_de_json` del kit, que son también la línea del diario —byte a byte la de antes—; un elemento de un digest que vale `p` o más no se lee. La superficie pasa de 31 a 32 métodos y `zkssl/0.4` no sube |
-| E4 — el testigo | ante un cambio de clave pide el acta, la juzga contra la clave que fijó y sigue o se detiene; `--auditar` la juzga en el diario | no | pendiente |
+| E4 — el testigo | ante un cambio de clave pide el acta, la juzga contra la clave que fijó y sigue o se detiene; `--auditar` la juzga en el diario | no | **construida (§647)**: ante un cambio de clave el testigo pide `zkssl_keyActs` y la juzga con `juzgar_rotacion` del kit; si la cadena lleva de la clave fijada a la recibida, anota `rotada` con la cadena dentro, fija la nueva con su tramo y sigue; si no, se detiene como antes, con el motivo. Nace `solapamiento`, que detiene (reglas 3 y 4). `--auditar` rejuzga la rotación desde la línea, sin el nodo. El diario del testigo pasa a v4 |
 | E5 — el kit, el catálogo y el banco | el campo `actas` en los sobres que comparan cabezas, sus vectores y `tools/banco_rotacion.sh` contra un nodo real | no (aditivo: un campo opcional) | pendiente |
 | E6 — el medio | el acta como hoja del medio de la clave que se va y de la que llega, con la E3 del RFC-0013 | no | pendiente, tras la E3 del RFC-0013 |
 
@@ -171,6 +171,17 @@ línea del diario lleva, sin su `v`, su `tipo` y su `index`, es lo que el cable 
 sobres de la E5 llevarán. `procedencia` y `firmaAnterior` van siempre, con `null` cuando no hay.
 El nodo arma la cadena al arrancar y no relee el diario por petición: las actas solo nacen al
 arrancar, y el diario crece una firma por latido.
+
+**Fijado en la E4 (§647).** El juicio de una rotación tiene un productor, `juzgar_rotacion` en el
+kit, que usan el testigo en vivo y `--auditar`, y la cadena entera, `verificar_cadena`, que usa
+además el nodo al arrancar. Puede cruzar varios eslabones: un testigo apagado ve la clave de hoy y
+no las de en medio. La regla 3 se aplica a lo que el testigo VIO: el mayor índice embebido de la
+clave fijada, entre las cabezas que verificaron, queda por debajo del `desde` de su sucesora. La
+regla 4, a cada cabeza de una clave que llegó por rotación —con TOFU no hay tramo, porque nadie lo
+dijo—. Fuera de su tramo, `solapamiento`, que detiene. La rotación se anota en su propia línea,
+con la cadena que el nodo sirvió, y la misma cabeza se juzga después con la clave nueva; las hojas
+que gastaron las actas salen como un `hueco`, que no detiene. El significado de `cambio-de-clave`
+se estrecha al cambio que la cadena no explica, y por eso el diario del testigo sube a v4.
 
 ### D-D — Dónde vive el acta
 

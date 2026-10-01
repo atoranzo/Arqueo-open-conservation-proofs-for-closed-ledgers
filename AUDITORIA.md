@@ -46454,3 +46454,96 @@ sobres del kit las aceptan (E5), ni el medio las publica (E6). El JSON del acta 
 propios: los traerán los sobres de la E5, que son los que un tercero guarda.
 
 **Lo que NO cierra.** La 84 sigue abierta, con la E2 y la E3 de su RFC construidas.
+
+## §647 — RFC-0015 E4: el testigo sigue una rotación que la cadena de actas explica, se detiene ante la que no, y nombra el solapamiento
+
+El commit que lleva este asiento, sobre `c8f7e34` (el §646). Un solo sello: el kit gana el juicio
+de la cadena y de una rotación; el testigo, dos veredictos, la petición de `zkssl_keyActs` ante un
+cambio de clave y un auditor que rejuzga la rotación sin el nodo; el diario del testigo sube a v4;
+el nodo recorre su cadena con el juez del kit; el RFC-0015, `NUCLEO.md`, la entrada 84, las filas
+del canon y las cifras de tres documentos se ponen al día; y este asiento. Lo escribe, lo prueba y
+lo commitea la misma sesión de Claude Code que el §646, no el autor en su máquina, fuera del paso
+4 de `GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello` y empuja. En la sesión,
+sobre este mismo árbol, el canon `--sello` salió VERDE, con `zk-ssl-verify` en 174 de 174,
+`zk-ssl-cli` en 135 de 135, `zk-ssl-node` en 191 de 191 y `check_tests` en 1806.
+
+**Rehecho sobre el §675**, como los cuatro anteriores: el código es el mismo, y las cifras, el humo
+de punta a punta y los bancos de este asiento son los de la base nueva.
+
+**De dónde sale.** La D-E del RFC-0015: ante un `CambioDeClave` el testigo pide `zkssl_keyActs`,
+juzga la cadena desde la clave que fijó y, si vale, fija la nueva con un veredicto nuevo,
+«rotada», que anota y sigue; si no hay acta o no vale, se detiene como hoy; `--auditar` hace lo
+mismo con el diario. Las reglas 3 y 4 de la D-C dan el resto: el `desde` de la sucesora supera lo
+que la vieja firmó, cada cabeza cae en el tramo de su clave, y lo contrario es **solapamiento**,
+evidencia oponible con nombre.
+
+**Lo que hace.**
+
+1. **El juicio, en el kit.** `verificar_cadena` recorre la cadena entera —el nodo la usa ya al
+   arrancar, en vez de su bucle propio—, y `juzgar_rotacion(actas, de, a, último_de_la_vieja)`
+   comprueba que la cadena vale, que `a` está en ella y `de` antes, y que lo que se vio firmar a
+   `de` queda por debajo del `desde` de su sucesora. Devuelve el tramo de `a` —por encima de su
+   `desde`, que es la hoja de su acta, y por debajo del de la siguiente, si la hay— y cuántos
+   eslabones cruzó: un testigo apagado ve la clave de hoy, no las de en medio. Cinco filas en
+   `NUCLEO.md`, familia ACTA.
+2. **El testigo vivo.** Ante un cambio de clave pide `zkssl_keyActs` y la juzga con una función
+   pura. Si la cadena lo explica, anota una línea `rotada` con la cadena dentro, fija la clave
+   nueva con su tramo y juzga la MISMA cabeza otra vez con ella; si no, sigue siendo
+   `cambio-de-clave`, se detiene, dice el motivo y deja la cadena en la línea. Cada cabeza que
+   verifica se mide contra el tramo de su clave, y la regla 3 se aplica a lo que el testigo VIO:
+   el mayor índice EMBEBIDO de la clave fijada entre las cabezas que verificaron. Nace
+   `solapamiento`, que detiene. Con TOFU no hay tramo: nadie lo dijo.
+3. **El auditor.** Una línea con actas y otra clave es una rotación que `--auditar` rejuzga con el
+   mismo juez, sin el nodo: si vale, la clave nueva queda fijada; si no, `rotacion-invalida` con el
+   motivo, y además `cambio-de-clave`. Mide también cada cabeza verificada contra el tramo de la
+   clave fijada, y nace `solapamiento` entre sus hallazgos.
+4. **El diario del testigo, v4.** Nacen las clases `rotada` y `solapamiento` y el campo `actas`, y
+   el significado de `cambio-de-clave` se estrecha al cambio que la cadena no explica: por eso sube
+   la versión, como en el §314. Los diarios v1 a v3 siguen auditándose.
+
+**Medido.** De punta a punta con los binarios de release: un nodo con la clave A y su génesis, un
+testigo mirándolo, el nodo parado y rearrancado con B y la firma de A. El testigo anota `rotada`
+—desde 5, un eslabón—, un `hueco` con las dos hojas que gastaron las actas, que no detiene, y sigue
+con las cabezas de B; su diario, en v4, sale de `--auditar` **sin hallazgos**, con todas sus
+cabezas reverificadas sin el nodo. Después, un testigo que fijó B ve una clave X con su propia
+génesis: «el cambio de clave NO se explica: la clave que se tenia no esta en la cadena antes de la
+que llega», y se detiene. Su diario auditado da `indice-retrocede` —X cuenta desde otro contador—,
+`rotacion-invalida` y `cambio-de-clave`.
+
+**Un rojo propio, cazado de punta a punta y no por los tests.** La primera auditoría de ese
+diario dio además un `solapamiento` que no existía: el auditor medía la cabeza de X contra el
+tramo de B, que no es su clave. El tramo es de la clave fijada, y la cabeza de otra clave ya es
+`cambio-de-clave`; corregido. Los tests del auditor no lo veían porque sus líneas llevan firmas
+sintéticas que no verifican, y el tramo solo se mide sobre cabezas que verifican; queda escrito
+aquí en vez de forzado en un test.
+
+**Los bancos del testigo, con el árbol limpio.** Los nueve que usan el testigo o un nodo con
+clave —`banco_reutilizacion.sh`, `banco_mentiroso_ausentes.sh`, `banco_apagado.sh`,
+`banco_cofirma.sh`, `banco_consistencia.sh`, `banco_evidencia_v2.sh`, `banco_mentiroso_vista.sh`,
+`banco_mentiroso_censura.sh` y `banco_mentiroso_sin_resolver.sh`— salieron VERDES sobre la base
+nueva. En la primera versión de este sello, sobre la base vieja, `banco_consistencia.sh` salió
+ROJO una vez de tres —en su positivo, catorce vueltas sin una línea `extiende`, todas `anclando` y
+`consistencia-pendiente`—, y VERDE en el mismo commit y en su base. El sello no toca el canal de
+la consistencia, y la causa no se demostró; aquí salió VERDE a la primera. Queda como medida, no
+como explicación.
+
+**Probado.** Los 174 tests del kit y los 135 del testigo pasan en release; el nodo sigue en 191.
+Cuatro son nuevos: en el kit, la rotación juzgada con la cadena —el tramo, la cadena al revés, la
+clave que nadie comprometió, la cadena sin su génesis y el solapamiento en el borde exacto—; en el
+testigo, un cambio con su cadena que rota y sigue, uno sin cadena que lo explique que sigue
+deteniendo con cada motivo —y el solapamiento, que detiene sin rotar—, y el auditor que rejuzga la
+rotación desde la línea. Las dos claves de esos tests son XMSS^MT de verdad, firmadas una vez.
+
+**Contadores.** `zk-ssl-verify` 173 -> 174 y `zk-ssl-cli` 132 -> 135. TOTAL DE SELLO 1643 -> 1647
+y TOTAL CON LARGOS 1780 -> 1784, en los tres párrafos ancla, con el desglose del verificador en
+174 y el del testigo en 135. La cuenta de `check_tests` pasa de 1802 a 1806. El censo de
+`NUCLEO.md`, de 92 a 97 en `zk-ssl-verify` (NÚCLEO 120 -> 124, REFERENCIA 12 -> 13). El
+`BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** Los sobres del kit que comparan cabezas siguen exigiendo una sola clave (E5),
+y no hay todavía banco que rote contra un nodo real dentro del canon: el humo de este asiento es
+manual. El testigo no rehace su memoria de su propio diario al rearrancar, como antes: un testigo
+que rearranca fija con TOFU la clave que vea. Y la regla 3 juzga lo que el testigo vio, no lo que
+el operador firmó sin que nadie mirara.
+
+**Lo que NO cierra.** La 84 sigue abierta, con la E2, la E3 y la E4 de su RFC construidas.

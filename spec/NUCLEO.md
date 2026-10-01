@@ -63,8 +63,8 @@ bajo la firma de la cabeza, entran por la primera mitad, como versión nueva del
 
 ## 4. El censo
 
-**Censo derivado:** 92 elementos alcanzables en `zk-ssl-verify` y 60 `pub` en `zk-ssl-hash`
-(LIBRO 5, NÚCLEO 120, REFERENCIA 12, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
+**Censo derivado:** 97 elementos alcanzables en `zk-ssl-verify` y 60 `pub` en `zk-ssl-hash`
+(LIBRO 5, NÚCLEO 124, REFERENCIA 13, REGISTRO 15). Alcanzable en `zk-ssl-verify` es lo que
 `lib.rs` exporta: sus propios `pub`, todo lo `pub` de los módulos `pub mod` (`acuses`, `mmr`, `consumos`, `congelados`,
 `cuentas`, `recibos`, `actas`) y los
 nombres que sus `pub use` sacan de los módulos privados (`inclusion`, `reverificacion`). Las
@@ -196,6 +196,11 @@ real de sus llaves, no por la primera marca.
 | `verificar_acta` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
 | `acta_a_json` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
 | `acta_de_json` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
+| `verificar_cadena` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
+| `Rotacion` | `verify/actas.rs` | NÚCLEO | ACTA | `struct` |
+| `en_su_tramo` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
+| `RotacionError` | `verify/actas.rs` | REFERENCIA | ACTA | `enum` |
+| `juzgar_rotacion` | `verify/actas.rs` | NÚCLEO | ACTA | `fn` |
 | `native_leaf` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `native_leaf_salted` | `hash/lib.rs` | NÚCLEO | INCLUSIÓN | `fn` |
 | `InclusionError` | `verify/inclusion.rs` | REFERENCIA | INCLUSIÓN | `enum` |
@@ -384,6 +389,12 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
 
 ## 8. Historia
 
+- §647 — `verificar_cadena`, `Rotacion` con `en_su_tramo`, `RotacionError` y `juzgar_rotacion`
+  en el módulo `actas`: la cadena entera y el paso de una clave a otra, juzgados por un
+  productor que usan el nodo al arrancar y el testigo en vivo y al auditar (RFC-0015, E4), con
+  las reglas 3 y 4 de la D-C —el `desde` de la sucesora por encima de lo que la vieja firmó, y
+  cada cabeza en el tramo de su clave— y el solapamiento con nombre. Cinco filas nuevas,
+  familia ACTA; el error, REFERENCIA, como `ActaError`.
 - §646 — `acta_a_json` y `acta_de_json` en el módulo `actas`: el acta tiene un JSON y un
   productor, que escribe la línea del diario y lo que sirve `zkssl_keyActs` (RFC-0015, E3b-2), y
   que leerán los sobres de la E5. Lo que se compone no se mueve: el `acta_digest` se calcula sobre
