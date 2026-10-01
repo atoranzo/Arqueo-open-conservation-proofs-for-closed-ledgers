@@ -44140,3 +44140,112 @@ repositorio.
 **Lo que NO cierra.** La otra sesión tiene que poner su rama sobre la nueva `main` con un reset, no
 con una fusión -una fusión traería de vuelta los once commits-, y entregar lo que siga sin esa línea.
 
+## §628 — el asistente no firma: ni una línea en el mensaje, ni su identidad en el commit
+
+El commit que lleva este asiento, sobre `073f2d7` (el S627). Un solo sello de documentos y de un
+ajuste de Claude Code: nacen `CLAUDE.md` y `.claude/settings.json`, `GENAI.md` gana un párrafo en
+cada mitad, y este asiento, con el canon `--sello` VERDE dentro del bloque. 3 ficheros más este
+asiento, con 102 inserciones fuera de él. El número es el §628 porque el §626 es de la otra sesión
+(`808e9b9`, en `claude/nice-planck-ax35zl`) y el §627 es la reescritura de `main`. El trabajo empezó
+sobre `6f56956`; cuando `main` se reescribió, se rehízo sobre `073f2d7` con un reset y no con una
+fusión, como pide el §627. Lo construyó un asistente, Claude Code en una sesión en la nube, con el
+método de `GENAI.md` salvo en su paso 4, que se declara: el cambio lo aplicó, el canon lo corrió y
+el commit lo hace la sesión en su contenedor, no el autor en su máquina; la aceptación del autor
+pasa del commit a su entrada en `main`.
+
+**De dónde sale.** El autor vio a `claude` en la lista de contribuidores del lateral de la portada
+del repositorio en GitHub y pidió quitarlo. Medido sobre `073f2d7`: los 914 commits de `main` tienen
+como autor y como committer a Angel Toranzo Portela, y ninguno lleva `Co-Authored-By`,
+`Claude-Session:` ni una dirección de `anthropic.com`. Sobre `6f56956`, donde empezó el trabajo,
+eran 922, con el mismo autor y committer y sin `Co-Authored-By` ni `anthropic.com`; nueve llevaban
+`Claude-Session:`, y son los que el §627 reescribió. El repositorio no tiene ningún PR. Lo que sí
+hubo es el S563-C original, `3332c91` (26-09-2026), con dos líneas: `Co-Authored-By: Claude Opus 5
+<noreply@anthropic.com>` y `Claude-Session:`. El 27 de septiembre las quitaron dos `--amend`, cada
+uno con su empuje forzado: `31793cf` (06:53 UTC) la primera y `ae94544` (06:58) la segunda; el §564
+cuenta sólo la primera. GitHub aún sirve `3332c91` y `31793cf` por su hash, aunque nada los alcance.
+
+Que `claude` siga en esa lista es, por tanto, un dato que GitHub conserva, no algo de la historia
+viva. Su documentación dice que, tras reescribir la historia, los contribuidores tardan unas 24
+horas en refrescarse y que, si siguen mal, se contacta con GitHub Support. Van cuatro días. El
+endpoint `/repos/.../contributors`, que cuenta por el correo del autor de cada commit, sólo devuelve
+a `atoranzo`, y con 922 contribuciones: los commits de `main` antes de la reescritura del §627,
+cuando ahora tiene 914. Sirve un dato de antes de la reescritura, y su documentación avisa de que
+puede llevar horas de retraso. No hay documentado ningún ajuste del repositorio que oculte a un
+contribuidor, ni la sección entera.
+
+**El agujero mayor no era la línea.** Lo que faltaba en el árbol era lo que impidiera que volviera a
+pasar, y medirlo destapó dos caminos, no uno. El primero es la línea: Claude Code añade por defecto
+`Co-Authored-By: <modelo> <noreply@anthropic.com>` a cada commit que hace, y en una sesión en la
+nube la pide además el recordatorio de atribución de la sesión. El segundo es peor: en el contenedor
+de una sesión en la nube, la identidad global de git es `Claude <noreply@anthropic.com>`, así que un
+`git commit` sin más hace al asistente autor y committer del commit, con la misma dirección de la
+línea que puso a `claude` en la lista. La misma configuración global firma cada commit con una clave
+del contenedor; esa firma no crea contribuidor, y este commit la lleva, como el `808e9b9` de la otra
+sesión. `GENAI.md` dice que un asistente no figura como coautor, pero nada que la herramienta leyera
+lo decía, y nada hablaba de la identidad.
+
+**Lo que hace.** (1) `CLAUDE.md`, en la raíz, bilingüe con la forma de `GENAI.md`. El autor de cada
+commit es el autor del proyecto, y en una sesión en la nube su identidad se fija en el `.git/config`
+del clon antes del primer commit, con el nombre de `Cargo.toml` y `NOTICE` y el correo de sus
+commits, sin escribir el correo en el árbol; `git var` lo comprueba. Ningún mensaje lleva
+`Co-Authored-By` ni `Claude-Session:`, ni la descripción de un PR el enlace de la sesión. La regla
+prevalece sobre la atribución por defecto y sobre el recordatorio de la sesión. Y no firmar no es
+ocultar: cuando la sesión commitea, el asiento dice que lo hizo un asistente, fuera del paso 4, y un
+PR dice qué modelo y para qué. (2) `.claude/settings.json` con `{"attribution": {"commit": "",
+"sessionUrl": false}}`, las claves que documenta Claude Code para quitar las dos líneas
+(`includeCoAuthoredBy` está en desuso). (3) `GENAI.md`, sección «Autoría y responsabilidad» y su
+gemela inglesa: un párrafo que dice que el asistente tampoco figura en los commits, que cuando una
+sesión commitea, fuera del paso 4, `CLAUDE.md` le indica cómo y que el asiento lo declare, y que
+ninguna compuerta lo comprueba.
+
+**Medido, no supuesto: lo que la herramienta lee, y lo que no.** En el bucle principal de esta
+sesión, nada más nacer `.claude/settings.json` con `commit` vacío, el recordatorio de atribución
+dejó de pedir `Co-Authored-By`, y al borrar el fichero para rehacer el trabajo sobre `073f2d7` lo
+volvió a pedir. Al crearlo otra vez, ya con `sessionUrl` a `false`, la sesión no lo volvió a leer,
+ni siquiera tras editarlo: su recordatorio, y según ellos mismos el de los subagentes que lanzó
+después, sigue pidiendo `Co-Authored-By` y `Claude-Session:`. Que `sessionUrl` a `false` quite la
+segunda lo dice la documentación, no esta medición. Este commit no depende del ajuste: su mensaje se
+escribió sin esas líneas, y se hizo con la identidad del autor fijada en el `.git/config` del clon,
+como manda `CLAUDE.md`, comprobada con `git log -1 --format='%an <%ae> | %cn <%ce>'` antes de
+empujar.
+
+**Decisiones (REVERSIBLES).** D-1: `sessionUrl` a `false`, por el §627, que quitó la línea de sesión
+de la historia de `main` y pidió entregar lo que siga sin ella. Quita también el enlace de sesión de
+la descripción de un PR. D-2: `attribution.pr` se queda por defecto. El pie que Claude Code pone en
+un PR no crea contribuidor, pero nombra la herramienta, no el modelo ni el propósito, así que no
+basta para `CONTRIBUTING.md`; `CLAUDE.md` lo dice. D-3: el ajuste es del ámbito del proyecto, así
+que alcanza a quien arranque Claude Code en la raíz de un clon de este repositorio, salvo que un
+ajuste local, de línea de órdenes o gestionado lo pise: aquí su Claude Code deja de añadir esas
+líneas. Es deliberado, y se declara.
+
+**Lo que NO hace.** No reescribe la historia: la de `main` ya está limpia. No toca los README ni
+`CONTRIBUTING.md`, que ya enlazan `GENAI.md`. No escribe el correo del autor en el árbol, donde no
+estaba. No quita a `claude` de la lista de contribuidores, que es de GitHub.
+
+**Lección.** Quitar la línea de la historia no quitó al contribuidor: el `--amend` que cuenta el
+§564 la sacó, y `claude` sigue en esa lista cuatro días después, con la historia limpia, porque lo
+que GitHub enseña en ese lateral no se deriva sólo de los commits vivos. Y la línea era el agujero
+visible, no el mayor: la identidad del contenedor habría hecho al asistente autor de un commit
+entero sin escribir una sola línea de atribución. Lo que el árbol puede hacer, sin compuerta, es
+decírselo a la herramienta donde la herramienta lo lee, y medir dónde no lo lee.
+
+**Contadores.** Ninguno se mueve: ni un test, ni un pin, ni una entrada del `BACKLOG.md`, que sigue
+en 43 abiertas y 73 resueltas.
+
+**Lo que NO cierra.** La entrada de `claude` en la lista de contribuidores. Quitarla depende de
+GitHub, y la decisión es del autor: pedírselo a GitHub Support, que es la vía que documenta GitHub,
+nombrando `3332c91`, el único que aún sirve el `Co-Authored-By`, y `31793cf`, que aún sirve el
+`Claude-Session:`; o probar lo que la comunidad cuenta que funciona y GitHub no confirma, renombrar
+la rama por defecto y devolverle después su nombre. Esta sesión lo intentó por la API, con permiso
+del autor, y el proxy de la sesión no permite escribir en esa ruta: no se tocó nada, y queda para el
+autor. No hay compuerta: nada comprueba que un commit alcanzable desde `main` tenga al autor como
+autor y committer y no lleve esas líneas; un gancho `commit-msg` o una línea del canon sobre `git
+log` serían baratos, y quedan nombrados, sin número. La regla sólo alcanza a una sesión cuyo clon la
+contenga: la rama `claude/nice-planck-ax35zl` (`808e9b9`) no la tiene hasta que se ponga sobre una
+`main` que la lleve; en una sesión con varios repositorios Claude Code no lee `attribution` del
+`.claude/settings.json`, y una sesión puede no releer el ajuste, como mide el párrafo de arriba, así
+que en esos casos sólo queda `CLAUDE.md`, que obliga al asistente que lo lee, no a un humano ni a
+otra herramienta. Y `--bancos`: en este contenedor el canon dice que no se ha corrido nunca, porque
+`.canon/` no se versiona; el último dato del autor, el del §624, es que sigue sin correrse desde
+`8b8e3f4`.
+

@@ -65,6 +65,13 @@ derechos de autor, y aquí la decisión, la medición y la aceptación son del
 autor. Quien quiera discutir una decisión de diseño o de código tiene enfrente a
 una persona que la explica.
 
+El asistente tampoco figura en los commits. Cuando es una sesión de Claude Code
+la que commitea, y no el autor como dice el paso 4, [`CLAUDE.md`](./CLAUDE.md) le
+indica que lo haga con la identidad del autor, sin líneas que nombren al
+asistente, como `Co-Authored-By`, y que el asiento lo declare;
+`.claude/settings.json` quita las que Claude Code añade por defecto. Ninguna
+compuerta lo comprueba.
+
 ---
 
 # Generative AI in Arqueo
@@ -129,3 +136,10 @@ what a machine generates without substantial human intellectual contribution
 does not give rise to copyright, and here the decision, the measurement and the
 acceptance are the author's. Anyone who wants to argue about a design or code
 decision has a person in front of them who explains it.
+
+Nor is the assistant listed in the commits. When a Claude Code session makes
+the commit, rather than the author as step 4 says, [`CLAUDE.md`](./CLAUDE.md)
+tells it to do so under the author's identity, without lines that name the
+assistant, such as `Co-Authored-By`, and to declare it in the entry;
+`.claude/settings.json` removes the ones Claude Code adds by default. No gate
+checks it.
