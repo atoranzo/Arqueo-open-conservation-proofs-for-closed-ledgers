@@ -45,7 +45,10 @@ fn leer(nombre: &str) -> String {
 }
 
 fn huella() -> [u8; 32] {
-    core::array::from_fn(|i| u8::from_str_radix(&HUELLA[2 * i..2 * i + 2], 16).unwrap())
+    // §650: sobre bytes, nunca troceando el `&str` (la puerta de zk-ssl-hash).
+    let c = |b: u8| (b as char).to_digit(16).unwrap() as u8;
+    let h = HUELLA.as_bytes();
+    core::array::from_fn(|i| c(h[2 * i]) << 4 | c(h[2 * i + 1]))
 }
 
 /// Las semillas de prueba de `main.go`: `desde, desde+1, …`.

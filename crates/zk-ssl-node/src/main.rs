@@ -3407,6 +3407,23 @@ mod tests {
         }
     }
 
+    /// §650 - una sola peticion SIN credencial con un caracter multibyte en un
+    /// campo hex. Antes: el decodificador del cable entraba en panico dentro de
+    /// `parse`, con el `estado` tomado, y el nodo pasaba a PARADA para siempre
+    /// (reproducido en la sesion del plano v2.0). Ahora: -32602 y el nodo sigue.
+    #[test]
+    fn un_hex_con_un_multibyte_es_parametro_invalido_y_el_nodo_sigue() {
+        let app = nodo(60);
+        let params = json!({"index": "0x0", "viewKey": "0xa\u{e9}0"});
+        let r = despachar(&app, "zkssl_accountView", || dispatch(&app, "zkssl_accountView", params));
+        let e = r.expect_err("un hex no canonico no puede dar Ok");
+        assert_eq!(e.code, -32602, "{}", e.message);
+        assert!(app.parada.get().is_none(), "el nodo NO puede quedar en PARADA");
+        assert!(!app.estado.is_poisoned());
+        let r2 = despachar(&app, "zkssl_supply", || dispatch(&app, "zkssl_supply", json!({})));
+        assert!(r2.is_ok(), "la peticion siguiente se sirve: {r2:?}");
+    }
+
     /// §530 - LA RED DEL PANICO: un pánico con el `estado` tomado lo envenena, y
     /// el nodo pasa a PARADA con su causa; la petición siguiente ni llega a
     /// ejecutarse. Falsador: sin el `catch_unwind` de `despachar`, este test entra
@@ -4028,15 +4045,13 @@ mod tests {
         assert_eq!(v["index"], json!("0x1"), "Q es una cantidad HEX del cable");
 
         // ⚠️ LO QUE IMPORTA: lo servido se VERIFICA, sin el nodo.
-        let hex = v["signature"].as_str().expect("signature").trim_start_matches("0x");
-        let firma: Vec<u8> = (0..hex.len() / 2)
-            .map(|i| u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16).expect("hex"))
-            .collect();
-        let dig = v["epochDigest"].as_str().expect("digest").trim_start_matches("0x");
-        let mut digest = [0u8; 32];
-        for i in 0..32 {
-            digest[i] = u8::from_str_radix(&dig[i * 2..i * 2 + 2], 16).expect("hex");
-        }
+        let firma = zk_ssl_hash::hex_canonico(v["signature"].as_str().expect("signature"))
+            .expect("hex");
+        let digest: [u8; 32] =
+            zk_ssl_hash::hex_canonico(v["epochDigest"].as_str().expect("digest"))
+                .expect("hex")
+                .try_into()
+                .expect("32 bytes");
         let c = CabezaFirmada {
             version_formato: q_de(&v["formatVersion"]) as u8,
             indice: q_de(&v["index"]),

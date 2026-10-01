@@ -309,10 +309,7 @@ mod tests_inclusion {
             digest_to_bytes(&d).iter().map(|b| format!("{b:02x}")).collect()
         }
         fn de_hex(s: &str) -> Digest {
-            let s = s.trim_start_matches("0x");
-            let bytes: Vec<u8> = (0..s.len() / 2)
-                .map(|i| u8::from_str_radix(&s[i * 2..i * 2 + 2], 16).expect("hex"))
-                .collect();
+            let bytes = zk_ssl_hash::bytes_de_hex(s.trim_start_matches("0x")).expect("hex");
             digest_from_bytes(&bytes).expect("32 bytes")
         }
 

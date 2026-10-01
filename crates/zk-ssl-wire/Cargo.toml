@@ -19,6 +19,9 @@ license.workspace = true
 
 [dependencies]
 zk-ssl = { path = "../zk-ssl" }
+# §650: el hex canonico (`hex_canonico`, `bytes_de_hex`). Ya estaba en la clausura por
+# `zk-ssl`; la dependencia directa no suma ningun nodo al grafo.
+zk-ssl-hash = { path = "../zk-ssl-hash" }
 # RFC-0007 E1b (§452): `VersionCabeza`, el unico productor del conjunto
 # de versiones (RFC-0005 E2); `firmada()` lo consume en vez de un literal.
 zk-ssl-verify = { path = "../zk-ssl-verify" }

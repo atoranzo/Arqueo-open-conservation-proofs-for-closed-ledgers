@@ -41,6 +41,11 @@ def hex_a_bytes(s):
     h = s[2:]
     if len(h) % 2 == 1:
         raise Rojo(f"hex impar ({len(h)} chars)")
+    # §650: la regla canonica, la misma que el mando: solo [0-9a-f]. bytes.fromhex
+    # admite mayusculas y se salta los espacios.
+    malo = next((i for i, c in enumerate(h) if c not in "0123456789abcdef"), None)
+    if malo is not None:
+        raise Rojo(f"hex: cifra no admitida en la posicion {malo}")
     try:
         return bytes.fromhex(h)
     except ValueError as e:

@@ -67,15 +67,12 @@ fn to_hex(bytes: &[u8]) -> String {
     s
 }
 
+/// §650: el hex canonico de `zk-ssl-hash`, que lee sobre bytes. La copia de
+/// aqui troceaba el `&str` por bytes y un caracter multibyte la hacia entrar en
+/// panico dentro de `Deserialize`, con el candado del nodo tomado: PARADA con
+/// una sola peticion. Ahora es `BadHex`, y tambien lo son `+` y las mayusculas.
 fn from_hex(s: &str) -> Result<Vec<u8>, WireError> {
-    let h = s.strip_prefix("0x").ok_or(WireError::BadHex)?;
-    if h.len() % 2 != 0 {
-        return Err(WireError::BadHex);
-    }
-    (0..h.len())
-        .step_by(2)
-        .map(|i| u8::from_str_radix(&h[i..i + 2], 16).map_err(|_| WireError::BadHex))
-        .collect()
+    zk_ssl_hash::hex_canonico(s).map_err(|_| WireError::BadHex)
 }
 
 // ─────────────────────────── escalares ──────────────────────────────
@@ -1294,6 +1291,19 @@ pub mod openrpc;
 mod tests {
     use super::*;
     use serde_json::Value;
+
+    /// §650: el DATA del cable se lee sobre bytes. Un multibyte, un `+` o una
+    /// mayuscula son `BadHex` dentro de `Deserialize`, no un panico. Falsador:
+    /// con la copia que troceaba el `&str`, el primer caso entra en panico.
+    #[test]
+    fn el_data_del_cable_es_el_hex_canonico() {
+        let mal = |s: &str| serde_json::from_value::<B32>(Value::String(s.into())).unwrap_err().to_string();
+        let ok = format!("0x{}", "ab".repeat(32));
+        assert!(serde_json::from_value::<B32>(Value::String(ok)).is_ok());
+        assert!(mal(&format!("0x\u{e9}{}", "a".repeat(62))).contains("hex mal formado"));
+        assert!(mal(&format!("0x+f{}", "a".repeat(62))).contains("hex mal formado"));
+        assert!(mal(&format!("0x{}", "AB".repeat(32))).contains("hex mal formado"));
+    }
 
     // ───────────────── §315 · la cofirma en el cable ─────────────────
 

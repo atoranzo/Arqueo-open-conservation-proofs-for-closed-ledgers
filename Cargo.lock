@@ -3648,6 +3648,7 @@ dependencies = [
  "zk-ssl",
  "zk-ssl-air",
  "zk-ssl-guardian",
+ "zk-ssl-hash",
  "zk-ssl-verify",
  "zk-ssl-wire",
 ]
@@ -3667,6 +3668,7 @@ dependencies = [
  "winterfell",
  "zk-ssl",
  "zk-ssl-guardian",
+ "zk-ssl-hash",
  "zk-ssl-wire",
 ]
 
@@ -3692,6 +3694,7 @@ dependencies = [
  "stark-experiment",
  "winterfell",
  "zk-ssl",
+ "zk-ssl-hash",
  "zk-ssl-verify",
 ]
 

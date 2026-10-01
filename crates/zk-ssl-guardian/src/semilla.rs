@@ -74,12 +74,21 @@ pub fn descodificar_hex(hex: &str) -> Result<Vec<u8>, GuardianError> {
             encontrado_car: h.len(),
         });
     }
-    (0..SEMILLA_LEN)
-        .map(|i| u8::from_str_radix(&h[i * 2..i * 2 + 2], 16))
-        .collect::<Result<Vec<u8>, _>>()
-        .map_err(|e| GuardianError::SemillaNoHex {
-            detalle: e.to_string(),
+    // §650: sobre BYTES. Trocear el `&str` con `&h[i * 2..i * 2 + 2]` hacia entrar
+    // en panico con un caracter multibyte (el corte cae dentro del caracter), y
+    // `from_str_radix` aceptaba un `+`. El guardian no tiene dependencias (§296):
+    // la regla se escribe aqui, la misma que `zk_ssl_hash::bytes_de_hex`.
+    let cifra = |b: u8| (b as char).to_digit(16).filter(|_| b.is_ascii_hexdigit());
+    h.as_bytes()
+        .chunks_exact(2)
+        .enumerate()
+        .map(|(i, par)| match (cifra(par[0]), cifra(par[1])) {
+            (Some(a), Some(c)) => Ok((a << 4 | c) as u8),
+            _ => Err(GuardianError::SemillaNoHex {
+                detalle: format!("cifra no admitida en el par {i}"),
+            }),
         })
+        .collect()
 }
 
 /// Lee una semilla en **HEX** de un fichero, comprobando antes los permisos.
@@ -184,6 +193,20 @@ mod tests {
             descodificar_hex(&mal),
             Err(GuardianError::SemillaNoHex { .. })
         ));
+    }
+
+    /// §650: 192 BYTES con un caracter multibyte dentro (dos cifras sustituidas
+    /// por «é»). La longitud en bytes cuadra; antes, el corte por bytes caia
+    /// dentro del caracter y el guardian entraba en panico. Tambien el `+`.
+    #[test]
+    fn un_multibyte_o_un_signo_se_rechazan_sin_panico() {
+        let mut mal = hex_de_prueba();
+        mal.replace_range(1..3, "\u{e9}");
+        assert_eq!(mal.len(), SEMILLA_LEN * 2, "la longitud en bytes tiene que cuadrar");
+        assert!(matches!(descodificar_hex(&mal), Err(GuardianError::SemillaNoHex { .. })));
+        let mut signo = hex_de_prueba();
+        signo.replace_range(0..1, "+");
+        assert!(matches!(descodificar_hex(&signo), Err(GuardianError::SemillaNoHex { .. })));
     }
 
     #[test]

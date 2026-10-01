@@ -23,6 +23,9 @@ dev = ["zk-ssl/sandbox"]
 
 [dependencies]
 zk-ssl = { path = "../zk-ssl" }
+# §650: el hex canonico (`hex_canonico`, `bytes_de_hex`). Ya estaba en la clausura por
+# `zk-ssl`; la dependencia directa no suma ningun nodo al grafo.
+zk-ssl-hash = { path = "../zk-ssl-hash" }
 zk-ssl-wire = { path = "../zk-ssl-wire" }
 # ⚠️ La VERIFICACION vive fuera del nodo desde §243: el firmante usa **el
 # mismo verificador que usara el tercero**, no otro. Si el firmante y el

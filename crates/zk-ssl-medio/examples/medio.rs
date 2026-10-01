@@ -25,7 +25,9 @@ fn hex32(v: &Value, que: &str) -> [u8; 32] {
         .strip_prefix("0x")
         .unwrap_or_else(|| panic!("{que}: sin 0x"));
     assert_eq!(h.len(), 64, "{que}: 32 bytes");
-    core::array::from_fn(|i| u8::from_str_radix(&h[2 * i..2 * i + 2], 16).expect(que))
+    // §650: sobre bytes, nunca troceando el `&str` (la puerta de zk-ssl-hash).
+    let c = |b: u8| (b as char).to_digit(16).expect(que) as u8;
+    core::array::from_fn(|i| c(h.as_bytes()[2 * i]) << 4 | c(h.as_bytes()[2 * i + 1]))
 }
 
 fn hex(b: &[u8]) -> String {

@@ -45206,3 +45206,63 @@ en 43 abiertas y 73 resueltas.
 por RPC con disco tras el §538: el margen a pico RTGS de la vía suelta con disco, ≈1,04× a ≈2,2×,
 es ESTIMADO, y es lo primero que el corte 1 tiene que medir. Diecisiete agentes de una sesión no son
 una auditoría externa. Y esta sesión no corrió `--bancos` ni `--completo`.
+
+## §650 — el hexadecimal, leído sobre bytes: un carácter multibyte ya no para el nodo ni tumba el kit
+
+El commit que lleva este asiento, sobre el §637 de esta rama (`claude/vibrant-cannon-qmxurq`, sobre
+`e1d1db3`). Es el primero de los cortes del aviso privado de seguridad que el §637 entregó al autor
+(SEG-02, P0); el autor pidió cerrarlos. El número es el §650 porque la sesión que trabaja sobre
+`main` lleva su propia secuencia y se le avisó de que esta rama usa del §650 al §653. Lo escribe, lo
+prueba y lo commitea una sesión de Claude Code en la nube, no el autor en su máquina, fuera del paso
+4 de `GENAI.md`, como pide `CLAUDE.md`. En la sesión, sobre este mismo árbol, el canon `--sello`
+salió VERDE: los 19 crates del nivel en sus pines, 324 s de tests y 7 min 2 s en total.
+
+**El defecto, medido.** Cada crate traía su copia de «quita `0x` y trocea de dos en dos» con
+`&h[i..i + 2]`. Eso trocea un `&str` por BYTES: con un carácter multibyte el corte cae dentro del
+carácter y Rust entra en pánico en vez de devolver un error. Reproducido en la sesión del §637 sobre
+`e69fadd`, en release, por la misma vía que el servidor (`despachar` → `dispatch`): una sola
+petición `zkssl_accountView` sin credencial, con `"viewKey": "0xaé0"`, entra en pánico dentro de
+`parse`, con el candado del estado tomado; `despachar` ve el candado envenenado y fija la PARADA
+(«end byte index 2 is not a char boundary; it is inside 'é'»), y la petición siguiente
+(`zkssl_supply`) ya se rechaza. El kit hacía lo mismo con un paquete: salía con 101 (pánico) en vez
+de ROJO. Y `u8::from_str_radix` acepta un `+` delante: `0x+f+f` se leía como `[15, 15]`, así que el
+«hex canónico» que declara `SECURITY.md` §3.bis no se cumplía. Las copias que leen datos ajenos eran
+cuatro: el cable (el nodo al leer peticiones y el SDK al leer respuestas), el kit y dos del testigo,
+que lee cabezas de un nodo que puede mentir (RFC-0011). Otras tres leían ficheros locales (el
+keystore del SDK, la semilla del guardián y el diario del nodo), y cuatro eran de tests y ejemplos.
+
+**Lo que hace.** (1) `zk-ssl-hash` gana un solo lector, sobre bytes: `bytes_de_hex` (el cuerpo sin
+prefijo, `[0-9a-fA-F]`, para los ficheros locales que ya admitían mayúsculas), `hex_canonico`
+(exige `0x` y `[0-9a-f]`: el del cable y el del paquete) y `HexError`. Nunca trocea un `&str`: lee
+`as_bytes()` con `chunks_exact(2)`. Tres filas nuevas en `spec/NUCLEO.md`, REFERENCIA: no componen
+ningún byte firmado. (2) El cable, el kit, el SDK, el testigo, el diario y los tests pasan a
+llamarlo; el cable, el SDK y el nodo ganan la dependencia directa de `zk-ssl-hash`, que ya estaba en
+sus clausuras: ningún paquete nuevo en ninguna. El guardián, que por diseño no tiene dependencias
+(§296), reescribe su lector en el sitio, sobre bytes; `zk-ssl-medio`, que sólo depende de `sha2`,
+también. (3) Los tres textos de rechazo del kit son los de siempre (`sin 0x: `, `hex impar (N
+chars)`, `hex: `): los manifiestos de `spec/vectors/paquete/` los fijan. (4) La segunda
+implementación (`tools/segunda/verificador.py`) aplica la misma regla: `bytes.fromhex` admitía
+mayúsculas y se saltaba los espacios.
+
+**Falsadores.** En el nodo, el caso de arriba por `despachar`: ahora `-32602`, sin PARADA, sin
+candado envenenado, y la petición siguiente se sirve. En el kit, un multibyte en un digest y en la
+firma de `paquete/posicion-v2.json` dan ROJO con salida 1, no 101, con el positivo primero y solo
+(§66.2). En el cable, un `B32` con un multibyte, con `+` o en mayúsculas es `BadHex`. En el testigo,
+`hex32` y `leer_hex`. En el guardián, una semilla de 192 bytes con un multibyte y otra con `+`. Y
+una puerta en `zk-ssl-hash`: ningún `from_str_radix(&…[…])` en el fuente de los crates del árbol,
+con prueba de vida (265 ficheros `.rs` medidos; el suelo es 200).
+
+**Lo que cambia para quien habla con el nodo.** El cable rechaza ahora mayúsculas y `+` en todo
+DATA: un cliente que los mande recibe `-32602`. Los productores de la casa escriben minúscula
+(`to_hex`), y los vectores también. Ni el formato ni un vector se mueven. El kit cambia de binario:
+este corte va en la versión nueva de `arqueo-verify` que pide el aviso, junto con los de los §651 y
+§653; la `v0.3.0` publicada sigue saliendo con 101 ante ese paquete.
+
+**Contadores.** `zk-ssl-hash` 40 -> 44, `zk-ssl-verify` 152 -> 155, `zk-ssl-node` 176 -> 177,
+`zk-ssl-cli` 131 -> 132, `zk-ssl-wire` 23 -> 24, `zk-ssl-guardian` 27 -> 28. TOTAL DE SELLO 1577 ->
+1588; TOTAL CON LARGOS 1714 -> 1725: los tres párrafos ancla al día (`PAPER.md`, `PAPER_EN.md` y
+`PRINCIPIOS.md`, con el desglose del nodo, el verificador y el testigo). El `BACKLOG.md` no se mueve.
+
+**Lo que NO cierra.** Sacar `parse` fuera del candado, que el aviso deja como red adicional del
+enrutador de ARQ-09. La publicación de la versión nueva del kit. Y los otros siete hallazgos del
+aviso, de los que SEG-01 y SEG-08 los cierra la rama `claude/nice-cannon-arzmc9` (§641, RFC-0017).

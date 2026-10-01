@@ -984,6 +984,78 @@ impl core::fmt::Display for FormatoError {
 
 impl std::error::Error for FormatoError {}
 
+// ═══════════════════════════════════════════════════════════════════════
+//  EL HEXADECIMAL, LEIDO SOBRE BYTES (§650)
+//
+//  Hasta aqui cada crate traia su copia de «quita 0x y trocea de dos en
+//  dos» con `&h[i..i + 2]`. Eso trocea un `&str` por BYTES: un caracter
+//  multibyte deja el corte dentro de un caracter y Rust entra en PANICO en
+//  vez de devolver un error. En el nodo, el panico salta con el candado del
+//  estado tomado y lo deja en PARADA; en el kit, el programa sale con 101 en
+//  vez de ROJO. Y `from_str_radix` acepta un `+` delante. Un solo productor,
+//  que nunca trocea un `&str`.
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Lo que puede ir mal al leer hexadecimal.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HexError {
+    /// Falta el prefijo `0x` donde se exige.
+    SinPrefijo,
+    /// Un numero impar de cifras (contadas en bytes de la cadena).
+    LongitudImpar(usize),
+    /// En esa posicion del cuerpo (en bytes) no hay una cifra admitida.
+    NoHex(usize),
+}
+
+impl core::fmt::Display for HexError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            HexError::SinPrefijo => write!(f, "hex sin 0x"),
+            HexError::LongitudImpar(n) => write!(f, "hex de longitud impar ({n})"),
+            HexError::NoHex(i) => write!(f, "hex: cifra no admitida en la posicion {i}"),
+        }
+    }
+}
+
+impl std::error::Error for HexError {}
+
+fn cifra(b: u8, mayusculas: bool) -> Option<u8> {
+    match b {
+        b'0'..=b'9' => Some(b - b'0'),
+        b'a'..=b'f' => Some(b - b'a' + 10),
+        b'A'..=b'F' if mayusculas => Some(b - b'A' + 10),
+        _ => None,
+    }
+}
+
+fn descodificar(h: &str, mayusculas: bool) -> Result<Vec<u8>, HexError> {
+    let b = h.as_bytes();
+    if b.len() % 2 != 0 {
+        return Err(HexError::LongitudImpar(b.len()));
+    }
+    b.chunks_exact(2)
+        .enumerate()
+        .map(|(i, par)| match (cifra(par[0], mayusculas), cifra(par[1], mayusculas)) {
+            (Some(a), Some(c)) => Ok(a << 4 | c),
+            (None, _) => Err(HexError::NoHex(2 * i)),
+            (_, None) => Err(HexError::NoHex(2 * i + 1)),
+        })
+        .collect()
+}
+
+/// El cuerpo de un hexadecimal, SIN prefijo: `[0-9a-fA-F]`, por pares. Para
+/// los ficheros locales que ya admitian mayusculas (keystore, diario).
+pub fn bytes_de_hex(h: &str) -> Result<Vec<u8>, HexError> {
+    descodificar(h, true)
+}
+
+/// El hexadecimal del cable y del paquete: `0x` y `[0-9a-f]` en minuscula,
+/// por pares, sin signo. Es el «hex canonico» de `SECURITY.md` §3.bis.
+pub fn hex_canonico(s: &str) -> Result<Vec<u8>, HexError> {
+    let h = s.strip_prefix("0x").ok_or(HexError::SinPrefijo)?;
+    descodificar(h, false)
+}
+
 /// Un elemento de Goldilocks cabe en 8 bytes, little-endian.
 pub fn element_to_bytes(e: BaseElement) -> [u8; 8] {
     e.as_int().to_le_bytes()
@@ -1738,5 +1810,79 @@ mod tests_canonicidad {
         }
         let d = [BaseElement::new(MODULO - 1), BaseElement::ZERO, BaseElement::new(1u64 << 63), BaseElement::ONE];
         assert_eq!(digest_from_bytes(&digest_to_bytes(&d)), Ok(d));
+    }
+}
+
+#[cfg(test)]
+mod tests_hex {
+    //! §650: el hexadecimal leido sobre bytes. Cada test es un caso que antes
+    //! entraba en panico o se aceptaba sin ser canonico.
+    use super::*;
+
+    #[test]
+    fn un_caracter_multibyte_es_un_error_y_no_un_panico() {
+        // 4 bytes: «a», «é» (2 bytes) y «0». Antes: panico «not a char boundary».
+        assert_eq!(hex_canonico("0xa\u{e9}0"), Err(HexError::NoHex(1)));
+        assert_eq!(bytes_de_hex("a\u{e9}0"), Err(HexError::NoHex(1)));
+        // Un multibyte que deja la longitud impar tambien se rechaza sin panico.
+        assert_eq!(hex_canonico("0x\u{e9}0"), Err(HexError::LongitudImpar(3)));
+    }
+
+    #[test]
+    fn el_canonico_exige_0x_minusculas_y_ningun_signo() {
+        assert_eq!(hex_canonico("0x00ff10"), Ok(vec![0x00, 0xff, 0x10]));
+        assert_eq!(hex_canonico("0x"), Ok(vec![]));
+        assert_eq!(hex_canonico("00ff"), Err(HexError::SinPrefijo));
+        assert_eq!(hex_canonico("0xFF"), Err(HexError::NoHex(0)));
+        // `u8::from_str_radix("+f", 16)` da 15: antes "0x+f+f" era [15, 15].
+        assert_eq!(hex_canonico("0x+f+f"), Err(HexError::NoHex(0)));
+        assert_eq!(hex_canonico("0xabc"), Err(HexError::LongitudImpar(3)));
+    }
+
+    #[test]
+    fn el_cuerpo_admite_mayusculas_y_nada_mas() {
+        assert_eq!(bytes_de_hex("ABcd"), Ok(vec![0xab, 0xcd]));
+        assert_eq!(bytes_de_hex("+f"), Err(HexError::NoHex(0)));
+        assert_eq!(bytes_de_hex("0g"), Err(HexError::NoHex(1)));
+    }
+
+    /// LA PUERTA: ningun `from_str_radix(&...[...])` en el fuente de los crates
+    /// del arbol. Es el patron que troceaba un `&str` por bytes; quien lo
+    /// vuelva a escribir lo ve aqui. Recorre `crates/*/src` y `crates/*/tests`.
+    #[test]
+    fn nadie_trocea_hexadecimal_por_bytes_de_una_cadena() {
+        let raiz = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+        let mut vistos = 0usize;
+        let mut malos = Vec::new();
+        let mut pila = vec![raiz];
+        while let Some(d) = pila.pop() {
+            for e in std::fs::read_dir(&d).expect("leer dir") {
+                let p = e.expect("entrada").path();
+                let nombre = p.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                if p.is_dir() {
+                    if nombre != "target" && !nombre.starts_with('.') {
+                        pila.push(p);
+                    }
+                } else if nombre.ends_with(".rs") {
+                    vistos += 1;
+                    let texto = std::fs::read_to_string(&p).expect("leer .rs");
+                    for (n, l) in texto.lines().enumerate() {
+                        if l.trim_start().starts_with("//") {
+                            continue;
+                        }
+                        if let Some(i) = l.find("from_str_radix(&") {
+                            if l[i..].contains('[') {
+                                malos.push(format!("{}:{}", p.display(), n + 1));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Prueba de vida: un recorrido vacio no es una puerta.
+        // 265 ficheros medidos en el §650; el suelo deja margen para borrar, no para
+        // que un recorrido vacio o desde otra raiz pase por bueno.
+        assert!(vistos > 200, "solo {vistos} ficheros .rs: el recorrido no ve el arbol");
+        assert!(malos.is_empty(), "hexadecimal troceado por bytes de un &str: {malos:?}");
     }
 }

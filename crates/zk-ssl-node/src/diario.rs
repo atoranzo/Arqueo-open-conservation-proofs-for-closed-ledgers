@@ -310,20 +310,11 @@ pub fn digests(ruta: impl AsRef<Path>) -> Vec<zk_ssl_verify::acuses::Digest> {
         if h.len() != 64 {
             continue;
         }
-        let mut b = [0u8; 32];
-        let mut mal = false;
-        for (i, par) in (0..64).step_by(2).enumerate() {
-            match u8::from_str_radix(&h[par..par + 2], 16) {
-                Ok(x) => b[i] = x,
-                Err(_) => {
-                    mal = true;
-                    break;
-                }
-            }
-        }
-        if mal {
-            continue;
-        }
+        // §650: sobre bytes; una linea con un multibyte se salta, no panica.
+        let b: [u8; 32] = match zk_ssl_hash::bytes_de_hex(h).ok().and_then(|v| v.try_into().ok()) {
+            Some(b) => b,
+            None => continue,
+        };
         if let Some(dig) = zk_ssl_verify::mmr::hoja_desde_bytes(&b) {
             v.push(dig);
         }

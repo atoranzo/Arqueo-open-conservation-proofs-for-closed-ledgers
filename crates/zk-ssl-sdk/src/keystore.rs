@@ -62,11 +62,8 @@ fn des_hex(s: &str) -> anyhow::Result<Vec<u8>> {
     let h = s
         .strip_prefix("0x")
         .ok_or_else(|| anyhow::anyhow!("hex sin 0x"))?;
-    anyhow::ensure!(h.len() % 2 == 0, "hex de longitud impar");
-    (0..h.len())
-        .step_by(2)
-        .map(|i| u8::from_str_radix(&h[i..i + 2], 16).map_err(Into::into))
-        .collect()
+    // §650: sobre bytes, sin trocear el `&str` (un multibyte era un panico).
+    zk_ssl_hash::bytes_de_hex(h).map_err(|e| anyhow::anyhow!("{e}"))
 }
 
 /// Guarda el wallet cifrado. En Unix, el fichero nace con permisos 0600.

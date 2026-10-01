@@ -73,15 +73,17 @@ fn err(m: String) -> String {
     m
 }
 
+/// §650: lee con `zk_ssl_hash::hex_canonico`, sobre bytes. La copia de aqui
+/// troceaba el `&str` y un caracter multibyte en un paquete hacia salir al
+/// mando con 101 (panico) en vez de ROJO. Los tres textos de rechazo son los de
+/// siempre: los manifiestos de `spec/vectors/paquete/` los fijan.
 fn hex_a_bytes(s: &str) -> Result<Vec<u8>, String> {
-    let h = s.strip_prefix("0x").ok_or_else(|| err(format!("sin 0x: {s:.18}")))?;
-    if h.len() % 2 != 0 {
-        return Err(err(format!("hex impar ({} chars)", h.len())));
-    }
-    (0..h.len())
-        .step_by(2)
-        .map(|i| u8::from_str_radix(&h[i..i + 2], 16).map_err(|e| err(format!("hex: {e}"))))
-        .collect()
+    use zk_ssl_hash::HexError;
+    zk_ssl_hash::hex_canonico(s).map_err(|e| match e {
+        HexError::SinPrefijo => err(format!("sin 0x: {s:.18}")),
+        HexError::LongitudImpar(n) => err(format!("hex impar ({n} chars)")),
+        HexError::NoHex(i) => err(format!("hex: cifra no admitida en la posicion {i}")),
+    })
 }
 
 fn digest_de(v: &serde_json::Value, campo: &str) -> Result<Digest, String> {
@@ -3557,5 +3559,47 @@ mod tests {
         p["cabeza"]["n"] = json!(format!("{:#x}", n + zk_ssl_hash::MODULO));
         let e = verificar_paquete(&p).unwrap_err();
         assert!(e.starts_with("n: ") && e.contains("no es canonico"), "{e}");
+    }
+}
+
+/// §650: un paquete con un caracter multibyte en un campo hex es ROJO con su
+/// texto, no un panico (salida 101). Falsador: con la copia que troceaba el
+/// `&str`, los dos casos entran en panico «not a char boundary».
+#[cfg(test)]
+mod tests_hex_650 {
+    use super::*;
+
+    fn paquete() -> serde_json::Value {
+        serde_json::from_str(include_str!("../../../spec/vectors/paquete/posicion-v2.json")).unwrap()
+    }
+
+    #[test]
+    fn un_multibyte_en_un_digest_del_paquete_es_rojo_y_no_panico() {
+        let mut p = paquete();
+        assert!(verificar_paquete(&p).is_ok(), "el positivo va primero y solo (§66.2)");
+        let raiz = p["cabeza"]["accountsRoot"].as_str().unwrap().to_string();
+        // Mismo largo en BYTES: dos cifras sustituidas por «é» (2 bytes).
+        p["cabeza"]["accountsRoot"] = serde_json::Value::String(format!("0x\u{e9}{}", &raiz[4..]));
+        let e = verificar_paquete(&p).unwrap_err();
+        assert!(e.starts_with("hex: "), "{e}");
+    }
+
+    #[test]
+    fn un_multibyte_en_la_firma_del_paquete_es_rojo_y_no_panico() {
+        let mut p = paquete();
+        let firma = p["cabeza"]["signature"].as_str().unwrap().to_string();
+        p["cabeza"]["signature"] = serde_json::Value::String(format!("0xa\u{e9}{}", &firma[5..]));
+        let r = verificar_paquete(&p);
+        assert!(r.is_err(), "una firma con un multibyte no puede verificar");
+        assert_eq!(codigo_de_salida(&r), 1, "ROJO, no 101: {r:?}");
+    }
+
+    #[test]
+    fn el_hex_del_kit_es_el_canonico() {
+        assert_eq!(hex_a_bytes("0x0aff"), Ok(vec![0x0a, 0xff]));
+        assert_eq!(hex_a_bytes("0x0AFF").unwrap_err(), "hex: cifra no admitida en la posicion 1");
+        assert_eq!(hex_a_bytes("0x+f").unwrap_err(), "hex: cifra no admitida en la posicion 0");
+        assert_eq!(hex_a_bytes("0xabc").unwrap_err(), "hex impar (3 chars)");
+        assert!(hex_a_bytes("abcd").unwrap_err().starts_with("sin 0x: "));
     }
 }

@@ -15,6 +15,9 @@ license.workspace = true
 
 [dependencies]
 zk-ssl = { path = "../zk-ssl" }
+# §650: el hex canonico (`hex_canonico`, `bytes_de_hex`). Ya estaba en la clausura por
+# `zk-ssl`; la dependencia directa no suma ningun nodo al grafo.
+zk-ssl-hash = { path = "../zk-ssl-hash" }
 zk-ssl-wire = { path = "../zk-ssl-wire" }
 # La regla de permisos del material de clave tiene UN productor (5.A-404, S199):
 # `semilla::comprobar_permisos`. El guardian no arrastra nada: solo `std`.

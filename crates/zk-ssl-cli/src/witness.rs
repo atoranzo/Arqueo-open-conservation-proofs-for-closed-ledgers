@@ -267,15 +267,11 @@ pub struct Pendiente {
 
 /// 32 bytes desde el hex del cable. `None` si no son exactamente 32.
 fn hex32(s: &str) -> Option<[u8; 32]> {
+    // §650: la cabeza la sirve un nodo que puede mentir (RFC-0011): sobre bytes,
+    // nunca troceando el `&str`, que con un multibyte hacia entrar al testigo
+    // en panico.
     let h = s.trim_start_matches("0x");
-    if h.len() != 64 {
-        return None;
-    }
-    let mut o = [0u8; 32];
-    for i in 0..32 {
-        o[i] = u8::from_str_radix(&h[i * 2..i * 2 + 2], 16).ok()?;
-    }
-    Some(o)
+    zk_ssl_hash::bytes_de_hex(h).ok()?.try_into().ok()
 }
 
 /// El juicio: ¿la cima nueva EXTIENDE a la custodiada?
@@ -976,9 +972,8 @@ fn leer_hex(v: &Value) -> Result<Vec<u8>, String> {
     if h.len() % 2 != 0 {
         return Err("hex de longitud impar".into());
     }
-    (0..h.len() / 2)
-        .map(|i| u8::from_str_radix(&h[i * 2..i * 2 + 2], 16).map_err(|e| e.to_string()))
-        .collect()
+    // §650: sobre bytes (ver `hex32`).
+    zk_ssl_hash::bytes_de_hex(h).map_err(|e| e.to_string())
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -3015,6 +3010,17 @@ impl Cofirmante {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// §650: la cabeza la sirve un nodo que puede mentir (RFC-0011). Un hex con
+    /// un multibyte es `None` / `Err`, no un panico del testigo.
+    #[test]
+    fn un_hex_con_un_multibyte_no_tumba_al_testigo() {
+        let mal = format!("0x\u{e9}{}", "a".repeat(62));
+        assert_eq!(mal.len(), 66, "64 cifras en bytes: la longitud cuadra");
+        assert_eq!(hex32(&mal), None);
+        assert!(leer_hex(&Value::String(mal)).is_err());
+        assert_eq!(hex32(&format!("0x{}", "0a".repeat(32))), Some([0x0a; 32]));
+    }
 
     // ── §336 · LA POLITICA DEL COFIRMANTE, que hasta hoy no tenia tests ──
 
