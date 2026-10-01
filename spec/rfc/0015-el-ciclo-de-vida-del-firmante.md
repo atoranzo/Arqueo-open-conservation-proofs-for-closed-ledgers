@@ -3,8 +3,9 @@
 - **Estado:** PROPUESTO (§639) — el texto y sus decisiones, escritos sobre lo medido en el árbol
   (§636, §638) y en el RFC 10033 de la IETF. Las cinco decisiones, TOMADAS en el §642 por
   delegación del autor, con el criterio del §609, y REVERSIBLES: ver «Decisiones». Construida la
-  E2, el núcleo del acta (§643), la E3a, el nodo que firma sus actas (§644), y la E3b-1, la
-  firma de la clave que se va y el techo que no reserva (§645); E3b-2 a E6 sin construir.
+  E2, el núcleo del acta (§643), la E3a, el nodo que firma sus actas (§644), la E3b-1, la firma
+  de la clave que se va y el techo que no reserva (§645), y la E3b-2, `zkssl_keyActs` (§646); E4
+  a E6 sin construir.
 - **Autor:** Ángel José Toranzo Portela
 - **Asistencia GenAI:** Claude (sesión 193, §639, que lo escribe entero sobre la medida de los
   §636 y §638) — ver [`GENAI.md`](../../GENAI.md)
@@ -20,7 +21,7 @@
   índice), §591 (la huella de la clave), §594 (la puerta del diario en todo estado), §636 y §638
   (lo que hoy pasa al cambiar de clave, medido), §639 (esta propuesta), §642 (las decisiones) y
   §643 (la E2),
-  §644 (la E3a) y §645 (la E3b-1).
+  §644 (la E3a), §645 (la E3b-1) y §646 (la E3b-2).
 - **Backlog:** la **84** (agotamiento, rotación y pérdida del índice), con la **92** (custodia y
   supervivencia del índice) y la **19** en su línea de familia, que el §288 pidió cortar juntas;
   la **87** (agilidad criptográfica: el acta lleva el esquema de la clave que presenta); y la
@@ -34,7 +35,7 @@
 | E2 — el núcleo | `DOMINIO_ACTA`, `acta_digest` y su KAT, y `verificar_acta` en el kit, con la segunda implementación | no (aditivo: una familia nueva) | **construida (§643)**: `DOMINIO_ACTA` (`ACTAS_V1`) y `acta_digest` en `zk-ssl-hash`; el módulo `actas` del kit con el preámbulo (`ZK-SSL-key-act`), el esquema de hoy y `verificar_acta`, con las reglas antes que las firmas; tres KAT —génesis, rotación y preámbulo— que la segunda implementación reproduce, 29 de 29; doce filas de la familia ACTA en `NUCLEO.md` |
 | E3a — el nodo firma sus actas | el acta génesis, la rotación a la sucesora comprometida y el aviso de agotamiento, al arrancar | no | **construida (§644)**: opt-in con `--siguiente` (sin ella y sin actas, el nodo firma como hasta hoy); `--huella-de-clave-fichero` imprime la huella de la clave fría; al arrancar, el nodo juzga la cadena de actas del diario, firma la génesis o la rotación por el camino de las cabezas y la anota con `fsync`, y no arranca con una clave que nadie comprometió; el umbral de un año de latidos exige `--reconozco-agotamiento`. La línea del acta no la ve ningún lector de cabezas y sí la puerta del contador |
 | E3b-1 — la vieja firma y el techo | la firma de la clave que se va (decisión 5), y el latido que deja de quemar el contador en el techo | no | **construida (§645)**: `--clave-anterior-fichero` da la semilla de la clave que se va, solo en una rotación; la vieja firma el mismo preámbulo en la hoja que da el contador y la nueva empieza en la siguiente, y una semilla que no es la del acta en vigor no gasta nada. En el techo el firmante devuelve `Agotada` **sin reservar**: el contador dice el techo, porque el SK no lo representa (medido) |
-| E3b-2 — el cable | `zkssl_keyActs`, que sirve la cadena de actas desde la génesis | no (aditivo: un método) | pendiente |
+| E3b-2 — el cable | `zkssl_keyActs`, que sirve la cadena de actas desde la génesis | no (aditivo: un método) | **construida (§646)**: sin parámetros, `{actas}` desde la génesis, armada una vez al arrancar tras juzgarla; el acta en JSON la escriben y la leen `acta_a_json` y `acta_de_json` del kit, que son también la línea del diario —byte a byte la de antes—; un elemento de un digest que vale `p` o más no se lee. La superficie pasa de 31 a 32 métodos y `zkssl/0.4` no sube |
 | E4 — el testigo | ante un cambio de clave pide el acta, la juzga contra la clave que fijó y sigue o se detiene; `--auditar` la juzga en el diario | no | pendiente |
 | E5 — el kit, el catálogo y el banco | el campo `actas` en los sobres que comparan cabezas, sus vectores y `tools/banco_rotacion.sh` contra un nodo real | no (aditivo: un campo opcional) | pendiente |
 | E6 — el medio | el acta como hoja del medio de la clave que se va y de la que llega, con la E3 del RFC-0013 | no | pendiente, tras la E3 del RFC-0013 |
@@ -164,6 +165,12 @@ el **contador**, no el SK: tras firmar con la última hoja, el índice del SK si
 2^40 − 1, porque su campo de cinco bytes no representa 2^40, y una segunda firma no da
 `KeyExhausted` sino una firma que no verifica; el firmante devuelve `Agotada` sin tocar el
 contador, y el latido en el techo falla sin quemar un índice por latido.
+
+**Fijado en la E3b-2 (§646).** El acta tiene **un** JSON y un productor, en el kit: lo que la
+línea del diario lleva, sin su `v`, su `tipo` y su `index`, es lo que el cable sirve y lo que los
+sobres de la E5 llevarán. `procedencia` y `firmaAnterior` van siempre, con `null` cuando no hay.
+El nodo arma la cadena al arrancar y no relee el diario por petición: las actas solo nacen al
+arrancar, y el diario crece una firma por latido.
 
 ### D-D — Dónde vive el acta
 

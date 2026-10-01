@@ -60,6 +60,7 @@ pub fn method_names() -> Vec<&'static str> {
         "zkssl_pendingPath",
         "zkssl_pledge",
         "zkssl_recepPath",
+        "zkssl_keyActs",
         "dev_fund",
         "dev_openSeeded",
         "dev_freeze",
@@ -107,6 +108,7 @@ fn esquemas_por_referencia() -> Vec<(&'static str, Option<&'static str>)> {
         ("EpochHead", Some("EpochHeadDto")),
         ("FrozenPath", None),
         ("InclusionReceipt", Some("InclusionReceiptDto")),
+        ("KeyActs", None),
         ("LogEntries", None),
         ("LogEntry", Some("LogEntryDto")),
         ("Opened", None),
@@ -218,6 +220,9 @@ pub fn document() -> Value {
         m("zkssl_recepPath",
           "Camino del recibo de recepcion `rx` en la era CERRADA que lo contiene (RFC-0010 E3). La cabeza NO viaja, ni la raiz: el titular sube su hoja hasta la recepRoot de la cabeza que custodia, que la respuesta identifica por su recepCount y su index.",
           json!([p("rx", "Q")]), "RecepPath"),
+        m("zkssl_keyActs",
+          "La cadena de actas de clave del operador, desde la genesis (RFC-0015 E3b-2): cada acta con su firma y, si la clave que se fue firmo, la suya. El nodo la juzgo al arrancar y quien la pide la juzga con `verificar_acta`. Vacia si el nodo no firma actas (opt-in): entonces un cambio de clave no tiene objeto que lo explique.",
+          json!([]), "KeyActs"),
         m("dev_fund", "SOLO --dev: emision delegada con custodios de PRUEBA.",
           json!([p("index", "Q"), p("amount", "Q")]), "Applied"),
         m("dev_openSeeded", "SOLO --dev: abre desde una clave determinista de la suite.",
@@ -274,7 +279,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn treinta_y_un_metodos_unicos_y_en_orden() {
+    fn treinta_y_dos_metodos_unicos_y_en_orden() {
         // §223: subio a 18 con `zkssl_applyMany`. §242: a 19 con
         // `zkssl_signedEpochHead`. §259: a 20 con
         // `zkssl_inclusionReceipt`. Que este test tenga el numero en el
@@ -294,15 +299,16 @@ mod tests {
         // §519: a 30 con `zkssl_pledge` -la marca de la prenda con su sobre, que el
         // nodo verifica ANTES de escribirla (RFC-0008, E3)-.
         // §571: a 31 con `zkssl_recepPath` -el camino del recibo de recepcion (RFC-0010, E3)-.
+        // §646: a 32 con `zkssl_keyActs` -la cadena de actas de clave (RFC-0015, E3b-2)-.
         let nombres = method_names();
-        assert_eq!(nombres.len(), 31);
+        assert_eq!(nombres.len(), 32);
         let mut u = nombres.clone();
         u.sort();
         u.dedup();
-        assert_eq!(u.len(), 31, "nombres repetidos");
+        assert_eq!(u.len(), 32, "nombres repetidos");
         let doc = document();
         let met = doc["methods"].as_array().expect("methods");
-        assert_eq!(met.len(), 31);
+        assert_eq!(met.len(), 32);
         for (i, mm) in met.iter().enumerate() {
             assert_eq!(mm["name"].as_str().unwrap(), nombres[i]);
         }

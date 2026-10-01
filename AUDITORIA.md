@@ -46377,3 +46377,80 @@ sigue deteniéndose ante un cambio de clave (E4) y los sobres del kit siguen exi
 clave (E5).
 
 **Lo que NO cierra.** La 84 sigue abierta, con la E2, la E3a y la E3b-1 de su RFC construidas.
+
+## §646 — RFC-0015 E3b-2: `zkssl_keyActs` sirve la cadena de actas, y el acta tiene un JSON con un productor, en el kit
+
+El commit que lleva este asiento, sobre `52e4742` (el §645). Un solo sello: el kit gana el JSON
+del acta, `acta_a_json` y `acta_de_json`; el diario lo usa para su línea; el nodo arma la cadena al
+arrancar y la sirve con un método nuevo; el contrato publicado, `RPC.md` y los seis sitios que
+cuentan métodos pasan de 31 a 32; el RFC-0015, `NUCLEO.md`, la entrada 84, las filas del canon y
+las cifras de tres documentos se ponen al día; y este asiento. Lo
+escribe, lo prueba y lo commitea la misma sesión de Claude Code que el §645, no el autor en su
+máquina, fuera del paso 4 de `GENAI.md`, como pide `CLAUDE.md`; el autor corre el canon `--sello`
+y empuja. En la sesión, sobre este mismo árbol, el canon `--sello` salió VERDE, con `zk-ssl-node`
+en 191 de 191, `zk-ssl-verify` en 173 de 173 y `check_tests` en 1802; y los tres bancos que
+arrancan y rearrancan nodos con clave, `banco_reutilizacion.sh`, `banco_mentiroso_ausentes.sh` y
+`banco_apagado.sh`, salieron VERDES con el árbol limpio.
+
+**Rehecho sobre el §675**, con tres cambios de fondo. El lector del acta lee el hexadecimal con el
+lector común del §650 (`hex_canonico`), en vez de trocear la cadena, y sus `Q` con el del §662
+(`cantidad_canonica`, la escritura mínima); el diario sigue leyendo sus líneas con el lector del
+§666. Y lo que la primera versión de
+este sello midió y fichó como la entrada 115 del BACKLOG ya no es verdad en esta base: el §640
+(RFC-0016) hizo que `digest_from_bytes` rechace un elemento que vale `p` o más, así que el lector
+del acta hereda la regla del núcleo y deja de repetirla, y la 115 no se abre.
+
+**De dónde sale.** La D-D del RFC-0015 pone el acta en tres sitios, «en todos tal cual»: el
+diario, el cable y el medio. El §644 la escribió en el diario con un JSON propio del nodo; el
+cable la tenía pendiente (E3b-2), y los sobres de la E5 la necesitarán leer en el kit. Tres
+lectores y dos escritores de un mismo objeto piden un productor, y el sitio es el kit, que es lo
+que un tercero tiene.
+
+**Lo que hace.**
+
+1. **El acta en JSON, en el kit.** `acta_a_json` escribe `{acta: {clave, esquema, desde,
+   siguiente, procedencia}, firma, firmaAnterior}` con las convenciones de `RPC.md`, y
+   `procedencia` y `firmaAnterior` van siempre, con `null` cuando no hay: un campo ausente no se
+   lee como uno vacío. `acta_de_json` lo lee campo a campo y dice cuál falla; ignora las claves de
+   más —la línea del diario lleva `v`, `tipo` e `index`— y no las que faltan. Leer no es juzgar:
+   eso sigue siendo `verificar_acta`. Dos filas nuevas en `NUCLEO.md`, familia ACTA.
+2. **El diario, con el mismo productor.** `linea_de_acta` es el JSON del kit con el marco del
+   diario delante, y `actas` lo lee con el lector del kit; salen del nodo los dos ayudantes de hex
+   que el §644 escribió solo para el acta y que se quedan sin uso. Lo anotado no se mueve: con el
+   binario nuevo, las dos líneas de acta del humo del §645 salen **idénticas byte a byte**.
+3. **El método.** `zkssl_keyActs`, sin parámetros, responde `{actas}` desde la génesis. El nodo
+   arma la cadena **una vez, al arrancar**, después de juzgarla y de firmar la que toque, y la
+   guarda en su estado: las actas solo nacen al arrancar, y releer el diario en cada petición
+   costaría lo que el diario mide, una firma por latido. Vacía sin clave o sin actas (D-I). El
+   nodo no la juzga al servirla: quien la pide la juzga con `verificar_acta`.
+4. **El contrato.** El método entra en la tabla de `openrpc.rs` con su esquema, `KeyActs`, y
+   `spec/openrpc.json` se regenera; `RPC.md` gana su fila y su sección; `README.md`,
+   `README_EN.md`, `RESUMEN_EJECUTIVO.md`, `RESUMEN_BILINGUE.md` dos veces y `spec/README.md` pasan
+   de 31 a 32 métodos, y de 28 a 29 `zkssl_*` donde se desglosan. `zkssl/0.4` no sube.
+
+**El borde del campo.** Sobre la base vieja, al escribir el lector salió que `digest_from_bytes`
+reducía módulo `p` ocho bytes que valían `p` o más, y que la segunda implementación los rechazaba.
+El §640 lo había cerrado ya en su rama, y en el `main` de hoy es regla del núcleo. Lo que queda de aquí es
+el test: el lector del acta rechaza un digest con un elemento que vale `p`, y `p − 1` se lee.
+
+**Probado.** Los 191 tests del nodo y los 173 del kit pasan en release. Dos son nuevos: en el kit,
+el JSON del acta va y vuelve —la génesis con sus dos `null`, la rotación entera—, ignora las claves
+del diario y rechaza con su nombre un campo que falta, un `Q` sin `0x`, un digest corto, un
+elemento que vale `p` y una firma impar; en el nodo, un nodo sin actas sirve la cadena vacía, y uno
+con la génesis y una rotación firmada por las dos claves sirve las dos, que el kit lee de vuelta
+iguales a las del diario y `verificar_acta` acepta eslabón a eslabón. El test que cruza el despacho
+con el contrato publicado no cambia y sigue verde con el método nuevo en los dos lados. Y por el
+cable de verdad, con el binario de release y `curl`: dos actas servidas, iguales a las del diario
+sin su marco.
+
+**Contadores.** `zk-ssl-node` 190 -> 191 y `zk-ssl-verify` 172 -> 173. TOTAL DE SELLO 1641 -> 1643
+y TOTAL CON LARGOS 1778 -> 1780, en los tres párrafos ancla, con el desglose del nodo en 191 y el
+del verificador en 173. La cuenta de `check_tests` pasa de 1800 a 1802. El censo de `NUCLEO.md`
+pasa de 90 a 92 en `zk-ssl-verify` (NÚCLEO 118 -> 120). El contrato publicado, de 31 a 32
+métodos. El `BACKLOG.md` sigue en 43 abiertas y 73 resueltas.
+
+**Lo que NO hace.** El testigo no pide todavía las actas ante un cambio de clave (E4), ni los
+sobres del kit las aceptan (E5), ni el medio las publica (E6). El JSON del acta no tiene vectores
+propios: los traerán los sobres de la E5, que son los que un tercero guarda.
+
+**Lo que NO cierra.** La 84 sigue abierta, con la E2 y la E3 de su RFC construidas.

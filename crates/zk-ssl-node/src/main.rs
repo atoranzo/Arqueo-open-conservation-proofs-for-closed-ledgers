@@ -484,6 +484,11 @@ struct App {
     /// deja de servir y cada petición recibe la causa. Vacía mientras el nodo
     /// sirve; se escribe una vez y no se borra. Reiniciar lee el estado del disco.
     parada: std::sync::OnceLock<String>,
+    /// **La cadena de actas de clave** (RFC-0015 E3b-2; §646), en el JSON del kit, como la sirve
+    /// `zkssl_keyActs`. Se arma UNA vez al arrancar: las actas solo nacen al arrancar, y leer el
+    /// diario entero en cada peticion costaria lo que el diario mide, una firma por latido.
+    /// Vacia sin `--clave` o sin actas (opt-in, D-I).
+    actas_de_clave: Vec<Value>,
     /// **Los consumos que OTROS libros firmaron tener** (RFC-0006, E4b, §436).
     ///
     /// ⚠️ **Sin `Mutex`, al revés que sus vecinas**: es inmutable tras
@@ -608,6 +613,16 @@ enum DecisionDeActa {
     },
     /// Ni una cosa ni otra: no se arranca, y se dice por que.
     NoArranca(String),
+}
+
+/// ⚠️ §646 · **La cadena que sirve `zkssl_keyActs`** (RFC-0015 E3b-2): la del diario, con el
+/// codec del kit, el mismo que escribe la linea. Se arma al arrancar, DESPUES de juzgarla y de
+/// firmar la que toque.
+fn cadena_servida(ruta: &str) -> Vec<Value> {
+    crate::diario::actas(ruta)
+        .iter()
+        .map(zk_ssl_verify::actas::acta_a_json)
+        .collect()
 }
 
 /// La cadena de actas del diario, juzgada entera con el juez del tercero (D-C): la genesis
@@ -1460,6 +1475,64 @@ mod acta_de_arranque {
         );
     }
 
+    /// ⚠️ §646: **el cable sirve la cadena de actas, y el kit la juzga.** Un nodo sin actas
+    /// responde la cadena vacia; con la genesis y una rotacion firmada por las dos claves, sirve
+    /// las dos, en orden, que el codec del kit lee de vuelta y `verificar_acta` acepta eslabon a
+    /// eslabon. Lo servido es lo anotado: la misma cadena que guarda el diario.
+    #[test]
+    fn el_cable_sirve_la_cadena_de_actas_y_el_kit_la_juzga() {
+        use crate::firma_cabeza::FirmanteCabeza;
+        use zk_ssl_verify::actas::{acta_de_json, verificar_acta};
+        let vacia = dispatch(&crate::tests::nodo(60), "zkssl_keyActs", json!({})).expect("vacia");
+        assert_eq!(vacia, json!({ "actas": [] }));
+
+        let d = crate::tests_dir("acta_en_el_cable");
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).expect("crear");
+        let (contador, diario) = (d.join("indice.bin"), d.join("diario.jsonl"));
+        let ruta = diario.to_str().expect("utf8");
+        let semilla = |x: u8| [x; 96];
+        let huella = |x: u8| huella_de_semilla(&semilla(x)).expect("huella");
+        let mut a = FirmanteCabeza::desde_semilla(&semilla(1), &contador).expect("A");
+        firmar_acta_si_toca(&mut a, ruta, Some(&huella(2)), None).expect("genesis");
+        drop(a);
+        let mut b = FirmanteCabeza::desde_semilla(&semilla(2), &contador).expect("B");
+        let r = b.reconciliar().expect("reconciliar");
+        if let DecisionDeArranque::ArrancaResincronizando { hasta, .. } =
+            politica_de_reconciliacion(&r, crate::diario::maximo_indice(&diario))
+        {
+            b.resincronizar_a(hasta).expect("resincronizar");
+        }
+        firmar_acta_si_toca(&mut b, ruta, Some(&huella(3)), Some(&semilla(1))).expect("rotacion");
+
+        let app = App {
+            actas_de_clave: cadena_servida(ruta),
+            ..crate::tests::nodo(60)
+        };
+        let v = dispatch(&app, "zkssl_keyActs", json!({})).expect("keyActs");
+        let servidas: Vec<ActaFirmada> = v["actas"]
+            .as_array()
+            .expect("actas")
+            .iter()
+            .map(|j| acta_de_json(j).expect("el kit la lee"))
+            .collect();
+        assert_eq!(
+            servidas,
+            crate::diario::actas(&diario),
+            "lo servido es lo anotado"
+        );
+        assert_eq!(servidas.len(), 2);
+        assert_eq!(verificar_acta(&servidas[0], None), Ok(()));
+        assert_eq!(
+            verificar_acta(&servidas[1], Some(&servidas[0].acta)),
+            Ok(())
+        );
+        assert!(
+            servidas[1].firma_anterior.is_some(),
+            "con la firma de la vieja"
+        );
+    }
+
     #[test]
     fn el_aviso_de_agotamiento_salta_a_un_año_de_latidos() {
         let techo = PRESUPUESTO_DE_LA_CLAVE;
@@ -1562,6 +1635,8 @@ async fn main() -> anyhow::Result<()> {
              Un nodo que firma sin diario no puede reconocer su propia firma"
         );
     }
+    // ⚠️ §646: la cadena de actas que el cable sirve; vacia sin clave o sin actas (D-I).
+    let mut actas_de_clave: Vec<Value> = Vec::new();
     let firmante = match &semilla_hex {
         Some(hex) => {
             let semilla = descodificar_semilla(hex)?;
@@ -1613,6 +1688,7 @@ async fn main() -> anyhow::Result<()> {
                     None => None,
                 };
                 firmar_acta_si_toca(&mut f, ruta, args.siguiente.as_deref(), anterior.as_deref())?;
+                actas_de_clave = cadena_servida(ruta);
             }
             // ⚠️ §644 · el aviso de agotamiento (RFC-0015 D-F; RFC 10033 §3.4), con
             //    reconocimiento explicito: por debajo del umbral, sin la bandera, no se arranca.
@@ -1706,6 +1782,7 @@ async fn main() -> anyhow::Result<()> {
         indice_firma: std::sync::atomic::AtomicU64::new(indice_firma),
         consumos_ajenos,
         parada: std::sync::OnceLock::new(),
+        actas_de_clave,
     });
 
     if args.latido > 0 {
@@ -3145,6 +3222,14 @@ fn dispatch(app: &App, method: &str, params: Value) -> Result<Value, RpcError> {
             }
         }
 
+        // ⚠️ §646 · RFC-0015 E3b-2: la cadena de actas de clave, desde la genesis, tal cual el
+        // diario la guarda y con el codec del kit (D-D). Sin parametros: la cadena de un operador
+        // cabe en un fichero. Vacia si el nodo no firma actas -sin `--siguiente` nunca, D-I-, y
+        // entonces un testigo se detiene ante un cambio de clave, como hoy. El nodo NO la juzga
+        // aqui: la juzgo al arrancar, y quien la pide la juzga con `verificar_acta`.
+        // ⚠️ Aditivo: la superficie pasa de 31 a 32 metodos y `zkssl/0.4` no sube.
+        "zkssl_keyActs" => Ok(json!({ "actas": app.actas_de_clave })),
+
         "zkssl_consistencyProof" => {
             // §293: el eslabon 2 como SERVICIO. El camino que prueba que la
             // cima ACTUAL extiende a la de una cabeza custodiada de tamano
@@ -3943,6 +4028,7 @@ mod tests {
             indice_firma: std::sync::atomic::AtomicU64::new(0),
             consumos_ajenos: BTreeSet::new(),
             parada: std::sync::OnceLock::new(),
+            actas_de_clave: Vec::new(),
         }
     }
 

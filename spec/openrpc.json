@@ -64,6 +64,9 @@
       "InclusionReceipt": {
         "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. En el cable: zk_ssl_wire::InclusionReceiptDto. Lo usan: zkssl_inclusionReceipt."
       },
+      "KeyActs": {
+        "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_keyActs."
+      },
       "LogEntries": {
         "description": "Forma normativa: spec/RPC.md, que este documento no repite; la atan los vectores de conformidad. Sin DTO en el cable: la compone el nodo. Lo usan: zkssl_logEntries."
       },
@@ -791,6 +794,17 @@
         }
       },
       "summary": "Camino del recibo de recepcion `rx` en la era CERRADA que lo contiene (RFC-0010 E3). La cabeza NO viaja, ni la raiz: el titular sube su hoja hasta la recepRoot de la cabeza que custodia, que la respuesta identifica por su recepCount y su index."
+    },
+    {
+      "name": "zkssl_keyActs",
+      "params": [],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/KeyActs"
+        }
+      },
+      "summary": "La cadena de actas de clave del operador, desde la genesis (RFC-0015 E3b-2): cada acta con su firma y, si la clave que se fue firmo, la suya. El nodo la juzgo al arrancar y quien la pide la juzga con `verificar_acta`. Vacia si el nodo no firma actas (opt-in): entonces un cambio de clave no tiene objeto que lo explique."
     },
     {
       "name": "dev_fund",

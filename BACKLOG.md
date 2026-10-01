@@ -689,6 +689,10 @@ instrumentacion) al grupo E.*
   reserva ni firma: el latido deja de quemar un índice por latido.
   QUEDAN el cable (`zkssl_keyActs`, E3b-2), el testigo, los sobres y el
   medio: sigue abierta.
+  ✅ a medias (§646): la E3b-2, `zkssl_keyActs` sirve la cadena de actas
+  desde la génesis, con el JSON del acta escrito y leído por el kit, que
+  es también la línea del diario. QUEDAN el testigo (E4), los sobres con
+  su banco (E5) y el medio (E6): sigue abierta.
 
 - [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en cuatro hitos (§623, §626).**
   `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con

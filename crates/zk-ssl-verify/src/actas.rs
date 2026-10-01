@@ -14,8 +14,9 @@
 //! ⚠️ **El `desde` es el indice EMBEBIDO** (RFC-0012, D-C; §399): el que la firma acredita. La
 //! primera hoja de la clave que entra firma su acta, asi que su firma lleva dentro el `desde`.
 
+use serde_json::{json, Value};
 use xmss::Signature;
-use zk_ssl_hash::{acta_digest, digest_to_bytes};
+use zk_ssl_hash::{acta_digest, digest_from_bytes, digest_to_bytes};
 
 // ⚠️ Reexportados para que quien arme un acta -el nodo- nombre la clave con la MISMA huella con
 // que este juez la compara, sin depender de `zk-ssl-hash` por su cuenta.
@@ -238,6 +239,115 @@ pub fn verificar_acta(a: &ActaFirmada, previa: Option<&Acta>) -> Result<(), Acta
         }
     }
     Ok(())
+}
+
+/// ⚠️ §646 · **El acta en JSON, con UN productor** (RFC-0015 D-D: en el diario, en el cable y en
+/// los sobres, tal cual). Con las convenciones de `spec/RPC.md`: la clave y las firmas en `DATA`,
+/// el esquema, el `desde` y el tamaño del MMR en `Q`, y los digests en `Digest`, con la
+/// serialización que persiste la capa. `procedencia` y `firmaAnterior` van SIEMPRE, `null` cuando
+/// no hay: un campo ausente no se lee como uno vacío.
+pub fn acta_a_json(a: &ActaFirmada) -> Value {
+    let acta = &a.acta;
+    let procedencia = match &acta.procedencia {
+        None => Value::Null,
+        Some(p) => json!({
+            "anterior": hex_de_digest(&p.anterior),
+            "epochDigest": hex_de_digest(&p.epoch_digest),
+            "mmrRoot": hex_de_digest(&p.mmr_root),
+            "mmrSize": q(p.mmr_size),
+        }),
+    };
+    json!({
+        "acta": {
+            "clave": hex(&acta.clave),
+            "esquema": q(acta.esquema),
+            "desde": q(acta.desde),
+            "siguiente": hex_de_digest(&acta.siguiente),
+            "procedencia": procedencia,
+        },
+        "firma": hex(&a.firma),
+        "firmaAnterior": a.firma_anterior.as_ref().map(|f| hex(f)),
+    })
+}
+
+/// Lee lo que [`acta_a_json`] escribe, con el nombre del campo que falla. Las claves de más se
+/// ignoran -la línea del diario lleva las suyas: `v`, `tipo` e `index`-; un campo que falta, o
+/// que no es lo que dice ser, no. Leer NO es juzgar: eso es [`verificar_acta`].
+pub fn acta_de_json(v: &Value) -> Result<ActaFirmada, String> {
+    let a = v
+        .get("acta")
+        .filter(|x| x.is_object())
+        .ok_or("falta acta, o no es un objeto")?;
+    let procedencia = match a.get("procedencia") {
+        None => return Err("falta acta.procedencia: null en la genesis".into()),
+        Some(Value::Null) => None,
+        Some(p) => Some(Procedencia {
+            anterior: digest_de(p, "anterior")?,
+            epoch_digest: digest_de(p, "epochDigest")?,
+            mmr_root: digest_de(p, "mmrRoot")?,
+            mmr_size: q_de(p, "mmrSize")?,
+        }),
+    };
+    let firma_anterior = match v.get("firmaAnterior") {
+        None => return Err("falta firmaAnterior: null si la clave que se va no firma".into()),
+        Some(Value::Null) => None,
+        Some(_) => Some(data_de(v, "firmaAnterior")?),
+    };
+    Ok(ActaFirmada {
+        acta: Acta {
+            clave: data_de(a, "clave")?,
+            esquema: q_de(a, "esquema")?,
+            desde: q_de(a, "desde")?,
+            siguiente: digest_de(a, "siguiente")?,
+            procedencia,
+        },
+        firma: data_de(v, "firma")?,
+        firma_anterior,
+    })
+}
+
+fn hex(b: &[u8]) -> String {
+    let mut s = String::with_capacity(2 + 2 * b.len());
+    s.push_str("0x");
+    for x in b {
+        s.push_str(&format!("{x:02x}"));
+    }
+    s
+}
+
+fn hex_de_digest(d: &Digest) -> String {
+    hex(&digest_to_bytes(d))
+}
+
+fn q(n: u64) -> String {
+    format!("{n:#x}")
+}
+
+fn texto<'a>(v: &'a Value, campo: &str) -> Result<&'a str, String> {
+    v.get(campo)
+        .and_then(|x| x.as_str())
+        .ok_or_else(|| format!("falta {campo}, o no es una cadena"))
+}
+
+/// El hex del cable —`0x`, minúscula, por pares—, con el lector de `zk-ssl-hash` (§650).
+fn data_de(v: &Value, campo: &str) -> Result<Vec<u8>, String> {
+    zk_ssl_hash::hex_canonico(texto(v, campo)?).map_err(|e| format!("{campo}: {e}"))
+}
+
+/// ⚠️ **Un elemento fuera del campo no se lee**: ocho bytes que valen `p` o más no son un
+/// elemento, y `digest_from_bytes` los rechaza desde el §640 (RFC-0016). El lector del acta lo
+/// hereda y no lo repite.
+fn digest_de(v: &Value, campo: &str) -> Result<Digest, String> {
+    let b = data_de(v, campo)?;
+    if b.len() != 32 {
+        return Err(format!("{campo}: {} bytes, se esperaban 32", b.len()));
+    }
+    digest_from_bytes(&b).map_err(|e| format!("{campo}: {e:?}"))
+}
+
+/// Un `Q` del cable, en su escritura mínima, con el lector de `zk-ssl-hash` (§662).
+fn q_de(v: &Value, campo: &str) -> Result<u64, String> {
+    zk_ssl_hash::cantidad_canonica(texto(v, campo)?).map_err(|e| format!("{campo}: {e}"))
 }
 
 #[cfg(test)]
@@ -480,5 +590,83 @@ mod tests {
         assert_eq!(preambulo_acta(ACTA_VERSION, &d).len(), 47);
         assert_ne!(DOMINIO_ACTA_FIRMA, crate::DOMINIO);
         assert_ne!(DOMINIO_ACTA_FIRMA, crate::DOMINIO_COFIRMA);
+    }
+
+    /// ⚠️ §646 · **el acta en JSON va y vuelve, y dice qué campo falla.** Sin firmar nada: leer
+    /// no es juzgar. La génesis lleva sus dos `null`; la rotación, todo. Un campo que falta, un
+    /// `Q` sin `0x`, un digest corto, un elemento que vale `p` y una firma impar se rechazan con
+    /// su nombre; una clave de más, como las de la línea del diario, no. El `p` es el borde:
+    /// `p − 1` se lee.
+    #[test]
+    fn el_acta_en_json_va_y_vuelve_y_dice_que_campo_falla() {
+        let genesis = ActaFirmada {
+            acta: Acta {
+                clave: vec![1, 2, 3],
+                esquema: ESQUEMA_XMSSMT_SHA2_40_8_256,
+                desde: 0,
+                siguiente: as_digest(7),
+                procedencia: None,
+            },
+            firma: vec![0xab; 5],
+            firma_anterior: None,
+        };
+        let rotacion = ActaFirmada {
+            acta: Acta {
+                clave: vec![4, 5],
+                esquema: ESQUEMA_XMSSMT_SHA2_40_8_256,
+                desde: 41,
+                siguiente: as_digest(8),
+                procedencia: Some(Procedencia {
+                    anterior: as_digest(9),
+                    epoch_digest: as_digest(10),
+                    mmr_root: as_digest(11),
+                    mmr_size: 40,
+                }),
+            },
+            firma: vec![0xcd; 3],
+            firma_anterior: Some(vec![0xef; 4]),
+        };
+        for a in [&genesis, &rotacion] {
+            assert_eq!(acta_de_json(&acta_a_json(a)).as_ref(), Ok(a));
+        }
+        let j = acta_a_json(&genesis);
+        assert!(j["acta"]["procedencia"].is_null() && j["firmaAnterior"].is_null());
+        assert_eq!(j["acta"]["esquema"], "0x100000005");
+        assert_eq!(j["acta"]["desde"], "0x0");
+        assert_eq!(j["firma"], "0xababababab");
+
+        let mut con_mas = acta_a_json(&rotacion);
+        con_mas["v"] = json!(1);
+        con_mas["tipo"] = json!("acta");
+        assert_eq!(acta_de_json(&con_mas).as_ref(), Ok(&rotacion));
+
+        let rojo = |cambio: &dyn Fn(&mut Value), campo: &str| {
+            let mut v = acta_a_json(&rotacion);
+            cambio(&mut v);
+            let e = acta_de_json(&v).expect_err(campo);
+            assert!(e.contains(campo), "{campo}: {e}");
+        };
+        rojo(
+            &|v| drop(v.as_object_mut().expect("o").remove("firmaAnterior")),
+            "firmaAnterior",
+        );
+        rojo(
+            &|v| drop(v["acta"].as_object_mut().expect("o").remove("procedencia")),
+            "procedencia",
+        );
+        rojo(&|v| v["acta"]["desde"] = json!("29"), "desde");
+        rojo(
+            &|v| v["acta"]["procedencia"]["mmrRoot"] = json!("0x00"),
+            "mmrRoot",
+        );
+        let p_le = hex(&0xFFFF_FFFF_0000_0001u64.to_le_bytes());
+        let con = |x: &str| json!(format!("{x}{}", "00".repeat(24)));
+        rojo(&|v| v["acta"]["siguiente"] = con(&p_le), "siguiente");
+        let mut borde = acta_a_json(&rotacion);
+        borde["acta"]["siguiente"] = con(&hex(&0xFFFF_FFFF_0000_0000u64.to_le_bytes()));
+        assert!(acta_de_json(&borde).is_ok(), "p - 1 es un elemento");
+        rojo(&|v| v["firma"] = json!("0xabc"), "firma");
+        rojo(&|v| v["acta"]["clave"] = json!(7), "clave");
+        assert!(acta_de_json(&json!({"firma": "0x00"})).is_err(), "sin acta");
     }
 }

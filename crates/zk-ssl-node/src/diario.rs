@@ -148,10 +148,6 @@ fn hex(b: &[u8]) -> String {
     format!("0x{}", crate::hex_de(b))
 }
 
-fn hex_digest(d: &zk_ssl_verify::acuses::Digest) -> String {
-    hex(&zk_ssl_wire::digest_to_wire(d).0)
-}
-
 // ⚠️ El lector de hex es el de `zk-ssl-hash` (§650): sobre bytes, con `0x` y en minúscula, como
 //    escribe este diario. Uno propio aquí sería otro productor del mismo contrato.
 fn bytes_de_hex(s: &str) -> Option<Vec<u8>> {
@@ -163,40 +159,16 @@ fn digest_de_hex(v: &Value) -> Option<zk_ssl_verify::acuses::Digest> {
     zk_ssl_wire::digest_from_wire(&zk_ssl_wire::B32(b)).ok()
 }
 
-fn u64_de_hex(v: &Value) -> Option<u64> {
-    let h = v.as_str()?.strip_prefix("0x")?;
-    if h.is_empty() || !h.bytes().all(|c| c.is_ascii_hexdigit()) {
-        return None;
-    }
-    u64::from_str_radix(h, 16).ok()
-}
-
 /// La línea de un acta firmada, con el índice que su firma reservó.
+///
+/// ⚠️ §646 · el acta la escribe el kit ([`zk_ssl_verify::actas::acta_a_json`]), el mismo productor
+/// que el cable: el diario solo le pone delante su versión, su tipo y el índice declarado.
 pub fn linea_de_acta(a: &zk_ssl_verify::actas::ActaFirmada, indice_declarado: u64) -> Value {
-    let acta = &a.acta;
-    let procedencia = match &acta.procedencia {
-        None => Value::Null,
-        Some(p) => json!({
-            "anterior": hex_digest(&p.anterior),
-            "epochDigest": hex_digest(&p.epoch_digest),
-            "mmrRoot": hex_digest(&p.mmr_root),
-            "mmrSize": q(p.mmr_size),
-        }),
-    };
-    json!({
-        "v": DIARIO_VERSION,
-        "tipo": "acta",
-        "index": q(indice_declarado),
-        "acta": {
-            "clave": hex(&acta.clave),
-            "esquema": q(acta.esquema),
-            "desde": q(acta.desde),
-            "siguiente": hex_digest(&acta.siguiente),
-            "procedencia": procedencia,
-        },
-        "firma": hex(&a.firma),
-        "firmaAnterior": a.firma_anterior.as_ref().map(|f| hex(f)),
-    })
+    let mut linea = zk_ssl_verify::actas::acta_a_json(a);
+    linea["v"] = json!(DIARIO_VERSION);
+    linea["tipo"] = json!("acta");
+    linea["index"] = json!(q(indice_declarado));
+    linea
 }
 
 /// Añade un acta al diario, **con `fsync`**. Al revés que [`anotar`]: una cabeza perdida
@@ -214,46 +186,16 @@ pub fn anotar_acta(ruta: impl AsRef<Path>, linea: &Value) -> std::io::Result<()>
 /// acta ilegible, se SALTA, como en [`limites`]: quien la use juzga la cadena entera con
 /// `verificar_acta`, y un acta que falte se nota en la cadena, no aquí.
 pub fn actas(ruta: impl AsRef<Path>) -> Vec<zk_ssl_verify::actas::ActaFirmada> {
-    use zk_ssl_verify::actas::{Acta, ActaFirmada, Procedencia};
     // ⚠️ Con el lector del §666: una línea con un byte ilegible se salta sola, no el diario.
     let texto = match lineas_del_diario(ruta) {
         Some(t) => t,
         None => return Vec::new(),
     };
-    let leer = |j: &Value| -> Option<ActaFirmada> {
-        if j["tipo"].as_str() != Some("acta") {
-            return None;
-        }
-        let a = &j["acta"];
-        let procedencia = match &a["procedencia"] {
-            Value::Null => None,
-            p => Some(Procedencia {
-                anterior: digest_de_hex(&p["anterior"])?,
-                epoch_digest: digest_de_hex(&p["epochDigest"])?,
-                mmr_root: digest_de_hex(&p["mmrRoot"])?,
-                mmr_size: u64_de_hex(&p["mmrSize"])?,
-            }),
-        };
-        let firma_anterior = match &j["firmaAnterior"] {
-            Value::Null => None,
-            f => Some(bytes_de_hex(f.as_str()?)?),
-        };
-        Some(ActaFirmada {
-            acta: Acta {
-                clave: bytes_de_hex(a["clave"].as_str()?)?,
-                esquema: u64_de_hex(&a["esquema"])?,
-                desde: u64_de_hex(&a["desde"])?,
-                siguiente: digest_de_hex(&a["siguiente"])?,
-                procedencia,
-            },
-            firma: bytes_de_hex(j["firma"].as_str()?)?,
-            firma_anterior,
-        })
-    };
     texto
         .iter()
         .filter_map(|l| serde_json::from_str::<Value>(l).ok())
-        .filter_map(|j| leer(&j))
+        .filter(|j| j["tipo"].as_str() == Some("acta"))
+        .filter_map(|j| zk_ssl_verify::actas::acta_de_json(&j).ok())
         .collect()
 }
 
