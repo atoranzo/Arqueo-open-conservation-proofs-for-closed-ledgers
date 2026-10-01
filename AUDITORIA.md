@@ -44020,6 +44020,85 @@ registra el aviso, no la respuesta. El cuarto hito de la 85 (el verificador STAR
 en el §623 y aún sin escribir) sigue vivo. Y la aceptación de `GENAI.md` de toda la rama, que es del
 autor.
 
+## §626 — el cuarto hito de la 85: el STARK verificado fuera de Rust, sobre las pruebas ocultas y con sal
+
+El §623 dejó la 85 en tres de cuatro hitos y decidió con medida el lenguaje del que quedaba:
+verificar STARK fuera de Rust, en Python. Este asiento lo escribe y lo mete en el canon.
+
+**Lo que hace.** Tres ficheros nuevos en `tools/segunda/`, en Python y sin dependencias:
+- `stark.py` (875 líneas): la maquinaria de `winter-verifier` 0.13.1 —el formato de `Proof` en el
+  orden de su `write_into`, la moneda pública `DefaultRandomCoin` sobre Blake3 con el orden exacto
+  de Fiat-Shamir, `BatchMerkleProof::get_root` tal cual (con su `nodes[i]` indexado por la posición
+  en la lista del nivel), la sal de `MerkleConSal`, el chequeo fuera del dominio con el divisor de
+  las transiciones y las aserciones de frontera, la composición DEEP, FRI con su resto, y la
+  envoltura `Oculta` (L = 2T, una columna más, las exenciones del interno más T, el cociente que
+  avanza de L − m en L − m)—. Leída de las fuentes de winterfell (las crates publicadas
+  `winter-fri`, `winter-crypto`, `winter-math` y `winter-utils`, y la copia de `crates/`), no
+  copiada. Blake3 y el campo, de `nucleo.py`; `INV_MDS` se calcula invirtiendo la MDS, y el
+  autotest la contrasta número a número con la tabla de `winter-crypto`.
+- `airs.py` (766 líneas): las **cinco** AIR del paquete —Banda, Edad, Prenda, CobroPendiente y
+  PagoEnCurso—, transcritas de `crates/zk-ssl-air/src/*.rs` restricción a restricción.
+- `juez_stark.py` (274 líneas): compone, para cada vector con prueba, el PAR que el mando juzga
+  —la prueba y el enunciado, con los mismos campos y la misma cabeza que lee `zk-ssl-verify`— y lo
+  compara con lo que fija su `MANIFIESTO.txt`; tres falsadores por positivo.
+
+**Lo medido.**
+
+| medida | valor |
+|---|---|
+| pruebas STARK en las familias que el kit verifica hoy | 58 (rechazo 8, edad 10, pago 8, pendiente 8, prenda 8, completitud 16), todas ocultas y con sal |
+| pares comparados con su manifiesto / que dicen lo que deben | **23 / 23**: 12 positivos que verifican, 11 negativos rechazados con la causa del juez |
+| la misma causa que imprime el binario, par a par | **23 de 23**, corriendo `zk-ssl-verify` sobre cada vector |
+| falsadores que dejan de verificar | **33 de 33** |
+| vectores que caen antes del juez (firma, cabeza, campos) | 35, contados y no comparados |
+| una verificación | 0,2 a 0,5 s; el juez entero, 12 s, por debajo de los ~59 s que el §623 proyectó |
+
+Los once negativos: `InconsistentOodConstraintEvaluations` donde el enunciado miente (otra cuenta,
+otra cota, otro importe, otro receptor, otra marca), el techo de la banda, las dos subraíces que no
+suben a su raíz, y `nacido ≥ seq` en pago y en cobro. Y `completitud` por sus tres veredictos: la
+prenda aceptada verifica contra su cabeza, la rechazada con prueba NO verifica contra la cabeza que
+el nodo juzgó (`ConstraintQueryDoesNotMatchCommitment`), y la del RECHAZO SIN FUNDAMENTO sí.
+
+⚠️ **Un falso «distinto» al medir contra el binario, y por qué no lo era.** La primera comparación
+dio 22 de 23: en `prenda-sin-fundamento` la salida del binario contiene
+`ConstraintQueryDoesNotMatchCommitment` y Python dice que el par verifica. Leída la salida entera,
+ese error es la **razón mentida del nodo**, que el binario cita («y el nodo dijo que no: …»); su
+veredicto es que el sobre VERIFICA, el mismo que Python. El patrón casaba dentro de la cita. Corregido
+el criterio, 23 de 23.
+
+**Lo que fijó escribirlo.** Que la semilla de Fiat-Shamir es el contexto **más las entradas
+públicas**, de modo que un enunciado mal compuesto no llega ni a la autenticación Merkle (y por eso
+el primer positivo que verifica ya prueba que el par se compone bien); que las aserciones de
+«última fila» de una AIR oculta usan la longitud **interna** T, porque el interno sigue viendo T;
+que las columnas periódicas de Banda, Prenda, Cobro y Pago miden la traza interna entera, 512, y se
+evalúan en `z²`; y que `check_leading_zeros` cuenta los ceros **finales** de la primera palabra,
+diga lo que diga su nombre.
+
+**El canon.** El bloque «3 duodecies» gana el juez del STARK, a pin cero, detrás del segundo
+verificador: una prueba nueva de esas familias tiene que verificar también en Python.
+
+⚠️ **Corrección (§626).** `doc/integracion-vertical-evaluacion.md`, §8, decía que el cuarto hito
+llevaría «los 23 AIR como jueces». Es inexacto: el paquete verifica **cinco** AIR; los 23 de
+`stark-experiment` son del lado del probador y no viaja ninguno en un vector. Corregido allí con la
+marca de este asiento.
+
+**Lo que esto NO es.** Una segunda opinión sobre las AIR. Ninguna RFC escribe sus restricciones y
+el `.rs` es la única fuente, así que `airs.py` dice lo mismo que ellas: una AIR infra-restringida
+pasaría aquí igual que allí. Lo que el cuarto hito pone en dos códigos es la **maquinaria** del
+verificador —Fiat-Shamir, FRI, DEEP, Merkle con sal, `Oculta`—, que es donde un fallo de winterfell
+o de la copia de la casa haría aceptar lo que no debe.
+
+**Contadores.** Ningún pin del canon se mueve: el juez entra a pin cero y no es un test de crate.
+Tres ficheros nuevos (1.915 líneas) y cuatro tocados: `tools/canon.sh`, `tools/segunda/README.md`,
+`doc/integracion-vertical-evaluacion.md` y la entrada 85 del `BACKLOG.md`, que pasa a hecha en
+cuatro hitos. El cable y el núcleo no cambian un byte.
+
+**Lo que NO cierra.** Los 34 vectores conservados de `spec/vectors/0.3/`, sin ocultar y sin sal,
+con las AIR de `0eda58c`, que el kit de hoy tampoco verifica. El mando entero de las formas con
+STARK en el segundo código: el juez juzga el par, pero no recorre la cabeza, la firma y los campos
+de esos sobres como `verificador.py` recorre los de las formas sin STARK. Y la aceptación de
+`GENAI.md`, que es del autor: correr el sello en su máquina y mover `main`.
+
 ## §627 — la historia de `main`, reescrita: el §623 sin la marca de sesión en sus commits
 
 El commit que lleva este asiento, sobre `98cd4af` (el §625, reescrito). Por decisión del autor, la

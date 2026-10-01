@@ -307,7 +307,7 @@ cuando son once y tres desde el §537 y el §575.
 | ¿Un módulo criptográfico nuevo? | No: nombrar el que existe. Un crate sin llamador va contra el §580 |
 | ¿Coger lo útil de winterfell? | Ya se cogió: 350 líneas y tres ficheros, con la foto que prueba que apagado es winterfell byte a byte |
 | ¿Y del ecosistema? | Plonky3 0.8 lleva ocultación y lookups con una clausura de 54 paquetes, medida; si cubre `EdadAir` es lo primero que hay que medir |
-| ¿Ser el estándar del nicho? | Con la entrada 85: una segunda implementación que pase los vectores. Tres hitos hechos y en el canon: 26 de 26 KAT del núcleo, las cabezas firmadas de todos los vectores con XMSS^MT desde RFC 8391, y el segundo verificador con 121 de 121 entradas de las cuatro familias sin STARK. Para las siete formas con STARK, «esto es un protocolo» sigue siendo una promesa, y lo dice el BACKLOG |
+| ¿Ser el estándar del nicho? | Con la entrada 85: una segunda implementación que pase los vectores. Cuatro hitos hechos y en el canon: 26 de 26 KAT del núcleo, las cabezas firmadas de todos los vectores con XMSS^MT desde RFC 8391, el segundo verificador con 121 de 121 entradas de las cuatro familias sin STARK, y el verificador STARK en Python sobre las pruebas ocultas y con sal de las seis familias que las llevan, 23 de 23 pares con el veredicto y la causa del binario (§626). Lo que sigue siendo promesa: las cinco AIR, transcritas del único sitio donde existen, y el mando entero de esas formas en el segundo código |
 | ¿El borrador? | Ninguna línea sirve de base; cuatro de sus ideas ya están selladas y una contradice el alcance declarado |
 | ¿Modularizar como `hbs-state` y `mtc-core`? | Una pieza, hoy: `kat_xmss` con `xmss.py`, lista para `git subtree split`. El fork, cuando el RFC de capa 2 decida; la spec, nunca por ese criterio |
 
@@ -326,15 +326,20 @@ cuando son once y tres desde el §537 y el §575.
 - Que las cifras del borrador sean falsas: que **no están medidas**, que es lo único que la casa
   necesita saber para no copiarlas.
 - Que la segunda implementación sea una segunda implementación del **protocolo**: lo es del
-  núcleo congelado, de la cabeza firmada con sus cofirmas y de las cinco formas sin STARK; las
-  siete formas con prueba siguen teniendo un solo código.
+  núcleo congelado, de la cabeza firmada con sus cofirmas, de las cinco formas sin STARK y, desde
+  el §626, de la verificación STARK de las seis familias con prueba. No lo es de sus cinco AIR,
+  transcritas del `.rs` porque ninguna RFC escribe sus restricciones, ni del mando de esas formas,
+  que en el segundo código todavía no se compone con la cabeza y la firma.
 
 ---
 
 ## 8. Pendientes que deja
 
-1. La entrada 85, cuarto hito: un verificador STARK de winterfell en Python para las siete formas
-   con prueba (FRI, DEEP y los 23 AIR como jueces). **Decidido el lenguaje, con medida**: Python,
+1. ✅ **Hecho en el §626.** La entrada 85, cuarto hito: un verificador STARK de winterfell en Python
+   para las formas con prueba (FRI, DEEP y las AIR como jueces). ⚠️ **Corrección (§626):** aquí ponía
+   «los 23 AIR», y es inexacto: el paquete verifica **cinco** —Banda, Edad, Prenda, CobroPendiente y
+   PagoEnCurso—; los 23 de `stark-experiment` son del probador y no viaja ninguno en un vector.
+   **Decidido el lenguaje, con medida**: Python,
    no un lenguaje compilado. Lo medido en esta máquina sobre las primitivas ya escritas —permutación
    Rescue 1,28 ms, un merge Blake3 78 µs, una multiplicación en la extensión cuadrática 0,65 µs—
    proyecta ~0,73 s por prueba y ~59 s por el catálogo entero (81 pruebas STARK), del orden de lo
@@ -342,7 +347,8 @@ cuando son once y tres desde el §537 y el §575.
    hace falta: la segunda implementación no se mide por su velocidad sino por decir los mismos
    bytes, y meterlo en otro lenguaje añadiría una caja de compilación por una conformidad que no la
    necesita. Se queda en Python, con la permutación y Blake3 que ya tiene. El hito es escribir FRI,
-   el muestreo DEEP y los 23 AIR como restricciones; el coste es de concepto, no de rendimiento.
+   el muestreo DEEP y las AIR como restricciones; el coste es de concepto, no de rendimiento.
+   Medido al hacerlo: 0,2 a 0,5 s por prueba, por debajo de los 0,73 proyectados; el juez entero, 12 s.
 2. El asiento del autor que acepte o revierta lo que esta rama deja: `tools/segunda/` con `kat_xmss/`,
    el bloque «3 duodecies» del canon y las precisiones de prosa de `NUCLEO.md` §6 y §8; y, si lo
    quiere fuera, el `git subtree split` de `kat_xmss/`.

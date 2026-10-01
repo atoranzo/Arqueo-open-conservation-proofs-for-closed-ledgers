@@ -1,4 +1,4 @@
-# `tools/segunda` — la segunda implementación del núcleo, y el verificador bajo wasmtime
+# `tools/segunda` — la segunda implementación: el núcleo, las cabezas, el segundo verificador y el STARK
 
 Los spikes de [`doc/integracion-vertical-evaluacion.md`](../../doc/integracion-vertical-evaluacion.md),
 secciones 5.2 y 5.3, medidos el 01-10-2026 sobre `e8ac246` (S615).
@@ -10,6 +10,9 @@ secciones 5.2 y 5.3, medidos el 01-10-2026 sobre `e8ac246` (S615).
 | `kat_xmss/xmss.py` | la **verificación XMSS^MT de RFC 8391** para `XMSSMT-SHA2_40/8_256`, el conjunto que la casa firma, escrita desde el texto del RFC y de ningún crate; solo verificar |
 | `juez_cabezas.py` | el **juez de las cabezas firmadas**: para cada cabeza y cofirma de los vectores recompone el `epochDigest` por versión, compara el preámbulo recuperado, verifica la firma con `kat_xmss/xmss.py` y comprueba el índice embebido (`PAQUETE.md`, 2/3 y sección 8); con un falsador que voltea un byte |
 | `verificador.py` | el **segundo verificador**: las cinco formas del paquete que no exigen una prueba STARK —posición v1 y v2 con acuse y cofirmas, extensión, consumo, conflicto y ancla— escritas desde `PAQUETE.md` con el contrato del mando (un argumento, `ROJO: {motivo}` del catálogo, exit 0/1/2), y juzgadas por `tools/conformidad.sh` con los mismos manifiestos que el binario |
+| `stark.py` | el **verificador STARK** (§626): la maquinaria de `winter-verifier` 0.13.1 en Python, sin dependencias —el formato de `Proof`, la moneda pública sobre Blake3 en el orden exacto de Fiat-Shamir, la autenticación Merkle por lotes con la sal de `MerkleConSal`, el chequeo fuera del dominio, la composición DEEP, FRI y la envoltura `Oculta`—, leída de las fuentes de winterfell y no copiada; `INV_MDS` se calcula invirtiendo la MDS y el autotest la contrasta con la tabla de `winter-crypto` |
+| `airs.py` | las **cinco AIR** del paquete —Banda, Edad, Prenda, CobroPendiente y PagoEnCurso—, **transcritas** de `crates/zk-ssl-air/src/*.rs` restricción a restricción: ninguna RFC escribe sus restricciones y el `.rs` es la única fuente, así que una AIR infra-restringida pasaría aquí igual que allí |
+| `juez_stark.py` | el **juez del STARK**: compone, para cada vector con prueba, el par que el mando juzga —la prueba y el enunciado, con los campos y la cabeza que lee `zk-ssl-verify`— y lo compara con su `MANIFIESTO.txt`; tres falsadores por positivo |
 | `wasm_runner.py` | el **envoltorio** para correr `zk-ssl-verify` compilado a `wasm32-wasip1` dentro de wasmtime con el contrato del mando (`PAQUETE.md`, sección 6), para que `tools/conformidad.sh` lo juzgue como al binario nativo |
 | `kat_xmss/` | el **corpus KAT de XMSS^MT**: claves y firmas producidas por el crate `xmss 0.1.0-pre.0` desde semillas fijas y verificadas por `kat_xmss/xmss.py`, que vive dentro para que el directorio sea un repositorio por sí solo; con su juez y su generador. Es el módulo con perfil de `hbs-state`: extraíble tal cual, sin un byte del protocolo (`kat_xmss/README.md`) |
 
@@ -27,6 +30,10 @@ python3 tools/segunda/kat_xmss/juez_xmss.py
 
 # 1 quater · el segundo verificador, con el arnes y los manifiestos del binario   -> 121 de 121
 for m in paquete consumo conflicto ancla; do bash tools/conformidad.sh tools/segunda/verificador.py spec/vectors/$m/MANIFIESTO.txt | tail -1; done
+
+# 1 quinquies · el verificador STARK: las pruebas ocultas y con sal de seis familias      -> 23 de 23
+python3 tools/segunda/stark.py          # autotest: la extension, INV_MDS, las raices
+python3 tools/segunda/juez_stark.py
 
 # 2 · el verificador a WebAssembly, y los diez manifiestos bajo wasmtime
 rustup target add wasm32-wasip1
@@ -86,6 +93,28 @@ RFC-0006 §413 (los 63 bits bajos de los primeros ocho bytes; la hoja vacía es 
 `ancla_digest` leída como Digest de cuatro elementos, lo que deja sin decir qué pasa si un limbo
 queda fuera del campo (2⁻³² por limbo): aquí es ROJO con nombre.
 
+**El verificador STARK** (§626). Las 58 pruebas de las seis familias que el kit verifica hoy van
+**ocultas** (la marca `arqueo:oculta:1` en el meta de la traza: L = 2T, una columna más, las
+exenciones del AIR interno más T) y **con sal** (cada hoja es `merge(item, sal)`); `stark.py` hace los
+dos caminos. El juez compone el par de cada vector y lo compara con el manifiesto:
+
+| medida | valor |
+|---|---|
+| pares comparados con su manifiesto / que dicen lo que deben | 23 / 23 |
+| de ellos, positivos que verifican | 12, en las seis familias |
+| negativos rechazados con la causa del juez | 11: `InconsistentOodConstraintEvaluations` donde el enunciado miente (otra cuenta, otra cota, otro importe, otro receptor, otra marca), el techo de la banda, las subraíces que no suben a la raíz, `nacido ≥ seq` |
+| `completitud`, por sus tres veredictos | la prenda aceptada verifica contra su cabeza; la rechazada con prueba NO verifica contra la juzgada (`ConstraintQueryDoesNotMatchCommitment`); la del RECHAZO SIN FUNDAMENTO SÍ |
+| la misma causa que imprime el binario, par a par | 23 de 23, medido corriendo `zk-ssl-verify` sobre cada vector |
+| falsadores (un byte volteado en tres tercios de la prueba) que dejan de verificar | 33 de 33 |
+| vectores que caen antes del juez (firma, cabeza, campos) | 35, contados y no comparados |
+| una verificación en Python | 0,2 a 0,5 s (Edad, la multisegmento, la más lenta); el juez entero, 12 s |
+
+Lo que la medida fijó al escribirlo: que la semilla de Fiat-Shamir es el contexto **más las
+entradas públicas**, de modo que un enunciado mal compuesto no llega ni a la autenticación Merkle;
+que las aserciones de «última fila» de una AIR oculta usan la longitud **interna** T; que las
+columnas periódicas de Banda, Prenda, Cobro y Pago miden la traza interna entera (512) y se evalúan
+en `z²`; y que `check_leading_zeros` de la moneda cuenta los ceros **finales** de la primera palabra.
+
 **El verificador bajo wasmtime** (`wasmtime` 49.0.0 de PyPI; `rustc` 1.97.0):
 
 | medida | nativo | `wasm32-wasip1` |
@@ -124,15 +153,21 @@ una spec»*. Cuatro cosas que quien escriba desde la sección 6 no puede saber:
 Los tres jueces y el segundo verificador corren en cada sello (`tools/canon.sh`, bloque «3 duodecies»), a pin cero: un KAT
 nuevo o una versión nueva de cabeza que la segunda implementación no reproduzca pone el sello en
 rojo con su nombre; el juez de `kat_xmss/` corre en el mismo bloque, para que un cambio de bytes del
-crate `xmss` se vea en el sello; y el segundo verificador corre contra los cuatro manifiestos, para
-que un vector nuevo tenga que pasar por los dos códigos. `wasm_runner.py` no corre en el canon: necesita `wasmtime` de PyPI.
+crate `xmss` se vea en el sello; el segundo verificador corre contra los cuatro manifiestos, para
+que un vector nuevo tenga que pasar por los dos códigos; y desde el §626 el juez del STARK corre en
+el mismo bloque, para que una prueba nueva de esas familias tenga que verificar también en Python. `wasm_runner.py` no corre en el canon: necesita `wasmtime` de PyPI.
 El `--sello` entero se corrió con el bloque dentro el 01-10-2026: VERDE, 1.054 s de tests.
 
 ## Lo que NO cubre
 
-- Las siete formas que exigen una prueba STARK: rechazo (en sus causas de circuito), edad, cobro
-  pendiente, pago en curso, prenda, completitud y las resoluciones con prueba. Verificar un STARK
-  de winterfell en Python es otro hito, con otro tamaño.
+- Las AIR como segunda opinión: `airs.py` las transcribe del `.rs`, la única fuente que existe.
+  Lo que el juez del STARK mide es la maquinaria del verificador, no si una AIR restringe lo que
+  dice restringir.
+- El mando entero de las formas con STARK en el segundo código: `juez_stark.py` juzga el par
+  (prueba y enunciado) que el binario compone, pero no recorre la cabeza, la firma y los campos de
+  esos sobres como `verificador.py` recorre los de las cinco formas sin STARK.
+- Los 34 vectores conservados de `spec/vectors/0.3/`: sin ocultar y sin sal, con las AIR de
+  `0eda58c`; el kit de hoy tampoco los verifica (rechaza su forma, D-AD).
 - Que el `.wasm` corra en un navegador: `wasm32-unknown-unknown` lo para `getrandom`, que `xmss`
   arrastra por `rand 0.10` para generar claves que el verificador no usa (medido con
   `cargo tree -i getrandom@0.4.3`). Es una línea más para el issue a RustCrypto de la entrada 77.

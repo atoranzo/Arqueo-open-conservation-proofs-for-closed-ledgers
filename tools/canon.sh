@@ -510,6 +510,17 @@ for F in paquete consumo conflicto ancla; do
     grep -q '^ROJO' "$OUT/segunda_$F.txt" || falla "segunda $F: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/segunda_$F.txt"))"
   fi
 done
+# El VERIFICADOR STARK (tools/segunda/stark.py y airs.py, cuarto hito de la 85, §626): las pruebas
+# ocultas y con sal de las familias que el kit verifica hoy -rechazo, edad, pago, pendiente,
+# prenda y completitud-, cada una con el enunciado que el mando le compone, contra lo que fija su
+# MANIFIESTO, y tres falsadores por positivo. Las AIR estan transcritas del .rs: lo que este juez
+# mide es la maquinaria (Fiat-Shamir, FRI, DEEP, Merkle con sal, Oculta), no las AIR. ~15 s.
+if python3 tools/segunda/juez_stark.py > "$OUT/segunda_stark.txt" 2>&1; then
+  msg "  OK  $(tail -n 1 "$OUT/segunda_stark.txt")"
+else
+  grep '^FALLA' "$OUT/segunda_stark.txt" | sed 's/^/      /' >&2
+  falla "la segunda implementacion NO juzga las pruebas STARK como el manifiesto ($(tail -n 1 "$OUT/segunda_stark.txt"))"
+fi
 
 # ── 3 ter · el ARTEFACTO (tools/artefacto.sh --check, §401): la PROPIEDAD, no un pin ──
 msg ""

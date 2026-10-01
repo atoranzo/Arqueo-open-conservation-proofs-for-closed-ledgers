@@ -652,11 +652,15 @@ instrumentacion) al grupo E.*
   pérdida total de clave a la cuarta.** Es un dato que se puede **medir
   en el propio árbol** —no hace falta creerse el suyo— y merece un banco.
 
-- [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en tres hitos (§623).**
+- [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en cuatro hitos (§623, §626).**
   `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con
-  XMSS^MT de RFC 8391 (los 42 fallos, negativos), y 121/121 entradas del segundo verificador en las
-  cinco formas sin STARK, con salida idéntica al binario. En el canon, a pin cero. Queda el cuarto
-  hito, el verificador STARK (decidido: Python, §623). El cuerpo original, abajo.
+  XMSS^MT de RFC 8391 (los 42 fallos, negativos), 121/121 entradas del segundo verificador en las
+  cinco formas sin STARK, con salida idéntica al binario, y el verificador STARK (`stark.py`,
+  `airs.py`, `juez_stark.py`, §626): 23/23 pares de las seis familias con prueba, ocultas y con sal,
+  con el veredicto y la causa del binario, y 33/33 falsadores callados. En el canon, a pin cero.
+  Queda, y va dicho: las cinco AIR están transcritas del `.rs` (no hay otra fuente), los 34 vectores
+  `0.3/` sin ocultar quedan fuera, y el mando de las formas con STARK no se compone aún en el
+  segundo código. El cuerpo original, abajo.
 
 - [ ] **85 (original). Una SEGUNDA implementación que pase los vectores.** Lo caro
   ya está hecho: vectores de conformidad versionados (`0.2` idéntico,
