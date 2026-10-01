@@ -44019,3 +44019,45 @@ habilitado, política heredada de Meta, correo del mantenedor); y este asiento.
 registra el aviso, no la respuesta. El cuarto hito de la 85 (el verificador STARK en Python, decidido
 en el §623 y aún sin escribir) sigue vivo. Y la aceptación de `GENAI.md` de toda la rama, que es del
 autor.
+
+## §627 — la historia de `main`, reescrita: el §623 sin la marca de sesión en sus commits
+
+El commit que lleva este asiento, sobre `98cd4af` (el §625, reescrito). Por decisión del autor, la
+historia de `main` desde `3d3bb3d` (el S622) se reescribe y se empuja con `--force-with-lease`. Los
+once commits que llevaron el §623 -nueve con una línea `Claude-Session:` en el mensaje y dos
+fusiones cuyo título nombraba la rama de trabajo de otra sesión- pasan a ser uno, a nombre del autor
+y sin esas líneas; el §624 y el §625 se vuelven a sellar encima, y el §625 entra así en `main` sin la
+línea que también traía. Es lo que el S603 hizo con la rama del RFC-0013, y lo que `GENAI.md` dice:
+el uso del asistente se declara allí, el registro por cambio es este fichero, y el marcado por
+commit no es el método de este proyecto. El número es el §627 porque la otra sesión reservó el §626.
+
+**Lo que NO cambia: los árboles, byte a byte.** El árbol del nuevo S623 (`71de3d3`) es el de
+`5da0081`; el del S624 (`68a8f98`), el de `6f56956`; el del §625 (`98cd4af`), el de `747d063`. Ni un
+fichero ni un byte: lo verificado por el canon del autor en `5da0081` y en `6f56956`, y por el de
+este sello, es lo mismo. Cambian los mensajes, la forma de la historia -lineal, sin fusiones- y por
+tanto los hashes. Ningún tag apunta a lo reescrito: `arqueo-verify-v0.3.0` está en `65cabfb`, antes.
+
+**La correspondencia, para las citas que quedan.** Los asientos no se reescriben, y dos citan
+commits que ya no están en `main`: el §623 nombra su base y sus sellos intermedios, y el §624, su
+base.
+
+| antes, fuera de `main` | qué era | ahora |
+|---|---|---|
+| `eaecb77`, `93ac2a0`, `826d569`, `e079269`, `5cb0e44`, `7e30e3a`, `e590185`, `68f0222`, `87ee407`, `66fe53b`, `5da0081` | el §623, en once commits | `71de3d3` |
+| `6f56956` | el S624 | `68a8f98` |
+| `cad94c6` y la fusión `747d063` | el §625 | `98cd4af` |
+
+Los estados intermedios del §623 -el canon VERDE en `e079269` y tras `5cb0e44`- no tienen
+equivalente en `main`: viven en la rama de trabajo de la otra sesión mientras exista, y su árbol
+final es el de `71de3d3`.
+
+**Lo que NO hace.** No borra esa rama ni sus commits: es del autor decidirlo, y GitHub puede seguir
+sirviendo un commit por su hash aunque nada lo alcance. No mira el repositorio `xmss-kat`, partido de
+`tools/segunda/kat_xmss/`: si sus commits llevan la misma línea, es otra reescritura, en otro
+repositorio.
+
+**Contadores.** Ninguno se mueve: ni un test, ni un pin, ni una entrada del `BACKLOG.md`.
+
+**Lo que NO cierra.** La otra sesión tiene que poner su rama sobre la nueva `main` con un reset, no
+con una fusión -una fusión traería de vuelta los once commits-, y entregar lo que siga sin esa línea.
+
