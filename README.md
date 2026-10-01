@@ -188,6 +188,7 @@ para las congelaciones. Todo lo demás está enumerado en [`AUDITORIA.md`](./AUD
 | Llegas desde Zenodo | [`doc/ZENODO.md`](./doc/ZENODO.md) |
 | Vas a contribuir o a reportar una vulnerabilidad | [`CONTRIBUTING.md`](./CONTRIBUTING.md) · [`SECURITY.md`](./SECURITY.md) |
 | Buscas la CA de certificados Merkle (MTC) que nació aquí | [`doc/MTC.md`](./doc/MTC.md) · <https://github.com/atoranzo/mtc-core> |
+| Buscas los vectores de respuesta conocida de XMSS^MT que nacieron aquí | [`tools/segunda/kat_xmss/`](./tools/segunda/kat_xmss/) · <https://github.com/atoranzo/xmss-kat> |
 
 `AUDITORIA.md` incluye una sección con **los puntos donde el autor tiene menos confianza**. Si vas
 a mirar el código con intención de romperlo, empieza ahí.

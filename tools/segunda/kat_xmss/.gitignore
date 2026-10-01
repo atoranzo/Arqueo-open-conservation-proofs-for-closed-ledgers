@@ -1,0 +1,4 @@
+/generador/target/
+/generador/Cargo.lock
+__pycache__/
+*.pyc

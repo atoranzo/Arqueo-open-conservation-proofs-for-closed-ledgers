@@ -237,7 +237,11 @@ real de sus llaves, no por la primera marca.
 
 Este documento **nombra**; los bytes los fijan los vectores de `spec/vectors/nucleo/` (§411,
 RFC-0005 E5): un fichero por `fn` NÚCLEO, `{fn, entradas, salida}` en hex `0x…`, emitidos por la
-referencia y reproducidos en cada canon (`zk-ssl-cli`, `nucleo_kat`). Una segunda implementación
+referencia y reproducidos en cada canon (`zk-ssl-cli`, `nucleo_kat`). ⚠️ Los `u64` de las entradas
+van como **número** hex (`seq`, `n`, `t`, los contadores, `as_digest.x`), salvo `embeber.x` y
+`balance`/`nonce` de `native_leaf*`, que van como **ocho bytes little-endian**: dos codificaciones
+en un catálogo, y un juez tiene que saberlo por fuera (medido por la segunda implementación,
+`tools/segunda/juez_nucleo.py`). Una segunda implementación
 que dé estos bytes en cada uno da los mismos bytes en todo lo que se firma. Son una foto de la
 referencia, y se declara: fijan la propiedad «dos implementaciones dan estos bytes».
 
@@ -280,8 +284,11 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
   `digest_of_proof` (§116) con dominio de bytes propio;
   `hash_del_lote = Blake3(b"ZK-SSL-batch-v1" ‖ len(u64 LE) ‖ (hash_prueba_i ‖ cuenta_i ‖
   posicion_i)*)` (RFC-0014, §610), el mismo molde, con 48 bytes por operación en el orden del lote
-  -el digest de su prueba, y su cuenta y su posición como `u64 LE`- y `k` en la longitud, que es lo
-  que va como `hash_prueba` en el `recibo_digest` de un lote;
+  -el digest de su prueba, y su cuenta y su posición como `u64 LE`-; `len` son los **bytes** de la
+  composición, `48·k`, como en el molde del §116, y `k` queda implícito en ella; es lo que va como
+  `hash_prueba` en el `recibo_digest` de un lote. ⚠️ **Corregido por la segunda implementación**
+  (`tools/segunda/`, entrada 85): hasta entonces aquí decía «`k` en la longitud», y con `len = k`
+  el KAT no reproduce (medido); el error se registra en vez de borrarse;
   `params_digest = merge(as_digest(PARAM_V1),
   merge(merge(as_digest(regulatory_limit), as_digest(max_supply)),
   merge(merge(as_digest(max_accounts), custodian_set_root), merge(governance_set_root,
@@ -289,7 +296,14 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
   `acuse_digest = merge(as_digest(ACUSE_V1), merge(hash_prueba, merge(as_digest(epoca),
   as_digest(n))))`; `mmr_hoja = merge(as_digest(MMRHOJA1), cabeza)`; `mmr_nodo =
   merge(as_digest(MMRNODO1), merge(izq, der))`; la cima es el árbol de Merkle con el corte en
-  la mayor potencia de dos menor que `n`.
+  la mayor potencia de dos menor que `n`, **con cada cabeza pasada por `mmr_hoja` dentro de la
+  cima** (la lectura de RFC 6962: `cima([c]) = mmr_hoja(c)`); ⚠️ precisado por la segunda
+  implementación (`tools/segunda/`, entrada 85): hasta entonces no se decía, y el KAT lo fija.
+  **La hoja de acuse**, que `PAQUETE.md` 2.1 nombra `hoja_de_acuse(hashPrueba, seq, n)` y hasta
+  aquí no estaba escrita: es `acuse_digest(hashPrueba, seq + 1, n)`, porque su `seq` es el
+  `logSeq` de la operación y la época del acuse es `logSeq + 1`, la primera cabeza que puede
+  contenerla (`RPC.md`, «El acuse en la respuesta», §274); con `epoca = seq` el KAT no reproduce
+  (medido).
 - **Lo que un KAT no puede dar**: la firma. `XmssMtSha2_40_8_256` es RFC 8391 y la clave
   publicada lleva su OID correcto; el apaño del OID es de lectura de `xmss 0.1.0-pre.0`
   (REFERENCIA) y una biblioteca correcta no lo necesita.
@@ -304,6 +318,12 @@ referencia, y se declara: fijan la propiedad «dos implementaciones dan estos by
   compartida entre operadores. La unicidad entre libros es familia nueva con RFC propio.
 
 ## 8. Historia
+
+- §623 — la segunda implementación del núcleo
+  (`tools/segunda/`, entrada 85) reproduce los 26 KAT desde esta sección y verifica las cabezas
+  firmadas de los vectores con XMSS^MT escrito desde RFC 8391; deja tres precisiones de prosa en la
+  sección 6 (la hoja de acuse con su `logSeq + 1`, la longitud de `hash_del_lote`, la cima con
+  `mmr_hoja` dentro) y una sobre el formato de los KAT. Ningún byte del formato se mueve.
 
 - §610 — `hash_del_lote`: el núcleo compone la huella de un lote de `zkssl_applyMany` (RFC-0014,
   E2), con `DOMINIO_LOTE` en la familia bytes; su KAT. Una fila nueva, familia RECIBOS. La hoja del

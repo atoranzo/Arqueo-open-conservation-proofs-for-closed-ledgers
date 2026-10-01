@@ -468,6 +468,49 @@ else
   grep -q '^ROJO' "$OUT/ancla.txt" || falla "ancla: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/ancla.txt"))"
 fi
 
+# ── 3 duodecies · la SEGUNDA implementacion (BACKLOG 85; tools/segunda/) ──
+# Otro codigo, en Python y sin dependencias, reproduce el nucleo congelado desde NUCLEO.md (26 KAT)
+# y verifica las cabezas firmadas de TODOS los vectores con XMSS^MT escrito desde RFC 8391
+# (tools/segunda/kat_xmss/xmss.py, dentro del directorio extraible). Esta
+# aqui por lo mismo que las herramientas del bucle (2 ter): un KAT nuevo o una version nueva de
+# cabeza que la segunda implementacion no reproduzca tiene que verse en el sello, no cuando alguien
+# se acuerde de correrla. Pin cero: los tres jueces y el segundo verificador fallan con nombre. ~45 s,
+# casi todos de XMSS en Python.
+msg ""
+msg "== CANON · la segunda implementacion (tools/segunda) =="
+T_SEG0=$(date +%s)
+if python3 tools/segunda/juez_nucleo.py > "$OUT/segunda_nucleo.txt" 2>&1; then
+  msg "  OK  $(tail -n 1 "$OUT/segunda_nucleo.txt")"
+else
+  grep '^ROJO' "$OUT/segunda_nucleo.txt" | sed 's/^/      /' >&2
+  falla "la segunda implementacion NO reproduce los KAT del nucleo ($(tail -n 1 "$OUT/segunda_nucleo.txt"))"
+fi
+if python3 tools/segunda/juez_cabezas.py > "$OUT/segunda_cabezas.txt" 2>&1; then
+  msg "  OK  $(tail -n 1 "$OUT/segunda_cabezas.txt") ($(( $(date +%s) - T_SEG0 )) s)"
+else
+  grep '^NO' "$OUT/segunda_cabezas.txt" | grep -v '\[negativo\]' | sed 's/^/      /' >&2
+  falla "la segunda implementacion NO verifica las cabezas firmadas ($(tail -n 1 "$OUT/segunda_cabezas.txt"))"
+fi
+# El corpus KAT de XMSS^MT (tools/segunda/kat_xmss, entrada 77): firmas del crate clavado, juzgadas
+# por la implementacion de RFC 8391. Si `xmss` cambia de version y de bytes, aqui se ve. ~1 s.
+if python3 tools/segunda/kat_xmss/juez_xmss.py > "$OUT/segunda_kat_xmss.txt" 2>&1; then
+  msg "  OK  $(tail -n 1 "$OUT/segunda_kat_xmss.txt" | sed 's/ - generador:.*//')"
+else
+  grep '^ROJO' "$OUT/segunda_kat_xmss.txt" | sed 's/^/      /' >&2
+  falla "el corpus KAT de xmss NO verifica con la implementacion de RFC 8391 ($(tail -n 1 "$OUT/segunda_kat_xmss.txt"))"
+fi
+# El SEGUNDO VERIFICADOR (tools/segunda/verificador.py): las cinco formas sin STARK del paquete, con
+# el contrato del mando, juzgadas por el MISMO arnes y los MISMOS manifiestos que el binario de
+# referencia. Si un vector nuevo entra en estas familias, los dos codigos tienen que decir lo mismo.
+for F in paquete consumo conflicto ancla; do
+  if bash tools/conformidad.sh tools/segunda/verificador.py "spec/vectors/$F/MANIFIESTO.txt" > "$OUT/segunda_$F.txt" 2>&1; then
+    msg "  OK  segunda $F: $(tail -n 1 "$OUT/segunda_$F.txt" | sed 's/^conformidad: //; s/ - binario.*//')"
+  else
+    while IFS= read -r L; do falla "segunda $F $L"; done < <(grep '^ROJO' "$OUT/segunda_$F.txt" | sed 's/^ROJO //')
+    grep -q '^ROJO' "$OUT/segunda_$F.txt" || falla "segunda $F: el arnes falla sin nombrar la entrada ($(tail -n 1 "$OUT/segunda_$F.txt"))"
+  fi
+done
+
 # ── 3 ter · el ARTEFACTO (tools/artefacto.sh --check, §401): la PROPIEDAD, no un pin ──
 msg ""
 msg "== CANON · el artefacto =="

@@ -27,18 +27,26 @@ crates/winter-air/, crates/winter-prover/, crates/winter-verifier/
 
     Fork de `winter-air`, `winter-prover` y `winter-verifier` 0.13.1
     (winterfell; Facebook, Inc. y sus afiliados;
-    https://github.com/novifinancial/winterfell), publicados bajo licencia
-    MIT (LICENSE en cada crate). Entran por `[patch.crates-io]` con su
-    mismo nombre y versión, y nunca se publican.
+    https://github.com/facebook/winterfell, antes novifinancial/winterfell),
+    publicados bajo licencia MIT (LICENSE en cada crate). Entran por
+    `[patch.crates-io]` con su mismo nombre y versión, y nunca se publican.
 
     Modificación funcional: la ocultación del testigo dentro del núcleo
-    (RFC-0009, D-F a D-K), APAGADA desde el asiento §533 y, desde el
-    §534, encendida sólo por `Prover::ocultacion`, que ningún probador de
-    ARQUEO devuelve: ocho ficheros tocados y dos nuevos
-    (`src/air/oculta.rs`, `src/marca.rs`), listados en el README de cada
-    crate. Con la ocultación apagada cada prueba sale byte a byte como
-    la de winterfell, y `crates/stark-experiment/src/kat_probador.rs` lo
-    comprueba en cada canon.
+    (RFC-0009, D-F a D-K), que entró APAGADA en el asiento §533, se
+    enciende por `Prover::ocultacion` desde el §534 y la devuelven los 23
+    probadores con fila de ARQUEO desde el §538 (E3b-2); y, desde el
+    §575, un lector acotado para que una prueba malformada no aborte el
+    proceso. Once ficheros tocados y tres nuevos (`src/air/oculta.rs`,
+    `src/marca.rs`, `src/proof/acotado.rs`), listados en el README de
+    cada crate. Con la ocultación apagada cada prueba sale byte a byte
+    como la de winterfell, y `crates/stark-experiment/src/kat_probador.rs`
+    lo comprueba en cada canon.
+    ⚠️ Corregido (§623):
+    hasta aquí este párrafo decía «ocho ficheros tocados y dos nuevos» y
+    que la ocultación la encendía un `Prover::ocultacion` «que ningún
+    probador de ARQUEO devuelve»; lo segundo dejó de ser cierto en el
+    §538 y lo primero en el §537 y el §575. El error se registra en vez
+    de borrarse.
 
 --------------------------------------------------------------------------
 SIN AFILIACIÓN INSTITUCIONAL

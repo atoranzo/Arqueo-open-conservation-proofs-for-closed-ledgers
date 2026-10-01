@@ -12,7 +12,7 @@ orden; y este proyecto marca las correcciones en vez de borrarlas.
 Lo que entre nuevo va al final con el numero siguiente, y se coloca en su
 grupo de prioridad sin cambiar de numero.
 
-**Estado**: 43 abiertas, 71 resueltas — **3 suspendidas** (16, 22 y 28). Casillas
+**Estado**: 43 abiertas, 73 resueltas — **3 suspendidas** (16, 22 y 28). Casillas
 recontadas en el §620 (la línea seguía con las del §597, 45 y 63), el §621 y el §622.
 Ultima revision: 30 de septiembre de 2026 — **contada, no recordada** (§583 a §587, §595, §597).
 
@@ -652,7 +652,13 @@ instrumentacion) al grupo E.*
   pérdida total de clave a la cuarta.** Es un dato que se puede **medir
   en el propio árbol** —no hace falta creerse el suyo— y merece un banco.
 
-- [ ] **85. Una SEGUNDA implementación que pase los vectores.** Lo caro
+- [x] **85. Una SEGUNDA implementación que pase los vectores: HECHA en tres hitos (§623).**
+  `tools/segunda/`, en Python desde la spec: 26/26 KAT del núcleo, 376/418 cabezas firmadas con
+  XMSS^MT de RFC 8391 (los 42 fallos, negativos), y 121/121 entradas del segundo verificador en las
+  cinco formas sin STARK, con salida idéntica al binario. En el canon, a pin cero. Queda el cuarto
+  hito, el verificador STARK (decidido: Python, §623). El cuerpo original, abajo.
+
+- [ ] **85 (original). Una SEGUNDA implementación que pase los vectores.** Lo caro
   ya está hecho: vectores de conformidad versionados (`0.2` idéntico,
   `0.1` rechazado), OpenRPC **generado** desde la tabla de
   `zk-ssl-wire`, y regeneración byte-exacta como compuerta permanente.
@@ -3326,7 +3332,13 @@ cerrados, para no publicar dos veces. Acumula ya: titularidad del cobro
 
 ---
 
-- [ ] **77. XMSS: lo que queda después de cerrar la 56 — KAT, el issue
+- [x] **77. XMSS: el KAT ausente, CERRADO (§623).** `tools/segunda/kat_xmss/` trae un corpus
+  producido por `xmss 0.1.0-pre.0` desde semillas fijas y verificado por una implementación de RFC
+  8391 escrita desde el RFC: 8/8, tres falsadores callados, partido como `xmss-kat-main` y publicado
+  en <https://github.com/atoranzo/xmss-kat>. Queda vivo el issue upstream (lo pide el §575, con su
+  borrador en `doc/reporte-winterfell-575.md`) y ARM. El cuerpo original, abajo.
+
+- [ ] **77 (original). XMSS: lo que queda después de cerrar la 56 — KAT, el issue
   upstream y ARM.** Nace en §267 al cerrar la 56. La firma de cabezas está
   implementada y sus dos incógnitas resueltas, pero la lista de pendientes de
   la evaluación **estaba enterrada en el cuerpo de la 67** —87 líneas y tres

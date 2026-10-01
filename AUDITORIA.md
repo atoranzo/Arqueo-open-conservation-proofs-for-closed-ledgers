@@ -43836,3 +43836,92 @@ las pruebas reales de los vectores de completitud y de prenda.
 lo que ejercen cambiaron (la versión del crate y su `Cargo.lock`, en el §619). Ningún banco mira el
 número de versión, pero eso se mide, no se supone.
 
+## §623 — la entrada 85: una SEGUNDA implementación, desde la spec, que pasa los vectores; y el KAT de la 77, partido
+
+El commit que lleva este asiento, sobre `7e30e3a` (la fusión de `main` hasta el S621). Cierra la 85
+en tres de sus cuatro hitos, cierra el «KAT ausente» de la 77, corrige la prosa del fork y de
+`NUCLEO.md` §6, y decide el lenguaje del hito que queda. La rama es
+`claude/nice-planck-ax35zl`; sus sellos —`93ac2a0`, `826d569`, `e079269`, `5cb0e44`, `e590185`— los
+construyó un asistente con el método de `GENAI.md`, y el canon `--sello` salió VERDE dos veces con
+el bloque nuevo dentro.
+
+**De dónde sale.** La 85 pedía desde su nacimiento *«una conformidad que sólo se comprueba contra
+sí misma es autoconformidad»*: lo caro —vectores versionados, OpenRPC generado, el arnés
+`conformidad.sh`— estaba hecho, y faltaba **otro código** que reprodujera los bytes. Nace de una
+pregunta del autor sobre si Arqueo debía hacerse el estándar de su nicho, y de la decisión, medida
+en `doc/integracion-vertical-evaluacion.md`, de que eso no se logra escribiendo más código propio
+sino dejando que un segundo lo reproduzca.
+
+**Lo que hace.** `tools/segunda/`, en Python y sin dependencias, escrito desde `spec/` y de ningún
+`.rs` de la casa:
+- `nucleo.py` reproduce el NÚCLEO congelado de `NUCLEO.md` §6 —Goldilocks, la permutación Rescue
+  `Rp64_256` leída de la fuente de `winter-crypto 0.13.1`, Blake3 escrito desde la especificación,
+  la serialización, los dominios, los preámbulos y las composiciones— y `juez_nucleo.py` lo corre
+  contra los 26 KAT de `spec/vectors/nucleo/`: **26 de 26 byte a byte**. El autotest valida Blake3
+  contra 19 salidas del crate `blake3 1.8.5` del lock y la permutación contra el vector Sage de
+  `winter-crypto`.
+- `kat_xmss/xmss.py` verifica XMSS^MT de RFC 8391 (los ocho conjuntos multiárbol SHA2, n = 32)
+  escrito desde el RFC; `juez_cabezas.py` recorre los 331 ficheros con cabezas de `spec/vectors/`,
+  recompone el `epochDigest` por versión, compara el preámbulo recuperado, verifica la firma y ata
+  el índice embebido: **376 de 418 cabezas y 7 de 11 cofirmas**, y los 46 ficheros con alguna que no
+  verifica son **los 46 negativos** de sus manifiestos; ningún positivo roto.
+- `verificador.py` es un segundo mando del paquete de evidencia, con su contrato (un argumento, las
+  líneas de su forma, `ROJO` del catálogo, exit 0/1/2), para las cinco formas sin STARK —posición
+  v1 y v2 con acuse y cofirmas, extensión, consumo, conflicto y ancla—. `conformidad.sh` lo juzga
+  con los manifiestos del binario: **paquete 70/70, consumo 14/14, conflicto 16/16, ancla 21/21**, y
+  en los once positivos su salida es **idéntica línea a línea** a la del binario.
+- `kat_xmss/` cierra la 77: un corpus producido por el crate `xmss 0.1.0-pre.0` desde semillas
+  fijas y verificado por `xmss.py`, **8 de 8** firmas con tres falsadores callados. Es el módulo
+  con perfil de `hbs-state` y `mtc-core`: comparte la disciplina, no el problema, y no lleva un byte
+  del protocolo. Se partió con `git subtree split` (dos commits, `a94e86f`) y se empujó como la
+  rama `xmss-kat-main`, hoy `main` de <https://github.com/atoranzo/xmss-kat> con etiqueta `v0.1.0`;
+  en un clon el juez corre solo. El generador, corrido otra vez, reproduce `vectores.json` byte a
+  byte (sha256 `259b8df2bb6633ff…`).
+- `tools/canon.sh` gana el bloque «3 duodecies», entre el ancla y el artefacto: los tres jueces y
+  las cuatro conformidades del segundo verificador, a pin cero, para que un vector nuevo tenga que
+  pasar por los dos códigos. ~45 s, casi todos de XMSS en Python.
+
+**Lo que la segunda implementación destapó de la spec, y se corrigió con el error registrado.**
+Escribir desde `NUCLEO.md` §6 y nada más no bastaba para reproducir tres cosas, y el KAT las fijaba:
+(1) `hoja_de_acuse` no estaba escrita y su época es `logSeq + 1`, que vive en `RPC.md`; (2) la
+longitud codificada de `hash_del_lote` son los bytes de la composición, `48·k`, no `k`; (3) la cima
+pasa cada hoja por `mmr_hoja`. Y una cuarta, de formato: los KAT codifican el `u64` de dos maneras
+según el campo. `NUCLEO.md` §6 las escribe desde este asiento; §8 lo registra.
+
+**La prosa del fork, al día.** `NOTICE` y los tres README de `crates/winter-*` decían que la
+ocultación la enciende un `Prover::ocultacion` «que ningún probador de ARQUEO devuelve» y que el
+fork toca «ocho ficheros y dos nuevos». Medido: los **23** probadores con fila devuelven `Some`
+desde el §538, y son **once** ficheros tocados y **tres** nuevos desde el §575 (`acotado.rs`). El
+tarball del kit copia `NOTICE`, así que la 0.3.0 llevaba la frase vieja; corregido aquí. La URL pasa
+a `facebook/winterfell`.
+
+**La deuda del §575, su borrador.** `doc/reporte-winterfell-575.md` es el reporte de divulgación
+responsable que el §575 dejó pendiente, para que el autor lo envíe por el canal que pide la política
+de winterfell (el programa de Meta, no un issue público). El fallo —una reserva de memoria del
+tamaño de una longitud leída de los bytes, que aborta el proceso sin pánico— se **confirmó sobre los
+crates publicados en crates.io** (no un fork), `winter-{air,utils,crypto,math} =0.13.1`, rustc
+1.97.0, en tres vías: `Vec::read_from`, `Proof::from_bytes` y `BatchMerkleProof::read_from`; la misma
+llamada con una longitud honesta da `Err(UnexpectedEOF)`. El arreglo existe y es el del §575.
+
+**El cuarto hito, decidido con medida: Python.** Verificar STARK fuera de Rust para las siete formas
+con prueba se queda en Python, no en un lenguaje compilado. Lo medido sobre las primitivas ya
+escritas —permutación Rescue 1,28 ms, un merge Blake3 78 µs, una multiplicación en la extensión
+cuadrática 0,65 µs— proyecta ~0,73 s por prueba y ~59 s por el catálogo de 81 pruebas STARK, del
+orden de lo que ya tardan suites del árbol. Un compilado iría 10× a 50× más rápido y no hace falta:
+la segunda implementación no se mide por velocidad sino por decir los mismos bytes, y otro lenguaje
+añadiría una caja de compilación por una conformidad que no la necesita.
+
+**Lo medido, en el árbol.** Canon `--sello` VERDE en `e079269` y otra vez tras `5cb0e44`, con el
+bloque dentro; los 18 crates en sus pines; `verificar_citas` (con los encabezados del §616),
+`check_cifras`, `check_publicadas` y `check_nucleo`, verdes. `zk-ssl-verify` compila a
+`wasm32-wasip1` sin cambios y pasa 316 de 316 entradas de los diez manifiestos bajo wasmtime, con el
+mismo veredicto que el nativo (spike, no en el canon: necesita `wasmtime` de PyPI).
+
+**Contadores.** Ninguno de los pines del canon se mueve: la segunda implementación entra a pin cero,
+y sus jueces no son tests de crate. Veintidós ficheros nuevos o tocados fuera de este asiento (2.775
+inserciones, 20 borrados), más la rama `xmss-kat-main` partida de dos de ellos. Las entradas 77 y
+85 del BACKLOG pasan a hechas en lo que este asiento cierra; el cable y el núcleo no cambian un byte.
+
+**Lo que NO cierra.** El cuarto hito de la 85 (el verificador STARK en Python, decidido pero sin
+escribir); el envío del reporte del §575, que es del autor; la aceptación de `GENAI.md` de toda esta
+rama; y la numeración, si el S622 de la otra sesión empuja antes y reclama el §623.

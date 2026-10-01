@@ -1,0 +1,15 @@
+# El GENERADOR de los vectores de kat_xmss: produce claves y firmas con `xmss 0.1.0-pre.0`, el crate
+# que la casa clava con `=`, desde semillas fijas. No es miembro del workspace a proposito: la casa no
+# lo compila ni lo corre en el canon; los vectores que produjo viajan en vectores.json y los juzga
+# juez_xmss.py con la implementacion escrita desde RFC 8391 (xmss.py). Correr, desde el directorio de kat_xmss:
+#     cargo run --release --manifest-path generador/Cargo.toml > vectores.json
+[package]
+name = "kat-xmss-generador"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+xmss = "=0.1.0-pre.0"
